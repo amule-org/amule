@@ -61,16 +61,11 @@
 #include <vector>
 #include <exception>
 
-/**
- * This functions displays a verbose description of
- * any unhandled exceptions that occur and then
- * terminate the program by raising SIGABRT.
- */
+// Prints a verbose description of any unhandled exception, then raises
+// SIGABRT.
 void OnUnhandledException()
 {
-	// Revert to the original exception handler, to avoid
-	// infinite recursion, in case something goes wrong in
-	// this function.
+	// Revert to the original handler so a fault in here cannot recurse.
 	std::set_terminate(std::abort);
 
 #ifdef HAVE_CXXABI
@@ -179,18 +174,15 @@ wxString get_backtrace(unsigned n)
 #include <link.h> // IWYU pragma: keep
 
 // PIE relocation offset for the main executable, subtracted from runtime
-// backtrace addresses before they reach either bfd or addr2line, both of which
-// expect link-time virtual addresses. 0 for non-PIE binaries. Populated lazily
-// by init_pie_base(), so both the bfd path and the addr2line fallback can rely
-// on it.
+// backtrace addresses before they reach bfd or addr2line, which both expect
+// link-time addresses. 0 for non-PIE. Populated lazily by init_pie_base().
 static intptr_t s_pie_base = 0;
 static bool s_pie_base_init = false;
 
 static int find_pie_base_cb(struct dl_phdr_info *info, size_t /*size*/, void *data)
 {
-	// The main executable is the first entry in dl_iterate_phdr's callback order
-	// and is identified by an empty dlpi_name. dlpi_addr is the relocation offset
-	// applied at load time: 0 for ET_EXEC, random for ET_DYN.
+	// The main executable is dl_iterate_phdr's first callback and has an empty
+	// dlpi_name. dlpi_addr is the load-time relocation: 0 for ET_EXEC.
 	if (info->dlpi_name == NULL || info->dlpi_name[0] == '\0') {
 		*reinterpret_cast<intptr_t *>(data) = static_cast<intptr_t>(info->dlpi_addr);
 		return 1; // stop iteration
@@ -217,10 +209,8 @@ static unsigned int s_line_number;
 static int s_found;
 
 /*
- * read all symbols in the executable into an array
- * and return the pointer to the array in symbol_list.
- * Also return the number of actual symbols read
- * If there's any error, return -1
+ * Read all symbols in the executable into an array, returning the count, or
+ * -1 on error.
  */
 static int get_backtrace_symbols(bfd *a_bfd, asymbol ***symbol_list_ptr)
 {
@@ -258,10 +248,8 @@ static int get_backtrace_symbols(bfd *a_bfd, asymbol ***symbol_list_ptr)
 }
 
 /*
- * print file, line and function information for address
- * The info is actually set into global variables. This
- * function is called from the iterator bfd_map_over_sections
- *
+ * Set file, line and function information for an address into globals.
+ * Called from the bfd_map_over_sections iterator.
  */
 void init_backtrace_info()
 {
@@ -283,9 +271,8 @@ void init_backtrace_info()
 
 	s_have_backtrace_symbols = (get_backtrace_symbols(s_a_bfd, &s_symbol_list) > 0);
 
-	// Same PIE-offset lookup the addr2line fallback uses: without translating
-	// backtrace() runtime PCs to link-time addresses, bfd's section-bounds check
-	// rejects every amule frame and each one symbolicates to "??" on modern
+	// Same PIE-offset lookup the addr2line fallback uses: untranslated PCs fail
+	// bfd's section-bounds check and every amule frame symbolicates to "??" on
 	// PIE-by-default distros. init_pie_base() is idempotent.
 	init_pie_base();
 }
@@ -304,14 +291,10 @@ void get_file_line_info(bfd *a_bfd, asection *section, void *_address)
 
 	bfd_vma vma = section->vma;
 
-	// Translate runtime PC back to a link-time address so it lines up
-	// with bfd's section vmas.  s_pie_base captured by init_backtrace_info
-	// is the executable's PIE relocation offset; 0 on non-PIE so this is
-	// a no-op there.  Library frames (libc, libwx, ...) come through with
-	// runtime addresses far outside amule's link-time vma range; after
-	// the subtraction they're either negative-wrapped to huge unsigned
-	// values or still way outside, and the section-bounds check below
-	// continues to skip them as it did before.
+	// Translate the runtime PC back to a link-time address so it lines up with
+	// bfd's section vmas. 0 on non-PIE, so a no-op there. Library frames land
+	// far outside amule's range either way, and the bounds check below still
+	// skips them.
 	uintptr_t address = (uintptr_t)_address - s_pie_base;
 	if (address < vma) {
 		return;
@@ -417,8 +400,8 @@ wxString get_backtrace(unsigned n)
 			AllAddresses += address[i] + " ";
 		}
 	}
-	// bt_strings is the char** block returned by backtrace_symbols(); passing it
-	// through free()'s void* parameter is the documented, intended idiom.
+	// bt_strings is backtrace_symbols()'s char** block; passing it through
+	// free()'s void* is the documented idiom.
 	// NOLINTNEXTLINE(bugprone-multi-level-implicit-pointer-conversion)
 	free(bt_strings);
 
@@ -465,12 +448,9 @@ wxString get_backtrace(unsigned n)
 
 #else /* !HAVE_BFD */
 	if (wxThread::IsMain()) {
-		// Translate runtime PCs to link-time addresses before handing
-		// them to addr2line, otherwise PIE binaries (the default on
-		// modern distros) return "??" for every amule frame -- the
-		// same PIE bug the bfd path had before #677, exposed here in
-		// the no-libbfd fallback.  init_pie_base() leaves s_pie_base
-		// at 0 for non-PIE binaries, so this loop is a no-op there.
+		// Translate runtime PCs to link-time addresses first, or PIE binaries
+		// return "??" for every amule frame -- the bug #677 fixed on the bfd
+		// path, exposed again here. A no-op for non-PIE.
 		init_pie_base();
 		wxString translatedAddresses;
 		for (int i = 0; i < num_entries; ++i) {
@@ -482,21 +462,13 @@ wxString get_backtrace(unsigned n)
 
 		wxString command;
 		command << "addr2line -C -f -s -e /proc/" << getpid() << "/exe " << translatedAddresses;
-		// The output of the command is this wxArrayString, in which
-		// the even elements are the function names, and the odd elements
-		// are the line numbers.
+		// Even elements of the output are function names, odd ones line numbers.
 
-		// Use popen() rather than wxExecute() here.  GUI wxExecute(cmd,
-		// out) on Linux waits for the child via wxGUIAppTraits::
-		// WaitForChild, which runs a nested wx event loop -- and that
-		// loop dispatches whatever is pending in the wx event queue.
-		// If the assert that brought us into get_backtrace() came from
-		// a periodic event handler (e.g. OnCoreTimer), the nested loop
-		// fires the same handler again, re-enters wxASSERT, and the
-		// second-level wx assert handler can't run amule's reentrantly
-		// so it falls through to wxTrap()'s int3 -> SIGTRAP.  popen()
-		// is a plain fork+waitpid pipeline with no wx involvement, so
-		// the reentrance path doesn't exist.
+		// popen() rather than wxExecute(): on Linux the GUI wxExecute waits via
+		// wxGUIAppTraits::WaitForChild, which runs a nested wx event loop. If the
+		// assert that brought us here came from a periodic handler, that loop
+		// fires the same handler again and the second-level assert handler falls
+		// through to wxTrap()'s int3. popen() is fork+waitpid with no wx in it.
 		FILE *pipe = popen((const char *)command.mb_str(), "r");
 		if (pipe) {
 			char line[1024];

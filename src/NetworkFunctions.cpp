@@ -96,15 +96,13 @@ struct filter_st
 };
 
 static filter_st reserved_ranges[] = {
-	//	Here are the reserved blocks from RFC 3330 at http://www.rfc-editor.org/rfc/rfc3330.txt
-	//
+	// Reserved blocks from RFC 3330 (http://www.rfc-editor.org/rfc/rfc3330.txt):
 	//                                         Address Block      Present Use Reference
-	//---------------------------------------------------------------------------------------------------------------------
+	//-----------------------------------------------------------------------------------------
 	{ 0x00000000, 0x000000ff }, // 0.0.0.0/8          "This" Network [RFC1700, page 4]
-	// According to RFC3330, 14.* and 24.* must be parsed as normal IPs.
-	// { 0x0000000e, 0x000000ff },	// 14.0.0.0/8         Public-Data Networks                  [RFC1700,
-	// page 181]
-	// { 0x00000018, 0x000000ff },	// 24.0.0.0/8         Cable Television Networks --
+	// Per RFC 3330, 14.* and 24.* must be parsed as normal IPs:
+	// { 0x0000000e, 0x000000ff },	// 14.0.0.0/8   Public-Data Networks    [RFC1700, page 181]
+	// { 0x00000018, 0x000000ff },	// 24.0.0.0/8   Cable Television Networks
 	{ 0x00000027, 0x000000ff }, // 39.0.0.0/8         Reserved but subject to allocation [RFC1797]
 	{ 0x0000007f, 0x000000ff }, // 127.0.0.0/8        Loopback [RFC1700, page 5]
 	{ 0x00000080, 0x0000ffff }, // 128.0.0.0/16       Reserved but subject to allocation --
@@ -150,9 +148,8 @@ bool IsLanIP(uint32_t ip) noexcept
 
 bool IsLoopbackIP(uint32_t ip) noexcept
 {
-	// 127.0.0.0/8 in anti-host order — the first octet (127 = 0x7f) sits
-	// in the low byte of the uint32 (matches the encoding used by
-	// StringIPtoUint32 / IsLanIP).
+	// 127.0.0.0/8 in anti-host order -- the first octet (127 = 0x7f) sits in the low byte of
+	// the uint32, matching the encoding StringIPtoUint32 / IsLanIP use.
 	return (ip & 0x000000ff) == 0x0000007f;
 }
 

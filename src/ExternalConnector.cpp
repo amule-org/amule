@@ -279,10 +279,9 @@ CaMuleExternalConnector::~CaMuleExternalConnector()
 {
 	delete m_configFile;
 	delete m_locale;
-	// new'd in ConnectAndRun and DestroySocket'd at the end of that method, but
-	// never delete'd -- process exit reclaimed it and LSan flagged the ~3 KB
-	// one-shot leak (#704). The ctor sets this to NULL, so the delete is a no-op
-	// when ConnectAndRun was never entered.
+	// new'd in ConnectAndRun and DestroySocket'd at the end of it, but never delete'd --
+	// process exit reclaimed it and LSan flagged the ~3 KB one-shot leak (#704). The ctor sets
+	// this to NULL, so the delete is a no-op when ConnectAndRun was never entered.
 	delete m_ECClient;
 	free(m_strFullVersion);
 	free(m_strOSDescription);
@@ -304,10 +303,10 @@ void CaMuleExternalConnector::OnInitCommandSet()
 void CaMuleExternalConnector::Show(const wxString &s)
 {
 	if (!m_KeepQuiet) {
-		// `utf8_str()` instead of `unicode2char()`, so non-ASCII output does not
-		// collapse to `?` when the connector runs in a `C` locale (#40). Connectors
-		// do call setlocale(LC_ALL, "") below, but in minimal containers without
-		// LANG or LC_ALL exported the C locale still falls back to `C`.
+		// `utf8_str()` instead of `unicode2char()`, so non-ASCII output does not collapse
+		// to `?` in a `C` locale (#40). Connectors do call setlocale(LC_ALL, "") below, but
+		// in minimal containers without LANG or LC_ALL the C locale still falls back to
+		// `C`.
 		printf("%s", (const char *)s.utf8_str());
 #ifdef __WINDOWS__
 		fflush(stdout);
@@ -456,14 +455,14 @@ void CaMuleExternalConnector::ConnectAndRun(const wxString &ProgName, const wxSt
 		m_ECClient->SetCanAEAD(m_ECEncryption);
 		m_ECClient->SetCanMultiSearch(m_canMultiSearch);
 		m_ECClient->SetCanChatSessions(m_canChat);
-		// Bound the blocking EC connect so a wrong or unreachable host fails fast
-		// instead of hanging out the OS TCP connect timeout, which can be minutes.
-		// The GUI clients have their own async watchdog; 15 s matches its budget.
+		// Bound the blocking EC connect so a wrong or unreachable host fails fast instead
+		// of hanging out the OS TCP connect timeout, which can be minutes. The GUI clients
+		// have their own async watchdog; 15 s matches its budget.
 		m_ECClient->SetConnectTimeout(15000);
 
-		// ConnectToCore is blocking, m_ECClient having been initialized with NULL.
-		// m_port is a long (the option parser's type) and the EC client takes an
-		// int; the value is range-checked when read, so the cast is deliberate.
+		// ConnectToCore is blocking, m_ECClient having been initialized with NULL. m_port
+		// is a long (the option parser's type) and the EC client takes an int; the value is
+		// range-checked when read, so the cast is deliberate.
 		if (!m_ECClient->ConnectToCore(
 			    m_host, static_cast<int>(m_port), m_password.Encode(), ProgName, ProgVersion)) {
 			// no connection => close gracefully
@@ -578,9 +577,8 @@ bool CaMuleExternalConnector::OnCmdLineParsed(wxCmdLineParser &parser)
 	if (!UsesConnectorConfigFile() || !parser.Found("config-file", &m_configFileName)) {
 		m_configFileName = "remote.conf";
 	}
-	// Portable detection is "does <cwd>/config/<probe> exist", so each
-	// connector probes for the file it actually owns rather than for
-	// remote.conf regardless.
+	// Portable detection is "does <cwd>/config/<probe> exist", so each connector probes for the
+	// file it actually owns rather than for remote.conf regardless.
 	m_configDir = GetConfigDir(PortableProbeFile());
 	m_configFileName = m_configDir + m_configFileName;
 
@@ -651,9 +649,9 @@ bool CaMuleExternalConnector::OnCmdLineParsed(wxCmdLineParser &parser)
 	parser.Found("log-file", &m_logFile);
 	m_noLogFile = parser.Found("no-log-file");
 
-	// Wire --verbose to the console logger gate, so AddDebugLogLine* output from
-	// this binary obeys the CLI flag the way amuled obeys its VerboseDebug pref.
-	// LoadAmuleConfig may already have set the gate; --verbose overrides it.
+	// Wire --verbose to the console logger gate, so AddDebugLogLine* output obeys the CLI flag
+	// the way amuled obeys its VerboseDebug pref. LoadAmuleConfig may already have set the
+	// gate; --verbose overrides it.
 	if (m_Verbose) {
 		theLogger.SetVerbose(true);
 	}
@@ -680,12 +678,12 @@ void CaMuleExternalConnector::LoadConfigFile()
 		// password, and the stored value is what authenticates.
 		RestrictToOwner(CPath(m_configFileName));
 		m_language = m_configFile->Read("/Locale", "");
-		// Match the default across amulecmd / amuleweb / amulegui. The literal
-		// loopback address rather than "localhost": on Windows those lookups can
-		// fail intermittently (IPv4 vs IPv6 stack ordering, Hosts file shape), which
-		// showed up as `Connection Failed. Unable to connect to localhost:4712`
-		// (#822). 127.0.0.1 is portable and unambiguous, and the OnCmdLineParsed
-		// fallback covers the "no config file at all" path.
+		// Match the default across amulecmd / amuleweb / amulegui. The literal loopback
+		// address rather than "localhost": on Windows those lookups can fail intermittently
+		// (IPv4 vs IPv6 stack ordering, Hosts file shape), showing up as `Connection
+		// Failed. Unable to connect to localhost:4712` (#822). 127.0.0.1 is portable and
+		// unambiguous, and the OnCmdLineParsed fallback covers the "no config file at all"
+		// path.
 		m_host = m_configFile->Read("/EC/Host", "127.0.0.1");
 		m_port = m_configFile->Read("/EC/Port", 4712l);
 		m_configFile->ReadHash("/EC/Password", &m_password);
@@ -709,9 +707,9 @@ void CaMuleExternalConnector::SaveConfigFile()
 		m_configFile->Write("/EC/Host", m_host);
 		m_configFile->Write("/EC/Port", m_port);
 		m_configFile->WriteHash("/EC/Password", m_password);
-		// ZLIB was read in LoadConfigFile but never written here, so toggling
-		// --disable-zlib did not persist and any value in the config file silently
-		// reset to the enabled default on every save (#817).
+		// ZLIB was read in LoadConfigFile but never written here, so toggling --disable-
+		// zlib did not persist and any value in the config file silently reset to the
+		// enabled default on every save (#817).
 		m_configFile->Write("/EC/ZLIB", m_ZLIB ? 1l : 0l);
 		m_configFile->Write("/EC/ForceZLIB", m_forceZLIB ? 1l : 0l);
 		m_configFile->Write("/EC/Encryption", m_ECEncryption ? 1l : 0l);
@@ -726,16 +724,14 @@ bool CaMuleExternalConnector::OnInit()
 #endif
 #endif
 
-	// Pull the libc locale from the environment before any wxString -> char*
-	// conversion runs via unicode2char(). Otherwise the process stays on the
-	// default "C" locale and wxConvLibc collapses every non-ASCII codepoint to '?'.
-	// readline does its own setlocale on first read, so paths through it appear to
-	// work; non-interactive paths do not. The helper also forces LC_NUMERIC back to
-	// "C" so libc printf/scanf decimal handling stays portable.
+	// Pull the libc locale from the environment before any wxString -> char* conversion runs
+	// via unicode2char(). Otherwise the process stays on the default "C" locale and wxConvLibc
+	// collapses every non-ASCII codepoint to '?'. readline does its own setlocale on first
+	// read, so paths through it appear to work; non-interactive paths do not. The helper also
+	// forces LC_NUMERIC back to "C" so libc printf/scanf decimal handling stays portable.
 	aMuleInitLocale();
 
-	// OnInit is called only once when creating the object; the two pointers below
-	// would otherwise need free()ing before the new value is assigned.
+	// OnInit runs once per object; the two pointers below would otherwise need free()ing first.
 	// cppcheck-suppress publicAllocationError
 	m_strFullVersion = strdup((const char *)unicode2char(GetMuleVersion()));
 	m_strOSDescription = strdup((const char *)unicode2char(wxGetOsDescription()));
@@ -748,10 +744,10 @@ bool CaMuleExternalConnector::OnInit()
 	SetLocale(m_language);
 
 #ifdef HAVE_LIBREADLINE
-	// Allow conditional parsing of the ~/.inputrc file. OnInitCmdLine() is called
-	// from wxApp::OnInit() above, so m_appname is already set. macOS libedit's
-	// rl_readline_name is char* and rl_completion_entry_function is Function*,
-	// where GNU readline on Linux has the const types.
+	// Allow conditional parsing of the ~/.inputrc file. OnInitCmdLine() is called from
+	// wxApp::OnInit() above, so m_appname is already set. macOS libedit's rl_readline_name is
+	// char* and rl_completion_entry_function is Function*, where GNU readline on Linux has the
+	// const types.
 #ifdef __WXMAC__
 	rl_readline_name = const_cast<char *>(m_appname);
 	theCommands = &m_commands;
@@ -809,9 +805,8 @@ void CaMuleExternalConnector::OnAssertFailure(
 	const wxChar *file, int line, const wxChar *func, const wxChar *cond, const wxChar *msg)
 {
 #if !defined wxUSE_STACKWALKER || !wxUSE_STACKWALKER
-	// Wrap both ternary branches in wxString() so the conditional has a single
-	// pointer type — raw `msg ? msg : ""` is a const wxChar* / const char*
-	// mix that Alpine's GCC 14 (and stricter GCCs in general) rejects.
+	// Wrap both ternary branches in wxString() so the conditional has a single pointer type --
+	// raw `msg ? msg : ""` is a const wxChar* / const char* mix that Alpine's GCC 14 rejects.
 	wxString errmsg = CFormat("%s:%s:%d: Assertion '%s' failed. %s") % file % func % line % cond %
 			  (msg ? wxString(msg) : wxString());
 

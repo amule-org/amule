@@ -45,9 +45,7 @@ class CED2KFileLink;
 // #define BUFFER_SIZE_LIMIT	500000 // Max bytes before forcing a flush
 #define BUFFER_TIME_LIMIT 60000 // Max milliseconds before forcing a flush
 
-// Ok, eMule and aMule are building incompatible backup files because
-// of the different name. aMule was using ".BAK" and eMule ".bak".
-// This should fix it.
+// eMule and aMule used to build incompatible backup files: aMule wrote ".BAK", eMule ".bak".
 #define PARTMET_BAK_EXT ".bak"
 
 enum EPartFileFormat
@@ -140,8 +138,8 @@ public:
 	bool IsMetDirty() const { return m_metDirty; }
 
 	// Soft-dirty bit for upload-stat counters (AllTimeRequests, AllTimeAccepts,
-	// AllTimeTransferred), flipped by CFileStatistic so a popular sharer does not
-	// re-dirty the partfile on every served chunk. See m_statsDirty.
+	// AllTimeTransferred), flipped by CFileStatistic so a popular sharer does not re-dirty the
+	// partfile on every served chunk. See m_statsDirty.
 	void MarkStatsDirty() { m_statsDirty = true; }
 	void ClearStatsDirty() { m_statsDirty = false; }
 	bool IsStatsDirty() const { return m_statsDirty; }
@@ -179,15 +177,12 @@ public:
 	virtual void UpdatePartsInfo();
 	const CPath &GetPartMetFileName() const { return m_partmetfilename; }
 
-	/**
-	 * Cached partmet basename (filename without `.met` extension) as a
-	 * wxString. Used by EC GET_SHARED_FILES / GET_UPDATE for the
-	 * EC_TAG_KNOWNFILE_FILENAME tag of partfiles — that path went through
-	 * `CFormat("%s") % GetPartMetFileName().RemoveExt()` on every call,
-	 * which allocates a CPath (two wxStrings via DeepCopy) plus a CFormat
-	 * round-trip per file per EC cycle. The basename never changes after
-	 * the partfile is created, so this is a populate-once cache.
-	 */
+	/// Cached partmet basename (filename without the `.met` extension). Used by EC
+	/// GET_SHARED_FILES / GET_UPDATE for a partfile's EC_TAG_KNOWNFILE_FILENAME tag -- that
+	/// path went through `CFormat("%s") % GetPartMetFileName().RemoveExt()` on every call,
+	/// allocating a CPath (two wxStrings via DeepCopy) plus a CFormat round-trip per file per
+	/// EC cycle. The basename never changes after the partfile is created, so this is a
+	/// populate-once cache.
 	const wxString &GetCachedPartMetBasename() const;
 	uint16 GetPartMetNumber() const;
 	uint64 GetTransferred() const { return transferred; }
@@ -225,15 +220,14 @@ public:
 		const CUpDownClient *client);
 	void FlushBuffer(bool fromAICHRecoveryDataAvailable = false);
 
-	// True when m_aChangedPart has dirty entries and the write thread
-	// is idle. CDownloadQueue uses this to drive FlushBuffer for
-	// paused/insufficient files (Process() doesn't run for them).
+	// True when m_aChangedPart has dirty entries and the write thread is idle. CDownloadQueue
+	// uses this to drive FlushBuffer for paused or insufficient files, which Process() does not
+	// run for.
 	bool HasPendingHashWork() const;
 
-	// Called from CamuleApp's wxEVT_PARTFILE_HASH_RESULT handler when
-	// CPartFileHashThread reports a HashSinglePart result for this file. Runs the
-	// Phase 3 success/failure logic: AICH recovery on a bad part, SafeAddKFile on a
-	// good complete one.
+	// Called from CamuleApp's wxEVT_PARTFILE_HASH_RESULT handler when CPartFileHashThread
+	// reports a HashSinglePart result for this file. Runs the Phase 3 success/failure logic:
+	// AICH recovery on a bad part, SafeAddKFile on a good complete one.
 	void OnAsyncHashComplete(uint16 partNumber, bool ok, bool fromAICHRecoveryDataAvailable);
 
 	// Barry - Added to prevent list containing deleted blocks on shutdown
@@ -275,10 +269,9 @@ public:
 
 	void SetDownPriority(uint8 newDownPriority, bool bSave = true, bool bRefresh = true);
 	bool IsAutoDownPriority() const { return m_bAutoDownPriority; }
-	// EC exports the priority with the auto flag folded in via
-	// EC_TAG_PARTFILE_PRIO; mark the change so remote clients see it without waiting
-	// for the next Process() tick -- and at all when the file is paused or stopped,
-	// where Process() does not run.
+	// EC exports the priority with the auto flag folded in via EC_TAG_PARTFILE_PRIO; mark the
+	// change so remote clients see it without waiting for the next Process() tick -- and at all
+	// when the file is paused or stopped, where Process() does not run.
 	void SetAutoDownPriority(bool flag)
 	{
 		if (m_bAutoDownPriority != flag) {
@@ -300,34 +293,17 @@ public:
 	void RequestAICHRecovery(uint16 nPart);
 	void AICHRecoveryDataAvailable(uint16 nPart);
 
-	/**
-	 * This function is used to update source-counts.
-	 *
-	 * @param oldState The old state of the client, or -1 to ignore.
-	 * @param newState The new state of the client, or -1 to ignore.
-	 *
-	 * Call this function for a client belonging to this file, which has changed
-	 * its state. The value -1 can be used to make the function ignore one of
-	 * the two states.
-	 *
-	 * AddSource and DelSource takes care of calling this function when a source is
-	 * removed, so there's no need to call this function when calling either of those.
-	 */
+	/// Updates source counts for a client of this file that changed state. @a oldState or @a
+	/// newState may be -1 to ignore that side. AddSource and DelSource call this themselves, so
+	/// there is no need to call it around either.
 	void ClientStateChanged(int oldState, int newState);
 
 	bool AddSource(CUpDownClient *client);
 	bool DelSource(CUpDownClient *client);
 
-	/**
-	 * Updates the frequency of available parts from with the data the client provides.
-	 *
-	 * @param client The clients whose available parts should be considered.
-	 * @param increment If true, the counts are incremented, otherwise they are decremented.
-	 *
-	 * This functions updates the frequency list of file-parts, using the clients
-	 * parts-status. This function should be called by clients every time they update their
-	 * parts-status, or when they are added or removed from the file.
-	 */
+	/// Updates the frequency list of file parts from @a client's parts-status, incrementing or
+	/// decrementing per @a increment. Clients should call it whenever they update their parts-
+	/// status, and when they are added to or removed from the file.
 	void UpdatePartsFrequency(CUpDownClient *client, bool increment);
 
 	ArrayOfUInts16 m_SrcpartFrequency;
@@ -340,29 +316,15 @@ public:
 
 	const CGapList &GetGapList() const { return m_gaplist; }
 
-	/**
-	 * Adds a source to the list of dead sources.
-	 *
-	 * @param client The source to be recorded as dead for this file.
-	 */
+	/// Records @a client as a dead source for this file.
 	void AddDeadSource(const CUpDownClient *client);
 
-	/**
-	 * Set the current progress of hashing and display it in the download list control.
-	 *
-	 * @param part Number of part currently being hashed. 0 for no hashing in progress.
-	 */
+	/// Sets the current hashing progress and displays it in the download list control. @a part
+	/// is the part being hashed, 0 for no hashing in progress.
 	virtual void SetHashingProgress(uint16 part) const;
 
-	/**
-	 * Checks if a source is recorded as being dead for this file.
-	 *
-	 * @param client The client to evaluate.
-	 * @return True if dead, false otherwise.
-	 *
-	 * Sources that are dead are not to be considered valid
-	 * sources and should not be added to the partfile.
-	 */
+	/// True if @a client is recorded as a dead source for this file. Dead sources are not valid
+	/// sources and must not be added to the partfile.
 	bool IsDeadSource(const CUpDownClient *client);
 
 	/* Kad Stuff */
@@ -371,9 +333,9 @@ public:
 	uint16 GetMaxSourcePerFileUDP() const;
 
 #ifndef CLIENT_GUI
-	// Daemon override: prepend the connected-source comments to the Kad notes.
-	// On amulegui the inherited CAbstractFile version returns the EC-streamed
-	// cache, so no override is needed there.
+	// Daemon override: prepend the connected-source comments to the Kad notes. On amulegui the
+	// inherited CAbstractFile version returns the EC-streamed cache, so no override is needed
+	// there.
 	void GetRatingAndComments(FileRatingList &list) const;
 #endif
 
@@ -420,9 +382,9 @@ private:
 	CPath m_fullname;        // path/name of the met file
 	CPath m_partmetfilename; // name of the met file
 	CPath m_PartPath;        // path/name of the partfile
-	// Cache for EC EC_TAG_KNOWNFILE_FILENAME — see GetCachedPartMetBasename().
-	// Populate-once: m_partmetfilename never changes for the lifetime of
-	// the partfile (the basename is the partfile's allocation number).
+	// Cache for EC EC_TAG_KNOWNFILE_FILENAME -- see GetCachedPartMetBasename(). Populate-once:
+	// m_partmetfilename never changes for the lifetime of the partfile, the basename being the
+	// partfile's allocation number.
 	mutable wxString m_cachedPartMetBasename;
 	bool m_paused;
 	bool m_stopped;
@@ -460,59 +422,50 @@ private:
 	// during destruction (avoids re-sharing a partfile being deleted).
 	bool m_inDestructor = false;
 
-	// Tick (GetTickCount) of the last successful SavePartFile.
-	// Used together with m_statsDirty to throttle soft-stat persistence
-	// to the STATS_HEARTBEAT_MS cadence (see FlushBuffer).
+	// Tick (GetTickCount) of the last successful SavePartFile. Used with m_statsDirty to
+	// throttle soft-stat persistence to the STATS_HEARTBEAT_MS cadence (see FlushBuffer).
 	uint64 m_lastMetSaveTick = 0;
 
-	// Soft-dirty bit for upload-stat counters that increment every time a peer
-	// requests, accepts or transfers a chunk. Promoted to a save only on the
-	// STATS_HEARTBEAT_MS cadence, since a pure seeder with active uploads would
-	// otherwise re-dirty every partfile on every block served. Cleared on a
-	// successful save.
+	// Soft-dirty bit for upload-stat counters that increment every time a peer requests,
+	// accepts or transfers a chunk. Promoted to a save only on the STATS_HEARTBEAT_MS cadence,
+	// since a pure seeder with active uploads would otherwise re-dirty every partfile on every
+	// block served. Cleared on a successful save.
 	bool m_statsDirty = false;
 
-	// True when in-memory partfile state has diverged from the on-disk .part.met
-	// since the last successful save. Gates the periodic FlushBuffer-driven
-	// SavePartFile, so idle partfiles do not rewrite their .met every 60 s with
-	// byte-identical content.
+	// True when in-memory partfile state has diverged from the on-disk .part.met since the last
+	// successful save. Gates the periodic FlushBuffer-driven SavePartFile, so idle partfiles do
+	// not rewrite their .met every 60 s with byte-identical content.
 	//
-	// Set by MarkMetDirty() at every mutation of a field that ends up in the .met
-	// (gap list, status, priorities, category, AICH state, corrupted list,
-	// lastseencomplete, filename), and cleared by a successful SavePartFile().
-	// Stat counters and download active time deliberately do NOT mark dirty: they
-	// persist on the next hard-state change or at shutdown, and a session's
-	// counters surviving a crash is best-effort by design.
+	// Set by MarkMetDirty() at every mutation of a field that ends up in the .met (gap list,
+	// status, priorities, category, AICH state, corrupted list, lastseencomplete, filename),
+	// and cleared by a successful SavePartFile(). Stat counters and download active time
+	// deliberately do NOT mark dirty: they persist on the next hard-state change or at
+	// shutdown, and a session's counters surviving a crash is best-effort by design.
 	//
-	// Initialised false, the load path constructing CPartFile in a state matching
-	// the just-read .met. LoadPartFile explicitly ClearMetDirty()s before each
-	// successful return, to undo MarkMetDirty()s produced incidentally by setters
-	// during tag parsing.
+	// Initialised false, the load path constructing CPartFile in a state matching the just-read
+	// .met. LoadPartFile explicitly ClearMetDirty()s before each successful return, to undo
+	// MarkMetDirty()s produced incidentally by setters during tag parsing.
 	bool m_metDirty = false;
 
-	// Count of HashJobs in flight on CPartFileHashThread for this file.
-	// Incremented before enqueue, decremented by the worker after HashSinglePart
-	// and the event post complete. ~CPartFile waits for it to reach 0, so the
-	// worker is never reading m_hpartfile while the destructor closes it.
+	// Count of HashJobs in flight on CPartFileHashThread for this file. Incremented before
+	// enqueue, decremented by the worker after HashSinglePart and the event post complete.
+	// ~CPartFile waits for it to reach 0, so the worker is never reading m_hpartfile while the
+	// destructor closes it.
 	std::atomic<int32> m_pendingHashes{ 0 };
 
-	// Serialises access to m_hpartfile across the main thread, CPartFileWriteThread
-	// and CPartFileHashThread. With ENABLE_MMAP=OFF (the default),
-	// CFileAutoClose::ReadAt / WriteAt are Seek+Read / Seek+Write on the same OS fd,
-	// so concurrent hash reads and disk writes would race on the file position.
-	// Held by CPartFileWriteThread::Entry, CPartFileHashThread::Entry, ~CPartFile's
-	// sync-hash drain, and FlushBuffer Phase 2's PB_READY synchronous fallback.
+	// Serialises access to m_hpartfile across the main thread, CPartFileWriteThread and
+	// CPartFileHashThread. With ENABLE_MMAP=OFF (the default), CFileAutoClose::ReadAt / WriteAt
+	// are Seek+Read / Seek+Write on the same OS fd, so concurrent hash reads and disk writes
+	// would race on the file position. Held by CPartFileWriteThread::Entry,
+	// CPartFileHashThread::Entry, ~CPartFile's sync-hash drain, and FlushBuffer Phase 2's
+	// PB_READY synchronous fallback.
 	std::mutex m_hpartfileMutex;
 
-	/**
-	 * The EC-exported values Process() can move in a single tick, as of the
-	 * last tick that moved any of them. Lets the per-tick mark tell a file
-	 * that actually did something from one that merely got a second older --
-	 * see the comment on the comparison in Process().
-	 *
-	 * Ordered to match the capture there; the values only exist to be
-	 * compared, so a plain array avoids naming ten fields twice.
-	 */
+	/// The EC-exported values Process() can move in a single tick, as of the last tick that
+	/// moved any of them. Lets the per-tick mark tell a file that actually did something from
+	/// one that merely got a second older -- see the comment on the comparison in Process().
+	/// Ordered to match the capture there; the values only exist to be compared, so a plain
+	/// array avoids naming ten fields twice.
 	std::array<uint64, 12> m_ecTickState{};
 
 	uint8 m_category;
@@ -584,18 +537,12 @@ public:
 	// Dropping slow sources
 	CUpDownClient *GetSlowerDownloadingClient(uint32 speed, CUpDownClient *caller);
 
-	// Read data for sharing
 	/**
-	 * Reads part-file data into the given area.
+	 * Reads part-file data into @a area, @a toread bytes from absolute offset @a offset.
 	 *
-	 * @param area Destination for the data.
-	 * @param offset Absolute offset to read from.
-	 * @param toread Number of bytes to read.
-	 * @param handleClosed Set when the read failed only because the
-	 *	completion path had already closed the file. That is the one
-	 *	recoverable failure; every other one is a real error and must
-	 *	not be silently swallowed by the caller.
-	 *
+	 * @param handleClosed Set when the read failed only because the completion path had already
+	 * closed the file. That is the one recoverable failure; every other one is a real error and
+	 * must not be silently swallowed by the caller.
 	 * @return true on success, false on any failure.
 	 */
 	bool ReadData(class CFileArea &area, uint64 offset, uint32 toread, bool *handleClosed = nullptr);

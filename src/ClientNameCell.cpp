@@ -35,10 +35,9 @@
 #include "CountryFlags.h"   // Needed for CCountryFlags (flag bitmaps)
 #include "CountryDisplay.h" // Needed for GetDisplayCountryCode
 #endif
-// MUST match the build's client class: the reduced EC client for amulegui, the
-// full one for monolithic. Including the wrong header gives this TU a different
-// CUpDownClient layout than the rest of the (remote) GUI, so member reads land
-// at the wrong offset.
+// MUST match the build's client class: the reduced EC client for amulegui, the full one for
+// monolithic. The wrong header gives this TU a different CUpDownClient layout than the rest of the
+// GUI, so member reads land at the wrong offset.
 #ifdef CLIENT_GUI
 #include "UpDownClientEC.h"
 #else

@@ -31,45 +31,42 @@
 
 // Startup splash for the monolithic GUI.
 //
-// Exists because startup is slow and silent: the main window is created before
-// the shared-file scan runs, but the scan holds the main thread, so nothing
-// paints until it finishes. On a large share -- worse on network storage, where
-// every file costs a round trip -- that is a long stretch with no sign the
-// application is alive, and under Flatpak long enough for xdg-desktop-portal's
+// Exists because startup is slow and silent: the main window is created before the shared-file scan
+// runs, but the scan holds the main thread, so nothing paints until it finishes. On a large share
+// -- worse on network storage, where every file costs a round trip -- that is a long stretch with
+// no sign the application is alive, and under Flatpak long enough for xdg-desktop-portal's
 // background monitor to conclude the app has no window and kill it.
 //
-// Everything is drawn by hand rather than assembled from child controls: the
-// background is a dark gradient, and native widgets on top of it would follow
-// the desktop theme instead, giving a light-on-dark gauge on most systems.
+// Everything is drawn by hand rather than assembled from child controls: the background is a dark
+// gradient, and native widgets on top of it would follow the desktop theme instead, giving a light-
+// on-dark gauge on most systems.
 class CSplashScreen : public wxFrame
 {
 public:
-	// Parented to the main window, so the window manager keeps it above aMule and
-	// nothing else. As a parentless wxSTAY_ON_TOP frame it sat at a desktop-global
-	// level, covering every other application with no taskbar button to raise over
-	// it or dismiss it with.
+	// Parented to the main window, so the window manager keeps it above aMule and nothing else.
+	// As a parentless wxSTAY_ON_TOP frame it sat at a desktop-global level, covering every
+	// other application with no taskbar button to raise over it or dismiss it with.
 	explicit CSplashScreen(wxWindow *parent);
 
-	// Update the phase text and the bar. Cheap to call often: repainting is
-	// rate-limited internally, so callers can report every file scanned.
+	// Update the phase text and the bar. Cheap to call often: repainting is rate-limited
+	// internally, so callers can report every file scanned.
 	//
-	// Set @a immediate when the update marks a change of phase rather than progress
-	// within one, to paint it without waiting out the rate limit. It cannot be
-	// inferred from the text changing, since the per-item updates carry a running
-	// count and so change their text every time.
+	// Set @a immediate when the update marks a change of phase rather than progress within one,
+	// to paint it without waiting out the rate limit. It cannot be inferred from the text
+	// changing, since the per-item updates carry a running count and so change their text every
+	// time.
 	void SetProgress(const wxString &status, int percent, bool immediate = false);
 
-	// Close, honouring the minimum on-screen time: a fast startup would otherwise
-	// flash the splash for a few frames, which reads as a glitch.
+	// Close, honouring the minimum on-screen time: a fast startup would otherwise flash the
+	// splash for a few frames, which reads as a glitch.
 	//
-	// Never blocks -- when the floor has not been reached it schedules the close and
-	// returns. Sleeping here would freeze the main thread, the very symptom the
-	// splash exists to explain.
+	// Never blocks -- when the floor has not been reached it schedules the close and returns.
+	// Sleeping here would freeze the main thread, the very symptom the splash exists to
+	// explain.
 	void Finish();
 
-	// Stamps the clock the minimum-display floor is measured from, so that
-	// floor covers the time actually spent visible rather than the time
-	// since the object was built.
+	// Stamps the clock the minimum-display floor is measured from, so that floor covers the
+	// time actually spent visible rather than the time since the object was built.
 	bool Show(bool show = true) override;
 
 private:
@@ -80,9 +77,9 @@ private:
 	// called early, so that wait costs the main thread nothing.
 	wxTimer m_closeTimer;
 
-	// Gradient, logo and the two fixed captions, rendered once. Only the
-	// bar and the phase text change afterwards, so the expensive part is
-	// paid at construction rather than on every update.
+	// Gradient, logo and the two fixed captions, rendered once. Only the bar and the phase text
+	// change afterwards, so the expensive part is paid at construction rather than on every
+	// update.
 	void RenderBackdrop();
 
 	wxBitmap m_backdrop;
@@ -93,11 +90,10 @@ private:
 	wxLongLong m_shownAt;
 	// Wall-clock of the last repaint, for the rate limit.
 	wxLongLong m_lastPaint;
-	// Cost accounting, reported once at Finish() so what the splash takes
-	// from the work it is reporting on is measurable rather than assumed.
-	// Two figures because they answer different questions: how much was
-	// drawn, and how much time the startup path gave up in total (drawing
-	// plus the event-loop pumping that gets it on screen).
+	// Cost accounting, reported once at Finish() so what the splash takes from the work it
+	// reports on is measurable rather than assumed. Two figures because they answer different
+	// questions: how much was drawn, and how much time the startup path gave up in total
+	// (drawing plus the event-loop pumping that gets it on screen).
 	unsigned m_paintCount;
 	wxLongLong m_paintMicros;
 	wxLongLong m_updateMicros;

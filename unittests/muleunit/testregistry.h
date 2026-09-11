@@ -32,10 +32,8 @@ class TestCase;
 typedef std::list<TestCase *> TestCaseList;
 
 /**
- * The TestRegistry is the main class used to register all tests,
- * and create appropriate TestCase. It can then be used to run
- * tests and print results. All methods that should be used by
- * the user are static.
+ * Registers all tests and creates the appropriate TestCase, then runs the tests and prints results.
+ * Every method a user should call is static.
  */
 class TestRegistry
 {
@@ -44,17 +42,14 @@ public:
 	~TestRegistry();
 
 	/**
-	 * Add a test in the registry. If the previous TestCase was not the same
-	 * as the one of the current test, a new TestCase is created.
-	 *
+	 * Add a test to the registry. A new TestCase is created when the previous one differs from
+	 * this test's.
 	 * @param test Test to be added
 	 */
 	static void addTest(Test *test);
 
 	/**
-	 * Runs all added tests and prints the results.
-	 *
-	 * @return False if there were failures.
+	 * Runs all added tests and prints the results. @return False if there were failures.
 	 */
 	static bool runAndPrint();
 

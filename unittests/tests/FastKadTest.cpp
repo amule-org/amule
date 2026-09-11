@@ -34,16 +34,15 @@ DECLARE_SIMPLE(FastKad)
 // test here depends on a real clock.
 static const uint64_t T0 = 1000000;
 
-// Every expected ceiling below is a literal worked out by hand from the
-// documented estimator -- mean + 2 * stddev + margin, with both moments divided
-// by the full window and every unfilled slot counted as the default response
-// time -- and NOT by reading CFastKad's own constants back. Reading them here
-// would make the assertions restate the implementation instead of pinning its
-// output, and would stay green through an arithmetic change.
+// Every expected ceiling below is a literal worked out by hand from the documented estimator --
+// mean + 2 * stddev + margin, with both moments divided by the full window and every unfilled slot
+// counted as the default response time -- and NOT by reading CFastKad's own constants back. Reading
+// them here would make the assertions restate the implementation instead of pinning its output, and
+// would stay green through an arithmetic change.
 //
-// The literals therefore assume the window and the two reference times below.
-// If any of them ever changes, ConstantsTheseTestsAssume fails first and says
-// so, instead of the arithmetic tests quietly re-deriving a new answer.
+// The literals therefore assume the window and the two reference times below. If any of them
+// changes, ConstantsTheseTestsAssume fails first and says so, instead of the arithmetic tests
+// quietly re-deriving a new answer.
 static const unsigned WINDOW = 100;
 static const unsigned DEFAULT_MS = 1000;
 static const unsigned CAP_MS = 3000;
@@ -104,10 +103,10 @@ TEST(FastKad, AKnownSeriesProducesTheHandComputedCeiling)
 TEST(FastKad, AFullWindowOfEqualSamplesIsThatValuePlusTheMargin)
 {
 	CFastKad kad;
-	// A full window removes the unfilled-slot bias entirely, and equal
-	// samples have zero variance, so the estimate is exactly the sample
-	// value plus the margin. This is the tightest available check on the
-	// mean, on the margin, and on the window being genuinely full.
+	// A full window removes the unfilled-slot bias entirely, and equal samples have zero
+	// variance, so the estimate is exactly the sample value plus the margin. This is the
+	// tightest available check on the mean, on the margin, and on the window being genuinely
+	// full.
 	for (unsigned i = 0; i < WINDOW; ++i) {
 		kad.AddResponseTime(0x0B000000 + i, 200, T0);
 	}
@@ -129,9 +128,8 @@ TEST(FastKad, AWindowOfInstantAnswersLeavesOnlyTheMargin)
 TEST(FastKad, TheEstimateIsCappedAtTheDocumentedMaximum)
 {
 	CFastKad kad;
-	// Half the nodes answer instantly, half take ten minutes. The raw
-	// formula yields roughly 903122 ms, which would stall every search;
-	// the cap is what makes that survivable.
+	// Half the nodes answer instantly, half take ten minutes. The raw formula yields roughly
+	// 903122 ms, which would stall every search; the cap is what makes that survivable.
 	for (unsigned i = 0; i < WINDOW; ++i) {
 		kad.AddResponseTime(0x0D000000 + i, (i % 2) ? 1 : 600000, T0);
 	}
@@ -170,10 +168,10 @@ TEST(FastKad, TheWindowIsBoundedAndFreshSamplesAreNotEvicted)
 	}
 	ASSERT_EQUALS(300u, (unsigned)kad.GetEstMaxResponseTime());
 
-	// Every existing sample is younger than the eviction age, so a flood of
-	// new addresses must be dropped rather than churn the window. Memory use
-	// stops growing AND the estimate is untouched -- the second half is what
-	// distinguishes "rejected" from "admitted and coincidentally equal".
+	// Every existing sample is younger than the eviction age, so a flood of new addresses must
+	// be dropped rather than churn the window. Memory use stops growing AND the estimate is
+	// untouched -- the second half distinguishes "rejected" from "admitted and coincidentally
+	// equal".
 	for (unsigned i = 0; i < WINDOW * 2; ++i) {
 		kad.AddResponseTime(0xA0000000 + i, 2500, T0 + 1);
 	}

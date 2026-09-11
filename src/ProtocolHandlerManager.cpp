@@ -51,9 +51,9 @@
 #endif
 
 // Forward declarations for the macOS backend entry points implemented in
-// ProtocolHandlerManager_mac.mm. Declared at file scope (external linkage,
-// global namespace) so the .mm's plain-C++ definitions link against them: a
-// static-linkage declaration could not bind to a global-scope definition.
+// ProtocolHandlerManager_mac.mm. Declared at file scope (external linkage, global namespace) so the
+// .mm's plain-C++ definitions link against them: a static-linkage declaration could not bind to a
+// global-scope definition.
 #if defined(__WXMAC__) || defined(__WXOSX__)
 wxString MacReadHandler(HandlerTarget scheme);
 bool MacWrite(HandlerTarget scheme, const wxString &canonicalExe);
@@ -63,9 +63,9 @@ wxString MacOwnBundleId();
 
 namespace
 {
-// True for targets registered as a URL protocol rather than a file type.
-// The two differ in key layout on Windows and in the mimeapps.list /
-// LaunchServices call used elsewhere, so every backend branches on it.
+// True for targets registered as a URL protocol rather than a file type. The two differ in key
+// layout on Windows and in the mimeapps.list / LaunchServices call used elsewhere, so every backend
+// branches on it.
 bool IsUriScheme(HandlerTarget target)
 {
 	return target != HandlerTarget::CollectionFile;
@@ -101,43 +101,40 @@ const char *SchemeNameUtf8(HandlerTarget target)
 	return "";
 }
 
-// Per-backend low-level helpers. Return raw OS state without applying
-// aMule-specific policy; definitions live near the bottom of this file.
+// Per-backend low-level helpers. Return raw OS state without applying aMule-specific policy;
+// definitions live near the bottom of this file.
 //
-// Reads the currently-registered handler's identifier for `scheme`. The shape
-// differs by OS: registry command string on Windows, .desktop id on Linux,
-// bundle id on macOS. Empty on "no handler set".
+// Reads the currently-registered handler's identifier for `scheme`. The shape differs by OS:
+// registry command string on Windows, .desktop id on Linux, bundle id on macOS. Empty on "no
+// handler set".
 wxString BackendReadHandler(HandlerTarget scheme);
 
-// Sets aMule as the default handler for `scheme`. `canonicalExe` is
-// the resolved absolute path of the running binary. Silent overwrite —
-// the caller owns the "another app is currently the default" UX.
+// Sets aMule as the default handler for `scheme`. `canonicalExe` is the resolved absolute path of
+// the running binary. Silent overwrite -- the caller owns the "another app is currently the
+// default" UX.
 bool BackendWrite(HandlerTarget scheme, const wxString &canonicalExe);
 
-// Removes aMule as the default handler for `scheme` if we're the
-// current handler. Idempotent — returns true if we weren't the
-// current handler either.
+// Removes aMule as the default handler for `scheme` if we are the current handler. Idempotent --
+// returns true if we were not the current handler either.
 bool BackendRemove(HandlerTarget scheme);
 
-// True iff `raw` (the return value of BackendReadHandler) refers to
-// the aMule binary/bundle at `canonicalExe`. Encapsulates the per-OS
-// identity check (registry command → executable path, .desktop id →
-// our desktop file, bundle id → our bundle id).
+// True iff `raw` (the return value of BackendReadHandler) refers to the aMule binary or bundle at
+// `canonicalExe`. Encapsulates the per-OS identity check: registry command -> executable path,
+// .desktop id -> our desktop file, bundle id -> our bundle id.
 bool BackendIdentityMatches(const wxString &raw, const wxString &canonicalExe);
 
-// True iff `raw` refers to *any* aMule binary/bundle (identity check
-// ignoring path drift). Used by SelfHealOnStartup: if the registered
-// handler is us-but-at-a-stale-path we rewrite; if it's a third-party
-// handler we leave it alone.
+// True iff `raw` refers to *any* aMule binary or bundle, ignoring path drift. Used by
+// SelfHealOnStartup: a registered handler that is us-but-at-a-stale-path is rewritten; a third-
+// party handler is left alone.
 bool BackendIsUs(const wxString &raw);
 } // namespace
 
 wxString ProtocolHandlerManager::GetCanonicalExecutablePath()
 {
-	// wxStandardPaths::GetExecutablePath() wraps the OS native call. On POSIX we
-	// resolve intermediate symlinks via realpath() so AppImage / .app bundle moves
-	// are detected correctly by SelfHealOnStartup. Same helper as
-	// AutostartManager, duplicated so this class stays self-contained.
+	// wxStandardPaths::GetExecutablePath() wraps the OS native call. On POSIX we resolve
+	// intermediate symlinks via realpath() so AppImage / .app bundle moves are detected
+	// correctly by SelfHealOnStartup. Same helper as AutostartManager, duplicated so this class
+	// stays self-contained.
 	wxString raw = wxStandardPaths::Get().GetExecutablePath();
 
 #ifndef __WXMSW__
@@ -148,14 +145,14 @@ wxString ProtocolHandlerManager::GetCanonicalExecutablePath()
 	if (realpath(raw.mb_str(wxConvUTF8), resolved) != nullptr) {
 		return wxString::FromUTF8(resolved);
 	}
-	// realpath failed — fall through to the raw path.
+	// realpath failed -- fall through to the raw path.
 #endif
 
 	return raw;
 }
 
 #if defined(__WXMAC__)
-// C shim defined in ProtocolHandlerManager_mac.mm — NSLog with the
+// C shim defined in ProtocolHandlerManager_mac.mm -- NSLog with the
 // [amuleurl] prefix so all diagnostics land under one Console.app filter.
 extern "C" void amule_url_log(const char *msg);
 #define AMULE_URL_LOG(fmtwx, ...) \
@@ -169,18 +166,17 @@ extern "C" void amule_url_log(const char *msg);
 
 void ProtocolHandler_QueueLinks(const wxArrayString &links)
 {
-	// Called from the mac Apple Event handlers. Cannot use AddLogLineNS:
-	// on amulegui cold-launch this may run before amuledlg is up and the
-	// GUI log path would deref null.
+	// Called from the mac Apple Event handlers. Cannot use AddLogLineNS: on an amulegui cold
+	// launch this may run before amuledlg is up, and the GUI log path would deref null.
 	if (links.IsEmpty()) {
 		return;
 	}
 
 	const wxString &cfgDir = thePrefs::GetConfigDir();
 	if (cfgDir.IsEmpty()) {
-		// Would resolve to a path relative to the launch working directory,
-		// which for a .app bundle is "/". Writing the links somewhere the app
-		// will never look is worse than dropping them with a log line.
+		// Would resolve to a path relative to the launch working directory, which for a
+		// .app bundle is "/". Writing the links somewhere the app will never look is worse
+		// than dropping them with a log line.
 		AMULE_URL_LOG(
 			wxT("queue: config dir not set yet, dropping %d link(s)"), (int)links.GetCount());
 		return;
@@ -202,10 +198,10 @@ void ProtocolHandler_QueueLinks(const wxArrayString &links)
 	} else {
 		AMULE_URL_LOG(wxT("failed to open ED2KLinks for write"));
 	}
-	// Do NOT call AddLinksFromFile here -- these handlers can fire before
-	// theApp->downloadqueue is wired (amulegui only builds it once the EC
-	// connection is up). The ~1 s polling loop in CDownloadQueue::Process and
-	// CamuleRemoteGuiApp::UpdateStats drains the file on the next tick.
+	// Do NOT call AddLinksFromFile here -- these handlers can fire before theApp->downloadqueue
+	// is wired (amulegui only builds it once the EC connection is up). The ~1 s polling loop in
+	// CDownloadQueue::Process and CamuleRemoteGuiApp::UpdateStats drains the file on the next
+	// tick.
 }
 
 void ProtocolHandler_QueueSchemeLink(const wxString &url)
@@ -213,10 +209,10 @@ void ProtocolHandler_QueueSchemeLink(const wxString &url)
 	if (url.empty()) {
 		return;
 	}
-	// Browsers percent-encode ed2k:// pipes; wxURI::Unescape restores the literals
-	// the eD2k parser expects. Done here rather than in QueueLinks because links
-	// read out of a collection file are not percent-encoded, and decoding them
-	// would corrupt any filename that legitimately contains a '%'.
+	// Browsers percent-encode ed2k:// pipes; wxURI::Unescape restores the literals the eD2k
+	// parser expects. Done here rather than in QueueLinks because links read out of a
+	// collection file are not percent-encoded, and decoding them would corrupt any filename
+	// that legitimately contains a '%'.
 	wxString decoded = wxURI::Unescape(url);
 	AMULE_URL_LOG(wxT("queue scheme link: '%s' -> '%s'"), url, decoded);
 
@@ -292,9 +288,7 @@ void ProtocolHandlerManager::SelfHealOnStartup()
 	}
 }
 
-// --------------------------------------------------------------------
 // Platform backends
-// --------------------------------------------------------------------
 
 namespace
 {
@@ -308,8 +302,8 @@ namespace
 //                              \DefaultIcon\        (default) = "<amule.exe>,0"
 //                              \shell\open\command\ (default) = "\"<amule.exe>\" \"%1\""
 //
-// A file type is laid out differently: the extension key names a ProgID, and the
-// ProgID carries the icon and command:
+// A file type is laid out differently: the extension key names a ProgID, and the ProgID carries
+// the icon and command:
 //
 //   HKCU\Software\Classes\.emulecollection\  (default) = "aMule.emulecollection"
 //                        \...\OpenWithProgids\ aMule.emulecollection = ""
@@ -370,9 +364,8 @@ static wxString ReadStringValue(HKEY root, const wchar_t *subKey, const wchar_t 
 	return wxString(buf.data());
 }
 
-// Extract the executable path from a Windows "shell\open\command" value:
-// `"C:\...\amule.exe" "%1"` -> `C:\...\amule.exe`. Also handles the unquoted
-// form.
+// Extract the executable path from a Windows "shell\open\command" value: `"C:\...\amule.exe" "%1"`
+// -> `C:\...\amule.exe`. Also handles the unquoted form.
 static wxString ExtractExeFromCommand(const wxString &command)
 {
 	if (command.empty()) {
@@ -422,7 +415,7 @@ bool BackendWrite(HandlerTarget target, const wxString &canonicalExe)
 	wxString base = SubKey(target);
 
 	if (IsUriScheme(target)) {
-		// URL Protocol scheme entry — the sentinel value that tells the
+		// URL Protocol scheme entry -- the sentinel value that tells the
 		// Windows shell "this is a URL protocol, not a filetype".
 		wxString schemeDescription = wxString::Format(wxT("URL:%s Protocol"),
 			target == HandlerTarget::Ed2kScheme ? wxT("eD2k") : wxT("Magnet"));
@@ -444,11 +437,10 @@ bool BackendWrite(HandlerTarget target, const wxString &canonicalExe)
 		return false;
 	}
 
-	// Advertise on the extension. OpenWithProgids only adds us to the "Open with"
-	// list; the extension's default is what binds, and we take it only when
-	// nothing else has claimed it. Neither makes aMule the user's *chosen*
-	// default: from Windows 8 on that lives in a hash-protected UserChoice key no
-	// application may write.
+	// Advertise on the extension. OpenWithProgids only adds us to the "Open with" list; the
+	// extension's default is what binds, and we take it only when nothing else has claimed it.
+	// Neither makes aMule the user's *chosen* default: from Windows 8 on that lives in a hash-
+	// protected UserChoice key no application may write.
 	wxString extProgIds = wxString(COLLECTION_EXT_KEY) + wxT("\\OpenWithProgids");
 	if (!WriteStringValue(HKEY_CURRENT_USER, extProgIds.wc_str(), COLLECTION_PROGID, wxEmptyString)) {
 		return false;
@@ -546,11 +538,11 @@ bool BackendIsUs(const wxString &raw)
 	if (raw.empty()) {
 		return false;
 	}
-	// "us" == the currently-running binary, keyed by basename so path drift still
-	// counts as our own registration (SelfHealOnStartup rewrites the full path).
-	// Per-binary comparison is what makes the amule/amulegui differentiation work:
-	// in a remote-GUI setup amulegui's checkbox correctly reads "unchecked" while
-	// amule.exe is the current handler, and vice versa.
+	// "us" == the currently-running binary, keyed by basename so path drift still counts as our
+	// own registration (SelfHealOnStartup rewrites the full path). Per-binary comparison is
+	// what makes the amule/amulegui differentiation work: in a remote-GUI setup amulegui's
+	// checkbox correctly reads "unchecked" while amule.exe is the current handler, and vice
+	// versa.
 	wxString ownExe = ProtocolHandlerManager::GetCanonicalExecutablePath();
 	if (ownExe.empty()) {
 		return false;
@@ -562,10 +554,10 @@ bool BackendIsUs(const wxString &raw)
 
 #elif defined(__WXMAC__) || defined(__WXOSX__)
 
-// The macOS backend is Objective-C++ (it needs LSCopyDefaultHandlerForURLScheme
-// / LSSetDefaultHandlerForURLScheme). Implementation lives in
-// ProtocolHandlerManager_mac.mm; the entry points declared above this anonymous
-// namespace have external linkage so the linker can resolve them.
+// The macOS backend is Objective-C++ (it needs LSCopyDefaultHandlerForURLScheme /
+// LSSetDefaultHandlerForURLScheme). Implementation lives in ProtocolHandlerManager_mac.mm; the
+// entry points declared above this anonymous namespace have external linkage so the linker can
+// resolve them.
 
 wxString BackendReadHandler(HandlerTarget scheme)
 {
@@ -579,24 +571,24 @@ bool BackendWrite(HandlerTarget scheme, const wxString &canonicalExe)
 
 bool BackendRemove(HandlerTarget scheme)
 {
-	// LaunchServices has no "remove default" call -- the model is that some app is
-	// always the default. On Disable the best we can do is check that we are
-	// currently the default and no-op; the user has to pick another app from the
-	// OS's "Open With" prompt to actually stop us receiving clicks. Silently
-	// reassigning to a third-party app would be worse than leaving us bound.
+	// LaunchServices has no "remove default" call -- the model is that some app is always the
+	// default. On Disable the best we can do is check that we are currently the default and no-
+	// op; the user has to pick another app from the OS's "Open With" prompt to actually stop us
+	// receiving clicks. Silently reassigning to a third-party app would be worse than leaving
+	// us bound.
 	//
-	// Returns true so the prefs toggle reads as "disable succeeded": the checkbox
-	// flipping off is the visible signal that we have stepped back. On Sequoia+
-	// this is unavoidable anyway -- Apple blocked programmatic clearing of scheme
-	// handlers to prevent malicious deregistration.
+	// Returns true so the prefs toggle reads as "disable succeeded": the checkbox flipping off
+	// is the visible signal that we have stepped back. On Sequoia+ this is unavoidable anyway
+	// -- Apple blocked programmatic clearing of scheme handlers to prevent malicious
+	// deregistration.
 	return true;
 }
 
 bool BackendIdentityMatches(const wxString &raw, const wxString & /*canonicalExe*/)
 {
-	// On macOS the identifier is a bundle id, not a path, so path drift does not
-	// apply: LaunchServices tracks the bundle by id and finds its current
-	// location. Identity match is bundle-id equality.
+	// On macOS the identifier is a bundle id, not a path, so path drift does not apply:
+	// LaunchServices tracks the bundle by id and finds its current location. Identity match is
+	// bundle-id equality.
 	return raw.IsSameAs(::MacOwnBundleId(), false);
 }
 
@@ -607,22 +599,19 @@ bool BackendIsUs(const wxString &raw)
 
 #else // assumed Linux / *BSD with XDG-compliant desktop env
 
-// Linux: per-user default scheme handler in $XDG_CONFIG_HOME/mimeapps.list
-// (falling back to ~/.config/mimeapps.list), whose [Default Applications]
-// section maps x-scheme-handler/<scheme> to a .desktop file id. The .desktop
-// file must also declare MimeType= including that pseudo-type before file
-// managers and browsers consider it a valid handler at all; that is shipped
-// statically under packaging/.
-// https://specifications.freedesktop.org/mime-apps-spec/latest/
+// Linux: per-user default scheme handler in $XDG_CONFIG_HOME/mimeapps.list (falling back to
+// ~/.config/mimeapps.list), whose [Default Applications] section maps x-scheme-handler/<scheme> to
+// a .desktop file id. The .desktop file must also declare MimeType= including that pseudo-type
+// before file managers and browsers consider it a valid handler at all; that is shipped statically
+// under packaging/. https://specifications.freedesktop.org/mime-apps-spec/latest/
 //
-// We do NOT depend on xdg-mime being installed -- several minimal distros and
-// containers ship without it, so the ini is written directly.
+// We do NOT depend on xdg-mime being installed -- several minimal distros and containers ship
+// without it, so the ini is written directly.
 
-// Which .desktop id represents the currently-running binary: amule maps to
-// org.amule.aMule.desktop, amulegui -> org.amule.aMule.gui.desktop. The daemon
-// is not user-facing but registers against the monolithic id too, so
-// `amuled --configure-protocols on` still points clicks at an entry the DE can
-// open. Basename lookup keeps this working across the install/AppImage variants.
+// Which .desktop id represents the currently-running binary: amule maps to org.amule.aMule.desktop,
+// amulegui to org.amule.aMule.gui.desktop. The daemon is not user-facing but registers against the
+// monolithic id too, so `amuled --configure-protocols on` still points clicks at an entry the DE
+// can open. Basename lookup keeps this working across the install/AppImage variants.
 static wxString OwnDesktopId()
 {
 	wxString ownExe = ProtocolHandlerManager::GetCanonicalExecutablePath();
@@ -643,9 +632,8 @@ static wxString MimeAppsPath()
 	return wxGetUserHome() + wxT("/.config/mimeapps.list");
 }
 
-// The mimeapps.list key. Schemes get the x-scheme-handler/ pseudo-type; the
-// collection is a real MIME type, for which SchemeNameUtf8 already returns the
-// whole key.
+// The mimeapps.list key. Schemes get the x-scheme-handler/ pseudo-type; the collection is a real
+// MIME type, for which SchemeNameUtf8 already returns the whole key.
 static wxString SchemeKey(HandlerTarget target)
 {
 	if (!IsUriScheme(target)) {
@@ -654,9 +642,9 @@ static wxString SchemeKey(HandlerTarget target)
 	return wxString::Format(wxT("x-scheme-handler/%s"), SchemeNameUtf8(target));
 }
 
-// Parse an ini-style file into (section, key, value) triples. Original line
-// order is preserved via a vector-of-lines so a round-trip write does not
-// reorder unrelated entries; comments and blank lines survive as-is.
+// Parse an ini-style file into (section, key, value) triples. Original line order is preserved via
+// a vector-of-lines so a round-trip write does not reorder unrelated entries; comments and blank
+// lines survive as-is.
 struct IniLine
 {
 	wxString section; // empty for pre-first-section lines (rare)
@@ -724,9 +712,9 @@ static bool WriteIniLines(const wxString &path, const std::vector<IniLine> &line
 		} else {
 			out << il.raw;
 		}
-		// Terminate every line, including the last: mimeapps.list is shared with
-		// xdg-mime and the desktop environment, and an unterminated final line
-		// silently fuses with whatever the next writer appends.
+		// Terminate every line, including the last: mimeapps.list is shared with xdg-mime
+		// and the desktop environment, and an unterminated final line silently fuses with
+		// whatever the next writer appends.
 		out << wxT("\n");
 	}
 
@@ -762,9 +750,9 @@ wxString BackendReadHandler(HandlerTarget scheme)
 
 bool BackendWrite(HandlerTarget scheme, const wxString &canonicalExe)
 {
-	// canonicalExe is unused on Linux: the mimeapps.list entry references a
-	// .desktop file id, not an executable path, and path drift is handled by the
-	// DE resolving the .desktop's Exec= line at click time.
+	// canonicalExe is unused on Linux: the mimeapps.list entry references a .desktop file id,
+	// not an executable path, and path drift is handled by the DE resolving the .desktop's
+	// Exec= line at click time.
 	(void)canonicalExe;
 
 	wxString path = MimeAppsPath();

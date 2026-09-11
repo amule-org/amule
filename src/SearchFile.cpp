@@ -135,10 +135,10 @@ CSearchFile::CSearchFile(const CSearchFile &other) // NOLINT(bugprone-copy-const
 	}
 }
 
-// Only reachable from LoadFromFile(); every field gets overwritten from the
-// stream except m_downloadStatus, which stays NEW until SetDownloadStatus()
-// recomputes it against the live knownfiles/downloadqueue/canceledfiles --
-// see the WriteToFile()/LoadFromFile() comments in SearchFile.h.
+// Only reachable from LoadFromFile(); every field gets overwritten from the stream except
+// m_downloadStatus, which stays NEW until SetDownloadStatus() recomputes it against the live
+// knownfiles/downloadqueue/canceledfiles -- see the WriteToFile()/LoadFromFile() comments in
+// SearchFile.h.
 CSearchFile::CSearchFile()
 : m_parent(nullptr)
 , m_showChildren(false)
@@ -157,9 +157,9 @@ CSearchFile::CSearchFile()
 
 CSearchFile::~CSearchFile()
 {
-	// Let any open comments dialog drop its pointer before we free the object
-	// (a Kad-notes lookup can still be showing this result). Fired for children
-	// too — they are deleted just below.
+	// Let any open comments dialog drop its pointer before we free the object (a Kad-notes
+	// lookup can still be showing this result). Fired for children too -- they are deleted just
+	// below.
 	Notify_SearchFileBeingDestroyed(this);
 
 	for (size_t i = 0; i < m_children.size(); ++i) {
@@ -171,13 +171,12 @@ bool CSearchFile::WriteToFile(CFileDataIO *file) const
 {
 	file->WriteHash(m_abyFileHash);
 
-	// Fixed tags: filename, size, sources, complete-sources, and rating if ever set.
-	// Anything else already in m_taglist is appended after, the same shape as
-	// CKnownFile::WriteToFile. Unlike CKnownFile's on-the-wire pairing of an
-	// FT_FILESIZE_HI tag alongside a 32-bit FT_FILESIZE -- a server-wire idiom where
-	// the two are used INSTEAD OF a 64-bit tag -- this format always writes the size
-	// as a single 64-bit-capable tag, so a size-hi tag here would be additive rather
-	// than complementary on read.
+	// Fixed tags: filename, size, sources, complete-sources, and rating if ever set. Anything
+	// else already in m_taglist is appended after, the same shape as CKnownFile::WriteToFile.
+	// Unlike CKnownFile's on-the-wire pairing of an FT_FILESIZE_HI tag alongside a 32-bit
+	// FT_FILESIZE -- a server-wire idiom where the two are used INSTEAD OF a 64-bit tag -- this
+	// format always writes the size as a single 64-bit-capable tag, so a size-hi tag here would
+	// be additive rather than complementary on read.
 	uint32 tagcount = 4;
 	if (m_iUserRating != 0) {
 		tagcount++;
@@ -286,11 +285,11 @@ CSearchFile *CSearchFile::LoadFromFile(CFileDataIO *file, bool allowChildren)
 
 	uint16 childcount = file->ReadUInt16();
 	if (childcount > 0 && !allowChildren) {
-		// A real result tree is two levels deep at most -- parent plus
-		// alternative-filename children, the same invariant AddChild() enforces at
-		// runtime. A child record claiming children of its own is malformed, and
-		// without this check a crafted file nesting one child per level recurses
-		// unbounded and overflows the stack before any other validation runs.
+		// A real result tree is two levels deep at most -- parent plus alternative-filename
+		// children, the invariant AddChild() enforces at runtime. A child record claiming
+		// children of its own is malformed, and without this check a crafted file nesting
+		// one child per level recurses unbounded and overflows the stack before any other
+		// validation runs.
 		return nullptr;
 	}
 	for (uint16 i = 0; i != childcount; ++i) {
@@ -298,22 +297,22 @@ CSearchFile *CSearchFile::LoadFromFile(CFileDataIO *file, bool allowChildren)
 		if (!child) {
 			return nullptr;
 		}
-		// Not AddChild(): that also does live-search duplicate merging, which does
-		// not apply to restoring an already-finalized tree where every child was
-		// distinct when written.
+		// Not AddChild(): that also does live-search duplicate merging, which does not
+		// apply to restoring an already finalized tree where every child was distinct when
+		// written.
 		child->m_parent = result.get();
 		result->m_children.push_back(child);
 	}
 
 	// m_downloadStatus is deliberately left at its NEW default: recomputing it needs
-	// theApp->downloadqueue/knownfiles/canceledfiles, which is the caller's job, so
-	// this stays a pure parser callable before those singletons exist.
+	// theApp->downloadqueue/knownfiles/canceledfiles, which is the caller's job, so this stays
+	// a pure parser callable before those singletons exist.
 	return result.release();
 }
 
-// SearchFile.cpp is core-only (CORE_SOURCES); the amulegui build compiles its
-// CSearchFile methods in amule-remote-gui.cpp, where the CLIENT_GUI version of
-// GetRatingAndComments (returning the EC-streamed list) also lives.
+// SearchFile.cpp is core-only (CORE_SOURCES); the amulegui build compiles its CSearchFile methods
+// in amule-remote-gui.cpp, where the CLIENT_GUI version of GetRatingAndComments (returning the EC-
+// streamed list) also lives.
 void CSearchFile::GetRatingAndComments(FileRatingList &list) const
 {
 	// A search result has no connected sources, so its comments are exactly the
@@ -407,12 +406,11 @@ void CSearchFile::AddChild(CSearchFile *file)
 				logSearch, CFormat("Created initial child for result '%s'") % GetFileName());
 			m_children.push_back(new CSearchFile(*this));
 			m_children.back()->m_parent = this;
-			// Announced like any other new row. Without this the group is
-			// formed with two children while only the incoming one is ever
-			// notified, so a view that builds its rows from notifications --
-			// rather than re-reading the model as it draws, which is what
-			// hides this on macOS -- shows a two-variant group holding one
-			// row, and the one missing is the result received first.
+			// Announced like any other new row. Without this the group is formed with
+			// two children while only the incoming one is ever notified, so a view that
+			// builds its rows from notifications -- rather than re-reading the model as
+			// it draws, which is what hides this on macOS -- shows a two-variant group
+			// holding one row, and the one missing is the result received first.
 			Notify_Search_Add_Result(m_children.back());
 		}
 	}

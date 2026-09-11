@@ -25,18 +25,15 @@
 
 #include "CCtypeAsciiScope.h"
 
-// wxFileConfig subclass that wraps every read / write / flush /
-// path-navigating call with CCtypeAsciiScope. amule.conf is parsed
-// and written through this subclass exclusively (see
-// amuleAppCommon::Initialize), so wxFileConfig's internal lookups
-// always run under a deterministic ASCII case-fold regardless of the
-// user's UI language.
+// wxFileConfig subclass that wraps every read / write / flush / path-navigating call with
+// CCtypeAsciiScope. amule.conf is parsed and written through this subclass exclusively (see
+// amuleAppCommon::Initialize), so wxFileConfig's internal lookups always run under a deterministic
+// ASCII case-fold regardless of the user's UI language.
 //
-// The Read / Has / Delete / Rename / SetPath overrides matter
-// because they all walk the same sorted m_aEntries / m_aSubgroups
-// arrays via CmpNoCase and would silently miss entries under a
-// non-C locale. The Write overrides are the ones that turn a missed
-// lookup into a *persistent* duplicate by appending a new entry.
+// The Read / Has / Delete / Rename / SetPath overrides matter because they all walk the same sorted
+// m_aEntries / m_aSubgroups arrays via CmpNoCase and would silently miss entries under a non-C
+// locale. The Write overrides are the ones that turn a missed lookup into a *persistent* duplicate
+// by appending a new entry.
 class CamuleFileConfig : public wxFileConfig
 {
 public:

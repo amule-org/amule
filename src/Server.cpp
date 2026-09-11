@@ -131,13 +131,12 @@ void CServer::Init()
 	challenge = 0;
 	softfiles = 0;
 	hardfiles = 0;
-	// Empty, not _("Unknown"): this is a display placeholder, and every
-	// non-display consumer of the field is worse off holding a translated
-	// one. server.met would persist the running locale's word (an Italian
-	// aMule wrote ST_VERSION="Sconosciuta"), EC would ship it to amulegui
-	// and to amuleapi, and /api/v0/servers would answer a localized string
-	// on a surface documented as English-only. The server list renders the
-	// placeholder itself when this is empty.
+	// Empty, not _("Unknown"): this is a display placeholder, and every non-display consumer of
+	// the field is worse off holding a translated one. server.met would persist the running
+	// locale's word (an Italian aMule wrote ST_VERSION="Sconosciuta"), EC would ship it to
+	// amulegui and amuleapi, and /api/v0/servers would answer a localized string on a surface
+	// documented as English-only. The server list renders the placeholder itself when this is
+	// empty.
 	m_strVersion.Clear();
 	m_uLowIDUsers = 0;
 	m_uDescReqChallenge = 0;
@@ -213,9 +212,8 @@ bool CServer::AddTagFromFile(CFileDataIO *servermet)
 
 	case ST_VERSION:
 		if (tag.IsStr()) {
-			// First writer wins: server.met carries ST_VERSION twice (a
-			// UTF-8 copy and a raw one) and the second must not overwrite
-			// what the first decoded.
+			// First writer wins: server.met carries ST_VERSION twice, a UTF-8 copy and
+			// a raw one, and the second must not overwrite what the first decoded.
 			if (m_strVersion.IsEmpty()) {
 				m_strVersion = tag.GetStr();
 			}

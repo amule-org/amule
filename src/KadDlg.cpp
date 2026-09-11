@@ -101,9 +101,8 @@ void CKadDlg::SetUpdatePeriod(int step)
 
 void CKadDlg::SetGraphColors()
 {
-	// Same shape as the download graph on the statistics panel -- three
-	// trends, the same three legend swatches -- driven by the Kad graph's
-	// own preference colours.
+	// Same shape as the download graph on the statistics panel -- three trends, the same three
+	// legend swatches -- driven by the Kad graph's own preference colours.
 	static const CStatisticsDlg::GraphColorSlot aSlot[] = { { 12, 2, IDC_C0, wxTRANSLATE("Current") },
 		{ 13, 1, IDC_C0_3, wxTRANSLATE("Running average") },
 		{ 14, 0, IDC_C0_2, wxTRANSLATE("Session average") } };
@@ -125,8 +124,8 @@ void CKadDlg::UpdateGraph(const GraphUpdateInfo &update)
 	// Check the current node-count to see if we should increase the graph height
 	if (m_kad_scope->GetUpperLimit() < update.kadnodes[2]) {
 		const unsigned nodeCount = static_cast<unsigned>(update.kadnodes[2]);
-		// Grow the limit by 50 sized increments. The integer ceiling-to-50 is
-		// intentional; a whole number is what we want for the axis range.
+		// Grow the limit by 50 sized increments. The integer ceiling-to-50 is intentional: a
+		// whole number is what we want for the axis range.
 		// NOLINTNEXTLINE(bugprone-integer-division)
 		m_kad_scope->SetRanges(0.0, (float)(((nodeCount + 49) / 50) * 50));
 	}
@@ -161,15 +160,14 @@ void CKadDlg::OnFieldsChange(wxCommandEvent &WXUNUSED(evt))
 void CKadDlg::OnBnClickedBootstrapClient(wxCommandEvent &WXUNUSED(evt))
 {
 	if (FindWindowById(ID_NODECONNECT)->IsEnabled()) {
-		// Single "x.x.x.x" field (issue #402 review, matches the eD2k tab's
-		// IDC_IPADDRESS). Trim first: the field's whole point is easier
-		// copy-paste, and a paste commonly carries a leading/trailing space
-		// that would otherwise fail as "Invalid ip to bootstrap". Octets are
-		// reversed before StringIPtoUint32 because that function returns
-		// anti-host order and Kad expects host order -- same trick the old
-		// four-separate-fields version used, just built from one string
-		// instead of four controls. wxSplit's third parameter (default '\\')
-		// is an escape character, not meaningful for IPs; left at default.
+		// Single "x.x.x.x" field (issue #402 review, matching the eD2k tab's
+		// IDC_IPADDRESS). Trim first: the field exists for easier copy-paste, and a paste
+		// commonly carries a leading or trailing space that would otherwise fail as
+		// "Invalid ip to bootstrap". Octets are reversed before StringIPtoUint32 because
+		// that function returns anti-host order and Kad expects host order -- the same
+		// trick the old four-field version used, built from one string instead of four
+		// controls. wxSplit's third parameter is an escape character, not meaningful for
+		// IPs, so it stays at its default.
 		wxArrayString octets = wxSplit(dynamic_cast<wxTextCtrl *>(FindWindowById(ID_NODE_IP))
 						       ->GetValue()
 						       .Trim(true)
@@ -205,9 +203,9 @@ void CKadDlg::OnBnClickedBootstrapClient(wxCommandEvent &WXUNUSED(evt))
 
 void CKadDlg::OnBnClickedDisconnectKad(wxCommandEvent &WXUNUSED(evt))
 {
-	// Doubles as Connect/Cancel/Disconnect depending on the button's current
-	// state (see UpdateConnectButton()) -- StopKad() also covers the
-	// "cancel while connecting" case, there's no separate abort path.
+	// Doubles as Connect/Cancel/Disconnect depending on the button's current state (see
+	// UpdateConnectButton()). StopKad() also covers "cancel while connecting"; there is no
+	// separate abort path.
 	if (theApp->IsConnectedKad() || theApp->IsKadRunning()) {
 		theApp->StopKad();
 	} else {

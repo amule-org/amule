@@ -22,13 +22,13 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-// Contract of the internal address type: byte order stated in the signature,
-// absence distinguishable from the all-zero address, failed narrowing rather
-// than truncation, and a total order fit to key a container.
+// Contract of the internal address type: byte order stated in the signature, absence
+// distinguishable from the all-zero address, failed narrowing rather than truncation, and a total
+// order fit to key a container.
 //
-// This is the type every uint32 IP in the tree is being migrated onto, so its
-// contract is pinned here rather than left to the applications. None of it needs
-// a running aMule: the type is a value type over sixteen octets and a family tag.
+// This is the type every uint32 IP in the tree is being migrated onto, so its contract is pinned
+// here rather than left to the applications. None of it needs a running aMule: the type is a value
+// type over sixteen octets and a family tag.
 
 #include <muleunit/test.h>
 
@@ -72,9 +72,8 @@ TEST(NetworkAddress, ByteOrderIsInTheSignature)
 	ASSERT_EQUALS(TEST_IP_ED2K_ORDER, CNetworkAddress::SwapOctets(TEST_IP_HOST_ORDER));
 	ASSERT_EQUALS(TEST_IP_HOST_ORDER, CNetworkAddress::SwapOctets(TEST_IP_ED2K_ORDER));
 
-	// Feeding a value in the wrong convention cannot be a silent no-op: it
-	// yields a different, visibly wrong address. Nothing stops a caller doing
-	// that, but nothing hides it either.
+	// Feeding a value in the wrong convention cannot be a silent no-op: it yields a different,
+	// visibly wrong address. Nothing stops a caller doing that, but nothing hides it either.
 	ASSERT_EQUALS(
 		wxString("1.2.0.192"), CNetworkAddress::FromIPv4HostOrder(TEST_IP_ED2K_ORDER).ToWxString());
 }
@@ -132,9 +131,8 @@ TEST(NetworkAddress, NarrowingAnIPv6AddressFails)
 	ASSERT_TRUE(v6.IsPresent());
 	ASSERT_TRUE(v6.IsIPv6());
 
-	// The failure is reported, and the caller's variable is left exactly as it
-	// was -- no truncation, no hash, no fabricated value even for a caller that
-	// ignores the return.
+	// The failure is reported, and the caller's variable is left exactly as it was -- no
+	// truncation, no hash, no fabricated value even for a caller that ignores the return.
 	uint32_t out = 0xDEADBEEFu;
 	ASSERT_FALSE(v6.ToIPv4HostOrder(out));
 	ASSERT_EQUALS(0xDEADBEEFu, out);
@@ -264,10 +262,9 @@ TEST(NetworkAddress, OrderingIsTotalAndUsableAsAKey)
 
 TEST(NetworkAddress, TruncatedToPrefixClearsHostBits)
 {
-	// The prefix operation a per-block limit or rule needs. Asserted against
-	// literal prefixes rather than against a mask computed the same way the
-	// implementation computes it -- a symmetric off-by-one in a shift would
-	// cancel out and pass.
+	// The prefix operation a per-block limit or rule needs. Asserted against literal prefixes
+	// rather than against a mask computed the same way the implementation computes it -- a
+	// symmetric off-by-one in a shift would cancel out and pass.
 	ASSERT_EQUALS(wxString("192.0.2.0"),
 		CNetworkAddress::FromString("192.0.2.130").TruncatedToPrefix(24).ToWxString());
 	ASSERT_EQUALS(wxString("192.0.0.0"),
@@ -304,13 +301,12 @@ TEST(NetworkAddress, TruncatedToPrefixClearsHostBits)
 	ASSERT_TRUE(CNetworkAddress::FromString("2001:db8::1").TruncatedToPrefix(64).IsIPv6());
 }
 
-// The IPv4 half of the same contract, and the one with the sharper failure.
-// A wrong prefix here does not advertise an unreachable address, it feeds
-// EncryptedDatagramSocket's key derivation an address the peer never sees --
-// so every frame decrypts to noise at the far end with nothing logged on
-// either side. Three of the rejections are sub-byte masks, and a mask is
-// exactly the kind of thing that is wrong in one direction only, so each is
-// pinned at both of its edges rather than at one address inside it.
+// The IPv4 half of the same contract, and the one with the sharper failure. A wrong prefix here
+// does not advertise an unreachable address, it feeds EncryptedDatagramSocket's key derivation an
+// address the peer never sees -- so every frame decrypts to noise at the far end with nothing
+// logged on either side. Three of the rejections are sub-byte masks, and a mask is exactly the kind
+// of thing that is wrong in one direction only, so each is pinned at both of its edges rather than
+// at one address inside it.
 TEST(NetworkAddress, GloballyRoutableIPv4RejectsEveryUnroutableRange)
 {
 	// Routable: ordinary public unicast, and the last address before the
@@ -323,9 +319,9 @@ TEST(NetworkAddress, GloballyRoutableIPv4RejectsEveryUnroutableRange)
 	ASSERT_FALSE(CNetworkAddress::FromString("2001:db8::1").IsGloballyRoutableIPv4());
 	ASSERT_FALSE(CNetworkAddress::FromString("0.0.0.0").IsGloballyRoutableIPv4());
 
-	// A v4-mapped address is judged as the IPv4 address it carries, in both
-	// directions -- Unmapped() runs first, so the answer must not depend on
-	// which form the caller happened to hold.
+	// A v4-mapped address is judged as the IPv4 address it carries, in both directions --
+	// Unmapped() runs first, so the answer must not depend on which form the caller happened to
+	// hold.
 	ASSERT_TRUE(CNetworkAddress::FromString("::ffff:1.1.1.1").IsGloballyRoutableIPv4());
 	ASSERT_FALSE(CNetworkAddress::FromString("::ffff:10.0.0.1").IsGloballyRoutableIPv4());
 
@@ -397,12 +393,11 @@ TEST(NetworkAddress, GloballyRoutableIPv4RejectsEveryUnroutableRange)
 	ASSERT_FALSE(CNetworkAddress::FromString("255.255.255.255").IsGloballyRoutableIPv4());
 }
 
-// CNetworkAddress no longer stores a boost::asio::ip::address, so the three
-// predicates that used to be asio's -- loopback, link-local, unique-local --
-// are now prefix tests in NetworkAddress.h. This pins each range it must
-// reject, because getting one prefix wrong here does not fail a build: it
-// advertises an address no peer can reach, and the only symptom is a wasted
-// connect attempt on the far side.
+// CNetworkAddress no longer stores a boost::asio::ip::address, so the three predicates that used to
+// be asio's -- loopback, link-local, unique-local -- are now prefix tests in NetworkAddress.h. This
+// pins each range it must reject, because getting one prefix wrong here does not fail a build: it
+// advertises an address no peer can reach, and the only symptom is a wasted connect attempt on the
+// far side.
 TEST(NetworkAddress, GloballyRoutableIPv6RejectsEveryUnreachableRange)
 {
 	ASSERT_FALSE(CNetworkAddress::FromString("2001:db8::1").IsGloballyRoutableIPv6());
@@ -521,11 +516,10 @@ TEST(NetworkAddress, GloballyRoutableIPv6RejectsEveryUnreachableRange)
 	ASSERT_TRUE(CNetworkAddress::FromString("fe7f:ffff::1").IsGloballyRoutableIPv6());
 }
 
-// The octets are the storage now, so what GetOctets() hands out is what every
-// bit-arithmetic caller (IPFilterMatch.h above all) works on. Two things are
-// worth pinning: the order is wire order for both families, and an IPv4
-// address leaves the tail zero rather than filling in the mapped prefix --
-// callers relying on the latter would silently match the wrong rule.
+// The octets are the storage now, so what GetOctets() hands out is what every bit-arithmetic caller
+// -- IPFilterMatch.h above all -- works on. Two things are worth pinning: the order is wire order
+// for both families, and an IPv4 address leaves the tail zero rather than filling in the mapped
+// prefix. Callers relying on the latter would silently match the wrong rule.
 TEST(NetworkAddress, OctetsAreWireOrderAndLeaveTheIPv4TailZero)
 {
 	// 192.0.2.1 reached through either 32-bit convention gives the same octets,
@@ -551,9 +545,9 @@ TEST(NetworkAddress, OctetsAreWireOrderAndLeaveTheIPv4TailZero)
 	ASSERT_EQUALS(1, static_cast<int>(mappedOctets[15]));
 	ASSERT_TRUE(v4Octets != mappedOctets);
 
-	// IPv6FromOctets() applies no absence rule, so the all-zero octets are the
-	// unspecified address and not absence -- unlike FromIPv6Bytes(), which is
-	// the wire-tag edge where all-zero does mean "this peer has no IPv6".
+	// IPv6FromOctets() applies no absence rule, so the all-zero octets are the unspecified
+	// address and not absence -- unlike FromIPv6Bytes(), the wire-tag edge where all-zero does
+	// mean "this peer has no IPv6".
 	ASSERT_TRUE(CNetworkAddress::AnyIPv6().IsPresent());
 	ASSERT_TRUE(CNetworkAddress::AnyIPv6().IsIPv6());
 	ASSERT_TRUE(CNetworkAddress::AnyIPv6().IsUnspecified());
@@ -563,17 +557,15 @@ TEST(NetworkAddress, OctetsAreWireOrderAndLeaveTheIPv4TailZero)
 	ASSERT_TRUE(CNetworkAddress::AnyIPv6() != CNetworkAddress::Absent());
 }
 
-// ToIPv6Bytes() is the wire-side writer: the CT_MOD_IP_V6 handshake tag, Kad's
-// "ip6" tag and the NAT endpoint hint each hand it a bare sixteen-byte buffer
-// and then read all sixteen back. Nothing pinned that it fills all sixteen, so
-// the postcondition lived only in the doc comment -- and a short write there is
-// not a cosmetic bug: the bytes it left alone become part of an address a peer
-// is told to punch at.
+// ToIPv6Bytes() is the wire-side writer: the CT_MOD_IP_V6 handshake tag, Kad's "ip6" tag and the
+// NAT endpoint hint each hand it a bare sixteen-byte buffer and then read all sixteen back. Nothing
+// pinned that it fills all sixteen, so the postcondition lived only in the doc comment -- and a
+// short write there is not cosmetic: the bytes it left alone become part of an address a peer is
+// told to punch at.
 TEST(NetworkAddress, ToIPv6BytesFillsAllSixteenOrWritesNothing)
 {
-	// Sentinel fill rather than zero fill: a byte still holding 0xCD afterwards
-	// is a byte the writer skipped, which a zero-filled buffer would hide behind
-	// a plausible-looking 0.
+	// Sentinel fill rather than zero fill: a byte still holding 0xCD afterwards is a byte the
+	// writer skipped, which a zero-filled buffer would hide behind a plausible-looking 0.
 	std::uint8_t bytes[16];
 	std::fill(std::begin(bytes), std::end(bytes), 0xCD);
 
@@ -583,9 +575,9 @@ TEST(NetworkAddress, ToIPv6BytesFillsAllSixteenOrWritesNothing)
 	for (std::size_t i = 0; i < expected.size(); ++i) {
 		ASSERT_EQUALS(static_cast<int>(expected[i]), static_cast<int>(bytes[i]));
 	}
-	// Stated separately for the trailing octet, because the tail is what a copy
-	// that stops early loses first. It is 1 rather than 0 here, so "skipped" and
-	// "correctly written" cannot coincide.
+	// Stated separately for the trailing octet, because the tail is what a copy that stops
+	// early loses first. It is 1 rather than 0 here, so "skipped" and "correctly written"
+	// cannot coincide.
 	ASSERT_EQUALS(1, static_cast<int>(bytes[15]));
 
 	// A mapped IPv4 address is an IPv6 address for this writer's purposes, and it
@@ -609,10 +601,9 @@ TEST(NetworkAddress, ToIPv6BytesFillsAllSixteenOrWritesNothing)
 }
 
 // The socket backend is the one caller that still needs a real asio address, so
-// NetworkAddressAsio.h is the single bridge. It has to be exactly lossless in
-// both directions: a swapped IPv4 conversion here would connect to the wrong
-// host, and a dropped scope id would fold two distinct link-local destinations
-// into one.
+// NetworkAddressAsio.h is the single bridge. It has to be exactly lossless in both directions: a
+// swapped IPv4 conversion here would connect to the wrong host, and a dropped scope id would fold
+// two distinct link-local destinations into one.
 TEST(NetworkAddress, AsioBridgeRoundTripsWithoutLosingAnything)
 {
 	const CNetworkAddress cases[] = {
@@ -642,9 +633,8 @@ TEST(NetworkAddress, AsioBridgeRoundTripsWithoutLosingAnything)
 			    .ToIPv4HostOrder(hostOrder));
 	ASSERT_EQUALS(TEST_IP_HOST_ORDER, hostOrder);
 
-	// A scope id is part of the address's identity, so it crosses too. Without
-	// it fe80::1%7 and fe80::1%9 would be one key in every container that uses
-	// this type.
+	// A scope id is part of the address's identity, so it crosses too. Without it fe80::1%7 and
+	// fe80::1%9 would be one key in every container that uses this type.
 	const CNetworkAddress scoped =
 		NetworkAddressAsio::FromAsioAddress(boost::asio::ip::make_address("fe80::1%7"));
 	ASSERT_EQUALS(7ul, scoped.GetScopeId());

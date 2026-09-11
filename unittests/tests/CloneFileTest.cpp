@@ -91,10 +91,10 @@ static uint64 FileLength(const CPath &path)
 	return length;
 }
 
-// Writes `length` bytes of deterministic, position-dependent data in 1 MiB
-// blocks. Chunked (rather than a single buffer) so the huge-file test never
-// holds multiple GiB in memory. The pattern depends on absolute offset, so
-// the tail differs from the head — a high-offset copy bug can't hide.
+// Writes `length` bytes of deterministic, position-dependent data in 1 MiB blocks. Chunked rather
+// than a single buffer, so the huge-file test never holds multiple GiB in memory. The pattern
+// depends on absolute offset, so the tail differs from the head and a high-offset copy bug cannot
+// hide.
 static void WriteDataChunked(const CPath &path, uint64 length)
 {
 	CFile file;
@@ -140,9 +140,8 @@ static bool SameContentStreaming(const CPath &a, const CPath &b)
 	return true;
 }
 
-// A size larger than the internal copy buffer, deliberately not a round
-// multiple of it, so the copy loop runs several full iterations plus a
-// short trailing chunk.
+// A size larger than the internal copy buffer, deliberately not a round multiple of it, so the copy
+// loop runs several full iterations plus a short trailing chunk.
 static const size_t MULTI_CHUNK = 3 * 1024 * 1024 + 123;
 
 DECLARE_SIMPLE(CFileCloneFile)
@@ -227,9 +226,9 @@ TEST(CFileCloneFile, UnwritableDestFails)
 	CPath::RemoveFile(src);
 }
 
-// CPath::BackupFile is the small same-filesystem copy path that
-// ClientCreditsList's clients.met backup now uses. Verify it produces a
-// byte-identical copy at src + appendix and overwrites an existing backup.
+// CPath::BackupFile is the small same-filesystem copy path ClientCreditsList's clients.met backup
+// now uses. Verify it produces a byte-identical copy at src + appendix and overwrites an existing
+// backup.
 TEST(CFileCloneFile, BackupFileCreatesIdenticalCopy)
 {
 	const wxString base = wxFileName::CreateTempFileName(wxT("amuleclone_"));
@@ -250,10 +249,9 @@ TEST(CFileCloneFile, BackupFileCreatesIdenticalCopy)
 	CPath::RemoveFile(bak);
 }
 
-// Opt-in: exercises a copy past the 4 GiB / 32-bit-offset boundary, which
-// would catch any length or offset truncation. Skipped unless
-// AMULE_CLONEFILE_HUGE_GB is set (writing multiple GiB is far too heavy for
-// the normal / CI test run). Example: AMULE_CLONEFILE_HUGE_GB=5 ./CloneFileTest
+// Opt-in: exercises a copy past the 4 GiB / 32-bit-offset boundary, which would catch any length or
+// offset truncation. Skipped unless AMULE_CLONEFILE_HUGE_GB is set, writing multiple GiB being far
+// too heavy for a normal or CI run. Example: AMULE_CLONEFILE_HUGE_GB=5 ./CloneFileTest
 TEST(CFileCloneFile, HugeFileOptIn)
 {
 	const char *env = getenv("AMULE_CLONEFILE_HUGE_GB");

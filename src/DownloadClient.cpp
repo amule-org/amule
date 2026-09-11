@@ -322,9 +322,9 @@ void CUpDownClient::ProcessFileInfo(const CMemFile *data, const CPartFile *file)
 
 	m_clientFilename = data->ReadString((GetUnicodeSupport() != utf8strNone));
 
-	// The file status is not requested for files <= PARTSIZE, for compatibility
-	// with eDonkeyHybrid: an OP_REQFILENAMEANSWER already means the remote client
-	// shares the file, and so has it complete.
+	// The file status is not requested for files <= PARTSIZE, for compatibility with
+	// eDonkeyHybrid: an OP_REQFILENAMEANSWER already means the remote client shares the file,
+	// and so has it complete.
 	if (m_reqfile->GetPartCount() == 1) {
 		m_nPartCount = m_reqfile->GetPartCount();
 
@@ -519,10 +519,10 @@ void CUpDownClient::SetDownloadState(uint8 byNewState)
 				m_downPartStatus.clear();
 				m_nPartCount = 0;
 			}
-			// (Old code disabled the per-socket download cap here on
-			// transition out of DS_DOWNLOADING. The cap is now a global
-			// budget in CDownloadBandwidthThrottler shared across all
-			// sockets, so there's no per-socket state to clear.)
+			// Old code disabled the per-socket download cap here on the transition out
+			// of DS_DOWNLOADING. The cap is now a global budget in
+			// CDownloadBandwidthThrottler shared across all sockets, so there is no
+			// per-socket state to clear.
 		}
 		m_nDownloadState = byNewState;
 		if (GetDownloadState() == DS_DOWNLOADING) {
@@ -562,26 +562,24 @@ void CUpDownClient::SendBlockRequests()
 		return;
 	}
 
-	// RTT/BDP-adaptive request-pipeline depth. The number of outstanding block
-	// requests needed to keep a link busy is the bandwidth-delay product,
-	// rate * RTT: on a LAN that is a fraction of a 180 KB block, so we stay shallow
-	// and avoid the burst/starve oscillation a deep pipeline provokes against a
-	// fast local peer; on a high-latency link it is large, so we go deep and hide
-	// the round-trip. Unlike a speed-only ladder this tells a fast LAN peer from a
-	// fast WAN one. m_minRTT is the min-filtered request->first-byte round-trip
-	// (see ProcessBlockPacket).
+	// RTT/BDP-adaptive request-pipeline depth. The number of outstanding block requests needed
+	// to keep a link busy is the bandwidth-delay product, rate * RTT: on a LAN that is a
+	// fraction of a 180 KB block, so we stay shallow and avoid the burst/starve oscillation a
+	// deep pipeline provokes against a fast local peer; on a high-latency link it is large, so
+	// we go deep and hide the round-trip. Unlike a speed-only ladder this tells a fast LAN peer
+	// from a fast WAN one. m_minRTT is the min-filtered request->first-byte round-trip (see
+	// ProcessBlockPacket).
 	//
-	// The flat cap of 24 is deliberate: the WAN ceiling is the OS TCP socket-buffer
-	// autotune limit (~4 MB by default), which pins throughput near 40 MB/s at
-	// 100 ms RTT however deep the pipeline runs, and 24 blocks is already 4.3 MB of
-	// authorised in-flight data. A deeper pipe buys no throughput, and 24 still
-	// sits inside eMule's own pending range.
+	// The flat cap of 24 is deliberate: the WAN ceiling is the OS TCP socket-buffer autotune
+	// limit (~4 MB by default), which pins throughput near 40 MB/s at 100 ms RTT however deep
+	// the pipeline runs, and 24 blocks is already 4.3 MB of authorised in-flight data. A deeper
+	// pipe buys no throughput, and 24 still sits inside eMule's own pending range.
 	const float rttMs = (m_minRTT > 0) ? (float)m_minRTT : 1.0f;
 	const float bdpBlocks = ((float)GetKBpsDown() * 1024.0f) * (rttMs / 1000.0f) / (float)EMBLOCKSIZE;
-	// 2x overshoot + margin: sizing the pipe to exactly the current BDP is
-	// self-limiting, since the measured rate is itself capped by the current pipe
-	// and can never grow past a low equilibrium. Over-provisioning lets the rate
-	// climb to the link's real ceiling, where the depth settles at the BDP.
+	// 2x overshoot plus margin: sizing the pipe to exactly the current BDP is self-limiting,
+	// since the measured rate is itself capped by the current pipe and can never grow past a
+	// low equilibrium. Over-provisioning lets the rate climb to the link's real ceiling, where
+	// the depth settles at the BDP.
 	size_t pendingCap = 2 * (size_t)bdpBlocks + STANDARD_BLOCKS_REQUEST;
 	if (pendingCap < STANDARD_BLOCKS_REQUEST) {
 		// The floor doubles as the slow-source guard: a trickle source, or one with
@@ -591,10 +589,10 @@ void CUpDownClient::SendBlockRequests()
 		pendingCap = 24; // OS-buffer ceiling (see above); still within eMule's pending range
 	}
 
-	// Smooth continuous refill: top the in-flight + staged block count up to
-	// pendingCap by the exact shortfall each call, never in bursts. Bursty refill
-	// emits requests in clusters that overfill and then starve a fast peer's send
-	// queue. Requests still ride the wire 3 to an OP_REQUESTPARTS packet.
+	// Smooth continuous refill: top the in-flight plus staged block count up to pendingCap by
+	// the exact shortfall each call, never in bursts. Bursty refill emits requests in clusters
+	// that overfill and then starve a fast peer's send queue. Requests still ride the wire 3 to
+	// an OP_REQUESTPARTS packet.
 	{
 		const size_t inSystem = m_PendingBlocks_list.size() + m_DownloadBlocks_list.size();
 		if (inSystem < pendingCap) {
@@ -703,15 +701,15 @@ void CUpDownClient::SendBlockRequests()
 		}
 	}
 
-	// Collect up to 3 pending blocks not yet written to a REQUESTPARTS packet
-	// (fQueued == 0). OP_REQUESTPARTS / OP_REQUESTPARTS_I64 carry exactly 3
-	// <start,end> pairs on the wire (ProcessRequestPartsPacket in UploadClient.cpp
-	// unconditionally reads 3), so asking for more in one packet corrupts the wire
-	// format and the sender ignores us; pad with zero-pairs instead.
+	// Collect up to 3 pending blocks not yet written to a REQUESTPARTS packet (fQueued == 0).
+	// OP_REQUESTPARTS / OP_REQUESTPARTS_I64 carry exactly 3 <start,end> pairs on the wire
+	// (ProcessRequestPartsPacket in UploadClient.cpp unconditionally reads 3), so asking for
+	// more in one packet corrupts the wire format and the sender ignores us; pad with zero-
+	// pairs instead.
 	//
-	// More than 3 blocks in flight means one 3-block packet per call, with the
-	// caller's re-invocation loop (after each OP_SENDINGPART, OP_ACCEPTUPLOADREQ,
-	// ...) issuing further packets until m_PendingBlocks_list is fully queued.
+	// More than 3 blocks in flight means one 3-block packet per call, with the caller's re-
+	// invocation loop (after each OP_SENDINGPART, OP_ACCEPTUPLOADREQ, ...) issuing further
+	// packets until m_PendingBlocks_list is fully queued.
 	std::vector<Pending_Block_Struct *> toRequest;
 	bool bHasLongBlocks = false;
 	const size_t perPacketLimit = STANDARD_BLOCKS_REQUEST;
@@ -754,9 +752,8 @@ void CUpDownClient::SendBlockRequests()
 
 	CPacket *packet = NULL;
 
-	// Always 3 blocks on the wire; pad missing entries with zero <start,end>
-	// pairs. The upload-side parser silently skips entries with end <= start, so
-	// the padding is inert.
+	// Always 3 blocks on the wire; pad missing entries with zero <start,end> pairs. The upload-
+	// side parser silently skips entries with end <= start, so the padding is inert.
 	const size_t kWireBlocks = STANDARD_BLOCKS_REQUEST;
 	const size_t offsetSize = bHasLongBlocks ? 8 : 4;
 	CMemFile data(16 + kWireBlocks * offsetSize * 2);
@@ -804,22 +801,13 @@ void CUpDownClient::SendBlockRequests()
 }
 
 /*
-Barry - Originally this only wrote to disk when a full 180k block
-had been received from a client, and only asked for data in
-180k blocks.
-
-This meant that on average 90k was lost for every connection
-to a client data source. That is a lot of wasted data.
-
-To reduce the lost data, packets are now written to a buffer
-and flushed to disk regularly regardless of size downloaded.
-
-This includes compressed packets.
-
-Data is also requested only where gaps are, not in 180k blocks.
-The requests will still not exceed 180k, but may be smaller to
-fill a gap.
-*/
+ * Barry - Originally this only wrote to disk when a full 180k block had been received from a
+ * client, and only asked for data in 180k blocks, so on average 90k was lost for every connection
+ * to a client data source. To reduce that, packets are now written to a buffer and flushed to disk
+ * regularly regardless of size downloaded, compressed packets included. Data is also requested only
+ * where gaps are, not in 180k blocks: a request still never exceeds 180k, but may be smaller to fill
+ * a gap.
+ */
 
 void CUpDownClient::ProcessBlockPacket(const uint8_t *packet, uint32 size, bool packed, bool largeblocks)
 {
@@ -945,9 +933,9 @@ void CUpDownClient::ProcessBlockPacket(const uint8_t *packet, uint32 size, bool 
 						this);
 				} else {
 					wxASSERT((long int)size > 0);
-					// Create space to store unzipped data, the size is
-					// only an initial guess, will be resized in unzip()
-					// if not big enough
+					// Create space to store unzipped data. The size is only an
+					// initial guess and is resized in unzip() if not big
+					// enough.
 					lenUnzipped = (size * 2);
 					// Don't get too big
 					if (lenUnzipped > (BLOCKSIZE + 300)) {
@@ -1012,18 +1000,19 @@ void CUpDownClient::ProcessBlockPacket(const uint8_t *packet, uint32 size, bool 
 						m_reqfile->RemoveBlockFromList(cur_block->block->StartOffset,
 							cur_block->block->EndOffset);
 
-						// If we had an zstream error, there is no chance that we
-						// could recover from it nor that we could use the current
-						// zstream (which is in error state) any longer.
+						// After a zstream error there is no chance of
+						// recovering from it, nor of using the current
+						// zstream, which is in an error state, any longer.
 						if (cur_block->zStream) {
 							inflateEnd(cur_block->zStream);
 							delete cur_block->zStream;
 							cur_block->zStream = NULL;
 						}
 
-						// No need to disconnect the sending client: the next
-						// zstream (a series of 10K-blocks building a 180K-block)
-						// may be valid again, so just ignore the rest of this one.
+						// No need to disconnect the sending client: the
+						// next zstream (a series of 10K blocks building a
+						// 180K block) may be valid again, so just ignore
+						// the rest of this one.
 						cur_block->fZStreamError = 1;
 						cur_block->totalUnzipped = 0; // bluecow's fix
 					}
@@ -1153,9 +1142,8 @@ int CUpDownClient::unzip(Pending_Block_Struct *block,
 
 		err = unzip(block, zS->next_in, zS->avail_in, unzipped, lenUnzipped, iRecursion + 1);
 	} else if ((err == Z_OK) && (zS->avail_in == 0)) {
-		// All available input has been processed, everything ok.
-		// Set the size to the amount unzipped in this call
-		// (including all recursive calls)
+		// All available input has been processed, everything ok. Set the size to the amount
+		// unzipped in this call, including all recursive calls.
 		(*lenUnzipped) = (zS->total_out - block->totalUnzipped);
 		block->totalUnzipped = zS->total_out;
 	} else {
@@ -1279,11 +1267,6 @@ void CUpDownClient::UDPReaskForDownload()
 	}
 
 	// #warning We should implement the quality tests for udp reliability
-	/*
-	if( m_nTotalUDPPackets > 3 && ((float)(m_nFailedUDPPackets/m_nTotalUDPPackets) > .3)) {
-		return;
-	}
-	*/
 
 	if (thePrefs::GetEffectiveUDPPort() == 0) {
 		return;
@@ -1426,10 +1409,11 @@ uint8 CUpDownClient::GetObfuscationStatus() const
 	return ret;
 }
 
-// IgnoreNoNeeded = will switch to files of which this source has no needed parts (if no better files found)
-// ignoreSuspensions = ignore timelimit for A4Af jumping
-// bRemoveCompletely = do not readd the file which the source is swapped from to the A4AF lists (needed if
-// deleting or stopping a file) toFile = Try to swap to this partfile only
+// IgnoreNoNeeded      switch to files this source has no needed parts of, if no better file is found
+// ignoreSuspensions   ignore the time limit for A4AF jumping
+// bRemoveCompletely   do not re-add the file the source is swapped from to the A4AF lists (needed
+//                     when deleting or stopping a file)
+// toFile              try to swap to this partfile only
 
 bool CUpDownClient::SwapToAnotherFile(
 	bool bIgnoreNoNeeded, bool ignoreSuspensions, bool bRemoveCompletely, CPartFile *toFile)

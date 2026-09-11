@@ -26,18 +26,15 @@
 #define MULE_STRERROR_R_H
 
 /**
- * Return string describing error number.
+ * Return a string describing an error number.
  *
- * This function implements the XSI-compliant strerror_r() function whenever
- * it's possible. Also it is thread safe if there is a thread-safe function
- * to get the error description.
+ * Implements the XSI-compliant strerror_r() wherever possible, and is thread safe if a thread-safe
+ * function to get the error description exists.
  *
  * @param errnum Error number for which the description is needed.
  * @param buf    Buffer to store the error description.
  * @param buflen Length of the buffer.
- *
- * @return 0 on success; on error, -1 is returned and errno is set to indicate
- *	   the error.
+ * @return 0 on success; -1 on error, with errno set to indicate it.
  */
 extern "C" int mule_strerror_r(int errnum, char *buf, size_t buflen);
 

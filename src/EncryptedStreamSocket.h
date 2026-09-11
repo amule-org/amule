@@ -23,12 +23,11 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-/* This class supports obfuscation and encryption for a *Mule tcp connection.
-   Right now only basic obfusication is supported, but this can be expanded, as their is a
-   dedicated handshake to negotiate the encryption method used.
+/* Obfuscation and encryption for a *Mule tcp connection. Only basic obfuscation is supported
+   right now, but a dedicated handshake negotiates the encryption method, so this can be expanded.
 
-   Please note, even if obfuscation uses encryption methods, it does not fulfill cryptographic standards since
-   it doesn't use secret (and for rc4 important: unique) keys
+   Note that obfuscation uses encryption methods but does not meet cryptographic standards, since
+   it uses no secret keys -- and, importantly for rc4, no unique ones.
 */
 
 #ifndef __ENCRYPTEDSTREAMSOCKET_H__

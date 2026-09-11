@@ -39,13 +39,11 @@ static bool s_running = false;
 static bool s_terminated = false;
 
 /**
- * This class is used in a custom implementation of wxThreadHelper.
+ * Used in a custom implementation of wxThreadHelper.
  *
- * The reason for not using wxThreadHelper are as follows:
- *  - wxThreadHelper makes use of wxThread:Kill, which is warned against
- *    several times in the docs, and even calls it in its destructor.
- *  - Managing the thread-object is difficult, since the only way to
- *    destroy it is to create a new thread.
+ * wxThreadHelper is avoided because it uses wxThread::Kill, which the docs warn against repeatedly
+ * and which it even calls in its destructor; and because managing the thread object is difficult,
+ * the only way to destroy it being to create a new thread.
  */
 class CTaskThread : public CMuleThread
 {
@@ -224,9 +222,8 @@ size_t CThreadScheduler::GetPendingCount(const wxString &type)
 		}
 	}
 
-	// The running task has already left the queue but is not done, so count
-	// it: otherwise a batch reads as finished while its last task is still
-	// executing.
+	// The running task has already left the queue but is not done, so count it: otherwise a
+	// batch reads as finished while its last task is still executing.
 	const CThreadTask *current = s_scheduler->m_currentTask;
 	if (current && (type.IsEmpty() || current->GetType() == type)) {
 		++count;
@@ -318,9 +315,9 @@ void *CThreadScheduler::Entry()
 		{
 			wxMutexLocker lock(s_lock);
 
-			// If the task has been aborted, the entry now refers to
-			// a different task, so dont remove it. That also means
-			// that it can't be the last task of this type.
+			// If the task has been aborted the entry now refers to a different task, so
+			// do not remove it. That also means it cannot be the last task of this
+			// type.
 			if (!task->m_abort) {
 				AddDebugLogLineN(logThreads,
 					CFormat("Completed task '%s%s', %u tasks remaining.") %

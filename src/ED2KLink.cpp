@@ -55,14 +55,12 @@ CED2KLink *CED2KLink::CreateLinkFromUrl(const wxString &link)
 	try {
 		return ParseLink(link);
 	} catch (const wxString &) {
-		// Chromium blocks an ed2k:// URL that carries literal '|', so links
-		// are published, copied and pasted with the delimiters percent-
-		// encoded. Retry rather than decode up front: a link that parses as
-		// given is never touched, so a filename holding a real "%7C" -- which
-		// is how a '|' in a name is spelled -- cannot be split into extra
-		// fields by this. Every caller reaches the parser, so handling it
-		// here is what keeps the command line, the paste box, the browser
-		// handler and the EC clients agreeing.
+		// Chromium blocks an ed2k:// URL carrying a literal '|', so links are published,
+		// copied and pasted with the delimiters percent-encoded. Retry rather than decode
+		// up front: a link that parses as given is never touched, so a filename holding a
+		// real "%7C" -- which is how a '|' in a name is spelled -- cannot be split into
+		// extra fields by this. Every caller reaches the parser, so handling it here keeps
+		// the command line, the paste box, the browser handler and the EC clients agreeing.
 		const wxString restored = RestoreEncodedPipes(link);
 		if (restored == link) {
 			throw;
@@ -98,9 +96,7 @@ CED2KLink *CED2KLink::ParseLink(const wxString &link)
 	}
 }
 
-/////////////////////////////////////////////
 // CED2KServerListLink implementation
-/////////////////////////////////////////////
 CED2KServerListLink::CED2KServerListLink(const wxString &link)
 : CED2KLink(kServerList)
 {
@@ -122,9 +118,7 @@ const wxString &CED2KServerListLink::GetAddress() const
 	return m_address;
 }
 
-/////////////////////////////////////////////
 // CED2KServerLink implementation
-/////////////////////////////////////////////
 CED2KServerLink::CED2KServerLink(const wxString &link)
 : CED2KLink(kServer)
 {
@@ -160,9 +154,7 @@ uint16 CED2KServerLink::GetPort() const
 	return m_port;
 }
 
-/////////////////////////////////////////////
 // CED2KFileLink implementation
-/////////////////////////////////////////////
 CED2KFileLink::CED2KFileLink(const wxString &link)
 : CED2KLink(kFile)
 , m_hashset(NULL)
@@ -182,9 +174,8 @@ CED2KFileLink::CED2KFileLink(const wxString &link)
 	// We don't want a path in the name.
 	m_name.Replace("/", "_");
 
-	// Note that StrToULong returns ULONG_MAX if the value is
-	// too large to be contained in a unsigned long, which means
-	// that this check is valid, as odd as it seems
+	// StrToULong returns ULONG_MAX if the value is too large for an unsigned long, which makes
+	// this check valid, odd as it seems.
 	wxString size = tokens.GetNextToken().Strip(wxString::both);
 	m_size = StrToULongLong(size);
 	if ((m_size == 0) || (m_size > MAX_FILE_SIZE)) {

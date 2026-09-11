@@ -21,9 +21,7 @@
 #ifndef G10_BITHELP_H
 #define G10_BITHELP_H
 
-/****************
- * Rotate the 32 bit unsigned integer X by N bits left/right
- */
+/* Rotate the 32 bit unsigned integer X by N bits left/right */
 #if defined(__GNUC__) && defined(__i386__)
 static inline uint32_t rol(uint32_t x, int n)
 {

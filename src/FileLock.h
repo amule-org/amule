@@ -34,26 +34,17 @@
 #include <string> // Do_not_auto_remove (g++-4.0.1 except win32)
 
 /**
- * This class provides an easy way to lock non-critical
- * files used by multiple applications. However, since
- * the implementation relies on fcntl, it may not work
- * on all filesystems (NFS) and thus locking is not
- * certain.
+ * An easy way to lock non-critical files used by several applications. The implementation relies on
+ * fcntl, so it may not work on all filesystems (NFS) and locking is not certain.
  *
- * Currently, this lock holds an exclusive lock on the
- * file in question. It is assumed that the file will
- * be read/written by all users.
- *
+ * The lock is exclusive: all users are assumed to read and write the file.
  */
 class CFileLock
 {
 public:
 	/**
-	 * Locks the lock-file for the specified file.
-	 *
-	 * The lock-file is a file named file + "_lock", and
-	 * will be created if it does not already exist. This
-	 * file is not removed afterwards.
+	 * Locks the lock-file for the specified file. The lock-file is named file + "_lock" and is
+	 * created if it does not exist. It is not removed afterwards.
 	 */
 	CFileLock(const std::string &file);
 

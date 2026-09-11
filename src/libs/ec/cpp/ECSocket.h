@@ -60,29 +60,25 @@ class CECPacket;
 class CQueuedData;
 
 /*! \class CECSocket
- *
- * \brief Socket handler for External Communications (EC).
- *
- * CECSocket takes care of the transmission of EC packets
+ * \brief Socket handler for External Communications (EC), i.e. the transmission
+ * of EC packets.
  */
 
 class CECSocket
 {
 	friend class CECPacket;
 	friend class CECTag;
-	// CECMemSocket is a CECSocket subclass that captures all I/O into an in-memory
-	// vector. To finish a serialization round it needs the FlushBuffers /
-	// m_output_queue drain machinery the real-socket path reaches via the friend
-	// declarations above; friendship here avoids weakening those for everyone else.
+	// CECMemSocket captures all I/O into an in-memory vector. To finish a
+	// serialization round it needs the FlushBuffers / m_output_queue drain machinery
+	// the real-socket path reaches via the friend declarations above.
 	friend class CECMemSocket;
 
 private:
 	static const unsigned int EC_SOCKET_BUFFER_SIZE = 2048;
 	// Cap on one queued output block. The tx path used to reuse
-	// EC_SOCKET_BUFFER_SIZE, so every packet left the socket in 2 KB writes
-	// and each one's sub-MSS remainder became a segment of its own. A cap and
-	// not a size: TxChunkSize() asks for what the packet needs and no more, so
-	// a small reply still costs a small block.
+	// EC_SOCKET_BUFFER_SIZE, so every packet left in 2 KB writes and each one's
+	// sub-MSS remainder became a segment of its own. A cap and not a size:
+	// TxChunkSize() asks for what the packet needs and no more.
 	static const unsigned int EC_SOCKET_TX_CHUNK_MAX = 64 * 1024;
 	static const unsigned int EC_HEADER_SIZE = 8;
 	const bool m_use_events;
@@ -108,50 +104,43 @@ private:
 	// --- transport encryption -------------------------------------------
 	//
 	// Keys are derived once the handshake has both nonces and the chosen cipher.
-	// m_crypt_ready says the keys exist; m_crypt_enabled says to actually seal
-	// outgoing packets. They are separate because the packet that completes the
-	// handshake must still go out in clear -- the client sends EC_OP_AUTH_PASSWD
-	// unencrypted and only then switches on, which m_crypt_enable_after_write
-	// expresses. Incoming packets are decided per packet by EC_FLAG_ENCRYPTED, so a
-	// plaintext EC_OP_AUTH_FAIL still parses after we have armed.
+	// m_crypt_ready says the keys exist; m_crypt_enabled says to seal outgoing
+	// packets. Separate because the packet that completes the handshake must still go
+	// out in clear -- the client sends EC_OP_AUTH_PASSWD unencrypted and only then
+	// switches on, which m_crypt_enable_after_write expresses. Incoming packets are
+	// decided per packet by EC_FLAG_ENCRYPTED.
 	ECCrypt::Session m_crypt;
 	bool m_crypt_ready;
 	bool m_crypt_enabled;
 	bool m_crypt_enable_after_write;
 
-	// Whether the packet ReadPacket last returned arrived sealed. The app
-	// dispatch uses it to reject a cleartext packet injected into a session
-	// that negotiated encryption; see CECServerSocket::OnPacketReceived.
+	// Whether the packet ReadPacket last returned arrived sealed, so the app dispatch
+	// can reject cleartext injected into a session that negotiated encryption.
 	bool m_last_rx_encrypted;
 
 protected:
-	// Pure arithmetic, protected rather than private so a test can pin the
-	// floor and the cap without standing up a socket -- the tree already
-	// reaches protected members by subclassing (see CECMemSocket).
+	// Pure arithmetic, protected rather than private so a test can pin the floor and
+	// the cap without standing up a socket (see CECMemSocket).
 	static size_t TxChunkSize(uint32 bodyLen);
 
-	// Encryption state for the app dispatch's post-handshake checks:
-	// IsCryptReady() is true once keys exist, i.e. the session negotiated
-	// AEAD; WasLastPacketEncrypted() reports how the last packet arrived.
+	// IsCryptReady() is true once keys exist, i.e. the session negotiated AEAD;
+	// WasLastPacketEncrypted() reports how the last packet arrived.
 	bool IsCryptReady() const { return m_crypt_ready; }
 	bool WasLastPacketEncrypted() const { return m_last_rx_encrypted; }
 
 	uint32_t m_my_flags;
 	bool m_haveNotificationSupport;
 
-	// Daemon-internal subclasses (e.g. CECMemSocket) need to set the
-	// per-packet wire flags before invoking serialization primitives
-	// like CECTag::Serialize that read m_tx_flags directly (without
-	// going through WritePacket). Promoting just the setter keeps the
-	// rest of m_tx_flags' lifecycle private to WritePacket / WriteBuffer.
+	// Daemon-internal subclasses (e.g. CECMemSocket) must set the per-packet wire
+	// flags before calling serialization primitives like CECTag::Serialize, which read
+	// m_tx_flags directly. Promoting just the setter keeps the rest of m_tx_flags'
+	// lifecycle private to WritePacket / WriteBuffer.
 	void SetTxFlags(uint32_t flags) { m_tx_flags = flags; }
 
-	// When true, the peer is on loopback / RFC1918 LAN / RFC3927
-	// link-local — i.e. the wire cost of an uncompressed response
-	// is irrelevant. WritePacket consults this to skip ZLIB on
-	// every packet up to a size threshold; large packets still
-	// compress so we never blow the receiver's 256 MB packet
-	// budget (ReadHeader gate). Default false (treat as remote).
+	// True when the peer is on loopback / RFC1918 LAN / RFC3927 link-local, i.e. the
+	// wire cost of an uncompressed response is irrelevant. WritePacket then skips ZLIB
+	// up to a size threshold; large packets still compress so we never blow the
+	// receiver's 256 MB packet budget (ReadHeader gate).
 	bool m_isLocalPeer;
 
 public:
@@ -160,39 +149,36 @@ public:
 
 	bool ConnectSocket(uint32_t ip, uint16_t port);
 
-	// Reset the EC packet layer to its just-constructed state so the SAME
-	// socket object can be reused for a fresh connection (amulegui reconnect,
-	// issue #444). Drops any queued output from the dead connection and
-	// rewinds the RX/TX reassembly state machine to "expecting a header";
-	// without this a mid-packet read left over from the drop misparses the
-	// reconnected session's first bytes and the login handshake fails.
+	// Reset the EC packet layer to its just-constructed state so the SAME socket
+	// object can be reused for a fresh connection (amulegui reconnect, issue #444).
+	// Drops queued output and rewinds the RX/TX reassembly to "expecting a header";
+	// without this a mid-packet read left over from the drop misparses the reconnected
+	// session's first bytes and the login handshake fails.
 	void ResetProtocolState();
 
 	/**
-	 * Drop the capability bits agreed with the previous peer, keeping the ones
-	 * this end chose locally. Only for a caller reusing this object against a
-	 * possibly different peer; see the definition for why it is separate from
-	 * ResetProtocolState.
+	 * Drop the capability bits agreed with the previous peer, keeping the ones this
+	 * end chose locally. Only for a caller reusing this object against a different
+	 * peer; the definition says why it is separate from ResetProtocolState.
 	 */
 	void ClearPeerNegotiatedFlags();
 
 	void CloseSocket() { InternalClose(); }
 
-	/**
-	 * Derive the session keys for this connection.
-	 *
-	 * Does not start sealing on its own -- see EnableAEADAfterNextWrite() and
-	 * EnableAEADNow(). Incoming packets can be opened as soon as this
-	 * succeeds, which is what lets the two ends switch over one packet apart.
-	 *
-	 * @return false if the cipher is unsupported or the nonces are malformed.
-	 */
 	/// Seal the queued body chunks in place and append the tag chunk.
 	bool SealOutputQueue(std::list<CQueuedData *>::iterator outputStart);
 
 	/// Open the received body in place and drop the verified tag.
 	bool OpenReceivedBody();
 
+	/**
+	 * Derive the session keys for this connection. Does not start sealing on its
+	 * own -- see EnableAEADAfterNextWrite() and EnableAEADNow(). Incoming packets
+	 * can be opened as soon as this succeeds, which lets the two ends switch over
+	 * one packet apart.
+	 *
+	 * @return false if the cipher is unsupported or the nonces are malformed.
+	 */
 	bool SetupAEAD(uint8_t cipher,
 		const std::vector<uint8_t> &ikm,
 		const std::vector<uint8_t> &serverNonce,
@@ -204,27 +190,23 @@ public:
 	/// this so its EC_OP_AUTH_PASSWD leaves in clear but the reply is sealed.
 	void EnableAEADAfterNextWrite() { m_crypt_enable_after_write = m_crypt_ready; }
 
-	/// Seal from the next packet on. The daemon uses this once the password
-	/// checks out, so EC_OP_AUTH_OK is itself encrypted -- which proves to the
-	/// client that the peer holds the same password.
+	/// Seal from the next packet on. The daemon uses this once the password checks
+	/// out, so EC_OP_AUTH_OK is itself sealed -- proof that it holds the password.
 	void EnableAEADNow() { m_crypt_enabled = m_crypt_ready; }
 
 	bool IsAEADReady() const { return m_crypt_ready; }
 	bool IsAEADEnabled() const { return m_crypt_enabled; }
 	uint8_t GetAEADCipher() const { return m_crypt.GetCipher(); }
 
-	// Locally-initiated abort: CloseSocket + OnLost. Use from the
-	// protocol-error paths in ReadHeader / ReadPacket where we close
-	// the socket ourselves. CAsioSocketImpl::Close sets m_closed = true
-	// before the asio close, which then suppresses the operation_aborted
-	// path through HandleRead → PostLostEvent (the m_closed gate at
-	// LibSocketAsio.cpp:695), so the wrapper's OnLost never fires from
-	// the asio side. Without an explicit dispatch the EC client (e.g.
-	// amulegui) never finds out the connection is gone — same #757
-	// "wedge" class of bug as the kernel-FIN miss, just on the
-	// self-close leg. Sites that already have their own UI-facing
-	// notification (CRemoteConnect::ProcessAuthPacket fires
-	// wxEVT_EC_CONNECTION directly) keep using plain CloseSocket.
+	// Locally-initiated abort: CloseSocket + OnLost. Use from the protocol-error paths
+	// in ReadHeader / ReadPacket where we close the socket ourselves.
+	// CAsioSocketImpl::Close sets m_closed = true before the asio close, which
+	// suppresses the operation_aborted path through HandleRead -> PostLostEvent
+	// (LibSocketAsio.cpp:695), so the wrapper's OnLost never fires from the asio side.
+	// Without an explicit dispatch the EC client never finds out the connection is
+	// gone -- the same #757 "wedge" as the kernel-FIN miss, on the self-close leg.
+	// Sites with their own UI-facing notification (CRemoteConnect::ProcessAuthPacket
+	// fires wxEVT_EC_CONNECTION) keep using plain CloseSocket.
 	void CloseAndDispatchLost()
 	{
 		InternalClose();
@@ -238,35 +220,25 @@ public:
 	void SetLocalPeer(bool isLocal) { m_isLocalPeer = isLocal; }
 
 	/**
-	 * Sends an EC packet and returns immediately.
+	 * Sends an EC packet and returns immediately; it goes out on idle time.
 	 *
-	 * @param packet The CECPacket packet to be sent.
-	 *
-	 * This is an asynchronous call, the function returns
-	 * immediately and the packet is sent on idle time.
-	 *
-	 * @note It's the caller's responsibility to \c delete
-	 * the \e packet.
+	 * @param packet The CECPacket packet to be sent. The caller must \c delete it.
 	 */
 	void SendPacket(const CECPacket *packet);
 
 	/**
-	 * Send a response whose body has already been pre-serialized
-	 * outside the normal CECPacket → WritePacket pipeline. Each blob
-	 * is the byte-form of one top-level child tag (as produced by
-	 * CECMemSocket::SerializeTag).
+	 * Send a response whose body was pre-serialized outside the normal CECPacket ->
+	 * WritePacket pipeline. Each blob is the byte-form of one top-level child tag, as
+	 * produced by CECMemSocket::SerializeTag.
 	 *
-	 * The flag-byte / length-header / per-connection compression /
-	 * length-patch dance is identical to what SendPacket → WritePacket
-	 * does — concentrated here so callers don't reach into CECSocket's
-	 * private buffer machinery.
+	 * The flag-byte / length-header / per-connection compression / length-patch dance
+	 * is the same one SendPacket -> WritePacket does, concentrated here so callers
+	 * need not reach into CECSocket's private buffer machinery.
 	 *
-	 * Wire format constraints on the cached blobs: UTF-8 numbers +
-	 * LARGE_TAG_COUNT, no zlib (compression is layered on per-
-	 * connection at this layer if required). Both capability bits are
-	 * forced on in the wire flag byte regardless of negotiation; clients
-	 * that didn't advertise them aren't served from the cache (the
-	 * caller decides the eligibility).
+	 * The cached blobs must be UTF-8 numbers + LARGE_TAG_COUNT and uncompressed;
+	 * compression is layered on per connection at this layer. Both capability bits are
+	 * forced on in the wire flag byte regardless of negotiation, so the caller must
+	 * not serve the cache to a client that did not advertise them.
 	 *
 	 * @param opcode The packet opcode the receiver should see.
 	 * @param blobs One pre-serialized child tag per element.
@@ -275,77 +247,49 @@ public:
 		uint8_t opcode, const std::vector<std::shared_ptr<const std::vector<unsigned char>>> &blobs);
 
 	/**
-	 * Sends an EC packet and waits for a reply.
+	 * Sends an EC packet and blocks until the reply arrives or the request times out.
+	 * OnPacketReceived() is not called for packets received this way.
 	 *
 	 * @param request The CECPacket packet to be sent.
-	 * @return The reply packet for the request.
+	 * @return The reply, heap-allocated with \c new, or \c NULL on timeout.
 	 *
-	 * Unlike SendPacket(), this call is synchronous and blocking.
-	 * The packet is sent immediately (or at least as soon as possible),
-	 * and the function does not return until a reply is received,
-	 * or a timeout encountered.
-	 *
-	 * The returned packet will be allocated on the heap with \c new,
-	 * or \c NULL is returned in case of an error (timeout).
-	 *
-	 * @note It's the caller's responsibility to \c delete both
-	 * request and reply.
-	 *
-	 * @note OnPacketReceived() won't be called for packets
-	 * received via this function.
+	 * @note It's the caller's responsibility to \c delete both request and reply.
 	 */
 	const CECPacket *SendRecvPacket(const CECPacket *request);
 
 	/**
-	 * Event handler function called when a new packet is received.
+	 * Event handler called when a new packet is received. Not called for packets
+	 * received via SendRecvPacket().
+	 *
+	 * The application processes the packet here and returns a reply allocated on the
+	 * heap with \c new, or \c NULL if none is needed. The library \c deletes both
+	 * packets.
 	 *
 	 * @param packet The packet that has been received.
 	 * @return The reply packet or \c NULL if no reply needed.
-	 *
-	 * In this function the application should process the received
-	 * packet, and create a reply if necessary. The reply must be allocated
-	 * on the heap with \c new. If no reply is necessary, the return
-	 * value of the function should be \c NULL. The library will \c delete
-	 * both packets.
-	 *
-	 * @note This function won't be called for packets received via the
-	 * SendRecvPacket() function.
 	 */
 	virtual const CECPacket *OnPacketReceived(const CECPacket *packet, uint32 trueSize);
 
 	/**
-	 * Get a message describing the error.
-	 *
-	 * @param error The code of the error for which a message should be returned.
-	 * @return The text describing the error.
+	 * @return Text describing the last error.
 	 */
 	virtual std::string GetLastErrorMsg();
 
 	/**
-	 * Error handler.
-	 *
-	 * This function is called when an error occurs. Use GetLastError() and
-	 * GetErrorMsg() to find out the nature of the error.
-	 *
-	 * The default error handler prints out an error message in debug builds,
-	 * and destroys the socket.
+	 * Error handler, called when an error occurs. Use GetLastError() and
+	 * GetErrorMsg() to find out its nature. The default prints a message in debug
+	 * builds and destroys the socket.
 	 */
 	virtual void OnError();
 
 	/**
-	 * Socket lost event handler.
-	 *
-	 * This function is called when the socket is lost (either because of a network
-	 * failure or because the remote end closed the socket gracefully).
-	 *
-	 * The default handler destroys the socket.
+	 * Socket lost event handler: the network failed or the remote end closed the
+	 * socket gracefully. The default handler destroys the socket.
 	 */
 	virtual void OnLost();
 
 	/**
-	 * Event handler for connection events.
-	 *
-	 * This function is called when a connection attempt succeeds.
+	 * Event handler called when a connection attempt succeeds.
 	 */
 	virtual void OnConnect();
 
@@ -433,19 +377,16 @@ public:
 	void Read(void *data, size_t len);
 
 	/*
-	 * Start of the buffered bytes, for transforms that rewrite the payload
-	 * where it lies instead of copying it out. Used by the AEAD path in
-	 * WritePacket / ReadPacket; flattening the queue into a scratch buffer
-	 * would double peak memory on the largest packets.
+	 * Start of the buffered bytes, for transforms that rewrite the payload in place.
+	 * Used by the AEAD path in WritePacket / ReadPacket; flattening the queue into a
+	 * scratch buffer would double peak memory on the largest packets.
 	 */
 	unsigned char *GetDataPtr() { return &m_data[0]; }
 
 	/* Drop @a len bytes from the end (the AEAD tag, once verified). */
 	void TruncateBy(size_t len);
 
-	/*
-	 * Pass pointers to zlib. From now on, no Read() calls are allowed
-	 */
+	// Pass pointers to zlib. From now on, no Read() calls are allowed
 	void ToZlib(z_stream &m_z)
 	{
 		m_z.avail_in = (uInt)GetUnreadDataLength();

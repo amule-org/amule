@@ -80,10 +80,10 @@ there client on the eMule forum..
 using namespace Kademlia;
 ////////////////////////////////////////
 
-// CKadAICHHashList is written against a plain 20-byte array so that the codec
-// pinning TAG_KADAICHHASHPUB / TAG_KADAICHHASHRESULT stays testable without
-// SHAHashSet.cpp behind it. This is where the two definitions of "AICH root
-// hash size" meet, so this is where they are held together.
+// CKadAICHHashList is written against a plain 20-byte array so that the codec pinning
+// TAG_KADAICHHASHPUB / TAG_KADAICHHASHRESULT stays testable without SHAHashSet.cpp behind it. This
+// is where the two definitions of "AICH root hash size" meet, so this is where they are held
+// together.
 static_assert(
 	Kademlia::KAD_AICH_HASH_SIZE == HASHSIZE, "Kad AICH hash size must match the AICH root hash size");
 
@@ -145,26 +145,26 @@ CSearch::~CSearch()
 		uint8_t fileid[16];
 		m_target.ToByteArray(fileid);
 		const CMD4Hash fileHash(fileid);
-		// Clear the running flag on EVERY local object that shares this hash. The
-		// lookup may have been triggered from a search result while the same file is
-		// also downloading or shared (two objects, one hash), and the flag was set on
-		// whichever one the user used -- so two independent `if`s, not an `else if`.
+		// Clear the running flag on EVERY local object that shares this hash. The lookup
+		// may have been triggered from a search result while the same file is also
+		// downloading or shared (two objects, one hash), and the flag was set on whichever
+		// one the user used -- so two independent `if`s, not an `else if`.
 		CKnownFile *knownFile = theApp->sharedfiles->GetFileByID(fileHash);
 		if (!knownFile) {
 			knownFile = theApp->downloadqueue->GetFileByID(fileHash);
 		}
 		if (knownFile) {
 			knownFile->SetKadCommentSearchRunning(false);
-			// Bump the file's EC generation so the next incremental update
-			// re-serializes it: this is how amulegui / amuleapi learn the
-			// notes lookup finished (they poll GET_UPDATE, which otherwise
-			// skips an unchanged partfile).
+			// Bump the file's EC generation so the next incremental update re-
+			// serializes it: this is how amulegui and amuleapi learn the notes lookup
+			// finished (they poll GET_UPDATE, which otherwise skips an unchanged
+			// partfile).
 			knownFile->MarkECChanged();
 		}
-		// Clear the flag on EVERY search result sharing this hash: the same file can
-		// be shown in several open searches at once, and all were marked running.
-		// Search files carry no EC change-generation, so the cleared flag rides the
-		// next periodic search-results poll.
+		// Clear the flag on EVERY search result sharing this hash: the same file can be
+		// shown in several open searches at once, and all were marked running. Search files
+		// carry no EC change-generation, so the cleared flag rides the next periodic
+		// search-results poll.
 		std::vector<CSearchFile *> searchFiles;
 		theApp->searchlist->GetAllSearchFilesByID(fileHash, searchFiles);
 		for (CSearchFile *searchFile : searchFiles) {
@@ -282,23 +282,21 @@ void CSearch::PrepareToStop() noexcept
 void CSearch::JumpStart()
 {
 #ifdef ENABLE_KAD_NODE_PROTECTION
-	// How long to wait on an outstanding request before treating the search as
-	// stalled. Derived from the response times actually observed (CFastKad) rather
-	// than fixed at 3 seconds: on a fast link the old constant wasted seconds on
-	// nodes that were never going to answer, and on a congested one it abandoned
-	// nodes that answered just too late.
+	// How long to wait on an outstanding request before treating the search as stalled. Derived
+	// from the response times actually observed (CFastKad) rather than fixed at 3 seconds: on a
+	// fast link the old constant wasted seconds on nodes that were never going to answer, and
+	// on a congested one it abandoned nodes that answered just too late.
 	//
-	// Background store operations keep the fixed 3 seconds: nobody is waiting on a
-	// publish, and a tight deadline would only add republish traffic.
+	// Background store operations keep the fixed 3 seconds: nobody is waiting on a publish, and
+	// a tight deadline would only add republish traffic.
 	const uint32_t maxPending = (m_type == STOREFILE || m_type == STOREKEYWORD || m_type == STORENOTES)
 					    ? SEC2MS(3)
 					    : fastKad.GetEstMaxResponseTime();
 
 	const uint64_t nowTick = ::GetTickCount64();
 
-	// Stop waiting on requests that have passed the ceiling, and remember
-	// those addresses as problematic so the next search does not queue behind
-	// the same dead nodes.
+	// Stop waiting on requests that have passed the ceiling, and remember those addresses as
+	// problematic so the next search does not queue behind the same dead nodes.
 	for (PendingRequestMap::iterator it = m_pendingRequests.begin(); it != m_pendingRequests.end();) {
 		if (nowTick - it->second.m_sentTick < maxPending) {
 			++it;
@@ -313,10 +311,9 @@ void CSearch::JumpStart()
 		return;
 	}
 #else
-	// Gate off: the fixed 3-second ceiling at its usual second granularity, so the
-	// moment a jumpstart goes out is unchanged. m_lastResponse is cast to time_t
-	// before the addition, which in uint32_t would wrap near the 2106 boundary and
-	// silently reorder the comparison.
+	// Gate off: the fixed 3-second ceiling at its usual second granularity, so the moment a
+	// jumpstart goes out is unchanged. m_lastResponse is cast to time_t before the addition,
+	// which in uint32_t would wrap near the 2106 boundary and silently reorder the comparison.
 	if ((time_t)m_lastResponse + SEC(3) > time(NULL)) {
 		return;
 	}
@@ -327,10 +324,10 @@ void CSearch::JumpStart()
 		return;
 	}
 
-	// Is this a find lookup and are the best two (=KADEMLIA_FIND_VALUE) nodes dead/unreachable?
-	// In this case try to discover more close nodes before using our other results
-	// The reason for this is that we may not have found the closest node alive due to results being
-	// limited to 2 contacts, which could very well have been the duplicates of our dead closest nodes
+	// Is this a find lookup, and are the best two (KADEMLIA_FIND_VALUE) nodes dead or
+	// unreachable? Then discover more close nodes before using the other results: limiting
+	// results to 2 contacts may have hidden the closest live node behind duplicates of the dead
+	// ones.
 	bool lookupCloserNodes = false;
 	if (m_requestedMoreNodes.empty() && GetRequestContactCount() == KADEMLIA_FIND_VALUE &&
 		m_tried.size() >= 3 * KADEMLIA_FIND_VALUE) {
@@ -402,24 +399,22 @@ void CSearch::ProcessResponse(uint32_t fromIP, uint16_t fromPort, ContactList *r
 
 #ifdef ENABLE_KAD_NODE_PROTECTION
 	if (fromContact != nullptr) {
-		// The answer closes out its pending record: leaving satisfied
-		// entries in the map would only make the timeout sweep in
-		// JumpStart walk dead weight.
+		// The answer closes out its pending record: leaving satisfied entries in the map
+		// would only make the timeout sweep in JumpStart walk dead weight.
 		PendingRequestMap::iterator pending = m_pendingRequests.find(fromContact->GetClientID());
 		if (pending != m_pendingRequests.end()) {
-			// A useful answer: feed its round-trip time to the shared
-			// estimator so the next timeout reflects the network we are
-			// actually on.
+			// A useful answer: feed its round-trip time to the shared estimator so the
+			// next timeout reflects the network we are actually on.
 			const uint64_t nowTick = ::GetTickCount64();
 			fastKad.AddResponseTime(
 				fromIP, (uint32_t)(nowTick - pending->second.m_sentTick), nowTick);
 			m_pendingRequests.erase(pending);
 		}
 
-		// The contact may have gone bad since we sent the request, and this is the
-		// point at which we know the node stands behind this identity.
-		// onlyOneNodePerIP is off here because the contact is already in our routing
-		// table, so a second port on the address is that table's problem.
+		// The contact may have gone bad since we sent the request, and this is the point at
+		// which we know the node stands behind this identity. onlyOneNodePerIP is off here
+		// because the contact is already in our routing table, so a second port on the
+		// address is that table's problem.
 		if (safeKad.IsBadNode(fromIP,
 			    fromPort,
 			    fromContact->GetClientID(),
@@ -679,10 +674,10 @@ void CSearch::StorePacket()
 		CMemFile searchTerms;
 		searchTerms.WriteUInt128(m_target);
 		if (from->GetVersion() >= 3) {
-			// Find file we are storing info about. The NOTES request carries
-			// the file size, which we read from whichever local list holds the
-			// hash: shared files, the download queue, or (for an on-demand
-			// lookup on a result the user has not downloaded) the search list.
+			// Find the file we are storing info about. The NOTES request carries the
+			// file size, which we read from whichever local list holds the hash: shared
+			// files, the download queue, or the search list for an on-demand lookup on
+			// a result the user has not downloaded.
 			uint8_t fileid[16];
 			m_target.ToByteArray(fileid);
 			const CMD4Hash fileHash(fileid);
@@ -1106,11 +1101,11 @@ void CSearch::ProcessResultFile(const CUInt128 &answer, TagPtrList *info)
 		} else if (!tag->GetName().Cmp(TAG_ENCRYPTION)) {
 			byCryptOptions = (uint8)tag->GetInt();
 		} else if (!tag->GetName().Cmp(TAG_IPV6) || !tag->GetName().Cmp(TAG_SERVINGBUDDYIPV6)) {
-			// eMuleAI publishes IPv6 sources alongside the IPv4 ones as
-			// 32 hex characters. aMule has no IPv6 stack yet, so the
-			// address is validated and dropped: a malformed tag is worth
-			// a log line, and a well-formed one must not be mistaken for
-			// a reachable source. Routing to it is the dual-stack change.
+			// eMuleAI publishes IPv6 sources alongside the IPv4 ones as 32 hex
+			// characters. aMule has no IPv6 stack yet, so the address is validated and
+			// dropped: a malformed tag is worth a log line, and a well-formed one must
+			// not be mistaken for a reachable source. Routing to it is the dual-stack
+			// change.
 			uint8_t address[16];
 			bool decoded = false;
 			if (tag->IsStr()) {
@@ -1189,12 +1184,11 @@ void CSearch::ProcessResultNotes(const CUInt128 &answer, TagPtrList *info)
 	m_target.ToByteArray(fileid);
 	const CMD4Hash fileHash(fileid);
 
-	// The same file can exist locally as more than one object sharing this hash:
-	// a downloading/shared CKnownFile and one CSearchFile per open search that
-	// returned it. The user may have triggered the lookup from any of them, and
-	// each keeps its own note list, so deliver the note to EVERY match. AddNote
-	// takes ownership and dedups per list, so each extra target gets an
-	// independent Copy() and the single original is consumed exactly once.
+	// The same file can exist locally as more than one object sharing this hash: a
+	// downloading/shared CKnownFile and one CSearchFile per open search that returned it. The
+	// user may have triggered the lookup from any of them, and each keeps its own note list, so
+	// deliver the note to EVERY match. AddNote takes ownership and dedups per list, so each
+	// extra target gets an independent Copy() and the single original is consumed exactly once.
 	CKnownFile *knownFile = theApp->sharedfiles->GetFileByID(fileHash);
 	if (!knownFile) {
 		knownFile = theApp->downloadqueue->GetFileByID(fileHash);
@@ -1209,9 +1203,8 @@ void CSearch::ProcessResultNotes(const CUInt128 &answer, TagPtrList *info)
 	}
 
 	m_answers++;
-	// Every search result sharing this hash (one per open search tab) gets its
-	// own copy; the note rides the next search-results poll (search files carry
-	// no EC change-generation).
+	// Every search result sharing this hash (one per open search tab) gets its own copy; the
+	// note rides the next search-results poll, search files carrying no EC change-generation.
 	for (CSearchFile *searchFile : searchFiles) {
 		searchFile->AddNote(entry->Copy());
 	}
@@ -1232,11 +1225,10 @@ void CSearch::ProcessResultKeyword(
 	const CUInt128 &answer, TagPtrList *info, uint32_t fromIP, uint16_t fromPort)
 {
 #ifdef ENABLE_KAD_PROTOCOL_10
-	// Find the contact that answered, so that version-gated result tags can
-	// be checked against the version it advertised.  A tag a peer cannot
-	// possibly have generated is a tag it is relaying on someone else's
-	// behalf, and the whole point of the publisher-side filtering is that we
-	// do not take those at face value.
+	// Find the contact that answered, so version-gated result tags can be checked against the
+	// version it advertised. A tag a peer cannot possibly have generated is a tag it is
+	// relaying on someone else's behalf, and the whole point of the publisher-side filtering is
+	// that we do not take those at face value.
 	uint8_t fromKadVersion = 0;
 	for (ContactMap::const_iterator it = m_tried.begin(); it != m_tried.end(); ++it) {
 		const CContact *tmpContact = it->second;
@@ -1328,11 +1320,11 @@ void CSearch::ProcessResultKeyword(
 #endif
 #ifdef ENABLE_KAD_PROTOCOL_10
 		} else if (tag->GetName() == TAG_KADAICHHASHRESULT) {
-			// AICH hashes on keyword storage arrived with Kad protocol version
-			// 0x09, so a sender below that cannot have produced this tag itself
-			// and it is filtered rather than trusted. Gated with the rest: with
-			// the switch off we never publish an AICH hash, so acting on one a
-			// peer reports would be behaviour upstream does not have.
+			// AICH hashes on keyword storage arrived with Kad protocol version 0x09, so
+			// a sender below that cannot have produced this tag itself and it is
+			// filtered rather than trusted. Gated with the rest: with the switch off we
+			// never publish an AICH hash, so acting on one a peer reports would be
+			// behaviour upstream does not have.
 			if (CKadAICHHashList::PeerSupportsAICHKeywordStorage(fromKadVersion) &&
 				tag->IsBsob()) {
 				if (!CKadAICHHashList::DecodeResultTag(
@@ -1375,10 +1367,9 @@ void CSearch::ProcessResultKeyword(
 	if (!title.IsEmpty()) {
 		taglist.push_back(new CTagString(TAG_MEDIA_TITLE, title));
 	}
-	// The codec was read off the wire and then never mentioned again, so every Kad
-	// result showed an empty Codec column and the value never reached a download
-	// started from it. Being a wxString, the dead store was not something
-	// -Wunused-but-set-variable could flag.
+	// The codec was read off the wire and then never mentioned again, so every Kad result
+	// showed an empty Codec column and the value never reached a download started from it.
+	// Being a wxString, the dead store was not something -Wunused-but-set-variable could flag.
 	if (!codec.IsEmpty()) {
 		taglist.push_back(new CTagString(TAG_MEDIA_CODEC, codec));
 	}
@@ -1392,11 +1383,10 @@ void CSearch::ProcessResultKeyword(
 		taglist.push_back(new CTagVarInt(TAG_SOURCES, availability));
 	}
 #ifdef ENABLE_KAD_PROTOCOL_10
-	// Carry a trusted AICH root hash into the search result, under the same
-	// tag name (FT_AICH_HASH) that an ed2k result and the part-file metadata
-	// use, so CPartFile takes it as its master hash when a download starts.
-	// SelectTrusted() answers nullptr far more often than not: see its
-	// declaration for why refusing is the right default here.
+	// Carry a trusted AICH root hash into the search result, under the same tag name
+	// (FT_AICH_HASH) that an ed2k result and the part-file metadata use, so CPartFile takes it
+	// as its master hash when a download starts. SelectTrusted() answers nullptr far more often
+	// than not: see its declaration for why refusing is the right default here.
 	const uint32_t publishersKnown = (publishInfo & 0x00FF0000) >> 16;
 	const CKadAICHHashList::SResultHash *bestAICHHash =
 		CKadAICHHashList::SelectTrusted(aichHashes, publishersKnown);
@@ -1425,8 +1415,8 @@ void CSearch::SendFindValue(CContact *contact, bool reaskMore)
 		uint8_t contactCount = GetRequestContactCount();
 
 		if (reaskMore) {
-			// Either the JumpStart dead-nodes fallback or RequestMoreResults() asked
-			// us to send the wider KADEMLIA_FIND_VALUE_MORE variant to this contact.
+			// Either the JumpStart dead-nodes fallback or RequestMoreResults() asked us
+			// to send the wider KADEMLIA_FIND_VALUE_MORE variant to this contact.
 			// Tracking its ClientID makes ProcessResponse's "more results than
 			// requested" check accept the larger response, and stops
 			// RequestMoreResults() reasking the same peer twice.
@@ -1511,10 +1501,9 @@ void CSearch::SendFindValue(CContact *contact, bool reaskMore)
 			}
 #endif
 #ifdef ENABLE_KAD_NODE_PROTECTION
-			// Start the clock on this request. The answer's round-trip
-			// time feeds the shared response-time estimator, and
-			// JumpStart uses the same record to notice a request that
-			// has gone past the estimated ceiling.
+			// Start the clock on this request. The answer's round-trip time feeds the
+			// shared response-time estimator, and JumpStart uses the same record to
+			// notice a request that has gone past the estimated ceiling.
 			sPendingRequest pending = {
 				::GetTickCount64(), contact->GetIPAddress(), contact->GetUDPPort()
 			};
@@ -1533,10 +1522,9 @@ void CSearch::SendFindValue(CContact *contact, bool reaskMore)
 	}
 }
 
-// The terminal half of RequestMoreResults()'s guards -- everything that will
-// still be true on the next press. Deliberately does NOT walk m_responded: "no
-// un-reasked peer right now" is transient, clears when another peer answers,
-// and must not read as "never again".
+// The terminal half of RequestMoreResults()'s guards -- everything that will still be true on the
+// next press. Deliberately does NOT walk m_responded: "no un-reasked peer right now" is transient,
+// clears when another peer answers, and must not read as "never again".
 bool CSearch::CanReaskMore() const
 {
 	return !m_stopping && GetRequestContactCount() == KADEMLIA_FIND_VALUE &&
@@ -1545,14 +1533,13 @@ bool CSearch::CanReaskMore() const
 
 bool CSearch::RequestMoreResults()
 {
-	// Walk m_responded (sorted by distance to target) for the closest peer not yet
-	// asked for KADEMLIA_FIND_VALUE_MORE, and dispatch the wider variant to it.
-	// Each reask returns up to 11 closer contacts instead of 2, which the
-	// ProcessResponse cascade then queries -- surfacing more file matches from one
-	// extra ring of the routing-table neighbourhood.
+	// Walk m_responded (sorted by distance to target) for the closest peer not yet asked for
+	// KADEMLIA_FIND_VALUE_MORE, and dispatch the wider variant to it. Each reask returns up to
+	// 11 closer contacts instead of 2, which the ProcessResponse cascade then queries --
+	// surfacing more file matches from one extra ring of the routing-table neighbourhood.
 	//
-	// Bounded by KADEMLIA_FIND_VALUE_MORE_REASKS: past 4 reasks the local
-	// neighbourhood for a keyword is typically exhausted.
+	// Bounded by KADEMLIA_FIND_VALUE_MORE_REASKS: past 4 reasks the local neighbourhood for a
+	// keyword is typically exhausted.
 
 	if (m_stopping) {
 		return false;
@@ -1566,9 +1553,8 @@ bool CSearch::RequestMoreResults()
 		return false;
 	}
 
-	// m_responded is keyed by distance; iteration is closest-first.
-	// m_tried is a parallel ContactMap on the same key, so we look up
-	// the CContact* via m_tried.
+	// m_responded is keyed by distance, so iteration is closest-first. m_tried is a parallel
+	// ContactMap on the same key, so the CContact* is looked up there.
 	for (RespondedMap::const_iterator it = m_responded.begin(); it != m_responded.end(); ++it) {
 		const CUInt128 &distance = it->first;
 		ContactMap::const_iterator triedIt = m_tried.find(distance);
@@ -1603,10 +1589,10 @@ void CSearch::PreparePacketForTags(CMemFile *bio, CKnownFile *file, uint8_t targ
 			taglist.push_back(new CTagVarInt(TAG_SOURCES, file->m_nCompleteSourcesCount));
 
 #ifdef ENABLE_KAD_PROTOCOL_10
-			// AICH root hash, added to keyword storage by Kad protocol version
-			// 0x09. A node at 0x08 has no handling for this tag, so it is omitted
-			// for it: the entry it stores simply carries no AICH hash and stays
-			// usable for search and routing.
+			// AICH root hash, added to keyword storage by Kad protocol version 0x09. A
+			// node at 0x08 has no handling for this tag, so it is omitted for it: the
+			// entry it stores simply carries no AICH hash and stays usable for search
+			// and routing.
 			if (CKadAICHHashList::PeerSupportsAICHKeywordStorage(targetKadVersion) &&
 				file->HasProperAICHHashSet()) {
 				const CAICHHash &aichHash = file->GetAICHHashset()->GetMasterHash();
@@ -1632,14 +1618,14 @@ void CSearch::PreparePacketForTags(CMemFile *bio, CKnownFile *file, uint8_t targ
 			// inherits its source's tags as a during-download preview, and
 			// GetMetaDataVer() answers "has any FT_MEDIA_* tag", not "was locally
 			// probed". So a partfile republishes what its search result advertised
-			// until its own completion probe corrects it. Telling the two apart needs
-			// a locally-probed flag on the file.
+			// until its own completion probe corrects it. Telling the two apart needs a
+			// locally-probed flag on the file.
 			if (file->GetMetaDataVer() > 0) {
 				// Looked up by id ALONE, not by (id, type). The old exact
-				// GetTag(id, TAGTYPE_UINT32) was safe only while everything reaching a
-				// CKnownFile locally happened to be a CTagInt32; now that a download
-				// can inherit a narrower integer from a Kad hit, it would silently
-				// stop publishing the moment such a tag was stored.
+				// GetTag(id, TAGTYPE_UINT32) was safe only while everything
+				// reaching a CKnownFile locally happened to be a CTagInt32; now
+				// that a download can inherit a narrower integer from a Kad hit, it
+				// would silently stop publishing the moment such a tag was stored.
 				static const uint8_t _aMetaTags[] = { FT_MEDIA_ARTIST,
 					FT_MEDIA_ALBUM,
 					FT_MEDIA_TITLE,

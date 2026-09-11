@@ -76,10 +76,9 @@ bool CRoutingBin::AddContact(CContact *contact)
 			sameSubnets++;
 		}
 	}
-	// Several checks so we do not store multiple contacts from the same IP, or too
-	// many from the same subnet. This raises the resource needs (IPs) for a
-	// successful attack; such IPs are not banned from Kad, so multiple clients
-	// behind one IP still index, search and so on.
+	// Several checks so we do not store multiple contacts from the same IP, or too many from
+	// the same subnet. This raises the resource needs (IPs) for a successful attack; such IPs
+	// are not banned from Kad, so several clients behind one IP still index, search and so on.
 
 	if (!CheckGlobalIPLimits(contact->GetIPAddress(), contact->GetUDPPort())) {
 		return false;
@@ -274,11 +273,10 @@ void CRoutingBin::AdjustGlobalTracking(uint32_t ip, bool increase)
 
 bool CRoutingBin::ChangeContactIPAddress(CContact *contact, uint32_t newIP)
 {
-	// Called if we want to update an indexed contact with a new IP. We have to check if we actually allow
-	// such a change and if adjust our tracking. Rejecting a change will in the worst case lead a node
-	// contact to become invalid and purged later, but it also protects against a flood of malicious
-	// update requests from one IP which would be able to "reroute" all contacts to itself and by that
-	// making them useless
+	// Called to update an indexed contact with a new IP. Check whether we allow such a change,
+	// and adjust our tracking. Rejecting one can at worst leave a node contact invalid and
+	// purged later, but it also blocks a flood of malicious update requests from one IP, which
+	// could otherwise "reroute" every contact to itself and make them useless.
 	if (contact->GetIPAddress() == newIP) {
 		return true;
 	}

@@ -31,37 +31,32 @@
 namespace webapi
 {
 
-//! Deepest nesting a request body may carry before it is refused unparsed.
-//!
-//! The deepest legitimate body on this surface is 3
-//! (`{"remote_controls":{"webserver":{...}}}`), so 32 leaves ample headroom.
+//! Deepest nesting a request body may carry before it is refused unparsed. The deepest legitimate
+//! body on this surface is 3 (`{"remote_controls":{"webserver":{...}}}`), so 32 leaves ample
+//! headroom.
 constexpr std::size_t kMaxJsonDepth = 32;
 
 /**
  * Whether @a body nests no deeper than @a maxDepth.
  *
- * A pre-parse guard, not a validator. picojson's `_parse_array` /
- * `_parse_object` recurse without a depth limit of their own, so a
- * `{"a":{"a":...}}` body nested deep enough exhausts the stack of the
- * handler-pool thread the parse runs on. Whatever gets past here still has to
- * satisfy picojson, which has the final say on syntax.
+ * A pre-parse guard, not a validator. picojson's `_parse_array` / `_parse_object` recurse without a
+ * depth limit of their own, so a `{"a":{"a":...}}` body nested deep enough exhausts the stack of
+ * the handler-pool thread the parse runs on. Whatever gets past here still has to satisfy picojson,
+ * which has the final say on syntax.
  *
- * Nesting depth, not a count of openers: a flat body is legal at any length.
- * An earlier version incremented on every `{` and `[` and never decremented,
- * which turned the cap into a budget of 32 containers for the whole request --
- * a PATCH /preferences whose `shared` array held directory names like
- * "Some.Release-BRD [2023]" was refused on the 33rd bracket while only three
- * levels deep (issue #1083, fixed in #1084).
+ * Nesting depth, not a count of openers: a flat body is legal at any length. An earlier version
+ * incremented on every `{` and `[` and never decremented, turning the cap into a budget of 32
+ * containers for the whole request -- a PATCH /preferences whose `shared` array held directory
+ * names like "Some.Release-BRD [2023]" was refused on the 33rd bracket while only three levels deep
+ * (issue #1083, fixed in #1084).
  *
- * String literals are skipped for that same reason, with backslash escapes
- * honoured so a `\"` inside one does not end it early. Unbalanced closers are
- * ignored rather than rejected.
+ * String literals are skipped for that same reason, with backslash escapes honoured so a `\"`
+ * inside one does not end it early. Unbalanced closers are ignored rather than rejected.
  *
- * Skipping strings cannot hide real nesting. To undercount, this would have to
- * believe it is inside a string where picojson does not, which needs an
- * unmatched quote -- and picojson then fails on the unterminated string rather
- * than recursing. Every way the two can disagree is either conservative here
- * or a parse error there.
+ * Skipping strings cannot hide real nesting. To undercount, this would have to believe it is inside
+ * a string where picojson does not, which needs an unmatched quote -- and picojson then fails on
+ * the unterminated string rather than recursing. Every way the two can disagree is either
+ * conservative here or a parse error there.
  */
 inline bool JsonNestingWithinLimit(const std::string &body, std::size_t maxDepth = kMaxJsonDepth)
 {
@@ -71,9 +66,9 @@ inline bool JsonNestingWithinLimit(const std::string &body, std::size_t maxDepth
 		const char c = body[i];
 		if (in_string) {
 			if (c == '\\') {
-				// Escaped char, never closes the string. Safe at the
-				// end of the buffer: this can only push i to size(),
-				// which the loop condition then stops on.
+				// Escaped char, never closes the string. Safe at the end of the
+				// buffer: this can only push i to size(), which the loop condition
+				// then stops on.
 				++i;
 			} else if (c == '"') {
 				in_string = false;

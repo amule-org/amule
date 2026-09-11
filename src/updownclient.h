@@ -91,9 +91,8 @@ enum EKadState
 	KS_CONNECTING_FWCHECK_UDP
 };
 
-// Lifecycle of a "View Files" (browse peer shared files) request. The values are
-// a wire contract, sent verbatim in EC_TAG_SEARCH_BROWSE_STATUS so a remote GUI
-// can render the browse tab's marker.
+// Lifecycle of a "View Files" (browse peer shared files) request. The values are a wire contract,
+// sent verbatim in EC_TAG_SEARCH_BROWSE_STATUS so a remote GUI can render the browse tab's marker.
 enum EBrowseStatus
 {
 	BROWSE_NONE = 0,    // no browse in flight for this client
@@ -119,13 +118,11 @@ enum ClientState
 /**
  * What TryToConnect did about the peer it was asked to reach.
  *
- * It used to answer with a bool that meant three different things -- and the
- * one the browse code needed, "did you actually try?", was not among them, so
- * that code inferred it from side effects instead. The inference was wrong
- * twice, in both cases because an exit was added or moved without anything
- * forcing a decision about what it meant (amule-org/amule#1071). Naming the
- * outcomes is what turns that from a silent default into a choice the compiler
- * makes somebody make.
+ * It used to answer with a bool that meant three different things -- and the one the browse code
+ * needed, "did you actually try?", was not among them, so that code inferred it from side effects
+ * instead. The inference was wrong twice, both times because an exit was added or moved without
+ * anything forcing a decision about what it meant (amule-org/amule#1071). Naming the outcomes turns
+ * that from a silent default into a choice somebody has to make.
  */
 enum class EContactResult
 {
@@ -134,9 +131,8 @@ enum class EContactResult
 	//! Nothing was sent: this peer cannot be reached the way things stand.
 	//! The client is still valid.
 	Declined,
-	//! Connect() declined to start, because the socket was already live. Kept
-	//! distinct only to preserve the historical bool, which callers have always
-	//! been told is "false" here.
+	//! Connect() declined to start, because the socket was already live. Kept distinct only to
+	//! preserve the historical bool, which callers have always been told is "false" here.
 	ConnectNotStarted,
 	//! The client was destroyed on the way out. Touching it is undefined.
 	ClientDeleted
@@ -148,19 +144,13 @@ class CUpDownClient : public CECID
 	friend class CClientRef;
 
 private:
-	/**
-	 * Please note that only the ClientList is allowed to delete the clients.
-	 * To schedule a client for deletion, call the CClientList::AddToDeleteQueue
-	 * function, which will safely remove dead clients once every second.
-	 */
+	/// Only the ClientList may delete clients. To schedule one, call
+	/// CClientList::AddToDeleteQueue, which safely removes dead clients once a second.
 	~CUpDownClient();
 
-	/**
-	 * Reference count which is increased whenever client is linked to a clientref.
-	 * Clients are to be stored only by ClientRefs, CUpDownClient * are for temporary
-	 * use only.
-	 * Linking is done only by CClientRef which is friend, so methods are private.
-	 */
+	/// Reference count, increased whenever the client is linked to a CClientRef. Clients are
+	/// stored only by ClientRefs; a CUpDownClient * is for temporary use. Linking is done only
+	/// by CClientRef, which is a friend, so the methods are private.
 	uint16 m_linked;
 #ifdef DEBUG_ZOMBIE_CLIENTS
 	bool m_linkedDebug;
@@ -195,39 +185,23 @@ public:
 		bool ed2kID,
 		bool checkfriend);
 
-	/**
-	 * This function is to be called when the client object is to be deleted.
-	 * It'll close the socket of the client and remove it from various lists
-	 * that can own it.
-	 *
-	 * The client will really be deleted only after thelast reference to it
-	 * is unlinked;
-	 */
+	/// Call when the client object is to be deleted: closes its socket and removes it from the
+	/// lists that can own it. The object is really deleted only once the last reference is
+	/// unlinked.
 	void Safe_Delete();
 
-	/**
-	 * Specifies if the client has been queued for deletion.
-	 *
-	 * @return True if Safe_Delete has been called, false otherwise.
-	 */
+	/// True once Safe_Delete has queued the client for deletion.
 	bool HasBeenDeleted() { return m_clientState == CS_DYING; }
 
 	ClientState GetClientState() { return m_clientState; }
 
 	bool Disconnected(const wxString &strReason, bool bFromSocket = false);
-	/**
-	 * Try to reach this peer, and say which of the three things happened.
-	 *
-	 * Prefer this over the bool overload when the answer matters: "I decided
-	 * not to" and "I am on my way" are different facts, and only this
-	 * spelling carries them.
-	 */
+	/// Try to reach this peer, and say which of the three things happened. Prefer this over the
+	/// bool overload when the answer matters: "I decided not to" and "I am on my way" are
+	/// different facts, and only this spelling carries them.
 	EContactResult TryToContact(bool bIgnoreMaxCon = false);
-	/**
-	 * As TryToContact, reduced to the historical answer: false means the
-	 * client was deleted (or Connect() declined to start) and must not be
-	 * touched again. Kept for the callers that only need that much.
-	 */
+	/// As TryToContact, reduced to the historical answer: false means the client was deleted
+	/// (or Connect() declined to start) and must not be touched again.
 	bool TryToConnect(bool bIgnoreMaxCon = false);
 	bool Connect();
 	void ConnectionEstablished();
@@ -237,14 +211,13 @@ public:
 	uint32 GetIP() const { return m_dwUserIP; }
 	bool HasLowID() const { return IsLowID(m_nUserIDHybrid); }
 	wxString GetFullIP() const { return Uint32toStringIP(m_FullUserIP); }
-	// The numeric form of GetFullIP(), for callers that do not need the string.
-	// Named to be hard to confuse with it: the GeoIP resolver overloads on the
-	// argument type, so passing the string variant compiles and silently takes the
-	// uncached path.
+	// The numeric form of GetFullIP(), for callers that do not need the string. Named to be
+	// hard to confuse with it: the GeoIP resolver overloads on the argument type, so passing
+	// the string variant compiles and silently takes the uncached path.
 	uint32 GetFullIPNumeric() const { return m_FullUserIP; }
-	// Country ISO code accessors (#439). Unconditional, so the shared client-list
-	// drawing code compiles regardless of the resolver gate. Unused by monolithic
-	// amule, which resolves locally; populated over EC on the remote GUI.
+	// Country ISO code accessors (#439). Unconditional, so the shared drawing code compiles
+	// regardless of the resolver gate. Monolithic amule resolves locally; the remote GUI gets
+	// these over EC.
 	const wxString &GetCountryCode() const { return m_countryCode; }
 	bool IsCountryFromCore() const { return m_countryFromCore; }
 	void SetCountryCode(const wxString &code)
@@ -283,25 +256,17 @@ public:
 
 	void ClearDownloadBlockRequests();
 	void RequestSharedFileList();
-	/**
-	 * Put this browse's ask on the wire, if it is still waiting for one.
-	 *
-	 * Shared by the two ways a browse reaches the peer: after a connect
-	 * (ConnectionEstablished) and over a socket that was already open
-	 * (RequestSharedFileList). Carries the single-shot guard and re-bases the
-	 * browse's silence deadline onto the moment the ask went out, so neither
-	 * caller can get one without the other.
-	 */
+	/// Put this browse's ask on the wire, if it is still waiting for one. Shared by the two
+	/// ways a browse reaches the peer: after a connect (ConnectionEstablished) and over an
+	/// already open socket (RequestSharedFileList). Carries the single-shot guard and re-bases
+	/// the browse's silence deadline onto the moment the ask went out, so neither caller can
+	/// get one without the other.
 	void SendSharedFilesRequest();
-	/**
-	 * Re-check the standing reasons to refuse this peer -- obfuscation
-	 * settings, IP filter, ban list -- disconnecting it on a hit. Contacting
-	 * means clean; ClientDeleted means `this` is gone.
-	 *
-	 * Shared by TryToContact and the already-connected browse path. All three
-	 * checks are settings-derived and every one of those settings can change
-	 * while a connection is open, so both routes to a peer have to notice.
-	 */
+	/// Re-check the standing reasons to refuse this peer -- obfuscation settings, IP filter,
+	/// ban list -- disconnecting it on a hit. Contacting means clean; ClientDeleted means
+	/// `this` is gone. Shared by TryToContact and the already-connected browse path: all three
+	/// checks are settings-derived, and every one of those settings can change while a
+	/// connection is open.
 	EContactResult CheckContactPreconditions();
 	void ProcessSharedFileList(const uint8_t *pachPacket, uint32 nSize, wxString &pszDirectory);
 	void SendSharedDirectories();
@@ -384,10 +349,7 @@ public:
 
 	void SetUploadFileID(CKnownFile *newreqfile);
 
-	/**
-	 *Gets the file actually on upload
-	 *
-	 */
+	/// The file currently being uploaded.
 	const CKnownFile *GetUploadFile() const { return m_uploadingfile; }
 
 	void SendOutOfPartReqsAndAddToWaitingQueue();
@@ -517,43 +479,34 @@ public:
 		int iRecursion = 0);
 	void UpdateDisplayedInfo(bool force = false);
 
-	// "View Files" (browse): the search ID this peer's listing is filed under.
-	// Allocated before the request goes out -- by the EC handler for a remote
-	// browse, by RequestSharedFileList for a local one -- so it is the single key
-	// for the browse everywhere. 0 means never browsed.
+	// "View Files" (browse): the search ID this peer's listing is filed under, allocated before
+	// the request goes out -- by the EC handler for a remote browse, by RequestSharedFileList
+	// for a local one -- so it is the single key for the browse everywhere. 0 means never
+	// browsed.
 	uint32 GetBrowseSearchId() const { return m_browseSearchId; }
-	/**
-	 * Whether this browse was asked for by a remote client rather than here.
-	 *
-	 * Recorded when the ID is pinned, NOT inferred from the ID being set: a
-	 * local browse allocates one of its own before the request goes out, so
-	 * "has an ID" stopped telling the two apart. Simplifying this back to
-	 * `m_browseSearchId != 0` compiles, passes, and silently stops every local
-	 * browse revealing its tab.
-	 *
-	 * Named because both the result path and the browse-started notification
-	 * have to make the same call: a browse someone else asked for must not
-	 * pull this user's panel or tab selection.
-	 */
+	/// Whether this browse was asked for by a remote client rather than here. Recorded when the
+	/// ID is pinned, NOT inferred from the ID being set: a local browse allocates one of its
+	/// own before the request goes out, so "has an ID" stopped telling the two apart.
+	/// Simplifying this back to `m_browseSearchId != 0` compiles, passes, and silently stops
+	/// every local browse revealing its tab. Both the result path and the browse-started
+	/// notification need the answer: a browse someone else asked for must not pull this user's
+	/// panel or selection.
 	bool IsBrowseEcInitiated() const { return m_browseEcInitiated; }
 	/**
 	 * Hand the next browse of this peer an ID somebody else allocated.
 	 *
-	 * Only the EC and friend handlers call this; a local browse chooses its
-	 * own inside RequestSharedFileList. Pinning is therefore also what marks
-	 * the browse as somebody else's.
+	 * Only the EC and friend handlers call this; a local browse chooses its own inside
+	 * RequestSharedFileList, so pinning is also what marks the browse as somebody else's.
 	 *
-	 * 0 means "nothing to pin", not "forget the ID you have": both callers
-	 * pass the EC-allocated ID or 0, and 0 is what a monolithic browse and a
-	 * legacy EC client both supply. Wiping the remembered ID on those left
-	 * RequestSharedFileList unable to find the peer's previous record, so it
-	 * allocated afresh and orphaned the registration, results and browse
+	 * 0 means "nothing to pin", not "forget the ID you have": both callers pass the EC-
+	 * allocated ID or 0, and 0 is what a monolithic browse and a legacy EC client both supply.
+	 * Wiping the remembered ID on those left RequestSharedFileList unable to find the peer's
+	 * previous record, so it allocated afresh and orphaned the registration, results and browse
 	 * record behind it.
 	 *
-	 * The pin is consumed by the next RequestSharedFileList, which otherwise
-	 * chooses for itself. Whether one was pinned cannot be inferred later:
-	 * an ID whose record has been disposed of looks exactly like one just
-	 * handed over.
+	 * The pin is consumed by the next RequestSharedFileList, which otherwise chooses for
+	 * itself. Whether one was pinned cannot be inferred later: an ID whose record has been
+	 * disposed of looks exactly like one just handed over.
 	 */
 	void PinBrowseSearchId(uint32 id)
 	{
@@ -580,58 +533,27 @@ public:
 	void ProcessPublicIPAnswer(const uint8_t *pbyData, uint32 uSize);
 	void SendPublicIPRequest();
 
-	/**
-	 * Sets the current socket of the client.
-	 *
-	 * @param socket The pointer to the new socket, can be NULL.
-	 *
-	 * Please note that this function DOES NOT delete the old socket.
-	 */
+	/// Sets the client's current socket, which may be NULL. Does NOT delete the old one.
 	void SetSocket(CClientTCPSocket *socket);
 
-	/**
-	 * Function for accessing the socket owned by a client.
-	 *
-	 * @return The pointer (can be NULL) to the socket used by this client.
-	 *
-	 * Please note that the socket object is quite volatile and can be removed
-	 * from one function call to the next, therefore, you should normally use
-	 * the safer functions below, which all check if the socket is valid before
-	 * deferring it.
-	 */
+	/// The socket this client uses, possibly NULL. The socket object is volatile and can vanish
+	/// between two calls, so prefer the safer wrappers below, which check it first.
 	CClientTCPSocket *GetSocket() const { return m_socket; }
 
-	/**
-	 * Safe function for checking if the socket is connected.
-	 *
-	 * @return True if the socket exists and is connected, false otherwise.
-	 */
+	/// True if the socket exists and is connected.
 	bool IsConnected() const;
 
-	/**
-	 * Safe function for sending packets.
-	 *
-	 * @return True if the socket exists and the packet was sent, false otherwise.
-	 */
+	/// Sends a packet. False if there is no socket or the send failed.
 	bool SendPacket(CPacket *packet, bool delpacket = true, bool controlpacket = true);
 
-	/**
-	 * Per-tick poke from CPartFile::Process. Re-arms this client's
-	 * socket if it suspended last tick because the global
-	 * CDownloadBandwidthThrottler bucket was empty, and returns the
-	 * client's current observed download speed for the per-file
-	 * kBpsDown display sum.
-	 *
-	 * The download cap (thePrefs::GetMaxDownload()) is enforced
-	 * globally inside the throttler, not per-client.
-	 */
+	/// Per-tick poke from CPartFile::Process. Re-arms this client's socket if it suspended last
+	/// tick because the global CDownloadBandwidthThrottler bucket was empty, and returns the
+	/// client's current observed download speed for the per-file kBpsDown display sum. The
+	/// download cap (thePrefs::GetMaxDownload()) is enforced globally inside the throttler, not
+	/// per client.
 	float TickDownloadAndMeasure();
 
-	/**
-	 * Sends a message to a client
-	 *
-	 * @return True if sent, false if connecting
-	 */
+	/// Sends a message to the client. False if still connecting.
 	bool SendChatMessage(const wxString &message);
 
 	bool HasBlocks() const { return !m_BlockRequests_queue.empty(); }
@@ -667,18 +589,16 @@ public:
 	uint8 GetKadVersion() { return m_byKadVersion; }
 	void ProcessFirewallCheckUDPRequest(CMemFile *data);
 
-	/* eMuleAI vendor capabilities */
-	//! What the peer claimed in CT_MOD_MISCOPTIONS. Recorded only: aMule
-	//! implements none of these features yet and advertises none of them
-	//! back. See src/PeerCapabilities.h.
+	//! What the peer claimed in CT_MOD_MISCOPTIONS (eMuleAI vendor capabilities). Recorded
+	//! only: aMule implements none of them and advertises none back. See
+	//! src/PeerCapabilities.h.
 	const CPeerCapabilities &GetModCapabilities() const { return m_modCapabilities; }
 	//! The peer's own IPv6 address from CT_MOD_IP_V6, big-endian, 16 bytes.
 	//! Only meaningful while HasModIPv6() is true.
 	const uint8_t *GetModIPv6() const { return m_modIPv6; }
 	bool HasModIPv6() const { return m_hasModIPv6; }
-	//! The peer's serving buddy's IPv6 address from
-	//! CT_EMULE_SERVINGBUDDYIPV6, big-endian, 16 bytes. Only meaningful
-	//! while HasServingBuddyIPv6() is true.
+	//! The peer's serving buddy's IPv6 address from CT_EMULE_SERVINGBUDDYIPV6, big-endian, 16
+	//! bytes. Only meaningful while HasServingBuddyIPv6() is true.
 	const uint8_t *GetServingBuddyIPv6() const { return m_servingBuddyIPv6; }
 	bool HasServingBuddyIPv6() const { return m_hasServingBuddyIPv6; }
 	// Kad added by me
@@ -687,20 +607,10 @@ public:
 	/* Returns the client hash type (SO_EMULE, mldonkey, etc) */
 	int GetHashType() const;
 
-	/**
-	 * Checks that a client isn't aggressively re-asking for files.
-	 *
-	 * Call this when a file is requested. If the time since the last request is
-	 * less than MIN_REQUESTTIME, 3 is added to the m_Aggressiveness variable.
-	 * If the time since the last request is >= MIN_REQUESTTIME, the variable is
-	 * decremented by 1. The client is banned if the variable reaches 10 or above.
-	 *
-	 * To check if a client is aggressive use the IsClientAggressive() function.
-	 *
-	 * Currently this function is called when the following packets are received:
-	 *  - OP_STARTUPLOADREQ
-	 *  - OP_REASKFILEPING
-	 */
+	/// Checks that a client isn't aggressively re-asking for files. Call on every file request:
+	/// a gap below MIN_REQUESTTIME adds 3 to m_Aggressiveness, a longer one subtracts 1, and
+	/// the client is banned at 10. Read the verdict with IsClientAggressive(). Currently called
+	/// for OP_STARTUPLOADREQ and OP_REASKFILEPING.
 	void CheckForAggressive();
 
 	const wxString &GetClientModString() const { return m_strModVersion; }
@@ -790,16 +700,12 @@ private:
 		uint64 timestamp;
 	};
 
-	//////////////////////////////////////////////////////////
 	// Upload data rate computation
-	//
 	uint32 m_nUpDatarate;
 	uint32 m_nSumForAvgUpDataRate;
 	std::list<TransferredData> m_AvarageUDR_list;
 
-	/**
-	 * This struct is used to keep track of CPartFiles which this source shares.
-	 */
+	/// Tracks the CPartFiles this source shares.
 	struct A4AFStamp
 	{
 		//! Signifies if this sources has needed parts for this file.
@@ -813,18 +719,9 @@ private:
 	//! This list contains all PartFiles which this client can be used as a source for.
 	A4AFList m_A4AF_list;
 
-	/**
-	 * Helper function used by SwapToAnotherFile().
-	 *
-	 * @param it The iterator of the PartFile to be examined.
-	 * @param ignorenoneeded Do not check for the status NoNeededParts when checking the file.
-	 * @param ignoresuspended Do not check the timestamp when checking the file.
-	 * @return True if the file is a viable target, false otherwise.
-	 *
-	 * This function is used to perform checks to see if we should consider
-	 * this file a viable target for A4AF swapping. Unless ignoresuspended is
-	 * true, it will examine the timestamp of the file and reset it if needed.
-	 */
+	/// Helper for SwapToAnotherFile(): true if the file at @a it is a viable A4AF swap target.
+	/// @a ignorenoneeded skips the NoNeededParts status check; @a ignoresuspended skips the
+	/// timestamp check, which otherwise also resets the timestamp when needed.
 	bool IsValidSwapTarget(
 		A4AFList::iterator it, bool ignorenoneeded = false, bool ignoresuspended = false);
 
@@ -908,9 +805,8 @@ private:
 	uint32 m_score;
 	uint16 m_waitingPosition;
 
-	//! This vector contains the availability of parts for the file that the user
-	//! is requesting. When changing it, be sure to call CKnownFile::UpdatePartsFrequency
-	//! so that the files know the actual availability of parts.
+	//! Availability of parts for the file the user is requesting. After changing it, call
+	//! CKnownFile::UpdatePartsFrequency so the files know the real availability.
 	BitVector m_upPartStatus;
 	uint16 m_lastPartAsked;
 	wxString m_strModVersion;
@@ -979,9 +875,8 @@ private:
 
 	bool m_bHelloAnswerPending;
 
-	//! This vector contains the availability of parts for the file we requested
-	//! from this user. When changing it, be sure to call CPartFile::UpdatePartsFrequency
-	//! so that the files know the actual availability of parts.
+	//! Availability of parts for the file we requested from this user. After changing it, call
+	//! CPartFile::UpdatePartsFrequency so the files know the real availability.
 	BitVector m_downPartStatus;
 
 	CAICHHash *m_pReqFileAICHHash;
@@ -1040,10 +935,8 @@ private:
 	/* Save the encryption status for display when disconnected */
 	bool m_hasbeenobfuscatinglately;
 
-	/* Kry - Debug thing. Clients created just to check their data
-	   have this string set to the reason we want to check them.
-	   Obviously, once checked, we disconnect them. Take that, sucker.
-	   This debug code is just for me I'm afraid. */
+	/* Kry - debug aid: clients created only to check their data carry the reason here, and are
+	   disconnected once checked. */
 #ifdef __DEBUG__
 	wxString connection_reason;
 #endif

@@ -45,9 +45,8 @@ CRateLimiter::Decision CRateLimiter::Check(const std::string &ip)
 		b.lockout_until = 0;
 		b.failures.clear();
 	}
-	// Mirror NoteFailure's per-stamp expiry so Check is self-consistent.
-	// Otherwise stale stamps from a long-idle bucket remain in failures
-	// until the next NoteFailure fires.
+	// Mirror NoteFailure's per-stamp expiry so Check is self-consistent. Otherwise stale stamps
+	// from a long-idle bucket stay in failures until the next NoteFailure fires.
 	while (!b.failures.empty() && (now - b.failures.front()) > m_cfg.window_seconds) {
 		b.failures.pop_front();
 	}
@@ -60,10 +59,9 @@ void CRateLimiter::NoteFailure(const std::string &ip)
 	const std::time_t now = m_clock();
 	Bucket &b = m_buckets[ip];
 
-	// Sliding window: drop any failure stamp older than `window_seconds`,
-	// then append now. Lockout fires when the live stamp count crosses
-	// `threshold`. See the Bucket comment for why per-stamp expiry rather
-	// than a wholesale reset.
+	// Sliding window: drop any failure stamp older than `window_seconds`, then append now.
+	// Lockout fires when the live stamp count crosses `threshold`. See the Bucket comment for
+	// why per-stamp expiry rather than a wholesale reset.
 	while (!b.failures.empty() && (now - b.failures.front()) > m_cfg.window_seconds) {
 		b.failures.pop_front();
 	}

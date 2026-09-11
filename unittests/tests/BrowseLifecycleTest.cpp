@@ -45,17 +45,15 @@ Record DirBrowse(std::uint64_t deadline = 1000)
 }
 } // namespace
 
-// --- The five defects this machine exists to make unreachable. ---------
-// Each of these was a live bug that only the right kind of peer could reach:
-// amule-org/amule#1071 and its two follow-ups. They are the reason the
+// The five defects this machine exists to make unreachable. Each was a live bug only the right kind
+// of peer could reach: amule-org/amule#1071 and its two follow-ups. They are the reason the
 // lifecycle was pulled out of CUpDownClient at all.
 
 TEST(BrowseLifecycle, FlatBrowseCompletesWhenItsSingleAnswerArrives)
 {
-	// A peer without directory support (MLdonkey, plain eDonkey, eMule < 0.28)
-	// answers OP_ASKSHAREDFILES in one packet. That used to leave the browse
-	// BROWSE_IN_PROGRESS forever -- a *successful* browse that never ended,
-	// with no timeout able to touch it.
+	// A peer without directory support (MLdonkey, plain eDonkey, eMule < 0.28) answers
+	// OP_ASKSHAREDFILES in one packet. That used to leave the browse BROWSE_IN_PROGRESS forever
+	// -- a *successful* browse that never ended, with no timeout able to touch it.
 	Record r = DirBrowse();
 	ASSERT_TRUE(Tick(r, 1) == Action::None);
 
@@ -66,9 +64,8 @@ TEST(BrowseLifecycle, FlatBrowseCompletesWhenItsSingleAnswerArrives)
 
 TEST(BrowseLifecycle, ZeroDirectoriesCompletesRatherThanWaiting)
 {
-	// A peer answering "I have 0 directories" is a real answer. It used to set
-	// the counter to 0 with nothing marking the browse finished, leaving it
-	// hanging at 0%.
+	// A peer answering "I have 0 directories" is a real answer. It used to set the counter to 0
+	// with nothing marking the browse finished, leaving it hanging at 0%.
 	Record r = DirBrowse();
 	r = OnDirectoryList(r, 0, 2000);
 	ASSERT_EQUALS(0, r.outstanding);
@@ -77,9 +74,9 @@ TEST(BrowseLifecycle, ZeroDirectoriesCompletesRatherThanWaiting)
 
 TEST(BrowseLifecycle, TerminalRecordIsDroppedNotRetriedForever)
 {
-	// The pending list used to key its erase on the deadline rather than the
-	// state, so a browse that ended without clearing its deadline was
-	// re-examined on every core tick for the life of the client.
+	// The pending list used to key its erase on the deadline rather than the state, so a browse
+	// that ended without clearing its deadline was re-examined on every core tick for the life
+	// of the client.
 	for (State s : { State::Finished, State::Failed }) {
 		Record r = DirBrowse();
 		r.state = s;
@@ -163,9 +160,8 @@ TEST(BrowseLifecycle, FlatBrowseReportsNoPercent)
 
 TEST(BrowseLifecycle, PacketsForATerminalBrowseChangeNothing)
 {
-	// A peer that answers after we gave up must not resurrect the record --
-	// the search id may already have been reused for a fresh browse of the
-	// same peer.
+	// A peer that answers after we gave up must not resurrect the record -- the search id may
+	// already have been reused for a fresh browse of the same peer.
 	Record failed = DirBrowse();
 	failed.state = State::Failed;
 
@@ -207,10 +203,9 @@ TEST(BrowseLifecycle, ADirectoryAnswerAfterListingsHaveStartedIsStillHonoured)
 
 TEST(BrowseLifecycle, ADisconnectAfterCompletionDoesNotTurnSuccessIntoFailure)
 {
-	// The ordinary shape of a successful browse: the peer sends its last
-	// directory and then drops the connection. The disconnect path asks for a
-	// failure without knowing the browse just succeeded, so the rule has to be
-	// here rather than at that call site.
+	// The ordinary shape of a successful browse: the peer sends its last directory and then
+	// drops the connection. The disconnect path asks for a failure without knowing the browse
+	// just succeeded, so the rule has to be here rather than at that call site.
 	Record r = DirBrowse();
 	r = OnDirectoryList(r, 1, 2000);
 	r = OnListingReceived(r, 2000);

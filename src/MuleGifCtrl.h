@@ -34,18 +34,13 @@ class MuleGIFDecoder;
 class wxBitmap;
 
 /**
- * MuleGifCtrl is a simple widget for displaying a gif animation.
- * It is based on the animation classes by Julian Smart and
- * Guillermo Rodriguez Garcia, but is specialized for the reduced
- * requirements of the aMule project. It provides flicker-free
- * redrawing using wxBufferedPaintDC.
+ * A simple widget for displaying a gif animation, based on the animation classes by Julian Smart
+ * and Guillermo Rodriguez Garcia but specialized for aMule's reduced requirements. Redrawing is
+ * flicker-free, via wxBufferedPaintDC.
  *
- * To reduce complexity, several things have been hardcoded, though
- * they can easily be changed:
- *  - The animation will continue to loop until Stop() is called.
- *  - The gif image is assumed to be transparent.
- *  - Start will start the animation from the first frame and wont
- *     continue a stopped animation.
+ * Several things are hardcoded to keep it simple, though they are easy to change: the animation
+ * loops until Stop() is called, the gif is assumed to be transparent, and Start() begins at the
+ * first frame rather than continuing a stopped animation.
  */
 class MuleGifCtrl : public wxControl
 {
@@ -59,7 +54,7 @@ private:
 
 public:
 	/**
-	 * Constructor. See wxWindow class documentation for more information.
+	 * See the wxWindow class documentation for more information.
 	 */
 	MuleGifCtrl(wxWindow *parent,
 		wxWindowID id,
@@ -69,30 +64,19 @@ public:
 		const wxValidator &validator = wxDefaultValidator,
 		const wxString &name = wxControlNameStr);
 
-	/**
-	 * Destructor
-	 */
 	virtual ~MuleGifCtrl();
 
 	/**
-	 * This loads the gif image from a char-array with a specific size.
+	 * Loads a gif image from a char array of @a size bytes, returning whether it loaded.
 	 *
-	 * @param data The array containing the image.
-	 * @param size The size of the array.
-	 * @return Returns true if the data was loaded, false otherwise.
-	 *
-	 * This sets the current animation and displays the first frame. If another
-	 * animation was loaded, it will be unloaded and the animation stopped.
-	 *
-	 * To convert a image to a format readable by this function, you can
-	 * use the utility hexdump. Look at inetdownload.h for how to format
-	 * the output.
+	 * Sets the current animation and displays its first frame; any animation already loaded is
+	 * unloaded and stopped. To convert an image into a form this can read, use hexdump -- see
+	 * inetdownload.h for how to format the output.
 	 */
 	bool LoadData(const char *data, int size);
 
 	/**
-	 * This function starts playing the animation provided that a animation is
-	 * set and it's not a static image.
+	 * Starts playing the animation, provided one is set and it is not a static image.
 	 */
 	void Start();
 
@@ -102,9 +86,7 @@ public:
 	void Stop();
 
 	/**
-	 * Returns the preferred size of the widget.
-	 *
-	 * @return Preferred size, which is the size of the animation.
+	 * The preferred size of the widget, which is the size of the animation.
 	 */
 	virtual wxSize GetBestSize();
 
@@ -115,16 +97,13 @@ private:
 	void OnTimer(wxTimerEvent &event);
 
 	/**
-	 * Function for drawing the animation.
-	 *
-	 * This functions draws the current frame, which is changed in OnTimer(),
-	 * using a wxBufferedPaintDC. By doing so and also catching the
-	 * ERASE_BACKGROUND events we avoid flickering on redraws.
+	 * Draws the current frame, changed in OnTimer(), through a wxBufferedPaintDC. That, plus
+	 * catching the ERASE_BACKGROUND events, avoids flicker on redraws.
 	 */
 	void OnPaint(wxPaintEvent &event);
 
 	/**
-	 * This function is used to avoid flicker when redrawing.
+	 * Avoids flicker when redrawing.
 	 */
 	void OnErase(wxEraseEvent &WXUNUSED(event)) {}
 

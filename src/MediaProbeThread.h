@@ -40,29 +40,26 @@ struct MediaProbeJob
 	CMD4Hash hash;        // resolved back to the CKnownFile on the main thread
 	CPath path;           // file to probe
 	wxString ffprobePath; // ffprobe binary
-	// Part of a mass operation (a share scan, a whole-share refresh) rather
-	// than a single user-visible file. Set by the scheduler, NOT inferred
-	// from how many jobs happen to be queued: the worker swaps the entire
-	// pending list out on each wake, so a batch size says only when the
-	// worker last woke up. Deciding it that way meant one arbitrary file per
-	// scan printed a per-file line while the rest were summarised, which
-	// reads as if that file were special (issue #1116).
+	// Part of a mass operation (a share scan, a whole-share refresh) rather than a single user-
+	// visible file. Set by the scheduler, NOT inferred from how many jobs happen to be queued:
+	// the worker swaps the entire pending list out on each wake, so a batch size says only when
+	// the worker last woke. Deciding it that way meant one arbitrary file per scan printed a
+	// per-file line while the rest were summarised, which reads as if that file were special
+	// (issue #1116).
 	bool bulk = false;
 };
 
 // Dedicated worker for ffprobe media-metadata extraction (#280).
 //
-// Why its own thread: media probing shells out to ffprobe via wxExecute,
-// which can block for a long time (or, on a headless daemon, hang) and
-// must never stall the core. Previously CMediaProbeTask ran on the shared
-// CThreadScheduler alongside CHashingTask / CCompletionTask, so a single
-// hung ffprobe wedged every download completion. Running probes on a
-// dedicated, isolated worker means a slow/hung probe can only ever delay
-// other probes, never completions or hashing. A wall-clock timeout in
-// MediaProbe::Probe bounds each probe so even this thread can't wedge.
+// Why its own thread: media probing shells out to ffprobe via wxExecute, which can block for a long
+// time (or, on a headless daemon, hang) and must never stall the core. CMediaProbeTask used to run
+// on the shared CThreadScheduler alongside CHashingTask / CCompletionTask, so a single hung ffprobe
+// wedged every download completion. On a dedicated, isolated worker a slow or hung probe can only
+// delay other probes. A wall-clock timeout in MediaProbe::Probe bounds each probe so even this
+// thread cannot wedge.
 //
-// Mirrors CPartFileHashThread: a single joinable worker draining a job
-// queue and posting a CMediaProbeEvent back to the main thread.
+// Mirrors CPartFileHashThread: a single joinable worker draining a job queue and posting a
+// CMediaProbeEvent back to the main thread.
 class CMediaProbeThread : public wxThread
 {
 public:
@@ -71,10 +68,9 @@ public:
 	// object is destroyed; the destructor itself has nothing to do.
 	~CMediaProbeThread() = default;
 
-	// Signal the worker to stop and join it. Queued (not-yet-started)
-	// probes are dropped — metadata is best-effort. An in-flight probe's
-	// ffprobe child is killed promptly (Probe polls the run flag), so the
-	// join returns without waiting on a slow or hung ffprobe.
+	// Signal the worker to stop and join it. Queued, not-yet-started probes are dropped --
+	// metadata is best-effort. An in-flight probe's ffprobe child is killed promptly (Probe
+	// polls the run flag), so the join returns without waiting on a slow or hung ffprobe.
 	void EndThread();
 
 	// Enqueue a probe. Thread-safe; returns immediately.
@@ -83,10 +79,10 @@ public:
 
 	bool IsRunning() const { return m_bRun; }
 
-	// How many probes are still queued. The worker reports only at the end of
-	// a drain, so this is what a caller polls to say "refreshing, N left" --
-	// and what the refresh entry points use to tell a scheduled file from one
-	// the gates dropped, since MaybeScheduleMediaProbe returns nothing.
+	// How many probes are still queued. The worker reports only at the end of a drain, so this
+	// is what a caller polls to say "refreshing, N left" -- and what the refresh entry points
+	// use to tell a scheduled file from one the gates dropped, since MaybeScheduleMediaProbe
+	// returns nothing.
 	size_t PendingCount() const
 	{
 		wxMutexLocker lock(const_cast<wxMutex &>(m_mutex));

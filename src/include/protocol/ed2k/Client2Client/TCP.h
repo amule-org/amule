@@ -83,9 +83,8 @@ enum ED2KExtendedClientTCP
 		0x91, // <HASH 16><frames 1>{frames * <len 4><frame len>} // Never used for sending on aMule
 	OP_MULTIPACKET = 0x92,
 	OP_MULTIPACKETANSWER = 0x93,
-	//	OP_PEERCACHE_QUERY			= 0x94, // Unused on aMule - no PeerCache
-	//	OP_PEERCACHE_ANSWER			= 0x95, // Unused on aMule - no PeerCache
-	//	OP_PEERCACHE_ACK			= 0x96, // Unused on aMule - no PeerCache
+	//	Unused on aMule -- no PeerCache: OP_PEERCACHE_QUERY = 0x94,
+	//	OP_PEERCACHE_ANSWER = 0x95, OP_PEERCACHE_ACK = 0x96.
 	OP_PUBLICIP_REQ = 0x97,
 	OP_PUBLICIP_ANSWER = 0x98,
 	OP_CALLBACK = 0x99, // <HASH 16><HASH 16><uint 16>

@@ -34,16 +34,15 @@ class wxWindow;
 class wxSizer;
 
 /**
- * Show a small modal dialog: an optional intro line, a two-column grid the
- * caller fills, and an OK button.
+ * Show a small modal dialog: an optional intro line, a two-column grid the caller fills, and an OK
+ * button.
  *
- * Shared so the part-bar legends and the status-bar core-version details do
- * not each carry a copy of the same scaffolding. `fillGrid` receives the
- * dialog to parent widgets to, and the grid to add them to.
+ * Shared so the part-bar legends and the status-bar core-version details do not each carry a copy
+ * of the same scaffolding. `fillGrid` receives the dialog to parent widgets to, and the grid to add
+ * them to.
  *
- * `introArt` is an optional wxArtProvider id (wxART_WARNING, wxART_TICK_MARK,
- * ...) drawn left of the intro line. Stock art, so it matches the platform and
- * needs no bundled asset.
+ * `introArt` is an optional wxArtProvider id (wxART_WARNING, wxART_TICK_MARK, ...) drawn left of
+ * the intro line. Stock art, so it matches the platform and needs no bundled asset.
  */
 void ShowInfoGridDialog(wxWindow *parent,
 	const wxString &title,

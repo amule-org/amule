@@ -35,19 +35,18 @@ namespace ecprogress
 /**
  * Render an `EC_OP_SEARCH_PROGRESS` reply as amulecmd's `progress` output.
  *
- * The reply comes in three shapes and the client does not get to choose which:
- * a daemon that echoed `EC_TAG_CAN_SEARCH_PROGRESS_UNION` always answers with
- * the union, one entry per search, naming ids only narrows which entries come
- * back. Older daemons answer about a single search, with the lifecycle tags at
- * the top level or, older still, only the overloaded `EC_TAG_SEARCH_STATUS`
+ * The reply comes in three shapes and the client does not get to choose which: a daemon that echoed
+ * `EC_TAG_CAN_SEARCH_PROGRESS_UNION` always answers with the union, one entry per search, and
+ * naming ids only narrows which entries come back. Older daemons answer about a single search, with
+ * the lifecycle tags at the top level or, older still, only the overloaded `EC_TAG_SEARCH_STATUS`
  * sentinel.
  *
- * Reading one shape as another is what made `progress` report 0 %
- * unconditionally: the union nests `EC_TAG_SEARCH_STATUS` inside each entry,
- * so a top-level read found nothing and rendered the miss as a number.
+ * Reading one shape as another is what made `progress` report 0 % unconditionally: the union nests
+ * `EC_TAG_SEARCH_STATUS` inside each entry, so a top-level read found nothing and rendered the miss
+ * as a number.
  *
- * Kept apart from the command loop, and free of theApp, so all three shapes
- * are reachable from a test.
+ * Kept apart from the command loop, and free of theApp, so all three shapes are reachable from a
+ * test.
  */
 wxString FormatSearchProgress(const CECPacket &response);
 

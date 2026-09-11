@@ -28,9 +28,9 @@
 #include <maxminddb.h>
 #include <wx/string.h>
 
-// Thin RAII wrapper around libmaxminddb for IP-to-country lookups against a
-// MaxMind .mmdb database (GeoLite2-Country or equivalent). Replaces the legacy
-// libGeoIP v1 / .dat backend that MaxMind discontinued in 2019.
+// Thin RAII wrapper around libmaxminddb for IP-to-country lookups against a MaxMind .mmdb database
+// (GeoLite2-Country or equivalent). Replaces the legacy libGeoIP v1 / .dat backend MaxMind
+// discontinued in 2019.
 class CMaxMindDBDatabase
 {
 public:

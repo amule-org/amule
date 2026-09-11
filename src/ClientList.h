@@ -53,96 +53,61 @@ enum buddyState
 #define BAN_CLEANUP_TIME 1200000 // 20 min
 
 /**
- * This class takes care of managing existing clients.
- *
- * This class tracks a number of attributes related to existing and deleted
- * clients. Among other things, it keeps track of existing, banned, dead and
- * dying clients, as well as offers support for matching new client-instances
- * against already exist clients to avoid duplicates.
+ * Manages existing clients: tracks existing, banned, dead and dying ones, and matches a new
+ * client instance against those already known so duplicates are avoided.
  */
 class CClientList
 {
 public:
-	/**
-	 * Constructor.
-	 */
 	CClientList();
 
-	/**
-	 * Destructor.
-	 */
 	~CClientList();
 
 	/**
 	 * Adds a client to the global list of clients.
-	 *
-	 * @param toadd The new client.
 	 */
 	void AddClient(CUpDownClient *toadd);
 
 	/**
-	 * The client at this address that could still be the peer with this hash,
-	 * or nullptr. Skips any that identifies as somebody else.
+	 * The client at this address that could still be the peer with this hash, or nullptr. Skips
+	 * any that identifies as somebody else.
 	 */
 	CUpDownClient *FindReusableClient(const CMD4Hash &hash, uint32 ip, uint16 port);
 
 	/**
 	 * A client for the peer at this address, added to the list.
 	 *
-	 * For the actions that inherently mean "go talk to this peer" -- browsing
-	 * its shared files, opening a chat -- when we are not already connected to
-	 * it and only hold its last known address. Creating the object does not
-	 * connect: the request the caller makes next is what opens a connection.
+	 * For the actions that inherently mean "go talk to this peer" -- browsing its shared files,
+	 * opening a chat -- when we are not already connected to it and only hold its last known
+	 * address. Creating the object does not connect: the request the caller makes next is what
+	 * opens a connection.
 	 *
-	 * Returns the client already held for this peer, matched by hash and
-	 * failing that by address, so repeating an action reuses the object the
-	 * previous one made instead of stacking up unreachable duplicates.
+	 * Returns the client already held for this peer, matched by hash and failing that by
+	 * address, so repeating an action reuses the object the previous one made instead of
+	 * stacking up unreachable duplicates.
 	 */
 	CClientRef CreateForAddress(const CMD4Hash &hash, uint32 ip, uint16 port, const wxString &name);
 
 	/**
-	 * Removes a client from the  client lists.
-	 *
-	 * @param client The client to be removed.
-	 *
-	 * To be called from CUpDownClient::Safe_Delete only.
+	 * Removes a client from the client lists. To be called from CUpDownClient::Safe_Delete only.
 	 */
 	void RemoveClient(CUpDownClient *client);
 
 	/**
-	 * Updates the recorded IP of the specified client.
-	 *
-	 * @param client The client to have its entry updated.
-	 * @param newIP The new IP address of the client.
-	 *
-	 * This function is to be called before the client actually changes its
-	 * IP-address, and will update the old entry with the new value. There
-	 * will only be added an entry if the new IP isn't zero.
+	 * Updates the recorded IP of the specified client, before it actually changes its address.
+	 * An entry is only added when the new IP is non-zero.
 	 */
 	void UpdateClientIP(CUpDownClient *client, uint32 newIP);
 
 	/**
-	 * Updates the recorded ID of the specified client.
-	 *
-	 * @param client The client to have its entry updated.
-	 * @param newID The new ID of the client.
-	 *
-	 * This function is to be called before the client actually changes its
-	 * ID, and will update the old entry with the new value. Unlike the other
-	 * two functions, this function will always ensure that there is an entry
-	 * for the client, regardless of the value of newID.
+	 * Updates the recorded ID of the specified client, before it actually changes its ID.
+	 * Unlike the IP and hash versions, this always ensures there is an entry, whatever newID is.
 	 */
 	void UpdateClientID(CUpDownClient *client, uint32 newID);
 
 	/**
-	 * Updates the recorded hash of the specified client.
-	 *
-	 * @param client The client to have its entry updated.
-	 * @param newHash The new user-hash.
-	 *
-	 * This function is to be called before the client actually changes its
-	 * user-hash, and will update the old entry with the new value. There will
-	 * only be added an entry if the new hash is valid.
+	 * Updates the recorded hash of the specified client, before it actually changes its
+	 * user-hash. An entry is only added when the new hash is valid.
 	 */
 	void UpdateClientHash(CUpDownClient *client, const CMD4Hash &newHash);
 
@@ -157,100 +122,63 @@ public:
 	void DeleteAll();
 
 	/**
-	 * Replaces a new client-instance with the an already existing client, if one such exist.
+	 * Replaces a new client instance with an already existing client, if one exists.
 	 *
-	 * @param client A pointer to the pointer of the new instance.
-	 * @param sender The socket associated with the new instance.
-	 *
-	 * Call this function when a new client-instance has been created. This function will then
-	 * compare it against all existing clients and see if we already have an instance matching
-	 * the new one. If that is the case, it will delete the new instance and set the pointer to
-	 * the existing one.
+	 * Call this when a new client instance has been created: it is compared against all existing
+	 * clients, and on a match the new instance is deleted and the pointer set to the existing
+	 * one.
 	 */
 	bool AttachToAlreadyKnown(CUpDownClient **client, CClientTCPSocket *sender);
 
 	/**
 	 * Finds a client with the specified ip and port.
-	 *
-	 * @param clientip The IP of the client to find.
-	 * @param port The port used by the client.
 	 */
 	CUpDownClient *FindClientByIP(uint32 clientip, uint16 port);
 
 	/**
-	 * Finds a client with the specified ip.
-	 *
-	 * @param clientip The IP of the client to find.
-	 *
-	 * Returns the first client found if there are several with same ip.
+	 * Finds a client with the specified ip, returning the first if several share it.
 	 */
 	CUpDownClient *FindClientByIP(uint32 clientip);
 
 	/**
 	 * Finds a client with the specified ECID.
-	 *
-	 * @param clientip The IP of the client to find.
-	 *
 	 */
 	CUpDownClient *FindClientByECID(uint32 ecid) const;
 
 	/**
-	 * Adds a client to the list of tracked clients.
-	 *
-	 * @param toadd The client to track.
-	 *
-	 * This function is used to keep track of clients after they
-	 * have been deleted and makes it possible to spot port or hash
-	 * changes.
+	 * Adds a client to the list of tracked clients, so it stays known after deletion and port or
+	 * hash changes can be spotted.
 	 */
 	void AddTrackClient(CUpDownClient *toadd);
 
 	/**
 	 * Checks if a client has changed its user-hash.
-	 *
-	 * @param dwIP The IP of the client.
-	 * @param nPort The port of the client.
-	 * @param pNewHash The userhash associated with the client.
-	 *
 	 */
 	bool ComparePriorUserhash(uint32 dwIP, uint16 nPort, void *pNewHash);
 
 	/**
 	 * Bans an IP address for 2 hours.
-	 *
-	 * @param dwIP The IP from which all clients will be banned.
 	 */
 	void AddBannedClient(uint32 dwIP);
 
 	/**
-	 * Checks if a client has been banned.
-	 *
-	 * @param dwIP The IP to check.
-	 * @return True if the IP is banned, false otherwise.
+	 * @return True if the IP is banned.
 	 */
 	bool IsBannedClient(uint32 dwIP);
 
 	/**
 	 * Unbans an IP address, if it has been banned.
-	 *
-	 * @param dwIP The IP address to unban.
 	 */
 	void RemoveBannedClient(uint32 dwIP);
 
 	/**
-	 * Main loop.
-	 *
-	 * This function takes care of cleaning the various lists and deleting
-	 * pending clients on the deletion-queue.
+	 * Main loop: cleans the various lists and deletes pending clients on the deletion queue.
 	 */
 	void Process();
 
 	/**
-	 * This function removes all clients filtered by the current IPFilter.
-	 *
-	 * Call this function after changing the current IPFiler list, to ensure
-	 * that no client-connections to illegal IPs exist. These would otherwise
-	 * be allowed to exist, bypassing the IPFilter.
+	 * Removes all clients filtered by the current IPFilter. Call after changing the IPFilter
+	 * list, or connections to illegal IPs would be left in place, bypassing the filter.
 	 */
 	void FilterQueues();
 
@@ -258,24 +186,13 @@ public:
 	typedef std::deque<CClientRef> SourceList;
 
 	/**
-	 * Returns a list of clients with the specified user-hash.
-	 *
-	 * @param hash The userhash to search for.
-	 *
-	 * This function will return a list of clients with the specified userhash,
-	 * provided that the hash is a valid non-empty userhash. Empty hashes will
-	 * simply result in nothing being found.
+	 * Returns the clients with the specified user-hash, provided it is a valid non-empty one.
+	 * An empty hash simply finds nothing.
 	 */
 	SourceList GetClientsByHash(const CMD4Hash &hash);
 
 	/**
-	 * Returns a list of clients with the specified IP.
-	 *
-	 * @param ip The IP-address to search for.
-	 *
-	 * This function will return a list of clients with the specified IP,
-	 * provided that the IP is a non-zero value. A value of zero will not
-	 * result in any results.
+	 * Returns the clients with the specified IP, provided it is non-zero. Zero finds nothing.
 	 */
 	SourceList GetClientsByIP(unsigned long ip);
 
@@ -285,40 +202,28 @@ public:
 	typedef std::pair<uint32, CClientRef> IDMapPair;
 
 	/**
-	 * Returns a list of all clients.
-	 *
 	 * @return The complete list of clients.
 	 */
 	const IDMap &GetClientList();
 
 	/**
 	 * Adds a source to the list of dead sources.
-	 *
-	 * @param client The source to be recorded as dead.
 	 */
 	void AddDeadSource(const CUpDownClient *client);
 
 	/**
-	 * Checks if a source is recorded as being dead.
-	 *
-	 * @param client The client to evaluate.
-	 * @return True if dead, false otherwise.
-	 *
-	 * Sources that are dead are not to be considered valid
-	 * sources and should not be added to partfiles.
+	 * @return True if the source is recorded as dead. A dead source is not a valid source and
+	 * must not be added to partfiles.
 	 */
 	bool IsDeadSource(const CUpDownClient *client);
 
 	/**
-	 * Sends a message to a client, identified by a GUI_ID
-	 *
-	 * @return Success
+	 * Sends a message to a client, identified by a GUI_ID. @return Success
 	 */
 	bool SendChatMessage(uint64 client_id, const wxString &message);
 
 	/**
 	 * Stops a chat session with a client.
-	 *
 	 */
 	void SetChatState(uint64 client_id, uint8 state);
 
@@ -348,45 +253,33 @@ public:
 	bool AllowCallbackRequest(uint32_t ip) const;
 
 protected:
-	/*
-	 * Avoids unwanted clients to be forever in the client list
-	 */
+	/* Avoids unwanted clients staying in the client list forever */
 	void CleanUpClientList();
 
 	void ProcessDirectCallbackList();
 
 private:
 	/**
-	 * Helperfunction which finds a client matching the specified client.
-	 *
-	 * @param client The client to search for.
-	 * @return The matching client or NULL.
-	 *
-	 * This functions searches through the list of clients and finds the first match
-	 * using the same checks as CUpDownClient::Compare, but without the overhead.
+	 * Finds the first client matching the specified one, or NULL. Uses the same checks as
+	 * CUpDownClient::Compare, but without the overhead.
 	 */
 	CUpDownClient *FindMatchingClient(CUpDownClient *client);
 
 	/**
 	 * Check if we already know this IP.
-	 *
-	 * This function is used to determine if the given IP address
-	 * is already known.
-	 *
-	 * @param ip The IP address to check.
 	 */
 	bool IsIPAlreadyKnown(uint32_t ip);
 
 	/**
-	 * Helperfunction which removes the client from the IP-list.
+	 * Removes the client from the IP-list.
 	 */
 	void RemoveIPFromList(CUpDownClient *client);
 	/**
-	 * Helperfunction which removes the client from the ID-list.
+	 * Removes the client from the ID-list.
 	 */
 	bool RemoveIDFromList(CUpDownClient *client);
 	/**
-	 * Helperfunction which removes the client from the hash-list.
+	 * Removes the client from the hash-list.
 	 */
 	void RemoveHashFromList(CUpDownClient *client);
 
@@ -404,10 +297,9 @@ private:
 	//! The full lists of clients
 	IDMap m_clientList;
 
-	//! This is the map of banned clients.
-	// The banned addresses, and the pairing rule for theStats' banned count:
-	// every operation reports whether the set actually changed, and the counter
-	// follows that answer rather than the call. See src/BanRecord.h.
+	//! The banned addresses, and the pairing rule for theStats' banned count: every operation
+	//! reports whether the set actually changed, and the counter follows that answer rather than
+	//! the call. See src/BanRecord.h.
 	CBanRecord m_bannedList;
 	//! This variable is used to keep track of the last time the banned-list was pruned.
 	uint64 m_dwLastBannCleanUp;

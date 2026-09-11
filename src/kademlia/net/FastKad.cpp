@@ -49,9 +49,8 @@ void CFastKad::AddResponseTime(uint32_t ip, uint32_t responseTimeMs, uint64_t no
 	std::map<uint32_t, sResponseTime>::iterator it = m_samples.find(ip);
 	if (it == m_samples.end()) {
 		if (m_samples.size() >= MAX_SAMPLES) {
-			// Evict the least recently referenced sample, but only if
-			// it is old enough that dropping it will not make the
-			// estimate jump around.
+			// Evict the least recently referenced sample, but only if it is old enough
+			// that dropping it will not make the estimate jump around.
 			uint64_t oldestAge = 0;
 			std::map<uint32_t, sResponseTime>::iterator oldest = m_samples.end();
 			for (std::map<uint32_t, sResponseTime>::iterator candidate = m_samples.begin();
@@ -64,9 +63,8 @@ void CFastKad::AddResponseTime(uint32_t ip, uint32_t responseTimeMs, uint64_t no
 				}
 			}
 			if (oldest == m_samples.end()) {
-				// Every sample is recent. Discarding this
-				// observation is the right call: the window
-				// already holds a fresh picture of the network.
+				// Every sample is recent. Discarding this observation is the right
+				// call: the window already holds a fresh picture of the network.
 				return;
 			}
 			m_samples.erase(oldest);
@@ -83,11 +81,10 @@ void CFastKad::AddResponseTime(uint32_t ip, uint32_t responseTimeMs, uint64_t no
 
 void CFastKad::RecalculateResponseTime()
 {
-	// Unfilled slots count as DEFAULT_RESPONSE_TIME_MS, and both moments are
-	// divided by the full window size rather than by the sample count. That
-	// is what makes the cold start safe -- with zero or one sample the
-	// estimate stays at the default instead of collapsing, and there is no
-	// division by a zero (or by count - 1 == 0) sample count anywhere.
+	// Unfilled slots count as DEFAULT_RESPONSE_TIME_MS, and both moments are divided by the
+	// full window size rather than by the sample count. That is what makes the cold start safe
+	// -- with zero or one sample the estimate stays at the default instead of collapsing, and
+	// nothing divides by a zero (or count - 1 == 0) sample count.
 	const double windowSize = (double)MAX_SAMPLES;
 	const double missing =
 		(m_samples.size() < MAX_SAMPLES) ? (windowSize - (double)m_samples.size()) : 0.0;

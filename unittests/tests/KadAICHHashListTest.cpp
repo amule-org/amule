@@ -224,10 +224,9 @@ TEST(KadAICHHashList, DecodeResultTagIgnoresTrailingGarbage)
 	ASSERT_EQUALS(3u, (unsigned)decoded[0].m_popularity);
 }
 
-// eMule 0.70b refuses to pick between competing hashes rather than crowning
-// the most popular one. The distinction is the whole test: the popularity
-// figure is supplied by the publishers themselves, so in a contested set the
-// liar also controls the number that would decide the vote.
+// eMule 0.70b refuses to pick between competing hashes rather than crowning the most popular one.
+// The distinction is the whole test: the popularity figure is supplied by the publishers
+// themselves, so in a contested set the liar also controls the number that would decide the vote.
 TEST(KadAICHHashList, CompetingHashesAreAllRefused)
 {
 	std::vector<CKadAICHHashList::SResultHash> decoded;
@@ -270,20 +269,19 @@ TEST(KadAICHHashList, ALoneHashStillNeedsAThirdOfThePublishers)
 	// 16 / 4 == 4: four publishers for every one that names this hash.
 	ASSERT_TRUE(CKadAICHHashList::SelectTrusted(decoded, 16) == NULL);
 
-	// No publisher count is not a passing ratio. The ratio alone would let it
-	// through, 0 divided by anything being 0, which is why upstream guards
-	// byPublishers > 0 separately and so do we: a missing TAG_PUBLISHINFO
-	// means there is no count to be a third of, and accepting it would make
-	// the least corroborated result the easiest to get accepted.
+	// No publisher count is not a passing ratio. The ratio alone would let it through, 0
+	// divided by anything being 0, which is why upstream guards byPublishers > 0 separately and
+	// so do we: a missing TAG_PUBLISHINFO means there is no count to be a third of, and
+	// accepting it would make the least corroborated result the easiest to get accepted.
 	ASSERT_TRUE(CKadAICHHashList::SelectTrusted(decoded, 0) == NULL);
 
 	decoded.clear();
 	ASSERT_TRUE(CKadAICHHashList::SelectTrusted(decoded, 10) == NULL);
 }
 
-// Task 1.5: mixed-version publish and search. Both the publish gate
-// (TAG_KADAICHHASHPUB) and the result gate (TAG_KADAICHHASHRESULT) consult this
-// one predicate, so pinning it pins the version behaviour of both directions.
+// Task 1.5: mixed-version publish and search. Both the publish gate (TAG_KADAICHHASHPUB) and the
+// result gate (TAG_KADAICHHASHRESULT) consult this one predicate, so pinning it pins the version
+// behaviour of both directions.
 TEST(KadAICHHashList, AICHKeywordStorageIsGatedOnKadVersion0x09)
 {
 	// A peer we could not identify gets no credit.
@@ -299,10 +297,9 @@ TEST(KadAICHHashList, AICHKeywordStorageIsGatedOnKadVersion0x09)
 	ASSERT_TRUE(CKadAICHHashList::PeerSupportsAICHKeywordStorage(0xFF));
 }
 
-// The version byte we advertise is what makes this change visible on the wire,
-// so both states of the ENABLE_KAD_PROTOCOL_10 switch are pinned here: with the
-// switch off aMule must still announce 0x08, exactly as upstream does, and it
-// must not claim AICH keyword storage it does not use.
+// The version byte we advertise is what makes this change visible on the wire, so both states of
+// the ENABLE_KAD_PROTOCOL_10 switch are pinned here: with the switch off aMule must still announce
+// 0x08, exactly as upstream does, and must not claim AICH keyword storage it does not use.
 TEST(KadAICHHashList, AdvertisedKadVersionFollowsTheBuildSwitch)
 {
 #ifdef ENABLE_KAD_PROTOCOL_10
@@ -312,9 +309,8 @@ TEST(KadAICHHashList, AdvertisedKadVersionFollowsTheBuildSwitch)
 	ASSERT_EQUALS(0x08u, (unsigned)KADEMLIA_VERSION);
 	ASSERT_FALSE(CKadAICHHashList::PeerSupportsAICHKeywordStorage(KADEMLIA_VERSION));
 #endif
-	// The eD2k CT_EMULE_MISCOPTIONS2 capability field reserves four bits for
-	// the Kad version (BaseClient.cpp, uKadVersion << 0), so a bump past
-	// 0x0F needs that field changed first.
+	// The eD2k CT_EMULE_MISCOPTIONS2 capability field reserves four bits for the Kad version
+	// (BaseClient.cpp, uKadVersion << 0), so a bump past 0x0F needs that field changed first.
 	ASSERT_TRUE(KADEMLIA_VERSION <= 0x0F);
 }
 

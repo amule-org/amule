@@ -34,9 +34,7 @@ class AutoSeededRandomPool;
 }
 const CryptoPP::AutoSeededRandomPool &GetRandomPool();
 
-/*
- * Random numbers generation
- */
+/* Random numbers generation */
 
 uint8_t GetRandomUint8();
 uint16_t GetRandomUint16();

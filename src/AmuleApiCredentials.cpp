@@ -51,10 +51,9 @@ bool ApplyPrefs(wxString &error)
 {
 	error.clear();
 
-	// Straight translation: the preferences say what the user asked for,
-	// webcommon knows what that means for the stored records. The rules
-	// are not repeated here because the amuleapi CLI and REST endpoint
-	// have to follow exactly the same ones.
+	// Straight translation: the preferences say what the user asked for, webcommon knows what
+	// that means for the stored records. The rules are not repeated here because the amuleapi
+	// CLI and REST endpoint have to follow exactly the same ones.
 	webcommon::CredentialChange change;
 	change.admin_md5 = std::string(thePrefs::GetAmuleApiPass().Lower().utf8_str());
 	change.guest_enabled = thePrefs::GetAmuleApiGuestIsEnabled();
@@ -66,9 +65,8 @@ bool ApplyPrefs(wxString &error)
 		return false;
 	}
 
-	// Consumed. A pending password is a request, and replaying it on
-	// every later save would keep re-hashing it and keep it in memory for
-	// the rest of the session.
+	// Consumed. A pending password is a request, and replaying it on every later save would
+	// keep re-hashing it and keep it in memory for the rest of the session.
 	thePrefs::SetAmuleApiPass(wxEmptyString);
 	thePrefs::SetAmuleApiGuestPass(wxEmptyString);
 
@@ -81,9 +79,9 @@ void RefreshState()
 	webcommon::Credentials creds;
 	std::string err;
 	if (!webcommon::LoadCredentialsFile(ConfigDir(), creds, err)) {
-		// A corrupt file is amuleapi's problem to report — it refuses to
-		// start and names the bad key. Here it only means we cannot say
-		// what is configured, so claim nothing rather than guess.
+		// A corrupt file is amuleapi's problem to report -- it refuses to start and names
+		// the bad key. Here it only means we cannot say what is configured, so claim
+		// nothing rather than guess.
 		thePrefs::SetAmuleApiAdminIsSet(false);
 		thePrefs::SetAmuleApiGuestIsEnabled(false);
 		return;

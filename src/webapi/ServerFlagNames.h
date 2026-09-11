@@ -38,24 +38,21 @@ namespace webapi
 /**
  * The eD2k server capability bitmasks, decoded to stable JSON keys.
  *
- * A server announces what it supports as two bitmasks; the API decodes them
- * server-side so a consumer never has to carry a copy of the aMule protocol
- * headers, the same rule /clients already follows for its numeric enums (see
- * ClientTagNames.h).
+ * A server announces what it supports as two bitmasks; the API decodes them server-side so a
+ * consumer never has to carry a copy of the aMule protocol headers, the same rule /clients already
+ * follows for its numeric enums (see ClientTagNames.h).
  *
- * Header-only, and deliberately built around a string-returning helper rather
- * than a per-writer emit loop: the REST object (Api.cpp, via CJsonWriter) and
- * the SSE payload (EventDiff.cpp, via ostringstream) use different writers but
- * are documented as carrying the identical object, so they call the same
- * function and emit the same bytes. Only the two tables below decide what a flags
- * object contains; adding a bit is a one-line change that both paths pick up.
+ * Header-only, and deliberately built around a string-returning helper rather than a per-writer
+ * emit loop: the REST object (Api.cpp, via CJsonWriter) and the SSE payload (EventDiff.cpp, via
+ * ostringstream) use different writers but are documented as carrying the identical object, so they
+ * call the same function and emit the same bytes. Only the two tables below decide what a flags
+ * object contains; adding a bit is a one-line change both paths pick up.
  *
- * EventDiff.cpp is compiled into EventDiffTest, which is stdlib-only by
- * design, so nothing here may reach for wxWidgets or EC.
+ * EventDiff.cpp is compiled into EventDiffTest, which is stdlib-only by design, so nothing here may
+ * reach for wxWidgets or EC.
  *
- * These are protocol tokens, not display text: untranslated and stable. The
- * desktop's TCP/UDP Flags columns render the same bits as single letters
- * (ServerListCtrl.cpp), which is a separate presentation of the same data.
+ * These are protocol tokens, not display text: untranslated and stable. The desktop's TCP/UDP Flags
+ * columns render the same bits as single letters (ServerListCtrl.cpp).
  */
 
 struct ServerFlagBit
@@ -67,10 +64,10 @@ struct ServerFlagBit
 /**
  * One flags object: `{"bitmask":N,"compression":true,...}`.
  *
- * Every key in the table is always present, false when its bit is clear, so a
- * consumer never branches on key existence. `bitmask` rides along for the
- * diagnostic case and for any bit a future server announces that this build
- * does not name yet -- decoding it to booleans alone would silently drop it.
+ * Every key in the table is always present, false when its bit is clear, so a consumer never
+ * branches on key existence. `bitmask` rides along for the diagnostic case and for any bit a future
+ * server announces that this build does not name yet -- decoding to booleans alone would silently
+ * drop it.
  *
  * All keys are ASCII literals from the tables, so no JSON escaping is needed.
  */
@@ -91,9 +88,8 @@ inline std::string ServerFlagsJson(std::uint32_t bits, const ServerFlagBit *tabl
 /**
  * The TCP capability object for `tcp_flags`.
  *
- * Bits from include/protocol/ed2k/Client2Server/TCP.h, in wire-bit order.
- * The table is a function-local static rather than a namespace-scope one so
- * every translation unit including this header shares a single instance.
+ * Bits from include/protocol/ed2k/Client2Server/TCP.h, in wire-bit order. The table is a function-
+ * local static so every translation unit including this header shares one instance.
  */
 inline std::string ServerTcpFlagsJson(std::uint32_t bits)
 {
@@ -104,9 +100,9 @@ inline std::string ServerTcpFlagsJson(std::uint32_t bits)
 		{ SRV_TCPFLG_RELATEDSEARCH, "related_search" },
 		{ SRV_TCPFLG_TYPETAGINTEGER, "type_tag_integer" },
 		{ SRV_TCPFLG_LARGEFILES, "large_files" },
-		// Spelled out rather than plain "obfuscation" because the UDP
-		// object below carries both a UDP- and a TCP-obfuscation bit;
-		// one key means one wire constant in either object.
+		// Spelled out rather than plain "obfuscation" because the UDP object below carries
+		// both a UDP- and a TCP-obfuscation bit; one key means one wire constant in either
+		// object.
 		{ SRV_TCPFLG_TCPOBFUSCATION, "tcp_obfuscation" },
 	};
 	return ServerFlagsJson(bits, kBits, sizeof(kBits) / sizeof(kBits[0]));

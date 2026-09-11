@@ -36,10 +36,9 @@ using namespace muleunit;
 
 DECLARE_SIMPLE(LanguageList)
 
-//! Catalogs that ship but are deliberately not offered in the picker, because they
-//! hold (next to) no translated strings: offering them would show an English UI
-//! under a native-language label. Move one here into GetLanguageList() once it is
-//! actually translated.
+//! Catalogs that ship but are deliberately not offered in the picker, because they hold (next to)
+//! no translated strings: offering them would show an English UI under a native-language label.
+//! Move one into GetLanguageList() once it is actually translated.
 static const char *const s_unlistedCatalogs[] = { "bn", "ta", "vi" };
 
 static bool IsUnlisted(const wxString &catalog)
@@ -89,9 +88,8 @@ TEST(LanguageList, EveryListedCatalogExists)
 	}
 }
 
-// The other direction: a translation added to po/ without a list entry never
-// reaches the picker. Failing here is the prompt to add it, or to record it as a
-// deliberately unlisted stub.
+// The other direction: a translation added to po/ without a list entry never reaches the picker.
+// Failing here is the prompt to add it, or to record it as a deliberately unlisted stub.
 TEST(LanguageList, EveryCatalogIsListedOrDeliberatelyNot)
 {
 	const wxArrayString po = PoBasenames();

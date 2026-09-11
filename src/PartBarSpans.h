@@ -25,19 +25,17 @@
 #ifndef PARTBARSPANS_H
 #define PARTBARSPANS_H
 
-// Which byte range each part of a file occupies in a chunk bar, and which of the
-// two things the shared-files bar is drawing.
+// Which byte range each part of a file occupies in a chunk bar, and which of the two things the
+// shared-files bar is drawing.
 //
-// Extracted because the arithmetic was wrong and nothing could see it. The three
-// bar columns computed their own spans, and CSharedFilesCtrl computed them
-// differently from the other two -- an end one byte past where CBarShader wants
-// it (src/BarShader.cpp:113-124 treats end as inclusive and increments it
-// itself). Invisible at MiB scale and unassertable while it lived inside a
-// method that needs a CKnownFile and a wxDC.
+// Extracted because the arithmetic was wrong and nothing could see it. The three bar columns
+// computed their own spans, and CSharedFilesCtrl computed them differently from the other two -- an
+// end one byte past where CBarShader wants it (src/BarShader.cpp:113-124 treats end as inclusive
+// and increments it itself). Invisible at MiB scale and unassertable while it lived inside a method
+// needing a CKnownFile and a wxDC.
 //
-// Header-only, wx-free and constexpr on purpose, like PartBarLegend.h: the
-// geometry and the mode choice are decided from two integers, so a headless run
-// can check them.
+// Header-only, wx-free and constexpr on purpose, like PartBarLegend.h: the geometry and the mode
+// choice are decided from two integers, so a headless run can check them.
 
 #include <cstddef>
 #include <cstdint>
@@ -63,9 +61,8 @@ constexpr bool operator!=(const Span &a, const Span &b)
 	return !(a == b);
 }
 
-//! What the shared-files bar is drawing for one row. The two are unrelated: one
-//! is availability across the swarm, the other is local re-hash progress that
-//! happens to occupy the same cell.
+//! What the shared-files bar is drawing for one row. The two are unrelated: one is availability
+//! across the swarm, the other is local re-hash progress that happens to occupy the same cell.
 enum class BarMode
 {
 	None = 0,     //!< nothing to draw; the file reports no parts
@@ -78,12 +75,11 @@ enum class BarMode
  *
  * @param index     zero-based part index, expected < partCount.
  * @param partSize  bytes per part (PARTSIZE at every call site).
- * @param fileSize  total bytes; the last part is short whenever the file does
- *                  not divide evenly, and its end is clamped to the last byte
- *                  rather than running past it.
+ * @param fileSize  total bytes; the last part is short whenever the file does not divide evenly,
+ *                  and its end is clamped to the last byte rather than running past it.
  *
- * Ends are inclusive and adjacent spans do not overlap, so span(i).end is
- * exactly span(i+1).start - 1. That property is what the old arithmetic broke.
+ * Ends are inclusive and adjacent spans do not overlap, so span(i).end is exactly span(i+1).start -
+ * 1. That property is what the old arithmetic broke.
  */
 constexpr Span SpanFor(std::size_t index, std::uint64_t partSize, std::uint64_t fileSize)
 {
@@ -95,9 +91,9 @@ constexpr Span SpanFor(std::size_t index, std::uint64_t partSize, std::uint64_t 
 /**
  * Which mode the bar is in.
  *
- * A file reporting no parts draws nothing at all, whatever progress says: the
- * caller has no span to fill, and a hashing bar over zero parts would be a bar
- * over nothing. Progress above zero otherwise means a re-hash is running.
+ * A file reporting no parts draws nothing at all, whatever progress says: the caller has no span to
+ * fill, and a hashing bar over zero parts would be a bar over nothing. Progress above zero
+ * otherwise means a re-hash is running.
  */
 constexpr BarMode ModeFor(std::uint64_t hashedPartCount, std::size_t partCount)
 {
@@ -108,9 +104,8 @@ constexpr BarMode ModeFor(std::uint64_t hashedPartCount, std::size_t partCount)
 /**
  * How many parts of @p partCount are already hashed, clamped.
  *
- * CHashingTask reports part + 1 (src/ThreadTasks.cpp:179, :693), so a completed
- * pass reports one past the last part and the raw number cannot be used as an
- * index or a span count.
+ * CHashingTask reports part + 1 (src/ThreadTasks.cpp:179, :693), so a completed pass reports one
+ * past the last part and the raw number cannot be used as an index or a span count.
  */
 constexpr std::size_t HashedPartsClamped(std::uint64_t hashedPartCount, std::size_t partCount)
 {

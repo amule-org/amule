@@ -69,9 +69,8 @@ wxString FormatClientVersion(uint32 clientSoft, uint32 major, uint32 minor, uint
 	}
 
 	default:
-		// eMule and everything modelled on it: the update is a letter, 'a'
-		// meaning 0. This is the case the history rows used to render as a
-		// digit.
+		// eMule and everything modelled on it: the update is a letter, 'a' meaning 0. This
+		// is the case the history rows used to render as a digit.
 		return CFormat(wxT("v%u.%u%c")) % major % minor % ('a' + update);
 	}
 }

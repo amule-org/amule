@@ -35,10 +35,9 @@ const char kPathSep = '\\';
 const char kPathSep = '/';
 #endif
 
-// Name handed out when the remote filename yields nothing we are willing
-// to echo. Deliberately boring: the alternative is an empty filename,
-// which sends the client back to guessing a name from the URL — and the
-// URL's last segment is the literal string "content".
+// Name handed out when the remote filename yields nothing we are willing to echo. Deliberately
+// boring: the alternative is an empty filename, which sends the client back to guessing a name from
+// the URL -- and the URL's last segment is the literal string "content".
 const char *const kFallbackName = "download";
 
 bool ContainsNul(const std::string &s)
@@ -46,14 +45,12 @@ bool ContainsNul(const std::string &s)
 	return s.find('\0') != std::string::npos;
 }
 
-// Parse an unsigned decimal with an explicit overflow guard.
-//
-// Not strtoull(): it signals overflow through errno plus a saturated
-// ULLONG_MAX, which callers forget to check and which cannot be told apart
-// from a genuine ULLONG_MAX. For a range bound, saturating is worse than
-// wrapping -- "bytes=<30 digits>-" would silently become a perfectly
-// satisfiable read near EOF. Requires at least one digit and rejects every
-// non-digit byte, so signs, whitespace and hex prefixes fail here.
+// Parse an unsigned decimal with an explicit overflow guard. Not strtoull(): it signals overflow
+// through errno plus a saturated ULLONG_MAX, which callers forget to check and which cannot be told
+// apart from a genuine ULLONG_MAX. For a range bound, saturating is worse than wrapping --
+// "bytes=<30 digits>-" would silently become a perfectly satisfiable read near EOF. Requires at
+// least one digit and rejects every non-digit byte, so signs, whitespace and hex prefixes fail
+// here.
 bool ParseU64(const std::string &s, std::uint64_t &out)
 {
 	if (s.empty())
@@ -84,17 +81,15 @@ std::string TrimOws(const std::string &s)
 	return s.substr(b, e - b);
 }
 
-// Canonicalise `candidate` (an ABSOLUTE path) and accept it only if it names a
-// regular file.
+// Canonicalise `candidate` (an ABSOLUTE path) and accept it only if it names a regular file.
 //
-// Split from the containment test below, and deliberately: the candidate is the
-// same path whichever root it is compared against, but realpath() is a full
-// path walk that stat()s every component. Recomputing it per root made an
-// N-root share pay up to 2N of those walks on every range request. The boundary
-// rule below is then a pure string comparison over two canonical paths.
+// Split from the containment test below, and deliberately: the candidate is the same path whichever
+// root it is compared against, but realpath() is a full path walk that stat()s every component.
+// Recomputing it per root made an N-root share pay up to 2N of those walks on every range request.
+// The boundary rule below is then a pure string comparison over two canonical paths.
 //
-// The regular-file test rides along here because it is a property of the
-// candidate alone, and running it first cannot change the verdict.
+// The regular-file test rides along here because it is a property of the candidate alone, and
+// running it first cannot change the verdict.
 bool CanonicaliseRegularFile(const std::string &candidate, std::string &fs_out)
 {
 	if (candidate.empty())
@@ -102,9 +97,9 @@ bool CanonicaliseRegularFile(const std::string &candidate, std::string &fs_out)
 
 	char fs_real[PATH_MAX];
 #ifdef _WIN32
-	// _fullpath() is lexical-only (no reparse-point resolution). Same trade-off
-	// StaticFs documents: on Windows symlinks require elevation, so lexical
-	// containment covers the operator-misconfig case this check targets.
+	// _fullpath() is lexical-only, with no reparse-point resolution. Same trade-off StaticFs
+	// documents: on Windows symlinks require elevation, so lexical containment covers the
+	// operator-misconfig case this check targets.
 	if (!_fullpath(fs_real, candidate.c_str(), PATH_MAX))
 		return false;
 #else
@@ -112,9 +107,9 @@ bool CanonicaliseRegularFile(const std::string &candidate, std::string &fs_out)
 		return false;
 #endif
 
-	// A directory (or a device, or a fifo) is not content. Checked here rather
-	// than left to the caller's open() so "exists but is not servable" produces
-	// the same opaque failure as everything else.
+	// A directory, or a device, or a fifo, is not content. Checked here rather than left to the
+	// caller's open() so "exists but is not servable" produces the same opaque failure as
+	// everything else.
 	struct stat st
 	{
 	};
@@ -129,14 +124,14 @@ bool CanonicaliseRegularFile(const std::string &candidate, std::string &fs_out)
 
 // Does the already-canonical `fs_real` land inside `root`?
 //
-// StaticFs::ResolveWithinRoot cannot be reused: it joins root and the caller's
-// path, which is right for a URL path but produces "/srv/share//srv/share/f"
-// for an absolute candidate. The shared-file case has no relative form to
-// offer -- the directory arrives from EC_TAG_KNOWNFILE_PATH already absolute.
+// StaticFs::ResolveWithinRoot cannot be reused: it joins root and the caller's path, which is right
+// for a URL path but produces "/srv/share//srv/share/f" for an absolute candidate. The shared-file
+// case has no relative form to offer -- the directory arrives from EC_TAG_KNOWNFILE_PATH already
+// absolute.
 //
-// So this is a sibling, not a weakening: same realpath()-based canonicalisation
-// and byte-for-byte the same boundary rule (the character at root_len must be a
-// separator or the terminator, which stops "/srv/share-evil" passing).
+// So this is a sibling, not a weakening: the same realpath()-based canonicalisation and byte-for-
+// byte the same boundary rule (the character at root_len must be a separator or the terminator,
+// which stops "/srv/share-evil" passing).
 bool CanonicalWithinRoot(const std::string &root, const std::string &fs_real)
 {
 	if (root.empty() || fs_real.empty())
@@ -168,9 +163,9 @@ bool CanonicalWithinRoot(const std::string &root, const std::string &fs_real)
 	return true;
 }
 
-// RFC 5987 attr-char, the set RFC 6266's filename* may carry unencoded.
-// Everything else -- including every byte of a UTF-8 sequence, and every byte
-// that could terminate a header -- becomes %XX.
+// RFC 5987 attr-char, the set RFC 6266's filename* may carry unencoded. Everything else --
+// including every byte of a UTF-8 sequence, and every byte that could terminate a header -- becomes
+// %XX.
 bool IsAttrChar(unsigned char c)
 {
 	if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9'))
@@ -194,18 +189,16 @@ bool IsAttrChar(unsigned char c)
 	}
 }
 
-// Reduce a remote filename to something safe to sit between quotes in a header.
-// Three different treatments on purpose:
+// Reduce a remote filename to something safe to sit between quotes in a header. Three different
+// treatments on purpose:
 //
-//  - Control characters and DEL are DROPPED, so an all-control name collapses
-//    to empty and triggers the fallback below.
-//  - Structural characters (quote, backslash, both path separators) are
-//    REPLACED with '_', keeping the name's shape: a quote would close
-//    filename="..." early, and a separator is honoured as a path by some
-//    clients.
-//  - Non-ASCII is replaced too: the quoted form has no encoding, so a raw
-//    UTF-8 byte there is at the mercy of the client's guess. The real name
-//    travels in filename*.
+//  - Control characters and DEL are DROPPED, so an all-control name collapses to empty and
+//    triggers the fallback below.
+//  - Structural characters (quote, backslash, both path separators) are REPLACED with '_', keeping
+//    the name's shape: a quote would close filename="..." early, and a separator is honoured as a
+//    path by some clients.
+//  - Non-ASCII is replaced too: the quoted form has no encoding, so a raw UTF-8 byte there is at
+//    the mercy of the client's guess. The real name travels in filename*.
 std::string SanitiseQuotedName(const std::string &filename)
 {
 	std::string out;
@@ -283,9 +276,9 @@ bool ResolveSharedContentPath(const std::vector<std::string> &roots,
 	if (!CanonicaliseRegularFile(candidate, fs_real))
 		return false;
 
-	// Inside ANY root is enough -- aMule's share is a list of separately added
-	// directories, so there is no single tree to be inside of. An empty list
-	// therefore shares nothing, which is the correct reading.
+	// Inside ANY root is enough -- aMule's share is a list of separately added directories, so
+	// there is no single tree to be inside of. An empty list therefore shares nothing, which is
+	// the correct reading.
 	for (const std::string &root : roots) {
 		if (CanonicalWithinRoot(root, fs_real)) {
 			fs_out.swap(fs_real);
@@ -337,11 +330,11 @@ RangeResult ParseSingleByteRange(const std::string &header_value,
 	const std::string first_str = set.substr(0, dash);
 	const std::string last_str = set.substr(dash + 1);
 
-	// Deliberate whitespace policy: RFC 7233's byte-range-spec contains no OWS at
-	// all -- the only OWS the grammar allows is around the commas of the `#rule`,
-	// and every comma is rejected anyway. So tolerance stops at the field value's
-	// own edges and at the "=". Inside the spec, ParseU64's digits-only rule
-	// makes "bytes=0 - 9" unparseable rather than quietly read as "bytes=0-9".
+	// Deliberate whitespace policy: RFC 7233's byte-range-spec contains no OWS at all -- the
+	// only OWS the grammar allows is around the commas of the `#rule`, and every comma is
+	// rejected anyway. So tolerance stops at the field value's own edges and at the "=". Inside
+	// the spec, ParseU64's digits-only rule makes "bytes=0 - 9" unparseable rather than quietly
+	// read as "bytes=0-9".
 
 	if (first_str.empty()) {
 		// suffix-byte-range-spec: "-N" means the last N bytes.
@@ -377,9 +370,9 @@ RangeResult ParseSingleByteRange(const std::string &header_value,
 	std::uint64_t last = 0;
 	if (!ParseU64(last_str, last))
 		return RangeResult::kIgnore;
-	// first > last is well-formed but meaningless, which RFC 7233 2.1 makes an
-	// invalid byte-range-set rather than an unsatisfiable one -- so it is a 200,
-	// not a 416. A 416 would invite a retry of the same header.
+	// first > last is well-formed but meaningless, which RFC 7233 2.1 makes an invalid byte-
+	// range-set rather than an unsatisfiable one -- so it is a 200, not a 416. A 416 would
+	// invite a retry of the same header.
 	if (first > last)
 		return RangeResult::kIgnore;
 	if (file_size == 0 || first >= file_size)
@@ -393,15 +386,15 @@ RangeResult ParseSingleByteRange(const std::string &header_value,
 std::string BuildContentDisposition(const std::string &filename)
 {
 	std::string quoted = SanitiseQuotedName(filename);
-	// If nothing printable survived, both forms name the file rather than leaving
-	// the client to invent something from the URL. Using the fallback for
-	// filename* too keeps the two halves agreeing.
+	// If nothing printable survived, both forms name the file rather than leaving the client to
+	// invent something from the URL. Using the fallback for filename* too keeps the two halves
+	// agreeing.
 	const bool usable = !quoted.empty();
 	if (!usable)
 		quoted = kFallbackName;
 	const std::string extended = usable ? PercentEncodeAttrChars(filename) : std::string(kFallbackName);
 
-	// `attachment` unconditionally — see the header for why `inline` is
+	// `attachment` unconditionally -- see the header for why `inline` is
 	// not an option on this route.
 	return "attachment; filename=\"" + quoted + "\"; filename*=UTF-8''" + extended;
 }
@@ -423,15 +416,15 @@ bool IfRangeAllowsRange(const std::string &if_range, const std::string &etag)
 	if (value.empty())
 		return true;
 
-	// RFC 9110 13.1.5 says a valid entity-tag is told apart from a valid HTTP-date
-	// by looking at the first two characters for a DQUOTE, and that only the
-	// STRONG form may match. Both rejections land here: a weak `W/"..."` starts
-	// with 'W', and every HTTP-date starts with a day name.
+	// RFC 9110 13.1.5 says a valid entity-tag is told apart from a valid HTTP-date by looking
+	// at the first two characters for a DQUOTE, and that only the STRONG form may match. Both
+	// rejections land here: a weak `W/"..."` starts with 'W', and every HTTP-date starts with a
+	// day name.
 	//
-	// The date form is not implemented, and the fall-through is the safe
-	// direction: a date validator has one-second resolution, so a representation
-	// replaced twice inside the same second compares EQUAL to the client's copy
-	// -- precisely the race this header exists to close.
+	// The date form is not implemented, and the fall-through is the safe direction: a date
+	// validator has one-second resolution, so a representation replaced twice inside the same
+	// second compares EQUAL to the client's copy -- precisely the race this header exists to
+	// close.
 	if (value[0] != '"')
 		return false;
 

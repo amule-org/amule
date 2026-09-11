@@ -119,9 +119,8 @@ void CContact::UpdateType() noexcept
 
 time_t CContact::GetLastSeen() const noexcept
 {
-	// calculating back from expire time, so we don't need an additional field.
-	// might result in wrong values if doing CheckingType() for example, so don't use for important timing
-	// stuff
+	// Calculated back from the expire time, so no extra field is needed. May give wrong values
+	// when doing CheckingType(), for example, so do not use it for important timing.
 	if (m_expires != 0) {
 		switch (m_type) {
 		case 2:

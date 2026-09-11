@@ -25,11 +25,10 @@
 #ifndef CLIENTLISTCOLUMNS_H
 #define CLIENTLISTCOLUMNS_H
 
-// The column ids every CGenericClientListCtrl subclass builds its column table
-// from. They used to live in GenericClientListCtrl.h, which cannot be included
-// without wx; they were split out so the pure decisions keyed on a column id --
-// currently PartBarLegend.h's column-to-legend mapping -- can be compiled and
-// tested without a GUI toolkit or a display. Nothing else moved with them.
+// The column ids every CGenericClientListCtrl subclass builds its column table from. They used to
+// live in GenericClientListCtrl.h, which cannot be included without wx; splitting them out lets the
+// pure decisions keyed on a column id -- currently PartBarLegend.h's column-to-legend mapping -- be
+// compiled and tested without a GUI toolkit or a display.
 
 enum GenericColumnEnum
 {

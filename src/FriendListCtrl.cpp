@@ -101,9 +101,8 @@ void CFriendListCtrl::UpdateFriend(CFriend *toupdate)
 
 	const wxUIntPtr ptr = reinterpret_cast<wxUIntPtr>(toupdate);
 	if (HasItemData(ptr)) {
-		// The cell is rendered from the friend on demand, so a refresh is
-		// just a repaint (plus a re-sort if the name changed under a
-		// name-sorted list).
+		// The cell is rendered from the friend on demand, so a refresh is just a repaint,
+		// plus a re-sort if the name changed under a name-sorted list.
 		RefreshItemData(ptr);
 	} else {
 		AddItemData(ptr);
@@ -120,9 +119,8 @@ wxString CFriendListCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) con
 
 bool CFriendListCtrl::GetItemAttr(wxUIntPtr item, unsigned WXUNUSED(column), wxDataViewItemAttr &attr) const
 {
-	// Linked friends stay visually distinguished in blue; unlinked ones fall
-	// back to the default (system) text colour so they don't render
-	// invisible on dark themes (#640).
+	// Linked friends stay visually distinguished in blue; unlinked ones fall back to the
+	// default system text colour so they do not render invisible on dark themes (#640).
 	const CFriend *cur_friend = reinterpret_cast<const CFriend *>(item);
 	if (cur_friend->GetLinkedClient().IsLinked()) {
 		attr.SetColour(*wxBLUE);
@@ -145,9 +143,8 @@ int CFriendListCtrl::CompareItemData(
 void CFriendListCtrl::OnItemActivated(wxDataViewEvent &event)
 {
 	// Open a session with the activated row alone, whatever else was selected.
-	// event.GetItem()'s ID is the row-addressed model's row index, not the item
-	// data, so the friend has to be resolved through the selection rather than cast
-	// directly from the item.
+	// event.GetItem()'s ID is the row-addressed model's row index, not the item data, so the
+	// friend has to be resolved through the selection rather than cast directly from the item.
 	if (event.GetItem().IsOk()) {
 		UnselectAll();
 		Select(event.GetItem());
@@ -189,11 +186,11 @@ void CFriendListCtrl::OnItemRightClicked(wxDataViewEvent &event)
 		menu->Append(MP_REMOVEFRIEND, _("Remove Friend"));
 		menu->Append(MP_MESSAGE, _("Send &Message"));
 		menu->Append(MP_SHOWLIST, _("View Files"));
-		// No connection gate: the slot is a property of the CFriend record, not of a
-		// live session. CFriendList::SetFriendSlot persists it and only additionally
-		// pokes the live client when one is linked, and CFriend::LinkClient applies
-		// the stored flag when the friend reconnects -- so granting it in advance to
-		// an offline friend is the case it is most useful for.
+		// No connection gate: the slot is a property of the CFriend record, not of a live
+		// session. CFriendList::SetFriendSlot persists it and only additionally pokes the
+		// live client when one is linked, and CFriend::LinkClient applies the stored flag
+		// when the friend reconnects -- so granting it in advance to an offline friend is
+		// the case it is most useful for.
 		menu->AppendCheckItem(MP_FRIENDSLOT, _("Establish Friend Slot"));
 		menu->Check(MP_FRIENDSLOT, cur_friend->HasFriendSlot());
 	}
@@ -209,10 +206,9 @@ void CFriendListCtrl::MessageFriend(CFriend *cur_friend)
 	}
 // #warning CORE/GUI!
 #ifndef CLIENT_GUI
-	// Resolve the peer before opening the tab, not after: this finds a client we
-	// already hold for the friend's hash even when the record carries no address,
-	// and CFriend::LinkClient then writes that address back to the record, which is
-	// what the tab is keyed on.
+	// Resolve the peer before opening the tab, not after: this finds a client we already hold
+	// for the friend's hash even when the record carries no address, and CFriend::LinkClient
+	// then writes that address back to the record, which is what the tab is keyed on.
 	theApp->friendlist->StartChatSession(cur_friend);
 #endif
 	if (!theApp->amuledlg->m_chatwnd->StartSession(cur_friend)) {
@@ -238,12 +234,11 @@ void CFriendListCtrl::OnRemoveFriend(wxCommandEvent &WXUNUSED(event))
 	}
 
 	if (wxMessageBox(question, _("Cancel"), wxICON_QUESTION | wxYES_NO | wxNO_DEFAULT, this) == wxYES) {
-		// Collect the selected friends first, then remove them. On amuleGUI
-		// RemoveFriend() is asynchronous -- it only sends an EC request, and the row
-		// is dropped when the daemon pushes the updated list -- so the removed friend
-		// is still selected when it returns. Re-querying the selection in the loop
-		// would keep finding the same friend and resend forever, in a tight loop that
-		// never yields to process the update.
+		// Collect the selected friends first, then remove them. On amuleGUI RemoveFriend()
+		// is asynchronous -- it only sends an EC request, and the row is dropped when the
+		// daemon pushes the updated list -- so the removed friend is still selected when it
+		// returns. Re-querying the selection in the loop would keep finding the same friend
+		// and resend forever, in a tight loop that never yields to process the update.
 		const std::vector<wxUIntPtr> selected = GetSelectedItemData();
 
 		for (wxUIntPtr data : selected) {
@@ -271,14 +266,14 @@ void CFriendListCtrl::OnViewFiles(wxCommandEvent &WXUNUSED(event))
 {
 	for (wxUIntPtr data : GetSelectedItemData()) {
 		CFriend *cur_friend = reinterpret_cast<CFriend *>(data);
-		// If this friend's listing is already open in the Search panel, switch to
-		// that tab rather than re-requesting, which would duplicate the results.
+		// If this friend's listing is already open in the Search panel, switch to that tab
+		// rather than re-requesting, which would duplicate the results.
 		//
 		// Which ECID keys that tab depends on who opened it, so both are tried: the
-		// monolithic opens it from Notify_Browse_Started, carrying the browsed
-		// CLIENT's ECID, while amulegui opens it from SendBrowseRequest with only the
-		// FRIEND's -- a friend need not be linked to a client when the browse is
-		// asked for. Matching on the client alone never found amulegui's tab.
+		// monolithic opens it from Notify_Browse_Started, carrying the browsed CLIENT's
+		// ECID, while amulegui opens it from SendBrowseRequest with only the FRIEND's -- a
+		// friend need not be linked to a client when the browse is asked for. Matching on
+		// the client alone never found amulegui's tab.
 		CSearchDlg *const searchwnd = theApp->amuledlg ? theApp->amuledlg->m_searchwnd : nullptr;
 		const CClientRef &linked = cur_friend->GetLinkedClient();
 		const uint32 clientEcid = linked.IsLinked() ? linked.ECID() : 0;

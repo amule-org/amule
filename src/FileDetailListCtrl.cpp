@@ -48,11 +48,10 @@ CFileDetailListCtrl::CFileDetailListCtrl(wxWindow *parent, int id, const wxPoint
 	// LoadColumnSettings() replaces it once the config has something saved.
 	ApplySorting(COLUMN_FILEDETAIL_SOURCES, SORT_DES);
 
-	// This list gains persistence here: it is the one dataview list that never
-	// had it, so a user who widened "File Name" lost it the moment the dialog
-	// closed, and the sort reset to Sources-descending on every open. There is
-	// no GetOldColumnOrder() override because there is no pre-dataview config
-	// to migrate -- nothing was ever written under this name.
+	// This list gains persistence here: it is the one dataview list that never had it, so a
+	// user who widened "File Name" lost it the moment the dialog closed, and the sort reset to
+	// Sources-descending on every open. There is no GetOldColumnOrder() override because there
+	// is no pre-dataview config to migrate -- nothing was ever written under this name.
 	m_columnStore.SetTableName("FileDetail");
 	LoadColumnSettings();
 
@@ -105,10 +104,9 @@ int CFileDetailListCtrl::CompareItemData(
 
 bool CFileDetailListCtrl::IsLiveSortColumn() const
 {
-	// Only the source count moves on its own; a row's name is the key it was
-	// created under and never changes. Answering "yes" for the name column
-	// would schedule a re-sort on every refresh tick that could not reorder
-	// anything. Same shape as CServerListCtrl.
+	// Only the source count moves on its own; a row's name is the key it was created under and
+	// never changes. Answering "yes" for the name column would schedule a re-sort on every
+	// refresh tick that could not reorder anything. Same shape as CServerListCtrl.
 	if (m_sort_orders.empty()) {
 		return false;
 	}

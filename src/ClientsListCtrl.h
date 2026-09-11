@@ -50,27 +50,25 @@
 /**
  * Every peer we are currently talking to, once each.
  *
- * The per-file lists (CSourceListCtrl, CSharedFilePeersListCtrl) answer "who is
- * on this file". This answers "who am I talking to", which is a different
- * question: the same peer can be a source for one download and a requester for
- * another, and only a per-client view can say so. Hence the file *count*
- * column, which the per-file lists have no way to express.
+ * The per-file lists (CSourceListCtrl, CSharedFilePeersListCtrl) answer "who is on this file". This
+ * answers "who am I talking to", which is a different question: the same peer can be a source for
+ * one download and a requester for another, and only a per-client view can say so. Hence the file
+ * *count* column, which the per-file lists have no way to express.
  *
- * Rows hold values rather than clients. A CClientRef would be the obvious
- * alternative and is the wrong tool -- those are owning (Unlink() deletes at
- * the last release), so the list would keep every peer it ever saw alive and
- * would never be told to let go, because the signal it is waiting for comes
- * from the destructor its own reference is preventing. The one thing a row
- * keeps of the peer itself is its ECID, which is a name to look it up by on
- * demand rather than a claim that it still exists.
+ * Rows hold values rather than clients. A CClientRef would be the obvious alternative and is the
+ * wrong tool -- those are owning (Unlink() deletes at the last release), so the list would keep
+ * every peer it ever saw alive and would never be told to let go, because the signal it is waiting
+ * for comes from the destructor its own reference is preventing. The one thing a row keeps of the
+ * peer itself is its ECID, which is a name to look it up by on demand rather than a claim that it
+ * still exists.
  */
 class CClientsListCtrl : public CClientRowListCtrl
 {
 public:
 	/**
-	 * @param tableName Names this list's saved column widths. The Active page
-	 *                  shows two of these side by side and they are sized for
-	 *                  different content, so they must not share one entry.
+	 * @param tableName Names this list's saved column widths. The Active page shows two of
+	 * these side by side and they are sized for different content, so they must not share one
+	 * entry.
 	 */
 	CClientsListCtrl(wxWindow *parent,
 		int id,
@@ -81,15 +79,12 @@ public:
 	~CClientsListCtrl();
 
 	/**
-	 * One row's worth of a peer, copied at sweep time.
-	 *
-	 * Values, not a pointer. The list is painted asynchronously, after the
-	 * sweep that produced it has returned, and a peer can be freed in
-	 * between -- which read back as a valid ECID beside a garbage name, a
-	 * zero address and a 2^48 byte count, and as values that never changed
-	 * because dead objects do not update. Copying is affordable: the set is
-	 * bounded by MaxConnections and this runs once a second only while the
-	 * page is on screen.
+	 * One row's worth of a peer, copied at sweep time. Values, not a pointer: the list is
+	 * painted asynchronously, after the sweep that produced it has returned, and a peer can be
+	 * freed in between -- which read back as a valid ECID beside a garbage name, a zero address
+	 * and a 2^48 byte count, and as values that never changed because dead objects do not
+	 * update. Copying is affordable: the set is bounded by MaxConnections and this runs once a
+	 * second only while the page is on screen.
 	 */
 	struct Row
 	{
@@ -104,9 +99,9 @@ public:
 		uint32 ip = 0;
 		uint16 port = 0;
 		uint8 sourceFrom = 0;
-		//! The file(s) this peer is on, by name. A peer holds at most one
-		//! download and one upload, so this is one name or two -- which is
-		//! what the column used to render as the digits 0, 1 and 2.
+		//! The file(s) this peer is on, by name. A peer holds at most one download and one
+		//! upload, so this is one name or two -- which is what the column used to render as
+		//! the digits 0, 1 and 2.
 		wxString files;
 		uint32 upSpeed = 0;
 		double downSpeed = 0.0;
@@ -116,12 +111,10 @@ public:
 		uint64 totalDown = 0;
 
 		/**
-		 * Whole-row comparison, so a caller asking "did this row change"
-		 * cannot test a subset by accident.
-		 *
-		 * ecid is excluded: rows are matched on it, so two rows being compared
-		 * always share one. Everything else is displayed, and anything that
-		 * moves has to reach the screen.
+		 * Whole-row comparison, so a caller asking "did this row change" cannot test a
+		 * subset by accident. ecid is excluded: rows are matched on it, so two rows being
+		 * compared always share one. Everything else is displayed, and anything that moves
+		 * has to reach the screen.
 		 */
 		bool operator==(const Row &other) const
 		{
@@ -136,12 +129,10 @@ public:
 	};
 
 	/**
-	 * Replace the rows with exactly the peers that are live right now.
-	 *
-	 * Takes the whole set rather than individual adds and removes: the
-	 * notifications that would drive those are queued when raised off the
-	 * main thread, so by delivery an added client may be a reused allocation
-	 * and a removed one already freed. Nothing is held between calls.
+	 * Replace the rows with exactly the peers that are live right now. Takes the whole set
+	 * rather than individual adds and removes: the notifications that would drive those are
+	 * queued when raised off the main thread, so by delivery an added client may be a reused
+	 * allocation and a removed one already freed. Nothing is held between calls.
 	 */
 	void SetClients(std::vector<Row> &&rows);
 
@@ -154,12 +145,10 @@ protected:
 	bool PeerForItem(wxUIntPtr data, PeerIdentity &out) const override;
 
 	/**
-	 * Speeds and transfer totals move on every poll, so a row sorted by one
-	 * of them has to be able to move with it.
-	 *
-	 * Only those columns: answering yes unconditionally re-sorts on every
-	 * refresh, which with no sort column at all -- or a static one like the
-	 * name -- reshuffles equal rows once a second and reads as flicker.
+	 * Speeds and transfer totals move on every poll, so a row sorted by one of them has to be
+	 * able to move with it. Only those columns: answering yes unconditionally re-sorts on every
+	 * refresh, which with no sort column at all -- or a static one like the name -- reshuffles
+	 * equal rows once a second and reads as flicker.
 	 */
 	bool IsLiveSortColumn() const override;
 
@@ -170,14 +159,11 @@ private:
 
 	std::vector<Row> m_rows;
 	/**
-	 * ECID to position in m_rows.
-	 *
-	 * Item data is the ECID, not the row position, so a selection survives a
-	 * rebuild: the sweep's order is not stable, so restoring a saved *index*
-	 * would hand the selection to whichever peer now sits there -- and the
-	 * context menu acts on the selection, so "Add to friends" could land on
-	 * someone the user never picked. This map is what keeps the identity
-	 * lookup O(1) on the paint path, which asks per cell.
+	 * ECID to position in m_rows. Item data is the ECID, not the row position, so a selection
+	 * survives a rebuild: the sweep's order is not stable, so restoring a saved *index* would
+	 * hand the selection to whichever peer now sits there -- and the context menu acts on the
+	 * selection, so "Add to friends" could land on someone the user never picked. This map is
+	 * what keeps the identity lookup O(1) on the paint path, which asks per cell.
 	 */
 	std::unordered_map<uint32, size_t> m_rowOfEcid;
 };

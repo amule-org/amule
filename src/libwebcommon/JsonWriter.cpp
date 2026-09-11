@@ -127,11 +127,10 @@ std::string JsonDoubleToString(double v)
 	// %.17g is the shortest round-trippable form for IEEE 754 doubles.
 	char buf[64];
 	std::snprintf(buf, sizeof(buf), "%.17g", v);
-	// JSON numbers are always C-locale (a '.' decimal point), but snprintf
-	// honours LC_NUMERIC, which amuleapi/amuleweb inherit from --locale.
-	// %g never emits digit grouping, so the only possible locale artifact is
-	// the decimal separator; normalise it to '.' so the output is valid JSON
-	// regardless of the process locale.
+	// JSON numbers are always C-locale, with a '.' decimal point, but snprintf honours
+	// LC_NUMERIC, which amuleapi/amuleweb inherit from --locale. %g never emits digit grouping,
+	// so the only possible locale artifact is the decimal separator; normalise it to '.' so the
+	// output is valid JSON whatever the process locale.
 	const char decimal_point = *std::localeconv()->decimal_point;
 	if (decimal_point != '.') {
 		for (char *p = buf; *p; ++p) {
@@ -189,10 +188,9 @@ void CJsonWriter::WriteEscapedString(const wxString &s)
 	for (wxString::const_iterator i = s.begin(); i != s.end(); ++i) {
 		wxUniChar uc = *i;
 		uint32_t cp = uc.GetValue();
-		// wxString on Windows uses UTF-16 internally so supplementary-
-		// plane code points (U+10000+) come through as two surrogate
-		// halves; Linux + macOS use UTF-32 and yield the combined
-		// code point in one step. Combine the halves here so both
+		// wxString on Windows is UTF-16 internally, so supplementary-plane code points
+		// (U+10000+) come through as two surrogate halves; Linux and macOS use UTF-32 and
+		// yield the combined code point in one step. Combine the halves here so both
 		// backends emit identical `\uXXXX\uXXXX` escapes.
 		if (cp >= 0xD800 && cp <= 0xDBFF) {
 			wxString::const_iterator j = i;
@@ -207,10 +205,9 @@ void CJsonWriter::WriteEscapedString(const wxString &s)
 				}
 			}
 			if (!paired) {
-				// Unpaired high surrogate. Falling through would
-				// emit invalid UTF-8 (CESU-8). Replace with U+FFFD so the
-				// JSON output stays valid Unicode. Same treatment
-				// for an unpaired low surrogate below.
+				// Unpaired high surrogate. Falling through would emit invalid UTF-8
+				// (CESU-8). Replace with U+FFFD so the JSON output stays valid
+				// Unicode. Same treatment for an unpaired low surrogate below.
 				cp = 0xFFFD;
 			}
 		} else if (cp >= 0xDC00 && cp <= 0xDFFF) {

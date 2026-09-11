@@ -37,10 +37,9 @@ using namespace webapi;
 namespace
 {
 
-// Per-test scratch dir, same shape as StaticFsTest's helper: POSIX uses
-// mkdtemp(), Windows builds a unique name under %TEMP%. Created empty;
-// the test populates it and must call RemoveAll() itself, because
-// muleunit's DECLARE_SIMPLE has no TearDown hook.
+// Per-test scratch dir, the same shape as StaticFsTest's helper: POSIX uses mkdtemp(), Windows
+// builds a unique name under %TEMP%. Created empty; the test populates it and must call RemoveAll()
+// itself, because muleunit's DECLARE_SIMPLE has no TearDown hook.
 std::string MakeScratchRoot(const char *tag)
 {
 #ifdef _WIN32
@@ -114,10 +113,8 @@ const char *const kOverflowDigits = "123456789012345678901234567890";
 
 DECLARE_SIMPLE(SharedContent)
 
-// ----------------------------------------------------------------------
-// JoinSharedPath — the API's `path` is the directory and `name` is the
-// basename, so this is the only place the two ever meet.
-// ----------------------------------------------------------------------
+// JoinSharedPath -- the API's `path` is the directory and `name` is the basename, so this is the
+// only place the two ever meet.
 
 TEST(SharedContent, JoinProducesDirSeparatorName)
 {
@@ -128,9 +125,9 @@ TEST(SharedContent, JoinProducesDirSeparatorName)
 
 TEST(SharedContent, JoinDoesNotDoubleTrailingSeparator)
 {
-	// A share root configured with a trailing slash is the common case
-	// (that is how most path-picking UIs hand it over), so a doubled
-	// separator here would be the normal path, not the exotic one.
+	// A share root configured with a trailing slash is the common case, that being how most
+	// path-picking UIs hand it over, so a doubled separator here would be the normal path
+	// rather than the exotic one.
 	std::string out;
 	ASSERT_TRUE(JoinSharedPath("/srv/share/", "movie.avi", out));
 	ASSERT_EQUALS(std::string("/srv/share/movie.avi"), out);
@@ -154,9 +151,8 @@ TEST(SharedContent, JoinRejectsEmptyName)
 
 TEST(SharedContent, JoinRejectsNameWithForwardSlash)
 {
-	// `name` must be a bare basename. Anything with a separator is
-	// either corrupt local state or a hostile ed2k filename; a
-	// traversal attempt is only the loudest instance of that.
+	// `name` must be a bare basename. Anything with a separator is either corrupt local state
+	// or a hostile ed2k filename; a traversal attempt is only the loudest instance of that.
 	std::string out;
 	ASSERT_TRUE(!JoinSharedPath("/srv/share", "sub/movie.avi", out));
 	ASSERT_TRUE(!JoinSharedPath("/srv/share", "../../etc/passwd", out));
@@ -178,7 +174,7 @@ TEST(SharedContent, JoinRejectsDotAndDotDot)
 
 TEST(SharedContent, JoinRejectsEmbeddedNul)
 {
-	// std::string keeps the NUL, the C path APIs stop at it — so
+	// std::string keeps the NUL, the C path APIs stop at it -- so
 	// without this the string we validated is not the path we open.
 	const std::string dir_nul = std::string("/srv/share\0/evil", 16);
 	const std::string name_nul = std::string("ok.bin\0.exe", 11);
@@ -188,10 +184,8 @@ TEST(SharedContent, JoinRejectsEmbeddedNul)
 	ASSERT_TRUE(!JoinSharedPath("/srv/share", name_nul, out));
 }
 
-// ----------------------------------------------------------------------
-// ResolveSharedContentPath — containment against a LIST of share roots.
-// Every rejection is opaque; the caller maps them all to one 404.
-// ----------------------------------------------------------------------
+// ResolveSharedContentPath -- containment against a LIST of share roots. Every rejection is opaque;
+// the caller maps them all to one 404.
 
 TEST(SharedContent, ResolveAcceptsFileInsideOneOfSeveralRoots)
 {
@@ -209,12 +203,11 @@ TEST(SharedContent, ResolveAcceptsFileInsideOneOfSeveralRoots)
 
 	std::string out;
 	ASSERT_TRUE(ResolveSharedContentPath(roots, root_b, "movie.avi", out));
-	// $TMPDIR is a symlink on macOS, so the canonical result is not
-	// textually the path we built. The basename is the stable part -- and
-	// the separator in front of it is not: the Windows branch canonicalises
-	// through _fullpath(), which returns backslashes. Assert what is
-	// actually invariant, the same way the production code treats either
-	// separator as a boundary.
+	// $TMPDIR is a symlink on macOS, so the canonical result is not textually the path we
+	// built. The basename is the stable part -- and the separator in front of it is not: the
+	// Windows branch canonicalises through _fullpath(), which returns backslashes. Assert what
+	// is actually invariant, the same way the production code treats either separator as a
+	// boundary.
 	ASSERT_TRUE(EndsWith(out, "/movie.avi") || EndsWith(out, "\\movie.avi"));
 
 	RemoveAll(parent);
@@ -241,7 +234,7 @@ TEST(SharedContent, ResolveRejectsFileOutsideEveryRoot)
 
 TEST(SharedContent, ResolveRejectsWhenRootListIsEmpty)
 {
-	// No configured shares means nothing is servable — not "anything
+	// No configured shares means nothing is servable -- not "anything
 	// is servable".
 	const std::string root = MakeScratchRoot("empty-roots");
 	ASSERT_TRUE(!root.empty());
@@ -256,10 +249,9 @@ TEST(SharedContent, ResolveRejectsWhenRootListIsEmpty)
 
 TEST(SharedContent, ResolveRejectsPrefixNeighbourRoot)
 {
-	// `/srv/share-evil` shares a textual prefix with `/srv/share` but is
-	// a different directory. A plain strncmp containment check accepts
-	// it; the boundary rule (the char at root_len must be a separator or
-	// the terminator) is what rejects it.
+	// `/srv/share-evil` shares a textual prefix with `/srv/share` but is a different directory.
+	// A plain strncmp containment check accepts it; the boundary rule -- the char at root_len
+	// must be a separator or the terminator -- is what rejects it.
 	const std::string parent = MakeScratchRoot("prefix-neighbour");
 	ASSERT_TRUE(!parent.empty());
 	const std::string root = parent + "/share";
@@ -310,10 +302,9 @@ TEST(SharedContent, ResolveRejectsBadJoin)
 #ifndef _WIN32
 TEST(SharedContent, ResolveRejectsSymlinkEscapingShareRoot)
 {
-	// The arbitrary-file-read case: a symlink planted *inside* a share
-	// root pointing outside it. Every lexical check passes — the name is
-	// a clean basename and the directory really is a configured root —
-	// so only canonicalisation catches it. Anyone who can write into a
+	// The arbitrary-file-read case: a symlink planted *inside* a share root pointing outside
+	// it. Every lexical check passes -- the name is a clean basename and the directory really
+	// is a configured root -- so only canonicalisation catches it. Anyone who can write into a
 	// shared directory can plant this.
 	const std::string parent = MakeScratchRoot("symlink-escape");
 	ASSERT_TRUE(!parent.empty());
@@ -353,9 +344,7 @@ TEST(SharedContent, ResolveAcceptsSymlinkStayingInsideShareRoot)
 }
 #endif // !_WIN32
 
-// ----------------------------------------------------------------------
-// ParseSingleByteRange — RFC 7233 §2.1/§3.1.
-// ----------------------------------------------------------------------
+// ParseSingleByteRange -- RFC 7233 2.1/3.1.
 
 TEST(SharedContent, RangeAbsentWhenHeaderEmpty)
 {
@@ -442,19 +431,18 @@ TEST(SharedContent, RangeOnEmptyFileIsAlwaysUnsatisfiable)
 
 TEST(SharedContent, RangeInvertedBoundsIsIgnored)
 {
-	// first > last is syntactically well-formed but semantically
-	// invalid, so RFC 7233 §2.1 says the whole byte-range-set is
-	// invalid — which we answer by ignoring the header, not by 416.
+	// first > last is syntactically well-formed but semantically invalid, so RFC 7233 2.1 says
+	// the whole byte-range-set is invalid -- which we answer by ignoring the header, not by
+	// 416.
 	std::uint64_t f = 0, l = 0;
 	ASSERT_TRUE(ParseSingleByteRange("bytes=500-499", 1000, f, l) == RangeResult::kIgnore);
 }
 
 TEST(SharedContent, MultiRangeIsIgnoredNotServedAsMultipart)
 {
-	// CVE-2011-3192 ("Apache Killer"): a short header carrying many
-	// overlapping ranges makes a multipart/byteranges responder
-	// materialise far more bytes than the file holds. We never assemble
-	// multipart at all — a comma in the set means a plain 200.
+	// CVE-2011-3192 ("Apache Killer"): a short header carrying many overlapping ranges makes a
+	// multipart/byteranges responder materialise far more bytes than the file holds. We never
+	// assemble multipart at all -- a comma in the set means a plain 200.
 	std::uint64_t f = 0, l = 0;
 	ASSERT_TRUE(ParseSingleByteRange("bytes=0-1,2-3", 1000, f, l) == RangeResult::kIgnore);
 	ASSERT_TRUE(ParseSingleByteRange("bytes=0-1, 2-3", 1000, f, l) == RangeResult::kIgnore);
@@ -494,11 +482,10 @@ TEST(SharedContent, RangeMalformedIsIgnored)
 
 TEST(SharedContent, RangeToleratesOnlyTheWhitespaceTheGrammarAllows)
 {
-	// RFC 7233's byte-range-spec has no OWS inside it — OWS is only
-	// permitted around the list commas of the `#rule`, and we reject
-	// every comma anyway. So leading/trailing field whitespace (which
-	// HTTP field parsing strips regardless) is tolerated, and a space
-	// around the dash or inside a number is not.
+	// RFC 7233's byte-range-spec has no OWS inside it -- OWS is only permitted around the list
+	// commas of the `#rule`, and we reject every comma anyway. So leading/trailing field
+	// whitespace, which HTTP field parsing strips regardless, is tolerated, and a space around
+	// the dash or inside a number is not.
 	std::uint64_t f = 0, l = 0;
 	ASSERT_TRUE(ParseSingleByteRange("  bytes=0-9  ", 1000, f, l) == RangeResult::kOk);
 	ASSERT_TRUE(ParseSingleByteRange("bytes = 0-9", 1000, f, l) == RangeResult::kOk);
@@ -509,10 +496,9 @@ TEST(SharedContent, RangeToleratesOnlyTheWhitespaceTheGrammarAllows)
 
 TEST(SharedContent, RangeOverflowingDigitsAreRejectedNotWrapped)
 {
-	// A 30-digit bound cannot fit in uint64. Wrapping it would turn an
-	// absurd request into a plausible in-range one; saturating it would
-	// turn it into "the rest of the file". Both are wrong — it is
-	// unparseable, so we ignore the header.
+	// A 30-digit bound cannot fit in uint64. Wrapping it would turn an absurd request into a
+	// plausible in-range one; saturating it would turn it into "the rest of the file". Both are
+	// wrong -- it is unparseable, so we ignore the header.
 	std::uint64_t f = 0, l = 0;
 	const std::string big(kOverflowDigits);
 	ASSERT_TRUE(ParseSingleByteRange("bytes=" + big + "-", 1000, f, l) == RangeResult::kIgnore);
@@ -527,10 +513,8 @@ TEST(SharedContent, RangeOverflowingDigitsAreRejectedNotWrapped)
 		    RangeResult::kUnsatisfiable);
 }
 
-// ----------------------------------------------------------------------
-// BuildContentDisposition — RFC 6266. The one place a remote-chosen
-// string is written into a response header.
-// ----------------------------------------------------------------------
+// BuildContentDisposition -- RFC 6266. The one place a remote-chosen string is written into a
+// response header.
 
 TEST(SharedContent, DispositionPlainAsciiNameUsesBothForms)
 {
@@ -547,16 +531,15 @@ TEST(SharedContent, DispositionIsAlwaysAttachmentNeverInline)
 
 TEST(SharedContent, DispositionStripsCrLfSoHeadersCannotBeInjected)
 {
-	// Regression test for response-header injection. The filename comes
-	// off the ed2k network; a CRLF in it would end the header and let
-	// the sender append their own — or a whole second response.
+	// Regression test for response-header injection. The filename comes off the ed2k network; a
+	// CRLF in it would end the header and let the sender append their own -- or a whole second
+	// response.
 	const std::string evil = "a\r\nSet-Cookie: pwned=1\r\n\r\n<html>.bin";
 	const std::string d = BuildContentDisposition(evil);
 	ASSERT_TRUE(d.find('\r') == std::string::npos);
 	ASSERT_TRUE(d.find('\n') == std::string::npos);
-	// The bare newlines must not survive into the encoded form either;
-	// if they were percent-encoded they would appear as %0D/%0A, which
-	// is inert, but nothing raw may remain.
+	// The bare newlines must not survive into the encoded form either; percent-encoded they
+	// would appear as %0D/%0A, which is inert, but nothing raw may remain.
 	ASSERT_TRUE(d.find("Set-Cookie: pwned=1\r") == std::string::npos);
 
 	// A lone LF and a lone CR are just as dangerous with a lenient
@@ -590,9 +573,8 @@ TEST(SharedContent, DispositionPercentEncodesUtf8InTheExtendedForm)
 
 TEST(SharedContent, DispositionFallsBackToPlaceholderWhenNothingSurvives)
 {
-	// An all-control name leaves nothing printable. Emitting an empty
-	// filename="" would let the client pick its own name from the URL,
-	// so we name it ourselves.
+	// An all-control name leaves nothing printable. Emitting an empty filename="" would let the
+	// client pick its own name from the URL, so we name it ourselves.
 	const std::string ctrl("\x01\x02\x1F\x7F", 4);
 	ASSERT_EQUALS(std::string("attachment; filename=\"download\"; filename*=UTF-8''download"),
 		BuildContentDisposition(ctrl));
@@ -611,17 +593,14 @@ TEST(SharedContent, DispositionRejectsPathSeparatorsInTheQuotedForm)
 
 TEST(SharedContent, DispositionSemicolonCannotSplitParameters)
 {
-	// A semicolon inside the quoted string is legal, but only because
-	// the quotes hold; the extended form must still encode it so a
-	// lenient parser cannot read it as a new parameter.
+	// A semicolon inside the quoted string is legal, but only because the quotes hold; the
+	// extended form must still encode it so a lenient parser cannot read it as a new parameter.
 	const std::string d = BuildContentDisposition("a;b.bin");
 	ASSERT_EQUALS(std::string("attachment; filename=\"a;b.bin\"; filename*=UTF-8''a%3Bb.bin"), d);
 }
 
-// ----------------------------------------------------------------------
-// BuildContentEtag — mirrors BuildStaticEtag (Api.cpp:501-507) so the
-// dispatcher's 304 machinery sees one validator shape for both routes.
-// ----------------------------------------------------------------------
+// BuildContentEtag -- mirrors BuildStaticEtag (Api.cpp:501-507) so the dispatcher's 304 machinery
+// sees one validator shape for both routes.
 
 TEST(SharedContent, EtagHasTheSameShapeAsTheStaticOne)
 {
@@ -642,9 +621,8 @@ TEST(SharedContent, EtagChangesWithMtimeAndWithSize)
 	const std::string base = BuildContentEtag(1700000000ull, 1024ull);
 	ASSERT_TRUE(base != BuildContentEtag(1700000001ull, 1024ull));
 	ASSERT_TRUE(base != BuildContentEtag(1700000000ull, 1025ull));
-	// A truncation that keeps the size but moves the mtime, and a
-	// rewrite that keeps the mtime but moves the size, must both
-	// invalidate — that is the whole point of the pair.
+	// A truncation that keeps the size but moves the mtime, and a rewrite that keeps the mtime
+	// but moves the size, must both invalidate -- that is the whole point of the pair.
 	ASSERT_TRUE(BuildContentEtag(1, 2) != BuildContentEtag(2, 1));
 }
 
@@ -655,19 +633,15 @@ TEST(SharedContent, EtagHandlesLargeFileSizes)
 	ASSERT_EQUALS(std::string("\"0-200000000\""), BuildContentEtag(0, 8589934592ull));
 }
 
-// ---------------------------------------------------------------------
-// If-Range (RFC 9110 §13.1.5).
+// If-Range (RFC 9110 13.1.5).
 //
-// The comparison here is STRONG, unlike the one If-None-Match uses, and
-// these cases exist mostly to pin that difference down: the weak-form
-// test below is the exact regression a reviewer would expect from
-// reaching for webcommon::IfNoneMatchHits, which answers "hit" for the
-// same input.
-// ---------------------------------------------------------------------
+// The comparison here is STRONG, unlike the one If-None-Match uses, and these cases exist mostly to
+// pin that difference down: the weak-form test below is the exact regression a reviewer would
+// expect from reaching for webcommon::IfNoneMatchHits, which answers "hit" for the same input.
 
 TEST(SharedContent, IfRangeAbsentLeavesTheRangeAlone)
 {
-	// No precondition, nothing to fail — the Range stands on its own.
+	// No precondition, nothing to fail -- the Range stands on its own.
 	ASSERT_TRUE(IfRangeAllowsRange("", "\"abc-100\""));
 	ASSERT_TRUE(IfRangeAllowsRange("   ", "\"abc-100\""));
 }
@@ -684,45 +658,40 @@ TEST(SharedContent, IfRangeStaleValidatorRefusesTheRange)
 	// The case the header exists for: the representation moved, so the
 	// window the client asked for belongs to a file it no longer holds.
 	ASSERT_FALSE(IfRangeAllowsRange("\"abc-100\"", "\"def-200\""));
-	// Same opaque payload, different length — no substring matching.
+	// Same opaque payload, different length -- no substring matching.
 	ASSERT_FALSE(IfRangeAllowsRange("\"abc-10\"", "\"abc-100\""));
 }
 
 TEST(SharedContent, IfRangeWeakValidatorNeverMatches)
 {
-	// Strong comparison. A weak validator marks two representations as
-	// equivalent, not byte-identical, which is not a guarantee a byte
-	// range can be built on — even though If-None-Match accepts exactly
-	// this input as a hit.
+	// Strong comparison. A weak validator marks two representations as equivalent, not byte-
+	// identical, which is not a guarantee a byte range can be built on -- even though If-None-
+	// Match accepts exactly this input as a hit.
 	ASSERT_FALSE(IfRangeAllowsRange("W/\"abc-100\"", "\"abc-100\""));
 	ASSERT_FALSE(IfRangeAllowsRange("w/\"abc-100\"", "\"abc-100\""));
 }
 
 TEST(SharedContent, IfRangeBareOrWildcardFormsDoNotMatch)
 {
-	// The unquoted form is tolerated by IfNoneMatchHits for
-	// non-canonical clients; it is not tolerated here, because §13.1.5
-	// distinguishes an entity-tag from an HTTP-date by the leading
-	// DQUOTE. And `*` is not in the If-Range grammar at all.
+	// The unquoted form is tolerated by IfNoneMatchHits for non-canonical clients; it is not
+	// tolerated here, because 13.1.5 distinguishes an entity-tag from an HTTP-date by the
+	// leading DQUOTE. And `*` is not in the If-Range grammar at all.
 	ASSERT_FALSE(IfRangeAllowsRange("abc-100", "\"abc-100\""));
 	ASSERT_FALSE(IfRangeAllowsRange("*", "\"abc-100\""));
 }
 
 TEST(SharedContent, IfRangeHttpDateFormIsTreatedAsNonMatching)
 {
-	// Not implemented, and refused rather than honoured: a
-	// second-resolution validator compares equal across a replacement
-	// that happened inside the same second, which is the race the
-	// header is there to close. Serving the whole file is the safe
-	// direction.
+	// Not implemented, and refused rather than honoured: a second-resolution validator compares
+	// equal across a replacement that happened inside the same second, which is the race the
+	// header is there to close. Serving the whole file is the safe direction.
 	ASSERT_FALSE(IfRangeAllowsRange("Sat, 01 Jan 2000 00:00:00 GMT", "\"abc-100\""));
 	ASSERT_FALSE(IfRangeAllowsRange("Wed, 21 Oct 2015 07:28:00 GMT", "\"abc-100\""));
 }
 
 TEST(SharedContent, IfRangeIsNotAListAndDoesNotWalkOne)
 {
-	// If-Range carries exactly one validator by grammar. A comma-joined
-	// pair is malformed, and a malformed precondition must fail closed
-	// rather than be split until something matches.
+	// If-Range carries exactly one validator by grammar. A comma-joined pair is malformed, and
+	// a malformed precondition must fail closed rather than be split until something matches.
 	ASSERT_FALSE(IfRangeAllowsRange("\"nope\", \"abc-100\"", "\"abc-100\""));
 }

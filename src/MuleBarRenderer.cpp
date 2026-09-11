@@ -50,22 +50,20 @@ bool CMuleBarRenderer::GetValue(wxVariant &value) const
 
 wxSize CMuleBarRenderer::GetSize() const
 {
-	// The generic backend passes the real cell rect to Render() and treats this
-	// only as a best-width hint, but the native macOS backend takes GetSize()
-	// as the cell size itself (wxCustomRendererObject::cellSize), so a constant
-	// here paints a fixed-width bar inside an arbitrarily wide column. Report
-	// the owning column's current width to keep both backends in step; the
-	// literal is the fallback for before the renderer is attached.
+	// The generic backend passes the real cell rect to Render() and treats this only as a best-
+	// width hint, but the native macOS backend takes GetSize() as the cell size itself
+	// (wxCustomRendererObject::cellSize), so a constant here paints a fixed-width bar inside an
+	// arbitrarily wide column. Report the owning column's current width to keep both backends
+	// in step; the literal is the fallback for before the renderer is attached.
 	int width = 40;
 	if (const wxDataViewColumn *column = GetOwner()) {
 		width = std::max(width, column->GetWidth());
 	}
-	// Height is deliberately wxDefaultCoord: wxDataViewCustomRendererBase::
-	// WXCallRender() only applies its vertical alignment -- which shrinks the
-	// rect it hands Render() down to GetSize().y -- when the height is >= 0.
-	// Reporting a concrete height there means a row taller than that (the
-	// generic backend pads rows past the text extent) draws the bar at the top
-	// with a gap under it. Opting out leaves the bar the full cell.
+	// Height is deliberately wxDefaultCoord: wxDataViewCustomRendererBase::WXCallRender() only
+	// applies its vertical alignment -- which shrinks the rect it hands Render() down to
+	// GetSize().y -- when the height is >= 0. Reporting a concrete height means a taller row
+	// (the generic backend pads rows past the text extent) draws the bar at the top with a gap
+	// under it. Opting out leaves the bar the full cell.
 	return wxSize(width, wxDefaultCoord);
 }
 

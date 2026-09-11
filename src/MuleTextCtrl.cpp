@@ -30,12 +30,10 @@
 #include <wx/settings.h>
 
 /**
- * These are the IDs used to identify the different menu-items.
+ * IDs identifying the different menu items.
  *
- * Please note that I make use of predefined wxIDs for the first two, but not
- * for Paste. This is because wxMenu poses some restrictions on what can be
- * done with items using those IDs, and by default, Paste is enabled even if
- * there's nothing to paste!
+ * The first two use predefined wxIDs, but Paste does not: wxMenu restricts what can be done with
+ * items using those IDs, and by default Paste is enabled even when there is nothing to paste.
  */
 enum CMTC_Events
 {
@@ -92,10 +90,9 @@ void CMuleTextCtrl::OnRightDown(wxMouseEvent &evt)
 
 	popup_menu.Append(CMTCE_SelAll, _("Select All"));
 
-	// wxMenu will automatically enable/disable the Cut and Copy items,
-	// however, were are a little more pricky about the Paste item than they
-	// are, so we enable/disable it on our own, depending on whenever or not
-	// there's actually something to paste
+	// wxMenu enables and disables the Cut and Copy items automatically, but we are pickier
+	// about Paste than it is, so we drive that one ourselves from whether there is actually
+	// something to paste.
 	bool canpaste = false;
 	if (CanPaste()) {
 		if (wxTheClipboard->Open()) {

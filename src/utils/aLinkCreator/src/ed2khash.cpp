@@ -96,9 +96,10 @@ bool Ed2kHash::SetED2KHashFromFile(const wxFileName &filename, MD4Hook hook)
 					MD4Update(&hdc, reinterpret_cast<unsigned char const *>(buf), read);
 				} else {
 					// User cancelled via the progress hook -- release both the
-					// per-buffer read scratch *and* the cumulative parthash buffer
-					// grown by realloc() below.  Pre-fix this path freed only buf,
-					// leaking tmpCharHash across every cancelled hash.
+					// per-buffer read scratch and the cumulative parthash
+					// buffer grown by realloc() below. Before the fix this path
+					// freed only buf, leaking tmpCharHash across every
+					// cancelled hash.
 					delete[] buf;
 #ifndef WANT_STRING_IMPLEMENTATION
 					free(tmpCharHash);
@@ -220,9 +221,9 @@ wxString Ed2kHash::GetED2KLink(const bool addPartHashes, const wxArrayString *ar
 wxString Ed2kHash::CleanFilename(const wxString &filename)
 {
 	wxString name(filename);
-	// Replace only what breaks ed2k link parsing: the field separator,
-	// the end-of-link marker, path separators, and control characters.
-	// Printable Unicode is preserved (files are keyed by hash + size).
+	// Replace only what breaks ed2k link parsing: the field separator, the end-of-link marker,
+	// path separators and control characters. Printable Unicode is preserved, files being keyed
+	// by hash + size.
 	for (size_t i = 0; i < name.length(); ++i) {
 		const wxUniChar ch = name[i];
 		if (ch == '|' || ch == '/' || ch == '\\' || ch < 0x20 || ch == 0x7f) {

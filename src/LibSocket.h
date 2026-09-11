@@ -56,14 +56,9 @@ enum
 	MULE_SOCKET_LOST
 };
 
-//
-// Abstraction class for library TCP socket
-// Can be a wxSocket or an ASIO socket
-//
+// Abstraction class for a library TCP socket: either a wxSocket or an ASIO socket.
 
-//
 // Client TCP socket
-//
 class CLibSocket
 {
 	friend class CAsioSocketImpl;
@@ -76,9 +71,9 @@ public:
 	// wx Stuff
 	void Notify(bool);
 	bool Connect(const amuleIPV4Address &adr, bool wait);
-	// Bound the synchronous connect to `ms` milliseconds (0 = no bound,
-	// the default). Only affects the blocking connect path used by the
-	// synchronous EC clients (amulecmd); the async path is unaffected.
+	// Bound the synchronous connect to `ms` milliseconds (0 = no bound, the default). Only
+	// affects the blocking connect path used by the synchronous EC clients (amulecmd); the
+	// async path is unaffected.
 	void SetConnectTimeout(int ms);
 	bool IsConnected() const;
 	bool IsOk() const;
@@ -88,11 +83,10 @@ public:
 	void Close();
 	void Destroy();
 
-	// Swap in a fresh asio socket impl on this same wrapper, so the socket can be
-	// re-connected after a loss WITHOUT recreating the CLibSocket -- and therefore
-	// without invalidating any pointer the app still holds to us, the remote GUI
-	// pinning its CRemoteConnect in every container. The outgoing impl is detached
-	// race-safely first (see LinkSocketImpl).
+	// Swap in a fresh asio socket impl on this same wrapper, so the socket can be re-connected
+	// after a loss WITHOUT recreating the CLibSocket -- and therefore without invalidating any
+	// pointer the app still holds to us, the remote GUI pinning its CRemoteConnect in every
+	// container. The outgoing impl is detached race-safely first (see LinkSocketImpl).
 	void ResetForReconnect();
 
 	// Get last error, 0 == no error
@@ -128,28 +122,26 @@ public:
 	wxString GetPeer();
 	uint32 GetPeerInt();
 
-	// Turn on TCP keepalive with per-socket timings, so a half-open connection
-	// (peer gone, FIN/RST lost or never sent) is torn down at the TCP layer instead
-	// of sitting idle forever. Used by the EC sockets on both ends. Effective only
-	// on POSIX (TCP_KEEPIDLE / TCP_KEEPINTVL / TCP_KEEPCNT) and Windows
-	// (SIO_KEEPALIVE_VALS, where only idle and interval are settable). No-op if the
-	// underlying socket is not open.
+	// Turn on TCP keepalive with per-socket timings, so a half-open connection (peer gone,
+	// FIN/RST lost or never sent) is torn down at the TCP layer instead of sitting idle
+	// forever. Used by the EC sockets on both ends. Effective only on POSIX (TCP_KEEPIDLE /
+	// TCP_KEEPINTVL / TCP_KEEPCNT) and Windows (SIO_KEEPALIVE_VALS, where only idle and
+	// interval are settable). No-op if the underlying socket is not open.
 	void EnableTcpKeepalive(int idleSec, int probeIntervalSec, int probeCount);
 
-	// Turn off Nagle. Used by the EC sockets on both ends, where a packet's
-	// trailing small write would otherwise wait out the peer's delayed-ACK timer.
-	// No-op if the underlying socket is not open.
+	// Turn off Nagle. Used by the EC sockets on both ends, where a packet's trailing small
+	// write would otherwise wait out the peer's delayed-ACK timer. No-op if the underlying
+	// socket is not open.
 	void EnableTcpNoDelay();
 
 	// Handlers
 	virtual void OnConnect(int) {}
 	virtual void OnSend(int) {}
 	virtual void OnReceive(int) {}
-	// The int argument is unused: it exists to give the CLibSocket-layer hook a
-	// different signature from CECSocket::OnLost(), so a class multi-inheriting
-	// from both (CECMuleSocket) can override this one unambiguously and forward.
-	// Without that, the Asio reactor's EOF-on-read dispatch lands on the empty
-	// CLibSocket::OnLost{} instead of the real overrides.
+	// The int argument is unused: it exists to give the CLibSocket-layer hook a different
+	// signature from CECSocket::OnLost(), so a class multi-inheriting from both (CECMuleSocket)
+	// can override this one unambiguously and forward. Without that, the Asio reactor's EOF-on-
+	// read dispatch lands on the empty CLibSocket::OnLost{} instead of the real overrides.
 	virtual void OnLost(int) {}
 	virtual void OnProxyEvent(int) {}
 
@@ -157,25 +149,22 @@ private:
 	// Replace the internal socket. Takes ownership of the passed shared_ptr.
 	void LinkSocketImpl(std::shared_ptr<class CAsioSocketImpl>);
 
-	// shared_ptr so the asio impl can outlive this wrapper for as long as
-	// any in-flight async callback still holds a shared_from_this() ref.
-	// Required to fix the wake-from-sleep use-after-free crash (issue #384).
+	// shared_ptr so the asio impl can outlive this wrapper for as long as any in-flight async
+	// callback still holds a shared_from_this() ref. Required to fix the wake-from-sleep use-
+	// after-free crash (issue #384).
 	std::shared_ptr<class CAsioSocketImpl> m_aSocket;
 	void LastCount();   // No. We don't have this. We return it directly with Read() and Write()
 	bool Error() const; // Only use LastError
 };
 
-//
 // TCP socket server
-//
 class CLibSocketServer
 {
 public:
 	CLibSocketServer(const amuleIPV4Address &adr, int flags);
-	// Bind the acceptor to a specific network interface (empty = any),
-	// independent of the global bind-to-interface pin set via
-	// SetSocketBindInterface(). Used by the EC listener so external-control
-	// traffic can live on a different interface than ed2k/Kad.
+	// Bind the acceptor to a specific network interface (empty = any), independent of the
+	// global bind-to-interface pin set via SetSocketBindInterface(). Used by the EC listener so
+	// external-control traffic can live on a different interface than ed2k/Kad.
 	CLibSocketServer(const amuleIPV4Address &adr, int flags, const wxString &bindInterface);
 	virtual ~CLibSocketServer();
 	// Accepts an incoming connection request, and creates a new CLibSocket object which represents the
@@ -200,14 +189,12 @@ public:
 	bool SocketAvailable();
 
 private:
-	// shared_ptr for the same reason as CLibSocket::m_aSocket — pending
+	// shared_ptr for the same reason as CLibSocket::m_aSocket -- pending
 	// async_accept completions must keep the impl alive past wrapper death.
 	std::shared_ptr<class CAsioSocketServerImpl> m_aServer;
 };
 
-//
 // UDP socket
-//
 class CLibUDPSocket
 {
 	friend class CAsioUDPSocketImpl;
@@ -228,24 +215,22 @@ public:
 	// Not needed here
 	bool Notify(bool) { return true; }
 
-	// Check if socket is currently blocking for write
-	// Well - we apparently have block in wx. At least we handle it in MuleUDPSocket.
-	// But this makes no sense. We send a packet to an IP in background.
-	// Either this works after some time, or not. But there is no block.
+	// Check whether the socket is currently blocking for write. We apparently have block in wx,
+	// at least we handle it in MuleUDPSocket, but it makes no sense: a packet is sent to an IP
+	// in the background, and either that works after some time or it does not. There is no
+	// block.
 	bool BlocksWrite() const { return false; }
 
 private:
-	// shared_ptr so the asio impl can outlive this wrapper for as long as
-	// any in-flight async callback still holds a shared_from_this() ref.
-	// Required to fix the wake-from-sleep use-after-free crash (issue #384).
+	// shared_ptr so the asio impl can outlive this wrapper for as long as any in-flight async
+	// callback still holds a shared_from_this() ref. Required to fix the wake-from-sleep use-
+	// after-free crash (issue #384).
 	std::shared_ptr<class CAsioUDPSocketImpl> m_aSocket;
 	void LastCount();   // block this
 	bool Error() const; // Only use LastError
 };
 
-//
 // ASIO event loop
-//
 class CAsioService
 {
 public:
@@ -258,10 +243,9 @@ private:
 	class CAsioServiceThread *m_threads;
 };
 
-// Set the network interface every socket binds its egress to (empty = system
-// default). Pushed in by the core from thePrefs::GetNetworkInterface() so this
-// socket library stays independent of CPreferences. Takes effect for sockets
-// opened after the call.
+// Set the network interface every socket binds its egress to (empty = system default). Pushed in by
+// the core from thePrefs::GetNetworkInterface() so this socket library stays independent of
+// CPreferences. Takes effect for sockets opened after the call.
 void SetSocketBindInterface(const wxString &iface);
 
 // Outcome of validating the configured bind interface, so the core can report
@@ -275,15 +259,14 @@ enum BindInterfaceStatus
 	BindIface_Unsupported // platform can't bind, or another error
 };
 
-// Validate the configured bind interface on a throwaway socket. Lets the core
-// warn the user (not found / permission denied) before any real socket opens,
-// rather than leaving traffic silently unbound.
+// Validate the configured bind interface on a throwaway socket. Lets the core warn the user (not
+// found, permission denied) before any real socket opens, rather than leaving traffic silently
+// unbound.
 BindInterfaceStatus TestSocketBindInterface(const wxString &iface);
 
-// Bind an already-open raw socket to the given interface, reusing the exact same
-// per-platform logic as aMule's own sockets -- for non-asio sockets such as
-// libcurl's (via CURLOPT_SOCKOPTFUNCTION). The fd is passed as uintptr_t so a
-// Windows SOCKET survives without truncation.
+// Bind an already-open raw socket to the given interface, reusing the exact same per-platform logic
+// as aMule's own sockets -- for non-asio sockets such as libcurl's, via CURLOPT_SOCKOPTFUNCTION.
+// The fd is passed as uintptr_t so a Windows SOCKET survives without truncation.
 bool BindRawSocketToInterface(uintptr_t fd, const wxString &iface);
 
 #endif /* __LIBSOCKET_H__ */

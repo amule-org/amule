@@ -25,8 +25,8 @@
 #ifndef _PHP_CORE_LIB_H_
 #define _PHP_CORE_LIB_H_
 
-/*
- * This is interface to CPP parts of amuleweb
+/**
+ * Interface to the CPP parts of amuleweb.
  */
 #ifdef __cplusplus
 

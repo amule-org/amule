@@ -66,10 +66,9 @@ static string GetLinksFilePath(const string &configDir)
 
 #ifdef __APPLE__
 
-	// ~/Library/Application Support always exists on macOS >= 10.5 and
-	// is the user-domain equivalent of FSFindFolder(kUserDomain,
-	// kApplicationSupportFolderType, ...) that we used to call via the
-	// Carbon FSRef API (removed in 64-bit macOS).
+	// ~/Library/Application Support always exists on macOS >= 10.5 and is the user-domain
+	// equivalent of the FSFindFolder(kUserDomain, kApplicationSupportFolderType, ...) we used
+	// to call through the Carbon FSRef API, removed in 64-bit macOS.
 	const char *home = getenv("HOME");
 	std::string strDir = (home ? home : "");
 	return strDir + "/Library/Application Support/aMule/ED2KLinks";
@@ -103,9 +102,8 @@ static string GetLinksFilePath(const string &configDir)
 
 #else
 
-	// Mirror the macOS branch above: getenv may return NULL if HOME is
-	// unset (rare in practice, but constructing std::string(NULL) is
-	// undefined behaviour).
+	// Mirror the macOS branch above: getenv may return NULL if HOME is unset -- rare in
+	// practice, but constructing std::string(NULL) is undefined behaviour.
 	const char *home = getenv("HOME");
 	return string(home ? home : "") + "/.aMule/ED2KLinks";
 
@@ -113,10 +111,7 @@ static string GetLinksFilePath(const string &configDir)
 }
 
 /**
- * Converts a hexadecimal number to a char.
- *
- * @param hex The hex-number, must be at most 2 digits long.
- * @return The resulting char or \0 if conversion failed.
+ * Converts a hexadecimal number of at most 2 digits to a char, or \0 if the conversion failed.
  */
 static char HexToDec(const string &hex)
 {
@@ -139,10 +134,7 @@ static char HexToDec(const string &hex)
 }
 
 /**
- * This function converts all valid HTML escape-codes to their corresponding chars.
- *
- * @param str The string to unescape.
- * @return The unescaped version of the input string.
+ * Converts every valid HTML escape code in @a str to its corresponding char.
  */
 static string Unescape(const string &str)
 {
@@ -171,7 +163,7 @@ static string Unescape(const string &str)
 }
 
 /**
- * Returns the string with whitespace stripped from both ends.
+ * The string with whitespace stripped from both ends.
  */
 static string strip(const string &str)
 {
@@ -194,7 +186,7 @@ static string strip(const string &str)
 }
 
 /**
- * Returns true if the string is a valid number.
+ * True if the string is a valid number.
  */
 static bool isNumber(const string &str)
 {
@@ -208,7 +200,7 @@ static bool isNumber(const string &str)
 }
 
 /**
- * Returns true if the string is a valid Base16 representation of a MD4 Hash.
+ * True if the string is a valid Base16 representation of an MD4 hash.
  */
 static bool isMD4Hash(const string &str)
 {
@@ -224,7 +216,7 @@ static bool isMD4Hash(const string &str)
 }
 
 /**
- * Returns a description of the current version of "ed2k".
+ * A description of the current version of "ed2k".
  */
 static string getVersion()
 {
@@ -236,7 +228,7 @@ static string getVersion()
 }
 
 /**
- * Helper-function for printing link-errors.
+ * Helper for printing link errors.
  */
 static void badLink(const string &type, const string &err, const string &uri)
 {
@@ -245,9 +237,7 @@ static void badLink(const string &type, const string &err, const string &uri)
 }
 
 /**
- * Writes a string to the ED2KLinks file.
- *
- * If errors are detected, it will terminate the program.
+ * Writes a string to the ED2KLinks file, terminating the program on error.
  */
 static void writeLink(const string &uri, const string &config_dir)
 {
@@ -271,10 +261,7 @@ static void writeLink(const string &uri, const string &config_dir)
 }
 
 /**
- * Writes the the specified URI to the ED2KLinks file if it is a valid file-link.
- *
- * @param uri The URI to check.
- * @return True if the URI was written, false otherwise.
+ * Writes @a uri to the ED2KLinks file if it is a valid file link, returning whether it was written.
  */
 static bool checkFileLink(const string &uri)
 {
@@ -321,10 +308,8 @@ static bool checkFileLink(const string &uri)
 }
 
 /**
- * Writes the the specified URI to the ED2KLinks file if it is a valid server-link.
- *
- * @param uri The URI to check.
- * @return True if the URI was written, false otherwise.
+ * Writes @a uri to the ED2KLinks file if it is a valid server link, returning whether it was
+ * written.
  */
 static bool checkServerLink(const string &uri)
 {
@@ -363,10 +348,8 @@ static bool checkServerLink(const string &uri)
 }
 
 /**
- * Writes the the specified URI to the ED2KLinks file if it is a valid serverlist-link.
- *
- * @param uri The URI to check.
- * @return True if the URI was written, false otherwise.
+ * Writes @a uri to the ED2KLinks file if it is a valid serverlist link, returning whether it was
+ * written.
  */
 static bool checkServerListLink(const string &uri)
 {

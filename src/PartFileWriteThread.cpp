@@ -73,14 +73,13 @@ void CPartFileWriteThread::QueueWrite(CPartFile *pFile, PartFileBufferedData *pB
 
 void CPartFileWriteThread::DropReferencesTo(const CKnownFile *file)
 {
-	// Pointer-value strip of any pending write item whose pFile matches `file`.
-	// Called from MuleNotify::KnownFileBeingDestroyed before CPartFile is freed, or
-	// the write loop would deref the dangling pFile on the next tick. CPartFile
-	// inherits from CKnownFile at the same address, so the cast never derefs.
+	// Pointer-value strip of any pending write item whose pFile matches `file`. Called from
+	// MuleNotify::KnownFileBeingDestroyed before CPartFile is freed, or the write loop would
+	// deref the dangling pFile on the next tick. CPartFile inherits from CKnownFile at the same
+	// address, so the cast never derefs.
 	//
-	// pBuffer is NOT deleted here: ownership stays with
-	// CPartFile::m_BufferedData_list, which ~CPartFile frees, so deleting it here
-	// too would double-free.
+	// pBuffer is NOT deleted here: ownership stays with CPartFile::m_BufferedData_list, which
+	// ~CPartFile frees, so deleting it here too would double-free.
 	wxMutexLocker lock(m_mutex);
 	for (std::list<ToWrite>::iterator it = m_flushList.begin(); it != m_flushList.end();
 		/* manual ++ */) {
@@ -92,18 +91,17 @@ void CPartFileWriteThread::DropReferencesTo(const CKnownFile *file)
 	}
 }
 
-// Replaces eMule's IOCP + overlapped WriteFile with synchronous
-// CFileArea::FlushAt(). The thread is dedicated to writes, so blocking on disk
-// I/O is fine -- the win is that the main thread no longer stalls.
+// Replaces eMule's IOCP + overlapped WriteFile with synchronous CFileArea::FlushAt(). The thread is
+// dedicated to writes, so blocking on disk I/O is fine -- the win is that the main thread no longer
+// stalls.
 void *CPartFileWriteThread::Entry()
 {
 	m_bRun = true;
 
-	// Loop until EndThread() clears m_bRun, then drain one final batch before
-	// returning. A shutdown signal must never drop queued writes: WriteToBuffer
-	// FillGap()s each range at queue time and the gaplist is persisted, so a dropped
-	// write would leave the .met claiming bytes that never reached disk -- a
-	// silently corrupt part on the next launch.
+	// Loop until EndThread() clears m_bRun, then drain one final batch before returning. A
+	// shutdown signal must never drop queued writes: WriteToBuffer FillGap()s each range at
+	// queue time and the gaplist is persisted, so a dropped write would leave the .met claiming
+	// bytes that never reached disk -- a silently corrupt part on the next launch.
 	for (;;) {
 		// Move queued items to a local work list under the lock, so the main thread
 		// can keep queueing while we process it.
@@ -121,10 +119,10 @@ void *CPartFileWriteThread::Entry()
 			keepRunning = m_bRun;
 		}
 
-		// Process all queued writes synchronously. No m_bRun check in
-		// the loop condition: a batch, once taken, is always written in
-		// full so a shutdown never abandons it half-drained.
-		// eMule ref: WriteBuffers() — line 122
+		// Process all queued writes synchronously. No m_bRun check in the loop condition: a
+		// batch, once taken, is always written in full so a shutdown never abandons it
+		// half-drained.
+		// eMule ref: WriteBuffers() -- line 122
 		for (std::list<ToWrite>::iterator it = workList.begin(); it != workList.end(); ++it) {
 			PartFileBufferedData *pBuffer = it->pBuffer;
 			uint32 lenData = (uint32)(pBuffer->end - pBuffer->start + 1);
@@ -155,7 +153,7 @@ void *CPartFileWriteThread::Entry()
 				writeOk = false;
 			}
 
-			// eMule ref: WriteCompletionRoutine line 179 — decrement in write thread
+			// eMule ref: WriteCompletionRoutine line 179 -- decrement in write thread
 			// so main thread can check m_iWrites at any time.
 			--it->pFile->m_iWrites;
 

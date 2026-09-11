@@ -24,16 +24,15 @@
 
 // The buffering between libutp and the eD2k stack.
 //
-// The property worth the coverage is the would-block contract, because
-// CEMSocket depends on it rather than merely tolerating it: 0 bytes with the
-// Blocks flag set means "not yet", 0 bytes with an error set means the peer is
-// gone. Getting that backwards disconnects a peer whose send window would have
-// opened a millisecond later, and the symptom -- peers dropping under load --
-// looks nothing like its cause.
+// The property worth the coverage is the would-block contract, because CEMSocket depends on it
+// rather than merely tolerating it: 0 bytes with the Blocks flag set means "not yet", 0 bytes with
+// an error set means the peer is gone. Getting that backwards disconnects a peer whose send window
+// would have opened a millisecond later, and the symptom -- peers dropping under load -- looks
+// nothing like its cause.
 //
-// The other one is the close: libutp's utp_close() must happen exactly once,
-// and a destructor plus a DESTROYING callback both closing is a double free
-// that only shows up when a peer leaves at the wrong moment.
+// The other one is the close: libutp's utp_close() must happen exactly once, and a destructor plus
+// a DESTROYING callback both closing is a double free that only shows up when a peer leaves at the
+// wrong moment.
 
 #include <muleunit/test.h>
 
@@ -120,10 +119,9 @@ TEST(UtpStream, ReadDrainedIsDueExactlyOncePerDrain)
 
 TEST(UtpStream, ReadBoundIsReportedRatherThanEnforced)
 {
-	// libutp can deliver more than the bound in one callback, and a byte
-	// dropped here is a hole in a file the peer already paid to send. So the
-	// bound is what UTP_GET_READ_BUFFER_SIZE reports -- the peer stops a round
-	// trip later -- not something this class refuses.
+	// libutp can deliver more than the bound in one callback, and a byte dropped here is a hole
+	// in a file the peer already paid to send. So the bound is what UTP_GET_READ_BUFFER_SIZE
+	// reports -- the peer stops a round trip later -- not something this class refuses.
 	CUtpStream stream(CUtpStream::kDefaultWriteBound, 8);
 	const std::vector<uint8_t> first = Pattern(20);
 	const std::vector<uint8_t> second = Pattern(12, 200);
@@ -153,11 +151,10 @@ TEST(UtpStream, ReadBoundIsReportedRatherThanEnforced)
 
 TEST(UtpStream, ErrorValuesCannotBeMistakenForSocketErrors)
 {
-	// LastError() stands in for CLibSocket::LastError() under the same name and
-	// type, and that one returns a boost error_code value: errno on POSIX,
-	// WinSock codes (10000-11999) on Windows. Every failure of ours has to sit
-	// clear of both, or a call site comparing against a constant matches by
-	// coincidence.
+	// LastError() stands in for CLibSocket::LastError() under the same name and type, and that
+	// one returns a boost error_code value: errno on POSIX, WinSock codes (10000-11999) on
+	// Windows. Every failure of ours has to sit clear of both, or a call site comparing against
+	// a constant matches by coincidence.
 	const EUtpTransportFailure failures[] = {
 		EUtpTransportFailure::Refused, EUtpTransportFailure::TimedOut, EUtpTransportFailure::Reset
 	};
@@ -216,10 +213,10 @@ TEST(UtpStream, RefusedBytesStayQueued)
 	const std::vector<uint8_t> payload = Pattern(40, 11);
 	ASSERT_EQUALS(40u, stream.Write(payload.data(), 40));
 
-	// utp_write() takes what the congestion window allows and reports it. The
-	// refused tail has to stay here: if the queue emptied, the caller would
-	// have to hold those bytes somewhere WriteBufferSize() cannot see and
-	// m_writeBound does not bound, which is the growth the bound prevents.
+	// utp_write() takes what the congestion window allows and reports it. The refused tail has
+	// to stay here: if the queue emptied, the caller would have to hold those bytes somewhere
+	// WriteBufferSize() cannot see and m_writeBound does not bound, which is the growth the
+	// bound prevents.
 	stream.ConsumeQueuedBytes(15);
 	ASSERT_EQUALS(25u, (unsigned)stream.WriteBufferSize());
 
@@ -301,10 +298,9 @@ TEST(UtpStream, EofAndDestroyingAreEndsRatherThanErrors)
 
 TEST(UtpStream, TheThreeFailuresStayDistinct)
 {
-	// A refused connection, a silent peer and a torn-down connection are three
-	// different facts about a peer, and the source list acts differently on
-	// each. Collapsing them to "failed" is what makes a firewalled peer
-	// indistinguishable from a dead one.
+	// A refused connection, a silent peer and a torn-down connection are three different facts
+	// about a peer, and the source list acts differently on each. Collapsing them to "failed"
+	// is what makes a firewalled peer indistinguishable from a dead one.
 	CUtpStream refused;
 	refused.OnFailure(EUtpTransportFailure::Refused);
 	CUtpStream timedOut;
@@ -361,9 +357,8 @@ TEST(UtpStream, ACleanEndIsNotOkAndIsNotAWouldBlock)
 
 	stream.OnFailure(EUtpTransportFailure::Eof);
 
-	// EOF ends the stream without failing it, so Write() refuses while both
-	// BlocksWrite() and LastError() stay 0 -- the pair a would-block sets.
-	// IsOk() is what tells the two apart.
+	// EOF ends the stream without failing it, so Write() refuses while both BlocksWrite() and
+	// LastError() stay 0 -- the pair a would-block sets. IsOk() is what tells the two apart.
 	ASSERT_EQUALS(0u, stream.Write(payload.data(), 4));
 	ASSERT_FALSE(stream.BlocksWrite());
 	ASSERT_EQUALS(0, stream.LastError());

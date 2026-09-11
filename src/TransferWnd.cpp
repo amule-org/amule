@@ -88,10 +88,9 @@ CTransferWnd::CTransferWnd(wxWindow *pParent)
 	clientlistctrl = CastChild(ID_CLIENTLIST, CSourceListCtrl);
 	m_dlTab = CastChild(ID_CATEGORIES, CMuleNotebook);
 
-	// Render the initial "Total size: 0 bytes" so the field is visible for an empty
-	// queue. CDownloadListCtrl::SetTotalSize() cannot do it yet: it reaches the
-	// label through theApp->amuledlg->m_transferwnd, which is not assigned until
-	// this constructor returns.
+	// Render the initial "Total size: 0 bytes" so the field is visible for an empty queue.
+	// CDownloadListCtrl::SetTotalSize() cannot do it yet: it reaches the label through
+	// theApp->amuledlg->m_transferwnd, which is not assigned until this constructor returns.
 	if (wxStaticText *totalSize = CastChild("downloadsTotalSize", wxStaticText)) {
 		totalSize->SetLabel(CFormat(_("Total queue size: %s")) % CastItoXBytes(0));
 	}
@@ -256,9 +255,9 @@ void CTransferWnd::OnAddCategory(wxCommandEvent &WXUNUSED(event))
 #endif
 	);
 	dialog.ShowModal();
-	// A new category's incoming dir joins the shareset, so the dialog may have
-	// left a re-walk owed. Run it now the modal is gone, behind its own
-	// progress dialog, rather than letting it freeze the app on a core tick.
+	// A new category's incoming dir joins the shareset, so the dialog may have left a re-walk
+	// owed. Run it now the modal is gone, behind its own progress dialog, rather than letting
+	// it freeze the app on a core tick.
 	ReloadSharedFilesIfPending(this);
 }
 
@@ -273,8 +272,8 @@ void CTransferWnd::RemoveCategory(int index)
 		return;
 	}
 	// Granted immediately in the monolithic build; in amulegui it goes out as
-	// EC_OP_DELETE_CATEGORY and the reply handler commits instead, so a
-	// refused delete cannot close the tab (amule-org/amule#1231).
+	// EC_OP_DELETE_CATEGORY and the reply handler commits instead, so a refused delete cannot
+	// close the tab (amule-org/amule#1231).
 	if (theApp->glob_prefs->RequestRemoveCat(index)) {
 		CommitRemoveCategory(index);
 	}
@@ -293,10 +292,9 @@ void CTransferWnd::CommitRemoveCategory(int index)
 	}
 	theApp->glob_prefs->SaveCats();
 	theApp->amuledlg->m_searchwnd->UpdateCatChoice();
-	// RemoveCat() asks for a re-walk (the category's directory leaves the
-	// shareset). Run it here behind a progress dialog rather than letting
-	// it land silently on a core tick -- CPreferences is shared with the
-	// daemon, so it cannot raise one itself.
+	// RemoveCat() asks for a re-walk, the category's directory leaving the shareset. Run it
+	// here behind a progress dialog rather than letting it land silently on a core tick --
+	// CPreferences is shared with the daemon, so it cannot raise one itself.
 	ReloadSharedFilesIfPending(this);
 }
 
@@ -516,9 +514,9 @@ void CTransferWnd::OnSashPositionChanging(wxSplitterEvent &evt)
 				wxCommandEvent event;
 				OnToggleClientList(event);
 			} else {
-				// normal resize
-				// If several events queue up, setting the sash to the current mouse position
-				// will speed up things and make sash moving more smoothly.
+				// Normal resize. If several events queue up, setting the sash to
+				// the current mouse position speeds things up and makes sash moving
+				// smoother.
 				evt.SetSashPosition(mousey);
 			}
 		}

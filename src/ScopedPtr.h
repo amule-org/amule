@@ -31,11 +31,10 @@
 /**
  * Sets a bool for the lifetime of the scope.
  *
- * Both users are notebook page-closing handlers whose own teardown fires a
- * MuleNotify that routes straight back into the close path for the same tab:
- * the flag makes the re-entry a no-op instead of a recursive close. It lived
- * privately in SearchDlg.cpp while there was one such handler; chat's is the
- * second, so it moved here rather than being copied.
+ * Both users are notebook page-closing handlers whose own teardown fires a MuleNotify that routes
+ * straight back into the close path for the same tab: the flag makes the re-entry a no-op instead
+ * of a recursive close. It lived privately in SearchDlg.cpp while there was one such handler;
+ * chat's is the second, so it moved here rather than being copied.
  */
 class CScopedFlag
 {
@@ -54,12 +53,8 @@ private:
 };
 
 /**
- * CScopedPtr is a simple smart pointer.
- *
- * This class is a replacement for std::auto_ptr, with simpler
- * copying schematics, in that it doesn't allow copying or
- * assignment, compared to auto_ptr, which allows only one
- * instance to own a pointer (swapping at assignment).
+ * A simple smart pointer. A replacement for std::auto_ptr with simpler copying: it allows neither
+ * copying nor assignment, where auto_ptr lets one instance own a pointer and swaps at assignment.
  */
 template <typename TYPE> class CScopedPtr
 {
@@ -110,9 +105,7 @@ private:
 };
 
 /**
- * Similar to CScopedPtr, except that an array is expected.
- *
- * @see CScopedPtr
+ * Similar to CScopedPtr, except that an array is expected. @see CScopedPtr
  */
 template <typename TYPE> class CScopedArray
 {
@@ -168,10 +161,8 @@ private:
 };
 
 /**
- * Similar to CScopedPtr, except that a STL container of pointers is expected
- * which has to be freed with DeleteContents.
- *
- * @see CScopedPtr
+ * Similar to CScopedPtr, except that it expects an STL container of pointers, freed with
+ * DeleteContents. @see CScopedPtr
  */
 template <typename STL_CONTAINER> class CScopedContainer
 {

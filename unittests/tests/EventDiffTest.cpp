@@ -40,10 +40,9 @@ using namespace webapi;
 
 DECLARE_SIMPLE(EventDiff)
 
-// Drain `bus` non-blockingly and return every event newer than `since` in id
-// order. Drain is a replay from a cursor, not a consume: draining from 0 twice
-// yields the same events twice, so a test asserting that a later tick emitted
-// *nothing* has to carry the cursor forward.
+// Drain `bus` non-blockingly and return every event newer than `since` in id order. Drain is a
+// replay from a cursor, not a consume: draining from 0 twice yields the same events twice, so a
+// test asserting that a later tick emitted *nothing* has to carry the cursor forward.
 static std::vector<Event> DrainSince(CEventBus &bus, std::uint64_t since)
 {
 	std::vector<Event> out;
@@ -57,9 +56,8 @@ static std::vector<Event> DrainAll(CEventBus &bus)
 	return DrainSince(bus, 0);
 }
 
-// log_appended cold-start: the first tick must not emit log_appended
-// for pre-existing lines (clients GET /api/v0/logs/amule for the
-// history; the event channel is live-tail only).
+// log_appended cold start: the first tick must not emit log_appended for pre-existing lines.
+// Clients GET /api/v0/logs/amule for the history; the event channel is live-tail only.
 TEST(EventDiff, LogAppendedColdStartSilent)
 {
 	CState state;
@@ -73,9 +71,8 @@ TEST(EventDiff, LogAppendedColdStartSilent)
 	for (const auto &ev : drained) {
 		ASSERT_TRUE(ev.name != "log_appended");
 	}
-	// Baseline counter must equal the pre-existing log size so the
-	// next tick's diff sees zero new lines until amuled actually
-	// logs something.
+	// The baseline counter must equal the pre-existing log size, so the next tick's diff sees
+	// zero new lines until amuled actually logs something.
 	ASSERT_EQUALS(static_cast<std::size_t>(2), prev.amule_log_count);
 	ASSERT_TRUE(prev.amule_log_initialised);
 }
@@ -113,7 +110,7 @@ TEST(EventDiff, LogAppendedFiresOnSingleNewLine)
 }
 
 // A batch of multiple new lines lands in one event with a `lines`
-// array — never N separate events. Bus traffic ≪ line traffic.
+// array -- never N separate events. Bus traffic ≪ line traffic.
 TEST(EventDiff, LogAppendedBatchesMultipleLinesIntoOneEvent)
 {
 	CState state;
@@ -160,11 +157,9 @@ TEST(EventDiff, LogAppendedSilentOnIdleTick)
 	}
 }
 
-// JSON escaping: a line containing characters that need JSON-escaping
-// (backslash, double quote, control chars) must produce a valid JSON
-// payload. The EscJson helper backing this is the same one the
-// snapshot payloads use; covering it here pins the contract for
-// the log path specifically.
+// JSON escaping: a line containing characters that need escaping (backslash, double quote, control
+// chars) must produce a valid JSON payload. The EscJson helper backing this is the same one the
+// snapshot payloads use; covering it here pins the contract for the log path specifically.
 TEST(EventDiff, LogAppendedEscapesJsonHazards)
 {
 	CState state;
@@ -182,9 +177,8 @@ TEST(EventDiff, LogAppendedEscapesJsonHazards)
 		if (ev.name == "log_appended")
 			payload = ev.data;
 	}
-	// The raw characters must NOT appear unescaped in the payload.
-	// `\"` must become `\\\"`, `\\` must become `\\\\`, `\x01` must
-	// be `\\u0001`.
+	// The raw characters must NOT appear unescaped in the payload: `\"` must become `\\\"`,
+	// `\\` must become `\\\\`, `\x01` must be `\\u0001`.
 	ASSERT_TRUE(payload.find("\\\"") != std::string::npos);
 	ASSERT_TRUE(payload.find("\\\\") != std::string::npos);
 	ASSERT_TRUE(payload.find("\\u0001") != std::string::npos);
@@ -214,13 +208,11 @@ TEST(EventDiff, LogAppendedSilentOnTruncation)
 	ASSERT_EQUALS(static_cast<std::size_t>(1), prev.amule_log_count);
 }
 
-// PR #646 / issue #115: upload_file_name (the partfile a peer is downloading
-// FROM us) is part of the base client field set, so it must ride the
-// client_added SSE payload — otherwise the WebUI clients table has no way to
-// fill the File column for an upload-only peer (it shows a blank "—").
-// Drives one status change through the real emit path and returns the
-// status_changed payload, so these assert what a subscriber actually sees
-// rather than reaching into EventDiff's internals.
+// PR #646 / issue #115: upload_file_name -- the partfile a peer is downloading FROM us -- is part
+// of the base client field set, so it must ride the client_added SSE payload. Otherwise the WebUI
+// clients table has no way to fill the File column for an upload-only peer and shows a blank "--".
+// Drives one status change through the real emit path and returns the status_changed payload, so
+// these assert what a subscriber actually sees rather than reaching into EventDiff's internals.
 namespace
 {
 std::string EmitStatusAndGetPayload(const StatusSnapshot &next)
@@ -241,11 +233,11 @@ std::string EmitStatusAndGetPayload(const StatusSnapshot &next)
 }
 } // namespace
 
-// The free-space sentinel must reach the SSE payload as JSON null, never as
-// a number. amuled's FREE_SPACE_UNKNOWN is -1 and its EC serializer casts it
-// to uint64, so the wire carries 0xFFFFFFFFFFFFFFFF; emitting that unsigned
-// would tell a consumer 17 exabytes are free, and 0 would read as a full
-// disk. Same rule as the REST body, asserted so the two cannot drift apart.
+// The free-space sentinel must reach the SSE payload as JSON null, never as a number. amuled's
+// FREE_SPACE_UNKNOWN is -1 and its EC serializer casts it to uint64, so the wire carries
+// 0xFFFFFFFFFFFFFFFF; emitting that unsigned would tell a consumer 17 exabytes are free, and 0
+// would read as a full disk. The same rule as the REST body, asserted so the two cannot drift
+// apart.
 TEST(EventDiff, StatusEventSerialisesUnknownFreeSpaceAsNull)
 {
 	StatusSnapshot s;
@@ -283,19 +275,18 @@ TEST(EventDiff, StatusEventCarriesIdentityFields)
 	ASSERT_TRUE(payload.find("\"id\":") == std::string::npos);
 }
 
-// The Kad firewall verdict is the one field on this payload a subscriber is
-// most likely to be watching for, and Equal(StatusSnapshot) is what decides
-// whether the event is published at all. Drop it from that comparator and a
-// firewall flip stops reaching subscribers entirely -- silently, since the
-// REST body keeps reporting the new value. Pinned here so a future edit to
-// the comparator cannot quietly lose it.
+// The Kad firewall verdict is the field on this payload a subscriber is most likely watching for,
+// and Equal(StatusSnapshot) is what decides whether the event is published at all. Drop it from
+// that comparator and a firewall flip stops reaching subscribers entirely -- silently, since the
+// REST body keeps reporting the new value. Pinned so a future edit to the comparator cannot quietly
+// lose it.
 TEST(EventDiff, StatusEventFiresWhenOnlyKadFirewalledTcpMoved)
 {
 	StatusSnapshot s;
 	s.kad_firewalled_tcp = true;
-	// The verdict only means anything while Kad is connected, so the payload
-	// prints it as a bool only when it was actually measured. Without this the
-	// field is `null` and the assertion below is about the wrong thing.
+	// The verdict only means anything while Kad is connected, so the payload prints it as a
+	// bool only when it was actually measured. Without this the field is `null` and the
+	// assertion below is about the wrong thing.
 	s.has_kad_firewalled_tcp = true;
 
 	const std::string payload = EmitStatusAndGetPayload(s);
@@ -306,11 +297,10 @@ TEST(EventDiff, StatusEventFiresWhenOnlyKadFirewalledTcpMoved)
 	ASSERT_TRUE(payload.find("\"firewalled\":") == std::string::npos);
 }
 
-// The disconnect edge is the one this whole gate exists for, and it is the one
-// a value-only comparator misses: the bool underneath keeps its last reading,
-// so only the has_ flag moves. If Equal(StatusSnapshot) ignores that flag the
-// event never fires and a subscriber keeps rendering a firewall verdict for a
-// network the daemon has left.
+// The disconnect edge is the one this whole gate exists for, and the one a value-only comparator
+// misses: the bool underneath keeps its last reading, so only the has_ flag moves. If
+// Equal(StatusSnapshot) ignores that flag the event never fires and a subscriber keeps rendering a
+// firewall verdict for a network the daemon has left.
 TEST(EventDiff, StatusEventFiresWhenTheKadFirewallVerdictBecomesUnknown)
 {
 	CState state;
@@ -325,9 +315,8 @@ TEST(EventDiff, StatusEventFiresWhenTheKadFirewallVerdictBecomesUnknown)
 	EmitDiffsAndUpdate(bus, prev, state);
 	DrainAll(bus);
 
-	// Kad drops. The bool is deliberately left true -- that is exactly the
-	// stale reading the gate has to suppress, and comparing values alone would
-	// see no change at all here.
+	// Kad drops. The bool is deliberately left true -- exactly the stale reading the gate has
+	// to suppress, and comparing values alone would see no change at all here.
 	StatusSnapshot dropped;
 	dropped.kad_firewalled_tcp = true;
 	dropped.has_kad_firewalled_tcp = false;
@@ -344,9 +333,9 @@ TEST(EventDiff, StatusEventFiresWhenTheKadFirewallVerdictBecomesUnknown)
 	ASSERT_TRUE(payload.find("\"firewalled_tcp\":null") != std::string::npos);
 }
 
-// Same edge, the kad half. status_changed fires on
-// !Equal(status) || !Equal(kad), and kad.network.* is gated by the SECOND
-// comparator -- a fix applied only to Equal(StatusSnapshot) leaves this silent.
+// The same edge, the kad half. status_changed fires on !Equal(status) || !Equal(kad), and
+// kad.network.* is gated by the SECOND comparator -- a fix applied only to Equal(StatusSnapshot)
+// leaves this silent.
 TEST(EventDiff, StatusEventFiresWhenTheKadNetworkFiguresBecomeUnknown)
 {
 	CState state;
@@ -381,9 +370,8 @@ TEST(EventDiff, StatusEventFiresWhenTheKadNetworkFiguresBecomeUnknown)
 	ASSERT_TRUE(payload.find("\"node_count\":499") == std::string::npos);
 }
 
-// A tick where only the overhead moved still has to fire: the field is in the
-// REST body, so if the SSE twin stays silent the two diverge until something
-// else happens to move.
+// A tick where only the overhead moved still has to fire: the field is in the REST body, so if the
+// SSE twin stays silent the two diverge until something else happens to move.
 TEST(EventDiff, StatusEventFiresWhenOnlyOverheadMoved)
 {
 	StatusSnapshot s;
@@ -395,10 +383,9 @@ TEST(EventDiff, StatusEventFiresWhenOnlyOverheadMoved)
 	ASSERT_TRUE(payload.find("\"download_overhead_bytes_per_second\":8700") != std::string::npos);
 }
 
-// EVENTS.md promises this payload is "identical to the REST /status envelope",
-// and both connected_since timestamps are part of that envelope. They were
-// missing from the event, so a subscriber could never learn when the daemon
-// connected without falling back to a poll.
+// EVENTS.md promises this payload is "identical to the REST /status envelope", and both
+// connected_since timestamps are part of that envelope. They were missing from the event, so a
+// subscriber could never learn when the daemon connected without falling back to a poll.
 TEST(EventDiff, StatusEventCarriesBothConnectedSince)
 {
 	StatusSnapshot s;
@@ -413,9 +400,9 @@ TEST(EventDiff, StatusEventCarriesBothConnectedSince)
 	ASSERT_TRUE(payload.find("\"connected_since_at\":1751000042") != std::string::npos);
 }
 
-// A reconnect can leave every other field identical -- same server, same id,
-// idle transfer rates -- and move only the timestamp. Without it in Equal()
-// that tick emits nothing and subscribers keep showing the old uptime.
+// A reconnect can leave every other field identical -- same server, same id, idle transfer rates --
+// and move only the timestamp. Without it in Equal() that tick emits nothing and subscribers keep
+// showing the old uptime.
 TEST(EventDiff, StatusEventFiresWhenOnlyConnectedSinceMoved)
 {
 	StatusSnapshot s;
@@ -461,11 +448,10 @@ TEST(EventDiff, ClientAddedCarriesUploadFileName)
 	ASSERT_TRUE(payload.find("upload.iso") != std::string::npos);
 }
 
-// Regression guard for the EventDiff.cpp Equal() half of PR #646: Equal() must
-// compare every field ToJson emits (see the note above Equal()), so a change
-// to upload_file_name alone still fires client_updated. Before the fix the
-// field was in neither, and an upload-file change would have been dropped —
-// the SSE-backed table would keep showing the stale filename.
+// Regression guard for the EventDiff.cpp Equal() half of PR #646: Equal() must compare every field
+// ToJson emits (see the note above Equal()), so a change to upload_file_name alone still fires
+// client_updated. Before the fix the field was in neither, and an upload-file change would have
+// been dropped -- the SSE-backed table would keep showing the stale filename.
 TEST(EventDiff, ClientUpdatedFiresOnUploadFileNameChange)
 {
 	CState state;
@@ -505,10 +491,9 @@ TEST(EventDiff, ClientUpdatedFiresOnUploadFileNameChange)
 	ASSERT_TRUE(payload.find("b.iso") != std::string::npos);
 }
 
-// Same contract as the client test above, for the capability bitmasks issue
-// #974 added: a server announcing its flags after the first UDP status reply
-// has to fire exactly one server_updated, and the payload has to carry the
-// decoded object -- not just the raw bitmask.
+// The same contract as the client test above, for the capability bitmasks issue #974 added: a
+// server announcing its flags after the first UDP status reply has to fire exactly one
+// server_updated, and the payload has to carry the decoded object, not just the raw bitmask.
 TEST(EventDiff, ServerUpdatedFiresOnTcpFlagsChange)
 {
 	CState state;
@@ -550,13 +535,12 @@ TEST(EventDiff, ServerUpdatedFiresOnTcpFlagsChange)
 	ASSERT_TRUE(payload.find("\"unicode\":false") != std::string::npos);
 }
 
-// The peer-version key must be spelled the same on the event bus as in the
-// REST list item. `WriteServerObject` renamed it `version` -> `software_version`
-// and the SSE twin was left behind, so the same value shipped under two names:
-// a client hydrating from GET /servers and then applying server_updated diffs
-// got the version under two keys and could not merge them. Equal() compares
-// s.version either way, so nothing failed loudly -- which is why this is pinned
-// by name rather than left to the shape assertions above.
+// The peer-version key must be spelled the same on the event bus as in the REST list item.
+// `WriteServerObject` renamed it `version` -> `software_version` and the SSE twin was left behind,
+// so the same value shipped under two names: a client hydrating from GET /servers and then applying
+// server_updated diffs got the version under two keys and could not merge them. Equal() compares
+// s.version either way, so nothing failed loudly -- which is why this is pinned by name rather than
+// left to the shape assertions above.
 TEST(EventDiff, ServerPayloadSpellsTheVersionKeyLikeRest)
 {
 	CState state;
@@ -625,9 +609,9 @@ TEST(EventDiff, ServerUpdatedFiresOnFileLimitChange)
 	ASSERT_TRUE(payload.find("\"hard_file_limit\":5000") != std::string::npos);
 }
 
-// The flags object is built by one shared helper so the REST writer
-// (Api.cpp, CJsonWriter) and this SSE writer emit the same bytes. Pin the
-// exact shape: key order follows the wire-bit order, bitmask leads.
+// The flags object is built by one shared helper so the REST writer (Api.cpp, CJsonWriter) and this
+// SSE writer emit the same bytes. Pin the exact shape: key order follows the wire-bit order,
+// bitmask leads.
 TEST(EventDiff, ServerFlagsJsonShape)
 {
 	ASSERT_EQUALS(std::string("{\"bitmask\":0,\"compression\":false,\"new_tags\":false,"
@@ -641,11 +625,9 @@ TEST(EventDiff, ServerFlagsJsonShape)
 	ASSERT_TRUE(webapi::ServerUdpFlagsJson(0x8000u).find("\"bitmask\":32768") != std::string::npos);
 }
 
-// --- search_result_updated: the fields that change after the search ends ---
-//
-// The window this closes: a finished search stops emitting search_progress,
-// so a hit downloaded from it, or a Kad notes lookup that lands afterwards,
-// used to be invisible until someone re-read the endpoint.
+// search_result_updated: the fields that change after the search ends. The window this closes: a
+// finished search stops emitting search_progress, so a hit downloaded from it, or a Kad notes
+// lookup landing afterwards, used to be invisible until someone re-read the endpoint.
 namespace
 {
 // Seed one result and baseline it, so each case below starts from "the
@@ -676,12 +658,10 @@ std::size_t CountEvent(CEventBus &bus, const char *name)
 }
 } // namespace
 
-// --- search_result_removed: the row the API stopped serving ---
-//
-// Every other collection emits a _removed; the search diff walked only the
-// current results, so a row that left the result space stayed on every
-// subscriber's screen for the life of the search. On a finished search no
-// further search_progress fires either, so nothing prompted a re-read.
+// search_result_removed: the row the API stopped serving. Every other collection emits a _removed;
+// the search diff walked only the current results, so a row that left the result space stayed on
+// every subscriber's screen for the life of the search. On a finished search no further
+// search_progress fires either, so nothing prompted a re-read.
 TEST(EventDiff, SearchResultRemovedFiresWhenAResultLeavesTheSearch)
 {
 	CState state;
@@ -730,11 +710,10 @@ TEST(EventDiff, SearchResultRemovedSilentWhileTheResultRemains)
 	ASSERT_EQUALS(static_cast<size_t>(0), CountEvent(bus, "search_result_removed"));
 }
 
-// DELETE /logs/amule empties the buffer. The old signal was a shrunk size,
-// which misses the case that matters: cleared and refilled past the old count
-// between two ticks, the size only grows, so the append branch published a
-// mid-buffer slice as though it were the tail and never published what came
-// before it. The clear-generation catches both shapes.
+// DELETE /logs/amule empties the buffer. The old signal was a shrunk size, which misses the case
+// that matters: cleared and refilled past the old count between two ticks, the size only grows, so
+// the append branch published a mid-buffer slice as though it were the tail and never published
+// what came before it. The clear-generation catches both shapes.
 TEST(EventDiff, LogClearPublishesResyncRatherThanAMidBufferSlice)
 {
 	CState state;
@@ -852,10 +831,9 @@ TEST(EventDiff, SearchResultUpdatedFiresWhenKadNotesLand)
 	ASSERT_EQUALS(static_cast<size_t>(2), CountEvent(bus, "search_result_updated"));
 }
 
-// The reason this is a restricted comparator rather than a full struct
-// compare: source counts move on essentially every tick of a running search,
-// and search_progress is already the re-read cue for them. Pushing them per
-// result would make this the loudest channel on the bus.
+// The reason this is a restricted comparator rather than a full struct compare: source counts move
+// on essentially every tick of a running search, and search_progress is already the re-read cue for
+// them. Pushing them per result would make this the loudest channel on the bus.
 TEST(EventDiff, SearchResultUpdatedIgnoresSourceCountChurn)
 {
 	CState state;
@@ -888,14 +866,11 @@ TEST(EventDiff, SearchResultUpdatedStaysSilentOnAnUnchangedResult)
 	ASSERT_EQUALS(static_cast<size_t>(1), CountEvent(bus, "search_result_added"));
 }
 
-// --- search_result_added is the results-list entry, verbatim ---------
-//
-// EVENTS.md promises the payload is byte-for-byte a
-// GET /search/{id}/results entry with `search_id` prepended. That used to
-// be two hand-written serialisers kept in step by review, and they had
-// already drifted apart. Both now go through WriteSearchResultFields, so
-// this pins the fields the event MUST carry -- including the two the
-// hand-rolled copy had been missing.
+// search_result_added is the results-list entry, verbatim. EVENTS.md promises the payload is byte
+// for byte a GET /search/{id}/results entry with `search_id` prepended. That used to be two hand-
+// written serialisers kept in step by review, and they had already drifted apart. Both now go
+// through WriteSearchResultFields, so this pins the fields the event MUST carry -- including the
+// two the hand-rolled copy had been missing.
 TEST(EventDiff, SearchResultAddedCarriesTheFullResultsEntry)
 {
 	CState state;
@@ -945,11 +920,9 @@ TEST(EventDiff, SearchResultAddedCarriesTheFullResultsEntry)
 	ASSERT_TRUE(payload.find("\"comments\":[]") != std::string::npos);
 }
 
-// --- search_closed fires when a slot disappears ----------------------
-//
-// A subscriber holding one view per search otherwise only learns the
-// search is gone by 404ing on a later read -- and with SSE live it may
-// never read again.
+// search_closed fires when a slot disappears. A subscriber holding one view per search otherwise
+// only learns the search is gone by 404ing on a later read -- and with SSE live it may never read
+// again.
 TEST(EventDiff, SearchClosedFiresOnceWhenTheSlotIsFreed)
 {
 	CState state;
@@ -981,27 +954,24 @@ TEST(EventDiff, SearchClosedFiresOnceWhenTheSlotIsFreed)
 	ASSERT_EQUALS(static_cast<size_t>(1), after_close.first);
 	ASSERT_EQUALS(std::string("{\"search_id\":42}"), after_close.second);
 
-	// Further ticks stay silent: the baseline was pruned with the event,
-	// so a freed search is announced exactly once and its surviving
-	// sibling is never swept up with it.
+	// Further ticks stay silent: the baseline was pruned with the event, so a freed search is
+	// announced exactly once and its surviving sibling is never swept up with it.
 	EmitDiffsAndUpdate(bus, prev, state);
 	EmitDiffsAndUpdate(bus, prev, state);
 	ASSERT_EQUALS(static_cast<size_t>(1), CountClosed().first);
 	ASSERT_TRUE(state.HasSearch(43));
 }
 
-// --- the client payload carries part_progress_percent ------------------
+// The client payload carries part_progress_percent. EVENTS.md promises an `_updated` subscriber
+// gets the full new state and never has to re-GET. This field was the one exception on the client
+// resource: it is derived rather than refreshed -- it needs the part count of the linked download,
+// which lives in a different snapshot -- so the diff pass never computed it and the payload
+// silently lacked a key the REST row had.
 //
-// EVENTS.md promises an `_updated` subscriber gets the full new state and
-// never has to re-GET. This field was the one exception on the client
-// resource: it is derived rather than refreshed (it needs the part count of
-// the linked download, which lives in a different snapshot), so the diff pass
-// never computed it and the payload silently lacked a key the REST row had.
-// #1159 section 1. ClientSnapshot carries has_parts_offered_count precisely so a
-// peer that never reported its part map can be told apart from one reporting
-// zero -- and zero is a real answer, being what a fresh source looks like
-// before its map arrives. The field was emitted unconditionally, so nothing
-// read the flag and both cases went out as 0.
+// #1159 section 1. ClientSnapshot carries has_parts_offered_count precisely so a peer that never
+// reported its part map can be told apart from one reporting zero -- and zero is a real answer,
+// being what a fresh source looks like before its map arrives. The field was emitted
+// unconditionally, so nothing read the flag and both cases went out as 0.
 TEST(EventDiff, ClientEventEmitsNullAvailablePartsWhenTheMapIsUnreported)
 {
 	CState state;
@@ -1084,9 +1054,9 @@ TEST(EventDiff, ClientUpdateFiresWhenThePartMapFinallyArrivesReportingZero)
 	ASSERT_TRUE(updated);
 }
 
-// #1159 section 9. amuled sends 0xffff for "that peer's queue is full" rather
-// than a position, so relaying it verbatim rendered "position 65535" and sorted
-// full queues to the far end as if they were merely very distant.
+// #1159 section 9. amuled sends 0xffff for "that peer's queue is full" rather than a position, so
+// relaying it verbatim rendered "position 65535" and sorted full queues to the far end as if they
+// were merely very distant.
 TEST(EventDiff, ClientEventEmitsNullRemoteQueueRankWhenTheQueueIsFull)
 {
 	CState state;
@@ -1165,10 +1135,10 @@ TEST(EventDiff, ClientEventCarriesPartProgressPercent)
 
 TEST(EventDiff, ClientEventNullsPartProgressPercentWithNoLinkedFile)
 {
-	// A peer that only downloads FROM us has no meaningful denominator, so
-	// the field is null -- the same rule the REST row follows since #1160
-	// section 1, where an unknown value is null rather than an absent key.
-	// The -1 sentinel is in-process only and must never reach the wire.
+	// A peer that only downloads FROM us has no meaningful denominator, so the field is null --
+	// the same rule the REST row follows since #1160 section 1, where an unknown value is null
+	// rather than an absent key. The -1 sentinel is in-process only and must never reach the
+	// wire.
 	CState state;
 	state.MutateClients([](std::map<std::uint32_t, ClientSnapshot> &clients) {
 		ClientSnapshot c;
@@ -1191,11 +1161,11 @@ TEST(EventDiff, ClientEventNullsPartProgressPercentWithNoLinkedFile)
 	ASSERT_TRUE(payload.find("-1") == std::string::npos);
 }
 
-// `media` is null, never absent, on a shared event whose file has no metadata.
-// The event promises key parity with the /shared row, and that row reports the
-// key unconditionally -- a subscriber diffing the two must not find `media` on
-// one side only. This drifted once already: the REST writer moved to null while
-// this one kept skipping the key, and only a live parity check caught it.
+// `media` is null, never absent, on a shared event whose file has no metadata. The event promises
+// key parity with the /shared row, and that row reports the key unconditionally -- a subscriber
+// diffing the two must not find `media` on one side only. This drifted once already: the REST
+// writer moved to null while this one kept skipping the key, and only a live parity check caught
+// it.
 TEST(EventDiff, SharedEventNullsMediaWithNoMetadata)
 {
 	CState state;
@@ -1256,12 +1226,11 @@ TEST(EventDiff, SharedEventCarriesMediaWhenPresent)
 	ASSERT_TRUE(payload.find("\"codec\":\"h264\"") != std::string::npos);
 }
 
-// Hashing progress on the shared side (issue #1054). amuled emits one tag kind
-// per ECID, so a file that is both downloading and shared arrives only as
-// EC_TAG_PARTFILE and its hashing progress lands in the download sub-block.
-// SharedHashingProgress() is the fallback every shared-side consumer goes
-// through; these pin that the SSE payload and the equality test use it too,
-// since a shared row that never updates is the failure this hides behind.
+// Hashing progress on the shared side (issue #1054). amuled emits one tag kind per ECID, so a file
+// that is both downloading and shared arrives only as EC_TAG_PARTFILE and its hashing progress
+// lands in the download sub-block. SharedHashingProgress() is the fallback every shared-side
+// consumer goes through; these pin that the SSE payload and the equality test use it too, since a
+// shared row that never updates is the failure this hides behind.
 TEST(EventDiff, SharedEventCarriesHashingProgressFromTheSharedSide)
 {
 	CState state;
@@ -1291,9 +1260,8 @@ TEST(EventDiff, SharedEventCarriesHashingProgressFromTheSharedSide)
 
 TEST(EventDiff, SharedEventFallsBackToTheDownloadSideHashingProgress)
 {
-	// The shared partfile case: shared.hashing_progress stays 0 because the
-	// tag never arrived on the KNOWNFILE variant, and the accessor reads
-	// across to the download sub-block.
+	// The shared partfile case: shared.hashing_progress stays 0 because the tag never arrived
+	// on the KNOWNFILE variant, and the accessor reads across to the download sub-block.
 	CState state;
 	state.MutateShared([](FileMap &files) {
 		FileSnapshot f;
@@ -1322,9 +1290,9 @@ TEST(EventDiff, SharedEventFallsBackToTheDownloadSideHashingProgress)
 
 TEST(EventDiff, SharedUpdatedFiresWhenOnlyHashingProgressMoved)
 {
-	// EqualShared compares through the accessor, so a hash advancing on the
-	// download side of a shared partfile still pushes shared_updated. Comparing
-	// the raw shared field would hold every tick of it back.
+	// EqualShared compares through the accessor, so a hash advancing on the download side of a
+	// shared partfile still pushes shared_updated. Comparing the raw shared field would hold
+	// every tick of it back.
 	CState state;
 	state.MutateShared([](FileMap &files) {
 		FileSnapshot f;
@@ -1357,9 +1325,9 @@ TEST(EventDiff, SharedUpdatedFiresWhenOnlyHashingProgressMoved)
 
 TEST(EventDiff, DownloadUpdatedFiresWhenOnlyHashingProgressMoved)
 {
-	// The download side needs the same treatment: hashing_progress used to be
-	// GET /downloads/{hash}-only and absent from EqualDownload, so a Verify
-	// Local Data pass produced no download_updated at all.
+	// The download side needs the same treatment: hashing_progress used to be GET
+	// /downloads/{hash}-only and absent from EqualDownload, so a Verify Local Data pass
+	// produced no download_updated at all.
 	CState state;
 	state.MutateDownloads([](FileMap &files) {
 		FileSnapshot f;
@@ -1388,10 +1356,9 @@ TEST(EventDiff, DownloadUpdatedFiresWhenOnlyHashingProgressMoved)
 	ASSERT_TRUE(payload.find("\"hashed_part_count\":5") != std::string::npos);
 }
 
-// The A4AF membership rides download_updated, and the predicate compares the
-// list rather than the count that summarises it. A swap moves one client out
-// and another in, so `sources_a4af` never moves -- comparing only the count
-// left the panel showing the client that had already left.
+// The A4AF membership rides download_updated, and the predicate compares the list rather than the
+// count that summarises it. A swap moves one client out and another in, so `sources_a4af` never
+// moves -- comparing only the count left the panel showing the client that had already left.
 TEST(EventDiff, DownloadUpdatedFiresWhenTheA4afSourceSetSwapsAtAConstantCount)
 {
 	CState state;
@@ -1453,9 +1420,9 @@ TEST(EventDiff, DownloadEventCarriesAnEmptySourceEcidsArrayWithNoA4afSources)
 	ASSERT_TRUE(payload.find("\"source_ecids\":[]") != std::string::npos);
 }
 
-// A file leaving the map fires download_removed carrying its hash, and drops
-// out of the baseline — the `gone` erase. Without it the baseline would grow
-// without bound across a session and keep re-firing the removal every tick.
+// A file leaving the map fires download_removed carrying its hash, and drops out of the baseline --
+// the `gone` erase. Without it the baseline would grow without bound across a session and keep re-
+// firing the removal every tick.
 TEST(EventDiff, DownloadRemovedFiresWhenTheFileLeavesTheMap)
 {
 	CState state;
@@ -1475,7 +1442,7 @@ TEST(EventDiff, DownloadRemovedFiresWhenTheFileLeavesTheMap)
 	DrainAll(bus);
 	ASSERT_EQUALS(static_cast<std::size_t>(1), prev.files.size());
 
-	// FileMap::erase is iterator-only — it keeps the hash index in step.
+	// FileMap::erase is iterator-only -- it keeps the hash index in step.
 	state.MutateDownloads([](FileMap &files) { files.erase(files.find(21)); });
 	EmitDiffsAndUpdate(bus, prev, state);
 
@@ -1496,9 +1463,8 @@ TEST(EventDiff, DownloadRemovedFiresWhenTheFileLeavesTheMap)
 	ASSERT_TRUE(DrainSince(bus, cursor).empty());
 }
 
-// The share flag clearing on a file that stays in the map fires shared_removed
-// without erasing the baseline entry: the ECID is still live, only that role
-// ended.
+// The share flag clearing on a file that stays in the map fires shared_removed without erasing the
+// baseline entry: the ECID is still live, only that role ended.
 TEST(EventDiff, SharedRemovedFiresWhenOnlyTheRoleFlagClears)
 {
 	CState state;
@@ -1536,9 +1502,9 @@ TEST(EventDiff, SharedRemovedFiresWhenOnlyTheRoleFlagClears)
 	ASSERT_TRUE(!prev.files.find(22)->second.is_shared);
 }
 
-// One ECID swapping roles in a single tick emits both families, removed first:
-// a client tearing down its download slot must not see the shared_added for
-// the same file arrive before the download_removed.
+// One ECID swapping roles in a single tick emits both families, removed first: a client tearing
+// down its download slot must not see the shared_added for the same file arrive before the
+// download_removed.
 TEST(EventDiff, RoleFlipEmitsRemovedBeforeAdded)
 {
 	CState state;
@@ -1578,11 +1544,11 @@ TEST(EventDiff, RoleFlipEmitsRemovedBeforeAdded)
 	ASSERT_TRUE(removed_at < added_at);
 }
 
-// The write-back trap: a role flag flipping is itself enough to refresh the
-// whole baseline entry, so fields the *other* role's predicate never compared
-// cannot reach the payload stale. Here the download sub-block moves during the
-// same tick that is_downloading goes false→true; the download_added must carry
-// the new value, not the one the entry was parked with while it was shared-only.
+// The write-back trap: a role flag flipping is itself enough to refresh the whole baseline entry,
+// so fields the *other* role's predicate never compared cannot reach the payload stale. Here the
+// download sub-block moves during the same tick that is_downloading goes false->true; the
+// download_added must carry the new value, not the one the entry was parked with while it was
+// shared-only.
 TEST(EventDiff, RoleFlipRefreshesFieldsTheOtherRoleNeverCompared)
 {
 	CState state;
@@ -1621,13 +1587,11 @@ TEST(EventDiff, RoleFlipRefreshesFieldsTheOtherRoleNeverCompared)
 	ASSERT_EQUALS(static_cast<std::uint64_t>(999), prev.files.find(24)->second.download.completed_bytes);
 }
 
-// --- comments_updated payload ---------------------------------------
-//
-// EVENTS.md promises the payload is the GET /downloads/{hash}/comments body
-// plus `hash`. It used to carry `hash` but NOT `kad_comment_lookup_running`,
-// so a client that followed the document and fed the event into the view it
-// built from the endpoint silently lost the in-flight-lookup flag -- exactly
-// the flag it needs while a POST /downloads/{hash}/comments Kad lookup runs.
+// comments_updated payload. EVENTS.md promises the payload is the GET /downloads/{hash}/comments
+// body plus `hash`. It used to carry `hash` but NOT `kad_comment_lookup_running`, so a client that
+// followed the document and fed the event into the view it built from the endpoint silently lost
+// the in-flight-lookup flag -- exactly the flag it needs while a POST /downloads/{hash}/comments
+// Kad lookup runs.
 TEST(EventDiff, CommentsUpdatedIsASupersetOfTheRestBody)
 {
 	CState state;
@@ -1646,9 +1610,9 @@ TEST(EventDiff, CommentsUpdatedIsASupersetOfTheRestBody)
 	EmitDiffsAndUpdate(bus, prev, state); // cold start: download_added
 	DrainAll(bus);
 
-	// A Kad lookup is in flight AND a note has landed, so the event fires
-	// with the flag still true -- the state a client is most likely to
-	// render, and the one the missing key made unrepresentable.
+	// A Kad lookup is in flight AND a note has landed, so the event fires with the flag still
+	// true -- the state a client is most likely to render, and the one the missing key made
+	// unrepresentable.
 	state.MutateDownloads([](FileMap &files) {
 		FileSnapshot &f = files.find(41)->second;
 		f.download.kad_comment_searching = true;
@@ -1714,10 +1678,9 @@ TEST(EventDiff, CommentsUpdatedReportsAnIdleKadLookup)
 	ASSERT_TRUE(payload.find("\"kad_comment_lookup_running\":false") != std::string::npos);
 }
 
-// The Kad lookup finishing is a comments_updated in its own right. The flag
-// rides in the payload, so if EqualComments ignores it the true->false edge
-// produces no event and a ?channels=comments subscriber's in-flight
-// indicator never clears.
+// The Kad lookup finishing is a comments_updated in its own right. The flag rides in the payload,
+// so if EqualComments ignores it the true->false edge produces no event and a ?channels=comments
+// subscriber's in-flight indicator never clears.
 TEST(EventDiff, CommentsUpdatedFiresWhenOnlyTheKadFlagClears)
 {
 	CState state;
@@ -1753,10 +1716,9 @@ TEST(EventDiff, CommentsUpdatedFiresWhenOnlyTheKadFlagClears)
 }
 
 // Cold start with a lookup already running. The mirror of
-// CommentsUpdatedFiresWhenOnlyTheKadFlagClears: there the finished edge never
-// arrived, here the starting state never arrives, and a ?channels=comments
-// subscriber that joined after the download appeared would never learn a
-// lookup was in flight.
+// CommentsUpdatedFiresWhenOnlyTheKadFlagClears: there the finished edge never arrived, here the
+// starting state never arrives, and a ?channels=comments subscriber that joined after the download
+// appeared would never learn a lookup was in flight.
 TEST(EventDiff, CommentsUpdatedFiresWhenAFileArrivesMidKadLookup)
 {
 	CState state;
@@ -1786,10 +1748,9 @@ TEST(EventDiff, CommentsUpdatedFiresWhenAFileArrivesMidKadLookup)
 	ASSERT_TRUE(payload.find("\"total\":0") != std::string::npos);
 }
 
-// #1290 item 5. The live client payload spelled "unknown" as a raw "" for its
-// optional strings while WriteKnownClientObject nulled the very same keys, so
-// one peer described by both objects disagreed with itself. R10 says an unknown
-// value is null and never a sentinel; "" is a sentinel.
+// #1290 item 5. The live client payload spelled "unknown" as a raw "" for its optional strings
+// while WriteKnownClientObject nulled the very same keys, so one peer described by both objects
+// disagreed with itself. R10 says an unknown value is null and never a sentinel; "" is a sentinel.
 TEST(EventDiff, ClientEventNullsOptionalStringsThatNeverArrived)
 {
 	CState state;
@@ -1828,9 +1789,9 @@ TEST(EventDiff, ClientEventNullsOptionalStringsThatNeverArrived)
 	}
 }
 
-// The states are enum labels, not free text: the daemon always answers, and an
-// answer outside the enum is the "unknown" member. Nulling them would have
-// invented a third case the wire cannot express.
+// The states are enum labels, not free text: the daemon always answers, and an answer outside the
+// enum is the "unknown" member. Nulling them would have invented a third case the wire cannot
+// express.
 TEST(EventDiff, ClientEventKeepsTheStateEnumsAsStrings)
 {
 	CState state;
@@ -1858,11 +1819,10 @@ TEST(EventDiff, ClientEventKeepsTheStateEnumsAsStrings)
 	ASSERT_TRUE(payload.find("\"ident_state\":\"identified\"") != std::string::npos);
 }
 
-// #1290 follow-up. `online` used to be `client_ecid != 0`, which is true from
-// the moment the daemon starts TRYING to reach a peer -- so a friend it can
-// never reach read as online. The field now carries EC_TAG_CLIENT_CONNECTED,
-// and a daemon that never sends it leaves the answer unknown rather than
-// guessing "offline".
+// #1290 follow-up. `online` used to be `client_ecid != 0`, which is true from the moment the daemon
+// starts TRYING to reach a peer -- so a friend it can never reach read as online. The field now
+// carries EC_TAG_CLIENT_CONNECTED, and a daemon that never sends it leaves the answer unknown
+// rather than guessing "offline".
 TEST(EventDiff, FriendEventReportsReachabilityNotClientObjectExistence)
 {
 	CState state;
@@ -1924,9 +1884,9 @@ TEST(EventDiff, FriendEventNullsConnectedWhenTheDaemonNeverReportedIt)
 	ASSERT_TRUE(payload.find("\"online\"") == std::string::npos);
 }
 
-// The connected flag has to be in Equal too, or a peer that finishes
-// connecting never fires an update: the ecid does not move on that edge, and
-// the indicator would sit wrong until something else about the peer changed.
+// The connected flag has to be in Equal too, or a peer that finishes connecting never fires an
+// update: the ecid does not move on that edge, and the indicator would sit wrong until something
+// else about the peer changed.
 TEST(EventDiff, ClientConnectingFiresAnUpdateEvenThoughTheEcidIsUnchanged)
 {
 	CState state;
@@ -1955,15 +1915,14 @@ TEST(EventDiff, ClientConnectingFiresAnUpdateEvenThoughTheEcidIsUnchanged)
 	ASSERT_TRUE(payload.find("\"connected\":true") != std::string::npos);
 }
 
-// `sent_at` on the chat_message payload has to spell an unstamped message the
-// way the REST row does -- null, not the 0 that renders as 1970 -- or a client
-// that hydrates history from GET /chats/{address}/messages and then live-updates
-// from the stream sees the same absent timestamp two ways.
+// `sent_at` on the chat_message payload has to spell an unstamped message the way the REST row does
+// -- null, not the 0 that renders as 1970 -- or a client that hydrates history from GET
+// /chats/{address}/messages and then live-updates from the stream sees the same absent timestamp
+// two ways.
 //
-// Unreachable through the daemon today: CChatSessionStore::Append stamps every
-// message it stores and the history reply carries the tag unconditionally, so
-// no live core produces the 0. That is exactly why it is pinned here rather
-// than in the curl suite, which cannot manufacture one.
+// Unreachable through the daemon today: CChatSessionStore::Append stamps every message it stores
+// and the history reply carries the tag unconditionally, so no live core produces the 0. That is
+// exactly why it is pinned here rather than in the curl suite, which cannot manufacture one.
 TEST(EventDiff, ChatMessageSentAtIsNullWhenUnstamped)
 {
 	CEventBus bus;
@@ -2015,10 +1974,10 @@ TEST(EventDiff, ChatMessageSentAtIsTheStampWhenPresent)
 	ASSERT_TRUE(payload.find("\"sent_at\":1786652714") != std::string::npos);
 }
 
-// The server row's `software_version` is null when the server has reported
-// none, matching WriteServerObject on the REST side -- the two are promised to
-// be byte-identical, and a raw "" here would be the third spelling of "unknown"
-// beside the nulls /clients and /known_clients already emit.
+// The server row's `software_version` is null when the server has reported none, matching
+// WriteServerObject on the REST side -- the two are promised to be byte-identical, and a raw ""
+// here would be the third spelling of "unknown" beside the nulls /clients and /known_clients
+// already emit.
 TEST(EventDiff, ServerSoftwareVersionIsNullWhenUnreported)
 {
 	CState state;

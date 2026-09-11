@@ -29,22 +29,14 @@
 #include "Format.h"
 
 /**
- * This class wraps a path/filename, serving a purpose much
- * like wxFileName. But in addition CPath serves to enable
- * the handling of "broken" filenames, allowing these to be
- * printed in a meaningful manner, while still allowing
- * access to the actual files in the filesystem.
+ * Wraps a path/filename much as wxFileName does, but also handles "broken"
+ * filenames: they print meaningfully while the real file stays reachable.
  *
- * This class is thread-safe, in that the class is read-only,
- * and any function that returns wxStrings or CPath objects,
- * ensure that an entirely new wxString object is created to
- * circumvent the thread-unsafe reference counting of that
- * class.
+ * Read-only, and every function returning a wxString or CPath builds a fresh
+ * object, so it sidesteps wxString's thread-unsafe reference counting.
  *
- * This class, and its static functions should be used in
- * preference of wxFileName, for the above reason, and so
- * that cross-platform issues can be worked around in a
- * single place.
+ * Prefer this over wxFileName for both reasons, and so cross-platform quirks
+ * are worked around in one place.
  */
 class CPath
 {
@@ -61,12 +53,10 @@ public:
 	/**
 	 * Creates a path from one saved in the 'universal' format.
 	 *
-	 * These are to be used when the filenames/paths are saved to
-	 * the local machine, and ensure that locale-changes does not
-	 * affect our ability to find previously known files. This
-	 * should not be used when sending filenames to other clients
-	 * or (currently) the core/gui.
-	 **/
+	 * Use for paths written to the local machine, so a locale change cannot
+	 * lose previously known files. Not for paths sent to other clients or
+	 * (currently) the core/gui.
+	 */
 	static CPath FromUniv(const wxString &path);
 	/** Creates an 'universal' path from the specified CPath. */
 	static wxString ToUniv(const CPath &path);
@@ -122,37 +112,31 @@ public:
 	/**
 	 * Existence, modification time and size from a single stat().
 	 *
-	 * Returns false when the path is not an existing regular file, which
-	 * covers the cases the callers used to test separately: a broken
-	 * symlink, a directory, and permissions too strict to stat.
+	 * False when the path is not an existing regular file: a broken symlink, a
+	 * directory, or permissions too strict to stat.
 	 *
-	 * FileExists() + GetModificationTime() + GetFileSize() answer the same
-	 * question in four filesystem round-trips, one of which opens the file
-	 * (GetFileSize() below). The share scan asks it once per shared file,
-	 * where that difference is most of the walk on a cold cache.
+	 * Asking separately costs four round-trips, one of which opens the file.
+	 * The share scan asks once per file, where that is most of a cold walk.
 	 */
 	bool GetFileStat(time_t &mtime, sint64 &size) const;
 
 	/**
-	 * Compares under the assumption that both objects are dirs, even if
-	 * one or the other lacks a terminal directory-separator. However, an
-	 * empty CPath object will not be considered equal to a path to the root.
+	 * Compares as directories, with or without a trailing separator. An empty
+	 * CPath is still not equal to the root path.
 	 */
 	bool IsSameDir(const CPath &other) const;
 
 	/**
 	 * The canonical string IsSameDir() reduces this path to.
 	 *
-	 * For paths that contain a separator -- which every shared directory
-	 * does -- equal keys mean IsSameDir() would return true, so a caller with
-	 * many of them can group them in one pass instead of comparing every
-	 * pair. Two bare filenames are not covered: IsSameDir() compares those
-	 * with PATHCMP while this normalises them, and on Windows
-	 * wxPATH_NORM_LONG would give PROGRA~1 and "Program Files" the same key
-	 * where PATHCMP calls them different.
-	 * Added for CSharedFileList, where answering a browse one directory at a
-	 * time was O(directories x files) calls to IsSameDir(), each normalising
-	 * both sides (issue #898).
+	 * For paths with a separator, equal keys mean IsSameDir() would say true, so
+	 * a caller can group many in one pass instead of comparing every pair. Bare
+	 * filenames are not covered: IsSameDir() uses PATHCMP while this normalises,
+	 * and on Windows wxPATH_NORM_LONG gives PROGRA~1 and "Program Files" the same
+	 * key where PATHCMP calls them different.
+	 *
+	 * For CSharedFileList, where a browse was O(directories x files) calls to
+	 * IsSameDir(), each normalising both sides (issue #898).
 	 */
 	wxString GetDirKey() const;
 
@@ -174,21 +158,14 @@ public:
 	bool StartsWith(const CPath &other) const;
 
 	/**
-	 * Get truncated path.
+	 * Get truncated path. Truncates the file's @em name, not the file.
 	 *
-	 * @note This function truncates the @em name of the file, not the file
-	 * itself.
-	 *
-	 * @param length	The truncated path should not exceed this length.
-	 * @param isFilePath	Indicates whether the last part of the path (the
-	 *			file name) should be kept or not, if possible.
-	 * @return	The truncated path, at most @a length long.
+	 * @param isFilePath  keep the last part (the file name) if possible.
 	 */
 	wxString TruncatePath(size_t length, bool isFilePath = false) const;
 
 	/**
-	 * Renames the file 'src' to the file 'dst', overwriting if specified. Note that
-	 * renaming cannot be done across volumes. For that CFile::CloneFile is required.
+	 * Renames src to dst. Cannot cross volumes; use CFile::CloneFile for that.
 	 */
 	static bool RenameFile(const CPath &src, const CPath &dst, bool overwrite = false);
 
@@ -232,9 +209,8 @@ template <> inline CFormat &CFormat::operator%(CPath value)
 }
 
 /**
- * Overloaded version of CmpAny for use with CPaths. As this is
- * typically used in the UI, it uses the printable filename in
- * order to get visually correct results.
+ * CmpAny for CPaths. Compares the printable filename, since this is mostly
+ * used in the UI and should sort the way the user sees it.
  */
 inline int CmpAny(const CPath &ArgA, const CPath &ArgB)
 {
@@ -242,17 +218,14 @@ inline int CmpAny(const CPath &ArgA, const CPath &ArgB)
 }
 
 /**
- * Strips all path separators from the specified end of a path.
- *
- * Note: type must be either leading or trailing.
+ * Strips all path separators from one end of a path. Type must be leading
+ * or trailing.
  */
 wxString StripSeparators(wxString path, wxString::stripType type);
 
 /**
- * Joins two paths with the operating system specific path-separator.
- *
- * If any of the parameters are empty, the other parameter is
- * returned unchanged.
+ * Joins two paths with the platform separator. An empty parameter returns
+ * the other unchanged.
  */
 wxString JoinPaths(const wxString &path, const wxString &file);
 

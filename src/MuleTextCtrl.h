@@ -33,21 +33,14 @@ class wxMouseEvent;
 class wxFocusEvent;
 
 /**
- * This class is a slightly improved wxTextCtrl that supports the traditional
- * popup-menu usually provided by text-ctrls. It provides the following options:
- *  - Cut
- *  - Copy
- *  - Paste
- *  - Clear
- *  - Select All
- *
- * Other than that, it acts exactly like an ordinary wxTextCtrl.
+ * A slightly improved wxTextCtrl that offers the traditional text-control popup menu -- Cut, Copy,
+ * Paste, Clear, Select All. Otherwise it acts exactly like an ordinary wxTextCtrl.
  */
 class CMuleTextCtrl : public wxTextCtrl
 {
 public:
 	/**
-	 * Constructor is identical to the wxTextCtrl one.
+	 * Identical to the wxTextCtrl constructor.
 	 */
 	CMuleTextCtrl(wxWindow *parent,
 		wxWindowID id,
@@ -58,29 +51,24 @@ public:
 		const wxValidator &validator = wxDefaultValidator,
 		const wxString &name = wxTextCtrlNameStr);
 
-	/**
-	 * Destructor, which currently does nothing.
-	 */
 	virtual ~CMuleTextCtrl() {};
 
 	/**
-	 * Enable a grey placeholder shown while the control is empty and
-	 * unfocused, cleared automatically on focus/typing. Works on all
-	 * platforms (unlike wxTextCtrl::SetHint(), which does nothing for
-	 * multi-line controls under GTK/MSW).
+	 * Enable a grey placeholder shown while the control is empty and unfocused, cleared
+	 * automatically on focus or typing. Works on all platforms, unlike wxTextCtrl::SetHint(),
+	 * which does nothing for multi-line controls under GTK/MSW.
 	 */
 	void SetPlaceholder(const wxString &hint);
 
 	/**
-	 * True while the placeholder text is being displayed, i.e. the user
-	 * has not entered anything. Callers reading the value should treat
-	 * this as an empty control.
+	 * True while the placeholder text is being displayed, i.e. the user has not entered
+	 * anything. Callers reading the value should treat this as an empty control.
 	 */
 	bool IsShowingPlaceholder() const { return m_showingPlaceholder; }
 
 	/**
-	 * Re-show the placeholder if the control is empty and unfocused.
-	 * Call this after programmatically clearing the value.
+	 * Re-show the placeholder if the control is empty and unfocused. Call after
+	 * programmatically clearing the value.
 	 */
 	void RefreshPlaceholder();
 
@@ -93,38 +81,30 @@ public:
 
 protected:
 	/**
-	 * This function takes care of creating the popup-menu.
-	 *
-	 * Please note that by using the RIGHT_DOWN event, I'm disabling the second
-	 * type of selection that the wxTextCtrl supports. However, I frankly only
-	 * noticed that second selection type while implementing this, so I doubt
-	 * that anyone will be missing it ...
+	 * Creates the popup menu. Using the RIGHT_DOWN event disables the second kind of selection
+	 * wxTextCtrl supports, which is obscure enough that nobody is likely to miss it.
 	 */
 	void OnRightDown(wxMouseEvent &evt);
 
 	/**
-	 * This function takes care of pasting text.
-	 *
-	 * Please note that it is only needed because wxMenu disallows enabling and
-	 * disabling of items that use the predefined wxID_PASTE id. This is the
-	 * only one of the already provided commands we need to override, since the
-	 * others already work just fine.
+	 * Pastes text. Only needed because wxMenu disallows enabling and disabling of items using
+	 * the predefined wxID_PASTE id; the other provided commands work as they are.
 	 */
 	void OnPaste(wxCommandEvent &evt);
 
 	/**
-	 * This functions takes care of selecting all text.
+	 * Selects all text.
 	 */
 	void OnSelAll(wxCommandEvent &evt);
 
 	/**
-	 * This functions takes care of clearing the text.
+	 * Clears the text.
 	 */
 	void OnClear(wxCommandEvent &evt);
 
 	/**
-	 * Placeholder focus handlers: clear the hint when the control gains
-	 * focus, restore it on blur if the user left the control empty.
+	 * Placeholder focus handlers: clear the hint when the control gains focus, restore it on
+	 * blur if the user left the control empty.
 	 */
 	void OnSetFocus(wxFocusEvent &evt);
 	void OnKillFocus(wxFocusEvent &evt);

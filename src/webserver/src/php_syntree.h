@@ -23,9 +23,7 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-/*
- * Syntax tree implementation for amule-PHP interpreter.
- */
+/* Syntax tree implementation for the amule-PHP interpreter. */
 
 #ifndef _PHP_SYNTREE_H_
 #define _PHP_SYNTREE_H_
@@ -75,10 +73,8 @@ typedef struct PHP_VALUE_NODE
 		uint64_t int_val;
 		double float_val;
 		char *str_val;
-		/* used for arrays and internal objects:
-		 * * array contain std::map of key:value pairs
-		 * * object contain internally interpreted data
-		 */
+		/* For arrays and internal objects: an array holds a std::map of key:value pairs, an object
+		 * holds internally interpreted data. */
 		void *ptr_val;
 		struct
 		{
@@ -88,17 +84,13 @@ typedef struct PHP_VALUE_NODE
 	};
 } PHP_VALUE_NODE;
 
-/*
- * Flags for different variable types/usages
- */
+/* Flags for different variable types/usages */
 
 #define PHP_VARFLAG_STATIC 0x0001
 #define PHP_VARFLAG_GLOBAL 0x0002
 #define PHP_VARFLAG_BYREF 0x0004
 
-/*
-  Data about variable.
-*/
+/* Data about a variable. */
 typedef struct PHP_VAR_NODE
 {
 	PHP_VALUE_NODE value;
@@ -107,9 +99,7 @@ typedef struct PHP_VAR_NODE
 	int flags;
 } PHP_VAR_NODE;
 
-/*
- Node in expression tree. Contain either (left op right) or (value)
-*/
+/* Node in an expression tree: either (left op right) or (value). */
 typedef enum PHP_EXP_OP
 {
 	PHP_OP_VAR,
@@ -235,14 +225,10 @@ struct PHP_FUNC_PARAM_ITEM
 typedef struct PHP_SYN_NODE PHP_SYN_NODE;
 
 /*
- * Scope table: holding variable definition and declarations for
- * functions and classes
- * Can be present in several locations:
- *  1. Representing stack frame block, inside of called function
- *  2. As global scope - holder of global vars, classes and global functions
- *  3. At class scope - holder of class members
- *  4. Copied to class instanse
- *
+ * Scope table, holding variable definitions and declarations for functions and classes. It appears
+ * in several places: as a stack-frame block inside a called function, as the global scope holding
+ * global vars, classes and functions, at class scope holding class members, and copied into a
+ * class instance.
  */
 typedef enum PHP_SCOPE_ITEM_TYPE
 {
@@ -273,9 +259,7 @@ typedef struct PHP_SCOPE_ITEM
 typedef void *PHP_SCOPE_TABLE;
 typedef void *PHP_SCOPE_STACK;
 
-/*
- Syntax tree node, representing 1 statement.
-*/
+/* Syntax tree node, representing one statement. */
 typedef enum PHP_STATEMENT_TYPE
 {
 	PHP_ST_EXPR,
@@ -293,9 +277,7 @@ typedef enum PHP_STATEMENT_TYPE
 	PHP_ST_ECHO
 } PHP_STATEMENT_TYPE;
 
-/*
- * Syntax tree constructs: regular statements and declarations
- */
+/* Syntax tree constructs: regular statements and declarations */
 typedef struct PHP_SYN_IF_NODE
 {
 	PHP_EXP_NODE *cond;
@@ -338,10 +320,9 @@ typedef struct PHP_FUNC_PARAM_DEF
 	int byref;
 	PHP_VALUE_NODE def_value;
 	/*
-	 * In PHP, user can choose per-call whether parameter is passed
-	 * by value of by reference. So, save ptr to original varnode,
-	 * for "byvalue" case since we don't have other lvalue to put in
-	 * that scope item.
+	 * In PHP the caller chooses per call whether a parameter is passed by value or by reference,
+	 * so keep a ptr to the original varnode for the "byvalue" case: there is no other lvalue to
+	 * put in that scope item.
 	 */
 	PHP_VAR_NODE *var;
 	PHP_SCOPE_ITEM *si_var;
@@ -361,9 +342,7 @@ typedef struct PHP_SYN_FUNC_DECL_NODE
 	PHP_FUNC_PARAM_DEF *params;
 } PHP_SYN_FUNC_DECL_NODE;
 
-/*
- * Evaluating $obj->some_field for built-in objects
- */
+/* Evaluating $obj->some_field for built-in objects */
 typedef void (*PHP_NATIVE_PROP_GET_FUNC_PTR)(void *obj, char *prop_name, PHP_VALUE_NODE *result);
 
 typedef struct PHP_SYN_CLASS_DECL_NODE
@@ -395,12 +374,8 @@ struct PHP_SYN_NODE
 };
 
 /*
- * Interface to lib of built-in functions, classes, variables
- */
-/*
- * Using fixed size array will allow "in-place" definition
- * of built-in functions without pointer mess.
- *
+ * Interface to the library of built-in functions, classes and variables. A fixed-size array
+ * allows "in-place" definition of built-in functions without a pointer mess.
  */
 #define PHP_MAX_FUNC_PARAM 16
 
@@ -423,9 +398,7 @@ typedef enum PHP_MSG_TYPE
 extern "C" {
 #endif
 
-/*
- * lex/yacc stuff
- */
+/* lex/yacc stuff */
 int phperror(char *err);
 int phpparse(void);
 
@@ -434,13 +407,9 @@ extern FILE *phpin;
 extern char *phptext;
 extern int phplineno;
 
-/*
- * Syntax tree interface to parser
- */
+/* Syntax tree interface to the parser */
 
-/*
- * Const expressions
- */
+/* Const expressions */
 PHP_EXP_NODE *make_const_exp_dnum(int number);
 PHP_EXP_NODE *make_const_exp_fnum(float number);
 PHP_EXP_NODE *make_const_exp_str(char *s, int unescape);
@@ -513,9 +482,7 @@ PHP_SYN_NODE *make_func_decl_syn_node(const char *name, PHP_EXP_NODE *param_list
 
 PHP_SYN_NODE *make_switch_syn_node(PHP_EXP_NODE *cond, PHP_EXP_NODE *case_list);
 
-//
-// add new item into function param list (in declaration )
-//
+// add a new item to the function param list (in a declaration)
 PHP_EXP_NODE *make_func_param(PHP_EXP_NODE *list, PHP_EXP_NODE *var_exp_node, char *class_name, int byref);
 
 PHP_VAR_NODE *make_var_node(void);
@@ -557,11 +524,9 @@ void php_syn_tree_free(PHP_SYN_NODE *tree);
 void php_exp_tree_free(PHP_EXP_NODE *tree);
 
 /*
- * Return code meaning:
- *  0  : continue execution to the next statement
- *  +x : return and skip current loop cycle, as "continue expr" means
- *  -x : return and break as "break expr" means
- *  In non-loop situation any != 0 code means "return"
+ * Return code meaning: 0 continues execution at the next statement, +x returns and skips the
+ * current loop cycle as "continue expr" means, -x returns and breaks as "break expr" means. Outside
+ * a loop any non-zero code means "return".
  */
 int php_execute(PHP_SYN_NODE *node, PHP_VALUE_NODE *result);
 
@@ -588,9 +553,7 @@ void php_report_error(PHP_MSG_TYPE mtype, const char *msg, ...) __attribute__((_
 void php_report_error(PHP_MSG_TYPE mtype, const char *msg, ...);
 #endif
 
-/*
- * Debugging
- */
+/* Debugging */
 void print_val_node(PHP_VALUE_NODE *node, int ident);
 void print_exp_node(PHP_EXP_NODE *node, int ident);
 void print_syn_node(PHP_SYN_NODE *node, int ident);
@@ -599,9 +562,7 @@ void print_syn_node(PHP_SYN_NODE *node, int ident);
 }
 #endif
 
-/*
- * C++ only functions, type definitions
- */
+/* C++ only functions, type definitions */
 #ifdef __cplusplus
 
 #include <map>
@@ -610,24 +571,18 @@ void print_syn_node(PHP_SYN_NODE *node, int ident);
 
 typedef std::map<std::string, PHP_VAR_NODE *>::iterator PHP_ARRAY_ITER_TYPE;
 typedef std::list<std::string>::iterator PHP_ARRAY_KEY_ITER_TYPE;
-//
-// In php arrays are behave like hashes (i.e. associative) and are sortable.
-// STL std::map is not sortable.
-//
+// In php, arrays behave like hashes (associative) and are sortable. STL std::map is not sortable.
 struct PHP_ARRAY_TYPE
 {
 	std::map<std::string, PHP_VAR_NODE *> array;
 	std::list<std::string> sorted_keys;
 	PHP_ARRAY_KEY_ITER_TYPE current;
-	// Hint for array_push_back: integer key to start the
-	// next free-slot scan from. Avoids O(N) per push (-> O(N^2)
-	// for N pushes) which wedges amuleweb on large shared lists.
+	// Hint for array_push_back: the integer key to start the next free-slot scan from. Avoids
+	// O(N) per push, so O(N^2) for N pushes, which wedges amuleweb on large shared lists.
 	int push_next_hint = 0;
 };
 
-//
-// using std::string instead of "char *" so keys will be compared
-// by string value
+// std::string rather than "char *", so keys compare by string value
 typedef std::map<std::string, PHP_SCOPE_ITEM *> PHP_SCOPE_TABLE_TYPE;
 typedef std::list<PHP_SCOPE_TABLE_TYPE *> PHP_SCOPE_STACK_TYPE;
 

@@ -31,9 +31,9 @@
 // MOD Note: Do not change this part - Merkur
 
 #define KADEMLIAASKTIME SEC2MS(1) // 1 second
-// The concurrent-file cap (formerly KADEMLIATOTALFILE) and per-file re-search
-// interval (formerly KADEMLIAREASKTIME) are now user preferences:
-// thePrefs::GetKadMaxSourceSearches() and thePrefs::GetKadSourceReaskTime().
+// The concurrent-file cap (formerly KADEMLIATOTALFILE) and per-file re-search interval (formerly
+// KADEMLIAREASKTIME) are now preferences: thePrefs::GetKadMaxSourceSearches() and
+// GetKadSourceReaskTime().
 #define KADEMLIAPUBLISHTIME SEC(2)        // 2 second
 #define KADEMLIATOTALSTORENOTES 1         // Total hashes to store.
 #define KADEMLIATOTALSTORESRC 3           // Total hashes to store.

@@ -34,18 +34,16 @@
 #include <wx/string.h> // Needed for wxString
 
 /**
- * eMuleAI vendor capability bits, carried in the CT_MOD_MISCOPTIONS (0xAA)
- * handshake tag.
+ * eMuleAI vendor capability bits, carried in the CT_MOD_MISCOPTIONS (0xAA) handshake tag.
  *
- * These positions are wire format. They mirror eMuleAI's UModMiscOptions
- * union field for field, least significant bit first, because that is the
- * order the reference implementation lays that union out on the wire.
+ * These positions are wire format. They mirror eMuleAI's UModMiscOptions union field for field,
+ * least significant bit first, because that is the order the reference implementation lays that
+ * union out on the wire.
  *
- * A one-bit offset here has no runtime signal. aMule would claim a transport
- * it does not have, the peer would open a handshake, and that handshake would
- * simply never complete -- nothing logs, nothing fails, the source is just
- * quietly unusable. PeerCapabilitiesTest pins each value as a literal word so
- * a renumbering cannot pass.
+ * A one-bit offset here has no runtime signal. aMule would claim a transport it does not have, the
+ * peer would open a handshake, and that handshake would simply never complete -- nothing logs,
+ * nothing fails, the source is just quietly unusable. PeerCapabilitiesTest pins each value as a
+ * literal word so a renumbering cannot pass.
  */
 enum EModMiscOptions : uint32_t
 {
@@ -61,31 +59,27 @@ enum EModMiscOptions : uint32_t
 	MOD_MISCOPT_NAT_TRAVERSAL_QUIC = 1u << 4
 };
 
-//! Bits 0-4 are defined. Bits 5-31 are reserved and travel as zero in both
-//! directions: they are masked out of what a peer sends, so no capability can
-//! be inferred from them, and never set in what aMule sends.
+//! Bits 0-4 are defined. Bits 5-31 are reserved and travel as zero in both directions: they are
+//! masked out of what a peer sends, so no capability can be inferred from them, and never set in
+//! what aMule sends.
 //!
-//! "Reserved" means reserved to aMule, not unallocated on the wire. The 0xAA
-//! word is not eMuleAI's alone: emule-qt allocates bit 5 in it
-//! (MODMISC_EXTXS_SKIPTAGS, extended source exchange without the tag
-//! preamble) and bit 10 (MODMISC_HTTPCACHE, HTTP cache sourcing). This mask
-//! drops both, so a peer that sets either reaches m_bits with it cleared.
+//! "Reserved" means reserved to aMule, not unallocated on the wire. The 0xAA word is not eMuleAI's
+//! alone: emule-qt allocates bit 5 in it (MODMISC_EXTXS_SKIPTAGS, extended source exchange without
+//! the tag preamble) and bit 10 (MODMISC_HTTPCACHE, HTTP cache sourcing). This mask drops both, so
+//! a peer that sets either reaches m_bits with it cleared.
 //!
-//! That is right while aMule acts on neither -- a bit it cannot use is a bit
-//! it must not relay -- and wrong the moment it wants to gate on one, because
-//! a dropped bit reads as absent rather than as unknown, which is a different
-//! claim. Widening this mask is the change that has to happen first: no query
-//! site can recover a bit that was cleared here. A new bit needs an
-//! EModMiscOptions entry, a widened mask, an entry in the display table
-//! below, and the literal position pinned in PeerCapabilitiesTest.
+//! That is right while aMule acts on neither -- a bit it cannot use is a bit it must not relay --
+//! and wrong the moment it wants to gate on one, because a dropped bit reads as absent rather than
+//! as unknown, which is a different claim. Widening this mask is the change that has to happen
+//! first: no query site can recover a bit that was cleared here. A new bit needs an EModMiscOptions
+//! entry, a widened mask, an entry in the display table below, and the literal position pinned in
+//! PeerCapabilitiesTest.
 constexpr uint32_t MOD_MISCOPT_KNOWN_MASK = 0x0000001Fu;
 
 /**
- * What a peer told us it can do.
- *
- * Read-only as far as this change is concerned: aMule records the peer's
- * claims so later changes in this set can act on them, and advertises nothing
- * new itself. See LocalAdvertisedModMiscOptions().
+ * What a peer told us it can do. Read-only as far as this change is concerned: aMule records the
+ * peer's claims so later changes in this set can act on them, and advertises nothing new itself.
+ * See LocalAdvertisedModMiscOptions().
  */
 class CPeerCapabilities
 {
@@ -123,28 +117,24 @@ public:
 	/**
 	 * The capability word as a comma-separated list, for client details.
 	 *
-	 * Empty when the peer claims nothing, and the caller decides what that
-	 * looks like: the client details dialog hides its row rather than
-	 * printing a word for it. A peer that sent no CT_MOD_MISCOPTIONS tag and
-	 * one that sent an all-zero word are the same state and read the same
-	 * way, because eMuleAI omits the tag when the word is zero, exactly as
-	 * aMule does.
+	 * Empty when the peer claims nothing, and the caller decides what that looks like: the
+	 * client details dialog hides its row rather than printing a word for it. A peer that sent
+	 * no CT_MOD_MISCOPTIONS tag and one that sent an all-zero word are the same state and read
+	 * the same way, because eMuleAI omits the tag when the word is zero, exactly as aMule does.
 	 *
-	 * The names are spelled out as prose rather than abbreviated, so they
-	 * are translated like the rest of the dialog. They carry no protocol
-	 * meaning and nothing reads them back: the bit identity is pinned by
-	 * PeerCapabilitiesTest, which asserts each position as a literal word,
-	 * and the pairing of bit to name by the display test. So rewording or
-	 * translating one cannot move a bit.
+	 * The names are spelled out as prose rather than abbreviated, so they are translated like
+	 * the rest of the dialog. They carry no protocol meaning and nothing reads them back: the
+	 * bit identity is pinned by PeerCapabilitiesTest, which asserts each position as a literal
+	 * word, and the pairing of bit to name by the display test. So rewording or translating one
+	 * cannot move a bit.
 	 *
-	 * They are marked with wxTRANSLATE and translated at use rather than
-	 * written as _(), because the table is static: _() in its initialiser
-	 * would translate once, on first call, possibly before the locale is
-	 * loaded, and would never follow a language change afterwards.
+	 * They are marked with wxTRANSLATE and translated at use rather than written as _(),
+	 * because the table is static: _() in its initialiser would translate once, on first call,
+	 * possibly before the locale is loaded, and would never follow a language change
+	 * afterwards.
 	 *
-	 * Lives here rather than on CUpDownClient because the core client and
-	 * the remote GUI's EC mirror both need it, and two copies of this table
-	 * would drift the moment a bit is added.
+	 * Lives here rather than on CUpDownClient because the core client and the remote GUI's EC
+	 * mirror both need it, and two copies of this table would drift the moment a bit is added.
 	 */
 	wxString GetDisplayText() const
 	{
@@ -165,15 +155,14 @@ public:
 	/**
 	 * The same bits as stable API tokens, in bit order.
 	 *
-	 * The /api/v0 surface spells every other multi-state field as an
-	 * enumerated token, and an integer there would make each consumer carry
-	 * its own copy of the table below -- reimplemented in JS for the Web UI
-	 * and again in every third-party client, each free to drift from this
-	 * file. A peer claims any combination of the bits rather than one state,
+	 * The /api/v0 surface spells every other multi-state field as an enumerated token, and an
+	 * integer there would make each consumer carry its own copy of the table below --
+	 * reimplemented in JS for the Web UI and again in every third-party client, each free to
+	 * drift from this file. A peer claims any combination of the bits rather than one state,
 	 * which is why this is a list rather than a single token.
 	 *
-	 * Unlike the display text these are not translated and never change:
-	 * they are wire vocabulary, and a consumer matches them literally.
+	 * Unlike the display text these are not translated and never change: they are wire
+	 * vocabulary, and a consumer matches them literally.
 	 */
 	std::vector<std::string> GetApiTokens() const
 	{
@@ -195,10 +184,10 @@ public:
 	};
 
 	/**
-	 * One table on purpose, and now carrying three things rather than two:
-	 * a bit cannot be added to the enum and then forgotten in the display
-	 * row, the API row, or either separately. A second table keyed on the
-	 * same enum is exactly the drift this arrangement exists to prevent.
+	 * One table on purpose, and now carrying three things rather than two: a bit cannot be
+	 * added to the enum and then forgotten in the display row, the API row, or either
+	 * separately. A second table keyed on the same enum is exactly the drift this arrangement
+	 * exists to prevent.
 	 */
 	static const std::vector<SCapabilityName> &Table()
 	{
@@ -227,15 +216,13 @@ private:
 /**
  * The CT_MOD_MISCOPTIONS word aMule puts in its own handshake.
  *
- * Zero, and deliberately so: none of the five features exists in this tree
- * yet. Recognising a capability and implementing it are separate changes, and
- * advertising one aMule does not have is worse than advertising nothing --
- * the peer opens a handshake that cannot complete and neither side logs a
- * reason. Each bit turns on in the change that ships its transport.
+ * Zero, and deliberately so: none of the five features exists in this tree yet. Recognising a
+ * capability and implementing it are separate changes, and advertising one aMule does not have is
+ * worse than advertising nothing -- the peer opens a handshake that cannot complete and neither
+ * side logs a reason. Each bit turns on in the change that ships its transport.
  *
- * Because the word is zero, no CT_MOD_MISCOPTIONS tag is emitted at all: an
- * absent tag and an all-zero one mean the same thing to eMuleAI, and the
- * absent one costs no bytes.
+ * Because the word is zero, no CT_MOD_MISCOPTIONS tag is emitted at all: an absent tag and an all-
+ * zero one mean the same thing to eMuleAI, and the absent one costs no bytes.
  */
 constexpr uint32_t LocalAdvertisedModMiscOptions()
 {
@@ -245,16 +232,14 @@ constexpr uint32_t LocalAdvertisedModMiscOptions()
 /**
  * Decode the 128-bit address carried by the "ip6" and "bi6" Kad tags.
  *
- * The wire form is exactly 32 hexadecimal characters, most significant byte
- * first, upper or lower case -- the reference implementation writes them with
- * its 128-bit hex formatter and reads them back with its MD4-hash parser, so
- * the length is fixed and not a prefix. Anything else is a malformed tag, not
- * a shorter address, and the caller must ignore it.
+ * The wire form is exactly 32 hexadecimal characters, most significant byte first, upper or lower
+ * case -- the reference implementation writes them with its 128-bit hex formatter and reads them
+ * back with its MD4-hash parser, so the length is fixed and not a prefix. Anything else is a
+ * malformed tag, not a shorter address, and the caller must ignore it.
  *
- * @param text  the tag's string value; may be NULL.
- * @param length  its length in characters.
- * @param out  receives 16 bytes, big-endian. Untouched unless true is
- *             returned.
+ * @param text the tag's string value; may be NULL.
+ * @param length its length in characters.
+ * @param out receives 16 bytes, big-endian. Untouched unless true is returned.
  * @return true when the whole run decoded.
  */
 inline bool DecodeIPv6HexTag(const char *text, size_t length, uint8_t *out)

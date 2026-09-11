@@ -35,10 +35,9 @@ std::vector<std::string> SplitPath(const std::string &path)
 	if (path.empty()) {
 		return out;
 	}
-	// A leading '/' is the conventional "absolute" form. We skip the
-	// empty segment it would otherwise produce; a trailing '/' still
-	// emits its empty segment so it's distinguishable from "no
-	// trailing slash".
+	// A leading '/' is the conventional "absolute" form, so skip the empty segment it would
+	// produce. A trailing '/' still emits its empty segment, so it stays distinguishable from
+	// "no trailing slash".
 	size_t i = (path[0] == '/') ? 1 : 0;
 	std::string cur;
 	for (; i < path.size(); ++i) {
@@ -60,9 +59,8 @@ bool LooksMalicious(const std::string &path)
 	if (path.find('\0') != std::string::npos)
 		return true;
 
-	// Encoded NUL — explicit reject even though today's routes don't
-	// percent-decode path segments. A future hash-by-name endpoint
-	// that does decode would otherwise admit this.
+	// Encoded NUL -- an explicit reject even though today's routes do not percent-decode path
+	// segments. A future hash-by-name endpoint that does decode would otherwise admit this.
 	for (size_t i = 0; i + 2 < path.size(); ++i) {
 		if (path[i] != '%')
 			continue;
@@ -72,11 +70,9 @@ bool LooksMalicious(const std::string &path)
 			return true;
 	}
 
-	// Encoded ".." (percent-encoded dot). Match `%2e` and `%2E` in
-	// both upper/lower hex forms. We don't bother with the more
-	// exotic `%2e%2E`/`%2E%2e` orderings — the simple loop catches
-	// any pair of "is a `%2e`-looking triplet" tokens that are
-	// adjacent.
+	// Encoded ".." (percent-encoded dot). Match `%2e` and `%2E` in both hex cases. The more
+	// exotic `%2e%2E` / `%2E%2e` orderings are not worth bothering with: the simple loop
+	// catches any pair of adjacent `%2e`-looking triplets.
 	for (size_t i = 0; i + 5 < path.size(); ++i) {
 		const bool dot1 =
 			path[i] == '%' && path[i + 1] == '2' && (path[i + 2] == 'e' || path[i + 2] == 'E');
@@ -88,9 +84,8 @@ bool LooksMalicious(const std::string &path)
 			return true;
 	}
 
-	// Literal ".." segment. SplitPath would happily emit a "..":
-	// segment-walk every "/"-delimited chunk and reject if it
-	// equals "..".
+	// Literal ".." segment. SplitPath would happily emit a "..", so walk every "/"-delimited
+	// chunk and reject any that equals "..".
 	size_t seg_start = (path[0] == '/') ? 1 : 0;
 	for (size_t i = seg_start; i <= path.size(); ++i) {
 		const bool boundary = (i == path.size()) || (path[i] == '/');
@@ -164,9 +159,9 @@ int HexNibble(char c)
 	return -1;
 }
 
-// Percent-decode an application/x-www-form-urlencoded fragment.
-// `+` → space (form convention); `%hh` → byte; malformed `%hh`
-// passes through verbatim so a stray `%` doesn't drop characters.
+// Percent-decode an application/x-www-form-urlencoded fragment. `+` becomes space (form
+// convention), `%hh` becomes a byte; a malformed `%hh` passes through verbatim so a stray `%` does
+// not drop characters.
 std::string PercentDecode(const std::string &in)
 {
 	std::string out;

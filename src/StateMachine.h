@@ -23,9 +23,7 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-//
 // Generic state machine implementation
-//
 
 #ifndef STATE_MACHINE_H
 #define STATE_MACHINE_H

@@ -28,30 +28,24 @@
 #include <cstddef>
 #include <utility>
 
-// Line-anchored HTTP header + Cookie helpers. Pure pointer-arithmetic
-// over a CRLF-terminated header block — no copies, no allocations,
-// no dependency on the HTTP server. Line-boundary anchoring (defeats
-// `X-Foo:`-in-value header-injection) and the OWS trimming rules
-// sit in one place.
+// Line-anchored HTTP header + Cookie helpers. Pure pointer arithmetic over a CRLF-terminated header
+// block -- no copies, no allocations, no dependency on the HTTP server. Line-boundary anchoring
+// (which defeats `X-Foo:`-in-value header injection) and the OWS trimming rules sit in one place.
 
 namespace webcommon
 {
 
-// Walk an HTTP header block looking for `name:` at the start of a
-// line (case-insensitive). Returns a non-owning view of the value,
-// past the colon and any leading OWS, up to but not including the
-// line's CRLF; returns {nullptr, 0} on miss. `block` is expected to
-// start at the HTTP-version line (e.g. "GET / HTTP/1.1\r\n"); that
-// line is skipped on the first iteration. Line-boundary anchoring
-// defeats header-injection via a value that happens to contain a
-// literal "X-Header:" — a strstr-based scan would have matched
-// anywhere.
+// Walk an HTTP header block looking for `name:` at the start of a line, case-insensitively. Returns
+// a non-owning view of the value, past the colon and any leading OWS, up to but not including the
+// line's CRLF; {nullptr, 0} on miss. `block` is expected to start at the HTTP-version line (e.g.
+// "GET / HTTP/1.1\r\n"), which is skipped on the first iteration. Line-boundary anchoring defeats
+// header injection via a value that happens to contain a literal "X-Header:" -- a strstr-based scan
+// would have matched anywhere.
 std::pair<const char *, std::size_t> FindHttpHeaderValue(const char *block, const char *name);
 
-// Extract `cookie_name=value` from a Cookie-header value (already found
-// via FindHttpHeaderValue — pass the view it returned). Returns
-// {nullptr, 0} on miss. The returned view spans from past the `=` up
-// to the next `;` or `cookies_len`, whichever comes first.
+// Extract `cookie_name=value` from a Cookie-header value, already found via FindHttpHeaderValue --
+// pass the view it returned. {nullptr, 0} on miss. The returned view spans from past the `=` to the
+// next `;` or `cookies_len`, whichever comes first.
 std::pair<const char *, std::size_t> FindCookieValue(
 	const char *cookies, std::size_t cookies_len, const char *cookie_name);
 

@@ -48,14 +48,12 @@ namespace Kademlia
 ////////////////////////////////////////
 
 /**
- * Class representing an unsigned 128-bit integer.
+ * An unsigned 128-bit integer.
  *
- * Not all operations are valid, especially multiplicative operations
- * (multiply, divide) and shift right are not implemented.
+ * Not all operations are valid: multiply, divide and shift right are not implemented.
  *
  * @if maint
- * Internal representation: The number is stored as a whole little-endian
- * 128-bit number.
+ * Internal representation: one whole little-endian 128-bit number.
  * @endif
  */
 class CUInt128
@@ -73,8 +71,8 @@ public:
 	explicit CUInt128(const uint8_t *valueBE) noexcept { SetValueBE(valueBE); }
 
 	/**
-	 * Generates a new number, copying the most significant 'numBits' bits from 'value'.
-	 * The remaining bits are randomly generated.
+	 * Generates a new number, copying the most significant 'numBits' bits from 'value'. The
+	 * remaining bits are random.
 	 */
 	CUInt128(const CUInt128 &value, unsigned numBits);
 
@@ -115,13 +113,12 @@ public:
 	void ToByteArray(uint8_t *b) const;
 
 	/**
-	 * Stores value used by the crypt functions.
+	 * Stores the value used by the crypt functions.
 	 *
-	 * Since eMule started to use the value as-is (four little-endian 32-bit integers in big-endian
-	 * order), we have to reproduce that same representation on every platform.
+	 * eMule uses the value as-is (four little-endian 32-bit integers in big-endian order), so
+	 * we reproduce that representation on every platform.
 	 *
-	 * @param buf Buffer to hold the value. Must be large enough to hold the data (16 bytes at least),
-	 *	and must not be NULL.
+	 * @param buf Buffer to hold the value. Must be non-NULL and at least 16 bytes.
 	 */
 	void StoreCryptValue(uint8_t *buf) const;
 

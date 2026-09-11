@@ -25,10 +25,7 @@
 
 /**
  * @file
- *
- * @brief Tests for compiler-specific features.
- *
- * This file helps aMule be compiled with various compilers.
+ * @brief Tests for compiler-specific features, so aMule builds with various compilers.
  */
 
 #ifndef COMPILERSPECIFIC_H

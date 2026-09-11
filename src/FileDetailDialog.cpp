@@ -54,10 +54,9 @@ wxEND_EVENT_TABLE()
 
 namespace
 {
-// Registry of open CFileDetailDialog instances; see CCommentDialog.cpp for the
-// rationale. The broadcast handler in GuiEvents.cpp iterates this on every
-// CKnownFile destruction, since a UAF would otherwise fire from the 5-second
-// update timer's deref of m_file (issue #755).
+// Registry of open CFileDetailDialog instances; see CCommentDialog.cpp for the rationale. The
+// broadcast handler in GuiEvents.cpp walks this on every CKnownFile destruction, since the 5-second
+// update timer's deref of m_file would otherwise be a UAF (issue #755).
 std::set<CFileDetailDialog *> &OpenInstances()
 {
 	static std::set<CFileDetailDialog *> instances;
@@ -90,10 +89,10 @@ CFileDetailDialog::~CFileDetailDialog()
 {
 	OpenInstances().erase(this);
 	m_timer.Stop();
-	// Drop the rows before freeing what they point at: the list control is a child
-	// window and so outlives this body, and the base has to be told before the
-	// caller frees the item data. Nothing can currently paint or sort in between,
-	// but that is a property of wx's teardown rather than something to rest on.
+	// Drop the rows before freeing what they point at: the list control is a child window and
+	// outlives this body, and the base has to be told before the caller frees the item data.
+	// Nothing can currently paint or sort in between, but that is a property of wx's teardown
+	// rather than something to rest on.
 	if (CFileDetailListCtrl *list = CastChild(IDC_LISTCTRLFILENAMES, CFileDetailListCtrl)) {
 		list->ClearSources();
 	}
@@ -105,10 +104,9 @@ CFileDetailDialog::~CFileDetailDialog()
 void CFileDetailDialog::DropReferencesTo(const CKnownFile *file)
 {
 	for (CFileDetailDialog *d : OpenInstances()) {
-		// Strip the file from m_files first, so Next/Prev navigation does not
-		// re-select it. m_files is a reference to the caller's vector, so erasing
-		// here mutates the caller's state too -- fine, since the caller holds it only
-		// for the duration of the modal dialog.
+		// Strip the file from m_files first, so Next/Prev navigation does not re-select it.
+		// m_files is a reference to the caller's vector, so this mutates the caller's state
+		// too -- fine, since it holds it only for the duration of the modal dialog.
 		for (std::vector<CKnownFile *>::iterator it = d->m_files.begin(); it != d->m_files.end();
 			/* manual ++ */) {
 			if (*it == file) {
@@ -117,10 +115,8 @@ void CFileDetailDialog::DropReferencesTo(const CKnownFile *file)
 				if (d->m_index > offset) {
 					--d->m_index;
 				} else if (d->m_index == offset) {
-					// The active file is the one being
-					// destroyed. The dialog will dismiss
-					// below, so the index value won't be
-					// read again.
+					// The active file is being destroyed. The dialog dismisses
+					// below, so the index is not read again.
 				}
 			} else {
 				++it;
@@ -150,10 +146,10 @@ void CFileDetailDialog::UpdateData(bool resetFilename)
 {
 	wxString bufferS;
 
-	// A file is "downloading" only while it is an incomplete partfile.
-	// CPartFile::IsPartFile() already returns false once complete, even though the
-	// object may linger as a CPartFile until the next restart, so it is the
-	// authoritative test rather than the concrete type. Works in amulegui too.
+	// A file is "downloading" only while it is an incomplete partfile. CPartFile::IsPartFile()
+	// returns false once complete, even though the object may linger as a CPartFile until the
+	// next restart, so it is the authoritative test rather than the concrete type. Works in
+	// amulegui too.
 	CPartFile *part = m_file->IsPartFile() ? static_cast<CPartFile *>(m_file) : nullptr;
 
 	// --- Common fields (present on every CKnownFile) ---
@@ -244,14 +240,13 @@ void CFileDetailDialog::UpdateData(bool resetFilename)
 	}
 	CastChild(IDC_FD_SHARE_LASTUP, wxControl)->SetLabel(bufferS);
 
-	// Media Info (issue #418): populated from FT_MEDIA_* when the file has probed
-	// metadata, with the labels left at their "N/A" default otherwise. Identical in
-	// the monolithic and remote builds, the remote proxy storing the same tags.
+	// Media Info (issue #418): filled from FT_MEDIA_* when the file has probed metadata, labels
+	// left at their "N/A" default otherwise. Identical in the monolithic and remote builds, the
+	// remote proxy storing the same tags.
 	//
-	// Per field, NOT gated on GetMetaDataVer(): that predicate answers "has this
-	// been probed", and a probed file can still have no duration. Filling every
-	// label on the aggregate would show Length 0:00 and Bitrate 0 kbps where the
-	// truthful answer is N/A.
+	// Per field, NOT gated on GetMetaDataVer(): that answers "has this been probed", and a
+	// probed file can still have no duration. Filling every label on the aggregate would show
+	// Length 0:00 and Bitrate 0 kbps where the truthful answer is N/A.
 	if (uint32 len = m_file->GetIntTagValue(FT_MEDIA_LENGTH)) {
 		CastChild(IDC_FD_MEDIA_LENGTH, wxControl)->SetLabel(CastSecondsToHM(len));
 	}
@@ -275,9 +270,9 @@ void CFileDetailDialog::UpdateData(bool resetFilename)
 		}
 	}
 
-	// Section visibility, driven by the file's own state rather than by which list
-	// opened the dialog: download rows show only for an in-progress partfile,
-	// sharing rows for any file that actually shares data.
+	// Section visibility, driven by the file's own state rather than by which list opened the
+	// dialog: download rows only for an in-progress partfile, sharing rows for any file that
+	// actually shares data.
 	bool showDownload = (part != nullptr);
 	bool showSharing = (part == nullptr) || (part->GetCompletedSize() > 0);
 	bool relayout = false;
@@ -297,10 +292,9 @@ void CFileDetailDialog::UpdateData(bool resetFilename)
 	}
 
 	setEnableForApplyButton();
-	// "Show all comments" opens the ratings/comments dialog, which works for a
-	// shared file as well as an in-progress download since a Kad notes lookup only
-	// needs the file's hash and size. Enabled whenever there are comments already
-	// or Kad is connected (#434).
+	// "Show all comments" opens the ratings/comments dialog, which works for a shared file as
+	// well as an in-progress download since a Kad notes lookup only needs the file's hash and
+	// size. Enabled whenever there are comments already or Kad is connected (#434).
 	FileRatingList list;
 	m_file->GetRatingAndComments(list);
 	CastChild(IDC_CMTBT, wxControl)->Enable(!list.empty() || theApp->IsConnectedKad());
@@ -314,9 +308,9 @@ void CFileDetailDialog::FillSourcenameList()
 {
 	CFileDetailListCtrl *pmyListCtrl = CastChild(IDC_LISTCTRLFILENAMES, CFileDetailListCtrl);
 
-	// The source-name list is a download-only view of how sources name the file. A
-	// plain shared file has none, so clear any rows a prior file left behind,
-	// freeing their item data, and bail before the partfile-only accessors below.
+	// The source-name list is a download-only view of how sources name the file. A plain shared
+	// file has none, so clear any rows a prior file left behind, freeing their item data, and
+	// bail before the partfile-only accessors below.
 	CPartFile *part = m_file->IsPartFile() ? static_cast<CPartFile *>(m_file) : nullptr;
 	if (!part) {
 		// Rows first, then the objects they point at -- same rule as the
@@ -381,13 +375,13 @@ void CFileDetailDialog::FillSourcenameList()
 		}
 	}
 
-	// Counts are zeroed above and rewritten in place, so while this runs the list
-	// is not ordered by the column it is sorted on -- and AddSource() places a new
-	// row with a binary search, which needs that ordering. An insertion therefore
-	// leaves rows in arbitrary positions and has to be repaired here.
+	// Counts are zeroed above and rewritten in place, so while this runs the list is not
+	// ordered by the column it is sorted on -- and AddSource() places a new row with a binary
+	// search, which needs that ordering. An insertion therefore leaves rows in arbitrary
+	// positions and has to be repaired here.
 	//
-	// Only on insertion: a count that merely changed is what the live-sort
-	// preference governs, and sorting unconditionally would override that setting.
+	// Only on insertion: a count that merely changed is what the live-sort preference governs,
+	// and sorting unconditionally would override it.
 	if (inserted) {
 		pmyListCtrl->SortList();
 	}
@@ -395,9 +389,8 @@ void CFileDetailDialog::FillSourcenameList()
 
 void CFileDetailDialog::OnBnClickedShowComment(wxCommandEvent &WXUNUSED(evt))
 {
-	// The dialog takes a CAbstractFile, so it works for a shared file as well as
-	// an in-progress download; the "Get from Kad" button inside it drives the
-	// on-demand community ratings/comments lookup.
+	// The dialog takes a CAbstractFile, so it works for a shared file as well as an in-progress
+	// download; its "Get from Kad" button drives the on-demand ratings/comments lookup.
 	if (m_file) {
 		CCommentDialogLst(this, m_file).ShowModal();
 	}

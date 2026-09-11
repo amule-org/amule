@@ -23,9 +23,7 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-//
 // Client to Server communication
-//
 
 #ifndef SERVERCONNECT_H
 #define SERVERCONNECT_H
@@ -91,13 +89,11 @@ public:
 	void SetClientID(uint32 newid);
 	bool IsLocalServer(uint32 dwIP, uint16 nPort);
 
-	/// True if `ip` matches the IP of the currently-connected ed2k server
-	/// or any in-flight CServerSocket whose login attempt is still
-	/// outstanding.  Used by CClientTCPSocket to short-circuit the
-	/// global download-bandwidth throttler for inbound peer connections
-	/// that are actually the server's HighID-callback probe (#778).
-	/// Without that bypass, a saturated peer-side download budget delays
-	/// the probe past the server's verification timer and we end up with
+	/// True if `ip` matches the currently connected ed2k server, or any in-flight CServerSocket
+	/// whose login attempt is still outstanding. CClientTCPSocket uses it to short-circuit the
+	/// global download-bandwidth throttler for inbound peer connections that are really the
+	/// server's HighID-callback probe (#778). Without that bypass, a saturated peer-side
+	/// download budget delays the probe past the server's verification timer and we end up with
 	/// a permanent LowID under sustained load.
 	bool IsServerIP(uint32 ip) const;
 	void TryAnotherConnectionrequest();
@@ -113,28 +109,26 @@ public:
 	/**
 	 * Whether a resolver has answered since the current sweep began.
 	 *
-	 * A server whose hostname does not resolve is the commonest way an eD2k
-	 * server dies, and pruning it is the point of "remove dead servers" -- but
-	 * with the link down nothing resolves, and blaming the whole list for that
-	 * is what emptied it (issue #887). One server failing to resolve while
-	 * others answered is the case that says something about that server, and
-	 * this is what separates the two.
+	 * A server whose hostname does not resolve is the commonest way an eD2k server dies, and
+	 * pruning it is the point of "remove dead servers" -- but with the link down nothing
+	 * resolves, and blaming the whole list for that is what emptied it (issue #887). One server
+	 * failing to resolve while others answered is the case that says something about that
+	 * server, and this is what separates the two.
 	 *
-	 * Only a lookup that actually ran counts: most of server.met carries an
-	 * address already, and going straight to connect proves nothing about the
-	 * resolver. Cleared by StopConnectionTry(), which every sweep ends at, so
-	 * a connect made outside one is never judged on an earlier sweep's link.
+	 * Only a lookup that actually ran counts: most of server.met carries an address already,
+	 * and going straight to connect proves nothing about the resolver. Cleared by
+	 * StopConnectionTry(), which every sweep ends at, so a connect made outside one is never
+	 * judged on an earlier sweep's link.
 	 */
 	bool HostnameResolvedThisSweep() const { return m_hostnameResolvedThisSweep; }
 
 	/**
 	 * Called when a socket has been DNS resolved.
 	 *
-	 * @param socket The socket object requesting DNS resolution.
+	 * @param socket The socket object requesting DNS resolution. May or may not refer to a
+	 * valid
+	 *               object, so check before use.
 	 * @param ip The found IP, or zero on error.
-	 *
-	 * Note that 'socket' may or may not refer to an valid object,
-	 * and should be checked before being used.
 	 */
 	void OnServerHostnameResolved(void *socket, uint32 ip);
 

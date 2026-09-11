@@ -7,36 +7,28 @@ using namespace muleunit;
 
 typedef CRangeMap<int> TestRangeMap;
 
-/**
- * Returns the contents of a TestRangeMap iterator as a string-presentation.
- */
+/// Returns the contents of a TestRangeMap iterator as a string-presentation.
 wxString StringFrom(const TestRangeMap::const_iterator &it)
 {
 	return wxString::Format(
 		"(%" wxLongLongFmtSpec "u, %" wxLongLongFmtSpec "u, %i)", it.keyStart(), it.keyEnd(), *it);
 }
 
-/**
- * Returns the contents of a TestRangeMap iterator as a string-presentation.
- */
+/// Returns the contents of a TestRangeMap iterator as a string-presentation.
 wxString StringFrom(TestRangeMap::iterator it)
 {
 	return wxString::Format(
 		"(%" wxLongLongFmtSpec "u, %" wxLongLongFmtSpec "u, %i)", it.keyStart(), it.keyEnd(), *it);
 }
 
-/**
- * Returns the contents of a CRangeSet iterator as a string-presentation.
- */
+/// Returns the contents of a CRangeSet iterator as a string-presentation.
 wxString StringFrom(const CRangeMap<void>::const_iterator &it)
 {
 	return wxString::Format(
 		"(%" wxLongLongFmtSpec "u, %" wxLongLongFmtSpec "u)", it.keyStart(), it.keyEnd());
 }
 
-/**
- * Returns the contents of a CRangeSet iterator as a string-presentation.
- */
+/// Returns the contents of a CRangeSet iterator as a string-presentation.
 wxString StringFrom(CRangeMap<void>::iterator it)
 {
 	return wxString::Format(
@@ -44,10 +36,8 @@ wxString StringFrom(CRangeMap<void>::iterator it)
 }
 
 /**
- * Returns the contents of a TestRangeMap as a string-representation.
- *
- * Using this function allows for easy comparison against the expected
- * result of a particular test.
+ * Returns the contents of a TestRangeMap as a string-representation, for easy comparison against a
+ * test's expected result.
  */
 template <typename VALUE> wxString StringFrom(const CRangeMap<VALUE> &map)
 {
@@ -106,8 +96,7 @@ void tearDown()
 }
 
 /**
- * Tests insertion into a map with a single range, checking against an
- * expected result.
+ * Tests insertion into a map with a single range, checking against an expected result.
  */
 void singleInsert(uint32 start, uint32 end, int value, const wxString &result)
 {
@@ -141,8 +130,7 @@ void doErase(uint32 start, uint32 end, const wxString &result)
 }
 
 /**
- * Tests insertion into a map with multiple ranges, checking against an
- * expected result.
+ * Tests insertion into a map with multiple ranges, checking against an expected result.
  */
 void multiInsert(int type, uint32 start, uint32 end, int value, const wxString &result)
 {
@@ -343,12 +331,9 @@ TEST(RangeMap, InvalidInsert)
 	ASSERT_RAISES(CInvalidParamsEx, m_map.insert(10, 9, 8));
 }
 
-/////////////////////////////////////////////////
-// The following tests exercize the merging algorithm.
-// The comment before each comment descrices the RangeMaps used to test,
-// and which types of ranges are tested. For example, the description
-// "a / b <-> c / d" is to be read as:
-//   Insert range starting at a or b, ending at c or d.
+// The following tests exercise the merging algorithm. The comment before each describes the
+// RangeMaps used and which types of ranges are tested: "a / b <-> c / d" reads as "insert range
+// starting at a or b, ending at c or d".
 
 // Single insert before start <-> before start.
 TEST(RangeMap, SingleInsert_BeforeStart_BeforeStart)
@@ -750,10 +735,8 @@ TEST(RangeMap, MultiInsert_AfterEnd_AfterEnd)
 	multiInsert(SSAME, 152, 170, 1, "[(100, 150, 1), (152, 200, 1)]");
 }
 
-/////////////////////////////////////////////////
-// The following tests exercize the erase function.
-// Since the erase function use the insert function, all
-// that is needed is to test that no merging is done.
+// The following tests exercise the erase function. Erase uses insert, so all that is needed is to
+// test that no merging is done.
 
 // Single erase before start <-> before start.
 TEST(RangeMap, Erase_BeforeStart_BeforeStart)
@@ -877,9 +860,7 @@ TEST(RangeMap, Swap)
 	}
 }
 
-/////////////////////////////////////////////////
-// The following test exercize the CRangeSet specialization.
-//
+// The following test exercises the CRangeSet specialization.
 
 TEST(RangeMap, RangeSet)
 {

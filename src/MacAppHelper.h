@@ -18,29 +18,25 @@
 extern "C" {
 #endif
 
-// Toggles NSApp's activation policy. Passing true switches the app to
-// NSApplicationActivationPolicyAccessory (no Dock icon, menu-bar /
-// NSStatusItem only); false restores NSApplicationActivationPolicyRegular
-// (normal Dock icon). Used to remove the Dock thumbnail when the main
+// Toggles NSApp's activation policy. True switches the app to
+// NSApplicationActivationPolicyAccessory (no Dock icon, menu-bar / NSStatusItem only); false
+// restores NSApplicationActivationPolicyRegular. Used to remove the Dock thumbnail when the main
 // window is hidden via "minimize to tray".
 void mac_set_accessory_mode(bool accessory);
 
-// Drops the inset row style from the NSTableView (or NSOutlineView) backing
-// the passed wxWindow handle, restoring the flush one. macOS 11 made the
-// inset style the default: it is what draws a selected row as a rounded
-// pill, and it reserves padding at both ends of every row, whether or not
-// the row is the selected one. The padding comes out of the cell the label
-// is drawn in, so a list whose width is derived from its longest label
-// ellipsises that label no matter how wide the column is made. Does nothing
-// if the handle is not backed by a table view, or below macOS 11.
+// Drops the inset row style from the NSTableView (or NSOutlineView) backing the passed wxWindow
+// handle, restoring the flush one. macOS 11 made the inset style the default: it draws a selected
+// row as a rounded pill, and reserves padding at both ends of every row whether or not the row is
+// selected. The padding comes out of the cell the label is drawn in, so a list whose width is
+// derived from its longest label ellipsises that label however wide the column is made. Does
+// nothing if the handle is not backed by a table view, or below macOS 11.
 void mac_set_table_view_flush(void *windowHandle);
 
 // Reveals `path` in Finder, selected in its containing folder.
 //
-// Goes through NSWorkspace rather than spawning `open -R`: LaunchServices does
-// the work out of process, so there is no subprocess to inherit anything from
-// aMule, and the file ends up selected rather than merely having its folder
-// opened. Returns false when the path is gone.
+// Goes through NSWorkspace rather than spawning `open -R`: LaunchServices does the work out of
+// process, so there is no subprocess to inherit anything from aMule, and the file ends up selected
+// rather than merely having its folder opened. False when the path is gone.
 bool mac_reveal_in_finder(const char *path);
 
 #ifdef __cplusplus

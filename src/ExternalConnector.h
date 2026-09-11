@@ -23,11 +23,8 @@
 //
 
 /*
- * This file must be included with wxUSE_GUI defined to zero or one.
- * Usually on console applications, this will be taken care of in
- * configure time. This is because wx classes will be compiled
- * differently in each case.
- *
+ * This file must be included with wxUSE_GUI defined to zero or one -- usually taken care of at
+ * configure time for console applications, because wx classes compile differently in each case.
  */
 
 #ifndef __EXTERNALCONNECTOR_H__
@@ -132,15 +129,11 @@ class CECFileConfig;
 class CaMuleExternalConnector : public wxApp
 {
 public:
-	//
-	// Constructor & Destructor
-	//
+	// Constructor & destructor
 	CaMuleExternalConnector();
 	~CaMuleExternalConnector();
 
-	//
 	// Virtual functions
-	//
 	virtual void Pre_Shell() {}
 	virtual void Post_Shell() {}
 	virtual int ProcessCommand(int) { return -1; }
@@ -151,37 +144,33 @@ public:
 	/**
 	 * Whether this connector keeps its own remote.conf.
 	 *
-	 * True for amulecmd and amuleweb, which have no config file of their own.
-	 * amuleapi returns false: it owns amuleapi.conf, and reading remote.conf
-	 * as well gave two files describing the same EC connection, with the
-	 * winner decided by load order. When false the base class registers
-	 * neither --config-file, --write-config nor --create-config-from, and
-	 * loads nothing -- the subclass is the only source of configuration.
+	 * True for amulecmd and amuleweb, which have no config file of their own. amuleapi returns
+	 * false: it owns amuleapi.conf, and reading remote.conf as well gave two files describing
+	 * the same EC connection, with the winner decided by load order. When false the base class
+	 * registers neither --config-file, --write-config nor --create-config-from, and loads
+	 * nothing -- the subclass is the only source of configuration.
 	 */
 	virtual bool UsesConnectorConfigFile() const { return true; }
 
 	/**
 	 * Whether this connector offers -P / --password on the command line.
 	 *
-	 * amuleapi returns false. A password passed there lands in argv, which
-	 * any local user can read out of ps, and amuleapi has two ways to get
-	 * the credential that do not: the ephemeral token the core writes when
-	 * it spawns amuleapi, and [EC]/Password in its own amuleapi.conf.
-	 * Keeping the option registered would keep offering the one route that
+	 * amuleapi returns false. A password passed there lands in argv, which any local user can
+	 * read out of ps, and amuleapi has two ways to get the credential that do not: the
+	 * ephemeral token the core writes when it spawns amuleapi, and [EC]/Password in its own
+	 * amuleapi.conf. Keeping the option registered would keep offering the one route that
 	 * leaks.
 	 *
-	 * amulecmd and amuleweb keep it. Both are commonly run by hand, and
-	 * neither owns a config file that could hold the value instead.
+	 * amulecmd and amuleweb keep it. Both are commonly run by hand, and neither owns a config
+	 * file that could hold the value instead.
 	 */
 	virtual bool UsesEcPasswordOption() const { return true; }
 
 	/**
-	 * Filename whose presence in <cwd>/config marks a portable install.
-	 *
-	 * Defaults to this connector's own config file (remote.conf). A
-	 * subclass that keeps its settings elsewhere overrides it: probing for
-	 * a file the tool never reads or writes can only detect portability by
-	 * accident, when some other tool happens to have left one behind.
+	 * Filename whose presence in <cwd>/config marks a portable install. Defaults to this
+	 * connector's own config file (remote.conf). A subclass that keeps its settings elsewhere
+	 * overrides it: probing for a file the tool never reads or writes can only detect
+	 * portability by accident, when some other tool happens to have left one behind.
 	 */
 	virtual wxString PortableProbeFile() const { return "remote.conf"; }
 	virtual void LoadAmuleConfig(CECFileConfig &cfg);
@@ -189,9 +178,7 @@ public:
 	virtual bool OnInit();
 	virtual const wxString GetGreetingTitle() = 0;
 
-	//
 	// Other functions
-	//
 	void Show(const wxString &s);
 	void DebugShow(const wxString &s)
 	{
@@ -213,36 +200,33 @@ public:
 	}
 	void SendPacket(const CECPacket *request) { m_ECClient->SendPacket(request); }
 	bool IsServerPartialUpdateActive() const { return m_ECClient->ServerSupportsPartialUpdate(); }
-	// True when an id-less EC_OP_SEARCH_PROGRESS returns every search as
-	// children, so a client polling N searches can do it in one round trip.
-	// Null-checked: the refresher can reach this between a drop and a
-	// reconnect, unlike the always-connected callers above.
+	// True when an id-less EC_OP_SEARCH_PROGRESS returns every search as children, so a client
+	// polling N searches can do it in one round trip. Null-checked: the refresher can reach
+	// this between a drop and a reconnect, unlike the always-connected callers above.
 	bool IsServerSearchProgressUnionActive() const
 	{
 		return m_ECClient && m_ECClient->ServerSupportsSearchProgressUnion();
 	}
-	// True when amuled answers EC_OP_GET_CLIENT_HISTORY. Null-checked for the same
-	// reason as the union accessor above, and the check is load-bearing beyond
-	// that: a daemon predating the request reaches the unknown-opcode branch of
-	// ProcessRequest2(), which asserts rather than answering EC_OP_FAILED.
+	// True when amuled answers EC_OP_GET_CLIENT_HISTORY. Null-checked for the same reason as
+	// the union accessor above, and the check is load-bearing beyond that: a daemon predating
+	// the request reaches the unknown-opcode branch of ProcessRequest2(), which asserts rather
+	// than answering EC_OP_FAILED.
 	bool IsServerClientHistoryActive() const
 	{
 		return m_ECClient && m_ECClient->ServerSupportsClientHistory();
 	}
-	// True when amuled serves the chat session ops. Same load-bearing null check:
-	// a daemon predating them asserts on the unknown opcode instead of answering
-	// EC_OP_FAILED, so every chat request must be gated on this.
+	// True when amuled serves the chat session ops. Same load-bearing null check: a daemon
+	// predating them asserts on the unknown opcode instead of answering EC_OP_FAILED, so every
+	// chat request must be gated on this.
 	bool IsServerChatActive() const { return m_ECClient && m_ECClient->ServerSupportsChatSessions(); }
-	// Version string of the connected core, from the EC AUTH_OK handshake.
-	// Empty when not connected (m_ECClient null) or when the daemon is old
-	// enough to omit the EC_TAG_SERVER_VERSION tag.
+	// Version string of the connected core, from the EC AUTH_OK handshake. Empty when not
+	// connected (m_ECClient null) or when the daemon is old enough to omit the
+	// EC_TAG_SERVER_VERSION tag.
 	wxString GetServerVersion() const { return m_ECClient ? m_ECClient->GetServerVersion() : wxString(); }
 	void ConnectAndRun(const wxString &ProgName, const wxString &ProgVersion);
 	void ShowGreet();
 
-	//
 	// Command line processing
-	//
 	void OnInitCmdLine(wxCmdLineParser &amuleweb_parser, const char *appname);
 	bool OnCmdLineParsed(wxCmdLineParser &parser);
 
@@ -266,26 +250,24 @@ protected:
 	wxString m_host;
 	CMD4Hash m_password;
 	bool m_ZLIB;
-	// Force ZLIB regardless of dialed-IP locality, via `/EC/ForceZLIB=1` or
-	// `--force-zlib`. For a WireGuard endpoint that resolves to an RFC1918 IP but
-	// whose transit is slow Internet, where the locality check would otherwise
-	// strip ZLIB.
+	// Force ZLIB regardless of dialed-IP locality, via `/EC/ForceZLIB=1` or `--force-zlib`. For
+	// a WireGuard endpoint that resolves to an RFC1918 IP but whose transit is slow Internet,
+	// where the locality check would otherwise strip ZLIB.
 	bool m_forceZLIB;
 
-	// Offer EC transport encryption. On by default: the daemon only encrypts
-	// what a client asks for, and only the client knows what address it
-	// dialed, so the decision has to live here rather than in the daemon --
-	// the same reasoning the ZLIB locality hint already follows. This is the
-	// opt-OUT, reachable as --disable-ec-encryption or /EC/Encryption=0.
+	// Offer EC transport encryption. On by default: the daemon only encrypts what a client asks
+	// for, and only the client knows what address it dialed, so the decision has to live here
+	// rather than in the daemon -- the same reasoning the ZLIB locality hint already follows.
+	// This is the opt-OUT, reachable as --disable-ec-encryption or /EC/Encryption=0.
 	bool m_ECEncryption;
-	// Advertise the multi-search EC capability (EC_TAG_CAN_MULTI_SEARCH) so
-	// the daemon addresses searches by ID and several can run at once. Off by
-	// default; only a connector that reads EC_TAG_SEARCH_ID back and handles
-	// per-ID results (amulecmd) sets it true. amuleweb stays single-search.
+	// Advertise the multi-search EC capability (EC_TAG_CAN_MULTI_SEARCH) so the daemon
+	// addresses searches by ID and several can run at once. Off by default; only a connector
+	// that reads EC_TAG_SEARCH_ID back and handles per-ID results (amulecmd) sets it true.
+	// amuleweb stays single-search.
 	bool m_canMultiSearch;
-	// Advertise EC_TAG_CAN_CHAT_SESSIONS so the daemon echoes it and this
-	// connector may use the chat session ops. Off by default; a connector
-	// that never reads chat leaves the daemon free of the work.
+	// Advertise EC_TAG_CAN_CHAT_SESSIONS so the daemon echoes it and this connector may use the
+	// chat session ops. Off by default; a connector that never reads chat leaves the daemon
+	// free of the work.
 	bool m_canChat;
 	bool m_KeepQuiet;
 	bool m_Verbose;

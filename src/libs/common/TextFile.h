@@ -50,14 +50,11 @@ enum EReadTextFile
 /**
  * Text file class.
  *
- * This class is a wrapper around wxFFile, letting an text file be read
- * or written line-by-line. The class provides transparent and automatic
- * EOL-style handling.
+ * A wrapper around wxFFile, letting a text file be read or written line by line, with transparent
+ * and automatic EOL-style handling.
  *
- * Note that it is not possible to seek in a CTextFile, only sequential
- * reading or writing is possible. Also note that the maximum length of a
- * line is fixed (see CTextFile::GetNextLine), however this shouldn't be
- * a problem, given the uses of this class.
+ * Seeking is not possible, only sequential reading or writing. The maximum length of a line is also
+ * fixed (see CTextFile::GetNextLine), which the uses of this class make harmless.
  */
 class CTextFile
 {
@@ -94,11 +91,9 @@ public:
 	 *
 	 * @param conv The converter used to convert from multibyte to widechar.
 	 *
-	 * Note that GetNextLine will return an empty string if the file has reached
-	 * EOF, or if the file is closed, or not readable. However, empty lines in
-	 * the file will also be returned unless otherwise specified, so this cannot be used to test for EOF.
-	 * Instead, use the function Eof().
-	 **/
+	 * Returns an empty string at EOF, and for a closed or unreadable file -- but empty lines in
+	 * the file also come back empty, so use Eof() rather than this to test for EOF.
+	 */
 	wxString GetNextLine(
 		EReadTextFile flags = txtReadAll, const wxMBConv &conv = wxConvLibc, bool *result = NULL);
 

@@ -37,20 +37,17 @@ class wxDC;
 // built without wxUSE_GRAPHICS_CONTEXT, where the class does not exist.
 class wxGraphicsContext;
 
-/////////////////////////////////////////////////////////////////////////////
 // COScopeCtrl window
 //
-// A scrolling line graph for the Statistics and Networks->Kad panels. All
-// four graphs in the GUI are instances of this control, so anything changed
-// here applies to every one of them.
+// A scrolling line graph for the Statistics and Networks->Kad panels. All four graphs in the GUI
+// are instances of this control, so anything changed here applies to every one of them.
 //
-// The control keeps no copy of the plotted samples: every paint asks
-// CStatistics::GetHistory for as many points as the plot area is wide and
-// redraws the whole curve. That is what lets the curves be drawn through a
-// wxGraphicsContext (anti-aliased, resolution independent) -- the previous
-// incremental design scrolled a cached bitmap sideways and appended one
-// segment per sample, which cannot carry anti-aliased content without
-// smearing it, and pinned the graph to the logical, non-HiDPI resolution.
+// The control keeps no copy of the plotted samples: every paint asks CStatistics::GetHistory for as
+// many points as the plot area is wide and redraws the whole curve. That is what lets the curves be
+// drawn through a wxGraphicsContext (anti-aliased, resolution independent) -- the previous
+// incremental design scrolled a cached bitmap sideways and appended one segment per sample, which
+// cannot carry anti-aliased content without smearing it, and pinned the graph to the logical, non-
+// HiDPI resolution.
 
 class COScopeCtrl : public wxControl
 {
@@ -99,9 +96,9 @@ private:
 	// measuring the axis labels rather than assuming a character width.
 	wxRect ComputePlotRect(wxDC &dc) const;
 	void DrawGrid(wxDC &dc, const wxRect &rectPlot);
-	// gc is created by the caller, which is where the concrete paint DC
-	// type is still known; it is null if this wxWidgets has no graphics
-	// context, and the curves then fall back to plain wxDC polylines.
+	// gc is created by the caller, which is where the concrete paint DC type is still known; it
+	// is null if this wxWidgets has no graphics context, and the curves then fall back to plain
+	// wxDC polylines.
 	void DrawCurves(wxDC &dc, wxGraphicsContext *gc, const wxRect &rectPlot);
 	// Crosshair, per-trend markers and the value readout at the hovered
 	// sample. samples is what DrawCurves has just plotted.

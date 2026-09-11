@@ -94,9 +94,8 @@ std::string HexEncode(const std::vector<unsigned char> &data)
 	return out;
 }
 
-// Trim ASCII whitespace from both ends. Used on the jwt-secret file's
-// single line; tolerates a trailing CR (Windows-edited file checked out
-// on POSIX) and stray indentation.
+// Trim ASCII whitespace from both ends. Used on the jwt-secret file's single line; tolerates a
+// trailing CR (a Windows-edited file checked out on POSIX) and stray indentation.
 std::string Trim(const std::string &s)
 {
 	size_t a = 0;
@@ -114,10 +113,9 @@ wxString JoinPath(const wxString &dir, const wxString &leaf)
 	return fn.GetFullPath();
 }
 
-// Thin wx wrapper over webcommon::WriteFileAtomic0600 so the call sites here
-// can keep passing wxString paths. The writer itself is shared with the
-// credential store and with amuled, so the permission and atomicity guarantees
-// cannot drift between them.
+// Thin wx wrapper over webcommon::WriteFileAtomic0600 so the call sites here can keep passing
+// wxString paths. The writer itself is shared with the credential store and with amuled, so the
+// permission and atomicity guarantees cannot drift.
 bool WriteFileAtomic0600(const wxString &target_path, const std::string &body)
 {
 	return webcommon::WriteFileAtomic0600(std::string(target_path.utf8_str()), body);
@@ -158,10 +156,9 @@ bool CAmuleApiConfig::LoadAmuleapiConf(const wxString &path)
 			       "BindAddress=127.0.0.1\n"
 			       "Port=4713\n"
 			       "AllowCORS=0\n"
-			       // Written empty so the key is discoverable: with
-			       // AllowCORS=1 and no entries the echo is anonymous-only,
-			       // and a cross-origin client that logs in needs its origin
-			       // listed here.
+			       // Written empty so the key is discoverable: with AllowCORS=1
+			       // and no entries the echo is anonymous-only, and a cross-origin
+			       // client that logs in needs its origin listed here.
 			       "CorsOriginAllowlist=\n"
 			       "StaticRoot=\n"
 			       "\n"
@@ -184,12 +181,11 @@ bool CAmuleApiConfig::LoadAmuleapiConf(const wxString &path)
 			       "MaxConcurrentFileResponses=6\n";
 
 	if (!wxFileExists(path)) {
-		// First-run: write a mode-0600 defaults file. The EC password stays empty
-		// and amuleapi refuses to connect until it is filled in; amuleapi.conf
-		// carries `[EC]/Password=` in cleartext, so owner-only mode matches the
-		// jwt-secret and passwords files. WriteFileAtomic0600 (write-temp, fsync,
-		// rename) so a crash mid-write cannot leave a truncated config the next
-		// start would load as partial.
+		// First run: write a mode-0600 defaults file. The EC password stays empty and
+		// amuleapi refuses to connect until it is filled in; amuleapi.conf carries
+		// `[EC]/Password=` in cleartext, so owner-only mode matches the jwt-secret and
+		// passwords files. WriteFileAtomic0600 (write-temp, fsync, rename) so a crash mid-
+		// write cannot leave a truncated config the next start would load as partial.
 		if (!WriteFileAtomic0600(path, std::string(defaults))) {
 			m_lastError = "cannot create amuleapi.conf: " + std::string(path.utf8_str());
 			return false;
@@ -273,11 +269,11 @@ bool CAmuleApiConfig::LoadAmuleapiConf(const wxString &path)
 		m_streaming.event_bus_ring_capacity = static_cast<unsigned>(n);
 	}
 
-	// `[Streaming]/MaxConcurrentFileResponses`. Bounded on both sides rather than
-	// merely positive: unlike the ring above, nothing downstream second-guesses
-	// this one, and every slot it grants pins a file descriptor and a 64 KiB
-	// buffer until the peer drains. 256 keeps the worst case in the tens of
-	// megabytes; anything outside the band is a typo, and a typo gets the default.
+	// `[Streaming]/MaxConcurrentFileResponses`. Bounded on both sides rather than merely
+	// positive: unlike the ring above, nothing downstream second-guesses this one, and every
+	// slot it grants pins a file descriptor and a 64 KiB buffer until the peer drains. 256
+	// keeps the worst case in the tens of megabytes; anything outside the band is a typo, and a
+	// typo gets the default.
 	if (cfg.Read("/Streaming/MaxConcurrentFileResponses", &n) && n > 0 && n <= 256) {
 		m_streaming.max_concurrent_file_responses = static_cast<unsigned>(n);
 	}
@@ -287,9 +283,9 @@ bool CAmuleApiConfig::LoadAmuleapiConf(const wxString &path)
 
 bool CAmuleApiConfig::LoadJwtSecret(const wxString &path)
 {
-	// Rotation is operator-manual: delete amuleapi-jwt-secret and restart
-	// amuleapi, which auto-generates a fresh secret and invalidates every
-	// previously-issued token. Documented in the amuleapi(1) FILES section.
+	// Rotation is operator-manual: delete amuleapi-jwt-secret and restart amuleapi, which
+	// generates a fresh secret and invalidates every previously issued token. Documented in the
+	// amuleapi(1) FILES section.
 	if (!wxFileExists(path)) {
 		// Auto-generate 32 random bytes. The new file is 0600 from
 		// the moment it lands on disk (open + chmod before any data).
@@ -343,9 +339,9 @@ bool CAmuleApiConfig::LoadPasswords(const wxString &path)
 	const std::string dir(m_configDir.utf8_str());
 
 	if (!wxFileExists(path)) {
-		// Auto-create empty so the operator sees the file exists, with the right
-		// mode bits. `amuleapi --set-admin-pass=<plain>` then hashes and writes the
-		// admin record; amulegui and the preferences dialog write the same file.
+		// Auto-create empty so the operator sees the file exists, with the right mode bits.
+		// `amuleapi --set-admin-pass=<plain>` then hashes and writes the admin record;
+		// amulegui and the preferences dialog write the same file.
 		std::string err;
 		if (!webcommon::SaveCredentialsFile(dir, m_credentials, err)) {
 			m_lastError = "cannot create amuleapi-passwords: " + err;
@@ -372,9 +368,9 @@ bool CAmuleApiConfig::HasAnyCredential() const
 
 std::time_t CAmuleApiConfig::CredentialsChangedAt() const
 {
-	// Second granularity, which leaves a token minted in the same second as a
-	// password change alive. Bounded and self-correcting: the next change moves
-	// the cutoff again, and one second is far inside the time to notice a leak.
+	// Second granularity, which leaves a token minted in the same second as a password change
+	// alive. Bounded and self-correcting: the next change moves the cutoff again, and one
+	// second is far inside the time to notice a leak.
 	wxFileName fn(JoinPath(m_configDir, "amuleapi-passwords"));
 	if (!fn.FileExists()) {
 		return 0;
@@ -391,9 +387,9 @@ void CAmuleApiConfig::ReloadCredentials()
 		// process is midway through replacing, must not lock anyone out.
 		return;
 	}
-	// A missing file loads as an empty set, and that is deliberate: an
-	// operator who deletes amuleapi-passwords to lock everyone out should
-	// not have to restart the daemon for it to take effect.
+	// A missing file loads as an empty set, deliberately: an operator who deletes amuleapi-
+	// passwords to lock everyone out should not have to restart the daemon for it to take
+	// effect.
 	m_credentials = fresh;
 }
 
@@ -419,9 +415,8 @@ CAmuleApiConfig::MatchedRole CAmuleApiConfig::VerifyPassword(const std::string &
 
 void CAmuleApiConfig::RehashInPlace(webcommon::CredentialRole role, const std::string &md5_hex)
 {
-	// Re-storing the same password at the current cost is housekeeping, not a
-	// rotation, so the file's modification time must not move: that timestamp is
-	// what invalidates sessions.
+	// Re-storing the same password at the current cost is housekeeping, not a rotation, so the
+	// file's modification time must not move: that timestamp is what invalidates sessions.
 	wxFileName fn(JoinPath(m_configDir, "amuleapi-passwords"));
 	const bool had_file = fn.FileExists();
 	wxDateTime access, modified, created;

@@ -18,10 +18,9 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-// Country flags are libmaxminddb-free: they map an ISO code to an embedded PNG
-// via the art provider, so this is compiled unconditionally into every GUI
-// (both amulegui, which gets codes over EC, and monolithic amule). Only the
-// resolver that produces the codes is gated on ENABLE_IP2COUNTRY.
+// Country flags are libmaxminddb-free: they map an ISO code to an embedded PNG via the art
+// provider, so this is compiled unconditionally into every GUI -- amulegui, which gets codes over
+// EC, and monolithic amule. Only the resolver producing the codes is gated on ENABLE_IP2COUNTRY.
 #include "CountryFlags.h"
 #include "Logger.h"          // For AddLogLine*
 #include <common/Format.h>   // For CFormat()
@@ -36,11 +35,10 @@ CCountryFlags::CCountryFlags() = default;
 
 void CCountryFlags::LoadFlags()
 {
-	// Walk the embedded icon table and pick out anything named
-	// "flag_<code>". The table is built by src/icons/embed_icons.py
-	// from src/icons/flags/<code>.png at compile time; CamuleArtProvider
-	// (registered in CamuleGuiApp::OnInit) hands us back a decoded
-	// wxBitmap for each.
+	// Walk the embedded icon table and pick out anything named "flag_<code>". The table is
+	// built by src/icons/embed_icons.py from src/icons/flags/<code>.png at compile time;
+	// CamuleArtProvider, registered in CamuleGuiApp::OnInit, hands back a decoded wxBitmap for
+	// each.
 	int icon_count = 0;
 	const struct AMuleIconEntry *icons = amule_get_all_icons(&icon_count);
 	const char flag_prefix[] = "flag_";
@@ -75,7 +73,7 @@ const wxImage &CCountryFlags::GetFlag(const wxString &code)
 {
 	if (!m_loaded) {
 		// First call happens during list drawing, well after the app's
-		// OnInit pushed CamuleArtProvider — so the flag art resolves now.
+		// OnInit pushed CamuleArtProvider -- so the flag art resolves now.
 		LoadFlags();
 		m_loaded = true;
 	}

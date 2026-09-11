@@ -33,13 +33,11 @@ using namespace webcommon;
 
 DECLARE_SIMPLE(Etag)
 
-// ----------------------------------------------------------------------
-// `Etag()` — SHA-256 truncated to 8 bytes (16 hex chars).
-// ----------------------------------------------------------------------
+// `Etag()` -- SHA-256 truncated to 8 bytes (16 hex chars).
 
 TEST(Etag, BareHexLength)
 {
-	// 16 hex chars regardless of body length — the truncation is the
+	// 16 hex chars regardless of body length -- the truncation is the
 	// wire contract that prevents header bloat.
 	ASSERT_EQUALS(static_cast<size_t>(16), Etag("").size());
 	ASSERT_EQUALS(static_cast<size_t>(16), Etag("x").size());
@@ -48,10 +46,9 @@ TEST(Etag, BareHexLength)
 
 TEST(Etag, EmptyBodyKnownDigest)
 {
-	// SHA-256("") truncated to 8 bytes, lowercase hex.
-	// Reference: `printf '' | shasum -a 256` →
-	// "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-	// Leading 16 hex chars = "e3b0c44298fc1c14".
+	// SHA-256("") truncated to 8 bytes, lowercase hex. Reference: `printf '' | shasum -a 256`
+	// = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", leading 16 hex
+	// chars "e3b0c44298fc1c14".
 	ASSERT_EQUALS(std::string("e3b0c44298fc1c14"), Etag(""));
 }
 
@@ -63,9 +60,7 @@ TEST(Etag, DistinctBodiesProduceDistinctEtags)
 	ASSERT_TRUE(Etag("{\"ok\":true}") != Etag("{\"ok\":false}"));
 }
 
-// ----------------------------------------------------------------------
-// `IfNoneMatchHits()` — fix for the bare-vs-quoted asymmetry.
-// ----------------------------------------------------------------------
+// `IfNoneMatchHits()` -- fix for the bare-vs-quoted asymmetry.
 
 TEST(Etag, IfNoneMatchEmptyHeaderNoHit)
 {
@@ -75,24 +70,22 @@ TEST(Etag, IfNoneMatchEmptyHeaderNoHit)
 
 TEST(Etag, IfNoneMatchBareHexHits)
 {
-	// Bare-vs-bare compare must hit — backward compatibility for
+	// Bare-vs-bare compare must hit -- backward compatibility for
 	// clients that send unquoted validators.
 	ASSERT_TRUE(IfNoneMatchHits("deadbeefdeadbeef", "deadbeefdeadbeef"));
 }
 
 TEST(Etag, IfNoneMatchQuotedHexHits)
 {
-	// RFC 7232 §2.3-canonical form: `"<hex>"`. This was the latent
-	// bug — strictly-RFC clients sending the quoted form never got
-	// 304 from the prior implementation.
+	// RFC 7232 2.3-canonical form: `"<hex>"`. This was the latent bug -- strictly-RFC clients
+	// sending the quoted form never got 304 from the prior implementation.
 	ASSERT_TRUE(IfNoneMatchHits("\"deadbeefdeadbeef\"", "deadbeefdeadbeef"));
 }
 
 TEST(Etag, IfNoneMatchWeakValidatorHits)
 {
-	// `W/"<hex>"`: weak validator. For conditional GETs we treat
-	// weak and strong as equivalent (Section 2.3.2 — opaque payload
-	// equality is what matters for 304 semantics).
+	// `W/"<hex>"`: weak validator. For conditional GETs we treat weak and strong as equivalent
+	// (Section 2.3.2 -- opaque payload equality is what matters for 304 semantics).
 	ASSERT_TRUE(IfNoneMatchHits("W/\"deadbeefdeadbeef\"", "deadbeefdeadbeef"));
 }
 
@@ -104,7 +97,7 @@ TEST(Etag, IfNoneMatchWildcardHits)
 
 TEST(Etag, IfNoneMatchListAnyMatchWins)
 {
-	// Comma-separated list — any matching entry returns true.
+	// Comma-separated list -- any matching entry returns true.
 	ASSERT_TRUE(IfNoneMatchHits(
 		"\"someotheretag\", \"deadbeefdeadbeef\", \"yetanother\"", "deadbeefdeadbeef"));
 	// Even with mixed strong/weak/bare.
@@ -131,20 +124,16 @@ TEST(Etag, IfNoneMatchHexMismatchMisses)
 
 TEST(Etag, IfNoneMatchHexCaseSensitive)
 {
-	// RFC §2.3.2: opaque-string equality. We emit lowercase hex on
-	// the response side; clients echoing the value back must also
-	// send lowercase. Uppercase variant → no hit.
+	// RFC 2.3.2: opaque-string equality. We emit lowercase hex on the response side; clients
+	// echoing the value back must also send lowercase, so an uppercase variant is no hit.
 	ASSERT_FALSE(IfNoneMatchHits("DEADBEEFDEADBEEF", "deadbeefdeadbeef"));
 }
 
-// --- Per-coding validators ------------------------------------------
-//
-// The body hash is taken before compression, so both codings of a resource
-// derive from one hash. A strong validator names ONE representation, so the
-// selected coding is appended to the wire value and the conditional-GET
-// comparison runs against THAT value. An earlier cut matched either coding,
-// which defeats the suffix entirely: a client holding gzip bytes and asking
-// for identity was told its copy was current.
+// Per-coding validators. The body hash is taken before compression, so both codings of a resource
+// derive from one hash. A strong validator names ONE representation, so the selected coding is
+// appended to the wire value and the conditional-GET comparison runs against THAT value. An earlier
+// cut matched either coding, which defeats the suffix entirely: a client holding gzip bytes and
+// asking for identity was told its copy was current.
 TEST(Etag, CodingSuffixDistinguishesTheTwoRepresentations)
 {
 	const std::string bare = "a1b2c3d4";
@@ -177,20 +166,16 @@ TEST(Etag, CodingSuffixIsNotAWildcard)
 	ASSERT_TRUE(!webcommon::IfNoneMatchHits("", "a1b2c3d4"));
 }
 
-// --- Naming a representation ----------------------------------------
-//
-// WithCodingSuffix is asked which coding the value must NAME, not whether to
-// add or remove a suffix. Three call sites used to spell that edit out by
-// hand -- two that could only add and one that could only add-or-strip -- and
-// the difference is what let a failed deflate ship a gzip validator on
-// identity bytes.
+// Naming a representation. WithCodingSuffix is asked which coding the value must NAME, not whether
+// to add or remove a suffix. Three call sites used to spell that edit out by hand -- two that could
+// only add and one that could only add-or-strip -- and the difference is what let a failed deflate
+// ship a gzip validator on identity bytes.
 TEST(Etag, CodingSuffixNamesTheSelectedRepresentation)
 {
 	ASSERT_TRUE(webcommon::WithCodingSuffix("a1b2c3d4", true) == "a1b2c3d4-gzip");
 	ASSERT_TRUE(webcommon::WithCodingSuffix("a1b2c3d4", false) == "a1b2c3d4");
-	// The quoted form the static path carries: the suffix belongs on the
-	// opaque payload, INSIDE the quotes, or the value stops being a valid
-	// entity-tag and no client matches it again.
+	// The quoted form the static path carries: the suffix belongs on the opaque payload, INSIDE
+	// the quotes, or the value stops being a valid entity-tag and no client matches it again.
 	ASSERT_TRUE(webcommon::WithCodingSuffix("\"1f-2a3b\"", true) == "\"1f-2a3b-gzip\"");
 	ASSERT_TRUE(webcommon::WithCodingSuffix("\"1f-2a3b-gzip\"", false) == "\"1f-2a3b\"");
 }
@@ -204,11 +189,10 @@ TEST(Etag, CodingSuffixIsIdempotent)
 	ASSERT_TRUE(webcommon::WithCodingSuffix("a1b2c3d4", false) == "a1b2c3d4");
 }
 
-// The reason the helper exists. GzipOnce can fail -- deflateInit2 or deflate
-// returning short -- after the dispatcher has already predicted compression
-// and stamped the suffix. The body then ships as identity, and the validator
-// has to come back down with it, or a cache stores identity bytes under the
-// gzip validator and serves them to a client that asked for gzip.
+// The reason the helper exists. GzipOnce can fail -- deflateInit2 or deflate returning short --
+// after the dispatcher has already predicted compression and stamped the suffix. The body then
+// ships as identity, and the validator has to come back down with it, or a cache stores identity
+// bytes under the gzip validator and serves them to a client that asked for gzip.
 TEST(Etag, AFailedCompressionTakesTheSuffixBackOff)
 {
 	const std::string predicted = webcommon::WithCodingSuffix("a1b2c3d4", true);
@@ -221,10 +205,10 @@ TEST(Etag, AFailedCompressionTakesTheSuffixBackOff)
 	ASSERT_TRUE(!webcommon::IfNoneMatchHits("\"a1b2c3d4-gzip\"", shipped));
 }
 
-// A body whose hash happens to end in the suffix text is not "already coded".
-// Guarded because the check is a suffix compare on the payload: if the digest
-// alphabet ever widened past hex, `...-gzip` could occur naturally and a
-// wrongly-detected prediction would strip a byte off a real validator.
+// A body whose hash happens to end in the suffix text is not "already coded". Guarded because the
+// check is a suffix compare on the payload: if the digest alphabet ever widened past hex,
+// `...-gzip` could occur naturally and a wrongly detected prediction would strip a byte off a real
+// validator.
 TEST(Etag, CodingSuffixLooksOnlyAtTheEndOfThePayload)
 {
 	ASSERT_TRUE(webcommon::WithCodingSuffix("-gzipa1b2", true) == "-gzipa1b2-gzip");

@@ -25,26 +25,22 @@
 
 #include <common/Path.h>
 
-// Worker thread that flattens the user's pending share intent
-// (explicit-shared paths + recursive-share roots) into a single flat
-// path list ready to drop into CPreferences::shareddir_list. The
-// recursive expansion is the historically-long-running step that used
-// to freeze the Directories preferences panel for minutes when a user
-// right-clicked a deep root like /home — moving it off the UI thread
-// lets the user see a progress bar and cancel cleanly.
+// Worker thread that flattens the user's pending share intent (explicit-shared paths + recursive-
+// share roots) into a single flat path list ready to drop into CPreferences::shareddir_list. The
+// recursive expansion is the historically long-running step that used to freeze the Directories
+// preferences panel for minutes when a user right-clicked a deep root like /home -- moving it off
+// the UI thread lets the user see a progress bar and cancel cleanly.
 //
 // Thread-safety contract:
-//   * The constructor copies its inputs by value into thread-private
-//     storage; the caller can drop its own copies immediately.
-//   * The caller may invoke Cancel() (which calls wxThread::Delete())
-//     from the UI thread at any time. The thread checks via
-//     TestDestroy() between directory enumerations and exits with
-//     m_cancelled=true.
-//   * Progress events are posted to the owner via wxQueueEvent, so the
-//     UI thread receives them in its normal event loop.
-//   * Results are only safe to read after the wxEVT_SHARED_DIRS_APPLY_DONE
-//     event arrives, at which point the worker thread is guaranteed
-//     to be finished.
+//   * The constructor copies its inputs by value into thread-private storage; the caller can drop
+// its own copies immediately.
+//   * The caller may invoke Cancel() (which calls wxThread::Delete()) from the UI thread at any
+// time. The thread checks via TestDestroy() between directory enumerations and exits with
+// m_cancelled=true.
+//   * Progress events are posted to the owner via wxQueueEvent, so the UI thread receives them in
+// its normal event loop.
+//   * Results are only safe to read after the wxEVT_SHARED_DIRS_APPLY_DONE event arrives, at which
+// point the worker thread is guaranteed to be finished.
 class CSharedDirsApplyTask : public wxThread
 {
 public:
@@ -80,9 +76,8 @@ private:
 	size_t m_lastReportedScanned = 0;
 };
 
-// Events posted from the worker thread to the owner. The owner is
-// expected to be a wxEvtHandler subclass that binds these via
-// Bind(wxEVT_SHARED_DIRS_APPLY_PROGRESS, ...).
+// Events posted from the worker thread to the owner, which is expected to be a wxEvtHandler
+// subclass binding them via Bind(wxEVT_SHARED_DIRS_APPLY_PROGRESS, ...).
 wxDECLARE_EVENT(wxEVT_SHARED_DIRS_APPLY_PROGRESS, wxThreadEvent);
 wxDECLARE_EVENT(wxEVT_SHARED_DIRS_APPLY_DONE, wxThreadEvent);
 

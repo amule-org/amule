@@ -116,13 +116,12 @@ bool CMagnetED2KConverter::CanConvertToED2K() const
 namespace
 {
 
-// A base32-encoded AICH master hash is always 32 characters from [A-Z2-7]
-// (RFC 4648, no padding -- 20 raw bytes need exactly ceil(160/5) = 32
-// symbols). ED2KLink.cpp's parser throws on anything else, so a magnet
-// carrying a junk/truncated urn:aich: must have it dropped here rather than
-// embedded -- otherwise a perfectly valid ed2k hash would be rejected
-// wholesale just because the AICH tagalong was malformed. Plain char-range
-// check (no CAICHHash dependency) so it works in both build modes.
+// A base32-encoded AICH master hash is always 32 characters from [A-Z2-7] (RFC 4648, no padding --
+// 20 raw bytes need exactly ceil(160/5) = 32 symbols). ED2KLink.cpp's parser throws on anything
+// else, so a magnet carrying a junk or truncated urn:aich: must have it dropped here rather than
+// embedded -- otherwise a perfectly valid ed2k hash would be rejected wholesale just because the
+// AICH tagalong was malformed. A plain char-range check, with no CAICHHash dependency, so it works
+// in both build modes.
 bool IsWellFormedAich(const STRING &s)
 {
 	if (s.length() != 32) {
@@ -155,10 +154,9 @@ STRING CMagnetED2KConverter::GetED2KLink() const
 		}
 		Value_List urn_list = GetField(_T("xt"));
 		STRING aich;
-		// Use the first ed2k-hash found, and separately the first AICH
-		// urn if the magnet carries one (amule-org/amule#331) -- both
-		// loop over the same xt list since either can come in any order
-		// relative to the other.
+		// Use the first ed2k hash found, and separately the first AICH urn if the magnet
+		// carries one (amule-org/amule#331). Both loop over the same xt list, since either
+		// can come in any order relative to the other.
 		for (Value_List::iterator it = urn_list.begin(); it != urn_list.end(); ++it) {
 			if (hash.empty() && it->compare(0, 9, _T("urn:ed2k:")) == 0) {
 				hash = it->substr(9);

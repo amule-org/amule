@@ -21,7 +21,7 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 //
-// Refresher orchestration — the per-tick loop body that issues EC
+// Refresher orchestration -- the per-tick loop body that issues EC
 // requests via `CamuleapiApp::SendRecvSerialized`. Split from
 // Refresher.cpp so the pure parser/applier code (`ApplyDownloads*`,
 // `ApplyUploads*`, `ApplyShared*`, `ParseStatusFromPacket`) stays
@@ -48,39 +48,34 @@
 namespace webapi
 {
 
-// One id-less EC_OP_SEARCH_RESULTS at EC_DETAIL_INC_UPDATE: the daemon answers
-// with every result of every search it holds, incrementally.
+// One id-less EC_OP_SEARCH_RESULTS at EC_DETAIL_INC_UPDATE: the daemon answers with every result of
+// every search it holds, incrementally. This replaced one EC_DETAIL_FULL roundtrip per active
+// search, each carrying that search's whole result set every tick whether or not anything had
+// changed. With eliding, an unchanged result costs nothing on the wire and an idle or finished
+// search nothing at all -- which makes polling finished searches affordable, and is why the caller
+// no longer filters on ActiveSearchIds().
 //
-// This replaced one EC_DETAIL_FULL roundtrip per active search, each carrying
-// that search's whole result set on every tick whether or not anything had
-// changed. With eliding, an unchanged result costs nothing on the wire and an
-// idle or finished search costs nothing at all -- which is what makes polling
-// finished searches affordable, and is why the caller no longer filters on
-// ActiveSearchIds().
+// No single-search fallback: amuleapi advertises multi-search unconditionally and never checks
+// whether the daemon supports it (App.cpp), so it has always required a matching daemon for search.
+// EC_TAG_CAN_PARTIAL_SEARCH is advertised for every client of CRemoteConnect, so the daemon is
+// already eliding for this connection.
 //
-// No single-search fallback: amuleapi already advertises multi-search
-// unconditionally and never checks whether the daemon supports it (App.cpp),
-// so it has always required a matching daemon for search. EC_TAG_CAN_PARTIAL_SEARCH
-// is advertised for every client of CRemoteConnect, so the daemon is already
-// eliding for this connection.
-// Serialises the two issuers of the search stream across the roundtrip AND the
-// apply. SendRecvSerialized only orders the roundtrips: both callers then take
-// the State lock separately, so a union reply and a FULL reply can still be
-// applied in the opposite order to the one they were fetched in. That matters
-// because the union's tombstones are one-shot -- the daemon drops an ECID from
-// io_lastSentResultIds as it emits EC_TAG_FILE_REMOVED for it -- so a stale
-// FULL landing after a tombstone re-inserts a row nothing will ever remove
-// again. Held across the EC call, which is the same wait the EC worker already
-// imposes; the State lock is always taken inside this one, never the reverse.
+// The mutex serialises the two issuers of the search stream across the roundtrip AND the apply.
+// SendRecvSerialized only orders the roundtrips; both callers then take the State lock separately,
+// so a union reply and a FULL reply can still be applied in the opposite order to the one they were
+// fetched in. The union's tombstones are one-shot -- the daemon drops an ECID from
+// io_lastSentResultIds as it emits EC_TAG_FILE_REMOVED for it -- so a stale FULL landing after a
+// tombstone re-inserts a row nothing will ever remove. Held across the EC call, the same wait the
+// EC worker already imposes; the State lock is always taken inside this one.
 std::mutex g_search_stream_mtx;
 
 SearchFetchOutcome FetchSearchResults(CamuleapiApp &app, CState &state)
 {
 	std::lock_guard<std::mutex> stream_lock(g_search_stream_mtx);
 	std::unique_ptr<CECPacket> req(new CECPacket(EC_OP_SEARCH_RESULTS, EC_DETAIL_INC_UPDATE));
-	// Opt into result grouping (issue #431): the empty EC_TAG_SEARCH_PARENT
-	// flag tells the responder to also emit each same-hash/different-name
-	// child so the results list can nest them.
+	// Opt into result grouping (issue #431): the empty EC_TAG_SEARCH_PARENT flag tells the
+	// responder to also emit each same-hash/different-name child so the results list can nest
+	// them.
 	req->AddTag(CECEmptyTag(EC_TAG_SEARCH_PARENT));
 	const CECPacket *resp = app.SendRecvSerialized(req.get());
 	if (!resp)
@@ -95,23 +90,21 @@ SearchFetchOutcome FetchSearchResults(CamuleapiApp &app, CState &state)
 
 // Re-fetch ONE search at EC_DETAIL_FULL, bypassing the union entirely.
 //
-// The union is a stateful differential stream: the daemon records what it has
-// sent this connection and then sends only changes, with no opcode for "send it
-// all again". This is the escape hatch, needed three ways.
+// The union is a stateful differential stream: the daemon records what it has sent this connection
+// and then sends only changes, with no opcode for "send it all again". This is the escape hatch,
+// needed three ways.
 //
-// Seeding a newly discovered slot: the union responder walks every search the
-// core holds, ApplySearchUnion drops results for a search it has no slot for,
-// and the daemon has already marked those ECIDs delivered -- dropped once means
-// dropped forever, so a slot created later by discovery would stay empty.
+// Seeding a newly discovered slot: the union responder walks every search the core holds,
+// ApplySearchUnion drops results for a search it has no slot for, and the daemon has already marked
+// those ECIDs delivered -- dropped once means dropped forever, so a slot created later by discovery
+// would stay empty.
 //
-// Serving the HTTP thread: the union must have exactly one issuer, or two
-// replies can be applied out of order and leave a ghost row no later poll can
-// clear. A FULL reply is self-contained but not ordered against the union's
-// one-shot tombstones, so this shares g_search_stream_mtx with it.
+// Serving the HTTP thread: the union must have exactly one issuer, or two replies can be applied
+// out of order and leave a ghost row no later poll can clear. A FULL reply is self-contained but
+// not ordered against the union's one-shot tombstones, so this shares g_search_stream_mtx.
 //
-// Re-seeding after a lost union reply, with `replace`: a merge cannot express a
-// deletion and a FULL reply carries no tombstones, so replace mode swaps the
-// slot's results wholesale for what the daemon reports now.
+// Re-seeding after a lost union reply, with `replace`: a merge cannot express a deletion and a FULL
+// reply carries no tombstones, so replace mode swaps the slot's results wholesale.
 SearchFetchOutcome FetchOneSearchFull(CamuleapiApp &app, CState &state, std::uint32_t search_id, bool replace)
 {
 	std::lock_guard<std::mutex> stream_lock(g_search_stream_mtx);
@@ -125,19 +118,19 @@ SearchFetchOutcome FetchOneSearchFull(CamuleapiApp &app, CState &state, std::uin
 	if (resp->GetTagByName(EC_TAG_SEARCH_EXPIRED)) {
 		outcome = SearchFetchOutcome::Expired;
 	} else {
-		// Same merge the union uses. The per-search responder builds its tags
-		// without a valuemap, so every field is present and the merge's
-		// absent-means-unchanged rule never fires. The reply carries no
-		// EC_TAG_SEARCH_ID of its own, hence the explicit id.
+		// Same merge the union uses. The per-search responder builds its tags without a
+		// valuemap, so every field is present and the merge's absent-means-unchanged rule
+		// never fires. The reply carries no EC_TAG_SEARCH_ID of its own, hence the explicit
+		// id.
 		state.MutateAllSearches([&](std::map<std::uint32_t, SearchSlot> &slots,
 						std::map<std::uint32_t, std::uint32_t> &owner) {
 			ApplySearchFullReply(resp, slots, owner, search_id, replace);
 		});
 	}
 	if (outcome == SearchFetchOutcome::Expired) {
-		// Definitive answer, just not a useful one: the daemon no longer has
-		// this search, so retirement owns the slot from here. Clearing the
-		// flag stops it being re-requested every tick forever.
+		// Definitive answer, just not a useful one: the daemon no longer has this search,
+		// so retirement owns the slot. Clearing the flag stops it being re-requested every
+		// tick.
 		state.ClearSearchResyncFlag(search_id);
 	}
 	delete resp;
@@ -146,17 +139,14 @@ SearchFetchOutcome FetchOneSearchFull(CamuleapiApp &app, CState &state, std::uin
 
 bool RefresherTick(CamuleapiApp &app, CState &state)
 {
-	// Per-tick budget: a few EC ops via SendRecvSerialized (m_ec_mtx-serialised).
-	// Any failure bails the whole tick so the cache stays internally consistent.
-	// STAT_REQ runs first because it is the cheapest probe: if EC dropped between
-	// ticks, it catches that before we burn roundtrips on the larger queries.
+	// Per-tick budget: a few EC ops via SendRecvSerialized (m_ec_mtx-serialised). Any failure
+	// bails the whole tick so the cache stays internally consistent. STAT_REQ runs first as the
+	// cheapest probe: an EC drop between ticks is caught before larger queries burn roundtrips.
 
-	// /status + /kad + /logs/amule share one STAT_REQ packet.
-	//
-	// Detail level CMD -> FULL because amuled only piggybacks
-	// EC_TAG_STATS_LOGGER_MESSAGE at FULL or INC_UPDATE. FULL is also what
-	// carries STATS_UP_OVERHEAD / STATS_DOWN_OVERHEAD and the two free-space
-	// tags, so dropping to CMD would silently empty those fields as well.
+	// /status + /kad + /logs/amule share one STAT_REQ packet. Detail level CMD -> FULL because
+	// amuled only piggybacks EC_TAG_STATS_LOGGER_MESSAGE at FULL or INC_UPDATE. FULL also
+	// carries STATS_UP_OVERHEAD / STATS_DOWN_OVERHEAD and the two free-space tags, so dropping
+	// to CMD would silently empty those fields too.
 	{
 		std::unique_ptr<CECPacket> req(new CECPacket(EC_OP_STAT_REQ, EC_DETAIL_FULL));
 		const CECPacket *resp = app.SendRecvSerialized(req.get());
@@ -176,15 +166,14 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 		delete resp;
 	}
 
-	// /downloads + /shared + /servers in a single GET_UPDATE roundtrip at
-	// EC_DETAIL_INC_UPDATE. The response packet shape and the "why INC_UPDATE
-	// works in one tick" rationale are documented next to
-	// ApplyGetUpdateToDownloads in Refresher.h.
+	// /downloads + /shared + /servers in a single GET_UPDATE roundtrip at EC_DETAIL_INC_UPDATE.
+	// The response packet shape and the "why INC_UPDATE works in one tick" rationale are
+	// documented next to ApplyGetUpdateToDownloads in Refresher.h.
 	//
 	// The response also carries EC_TAG_CLIENT (filtered server-side by
-	// TransmitOnlyUploadingClients) and EC_TAG_FRIEND containers, consumed below
-	// into /clients and /friends -- /uploads stays bound to the upload-queue
-	// semantic via EC_OP_GET_ULOAD_QUEUE.
+	// TransmitOnlyUploadingClients) and EC_TAG_FRIEND containers, consumed below into /clients
+	// and /friends -- /uploads stays bound to the upload-queue semantic via
+	// EC_OP_GET_ULOAD_QUEUE.
 	{
 		std::unique_ptr<CECPacket> req(new CECPacket(EC_OP_GET_UPDATE, EC_DETAIL_INC_UPDATE));
 		const CECPacket *resp = app.SendRecvSerialized(req.get());
@@ -211,14 +200,14 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 			}
 		});
 
-		// Shared walker reads and writes the same unified m_files map: when it
-		// sees a partfile whose hash was CValueMap-suppressed, the entry already
-		// carries hash + name from the downloads walker above.
+		// Shared walker reads and writes the same unified m_files map: a partfile whose
+		// hash was CValueMap-suppressed already carries hash + name from the downloads
+		// walker above.
 		//
 		// Same `rle` map: the shared walker decodes the availability blob on
-		// EC_TAG_KNOWNFILE tags and the downloads walker the EC_TAG_PARTFILE ones,
-		// and amuled emits exactly one of the two per ECID. The eviction sweep
-		// above only touches ECIDs that were downloading.
+		// EC_TAG_KNOWNFILE tags and the downloads walker the EC_TAG_PARTFILE ones, and
+		// amuled emits exactly one per ECID. The eviction sweep above only touches ECIDs
+		// that were downloading.
 		state.MutateShared([&](FileMap &cache) { ApplyGetUpdateToShared(resp, cache, rle); });
 
 		state.MutateServers([&](std::map<std::uint32_t, ServerSnapshot> &cache) {
@@ -229,27 +218,26 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 			ApplyGetUpdateToFriends(resp, cache);
 		});
 
-		// /clients -- every alive peer in theApp->clientlist. The walker turns each
-		// peer's file ECID into an MD4 hash as it goes, the wire contract being
-		// hash-only, so it needs the map the downloads/shared walkers just wrote:
-		// one acquisition hands it both.
+		// /clients -- every alive peer in theApp->clientlist. The walker turns each peer's
+		// file ECID into an MD4 hash as it goes, the wire contract being hash-only, so it
+		// needs the map the downloads/shared walkers just wrote: one acquisition hands it
+		// both.
 		state.MutateClientsWithFiles(
 			[&](std::map<std::uint32_t, ClientSnapshot> &cache, const FileMap &files) {
 				ApplyGetUpdateToClients(resp, cache, files);
 			});
 		delete resp;
 
-		// Fold this tick's peers into the known-clients store, so it stays current
-		// from the update we already have rather than being re-read. A no-op until
-		// something has asked for /known_clients; after that it costs one hash
-		// lookup per connected peer, bounded by MaxConnections.
+		// Fold this tick's peers into the known-clients store, so it stays current from the
+		// update we already have rather than being re-read. A no-op until something asks
+		// for /known_clients; after that it costs one hash lookup per connected peer.
 		state.ReconcileKnownClients();
 	}
 
-	// /chats -- one roundtrip carrying the cursor from the previous tick, so the
-	// daemon replies with the session list plus only the messages we do not have.
-	// Gated on the capability: a daemon predating the chat ops reaches the
-	// unknown-opcode branch of ProcessRequest2(), which asserts.
+	// /chats -- one roundtrip carrying the cursor from the previous tick, so the daemon replies
+	// with the session list plus only the messages we do not have. Gated on the capability: a
+	// daemon predating the chat ops reaches ProcessRequest2()'s unknown-opcode branch, which
+	// asserts.
 	if (app.IsServerChatActive()) {
 		std::unique_ptr<CECPacket> req(new CECPacket(EC_OP_GET_CHAT_SESSIONS));
 		const std::uint32_t cursor = state.ChatCursor();
@@ -270,35 +258,31 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 		PublishChatEvents(app.EventBus(), new_messages, closed);
 	}
 
-	// /logs/server_info, /stats/tree and /stats/graphs/{graph} are NOT fetched
-	// per-tick -- they are lazy-fetched on first GET via CTtlCache (1 s TTL
-	// coalesces burst reads), driven by the handlers under m_ec_mtx.
+	// /logs/server_info, /stats/tree and /stats/graphs/{graph} are lazy-fetched on first GET
+	// via CTtlCache (a 1 s TTL coalesces burst reads), under m_ec_mtx, not polled per tick.
 
-	// Searches this session never started itself are NOT discovered here
-	// per-tick -- that would pay an EC_OP_SEARCH_LIST roundtrip every tick
-	// forever. HandleSearchResults does a one-off check on a cache miss and
-	// seeds the slot; from the next tick the loop below picks it up.
+	// Searches this session never started are NOT discovered per tick -- that would pay an
+	// EC_OP_SEARCH_LIST roundtrip every tick forever. HandleSearchResults does a one-off check
+	// on a cache miss and seeds the slot; from the next tick the loop below picks it up.
 
-	// /search/results -- poll each ACTIVE search independently. POST /search seeds
-	// a slot with active=true; the daemon's per-id EC_TAG_SEARCH_LIFECYCLE_STATE
-	// says when to flip it back. A search evicted from the daemon's ring comes
-	// back as EC_TAG_SEARCH_EXPIRED, resolved to a terminal snapshot.
+	// /search/results -- poll each ACTIVE search independently. POST /search seeds a slot with
+	// active=true; the daemon's per-id EC_TAG_SEARCH_LIFECYCLE_STATE says when to flip it back.
+	// A search evicted from the daemon's ring comes back as EC_TAG_SEARCH_EXPIRED, resolved to
+	// a terminal snapshot.
 	//
-	// Progress for every active search comes in ONE roundtrip when the daemon
-	// advertises the union. That matters more here than in amuleGUI because
-	// SendRecvSerialized is synchronous and process-wide mutexed, so N searches
-	// meant N serialized round trips inside a single tick.
+	// Progress for every active search comes in ONE roundtrip when the daemon advertises the
+	// union. That matters more here than in amuleGUI because SendRecvSerialized is synchronous
+	// and process-wide mutexed, so N searches meant N serialized roundtrips inside a single
+	// tick.
 	std::map<std::uint32_t, std::pair<std::uint32_t, std::uint32_t>> union_progress;
 	bool have_union = false;
 	const std::vector<std::uint32_t> active_sids = state.ActiveSearchIds();
-	// Every slot the daemon could still speak for, finished ones included. A
-	// finished search is never polled for progress, but it still has to be
-	// watched for EXPIRY: the ring evicting it is what tombstones its results,
-	// and a slot not detached by then has them erased by the union below.
-	//
-	// Naming these ids is also what stops the eviction happening so soon. The
-	// daemon touches its LRU for exactly the ids a client names, so leaving
-	// finished searches out made them the first victims of anyone's next search.
+	// Every slot the daemon could still speak for, finished ones included. A finished search is
+	// never polled for progress, but it still has to be watched for EXPIRY: the ring evicting
+	// it is what tombstones its results, and a slot not detached by then has them erased by the
+	// union below. Naming these ids also delays the eviction -- the daemon touches its LRU for
+	// exactly the ids a client names, so leaving finished searches out made them the first
+	// victims of anyone's next search.
 	const std::vector<std::uint32_t> attached_sids = state.AttachedSearchIds();
 	// Nothing attached means nothing to ask about. Without this guard the union
 	// would cost a roundtrip every tick forever on an idle daemon.
@@ -312,16 +296,15 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 		const CECPacket *resp = app.SendRecvSerialized(req.get());
 		if (!resp)
 			return false;
-		// Only trust a reply that really is a union. Anything else -- an
-		// EC_OP_FAILED, a packet with no search children -- must fall through to
-		// the per-id polling below rather than be read as an empty union: absence
-		// is the expiry signal, so a misread would retire every tracked search.
+		// Only trust a reply that really is a union. Anything else (an EC_OP_FAILED, a
+		// packet with no search children) must fall through to the per-id polling below:
+		// absence is the expiry signal, so reading it as an empty union would retire every
+		// tracked search.
 		have_union = ParseSearchProgressUnion(resp, union_progress);
 		delete resp;
 	}
 
-	// Per-search lifecycle, off the progress union fetched above (or one roundtrip
-	// each against an older daemon). Runs BEFORE the results poll below so an
+	// Per-search lifecycle, off the progress union above. Runs BEFORE the results poll so an
 	// eviction is seen, and the slot frozen, while its results are still there.
 	for (std::uint32_t sid : attached_sids) {
 		std::uint32_t percent = 0;
@@ -342,10 +325,9 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 				lifecycle_state = found->second.second;
 			}
 		} else if (was_active) {
-			// No union on this daemon: fall back to one roundtrip per search, and
-			// only for the active ones. Paying a roundtrip per FINISHED slot every
-			// tick to learn about an eviction that may never come is the trade the
-			// union makes cheap and this form does not.
+			// No union on this daemon: one roundtrip per search, and only the active
+			// ones. A roundtrip per FINISHED slot every tick, for an eviction that may
+			// never come, is the trade the union makes cheap and this form does not.
 			std::unique_ptr<CECPacket> req(new CECPacket(EC_OP_SEARCH_PROGRESS));
 			req->AddTag(CECTag(EC_TAG_SEARCH_ID, sid));
 			const CECPacket *resp = app.SendRecvSerialized(req.get());
@@ -369,14 +351,12 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 		}
 		if (expired) {
 			// The daemon evicted this search (its ring is capped). Retire the slot as
-			// finished + inactive so we stop polling it but keep the last-known
-			// results for late reads; the terminal state also drives a final
-			// search_progress SSE frame.
-			//
-			// Detaching is what makes "keep the last-known results" true: the same
-			// eviction makes the union emit an EC_TAG_FILE_REMOVED for every one of
-			// this search's results. Hence this loop running ahead of the results
-			// poll -- the progress union it reads was fetched separately, above.
+			// finished + inactive so we stop polling it but keep the last-known results
+			// for late reads; the terminal state also drives a final search_progress
+			// SSE frame. Detaching is what makes "keep the last-known results" true:
+			// the same eviction makes the union emit an EC_TAG_FILE_REMOVED for every
+			// one of this search's results. Hence this loop running ahead of the
+			// results poll.
 			state.DetachSearch(sid);
 			SearchProgressSnapshot fin = state.SearchProgress(sid);
 			fin.active = false;
@@ -395,10 +375,9 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 		state.WriteSearchProgress(sid, next);
 	}
 
-	// Anything the last failed union reply covered is unrecoverable from the
-	// stream itself, so re-seed those slots in full before polling again.
-	// Ordered after the retirement loop so a slot the daemon has dropped is
-	// already detached and SearchesNeedingResync skips it.
+	// Anything the last failed union reply covered is unrecoverable from the stream itself, so
+	// re-seed those slots in full before polling again. Ordered after the retirement loop so a
+	// slot the daemon has dropped is already detached and SearchesNeedingResync skips it.
 	for (std::uint32_t sid : state.SearchesNeedingResync()) {
 		if (FetchOneSearchFull(app, state, sid, /*replace=*/true) == SearchFetchOutcome::EcFailed) {
 			return false;
@@ -406,25 +385,24 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 	}
 	// Results for every search in one roundtrip.
 	//
-	// Gated on there being any attached search at all, not on which ones are
-	// active: a finished search still changes -- a hit gets downloaded, a Kad
-	// notes lookup lands -- and costs nothing to keep polling. What is not worth
-	// paying for is the empty case.
+	// Gated on there being any attached search at all, not on which ones are active: a finished
+	// search still changes -- a hit gets downloaded, a Kad notes lookup lands -- and costs
+	// nothing to keep polling. What is not worth paying for is the empty case.
 	//
-	// Deliberately NOT gated on SSE subscribers, unlike the diff walk: a REST
-	// client polling GET /search/{id}/results reads this cache, and for an active
-	// search nothing else refreshes it (ClaimSearchRefresh covers only inactive
-	// slots), so skipping the fetch would hand that client frozen results.
+	// Deliberately NOT gated on SSE subscribers, unlike the diff walk: a REST client polling
+	// GET /search/{id}/results reads this cache, and for an active search nothing else
+	// refreshes it (ClaimSearchRefresh covers only inactive slots), so skipping the fetch would
+	// hand that client frozen results.
 	//
-	// The gate asks about OUR slots, not the daemon's searches. Skipping the poll
-	// when we hold none is the point, not an optimisation: ApplySearchUnion drops
-	// results for a search it has no slot for and the daemon marks them sent
-	// regardless, so polling with nothing to apply them to would burn through a
-	// foreign search's results once and elide them forever after.
+	// The gate asks about OUR slots, not the daemon's searches. Skipping the poll when we hold
+	// none is the point, not an optimisation: ApplySearchUnion drops results for a search it
+	// has no slot for and the daemon marks them sent regardless, so polling with nothing to
+	// apply them to would burn through a foreign search's results once and elide them forever
+	// after.
 	//
-	// The set is the same one the progress union above asked about, reused rather
-	// than recomputed against a second spelling of the same !detached test. A
-	// slot an HTTP thread created since is picked up by the next tick.
+	// The set is the same one the progress union asked about, reused rather than recomputed
+	// against a second spelling of the same !detached test. A slot an HTTP thread created since
+	// is picked up by the next tick.
 	if (!attached_sids.empty()) {
 		if (FetchSearchResults(app, state) == SearchFetchOutcome::EcFailed) {
 			// The daemon commits its differential state while building the reply, so
@@ -438,11 +416,11 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 		}
 	}
 
-	// /preferences + /categories -- one EC roundtrip populates both. The
-	// selection bitmask requests every category the endpoint exposes, spelled
-	// with the named enums rather than hex literals so a future bit shuffle in
-	// ECCodes.h cannot silently zero out a section. STATISTICS is intentionally
-	// omitted: its serialize block is empty, the 0x1B* tags being live graph data.
+	// /preferences + /categories -- one EC roundtrip populates both. The selection bitmask
+	// requests every category the endpoint exposes, spelled with the named enums rather than
+	// hex literals so a future bit shuffle in ECCodes.h cannot silently zero out a section.
+	// STATISTICS is omitted: its serialize block is empty, the 0x1B* tags being live graph
+	// data.
 	{
 		const std::uint32_t selection =
 			EC_PREFS_CATEGORIES | EC_PREFS_GENERAL | EC_PREFS_CONNECTIONS | EC_PREFS_DIRECTORIES |
@@ -462,15 +440,14 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 		delete resp;
 	}
 
-	// EmitDiffsAndUpdate is intentionally NOT called here. Mutation handlers
-	// invoke RefresherTick() inline on HTTP threads so the response sees
-	// post-mutation state, and LastSeenState has no internal lock -- concurrent
-	// std::map mutation from the wxApp refresher loop and an HTTP thread is UB.
+	// EmitDiffsAndUpdate is intentionally NOT called here. Mutation handlers invoke
+	// RefresherTick() inline on HTTP threads so the response sees post-mutation state, and
+	// LastSeenState has no internal lock -- concurrent std::map mutation from the wxApp
+	// refresher loop and an HTTP thread is UB.
 	//
-	// The ETag memo key rides on this, so it has to be bumped HERE and not in
-	// MarkTickSuccess: the background loop calls that, but the mutating handlers
-	// refresh inline and never do, so a mutation moved the body while the key
-	// stood still and the next conditional GET was answered 304.
+	// The ETag memo key rides on this, so it must be bumped HERE, not in MarkTickSuccess: only
+	// the background loop calls that, so a mutation moved the body while the key stood still
+	// and the next conditional GET was answered 304.
 	state.BumpSnapshotRevision();
 	return true;
 }

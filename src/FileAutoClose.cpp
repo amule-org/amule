@@ -128,9 +128,9 @@ void CFileAutoClose::Reopen()
 	if (m_autoClosed) {
 		AddDebugLogLineN(logCFile, "Reopen AutoClosed file " + GetFilePath().GetPrintable());
 		m_file.Reopen(m_mode); // throws on failure
-		// On open error m_autoClosed stays true, so if the app tries again
-		// it opens and throws again.
-		// Otherwise it would assert on an operation on a closed file and probably die.
+		// On an open error m_autoClosed stays true, so a later attempt opens and throws
+		// again. Otherwise it would assert on an operation on a closed file and probably
+		// die.
 		m_autoClosed = false;
 	}
 	m_lastAccess = TheTime;

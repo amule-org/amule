@@ -97,7 +97,7 @@ wxBEGIN_EVENT_TABLE(CamuleDaemonApp, wxAppConsole)
 	EVT_MULE_HASHING(CamuleDaemonApp::OnFinishedHashing)
 	EVT_MULE_AICH_HASHING(CamuleDaemonApp::OnFinishedAICHHashing)
 
-	// MediaProbe (#140) — attaches media tags on the main thread.
+	// MediaProbe (#140) -- attaches media tags on the main thread.
 	EVT_MULE_MEDIA_PROBE(CamuleDaemonApp::OnMediaProbeFinished)
 
 	// CPartFileHashThread per-part result
@@ -116,15 +116,13 @@ wxEND_EVENT_TABLE()
 IMPLEMENT_APP_NO_MAIN(CamuleDaemonApp)
 
 #ifndef __WINDOWS__
-// amuled's `-f`/`--full-daemon` must daemonize BEFORE wxEntry() initialises
-// wxWidgets. On macOS wx links the Cocoa core, which spins up framework threads
-// during app init; forking AFTER that and then calling into ObjC from the child
-// -- the FSEvents run-loop pump, the version-check HTTP fetch, Kad startup --
-// trips the ObjC fork-safety guard and aborts or spins at 100% CPU. Forking first
-// lets Cocoa initialise fresh in the child, and is harmless on Linux/*BSD.
-// Everything then runs in the child, so the worker threads constructed during
-// OnInit() land in the daemon instead of being orphaned by a mid-init fork
-// (#849). Windows never forks.
+// amuled's `-f`/`--full-daemon` must daemonize BEFORE wxEntry() initialises wxWidgets. On macOS wx
+// links the Cocoa core, which spins up framework threads during app init; forking AFTER that and
+// then calling into ObjC from the child -- the FSEvents run-loop pump, the version-check HTTP
+// fetch, Kad startup -- trips the ObjC fork-safety guard and aborts or spins at 100% CPU. Forking
+// first lets Cocoa initialise fresh in the child, and is harmless on Linux/*BSD. Everything then
+// runs in the child, so the worker threads constructed during OnInit() land in the daemon instead
+// of being orphaned by a mid-init fork (#849). Windows never forks.
 static bool AmuledWantsDaemonFork(int argc, char **argv)
 {
 	for (int i = 1; i < argc; ++i) {
@@ -145,18 +143,17 @@ static void AmuledDaemonizeEarly()
 	fprintf(stdout, "amuled: forking to background - see you\n");
 	fflush(stdout);
 
-	// Detach stdio to /dev/null and fork; the original process exits so the shell
-	// returns, and the child -- session leader after setsid() -- carries on into
-	// wxEntry(). The pid file is written later from InitGui(), now running in this
-	// child, with getpid().
+	// Detach stdio to /dev/null and fork; the original process exits so the shell returns, and
+	// the child -- session leader after setsid() -- carries on into wxEntry(). The pid file is
+	// written later from InitGui(), now running in this child, with getpid().
 	for (int i_fd = 0; i_fd < 3; ++i_fd) {
 		close(i_fd);
 	}
 	int fd = open("/dev/null", O_RDWR);
 	if (fd >= 0) {
-		// fd is 0, the lowest free after the closes, so dup twice to reopen
-		// stdout(1) and stderr(2) on /dev/null. The empty bodies ignore the dup
-		// return deliberately, silencing -Wunused-result.
+		// fd is 0, the lowest free after the closes, so dup twice to reopen stdout(1) and
+		// stderr(2) on /dev/null. The empty bodies ignore the dup return deliberately,
+		// silencing -Wunused-result.
 		if (dup(fd)) {
 		}
 		if (dup(fd)) {
@@ -184,10 +181,8 @@ int main(int argc, char **argv)
 }
 
 #ifdef __WINDOWS__
-//
 // CTRL-C-Handler
 // see http://msdn.microsoft.com/en-us/library/windows/desktop/ms685049%28v=vs.85%29.aspx
-//
 static BOOL CtrlHandler(DWORD fdwCtrlType)
 {
 	switch (fdwCtrlType) {
@@ -253,9 +248,9 @@ int CamuleDaemonApp::InitGui(bool, wxString &)
 	if (!enable_daemon_fork) {
 		return 0;
 	}
-	// The fork+setsid+stdio detach happens before wxEntry() now (see main()
-	// above), so this runs in the daemon child. Silence the stdout log and
-	// drop the pid file with our own (post-setsid) pid.
+	// The fork+setsid+stdio detach happens before wxEntry() now (see main() above), so this
+	// runs in the daemon child. Silence the stdout log and drop the pid file with our own post-
+	// setsid pid.
 	theLogger.SetEnabledStdoutLog(false);
 	if (!m_PidFile.IsEmpty()) {
 		// A pid file with the daemon's pid, so any daemon-manager can manage the
@@ -279,17 +274,14 @@ bool CamuleDaemonApp::Initialize(int &argc_, wxChar **argv_)
 		return false;
 	}
 
-	// Pull LC_CTYPE etc. from the environment so unicode2char() emits
-	// real UTF-8 instead of mangling non-ASCII bytes under the default
-	// "C" locale (see #203).
+	// Pull LC_CTYPE etc. from the environment so unicode2char() emits real UTF-8 instead of
+	// mangling non-ASCII bytes under the default "C" locale (see #203).
 	aMuleInitLocale();
 
 #ifdef __UNIX__
 	wxString encName;
 #if wxUSE_INTL
-	// if a non default locale is set,
-	// assume that the user wants his
-	// filenames in this locale too
+	// A non-default locale is taken to mean the user wants filenames in that locale too.
 	encName = wxLocale::GetSystemEncodingName().Upper();
 
 	// But don't consider ASCII in this case.
@@ -308,11 +300,11 @@ bool CamuleDaemonApp::Initialize(int &argc_, wxChar **argv_)
 	}
 
 #ifdef __WXOSX__
-	// macOS reports "Mac OS Roman" from GetSystemEncodingName() regardless of the
-	// user's locale, but HFS+/APFS file names are always UTF-8. Encoding with Mac
-	// Roman turns U+00AA into the single byte 0xAA, which the kernel rejects as
-	// invalid UTF-8 when the completed file is opened, leaving non-ASCII downloads
-	// stuck in PS_ERROR. The GUI keeps wx's UTF-8 converter; force UTF-8 to match.
+	// macOS reports "Mac OS Roman" from GetSystemEncodingName() regardless of the user's
+	// locale, but HFS+/APFS file names are always UTF-8. Encoding with Mac Roman turns U+00AA
+	// into the single byte 0xAA, which the kernel rejects as invalid UTF-8 when the completed
+	// file is opened, leaving non-ASCII downloads stuck in PS_ERROR. The GUI keeps wx's UTF-8
+	// converter; force UTF-8 to match.
 	encName = "UTF-8";
 #endif
 

@@ -44,18 +44,17 @@
 #include <common/Format.h>
 #include "Preferences.h" // Needed for thePrefs
 
-// Max duplicate-list records retained per hash. Unique hashes always keep their
-// live m_knownFileMap entry; this caps only the historical (name/date) variants
-// in m_duplicateFileList. 8 covers daily-touch / weekly-snapshot /
-// monthly-backup cycles while bounding known.met at unique_hashes * (1 + cap).
+// Max duplicate-list records retained per hash. Unique hashes always keep their live m_knownFileMap
+// entry; this caps only the historical (name/date) variants in m_duplicateFileList. 8 covers daily-
+// touch / weekly-snapshot / monthly-backup cycles while bounding known.met at unique_hashes * (1 +
+// cap).
 #define KNOWN_DUPLICATE_HASH_CAP 8
 
-// TTL after which a record (live or duplicate) whose lastSeen has not been
-// refreshed is dropped. A file on disk has its lastSeen bumped by
-// FindKnownFile / IsOnDuplicates / Append every share-scan; anything stale this
-// long either lost its file or had its mtime/name change in a way that will not
-// recur (mtime is monotone-forward in practice). 30 days catches most
-// pathological touch loops without losing intermittent matches.
+// TTL after which a record (live or duplicate) whose lastSeen has not been refreshed is dropped. A
+// file on disk has its lastSeen bumped by FindKnownFile / IsOnDuplicates / Append every share-scan;
+// anything stale this long either lost its file or had its mtime/name change in a way that will not
+// recur (mtime is monotone-forward in practice). 30 days catches most pathological touch loops
+// without losing intermittent matches.
 #define KNOWN_DUPLICATE_TTL_SECS (30 * 24 * 60 * 60)
 
 // This function is inlined for performance
@@ -112,13 +111,12 @@ bool CKnownFileList::Init()
 			CFormat("Reading %i known files from file format 0x%2.2x.") % RecordsNumber %
 				version);
 
-		// Keep the size-map index live during the load. Append() is O(log N) per
-		// record, but on each MD4 hash collision it falls back to
-		// IsOnDuplicates(name, date, size), which without a duplicate-size index
-		// scans m_duplicateFileList linearly -- O(N^2) over the whole load.
-		// Prebuilding the empty index lets Append maintain it incrementally, so
-		// every collision check takes the equal_range fast path (issue #562, a
-		// ~36 s startup gap on a 200 k-file library).
+		// Keep the size-map index live during the load. Append() is O(log N) per record,
+		// but on each MD4 hash collision it falls back to IsOnDuplicates(name, date, size),
+		// which without a duplicate-size index scans m_duplicateFileList linearly -- O(N^2)
+		// over the whole load. Prebuilding the empty index lets Append maintain it
+		// incrementally, so every collision check takes the equal_range fast path (issue
+		// #562, a ~36 s startup gap on a 200 k-file library).
 		PrepareIndex();
 		for (uint32 i = 0; i < RecordsNumber; i++) {
 			CScopedPtr<CKnownFile> record;
@@ -148,23 +146,21 @@ bool CKnownFileList::Init()
 
 void CKnownFileList::Save()
 {
-	// Acquire the lock before opening the .new file. Save() is called from both
-	// the main thread and the hashing worker (CHashingTask::OnLastTask); if two
-	// callers raced past the open, both would create known.met.new at the same
-	// path, the first to Close() would rename it away, and the second's rename
-	// would fail with ENOENT (#86). Holding list_mut around the whole save
-	// serialises the .new lifecycle; the list is read-only inside, so the critical
+	// Acquire the lock before opening the .new file. Save() is called from both the main thread
+	// and the hashing worker (CHashingTask::OnLastTask); if two callers raced past the open,
+	// both would create known.met.new at the same path, the first to Close() would rename it
+	// away, and the second's rename would fail with ENOENT (#86). Holding list_mut around the
+	// whole save serialises the .new lifecycle; the list is read-only inside, so the critical
 	// section is not meaningfully widened.
 	wxMutexLocker sLock(list_mut);
 
-	// Snapshot the in-use set under our own lock. Taking it before locking left a
-	// TOCTOU window where the main thread could add a CKnownFile to sharedfiles
-	// between snapshot and prune; the prune then deleted a file sharedfiles still
-	// indexed, and the EC encoder map kept feeding the dangling pointer to
-	// Get_EC_Response_GetUpdate (#685).
+	// Snapshot the in-use set under our own lock. Taking it before locking left a TOCTOU window
+	// where the main thread could add a CKnownFile to sharedfiles between snapshot and prune;
+	// the prune then deleted a file sharedfiles still indexed, and the EC encoder map kept
+	// feeding the dangling pointer to Get_EC_Response_GetUpdate (#685).
 	//
-	// Brief overlap of the knownfiles -> sharedfiles / downloadqueue locks is
-	// safe: nothing acquires those in the reverse order while holding the first.
+	// Brief overlap of the knownfiles -> sharedfiles / downloadqueue locks is safe: nothing
+	// acquires those in the reverse order while holding the first.
 	std::unordered_set<CKnownFile *> inUse;
 	if (theApp && theApp->sharedfiles) {
 		std::vector<CKnownFile *> sharedSnapshot;
@@ -187,9 +183,8 @@ void CKnownFileList::Save()
 	AddDebugLogLineN(logKnownFiles, CFormat("start saving %s") % m_filename);
 
 	try {
-		// Kry - This is the version, but we don't know it till
-		// we know if any largefile is saved. This allows the list
-		// to be compatible with previous versions.
+		// Kry - This is the version, but we do not know it until we know whether any large
+		// file is saved. This keeps the list compatible with previous versions.
 		bool bContainsAnyLargeFiles = false;
 		file.WriteUInt8(0);
 
@@ -230,25 +225,23 @@ size_t CKnownFileList::GetKnownFileCount() const
 
 bool CKnownFileList::IsKnownFile(const CKnownFile *file) const
 {
-	// Pointer-value scan over both lists; safe to call with a possibly-freed
-	// `file` pointer, since nothing is dereferenced. Used by OnFinishedHashing /
-	// OnFinishedAICHHashing to validate that the owner pointer survived hashing.
-	// Neither container is pointer-keyed, so both are walked: linear in shareset
-	// size, but only on hash completion, which is rare enough not to justify a
-	// per-pointer index.
+	// Pointer-value scan over both lists; safe to call with a possibly-freed `file` pointer,
+	// since nothing is dereferenced. Used by OnFinishedHashing / OnFinishedAICHHashing to
+	// validate that the owner pointer survived hashing. Neither container is pointer-keyed, so
+	// both are walked: linear in shareset size, but only on hash completion, which is rare
+	// enough not to justify a per-pointer index.
 	wxMutexLocker sLock(list_mut);
 	for (const auto &entry : m_knownFileMap) {
 		if (entry.second == file) {
 			return true;
 		}
 	}
-	// The duplicate list counts as alive: this asks whether the record still
-	// exists, not whether it is canonical. PromoteToCanonical moves a live record
-	// out of the map whenever the share scan finds a better copy for its hash, and
-	// an AICH result landing after that must not read as "owner was destroyed" --
-	// the result would be dropped with a log line saying the opposite of what
-	// happened. A record that really was freed is erased from this list by
-	// PruneDuplicates under the same lock, so the freed case still answers false.
+	// The duplicate list counts as alive: this asks whether the record still exists, not
+	// whether it is canonical. PromoteToCanonical moves a live record out of the map whenever
+	// the share scan finds a better copy for its hash, and an AICH result landing after that
+	// must not read as "owner was destroyed" -- the result would be dropped with a log line
+	// saying the opposite of what happened. A record that really was freed is erased from this
+	// list by PruneDuplicates under the same lock, so the freed case still answers false.
 	for (const CKnownFile *record : m_duplicateFileList) {
 		if (record == file) {
 			return true;
@@ -261,12 +254,11 @@ void CKnownFileList::Clear()
 {
 	wxMutexLocker sLock(list_mut);
 
-	// Fire Notify_KnownFileBeingDestroyed for every file about to be deleted, so
-	// subscribers (list ctrls, dialogs, the AICH static list, the write thread's
-	// flushList, EC client-side m_uploadingfile / m_reqfile) strip their references
-	// before the delete. Pointer-value comparison only: the objects are alive at
-	// notify time, but subscribers must not deref them on the main-thread
-	// dispatch, which may run after DeleteContents has freed them.
+	// Fire Notify_KnownFileBeingDestroyed for every file about to be deleted, so subscribers
+	// (list ctrls, dialogs, the AICH static list, the write thread's flushList, EC client-side
+	// m_uploadingfile / m_reqfile) strip their references before the delete. Pointer-value
+	// comparison only: the objects are alive at notify time, but subscribers must not deref
+	// them on the main-thread dispatch, which may run after DeleteContents has freed them.
 	for (CKnownFileMap::const_iterator it = m_knownFileMap.begin(); it != m_knownFileMap.end(); ++it) {
 		Notify_KnownFileBeingDestroyed(it->second);
 	}
@@ -298,11 +290,10 @@ void CKnownFileList::CollectLiveAICHRoots(std::unordered_set<CAICHHash> &out)
 			out.insert(f->GetAICHHashset()->GetMasterHash());
 		}
 	}
-	// Duplicate-list records can also be the only owner of an AICH master hash,
-	// because a hash-collision demote in Append parks the previous record and its
-	// hashset on the duplicate list. Dropping the duplicate's AICH from
-	// known2_64.met would silently lose that hashset if the duplicate were later
-	// re-promoted by an mtime restore; keeping both sets is cheap.
+	// Duplicate-list records can also be the only owner of an AICH master hash, because a hash-
+	// collision demote in Append parks the previous record and its hashset on the duplicate
+	// list. Dropping the duplicate's AICH from known2_64.met would silently lose that hashset
+	// if the duplicate were later re-promoted by an mtime restore; keeping both sets is cheap.
 	for (KnownFileList::const_iterator it = m_duplicateFileList.begin(); it != m_duplicateFileList.end();
 		++it) {
 		const CKnownFile *f = *it;
@@ -339,10 +330,10 @@ CKnownFile *CKnownFileList::FindKnownFile(const CPath &filename, time_t in_date,
 		}
 	}
 
-	// Pin any duplicate-list match against this session's prune, so a real
-	// on-disk file's record is not dropped just because its hash is also held by a
-	// more-recent live entry -- the dual-content-copy case, where the same hash
-	// sits in two shared paths and only one becomes m_Files_map.
+	// Pin any duplicate-list match against this session's prune, so a real on-disk file's
+	// record is not dropped just because its hash is also held by a more-recent live entry --
+	// the dual-content-copy case, where the same hash sits in two shared paths and only one
+	// becomes m_Files_map.
 	CKnownFile *dup = IsOnDuplicates(filename, in_date, in_size);
 	if (dup) {
 		dup->SetLastSeen(now);
@@ -394,12 +385,11 @@ void CKnownFileList::EraseFromSizeMap(KnownFileSizeMap *sizeMap, CKnownFile *rec
 {
 	// Caller must hold list_mut.
 	//
-	// The key is recomputed from the record's CURRENT size and mtime, so a record
-	// whose either value changed while it was indexed cannot be found and the
-	// erase silently leaves the old entry behind. Every caller today either
-	// indexes a record it has not mutated or sets the new values before the first
-	// insert, but a future caller that mutates an already-indexed record has to
-	// erase under the old key first.
+	// The key is recomputed from the record's CURRENT size and mtime, so a record whose either
+	// value changed while it was indexed cannot be found and the erase silently leaves the old
+	// entry behind. Every caller today either indexes a record it has not mutated or sets the
+	// new values before the first insert, but a future caller that mutates an already-indexed
+	// record has to erase under the old key first.
 	if (!sizeMap) {
 		return;
 	}
@@ -436,34 +426,32 @@ bool CKnownFileList::PromoteToCanonical(CKnownFile *file)
 	const CMD4Hash &tkey = file->GetFileHash();
 	const auto it = m_knownFileMap.find(tkey);
 	if (it == m_knownFileMap.end() || it->second == file) {
-		// Already canonical, or this hash has no live record at all --
-		// a freshly hashed file becomes canonical through Append, so
-		// there is nothing to take over here.
+		// Already canonical, or this hash has no live record at all -- a freshly hashed
+		// file becomes canonical through Append, so there is nothing to take over here.
 		return false;
 	}
 
 	CKnownFile *demoted = it->second;
 
-	// Same swap Append performs when a later known.met entry takes over a hash,
-	// minus the Kad withdrawal: `demoted` cannot be in the shared list (m_Files_map
-	// is hash-keyed and `file` holds that slot), and only
-	// CSharedFileList::AddFile publishes keywords, so it has none to remove.
+	// Same swap Append performs when a later known.met entry takes over a hash, minus the Kad
+	// withdrawal: `demoted` cannot be in the shared list (m_Files_map is hash-keyed and `file`
+	// holds that slot), and only CSharedFileList::AddFile publishes keywords, so it has none to
+	// remove.
 	m_duplicateFileList.push_back(demoted);
 	EraseFromSizeMap(m_knownSizeMap, demoted);
 	InsertIntoSizeMap(m_duplicateSizeMap, demoted);
 
-	// `file` moves the other way. It is on the duplicate list in the case this
-	// exists for, but not necessarily -- an already-canonical record short-circuits
-	// above.
+	// `file` moves the other way. It is on the duplicate list in the case this exists for, but
+	// not necessarily -- an already-canonical record short-circuits above.
 	m_duplicateFileList.remove(file);
 	EraseFromSizeMap(m_duplicateSizeMap, file);
 	InsertIntoSizeMap(m_knownSizeMap, file);
 	m_knownFileMap[tkey] = file;
 
-	// m_pinnedDuplicates keeps `file` on purpose: the pin records that this
-	// session matched the record against a real on-disk file, which stays true. It
-	// only ever guards duplicate-list records, so it costs nothing while `file` is
-	// canonical and protects it from the cap prune if a later Append demotes it.
+	// m_pinnedDuplicates keeps `file` on purpose: the pin records that this session matched the
+	// record against a real on-disk file, which stays true. It only ever guards duplicate-list
+	// records, so it costs nothing while `file` is canonical and protects it from the cap prune
+	// if a later Append demotes it.
 
 	AddDebugLogLineN(logKnownFiles,
 		CFormat("Duplicate '%s' is now the canonical record for its hash, replacing '%s'") %
@@ -500,21 +488,20 @@ bool CKnownFileList::Append(CKnownFile *Record, bool afterHashing)
 		const CMD4Hash &tkey = Record->GetFileHash();
 		CKnownFileMap::iterator it = m_knownFileMap.find(tkey);
 		if (it == m_knownFileMap.end()) {
-			// Only stamp lastSeen=now for a confirmed sighting of the file on
-			// disk (post-hash via CHashingTask, or any other afterHashing=true
-			// path). During known.met load Append runs with afterHashing=false,
-			// and touching lastSeen there would overwrite either the FT_LASTSEEN
-			// tag just loaded or the m_lastDateChanged fallback
-			// CKnownFile::LoadFromFile substitutes when the tag is absent. That
-			// fallback is the only thing letting the TTL prune do useful
-			// migration work on an old known.met: trample it and every loaded
+			// Only stamp lastSeen=now for a confirmed sighting of the file on disk
+			// (post-hash via CHashingTask, or any other afterHashing=true path). During
+			// known.met load Append runs with afterHashing=false, and touching lastSeen
+			// there would overwrite either the FT_LASTSEEN tag just loaded or the
+			// m_lastDateChanged fallback CKnownFile::LoadFromFile substitutes when the
+			// tag is absent. That fallback is the only thing letting the TTL prune do
+			// useful migration work on an old known.met: trample it and every loaded
 			// record looks fresh, so TTL never evicts anything.
 			if (afterHashing) {
 				Record->SetLastSeen(now);
-				// Shared-since (issue #466): stamped once, and only for a
-				// genuinely new file. Same afterHashing guard as lastSeen, so a
-				// known.met load never re-stamps and a file predating the
-				// feature keeps 0 (unknown) rather than looking shared just now.
+				// Shared-since (issue #466): stamped once, and only for a genuinely
+				// new file. Same afterHashing guard as lastSeen, so a known.met
+				// load never re-stamps and a file predating the feature keeps 0
+				// (unknown) rather than looking shared just now.
 				if (Record->GetDateShared() == 0) {
 					Record->SetDateShared(now);
 				}
@@ -539,16 +526,15 @@ bool CKnownFileList::Append(CKnownFile *Record, bool afterHashing)
 			} else if (CKnownFile *dup = IsOnDuplicates(Record->GetFileName(),
 					   Record->GetLastChangeDatetime(),
 					   Record->GetFileSize())) {
-				// The file is on the duplicates list, ignore it.
-				// Should not happen, at least not after hashing. Or why did it get hashed in
-				// the first place then?
+				// The file is on the duplicates list, ignore it. Should not happen,
+				// at least not after hashing -- why would it have been hashed?
 				AddDebugLogLineN(logKnownFiles,
 					CFormat("%s is on the duplicates list") %
 						Record->GetFileName().GetPrintable());
-				// Pin the duplicate only when this branch was reached by
-				// hashing a real on-disk file. During load Append is not a fresh
-				// sighting, and pinning would falsely protect stale records from
-				// the cap/TTL prune.
+				// Pin the duplicate only when this branch was reached by hashing a
+				// real on-disk file. During load Append is not a fresh sighting,
+				// and pinning would falsely protect stale records from the cap/TTL
+				// prune.
 				if (afterHashing) {
 					dup->SetLastSeen(now);
 					m_pinnedDuplicates.insert(dup);
@@ -556,10 +542,10 @@ bool CKnownFileList::Append(CKnownFile *Record, bool afterHashing)
 				return false;
 			} else {
 				if (afterHashing && existing->GetFileSize() == Record->GetFileSize()) {
-					// We just hashed a "new" shared file and find it's already known
-					// under a different name or date. Guess what - it was probably
-					// renamed or touched. So copy over all properties from the existing
-					// known file and just keep name/date.
+					// We just hashed a "new" shared file and find it already
+					// known under a different name or date: probably renamed or
+					// touched. Copy over all properties from the existing known
+					// file and keep only name/date.
 					time_t newDate = Record->GetLastChangeDatetime();
 					CPath newName = Record->GetFileName();
 					CMemFile f;
@@ -583,9 +569,9 @@ bool CKnownFileList::Append(CKnownFile *Record, bool afterHashing)
 					Record->SetLastChangeDatetime(newDate);
 					Record->SetFileName(newName);
 				}
-				// The file is a duplicated hash. Add THE OLD ONE to the duplicates list.
-				// (This is used when reading the known file list where the duplicates are
-				// stored in front.)
+				// The file is a duplicated hash. Add THE OLD ONE to the duplicates
+				// list. (Used when reading the known file list, where the
+				// duplicates are stored in front.)
 				m_duplicateFileList.push_back(existing);
 				InsertIntoSizeMap(m_duplicateSizeMap, existing);
 				if (theApp->sharedfiles) {
@@ -599,7 +585,7 @@ bool CKnownFileList::Append(CKnownFile *Record, bool afterHashing)
 				InsertIntoSizeMap(m_knownSizeMap, Record);
 				// On the afterHashing path the copy-existing-tags block above
 				// pulled the prior FT_LASTSEEN into Record, so refresh it or the
-				// new live entry is born aged-out of the TTL window. During load
+				// new live entry is born aged out of the TTL window. During load
 				// keep Record's own loaded lastSeen: stamping the replacement as
 				// fresh would make every live entry look load-time-fresh, and the
 				// migration-driven TTL pass would never evict.
@@ -644,10 +630,10 @@ void CKnownFileList::PruneDuplicates(const std::unordered_set<CKnownFile *> &inU
 {
 	// Caller must hold list_mut.
 
-	// Gate on a full share-scan having run this session: before that inUse is
-	// empty and FindKnownFile has not populated m_pinnedDuplicates, so a prune
-	// would drop records the next scan would legitimately have pinned. Set by
-	// MarkInitialShareScanComplete() from CSharedFileList::Reload.
+	// Gate on a full share-scan having run this session: before that inUse is empty and
+	// FindKnownFile has not populated m_pinnedDuplicates, so a prune would drop records the
+	// next scan would legitimately have pinned. Set by MarkInitialShareScanComplete() from
+	// CSharedFileList::Reload.
 	if (!m_initialShareScanComplete) {
 		return;
 	}
@@ -659,11 +645,10 @@ void CKnownFileList::PruneDuplicates(const std::unordered_set<CKnownFile *> &inU
 		return inUse.count(r) > 0 || m_pinnedDuplicates.count(r) > 0;
 	};
 
-	// Pass 1: live entries past TTL. A non-refreshed live entry means no
-	// share-scan in the last TTL window produced a (name, date, size) match, so
-	// the file is no longer accessible and the whole hash is dead, duplicates
-	// included. std::set rather than unordered_set because CMD4Hash provides
-	// operator< but no std::hash specialization.
+	// Pass 1: live entries past TTL. A non-refreshed live entry means no share-scan in the last
+	// TTL window produced a (name, date, size) match, so the file is no longer accessible and
+	// the whole hash is dead, duplicates included. std::set rather than unordered_set because
+	// CMD4Hash provides operator< but no std::hash specialization.
 	std::set<CMD4Hash> deadHashes;
 	for (CKnownFileMap::const_iterator it = m_knownFileMap.begin(); it != m_knownFileMap.end(); ++it) {
 		CKnownFile *live = it->second;
@@ -710,11 +695,10 @@ void CKnownFileList::PruneDuplicates(const std::unordered_set<CKnownFile *> &inU
 		}
 		CKnownFile *dead = kit->second;
 
-		// Final re-check: Save() snapshots inUse under our own lock, but the
-		// snapshot's sharedfiles / downloadqueue locks were released before the
-		// prune body ran, so a concurrent SafeAddKFile or RemoveFile could have
-		// changed membership. Re-query under the owner's lock immediately before
-		// the delete (#685).
+		// Final re-check: Save() snapshots inUse under our own lock, but the snapshot's
+		// sharedfiles / downloadqueue locks were released before the prune body ran, so a
+		// concurrent SafeAddKFile or RemoveFile could have changed membership. Re-query
+		// under the owner's lock immediately before the delete (#685).
 		if (theApp && theApp->sharedfiles && theApp->sharedfiles->GetFileByID(*it) != NULL) {
 			continue;
 		}

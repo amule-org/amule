@@ -22,7 +22,7 @@
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 //
 // Pure EC-tag-to-State translation layer. No CamuleapiApp dependency
-// — the per-tick orchestration (`RefresherTick` + `TwoPhaseRefresh`)
+// -- the per-tick orchestration (`RefresherTick` + `TwoPhaseRefresh`)
 // lives in RefresherTick.cpp so the unit tests can link these
 // transformations in isolation.
 
@@ -61,10 +61,9 @@ namespace webapi
 
 const char *ClientSoftwareName(std::uint32_t code)
 {
-	// Subset that covers the bulk of the live ed2k population —
-	// every client we'd ever realistically meet on the wire. SO_UNKNOWN
-	// and SO_COMPAT_UNK collapse to "unknown" / "compat" so consumers
-	// see a stable label even when amuled couldn't fingerprint the
+	// Subset that covers the bulk of the live ed2k population -- every client we would ever
+	// realistically meet on the wire. SO_UNKNOWN and SO_COMPAT_UNK collapse to "unknown" /
+	// "compat" so consumers see a stable label even when amuled could not fingerprint the
 	// peer's software.
 	switch (code) {
 	case SO_EMULE:
@@ -120,9 +119,9 @@ const char *ClientObfuscationName(std::uint8_t code)
 		return "unknown";
 	}
 }
-// Map EC_TAG_CLIENT_FROM (ESourceFrom, Constants.h) to a stable
-// lowercase token, mirroring the GUI's Origin column without leaking
-// the daemon locale. Local/remote server both collapse to "server".
+// Map EC_TAG_CLIENT_FROM (ESourceFrom, Constants.h) to a stable lowercase token,
+// mirroring the GUI's Origin column without leaking the daemon locale. Local/remote server
+// both collapse to "server".
 std::string SourceOriginName(std::uint32_t from)
 {
 	switch (from) {
@@ -162,9 +161,9 @@ const char *Ed2kStateString(const CEC_ConnState_Tag *conn)
 
 const char *KadStateString(const CEC_ConnState_Tag *conn)
 {
-	// Kad has a "running but disconnected" mode (peer-discovery active,
-	// no contact-routing yet); we collapse that into "connecting" so
-	// the API surface uses three states uniformly for both networks.
+	// Kad has a "running but disconnected" mode (peer-discovery active, no contact-routing
+	// yet); collapse it into "connecting" so the API surface uses three states uniformly for
+	// both networks.
 	if (!conn || !conn->IsKadRunning())
 		return "disabled";
 	if (conn->IsConnectedKademlia())
@@ -172,10 +171,10 @@ const char *KadStateString(const CEC_ConnState_Tag *conn)
 	return "connecting";
 }
 
-// As above, but an unset address formats as empty rather than "0.0.0.0". The
-// peer and server fields use 0 for "not known" and emit the key as null on it,
-// whereas the Kad fields report the quad verbatim -- which is the only
-// difference there has ever been between these two.
+// As above, but an unset address formats as empty rather than "0.0.0.0". The peer and
+// server fields use 0 for "not known" and emit the key as null on it, whereas the Kad
+// fields report the quad verbatim -- the only difference there has ever been between
+// these two.
 std::string FormatClientIpv4(std::uint32_t ip_lsb_first)
 {
 	return ip_lsb_first == 0 ? std::string() : IPv4ToDotted(ip_lsb_first);
@@ -195,13 +194,13 @@ void ParseStatusFromPacket(const CECPacket *resp, StatusSnapshot &out)
 	out.kad_state = KadStateString(conn);
 
 	if (conn) {
-		// Only meaningful while connected: with no EC_TAG_ED2K_ID the id
-		// reads 0, and HasLowID() is "id < HIGHEST_LOWID_ED2K_KAD", so a
-		// disconnected daemon would otherwise be reported as a LowID.
+		// Only meaningful while connected: with no EC_TAG_ED2K_ID the id reads 0, and
+		// HasLowID() is "id < HIGHEST_LOWID_ED2K_KAD", so a disconnected daemon would
+		// otherwise be reported as a LowID.
 		out.ed2k_high_id = conn->IsConnectedED2K() && !conn->HasLowID();
-		// Gated: IsKadFirewalled() reads a connstate bit that survives a
-		// disconnect, so an unconnected daemon answered `true` -- a
-		// reachability verdict about a network it is not on.
+		// Gated: IsKadFirewalled() reads a connstate bit that survives a disconnect, so an
+		// unconnected daemon answered `true` -- a reachability verdict about a network it is
+		// not on.
 		if (conn->IsConnectedKademlia()) {
 			out.kad_firewalled_tcp = conn->IsKadFirewalled();
 			out.has_kad_firewalled_tcp = true;
@@ -212,9 +211,9 @@ void ParseStatusFromPacket(const CECPacket *resp, StatusSnapshot &out)
 			const std::uint32_t id = static_cast<std::uint32_t>(conn->GetEd2kId());
 			if (id != 0xffffffffu) {
 				out.ed2k_user_id = id;
-				// A HighID *is* our public address, LSB-first, the same
-				// layout EC_TAG_CLIENT_USER_IP uses. A LowID is a small
-				// number the server picked and carries no address.
+				// A HighID *is* our public address, LSB-first, the same layout
+				// EC_TAG_CLIENT_USER_IP uses. A LowID is a small number the server
+				// picked and carries no address.
 				if (out.ed2k_high_id) {
 					out.ed2k_public_ip = IPv4ToDotted(id);
 				}
@@ -225,10 +224,10 @@ void ParseStatusFromPacket(const CECPacket *resp, StatusSnapshot &out)
 				if (name) {
 					out.server_name = std::string(name->GetStringData().utf8_str());
 				}
-				// Not StringIP(): every overload of it appends ":port" and wraps
-				// the result in brackets, so `server_ip` used to read
-				// "[77.42.68.79:4232]" -- contradicting its declared dotted-quad
-				// contract. The port stays in `server_port`.
+				// Not StringIP(): every overload appends ":port" and wraps the result
+				// in brackets, so `server_ip` used to read "[77.42.68.79:4232]" --
+				// contradicting its declared dotted-quad contract. The port stays in
+				// `server_port`.
 				out.server_ip = FormatClientIpv4(server->GetIPv4Data().IP());
 				out.server_port = server->GetIPv4Data().m_port;
 			}
@@ -251,10 +250,10 @@ void ParseStatusFromPacket(const CECPacket *resp, StatusSnapshot &out)
 	if (const CECTag *t = resp->GetTagByName(EC_TAG_STATS_UL_SPEED)) {
 		out.upload_bytes_per_second = static_cast<std::uint64_t>(t->GetInt());
 	}
-	// Overhead rates and free space ride the same EC_DETAIL_FULL response. The
-	// two disk figures are cast through int64 on purpose: amuled's
-	// FREE_SPACE_UNKNOWN is -1 and the serializer casts it to uint64, so an
-	// unsigned read would turn "unknown" into 18446744073709551615.
+	// Overhead rates and free space ride the same EC_DETAIL_FULL response. The two disk
+	// figures are cast through int64 on purpose: amuled's FREE_SPACE_UNKNOWN is -1 and the
+	// serializer casts it to uint64, so an unsigned read would turn "unknown" into
+	// 18446744073709551615.
 	if (const CECTag *t = resp->GetTagByName(EC_TAG_STATS_UP_OVERHEAD)) {
 		out.upload_overhead_bytes_per_second = static_cast<std::uint64_t>(t->GetInt());
 	}
@@ -273,13 +272,13 @@ void ParseStatusFromPacket(const CECPacket *resp, StatusSnapshot &out)
 	if (const CECTag *t = resp->GetTagByName(EC_TAG_STATS_TOTAL_SRC_COUNT)) {
 		out.total_src_count = static_cast<std::uint32_t>(t->GetInt());
 	}
-	// ed2k network aggregate -- the same EC_OP_STAT_REQ response already carries
-	// KAD_USERS / KAD_FILES, plus ED2K_USERS / ED2K_FILES next to them, so
-	// /status can surface ed2k.network.{users,files} with no extra roundtrip.
+	// ed2k network aggregate -- the same EC_OP_STAT_REQ response already carries KAD_USERS /
+	// KAD_FILES, plus ED2K_USERS / ED2K_FILES next to them, so /status can surface
+	// ed2k.network.{users,files} with no extra roundtrip.
 	//
-	// Gated on being connected: amuled emits these tags unconditionally, above
-	// its own `if (IsConnected())` block, and CServerList::GetUserFileStatus sums
-	// the whole known server list, so nothing zeroes them on disconnect.
+	// Gated on being connected: amuled emits these tags unconditionally, above its own `if
+	// (IsConnected())` block, and CServerList::GetUserFileStatus sums the whole known server
+	// list, so nothing zeroes them on disconnect.
 	if (out.ed2k_state == "connected") {
 		if (const CECTag *t = resp->GetTagByName(EC_TAG_STATS_ED2K_USERS)) {
 			out.ed2k_users = static_cast<std::uint32_t>(t->GetInt());
@@ -307,18 +306,16 @@ void ParseStatusFromPacket(const CECPacket *resp, StatusSnapshot &out)
 namespace
 {
 
-// PartFile status code (PS_*, Constants.h) -> wire string. amule has more codes
-// than the API surface. "downloading" is overloaded: it covers PS_READY (the
-// daemon's "transferring" state) AND PS_EMPTY (no sources right now but the
-// file is not paused) -- clients distinguish by reading
-// `speed_bytes_per_second` and `sources.transferring`.
+// PartFile status code (PS_*, Constants.h) -> wire string. amule has more codes than the
+// API surface. "downloading" is overloaded: it covers PS_READY (the daemon's
+// "transferring" state) AND PS_EMPTY (no sources right now but the file is not paused) --
+// clients distinguish by reading `speed_bytes_per_second` and `sources.transferring`.
 const char *DownloadStatusName(std::uint8_t ps_code, bool stopped)
 {
-	// PS_COMPLETE / PS_COMPLETING take priority over `stopped`: amuled holds
-	// finished downloads in `m_completedDownloads` with EC_TAG_PARTFILE_STOPPED
-	// set, so a naive `if (stopped) return "paused"` early-out masks every
-	// cleared-pending file as still-paused. The "completed" wire string is
-	// reserved for "in m_completedDownloads, awaiting clear".
+	// PS_COMPLETE / PS_COMPLETING take priority over `stopped`: amuled holds finished
+	// downloads in `m_completedDownloads` with EC_TAG_PARTFILE_STOPPED set, so a naive `if
+	// (stopped) return "paused"` early-out masks every cleared-pending file as still-paused.
+	// The "completed" wire string is reserved for "in m_completedDownloads, awaiting clear".
 	if (ps_code == PS_COMPLETE)
 		return "completed";
 	if (ps_code == PS_COMPLETING)
@@ -326,11 +323,10 @@ const char *DownloadStatusName(std::uint8_t ps_code, bool stopped)
 
 	if (stopped)
 		return "stopped"; // stop = pause + drop all sources +
-				  // stop searching; the daemon reports it as
-				  // PS_PAUSED with EC_TAG_PARTFILE_STOPPED set,
-				  // surfaced here as a distinct wire status so
-				  // clients can tell it apart from a plain pause
-				  // (see /downloads PATCH status="stopped")
+				  // stop searching; the daemon reports it as PS_PAUSED with
+				  // EC_TAG_PARTFILE_STOPPED set, surfaced here as a distinct
+				  // wire status so clients can tell it apart from a plain
+				  // pause (see /downloads PATCH status="stopped")
 	switch (ps_code) {
 	case PS_READY:
 		return "downloading";
@@ -353,17 +349,16 @@ const char *DownloadStatusName(std::uint8_t ps_code, bool stopped)
 	}
 }
 
-// The auto-priority flag is encoded as `prio + 10`, NOT bit-7 (`& 0x80`) --
-// the pattern amule-remote-gui.cpp uses. Same encoding for
-// EC_TAG_KNOWNFILE_PRIO (shared, up-side) and EC_TAG_PARTFILE_PRIO (downloads,
-// down-side). Using bit-7 here silently mis-labels every auto-priority entry as
-// "normal", because the PR_* enum values are tiny and never overlap 0x80.
+// The auto-priority flag is encoded as `prio + 10`, NOT bit-7 (`& 0x80`) -- the pattern
+// amule-remote-gui.cpp uses. Same encoding for EC_TAG_KNOWNFILE_PRIO (shared, up-side) and
+// EC_TAG_PARTFILE_PRIO (downloads, down-side). Using bit-7 here silently mis-labels every
+// auto-priority entry as "normal", because the PR_* enum values are tiny and never overlap
+// 0x80.
 constexpr std::uint8_t kAutoPriorityOffset = 10;
 
-// Decodes the shared `+ 10` auto-flag offset carried by both
-// EC_TAG_PARTFILE_PRIO and EC_TAG_KNOWNFILE_PRIO: a raw code >= 10 is an auto
-// entry whose base level is `raw - 10`. Returns the base level as a wire string
-// and reports the auto flag via `auto_out`.
+// Decodes the shared `+ 10` auto-flag offset carried by both EC_TAG_PARTFILE_PRIO and
+// EC_TAG_KNOWNFILE_PRIO: a raw code >= 10 is an auto entry whose base level is `raw - 10`.
+// Returns the base level as a wire string and reports the auto flag via `auto_out`.
 const char *PriorityName(std::uint8_t pr_code_raw, bool &auto_out)
 {
 	std::uint8_t pr;
@@ -407,9 +402,9 @@ std::string TagHashLower(const CEC_SharedFile_Tag *sf)
 }
 
 // Decode the base CKnownFile detail tags carried by BOTH EC_TAG_PARTFILE and
-// EC_TAG_KNOWNFILE (via the CEC_SharedFile_Tag base ctor), so the download and
-// shared detail endpoints share one decode. Detail-only, and INC-safe: only
-// assigns when a tag is present this frame.
+// EC_TAG_KNOWNFILE (via the CEC_SharedFile_Tag base ctor), so the download and shared
+// detail endpoints share one decode. Detail-only, and INC-safe: only assigns when a tag is
+// present this frame.
 void MergeKnownFileDetail(const CECTag *t, FileSnapshot &f)
 {
 	if (const CECTag *aich = t->GetTagByName(EC_TAG_KNOWNFILE_AICH_MASTERHASH))
@@ -450,21 +445,20 @@ void MergeKnownFileDetail(const CECTag *t, FileSnapshot &f)
 	if (const CECTag *x = t->GetTagByName(EC_TAG_KNOWNFILE_MEDIA_TITLE)) {
 		f.media.title = std::string(x->GetStringData().utf8_str());
 	}
-	// Derived from what the snapshot now holds rather than latched true by
-	// whichever tag happened to arrive. A zero / empty value is the daemon
-	// clearing that field, so latching would report has_media on a file whose
-	// every field has since been cleared.
+	// Derived from what the snapshot now holds rather than latched true by whichever tag
+	// happened to arrive. A zero / empty value is the daemon clearing that field, so latching
+	// would report has_media on a file whose every field has since been cleared.
 	f.has_media = f.media.duration_seconds != 0 || f.media.bitrate_kilobits_per_second != 0 ||
 		      !f.media.codec.empty() || !f.media.artist.empty() || !f.media.album.empty() ||
 		      !f.media.title.empty();
 }
 
-// Merge a CEC_PartFile_Tag's PRESENT child tags into an existing FileSnapshot.
-// Absent tags leave the corresponding field unchanged -- that is the point of
-// INC mode. Identity (name, ed2k_link, size, priority) lives at the top level
-// because both walkers populate it; download-specific stats land in
-// `f.download`. The caller sets f.ecid + f.hash on first encounter and flips
-// f.is_downloading. `is_new` is used only for the status-string re-derive.
+// Merge a CEC_PartFile_Tag's PRESENT child tags into an existing FileSnapshot. Absent tags
+// leave the corresponding field unchanged -- that is the point of INC mode. Identity (name,
+// ed2k_link, size, priority) lives at the top level because both walkers populate it;
+// download-specific stats land in `f.download`. The caller sets f.ecid + f.hash on first
+// encounter and flips f.is_downloading. `is_new` is used only for the status-string
+// re-derive.
 void MergePartFileTag(const CEC_PartFile_Tag *pf, FileSnapshot &f, bool is_new)
 {
 	wxString fn;
@@ -498,7 +492,7 @@ void MergePartFileTag(const CEC_PartFile_Tag *pf, FileSnapshot &f, bool is_new)
 			f.download.speed_bytes_per_second = v;
 	}
 	{
-		// Status + stopped flag interact — re-derive the wire string
+		// Status + stopped flag interact -- re-derive the wire string
 		// whenever either changed.
 		std::uint8_t fs = 0;
 		bool stopped = false;
@@ -518,10 +512,10 @@ void MergePartFileTag(const CEC_PartFile_Tag *pf, FileSnapshot &f, bool is_new)
 		}
 	}
 	{
-		// Upload priority also rides on the partfile tag (the base
-		// CEC_SharedFile_Tag ctor adds EC_TAG_KNOWNFILE_PRIO). Capture it here,
-		// from the file's first downloading tick, so a partfile that starts sharing
-		// only later still has a shared `priority`: by then the tag is suppressed.
+		// Upload priority also rides on the partfile tag (the base CEC_SharedFile_Tag ctor adds
+		// EC_TAG_KNOWNFILE_PRIO). Capture it here, from the file's first downloading tick, so a
+		// partfile that starts sharing only later still has a shared `priority`: by then the tag
+		// is suppressed.
 		std::uint8_t up_raw = 0;
 		if (pf->AssignIfExist(EC_TAG_KNOWNFILE_PRIO, up_raw)) {
 			bool up_auto = false;
@@ -571,10 +565,10 @@ void MergePartFileTag(const CEC_PartFile_Tag *pf, FileSnapshot &f, bool is_new)
 		if (pf->AssignIfExist(EC_TAG_PARTFILE_GAINED_COMPRESSION, v))
 			f.download.gained_by_compression_bytes = v;
 	}
-	// Per-source comments/ratings. The EC container packs four children per
-	// source, evaluated by index: username, filename, rating (int8; -1 =
-	// unrated), comment. Rebuild whenever the container is present -- it is
-	// CValueMap-suppressed when unchanged, so absent keeps the prior list.
+	// Per-source comments/ratings. The EC container packs four children per source, evaluated
+	// by index: username, filename, rating (int8; -1 = unrated), comment. Rebuild whenever the
+	// container is present -- it is CValueMap-suppressed when unchanged, so absent keeps the
+	// prior list.
 	if (const CECTag *cont = pf->GetTagByName(EC_TAG_PARTFILE_COMMENTS)) {
 		std::vector<const CECTag *> kids;
 		for (const CECTag &kid : *cont)
@@ -594,10 +588,10 @@ void MergePartFileTag(const CEC_PartFile_Tag *pf, FileSnapshot &f, bool is_new)
 	if (const CECTag *ks = pf->GetTagByName(EC_TAG_PARTFILE_KAD_COMMENT_SEARCHING)) {
 		f.download.kad_comment_searching = ks->GetInt() != 0;
 	}
-	// Source-reported filenames. amuled delta-encodes the container keyed by a
-	// stable per-name id: a child carrying a name subtag is a new/updated entry,
-	// a child with COUNTS==0 and no name is a removal, otherwise a count update.
-	// The container is only sent when something changed.
+	// Source-reported filenames. amuled delta-encodes the container keyed by a stable per-name
+	// id: a child carrying a name subtag is a new/updated entry, a child with COUNTS==0 and no
+	// name is a removal, otherwise a count update. The container is only sent when something
+	// changed.
 	if (const CECTag *names = pf->GetTagByName(EC_TAG_PARTFILE_SOURCE_NAMES)) {
 		for (const CECTag &child : *names) {
 			const std::uint32_t id = static_cast<std::uint32_t>(child.GetInt());
@@ -634,15 +628,15 @@ void MergePartFileTag(const CEC_PartFile_Tag *pf, FileSnapshot &f, bool is_new)
 	}
 	// Base CKnownFile detail tags (aich_hash, upload_queue_count, part_file_name).
 	MergeKnownFileDetail(pf, f);
-	// Recompute percent unconditionally — both inputs may have moved.
+	// Recompute percent unconditionally -- both inputs may have moved.
 	f.download.percent = (f.size > 0) ? (static_cast<double>(f.download.completed_bytes) * 100.0 /
 						    static_cast<double>(f.size))
 					  : 0.0;
 }
 
 // State-code -> wire-string decoders for the four enums amule ships on
-// EC_TAG_CLIENT_*_STATE. Wire forms are snake_case names of our own, not the
-// Constants.h identifiers lowercased, and all fall back to "unknown".
+// EC_TAG_CLIENT_*_STATE. Wire forms are snake_case names of our own, not the Constants.h
+// identifiers lowercased, and all fall back to "unknown".
 
 const char *ClientUploadStateName(std::uint8_t code)
 {
@@ -728,20 +722,18 @@ const char *ClientIdentStateName(std::uint8_t code)
 
 // Decode one per-part BitVector tag into a bool vector.
 //
-// Two shapes on the wire, and the empty one is the trap: for
-// EC_TAG_CLIENT_PART_STATUS the core sends a tag with no payload when the peer
-// holds EVERY part, so an empty tag means "full", not "unknown". The caller
-// learns that through `out_all` because the true length is the file's part
-// count, which is known only where the row is rendered.
+// Two shapes on the wire, and the empty one is the trap: for EC_TAG_CLIENT_PART_STATUS the
+// core sends a tag with no payload when the peer holds EVERY part, so an empty tag means
+// "full", not "unknown". The caller learns that through `out_all` because the true length
+// is the file's part count, which is known only where the row is rendered.
 //
-// The shorthand is download-side ONLY. EC_TAG_CLIENT_UPLOAD_PART_STATUS is
-// always sent as a buffer, so a full uploader arrives as an all-ones bitmap.
-// An empty UPLOAD tag is narrow but possible -- a zero-byte file, for which
-// CKnownFile sets part count 0 -- and is dropped by the renderer's
-// `part_count == 0` guard, which is therefore load-bearing, not dead code.
+// The shorthand is download-side ONLY. EC_TAG_CLIENT_UPLOAD_PART_STATUS is always sent as
+// a buffer, so a full uploader arrives as an all-ones bitmap. An empty UPLOAD tag is narrow
+// but possible -- a zero-byte file, for which CKnownFile sets part count 0 -- and is dropped
+// by the renderer's `part_count == 0` guard, which is therefore load-bearing, not dead code.
 //
-// The buffer holds ceil(bits/8) bytes, so decoding yields a multiple of 8 and
-// the tail beyond the file's part count is padding for the renderer to trim.
+// The buffer holds ceil(bits/8) bytes, so decoding yields a multiple of 8 and the tail
+// beyond the file's part count is padding for the renderer to trim.
 void DecodePartStatusTag(const CECTag *client_tag,
 	ec_tagname_t tag_name,
 	std::vector<bool> &out_bits,
@@ -767,9 +759,9 @@ void DecodePartStatusTag(const CECTag *client_tag,
 	}
 }
 
-// Merge a `CEC_UpDownClient_Tag` into an existing ClientSnapshot. On a
-// cache-miss the caller pre-populates ecid + hashes; on a hit the AssignIfExist
-// pattern leaves cached values intact when the tag is CValueMap-suppressed.
+// Merge a `CEC_UpDownClient_Tag` into an existing ClientSnapshot. On a cache-miss the
+// caller pre-populates ecid + hashes; on a hit the AssignIfExist pattern leaves cached
+// values intact when the tag is CValueMap-suppressed.
 void MergeClientTag(const CEC_UpDownClient_Tag *c, ClientSnapshot &cs, bool is_new, const FileMap &files)
 {
 	if (const CECTag *t = c->GetTagByName(EC_TAG_CLIENT_NAME)) {
@@ -797,12 +789,11 @@ void MergeClientTag(const CEC_UpDownClient_Tag *c, ClientSnapshot &cs, bool is_n
 	if (c->AssignIfExist(EC_TAG_CLIENT_SOFTWARE, soft_code))
 		cs.software = ClientSoftwareName(soft_code);
 
-	// software_version: the daemon formats this with gettext -- an unidentified
-	// peer yields _("Unknown"), which is "Desconocido" on a Spanish daemon and
-	// would leak the daemon locale into the English-only API. So we key off the
-	// locale-independent numeric software code instead: a peer the daemon could
-	// not identify (SO_UNKNOWN, exactly the branch that sets the translated
-	// string) never has the string read at all, and is left empty -- which
+	// software_version: the daemon formats this with gettext -- an unidentified peer yields
+	// _("Unknown"), which is "Desconocido" on a Spanish daemon and would leak the daemon locale
+	// into the English-only API. So key off the locale-independent numeric software code
+	// instead: a peer the daemon could not identify (SO_UNKNOWN, exactly the branch that sets
+	// the translated string) never has the string read at all, and is left empty -- which
 	// reaches the wire as null, since software_version is free text, not an enum.
 	if (soft_code != static_cast<std::uint32_t>(SO_UNKNOWN)) {
 		if (const CECTag *t = c->GetTagByName(EC_TAG_CLIENT_SOFT_VER_STR)) {
@@ -839,9 +830,9 @@ void MergeClientTag(const CEC_UpDownClient_Tag *c, ClientSnapshot &cs, bool is_n
 		}
 	}
 	{
-		// Tag-present is the daemon's answer either way; tag-absent leaves the
-		// cached value alone. has_connected stays false only for a daemon that
-		// never sends it at all, and that reaches the wire as null.
+		// Tag-present is the daemon's answer either way; tag-absent leaves the cached value
+		// alone. has_connected stays false only for a daemon that never sends it at all, and
+		// that reaches the wire as null.
 		bool v = false;
 		if (c->AssignIfExist(EC_TAG_CLIENT_CONNECTED, v)) {
 			cs.connected = v;
@@ -854,21 +845,19 @@ void MergeClientTag(const CEC_UpDownClient_Tag *c, ClientSnapshot &cs, bool is_n
 	if (c->RemoteFilename(fn)) {
 		cs.download_file_name = std::string(fn.utf8_str());
 	}
-	// UPLOAD_FILE / REQUEST_FILE carry amuled-side ECIDs (the unified
-	// m_FileEncoder map's IDs), which is what `files` is keyed by, so resolve to
-	// MD4 hashes with a lookup per transferring peer. Empty hash if the ECID is
-	// not there -- the file may have been removed between the file walkers and
-	// this one.
+	// UPLOAD_FILE / REQUEST_FILE carry amuled-side ECIDs (the unified m_FileEncoder map's
+	// IDs), which is what `files` is keyed by, so resolve to MD4 hashes with a lookup per
+	// transferring peer. Empty hash if the ECID is not there -- the file may have been removed
+	// between the file walkers and this one.
 	//
-	// A zero ECID is the core saying "no file", not "unchanged". Reading 0 as
-	// absent left the last hash cached forever, so a peer that finished
-	// downloading kept its `role: "source"` row for as long as it stayed in
-	// clientlist.
+	// A zero ECID is the core saying "no file", not "unchanged". Reading 0 as absent left the
+	// last hash cached forever, so a peer that finished downloading kept its `role: "source"`
+	// row for as long as it stayed in clientlist.
 	//
 	// Whenever the hash moves, the matching per-part bitmap has to go with it:
-	// CUpDownClient::SetReqFile clears m_downPartStatus without repopulating it
-	// and the core then sends no PART_STATUS until the peer answers for the new
-	// file, so a bitmap kept across the change describes the OLD file.
+	// CUpDownClient::SetReqFile clears m_downPartStatus without repopulating it and the core
+	// then sends no PART_STATUS until the peer answers for the new file, so a bitmap kept
+	// across the change describes the OLD file.
 	{
 		std::uint32_t v = 0;
 		if (c->AssignIfExist(EC_TAG_CLIENT_UPLOAD_FILE, v)) {
@@ -929,9 +918,9 @@ void MergeClientTag(const CEC_UpDownClient_Tag *c, ClientSnapshot &cs, bool is_n
 			cs.upload_speed_bytes_per_second = v;
 	}
 	{
-		// EC_TAG_CLIENT_DOWN_SPEED is emitted as a double-encoded CECTag (KBps as a
-		// double). AssignIfExist with a uint will not pick it up cleanly, so
-		// extract via the typed read and convert.
+		// EC_TAG_CLIENT_DOWN_SPEED is emitted as a double-encoded CECTag (KBps as a double).
+		// AssignIfExist with a uint will not pick it up cleanly, so extract via the typed read
+		// and convert.
 		if (const CECTag *t = c->GetTagByName(EC_TAG_CLIENT_DOWN_SPEED)) {
 			const double kBps = t->GetDoubleData();
 			cs.download_speed_bytes_per_second = static_cast<std::uint32_t>(kBps * 1024.0);
@@ -960,9 +949,8 @@ void MergeClientTag(const CEC_UpDownClient_Tag *c, ClientSnapshot &cs, bool is_n
 	}
 	{
 		// Taken as delivered. The daemon already dropped the bits it does not know
-		// (CPeerCapabilities::SetFromWire), and re-masking here would put a second
-		// copy of that mask in the tree, free to drift from the one that saw the
-		// handshake.
+		// (CPeerCapabilities::SetFromWire), and re-masking here would put a second copy of that
+		// mask in the tree, free to drift from the one that saw the handshake.
 		std::uint32_t v = cs.protocol_extensions;
 		if (c->AssignIfExist(EC_TAG_CLIENT_MOD_CAPABILITIES, v))
 			cs.protocol_extensions = v;
@@ -1013,10 +1001,10 @@ void MergeClientTag(const CEC_UpDownClient_Tag *c, ClientSnapshot &cs, bool is_n
 	if (const CECTag *t = c->GetTagByName(EC_TAG_PARTFILE_NAME)) {
 		cs.upload_file_name = std::string(t->GetStringData().utf8_str());
 	}
-	// Per-part bitmaps. Both tags carry a raw BitVector buffer, bit i at
-	// buffer[i / 8] & (1 << (i & 7)) -- LSB-first within each byte, matching
-	// BitVector::s_posMask. An EMPTY tag is the core's shorthand for "has every
-	// part" on the DOWNLOAD tag only; see DecodePartStatusTag.
+	// Per-part bitmaps. Both tags carry a raw BitVector buffer, bit i at buffer[i / 8] & (1 <<
+	// (i & 7)) -- LSB-first within each byte, matching BitVector::s_posMask. An EMPTY tag is
+	// the core's shorthand for "has every part" on the DOWNLOAD tag only; see
+	// DecodePartStatusTag.
 	DecodePartStatusTag(
 		c, EC_TAG_CLIENT_PART_STATUS, cs.part_status, cs.part_status_all, cs.has_part_status);
 	DecodePartStatusTag(c,
@@ -1123,10 +1111,10 @@ void MergeSharedTag(const CEC_SharedFile_Tag *sf, FileSnapshot &f)
 		if (sf->AssignIfExist(EC_TAG_KNOWNFILE_COMPLETE_SOURCES_HIGH, v))
 			f.shared.complete_sources_high = v;
 
-		// Parts hashed so far by a Verify Local Data or an AICH hashset rebuild
-		// over this complete share. Rides every update tick, CValueMap-suppressed
-		// when unchanged, so it moves only while a hash is running. The partfile
-		// equivalent is decoded into download.hashed_part_count above.
+		// Parts hashed so far by a Verify Local Data or an AICH hashset rebuild over this
+		// complete share. Rides every update tick, CValueMap-suppressed when unchanged, so it
+		// moves only while a hash is running. The partfile equivalent is decoded into
+		// download.hashed_part_count above.
 		if (sf->AssignIfExist(EC_TAG_KNOWNFILE_HASHED_PART_COUNT, v))
 			f.shared.hashing_progress = v;
 	}
@@ -1170,10 +1158,9 @@ void MergeSharedTag(const CEC_SharedFile_Tag *sf, FileSnapshot &f)
 namespace
 {
 
-// Apply the stateful RLE decode for the gap + part-status blobs on one partfile
-// tag. Allocates `rle_state[ecid]` if absent; mutates it on each call
-// (XOR-deltas against the prior decoded buffer). HTTP handlers read the output
-// without touching the decoder state.
+// Apply the stateful RLE decode for the gap + part-status blobs on one partfile tag.
+// Allocates `rle_state[ecid]` if absent; mutates it on each call (XOR-deltas against the
+// prior decoded buffer). HTTP handlers read the output without touching the decoder state.
 void DecodeRleBlobsForPartFile(
 	const CEC_PartFile_Tag *pf, FileSnapshot &f, std::map<std::uint32_t, PartFileEncoderData> &rle_state)
 {
@@ -1192,13 +1179,13 @@ void DecodeRleBlobsForPartFile(
 	}
 }
 
-// Same stateful decode for the availability blob on one *knownfile* tag -- a
-// complete shared file, which carries EC_TAG_PARTFILE_PART_STATUS but no
-// gap/req blobs. Output backs the shared "Obtained Parts" bar.
+// Same stateful decode for the availability blob on one *knownfile* tag -- a complete
+// shared file, which carries EC_TAG_PARTFILE_PART_STATUS but no gap/req blobs. Output backs
+// the shared "Obtained Parts" bar.
 //
-// Shares `rle_state` with the partfile decoder above on purpose; see the note
-// on ApplyGetUpdateToShared in Refresher.h for why one map per ECID is the
-// correct mirror of the daemon's encoder set.
+// Shares `rle_state` with the partfile decoder above on purpose; see the note on
+// ApplyGetUpdateToShared in Refresher.h for why one map per ECID is the correct mirror of
+// the daemon's encoder set.
 void DecodeRleBlobsForSharedFile(const CEC_SharedFile_Tag *sf,
 	FileSnapshot &f,
 	std::map<std::uint32_t, PartFileEncoderData> &rle_state)
@@ -1211,11 +1198,10 @@ void DecodeRleBlobsForSharedFile(const CEC_SharedFile_Tag *sf,
 	f.shared.decoded_part_sources.assign(parts.begin(), parts.end());
 }
 
-// Clear the shared *session statistics* on a share-role-off transition while
-// preserving the upload priority. The stats are per-share-session and must not
-// survive; the upload priority is a persistent file attribute that amuled
-// CValueMap-suppresses once sent, so wiping it here would strand a partfile
-// that re-shares later with an empty `priority`.
+// Clear the shared *session statistics* on a share-role-off transition while preserving the
+// upload priority. The stats are per-share-session and must not survive; the upload
+// priority is a persistent file attribute that amuled CValueMap-suppresses once sent, so
+// wiping it here would strand a partfile that re-shares later with an empty `priority`.
 void ClearSharedRoleKeepPriority(FileSnapshot &f)
 {
 	std::string prio = std::move(f.shared.priority);
@@ -1233,11 +1219,10 @@ void ApplyGetUpdateToDownloads(
 	if (!resp)
 		return;
 
-	// Walk the response top level. Three tag-name dispatches:
-	//  * EC_TAG_PARTFILE     -> set is_downloading + merge download side
-	//  * EC_TAG_FILE_REMOVED -> clear download role; drop entry if it had no
-	//                          shared role either
-	//  * everything else     -> handled by the sibling walkers
+	// Walk the response top level. Three tag-name dispatches: EC_TAG_PARTFILE sets
+	// is_downloading and merges the download side; EC_TAG_FILE_REMOVED clears the download
+	// role, dropping the entry if it had no shared role either; everything else is handled by
+	// the sibling walkers.
 	for (CECPacket::const_iterator it = resp->begin(); it != resp->end(); ++it) {
 		const CECTag *t = &*it;
 		const ec_tagname_t name = t->GetTagName();
@@ -1288,15 +1273,14 @@ void ApplyGetUpdateToShared(
 	if (!resp)
 		return;
 
-	// amuled's "shared files" surface is the union of completed knownfiles
-	// (EC_TAG_KNOWNFILE, always shared) and partfiles with IsShared()==true
-	// (>=1 chunk complete -> EC_TAG_PARTFILE with an EC_TAG_PARTFILE_SHARED
-	// child). CEC_PartFile_Tag derives from CEC_SharedFile_Tag, so we cast and
-	// pass through MergeSharedTag.
+	// amuled's "shared files" surface is the union of completed knownfiles (EC_TAG_KNOWNFILE,
+	// always shared) and partfiles with IsShared()==true (>=1 chunk complete ->
+	// EC_TAG_PARTFILE with an EC_TAG_PARTFILE_SHARED child). CEC_PartFile_Tag derives from
+	// CEC_SharedFile_Tag, so we cast and pass through MergeSharedTag.
 	//
-	// EC_TAG_PARTFILE_SHARED is CValueMap-suppressed when unchanged:
-	// present-and-true -> set is_shared + merge; present-and-false -> clear it
-	// (the file stays in m_files if still downloading); absent -> preserve.
+	// EC_TAG_PARTFILE_SHARED is CValueMap-suppressed when unchanged: present-and-true sets
+	// is_shared and merges; present-and-false clears it (the file stays in m_files if still
+	// downloading); absent preserves.
 	for (CECPacket::const_iterator it = resp->begin(); it != resp->end(); ++it) {
 		const CECTag *t = &*it;
 		const ec_tagname_t name = t->GetTagName();
@@ -1324,10 +1308,10 @@ void ApplyGetUpdateToShared(
 			if (shared_flag) {
 				const bool is_shared = (shared_flag->GetInt() != 0);
 				if (!is_shared) {
-					// Partfile is_shared transitioned false, or arrived unshared. Reset
-					// the shared session stats; the entry stays in m_files because the
-					// downloading role may still hold it, and if it does not the
-					// downloads-walker FILE_REMOVED will drop it.
+					// Partfile is_shared transitioned false, or arrived
+					// unshared. Reset the shared session stats; the entry stays
+					// in m_files because the downloading role may still hold it,
+					// and if it does not the downloads-walker FILE_REMOVED drops it.
 					auto fit = cache.find(ecid);
 					if (fit != cache.end()) {
 						cache.SetShared(fit, false);
@@ -1358,9 +1342,9 @@ void ApplyGetUpdateToShared(
 				DecodeRleBlobsForSharedFile(sf, f, rle_state);
 			cache.emplace(ecid, std::move(f));
 		} else {
-			// Existing entry -- flip is_shared on, merge fields. If hash arrived and
-			// we do not already have one (rare: a prior partfile-walker tick had it
-			// suppressed), capture it now.
+			// Existing entry -- flip is_shared on, merge fields. If hash arrived and we do not
+			// already have one (rare: a prior partfile-walker tick had it suppressed), capture it
+			// now.
 			if (map_it->second.hash.empty()) {
 				const std::string h = TagHashLower(sf);
 				if (!h.empty())
@@ -1368,9 +1352,9 @@ void ApplyGetUpdateToShared(
 			}
 			cache.SetShared(map_it, true);
 			MergeSharedTag(sf, map_it->second);
-			// PARTFILE tags are decoded by the downloads walker, which already ran on
-			// this same response; decoding them again would apply the XOR delta twice
-			// and desync the decoder for good.
+			// PARTFILE tags are decoded by the downloads walker, which already ran on this same
+			// response; decoding them again would apply the XOR delta twice and desync the
+			// decoder for good.
 			if (name == EC_TAG_KNOWNFILE)
 				DecodeRleBlobsForSharedFile(sf, map_it->second, rle_state);
 		}
@@ -1389,11 +1373,10 @@ void ApplyGetUpdateToClients(
 	if (!container)
 		return;
 
-	// Walk the per-client children. Every alive client in theApp->clientlist
-	// surfaces here every tick -- the outer per-client tag is added
-	// unconditionally, only the children are CValueMap-suppressed. So this uses
-	// "seen this tick = keep, absent = evict": there is no FILE_REMOVED
-	// equivalent for clients.
+	// Walk the per-client children. Every alive client in theApp->clientlist surfaces here
+	// every tick -- the outer per-client tag is added unconditionally, only the children are
+	// CValueMap-suppressed. So this uses "seen this tick = keep, absent = evict": there is no
+	// FILE_REMOVED equivalent for clients.
 	std::set<std::uint32_t> seen;
 	for (CECTag::const_iterator it = container->begin(); it != container->end(); ++it) {
 		const CECTag *t = &*it;
@@ -1432,9 +1415,8 @@ namespace
 
 const char *KadBuddyStatusName(std::uint32_t status_code)
 {
-	// EC ships the `buddyState` enum (ClientList.h) value directly.
-	// Using the enum names rather than literal 0/1/2 so a future
-	// reorder of buddyState can't silently re-label the wire.
+	// EC ships the `buddyState` enum (ClientList.h) value directly. Using the enum names rather
+	// than literal 0/1/2 so a future reorder of buddyState cannot silently re-label the wire.
 	switch (static_cast<buddyState>(status_code)) {
 	case Disconnected:
 		return "no_buddy";
@@ -1452,9 +1434,9 @@ const char *KadBuddyStatusName(std::uint32_t status_code)
 bool ParseSearchProgressUnion(
 	const CECPacket *resp, std::map<std::uint32_t, std::pair<std::uint32_t, std::uint32_t>> &out)
 {
-	// Opcode gate, not a child-count gate: see the header. A reply we cannot
-	// parse must NOT reach the caller as an empty union, because the caller
-	// reads absence as expiry and would retire every tracked search at once.
+	// Opcode gate, not a child-count gate: see the header. A reply we cannot parse must NOT
+	// reach the caller as an empty union, because the caller reads absence as expiry and would
+	// retire every tracked search at once.
 	if (!resp || resp->GetOpCode() != EC_OP_SEARCH_PROGRESS) {
 		return false;
 	}
@@ -1485,28 +1467,28 @@ void ParseKadFromPacket(const CECPacket *resp, KadSnapshot &out)
 
 	out.state = KadStateString(conn);
 	if (conn) {
-		// Gated like the /status copy of this field: IsKadFirewalled() reads a
-		// connstate bit that outlives the disconnect, so an unconnected daemon
-		// reported a reachability verdict it had not measured.
+		// Gated like the /status copy of this field: IsKadFirewalled() reads a connstate bit
+		// that outlives the disconnect, so an unconnected daemon reported a reachability verdict
+		// it had not measured.
 		if (conn->IsConnectedKademlia()) {
 			out.firewalled_tcp = conn->IsKadFirewalled();
 			out.has_firewalled_tcp = true;
 		}
-		// Our own node id. amuled ships EC_TAG_KAD_ID only while Kad is running,
-		// which is the same condition KadStateString() reports as anything other
-		// than "disabled" -- so an absent sub-tag leaves the field empty rather
-		// than emitting a zero id that would read as a real (all-zero) identity.
-		// Lowercased to match every other hex identifier this API emits.
+		// Our own node id. amuled ships EC_TAG_KAD_ID only while Kad is running, which is the
+		// same condition KadStateString() reports as anything other than "disabled" -- so an
+		// absent sub-tag leaves the field empty rather than emitting a zero id that would read
+		// as a real (all-zero) identity. Lowercased to match every other hex identifier this API
+		// emits.
 		CUInt128 kadID;
 		if (conn->GetKadID(kadID)) {
 			out.node_id = std::string(kadID.ToHexString().Lower().utf8_str());
 		}
 	}
 
-	// Gated on `connected`, unlike the tags below, which amuled already gates
-	// itself. These three ship unconditionally: `users`/`files` are the last
-	// persisted estimate and survive into `connecting`, and `nodes` is our own
-	// routing-table size -- measured at 2 with Kad fully stopped.
+	// Gated on `connected`, unlike the tags below, which amuled already gates itself. These
+	// three ship unconditionally: `users`/`files` are the last persisted estimate and survive
+	// into `connecting`, and `nodes` is our own routing-table size -- measured at 2 with Kad
+	// fully stopped.
 	if (out.state == "connected") {
 		if (const CECTag *t = resp->GetTagByName(EC_TAG_STATS_KAD_USERS)) {
 			out.users = static_cast<std::uint32_t>(t->GetInt());
@@ -1569,9 +1551,9 @@ void ParseAmuleLogFromPacket(const CECPacket *resp, std::vector<std::string> &ou
 	out_new_lines.clear();
 	if (!resp)
 		return;
-	// `EC_TAG_STATS_LOGGER_MESSAGE` is a parent tag with child EC_TAG_STRING
-	// entries, one per new log line drained from the per-connection
-	// CLoggerAccess cursor. Absent when there is nothing new since our last tick.
+	// `EC_TAG_STATS_LOGGER_MESSAGE` is a parent tag with child EC_TAG_STRING entries, one per
+	// new log line drained from the per-connection CLoggerAccess cursor. Absent when there is
+	// nothing new since our last tick.
 	const CECTag *logger = resp->GetTagByName(EC_TAG_STATS_LOGGER_MESSAGE);
 	if (!logger)
 		return;
@@ -1585,11 +1567,10 @@ void ParseAmuleLogFromPacket(const CECPacket *resp, std::vector<std::string> &ou
 
 // --- /servers (rides on GET_UPDATE response) ---------------------------
 
-// SRV_PR_* constants live in Server.h. Note the values are not monotone with
-// priority (NORMAL=0, HIGH=1, LOW=2), which is why the named macros are used
-// instead of literal 0/1/2. The two directions are kept adjacent, and covered
-// by a round-trip test, because that order is what a second implementation
-// elsewhere would get wrong.
+// SRV_PR_* constants live in Server.h. The values are not monotone with priority (NORMAL=0,
+// HIGH=1, LOW=2), which is why the named macros are used instead of literal 0/1/2. The two
+// directions are kept adjacent, and covered by a round-trip test, because that order is
+// what a second implementation elsewhere would get wrong.
 const char *ServerPriorityName(std::uint32_t prio_code)
 {
 	switch (prio_code) {
@@ -1621,9 +1602,9 @@ bool ServerPriorityCode(const std::string &name, std::uint32_t &out_code)
 namespace
 {
 
-// Build (or merge into) a ServerSnapshot from one per-server tag. Identity-only
-// tags (name/description/version/IPv4) are subject to CValueMap suppression, so
-// for an existing entry the cached value is left alone when the source is empty.
+// Build (or merge into) a ServerSnapshot from one per-server tag. Identity-only tags
+// (name/description/version/IPv4) are subject to CValueMap suppression, so for an existing
+// entry the cached value is left alone when the source is empty.
 void MergeServerTag(const CEC_Server_Tag *st, ServerSnapshot &s, bool is_new)
 {
 	s.ecid = st->ID();
@@ -1650,15 +1631,12 @@ void MergeServerTag(const CEC_Server_Tag *st, ServerSnapshot &s, bool is_new)
 	if (const CECTag *t = st->GetTagByName(EC_TAG_SERVER_COUNTRY)) {
 		s.country_code = std::string(t->GetStringData().utf8_str());
 	}
-	// IP + port shipping shape varies by EC detail level:
-	//  * FULL/WEB/UPDATE (webserver, amulecmd) pack them into the OUTER tag as
-	//    IPv4 data (st->GetIPv4Data()).
-	//  * INC_UPDATE / GET_UPDATE (amulegui, amuleapi) ship them as CHILD tags
-	//    EC_TAG_SERVER_IP + EC_TAG_SERVER_PORT; the outer tag carries the ECID
-	//    instead, so GetIPv4Data() returns all-zeros and /servers[].address
-	//    silently degrades to "0.0.0.0:0".
-	// Try the child-tag shape first; fall back to GetIPv4Data() so any future
-	// use of FULL detail still works.
+	// IP + port shipping shape varies by EC detail level. FULL/WEB/UPDATE (webserver,
+	// amulecmd) pack them into the OUTER tag as IPv4 data (st->GetIPv4Data()). INC_UPDATE /
+	// GET_UPDATE (amulegui, amuleapi) ship them as CHILD tags EC_TAG_SERVER_IP +
+	// EC_TAG_SERVER_PORT; the outer tag carries the ECID instead, so GetIPv4Data() returns
+	// all-zeros and /servers[].address silently degrades to "0.0.0.0:0". Try the child-tag
+	// shape first; fall back to GetIPv4Data() so any future use of FULL detail still works.
 	{
 		std::uint32_t ip_he = 0;
 		std::uint16_t port = 0;
@@ -1683,10 +1661,10 @@ void MergeServerTag(const CEC_Server_Tag *st, ServerSnapshot &s, bool is_new)
 				s.address = buf;
 			}
 		}
-		// No FULL-detail fallback to st->GetIPv4Data() here: the refresher only
-		// ever asks for EC_DETAIL_INC_UPDATE, and reading it trips a libec
-		// Debug-build assertion on non-IPv4 outer tags -- which aborts the test
-		// process before any assertion in our own code can run.
+		// No FULL-detail fallback to st->GetIPv4Data() here: the refresher only ever asks for
+		// EC_DETAIL_INC_UPDATE, and reading it trips a libec Debug-build assertion on non-IPv4
+		// outer tags -- which aborts the test process before any assertion in our own code can
+		// run.
 	}
 	{
 		std::uint32_t v = 0;
@@ -1713,9 +1691,9 @@ void MergeServerTag(const CEC_Server_Tag *st, ServerSnapshot &s, bool is_new)
 		if (st->AssignIfExist(EC_TAG_SERVER_FILES, v))
 			s.files = v;
 	}
-	// Publishing limits and wire capability flags. Both server-tag builders emit
-	// all four, so the initial list and the incremental updates carry them
-	// alike; a suppressed unchanged tag leaves the cached value intact.
+	// Publishing limits and wire capability flags. Both server-tag builders emit all four, so
+	// the initial list and the incremental updates carry them alike; a suppressed unchanged tag
+	// leaves the cached value intact.
 	{
 		std::uint32_t v = 0;
 		if (st->AssignIfExist(EC_TAG_SERVER_FILES_SOFT, v))
@@ -1753,10 +1731,10 @@ void MergeServerTag(const CEC_Server_Tag *st, ServerSnapshot &s, bool is_new)
 
 } // namespace
 
-// Same container shape as the servers walker above: GET_UPDATE wraps every
-// friend in one EC_TAG_FRIEND container, per-field values are suppressed when
-// unchanged, and the container is always the complete list -- so "not seen this
-// tick" means the friend was removed on the daemon side.
+// Same container shape as the servers walker above: GET_UPDATE wraps every friend in one
+// EC_TAG_FRIEND container, per-field values are suppressed when unchanged, and the
+// container is always the complete list -- so "not seen this tick" means the friend was
+// removed on the daemon side.
 static void MergeFriendTag(const CEC_Friend_Tag *ft, FriendSnapshot &f, bool is_new)
 {
 	f.ecid = ft->ID();
@@ -1792,9 +1770,8 @@ static void MergeFriendTag(const CEC_Friend_Tag *ft, FriendSnapshot &f, bool is_
 			f.client_ecid = client;
 	}
 	{
-		// Echoed from the linked client by the daemon. Linked but not
-		// connected is the ordinary case for an offline friend, and is
-		// exactly what client_ecid alone could not express.
+		// Echoed from the linked client by the daemon. Linked but not connected is the ordinary
+		// case for an offline friend, and is exactly what client_ecid alone could not express.
 		bool v = false;
 		if (ft->AssignIfExist(EC_TAG_CLIENT_CONNECTED, v)) {
 			f.connected = v;
@@ -1837,9 +1814,9 @@ void ApplyChatSessions(const CECPacket *resp,
 		ChatSessionSnapshot session;
 		session.gui_id = t->GetInt();
 		present.insert(session.gui_id);
-		// GUI_ID is (ip << 16) | port, with the IP in the same byte order
-		// EC_TAG_CLIENT_USER_IP uses, so it renders with the peer formatter
-		// every other address on this surface goes through.
+		// GUI_ID is (ip << 16) | port, with the IP in the same byte order EC_TAG_CLIENT_USER_IP
+		// uses, so it renders with the peer formatter every other address on this surface goes
+		// through.
 		session.ip = FormatClientIpv4(static_cast<std::uint32_t>(session.gui_id >> 16));
 		session.port = static_cast<std::uint16_t>(session.gui_id & 0xFFFFu);
 
@@ -1901,9 +1878,9 @@ void ApplyChatSessions(const CECPacket *resp,
 		fresh.push_back(std::move(session));
 	}
 
-	// Absent from the reply == closed on the daemon. Reported so the event
-	// layer can emit chat_session_closed; the vector is replaced wholesale
-	// below, which is what actually drops it.
+	// Absent from the reply means closed on the daemon. Reported so the event layer can emit
+	// chat_session_closed; the vector is replaced wholesale below, which is what actually drops
+	// it.
 	for (const auto &kv : previous) {
 		if (!present.count(kv.first))
 			out_closed.push_back(kv.first);
@@ -1954,18 +1931,17 @@ void ApplyGetUpdateToServers(const CECPacket *resp, std::map<std::uint32_t, Serv
 {
 	if (!resp)
 		return;
-	// Find the EC_TAG_SERVER container at top level. Unlike the legacy
-	// EC_OP_GET_SERVER_LIST shape (one EC_TAG_SERVER per server at the response
-	// root), GET_UPDATE wraps them in one container of the same name.
+	// Find the EC_TAG_SERVER container at top level. Unlike the legacy EC_OP_GET_SERVER_LIST
+	// shape (one EC_TAG_SERVER per server at the response root), GET_UPDATE wraps them in one
+	// container of the same name.
 	const CECTag *container = resp->GetTagByName(EC_TAG_SERVER);
 	if (!container)
 		return;
 
-	// The container always carries the FULL current server list (no FILE_REMOVED
-	// markers for servers), but individual per-server fields are
-	// CValueMap-suppressed on unchanged values. Two consequences: servers absent
-	// from the response are gone on amuled's side, so evict by "not seen this
-	// tick"; and for servers already cached, identity tags may be absent this
+	// The container always carries the FULL current server list (no FILE_REMOVED markers for
+	// servers), but individual per-server fields are CValueMap-suppressed on unchanged values.
+	// Two consequences: servers absent from the response are gone on amuled's side, so evict by
+	// "not seen this tick"; and for servers already cached, identity tags may be absent this
 	// tick, which MergeServerTag leaves alone.
 	std::set<std::uint32_t> seen;
 	for (CECTag::const_iterator it = container->begin(); it != container->end(); ++it) {
@@ -2010,9 +1986,9 @@ const char *ECStatValueTypeName(int type)
 	case EC_VALUE_INTEGER:
 		return "integer";
 	case EC_VALUE_ISTRING:
-		// Both ISTRING and ISHORT are plain integers the desktop happens to render
-		// abbreviated ("12.5k"). That is a wx formatter choice with nothing a REST
-		// client can act on, so they collapse onto the same token.
+		// Both ISTRING and ISHORT are plain integers the desktop happens to render abbreviated
+		// ("12.5k"). That is a wx formatter choice with nothing a REST client can act on, so they
+		// collapse onto the same token.
 		return "integer";
 	case EC_VALUE_BYTES:
 		return "bytes";
@@ -2120,9 +2096,9 @@ void ParseStatsTreeFromPacket(const CECPacket *resp, StatsTreeNode &out)
 	out.children.clear();
 	if (!resp)
 		return;
-	// amuled emits a single root EC_TAG_STATTREE_NODE whose label is always an
-	// unlabeled container, so it is dropped and its direct children surface at
-	// the top level -- what amuleweb's am_load_stats_tree.php does too.
+	// amuled emits a single root EC_TAG_STATTREE_NODE whose label is always an unlabeled
+	// container, so it is dropped and its direct children surface at the top level -- what
+	// amuleweb's am_load_stats_tree.php does too.
 	const CECTag *root = resp->GetTagByName(EC_TAG_STATTREE_NODE);
 	if (!root)
 		return;
@@ -2140,10 +2116,9 @@ void ParseStatsTreeFromPacket(const CECPacket *resp, StatsTreeNode &out)
 namespace
 {
 
-// EC_TAG_STATSGRAPH_DATA is a binary blob of N interleaved uint32 channels,
-// each value pre-converted to network byte order via ENDIAN_HTONL on the
-// amuled side (Statistics.cpp), so it has to be swapped back to host order
-// before consumption.
+// EC_TAG_STATSGRAPH_DATA is a binary blob of N interleaved uint32 channels, each value
+// pre-converted to network byte order via ENDIAN_HTONL on the amuled side (Statistics.cpp),
+// so it has to be swapped back to host order before consumption.
 std::uint32_t BigEndianToHost32(const std::uint8_t *p)
 {
 	return (static_cast<std::uint32_t>(p[0]) << 24) | (static_cast<std::uint32_t>(p[1]) << 16) |
@@ -2189,8 +2164,7 @@ void ParseGraphsFromPacket(const CECPacket *resp, StatsGraphs &out)
 		return;
 
 	if (const CECTag *t = resp->GetTagByName(EC_TAG_STATSGRAPH_DATA)) {
-		// 4 interleaved channels per amuled-side layout
-		// (Statistics.cpp):
+		// 4 interleaved channels per amuled-side layout (Statistics.cpp):
 		//  ch0 = kBpsDownCur * 1024  (bytes per second)
 		//  ch1 = kBpsUpCur   * 1024  (bytes per second)
 		//  ch2 = cntConnections      (active client connections)
@@ -2208,8 +2182,8 @@ void ParseGraphsFromPacket(const CECPacket *resp, StatsGraphs &out)
 		}
 	}
 	if (const CECTag *t = resp->GetTagByName(EC_TAG_STATSGRAPH_DATA_CONN)) {
-		// 2 interleaved channels, filled by the same amuled loop and from the same
-		// records as EC_TAG_STATSGRAPH_DATA, so index i lines up across both:
+		// 2 interleaved channels, filled by the same amuled loop and from the same records as
+		// EC_TAG_STATSGRAPH_DATA, so index i lines up across both:
 		//  ch0 = cntUploads   (peers we are pushing to)
 		//  ch1 = cntDownloads (peers we are pulling from)
 		std::vector<std::vector<std::uint32_t>> channels;
@@ -2223,10 +2197,9 @@ void ParseGraphsFromPacket(const CECPacket *resp, StatsGraphs &out)
 		}
 	}
 
-	// How many records a resolution range holds. Ask for more and the daemon
-	// repeats records instead of failing, which the caller cannot detect since
-	// no timestamps are on the wire -- so this bounds every series below. Absent
-	// on daemons predating the tag.
+	// How many records a resolution range holds. Ask for more and the daemon repeats records
+	// instead of failing, which the caller cannot detect since no timestamps are on the wire --
+	// so this bounds every series below. Absent on daemons predating the tag.
 	{
 		std::uint16_t depth = 0;
 		if (resp->AssignIfExist(EC_TAG_STATSGRAPH_DEPTH, depth) && depth > 0) {
@@ -2247,9 +2220,9 @@ void ParseGraphsFromPacket(const CECPacket *resp, StatsGraphs &out)
 	resp->AssignIfExist(EC_TAG_STATSGRAPH_SESSION_KAD, out.session_kad_node_seconds);
 	resp->AssignIfExist(EC_TAG_STATSGRAPH_SESSION_TIMESPAN, out.session_duration_seconds);
 
-	// Drop anything past the daemon's per-range depth. Beyond it the walk hands
-	// back repeated records, and reconstructing a time axis over those draws
-	// them as distinct samples -- silently compressing time across the plot.
+	// Drop anything past the daemon's per-range depth. Beyond it the walk hands back repeated
+	// records, and reconstructing a time axis over those draws them as distinct samples --
+	// silently compressing time across the plot.
 	TruncateToLast(out.download_bytes_per_second, out.max_points);
 	TruncateToLast(out.upload_bytes_per_second, out.max_points);
 	TruncateToLast(out.connections, out.max_points);
@@ -2294,9 +2267,9 @@ std::string FileTypeToken(const std::string &name)
 	std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) {
 		return static_cast<char>(std::tolower(c));
 	});
-	// GetFiletypeDesc() returns UI labels, and lowercasing them left three
-	// problems in one enum: plurals where the token names ONE file's type, a
-	// hyphen where every other enum token is snake_case, and "any" for unknown.
+	// GetFiletypeDesc() returns UI labels, and lowercasing them left three problems in one
+	// enum: plurals where the token names ONE file's type, a hyphen where every other enum
+	// token is snake_case, and "any" for unknown.
 	static const std::map<std::string, std::string> kNormalised = {
 		{ "videos", "video" },
 		{ "audio", "audio" },
@@ -2313,19 +2286,17 @@ std::string FileTypeToken(const std::string &name)
 	return it != kNormalised.end() ? it->second : std::string("unknown");
 }
 
-// Merge one EC_TAG_SEARCHFILE onto a result, writing only the fields the tag
-// actually carries.
-//
-// This is the whole contract of the incremental union poll: the daemon diffs a
-// result against what it last sent us and emits only what moved, so an absent
-// field means "unchanged", never "cleared".
+// Merge one EC_TAG_SEARCHFILE onto a result, writing only the fields the tag actually
+// carries. This is the whole contract of the incremental union poll: the daemon diffs a
+// result against what it last sent us and emits only what moved, so an absent field means
+// "unchanged", never "cleared".
 void MergeSearchResultTag(const CEC_SearchFile_Tag *sf, SearchResult &r)
 {
 	r.ecid = sf->ID();
-	// Identity and the immutable descriptors. Under INC_UPDATE these travel once
-	// and are diffed away afterwards, and the accessors go through
-	// GetTagByNameSafe -- an absent tag reads as "" or 0, which would wipe the
-	// field. So each is written only when its tag is actually on this packet.
+	// Identity and the immutable descriptors. Under INC_UPDATE these travel once and are diffed
+	// away afterwards, and the accessors go through GetTagByNameSafe -- an absent tag reads as
+	// "" or 0, which would wipe the field. So each is written only when its tag is actually on
+	// this packet.
 	if (sf->GetTagByName(EC_TAG_PARTFILE_HASH)) {
 		std::string h(sf->FileHashString().utf8_str());
 		std::transform(
@@ -2362,10 +2333,10 @@ void MergeSearchResultTag(const CEC_SearchFile_Tag *sf, SearchResult &r)
 		if (sf->AssignIfExist(EC_TAG_KNOWNFILE_RATING, v))
 			r.rating = v;
 	}
-	// Download status: amuled packs the CSearchFile status in
-	// EC_TAG_PARTFILE_STATUS. `already_downloaded` is not its own field on the
-	// wire -- AlreadyHave() reads the same tag -- so both move together. Writing
-	// the absent case as status 0 would report every unchanged result as "new".
+	// Download status: amuled packs the CSearchFile status in EC_TAG_PARTFILE_STATUS.
+	// `already_downloaded` is not its own field on the wire -- AlreadyHave() reads the same tag
+	// -- so both move together. Writing the absent case as status 0 would report every
+	// unchanged result as "new".
 	{
 		std::uint32_t v = 0;
 		if (sf->AssignIfExist(EC_TAG_PARTFILE_STATUS, v)) {
@@ -2377,18 +2348,17 @@ void MergeSearchResultTag(const CEC_SearchFile_Tag *sf, SearchResult &r)
 	if (!r.name.empty()) {
 		r.type = FileTypeToken(r.name);
 	}
-	// Browse-only: the folder this file sits in inside the peer's share. The core
-	// attaches it to results filed from a shared-file listing and nothing else,
-	// so an ordinary server/Kad hit leaves it empty.
+	// Browse-only: the folder this file sits in inside the peer's share. The core attaches it
+	// to results filed from a shared-file listing and nothing else, so an ordinary server/Kad
+	// hit leaves it empty.
 	if (const CECTag *x = sf->GetTagByName(EC_TAG_SEARCHFILE_DIRECTORY)) {
 		r.directory = std::string(x->GetStringData().utf8_str());
 	}
-	// Media metadata, present when the hit carried FT_MEDIA_* tags. On a locally
-	// known file those are our own probe's values; on a remote hit they are
-	// whatever the responding server advertised, which is not validated anywhere
-	// and can contradict the file (a .pdf with a runtime and an xvid codec is a
-	// real observed result). Passed through as sent -- the API documents the
-	// search-result `media` as unverified.
+	// Media metadata, present when the hit carried FT_MEDIA_* tags. On a locally known file
+	// those are our own probe's values; on a remote hit they are whatever the responding server
+	// advertised, which is not validated anywhere and can contradict the file (a .pdf with a
+	// runtime and an xvid codec is a real observed result). Passed through as sent -- the API
+	// documents the search-result `media` as unverified.
 	{
 		std::uint32_t v = 0;
 		if (sf->AssignIfExist(EC_TAG_KNOWNFILE_MEDIA_LENGTH, v)) {
@@ -2410,22 +2380,20 @@ void MergeSearchResultTag(const CEC_SearchFile_Tag *sf, SearchResult &r)
 	if (const CECTag *x = sf->GetTagByName(EC_TAG_KNOWNFILE_MEDIA_TITLE)) {
 		r.media.title = std::string(x->GetStringData().utf8_str());
 	}
-	// Derived from the fields, exactly as MergeKnownFileDetail does for a shared
-	// file. Both paths share AddMediaTagsPresent on the daemon side, so either
-	// can be sent a zero / empty "this field is gone" tag -- latching on any tag
-	// being present would mark a result as having media with every field blank.
+	// Derived from the fields, exactly as MergeKnownFileDetail does for a shared file. Both
+	// paths share AddMediaTagsPresent on the daemon side, so either can be sent a zero / empty
+	// "this field is gone" tag -- latching on any tag being present would mark a result as
+	// having media with every field blank.
 	r.has_media = r.media.duration_seconds != 0 || r.media.bitrate_kilobits_per_second != 0 ||
 		      !r.media.codec.empty() || !r.media.artist.empty() || !r.media.album.empty() ||
 		      !r.media.title.empty();
-	// On-demand Kad community ratings/comments. Same 4-children-per-entry
-	// positional container the download side uses (username, filename, rating,
-	// comment).
+	// On-demand Kad community ratings/comments. Same 4-children-per-entry positional container
+	// the download side uses (username, filename, rating, comment).
 	//
-	// This container is the one field where absence is a value, not silence: it
-	// is built only when there are notes and is added without the valuemap, so
-	// it is never diffed away. An absent one means "no notes", and a present one
-	// replaces the set rather than appending. The searching flag beside it goes
-	// through the valuemap like everything else.
+	// This container is the one field where absence is a value, not silence: it is built only
+	// when there are notes and is added without the valuemap, so it is never diffed away. An
+	// absent one means "no notes", and a present one replaces the set rather than appending.
+	// The searching flag beside it goes through the valuemap like everything else.
 	r.comments.clear();
 	if (const CECTag *cont = sf->GetTagByName(EC_TAG_PARTFILE_COMMENTS)) {
 		std::vector<const CECTag *> kids;
@@ -2448,11 +2416,10 @@ void MergeSearchResultTag(const CEC_SearchFile_Tag *sf, SearchResult &r)
 	}
 }
 
-// Rebuild the folded view (`results`) from the flat merge target (`raw`).
-//
-// Kept as a pass over `raw` rather than merged into directly: a grouped child
-// is addressable by its own ECID on the wire and gets diffed tags of its own,
-// so it has to stay in `raw`, while every reader wants it nested in its parent.
+// Rebuild the folded view (`results`) from the flat merge target (`raw`). Kept as a pass
+// over `raw` rather than merged into directly: a grouped child is addressable by its own
+// ECID on the wire and gets diffed tags of its own, so it has to stay in `raw`, while every
+// reader wants it nested in its parent.
 void RebuildFoldedResults(
 	const std::map<std::uint32_t, SearchResult> &raw, std::map<std::uint32_t, SearchResult> &out)
 {
@@ -2462,10 +2429,9 @@ void RebuildFoldedResults(
 		if (!kv.second.has_parent)
 			out.emplace(kv.first, kv.second);
 	}
-	// Then fold each child into its parent's children[], so the API serves one row
-	// per hash+size with the alternative filenames nested. A child whose parent
-	// is not in the set -- which should not happen -- is promoted to a top-level
-	// row instead, so nothing is silently lost.
+	// Then fold each child into its parent's children[], so the API serves one row per hash+size
+	// with the alternative filenames nested. A child whose parent is not in the set -- which
+	// should not happen -- is promoted to a top-level row instead, so nothing is silently lost.
 	for (const auto &kv : raw) {
 		const SearchResult &child = kv.second;
 		if (!child.has_parent)
@@ -2488,16 +2454,16 @@ void RebuildFoldedResults(
 
 // Apply one incremental multi-search union reply across every search slot.
 //
-// The reply is not per-search: it carries every result of every search the
-// daemon holds, and it carries them incrementally. Two consequences.
+// The reply is not per-search: it carries every result of every search the daemon holds,
+// and it carries them incrementally. Two consequences.
 //
-// First, EC_TAG_SEARCH_ID travels only the first time the daemon tells us
-// about a result -- after that the tag is diffed away, because a result never
-// changes owner. So a tag without one is attributed through `owner`.
+// First, EC_TAG_SEARCH_ID travels only the first time the daemon tells us about a result --
+// after that the tag is diffed away, because a result never changes owner. So a tag without
+// one is attributed through `owner`.
 //
-// Second, absence no longer means deletion: removal is explicit, as one
-// EC_TAG_FILE_REMOVED per gone ECID. Sweeping "anything missing is gone" here
-// would delete the whole result set on the first quiet poll.
+// Second, absence no longer means deletion: removal is explicit, as one EC_TAG_FILE_REMOVED
+// per gone ECID. Sweeping "anything missing is gone" here would delete the whole result set
+// on the first quiet poll.
 void ApplySearchUnion(const CECPacket *resp,
 	std::map<std::uint32_t, SearchSlot> &slots,
 	std::map<std::uint32_t, std::uint32_t> &owner,
@@ -2523,10 +2489,10 @@ void ApplySearchUnion(const CECPacket *resp,
 				continue;
 			}
 			if (sit->second.detached) {
-				// The daemon evicted this whole search and is tombstoning its results
-				// on the way out. Retirement deliberately keeps them for late reads,
-				// so the removals are ignored -- and the index entries with them,
-				// since nothing else will re-establish them.
+				// The daemon evicted this whole search and is tombstoning its results on
+				// the way out. Retirement deliberately keeps them for late reads, so the
+				// removals are ignored -- and the index entries with them, since nothing
+				// else will re-establish them.
 				continue;
 			}
 			if (sit->second.raw.erase(ecid) != 0)
@@ -2542,9 +2508,9 @@ void ApplySearchUnion(const CECPacket *resp,
 
 		// Present on a result's first appearance, diffed away afterwards.
 		//
-		// The index is written only once this tag is known to be applicable: a
-		// slot that turns out to be missing or detached takes an early exit, and
-		// an entry written ahead of those would outlive the slot it points at.
+		// The index is written only once this tag is known to be applicable: a slot that turns
+		// out to be missing or detached takes an early exit, and an entry written ahead of those
+		// would outlive the slot it points at.
 		std::uint32_t sid = 0;
 		bool sid_is_new = false;
 		if (const CECTag *x = sf->GetTagByName(EC_TAG_SEARCH_ID)) {
@@ -2559,8 +2525,8 @@ void ApplySearchUnion(const CECPacket *resp,
 			const auto oit = owner.find(ecid);
 			if (oit == owner.end()) {
 				// A diffed tag for a result we have no record of. Only reachable if our
-				// slot went away while the daemon still believed we held it, and
-				// inventing a slot would produce a search with no lifecycle state.
+				// slot went away while the daemon still believed we held it, and inventing
+				// a slot would produce a search with no lifecycle state.
 				continue;
 			}
 			sid = oit->second;
@@ -2568,12 +2534,11 @@ void ApplySearchUnion(const CECPacket *resp,
 
 		const auto sit = slots.find(sid);
 		if (sit == slots.end()) {
-			// Results for a search this session has no slot for -- one started in
-			// amulegui or the monolithic GUI, since the union responder walks every
-			// search the core holds. Dropped rather than auto-created:
-			// MarkSearchStarted / discovery own slot creation and the lifecycle
-			// state. Whoever creates the slot re-reads the search in full instead,
-			// via FetchOneSearchFull, which bypasses the differential stream.
+			// Results for a search this session has no slot for -- one started in amulegui or the
+			// monolithic GUI, since the union responder walks every search the core holds.
+			// Dropped rather than auto-created: MarkSearchStarted / discovery own slot creation
+			// and the lifecycle state. Whoever creates the slot re-reads the search in full
+			// instead, via FetchOneSearchFull, which bypasses the differential stream.
 			owner.erase(ecid);
 			continue;
 		}
@@ -2587,10 +2552,10 @@ void ApplySearchUnion(const CECPacket *resp,
 		auto &slot_results = sit->second.raw;
 		const auto existing = slot_results.find(ecid);
 		if (existing == slot_results.end()) {
-			// First sight of this result. Seed the fields whose "absent" reading
-			// differs between a fresh row and a diff: status has no sensible empty
-			// value, and merging onto a default-constructed SearchResult would leave
-			// it "", which is not a state any consumer knows.
+			// First sight of this result. Seed the fields whose "absent" reading differs between
+			// a fresh row and a diff: status has no sensible empty value, and merging onto a
+			// default-constructed SearchResult would leave it "", which is not a state any
+			// consumer knows.
 			SearchResult fresh;
 			fresh.ecid = ecid;
 			fresh.status = SearchStatusName(0);
@@ -2634,20 +2599,19 @@ void ApplySearchFullReply(const CECPacket *resp,
 	// nothing -- exactly the case where the stale fold has to be cleared.
 	if (replace) {
 		RebuildFoldedResults(sit->second.raw, sit->second.results);
-		// Only a replace answers the question the flag asks. A merge re-reads every
-		// row the daemon still has, but it cannot remove one it has dropped -- the
-		// tombstones went out in the union reply that was lost. Clearing the flag
-		// here would leave those rows in place for the life of the slot.
+		// Only a replace answers the question the flag asks. A merge re-reads every row the
+		// daemon still has, but it cannot remove one it has dropped -- the tombstones went out in
+		// the union reply that was lost. Clearing the flag here would leave those rows in place
+		// for the life of the slot.
 		sit->second.needs_resync = false;
 	}
 }
 
 // --- Search-progress, daemon-supplied lifecycle path -------------------
 //
-// Reads EC_TAG_SEARCH_LIFECYCLE_STATE from the EC_OP_SEARCH_PROGRESS response.
-// No sentinel decode, no `saw_in_progress` tracking, no defensive timeout: the
-// daemon's flag is the source of truth, and amuleapi pins a version that
-// carries the tag.
+// Reads EC_TAG_SEARCH_LIFECYCLE_STATE from the EC_OP_SEARCH_PROGRESS response. No sentinel
+// decode, no `saw_in_progress` tracking, no defensive timeout: the daemon's flag is the
+// source of truth, and amuleapi pins a version that carries the tag.
 SearchProgressSnapshot AdvanceSearchProgress(
 	const SearchProgressSnapshot &prev, std::uint32_t lifecycle_state, std::uint32_t pct_now)
 {
@@ -2663,7 +2627,7 @@ SearchProgressSnapshot AdvanceSearchProgress(
 		// = real server-queue percent; Kad = cosmetic time-ramp; local = instant).
 		next.percent = (pct_now > 100) ? 100 : pct_now;
 	} else {
-		// SEARCH_LIFECYCLE_IDLE — refresher shouldn't be calling us
+		// SEARCH_LIFECYCLE_IDLE -- refresher shouldn't be calling us
 		// in this state (active was true on entry), but stay defensive.
 		next.complete = false;
 		next.active = false;
@@ -2712,8 +2676,8 @@ void ParseGeneralPrefs(const CECTag *gen, PreferencesSnapshot &out)
 		out.version_check_enabled = (t->GetInt() != 0);
 	}
 	// Capability: 3.1+ daemons always send this bool (true when built with
-	// ENABLE_VERSION_CHECK, false when compiled out). Absent means a pre-3.1
-	// daemon that can't relay a result over EC anyway, so it stays false.
+	// ENABLE_VERSION_CHECK, false when compiled out). Absent means a pre-3.1 daemon that cannot
+	// relay a result over EC anyway, so it stays false.
 	if (const CECTag *t = gen->GetTagByName(EC_TAG_GENERAL_VERSION_CHECK_AVAILABLE)) {
 		out.version_check_available = t->GetInt() != 0;
 	}
@@ -2806,14 +2770,13 @@ void ParseConnectionPrefs(const CECTag *conn, PreferencesSnapshot &out)
 
 // --- Extended EC-carried preference categories ------
 //
-// One walk over the declarative field table in PrefsSchema.cpp replaces the
-// twelve hand-written per-category parsers this used to be.
+// One walk over the declarative field table in PrefsSchema.cpp replaces the twelve
+// hand-written per-category parsers this used to be.
 //
-// Boolean encoding follows the core serializer (ECSpecialMuleTags.cpp): most
-// bools are emitted as a bare CECEmptyTag only when true, so presence == true
-// and absence must actively write `false`; a few are emitted as a value tag
-// every time, and those leave the member at its default when the tag is
-// missing. That difference is the PrefEnc column.
+// Boolean encoding follows the core serializer (ECSpecialMuleTags.cpp): most bools are
+// emitted as a bare CECEmptyTag only when true, so presence == true and absence must
+// actively write `false`; a few are emitted as a value tag every time, and those leave the
+// member at its default when the tag is missing. That difference is the PrefEnc column.
 
 void ApplyPrefFieldFromTag(const PrefField &f, const CECTag *group, PreferencesSnapshot &out)
 {
@@ -2843,9 +2806,9 @@ void ApplyPrefFieldFromTag(const PrefField &f, const CECTag *group, PreferencesS
 		*static_cast<std::uint16_t *>(f.member(out)) = static_cast<std::uint16_t>(t->GetInt());
 		break;
 	case PrefType::Uint32: {
-		// ec_scale != 0 means EC and the API use different units. Division is exact
-		// for the three rows that use it -- the core stores whole minutes and
-		// multiplies on the way out -- so nothing is lost here.
+		// ec_scale != 0 means EC and the API use different units. Division is exact for the three
+		// rows that use it -- the core stores whole minutes and multiplies on the way out -- so
+		// nothing is lost here.
 		const std::uint64_t raw = static_cast<std::uint64_t>(t->GetInt());
 		*static_cast<std::uint32_t *>(f.member(out)) =
 			static_cast<std::uint32_t>(f.ec_scale ? raw / f.ec_scale : raw);
@@ -2868,10 +2831,10 @@ void ApplyPrefFieldFromTag(const PrefField &f, const CECTag *group, PreferencesS
 		break;
 	}
 	case PrefType::Enum: {
-		// The wire carries the index into the row's name table. An out-of-range
-		// value leaves the default rather than inventing a member the daemon never
-		// named. GetInt() is unsigned, so the index stays unsigned: a signed copy
-		// would narrow, and the >= 0 half of the range check would be dead.
+		// The wire carries the index into the row's name table. An out-of-range value leaves the
+		// default rather than inventing a member the daemon never named. GetInt() is unsigned, so
+		// the index stays unsigned: a signed copy would narrow, and the >= 0 half of the range
+		// check would be dead.
 		const std::uint64_t idx = t->GetInt();
 		std::uint64_t n = 0;
 		while (f.enum_names[n] != nullptr)
@@ -2901,9 +2864,9 @@ void ParsePreferencesFromPacket(
 			ApplyPrefFieldFromTag(f, group, out_prefs);
 	}
 
-	// Capability flag that is not a /preferences field: it is reported by
-	// /version, so it has no schema row. Absent means a pre-3.1 daemon that
-	// cannot relay a result over EC anyway, so it stays false.
+	// Capability flag that is not a /preferences field: it is reported by /version, so it has
+	// no schema row. Absent means a pre-3.1 daemon that cannot relay a result over EC anyway,
+	// so it stays false.
 	if (const CECTag *gen = resp->GetTagByName(EC_TAG_PREFS_GENERAL)) {
 		if (const CECTag *t = gen->GetTagByName(EC_TAG_GENERAL_VERSION_CHECK_AVAILABLE))
 			out_prefs.version_check_available = (t->GetInt() != 0);
@@ -2921,8 +2884,8 @@ void ParsePreferencesFromPacket(
 	}
 }
 
-// RefresherTick + TwoPhaseRefresh live in RefresherTick.cpp so that
-// this TU stays App-free and the unit tests can link the Apply*
-// functions without pulling in wxApp / ExternalConnector.
+// RefresherTick + TwoPhaseRefresh live in RefresherTick.cpp so this TU stays App-free and
+// the unit tests can link the Apply* functions without pulling in wxApp /
+// ExternalConnector.
 
 } // namespace webapi

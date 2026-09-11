@@ -22,10 +22,9 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-/* Functions for logging EC packets in debug builds
+/* Functions for logging EC packets in debug builds.
  *
- * The following functions are not implemented in the library, they need
- * to be implemented in EC using applications.
+ * These are not implemented in the library; EC-using applications implement them.
  */
 
 #ifndef EC_ECLOG_H
@@ -34,12 +33,12 @@
 #ifdef __DEBUG__
 
 /**
- * Check whether EC packet logging is enabled
+ * Check whether EC packet logging is enabled.
  */
 bool ECLogIsEnabled();
 
 /**
- * Actually log a line of text
+ * Actually log a line of text.
  */
 void DoECLogLine(const wxString &line);
 

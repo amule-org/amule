@@ -100,10 +100,9 @@ CTag::CTag(const CFileDataIO &data, bool bOptUTF8)
 			}
 		}
 
-		// NOTE: It's very important that we read the *entire* packet data,
-		// even if we do not use each tag. Otherwise we will get in trouble
-		// when the packets are returned in a list - like the search results
-		// from a server. If we cannot do this, then we throw an exception.
+		// It is very important to read the *entire* packet data, even for tags we do not
+		// use. Otherwise we get into trouble when packets are returned in a list, like
+		// search results from a server. If we cannot, we throw an exception.
 		switch (m_uType) {
 		case TAGTYPE_STRING:
 			m_pstrVal = new wxString(data.ReadString(bOptUTF8));
@@ -201,16 +200,14 @@ CTag::~CTag()
 CTag &CTag::operator=(const CTag &rhs)
 {
 	if (&rhs != this) {
-		// Release whatever THIS currently owns, keyed on its *current*
-		// type — the same dispatch the destructor uses. The union means
-		// the owned pointer only exists for string / hash / blob / bsob
-		// tags; for an int/float tag that union slot holds a scalar, not
-		// a pointer. Freeing based on the RHS type (as this used to) frees
-		// a garbage "pointer" whenever the two tags' types differ — e.g.
-		// assigning a string tag onto a slot that currently holds an int,
-		// which is exactly what std::vector<CTag>::erase does when it
-		// shifts elements. That corrupts the heap (observed as a double
-		// free in a wxString destructor).
+		// Release whatever THIS currently owns, keyed on its *current* type -- the same
+		// dispatch the destructor uses. The union means the owned pointer only exists for
+		// string / hash / blob / bsob tags; for an int/float tag that slot holds a scalar,
+		// not a pointer. Freeing based on the RHS type, as this used to, frees a garbage
+		// "pointer" whenever the two tags' types differ -- assigning a string tag onto a
+		// slot currently holding an int, which is exactly what std::vector<CTag>::erase
+		// does when it shifts elements. That corrupts the heap, observed as a double free
+		// in a wxString destructor.
 		if (IsStr()) {
 			delete m_pstrVal;
 		} else if (IsHash()) {

@@ -36,19 +36,17 @@ class wxDC;
 /**
  * Everything the User Name cell draws, as values.
  *
- * A snapshot rather than a client pointer because the two lists that draw this
- * cell reach their peers differently: the per-file lists hold an owning
- * CClientRef and could be asked at paint time, while the global clients list
- * copies each peer's values once per sweep precisely so that nothing it paints
- * can be freed underneath it. A value type is the only input both can produce,
- * and it keeps the drawing free of any lifetime question.
+ * A snapshot rather than a client pointer because the two lists drawing this cell reach their peers
+ * differently: the per-file lists hold an owning CClientRef and could be asked at paint time, while
+ * the global clients list copies each peer's values once per sweep precisely so nothing it paints
+ * can be freed underneath it. A value type is the only input both can produce, and it keeps the
+ * drawing free of any lifetime question.
  */
 struct ClientNameCell
 {
 	wxString name;
-	//! Two-letter code, or empty to draw no flag. Already through
-	//! GetDisplayCountryCode(), so an empty string means "draw nothing"
-	//! whether that is because the feature is off or the country is unknown.
+	//! Two-letter code, or empty to draw no flag. Already through GetDisplayCountryCode(), so
+	//! empty means "draw nothing" whether the feature is off or the country is unknown.
 	wxString countryCode;
 	uint8 downloadState = 0; //!< DS_*
 	uint8 clientSoft = 0;    //!< SO_*
@@ -56,10 +54,8 @@ struct ClientNameCell
 	//! An A4AF source is drawn grey whatever its download state says.
 	bool a4af = false;
 	/**
-	 * Draw the download-state badge.
-	 *
-	 * False for a row describing a peer we are not talking to -- the history
-	 * list -- where there is no live state and a badge could only invent one.
+	 * Draw the download-state badge. False for a row describing a peer we are not talking to --
+	 * the history list -- where there is no live state and a badge could only invent one.
 	 */
 	bool showState = true;
 	//! False when the software is simply not recorded, so it draws as unknown
@@ -74,13 +70,12 @@ struct ClientNameCell
 	bool highCredits = false;
 
 	/**
-	 * Whole-struct comparison, so a caller deciding "has this cell changed"
-	 * cannot test a subset by accident.
+	 * Whole-struct comparison, so a caller deciding "has this cell changed" cannot test a
+	 * subset by accident.
 	 *
-	 * The badges move independently of the name: secure identification
-	 * completes after the hello, the credit ratio crosses 1 mid-session,
-	 * obfuscation and bad-guy state can change. A test written against name
-	 * and address alone freezes all of them.
+	 * The badges move independently of the name: secure identification completes after the
+	 * hello, the credit ratio crosses 1 mid-session, obfuscation and bad-guy state can change.
+	 * A test written against name and address alone freezes all of them.
 	 */
 	bool operator==(const ClientNameCell &other) const
 	{
@@ -101,10 +96,9 @@ ClientNameCell MakeClientNameCell(const CUpDownClient *client, bool a4af = false
 /**
  * Draw the badge cluster, the optional country flag and the name.
  *
- * Several badges deliberately stack at the same x: the download-state smiley
- * advances, then software/credentials/encryption all overprint one slot, which
- * is what the pre-wxDataView DrawClientItem() did and what the column widths
- * are still sized for.
+ * Several badges deliberately stack at the same x: the download-state smiley advances, then
+ * software/credentials/encryption all overprint one slot, which is what the pre-wxDataView
+ * DrawClientItem() did and what the column widths are still sized for.
  */
 void DrawClientNameCell(const ClientNameCell &cell, const wxRect &rect, wxDC *dc);
 

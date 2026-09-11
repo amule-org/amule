@@ -64,16 +64,16 @@ CEC_Category_Tag::CEC_Category_Tag(
 
 bool CEC_Category_Tag::Apply()
 {
-	// The index arrives from an EC client and the protocol does not constrain it:
-	// the tag admits any uint8 while only GetCatCount() categories exist. Refused
-	// here rather than only inside UpdateCategory, because BOTH calls below index
-	// with it -- the failure branch reads GetCatPath(), guarded by a wxASSERT that
-	// vanishes in a release build. Unchecked, UpdateCategory indexed m_CatList out
-	// of range and took the daemon down with SIGABRT (#1227).
+	// The index arrives from an EC client and the protocol does not constrain it: the tag
+	// admits any uint8 while only GetCatCount() categories exist. Refused here rather than only
+	// inside UpdateCategory, because BOTH calls below index with it -- the failure branch reads
+	// GetCatPath(), guarded by a wxASSERT that vanishes in a release build. Unchecked,
+	// UpdateCategory indexed m_CatList out of range and took the daemon down with SIGABRT
+	// (#1227).
 	if (GetInt() >= theApp->glob_prefs->GetCatCount()) {
-		// The EC_OP_UPDATE_CATEGORY handler turns false into EC_OP_FAILED
-		// carrying the category and the client's own path, which is the
-		// rejection this case wants -- no new protocol surface needed.
+		// The EC_OP_UPDATE_CATEGORY handler turns false into EC_OP_FAILED carrying the
+		// category and the client's own path, which is the rejection this case wants -- no
+		// new protocol surface needed.
 		return false;
 	}
 	bool ret = theApp->glob_prefs->UpdateCategory(
@@ -119,20 +119,20 @@ CEC_Prefs_Packet::CEC_Prefs_Packet(
 		user_prefs.AddTag(CECTag(EC_TAG_USER_HASH, thePrefs::GetUserHash()));
 		user_prefs.AddTag(CECTag(EC_TAG_USER_HOST, thePrefs::GetYourHostname()));
 		user_prefs.AddTag(CECTag(EC_TAG_GENERAL_CHECK_NEW_VERSION, thePrefs::GetCheckNewVersion()));
-		// Capability signal: whether this build can perform version checks. Emitted
-		// as a bool by every 3.1+ daemon, so a client can tell "compiled out"
-		// (false) from an old daemon predating the tag (absent). Distinct from the
-		// CHECK_NEW_VERSION PREFERENCE above: update checking is active only when
-		// available AND the pref is set.
+		// Capability signal: whether this build can perform version checks. Emitted as a
+		// bool by every 3.1+ daemon, so a client can tell "compiled out" (false) from an
+		// old daemon predating the tag (absent). Distinct from the CHECK_NEW_VERSION
+		// PREFERENCE above: update checking is active only when available AND the pref is
+		// set.
 #ifdef ENABLE_VERSION_CHECK
 		const bool versionCheckAvailable = true;
 #else
 		const bool versionCheckAvailable = false;
 #endif
 		user_prefs.AddTag(CECTag(EC_TAG_GENERAL_VERSION_CHECK_AVAILABLE, versionCheckAvailable));
-		// Capability signal: whether this build can do UPnP port forwarding
-		// (ENABLE_UPNP). The remote GUI greys the P2P-UPnP controls when the
-		// core can't forward, instead of offering a dead toggle.
+		// Capability signal: whether this build can do UPnP port forwarding (ENABLE_UPNP).
+		// The remote GUI greys the P2P-UPnP controls when the core cannot forward, instead
+		// of offering a dead toggle.
 #ifdef ENABLE_UPNP
 		const bool upnpAvailable = true;
 #else
@@ -170,10 +170,10 @@ CEC_Prefs_Packet::CEC_Prefs_Packet(
 		}
 		connPrefs.AddTag(CECTag(EC_TAG_CONN_BIND_ADDRESS, thePrefs::GetAddress()));
 		connPrefs.AddTag(CECTag(EC_TAG_CONN_BIND_INTERFACE, thePrefs::GetNetworkInterface()));
-		// Proxy: the daemon routes P2P and its HTTP fetches through this, and the
-		// remote GUI must be able to read and set it. The password rides plainly (it
-		// is a plaintext credential, not a hash) so amulegui can show it; the
-		// amuleapi surface keeps it write-only.
+		// Proxy: the daemon routes P2P and its HTTP fetches through this, and the remote
+		// GUI must be able to read and set it. The password rides plainly (it is a
+		// plaintext credential, not a hash) so amulegui can show it; the amuleapi surface
+		// keeps it write-only.
 		const CProxyData *proxy = thePrefs::GetProxyData();
 		connPrefs.AddTag(CECTag(EC_TAG_PROXY_ENABLE, proxy->m_proxyEnable));
 		connPrefs.AddTag(CECTag(EC_TAG_PROXY_TYPE, static_cast<uint32>(proxy->m_proxyType)));
@@ -182,9 +182,9 @@ CEC_Prefs_Packet::CEC_Prefs_Packet(
 		connPrefs.AddTag(CECTag(EC_TAG_PROXY_AUTH, proxy->m_enablePassword));
 		connPrefs.AddTag(CECTag(EC_TAG_PROXY_USER, proxy->m_userName));
 		connPrefs.AddTag(CECTag(EC_TAG_PROXY_PASSWORD, proxy->m_password));
-		// UPnP: the enable toggle forwards the P2P ports above, while UPnPTCPPort is
-		// the control point's own local port, not a forwarded one. Web-server and
-		// EC-port UPnP are deliberately not carried.
+		// UPnP: the enable toggle forwards the P2P ports above, while UPnPTCPPort is the
+		// control point's own local port, not a forwarded one. Web-server and EC-port UPnP
+		// are deliberately not carried.
 		connPrefs.AddTag(CECTag(EC_TAG_CONN_UPNP_ENABLED, thePrefs::GetUPnPEnabled()));
 		connPrefs.AddTag(CECTag(EC_TAG_CONN_UPNP_TCP_PORT, thePrefs::GetUPnPTCPPort()));
 		AddTag(connPrefs);
@@ -250,10 +250,9 @@ CEC_Prefs_Packet::CEC_Prefs_Packet(
 		}
 		rc_prefs.AddTag(CECTag(EC_TAG_AMULEAPI_BIND, thePrefs::GetAmuleApiBindAddress()));
 
-		// amuleapi's credentials are stored salted and stretched in
-		// amuleapi-passwords, so unlike the webserver's there is no digest to put on
-		// the wire. Both tags therefore carry a REQUEST from a client and a STATE
-		// from the daemon:
+		// amuleapi's credentials are stored salted and stretched in amuleapi-passwords, so unlike
+		// the webserver's there is no digest to put on the wire. Both tags therefore carry a REQUEST
+		// from a client and a STATE from the daemon:
 		//
 		//   admin absent          leave the stored password alone
 		//   admin present, empty  a password is set (daemon -> client)
@@ -263,10 +262,9 @@ CEC_Prefs_Packet::CEC_Prefs_Packet(
 		//   guest present, empty  guest access on, password unchanged
 		//   guest present + hash  guest access on with this password
 		//
-		// Guest has the same container-plus-optional-child shape as
-		// EC_TAG_WEBSERVER_GUEST, so absence can mean "off". Admin has no off state
-		// on purpose: clearing it from a stray prefs push would leave a non-loopback
-		// deployment with no way back in.
+		// Guest has the same container-plus-optional-child shape as EC_TAG_WEBSERVER_GUEST, so
+		// absence can mean "off". Admin has no off state on purpose: clearing it from a stray prefs
+		// push would leave a non-loopback deployment with no way back in.
 		if (!thePrefs::GetAmuleApiPass().IsEmpty()) {
 			CECEmptyTag adminTag(EC_TAG_AMULEAPI_PASSWD);
 			CMD4Hash passhash;
@@ -370,10 +368,10 @@ CEC_Prefs_Packet::CEC_Prefs_Packet(
 		if (thePrefs::GetAllocFullFile()) {
 			filePrefs.AddTag(CECEmptyTag(EC_TAG_FILES_ALLOC_FULL_SIZE));
 		}
-		// mmap capability negotiation: advertise support (tag presence) plus the
-		// current value. Gated on the RUNTIME capability rather than #ifdef
-		// MMAP_SUPPORTED, so a remote GUI on a platform without mmap can still relay
-		// the value to a daemon that has it.
+		// mmap capability negotiation: advertise support (tag presence) plus the current
+		// value. Gated on the RUNTIME capability rather than #ifdef MMAP_SUPPORTED, so a
+		// remote GUI on a platform without mmap can still relay the value to a daemon that
+		// has it.
 		if (thePrefs::GetMMapSupported()) {
 			filePrefs.AddTag(CECEmptyTag(EC_TAG_FILES_MMAP_SUPPORTED));
 			if (thePrefs::GetMMapEnabled()) {
@@ -492,9 +490,9 @@ CEC_Prefs_Packet::CEC_Prefs_Packet(
 
 	if (selection & EC_PREFS_IP2COUNTRY) {
 		CECEmptyTag ip2cPrefs(EC_TAG_PREFS_IP2COUNTRY);
-		// SUPPORTED tells a remote GUI whether THIS build has GeoIP compiled in at
-		// all; amulegui gates its whole GeoIP config panel on it. The settings below
-		// are plain prefs and always sent so the panel can populate.
+		// SUPPORTED tells a remote GUI whether THIS build has GeoIP compiled in at all;
+		// amulegui gates its whole GeoIP config panel on it. The settings below are plain
+		// prefs and always sent so the panel can populate.
 #ifdef GEOIP_GUI
 		ip2cPrefs.AddTag(CECTag(EC_TAG_IP2COUNTRY_SUPPORTED, true));
 #else
@@ -506,14 +504,14 @@ CEC_Prefs_Packet::CEC_Prefs_Packet(
 		ip2cPrefs.AddTag(
 			CECTag(EC_TAG_IP2COUNTRY_MAXMIND_LICENSE, thePrefs::GetGeoIPMaxMindLicense()));
 		ip2cPrefs.AddTag(CECTag(EC_TAG_IP2COUNTRY_AUTO_UPDATE, thePrefs::IsGeoIPAutoUpdate()));
-		// Read-only live status, filled only where a resolver exists, so a remote GUI
-		// can render the status line and disable buttons while a refresh runs. NULL
-		// on amulegui, which only receives these.
+		// Read-only live status, filled only where a resolver exists, so a remote GUI can
+		// render the status line and disable buttons while a refresh runs. NULL on
+		// amulegui, which only receives these.
 #ifndef CLIENT_GUI
-		// Resolver-owning builds only: amulegui has no CIP2Country instance and does
-		// not link the resolver, so referencing its out-of-line methods here would
-		// break its link. The live status flows the other way there -- it RECEIVES
-		// these tags in Apply().
+		// Resolver-owning builds only: amulegui has no CIP2Country instance and does not
+		// link the resolver, so referencing its out-of-line methods here would break its
+		// link. The live status flows the other way there -- it RECEIVES these tags in
+		// Apply().
 		if (CIP2Country *ip2c = theApp->GetIP2Country()) {
 			ip2cPrefs.AddTag(CECTag(EC_TAG_IP2COUNTRY_DB_PATH, ip2c->GetDatabasePath()));
 			ip2cPrefs.AddTag(CECTag(EC_TAG_IP2COUNTRY_DB_LOADED, ip2c->IsEnabled()));
@@ -524,8 +522,8 @@ CEC_Prefs_Packet::CEC_Prefs_Packet(
 		}
 #endif
 		// Transient "Update now" trigger set by amulegui's prefs panel, carried on the
-		// outgoing packet so the daemon's Apply() kicks off a manual refresh. Only
-		// ever set on amulegui, so the daemon's own outbound prefs never emit it.
+		// outgoing packet so the daemon's Apply() kicks off a manual refresh. Only ever set
+		// on amulegui, so the daemon's own outbound prefs never emit it.
 		if (thePrefs::IsGeoIPUpdateRequested()) {
 			ip2cPrefs.AddTag(CECTag(EC_TAG_IP2COUNTRY_UPDATE_NOW, true));
 		}
@@ -534,13 +532,12 @@ CEC_Prefs_Packet::CEC_Prefs_Packet(
 }
 
 /**
- * Applies a boolean value from the set_preferences request
+ * Applies a boolean value from the set_preferences request.
  *
- * @param use_tag	If true, an unset variable means "leave unchanged". If false, an unset variable means
- * false.
- * @param thisTab	The TAG that contains the TAG with a boolean value
- * @param applyFunc	The function to use for applying the value
- * @param tagName	The name of the TAG that holds the boolean value
+ * @param use_tag If true, an unset variable means "leave unchanged"; if false, it means false.
+ * @param thisTab The TAG containing the TAG with a boolean value.
+ * @param applyFunc The function to apply the value with.
+ * @param tagName The name of the TAG holding the boolean value.
  */
 static void ApplyBoolean(bool use_tag, const CECTag *thisTab, void(applyFunc)(bool), int tagName)
 {
@@ -555,9 +552,8 @@ static void ApplyBoolean(bool use_tag, const CECTag *thisTab, void(applyFunc)(bo
 }
 
 /*
- * This will set all preferences except of categories, which are work as following:
- *  -> On remote gui they are loaded on startup, and then changed on-command
- *  -> Webserver doesn't supposed to change it.
+ * Sets every preference except the categories, which work as follows: the remote GUI loads them
+ * at startup and then changes them on command, and the webserver is not supposed to change them.
  */
 void CEC_Prefs_Packet::Apply() const
 {
@@ -578,10 +574,9 @@ void CEC_Prefs_Packet::Apply() const
 			thePrefs::SetCheckNewVersion(oneTag->GetInt() != 0);
 		}
 #ifdef CLIENT_GUI
-		// Capability of the connected daemon: 3.1+ daemons always send this bool. A
-		// pre-3.1 daemon omits it but still supports the NewVersionCheck preference,
-		// so absent means available (keep the checkbox) and only an explicit false
-		// hides it.
+		// Capability of the connected daemon: 3.1+ daemons always send this bool. A pre-3.1
+		// daemon omits it but still supports the NewVersionCheck preference, so absent
+		// means available (keep the checkbox) and only an explicit false hides it.
 		if (const CECTag *vc = thisTab->GetTagByName(EC_TAG_GENERAL_VERSION_CHECK_AVAILABLE)) {
 			thePrefs::SetVersionCheckAvailable(vc->GetInt() != 0);
 		} else {
@@ -597,9 +592,7 @@ void CEC_Prefs_Packet::Apply() const
 #endif
 	}
 
-	//
-	// webserver doesn't transmit all boolean values
-	//
+	// the webserver does not transmit all boolean values
 	bool use_tag = (GetDetailLevel() == EC_DETAIL_FULL);
 
 	if ((thisTab = GetTagByName(EC_TAG_PREFS_CONNECTIONS)) != NULL) {
@@ -641,9 +634,9 @@ void CEC_Prefs_Packet::Apply() const
 		if ((oneTag = thisTab->GetTagByName(EC_TAG_CONN_BIND_INTERFACE)) != nullptr) {
 			thePrefs::SetNetworkInterface(oneTag->GetStringData());
 		}
-		// Proxy is a compound value; start from the current config and overwrite
-		// only the fields the packet actually carried (a partial PATCH leaves the
-		// rest -- notably the write-only password -- untouched).
+		// Proxy is a compound value; start from the current config and overwrite only the
+		// fields the packet actually carried, so a partial PATCH leaves the rest -- notably
+		// the write-only password -- untouched.
 		CProxyData proxy = *thePrefs::GetProxyData();
 		bool proxySet = false;
 		if ((oneTag = thisTab->GetTagByName(EC_TAG_PROXY_ENABLE)) != nullptr) {
@@ -713,15 +706,15 @@ void CEC_Prefs_Packet::Apply() const
 		if ((oneTag = thisTab->GetTagByName(EC_TAG_AMULEAPI_BIND)) != nullptr) {
 			thePrefs::SetAmuleApiBindAddress(oneTag->GetStringData());
 		}
-		// See the emit side for the encoding. The pending-password prefs start empty
-		// and are cleared again by AmuleApiCredentials::ApplyPrefs, so "tag present
-		// but carrying no hash" correctly leaves the stored password untouched.
+		// See the emit side for the encoding. The pending-password prefs start empty and
+		// are cleared again by AmuleApiCredentials::ApplyPrefs, so "tag present but
+		// carrying no hash" correctly leaves the stored password untouched.
 		//
 		// The guest toggle goes through ApplyBoolean for the same reason
 		// EC_TAG_WEBSERVER_GUEST does: this method serves two callers with opposite
-		// conventions. amulegui sends the whole group at EC_DETAIL_UPDATE, where an
-		// absent tag means "off"; amuleapi's PATCH /preferences sends only the named
-		// fields at EC_DETAIL_FULL, where absent means "leave alone".
+		// conventions. amulegui sends the whole group at EC_DETAIL_UPDATE, where an absent
+		// tag means "off"; amuleapi's PATCH /preferences sends only the named fields at
+		// EC_DETAIL_FULL, where absent means "leave alone".
 		thePrefs::SetAmuleApiPass(wxEmptyString);
 		if ((oneTag = thisTab->GetTagByName(EC_TAG_AMULEAPI_PASSWD)) != nullptr) {
 			thePrefs::SetAmuleApiAdminIsSet(true);
@@ -872,9 +865,8 @@ void CEC_Prefs_Packet::Apply() const
 			thePrefs::RecompileShareExcludeFilter();
 		}
 
-		// Apply the new auto-rescan state immediately on amuled so a
-		// remote toggle from amulegui doesn't need a daemon restart to
-		// take effect.
+		// Apply the new auto-rescan state immediately on amuled so a remote toggle from
+		// amulegui does not need a daemon restart to take effect.
 		if (theApp->sharedfiles) {
 			theApp->sharedfiles->EnableDirectoryWatcher(thePrefs::AutoRescanSharedDirs());
 			// Same for a changed exclusion filter: re-walk so newly excluded files
@@ -956,17 +948,16 @@ void CEC_Prefs_Packet::Apply() const
 	}
 
 	if ((thisTab = GetTagByName(EC_TAG_PREFS_IP2COUNTRY)) != nullptr) {
-		// SUPPORTED is the core's capability flag, flowing daemon -> GUI only:
-		// amulegui records it to show or hide its GeoIP page. The daemon must NOT
-		// apply an incoming SUPPORTED, which would carry the GUI's own value, so this
-		// is CLIENT_GUI-only.
+		// SUPPORTED is the core's capability flag, flowing daemon -> GUI only: amulegui
+		// records it to show or hide its GeoIP page. The daemon must NOT apply an incoming
+		// SUPPORTED, which would carry the GUI's own value, so this is CLIENT_GUI-only.
 #ifdef CLIENT_GUI
 		if ((oneTag = thisTab->GetTagByName(EC_TAG_IP2COUNTRY_SUPPORTED)) != nullptr) {
 			thePrefs::SetGeoIPSupported(oneTag->GetInt() != 0);
 		}
 #endif
 		// Read-only live status mirrored for amulegui's panel (the daemon fills
-		// these; it sets-but-ignores its own copy — it reads its live resolver).
+		// these; it sets-but-ignores its own copy -- it reads its live resolver).
 		if ((oneTag = thisTab->GetTagByName(EC_TAG_IP2COUNTRY_DB_LOADED)) != nullptr) {
 			thePrefs::SetGeoIPStatusLoaded(oneTag->GetInt() != 0);
 		}
@@ -994,21 +985,21 @@ void CEC_Prefs_Packet::Apply() const
 		if ((oneTag = thisTab->GetTagByName(EC_TAG_IP2COUNTRY_AUTO_UPDATE)) != nullptr) {
 			thePrefs::SetGeoIPAutoUpdate(oneTag->GetInt() != 0);
 		}
-		// Apply live: on the daemon this creates, enables or disables the resolver for
-		// the new settings; a no-op on amulegui, which merely absorbs the settings for
-		// display. Do NOT auto-download here -- an explicit "Update now" below carries
-		// that intent, and doing both fires twice.
+		// Apply live: on the daemon this creates, enables or disables the resolver for the
+		// new settings; a no-op on amulegui, which merely absorbs the settings for display.
+		// Do NOT auto-download here -- an explicit "Update now" below carries that intent,
+		// and doing both fires twice.
 		theApp->EnableIP2Country(false);
 #ifndef CLIENT_GUI
 		// Explicit "Update now" trigger from a remote GUI: re-download the DB from the
-		// just-applied source. Daemon and monolithic only, since amulegui sends this
-		// tag but never receives it and does not link the resolver.
+		// just-applied source. Daemon and monolithic only, since amulegui sends this tag
+		// but never receives it and does not link the resolver.
 		if ((oneTag = thisTab->GetTagByName(EC_TAG_IP2COUNTRY_UPDATE_NOW)) != nullptr &&
 			oneTag->GetInt() != 0) {
 			if (theApp->GetIP2Country()) {
-				// Remote trigger: no progress dialog -- the requesting amulegui cannot
-				// render EC download progress, and on a monolithic-app-as-backend the
-				// dialog would pop on the core.
+				// Remote trigger: no progress dialog -- the requesting amulegui
+				// cannot render EC download progress, and on a monolithic-app-as-
+				// backend the dialog would pop on the core.
 				theApp->GetIP2Country()->Update(true, false);
 			}
 		}

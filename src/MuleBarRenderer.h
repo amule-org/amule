@@ -36,8 +36,8 @@
 #include <vector>
 
 /**
- * One coloured span of a CBarShader-style bar, in byte-offset (virtual
- * filesize) space -- exactly what CBarShader::FillRange() takes.
+ * One coloured span of a CBarShader-style bar, in byte-offset (virtual filesize) space -- exactly
+ * what CBarShader::FillRange() takes.
  */
 struct CBarFillSpan
 {
@@ -53,13 +53,10 @@ struct CBarFillSpan
 
 /**
  * The payload a bar-drawing column cell carries through a wxVariant, from a
- * CMuleVirtualDataViewCtrl::GetItemBarFill() implementation to
- * CMuleBarRenderer::Render().
- *
- * Deliberately just data: turning a file's source/availability information
- * into spans is per-list business logic and stays in the list, the same
- * split GetItemColumnText() already has. A CBarFillSpec knows nothing about
- * where its spans came from.
+ * CMuleVirtualDataViewCtrl::GetItemBarFill() implementation to CMuleBarRenderer::Render().
+ * Deliberately just data: turning a file's source or availability information into spans is per-
+ * list business logic and stays in the list, the same split GetItemColumnText() already has. A
+ * CBarFillSpec knows nothing about where its spans came from.
  */
 class CBarFillSpec : public wxObject
 {
@@ -73,13 +70,12 @@ public:
 	}
 
 	/**
-	 * The row's own item-data pointer, carried through only so a renderer
-	 * subclass can cast it back to its domain type for extra per-list
-	 * drawing (e.g. CDownloadBarRenderer -> CPartFile*). Safe to dereference
-	 * only synchronously inside Render(): GetValueByRow() is the sole
-	 * producer of a CBarFillSpec and only runs for rows currently in the
-	 * model, so liveness holds for that call -- this is not a cache key and
-	 * must never be stored past one Render() call.
+	 * The row's own item-data pointer, carried through only so a renderer subclass can cast it
+	 * back to its domain type for extra per-list drawing (CDownloadBarRenderer -> CPartFile*,
+	 * say). Safe to dereference only synchronously inside Render(): GetValueByRow() is the sole
+	 * producer of a CBarFillSpec and only runs for rows currently in the model, so liveness
+	 * holds for that call -- this is not a cache key and must never be stored past one Render()
+	 * call.
 	 */
 	wxUIntPtr GetIdentity() const { return m_identity; }
 	uint64 GetFileSize() const { return m_fileSize; }
@@ -98,33 +94,29 @@ private:
 	wxDECLARE_DYNAMIC_CLASS(CBarFillSpec);
 };
 
-// Declared at namespace scope with the non-"wx"-prefixed macro, not the
-// in-class wxDECLARE_VARIANT_OBJECT() used for e.g. wxDataViewIconText:
-// wxWidgets 3.2 (the CI's Linux package) only has
-// DECLARE_VARIANT_OBJECT/IMPLEMENT_VARIANT_OBJECT, whose expansion is a pair
-// of free-function declarations, not friend declarations -- placing them
-// inside the class body compiles as ill-formed member operators on 3.2.
-// Neither operator touches CBarFillSpec's private members, so free
-// functions need no special access and this works on every wx version.
-// Confirmed by a build failure against 3.2 that a green build against
-// Homebrew's wx 3.3.3 locally didn't catch.
+// Declared at namespace scope with the non-"wx"-prefixed macro, not the in-class
+// wxDECLARE_VARIANT_OBJECT() used for wxDataViewIconText and friends: wxWidgets 3.2, the CI's Linux
+// package, only has DECLARE_VARIANT_OBJECT/IMPLEMENT_VARIANT_OBJECT, whose expansion is a pair of
+// free-function declarations rather than friend declarations -- placing them inside the class body
+// compiles as ill-formed member operators on 3.2. Neither operator touches CBarFillSpec's private
+// members, so free functions need no special access and this works on every wx version. Confirmed
+// by a build failure against 3.2 that a green build against Homebrew's wx 3.3.3 locally did not
+// catch.
 DECLARE_VARIANT_OBJECT(CBarFillSpec)
 
 /**
  * Renders a CBarShader chunk bar in a wxDataViewCtrl cell.
  *
- * List-agnostic: every list feeds it the same CBarFillSpec shape through
- * GetItemBarFill(), so one renderer instance (registered via
- * CMuleDataViewCtrl::AppendBarColumn()) serves any list that wants a bar
- * column. Matches the flat/3D and border-drawing behaviour every existing
- * CBarShader caller already has, since those come from a global preference
- * (thePrefs::UseFlatBar()) rather than anything list-specific.
+ * List-agnostic: every list feeds it the same CBarFillSpec shape through GetItemBarFill(), so one
+ * renderer instance, registered via CMuleDataViewCtrl::AppendBarColumn(), serves any list that
+ * wants a bar column. It matches the flat/3D and border-drawing behaviour every existing CBarShader
+ * caller already has, since those come from a global preference (thePrefs::UseFlatBar()) rather
+ * than anything list-specific.
  *
- * The CBarShader is a renderer member, not a per-Render() local: SetWidth()/
- * SetHeight() reset its content buffer, so it must not be resized more than
- * once per paint, and rebuilding one from scratch per cell per repaint would
- * be wasteful -- the same reason the pre-port code kept it as a function-
- * local static.
+ * The CBarShader is a renderer member, not a per-Render() local: SetWidth()/SetHeight() reset its
+ * content buffer, so it must not be resized more than once per paint, and rebuilding one from
+ * scratch per cell per repaint would be wasteful -- the same reason the pre-port code kept it as a
+ * function-local static.
  */
 class CMuleBarRenderer : public wxDataViewCustomRenderer
 {
@@ -138,29 +130,23 @@ public:
 	wxSize GetSize() const override;
 
 protected:
-	//! For a subclass that draws more than the chunk bar (e.g.
-	//! CDownloadBarRenderer's completed-strip and percent text) and needs
-	//! back the data SetValue() already unpacked.
+	//! For a subclass that draws more than the chunk bar (CDownloadBarRenderer's completed-
+	//! strip and percent text, say) and needs back the data SetValue() already unpacked.
 	const CBarFillSpec &GetSpec() const { return m_spec; }
 
 	/**
-	 * The rect CBarShader is actually drawn into for a given cell -- inset by
-	 * one pixel a side in round (non-flat) mode, to leave room for the black
-	 * border. A subclass overlay (e.g. a completed-progress strip) must draw
-	 * into this same rect, not the raw cell, or it will not line up with the
-	 * bar underneath it.
-	 */
-	/**
-	 * The area a bar may paint in, one pixel clear of the row above and below.
+	 * The area a bar may paint in, one pixel clear of the row above and below, and inset by one
+	 * pixel a side in round (non-flat) mode to leave room for the black border. A subclass
+	 * overlay, such as a completed-progress strip, must draw into this same rect and not the
+	 * raw cell, or it will not line up with the bar underneath it.
 	 *
-	 * Pre-port every caller inset the rect it handed the bar by a pixel top and
-	 * bottom before drawing (CSharedFilesCtrl::OnDrawItem and its equivalents),
-	 * and the 3D border went on that inset rect, not on the cell. Only the
-	 * inner `!bFlat` step survived the port into this class; while GetSize()
-	 * reported the text height the clamp in WXCallRender() happened to supply
-	 * the missing gap, so nothing showed until the bar started filling its cell
-	 * (issue #880). Without it, flat bars in adjacent rows touch and read as one
-	 * block, and 3D borders double up into a single thick line.
+	 * Pre-port every caller inset the rect it handed the bar by a pixel top and bottom before
+	 * drawing (CSharedFilesCtrl::OnDrawItem and its equivalents), and the 3D border went on
+	 * that inset rect, not on the cell. Only the inner `!bFlat` step survived the port into
+	 * this class; while GetSize() reported the text height the clamp in WXCallRender() happened
+	 * to supply the missing gap, so nothing showed until the bar started filling its cell
+	 * (issue #880). Without it, flat bars in adjacent rows touch and read as one block, and 3D
+	 * borders double up into a single thick line.
 	 */
 	static wxRect InsetForBar(wxRect cell, bool bFlat)
 	{

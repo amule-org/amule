@@ -36,15 +36,14 @@
 /**
  * The buffering a uTP stream needs, with no libutp in sight.
  *
- * libutp hands bytes up in a callback and takes bytes down through a call, and
- * neither happens when the eD2k stack above wants it to. This holds the two
- * queues in between and answers the would-block questions CEMSocket asks, so
- * the state machine can be tested without a library, a socket or a peer.
+ * libutp hands bytes up in a callback and takes bytes down through a call, and neither happens when
+ * the eD2k stack above wants it to. This holds the two queues in between and answers the would-
+ * block questions CEMSocket asks, so the state machine can be tested without a library, a socket or
+ * a peer.
  *
- * It calls nothing. Read-drained and window notifications are the transport's
- * to send, from the main thread; this only reports when they are due, because a
- * class that both buffers bytes and re-enters libutp is the one that deadlocks
- * when libutp calls back into it.
+ * It calls nothing. Read-drained and window notifications are the transport's to send, from the
+ * main thread; this only reports when they are due, because a class that both buffers bytes and re-
+ * enters libutp is the one that deadlocks when libutp calls back into it.
  */
 class CUtpStream
 {
@@ -55,18 +54,16 @@ public:
 	/**
 	 * Default bound on buffered received bytes.
 	 *
-	 * @b Not a cap that drops bytes: libutp can deliver more than this in one
-	 * callback and received data is never discarded, because a byte thrown
-	 * away here is a hole in a file the peer already paid to send. It is the
-	 * number UTP_GET_READ_BUFFER_SIZE reports, which is how libutp decides to
-	 * stop advertising receive window -- so the bound is applied by the peer
-	 * slowing down, one round trip later, rather than by this class refusing
-	 * anything.
+	 * @b Not a cap that drops bytes: libutp can deliver more than this in one callback and
+	 * received data is never discarded, because a byte thrown away here is a hole in a file the
+	 * peer already paid to send. It is the number UTP_GET_READ_BUFFER_SIZE reports, which is
+	 * how libutp decides to stop advertising receive window -- so the bound is applied by the
+	 * peer slowing down, one round trip later, rather than by this class refusing anything.
 	 *
-	 * Inert until the acceptor wires that callback. It is decided here so the
-	 * acceptor inherits a value rather than inventing one, and so both
-	 * directions are bounded: an unbounded read buffer is how a peer that
-	 * sends faster than the application reads grows memory without limit.
+	 * Inert until the acceptor wires that callback. It is decided here so the acceptor inherits
+	 * a value rather than inventing one, and so both directions are bounded: an unbounded read
+	 * buffer is how a peer that sends faster than the application reads grows memory without
+	 * limit.
 	 */
 	static constexpr size_t kDefaultReadBound = 64 * 1024;
 
@@ -89,12 +86,10 @@ public:
 	}
 
 	/**
-	 * Moves buffered bytes out.
-	 *
-	 * An empty buffer is a would-block, not an end: 0 bytes, BlocksRead() set,
-	 * LastError() still 0. Once the peer has sent EOF an empty buffer is the
-	 * end of the stream instead, and that is the one case where 0 means no
-	 * more bytes are coming.
+	 * Moves buffered bytes out. An empty buffer is a would-block, not an end: 0 bytes,
+	 * BlocksRead() set, LastError() still 0. Once the peer has sent EOF an empty buffer is the
+	 * end of the stream instead, and that is the one case where 0 means no more bytes are
+	 * coming.
 	 */
 	uint32_t Read(void *buffer, uint32_t length)
 	{
@@ -114,10 +109,10 @@ public:
 		m_readBuffer.erase(m_readBuffer.begin(), m_readBuffer.begin() + consumed);
 		m_blocksRead = false;
 		if (m_readBuffer.empty()) {
-			// libutp stops delivering while the application is behind, and
-			// resumes on utp_read_drained(). Owed exactly once per drain:
-			// sending it again with an already-empty buffer is a wakeup for
-			// nothing, and never sending it stalls the peer permanently.
+			// libutp stops delivering while the application is behind, and resumes on
+			// utp_read_drained(). Owed exactly once per drain: sending it again with an
+			// already-empty buffer is a wakeup for nothing, and never sending it stalls
+			// the peer permanently.
 			m_readDrainedDue = true;
 		}
 		return static_cast<uint32_t>(taken);
@@ -127,14 +122,11 @@ public:
 	size_t ReadBufferSize() const { return m_readBuffer.size(); }
 
 	/**
-	 * The value the acceptor passes to utp_setsockopt(UTP_RCVBUF).
-	 *
-	 * libutp applies the bound itself: get_rcv_window() advertises
-	 * opt_rcvbuf minus what ReadBufferSize() reports, so a reader that falls
-	 * behind shrinks the window to zero and the peer stops. Nothing here
-	 * compares the two, because a predicate over them would only be useful
-	 * for refusing a payload, and refusing one drops bytes the peer already
-	 * paid to send.
+	 * The value the acceptor passes to utp_setsockopt(UTP_RCVBUF). libutp applies the bound
+	 * itself: get_rcv_window() advertises opt_rcvbuf minus what ReadBufferSize() reports, so a
+	 * reader that falls behind shrinks the window to zero and the peer stops. Nothing here
+	 * compares the two, because a predicate over them would only be useful for refusing a
+	 * payload, and refusing one drops bytes the peer already paid to send.
 	 */
 	size_t ReadBound() const { return m_readBound; }
 
@@ -149,12 +141,10 @@ public:
 	// -- outbound -----------------------------------------------------
 
 	/**
-	 * Queues bytes for the peer.
-	 *
-	 * A full queue is a would-block: 0 bytes, BlocksWrite() set, no error. The
-	 * bound exists because libutp accepts writes into its own send buffer
-	 * without limit, so an unbounded queue here would let a stalled peer grow
-	 * memory until the upload thread noticed, which it has no way to do.
+	 * Queues bytes for the peer. A full queue is a would-block: 0 bytes, BlocksWrite() set, no
+	 * error. The bound exists because libutp accepts writes into its own send buffer without
+	 * limit, so an unbounded queue here would let a stalled peer grow memory until the upload
+	 * thread noticed, which it has no way to do.
 	 */
 	uint32_t Write(const void *buffer, uint32_t length)
 	{
@@ -183,14 +173,12 @@ public:
 	}
 
 	/**
-	 * Drops the bytes libutp accepted and keeps the rest queued.
-	 *
-	 * utp_write() returns how much it took, which is less than it was offered
-	 * as soon as the congestion window is full and zero while the socket is
-	 * not connected. Handing the whole queue out and clearing it would leave
-	 * the caller holding the refused tail with nowhere to put it back, so it
-	 * would need a second queue that WriteBufferSize() cannot see and
-	 * m_writeBound does not bound. Peek, offer, then consume what was taken.
+	 * Drops the bytes libutp accepted and keeps the rest queued. utp_write() returns how much
+	 * it took, which is less than it was offered as soon as the congestion window is full, and
+	 * zero while the socket is not connected. Handing the whole queue out and clearing it would
+	 * leave the caller holding the refused tail with nowhere to put it back, so it would need a
+	 * second queue that WriteBufferSize() cannot see and m_writeBound does not bound. Peek,
+	 * offer, then consume what was taken.
 	 */
 	void ConsumeQueuedBytes(size_t accepted)
 	{
@@ -207,10 +195,9 @@ public:
 	// -- ending -------------------------------------------------------
 
 	/**
-	 * Records how the stream ended. The first end wins.
-	 *
-	 * A reset arriving after a clean EOF does not turn a finished transfer
-	 * into a failed one, which is what would happen if the last writer won.
+	 * Records how the stream ended; the first end wins. A reset arriving after a clean EOF does
+	 * not turn a finished transfer into a failed one, which is what would happen if the last
+	 * writer won.
 	 */
 	void OnFailure(EUtpTransportFailure failure)
 	{
@@ -225,26 +212,22 @@ public:
 	bool IsTerminal() const { return IsUtpTerminal(m_failure); }
 
 	/**
-	 * Whether the stream is still usable, as IStreamTransport::IsOk() means it.
-	 *
-	 * A clean EOF ends the stream without failing it, so Write() refuses with
-	 * 0 while BlocksWrite() and LastError() are both still 0. Those two alone
-	 * describe a would-block, which this is not, so the difference has to be
-	 * askable rather than inferred from the pair.
+	 * Whether the stream is still usable, as IStreamTransport::IsOk() means it. A clean EOF
+	 * ends the stream without failing it, so Write() refuses with 0 while BlocksWrite() and
+	 * LastError() are both still 0. Those two alone describe a would-block, which this is not,
+	 * so the difference has to be askable rather than inferred from the pair.
 	 */
 	bool IsOk() const { return !IsTerminal(); }
 
 	/**
 	 * Nonzero only for a real failure. EOF and destroying are ends, not errors.
 	 *
-	 * The value is opaque: only its truthiness is defined. It is offset out of
-	 * the way on purpose, because this stands in for CLibSocket::LastError()
-	 * under the same name and type and a call site comparing against a known
-	 * constant would otherwise match by coincidence -- wrong, and silent.
-	 * CLibSocket::LastError() returns a boost error_code value (see
-	 * m_ErrorCode in LibSocketAsio.cpp), so the range to clear is errno on
-	 * POSIX and the WinSock codes on Windows, not wxSocketError. Callers
-	 * wanting the reason ask Failure().
+	 * The value is opaque: only its truthiness is defined. It is offset out of the way on
+	 * purpose, because this stands in for CLibSocket::LastError() under the same name and type
+	 * and a call site comparing against a known constant would otherwise match by coincidence
+	 * -- wrong, and silent. CLibSocket::LastError() returns a boost error_code value (see
+	 * m_ErrorCode in LibSocketAsio.cpp), so the range to clear is errno on POSIX and the
+	 * WinSock codes on Windows, not wxSocketError. Callers wanting the reason ask Failure().
 	 */
 	int LastError() const
 	{

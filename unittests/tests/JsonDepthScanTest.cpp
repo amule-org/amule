@@ -22,15 +22,14 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-// The pre-parse guard that stops a deeply nested request body exhausting the
-// handler thread's stack inside picojson's recursive descent.
+// The pre-parse guard that stops a deeply nested request body exhausting the handler thread's stack
+// inside picojson's recursive descent.
 //
-// It has already been wrong once in the direction that rejects valid input:
-// counting every opener in the buffer rather than tracking nesting turned the
-// cap into a budget of 32 containers for the whole request, so a flat array of
-// directory names containing brackets was refused three levels deep (#1084).
-// These pin both directions -- that legal bodies get through whatever their
-// length, and that the depth limit itself still bites.
+// It has already been wrong once in the direction that rejects valid input: counting every opener
+// in the buffer rather than tracking nesting turned the cap into a budget of 32 containers for the
+// whole request, so a flat array of directory names containing brackets was refused three levels
+// deep (#1084). These pin both directions -- that legal bodies get through whatever their length,
+// and that the depth limit itself still bites.
 
 #include <muleunit/test.h>
 

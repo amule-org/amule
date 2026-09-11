@@ -75,10 +75,9 @@ public:
 		kGraphGridColor = 1
 	};
 
-	// One trend's colour wiring: which preference colour drives it and
-	// which legend swatch shows the same colour beside the graph. CKadDlg
-	// describes its graph with these too, so both panels colour their
-	// graphs through the code below rather than each rolling its own.
+	// One trend's colour wiring: which preference colour drives it and which legend swatch
+	// shows the same colour beside the graph. CKadDlg describes its graph with these too, so
+	// both panels colour their graphs through the code below rather than each rolling its own.
 	struct GraphColorSlot
 	{
 		unsigned colorIndex; // index into getColors()

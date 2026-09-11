@@ -82,7 +82,7 @@ wxBEGIN_EVENT_TABLE(CamuleGuiApp, wxApp)
 	EVT_MULE_HASHING(CamuleGuiApp::OnFinishedHashing)
 	EVT_MULE_AICH_HASHING(CamuleGuiApp::OnFinishedAICHHashing)
 
-	// MediaProbe (#140) — attaches media tags on the main thread.
+	// MediaProbe (#140) -- attaches media tags on the main thread.
 	EVT_MULE_MEDIA_PROBE(CamuleGuiApp::OnMediaProbeFinished)
 
 	// CPartFileHashThread per-part result
@@ -97,9 +97,9 @@ wxBEGIN_EVENT_TABLE(CamuleGuiApp, wxApp)
 	// Disk space preallocation finished
 	EVT_MULE_ALLOC_FINISHED(CamuleGuiApp::OnFinishedAllocation)
 
-	// macOS Dock right-click Quit and system session end. Normal exit paths (red X,
-	// Cmd+Q, File > Quit) go through CamuleDlg::OnClose -> ShutDown -> OnExit; the
-	// Dock Quit path skips OnClose and needs EVT_END_SESSION to run the cleanup.
+	// macOS Dock right-click Quit and system session end. Normal exit paths (red X, Cmd+Q, File
+	// > Quit) go through CamuleDlg::OnClose -> ShutDown -> OnExit; the Dock Quit path skips
+	// OnClose and needs EVT_END_SESSION to run the cleanup.
 	EVT_QUERY_END_SESSION(CamuleGuiApp::OnQueryEndSession)
 	EVT_END_SESSION(CamuleGuiApp::OnEndSession)
 wxEND_EVENT_TABLE()
@@ -110,18 +110,17 @@ IMPLEMENT_APP(CamuleGuiApp)
 
 CamuleGuiBase::CamuleGuiBase()
 {
-	// Disable these checks for now.  The code really needs updating to
-	// eliminate these inconsistent flag uses, but these checks are new
-	// since wx3.0, and this should just return us to what 3.0 did.
+	// Disable these checks for now. The code really needs updating to eliminate these
+	// inconsistent flag uses, but the checks are new since wx3.0, and this returns us to what
+	// 3.0 did.
 	wxSizerFlags::DisableConsistencyChecks();
 
 	amuledlg = NULL;
 
 #ifdef GEOIP_GUI
-	// Country flag images, shared by both GUIs. Codes come from the core resolver
-	// (monolithic) or the EC tag (amulegui); this maps them to flags. The resolver's
-	// manual-update failure popup is wired later, once the core has created the
-	// resolver in OnInit.
+	// Country flag images, shared by both GUIs. Codes come from the core resolver (monolithic)
+	// or the EC tag (amulegui); this maps them to flags. The resolver's manual-update failure
+	// popup is wired later, once the core has created the resolver in OnInit.
 	m_countryFlags = new CCountryFlags();
 #endif
 }
@@ -145,10 +144,10 @@ int CamuleGuiBase::ShowAlert(wxString msg, wxString title, int flags)
 void CamuleGuiBase::FollowSystemAppearance()
 {
 #if wxCHECK_VERSION(3, 3, 0)
-	// Every other platform follows the desktop's light/dark setting by itself; MSW
-	// is the one that has to be asked, which is why aMule looked native in dark mode
-	// on GTK and macOS but not on Windows. Not gated on __WXMSW__:
-	// Appearance::System is the right request everywhere and a no-op elsewhere.
+	// Every other platform follows the desktop's light/dark setting by itself; MSW is the one
+	// that has to be asked, which is why aMule looked native in dark mode on GTK and macOS but
+	// not on Windows. Not gated on __WXMSW__: Appearance::System is the right request
+	// everywhere and a no-op elsewhere.
 	const wxApp::AppearanceResult appearance = wxTheApp->SetAppearance(wxApp::Appearance::System);
 	if (appearance == wxApp::AppearanceResult::Failure) {
 		AddDebugLogLineN(logStandard, "Could not follow the system light/dark appearance");
@@ -165,11 +164,8 @@ int CamuleGuiBase::InitGui(bool geometry_enabled, wxString &geom_string)
 	unsigned int geometry_height = 600;
 
 	if (geometry_enabled) {
-		// I plan on moving this to a separate function, as it just clutters up OnInit()
-		/*
-		This implementation might work with mac, provided that the
-		SetSize() function works as expected.
-		*/
+		// TODO: move this to a separate function; it just clutters up OnInit(). It might work with
+		// mac too, provided SetSize() works as expected.
 
 		if (geom_string.GetChar(0) == '=') {
 			geom_string.Remove(0, 1);
@@ -229,30 +225,29 @@ int CamuleGuiBase::InitGui(bool geometry_enabled, wxString &geom_string)
 	return 0;
 }
 
-// See CamuleApp::RestoreSearchTabs(). Split out of InitGui() so it can run after
-// the download queue is loaded: CSearchList::LoadSearches() computes each
-// restored result's download status against downloadqueue/knownfiles/
-// canceledfiles, and the queue is still empty while the GUI is being built
+// See CamuleApp::RestoreSearchTabs(). Split out of InitGui() so it can run after the download queue
+// is loaded: CSearchList::LoadSearches() computes each restored result's download status against
+// downloadqueue/knownfiles/canceledfiles, and the queue is still empty while the GUI is being built
 // (#1101 -- restored results that were already downloading came back as NEW).
 void CamuleGuiBase::CreateRestoredSearchTabs()
 {
 #ifndef CLIENT_GUI
-	// Create a tab for every search restored from StoredSearches.met. Reuses the
-	// same unselected-tab path CSearchDlg::OnSearchAdded provides for a search
-	// discovered from another client -- a restored search is the same kind of thing,
-	// discovered locally instead of over EC. Nothing has started a search yet at
-	// this point in startup, so every entry here is a restored one.
+	// Create a tab for every search restored from StoredSearches.met. Reuses the same
+	// unselected-tab path CSearchDlg::OnSearchAdded provides for a search discovered from
+	// another client -- a restored search is the same kind of thing, discovered locally instead
+	// of over EC. Nothing has started a search yet at this point in startup, so every entry
+	// here is a restored one.
 	//
-	// Monolithic (CSearchList) only: this file is also compiled into the amuleGUI
-	// target, where theApp->searchlist is CSearchListRem and restored searches
-	// arrive over EC_OP_SEARCH_LIST instead.
+	// Monolithic (CSearchList) only: this file is also compiled into the amuleGUI target, where
+	// theApp->searchlist is CSearchListRem and restored searches arrive over EC_OP_SEARCH_LIST
+	// instead.
 	for (const auto &kv : theApp->searchlist->GetKnownSearchIds()) {
 		Notify_Search_Added(static_cast<wxUIntPtr>(kv.first),
 			kv.second,
 			static_cast<uint32>(theApp->searchlist->GetSearchLifecycleKindById(kv.first)));
-		// OnSearchAdded labels the tab " (0)", right for a freshly discovered
-		// foreign search but wrong here: LoadSearches() ran before this call, so the
-		// tab's list is already populated and only the label needs correcting.
+		// OnSearchAdded labels the tab " (0)", right for a freshly discovered foreign
+		// search but wrong here: LoadSearches() ran before this call, so the tab's list is
+		// already populated and only the label needs correcting.
 		if (theApp->amuledlg && theApp->amuledlg->m_searchwnd) {
 			if (CSearchListCtrl *page = theApp->amuledlg->m_searchwnd->GetSearchList(
 				    static_cast<wxUIntPtr>(kv.first))) {
@@ -334,10 +329,10 @@ int CamuleGuiApp::OnExit()
 
 void CamuleGuiApp::ShutDown(wxCloseEvent &WXUNUSED(evt))
 {
-	// The tray icon's Exit runs its own menu-tracking loop and stays live while a
-	// modal dialog is open, so this can be reached with one of the list controls'
-	// dialogs still on the stack -- the same hazard the remote GUI hits on an EC
-	// drop. See CamuleAppCommon::DeferShutDownToOuterLoop.
+	// The tray icon's Exit runs its own menu-tracking loop and stays live while a modal dialog
+	// is open, so this can be reached with one of the list controls' dialogs still on the stack
+	// -- the same hazard the remote GUI hits on an EC drop. See
+	// CamuleAppCommon::DeferShutDownToOuterLoop.
 	if (DeferShutDownToOuterLoop([this] {
 		    if (!IsOnShutDown() && amuledlg) {
 			    wxCloseEvent ev;
@@ -352,14 +347,14 @@ void CamuleGuiApp::ShutDown(wxCloseEvent &WXUNUSED(evt))
 	CamuleApp::ShutDown();
 }
 
-// macOS Dock right-click Quit bypasses OnClose. wx posts a session-end event for
-// this path; drive the same ShutDown sequence so the destructor chain
-// (~CPartFile -> FlushBuffer -> SavePartFile) runs and progress is persisted.
+// macOS Dock right-click Quit bypasses OnClose. wx posts a session-end event for this path; drive
+// the same ShutDown sequence so the destructor chain (~CPartFile -> FlushBuffer -> SavePartFile)
+// runs and progress is persisted.
 void CamuleGuiApp::OnQueryEndSession(wxCloseEvent &evt)
 {
-	// Mark the app as quitting before letting wx propagate the close to top-level
-	// windows: CamuleDlg::OnClose checks this flag and skips its HideOnClose-veto
-	// branch, so a session-end path actually quits instead of hiding to tray.
+	// Mark the app as quitting before letting wx propagate the close to top-level windows:
+	// CamuleDlg::OnClose checks this flag and skips its HideOnClose-veto branch, so a session-
+	// end path actually quits instead of hiding to tray.
 	SetQuitting();
 	evt.Skip();
 }
@@ -379,11 +374,11 @@ void CamuleGuiApp::OnEndSession(wxCloseEvent &evt)
 #ifdef __WXMAC__
 void CamuleGuiApp::MacReopenApp()
 {
-	// Fired when the user clicks the Dock icon with no visible top-level windows,
-	// and on a re-launch from Finder / Launchpad. Without this override wxApp's
-	// default Reopen handler is a no-op when the frame is hidden, so a window hidden
-	// via the close button (HideOnClose) stays hidden and only Cmd+Tab brings aMule
-	// back. The restore itself lives on the window, shared with the tray icon.
+	// Fired when the user clicks the Dock icon with no visible top-level windows, and on a re-
+	// launch from Finder / Launchpad. Without this override wxApp's default Reopen handler is a
+	// no-op when the frame is hidden, so a window hidden via the close button (HideOnClose)
+	// stays hidden and only Cmd+Tab brings aMule back. The restore itself lives on the window,
+	// shared with the tray icon.
 	if (amuledlg) {
 		amuledlg->RestoreMainWindow();
 	}
@@ -391,12 +386,10 @@ void CamuleGuiApp::MacReopenApp()
 
 void CamuleGuiApp::MacOpenFiles(const wxArrayString &fileNames)
 {
-	// Fires for a Finder double-click, "Open With > aMule", and files dropped on the
-	// Dock icon, so most of what arrives here is not a collection at all;
-	// OpenCollectionFiles ignores those silently rather than nagging.
-	//
-	// wx holds the launch event until after OnInit returns, so
-	// thePrefs::GetConfigDir() is set by the time this runs even on a cold launch.
+	// Fires for a Finder double-click, "Open With > aMule", and files dropped on the Dock icon,
+	// so most of what arrives here is not a collection at all; OpenCollectionFiles ignores
+	// those silently rather than nagging. wx holds the launch event until after OnInit returns,
+	// so thePrefs::GetConfigDir() is set by the time this runs even on a cold launch.
 	OpenCollectionFiles(fileNames);
 }
 
@@ -410,9 +403,9 @@ bool CamuleGuiApp::OnInit()
 {
 	amuledlg = NULL;
 
-	// Register the embedded-PNG art provider before CamuleApp::OnInit()
-	// touches anything UI-shaped. wxArtProvider::Push takes ownership
-	// of the pointer; wx tears the providers down at app exit.
+	// Register the embedded-PNG art provider before CamuleApp::OnInit() touches anything UI-
+	// shaped. wxArtProvider::Push takes ownership of the pointer; wx tears the providers down
+	// at app exit.
 	wxArtProvider::Push(new CamuleArtProvider());
 
 	// Must happen before any window exists, and the startup splash is created
@@ -429,18 +422,18 @@ bool CamuleGuiApp::OnInit()
 		OnExit();
 	}
 
-	// Note: wxTimer can be off by more than 10%, and timer cycles are also lost to
-	// CPU load -- about 0.5% under light load, more than 6% with heavy download
-	// traffic or another demanding process. The upload queue process loop
-	// compensates for timer error. When adding functionality assume the timer is
-	// only approximately correct, and measure with ::GetTickCount64().
+	// Note: wxTimer can be off by more than 10%, and timer cycles are also lost to CPU load --
+	// about 0.5% under light load, more than 6% with heavy download traffic or another
+	// demanding process. The upload queue process loop compensates for timer error. When adding
+	// functionality assume the timer is only approximately correct, and measure with
+	// ::GetTickCount64().
 	core_timer->Start(CORE_TIMER_PERIOD);
 	amuledlg->StartGuiTimer();
 
 #ifdef __WXMAC__
-	// This tells the OS to notice the ed2kHelperScript.app inside aMule.app.
-	// ed2kHelperScript.app describes itself (Info.plist) as handling ed2k URLs.
-	// So, from then on the OS will know to pass ed2k URLs to the helper app.
+	// This tells the OS to notice the ed2kHelperScript.app inside aMule.app. That app's
+	// Info.plist says it handles ed2k URLs, so from then on the OS passes ed2k URLs to the
+	// helper.
 	CFURLRef ed2kHelperUrl =
 		CFBundleCopyAuxiliaryExecutableURL(CFBundleGetMainBundle(), CFSTR("ed2kHelperScript.app"));
 	if (ed2kHelperUrl) {
@@ -450,9 +443,8 @@ bool CamuleGuiApp::OnInit()
 #endif
 
 #ifdef __WXGTK__
-	// AppImage first-run desktop integration prompt. CallAfter defers the
-	// dialog until the event loop is fully running, so the modal doesn't
-	// block OnInit's return path.
+	// AppImage first-run desktop integration prompt. CallAfter defers the dialog until the
+	// event loop is fully running, so the modal does not block OnInit's return path.
 	CallAfter([this] { AppImageIntegration::PromptAndInstall(amuledlg); });
 #endif
 

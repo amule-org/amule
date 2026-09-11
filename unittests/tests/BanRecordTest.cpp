@@ -39,10 +39,10 @@ const uint32 IP_A = 0x0100007f;
 const uint32 IP_B = 0x0200007f;
 } // namespace
 
-// The whole point of the class: the caller increments a counter when this
-// returns true, so a second ban of the same address must answer false or the
-// statistic drifts. CUpDownClient::SetSpammer(true) calls Ban() with no
-// IsBanned() check, which is how that second call happens in practice.
+// The whole point of the class: the caller increments a counter when this returns true, so a second
+// ban of the same address must answer false or the statistic drifts.
+// CUpDownClient::SetSpammer(true) calls Ban() with no IsBanned() check, which is how that second
+// call happens in practice.
 TEST(BanRecord, BanningTheSameAddressTwiceCountsOnce)
 {
 	CBanRecord record;
@@ -76,9 +76,8 @@ TEST(BanRecord, UnbanningAnAddressThatIsNotBannedCountsNothing)
 	ASSERT_FALSE(record.Unban(IP_A));
 }
 
-// Zero is not an address. CUpDownClient's constructor sets the address to zero
-// when there is no socket, so one entry under that key would make every such
-// client read back as banned.
+// Zero is not an address. CUpDownClient's constructor sets the address to zero when there is no
+// socket, so one entry under that key would make every such client read back as banned.
 TEST(BanRecord, ZeroIsNeverBannedAndNeverAKey)
 {
 	CBanRecord record;
@@ -92,9 +91,8 @@ TEST(BanRecord, ZeroIsNeverBannedAndNeverAKey)
 	ASSERT_FALSE(record.IsBanned(0, T0));
 }
 
-// Expiry is read at the lookup rather than swept, so a lapsed ban must answer
-// false the moment it lapses -- and must stop being counted, because the
-// caller decrements on the transition.
+// Expiry is read at the lookup rather than swept, so a lapsed ban must answer false the moment it
+// lapses -- and must stop being counted, because the caller decrements on the transition.
 TEST(BanRecord, ALapsedBanIsForgottenOnLookup)
 {
 	CBanRecord record;
@@ -108,9 +106,8 @@ TEST(BanRecord, ALapsedBanIsForgottenOnLookup)
 	ASSERT_FALSE(record.Unban(IP_A));
 }
 
-// The lookup reports whether it dropped an entry, so the caller knows whether
-// to decrement. Reporting the drop is the only way it can: it has no other
-// view of the map.
+// The lookup reports whether it dropped an entry, so the caller knows whether to decrement.
+// Reporting the drop is the only way it can: it has no other view of the map.
 TEST(BanRecord, TheLookupReportsWhetherItDroppedALapsedEntry)
 {
 	CBanRecord record;
@@ -144,9 +141,8 @@ TEST(BanRecord, DistinctAddressesAreCountedSeparately)
 	ASSERT_FALSE(record.IsBanned(IP_A, T0 + 1));
 }
 
-// The sweep exists so a table of long-lapsed entries does not grow without
-// bound when nobody looks those addresses up again. It reports how many it
-// dropped, for the same reason the lookup does.
+// The sweep exists so a table of long-lapsed entries does not grow without bound when nobody looks
+// those addresses up again. It reports how many it dropped, for the same reason the lookup does.
 TEST(BanRecord, TheSweepDropsOnlyLapsedEntriesAndReportsHowMany)
 {
 	CBanRecord record;

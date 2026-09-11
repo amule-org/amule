@@ -1,5 +1,5 @@
 //
-// CamuleArtProvider — wxArtProvider subclass exposing aMule's bundled
+// CamuleArtProvider -- wxArtProvider subclass exposing aMule's bundled
 // PNG icons through wxArtProvider::GetBitmap() / GetIcon().
 //
 // The icon data itself lives in src/icons/icon_data.c (build-time
@@ -23,7 +23,7 @@
 class CamuleArtProvider : public wxArtProvider
 {
 public:
-	// Prefix every aMule art id starts with — e.g. "amule:sort_dn".
+	// Prefix every aMule art id starts with -- e.g. "amule:sort_dn".
 	static const wxString PREFIX;
 
 	// Build a full art id from a short icon name.  E.g.
@@ -33,11 +33,10 @@ public:
 protected:
 	wxBitmap CreateBitmap(const wxArtID &id, const wxArtClient &client, const wxSize &size) override;
 
-	// Bundle-aware lookup behind wxArtProvider::GetBitmapBundle().
-	// Icons with an embedded SVG twin become resolution-independent
-	// bundles (wx rasterizes the SVG at whatever size/DPI the consuming
-	// widget asks for); PNG-only icons fall back to the PNG plus a
-	// smooth 2x upscale.
+	// Bundle-aware lookup behind wxArtProvider::GetBitmapBundle(). Icons with an embedded SVG
+	// twin become resolution-independent bundles, wx rasterizing the SVG at whatever size/DPI
+	// the consuming widget asks for; PNG-only icons fall back to the PNG plus a smooth 2x
+	// upscale.
 	wxBitmapBundle CreateBitmapBundle(
 		const wxArtID &id, const wxArtClient &client, const wxSize &size) override;
 };

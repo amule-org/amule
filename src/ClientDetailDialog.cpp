@@ -78,9 +78,9 @@ ClientDetailInfo ClientDetailInfoFromClient(const CClientRef &client)
 void CClientDetailDialog::Build()
 {
 	wxSizer *content = clientDetails(this, true);
-	// The Close button uses ID_CLOSEWND rather than wxID_CANCEL, so wxDialog does
-	// not auto-bind Escape to it; name it as the escape target so Escape dismisses
-	// the dialog the way clicking Close does.
+	// The Close button uses ID_CLOSEWND rather than wxID_CANCEL, so wxDialog does not auto-bind
+	// Escape to it; name it as the escape target so Escape dismisses the dialog the way Close
+	// does.
 	SetEscapeId(ID_CLOSEWND);
 	OnInitDialog();
 	content->SetSizeHints(this);
@@ -110,14 +110,14 @@ void CClientDetailDialog::OnBnClose(wxCommandEvent &WXUNUSED(evt))
 
 bool CClientDetailDialog::OnInitDialog()
 {
-	// The dash the session fields fall back to when there is no live peer
-	// behind this dialog. Not "0": a zero rate or a zero queue rank is a
-	// measurement, and these are the absence of one.
+	// The dash the session fields fall back to when there is no live peer behind this dialog.
+	// Not "0": a zero rate or a zero queue rank is a measurement, and these are the absence of
+	// one.
 	static const wxString kNoValue = "-";
 
-	// Username and hash are reported independently: a credit record keeps a hash
-	// long before it has a name, because the core only writes the name out at
-	// disconnect, so the two are not known together.
+	// Username and hash are reported independently: a credit record keeps a hash long before it
+	// has a name, because the core only writes the name out at disconnect, so the two are not
+	// known together.
 	CastChild(ID_DNAME, wxStaticText)
 		->SetLabel(m_info.userName.IsEmpty() ? _("Unknown") : m_info.userName);
 	CastChild(ID_DHASH, wxStaticText)
@@ -171,16 +171,13 @@ bool CClientDetailDialog::OnInitDialog()
 	}
 	CastChild(IDT_OBFUSCATION, wxStaticText)->SetLabel(buffer);
 
-	// Protocol extensions the peer claims -- not what this build can do with
-	// them: aMule implements none of these yet, so the line reads as "this
-	// peer would support X if we did".
+	// Protocol extensions the peer claims -- not what this build can do with them: aMule
+	// implements none of these yet, so the line reads as "this peer would support X if we did".
 	//
-	// Label and value are both hidden when there is nothing to claim, rather
-	// than shown with a placeholder. Almost no peer on the network sets any
-	// of these bits, and a stored row has no hello to read at all, so the
-	// alternative is a row that reads "None" or "-" for nearly every peer,
-	// permanently -- a row that says nothing while taking up the space of one
-	// that does. Hiding both controls leaves no gap: the sizer skips a hidden
+	// Label and value are both hidden when there is nothing to claim, rather than shown with a
+	// placeholder. Almost no peer on the network sets any of these bits, and a stored row has
+	// no hello to read at all, so the alternative is a row reading "None" or "-" for nearly
+	// every peer, permanently. Hiding both controls leaves no gap: the sizer skips a hidden
 	// pair, and Layout() below reflows what is left.
 	const bool hasCapabilities = m_info.hasSession && !m_info.modCapabilities.IsEmpty();
 	CastChild(IDT_MOD_CAPABILITIES_LABEL, wxStaticText)->Show(hasCapabilities);
@@ -226,9 +223,9 @@ bool CClientDetailDialog::OnInitDialog()
 							((float)m_info.uploadDatarate / 1024.0f))
 					     : kNoValue);
 
-	// Lifetime credit, which a stored record knows as well as a live peer.
-	// The control ids read backwards against their labels -- ID_DUPTOTAL sits
-	// under "Downloaded (total):" -- so follow the labels, not the names.
+	// Lifetime credit, which a stored record knows as well as a live peer. The control ids read
+	// backwards against their labels -- ID_DUPTOTAL sits under "Downloaded (total):" -- so
+	// follow the labels, not the names.
 	CastChild(ID_DUPTOTAL, wxStaticText)->SetLabel(CastItoXBytes(m_info.downloadedTotal));
 	CastChild(ID_DDOWNTOTAL, wxStaticText)->SetLabel(CastItoXBytes(m_info.uploadedTotal));
 

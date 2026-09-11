@@ -19,7 +19,7 @@
 //
 
 //
-// Country flags are from FAMFAMFAM (http://www.famfamfam.com) — public domain,
+// Country flags are from FAMFAMFAM (http://www.famfamfam.com) -- public domain,
 // named with the ISO 3166-1 alpha-2 country codes.
 //
 
@@ -31,11 +31,10 @@
 #include <wx/image.h>
 #include <wx/string.h>
 
-// GUI-only country flag cache: maps an ISO 3166-1 alpha-2 code (lowercase) to
-// its flag bitmap. Split out of CIP2Country so the resolver stays headless and
-// usable in amuled (see IP2Country.h) — country *codes* travel over EC, and
-// each GUI turns the code into a flag here. Owned by CamuleGuiBase, so both the
-// monolithic and remote GUIs share one instance.
+// GUI-only country flag cache: maps an ISO 3166-1 alpha-2 code (lowercase) to its flag bitmap.
+// Split out of CIP2Country so the resolver stays headless and usable in amuled (see IP2Country.h)
+// -- country *codes* travel over EC, and each GUI turns the code into a flag here. Owned by
+// CamuleGuiBase, so both the monolithic and remote GUIs share one instance.
 class CCountryFlags
 {
 public:
@@ -46,11 +45,11 @@ public:
 	const wxImage &GetFlag(const wxString &code);
 
 private:
-	// Lazily populate m_flags on first GetFlag(). Deferred (not done in the
-	// ctor) because CamuleGuiBase constructs this before the app's OnInit has
-	// pushed CamuleArtProvider — loading in the ctor would find no art and
-	// every flag would come back blank (peers list shows the bare code, no
-	// flag). By first draw, OnInit has run and the provider is live.
+	// Lazily populate m_flags on the first GetFlag(). Deferred rather than done in the ctor
+	// because CamuleGuiBase constructs this before the app's OnInit has pushed
+	// CamuleArtProvider -- loading in the ctor would find no art and every flag would come back
+	// blank, the peers list showing the bare code. By first draw, OnInit has run and the
+	// provider is live.
 	void LoadFlags();
 
 	bool m_loaded = false;

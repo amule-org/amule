@@ -34,16 +34,14 @@ struct SearchResult;
 
 // One search hit's JSON fields, WITHOUT the enclosing braces.
 //
-// Two surfaces serve the same object and are documented as carrying the
-// identical shape: the `results[]` array of GET /search/{id}/results, and the
-// `search_result_added` SSE payload (which prepends its own `search_id` and is
-// otherwise byte-for-byte the same). They used to be two hand-written
-// serialisers that had to be kept in step by hand, and had already drifted --
-// the REST one grew `kad_comment_lookup_running` and `comments[]` that the
-// event never gained. Emitting the fields from one place is what makes the
-// documented promise structural instead of aspirational.
+// Two surfaces serve the same object and are documented as carrying the identical shape: the
+// `results[]` array of GET /search/{id}/results, and the `search_result_added` SSE payload, which
+// prepends its own `search_id` and is otherwise byte for byte the same. They used to be two hand-
+// written serialisers kept in step by hand, and had already drifted -- the REST one grew
+// `kad_comment_lookup_running` and `comments[]` that the event never gained. Emitting the fields
+// from one place is what makes the documented promise structural instead of aspirational.
 //
-// Braces are the caller's so the event can put `search_id` first.
+// Braces are the caller's, so the event can put `search_id` first.
 void WriteSearchResultFields(CJsonWriter &w, const SearchResult &r);
 
 } // namespace webapi

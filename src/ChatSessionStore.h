@@ -35,24 +35,22 @@
 
 // The core's record of who we are chatting with and what was said.
 //
-// Chat used to exist only inside the monolithic GUI's notebook tabs, which
-// left nothing for EC to serve and no way for two clients to agree on the
-// transcript. This store moves the model into the core so the local GUI,
-// amulegui and amuleapi are three views of one conversation rather than three
-// private ones.
+// Chat used to exist only inside the monolithic GUI's notebook tabs, which left nothing for EC to
+// serve and no way for two clients to agree on the transcript. This store moves the model into the
+// core so the local GUI, amulegui and amuleapi are three views of one conversation rather than
+// three private ones.
 //
-// Compiled into both `amule` and `amuled` -- no GUI dependency. Owned by
-// CamuleApp, fed at the two existing choke points (CUpDownClient::
-// ProcessChatMessage inbound, CClientList::SendChatMessage outbound).
+// Compiled into both `amule` and `amuled` -- no GUI dependency. Owned by CamuleApp, fed at the two
+// existing choke points (CUpDownClient::ProcessChatMessage inbound, CClientList::SendChatMessage
+// outbound).
 //
-// In-memory only: an amuled restart empties it, which is the behaviour the
-// monolithic GUI already has (the transcript dies with the notebook page).
-// Persisting it is a self-contained follow-up that needs no EC change.
+// In-memory only: an amuled restart empties it, which is what the monolithic GUI already does (the
+// transcript dies with the notebook page). Persisting it is a self-contained follow-up that needs
+// no EC change.
 //
-// **Threading:** every mutator runs on the main thread, from the packet
-// handlers and the EC request handlers, exactly like CClientList. No locking,
-// deliberately -- adding a mutex here would imply off-thread callers that do
-// not exist and would have to be audited into existence.
+// **Threading:** every mutator runs on the main thread, from the packet handlers and the EC request
+// handlers, exactly like CClientList. No locking, deliberately -- a mutex here would imply off-
+// thread callers that do not exist.
 class CChatSessionStore
 {
 public:
@@ -83,15 +81,15 @@ public:
 		uint32 LastMsgId() const { return messages.empty() ? 0 : messages.back().id; }
 	};
 
-	// Bounded so a chatty peer cannot grow the daemon without limit. Plain
-	// constants rather than preferences: nobody has asked to tune them, and a
-	// pref would need EC prefs plumbing to be reachable from a remote client.
+	// Bounded so a chatty peer cannot grow the daemon without limit. Plain constants rather
+	// than preferences: nobody has asked to tune them, and a pref would need EC prefs plumbing
+	// to be reachable from a remote client.
 	static const size_t MAX_MESSAGES_PER_SESSION = 200;
 	static const size_t MAX_SESSIONS = 50;
 
-	// Record one message, creating the session when it is the first. `name`
-	// updates the stored display name when non-empty, so a peer that only
-	// reveals its nick later still ends up named. Returns the id assigned.
+	// Record one message, creating the session when it is the first. `name` updates the stored
+	// display name when non-empty, so a peer that only reveals its nick later still ends up
+	// named. Returns the id assigned.
 	uint32 AddIncoming(uint64 gui_id, const wxString &name, const wxString &text);
 	uint32 AddOutgoing(uint64 gui_id, const wxString &text);
 
@@ -115,10 +113,9 @@ private:
 	uint32 Append(Session &s, uint8 direction, const wxString &text);
 	void EvictSessionsIfNeeded();
 
-	// A list, not a map: the working set is at most MAX_SESSIONS, and the
-	// dominant operations are "walk in activity order" and "move to front",
-	// both O(1) here and both awkward on a map keyed by GUI_ID. Front is the
-	// most recently active session.
+	// A list, not a map: the working set is at most MAX_SESSIONS, and the dominant operations
+	// are "walk in activity order" and "move to front", both O(1) here and both awkward on a
+	// map keyed by GUI_ID. Front is the most recently active session.
 	std::list<Session> m_sessions;
 	uint32 m_lastMsgId = 0;
 };

@@ -48,20 +48,19 @@ constexpr int kSplashWidth = 440;
 constexpr int kSplashHeight = 340;
 constexpr int kLogoSize = 128;
 
-// Gradient, matching the artwork the splash replaces: an ellipse centred on the
-// panel, falling off linearly from a lifted grey to black. The radius is
-// normalised per axis, so the ellipse follows the panel's shape rather than
-// being circular, and reaches black past the corners rather than exactly at them.
+// Gradient, matching the artwork the splash replaces: an ellipse centred on the panel, falling off
+// linearly from a lifted grey to black. The radius is normalised per axis, so the ellipse follows
+// the panel's shape rather than being circular, and reaches black past the corners rather than
+// exactly at them.
 constexpr int kCentreR = 79;
 constexpr int kCentreG = 79;
 constexpr int kCentreB = 82;
 constexpr double kBlackAtRadius = 1.39;
 
-// Repaint at most this often while the caller reports progress. Time-based
-// rather than every-N-items: the shared-file scan runs at wildly different
-// speeds depending on whether the files are local or on network storage, so a
-// count-based rule is either too coarse or too costly. At 10 Hz the bar looks
-// continuous and the cost stays negligible.
+// Repaint at most this often while the caller reports progress. Time-based rather than every-N-
+// items: the shared-file scan runs at wildly different speeds depending on whether the files are
+// local or on network storage, so a count-based rule is either too coarse or too costly. At 10 Hz
+// the bar looks continuous and costs almost nothing.
 constexpr long kRepaintIntervalMs = 100;
 
 // Minimum time on screen. A startup that beats this would otherwise show
@@ -70,9 +69,9 @@ constexpr long kMinimumVisibleMs = 1500;
 
 // Shrinks @a font until @a text fits @a maxWidth, and draws it centred.
 //
-// A guard rather than a layout scheme: every string here is short enough at
-// the intended size, but they are translated and the panel is fixed-width, so
-// one long translation would otherwise run off both edges unnoticed.
+// A guard rather than a layout scheme: every string here is short enough at the intended size, but
+// they are translated and the panel is fixed-width, so one long translation would otherwise run off
+// both edges unnoticed.
 void DrawFittedText(
 	wxDC &dc, const wxString &text, wxFont font, int maxWidth, int centreX, int y, wxSize &extent)
 {
@@ -120,9 +119,9 @@ CSplashScreen::CSplashScreen(wxWindow *parent)
 	SetClientSize(FromDIP(wxSize(kSplashWidth, kSplashHeight)));
 	SetBackgroundStyle(wxBG_STYLE_PAINT);
 	RenderBackdrop();
-	// Explicitly on the screen rather than on the parent: with a parent set,
-	// Centre() would centre on a main window that is not on screen yet, and
-	// its saved geometry can put the splash anywhere or off-screen entirely.
+	// Explicitly on the screen rather than on the parent: with a parent set, Centre() would
+	// centre on a main window that is not on screen yet, and its saved geometry can put the
+	// splash anywhere or off-screen entirely.
 	CentreOnScreen();
 }
 
@@ -166,8 +165,8 @@ void CSplashScreen::RenderBackdrop()
 	}
 
 	// Application name and running version. The version-number macros rather than
-	// GetMuleVersion(), which deliberately describes the build for debugging --
-	// toolkit, Boost, snapshot revision -- and is a paragraph, not a title.
+	// GetMuleVersion(), which deliberately describes the build for debugging -- toolkit, Boost,
+	// snapshot revision -- and is a paragraph, not a title.
 	wxFont title = GetFont();
 	title.SetPointSize(title.GetPointSize() + 6);
 	title.SetWeight(wxFONTWEIGHT_BOLD);
@@ -232,14 +231,14 @@ void CSplashScreen::SetProgress(const wxString &status, int percent, bool immedi
 
 	Refresh(false);
 
-	// The event loop has to run for the invalidation to reach the screen: under
-	// GTK3, Update() cannot force a synchronous repaint the way it does elsewhere,
-	// since drawing is driven by the frame clock, which only ticks from the loop.
+	// The event loop has to run for the invalidation to reach the screen: under GTK3, Update()
+	// cannot force a synchronous repaint the way it does elsewhere, since drawing is driven by
+	// the frame clock, which only ticks from the loop.
 	//
-	// wxSafeYield rather than wxYield: it disables every other top-level window for
-	// the duration, so input arriving while the application is half-built is
-	// discarded rather than dispatched into subsystems that do not exist yet. The
-	// rate limit above bounds what this costs.
+	// wxSafeYield rather than wxYield: it disables every other top-level window for the
+	// duration, so input arriving while the application is half-built is discarded rather than
+	// dispatched into subsystems that do not exist yet. The rate limit above bounds what this
+	// costs.
 	wxSafeYield(this, true);
 
 	m_updateMicros += (wxGetUTCTimeMillis() - now);
@@ -249,13 +248,13 @@ void CSplashScreen::Finish()
 {
 	const wxLongLong visibleMs = wxGetUTCTimeMillis() - m_shownAt;
 
-	// Debug level: this is the splash's own overhead against the work it reports
-	// on, which matters when tuning the phase weighting but is noise in a user's
-	// log. The phase timings themselves are logged normally.
+	// Debug level: this is the splash's own overhead against the work it reports on, which
+	// matters when tuning the phase weighting but is noise in a user's log. The phase timings
+	// themselves are logged normally.
 	//
-	// logGeneral, not logStandard: the latter is the -1 sentinel meaning "not a
-	// debug category", so a debug line asking whether it is enabled reaches
-	// CLogger::IsEnabled, whose index check rejects anything below zero.
+	// logGeneral, not logStandard: the latter is the -1 sentinel meaning "not a debug
+	// category", so a debug line asking whether it is enabled reaches CLogger::IsEnabled, whose
+	// index check rejects anything below zero.
 	AddDebugLogLineN(logGeneral,
 		CFormat("Splash: %u repaints costing %lld ms, %lld ms taken from startup, "
 			"over %lld ms on screen") %
@@ -268,9 +267,9 @@ void CSplashScreen::Finish()
 		return;
 	}
 
-	// Under the floor: hand the close to a one-shot timer so the main thread
-	// carries on. wxWindow::Destroy() is already deferred (it posts to the
-	// idle handler), so the frame outlives this call either way.
+	// Under the floor: hand the close to a one-shot timer so the main thread carries on.
+	// wxWindow::Destroy() is already deferred (it posts to the idle handler), so the frame
+	// outlives this call either way.
 	const int remainingMs = static_cast<int>((kMinimumVisibleMs - visibleMs).ToLong());
 	m_closeTimer.SetOwner(this);
 	m_closeTimer.StartOnce(remainingMs);

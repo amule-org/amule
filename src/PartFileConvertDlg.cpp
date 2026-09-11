@@ -246,13 +246,11 @@ void CPartFileConvertDlg::RemoveSel(wxCommandEvent &WXUNUSED(event))
 	if (m_joblist->GetSelectedItemCount() == 0)
 		return;
 
-	// Collect every selected job id before issuing any removal. The
-	// notification is delivered synchronously on the main thread, so
-	// each Notify_ConvertRemoveJob() reaches CPartFileConvertDlg::
-	// RemoveJobInfo() and DeleteItem()s the row before this function
-	// returns -- which invalidates the next GetNextItem() walk when
-	// the last surviving selected row was the last row overall
-	// (wxGenericListCtrl::GetNextItem asserts "ret < max" because
+	// Collect every selected job id before issuing any removal. The notification is delivered
+	// synchronously on the main thread, so each Notify_ConvertRemoveJob() reaches
+	// CPartFileConvertDlg::RemoveJobInfo() and DeleteItem()s the row before this function
+	// returns -- which invalidates the next GetNextItem() walk when the last surviving selected
+	// row was the last row overall (wxGenericListCtrl::GetNextItem asserts "ret < max" because
 	// item_nr is now past the shrunken end).
 	std::vector<wxUIntPtr> ids;
 	ids.reserve(m_joblist->GetSelectedItemCount());

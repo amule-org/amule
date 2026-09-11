@@ -116,9 +116,8 @@ SearchFile::SearchFile(const CEC_SearchFile_Tag *tag)
 	bPresent = tag->AlreadyHave();
 }
 
-// Parse a size string like "100M", "1G", "512K", "12345" (bytes default).
-// Suffixes are case-insensitive and use binary multipliers
-// (K=1024, M=1024*1024, G=1024*1024*1024). Returns true on success.
+// Parse a size string like "100M", "1G", "512K", "12345" (bytes by default). Suffixes are case-
+// insensitive and binary (K=1024, M=1024*1024, G=1024*1024*1024). True on success.
 static bool ParseSizeWithSuffix(const wxString &s, uint64 &out)
 {
 	if (s.IsEmpty()) {
@@ -154,11 +153,10 @@ static bool ParseSizeWithSuffix(const wxString &s, uint64 &out)
 	return true;
 }
 
-// Strip optional --type / --extension / --avail / --min-size / --max-size flags
-// from `args`, leaving only the search keyword(s). Each flag takes exactly one
-// whitespace-separated value; unknown tokens are preserved as part of the query,
-// joined by single spaces in input order. False if a flag is missing its value
-// or a value fails to parse, in which case the outputs are undefined.
+// Strip optional --type / --extension / --avail / --min-size / --max-size flags from `args`,
+// leaving the search keywords. Each flag takes exactly one whitespace-separated value; unknown
+// tokens stay part of the query, joined by single spaces in input order. False if a flag is missing
+// its value or a value fails to parse, in which case the outputs are undefined.
 static bool ParseSearchFilters(wxString &args,
 	wxString &type,
 	wxString &extension,
@@ -772,8 +770,8 @@ int CamulecmdApp::ProcessCommand(int CmdId)
 	return CMD_OK;
 }
 
-/*
- * Method to show the results in the console
+/**
+ * Shows the results in the console.
  */
 void CamulecmdApp::ShowResults(CResultMap results_map)
 {
@@ -819,8 +817,8 @@ static wxString StatTree2Text(const CEC_StatTree_Node_Tag *tree, int depth)
 	return result;
 }
 
-/*
- * Format EC packet into text form for output to console
+/**
+ * Formats an EC packet into text for the console.
  */
 void CamulecmdApp::Process_Answer_v2(const CECPacket *response)
 {
@@ -878,9 +876,9 @@ void CamulecmdApp::Process_Answer_v2(const CECPacket *response)
 		for (CECPacket::const_iterator it = response->begin(); it != response->end(); ++it) {
 			const CECTag &tag = *it;
 			if (tag.GetTagName() == EC_TAG_SEARCH_ID) {
-				// Multi-search: the daemon-allocated search ID. Pass it to
-				// 'results <id>' / 'progress <id>' to address this search;
-				// no-arg acts on the most recent one.
+				// Multi-search: the daemon-allocated search ID. Pass it to 'results
+				// <id>' / 'progress <id>' to address this search; no-arg acts on
+				// the most recent one.
 				s << CFormat(_("Search started (id %u).\n")) % tag.GetInt();
 			} else if (tag.IsString()) {
 				s << tag.GetStringData() << "\n";
@@ -947,9 +945,9 @@ void CamulecmdApp::Process_Answer_v2(const CECPacket *response)
 			uint64 filesize, donesize;
 			filesize = tag->SizeFull();
 			donesize = tag->SizeDone();
-			// Still two lines per entry: the newline delimits records and the
-			// leading tab marks the continuation, so splitting each line on the
-			// separator stays unambiguous.
+			// Still two lines per entry: the newline delimits records and the leading
+			// tab marks the continuation, so splitting each line on the separator stays
+			// unambiguous.
 			s << tag->FileHashString() << Sep(" ") << Field(tag->FileName())
 			  << (CFormat("\n\t [%.1f%%]") % ((float)donesize / ((float)filesize) * 100.0))
 			  << Sep(" ")
@@ -957,9 +955,9 @@ void CamulecmdApp::Process_Answer_v2(const CECPacket *response)
 				     ((int)tag->SourceCount() - (int)tag->SourceNotCurrCount()) %
 				     (int)tag->SourceCount())
 			  << Sep(" ")
-			  // The no-value branches were padding that stood in for the
-			  // value AND its separator, so in tab mode each becomes one
-			  // empty field -- every row keeps the same field count.
+			  // The no-value branches were padding that stood in for the value AND its
+			  // separator, so in tab mode each becomes one empty field -- every row keeps the
+			  // same field count.
 			  << ((int)tag->SourceCountA4AF()
 					     ? wxString(CFormat("+%2.2i") % (int)tag->SourceCountA4AF()) +
 						       Sep(" ")
@@ -1090,11 +1088,11 @@ void CamulecmdApp::Process_Answer_v2(const CECPacket *response)
 		break;
 	}
 	case EC_OP_SEARCH_PROGRESS:
-		// Every shape the daemon may answer with, decoded in one place. This
-		// used to read EC_TAG_SEARCH_STATUS off the top level, which the union
-		// reply does not carry there -- and since amulecmd advertises the
-		// union capability along with multi-search, the union is exactly what
-		// it gets, so `progress` reported 0 % whatever the search was doing.
+		// Every shape the daemon may answer with, decoded in one place. This used to read
+		// EC_TAG_SEARCH_STATUS off the top level, which the union reply does not carry
+		// there -- and since amulecmd advertises the union capability along with multi-
+		// search, the union is exactly what it gets, so `progress` reported 0 % whatever
+		// the search was doing.
 		s += ecprogress::FormatSearchProgress(*response);
 		break;
 	default:
@@ -1360,9 +1358,7 @@ void CamulecmdApp::OnInitCommandSet()
 			"will start to download the file with the number 12 of the previous search.\n"),
 		CMD_PARAM_ALWAYS);
 
-	//
 	// TODO: These commands below need implementation and/or rewrite!
-	//
 
 	m_commands.AddCommand("Pause", CMD_ID_PAUSE, wxTRANSLATE("Pause download."), "", CMD_PARAM_ALWAYS);
 
@@ -1402,9 +1398,7 @@ void CamulecmdApp::OnInitCommandSet()
 
 	m_commands.AddCommand("Reset", CMD_ID_RESET_LOG, wxTRANSLATE("Reset log."), "", CMD_PARAM_NEVER);
 
-	//
 	// Deprecated commands, kept for backwards compatibility only.
-	//
 
 #define DEPRECATED(OLDCMD, ID, NEWCMD, PARAM) \
 	m_commands.AddCommand(OLDCMD, \
@@ -1428,10 +1422,9 @@ void CamulecmdApp::OnInitCommandSet()
 
 int CamulecmdApp::OnRun()
 {
-	// amulecmd reads EC_TAG_SEARCH_ID back and addresses results/progress by
-	// it, so opt into the multi-search protocol: several searches can be kept
-	// on the daemon at once and referenced by ID (no-arg commands act on the
-	// most-recently-started one).
+	// amulecmd reads EC_TAG_SEARCH_ID back and addresses results/progress by it, so opt into
+	// the multi-search protocol: several searches can be kept on the daemon at once and
+	// referenced by ID (no-arg commands act on the most recent).
 	m_canMultiSearch = true;
 	ConnectAndRun("aMulecmd", VERSION);
 	return 0;

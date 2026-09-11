@@ -49,9 +49,8 @@ namespace
 // Layout of the holder record, shared by both implementations:
 //   line 1  the writer's pid
 //   line 2  what it was: "amule", "amuled" or "amulegui"
-// A file with only the first line was written by an aMule that predates the
-// second, and leaves `kind` empty, which every caller reads as "assume it can
-// be raised" -- the behaviour that shipped before.
+// A file with only the first line was written by an aMule predating the second, and leaves `kind`
+// empty, which every caller reads as "assume it can be raised".
 void ParseHolder(const char *text, int &pid, wxString &kind)
 {
 	pid = 0;
@@ -135,14 +134,14 @@ InstanceLock::Result InstanceLock::Acquire(
 	}
 	m_anotherRunning = m_wxImpl->IsAnotherRunning();
 
-	// The mutex answers "is another instance running" but says nothing about WHICH:
-	// amuled shares this name with the monolithic GUI, and only one of them has a
-	// window to raise. wxSingleInstanceChecker keeps no file, so the two facts POSIX
-	// writes into the lock file are written beside the mutex here.
+	// The mutex answers "is another instance running" but says nothing about WHICH: amuled
+	// shares this name with the monolithic GUI, and only one of them has a window to raise.
+	// wxSingleInstanceChecker keeps no file, so the two facts POSIX writes into the lock file
+	// are written beside the mutex here.
 	//
-	// No liveness check is needed on this side: the OS releases a named mutex when
-	// its owner dies, so a held mutex proves a live holder, and a file left by a
-	// crash is overwritten by the next acquire.
+	// No liveness check is needed on this side: the OS releases a named mutex when its owner
+	// dies, so a held mutex proves a live holder, and a file left by a crash is overwritten by
+	// the next acquire.
 	if (m_anotherRunning) {
 		ReadHolderFile(m_path, m_holderPid, m_holderKind);
 		return LOCK_HELD;
@@ -166,19 +165,17 @@ void InstanceLock::Release()
 InstanceLock::Result InstanceLock::Acquire(
 	const wxString &filename, const wxString &dir, const wxString &selfKind)
 {
-	// Idempotent-caller contract (see header). Drop any existing fd first without
-	// unlinking -- the file is replaced by the open() below, and unlinking here
-	// would leave a window with no lock file on disk for a third instance to slip
-	// through.
+	// Idempotent-caller contract (see header). Drop any existing fd first without unlinking --
+	// the file is replaced by the open() below, and unlinking here would leave a window with no
+	// lock file on disk for a third instance to slip through.
 	if (m_fd != -1) {
 		(void)close(m_fd);
 		m_fd = -1;
 	}
 	m_path = dir + filename;
 
-	// Open (or create) the lock file. Unlike wxSingleInstanceChecker we
-	// do NOT use O_EXCL: the file's presence isn't the signal, the
-	// kernel-held fcntl lock is.
+	// Open (or create) the lock file. Unlike wxSingleInstanceChecker we do NOT use O_EXCL: the
+	// file's presence is not the signal, the kernel-held fcntl lock is.
 	m_fd = open(m_path.fn_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
 	if (m_fd == -1) {
 		return LOCK_ERROR;
@@ -203,13 +200,11 @@ InstanceLock::Result InstanceLock::Acquire(
 
 	if (fcntl(m_fd, F_SETLK, &fl) == -1) {
 		int saved = errno;
-		// EACCES and EAGAIN both mean "prohibited by another process's
-		// lock" -- POSIX allows either and the platforms differ, so
-		// neither can be read as a permission problem. Record who the
-		// file SAYS owns it before closing, while we still have the fd.
-		// Whether that pid is alive is the caller's question, and the
-		// only thing separating "an aMule is running" from "something
-		// else has this file".
+		// EACCES and EAGAIN both mean "prohibited by another process's lock" -- POSIX
+		// allows either and the platforms differ, so neither can be read as a permission
+		// problem. Record who the file SAYS owns it before closing, while we still have the
+		// fd. Whether that pid is alive is the caller's question, and the only thing
+		// separating "an aMule is running" from "something else has this file".
 		m_holderPid = 0;
 		if (saved == EAGAIN || saved == EACCES) {
 			char held[64] = { 0 };
@@ -229,13 +224,10 @@ InstanceLock::Result InstanceLock::Acquire(
 		return LOCK_ERROR;
 	}
 
-	// Refresh the on-disk PID, and what we are, as a diagnostic aid ("who
-	// owns muleLock?" via `cat`) and so a later launch can tell a raisable
-	// GUI holder from a headless daemon.
-	// via `cat`). The kernel - not this integer - is the source of
-	// truth. Under a PID-namespaced sandbox (Flatpak, docker) this is
-	// the sandbox-local pid and may not match anything visible on the
-	// host, but is still useful for triage.
+	// Refresh the on-disk pid, and what we are, as a triage aid ("who owns muleLock?" via
+	// `cat`) and so a later launch can tell a raisable GUI holder from a headless daemon. The
+	// kernel -- not this integer -- is the source of truth. Under a PID-namespaced sandbox
+	// (Flatpak, docker) this is the sandbox-local pid and may match nothing on the host.
 	(void)ftruncate(m_fd, 0);
 	char buf[96];
 	int n = snprintf(buf, sizeof(buf), "%d\n%s\n", (int)getpid(), (const char *)selfKind.utf8_str());

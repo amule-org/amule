@@ -39,18 +39,8 @@
 
 class CPath;
 
-/**
- * Helper function.
- *
- * @param ArgA The base value.
- * @param ArgB The value to compare ArgA against.
- * @return See below.
- *
- * Use this function to safely compare two arguments of a type that supports
- * the "<" operator. It works like strcmp and returns a negative value if ArgA
- * is less than ArgB, zero if ArgA is equal to ArgB and a positive value if
- * ArgA is greater than ArgB.
- */
+/// Compares two values of a type supporting "<", like strcmp: negative if @a ArgA is less than @a
+/// ArgB, zero if equal, positive if greater.
 template <class TYPE> int CmpAny(const TYPE &ArgA, const TYPE &ArgB)
 {
 	if (ArgA < ArgB) {
@@ -82,13 +72,8 @@ inline int CmpAny(const wxChar *ArgA, const wxChar *ArgB)
 	return CmpAny(wxString(ArgA), wxString(ArgB));
 }
 
-/**
- * Removes the first instance of a value from a STL-like list: list, vector or deque.
- *
- * @param list The list to manipulate.
- * @param item The value to search for and remove.
- * @return The number of instances removed.
- */
+/// Removes the first instance of @a item from a STL-like list, vector or deque. Returns how many
+/// were removed.
 template <typename LIST, typename ITEM> unsigned int EraseFirstValue(LIST &list, const ITEM &item)
 {
 	typename LIST::iterator it = list.begin();
@@ -104,13 +89,8 @@ template <typename LIST, typename ITEM> unsigned int EraseFirstValue(LIST &list,
 	return false;
 }
 
-/**
- * Removes all instances of a value from a STL-like list: list, vector or deque.
- *
- * @param list The list to manipulate.
- * @param item The value to search for and remove.
- * @return The number of instances removed.
- */
+/// Removes every instance of @a item from a STL-like list, vector or deque. Returns how many were
+/// removed.
 template <typename LIST, typename ITEM> unsigned int EraseValue(LIST &list, const ITEM &item)
 {
 	typename LIST::iterator it = list.begin();
@@ -152,52 +132,22 @@ template <typename STL_CONTAINER> void DeleteContents(STL_CONTAINER &container)
 	std::for_each(copy.begin(), copy.end(), SDoDelete());
 }
 
-/**
- * Copies elements from the range [first, first + n) to the range [result, result + n).
- */
+/// Copies elements from [first, first + n) to [result, result + n).
 template <class InputIterator, class OutputIterator>
 OutputIterator STLCopy_n(InputIterator first, size_t n, OutputIterator result)
 {
 	return std::copy(first, first + n, result);
 }
 
-/**
- * Helperfunction for accessing a child of the calling widget.
- *
- * @param IdOrName The ID or the Name of the widget to find.
- * @param type The widget-type to cast the found widget to.
- *
- * Use this function as a replacement for the following constructs:
- *  - wxStaticCast( FindWindow( <IdOrName> ), <type> )
- *  - (<type>*)FindWindow( <IdOrName> )
- *
- * It has the advantage of validating the cast in debug builds and being much
- * shorter than than manually typing wxStaticCast + FindWindow. This mean that
- * we will be alerted in case of widget changing type, instead of getting just
- * getting bad mojo due to casting a pointer to the wrong type.
- */
+/// Accesses a child of the calling widget, replacing wxStaticCast(FindWindow(<IdOrName>), <type>).
+/// Shorter, and the dynamic_cast reports a widget that changed type instead of quietly handing back
+/// a bad pointer.
 #define CastChild(IdOrName, type) dynamic_cast<type *>(FindWindow(IdOrName))
 
-/**
- * Helperfunction for accessing the child of a any widget by ID.
- *
- * @param ID The ID of the widget to find.
- * @param parent The parent of the widget to find, or NULL to search from the top.
- * @param type The type to cast the widget to.
- *
- * @see CastChild()
- */
+/// Accesses any widget's child by ID; @a parent NULL searches from the top. @see CastChild()
 #define CastByID(ID, parent, type) dynamic_cast<type *>(wxWindow::FindWindowById((ID), (parent)))
 
-/**
- * Helperfunction for accessing the child of a any widget by Name.
- *
- * @param Name The Name of the widget to find.
- * @param parent The parent of the widget to find, or NULL to search from the top.
- * @param type The type to cast the widget to.
- *
- * @see CastChild()
- */
+/// Accesses any widget's child by Name; @a parent NULL searches from the top. @see CastChild()
 #define CastByName(Name, parent, type) dynamic_cast<type *>(wxWindow::FindWindowByName((Name), (parent)))
 
 // From Gnucleus project [found by Tarod]
@@ -219,33 +169,28 @@ wxString CastItoSpeed(uint32 bytes);
 // Converts an amount of seconds to human readable time.
 wxString CastSecondsToHM(uint32 seconds, uint16 msecs = 0);
 /**
- * A timestamp written the way the user's locale writes one.
+ * Punctuation for a "label: value" pair, applied to an already-translated label.
  *
- * "%x %X", so the day/month order, the separators and the 12- or 24-hour
- * clock all come from LC_TIME rather than from us. Every timestamp the
- * interface shows goes through here, so the choice is made once instead of
- * per call site -- which is how they came to disagree with each other
- * (amule-org/amule#925).
- *
- * Not for the log or for anything on the wire. An ISO 8601 stamp sorts
- * lexicographically, cannot be read day-first or month-first by mistake and
- * survives being pasted into a bug report by someone in another locale, all
- * of which matter more there than looking familiar does.
- */
-/**
- * Punctuation for a "label: value" pair, applied to an already-translated
- * label.
- *
- * Where the colon sits is a property of the language, not of the layout:
- * Russian typography forbids a space before it, French requires one. Building
- * the string in C++ ("label" + ": ") puts that choice out of a translator's
- * reach, which is what amule-org/amule#1294 reported. Routing it through one
- * catalog entry settles the convention for every label at once, and lets the
- * bare label stay shared with the list columns and menus that already
- * translate it -- rather than each dialog minting a colon-suffixed twin.
+ * Where the colon sits is a property of the language, not of the layout: Russian typography forbids
+ * a space before it, French requires one. Building the string in C++ ("label" + ": ") puts that
+ * choice out of a translator's reach (amule-org/amule#1294). One catalog entry settles the
+ * convention for every label at once, and lets the bare label stay shared with the list columns and
+ * menus that already translate it, rather than each dialog minting a colon-suffixed twin.
  */
 wxString LabelWithColon(const wxString &label);
 
+/**
+ * A timestamp written the way the user's locale writes one.
+ *
+ * "%x %X", so the day/month order, the separators and the 12- or 24-hour clock all come from
+ * LC_TIME rather than from us. Every timestamp the interface shows goes through here, so the
+ * choice is made once instead of per call site -- which is how they came to disagree with each
+ * other (amule-org/amule#925).
+ *
+ * Not for the log or for anything on the wire. An ISO 8601 stamp sorts lexicographically, cannot
+ * be read day-first or month-first by mistake and survives being pasted into a bug report by
+ * someone in another locale, all of which matter more there than looking familiar does.
+ */
 wxString FormatLocalDateTime(const wxDateTime &when);
 // Date-only form of the above, for a column too narrow to carry both.
 wxString FormatLocalDate(const wxDateTime &when);
@@ -279,9 +224,7 @@ wxString GetFiletypeByName(const CPath &filename, bool translated = true);
 // Returns the name associated with a category value.
 wxString GetCatTitle(AllCategoryFilter cat);
 
-///////////////////////////////////////////////////////////////////////////////
 // ED2K File Type
-//
 
 enum EED2KFileType
 {
@@ -308,27 +251,24 @@ private:
 
 EED2KFileType GetED2KFileTypeID(const CPath &fileName);
 
-//! True when a file's name marks it as something ffprobe could extract media
-//! metadata from -- audio or video by extension.
+//! True when a file's name marks it as something ffprobe could extract media metadata from -- audio
+//! or video by extension.
 //!
-//! Lives here, in muleappcommon, because the core and the GUI must agree on it:
-//! the scheduler uses it to decide what to probe, and the shared-files view to
-//! decide whether to offer the action at all. Two copies of the rule would
-//! eventually disagree, and the symptom would be a menu entry that is enabled
-//! and silently does nothing.
+//! Lives in muleappcommon because the core and the GUI must agree on it: the scheduler uses it to
+//! decide what to probe, and the shared-files view to decide whether to offer the action at all.
+//! Two copies of the rule would eventually disagree, and the symptom would be a menu entry that is
+//! enabled and silently does nothing.
 //!
-//! Says nothing about whether the file is COMPLETE. An in-progress download is in
-//! the shared list as a partfile with nothing readable on disk, and callers test
-//! that separately.
+//! Says nothing about whether the file is COMPLETE. An in-progress download is in the shared list
+//! as a partfile with nothing readable on disk, and callers test that separately.
 bool IsMediaProbeCandidate(const CPath &fileName);
 wxString GetED2KFileTypeSearchTerm(EED2KFileType iFileID);
 wxString GetFileTypeByName(const CPath &fileName);
 EED2KFileType GetED2KFileTypeSearchID(EED2KFileType iFileID);
 ///////////////////////////////////////////////////////////////////////////////
 
-// md4cmp -- replacement for memcmp(hash1,hash2,16)
-// Like 'memcmp' this function returns 0, if hash1==hash2, and !0, if hash1!=hash2.
-// NOTE: Do *NOT* use that function for determining if hash1<hash2 or hash1>hash2.
+// md4cmp -- replacement for memcmp(hash1, hash2, 16): 0 if equal, non-zero otherwise. Do NOT use it
+// to decide whether hash1 < hash2.
 inline int md4cmp(const void *hash1, const void *hash2)
 {
 	return memcmp(hash1, hash2, 16);
@@ -358,12 +298,10 @@ void DumpMem_DW(const uint32 *ptr, int count);
 #define PORT_FROM_GUI_ID(x) (x & 0xFFFF)
 #define IP_FROM_GUI_ID(x) (x >> 16)
 
-// Label for a chat peer the core has no nickname for, built from its GUI_ID.
-//
-// Deliberately NOT translated: the same label is rendered by the monolithic
-// chat selector, by amulegui and by amuleapi's /chats, and the API contract
-// fixes it as English. Translating the GUI copies alone would show the same
-// conversation under two different names depending on which client you opened.
+// Label for a chat peer the core has no nickname for, built from its GUI_ID. Deliberately NOT
+// translated: the same label is rendered by the monolithic chat selector, by amulegui and by
+// amuleapi's /chats, and the API contract fixes it as English. Translating the GUI copies alone
+// would show one conversation under two names depending on which client you opened.
 inline wxString ChatPeerFallbackName(uint64 gui_id)
 {
 	return CFormat(wxT("IP: %s Port: %u")) % Uint32toStringIP(IP_FROM_GUI_ID(gui_id)) %
@@ -393,38 +331,27 @@ struct CVersionCompareResult
 	wxString latest;
 };
 
-// Parse the `tag_name` from a GitHub /releases/latest JSON body and compare
-// it against this binary's compiled VERSION_MJR/MIN/UPDATE. Pure and
-// wxBase-only (no GUI, no preferences), so the daemon check
-// (CamuleApp::CheckNewVersion), the GUI check (CVersionCheck) and amuleapi
-// all share one implementation.
+// Parse the `tag_name` from a GitHub /releases/latest JSON body and compare it against this
+// binary's compiled VERSION_MJR/MIN/UPDATE. Pure and wxBase-only (no GUI, no preferences), so the
+// daemon check (CamuleApp::CheckNewVersion), the GUI check (CVersionCheck) and amuleapi all share
+// one implementation.
 CVersionCompareResult CompareLatestReleaseVersion(const wxString &json);
 
 wxString GetConfigDir(const wxString &configFile);
 
-/**
- * Adds aMule's custom languages to db.
- */
+/// Adds aMule's custom languages to db.
 void InitCustomLanguages();
 
-/**
- * Initializes locale
- */
+/// Initializes the locale.
 void InitLocale(wxLocale &locale, int language);
 
-/**
- * Converts a string locale definition to a wxLANGUAGE id.
- */
+/// Converts a string locale definition to a wxLANGUAGE id.
 int StrLang2wx(const wxString &language);
 
-/**
- * Converts a wxLANGUAGE id to a string locale name.
- */
+/// Converts a wxLANGUAGE id to a string locale name.
 wxString wxLang2Str(const int lang);
 
-/**
- * Generate MD5Hash of prompt input
- */
+/// Generates the MD5 hash of prompted input.
 CMD4Hash GetPassword(bool allowEmptyPassword = false);
 
 #if wxUSE_THREADS
@@ -432,23 +359,16 @@ CMD4Hash GetPassword(bool allowEmptyPassword = false);
 #include <wx/thread.h>
 
 /**
- * Automatically unlocks a mutex on construction and locks it on destruction.
- *
- * This class is the complement of wxMutexLocker.  It is intended to be used
- * when a mutex, which is locked for a period of time, needs to be
- * temporarily unlocked for a bit.  For example:
+ * Unlocks a mutex on construction and locks it on destruction: the complement of wxMutexLocker,
+ * for temporarily releasing a mutex held across a longer span.
  *
  *	wxMutexLocker lock(mutex);
- *
- *	// ... do stuff that requires that the mutex is locked ...
- *
+ *	// ... work that needs the mutex locked ...
  *	{
  *		CMutexUnlocker unlocker(mutex);
- *		// ... do stuff that requires that the mutex is unlocked ...
+ *		// ... work that needs it unlocked ...
  *	}
- *
- *	// ... do more stuff that requires that the mutex is locked ...
- *
+ *	// ... more work that needs it locked ...
  */
 class CMutexUnlocker
 {

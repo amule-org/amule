@@ -65,18 +65,16 @@ void CStateMachine::Clock()
 	state_entry = (m_state != old_state) || (m_clockCounter == 1);
 	if (state_entry) {
 		m_clocksInCurrentState = 0;
-		// Uncomment here to debug the state machine.
-		// State changes will be printed to stdout.
+		// Uncomment to debug the state machine; state changes print to stdout.
 		// printf("%s(%04d): %d -> %d\n", (const char *)unicode2char(m_name), m_clockCounter,
-		// old_state, m_state);
+		//     old_state, m_state);
 	}
 	++m_clocksInCurrentState;
 
 	/* Process new state entry */
 	if (m_state < m_maxStates) {
-		/* It should be ok to call Clock() recursively inside this
-		 * procedure because state change has already happened. Also
-		 * the m_state mutex is recursive. */
+		// Calling Clock() recursively inside this procedure should be fine: the state
+		// change has already happened, and the m_state mutex is recursive.
 		process_state(m_state, state_entry);
 	}
 }

@@ -30,63 +30,47 @@
 #include "MuleDebug.h"
 
 /**
- * This class offers a typesafe alternative to wxString::Format.
+ * A typesafe alternative to wxString::Format, implemented against the printf description in
+ * "man 3 printf".
  *
- * %CFormat has been implemented against the description of printf found
- * in the "man 3 printf" manual page.
+ * %CFormat lacks:
+ *  - the @c "*" width-modifier, because only one argument is fed at a time,
+ *  - the @c "n" type, which is unsafe and will not be implemented,
+ *  - the @c "C" and @c "S" types, considered obsolete,
+ *  - the Long Double type, which is extremely slow and should not be used.
  *
- * %CFormat lacks the following capabilities:
- *  - The @c "*" width-modifier, because only one argument is fed at a time.
- *  - The @c "n" type, just unsafe and won't be implemented.
- *  - The @c "C" and @c "S" types, which are considered obsolete.
- *  - The Long Double type, which is extremely slow and shouldn't be used.
+ * Support for the C99 @c a, @c A conversions and the non-standard @c ', @c I flags depends on the
+ * underlying C library. Do not use them. The glibc-specific @c m conversion is supported on every
+ * platform that offers an error description, and is thread-safe wherever that lookup is.
  *
- * Support for the C99 @c a, @c A conversions and the non-standard @c ', @c I
- * flags depend on the underlying C library. Do not use them.
- *
- * Supports the glibc-specific @c m conversion on all platforms, where there's
- * a way to get the error description. If the underlying C library has a
- * thread-safe way to get the error description, then this conversion is
- * thread-safe, too.
- *
- * Deviations from printf(3):
- *
- * %CFormat tries hard to format the passed POD-type according to the
- * conversion type. Basic type conversions may take place to accomplish this
- * goal. This results in formats accepting a variety of types, namely:
- *  - @c c, @c i, @c d, @c u, @c o, @c x, @c X accept @c wxChar and all integer
+ * Deviations from printf(3): %CFormat tries hard to format the passed POD type according to the
+ * conversion type, converting basic types where needed, so a format accepts a variety of types:
+ *  - @c c, @c i, @c d, @c u, @c o, @c x, @c X accept @c wxChar and all integer types,
+ *  - @c a, @c A, @c e, @c E, @c f, @c F, @c g, @c G accept @c wxChar, integer and floating-point
  *    types,
- *  - @c a, @c A, @c e, @c E, @c f, @c F, @c g, @c G accept @c wxChar, integer
- *    and floating-point types,
  *  - @c p accepts only pointers,
- *  - @c s accepts all the above mentioned types in addition to @c wxString and
- *    @c wxChar* types.
+ *  - @c s accepts all of the above plus @c wxString and @c wxChar*.
  *
- * The only exception from this rule is integer (@c d, @c i, @c u) conversion.
- * It will always use the correct conversion (@c i or @c u) depending on the
- * signedness of the passed argument.
+ * The exception is integer (@c d, @c i, @c u) conversion, which always uses @c i or @c u according
+ * to the signedness of the argument passed.
  *
- * @c 's' conversions are inspired by the <em>"we're converting to string,
- * anyway"</em> mood. Thus they use a 'default' conversion for each accepted
- * type: @c 'c' for @c wxChar, @c 'i' and @c 'u' for signed and unsigned
- * integers, respectively, @c 'g' for floating-point numbers and @c 'p' for
- * pointers.
+ * @c 's' conversions follow the "we are converting to string anyway" mood, so each accepted type
+ * gets a default conversion: @c 'c' for @c wxChar, @c 'i' and @c 'u' for signed and unsigned
+ * integers, @c 'g' for floating-point numbers and @c 'p' for pointers.
  *
- * Other relaxations / differences from printf(3):
- *  - Length modifiers are read and validated, but always ignored.
- *  - As a consequence, invalid combinations of length modifiers and conversion
- *    types are silently ignored (i.e. for example the invalid @c '%%qs'
- *    format-specifier is silently treated as @c '%%s').
- *  - @c 'p' conversion ignores all modifiers except the argument index reference.
- *  - You can mix positional and indexed argument references. (You actually can't,
- *    because msgfmt will treat this as an error.)
- *  - With indexed argument references we allow to leave gaps in the indices.
+ * Other relaxations:
+ *  - Length modifiers are read and validated, but always ignored, so an invalid combination of
+ *    length modifier and conversion type is silently ignored (@c '%%qs' is treated as @c '%%s').
+ *  - @c 'p' conversion ignores every modifier except the argument index reference.
+ *  - Positional and indexed argument references can be mixed. (They actually cannot, because
+ *    msgfmt treats that as an error.)
+ *  - Indexed argument references may leave gaps in the indices.
  */
 class CFormat
 {
 private:
 	/**
-	 * Structure to hold a format specifier.
+	 * Holds a format specifier.
 	 */
 	struct FormatSpecifier
 	{
@@ -105,33 +89,20 @@ private:
 
 public:
 	/**
-	 * Constructor.
-	 *
-	 * @param str The format-string to be used.
+	 * @param str The format string to be used.
 	 */
 	CFormat(const wxChar *str) { Init(str); }
 
 	/**
-	 * Constructor.
-	 *
-	 * This form is required to construct from a plain char *
-	 * with wx 2.9
-	 *
-	 * @param str The format-string to be used.
+	 * Required to construct from a plain char * with wx 2.9. @param str The format string to be
+	 * used.
 	 */
 	CFormat(const wxString &str) { Init(str); }
 
 	/**
-	 * Feeds a value into the format-string.
-	 *
-	 * Passing a type that isn't compatible with the current format
-	 * field results in the field being skipped, and an exception raised.
-	 *
-	 * Passing any type to a CFormat with no free fields results in the
-	 * argument being ignored.
-	 *
-	 * Specialize this member template to teach CFormat how to handle
-	 * other types.
+	 * Feeds a value into the format string. A type incompatible with the current format field
+	 * skips the field and raises an exception; any type fed to a CFormat with no free fields is
+	 * ignored. Specialize this member template to teach CFormat other types.
 	 */
 	template <typename _Tp> CFormat &operator%(_Tp value);
 
@@ -153,7 +124,7 @@ public:
 	}
 
 	/**
-	 * Returns the resulting string.
+	 * The resulting string.
 	 */
 	wxString GetString() const;
 
@@ -164,8 +135,6 @@ public:
 
 private:
 	/**
-	 * Initialize internal structures.
-	 *
 	 * Initializes member variables and parses the given format string.
 	 */
 	void Init(const wxString &str);

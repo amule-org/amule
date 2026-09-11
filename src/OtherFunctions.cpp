@@ -52,11 +52,9 @@
 #include <wx/utils.h>
 #endif
 
-// Formats a filesize in bytes to make it suitable for displaying.
-//
-// IEC units, because the arithmetic below is binary: every step divides by 1024,
-// so a figure labelled "GB" was really gibibytes and read about 7% high against
-// anything measuring in powers of 1000 (issue #930).
+// Formats a filesize in bytes for display. IEC units, because the arithmetic below is binary: every
+// step divides by 1024, so a figure labelled "GB" was really gibibytes and read about 7% high
+// against anything measuring in powers of 1000 (issue #930).
 wxString CastItoXBytes(uint64 count)
 {
 
@@ -127,9 +125,9 @@ wxString LabelWithColon(const wxString &label)
 
 wxString FormatLocalDateTime(const wxDateTime &when)
 {
-	// %x %X: both halves come from LC_TIME, so a locale that writes the day first,
-	// or separates with dots, or wants a 12-hour clock, gets what it writes -- and
-	// every timestamp in the interface agrees, because they all arrive here.
+	// %x %X: both halves come from LC_TIME, so a locale that writes the day first, or separates
+	// with dots, or wants a 12-hour clock, gets what it writes -- and every timestamp in the
+	// interface agrees, because they all arrive here.
 	return when.Format("%x %X");
 }
 
@@ -138,9 +136,8 @@ wxString FormatLocalDate(const wxDateTime &when)
 	return when.Format("%x");
 }
 
-// Codec FOURCC -> human-readable name, inspired by eMule AI's MediaInfo.cpp
-// (GPL v2+). Unknown codec IDs pass through unchanged so something useful still
-// shows in the UI.
+// Codec FOURCC -> human-readable name, inspired by eMule AI's MediaInfo.cpp (GPL v2+). Unknown
+// codec IDs pass through unchanged so something useful still shows in the UI.
 wxString FormatMediaCodec(const wxString &raw)
 {
 	if (raw.IsEmpty()) {
@@ -309,14 +306,8 @@ wxString GetRateString(uint16 rate)
 }
 
 /**
- * Return the size in bytes of the given size-type
- *
- * @param type The type (as an int) where: 0 = Byte, 1 = KB, 2 = MB, 3 = GB
- *
- * @return The amount of Bytes the provided size-type represents
- *
- * Values over GB aren't handled since the amount of Bytes 1TB represents
- * is over the uint32 capacity
+ * The size in bytes the given size-type represents. @param type 0 = Byte, 1 = KB, 2 = MB, 3 = GB.
+ * Values over GB are not handled, since 1 TB in bytes exceeds uint32.
  */
 uint32 GetTypeSize(uint8 type)
 {
@@ -482,14 +473,10 @@ unsigned int DecodeBase32(const wxString &base32Buffer, unsigned int base32BufLe
 }
 
 /*
- * base64.c
- *
- * Base64 encoding/decoding command line filter
+ * base64.c -- Base64 encoding/decoding command line filter
  *
  * Copyright (c) 2002-2011 Matthias Gaertner
- * Adapted to use wxWidgets by
- * Copyright (c) 2005-2011 Marcelo Roberto Jimenez ( phoenix@amule.org )
- *
+ * Adapted to use wxWidgets by Copyright (c) 2005-2011 Marcelo Roberto Jimenez ( phoenix@amule.org )
  */
 static const wxString to_b64(
 	/*   0000000000111111111122222222223333333333444444444455555555556666 */
@@ -1368,7 +1355,7 @@ EED2KFileType GetED2KFileTypeSearchID(EED2KFileType iFileID)
 }
 
 /**
- * Dumps a buffer to a wxString
+ * Dumps a buffer to a wxString.
  */
 wxString DumpMemToStr(const void *buff, int n, const wxString &msg, bool ok)
 {
@@ -1421,7 +1408,7 @@ wxString DumpMemToStr(const void *buff, int n, const wxString &msg, bool ok)
 }
 
 /**
- * Dumps a buffer to stdout
+ * Dumps a buffer to stdout.
  */
 void DumpMem(const void *buff, int n, const wxString &msg, bool ok)
 {
@@ -1444,9 +1431,9 @@ CVersionCompareResult CompareLatestReleaseVersion(const wxString &json)
 {
 	CVersionCompareResult result;
 
-	// Extract the `tag_name` string. /releases/latest excludes pre-releases, so the
-	// tag names a stable release, and a regex on the one well-known field is robust
-	// against whitespace and field order without a full JSON parser.
+	// Extract the `tag_name` string. /releases/latest excludes pre-releases, so the tag names a
+	// stable release, and a regex on the one well-known field is robust against whitespace and
+	// field order without a full JSON parser.
 	wxRegEx tagRe(wxT("\"tag_name\"[[:space:]]*:[[:space:]]*\"([^\"]+)\""));
 	if (!tagRe.IsValid() || !tagRe.Matches(json)) {
 		return result; // ParseError
@@ -1494,9 +1481,8 @@ wxString GetConfigDir(const wxString &configFileBase)
 {
 	wxString configPath;
 
-	// "Portable aMule" - Use aMule from an external USB drive
-	// Check for ./config/amule.conf (or whatever gets passed as configFile)
-	// and use this configuration if found
+	// "Portable aMule", run from an external USB drive: check for ./config/amule.conf, or
+	// whatever gets passed as configFile, and use that configuration if found.
 	const wxString configDir = JoinPaths(wxFileName::GetCwd(), "config");
 	const wxString configFile = JoinPaths(configDir, configFileBase);
 
@@ -1541,25 +1527,24 @@ void InitLocale(wxLocale &locale, int language)
 	locale.Init(language, wxLOCALE_LOAD_DEFAULT);
 
 #if defined(__WXMAC__) || defined(__WINDOWS__)
-	// On macOS, GetDataDir() returns <bundle>/Contents/SharedSupport while the .mo
-	// catalogs live under <bundle>/Contents/Resources, which is what
-	// GetResourcesDir() returns. On Windows both return the .exe's directory.
+	// On macOS, GetDataDir() returns <bundle>/Contents/SharedSupport while the .mo catalogs
+	// live under <bundle>/Contents/Resources, which is what GetResourcesDir() returns. On
+	// Windows both return the .exe's directory.
 	locale.AddCatalogLookupPathPrefix(JoinPaths(wxStandardPaths::Get().GetResourcesDir(), "locale"));
 #elif defined(__WXGTK__) || defined(__UNIX__)
 	// On Linux/*BSD the .mo catalogs are installed under
-	//   ${CMAKE_INSTALL_PREFIX}/share/locale/<lang>/LC_MESSAGES/amule.mo
-	// while libintl's default lookup path is baked in at wxGTK's build time. For a
-	// system install that builds the binary and wxGTK against the same prefix the
-	// two match and translations work unaided.
+	// ${CMAKE_INSTALL_PREFIX}/share/locale/<lang>/LC_MESSAGES/amule.mo, while libintl's default
+	// lookup path is baked in at wxGTK's build time. For a system install that builds the
+	// binary and wxGTK against the same prefix, the two match and translations work unaided.
 	//
-	// In a Flatpak they do not: the bundle installs under prefix=/app while the
-	// wxGTK in the GNOME runtime was built against prefix=/usr, so libintl looks
-	// under /usr/share/locale and our catalogs sit untouched at /app/share/locale --
-	// every gettext() lookup misses and the UI runs in English regardless of LANG.
+	// In a Flatpak they do not: the bundle installs under prefix=/app while the wxGTK in the
+	// GNOME runtime was built against prefix=/usr, so libintl looks under /usr/share/locale and
+	// our catalogs sit untouched at /app/share/locale -- every gettext() lookup misses and the
+	// UI runs in English regardless of LANG.
 	//
-	// Registering ${install_prefix}/share/locale as a wxLocale lookup prefix makes
-	// the binary self-sufficient: it matches the Flatpak install path and is a
-	// harmless no-op on system installs.
+	// Registering ${install_prefix}/share/locale as a wxLocale lookup prefix makes the binary
+	// self-sufficient: it matches the Flatpak install path and is a harmless no-op on system
+	// installs.
 	locale.AddCatalogLookupPathPrefix(
 		JoinPaths(JoinPaths(wxStandardPaths::Get().GetInstallPrefix(), "share"), "locale"));
 #endif
@@ -1617,8 +1602,8 @@ CMD4Hash GetPassword(bool allowEmptyPassword)
 #else
 	// #warning This way, pass enter is not hidden on windows. Bad thing.
 	char temp_str[512];
-	// Though fflush() on an input stream is undefined behaviour by the standard,
-	// the MSVCRT version does seem to clear the input buffers.
+	// Though fflush() on an input stream is undefined behaviour by the standard, the MSVCRT version
+	// does seem to clear the input buffers.
 	// cppcheck-suppress fflushOnInputStream
 	fflush(stdin);
 	printf("Enter password for mule connection: \n");

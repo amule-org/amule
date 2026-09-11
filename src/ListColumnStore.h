@@ -32,12 +32,10 @@
 #include <vector>
 
 /**
- * Width at or below which a column counts as hidden.
- *
- * wxGTK reserves a few pixels for the header grip and won't shrink a column
- * below that, so "hidden" can't mean literally zero there.  Shared by every
- * list that offers the header's show/hide menu, so the threshold and the
- * width written to the config stay in agreement.
+ * Width at or below which a column counts as hidden. wxGTK reserves a few pixels for the header
+ * grip and will not shrink a column below that, so "hidden" cannot mean literally zero there.
+ * Shared by every list that offers the header's show/hide menu, so the threshold and the width
+ * written to the config stay in agreement.
  */
 #ifdef __WXGTK__
 constexpr int COL_SIZE_MIN = 10;
@@ -48,13 +46,11 @@ constexpr int COL_SIZE_MIN = 0;
 #endif
 
 /**
- * The subset of a list widget's column API that column persistence needs.
- * CMuleListCtrl already implements this exact signature set by inheriting
- * wxGenericListCtrl, so it satisfies this interface for free (see its
- * class declaration). A future wxDataViewCtrl-backed list only needs to
- * forward these three calls to its own columns
- * (GetColumnCount()/GetColumn(i)->GetWidth()/SetWidth()) to reuse
- * CListColumnStore unchanged.
+ * The subset of a list widget's column API that column persistence needs. CMuleListCtrl already
+ * implements this exact signature set by inheriting wxGenericListCtrl, so it satisfies the
+ * interface for free. A wxDataViewCtrl-backed list only has to forward these three calls to its own
+ * columns (GetColumnCount() / GetColumn(i)->GetWidth() / SetWidth()) to reuse CListColumnStore
+ * unchanged.
  */
 class IColumnWidthProvider
 {
@@ -66,20 +62,16 @@ public:
 };
 
 /**
- * Owns a list control's column-persistence state (the stable, translation-
- * independent name/default-width per column, the last-known width cache,
- * and (de)serialization to/from wxConfig) independently of which widget
- * actually renders the columns.
+ * Owns a list control's column-persistence state -- the stable, translation-independent name and
+ * default width per column, the last-known width cache, and (de)serialization to and from wxConfig
+ * -- independently of which widget renders the columns.
  *
- * Extracted from CMuleListCtrl (see #675/#180 phase 2 discussion): the
- * persisted format and config keys ("/eMule/TableOrdering<name>",
- * "/eMule/TableWidths<name>") are unchanged, so existing user settings
- * keep working across this refactor. Sort-order *mutation* deliberately
- * stays out of this class -- applying a loaded sort order can have
- * widget-specific side effects (e.g. CMuleListCtrl::SetSorting() also
- * triggers a re-sort and validates against AltSortAllowed()), so
- * LoadSettings() only decodes the stored order and hands it back to the
- * caller to apply through whatever mechanism its own widget needs.
+ * Extracted from CMuleListCtrl (see the #675/#180 phase 2 discussion): the persisted format and
+ * config keys ("/eMule/TableOrdering<name>", "/eMule/TableWidths<name>") are unchanged, so existing
+ * user settings keep working. Sort-order *mutation* deliberately stays out of this class --
+ * applying a loaded sort order can have widget-specific side effects (CMuleListCtrl::SetSorting()
+ * also triggers a re-sort and validates against AltSortAllowed()), so LoadSettings() only decodes
+ * the stored order and hands it back to the caller.
  */
 class CListColumnStore
 {
@@ -87,16 +79,15 @@ public:
 	/**
 	 * The sort flags this store reads and writes.
 	 *
-	 * Deliberately its own, not borrowed from either list base: the two use
-	 * different bit values for the same idea (CMuleListCtrl 0x1000/0x2000,
-	 * CMuleDataViewCtrl 0x1/0x2), so a store that spoke one of them silently
-	 * dropped descending and alternate sorting for every list built on the
-	 * other -- saving them as "not set" and restoring them as ascending. The
-	 * store owns the serialised format; each base converts to and from it at
-	 * the call, which is the only place the two vocabularies meet.
+	 * Deliberately its own, not borrowed from either list base: the two use different bit
+	 * values for the same idea (CMuleListCtrl 0x1000/0x2000, CMuleDataViewCtrl 0x1/0x2), so a
+	 * store that spoke one of them silently dropped descending and alternate sorting for every
+	 * list built on the other -- saving them as "not set" and restoring them as ascending. The
+	 * store owns the serialised format; each base converts to and from it at the call, which is
+	 * the only place the two vocabularies meet.
 	 *
-	 * These values are not interchangeable with either base's flags even
-	 * where the numbers happen to line up. Convert; never pass through.
+	 * These values are not interchangeable with either base's flags even where the numbers
+	 * happen to line up. Convert; never pass through.
 	 */
 	enum SortFlag
 	{
@@ -113,22 +104,18 @@ public:
 	typedef std::list<CColPair> CSortingList;
 
 	/**
-	 * Sets the persistence key prefix. Mirrors
-	 * CMuleListCtrl::SetTableName(): an empty name means "don't persist".
+	 * Sets the persistence key prefix. Mirrors CMuleListCtrl::SetTableName(): an empty name
+	 * means "do not persist".
 	 */
 	void SetTableName(const wxString &name) { m_name = name; }
 	bool HasTableName() const { return !m_name.IsEmpty(); }
 
 	/**
-	 * Registers a column's persistence name and default width at the
-	 * given index. Called from the list's InsertColumn()-equivalent, the
-	 * same point CMuleListCtrl::InsertColumn() currently updates
-	 * m_column_names from.
+	 * Registers a column's persistence name and default width at the given index, from the
+	 * list's InsertColumn() equivalent. In debug builds it also asserts the name is free of ':'
+	 * and ',' (the serialization format's own delimiters) and not already registered -- this
+	 * store is the only thing that can check uniqueness now.
 	 */
-	//! In debug builds, also asserts the name is free of ':'/',' (the
-	//! serialization format's own delimiters) and not already registered --
-	//! this store is the only thing that can check uniqueness now, so the
-	//! check moved here from CMuleListCtrl::InsertColumn().
 	void RegisterColumn(int index, int defaultWidth, const wxString &name);
 
 	//! Forgets all registered columns (mirrors CMuleListCtrl::ClearAll()).
@@ -139,38 +126,31 @@ public:
 	int GetColumnIndex(const wxString &name) const;
 
 	/**
-	 * Last-known width cache for a hidden column, keyed by column index.
-	 * Used by the hide/show-via-menu interaction (CMuleListCtrl::OnMenuSelected):
-	 * width is cached here when a column is hidden, so it can be restored
-	 * when the column is shown again in the same session. 0 if never cached.
+	 * Last-known width cache for a hidden column, keyed by column index. Used by the hide/show-
+	 * via-menu interaction (CMuleListCtrl::OnMenuSelected): the width is cached here when a
+	 * column is hidden, so it can be restored when the column is shown again in the same
+	 * session. 0 if never cached.
 	 */
 	int GetCachedWidth(int index) const;
 	void SetCachedWidth(int index, int width);
 
 	/**
-	 * Writes the current column widths/visibility and the given sort
-	 * order out to wxConfig, under this store's table name. No-op if no
-	 * table name has been set.
+	 * Writes the current column widths and visibility, plus the given sort order, to wxConfig
+	 * under this store's table name. No-op if no table name has been set.
 	 */
 	void SaveSettings(const IColumnWidthProvider &widget, const CSortingList &sortOrders) const;
 
 	/**
-	 * Reads column widths/visibility and sort order back from wxConfig,
-	 * applying widths directly via the given widget and returning the
-	 * decoded sort order (in the same primary-last order
-	 * CMuleListCtrl::LoadSettings() has always built it in, ready to be
-	 * applied via the caller's own SetSorting()). No-op (and clears
-	 * outSortOrders) if no table name has been set.
+	 * Reads column widths and visibility and sort order back from wxConfig, applying widths
+	 * directly through the given widget and returning the decoded sort order (in the primary-
+	 * last order CMuleListCtrl::LoadSettings() has always built, ready for the caller's own
+	 * SetSorting()). No-op, and clears outSortOrders, if no table name has been set.
 	 *
 	 * @param oldColumnOrder Pre-2.2.2 column order, comma-separated, as
-	 * CMuleListCtrl::GetOldColumnOrder() provides; empty to skip that
-	 * migration path.
-	 */
-	/**
-	 * @return true when at least one stored column width was applied, i.e. this
-	 *         profile has a saved layout. Callers use it to decide whether an
-	 *         auto-fit would be helping a fresh profile or destroying a width
-	 *         the user chose.
+	 * CMuleListCtrl::GetOldColumnOrder() provides; empty to skip that migration path.
+	 * @return true when at least one stored column width was applied, i.e. this profile has a
+	 * saved layout. Callers use it to decide whether an auto-fit would be helping a fresh
+	 * profile or destroying a width the user chose.
 	 */
 	bool LoadSettings(
 		IColumnWidthProvider &widget, const wxString &oldColumnOrder, CSortingList &outSortOrders);

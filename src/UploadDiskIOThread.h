@@ -38,9 +38,9 @@
 class CPacket;
 class CUpDownClient;
 
-// Mirrors eMule's OpenOvFile_Struct (UploadDiskIOThread.h:20-28)
-// HANDLE hFile replaced with aMule's file-open-on-demand model:
-// we don't cache file handles; CFileArea opens/closes as needed.
+// Mirrors eMule's OpenOvFile_Struct (UploadDiskIOThread.h:20-28). HANDLE hFile is replaced with
+// aMule's file-open-on-demand model: we cache no file handles, CFileArea opens and closes as
+// needed.
 struct OpenFile_Struct
 {
 	uint8 ucMD4FileHash[16];
@@ -52,7 +52,7 @@ struct OpenFile_Struct
 struct Requested_Block_Struct;
 
 // Mirrors eMule's OverlappedEx_Struct (UploadDiskIOThread.h:32-41)
-// OVERLAPPED removed — reads are synchronous on this thread via CFileArea.
+// OVERLAPPED removed -- reads are synchronous on this thread via CFileArea.
 struct ReadRequest_Struct
 {
 	OpenFile_Struct *pFileStruct;
@@ -63,13 +63,13 @@ struct ReadRequest_Struct
 	CFileArea area;                 // holds read buffer; replaces BYTE* pBuffer + OVERLAPPED
 };
 
-// Packet + payload-size pair, used by the static packet-creation helpers.
-// Mirrors eMule's CPacketList + Packet::uStatsPayLoad approach; aMule's CPacket
-// has no uStatsPayLoad member so we carry the value alongside the pointer.
+// Packet + payload-size pair, used by the static packet-creation helpers. Mirrors eMule's
+// CPacketList + Packet::uStatsPayLoad approach; aMule's CPacket has no uStatsPayLoad member, so we
+// carry the value alongside the pointer.
 typedef std::list<std::pair<CPacket *, uint32>> CPacketList;
 
-// Port of eMule's CUploadDiskIOThread (UploadDiskIOThread.h:48-86).
-// Windows primitives replaced with wxWidgets equivalents:
+// Port of eMule's CUploadDiskIOThread (UploadDiskIOThread.h:48-86). Windows primitives replaced
+// with wxWidgets equivalents:
 //   CWinThread           -> wxThread (joinable)
 //   CEvent               -> wxCondition + wxMutex
 //   WaitForMultipleObjects -> wxCondition::WaitTimeout()
@@ -86,7 +86,7 @@ public:
 	void NewBlockRequestsAvailable(); // eMule ref: UploadDiskIOThread.h:55
 	void SocketNeedsMoreData();       // eMule ref: UploadDiskIOThread.h:56
 
-	// eMule ref: UploadDiskIOThread.h:72-73 — static packet creation helpers
+	// eMule ref: UploadDiskIOThread.h:72-73 -- static packet creation helpers
 	// uploadDatarate (bytes/s) scales per-packet chunk size (10 KiB floor, 128 KiB ceiling).
 	static void CreateStandardPackets(const uint8_t *buffer,
 		uint64 startOffset,
@@ -117,11 +117,11 @@ private:
 	// Prevents lost wakeups when signal arrives before WaitTimeout() is entered.
 	bool m_bNewBlocksPending;   // set by NewBlockRequestsAvailable()
 	bool m_bSocketNeedsPending; // set by SocketNeedsMoreData()
-	// m_eventAsyncIOFinished not needed — reads complete synchronously on this thread
+	// m_eventAsyncIOFinished not needed -- reads complete synchronously on this thread
 
 	std::list<OpenFile_Struct *> m_listOpenFiles;     // eMule ref: line 83
 	std::list<ReadRequest_Struct *> m_listFinishedIO; // eMule ref: line 85
-	// m_listPendingIO not needed — reads are synchronous, go straight to m_listFinishedIO
+	// m_listPendingIO not needed -- reads are synchronous, go straight to m_listFinishedIO
 };
 
 #endif

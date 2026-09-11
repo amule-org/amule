@@ -28,17 +28,15 @@
 /**
  * How a uTP stream ended.
  *
- * Three of these are ends the peer chose and two are ends the transport
- * reports, and the reason they are one enum rather than a bool is that the
- * caller acts differently on each: a refused connection says the peer is
- * reachable and declined, a timeout says nothing about the peer at all, and a
- * reset says the connection existed and no longer does. Collapsing them is how
- * a dead peer and a firewalled one become indistinguishable in the source list.
+ * Three of these are ends the peer chose and two are ends the transport reports. They are one enum
+ * rather than a bool because the caller acts differently on each: a refused connection says the
+ * peer is reachable and declined, a timeout says nothing about the peer at all, and a reset says
+ * the connection existed and no longer does. Collapsing them is how a dead peer and a firewalled
+ * one become indistinguishable in the source list.
  *
- * @c Eof and @c Destroying are terminal but are @b not failures. A peer that
- * closes cleanly after sending what it owed has not failed, and reporting it as
- * an error would penalise it in exactly the accounting a clean close should
- * leave alone.
+ * @c Eof and @c Destroying are terminal but are @b not failures. A peer that closes cleanly after
+ * sending what it owed has not failed, and reporting it as an error would penalise it in exactly
+ * the accounting a clean close should leave alone.
  */
 enum class EUtpTransportFailure
 {
@@ -70,15 +68,14 @@ inline bool IsUtpTerminal(EUtpTransportFailure failure) noexcept
 /**
  * The close bookkeeping, as a type rather than as a rule.
  *
- * libutp's @c utp_close() must be called exactly once per socket, and the
- * pointer is invalid the moment @c UTP_STATE_DESTROYING arrives. Both halves of
- * that are easy to get wrong by hand -- a destructor that closes, plus a state
- * callback that closes, is a double free that only appears when a peer
+ * libutp's @c utp_close() must be called exactly once per socket, and the pointer is invalid the
+ * moment @c UTP_STATE_DESTROYING arrives. Both halves are easy to get wrong by hand -- a destructor
+ * that closes, plus a state callback that closes, is a double free that only appears when a peer
  * disconnects at the wrong moment.
  *
- * So the permission to close is consumed rather than checked: Take() answers
- * true once and false forever after, and there is no way to ask "was it closed"
- * and then close, which is the shape that races.
+ * So the permission to close is consumed rather than checked: Take() answers true once and false
+ * forever after, and there is no way to ask "was it closed" and then close, which is the shape that
+ * races.
  */
 class CUtpCloseOnce
 {

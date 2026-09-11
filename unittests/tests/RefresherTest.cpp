@@ -49,19 +49,14 @@ using namespace muleunit;
 using namespace webapi;
 
 DECLARE_SIMPLE(Refresher)
-// Own suite: the preference-schema domain guards below are about
-// PrefsSchema.cpp, which this target already compiles and links, not about the
-// EC walkers the rest of the file covers.
+// Own suite: the preference-schema domain guards below are about PrefsSchema.cpp, which this target
+// already compiles and links, not about the EC walkers the rest of the file covers.
 DECLARE_SIMPLE(PrefsSchema)
 
-// ----------------------------------------------------------------------
-// EC_TAG_FILE_REMOVED — INC-protocol deletion marker. With GET_UPDATE
-// + EC_DETAIL_INC_UPDATE the marker arrives in the consolidated response
-// packet. Both ApplyGetUpdateToDownloads and ApplyGetUpdateToShared
-// react to it (one will be a no-op for any given ECID since the
-// server-side encoder map is unified across both surfaces, but the
-// dispatch is per-walker).
-// ----------------------------------------------------------------------
+// EC_TAG_FILE_REMOVED -- INC-protocol deletion marker. With GET_UPDATE + EC_DETAIL_INC_UPDATE the
+// marker arrives in the consolidated response packet. Both ApplyGetUpdateToDownloads and
+// ApplyGetUpdateToShared react to it: one is a no-op for any given ECID, the server-side encoder
+// map being unified across both surfaces, but the dispatch is per-walker.
 
 TEST(Refresher, FileRemovedErasesFromDownloads)
 {
@@ -82,11 +77,9 @@ TEST(Refresher, FileRemovedErasesFromDownloads)
 		cache.emplace(99, d);
 	}
 
-	// Craft a GET_UPDATE response that contains a single
-	// EC_TAG_FILE_REMOVED marker pointing at ECID 42.
-	// The response packet's op code is what amuled emits per
-	// ExternalConn.cpp:874 (EC_OP_SHARED_FILES); the walker doesn't
-	// care, it iterates child tags.
+	// Craft a GET_UPDATE response holding a single EC_TAG_FILE_REMOVED marker pointing at ECID
+	// 42. The response packet's op code is what amuled emits per ExternalConn.cpp:874
+	// (EC_OP_SHARED_FILES); the walker does not care, it iterates child tags.
 	CECPacket resp(EC_OP_SHARED_FILES);
 	resp.AddTag(CECTag(EC_TAG_FILE_REMOVED, static_cast<std::uint32_t>(42)));
 
@@ -95,7 +88,7 @@ TEST(Refresher, FileRemovedErasesFromDownloads)
 
 	// Doomed download is gone.
 	ASSERT_TRUE(cache.find(42) == cache.end());
-	// Survivor is untouched — INC protocol uses explicit deletion
+	// Survivor is untouched -- INC protocol uses explicit deletion
 	// markers, never "absence implies removed".
 	ASSERT_TRUE(cache.find(99) != cache.end());
 	ASSERT_EQUALS(std::string("survivor.iso"), cache.find(99)->second.name);
@@ -104,12 +97,11 @@ TEST(Refresher, FileRemovedErasesFromDownloads)
 TEST(Refresher, FileRemovedErasesFromShared)
 {
 	std::map<std::uint32_t, PartFileEncoderData> rle_state;
-	// Symmetric to FileRemovedErasesFromDownloads. The server-side
-	// encoder map is unified across partfiles + sharedfiles, so a
-	// FILE_REMOVED marker could target an ECID in either cache.
-	// ApplyGetUpdateToShared evicts unconditionally; the eventual
-	// cross-walker call in RefresherTick has both walkers fire on
-	// the same response so the right cache loses the entry.
+	// Symmetric to FileRemovedErasesFromDownloads. The server-side encoder map is unified
+	// across partfiles and sharedfiles, so a FILE_REMOVED marker could target an ECID in either
+	// cache. ApplyGetUpdateToShared evicts unconditionally; the eventual cross-walker call in
+	// RefresherTick has both walkers fire on the same response, so the right cache loses the
+	// entry.
 	FileMap cache;
 	{
 		FileSnapshot s;
@@ -140,9 +132,8 @@ TEST(Refresher, FileRemovedForUnknownEcidIsNoOp)
 		cache.emplace(7, d);
 	}
 
-	// Server emits a stale removal marker for ECID 9999 we've never
-	// seen (race: server-side gen bumped between the two lookups).
-	// Erasing a missing key must be a no-op.
+	// Server emits a stale removal marker for ECID 9999 we have never seen -- a race, the
+	// server-side gen bumping between the two lookups. Erasing a missing key must be a no-op.
 	CECPacket resp(EC_OP_SHARED_FILES);
 	resp.AddTag(CECTag(EC_TAG_FILE_REMOVED, static_cast<std::uint32_t>(9999)));
 
@@ -154,10 +145,8 @@ TEST(Refresher, FileRemovedForUnknownEcidIsNoOp)
 	ASSERT_EQUALS(std::string("kept.iso"), cache.find(7)->second.name);
 }
 
-// ----------------------------------------------------------------------
-// Empty response (no churn since the last tick) — INC protocol's
-// silent-skip semantics. Downloads + shared caches stay intact.
-// ----------------------------------------------------------------------
+// Empty response (no churn since the last tick) -- the INC protocol's silent-skip semantics.
+// Downloads and shared caches stay intact.
 
 TEST(Refresher, EmptyResponseLeavesCachesIntact)
 {
@@ -182,17 +171,14 @@ TEST(Refresher, EmptyResponseLeavesCachesIntact)
 	ApplyGetUpdateToShared(&resp, shared, rle_state);
 
 	// INC protocol: empty response means "no changes since last tick".
-	// Cache stays intact — no bulk-delete fallback needed.
+	// Cache stays intact -- no bulk-delete fallback needed.
 	ASSERT_EQUALS(static_cast<size_t>(1), downloads.size());
 	ASSERT_EQUALS(static_cast<size_t>(1), shared.size());
 }
 
-// ----------------------------------------------------------------------
-// Mixed top-level dispatch — one GET_UPDATE response carries both
-// EC_TAG_PARTFILE and EC_TAG_KNOWNFILE at the same level. The two
-// walkers must each consume only their own tag type without
-// cross-contaminating the other cache.
-// ----------------------------------------------------------------------
+// Mixed top-level dispatch -- one GET_UPDATE response carries both EC_TAG_PARTFILE and
+// EC_TAG_KNOWNFILE at the same level. The two walkers must each consume only their own tag type
+// without cross-contaminating the other cache.
 
 TEST(Refresher, MixedTopLevelDispatchedByTagName)
 {
@@ -201,18 +187,18 @@ TEST(Refresher, MixedTopLevelDispatchedByTagName)
 	std::map<std::uint32_t, PartFileEncoderData> rle_state;
 
 	CECPacket resp(EC_OP_SHARED_FILES);
-	// One partfile (ECID 10) — should land in downloads only.
+	// One partfile (ECID 10) -- should land in downloads only.
 	resp.AddTag(CECTag(EC_TAG_PARTFILE, static_cast<std::uint32_t>(10)));
-	// One sharedfile (ECID 20) — should land in shared only.
+	// One sharedfile (ECID 20) -- should land in shared only.
 	resp.AddTag(CECTag(EC_TAG_KNOWNFILE, static_cast<std::uint32_t>(20)));
-	// A FILE_REMOVED marker (ECID 99) — erases from both walkers'
+	// A FILE_REMOVED marker (ECID 99) -- erases from both walkers'
 	// caches; since neither was pre-seeded, it's a no-op for both.
 	resp.AddTag(CECTag(EC_TAG_FILE_REMOVED, static_cast<std::uint32_t>(99)));
 
 	ApplyGetUpdateToDownloads(&resp, downloads, rle_state);
 	ApplyGetUpdateToShared(&resp, shared, rle_state);
 
-	// Downloads walker captured ECID 10 only — NOT ECID 20 (that
+	// Downloads walker captured ECID 10 only -- NOT ECID 20 (that
 	// belongs to shared) and NOT ECID 99 (that's the FILE_REMOVED).
 	ASSERT_EQUALS(static_cast<size_t>(1), downloads.size());
 	ASSERT_TRUE(downloads.find(10) != downloads.end());
@@ -224,14 +210,10 @@ TEST(Refresher, MixedTopLevelDispatchedByTagName)
 	ASSERT_TRUE(shared.find(10) == shared.end());
 }
 
-// ----------------------------------------------------------------------
-// Shared partfile dispatch — amuled's /shared surface is the union
-// of completed knownfiles AND partfiles with `IsShared()=true`
-// (i.e. ≥1 chunk completed → uploadable). GET_UPDATE ships partfiles
-// as EC_TAG_PARTFILE with a child `EC_TAG_PARTFILE_SHARED` bool.
-// The shared walker has to consume both top-level tag types and gate
-// partfile inclusion on the flag.
-// ----------------------------------------------------------------------
+// Shared partfile dispatch -- amuled's /shared surface is the union of completed knownfiles AND
+// partfiles with `IsShared()=true`, i.e. at least one chunk completed, so uploadable. GET_UPDATE
+// ships partfiles as EC_TAG_PARTFILE with a child `EC_TAG_PARTFILE_SHARED` bool. The shared walker
+// has to consume both top-level tag types and gate partfile inclusion on the flag.
 
 TEST(Refresher, SharedPartfileWithFlagTrueLandsInShared)
 {
@@ -246,9 +228,8 @@ TEST(Refresher, SharedPartfileWithFlagTrueLandsInShared)
 		resp.AddTag(pf);
 	}
 
-	// PARTFILE_HASH is CValueMap-suppressed on the partfile-to-shared
-	// transition tick — supply identity via the downloads-cache fallback,
-	// which is how the live code recovers it.
+	// PARTFILE_HASH is CValueMap-suppressed on the partfile-to-shared transition tick, so
+	// supply identity via the downloads-cache fallback, which is how the live code recovers it.
 	std::map<std::uint32_t, std::pair<std::string, std::string>> fallback;
 	fallback[50] = std::make_pair(
 		std::string("aaaa3333aaaa3333aaaa3333aaaa3333"), std::string("shared-test.iso"));
@@ -262,9 +243,9 @@ TEST(Refresher, SharedPartfileWithFlagTrueLandsInShared)
 TEST(Refresher, UnsharedPartfileSkippedFromShared)
 {
 	std::map<std::uint32_t, PartFileEncoderData> rle_state;
-	// PARTFILE arrives with EC_TAG_PARTFILE_SHARED=false. The
-	// shared walker must NOT insert it — the file is in the download
-	// queue but has zero chunks completed, so no peer can request it.
+	// PARTFILE arrives with EC_TAG_PARTFILE_SHARED=false. The shared walker must NOT insert it
+	// -- the file is in the download queue with zero chunks completed, so no peer can request
+	// it.
 	FileMap cache;
 	CECPacket resp(EC_OP_SHARED_FILES);
 	{
@@ -278,15 +259,11 @@ TEST(Refresher, UnsharedPartfileSkippedFromShared)
 	ASSERT_TRUE(cache.empty());
 }
 
-// ----------------------------------------------------------------------
-// Shared availability bar — EC_TAG_PARTFILE_PART_STATUS on the
-// EC_TAG_KNOWNFILE tag (issue #982). amuled RLE-encodes the per-part
-// source counts as an XOR delta against the previously encoded state,
-// so the decoder is stateful and every frame must be fed to it in
-// order. These tests drive the real RLE_Data encoder to build the
-// blobs, so they pin the wire format rather than a re-implementation
-// of it.
-// ----------------------------------------------------------------------
+// Shared availability bar -- EC_TAG_PARTFILE_PART_STATUS on the EC_TAG_KNOWNFILE tag (issue #982).
+// amuled RLE-encodes the per-part source counts as an XOR delta against the previously encoded
+// state, so the decoder is stateful and every frame must be fed to it in order. These tests drive
+// the real RLE_Data encoder to build the blobs, so they pin the wire format rather than a re-
+// implementation of it.
 
 namespace
 {
@@ -304,13 +281,10 @@ void AddEncodedPartStatus(CECTag &parent, RLE_Data &enc, const ArrayOfUInts16 &s
 
 } // namespace
 
-// ----------------------------------------------------------------------
-// Chat sessions -- EC_OP_CHAT_SESSIONS (issue #971). The reply is the
-// daemon's COMPLETE session set plus only the messages newer than the
-// cursor the client sent, so the walker replaces the session vector
-// wholesale while appending messages incrementally. A session missing
-// from a reply is the ONLY signal a close produces.
-// ----------------------------------------------------------------------
+// Chat sessions -- EC_OP_CHAT_SESSIONS (issue #971). The reply is the daemon's COMPLETE session set
+// plus only the messages newer than the cursor the client sent, so the walker replaces the session
+// vector wholesale while appending messages incrementally. A session missing from a reply is the
+// ONLY signal a close produces.
 
 namespace
 {
@@ -378,9 +352,9 @@ TEST(Refresher, ChatSessionDecodesIdentityAndMessages)
 
 TEST(Refresher, ChatMessagesAccumulateAcrossTicks)
 {
-	// Later replies carry only what is past the cursor, so the walker must
-	// carry the earlier messages over rather than replacing them -- otherwise
-	// every tick would shrink the transcript to whatever just arrived.
+	// Later replies carry only what is past the cursor, so the walker must carry the earlier
+	// messages over rather than replacing them -- otherwise every tick would shrink the
+	// transcript to whatever just arrived.
 	std::vector<ChatSessionSnapshot> cache;
 	std::uint32_t cursor = 0;
 	{
@@ -416,9 +390,9 @@ TEST(Refresher, ChatMessagesAccumulateAcrossTicks)
 
 TEST(Refresher, ChatSessionAbsentFromReplyIsReportedClosed)
 {
-	// Absence IS the close signal -- there is no expiry tag -- so a session
-	// the previous tick held must be dropped AND reported, not merged
-	// forward. Merging would resurrect closed conversations forever.
+	// Absence IS the close signal -- there is no expiry tag -- so a session the previous tick
+	// held must be dropped AND reported, not merged forward. Merging would resurrect closed
+	// conversations forever.
 	std::vector<ChatSessionSnapshot> cache;
 	std::uint32_t cursor = 0;
 	{
@@ -471,9 +445,8 @@ TEST(Refresher, ChatSessionWithNoNewMessagesIsStillListed)
 
 TEST(Refresher, ChatSessionKeepsAKnownNameWhenTheReplyOmitsIt)
 {
-	// The daemon suppresses an unchanged name; letting that blank the cached
-	// one would make an established conversation fall back to its ip:port
-	// label mid-stream.
+	// The daemon suppresses an unchanged name; letting that blank the cached one would make an
+	// established conversation fall back to its ip:port label mid-stream.
 	std::vector<ChatSessionSnapshot> cache;
 	std::uint32_t cursor = 0;
 	{
@@ -543,9 +516,8 @@ TEST(Refresher, SharedKnownFileDecodesAvailability)
 
 TEST(Refresher, SharedKnownFileAvailabilityTracksDifferentialFrames)
 {
-	// Second and later frames are XOR deltas against the previous
-	// decoded buffer, so a decoder that is not carried across ticks
-	// (or is fed a frame twice) paints garbage rather than merely
+	// Second and later frames are XOR deltas against the previous decoded buffer, so a decoder
+	// not carried across ticks -- or fed a frame twice -- paints garbage rather than merely
 	// lagging. Drive two frames through one encoder/decoder pair.
 	std::map<std::uint32_t, PartFileEncoderData> rle_state;
 	FileMap cache;
@@ -584,10 +556,9 @@ TEST(Refresher, SharedKnownFileAvailabilityTracksDifferentialFrames)
 
 TEST(Refresher, SharedWalkerLeavesPartfileAvailabilityToDownloadsWalker)
 {
-	// A shared partfile reaches this walker as EC_TAG_PARTFILE, and the
-	// downloads walker has already consumed that same tag's PART_STATUS
-	// on this very response. Decoding it a second time here would apply
-	// the XOR delta twice and desync the decoder permanently, so the
+	// A shared partfile reaches this walker as EC_TAG_PARTFILE, and the downloads walker has
+	// already consumed that same tag's PART_STATUS on this very response. Decoding it a second
+	// time here would apply the XOR delta twice and desync the decoder permanently, so the
 	// shared walker must not touch the decoder state for a PARTFILE tag.
 	std::map<std::uint32_t, PartFileEncoderData> rle_state;
 	FileMap cache;
@@ -618,12 +589,11 @@ TEST(Refresher, SharedWalkerLeavesPartfileAvailabilityToDownloadsWalker)
 TEST(Refresher, SharedPartfileTransitionsOutClearsSharedRole)
 {
 	std::map<std::uint32_t, PartFileEncoderData> rle_state;
-	// Pre-seed a shared partfile in cache (was sharing on previous
-	// ticks). Now the operator paused / stopped it: the next tick
-	// emits EC_TAG_PARTFILE_SHARED=false. The walker must clear the
-	// is_shared role (and reset the shared sub-block so /shared can't
-	// surface stale upload stats). The entry itself stays in the
-	// unified map — entity-level eviction is FILE_REMOVED's job.
+	// Pre-seed a shared partfile in cache, sharing on previous ticks. Now the operator paused
+	// or stopped it: the next tick emits EC_TAG_PARTFILE_SHARED=false. The walker must clear
+	// the is_shared role, and reset the shared sub-block so /shared cannot surface stale upload
+	// stats. The entry itself stays in the unified map -- entity-level eviction is
+	// FILE_REMOVED's job.
 	FileMap cache;
 	{
 		FileSnapshot s;
@@ -653,10 +623,9 @@ TEST(Refresher, SharedPartfileTransitionsOutClearsSharedRole)
 TEST(Refresher, SuppressedSharedFlagPreservesCachedPartfile)
 {
 	std::map<std::uint32_t, PartFileEncoderData> rle_state;
-	// CValueMap suppresses the EC_TAG_PARTFILE_SHARED tag when the
-	// value matches the previous frame. For a cached partfile that
-	// was previously shared, the absence of the flag means "still
-	// shared" — the walker must keep it and apply stat deltas.
+	// CValueMap suppresses the EC_TAG_PARTFILE_SHARED tag when the value matches the previous
+	// frame. For a cached partfile that was previously shared, the absence of the flag means
+	// "still shared" -- the walker must keep it and apply stat deltas.
 	FileMap cache;
 	{
 		FileSnapshot s;
@@ -666,7 +635,7 @@ TEST(Refresher, SuppressedSharedFlagPreservesCachedPartfile)
 		cache.emplace(80, s);
 	}
 	CECPacket resp(EC_OP_SHARED_FILES);
-	// PARTFILE with no EC_TAG_PARTFILE_SHARED child — flag suppressed.
+	// PARTFILE with no EC_TAG_PARTFILE_SHARED child -- flag suppressed.
 	resp.AddTag(CECTag(EC_TAG_PARTFILE, static_cast<std::uint32_t>(80)));
 
 	ApplyGetUpdateToShared(&resp, cache, rle_state);
@@ -678,10 +647,9 @@ TEST(Refresher, SuppressedSharedFlagPreservesCachedPartfile)
 TEST(Refresher, SuppressedSharedFlagSkipsUnknownPartfile)
 {
 	std::map<std::uint32_t, PartFileEncoderData> rle_state;
-	// Mirror of the previous test: a PARTFILE with the SHARED flag
-	// suppressed AND no prior cache entry means "we have no signal
-	// that this is shared." Don't insert blindly — wait for the next
-	// tick that flips the state to emit the flag.
+	// Mirror of the previous test: a PARTFILE with the SHARED flag suppressed AND no prior
+	// cache entry means we have no signal that it is shared. Do not insert blindly -- wait for
+	// the next tick that flips the state and emits the flag.
 	FileMap cache;
 	CECPacket resp(EC_OP_SHARED_FILES);
 	resp.AddTag(CECTag(EC_TAG_PARTFILE, static_cast<std::uint32_t>(90)));
@@ -691,46 +659,38 @@ TEST(Refresher, SuppressedSharedFlagSkipsUnknownPartfile)
 	ASSERT_TRUE(cache.empty());
 }
 
-// ----------------------------------------------------------------------
-// New ECID arrives in one tick with identity baked in — the whole
-// point of the GET_UPDATE consolidation. INC_UPDATE doesn't hit the
-// EC_DETAIL_UPDATE early-return at ECSpecialCoreTags.cpp:244-246, so
-// HASH / NAME / SIZE are shipped on first encounter; no second
-// roundtrip needed.
-// ----------------------------------------------------------------------
+// New ECID arrives in one tick with identity baked in -- the whole point of the GET_UPDATE
+// consolidation. INC_UPDATE does not hit the EC_DETAIL_UPDATE early-return at
+// ECSpecialCoreTags.cpp:244-246, so HASH / NAME / SIZE are shipped on first encounter and no second
+// roundtrip is needed.
 
 TEST(Refresher, NewPartfileInsertedInOneTick)
 {
 	FileMap cache;
 	std::map<std::uint32_t, PartFileEncoderData> rle_state;
 
-	// Craft a partfile tag with just the ECID. The walker dispatches
-	// on tag name, calls TagHashLower + MergePartFileTag — both of
-	// which gracefully tolerate an absent child set. After the
-	// walker runs, ECID 55 is in the cache with default-init fields.
-	// (In production a real CEC_PartFile_Tag at INC_UPDATE always
-	// carries the full identity child set; this test pins the bare-
-	// minimum insertion path.)
+	// Craft a partfile tag with just the ECID. The walker dispatches on tag name and calls
+	// TagHashLower + MergePartFileTag, both of which tolerate an absent child set. After the
+	// walker runs, ECID 55 is in the cache with default-init fields. In production a real
+	// CEC_PartFile_Tag at INC_UPDATE always carries the full identity child set; this test pins
+	// the bare-minimum insertion path.
 	CECPacket resp(EC_OP_SHARED_FILES);
 	resp.AddTag(CECTag(EC_TAG_PARTFILE, static_cast<std::uint32_t>(55)));
 
 	ApplyGetUpdateToDownloads(&resp, cache, rle_state);
 
-	// The new ECID landed — no needed.
+	// The new ECID landed -- no needed.
 	ASSERT_EQUALS(static_cast<size_t>(1), cache.size());
 	ASSERT_TRUE(cache.find(55) != cache.end());
 	ASSERT_EQUALS(static_cast<std::uint32_t>(55), cache.find(55)->second.ecid);
 }
 
-// ----------------------------------------------------------------------
-// A partfile that is BOTH downloading and shared carries two independent
-// priorities: the download priority (EC_TAG_PARTFILE_PRIO, surfaced on
-// /downloads) and the upload priority (EC_TAG_KNOWNFILE_PRIO, surfaced on
-// /shared). They live in separate sub-blocks; the shared-walker pass must
-// not clobber the download value written by the downloads-walker pass.
-// (Regression: a single top-level snapshot `priority` field let the two
-// overwrite each other — /downloads reported the upload level.)
-// ----------------------------------------------------------------------
+// A partfile that is BOTH downloading and shared carries two independent priorities: the download
+// priority (EC_TAG_PARTFILE_PRIO, surfaced on /downloads) and the upload priority
+// (EC_TAG_KNOWNFILE_PRIO, surfaced on /shared). They live in separate sub-blocks; the shared-walker
+// pass must not clobber the download value written by the downloads-walker pass. Regression: a
+// single top-level snapshot `priority` field let the two overwrite each other, so /downloads
+// reported the upload level.
 
 TEST(Refresher, BothFilePrioritiesAreIndependent)
 {
@@ -769,25 +729,21 @@ TEST(Refresher, BothFilePrioritiesAreIndependent)
 	ASSERT_EQUALS(std::string("low"), it->second.shared.priority);
 }
 
-// ----------------------------------------------------------------------
-// A partfile that starts downloading BEFORE it shares. Its upload
-// priority (EC_TAG_KNOWNFILE_PRIO) is emitted on early ticks while it is
-// still download-only; amuled then CValueMap-suppresses the unchanged
-// tag. When the file later flips shared, the shared walker never sees
-// the priority tag again. The downloads walker must therefore latch the
-// upload priority from the partfile tag, and the share-off reset must
-// preserve it, so /shared reports a real level instead of "".
-// (Regression: amule-org/amule#384 follow-up — empty shared `priority`.)
-// ----------------------------------------------------------------------
+// A partfile that starts downloading BEFORE it shares. Its upload priority (EC_TAG_KNOWNFILE_PRIO)
+// is emitted on early ticks while it is still download-only; amuled then CValueMap-suppresses the
+// unchanged tag. When the file later flips shared, the shared walker never sees the priority tag
+// again. The downloads walker must therefore latch the upload priority from the partfile tag, and
+// the share-off reset must preserve it, so /shared reports a real level instead of "". Regression:
+// amule-org/amule#384 follow-up, an empty shared `priority`.
 
 TEST(Refresher, SharedPriorityLatchedBeforeSharingSurvivesSuppression)
 {
 	FileMap cache;
 	std::map<std::uint32_t, PartFileEncoderData> rle_state;
 
-	// Tick 1 — download-only. The partfile tag carries both priorities
-	// (download PR_HIGH=2 → "high", upload PR_LOW=0 → "low") and an
-	// explicit not-shared flag. Downloads walker runs first, then shared.
+	// Tick 1 -- download-only. The partfile tag carries both priorities (download PR_HIGH=2 ->
+	// "high", upload PR_LOW=0 -> "low") and an explicit not-shared flag. Downloads walker runs
+	// first, then shared.
 	{
 		CECPacket resp(EC_OP_SHARED_FILES);
 		CECTag pf(EC_TAG_PARTFILE, static_cast<std::uint32_t>(78));
@@ -807,9 +763,9 @@ TEST(Refresher, SharedPriorityLatchedBeforeSharingSurvivesSuppression)
 		ASSERT_EQUALS(std::string("low"), it->second.shared.priority);
 	}
 
-	// Tick 2 — file flips shared, but the unchanged upload priority is
-	// now suppressed (no EC_TAG_KNOWNFILE_PRIO child). Without the latch
-	// the shared walker would leave shared.priority empty.
+	// Tick 2 -- the file flips shared, but the unchanged upload priority is now suppressed (no
+	// EC_TAG_KNOWNFILE_PRIO child). Without the latch the shared walker would leave
+	// shared.priority empty.
 	{
 		CECPacket resp(EC_OP_SHARED_FILES);
 		CECTag pf(EC_TAG_PARTFILE, static_cast<std::uint32_t>(78));
@@ -825,11 +781,9 @@ TEST(Refresher, SharedPriorityLatchedBeforeSharingSurvivesSuppression)
 	ASSERT_EQUALS(std::string("low"), it->second.shared.priority); // not empty
 }
 
-// ----------------------------------------------------------------------
-// Single-file detail decode (issue #417). The download-detail and
-// shared-detail endpoints read these off the same snapshot the walkers
-// build, so pin that the new tags land in the right sub-blocks.
-// ----------------------------------------------------------------------
+// Single-file detail decode (issue #417). The download-detail and shared-detail endpoints read
+// these off the same snapshot the walkers build, so pin that the new tags land in the right sub-
+// blocks.
 
 TEST(Refresher, DownloadDetailTagsDecodeIntoSnapshot)
 {
@@ -845,9 +799,8 @@ TEST(Refresher, DownloadDetailTagsDecodeIntoSnapshot)
 	pf.AddTag(CECTag(EC_TAG_PARTFILE_LOST_CORRUPTION, static_cast<std::uint64_t>(9728000)));
 	pf.AddTag(CECTag(EC_TAG_PARTFILE_GAINED_COMPRESSION, static_cast<std::uint64_t>(4096)));
 	pf.AddTag(CECTag(EC_TAG_PARTFILE_SAVED_ICH, static_cast<std::uint32_t>(7)));
-	// Still sent by the daemon, deliberately not decoded any more: partmet_id
-	// was dropped from the surface, and an undecoded tag must not disturb the
-	// rest of the parse.
+	// Still sent by the daemon, deliberately not decoded any more: partmet_id was dropped from
+	// the surface, and an undecoded tag must not disturb the rest of the parse.
 	pf.AddTag(CECTag(EC_TAG_PARTFILE_PARTMETID, static_cast<std::uint32_t>(42)));
 	// Base CKnownFile tags carried on the partfile tag too.
 	pf.AddTag(CECTag(EC_TAG_KNOWNFILE_ON_QUEUE, static_cast<std::uint32_t>(5)));
@@ -917,10 +870,9 @@ TEST(Refresher, SharedDetailTagsDecodeIntoSnapshot)
 	ASSERT_EQUALS(static_cast<std::uint32_t>(1699000000), s.shared.shared_since);
 }
 
-// Comment/rating (issue #419): the user's own comment+rating land at the
-// top level; the per-source EC_TAG_PARTFILE_COMMENTS container decodes
-// into download.source_comments (4 index-grouped children per source,
-// rating -1 = unrated).
+// Comment/rating (issue #419): the user's own comment and rating land at the top level; the per-
+// source EC_TAG_PARTFILE_COMMENTS container decodes into download.source_comments, 4 index-grouped
+// children per source, rating -1 = unrated.
 TEST(Refresher, CommentRatingAndSourceCommentsDecode)
 {
 	FileMap cache;
@@ -955,9 +907,9 @@ TEST(Refresher, CommentRatingAndSourceCommentsDecode)
 	ASSERT_EQUALS(std::string("no rating here"), it->second.download.source_comments[1].comment);
 }
 
-// Source-reported filenames (issue #420) are delta-encoded by amuled and
-// accumulated across ticks: tick 1 adds two names; tick 2 removes one
-// (COUNTS=0) and updates the other's count (COUNTS-only child).
+// Source-reported filenames (issue #420) are delta-encoded by amuled and accumulated across ticks:
+// tick 1 adds two names; tick 2 removes one (COUNTS=0) and updates the other's count (COUNTS-only
+// child).
 TEST(Refresher, SourceNamesDeltaAccumulate)
 {
 	FileMap cache;
@@ -1009,9 +961,9 @@ TEST(Refresher, SourceNamesDeltaAccumulate)
 	ASSERT_TRUE(it->second.download.source_names.find(2) == it->second.download.source_names.end());
 }
 
-// A4AF (issue #421): the auto flag decodes into download.a4af_auto and
-// the EC_TAG_PARTFILE_A4AF_SOURCES container's EC_TAG_ECID children into
-// the a4af_sources list (full replace when present).
+// A4AF (issue #421): the auto flag decodes into download.a4af_auto and the
+// EC_TAG_PARTFILE_A4AF_SOURCES container's EC_TAG_ECID children into the a4af_sources list, a full
+// replace when present.
 TEST(Refresher, A4afAutoAndSourcesDecode)
 {
 	FileMap cache;
@@ -1035,9 +987,9 @@ TEST(Refresher, A4afAutoAndSourcesDecode)
 	ASSERT_EQUALS(static_cast<std::uint32_t>(5678), it->second.download.a4af_sources[1]);
 }
 
-// Media metadata (issue #418): the six FT_MEDIA_* EC tags decode into the
-// `media` sub-struct and set `has_media`; a file with no media tags keeps
-// has_media=false (so the API omits the `media` object).
+// Media metadata (issue #418): the six FT_MEDIA_* EC tags decode into the `media` sub-struct and
+// set `has_media`; a file with no media tags keeps has_media=false, so the API omits the `media`
+// object.
 TEST(Refresher, MediaMetadataDecode)
 {
 	FileMap cache;
@@ -1071,12 +1023,11 @@ TEST(Refresher, MediaMetadataDecode)
 	ASSERT_TRUE(!it2->second.has_media);
 }
 
-// The clear half of the same contract. amuled sends a zero / empty value for
-// a field it previously sent a real one for -- a tag that is simply not
-// offered reads as UNCHANGED to a CValueMap peer, so an omitted field would
-// leave this snapshot serving the stale value, including one inherited
-// unverified from a search result. That is exactly what the completion
-// re-probe exists to correct, and it regressed once already.
+// The clear half of the same contract. amuled sends a zero or empty value for a field it previously
+// sent a real one for -- a tag simply not offered reads as UNCHANGED to a CValueMap peer, so an
+// omitted field would leave this snapshot serving the stale value, including one inherited
+// unverified from a search result. That is exactly what the completion re-probe exists to correct,
+// and it regressed once already.
 TEST(Refresher, MediaMetadataClearRemovesFieldsAndRecomputesHasMedia)
 {
 	FileMap cache;
@@ -1119,9 +1070,8 @@ TEST(Refresher, MediaMetadataClearRemovesFieldsAndRecomputesHasMedia)
 
 TEST(Refresher, MediaMetadataClearingEveryFieldDropsHasMedia)
 {
-	// has_media is DERIVED, not latched: a file whose every field has been
-	// cleared must stop reporting media, or the API keeps emitting an empty
-	// `media` object for it.
+	// has_media is DERIVED, not latched: a file whose every field has been cleared must stop
+	// reporting media, or the API keeps emitting an empty `media` object for it.
 	FileMap cache;
 	std::map<std::uint32_t, PartFileEncoderData> rle_state;
 	{
@@ -1144,20 +1094,16 @@ TEST(Refresher, MediaMetadataClearingEveryFieldDropsHasMedia)
 	ASSERT_TRUE(!cache.find(701)->second.has_media);
 }
 
-// ----------------------------------------------------------------------
-// /servers — GET_UPDATE wraps per-server tags in an EC_TAG_SERVER
-// container at top level. Walker iterates INTO the container and
-// merges per-ECID; cache entries not seen in the response get evicted
-// because the server side has no FILE_REMOVED equivalent for servers
-// (the container always carries the full current list).
-// ----------------------------------------------------------------------
+// /servers -- GET_UPDATE wraps per-server tags in an EC_TAG_SERVER container at top level. The
+// walker iterates INTO the container and merges per-ECID; cache entries not seen in the response
+// are evicted, because the server side has no FILE_REMOVED equivalent for servers and the container
+// always carries the full current list.
 
 TEST(Refresher, ServersFromContainerMergesByEcid)
 {
 	std::map<std::uint32_t, ServerSnapshot> cache;
-	// Pre-seed an entry that should disappear: a server the operator
-	// removed from amuled between ticks (it won't show up in the new
-	// response's SERVER container).
+	// Pre-seed an entry that should disappear: a server the operator removed from amuled
+	// between ticks, so it will not show up in the new response's SERVER container.
 	{
 		ServerSnapshot s;
 		s.ecid = 9999;
@@ -1169,10 +1115,9 @@ TEST(Refresher, ServersFromContainerMergesByEcid)
 	CECPacket resp(EC_OP_SHARED_FILES);
 	{
 		CECTag container(EC_TAG_SERVER, static_cast<std::uint32_t>(0));
-		// One per-server child tag inside the container — same
-		// EC_TAG_SERVER name (the walker disambiguates by depth, not
-		// by name). Minimum tags needed for the merge to populate
-		// the snapshot.
+		// One per-server child tag inside the container -- the same EC_TAG_SERVER name, the
+		// walker disambiguating by depth rather than name. The minimum tags needed for the
+		// merge to populate the snapshot.
 		CECTag srv(EC_TAG_SERVER, static_cast<std::uint32_t>(42));
 		srv.AddTag(CECTag(EC_TAG_SERVER_USERS, static_cast<std::uint32_t>(1234)));
 		// #440 server host country ISO code resolved daemon-side.
@@ -1190,11 +1135,10 @@ TEST(Refresher, ServersFromContainerMergesByEcid)
 	ASSERT_EQUALS(std::string("de"), cache[42].country_code);
 }
 
-// The four fields issue #974 added: publishing limits + capability
-// bitmasks. They ride the same GET_UPDATE response the rest of the
-// server snapshot comes from, so the only thing to prove is that
-// MergeServerTag reads them and that a tag CValueMap suppressed on an
-// unchanged tick does not clobber the cached value.
+// The four fields issue #974 added: publishing limits plus capability bitmasks. They ride the same
+// GET_UPDATE response the rest of the server snapshot comes from, so the only thing to prove is
+// that MergeServerTag reads them and that a tag CValueMap suppressed on an unchanged tick does not
+// clobber the cached value.
 TEST(Refresher, ServerLimitsAndFlagsReachTheSnapshot)
 {
 	std::map<std::uint32_t, ServerSnapshot> cache;
@@ -1223,10 +1167,9 @@ TEST(Refresher, ServerLimitsAndFlagsReachTheSnapshot)
 	ASSERT_EQUALS(static_cast<std::uint32_t>(SRV_UDPFLG_EXT_GETSOURCES | SRV_UDPFLG_LARGEFILES),
 		cache[7].udp_flags);
 
-	// Next tick: the server is still in the list but nothing it
-	// announced changed, so CValueMap suppresses all four tags. The
-	// cached values have to survive -- dropping to 0 here would read
-	// as "the server stopped supporting everything".
+	// Next tick: the server is still in the list but nothing it announced changed, so CValueMap
+	// suppresses all four tags. The cached values have to survive -- dropping to 0 here would
+	// read as "the server stopped supporting everything".
 	CECPacket quiet(EC_OP_SHARED_FILES);
 	{
 		CECTag container(EC_TAG_SERVER, static_cast<std::uint32_t>(0));
@@ -1289,11 +1232,9 @@ TEST(Refresher, ServersEmptyContainerEmptiesCache)
 
 TEST(Refresher, ServersNoContainerLeavesCacheAlone)
 {
-	// Defensive: if a response is missing the SERVER container
-	// entirely (which production amuled never does — it always
-	// emits the container even when empty), the walker leaves the
-	// cache untouched. Better than wiping on an unexpected wire
-	// shape.
+	// Defensive: if a response is missing the SERVER container entirely -- which production
+	// amuled never does, it always emits the container even when empty -- the walker leaves the
+	// cache untouched. Better than wiping on an unexpected wire shape.
 	std::map<std::uint32_t, ServerSnapshot> cache;
 	cache.emplace(7, ServerSnapshot{});
 
@@ -1306,10 +1247,8 @@ TEST(Refresher, ServersNoContainerLeavesCacheAlone)
 	ASSERT_TRUE(cache.find(7) != cache.end());
 }
 
-// ----------------------------------------------------------------------
-// Friends — same container shape as servers: full list every tick, per-field
-// CValueMap suppression, eviction by "not seen".
-// ----------------------------------------------------------------------
+// Friends -- the same container shape as servers: full list every tick, per-field CValueMap
+// suppression, eviction by "not seen".
 
 TEST(Refresher, FriendsFromContainerMergesByEcid)
 {
@@ -1349,9 +1288,8 @@ TEST(Refresher, FriendsFromContainerMergesByEcid)
 
 TEST(Refresher, FriendsSuppressedFieldsKeepCachedValues)
 {
-	// CValueMap omits unchanged fields, so a tick carrying only the changed
-	// one must not blank the rest. The friend goes offline (CLIENT -> 0) and
-	// nothing else is sent.
+	// CValueMap omits unchanged fields, so a tick carrying only the changed one must not blank
+	// the rest. The friend goes offline (CLIENT -> 0) and nothing else is sent.
 	std::map<std::uint32_t, FriendSnapshot> cache;
 	{
 		FriendSnapshot f;
@@ -1418,12 +1356,9 @@ TEST(Refresher, FriendsNoContainerLeavesCacheAlone)
 	ASSERT_TRUE(cache.find(7) != cache.end());
 }
 
-// ----------------------------------------------------------------------
-// RLE state map — cleaned up alongside the cache when a partfile
-// gets evicted via FILE_REMOVED. Without the cleanup, the decoder's
-// internal buffer (~200 KB per partfile on TB-class files) would
+// RLE state map -- cleaned up alongside the cache when a partfile is evicted via FILE_REMOVED.
+// Without the cleanup the decoder's internal buffer, ~200 KB per partfile on TB-class files, would
 // slowly leak.
-// ----------------------------------------------------------------------
 
 TEST(Refresher, RleStateErasedAlongsideFileRemoved)
 {
@@ -1450,9 +1385,8 @@ TEST(Refresher, RleStateErasedAlongsideFileRemoved)
 
 TEST(Refresher, RleStatePreservedForKnownEntryAcrossTick)
 {
-	// A partfile already in cache should KEEP its RLE state across a
-	// tick that brings no new info. The decoder relies on its buffer
-	// surviving from the prior tick.
+	// A partfile already in cache should KEEP its RLE state across a tick that brings no new
+	// info. The decoder relies on its buffer surviving from the prior tick.
 	FileMap cache;
 	std::map<std::uint32_t, PartFileEncoderData> rle_state;
 	{
@@ -1473,23 +1407,19 @@ TEST(Refresher, RleStatePreservedForKnownEntryAcrossTick)
 	ASSERT_TRUE(rle_state.find(5) != rle_state.end());
 }
 
-// ----------------------------------------------------------------------
-// /stats/tree — recursive walk strips the root container and surfaces
-// its children at the top level. Crafted as a hand-built CECTag tree.
-// ----------------------------------------------------------------------
+// /stats/tree -- the recursive walk strips the root container and surfaces its children at the top
+// level. Crafted as a hand-built CECTag tree.
 
 TEST(Refresher, StatusDecodeCompleteOverridesStopped)
 {
-	// A completed download in amuled sits in `m_completedDownloads`
-	// with EC_TAG_PARTFILE_STOPPED set true. The decoder used to
-	// short-circuit on `stopped` and report "paused" — masking the
-	// PS_COMPLETE state from /downloads consumers (and breaking the
-	// status=="completed" filter). PS_COMPLETE (and
-	// PS_COMPLETING) must take priority over the stopped flag.
+	// A completed download in amuled sits in `m_completedDownloads` with
+	// EC_TAG_PARTFILE_STOPPED set true. The decoder used to short-circuit on `stopped` and
+	// report "paused", masking the PS_COMPLETE state from /downloads consumers and breaking the
+	// status=="completed" filter. PS_COMPLETE, and PS_COMPLETING, must take priority over the
+	// stopped flag.
 	//
-	// PS_COMPLETE = 9 (Constants.h). Crafting a partfile tag with
-	// PS_STATUS=9 + STOPPED=true exercises the merge path through
-	// ApplyGetUpdateToDownloads.
+	// PS_COMPLETE = 9 (Constants.h). Crafting a partfile tag with PS_STATUS=9 + STOPPED=true
+	// exercises the merge path through ApplyGetUpdateToDownloads.
 	FileMap cache;
 	std::map<std::uint32_t, PartFileEncoderData> rle_state;
 
@@ -1509,9 +1439,8 @@ TEST(Refresher, StatusDecodeCompleteOverridesStopped)
 
 TEST(Refresher, StatusDecodeCompletingOverridesStopped)
 {
-	// Same shape, PS_COMPLETING (=8) takes priority over stopped too
-	// — covers the in-flight finalization race where the cache is
-	// being moved from m_filelist to m_completedDownloads.
+	// Same shape: PS_COMPLETING (=8) takes priority over stopped too. Covers the in-flight
+	// finalization race where the cache is being moved from m_filelist to m_completedDownloads.
 	FileMap cache;
 	std::map<std::uint32_t, PartFileEncoderData> rle_state;
 
@@ -1530,12 +1459,11 @@ TEST(Refresher, StatusDecodeCompletingOverridesStopped)
 
 TEST(Refresher, StatusDecodeStoppedNonCompleteReportsStopped)
 {
-	// A download that's stopped but NOT yet completed (user hit Stop
-	// mid-transfer) surfaces as the distinct wire status "stopped":
-	// stop = pause + drop all sources + reset the Kad source search,
-	// and clients need to tell it apart from a plain "paused" (which
-	// keeps its sources). PS_COMPLETE / PS_COMPLETING still take
-	// priority over the stopped flag — see the two tests above.
+	// A download that is stopped but NOT yet completed (the user hit Stop mid-transfer)
+	// surfaces as the distinct wire status "stopped": stop = pause + drop all sources + reset
+	// the Kad source search, and clients need to tell it apart from a plain "paused", which
+	// keeps its sources. PS_COMPLETE / PS_COMPLETING still take priority over the stopped flag
+	// -- see the two tests above.
 	FileMap cache;
 	std::map<std::uint32_t, PartFileEncoderData> rle_state;
 
@@ -1555,10 +1483,9 @@ TEST(Refresher, StatusDecodeStoppedNonCompleteReportsStopped)
 
 TEST(Refresher, StatusDecodePausedNotStoppedReportsPaused)
 {
-	// The complement: a paused file that is NOT stopped (PS_PAUSED with
-	// the stopped flag clear) keeps its sources and reports "paused",
-	// distinct from the "stopped" state above. Pins that the "stopped"
-	// wire status is gated on EC_TAG_PARTFILE_STOPPED, not on PS_PAUSED.
+	// The complement: a paused file that is NOT stopped (PS_PAUSED with the stopped flag clear)
+	// keeps its sources and reports "paused", distinct from the "stopped" state above. Pins
+	// that the "stopped" wire status is gated on EC_TAG_PARTFILE_STOPPED, not on PS_PAUSED.
 	FileMap cache;
 	std::map<std::uint32_t, PartFileEncoderData> rle_state;
 
@@ -1635,13 +1562,10 @@ TEST(Refresher, ParseStatsTreeStripsRootAndRecursesChildren)
 	ASSERT_EQUALS(static_cast<size_t>(0), out.children[1].children.size());
 }
 
-// ----------------------------------------------------------------------
-// AdvanceSearchProgress — maps EC_TAG_SEARCH_LIFECYCLE_STATE +
-// EC_TAG_SEARCH_LIFECYCLE_PERCENT into (percent, complete, active).
-// Trusts the daemon's flags; the percent is the daemon's unified 0..100
-// for every kind (global = real, Kad = cosmetic ramp), so amuleapi no
-// longer masks it per-kind — it just passes it through and clamps.
-// ----------------------------------------------------------------------
+// AdvanceSearchProgress -- maps EC_TAG_SEARCH_LIFECYCLE_STATE + EC_TAG_SEARCH_LIFECYCLE_PERCENT
+// into (percent, complete, active). Trusts the daemon's flags; the percent is the daemon's unified
+// 0..100 for every kind (global = real, Kad = cosmetic ramp), so amuleapi no longer masks it per-
+// kind -- it passes it through and clamps.
 
 namespace
 {
@@ -1660,13 +1584,12 @@ constexpr std::uint32_t LIFECYCLE_FINISHED = 2;
 
 } // namespace
 
-// Search result status + type (issue #429): EC_TAG_PARTFILE_STATUS decodes
-// to the lowercase status string, and `type` is derived from the filename.
-// The union reply is not per-search: every result carries EC_TAG_SEARCH_ID the
-// first time the daemon mentions it, and the applier attributes later diffed
-// tags through the ECID -> search_id index. These fixtures therefore stamp one
-// search id on every result tag and pre-create its slot, which is what the
-// refresher does via MarkSearchStarted before any poll runs.
+// Search result status + type (issue #429): EC_TAG_PARTFILE_STATUS decodes to the lowercase status
+// string, and `type` is derived from the filename. The union reply is not per-search: every result
+// carries EC_TAG_SEARCH_ID the first time the daemon mentions it, and the applier attributes later
+// diffed tags through the ECID -> search_id index. These fixtures therefore stamp one search id on
+// every result tag and pre-create its slot, which is what the refresher does via MarkSearchStarted
+// before any poll runs.
 static constexpr std::uint32_t kSid = 4242;
 
 TEST(Refresher, SearchResultStatusAndTypeDecode)
@@ -1694,9 +1617,8 @@ TEST(Refresher, SearchResultStatusAndTypeDecode)
 	const auto it = cache.find(70);
 	ASSERT_TRUE(it != cache.end());
 	ASSERT_EQUALS(std::string("queued"), it->second.status);
-	// Normalised from GetFiletypeByName's UI label: singular, snake_case,
-	// and "unknown" rather than "any". Same token set as the shared-detail
-	// file_type, which shares this helper.
+	// Normalised from GetFiletypeByName's UI label: singular, snake_case, and "unknown" rather
+	// than "any". The same token set as the shared-detail file_type, which shares this helper.
 	ASSERT_EQUALS(std::string("video"), it->second.type);
 
 	const auto it2 = cache.find(71);
@@ -1720,8 +1642,8 @@ TEST(Refresher, SearchProgressRunningPassesThroughKadRamp)
 	using webapi::AdvanceSearchProgress;
 	webapi::SearchProgressSnapshot s = MakeActive("kad");
 	// The daemon synthesises a cosmetic time-ramp for Kad and ships it in
-	// EC_TAG_SEARCH_LIFECYCLE_PERCENT, so amuleapi no longer masks Kad to
-	// 0 — it passes the daemon value straight through.
+	// EC_TAG_SEARCH_LIFECYCLE_PERCENT, so amuleapi no longer masks Kad to 0 -- it passes the
+	// daemon value straight through.
 	s = AdvanceSearchProgress(s, LIFECYCLE_RUNNING, /*pct=*/37);
 	ASSERT_TRUE(s.active);
 	ASSERT_EQUALS(static_cast<uint32_t>(37), s.percent);
@@ -1760,10 +1682,9 @@ TEST(Refresher, SearchProgressIdleZeroesOutGracefully)
 	ASSERT_EQUALS(static_cast<uint32_t>(0), s.percent);
 }
 
-// Search result media metadata (issue #430): the EC_TAG_KNOWNFILE_MEDIA_*
-// tags (present only for hits known/probed locally) decode into the
-// SearchResult media sub-struct and set has_media; a hit with none stays
-// has_media=false so the API omits the `media` object.
+// Search result media metadata (issue #430): the EC_TAG_KNOWNFILE_MEDIA_* tags, present only for
+// hits known or probed locally, decode into the SearchResult media sub-struct and set has_media; a
+// hit with none stays has_media=false so the API omits the `media` object.
 TEST(Refresher, SearchResultMediaDecode)
 {
 	std::map<std::uint32_t, SearchSlot> slots;
@@ -1800,11 +1721,9 @@ TEST(Refresher, SearchResultMediaDecode)
 	ASSERT_TRUE(!it2->second.has_media);
 }
 
-// --- #431: result grouping folds same-hash/diff-name children --------
-//
-// A parent plus two children (each carrying EC_TAG_SEARCH_PARENT) must
-// collapse to a single top-level result with the two alternative names
-// nested in children[]; the child ECIDs must not remain top-level.
+// #431: result grouping folds same-hash/diff-name children. A parent plus two children, each
+// carrying EC_TAG_SEARCH_PARENT, must collapse to a single top-level result with the two
+// alternative names nested in children[]; the child ECIDs must not remain top-level.
 TEST(Refresher, SearchResultGroupingFoldsChildren)
 {
 	std::map<std::uint32_t, SearchSlot> slots;
@@ -1850,13 +1769,10 @@ TEST(Refresher, SearchResultGroupingFoldsChildren)
 	ASSERT_EQUALS(std::string("third.mkv"), it->second.children[1].name);
 }
 
-// --- Browse results carry the folder they live in ---------------------
-//
-// EC_TAG_SEARCHFILE_DIRECTORY is attached by the core only to results
-// filed from a peer's shared-file listing, which is what makes it the
-// browse-only "Directories" column. It is per-RESULT, not per-search: two
-// copies of one file in different folders of the same share group under a
-// single parent and each must keep its own folder.
+// Browse results carry the folder they live in. EC_TAG_SEARCHFILE_DIRECTORY is attached by the core
+// only to results filed from a peer's shared-file listing, which is what makes it the browse-only
+// "Directories" column. It is per-RESULT, not per-search: two copies of one file in different
+// folders of the same share group land under a single parent, and each must keep its own folder.
 TEST(Refresher, SearchResultDirectoryDecodesAndRidesEachChild)
 {
 	std::map<std::uint32_t, SearchSlot> slots;
@@ -1911,17 +1827,15 @@ TEST(Refresher, SearchResultDirectoryEmptyOnOrdinaryHit)
 	ASSERT_TRUE(it->second.directory.empty());
 }
 
-// --- #359: peer software_version must be locale-independent ----------
-//
-// The daemon formats the version string with gettext, so an unidentified
-// client yields _("Unknown") -- "Desconocido" on a Spanish daemon. amuleapi
-// is a separate process and can't reverse the translation, so the refresher
-// keys off the numeric software code (locale-independent) and emits the
-// lowercase "unknown" sentinel instead of the translated string.
+// #359: peer software_version must be locale-independent. The daemon formats the version string
+// with gettext, so an unidentified client yields _("Unknown") -- "Desconocido" on a Spanish daemon.
+// amuleapi is a separate process and cannot reverse the translation, so the refresher keys off the
+// numeric software code and emits the lowercase "unknown" sentinel instead of the translated
+// string.
 
-// Build a one-client GET_UPDATE response: an EC_TAG_CLIENT container with a
-// single child client carrying the software code and (optionally) a version
-// string. Mirrors the amuled-side EC_TAG_CLIENT shape.
+// Build a one-client GET_UPDATE response: an EC_TAG_CLIENT container with a single child client
+// carrying the software code and, optionally, a version string. Mirrors the amuled-side
+// EC_TAG_CLIENT shape.
 static void PutOneClient(CECPacket &resp,
 	std::uint32_t ecid,
 	std::uint32_t soft,
@@ -1936,9 +1850,9 @@ static void PutOneClient(CECPacket &resp,
 	resp.AddTag(container);
 }
 
-// Per-part bitmaps (issue #984). Three wire conventions have to survive the
-// decoder: an EMPTY tag means "holds every part", the buffer is LSB-first
-// within each byte, and an absent tag means unchanged rather than zero.
+// Per-part bitmaps (issue #984). Three wire conventions have to survive the decoder: an EMPTY tag
+// means "holds every part", the buffer is LSB-first within each byte, and an absent tag means
+// unchanged rather than zero.
 static void PutClientWithPartStatus(CECPacket &resp,
 	std::uint32_t ecid,
 	const std::uint8_t *buf /* nullptr = empty tag */,
@@ -1993,10 +1907,9 @@ TEST(Refresher, ClientPartStatusIsDecodedLsbFirst)
 	ASSERT_TRUE(!cache[12].part_status[7]);
 }
 
-// Same helper plus a REQUEST_FILE ECID, for the swap tests below. The core
-// always sends that tag when the request file changes (AddDiffTag), and sends
-// it as a literal 0 when the peer stops requesting anything
-// (ECSpecialCoreTags.cpp:443).
+// The same helper plus a REQUEST_FILE ECID, for the swap tests below. The core always sends that
+// tag when the request file changes (AddDiffTag), and sends it as a literal 0 when the peer stops
+// requesting anything (ECSpecialCoreTags.cpp:443).
 static void PutClientWithReqFileAndPartStatus(CECPacket &resp,
 	std::uint32_t ecid,
 	std::uint32_t req_file_ecid,
@@ -2029,11 +1942,10 @@ static FileMap FilesWithHashes(std::initializer_list<std::pair<std::uint32_t, co
 
 TEST(Refresher, ClientPartStatusIsDroppedWhenTheRequestFileChanges)
 {
-	// An A4AF swap. CUpDownClient::SetReqFile clears m_downPartStatus without
-	// repopulating it, and the core then sends no PART_STATUS until the peer
-	// answers for the new file -- so a bitmap kept across the change would
-	// describe the OLD file and report the peer as holding parts of a file it
-	// has never sent a status for.
+	// An A4AF swap. CUpDownClient::SetReqFile clears m_downPartStatus without repopulating it,
+	// and the core then sends no PART_STATUS until the peer answers for the new file -- so a
+	// bitmap kept across the change would describe the OLD file and report the peer as holding
+	// parts of a file it has never sent a status for.
 	std::map<std::uint32_t, ClientSnapshot> cache;
 	const FileMap files = FilesWithHashes(
 		{ { 70, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }, { 71, "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" } });
@@ -2058,9 +1970,9 @@ TEST(Refresher, ClientPartStatusIsDroppedWhenTheRequestFileChanges)
 
 TEST(Refresher, ClientPartStatusInTheSameTickSurvivesTheFileChange)
 {
-	// The invalidation must not eat a bitmap the same packet carries: the
-	// hash is merged before the PART_STATUS decode, so a peer that swaps and
-	// reports its new status in one tick keeps the new status.
+	// The invalidation must not eat a bitmap the same packet carries: the hash is merged before
+	// the PART_STATUS decode, so a peer that swaps and reports its new status in one tick keeps
+	// the new status.
 	std::map<std::uint32_t, ClientSnapshot> cache;
 	const FileMap files = FilesWithHashes(
 		{ { 70, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }, { 71, "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" } });
@@ -2083,9 +1995,9 @@ TEST(Refresher, ClientPartStatusInTheSameTickSurvivesTheFileChange)
 
 TEST(Refresher, ClientRequestFileZeroClearsTheDownloadHash)
 {
-	// The core spells "no request file" as the tag carrying 0, not as an
-	// absent tag. Reading that as "unchanged" left a finished peer listed as
-	// a source of the file it had just completed, bitmap and all.
+	// The core spells "no request file" as the tag carrying 0, not as an absent tag. Reading
+	// that as "unchanged" left a finished peer listed as a source of the file it had just
+	// completed, bitmap and all.
 	std::map<std::uint32_t, ClientSnapshot> cache;
 	const FileMap files = FilesWithHashes({ { 70, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" } });
 
@@ -2141,9 +2053,9 @@ TEST(Refresher, ClientVersionUnknownIsLeftEmptyRatherThanTranslated)
 	// The locale leak is what this test exists to catch: whatever the
 	// representation of "no version", it must not be the daemon's string.
 	ASSERT_TRUE(cache[7].software_version != "Desconocido");
-	// Empty here, null on the wire. Not the "unknown" sentinel it used to
-	// be: software_version is free text, so there is no enum member to fall
-	// back to, and R10 spells an unknown value null.
+	// Empty here, null on the wire. Not the "unknown" sentinel it used to be: software_version
+	// is free text, so there is no enum member to fall back to, and R10 spells an unknown value
+	// null.
 	ASSERT_EQUALS(std::string(), cache[7].software_version);
 }
 
@@ -2173,12 +2085,10 @@ TEST(Refresher, ClientKnownButNoVersionStringIsLeftEmpty)
 	ASSERT_EQUALS(std::string(), cache[9].software_version);
 }
 
-// --- #422: detail-only client fields decode --------------------------
-//
-// The section-B fields ride the INC_UPDATE client tag and are captured
-// into ClientSnapshot by MergeClientTag; the detail endpoint serializes
-// them. Verify each decodes, HighID/LowID derives from the hybrid id,
-// and EC_TAG_CLIENT_FROM maps to the stable origin token.
+// #422: detail-only client fields decode. The section-B fields ride the INC_UPDATE client tag and
+// are captured into ClientSnapshot by MergeClientTag; the detail endpoint serializes them. Verify
+// each decodes, that HighID/LowID derives from the hybrid id, and that EC_TAG_CLIENT_FROM maps to
+// the stable origin token.
 TEST(Refresher, ClientDetailFieldsDecode)
 {
 	std::map<std::uint32_t, ClientSnapshot> cache;
@@ -2242,13 +2152,11 @@ TEST(Refresher, ClientDetailFieldsDecode)
 	ASSERT_TRUE(it2->second.credit_ratio == 0.0);
 }
 
-// --- #437: extended EC preference categories decode ------------------
-//
-// Covers both boolean encodings the core serializer uses: value tags
-// (share_hidden/exclude_patterns_use_regex -> GetInt()!=0) and bare presence
-// tags (ich_enabled/use_secident/endgame_enabled -> tag present == true), the
-// 3-state shared_files_visibility enum decoded from the wire int (#596, #655),
-// plus ints, strings, and the directories.shared_paths string array.
+// #437: extended EC preference categories decode. Covers both boolean encodings the core serializer
+// uses -- value tags (share_hidden / exclude_patterns_use_regex -> GetInt()!=0) and bare presence
+// tags (ich_enabled / use_secident / endgame_enabled -> tag present == true) -- plus the 3-state
+// shared_files_visibility enum decoded from the wire int (#596, #655), ints, strings, and the
+// directories.shared_paths string array.
 TEST(Refresher, PreferencesExtendedCategoriesDecode)
 {
 	CECPacket resp(EC_OP_SET_PREFERENCES);
@@ -2361,17 +2269,15 @@ TEST(Refresher, PreferencesExtendedCategoriesDecode)
 	ASSERT_TRUE(!p.geoip.download_in_progress); // absent -> false
 }
 
-// --- #655: enum strings and the nested remote_controls shape ----------
+// #655: enum strings and the nested remote_controls shape. The EC layer is unchanged by the field-
+// naming pass: it still carries the proxy type as a wire int and both remote-control subsystems in
+// one flat category. What changed is the API shape the snapshot feeds, so this pins the two
+// translations that now happen at the webapi boundary.
 //
-// The EC layer is unchanged by the field-naming pass: it still carries the
-// proxy type as a wire int and both remote-control subsystems in one flat
-// category. What changed is the API shape the snapshot feeds, so this pins
-// the two translations that now happen at the webapi boundary.
-// The core emits EC_TAG_GENERAL_CHECK_NEW_VERSION unconditionally, as a value
-// tag rather than a conditional empty one. Decoding it by presence therefore
-// pinned the answer to true, and a read-modify-write of any other preference
-// re-enabled version checking behind the user's back. Both `false` cases below
-// read `true` under that decode.
+// The core emits EC_TAG_GENERAL_CHECK_NEW_VERSION unconditionally, as a value tag rather than a
+// conditional empty one. Decoding it by presence therefore pinned the answer to true, and a read-
+// modify-write of any other preference re-enabled version checking behind the user's back. Both
+// `false` cases below read `true` under that decode.
 TEST(Refresher, VersionCheckEnabledDecodesTheValueNotThePresence)
 {
 	{
@@ -2483,11 +2389,9 @@ TEST(Refresher, PreferencesEnumStringsCoverEveryWireValue)
 	}
 }
 
-// --- #655: the preferences schema table is self-consistent -------------
-//
-// GET emit, PATCH apply and the EC decode are all driven off PrefSchema(),
-// so a malformed row silently breaks all three at once. These pin the
-// invariants the three walkers rely on.
+// #655: the preferences schema table is self-consistent. GET emit, PATCH apply and the EC decode
+// are all driven off PrefSchema(), so a malformed row silently breaks all three at once. These pin
+// the invariants the three walkers rely on.
 TEST(Refresher, PrefsSchemaIsWellFormed)
 {
 	std::set<std::string> seen;
@@ -2540,14 +2444,12 @@ TEST(Refresher, PrefsSchemaIsWellFormed)
 	ASSERT_EQUALS(static_cast<std::size_t>(119), emitted);
 }
 
-// The schema's irregularities are enumerated rather than merely counted: each
-// is deliberate and documented, so a new one appearing is a mistake worth
-// catching rather than a pattern to copy.
+// The schema's irregularities are enumerated rather than merely counted: each is deliberate and
+// documented, so a new one appearing is a mistake worth catching rather than a pattern to copy.
 //
-// Exactly two fields invert, and both do so because the EC tag they ride on is
-// named for the negative case: EC_TAG_CONN_UDP_DISABLE and, since #655,
-// EC_TAG_FILES_CREATE_NORMAL. In both the API states the positive fact and the
-// schema undoes the EC negation on read and write alike.
+// Exactly two fields invert, and both do so because the EC tag they ride on is named for the
+// negative case: EC_TAG_CONN_UDP_DISABLE and, since #655, EC_TAG_FILES_CREATE_NORMAL. In both, the
+// API states the positive fact and the schema undoes the EC negation on read and write alike.
 TEST(Refresher, PrefsSchemaIrregularitiesStayContained)
 {
 	std::size_t inverted = 0, foreign_group = 0, bespoke = 0;
@@ -2572,12 +2474,10 @@ TEST(Refresher, PrefsSchemaIrregularitiesStayContained)
 	ASSERT_EQUALS(static_cast<std::size_t>(1), bespoke);
 }
 
-// --- #692: ed2k server priority maps both ways -------------------------
-//
-// The SRV_PR_* wire values are not monotone (NORMAL=0, HIGH=1, LOW=2), so a
-// name->code mapping that assumed a name's position in a list was its code --
-// which is exactly what the generic enum helper on the preferences path does
-// -- would be wrong for every value. Pin both directions and the round trip.
+// #692: ed2k server priority maps both ways. The SRV_PR_* wire values are not monotone (NORMAL=0,
+// HIGH=1, LOW=2), so a name->code mapping that assumed a name's position in a list was its code --
+// exactly what the generic enum helper on the preferences path does -- would be wrong for every
+// value. Pin both directions and the round trip.
 TEST(Refresher, ServerPriorityMapsBothWays)
 {
 	ASSERT_EQUALS(std::string("normal"), std::string(ServerPriorityName(SRV_PR_NORMAL)));
@@ -2609,19 +2509,15 @@ TEST(Refresher, ServerPriorityMapsBothWays)
 	ASSERT_EQUALS(static_cast<std::uint32_t>(4242), untouched);
 }
 
-// --- union EC_OP_SEARCH_PROGRESS -------------------------------------------
-//
-// Absence from a union reply is how amuleapi learns a search expired, so the
-// parser's return value is load-bearing: a reply it could not parse must be
-// rejected outright rather than handed back as an empty union, which the
-// caller would read as "every tracked search is gone" and retire in one pass.
+// Union EC_OP_SEARCH_PROGRESS. Absence from a union reply is how amuleapi learns a search expired,
+// so the parser's return value is load-bearing: a reply it could not parse must be rejected
+// outright rather than handed back as an empty union, which the caller would read as "every tracked
+// search is gone" and retire in one pass.
 
-// --- The incremental contract -------------------------------------------
-//
-// Under EC_DETAIL_INC_UPDATE the daemon sends only what moved, so an absent
-// field means "unchanged". These pin that per field, because the failure mode
-// is silent: a guard forgotten on one field reverts it to its default on the
-// first quiet poll and nothing else notices.
+// The incremental contract. Under EC_DETAIL_INC_UPDATE the daemon sends only what moved, so an
+// absent field means "unchanged". These pin that per field, because the failure mode is silent: a
+// guard forgotten on one field reverts it to its default on the first quiet poll and nothing else
+// notices.
 
 TEST(Refresher, SearchUnionSecondPollKeepsFieldsTheDiffOmits)
 {
@@ -2660,9 +2556,9 @@ TEST(Refresher, SearchUnionSecondPollKeepsFieldsTheDiffOmits)
 
 TEST(Refresher, SearchUnionAppliesAStatusChangeOnAFinishedSearch)
 {
-	// The case #1187 section 2 is about: a hit gets downloaded after its
-	// search finished. Nothing here knows or cares that the search is over --
-	// which is the point, since the union polls it either way.
+	// The case #1187 section 2 is about: a hit gets downloaded after its search finished.
+	// Nothing here knows or cares that the search is over -- which is the point, since the
+	// union polls it either way.
 	std::map<std::uint32_t, SearchSlot> slots;
 	std::map<std::uint32_t, std::uint32_t> owner;
 	slots[kSid];
@@ -2689,9 +2585,9 @@ TEST(Refresher, SearchUnionAppliesAStatusChangeOnAFinishedSearch)
 
 TEST(Refresher, SearchUnionQuietPollRemovesNothing)
 {
-	// Absence stopped meaning deletion: a poll that mentions a search not at
-	// all must leave its results alone. Sweeping here would empty every
-	// result set on the first tick where nothing changed.
+	// Absence stopped meaning deletion: a poll that mentions a search not at all must leave its
+	// results alone. Sweeping here would empty every result set on the first tick where nothing
+	// changed.
 	std::map<std::uint32_t, SearchSlot> slots;
 	std::map<std::uint32_t, std::uint32_t> owner;
 	slots[kSid];
@@ -2777,9 +2673,9 @@ TEST(Refresher, SearchUnionAttributesDiffedTagsAcrossTwoSearches)
 
 TEST(Refresher, SearchUnionDiffedChildStaysFoldedIntoItsParent)
 {
-	// A grouped child is addressable by its own ECID on the wire, so it gets
-	// diffed tags of its own -- which is why `raw` keeps children and the
-	// folded view is rebuilt from it rather than merged into.
+	// A grouped child is addressable by its own ECID on the wire, so it gets diffed tags of its
+	// own -- which is why `raw` keeps children and the folded view is rebuilt from it rather
+	// than merged into.
 	std::map<std::uint32_t, SearchSlot> slots;
 	std::map<std::uint32_t, std::uint32_t> owner;
 	slots[kSid];
@@ -2814,11 +2710,10 @@ TEST(Refresher, SearchUnionDiffedChildStaysFoldedIntoItsParent)
 
 TEST(Refresher, SearchUnionSeesTheKadLookupEnd)
 {
-	// The daemon now always sends EC_TAG_PARTFILE_KAD_COMMENT_SEARCHING, and
-	// sends it through the valuemap, so the 1 -> 0 transition is itself a
-	// child tag and the result carrying it is not elided as unchanged. It
-	// used to be emitted only while the lookup ran or had notes, which made
-	// "finished, found nothing" a tag that simply stopped appearing -- and an
+	// The daemon now always sends EC_TAG_PARTFILE_KAD_COMMENT_SEARCHING, and sends it through
+	// the valuemap, so the 1 -> 0 transition is itself a child tag and the result carrying it
+	// is not elided as unchanged. It used to be emitted only while the lookup ran or had notes,
+	// which made "finished, found nothing" a tag that simply stopped appearing -- and an
 	// incremental client cannot tell that from silence.
 	std::map<std::uint32_t, SearchSlot> slots;
 	std::map<std::uint32_t, std::uint32_t> owner;
@@ -2847,10 +2742,10 @@ TEST(Refresher, SearchUnionSeesTheKadLookupEnd)
 
 TEST(Refresher, SearchUnionCommentsAbsenceMeansNoNotes)
 {
-	// The comments container is the one field where absence is a value: it is
-	// built only when there are notes and added without the valuemap, so it is
-	// never diffed away. A poll that omits it is saying "no notes", not
-	// "unchanged" -- otherwise a note set could never shrink to empty.
+	// The comments container is the one field where absence is a value: it is built only when
+	// there are notes and added without the valuemap, so it is never diffed away. A poll that
+	// omits it is saying "no notes", not "unchanged" -- otherwise a note set could never shrink
+	// to empty.
 	std::map<std::uint32_t, SearchSlot> slots;
 	std::map<std::uint32_t, std::uint32_t> owner;
 	slots[kSid];
@@ -2879,9 +2774,9 @@ TEST(Refresher, SearchUnionCommentsAbsenceMeansNoNotes)
 
 TEST(Refresher, SearchUnionIgnoresResultsForAnUnknownSearch)
 {
-	// Slot creation belongs to MarkSearchStarted / discovery, which also set
-	// the lifecycle state GET /search reports. Auto-creating one here would
-	// produce a search with results and no state behind it.
+	// Slot creation belongs to MarkSearchStarted / discovery, which also set the lifecycle
+	// state GET /search reports. Auto-creating one here would produce a search with results and
+	// no state behind it.
 	std::map<std::uint32_t, SearchSlot> slots;
 	std::map<std::uint32_t, std::uint32_t> owner;
 
@@ -2899,10 +2794,10 @@ TEST(Refresher, SearchUnionIgnoresResultsForAnUnknownSearch)
 
 TEST(Refresher, SearchUnionLeavesADetachedSlotAlone)
 {
-	// The daemon evicted the search from its ring. That makes it emit an
-	// EC_TAG_FILE_REMOVED for every result it had sent us -- but the tick has
-	// already detached the slot, precisely so those tombstones do not erase
-	// the results the retirement path means to keep for late reads.
+	// The daemon evicted the search from its ring. That makes it emit an EC_TAG_FILE_REMOVED
+	// for every result it had sent us -- but the tick has already detached the slot, precisely
+	// so those tombstones do not erase the results the retirement path means to keep for late
+	// reads.
 	std::map<std::uint32_t, SearchSlot> slots;
 	std::map<std::uint32_t, std::uint32_t> owner;
 	SearchSlot &slot = slots[kSid];
@@ -2953,10 +2848,9 @@ TEST(Refresher, SearchUnionDoesNotUpdateADetachedSlot)
 
 TEST(Refresher, SearchUnionDefaultSidAdoptsAnIdLessReply)
 {
-	// The per-search EC_DETAIL_FULL fetch -- the resync path the differential
-	// union has no opcode for. Its reply carries no EC_TAG_SEARCH_ID at all,
-	// so every tag in it has to be attributed to the search that was asked
-	// for, and the ECID index built from that.
+	// The per-search EC_DETAIL_FULL fetch -- the resync path the differential union has no
+	// opcode for. Its reply carries no EC_TAG_SEARCH_ID at all, so every tag in it has to be
+	// attributed to the search that was asked for, and the ECID index built from that.
 	std::map<std::uint32_t, SearchSlot> slots;
 	std::map<std::uint32_t, std::uint32_t> owner;
 	slots[kSid];
@@ -2974,11 +2868,10 @@ TEST(Refresher, SearchUnionDefaultSidAdoptsAnIdLessReply)
 
 TEST(Refresher, SearchUnionLeavesNoIndexEntryForADetachedSlot)
 {
-	// The index is what eviction walks to clean up after a slot, and it walks
-	// it via the slot's own results. An entry written for a result that was
-	// then dropped on the detached guard is in neither place, so nothing ever
-	// removes it -- and a reused ECID would resolve through it to a search
-	// that is gone.
+	// The index is what eviction walks to clean up after a slot, and it walks it via the slot's
+	// own results. An entry written for a result that was then dropped on the detached guard is
+	// in neither place, so nothing ever removes it -- and a reused ECID would resolve through
+	// it to a search that is gone.
 	std::map<std::uint32_t, SearchSlot> slots;
 	std::map<std::uint32_t, std::uint32_t> owner;
 	SearchSlot &slot = slots[kSid];
@@ -3017,14 +2910,12 @@ TEST(Refresher, SearchUnionStillIndexesAResultItAccepts)
 
 TEST(Refresher, AMergingFullReplyLeavesTheResyncFlagSet)
 {
-	// The flag says "a union reply was lost, so this slot may hold rows the
-	// daemon has already dropped". Only a replace answers that: a merge
-	// re-reads what the daemon still has and cannot remove what it does not.
-	// Clearing it on a merge strands those rows for the life of the slot --
-	// the tombstones went out in the reply that was lost, and the daemon
-	// never mentions them again. The HTTP refresh path (RefreshSearchIfStale)
-	// takes exactly this mode, and it serves the same non-active slots the
-	// flag is set on.
+	// The flag says "a union reply was lost, so this slot may hold rows the daemon has already
+	// dropped". Only a replace answers that: a merge re-reads what the daemon still has and
+	// cannot remove what it does not. Clearing it on a merge strands those rows for the life of
+	// the slot -- the tombstones went out in the reply that was lost, and the daemon never
+	// mentions them again. The HTTP refresh path (RefreshSearchIfStale) takes exactly this
+	// mode, and it serves the same non-active slots the flag is set on.
 	std::map<std::uint32_t, SearchSlot> slots;
 	std::map<std::uint32_t, std::uint32_t> owner;
 	SearchSlot &slot = slots[kSid];
@@ -3049,9 +2940,9 @@ TEST(Refresher, AMergingFullReplyLeavesTheResyncFlagSet)
 
 TEST(Refresher, AReplacingFullReplyDropsStaleRowsAndClearsTheFlag)
 {
-	// The re-seed the tick issues. Swapping the rows wholesale is the only
-	// way to express a deletion from a reply that carries no tombstones, and
-	// having done it the slot is authoritative again.
+	// The re-seed the tick issues. Swapping the rows wholesale is the only way to express a
+	// deletion from a reply that carries no tombstones, and having done it the slot is
+	// authoritative again.
 	std::map<std::uint32_t, SearchSlot> slots;
 	std::map<std::uint32_t, std::uint32_t> owner;
 	SearchSlot &slot = slots[kSid];
@@ -3078,10 +2969,9 @@ TEST(Refresher, AReplacingFullReplyDropsStaleRowsAndClearsTheFlag)
 
 TEST(Refresher, AnEmptyReplacingReplyClearsTheFoldedView)
 {
-	// The daemon reporting nothing left is a real answer, and the one an
-	// empty-reply merge cannot express: ApplySearchUnion refolds only slots
-	// it touched, so without the unconditional refold the stale fold would
-	// outlive the rows it was built from.
+	// The daemon reporting nothing left is a real answer, and the one an empty-reply merge
+	// cannot express: ApplySearchUnion refolds only slots it touched, so without the
+	// unconditional refold the stale fold would outlive the rows it was built from.
 	std::map<std::uint32_t, SearchSlot> slots;
 	std::map<std::uint32_t, std::uint32_t> owner;
 	SearchSlot &slot = slots[kSid];
@@ -3135,9 +3025,9 @@ TEST(Refresher, SearchProgressUnionOmitsExpiredSearch)
 
 TEST(Refresher, SearchProgressUnionAcceptsEmptyReply)
 {
-	// Right opcode, no children: the daemon legitimately holds none of the
-	// searches asked about. Accepted, so the caller retires all of them. The
-	// discriminator is the opcode, never the child count.
+	// Right opcode, no children: the daemon legitimately holds none of the searches asked
+	// about. Accepted, so the caller retires all of them. The discriminator is the opcode,
+	// never the child count.
 	CECPacket resp(EC_OP_SEARCH_PROGRESS);
 	std::map<std::uint32_t, std::pair<std::uint32_t, std::uint32_t>> out;
 	ASSERT_TRUE(ParseSearchProgressUnion(&resp, out));
@@ -3146,9 +3036,9 @@ TEST(Refresher, SearchProgressUnionAcceptsEmptyReply)
 
 TEST(Refresher, SearchProgressUnionRejectsFailureReply)
 {
-	// EC_OP_FAILED must NOT be read as an empty union: that would retire every
-	// tracked search at once. Rejecting it sends the caller back to per-id
-	// polling, which expires only on an explicit EC_TAG_SEARCH_EXPIRED.
+	// EC_OP_FAILED must NOT be read as an empty union: that would retire every tracked search
+	// at once. Rejecting it sends the caller back to per-id polling, which expires only on an
+	// explicit EC_TAG_SEARCH_EXPIRED.
 	CECPacket resp(EC_OP_FAILED);
 	std::map<std::uint32_t, std::pair<std::uint32_t, std::uint32_t>> out;
 	ASSERT_TRUE(!ParseSearchProgressUnion(&resp, out));
@@ -3157,21 +3047,17 @@ TEST(Refresher, SearchProgressUnionRejectsFailureReply)
 	ASSERT_TRUE(!ParseSearchProgressUnion(NULL, out));
 }
 
-// ----------------------------------------------------------------------
-// ParseKadFromPacket — /kad's node_id rides EC_TAG_KAD_ID, a UINT128
-// sub-tag of EC_TAG_CONNSTATE that amuled sends only while Kad is
-// running. The API contract is 32 LOWERCASE hex chars (the desktop
-// panel renders the same value uppercase), and an empty string rather
-// than an all-zero id when the sub-tag is absent.
-// ----------------------------------------------------------------------
+// ParseKadFromPacket -- /kad's node_id rides EC_TAG_KAD_ID, a UINT128 sub-tag of EC_TAG_CONNSTATE
+// that amuled sends only while Kad is running. The API contract is 32 LOWERCASE hex chars (the
+// desktop panel renders the same value uppercase), and an empty string rather than an all-zero id
+// when the sub-tag is absent.
 
 namespace
 {
 
-// CEC_ConnState_Tag is core-side (it builds itself from theApp), so
-// tests synthesise the wire shape instead: a plain EC_TAG_CONNSTATE
-// carrying the flag word, which is exactly what ParseKadFromPacket
-// downcasts. Bit 0x04 = connected to Kad, 0x10 = Kad running.
+// CEC_ConnState_Tag is core-side, building itself from theApp, so tests synthesise the wire shape
+// instead: a plain EC_TAG_CONNSTATE carrying the flag word, which is exactly what
+// ParseKadFromPacket downcasts. Bit 0x04 = connected to Kad, 0x10 = Kad running.
 CECTag MakeConnState(std::uint32_t flags)
 {
 	return CECTag(EC_TAG_CONNSTATE, flags);
@@ -3199,9 +3085,9 @@ TEST(Refresher, KadNodeIdDecodesAsLowercaseHex)
 
 TEST(Refresher, KadNodeIdEmptyWhenTagAbsent)
 {
-	// Kad not running: amuled omits EC_TAG_KAD_ID entirely. An all-zero
-	// id would read as a real identity, so the field must stay empty --
-	// and that is exactly the case `state == "disabled"` describes.
+	// Kad not running: amuled omits EC_TAG_KAD_ID entirely. An all-zero id would read as a real
+	// identity, so the field must stay empty -- exactly the case `state == "disabled"`
+	// describes.
 	CECPacket resp(EC_OP_STATS);
 	resp.AddTag(MakeConnState(0));
 
@@ -3214,11 +3100,10 @@ TEST(Refresher, KadNodeIdEmptyWhenTagAbsent)
 
 TEST(Refresher, KadPublicIpIsOursAndBuddyIpIsSeparate)
 {
-	// The two addresses in this payload belong to different parties, and
-	// they land in differently-named fields -- which is the whole reason
-	// ours is `public_ip` and not a bare `ip`. Encoded the way
-	// IPv4ToDotted reads them, least-significant byte first: 0x057100CB
-	// is 203.0.113.5 and 0x097100CB is 203.0.113.9.
+	// The two addresses in this payload belong to different parties, and they land in
+	// differently named fields -- the whole reason ours is `public_ip` and not a bare `ip`.
+	// Encoded the way IPv4ToDotted reads them, least significant byte first: 0x057100CB is
+	// 203.0.113.5 and 0x097100CB is 203.0.113.9.
 	CECPacket resp(EC_OP_STATS);
 	resp.AddTag(MakeConnState(0x04 | 0x10));
 	resp.AddTag(CECTag(EC_TAG_STATS_KAD_IP_ADDRESS, static_cast<std::uint32_t>(0x057100CBu)));
@@ -3233,11 +3118,10 @@ TEST(Refresher, KadPublicIpIsOursAndBuddyIpIsSeparate)
 
 TEST(Refresher, KadBuddyStatusIsNoBuddyWhenTagAbsent)
 {
-	// amuled ships EC_TAG_STATS_BUDDY_STATUS only while Kad is
-	// connected. Absent, the field must still hold one of the values
-	// /kad documents -- an empty string is a fourth value outside the
-	// enum. The core and amulegui both read the absence as
-	// `Disconnected`, so "no_buddy" is the amule-faithful answer.
+	// amuled ships EC_TAG_STATS_BUDDY_STATUS only while Kad is connected. Absent, the field
+	// must still hold one of the values /kad documents -- an empty string is a fourth value
+	// outside the enum. The core and amulegui both read the absence as `Disconnected`, so
+	// "no_buddy" is the amule-faithful answer.
 	CECPacket resp(EC_OP_STATS);
 	resp.AddTag(MakeConnState(0));
 
@@ -3248,24 +3132,19 @@ TEST(Refresher, KadBuddyStatusIsNoBuddyWhenTagAbsent)
 	ASSERT_EQUALS(std::string("no_buddy"), out.buddy_status);
 }
 
-// ----------------------------------------------------------------------
-// ParseStatusFromPacket — our own eD2k identity and the four stats
-// counters /status reports. Everything below decodes from tags amuled
-// already sends in the EC_DETAIL_FULL STAT_REQ response; these tests
-// exercise the decode itself, which is where the two sentinels live
-// (0xffffffff for "connect in flight" and the free-space -1 that
-// arrives on the wire as 0xFFFFFFFFFFFFFFFF).
+// ParseStatusFromPacket -- our own eD2k identity and the four stats counters /status reports.
+// Everything below decodes from tags amuled already sends in the EC_DETAIL_FULL STAT_REQ response;
+// these tests exercise the decode itself, which is where the two sentinels live: 0xffffffff for
+// "connect in flight" and the free-space -1 that arrives on the wire as 0xFFFFFFFFFFFFFFFF.
 //
-// MakeConnState above supplies the EC_TAG_CONNSTATE flag word; bit
-// 0x01 = connected to ed2k, 0x02 = connecting.
-// ----------------------------------------------------------------------
+// MakeConnState above supplies the EC_TAG_CONNSTATE flag word; bit 0x01 = connected to ed2k, 0x02 =
+// connecting.
 
 TEST(Refresher, StatusHighIdLandsIdAndDottedQuad)
 {
-	// A HighID *is* our public IPv4 packed LSB-first, so public_ip has to
-	// fall out of the id rather than being a second field to trust: 210.2.150.73
-	// is 210 | 2<<8 | 150<<16 | 73<<24 == 1234567890, and that identity is
-	// exactly what the /status docs promise.
+	// A HighID *is* our public IPv4 packed LSB-first, so public_ip has to fall out of the id
+	// rather than being a second field to trust: 210.2.150.73 is 210 | 2<<8 | 150<<16 | 73<<24
+	// == 1234567890, and that identity is exactly what the /status docs promise.
 	CECPacket resp(EC_OP_STATS);
 	CECTag conn = MakeConnState(0x01);
 	conn.AddTag(CECTag(EC_TAG_ED2K_ID, static_cast<std::uint32_t>(1234567890u)));
@@ -3282,9 +3161,8 @@ TEST(Refresher, StatusHighIdLandsIdAndDottedQuad)
 
 TEST(Refresher, StatusLowIdKeepsIdButHasNoPublicAddress)
 {
-	// A LowID is a small number the server picked for a firewalled client
-	// and encodes no address at all -- rendering it as a dotted quad would
-	// invent one (here it would read "42.0.0.0").
+	// A LowID is a small number the server picked for a firewalled client and encodes no
+	// address at all -- rendering it as a dotted quad would invent one, here "42.0.0.0".
 	CECPacket resp(EC_OP_STATS);
 	CECTag conn = MakeConnState(0x01);
 	conn.AddTag(CECTag(EC_TAG_ED2K_ID, static_cast<std::uint32_t>(42u)));
@@ -3301,9 +3179,8 @@ TEST(Refresher, StatusLowIdKeepsIdButHasNoPublicAddress)
 
 TEST(Refresher, StatusConnectingSentinelNeverReachesTheSnapshot)
 {
-	// amuled sends 0xffffffff while a connect is in flight
-	// (ECSpecialCoreTags.cpp). Surfaced verbatim it would read as a
-	// HighID of 255.255.255.255; normalised, the id stays 0.
+	// amuled sends 0xffffffff while a connect is in flight (ECSpecialCoreTags.cpp). Surfaced
+	// verbatim it would read as a HighID of 255.255.255.255; normalised, the id stays 0.
 	CECPacket resp(EC_OP_STATS);
 	CECTag conn = MakeConnState(0x01);
 	conn.AddTag(CECTag(EC_TAG_ED2K_ID, static_cast<std::uint32_t>(0xffffffffu)));
@@ -3318,10 +3195,10 @@ TEST(Refresher, StatusConnectingSentinelNeverReachesTheSnapshot)
 
 TEST(Refresher, StatusDisconnectedIsNotReportedAsLowId)
 {
-	// The bug the high_id rename fixed: with no EC_TAG_ED2K_ID the id reads
-	// 0, and HasLowID() is "id < 16777216", so the old negative spelling
-	// reported low_id: true for a daemon that simply has no id yet -- a
-	// firewall diagnosis out of thin air. Positive sense reads correctly.
+	// The bug the high_id rename fixed: with no EC_TAG_ED2K_ID the id reads 0, and HasLowID()
+	// is "id < 16777216", so the old negative spelling reported low_id: true for a daemon that
+	// simply has no id yet -- a firewall diagnosis out of thin air. Positive sense reads
+	// correctly.
 	CECPacket resp(EC_OP_STATS);
 	resp.AddTag(MakeConnState(0));
 
@@ -3354,10 +3231,9 @@ TEST(Refresher, StatusOverheadAndFreeSpaceTagsDecode)
 
 TEST(Refresher, StatusFreeSpaceUnknownSentinelReadsBackAsMinusOne)
 {
-	// amuled's FREE_SPACE_UNKNOWN is a signed -1 and its EC serializer
-	// casts it straight to uint64, so the wire carries
-	// 0xFFFFFFFFFFFFFFFF. Read unsigned that becomes 18446744073709551615
-	// -- "17 exabytes free", the exact opposite of the truth. The decode
+	// amuled's FREE_SPACE_UNKNOWN is a signed -1 and its EC serializer casts it straight to
+	// uint64, so the wire carries 0xFFFFFFFFFFFFFFFF. Read unsigned that becomes
+	// 18446744073709551615 -- "17 exabytes free", the exact opposite of the truth. The decode
 	// has to land -1 so the handlers can emit null.
 	CECPacket resp(EC_OP_STATS);
 	resp.AddTag(MakeConnState(0x01));
@@ -3374,9 +3250,9 @@ TEST(Refresher, StatusFreeSpaceUnknownSentinelReadsBackAsMinusOne)
 
 TEST(Refresher, StatusWithoutStatsTagsKeepsZeroOverheadAndUnknownDisk)
 {
-	// An amuled old enough not to send these tags must still produce a
-	// serviceable snapshot: overhead 0 (the documented "daemon reports
-	// nothing"), disk -1 so /status answers null rather than 0.
+	// An amuled old enough not to send these tags must still produce a serviceable snapshot:
+	// overhead 0 (the documented "daemon reports nothing"), disk -1 so /status answers null
+	// rather than 0.
 	CECPacket resp(EC_OP_STATS);
 	resp.AddTag(MakeConnState(0x01));
 
@@ -3389,21 +3265,17 @@ TEST(Refresher, StatusWithoutStatsTagsKeepsZeroOverheadAndUnknownDisk)
 	ASSERT_EQUALS(static_cast<std::int64_t>(-1), out.incoming_free_bytes);
 }
 
-// ----------------------------------------------------------------------
 // Preference schema domains (#1174).
 //
-// The schema's bounds and the core's storage limits are two copies of one
-// fact, and nothing used to fail when they drifted apart: eight fields
-// declared a range wider than what CPreferences could hold, so a PATCH inside
-// the declared range was accepted, answered 200, and the value was changed by
-// integer division, by a uint8/uint16 wrap, or by a clamp that did not run
-// until the next daemon start.
+// The schema's bounds and the core's storage limits are two copies of one fact, and nothing used to
+// fail when they drifted apart: eight fields declared a range wider than what CPreferences could
+// hold, so a PATCH inside the declared range was accepted, answered 200, and the value was changed
+// by integer division, by a uint8/uint16 wrap, or by a clamp that did not run until the next daemon
+// start.
 //
-// These assert the properties that are checkable from the schema alone. They
-// deliberately do not restate each field's numbers -- a test that hardcodes
-// the same constants as the table only asserts the table equals a copy of
-// itself. What they catch is the SHAPE of the defect.
-// ----------------------------------------------------------------------
+// These assert the properties checkable from the schema alone. They deliberately do not restate
+// each field's numbers -- a test hardcoding the same constants as the table only asserts the table
+// equals a copy of itself. What they catch is the SHAPE of the defect.
 
 TEST(PrefsSchema, NumericRowsHaveACoherentDomain)
 {
@@ -3415,8 +3287,8 @@ TEST(PrefsSchema, NumericRowsHaveACoherentDomain)
 		const std::string where = std::string(f.category) + "." + f.key;
 		ASSERT_TRUE_M(f.min <= f.max, (where + ": min above max"));
 		// A Uint16 row whose ceiling does not fit in a uint16 is the
-		// max_new_connections_per_5s defect exactly: the declared range says
-		// one thing and the wire type says another, and the excess wraps.
+		// max_new_connections_per_5s defect exactly: the declared range says one thing and
+		// the wire type says another, and the excess wraps.
 		if (f.type == webapi::PrefType::Uint16) {
 			ASSERT_TRUE_M(f.max <= 65535u, (where + ": Uint16 row declares a max above 65535"));
 		}
@@ -3431,11 +3303,10 @@ TEST(PrefsSchema, NumericRowsHaveACoherentDomain)
 
 TEST(PrefsSchema, AnUnboundedNumericRowIsADeliberateChoice)
 {
-	// The forcing function. A new numeric row that leaves its ceiling at the
-	// full uint32 range fails here until someone puts it on this list, which
-	// is the review conversation the eight fields in #1174 never had. Both
-	// entries below were resolved to genuine uint32 members in the core during
-	// that audit.
+	// The forcing function. A new numeric row that leaves its ceiling at the full uint32 range
+	// fails here until someone puts it on this list, which is the review conversation the eight
+	// fields in #1174 never had. Both entries below were resolved to genuine uint32 members in
+	// the core during that audit.
 	static const char *const kKnownUnbounded[] = {
 		"files.min_free_space_mebibytes",
 		"remote_controls.webserver.refresh_seconds",

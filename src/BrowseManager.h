@@ -37,19 +37,16 @@ class CUpDownClient;
 /**
  * Owns every "View Files" browse the core is running.
  *
- * Before this existed a browse was four fields borrowed on CUpDownClient plus
- * two maps on CSearchList plus a list on CClientList, and the same fact was
- * written independently in seven files. Five separate defects were that one
- * invariant broken somewhere different -- a successful browse never marked
- * finished, a peer we declined to contact, a terminal browse re-examined on
- * every tick forever. One owner is the point: the lifecycle is decided by
- * browse::Tick and stored here, and every other subsystem reads it rather than
- * keeping a copy that has to be made to agree.
+ * Before this existed a browse was four fields borrowed on CUpDownClient plus two maps on
+ * CSearchList plus a list on CClientList, and the same fact was written independently in seven
+ * files. Five separate defects were that one invariant broken somewhere different -- a successful
+ * browse never marked finished, a peer we declined to contact, a terminal browse re-examined on
+ * every tick forever. One owner is the point: the lifecycle is decided by browse::Tick and stored
+ * here, and every other subsystem reads it rather than keeping a copy that has to be made to agree.
  *
- * Core-only. Everything that touches browse state -- CUpDownClient,
- * CClientTCPSocket, CSearchList, the EC handlers, and the monolithic search
- * dialog's #ifndef CLIENT_GUI paths -- is core; amulegui learns a browse's
- * state over EC instead.
+ * Core-only. Everything that touches browse state -- CUpDownClient, CClientTCPSocket, CSearchList,
+ * the EC handlers, and the monolithic search dialog's #ifndef CLIENT_GUI paths -- is core; amulegui
+ * learns a browse's state over EC instead.
  */
 class CBrowseManager
 {
@@ -57,22 +54,21 @@ public:
 	/**
 	 * Begin tracking a browse of `client` under `searchId`.
 	 *
-	 * The ID is allocated by the caller before the request goes out, for both
-	 * the EC and the local path, so a browse is addressable from the moment it
-	 * exists. That is what lets this map be keyed by ID: the old code had no
-	 * ID for a local browse until its first result arrived and keyed the
-	 * interim state on the client pointer instead, which left entries behind
-	 * that nothing could prune and made two browses of different peers
-	 * collide when an address was reused.
+	 * The ID is allocated by the caller before the request goes out, for both the EC and the
+	 * local path, so a browse is addressable from the moment it exists. That is what lets this
+	 * map be keyed by ID: the old code had no ID for a local browse until its first result
+	 * arrived and keyed the interim state on the client pointer instead, which left entries
+	 * behind that nothing could prune and made two browses of different peers collide when an
+	 * address was reused.
 	 *
-	 * Refuses to start a second browse of a client that already has one, so
-	 * the caller's own "already in flight" check and this cannot disagree.
+	 * Refuses to start a second browse of a client that already has one, so the caller's own
+	 * "already in flight" check and this cannot disagree.
 	 */
 	bool Start(CUpDownClient *client, std::uint32_t searchId, std::uint64_t now);
 
 	/**
-	 * The ask is on the wire. Restarts the silence budget, because the click
-	 * may have been a connect ago and the peer's clock starts here.
+	 * The ask is on the wire. Restarts the silence budget, because the click may have been a
+	 * connect ago and the peer's clock starts here.
 	 */
 	void OnRequestSent(CUpDownClient *client, std::uint64_t now);
 
@@ -80,10 +76,9 @@ public:
 	void OnDirectoryList(CUpDownClient *client, int dirCount, std::uint64_t now);
 
 	/**
-	 * One listing arrived, of either protocol form. Completes the browse when
-	 * nothing more is expected -- which is where the flat (single-answer) form
-	 * used to be left hanging, because only the directory form's packet
-	 * handler marked anything.
+	 * One listing arrived, of either protocol form. Completes the browse when nothing more is
+	 * expected -- which is where the flat (single-answer) form used to be left hanging, because
+	 * only the directory form's packet handler marked anything.
 	 */
 	void OnListingReceived(CUpDownClient *client, std::uint64_t now);
 
@@ -92,18 +87,16 @@ public:
 	void Fail(CUpDownClient *client);
 
 	/**
-	 * The client is being destroyed: fail its browse if one is still running,
-	 * then let go of the reference. The record itself outlives the peer --
-	 * the search ID is still listed and still has to answer for its state.
+	 * The client is being destroyed: fail its browse if one is still running, then let go of
+	 * the reference. The record itself outlives the peer -- the search ID is still listed and
+	 * still has to answer for its state.
 	 */
 	void Forget(CUpDownClient *client);
 
 	/**
-	 * Release a browse for good, when its search is freed.
-	 *
-	 * Records are deliberately kept after they terminate: every consumer asks
-	 * here what a browse's state is, so a record dropped at completion would
-	 * send the listing back to guessing from whether results were retained --
+	 * Release a browse for good, when its search is freed. Records are deliberately kept after
+	 * they terminate: every consumer asks here what a browse's state is, so a record dropped at
+	 * completion would send the listing back to guessing from whether results were retained --
 	 * which reports a failed browse as idle, forever.
 	 */
 	void Remove(std::uint32_t searchId);
@@ -137,11 +130,10 @@ private:
 	browse::Store m_store;
 
 	/**
-	 * The references that keep browsed peers alive, keyed the same way.
-	 *
-	 * Not a second copy of the browse -- the store owns that. This holds only
-	 * lifetime, and entries leave it as soon as the store says the peer is no
-	 * longer needed, which is well before the record itself is disposed of.
+	 * The references that keep browsed peers alive, keyed the same way. Not a second copy of
+	 * the browse -- the store owns that. This holds only lifetime, and entries leave it as soon
+	 * as the store says the peer is no longer needed, which is well before the record itself is
+	 * disposed of.
 	 */
 	std::map<std::uint32_t, CClientRef> m_clients;
 };

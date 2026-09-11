@@ -28,10 +28,7 @@
 #include <set>
 #include "MD4Hash.h"
 
-//
-// A list to keep track of canceled files, stored in canceled.met .
-// Only the file hash is stored.
-//
+// Tracks canceled files in canceled.met. Only the file hash is stored.
 class CCanceledFileList
 {
 public:

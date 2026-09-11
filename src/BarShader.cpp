@@ -118,9 +118,8 @@ void CBarShader::FillRange(uint64 start, uint64 end, const CMuleColour &colour)
 		return;
 	}
 
-	// precision for small files: end must be increased by one
-	// think of each byte as a visible block, then start points to
-	// the beginning of its block, but end points to the END of its block
+	// Precision for small files: end must be increased by one. Think of each byte as a visible
+	// block -- start points at the beginning of its block, end at the END of its block.
 	end++;
 
 	if (end > m_FileSize) {

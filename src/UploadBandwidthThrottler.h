@@ -53,9 +53,9 @@ public:
 
 	void EndThread();
 
-	// Called by disk I/O thread when new packet data is available on a socket queue.
-	// Wakes the throttler early instead of waiting for its next sleep interval.
-	// eMule ref: UploadBandwidthThrottler.cpp:795
+	// Called by the disk I/O thread when new packet data is available on a socket queue. Wakes
+	// the throttler early instead of waiting for its next sleep interval. eMule ref:
+	// UploadBandwidthThrottler.cpp:795
 	void NewUploadDataAvailable();
 
 private:

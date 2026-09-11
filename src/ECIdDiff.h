@@ -33,19 +33,17 @@
 #include "Types.h" // Needed for uint32
 
 /**
- * Which ECIDs the client was told about last cycle and is no longer being
- * told about, i.e. the ones that need an explicit `EC_TAG_FILE_REMOVED`.
+ * Which ECIDs the client was told about last cycle and is no longer being told about, i.e. the ones
+ * needing an explicit `EC_TAG_FILE_REMOVED`.
  *
- * Both inputs must be sorted ascending and duplicate-free, which lets this be
- * a single linear pass over two contiguous arrays instead of a lookup per
- * file. `Get_EC_Response_GetUpdate` gets that ordering for free: it walks the
- * encoder map, which is kept sorted by ECID.
+ * Both inputs must be sorted ascending and duplicate-free, which makes this a single linear pass
+ * over two contiguous arrays instead of a lookup per file. `Get_EC_Response_GetUpdate` gets that
+ * ordering for free: it walks the encoder map, which is kept sorted by ECID.
  *
- * Deliberately pure, and deliberately not taking a CECPacket. The failure
- * mode of getting this wrong is silent in both directions -- a missed removal
- * leaves an entry in the client's list forever with no error anywhere, and a
- * spurious one deletes a file the user still has -- so it is worth being able
- * to test it without an app, a daemon, or a connected client.
+ * Deliberately pure, and deliberately not taking a CECPacket. Getting this wrong fails silently in
+ * both directions -- a missed removal leaves an entry in the client's list forever, a spurious one
+ * deletes a file the user still has -- so it is worth being testable without an app, a daemon, or a
+ * connected client.
  *
  * @param previous ECIDs sent in the previous response.
  * @param current  ECIDs being sent in this one.
@@ -54,31 +52,22 @@
 inline void ComputeRemovedIds(
 	const std::vector<uint32> &previous, const std::vector<uint32> &current, std::vector<uint32> &removed)
 {
-	// Preconditions, not defensive coding. An input that is out of order, or
-	// that carries a duplicate, makes this quietly return the wrong set
-	// rather than fail -- and both wrong answers are invisible at runtime: a
-	// missed removal leaves a row in the client's list for the life of the
-	// connection, and a spurious one deletes a file the user still has.
-	// Checking turns that into a debug-run abort.
+	// Preconditions, not defensive coding. Input that is out of order, or carries a duplicate,
+	// makes this quietly return the wrong set rather than fail -- and both wrong answers are
+	// invisible at runtime. Checking turns that into a debug-run abort.
 	//
-	// One pass covers both halves of the contract: adjacent_find looks for the
-	// first neighbouring pair that is not strictly increasing, which catches an
-	// equal pair as well as an out-of-order one. O(n) against a merge that is
-	// already O(n), and only in debug builds.
+	// One pass covers both halves of the contract: adjacent_find looks for the first
+	// neighbouring pair that is not strictly increasing, which catches an equal pair as well as
+	// an out-of-order one.
 	//
-	// adjacent_find rather than is_sorted with a `<=` comparator, which is what
-	// this was. is_sorted requires its comparator to be a strict weak ordering
-	// and `<=` is not irreflexive, so a hardened standard library is entitled
-	// to -- and libstdc++ under _GLIBCXX_DEBUG does -- abort on the predicate
-	// itself. That would fire on the debug build these checks exist to serve.
-	// adjacent_find takes a plain binary predicate with no ordering contract.
+	// adjacent_find rather than is_sorted with a `<=` comparator, which is what this was.
+	// is_sorted requires a strict weak ordering and `<=` is not irreflexive, so a hardened
+	// standard library is entitled to -- and libstdc++ under _GLIBCXX_DEBUG does -- abort on
+	// the predicate itself. That would fire on the very build these checks exist to serve.
 	//
-	// assert() rather than the wxASSERT used elsewhere in the tree, because
-	// this header is deliberately usable without an app and wxASSERT is not:
-	// wx installs its assert handler from the wxApp constructor, so with no
-	// wxApp -- which is exactly the case in the unit tests -- wxASSERT is a
-	// silent no-op and the check would not fire where it is easiest to
-	// exercise. Verified by feeding it unsorted and duplicate input.
+	// assert() rather than wxASSERT, because this header is deliberately usable without an app:
+	// wx installs its assert handler from the wxApp constructor, so with no wxApp -- exactly
+	// the unit-test case -- wxASSERT is a silent no-op.
 	assert(std::adjacent_find(previous.begin(), previous.end(), std::greater_equal<uint32>()) ==
 		previous.end());
 	assert(std::adjacent_find(current.begin(), current.end(), std::greater_equal<uint32>()) ==
@@ -88,9 +77,8 @@ inline void ComputeRemovedIds(
 	std::vector<uint32>::const_iterator cur = current.begin();
 	const std::vector<uint32>::const_iterator curEnd = current.end();
 	for (const uint32 prev : previous) {
-		// `previous` ascends too, so the cursor only ever moves forward
-		// across the whole call -- this is O(previous + current), not
-		// O(previous * current).
+		// `previous` ascends too, so the cursor only moves forward across the whole call --
+		// this is O(previous + current), not O(previous * current).
 		while (cur != curEnd && *cur < prev) {
 			++cur;
 		}

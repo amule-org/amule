@@ -22,13 +22,13 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-// CValueMap is the incremental-update filter behind every EC tag that carries
-// a value map: it decides whether a field has changed since the last response
-// to this client, and only then does the tag get built and emitted.
+// CValueMap is the incremental-update filter behind every EC tag that carries a value map: it
+// decides whether a field has changed since the last response to this client, and only then does
+// the tag get built and emitted.
 //
-// Its failure mode is silence. A field that is wrongly judged unchanged simply
-// stops updating in the GUI -- no crash, no log line, nothing a build or a
-// clean daemon run would catch. These tests pin the contract instead.
+// Its failure mode is silence. A field wrongly judged unchanged simply stops updating in the GUI --
+// no crash, no log line, nothing a build or a clean daemon run would catch. These tests pin the
+// contract instead.
 
 #include <muleunit/test.h>
 
@@ -101,12 +101,11 @@ TEST(CValueMapTest, StringsRoundTripThroughTheirOwnCache)
 	ASSERT_EQUALS((size_t)1, EmittedCount(third));
 }
 
-// bool needs its own overload to resolve ambiguity -- without it a bool
-// argument is ambiguous across uint8/16/32/64 and does not compile. It is NOT
-// a wire-format concern: CECTag(name, bool) calls InitInt() exactly as
-// CECTag(name, uint8) does, so folding it into the integer overload would
-// produce an identical tag. Only the caching behaviour is observable here, so
-// that is all this asserts.
+// bool needs its own overload to resolve ambiguity -- without it a bool argument is ambiguous
+// across uint8/16/32/64 and does not compile. It is NOT a wire-format concern: CECTag(name, bool)
+// calls InitInt() exactly as CECTag(name, uint8) does, so folding it into the integer overload
+// would produce an identical tag. Only the caching behaviour is observable here, so that is all
+// this asserts.
 TEST(CValueMapTest, BoolCachesSeparatelyFromItsValue)
 {
 	CValueMap vm;
@@ -125,9 +124,8 @@ TEST(CValueMapTest, BoolCachesSeparatelyFromItsValue)
 	ASSERT_EQUALS((uint64_t)0, third.GetFirstTagSafe()->GetInt());
 }
 
-// double is a genuine value concern, unlike bool: routed through an integer
-// overload the fractional part is lost, so the round-trip is what this asserts
-// rather than the emit counts alone.
+// double is a genuine value concern, unlike bool: routed through an integer overload the fractional
+// part is lost, so the round trip is what this asserts rather than the emit counts alone.
 TEST(CValueMapTest, DoubleKeepsItsFractionalPart)
 {
 	CValueMap vm;
@@ -148,10 +146,10 @@ TEST(CValueMapTest, DoubleKeepsItsFractionalPart)
 	ASSERT_EQUALS(1.25, third.GetFirstTagSafe()->GetDoubleData());
 }
 
-// A string literal must not reach the bool overload. `const char*` -> bool is a
-// standard conversion and beats the user-defined one to wxString, so without an
-// explicit pointer overload this would emit a boolean tag here while the plain
-// CECTag path -- which has its own pointer constructors -- emitted a string one.
+// A string literal must not reach the bool overload. `const char*` -> bool is a standard conversion
+// and beats the user-defined one to wxString, so without an explicit pointer overload this would
+// emit a boolean tag here while the plain CECTag path -- which has its own pointer constructors --
+// emitted a string one.
 TEST(CValueMapTest, StringLiteralDoesNotBecomeABool)
 {
 	CValueMap vm;
@@ -176,12 +174,11 @@ TEST(CValueMapTest, DifferentTagsAreIndependent)
 	ASSERT_EQUALS((size_t)1, EmittedCount(second));
 }
 
-// AddDiffTag has two branches -- value map present, and absent for callers not
-// doing an incremental update -- and the design rests on them producing the
-// same tag. The bug this file was written for lived exactly there: a string
-// literal took the bool overload through the map and the const char*
-// constructor without it, so one call site emitted different wire types on an
-// incremental update than on a full request.
+// AddDiffTag has two branches -- value map present, and absent for callers not doing an incremental
+// update -- and the design rests on them producing the same tag. The bug this file was written for
+// lived exactly there: a string literal took the bool overload through the map and the const char*
+// constructor without it, so one call site emitted different wire types on an incremental update
+// than on a full request.
 TEST(CValueMapTest, AddDiffTagBranchesAgreeOnLiterals)
 {
 	CValueMap vm;
@@ -221,19 +218,16 @@ TEST(CValueMapTest, AddDiffTagWithoutMapAlwaysEmits)
 	ASSERT_EQUALS((size_t)2, EmittedCount(parent));
 }
 
-// --- HasTag: which cache it reads --------------------------------------
-// HasTag gates the media clear emission: a field that is now absent gets an
-// explicit zero / empty frame only when a value was previously SENT for it,
-// because a tag simply not offered reads as UNCHANGED on the remote side.
+// HasTag: which cache it reads. HasTag gates the media clear emission: a field that is now absent
+// gets an explicit zero / empty frame only when a value was previously SENT for it, because a tag
+// simply not offered reads as UNCHANGED on the remote side.
 //
-// The property worth pinning is not "true after a write" but WHICH cache it
-// reads. The two write forms keep separate caches, and this header's own
-// comment above AddDiffTag warns that mixing them for one tagname means
-// neither sees the other's last value. HasTag reads m_map_tag, the cache
-// AddTag(const CECTag &, CECTag *) writes -- so if a media field were ever
-// routed through AddDiffTag for efficiency, HasTag would silently report
-// false for it and that field's clear would stop being emitted, with nothing
-// failing anywhere.
+// The property worth pinning is not "true after a write" but WHICH cache it reads. The two write
+// forms keep separate caches, and this header's own comment above AddDiffTag warns that mixing them
+// for one tagname means neither sees the other's last value. HasTag reads m_map_tag, the cache
+// AddTag(const CECTag &, CECTag *) writes -- so if a media field were ever routed through
+// AddDiffTag for efficiency, HasTag would silently report false for it and that field's clear would
+// stop being emitted, with nothing failing anywhere.
 
 TEST(CValueMapTest, HasTagIsFalseBeforeAnythingIsSent)
 {
@@ -251,21 +245,20 @@ TEST(CValueMapTest, HasTagIsTrueAfterTheCECTagFormWrites)
 
 TEST(CValueMapTest, HasTagDoesNotSeeTheTypedCacheWrites)
 {
-	// AddDiffTag writes the TYPED cache, not m_map_tag. HasTag must report
-	// false for it -- not because that is desirable, but because it is the
-	// truth about which cache holds the value, and a caller mixing the two
-	// forms for one tagname is the documented bug this exposes rather than
-	// hides.
+	// AddDiffTag writes the TYPED cache, not m_map_tag. HasTag must report false for it -- not
+	// because that is desirable, but because it is the truth about which cache holds the value,
+	// and a caller mixing the two forms for one tagname is the documented bug this exposes
+	// rather than hides.
 	CValueMap vm;
 	CECEmptyTag parent(1);
 	AddDiffTag(&parent, static_cast<ec_tagname_t>(101), wxString(wxT("value")), &vm);
 	ASSERT_TRUE(!vm.HasTag(101));
 }
 
-// The hazard that keeps EC_TAG_CLIENT_UPLOAD_FILE on the old path: one tag name
-// written through two different types keeps two independent caches, so neither
-// sees the other's last value and a transition between them is not suppressed.
-// Documented in the PR; executable here so converting that site later fails.
+// The hazard that keeps EC_TAG_CLIENT_UPLOAD_FILE on the old path: one tag name written through two
+// different types keeps two independent caches, so neither sees the other's last value and a
+// transition between them is not suppressed. Documented in the PR; executable here so converting
+// that site later fails.
 TEST(CValueMapTest, OneTagNameAcrossTwoTypesKeepsSeparateCaches)
 {
 	CValueMap vm;

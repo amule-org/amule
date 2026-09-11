@@ -35,51 +35,39 @@
 /**
  * Per-file bytes cache for the FULL EC response paths.
  *
- * Backs the amulecmd `show shared` / `show DL` invocations: each one is
- * a fresh short-lived EC connection with no per-connection diff state,
- * so it always asks for `EC_DETAIL_FULL` and would otherwise force the
- * daemon to rebuild and serialize the entire shared-file / partfile
- * tag tree from scratch every time. On a 91 k-file shareset that's
- * ~10 s of CPU per invocation (issue #713).
+ * Backs the amulecmd `show shared` / `show DL` invocations: each is a fresh short-lived EC
+ * connection with no per-connection diff state, so it always asks for `EC_DETAIL_FULL` and would
+ * otherwise force the daemon to rebuild and serialize the entire shared-file / partfile tag tree
+ * from scratch. On a 91 k-file shareset that is ~10 s of CPU per invocation (issue #713).
  *
- * The cache stores one pre-serialized blob per file, keyed by ECID,
- * and freshness-stamped with the file's `m_ecGen` at the time of build.
- * On each request the daemon iterates the current snapshot of files,
- * reuses cached blobs whose gen is still current, and rebuilds only
- * the ones whose `m_ecGen` has advanced past the cached value
- * (the same per-file freshness primitive PR #727 introduced).
+ * One pre-serialized blob per file, keyed by ECID and freshness-stamped with the file's `m_ecGen`
+ * at build time. Each request walks the current snapshot, reuses blobs whose gen is still current,
+ * and rebuilds only those whose `m_ecGen` has advanced.
  *
- * A connection-side helper concatenates the per-file blobs with a
- * fresh opcode + children-count header and writes the result through
- * the real socket's `WriteBuffer` — per-connection compression (#728)
- * still applies because the cached bytes flow through the connection's
- * normal write path.
+ * A connection-side helper concatenates the blobs with a fresh opcode + children-count header and
+ * writes the result through the real socket's `WriteBuffer`, so per-connection compression (#728)
+ * still applies.
  *
- * The cached blobs use the canonical wire format chosen by
- * `CECMemSocket`: UTF-8 numbers + sentinel-extended children count, no
- * zlib. Both capability bits are advertised by every modern client, so
- * the cached form is reusable regardless of which connection ends up
- * emitting it.
+ * The blobs use the canonical wire format `CECMemSocket` chooses: UTF-8 numbers + sentinel-extended
+ * children count, no zlib. Every modern client advertises both capability bits, so a cached blob is
+ * reusable whichever connection emits it.
  */
 class CECFullResponseCache
 {
 public:
-	/// Build a self-contained CECTag for the given file. Caller owns
-	/// the returned tag and is expected to throw it away after the
-	/// cache serializes it.
+	/// Build a self-contained CECTag for the given file. The caller owns the returned tag and
+	/// throws it away after the cache serializes it.
 	using TagBuilder = std::function<CECTag *(const void *file)>;
 
 	explicit CECFullResponseCache(TagBuilder builder);
 
 	/**
-	 * Snapshot the per-file blobs for the given (file pointer, ECID,
-	 * current m_ecGen) tuples. Rebuilds any stale entries inline.
-	 * Returns the blobs in the same order as the inputs so the caller
-	 * can write them straight to the wire.
+	 * Snapshot the per-file blobs for the given (file pointer, ECID, current m_ecGen) tuples,
+	 * rebuilding stale entries inline. Returns them in input order so the caller can write them
+	 * straight to the wire.
 	 *
-	 * Concurrent callers each get a consistent set of bytes — rebuilds
-	 * race-but-don't-corrupt (last write wins, both readers see a
-	 * valid blob).
+	 * Concurrent callers each get a consistent set of bytes -- rebuilds race but do not corrupt
+	 * (last write wins, both readers see a valid blob).
 	 */
 	struct FileRef
 	{
@@ -91,9 +79,8 @@ public:
 	std::vector<std::shared_ptr<const std::vector<unsigned char>>> GetBlobs(
 		const std::vector<FileRef> &files);
 
-	/// Drop cached entries for ECIDs not in the given set (called once
-	/// per request after GetBlobs to prune files that left the
-	/// shareset). Bounded memory.
+	/// Drop cached entries for ECIDs not in the given set, once per request after GetBlobs, so
+	/// files that left the shareset do not grow the cache.
 	void PruneOutsideOf(const std::vector<FileRef> &alive_files);
 
 private:

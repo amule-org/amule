@@ -36,42 +36,33 @@ class wxMenu;
 class wxWindow;
 
 /**
- * The right-click menu offered on a peer, and what its entries do.
- *
- * Free functions rather than a base class because the lists that offer this
- * menu do not share a row type: the per-file lists hold an owning CClientRef
- * per row, the global clients list holds a value snapshot and resolves the peer
- * by ECID when something is actually done to it. All they have in common is the
- * CClientRef they end up with, which is exactly what these take.
+ * The right-click menu offered on a peer, and what its entries do. Free functions rather than a
+ * base class because the lists that offer this menu do not share a row type: the per-file lists
+ * hold an owning CClientRef per row, the global clients list holds a value snapshot and resolves
+ * the peer by ECID when something is actually done to it. All they have in common is the CClientRef
+ * they end up with, which is exactly what these take.
  */
 
 /**
- * Build the menu for `client`, with the entries every caller can act on.
- *
- * "Swap to this file" is not among them: it needs a file in context, so the
- * per-file lists append it themselves.
- *
- * Caller owns the returned menu.
+ * Build the menu for `client`, with the entries every caller can act on. "Swap to this file" is not
+ * among them: it needs a file in context, so the per-file lists append it themselves. Caller owns
+ * the returned menu.
  */
 wxMenu *BuildClientContextMenu(const CClientRef &client);
 
 /**
- * The same menu for a peer we are not connected to.
- *
- * Everything on it works from the stored record: friending and the friend
- * slot are persistent, and browsing or messaging opens a connection when the
- * user picks them. Only the friend slot needs the peer to be a friend
- * already, which is a property of our own list rather than of the connection.
+ * The same menu for a peer we are not connected to. Everything on it works from the stored record:
+ * friending and the friend slot are persistent, and browsing or messaging opens a connection when
+ * the user picks them. Only the friend slot needs the peer to be a friend already, which is a
+ * property of our own list rather than of the connection.
  */
 wxMenu *BuildPeerContextMenu(const PeerIdentity &peer);
 
 /**
- * Whether this build can browse this particular peer.
- *
- * Always true in monolithic. In amulegui it depends on the peer: EC names a
- * browse target by ECID, so a connected peer or a friend can be named, and
- * one that is neither cannot. Chat is not covered by this and works in both
- * builds, because EC_OP_CHAT_SEND addresses by GUI_ID.
+ * Whether this build can browse this particular peer. Always true in monolithic. In amulegui it
+ * depends on the peer: EC names a browse target by ECID, so a connected peer or a friend can be
+ * named, and one that is neither cannot. Chat is not covered by this and works in both builds,
+ * because EC_OP_CHAT_SEND addresses by GUI_ID.
  */
 bool PeerBrowseIsPossible(const PeerIdentity &peer);
 
@@ -85,10 +76,9 @@ CFriend *FriendFor(const PeerIdentity &peer);
 bool PeerIsFriend(const PeerIdentity &peer);
 
 /**
- * Browse a peer, opening a connection to it if we are not already talking.
- *
- * False when nothing was asked: amulegui cannot name a peer it has no ECID
- * for, and the caller reports what it skipped rather than failing silently.
+ * Browse a peer, opening a connection to it if we are not already talking. False when nothing was
+ * asked: amulegui cannot name a peer it has no ECID for, and the caller reports what it skipped
+ * rather than failing silently.
  */
 bool PeerActionViewFiles(const PeerIdentity &peer);
 
@@ -96,10 +86,8 @@ bool PeerActionViewFiles(const PeerIdentity &peer);
 void PeerActionSendMessage(const PeerIdentity &peer);
 
 /**
- * Grant or revoke the friend slot for one peer.
- *
- * Resolves the friend record the same way the menu did, so the entry and the
- * action cannot describe different peers. `selected` is the size of the
+ * Grant or revoke the friend slot for one peer. Resolves the friend record the same way the menu
+ * did, so the entry and the action cannot describe different peers. `selected` is the size of the
  * selection, used only to warn that a wider one still got a single slot.
  */
 void PeerActionSetFriendSlot(wxWindow *parent, const PeerIdentity &peer, bool checked, size_t selected);
@@ -107,11 +95,9 @@ void PeerActionSetFriendSlot(wxWindow *parent, const PeerIdentity &peer, bool ch
 /**
  * Friend or unfriend every peer given, writing the friend list once.
  *
- * One direction for the whole run rather than a per-row toggle: the menu
- * entry is labelled from a single row, and a selection holding both friends
- * and strangers would otherwise do the opposite of that label to half of it.
- *
- * Returns how many were left out for having no address to store, so the
+ * One direction for the whole run rather than a per-row toggle: the menu entry is labelled from a
+ * single row, and a selection holding both friends and strangers would otherwise do the opposite of
+ * that label to half of it. Returns how many were left out for having no address to store, so the
  * caller can say so rather than reporting a count it did not act on.
  */
 size_t PeerActionSetFriends(const std::vector<PeerIdentity> &peers, bool addThem);
@@ -120,9 +106,8 @@ size_t PeerActionSetFriends(const std::vector<PeerIdentity> &peers, bool addThem
 void ClientActionViewFiles(const std::vector<CClientRef> &clients);
 
 /**
- * Whether a bulk action over `count` rows should go ahead.
- *
- * True without asking for a small selection; larger ones are confirmed.
+ * Whether a bulk action over `count` rows should go ahead. True without asking for a small
+ * selection; larger ones are confirmed.
  */
 bool ConfirmBulkPeerAction(wxWindow *parent, size_t count, const wxString &message);
 
@@ -133,27 +118,21 @@ bool ConfirmFriendAction(wxWindow *parent, size_t count, bool addThem);
 void ReportFriendSkips(size_t skipped);
 
 /**
- * Asks before browsing a wide selection.
- *
- * Always says a connection is opened to each peer: whether one is depends on
- * the peer rather than on the list asking, and every list can hold a peer we
- * hold no socket for.
+ * Asks before browsing a wide selection. Always says a connection is opened to each peer: whether
+ * one is depends on the peer rather than on the list asking, and every list can hold a peer we hold
+ * no socket for.
  */
 bool ConfirmBrowseAction(wxWindow *parent, size_t count);
 
 /**
- * Friend or unfriend a selection of live clients.
- *
- * Confirms, then runs the same action the row-backed lists use, so both paths
- * share one set of rules instead of accumulating their own.
+ * Friend or unfriend a selection of live clients. Confirms, then runs the same action the row-
+ * backed lists use, so both paths share one set of rules instead of accumulating their own.
  */
 void PeerActionSetFriendsForClients(wxWindow *parent, const std::vector<CClientRef> &clients, bool addThem);
 
 /**
- * Give the first selected peer the friend slot.
- *
- * Only one peer can hold it, so a multiple selection is applied to the first
- * and the caller's window is told about it.
+ * Give the first selected peer the friend slot. Only one peer can hold it, so a multiple selection
+ * is applied to the first and the caller's window is told about it.
  */
 void ClientActionSetFriendSlot(wxWindow *parent, const std::vector<CClientRef> &clients, bool checked);
 

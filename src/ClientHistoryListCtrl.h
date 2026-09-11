@@ -51,16 +51,14 @@
 /**
  * One row of the clients history.
  *
- * Deliberately a plain value rather than a pointer into the credit store: the
- * monolithic build fills these from CClientCreditsList and amulegui from an
- * EC reply, and a value type is the only thing both can produce. It also means
- * the list holds nothing that can be freed underneath it -- the history is a
- * snapshot of something that only changes when a peer connects or leaves.
+ * Deliberately a plain value rather than a pointer into the credit store: the monolithic build
+ * fills these from CClientCreditsList and amulegui from an EC reply, and a value type is the only
+ * thing both can produce. It also means the list holds nothing that can be freed underneath it --
+ * the history is a snapshot of something that only changes when a peer connects or leaves.
  *
- * Every field except the hash and the totals is optional. A record written
- * before aMule kept per-peer metadata has no name, address or software, and a
- * daemon too old to send it leaves them empty too; the list renders the gaps
- * as blanks rather than pretending to know.
+ * Every field except the hash and the totals is optional. A record written before aMule kept per-
+ * peer metadata has no name, address or software, and a daemon too old to send it leaves them empty
+ * too; the list renders the gaps as blanks rather than pretending to know.
  */
 struct ClientHistoryRow
 {
@@ -82,41 +80,33 @@ struct ClientHistoryRow
 	uint8 obfuscation = 0;
 	bool hasMeta = false;
 	/**
-	 * Name, software and origin are known from somewhere real.
-	 *
-	 * Not the same as hasMeta, which says the *store* holds metadata: a peer
-	 * connected right now tells us who it is whether or not the core has ever
-	 * written a record for it. Columns describing identity key on this;
-	 * first-seen and session count still key on hasMeta, since only the store
-	 * has those.
+	 * Name, software and origin are known from somewhere real. Not the same as hasMeta, which
+	 * says the *store* holds metadata: a peer connected right now tells us who it is whether or
+	 * not the core has ever written a record for it. Columns describing identity key on this;
+	 * first-seen and session count still key on hasMeta, since only the store has those.
 	 */
 	bool identityKnown = false;
-	//! Country as the core resolved it, and whether it said anything at all.
-	//! Same contract as the live lists: told-by-core is authoritative even
-	//! when empty, and only a build with its own resolver falls back locally.
+	//! Country as the core resolved it, and whether it said anything at all. Same contract as
+	//! the live lists: told-by-core is authoritative even when empty, and only a build with its
+	//! own resolver falls back locally.
 	wxString country;
 	bool countryFromCore = false;
 	/**
-	 * This peer is connected right now.
-	 *
-	 * Established by user hash, never by ECID: an ECID identifies a peer only
-	 * within one daemon process, while the hash is what the credit store is
-	 * keyed on and is the same peer's identity across restarts. It is the
-	 * only thing that can connect a history row to the live client that is
-	 * the same peer.
+	 * This peer is connected right now. Established by user hash, never by ECID: an ECID
+	 * identifies a peer only within one daemon process, while the hash is what the credit store
+	 * is keyed on and is the same peer's identity across restarts. It is the only thing that
+	 * can connect a history row to the live client that is the same peer.
 	 */
 	bool online = false;
-	//! Everything the Name cell draws, built from the stored metadata. No
-	//! download-state badge: this row describes a peer we may not be talking
-	//! to, and there is no live state to report.
+	//! Everything the Name cell draws, built from the stored metadata. No download-state badge:
+	//! this row describes a peer we may not be talking to, and there is no live state to
+	//! report.
 	ClientNameCell nameCell;
 };
 
 /**
- * Every peer we have ever exchanged data with.
- *
- * Rows are addressed by index into m_rows rather than by pointer, so sorting
- * the control never invalidates them.
+ * Every peer we have ever exchanged data with. Rows are addressed by index into m_rows rather than
+ * by pointer, so sorting the control never invalidates them.
  */
 class CClientHistoryListCtrl : public CClientRowListCtrl
 {
@@ -125,12 +115,10 @@ public:
 	~CClientHistoryListCtrl();
 
 	/**
-	 * What a currently-connected peer contributes to its history row.
-	 *
-	 * A record for a peer that is *not* connected cannot change -- the credit
-	 * totals only move while a transfer is running, and last-seen only at
-	 * disconnect -- so the connected peers are the whole of what can go stale
-	 * between loads, and the sweep already walks exactly those.
+	 * What a currently-connected peer contributes to its history row. A record for a peer that
+	 * is *not* connected cannot change -- the credit totals only move while a transfer is
+	 * running, and last-seen only at disconnect -- so the connected peers are the whole of what
+	 * can go stale between loads, and the sweep already walks exactly those.
 	 */
 	struct LiveClient
 	{
@@ -153,14 +141,13 @@ public:
 	/**
 	 * Fold this tick's live peers into the rows.
 	 *
-	 * Costs one hash lookup per connected peer -- bounded by MaxConnections --
-	 * never a walk of the store, which on a real node is tens of thousands of
-	 * records. Peers that went away are found through the set of rows
-	 * currently marked online rather than by scanning for them.
+	 * Costs one hash lookup per connected peer -- bounded by MaxConnections -- never a walk of
+	 * the store, which on a real node is tens of thousands of records. Peers that went away are
+	 * found through the set of rows currently marked online rather than by scanning for them.
 	 *
-	 * Does three things a load-on-switch list cannot: keeps the totals of a
-	 * transferring peer moving, clears "Online now" for one that left, and
-	 * adds a row for a peer met since the tab was opened.
+	 * Does three things a load-on-switch list cannot: keeps the totals of a transferring peer
+	 * moving, clears "Online now" for one that left, and adds a row for a peer met since the
+	 * tab was opened.
 	 */
 	void ReconcileLive(const std::unordered_map<CMD4Hash, LiveClient> &live);
 	//! True once a snapshot has been supplied, so the page can tell "empty
@@ -170,10 +157,10 @@ public:
 protected:
 	wxString GetItemColumnText(wxUIntPtr item, unsigned column) const override;
 	/**
-	 * Last-seen, the transfer rates and the totals all move while the tab is
-	 * open, so a row sorted by one of them has to be able to move with it --
-	 * "Online now" sorts as the most recent thing there is, so a peer that
-	 * connects or leaves changes its own place in the default order.
+	 * Last-seen, the transfer rates and the totals all move while the tab is open, so a row
+	 * sorted by one of them has to be able to move with it -- "Online now" sorts as the most
+	 * recent thing there is, so a peer that connects or leaves changes its own place in the
+	 * default order.
 	 */
 	bool IsLiveSortColumn() const override;
 	int CompareItemData(

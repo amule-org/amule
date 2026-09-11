@@ -51,9 +51,9 @@
 namespace
 {
 
-// AppRun exports both env vars: APPIMAGE is the original .AppImage path the user
-// invoked, APPDIR the squashfs mount point. Both are needed -- APPIMAGE for the
-// rewritten Exec= line, APPDIR to find the bundled .desktop and icons.
+// AppRun exports both env vars: APPIMAGE is the original .AppImage path the user invoked, APPDIR
+// the squashfs mount point. Both are needed -- APPIMAGE for the rewritten Exec= line, APPDIR to
+// find the bundled .desktop and icons.
 wxString GetAppImagePath()
 {
 	const char *env = getenv("APPIMAGE");
@@ -67,8 +67,8 @@ wxString GetAppDir()
 }
 
 // Resolve the XDG user data dir per the basedir spec. Not derived from
-// wxStandardPaths::GetUserDataDir(), which returns the legacy "$HOME/.<appname>"
-// for aMule rather than the canonical XDG location.
+// wxStandardPaths::GetUserDataDir(), which returns the legacy "$HOME/.<appname>" for aMule rather
+// than the canonical XDG location.
 wxString GetUserDataHome()
 {
 	const char *xdg = getenv("XDG_DATA_HOME");
@@ -93,9 +93,8 @@ wxString GetUserMimePackagesDir()
 	return GetUserDataHome() + wxT("/mime/packages");
 }
 
-// Read the bundled .desktop, swap Exec= and TryExec= to point at $APPIMAGE,
-// and write the result to ~/.local/share/applications/org.amule.aMule.desktop.
-// Returns true on success.
+// Read the bundled .desktop, swap Exec= and TryExec= to point at $APPIMAGE, and write the result to
+// ~/.local/share/applications/org.amule.aMule.desktop. Returns true on success.
 bool InstallDesktopFile(
 	const wxString &appimagePath, const wxString &sourceDesktop, const wxString &destDesktop)
 {
@@ -119,9 +118,9 @@ bool InstallDesktopFile(
 		if (line.StartsWith(wxT("Exec="))) {
 			// Quote the AppImage path so spaces survive. %U matches the shipped
 			// org.amule.aMule.desktop: aMule accepts ed2k:// and magnet: URLs plus
-			// .emulecollection paths and file:// URLs, any number of them. Must stay
-			// in step with the shipped file, which was %F once and silently
-			// swallowed URL clicks.
+			// .emulecollection paths and file:// URLs, any number of them. Must stay in
+			// step with the shipped file, which was %F once and silently swallowed URL
+			// clicks.
 			line = wxT("Exec=\"") + appimagePath + wxT("\" %U");
 		} else if (line.StartsWith(wxT("TryExec="))) {
 			line = wxT("TryExec=") + appimagePath;
@@ -135,9 +134,9 @@ bool InstallDesktopFile(
 	return ok;
 }
 
-// Walk $APPDIR/usr/share/icons/hicolor and mirror the org.amule.aMule.* PNG
-// files into ~/.local/share/icons/hicolor preserving the size subdirs.
-// Best-effort: any single copy failure is logged but doesn't abort the rest.
+// Walk $APPDIR/usr/share/icons/hicolor and mirror the org.amule.aMule.* PNG files into
+// ~/.local/share/icons/hicolor, preserving the size subdirs. Best-effort: any single copy failure
+// is logged but does not abort the rest.
 bool InstallIcons(const wxString &appdir, const wxString &userIconsDir)
 {
 	const wxString sourceHicolor = appdir + wxT("/usr/share/icons/hicolor");
@@ -147,10 +146,9 @@ bool InstallIcons(const wxString &appdir, const wxString &userIconsDir)
 		return false;
 	}
 
-	// Two name shapes to collect: the application icons (org.amule.aMule.*
-	// under apps/) and the icon for the collection file type, whose name
-	// is dictated by the icon naming spec (the MIME type with '/' replaced
-	// by '-') and so does not carry the app id.
+	// Two name shapes to collect: the application icons (org.amule.aMule.* under apps/) and the
+	// icon for the collection file type, whose name is dictated by the icon naming spec -- the
+	// MIME type with '/' replaced by '-' -- and so does not carry the app id.
 	wxArrayString found;
 	wxDir::GetAllFiles(sourceHicolor, &found, wxT("org.amule.aMule.*"), wxDIR_FILES | wxDIR_DIRS);
 	wxDir::GetAllFiles(
@@ -182,11 +180,10 @@ bool InstallIcons(const wxString &appdir, const wxString &userIconsDir)
 	return anyOk;
 }
 
-// Copy the bundled shared-mime-info package into ~/.local/share/mime/packages so
-// the desktop learns what a .emulecollection is. Without it the file is sniffed
-// as text/plain or application/octet-stream, the MimeType= line never matches,
-// and aMule is absent from the file manager's "Open With". A system package gets
-// this from CMake; an AppImage has no packager.
+// Copy the bundled shared-mime-info package into ~/.local/share/mime/packages so the desktop learns
+// what a .emulecollection is. Without it the file is sniffed as text/plain or application/octet-
+// stream, the MimeType= line never matches, and aMule is absent from the file manager's "Open
+// With". A system package gets this from CMake; an AppImage has no packager.
 bool InstallMimePackage(const wxString &appdir, const wxString &userMimePackagesDir)
 {
 	const wxString source = appdir + wxT("/usr/share/mime/packages/org.amule.aMule.xml");
@@ -209,13 +206,10 @@ bool InstallMimePackage(const wxString &appdir, const wxString &userMimePackages
 	return true;
 }
 
-// Run a helper with its arguments passed as an argv vector rather than as one
-// command string.
-//
-// The string form of wxExecute does its own tokenising and hands the quote
-// characters through to the program, so `cmd "/home/me/dir"` arrives as a path
-// that literally starts with a quote. Quoting was there to survive spaces in
-// $HOME; argv gives that for free and without a shell.
+// Run a helper with its arguments passed as an argv vector rather than as one command string. The
+// string form of wxExecute does its own tokenising and hands the quote characters through to the
+// program, so `cmd "/home/me/dir"` arrives as a path that literally starts with a quote. Quoting
+// was there to survive spaces in $HOME; argv gives that for free and without a shell.
 static void RunHelper(const wxString &program, const wxArrayString &args)
 {
 	std::vector<wxCharBuffer> storage;
@@ -230,11 +224,11 @@ static void RunHelper(const wxString &program, const wxArrayString &args)
 	}
 	argv.push_back(nullptr);
 
-	// These are system binaries, and AppRun has put the AppImage's own library
-	// directory at the front of LD_LIBRARY_PATH for our sake. A child inheriting
-	// that loads our bundled glib rather than the host's and dies before doing any
-	// work -- update-mime-database exits with "undefined symbol:
-	// g_string_free_and_steal". Same class of failure as #334, so reuse its helper.
+	// These are system binaries, and AppRun has put the AppImage's own library directory at the
+	// front of LD_LIBRARY_PATH for our sake. A child inheriting that loads our bundled glib
+	// rather than the host's and dies before doing any work -- update-mime-database exits with
+	// "undefined symbol: g_string_free_and_steal". Same class of failure as #334, so reuse its
+	// helper.
 	wxExecuteEnv execEnv;
 	const bool sanitized = AppImageEnv::GetSanitizedExecEnv(execEnv);
 	const int flags = wxEXEC_SYNC | wxEXEC_NODISABLE | wxEXEC_NOEVENTS;
@@ -242,15 +236,13 @@ static void RunHelper(const wxString &program, const wxArrayString &args)
 	wxExecute(argv.data(), flags, nullptr, sanitized ? &execEnv : nullptr);
 }
 
-// update-desktop-database, gtk-update-icon-cache and update-mime-database exist
-// on every desktop distro that ships a .desktop file system, and integration
-// does not fail if they are missing.
+// update-desktop-database, gtk-update-icon-cache and update-mime-database exist on every desktop
+// distro that ships a .desktop file system, and integration does not fail if they are missing.
 //
-// The .desktop and icon caches have a safety net -- desktop environments watch
-// those directories and rebuild within seconds, which is why the broken quoting
-// above went unnoticed for so long. The shared-mime-info database has no such
-// watcher: without update-mime-database the collection type stays unknown and a
-// double-click opens whatever handles text/plain.
+// The .desktop and icon caches have a safety net -- desktop environments watch those directories
+// and rebuild within seconds, which is why the broken quoting above went unnoticed for so long. The
+// shared-mime-info database has no such watcher: without update-mime-database the collection type
+// stays unknown and a double-click opens whatever handles text/plain.
 void RefreshSystemCaches(
 	const wxString &userAppsDir, const wxString &userIconsDir, const wxString &userMimeDir)
 {
@@ -281,11 +273,10 @@ wxString GetUserBinDir()
 	return wxGetUserHome() + wxT("/.local/bin");
 }
 
-// True if `path` names an existing symlink, broken or intact. Distinct from
-// wxFileExists, which is also true for a regular file and for a symlink pointing
-// at a missing target -- the difference decides whether it is safe to replace
-// with our own symlink. POSIX-only; MinGW-w64 has neither lstat nor S_ISLNK, and
-// the whole AppImage path is a no-op there anyway.
+// True if `path` names an existing symlink, broken or intact. Distinct from wxFileExists, which is
+// also true for a regular file and for a symlink pointing at a missing target -- the difference
+// decides whether it is safe to replace with our own symlink. POSIX-only; MinGW-w64 has neither
+// lstat nor S_ISLNK, and the whole AppImage path is a no-op there anyway.
 #ifdef __WXGTK__
 bool IsSymlink(const wxString &path)
 {
@@ -294,9 +285,9 @@ bool IsSymlink(const wxString &path)
 }
 #endif
 
-// The names AppRun's argv[0]-dispatch case knows about. Any name AppRun does not
-// recognize falls back to `amule`, so a stale symlink to a since-removed binary
-// still launches the monolithic GUI. Order matches the AppRun case statement.
+// The names AppRun's argv[0]-dispatch case knows about. Any name AppRun does not recognize falls
+// back to `amule`, so a stale symlink to a since-removed binary still launches the monolithic GUI.
+// Order matches the AppRun case statement.
 const wxString kAppRunNames[] = {
 	wxT("amule"),
 	wxT("amuled"),
@@ -311,12 +302,11 @@ const wxString kAppRunNames[] = {
 	wxT("alcc"),
 };
 
-// Create ~/.local/bin/<name> symlinks for each AppRun-dispatched binary this
-// AppImage actually bundles, returning the count created. Refuses to clobber a
-// pre-existing regular file at any of these paths, protecting a user's
-// distro-packaged binary; existing symlinks ARE replaced, so re-installing a new
-// AppImage refreshes the targets. POSIX-only, and never called on Windows or
-// macOS (ShouldPrompt returns false there), but it still has to compile.
+// Create ~/.local/bin/<name> symlinks for each AppRun-dispatched binary this AppImage actually
+// bundles, returning the count created. Refuses to clobber a pre-existing regular file at any of
+// these paths, protecting a user's distro-packaged binary; existing symlinks ARE replaced, so re-
+// installing a new AppImage refreshes the targets. POSIX-only, and never called on Windows or macOS
+// (ShouldPrompt returns false there), but it still has to compile.
 #ifdef __WXGTK__
 int InstallCommandSymlinks(const wxString &appdir, const wxString &appimagePath)
 {
@@ -370,7 +360,7 @@ bool ShouldPrompt()
 {
 #ifdef __WXGTK__
 	if (GetAppImagePath().IsEmpty()) {
-		// Not running from an AppImage — distro install or dev build.
+		// Not running from an AppImage -- distro install or dev build.
 		return false;
 	}
 	if (thePrefs::IsAppImageIntegrationDeclined()) {
@@ -378,7 +368,7 @@ bool ShouldPrompt()
 		return false;
 	}
 	if (DesktopFileAlreadyInstalled()) {
-		// Already installed — most likely from a previous "Yes" click.
+		// Already installed -- most likely from a previous "Yes" click.
 		return false;
 	}
 	return true;
@@ -443,9 +433,9 @@ void PromptAndInstall(wxWindow *parent)
 		return;
 	}
 
-	// Shell-command shortcuts first: the amulegui .desktop file installed below
-	// points at ~/.local/bin/amulegui to route clicks to the correct AppRun
-	// dispatch. Without that symlink the Exec= still resolves via PATH lookup.
+	// Shell-command shortcuts first: the amulegui .desktop file installed below points at
+	// ~/.local/bin/amulegui to route clicks to the correct AppRun dispatch. Without that
+	// symlink the Exec= still resolves via PATH lookup.
 	const int symlinkCount = InstallCommandSymlinks(appdir, appimagePath);
 
 	// Install org.amule.aMule.desktop (monolithic amule). Exec= points
@@ -461,10 +451,10 @@ void PromptAndInstall(wxWindow *parent)
 		return;
 	}
 
-	// Install org.amule.aMule.gui.desktop (remote-GUI amulegui). Exec= points at
-	// the ~/.local/bin/amulegui symlink so AppRun's basename dispatch picks
-	// amulegui rather than the default amule. Attempted only if the AppImage
-	// bundles amulegui AND the symlink was created.
+	// Install org.amule.aMule.gui.desktop (remote-GUI amulegui). Exec= points at the
+	// ~/.local/bin/amulegui symlink so AppRun's basename dispatch picks amulegui rather than
+	// the default amule. Attempted only if the AppImage bundles amulegui AND the symlink was
+	// created.
 	const wxString guiSource = appdir + wxT("/usr/share/applications/org.amule.aMule.gui.desktop");
 	const wxString guiSymlink = GetUserBinDir() + wxT("/amulegui");
 	if (wxFileExists(guiSource) && wxFileExists(guiSymlink)) {
@@ -503,16 +493,16 @@ void PromptAndInstall(wxWindow *parent)
 		return;
 	}
 
-	// Spawn a detached shell that polls our PID and re-execs the AppImage once we
-	// fully exit, so aMule's normal shutdown has time to save partfiles and release
-	// the EC port before the new instance grabs the same locks.
+	// Spawn a detached shell that polls our PID and re-execs the AppImage once we fully exit,
+	// so aMule's normal shutdown has time to save partfiles and release the EC port before the
+	// new instance grabs the same locks.
 	const wxString relaunchCmd =
 		wxString::Format(wxT("sh -c 'while kill -0 %d 2>/dev/null; do sleep 0.2; done; exec \"%s\"'"),
 			static_cast<int>(getpid()),
 			appimagePath);
 	wxExecute(relaunchCmd, wxEXEC_ASYNC | wxEXEC_MAKE_GROUP_LEADER);
 
-	// Trigger normal close on the main dialog — same path as red X / File>Quit.
+	// Trigger normal close on the main dialog -- same path as red X / File>Quit.
 	if (parent) {
 		parent->Close(true);
 	}

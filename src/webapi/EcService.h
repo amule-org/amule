@@ -39,29 +39,24 @@ class CECPacket;
 namespace webapi
 {
 
-// Serialises all EC roundtrips onto a single dedicated worker thread with a
-// bounded FIFO queue.
+// Serialises all EC roundtrips onto a single dedicated worker thread with a bounded FIFO queue.
 //
-// Why: amuleapi's one EC connection is a strictly serial request/reply
-// protocol, and the HTTP request handlers now run on a worker pool (many
-// threads). Letting each pool thread do its own blocking roundtrip meant a
-// stalled amuled could park an unbounded number of pool threads on the EC
-// mutex until the read timeout fired — starving non-EC requests. It also
-// left the single socket reachable from several threads, which is how a
-// framing desync becomes possible.
+// Why: amuleapi's one EC connection is a strictly serial request/reply protocol, and the HTTP
+// request handlers now run on a worker pool. Letting each pool thread do its own blocking roundtrip
+// meant a stalled amuled could park an unbounded number of pool threads on the EC mutex until the
+// read timeout fired, starving non-EC requests. It also left the single socket reachable from
+// several threads, which is how a framing desync becomes possible.
 //
-// This service fixes both: exactly one thread ever touches the socket
-// (no desync), and the queue is bounded (backpressure). When the queue is
-// full — i.e. a roundtrip is stalled and callers are piling up behind it —
-// further submissions return `nullptr` immediately, which every caller
-// already treats as `503 ec_unavailable`. So a stalled EC lane sheds load
-// instead of exhausting the handler pool.
+// This service fixes both: exactly one thread ever touches the socket (no desync), and the queue is
+// bounded (backpressure). When the queue is full -- a roundtrip is stalled and callers are piling
+// up behind it -- further submissions return `nullptr` immediately, which every caller already
+// treats as `503 ec_unavailable`. So a stalled EC lane sheds load instead of exhausting the handler
+// pool.
 //
-// Lifetime contract: `Submit` borrows the request pointer; callers block on
-// the returned future until completion (the per-roundtrip duration is bounded
-// by the EC read timeout), so the caller's stack-owned request outlives the
-// worker's use of it. The result pointer follows the pre-existing
-// SendRecvSerialized contract — the caller owns and deletes it.
+// Lifetime contract: `Submit` borrows the request pointer; callers block on the returned future
+// until completion (bounded by the EC read timeout), so the caller's stack-owned request outlives
+// the worker's use of it. The result pointer follows the pre-existing SendRecvSerialized contract
+// -- the caller owns and deletes it.
 class CEcService
 {
 public:
@@ -87,9 +82,9 @@ public:
 		m_worker = std::thread([this] { WorkerLoop(); });
 	}
 
-	// Enqueue a roundtrip and return a future for its reply. Returns a
-	// ready future holding nullptr if the queue is full (backpressure) or
-	// the service is stopping — callers map nullptr to 503.
+	// Enqueue a roundtrip and return a future for its reply. Returns a ready future holding
+	// nullptr if the queue is full (backpressure) or the service is stopping -- callers map
+	// nullptr to 503.
 	std::future<const CECPacket *> Submit(const CECPacket *request)
 	{
 		std::promise<const CECPacket *> prom;
@@ -106,9 +101,9 @@ public:
 		return fut;
 	}
 
-	// Stop the worker. Idempotent. Fulfils any queued (not-yet-started) jobs with
-	// nullptr so their callers unblock, then joins -- bounded by the EC read
-	// timeout if a roundtrip is in flight.
+	// Stop the worker. Idempotent. Fulfils any queued, not-yet-started jobs with nullptr so
+	// their callers unblock, then joins -- bounded by the EC read timeout if a roundtrip is in
+	// flight.
 	void Stop()
 	{
 		{

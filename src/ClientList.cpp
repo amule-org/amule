@@ -55,12 +55,8 @@
 #include "kademlia/routing/Contact.h"
 
 /**
- * CDeletedClient Class
- *
- * This class / list is a bit overkill, but currently needed to avoid any
- * exploit possibility. It will keep track of certain clients attributes
- * for 2 hours, while the CUpDownClient object might be deleted already.
- * Currently saves: IP, Port, UserHash.
+ * CDeletedClient: keeps a deleted peer's IP, port and user hash for 2 hours, after the
+ * CUpDownClient object itself is gone. A bit overkill, but currently needed to close an exploit.
  */
 class CDeletedClient
 {
@@ -101,19 +97,18 @@ CClientList::~CClientList()
 
 CUpDownClient *CClientList::FindReusableClient(const CMD4Hash &hash, uint32 ip, uint16 port)
 {
-	// Every client at this address, not just the first. FindClientByIP()
-	// stops at the first port match, which may be an unrelated client holding
-	// an address our peer used to have; rejecting that one without looking
-	// further would allocate a new object on every call.
+	// Every client at this address, not just the first. FindClientByIP() stops at the first
+	// port match, which may be an unrelated client holding an address our peer used to have;
+	// rejecting that one without looking further would allocate a new object on every call.
 	std::pair<IDMap::iterator, IDMap::iterator> range = m_ipList.equal_range(ip);
 	for (; range.first != range.second; ++range.first) {
 		CUpDownClient *cur_client = range.first->second.GetClient();
 		if (cur_client->GetUserPort() != port) {
 			continue;
 		}
-		// Unidentified is a candidate: it is either this peer before its
-		// handshake, or a placeholder an earlier call made for it. An
-		// identified one is only this peer if the hashes agree.
+		// Unidentified is a candidate: it is either this peer before its handshake, or a
+		// placeholder an earlier call made for it. An identified one is only this peer if
+		// the hashes agree.
 		if (cur_client->GetUserHash().IsEmpty() || cur_client->GetUserHash() == hash) {
 			return cur_client;
 		}
@@ -133,10 +128,10 @@ CClientRef CClientList::CreateForAddress(const CMD4Hash &hash, uint32 ip, uint16
 		}
 	}
 	if (client == nullptr) {
-		// An address alone identifies a peer only while nothing contradicts
-		// it. A stored address goes stale, and handing an unrelated client
-		// to CFriend::LinkClient() copies the stranger's hash into the
-		// friend record and saves it, losing the friend for good.
+		// An address alone identifies a peer only while nothing contradicts it. A stored
+		// address goes stale, and handing an unrelated client to CFriend::LinkClient()
+		// copies the stranger's hash into the friend record and saves it, losing the friend
+		// for good.
 		client = FindReusableClient(hash, ip, port);
 	}
 	if (client != nullptr) {
@@ -144,25 +139,24 @@ CClientRef CClientList::CreateForAddress(const CMD4Hash &hash, uint32 ip, uint16
 	}
 
 	if (ip == 0 || port == 0) {
-		// Nothing held for this peer and nowhere to dial: an invented client
-		// would only ever target 0.0.0.0, and AddClient() will not index a
-		// zero address, so the next lookup would miss it and make another.
-		// Callers ask IsLinked() rather than assuming they got one.
+		// Nothing held for this peer and nowhere to dial: an invented client would only
+		// ever target 0.0.0.0, and AddClient() will not index a zero address, so the next
+		// lookup would miss it and make another. Callers ask IsLinked() rather than
+		// assuming they got one.
 		return CClientRef();
 	}
 
 	client = new CUpDownClient(port, ip, 0, 0, nullptr, true, true);
-	// The ctor only records the address to connect to, leaving GetIP() at 0.
-	// Seed it, or anything that reads the peer's IP back -- a friend record
-	// saving itself, a menu deciding whether it can message -- sees 0.0.0.0.
+	// The ctor only records the address to connect to, leaving GetIP() at 0. Seed it, or
+	// anything that reads the peer's IP back -- a friend record saving itself, a menu deciding
+	// whether it can message -- sees 0.0.0.0.
 	client->SetIP(ip);
 	client->SetUserName(name);
-	// The hash is deliberately NOT seeded. This client has never connected, so it
-	// carries no credits and reports zero for every lifetime total, while a hash is
-	// exactly what makes the Clients page treat it as a peer whose totals are
-	// known: it would publish those zeroes over the stored Total Up / Down of the
-	// row that asked for it, and mark that row online. The handshake sets the real
-	// hash when the peer answers.
+	// The hash is deliberately NOT seeded. This client has never connected, so it carries no
+	// credits and reports zero for every lifetime total, while a hash is exactly what makes the
+	// Clients page treat it as a peer whose totals are known: it would publish those zeroes
+	// over the stored Total Up / Down of the row that asked for it, and mark that row online.
+	// The handshake sets the real hash when the peer answers.
 	AddClient(client);
 	return CCLIENTREF(client, wxT("CClientList::CreateForAddress"));
 }
@@ -196,10 +190,10 @@ void CClientList::RemoveClient(CUpDownClient *client)
 {
 	RemoveFromKadList(client);
 	RemoveDirectCallback(client);
-	// Drop any browse of this client: the manager holds a reference, and the
-	// client is going away, so there is nothing left to report a result to.
-	// Guarded like the clientlist call in CUpDownClient::Safe_Delete: clients
-	// are still being reaped while the app tears itself down.
+	// Drop any browse of this client: the manager holds a reference, and the client is going
+	// away, so there is nothing left to report a result to. Guarded like the clientlist call in
+	// CUpDownClient::Safe_Delete: clients are still being reaped while the app tears itself
+	// down.
 	if (theApp->browsemanager) {
 		theApp->browsemanager->Forget(client);
 	}
@@ -555,9 +549,8 @@ void CClientList::Process()
 	if (m_dwLastBannCleanUp + BAN_CLEANUP_TIME < cur_tick) {
 		m_dwLastBannCleanUp = cur_tick;
 
-		// One decrement per entry the sweep actually dropped. The record
-		// counts them because it is the only thing that knows which were
-		// lapsed.
+		// One decrement per entry the sweep actually dropped. The record counts them
+		// because it is the only thing that knows which were lapsed.
 		const std::size_t dropped = m_bannedList.DropLapsed(cur_tick);
 		for (std::size_t i = 0; i < dropped; ++i) {
 			theStats::RemoveBannedClient();
@@ -578,9 +571,9 @@ void CClientList::Process()
 		}
 	}
 
-	// Try to connect to the clients in m_KadList. If connected, remove them from
-	// the list and send a message back to Kad so we can send an ACK; if not, the
-	// client is removed and the socket timeout deletes the object.
+	// Try to connect to the clients in m_KadList. If connected, remove them from the list and
+	// send a message back to Kad so we can send an ACK; if not, the client is removed and the
+	// socket timeout deletes the object.
 
 	// buddy is just a flag that is used to make sure we are still connected or connecting to a buddy.
 	buddyState buddy = Disconnected;
@@ -615,9 +608,10 @@ void CClientList::Process()
 			// We successfully connected to the client.
 			// We now send a ack to let them know.
 			if (cur_client->GetKadVersion() >= 7) {
-				// The result is now sent per TCP instead of UDP, because this will fail if
-				// our intern port is unreachable. But we want the TCP testresult regardless
-				// if UDP is firewalled, the new UDP state and test takes care of the rest
+				// The result is now sent over TCP instead of UDP, because UDP fails
+				// if our internal port is unreachable. We want the TCP test result
+				// regardless of UDP being firewalled; the new UDP state and test
+				// take care of the rest.
 				wxASSERT(cur_client->IsConnected());
 				AddDebugLogLineN(logLocalClient,
 					"Local Client: OP_KAD_FWTCPCHECK_ACK to " +
@@ -642,19 +636,19 @@ void CClientList::Process()
 			break;
 
 		case KS_INCOMING_BUDDY:
-			// A firewalled client wants us to be his buddy.
-			// If we already have a buddy, we set Kad state to KS_NONE and it's removed in the
-			// next cycle. If not, this client will change to KS_CONNECTED_BUDDY when it connects.
+			// A firewalled client wants us to be his buddy. If we already have a buddy,
+			// set Kad state to KS_NONE and it is removed next cycle; if not, this
+			// client changes to KS_CONNECTED_BUDDY when it connects.
 			if (m_nBuddyStatus == Connected) {
 				cur_client->SetKadState(KS_NONE);
 			}
 			break;
 
 		case KS_QUEUED_BUDDY:
-			// We are firewalled and want this client as a buddy, but only if we
-			// are not already trying another. Already connected to a buddy: set
-			// KS_NONE and it goes next cycle. Already trying one: ignore this
-			// client, since the attempt in flight may still fail.
+			// We are firewalled and want this client as a buddy, but only if we are not
+			// already trying another. Already connected to a buddy: set KS_NONE and it
+			// goes next cycle. Already trying one: ignore this client, since the
+			// attempt in flight may still fail.
 			if (m_nBuddyStatus == Disconnected) {
 				buddy = Connecting;
 				m_nBuddyStatus = Connecting;
@@ -669,9 +663,9 @@ void CClientList::Process()
 			break;
 
 		case KS_CONNECTING_BUDDY:
-			// We are trying to connect to this client. It should not happen, but
-			// make sure we are not already connected to a buddy -- if we are, set
-			// KS_NONE for next cycle -- and otherwise flag connecting.
+			// We are trying to connect to this client. It should not happen, but make
+			// sure we are not already connected to a buddy -- if we are, set KS_NONE
+			// for next cycle -- and otherwise flag connecting.
 			if (m_nBuddyStatus == Connected) {
 				cur_client->SetKadState(KS_NONE);
 			} else {
@@ -722,10 +716,9 @@ void CClientList::Process()
 		// we only need a buddy if direct callback is not available
 		if (Kademlia::CKademlia::IsFirewalled() &&
 			Kademlia::CUDPFirewallTester::IsFirewalledUDP(true)) {
-			// Kad buddies do not work with RequireCrypt, so it is disabled here.
-			// Buddy connections themselves have supported obfuscation since eMule
-			// 0.49a, but callback requests do not, so we could not answer one
-			// under RequireCrypt.
+			// Kad buddies do not work with RequireCrypt, so it is disabled here. Buddy
+			// connections themselves have supported obfuscation since eMule 0.49a, but
+			// callback requests do not, so we could not answer one under RequireCrypt.
 			if (m_nBuddyStatus == Disconnected &&
 				Kademlia::CKademlia::GetPrefs()->GetFindBuddy() &&
 				!thePrefs::IsClientCryptLayerRequired()) {
@@ -745,8 +738,8 @@ void CClientList::Process()
 		} else {
 			if (m_pBuddy.IsLinked()) {
 				// If a buddy is not firewalled either, someone has fixed their
-				// firewall or stopped saturating their line, so set KS_NONE and
-				// let the next cycle clear it up.
+				// firewall or stopped saturating their line, so set KS_NONE and let
+				// the next cycle clear it up.
 				if (!m_pBuddy.HasLowID()) {
 					m_pBuddy.GetClient()->SetKadState(KS_NONE);
 				}
@@ -767,11 +760,10 @@ void CClientList::Process()
 
 void CClientList::AddBannedClient(uint32 dwIP)
 {
-	// Counted only when the address was not already banned. Ban() overwrote the
-	// tick on an address already present and counted it again, and
-	// CUpDownClient::SetSpammer(true) calls Ban() with no IsBanned() check, so a
-	// client banned for aggressiveness and later flagged as a spammer counted
-	// twice while UnBan() gave back one.
+	// Counted only when the address was not already banned. Ban() overwrote the tick on an
+	// address already present and counted it again, and CUpDownClient::SetSpammer(true) calls
+	// Ban() with no IsBanned() check, so a client banned for aggressiveness and later flagged
+	// as a spammer counted twice while UnBan() gave back one.
 	if (m_bannedList.Ban(dwIP, ::GetTickCount64())) {
 		theStats::AddBannedClient();
 	}
@@ -868,11 +860,11 @@ bool CClientList::SendChatMessage(uint64 client_id, const wxString &message)
 				"Creating") %
 				client_id % Uint32toStringIP(IP_FROM_GUI_ID(client_id)) %
 				PORT_FROM_GUI_ID(client_id));
-		// Through CreateForAddress(), which seeds GetIP() and reuses any client we
-		// already hold for this peer. Constructing one here directly leaves GetIP()
-		// at 0, so AddClient() keeps it out of the address index and the lookup
-		// above misses it next time: one unreachable client per message sent. Both
-		// builds arrive here, amulegui by way of EC_OP_CHAT_SEND.
+		// Through CreateForAddress(), which seeds GetIP() and reuses any client we already
+		// hold for this peer. Constructing one here directly leaves GetIP() at 0, so
+		// AddClient() keeps it out of the address index and the lookup above misses it next
+		// time: one unreachable client per message sent. Both builds arrive here, amulegui
+		// by way of EC_OP_CHAT_SEND.
 		CClientRef ref = CreateForAddress(
 			CMD4Hash(), IP_FROM_GUI_ID(client_id), PORT_FROM_GUI_ID(client_id), wxEmptyString);
 		if (!ref.IsLinked()) {
@@ -881,9 +873,8 @@ bool CClientList::SendChatMessage(uint64 client_id, const wxString &message)
 		client = ref.GetClient();
 	}
 	// Record before sending, and regardless of the result: a false return from
-	// CUpDownClient::SendChatMessage means "queued while connecting", not
-	// "failed", so gating the store on it would drop exactly the messages a slow
-	// peer receives a moment later.
+	// CUpDownClient::SendChatMessage means "queued while connecting", not "failed", so gating
+	// the store on it would drop exactly the messages a slow peer receives a moment later.
 	if (theApp->chatsessions) {
 		theApp->chatsessions->AddOutgoing(client_id, message);
 	}
@@ -1022,10 +1013,9 @@ bool CClientList::DoRequestFirewallCheckUDP(const Kademlia::CContact &contact)
 	if (IsIPAlreadyKnown(wxUINT32_SWAP_ALWAYS(contact.GetIPAddress()))) {
 		return false;
 	}
-	// Just create the client object, set the state and wait.
-	// TODO: we do not know the client's userhash, so no obfuscated connection can
-	// be built and the check does not work under "Require Obfuscation". The only
-	// somewhat acceptable fix is to use the KadID instead.
+	// Just create the client object, set the state and wait. TODO: we do not know the client's
+	// userhash, so no obfuscated connection can be built and the check does not work under
+	// "Require Obfuscation". The only somewhat acceptable fix is to use the KadID instead.
 	CUpDownClient *pNewClient =
 		new CUpDownClient(contact.GetTCPPort(), contact.GetIPAddress(), 0, 0, NULL, false, true);
 	pNewClient->SetKadState(KS_QUEUED_FWCHECK_UDP);
@@ -1039,12 +1029,11 @@ bool CClientList::DoRequestFirewallCheckUDP(const Kademlia::CContact &contact)
 
 void CClientList::CleanUpClientList()
 {
-	// Remove clients that are no longer needed, by time. CUpDownClient::Disconnected
-	// does this check too, but misses the cases where a client changes state without
-	// being connected. Doing it at every state change would be more effective but is
-	// not compatible with the current code: there are points where a client has no
-	// state for a few lines, and nothing is prepared for a client object going
-	// invalid while being worked on.
+	// Remove clients that are no longer needed, by time. CUpDownClient::Disconnected does this
+	// check too, but misses the cases where a client changes state without being connected.
+	// Doing it at every state change would be more effective but is not compatible with the
+	// current code: there are points where a client has no state for a few lines, and nothing
+	// is prepared for a client object going invalid while being worked on.
 	const uint64 cur_tick = ::GetTickCount64();
 	if (m_dwLastClientCleanUp + CLIENTLIST_CLEANUP_TIME < cur_tick) {
 		m_dwLastClientCleanUp = cur_tick;

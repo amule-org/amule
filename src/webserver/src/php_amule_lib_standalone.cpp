@@ -23,10 +23,8 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-//
-// This file is NOT part of aMule build. It's used solely for testing PHP engine
-// in separate build
-//
+// This file is NOT part of the aMule build. It is used solely for testing the PHP engine in a
+// separate build.
 #include <string> // Do_not_auto_remove (g++-4.0.1)
 #include <map>
 
@@ -72,11 +70,7 @@ void php_native_reload_shared_file_cmd(PHP_VALUE_NODE *)
 	printf("php_native_reload_shared_file_cmd\n");
 }
 
-/*
- *
- * Usage: php_native_download_file_cmd($file_hash, "command", $optional_arg)
- *
- */
+/* Usage: php_native_download_file_cmd($file_hash, "command", $optional_arg) */
 void php_native_download_file_cmd(PHP_VALUE_NODE *)
 {
 	PHP_SCOPE_ITEM *si = get_scope_item(g_current_scope, "__param_0");
@@ -103,9 +97,7 @@ void php_native_download_file_cmd(PHP_VALUE_NODE *)
 	printf("php_native_download_file_cmd: hash=%s cmd=%s\n", str_hash, cmd_name);
 }
 
-/*
- * Usage amule_kad_connect($bootstrap_ip, $bootstrap_port)
- */
+/* Usage: amule_kad_connect($bootstrap_ip, $bootstrap_port) */
 void php_native_kad_connect(PHP_VALUE_NODE *)
 {
 	PHP_SCOPE_ITEM *si = get_scope_item(g_current_scope, "__param_0");
@@ -132,9 +124,7 @@ void php_native_kad_disconnect(PHP_VALUE_NODE *)
 	printf("php_native_kad_disconnect\n");
 }
 
-/*
- * Usage amule_add_server_cmd($server_addr, $server_port, $server_name);
- */
+/* Usage: amule_add_server_cmd($server_addr, $server_port, $server_name) */
 void php_native_add_server_cmd(PHP_VALUE_NODE *)
 {
 	PHP_SCOPE_ITEM *si = get_scope_item(g_current_scope, "__param_0");
@@ -162,9 +152,7 @@ void php_native_add_server_cmd(PHP_VALUE_NODE *)
 	printf("php_native_add_server_cmd: addr=%s port=%04d name=%s\n", addr, port, name);
 }
 
-/*
- * Usage amule_server_cmd($server_ip, $server_port, "command");
- */
+/* Usage: amule_server_cmd($server_ip, $server_port, "command") */
 void php_native_server_cmd(PHP_VALUE_NODE *)
 {
 	PHP_SCOPE_ITEM *si = get_scope_item(g_current_scope, "__param_0");
@@ -193,9 +181,7 @@ void php_native_server_cmd(PHP_VALUE_NODE *)
 	printf("php_native_server_cmd: ip=%08x port=%04d cmd=%s\n", ip, port, cmd);
 }
 
-/*
- * Query amule status. Return hash containing stats values
- */
+/* Query amule status. Returns a hash of stats values. */
 void php_get_amule_stats(PHP_VALUE_NODE *result)
 {
 	cast_value_array(result);
@@ -215,19 +201,13 @@ void php_get_amule_categories(PHP_VALUE_NODE *result)
 	}
 }
 
-/*
- * Return hash of amule options.
- *  Key: option name
- *  Value: option value (string)
- */
+/* Returns a hash of amule options: key = option name, value = option value (string). */
 void php_get_amule_options(PHP_VALUE_NODE *result)
 {
 	cast_value_array(result);
 }
 
-/*
- * Set amule options from given array. Argument looks like "amule_get_options" result
- */
+/* Set amule options from the given array, shaped like an amule_get_options result. */
 void php_set_amule_options(PHP_VALUE_NODE *)
 {
 	PHP_SCOPE_ITEM *si = get_scope_item(g_current_scope, "__param_0");
@@ -237,9 +217,7 @@ void php_set_amule_options(PHP_VALUE_NODE *)
 	}
 }
 
-/*
- * Download 1 of search results. Params: hash, category (default=0)
- */
+/* Download one of the search results. Params: hash, category (default 0). */
 void php_native_search_download_cmd(PHP_VALUE_NODE *)
 {
 	PHP_SCOPE_ITEM *si = get_scope_item(g_current_scope, "__param_0");
@@ -320,9 +298,7 @@ void php_native_search_start_cmd(PHP_VALUE_NODE *)
 		max_size);
 }
 
-/*
- * Request contents of log
- */
+/* Request the contents of the log */
 void php_get_log(PHP_VALUE_NODE *result)
 {
 	value_value_free(result);
@@ -339,9 +315,7 @@ void php_get_log(PHP_VALUE_NODE *result)
 	printf("php_get_log: reset=%d\n", rst);
 }
 
-/*
- * Request contents of server info
- */
+/* Request the contents of the server info */
 void php_get_serverinfo(PHP_VALUE_NODE *result)
 {
 	value_value_free(result);
@@ -357,9 +331,7 @@ void php_get_serverinfo(PHP_VALUE_NODE *result)
 	printf("php_get_serverinfo: reset=%d\n", rst);
 }
 
-/*
- * Download ed2k link. Params: link, category (default=0)
- */
+/* Download an ed2k link. Params: link, category (default 0). */
 void php_native_ed2k_download_cmd(PHP_VALUE_NODE *result)
 {
 	PHP_SCOPE_ITEM *si = get_scope_item(g_current_scope, "__param_0");
@@ -455,9 +427,7 @@ void php_native_load_amule_vars(PHP_VALUE_NODE *result)
 	}
 }
 
-/*
- * Amule objects implementations
- */
+/* Amule objects implementations */
 void amule_fake_prop_get(void *obj, char *prop_name, PHP_VALUE_NODE *result)
 {
 	if (!strcmp(prop_name, "name") || !strcmp(prop_name, "hash")) {

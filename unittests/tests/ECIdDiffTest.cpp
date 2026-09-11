@@ -28,15 +28,14 @@
 
 using namespace muleunit;
 
-// `ComputeRemovedIds` decides which files the daemon tells a partial-update
-// client to delete. Both ways of getting it wrong are silent: a missed removal
-// leaves an entry in the client's list for the life of the connection with no
-// error logged anywhere, and a spurious one deletes a file the user still has.
-// Neither shows up as a crash, a failed request, or a wrong-looking packet --
-// only as a list that quietly disagrees with the daemon.
+// `ComputeRemovedIds` decides which files the daemon tells a partial-update client to delete. Both
+// ways of getting it wrong are silent: a missed removal leaves an entry in the client's list for
+// the life of the connection with no error logged anywhere, and a spurious one deletes a file the
+// user still has. Neither shows up as a crash, a failed request, or a wrong-looking packet -- only
+// as a list that quietly disagrees with the daemon.
 //
-// It is a pure function over two sorted vectors, so unlike the surrounding
-// handler it needs no app, no daemon and no connected client to exercise.
+// It is a pure function over two sorted vectors, so unlike the surrounding handler it needs no app,
+// no daemon and no connected client to exercise.
 
 DECLARE_SIMPLE(ECIdDiff)
 

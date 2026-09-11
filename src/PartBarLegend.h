@@ -25,28 +25,24 @@
 #ifndef PARTBARLEGEND_H
 #define PARTBARLEGEND_H
 
-// The palette of the chunk-bar columns -- the two in the client lists and the
-// source-availability one in the shared-files list -- and the legends the row
-// context menu opens to explain them.
+// The palette of the chunk-bar columns -- the two in the client lists and the source-availability
+// one in the shared-files list -- and the legends the row context menu opens to explain them.
 //
-// The point of this header is that there is exactly one copy of each colour. A
-// legend that restated the palette, in words or in swatches filled from a second
-// set of constants, would be free to drift away from the pixels it claims to
-// explain, and nothing would fail when it did. Here the renderer and the legend
-// both read SourcePartColour()/PeerPartColour(), so a colour can only change for
-// both at once.
+// The point of this header is that there is exactly one copy of each colour. A legend that restated
+// the palette, in words or in swatches filled from a second set of constants, would be free to
+// drift away from the pixels it claims to explain, and nothing would fail when it did. Here the
+// renderer and the legend both read SourcePartColour()/PeerPartColour(), so a colour can only
+// change for both at once.
 //
-// "One copy of each colour" is a rule about definitions, not about values. Two
-// constants may hold the same RGB when they mean different things and never
-// appear in the same legend -- kNextPending and kFlatHashPending do -- so the
-// no-two-rows-alike invariant is scoped PER LEGEND: within one legend a repeated
-// colour is a distinction the reader cannot see; across two it is a coincidence.
+// "One copy of each colour" is a rule about definitions, not about values. Two constants may hold
+// the same RGB when they mean different things and never appear in the same legend -- kNextPending
+// and kFlatHashPending do -- so the no-two-rows-alike invariant is scoped PER LEGEND: within one
+// legend a repeated colour is a distinction the reader cannot see; across two it is a coincidence.
 //
-// It pulls in nothing but <cstddef>/<cstdint>, ClientListColumns.h and
-// PartBarSpans.h -- itself wx-free -- so what a legend lists, in which order, in
-// which colour, and which legend a column gets is all reachable from a unit test
-// with no wx, no app and no display session. What is left needing a display is
-// the drawing itself.
+// It pulls in nothing but <cstddef>/<cstdint>, ClientListColumns.h and PartBarSpans.h -- itself wx-
+// free -- so what a legend lists, in which order, in which colour, and which legend a column gets
+// is all reachable from a unit test with no wx, no app and no display session. What is left needing
+// a display is the drawing itself.
 
 #include <cstddef>
 #include <cstdint>
@@ -76,9 +72,8 @@ constexpr bool operator!=(const BarColour &a, const BarColour &b)
 	return !(a == b);
 }
 
-// The palette itself. Two variants of each fill: the flat one is used when
-// thePrefs::UseFlatBar() is set, which drops the gradient the shaded bar draws
-// and so needs its own, more contrasty values.
+// The palette itself. Two variants of each fill: the flat one is used when thePrefs::UseFlatBar()
+// is set, which drops the gradient the shaded bar draws and so needs more contrasty values.
 constexpr BarColour kBoth{ 0, 192, 0 };
 constexpr BarColour kFlatBoth{ 0, 150, 0 };
 
@@ -99,29 +94,28 @@ constexpr BarColour kFlatUnavailable{ 224, 224, 224 };
 constexpr BarColour kAvailable{ 104, 104, 104 };
 constexpr BarColour kFlatAvailable{ 0, 0, 0 };
 
-// The part of a shared file not yet re-hashed, drawn flat. Byte-identical to
-// kNextPending and deliberately a separate constant: one is a request cue in a
-// client list, the other is unread bytes of a local file, and merging them would
-// mean a change to either bar silently moved the other.
+// The part of a shared file not yet re-hashed, drawn flat. Byte-identical to kNextPending and
+// deliberately a separate constant: one is a request cue in a client list, the other is unread
+// bytes of a local file, and merging them would mean a change to either bar silently moved the
+// other.
 constexpr BarColour kFlatHashPending{ 255, 255, 100 };
 
 // The shared-files availability bar. A part no source holds is its own state,
 // not the dark end of the fade, so it keeps its own constant.
 constexpr BarColour kZeroSources{ 255, 0, 0 };
 
-//! Source count at which the fade reaches its dark end. Adding an eleventh
-//! source darkens nothing. This is AVAIL_FULL in
-//! src/webapi/static/js/components.js, and the two surfaces have to agree on it
-//! or the same file looks differently shared in the GUI and in a browser.
+//! Source count at which the fade reaches its dark end. Adding an eleventh source darkens nothing.
+//! This is AVAIL_FULL in src/webapi/static/js/components.js, and the two surfaces have to agree on
+//! it or the same file looks differently shared in the GUI and in a browser.
 constexpr unsigned kAvailFull = 10;
 
-//! The endpoints of the fade: one source, and kAvailFull or more. Shared with
-//! the Web UI's light theme as --piece-avail-lo / --piece-avail, which the test
-//! reads from there, so the two surfaces cannot drift.
+//! The endpoints of the fade: one source, and kAvailFull or more. Shared with the Web UI's light
+//! theme as --piece-avail-lo / --piece-avail, which the test reads from there, so the two surfaces
+//! cannot drift.
 //!
-//! The dark end is deeper than the pair adopted in #1282, which travelled about
-//! a third less than the ramp it replaced and compressed the middle of the
-//! scale, making neighbouring source counts hard to tell apart.
+//! The dark end is deeper than the pair adopted in #1282, which travelled about a third less than
+//! the ramp it replaced and compressed the middle of the scale, making neighbouring source counts
+//! hard to tell apart.
 constexpr BarColour kAvailFew{ 166, 212, 238 };
 constexpr BarColour kAvailMany{ 13, 59, 102 };
 
@@ -131,16 +125,14 @@ constexpr int kAvailFadeSteps = static_cast<int>(kAvailFull) - 1;
 /**
  * One channel of the blend, @p k steps of kAvailFadeSteps from @p lo to @p hi.
  *
- * round(lo + (hi - lo) * k / 9) without floating point: doubling numerator and
- * denominator and adding half the denominator turns C++ truncating division
- * into rounding. The numerator's minimum is hi * 9, which is positive, so the
- * truncation is a floor and the identity holds.
+ * round(lo + (hi - lo) * k / 9) without floating point: doubling numerator and denominator and
+ * adding half the denominator turns C++ truncating division into rounding. The numerator's minimum
+ * is hi * 9, which is positive, so the truncation is a floor and the identity holds.
  *
- * Nothing here can land on a half. lo * 9 + (hi - lo) * k over a denominator of
- * 9 has a fractional part in ninths, and 1/2 is not one of them, so the
- * rounding mode never matters -- Math.round in components.js:404-407,
- * std::lround and banker's rounding all produce these same numbers. That is why
- * the browser and the GUI agree by construction rather than by convention.
+ * Nothing here can land on a half. lo * 9 + (hi - lo) * k over a denominator of 9 has a fractional
+ * part in ninths, and 1/2 is not one of them, so the rounding mode never matters -- Math.round in
+ * components.js:404-407, std::lround and banker's rounding all produce these same numbers. That is
+ * why the browser and the GUI agree by construction rather than by convention.
  */
 constexpr std::uint8_t AvailabilityFadeChannel(int lo, int hi, int k)
 {
@@ -157,10 +149,9 @@ constexpr int AvailabilityFadeStep(unsigned sources)
 /**
  * Bar colour for a part @p sources peers hold, for @p sources >= 1.
  *
- * Takes the source count and nothing else. That arity is deliberate: it is what
- * stops the shared-files list and the downloads list from drifting apart again,
- * because neither can pass its own endpoints without adding a parameter, and a
- * changed signature is something a reviewer sees.
+ * Takes the source count and nothing else. That arity is deliberate: it is what stops the shared-
+ * files list and the downloads list from drifting apart again, because neither can pass its own
+ * endpoints without adding a parameter, and a changed signature is something a reviewer sees.
  *
  * @p sources == 0 is not on this fade at all -- see kZeroSources.
  */
@@ -173,9 +164,9 @@ constexpr BarColour SourceAvailabilityColour(unsigned sources)
 }
 
 /**
- * The five fills the Sources bar (ColumnUserProgress) distinguishes, in the
- * order GetItemBarFill() tests them -- which is also the order the legend
- * lists them in, so a reader can follow one against the other.
+ * The five fills the Sources bar (ColumnUserProgress) distinguishes, in the order GetItemBarFill()
+ * tests them -- which is also the order the legend lists them in, so a reader can follow one
+ * against the other.
  */
 enum class SourcePartState
 {
@@ -187,10 +178,10 @@ enum class SourcePartState
 };
 
 /**
- * The two fills the Peers bar (ColumnUserAvailable) distinguishes. A peer of
- * one of our shared files is either holding a part or not; none of the
- * request-state cues above apply, which is why the two columns cannot share
- * one legend and, since #1192, no longer share one header label either.
+ * The two fills the Peers bar (ColumnUserAvailable) distinguishes. A peer of one of our shared
+ * files is either holding a part or not; none of the request-state cues above apply, which is why
+ * the two columns cannot share one legend and, since #1192, no longer share one header label
+ * either.
  */
 enum class PeerPartState
 {
@@ -217,10 +208,9 @@ constexpr BarColour PeerPartColour(PeerPartState state, bool flat)
 }
 
 /**
- * What the source-availability bar can say about one part, as its legend lists
- * it. The two blue rows are the ends of a continuum rather than two discrete
- * fills, so the legend explains a gradient by naming where it starts and where
- * it stops; the red is not on that gradient at all.
+ * What the source-availability bar can say about one part, as its legend lists it. The two blue
+ * rows are the ends of a continuum rather than two discrete fills, so the legend explains a
+ * gradient by naming where it starts and where it stops; the red is not on that gradient at all.
  */
 enum class AvailabilityPartState
 {
@@ -230,9 +220,8 @@ enum class AvailabilityPartState
 };
 
 /**
- * What the same cell says while a re-hash is running. Unrelated to the above:
- * availability is a fact about the swarm, this is progress through local data
- * that happens to occupy the same column.
+ * What the same cell says while a re-hash is running. Unrelated to the above: availability is a
+ * fact about the swarm, this is progress through local data that happens to occupy the same column.
  */
 enum class HashingPartState
 {
@@ -243,11 +232,10 @@ enum class HashingPartState
 /**
  * Colour the source-availability bar fills a part with.
  *
- * @p flat is accepted and ignored, on purpose. The renderer took the flat-bar
- * preference and never consulted it for this bar, so inventing a second set of
- * values here would have the legend explaining a distinction the bar does not
- * draw. The parameter stays for the shape it shares with its siblings, and the
- * suite asserts both arguments give the same colour.
+ * @p flat is accepted and ignored, on purpose. The renderer took the flat-bar preference and never
+ * consulted it for this bar, so inventing a second set of values here would have the legend
+ * explaining a distinction the bar does not draw. The parameter stays for the shape it shares with
+ * its siblings, and the suite asserts both arguments give the same colour.
  */
 constexpr BarColour AvailabilityPartColour(AvailabilityPartState state, bool)
 {
@@ -274,9 +262,8 @@ enum class BarLegendKind
 	SharedHashing       //!< the same cell, re-hash progress
 };
 
-//! The legend a column's colours are explained by. BarLegendKind::None means
-//! the column draws no bar, so a list showing only such columns offers no
-//! legend at all.
+//! The legend a column's colours are explained by. BarLegendKind::None means the column draws no
+//! bar, so a list showing only such columns offers no legend at all.
 constexpr BarLegendKind LegendForColumn(GenericColumnEnum cid)
 {
 	return cid == ColumnUserProgress    ? BarLegendKind::SourceParts
@@ -287,16 +274,15 @@ constexpr BarLegendKind LegendForColumn(GenericColumnEnum cid)
 /**
  * The shared-files list's bar column, as a type of its own.
  *
- * That list identifies its columns with plain #defines
- * (src/SharedFilesCtrl.h:31-46) whose numbers overlap GenericColumnEnum's:
- * COLUMN_SHARED_PART is 8, which is also ColumnUserQueueRankLocal. Passing one
- * where the other is wanted therefore compiled, silently, and returned a legend
- * for the wrong thing. A distinct scoped enum has no conversion to the other, so
- * that call is now a compile error -- and none of the existing call sites had to
- * change, because this is an overload rather than a replacement.
+ * That list identifies its columns with plain #defines (src/SharedFilesCtrl.h:31-46) whose numbers
+ * overlap GenericColumnEnum's: COLUMN_SHARED_PART is 8, which is also ColumnUserQueueRankLocal.
+ * Passing one where the other is wanted therefore compiled, silently, and returned a legend for the
+ * wrong thing. A distinct scoped enum has no conversion to the other, so that call is now a compile
+ * error -- and no existing call site had to change, this being an overload rather than a
+ * replacement.
  *
- * A deliberate static_cast still gets through; types cannot stop that, and the
- * suite pins what it produces instead.
+ * A deliberate static_cast still gets through; types cannot stop that, and the suite pins what it
+ * produces instead.
  */
 enum class SharedFilesBarColumn
 {
@@ -304,14 +290,12 @@ enum class SharedFilesBarColumn
 };
 
 /**
- * The legend explaining the shared-files bar, given what that row's bar is
- * drawing.
+ * The legend explaining the shared-files bar, given what that row's bar is drawing.
  *
- * One column, two legends. The cell shows source availability most of the time
- * and re-hash progress while a hash runs, and neither explains the other, so
- * the mode has to reach the selector. It arrives as a value -- ModeFor() in
- * PartBarSpans.h turns two integers into it -- which keeps this header free of
- * row state and the whole thing constexpr.
+ * One column, two legends. The cell shows source availability most of the time and re-hash progress
+ * while a hash runs, and neither explains the other, so the mode has to reach the selector. It
+ * arrives as a value -- ModeFor() in PartBarSpans.h turns two integers into it -- which keeps this
+ * header free of row state and the whole thing constexpr.
  */
 constexpr BarLegendKind LegendForColumn(SharedFilesBarColumn column, BarMode mode)
 {
@@ -322,13 +306,12 @@ constexpr BarLegendKind LegendForColumn(SharedFilesBarColumn column, BarMode mod
 }
 
 /**
- * The legend for a shared-files row, straight from the two integers the file
- * reports.
+ * The legend for a shared-files row, straight from the two integers the file reports.
  *
- * The row context menu has exactly this decision to make and nothing else:
- * which of the one column's two legends the clicked file wants, or none at all.
- * Composed here rather than at the call site because the composition is the
- * part a headless run can check -- opening the dialog is not.
+ * The row context menu has exactly this decision to make and nothing else: which of the one
+ * column's two legends the clicked file wants, or none at all. Composed here rather than at the
+ * call site because the composition is the part a headless run can check -- opening the dialog is
+ * not.
  */
 constexpr BarLegendKind LegendForSharedFilesRow(std::uint64_t hashedPartCount, std::size_t partCount)
 {

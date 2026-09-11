@@ -43,18 +43,13 @@ wxDECLARE_EVENT(wxEVT_COMMAND_MULENOTEBOOK_ALL_PAGES_CLOSED, wxEvent);
 class wxWindow;
 
 /**
- * This is an NoteBook control which adds additional features above what is
- * provided by the wxNoteBook widget. Currently it includes:
- *  - Use of images on the tabs for closing the pages.
- *  - A popup-menu for closing one or more pages.
- *  - Events triggered when pages are closed.
+ * A wxNotebook with a few extra features: images on the tabs for closing pages, a popup menu for
+ * closing one or more pages, and events triggered when pages are closed.
  */
 class CMuleNotebook : public wxNotebook
 {
 public:
 	/**
-	 * Constructor.
-	 *
 	 * @see wxNotebook::wxNotebook
 	 */
 	CMuleNotebook(wxWindow *parent,
@@ -64,70 +59,58 @@ public:
 		long style = 0,
 		const wxString &name = "notebook");
 
-	/**
-	 * Destructor.
-	 */
 	virtual ~CMuleNotebook();
 
 	/**
-	 * Deletes the page and triggers an event.
-	 *
-	 * @param nPage The page to be removed.
+	 * Deletes page @a nPage and triggers an event.
 	 */
 	virtual bool DeletePage(int nPage);
 
 	/**
-	 * Deletes and triggers and event for every page.
+	 * Deletes every page, triggering an event for each.
 	 */
 	virtual bool DeleteAllPages();
 
 	/**
-	 * Enables or disables the displaying of a popup-menu.
-	 *
-	 * @param enabled The new setting.
+	 * Enables or disables the display of a popup menu.
 	 */
 	void EnablePopup(bool enable);
 
 	/**
-	 * Sets an external widget to handle the popup-event.
-	 *
-	 * @param widget The widget which would receive the event or NULL to disable.
-	 *
-	 * Setting the handler to a non-NULL pointer means that upon right-clicks, a
-	 * right click event will be sent to that widget, so that it can create a
-	 * popup-menu. The coordinates will be fixed to fit onto the specified widget,
-	 * so no mapping is needed.
+	 * Sets an external widget to handle the popup event, or NULL to disable. With one set, a
+	 * right click sends a right-click event to that widget so it can create a popup menu; the
+	 * coordinates are fixed to fit it, so no mapping is needed.
 	 */
 	void SetPopupHandler(wxWindow *widget);
 
 protected:
 	/**
-	 * Event handler for left or middle mouse button to press or release (for closing pages)
+	 * Left or middle mouse button press or release, for closing pages.
 	 */
 	void OnMouseButton(wxMouseEvent &event);
 
 	/**
-	 * Event handler for mouse motion (for highlighting the 'x')
+	 * Mouse motion, for highlighting the 'x'.
 	 */
 	void OnMouseMotion(wxMouseEvent &event);
 
 	/**
-	 * Event-handler for right-clicks that takes care of displaying the popup-menu.
+	 * Right clicks, which display the popup menu.
 	 */
 	void OnRMButton(wxMouseEvent &event);
 
 	/**
-	 * Event-handler of the Close item on the popup-menu.
+	 * The Close item on the popup menu.
 	 */
 	void OnPopupClose(wxCommandEvent &evt);
 
 	/**
-	 * Event-handler of the CloseAll item on the popup-menu.
+	 * The CloseAll item on the popup menu.
 	 */
 	void OnPopupCloseAll(wxCommandEvent &evt);
 
 	/**
-	 * Event-handler of the CloseOthers item on the popup-menu.
+	 * The CloseOthers item on the popup menu.
 	 */
 	void OnPopupCloseOthers(wxCommandEvent &evt);
 

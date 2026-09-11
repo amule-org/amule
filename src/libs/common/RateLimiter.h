@@ -35,19 +35,16 @@
 /**
  * Per-IP sliding-window failure rate limiter.
  *
- * Tracks failed authentication attempts and locks the offending address out
- * for `lockout_seconds` once `threshold` failures land inside
- * `window_seconds`. A success resets that address's bucket.
+ * Tracks failed authentication attempts and locks the offending address out for `lockout_seconds`
+ * once `threshold` failures land inside `window_seconds`. A success resets that address's bucket.
  *
- * Lives in mulecommon because both authenticated front doors need it: the
- * amuleapi HTTP login and the External Connection password exchange. Nothing
- * here touches wx or any protocol, so it stays linkable from the daemon,
- * which does not link the webapi library.
+ * Lives in mulecommon because both authenticated front doors need it: the amuleapi HTTP login and
+ * the External Connection password exchange. Nothing here touches wx or any protocol, so it stays
+ * linkable from the daemon, which does not link the webapi library.
  *
- * Storage: one bucket per address. Real deployments serve a small population
- * (a LAN operator, a handful of clients), so the map stays small even under
- * bot-scan load. No active GC; cold buckets are overwritten when the offender
- * returns, and process lifetime bounds the worst case.
+ * Storage: one bucket per address. Real deployments serve a small population (a LAN operator, a
+ * handful of clients), so the map stays small even under bot-scan load. No active GC; cold buckets
+ * are overwritten when the offender returns, and process lifetime bounds the worst case.
  */
 class CRateLimiter
 {
@@ -59,9 +56,8 @@ public:
 		unsigned lockout_seconds = 300;
 	};
 
-	/// Clock injection. Default is std::time(nullptr); tests pass a
-	/// controllable lambda to exercise the sliding-window logic in
-	/// microseconds instead of sleeping through real seconds.
+	/// Clock injection. Default is std::time(nullptr); tests pass a controllable lambda to
+	/// exercise the sliding window in microseconds instead of sleeping through real seconds.
 	using Clock = std::function<std::time_t()>;
 
 	explicit CRateLimiter(Config cfg, Clock clock = nullptr)
@@ -76,18 +72,16 @@ public:
 		std::time_t retry_after_seconds = 0;
 	};
 
-	/// Called BEFORE the credential compare. When `locked_out` is set the
-	/// caller must refuse without touching the credential path, reporting
-	/// `retry_after_seconds`.
+	/// Called BEFORE the credential compare. When `locked_out` is set the caller must refuse
+	/// without touching the credential path, reporting `retry_after_seconds`.
 	Decision Check(const std::string &ip);
 
 	/// Called AFTER a failed credential compare. Records the failure and
 	/// arms the lockout once the threshold is crossed.
 	void NoteFailure(const std::string &ip);
 
-	/// Called AFTER a successful credential compare. Drops the bucket so a
-	/// legitimate user's next attempt is not accounted against an earlier
-	/// streak of typos.
+	/// Called AFTER a successful credential compare. Drops the bucket so a legitimate user's
+	/// next attempt is not accounted against an earlier streak of typos.
 	void NoteSuccess(const std::string &ip);
 
 	const Config &Cfg() const { return m_cfg; }
@@ -95,12 +89,10 @@ public:
 private:
 	struct Bucket
 	{
-		// Sliding window of failure timestamps. A plain counter plus a
-		// window start would implement a TUMBLING window, where an
-		// attacker can spend threshold-1 failures at the end of one
-		// window and threshold-1 more at the start of the next and never
-		// trip the lockout. One timestamp per failure, expired
-		// individually, closes that gap.
+		// Sliding window of failure timestamps. A plain counter plus a window start would
+		// be a TUMBLING window, where an attacker can spend threshold-1 failures at the end
+		// of one window and threshold-1 more at the start of the next and never trip the
+		// lockout. One timestamp per failure, expired individually, closes that gap.
 		std::deque<std::time_t> failures;
 		std::time_t lockout_until = 0;
 	};

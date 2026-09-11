@@ -33,9 +33,7 @@
 
 class CECSocket;
 
-/**
- * High level EC packet handler class
- */
+/// High level EC packet handler class.
 class CECPacket : public CECEmptyTag
 {
 	friend class CECSocket;

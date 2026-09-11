@@ -78,10 +78,9 @@ bool WriteFileAtomic0600(const std::string &path, const std::string &body)
 	}
 	return true;
 #else
-	// Windows: no permission story to enforce, so this is a plain
-	// truncating write. Kept atomic-ish only in the sense that a failed
-	// write is reported; callers holding a secret are warned in the
-	// header that confidentiality is not provided here.
+	// Windows: no permission story to enforce, so this is a plain truncating write. Atomic-ish
+	// only in the sense that a failed write is reported; the header warns callers holding a
+	// secret that confidentiality is not provided here.
 	std::ofstream f(path.c_str(), std::ios::binary | std::ios::trunc);
 	if (!f.is_open()) {
 		return false;

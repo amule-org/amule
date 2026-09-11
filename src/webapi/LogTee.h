@@ -34,14 +34,13 @@
 namespace webapi
 {
 
-// Append-only log file with a simple two-file size cap. When a write would
-// cross maxBytes the current file is renamed to "<path>.1" (replacing any older
-// rotation) and a fresh file is opened, so on-disk usage stays bounded to
-// ~2x maxBytes while the most recent history is always preserved.
+// Append-only log file with a simple two-file size cap. When a write would cross maxBytes the
+// current file is renamed to "<path>.1" (replacing any older rotation) and a fresh file is opened,
+// so on-disk usage stays bounded to ~2x maxBytes while the most recent history is always preserved.
 //
-// Portable (C stdio), no file descriptors 1/2 and no threads -- this is the sink
-// CLogTee writes into, and it is unit-tested directly. All public methods are
-// internally locked, so the two forwarding threads may call Write() concurrently.
+// Portable (C stdio), no file descriptors 1/2 and no threads -- this is the sink CLogTee writes
+// into, and it is unit-tested directly. All public methods are internally locked, so the two
+// forwarding threads may call Write() concurrently.
 class CRotatingLog
 {
 public:
@@ -51,9 +50,9 @@ public:
 	CRotatingLog(const CRotatingLog &) = delete;
 	CRotatingLog &operator=(const CRotatingLog &) = delete;
 
-	// Opens path in append mode and seeds the running size from the existing
-	// file so the cap accounts for pre-existing content. maxBytes == 0 disables
-	// rotation (unbounded). Returns false on open failure.
+	// Opens path in append mode and seeds the running size from the existing file, so the cap
+	// accounts for pre-existing content. maxBytes == 0 disables rotation. False on open
+	// failure.
 	bool Open(const std::string &path, std::size_t maxBytes);
 
 	// Appends n bytes, rotating first if the cap would be crossed. No-op when
@@ -76,13 +75,12 @@ private:
 	std::FILE *m_fp = nullptr;
 };
 
-// Duplicates the process's stdout and stderr into a log file while leaving the
-// original console streams intact (a "tee"). It works at the file-descriptor
-// level -- fd 1 and fd 2 are routed through pipes and a forwarding thread copies
-// each chunk to both the saved console fd and the log file -- so it captures C
-// stdio, C++ streams and anything else that writes to those descriptors,
-// including the fatal-signal backtrace. Cross-platform via the POSIX and
-// Windows pipe/dup2/read equivalents.
+// Duplicates the process's stdout and stderr into a log file while leaving the original console
+// streams intact (a "tee"). It works at the file-descriptor level -- fd 1 and fd 2 are routed
+// through pipes and a forwarding thread copies each chunk to both the saved console fd and the log
+// file -- so it captures C stdio, C++ streams and anything else that writes to those descriptors,
+// including the fatal-signal backtrace. Cross-platform via the POSIX and Windows pipe/dup2/read
+// equivalents.
 class CLogTee
 {
 public:
@@ -92,26 +90,26 @@ public:
 	CLogTee(const CLogTee &) = delete;
 	CLogTee &operator=(const CLogTee &) = delete;
 
-	// Opens logPath (append, capped at maxBytes), redirects fd 1 and 2 through
-	// pipes and starts the forwarding threads. On any failure it restores the
-	// descriptors and returns false, leaving stdout/stderr untouched.
+	// Opens logPath (append, capped at maxBytes), redirects fd 1 and 2 through pipes and starts
+	// the forwarding threads. On any failure it restores the descriptors and returns false,
+	// leaving stdout/stderr untouched.
 	bool Install(const std::string &logPath, std::size_t maxBytes);
 
 	// Restores the original descriptors, drains and joins the forwarding
 	// threads and closes the file. Idempotent; also called by the destructor.
 	void Uninstall();
 
-	// Crash path: point fd 2 straight at the log file so a backtrace from the
-	// fatal handler is written synchronously, without depending on the
-	// forwarding thread being scheduled before the process dies.
+	// Crash path: point fd 2 straight at the log file so a backtrace from the fatal handler is
+	// written synchronously, without depending on the forwarding thread being scheduled before
+	// the process dies.
 	void RedirectStderrToFileForCrash();
 
 	bool IsInstalled() const { return m_installed; }
 
 private:
-	// One forwarding worker per stream: blocking-reads a pipe and writes each
-	// chunk to its console fd and the log file. Two threads rather than one
-	// poll() loop so the same code runs on Windows, which cannot poll() pipes.
+	// One forwarding worker per stream: blocking-reads a pipe and writes each chunk to its
+	// console fd and the log file. Two threads rather than one poll() loop so the same code
+	// runs on Windows, which cannot poll() pipes.
 	void Pump(int readFd, int consoleFd);
 
 	bool m_installed = false;

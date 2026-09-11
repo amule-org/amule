@@ -40,11 +40,10 @@
 #include "Logger.h"
 #include "libs/common/Path.h"
 
-// Native child-process primitives for the bounded, killable probe runner.
-// wxExecute/wxProcess async bookkeeping is bound to the main-thread event
-// loop (its SIGCHLD reaper fires wxProcess::OnTerminate there), so polling
-// it from the probe worker races that loop — a use-after-free. Managing
-// ffprobe with native primitives keeps the whole lifecycle on this thread.
+// Native child-process primitives for the bounded, killable probe runner. wxExecute/wxProcess async
+// bookkeeping is bound to the main-thread event loop (its SIGCHLD reaper fires
+// wxProcess::OnTerminate there), so polling it from the probe worker races that loop -- a use-
+// after-free. Managing ffprobe with native primitives keeps the whole lifecycle on this thread.
 #ifdef __WXMSW__
 #include <windows.h>
 #else
@@ -72,10 +71,10 @@ constexpr int kSpawnFailed = -1;    // couldn't launch the binary at all
 constexpr int kKilled = -2;         // overran timeoutMs, or keepRunning went false
 constexpr int kOutputTooLarge = -3; // reply exceeded the read budget; see the slurp
 
-// Spawn `exe argv...`, capturing stdout to a temp file, bounded by `timeoutMs`
-// wall-clock. The wait loop also polls `keepRunning`, so worker shutdown kills
-// the child at once. Real argv, no shell, so paths need no escaping. See the
-// include-block note for why this bypasses wxExecute/wxProcess entirely.
+// Spawn `exe argv...`, capturing stdout to a temp file, bounded by `timeoutMs` wall-clock. The wait
+// loop also polls `keepRunning`, so worker shutdown kills the child at once. Real argv, no shell,
+// so paths need no escaping. See the include-block note for why this bypasses wxExecute/wxProcess
+// entirely.
 int RunBoundedFFProbe(const wxString &exe,
 	const wxArrayString &argv,
 	unsigned timeoutMs,
@@ -106,9 +105,9 @@ int RunBoundedFFProbe(const wxString &exe,
 		return kSpawnFailed;
 	}
 
-	// Kill-on-close job so terminating it takes down the whole process tree, the
-	// Windows equivalent of the POSIX process-group kill. ffprobe.exe forks
-	// nothing, but a wrapper-style path would, and TerminateProcess would orphan it.
+	// Kill-on-close job so terminating it takes down the whole process tree, the Windows
+	// equivalent of the POSIX process-group kill. ffprobe.exe forks nothing, but a wrapper-
+	// style path would, and TerminateProcess would orphan it.
 	HANDLE hJob = ::CreateJobObjectW(nullptr, nullptr);
 	if (hJob != nullptr) {
 		JOBOBJECT_EXTENDED_LIMIT_INFORMATION jeli;
@@ -209,10 +208,10 @@ int RunBoundedFFProbe(const wxString &exe,
 		&fa, STDOUT_FILENO, tmpNative.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0600);
 	posix_spawn_file_actions_addopen(&fa, STDERR_FILENO, "/dev/null", O_WRONLY, 0);
 
-	// Own process group so a kill takes out the whole tree: ffprobe forks
-	// nothing, but a wrapper-style path (snap's /snap/bin/ffprobe, a flatpak-run
-	// shim) is a shell that execs the real binary as a child. setpgroup(0) makes
-	// the child a group leader, and the kill path below signals -pid.
+	// Own process group so a kill takes out the whole tree: ffprobe forks nothing, but a
+	// wrapper-style path (snap's /snap/bin/ffprobe, a flatpak-run shim) is a shell that execs
+	// the real binary as a child. setpgroup(0) makes the child a group leader, and the kill
+	// path below signals -pid.
 	posix_spawnattr_t attr;
 	posix_spawnattr_init(&attr);
 	posix_spawnattr_setflags(&attr, POSIX_SPAWN_SETPGROUP);
@@ -249,14 +248,14 @@ int RunBoundedFFProbe(const wxString &exe,
 	}
 #endif
 
-	// Slurp captured stdout. On a kill the file is partial/empty, but the
-	// caller treats kKilled as failure and never reads stdoutLines then.
+	// Slurp captured stdout. On a kill the file is partial or empty, but the caller treats
+	// kKilled as failure and never reads stdoutLines then.
 	//
-	// Bounded, because container tags are attacker-chosen text of arbitrary
-	// length: uncapped, a crafted 100 MB title is slurped whole into a wxString
-	// and copied again by the tokenizer and the unescaper before kMaxTagChars
-	// ever applies. A legitimate five-field reply is a few hundred bytes, and
-	// anything past the cap is treated as a failed probe rather than truncated.
+	// Bounded, because container tags are attacker-chosen text of arbitrary length: uncapped, a
+	// crafted 100 MB title is slurped whole into a wxString and copied again by the tokenizer
+	// and the unescaper before kMaxTagChars ever applies. A legitimate five-field reply is a
+	// few hundred bytes, and anything past the cap is treated as a failed probe rather than
+	// truncated.
 	const wxFileOffset kMaxProbeOutputBytes = 1024 * 1024;
 	if (exitCode >= 0) {
 		wxFFile f(tmpPath, wxT("rb"));
@@ -284,18 +283,18 @@ int RunBoundedFFProbe(const wxString &exe,
 namespace
 {
 
-// Wall-clock bound for one `-version` invocation. A working ffprobe answers in
-// milliseconds; one that has not by now is wedged (a stale network mount, a
-// wrapper blocked on a lock) and must not hold up whoever asked.
+// Wall-clock bound for one `-version` invocation. A working ffprobe answers in milliseconds; one
+// that has not by now is wedged (a stale network mount, a wrapper blocked on a lock) and must not
+// hold up whoever asked.
 constexpr unsigned kDetectTimeoutMs = 3000;
 
-// True if `binary` runs cleanly enough to print its own -version output. Serves
-// both as the "is ffprobe on PATH" probe and as the "does this path work" one.
+// True if `binary` runs cleanly enough to print its own -version output. Serves both as the "is
+// ffprobe on PATH" probe and as the "does this path work" one.
 //
-// Goes through RunBoundedFFProbe because that puts a deadline on a binary that
-// never returns and is callable off the main thread; wxExecute is neither (see
-// the include-block note above). Bare `ffprobe` still resolves through PATH:
-// posix_spawnp and CreateProcess with a null application name both search it.
+// Goes through RunBoundedFFProbe because that puts a deadline on a binary that never returns and is
+// callable off the main thread; wxExecute is neither (see the include-block note above). Bare
+// `ffprobe` still resolves through PATH: posix_spawnp and CreateProcess with a null application
+// name both search it.
 bool CanRun(const wxString &binary)
 {
 	// Detection is never cancelled part-way; only the timeout bounds it.
@@ -305,9 +304,9 @@ bool CanRun(const wxString &binary)
 	return RunBoundedFFProbe(binary, argv, kDetectTimeoutMs, keepRunning, out) == 0;
 }
 
-// Well-known install locations, tried in order; one entry per install-manager,
-// since we want the first existing binary rather than every possible location.
-// ARM64 Homebrew before Intel, matching what a bare PATH lookup finds first.
+// Well-known install locations, tried in order; one entry per install-manager, since we want the
+// first existing binary rather than every possible location. ARM64 Homebrew before Intel, matching
+// what a bare PATH lookup finds first.
 wxArrayString WellKnownPaths()
 {
 	wxArrayString paths;
@@ -316,18 +315,17 @@ wxArrayString WellKnownPaths()
 	paths.Add(wxT("/usr/local/bin/ffprobe"));
 	paths.Add(wxT("/opt/local/bin/ffprobe")); // MacPorts
 #elif defined(__WXMSW__)
-	// WinGet's per-app dir carries the package version, so there is no leaf to
-	// hardcode -- WinGet users are found by the `where.exe` PATH probe instead.
-	// Chocolatey and scoop have stable roots.
+	// WinGet's per-app dir carries the package version, so there is no leaf to hardcode --
+	// WinGet users are found by the `where.exe` PATH probe instead. Chocolatey and scoop have
+	// stable roots.
 	paths.Add(wxT("C:\\ffmpeg\\bin\\ffprobe.exe"));
 	paths.Add(wxT("C:\\ProgramData\\chocolatey\\bin\\ffprobe.exe"));
 	if (const wxChar *home = wxGetenv(wxT("USERPROFILE"))) {
 		paths.Add(wxString(home) + wxT("\\scoop\\apps\\ffmpeg\\current\\bin\\ffprobe.exe"));
 	}
 #else
-	// Snap and Flatpak users typically launch ffprobe out of their sandbox root;
-	// the snap case is covered explicitly, flatpak users point the preference at
-	// their wrapper manually.
+	// Snap and Flatpak users typically launch ffprobe out of their sandbox root; the snap case
+	// is covered explicitly, flatpak users point the preference at their wrapper manually.
 	paths.Add(wxT("/usr/bin/ffprobe"));
 	paths.Add(wxT("/usr/local/bin/ffprobe"));
 	paths.Add(wxT("/snap/bin/ffprobe"));
@@ -339,10 +337,10 @@ wxArrayString WellKnownPaths()
 
 wxString AutoDetectPath()
 {
-	// Fast path: bare `ffprobe` on PATH, which is what most Linux and BSD
-	// installs give for free. On macOS and Windows this often fails even when
-	// ffprobe IS installed, because GUI-launched processes get a minimal PATH
-	// (launchd's lacks /opt/homebrew; Windows GUI apps can miss choco/scoop).
+	// Fast path: bare `ffprobe` on PATH, which is what most Linux and BSD installs give for
+	// free. On macOS and Windows this often fails even when ffprobe IS installed, because GUI-
+	// launched processes get a minimal PATH (launchd's lacks /opt/homebrew; Windows GUI apps
+	// can miss choco/scoop).
 	if (CanRun(wxT("ffprobe"))) {
 		return wxT("ffprobe");
 	}
@@ -358,13 +356,13 @@ wxString AutoDetectPath()
 
 wxString DetectedPath(bool redetect)
 {
-	// Detection describes the machine, not a user choice, so it is derived at
-	// runtime and never written to the config file. Memoised because it costs at
-	// least one subprocess and cannot change under a running daemon without
-	// someone installing ffmpeg -- which `redetect` is for.
+	// Detection describes the machine, not a user choice, so it is derived at runtime and never
+	// written to the config file. Memoised because it costs at least one subprocess and cannot
+	// change under a running daemon without someone installing ffmpeg -- which `redetect` is
+	// for.
 	//
-	// The lock is held across the detection itself so two callers cannot race two
-	// scans; worst case that is one subprocess spawn's worth of blocking.
+	// The lock is held across the detection itself so two callers cannot race two scans; worst
+	// case that is one subprocess spawn's worth of blocking.
 	static std::mutex mutex;
 	static bool done = false;
 	static wxString cached;
@@ -377,9 +375,9 @@ wxString DetectedPath(bool redetect)
 	done = true;
 
 	if (cached.IsEmpty()) {
-		// Not a debug line: the operator asked for metadata extraction and is
-		// getting none, and on a headless daemon this is the only place that can
-		// say why. Fires once per process -- the memo above guarantees it.
+		// Not a debug line: the operator asked for metadata extraction and is getting none,
+		// and on a headless daemon this is the only place that can say why. Fires once per
+		// process -- the memo above guarantees it.
 		AddLogLineN(_("Media metadata: no ffprobe binary found. Install ffmpeg, or set the "
 			      "ffprobe path in preferences; length, bitrate and codec will not be "
 			      "extracted."));
@@ -400,11 +398,10 @@ bool ParseSeconds(const wxString &value, uint32 &out)
 	if (value.IsEmpty()) {
 		return false;
 	}
-	// Named local: `value.utf8_str().data()` twice would be two separate
-	// temporaries, each dead at the end of its own full-expression, so the
-	// comparison below would read a freed pointer and compare it against one from
-	// a different object -- which happens to work only because the allocator
-	// hands back the same block.
+	// Named local: `value.utf8_str().data()` twice would be two separate temporaries, each dead
+	// at the end of its own full-expression, so the comparison below would read a freed pointer
+	// and compare it against one from a different object -- which happens to work only because
+	// the allocator hands back the same block.
 	const wxScopedCharBuffer buf = value.utf8_str();
 	const char *const str = buf.data();
 	char *end = nullptr;
@@ -412,7 +409,7 @@ bool ParseSeconds(const wxString &value, uint32 &out)
 	if (end == str || d < 0.0) {
 		return false;
 	}
-	// Cap at uint32 range (~136 years — plenty).
+	// Cap at uint32 range (~136 years -- plenty).
 	if (d > static_cast<double>(0xFFFFFFFFu)) {
 		out = 0xFFFFFFFFu;
 	} else {
@@ -450,9 +447,9 @@ bool ParseBitrateKbps(const wxString &value, uint32 &out)
 
 const wxChar *ProbeEntries()
 {
-	// Per stream: codec_name and codec_type (so a video track's codec beats an
-	// audio one and subtitle/data streams never win), attached_pic, and its own
-	// artist/title/album. Per format: duration, bit_rate and the same three tags.
+	// Per stream: codec_name and codec_type (so a video track's codec beats an audio one and
+	// subtitle/data streams never win), attached_pic, and its own artist/title/album. Per
+	// format: duration, bit_rate and the same three tags.
 	return wxT("format=duration,bit_rate"
 		   ":format_tags=artist,title,album"
 		   ":stream=codec_name,codec_type"
@@ -511,23 +508,23 @@ wxString UnflattenValue(const wxString &raw)
 	return out;
 }
 
-// Longest tag value we keep. Generous for a real artist/album/title; the point
-// is to bound what a crafted file can make this node store and publish, not to
-// fit any real metadata. These values go into known.met, into the log line, and
-// into every offered-file packet sent to every server and client.
+// Longest tag value we keep. Generous for a real artist/album/title; the point is to bound what a
+// crafted file can make this node store and publish, not to fit any real metadata. These values go
+// into known.met, into the log line, and into every offered-file packet sent to every server and
+// client.
 const size_t kMaxTagChars = 256;
 
-// Clean one tag value before it is allowed any further: bound the length and
-// drop control characters.
+// Clean one tag value before it is allowed any further: bound the length and drop control
+// characters.
 //
-// The cap is what keeps oversized text out of known.met, out of the log line
-// and off the wire; without it the only bound anywhere was the wire format's
-// 0xFFFF truncation, a packet-integrity guard rather than a policy. How much is
-// READ is bounded separately, at the slurp in RunBoundedFFProbe.
+// The cap is what keeps oversized text out of known.met, out of the log line and off the wire;
+// without it the only bound anywhere was the wire format's 0xFFFF truncation, a packet-integrity
+// guard rather than a policy. How much is READ is bounded separately, at the slurp in
+// RunBoundedFFProbe.
 //
-// Control characters are dropped because the value reaches a log line (and
-// through it GET /api/v0/logs/amule) and several list controls, where a raw
-// newline lets one field impersonate several.
+// Control characters are dropped because the value reaches a log line (and through it GET
+// /api/v0/logs/amule) and several list controls, where a raw newline lets one field impersonate
+// several.
 wxString SanitiseTagValue(const wxString &value)
 {
 	wxString out;
@@ -547,10 +544,9 @@ wxString SanitiseTagValue(const wxString &value)
 	return out;
 }
 
-// ffprobe prints the container's own key case -- Matroska yields
-// format.tags.ARTIST and format.tags.ALBUM beside a lower-case
-// format.tags.title, in one file -- while matching the requested names
-// case-insensitively. So the parser has to as well.
+// ffprobe prints the container's own key case -- Matroska yields format.tags.ARTIST and
+// format.tags.ALBUM beside a lower-case format.tags.title, in one file -- while matching the
+// requested names case-insensitively. So the parser has to as well.
 void AssignTag(const wxString &key, const wxString &value, wxString &artist, wxString &album, wxString &title)
 {
 	const wxString lower = key.Lower();
@@ -572,9 +568,9 @@ bool ParseProbeOutput(const wxArrayString &lines, MediaInfo &out)
 	MediaInfo info;
 	bool got_duration = false;
 
-	// Keyed by the stream index ffprobe puts in the key, so ordering comes from
-	// the data rather than from the order lines happen to arrive in; the map also
-	// hands the streams back in index order for the selection below.
+	// Keyed by the stream index ffprobe puts in the key, so ordering comes from the data rather
+	// than from the order lines happen to arrive in; the map also hands the streams back in
+	// index order for the selection below.
 	std::map<unsigned long, ProbeStream> streams;
 	wxString formatArtist, formatAlbum, formatTitle;
 
@@ -627,20 +623,20 @@ bool ParseProbeOutput(const wxArrayString &lines, MediaInfo &out)
 	// First video track's codec, else the first audio track's. Subtitle and data
 	// streams never win, so we don't advertise "subrip" as a file's codec.
 	wxString videoCodec, audioCodec;
-	// Tags of the stream that supplied audioCodec: the fallback source for
-	// Ogg/Opus, where Vorbis comments belong to the logical stream and the format
-	// section carries nothing at all.
+	// Tags of the stream that supplied audioCodec: the fallback source for Ogg/Opus, where
+	// Vorbis comments belong to the logical stream and the format section carries nothing at
+	// all.
 	wxString streamArtist, streamAlbum, streamTitle;
 	// Real (non-artwork) audio streams; the fallback below requires exactly one.
 	unsigned audioStreamCount = 0;
 
 	for (const auto &entry : streams) {
 		const ProbeStream &st = entry.second;
-		// Cover art (ID3 APIC, FLAC PICTURE, MOV covr, Matroska image attachments)
-		// is reported as an ordinary video stream, and is the only non-content
-		// stream claiming codec_type=video. Without this an MP3 with artwork
-		// advertises "mjpeg" as the file's codec -- to every peer, since the tag
-		// goes out on the wire. FFmpeg's own "real video" selector is the same test.
+		// Cover art (ID3 APIC, FLAC PICTURE, MOV covr, Matroska image attachments) is
+		// reported as an ordinary video stream, and is the only non-content stream claiming
+		// codec_type=video. Without this an MP3 with artwork advertises "mjpeg" as the
+		// file's codec -- to every peer, since the tag goes out on the wire. FFmpeg's own
+		// "real video" selector is the same test.
 		if (st.attached_pic || st.codec.IsEmpty()) {
 			continue;
 		}
@@ -668,15 +664,14 @@ bool ParseProbeOutput(const wxArrayString &lines, MediaInfo &out)
 	info.artist = formatArtist;
 	info.album = formatAlbum;
 	info.title = formatTitle;
-	// Stream tags are consulted only for a file with exactly one audio stream, no
-	// video and an Ogg-family codec, and only where the format section gave
-	// nothing. Vorbis comments belong to the single logical stream there, which is
-	// why the fallback exists at all. Anywhere else stream tags are track LABELS
-	// ("Deutsch", "Espanol"), and publishing one as the file's title sends it to
-	// every peer over ed2k and Kad; on a one-track file nothing structural tells a
-	// label from a title (a single .mka muxed with --track-name 0:Deutsch passes
-	// every other test here), so the scope is by codec rather than by "not a
-	// video". The other containers lose nothing: they report in the format section.
+	// Stream tags are consulted only for a file with exactly one audio stream, no video and an
+	// Ogg-family codec, and only where the format section gave nothing. Vorbis comments belong
+	// to the single logical stream there, which is why the fallback exists at all. Anywhere
+	// else stream tags are track LABELS ("Deutsch", "Espanol"), and publishing one as the
+	// file's title sends it to every peer over ed2k and Kad; on a one-track file nothing
+	// structural tells a label from a title (a single .mka muxed with --track-name 0:Deutsch
+	// passes every other test here), so the scope is by codec rather than by "not a video". The
+	// other containers lose nothing: they report in the format section.
 	const bool streamTagCodec = (audioCodec == wxT("vorbis") || audioCodec == wxT("opus") ||
 				     audioCodec == wxT("flac") || audioCodec == wxT("speex"));
 	if (audioStreamCount == 1 && videoCodec.IsEmpty() && streamTagCodec) {
@@ -691,11 +686,10 @@ bool ParseProbeOutput(const wxArrayString &lines, MediaInfo &out)
 		}
 	}
 
-	// A zero duration is not a duration (see the format.duration branch), so a
-	// container ffprobe can open and time as zero while reporting no codec would
-	// otherwise be a successful probe carrying an all-empty MediaInfo -- which the
-	// authoritative apply step treats as grounds to clear every media tag the file
-	// had.
+	// A zero duration is not a duration (see the format.duration branch), so a container
+	// ffprobe can open and time as zero while reporting no codec would otherwise be a
+	// successful probe carrying an all-empty MediaInfo -- which the authoritative apply step
+	// treats as grounds to clear every media tag the file had.
 	if (!got_duration && info.codec.IsEmpty()) {
 		return false;
 	}
@@ -715,10 +709,10 @@ ProbeOutcome Probe(const wxString &ffprobePath,
 		return ProbeOutcome::Unavailable;
 	}
 
-	// A job is queued only once hashing has finished, but nothing re-checks
-	// between the queue and the worker picking the job up, and that gap widens
-	// whenever the probe queue backs up. One stat beats announcing a probe of a
-	// file deleted in the meantime and then forking on it purely to fail.
+	// A job is queued only once hashing has finished, but nothing re-checks between the queue
+	// and the worker picking the job up, and that gap widens whenever the probe queue backs up.
+	// One stat beats announcing a probe of a file deleted in the meantime and then forking on
+	// it purely to fail.
 	if (!file.FileExists()) {
 		// A share with stale known.met entries hits this on every refresh, so it
 		// has to say what happened: without a line it is indistinguishable from a

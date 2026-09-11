@@ -22,13 +22,13 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-// Where each part of a file sits in a chunk bar, and which of the two things the
-// shared-files bar is drawing.
+// Where each part of a file sits in a chunk bar, and which of the two things the shared-files bar
+// is drawing.
 //
-// Wx-free and header-only, like PartBarLegendTest: the expected values are
-// spelled out rather than recomputed from the header's own formula, because a
-// test that derived them the way production does would pass whatever either
-// said. The drawing itself is not reachable from here and is not attempted.
+// Wx-free and header-only, like PartBarLegendTest: the expected values are spelled out rather than
+// recomputed from the header's own formula, because a test deriving them the way production does
+// would pass whatever either said. The drawing itself is not reachable from here and is not
+// attempted.
 
 #include <muleunit/test.h>
 
@@ -53,9 +53,9 @@ DECLARE_SIMPLE(PartBarSpans)
 TEST(PartBarSpans, AdjacentSpansDoNotOverlap)
 {
 	// CBarShader::FillRange takes end as inclusive and increments it itself
-	// (src/BarShader.cpp:113-124), so part i must end exactly one byte before
-	// part i+1 begins. Overlapping spans paint one byte twice, and the shared
-	// files bar has been doing that where the other two bars do not.
+	// (src/BarShader.cpp:113-124), so part i must end exactly one byte before part i+1 begins.
+	// Overlapping spans paint one byte twice, and the shared-files bar has been doing that
+	// where the other two bars do not.
 	const std::uint64_t fileSize = kPartSize * 4 + 12345;
 	for (std::size_t i = 0; i + 1 < 5; ++i) {
 		const Span here = SpanFor(i, kPartSize, fileSize);
@@ -66,10 +66,9 @@ TEST(PartBarSpans, AdjacentSpansDoNotOverlap)
 
 TEST(PartBarSpans, TheLastSpanEndsAtTheLastByte)
 {
-	// A file that does not divide evenly has a short last part. Its end is the
-	// file's last byte, not one past it: FillRange clamps a span that runs past
-	// m_FileSize, so an over-long end is silently truncated rather than
-	// reported, which is why this was never noticed.
+	// A file that does not divide evenly has a short last part. Its end is the file's last
+	// byte, not one past it: FillRange clamps a span running past m_FileSize, so an over-long
+	// end is silently truncated rather than reported, which is why this was never noticed.
 	const std::uint64_t fileSize = kPartSize * 3 + 1;
 	const Span last = SpanFor(3, kPartSize, fileSize);
 	ASSERT_EQUALS(fileSize - 1, last.end);
@@ -107,9 +106,9 @@ TEST(PartBarSpans, ProgressAboveZeroSelectsHashingAndZeroSelectsAvailability)
 
 TEST(PartBarSpans, TheHashedCountIsClampedToTheParts)
 {
-	// CHashingTask reports part + 1 (src/ThreadTasks.cpp:179, :693), so a
-	// finished pass reports one past the last part. Used unclamped as an index
-	// or a count, that reads or fills one span too many.
+	// CHashingTask reports part + 1 (src/ThreadTasks.cpp:179, :693), so a finished pass reports
+	// one past the last part. Used unclamped as an index or a count, that reads or fills one
+	// span too many.
 	ASSERT_EQUALS((std::size_t)4, HashedPartsClamped(4, 9));
 	ASSERT_EQUALS((std::size_t)9, HashedPartsClamped(9, 9));
 	ASSERT_EQUALS((std::size_t)9, HashedPartsClamped(10, 9));

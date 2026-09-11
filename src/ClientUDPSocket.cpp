@@ -180,8 +180,8 @@ void CClientUDPSocket::OnPacketReceived(uint32 ip, uint16 port, uint8_t *buffer,
 				//
 				// This branch reaches no packet accounting at all, which is what
 				// keeps a dropped frame from feeding a ban: CPacketTracking is only
-				// entered from the Kad listener, and an eMuleAI peer's NAT-T traffic
-				// would otherwise read as malformed.
+				// entered from the Kad listener, and an eMuleAI peer's NAT-T
+				// traffic would otherwise read as malformed.
 				ProcessReservedProt2Frame(decryptedBuffer + 1, packetLen - 1, ip, port);
 				break;
 
@@ -207,18 +207,17 @@ void CClientUDPSocket::ProcessReservedProt2Frame(
 
 	switch (classified.disposition) {
 	case RP2_TRUNCATED:
-		// Nothing but the protocol byte arrived, so there is no type byte
-		// to read. Dropped without reading the window -- the guard is the
-		// point, this is the shortest datagram that can reach here.
+		// Nothing but the protocol byte arrived, so there is no type byte to read. Dropped
+		// without reading the window -- the guard is the point, this being the shortest
+		// datagram that can reach here.
 		AddDebugLogLineN(logClientUDP,
 			CFormat("Dropping truncated NAT-T datagram from %s:%u") % Uint32toStringIP(ip) %
 				port);
 		return;
 
 	case RP2_UNKNOWN_TYPE:
-		// A frame type this protocol does not define. Dropped, and
-		// deliberately not counted anywhere: see the OP_UDPRESERVEDPROT2
-		// comment in OnPacketReceived().
+		// A frame type this protocol does not define. Dropped, and deliberately not counted
+		// anywhere: see the OP_UDPRESERVEDPROT2 comment in OnPacketReceived().
 		if (m_unknownFrameLog.ShouldLog(::GetTickCount64())) {
 			AddDebugLogLineN(logClientUDP,
 				CFormat("Dropping NAT-T frame of unknown type 0x%02X from %s:%u (%u further "
@@ -233,10 +232,10 @@ void CClientUDPSocket::ProcessReservedProt2Frame(
 	}
 
 	// The registered types. Each is dropped in its own case rather than in a shared
-	// fallthrough, so the change that ships a transport replaces its own case and
-	// nothing else -- which is what the uTP case below now is. The other four belong
-	// to transports this build does not have, so a peer's attempt at one is a
-	// recognised frame aMule cannot serve rather than malformed traffic.
+	// fallthrough, so the change that ships a transport replaces its own case and nothing else
+	// -- which is what the uTP case below now is. The other four belong to transports this
+	// build does not have, so a peer's attempt at one is a recognised frame aMule cannot serve
+	// rather than malformed traffic.
 	switch (classified.type) {
 	case OP_NATT_FRAME_UTP:
 #ifdef AMULE_UTP_TRANSPORT
@@ -244,9 +243,9 @@ void CClientUDPSocket::ProcessReservedProt2Frame(
 		if (ProcessUtpFrame(m_utp, classified, ip, port)) {
 			return;
 		}
-		// Reached only when libutp has seen the datagram and disclaimed it:
-		// it belongs to no connection it holds. A different reason from the
-		// types below, so it does not borrow their message.
+		// Reached only when libutp has seen the datagram and disclaimed it: it belongs to
+		// no connection it holds. A different reason from the types below, so it does not
+		// borrow their message.
 		AddDebugLogLineN(logClientUDP,
 			CFormat("Dropping uTP frame from %s:%u: not for any open uTP connection") %
 				Uint32toStringIP(ip) % port);
@@ -279,9 +278,9 @@ void CClientUDPSocket::ProcessReservedProt2Frame(
 		break;
 
 	default:
-		// Unreachable: ClassifyReservedProt2Frame only reports RP2_KNOWN_TYPE for
-		// the five cases above. Kept so that adding a type there without a case here
-		// fails loudly rather than silently taking the drop path.
+		// Unreachable: ClassifyReservedProt2Frame only reports RP2_KNOWN_TYPE for the five
+		// cases above. Kept so that adding a type there without a case here fails loudly
+		// rather than silently taking the drop path.
 		wxFAIL;
 		break;
 	}
@@ -299,12 +298,9 @@ void CClientUDPSocket::ProcessPacket(uint8_t *packet, int16 size, int8 opcode, u
 				break;
 			}
 			if (!md4cmp(packet, buddy->GetBuddyID())) {
-				/*
-					The packet has an initial 16 bytes key for the buddy.
-					This is currently unused, so to make the transformation
-					we discard the first 10 bytes below and then overwrite
-					the other 6 with ip/port.
-				*/
+				/* The packet starts with a 16-byte key for the buddy. It is currently
+				   unused, so the transformation discards the first 10 bytes below and
+				   overwrites the other 6 with ip/port. */
 				CMemFile mem_packet(packet + 10, size - 10);
 				// Change the ip and port while leaving the rest untouched
 				mem_packet.Seek(0, wxFromStart);
@@ -351,11 +347,10 @@ void CClientUDPSocket::ProcessPacket(uint8_t *packet, int16 size, int8 opcode, u
 		if (sender) {
 			sender->CheckForAggressive();
 			if (sender->IsBanned()) {
-				// CheckForAggressive can call Ban() on score >= 10.
-				// Mirror the TCP file-request path at
-				// ClientTCPSocket.cpp:539 and short-circuit so a
-				// freshly-banned client cannot keep the seeder
-				// processing UDP file-info packets.
+				// CheckForAggressive can call Ban() on score >= 10. Mirror the TCP
+				// file-request path at ClientTCPSocket.cpp:539 and short-circuit,
+				// so a freshly banned client cannot keep the seeder processing UDP
+				// file-info packets.
 				break;
 			}
 

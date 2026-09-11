@@ -29,11 +29,23 @@
 #include <cstdint>
 #include <string>
 
-// Streaming JSON output. Appends UTF-8 bytes to an internal or caller-owned
-// std::string, ready to be a response body with no conversion. Inputs stay
-// wxString -- that is what callers hold -- and are encoded on append. Do not
-// put the buffer back to wxString: it is UTF-32 here (wxUSE_UNICODE_WCHAR),
-// which held an ASCII body at four bytes a character.
+// One JSON number formatting for doubles, shared by CJsonWriter::ValueDouble and by the
+// hand-rolled ostringstream payload builders in the SSE layer.
+//
+// Two things it gets right that `ostream << double` does not: %.17g, the shortest
+// round-trippable form for an IEEE 754 double (the stream default is 6 significant digits, so
+// the same value reads differently on SSE and REST), and a C-locale decimal point. JSON numbers
+// are always '.'-separated, but ostream and snprintf both honour LC_NUMERIC -- which amuleapi
+// inherits from --locale -- so on an it/de/fr locale an unnormalised double emits "33,3333" and
+// the whole frame stops being valid JSON.
+//
+// NaN and the infinities become `null`; JSON has no spelling for them.
+std::string JsonDoubleToString(double v);
+
+// Streaming JSON output. Appends UTF-8 bytes to an internal or caller-owned std::string, ready
+// to be a response body with no conversion. Inputs stay wxString -- that is what callers hold --
+// and are encoded on append. Do not put the buffer back to wxString: it is UTF-32 here
+// (wxUSE_UNICODE_WCHAR), which held an ASCII body at four bytes a character.
 //
 // Usage:
 //  CJsonWriter w;
@@ -43,23 +55,9 @@
 //  w.EndObject();
 //  const std::string &out = w.GetBuffer();
 //
-// Commas between siblings are inserted automatically. Calling Key()
-// outside an object, or omitting it inside one, is a programmer error
-// (no runtime check; tests cover the legal patterns).
-// One JSON number formatting for doubles, shared by CJsonWriter::ValueDouble
-// and by the hand-rolled ostringstream payload builders in the SSE layer.
-//
-// Two things it gets right that `ostream << double` does not: %.17g, the
-// shortest round-trippable form for an IEEE 754 double (the stream default is
-// 6 significant digits, so the same value reads differently on SSE and REST),
-// and a C-locale decimal point. JSON numbers are always '.'-separated, but
-// ostream and snprintf both honour LC_NUMERIC -- which amuleapi inherits from
-// --locale -- so on an it/de/fr locale an unnormalised double emits "33,3333"
-// and the whole frame stops being valid JSON.
-//
-// NaN and the infinities become `null`; JSON has no spelling for them.
-std::string JsonDoubleToString(double v);
-
+// Commas between siblings are inserted automatically. Calling Key() outside an object, or
+// omitting it inside one, is a programmer error (no runtime check; tests cover the legal
+// patterns).
 class CJsonWriter
 {
 public:
@@ -82,22 +80,18 @@ public:
 	void ValueDouble(double v);
 	void ValueString(const wxString &s);
 	void ValueString(const char *s);
-	// Pre-formatted JSON fragment, written verbatim. Caller responsible
-	// for valid syntax and for it being UTF-8. Useful when the writer is
-	// composing a response from a sub-component that already produced JSON
-	// text.
+	// Pre-formatted JSON fragment, written verbatim. The caller is responsible for valid UTF-8
+	// syntax. Useful when composing a response from a sub-component that already produced JSON text.
 	void ValueRaw(const std::string &json_fragment);
 
 	const std::string &GetBuffer() const { return *m_buf; }
 
-	// Move the accumulated text out, leaving this writer empty and ready to
-	// build another document. Saves copying a multi-megabyte body at the end of
-	// a response.
+	// Move the accumulated text out, leaving this writer empty and ready to build another
+	// document. Saves copying a multi-megabyte body at the end of a response.
 	//
-	// A caller-owned buffer is copied instead, and left exactly as it was:
-	// emptying someone else's is not ours to do, and clearing the comma state
-	// while its text is still there would drop the separator before whatever is
-	// written next.
+	// A caller-owned buffer is copied instead, and left exactly as it was: emptying someone
+	// else's is not ours to do, and clearing the comma state while its text is still there would
+	// drop the separator before whatever is written next.
 	std::string TakeBuffer()
 	{
 		if (m_buf != &m_internal) {

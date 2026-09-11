@@ -73,11 +73,11 @@ public:
 	/**
 	 * Marks the specified server as static or not.
 	 *
-	 * @param The server to be marked or unmarked as static.
-	 * @param The new static state.
+	 * As well as setting the server's static flag, this adds it to or removes it from the
+	 * static-list file.
 	 *
-	 * Other than setting the static setting of the specified server, it
-	 * also adds or removes the server from the static-list file.
+	 * @param server The server to mark or unmark.
+	 * @param isStatic The new static state.
 	 */
 	void SetStaticServer(CServer *server, bool isStatic);
 	void SetServerPrio(CServer *server, uint32 prio);
@@ -85,11 +85,9 @@ public:
 	/**
 	 * Kick off the auto-update HTTP download of server.met.
 	 *
-	 * Split out of Init() so the caller can defer the HTTP request
-	 * until after the heavy startup I/O has finished, avoiding the
-	 * wxWebSession worker thread being starved by the main thread
-	 * (see #714). Caller is expected to gate this on the
-	 * AutoServerlist pref.
+	 * Split out of Init() so the caller can defer the HTTP request until after the heavy
+	 * startup I/O has finished, which stops the main thread starving the wxWebSession worker
+	 * (see #714). The caller is expected to gate this on the AutoServerlist pref.
 	 */
 	void StartAutoUpdate();
 

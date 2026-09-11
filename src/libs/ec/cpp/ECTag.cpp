@@ -36,21 +36,9 @@
 #include <iomanip> // Needed for std::setprecision
 #include <limits>  // Needed for std::numeric_limits
 
-/**********************************************************
- *							  *
- *	CECTag class					  *
- *							  *
- **********************************************************/
-
 //! Defines the Null tag which may be returned by GetTagByNameSafe.
 const CECTag CECTag::s_theNullTag;
 
-/**
- * Creates a new null-valued CECTag instance
- *
- * @see s_theNullTag
- * @see GetTagByNameSafe
- */
 CECTag::CECTag()
 : m_tagName(0)
 , m_dataType(EC_TAGTYPE_UNKNOWN)
@@ -59,14 +47,6 @@ CECTag::CECTag()
 {
 }
 
-/**
- * Creates a new CECTag instance from the given data
- *
- * @param name	 TAG name
- * @param length length of data buffer
- * @param data	 TAG data
- *
- */
 CECTag::CECTag(ec_tagname_t name, unsigned int length, const void *data)
 : m_tagName(name)
 {
@@ -82,15 +62,7 @@ CECTag::CECTag(ec_tagname_t name, unsigned int length, const void *data)
 	m_dataType = EC_TAGTYPE_CUSTOM;
 }
 
-/**
- * Creates a new CECTag instance for custom data
- *
- * @param name		TAG name
- * @param length	length of data buffer that will be alloc'ed
- * @param dataptr	pointer to a void pointer which will be assigned the internal TAG data buffer
- *
- * \note TAG data buffer has to be filled with valid data after the ctor
- */
+// The data buffer must be filled in after construction.
 CECTag::CECTag(ec_tagname_t name, unsigned int length, void **dataptr)
 : m_tagName(name)
 {
@@ -100,16 +72,7 @@ CECTag::CECTag(ec_tagname_t name, unsigned int length, void **dataptr)
 	m_dataType = EC_TAGTYPE_CUSTOM;
 }
 
-/**
- * Creates a new CECTag instance, which contains an IPv4 address.
- *
- * This function takes care of the endianness of the port number.
- *
- * @param name TAG name
- * @param data The EC_IPv4_t class containing the IPv4 address.
- *
- * @see GetIPv4Data()
- */
+// Takes care of the port number's endianness.
 CECTag::CECTag(ec_tagname_t name, const EC_IPv4_t &data)
 : m_tagName(name)
 {
@@ -121,16 +84,7 @@ CECTag::CECTag(ec_tagname_t name, const EC_IPv4_t &data)
 	m_dataType = EC_TAGTYPE_IPV4;
 }
 
-/**
- * Creates a new CECTag instance, which contains a MD4 hash.
- *
- * This function takes care to store hash in network byte order.
- *
- * @param name TAG name
- * @param data The CMD4Hash class containing the MD4 hash.
- *
- * @see GetMD4Data()
- */
+// Stores the hash in network byte order.
 CECTag::CECTag(ec_tagname_t name, const CMD4Hash &data)
 : m_tagName(name)
 {
@@ -141,28 +95,14 @@ CECTag::CECTag(ec_tagname_t name, const CMD4Hash &data)
 	m_dataType = EC_TAGTYPE_HASH16;
 }
 
-/**
- * Creates a new CECTag instance, which contains a string
- *
- * @param name TAG name
- * @param data wxString object, it's contents are converted to UTF-8.
- *
- * @see GetStringDataSTL()
- */
+// Contents are converted to UTF-8.
 CECTag::CECTag(ec_tagname_t name, const std::string &data)
 : m_tagName(name)
 {
 	ConstructStringTag(name, data);
 }
 
-/**
- * Creates a new CECTag instance, which contains a string
- *
- * @param name TAG name
- * @param data wxString object, it's contents are converted to UTF-8.
- *
- * @see GetStringData()
- */
+// Contents are converted to UTF-8.
 CECTag::CECTag(ec_tagname_t name, const wxString &data)
 {
 	ConstructStringTag(name, (const char *)unicode2UTF8(data));
@@ -172,25 +112,13 @@ CECTag::CECTag(ec_tagname_t name, const wxChar *data)
 	ConstructStringTag(name, (const char *)unicode2UTF8(data));
 }
 
-/**
- * Copy constructor
- */
 CECTag::CECTag(const CECTag &tag)
 {
 	m_tagData = NULL;
 	*this = tag;
 }
 
-/**
- * Creates a new CECTag instance, which contains an int value.
- *
- * This takes care of endianness problems with numbers.
- *
- * @param name TAG name.
- * @param data number.
- *
- * @see GetInt()
- */
+// Takes care of endianness.
 CECTag::CECTag(ec_tagname_t name, bool data)
 : m_tagName(name)
 {
@@ -251,26 +179,15 @@ void CECTag::InitInt(uint64 data)
 	}
 }
 
-/**
- * Creates a new CECTag instance, which contains a double precision floating point number
- *
- * @param name TAG name
- * @param data double number
- *
- * @note The actual data is converted to string representation, because we have not found
- * yet an effective and safe way to transmit floating point numbers.
- *
- * @see GetDoubleData()
- */
+// Sent as a string: no safe, effective way to put a float on the wire has
+// been found.
 CECTag::CECTag(ec_tagname_t name, double data)
 : m_tagName(name)
 {
 	std::ostringstream double_str;
-	// Default stream precision is 6 significant digits, which switches to
-	// scientific notation past 1e6 and quantises the value: a statsgraph
-	// timestamp (seconds of uptime) lands on a 10-second grid once the
-	// daemon has been up ~11.6 days, and 100 seconds past ~115 days.
-	// max_digits10 is the shortest precision that round-trips exactly.
+	// Default precision is 6 significant digits, which switches to scientific
+	// notation past 1e6 and quantises: a statsgraph timestamp lands on a
+	// 10-second grid after ~11.6 days of uptime. max_digits10 round-trips.
 	double_str << std::setprecision(std::numeric_limits<double>::max_digits10) << data;
 	std::string double_string = double_str.str();
 	const char *double_chr = double_string.c_str();
@@ -280,20 +197,14 @@ CECTag::CECTag(ec_tagname_t name, double data)
 	m_dataType = EC_TAGTYPE_DOUBLE;
 }
 
-/**
- * Destructor - frees allocated data and deletes child TAGs.
- */
 CECTag::~CECTag(void)
 {
 	delete[] m_tagData;
 }
 
 /**
- * Copy assignment operator.
- *
- * std::vector uses this, but the compiler-supplied version wouldn't properly
- * handle m_dynamic and m_tagData.  This wouldn't be necessary if m_tagData
- * was a smart pointer (Hi, Kry!).
+ * std::vector needs this: the compiler-supplied version mishandles m_dynamic
+ * and m_tagData. Unnecessary if m_tagData were a smart pointer.
  */
 CECTag &CECTag::operator=(const CECTag &tag)
 {
@@ -316,10 +227,6 @@ CECTag &CECTag::operator=(const CECTag &tag)
 	return *this;
 }
 
-/**
- * Compare operator.
- *
- */
 bool CECTag::operator==(const CECTag &tag) const
 {
 	return m_dataType == tag.m_dataType && m_tagName == tag.m_tagName && m_dataLen == tag.m_dataLen &&
@@ -327,64 +234,25 @@ bool CECTag::operator==(const CECTag &tag) const
 }
 
 /**
- * Add a child tag to this one. The tag argument is reset to an empty tag.
+ * Adds a child tag, swallowing its content: `tag` is left empty afterwards.
  *
- * Be very careful that this method swallows the content of \e tag, leaving \e tag empty.
- * Thus, the following code won't work as expected:
- * \code
- * {
- *	CECPacket *p = new CECPacket(whatever);
- *	CECTag *t1 = new CECTag(whatever);
- *	CECTag *t2 = new CECTag(whatever);
- *	p->AddTag(*t1);
- *	t1->AddTag(*t2);	// t2 won't be part of p !!!
- * }
- * \endcode
+ * So `p->AddTag(*t1); t1->AddTag(*t2);` does NOT put t2 inside p. Build the
+ * tree bottom-up instead: add t2 to t1, then t1 to p.
  *
- * To get the desired results, the above should be replaced with something like:
- *
- * \code
- * {
- *	CECPacket *p = new CECPacket(whatever);
- *	CECTag *t1 = new CECTag(whatever);
- *	CECTag *t2 = new CECTag(whatever);
- *	t1->AddTag(*t2);
- *	delete t2;	// we can safely delete the now empty t2 here, because t1 holds its content
- *	p->AddTag(*t1);
- *	delete t1;	// now p holds the content of both t1 and t2
- * }
- * \endcode
- *
- * Then why copying? The answer is to enable simplifying the code like this:
- *
- * \code
- * {
- *	CECPacket *p = new CECPacket(whatever);
- *	CECTag t1(whatever);
- *	t1.AddTag(CECTag(whatever));	// t2 is now created on-the-fly
- *	p->AddTag(t1);	// now p holds a copy of both t1 and t2
- * }
- * \endcode
- *
- * @param tag a CECTag class instance to add.
- * @return \b true if tag was really added,
- * \b false when it was omitted through valuemap or the limit for children
- * is exceeded.
+ * False when the tag was omitted through valuemap or the child limit.
  */
 bool CECTag::AddTag(const CECTag &tag, CValueMap *valuemap)
 {
 	if (valuemap) {
 		return valuemap->AddTag(tag, this);
 	}
-	// The historical 65535 children-per-tag wire-format ceiling was lifted by the
-	// sentinel-extended count format in WriteChildren / ReadChildren. The old
-	// writer-side guard silently dropped every tag past the 65535th, so an
-	// EC_OP_SHARED_FILES response could not carry a larger library (#199).
+	// The 65535 children-per-tag ceiling was lifted by the sentinel-extended
+	// count in WriteChildren/ReadChildren. The old guard silently dropped every
+	// tag past the 65535th, capping an EC_OP_SHARED_FILES response (#199).
 
 	m_tagList.push_back(CECEmptyTag());
-	// Then exchange the data. The original tag will be destroyed right after this call anyway.
-	// UGLY - GCC allows a reference to an in place constructed object only to be passed as const.
-	// So pass it the way it wants it and then cheat and cast it back to non-const. :-/
+	// Exchange the data; the original is destroyed right after this call. The
+	// const_cast is because GCC passes an in-place constructed object as const.
 	CECTag &wtag = const_cast<CECTag &>(tag);
 	wtag.swap(m_tagList.back());
 	return true;
@@ -451,9 +319,8 @@ bool CECTag::ReadFromSocket(CECSocket &socket)
 	m_dataLen = 0;
 	const bool useLargeCount = (socket.m_rx_flags & EC_FLAG_LARGE_TAG_COUNT) != 0;
 	const uint32_t childrenLen = GetTagLen(useLargeCount);
-	// Reject malformed tags whose declared length is smaller than the
-	// serialized size of the children we just parsed. Without this guard
-	// the unsigned subtraction below wraps to ~4 GB and drives an
+	// Reject a declared length smaller than the children just parsed: the
+	// unsigned subtraction below would wrap to ~4 GB and drive an
 	// attacker-controlled oversized allocation in NewData().
 	if (tmp_len < childrenLen) {
 		return false;
@@ -511,12 +378,10 @@ bool CECTag::ReadChildren(CECSocket &socket)
 	}
 	uint32 tmp_tagCount;
 	if (useLargeCount && tmp_tagCount16 == 0xFFFF) {
-		// Sentinel-extended children count -- see WriteChildren. Only honoured
-		// when the peer advertised EC_TAG_CAN_LARGE_TAG_COUNT in the auth
-		// handshake. Old peers that do not know the extension can still
-		// legitimately emit count == 0xFFFF as the literal uint16 count for 65535
-		// children, so without the negotiated flag 0xFFFF MUST be treated as the
-		// count with no follow-up bytes consumed.
+		// Sentinel-extended children count, see WriteChildren. Only honoured when
+		// the peer advertised EC_TAG_CAN_LARGE_TAG_COUNT: an old peer can emit
+		// 0xFFFF as a literal count of 65535, so without the flag it must be read
+		// as the count with no follow-up bytes.
 		uint32 tmp_tagCount32;
 		if (!socket.ReadNumber(&tmp_tagCount32, sizeof(uint32))) {
 			return false;
@@ -540,14 +405,12 @@ bool CECTag::WriteChildren(CECSocket &socket) const
 {
 	const bool useLargeCount = (socket.m_tx_flags & EC_FLAG_LARGE_TAG_COUNT) != 0;
 	const size_t count = m_tagList.size();
-	// In non-sentinel (mixed-version-safe) mode the wire count field is
-	// uint16; cap at 0xFFFE both to fit and to avoid emitting 0xFFFF,
-	// which a fix-side peer would treat as the sentinel marker even when
-	// the capability wasn't negotiated this connection.
+	// The non-sentinel wire count is uint16; cap at 0xFFFE to fit and to avoid
+	// emitting 0xFFFF, which a fix-side peer reads as the sentinel marker.
 	const size_t writeCount = useLargeCount ? count : std::min(count, (size_t)0xFFFE);
 
 	if (useLargeCount && count >= 0xFFFF) {
-		// Sentinel-extended count — see ReadChildren for the format.
+		// Sentinel-extended count -- see ReadChildren for the format.
 		uint16 marker = 0xFFFF;
 		if (!socket.WriteNumber(&marker, sizeof(marker)))
 			return false;
@@ -555,11 +418,9 @@ bool CECTag::WriteChildren(CECSocket &socket) const
 		if (!socket.WriteNumber(&tmp, sizeof(tmp)))
 			return false;
 	} else {
-		// Plain uint16 count — wire-byte-identical to the historical
-		// format. When useLargeCount is false and the in-memory list
-		// has more than 0xFFFE children, only the first 0xFFFE are
-		// serialised (silent truncation, matching the historical
-		// AddTag cap behaviour for old peers). #199.
+		// Plain uint16 count, byte-identical to the historical format. Beyond
+		// 0xFFFE children only the first 0xFFFE are serialised, matching the old
+		// AddTag cap for old peers (#199).
 		uint16 tmp = (uint16)writeCount;
 		if (!socket.WriteNumber(&tmp, sizeof(tmp)))
 			return false;
@@ -573,12 +434,6 @@ bool CECTag::WriteChildren(CECSocket &socket) const
 	return true;
 }
 
-/**
- * Finds the (first) child tag with given name.
- *
- * @param name TAG name to look for.
- * @return the tag found, or NULL.
- */
 const CECTag *CECTag::GetTagByName(ec_tagname_t name) const
 {
 	for (const_iterator it = begin(); it != end(); ++it) {
@@ -588,12 +443,6 @@ const CECTag *CECTag::GetTagByName(ec_tagname_t name) const
 	return NULL;
 }
 
-/**
- * Finds the (first) child tag with given name.
- *
- * @param name TAG name to look for.
- * @return the tag found, or NULL.
- */
 CECTag *CECTag::GetTagByName(ec_tagname_t name)
 {
 	for (TagList::iterator it = m_tagList.begin(); it != m_tagList.end(); ++it) {
@@ -603,14 +452,7 @@ CECTag *CECTag::GetTagByName(ec_tagname_t name)
 	return NULL;
 }
 
-/**
- * Finds the (first) child tag with given name.
- *
- * @param name TAG name to look for.
- * @return the tag found, or a special null-valued tag otherwise.
- *
- * @see s_theNullTag
- */
+// Unlike GetTagByName, returns the null tag rather than NULL when absent.
 const CECTag *CECTag::GetTagByNameSafe(ec_tagname_t name) const
 {
 	const CECTag *result = GetTagByName(name);
@@ -619,19 +461,13 @@ const CECTag *CECTag::GetTagByNameSafe(ec_tagname_t name) const
 	return result;
 }
 
-/**
- * Query TAG length that is suitable for the TAGLEN field (i.e.\
- * without it's own header size).
- *
- * @return Tag length, containing its childs' length.
- */
+// Length for the TAGLEN field, excluding its own header.
 uint32 CECTag::GetTagLen(bool useLargeCount) const
 {
 	uint32 length = m_dataLen;
-	// Mirror WriteChildren's iteration cap: in non-sentinel mode only
-	// the first 0xFFFE children get serialised, so the wire-size
-	// estimate must stop counting at the same boundary or tagLen will
-	// over-state and m_dataLen reader-side calc will overrun. #199.
+	// Mirror WriteChildren's cap: in non-sentinel mode only the first 0xFFFE
+	// children are serialised, so the size estimate must stop there or tagLen
+	// over-states and the reader's m_dataLen calc overruns (#199).
 	const size_t total = m_tagList.size();
 	const size_t maxIter = useLargeCount ? total : std::min(total, (size_t)0xFFFE);
 	size_t i = 0;
@@ -639,10 +475,8 @@ uint32 CECTag::GetTagLen(bool useLargeCount) const
 		length += it->GetTagLen(useLargeCount);
 		length += sizeof(ec_tagname_t) + sizeof(ec_tagtype_t) + sizeof(ec_taglen_t);
 		if (it->HasChildTags()) {
-			// Children-count field — uint16 normally, with an extra
-			// uint32 follow-up only when sentinel format is in effect
-			// AND that nested tag has >= 0xFFFF children. See
-			// WriteChildren / ReadChildren for the sentinel scheme.
+			// uint16 normally, with a uint32 follow-up only in sentinel format
+			// when that nested tag has >= 0xFFFF children.
 			length += sizeof(uint16);
 			if (useLargeCount && it->GetTagCount() >= 0xFFFF) {
 				length += sizeof(uint32);
@@ -712,15 +546,7 @@ CMD4Hash CECTag::GetMD4Data() const
 	return CMD4Hash((const unsigned char *)m_tagData);
 }
 
-/**
- * Returns an EC_IPv4_t class.
- *
- * This function takes care of the endianness of the port number.
- *
- * @return EC_IPv4_t class.
- *
- * @see CECTag(ec_tagname_t, const EC_IPv4_t&)
- */
+// Takes care of the port number's endianness.
 EC_IPv4_t CECTag::GetIPv4Data() const
 {
 	EC_IPv4_t p(0, 0);
@@ -737,16 +563,7 @@ EC_IPv4_t CECTag::GetIPv4Data() const
 	return p;
 }
 
-/**
- * Returns a double value.
- *
- * @note The returned value is what we get by converting the string form
- * of the number to a double.
- *
- * @return The double value of the tag.
- *
- * @see CECTag(ec_tagname_t, double)
- */
+// The value is the string form of the number converted back to double.
 double CECTag::GetDoubleData(void) const
 {
 	if (m_dataType != EC_TAGTYPE_DOUBLE) {
@@ -1085,12 +902,10 @@ void CECTag::DebugPrint(int level, bool print_empty) const
 				s2 = GetMD4Data().Encode();
 				break;
 			case EC_TAGTYPE_UINT128:
-				// Using any non-inline function from UInt128.h would break linkage
-				// of remote apps otherwise not using CUInt128. So just fall through
-				// and display the value as a byte-stream. Since the value is sent
-				// big-endian on the network, the visual result is correct, except
-				// for the intervening spaces...
-				// s2 = GetInt128Data().ToHexString(); break;
+				// Any non-inline function from UInt128.h would break linkage for remote
+				// apps not otherwise using CUInt128, so fall through and show the value as
+				// a byte stream. It is sent big-endian, so it reads correctly apart from
+				// the spaces.
 			case EC_TAGTYPE_CUSTOM:
 				if (m_dataLen == 0) {
 					s2 = "empty";

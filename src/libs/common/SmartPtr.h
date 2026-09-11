@@ -25,20 +25,15 @@
 #ifndef SMARTPTR_H
 #define SMARTPTR_H
 
-// std::auto_ptr is deprecated in C++11 and removed in C++17. We should use
-// std::unique_ptr instead, which was introduced in C++11.
-//
-// Considering the above, we shall use std::unique_ptr if we're using C++11 or
-// a later standard, and std::auto_ptr otherwise.
+// std::auto_ptr is deprecated in C++11 and removed in C++17, so use std::unique_ptr where the
+// standard is C++11 or later, and std::auto_ptr otherwise.
 
 #include <memory>
 
 #if __cplusplus >= 201103L
 
-// It seems like Apple has (or had, hopefully) a configuration where a new
-// clang compiler supporting C++11 is accompanied by an old c++ library not
-// supporting std::unique_ptr.
-// See
+// Apple has (or had, hopefully) a configuration where a new clang compiler supporting C++11 is
+// accompanied by an old c++ library that does not support std::unique_ptr. See
 // https://stackoverflow.com/questions/31655462/no-type-named-unique-ptr-in-namespace-std-when-compiling-under-llvm-clang
 #ifdef __clang__
 #if __has_include(<forward_list>)

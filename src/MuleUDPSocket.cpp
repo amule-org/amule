@@ -73,9 +73,9 @@ void CMuleUDPSocket::CreateSocket()
 		AddDebugLogLineC(logMuleUDP, "Failed to create valid " + m_name);
 		DestroySocket();
 	} else {
-		// One template rather than concatenation: translators need to be able to
-		// reorder the name and the port. m_name is a construction-time identifier
-		// ("Server UDP-Socket"), left untranslated on purpose.
+		// One template rather than concatenation: translators need to be able to reorder
+		// the name and the port. m_name is a construction-time identifier ("Server UDP-
+		// Socket"), left untranslated on purpose.
 		AddLogLineN(CFormat(_("Created %s at port %u")) % m_name % m_addr.Service());
 	}
 }
@@ -178,12 +178,10 @@ void CMuleUDPSocket::OnReceiveError(int DEBUG_ONLY(errorCode), uint32 WXUNUSED(i
 
 void CMuleUDPSocket::OnDisconnected(int WXUNUSED(errorCode))
 {
-	/* Due to bugs in wxWidgets, UDP sockets will sometimes
-	 * be closed. This is caused by the fact that wx treats
-	 * zero-length datagrams as EOF, which is only the case
-	 * when dealing with streaming sockets.
+	/* Due to bugs in wxWidgets, UDP sockets will sometimes be closed. This is caused by wx
+	 * treating zero-length datagrams as EOF, which is only the case for streaming sockets.
 	 *
-	 * This has been reported as patch #1885472:
+	 * Reported as patch #1885472:
 	 * http://sourceforge.net/tracker/index.php?func=detail&aid=1885472&group_id=9863&atid=309863
 	 */
 	AddDebugLogLineC(logMuleUDP, m_name + "Socket died, recreating.");
@@ -315,9 +313,8 @@ bool CMuleUDPSocket::SendTo(uint8_t *buffer, uint32_t length, uint32_t ip, uint1
 	bool sent = false;
 	m_socket->SendTo(addr, buffer, length);
 	if (m_socket->BlocksWrite()) {
-		// Socket is busy and can't send this data right now,
-		// so we just return not sent and set the wouldblock
-		// flag so it gets resent when socket is ready.
+		// The socket is busy and cannot send this data now, so return not-sent and set the
+		// wouldblock flag, and it is resent when the socket is ready.
 		m_busy = true;
 	} else if (uint32 error = m_socket->LastError()) {
 		// An error which we can't handle happened, so we drop

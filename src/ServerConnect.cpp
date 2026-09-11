@@ -80,7 +80,7 @@ void CServerConnect::TryAnotherConnectionrequest()
 							    : _("Failed to connect to all obfuscated servers "
 								"listed. "
 								"Making another pass without obfuscation."));
-					// try all servers on the non-obfuscated port next. Bounded:
+					// Try all servers on the non-obfuscated port next. Bounded:
 					// one extra pass with different parameters, after which the
 					// wrap-around below takes over.
 					m_recurseTryAnotherConnectionrequest = true;
@@ -94,14 +94,16 @@ void CServerConnect::TryAnotherConnectionrequest()
 							    ? _("Failed to connect to all static servers "
 								"listed.")
 							    : _("Failed to connect to all servers listed."));
-					// Wait before starting over rather than restarting the sweep here.
-					// Every server having failed says nothing about when one will
-					// answer, and with the link down they all fail the moment they are
-					// tried -- so the immediate restart this replaces meant a full pass
-					// per second for as long as the outage lasted. The same timer the
-					// CS_FATALERROR path uses, so a caller that switched auto-reconnect
-					// off gets what it asked for. StopConnectionTry() first, since it
-					// stops the timer and would undo an earlier arm.
+					// Wait before starting over rather than restarting the
+					// sweep here. Every server having failed says nothing about
+					// when one will answer, and with the link down they all
+					// fail the moment they are tried -- so the immediate
+					// restart this replaces meant a full pass per second for as
+					// long as the outage lasted. The same timer the
+					// CS_FATALERROR path uses, so a caller that switched auto-
+					// reconnect off gets what it asked for. StopConnectionTry()
+					// first, since it stops the timer and would undo an earlier
+					// arm.
 					StopConnectionTry();
 					if (thePrefs::Reconnect()) {
 						AddLogLineN(
@@ -202,10 +204,10 @@ void CServerConnect::StopConnectionTry()
 	connectionattemps.clear();
 	connecting = false;
 	singleconnecting = false;
-	// Every sweep ends here, so this is where the DNS evidence expires. Outside a
-	// sweep nothing has proved the resolver works, and a manual connect judged on a
-	// sweep that ran while the link was up would blame a name that cannot resolve
-	// now -- three of those delete the server.
+	// Every sweep ends here, so this is where the DNS evidence expires. Outside a sweep nothing
+	// has proved the resolver works, and a manual connect judged on a sweep that ran while the
+	// link was up would blame a name that cannot resolve now -- three of those delete the
+	// server.
 	m_hostnameResolvedThisSweep = false;
 
 	if (m_idRetryTimer.IsRunning()) {
@@ -235,10 +237,10 @@ void CServerConnect::ConnectionEstablished(CServerSocket *sender)
 		AddLogLineN(CFormat(_("Connected to %s (%s:%i)")) % sender->cur_server->GetListName() %
 			    sender->cur_server->GetFullIP() % sender->cur_server->GetPort());
 
-		// A new server connection is the moment our outward-facing address is most
-		// likely to have just changed -- a reconnect after a link came back up lands
-		// here. Peers reached through it will start telling us what address they see,
-		// and their claims are only believed against the set published here.
+		// A new server connection is the moment our outward-facing address is most likely
+		// to have just changed -- a reconnect after a link came back up lands here. Peers
+		// reached through it will start telling us what address they see, and their claims
+		// are only believed against the set published here.
 		RefreshLocalPublicIPv6Addresses();
 
 		CServer *update = theApp->serverlist->GetServerByAddress(
@@ -609,10 +611,9 @@ bool CServerConnect::IsServerIP(uint32 ip) const
 	if (connectedsocket && connectedsocket->cur_server && connectedsocket->cur_server->GetIP() == ip) {
 		return true;
 	}
-	// Then any login still in flight. m_lstOpenSockets includes connectedsocket
-	// too, but the early-out above keeps the common case to a single pointer chase;
-	// the loop only runs while several servers are being tried in parallel, bounded
-	// by max_simcons.
+	// Then any login still in flight. m_lstOpenSockets includes connectedsocket too, but the
+	// early-out above keeps the common case to a single pointer chase; the loop only runs while
+	// several servers are tried in parallel, bounded by max_simcons.
 	for (SocketsList::const_iterator it = m_lstOpenSockets.begin(); it != m_lstOpenSockets.end(); ++it) {
 		const CServerSocket *sock = *it;
 		if (sock && sock->cur_server && sock->cur_server->GetIP() == ip) {
@@ -638,14 +639,11 @@ void CServerConnect::KeepConnectionAlive()
 #ifdef DEBUG_CLIENT_PROTOCOL
 		AddLogLineC("Client: OP_OFFERFILES");
 #endif
-		// compress packet
-		//   - this kind of data is highly compressible (N * (1 MD4 and at least 3 string meta data
-		//   tags and 1 integer meta data tag))
-		//   - the min. amount of data needed for one published file is ~100 bytes
-		//   - this function is called once when connecting to a server and when a file becomes
-		//   shareable - so, it's called rarely.
-		//   - if the compressed size is still >= the original size, we send the uncompressed packet
-		// therefore we always try to compress the packet
+		// Always try to compress the packet. This data is highly compressible (N * one MD4,
+		// at least 3 string meta tags and 1 integer meta tag), the minimum for one
+		// published file is ~100 bytes, and this runs rarely -- once on connecting to a
+		// server, and when a file becomes shareable. If the compressed size is still >= the
+		// original, the uncompressed packet is sent.
 		theStats::AddUpOverheadServer(packet->GetPacketSize());
 		connectedsocket->SendPacket(packet, true);
 

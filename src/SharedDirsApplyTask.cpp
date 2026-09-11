@@ -24,9 +24,8 @@
 wxDEFINE_EVENT(wxEVT_SHARED_DIRS_APPLY_PROGRESS, wxThreadEvent);
 wxDEFINE_EVENT(wxEVT_SHARED_DIRS_APPLY_DONE, wxThreadEvent);
 
-// Coalesce progress events so the UI thread isn't flooded — every
-// 256 directories is enough for a responsive bar without dominating
-// the wxQueueEvent path.
+// Coalesce progress events so the UI thread is not flooded -- every 256 directories is enough for a
+// responsive bar without dominating the wxQueueEvent path.
 static constexpr size_t kProgressBatch = 256;
 
 CSharedDirsApplyTask::CSharedDirsApplyTask(
@@ -41,18 +40,17 @@ CSharedDirsApplyTask::CSharedDirsApplyTask(
 void CSharedDirsApplyTask::Cancel()
 {
 	if (IsRunning()) {
-		// wxThread::Delete on a joinable thread requests termination
-		// and waits for the worker to exit. The worker checks via
-		// TestDestroy() between directory steps and bails promptly.
+		// wxThread::Delete on a joinable thread requests termination and waits for the
+		// worker to exit. The worker checks via TestDestroy() between directory steps and
+		// bails promptly.
 		Delete();
 	}
 }
 
 wxThread::ExitCode CSharedDirsApplyTask::Entry()
 {
-	// Start from the explicit set so subdir-overlap dedup happens in
-	// one place. Use a set keyed on the raw path for O(log N) dedup
-	// against later inserts from the recursive walk.
+	// Start from the explicit set so subdir-overlap dedup happens in one place. A set keyed on
+	// the raw path gives O(log N) dedup against later inserts from the recursive walk.
 	std::set<wxString> seen;
 	for (const CPath &p : m_explicit) {
 		if (p.IsOk() && p.DirExists()) {
@@ -92,9 +90,8 @@ wxThread::ExitCode CSharedDirsApplyTask::Entry()
 
 void CSharedDirsApplyTask::ExpandRecursive(const CPath &root)
 {
-	// Iterative walk so a deep tree doesn't blow the worker's stack
-	// and so the cancel check can happen between *every* directory
-	// rather than only on the way back up.
+	// Iterative walk, so a deep tree does not blow the worker's stack and the cancel check can
+	// happen between *every* directory rather than only on the way back up.
 	std::vector<CPath> queue;
 	queue.push_back(root);
 
@@ -107,11 +104,10 @@ void CSharedDirsApplyTask::ExpandRecursive(const CPath &root)
 		CPath dir = queue.back();
 		queue.pop_back();
 
-		// Enumerate immediate subdirectories. CDirIterator's first
-		// GetFirstFile returns an invalid CPath if the dir can't be
-		// opened (permission denied, vanished, etc.), so a simple
-		// IsOk() check on the first result is enough to skip
-		// unreadable trees without aborting the whole task.
+		// Enumerate immediate subdirectories. CDirIterator's first GetFirstFile returns an
+		// invalid CPath if the dir cannot be opened (permission denied, vanished), so an
+		// IsOk() check on the first result is enough to skip unreadable trees without
+		// aborting the whole task.
 		const int extraFlags = thePrefs::FollowSymlinksInShares() ? 0 : wxDIR_NO_FOLLOW;
 		CDirIterator finder(dir);
 		for (CPath sub = finder.GetFirstFile(CDirIterator::DirNoHidden, wxEmptyString, extraFlags);

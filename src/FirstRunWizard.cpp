@@ -50,23 +50,22 @@
 
 namespace
 {
-// A predefined connection profile, carrying two distinct pairs of kByte/s
-// values:
-//   * the suggested rate LIMITS (uploadKBs / downloadKBs, 0 == unlimited), which
-//     fill the two spin controls and become MaxUpload / MaxDownload; and
-//   * the raw line CAPACITY (uploadCapKBs / downloadCapKBs), which becomes
-//     MaxGraphUploadRate / MaxGraphDownloadRate -- the value that scales the
-//     statistics graphs and feeds the dynamic-upload logic. Capacity is never 0,
-//     so a fast unlimited-limit line still gets sensibly scaled graphs.
-// The upload limit is ~80% of raw upstream capacity, leaving ACK and protocol
-// headroom; the download limit is left unlimited.
+// A predefined connection profile, carrying two distinct pairs of kByte/s values:
+//   * the suggested rate LIMITS (uploadKBs / downloadKBs, 0 == unlimited), which fill the two spin
+//     controls and become MaxUpload / MaxDownload; and
+//   * the raw line CAPACITY (uploadCapKBs / downloadCapKBs), which becomes MaxGraphUploadRate /
+//     MaxGraphDownloadRate -- the value that scales the statistics graphs and feeds the
+//     dynamic-upload logic. Capacity is never 0, so a fast unlimited-limit line still gets
+//     sensibly scaled graphs.
 //
-// Each profile also carries its own peer limits (maxConnections /
-// maxConnectionsPer5Sec / maxSourcesPerFile). A slow uplink can only usefully
-// feed a handful of peers, so a modest line keeps fewer sources and connections
-// rather than drowning in half-open overhead. They are scaled to each line's
-// upstream CAPACITY here rather than re-derived from the upload-limit field
-// through coarse buckets, which modern presets all sit above.
+// The upload limit is ~80% of raw upstream capacity, leaving ACK and protocol headroom; the
+// download limit is left unlimited.
+//
+// Each profile also carries its own peer limits (maxConnections / maxConnectionsPer5Sec /
+// maxSourcesPerFile). A slow uplink can only usefully feed a handful of peers, so a modest line
+// keeps fewer sources and connections rather than drowning in half-open overhead. They are scaled
+// to each line's upstream CAPACITY here rather than re-derived from the upload-limit field through
+// coarse buckets, which modern presets all sit above.
 struct ConnectionProfile
 {
 	const char *label;
@@ -99,9 +98,8 @@ struct DerivedLimits
 	int maxSourcesPerFile;
 };
 
-// Keep the connection count within the OS-aware ceiling: on legacy Windows the
-// half-open-connection limit makes a flat 500 (plus a hot 50-per-5s) too
-// aggressive.
+// Keep the connection count within the OS-aware ceiling: on legacy Windows the half-open-connection
+// limit makes a flat 500, plus a hot 50-per-5s, too aggressive.
 DerivedLimits ClampLimits(DerivedLimits d)
 {
 	const int recommended = thePrefs::GetRecommendedMaxConnections();
@@ -111,11 +109,10 @@ DerivedLimits ClampLimits(DerivedLimits d)
 	return d;
 }
 
-// Recommended peer limits for the current upload setting. A preset carries its
-// own per-line numbers; a manually-entered upload limit ("Other") is still
-// bucketed, but on a modern kByte/s scale rather than the old <4/7/13/25/50
-// tiers, which today's uplinks all exceed. An unlimited (0) upload limit is
-// treated as a fast line. The caller clamps the result through ClampLimits().
+// Recommended peer limits for the current upload setting. A preset carries its own per-line
+// numbers; a manually-entered upload limit ("Other") is still bucketed, but on a modern kByte/s
+// scale rather than the old <4/7/13/25/50 tiers, which today's uplinks all exceed. An unlimited (0)
+// upload limit is treated as a fast line. The caller clamps the result through ClampLimits().
 DerivedLimits DeriveLimits(int uploadKBs)
 {
 	const int up = (uploadKBs <= 0) ? 100000 : uploadKBs;
@@ -133,9 +130,8 @@ DerivedLimits DeriveLimits(int uploadKBs)
 	return { 500, 50, 1000 };
 }
 
-// Resolve the limits for the current wizard state: the selected
-// preset's own numbers when a profile is active, otherwise the
-// manually-derived bucket. Always clamped to the OS recommendation.
+// Resolve the limits for the current wizard state: the selected preset's own numbers when a profile
+// is active, otherwise the manually-derived bucket. Always clamped to the OS recommendation.
 DerivedLimits ResolveLimits(int profileSel, int uploadKBs)
 {
 	DerivedLimits d;
@@ -328,11 +324,10 @@ wxWizardPageSimple *CFirstRunWizard::BuildNetworkPage()
 		wxBOTTOM,
 		8);
 
-	// Network labels reuse existing catalog strings so translators don't get
-	// wizard-only duplicates; the guidance sentence above carries the
-	// "server-based / serverless" explanation. Use the project's "eD2k"
-	// spelling (an existing catalog string) rather than the Networks panel's
-	// mis-cased "ED2K".
+	// Network labels reuse existing catalog strings so translators do not get wizard-only
+	// duplicates; the guidance sentence above carries the "server-based / serverless"
+	// explanation. Use the project's "eD2k" spelling, an existing catalog string, rather than
+	// the Networks panel's mis-cased "ED2K".
 	m_ed2kCtrl = new wxCheckBox(page, wxID_ANY, _("eD2k"));
 	m_ed2kCtrl->SetValue(thePrefs::GetNetworkED2K());
 	sizer->Add(m_ed2kCtrl, 0, wxBOTTOM, 4);
@@ -344,9 +339,9 @@ wxWizardPageSimple *CFirstRunWizard::BuildNetworkPage()
 	wxFlexGridSizer *grid = new wxFlexGridSizer(2, 2, 6, 8);
 	grid->AddGrowableCol(1);
 
-	// Port labels mirror the existing Ports-panel wording (including the
-	// trailing spaces) so the controls reuse the already-translated msgids
-	// instead of introducing wizard-only strings every translator must redo.
+	// Port labels mirror the existing Ports-panel wording, trailing spaces included, so the
+	// controls reuse the already-translated msgids instead of introducing wizard-only strings
+	// every translator must redo.
 	grid->Add(new wxStaticText(page, wxID_ANY, _("Standard TCP Port ")), 0, wxALIGN_CENTER_VERTICAL);
 	m_tcpPortCtrl = new wxSpinCtrl(page, wxID_ANY);
 	m_tcpPortCtrl->SetRange(1, 65535);
@@ -415,11 +410,10 @@ wxWizardPageSimple *CFirstRunWizard::BuildBootstrapPage()
 			0);
 	}
 
-	// Recurring refresh, distinct from the one-time download above: re-fetch the
-	// eD2k server list from the configured URL on every start (the AutoServerlist
-	// pref, off by default and otherwise only on the Server tab). Shown whether or
-	// not a bootstrap download is offered, and checked so a first-run user gets an
-	// up-to-date list without hunting for the setting.
+	// Recurring refresh, distinct from the one-time download above: re-fetch the eD2k server
+	// list from the configured URL on every start (the AutoServerlist pref, off by default and
+	// otherwise only on the Server tab). Shown whether or not a bootstrap download is offered,
+	// and checked so a first-run user gets an up-to-date list without hunting for the setting.
 	m_autoUpdateServerCtrl = new wxCheckBox(page, wxID_ANY, _("Auto-update server list at startup"));
 	m_autoUpdateServerCtrl->SetValue(true);
 	sizer->Add(m_autoUpdateServerCtrl, 0, wxTOP, 8);
@@ -442,19 +436,18 @@ wxWizardPageSimple *CFirstRunWizard::BuildIntegrationsPage()
 		wxBOTTOM,
 		12);
 
-	// All three checkboxes reuse the exact strings from the Preferences panel so
-	// translators only see them once. The three backends all live in the OS, not in
-	// aMule.conf.
+	// All three checkboxes reuse the exact strings from the Preferences panel so translators
+	// only see them once. The three backends all live in the OS, not in aMule.conf.
 	m_autostartCtrl = new wxCheckBox(page, wxID_ANY, _("Start aMule automatically when I log in"));
 	m_autostartCtrl->SetValue(AutostartManager::IsEnabled());
 	// Wider gap than the 4 used between rows: autostart is its own thing,
 	// and the three registration toggles below read as a group.
 	sizer->Add(m_autostartCtrl, 0, wxBOTTOM, 12);
 
-	// On macOS the un-register path is a no-op (LaunchServices blocks programmatic
-	// reset), so once aMule already holds the scheme registration the checkbox is
-	// not created at all rather than being dead. On Linux and Windows Disable works,
-	// so the box is always created and reflects live state.
+	// On macOS the un-register path is a no-op (LaunchServices blocks programmatic reset), so
+	// once aMule already holds the scheme registration the checkbox is not created at all
+	// rather than being dead. On Linux and Windows Disable works, so the box is always created
+	// and reflects live state.
 	bool magnetEnabled = ProtocolHandlerManager::IsEnabled(HandlerTarget::MagnetScheme);
 #ifdef __WXMAC__
 	const bool showEd2kBox = !ProtocolHandlerManager::IsEnabled(HandlerTarget::Ed2kScheme);
@@ -476,14 +469,14 @@ wxWizardPageSimple *CFirstRunWizard::BuildIntegrationsPage()
 
 	if (showMagnetBox) {
 		m_registerMagnetCtrl = new wxCheckBox(page, wxID_ANY, _("Register aMule for magnet: links"));
-		// Default OFF: aMule only handles the eD2k-compatible subset of magnets, so
-		// leaving this off avoids silently stealing BitTorrent magnet clicks.
-		// Preserves the current state if the user opted in elsewhere.
+		// Default OFF: aMule only handles the eD2k-compatible subset of magnets, so leaving
+		// this off avoids silently stealing BitTorrent magnet clicks. Preserves the current
+		// state if the user opted in elsewhere.
 		m_registerMagnetCtrl->SetValue(magnetEnabled);
 		sizer->Add(m_registerMagnetCtrl, 0, wxBOTTOM, 2);
-		// wxLEFT only: the 20 is the indent under the checkbox. Applying it
-		// to wxBOTTOM as well would leave a 20px gap before whatever comes
-		// next, which is five times the spacing every other row uses.
+		// wxLEFT only: the 20 is the indent under the checkbox. Applying it to wxBOTTOM as
+		// well would leave a 20px gap before whatever comes next, five times the spacing
+		// every other row uses.
 		sizer->Add(new wxStaticText(page,
 				   wxID_ANY,
 				   _("Only eD2k-compatible magnets. Leave off if you use a BitTorrent "
@@ -495,10 +488,10 @@ wxWizardPageSimple *CFirstRunWizard::BuildIntegrationsPage()
 	}
 
 	if (showAssocBox) {
-		// Third section break, so the page reads as autostart / link handling /
-		// file handling. 8 plus the 4 trailing the block above is the same 12 that
-		// follows autostart, and with the magnet block hidden the 4 after the ed2k
-		// row gets there just the same.
+		// Third section break, so the page reads as autostart / link handling / file
+		// handling. 8 plus the 4 trailing the block above is the same 12 that follows
+		// autostart, and with the magnet block hidden the 4 after the ed2k row gets there
+		// just the same.
 		sizer->AddSpacer(8);
 		// String reused verbatim from the Preferences panel so translators
 		// only ever see it once.
@@ -584,7 +577,7 @@ void CFirstRunWizard::OnSpeedChoice(wxCommandEvent &WXUNUSED(evt))
 
 void CFirstRunWizard::OnUploadChanged(wxSpinEvent &WXUNUSED(evt))
 {
-	// The user typed an upload value by hand — detach the profile
+	// The user typed an upload value by hand -- detach the profile
 	// choice so it doesn't claim a preset that no longer matches.
 	m_speedCtrl->SetSelection((int)s_profileCount);
 	UpdateDerivedLabel();
@@ -613,7 +606,7 @@ void CFirstRunWizard::OnBrowseTemp(wxCommandEvent &WXUNUSED(evt))
 
 void CFirstRunWizard::Apply(FirstRunWizard::Result &res)
 {
-	// Nickname — keep the existing default rather than allowing an
+	// Nickname -- keep the existing default rather than allowing an
 	// empty nick.
 	wxString nick = m_nickCtrl->GetValue().Trim().Trim(false);
 	if (!nick.IsEmpty()) {
@@ -626,12 +619,11 @@ void CFirstRunWizard::Apply(FirstRunWizard::Result &res)
 	thePrefs::SetMaxUpload(up);
 	thePrefs::SetMaxDownload(down);
 
-	// Line capacity is a separate value from the limits above: it scales the
-	// statistics graphs and feeds the dynamic-upload logic. A still-selected preset
-	// supplies its raw capacity; otherwise the user typed values by hand, so it is
-	// estimated from the limits (upload limits sit ~80% below the raw rate, so
-	// cap = limit * 5 / 4). A 0 manual limit tells us nothing, so the existing
-	// capacity is kept rather than zeroed.
+	// Line capacity is a separate value from the limits above: it scales the statistics graphs
+	// and feeds the dynamic-upload logic. A still-selected preset supplies its raw capacity;
+	// otherwise the user typed values by hand, so it is estimated from the limits (upload
+	// limits sit ~80% below the raw rate, so cap = limit * 5 / 4). A 0 manual limit tells us
+	// nothing, so the existing capacity is kept rather than zeroed.
 	int upCap = 0;
 	int downCap = 0;
 	const int sel = m_speedCtrl->GetSelection();
@@ -669,7 +661,7 @@ void CFirstRunWizard::Apply(FirstRunWizard::Result &res)
 		thePrefs::SetAutoServerlist(m_autoUpdateServerCtrl->GetValue());
 	}
 
-	// Folders — only override the defaults if the user typed something.
+	// Folders -- only override the defaults if the user typed something.
 	wxString inc = m_incomingCtrl->GetValue().Trim().Trim(false);
 	if (!inc.IsEmpty()) {
 		thePrefs::SetIncomingDir(CPath(inc));
@@ -679,11 +671,10 @@ void CFirstRunWizard::Apply(FirstRunWizard::Result &res)
 		thePrefs::SetTempDir(CPath(tmp));
 	}
 
-	// Integrations page. All three writes go straight to the OS (registry /
-	// mimeapps.list / LaunchServices / autostart store) and none touch aMule.conf,
-	// so glob_prefs->Save() below does not cover them. Enable/Disable silently: on a
-	// fresh install the "another handler is registered" prompt is normally
-	// irrelevant, and the user is already choosing aMule here.
+	// Integrations page. All three writes go straight to the OS (registry / mimeapps.list /
+	// LaunchServices / autostart store) and none touch aMule.conf, so glob_prefs->Save() below
+	// does not cover them. Enable/Disable silently: on a fresh install the "another handler is
+	// registered" prompt is normally irrelevant, and the user is already choosing aMule here.
 	if (m_autostartCtrl) {
 		if (m_autostartCtrl->GetValue()) {
 			AutostartManager::Enable();
@@ -713,9 +704,8 @@ void CFirstRunWizard::Apply(FirstRunWizard::Result &res)
 		}
 	}
 
-	// Record that the wizard ran to completion so it is not shown again. Only
-	// reached when the user pressed Finish, so a cancelled run leaves the flag false
-	// and the wizard reappears.
+	// Record that the wizard ran to completion so it is not shown again. Only reached when the
+	// user pressed Finish, so a cancelled run leaves the flag false and the wizard reappears.
 	thePrefs::SetFirstRunWizardDone(true);
 
 	if (theApp->glob_prefs) {
@@ -740,10 +730,10 @@ Result Run(wxWindow *parent, bool needServerMet, bool needNodesDat)
 	if (res.finished) {
 		wizard.Apply(res);
 	} else {
-		// The user cancelled. Only Finish records FirstRunWizardDone, so without
-		// this the wizard would reappear on every launch with no way to dismiss it
-		// for good. Offers the same persistent "don't show again" choice the AppImage
-		// integration prompt uses; re-show is the safe default.
+		// The user cancelled. Only Finish records FirstRunWizardDone, so without this the
+		// wizard would reappear on every launch with no way to dismiss it for good. Offers
+		// the same persistent "don't show again" choice the AppImage integration prompt
+		// uses; re-show is the safe default.
 		wxMessageDialog ask(parent,
 			_("Show this setup wizard again the next time you start aMule?"),
 			_("Setup not finished"),

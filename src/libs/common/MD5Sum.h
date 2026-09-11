@@ -30,9 +30,8 @@ documentation and/or software.
 
 #define MD5_DIGEST_SIZE 16
 
-// Crypto::Weak::MD5 needs CRYPTOPP_ENABLE_NAMESPACE_WEAK which
-// has already been declared in CryptoPP_Inc.h header, where other
-// weak crypto algorithms (e.g. MD4) are also included
+// Crypto::Weak::MD5 needs CRYPTOPP_ENABLE_NAMESPACE_WEAK, already declared in CryptoPP_Inc.h where
+// the other weak algorithms (MD4) are included.
 
 typedef struct
 {

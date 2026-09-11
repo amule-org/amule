@@ -35,10 +35,9 @@ class wxStaticText;
 class wxButton;
 class wxHyperlinkCtrl;
 
-// The Help/About dialog. Shows the aMule version + credits with native
-// clickable links (previously a plain wxMessageBox) and, when the version
-// check is compiled in (ENABLE_VERSION_CHECK), a live "Check for updates"
-// control backed by the shared CVersionCheck.
+// The Help/About dialog. Shows the aMule version and credits with native clickable links (it was a
+// plain wxMessageBox) and, where the version check is compiled in (ENABLE_VERSION_CHECK), a live
+// "Check for updates" control backed by the shared CVersionCheck.
 class CAboutDlg : public wxDialog
 {
 public:

@@ -35,30 +35,25 @@
 
 #include "Role.h"
 
-// HS256 JWT machinery for the /api/v0 surface. Token shape per
-// RFC 7519: <base64url(header)>.<base64url(payload)>.<base64url(sig)>
+// HS256 JWT machinery for the /api/v0 surface. Token shape per RFC 7519:
+// <base64url(header)>.<base64url(payload)>.<base64url(sig)>
 //
 //   header  = {"alg":"HS256","typ":"JWT"}
-//   payload = {"role":"admin"|"guest","iat":<unix>,"exp":<unix>,
-//              "jti":"<random base64url>"}
+//   payload = {"role":"admin"|"guest","iat":<unix>,"exp":<unix>,"jti":"<random base64url>"}
 //   sig     = HMAC-SHA-256(secret, header_b64 + "." + payload_b64)
 //
-// The HMAC secret is supplied at construction by the owning binary
-// (amuleapi loads it from `${config_dir}/amuleapi-jwt-secret`); this
-// class never touches the filesystem.
+// The owning binary supplies the HMAC secret at construction (amuleapi loads it from
+// `${config_dir}/amuleapi-jwt-secret`); this class never touches the filesystem.
 //
-// `jti` (RFC 7519 §4.1.7) is a 128-bit random identifier emitted
-// per Issue() and surfaced through Verify() so the owning binary
-// can run a server-side revocation list — `/auth/logout` adds the
-// jti, Verify rejects on the next request. The revocation set lives
-// in the owner, not in this library.
+// `jti` (RFC 7519 4.1.7) is a 128-bit random identifier emitted per Issue() and surfaced through
+// Verify() so the owning binary can run a server-side revocation list -- `/auth/logout` adds the
+// jti, Verify rejects on the next request. The revocation set lives in the owner, not here.
 class CJwt
 {
 public:
-	// `secret` is the HMAC-SHA-256 key. amuleapi loads 32 random bytes
-	// (256 bits, matching the digest size) from amuleapi-jwt-secret;
-	// the test-only constructor passes a deterministic fill so test
-	// vectors are reproducible.
+	// `secret` is the HMAC-SHA-256 key. amuleapi loads 32 random bytes (256 bits, matching the
+	// digest size) from amuleapi-jwt-secret; the test-only constructor passes a deterministic
+	// fill so test vectors are reproducible.
 	explicit CJwt(std::vector<unsigned char> secret);
 
 	struct IssuedToken
@@ -77,29 +72,24 @@ public:
 		Role role;
 		std::time_t exp;
 		std::string jti; // for revocation-list lookup
-		// Issued-at, already mandatory in the payload. Surfaced so a
-		// caller can reject every token minted before some event —
-		// which is how changing a password ends the sessions that the
-		// old password opened.
+		// Issued-at, already mandatory in the payload. Surfaced so a caller can reject
+		// every token minted before some event -- which is how changing a password ends the
+		// sessions the old password opened.
 		std::time_t iat;
 	};
 
-	// Verifies a token's signature, header `alg`/`typ`, and payload
-	// shape. Returns true and fills `out` on success; false on bad
-	// signature, expired `exp`, malformed base64, malformed JSON, or
-	// wrong algorithm. Constant-time MAC compare runs before the
-	// header `alg` parse so the timing channel doesn't distinguish
-	// "wrong MAC" from "malformed header".
+	// Verifies a token's signature, header `alg`/`typ`, and payload shape. True and fills `out`
+	// on success; false on bad signature, expired `exp`, malformed base64, malformed JSON, or
+	// wrong algorithm. The constant-time MAC compare runs before the header `alg` parse, so the
+	// timing channel does not distinguish "wrong MAC" from "malformed header".
 	bool Verify(const std::string &token, VerifyResult &out) const;
 
 private:
-	// CryptoPP::SecBlock zeros its backing buffer at destruction
-	// (and on reallocation via AlignedAllocator), so a coredump or
-	// swap from a long-lived amuleapi process won't leak the HMAC
-	// signing key the same way a plain std::vector<unsigned char>
-	// would. The constructor accepts a vector for caller convenience
-	// (config-load doesn't want to drag SecBlock into its surface)
-	// and copies into the SecBlock once.
+	// CryptoPP::SecBlock zeros its backing buffer at destruction (and on reallocation via
+	// AlignedAllocator), so a coredump or swap from a long-lived amuleapi process will not leak
+	// the HMAC signing key the way a plain std::vector<unsigned char> would. The constructor
+	// accepts a vector for caller convenience -- config-load does not want SecBlock in its
+	// surface -- and copies into the SecBlock once.
 	CryptoPP::SecByteBlock m_secret;
 };
 

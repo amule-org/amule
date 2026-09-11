@@ -33,52 +33,44 @@
 namespace webapi
 {
 
-// Single-flight TTL cache for lazy-fetched endpoints
-// (/logs/server_info, /stats/tree, /stats/graphs/{graph},
-// /search/results). HTTP handlers drive their own EC fetches on
-// demand, coalescing burst reads via a 1 s TTL.
+// Single-flight TTL cache for lazy-fetched endpoints (/logs/server_info, /stats/tree,
+// /stats/graphs/{graph}, /search/results). HTTP handlers drive their own EC fetches on demand,
+// coalescing burst reads via a 1 s TTL.
 //
-// **Single-flight semantics.** Only one thread runs `fetch()` for a
-// given stale-or-unset cache; concurrent callers park on a condvar
-// while the inflight thread runs the EC roundtrip with the cache
-// mutex DROPPED. Once the result is stored and the flag clears,
-// every waiter observes the just-stored value and returns it without
-// re-fetching.
+// Single-flight semantics: only one thread runs `fetch()` for a given stale-or-unset cache;
+// concurrent callers park on a condvar while the inflight thread runs the EC roundtrip with the
+// cache mutex DROPPED. Once the result is stored and the flag clears, every waiter observes the
+// just-stored value and returns it without re-fetching.
 //
-// **Why drop the mutex around fetch?** A 30 s amuled stall on
-// /stats/tree would otherwise park every concurrent reader of that
-// endpoint for the stall's duration. Dropping the cache mutex around
-// the EC call lets concurrent readers cooperate on the single
-// inflight fetch without serialising on the slowest amuled response.
+// Why drop the mutex around fetch: a 30 s amuled stall on /stats/tree would otherwise park every
+// concurrent reader of that endpoint for the stall's duration. Dropping the cache mutex around the
+// EC call lets concurrent readers cooperate on the single inflight fetch without serialising on the
+// slowest amuled response.
 //
-// **Lock ordering.** The fetcher lambda acquires `m_ec_mtx` while
-// this cache's `m_mu` is NOT held. Still single-flight per endpoint
-// because `m_inflight` gates concurrent fetches.
-//
-// The cached `T` must be copyable (returned by value so `m_mu` isn't
-// held across JSON serialisation).
+// Lock ordering: the fetcher lambda acquires `m_ec_mtx` while this cache's `m_mu` is NOT held.
+// Still single-flight per endpoint, because `m_inflight` gates concurrent fetches. The cached `T`
+// must be copyable, since it is returned by value so `m_mu` is not held across JSON serialisation.
 template <class T> class CTtlCache
 {
 public:
 	using clock_t = std::chrono::steady_clock;
 
-	// Returns a copy of the freshest value. On a hit, immediately under a brief
-	// lock. On a miss, one caller becomes the "inflight" worker (drops the lock,
-	// runs fetch, re-takes it, stores, broadcasts) while concurrent callers wait
-	// on the condvar and then read the stored value.
+	// Returns a copy of the freshest value. On a hit, immediately under a brief lock. On a
+	// miss, one caller becomes the "inflight" worker -- drops the lock, runs fetch, re-takes
+	// it, stores, broadcasts -- while concurrent callers wait on the condvar and then read the
+	// stored value.
 	template <class Fetcher> T GetOrFetch(std::chrono::milliseconds ttl, Fetcher fetch)
 	{
 		return GetOrFetch(ttl, fetch, [](const T &) { return true; });
 	}
 
-	// As above, plus a validity predicate on the cached value: a fresh entry that
-	// fails it counts as a miss and is refetched.
+	// As above, plus a validity predicate on the cached value: a fresh entry that fails it
+	// counts as a miss and is refetched.
 	//
-	// This is for endpoints whose EC request is parameterised by the caller: the
-	// cache is unkeyed, so an entry fetched at one parameter must not be served
-	// to a request asking for another. Storing the parameter inside the cached
-	// value keeps the single-entry cache; a map keyed by a caller-supplied value
-	// would be unbounded by construction.
+	// This is for endpoints whose EC request is parameterised by the caller: the cache is
+	// unkeyed, so an entry fetched at one parameter must not be served to a request asking for
+	// another. Storing the parameter inside the cached value keeps the single-entry cache; a
+	// map keyed by a caller-supplied value would be unbounded by construction.
 	template <class Fetcher, class Validator>
 	T GetOrFetch(std::chrono::milliseconds ttl, Fetcher fetch, Validator is_valid)
 	{
@@ -90,15 +82,16 @@ public:
 				return m_value;
 			}
 			if (m_inflight) {
-				// Another caller is doing the EC roundtrip. Wait for them to finish,
-				// then re-check freshness in case yet another fetch is needed -- the
-				// inflight result can race our TTL clamp when fetch was slow.
+				// Another caller is doing the EC roundtrip. Wait for them to
+				// finish, then re-check freshness in case yet another fetch is
+				// needed -- the inflight result can race our TTL clamp when fetch
+				// was slow.
 				m_cv.wait(lk, [this] { return !m_inflight; });
 				continue;
 			}
 			// We are the inflight worker. Claim the slot, drop the lock, and fetch
-			// unguarded so peers can park on the condvar rather than serialising on
-			// the cache mutex behind our long EC call.
+			// unguarded so peers can park on the condvar rather than serialising on the
+			// cache mutex behind our long EC call.
 			m_inflight = true;
 			lk.unlock();
 			T fetched;
@@ -121,18 +114,16 @@ public:
 				m_inflight = false;
 			}
 			m_cv.notify_all();
-			// Re-acquire to read the value under the lock, so the contract (the
-			// returned T is a stable copy of the just-stored snapshot) holds in the
+			// Re-acquire to read the value under the lock, so the contract -- the
+			// returned T is a stable copy of the just-stored snapshot -- holds in the
 			// face of a racing Invalidate.
 			std::lock_guard<std::mutex> g(m_mu);
 			return m_value;
 		}
 	}
 
-	// Invalidate. Future GetOrFetch will trigger a fresh fetch
-	// regardless of TTL. Used by mutations that touch an
-	// endpoint's data (e.g. POST /search invalidating
-	// /search/results).
+	// Invalidate. A future GetOrFetch triggers a fresh fetch regardless of TTL. Used by
+	// mutations that touch an endpoint's data, e.g. POST /search invalidating /search/results.
 	void Invalidate()
 	{
 		std::lock_guard<std::mutex> g(m_mu);

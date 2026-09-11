@@ -46,22 +46,15 @@ void writePredefData(CFileDataIO *file)
 	file->Seek(0, wxFromStart);
 }
 
-/////////////////////////////////////////////////////////////////////
-// Specialize this template for each implementation
-// of the CFileDataIO interface you wish to test.
-//
-// This struct must be a subclass of Test.
+// Specialize this template for each implementation of the CFileDataIO interface you wish to test.
+// It must be a subclass of Test.
 //
 // Two pointers are to be defined:
 //  m_emptyFile, which must be an empty, zero-length file
-//  m_predefFile, which must be TEST_LENGTH in size and
-//                and contain the sequence 0..255 repeated
-//                as needed.
+//  m_predefFile, which must be TEST_LENGTH in size and contain the sequence 0..255 repeated as
+//                needed.
 //
-// The following functions should be overridden:
-//  - setUp()
-//  - tearDown()
-//
+// setUp() and tearDown() should be overridden.
 template <typename TYPE> struct FileDataIOFixture;
 
 template <> class FileDataIOFixture<CFile> : public Test
@@ -140,20 +133,14 @@ public:
 	}
 };
 
-/////////////////////////////////////////////////////////////////////
-// A writeWrite interface should be implemented for each set of
-// read/write functions that is to be tested. The following 3
-// static functions must be implemented in each specialization of the
-// template:
+// A writeWrite interface should be implemented for each set of read/write functions to be tested.
+// Each specialization of the template must implement:
 //
-//  - TYPE genValue(size_t j), which returns the expected value at
-//    position j in the files with predefined data.
-//  - TYPE readValue(CFileDataIO*), which returns and returns the
-//    value at the current position in the file.
-//  - void writeValue(CFileDataIO*, TYPE), which writes the given
-//    value at the current position in the file.
-//  - wxString name(), which returns the human-readble name of the type
-//
+//  - TYPE genValue(size_t j), returning the expected value at position j in the files with
+//    predefined data.
+//  - TYPE readValue(CFileDataIO*), returning the value at the current position in the file.
+//  - void writeValue(CFileDataIO*, TYPE), writing the given value at the current position.
+//  - wxString name(), returning the human-readable name of the type.
 template <typename TYPE> struct RWInterface;
 
 template <> struct RWInterface<uint8>
@@ -233,9 +220,7 @@ template <> struct RWInterface<CUInt128>
 	static wxString name() { return "CUInt128"; }
 };
 
-/////////////////////////////////////////////////////////////////////
-// The following tests ensure that the given implementations
-// of the CFileDataIO interface properly does so.
+// The following tests ensure the given implementations of CFileDataIO properly do so.
 
 template <typename IMPL, typename TYPE, size_t SIZE> class ReadTest : public FileDataIOFixture<IMPL>
 {
@@ -689,14 +674,13 @@ TEST(CMemFile, SetLength)
 /////////////////////////////////////////////////////////////////////
 // CFile specific tests
 
-// Function-local rather than file-scope. CPath's constructor reaches
-// wxConvFileName through filename2char(), and wxWidgets sets that pointer in
-// its own static initialisation, in another translation unit. A shared wx runs
-// every one of its initialisers at load time, before the executable's, so a
-// file-scope CPath was safe there; a statically linked wx leaves the order
-// across translation units unspecified, and the constructor could dereference
-// a null pointer before main() ever ran (#1315). Constructed on first use
-// instead, which is after IMPLEMENT_APP_CONSOLE's main() has brought wx up.
+// Function-local rather than file-scope. CPath's constructor reaches wxConvFileName through
+// filename2char(), and wxWidgets sets that pointer in its own static initialisation, in another
+// translation unit. A shared wx runs every one of its initialisers at load time, before the
+// executable's, so a file-scope CPath was safe there; a statically linked wx leaves the order
+// across translation units unspecified, and the constructor could dereference a null pointer before
+// main() ever ran (#1315). Constructed on first use instead, after IMPLEMENT_APP_CONSOLE's main()
+// has brought wx up.
 static const CPath &TestFile()
 {
 	static const CPath path("TestFile.dat");

@@ -34,28 +34,24 @@ class CSearchFile;
 class CSearchListCtrl;
 
 /**
- * wxDataViewModel backing a CSearchListCtrl. Presents the CSearchFile
- * parent/children forest for one search-id as a native tree.
+ * wxDataViewModel backing a CSearchListCtrl. Presents the CSearchFile parent/children forest for
+ * one search-id as a native tree.
  *
- * Two things that used to be hand-rolled in CSearchListCtrl::OnDrawItem /
- * ShowChildren are deliberately NOT reimplemented here:
- *  - Expand/collapse state is owned by wxDataViewCtrl itself (per-row, via
- *    Expand()/Collapse()/IsExpanded()), so GetChildren() always reports the
- *    full child set -- CSearchFile::ShowChildren()/SetShowChildren(), which
- *    the old hand-drawn tree used to fake this, is not consulted.
- *  - Tree connector lines and the expander glyph are drawn natively by the
- *    control from IsContainer()/GetChildren(), replacing
- *    CSearchListCtrl::OnDrawItem's manual DrawLine/DrawCircle code.
+ * Two things that used to be hand-rolled in CSearchListCtrl::OnDrawItem / ShowChildren are
+ * deliberately NOT reimplemented here. Expand/collapse state is owned by wxDataViewCtrl itself (per
+ * row, via Expand()/Collapse()/IsExpanded()), so GetChildren() always reports the full child set --
+ * CSearchFile::ShowChildren()/SetShowChildren(), which the old hand-drawn tree used to fake this,
+ * is not consulted. And tree connector lines and the expander glyph are drawn natively by the
+ * control from IsContainer()/GetChildren(), replacing OnDrawItem's manual DrawLine/DrawCircle code.
  *
- * Regex/known-file filtering (CSearchListCtrl::SetFilter) is a different
- * concept from expand/collapse -- a filtered-out result must not appear at
- * all, so it is excluded at the IsContainer()/GetChildren() level.
+ * Regex/known-file filtering (CSearchListCtrl::SetFilter) is a different concept from
+ * expand/collapse -- a filtered-out result must not appear at all, so it is excluded at the
+ * IsContainer()/GetChildren() level.
  *
  * The model does not own or cache the result set: GetChildren() queries
- * CSearchList::GetSearchResults() (via the owning CSearchListCtrl) live, so
- * there is a single source of truth and no separate bookkeeping to keep in
- * sync. AddFile()/RemoveFile()/UpdateFile() only need to notify the control
- * that something changed -- they are not the place new data is stored.
+ * CSearchList::GetSearchResults(), via the owning CSearchListCtrl, live -- so there is a single
+ * source of truth and no separate bookkeeping to keep in sync. AddFile()/RemoveFile()/UpdateFile()
+ * only need to notify the control that something changed; they are not where new data is stored.
  */
 class CSearchListModel : public wxDataViewModel
 {
@@ -73,30 +69,28 @@ public:
 	void NotifyFilterChanged();
 
 	/**
-	 * Bumped whenever something happens that could change which results are
-	 * shown, or how they are grouped.
-	 *
-	 * For derived models that cache a view of the result set: this model
-	 * itself caches nothing and re-reads on every query, but a browse groups
-	 * its results by folder, and rederiving that grouping on every query is
-	 * O(results) against a control that asks several times per rebuild.
-	 * Comparing this instead makes the cost per change rather than per query.
+	 * Bumped whenever something happens that could change which results are shown, or how they
+	 * are grouped. For derived models that cache a view of the result set: this model caches
+	 * nothing and re-reads on every query, but a browse groups its results by folder, and
+	 * rederiving that grouping on every query is O(results) against a control that asks several
+	 * times per rebuild. Comparing this instead makes the cost per change rather than per
+	 * query.
 	 */
 	unsigned GetContentGeneration() const noexcept { return m_contentGeneration; }
 
-	//! Forces the next flush to be a full Cleared(). Group formation needs one:
-	//! making an existing result a container leaves the control's tree inconsistent
-	//! on GTK/MSW under any incremental notification -- ItemChanged() and
-	//! delete+re-add both failed to make those backends re-derive container-ness.
+	//! Forces the next flush to be a full Cleared(). Group formation needs one: making an
+	//! existing result a container leaves the control's tree inconsistent on GTK/MSW under any
+	//! incremental notification -- ItemChanged() and delete+re-add both failed to make those
+	//! backends re-derive container-ness.
 	void MarkDirty()
 	{
 		m_pendingReset = true;
 		++m_contentGeneration;
 	}
 
-	//! Applies whatever the arrivals since the last flush added up to, one
-	//! batch per idle (CSearchListCtrl::OnIdle). Returns true if it was a
-	//! Cleared(), which costs the control its view state.
+	//! Applies whatever the arrivals since the last flush added up to, one batch per idle
+	//! (CSearchListCtrl::OnIdle). Returns true if it was a Cleared(), which costs the control
+	//! its view state.
 	bool FlushPending();
 
 	//! Whether anything is waiting, of either kind.
@@ -109,31 +103,24 @@ public:
 	//! save and restore selection and expansion around it.
 	bool HasPendingReset() const { return m_pendingReset; }
 
-	//! Drops everything queued. For the paths that are about to rebuild the
-	//! tree anyway, and for a new result set, whose pending entries point
-	//! into storage that is no longer ours.
+	//! Drops everything queued. For the paths that are about to rebuild the tree anyway, and
+	//! for a new result set, whose pending entries point into storage that is no longer ours.
 	void DropPending();
 
 	/**
-	 * Forgets @a file, which is about to be freed.
-	 *
-	 * Called for every CSearchFile destruction (MuleNotify::
-	 * SearchFileBeingDestroyed), which is the only liveness signal there is:
-	 * nothing unlinks a child from its parent's m_children, so a pointer
-	 * being listed there says nothing about whether it is still allocated.
-	 * Every live model is asked, since a result belongs to exactly one of
-	 * them and none of them knows which.
+	 * Forgets @a file, which is about to be freed. Called for every CSearchFile destruction
+	 * (MuleNotify::SearchFileBeingDestroyed), which is the only liveness signal there is:
+	 * nothing unlinks a child from its parent's m_children, so a pointer being listed there
+	 * says nothing about whether it is still allocated. Every live model is asked, since a
+	 * result belongs to exactly one of them and none of them knows which.
 	 */
 	static void DropReferencesTo(CSearchFile *file);
 
 	/**
-	 * Whether @a item is a grouping node rather than a result.
-	 *
-	 * Always false here: in a search, every item is a CSearchFile. A browse
-	 * grouped by folder (CBrowseListModel) puts nodes in the tree that are
-	 * not results, and this is how a caller holding a wxDataViewItem -- a
-	 * bare void* with nothing to distinguish it -- can find out before
-	 * handing it to ToFile().
+	 * Whether @a item is a grouping node rather than a result. Always false here: in a search,
+	 * every item is a CSearchFile. A browse grouped by folder (CBrowseListModel) puts nodes in
+	 * the tree that are not results, and this is how a caller holding a wxDataViewItem -- a
+	 * bare void* with nothing to distinguish it -- can find out before handing it to ToFile().
 	 */
 	virtual bool IsFolder(const wxDataViewItem &WXUNUSED(item)) const { return false; }
 
@@ -166,11 +153,10 @@ public:
 		COL_ALBUM,
 		COL_TITLE,
 		COL_DIRECTORY,
-		//! Always empty. macOS sizes the trailing column to the leftover
-		//! space, collapsing it to nothing once the columns are wider than
-		//! the control; a spacer at the end takes that role so no real
-		//! column is ever the one that disappears. Only appended there --
-		//! GTK and MSW lay the columns out without it.
+		//! Always empty. macOS sizes the trailing column to the leftover space, collapsing
+		//! it to nothing once the columns are wider than the control; a spacer at the end
+		//! takes that role so no real column is ever the one that disappears. Only appended
+		//! there -- GTK and MSW lay the columns out without it.
 		COL_SPACER,
 		COL_COUNT
 	};
@@ -183,11 +169,10 @@ public:
 	bool GetAttr(const wxDataViewItem &item, unsigned int col, wxDataViewItemAttr &attr) const wxOVERRIDE;
 	wxDataViewItem GetParent(const wxDataViewItem &item) const wxOVERRIDE;
 	bool IsContainer(const wxDataViewItem &item) const wxOVERRIDE;
-	//! A grouped result is a row in its own right, not a section header: the
-	//! parent carries the same name/size/sources/rating as any other result
-	//! and its children are alternative sources for the same file. Without
-	//! this, wxDataViewModel::HasValue() draws only column 0 for a container
-	//! -- the group shows its filename and nothing else until expanded.
+	//! A grouped result is a row in its own right, not a section header: the parent carries the
+	//! same name/size/sources/rating as any other result and its children are alternative
+	//! sources for the same file. Without this, wxDataViewModel::HasValue() draws only column 0
+	//! for a container -- the group shows its filename and nothing else until expanded.
 	bool HasContainerColumns(const wxDataViewItem &item) const wxOVERRIDE;
 	unsigned int GetChildren(const wxDataViewItem &item, wxDataViewItemArray &children) const wxOVERRIDE;
 	int Compare(const wxDataViewItem &item1,
@@ -208,9 +193,9 @@ private:
 	//! compared for equality against the value at the last cache fill.
 	unsigned m_contentGeneration = 0;
 
-	//! Arrivals waiting to be reported incrementally: new rows, and rows
-	//! whose values changed. Held as pointers between the notification and
-	//! the next idle, and kept honest by DropReferencesTo().
+	//! Arrivals waiting to be reported incrementally: new rows, and rows whose values changed.
+	//! Held as pointers between the notification and the next idle, and kept honest by
+	//! DropReferencesTo().
 	std::vector<CSearchFile *> m_pendingAdded;
 	std::vector<CSearchFile *> m_pendingChanged;
 

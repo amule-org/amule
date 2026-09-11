@@ -32,21 +32,17 @@
 
 // Implementation of the non-inlines
 
-//
 // Conversion of a wxString so it can be used by printf() on a console.
 //
-// On non-Windows we emit UTF-8 directly. *nix terminals and log files are
-// effectively always UTF-8 nowadays, whereas routing through the C-library
-// locale charset (wxConvLibc) mangles non-ASCII text under a C/POSIX locale
-// -- common in minimal Docker images -- and does so inconsistently across
-// libc implementations (glibc fails the conversion outright, macOS libc
-// succeeds with lossy bytes). Going straight to UTF-8 sidesteps all of that;
-// ASCII is unaffected since it is identical in both encodings.
+// On non-Windows we emit UTF-8 directly. *nix terminals and log files are effectively always UTF-8
+// nowadays, whereas routing through the C-library locale charset (wxConvLibc) mangles non-ASCII
+// text under a C/POSIX locale -- common in minimal Docker images -- and does so inconsistently
+// across libc implementations (glibc fails the conversion outright, macOS libc succeeds with lossy
+// bytes). ASCII is unaffected, being identical in both encodings.
 //
-// On Windows the console is limited to the active code page, so we try the
-// locale charset first and then fall back to a best-effort per-character
-// conversion, replacing each non-representable character with '?'.
-//
+// On Windows the console is limited to the active code page, so we try the locale charset first and
+// then fall back to a best-effort per-character conversion, replacing each non-representable
+// character with '?'.
 Unicode2CharBuf unicode2char(const wxChar *s)
 {
 #ifndef __WXMSW__
@@ -64,10 +60,9 @@ Unicode2CharBuf unicode2char(const wxChar *s)
 	char *data = buf.data();
 	size_t pos = 0;
 	for (size_t i = 0; i < len; i++) {
-		// FromWChar() writes the raw bytes for one character and returns
-		// how many it wrote (no NUL, since we pass an explicit length),
-		// so advance by exactly that -- the previous `- 1` left pos on
-		// the last byte and made every ASCII char overwrite its
+		// FromWChar() writes the raw bytes for one character and returns how many it wrote
+		// (no NUL, since we pass an explicit length), so advance by exactly that -- the
+		// previous `- 1` left pos on the last byte and made every ASCII char overwrite its
 		// predecessor.
 		size_t len_char = wxConvLibc.FromWChar(data + pos, maxlen - pos, s + i, 1);
 		if (len_char != wxCONV_FAILED && len_char > 0) {
@@ -136,16 +131,13 @@ wxString UnescapeHTML(const wxString &str)
 	size_t j = 0;
 	for (size_t i = 0; i < len; ++i, ++j) {
 		if (buffer[i] == '%' && (len > i + 2)) {
-			// Read the two hex digits out of the same buffer we are
-			// walking. They used to be taken from str, whose index is
-			// in characters while i counts bytes: one multi-byte
-			// character anywhere earlier desynchronised the two, and
-			// every escape after it decoded from the wrong offset --
-			// silently corrupting the rest of the string, newlines and
-			// all (an accented eD2k filename lost its tail this way).
-			// From8BitData, not FromAscii: the two bytes behind a '%'
-			// need not be hex digits at all, and FromAscii asserts on
-			// anything past 0x7F. HexToDec rejects them either way.
+			// Read the two hex digits out of the same buffer we are walking. They used
+			// to be taken from str, whose index is in characters while i counts bytes:
+			// one multi-byte character anywhere earlier desynchronised the two, and
+			// every escape after it decoded from the wrong offset, silently corrupting
+			// the rest of the string, newlines and all. From8BitData, not FromAscii:
+			// the two bytes behind a '%' need not be hex digits at all, and FromAscii
+			// asserts on anything past 0x7F. HexToDec rejects them either way.
 			wxChar unesc = HexToDec(wxString::From8BitData(buffer + i + 1, 2));
 			if (unesc) {
 				i += 2;

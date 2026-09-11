@@ -25,12 +25,11 @@
 CECMemSocket::CECMemSocket()
 : CECSocket(false)
 {
-	// Lock the canonical wire format the cache assumes its consumers can
-	// decode: UTF-8 numbers + sentinel-extended children count, no zlib.
-	// Both capability flags are advertised by every modern client; the
-	// cached bytes are reusable regardless of which connection ends up
-	// writing them out (per-connection compression is layered on by the
-	// real socket's WriteBuffer at send time, separately from this).
+	// Lock the canonical wire format the cache assumes its consumers can decode: UTF-8 numbers
+	// + sentinel-extended children count, no zlib. Every modern client advertises both
+	// capability flags, so the cached bytes are reusable whichever connection writes them out.
+	// Per-connection compression is layered on separately by the real socket's WriteBuffer at
+	// send time.
 	m_my_flags |= EC_FLAG_UTF8_NUMBERS | EC_FLAG_LARGE_TAG_COUNT;
 	SetTxFlags(m_my_flags);
 }
@@ -45,14 +44,12 @@ uint32 CECMemSocket::InternalWrite(const void *ptr, uint32 len)
 std::vector<unsigned char> CECMemSocket::SerializeTag(const CECTag &tag)
 {
 	CECMemSocket mem;
-	// Walk the tag into the per-instance buffer chain. Serialize emits
-	// name + type + length + body + nested children — a self-contained
-	// blob that can be re-inserted as a child of any later response by
-	// just writing the bytes through a real connection's WriteBuffer.
+	// Walk the tag into the per-instance buffer chain. Serialize emits name + type + length +
+	// body + nested children -- a self-contained blob that can be re-inserted as a child of any
+	// later response by writing the bytes through a real connection's WriteBuffer.
 	tag.Serialize(mem);
-	// Tag serialization does not zlib-encode (we asked for raw bytes by
-	// keeping EC_FLAG_ZLIB out of m_tx_flags), so FlushBuffers has no
-	// trailing deflate state to flush — but it does cycle the in-flight
+	// Tag serialization does not zlib-encode, EC_FLAG_ZLIB being kept out of m_tx_flags, so
+	// FlushBuffers has no trailing deflate state to flush -- but it does cycle the in-flight
 	// CQueuedData into m_output_queue, which is what we drain next.
 	mem.FlushBuffers();
 	mem.OnOutput(); // drains m_output_queue → InternalWrite → m_bytes

@@ -23,9 +23,7 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-//
 // Client to Server communication
-//
 
 #ifndef SERVERSOCKET_H
 #define SERVERSOCKET_H
@@ -33,9 +31,7 @@
 #include "EMSocket.h" // Needed for CEMSocket
 #include "ServerConnect.h"
 
-//------------------------------------------------------------------------------
 // CServerSocket
-//------------------------------------------------------------------------------
 
 class CServer;
 
@@ -58,9 +54,8 @@ public:
 	void OnError(int nErrorCode) override;
 	bool PacketReceived(CPacket *packet) override;
 
-	// Server control traffic is not subject to the global download
-	// bandwidth budget — search/source/MOTD packets are tiny and
-	// latency-sensitive.
+	// Server control traffic is not subject to the global download bandwidth budget -- search,
+	// source and MOTD packets are tiny and latency-sensitive.
 	bool IsDownloadThrottled() const override { return false; }
 	void SendPacket(CPacket *packet,
 		bool delpacket = true,

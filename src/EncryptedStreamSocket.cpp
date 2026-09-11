@@ -23,76 +23,54 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-/* Basic Obfuscated Handshake Protocol Client <-> Client:
-	- Keycreation:
-		- Client A (Outgoing connection):
-				Sendkey:	Md5(<UserHashClientB 16><MagicValue34 1><RandomKeyPartClientA
-4>)  21 Receivekey:	Md5(<UserHashClientB 16><MagicValue203 1><RandomKeyPartClientA 4>) 21
-		- Client B (Incoming connection):
-				Sendkey:	Md5(<UserHashClientB 16><MagicValue203 1><RandomKeyPartClientA
-4>) 21 Receivekey:	Md5(<UserHashClientB 16><MagicValue34 1><RandomKeyPartClientA 4>)  21 NOTE: First 1024
-bytes are discarded
-
-	- Handshake
-			-> The handshake is encrypted - except otherwise noted - by the Keys created above
-			-> Handshake is blocking - do not start sending an answer before the request is
-completely received (this includes the random bytes)
-			-> EncryptionMethod = 0 is Obfuscation and the only supported method right now
-		Client A: <SemiRandomNotProtocolMarker 1[Unencrypted]><RandomKeyPart
-4[Unencrypted]><MagicValue 4><EncryptionMethodsSupported 1><EncryptionMethodPreferred 1><PaddingLen
-1><RandomBytes PaddingLen%max256> Client B: <MagicValue 4><EncryptionMethodsSelected 1><PaddingLen
-1><RandomBytes PaddingLen%max256>
-			-> The basic handshake is finished here, if an additional/different EncryptionMethod
-was selected it may continue negotiating details for this one
-
-	- Overhead: 18-48 (~33) Bytes + 2 * IP/TCP Headers per Connection
-
-	- Security for Basic Obfuscation:
-			- Random looking stream, very limited protection against passive eavesdropping single
-connections
-
-	- Additional Comments:
-			- RandomKeyPart is needed to make multiple connections between two clients look
-different (but still random), since otherwise the same key would be used and RC4 would create the same output.
-Since the key is a MD5 hash it doesn't weaken the key if that part is known
-			- Why DH-KeyAgreement isn't used as basic obfuscation key: It doesn't offer
-substantial more protection against passive connection based protocol identification, it has about 200 bytes
-more overhead, needs more CPU time, we cannot say if the received data is junk, unencrypted or part of the
-keyagreement before the handshake is finished without losing the complete randomness, it doesn't offer
-substantial protection against eavesdropping without added authentication
-
-Basic Obfuscated Handshake Protocol Client <-> Server:
-	- RC4 Keycreation:
-		- Client (Outgoing connection):
-			Sendkey:    Md5(<S 96><MagicValue34 1>)  97
-			Receivekey: Md5(<S 96><MagicValue203 1>) 97
-		- Server (Incoming connection):
-			Sendkey:    Md5(<S 96><MagicValue203 1>) 97
-			Receivekey: Md5(<S 96><MagicValue34 1>)  97
-
-		NOTE: First 1024 Bytes are discarded
-
-	- Handshake
-		-> The handshake is encrypted - except otherwise noted - by the Keys created above
-		-> Handshake is blocking - do not start sending an answer before the request is completely
-received (this includes the random bytes)
-		-> EncryptionMethod = 0 is Obfuscation and the only supported method right now
-
-	Client: <SemiRandomNotProtocolMarker 1[Unencrypted]><G^A 96 [Unencrypted]><RandomBytes 0-15
-[Unencrypted]> Server: <G^B 96 [Unencrypted]><MagicValue 4><EncryptionMethodsSupported
-1><EncryptionMethodPreferred 1><PaddingLen 1><RandomBytes PaddingLen> Client: <MagicValue
-4><EncryptionMethodsSelected 1><PaddingLen 1><RandomBytes PaddingLen> (Answer delayed till first payload to
-save a frame)
-
-
-	-> The basic handshake is finished here, if an additional/different EncryptionMethod was selected it
-may continue negotiating details for this one
-
-	- Overhead: 206-251 (~229) Bytes + 2 * IP/TCP Headers Headers per Connection
-
-	- DH Agreement Specifics: sizeof(a) and sizeof(b) = 128 Bits, g = 2, p = dh768_p (see below), sizeof
-p, s, etc. = 768 bits
-*/
+/* Basic Obfuscated Handshake Protocol, client <-> client.
+ *
+ * Key creation, client A (outgoing connection):
+ *     Sendkey    = Md5(<UserHashClientB 16><MagicValue34 1><RandomKeyPartClientA 4>)   21
+ *     Receivekey = Md5(<UserHashClientB 16><MagicValue203 1><RandomKeyPartClientA 4>)  21
+ * Client B (incoming connection): the two are swapped. The first 1024 bytes are discarded.
+ *
+ * Handshake: encrypted with the keys above unless noted, and blocking -- do not start sending an
+ * answer before the request is completely received, random bytes included. EncryptionMethod = 0 is
+ * Obfuscation, the only method supported right now.
+ *     A: <SemiRandomNotProtocolMarker 1[plain]><RandomKeyPart 4[plain]><MagicValue 4>
+ *        <EncryptionMethodsSupported 1><EncryptionMethodPreferred 1><PaddingLen 1>
+ *        <RandomBytes PaddingLen%max256>
+ *     B: <MagicValue 4><EncryptionMethodsSelected 1><PaddingLen 1><RandomBytes PaddingLen%max256>
+ * The basic handshake finishes here; a different EncryptionMethod may negotiate further details.
+ *
+ * Overhead: 18-48 (~33) bytes plus 2 x IP/TCP headers per connection. Security: a random-looking
+ * stream, very limited protection against passive eavesdropping on single connections.
+ *
+ * RandomKeyPart makes several connections between two clients look different but still random;
+ * without it the same key would be reused and RC4 would produce the same output. The key is an MD5
+ * hash, so knowing that part does not weaken it.
+ *
+ * Why DH key agreement is not used as the basic obfuscation key: it offers no substantial extra
+ * protection against passive connection-based protocol identification, costs about 200 bytes more
+ * overhead and more CPU, cannot tell junk from unencrypted data or from part of the key agreement
+ * before the handshake is finished without losing all randomness, and offers no substantial
+ * protection against eavesdropping without added authentication.
+ *
+ *
+ * Basic Obfuscated Handshake Protocol, client <-> server.
+ *
+ * RC4 key creation, client (outgoing connection):
+ *     Sendkey    = Md5(<S 96><MagicValue34 1>)   97
+ *     Receivekey = Md5(<S 96><MagicValue203 1>)  97
+ * Server (incoming connection): the two are swapped. The first 1024 bytes are discarded.
+ *
+ * Handshake: same rules as above.
+ *     Client: <SemiRandomNotProtocolMarker 1[plain]><G^A 96[plain]><RandomBytes 0-15[plain]>
+ *     Server: <G^B 96[plain]><MagicValue 4><EncryptionMethodsSupported 1>
+ *             <EncryptionMethodPreferred 1><PaddingLen 1><RandomBytes PaddingLen>
+ *     Client: <MagicValue 4><EncryptionMethodsSelected 1><PaddingLen 1><RandomBytes PaddingLen>
+ *             (delayed until the first payload, to save a frame)
+ * The basic handshake finishes here; a different EncryptionMethod may negotiate further details.
+ *
+ * Overhead: 206-251 (~229) bytes plus 2 x IP/TCP headers per connection. DH agreement specifics:
+ * sizeof(a) and sizeof(b) = 128 bits, g = 2, p = dh768_p (see below), sizeof p, s etc. = 768 bits.
+ */
 #include "EncryptedStreamSocket.h"
 #include "amule.h"
 #include "Logger.h"
@@ -343,9 +321,10 @@ int CEncryptedStreamSocket::Read(void *lpBuf, uint32_t nBufLen)
 			}
 			nRead += nNegRes;
 			if (nRead != (uint32_t)m_nObfusicationBytesReceived) {
-				// More data than the current negotiation step required (or a bug): this
-				// should never happen, since even a handshake that just finished here can
-				// have no data left -- the other client has not received our response yet.
+				// More data than the current negotiation step required, or a bug:
+				// this should never happen, since even a handshake that just
+				// finished here can have no data left -- the other client has not
+				// received our response yet.
 				OnError(ERR_ENCRYPTION);
 			}
 			return 0;
@@ -353,15 +332,16 @@ int CEncryptedStreamSocket::Read(void *lpBuf, uint32_t nBufLen)
 			// doesn't seem to be encrypted
 			m_StreamCryptState = ECS_NONE;
 
-			// If we require an encrypted connection, cut it here. Rare against
-			// up-to-date eMule clients, which check for incompatibility before
-			// connecting where they can.
+			// If we require an encrypted connection, cut it here. Rare against up-to-
+			// date eMule clients, which check for incompatibility before connecting
+			// where they can.
 			if (thePrefs::IsClientCryptLayerRequired()) {
 				// Even with Require enabled we still have to accept the unencrypted
-				// connections used for lowid/firewall checks by servers and by clients
-				// we selected ourselves; refusing them would always result in a
-				// lowid/firewalled status. The .ini option ClientCryptLayerRequiredStrict
-				// is the only exception, ignoring even test connections.
+				// connections used for lowid/firewall checks by servers and by
+				// clients we selected ourselves; refusing them would always result
+				// in a lowid/firewalled status. The .ini option
+				// ClientCryptLayerRequiredStrict is the only exception, ignoring
+				// even test connections.
 				uint32_t ip = GetPeerInt();
 				if (thePrefs::IsClientCryptLayerRequiredStrict() ||
 					(!theApp->serverconnect->AwaitingTestFromIP(ip) &&
@@ -515,13 +495,12 @@ void CEncryptedStreamSocket::StartNegotiation(bool bOutgoing)
 int CEncryptedStreamSocket::Negotiate(const uint8 *pBuffer, uint32 nLen)
 {
 	uint32_t nRead = 0;
-	// Reaching Negotiate() with m_nReceiveBytesWanted == 0 means the state machine
-	// has consumed everything the current step expected, but somebody still posted
-	// a Read while the socket sits in ECS_NEGOTIATING -- a kernel buffer flushing
-	// on teardown, late bytes from a server we are switching away from. wxCHECK_MSG
-	// returns the -1 sentinel both call sites already check for, so the caller
-	// cleanly aborts the connection instead of entering the loop with bogus byte
-	// math (#778).
+	// Reaching Negotiate() with m_nReceiveBytesWanted == 0 means the state machine has consumed
+	// everything the current step expected, but somebody still posted a Read while the socket
+	// sits in ECS_NEGOTIATING -- a kernel buffer flushing on teardown, late bytes from a server
+	// we are switching away from. wxCHECK_MSG returns the -1 sentinel both call sites already
+	// check for, so the caller cleanly aborts the connection instead of entering the loop with
+	// bogus byte math (#778).
 	wxCHECK_MSG(m_nReceiveBytesWanted > 0,
 		-1,
 		"CEncryptedStreamSocket::Negotiate: called with m_nReceiveBytesWanted == 0");

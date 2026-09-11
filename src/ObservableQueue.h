@@ -70,36 +70,17 @@ public:
 		INITIAL
 	};
 
-	/**
-	 * Constructor for misc events.
-	 */
 	CQueueEvent(Type event);
 
-	/**
-	 * Constructor for events regarding multiple values.
-	 *
-	 * Note: CQueueEvent does not take ownership of the specified list.
-	 */
+	// Does not take ownership of the list.
 	CQueueEvent(Type event, const ValueList *list);
 
-	/**
-	 * Constructor for events regarding a single value
-	 */
 	CQueueEvent(Type event, const ValueType &value);
 
-	/**
-	 * Returns the event-type.
-	 */
 	Type GetEvent() const { return m_type; }
 
-	/**
-	 * Returns the number of available values passed with the event.
-	 */
 	size_t GetCount() const;
 
-	/**
-	 * Returns a copy of the ith value.
-	 */
 	ValueType GetValue(size_t i) const;
 
 private:

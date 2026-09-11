@@ -33,85 +33,51 @@ class wxRect;
 class wxDC;
 
 /**
- * The barshader class is responsible for drawing the chunk-based progress bars used in aMule.
- *
- * CBarShader represents the chunks of a file through the use of spans, which
- * cover a range in the file with a certain color. New spans can be added on
- * the fly and old spans are automatically removed, resized or merged when
- * necessary.
- *
- * CBarShader will try to minimize the number of spans when possible.
+ * Draws the chunk-based progress bars used in aMule. A file's chunks are represented as spans, each
+ * covering a range with a colour. New spans can be added on the fly; old ones are automatically
+ * removed, resized or merged as needed, and the number of spans is minimised where possible.
  */
 class CBarShader
 {
 public:
 	/**
-	 * Constructor.
-	 *
-	 * @param height The height of the area upon which the span is drawn.
-	 * @param width  The width of the area upon which the span is drawn.
+	 * @param height The height of the area the span is drawn on.
+	 * @param width The width of the area the span is drawn on.
 	 */
 	CBarShader(unsigned height = 1, unsigned width = 1);
 
-	/**
-	 * Destructor.
-	 */
 	~CBarShader();
 
 	/**
-	 * Sets the width of the drawn bar.
-	 *
-	 * @param width The new width.
-	 *
-	 * Setting this sets the width the bar which is used when it
-	 * is drawn and resets the pixel buffer to the fill color.
+	 * Sets the width of the drawn bar, and resets the pixel buffer to the fill colour.
 	 */
 	void SetWidth(int width);
 
 	/**
 	 * Sets the height of the drawn bar.
-	 *
-	 * @param height The new height.
-	 *
-	 * Changes the height of the bar, used when it is drawn.
 	 */
 	void SetHeight(unsigned height);
 
 	/**
-	 * Sets the 3D-depth of the bar
-	 *
-	 * @param depth A value in the range from 1 to 5.
+	 * Sets the 3D depth of the bar. @param depth A value from 1 to 5.
 	 */
 	void Set3dDepth(unsigned depth);
 
 	/**
-	 * Sets a new filesize.
-	 *
-	 * @param fileSize The new filesize.
-	 *
-	 * Calling this function sets a new filesize, which is the virtual
-	 * length of the bar. This function must be called before any filling.
+	 * Sets a new filesize, which is the virtual length of the bar. Must be called before any
+	 * filling.
 	 */
 	void SetFileSize(uint64 fileSize) { m_FileSize = fileSize; }
 
 	/**
-	 * Fills in a range with a certain color.
-	 *
-	 * @param start The starting position of the new span.
-	 * @param end The ending position of the new span. Must be larger than start.
-	 * @param colour The colour of the new span.
-	 *
-	 * Calling this function fill the specified range with the specified color.
-	 * Any spans completely or partially covered by the new span are either
-	 * removed or resized. If the value of end is larger than the current
-	 * filesize, the filesize is increased to the value of end.
+	 * Fills the range [@a start, @a end) with @a colour. Any span the new one completely or
+	 * partially covers is removed or resized. If @a end is past the current filesize, the
+	 * filesize grows to it. @a end must be larger than @a start.
 	 */
 	void FillRange(uint64 start, uint64 end, const CMuleColour &colour);
 
 	/**
-	 * Fill the entire bar with a span of the specified color.
-	 *
-	 * @param colour The colour of the new span.
+	 * Fills the entire bar with a span of @a colour.
 	 */
 	void Fill(const CMuleColour &colour)
 	{
@@ -120,21 +86,14 @@ public:
 	}
 
 	/**
-	 * Draws the bar on the specified wxDC.
-	 *
-	 * @param dc The wxDC upon which the bar should be drawn.
-	 * @param iLeft The left position from where to start drawing.
-	 * @param iTop The top position from where to start drawing.
-	 * @param bFlat 3D effect is not applied if this is true.
-	 *
-	 * This functions draws the bar with the height and width specified
-	 * through either the constructor or with SetWidth() and SetHeight().
+	 * Draws the bar on @a dc at (@a iLeft, @a iTop), with the height and width set through the
+	 * constructor or SetWidth()/SetHeight(). @a bFlat suppresses the 3D effect.
 	 */
 	void Draw(wxDC *dc, int iLeft, int iTop, bool bFlat);
 
 private:
 	/**
-	 * Calculates the modifiers used to create 3d effect.
+	 * Calculates the modifiers used to create the 3d effect.
 	 */
 	void BuildModifiers();
 

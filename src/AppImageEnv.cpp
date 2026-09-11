@@ -59,11 +59,10 @@ bool GetSanitizedExecEnv(wxExecuteEnv &env)
 		return false;
 	}
 
-	// A path component belongs to the bundle when it is $APPDIR itself or sits
-	// beneath it. Strip such components from every variable; a variable whose
-	// whole value was bundle-owned is dropped entirely. Deliberately generic
-	// rather than a fixed LD_LIBRARY_PATH/GTK_PATH list, so the module- and
-	// data-path variables the linuxdeploy GTK hooks inject are covered too.
+	// A path component belongs to the bundle when it is $APPDIR itself or sits beneath it.
+	// Strip such components from every variable; a variable whose whole value was bundle-owned
+	// is dropped. Deliberately generic rather than a fixed LD_LIBRARY_PATH/GTK_PATH list, so
+	// the module- and data-path variables the linuxdeploy GTK hooks inject are covered too.
 	const wxString prefix = appdir + wxT("/");
 	for (const auto &var : current) {
 		const wxString &value = var.second;

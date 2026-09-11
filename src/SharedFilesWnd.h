@@ -37,47 +37,35 @@ class wxSplitterEvent;
 class wxRadioButton;
 
 /**
- * This class represents the window containing the list of shared files.
+ * The window holding the list of shared files.
  */
 class CSharedFilesWnd : public wxPanel
 {
 public:
-	/**
-	 * Constructor.
-	 */
 	CSharedFilesWnd(wxWindow *pParent = NULL);
 
-	/**
-	 * Destructor.
-	 */
 	~CSharedFilesWnd();
 
 	/**
-	 * This function updates the statistics of the selected items.
-	 *
-	 * Call this function when an item has been selected, or when a
-	 * selected item changes. It
+	 * Updates the statistics of the selected items. Call after an item is selected, or when a
+	 * selected item changes.
 	 */
 	void SelectionUpdated();
 
 	/**
-	 * Refreshes only the stat bars/labels for the current selection.
-	 *
-	 * Cheap (iterates just the selected rows), so it runs on every selection
-	 * change regardless of the client-show mode; SelectionUpdated() calls it
-	 * and additionally rebuilds the client list.
+	 * Refreshes only the stat bars/labels for the current selection. Cheap (it walks just the
+	 * selected rows), so it runs on every selection change regardless of the client-show mode;
+	 * SelectionUpdated() calls it and also rebuilds the client list.
 	 */
 	void UpdateSelectionStats();
 
 	/**
-	 * Deletes all files and updates widget
+	 * Deletes all files and updates the widget.
 	 */
 	void RemoveAllSharedFiles();
 
 	/**
-	 * Call this function before displaying the dialog.
-	 *
-	 * This functions does a few tasks to ensure that the dialog is looking the right way.
+	 * Call before displaying the dialog: makes it look the right way.
 	 */
 	void Prepare();
 
@@ -92,7 +80,7 @@ public:
 
 private:
 	/**
-	 * Event-handler for reloading the list of shared files.
+	 * Event handler: reload the list of shared files.
 	 */
 	void OnBtnReloadShared(wxCommandEvent &evt);
 
@@ -100,22 +88,22 @@ private:
 	void OnFilterChanged(wxCommandEvent &evt);
 
 	/**
-	 * Event-handler for showing details about a shared file(s).
+	 * Event handler: show details about the selected shared file(s).
 	 */
 	void OnItemSelectionChanged(wxListEvent &evt);
 
 	/**
-	 * Event-handler for the list-toggle button.
+	 * Event handler: the list-toggle button.
 	 */
 	void OnToggleClientList(wxCommandEvent &event);
 
 	/**
-	 * Event-handler for changes in the sash divider position.
+	 * Event handler: the sash divider moved.
 	 */
 	void OnSashPositionChanging(wxSplitterEvent &evt);
 
 	/**
-	 * Event-handler for changes in the clients mode radio box.
+	 * Event handler: the clients mode radio box changed.
 	 */
 	void OnSelectClientsMode(wxCommandEvent &WXUNUSED(evt));
 
@@ -136,7 +124,7 @@ private:
 	static const int s_splitterMin = 90;
 
 	/**
-	 * Mode which clients are shown
+	 * Which clients are shown.
 	 */
 	enum EClientShow
 	{

@@ -57,10 +57,9 @@
 namespace
 {
 
-// Why a shared file can or cannot be re-probed. One classifier rather than the
-// same two conditions written at both call sites: the menu asks whether to
-// enable the entry, the handler asks how many of a selection it is leaving out
-// and why, and those answers must not be able to disagree.
+// Why a shared file can or cannot be re-probed. One classifier rather than the same two conditions
+// at both call sites: the menu asks whether to enable the entry, the handler asks how many of a
+// selection it is leaving out and why, and those answers must not disagree.
 enum class MediaRefreshEligibility
 {
 	Eligible,
@@ -71,19 +70,19 @@ enum class MediaRefreshEligibility
 
 MediaRefreshEligibility ClassifyForMediaRefresh(const CKnownFile *file)
 {
-	// First, because it decides the answer for every file at once: with the
-	// feature off the scheduler drops the job before looking at the file, so the
-	// entry would be enabled and do nothing at all, with no clue why.
+	// First, because it decides the answer for every file at once: with the feature off the
+	// scheduler drops the job before looking at the file, so the entry would be enabled and do
+	// nothing, with no clue why.
 	//
-	// Correct in amulegui too: the daemon sends this preference over EC as a
-	// presence tag and the receiving side maps an absent tag to false, so a
-	// remote GUI reports the DAEMON's setting rather than its own default.
+	// Correct in amulegui too: the daemon sends this preference over EC as a presence tag and
+	// the receiving side maps an absent tag to false, so a remote GUI reports the DAEMON's
+	// setting rather than its own default.
 	if (!thePrefs::GetMediaMetadataEnabled()) {
 		return MediaRefreshEligibility::FeatureDisabled;
 	}
-	// IsPartFile() is answered correctly in both binaries: amulegui files a
-	// shared partfile into its shared list as the very CPartFile the download
-	// queue holds, not a plain CKnownFile.
+	// IsPartFile() is answered correctly in both binaries: amulegui files a shared partfile
+	// into its shared list as the very CPartFile the download queue holds, not a plain
+	// CKnownFile.
 	if (file->IsPartFile()) {
 		return MediaRefreshEligibility::Incomplete;
 	}
@@ -143,11 +142,10 @@ CSharedFilesCtrl::CSharedFilesCtrl(wxWindow *parent, int id, const wxPoint &pos,
 {
 	m_menu = nullptr;
 
-	// File Name carries the rating/comment smiley through CMuleIconTextRenderer,
-	// which reserves the icon slot only on the rows that have one -- wx's own
-	// icon+text renderer indents every row without a smiley, which is why this
-	// briefly lived in a column of its own. Obtained Parts is the availability
-	// bar; the rest are plain text.
+	// File Name carries the rating/comment smiley through CMuleIconTextRenderer, which reserves
+	// the icon slot only on rows that have one -- wx's own icon+text renderer indents every row
+	// without a smiley, which is why this briefly lived in a column of its own. Obtained Parts
+	// is the availability bar; the rest are plain text.
 	const int colFlags = wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE;
 	AddIconTextColumn(_("File Name"), COLUMN_SHARED_NAME, "N", 400, wxALIGN_LEFT, colFlags);
 	AddTextColumn(_("Size"), COLUMN_SHARED_SIZE, "Z", 100, wxALIGN_LEFT, colFlags);
@@ -159,16 +157,16 @@ CSharedFilesCtrl::CSharedFilesCtrl(wxWindow *parent, int id, const wxPoint &pos,
 	AddTextColumn(_("Share Ratio"), COLUMN_SHARED_RTIO, "R", 80, wxALIGN_LEFT, colFlags);
 	AddBarColumn(_("Source Availability"), COLUMN_SHARED_PART, "P", 120, colFlags);
 	AddTextColumn(_("Complete Sources"), COLUMN_SHARED_CMPL, "C", 120, wxALIGN_LEFT, colFlags);
-	// FileID (== file hash) was dropped — the hash is on the details modal. The
-	// three new columns reuse existing translations ("Speed", "Shared since",
-	// "Last upload"); Directory Path stays but moves to the end.
+	// FileID (== file hash) was dropped -- the hash is on the details modal. The three new
+	// columns reuse existing translations ("Speed", "Shared since", "Last upload"); Directory
+	// Path stays but moves to the end.
 	AddTextColumn(_("Speed"), COLUMN_SHARED_SPEED, "U", 90, wxALIGN_LEFT, colFlags);
 	AddTextColumn(_("Shared since"), COLUMN_SHARED_SINCE, "H", 130, wxALIGN_LEFT, colFlags);
 	AddTextColumn(_("Last upload"), COLUMN_SHARED_LASTUP, "L", 130, wxALIGN_LEFT, colFlags);
 	AddTextColumn(_("Directory Path"), COLUMN_SHARED_PATH, "D", 430, wxALIGN_LEFT, colFlags);
-	// Media metadata, the same FT_MEDIA_* tags and wording the search list
-	// uses. Keys are lowercase because "L" and "C" are already taken above by
-	// Last upload and Complete Sources, and the store is case-sensitive.
+	// Media metadata, the same FT_MEDIA_* tags and wording the search list uses. Keys are
+	// lowercase because "L" and "C" are taken above by Last upload and Complete Sources, and
+	// the store is case-sensitive.
 	AddTextColumn(_("Length"), COLUMN_SHARED_MEDIA_LENGTH, "l", 80, wxALIGN_LEFT, colFlags);
 	AddTextColumn(_("Bitrate"), COLUMN_SHARED_MEDIA_BITRATE, "b", 80, wxALIGN_LEFT, colFlags);
 	AddTextColumn(_("Codec"), COLUMN_SHARED_MEDIA_CODEC, "c", 80, wxALIGN_LEFT, colFlags);
@@ -184,11 +182,10 @@ CSharedFilesCtrl::CSharedFilesCtrl(wxWindow *parent, int id, const wxPoint &pos,
 	// when the config has something saved.
 	ApplySorting(COLUMN_SHARED_NAME, 0);
 
-	// The media columns are only filled for files ffprobe has been run over, so a
-	// share that has never been probed would gain three empty columns for
-	// everyone. Listed in the header menu, hidden until asked for -- the widths
-	// above are what they get when enabled. Set before LoadColumnSettings() so
-	// anything the user saved wins.
+	// The media columns are only filled for files ffprobe has run over, so a share that has
+	// never been probed would gain three empty columns for everyone. Listed in the header menu,
+	// hidden until asked for -- the widths above are what they get when enabled. Set before
+	// LoadColumnSettings() so anything the user saved wins.
 	SetColumnHidden(COLUMN_SHARED_MEDIA_LENGTH, true, 0);
 	SetColumnHidden(COLUMN_SHARED_MEDIA_BITRATE, true, 0);
 	SetColumnHidden(COLUMN_SHARED_MEDIA_CODEC, true, 0);
@@ -224,9 +221,9 @@ void CSharedFilesCtrl::OnItemRightClicked(wxDataViewEvent &event)
 	if (selected.empty()) {
 		return;
 	}
-	// Bound re-checked by the handlers that use it (OnOpenFile,
-	// OnShowInFolder): PopupMenu runs a nested event loop, so the shared-dir
-	// watcher can mutate the list while the menu is open.
+	// Bound re-checked by the handlers that use it (OnOpenFile, OnShowInFolder): PopupMenu runs
+	// a nested event loop, so the shared-dir watcher can mutate the list while the menu is
+	// open.
 	m_menuItem = selected.front();
 
 	if (m_menu == nullptr) {
@@ -282,11 +279,10 @@ void CSharedFilesCtrl::OnItemRightClicked(wxDataViewEvent &event)
 		m_menu->Append(MP_WS, _("Copy feedback to clipboard"));
 		m_menu->AppendSeparator();
 
-		// Same entry the search list offers, on the same gate. Every row here
-		// has a hash, partfiles included: a shared partfile is listed under the
-		// completed file's hash. Hidden, not greyed, when no stats server is
-		// configured, because an empty preference means the feature is off
-		// rather than unavailable for this row.
+		// Same entry the search list offers, on the same gate. Every row here has a hash,
+		// partfiles included: a shared partfile is listed under the completed file's hash.
+		// Hidden, not greyed, when no stats server is configured, because an empty
+		// preference means the feature is off rather than unavailable for this row.
 		const wxString &statsServer = thePrefs::GetStatsServerName();
 		if (!statsServer.IsEmpty()) {
 			m_menu->Append(MP_RAZORSTATS, CFormat(_("Get %s for this file")) % statsServer);
@@ -294,15 +290,14 @@ void CSharedFilesCtrl::OnItemRightClicked(wxDataViewEvent &event)
 		}
 		m_menu->Append(MP_EXPORTCOLLECTION, _("Export selected files to an emulecollection"));
 
-		// The bar column is the only cell in this list whose colours need
-		// explaining, and it explains two unrelated things depending on the row,
-		// so the legend is chosen from the clicked file: right-click a file being
-		// re-hashed and the hashing legend opens, not the availability one.
+		// Which of two unrelated things the bar column explains depends on the row, so the
+		// legend is chosen from the clicked file: right-click a file being re-hashed and
+		// the hashing legend opens, not the availability one.
 		//
-		// Guarded by IsColumnHidden() rather than by
-		// CGenericClientListCtrl::FindBarLegendColumn(), which is a member of the
-		// other list. Model id and view position coincide, so COLUMN_SHARED_PART
-		// answers both. A bar the user has hidden is not on screen to explain.
+		// Guarded by IsColumnHidden() rather than
+		// CGenericClientListCtrl::FindBarLegendColumn(), a member of the other list. Model
+		// id and view position coincide, so COLUMN_SHARED_PART answers both. A bar the user
+		// has hidden is not on screen to explain.
 		const partbar::BarLegendKind legend =
 			partbar::LegendForSharedFilesRow(file->GetHashingProgress(), file->GetPartCount());
 		if (legend != partbar::BarLegendKind::None && !IsColumnHidden(COLUMN_SHARED_PART)) {
@@ -310,15 +305,14 @@ void CSharedFilesCtrl::OnItemRightClicked(wxDataViewEvent &event)
 			m_menu->Append(MP_BARLEGEND, _("Colour legend"));
 		}
 
-		// Offered only when the file is reachable from this host: the shared list
-		// carries the daemon's directory in amulegui, which resolves here only on
-		// a shared filesystem, and a locally shared file can have been moved since
-		// it was hashed.
+		// Offered only when the file is reachable from this host: the shared list carries
+		// the daemon's directory in amulegui, which resolves here only on a shared
+		// filesystem, and a locally shared file can have been moved since it was hashed.
 		//
-		// CSharedFileList shares PS_READY part files, so an entry here can be an
-		// in-progress download. Gated exactly as the Downloads list does it: a
-		// finished file of any type can be opened, an unfinished one only when
-		// enough of the media is on disk to play.
+		// CSharedFileList shares PS_READY part files, so an entry here can be an in-
+		// progress download. Gated exactly as the Downloads list does it: a finished file
+		// of any type can be opened, an unfinished one only when enough of the media is on
+		// disk to play.
 		const bool previewable =
 			file->IsPartFile() ? static_cast<CPartFile *>(file)->PreviewAvailable() : true;
 		m_menu->SetLabel(
@@ -331,35 +325,30 @@ void CSharedFilesCtrl::OnItemRightClicked(wxDataViewEvent &event)
 		m_menu->Enable(MP_SHOWINFOLDER, canReveal);
 		if (isCollection) {
 			// Reading a collection means reading its bytes on this host, so it needs
-			// the same reachability as opening the file. A part file is excluded on
-			// top of that: it is a truncated collection, not a usable one.
+			// the same reachability as opening the file. A part file is excluded on top
+			// of that: it is a truncated collection, not a usable one.
 			m_menu->Enable(MP_ADDCOLLECTION, canOpen && !file->IsPartFile());
 		}
 		m_menu->Enable(MP_GETAICHED2KLINK, file->HasProperAICHHashSet());
 		m_menu->Enable(MP_GETAICHED2KLINKSRC, file->HasProperAICHHashSet());
 		m_menu->Enable(MP_GETHOSTNAMESOURCEED2KLINK, !thePrefs::GetYourHostname().IsEmpty());
 		m_menu->Enable(MP_GETHOSTNAMECRYPTSOURCEED2KLINK, !thePrefs::GetYourHostname().IsEmpty());
-		// Verifying a partfile is not supported: the hashset covers the
-		// finished file, and CVerifyLocalDataTask bails on one anyway. Greyed
-		// out rather than silently refused, so the state is visible before the
-		// click instead of only in the log afterwards (amule-org/amule#1039).
-		// IsPartFile() is answered correctly in both binaries: amulegui files a
-		// shared partfile into its shared list as the very CPartFile the
-		// download queue holds (amule-remote-gui.cpp), not a plain CKnownFile.
+		// Verifying a partfile is not supported: the hashset covers the finished file, and
+		// CVerifyLocalDataTask bails on one anyway. Greyed out rather than silently
+		// refused, so the state is visible before the click instead of only in the log
+		// afterwards (amule-org/amule#1039). IsPartFile() is answered correctly in both
+		// binaries: amulegui files a shared partfile into its shared list as the very
+		// CPartFile the download queue holds (amule-remote-gui.cpp).
 		m_menu->Enable(MP_VERIFY, !file->IsPartFile());
-		// Same two conditions the scheduler applies, asked through the shared
-		// predicate rather than a second copy of the rule: an in-progress
-		// download has no complete file for ffprobe to read, and a file that
-		// is not audio or video has nothing to extract. Greyed out rather
-		// than accepted and silently dropped, so the state is visible before
-		// the click (issue #1079).
+		// Same two conditions the scheduler applies, asked through the shared predicate
+		// rather than a second copy of the rule: an in-progress download has no complete
+		// file for ffprobe to read, and a file that is not audio or video has nothing to
+		// extract. Greyed out rather than accepted and silently dropped, so the state is
+		// visible before the click (issue #1079).
 		//
-		// Built from the right-clicked row while the handler acts on the whole
-		// selection, exactly as Verify Local Data does -- a mixed selection is
-		// filtered there, and the dialog says what it left out.
-		// From the selection, not from `file`: the handler refreshes every
-		// eligible file in the selection and the confirmation accounts for the
-		// rest, so the entry is available whenever there is anything to do.
+		// Built from the selection, not from the right-clicked row: the handler refreshes
+		// every eligible file in the selection and the confirmation accounts for the rest,
+		// so the entry is available whenever there is anything to do.
 		m_menu->Enable(MP_REFRESHMEDIAMETA, !PartitionForMediaRefresh().eligible.empty());
 
 		int priority = file->IsAutoUpPriority() ? PR_AUTO : file->GetUpPriority();
@@ -385,9 +374,9 @@ void CSharedFilesCtrl::ShowFileDetailDialog(long focused)
 	if (focused < 0) {
 		return;
 	}
-	// Pass every listed file so the dialog's Next/Prev can walk the shared
-	// list, anchored on the clicked row. Reuses the same CFileDetailDialog as
-	// the downloads list; per-file state decides which sections it shows.
+	// Pass every listed file so the dialog's Next/Prev can walk the shared list, anchored on
+	// the clicked row. Reuses the CFileDetailDialog the downloads list uses; per-file state
+	// decides which sections it shows.
 	std::vector<CKnownFile *> files;
 	const long nrItems = ItemDataCount();
 	files.reserve(nrItems);
@@ -403,9 +392,8 @@ void CSharedFilesCtrl::ShowFileDetailDialog(long focused)
 
 void CSharedFilesCtrl::OnRazorStatsCheck(wxCommandEvent &WXUNUSED(event))
 {
-	// Bound re-checked, for the reason OnOpenFile gives: PopupMenu runs a
-	// nested event loop, so the shared-dir watcher can drop the row while the
-	// menu is open.
+	// Bound re-checked, for the reason OnOpenFile gives: PopupMenu runs a nested event loop, so
+	// the shared-dir watcher can drop the row while the menu is open.
 	if (m_menuItem == 0 || !HasItemData(m_menuItem)) {
 		return;
 	}
@@ -415,16 +403,15 @@ void CSharedFilesCtrl::OnRazorStatsCheck(wxCommandEvent &WXUNUSED(event))
 
 void CSharedFilesCtrl::OnShowBarLegend(wxCommandEvent &WXUNUSED(event))
 {
-	// Bound re-checked, for the reason OnOpenFile gives: PopupMenu runs a
-	// nested event loop, so the shared-dir watcher can drop the row while the
-	// menu is open.
+	// Bound re-checked, for the reason OnOpenFile gives: PopupMenu runs a nested event loop, so
+	// the shared-dir watcher can drop the row while the menu is open.
 	if (m_menuItem == 0 || !HasItemData(m_menuItem)) {
 		return;
 	}
 
-	// Resolved again rather than remembered from when the entry was appended: a
-	// re-hash can start or finish while the menu is up, and the legend has to
-	// explain what the cell is drawing now.
+	// Resolved again rather than remembered from when the entry was appended: a re-hash can
+	// start or finish while the menu is up, and the legend has to explain what the cell is
+	// drawing now.
 	const CKnownFile *file = reinterpret_cast<CKnownFile *>(m_menuItem);
 
 	// Titled from the live column rather than from a second copy of its label,
@@ -447,21 +434,19 @@ void CSharedFilesCtrl::OnItemActivated(wxDataViewEvent &event)
 	if (!event.GetItem().IsOk()) {
 		return;
 	}
-	// Read the row straight off the event, as CDownloadListCtrl::
-	// OnItemActivated does -- touching the selection here would discard
-	// whatever multi-selection the user already had for no reason.
+	// Read the row straight off the event, as CDownloadListCtrl::OnItemActivated does --
+	// touching the selection here would discard whatever multi-selection the user had, for no
+	// reason.
 	const long row = GetModelRow(event.GetItem());
 	CKnownFile *file = FileAtRow(row);
 	if (!file) {
 		return;
 	}
 
-	// A finished file of any type can be opened, an unfinished one
-	// (CSharedFileList also carries PS_READY part files) only once enough of
-	// the media is on disk to play. Same rule as CDownloadListCtrl::
-	// OnItemActivated, which lists these very files while they are still
-	// downloading -- see the note there. Anything else opens the file-details
-	// modal, which is what every double-click in this list did before.
+	// A finished file of any type can be opened, an unfinished one (CSharedFileList also
+	// carries PS_READY part files) only once enough of the media is on disk to play. Same rule
+	// as CDownloadListCtrl::OnItemActivated -- see the note there. Anything else opens the
+	// file-details modal, which is what every double-click in this list did before.
 	const bool launchable = !file->IsPartFile() || static_cast<CPartFile *>(file)->PreviewAvailable();
 	if (launchable && FileLaunch::CanOpen(file)) {
 		FileLaunch::Open(file, this);
@@ -474,11 +459,10 @@ void CSharedFilesCtrl::OnVerifyLocalData(wxCommandEvent &WXUNUSED(event))
 {
 	for (wxUIntPtr data : GetSelectedItemData()) {
 		CKnownFile *file = reinterpret_cast<CKnownFile *>(data);
-		// Still reachable with the menu item greyed out for partfiles: the
-		// menu is built from the row that was right-clicked, while this acts
-		// on the whole selection. Right-click a completed file with a
-		// partfile also selected and the entry is enabled, but the partfile
-		// still has to be turned away here.
+		// Still reachable with the menu item greyed out for partfiles: the menu is built
+		// from the row that was right-clicked, while this acts on the whole selection.
+		// Right-click a completed file with a partfile also selected and the entry is
+		// enabled, but the partfile still has to be turned away here.
 		if (file->IsPartFile()) {
 			AddLogLineN(
 				CFormat(_("Verify Local Data on PartFile is currently not supported: %s")) %
@@ -491,21 +475,19 @@ void CSharedFilesCtrl::OnVerifyLocalData(wxCommandEvent &WXUNUSED(event))
 
 CSharedFilesCtrl::MediaRefreshSelection CSharedFilesCtrl::PartitionForMediaRefresh() const
 {
-	// The action applies to the SELECTION, so the menu has to be enabled from
-	// the selection too. Judging it by the right-clicked row instead meant a
-	// mixed selection greyed the entry out whenever the row under the cursor
-	// happened to be the ineligible one -- select a .mp3 and a .zip,
-	// right-click the .zip, and an action that would have refreshed the .mp3
-	// was unavailable. Which row the cursor is over is not something the user
-	// is choosing with; the selection is.
+	// The action applies to the SELECTION, so the menu has to be enabled from the selection
+	// too. Judging it by the right-clicked row meant a mixed selection greyed the entry out
+	// whenever the row under the cursor was the ineligible one -- select a .mp3 and a .zip,
+	// right-click the .zip, and an action that would have refreshed the .mp3 was unavailable.
+	// The user is choosing with the selection, not with the cursor.
 	MediaRefreshSelection out;
 	for (wxUIntPtr data : GetSelectedItemData()) {
 		CKnownFile *file = reinterpret_cast<CKnownFile *>(data);
 		switch (ClassifyForMediaRefresh(file)) {
 		case MediaRefreshEligibility::FeatureDisabled:
-			// Global rather than per-file: with the feature off every file
-			// lands here, the eligible list comes back empty, and the entry is
-			// greyed for the whole selection.
+			// Global rather than per-file: with the feature off every file lands here,
+			// the eligible list comes back empty, and the entry is greyed for the whole
+			// selection.
 			break;
 		case MediaRefreshEligibility::Incomplete:
 			++out.incomplete;
@@ -531,12 +513,11 @@ void CSharedFilesCtrl::OnRefreshMediaMetadata(wxCommandEvent &WXUNUSED(event))
 		return;
 	}
 
-	// Say what is being left out whether or not a dialog follows. Select one
-	// .mp3 and ten .zip files and the dialog never appears, so without this the
-	// ten are passed over in silence -- and "I selected eleven files and it
-	// only did one" is precisely the kind of thing the log has to answer.
-	// Verify Local Data, the model for this handler, reports every file it
-	// refuses regardless of what else succeeded.
+	// Say what is being left out whether or not a dialog follows. Select one .mp3 and ten .zip
+	// files and the dialog never appears, so without this the ten are passed over in silence --
+	// and "I selected eleven files and it only did one" is precisely what the log has to
+	// answer. Verify Local Data, the model for this handler, reports every file it refuses
+	// regardless of what else succeeded.
 	if (incomplete > 0) {
 		AddLogLineN(CFormat(wxPLURAL("Media metadata: skipping %u incomplete download",
 				    "Media metadata: skipping %u incomplete downloads",
@@ -550,11 +531,10 @@ void CSharedFilesCtrl::OnRefreshMediaMetadata(wxCommandEvent &WXUNUSED(event))
 			    notMedia);
 	}
 
-	// One file is the "check whether this fixes it" case and queues straight
-	// away; a dialog there would cost a click on the common action. More than
-	// one is where the warning earns its place -- the cost is roughly 13 ms
-	// per file, so a large selection is real background work, and on slow
-	// media (network mounts, spun-down disks) considerably more.
+	// One file is the "check whether this fixes it" case and queues straight away; a dialog
+	// there would cost a click on the common action. More than one is where the warning earns
+	// its place -- roughly 13 ms per file, so a large selection is real background work, and
+	// considerably more on network mounts or spun-down disks.
 	if (eligible.size() > 1) {
 		wxString message = CFormat(wxPLURAL("Re-extract media metadata for %u file?",
 					   "Re-extract media metadata for %u files?",
@@ -581,10 +561,10 @@ void CSharedFilesCtrl::OnRefreshMediaMetadata(wxCommandEvent &WXUNUSED(event))
 		}
 	}
 
-	// One call for the whole set, not one per file: amulegui turns each into an
-	// EC request, and the request fifo stalls the GUI's own polling past about
-	// twenty in flight -- "select all, refresh" on a large share would put one
-	// packet per shared file into the socket in a tight loop.
+	// One call for the whole set, not one per file: amulegui turns each into an EC request, and
+	// the request fifo stalls the GUI's own polling past about twenty in flight -- "select all,
+	// refresh" on a large share would put one packet per shared file into the socket in a tight
+	// loop.
 	theApp->sharedfiles->RefreshMediaMetadata(eligible);
 }
 
@@ -653,9 +633,9 @@ wxString CSharedFilesCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) co
 		}
 
 	case COLUMN_SHARED_SPEED:
-		// Live upload speed, adaptive KiB/s / MiB/s and blank below
-		// 1 KiB/s — same formatting as the peers (client) list. Sorting
-		// uses the raw byte/s value (see CompareItemData), not this string.
+		// Live upload speed, adaptive KiB/s / MiB/s and blank below 1 KiB/s -- same
+		// formatting as the peers (client) list. Sorting uses the raw byte/s value (see
+		// CompareItemData), not this string.
 		if (file->GetUploadDatarate() >= 1024) {
 			if (file->GetUploadDatarate() >= 1048576) {
 				return CFormat(_("%.1f MiB/s")) % (file->GetUploadDatarate() / 1048576.0);
@@ -679,9 +659,8 @@ wxString CSharedFilesCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) co
 		return wxEmptyString;
 
 	case COLUMN_SHARED_PATH:
-		// Status-agnostic: the Temp dir for a partfile, the
-		// destination once completed (EC_TAG_KNOWNFILE_PATH in
-		// the remote GUI).
+		// Status-agnostic: the Temp dir for a partfile, the destination once completed
+		// (EC_TAG_KNOWNFILE_PATH in the remote GUI).
 		return file->GetFilePath().GetPrintable();
 
 	// Media tags, rendered exactly as the search list renders them so the
@@ -750,17 +729,17 @@ void CSharedFilesCtrl::GetItemBarFill(wxUIntPtr item, unsigned column, CBarFillS
 
 	std::vector<CBarFillSpan> spans;
 
-	// Which of the two unrelated things this cell is drawing. Decided from the
-	// same two integers the row context menu picks the legend from, so the bar
-	// and its explanation cannot disagree about which one is on screen.
+	// Which of the two unrelated things this cell is drawing. Decided from the same two
+	// integers the row context menu picks the legend from, so the bar and its explanation
+	// cannot disagree.
 	switch (partbar::ModeFor(file->GetHashingProgress(), partCount)) {
 	case partbar::BarMode::None:
 		return;
 
 	case partbar::BarMode::Hashing: {
-		// CHashingTask reports part + 1, so a finished pass reports one part
-		// past the end of the file and the raw count cannot be used as an
-		// index. Clamped, then turned into the last hashed byte.
+		// CHashingTask reports part + 1, so a finished pass reports one part past the end
+		// of the file and the raw count cannot be used as an index. Clamped, then turned
+		// into the last hashed byte.
 		const std::size_t hashedParts =
 			partbar::HashedPartsClamped(file->GetHashingProgress(), partCount);
 		const uint64 hashedEnd = partbar::SpanFor(hashedParts - 1, PARTSIZE, fileSize).end;
@@ -798,10 +777,10 @@ void CSharedFilesCtrl::GetItemBarFill(wxUIntPtr item, unsigned column, CBarFillS
 						: partbar::SourceAvailabilityColour(sources)) });
 		}
 
-		// Whatever the availability array did not cover. It is normally exactly
-		// partCount long, but a remote GUI can see a share before the daemon's
-		// frequencies arrive, and a tail nobody is known to hold reads as the
-		// same red a zero count draws rather than as unpainted background.
+		// Whatever the availability array did not cover. It is normally exactly partCount
+		// long, but a remote GUI can see a share before the daemon's frequencies arrive,
+		// and a tail nobody is known to hold reads as the same red a zero count draws
+		// rather than as unpainted background.
 		const uint64 covered = PARTSIZE * static_cast<uint64>(list.size());
 		if (covered < fileSize) {
 			spans.push_back({ covered,
@@ -854,9 +833,8 @@ void CSharedFilesCtrl::ShowFileList()
 {
 	Freeze();
 
-	// The rebuild renumbers every row, so keep selection + focus by item
-	// identity -- otherwise editing the filter (which comes through here)
-	// drops whatever the user had selected.
+	// The rebuild renumbers every row, so keep selection + focus by item identity -- otherwise
+	// editing the filter (which comes through here) drops whatever the user had selected.
 	const std::vector<wxUIntPtr> selected = GetSelectedItemData();
 
 	ClearItemData();
@@ -887,14 +865,13 @@ void CSharedFilesCtrl::RebuildFilteredView()
 
 void CSharedFilesCtrl::BeginBatchUpdate()
 {
-	// During the batch ShowFile() appends the row (O(1)) instead of doing a
-	// sorted AddItemData() (which rebuilds the whole row index per insert --
-	// O(n), i.e. O(n^2) for a burst on a large share). Coalesce the repaints
-	// (Freeze) and defer the single sort to EndBatchUpdate().
+	// During the batch ShowFile() appends the row (O(1)) instead of a sorted AddItemData(),
+	// which rebuilds the whole row index per insert -- O(n), so O(n^2) for a burst on a large
+	// share. Coalesce the repaints (Freeze) and defer the single sort to EndBatchUpdate().
 	Freeze();
-	// The rows arrive unsorted and EndBatchUpdate() sorts them once, so the
-	// header's sort key buys nothing here -- and on macOS it costs a re-query
-	// and a full comparison pass per inserted row. See SuspendHeaderSort().
+	// The rows arrive unsorted and EndBatchUpdate() sorts them once, so the header's sort key
+	// buys nothing here -- and on macOS it costs a re-query and a full comparison pass per
+	// inserted row. See SuspendHeaderSort().
 	SuspendHeaderSort();
 	m_batchUpdate = true;
 	m_batchFrozen = true;
@@ -917,9 +894,9 @@ void CSharedFilesCtrl::SortIfRowsAppended()
 	}
 	m_batchRowsAppended = false;
 	if (m_startupDrain) {
-		// The rows were appended without notifying the model, so this is the
-		// first it hears of them: FinishBulkLoad() sorts and issues the single
-		// Reset() that makes them exist for the control.
+		// The rows were appended without notifying the model, so this is the first it hears
+		// of them: FinishBulkLoad() sorts and issues the single Reset() that makes them
+		// exist for the control.
 		FinishBulkLoad();
 		ShowFilesCount();
 	} else {
@@ -991,13 +968,12 @@ void CSharedFilesCtrl::ShowFile(CKnownFile *file)
 	}
 
 	if (m_batchUpdate) {
-		// Batched poll (remote GUI): append at the end (O(1)) and let
-		// EndBatchUpdate() sort once. AddItemData()'s sorted insert rebuilds
-		// the whole row index on every call (O(n)), which turns a burst of
-		// freshly-shared files into an O(n^2) freeze on a large share.
-		// Mirrors CDownloadListCtrl::ShowFile(). AppendItemDataNow() keeps the
-		// row index and item count live, so the interleaved reconcile prune
-		// and in-place UpdateItem() during the same poll stay correct.
+		// Batched poll (remote GUI): append at the end (O(1)) and let EndBatchUpdate() sort
+		// once. AddItemData()'s sorted insert rebuilds the whole row index on every call
+		// (O(n)), turning a burst of freshly-shared files into an O(n^2) freeze on a large
+		// share. Mirrors CDownloadListCtrl::ShowFile(). AppendItemDataNow() keeps the row
+		// index and item count live, so the interleaved reconcile prune and in-place
+		// UpdateItem() during the same poll stay correct.
 		const wxUIntPtr data = reinterpret_cast<wxUIntPtr>(file);
 		if (RowOfData(data) == -1) {
 			if (m_startupDrain) {
@@ -1136,18 +1112,18 @@ void CSharedFilesCtrl::OnExportCollection(wxCommandEvent &WXUNUSED(evt))
 {
 	const wxString caption = _("Export to emulecollection");
 
-	// Same links the "Copy eD2k link to clipboard" item produces, for the
-	// same selection: a text collection is a plain list of them, which is
-	// what CMuleCollection and eMule both read back.
+	// Same links the "Copy eD2k link to clipboard" item produces, for the same selection: a
+	// text collection is a plain list of them, which is what CMuleCollection and eMule both
+	// read back.
 	const wxString links = SelectedLinks(MP_GETED2KLINK);
 	if (links.IsEmpty()) {
 		wxMessageBox(_("No files are selected to export."), caption, wxOK | wxICON_INFORMATION, this);
 		return;
 	}
 
-	// Timestamped so repeated exports sit side by side instead of one
-	// silently replacing the last. Sortable order, no characters that would
-	// need escaping on any of the filesystems we support.
+	// Timestamped so repeated exports sit side by side instead of one silently replacing the
+	// last. Sortable order, no characters that would need escaping on any filesystem we
+	// support.
 	const wxString defaultName =
 		CFormat("amule-shared-%s.emulecollection") % wxDateTime::Now().Format("%Y%m%d-%H%M%S");
 
@@ -1165,10 +1141,9 @@ void CSharedFilesCtrl::OnExportCollection(wxCommandEvent &WXUNUSED(evt))
 	if (path.IsEmpty()) {
 		return;
 	}
-	// Append the extension when the user picked the collection filter and left
-	// it off. wxFD_OVERWRITE_PROMPT judged the name as typed, so ask again
-	// here: without this, saving as "backup" over an existing
-	// "backup.emulecollection" would overwrite it without a word.
+	// Append the extension when the user picked the collection filter and left it off.
+	// wxFD_OVERWRITE_PROMPT judged the name as typed, so ask again here: without this, saving
+	// as "backup" over an existing "backup.emulecollection" would overwrite it without a word.
 	if (dialog.GetFilterIndex() == 0 && !path.Lower().EndsWith(".emulecollection")) {
 		path += ".emulecollection";
 		if (wxFileExists(path) &&
@@ -1180,9 +1155,9 @@ void CSharedFilesCtrl::OnExportCollection(wxCommandEvent &WXUNUSED(evt))
 		}
 	}
 
-	// UTF-8 and no byte-order mark: aMule skips a BOM when reading a text
-	// collection, but eMule reads one through CStdioFile in text mode, where
-	// the mark would land in the first line and cost that entry.
+	// UTF-8 and no byte-order mark: aMule skips a BOM when reading a text collection, but eMule
+	// reads one through CStdioFile in text mode, where the mark would land in the first line
+	// and cost that entry.
 	const wxCharBuffer utf8(unicode2UTF8(links));
 	wxFile out;
 	if (!out.Create(path, true) || out.Write(utf8.data(), utf8.length()) != utf8.length() ||
@@ -1337,9 +1312,9 @@ int CSharedFilesCtrl::CompareItemData(
 	case COLUMN_SHARED_PATH:
 		return mod * CmpAny(file1->GetFilePath(), file2->GetFilePath());
 
-	// Media tags. Unprobed files sort last in both directions rather than
-	// counting as zero, which would bury the probed rows under them on an
-	// ascending sort -- the same rule the search list applies.
+	// Media tags. Unprobed files sort last in both directions rather than counting as zero,
+	// which would bury the probed rows under them on an ascending sort -- the same rule the
+	// search list applies.
 	case COLUMN_SHARED_MEDIA_LENGTH:
 		return CompareMediaInt(
 			file1->GetIntTagValue(FT_MEDIA_LENGTH), file2->GetIntTagValue(FT_MEDIA_LENGTH), mod);
@@ -1374,10 +1349,9 @@ int CSharedFilesCtrl::CompareItemData(
 void CSharedFilesCtrl::UpdateItem(CKnownFile *toupdate)
 {
 	if (m_inBulkUpdate) {
-		// Caller (e.g. CSharedFileList::ClearED2KPublishInfo) will
-		// issue a single Refresh() in EndBulkUpdate(). Skipping the
-		// per-row refresh here is what turns ClearED2KPublishInfo
-		// from O(N²) into O(N) for users with thousands of shared
+		// The caller (e.g. CSharedFileList::ClearED2KPublishInfo) issues a single Refresh()
+		// in EndBulkUpdate(). Skipping the per-row refresh here is what turns
+		// ClearED2KPublishInfo from O(N^2) into O(N) for users with thousands of shared
 		// files. See #302.
 		return;
 	}
@@ -1402,9 +1376,9 @@ void CSharedFilesCtrl::BeginBulkUpdate()
 void CSharedFilesCtrl::EndBulkUpdate()
 {
 	m_inBulkUpdate = false;
-	// One full repaint covers every row whose data changed during the
-	// bulk window. SelectionUpdated() refreshes the right-hand detail
-	// panel in case the selected row's data changed.
+	// One full repaint covers every row whose data changed during the bulk window.
+	// SelectionUpdated() refreshes the right-hand detail panel in case the selected row's data
+	// changed.
 	Refresh();
 	if (theApp->amuledlg && theApp->amuledlg->m_sharedfileswnd) {
 		theApp->amuledlg->m_sharedfileswnd->SelectionUpdated();
@@ -1419,10 +1393,9 @@ uint64 CSharedFilesCtrl::ShownIncompleteBytes() const
 
 	std::vector<CPartFile *> parts;
 #ifdef CLIENT_GUI
-	// CDownQueueRem is a std::map keyed by ECID, with no CopyFileList().
-	// This file is compiled per executable rather than into muleappgui
-	// (cmake/source-vars.cmake), so the two builds really do see their own
-	// download queue here.
+	// CDownQueueRem is a std::map keyed by ECID, with no CopyFileList(). This file is compiled
+	// per executable rather than into muleappgui (cmake/source-vars.cmake), so the two builds
+	// really do see their own download queue here.
 	parts.reserve(theApp->downloadqueue->size());
 	for (const auto &entry : *theApp->downloadqueue) {
 		parts.push_back(entry.second);
@@ -1453,10 +1426,9 @@ uint64 CSharedFilesCtrl::ShownIncompleteBytes() const
 
 void CSharedFilesCtrl::UpdateTotalSize()
 {
-	// The label lives in the statistics box (the bottom pane of the shared
-	// splitter), a different window from this list, so reach it through the
-	// shared-files window rather than GetParent(). Resolved once; see the
-	// note on m_freeSpaceLabel.
+	// The label lives in the statistics box (the bottom pane of the shared splitter), a
+	// different window from this list, so reach it through the shared-files window rather than
+	// GetParent(). Resolved once; see the note on m_freeSpaceLabel.
 	if (!theApp->amuledlg || !theApp->amuledlg->m_sharedfileswnd) {
 		return;
 	}
@@ -1468,15 +1440,14 @@ void CSharedFilesCtrl::UpdateTotalSize()
 		}
 	}
 
-	// The total is the sum of the Size column, which shows a part file's
-	// final size. That answers "how much am I sharing" but not "how much of
-	// it do I have", and the two differ by however much is still to
-	// download -- 400 GB of it in the report that prompted this (#927). Both
-	// are shown rather than one replaced, so the total still adds up to its
-	// own column.
-	// "completed", the word the Downloads list already uses for this same
-	// quantity (its Completed column), rather than "complete": what is being
-	// counted is bytes obtained, not files that are finished.
+	// The total is the sum of the Size column, which shows a part file's final size. That
+	// answers "how much am I sharing" but not "how much of it do I have", and the two differ by
+	// however much is still to download -- 400 GB of it in the report that prompted this
+	// (#927). Both are shown rather than one replaced, so the total still adds up to its own
+	// column.
+	//
+	// "completed", the word the Downloads list already uses for this quantity, rather than
+	// "complete": what is counted is bytes obtained, not files that are finished.
 	const uint64 missing = ShownIncompleteBytes();
 	const wxString text =
 		missing ? CFormat(_("Total size of Shared Files: %s (%s completed)")) %
@@ -1510,9 +1481,9 @@ void CSharedFilesCtrl::ShowFilesCount()
 	wxStaticText *label = CastByName("sharedFilesLabel", GetParent(), wxStaticText);
 
 	if (m_hashingRemaining > 0) {
-		// Startup is still hashing files the scan found; they join the list
-		// as each one finishes. Said here rather than in a dialog: it is
-		// progress, not something to acknowledge (#853).
+		// Startup is still hashing files the scan found; they join the list as each one
+		// finishes. Said here rather than in a dialog: it is progress, not something to
+		// acknowledge (#853).
 		label->SetLabel(CFormat(wxPLURAL("Shared Files (%i, hashing %u more)",
 					"Shared Files (%i, hashing %u more)",
 					m_hashingRemaining)) %
@@ -1564,25 +1535,24 @@ void CSharedFilesCtrl::OnAddCollection(wxCommandEvent &WXUNUSED(evt))
 	}
 	CKnownFile *file = reinterpret_cast<CKnownFile *>(selected.front());
 
-	// The collection is parsed on this side, so its bytes have to be readable
-	// from this host. amulegui is shown the daemon's directory, which
-	// ResolvePath() rewrites through the user's configured mapping; in the
-	// monolithic build the path is already local and resolves unchanged.
+	// The collection is parsed on this side, so its bytes have to be readable from this host.
+	// amulegui is shown the daemon's directory, which ResolvePath() rewrites through the user's
+	// configured mapping; in the monolithic build the path is already local and resolves
+	// unchanged.
 	//
-	// A part file is turned away rather than resolved: it resolves to the
-	// ".part" in the temp directory, which does exist, so a half-downloaded
-	// collection would parse and quietly queue whichever links happened to be
-	// on disk already. The menu entry is disabled for those, so this repeats
-	// that test only to keep the handler correct on its own.
+	// A part file is turned away rather than resolved: it resolves to the ".part" in the temp
+	// directory, which does exist, so a half-downloaded collection would parse and quietly
+	// queue whichever links happened to be on disk already. The menu entry is disabled for
+	// those, so this repeats that test only to keep the handler correct on its own.
 	CPath collection;
 	if (file->IsPartFile() || !FileLaunch::ResolvePath(file, collection)) {
 		return;
 	}
 
-	// The same expansion the command line and the macOS open-document path
-	// use: it reports a missing, malformed or empty collection itself, and
-	// runs every entry through CheckPassedLink() instead of forwarding the raw
-	// strings -- so magnet entries convert and invalid ones are named.
+	// The same expansion the command line and the macOS open-document path use: it reports a
+	// missing, malformed or empty collection itself, and runs every entry through
+	// CheckPassedLink() instead of forwarding the raw strings -- so magnet entries convert and
+	// invalid ones are named.
 	wxArrayString links;
 	if (theApp->ExpandPassedCollection(collection.GetRaw(), links, 0) !=
 		CamuleAppCommon::kCollectionExpanded) {
@@ -1596,9 +1566,9 @@ void CSharedFilesCtrl::OnAddCollection(wxCommandEvent &WXUNUSED(evt))
 // files at once is not a thing either desktop handler does gracefully.
 void CSharedFilesCtrl::OnOpenFile(wxCommandEvent &WXUNUSED(event))
 {
-	// Bound re-checked: PopupMenu runs a nested event loop, so the shared-dir
-	// watcher can mutate the list while the menu is open. Pinning the identity
-	// means a row removed above this one cannot redirect the click.
+	// Bound re-checked: PopupMenu runs a nested event loop, so the shared-dir watcher can
+	// mutate the list while the menu is open. Pinning the identity means a row removed above
+	// this one cannot redirect the click.
 	if (m_menuItem != 0 && HasItemData(m_menuItem)) {
 		FileLaunch::Open(reinterpret_cast<CKnownFile *>(m_menuItem), this);
 	}

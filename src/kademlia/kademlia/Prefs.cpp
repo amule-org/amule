@@ -145,9 +145,9 @@ void CPrefs::SetIPAddress(uint32_t val) noexcept
 		m_ip = val;
 		m_ipLast = val;
 	}
-	// If the last check matches this one, reset our current IP.
-	// If the last check does not match, wait for our next incoming IP.
-	// This happens for two reasons.. We just changed our IP, or a client responded with a bad IP.
+	// If the last check matches this one, reset our current IP; if not, wait for our next
+	// incoming IP. A mismatch means either that we just changed our IP or that a client
+	// responded with a bad one.
 	if (val == m_ipLast) {
 		m_ip = val;
 	} else {
@@ -158,9 +158,9 @@ void CPrefs::SetIPAddress(uint32_t val) noexcept
 bool CPrefs::GetFirewalled() const noexcept
 {
 	if (m_firewalled < 2) {
-		// Not enough people have told us we are open but we may be doing a recheck
-		// at the moment which will give a false lowID.. Therefore we check to see
-		// if we are still rechecking and will report our last known state..
+		// Not enough people have told us we are open, but we may be doing a recheck right
+		// now, which would give a false lowID. So check whether we are still rechecking and
+		// report our last known state.
 		if (GetRecheckIP()) {
 			return m_lastFirewallState;
 		}
@@ -187,9 +187,9 @@ void CPrefs::IncFirewalled()
 
 void CPrefs::SetKademliaFiles()
 {
-	// There is no real way to know how many files are in the Kad network..
-	// So we first try to see how many files per user are in the ED2K network..
-	// If that fails, we use a set value based on previous tests..
+	// There is no real way to know how many files are in the Kad network, so first try how many
+	// files per user the ED2K network has. If that fails, use a set value based on previous
+	// tests.
 	uint32_t nServerAverage = theApp->serverlist->GetAvgFile();
 	uint32_t nKadAverage = Kademlia::CKademlia::GetIndexed()->GetFileKeyCount();
 
@@ -213,12 +213,8 @@ void CPrefs::SetKademliaFiles()
 
 uint8_t CPrefs::GetMyConnectOptions(bool encryption, bool callback)
 {
-	// Connect options Tag
-	// 4 Reserved (!)
-	// 1 Direct Callback
-	// 1 CryptLayer Required
-	// 1 CryptLayer Requested
-	// 1 CryptLayer Supported
+	// Connect options tag: 4 reserved (!), 1 direct callback, 1 CryptLayer required,
+	// 1 CryptLayer requested, 1 CryptLayer supported.
 
 	// direct callback is only possible if connected to kad, tcp firewalled and verified UDP open (for
 	// example on a full cone NAT)

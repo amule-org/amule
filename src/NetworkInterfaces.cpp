@@ -41,10 +41,9 @@
 #include <netinet/in.h>
 #include <arpa/inet.h> // inet_ntop
 #include <unistd.h>    // close() for the per-address flag probe
-// Every POSIX target other than Linux that this project builds for keeps the
-// per-address IPv6 flags behind SIOCGIFAFLAG_IN6 instead of a /proc file. The
-// header is BSD-family only, so it is reached by name rather than by "not
-// Linux", which would break the first time somebody builds on Solaris.
+// Every POSIX target other than Linux that this project builds for keeps the per-address IPv6 flags
+// behind SIOCGIFAFLAG_IN6 instead of a /proc file. The header is BSD-family only, so it is reached
+// by name rather than by "not Linux", which would break the first time somebody builds on Solaris.
 #if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || \
 	defined(__DragonFly__)
 #include <sys/ioctl.h>
@@ -59,22 +58,21 @@ typedef std::array<std::uint8_t, 16> Ipv6Bytes;
 
 #if !defined(__WINDOWS__) && defined(__linux__)
 
-//! IFA_F_TENTATIVE, spelled out rather than pulled from <linux/if_addr.h>:
-//! that header is not reliably reachable from userspace across the libc
-//! implementations this project builds against, and the value is ABI-stable.
+//! IFA_F_TENTATIVE, spelled out rather than pulled from <linux/if_addr.h>: that header is not
+//! reliably reachable from userspace across the libc implementations this project builds against,
+//! and the value is ABI-stable.
 const unsigned int LINUX_IFA_F_TENTATIVE = 0x40;
 
 /**
  * Per-address IPv6 flags, as the kernel reports them.
  *
- * getifaddrs() lists which IPv6 addresses exist but not what state each one is
- * in, and on Linux this file is the only place the flags are exposed. Without
- * it an address still running duplicate address detection is indistinguishable
- * from a finished one.
+ * getifaddrs() lists which IPv6 addresses exist but not what state each one is in, and on Linux
+ * this file is the only place the flags are exposed. Without it an address still running duplicate
+ * address detection is indistinguishable from a finished one.
  *
- * An address missing from this list is treated as flagless rather than
- * skipped: a container or a stripped-down root may not mount /proc, and losing
- * the whole enumeration there would be worse than losing the DAD distinction.
+ * An address missing from this list is treated as flagless rather than skipped: a container or a
+ * stripped-down root may not mount /proc, and losing the whole enumeration there would be worse
+ * than losing the DAD distinction.
  */
 std::vector<std::pair<Ipv6Bytes, unsigned int>> ReadIfInet6Flags()
 {
@@ -127,9 +125,9 @@ std::vector<NetworkInterface> DetectNetworkInterfaces()
 {
 	std::vector<NetworkInterface> result;
 
-	// Find the entry for @a name, appending one if this is the first time we
-	// have seen it. Needed because the POSIX enumeration lists one node per
-	// address family, so a dual-stack interface appears more than once.
+	// Find the entry for @a name, appending one if this is the first time we have seen it.
+	// Needed because the POSIX enumeration lists one node per address family, so a dual-stack
+	// interface appears more than once.
 	auto entryFor = [&result](const wxString &name) -> NetworkInterface & {
 		for (NetworkInterface &iface : result) {
 			if (iface.name == name) {
@@ -179,10 +177,10 @@ std::vector<NetworkInterface> DetectNetworkInterfaces()
 						iface.ipv4.Add(wxString::FromUTF8(text));
 					}
 				} else if (sa->sa_family == AF_INET6) {
-					// Anything but Preferred is an address we cannot claim
-					// as ours: Tentative is still in duplicate address
-					// detection, Duplicate lost it, Invalid and Deprecated
-					// are on their way out.
+					// Anything but Preferred is an address we cannot claim:
+					// Tentative is still in duplicate address detection,
+					// Duplicate lost it, Invalid and Deprecated are on their
+					// way out.
 					if (ua->DadState != IpDadStatePreferred) {
 						continue;
 					}
@@ -200,9 +198,8 @@ std::vector<NetworkInterface> DetectNetworkInterfaces()
 #ifdef __linux__
 		const std::vector<std::pair<Ipv6Bytes, unsigned int>> inet6Flags = ReadIfInet6Flags();
 #elif defined(SIOCGIFAFLAG_IN6)
-		// One socket for the whole walk: the ioctl needs a handle of the
-		// right family, and opening one per address would turn an
-		// enumeration into a syscall storm.
+		// One socket for the whole walk: the ioctl needs a handle of the right family, and
+		// opening one per address would turn an enumeration into a syscall storm.
 		const int flagSocket = ::socket(AF_INET6, SOCK_DGRAM, 0);
 #endif
 		for (struct ifaddrs *p = ifaces; p != nullptr; p = p->ifa_next) {

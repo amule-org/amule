@@ -33,24 +33,24 @@
 /**
  * What a byte stream has to do to stand in for a TCP socket here.
  *
- * The eD2k stack above -- CEMSocket and everything it carries -- is written
- * against CLibSocket, so a second transport is only possible if it answers the
- * same questions. This is that set of questions, named once, so a transport can
- * be written and tested without a socket, a peer, or the app.
+ * The eD2k stack above -- CEMSocket and everything it carries -- is written against CLibSocket, so
+ * a second transport is only possible if it answers the same questions. This is that set of
+ * questions, named once, so a transport can be written and tested without a socket, a peer, or the
+ * app.
  *
- * The contract that matters is the would-block one, because CEMSocket depends
- * on it rather than merely tolerating it:
+ * The contract that matters is the would-block one, because CEMSocket depends on it rather than
+ * merely tolerating it:
  *
- *   - a read or write that cannot proceed returns 0, sets the matching Blocks
- *     flag, and leaves LastError() at 0;
- *   - a transport that returns 0 with an error set is reporting a dead
- *     connection, and the stack drops the peer.
+ *   - a read or write that cannot proceed returns 0, sets the matching Blocks flag, and leaves
+ * LastError() at 0;
+ *   - a transport that returns 0 with an error set is reporting a dead connection, and the stack
+ * drops the peer.
  *
- * Returning 0 and an error for a full send window is therefore not a cosmetic
- * mistake: it disconnects a peer whose window will open a millisecond later.
+ * Returning 0 and an error for a full send window is therefore not cosmetic: it disconnects a peer
+ * whose window will open a millisecond later.
  *
- * Deliberately free of Boost.Asio and of libutp. Both exist below this line;
- * neither belongs in the include closure of the code that only wants bytes.
+ * Deliberately free of Boost.Asio and of libutp. Both exist below this line; neither belongs in the
+ * include closure of code that only wants bytes.
  */
 class IStreamTransport
 {
@@ -78,26 +78,22 @@ public:
 	/**
 	 * Zero unless the stream actually failed. Never set for a would-block.
 	 *
-	 * Only its truthiness is defined: the value is opaque and carries no
-	 * meaning a caller may act on. It shares its name and type with
-	 * `CLibSocket::LastError()`, which returns a boost error_code value, so
-	 * the trap this warns about is a call site comparing against an errno or
-	 * WinSock constant and matching by coincidence. Implementations keep
-	 * their values outside those ranges so such a comparison cannot
-	 * accidentally succeed; ask the transport for the reason instead.
+	 * Only its truthiness is defined; the value is opaque. It shares its name and type with
+	 * `CLibSocket::LastError()`, which returns a boost error_code, so the trap is a call site
+	 * comparing against an errno or WinSock constant and matching by coincidence.
+	 * Implementations keep their values outside those ranges; ask the transport for the reason
+	 * instead.
 	 */
 	virtual int LastError() const = 0;
 
 	/**
 	 * The peer's address, full width.
 	 *
-	 * Deliberately not the 32-bit form `CLibSocket::GetPeerInt()` returns,
-	 * even though mirroring it would make substitution simpler: this series
-	 * exists because a peer's identity does not fit in 32 bits, and a new
-	 * interface that narrows by construction would put back exactly what
-	 * NetworkAddress.h was added to remove. A call site that genuinely needs
-	 * the eD2k wire form narrows with ToIPv4NetworkOrder() and handles the
-	 * failure, which is the point of that API.
+	 * Deliberately not the 32-bit form `CLibSocket::GetPeerInt()` returns, even though
+	 * mirroring it would make substitution simpler: this series exists because a peer's
+	 * identity does not fit in 32 bits, and a new interface that narrows by construction would
+	 * put back exactly what NetworkAddress.h removed. A call site that genuinely needs the eD2k
+	 * wire form narrows with ToIPv4NetworkOrder() and handles the failure.
 	 */
 	virtual CNetworkAddress GetPeerAddress() const = 0;
 	virtual uint16_t GetPeerPort() const = 0;

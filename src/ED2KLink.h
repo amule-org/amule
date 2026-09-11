@@ -43,9 +43,8 @@ public:
 	} LinkType;
 
 	/**
-	 * Parses a link, accepting percent-encoded '|' delimiters.
-	 *
-	 * Throws a wxString describing the problem if the link is not one.
+	 * Parses a link, accepting percent-encoded '|' delimiters. Throws a wxString describing the
+	 * problem if the link is not one.
 	 */
 	static CED2KLink *CreateLinkFromUrl(const wxString &link);
 
@@ -85,7 +84,7 @@ public:
 	CMemFile *m_hashset;
 
 	/**
-	 * Structure used to store sources found in file links.
+	 * Stores sources found in file links.
 	 */
 	struct SED2KLinkSource
 	{

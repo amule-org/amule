@@ -44,13 +44,10 @@
 using namespace muleunit;
 
 DECLARE(AmuleApiConfig)
-// Fresh per-test config dir under the system temp tree. Tearing
-// down inside the test bodies avoids muleunit's lack of a
-// TearDown hook in the DECLARE_SIMPLE style — each test owns its
-// own dir. wxStandardPaths::GetTempDir() returns `/tmp` on
-// POSIX and `%TEMP%` on Windows (typically `C:\\Users\\<user>\\
-	// AppData\\Local\\Temp`), so the test is portable across the CI
-// matrix.
+// Fresh per-test config dir under the system temp tree. Tearing down inside the test bodies
+// works around muleunit's lack of a TearDown hook in the DECLARE_SIMPLE style -- each test owns
+// its own dir. wxStandardPaths::GetTempDir() returns `/tmp` on POSIX and `%TEMP%` on Windows, so
+// the test is portable across the CI matrix.
 wxString MakeTmpDir(const char *tag)
 {
 	wxString d;
@@ -90,10 +87,9 @@ TEST(AmuleApiConfig, FreshLoadProducesStreamingDefaults)
 	ASSERT_EQUALS(static_cast<unsigned>(6), cfg.StreamingCfg().max_concurrent_file_responses);
 }
 
-// Hand-writes an amuleapi.conf carrying one `[Streaming]` line, at the 0600
-// Load() insists on, and reports what the parser made of the file-response cap.
-// The dir is created first so the first-run path can't get in ahead and write
-// the defaults we are trying to override.
+// Hand-writes an amuleapi.conf carrying one `[Streaming]` line, at the 0600 Load() insists on, and
+// reports what the parser made of the file-response cap. The dir is created first so the first-run
+// path cannot get in ahead and write the defaults we are trying to override.
 unsigned LoadedFileResponseCap(const char *tag, const char *streaming_line)
 {
 	// Not MakeTmpDir: that one is a member of the DECLARE block and these
@@ -128,9 +124,8 @@ unsigned LoadedFileResponseCap(const char *tag, const char *streaming_line)
 
 TEST(AmuleApiConfig, FileResponseCapIsConfigurable)
 {
-	// The point of the whole option: 6 is a default, not a ceiling. A NAS
-	// with several devices behind one proxy address raises it; a Pi serving
-	// off the disk it downloads to lowers it.
+	// The point of the whole option: 6 is a default, not a ceiling. A NAS with several devices
+	// behind one proxy address raises it; a Pi serving off the disk it downloads to lowers it.
 	ASSERT_EQUALS(
 		static_cast<unsigned>(24), LoadedFileResponseCap("cap-24", "MaxConcurrentFileResponses=24"));
 	ASSERT_EQUALS(
@@ -139,11 +134,10 @@ TEST(AmuleApiConfig, FileResponseCapIsConfigurable)
 
 TEST(AmuleApiConfig, InvalidFileResponseCapFallsBackToDefault)
 {
-	// Every one of these has to land on 6 rather than on itself. Zero and a
-	// negative would close the route outright; the four-digit value would
-	// trade away the bounded-RSS property the streaming path exists for;
-	// the non-numeric one is what a comment or a stray unit looks like to
-	// wxFileConfig.
+	// Every one of these has to land on 6 rather than on itself. Zero and a negative would
+	// close the route outright; the four-digit value would trade away the bounded-RSS property
+	// the streaming path exists for; the non-numeric one is what a comment or a stray unit
+	// looks like to wxFileConfig.
 	ASSERT_EQUALS(
 		static_cast<unsigned>(6), LoadedFileResponseCap("cap-zero", "MaxConcurrentFileResponses=0"));
 	ASSERT_EQUALS(
@@ -190,7 +184,7 @@ TEST(AmuleApiConfig, JwtSecretRoundTripStable)
 	ASSERT_TRUE(cfg2.Load(dir));
 	const std::vector<unsigned char> second = cfg2.JwtSecret();
 
-	// Second load reads what the first generated — same bytes.
+	// Second load reads what the first generated -- same bytes.
 	ASSERT_TRUE(first == second);
 }
 
@@ -228,9 +222,8 @@ TEST(AmuleApiConfig, SetPasswordIsReloadableAndVerifies)
 		    cfg2.VerifyPassword("00000000000000000000000000000000"));
 }
 
-// Each role is set independently. The write re-reads the file first, so
-// changing one role never reverts a change another process made to the
-// other one — that is the whole reason there is a single store.
+// Each role is set independently. The write re-reads the file first, so changing one role never
+// reverts a change another process made to the other -- the whole reason there is a single store.
 TEST(AmuleApiConfig, SetPasswordLeavesTheOtherRoleAlone)
 {
 	const wxString dir = MakeTmpDir("pw-independent");
@@ -313,9 +306,8 @@ TEST(AmuleApiConfig, PasswordChangedOnDiskIsPickedUpAtNextLogin)
 	ASSERT_TRUE(CAmuleApiConfig::MatchedRole::None == running.VerifyPassword(first));
 }
 
-// A config written before the KDF holds a bare MD5. It must still let its
-// owner in, and the record must be rewritten at the current cost so the
-// upgrade needs no operator step.
+// A config written before the KDF holds a bare MD5. It must still let its owner in, and the record
+// must be rewritten at the current cost so the upgrade needs no operator step.
 TEST(AmuleApiConfig, LegacyBareMd5IsUpgradedOnSuccessfulLogin)
 {
 	const wxString dir = MakeTmpDir("pw-legacy");
@@ -347,9 +339,8 @@ TEST(AmuleApiConfig, LegacyBareMd5IsUpgradedOnSuccessfulLogin)
 TEST(AmuleApiConfig, MalformedPasswordLineRejected)
 {
 	const wxString dir = MakeTmpDir("pw-bad");
-	// Hand-create the dir + a bad passwords file BEFORE Load() runs,
-	// otherwise the auto-create path writes a fresh empty file and
-	// we never exercise the parser failure path.
+	// Hand-create the dir and a bad passwords file BEFORE Load() runs, otherwise the auto-
+	// create path writes a fresh empty file and the parser failure path is never exercised.
 	::wxMkdir(dir, 0700);
 	wxFile bad(dir + "/amuleapi-passwords", wxFile::write);
 	const char *bad_line = "admin=not_a_valid_record\n";
@@ -365,26 +356,21 @@ TEST(AmuleApiConfig, MalformedPasswordLineRejected)
 }
 
 #ifndef _WIN32
-// POSIX-only: the production hardening (mode-bit check in
-// AmuleApiConfig::EnforceOwnerOnly) is itself POSIX-only. Windows
-// uses ACLs rather than POSIX mode bits, and the typical Windows
-// daemon footprint (single-operator workstation, %USERPROFILE%-
-// scoped config dir) makes the threat model very different. If
-// amuleapi ever ships a Windows hardening pass (via GetSecurityInfo
-/// GetEffectiveRightsFromAcl on the secret file's DACL), the
-// matching test should land under `#ifdef _WIN32` here. Until then,
-// the #ifndef intentionally skips the assertion on Windows so the
-// test suite stays green there without misrepresenting the
-// platform's posture.
+// POSIX-only: the production hardening (the mode-bit check in AmuleApiConfig::EnforceOwnerOnly) is
+// itself POSIX-only. Windows uses ACLs rather than POSIX mode bits, and the typical Windows daemon
+// footprint -- single-operator workstation, %USERPROFILE%-scoped config dir -- makes the threat
+// model very different. If amuleapi ever ships a Windows hardening pass, via GetSecurityInfo /
+// GetEffectiveRightsFromAcl on the secret file's DACL, the matching test belongs under `#ifdef
+// _WIN32` here. Until then the #ifndef intentionally skips the assertion on Windows, so the suite
+// stays green there without misrepresenting the platform's posture.
 TEST(AmuleApiConfig, LooserSecretFilePermissionsRejected)
 {
 	const wxString dir = MakeTmpDir("perm");
 	CAmuleApiConfig cfg;
 	ASSERT_TRUE(cfg.Load(dir)); // first load auto-creates with 0600
 
-	// Loosen the secret file to 0644 and verify the next Load fails
-	// with an actionable error. This guards the "operator
-	// accidentally chmodded the secret world-readable" scenario.
+	// Loosen the secret file to 0644 and verify the next Load fails with an actionable error.
+	// This guards the "operator accidentally chmodded the secret world-readable" scenario.
 	const std::string path = std::string((dir + "/amuleapi-jwt-secret").utf8_str());
 	ASSERT_EQUALS(0, ::chmod(path.c_str(), S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH));
 

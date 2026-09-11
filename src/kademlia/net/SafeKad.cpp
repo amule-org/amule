@@ -59,10 +59,9 @@ bool CSafeKad::TrackNode(
 	if (it == m_trackedNodes.End()) {
 		Cleanup(now); // make room for a new node to track
 		if (m_trackedNodes.Size() >= MAX_TRACKED_NODES) {
-			// Still full of entries too recent to drop: evict the
-			// least recently referenced one anyway, because refusing
-			// to track is worse than forgetting the oldest node --
-			// an untracked node gets no identity checks at all.
+			// Still full of entries too recent to drop: evict the least recently
+			// referenced one anyway, because refusing to track is worse than forgetting
+			// the oldest node -- an untracked node gets no identity checks at all.
 			m_trackedNodes.Erase(m_trackedNodes.OldestKey());
 		}
 		sTracked tracked;
@@ -77,21 +76,19 @@ bool CSafeKad::TrackNode(
 	sTracked tracked = it->second;
 	bool accepted = true;
 	if (id != tracked.m_lastID) {
-		// A verified identity is not replaced by an unverified claim:
-		// otherwise anyone able to spoof a source address could rewrite
-		// our view of a node that has actually proved who it is.
+		// A verified identity is not replaced by an unverified claim: otherwise anyone able
+		// to spoof a source address could rewrite our view of a node that has actually
+		// proved who it is.
 		if (tracked.m_idVerified && !idVerified) {
 			accepted = false;
 		} else if (now - tracked.m_lastIDChange < MIN_ID_CHANGE_INTERVAL) {
-			// Rotating identity faster than once an hour. Mark the
-			// address problematic, and escalate to a ban if it was
-			// problematic already -- one rejected change is a
-			// plausible accident, two inside 300 s is not.
+			// Rotating identity faster than once an hour. Mark the address problematic,
+			// and escalate to a ban if it was problematic already -- one rejected
+			// change is a plausible accident, two inside 300 s is not.
 			//
-			// idVerified gates the escalation, not the refusal. The
-			// rotation is refused either way, but only a peer that has
-			// proved which port it listens on can be banned for it:
-			// otherwise two fabricated mentions of an honest node ban
+			// idVerified gates the escalation, not the refusal. The rotation is refused
+			// either way, but only a peer that has proved which port it listens on can
+			// be banned for it: otherwise two fabricated mentions of an honest node ban
 			// it, which is the attack the verification exists to stop.
 			accepted = false;
 			if (idVerified) {
@@ -164,18 +161,17 @@ bool CSafeKad::BanAddress(uint32_t ip, time_t now)
 	const bool isNew = (it == m_bannedAddresses.End());
 	sBanned banned;
 	if (it == m_bannedAddresses.End() && m_bannedAddresses.Size() >= MAX_BANNED_ADDRESSES) {
-		// A thousand simultaneously banned addresses means something much
-		// larger is going on than one bad node; drop the oldest ban
-		// rather than growing without bound.
+		// A thousand simultaneously banned addresses means something much larger is going
+		// on than one bad node; drop the oldest ban rather than growing without bound.
 		m_bannedAddresses.Erase(m_bannedAddresses.OldestKey());
 	}
 	banned.m_banned = now;
 	banned.m_lastReferenced = now;
 	m_bannedAddresses.Set(ip, banned);
 
-	// A banned address is not worth tracking an identity for, and its
-	// problematic entries have been superseded by the stronger measure.
-	// The ban covers the address, so every port on it goes.
+	// A banned address is not worth tracking an identity for, and its problematic entries have
+	// been superseded by the stronger measure. The ban covers the address, so every port on it
+	// goes.
 	DropAllPortsOf(ip);
 
 	return isNew;
@@ -183,9 +179,8 @@ bool CSafeKad::BanAddress(uint32_t ip, time_t now)
 
 void CSafeKad::DropAllPortsOf(uint32_t ip)
 {
-	// Collect first, erase after: erasing invalidates the iterator, and the
-	// aged map has to see each removal individually to keep its age index in
-	// step.
+	// Collect first, erase after: erasing invalidates the iterator, and the aged map has to see
+	// each removal individually to keep its age index in step.
 	std::vector<uint16_t> ports;
 	for (CKadAgedMap<SKadNodeAddress, sTracked>::iterator it =
 			m_trackedNodes.LowerBound(SKadNodeAddress(ip, 0));
@@ -287,28 +282,24 @@ bool CSafeKad::IsBadNode(uint32_t ip,
 			m_trackedNodes.Set(address, tracked);
 			return false;
 		}
-		// A different identity. A node below 0x08 could not prove which
-		// port it listens on, so an unverified identity change from one
-		// is refused outright rather than rate-limited.
+		// A different identity. A node below 0x08 could not prove which port it listens on,
+		// so an unverified identity change from one is refused outright rather than rate-
+		// limited.
 		if ((it->second.m_idVerified || kadVersion < MIN_PORT_VERIFIABLE_VERSION) && !idVerified) {
-			// Refused, and deliberately not escalated. This branch's own
-			// condition ends in !idVerified, so everything reaching it is
-			// an unverified claim -- and an unverified claim is exactly
-			// what a third party can fabricate about somebody else.
-			// ProcessKademlia2Response() calls AddUnfiltered() with
-			// verified hardcoded to false, and the peer answering our
-			// request picks the (IP, port, ID) triples it lists, so
-			// banning here would let one peer get an honest node banned
-			// by mentioning it twice. m_lastIDChange is stamped when an
-			// entry is created, so the sub-hour window covers every
-			// freshly-learned contact rather than only ones that really
-			// did just change ID.
+			// Refused, and deliberately not escalated. This branch's own condition ends
+			// in !idVerified, so everything reaching it is an unverified claim -- and
+			// an unverified claim is exactly what a third party can fabricate about
+			// somebody else. ProcessKademlia2Response() calls AddUnfiltered() with
+			// verified hardcoded to false, and the peer answering our request picks the
+			// (IP, port, ID) triples it lists, so banning here would let one peer get
+			// an honest node banned by mentioning it twice. m_lastIDChange is stamped
+			// when an entry is created, so the sub-hour window covers every freshly-
+			// learned contact rather than only ones that really did just change ID.
 			//
-			// Both references decline for this reason; emule-qt states
-			// it outright: the ban requires verification by design, and
-			// unverified flips are recorded but never banned. Refusing
-			// still costs the sender its rotation, which is the part
-			// that has to hold.
+			// Both references decline for this reason; emule-qt states it outright: the
+			// ban requires verification by design, and unverified flips are recorded
+			// but never banned. Refusing still costs the sender its rotation, which is
+			// the part that has to hold.
 			return true;
 		}
 		// TrackNode applies the one-hour interval and the escalation.
@@ -316,10 +307,9 @@ bool CSafeKad::IsBadNode(uint32_t ip,
 	}
 
 	if (onlyOneNodePerIP && HasOtherTrackedPort(ip, port)) {
-		// A second Kad port on one address is either a NAT hiding several
-		// clients or one client pretending to be several. Both are bad
-		// for the routing table, and the honest case still has its first
-		// port tracked and usable.
+		// A second Kad port on one address is either a NAT hiding several clients or one
+		// client pretending to be several. Both are bad for the routing table, and the
+		// honest case still has its first port tracked and usable.
 		return true;
 	}
 	TrackNode(ip, port, id, idVerified, now);

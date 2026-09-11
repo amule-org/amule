@@ -31,8 +31,7 @@
 #include <wx/wxcrt.h>
 
 /**
- * MuleUnit namespace.
- * This is the namespace containing all muleunit classes.
+ * MuleUnit namespace, holding all muleunit classes.
  */
 namespace muleunit
 {
@@ -83,15 +82,13 @@ public:
 };
 
 /**
- * This class is used to produce informative backtraces
+ * Produces informative backtraces.
  *
- * This is done by specifying a "context" for a given scope, using
- * the CONTEXT macro, at which point a description is added to the
- * current list of contexts. At destruction, when the scope is exited,
- * the context is removed from the queue.
+ * Specify a "context" for a given scope with the CONTEXT macro, which adds a description to the
+ * current list of contexts; at destruction, when the scope is exited, the context is removed from
+ * the queue.
  *
- * The resulting "backtrace" can then be printed by calling the
- * PrintBT() function of an CTestFailureException.
+ * The resulting "backtrace" is printed by CTestFailureException::PrintBT().
  */
 class CContext
 {
@@ -110,9 +107,7 @@ public:
 //! Specifies the context of the current scope.
 #define CONTEXT(x) CContext wxCONCAT(context, __LINE__)(__FILE__, __LINE__, x)
 
-/**
- * This class disables assertions while it is in scope.
- */
+/// Disables assertions while it is in scope.
 class CAssertOff
 {
 public:
@@ -120,9 +115,7 @@ public:
 	~CAssertOff();
 };
 
-/**
- * Helperfunction that converts basic types to strings.
- */
+/// Converts basic types to strings.
 template <typename TYPE> wxString StringFrom(const TYPE &value)
 {
 	return wxString() << value;
@@ -140,61 +133,50 @@ inline wxString StringFrom(signed long long value)
 
 /**
  * Test class containing all macros to do unit testing.
- * A test object represents a test that will be executed. Once it has been
- * executed, it reports all failures in the testPartResult linked list.
  *
- * A failure occurs when a test fails (condition is false).
+ * A test object represents a test that will be executed. Once it has run, it reports all failures
+ * in the testPartResult linked list. A failure occurs when a test's condition is false.
  */
 class Test
 {
 public:
 	/**
-	 * Main Test constructor. Used to create a test that will register itself
-	 * with TestRegistry and with its test case.
+	 * Main Test constructor. Creates a test that registers itself with TestRegistry and with
+	 * its test case.
 	 * @param testCaseName Name of the test case this test belongs to
 	 * @param testName Name of this test
 	 */
 	Test(const wxString &testCaseName, const wxString &testName);
 
 	/**
-	 * Main Test destructor
-	 * Delete the testPartResult linked list. This is why the user should
-	 * only use the macro provided by muleunit to report a test result.
+	 * Main Test destructor. Deletes the testPartResult linked list, which is why the user
+	 * should only report a test result through the macros muleunit provides.
 	 */
 	virtual ~Test();
 
-	/**
-	 * Fixtures that will be called after run().
-	 */
+	/// Fixtures that will be called after run().
 	virtual void tearDown();
 
-	/**
-	 * Fixtures that will be called before run().
-	 */
+	/// Fixtures that will be called before run().
 	virtual void setUp();
 
 	/**
-	 * Test code should be in this method.
-	 * run() will be called by the Test's TestCase, hence subclasses of Test
-	 * should override this method.
+	 * Test code goes in this method. run() is called by the Test's TestCase, so subclasses of
+	 * Test should override it.
 	 */
 	virtual void run();
 
 	/**
-	 * Get the name of the TestCase this test belongs to. The name of the
-	 * TestCase is the first parameter of the test declaration. For example,
-	 * if a test is declared as TEST(TESTCASE1, TEST1), this method will return
-	 * "TESTCASE1".
+	 * Get the name of the TestCase this test belongs to: the first parameter of the test
+	 * declaration. For a test declared as TEST(TESTCASE1, TEST1) this returns "TESTCASE1".
 	 *
 	 * @return The TestCase name of this test
 	 */
 	const wxString &getTestCaseName() const;
 
 	/**
-	 * Get the name of this test. The name of the test is the second
-	 * parameter of the test declaration. For example,
-	 * if a test is declared as TEST(TESTCASE1, TEST1), this method will return
-	 * "TEST1".
+	 * Get the name of this test: the second parameter of the test declaration. For a test
+	 * declared as TEST(TESTCASE1, TEST1) this returns "TEST1".
 	 *
 	 * @return The name of this test.
 	 */
@@ -219,8 +201,7 @@ protected:
 #define THROW_TEST_FAILURE(message) throw CTestFailureException(message, __FILE__, __LINE__)
 
 /**
- * Asserts that a condition is true.
- * If the condition is not true, a failure is generated.
+ * Asserts that a condition is true; a failure is generated if it is not.
  * @param condition Condition to fulfill for the assertion to pass
  * @param message Message that will be displayed if this assertion fails
  */
@@ -231,19 +212,15 @@ protected:
 		} \
 	}
 
-/**
- * Same as ASSERT_TRUE, but without an explicit message.
- */
+/// Same as ASSERT_TRUE, but without an explicit message.
 #define ASSERT_TRUE(condition) ASSERT_TRUE_M(condition, wxString("Not true: ") + #condition);
 
-/**
- * Same as ASSERT_TRUE, but without an explicit message and condition must be false.
- */
+/// Same as ASSERT_TRUE, but without an explicit message and the condition must be false.
 #define ASSERT_FALSE(condition) ASSERT_TRUE_M(!(condition), wxString("Not false: ") + #condition);
 
 /**
- * Asserts that the two parameters are equals. Operator == must be defined.
- * If the two parameters are not equals, a failure is generated.
+ * Asserts that the two parameters are equal; operator == must be defined. A failure is generated if
+ * they are not.
  * @param expected Expected value
  * @param actual Actual value to be compared
  * @param message Message that will be displayed if this assertion fails
@@ -255,25 +232,18 @@ protected:
 		} \
 	}
 
-/**
- * Same as ASSERT_EQUALS_M, but without an explicit message.
- */
+/// Same as ASSERT_EQUALS_M, but without an explicit message.
 #define ASSERT_EQUALS(expected, actual) Test::DoAssertEquals(__FILE__, __LINE__, expected, actual)
 
 /**
- * Make a test fails with the given message.
- * @param text Failure message
+ * Makes a test fail with the given message. @param text Failure message
  */
 #define FAIL_M(text) THROW_TEST_FAILURE(text)
 
-/**
- * Same as FAIL_M, but without an explicit message.
- */
+/// Same as FAIL_M, but without an explicit message.
 #define FAIL() FAIL_M("Test failed.")
 
-/**
- * Requires that an exception of a certain type is raised.
- */
+/// Requires that an exception of a certain type is raised.
 #define ASSERT_RAISES_M(type, call, message) \
 	try { \
 		{ \
@@ -285,21 +255,17 @@ protected:
 		THROW_TEST_FAILURE(wxString::FromAscii(e.what())); \
 	}
 
-/**
- * Same as ASSERT_RAISES, but without an explicit message.
- */
+/// Same as ASSERT_RAISES, but without an explicit message.
 #define ASSERT_RAISES(type, call) ASSERT_RAISES_M(type, (call), "Exception of type " #type " not raised.")
 
 /**
- * Define a test in a TestCase using test fixtures.
- * User should put his test code between brackets after using this macro.
+ * Define a test in a TestCase using test fixtures. Put the test code between brackets after this
+ * macro.
  *
- * This macro should only be used if test fixtures were declared earlier in
- * this order: DECLARE, SETUP, TEARDOWN.
- * @param testCaseName TestCase name where the test belongs to. Should be
- * the same name of DECLARE, SETUP and TEARDOWN.
+ * Only use this if test fixtures were declared earlier, in this order: DECLARE, SETUP, TEARDOWN.
+ * @param testCaseName TestCase the test belongs to. The same name as DECLARE, SETUP and TEARDOWN.
  * @param testName Unique test name.
- * @param testDisplayName This will be displayed when running the test.
+ * @param testDisplayName Displayed when running the test.
  */
 #define TEST_M(testCaseName, testName, testDisplayName) \
 	class testCaseName##testName##Test : public testCaseName##Declare##Test \
@@ -316,24 +282,19 @@ protected:
 	void testCaseName##testName##Test::run()
 
 /**
- * Define a test in a TestCase using test fixtures.
- * User should put his test code between brackets after using this macro.
+ * Define a test in a TestCase using test fixtures. Put the test code between brackets after this
+ * macro.
  *
- * This macro should only be used if test fixtures were declared earlier in
- * this order: DECLARE, SETUP, TEARDOWN.
- * @param testCaseName TestCase name where the test belongs to. Should be
- * the same name of DECLARE, SETUP and TEARDOWN.
+ * Only use this if test fixtures were declared earlier, in this order: DECLARE, SETUP, TEARDOWN.
+ * @param testCaseName TestCase the test belongs to. The same name as DECLARE, SETUP and TEARDOWN.
  * @param testName Unique test name.
  */
 #define TEST(testCaseName, testName) TEST_M(testCaseName, testName, #testName)
 
 /**
- * Location to declare variables and objects.
- * This is where user should declare members accessible by TESTF,
- * SETUP and TEARDOWN.
+ * Location to declare variables and objects: the members accessible by TESTF, SETUP and TEARDOWN.
  *
- * User should not use brackets after using this macro. User should
- * not initialize any members here.
+ * Do not use brackets after this macro, and do not initialize any members here.
  *
  * @param testCaseName TestCase name of the fixtures
  * @see END_DECLARE for more information.
@@ -349,18 +310,13 @@ protected:
 		virtual void run() = 0;
 
 /**
- * Ending macro used after DECLARE.
- *
- * User should use this macro after declaring members with
- * DECLARE macro.
+ * Ending macro, used after declaring members with DECLARE.
  */
 #define END_DECLARE \
 	} \
 	;
 
-/**
- * Macro for creating a fixture with no setup/teardown or member variables.
- */
+/// Creates a fixture with no setup/teardown or member variables.
 #define DECLARE_SIMPLE(testCaseName) \
 	DECLARE(testCaseName) \
 	END_DECLARE;

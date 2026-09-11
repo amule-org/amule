@@ -46,7 +46,7 @@ TEST(Jwt, IssueProducesThreeDottedParts)
 {
 	CJwt auth(MakeSecret(0xAB));
 	const std::string token = auth.Issue(Role::ADMIN).token;
-	// Header.Payload.Signature — exactly two dots.
+	// Header.Payload.Signature -- exactly two dots.
 	int dots = 0;
 	for (size_t i = 0; i < token.size(); ++i) {
 		if (token[i] == '.')
@@ -84,7 +84,7 @@ TEST(Jwt, ExpiryIs24Hours)
 	const CJwt::IssuedToken issued = auth.Issue(Role::ADMIN);
 	const std::time_t after = std::time(nullptr);
 
-	// expires_at must be between [before+86400, after+86400] — same-
+	// expires_at must be between [before+86400, after+86400] -- same-
 	// second tolerance for the clock tick.
 	const std::time_t lifetime = 24 * 60 * 60;
 	ASSERT_TRUE(issued.expires_at >= before + lifetime);
@@ -102,10 +102,9 @@ TEST(Jwt, IssueEmitsJti)
 
 TEST(Jwt, IssueProducesUniqueJti)
 {
-	// 128 random bits gives 1-in-2^64 collision odds across a single
-	// instance's lifetime. Across 1000 issues we'd need ~2^77 calls
-	// before a collision becomes likely; 1000 is comfortably in the
-	// "never sees a dupe" range and catches any RNG-reset bug.
+	// 128 random bits gives 1-in-2^64 collision odds across a single instance's lifetime.
+	// Across 1000 issues we would need ~2^77 calls before a collision becomes likely; 1000 is
+	// comfortably in the "never sees a dupe" range and catches any RNG-reset bug.
 	CJwt auth(MakeSecret(0x12));
 	std::set<std::string> seen;
 	for (int i = 0; i < 1000; ++i) {
@@ -174,11 +173,10 @@ TEST(Jwt, MalformedNoDotsRejected)
 
 TEST(Jwt, MalformedBase64Rejected)
 {
-	// Each section has invalid base64url chars (`=` / `+` aren't in
-	// the b64url alphabet). The test pins "malformed input gets
-	// rejected" without claiming WHICH layer caught it — currently
-	// the MAC compare bails on length mismatch, but if you reorder
-	// the verify pipeline the test still holds.
+	// Each section has invalid base64url chars (`=` / `+` are not in the b64url alphabet). The
+	// test pins "malformed input gets rejected" without claiming WHICH layer caught it --
+	// currently the MAC compare bails on length mismatch, but reordering the verify pipeline
+	// leaves the test holding.
 	CJwt auth(MakeSecret(0x88));
 	CJwt::VerifyResult r;
 	ASSERT_FALSE(auth.Verify("!!!.bbb.ccc", r));
@@ -186,14 +184,10 @@ TEST(Jwt, MalformedBase64Rejected)
 	ASSERT_FALSE(auth.Verify("aaa.bbb.!!!", r));
 }
 
-// --- Header-validation tests (alg-confusion defence) ----------------
-//
-// These tests build a custom JWT byte-for-byte: an arbitrary header
-// + payload + the *correct* HMAC-SHA-256 signature using the test
-// secret. That means the MAC compare succeeds and we reach the
-// header alg/typ check inside Verify(). If the check is ever
-// regressed (e.g. someone removes it for "performance"), these
-// tests start failing.
+// Header-validation tests (alg-confusion defence). These build a custom JWT byte for byte: an
+// arbitrary header + payload + the *correct* HMAC-SHA-256 signature using the test secret. The MAC
+// compare therefore succeeds and we reach the header alg/typ check inside Verify(). If that check
+// is ever regressed -- someone removing it for "performance" -- these tests start failing.
 
 namespace
 {
@@ -298,7 +292,7 @@ TEST(Jwt, ExpInPastRejected)
 {
 	const auto secret = MakeSecret(0xEE);
 	CJwt auth(secret);
-	// Yesterday — Verify must reject expired tokens regardless of MAC.
+	// Yesterday -- Verify must reject expired tokens regardless of MAC.
 	const std::time_t yesterday = std::time(nullptr) - 86400;
 	const std::string token = CraftToken(secret,
 		"{\"alg\":\"HS256\",\"typ\":\"JWT\"}",
@@ -320,9 +314,8 @@ TEST(Jwt, MalformedPayloadJsonRejected)
 
 TEST(Jwt, MissingJtiRejected)
 {
-	// Crafted token with a valid HS256 MAC, valid header, valid
-	// role/exp — but no `jti` claim. amuleapi's revocation list
-	// keys off jti, so a token without one would create a hole in
+	// Crafted token with a valid HS256 MAC, valid header, valid role/exp -- but no `jti` claim.
+	// amuleapi's revocation list keys off jti, so a token without one would create a hole in
 	// the revocation check; Verify() must refuse to admit one.
 	const auto secret = MakeSecret(0x01);
 	CJwt auth(secret);
@@ -334,14 +327,12 @@ TEST(Jwt, MissingJtiRejected)
 
 TEST(Jwt, EmptyJtiRejected)
 {
-	// Crafted token with an empty `jti` string. The revocation list
-	// keys off jti; an empty key collides for every issuer of an
-	// empty-jti token, so Verify() must refuse.
+	// Crafted token with an empty `jti` string. The revocation list keys off jti; an empty key
+	// collides for every issuer of an empty-jti token, so Verify() must refuse.
 	const auto secret = MakeSecret(0x02);
 	CJwt auth(secret);
-	// iat + 1h exp so the mandatory-iat + lifetime-cap checks both
-	// pass and the empty-jti check is the only available reject
-	// path.
+	// iat + 1h exp so the mandatory-iat and lifetime-cap checks both pass and the empty-jti
+	// check is the only available reject path.
 	const std::time_t now = std::time(nullptr);
 	const std::string token = CraftToken(secret,
 		"{\"alg\":\"HS256\",\"typ\":\"JWT\"}",
@@ -353,10 +344,9 @@ TEST(Jwt, EmptyJtiRejected)
 
 TEST(Jwt, MissingIatRejected)
 {
-	// Without an iat claim a token has unbounded lifetime — an
-	// attacker who somehow gained mint capability could otherwise
-	// issue a token with exp = year-2100 and bypass the lifetime
-	// cap entirely. Mandatory iat closes the door.
+	// Without an iat claim a token has unbounded lifetime -- an attacker who somehow gained
+	// mint capability could otherwise issue a token with exp = year-2100 and bypass the
+	// lifetime cap entirely. Mandatory iat closes the door.
 	const auto secret = MakeSecret(0x03);
 	CJwt auth(secret);
 	const std::time_t now = std::time(nullptr);
@@ -369,11 +359,9 @@ TEST(Jwt, MissingIatRejected)
 
 TEST(Jwt, ExpIatLifetimeCapExceeded)
 {
-	// iat present + exp within the same future window, but the
-	// total (exp - iat) is two days — well past the 24-hour
-	// TOKEN_LIFETIME_SECONDS + skew. Verify must refuse: even
-	// with the secret compromised, a hostile mint can't outrun
-	// the lifetime cap.
+	// iat present and exp within the same future window, but the total (exp - iat) is two days
+	// -- well past the 24-hour TOKEN_LIFETIME_SECONDS + skew. Verify must refuse: even with the
+	// secret compromised, a hostile mint cannot outrun the lifetime cap.
 	const auto secret = MakeSecret(0x04);
 	CJwt auth(secret);
 	const std::time_t now = std::time(nullptr);
@@ -386,27 +374,23 @@ TEST(Jwt, ExpIatLifetimeCapExceeded)
 	ASSERT_FALSE(auth.Verify(token, r));
 }
 
-// --- Base64UrlDecode structural-invariant boundary tests ------------
+// Base64UrlDecode structural-invariant boundary tests. Each crafts a token whose signing input is
+// malformed in a way Base64UrlDecode is supposed to catch, then signs THAT signing input with the
+// matching HMAC so the constant-time MAC compare passes and Verify() actually reaches
+// Base64UrlDecode. Without the boundary guards Verify() would accept the malformed token; the
+// asserts pin the rejection in place.
 //
-// Each test crafts a token whose signing input is malformed in a way
-// Base64UrlDecode is supposed to catch, then signs THAT signing input
-// with the matching HMAC so the constant-time MAC compare passes and
-// Verify() actually reaches Base64UrlDecode. Without the boundary
-// guards, Verify() would accept the malformed token; the asserts pin
-// the rejection in place.
-//
-// Two invariants the impl guards (Jwt.cpp:94-100):
-//  * len % 4 == 1 — impossible for any valid base64url string
-//  * non-zero residue bits — `len % 4 == 2/3` leaves 4/2 trailing
-//    bits that a valid encoder always emits as 0
+// Two invariants the implementation guards (Jwt.cpp:94-100):
+//  * len % 4 == 1 -- impossible for any valid base64url string
+//  * non-zero residue bits -- `len % 4 == 2/3` leaves 4/2 trailing bits a valid encoder always
+// emits as 0
 
 TEST(Jwt, Base64UrlDecodeRejectsLenMod4EqualsOne)
 {
 	const auto secret = MakeSecret(0xA7);
 	CJwt auth(secret);
-	// header section has length % 4 == 1 (9 chars). Any 9-char string
-	// drawn from the b64url alphabet works; the decoder rejects on
-	// size alone before inspecting the bytes.
+	// The header section has length % 4 == 1 (9 chars). Any 9-char string drawn from the b64url
+	// alphabet works; the decoder rejects on size alone before inspecting the bytes.
 	const std::string h_b64 = "AAAAAAAAA"; // 9 chars
 	const std::string p_b64 = "AAAA";      // 4 chars (mod 4 == 0)
 	const std::string signing_input = h_b64 + "." + p_b64;
@@ -424,10 +408,9 @@ TEST(Jwt, Base64UrlDecodeRejectsNonZeroResidueBits)
 {
 	const auto secret = MakeSecret(0xA8);
 	CJwt auth(secret);
-	// 6-char b64url (len % 4 == 2) decodes to 1 byte and leaves 4
-	// trailing bits that a valid encoder always emits as 0. "AAAAAB"
-	// → 000000 000000 000000 000000 000000 000001 → 1 byte 0x00 +
-	// residue 0001. Decoder must reject the non-zero residue.
+	// 6-char b64url (len % 4 == 2) decodes to 1 byte and leaves 4 trailing bits a valid encoder
+	// always emits as 0. "AAAAAB" -> 000000 000000 000000 000000 000000 000001 -> 1 byte 0x00 +
+	// residue 0001. The decoder must reject the non-zero residue.
 	const std::string h_b64 = "AAAAAB";
 	const std::string p_b64 = "AAAA";
 	const std::string signing_input = h_b64 + "." + p_b64;
@@ -441,16 +424,13 @@ TEST(Jwt, Base64UrlDecodeRejectsNonZeroResidueBits)
 	ASSERT_FALSE(auth.Verify(token, r));
 }
 
-// --- Depth-cap defence against unauthenticated stack-overflow -------
-//
-// picojson::parse recurses one stack frame per `{`/`[`. On musl (128
-// KiB stack) a few hundred levels crash the worker — and both Verify()
-// parse sites run BEFORE the MAC verdict, so an unauthenticated peer
-// can submit `Authorization: Bearer <crafted>` with deeply-nested
-// JSON and crash the daemon. The pre-parse opener-count cap (>32
-// rejects) blocks both sides in O(body length) with zero allocations.
-// Tests craft tokens past the cap, sign with the matching HMAC so
-// the MAC compare passes, then assert Verify() rejects.
+// Depth-cap defence against unauthenticated stack overflow. picojson::parse recurses one stack
+// frame per `{`/`[`. On musl, with its 128 KiB stack, a few hundred levels crash the worker -- and
+// both Verify() parse sites run BEFORE the MAC verdict, so an unauthenticated peer can submit
+// `Authorization: Bearer <crafted>` with deeply nested JSON and crash the daemon. The pre-parse
+// opener-count cap (>32 rejects) blocks both sides in O(body length) with zero allocations. These
+// craft tokens past the cap, sign with the matching HMAC so the MAC compare passes, then assert
+// Verify() rejects.
 
 namespace
 {
@@ -474,7 +454,7 @@ TEST(Jwt, DeeplyNestedPayloadRejected)
 {
 	const auto secret = MakeSecret(0xA9);
 	CJwt auth(secret);
-	// 200 levels — well over the 32-opener cap but small enough that
+	// 200 levels -- well over the 32-opener cap but small enough that
 	// the test stays fast and doesn't itself risk a stack overflow.
 	const std::string token =
 		CraftToken(secret, "{\"alg\":\"HS256\",\"typ\":\"JWT\"}", DeeplyNested("1", 200));

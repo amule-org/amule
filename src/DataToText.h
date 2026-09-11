@@ -33,22 +33,17 @@ wxString PriorityToStr(int priority, bool isAuto);
 // Returns the textual representation of download states
 wxString DownloadStateToStr(int state, bool queueFull);
 
-/**
- * @return Human-readable client software name.
- */
+/// @return Human-readable client software name.
 const wxString GetSoftName(unsigned int software_ident);
 
 /**
  * Get "Source From" text, i.e. where we got the source from.
- *
  * @param source_from A ESourceFrom enum value.
  * @return Human-readable text for the ESourceFrom enum values.
  */
 wxString OriginToText(unsigned int source_from);
 
-/**
- * @return The textual representation of a partfile conversion state.
- */
+/// @return The textual representation of a partfile conversion state.
 wxString GetConversionState(unsigned int state);
 
 #endif /* DATATOTEXT_H */

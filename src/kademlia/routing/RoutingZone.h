@@ -54,13 +54,10 @@ class CContact;
 class CKadUDPKey;
 
 /**
- * The *Zone* is just a node in a binary tree of *Zone*s.
- * Each zone is either an internal node or a leaf node.
- * Internal nodes have "bin == null" and "subZones[i] != null",
- * leaf nodes have "subZones[i] == null" and "bin != null".
+ * The *Zone* is a node in a binary tree of *Zone*s, either internal or leaf. Internal nodes have
+ * "bin == null" and "subZones[i] != null"; leaf nodes have "subZones[i] == null" and "bin != null".
  *
- * All key pseudoaddresses are relative to the center (self), which
- * is considered to be 000..000
+ * All key pseudoaddresses are relative to the center (self), which counts as 000..000.
  */
 class CRoutingZone
 {
@@ -163,16 +160,15 @@ private:
 	void SetAllContactsVerified();
 
 	/**
-	 * Generates a new TokenBin for this zone. Used when the current zone is becoming a leaf zone.
-	 * Must be deleted by caller
+	 * Generates a new TokenBin for this zone, used when it is becoming a leaf zone. The caller
+	 * must delete it.
 	 */
 	CRoutingZone *GenSubZone(unsigned side);
 
 	/**
-	 * Zone pair is an array of two. Either both entries are null, which
-	 * means that *this* is a leaf zone, or both are non-null which means
-	 * that *this* has been split into equally sized finer zones.
-	 * The zone with index 0 is the one closer to our *self* token.
+	 * Zone pair, an array of two. Either both entries are null, meaning *this* is a leaf zone,
+	 * or both are non-null, meaning *this* has been split into equally sized finer zones. Index
+	 * 0 is the one closer to our *self* token.
 	 */
 	CRoutingZone *m_subZones[2];
 	CRoutingZone *m_superZone;
@@ -181,15 +177,14 @@ private:
 	static CUInt128 me;
 
 	/**
-	 * The level indicates what size chunk of the address space
-	 * this zone is representing. Level 0 is the whole space,
-	 * level 1 is 1/2 of the space, level 2 is 1/4, etc.
+	 * How large a chunk of the address space this zone represents. Level 0 is the whole space,
+	 * level 1 is 1/2, level 2 is 1/4, and so on.
 	 */
 	uint32_t m_level;
 
 	/**
-	 * This is the distance in number of zones from the zone at this level
-	 * that contains the center of the system; distance is wrt the XOR metric.
+	 * Distance, in number of zones, from the zone at this level holding the center of the
+	 * system. Distance is with respect to the XOR metric.
 	 */
 	CUInt128 m_zoneIndex;
 

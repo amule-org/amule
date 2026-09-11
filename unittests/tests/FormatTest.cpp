@@ -6,9 +6,8 @@
 
 using namespace muleunit;
 
-// Note: These tests have been written in accordance with the
-//       capabilities of printf found in printf(3).
-// Note to the above: Except where otherwise stated.
+// Note: These tests have been written in accordance with the capabilities of printf found in
+//       printf(3), except where otherwise stated.
 
 #define ELEMENTS(x) (sizeof(x) / sizeof(x[0]))
 #define MIN(x) std::numeric_limits<x>::min()
@@ -102,11 +101,10 @@ TEST(Format, SetStringAndGetString)
 	STANDARD_TEST(cformat, wxformat, (type)(MAX(type) / 2)); \
 	STANDARD_TEST(cformat, wxformat, MAX(type));
 
-// In wx >= 2.9 wxChar represents a Unicode code point, thus its maximum value
-// is 1114111 (0x10ffff) on platforms with 4-byte wchar_t (Linux, macOS).
-// Windows uses 2-byte wchar_t, so the ceiling is 0xffff there — do the min
-// at 32-bit width and cast back, so the narrowing from 0x10ffff to wxChar
-// happens explicitly rather than as an implicit constant conversion.
+// In wx >= 2.9 wxChar represents a Unicode code point, so its maximum is 1114111 (0x10ffff) on
+// platforms with 4-byte wchar_t (Linux, macOS). Windows uses 2-byte wchar_t, so the ceiling is
+// 0xffff there -- do the min at 32-bit width and cast back, so the narrowing from 0x10ffff to
+// wxChar happens explicitly rather than as an implicit constant conversion.
 TEST(Format, InjectwxChar)
 {
 	const uint32_t maxCodePoint = std::min<uint32_t>(static_cast<uint32_t>(MAX(wxChar)), 0x10ffffu);

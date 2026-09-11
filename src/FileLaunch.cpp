@@ -51,15 +51,15 @@
 namespace
 {
 
-// Hand an argument vector to the desktop, with the AppImage-safe environment
-// when we are inside a bundle: AppRun prepends the bundle's lib/bin directories
-// to the child's search paths, and a host program that inherits them loads our
-// older bundled libraries and dies on an undefined symbol (#334).
+// Hand an argument vector to the desktop, with the AppImage-safe environment when we are inside a
+// bundle: AppRun prepends the bundle's lib/bin directories to the child's search paths, and a host
+// program that inherits them loads our older bundled libraries and dies on an undefined symbol
+// (#334).
 //
-// A vector rather than a command string on purpose: the path crosses untouched,
-// so a name with spaces or quotes needs no escaping and cannot be re-split by
-// the shell-style parser wxExecute applies to strings. The wide overload keeps
-// non-ASCII names intact, which mb_str() would mangle under a C locale.
+// A vector rather than a command string on purpose: the path crosses untouched, so a name with
+// spaces or quotes needs no escaping and cannot be re-split by the shell-style parser wxExecute
+// applies to strings. The wide overload keeps non-ASCII names intact, which mb_str() would mangle
+// under a C locale.
 bool RunDetached(const wxString &description, const std::vector<wxString> &args)
 {
 	std::vector<wxWCharBuffer> buffers;
@@ -79,11 +79,10 @@ bool RunDetached(const wxString &description, const std::vector<wxString> &args)
 	try {
 		ret = wxExecute(argv.data(), wxEXEC_ASYNC, process, sanitized ? &execEnv : nullptr);
 	} catch (...) {
-		// wxExecute throws, rather than returning an error, when the environment it
-		// has to hand the child is unusable -- a working directory that no longer
-		// exists, for one. Uncaught it unwinds out of the menu handler and wx
-		// terminates the application cleanly: no signal, no backtrace, no crash
-		// report.
+		// wxExecute throws, rather than returning an error, when the environment it has to
+		// hand the child is unusable -- a working directory that no longer exists, for one.
+		// Uncaught it unwinds out of the menu handler and wx terminates the application
+		// cleanly: no signal, no backtrace, no crash report.
 		delete process;
 		return false;
 	}
@@ -91,10 +90,10 @@ bool RunDetached(const wxString &description, const std::vector<wxString> &args)
 		delete process;
 		return false;
 	}
-	// True means the child was spawned, not that it did anything useful: an async
-	// wxExecute returns the pid as soon as the fork succeeds, so a failed exec (no
-	// xdg-open installed, say) is not reported here. macOS and Windows do surface a
-	// failure, since neither reaches the desktop opener this way.
+	// True means the child was spawned, not that it did anything useful: an async wxExecute
+	// returns the pid as soon as the fork succeeds, so a failed exec (no xdg-open installed,
+	// say) is not reported here. macOS and Windows do surface a failure, since neither reaches
+	// the desktop opener this way.
 	return true;
 }
 
@@ -110,27 +109,25 @@ void Fail(const wxString &message, wxWindow *parent, bool reportModally)
 
 // Hand the path to the user's configured player.
 //
-// The template is split into arguments ONCE, with wxCmdLineParser, and the
-// placeholders are substituted inside the resulting arguments -- so the path and
-// the bare name each cross as a single argv entry whatever they contain. The old
-// code appended the path to a command string and let wxExecute re-split it, so a
-// remote-supplied filename could inject arguments: `x\' --script=/tmp/evil.lua
-// \'.avi` becomes a separate --script argument, and mpv and vlc execute scripts
-// given that way. Escaping the quotes was the previous defence and was itself
-// bypassable; not building a string removes the class.
+// The template is split into arguments ONCE, with wxCmdLineParser, and the placeholders are
+// substituted inside the resulting arguments -- so the path and the bare name each cross as a
+// single argv entry whatever they contain. The old code appended the path to a command string and
+// let wxExecute re-split it, so a remote-supplied filename could inject arguments: `x\'
+// --script=/tmp/evil.lua \'.avi` becomes a separate --script argument, and mpv and vlc execute
+// scripts given that way. Escaping the quotes was the previous defence and was itself bypassable;
+// not building a string removes the class.
 //
-// `reportModally` is for the caller that has nothing to fall back to: a failure
-// it only logs is, from the user's side, the same silent nothing this removes.
+// `reportModally` is for the caller that has nothing to fall back to: a failure it only logs is,
+// from the user's side, the same silent nothing this removes.
 bool LaunchWithPlayer(const wxString &player, const CPath &path, wxWindow *parent, bool reportModally)
 {
 	const wxString target = path.GetRaw();
 	const wxString name = path.GetFullName().GetRaw();
 
-	// ConvertStringToArgs defaults to DOS rules, which is wrong everywhere but
-	// Windows: it leaves single quotes literal and does not honour backslash
-	// escapes, so an existing `mpv -fs '%PARTFILE'` silently stops working. Windows
-	// genuinely needs DOS, since UNIX rules would eat the backslashes in C:\Program
-	// Files\...
+	// ConvertStringToArgs defaults to DOS rules, which is wrong everywhere but Windows: it
+	// leaves single quotes literal and does not honour backslash escapes, so an existing `mpv
+	// -fs '%PARTFILE'` silently stops working. Windows genuinely needs DOS, since UNIX rules
+	// would eat the backslashes in C:\Program Files\...
 #ifdef __WINDOWS__
 	wxArrayString parts = wxCmdLineParser::ConvertStringToArgs(player, wxCMD_LINE_SPLIT_DOS);
 #else
@@ -144,17 +141,15 @@ bool LaunchWithPlayer(const wxString &player, const CPath &path, wxWindow *paren
 	}
 
 	// An absolute program path that is not a runnable file is worth catching here.
-	// IsFileExecutable covers both halves: a path that is absent, and one that
-	// exists without the exec bit. wxExecute cannot report it -- the async form
-	// returns the pid as soon as the fork succeeds and execvp then fails in the
-	// child, so the caller sees success while the user sees only wx's "execvp ...
-	// failed with error 2". That is the normal state of affairs inside a Flatpak,
-	// where a host player is simply not on the sandbox's filesystem.
+	// IsFileExecutable covers both halves: a path that is absent, and one that exists without
+	// the exec bit. wxExecute cannot report it -- the async form returns the pid as soon as the
+	// fork succeeds and execvp then fails in the child, so the caller sees success while the
+	// user sees only wx's "execvp ... failed with error 2". That is the normal state of affairs
+	// inside a Flatpak, where a host player is simply not on the sandbox's filesystem.
 	//
-	// A bare command name is left alone: resolving it would mean reimplementing the
-	// PATH search the exec does anyway. Windows paths never match this test and do
-	// not need to: CreateProcess fails synchronously, so the error path below
-	// already reports it.
+	// A bare command name is left alone: resolving it would mean reimplementing the PATH search
+	// the exec does anyway. Windows paths never match this test and do not need to:
+	// CreateProcess fails synchronously, so the error path below already reports it.
 	if (parts[0].StartsWith("/") && !wxFileName::IsFileExecutable(parts[0])) {
 		Fail(CFormat(_("The configured video player was not found: %s")) % parts[0],
 			parent,
@@ -210,9 +205,9 @@ bool OpenWithDesktop(const CPath &path)
 {
 	const wxString target = path.GetRaw();
 #if defined(__WXMSW__) || defined(__WXMAC__)
-	// No AppImage on these platforms, so there is no environment to sanitize
-	// and the portable call is both simpler and better behaved than spawning
-	// a shell (it uses ShellExecute / LaunchServices directly).
+	// No AppImage on these platforms, so there is no environment to sanitize, and the portable
+	// call is both simpler and better behaved than spawning a shell -- it uses ShellExecute /
+	// LaunchServices directly.
 	try {
 		return wxLaunchDefaultApplication(target);
 	} catch (...) {
@@ -220,9 +215,8 @@ bool OpenWithDesktop(const CPath &path)
 		return false;
 	}
 #else
-	// Linux/BSD: xdg-open, via wxExecute so the AppImage-safe environment can
-	// be passed. Inside Flatpak this is the portal shim, which forwards to the
-	// host's handler.
+	// Linux/BSD: xdg-open, via wxExecute so the AppImage-safe environment can be passed. Inside
+	// Flatpak this is the portal shim, which forwards to the host's handler.
 	return RunDetached(CFormat("xdg-open %s") % target, { "xdg-open", target });
 #endif
 }
@@ -245,21 +239,21 @@ bool ResolvePath(const CKnownFile *file, CPath &out)
 	}
 
 #ifdef CLIENT_GUI
-	// Rewrite a remote daemon's path into this machine's, per the user's configured
-	// mappings (issue #843) -- the daemon's /downloads/incoming reachable here as
-	// D:\Downloads\aMule\incoming over a Samba mount, say. String substitution on
-	// the raw daemon path, before it becomes part of a CPath, since the remote side
-	// need not use this host's separator convention. Returns the input unchanged
-	// when no mapping's prefix matches, the empty mapping list included.
+	// Rewrite a remote daemon's path into this machine's, per the user's configured mappings
+	// (issue #843) -- the daemon's /downloads/incoming reachable here as
+	// D:\Downloads\aMule\incoming over a Samba mount, say. String substitution on the raw
+	// daemon path, before it becomes part of a CPath, since the remote side need not use this
+	// host's separator convention. Returns the input unchanged when no mapping's prefix
+	// matches, the empty mapping list included.
 	const CPath directory = CPath(theApp->glob_prefs->ApplyPathMapping(rawDirectory.GetRaw()));
 #else
 	// The monolithic app is its own core: never remapped, so no copy.
 	const CPath &directory = rawDirectory;
 #endif
 
-	// IsPartFile() is `status != PS_COMPLETE` on CPartFile and a constant false
-	// on CKnownFile, so a true answer also establishes the dynamic type -- the
-	// downcast below is guarded by the same test that selects this branch.
+	// IsPartFile() is `status != PS_COMPLETE` on CPartFile and a constant false on CKnownFile,
+	// so a true answer also establishes the dynamic type -- the downcast below is guarded by
+	// the same test that selects this branch.
 	CPath name;
 	if (file->IsPartFile()) {
 		name = static_cast<const CPartFile *>(file)->GetPartMetFileName().RemoveExt();
@@ -311,10 +305,10 @@ void Open(CKnownFile *file, wxWindow *parent)
 	const bool media = (type == ftVideo || type == ftAudio);
 	const wxString &player = thePrefs::GetVideoPlayer();
 
-	// An unfinished download is "NNNN.part" on disk, and no desktop registers a
-	// handler for that extension, so the platform opener would answer with its own
-	// "no application set to open this document" dialog. Previewing one only works
-	// by handing the path to a player, so when there is none, say so.
+	// An unfinished download is "NNNN.part" on disk, and no desktop registers a handler for
+	// that extension, so the platform opener would answer with its own "no application set to
+	// open this document" dialog. Previewing one only works by handing the path to a player, so
+	// when there is none, say so.
 	if (incomplete) {
 		if (player.IsEmpty()) {
 			if (parent != nullptr) {
@@ -333,11 +327,11 @@ void Open(CKnownFile *file, wxWindow *parent)
 		return;
 	}
 
-	// Completed: the configured player is for watching media, so it is used for
-	// media and deliberately not for anything else -- which is what used to send an
-	// archive to the video player. A player that could not be launched should not
-	// cost the user the action: for a finished file the desktop handler is a
-	// reasonable second choice, and inside a Flatpak that is the portal.
+	// Completed: the configured player is for watching media, so it is used for media and
+	// deliberately not for anything else -- which is what used to send an archive to the video
+	// player. A player that could not be launched should not cost the user the action: for a
+	// finished file the desktop handler is a reasonable second choice, and inside a Flatpak
+	// that is the portal.
 	if (media && !player.IsEmpty() && LaunchWithPlayer(player, path, parent, false)) {
 		return;
 	}
@@ -364,14 +358,14 @@ void Reveal(const CKnownFile *file, wxWindow *WXUNUSED(parent))
 
 	bool ok = false;
 #if defined(__WXMAC__)
-	// NSWorkspace rather than spawning `open -R`: it selects the file in its folder,
-	// which is what "Show in Finder" means, and needs no subprocess, so nothing
-	// about the caller's environment can perturb it.
+	// NSWorkspace rather than spawning `open -R`: it selects the file in its folder, which is
+	// what "Show in Finder" means, and needs no subprocess, so nothing about the caller's
+	// environment can perturb it.
 	ok = mac_reveal_in_finder(path.GetRaw().utf8_str());
 #elif defined(__WXMSW__)
-	// Explorer wants the path glued to the switch by a comma, and it exits
-	// non-zero even on success -- so the return code says nothing, and this
-	// stays a quoted string rather than an argument vector.
+	// Explorer wants the path glued to the switch by a comma, and it exits non-zero even on
+	// success -- so the return code says nothing, and this stays a quoted string rather than an
+	// argument vector.
 	const wxString command = "explorer /select,\"" + path.GetRaw() + "\"";
 	CTerminationProcess *process = new CTerminationProcess(command);
 	try {
@@ -389,9 +383,9 @@ void Reveal(const CKnownFile *file, wxWindow *WXUNUSED(parent))
 		ok = false;
 	}
 #else
-	// No portable way to select the file; opening the containing folder is the
-	// part every desktop agrees on. Selecting it would mean the FileManager1
-	// D-Bus interface, which not every file manager implements.
+	// No portable way to select the file; opening the containing folder is the part every
+	// desktop agrees on. Selecting it would mean the FileManager1 D-Bus interface, which not
+	// every file manager implements.
 	const wxString directory = path.GetPath().GetRaw();
 	ok = RunDetached(CFormat("xdg-open %s") % directory, { "xdg-open", directory });
 #endif

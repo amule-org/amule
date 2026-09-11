@@ -57,7 +57,7 @@ UploadBandwidthThrottler::UploadBandwidthThrottler()
 }
 
 /**
- * The destructor stops the thread. If the thread has already stopped, destructor does nothing.
+ * The destructor stops the thread, or does nothing if it has already stopped.
  */
 UploadBandwidthThrottler::~UploadBandwidthThrottler()
 {
@@ -65,9 +65,9 @@ UploadBandwidthThrottler::~UploadBandwidthThrottler()
 }
 
 /**
- * Called by the disk I/O thread when it has put new data on a socket queue.
- * Wakes the throttler immediately instead of waiting for its next sleep interval.
- * eMule ref: UploadBandwidthThrottler.cpp:795
+ * Called by the disk I/O thread when it has put new data on a socket queue. Wakes the throttler
+ * immediately instead of waiting for its next sleep interval. eMule ref:
+ * UploadBandwidthThrottler.cpp:795
  */
 void UploadBandwidthThrottler::NewUploadDataAvailable()
 {
@@ -76,10 +76,8 @@ void UploadBandwidthThrottler::NewUploadDataAvailable()
 }
 
 /**
- * Find out how many bytes that has been put on the sockets since the last call to this
- * method. Includes overhead of control packets.
- *
- * @return the number of bytes that has been put on the sockets since the last call
+ * Bytes put on the sockets since the last call to this method, including control-packet overhead.
+ * Resets the counter.
  */
 uint64 UploadBandwidthThrottler::GetNumberOfSentBytesSinceLastCallAndReset()
 {
@@ -92,10 +90,8 @@ uint64 UploadBandwidthThrottler::GetNumberOfSentBytesSinceLastCallAndReset()
 }
 
 /**
- * Find out how many bytes that has been put on the sockets since the last call to this
- * method. Excludes overhead of control packets.
- *
- * @return the number of bytes that has been put on the sockets since the last call
+ * Bytes put on the sockets since the last call to this method, excluding control-packet overhead.
+ * Resets the counter.
  */
 uint64 UploadBandwidthThrottler::GetNumberOfSentBytesOverheadSinceLastCallAndReset()
 {
@@ -108,20 +104,14 @@ uint64 UploadBandwidthThrottler::GetNumberOfSentBytesOverheadSinceLastCallAndRes
 }
 
 /**
- * Add a socket to the list of sockets that have upload slots. The main thread will
- * continuously call send on these sockets, to give them chance to work off their queues.
- * The sockets are called in the order they exist in the list, so the top socket (index 0)
- * will be given a chance first to use bandwidth, and then the next socket (index 1) etc.
+ * Add a socket to the list of sockets that have upload slots. The main thread continuously calls
+ * send on these, so they can work off their queues; they are served in list order, so the top
+ * socket gets the bandwidth first.
  *
- * It is possible to add a socket several times to the list without removing it in between,
- * but that should be avoided.
+ * Adding a socket several times without removing it in between is possible but should be avoided.
  *
- * @param index insert the socket at this place in the list. An index that is higher than the
- *              current number of sockets in the list will mean that the socket should be inserted
- *              last in the list.
- *
- * @param socket the address to the socket that should be added to the list. If the address is NULL,
- *               this method will do nothing.
+ * @param index where to insert the socket. An index past the end means last.
+ * @param socket the socket to add. NULL does nothing.
  */
 void UploadBandwidthThrottler::AddToStandardList(uint32 index, ThrottledFileSocket *socket)
 {
@@ -138,13 +128,8 @@ void UploadBandwidthThrottler::AddToStandardList(uint32 index, ThrottledFileSock
 }
 
 /**
- * Remove a socket from the list of sockets that have upload slots.
- *
- * If the socket has mistakenly been added several times to the list, this method
- * will return all of the entries for the socket.
- *
- * @param socket the address of the socket that should be removed from the list. If this socket
- *               does not exist in the list, this method will do nothing.
+ * Remove a socket from the list of sockets that have upload slots. If it was mistakenly added
+ * several times, every entry for it is removed. A socket not in the list does nothing.
  */
 bool UploadBandwidthThrottler::RemoveFromStandardList(ThrottledFileSocket *socket)
 {
@@ -154,13 +139,9 @@ bool UploadBandwidthThrottler::RemoveFromStandardList(ThrottledFileSocket *socke
 }
 
 /**
- * Remove a socket from the list of sockets that have upload slots. NOT THREADSAFE!
- * This is an internal method that doesn't take the necessary lock before it removes
- * the socket. This method should only be called when the current thread already owns
- * the m_sendLocker lock!
- *
- * @param socket address of the socket that should be removed from the list. If this socket
- *               does not exist in the list, this method will do nothing.
+ * Remove a socket from the list of sockets that have upload slots. NOT THREADSAFE: this is the
+ * internal form, which does not take m_sendLocker, so only call it while already holding that lock.
+ * A socket not in the list does nothing.
  */
 bool UploadBandwidthThrottler::RemoveFromStandardListNoLock(ThrottledFileSocket *socket)
 {
@@ -168,16 +149,11 @@ bool UploadBandwidthThrottler::RemoveFromStandardListNoLock(ThrottledFileSocket 
 }
 
 /**
- * Notifies the send thread that it should try to call controlpacket send
- * for the supplied socket. It is allowed to call this method several times
- * for the same socket, without having controlpacket send called for the socket
- * first. The doublette entries are never filtered, since it is incurs less cpu
- * overhead to simply call Send() in the socket for each double. Send() will
- * already have done its work when the second Send() is called, and will just
- * return with little cpu overhead.
+ * Notifies the send thread that it should try to call controlpacket send for @a socket.
  *
- * @param socket address to the socket that requests to have controlpacket send
- *               to be called on it
+ * May be called several times for the same socket without a send in between. Duplicates are not
+ * filtered: calling Send() again costs less CPU than filtering, since the second call finds the
+ * work already done and returns.
  */
 void UploadBandwidthThrottler::QueueForSendingControlPacket(ThrottledControlSocket *socket, bool hasSent)
 {
@@ -195,17 +171,16 @@ void UploadBandwidthThrottler::QueueForSendingControlPacket(ThrottledControlSock
 		}
 	}
 
-	// Wake the throttler when the temp control queue goes from empty to non-empty.
-	// Without the signal its adaptive backoff (extraSleepTime *= 5 per idle tick,
-	// capped at 1 s) lets the thread doze through newly-queued packets, adding
-	// 5-25 ms of latency to every freshly-built OP_REQUESTPARTS -- which directly
-	// caps per-peer download throughput on Windows, where peer ramp is already
-	// sensitive to ACK clock jitter.
+	// Wake the throttler when the temp control queue goes from empty to non-empty. Without the
+	// signal its adaptive backoff (extraSleepTime *= 5 per idle tick, capped at 1 s) lets the
+	// thread doze through newly-queued packets, adding 5-25 ms of latency to every freshly-
+	// built OP_REQUESTPARTS -- which directly caps per-peer download throughput on Windows,
+	// where peer ramp is already sensitive to ACK clock jitter.
 	//
-	// Gating on that transition rather than on every queue add matches the
-	// CBatchDrainNotifier pattern: one wake per drain cycle, so bursty enqueues
-	// from one SendBlockRequests fan-out coalesce into a single signal. The disk I/O
-	// thread already wakes the throttler the same way for file data.
+	// Gating on that transition rather than on every queue add matches the CBatchDrainNotifier
+	// pattern: one wake per drain cycle, so bursty enqueues from one SendBlockRequests fan-out
+	// coalesce into a single signal. The disk I/O thread already wakes the throttler the same
+	// way for file data.
 	if (wasEmpty) {
 		wxMutexLocker lock(m_newDataMutex);
 		m_newDataCondition.Signal();
@@ -213,11 +188,8 @@ void UploadBandwidthThrottler::QueueForSendingControlPacket(ThrottledControlSock
 }
 
 /**
- * Remove the socket from all lists and queues. This will make it safe to
- * erase/delete the socket. It will also cause the main thread to stop calling
- * send() for the socket.
- *
- * @param socket address to the socket that should be removed
+ * Remove @a socket from all lists and queues, making it safe to erase or delete and stopping the
+ * main thread calling send() for it.
  */
 void UploadBandwidthThrottler::DoRemoveFromAllQueues(ThrottledControlSocket *socket)
 {
@@ -250,9 +222,8 @@ void UploadBandwidthThrottler::RemoveFromAllQueues(ThrottledFileSocket *socket)
 }
 
 /**
- * Make the thread exit. This method will not return until the thread has stopped
- * looping. This guarantees that the thread will not access the CEMSockets after this
- * call has exited.
+ * Make the thread exit. Does not return until the thread has stopped looping, which guarantees it
+ * will not touch the CEMSockets afterwards.
  */
 void UploadBandwidthThrottler::EndThread()
 {
@@ -271,12 +242,9 @@ void UploadBandwidthThrottler::EndThread()
 /**
  * The thread method that handles calling send for the individual sockets.
  *
- * Control packets will always be tried to be sent first. If there is any bandwidth leftover
- * after that, send() for the upload slot sockets will be called in priority order until we have run
- * out of available bandwidth for this loop. Upload slots will not be allowed to go without having sent
- * called for more than a defined amount of time (i.e. two seconds).
- *
- * @return always returns 0.
+ * Control packets are always tried first. Any bandwidth left over goes to the upload-slot sockets
+ * in priority order, until the loop runs out. No upload slot is left without a send for longer than
+ * a defined time (two seconds). Always returns 0.
  */
 void *UploadBandwidthThrottler::Entry()
 {
@@ -294,7 +262,7 @@ void *UploadBandwidthThrottler::Entry()
 		uint64 timeSinceLastLoop = GetTickCount64() - lastLoopTick;
 
 		if (thePrefs::GetMaxUpload() == UNLIMITED) {
-			// MaxUpload=0 means literal unlimited — bypass the per-iteration rate cap
+			// MaxUpload=0 means literal unlimited -- bypass the per-iteration rate cap
 			// so SendFileAndControlData() is never throttled.
 			allowedDataRate = UNLIMITED_RATE;
 		} else {
@@ -348,9 +316,9 @@ void *UploadBandwidthThrottler::Entry()
 		}
 
 		// Calculate how many bytes we can spend. In UNLIMITED mode allowedDataRate is
-		// UINT_MAX (~4 GB/s), which would overflow the sint32 bytesToSpend accumulator
-		// once multiplied by timeSinceLastLoop, so the budget rate is capped at
-		// 1 GB/s -- still far above any real uplink.
+		// UINT_MAX (~4 GB/s), which would overflow the sint32 bytesToSpend accumulator once
+		// multiplied by timeSinceLastLoop, so the budget rate is capped at 1 GB/s -- still
+		// far above any real uplink.
 		const uint32 bytesToSpendRate =
 			(allowedDataRate == UNLIMITED_RATE) ? (1024u * 1024u * 1024u) : allowedDataRate;
 		bytesToSpend += (sint32)(bytesToSpendRate / 1000.0 * timeSinceLastLoop);
@@ -431,10 +399,10 @@ void *UploadBandwidthThrottler::Entry()
 				}
 			}
 
-			// Give available bandwidth to slots, starting with the one we ended with last time.
-			// There are two passes. First pass gives packets of doubleSendSize, second pass
-			// gives as much as possible.
-			// Second pass starts with the last slot of the first pass actually.
+			// Give available bandwidth to slots, starting with the one we ended with
+			// last time. Two passes: the first gives packets of doubleSendSize, the
+			// second as much as possible, starting from the last slot of the first
+			// pass.
 			for (uint32 slotCounter = 0; (slotCounter < slots * 2) && spentBytes < bytesToSpend;
 				slotCounter++) {
 				if (rememberedSlotCounter >= slots) { // wrap around pointer
@@ -486,9 +454,10 @@ void *UploadBandwidthThrottler::Entry()
 			} else {
 				extraSleepTime = TIME_BETWEEN_UPLOAD_LOOPS;
 
-				// eMule ref: EMSocket.cpp:602 — SocketAvailable()
-				// Wake disk I/O thread whenever payload bytes were actually sent so it can
-				// refill the socket queue without waiting for its 100ms WaitTimeout.
+				// eMule ref: EMSocket.cpp:602 -- SocketAvailable(). Wake the disk
+				// I/O thread whenever payload bytes were actually sent, so it can
+				// refill the socket queue without waiting for its 100 ms
+				// WaitTimeout.
 				if (spentBytes > spentOverhead && theApp->uploadDiskIOThread != NULL) {
 					theApp->uploadDiskIOThread->SocketNeedsMoreData();
 				}

@@ -106,14 +106,14 @@ bool CPacketTracking::IsOnOutTrackList(uint32_t ip, uint8_t opcode, bool dontRem
 
 bool CPacketTracking::InTrackListIsAllowedPacket(uint32_t ip, uint8_t opcode, bool /*bValidSenderkey*/)
 {
-	// this tracklist tacks _incoming_ request packets and acts as a general flood protection by dropping
-	// too frequent requests from a single IP, avoiding response floods, processing time DOS attacks and
-	// slowing down other possible attacks/behavior (scanning indexed files, fake publish floods, etc)
+	// This tracklist tracks _incoming_ request packets and acts as general flood protection,
+	// dropping too-frequent requests from a single IP. That avoids response floods and
+	// processing-time DOS attacks, and slows other possible attacks such as scanning indexed
+	// files or fake publish floods.
 
-	// first figure out if this is a request packet to be tracked and its timelimits
-	// timelimits are chosen by estimating the max. frequency of such packets on normal operation (+
-	// buffer) (those limits are not meant to be fine to be used by normal usage, but only supposed to be
-	// a flood detection)
+	// First figure out whether this is a request packet to be tracked, and its time limits. The
+	// limits come from the estimated maximum frequency of such packets in normal operation,
+	// plus a buffer -- they are flood detection, not a guide to normal usage.
 
 	uint32_t allowedPacketsPerMinute;
 	DEBUG_ONLY(const uint8_t dbgOrgOpcode = opcode;)

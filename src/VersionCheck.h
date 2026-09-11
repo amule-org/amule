@@ -37,16 +37,16 @@
 // when a check finishes. GetInt() carries the resulting CVersionCheck::Status.
 wxDECLARE_EVENT(wxEVT_VERSION_CHECK_DONE, wxCommandEvent);
 
-// Fetches the latest published aMule release from GitHub and compares it
-// against the running client version (VERSION_MJR / MIN / UPDATE).
+// Fetches the latest published aMule release from GitHub and compares it against the running client
+// version (VERSION_MJR / MIN / UPDATE).
 //
-// Shared by the monolithic GUI and amulegui: both are GUI clients built from
-// the same version macros, so neither needs the daemon core nor an EC
-// round-trip to answer "is a newer aMule available?".
+// Shared by the monolithic GUI and amulegui: both are GUI clients built from the same version
+// macros, so neither needs the daemon core nor an EC roundtrip to answer "is a newer aMule
+// available?".
 //
-// Asynchronous: Start() kicks off a wxWebRequest and returns immediately; the
-// result arrives later as a wxEVT_VERSION_CHECK_DONE event on the caller's
-// handler. One instance runs at most one check at a time.
+// Asynchronous: Start() kicks off a wxWebRequest and returns immediately; the result arrives later
+// as a wxEVT_VERSION_CHECK_DONE event on the caller's handler. One instance runs at most one check
+// at a time.
 class CVersionCheck : public wxEvtHandler
 {
 public:
@@ -54,16 +54,16 @@ public:
 	{
 		Checking, // a request is currently in flight
 		UpToDate, // running version is the latest release (or newer)
-		Outdated, // a newer release exists — see LatestVersion()
+		Outdated, // a newer release exists -- see LatestVersion()
 		Failed    // network or parse error
 	};
 
 	CVersionCheck();
 	~CVersionCheck() override;
 
-	// Start an asynchronous check. On completion a wxEVT_VERSION_CHECK_DONE
-	// command event with id == notifyId is posted to notify. A Start() call
-	// while a check is already in flight is ignored.
+	// Start an asynchronous check. On completion a wxEVT_VERSION_CHECK_DONE command event with
+	// id == notifyId is posted to notify. A Start() call while a check is already in flight is
+	// ignored.
 	void Start(wxEvtHandler *notify, int notifyId);
 
 	Status GetStatus() const { return m_status; }

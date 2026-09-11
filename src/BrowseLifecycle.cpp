@@ -33,9 +33,9 @@ Action Tick(const Record &rec, std::uint64_t now)
 		// Terminal already: whoever is tracking it should stop.
 		return Action::Drop;
 	}
-	// Completion wins over expiry. A browse whose last listing landed in the
-	// same tick its deadline passed succeeded; reporting that as a timeout
-	// would throw away results we are holding.
+	// Completion wins over expiry. A browse whose last listing landed in the same tick its
+	// deadline passed succeeded; reporting that as a timeout would throw away results we are
+	// holding.
 	if (rec.outstanding == 0) {
 		return Action::Complete;
 	}

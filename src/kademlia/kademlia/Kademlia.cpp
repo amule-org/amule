@@ -158,10 +158,9 @@ void CKademlia::Stop()
 	m_events.clear();
 
 #ifdef ENABLE_KAD_NODE_PROTECTION
-	// The protection tables and the response-time window are keyed on
-	// addresses from a Kad session that has just ended; carrying them into
-	// the next one would judge fresh contacts on stale evidence, and Kad is
-	// restarted on every reconnect.
+	// The protection tables and the response-time window are keyed on addresses from a Kad
+	// session that has just ended; carrying them into the next one would judge fresh contacts
+	// on stale evidence, and Kad restarts on every reconnect.
 	safeKad.Clear();
 	fastKad.Clear();
 #endif
@@ -228,9 +227,9 @@ void CKademlia::Process()
 	for (EventMap::const_iterator it = m_events.begin(); it != m_events.end(); ++it) {
 		CRoutingZone *zone = it->first;
 		if (updateUserFile) {
-			// The EstimateCount function is not made for really small networks, if we are in LAN
-			// mode, it is actually better to assume that all users of the network are in our
-			// routing table and use the real count function
+			// EstimateCount is not made for really small networks. In LAN mode it is
+			// better to assume every user of the network is in our routing table and
+			// use the real count function.
 			if (IsRunningInLANMode()) {
 				tempUsers = zone->GetNumContacts();
 			} else {
@@ -270,10 +269,9 @@ void CKademlia::Process()
 	}
 
 #ifdef ENABLE_KAD_NODE_PROTECTION
-	// Published as a gauge rather than counted at the ban: these bans lapse
-	// inside an aged map, and entries are also evicted when it is full, so
-	// there is no event to hang a decrement on. Reading the record on the
-	// timer cannot drift from it.
+	// Published as a gauge rather than counted at the ban: these bans lapse inside an aged map,
+	// and entries are also evicted when it is full, so there is no event to hang a decrement
+	// on.
 	theStats::SetKadBannedAddresses((uint32)safeKad.GetBannedAddressCount());
 #endif
 
@@ -346,9 +344,8 @@ void CKademlia::ProcessPacket(const uint8_t *data,
 void CKademlia::RecheckFirewalled()
 {
 	if (instance && instance->m_prefs && !IsRunningInLANMode()) {
-		// Something is forcing a new firewall check
-		// Stop any new buddy requests, and tell the client
-		// to recheck it's IP which in turns rechecks firewall.
+		// Something is forcing a new firewall check. Stop new buddy requests and tell the
+		// client to recheck its IP, which in turn rechecks the firewall.
 		instance->m_prefs->SetFindBuddy(false);
 		instance->m_prefs->SetRecheckIP();
 		// also UDP check
@@ -426,18 +423,16 @@ void CKademlia::StatsAddClosestDistance(const CUInt128 &distance)
 
 uint32_t CKademlia::CalculateKadUsersNew()
 {
-	// the idea of calculating the user count with this method is simple:
-	// whenever we do a search for any NodeID (except in certain cases where the result is not usable),
-	// we remember the distance of the closest node we found. Because we assume all NodeIDs are
-	// distributed equally, we can calculate based on this distance how "filled" the possible NodesID room
-	// is and by this calculate how many users there are. Of course this only works if we have enough
-	// samples, because each single sample will be wrong, but the average of them should produce a usable
-	// number. To avoid drifts caused by a a single (or more) really close or really far away hits, we do
-	// use median-average instead through
+	// Estimating the user count: on every search for a NodeID (except where the result is
+	// unusable) we remember the distance of the closest node found. NodeIDs are assumed to be
+	// distributed equally, so that distance says how "filled" the NodeID room is, and from that
+	// how many users there are. Each single sample is wrong, but their average is usable.
+	// Median-average rather than mean, so a few really close or really far hits cannot drift
+	// the result.
 
-	// doesn't work well if we have no files to index and nothing to download and the numbers seems to be
-	// a bit too low compared to our other method. So let's stay with the old one for now, but keep this
-	// here as an alternative
+	// Does not work well with no files to index and nothing to download, and the numbers look a
+	// bit low against our other method. Stay with the old one for now, but keep this as an
+	// alternative.
 
 	if (m_statsEstUsersProbes.size() < 10) {
 		return 0;
@@ -474,11 +469,9 @@ uint32_t CKademlia::CalculateKadUsersNew()
 	}
 	median = (uint32_t)(average / medianList.size());
 
-	// LowIDModififier
-	// Modify count by assuming 20% of the users are firewalled and can't be a contact for < 0.49b nodes
-	// Modify count by actual statistics of Firewalled ratio for >= 0.49b if we are not firewalled ourself
-	// Modify count by 40% for >= 0.49b if we are firewalled ourself (the actual Firewalled count at this
-	// date on kad is 35-55%)
+	// LowIDModififier. Assume 20% of users are firewalled and cannot be a contact, for < 0.49b
+	// nodes. For >= 0.49b use the actual firewalled ratio if we are not firewalled ourselves,
+	// or 40% if we are (the real Kad figure at this date is 35-55%).
 	const float firewalledModifyOld = 1.20f;
 	float firewalledModifyNew = 0.0;
 	if (CUDPFirewallTester::IsFirewalledUDP(true)) {
@@ -514,9 +507,9 @@ bool CKademlia::IsRunningInLANMode()
 	if (m_lanModeCheck + 10 <= now) {
 		m_lanModeCheck = now;
 		uint32_t count = GetRoutingZone()->GetNumContacts();
-		// Limit to 256 nodes, if we have more we don't want to use the LAN mode which is assuming we
-		// use a small home LAN (otherwise we might need to do firewallcheck, external port requests
-		// etc after all)
+		// Cap at 256 nodes: above that this is not the small home LAN that LAN mode
+		// assumes, and we would still need a firewall check, external port requests and so
+		// on.
 		if (count == 0 || count > 256) {
 			m_lanMode = false;
 		} else {

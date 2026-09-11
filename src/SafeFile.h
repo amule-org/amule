@@ -38,50 +38,37 @@ using Kademlia::CUInt128;
 class CMD4Hash;
 
 /**
- * This class provides a interface for safe file IO.
+ * Interface for safe file IO.
  *
- * Basic IO operations will either succeed or throw an exception,
- * so that failure cannot be ignored. There are currently 3 types
- * of failures: Read past EOF, errors while reading, and errors
- * while writing.
+ * Basic IO operations either succeed or throw, so failure cannot be ignored. There are
+ * three kinds of failure: read past EOF, errors while reading, and errors while
+ * writing.
  *
- * Beyond basic IO, the interface provides functions for reading
- * and writing a number of simple data-types. These are all written
- * and read as little-endian in order to allow for communication
- * across platforms.
+ * Beyond basic IO, the interface reads and writes a number of simple data types, all
+ * little-endian so they travel across platforms.
  *
- * Note that when empty areas are created, for instance by seeking
- * past the end, then writing, the value of bytes where no data was
- * explicitly written is not specified.
+ * Where an empty area is created -- by seeking past the end, then writing -- the value
+ * of the bytes nothing was explicitly written to is unspecified.
  */
 class CFileDataIO
 {
 public:
 	/**
-	 * The Destructor does nothing, but is needed to allow
-	 * for safe deletion objects via CFileDataIO pointers.
+	 * Does nothing, but is needed to delete objects safely via CFileDataIO pointers.
 	 */
 	virtual ~CFileDataIO();
 
-	/**
-	 * Must return the current position in the file.
-	 */
+	/** Must return the current position in the file. */
 	virtual uint64 GetPosition() const = 0;
 
-	/**
-	 * Must return the length of the file-object in bytes.
-	 */
+	/** Must return the length of the file object in bytes. */
 	virtual uint64 GetLength() const = 0;
 
-	/**
-	 * Returns true when the file-position is past or at the end of the file.
-	 */
+	/** Returns true when the file position is past or at the end of the file. */
 	virtual bool Eof() const;
 
 	/**
-	 * Changes the file position.
-	 *
-	 * Note that seeking to an negative position is an illegal operation.
+	 * Changes the file position. Seeking to a negative position is illegal.
 	 *
 	 * @see wxFile::Seek
 	 */
@@ -93,14 +80,10 @@ public:
 	 * @param buffer The target buffer.
 	 * @param count The number of bytes to read.
 	 *
-	 * Note that Read will read the specified number of
-	 * bytes unless this would read past the end of the
-	 * file. In that case, a CEOFException is thrown and
-	 * the position and target buffer is left unchanged.
-	 *
-	 * However, it is also possible that the read will
-	 * fail due to IO errors (bad hardware, etc), in which
-	 * case an CIOFailureException will be thrown.
+	 * Reads exactly that many bytes unless it would read past the end of the file, in
+	 * which case a CEOFException is thrown and the position and target buffer are left
+	 * unchanged. A read can also fail on IO errors (bad hardware and the like), which
+	 * throws a CIOFailureException.
 	 */
 	virtual void Read(void *buffer, size_t count) const;
 
@@ -110,10 +93,8 @@ public:
 	 * @param buffer The source-data buffer.
 	 * @param count The number of bytes to write.
 	 *
-	 * Note that Write will throw a CIOFailureException
-	 * if it fails to write the specified number of bytes,
-	 * which can be caused by hardware failures, lack of
-	 * free space, etc.
+	 * Throws a CIOFailureException if it fails to write that many bytes -- hardware
+	 * failure, lack of free space, and so on.
 	 */
 	virtual void Write(const void *buffer, size_t count);
 
@@ -141,23 +122,21 @@ public:
 	 * @param SafeRead Avoids throwing CEOFException, see below.
 	 * @return The resulting text-string.
 	 *
-	 * Note that when SafeRead is set to true, CSafeFileIO will crop the length
-	 * read from the length-field (see lenBytes), so that at most GetLength() -
-	 * GetPosition() bytes are read.
+	 * With SafeRead set, CSafeFileIO crops the length read from the length field (see
+	 * lenBytes), so at most GetLength() - GetPosition() bytes are read.
 	 *
 	 * @see CSafeFileIO::Read
 	 */
 	virtual wxString ReadString(bool bOptUTF8, uint8 lenBytes = 2, bool SafeRead = false) const;
 
 	/**
-	 * Reads a string from the file, where the length is specified directly.
+	 * Reads a string from the file, where the length is specified directly. Typically
+	 * used when the text field's length is not stored as an integer field in front of
+	 * the text field.
 	 *
 	 * @param bOptUTF8 Specifies if the string is UTF8 encoded.
 	 * @param length The length of the string.
 	 * @return The resulting text-string.
-	 *
-	 * This function is typically used when the text-fields length is not stored
-	 * as an integer-field in front of the text-field.
 	 */
 	virtual wxString ReadOnlyString(bool bOptUTF8, uint16 length) const;
 
@@ -178,14 +157,12 @@ public:
 	//@}
 
 	/**
-	 * Writes a text-string to the file.
+	 * Writes a text string to the file.
 	 *
 	 * @param str The string to be written.
 	 * @param encoding The text-encoding, see EUtf8Str.
-	 * @param lenBytes The number of bytes used to store the string length.
-	 *
-	 * Valid values for the 'lenBytes' parameters is 0 bytes (no length field),
-	 * 2 bytes and 4 bytes.
+	 * @param lenBytes The number of bytes used to store the string length: 0 (no length
+	 * field), 2 or 4.
 	 *
 	 * @see CSafeFileIO::Write
 	 */
@@ -218,17 +195,12 @@ protected:
 	 * The actual read / write function, as implemented by subclasses.
 	 *
 	 * @param buffer The buffer to read data into / write data from.
-	 * @param count The number of bytes to read / written.
-	 * @return The number of bytes read / written or -1 in case of errors.
+	 * @param count The number of bytes to read / write.
+	 * @return The number of bytes actually read / written, or -1 on error -- the caller
+	 * uses the return value to decide whether the operation succeeded.
 	 *
-	 * Note that the return value must be the actual number of bytes
-	 * read or written, with the exception that in case of errors, -1
-	 * may be returned. This is because the return value is used to
-	 * detect if the operation succeeded.
-	 *
-	 * This function should not throw Either of the CSafeIOExceptions,
-	 * this is done by the CSafeFileIO::Read and the CSafeFileIO::Write
-	 * functions.
+	 * Must not throw either CSafeIOException; CSafeFileIO::Read and CSafeFileIO::Write
+	 * do that.
 	 */
 	//@{
 	virtual sint64 doRead(void *buffer, size_t count) const = 0;
@@ -241,28 +213,25 @@ protected:
 	 * @param offset The absolute offset to seek to.
 	 * @return The resulting offset.
 	 *
-	 * This function should not throw of the CSafeIOExceptions,
-	 * this is handled by the CSafeFileIO::Seek. At the moment,
-	 * seeks that fail are considered a fatal error.
+	 * Must not throw a CSafeIOException; CSafeFileIO::Seek handles that. A failed seek
+	 * is currently a fatal error.
 	 */
 	virtual sint64 doSeek(sint64 offset) const = 0;
 
 private:
 	/**
-	 * Helper-function that does the actual writing of the string.
+	 * Does the actual writing of the string.
 	 *
 	 * @param str The string to be written.
 	 * @param encoding The encoding of the string.
 	 * @param lenBytes The number of bytes used to store the string length.
-	 *
 	 */
 	void WriteStringCore(const char *str, EUtf8Str encoding, uint8 lenBytes);
 };
 
 /**
- * The base class of IO exceptions used by
- * the CSafeFileIO interface and implementations
- * of the interface.
+ * Base class of the IO exceptions the CSafeFileIO interface and its implementations
+ * use.
  */
 struct CSafeIOException : public CMuleException
 {
@@ -270,12 +239,8 @@ struct CSafeIOException : public CMuleException
 };
 
 /**
- * This exception is thrown when attempts are
- * made at reading past the end of the file.
- *
- * This typically happens when a invalid packet
- * is received that is shorter than expected and
- * is not fatal.
+ * Thrown on an attempt to read past the end of the file. Typically an invalid packet
+ * that is shorter than expected, and not fatal.
  */
 struct CEOFException : public CSafeIOException
 {
@@ -283,10 +248,8 @@ struct CEOFException : public CSafeIOException
 };
 
 /**
- * This exception reflects a failure in performing
- * basic IO operations read and write. It will be
- * thrown in case a read or a write fails to read
- * or write the specified number of bytes.
+ * A failure in the basic read and write operations: thrown when a read or a write
+ * moves fewer than the specified number of bytes.
  */
 struct CIOFailureException : public CSafeIOException
 {

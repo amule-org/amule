@@ -298,9 +298,8 @@ void AlcFrame::SetFileToHash()
 	}
 #elif defined(__WXMAC__)
 
-	// ~/Documents always exists on macOS and matches what
-	// FSFindFolder(kUserDomain, kDocumentsFolderType, ...) used to
-	// return via the Carbon FSRef API (removed in 64-bit macOS).
+	// ~/Documents always exists on macOS and matches what FSFindFolder(kUserDomain,
+	// kDocumentsFolderType, ...) returned via the Carbon FSRef API, removed in 64-bit macOS.
 	wxString browseroot;
 	const char *home = getenv("HOME");
 	if (home) {

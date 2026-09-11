@@ -33,9 +33,9 @@
 namespace
 {
 
-// Wire convention shared with amuleapi's SearchLifecycleStateToString and
-// pinned against CSearchList::SearchLifecycleState by a static_assert in
-// ExternalConn.cpp: 0 idle, 1 running, 2 finished.
+// Wire convention shared with amuleapi's SearchLifecycleStateToString and pinned against
+// CSearchList::SearchLifecycleState by a static_assert in ExternalConn.cpp: 0 idle, 1 running, 2
+// finished.
 wxString StateName(unsigned state)
 {
 	switch (state) {
@@ -50,9 +50,9 @@ wxString StateName(unsigned state)
 
 wxString OneLine(unsigned id, const wxString &name, unsigned state, unsigned percent, unsigned results)
 {
-	// The query the search was started with, or the peer's nickname for a
-	// browse. Older daemons do not send it; the line then reads as it did
-	// before rather than showing an empty pair of quotes.
+	// The query the search was started with, or the peer's nickname for a browse. Older daemons
+	// do not send it; the line then reads as it did before rather than showing an empty pair of
+	// quotes.
 	if (name.IsEmpty()) {
 		return CFormat(_("Search %u: %s, %u %% (%u results)\n")) % id % StateName(state) % percent %
 		       results;
@@ -79,11 +79,10 @@ wxString ecprogress::FormatSearchProgress(const CECPacket &response)
 		return _("Search expired or unknown ID. Start a new search.\n");
 	}
 
-	// Union shape: one child per search, its own value the search id and its
-	// fields nested inside. Presence of EC_TAG_SEARCH_ID is NOT the test --
-	// the single-search reply echoes one as a bare leaf, and an expired
-	// verdict echoes the id it is about. Carrying the nested percent is what
-	// makes a child an entry.
+	// Union shape: one child per search, its own value the search id and its fields nested
+	// inside. Presence of EC_TAG_SEARCH_ID is NOT the test -- the single-search reply echoes
+	// one as a bare leaf, and an expired verdict echoes the id it is about. Carrying the nested
+	// percent is what makes a child an entry.
 	wxString out;
 	bool sawEntry = false;
 	for (const CECTag &entry : response) {
@@ -105,9 +104,9 @@ wxString ecprogress::FormatSearchProgress(const CECPacket &response)
 		return out;
 	}
 
-	// Single-search reply carrying the lifecycle tags. Preferred over the
-	// sentinel below: a finished search reports 100 % and says so, where the
-	// sentinel only ever said 0 once the search stopped running.
+	// Single-search reply carrying the lifecycle tags. Preferred over the sentinel below: a
+	// finished search reports 100 % and says so, where the sentinel only ever said 0 once the
+	// search stopped running.
 	if (const CECTag *percent = response.GetTagByName(EC_TAG_SEARCH_LIFECYCLE_PERCENT)) {
 		return OneLine(IntOr(response.GetTagByName(EC_TAG_SEARCH_ID), 0),
 			NameOf(response.GetTagByName(EC_TAG_SEARCH_NAME)),

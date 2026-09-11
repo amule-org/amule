@@ -44,24 +44,22 @@
 namespace
 {
 /**
- * Upper bound on a collection file we are willing to read into memory.
- * The format caps itself at 1024 entries, so anything this large is either
- * corrupt or not a collection at all.
+ * Upper bound on a collection file we are willing to read into memory. The format caps itself at
+ * 1024 entries, so anything this large is either corrupt or not a collection at all.
  */
 const size_t MAX_COLLECTION_BYTES = 4 * 1024 * 1024;
 
 /**
- * Upper bound on a single length-prefixed blob inside the header. Without
- * it a twelve-byte crafted file can ask us to allocate 4 GiB.
+ * Upper bound on a single length-prefixed blob inside the header. Without it a twelve-byte crafted
+ * file can ask us to allocate 4 GiB.
  */
 const uint32_t MAX_BLOB_BYTES = 64 * 1024;
 
 /**
- * Rejects anything that would break the one-link-per-line contract the
- * ED2KLinks file relies on, or the pipe-delimited eD2k URI grammar itself.
- * Filenames are UTF-8, so the comparison has to be done on unsigned chars -
- * with a signed char every byte from 0x80 up would look like a control
- * character and legitimate non-ASCII names would be thrown away.
+ * Rejects anything that would break the one-link-per-line contract the ED2KLinks file relies on, or
+ * the pipe-delimited eD2k URI grammar itself. Filenames are UTF-8, so the comparison has to be done
+ * on unsigned chars: with a signed char every byte from 0x80 up would look like a control character
+ * and legitimate non-ASCII names would be thrown away.
  */
 bool IsSafeLinkField(const std::string &field)
 {
@@ -75,8 +73,8 @@ bool IsSafeLinkField(const std::string &field)
 }
 
 /**
- * True when the buffer opens with a collection version header. Caller has
- * already checked that at least four bytes are available.
+ * True when the buffer opens with a collection version header. The caller has already checked that
+ * at least four bytes are available.
  */
 bool LooksLikeBinary(const char *data)
 {
@@ -95,10 +93,10 @@ bool CMuleCollection::OpenBuffer(const char *data, size_t len)
 		return false;
 	}
 
-	// Skip a UTF-8 byte-order mark. Text collections are hand-made lists of links,
-	// and a Windows editor saves them with a BOM by default; without this the first
-	// link fails its "starts with ed2k://|file|" check and a single-entry collection
-	// looks empty. A binary collection never starts with one.
+	// Skip a UTF-8 byte-order mark. Text collections are hand-made lists of links, and a
+	// Windows editor saves them with a BOM by default; without this the first link fails its
+	// "starts with ed2k://|file|" check and a single-entry collection looks empty. A binary
+	// collection never starts with one.
 	if (len >= 3 && static_cast<unsigned char>(data[0]) == 0xEF &&
 		static_cast<unsigned char>(data[1]) == 0xBB && static_cast<unsigned char>(data[2]) == 0xBF) {
 		data += 3;
@@ -111,14 +109,14 @@ bool CMuleCollection::OpenBuffer(const char *data, size_t len)
 	const std::string buffer(data, len);
 	std::istringstream infile(buffer, std::ios::in | std::ios::binary);
 
-	// The two formats are told apart by the leading four bytes and only one parser
-	// ever runs: a binary collection starts with a version of 1 or 2, a text one
-	// with "ed2k://", which as a little-endian uint32 is 0x6b326465.
+	// The two formats are told apart by the leading four bytes and only one parser ever runs: a
+	// binary collection starts with a version of 1 or 2, a text one with "ed2k://", which as a
+	// little-endian uint32 is 0x6b326465.
 	//
-	// Never try the text parser as a fallback for a binary file. It scans for
-	// anything that looks like a link, so a hostile collection could smuggle one
-	// inside a filename field, have the binary parser correctly reject the entry,
-	// and still see it harvested from the raw bytes on the second pass.
+	// Never try the text parser as a fallback for a binary file. It scans for anything that
+	// looks like a link, so a hostile collection could smuggle one inside a filename field,
+	// have the binary parser correctly reject the entry, and still see it harvested from the
+	// raw bytes on the second pass.
 	std::vector<std::string> parsed;
 	const bool isBinary = (len >= sizeof(uint32_t)) && (LooksLikeBinary(data));
 
@@ -166,9 +164,9 @@ bool CMuleCollection::Open(const std::string &File)
 #ifndef USE_STD_STRING
 bool CMuleCollection::Open(const wxString &File)
 {
-	// wxFile is what makes this overload worth having: it opens wide paths
-	// on Windows and converts with wxConvFileName on POSIX, where handing a
-	// locale-narrowed path to std::ifstream silently fails to open.
+	// wxFile is what makes this overload worth having: it opens wide paths on Windows and
+	// converts with wxConvFileName on POSIX, where handing a locale-narrowed path to
+	// std::ifstream silently fails to open.
 	wxFile file;
 	if (!file.Open(File, wxFile::read)) {
 		return false;
@@ -255,9 +253,9 @@ bool CMuleCollection::ParseBinary(std::istream &infile, std::vector<std::string>
 		// FT_COLLECTIONAUTHORKEY
 		case 0x32: {
 			uint32_t hTagBlobSize = ReadInt<uint32_t>(infile);
-			// The size is straight from the file, so bound it before
-			// it becomes an allocation - otherwise twelve crafted
-			// bytes ask for 4 GiB and the bad_alloc escapes Open().
+			// The size comes straight from the file, so bound it before it becomes an
+			// allocation -- otherwise twelve crafted bytes ask for 4 GiB and the
+			// bad_alloc escapes Open().
 			if (!infile.good() || hTagBlobSize > MAX_BLOB_BYTES) {
 				return false;
 			}
@@ -269,10 +267,9 @@ bool CMuleCollection::ParseBinary(std::istream &infile, std::vector<std::string>
 		}
 		// UNDEFINED TAG
 		default:
-			// An unknown header tag carries an unknown payload, so we
-			// cannot skip past it and every subsequent read would be
-			// misaligned. Bail rather than parse garbage - the same
-			// choice the per-file tag loop below already makes.
+			// An unknown header tag carries an unknown payload, so we cannot skip past
+			// it and every later read would be misaligned. Bail rather than parse
+			// garbage -- the same choice the per-file tag loop below already makes.
 			return false;
 		}
 		if (!infile.good()) {
@@ -282,12 +279,8 @@ bool CMuleCollection::ParseBinary(std::istream &infile, std::vector<std::string>
 
 	uint32_t cFileCount = ReadInt<uint32_t>(infile);
 
-	/*
-	softlimit is set to 1024 to avoid problems with big uint32_t values
-	I don't believe anyone would want to use an emulecollection file
-	to store more than 1024 files, but just raise below value in case
-	you know someone who does.
-	*/
+	/* The soft limit of 1024 avoids problems with big uint32_t values. Nobody is likely to store
+	   more than 1024 files in an emulecollection, but raise it if you know someone who does. */
 
 	if (!infile.good() || cFileCount > 1024) {
 		return false;
@@ -394,13 +387,11 @@ bool CMuleCollection::ParseBinary(std::istream &infile, std::vector<std::string>
 			}
 		}
 
-		// Without a hash the synthesised link is syntactically valid but
-		// names the all-zero file id, which queues a download that can
-		// never find a source or complete. Skip the entry instead.
-		//
-		// The field checks keep a hostile filename from carrying a
-		// newline (which would forge extra lines once the link reaches
-		// the ED2KLinks file) or a pipe (which would forge extra fields).
+		// Without a hash the synthesised link is syntactically valid but names the all-zero
+		// file id, which queues a download that can never find a source or complete. Skip
+		// the entry instead. The field checks keep a hostile filename from carrying a
+		// newline, which would forge extra lines once the link reaches the ED2KLinks file,
+		// or a pipe, which would forge extra fields.
 		if (!fileName.empty() && fileSize > 0 && haveHash && IsSafeLinkField(fileName)) {
 			if (!rootHash.empty() && !IsSafeLinkField(rootHash)) {
 				rootHash.clear();
@@ -424,11 +415,10 @@ bool CMuleCollection::ParseText(std::istream &infile, std::vector<std::string> &
 	std::string line;
 
 	while (getline(infile, line, (char)10 /* LF */)) {
-		// An empty line used to underflow the length arithmetic here and
-		// index far past the end of the string, which threw out of
-		// Open() uncaught. Blank lines are ordinary in hand-written
-		// collections, and a corrupt binary file falls through to this
-		// parser and produces them routinely.
+		// An empty line used to underflow the length arithmetic here and index far past the
+		// end of the string, throwing out of Open() uncaught. Blank lines are ordinary in
+		// hand-written collections, and a corrupt binary file falls through to this parser
+		// and produces them routinely.
 		if (!line.empty() && (char)13 /* CR */ == line[line.size() - 1]) {
 			line.erase(line.size() - 1);
 		}

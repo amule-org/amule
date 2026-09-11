@@ -35,16 +35,12 @@ class CEncryptedDatagramSocket;
 class CProxyData;
 class CPacket;
 
-/***
- * This class provides a UBT governed UDP-socket.
+/**
+ * A UBT-governed UDP socket.
  *
- * The CMuleUDPSocket are created with the NOWAIT option and
- * handle both INPUT and OUTPUT events.
- *
- * The following additional features are provided compared to CDatagramSocketProxy:
- *  - Goverened by the UBT.
- *  - Automatic sending/receiving of packets.
- *  - Fallover recovery for when a socket becomes invalid (error 4).
+ * Created with the NOWAIT option, handling both INPUT and OUTPUT events. Over CDatagramSocketProxy
+ * it adds UBT governance, automatic sending and receiving of packets, and fallover recovery for
+ * when a socket becomes invalid (error 4).
  *
  * @see ThrottledControlSocket
  * @see CEncryptedDatagramSocket
@@ -58,7 +54,7 @@ public:
 	 *
 	 * @param name Name used when logging events.
 	 * @param id The ID used for events.
-	 * @param address The address where the socket will listen.
+	 * @param address The address the socket will listen on.
 	 * @param ProxyData ProxyData associated with the socket.
 	 */
 	CMuleUDPSocket(const wxString &name,
@@ -67,23 +63,18 @@ public:
 		const CProxyData *ProxyData = NULL);
 
 	/**
-	 * Destructor, safely closes the socket if opened.
+	 * Safely closes the socket if opened.
 	 */
 	virtual ~CMuleUDPSocket();
 
 	/**
-	 * Opens the socket.
-	 *
-	 * The socket is bound to the address specified in
-	 * the constructor.
+	 * Opens the socket, bound to the address given to the constructor.
 	 */
 	void Open();
 
 	/**
-	 * Closes the socket.
-	 *
-	 * The socket can be reopened by calling Open. Closing a
-	 * already closed socket is an illegal operation.
+	 * Closes the socket. It can be reopened with Open(); closing an already closed socket is
+	 * illegal.
 	 */
 	// Gating virtual would make class layout depend on a define in this widely included header.
 	// The only other subclass, CServerUDPSocket, declares no Close().
@@ -99,18 +90,13 @@ public:
 	virtual void OnDisconnected(int errorCode);
 
 	/**
-	 * Queues a packet for sending.
+	 * Queues a packet for sending, taking ownership of it.
 	 *
 	 * @param packet The packet to send.
 	 * @param IP The target IP address.
 	 * @param port The target port.
-	 * @param bEncrypt If the packet must be encrypted
-	 * @param port The target port.
-	 * @param pachTargetClientHashORKadID The client hash or Kad ID
-	 * @param bKad
-	 * @param nReceiverVerifyKey
-	 *
-	 * Note that CMuleUDPSocket takes ownership of the packet.
+	 * @param bEncrypt Whether the packet must be encrypted.
+	 * @param pachTargetClientHashORKadID The client hash or Kad ID.
 	 */
 	void SendPacket(CPacket *packet,
 		uint32 IP,
@@ -121,9 +107,7 @@ public:
 		uint32 nReceiverVerifyKey);
 
 	/**
-	 * Returns true if the socket is Ok, false otherwise.
-	 *
-	 * @see wxSocketBase::Ok
+	 * True if the socket is Ok. @see wxSocketBase::Ok
 	 */
 	bool Ok();
 
@@ -132,10 +116,10 @@ public:
 
 protected:
 	/**
-	 * This function is called when a packet has been received.
+	 * Called when a packet has been received.
 	 *
-	 * @param addr The address from where data was received.
-	 * @param buffer The data that has been received.
+	 * @param addr The address the data came from.
+	 * @param buffer The data received.
 	 * @param length The length of the data buffer.
 	 */
 	virtual void OnPacketReceived(uint32 ip, uint16 port, uint8_t *buffer, size_t length) = 0;
@@ -148,17 +132,14 @@ private:
 	 * Sends a packet to the specified address.
 	 *
 	 * @param buffer The data to be sent.
-	 * @param length the length of the data buffer.
-	 * @param ip The target ip address.
+	 * @param length The length of the data buffer.
+	 * @param ip The target IP address.
 	 * @param port The target port.
 	 */
 	bool SendTo(uint8_t *buffer, uint32_t length, uint32_t ip, uint16_t port);
 
 	/**
-	 * Creates a new socket.
-	 *
-	 * Calling this function when a socket already exists
-	 * is an illegal operation.
+	 * Creates a new socket. Calling this when one already exists is illegal.
 	 */
 	void CreateSocket();
 

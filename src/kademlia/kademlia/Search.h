@@ -64,14 +64,13 @@ public:
 		m_searchID = id;
 		m_searchIDAssigned = true;
 	}
-	// Whether this search was ever given an id. Only PrepareFindKeywords and
-	// PrepareLookup assign one; FindNode, FindNodeSpecial and
-	// FindNodeFWCheckUDP leave the constructor's default, which is the same
-	// value an EC client that predates multi-search uses for every search it
-	// runs (0xFFFFFFFF). An id lookup must not resolve to a search that never
-	// claimed one, or aMule's own node lookups answer for a legacy client's
-	// search. The value alone cannot say: a legacy Kad keyword search really
-	// does get 0xFFFFFFFF assigned, deliberately, in PrepareFindKeywords.
+	// Whether this search was ever given an id. Only PrepareFindKeywords and PrepareLookup
+	// assign one; FindNode, FindNodeSpecial and FindNodeFWCheckUDP leave the constructor's
+	// default, which is the same value an EC client that predates multi-search uses for every
+	// search it runs (0xFFFFFFFF). An id lookup must not resolve to a search that never claimed
+	// one, or aMule's own node lookups answer for a legacy client's search. The value alone
+	// cannot say: a legacy Kad keyword search really does get 0xFFFFFFFF assigned,
+	// deliberately, in PrepareFindKeywords.
 	bool HasSearchID() const noexcept { return m_searchIDAssigned; }
 	uint32_t GetSearchTypes() const noexcept { return m_type; }
 	void SetSearchTypes(uint32_t val) noexcept { m_type = val; }
@@ -116,26 +115,24 @@ public:
 		m_nodeSpecialSearchRequester = requester;
 	}
 
-	// User-triggered widening of the Kad result set. Walks m_responded for the
-	// closest contact not already reasked and sends it SendFindValue with
-	// reaskMore=true, so peers return up to 11 closer contacts instead of 2.
-	// Subsequent FIND_VALUE queries against those contacts surface matches the
-	// search's initial alpha=ALPHA_QUERY frontier missed. Bounded internally by
+	// User-triggered widening of the Kad result set. Walks m_responded for the closest contact
+	// not already reasked and sends it SendFindValue with reaskMore=true, so peers return up to
+	// 11 closer contacts instead of 2. Later FIND_VALUE queries against those contacts surface
+	// matches the search's initial alpha=ALPHA_QUERY frontier missed. Bounded internally by
 	// KADEMLIA_FIND_VALUE_MORE_REASKS.
 	bool RequestMoreResults();
 
-	// Whether this search could still be widened by a future reask, ignoring
-	// whether one is dispatchable right now.
+	// Whether this search could still be widened by a future reask, ignoring whether one is
+	// dispatchable right now.
 	//
-	// The distinction is the point: RequestMoreResults() returns false both when
-	// the search is finished with reasking for good and when it simply has no
-	// un-reasked peer to send to YET, and those want opposite answers from a UI.
-	// The first is terminal, so the "More" control should go away; the second
-	// clears as soon as another peer responds.
+	// The distinction is the point: RequestMoreResults() returns false both when the search is
+	// finished with reasking for good and when it simply has no un-reasked peer to send to YET,
+	// and those want opposite answers from a UI. The first is terminal, so the "More" control
+	// should go away; the second clears as soon as another peer responds.
 	//
-	// Callers pair the two as `fired || CanReaskMore()`, and the `fired ||` is not
-	// optional: the reask that consumes the last of the budget really happens, and
-	// this predicate is already false by the time it returns.
+	// Callers pair the two as `fired || CanReaskMore()`, and the `fired ||` is not optional:
+	// the reask that consumes the last of the budget really happens, and this predicate is
+	// already false by the time it returns.
 	bool CanReaskMore() const;
 
 	enum
@@ -198,12 +195,11 @@ private:
 	typedef std::map<CUInt128, bool> RespondedMap;
 
 #ifdef ENABLE_KAD_NODE_PROTECTION
-	// A request we have sent and not yet had an answer to, keyed by the
-	// contact's ClientID.  Two things need it: CFastKad wants the round-trip
-	// time of every answer, and JumpStart wants to know which contacts have
-	// gone past the estimated ceiling so it can stop waiting on them.  The
-	// address is carried along because by the time a request times out the
-	// contact may already have been dropped from m_tried.
+	// A request we have sent and not yet had an answer to, keyed by the contact's ClientID. Two
+	// things need it: CFastKad wants the round-trip time of every answer, and JumpStart wants
+	// to know which contacts have gone past the estimated ceiling so it can stop waiting on
+	// them. The address is carried along because by the time a request times out the contact
+	// may already have been dropped from m_tried.
 	struct sPendingRequest
 	{
 		uint64_t m_sentTick;
@@ -213,9 +209,9 @@ private:
 	typedef std::map<CUInt128, sPendingRequest> PendingRequestMap;
 
 	PendingRequestMap m_pendingRequests;
-	// Millisecond-resolution twin of m_lastResponse.  The stall check in
-	// JumpStart compares against a derived ceiling that is expressed in
-	// milliseconds, and second granularity would quantise it to uselessness.
+	// Millisecond-resolution twin of m_lastResponse. The stall check in JumpStart compares
+	// against a derived ceiling expressed in milliseconds, and second granularity would
+	// quantise it to uselessness.
 	uint64_t m_lastResponseTick;
 #endif
 
@@ -227,15 +223,12 @@ private:
 	ContactMap m_inUse;
 	CUInt128 m_closestDistantFound; // not used for the search itself, but for statistical data collecting
 
-	// Set of contact ClientIDs we have asked KADEMLIA_FIND_VALUE_MORE
-	// from (the wider 11-contact response variant).  Tracked as a set
-	// rather than a single pointer so that:
-	//   - the existing dead-nodes-fallback at JumpStart can still fire
-	//     once on the closest responded node (semantically: empty set
-	//     before, one entry after, like the old NULL/non-NULL check);
-	//   - RequestMoreResults() can be called multiple times to widen
-	//     further on subsequent responded nodes, capped by
-	//     KADEMLIA_FIND_VALUE_MORE_REASKS.
+	// Set of contact ClientIDs we have asked KADEMLIA_FIND_VALUE_MORE from (the wider 11-contact
+	// response variant). A set rather than a single pointer so that:
+	//   - the dead-nodes fallback at JumpStart can still fire once on the closest responded node
+	//     (empty set before, one entry after, like the old NULL/non-NULL check);
+	//   - RequestMoreResults() can be called several times to widen further on later responded
+	//     nodes, capped by KADEMLIA_FIND_VALUE_MORE_REASKS.
 	std::set<CUInt128> m_requestedMoreNodes;
 };
 

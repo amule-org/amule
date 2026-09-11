@@ -34,23 +34,18 @@
 /**
  * Authenticated encryption for the External Connect packet layer.
  *
- * The session key comes from an ephemeral X25519 exchange, so a recording of a
+ * The session key comes from an ephemeral X25519 exchange, so a recorded
  * session cannot be decrypted later even by someone who by then holds the EC
- * password: the keys that opened it existed only for its duration and were
- * never written anywhere.
+ * password: the keys that opened it existed only for its duration.
  *
- * That alone would leave an active man in the middle free to run one exchange
- * with each side and relay between them, since a raw exchange authenticates
- * nobody. The shared EC password is what closes that, through the confirmation
- * tags below rather than through the key: each side proves it knows the
- * password over the exact handshake it saw, and a relay's two handshakes
- * necessarily differ, so at least one check fails. No certificate handling is
- * needed for any of it.
+ * A raw exchange authenticates nobody, so an active man in the middle could run
+ * one exchange with each side and relay. The shared password closes that through
+ * the confirmation tags below: each side proves it knows the password over the
+ * exact handshake it saw, and a relay's two handshakes differ, so at least one
+ * check fails. No certificates needed.
  *
- * Nothing here is new dependency surface: the `ec` library already links
- * Crypto++ (`NEED_LIB_EC` implies `NEED_LIB_CRYPTO`), which is also where
- * aMule's eD2k obfuscation, secure identification and the webserver's HMAC
- * already come from.
+ * No new dependency: the `ec` library already links Crypto++, which also backs
+ * aMule's eD2k obfuscation, secure identification and the webserver's HMAC.
  */
 namespace ECCrypt
 {
@@ -61,11 +56,9 @@ enum Cipher : uint8_t
 	Cipher_None = 0,
 	/// Mandatory baseline: present in every Crypto++ we accept.
 	Cipher_AES128_GCM = 1,
-	/// Preferred where available. Roughly 2.6x faster than AES-GCM in a
-	/// Crypto++ build without hardware AES -- which is every Raspberry Pi up
-	/// to and including the 4, whose Cortex-A53/A72 have no ARMv8 crypto
-	/// extensions. Needs Crypto++ 8.1, which is aMule's minimum, so it is
-	/// always compiled in and simply negotiated rather than assumed.
+	/// Preferred where available: roughly 2.6x faster than AES-GCM without
+	/// hardware AES, which is every Raspberry Pi up to the 4. Needs Crypto++
+	/// 8.1, aMule's minimum, so it is always compiled in and just negotiated.
 	Cipher_ChaCha20_Poly1305 = 2
 };
 
@@ -75,9 +68,8 @@ const size_t NONCE_TAG_LEN = 32;
 const size_t AEAD_TAG_LEN = 16;
 
 /// Whether this CPU runs AES in hardware *and* cryptopp will dispatch to it.
-/// Both halves matter: where cryptopp's detection comes up empty it also falls
-/// back to table-based AES, so asking the CPU directly would have us prefer a
-/// cipher the library then runs in software.
+/// Both matter: where cryptopp's detection comes up empty it falls back to
+/// table-based AES, so asking the CPU alone would prefer a software cipher.
 bool HasHardwareAES();
 
 /// Ciphers this build can actually do, strongest/fastest first. The server
@@ -86,9 +78,8 @@ bool HasHardwareAES();
 std::vector<uint8_t> SupportedCiphers();
 
 /// SupportedCiphers() with the hardware question answered explicitly, so both
-/// orderings are testable on any machine. Kept as an overload rather than a
-/// defaulted argument: a default would make every caller's translation unit
-/// need HasHardwareAES()'s definition, and cryptopp stays out of this header.
+/// orderings are testable anywhere. An overload rather than a default argument:
+/// a default would pull HasHardwareAES()'s definition into every caller.
 std::vector<uint8_t> SupportedCiphers(bool preferAES);
 
 /// Whether this build can do @a cipher at all.
@@ -100,19 +91,17 @@ const char *CipherName(uint8_t cipher);
 /// @a count cryptographically random bytes. Empty on failure.
 std::vector<uint8_t> RandomBytes(size_t count);
 
-/// Overwrite the bytes with a wipe the optimiser may not elide (unlike
-/// std::fill / memset on a buffer about to be freed), then clear the vector.
-/// For private keys and the shared secret, so a later memory disclosure
-/// cannot recover them.
+/// Overwrite with a wipe the optimiser may not elide (unlike std::fill on a
+/// buffer about to be freed), then clear. For private keys and the shared
+/// secret, so a later memory disclosure cannot recover them.
 void SecureWipe(std::vector<uint8_t> &v);
 void SecureWipe(uint8_t *p, size_t n);
 
 /**
  * HKDF-SHA256 (RFC 5869), extract-then-expand.
  *
- * Thin wrapper over Crypto++'s `hkdf.h`. Kept as a function of its own for the
- * vector-in/vector-out shape the rest of this layer uses, and because the
- * RFC 5869 length cap is enforced here rather than surfacing as an exception.
+ * Wraps Crypto++'s hkdf.h for the vector-in/vector-out shape used here, and
+ * enforces the RFC length cap rather than letting it surface as an exception.
  */
 std::vector<uint8_t> HkdfSha256(const std::vector<uint8_t> &ikm,
 	const std::vector<uint8_t> &salt,
@@ -125,24 +114,19 @@ constexpr size_t X25519_KEY_LEN = 32;
 /**
  * Generate an ephemeral X25519 key pair.
  *
- * Ephemeral is the whole point: the private key never leaves the process, is
- * never written anywhere, and is discarded once the session key is derived.
- * That is what gives forward secrecy -- a recording of the session cannot be
- * decrypted later even by someone who learns the EC password, because the
- * password is not what the channel key is derived from.
+ * The private key never leaves the process, is never written anywhere, and is
+ * discarded once the session key is derived. That is what gives forward secrecy.
  *
- * @return false if randomness is unavailable, in which case both outputs are
- *         cleared and the caller must stay in clear rather than continue with
- *         a predictable key.
+ * @return false if randomness is unavailable; both outputs are cleared and the
+ *         caller must stay in clear rather than use a predictable key.
  */
 bool GenerateX25519KeyPair(std::vector<uint8_t> &privOut, std::vector<uint8_t> &pubOut);
 
 /**
  * X25519 shared secret from our private key and the peer's public key.
  *
- * The peer's key is validated: an all-zero shared secret (which a peer can
- * force with a low-order point) is rejected rather than used, since it would
- * key every such session identically.
+ * An all-zero secret, which a peer can force with a low-order point, is
+ * rejected: it would key every such session identically.
  *
  * @return false on a malformed or degenerate peer key; @a sharedOut is cleared.
  */
@@ -153,13 +137,11 @@ bool X25519Agree(const std::vector<uint8_t> &priv,
 /**
  * The handshake transcript both sides bind into their derivations.
  *
- * One definition rather than one per side: the two ends must agree byte for
- * byte or every session fails, and two copies of the same concatenation in
- * two files is exactly the thing that drifts when a field is added later.
+ * One definition rather than one per side: the ends must agree byte for byte,
+ * and two copies of the same concatenation drift when a field is added later.
  *
- * The cipher list is length-prefixed so that no two different handshakes can
- * flatten to the same bytes -- with a bare concatenation the boundary between
- * a variable-length list and what follows it is only implied.
+ * The cipher list is length-prefixed so no two handshakes can flatten to the
+ * same bytes; with a bare concatenation the boundary is only implied.
  */
 std::vector<uint8_t> BuildTranscript(const std::vector<uint8_t> &offeredCiphers,
 	uint8_t chosenCipher,
@@ -171,22 +153,17 @@ std::vector<uint8_t> BuildTranscript(const std::vector<uint8_t> &offeredCiphers,
 /**
  * Key-confirmation tag proving knowledge of the EC credential.
  *
- * With the channel key derived from the ephemeral exchange alone, the password
- * no longer defends against an active man in the middle by making the key
- * underivable -- an attacker can complete two exchanges and relay. This is what
- * catches that instead: the tag binds the credential to the handshake
- * transcript, which necessarily differs on the two legs of a relay, so the
- * check fails on at least one of them.
+ * The channel key comes from the ephemeral exchange alone, so the password no
+ * longer stops an active man in the middle, who can complete two exchanges and
+ * relay. The tag catches that: it binds the credential to the transcript, which
+ * differs on the two legs of a relay, so at least one check fails.
  *
  * Built from the existing HKDF rather than a separate HMAC: extract-then-expand
  * with the credential as keying material is a MAC over the transcript, and
- * reusing the primitive that is already here keeps the crypto surface to what
- * is already reviewed.
+ * reusing it keeps the crypto surface to what is already reviewed.
  *
- * @param secret     the credential this connection authenticated with.
- * @param transcript handshake bytes, including both public keys.
- * @param label      direction tag, so the two sides' confirmations differ and
- *                   one cannot be replayed as the other.
+ * @param label direction tag, so the two sides' confirmations differ and one
+ *              cannot be replayed as the other.
  */
 std::vector<uint8_t> ConfirmTag(
 	const std::vector<uint8_t> &secret, const std::vector<uint8_t> &transcript, const char *label);
@@ -197,20 +174,17 @@ constexpr size_t CONFIRM_TAG_LEN = 32;
 /**
  * Constant-time equality for secrets.
  *
- * Used for the confirmation check: a byte-at-a-time compare that returns early
- * leaks, through timing, how much of a guessed tag was right, which turns
- * forging one into a per-byte search instead of a 2^256 one.
+ * A compare that returns early leaks, through timing, how much of a guessed tag
+ * was right, turning forgery into a per-byte search instead of a 2^256 one.
  */
 bool ConstantTimeEquals(const std::vector<uint8_t> &a, const std::vector<uint8_t> &b);
 
 /**
  * One direction-aware AEAD session for a single EC connection.
  *
- * Keys are split per direction so the two packet counters can never produce a
- * colliding nonce. The counter is implicit: it is not carried on the wire,
- * because TCP already guarantees ordering and the EC framing treats any desync
- * as fatal regardless, so an explicit counter would cost 8 bytes per packet and
- * buy nothing.
+ * Keys are split per direction so the two packet counters cannot collide on a
+ * nonce. The counter is implicit: TCP guarantees ordering and EC treats any
+ * desync as fatal, so carrying it would cost 8 bytes per packet and buy nothing.
  */
 class Session
 {
@@ -223,18 +197,13 @@ public:
 	/**
 	 * Derive the session keys.
 	 *
-	 * @param cipher       negotiated cipher id.
-	 * @param ikm          the X25519 shared secret. Deliberately not the
-	 *                     credential: keying from something that outlives the
-	 *                     session is exactly what costs forward secrecy.
-	 * @param serverNonce  NONCE_TAG_LEN bytes from the daemon.
-	 * @param clientNonce  NONCE_TAG_LEN bytes from the client.
-	 * @param transcript   handshake bytes bound into the derivation, so a
-	 *                     tampered capability exchange yields a different key
-	 *                     on each side and the first tag check fails. This is
-	 *                     the actual downgrade defence; policy checks sit on
-	 *                     top of it.
-	 * @param isServer     which direction key to seal with.
+	 * @param ikm         the X25519 shared secret, deliberately not the
+	 *                    credential: keying from something that outlives the
+	 *                    session is what costs forward secrecy.
+	 * @param transcript  handshake bytes bound into the derivation, so a tampered
+	 *                    capability exchange yields a different key on each side
+	 *                    and the first tag check fails. This is the downgrade
+	 *                    defence; policy checks sit on top.
 	 * @return false if the cipher is unsupported or a nonce is the wrong size.
 	 */
 	bool Init(uint8_t cipher,
@@ -261,14 +230,13 @@ public:
 
 	// --- streaming, in place -------------------------------------------
 	//
-	// The EC write path builds a packet as a list of CQueuedData chunks and only
-	// then back-patches the length, so the whole packet is already in memory before
-	// anything reaches the socket. These let the chunks be sealed where they lie
-	// and the tag appended, instead of flattening the body into a second buffer,
-	// which would double peak memory on exactly the huge responses the 256 MB
-	// receive gate exists for. The total length need not be known in advance, which
-	// matters because with ZLIB the compressed size is only known once deflate has
-	// finished. Begin/Final bracket one packet and advance that direction's counter.
+	// The EC write path builds a packet as CQueuedData chunks and back-patches the
+	// length, so the packet is already in memory before it reaches the socket.
+	// These seal chunks in place and append the tag rather than flattening into a
+	// second buffer, which would double peak memory on exactly the huge responses
+	// the 256 MB gate exists for. The length need not be known in advance: with
+	// ZLIB the compressed size is only known once deflate finishes. Begin/Final
+	// bracket one packet and advance that direction's counter.
 
 	bool SealBegin();
 	bool SealUpdate(uint8_t *data, size_t len);

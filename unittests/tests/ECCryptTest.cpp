@@ -18,17 +18,15 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-//
 // Coverage for the EC transport-encryption primitives.
 //
-// The properties here fail *silently* if they ever regress -- a reused nonce,
-// a key derivation that stops mixing in one of its inputs, or a tag that stops
-// being checked all still encrypt and decrypt happily while providing much
-// less than they claim. So each one is asserted rather than assumed.
+// The properties here fail *silently* if they ever regress -- a reused nonce, a key derivation that
+// stops mixing in one of its inputs, or a tag that stops being checked all still encrypt and
+// decrypt happily while providing much less than they claim. So each is asserted rather than
+// assumed.
 //
-// Every test runs against every cipher the build supports, because which ones
-// exist depends on the cryptopp version (ChaCha20-Poly1305 needs 8.1).
-//
+// Every test runs against every cipher the build supports, because which ones exist depends on the
+// cryptopp version (ChaCha20-Poly1305 needs 8.1).
 
 #include <muleunit/test.h>
 
@@ -79,9 +77,8 @@ END_DECLARE;
 
 TEST(ECCrypt, HkdfMatchesRfc5869TestCase1)
 {
-	// RFC 5869 appendix A.1. An independent vector, not a self-consistency
-	// check: this is what proves the hand-rolled extract/expand is really
-	// HKDF and not merely stable.
+	// RFC 5869 appendix A.1. An independent vector, not a self-consistency check: this is what
+	// proves the hand-rolled extract/expand is really HKDF and not merely stable.
 	const std::vector<uint8_t> ikm = Fill(22, 0x0b);
 	std::vector<uint8_t> salt, info;
 	for (int i = 0x00; i <= 0x0c; ++i) {
@@ -158,9 +155,8 @@ TEST(ECCrypt, PreferredCipherComesFirst)
 	const std::vector<uint8_t> ciphers2 = SupportedCiphers(true);
 	ASSERT_EQUALS((int)Cipher_AES128_GCM, (int)ciphers2[0]);
 
-	// Case 3: preferAES = HasHardwareAES()
-	// ChaCha20 shall come first if supported and no hardware support for AES
-	// Otherwise, AES shall come first
+	// Case 3: preferAES = HasHardwareAES(). ChaCha20 comes first if supported and there is no
+	// hardware AES; otherwise AES comes first.
 	const std::vector<uint8_t> ciphers3 = SupportedCiphers();
 	if (IsCipherSupported(Cipher_ChaCha20_Poly1305) && !HasHardwareAES()) {
 		ASSERT_EQUALS((int)Cipher_ChaCha20_Poly1305, (int)ciphers3[0]);
@@ -366,9 +362,9 @@ TEST(ECCrypt, WrongSharedSecretCannotOpen)
 
 TEST(ECCrypt, TamperedTranscriptCannotOpen)
 {
-	// The downgrade defence. If an attacker edits the capability exchange the
-	// two ends derive different keys, so the first sealed packet fails rather
-	// than the connection quietly falling back to something weaker.
+	// The downgrade defence. If an attacker edits the capability exchange the two ends derive
+	// different keys, so the first sealed packet fails rather than the connection quietly
+	// falling back to something weaker.
 	const std::vector<uint8_t> ciphers = SupportedCiphers();
 	for (size_t i = 0; i < ciphers.size(); ++i) {
 		const std::vector<uint8_t> ikm = Fill(32, 7);
@@ -545,14 +541,13 @@ TEST(ECCrypt, SecureWipeEmptiesTheBuffer)
 	SecureWipe(nullptr, 0);
 }
 
-// BuildTranscript defines a wire format: the client and the server each build
-// this byte string independently and feed it to the AEAD as associated data, so
-// the two must agree byte for byte or authentication fails with no useful
-// diagnostic. Nothing else in this file covered it, which meant a refactor of
-// the function could pass the whole suite while changing the format (#800).
+// BuildTranscript defines a wire format: the client and the server each build this byte string
+// independently and feed it to the AEAD as associated data, so the two must agree byte for byte or
+// authentication fails with no useful diagnostic. Nothing else in this file covered it, which meant
+// a refactor of the function could pass the whole suite while changing the format (#800).
 //
-// Golden vector rather than a property: the point is to pin the exact layout --
-// count, capped cipher list, chosen cipher, then the four blobs in order.
+// Golden vector rather than a property: the point is to pin the exact layout -- count, capped
+// cipher list, chosen cipher, then the four blobs in order.
 TEST(ECCrypt, BuildTranscriptMatchesGoldenVector)
 {
 	const std::vector<uint8_t> offered = { 0x01, 0x02, 0x03 };
@@ -611,9 +606,8 @@ TEST(ECCrypt, BuildTranscriptCapsCipherListAt255)
 	ASSERT_EQUALS((uint8_t)0x07, out[256]);
 }
 
-// Every field has to reach the output; one silently dropped would still
-// authenticate happily between two peers running the same build, and only fail
-// against a peer that included it.
+// Every field has to reach the output; one silently dropped would still authenticate happily
+// between two peers running the same build, and only fail against a peer that included it.
 TEST(ECCrypt, BuildTranscriptIsSensitiveToEveryInput)
 {
 	const std::vector<uint8_t> offered = Fill(3, 1), cn = Fill(4, 2), sn = Fill(4, 3), cp = Fill(3, 4),

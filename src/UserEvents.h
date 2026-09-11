@@ -33,13 +33,8 @@
 #define ATTR(x) __attribute__((x))
 #endif
 
-/* Each event will use 5 IDs:
-   - the panel that shows the prefs for this event
-   - the 'Core command enabled' checkbox
-   - the 'Core command' textctrl
-   - the 'GUI command enabled' checkbox
-   - the 'GUI command' textctrl
-*/
+/* Each event uses 5 IDs: the panel showing its prefs, the 'Core command enabled' checkbox, the
+   'Core command' textctrl, the 'GUI command enabled' checkbox and the 'GUI command' textctrl. */
 #define USEREVENTS_IDS_PER_EVENT 5
 
 const int USEREVENTS_FIRST_ID = 11500; /* Some safe GUI ID to start from */
@@ -47,13 +42,11 @@ const int USEREVENTS_FIRST_ID = 11500; /* Some safe GUI ID to start from */
 /**
  * Macro listing all the events.
  *
- * This huge macro is expanded 5 times in the sources, each time producing
- * different code. If we decide to get rid of the macro either because of coding style
- * decision, or someone finds a compiler that doesn't support this big macro, we
- * have to maintain these five places in sync. They are:
- * - one in PrefsUnifiedDlg.cpp (EVENT_LIST, PrefsUnifiedDlg::PrefsUnifiedDlg())
- * - one in this header (CUserEvents::EventType)
- * - two in UserEvents.cpp (static struct EventList[]; CUserEvent::ExecuteCommand())
+ * Expanded 5 times in the sources, each producing different code. Dropping the macro -- on style
+ * grounds, or because a compiler cannot cope with one this big -- means keeping those five places
+ * in sync by hand: one in PrefsUnifiedDlg.cpp (EVENT_LIST, PrefsUnifiedDlg::PrefsUnifiedDlg()), one
+ * in this header (CUserEvents::EventType), and two in UserEvents.cpp (static struct EventList[];
+ * CUserEvent::ExecuteCommand()).
  */
 #define USEREVENTS_EVENTLIST() \
 	USEREVENTS_EVENT(DownloadCompleted, \
@@ -94,10 +87,8 @@ const int USEREVENTS_FIRST_ID = 11500; /* Some safe GUI ID to start from */
 #define USEREVENTS_EVENT(ID, NAME, VARS) ID,
 
 /**
- * Class to handle userspace events.
- *
- * These events that we publish to the user and let him
- * specify a command to be run when one of these events occur.
+ * Handles userspace events: events published to the user, who can specify a command to run when one
+ * occurs.
  */
 class CUserEvents
 {
@@ -115,36 +106,30 @@ public:
 	/**
 	 * Process a user event.
 	 *
-	 * Notes on the 'object' argument: this should be a pointer to
-	 * an object instance, from which all of the replacement texts
-	 * can be generated.
-	 *
-	 * Unfortunately this approach does not provide any type-safety,
-	 * a list of string pairs (key, replacement) would be the best.
-	 * However, this would need either expanding the macro at all of
-	 * the places where CUserEvents::ProcessEvent is called from, or
-	 * creating lists of parameters for each event, etc = more lists
-	 * to keep in sync manually.
+	 * `object` should be a pointer to an object instance from which every replacement text can
+	 * be generated. That is not type-safe; a list of (key, replacement) string pairs would be
+	 * better, but it would mean either expanding the macro at every CUserEvents::ProcessEvent
+	 * call site or creating a parameter list per event -- more lists to keep in sync by hand.
 	 */
 	static void ProcessEvent(enum EventType event, const void *object);
 
 	/**
-	 * Returns the number of defined user events.
+	 * The number of defined user events.
 	 */
 	static unsigned int GetCount() ATTR(__const__);
 
 	/**
-	 * Returns the human-readable name of the event.
+	 * The human-readable name of the event.
 	 */
 	static const wxString &GetDisplayName(enum EventType event) ATTR(__pure__);
 
 	/**
-	 * Checks whether the core command is enabled.
+	 * Whether the core command is enabled.
 	 */
 	static bool IsCoreCommandEnabled(enum EventType event) ATTR(__pure__);
 
 	/**
-	 * Checks whether the GUI command is enabled.
+	 * Whether the GUI command is enabled.
 	 */
 	static bool IsGUICommandEnabled(enum EventType event) ATTR(__pure__);
 

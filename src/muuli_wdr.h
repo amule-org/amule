@@ -84,14 +84,12 @@ extern wxSizer *s_filter_sizer;
 #define ID_FILTER_TEXT 10014
 #define ID_FILTER_INVERT 10016
 #define ID_FILTER_KNOWN 10017
-// Numbered outside the search block: 10014-10025 is contiguous and full, so a
-// new id here would mean renumbering every later one. 10493 is the next free
+// Numbered outside the search block: 10014-10025 is contiguous and full. 10493 is the next free
 // value file-wide.
 #define ID_FILTER_RESET 10493
-// Divides the action buttons from the filter row. Carries an id so the dialog
-// can show and hide it with the row it introduces -- a rule left behind on its
-// own would sit under the buttons with nothing beneath it. Numbered out of
-// block for the same reason as ID_FILTER_RESET.
+// Divides the action buttons from the filter row. Carries an id so the dialog can hide it with the
+// row it introduces -- a rule left on its own would sit under the buttons with nothing beneath it.
+// Out of block for the same reason as ID_FILTER_RESET.
 #define ID_FILTER_SEPARATOR 10508
 #define IDC_STARTS 10018
 #define IDC_SEARCHMORE 10019
@@ -226,12 +224,10 @@ wxSizer *statsDlg(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE)
 #define ID_DSNAME 10098
 #define IDT_OBFUSCATION 10099
 #define IDT_KAD 10100
-// Peer's protocol-extension word, Client Details. Appended at the end of the id
-// space rather than next to IDT_KAD: the ids are bound implicitly and by value,
-// so inserting one here would renumber every id below it. The label carries an
-// id of its own -- unlike every other label in this dialog -- because the row is
-// hidden whole when the peer claims no extension, and a label with id -1 cannot
-// be found to hide.
+// Peer's protocol-extension word, Client Details. Appended at the end of the id space rather than
+// next to IDT_KAD: the ids are bound implicitly and by value, so inserting one here would renumber
+// every id below. The label carries its own id -- unlike every other label here -- because the
+// whole row is hidden when the peer claims no extension, and a label with id -1 cannot be found.
 #define IDT_MOD_CAPABILITIES 10510
 #define IDT_MOD_CAPABILITIES_LABEL 10511
 #define ID_DDOWNLOADING 10101
@@ -283,13 +279,11 @@ wxSizer *PreferencesGeneralTab(wxWindow *parent, bool call_fit = TRUE, bool set_
 #define IDC_UPNPTCPPORTTEXT 10137
 #define IDC_UPNPTCPPORT 10138
 #define IDC_ADDRESS 10139
-// 10410: bind-to-interface text control (functional, next free above the top
-// of the current range). Its label IDC_INTERFACETEXT lives in the 10355+
-// orphan-label band below.
+// 10410: bind-to-interface text control, next free above the top of the current range. Its label
+// IDC_INTERFACETEXT lives in the 10355+ orphan-label band below.
 #define IDC_INTERFACE 10410
-// EC-listener bind-to-interface control + its label (Remote Controls tab).
-// Separate from the P2P IDC_INTERFACE above so external-connection traffic can
-// bind to its own interface (issue #330).
+// EC-listener bind-to-interface control + its label (Remote Controls tab). Separate from the P2P
+// IDC_INTERFACE above so external-connection traffic can bind to its own interface (issue #330).
 #define IDC_EC_INTERFACE 10474
 #define IDC_EC_INTERFACETEXT 10475
 #define ID_TEXT 10140
@@ -328,11 +322,10 @@ wxSizer *PreferencesServerTab(wxWindow *parent, bool call_fit = TRUE, bool set_s
 #define IDC_MINDISKSPACE 10168
 #define IDC_SRCSEEDS 10169
 #define IDC_UAP 10170
-// Media metadata extraction (issue #140). In the high band (>= 10420) to clear
-// an eventual wxDesigner regeneration and other in-flight branches:
-// bind-to-interface reserves 10410, so this starts at 10420 with a 10-ID
-// cushion. The label lives in the 10355+ orphan-label band with the other
-// daemon-only ones.
+// Media metadata extraction (issue #140). In the high band (>= 10420) to clear an eventual
+// wxDesigner regeneration and other in-flight branches: bind-to-interface reserves 10410, so this
+// starts at 10420 with a 10-ID cushion. The label lives in the 10355+ orphan-label band with the
+// other daemon-only ones.
 #define IDC_MEDIAMETA_ENABLED 10420
 #define IDC_MEDIAMETA_FFPROBEPATH 10421
 #define IDC_MEDIAMETA_FFPROBEBROWSE 10422
@@ -363,14 +356,13 @@ wxSizer *PreferencesFilesTab(wxWindow *parent, bool call_fit = TRUE, bool set_si
 #define IDC_AMULEAPI_PASSWD_STATE 10490
 #define IDC_AMULEAPI_GUEST_PASSWD_STATE 10491
 #define IDC_CREATEFILESSPARSE 10492
-// 10344..10354 are ID_BUTTON* toolbar IDs; 10355..10399 free. The
-// IDs below name orphan labels / static boxes so amulegui can hide
-// them via PrefsUnifiedDlg's amuledOnlyPrefs[].
+// 10344..10354 are ID_BUTTON* toolbar IDs; 10355..10399 free. The IDs below name orphan labels /
+// static boxes so amulegui can hide them via PrefsUnifiedDlg's amuledOnlyPrefs[].
 #define IDC_ADDRESSTEXT 10355
 #define IDC_INTERFACETEXT 10362
-// Orphan label for the ffprobe path text control. Grouped with the
-// rest so amulegui hides it via amuledOnlyPrefs[] (probing runs on
-// the daemon side; the remote GUI has no business setting the path).
+// Orphan label for the ffprobe path text control. Grouped with the rest so amulegui hides it via
+// amuledOnlyPrefs[]: probing runs on the daemon, so the remote GUI has no business setting the
+// path.
 #define IDC_MEDIAMETA_FFPROBEPATHTEXT 10370
 #define IDC_ENDGAME 10424
 #define IDC_EXT_CONN_PARAMS_BOX 10356
@@ -385,9 +377,8 @@ wxSizer *PreferencesDirectoriesTab(wxWindow *parent, bool call_fit = TRUE, bool 
 wxSizer *PreferencesPathMappingTab(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 #endif
 
-// IP2Country (GeoIP) preferences tab. 10400+ leaves a clear gap above the
-// toolbar / button IDs that crowd 10350-10354, where sharing an ID gets the
-// wrong event delivered into the prefs panel.
+// IP2Country (GeoIP) preferences tab. 10400+ leaves a clear gap above the toolbar / button IDs
+// crowding 10350-10354, where sharing an ID gets the wrong event delivered into the prefs panel.
 #define IDC_GEOIP_SOURCE 10400
 #define IDC_GEOIP_MAXMIND_LIC 10401
 #define IDC_GEOIP_CUSTOM_URL 10402
@@ -424,9 +415,8 @@ wxSizer *PreferencesStatisticsTab(wxWindow *parent, bool call_fit = TRUE, bool s
 #define IDC_SERVERKEEPALIVE_LABEL 10196
 #define IDC_SERVERKEEPALIVE 10197
 #define IDC_PREVENT_SLEEP 10198
-// Picked at 10430+ to clear both the 10420-10429 media-metadata cushion
-// (IDC_MEDIAMETA_*, plus IDC_ENDGAME which sits at 10424) and any future
-// wxDesigner regeneration.
+// At 10430+ to clear both the 10420-10429 media-metadata cushion (IDC_MEDIAMETA_*, plus IDC_ENDGAME
+// at 10424) and any future wxDesigner regeneration.
 #define IDC_KADMAXSEARCHES 10430
 #define IDC_KADREASKTIME 10431
 #define IDC_SOURCEREASKTIME 10432
@@ -497,9 +487,9 @@ wxSizer *aMuleLog(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE)
 #define ID_GUILOGVIEW 10476
 #define ID_BTN_RESET_GUILOG 10477
 
-// Remote-GUI shared-folders editor (CLIENT_GUI only). The directory tree
-// browses *this* machine, which is the wrong filesystem when the daemon is
-// remote, so amulegui edits the daemon's roots as an explicit path list.
+// Remote-GUI shared-folders editor (CLIENT_GUI only). The directory tree browses *this* machine,
+// the wrong filesystem when the daemon is remote, so amulegui edits the daemon's roots as an
+// explicit path list.
 #define IDC_SHAREDDIRS_LIST 10478
 #define IDC_SHAREDDIR_PATH 10479
 #define IDC_SHAREDDIR_RECURSIVE 10480
@@ -507,9 +497,8 @@ wxSizer *aMuleLog(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE)
 #define IDC_SHAREDDIR_REMOVE 10482
 // Interface (GUI Tweaks) tab: toggle live column auto-sorting of the lists.
 #define IDC_LIVELISTSORT 10483
-// Remote-GUI path-mapping editor (CLIENT_GUI only, issue #843): a
-// user-configured remote->local path-prefix table, so Open and Show-in-folder
-// work against a daemon on another machine this one can otherwise reach.
+// Remote-GUI path-mapping editor (CLIENT_GUI only, issue #843): a user-configured remote->local
+// path-prefix table, so Open and Show-in-folder work against a daemon on another machine.
 #define IDC_PATHMAP_LIST 10496
 #define IDC_PATHMAP_REMOTE 10497
 #define IDC_PATHMAP_LOCAL 10498
@@ -660,9 +649,9 @@ wxSizer *messagePageMessages(wxWindow *parent, bool call_fit = TRUE, bool set_si
 #define ID_BUTTONNEWPREFERENCES 10352
 #define ID_BUTTONIMPORT 10353
 #define ID_ABOUT 10354
-// Appended rather than slotted between the panel buttons above: those values are
-// referenced by saved toolbar state, so renumbering would silently move a user's
-// buttons. 10503 upwards is the first free pair.
+// Appended rather than slotted between the panel buttons above: saved toolbar state references
+// those values, so renumbering would silently move a user's buttons. 10503 upwards is the first
+// free pair.
 #define ID_BUTTONCLIENTS 10503
 #define ID_CLIENTSLIST 10504
 #define ID_CLIENTHISTORYLIST 10505
@@ -677,9 +666,8 @@ wxBitmap amuleSpecial(size_t index);
 
 wxBitmap amuleDlgImages(size_t index);
 
-// Shared by CServerWnd::UpdateED2KConnectButton() and
-// CKadDlg::UpdateConnectButton(): both panes' Connect/Cancel/Disconnect
-// toggle buttons need the same label/bitmap/enabled-state logic.
+// Shared by CServerWnd::UpdateED2KConnectButton() and CKadDlg::UpdateConnectButton(): both panes'
+// Connect/Cancel/Disconnect buttons need the same label/bitmap/enabled-state logic.
 enum EConnButtonState
 {
 	ConnButtonOff,

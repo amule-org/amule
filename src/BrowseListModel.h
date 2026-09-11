@@ -33,10 +33,8 @@
 #include <unordered_map> // Needed for std::unordered_map (result -> its folder)
 
 /**
- * A folder in a browsed peer's shared-file listing.
- *
- * Not a CSearchFile: it has no hash, no size and no sources, and every
- * operation the search list offers on a result is meaningless for it. It
+ * A folder in a browsed peer's shared-file listing. Not a CSearchFile: it has no hash, no size and
+ * no sources, and every operation the search list offers on a result is meaningless for it. It
  * exists only to be a wxDataViewItem the control can draw and expand.
  */
 class CBrowseFolderNode
@@ -53,9 +51,9 @@ public:
 	const wxString &GetName() const noexcept { return m_name; }
 	CBrowseFolderNode *GetParent() const noexcept { return m_parent; }
 
-	//! Distance from a root. Held on the node rather than counted on
-	//! demand because it is what bounds the tree across directory strings,
-	//! and the readers that walk it recurse: see MAX_FOLDER_DEPTH.
+	//! Distance from a root. Held on the node rather than counted on demand because it is what
+	//! bounds the tree across directory strings, and the readers that walk it recurse: see
+	//! MAX_FOLDER_DEPTH.
 	size_t GetDepth() const noexcept { return m_depth; }
 
 	//! Sub-folders and the results filed directly here. Both are rebuilt
@@ -70,41 +68,35 @@ private:
 };
 
 /**
- * The model behind a browse tab: the same result list as a search, grouped
- * under the directories the peer reported.
+ * The model behind a browse tab: the same result list as a search, grouped under the directories
+ * the peer reported.
  *
- * Extends rather than alters CSearchListModel, because a browse is the only
- * place folders exist -- an ordinary Kad/eD2k search has no directory to
- * group by, and nothing about its model should have to know that folders are
- * a possibility.
+ * Extends rather than alters CSearchListModel, because a browse is the only place folders exist --
+ * an ordinary Kad/eD2k search has no directory to group by, and nothing about its model should have
+ * to know that folders are a possibility.
  *
- * The directory strings nest. A peer names each shared directory by walking
- * up from it for as long as the parent is also shared and joining that run
- * (CSharedFileList::GetPublicSharedDirName), so what arrives is a relative
- * path -- "Shared/Movies/Action" -- rather than a flat label or an absolute
- * path. Splitting it back into segments reproduces the peer's own layout.
+ * The directory strings nest. A peer names each shared directory by walking up from it for as long
+ * as the parent is also shared and joining that run (CSharedFileList::GetPublicSharedDirName), so
+ * what arrives is a relative path -- "Shared/Movies/Action" -- rather than a flat label or an
+ * absolute path. Splitting it back into segments reproduces the peer's own layout.
  *
- * Both separators are split on. The sender uses its own platform's
- * wxFileName::GetPathSeparator(), so a Windows peer sends backslashes and a
- * POSIX peer forward slashes, and there is nothing in the packet saying
- * which. A directory whose name genuinely contains the other platform's
- * separator would split into segments that were never real folders; that is
- * the trade eMule makes here too, and it costs a cosmetic mis-grouping
- * rather than a wrong file.
+ * Both separators are split on. The sender uses its own platform's wxFileName::GetPathSeparator(),
+ * so a Windows peer sends backslashes and a POSIX peer forward slashes, and nothing in the packet
+ * says which. A directory whose name genuinely contains the other platform's separator would split
+ * into segments that were never real folders; that is the trade eMule makes here too, and it costs
+ * a cosmetic mis-grouping rather than a wrong file.
  *
- * Peers that answer the older whole-list request send no directory at all
- * (ClientTCPSocket, OP_ASKSHAREDFILESANSWER passes an empty string). Those
- * results have no folder to sit under and stay at the top level, so browsing
- * such a peer looks exactly like it did before folders existed.
+ * Peers that answer the older whole-list request send no directory at all (ClientTCPSocket,
+ * OP_ASKSHAREDFILESANSWER passes an empty string). Those results have no folder to sit under and
+ * stay at the top level, so browsing such a peer looks exactly like it did before folders existed.
  *
  * The incremental add path does not know about folders, and does not need to.
- * CSearchListModel::FlushPending() announces every parentless result under
- * the invisible root, which is not where this model puts them -- but
- * incremental notifications are only enabled on __WXOSX__, and
- * wxCocoaDataViewControl::Add() discards the items it is given and calls
- * [NSOutlineView reloadData], which re-reads the tree through GetChildren().
- * GTK and MSW take the Cleared() branch, which re-reads it too. Either way
- * the grouping below is what the control ends up drawing.
+ * CSearchListModel::FlushPending() announces every parentless result under the invisible root,
+ * which is not where this model puts them -- but incremental notifications are only enabled on
+ * __WXOSX__, and wxCocoaDataViewControl::Add() discards the items it is given and calls
+ * [NSOutlineView reloadData], which re-reads the tree through GetChildren(). GTK and MSW take the
+ * Cleared() branch, which re-reads it too. Either way the grouping below is what the control ends
+ * up drawing.
  */
 class CBrowseListModel : public CSearchListModel
 {
@@ -113,9 +105,8 @@ public:
 
 	bool IsFolder(const wxDataViewItem &item) const wxOVERRIDE;
 
-	// wxDataViewModel interface. Each of these has to answer for folder
-	// items, which the base class would hand to ToFile() and read as a
-	// CSearchFile.
+	// wxDataViewModel interface. Each of these has to answer for folder items, which the base
+	// class would hand to ToFile() and read as a CSearchFile.
 	void GetValue(wxVariant &variant, const wxDataViewItem &item, unsigned int col) const wxOVERRIDE;
 	bool GetAttr(const wxDataViewItem &item, unsigned int col, wxDataViewItemAttr &attr) const wxOVERRIDE;
 	wxDataViewItem GetParent(const wxDataViewItem &item) const wxOVERRIDE;
@@ -142,70 +133,62 @@ private:
 	/**
 	 * Re-files the current results under their directories.
 	 *
-	 * Called from the const tree accessors, because the model deliberately
-	 * keeps no copy of the result set (see CSearchListModel) and the folders
-	 * are derived from whatever it holds right now.
+	 * Called from the const tree accessors, because the model deliberately keeps no copy of the
+	 * result set (see CSearchListModel) and the folders are derived from whatever it holds
+	 * right now.
 	 *
-	 * Nodes are keyed by their full path and never erased while the model
-	 * lives: the control may still be holding an item for a folder whose
-	 * last result just went away, and that pointer has to stay readable. A
-	 * node with nothing under it is simply not reported as a child.
+	 * Nodes are keyed by their full path and never erased while the model lives: the control
+	 * may still be holding an item for a folder whose last result just went away, and that
+	 * pointer has to stay readable. A node with nothing under it is simply not reported as a
+	 * child.
 	 */
 	void RebuildFolders() const;
 
 	/**
-	 * Most nodes the tree is ever deep, counted end to end and not per
-	 * directory string.
+	 * Most nodes the tree is ever deep, counted end to end and not per directory string.
 	 *
 	 * The strings are whatever the peer put in the packets, each up to 64 KB
-	 * (CFileDataIO::ReadString defaults to a uint16 length) and checked by
-	 * nothing between the socket and here. Two separate costs follow from
-	 * that, and they need two separate bounds:
+	 * (CFileDataIO::ReadString defaults to a uint16 length) and checked by nothing between the
+	 * socket and here. Two separate costs follow, and they need two separate bounds.
 	 *
-	 * Per string, every segment is a recursion level in EnsureFolder() and a
-	 * node keyed by its own prefix, so one directory named with 65,535
-	 * separators is that many frames and the sum of all those prefixes in
-	 * live wxStrings. The depth argument to EnsureFolder() stops it.
+	 * Per string, every segment is a recursion level in EnsureFolder() and a node keyed by its
+	 * own prefix, so one directory named with 65,535 separators is that many frames and the sum
+	 * of all those prefixes in live wxStrings. The depth argument to EnsureFolder() stops it.
 	 *
-	 * Across strings, chains compose: EnsureFolder() hands back an existing
-	 * node with the parents it already has, so a path bottoming out on one an
-	 * earlier string created inherits everything above it. Counting calls
-	 * cannot see that -- a peer sending directories shortest-first adds a
-	 * capped run per packet and nests without limit. So a node also carries
-	 * its own depth (CBrowseFolderNode::GetDepth) and refuses to be attached
-	 * past this, which is the bound HasContent() and
-	 * CSearchListCtrl::SetSubtreeExpanded() need: both recurse over the tree
-	 * rather than over any one string.
+	 * Across strings, chains compose: EnsureFolder() hands back an existing node with the
+	 * parents it already has, so a path bottoming out on one an earlier string created inherits
+	 * everything above it. Counting calls cannot see that -- a peer sending directories
+	 * shortest-first adds a capped run per packet and nests without limit. So a node also
+	 * carries its own depth (CBrowseFolderNode::GetDepth) and refuses to be attached past this,
+	 * which is the bound HasContent() and CSearchListCtrl::SetSubtreeExpanded() need: both
+	 * recurse over the tree rather than over any one string.
 	 *
-	 * A peer names a directory by joining the run of shared directories it
-	 * belongs to (CSharedFileList::GetPublicSharedDirName), so a real one is
-	 * a handful of segments deep and nothing legitimate comes near this.
-	 * Where either bound bites, the remainder is left as one folder name
-	 * rather than split further.
+	 * A peer names a directory by joining the run of shared directories it belongs to
+	 * (CSharedFileList::GetPublicSharedDirName), so a real one is a handful of segments deep
+	 * and nothing legitimate comes near this. Where either bound bites, the remainder is left
+	 * as one folder name rather than split further.
 	 *
-	 * What this bounds is the recursion and the depth of the tree, which is
-	 * the crash. It is not a bound on memory: a capped string still leaves
-	 * about MAX_FOLDER_DEPTH nodes, each keyed by its own prefix of it, so a
-	 * 64 KB directory name costs a few MB of live keys rather than the GBs
-	 * it would unbounded -- and that still scales with how many such strings
-	 * the peer sends.
+	 * What this bounds is the recursion and the depth of the tree, which is the crash. It is
+	 * not a bound on memory: a capped string still leaves about MAX_FOLDER_DEPTH nodes, each
+	 * keyed by its own prefix of it, so a 64 KB directory name costs a few MB of live keys
+	 * rather than the GBs it would unbounded -- and that still scales with how many such
+	 * strings the peer sends.
 	 */
 	static const size_t MAX_FOLDER_DEPTH = 64;
 
-	//! Returns the node for @a path, creating it and every missing ancestor.
-	//! @a path must be canonical (see NormalizeDirectory), which every prefix
-	//! this recurses onto then is too.
-	//! @a depth is this function's own recursion level; see MAX_FOLDER_DEPTH
-	//! for why the node's depth is checked as well.
+	//! Returns the node for @a path, creating it and every missing ancestor. @a path must be
+	//! canonical (see NormalizeDirectory), which every prefix this recurses onto then is too.
+	//! @a depth is this function's own recursion level; see MAX_FOLDER_DEPTH for why the node's
+	//! depth is checked as well.
 	CBrowseFolderNode *EnsureFolder(const wxString &path, size_t depth = 0) const;
 
 	//! Whether anything at all is under @a folder, at any depth. A folder
 	//! that only holds other empty folders is not worth a row.
 	static bool HasContent(const CBrowseFolderNode *folder);
 
-	//! Full path -> node. unique_ptr so that a rebuild that inserts a new
-	//! directory cannot move the existing nodes: the control holds their
-	//! addresses as item IDs, and so do the parent links.
+	//! Full path -> node. unique_ptr so that a rebuild inserting a new directory cannot move
+	//! the existing nodes: the control holds their addresses as item IDs, and so do the parent
+	//! links.
 	mutable std::map<wxString, std::unique_ptr<CBrowseFolderNode>> m_folders;
 
 	//! The nodes with no parent, in insertion order of first appearance.
@@ -216,21 +199,20 @@ private:
 	mutable unsigned m_foldersGeneration = 0;
 	mutable wxUIntPtr m_foldersSearchId = 0;
 
-	//! Every address in m_folders, for IsFolder(). The item is a bare void*
-	//! with nothing to distinguish it, so membership here is what makes the
-	//! difference between a folder and a result answerable at all.
+	//! Every address in m_folders, for IsFolder(). The item is a bare void* with nothing to
+	//! distinguish it, so membership here is what makes the folder-or-result question
+	//! answerable at all.
 	mutable std::set<const void *> m_folderAddresses;
 
 	//! Results the peer reported with no directory. Top level, next to the
 	//! folders.
 	mutable std::vector<CSearchFile *> m_looseFiles;
 
-	//! Which folder RebuildFolders() filed each shown result under, recorded as it
-	//! files them. GetParent() is on the traversal path rather than the rebuild
-	//! path and wx asks it per item, so it resolves through this instead of
-	//! re-deriving the key from the result's directory string. Written by the
-	//! grouping walk itself, so it cannot describe a different grouping than the
-	//! one drawn; a result with no directory is simply absent.
+	//! Which folder RebuildFolders() filed each shown result under, recorded as it files them.
+	//! GetParent() is on the traversal path rather than the rebuild path and wx asks it per
+	//! item, so it resolves through this instead of re-deriving the key from the result's
+	//! directory string. Written by the grouping walk itself, so it cannot describe a different
+	//! grouping than the one drawn; a result with no directory is simply absent.
 	mutable std::unordered_map<const CSearchFile *, CBrowseFolderNode *> m_fileParents;
 };
 

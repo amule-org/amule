@@ -40,14 +40,13 @@ DECLARE_SIMPLE(Credentials)
 
 namespace
 {
-// MD5("secret") and MD5("other") — the pre-hash the preferences dialog
+// MD5("secret") and MD5("other") -- the pre-hash the preferences dialog
 // produces before the value ever leaves the client.
 const char *const MD5_SECRET = "5ebe2294ecd0e0f08eab7690d2a6ee69";
 const char *const MD5_OTHER = "795f3202b17cb6bc3d4b771d8c6c9eaf";
 
-// Directory helpers go through wx rather than shelling out: this target
-// is built on the mingw-w64 CI legs too, where `mkdir -p` / `rm -rf` are
-// not available.
+// Directory helpers go through wx rather than shelling out: this target is built on the mingw-w64
+// CI legs too, where `mkdir -p` / `rm -rf` are not available.
 std::string TempDir()
 {
 	// Unit tests run from the build tree; a per-process subdirectory keeps
@@ -255,9 +254,9 @@ TEST(Credentials, FilePathJoinsWithAndWithoutSeparator)
 	ASSERT_EQUALS(std::string("/tmp/x/amuleapi-passwords"), CredentialsFilePath("/tmp/x/"));
 }
 
-// The pending-change rules every entry point shares: aMule's preferences
-// dialog, the same dialog in amulegui over EC, `amuleapi --set-*-pass` and
-// the REST endpoint. Encoded once here so the four cannot disagree.
+// The pending-change rules every entry point shares: aMule's preferences dialog, the same dialog in
+// amulegui over EC, `amuleapi --set-*-pass` and the REST endpoint. Encoded once here so the four
+// cannot disagree.
 TEST(Credentials, ChangeWithEmptyAdminLeavesAdminAlone)
 {
 	const std::string dir = TempDir();
@@ -353,15 +352,11 @@ TEST(Credentials, ChangeRejectsMalformedDigests)
 	RemoveTempDir(dir);
 }
 
-// --- Ephemeral EC token ------------------------------------------------
-//
-// The token is how amuled hands a spawned amuleapi a credential without
-// either process putting the password-equivalent value from amule.conf on
-// disk or on a command line. Both ends derive the filename from
-// EcTokenFilePath, so these pin the joining rules the same way the
-// amuleapi-passwords test above does -- a drift between the two binaries
-// would not fail loudly, it would just mean the child never finds the file
-// and quietly falls back to its configured password.
+// Ephemeral EC token. The token is how amuled hands a spawned amuleapi a credential without either
+// process putting the password-equivalent value from amule.conf on disk or on a command line. Both
+// ends derive the filename from EcTokenFilePath, so these pin the joining rules the same way the
+// amuleapi-passwords test above does -- a drift between the two binaries would not fail loudly, it
+// would just mean the child never finds the file and quietly falls back to its configured password.
 
 TEST(Credentials, EcTokenFilePathJoinsLikeCredentialsPath)
 {
@@ -414,9 +409,9 @@ TEST(Credentials, ReadAndConsumeEcTokenRejectsMalformedButStillDeletes)
 	const std::string dir = TempDir();
 	const std::string path = EcTokenFilePath(dir);
 
-	// Truncated, non-hex and empty must all be refused rather than
-	// attempted as a credential; the file goes either way, because a file
-	// that failed to parse is still not something to leave behind.
+	// Truncated, non-hex and empty must all be refused rather than attempted as a credential;
+	// the file goes either way, because a file that failed to parse is still not something to
+	// leave behind.
 	const char *const bad[] = {
 		"deadbeef", "", "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz", "5ebe2294ecd0e0f08eab7690d2a6ee69extra"
 	};

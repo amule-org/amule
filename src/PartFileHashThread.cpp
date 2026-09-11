@@ -89,12 +89,11 @@ void *CPartFileHashThread::Entry()
 
 	AddDebugLogLineN(logPartFile, wxT("Hash thread: started"));
 
-	// Loop until EndThread() clears m_bRun, then drain one final batch before
-	// returning. Dropping a queued job would skip its --m_pendingHashes, the only
-	// decrement, and ~CPartFile blocks on `while (m_pendingHashes > 0)` -- so a
-	// dropped job hangs shutdown. Draining also means the part is actually hashed
-	// rather than left unverified, its m_aChangedPart entry having been cleared at
-	// enqueue. Mirrors CPartFileWriteThread.
+	// Loop until EndThread() clears m_bRun, then drain one final batch before returning.
+	// Dropping a queued job would skip its --m_pendingHashes, the only decrement, and
+	// ~CPartFile blocks on `while (m_pendingHashes > 0)` -- so a dropped job hangs shutdown.
+	// Draining also means the part is actually hashed rather than left unverified, its
+	// m_aChangedPart entry having been cleared at enqueue. Mirrors CPartFileWriteThread.
 	for (;;) {
 		// Move queued jobs to a local work list under the lock, minimising hold time
 		// so the main thread can keep enqueueing.
@@ -112,21 +111,20 @@ void *CPartFileHashThread::Entry()
 			keepRunning = m_bRun;
 		}
 
-		// No m_bRun check in the loop condition: a batch, once taken, is
-		// always processed in full so a shutdown never abandons a job
-		// (which would leave m_pendingHashes stuck and hang ~CPartFile).
+		// No m_bRun check in the loop condition: a batch, once taken, is always processed
+		// in full, so a shutdown never abandons a job -- which would leave m_pendingHashes
+		// stuck and hang ~CPartFile.
 		for (std::list<HashJob>::iterator it = workList.begin(); it != workList.end(); ++it) {
 			const uint64 startTick = GetTickCount64();
 
-			// CPartFile::m_pendingHashes was incremented before enqueue and is the
-			// gate ~CPartFile waits on, so the file pointer is valid here.
+			// CPartFile::m_pendingHashes was incremented before enqueue and is the gate
+			// ~CPartFile waits on, so the file pointer is valid here.
 			//
-			// Lock m_hpartfileMutex against CPartFileWriteThread: with
-			// ENABLE_MMAP=OFF, HashSinglePart's CFileArea::ReadAt does Seek+Read on
-			// the same fd the write thread does Seek+Write on, and the two race on
-			// the file position. The quiescent guard at enqueue time only gates
-			// dispatch; it does not stop writes resuming while the hash thread is
-			// still working through a backlog.
+			// Lock m_hpartfileMutex against CPartFileWriteThread: with ENABLE_MMAP=OFF,
+			// HashSinglePart's CFileArea::ReadAt does Seek+Read on the same fd the
+			// write thread does Seek+Write on, and the two race on the file position.
+			// The quiescent guard at enqueue time only gates dispatch; it does not stop
+			// writes resuming while the hash thread is still working through a backlog.
 			bool ok;
 			{
 				std::lock_guard<std::mutex> lock(it->pFile->m_hpartfileMutex);
@@ -140,20 +138,20 @@ void *CPartFileHashThread::Entry()
 					(ok ? wxT("ok") : wxT("CORRUPT")) % elapsedMs %
 					it->pFile->GetFileName());
 			// Silence the unused-variable warning in release builds, where
-			// AddDebugLogLineN above compiles to a no-op.  Caught on lint
-			// as clang-analyzer-deadcode.DeadStores.
+			// AddDebugLogLineN above compiles to a no-op. Caught on lint as clang-
+			// analyzer-deadcode.DeadStores.
 			wxUnusedVar(elapsedMs);
 
-			// Post result back to the main thread.  Carries fileHash
-			// (not pointer) so the handler can drop the event safely if
-			// the file was removed between enqueue and dispatch.
+			// Post the result back to the main thread. Carries fileHash rather than a
+			// pointer, so the handler can drop the event safely if the file was removed
+			// between enqueue and dispatch.
 			CPartFileHashResultEvent evt(
 				it->fileHash, it->partNumber, ok, it->fromAICHRecoveryDataAvailable);
 			theApp->AddPendingEvent(evt);
 
-			// Decrement m_pendingHashes here (after work is fully done
-			// AND event posted) so ~CPartFile's wait on the counter
-			// includes the event-post step.
+			// Decrement m_pendingHashes here, after the work is fully done AND the
+			// event posted, so ~CPartFile's wait on the counter includes the event-post
+			// step.
 			--it->pFile->m_pendingHashes;
 		}
 

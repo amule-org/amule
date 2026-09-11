@@ -48,10 +48,10 @@
 #if wxUSE_UNICODE
     #define __WDR_EURO__ "\u20ac"
 #else
-    // Legacy ANSI branch: bytes >=0x80 fail wxConvLibc in POSIX UTF-8 locales.
-    // Keep wxT() so the literal becomes a wide-char at compile time and matches
-    // the pre-sweep behaviour — the branch is effectively dead today
-    // (wxUSE_UNICODE has been on by default since wx 3.0) but toggle-able.
+    // Legacy ANSI branch: bytes >=0x80 fail wxConvLibc in POSIX UTF-8 locales. Keep wxT() so the
+    // literal becomes a wide char at compile time and matches the pre-sweep behaviour -- the branch
+    // is effectively dead today (wxUSE_UNICODE has been on by default since wx 3.0) but toggle-
+    // able.
     #if defined(__WXMAC__)
         #define __WDR_EURO__ wxT("\xdb")
     #elif defined(__WXMSW__)
@@ -82,7 +82,6 @@
 #ifndef wxGA_PROGRESSBAR
 #define wxGA_PROGRESSBAR 0
 #endif
-
 
 // Implement window functions
 
@@ -125,12 +124,11 @@ wxSizer *muleDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     item6->Add( item9, wxSizerFlags().Center().Border(wxLEFT, 5) );
 
 #ifdef CLIENT_GUI
-    // Connected core's version, left of the counters it heads. amulegui only:
-    // this file is compiled per-executable, so CLIENT_GUI is the consuming
-    // target's and monolithic aMule never builds it. Hidden until the EC
-    // handshake reports a version. Clickable, so it gets the hand cursor. 16x16
-    // explicitly: with no size the bundle defaults to the icon's PNG twin,
-    // 256x256 for the logo. The size is logical, so it still renders from SVG.
+    // Connected core's version, left of the counters it heads. amulegui only: this file is compiled
+    // per-executable, so CLIENT_GUI is the consuming target's and monolithic aMule never builds it.
+    // Hidden until the EC handshake reports a version. Clickable, so it gets the hand cursor. 16x16
+    // explicitly: with no size the bundle defaults to the icon's PNG twin, 256x256 for the logo.
+    // The size is logical, so it still renders from SVG.
     wxStaticBitmap *coreVerIcon = new wxStaticBitmap( parent, -1, wxArtProvider::GetBitmapBundle( "amule:amule", wxART_OTHER, wxSize(16, 16) ), wxDefaultPosition, wxDefaultSize );
     coreVerIcon->SetName( "coreVersionImage" );
     coreVerIcon->SetCursor( wxCursor( wxCURSOR_HAND ) );
@@ -178,9 +176,9 @@ wxSizer *muleDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     item17->SetName( "connLabel" );
     item6->Add( item17, wxSizerFlags().Center().Border(wxRIGHT, 5) );
 #if defined(__WXMAC__)
-    // macOS rounds the frame's bottom corners, clipping content that sits flush
-    // against the edge. Inset the status row -- a wider left margin for the
-    // leading icon, a slimmer bottom margin -- so nothing is cut off.
+    // macOS rounds the frame's bottom corners, clipping content flush against the edge. Inset the
+    // status row -- a wider left margin for the leading icon, a slimmer bottom margin -- so nothing
+    // is cut off.
     item6->PrependSpacer(16);
     item0->Add( item6, wxSizerFlags().Expand().CenterVertical().Border(wxRIGHT|wxBOTTOM, 6) );
 #else
@@ -258,10 +256,9 @@ wxSizer *searchDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     item3->Add( item6, 0, wxALIGN_CENTER, 0 );
 
     item1->Add( item3, wxSizerFlags().Expand().CenterVertical() );
-    // One row: the five filters sit side by side, each preceded by a separator
-    // from the second onwards -- 14 cells. They were split across two rows of
-    // eight while Category lived here, which left Min Size stranded at the end
-    // of the first row, away from Max Size.
+    // One row: the five filters sit side by side, each preceded by a separator from the second
+    // onwards -- 14 cells. They were split across two rows of eight while Category lived here,
+    // which left Min Size stranded at the end of the first row, away from Max Size.
     wxFlexGridSizer *item13 = new wxFlexGridSizer( 14, 0, 0 );
     s_extended_sizer = item13;
 
@@ -280,10 +277,9 @@ wxSizer *searchDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     };
     wxChoice *item15 = new wxChoice( item2, IDC_TypeSearch, wxDefaultPosition, wxDefaultSize, 8, strs15, 0 );
     item13->Add( item15, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 5) );
-    // The category selector used to sit here, between File Type and Extension.
-    // It is not a search filter -- nothing about it travels with the query -- so
-    // it moved to the button row next to Download, whose destination it is.
-    // Five filters remain: three on this row, two on the next.
+    // The category selector used to sit here, between File Type and Extension. It is not a search
+    // filter -- nothing about it travels with the query -- so it moved to the button row next to
+    // Download, whose destination it is. Five filters remain: three on this row, two on the next.
     wxStaticLine *item16 = new wxStaticLine( item2, -1, wxDefaultPosition, wxSize(-1,20), wxLI_VERTICAL );
     item13->Add( item16, wxSizerFlags().Center().Border(wxALL, 5) );
     wxStaticText *item20 = new wxStaticText( item2, -1, _("Extension"), wxDefaultPosition, wxDefaultSize, 0 );
@@ -352,10 +348,9 @@ wxSizer *searchDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     item34->Add( item41, wxSizerFlags().Center().Border(wxALL, 5) );
     wxCheckBox *item42 = new wxCheckBox( item2, ID_FILTER_KNOWN, _("Hide Known Files"), wxDefaultPosition, wxDefaultSize, 0 );
     item34->Add( item42, wxSizerFlags().Center().Border(wxALL, 5) );
-    // Clears the filter text and returns both checkboxes to their defaults. Named
-    // in full rather than a bare "Reset" so it cannot be read as a second "Reset
-    // Fields": that button covers the search parameters, this one covers only
-    // the filter row it sits in.
+    // Clears the filter text and returns both checkboxes to their defaults. Named in full rather
+    // than a bare "Reset" so it cannot be read as a second "Reset Fields": that button covers the
+    // search parameters, this one covers only the filter row it sits in.
     wxStaticLine *item59 = new wxStaticLine( item2, -1, wxDefaultPosition, wxSize(-1,20), wxLI_VERTICAL );
     item34->Add( item59, wxSizerFlags().Center().Border(wxALL, 5) );
     wxButton *item60 = new wxButton( item2, ID_FILTER_RESET, _("Reset Filters"), wxDefaultPosition, wxDefaultSize, 0 );
@@ -382,26 +377,24 @@ wxSizer *searchDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     wxButton *item50 = new wxButton( item2, IDC_SDOWNLOAD, _("Download"), wxDefaultPosition, wxDefaultSize, 0 );
     item50->Enable( false );
     item43->Add( item50, wxSizerFlags().Center().Border(wxALL, 5) );
-    // Where the button beside it sends the file. It sat in the extended-parameters
-    // row until that made it read as a search filter -- something neither ed2k
-    // nor Kad can do -- and let a chosen category be hidden and then silently
-    // ignored. Here it is always visible and its meaning is positional. Same
-    // wording as the right-click action that does the same thing.
+    // Where the button beside it sends the file. It sat in the extended-parameters row until that
+    // made it read as a search filter -- something neither ed2k nor Kad can do -- and let a chosen
+    // category be hidden and then silently ignored. Here it is always visible and its meaning is
+    // positional. Same wording as the right-click action that does the same thing.
     wxStaticText *item17 = new wxStaticText( item2, ID_AUTOCATASSIGN_LABEL, _("Download in category"), wxDefaultPosition, wxDefaultSize, 0 );
     item43->Add( item17, wxSizerFlags().Center().Border(wxALL, 5) );
-    // Empty item list: UpdateCatChoice() fills it and keeps it in step with the
-    // configured categories. nullptr, not the file's usual (wxString*) NULL --
-    // this line is new, so the Tier-2 modernize-use-nullptr check applies to it.
+    // Empty item list: UpdateCatChoice() fills it and keeps it in step with the configured
+    // categories. nullptr, not the file's usual (wxString*) NULL -- this line is new, so the Tier-2
+    // modernize-use-nullptr check applies to it.
     wxString *strs18 = nullptr;
     wxChoice *item18 = new wxChoice( item2, ID_AUTOCATASSIGN, wxDefaultPosition, wxDefaultSize, 0, strs18, 0 );
     item43->Add( item18, wxSizerFlags().Center().Border(wxALL, 5) );
     wxStaticLine *item51 = new wxStaticLine( item2, -1, wxDefaultPosition, wxSize(-1,20), wxLI_VERTICAL );
     item43->Add( item51, wxSizerFlags().Center().Border(wxALL, 5) );
-    // Ordered most to least destructive rightwards, so the mildest sits at the
-    // edge where it is easiest to hit and the one that discards saved terms is
-    // furthest from it. CSearchDlg inserts "Clear Search History" ahead of Clear
-    // Search Results at runtime. Reset Fields last also puts it directly above
-    // "Reset Filters" in the row below, which is the control it parallels.
+    // Ordered most to least destructive rightwards, so the mildest sits at the edge where it is
+    // easiest to hit and the one that discards saved terms is furthest from it. CSearchDlg inserts
+    // "Clear Search History" ahead of Clear Search Results at runtime. Reset Fields last also puts
+    // it directly above "Reset Filters" in the row below, which is the control it parallels.
     wxButton *item54 = new wxButton( item2, IDC_CLEAR_RESULTS, _("Clear Search Results"), wxDefaultPosition, wxDefaultSize, 0 );
     item54->Enable( false );
     item43->Add( item54, wxSizerFlags().Center().Border(wxALL, 5) );
@@ -411,19 +404,17 @@ wxSizer *searchDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     item52->Enable( false );
     item43->Add( item52, wxSizerFlags().Center().Border(wxALL, 5) );
     item1->Add( item43, wxSizerFlags().Center().Border(wxALL, 5) );
-    // Rule between the buttons and the filter row: with extended parameters and
-    // filtering both on, five rows of fields run together, and this marks where
-    // the search parameters stop and what filters the results already on screen
-    // begins. Full width rather than the button row's extent -- that row is
-    // centred and sized to its contents. Shown and hidden with the row it
+    // Rule between the buttons and the filter row: with extended parameters and filtering both on,
+    // five rows of fields run together, and this marks where the search parameters stop and what
+    // filters the results already on screen begins. Full width rather than the button row's extent
+    // -- that row is centred and sized to its contents. Shown and hidden with the row it
     // introduces; see CSearchDlg::ApplyFilterSeparator().
     wxStaticLine *item61 = new wxStaticLine( item2, ID_FILTER_SEPARATOR, wxDefaultPosition, wxDefaultSize, wxLI_HORIZONTAL );
     item1->Add( item61, wxSizerFlags().Expand().Border(wxLEFT|wxRIGHT, 5) );
-    // Filter row goes BELOW the action buttons: filtering is not a search
-    // parameter -- it applies to results already on screen and is not touched by
-    // "Reset Fields" -- so grouping it with the search parameters above the
-    // buttons misrepresented it, and it sits closer to the results list here.
-    // Added after item43 purely for sizer order; the row is still built above so
+    // Filter row goes BELOW the action buttons: filtering is not a search parameter -- it applies
+    // to results already on screen and is not touched by "Reset Fields" -- so grouping it with the
+    // search parameters above the buttons misrepresented it, and it sits closer to the results list
+    // here. Added after item43 purely for sizer order; the row is still built above so
     // s_filter_sizer keeps its show/hide wiring.
     item1->Add( item34, wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 5) );
     item0->Add( item1, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 5) );
@@ -504,25 +495,23 @@ wxSizer *transferBottomPane( wxWindow *parent, bool call_fit, bool set_sizer )
     item3->Add( item5, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT, 5) );
     item1->Add( item3, wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 5) );
 
-    // Combined size of the downloads currently visible (category + text filter),
-    // followed by the free space on the filesystem holding the part files. Both
-    // right-aligned in the growable header's third column, and both in one box
-    // sizer so the header keeps its three columns. No wxST_NO_AUTORESIZE: the
-    // labels must grow to fit their text, and they start empty.
+    // Combined size of the downloads currently visible (category + text filter), followed by the
+    // free space on the filesystem holding the part files. Both right-aligned in the growable
+    // header's third column, and both in one box sizer so the header keeps its three columns. No
+    // wxST_NO_AUTORESIZE: the labels must grow to fit their text, and they start empty.
     wxBoxSizer *item5a = new wxBoxSizer( wxHORIZONTAL );
 
     wxStaticText *item5b = new wxStaticText( parent, -1, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxALIGN_RIGHT );
     item5b->SetName( "downloadsTotalSize" );
     item5a->Add( item5b, wxSizerFlags().CenterVertical() );
 
-    // The "|" joining the two figures, in a label of its own for the same reason
-    // the figure has one: a wxStaticText colours all or nothing, so a separator
-    // sharing the label below would turn red along with the figure whenever the
-    // warning fires.
+    // The "|" joining the two figures, in a label of its own for the same reason the figure has
+    // one: a wxStaticText colours all or nothing, so a separator sharing the label below would turn
+    // red along with the figure whenever the warning fires.
     //
-    // The gaps around it are sizer border, not spaces in the text: a static text
-    // is sized to its text extent, which ignores trailing whitespace, so a " | "
-    // label loses the space on one side and doubles it on the other.
+    // The gaps around it are sizer border, not spaces in the text: a static text is sized to its
+    // text extent, which ignores trailing whitespace, so a " | " label loses the space on one side
+    // and doubles it on the other.
     wxStaticText *item5c = new wxStaticText( parent, -1, wxEmptyString );
     item5c->SetName( "downloadsFreeSpaceSep" );
     // Starts hidden: the labels either side start empty, and a shown separator
@@ -530,9 +519,8 @@ wxSizer *transferBottomPane( wxWindow *parent, bool call_fit, bool set_sizer )
     item5c->Show( false );
     item5a->Add( item5c, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT, 4) );
 
-    // Separate label rather than more text in the one above: it turns red on
-    // its own when the free space no longer covers what is left to download,
-    // and a wxStaticText colours all or nothing.
+    // Separate label rather than more text in the one above: it turns red on its own when the free
+    // space no longer covers what is left to download, and a wxStaticText colours all or nothing.
     wxStaticText *item5d = new wxStaticText( parent, -1, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxALIGN_RIGHT );
     item5d->SetName( "downloadsFreeSpace" );
     item5a->Add( item5d, wxSizerFlags().CenterVertical() );
@@ -578,20 +566,18 @@ wxSizer *messagePage( wxWindow *parent, bool call_fit, bool set_sizer )
 
 namespace
 {
-// File-details helper: append a "label" + HOTLIGHT-coloured value pair (the
-// value control carrying `valueId`, initialised to "N/A") to `grid` as one
-// horizontal row. Mirrors the label/value styling used throughout
-// fileDetails(), so the relocated download rows and the Sharing box stay
-// visually consistent with the hand-written rows.
+// File-details helper: append a "label" + HOTLIGHT-coloured value pair (the value control carrying
+// `valueId`, initialised to "N/A") to `grid` as one horizontal row. Mirrors the label/value styling
+// used throughout fileDetails(), so the relocated download rows and the Sharing box stay visually
+// consistent with the hand-written rows.
 //
-// `appendColon` renders the label as "label:" at display time. The Sharing rows
-// use it so they can reuse existing bare translations instead of minting a
-// second, colon-suffixed catalog string for each.
+// `appendColon` renders the label as "label:" at display time. The Sharing rows use it so they can
+// reuse existing bare translations instead of minting a second, colon-suffixed catalog string for
+// each.
 //
-// The punctuation goes through the catalog rather than being concatenated in
-// C++, because where the colon sits is a property of the language, not of the
-// layout: Russian typography forbids the space this used to hard-code, while
-// French requires it.
+// The punctuation goes through the catalog rather than being concatenated in C++, because where the
+// colon sits is a property of the language, not of the layout: Russian typography forbids the space
+// this used to hard-code, while French requires it.
 void AddFileDetailRow(
     wxWindow *rowParent, wxSizer *grid, const wxString &label, int valueId, bool appendColon = false )
 {
@@ -653,14 +639,13 @@ wxSizer *fileDetails( wxWindow *parent, bool call_fit, bool set_sizer )
     item15->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
     item13->Add( item15, wxSizerFlags().Center().Border(wxLEFT, 5) );
     item12->Add( item13, wxSizerFlags().Expand().CenterVertical() );
-    // Partfilestatus + Last seen complete are download-only; they now live in
-    // the Download panel below so the whole panel can be hidden for a shared,
-    // non-downloading file.
+    // Partfilestatus + Last seen complete are download-only; they now live in the Download panel
+    // below so the whole panel can be hidden for a shared, non-downloading file.
     item1->Add( item12, wxSizerFlags().Expand().CenterVertical() );
     item0->Add( item1, wxSizerFlags(1).Expand().Border(wxALL, 5) );
-    // ---- Download-only sections, wrapped in a panel the dialog hides for a
-    //      shared file that is not (or no longer) downloading. Controls are
-    //      parented to the panel so Show(false) collapses the whole group. ----
+    // Download-only sections, wrapped in a panel the dialog hides for a shared file that is not, or
+    // no longer, downloading. Controls are parented to the panel so Show(false) collapses the whole
+    // group.
     wxPanel *dlPanel = new wxPanel( parent, IDC_FD_DOWNLOAD_PANEL );
     wxBoxSizer *dlPanelSizer = new wxBoxSizer( wxVERTICAL );
 
@@ -715,9 +700,9 @@ wxSizer *fileDetails( wxWindow *parent, bool call_fit, bool set_sizer )
     dlPanel->SetSizer( dlPanelSizer );
     item0->Add( dlPanel, wxSizerFlags().Expand().CenterVertical() );
 
-    // ---- Sharing box, wrapped in a panel the dialog hides for a file with no
-    //      sharing role. Upload counters, live upload activity and the share
-    //      timestamps; populated in both the monolithic and remote builds. ----
+    // Sharing box, wrapped in a panel the dialog hides for a file with no sharing role. Upload
+    // counters, live upload activity and the share timestamps; populated in both the monolithic and
+    // remote builds.
     wxPanel *shPanel = new wxPanel( parent, IDC_FD_SHARING_PANEL );
     wxBoxSizer *shPanelSizer = new wxBoxSizer( wxVERTICAL );
     wxStaticBox *shBox = new wxStaticBox( shPanel, -1, _("Sharing") );
@@ -725,9 +710,9 @@ wxSizer *fileDetails( wxWindow *parent, bool call_fit, bool set_sizer )
     wxFlexGridSizer *shGrid = new wxFlexGridSizer( 2, 0, 0 );
     shGrid->AddGrowableCol( 0 );
     shGrid->AddGrowableCol( 1 );
-    // Labels reuse existing bare translations; the colon is applied at display
-    // time through the localizable "%s :" format (appendColon), so no new
-    // catalog string is needed per row and the punctuation stays translatable.
+    // Labels reuse existing bare translations; the colon is applied at display time through the
+    // localizable "%s :" format (appendColon), so no new catalog string is needed per row and the
+    // punctuation stays translatable.
     AddFileDetailRow( shPanel, shGrid, _("Requests"), IDC_FD_SHARE_REQ, true );
     AddFileDetailRow( shPanel, shGrid, _("Accepted Requests"), IDC_FD_SHARE_ACC, true );
     AddFileDetailRow( shPanel, shGrid, _("Transferred Data"), IDC_FD_SHARE_XFER, true );
@@ -744,11 +729,10 @@ wxSizer *fileDetails( wxWindow *parent, bool call_fit, bool set_sizer )
     shPanel->SetSizer( shPanelSizer );
     item0->Add( shPanel, wxSizerFlags().Expand().CenterVertical() );
 
-    // Media Info (issue #418) — populated from FT_MEDIA_* when the file
-    // has probed metadata; the six labels show "N/A" otherwise. Layout +
-    // styling mirror the "Intelligent Corruption Handling" box above:
-    // "label :" static text plus a HOTLIGHT-coloured value, two fields
-    // per row in a 2-column growable grid.
+    // Media Info (issue #418) -- populated from FT_MEDIA_* when the file has probed metadata; the
+    // six labels show "N/A" otherwise. Layout and styling mirror the "Intelligent Corruption
+    // Handling" box above: "label :" static text plus a HOTLIGHT-coloured value, two fields per row
+    // in a 2-column growable grid.
     wxStaticBox *mediaBox = new wxStaticBox( parent, -1, _("Media Info") );
     wxStaticBoxSizer *mediaBoxSizer = new wxStaticBoxSizer( mediaBox, wxVERTICAL );
     wxFlexGridSizer *mediaGrid = new wxFlexGridSizer( 2, 0, 0 );
@@ -1380,17 +1364,15 @@ wxSizer *PreferencesGeneralTab( wxWindow *parent, bool call_fit, bool set_sizer 
     item7->SetToolTip( _("Enabling this will make aMule check for a new version at startup and once a day while running") );
     item0->Add( item7, 0, wxALIGN_CENTER_VERTICAL, 0 );
 
-    // Autostart-on-login toggle (per-OS backend: Windows registry,
-    // macOS LaunchAgent, Linux XDG .desktop). State is read live from
-    // the OS each time this page opens, never persisted in aMule.conf
-    // — the OS is the source of truth.
+    // Autostart-on-login toggle (per-OS backend: Windows registry, macOS LaunchAgent, Linux XDG
+    // .desktop). State is read live from the OS each time this page opens, never persisted in
+    // aMule.conf -- the OS is the source of truth.
     wxCheckBox *itemAutostart = new wxCheckBox( parent, IDC_AUTOSTART_LOGIN, _("Start aMule automatically when I log in"), wxDefaultPosition, wxDefaultSize, 0 );
     itemAutostart->SetToolTip( _("Registers a per-user autostart entry with the OS so aMule launches at login. If you move the aMule binary, launch aMule once manually afterwards to refresh the entry.") );
     item0->Add( itemAutostart, 0, wxALIGN_CENTER_VERTICAL, 0 );
 
-    // URL-scheme handler toggles. Same OS-is-source-of-truth model as
-    // autostart above: state lives in HKCU\Software\Classes\<scheme>
-    // (Windows), $XDG_CONFIG_HOME/mimeapps.list (Linux), or
+    // URL-scheme handler toggles. Same OS-is-source-of-truth model as autostart above: state lives
+    // in HKCU\Software\Classes\<scheme> (Windows), $XDG_CONFIG_HOME/mimeapps.list (Linux), or
     // LaunchServices (macOS), never in aMule.conf.
     wxCheckBox *itemProtoEd2k = new wxCheckBox( parent, IDC_PROTOCOL_ED2K, _("Register aMule for ed2k:// links"), wxDefaultPosition, wxDefaultSize, 0 );
     itemProtoEd2k->SetToolTip( _("Makes aMule the default handler for ed2k:// links so clicking one in your browser or file manager opens it here.") );
@@ -1400,9 +1382,8 @@ wxSizer *PreferencesGeneralTab( wxWindow *parent, bool call_fit, bool set_sizer 
     itemProtoMagnet->SetToolTip( _("aMule only handles eD2k-compatible magnets (containing xt=urn:ed2k:). BitTorrent magnets are NOT supported and clicking them will silently fail. If you use a BitTorrent client (Transmission, qBittorrent, etc.), leave this off.") );
     item0->Add( itemProtoMagnet, 0, wxALIGN_CENTER_VERTICAL, 0 );
 
-    // Same OS-is-source-of-truth model as the scheme toggles above; the
-    // store is the ProgID under HKCU\Software\Classes (Windows),
-    // mimeapps.list (Linux) or LaunchServices (macOS).
+    // Same OS-is-source-of-truth model as the scheme toggles above; the store is the ProgID under
+    // HKCU\Software\Classes (Windows), mimeapps.list (Linux) or LaunchServices (macOS).
     wxCheckBox *itemAssocCollection = new wxCheckBox( parent, IDC_ASSOC_COLLECTION, _("Open .emulecollection files with aMule"), wxDefaultPosition, wxDefaultSize, 0 );
     itemAssocCollection->SetToolTip( _("Opening a collection queues every eD2k link it contains. On Windows this adds aMule to the \"Open with\" list and takes the default only when no other program has claimed the file type.") );
     item0->Add( itemAssocCollection, 0, wxALIGN_CENTER_VERTICAL, 0 );
@@ -1431,9 +1412,9 @@ wxSizer *PreferencesGeneralTab( wxWindow *parent, bool call_fit, bool set_sizer 
     item13->SetToolTip( _("Enabling this will make aMule to show notifications when finished downloading.") );
     item0->Add( item13, 0, wxALIGN_CENTER_VERTICAL, 0 );
 
-    // Query history for the Search tab's Name field (amule-org/amule#641).
-    // A client-side-only setting (no EC/core involvement), so this one
-    // checkbox works unchanged in both amule and amuleGUI.
+    // Query history for the Search tab's Name field (amule-org/amule#641). A client-side-only
+    // setting (no EC or core involvement), so this one checkbox works unchanged in both amule and
+    // amuleGUI.
     wxCheckBox *itemSearchHistory = new wxCheckBox( parent, IDC_SEARCHHISTORYENABLED, _("Remember search history"), wxDefaultPosition, wxDefaultSize, 0 );
     itemSearchHistory->SetToolTip( _("Keeps a dropdown list of your past search terms in the Search tab's Name field. This remembers the queries you typed, not the results they returned.") );
     item0->Add( itemSearchHistory, 0, wxALIGN_CENTER_VERTICAL, 0 );
@@ -1576,14 +1557,14 @@ wxSizer *PreferencesConnectionTab( wxWindow *parent, bool call_fit, bool set_siz
     wxStaticText *item26b = new wxStaticText( parent, IDC_INTERFACETEXT, _("Bind to network interface (empty for any):"), wxDefaultPosition, wxDefaultSize, 0 );
     item25->Add( item26b, wxSizerFlags().CenterVertical().Border(wxRIGHT, 5) );
 #ifdef CLIENT_GUI
-    // Remote GUI: a plain text field. amulegui runs on a different host than the
-    // daemon, so a drop-down of *this* machine's interfaces would be misleading;
-    // the operator types the daemon-side interface name (synced over EC).
+    // Remote GUI: a plain text field. amulegui runs on a different host than the daemon, so a drop-
+    // down of *this* machine's interfaces would be misleading; the operator types the daemon-side
+    // interface name, synced over EC.
     wxTextCtrl *item27b = new wxTextCtrl( parent, IDC_INTERFACE, "", wxDefaultPosition, wxSize(120,-1), 0 );
 #else
-    // Editable combo: the drop-down is filled at runtime with the machine's
-    // interfaces (PrefsUnifiedDlg), but it stays editable so an interface that
-    // is down when the dialog opens (e.g. a VPN tunnel) can still be typed in.
+    // Editable combo: the drop-down is filled at runtime with the machine's interfaces
+    // (PrefsUnifiedDlg), but it stays editable so an interface that is down when the dialog opens,
+    // such as a VPN tunnel, can still be typed in.
     wxComboBox *item27b = new wxComboBox( parent, IDC_INTERFACE, "", wxDefaultPosition, wxSize(120,-1), 0, NULL, wxCB_DROPDOWN );
 #endif
     item27b->SetToolTip( _("Advanced users only: pin all of aMule's traffic to one network interface, chosen from the list or typed in by name (e.g. tun0, eth0, en0) or index. Unlike binding to an IP, this stops traffic leaking out via the default route - useful with a VPN. Requires no elevated privileges.") );
@@ -1721,13 +1702,12 @@ wxSizer *PreferencesFilesTab( wxWindow *parent, bool call_fit, bool set_sizer )
     wxCheckBox *item13 = new wxCheckBox( item6, IDC_ALLOCFULLFILE, _("Preallocate disk space for new files"), wxDefaultPosition, wxDefaultSize, 0 );
     item13->SetToolTip( _("For new files preallocates disk space for the whole file, thus reduces fragmentation") );
     item5->Add( item13, wxSizerFlags().CenterVertical().Border(wxTOP, 0) );
-    // /eMule/CreateSparseFiles was EC-wired and settable via the Web UI but had
-    // no control here or in amuleGUI -- hand-editing amule.conf was the only
-    // way. Only does real work when the *core* runs on Windows. Always created
-    // and bound here: amuleGUI has no EC capability tag to know the core's
-    // platform, so it always shows the control, and the monolithic non-Windows
-    // build hides it post-creation in PrefsUnifiedDlg's ctor rather than
-    // skipping creation, so the Cfg_Tmpl binding still has a widget.
+    // /eMule/CreateSparseFiles was EC-wired and settable via the Web UI but had no control here or
+    // in amuleGUI -- hand-editing amule.conf was the only way. Only does real work when the *core*
+    // runs on Windows. Always created and bound here: amuleGUI has no EC capability tag to know the
+    // core's platform, so it always shows the control, and the monolithic non-Windows build hides
+    // it post-creation in PrefsUnifiedDlg's ctor rather than skipping creation, so the Cfg_Tmpl
+    // binding still has a widget.
     wxCheckBox *itemCreateSparse = new wxCheckBox( item6, IDC_CREATEFILESSPARSE, _("Create new files as sparse files"), wxDefaultPosition, wxDefaultSize, 0 );
     itemCreateSparse->SetToolTip( _("Sparse part files only occupy disk space for the parts already downloaded, so free space is used up gradually as the file fills in. Turn this off to use an ordinary file instead - useful where sparse files are unsupported or slow, or where backup/de-duplication tools handle them badly. Applies only when the core runs on Windows; on Linux and macOS part files are sparse anyway and this setting has no effect.") );
     item5->Add( itemCreateSparse, wxSizerFlags().CenterVertical().Border(wxTOP, 0) );
@@ -1756,7 +1736,7 @@ wxSizer *PreferencesFilesTab( wxWindow *parent, bool call_fit, bool set_sizer )
     item19->Add( item21, wxSizerFlags().CenterVertical().Border(wxRIGHT, 0) );
     item0->Add( item19, wxSizerFlags().Expand().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 0) );
 
-    // Intelligent Corruption Handling — an advanced option, placed after the
+    // Intelligent Corruption Handling -- an advanced option, placed after the
     // Downloads / Uploads groups (issue #594).
     wxStaticBox *item2 = new wxStaticBox( parent, -1, _("Intelligent Corruption Handling (I.C.H.)") );
     wxStaticBoxSizer *item1 = new wxStaticBoxSizer( item2, wxVERTICAL );
@@ -1769,12 +1749,11 @@ wxSizer *PreferencesFilesTab( wxWindow *parent, bool call_fit, bool set_sizer )
 
     item0->Add( item1, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 0) );
 
-    // Media metadata extraction: an optional feature that runs ffprobe against
-    // each shared file at share-add / known.met load time to populate
-    // FT_MEDIA_LENGTH / _BITRATE / _CODEC on the CKnownFile; the ed2k and Kad
-    // publishers then advertise those tags automatically. The enable toggle and
-    // the path field are EC-wired and stay visible in amulegui; only "Browse"
-    // and "Detect" hide there, since both would search the GUI's filesystem.
+    // Media metadata extraction: an optional feature that runs ffprobe against each shared file at
+    // share-add / known.met load time to populate FT_MEDIA_LENGTH / _BITRATE / _CODEC on the
+    // CKnownFile; the ed2k and Kad publishers then advertise those tags automatically. The enable
+    // toggle and the path field are EC-wired and stay visible in amulegui; only "Browse" and
+    // "Detect" hide there, since both would search the GUI's filesystem.
     wxStaticBox *item22 = new wxStaticBox( parent, -1, _("Media metadata extraction") );
     wxStaticBoxSizer *item22sz = new wxStaticBoxSizer( item22, wxVERTICAL );
 
@@ -1878,15 +1857,14 @@ wxSizer *PreferencesDirectoriesTab( wxWindow *parent, bool call_fit, bool set_si
     wxCheckBox *item13 = new wxCheckBox( item10, IDC_SHAREHIDDENFILES, _("Share hidden files"), wxDefaultPosition, wxDefaultSize, 0 );
     item13->SetValue( TRUE );
     item9->Add( item13, 0, wxALIGN_CENTER_VERTICAL, 0 );
-    // Auto-rescan toggle. When on, the fs-watcher reflects changes in
-    // the shared dirs without a manual reload; new subdirs created under
-    // any path in the tree above are auto-shared.
+    // Auto-rescan toggle. When on, the fs-watcher reflects changes in the shared dirs without a
+    // manual reload; new subdirs created under any path in the tree above are auto-shared.
     wxCheckBox *itemAutoRescan = new wxCheckBox( item10, IDC_AUTO_RESCAN_SHARED, _("Automatically rescan shared folders for changes"), wxDefaultPosition, wxDefaultSize, 0 );
     itemAutoRescan->SetValue( TRUE );
     item9->Add( itemAutoRescan, 0, wxALIGN_CENTER_VERTICAL, 0 );
-    // Follow-symlinks toggle. Default on to preserve historical
-    // behaviour; off makes the iterator pass wxDIR_NO_FOLLOW so symlinks
-    // (file or directory) are not traversed by the shared-folder walk.
+    // Follow-symlinks toggle. Default on to preserve historical behaviour; off makes the iterator
+    // pass wxDIR_NO_FOLLOW so symlinks, file or directory, are not traversed by the shared-folder
+    // walk.
     wxCheckBox *itemFollowSymlinks = new wxCheckBox( item10, IDC_FOLLOW_SYMLINKS_SHARED, _("Follow symbolic links in shared folders"), wxDefaultPosition, wxDefaultSize, 0 );
     itemFollowSymlinks->SetValue( TRUE );
     item9->Add( itemFollowSymlinks, 0, wxALIGN_CENTER_VERTICAL, 0 );
@@ -1904,11 +1882,10 @@ wxSizer *PreferencesDirectoriesTab( wxWindow *parent, bool call_fit, bool set_si
     itemExcludeRegex->SetToolTip(_("When set, the whole field is one regular expression ('|' is alternation). When unset, it is a list of '|'-separated wildcards."));
     item9->Add( itemExcludeRegex, 0, wxALIGN_CENTER_VERTICAL, 0 );
 
-    // Live preview: how many currently-shared files the typed pattern would
-    // exclude. Needs the core's in-memory shared list, which the remote GUI
-    // (amulegui) does not have; this file is built once into muleappgui with
-    // CLIENT_GUI undefined, so PrefsUnifiedDlg removes the button + info at
-    // runtime there (the pattern/regex fields still work and sync over EC).
+    // Live preview: how many currently-shared files the typed pattern would exclude. Needs the
+    // core's in-memory shared list, which the remote GUI does not have; this file is built once
+    // into muleappgui with CLIENT_GUI undefined, so PrefsUnifiedDlg removes the button and info at
+    // runtime there. The pattern/regex fields still work and sync over EC.
     wxBoxSizer *itemPreviewRow = new wxBoxSizer( wxHORIZONTAL );
     wxButton *itemPreviewBtn = new wxButton( item10, IDC_EXCLUDE_SHARE_PREVIEW, _("Preview"), wxDefaultPosition, wxDefaultSize, 0 );
     itemPreviewBtn->SetToolTip(_("Show how many shared files the current pattern would exclude."));
@@ -1934,12 +1911,11 @@ wxSizer *PreferencesPathMappingTab( wxWindow *parent, bool call_fit, bool set_si
     wxBoxSizer *item0 = new wxBoxSizer( wxVERTICAL );
 
     wxStaticText *itemHint = new wxStaticText( parent, IDC_PATHMAP_HINT, _("When the connected core's files live on a different machine, map a path prefix it reports to where that filesystem is reachable from here (a network share, say) so \"Open\" and \"Show in folder\" work."), wxDefaultPosition, wxDefaultSize, 0 );
-    // An unwrapped wxStaticText reports its whole single line as its best width,
-    // and the sizer turns that into the page's minimum width -- the dialog comes
-    // up as wide as this sentence. So it is wrapped here to bound that minimum,
-    // DPI-scaled rather than a raw pixel count. PrefsUnifiedDlg then re-flows it
-    // to the control's real width and keeps it current across resizes; it
-    // restores this text before each wrap, since Wrap() can only add breaks.
+    // An unwrapped wxStaticText reports its whole single line as its best width, and the sizer
+    // turns that into the page's minimum width -- the dialog comes up as wide as this sentence. So
+    // it is wrapped here to bound that minimum, DPI-scaled rather than a raw pixel count.
+    // PrefsUnifiedDlg then re-flows it to the control's real width and keeps it current across
+    // resizes; it restores this text before each wrap, since Wrap() can only add breaks.
     itemHint->Wrap( parent->FromDIP(380) );
     item0->Add( itemHint, wxSizerFlags().Expand().Border(wxBOTTOM, 6) );
 
@@ -2181,9 +2157,9 @@ wxSizer *PreferencesGuiTweaksTab( wxWindow *parent, bool call_fit, bool set_size
     wxCheckBox *itemLiveSort = new wxCheckBox( parent, IDC_LIVELISTSORT, _("Live column sorting (auto-reorder rows as their values change)"), wxDefaultPosition, wxDefaultSize, 0 );
     itemLiveSort->SetValue( TRUE );
     item0->Add( itemLiveSort, wxSizerFlags().Expand().CenterVertical() );
-    // The "Show country flags for clients" checkbox lives in the dedicated
-    // IP2Country preferences tab. The Cfg_Bool binding stays at
-    // IDC_SHOW_COUNTRY_FLAGS so amule.conf /eMule/GeoIPEnabled stays compatible.
+    // The "Show country flags for clients" checkbox lives in the dedicated IP2Country preferences
+    // tab. The Cfg_Bool binding stays at IDC_SHOW_COUNTRY_FLAGS so amule.conf /eMule/GeoIPEnabled
+    // stays compatible.
     wxStaticBox *item14 = new wxStaticBox( parent, -1, _("Download Queue Files") );
     wxStaticBoxSizer *item13 = new wxStaticBoxSizer( item14, wxVERTICAL );
 
@@ -2231,14 +2207,14 @@ wxSizer *PreferencesRemoteControlsTab( wxWindow *parent, bool call_fit, bool set
     wxStaticText *item5 = new wxStaticText( item2, IDC_EXT_CONN_IPTEXT, _("IP of the listening interface:"), wxDefaultPosition, wxDefaultSize, wxST_NO_AUTORESIZE );
     item4->Add( item5, wxSizerFlags().Expand().CenterVertical().Border(wxLEFT, 5) );
 #ifdef CLIENT_GUI
-    // Hidden in the remote GUI (the whole EC-listener config group is), so a
-    // plain text field is enough — no point offering a drop-down of the wrong
-    // host's addresses. See PrefsUnifiedDlg amuledOnlyPrefs[].
+    // Hidden in the remote GUI, as the whole EC-listener config group is, so a plain text field is
+    // enough -- no point offering a drop-down of the wrong host's addresses. See PrefsUnifiedDlg
+    // amuledOnlyPrefs[].
     CMuleTextCtrl *item6 = new CMuleTextCtrl( parent, IDC_EXT_CONN_IP, "", wxDefaultPosition, wxDefaultSize, 0 );
 #else
-    // Editable combo filled at runtime with 127.0.0.1, 0.0.0.0 and this
-    // machine's own addresses (PrefsUnifiedDlg); stays editable so an address
-    // belonging to an interface that is down right now can still be typed in.
+    // Editable combo filled at runtime with 127.0.0.1, 0.0.0.0 and this machine's own addresses
+    // (PrefsUnifiedDlg); stays editable so an address belonging to an interface that is down right
+    // now can still be typed in.
     wxComboBox *item6 = new wxComboBox( item2, IDC_EXT_CONN_IP, "", wxDefaultPosition, wxDefaultSize, 0, nullptr, wxCB_DROPDOWN );
 #endif
     item6->SetToolTip( _("Enter here a valid ip in the a.b.c.d format for the listening EC interface. An empty field or 0.0.0.0 will mean any interface.") );
@@ -2247,14 +2223,14 @@ wxSizer *PreferencesRemoteControlsTab( wxWindow *parent, bool call_fit, bool set
     wxStaticText *item6b = new wxStaticText( item2, IDC_EC_INTERFACETEXT, _("Bind to network interface (empty for any):"), wxDefaultPosition, wxDefaultSize, wxST_NO_AUTORESIZE );
     item4->Add( item6b, wxSizerFlags().Expand().CenterVertical().Border(wxLEFT, 5) );
 #ifdef CLIENT_GUI
-    // Hidden in the remote GUI (the whole EC-listener config group is), so a
-    // plain text field is enough — no point populating a drop-down of the
-    // wrong host's interfaces. See PrefsUnifiedDlg amuledOnlyPrefs[].
+    // Hidden in the remote GUI, as the whole EC-listener config group is, so a plain text field is
+    // enough -- no point populating a drop-down of the wrong host's interfaces. See PrefsUnifiedDlg
+    // amuledOnlyPrefs[].
     wxTextCtrl *item6c = new wxTextCtrl( parent, IDC_EC_INTERFACE, "", wxDefaultPosition, wxDefaultSize, 0 );
 #else
-    // Editable combo filled at runtime with the machine's interfaces
-    // (PrefsUnifiedDlg); stays editable so a currently-down interface can be
-    // typed in. Binds only aMule's external-connection (EC) socket.
+    // Editable combo filled at runtime with the machine's interfaces (PrefsUnifiedDlg); stays
+    // editable so a currently-down interface can be typed in. Binds only aMule's external-
+    // connection (EC) socket.
     wxComboBox *item6c = new wxComboBox( item2, IDC_EC_INTERFACE, "", wxDefaultPosition, wxDefaultSize, 0, nullptr, wxCB_DROPDOWN );
 #endif
     item4->Add( item6c, wxSizerFlags(1).Expand().CenterVertical().Border(wxLEFT, 5) );
@@ -2315,11 +2291,10 @@ wxSizer *PreferencesRemoteControlsTab( wxWindow *parent, bool call_fit, bool set
     CMuleTextCtrl *item46 = new CMuleTextCtrl( item37, IDC_AMULEAPI_PASSWD, "", wxDefaultPosition, wxDefaultSize, wxTE_PASSWORD );
     item46->SetToolTip( amuleapiPasswordHint );
     item46s->Add( item46, wxSizerFlags(1).Expand().CenterVertical() );
-    // Filled in at runtime by PrefsUnifiedDlg: the stored password is hashed and
-    // can never be shown, so this says whether one exists. Constructed with the
-    // wider of the two strings it can hold, not with "": the sizer takes its
-    // minimum width from the label present at construction, so an empty one
-    // reserves nothing and GTK then clips whatever SetLabel writes.
+    // Filled in at runtime by PrefsUnifiedDlg: the stored password is hashed and can never be
+    // shown, so this says whether one exists. Constructed with the wider of the two strings it can
+    // hold, not with "": the sizer takes its minimum width from the label present at construction,
+    // so an empty one reserves nothing and GTK then clips whatever SetLabel writes.
     wxStaticText *item46t = new wxStaticText( item37, IDC_AMULEAPI_PASSWD_STATE, _("A password is set."), wxDefaultPosition, wxDefaultSize, 0 );
     item46s->Add( item46t, wxSizerFlags().CenterVertical().Border(wxLEFT, 5) );
     item42->Add( item46s, wxSizerFlags(1).Expand().CenterVertical() );
@@ -2431,9 +2406,9 @@ wxSizer *preferencesDlgTop( wxWindow *parent, bool call_fit, bool set_sizer )
     // its border reads as slack on every row rather than as breathing room.
     item1->Add( item2, wxSizerFlags().Expand().Border(wxALL, 2) );
     item0->Add( item1, wxSizerFlags(1).Expand().Border(wxALL, 0) );
-    // Plain button row (no static-box container). A leading stretch spacer
-    // right-aligns the whole group; the page-scoped "Reset" button (hidden
-    // except on the Advanced page, see PrefsUnifiedDlg) sits left of OK/Cancel.
+    // Plain button row (no static-box container). A leading stretch spacer right-aligns the whole
+    // group; the page-scoped "Reset" button, hidden except on the Advanced page (see
+    // PrefsUnifiedDlg), sits left of OK/Cancel.
     wxBoxSizer *item3 = new wxBoxSizer( wxHORIZONTAL );
 
     item3->AddStretchSpacer( 1 );
@@ -2520,9 +2495,9 @@ wxSizer *CategoriesEditWindow( wxWindow *parent, bool call_fit, bool set_sizer )
     item16->Add( item21, wxSizerFlags().CenterVertical().Right().Border(wxLEFT|wxRIGHT, 5) );
     item1->Add( item16, wxSizerFlags().Expand().CenterVertical() );
     item0->Add( item1, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 5) );
-    // Plain button row (no static-box container) so no border is drawn
-    // around OK/Cancel, matching the Settings dialog. A leading stretch
-    // spacer right-aligns the buttons, like the Preferences/About dialogs.
+    // Plain button row (no static-box container) so no border is drawn around OK/Cancel, matching
+    // the Settings dialog. A leading stretch spacer right-aligns the buttons, like the Preferences
+    // and About dialogs.
     wxBoxSizer *item22 = new wxBoxSizer( wxHORIZONTAL );
 
     item22->AddStretchSpacer( 1 );
@@ -2604,9 +2579,8 @@ wxSizer *aMuleLog( wxWindow *parent, bool call_fit, bool set_sizer )
     return item0;
 }
 
-// amulegui only: the GUI client's own log (mirrors aMuleLog but its own
-// text control + Clear button). Added as a separate tab so "aMule Log" carries
-// only the daemon/core log received over EC.
+// amulegui only: the GUI client's own log (mirrors aMuleLog but with its own text control and Clear
+// button). A separate tab, so "aMule Log" carries only the daemon/core log received over EC.
 wxSizer *aMuleGuiLog( wxWindow *parent, bool call_fit, bool set_sizer )
 {
     wxBoxSizer *item0 = new wxBoxSizer( wxVERTICAL );
@@ -2642,17 +2616,16 @@ wxSizer *serverListDlgUp( wxWindow *parent, bool call_fit, bool set_sizer )
     item1->Add( item3, wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 5) );
     CMuleTextCtrl *item4 = new CMuleTextCtrl( parent, IDC_SERVERLISTURL, "", wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER );
     item4->SetToolTip( _("Enter the url to a server.met file here and press the button to the left to update the list of known servers.") );
-    // CenterVertical, not Expand: the row's height now follows the icon-bearing
-    // connect button (taller than a one-line field on macOS), and Expand would
-    // stretch this single-line entry to that height -- rendering it two lines
-    // tall on macOS. Proportion 1 still fills the row horizontally.
+    // CenterVertical, not Expand: the row's height now follows the icon-bearing connect button,
+    // taller than a one-line field on macOS, and Expand would stretch this single-line entry to
+    // that height, rendering it two lines tall there. Proportion 1 still fills the row
+    // horizontally.
     item1->Add( item4, wxSizerFlags(1).CenterVertical().Border(wxLEFT, 5) );
     item1->AddStretchSpacer(1);
-    // Placeholder label -- CServerWnd's ctor calls UpdateED2KConnectButton()
-    // right after construction, which sets the real label/bitmap for the
-    // current state. Kept on this top row, right-aligned via the stretch
-    // spacer above, so the primary control sits directly above the table --
-    // mirrors the Kad tab's "primary control on top, manual form below" shape.
+    // Placeholder label -- CServerWnd's ctor calls UpdateED2KConnectButton() right after
+    // construction, which sets the real label and bitmap for the current state. Kept on this top
+    // row, right-aligned via the stretch spacer above, so the primary control sits directly above
+    // the table -- mirrors the Kad tab's "primary control on top, manual form below" shape.
     wxButton *item14 = new wxButton( parent, IDC_ED2KDISCONNECT, _("Connect"), wxDefaultPosition, wxDefaultSize, 0 );
     item1->Add( item14, wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 5) );
     // Top border: without it this row sits flush against the tab strip
@@ -2734,9 +2707,9 @@ wxSizer *KadDlg( wxWindow *parent, bool call_fit, bool set_sizer )
 {
     wxBoxSizer *item0 = new wxBoxSizer( wxVERTICAL );
 
-    // First row, full width: nodes-list URL refresher + the connect/disconnect
-    // toggle right-aligned -- identical shape to the ED2K pane's server-list
-    // row (see serverListDlgUp), so both network tabs lead the same way.
+    // First row, full width: nodes-list URL refresher plus the connect/disconnect toggle right-
+    // aligned -- identical shape to the ED2K pane's server-list row (see serverListDlgUp), so both
+    // network tabs lead the same way.
     wxBoxSizer *item3 = new wxBoxSizer( wxHORIZONTAL );
 
     wxBitmapButton *item4 = new wxBitmapButton( parent, ID_UPDATEKADLIST, wxArtProvider::GetBitmapBundle( "amule:reload" ), wxDefaultPosition, wxDefaultSize );
@@ -2761,10 +2734,10 @@ wxSizer *KadDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     // "too close to the borders of the tab container").
     item0->Add( item3, wxSizerFlags().Expand().CenterVertical().Border(wxTOP, 5) );
 
-    // Graph, full width -- mirrors serverListDlgUp's shape (top row, then a
-    // full-width primary area, then a manual-entry row below) rather than
-    // splitting the tab into two side-by-side columns. item2 keeps the same
-    // wrapping depth around the graph box as the original two-column layout had.
+    // Graph, full width -- mirrors serverListDlgUp's shape (top row, then a full-width primary
+    // area, then a manual-entry row below) rather than splitting the tab into two side-by-side
+    // columns. item2 keeps the same wrapping depth around the graph box as the original two-column
+    // layout had.
     wxBoxSizer *item2 = new wxBoxSizer( wxVERTICAL );
 
     wxStaticBox *item8 = new wxStaticBox( parent, -1, _("Nodes stats") );
@@ -2775,9 +2748,9 @@ item9->SetName("kadScope");
     wxASSERT( item9 );
     item7->Add( item9, wxSizerFlags(1).Expand() );
 
-    // Three legend entries packed tight at the left. No growable columns: the row
-    // is Expand()ed so Linux has room to draw every label, but without growable
-    // cols the entries stay next to each other instead of spread across.
+    // Three legend entries packed tight at the left. No growable columns: the row is Expand()ed so
+    // Linux has room to draw every label, but without growable cols the entries stay next to each
+    // other instead of spread across.
     wxFlexGridSizer *item10 = new wxFlexGridSizer( 3, 0, 0 );
 
     wxBoxSizer *item11 = new wxBoxSizer( wxHORIZONTAL );
@@ -2808,9 +2781,9 @@ item9->SetName("kadScope");
     item2->Add( item7, wxSizerFlags(1).Expand() );
     item0->Add( item2, wxSizerFlags(1).Expand() );
 
-    // Bootstrap-from-node row, full width below the graph -- mirrors
-    // serverListDlgUp's "Add server manually" row: a single IP field, not
-    // eD2k's four-octet split, plus a port field and the Connect button.
+    // Bootstrap-from-node row, full width below the graph -- mirrors serverListDlgUp's "Add server
+    // manually" row: a single IP field, not eD2k's four-octet split, plus a port field and the
+    // Connect button.
     wxBoxSizer *item24 = new wxBoxSizer( wxHORIZONTAL );
 
     wxStaticText *item25 = new wxStaticText( parent, -1, _("Bootstrap from node: IP"), wxDefaultPosition, wxDefaultSize, wxST_NO_AUTORESIZE );
@@ -2988,24 +2961,21 @@ wxSizer *PreferencesOnlineSigTab( wxWindow *parent, bool call_fit, bool set_size
 
 wxSizer *PreferencesIP2CountryTab( wxWindow *parent, bool call_fit, bool set_sizer )
 {
-    // IP2Country preferences panel — exposed only when amule is built with
-    // ENABLE_IP2COUNTRY. The panel covers the full lifecycle: master enable
-    // checkbox, source selection (DB-IP / MaxMind / Custom URL), per-source
-    // attribution + license text (the license terms require attribution to
-    // be displayed; rendering it inline here satisfies that obligation
-    // without a separate About-dialog entry), an Update Now button, and an
-    // auto-update toggle.
+    // IP2Country preferences panel -- exposed only when amule is built with ENABLE_IP2COUNTRY. The
+    // panel covers the full lifecycle: master enable checkbox, source selection (DB-IP / MaxMind /
+    // Custom URL), per-source attribution and license text (the license terms require attribution
+    // to be displayed; rendering it inline here satisfies that obligation without a separate About-
+    // dialog entry), an Update Now button, and an auto-update toggle.
     //
-    // Most of the source-specific controls live on three sibling sub-panels
-    // (DB-IP / MaxMind / Custom). The PrefsUnifiedDlg shows exactly one at
-    // a time based on the source dropdown's selection. We build all three
-    // up-front so the IDs exist for Cfg_* binding regardless of which is
-    // currently visible.
+    // Most of the source-specific controls live on three sibling sub-panels (DB-IP / MaxMind /
+    // Custom). PrefsUnifiedDlg shows exactly one at a time based on the source dropdown's
+    // selection. All three are built up front so the IDs exist for Cfg_* binding regardless of
+    // which is currently visible.
     wxBoxSizer *item0 = new wxBoxSizer( wxVERTICAL );
 
-    // Master enable checkbox — moved out of the Interface tab so the
-    // whole feature configures from one place. CfgChanged(IDC_SHOW_COUNTRY_FLAGS)
-    // in PrefsUnifiedDlg::TryClose still re-calls EnableIP2Country().
+    // Master enable checkbox -- moved out of the Interface tab so the whole feature configures from
+    // one place. CfgChanged(IDC_SHOW_COUNTRY_FLAGS) in PrefsUnifiedDlg::TryClose still re-calls
+    // EnableIP2Country().
     wxCheckBox *item1 = new wxCheckBox( parent, IDC_SHOW_COUNTRY_FLAGS, _("Show country flags for clients"), wxDefaultPosition, wxDefaultSize, 0 );
     item1->SetToolTip( _("Render the country flag column in the transfers, queue and search views. Requires a valid MMDB GeoIP database (see below).") );
     item0->Add( item1, wxSizerFlags().CenterVertical().Border(wxALL, 4) );
@@ -3015,12 +2985,10 @@ wxSizer *PreferencesIP2CountryTab( wxWindow *parent, bool call_fit, bool set_siz
     wxStaticBox *item3 = new wxStaticBox( parent, -1, _("Database") );
     wxStaticBoxSizer *item2 = new wxStaticBoxSizer( item3, wxVERTICAL );
 
-    // Status block — multi-line static text. PrefsUnifiedDlg updates the
-    // label content in TransferToWindow() based on the live mmdb state
-    // and the selected source's attribution string.
-    // Placeholder is overwritten by PrefsUnifiedDlg::UpdateGeoIPStatus()
-    // during TransferToWindow before this label ever paints; no
-    // user-visible string here, so nothing to translate.
+    // Status block -- multi-line static text. PrefsUnifiedDlg updates the label content in
+    // TransferToWindow() from the live mmdb state and the selected source's attribution string. The
+    // placeholder is overwritten by UpdateGeoIPStatus() before this label ever paints, so there is
+    // no user-visible string here to translate.
     wxStaticText *item4 = new wxStaticText( item3, IDC_GEOIP_STATUS,
         wxEmptyString,
         wxDefaultPosition, wxDefaultSize, 0 );
@@ -3040,12 +3008,11 @@ wxSizer *PreferencesIP2CountryTab( wxWindow *parent, bool call_fit, bool set_siz
     item5->Add( item7, wxSizerFlags().Center().Expand() );
     item2->Add( item5, wxSizerFlags().Expand().Border(wxALL, 4) );
 
-    // Source-specific options panel. Hosts three child wxPanel siblings
-    // (DB-IP / MaxMind / Custom) — one shown at a time, the other two
-    // hidden. Real wxPanel children are required (instead of just
-    // hiding sibling widgets) because Show(false) on individual widgets
-    // doesn't propagate to their sizer slot or to nearby ID-less labels,
-    // which left those labels visible across source changes.
+    // Source-specific options panel, hosting three child wxPanel siblings (DB-IP / MaxMind /
+    // Custom) -- one shown at a time, the other two hidden. Real wxPanel children are required
+    // rather than just hiding sibling widgets, because Show(false) on individual widgets does not
+    // propagate to their sizer slot or to nearby ID-less labels, which left those labels visible
+    // across source changes.
     wxStaticBox *item9 = new wxStaticBox( item3, IDC_GEOIP_SOURCE_PANEL, wxEmptyString );
     wxStaticBoxSizer *item8 = new wxStaticBoxSizer( item9, wxVERTICAL );
 
@@ -3420,12 +3387,11 @@ wxSizer *sharedfilesBottomDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     wxStaticBox *item1 = new wxStaticBox( parent, -1, _("Statistics and queued clients for selected file(s) : Session / All time") );
     wxStaticBoxSizer *item0 = new wxStaticBoxSizer( item1, wxVERTICAL );
 
-    // Five columns and two rows: the collapse/expand button, the size
-    // figures, and the three statistics groups. Row one carries the counters,
-    // row two the gauges, and the size column takes one figure per row so
-    // each lines up with the statistics beside it. Only the statistics
-    // columns grow, so the button keeps a narrow column of its own and the
-    // size column is exactly as wide as its text.
+    // Five columns and two rows: the collapse/expand button, the size figures, and the three
+    // statistics groups. Row one carries the counters, row two the gauges, and the size column
+    // takes one figure per row so each lines up with the statistics beside it. Only the statistics
+    // columns grow, so the button keeps a narrow column of its own and the size column is exactly
+    // as wide as its text.
     wxFlexGridSizer *item2 = new wxFlexGridSizer( 5, 0, 0 );
     item2->AddGrowableCol( 2 );
     item2->AddGrowableCol( 3 );
@@ -3435,12 +3401,11 @@ wxSizer *sharedfilesBottomDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     wxBitmapButton *item3 = new wxBitmapButton( item1, ID_SHAREDCLIENTTOGGLE, wxArtProvider::GetBitmapBundle( "amule:arrows_down" ), wxDefaultPosition, wxDefaultSize );
     item2->Add( item3, wxSizerFlags().CenterVertical() );
 
-    // Combined size of the shared files currently visible (text filter). Set
-    // by CSharedFilesCtrl::ShowFilesCount(). No wxST_NO_AUTORESIZE: the label
-    // must grow to fit its text. Its column's second row holds the free-space
-    // figure, so each size gets a full line of its own and both line up with
-    // the statistics beside them -- the counters share this row, the gauges
-    // share the next.
+    // Combined size of the shared files currently visible (text filter). Set by
+    // CSharedFilesCtrl::ShowFilesCount(). No wxST_NO_AUTORESIZE: the label must grow to fit its
+    // text. Its column's second row holds the free-space figure, so each size gets a full line of
+    // its own and both line up with the statistics beside them -- the counters share this row, the
+    // gauges the next.
     wxStaticText *item13 = new wxStaticText( item1, -1, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
     item13->SetName( "sharedFilesTotalSize" );
     item2->Add( item13, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT, 5) );
@@ -3471,16 +3436,14 @@ wxSizer *sharedfilesBottomDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     item12->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
     item10->Add( item12, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT, 5) );
     item2->Add( item10, wxSizerFlags().Center().Border(wxALL, 5) );
-    // Second row: nothing under the button, the free-space figure under the
-    // total size, then the gauges under the statistics they belong to. A
-    // wxFlexGridSizer fills row by row, so the empty button cell has to be
-    // added explicitly rather than left out.
+    // Second row: nothing under the button, the free-space figure under the total size, then the
+    // gauges under the statistics they belong to. A wxFlexGridSizer fills row by row, so the empty
+    // button cell has to be added explicitly rather than left out.
     item2->AddSpacer( 0 );
 
-    // Free space where finished downloads land (the default category's
-    // incoming directory). Informational only -- no threshold here, unlike
-    // the Downloads panel, which is where running out actually stops work.
-    // Set by CSharedFilesCtrl::UpdateFreeSpace().
+    // Free space where finished downloads land (the default category's incoming directory).
+    // Informational only -- no threshold here, unlike the Downloads panel, which is where running
+    // out actually stops work. Set by CSharedFilesCtrl::UpdateFreeSpace().
     wxStaticText *item13b = new wxStaticText( item1, -1, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
     item13b->SetName( "sharedFilesFreeSpace" );
     item2->Add( item13b, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT, 5) );
@@ -3514,12 +3477,11 @@ wxSizer *sharedfilesTopDlg( wxWindow *parent, bool call_fit, bool set_sizer )
 {
     wxBoxSizer *item0 = new wxBoxSizer( wxVERTICAL );
 
-    // Header row: [Shared files] [Filter: ___] ... [Show Clients ...] ... [Reload].
-    // The left and right regions each take proportion 1, so they are equal width
-    // and the radio group in the middle (proportion 0) stays centered in the
-    // window regardless of how wide the left/right content is (the filter box
-    // widened the left region, which knocked the radios off-centre under the
-    // old growable-column layout).
+    // Header row: [Shared files] [Filter: ___] ... [Show Clients ...] ... [Reload]. The left and
+    // right regions each take proportion 1, so they are equal width and the radio group in the
+    // middle (proportion 0) stays centered in the window regardless of how wide the left/right
+    // content is. The filter box widened the left region, which knocked the radios off-centre under
+    // the old growable-column layout.
     wxBoxSizer *item1 = new wxBoxSizer( wxHORIZONTAL );
 
     wxBoxSizer *itemShLeft = new wxBoxSizer( wxHORIZONTAL );
@@ -3602,10 +3564,9 @@ wxSizer *messagePageMessages( wxWindow *parent, bool call_fit, bool set_sizer )
 
     wxBoxSizer *item1 = new wxBoxSizer( wxHORIZONTAL );
 
-    // "amule:message" is a dedicated small chat-bubble glyph, not the main
-    // toolbar's "amule:toolbar_messages" mascot illustration (#735 review:
-    // that one is a detailed gradient bust that stops reading as
-    // "messages" once shrunk from its native 32x32 down to this header's
+    // "amule:message" is a dedicated small chat-bubble glyph, not the main toolbar's
+    // "amule:toolbar_messages" mascot illustration (#735 review: that one is a detailed gradient
+    // bust that stops reading as "messages" once shrunk from its native 32x32 down to this header's
     // 16x16).
     wxStaticBitmap *item2 = new wxStaticBitmap( parent, -1,
         wxArtProvider::GetBitmapBundle( "amule:message" ),
@@ -3650,15 +3611,13 @@ wxSizer *messagePageMessages( wxWindow *parent, bool call_fit, bool set_sizer )
 
 wxBitmap clientImages( size_t index )
 {
-    // 22 of these 27 client-status icons are simple pictograms, migrated
-    // to CamuleArtProvider. The remaining 5 -- eMule/aMule/lphant/
-    // Shareaza/xMule, indices 12/15/16/17/18 below -- are specific
-    // client-software mascots kept as the original raw artwork for now:
-    // redrawing someone else's brand mascot risks not matching the real
-    // logo, unlike a generic pictogram (see #675). The array index must
-    // stay in sync with ClientSkinEnum (amuleDlg.h) -- this is the same
-    // enum-order-is-load-bearing constraint the callers that do index
-    // arithmetic (Client_InvalidRating_Smiley + rating - 1) depend on.
+    // 22 of these 27 client-status icons are simple pictograms, migrated to CamuleArtProvider. The
+    // remaining 5 -- eMule/aMule/lphant/Shareaza/xMule, indices 12/15/16/17/18 below -- are
+    // specific client-software mascots kept as the original raw artwork for now: redrawing someone
+    // else's brand mascot risks not matching the real logo, unlike a generic pictogram (see #675).
+    // The array index must stay in sync with ClientSkinEnum (amuleDlg.h) -- the same enum-order-is-
+    // load-bearing constraint the callers doing index arithmetic (Client_InvalidRating_Smiley +
+    // rating - 1) depend on.
     static const char *const artIds[] = {
         "amule:client_green", "amule:client_red", "amule:client_yellow",
         "amule:client_grey", "amule:client_white",
@@ -3674,16 +3633,15 @@ wxBitmap clientImages( size_t index )
         "amule:client_goodrating", "amule:client_excellentrating",
         "amule:client_commentonly", "amule:client_encryption",
     };
-    // wxFAIL_MSG below compiles out in release builds, so it can't catch a
-    // future ClientSkinEnum member that isn't reflected here -- this can,
-    // and does so at compile time in every build.
+    // wxFAIL_MSG below compiles out in release builds, so it cannot catch a future ClientSkinEnum
+    // member that is not reflected here -- this can, and does so at compile time in every build.
     static_assert(WXSIZEOF(artIds) == CLIENT_SKIN_SIZE,
         "artIds must stay in sync with ClientSkinEnum");
     if (index < WXSIZEOF(artIds) && artIds[index] != nullptr) {
         const wxBitmap bitmap = wxArtProvider::GetBitmap(artIds[index], wxART_OTHER, wxSize(16, 16));
-        // The fallthrough wxFAIL_MSG below only guards an out-of-range index;
-        // it doesn't see this path returning early, so a resolution failure
-        // here needs its own guard, same reasoning as #739's assert.
+        // The fallthrough wxFAIL_MSG below only guards an out-of-range index; it does not see this
+        // path returning early, so a resolution failure here needs its own guard, same reasoning as
+        // #739's assert.
         wxASSERT_MSG(bitmap.IsOk(),
             wxString::Format("clientImages: art id %s did not resolve", artIds[index]));
         return bitmap;
@@ -3887,9 +3845,9 @@ wxBitmap clientImages( size_t index )
         wxBitmap bitmap( xpm_data );
         return bitmap;
     }
-    // Unexpected index: loud in debug builds (got3nks, PR #725 review --
-    // this bank previously failed silently into a blank icon, which is how
-    // an incorrectly-deleted amuleSpecial(25) almost shipped undetected).
+    // Unexpected index: loud in debug builds (got3nks, PR #725 review -- this bank previously
+    // failed silently into a blank icon, which is how an incorrectly-deleted amuleSpecial(25)
+    // almost shipped undetected).
     wxFAIL_MSG(wxString::Format("clientImages: no icon for index %zu", index));
     return wxNullBitmap;
 }
@@ -4498,14 +4456,12 @@ wxBitmap amuleSpecial( size_t index )
         wxBitmap bitmap( image );
         return bitmap;
     }
-    // Only reachable in __DEBUG__ builds: PrefsUnifiedDlg.cpp's pages[]
-    // table has one entry guarded by #ifdef __DEBUG__ ("Debugging",
-    // PreferencesDebug) whose m_imageidx is 25 -- easy to miss with a
-    // release build or a naming-convention-based grep, since every other
-    // entry there is Preferences<Something>Tab. A deleted-by-mistake
-    // index here wouldn't fail any build; it falls through to
-    // wxNullBitmap, so the only symptom is a blank icon on the
-    // Preferences > Debugging page in a debug build (see PR #725 review).
+    // Only reachable in __DEBUG__ builds: PrefsUnifiedDlg.cpp's pages[] table has one entry guarded
+    // by #ifdef __DEBUG__ ("Debugging", PreferencesDebug) whose m_imageidx is 25 -- easy to miss
+    // with a release build or a naming-convention-based grep, since every other entry there is
+    // Preferences<Something>Tab. A deleted-by-mistake index here would fail no build; it falls
+    // through to wxNullBitmap, so the only symptom is a blank icon on the Preferences > Debugging
+    // page in a debug build (see PR #725 review).
     if (index == 25)
     {
         static const unsigned char data[] = 
@@ -4547,9 +4503,9 @@ wxBitmap amuleSpecial( size_t index )
         wxBitmap bitmap( image );
         return bitmap;
     }
-    // Unexpected index: loud in debug builds (got3nks, PR #725 review --
-    // this bank previously failed silently into a blank icon, which is how
-    // an incorrectly-deleted amuleSpecial(25) almost shipped undetected).
+    // Unexpected index: loud in debug builds (got3nks, PR #725 review -- this bank previously
+    // failed silently into a blank icon, which is how an incorrectly-deleted amuleSpecial(25)
+    // almost shipped undetected).
     wxFAIL_MSG(wxString::Format("amuleSpecial: no icon for index %zu", index));
     return wxNullBitmap;
 }
@@ -4557,10 +4513,9 @@ wxBitmap amuleSpecial( size_t index )
 void SetConnectButtonState(
 	wxButton *button, EConnButtonState state, bool enabled, const wxString &networkName)
 {
-	// networkName ("ED2K" / "Kad") is folded into the label itself, not
-	// concatenated after translation: the button sits in the same spot on
-	// both tabs, so without it there is nothing on the button telling you
-	// which network "Disconnect" affects (issue #402 review).
+	// networkName ("ED2K" / "Kad") is folded into the label itself, not concatenated after
+	// translation: the button sits in the same spot on both tabs, so without it there is
+	// nothing on the button telling you which network "Disconnect" affects (issue #402 review).
 	wxString label;
 	wxString artId;
 	switch (state) {
@@ -4576,26 +4531,23 @@ void SetConnectButtonState(
 		label = wxString(CFormat(_("Connect %s")) % networkName);
 		artId = "amule:toolbar_connect";
 	}
-	// The button sits inline next to a one-line URL field, where the art's
-	// native 32x32 toolbar size is too big (issue #402 review: "the button
-	// and the icon are too big") -- request the SVG rasterized straight at
-	// a more modest logical size instead of the toolbar's native one.
+	// The button sits inline next to a one-line URL field, where the art's native 32x32 toolbar
+	// size is too big (issue #402 review: "the button and the icon are too big") -- request the
+	// SVG rasterized straight at a more modest logical size instead of the toolbar's native
+	// one.
 	button->SetBitmap(wxArtProvider::GetBitmapBundle(artId, wxART_BUTTON, wxSize(16, 16)));
 
-	// wxButton::SetBitmapMargins() means different things per port that
-	// implement it (msw/anybutton.h, osx/anybutton.h -- wxGTK inherits the
-	// base class's no-op): wxOSX stores it as the margin AROUND the bitmap
-	// (both sides, including button edge), so overriding it there is a real
-	// gap fix. wxMSW applies it BETWEEN bitmap and label only, layered on
-	// top of a font-derived default (src/msw/anybutton.cpp:
-	// m_margin.x = GetCharWidth(); m_margin.y = GetCharHeight() / 2) that
-	// already matches native Windows button metrics -- overriding it with a
-	// fixed (4, 0) narrows the gap AND drops the vertical margin to zero,
-	// moving the button away from the platform convention instead of toward
-	// it. So this is wxOSX-only; wxMSW keeps its own native default
-	// untouched, and wxGTK falls back to the old trick: a leading space
-	// outside the translatable string (so no new msgid), which depends on
-	// no translator trimming leading whitespace but is otherwise harmless.
+	// wxButton::SetBitmapMargins() means different things per port that implement it
+	// (msw/anybutton.h, osx/anybutton.h -- wxGTK inherits the base class's no-op): wxOSX stores
+	// it as the margin AROUND the bitmap, both sides including the button edge, so overriding
+	// it there is a real gap fix. wxMSW applies it BETWEEN bitmap and label only, layered on
+	// top of a font-derived default (src/msw/anybutton.cpp: m_margin.x = GetCharWidth();
+	// m_margin.y = GetCharHeight() / 2) that already matches native Windows button metrics --
+	// overriding it with a fixed (4, 0) narrows the gap AND drops the vertical margin to zero,
+	// moving away from the platform convention instead of toward it. So this is wxOSX-only;
+	// wxMSW keeps its native default, and wxGTK falls back to the old trick of a leading space
+	// outside the translatable string (so no new msgid), which depends on no translator
+	// trimming leading whitespace but is otherwise harmless.
 #ifdef __WXOSX__
 	button->SetBitmapMargins(button->FromDIP(4), 0);
 	button->SetLabel(label);
@@ -4607,23 +4559,21 @@ void SetConnectButtonState(
 
 	button->Enable(enabled);
 
-	// SetBitmap() grows the button's best size; without a re-layout here,
-	// a pane laid out before its first UpdateXConnectButton() call (the
-	// Servers pane is visible at startup, unlike Kad's notebook page,
-	// which is first laid out only once shown -- after its bitmap already
-	// landed) paints with the stale text-only measurement, so the icon
-	// overlaps the label until the next window resize (#663 review).
+	// SetBitmap() grows the button's best size; without a re-layout here, a pane laid out
+	// before its first UpdateXConnectButton() call -- the Servers pane is visible at startup,
+	// unlike Kad's notebook page, which is first laid out only once shown, after its bitmap
+	// already landed -- paints with the stale text-only measurement, so the icon overlaps the
+	// label until the next window resize (#663 review).
 	button->GetParent()->Layout();
 }
 
 wxBitmap amuleDlgImages( size_t index )
 {
-    // Unexpected index: loud in debug builds (got3nks, PR #725 review --
-    // this bank previously failed silently into a blank icon, which is how
-    // an incorrectly-deleted amuleSpecial(25) almost shipped undetected).
+    // Unexpected index: loud in debug builds (got3nks, PR #725 review -- this bank previously
+    // failed silently into a blank icon, which is how an incorrectly-deleted amuleSpecial(25)
+    // almost shipped undetected).
     wxFAIL_MSG(wxString::Format("amuleDlgImages: no icon for index %zu", index));
     return wxNullBitmap;
 }
-
 
 // End of generated file

@@ -22,17 +22,16 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-// The two predicates behind `next_requested_part_index` and
-// `downloading_part_index` on GET /{downloads,shared}/{hash}/clients.
+// The two predicates behind `next_requested_part_index` and `downloading_part_index` on GET
+// /{downloads,shared}/{hash}/clients.
 //
-// Every branch here is decided by a value amuled reports about a peer, and the
-// ones that matter are the ones no live peer will hand over on request: the
-// 0xffff "no block pending" sentinel, the boundary at part_count, a file with
-// more than 65535 parts (~637 GB, where 0xffff is a legitimate chunk and the
-// sentinel is therefore indistinguishable from real data by range alone), and a
-// source whose download_state flips to "downloading". Waiting for a daemon to
-// produce those is waiting forever, which is why the predicates live in a
-// header of their own -- no wx, no Boost.Beast, no EC -- and are driven here.
+// Every branch here is decided by a value amuled reports about a peer, and the ones that matter are
+// the ones no live peer will hand over on request: the 0xffff "no block pending" sentinel, the
+// boundary at part_count, a file with more than 65535 parts (~637 GB, where 0xffff is a legitimate
+// chunk and the sentinel is indistinguishable from real data by range alone), and a source whose
+// download_state flips to "downloading". Waiting for a daemon to produce those is waiting forever,
+// which is why the predicates live in a header of their own -- no wx, no Boost.Beast, no EC -- and
+// are driven here.
 
 #include <muleunit/test.h>
 
@@ -47,9 +46,9 @@ using namespace webapi;
 namespace
 {
 
-// A file with more than 65535 parts: 65536 * 9.28 MB is about 608 GiB, so this
-// is a real size a real user reaches, not a synthetic extreme. Named because
-// every "large file" case below turns on it being > kNoPartPendingSentinel.
+// A file with more than 65535 parts: 65536 * 9.28 MB is about 608 GiB, so this is a real size a
+// real user reaches rather than a synthetic extreme. Named because every "large file" case below
+// turns on it being > kNoPartPendingSentinel.
 constexpr std::uint64_t kPartCountAbove16Bit = 200000u;
 
 } // namespace
@@ -86,9 +85,8 @@ TEST(PartIndex, AnInRangeIndexIsUsable)
 
 TEST(PartIndex, PartCountMinusOneIsInsideAndPartCountIsNot)
 {
-	// The boundary. part_count is a count, the index is 0-based, so the last
-	// addressable chunk is part_count - 1 and part_count itself is the first
-	// value that must be refused.
+	// The boundary. part_count is a count, the index is 0-based, so the last addressable chunk
+	// is part_count - 1 and part_count itself is the first value that must be refused.
 	ASSERT_TRUE(UsablePartIndex(true, 9, 10));
 	ASSERT_FALSE(UsablePartIndex(true, 10, 10));
 	ASSERT_FALSE(UsablePartIndex(true, 11, 10));
@@ -113,11 +111,10 @@ TEST(PartIndex, TheSentinelIsRefusedOnAnOrdinaryFile)
 
 TEST(PartIndex, TheSentinelIsRefusedEvenWhere65535IsARealChunk)
 {
-	// The 637 GB case, and the entire reason UsablePartIndex names the
-	// sentinel instead of leaving it to the bound: with 200000 parts, 65535
-	// is squarely in range, so a bounds check alone would relay "no block
-	// pending" as an index and paint a stripe on chunk 65535 of exactly the
-	// files a per-source bar is most useful on.
+	// The 637 GB case, and the entire reason UsablePartIndex names the sentinel instead of
+	// leaving it to the bound: with 200000 parts, 65535 is squarely in range, so a bounds check
+	// alone would relay "no block pending" as an index and paint a stripe on chunk 65535 of
+	// exactly the files a per-source bar is most useful on.
 	ASSERT_TRUE(65535u < kPartCountAbove16Bit); // the bound would have passed it
 	ASSERT_FALSE(UsablePartIndex(true, kNoPartPendingSentinel, kPartCountAbove16Bit));
 
@@ -135,11 +132,10 @@ TEST(PartIndex, TheSentinelIsRefusedEvenWhere65535IsARealChunk)
 
 TEST(PartIndex, LastDownloadingPartNeedsTheDownloadingState)
 {
-	// The defect the guard exists for. The core initialises the field to 0 and
-	// ships it unconditionally, so a source that is merely connected or queued
-	// reports a perfectly in-range 0 -- and since most sources in a list are
-	// queued, relaying it would mark chunk 0 as "downloading now" on nearly
-	// every row. Only the exact state string opens the gate.
+	// The defect the guard exists for. The core initialises the field to 0 and ships it
+	// unconditionally, so a source that is merely connected or queued reports a perfectly in-
+	// range 0 -- and since most sources in a list are queued, relaying it would mark chunk 0 as
+	// "downloading now" on nearly every row. Only the exact state string opens the gate.
 	ASSERT_TRUE(UsableLastDownloadingPart("downloading", true, 0, 100));
 
 	ASSERT_FALSE(UsableLastDownloadingPart("queued", true, 0, 100));
@@ -147,9 +143,9 @@ TEST(PartIndex, LastDownloadingPartNeedsTheDownloadingState)
 	ASSERT_FALSE(UsableLastDownloadingPart("connected", true, 0, 100));
 	ASSERT_FALSE(UsableLastDownloadingPart("", true, 0, 100));
 
-	// Not just the stale 0: a genuinely in-range value is still refused while
-	// the peer is not transferring, because it describes a chunk that finished
-	// arriving at some point in the past.
+	// Not just the stale 0: a genuinely in-range value is still refused while the peer is not
+	// transferring, because it describes a chunk that finished arriving at some point in the
+	// past.
 	ASSERT_FALSE(UsableLastDownloadingPart("queued", true, 42, 100));
 	ASSERT_FALSE(UsableLastDownloadingPart("too_many_connections", true, 42, 100));
 }
@@ -157,8 +153,8 @@ TEST(PartIndex, LastDownloadingPartNeedsTheDownloadingState)
 TEST(PartIndex, TheStateComparisonIsExact)
 {
 	// The state string comes from one enum-to-token mapping (Refresher.cpp:
-	// ClientDownloadStateName) and is compared verbatim, so nothing that merely
-	// contains or resembles the token opens the gate.
+	// ClientDownloadStateName) and is compared verbatim, so nothing that merely contains or
+	// resembles the token opens the gate.
 	ASSERT_FALSE(UsableLastDownloadingPart("Downloading", true, 5, 100));
 	ASSERT_FALSE(UsableLastDownloadingPart("downloading ", true, 5, 100));
 	ASSERT_FALSE(UsableLastDownloadingPart("notdownloading", true, 5, 100));

@@ -74,30 +74,27 @@
 
 //-------------------- File_Encoder --------------------
 
-/*
- * Encode 'obtained parts' info to be sent to remote gui
- */
+// Encode 'obtained parts' info to be sent to remote gui
 class CKnownFile_Encoder
 {
 	// number of sources for each part for progress bar colouring
 	RLE_Data m_enc_data;
 
-	// Reconcile epoch, stamped by CFileEncoderMap::UpdateEncoders on every
-	// encoder whose file is still listed. Encoders left carrying an older stamp
-	// have lost their file and are swept.
+	// Reconcile epoch, stamped by CFileEncoderMap::UpdateEncoders on every encoder
+	// whose file is still listed. Encoders left carrying an older stamp have lost their
+	// file and are swept.
 	uint64 m_seenEpoch;
 
-	// Whether `Get_EC_Response_GetUpdate` has already sent this file to the
-	// client carrying its identifying fields. False on a freshly-built encoder,
-	// which is what makes a re-created encoder re-send full detail without the
-	// caller having to erase anything.
+	// Whether `Get_EC_Response_GetUpdate` has already sent this file to the client
+	// carrying its identifying fields. False on a freshly-built encoder, which is what
+	// makes a re-created encoder re-send full detail without the caller having to erase
+	// anything.
 	//
-	// Deliberately specific to that one response path rather than a general "the
-	// client has this file": a path that has never sent the identity must not
-	// take the unchanged-file shortcut, or the client is left with a child-less
-	// tag it turns into a ghost entry. The two amuleweb handlers answer the same
-	// question from their own sets, because they iterate a CopyFileList snapshot
-	// rather than the encoder map.
+	// Deliberately specific to that one response path rather than a general "the client
+	// has this file": a path that has never sent the identity must not take the
+	// unchanged-file shortcut, or the client is left with a child-less tag it turns into
+	// a ghost entry. The two amuleweb handlers answer the same question from their own
+	// sets, because they iterate a CopyFileList snapshot rather than the encoder map.
 	bool m_sentOnUpdatePath;
 
 protected:
@@ -130,13 +127,10 @@ public:
 };
 
 /*!
- * PartStatus strings and gap lists are quite long - RLE encoding will help.
+ * PartStatus strings and gap lists are long, so send an RLE-encoded difference
+ * from the previous one rather than the full part-status string each time.
  *
- * Instead of sending each time full part-status string, send
- * RLE encoded difference from previous one.
- *
- * PartFileEncoderData class is used for decode only,
- * while CPartFile_Encoder is used for encode only.
+ * PartFileEncoderData decodes only; CPartFile_Encoder encodes only.
  */
 class CPartFile_Encoder : public CKnownFile_Encoder
 {
@@ -180,15 +174,14 @@ public:
 	virtual bool IsPartFile_Encoder() { return true; }
 };
 
-// The encoders for the files this connection has told its client about, held in
-// ECID order.
+// The encoders for the files this connection has told its client about, held in ECID
+// order.
 //
-// A sorted vector rather than a std::map. The response walk touches every entry
-// on every poll and does very little per entry, so its cost was dominated by
-// chasing red-black-tree pointers around the heap -- a linear scan of a
-// contiguous array is something the prefetcher can follow, a tree traversal is
-// not. Lookup becomes a binary search, which is now the rarer operation, and
-// structural change is rarer still.
+// A sorted vector rather than a std::map. The response walk touches every entry on
+// every poll and does very little per entry, so its cost was dominated by chasing
+// red-black-tree pointers around the heap -- a linear scan of a contiguous array is
+// something the prefetcher can follow, a tree traversal is not. Lookup becomes a
+// binary search, which is now the rarer operation.
 class CFileEncoderMap
 {
 	typedef std::set<uint32> IDSet;
@@ -208,17 +201,16 @@ public:
 	// Binary search by ECID; end() when absent.
 	iterator find(uint32 id);
 
-	// The encoder for `id`, or NULL. Unlike std::map::operator[] this does
-	// not insert a default-constructed entry on a miss -- that entry would
-	// have held a NULL encoder, which the next reconcile would then have
-	// dereferenced.
+	// The encoder for `id`, or NULL. Unlike std::map::operator[] this does not insert a
+	// default-constructed entry on a miss -- that entry would have held a NULL encoder,
+	// which the next reconcile would then have dereferenced.
 	CKnownFile_Encoder *operator[](uint32 id);
 
-	// If freshEcids is non-null, receives the ECIDs whose encoder was (re-)created
-	// this call. A freshly-created encoder signals that the caller's per-ECID EC
-	// caches (the CObjTagMap valuemap, and the encoder's own sent-with-detail
-	// flag) are stale w.r.t. the client's view and must be dropped, so
-	// INC_UPDATE emissions re-send identifying fields.
+	// If freshEcids is non-null, receives the ECIDs whose encoder was (re-)created this
+	// call. A freshly-created encoder signals that the caller's per-ECID EC caches (the
+	// CObjTagMap valuemap, and the encoder's own sent-with-detail flag) are stale
+	// w.r.t. the client's view and must be dropped, so INC_UPDATE emissions re-send
+	// identifying fields.
 	void UpdateEncoders(IDSet *freshEcids = nullptr);
 
 private:
@@ -231,10 +223,10 @@ private:
 		bool operator()(uint32 id, const value_type &b) const { return id < b.first; }
 	};
 
-	// Entries created during a reconcile, merged in once the pass that made them
-	// is done. Appending here rather than inserting into the middle of m_entries
-	// keeps a first poll -- where every file is new -- from paying a memmove of
-	// the whole array per file.
+	// Entries created during a reconcile, merged in once the pass that made them is
+	// done. Appending here rather than inserting into the middle of m_entries keeps a
+	// first poll -- where every file is new -- from paying a memmove of the whole array
+	// per file.
 	Storage m_pending;
 	void FlushPending();
 
@@ -242,19 +234,19 @@ private:
 	// it appends each ECID it passes to the list the removal merge consumes.
 	Storage m_entries;
 
-	// The list generations this map was last reconciled against. When both still
-	// match, the lists have not gained or lost a file and the reconcile is a
-	// no-op. `m_haveListGen` distinguishes "never reconciled" from "reconciled
-	// when both counters happened to be zero", which is the state at startup.
+	// The list generations this map was last reconciled against. When both still match,
+	// the lists have not gained or lost a file and the reconcile is a no-op.
+	// `m_haveListGen` distinguishes "never reconciled" from "reconciled when both
+	// counters happened to be zero", which is the state at startup.
 	uint64 m_lastSharedGen = 0;
 	uint64 m_lastDownloadGen = 0;
 	bool m_haveListGen = false;
 
 	// Monotonic reconcile counter; see UpdateEncoders. Two things make a stamp
-	// comparison safe: the map belongs to one CECServerSocket, so encoders are
-	// never shared across clients, and every UpdateEncoders call takes a fresh
-	// value before stamping anything, so no encoder can already carry the value
-	// the current call is about to use.
+	// comparison safe: the map belongs to one CECServerSocket, so encoders are never
+	// shared across clients, and every UpdateEncoders call takes a fresh value before
+	// stamping anything, so no encoder can already carry the value the current call is
+	// about to use.
 	uint64 m_epoch = 0;
 };
 
@@ -301,26 +293,24 @@ void CFileEncoderMap::FlushPending()
 // or if we have new files without encoder yet.
 void CFileEncoderMap::UpdateEncoders(IDSet *freshEcids)
 {
-	// Nothing has entered or left either list since the last reconcile, so the
-	// encoder map already mirrors them and the whole pass below would end where
-	// it started. On a library that is not churning, that is every poll for
-	// every connected client.
+	// Nothing has entered or left either list since the last reconcile, so the encoder
+	// map already mirrors them and the whole pass below would end where it started. On a
+	// library that is not churning, that is every poll for every connected client.
 	//
-	// Read the counters BEFORE the snapshots, never after. Read first and the
-	// values can only be older than what CopyFileList goes on to see, so a file
-	// arriving in between is picked up one cycle late. Read after, and a change
-	// that landed between the copy and the read is recorded as already seen and
-	// never reconciled at all.
+	// Read the counters BEFORE the snapshots, never after. Read first and the values can
+	// only be older than what CopyFileList goes on to see, so a file arriving in between
+	// is picked up one cycle late. Read after, and a change that landed between the copy
+	// and the read is recorded as already seen and never reconciled at all.
 	const uint64 sharedGen = theApp->sharedfiles->GetListGeneration();
 	const uint64 downloadGen = theApp->downloadqueue->GetListGeneration();
 	if (m_haveListGen && sharedGen == m_lastSharedGen && downloadGen == m_lastDownloadGen) {
 		return;
 	}
 
-	// Stamp every encoder whose file is still listed with this epoch; the sweep
-	// below then takes anything left behind. This used to build a set of the live
-	// ECIDs instead, costing a tree insertion per file plus a lookup per encoder
-	// in the sweep, on every poll, to find the handful of files that moved.
+	// Stamp every encoder whose file is still listed with this epoch; the sweep below
+	// then takes anything left behind. This used to build a set of the live ECIDs
+	// instead, costing a tree insertion per file plus a lookup per encoder in the sweep,
+	// on every poll, to find the handful of files that moved.
 	const uint64 epoch = ++m_epoch;
 	// Downloads
 	std::vector<CPartFile *> downloads;
@@ -339,10 +329,10 @@ void CFileEncoderMap::UpdateEncoders(IDSet *freshEcids)
 			it->second->SetSeenEpoch(epoch);
 		}
 	}
-	// Merge before the shares pass, not after both. A partfile appears in both
-	// lists, and the check below asks whether this reconcile has already reached
-	// it -- which it answers with find(). Leaving the new entries unmerged would
-	// hide them from that lookup and build a second encoder for the same ECID.
+	// Merge before the shares pass, not after both. A partfile appears in both lists,
+	// and the check below asks whether this reconcile has already reached it -- which it
+	// answers with find(). Leaving the new entries unmerged would hide them from that
+	// lookup and build a second encoder for the same ECID.
 	FlushPending();
 	// Shares
 	std::vector<CKnownFile *> shares;
@@ -350,9 +340,9 @@ void CFileEncoderMap::UpdateEncoders(IDSet *freshEcids)
 	for (uint32 i = shares.size(); i--;) {
 		uint32 id = shares[i]->ECID();
 		iterator it = find(id);
-		// Check if it is already there. Carrying this epoch means the
-		// downloads loop above already reached it, which is what the old
-		// `curr_files.count(id)` tested; the IsCPartFile() is just a speedup.
+		// Check if it is already there. Carrying this epoch means the downloads loop
+		// above already reached it, which is what the old `curr_files.count(id)`
+		// tested; the IsCPartFile() is just a speedup.
 		if (shares[i]->IsCPartFile() && it != end() && it->second->GetSeenEpoch() == epoch) {
 			it->second->SetShared();
 			continue;
@@ -370,9 +360,9 @@ void CFileEncoderMap::UpdateEncoders(IDSet *freshEcids)
 	}
 	FlushPending();
 
-	// Anything still carrying an older stamp has lost its file. Delete those
-	// encoders and close the gaps in one pass, preserving order. Collecting the
-	// dead into a set and erasing one at a time made every erase a fresh lookup.
+	// Anything still carrying an older stamp has lost its file. Delete those encoders
+	// and close the gaps in one pass, preserving order. Collecting the dead into a set
+	// and erasing one at a time made every erase a fresh lookup.
 	iterator out = m_entries.begin();
 	for (iterator it = m_entries.begin(); it != m_entries.end(); ++it) {
 		if (it->second->GetSeenEpoch() != epoch) {
@@ -387,19 +377,19 @@ void CFileEncoderMap::UpdateEncoders(IDSet *freshEcids)
 	m_entries.erase(out, m_entries.end());
 
 	// Record what this pass reconciled against, so the next one can tell whether
-	// anything moved. Set here rather than next to the read above, so an
-	// exception part-way through leaves the map looking un-reconciled.
+	// anything moved. Set here rather than next to the read above, so an exception
+	// part-way through leaves the map looking un-reconciled.
 	m_lastSharedGen = sharedGen;
 	m_lastDownloadGen = downloadGen;
 	m_haveListGen = true;
 
-	// The GET_UPDATE walk relies on this order to feed the removal merge, and
-	// getting it wrong loses or invents removals silently. Debug-only, and
-	// rejects duplicate ECIDs as well as misordering.
+	// The GET_UPDATE walk relies on this order to feed the removal merge, and getting it
+	// wrong loses or invents removals silently. Debug-only, and rejects duplicate ECIDs
+	// as well as misordering.
 	//
-	// adjacent_find rather than is_sorted: is_sorted requires a strict weak
-	// ordering, and the `<=` needed to reject equal neighbours is not
-	// irreflexive. Hardened standard libraries check exactly that and abort.
+	// adjacent_find rather than is_sorted: is_sorted requires a strict weak ordering,
+	// and the `<=` needed to reject equal neighbours is not irreflexive. Hardened
+	// standard libraries check exactly that and abort.
 	assert(std::adjacent_find(
 		       m_entries.begin(), m_entries.end(), [](const value_type &a, const value_type &b) {
 			       return a.first >= b.first;
@@ -421,7 +411,7 @@ public:
 
 	void ResetLog() { m_LoggerAccess.Reset(); }
 
-	// True once this connection advertised EC_TAG_CAN_CHAT — it speaks the
+	// True once this connection advertised EC_TAG_CAN_CHAT -- it speaks the
 	// chat session ops and may be sent EC_OP_CHAT_SESSIONS replies.
 	bool ChatActive() const { return m_chatActive; }
 
@@ -440,28 +430,28 @@ private:
 
 	uint64_t m_passwd_salt;
 
-	// The credential this connection authenticated with -- the configured EC
-	// password, or the ephemeral token the core issued to the amuleapi it
-	// spawned. Per-socket precisely because two clients may be using different
-	// credentials at once; ActivateAEAD() keys the session from this.
+	// The credential this connection authenticated with -- the configured EC password,
+	// or the ephemeral token the core issued to the amuleapi it spawned. Per-socket
+	// precisely because two clients may be using different credentials at once;
+	// ActivateAEAD() keys the session from this.
 	wxString m_authSecret;
 
-	// Transport encryption, chosen during EC_OP_AUTH_REQ and only turned on
-	// once the password verifies. Held here until then because a client that
-	// fails authentication must never get a working key.
+	// Transport encryption, chosen during EC_OP_AUTH_REQ and only turned on once the
+	// password verifies. Held here until then because a client that fails authentication
+	// must never get a working key.
 	uint8_t m_aeadCipher;
-	// Set when the client offered encryption (CAN_AEAD + a nonce) but sent no
-	// usable public key. Such a peer is provably new enough to send one, so the
-	// offer is malformed and the login is refused rather than degraded to clear.
+	// Set when the client offered encryption (CAN_AEAD + a nonce) but sent no usable
+	// public key. Such a peer is provably new enough to send one, so the offer is
+	// malformed and the login is refused rather than degraded to clear.
 	bool m_aeadOfferMalformed;
 	std::vector<uint8_t> m_aeadServerNonce;
 	std::vector<uint8_t> m_aeadClientNonce;
 	std::vector<uint8_t> m_aeadTranscript;
 
-	// The X25519 shared secret, and the only thing the channel key is derived
-	// from. Our ephemeral private key is wiped as soon as this exists, and this
-	// is wiped once the keys are derived, so a peer that never gets past the
-	// password check leaves nothing behind.
+	// The X25519 shared secret, and the only thing the channel key is derived from. Our
+	// ephemeral private key is wiped as soon as this exists, and this is wiped once the
+	// keys are derived, so a peer that never gets past the password check leaves nothing
+	// behind.
 	std::vector<uint8_t> m_aeadShared;
 
 	/// Run the key exchange, pick a cipher, and add our half of the salt.
@@ -472,9 +462,8 @@ private:
 	 * Check the client's key-confirmation tag from EC_OP_AUTH_PASSWD.
 	 *
 	 * Separate from the password check above and not a substitute for it: that
-	 * proves the client knows the credential, this proves the same client also
-	 * ran the key exchange we think it did. A relay passes the first and fails
-	 * this one.
+	 * proves the client knows the credential, this proves the same client also ran
+	 * the key exchange we think it did. A relay passes the first and fails this.
 	 */
 	bool VerifyClientConfirm(const CECPacket *request, const wxString &secret) const;
 	/// Our proof to the client, for EC_OP_AUTH_OK.
@@ -487,67 +476,64 @@ private:
 	virtual bool IsAuthorized() { return m_conn_state == CONN_ESTABLISHED; }
 
 	// Bound on the WriteDoneAndQueueEmpty -> SendPacket -> OnOutput ->
-	// WriteDoneAndQueueEmpty recursion chain that drains the notifier
-	// queue. See WriteDoneAndQueueEmpty for the full reasoning.
+	// WriteDoneAndQueueEmpty recursion chain that drains the notifier queue. See
+	// WriteDoneAndQueueEmpty for the full reasoning.
 	int m_notification_dispatch_depth;
 
-	// EC INC_UPDATE skip-unchanged state. `m_lastEcGenSeen*` values are the
-	// highest `CKnownFile::s_globalEcGen` already reflected in the client's view
-	// *for that particular request path* -- files with a smaller `m_ecGen` did
-	// not change since that path's last response and are skipped. Three
-	// independent counters because the request paths interleave on different
-	// schedules: GET_UPDATE (amulegui), GET_SHARED_FILES and GET_DLOAD_QUEUE
-	// (both amuleweb).
+	// EC INC_UPDATE skip-unchanged state. `m_lastEcGenSeen*` values are the highest
+	// `CKnownFile::s_globalEcGen` already reflected in the client's view *for that
+	// particular request path* -- files with a smaller `m_ecGen` did not change since
+	// that path's last response and are skipped. Three independent counters because the
+	// request paths interleave on different schedules: GET_UPDATE (amulegui),
+	// GET_SHARED_FILES and GET_DLOAD_QUEUE (both amuleweb).
 	uint64 m_lastEcGenSeen;
 	uint64 m_lastEcGenSeenShared;
 	uint64 m_lastEcGenSeenPart;
 
 	// Client opted in to the partial-update protocol at auth time (advertised
-	// `EC_TAG_CAN_PARTIAL_UPDATE`). When set, Get_EC_Response_GetUpdate skips
-	// unchanged files entirely and emits explicit EC_TAG_FILE_REMOVED markers;
-	// the client mirrors this by skipping its bulk deletion loop. When not set,
-	// the server emits empty "alive marker" tags for unchanged files so old
-	// clients, which infer deletion from absence, keep working.
+	// `EC_TAG_CAN_PARTIAL_UPDATE`). When set, Get_EC_Response_GetUpdate skips unchanged
+	// files entirely and emits explicit EC_TAG_FILE_REMOVED markers; the client mirrors
+	// this by skipping its bulk deletion loop. When not set, the server emits empty
+	// "alive marker" tags for unchanged files so old clients, which infer deletion from
+	// absence, keep working.
 	bool m_partialUpdateActive;
 
-	// Client negotiated `EC_TAG_CAN_PARTIAL_SEARCH`: the multi-search results
-	// union may skip results whose exported fields are unchanged and report
-	// removals with explicit EC_TAG_FILE_REMOVED tombstones. Separate from
-	// m_partialUpdateActive on purpose -- reusing that flag would break an older
-	// amuleGUI, which advertises it but still deletes any absent result.
+	// Client negotiated `EC_TAG_CAN_PARTIAL_SEARCH`: the multi-search results union may
+	// skip results whose exported fields are unchanged and report removals with explicit
+	// EC_TAG_FILE_REMOVED tombstones. Separate from m_partialUpdateActive on purpose --
+	// reusing that flag would break an older amuleGUI, which advertises it but still
+	// deletes any absent result.
 	bool m_partialSearchActive;
 	// Client opted in to the multi-search protocol at auth time (advertised
-	// `EC_TAG_CAN_MULTI_SEARCH`). When set, the EC search handlers allocate a
-	// distinct daemon-side search ID per EC_OP_SEARCH_START and address
-	// results/progress/stop by it. When not set, the legacy single-search path
-	// runs verbatim (0xffffffff sentinel bucket, wipe-on-start, parameterless
-	// stop) so old clients keep working.
+	// `EC_TAG_CAN_MULTI_SEARCH`). When set, the EC search handlers allocate a distinct
+	// daemon-side search ID per EC_OP_SEARCH_START and address results/progress/stop by
+	// it. When not set, the legacy single-search path runs verbatim (0xffffffff sentinel
+	// bucket, wipe-on-start, parameterless stop) so old clients keep working.
 	bool m_multiSearchActive;
 	// Set when the client advertised `EC_TAG_CAN_SEARCH_PROGRESS_UNION`: an
-	// EC_OP_SEARCH_PROGRESS carrying no EC_TAG_SEARCH_ID reports every search
-	// this connection could hold a tab for, one child each. Only consulted
-	// together with m_multiSearchActive -- a single-search client's id-less
-	// request keeps meaning "the current search".
+	// EC_OP_SEARCH_PROGRESS carrying no EC_TAG_SEARCH_ID reports every search this
+	// connection could hold a tab for, one child each. Only consulted together with
+	// m_multiSearchActive -- a single-search client's id-less request keeps meaning "the
+	// current search".
 	bool m_searchProgressUnionActive;
-	// Set when the client advertised EC_TAG_CAN_CHAT: it speaks the chat
-	// session ops (EC_OP_GET_CHAT_SESSIONS and friends). A client that omits
-	// the tag never sees the capability echoed and must never send those
-	// opcodes — an unknown opcode asserts before the EC_OP_FAILED path.
+	// Set when the client advertised EC_TAG_CAN_CHAT: it speaks the chat session ops
+	// (EC_OP_GET_CHAT_SESSIONS and friends). A client that omits the tag never sees the
+	// capability echoed and must never send those opcodes -- an unknown opcode asserts
+	// before the EC_OP_FAILED path.
 	bool m_chatActive;
-	// File ECIDs sent in the previous response for each EC request path, diffed
-	// against the current snapshot to compute the removal list emitted to
-	// partial-update-capable clients. Tracked per-path because amulegui uses
-	// EC_OP_GET_UPDATE while amuleweb drives two separate INC_UPDATE streams.
+	// File ECIDs sent in the previous response for each EC request path, diffed against
+	// the current snapshot to compute the removal list emitted to partial-update-capable
+	// clients. Tracked per-path because amulegui uses EC_OP_GET_UPDATE while amuleweb
+	// drives two separate INC_UPDATE streams.
 	//
-	// `m_lastSentFileIds` is held sorted ascending in a vector rather than a
-	// std::set: Get_EC_Response_GetUpdate walks the encoder map, which is keyed
-	// by ECID, so the current IDs come out already in order and the diff is a
-	// linear merge over two contiguous arrays -- where the set cost a tree
-	// insertion per file to build and a lookup per file to diff, on every poll.
+	// `m_lastSentFileIds` is held sorted ascending in a vector rather than a std::set:
+	// Get_EC_Response_GetUpdate walks the encoder map, which is keyed by ECID, so the
+	// current IDs come out already in order and the diff is a linear merge over two
+	// contiguous arrays -- where the set cost a tree insertion per file to build and a
+	// lookup per file to diff, on every poll.
 	//
-	// The other two keep the set: their handlers iterate a CopyFileList snapshot,
-	// which is neither ECID-ordered nor necessarily the whole list, so the
-	// ordering the merge needs is not available without paying for a lookup.
+	// The other two keep the set: their handlers iterate a CopyFileList snapshot, which
+	// is neither ECID-ordered nor necessarily the whole list.
 	std::vector<uint32> m_lastSentFileIds;
 	std::set<uint32> m_lastSentSharedFileIds;
 	std::set<uint32> m_lastSentPartFileIds;
@@ -555,29 +541,28 @@ private:
 	// path), which addresses one search at a time.
 	std::set<uint32> m_lastSentSearchIds;
 
-	// Result ECIDs last sent on the EC_DETAIL_INC_UPDATE union poll (amulegui),
-	// so Get_EC_Response_Search_Results_Union can emit EC_TAG_FILE_REMOVED for
-	// results that are gone instead of relying on absence. Separate from
-	// m_lastSentSearchIds, which belongs to amuleweb's per-search path.
+	// Result ECIDs last sent on the EC_DETAIL_INC_UPDATE union poll (amulegui), so
+	// Get_EC_Response_Search_Results_Union can emit EC_TAG_FILE_REMOVED for results that
+	// are gone instead of relying on absence. Separate from m_lastSentSearchIds, which
+	// belongs to amuleweb's per-search path.
 	//
-	// Only populated for clients that negotiated EC_TAG_CAN_PARTIAL_UPDATE: a
-	// legacy client keeps the bulk "anything missing == deleted" rule, so the
-	// union must keep re-sending every result and there is nothing to track.
+	// Only populated for clients that negotiated EC_TAG_CAN_PARTIAL_UPDATE: a legacy
+	// client keeps the bulk "anything missing == deleted" rule, so the union must keep
+	// re-sending every result and there is nothing to track.
 	std::set<uint32> m_lastSentSearchResultIds;
 
-	// Whether a file has already been sent to the client with full detail now
-	// lives as a flag on the encoder itself -- see
-	// CKnownFile_Encoder::WasSentOnUpdatePath. It used to be three per-path sets
-	// here, each costing a tree lookup per file on every poll to answer a
-	// question the encoder was already in a position to answer.
+	// Whether a file has already been sent to the client with full detail now lives as a
+	// flag on the encoder itself -- see CKnownFile_Encoder::WasSentOnUpdatePath. It used
+	// to be three per-path sets here, each costing a tree lookup per file on every poll
+	// to answer a question the encoder was already in a position to answer.
 	//
-	// Keeping it on the encoder also bounds it. The sets were only ever inserted
-	// into, so an ECID whose file went away stayed for the life of the
-	// connection. An encoder is destroyed with its file, and a re-created one
-	// starts at zero -- exactly the "re-send full detail" state wanted.
+	// Keeping it on the encoder also bounds it. The sets were only ever inserted into, so
+	// an ECID whose file went away stayed for the life of the connection. An encoder is
+	// destroyed with its file, and a re-created one starts at zero -- exactly the
+	// "re-send full detail" state wanted.
 	//
-	// The two amuleweb paths keep their sets, for the reason given on
-	// m_lastSentFileIds above.
+	// The two amuleweb paths keep their sets, for the reason given on m_lastSentFileIds
+	// above.
 	std::set<uint32> m_sentWithDetailIdsShared;
 	std::set<uint32> m_sentWithDetailIdsPart;
 };
@@ -641,10 +626,9 @@ void CECServerSocket::NegotiateAEAD(const CECPacket *request, CECPacket *respons
 		return;
 	}
 	if (clientPubTag == nullptr || clientPubTag->GetTagDataLen() != ECCrypt::X25519_KEY_LEN) {
-		// Not an older client -- encryption has never shipped, so anything that
-		// offers it at all is new enough to send a key. A keyless offer is
-		// therefore malformed, or a middlebox stripped the key, and the login is
-		// refused rather than degraded to clear.
+		// Not an older client -- encryption has never shipped, so anything that offers
+		// it at all is new enough to send a key. A keyless offer is therefore malformed,
+		// or a middlebox stripped the key, and the login is refused rather than degraded.
 		m_aeadOfferMalformed = true;
 		AddDebugLogLineN(logEC, "AEAD: offer without a usable public key, refusing the login");
 		return;
@@ -653,9 +637,9 @@ void CECServerSocket::NegotiateAEAD(const CECPacket *request, CECPacket *respons
 	const uint8_t *offered = (const uint8_t *)offer->GetTagData();
 	const uint16_t offeredLen = offer->GetTagDataLen();
 
-	// The client prefers Cipher_ChaCha20_Poly1305, probably because it has no
-	// hardware AES. If a third cipher is ever added, update all the logic below
-	// and SupportedCiphers() to match.
+	// The client prefers Cipher_ChaCha20_Poly1305, probably because it has no hardware
+	// AES. If a third cipher is ever added, update all the logic below and
+	// SupportedCiphers() to match.
 	if (offeredLen && offered[0] == ECCrypt::Cipher_ChaCha20_Poly1305 &&
 		ECCrypt::IsCipherSupported(ECCrypt::Cipher_ChaCha20_Poly1305))
 		m_aeadCipher = ECCrypt::Cipher_ChaCha20_Poly1305;
@@ -686,9 +670,9 @@ void CECServerSocket::NegotiateAEAD(const CECPacket *request, CECPacket *respons
 		return;
 	}
 
-	// Our ephemeral half. Generated per connection and never stored: that is what
-	// makes a recording of this session unreadable later, even to someone who by
-	// then holds the EC password.
+	// Our ephemeral half. Generated per connection and never stored: that is what makes
+	// a recording of this session unreadable later, even to someone who by then holds
+	// the EC password.
 	std::vector<uint8_t> ephPriv;
 	std::vector<uint8_t> ephPub;
 	if (!ECCrypt::GenerateX25519KeyPair(ephPriv, ephPub)) {
@@ -716,10 +700,9 @@ void CECServerSocket::NegotiateAEAD(const CECPacket *request, CECPacket *respons
 	const uint8_t *clientNonceData = (const uint8_t *)clientNonceTag->GetTagData();
 	m_aeadClientNonce.assign(clientNonceData, clientNonceData + clientNonceTag->GetTagDataLen());
 
-	// Transcript: everything both sides exchanged, taken exactly as it reached us.
-	// If any of it was edited in flight our derivation differs from the client's
-	// and the first sealed packet fails, instead of the session dropping to
-	// whatever the attacker preferred.
+	// Transcript: everything both sides exchanged, taken exactly as it reached us. If
+	// any of it was edited in flight our derivation differs from the client's and the
+	// first sealed packet fails, instead of dropping to whatever the attacker preferred.
 	const std::vector<uint8_t> offeredVec(offered, offered + offeredLen);
 	m_aeadTranscript = ECCrypt::BuildTranscript(
 		offeredVec, m_aeadCipher, m_aeadClientNonce, m_aeadServerNonce, clientPub, ephPub);
@@ -733,8 +716,8 @@ void CECServerSocket::NegotiateAEAD(const CECPacket *request, CECPacket *respons
 namespace
 {
 /// The credential in the byte form both ends feed to ConfirmTag. Lower-cased
-/// because the client derives from `pass.Lower()` and a hex hash that differs
-/// only in case would otherwise produce a different tag on each side.
+/// because the client derives from `pass.Lower()` and a hex hash differing only
+/// in case would produce a different tag on each side.
 std::vector<uint8_t> CredentialBytes(const wxString &secret)
 {
 	const wxString lowered = secret.Lower();
@@ -778,10 +761,10 @@ void CECServerSocket::ActivateAEAD()
 	if (m_aeadCipher == ECCrypt::Cipher_None || m_aeadShared.empty()) {
 		return;
 	}
-	// Keyed from the ephemeral exchange and nothing else. It used to be keyed
-	// from whichever credential this connection authenticated with, which made a
-	// session recorded today readable by anyone who learns the password tomorrow.
-	// The credential still has to be proved, but it no longer opens the channel.
+	// Keyed from the ephemeral exchange and nothing else. It used to be keyed from
+	// whichever credential this connection authenticated with, which made a session
+	// recorded today readable by anyone who learns the password tomorrow. The credential
+	// still has to be proved, but it no longer opens the channel.
 	if (!SetupAEAD(m_aeadCipher,
 		    m_aeadShared,
 		    m_aeadServerNonce,
@@ -814,18 +797,16 @@ const CECPacket *CECServerSocket::OnPacketReceived(const CECPacket *packet, uint
 	}
 
 	if (m_conn_state != CONN_ESTABLISHED) {
-		// This is called twice:
-		// 1) send salt
-		// 2) verify password
+		// Called twice: once to send the salt, once to verify the password.
 		reply = Authenticate(packet);
 	} else {
 		if (IsCryptReady() && !WasLastPacketEncrypted()) {
 			// The session negotiated encryption, so every packet past the handshake
-			// must arrive sealed. A cleartext packet here is an injection attempt:
-			// our sealed replies stay confidential, but executing an
-			// unauthenticated cleartext command with this session's authority is
-			// not something to allow. The one legitimate clear packet, a terminal
-			// AUTH_FAIL, only ever arrives before CONN_ESTABLISHED.
+			// must arrive sealed. A cleartext packet here is an injection attempt: our
+			// sealed replies stay confidential, but executing an unauthenticated
+			// cleartext command with this session's authority is not. The one
+			// legitimate clear packet, a terminal AUTH_FAIL, only arrives before
+			// CONN_ESTABLISHED.
 			AddDebugLogLineN(logEC, "EC: cleartext packet on an encrypted session, dropping");
 			CloseSocket();
 			return nullptr;
@@ -856,26 +837,25 @@ void CECServerSocket::WriteDoneAndQueueEmpty()
 	//   WriteDoneAndQueueEmpty -> SendPacket -> WritePacket + OnOutput
 	//     -> OnOutput drains queue -> WriteDoneAndQueueEmpty -> ...
 	//
-	// On a busy amuled the ECNotifier always has the next packet ready, so the
-	// recursion never bottoms out: the main thread stays inside this chain and
-	// never yields back to the wx event loop, starving every other event --
-	// including the LibSocketLost a half-closed EC peer needs to be torn down.
-	// With the peer in kernel CLOSE-WAIT, writes silently succeed against the
-	// dead buffer and amuled spins indefinitely flushing to nowhere.
+	// On a busy amuled the ECNotifier always has the next packet ready, so the recursion
+	// never bottoms out: the main thread stays inside this chain and never yields back
+	// to the wx event loop, starving every other event -- including the LibSocketLost a
+	// half-closed EC peer needs to be torn down. With the peer in kernel CLOSE-WAIT,
+	// writes silently succeed against the dead buffer and amuled spins indefinitely.
 	//
-	// Cap the dispatch depth so the chain returns to the event loop every
-	// MAX_DEPTH packets. Pending asio completions get processed in between; on a
-	// healthy peer the loop resumes when OnSend re-enters via the next one.
+	// Cap the dispatch depth so the chain returns to the event loop every MAX_DEPTH
+	// packets. Pending asio completions get processed in between; on a healthy peer the
+	// loop resumes when OnSend re-enters via the next one.
 	static const int MAX_DEPTH = 8;
 	if (m_notification_dispatch_depth >= MAX_DEPTH) {
 		return;
 	}
 
-	// ECNotifier::GetNextPacket returns a fresh new CECPacket and the caller owns
-	// it; SendPacket only serialises it into the per-socket output queue and
-	// never deletes. Hand the raw pointer to a smart pointer so the packet and
-	// its CECTag tree are freed at scope exit -- pre-fix this path was the
-	// dominant retained-bytes leak on a long-running amuled with peers attached.
+	// ECNotifier::GetNextPacket returns a fresh CECPacket and the caller owns it;
+	// SendPacket only serialises it into the per-socket output queue and never deletes.
+	// Hand the raw pointer to a smart pointer so the packet and its CECTag tree are freed
+	// at scope exit -- pre-fix this was the dominant retained-bytes leak on a
+	// long-running amuled with peers attached.
 	CSmartPtr<CECPacket> packet(m_ec_notifier->GetNextPacket(this));
 	if (!packet) {
 		return;
@@ -894,12 +874,11 @@ void CECServerSocket::WriteDoneAndQueueEmpty()
 //-------------------- ExternalConn --------------------
 
 ExternalConn::ExternalConn(amuleIPV4Address addr, wxString *msg)
-// Defaults are ten failures a minute, then five minutes out -- deliberately
-// looser than amuleapi's five, because an EC client retries on its own:
-// amulegui reconnects on a dropped link, so a saved password that has gone
-// stale burns attempts with no human in the loop. Ten still caps a guesser at
-// nine attempts a minute. Read once at construction, so changing them takes a
-// restart -- the same as every other setting on this listener.
+// Defaults are ten failures a minute, then five minutes out -- deliberately looser
+// than amuleapi's five, because an EC client retries on its own: amulegui reconnects
+// on a dropped link, so a saved password that has gone stale burns attempts with no
+// human in the loop. Ten still caps a guesser at nine attempts a minute. Read once at
+// construction, so changing them takes a restart.
 : m_authRateLimiter(CRateLimiter::Config{ thePrefs::ECAuthFailureWindowSeconds(),
 	  thePrefs::ECAuthFailureThreshold(),
 	  thePrefs::ECAuthLockoutSeconds() })
@@ -987,17 +966,15 @@ CExternalConnListener::CExternalConnListener(const amuleIPV4Address &adr, int fl
 void CExternalConnListener::OnAccept()
 {
 	CECServerSocket *sock = new CECServerSocket(m_conn->m_ec_notifier);
-	// Accept new connection if there is one in the pending
-	// connections queue, else exit. We use Accept(FALSE) for
-	// non-blocking accept (although if we got here, there
-	// should ALWAYS be a pending connection).
+	// Accept a new connection if one is pending, else exit. Accept(FALSE) is the
+	// non-blocking form, although if we got here there should ALWAYS be one pending.
 	if (AcceptWith(*sock, false)) {
 		// Apply the EC socket options on the freshly-accepted server-side socket,
-		// symmetrically with what the client just enabled on its end: keepalive,
-		// so amuled detects a half-open EC client instead of sitting on the dead
-		// connection for the ~2h TCP retransmit timeout while holding the
-		// CECServerSocket and its notifier reference; and TCP_NODELAY, which only
-		// removes the ~40 ms Nagle stall if it is set on this end too.
+		// symmetrically with what the client just enabled: keepalive, so amuled detects
+		// a half-open EC client instead of sitting on the dead connection for the ~2h TCP
+		// retransmit timeout while holding the CECServerSocket and its notifier
+		// reference; and TCP_NODELAY, which only removes the ~40 ms Nagle stall if it is
+		// set on this end too.
 		sock->ApplyEcSocketOptions();
 		AddLogLineN(_("New external connection accepted"));
 	} else {
@@ -1006,9 +983,7 @@ void CExternalConnListener::OnAccept()
 	}
 }
 
-//
 // Authentication
-//
 const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 {
 	CECPacket *response;
@@ -1068,20 +1043,18 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 				// half of the derivation salt. Keys are only derived once the password
 				// checks out, below.
 				NegotiateAEAD(request, response);
-				//
 				// So far ok, check capabilities of client
-				//
 				if (request->GetTagByName(EC_TAG_CAN_ZLIB)) {
 					m_my_flags |= EC_FLAG_ZLIB;
 				}
-				// Honour the client's prefer-no-ZLIB hint: when set, the client believes
-				// transit between us is fast (loopback / LAN) and per-packet deflate is
-				// wasted CPU. The decision lives on the client because only the client
-				// knows the IP it dialed; the server's peer-IP view would misclassify a
+				// Honour the client's prefer-no-ZLIB hint: the client believes transit
+				// between us is fast (loopback / LAN) and per-packet deflate is wasted
+				// CPU. The decision lives on the client because only the client knows
+				// the IP it dialed; the server's peer-IP view would misclassify a
 				// WireGuard tunnel endpoint as "local". CECSocket::WritePacket honours
-				// the resulting `m_isLocalPeer` flag per packet, falling back to ZLIB
-				// above kLocalPeerZlibBypassMax so large responses stay inside the
-				// receiver's 256 MB ReadHeader gate.
+				// `m_isLocalPeer` per packet, falling back to ZLIB above
+				// kLocalPeerZlibBypassMax so large responses stay inside the receiver's
+				// 256 MB ReadHeader gate.
 				if (request->GetTagByName(EC_TAG_PREFER_NO_ZLIB)) {
 					SetLocalPeer(true);
 					AddDebugLogLineN(logEC,
@@ -1093,44 +1066,44 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 					m_my_flags |= EC_FLAG_UTF8_NUMBERS;
 				}
 				if (request->GetTagByName(EC_TAG_CAN_LARGE_TAG_COUNT)) {
-					// Client can decode the sentinel-extended children-count format in
-					// CECTag::WriteChildren. Only new clients send this tag; old ones
-					// omit it and the wire format stays capped at uint16.
+					// Client can decode the sentinel-extended children-count format
+					// in CECTag::WriteChildren. Old clients omit this tag and the
+					// wire format stays capped at uint16.
 					m_my_flags |= EC_FLAG_LARGE_TAG_COUNT;
 				}
 				if (request->GetTagByName(EC_TAG_CAN_PARTIAL_UPDATE)) {
 					// Client understands the partial-update protocol:
 					// Get_EC_Response_GetUpdate may omit unchanged files and emit
 					// explicit EC_TAG_FILE_REMOVED markers instead of relying on
-					// absence-implies-deletion. Old clients omit this tag and keep the
-					// backward-compat alive-marker path.
+					// absence. Old clients omit this tag and keep the
+					// alive-marker path.
 					m_partialUpdateActive = true;
 				}
 				if (request->GetTagByName(EC_TAG_CAN_PARTIAL_SEARCH)) {
-					// Client applies the same rule to search results. Old
-					// clients omit this tag and the union keeps re-sending
-					// every result of every open search on every poll.
+					// Client applies the same rule to search results. Old clients
+					// omit this tag and the union keeps re-sending every result of
+					// every open search on every poll.
 					m_partialSearchActive = true;
 				}
 				if (request->GetTagByName(EC_TAG_CAN_MULTI_SEARCH)) {
 					// Client understands the multi-search protocol: EC searches are
-					// addressed by a daemon-allocated EC_TAG_SEARCH_ID instead of the
-					// single 0xffffffff sentinel, so several can run at once. Old clients
-					// omit this tag and keep the legacy sentinel path.
+					// addressed by a daemon-allocated EC_TAG_SEARCH_ID instead of
+					// the single 0xffffffff sentinel, so several can run at once.
+					// Old clients omit this tag and keep the sentinel path.
 					m_multiSearchActive = true;
 				}
 				if (request->GetTagByName(EC_TAG_CAN_SEARCH_PROGRESS_UNION)) {
 					// Client reads an id-less EC_OP_SEARCH_PROGRESS as "every open
-					// search", each reported as a child tag, so it polls once instead of
-					// once per search. Only honoured together with multi-search: for a
-					// single-search client an id-less request still means "the current
-					// search", which amulecmd's `search progress` expects.
+					// search", each reported as a child tag, so it polls once
+					// instead of once per search. Only honoured with multi-search:
+					// for a single-search client an id-less request still means
+					// "the current search", which amulecmd expects.
 					m_searchProgressUnionActive = true;
 				}
 				if (request->GetTagByName(EC_TAG_CAN_CHAT_SESSIONS)) {
 					// Client speaks the chat session ops. Its own tag, NOT
-					// EC_TAG_CAN_CHAT: that one is echoed by daemons which predate these
-					// opcodes, so a client gating on it would send
+					// EC_TAG_CAN_CHAT: that one is echoed by daemons which predate
+					// these opcodes, so a client gating on it would send
 					// EC_OP_GET_CHAT_SESSIONS to a core that asserts on it.
 					m_chatActive = true;
 				}
@@ -1158,16 +1131,16 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 		const CECTag *passwd = request->GetTagByName(EC_TAG_PASSWD_HASH);
 		CMD4Hash passh;
 
-		// Brute-force guard, ahead of every credential path. Keyed on the address
-		// alone rather than address+port, or each reconnect would look like a new
-		// client and reset the count -- which is what a guesser does anyway.
+		// Brute-force guard, ahead of every credential path. Keyed on the address alone
+		// rather than address+port, or each reconnect would look like a new client and
+		// reset the count -- which is what a guesser does anyway.
 		const std::string peerIp(wxString(GetIP()).ToStdString());
 		const CRateLimiter::Decision throttle =
 			theApp->ECServerHandler->AuthRateLimiter().Check(peerIp);
 		if (throttle.locked_out) {
-			// Say so explicitly instead of reusing "wrong password": a user who has
-			// just fixed their password deserves to know why it still fails, and it
-			// tells an attacker nothing they cannot infer from being refused.
+			// Say so explicitly instead of reusing "wrong password": a user who has just
+			// fixed their password deserves to know why it still fails, and it tells an
+			// attacker nothing they cannot infer from being refused.
 			const wxString err = CFormat(wxGetTranslation(wxTRANSLATE(
 						     "Too many failed connection attempts; try again "
 						     "in %d seconds."))) %
@@ -1188,46 +1161,45 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 			passh.Decode(MD5Sum(thePrefs::ECPassword().Lower() + saltHash).GetHash());
 
 			// Second accepted credential: the ephemeral token the core issued to the
-			// amuleapi it spawned, so that daemon never needs the
-			// password-equivalent value out of amule.conf. Empty when no token was
-			// issued, and an empty token must never authenticate anyone -- so the
-			// emptiness is tested here rather than relying on a digest of "".
+			// amuleapi it spawned, so that daemon never needs the password-equivalent value
+			// out of amule.conf. Empty when no token was issued, and an empty token must
+			// never authenticate anyone -- so the emptiness is tested here rather than
+			// relying on a digest of "".
 			const wxString &ecToken = theApp->GetEcToken();
 			CMD4Hash tokenh;
 			const bool tokenUsable = !ecToken.IsEmpty() &&
 						 tokenh.Decode(MD5Sum(ecToken.Lower() + saltHash).GetHash());
 
-			// Compare against both without short-circuiting. The naive
-			// `if (pw) ... else if (token) ...` leaks which credential matched
-			// through timing, and -- more usefully to an attacker -- whether a
-			// token is live at all. Both branches are evaluated and OR'd, so
-			// acceptance is one decision. The per-comparison timing is not itself
-			// a concern: the digests are salted per connection.
+			// Compare against both without short-circuiting. The naive `if (pw) ... else if
+			// (token) ...` leaks which credential matched through timing, and -- more
+			// usefully to an attacker -- whether a token is live at all. Both branches are
+			// evaluated and OR'd, so acceptance is one decision. The per-comparison timing
+			// is not itself a concern: the digests are salted per connection.
 			const bool matchedPassword = passwd && passwd->GetMD4Data() == passh;
 			const bool matchedToken = passwd && tokenUsable && passwd->GetMD4Data() == tokenh;
 			const bool credentialOk = matchedPassword || matchedToken;
-			// Which of the two it was. The client keys its confirmation from
-			// the credential it presented, so a token-authenticated peer has
-			// to be checked against the token and not the configured password.
+			// Which of the two it was. The client keys its confirmation from the credential
+			// it presented, so a token-authenticated peer has to be checked against the
+			// token and not the configured password.
 			const wxString authSecret = matchedPassword ? thePrefs::ECPassword() : ecToken;
 
-			// Whether that same client also ran the key exchange we completed. The
-			// password check cannot tell us: a relay forwards the challenge response
-			// untouched and passes it, but it has to run its own exchange with each
-			// of us, so its two transcripts differ and this tag cannot be right on
-			// both legs. Vacuously true on a session with no encryption.
+			// Whether that same client also ran the key exchange we completed. The password
+			// check cannot tell us: a relay forwards the challenge response untouched and
+			// passes it, but it has to run its own exchange with each of us, so its two
+			// transcripts differ and this tag cannot be right on both legs. Vacuously true
+			// on a session with no encryption.
 			const bool confirmOk = !credentialOk || m_aeadCipher == ECCrypt::Cipher_None ||
 					       VerifyClientConfirm(request, authSecret);
 
-			// Operator policy: refuse anything that did not negotiate encryption.
-			// Checked ahead of the password so the client gets the real reason
-			// rather than a misleading "wrong password". Deliberately flat rather
-			// than keyed on the peer address: only the client knows what it dialed.
+			// Operator policy: refuse anything that did not negotiate encryption. Checked
+			// ahead of the password so the client gets the real reason rather than a
+			// misleading "wrong password". Deliberately flat rather than keyed on the peer
+			// address: only the client knows what it dialed.
 			if (m_aeadOfferMalformed) {
-				// The client offered encryption but sent no usable public key.
-				// Encryption has never shipped, so a peer that offers it at all is new
-				// enough to send a key: a keyless offer is malformed, or an on-path
-				// attacker stripping the key, not an older client.
+				// The client offered encryption but sent no usable public key. Encryption
+				// has never shipped, so a peer that offers it at all is new enough to send
+				// a key: a keyless offer is malformed, or an on-path attacker stripping the
+				// key, not an older client.
 				const wxString err = wxTRANSLATE(
 					"Authentication failed: the client offered an encrypted External "
 					"Connection but sent no usable key.");
@@ -1242,9 +1214,9 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 				response = new CECPacket(EC_OP_AUTH_FAIL);
 				response->AddTag(CECTag(EC_TAG_STRING, err));
 			} else if (credentialOk && !confirmOk) {
-				// Right credential, wrong handshake. Refused rather than continued in
-				// clear: a client that negotiated encryption and cannot confirm it is
-				// either being relayed or is not the client it claims to be.
+				// Right credential, wrong handshake. Refused rather than continued in clear:
+				// a client that negotiated encryption and cannot confirm it is either being
+				// relayed or is not the client it claims to be.
 				ECCrypt::SecureWipe(m_aeadShared);
 				const wxString err = wxTRANSLATE(
 					"Authentication failed: the client could not confirm the encrypted "
@@ -1253,65 +1225,63 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 				response = new CECPacket(EC_OP_AUTH_FAIL);
 				response->AddTag(CECTag(EC_TAG_STRING, err));
 			} else if (passwd && credentialOk) {
-				// One of the two accepted credentials matched, so both ends hold the
-				// same secret and the keys will match. Switch on now rather than after
-				// the reply: EC_OP_AUTH_OK is then itself sealed, which proves to the
-				// client that its peer really does know the secret.
+				// One of the two accepted credentials matched, so both ends hold the same
+				// secret and the keys will match. Switch on now rather than after the reply:
+				// EC_OP_AUTH_OK is then itself sealed, which proves to the client that its
+				// peer really does know the secret.
 				//
 				// Remember WHICH one for ActivateAEAD: the client keys its half from the
 				// credential it presented, so keying ours from the configured password
 				// regardless would break every token-authenticated session.
 				m_authSecret = authSecret;
-				// Clear the bucket: a legitimate user who mistyped a few
-				// times must not carry that streak into their next
-				// connection.
+				// Clear the bucket: a legitimate user who mistyped a few times must not carry
+				// that streak into their next connection.
 				theApp->ECServerHandler->AuthRateLimiter().NoteSuccess(peerIp);
-				// Computed before ActivateAEAD wipes what it derives from -- the tag
-				// depends only on the transcript, but keeping the order explicit avoids
-				// that becoming a trap later.
+				// Computed before ActivateAEAD wipes what it derives from -- the tag depends
+				// only on the transcript, but keeping the order explicit avoids that becoming
+				// a trap later.
 				const std::vector<uint8_t> serverConfirm = ServerConfirm(authSecret);
 				ActivateAEAD();
 				response = new CECPacket(EC_OP_AUTH_OK);
-				// Short form rather than bare VERSION: on a development build VERSION is
-				// the literal "GIT", so every snapshot would identify itself
-				// identically. No change on a tagged release, where GITDATE is undefined.
+				// Short form rather than bare VERSION: on a development build VERSION is the
+				// literal "GIT", so every snapshot would identify itself identically. No
+				// change on a tagged release, where GITDATE is undefined.
 				response->AddTag(CECTag(EC_TAG_SERVER_VERSION, GetShortMuleVersion()));
-				// Our half of the proof. Travels inside the now-sealed
-				// AUTH_OK, so the client learns both that we hold the
-				// credential and that we hold the key, from one packet.
+				// Our half of the proof. Travels inside the now-sealed AUTH_OK, so the client
+				// learns both that we hold the credential and that we hold the key, from one
+				// packet.
 				response->AddTag(CECTag(EC_TAG_AEAD_SERVER_CONFIRM,
 					serverConfirm.size(),
 					serverConfirm.data()));
 				// Echo the negotiated large-tag-count capability so the client mirrors
-				// EC_FLAG_LARGE_TAG_COUNT into its own m_my_flags. Without the echo it
-				// would never set the flag in its outgoing per-packet headers.
+				// EC_FLAG_LARGE_TAG_COUNT into its own m_my_flags. Without the echo it would
+				// never set the flag in its outgoing per-packet headers.
 				if (m_my_flags & EC_FLAG_LARGE_TAG_COUNT) {
 					response->AddTag(CECEmptyTag(EC_TAG_CAN_LARGE_TAG_COUNT));
 				}
-				// Identifies this daemon *process*. ECIDs come from a counter that
-				// restarts with the process, so after a daemon restart the same numbers
-				// are handed out again in whatever order files load this time -- and a
-				// client that kept its objects across the reconnect would pair them up
-				// by number and quietly describe one file with another's data. A
-				// client that sees a different value here starts over. Old clients
-				// ignore the tag; new clients against an old daemon start over every
-				// reconnect, which is correct if wasteful.
+				// Identifies this daemon *process*. ECIDs come from a counter that restarts
+				// with the process, so after a daemon restart the same numbers are handed out
+				// again in whatever order files load this time -- and a client that kept its
+				// objects across the reconnect would pair them up by number and quietly
+				// describe one file with another's data. A client that sees a different value
+				// here starts over. Old clients ignore the tag; new clients against an old
+				// daemon start over every reconnect, which is correct if wasteful.
 				response->AddTag(CECTag(EC_TAG_SESSION_ID, GetEcSessionId()));
 				if (m_partialUpdateActive) {
-					// Confirm partial-update mode so the client switches
-					// off its bulk "missing == deleted" fallback and
-					// expects explicit `EC_TAG_FILE_REMOVED` markers.
+					// Confirm partial-update mode so the client switches off its bulk
+					// "missing == deleted" fallback and expects explicit
+					// `EC_TAG_FILE_REMOVED` markers.
 					response->AddTag(CECEmptyTag(EC_TAG_CAN_PARTIAL_UPDATE));
 				}
 				if (m_partialSearchActive) {
 					// Confirm the search half too. The client must not stop deleting on
-					// absence until it knows the daemon actually skips unchanged results
-					// -- against an older daemon absence still means the result is gone.
+					// absence until it knows the daemon actually skips unchanged results:
+					// against an older daemon absence still means the result is gone.
 					response->AddTag(CECEmptyTag(EC_TAG_CAN_PARTIAL_SEARCH));
 				}
-				// Unconditional: this daemon answers EC_OP_GET_CLIENT_HISTORY, and a
-				// client that does not see the echo must not send the request -- against
-				// a daemon that predates it the unknown opcode asserts.
+				// Unconditional: this daemon answers EC_OP_GET_CLIENT_HISTORY, and a client
+				// that does not see the echo must not send the request -- against a daemon
+				// that predates it the unknown opcode asserts.
 				response->AddTag(CECEmptyTag(EC_TAG_CAN_CLIENT_HISTORY));
 				if (m_chatActive) {
 					// Confirm the chat session ops so the client starts
@@ -1319,28 +1289,28 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 					response->AddTag(CECEmptyTag(EC_TAG_CAN_CHAT_SESSIONS));
 				}
 				if (m_multiSearchActive) {
-					// Confirm multi-search mode so the client addresses
-					// searches by `EC_TAG_SEARCH_ID` rather than the
-					// legacy single-search sentinel.
+					// Confirm multi-search mode so the client addresses searches by
+					// `EC_TAG_SEARCH_ID` rather than the legacy single-search
+					// sentinel.
 					response->AddTag(CECEmptyTag(EC_TAG_CAN_MULTI_SEARCH));
 					if (m_searchProgressUnionActive) {
 						// Confirm the union form of EC_OP_SEARCH_PROGRESS: the client
 						// then sends one id-less request per poll instead of one per
-						// open tab. Nested inside the multi-search echo on purpose --
+						// open tab. Nested inside the multi-search echo on purpose:
 						// the union addresses its children by search ID, which only
 						// exists in that mode.
 						response->AddTag(
 							CECEmptyTag(EC_TAG_CAN_SEARCH_PROGRESS_UNION));
 					}
 				}
-				// Confirm we serve EC_OP_GET/SET_SHARED_DIRS, so a remote GUI can present
-				// an editable shared-folders panel instead of one whose edits it could
-				// never deliver. Unconditional: the ops need no per-connection state.
+				// Confirm we serve EC_OP_GET/SET_SHARED_DIRS, so a remote GUI can present an
+				// editable shared-folders panel instead of one whose edits it could never
+				// deliver. Unconditional: the ops need no per-connection state.
 				response->AddTag(CECEmptyTag(EC_TAG_CAN_SHAREDDIRS_CONFIG));
-				// Confirm we serve EC_OP_SEARCH_LIST, so a remote GUI can enumerate
-				// searches it did not start itself. Unconditional, for the same reason.
-				// A client that gets no echo must not send the opcode at all -- it would
-				// land in ProcessRequest2's unknown-opcode branch and assert.
+				// Confirm we serve EC_OP_SEARCH_LIST, so a remote GUI can enumerate searches
+				// it did not start itself. Unconditional, for the same reason. A client that
+				// gets no echo must not send the opcode at all -- it would land in
+				// ProcessRequest2's unknown-opcode branch and assert.
 				response->AddTag(CECEmptyTag(EC_TAG_CAN_SEARCH_LIST));
 			} else {
 				wxString err;
@@ -1350,9 +1320,9 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 					err = wxTRANSLATE("Authentication failed: missing password.");
 				}
 
-				// Both branches are a failed credential attempt: a client that omits the
-				// hash entirely is guessing just as much as one that sends a wrong hash,
-				// and letting the omission go uncounted would be an unmetered path.
+				// Both branches are a failed credential attempt: a client that omits the hash
+				// entirely is guessing just as much as one that sends a wrong hash, and
+				// letting the omission go uncounted would be an unmetered path.
 				theApp->ECServerHandler->AuthRateLimiter().NoteFailure(peerIp);
 
 				response = new CECPacket(EC_OP_AUTH_FAIL);
@@ -1388,12 +1358,11 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 	return response;
 }
 
-// Make a Logger tag (if there are any logging messages) and add it to the
-// response. Max log lines packed into a single EC stats response, kept bounded
-// so a large first-sync backlog drains in a handful of polls without any one
-// poll hauling multiple MB: the log rides on the same response as the live
-// stats, and the client renders each poll's batch in one go. The wire format
-// imposes no such limit -- this is purely a per-poll responsiveness cap.
+// Make a Logger tag (if there are any logging messages) and add it to the response.
+// Max log lines packed into a single EC stats response, kept bounded so a large
+// first-sync backlog drains in a handful of polls without any one poll hauling
+// multiple MB: the log rides on the same response as the live stats, and the client
+// renders each poll's batch in one go. The wire format imposes no such limit.
 static const int EC_LOG_LINES_PER_MESSAGE = 5000;
 
 static void AddLoggerTag(CECPacket *response, CLoggerAccess &LoggerAccess)
@@ -1418,9 +1387,9 @@ static CECPacket *Get_EC_Response_StatRequest(const CECPacket *request, CLoggerA
 
 	switch (request->GetDetailLevel()) {
 	case EC_DETAIL_FULL:
-	// This is not an actual INC_UPDATE.
-	// amulegui only sets the detail level of the stats package to EC_DETAIL_INC_UPDATE
-	// so that the included conn state tag is created the way it is needed here.
+	// Not an actual INC_UPDATE: amulegui only sets the stats package to
+	// EC_DETAIL_INC_UPDATE so the included conn state tag is created the way it is
+	// needed here.
 	case EC_DETAIL_INC_UPDATE:
 		response->AddTag(CECTag(EC_TAG_STATS_UP_OVERHEAD, (uint32)theStats::GetUpOverheadRate()));
 		response->AddTag(CECTag(EC_TAG_STATS_DOWN_OVERHEAD, (uint32)theStats::GetDownOverheadRate()));
@@ -1431,17 +1400,17 @@ static CECPacket *Get_EC_Response_StatRequest(const CECPacket *request, CLoggerA
 		response->AddTag(
 			CECTag(EC_TAG_STATS_TOTAL_RECEIVED_BYTES, theStats::GetTotalReceivedBytes()));
 		response->AddTag(CECTag(EC_TAG_STATS_SHARED_FILE_COUNT, theStats::GetSharedFileCount()));
-		// Disk space for the Downloads and Shared Files panels. Only the core can
-		// answer: the GUI may be on another machine entirely, and even where it
-		// mounts the same share it can see a different size or quota. Both getters
-		// are cache-backed, so a stats poll never costs a filesystem round trip.
+		// Disk space for the Downloads and Shared Files panels. Only the core can answer:
+		// the GUI may be on another machine entirely, and even where it mounts the same
+		// share it can see a different size or quota. Both getters are cache-backed, so a
+		// stats poll never costs a filesystem round trip.
 		response->AddTag(CECTag(EC_TAG_STATS_TEMP_FREE_SPACE, (uint64)theStats::GetTempFreeSpace()));
 		response->AddTag(
 			CECTag(EC_TAG_STATS_INCOMING_FREE_SPACE, (uint64)theStats::GetIncomingFreeSpace()));
 #ifdef ENABLE_VERSION_CHECK
-		// Version-check result, relayed for amuleapi's /version "update"
-		// object. Present only once a check has completed. OUTDATED is an
-		// empty marker tag, present only when a newer release exists.
+		// Version-check result, relayed for amuleapi's /version "update" object. Present
+		// only once a check has completed. OUTDATED is an empty marker tag, present only
+		// when a newer release exists.
 		if (theApp->IsVersionCheckDone()) {
 			response->AddTag(
 				CECTag(EC_TAG_GENERAL_VERSION_CHECK_LATEST, theApp->GetVersionCheckLatest()));
@@ -1512,11 +1481,11 @@ static CECPacket *Get_EC_Response_StatRequest(const CECPacket *request, CLoggerA
 	return response;
 }
 
-// Serialise the daemon's shared-directory configuration: one EC_TAG_SHAREDDIR
-// per configured root, with an EC_TAG_SHAREDDIR_RECURSIVE subtag on the roots
-// whose entire subtree is shared. Only the two *intent* lists travel --
-// shareddir.dat is the runtime union the daemon regenerates itself, so sending
-// it would invite a remote client to edit a derived artefact.
+// Serialise the daemon's shared-directory configuration: one EC_TAG_SHAREDDIR per
+// configured root, with an EC_TAG_SHAREDDIR_RECURSIVE subtag on the roots whose
+// entire subtree is shared. Only the two *intent* lists travel -- shareddir.dat is
+// the runtime union the daemon regenerates itself, so sending it would invite a
+// remote client to edit a derived artefact.
 static CECPacket *Get_EC_Response_GetSharedDirs()
 {
 	CECPacket *response = new CECPacket(EC_OP_GET_SHARED_DIRS);
@@ -1533,12 +1502,12 @@ static CECPacket *Get_EC_Response_GetSharedDirs()
 	return response;
 }
 
-// Replace the shared-directory configuration with the client's list, persist
-// both intent files and rescan. Paths are validated here because a remote GUI
-// cannot browse this host's filesystem -- a typo would otherwise become a
-// silently dead share. Rejected paths are reported back individually with a
-// numeric reason the client translates, so the daemon's locale never leaks;
-// every path that did validate is still applied.
+// Replace the shared-directory configuration with the client's list, persist both
+// intent files and rescan. Paths are validated here because a remote GUI cannot
+// browse this host's filesystem -- a typo would otherwise become a silently dead
+// share. Rejected paths are reported back individually with a numeric reason the
+// client translates, so the daemon's locale never leaks; every path that did
+// validate is still applied.
 namespace
 {
 
@@ -1551,23 +1520,23 @@ uint32 ChatCursorFrom(const CECPacket *request)
 }
 
 // One EC_TAG_CHAT_SESSION container: identity, plus every message newer than
-// `cursor`. A session with nothing new still encodes, with no message children
-// -- that is how a late-connecting client learns it exists.
+// `cursor`. A session with nothing new still encodes, with no message children --
+// that is how a late-connecting client learns it exists.
 CECTag EncodeChatSession(const CChatSessionStore::Session &session, uint32 cursor)
 {
 	CECTag tag(EC_TAG_CHAT_SESSION, session.gui_id);
 	tag.AddTag(CECTag(EC_TAG_CHAT_PEER_NAME, session.name));
 	tag.AddTag(CECTag(EC_TAG_CHAT_MSG_ID, session.LastMsgId()));
 
-	// Link the live peer and the friend entry when they exist, so a client
-	// can join against its own /clients and /friends views without a lookup
-	// of its own. Both are omitted when absent rather than sent as 0.
+	// Link the live peer and the friend entry when they exist, so a client can join
+	// against its own /clients and /friends views without a lookup of its own. Both are
+	// omitted when absent rather than sent as 0.
 	if (const CUpDownClient *client = theApp->clientlist->FindClientByIP(session.ip, session.port)) {
 		tag.AddTag(CECTag(EC_TAG_CLIENT, client->ECID()));
-		// Sent whenever the client is, so "we are talking to a peer that is
-		// actually reachable" is answerable without inferring it from the ECID
-		// being present -- which is true from the first contact ATTEMPT, so a
-		// chat opened against an unroutable address read as online.
+		// Sent whenever the client is, so "we are talking to a peer that is actually
+		// reachable" is answerable without inferring it from the ECID being present --
+		// which is true from the first contact ATTEMPT, so a chat opened against an
+		// unroutable address read as online.
 		tag.AddTag(CECTag(EC_TAG_CLIENT_CONNECTED, client->IsConnected()));
 	}
 	if (const CFriend *f = theApp->friendlist->FindFriend(CMD4Hash(), session.ip, session.port)) {
@@ -1587,10 +1556,10 @@ CECTag EncodeChatSession(const CChatSessionStore::Session &session, uint32 curso
 	return tag;
 }
 
-// Resolve an EC_OP_CHAT_SEND target to a GUI_ID. Three addressing modes so a
-// caller can reply without a lookup (CHAT_CLIENT_ID), address a live peer it
-// already has (CLIENT), or reach a friend who is currently OFFLINE (FRIEND) --
-// the last resolves through the friend's stored ip:port.
+// Resolve an EC_OP_CHAT_SEND target to a GUI_ID. Three addressing modes so a caller
+// can reply without a lookup (CHAT_CLIENT_ID), address a live peer it already has
+// (CLIENT), or reach a friend who is currently OFFLINE (FRIEND) -- the last resolves
+// through the friend's stored ip:port.
 bool ResolveChatTarget(const CECPacket *request, uint64 &out_gui_id)
 {
 	if (const CECTag *tag = request->GetTagByName(EC_TAG_CHAT_CLIENT_ID)) {
@@ -1654,19 +1623,19 @@ static CECPacket *Get_EC_Response_SetSharedDirs(const CECPacket *request)
 
 	theApp->glob_prefs->shareddir_explicit_list = explicitDirs;
 	theApp->glob_prefs->shareddir_recursive_list = recursiveDirs;
-	// The union (shareddir.dat) has to be refreshed here too, not just the two
-	// intent lists. ReloadSharedFolders reconciles against the union on disk and
-	// drops any explicit root missing from it -- that is how it honours external
-	// edits -- so a stale union would make it trim the roots we just added.
+	// The union (shareddir.dat) has to be refreshed here too, not just the two intent
+	// lists. ReloadSharedFolders reconciles against the union on disk and drops any
+	// explicit root missing from it -- that is how it honours external edits -- so a
+	// stale union would make it trim the roots we just added.
 	CPreferences::PathList unionDirs = explicitDirs;
 	unionDirs.insert(unionDirs.end(), recursiveDirs.begin(), recursiveDirs.end());
 	theApp->glob_prefs->shareddir_list = unionDirs;
 	// Persist before reloading: FindSharedFiles starts by re-reading the
 	// intent files from disk, so the in-memory lists alone wouldn't stick.
 	theApp->glob_prefs->SaveSharedFolders();
-	// The lists above are written and persisted synchronously, so the reply
-	// still means "directories accepted and saved"; only the rescan is
-	// deferred to the next Process() tick.
+	// The lists above are written and persisted synchronously, so the reply still means
+	// "directories accepted and saved"; only the rescan is deferred to the next
+	// Process() tick.
 	theApp->sharedfiles->RequestReload();
 
 	return response;
@@ -1692,16 +1661,16 @@ static CECPacket *Get_EC_Response_GetSharedFiles(const CECPacket *request,
 
 	// Skip-unchanged + EC_TAG_FILE_REMOVED is wired only for the EC_DETAIL_UPDATE
 	// polling path that amuleweb uses, and only when the client opted into the
-	// partial-update protocol at auth. EC_DETAIL_FULL callers (amulecmd
-	// `show shared`, any one-shot query) still get every alive file in full.
+	// partial-update protocol at auth. EC_DETAIL_FULL callers (amulecmd `show shared`,
+	// any one-shot query) still get every alive file in full.
 	const bool skip_unchanged_path = partial_update_active && detail_level == EC_DETAIL_UPDATE;
 	const uint64 ec_snapshot = skip_unchanged_path ? CKnownFile::GetGlobalECGen() : 0;
 	const uint64 ec_threshold = io_lastEcGenSeen;
 
-	// Snapshot the shared-file list once. GetFileByIndex() does an O(N)
-	// std::advance over the underlying std::map and re-acquires list_mut on
-	// every call -- looping it N times is O(N^2) and pegs the main thread for
-	// tens of minutes on users with tens of thousands of shared files.
+	// Snapshot the shared-file list once. GetFileByIndex() does an O(N) std::advance
+	// over the underlying std::map and re-acquires list_mut on every call -- looping it
+	// N times is O(N^2) and pegs the main thread for tens of minutes on users with tens
+	// of thousands of shared files.
 	std::vector<CKnownFile *> snapshot;
 	theApp->sharedfiles->CopyFileList(snapshot);
 
@@ -1731,9 +1700,9 @@ static CECPacket *Get_EC_Response_GetSharedFiles(const CECPacket *request,
 		if (!enc) {
 			// UpdateEncoders reads the list generations unlocked, so a file added on a
 			// worker thread between that read and this handler's own snapshot can be
-			// present here with no encoder built for it yet. Skip it this cycle -- it
-			// stays in current_file_ids, so it is not reported as removed -- and the
-			// next poll's reconcile builds it. Dereferencing NULL would crash amuled.
+			// present here with no encoder built for it yet. Skip it this cycle -- it stays
+			// in current_file_ids, so it is not reported as removed -- and the next poll's
+			// reconcile builds it. Dereferencing NULL would crash amuled.
 			continue;
 		}
 		if (detail_level != EC_DETAIL_UPDATE) {
@@ -1765,12 +1734,11 @@ static CECPacket *Get_EC_Response_GetSharedFiles(const CECPacket *request,
 /**
  * The credit store, one tag per peer we have ever exchanged data with.
  *
- * Sent whole rather than incrementally: it changes only when a peer connects
- * or disconnects, the client asks for it once when the page is opened, and
- * every other EC bulk request works the same way. Metadata fields are emitted
- * only when the store actually has them -- a record written before aMule kept
- * that information carries a hash, totals and a last-seen date and nothing
- * else, and the client renders the gaps as blanks.
+ * Sent whole rather than incrementally: it changes only when a peer connects or
+ * disconnects, the client asks for it once when the page is opened, and every
+ * other EC bulk request works the same way. Metadata fields are emitted only
+ * when the store actually has them -- a record written before aMule kept that
+ * information carries a hash, totals and a last-seen date and nothing else.
  */
 static CECPacket *Get_EC_Response_ClientHistory()
 {
@@ -1799,20 +1767,19 @@ static CECPacket *Get_EC_Response_ClientHistory()
 			entry.AddTag(CECTag(EC_TAG_CLIENT_USER_PORT, meta.lastPort));
 			entry.AddTag(CECTag(EC_TAG_CLIENT_KAD_PORT, meta.kadPort));
 			entry.AddTag(CECTag(EC_TAG_CLIENT_SOFTWARE, meta.clientSoft));
-			// The same per-software rendering the live path uses. This used to be a
-			// generic major.minor.update built here, on the reasoning that only
-			// lPhant and eMule+ have a bespoke format -- which overlooked plain
-			// eMule, whose update component is a letter, so every eMule in the
-			// history read as v0.70.1 rather than v0.70b.
+			// The same per-software rendering the live path uses. This used to be a generic
+			// major.minor.update built here, on the reasoning that only lPhant and eMule+
+			// have a bespoke format -- which overlooked plain eMule, whose update component
+			// is a letter, so every eMule in the history read as v0.70.1 rather than v0.70b.
 			entry.AddTag(CECTag(EC_TAG_CLIENT_SOFT_VER_STR,
 				FormatPackedClientVersion(meta.clientSoft, meta.version)));
 			entry.AddTag(CECTag(EC_TAG_CLIENT_FROM, meta.sourceFrom));
 			entry.AddTag(CECTag(EC_TAG_CLIENT_OBFUSCATION_STATUS, meta.obfuscation));
 #ifdef ENABLE_IP2COUNTRY
 			// Resolved here for the same reason live peers are: amulegui has no GeoIP
-			// database of its own, so a country it is not told is a country it cannot
-			// show. Emitted even when empty, so tag-present means "the daemon looked"
-			// and tag-absent means "the daemon has no GeoIP".
+			// database of its own, so a country it is not told is a country it cannot show.
+			// Emitted even when empty, so tag-present means "the daemon looked" and
+			// tag-absent means "the daemon has no GeoIP".
 			if (theApp->GetIP2Country() && theApp->GetIP2Country()->IsEnabled()) {
 				entry.AddTag(CECTag(EC_TAG_CLIENT_COUNTRY,
 					theApp->GetIP2Country()->GetCountryCode(meta.lastIP)));
@@ -1833,34 +1800,31 @@ static CECPacket *Get_EC_Response_GetUpdate(CFileEncoderMap &encoders,
 	CECPacket *response = new CECPacket(EC_OP_SHARED_FILES);
 
 	// Snapshot the global EC generation now. Any file whose `m_ecGen` exceeds the
-	// caller's `m_lastEcGenSeen` has been touched by a MarkECChanged() hook
-	// since the last response for this client and is sent through the encoder.
-	// Reading the snapshot before the iteration means files that change mid-loop
-	// are picked up on the next request.
+	// caller's `m_lastEcGenSeen` has been touched by a MarkECChanged() hook since the
+	// last response for this client and is sent through the encoder. Reading the
+	// snapshot before the iteration means files that change mid-loop are picked up on
+	// the next request.
 	const uint64 ec_snapshot = CKnownFile::GetGlobalECGen();
 	const uint64 ec_threshold = io_lastEcGenSeen;
 
-	// Freshly-created encoders this cycle. Every entry is an ECID whose prior
-	// encoder was either destroyed or never existed, so the peer's mirrored
-	// state for it is empty and any INC_UPDATE the ctor would suppress against a
-	// cached value produces a hash-less tag the client rejects. Drop the cache
-	// so the file re-appears in full detail on this response; the encoder's own
-	// sent-with-detail flag starts at zero by construction.
+	// Freshly-created encoders this cycle. Every entry is an ECID whose prior encoder
+	// was either destroyed or never existed, so the peer's mirrored state for it is
+	// empty and any INC_UPDATE the ctor would suppress against a cached value produces
+	// a hash-less tag the client rejects. Drop the cache so the file re-appears in full
+	// detail on this response; the encoder's sent-with-detail flag starts at zero.
 	std::set<uint32> freshEcids;
 	encoders.UpdateEncoders(&freshEcids);
 	for (uint32 ecid : freshEcids) {
 		tagmap.EraseValueMap(ecid);
 	}
 
-	// The IDs of all files currently alive on the server, ascending -- the
-	// encoder map is keyed by ECID, so iterating it below appends them in order.
-	// Used by the partial-update path to diff against the previous cycle and
-	// synthesize EC_TAG_FILE_REMOVED markers; a legacy client infers removal
-	// from absence instead, so for one of those this is never read.
+	// The IDs of all files currently alive on the server, ascending -- the encoder map
+	// is keyed by ECID, so iterating it below appends them in order. Used by the
+	// partial-update path to diff against the previous cycle and synthesize
+	// EC_TAG_FILE_REMOVED markers; a legacy client infers removal from absence instead.
 	//
-	// The ordering the merge needs is guaranteed by the container:
-	// CFileEncoderMap keeps its entries sorted by ECID and asserts that at the
-	// end of every reconcile, so it is checked where it is established.
+	// The ordering the merge needs is guaranteed by the container: CFileEncoderMap keeps
+	// its entries sorted by ECID and asserts that at the end of every reconcile.
 	std::vector<uint32> current_file_ids;
 	if (partial_update_active) {
 		current_file_ids.reserve(encoders.size());
@@ -1877,30 +1841,28 @@ static CECPacket *Get_EC_Response_GetUpdate(CFileEncoderMap &encoders,
 			// Nothing exported has changed since the client's last view of this file
 			// AND the client has previously received this ECID with full detail.
 			if (partial_update_active) {
-				// New protocol: skip the file entirely. The client only deletes when it
-				// sees an explicit EC_TAG_FILE_REMOVED, emitted below, so absence here
-				// is correctly read as "no change".
+				// New protocol: skip the file entirely. The client only deletes when
+				// it sees an explicit EC_TAG_FILE_REMOVED, emitted below, so absence
+				// here is correctly read as "no change".
 				continue;
 			}
-			// Legacy clients treat any file missing from the response as deleted,
-			// then re-add it on the next full-sweep cycle -- wedging the GUI on big
-			// libraries. Emit a 5-byte alive marker (EC_TAG_KNOWNFILE /
-			// EC_TAG_PARTFILE with the ECID and no children): the client's
-			// `if (tag->HasChildTags())` already treats a childless tag as a no-op
-			// update, but still records the file as present.
+			// Legacy clients treat any file missing from the response as deleted, then
+			// re-add it on the next full-sweep cycle -- wedging the GUI on big libraries.
+			// Emit a 5-byte alive marker (EC_TAG_KNOWNFILE / EC_TAG_PARTFILE with the ECID
+			// and no children): the client's `if (tag->HasChildTags())` already treats a
+			// childless tag as a no-op update, but still records the file as present.
 			const ec_tagname_t tagname =
 				it->second->IsPartFile_Encoder() ? EC_TAG_PARTFILE : EC_TAG_KNOWNFILE;
 			response->AddTag(CECTag(tagname, ecid));
 			continue;
 		}
-		// Fall-through: either the file changed since the client's last view, or
-		// the ECID is new to this client. In both cases the client needs the full
-		// payload -- an alive marker or a silent skip would produce a ghost entry
-		// whose metadata never reached the client.
+		// Fall-through: either the file changed since the client's last view, or the ECID
+		// is new to this client. In both cases the client needs the full payload -- an
+		// alive marker or a silent skip would produce a ghost entry whose metadata never
+		// reached the client.
 		CValueMap &valuemap = tagmap.GetValueMap(ecid);
-		// Completed cleared Partfiles are still stored as CPartfile,
-		// but encoded as KnownFile, so we have to check the encoder type
-		// instead of the file type.
+		// Completed cleared Partfiles are still stored as CPartfile but encoded as
+		// KnownFile, so check the encoder type rather than the file type.
 		if (it->second->IsPartFile_Encoder()) {
 			CEC_PartFile_Tag filetag(
 				static_cast<const CPartFile *>(cur_file), EC_DETAIL_INC_UPDATE, &valuemap);
@@ -1921,9 +1883,9 @@ static CECPacket *Get_EC_Response_GetUpdate(CFileEncoderMap &encoders,
 	}
 
 	if (partial_update_active) {
-		// Partial-update protocol: emit one EC_TAG_FILE_REMOVED per file that was
-		// in the previous response but is no longer alive on the server, replacing
-		// the legacy client's bulk "anything missing == deleted" inference.
+		// Partial-update protocol: emit one EC_TAG_FILE_REMOVED per file that was in the
+		// previous response but is no longer alive on the server, replacing the legacy
+		// client's bulk "anything missing == deleted" inference.
 		std::vector<uint32> removed;
 		ComputeRemovedIds(io_lastSentFileIds, current_file_ids, removed);
 		for (uint32 ecid : removed) {
@@ -1980,9 +1942,7 @@ static CECPacket *Get_EC_Response_GetClientQueue(const CECPacket *request, CObjT
 
 	EC_DETAIL_LEVEL detail_level = request->GetDetailLevel();
 
-	//
-	// request can contain list of queried items
-	// (not for incremental update of course)
+	// request can contain list of queried items (not for incremental update of course)
 	CTagSet<uint32, EC_TAG_CLIENT> queryitems(request);
 
 	const CClientRefList &clients = theApp->uploadqueue->GetUploadingList();
@@ -2088,9 +2048,9 @@ static CECPacket *Get_EC_Response_GetDownloadQueue(const CECPacket *request,
 	return response;
 }
 
-// Build a CEC_SharedFile_Tag for the per-file cache. The output is
-// self-contained -- the encoder is reset before each Encode call in FULL mode
-// -- so a local encoder suffices. Caller owns the returned tag.
+// Build a CEC_SharedFile_Tag for the per-file cache. The output is self-contained --
+// the encoder is reset before each Encode call in FULL mode -- so a local encoder
+// suffices. Caller owns the returned tag.
 static CECTag *BuildSharedFileCacheTag(const void *file_v)
 {
 	const CKnownFile *cur_file = static_cast<const CKnownFile *>(file_v);
@@ -2112,10 +2072,10 @@ static CECTag *BuildPartFileCacheTag(const void *file_v)
 	return filetag;
 }
 
-// Two daemon-wide caches. Each holds one pre-serialized blob per file in its
-// domain, freshness-stamped with the file's m_ecGen at build time. A request
-// rebuilds only entries whose file gen has advanced past the cached gen -- the
-// same per-file freshness primitive the INC_UPDATE path uses.
+// Two daemon-wide caches. Each holds one pre-serialized blob per file in its domain,
+// freshness-stamped with the file's m_ecGen at build time. A request rebuilds only
+// entries whose file gen has advanced past the cached gen -- the same per-file
+// freshness primitive the INC_UPDATE path uses.
 static CECFullResponseCache s_sharedFilesFullCache(BuildSharedFileCacheTag);
 static CECFullResponseCache s_downloadQueueFullCache(BuildPartFileCacheTag);
 
@@ -2149,13 +2109,12 @@ static CECPacket *Get_EC_Response_PartFile_Cmd(const CECPacket *request)
 			CoreNotify_PartFile_Swap_A4AF_Auto(pfile);
 			break;
 		case EC_OP_PARTFILE_SET_A4AF_AUTO:
-			// Set, rather than flip. The op above cannot express "make it true": a
-			// caller that cannot see the current value cannot ask for a particular
-			// one, and a repeated request undoes itself. That is fine for the GUI
-			// menu item driving it, and wrong for an HTTP API, where a library may
-			// retry without the caller knowing. SetA4AFAuto() only marks the file
-			// EC-changed when the value actually moves, so re-sending the value it
-			// already holds costs nothing.
+			// Set, rather than flip. The op above cannot express "make it true": a caller
+			// that cannot see the current value cannot ask for a particular one, and a
+			// repeated request undoes itself. That is fine for the GUI menu item driving it,
+			// and wrong for an HTTP API, where a library may retry without the caller
+			// knowing. SetA4AFAuto() only marks the file EC-changed when the value actually
+			// moves, so re-sending the value it already holds costs nothing.
 			pfile->SetA4AFAuto(hashtag.GetFirstTagSafe()->GetInt() != 0);
 			break;
 		case EC_OP_PARTFILE_SWAP_A4AF_OTHERS:
@@ -2286,15 +2245,15 @@ static CECPacket *Get_EC_Response_Server(const CECPacket *request)
 	return response;
 }
 
-// Allocate + register a browse ("View Files") search ID in the shared EC search
-// ring. Reuses the ed2k bottom-half allocator: a browse is just another
-// addressable result set, so it draws from the same disjoint id space and LRU
-// eviction as a normal search.
+// Allocate + register a browse ("View Files") search ID in the shared EC search ring.
+// Reuses the ed2k bottom-half allocator: a browse is just another addressable result
+// set, so it draws from the same disjoint id space and LRU eviction as a normal
+// search.
 //
-// The one invariant this file's kind reporting rests on: SearchType is cast
-// straight to uint8 for EC_TAG_SEARCH_LIFECYCLE_KIND, so its members have to
-// carry the EC_SEARCH_TYPE numbers -- stated where the compiler checks it,
-// because a comment saying so is what let a browse nearly be given 3.
+// The one invariant this file's kind reporting rests on: SearchType is cast straight
+// to uint8 for EC_TAG_SEARCH_LIFECYCLE_KIND, so its members have to carry the
+// EC_SEARCH_TYPE numbers -- stated where the compiler checks it, because a comment
+// saying so is what let a browse nearly be given 3.
 static_assert(static_cast<int>(LocalSearch) == EC_SEARCH_LOCAL,
 	"SearchType and EC_SEARCH_TYPE must agree: LocalSearch");
 static_assert(static_cast<int>(GlobalSearch) == EC_SEARCH_GLOBAL,
@@ -2305,23 +2264,23 @@ static_assert(static_cast<int>(BrowseSearch) == EC_SEARCH_BROWSE,
 	"SearchType and EC_SEARCH_TYPE must agree: BrowseSearch");
 
 static uint32 AllocateBrowseSearchId();
-// Undo an AllocateBrowseSearchId() whose browse never started. Drops the
-// results and the registry's own bookkeeping together: RemoveResults() alone
-// leaves the dead id as Current(), so id-less result polls target a freed
-// bucket, and it keeps one of the ring slots until it evicts a live search.
+// Undo an AllocateBrowseSearchId() whose browse never started. Drops the results and
+// the registry's own bookkeeping together: RemoveResults() alone leaves the dead id
+// as Current(), so id-less result polls target a freed bucket, and it keeps one of
+// the ring slots until it evicts a live search.
 static void ReleaseBrowseSearchId(uint32 id);
 
-// Reply to a browse request. Multi-search clients get the allocated search ID
-// (and the echoed optimistic ref) so amuleGUI can rekey its tab; legacy clients
-// get the historical empty acknowledgement.
+// Reply to a browse request. Multi-search clients get the allocated search ID (and
+// the echoed optimistic ref) so amuleGUI can rekey its tab; legacy clients get the
+// historical empty acknowledgement.
 static CECPacket *BuildBrowseReply(uint32 browseId, const CECTag *reftag)
 {
 	if (browseId == 0) {
 		return new CECPacket(EC_OP_NOOP);
 	}
-	// EC_OP_STRINGS with both SEARCH_ID + SEARCH_REF is exactly what the search
-	// START reply sends, so amuleGUI's CSearchListRem::HandlePacket rekeys the
-	// optimistic browse tab and starts polling its progress via the same path.
+	// EC_OP_STRINGS with both SEARCH_ID + SEARCH_REF is exactly what the search START
+	// reply sends, so amuleGUI's CSearchListRem::HandlePacket rekeys the optimistic
+	// browse tab and starts polling its progress via the same path.
 	CECPacket *reply = new CECPacket(EC_OP_STRINGS);
 	reply->AddTag(CECTag(EC_TAG_SEARCH_ID, browseId));
 	if (reftag) {
@@ -2363,10 +2322,10 @@ static CECPacket *Get_EC_Response_Friend(const CECPacket *request, bool multiSea
 			if (Friend) {
 				theApp->friendlist->RemoveFriend(Friend);
 			}
-			// Idempotent: the desired end state of REMOVE is "friend not in the
-			// list", already true if FindFriend returned null (transient sync skew
-			// between amulegui's local view and m_FriendList). Returning
-			// EC_OP_FAILED forces the GUI into a resend / hang loop on a stale ECID.
+			// Idempotent: the desired end state of REMOVE is "friend not in the list",
+			// already true if FindFriend returned null (transient sync skew between
+			// amulegui's local view and m_FriendList). Returning EC_OP_FAILED forces the GUI
+			// into a resend / hang loop on a stale ECID.
 			response = new CECPacket(EC_OP_NOOP);
 		}
 	} else if ((tag = request->GetTagByName(EC_TAG_FRIEND_FRIENDSLOT))) {
@@ -2379,21 +2338,21 @@ static CECPacket *Get_EC_Response_Friend(const CECPacket *request, bool multiSea
 			}
 		}
 	} else if ((tag = request->GetTagByName(EC_TAG_FRIEND_SHARED))) {
-		// Browse ("View Files") over EC. For a multi-search-capable client the
-		// daemon allocates a real, wire-safe search ID, registers it in the ring
-		// and pins it on the target client so ProcessSharedFileList files the
-		// returned listing under it; the reply carries that ID, echoing the GUI's
-		// optimistic EC_TAG_SEARCH_REF, so amuleGUI rekeys its browse tab. Legacy
-		// clients keep the old fire-and-forget EC_OP_NOOP.
+		// Browse ("View Files") over EC. For a multi-search-capable client the daemon
+		// allocates a real, wire-safe search ID, registers it in the ring and pins it on
+		// the target client so ProcessSharedFileList files the returned listing under it;
+		// the reply carries that ID, echoing the GUI's optimistic EC_TAG_SEARCH_REF, so
+		// amuleGUI rekeys its browse tab. Legacy clients keep the old fire-and-forget
+		// EC_OP_NOOP.
 		//
-		// The ID is allocated per branch, once the target peer is known and only
-		// if it has no browse running -- see browseInFlightId below.
+		// The ID is allocated per branch, once the target peer is known and only if it has
+		// no browse running -- see browseInFlightId below.
 		const CECTag *reftag = tag->GetTagByName(EC_TAG_SEARCH_REF);
-		// A browse failure needs the correlation token for the same reason a failed
-		// search start does: amuleGUI created its optimistic browse tab before
-		// sending and has no other way to tell which browse this verdict answers.
-		// "Client not found." is the ordinary case -- the peer gets reaped between
-		// the user seeing the row and clicking View Files.
+		// A browse failure needs the correlation token for the same reason a failed search
+		// start does: amuleGUI created its optimistic browse tab before sending and has no
+		// other way to tell which browse this verdict answers. "Client not found." is the
+		// ordinary case -- the peer gets reaped between the user seeing the row and
+		// clicking View Files.
 		auto browseFailure = [reftag](const wxString &msg) {
 			CECPacket *fail = new CECPacket(EC_OP_FAILED);
 			fail->AddTag(CECTag(EC_TAG_STRING, msg));
@@ -2403,21 +2362,19 @@ static CECPacket *Get_EC_Response_Friend(const CECPacket *request, bool multiSea
 			}
 			return fail;
 		};
-		// A browse of a peer that is already being browsed joins that browse
-		// instead of minting a second identity for it.
-		// CUpDownClient::RequestSharedFileList() declines to re-ask a peer that is
-		// still answering, so a freshly allocated ID would never be stamped with a
-		// lifecycle -- while PinBrowseSearchId has already repointed every later
-		// status write away from the first ID, leaving it BROWSE_IN_PROGRESS with
-		// nothing able to terminalize it. Returns 0 when the peer has no browse
-		// running, i.e. when the caller should allocate as usual.
+		// A browse of a peer that is already being browsed joins that browse instead of
+		// minting a second identity for it. CUpDownClient::RequestSharedFileList() declines
+		// to re-ask a peer that is still answering, so a freshly allocated ID would never
+		// be stamped with a lifecycle -- while PinBrowseSearchId has already repointed every
+		// later status write away from the first ID, leaving it BROWSE_IN_PROGRESS with
+		// nothing able to terminalize it. Returns 0 when the peer has no browse running.
 		auto browseInFlightId = [](const CUpDownClient *peer) -> uint32 {
 			return peer != nullptr ? theApp->browsemanager->SearchIdFor(peer) : 0;
 		};
-		// Same reply as a fresh browse, pointing at the browse that is really
-		// running: no allocation (the second ID would be stranded), no
-		// RegisterBrowseSearch (it would restamp m_searchStartTimes), no repoint,
-		// no re-request. A legacy client still gets its historical EC_OP_NOOP.
+		// Same reply as a fresh browse, pointing at the browse that is really running: no
+		// allocation (the second ID would be stranded), no RegisterBrowseSearch (it would
+		// restamp m_searchStartTimes), no repoint, no re-request. A legacy client still gets
+		// its historical EC_OP_NOOP.
 		auto joinBrowse = [&](uint32 inFlightId) {
 			return BuildBrowseReply(multiSearch ? inFlightId : 0, reftag);
 		};
@@ -2425,9 +2382,8 @@ static CECPacket *Get_EC_Response_Friend(const CECPacket *request, bool multiSea
 		if (subtag) {
 			CFriend *Friend = theApp->friendlist->FindFriend(subtag->GetInt());
 			if (Friend) {
-				// The linked client need not exist yet -- CFriendList::
-				// RequestSharedFileList creates it -- and without one there
-				// is by definition no browse to join.
+				// The linked client need not exist yet -- CFriendList::RequestSharedFileList
+				// creates it -- and without one there is by definition no browse to join.
 				const CClientRef &linked = Friend->GetLinkedClient();
 				const uint32 inFlight =
 					browseInFlightId(linked.IsLinked() ? linked.GetClient() : nullptr);
@@ -2435,10 +2391,9 @@ static CECPacket *Get_EC_Response_Friend(const CECPacket *request, bool multiSea
 					response = joinBrowse(inFlight);
 				} else {
 					const uint32 browseId = multiSearch ? AllocateBrowseSearchId() : 0;
-					// Describe the browse before the results start arriving,
-					// so the search list can report it as one (kind + peer
-					// name) rather than as a nameless search of the scalar
-					// kind.
+					// Describe the browse before the results start arriving, so
+					// the search list can report it as one (kind + peer name)
+					// rather than as a nameless search of the scalar kind.
 					if (browseId) {
 						theApp->searchlist->RegisterBrowseSearch(
 							browseId, Friend->GetName(), subtag->GetInt());
@@ -2449,17 +2404,17 @@ static CECPacket *Get_EC_Response_Friend(const CECPacket *request, bool multiSea
 						response = BuildBrowseReply(browseId, reftag);
 					} else {
 						// Nothing was asked under this id, so nothing will
-						// answer or time out under it: release it, or the tab
-						// it names sits pending for the whole session.
+						// answer or time out under it: release it, or the
+						// tab it names sits pending for the whole session.
 						if (browseId) {
 							ReleaseBrowseSearchId(browseId);
 						}
-						// The callee resolves its client by hash, which can find one
-						// the check above could not: that looked at the record's
-						// linkage, which is empty for a friend added by address. Ask
-						// again now that linking has happened, so a browse already
-						// running is joined rather than reported as a missing
-						// address.
+						// The callee resolves its client by hash, which can
+						// find one the check above could not: that looked at
+						// the record's linkage, which is empty for a friend
+						// added by address. Ask again now that linking has
+						// happened, so a browse already running is joined
+						// rather than reported as a missing address.
 						const CClientRef &nowLinked = Friend->GetLinkedClient();
 						const uint32 running = browseInFlightId(
 							nowLinked.IsLinked() ? nowLinked.GetClient()
@@ -2511,10 +2466,10 @@ static CECPacket *Get_EC_Response_Friend(const CECPacket *request, bool multiSea
 namespace
 {
 // Global multi-search registry, shared across all EC connections (EC runs
-// synchronously on the main thread, so no locking is needed). Bounds the
-// daemon's retained EC searches to kMaxEcSearches, evicting the
-// least-recently-touched -- which also stops a still-running Kad search via
-// RemoveResults. Legacy clients bypass this and keep the sentinel bucket.
+// synchronously on the main thread, so no locking is needed). Bounds the daemon's
+// retained EC searches to kMaxEcSearches, evicting the least-recently-touched --
+// which also stops a still-running Kad search via RemoveResults. Legacy clients
+// bypass this and keep the sentinel bucket.
 constexpr std::size_t kMaxEcSearches = 20;
 
 class CEcSearchRegistry
@@ -2546,10 +2501,10 @@ public:
 
 	bool Has(uint32 id) const { return std::find(m_lru.begin(), m_lru.end(), id) != m_lru.end(); }
 
-	// Drop id from the ring/current without touching core search state. For a
-	// search this registry tracks, call alongside the caller's own unconditional
-	// CSearchList::RemoveResults, instead of Close(), when the id may or may not
-	// be one this registry knows about.
+	// Drop id from the ring/current without touching core search state. For a search
+	// this registry tracks, call alongside the caller's own unconditional
+	// CSearchList::RemoveResults, instead of Close(), when the id may or may not be one
+	// this registry knows about.
 	void Forget(uint32 id)
 	{
 		m_lru.remove(id);
@@ -2606,20 +2561,20 @@ static CECPacket *Get_EC_Response_Search_Results(const CECPacket *request,
 	// request can contain list of queried items
 	CTagSet<uint32, EC_TAG_SEARCHFILE> queryitems(request);
 
-	// EC_TAG_FILE_REMOVED tombstoning is wired only for the EC_DETAIL_UPDATE
-	// polling path that amuleweb uses, and only when the client opted into the
-	// partial-update protocol at auth. The EC_DETAIL_INC_UPDATE dispatch
-	// (amulegui) takes the tagmap overload below; EC_DETAIL_FULL callers are
-	// unchanged. The queryitems.empty() check excludes per-ID subset queries:
-	// tombstoning is meaningful only when polling the whole set.
+	// EC_TAG_FILE_REMOVED tombstoning is wired only for the EC_DETAIL_UPDATE polling
+	// path that amuleweb uses, and only when the client opted into the partial-update
+	// protocol at auth. The EC_DETAIL_INC_UPDATE dispatch (amulegui) takes the tagmap
+	// overload below; EC_DETAIL_FULL callers are unchanged. The queryitems.empty() check
+	// excludes per-ID subset queries: tombstoning is meaningful only when polling the
+	// whole set.
 	const bool tombstone_path =
 		partial_update_active && detail_level == EC_DETAIL_UPDATE && queryitems.empty();
 
-	// Result grouping: a caller that wants the same-hash/same-size-but-different-
-	// filename children (the expandable tree the GUI shows) opts in by adding an
-	// empty EC_TAG_SEARCH_PARENT flag to the request. Without it this path stays
-	// parents-only, so amulecmd and amuleweb are unchanged. Children carry their
-	// parent's ECID via EC_TAG_SEARCH_PARENT so the client can rebuild the tree.
+	// Result grouping: a caller that wants the same-hash/same-size/different-filename
+	// children (the expandable tree the GUI shows) opts in by adding an empty
+	// EC_TAG_SEARCH_PARENT flag to the request. Without it this path stays parents-only,
+	// so amulecmd and amuleweb are unchanged. Children carry their parent's ECID via
+	// EC_TAG_SEARCH_PARENT so the client can rebuild the tree.
 	const bool want_children = request->GetTagByName(EC_TAG_SEARCH_PARENT) != nullptr;
 
 	std::set<uint32> current_ids;
@@ -2646,12 +2601,11 @@ static CECPacket *Get_EC_Response_Search_Results(const CECPacket *request,
 	}
 
 	if (tombstone_path) {
-		// One EC_TAG_FILE_REMOVED per result that was in the previous response
-		// but is no longer in the daemon's searchlist -- typically because the
-		// user started a new search, which clears the list. Without these
-		// markers amuleweb's ProcessUpdate takes the partial-update branch,
-		// which expects explicit deletions, and sees no signal to drop the old
-		// results, so they accumulate across searches.
+		// One EC_TAG_FILE_REMOVED per result that was in the previous response but is no
+		// longer in the daemon's searchlist -- typically because the user started a new
+		// search, which clears the list. Without these markers amuleweb's ProcessUpdate
+		// takes the partial-update branch, which expects explicit deletions, and sees no
+		// signal to drop the old results, so they accumulate across searches.
 		for (std::set<uint32>::const_iterator i = io_lastSentSearchIds.begin();
 			i != io_lastSentSearchIds.end();
 			++i) {
@@ -2687,36 +2641,33 @@ static CECPacket *Get_EC_Response_Search_Results(CObjTagMap &tagmap, wxUIntPtr s
 	return response;
 }
 
-// Multi-search INC_UPDATE union poll (amulegui): amulegui runs every open
-// search through a single result container, so emit the results of *all*
-// active searches in one reply, tagging each with its EC_TAG_SEARCH_ID. Only
-// reached for m_multiSearchActive clients.
+// Multi-search INC_UPDATE union poll (amulegui): amulegui runs every open search
+// through a single result container, so emit the results of *all* active searches in
+// one reply, tagging each with its EC_TAG_SEARCH_ID. Only reached for
+// m_multiSearchActive clients.
 //
-// Enumerates CSearchList::GetKnownSearchIds() -- every search AND "View Files"
-// browse tab the core holds, started by the monolithic GUI or by any EC client
-// -- rather than s_ecSearches.ActiveIds(), which only ever holds EC-initiated
-// searches. A monolithic-started search's results would otherwise never reach
-// amulegui even once Get_EC_Response_Search_List learned to enumerate it: the
-// two have to agree on the same set, or a discovered tab appears and never
-// fills. Browses need no second source: every one reaches RegisterBrowseSearch
-// before its request goes out, so m_searchStrings holds them alongside real
-// searches.
+// Enumerates CSearchList::GetKnownSearchIds() -- every search AND "View Files" browse
+// tab the core holds, started by the monolithic GUI or by any EC client -- rather
+// than s_ecSearches.ActiveIds(), which only ever holds EC-initiated searches. A
+// monolithic-started search's results would otherwise never reach amulegui even once
+// Get_EC_Response_Search_List learned to enumerate it: the two have to agree on the
+// same set, or a discovered tab appears and never fills. Browses need no second
+// source: every one reaches RegisterBrowseSearch before its request goes out.
 //
 // s_ecSearches keeps governing EC-client lifecycle and eviction only -- folding
-// monolithic searches into that 20-entry LRU would let unrelated EC traffic
-// evict, and so stop, a local user's own still-running Kad search.
+// monolithic searches into that 20-entry LRU would let unrelated EC traffic evict,
+// and so stop, a local user's own still-running Kad search.
 static CECPacket *Get_EC_Response_Search_Results_Union(
 	CObjTagMap &tagmap, bool partial_update_active, std::set<uint32> &io_lastSentResultIds)
 {
 	CECPacket *response = new CECPacket(EC_OP_SEARCH_RESULTS);
-	// Incremental: unchanged fields are diffed out via the per-connection
-	// valuemap, keyed by the globally-unique ECID. Safe because amulegui's
-	// container retains its items across searches, so a result is never
-	// re-created from a diffed tag.
+	// Incremental: unchanged fields are diffed out via the per-connection valuemap, keyed
+	// by the globally-unique ECID. Safe because amulegui's container retains its items
+	// across searches, so a result is never re-created from a diffed tag.
 	//
-	// `current_ids` is every result the client is currently believed to hold, so
-	// the partial-update path below can synthesize removals by diffing against
-	// the previous cycle instead of relying on absence.
+	// `current_ids` is every result the client is currently believed to hold, so the
+	// partial-update path below can synthesize removals by diffing against the previous
+	// cycle instead of relying on absence.
 	std::set<uint32> current_ids;
 
 	auto emitOne = [&](CSearchFile *sf, uint32 sid) {
@@ -2724,18 +2675,17 @@ static CECPacket *Get_EC_Response_Search_Results_Union(
 		current_ids.insert(ecid);
 		const bool known = io_lastSentResultIds.count(ecid) != 0;
 		CValueMap &valuemap = tagmap.GetValueMap(ecid);
-		// The owning search ID never changes for a result, so it only has to
-		// travel once per connection -- but only once removal is explicit. A
-		// legacy client deletes anything missing from the reply and would then
-		// re-create the item from a later diffed tag, which must still carry the
-		// ID to be attributable to a tab.
+		// The owning search ID never changes for a result, so it only has to travel once
+		// per connection -- but only once removal is explicit. A legacy client deletes
+		// anything missing from the reply and would then re-create the item from a later
+		// diffed tag, which must still carry the ID to be attributable to a tab.
 		const uint32 attribute_sid = (partial_update_active && known) ? 0 : sid;
 		CEC_SearchFile_Tag tag(sf, EC_DETAIL_INC_UPDATE, &valuemap, attribute_sid);
 		if (partial_update_active && known && !tag.HasChildTags()) {
-			// Nothing about this result changed since the client's last view. Absence
-			// no longer implies deletion for this client, so the whole tag can go.
-			// This is what makes an idle search cost nothing: previously every
-			// result re-sent its envelope and its search ID on every poll, forever.
+			// Nothing about this result changed since the client's last view. Absence no
+			// longer implies deletion for this client, so the whole tag can go. This is what
+			// makes an idle search cost nothing: previously every result re-sent its envelope
+			// and its search ID on every poll, forever.
 			return;
 		}
 		response->AddTag(tag);
@@ -2752,24 +2702,24 @@ static CECPacket *Get_EC_Response_Search_Results_Union(
 			}
 		}
 	};
-	// GetKnownSearchIds() covers browses too: RequestSharedFileList registers
-	// every one of them, by either route, before the request goes out, and
-	// RemoveResults drops the registration and the browse together.
+	// GetKnownSearchIds() covers browses too: RequestSharedFileList registers every one
+	// of them, by either route, before the request goes out, and RemoveResults drops the
+	// registration and the browse together.
 	for (const auto &entry : theApp->searchlist->GetKnownSearchIds()) {
 		emitResultsFor(entry.first);
 	}
 
 	if (partial_update_active) {
-		// One EC_TAG_FILE_REMOVED per result the client was told about that the core
-		// no longer holds -- a closed or evicted search, or a results list replaced
-		// by a new search on the same ID. Reuses the knownfile tombstone rather
-		// than inventing a second one: the meaning and the payload are identical.
+		// One EC_TAG_FILE_REMOVED per result the client was told about that the core no
+		// longer holds -- a closed or evicted search, or a results list replaced by a new
+		// search on the same ID. Reuses the knownfile tombstone rather than inventing a
+		// second one: the meaning and the payload are identical.
 		for (uint32 id : io_lastSentResultIds) {
 			if (!current_ids.count(id)) {
 				response->AddTag(CECTag(EC_TAG_FILE_REMOVED, id));
 				// Drop the diff state with the result. ECIDs are handed out
-				// monotonically so reuse is not expected, but a stale valuemap would
-				// diff away the very fields a re-created result needs.
+				// monotonically so reuse is not expected, but a stale valuemap
+				// would diff away the very fields a re-created result needs.
 				tagmap.EraseValueMap(id);
 			}
 		}
@@ -2778,24 +2728,23 @@ static CECPacket *Get_EC_Response_Search_Results_Union(
 	return response;
 }
 
-// Enumerates every search the core currently holds so a client that never
-// started any of them locally -- a freshly (re)connected amulegui, a stateless
-// amuleapi request, or a search typed into the monolithic GUI -- can discover
-// what to ask about and build tabs for it. One entry per known search:
-// EC_TAG_SEARCH_ID as the entry's own value, with name/kind/state as children.
-// Only reached for m_multiSearchActive clients: a legacy client has no concept
-// of more than the single sentinel search.
+// Enumerates every search the core currently holds so a client that never started
+// any of them locally -- a freshly (re)connected amulegui, a stateless amuleapi
+// request, or a search typed into the monolithic GUI -- can discover what to ask
+// about and build tabs for it. One entry per known search: EC_TAG_SEARCH_ID as the
+// entry's own value, with name/kind/state as children. Only reached for
+// m_multiSearchActive clients: a legacy client has no concept of more than the single
+// sentinel search.
 //
-// Browses are enumerated here too, because a browse now carries a name, a
-// recorded kind and its peer's ECID (RegisterBrowseSearch), which is exactly
-// what lets a remote GUI rebuild it as a browse tab rather than a nameless
-// search. RegisterBrowseSearch writing m_searchStrings is what puts them in
-// reach of GetKnownSearchIds(); it is deliberate, not incidental.
+// Browses are enumerated here too, because a browse now carries a name, a recorded
+// kind and its peer's ECID (RegisterBrowseSearch), which is exactly what lets a
+// remote GUI rebuild it as a browse tab rather than a nameless search.
+// RegisterBrowseSearch writing m_searchStrings is what puts them in reach of
+// GetKnownSearchIds(); it is deliberate, not incidental.
 //
-// amuleapi decodes the two wire values written below from raw numeric
-// literals, since it cannot include SearchList.h. This file can see both
-// CSearchList's enums and the EC ones, so it is the one place that can catch a
-// reorder at compile time instead of amuleapi silently mislabelling a search.
+// amuleapi decodes the two wire values written below from raw numeric literals, since
+// it cannot include SearchList.h. This file can see both CSearchList's enums and the
+// EC ones, so it is the one place that can catch a reorder at compile time.
 static_assert(CSearchList::SEARCH_LIFECYCLE_IDLE == 0 && CSearchList::SEARCH_LIFECYCLE_RUNNING == 1 &&
 		      CSearchList::SEARCH_LIFECYCLE_FINISHED == 2,
 	"CSearchList::SearchLifecycleState numeric values must stay in sync with "
@@ -2818,9 +2767,9 @@ static CECPacket *Get_EC_Response_Search_List()
 		// known.second is the same string GetSearchStringById(sid) would
 		// look up -- already have it from this map entry, no need to re-find.
 		entry.AddTag(EC_TAG_SEARCH_NAME, known.second);
-		// A browse also carries the peer it is listing: without it a remote
-		// GUI cannot build a browse tab at all, since a tab with no ecid is
-		// by definition not a browse (CSearchListCtrl::IsBrowse).
+		// A browse also carries the peer it is listing: without it a remote GUI cannot
+		// build a browse tab at all, since a tab with no ecid is by definition not a
+		// browse (CSearchListCtrl::IsBrowse).
 		const uint32 browsePeer = theApp->searchlist->GetBrowsePeerEcid(sid);
 		if (browsePeer) {
 			entry.AddTag(CECTag(EC_TAG_CLIENT, browsePeer));
@@ -2831,15 +2780,15 @@ static CECPacket *Get_EC_Response_Search_List()
 		entry.AddTag(EC_TAG_SEARCH_LIFECYCLE_STATE,
 			static_cast<uint64_t>(
 				static_cast<uint8>(theApp->searchlist->GetSearchLifecycleStateById(sid))));
-		// How many hits this search is holding. A client that adopts the whole
-		// listing and fetches results per tab on activation has no other way to
-		// label a tab it has not opened yet -- and eagerly fetching every search's
-		// results to learn one integer each is what the lazy fetch avoids.
+		// How many hits this search is holding. A client that adopts the whole listing and
+		// fetches results per tab on activation has no other way to label a tab it has not
+		// opened yet -- and eagerly fetching every search's results to learn one integer
+		// each is what the lazy fetch avoids.
 		entry.AddTag(CECTag(EC_TAG_SEARCH_RESULT_COUNT,
 			static_cast<uint32>(theApp->searchlist->GetSearchResults(sid).size())));
-		// And the percent, so a client discovering a *running* search reports the
-		// daemon's real ramp from first sight rather than 0 until the next poll.
-		// Both tags are already emitted on the per-id progress reply.
+		// And the percent, so a client discovering a *running* search reports the daemon's
+		// real ramp from first sight rather than 0 until the next poll. Both tags are
+		// already emitted on the per-id progress reply.
 		entry.AddTag(CECTag(EC_TAG_SEARCH_LIFECYCLE_PERCENT,
 			theApp->searchlist->GetSearchLifecyclePercentById(sid)));
 		response->AddTag(entry);
@@ -2848,17 +2797,16 @@ static CECPacket *Get_EC_Response_Search_List()
 	return response;
 }
 
-// Emit one search's progress into `out`: the reply packet itself for a request
-// naming a single EC_TAG_SEARCH_ID, or one child entry per search for the union
-// form below. Both callers share this function so the two shapes cannot drift.
+// Emit one search's progress into `out`: the reply packet itself for a request naming
+// a single EC_TAG_SEARCH_ID, or one child entry per search for the union form below.
+// Both callers share this function so the two shapes cannot drift.
 //
-// A browse ("View Files") ID is not a CSearchList search: report its lifecycle
-// from the persisted browse state (browsing / finished / failed) plus the bar,
-// keyed by search ID, and the running result count. Reading the persisted state
-// -- rather than the browsing client, which is transient and, for a browse that
-// fails on disconnect, reaped before the next poll -- means the terminal
-// "failed" still reaches amuleGUI so its tab marker flips.
-// EC_TAG_SEARCH_BROWSE_STATUS is the discriminator the GUI branches on.
+// A browse ("View Files") ID is not a CSearchList search: report its lifecycle from
+// the persisted browse state (browsing / finished / failed) plus the bar, keyed by
+// search ID, and the running result count. Reading the persisted state -- rather than
+// the browsing client, which is transient and, for a browse that fails on disconnect,
+// reaped before the next poll -- means the terminal "failed" still reaches amuleGUI
+// so its tab marker flips. EC_TAG_SEARCH_BROWSE_STATUS is the discriminator.
 //
 // EC_TAG_SEARCH_STATUS MUST be added first in both branches: the GUI reads the
 // reply's (or the entry's) first tag via GetFirstTagSafe.
@@ -2870,23 +2818,22 @@ static void AppendSearchProgress(CECTag &out, wxUIntPtr sid)
 			static_cast<uint8>(bstate == browse::State::InProgress ? BROWSE_IN_PROGRESS
 					   : bstate == browse::State::Finished ? BROWSE_FINISHED
 									       : BROWSE_FAILED);
-		// Bar value (0..100 running, 0xffff done/failed) so amuleGUI drives
-		// the browse tab's gauge via the same UpdateSearchProgress path as
-		// a search.
+		// Bar value (0..100 running, 0xffff done/failed) so amuleGUI drives the browse
+		// tab's gauge via the same UpdateSearchProgress path as a search.
 		const uint16 bar = static_cast<uint16>(theApp->searchlist->GetSearchBarStatusById(sid));
 		out.AddTag(CECTag(EC_TAG_SEARCH_STATUS, bar));
 		out.AddTag(CECTag(EC_TAG_SEARCH_BROWSE_STATUS, browseStatus));
 		out.AddTag(CECTag(EC_TAG_SEARCH_ID, static_cast<uint32>(sid)));
-		// The peer's nickname, for a browse. Same tag and same source as the
-		// search list's, so a client polling progress can name what it is
-		// reporting on without a second round trip for the list.
+		// The peer's nickname, for a browse. Same tag and same source as the search list's,
+		// so a client polling progress can name what it is reporting on without a second
+		// round trip for the list.
 		out.AddTag(EC_TAG_SEARCH_NAME, theApp->searchlist->GetSearchStringById(sid));
 		out.AddTag(CECTag(EC_TAG_SEARCH_RESULT_COUNT,
 			static_cast<uint32>(theApp->searchlist->GetSearchResults(sid).size())));
-		// Also emit the standard lifecycle tags, mapped from the browse status, so
-		// amuleapi / amuleweb consume a browse through their existing
-		// SEARCH_PROGRESS handling with no special-casing: browsing -> RUNNING,
-		// finished/failed -> FINISHED. Percent is the dir-based bar value.
+		// Also emit the standard lifecycle tags, mapped from the browse status, so amuleapi
+		// / amuleweb consume a browse through their existing SEARCH_PROGRESS handling with
+		// no special-casing: browsing -> RUNNING, finished/failed -> FINISHED. Percent is
+		// the dir-based bar value.
 		const bool browsing = browseStatus == BROWSE_IN_PROGRESS;
 		out.AddTag(CECTag(EC_TAG_SEARCH_LIFECYCLE_STATE,
 			static_cast<uint8>(browsing ? CSearchList::SEARCH_LIFECYCLE_RUNNING
@@ -2900,20 +2847,20 @@ static void AppendSearchProgress(CECTag &out, wxUIntPtr sid)
 	const CSearchList::SearchLifecycleState st = theApp->searchlist->GetSearchLifecycleStateById(sid);
 	const uint8 pct = theApp->searchlist->GetSearchLifecyclePercentById(sid);
 	// EC_TAG_SEARCH_STATUS: the overloaded sentinel the GUI decodes in
-	// Search_Update_Progress -- a finished Kad search reports 0xfffe (clears the
-	// "!" marker and resets the bar), a finished ed2k search 0xffff, otherwise
-	// the running percent. Shared with the monolithic bar.
+	// Search_Update_Progress -- a finished Kad search reports 0xfffe (clears the "!"
+	// marker and resets the bar), a finished ed2k search 0xffff, otherwise the running
+	// percent. Shared with the monolithic bar.
 	out.AddTag(CECTag(EC_TAG_SEARCH_STATUS, theApp->searchlist->GetSearchBarStatusById(sid)));
 	// Echo the ID so the client can confirm which search this is for.
 	out.AddTag(CECTag(EC_TAG_SEARCH_ID, static_cast<uint32>(sid)));
-	// ...and the query it was started with, so a progress reply is readable on
-	// its own: a client that polls progress per tab should not have to fetch the
-	// list as well just to label it.
+	// ...and the query it was started with, so a progress reply is readable on its own:
+	// a client that polls progress per tab should not have to fetch the list as well
+	// just to label it.
 	out.AddTag(EC_TAG_SEARCH_NAME, theApp->searchlist->GetSearchStringById(sid));
 	out.AddTag(CECTag(EC_TAG_SEARCH_LIFECYCLE_STATE, static_cast<uint8>(st)));
-	// Per-id kind (not the scalar): a multi-search client polls each tab by id
-	// and needs THIS search's real type, e.g. to enable the Kad-only "More"
-	// button on the right tab.
+	// Per-id kind (not the scalar): a multi-search client polls each tab by id and needs
+	// THIS search's real type, e.g. to enable the Kad-only "More" button on the right
+	// tab.
 	out.AddTag(CECTag(EC_TAG_SEARCH_LIFECYCLE_KIND,
 		static_cast<uint8>(theApp->searchlist->GetSearchLifecycleKindById(sid))));
 	out.AddTag(CECTag(EC_TAG_SEARCH_RESULT_COUNT,
@@ -2921,26 +2868,25 @@ static void AppendSearchProgress(CECTag &out, wxUIntPtr sid)
 	out.AddTag(CECTag(EC_TAG_SEARCH_LIFECYCLE_PERCENT, pct));
 }
 
-// Progress for every search this connection could hold a tab for, one child
-// per search, so a client with N open tabs polls once instead of N times.
+// Progress for every search this connection could hold a tab for, one child per
+// search, so a client with N open tabs polls once instead of N times.
 //
-// Enumerates searches *and* browse ids -- unlike Get_EC_Response_Search_List,
-// which is deliberately narrow because it drives tab *discovery*. Nothing is
-// discovered here: a client only ever looks up ids it already has tabs for.
+// Enumerates searches *and* browse ids -- unlike Get_EC_Response_Search_List, which is
+// deliberately narrow because it drives tab *discovery*. Nothing is discovered here:
+// a client only ever looks up ids it already has tabs for.
 //
-// There is no EC_TAG_SEARCH_EXPIRED in the union. The per-id form needs it
-// because a reply about one id is otherwise indistinguishable from silence;
-// here the whole set is present, so a client treats any tab whose id is absent
-// as expired -- which also catches an LRU eviction the per-id form only
-// notices when it happens to poll that id.
+// There is no EC_TAG_SEARCH_EXPIRED in the union. The per-id form needs it because a
+// reply about one id is otherwise indistinguishable from silence; here the whole set
+// is present, so a client treats any tab whose id is absent as expired -- which also
+// catches an LRU eviction the per-id form only notices when it polls that id.
 static CECPacket *Get_EC_Response_Search_Progress_Union(const CECPacket *request)
 {
 	CECPacket *response = new CECPacket(EC_OP_SEARCH_PROGRESS);
 
-	// The ids the client is actually tracking, when it names them. It costs
-	// nothing to carry and it keeps the LRU meaning what it meant before: Touch
-	// marks the searches a client still has open. Touching everything the daemon
-	// holds would make an abandoned search as protected as a live tab.
+	// The ids the client is actually tracking, when it names them. It costs nothing to
+	// carry and it keeps the LRU meaning what it meant before: Touch marks the searches
+	// a client still has open. Touching everything the daemon holds would make an
+	// abandoned search as protected as a live tab.
 	std::vector<uint32> wanted;
 	for (const CECTag &tag : *request) {
 		if (tag.GetTagName() == EC_TAG_SEARCH_ID) {
@@ -2960,15 +2906,15 @@ static CECPacket *Get_EC_Response_Search_Progress_Union(const CECPacket *request
 	};
 
 	if (!wanted.empty()) {
-		// Answer about the ids the client named, resolving each exactly as the
-		// per-id form does. Deliberately NOT a walk of the daemon's own maps
-		// filtered by these ids: a Kad search is addressed by an id with the high
-		// bit set, which is not the key those maps are stored under, so filtering
-		// silently dropped every Kad search and the client read that as expiry.
+		// Answer about the ids the client named, resolving each exactly as the per-id form
+		// does. Deliberately NOT a walk of the daemon's own maps filtered by these ids: a
+		// Kad search is addressed by an id with the high bit set, which is not the key
+		// those maps are stored under, so filtering silently dropped every Kad search and
+		// the client read that as expiry.
 		for (uint32 want : wanted) {
-			// The gate the per-id path uses -- the core's own knowledge, which
-			// covers browse ids too (see IsKnownSearchId). An id that fails it
-			// is left out, and its absence is how the client learns it expired.
+			// The gate the per-id path uses -- the core's own knowledge, which covers
+			// browse ids too (see IsKnownSearchId). An id that fails it is left out, and
+			// its absence is how the client learns it expired.
 			if (want == 0 || !theApp->searchlist->IsKnownSearchId(want)) {
 				continue;
 			}
@@ -2977,9 +2923,8 @@ static CECPacket *Get_EC_Response_Search_Progress_Union(const CECPacket *request
 		return response;
 	}
 
-	// No ids named: report everything the daemon holds. Used by a stateless
-	// caller that has no tracked set to enumerate.
-	// Browses included; see the union poll above.
+	// No ids named: report everything the daemon holds. Used by a stateless caller that
+	// has no tracked set to enumerate. Browses included; see the union poll above.
 	for (const auto &known : theApp->searchlist->GetKnownSearchIds()) {
 		emitOne(known.first);
 	}
@@ -2993,17 +2938,16 @@ static CECPacket *Get_EC_Response_Search_Results_Download(const CECPacket *reque
 	for (CECPacket::const_iterator it = request->begin(); it != request->end(); ++it) {
 		const CECTag &tag = *it;
 		// Read the category by name (both amulegui and amuleapi send it as
-		// EC_TAG_PARTFILE_CAT) rather than "first child", so an optional
-		// EC_TAG_SEARCHFILE selector below can ride alongside it.
+		// EC_TAG_PARTFILE_CAT) rather than "first child", so an optional EC_TAG_SEARCHFILE
+		// selector below can ride alongside it.
 		uint8 category = 0;
 		if (const CECTag *catTag = tag.GetTagByName(EC_TAG_PARTFILE_CAT)) {
 			category = catTag->GetInt();
 		}
-		// Issue #431: an optional EC_TAG_SEARCHFILE child carries a search
-		// result's ECID, selecting one specific same-hash/different-name
-		// grouped result so it downloads under that chosen filename.
-		// Without it, download the first result matching the hash (the
-		// parent) — the unchanged behaviour.
+		// Issue #431: an optional EC_TAG_SEARCHFILE child carries a search result's ECID,
+		// selecting one specific same-hash/different-name grouped result so it downloads
+		// under that chosen filename. Without it, download the first result matching the
+		// hash (the parent) -- the unchanged behaviour.
 		if (const CECTag *ecidTag = tag.GetTagByName(EC_TAG_SEARCHFILE)) {
 			theApp->searchlist->AddFileToDownloadByEcid(ecidTag->GetInt(), category);
 		} else {
@@ -3017,20 +2961,20 @@ static CECPacket *Get_EC_Response_Search_Stop(const CECPacket *request, bool mul
 {
 	CECPacket *reply = new CECPacket(EC_OP_MISC_DATA);
 	if (multiSearch) {
-		// Per-ID stop. No ID means the most-recently-started search. Gate on the
-		// core's own knowledge (CSearchList::IsKnownSearchId), not s_ecSearches: a
-		// monolithic-started search is known to the core but was never Register()'d
-		// into that EC-only registry, so gating on the registry alone silently
-		// no-ops both Stop and Close for it.
+		// Per-ID stop. No ID means the most-recently-started search. Gate on the core's own
+		// knowledge (CSearchList::IsKnownSearchId), not s_ecSearches: a monolithic-started
+		// search is known to the core but was never Register()'d into that EC-only
+		// registry, so gating on the registry alone silently no-ops both Stop and Close
+		// for it.
 		const CECTag *idTag = request->GetTagByName(EC_TAG_SEARCH_ID);
 		uint32 sid = idTag ? static_cast<uint32>(idTag->GetInt()) : s_ecSearches.Current();
 		if (sid != 0 && theApp->searchlist->IsKnownSearchId(sid)) {
 			if (request->GetTagByName(EC_TAG_SEARCH_CLOSE)) {
 				// Tab close: stop activity, free results, drop from the ring. Free the
-				// core's state unconditionally -- that is what actually stops a running
-				// Kad search and erases the per-id maps, including m_searchStrings,
-				// which is what stops the search reappearing as a discovered tab. Only
-				// touch the registry's own bookkeeping for a search it tracks.
+				// core's state unconditionally -- that is what actually stops a running Kad
+				// search and erases the per-id maps, including m_searchStrings, which is
+				// what stops the search reappearing as a discovered tab. Only touch the
+				// registry's own bookkeeping for a search it tracks.
 				theApp->searchlist->RemoveResults(sid);
 				if (s_ecSearches.Has(sid)) {
 					s_ecSearches.Forget(sid);
@@ -3053,8 +2997,8 @@ static CECPacket *Get_EC_Response_Search_Request_More(const CECPacket *request, 
 	// and that line is forwarded back over EC; the reply carries the other half,
 	// whether a LATER press could still widen the search.
 	CECPacket *reply = new CECPacket(EC_OP_MISC_DATA);
-	// Per-ID. No ID means the most-recently-started search. Gate on the core's
-	// own knowledge, not s_ecSearches -- see Get_EC_Response_Search_Stop: a
+	// Per-ID. No ID means the most-recently-started search. Gate on the core's own
+	// knowledge, not s_ecSearches -- see Get_EC_Response_Search_Stop: a
 	// monolithic-started Kad search's "More results" would otherwise do nothing.
 	const CECTag *idTag = request->GetTagByName(EC_TAG_SEARCH_ID);
 	uint32 sid =
@@ -3063,14 +3007,14 @@ static CECPacket *Get_EC_Response_Search_Request_More(const CECPacket *request, 
 	if (sid != 0 && (!multiSearch || theApp->searchlist->IsKnownSearchId(sid))) {
 		reaskable = theApp->searchlist->RequestMoreResults(sid);
 	}
-	// Emitted on BOTH paths, including the unknown-id early-out above, which
-	// leaves it false -- a search the core does not hold is terminal by
-	// definition. That way an absent tag means exactly one thing: a daemon
-	// older than this reply, whose answer is unknown rather than "exhausted".
+	// Emitted on BOTH paths, including the unknown-id early-out above, which leaves it
+	// false -- a search the core does not hold is terminal by definition. That way an
+	// absent tag means exactly one thing: a daemon older than this reply, whose answer
+	// is unknown rather than "exhausted".
 	reply->AddTag(CECTag(EC_TAG_SEARCH_MORE_REASKABLE, static_cast<uint8>(reaskable ? 1 : 0)));
-	// Echo which search the verdict is about. The request may not have named one,
-	// and a client with several tabs open cannot attribute a bare reply to any
-	// of them -- the replies are not correlated any other way.
+	// Echo which search the verdict is about. The request may not have named one, and a
+	// client with several tabs open cannot attribute a bare reply to any of them -- the
+	// replies are not correlated any other way.
 	if (sid != 0) {
 		reply->AddTag(CECTag(EC_TAG_SEARCH_ID, sid));
 	}
@@ -3100,9 +3044,9 @@ static CECPacket *Get_EC_Response_Search(const CECPacket *request, bool multiSea
 	if (search_type == EC_SEARCH_WEB) {
 		response = wxTRANSLATE("WebSearch from remote interface makes no sense.");
 	} else if (search_type == EC_SEARCH_BROWSE) {
-		// Reported by the daemon, never accepted here: a browse is started
-		// by EC_OP_FRIEND, and the mapping below would otherwise fall
-		// through its final ternary and quietly start a local search.
+		// Reported by the daemon, never accepted here: a browse is started by
+		// EC_OP_FRIEND, and the mapping below would otherwise fall through its final
+		// ternary and quietly start a local search.
 		response = wxTRANSLATE("A browse is not a search that can be started.");
 	} else {
 		SearchType core_search_type = (search_type == EC_SEARCH_GLOBAL) ? GlobalSearch
@@ -3111,19 +3055,18 @@ static CECPacket *Get_EC_Response_Search(const CECPacket *request, bool multiSea
 
 		if (multiSearch) {
 			// START is additive -- it does not stop sibling searches. But ed2k
-			// (local/global) share a single in-flight slot and file their results
-			// under the scalar m_currentSearch, so starting a NEW ed2k search must
-			// finalize any in-flight one first, or its late UDP results land in the
-			// new search's bucket. A Kad search uses its own ID and machinery, so it
-			// must NOT disturb a running ed2k search -- doing so used to kill an
-			// in-flight global search, which then returned zero results.
+			// (local/global) share a single in-flight slot and file their results under the
+			// scalar m_currentSearch, so starting a NEW ed2k search must finalize any
+			// in-flight one first, or its late UDP results land in the new search's bucket.
+			// A Kad search uses its own ID and machinery, so it must NOT disturb a running
+			// ed2k search -- doing so used to kill an in-flight global search, which then
+			// returned zero results.
 			if (core_search_type != KadSearch) {
 				theApp->searchlist->StopInFlightEd2kSearch();
 			}
-			// The daemon allocates the ID (no sentinel): ed2k gets a
-			// bottom-half ID; a Kad search self-allocates a top-half ID
-			// inside StartNewSearch, which overwrites this seed and we read
-			// the real ID back.
+			// The daemon allocates the ID (no sentinel): ed2k gets a bottom-half ID; a Kad
+			// search self-allocates a top-half ID inside StartNewSearch, which overwrites
+			// this seed and we read the real ID back.
 			search_id = theApp->searchlist->AllocateEd2kId();
 		} else {
 			// Legacy single-search sentinel path (unchanged): wipe the one
@@ -3140,8 +3083,8 @@ static CECPacket *Get_EC_Response_Search(const CECPacket *request, bool multiSea
 			op = EC_OP_STRINGS;
 			started = true;
 			if (multiSearch) {
-				// Register whatever ID the core settled on (the Kad ID for a
-				// Kad search) as most-recently-used + current, evicting the
+				// Register whatever ID the core settled on (the Kad ID for a Kad
+				// search) as most-recently-used + current, evicting the
 				// least-recently-used search if over the ring's cap.
 				s_ecSearches.Register(search_id);
 			}
@@ -3157,13 +3100,12 @@ static CECPacket *Get_EC_Response_Search(const CECPacket *request, bool multiSea
 		reply->AddTag(CECTag(EC_TAG_SEARCH_ID, search_id));
 	}
 	if (multiSearch) {
-		// Echo the client's correlation token (if any) on BOTH outcomes, not just
-		// success: the client created its optimistic tab before sending and has no
-		// other way to tell which start this verdict answers. On failure it needs
-		// the token to drop that phantom tab and release the discovery deferral --
-		// otherwise the id sits in m_pendingSearchStarts until the user happens to
-		// close exactly that tab, with an EC_OP_SEARCH_LIST round trip every tick
-		// and discovery off in the meantime.
+		// Echo the client's correlation token (if any) on BOTH outcomes, not just success:
+		// the client created its optimistic tab before sending and has no other way to tell
+		// which start this verdict answers. On failure it needs the token to drop that
+		// phantom tab and release the discovery deferral -- otherwise the id sits in
+		// m_pendingSearchStarts until the user happens to close exactly that tab, with an
+		// EC_OP_SEARCH_LIST round trip every tick and discovery off in the meantime.
 		const CECTag *ref = request->GetTagByName(EC_TAG_SEARCH_REF);
 		if (ref) {
 			reply->AddTag(CECTag(EC_TAG_SEARCH_REF, static_cast<uint32>(ref->GetInt())));
@@ -3356,17 +3298,16 @@ static CECPacket *GetStatsGraphs(const CECPacket *request)
 				EC_TAG_STATSGRAPH_DATA_CONN, 2 * numPoints * sizeof(uint32), connData));
 			delete[] graphData;
 			delete[] connData;
-			// Latest session totals -- let amulegui compute the same
-			// kBytesReceived / sTimestamp session average monolithic shows,
-			// instead of falling back to a GUI-local integral.
+			// Latest session totals -- let amulegui compute the same kBytesReceived /
+			// sTimestamp session average monolithic shows, instead of falling back to a
+			// GUI-local integral.
 			response->AddTag(CECTag(EC_TAG_STATSGRAPH_SESSION_DL, sessionDl));
 			response->AddTag(CECTag(EC_TAG_STATSGRAPH_SESSION_UL, sessionUl));
 			response->AddTag(CECTag(EC_TAG_STATSGRAPH_SESSION_KAD, sessionKad));
 			response->AddTag(CECTag(EC_TAG_STATSGRAPH_SESSION_TIMESPAN, sessionTimespan));
-			// How deep we can actually answer at the requested scale, so the client
-			// can cap its next request instead of guessing. Over-asking gets a
-			// record repeated rather than an error, and without timestamps on the
-			// wire the client cannot see it.
+			// How deep we can actually answer at the requested scale, so the client can cap
+			// its next request instead of guessing. Over-asking gets a record repeated rather
+			// than an error, and without timestamps on the wire the client cannot see it.
 			response->AddTag(
 				CECTag(EC_TAG_STATSGRAPH_DEPTH, (uint16)CStatistics::GetPointsPerRange()));
 			response->AddTag(CECTag(EC_TAG_STATSGRAPH_LAST, dTimestamp));
@@ -3423,9 +3364,9 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 		}
 		break;
 	case EC_OP_ADD_LINK: {
-		// Aggregate the per-link results into a single response: every iteration
-		// used to overwrite the previous one, so a batch of N-1 successes
-		// followed by one failure looked like a total failure, and vice versa.
+		// Aggregate the per-link results into a single response: every iteration used to
+		// overwrite the previous one, so a batch of N-1 successes followed by one failure
+		// looked like a total failure, and vice versa.
 		int successCount = 0;
 		int failCount = 0;
 		for (CECPacket::const_iterator it = request->begin(); it != request->end(); ++it) {
@@ -3466,9 +3407,9 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 		break;
 	case EC_OP_VERSION_CHECK:
 		// On-demand version check trigger (amuleapi's POST /version/check).
-		// Fire-and-forget: StartVersionCheck() kicks off the async fetch and the
-		// result is relayed later via the stats response. EC_OP_NOOP = accepted;
-		// EC_OP_FAILED = throttled or compiled out.
+		// Fire-and-forget: StartVersionCheck() kicks off the async fetch and the result is
+		// relayed later via the stats response. EC_OP_NOOP = accepted; EC_OP_FAILED =
+		// throttled or compiled out.
 #ifdef ENABLE_VERSION_CHECK
 		if (theApp->StartVersionCheck()) {
 			response = new CECPacket(EC_OP_NOOP);
@@ -3492,9 +3433,9 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 			CTagSet<uint32, EC_TAG_KNOWNFILE>(request).empty() &&
 			(m_my_flags & EC_FLAG_UTF8_NUMBERS) && (m_my_flags & EC_FLAG_LARGE_TAG_COUNT)) {
 			// Per-file bytes cache: a daemon-wide map<ECID, bytes> keyed off
-			// CKnownFile::s_globalEcGen, rebuilding only entries whose gen advanced
-			// since last use. Concatenated and written through the connection's
-			// socket with the same per-connection compression WritePacket uses.
+			// CKnownFile::s_globalEcGen, rebuilding only entries whose gen advanced since last
+			// use. Concatenated and written through the connection's socket with the same
+			// per-connection compression WritePacket uses.
 			std::vector<CKnownFile *> snapshot;
 			theApp->sharedfiles->CopyFileList(snapshot);
 			std::vector<CECFullResponseCache::FileRef> refs;
@@ -3640,9 +3581,9 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 	}
 	case EC_OP_CLIENT_SWAP_TO_ANOTHER_FILE: {
 		// Report what happened rather than answering NOOP either way. The swap is
-		// best-effort in the core -- it refuses a peer that is actively sending,
-		// and a peer that is not an A4AF source of the target has nowhere to go --
-		// and a caller that cannot tell those apart from success can only guess.
+		// best-effort in the core -- it refuses a peer that is actively sending, and a peer
+		// that is not an A4AF source of the target has nowhere to go -- and a caller that
+		// cannot tell those apart from success can only guess.
 		uint32 idClient = request->GetTagByNameSafe(EC_TAG_CLIENT)->GetInt();
 		CUpDownClient *client = theApp->clientlist->FindClientByECID(idClient);
 		CMD4Hash idFile = request->GetTagByNameSafe(EC_TAG_PARTFILE)->GetMD4Data();
@@ -3685,9 +3626,8 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 	}
 	case EC_OP_SHARED_FILE_SEARCH_KAD_NOTES: {
 		CMD4Hash hash = request->GetTagByNameSafe(EC_TAG_KNOWNFILE)->GetMD4Data();
-		// Notes are requested from the download-comments dialog or a search
-		// result: try the download queue first, then the shared list, then the
-		// current search results.
+		// Notes are requested from the download-comments dialog or a search result: try the
+		// download queue first, then the shared list, then the current search results.
 		CAbstractFile *file = theApp->downloadqueue->GetFileByID(hash);
 		if (!file) {
 			file = theApp->sharedfiles->GetFileByID(hash);
@@ -3696,11 +3636,11 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 			file = theApp->searchlist->GetSearchFileByID(hash);
 		}
 		if (file && file->RequestKadNoteSearch()) {
-			// One Kad NOTES lookup runs per hash, but the same file can be shown in
-			// several open search tabs (one CSearchFile each). RequestKadNoteSearch
-			// set the running flag only on the object it ran on; mirror it onto every
-			// same-hash search result so each tab shows the in-flight lookup. The
-			// flag is cleared on all of them when the CSearch ends.
+			// One Kad NOTES lookup runs per hash, but the same file can be shown in several
+			// open search tabs (one CSearchFile each). RequestKadNoteSearch set the running
+			// flag only on the object it ran on; mirror it onto every same-hash search result
+			// so each tab shows the in-flight lookup. The flag is cleared on all of them when
+			// the CSearch ends.
 			std::vector<CSearchFile *> searchFiles;
 			theApp->searchlist->GetAllSearchFilesByID(hash, searchFiles);
 			for (CSearchFile *sf : searchFiles) {
@@ -3809,17 +3749,17 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 				m_obj_tagmap, m_partialSearchActive, m_lastSentSearchResultIds);
 			break;
 		}
-		// Otherwise address a specific search by EC_TAG_SEARCH_ID (no ID =>
-		// the most-recently-started search) — amulecmd / amuleapi use FULL.
-		// Legacy (non-multi) clients keep the single 0xffffffff sentinel.
+		// Otherwise address a specific search by EC_TAG_SEARCH_ID (no ID means the
+		// most-recently-started search) -- amulecmd / amuleapi use FULL. Legacy (non-multi)
+		// clients keep the single 0xffffffff sentinel.
 		wxUIntPtr sid = 0xffffffff;
 		if (m_multiSearchActive) {
 			const CECTag *idTag = request->GetTagByName(EC_TAG_SEARCH_ID);
 			uint32 want = idTag ? static_cast<uint32>(idTag->GetInt()) : s_ecSearches.Current();
 			// Gate on the core's own knowledge (CSearchList::IsKnownSearchId), not
-			// s_ecSearches: that registry only ever holds EC-initiated searches, so
-			// gating on it reports a monolithic-started search as expired even while
-			// it is still running.
+			// s_ecSearches: that registry only ever holds EC-initiated searches, so gating on
+			// it reports a monolithic-started search as expired even while it is still
+			// running.
 			if (want == 0 || !theApp->searchlist->IsKnownSearchId(want)) {
 				// Evicted or never-known: tell the client it expired rather
 				// than returning a misleading empty result set.
@@ -3827,10 +3767,10 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 				response->AddTag(CECEmptyTag(EC_TAG_SEARCH_EXPIRED));
 				break;
 			}
-			// Only bump the EC-session LRU for a search the registry actually tracks
-			// -- Touch() on an id it does not know would silently insert it
-			// (push_front has no "was it found" guard), growing the ring past
-			// kMaxEcSearches for ids Register() never admitted.
+			// Only bump the EC-session LRU for a search the registry actually tracks --
+			// Touch() on an id it does not know would silently insert it (push_front has no
+			// "was it found" guard), growing the ring past kMaxEcSearches for ids Register()
+			// never admitted.
 			if (s_ecSearches.Has(want)) {
 				s_ecSearches.Touch(want);
 			}
@@ -3846,11 +3786,11 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 	}
 
 	case EC_OP_SEARCH_PROGRESS: {
-		// Union form, decided before anything is allocated. A client that
-		// advertised EC_TAG_CAN_SEARCH_PROGRESS_UNION always gets the union
-		// shape: naming ids narrows which searches come back, it does not opt
-		// back into the single-search reply. Gating on "no ids named" instead
-		// would answer such a client about its FIRST id only.
+		// Union form, decided before anything is allocated. A client that advertised
+		// EC_TAG_CAN_SEARCH_PROGRESS_UNION always gets the union shape: naming ids narrows
+		// which searches come back, it does not opt back into the single-search reply.
+		// Gating on "no ids named" instead would answer such a client about its FIRST id
+		// only.
 		if (m_multiSearchActive && m_searchProgressUnionActive) {
 			response = Get_EC_Response_Search_Progress_Union(request);
 			break;
@@ -3860,18 +3800,18 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 		if (m_multiSearchActive) {
 			const CECTag *idTag = request->GetTagByName(EC_TAG_SEARCH_ID);
 			uint32 want = idTag ? static_cast<uint32>(idTag->GetInt()) : s_ecSearches.Current();
-			// See the matching comment in the EC_OP_SEARCH_RESULTS case above:
-			// gate on the core's own knowledge, not the EC-only registry, so a
-			// monolithic-started search's progress isn't reported as expired.
+			// See the matching comment in the EC_OP_SEARCH_RESULTS case above: gate on the
+			// core's own knowledge, not the EC-only registry, so a monolithic-started
+			// search's progress isn't reported as expired.
 			if (want == 0 || !theApp->searchlist->IsKnownSearchId(want)) {
 				response->AddTag(CECEmptyTag(EC_TAG_SEARCH_EXPIRED));
 				// Echo the id this verdict is about. amulegui reads the whole progress
-				// reply under `if (idTag)` -- it has to, since it polls several
-				// searches and the replies are not correlated any other way -- so an
-				// EXPIRED carrying no id was silently unreadable: the tab for a search
-				// the core had already freed stayed open forever, its results dropped
-				// by the next union poll. `want` is safe to echo even for an unknown
-				// id: it is the value the client itself just asked about.
+				// reply under `if (idTag)` -- it has to, since it polls several searches
+				// and the replies are not correlated any other way -- so an EXPIRED
+				// carrying no id was silently unreadable: the tab for a search the core
+				// had already freed stayed open forever, its results dropped by the next
+				// union poll. `want` is safe to echo even for an unknown id: it is the
+				// value the client itself just asked about.
 				if (want != 0) {
 					response->AddTag(CECTag(EC_TAG_SEARCH_ID, want));
 				}
@@ -3912,10 +3852,10 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 		break;
 	case EC_OP_SET_PREFERENCES: {
 		static_cast<const CEC_Prefs_Packet *>(request)->Apply();
-		// Apply() left any amuleapi password the client sent sitting in the
-		// preferences as a pending request; this is what turns it into a stored,
-		// stretched record in amuleapi-passwords. Logged rather than returned as
-		// an EC error: the rest of the preferences applied fine.
+		// Apply() left any amuleapi password the client sent sitting in the preferences as
+		// a pending request; this is what turns it into a stored, stretched record in
+		// amuleapi-passwords. Logged rather than returned as an EC error: the rest of the
+		// preferences applied fine.
 		wxString credentialError;
 		if (!AmuleApiCredentials::ApplyPrefs(credentialError)) {
 			AddLogLineC(CFormat(_("Could not save the amuleapi password: %s")) % credentialError);
@@ -3959,12 +3899,12 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 			CEC_Category_Tag tag(
 				*static_cast<const CEC_Category_Tag *>(request->GetFirstTagSafe()));
 			if (tag.GetInt() >= theApp->glob_prefs->GetCatCount()) {
-				// No such category. Deliberately WITHOUT EC_TAG_CATEGORY_PATH: on a
-				// failed update that tag means "everything but the path was applied,
-				// and here is the path kept instead", which clients answer as a
-				// success. Emitting it here would report a category that does not
-				// exist as updated. The index is whatever the client sent -- it used
-				// to be indexed straight into m_CatList.
+				// No such category. Deliberately WITHOUT EC_TAG_CATEGORY_PATH: on a failed
+				// update that tag means "everything but the path was applied, and here is
+				// the path kept instead", which clients answer as a success. Emitting it
+				// here would report a category that does not exist as updated. The index
+				// is whatever the client sent -- it used to be indexed straight into
+				// m_CatList.
 				response = new CECPacket(EC_OP_FAILED);
 				response->AddTag(CECTag(EC_TAG_CATEGORY, tag.GetInt()));
 				response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("No such category.")));
@@ -3985,11 +3925,10 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 		}
 		break;
 	case EC_OP_DELETE_CATEGORY:
-		// Rejections answer EC_OP_FAILED, not the blanket EC_OP_NOOP this used to
-		// send: the guards downstream discard these silently, so a client could
-		// not tell a completed delete from a discarded one. Never attach
-		// EC_TAG_CATEGORY_PATH -- on a failed category command clients read it
-		// as success.
+		// Rejections answer EC_OP_FAILED, not the blanket EC_OP_NOOP this used to send:
+		// the guards downstream discard these silently, so a client could not tell a
+		// completed delete from a discarded one. Never attach EC_TAG_CATEGORY_PATH -- on a
+		// failed category command clients read it as success.
 		if (request->GetTagCount() != 1) {
 			response = new CECPacket(EC_OP_FAILED);
 			response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("Malformed category request.")));
@@ -4067,10 +4006,10 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 		response = new CECPacket(EC_OP_NOOP);
 		break;
 	case EC_OP_GET_CHAT_MESSAGES: {
-		// Non-destructive backfill of ONE session's history, for a client
-		// opening a conversation it has no transcript for. The polling path
-		// is EC_OP_GET_CHAT_SESSIONS; this exists so opening an old tab does
-		// not have to replay the whole store.
+		// Non-destructive backfill of ONE session's history, for a client opening a
+		// conversation it has no transcript for. The polling path is
+		// EC_OP_GET_CHAT_SESSIONS; this exists so opening an old tab does not have to
+		// replay the whole store.
 		const CECTag *idTag = request->GetTagByName(EC_TAG_CHAT_CLIENT_ID);
 		if (!idTag) {
 			response = new CECPacket(EC_OP_FAILED);
@@ -4089,23 +4028,23 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 		break;
 	}
 	case EC_OP_REFRESH_MEDIA_METADATA: {
-		// Re-extract media metadata: for one file when the request names a hash,
-		// otherwise for the whole share. Answers immediately with how many probes
-		// were queued -- the work happens on the media-probe worker.
+		// Re-extract media metadata: for one file when the request names a hash, otherwise
+		// for the whole share. Answers immediately with how many probes were queued -- the
+		// work happens on the media-probe worker.
 		//
-		// Disabled is not the same answer as "nothing was eligible", and both used
-		// to arrive as queued = 0. A caller cannot act on that: a share with no
-		// media in it legitimately queues nothing. Answered first, and as a
-		// failure, so REST turns it into an error naming the reason.
+		// Disabled is not the same answer as "nothing was eligible", and both used to
+		// arrive as queued = 0. A caller cannot act on that: a share with no media in it
+		// legitimately queues nothing. Answered first, and as a failure, so REST turns it
+		// into an error naming the reason.
 		if (!thePrefs::GetMediaMetadataEnabled()) {
 			response = new CECPacket(EC_OP_FAILED);
 			response->AddTag(CECTag(EC_TAG_STRING,
 				wxTRANSLATE("Media metadata extraction is disabled in preferences")));
 			break;
 		}
-		// Every EC_TAG_KNOWNFILE child, not just the first: the GUI sends one
-		// request for a whole selection rather than one packet per file, which
-		// would stall its own polling on the request fifo.
+		// Every EC_TAG_KNOWNFILE child, not just the first: the GUI sends one request for a
+		// whole selection rather than one packet per file, which would stall its own
+		// polling on the request fifo.
 		std::vector<CMD4Hash> hashes;
 		for (const CECTag &child : *request) {
 			if (child.GetTagName() == EC_TAG_KNOWNFILE) {
@@ -4119,8 +4058,8 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 			const CMD4Hash hash = hashes.front();
 			if (!theApp->sharedfiles->RefreshMediaMetadata(hash)) {
 				// The caller already resolved the hash against its own snapshot, so "no
-				// such file" is not the reason by the time this runs -- what is left is
-				// a file whose extension is not audio/video, or an in-progress download.
+				// such file" is not the reason by the time this runs -- what is left is a
+				// file whose extension is not audio/video, or an in-progress download.
 				response = new CECPacket(EC_OP_FAILED);
 				response->AddTag(CECTag(EC_TAG_STRING,
 					wxTRANSLATE("File is not eligible for media metadata "
@@ -4137,19 +4076,18 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 		break;
 	}
 	case EC_OP_GET_CHAT_SESSIONS: {
-		// The per-tick workhorse: the session list AND every message newer
-		// than the client's cursor in one roundtrip, so an idle connection
-		// costs one small packet and a busy one needs no follow-up query.
+		// The per-tick workhorse: the session list AND every message newer than the
+		// client's cursor in one roundtrip, so an idle connection costs one small packet
+		// and a busy one needs no follow-up query.
 		const uint32 cursor = ChatCursorFrom(request);
 		response = new CECPacket(EC_OP_CHAT_SESSIONS);
-		// Top-level cursor even when nothing came back, so a client can
-		// advance past messages that were evicted rather than re-asking for
-		// them forever.
+		// Top-level cursor even when nothing came back, so a client can advance past
+		// messages that were evicted rather than re-asking for them forever.
 		response->AddTag(CECTag(EC_TAG_CHAT_MSG_ID, theApp->chatsessions->LastMsgId()));
 		for (const CChatSessionStore::Session *session : theApp->chatsessions->Sessions()) {
-			// Sessions with nothing new are still listed, with no message children:
-			// that is how a client that connected late learns the session exists, and
-			// how every client learns a session it is tracking was closed elsewhere.
+			// Sessions with nothing new are still listed, with no message children: that is
+			// how a client that connected late learns the session exists, and how every
+			// client learns a session it is tracking was closed elsewhere.
 			response->AddTag(EncodeChatSession(*session, cursor));
 		}
 		break;
@@ -4168,10 +4106,10 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 			response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("Unknown chat target")));
 			break;
 		}
-		// Deliberately ignoring the bool: a false return means "queued while
-		// connecting", not "failed" -- the desktop optimistically prints
-		// *** Connecting to Client *** -- so turning it into EC_OP_FAILED would
-		// report an error for a message that arrives moments later.
+		// Deliberately ignoring the bool: a false return means "queued while connecting",
+		// not "failed" -- the desktop optimistically prints *** Connecting to Client ***
+		// -- so turning it into EC_OP_FAILED would report an error for a message that
+		// arrives moments later.
 		theApp->clientlist->SendChatMessage(gui_id, text);
 		response = new CECPacket(EC_OP_NOOP);
 		response->AddTag(CECTag(EC_TAG_CHAT_CLIENT_ID, gui_id));
@@ -4192,9 +4130,9 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 			break;
 		}
 		theApp->clientlist->SetChatState(gui_id, MS_NONE);
-		// Closing is global, matching how closing a search tab destroys the
-		// core bucket for every client: the next EC_OP_CHAT_SESSIONS reply
-		// simply omits the session and each client drops its tab.
+		// Closing is global, matching how closing a search tab destroys the core bucket for
+		// every client: the next EC_OP_CHAT_SESSIONS reply simply omits the session and
+		// each client drops its tab.
 		Notify_Chat_SessionRemoved(gui_id);
 		response = new CECPacket(EC_OP_NOOP);
 		break;
@@ -4325,13 +4263,10 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 	return response;
 }
 
-/*
- * Here notification-based EC. Notification will be sorted by priority for possible throttling.
- */
+// Notification-based EC below. Notifications are sorted by priority for possible
+// throttling.
 
-/*
- * Core general status
- */
+// Core general status
 ECStatusMsgSource::ECStatusMsgSource()
 {
 	m_last_ed2k_status_sent = 0xffffffff;
@@ -4378,9 +4313,7 @@ CECPacket *ECStatusMsgSource::GetNextPacket()
 	return 0;
 }
 
-/*
- * Downloading files
- */
+// Downloading files
 ECPartFileMsgSource::ECPartFileMsgSource()
 {
 	std::vector<CPartFile *> snapshot;
@@ -4454,9 +4387,7 @@ CECPacket *ECPartFileMsgSource::GetNextPacket()
 	return 0;
 }
 
-/*
- * Shared files - similar to downloading
- */
+// Shared files - similar to downloading
 ECKnownFileMsgSource::ECKnownFileMsgSource()
 {
 	std::vector<CKnownFile *> snapshot;
@@ -4522,9 +4453,7 @@ CECPacket *ECKnownFileMsgSource::GetNextPacket()
 	return 0;
 }
 
-/*
- * Notification about search status
- */
+// Notification about search status
 ECSearchMsgSource::ECSearchMsgSource() {}
 
 CECPacket *ECSearchMsgSource::GetNextPacket()
@@ -4571,9 +4500,7 @@ void ECSearchMsgSource::SetChildDirty(const CSearchFile *file)
 	m_dirty_status[file->GetFileHash()].m_child_dirty = true;
 }
 
-/*
- * Notification about uploading clients
- */
+// Notification about uploading clients
 CECPacket *ECClientMsgSource::GetNextPacket()
 {
 	return 0;
@@ -4725,8 +4652,8 @@ void ECNotifier::NextPacketToSocket()
 		if (sock->HaveNotificationSupport() && !sock->DataPending()) {
 			ECUpdateMsgSource **notifier_array = i->second;
 			// Same ownership contract as WriteDoneAndQueueEmpty: the CECPacket from
-			// GetNextPacket is caller-owned and SendPacket only serialises it, so
-			// wrap it to be freed at scope exit.
+			// GetNextPacket is caller-owned and SendPacket only serialises it, so wrap it to
+			// be freed at scope exit.
 			CSmartPtr<CECPacket> packet(GetNextPacket(notifier_array));
 			if (packet) {
 				// printf("[EC] sending update packet; opcode=%x\n",packet->GetOpCode());

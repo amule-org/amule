@@ -56,9 +56,8 @@ there client on the eMule forum..
 using namespace Kademlia;
 ////////////////////////////////////////
 
-// Top bit reserved for Kad-allocated IDs; ed2k Local/Global IDs
-// (CSearchDlg::StartNewSearch) live in the bottom half. Keeps the
-// two ID spaces from ever colliding regardless of session length.
+// Top bit reserved for Kad-allocated IDs; ed2k Local/Global IDs (CSearchDlg::StartNewSearch) live
+// in the bottom half, so the two ID spaces cannot collide however long the session runs.
 #define SEARCH_ID_KAD_MASK 0x80000000
 uint32_t CSearchManager::m_nextID = SEARCH_ID_KAD_MASK;
 SearchMap CSearchManager::m_searches;
@@ -78,19 +77,19 @@ bool CSearchManager::RequestMoreResults(uint32_t searchID, bool *out_fired)
 	if (out_fired) {
 		*out_fired = false;
 	}
-	// Linear scan because m_searches is keyed by target hash, not
-	// searchID.  CSearch counts at any one time are tiny (one per active
-	// user search plus internal lookups), so the scan cost is negligible.
+	// Linear scan because m_searches is keyed by target hash, not searchID. CSearch counts are
+	// tiny at any one time (one per active user search plus internal lookups), so the scan cost
+	// is negligible.
 	for (SearchMap::iterator it = m_searches.begin(); it != m_searches.end(); ++it) {
 		if (it->second->GetSearchID() == searchID) {
 			const bool fired = it->second->RequestMoreResults();
 			if (out_fired) {
 				*out_fired = fired;
 			}
-			// Evaluated AFTER the attempt, and or-ed with it: the reask that
-			// consumes the last of the budget really happened, but leaves
-			// CanReaskMore() false. Reporting that as a refusal would have
-			// every client disable its control on a success.
+			// Evaluated AFTER the attempt, and or-ed with it: the reask that consumes
+			// the last of the budget really happened, but leaves CanReaskMore() false.
+			// Reporting that as a refusal would have every client disable its control
+			// on a success.
 			return fired || it->second->CanReaskMore();
 		}
 	}
@@ -102,13 +101,12 @@ bool CSearchManager::RequestMoreResults(uint32_t searchID, bool *out_fired)
 bool CSearchManager::IsKadSearch(uint32_t searchID)
 {
 	for (SearchMap::const_iterator it = m_searches.begin(); it != m_searches.end(); ++it) {
-		// Skip searches that were never given an id. Their m_searchID is the
-		// constructor's 0xFFFFFFFF, which is also the single bucket every EC client
-		// predating multi-search reuses for all of its searches -- so without this an
-		// ordinary node lookup, buddy lookup or UDP firewall check answers "yes, that
-		// is a running Kad search" for a legacy client's ed2k search, and the whole
-		// per-id lifecycle follows from there. Only PrepareFindKeywords and
-		// PrepareLookup assign an id.
+		// Skip searches that were never given an id. Their m_searchID is the constructor's
+		// 0xFFFFFFFF, which is also the single bucket every pre-multi-search EC client
+		// reuses for all of its searches -- so without this an ordinary node lookup, buddy
+		// lookup or UDP firewall check answers "yes, that is a running Kad search" for a
+		// legacy client's ed2k search, and the whole per-id lifecycle follows. Only
+		// PrepareFindKeywords and PrepareLookup assign an id.
 		if (!it->second->HasSearchID()) {
 			continue;
 		}
@@ -127,9 +125,9 @@ void CSearchManager::StopSearch(uint32_t searchID, bool delayDelete)
 			if (delayDelete) {
 				it->second->PrepareToStop();
 			} else {
-				// Delete this search now. If this method is changed to continue
-				// looping, take care of the iterator: it already points at the next
-				// entry, so the for-loop could iterate past the end.
+				// Delete this search now. If this method is changed to keep
+				// looping, mind the iterator: it already points at the next entry,
+				// so the for-loop could run past the end.
 				delete it->second;
 				m_searches.erase(it++);
 			}
@@ -286,13 +284,11 @@ void CSearchManager::GetWords(const wxString &str, WordList *words, bool allowDu
 	wxStringTokenizer tkz(str, GetInvalidKeywordChars());
 	while (tkz.HasMoreTokens()) {
 		current_word = tkz.GetNextToken();
-		// TODO: We'd need a safe way to determine if a sequence which contains only 3 chars is a real
-		// word. Currently we do this by evaluating the UTF-8 byte count. This will work well for
-		// Western locales, AS LONG AS the min. byte count is 3(!). If the byte count is once changed
-		// to 2, this will not work properly any longer because there are a lot of Western characters
-		// which need 2 bytes in UTF-8. Maybe we need to evaluate the Unicode character values itself
-		// whether the characters are located in code ranges where single characters are known to
-		// represent words.
+		// TODO: we need a safe way to tell whether a 3-character sequence is a real word.
+		// For now we go by the UTF-8 byte count, which works for Western locales AS LONG AS
+		// the minimum byte count is 3(!). At 2 it breaks, many Western characters needing 2
+		// bytes in UTF-8. Evaluating the Unicode character values, and whether they sit in
+		// ranges where single characters are words, may be the answer.
 		if (strlen((const char *)(current_word.utf8_str())) >= 3) {
 			current_word.MakeLower();
 			if (!allowDuplicates) {
