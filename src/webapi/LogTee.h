@@ -80,12 +80,9 @@ private:
 // original console streams intact (a "tee"). It works at the file-descriptor
 // level -- fd 1 and fd 2 are routed through pipes and a forwarding thread copies
 // each chunk to both the saved console fd and the log file -- so it captures C
-// stdio (printf/fprintf), C++ streams (std::cout/std::cerr) and anything else
-// that writes to those descriptors, including the fatal-signal backtrace.
-//
-// Cross-platform: POSIX pipe/dup2/read and the Windows _pipe/_dup2/_read
-// equivalents. amuleapi installs a single instance at startup; the other EC
-// connectors do not use it.
+// stdio, C++ streams and anything else that writes to those descriptors,
+// including the fatal-signal backtrace. Cross-platform via the POSIX and
+// Windows pipe/dup2/read equivalents.
 class CLogTee
 {
 public:
@@ -97,16 +94,15 @@ public:
 
 	// Opens logPath (append, capped at maxBytes), redirects fd 1 and 2 through
 	// pipes and starts the forwarding threads. On any failure it restores the
-	// descriptors and returns false, leaving the process's stdout/stderr
-	// untouched.
+	// descriptors and returns false, leaving stdout/stderr untouched.
 	bool Install(const std::string &logPath, std::size_t maxBytes);
 
 	// Restores the original descriptors, drains and joins the forwarding
 	// threads and closes the file. Idempotent; also called by the destructor.
 	void Uninstall();
 
-	// Crash path: point fd 2 straight at the log file so a backtrace emitted by
-	// the fatal handler is written synchronously, without depending on the
+	// Crash path: point fd 2 straight at the log file so a backtrace from the
+	// fatal handler is written synchronously, without depending on the
 	// forwarding thread being scheduled before the process dies.
 	void RedirectStderrToFileForCrash();
 
@@ -114,9 +110,8 @@ public:
 
 private:
 	// One forwarding worker per stream: blocking-reads a pipe and writes each
-	// chunk to its console fd and the log file. Two threads (rather than one
-	// poll() loop) so the same code runs on Windows, which cannot poll() pipe
-	// descriptors.
+	// chunk to its console fd and the log file. Two threads rather than one
+	// poll() loop so the same code runs on Windows, which cannot poll() pipes.
 	void Pump(int readFd, int consoleFd);
 
 	bool m_installed = false;

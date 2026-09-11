@@ -114,11 +114,10 @@ wxString JoinPath(const wxString &dir, const wxString &leaf)
 	return fn.GetFullPath();
 }
 
-// Thin wx wrapper over webcommon::WriteFileAtomic0600 so the call sites
-// here can keep passing wxString paths. The writer itself is shared with
-// the credential store and with amuled, which writes the EC token into the
-// same config dir -- one implementation, so the permission and atomicity
-// guarantees cannot drift between them.
+// Thin wx wrapper over webcommon::WriteFileAtomic0600 so the call sites here
+// can keep passing wxString paths. The writer itself is shared with the
+// credential store and with amuled, so the permission and atomicity guarantees
+// cannot drift between them.
 bool WriteFileAtomic0600(const wxString &target_path, const std::string &body)
 {
 	return webcommon::WriteFileAtomic0600(std::string(target_path.utf8_str()), body);
@@ -185,24 +184,20 @@ bool CAmuleApiConfig::LoadAmuleapiConf(const wxString &path)
 			       "MaxConcurrentFileResponses=6\n";
 
 	if (!wxFileExists(path)) {
-		// First-run: write mode-0600 defaults file. EC password stays
-		// empty; amuleapi refuses to connect until it's filled in.
-		// amuleapi.conf carries `[EC]/Password=` in cleartext (base
-		// class wants hashable plaintext), so owner-only mode matches
-		// jwt-secret and passwords files.
-		//
-		// WriteFileAtomic0600 (write-temp, fsync, rename) so a crash
-		// mid-write can't leave a truncated config that the next
-		// start would happily load as partial → silent default flip.
+		// First-run: write a mode-0600 defaults file. The EC password stays empty
+		// and amuleapi refuses to connect until it is filled in; amuleapi.conf
+		// carries `[EC]/Password=` in cleartext, so owner-only mode matches the
+		// jwt-secret and passwords files. WriteFileAtomic0600 (write-temp, fsync,
+		// rename) so a crash mid-write cannot leave a truncated config the next
+		// start would load as partial.
 		if (!WriteFileAtomic0600(path, std::string(defaults))) {
 			m_lastError = "cannot create amuleapi.conf: " + std::string(path.utf8_str());
 			return false;
 		}
 	}
 
-	// Enforce 0600 on every load so a hand-edit (or a `cp` from a
-	// loose-permission source) doesn't silently widen the EC
-	// password's exposure.
+	// Enforce 0600 on every load so a hand-edit, or a `cp` from a
+	// loose-permission source, does not silently widen the password's exposure.
 	if (!EnforceOwnerOnly(path))
 		return false;
 
@@ -272,21 +267,17 @@ bool CAmuleApiConfig::LoadAmuleapiConf(const wxString &path)
 		m_auth.token_lockout_seconds = static_cast<unsigned>(n);
 	}
 
-	// `[Streaming]/EventBusRingCapacity`. Below the CEventBus floor
-	// is silently clamped up by the bus itself; we just accept any
-	// positive value here.
+	// `[Streaming]/EventBusRingCapacity`. Anything below the CEventBus floor is
+	// clamped up by the bus itself, so any positive value is accepted here.
 	if (cfg.Read("/Streaming/EventBusRingCapacity", &n) && n > 0) {
 		m_streaming.event_bus_ring_capacity = static_cast<unsigned>(n);
 	}
 
-	// `[Streaming]/MaxConcurrentFileResponses`. Bounded on both sides
-	// rather than merely positive, the way `/Server/Port` is: unlike the
-	// ring above -- which the bus clamps for us -- nothing downstream
-	// second-guesses this one, and every slot it grants pins a file
-	// descriptor and a 64 KiB buffer until the peer drains. 256 is already
-	// far past any plausible household deployment and keeps the worst case
-	// in the tens of megabytes; anything outside the band is a typo, and a
-	// typo gets the default rather than a number the operator did not mean.
+	// `[Streaming]/MaxConcurrentFileResponses`. Bounded on both sides rather than
+	// merely positive: unlike the ring above, nothing downstream second-guesses
+	// this one, and every slot it grants pins a file descriptor and a 64 KiB
+	// buffer until the peer drains. 256 keeps the worst case in the tens of
+	// megabytes; anything outside the band is a typo, and a typo gets the default.
 	if (cfg.Read("/Streaming/MaxConcurrentFileResponses", &n) && n > 0 && n <= 256) {
 		m_streaming.max_concurrent_file_responses = static_cast<unsigned>(n);
 	}
@@ -296,14 +287,9 @@ bool CAmuleApiConfig::LoadAmuleapiConf(const wxString &path)
 
 bool CAmuleApiConfig::LoadJwtSecret(const wxString &path)
 {
-	// Rotation is operator-manual today: delete amuleapi-jwt-secret
-	// and restart amuleapi, which auto-generates a fresh secret and
-	// invalidates every previously-issued token. A `--rotate-jwt-
-	// secret` CLI subcommand that does the file replacement + a
-	// SIGHUP reload without a full restart is roadmapped for 3.1
-	// (would let the daemon keep accepting old-keyed tokens for a
-	// grace window). Until then, the manual flow is documented in
-	// the amuleapi(1) FILES section.
+	// Rotation is operator-manual: delete amuleapi-jwt-secret and restart
+	// amuleapi, which auto-generates a fresh secret and invalidates every
+	// previously-issued token. Documented in the amuleapi(1) FILES section.
 	if (!wxFileExists(path)) {
 		// Auto-generate 32 random bytes. The new file is 0600 from
 		// the moment it lands on disk (open + chmod before any data).
@@ -326,9 +312,8 @@ bool CAmuleApiConfig::LoadJwtSecret(const wxString &path)
 		return false;
 	}
 	const wxFileOffset sz = f.Length();
-	// 64 hex chars + optional trailing newline. Cap generously to
-	// catch "someone pasted a 2 KB blob" without truncating valid
-	// edits.
+	// 64 hex chars + optional trailing newline. Capped generously to catch
+	// "someone pasted a 2 KB blob" without truncating valid edits.
 	if (sz < 64 || sz > 4096) {
 		m_lastError = "amuleapi-jwt-secret has unexpected size; "
 			      "expected 64 hex chars (256-bit secret)";
@@ -358,12 +343,9 @@ bool CAmuleApiConfig::LoadPasswords(const wxString &path)
 	const std::string dir(m_configDir.utf8_str());
 
 	if (!wxFileExists(path)) {
-		// Auto-create empty so the operator sees the file exists, with
-		// the right mode bits. First-run flow:
-		//  amuleapi --set-admin-pass=<plain>
-		// hashes + writes the admin record; the daemon then accepts
-		// logins. amulegui and the preferences dialog write the same
-		// file for the same effect.
+		// Auto-create empty so the operator sees the file exists, with the right
+		// mode bits. `amuleapi --set-admin-pass=<plain>` then hashes and writes the
+		// admin record; amulegui and the preferences dialog write the same file.
 		std::string err;
 		if (!webcommon::SaveCredentialsFile(dir, m_credentials, err)) {
 			m_lastError = "cannot create amuleapi-passwords: " + err;
@@ -390,10 +372,9 @@ bool CAmuleApiConfig::HasAnyCredential() const
 
 std::time_t CAmuleApiConfig::CredentialsChangedAt() const
 {
-	// Second granularity, which leaves a token minted in the same second
-	// as a password change alive. Bounded and self-correcting: the next
-	// change moves the cutoff again, and a one-second window is far
-	// inside the time it takes to notice a leak and react to it.
+	// Second granularity, which leaves a token minted in the same second as a
+	// password change alive. Bounded and self-correcting: the next change moves
+	// the cutoff again, and one second is far inside the time to notice a leak.
 	wxFileName fn(JoinPath(m_configDir, "amuleapi-passwords"));
 	if (!fn.FileExists()) {
 		return 0;
@@ -438,10 +419,9 @@ CAmuleApiConfig::MatchedRole CAmuleApiConfig::VerifyPassword(const std::string &
 
 void CAmuleApiConfig::RehashInPlace(webcommon::CredentialRole role, const std::string &md5_hex)
 {
-	// Re-storing the same password at the current cost is housekeeping,
-	// not a rotation, so the file's modification time must not move: that
-	// timestamp is what invalidates sessions, and nobody should be signed
-	// out because their password was quietly re-hashed on the way in.
+	// Re-storing the same password at the current cost is housekeeping, not a
+	// rotation, so the file's modification time must not move: that timestamp is
+	// what invalidates sessions.
 	wxFileName fn(JoinPath(m_configDir, "amuleapi-passwords"));
 	const bool had_file = fn.FileExists();
 	wxDateTime access, modified, created;

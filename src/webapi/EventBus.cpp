@@ -51,23 +51,19 @@ void CEventBus::Publish(const std::string &name, const std::string &data)
 	ev.data = data;
 	{
 		std::lock_guard<std::mutex> g(m_mu);
-		// ID assignment INSIDE the lock. With fetch_add outside,
-		// two concurrent publishers can swap their lock-order vs
-		// their id-order: thread A gets id=N, thread B gets id=N+1,
-		// then thread B grabs the lock first and pushes id=N+1
-		// before thread A pushes id=N. The drainer then iterates
-		// the deque (which is publish order, NOT id order) and
-		// reports `id=N+1, id=N` — failing the strict-monotonicity
-		// invariant every subscriber depends on.
-		// Single-lock-section publish keeps fetch+push atomic.
+		// ID assignment INSIDE the lock. With fetch_add outside, two concurrent
+		// publishers can swap their lock-order against their id-order: A gets
+		// id=N and B id=N+1, then B grabs the lock first and pushes N+1 before A
+		// pushes N. The drainer iterates the deque, which is publish order and
+		// NOT id order, and reports `id=N+1, id=N` -- failing the strict
+		// monotonicity every subscriber depends on.
 		ev.id = m_next_id.fetch_add(1, std::memory_order_relaxed);
 		if (m_ring.size() >= m_capacity)
 			m_ring.pop_front();
 		m_ring.push_back(std::move(ev));
 	}
-	// notify_all so every blocked drainer wakes and races to its
-	// own copy-out. The mutex critical section is short (just walks
-	// the deque) so contention is negligible.
+	// notify_all so every blocked drainer wakes and races to its own copy-out.
+	// The critical section is short, so contention is negligible.
 	m_cv.notify_all();
 }
 
@@ -77,13 +73,10 @@ void CEventBus::PublishBatch(const std::vector<std::pair<std::string, std::strin
 		return;
 	{
 		std::lock_guard<std::mutex> g(m_mu);
-		// Same id-monotonicity invariant as Publish: assign + push
-		// inside the lock. Doing the whole batch under one lock
-		// also collapses N notify_all wake-ups into one — the cold
-		// start tick on a 5K-download library used to fire 5K
-		// individual notify_all cycles inside the refresher loop
-		// (each going through every drainer's cv mutex), which
-		// dominated the tick's wall-clock.
+		// Same id-monotonicity invariant as Publish: assign + push inside the lock.
+		// Doing the whole batch under one lock also collapses N notify_all
+		// wake-ups into one -- the cold-start tick on a 5K-download library used
+		// to fire 5K of them inside the refresher loop, dominating the tick.
 		for (const auto &kv : events) {
 			Event ev;
 			ev.name = kv.first;
@@ -113,10 +106,8 @@ std::uint64_t CEventBus::Drain(
 		       (!m_ring.empty() && m_ring.back().id > since_id);
 	};
 	if (!has_newer()) {
-		// Wait up to `timeout` for someone to publish OR for the
-		// shutdown latch to fire. wait_for returns no_timeout on a
-		// notify, timeout otherwise. We re-check the predicate
-		// either way.
+		// Wait up to `timeout` for someone to publish OR for the shutdown latch to
+		// fire. The predicate is re-checked either way.
 		m_cv.wait_for(lk, timeout, has_newer);
 	}
 
@@ -159,10 +150,9 @@ void CEventBus::ResetForTest()
 
 void CEventBus::Shutdown()
 {
-	// Latch the shutdown flag and broadcast. Drain callers wake on
-	// the cv either way (even with no events pending) and exit the
-	// predicate. notify_all under the lock so a drainer that's
-	// about to wait_for can't miss the wake.
+	// Latch the shutdown flag and broadcast. Drain callers wake on the cv either
+	// way and exit the predicate. notify_all under the lock, so a drainer about
+	// to wait_for cannot miss the wake.
 	{
 		std::lock_guard<std::mutex> g(m_mu);
 		m_shutdown.store(true, std::memory_order_release);

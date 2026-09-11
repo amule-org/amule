@@ -48,16 +48,13 @@ constexpr const char *kDownloadStateDownloading = "downloading";
 
 //! True when a reported part index can actually address a chunk of a file with
 //! `part_count` chunks. Three things make it unusable: the peer never reported
-//! one (`present` false), kNoPartPendingSentinel, and any index left over from
-//! a peer whose request file is not this one. Relayed raw, either of the last
-//! two would draw a stripe on a chunk nothing is happening to.
+//! one (`present` false), kNoPartPendingSentinel, and any index left over from a
+//! peer whose request file is not this one.
 //!
-//! The sentinel is tested by name rather than left to fall out of the bounds
-//! check, which only filters it while `part_count <= 0xffff`. Above that -- a
-//! file larger than 65535 * kPartSizeBytes, about 637 GB -- 65535 is a real
-//! chunk, so the bound alone would pass the sentinel through as an index on
-//! exactly the files a source bar is most useful on. Part 65535 of such a file
-//! is then unreportable, which is what the desktop already accepts.
+//! The sentinel is tested by name rather than left to the bounds check, which
+//! only filters it while `part_count <= 0xffff`. Above that -- a file larger
+//! than about 637 GB -- 65535 is a real chunk, so the bound alone would pass
+//! the sentinel through on exactly the files a source bar is most useful on.
 inline bool UsablePartIndex(bool present, std::uint16_t part, std::uint64_t part_count)
 {
 	return present && part != kNoPartPendingSentinel && static_cast<std::uint64_t>(part) < part_count;
@@ -65,23 +62,19 @@ inline bool UsablePartIndex(bool present, std::uint16_t part, std::uint64_t part
 
 //! The same test for `last_downloading_part`, plus the download-state guard the
 //! bounds check cannot supply: the core initialises m_lastDownloadingPart to 0
-//! (BaseClient.cpp: CUpDownClient::Init) and ECSpecialCoreTags.cpp ships it with
-//! AddTag rather than AddDiffTag, so it arrives on every frame whether or not
-//! the peer is transferring. A connected-but-queued source therefore reports a
-//! perfectly in-range 0, indistinguishable from one actually feeding chunk 0 --
-//! and since most sources in a list are queued rather than transferring, a
-//! renderer would mark chunk 0 as "downloading now" on nearly every row. The
-//! desktop guards it the same way (GenericClientListCtrl.cpp: lastDownloadingPart
-//! is forced to 0xffff unless GetDownloadState() == DS_DOWNLOADING); doing it in
-//! the serializer instead means every API client gets it right once rather than
-//! each rediscovering the rule.
+//! and ECSpecialCoreTags.cpp ships it with AddTag rather than AddDiffTag, so it
+//! arrives on every frame whether or not the peer is transferring. A
+//! connected-but-queued source therefore reports a perfectly in-range 0,
+//! indistinguishable from one actually feeding chunk 0 -- and most sources in a
+//! list are queued, so a renderer would mark chunk 0 as "downloading now" on
+//! nearly every row. The desktop guards it the same way; doing it in the
+//! serializer means every API client gets it right once.
 //!
 //! Takes the state string and the two scalars rather than a ClientSnapshot, so
 //! this header needs neither State.h nor anything State.h reaches.
 //!
 //! Deliberately NOT applied to next_requested_part, exactly as the desktop does
-//! not apply it either: 0xffff is that field's own "no block pending" answer, so
-//! an idle peer already falls out through UsablePartIndex.
+//! not: 0xffff is that field's own "no block pending" answer.
 inline bool UsableLastDownloadingPart(
 	const std::string &download_state, bool present, std::uint16_t part, std::uint64_t part_count)
 {

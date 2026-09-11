@@ -77,14 +77,10 @@ std::size_t CRevocationSet::Size() const
 
 void CRevocationSet::GcExpired() const
 {
-	// O(n) sweep over the revoked map, fired from every Revoke() and
-	// every Contains() check. Fine at amuleapi's expected scale (a
-	// single operator, a handful of admin/guest sessions per day);
-	// the map stays in the low hundreds even under aggressive
-	// re-login. If multi-tenant deployments ever raise the revoked
-	// population into the thousands, swap this for a min-heap keyed
-	// by `exp` so the GC pops a constant prefix per call instead of
-	// walking the whole structure.
+	// O(n) sweep over the revoked map, fired from every Revoke() and every
+	// Contains() check. Fine at amuleapi's expected scale -- a single operator,
+	// a handful of sessions per day -- so the map stays in the low hundreds
+	// even under aggressive re-login.
 	const std::time_t now = std::time(nullptr);
 	for (auto it = m_revoked.begin(); it != m_revoked.end();) {
 		if (it->second <= now) {
@@ -99,9 +95,8 @@ void CRevocationSet::GcExpired() const
 
 std::string ExtractBearerToken(const std::string &authorization_header)
 {
-	// `Authorization: Bearer <jwt>` per RFC 6750 §2.1. Scheme name is
-	// case-insensitive; the token itself is the bare base64url
-	// triplet our own CJwt emits.
+	// `Authorization: Bearer <jwt>` per RFC 6750 2.1. The scheme name is
+	// case-insensitive; the token is the bare base64url triplet CJwt emits.
 	const char *prefix = "Bearer ";
 	const size_t plen = std::strlen(prefix);
 	if (authorization_header.size() <= plen)
@@ -123,9 +118,8 @@ std::string ExtractBearerToken(const std::string &authorization_header)
 
 std::string ExtractCookieValue(const std::string &cookie_header, const std::string &cookie_name)
 {
-	// Delegate to libwebcommon's pointer-arithmetic helper so the
-	// parsing rules (case-insensitive name match, `;` separators,
-	// OWS trimming) stay in one place.
+	// Delegate to libwebcommon's helper so the parsing rules (case-insensitive
+	// name match, `;` separators, OWS trimming) stay in one place.
 	const auto v =
 		webcommon::FindCookieValue(cookie_header.c_str(), cookie_header.size(), cookie_name.c_str());
 	if (!v.first || v.second == 0)

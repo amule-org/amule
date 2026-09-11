@@ -42,11 +42,9 @@ bool ResolveWithinRoot(const std::string &root, const std::string &rel, std::str
 	char root_real[PATH_MAX];
 	char fs_real[PATH_MAX];
 #ifdef _WIN32
-	// _fullpath() is lexical-only (no reparse-point resolution). On
-	// Windows the symlink containment threat model is weaker — symlinks
-	// require elevation and are functionally exotic, so lexical
-	// containment is sufficient for the operator-misconfig case the
-	// rejection step targets.
+	// _fullpath() is lexical-only (no reparse-point resolution). On Windows the
+	// symlink containment threat model is weaker -- symlinks require elevation
+	// -- so lexical containment covers the operator-misconfig case this targets.
 	if (!_fullpath(root_real, root.c_str(), PATH_MAX))
 		return false;
 	const std::string joined = std::string(root_real) + "\\" + rel;
@@ -62,10 +60,9 @@ bool ResolveWithinRoot(const std::string &root, const std::string &rel, std::str
 	if (!realpath(joined.c_str(), fs_real))
 		return false;
 #endif
-	// _fullpath() on Windows preserves a trailing path separator from
-	// its input, which then breaks the prefix comparison below. POSIX
-	// realpath() strips them. Normalise here so the containment check
-	// is platform-agnostic.
+	// _fullpath() on Windows preserves a trailing path separator from its input,
+	// which then breaks the prefix comparison below; POSIX realpath() strips
+	// them. Normalise here so the containment check is platform-agnostic.
 	std::size_t root_len = std::strlen(root_real);
 	while (root_len > 1 && (root_real[root_len - 1] == '/' || root_real[root_len - 1] == '\\')) {
 		root_real[--root_len] = '\0';
