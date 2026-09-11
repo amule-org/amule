@@ -56,12 +56,10 @@
 class CWebSocket;
 class CMD4Hash;
 
-// Idle window after which a CSession entry is dropped and the user is
-// asked to log in again. Has been a hardcoded 7200 (2 hours) in
-// CScriptWebServer::CheckLoggedin since forever; the named constant
-// existed but was never wired up (set to 300, but no `7200`-using site
-// referenced it). Keep the live behaviour (2 hours) and have the
-// macro own the value so the timeout can be changed in one place.
+// Idle window after which a CSession entry is dropped and the user is asked to
+// log in again. CheckLoggedin has hardcoded 7200 (2 hours) since forever, while
+// the named constant existed and was never wired up. The macro now owns the
+// value, so the timeout can be changed in one place.
 #define SESSION_TIMEOUT_SECS 7200 // 2 hours session expiration
 #define SHORT_FILENAME_LENGTH 40  // Max size of file name.
 

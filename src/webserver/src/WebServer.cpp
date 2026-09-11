@@ -584,12 +584,10 @@ int CWebServerBase::GzipCompress(
 		0 /*xflags*/,
 		255);
 
-	// wire buffers
 	stream.next_in = const_cast<Bytef *>(source);
 	stream.avail_in = (uInt)sourceLen;
 	stream.next_out = ((Bytef *)dest) + 10;
 	stream.avail_out = *destLen - 18;
-	// doit
 	err = deflate(&stream, Z_FINISH);
 	if (err != Z_STREAM_END) {
 		deflateEnd(&stream);
@@ -597,17 +595,14 @@ int CWebServerBase::GzipCompress(
 	}
 	err = deflateEnd(&stream);
 	crc = crc32(crc, (const Bytef *)source, sourceLen);
-	// CRC
 	*(((Bytef *)dest) + 10 + stream.total_out) = (Bytef)(crc & 0xFF);
 	*(((Bytef *)dest) + 10 + stream.total_out + 1) = (Bytef)((crc >> 8) & 0xFF);
 	*(((Bytef *)dest) + 10 + stream.total_out + 2) = (Bytef)((crc >> 16) & 0xFF);
 	*(((Bytef *)dest) + 10 + stream.total_out + 3) = (Bytef)((crc >> 24) & 0xFF);
-	// Length
 	*(((Bytef *)dest) + 10 + stream.total_out + 4) = (Bytef)(sourceLen & 0xFF);
 	*(((Bytef *)dest) + 10 + stream.total_out + 5) = (Bytef)((sourceLen >> 8) & 0xFF);
 	*(((Bytef *)dest) + 10 + stream.total_out + 6) = (Bytef)((sourceLen >> 16) & 0xFF);
 	*(((Bytef *)dest) + 10 + stream.total_out + 7) = (Bytef)((sourceLen >> 24) & 0xFF);
-	// return  destLength
 	*destLen = 10 + stream.total_out + 8;
 
 	return err;
@@ -1043,22 +1038,16 @@ CProgressImage::~CProgressImage()
 
 void CProgressImage::CreateSpan()
 {
-	// Step 1: get gap list.  Use .data() rather than &m_Gaps[0] so the
-	// pointer is well-defined when the vector is empty (no gaps yet on
-	// a fresh partfile, or all gaps closed on a just-completed file).
-	// libstdc++ debug-mode catches the operator[]-on-empty case as a
-	// libstdc++ assertion -> SIGABRT; release builds previously got away
-	// with undefined behaviour.  The loop below is already bounded by
-	// gap_list_size, so when the vector is empty the pointer is never
-	// dereferenced.
+	// Step 1: get gap list. .data() rather than &m_Gaps[0], so the pointer is
+	// well-defined when the vector is empty -- no gaps yet on a fresh partfile, or
+	// all gaps closed on a just-completed one -- which libstdc++ debug mode
+	// otherwise catches as an assertion and SIGABRT. The loop below is bounded by
+	// gap_list_size, so an empty vector's pointer is never dereferenced.
 	const Gap_Struct *gap_list = (const Gap_Struct *)m_file->m_Gaps.data();
 	int gap_list_size = m_file->m_Gaps.size() / 2;
 
-	// allocate for worst case !
 	int color_gaps_alloc = 2 * (2 * gap_list_size + m_file->lFileSize / PARTSIZE + 1);
 	Color_Gap_Struct *colored_gaps = new Color_Gap_Struct[color_gaps_alloc];
-
-	// Step 2: combine gap and part status information
 
 	// Init first item to dummy info, so we will always have "previous" item
 	int colored_gaps_size = 0;
@@ -1125,7 +1114,6 @@ void CProgressImage::CreateSpan()
 				m_ColorLine[j] = colored_gaps[i].color;
 			}
 		}
-		// overwrite requested parts
 		for (uint32 i = 0; i < m_file->m_ReqParts.size(); i++) {
 			uint32 start = m_file->m_ReqParts[i].start / factor;
 			uint32 end = m_file->m_ReqParts[i].end / factor;
@@ -1177,7 +1165,6 @@ void CDynPngImage::png_write_fn(png_structp png_ptr, png_bytep data, png_size_t 
 
 unsigned char *CDynPngImage::RequestData(int &size)
 {
-	// write png into buffer
 	png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, 0, 0, 0);
 	png_infop info_ptr = png_create_info_struct(png_ptr);
 	png_set_IHDR(png_ptr,
@@ -1236,7 +1223,6 @@ void CDynProgressImage::DrawImage()
 
 unsigned char *CDynProgressImage::RequestData(int &size)
 {
-	// create new one
 	DrawImage();
 
 	return CDynPngImage::RequestData(size);

@@ -62,15 +62,11 @@ CWebSocket::CWebSocket(CWebServerBase *parent)
 {
 	m_pHead = 0;
 	m_pTail = 0;
-	// Allocate one extra slot so the NUL terminator at the end of
-	// OnReceive() always has a home, even if Read() exactly fills the
-	// requested span and the grow loop is skipped (the off-by-one
-	// scenario in #873: first Read returns m_dwBufSize bytes AND
-	// LastError() is set, leaving m_dwRecv == m_dwBufSize when the
-	// loop exits). The allocation is +1 byte; m_dwBufSize keeps
-	// reflecting the *usable* span we hand to Read() so the
-	// `m_dwBufSize - m_dwRecv` reads below still leave the spare slot
-	// free for the terminator.
+	// Allocate one extra slot so the NUL terminator at the end of OnReceive()
+	// always has a home, even if Read() exactly fills the requested span and the
+	// grow loop is skipped (the off-by-one in #873). m_dwBufSize keeps reflecting
+	// the USABLE span handed to Read(), so the `m_dwBufSize - m_dwRecv` reads below
+	// still leave the spare slot free.
 	m_pBuf = new char[4096 + 1];
 	m_IsGet = false;
 	m_IsPost = false;
