@@ -277,23 +277,46 @@ jobs:
           # Apple Silicon runners ship Rosetta preinstalled. Install
           # x86_64 Homebrew at /usr/local so we can fetch x86_64 bottles
           # for our deps. The native /opt/homebrew install is left alone.
-          arch -x86_64 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+          #
+          # Pinned rather than HEAD: as of 2026-09-11 install.sh aborts
+          # with "Homebrew on macOS is only supported on Apple Silicon
+          # processors!" before it creates the prefix, so HEAD cannot
+          # bootstrap this leg at all. df3c2556 is the last commit that
+          # still installs to /usr/local. A pinned ref also removes a
+          # fetch-HEAD-and-pipe-to-bash hazard.
+          REF=df3c2556141c012eaba0453ede7a1bd4f05b824c
+          arch -x86_64 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/$REF/install.sh)"
       - name: Update Homebrew
         run: ${{ matrix.archcmd }} ${{ matrix.brew_prefix }}/bin/brew update
-      # Homebrew dropped macOS Intel support in September 2026, so pcre2
-      # and openssl@3 now publish arm64_* macOS tags only (plus
-      # x86_64_linux, a Linuxbrew ELF build unusable on a Mac). The
-      # x86_64 prefix cannot be filled from bottles alone: `brew install`
-      # aborts with "no bottle available!" before reaching the rest of
-      # the list. Building the two from source costs ~68 min, so the
-      # kegs are cached; only a version bump pays that again.
+      # Homebrew is retiring Intel macOS, and a formula loses its Intel
+      # bottle the moment it is next revised, publishing arm64_* macOS
+      # tags only (plus x86_64_linux, a Linuxbrew ELF build unusable on
+      # a Mac). `brew install` then aborts with "no bottle available!"
+      # before reaching the rest of the list, so every formula that has
+      # lost its Intel bottle is built from source here instead.
+      #
+      # Pouring the last published Intel bottle by hand looks tempting
+      # and does not work: bottles carry @@HOMEBREW_PREFIX@@ in every
+      # install name, and Homebrew rewrites that during its own pour
+      # with a Mach-O edit plus a re-sign. An untarred bottle is broken,
+      # silently, until something tries to link against it.
+      #
+      # pkgconf is in the list as a build dependency, not a runtime one:
+      # aom, libmaxminddb and wxwidgets all need it to build and it has
+      # no Intel bottle either, so leaving it implicit risks the same
+      # "no bottle available!" abort one level down.
+      #
+      # Building costs upwards of an hour, so the kegs are cached and
+      # only a version bump pays it again. The formula list, the two
+      # cache path blocks and the relink loop must stay in step.
       - name: Resolve x86_64 source-built versions
         id: intelkegs
         if: matrix.arch == 'x86_64'
         run: |
           # Key on the versions brew resolved after `update`, not a
           # literal: a stale keg must never shadow a newer release.
-          V=$(${{ matrix.archcmd }} ${{ matrix.brew_prefix }}/bin/brew info --json=v2 pcre2 openssl@3 \
+          V=$(${{ matrix.archcmd }} ${{ matrix.brew_prefix }}/bin/brew info --json=v2 \
+                  pcre2 openssl@3 aom jpeg-turbo json-c libmaxminddb libtiff libupnp lz4 pkgconf wxwidgets \
               | python3 -c 'import sys,json;print("-".join(f["versions"]["stable"] for f in json.load(sys.stdin)["formulae"]))')
           echo "vers=$V" >> "$GITHUB_OUTPUT"
       - name: Restore x86_64 source-built kegs
@@ -303,20 +326,42 @@ jobs:
           path: |
             /usr/local/Cellar/pcre2
             /usr/local/Cellar/openssl@3
+            /usr/local/Cellar/aom
+            /usr/local/Cellar/jpeg-turbo
+            /usr/local/Cellar/json-c
+            /usr/local/Cellar/libmaxminddb
+            /usr/local/Cellar/libtiff
+            /usr/local/Cellar/libupnp
+            /usr/local/Cellar/lz4
+            /usr/local/Cellar/pkgconf
+            /usr/local/Cellar/wxwidgets
             /usr/local/opt/pcre2
             /usr/local/opt/openssl@3
+            /usr/local/opt/aom
+            /usr/local/opt/jpeg-turbo
+            /usr/local/opt/json-c
+            /usr/local/opt/libmaxminddb
+            /usr/local/opt/libtiff
+            /usr/local/opt/libupnp
+            /usr/local/opt/lz4
+            /usr/local/opt/pkgconf
+            /usr/local/opt/wxwidgets
           key: ${{ runner.os }}-macos-intel-kegs-${{ steps.intelkegs.outputs.vers }}
       - name: Install Homebrew deps
         run: |
           BREW=${{ matrix.brew_prefix }}/bin/brew
           if [ "${{ matrix.arch }}" = "x86_64" ]; then
-              # No-op when the cache restored a keg of the same version.
-              ${{ matrix.archcmd }} $BREW install --build-from-source pcre2 openssl@3
+              SRCBUILD="pcre2 openssl@3 aom jpeg-turbo json-c libmaxminddb libtiff libupnp lz4 pkgconf wxwidgets"
+              # No-op for each keg the cache restored at the same version.
+              ${{ matrix.archcmd }} $BREW install --build-from-source $SRCBUILD
               # A restored keg has no /usr/local/{lib,include} symlinks --
               # only the Cellar and opt paths are cached -- so relink or
               # dependents will not find the headers. openssl@3 is keg-only
               # and is found through its opt path, which is cached.
-              ${{ matrix.archcmd }} $BREW link --overwrite pcre2
+              for f in $SRCBUILD; do
+                  [ "$f" = "openssl@3" ] && continue
+                  ${{ matrix.archcmd }} $BREW link --overwrite "$f"
+              done
           fi
           # NOT --quiet: when the next formula loses its Intel bottle,
           # the reason has to be in the log. It was suppressed here, so
@@ -338,8 +383,26 @@ jobs:
           path: |
             /usr/local/Cellar/pcre2
             /usr/local/Cellar/openssl@3
+            /usr/local/Cellar/aom
+            /usr/local/Cellar/jpeg-turbo
+            /usr/local/Cellar/json-c
+            /usr/local/Cellar/libmaxminddb
+            /usr/local/Cellar/libtiff
+            /usr/local/Cellar/libupnp
+            /usr/local/Cellar/lz4
+            /usr/local/Cellar/pkgconf
+            /usr/local/Cellar/wxwidgets
             /usr/local/opt/pcre2
             /usr/local/opt/openssl@3
+            /usr/local/opt/aom
+            /usr/local/opt/jpeg-turbo
+            /usr/local/opt/json-c
+            /usr/local/opt/libmaxminddb
+            /usr/local/opt/libtiff
+            /usr/local/opt/libupnp
+            /usr/local/opt/lz4
+            /usr/local/opt/pkgconf
+            /usr/local/opt/wxwidgets
           key: ${{ runner.os }}-macos-intel-kegs-${{ steps.intelkegs.outputs.vers }}
       - name: Restore ccache
         if: github.event_name != 'workflow_call'
