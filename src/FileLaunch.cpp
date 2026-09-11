@@ -54,9 +54,7 @@ namespace
 // Hand an argument vector to the desktop, with the AppImage-safe environment
 // when we are inside a bundle: AppRun prepends the bundle's lib/bin directories
 // to the child's search paths, and a host program that inherits them loads our
-// older bundled libraries instead of the system ones and dies on an undefined
-// symbol (#334). Outside an AppImage this is a no-op and the child inherits as
-// usual.
+// older bundled libraries and dies on an undefined symbol (#334).
 //
 // A vector rather than a command string on purpose: the path crosses untouched,
 // so a name with spaces or quotes needs no escaping and cannot be re-split by
@@ -81,12 +79,11 @@ bool RunDetached(const wxString &description, const std::vector<wxString> &args)
 	try {
 		ret = wxExecute(argv.data(), wxEXEC_ASYNC, process, sanitized ? &execEnv : nullptr);
 	} catch (...) {
-		// wxExecute throws, rather than returning an error, when the environment
-		// it has to hand the child is unusable -- a working directory that no
-		// longer exists, for one. Uncaught it unwinds out of the menu handler and
-		// wx terminates the application: a *clean* exit, so no signal, no
-		// backtrace and no crash report, which makes it near-undiagnosable. A
-		// failed launch is not worth losing the session over.
+		// wxExecute throws, rather than returning an error, when the environment it
+		// has to hand the child is unusable -- a working directory that no longer
+		// exists, for one. Uncaught it unwinds out of the menu handler and wx
+		// terminates the application cleanly: no signal, no backtrace, no crash
+		// report.
 		delete process;
 		return false;
 	}
@@ -94,11 +91,10 @@ bool RunDetached(const wxString &description, const std::vector<wxString> &args)
 		delete process;
 		return false;
 	}
-	// True means the child was spawned, not that it did anything useful: an
-	// async wxExecute returns the pid as soon as the fork succeeds, so a failed
-	// exec (no xdg-open installed, say) is not reported here. macOS and Windows
-	// do surface a failure, because neither goes through this path for the
-	// desktop opener.
+	// True means the child was spawned, not that it did anything useful: an async
+	// wxExecute returns the pid as soon as the fork succeeds, so a failed exec (no
+	// xdg-open installed, say) is not reported here. macOS and Windows do surface a
+	// failure, since neither reaches the desktop opener this way.
 	return true;
 }
 
@@ -115,17 +111,16 @@ void Fail(const wxString &message, wxWindow *parent, bool reportModally)
 // Hand the path to the user's configured player.
 //
 // The template is split into arguments ONCE, with wxCmdLineParser, and the
-// placeholders are then substituted inside the resulting arguments -- so the
-// path and the bare name each cross as a single argv entry no matter what they
-// contain. The old code appended the path to a command string and let wxExecute
-// re-split it, which meant a remote-supplied filename could inject arguments:
-// `x\' --script=/tmp/evil.lua \'.avi` becomes a separate --script argument, and
-// players like mpv and vlc execute scripts given that way. Escaping the quotes
-// was the previous defence and was itself bypassable with a backslash; not
-// building a string in the first place removes the class.
+// placeholders are substituted inside the resulting arguments -- so the path and
+// the bare name each cross as a single argv entry whatever they contain. The old
+// code appended the path to a command string and let wxExecute re-split it, so a
+// remote-supplied filename could inject arguments: `x\' --script=/tmp/evil.lua
+// \'.avi` becomes a separate --script argument, and mpv and vlc execute scripts
+// given that way. Escaping the quotes was the previous defence and was itself
+// bypassable; not building a string removes the class.
+//
 // `reportModally` is for the caller that has nothing to fall back to: a failure
-// it only logs is, from the user's side, the same silent nothing this is meant
-// to remove. The caller that can fall back leaves it false and stays quiet.
+// it only logs is, from the user's side, the same silent nothing this removes.
 bool LaunchWithPlayer(const wxString &player, const CPath &path, wxWindow *parent, bool reportModally)
 {
 	const wxString target = path.GetRaw();
@@ -133,9 +128,9 @@ bool LaunchWithPlayer(const wxString &player, const CPath &path, wxWindow *paren
 
 	// ConvertStringToArgs defaults to DOS rules, which is wrong everywhere but
 	// Windows: it leaves single quotes literal and does not honour backslash
-	// escapes, so an existing `mpv -fs '%PARTFILE'` or a path with an escaped
-	// space silently stops working. Windows genuinely needs DOS, since UNIX
-	// rules would eat the backslashes in C:\Program Files\...
+	// escapes, so an existing `mpv -fs '%PARTFILE'` silently stops working. Windows
+	// genuinely needs DOS, since UNIX rules would eat the backslashes in C:\Program
+	// Files\...
 #ifdef __WINDOWS__
 	wxArrayString parts = wxCmdLineParser::ConvertStringToArgs(player, wxCMD_LINE_SPLIT_DOS);
 #else
@@ -148,23 +143,18 @@ bool LaunchWithPlayer(const wxString &player, const CPath &path, wxWindow *paren
 		return false;
 	}
 
-	// An absolute program path that is not a runnable file is worth catching
-	// here. IsFileExecutable covers both halves: a path that is absent, and one
-	// that exists without the exec bit -- a data file, or a wrapper script that
-	// was never chmod +x -- which would otherwise fail the same way.
-	// wxExecute cannot report it: the async form returns the pid as soon as the
-	// fork succeeds and execvp then fails in the child, so the caller sees
-	// success while the user sees only wx's "execvp ... failed with error 2".
-	// That is the normal state of affairs inside a Flatpak, where a host player
-	// such as /usr/bin/vlc is simply not on the sandbox's filesystem.
+	// An absolute program path that is not a runnable file is worth catching here.
+	// IsFileExecutable covers both halves: a path that is absent, and one that
+	// exists without the exec bit. wxExecute cannot report it -- the async form
+	// returns the pid as soon as the fork succeeds and execvp then fails in the
+	// child, so the caller sees success while the user sees only wx's "execvp ...
+	// failed with error 2". That is the normal state of affairs inside a Flatpak,
+	// where a host player is simply not on the sandbox's filesystem.
 	//
-	// A bare command name is left alone: resolving it would mean reimplementing
-	// the PATH search that the exec does anyway.
-	//
-	// Windows paths never match this test, and do not need to: there wxExecute
-	// goes through CreateProcess, which fails synchronously, so the launch
-	// returns 0 and the error path below already reports it. Only the POSIX
-	// fork/exec pair can succeed at the fork and fail out of sight in the child.
+	// A bare command name is left alone: resolving it would mean reimplementing the
+	// PATH search the exec does anyway. Windows paths never match this test and do
+	// not need to: CreateProcess fails synchronously, so the error path below
+	// already reports it.
 	if (parts[0].StartsWith("/") && !wxFileName::IsFileExecutable(parts[0])) {
 		Fail(CFormat(_("The configured video player was not found: %s")) % parts[0],
 			parent,
@@ -255,15 +245,12 @@ bool ResolvePath(const CKnownFile *file, CPath &out)
 	}
 
 #ifdef CLIENT_GUI
-	// Rewrite a remote daemon's path into this machine's, per the user's
-	// configured mappings (issue #843) -- e.g. the daemon's
-	// /downloads/incoming reachable here as D:\Downloads\aMule\incoming via
-	// a Samba mount. String substitution on the raw daemon path, done
-	// before it becomes part of a CPath: ApplyPathMapping() never assumes
-	// the remote side uses this host's separator convention. A no-op
-	// (returns the input unchanged) whenever no configured mapping's prefix
-	// matches, including the common case of an empty mapping list -- so
-	// this is a genuine copy only for a build that can actually change it.
+	// Rewrite a remote daemon's path into this machine's, per the user's configured
+	// mappings (issue #843) -- the daemon's /downloads/incoming reachable here as
+	// D:\Downloads\aMule\incoming over a Samba mount, say. String substitution on
+	// the raw daemon path, before it becomes part of a CPath, since the remote side
+	// need not use this host's separator convention. Returns the input unchanged
+	// when no mapping's prefix matches, the empty mapping list included.
 	const CPath directory = CPath(theApp->glob_prefs->ApplyPathMapping(rawDirectory.GetRaw()));
 #else
 	// The monolithic app is its own core: never remapped, so no copy.
@@ -324,11 +311,10 @@ void Open(CKnownFile *file, wxWindow *parent)
 	const bool media = (type == ftVideo || type == ftAudio);
 	const wxString &player = thePrefs::GetVideoPlayer();
 
-	// An unfinished download is "NNNN.part" on disk. No desktop registers a
-	// handler for that extension, so the platform opener cannot do anything
-	// with it -- it would answer with its own "no application set to open this
-	// document" dialog. Previewing one only works by handing the path to a
-	// player, so when there is none, say so instead of failing twice.
+	// An unfinished download is "NNNN.part" on disk, and no desktop registers a
+	// handler for that extension, so the platform opener would answer with its own
+	// "no application set to open this document" dialog. Previewing one only works
+	// by handing the path to a player, so when there is none, say so.
 	if (incomplete) {
 		if (player.IsEmpty()) {
 			if (parent != nullptr) {
@@ -348,11 +334,10 @@ void Open(CKnownFile *file, wxWindow *parent)
 	}
 
 	// Completed: the configured player is for watching media, so it is used for
-	// media and deliberately not for anything else -- which is what used to send
-	// an archive to the video player.
-	// A player that could not be launched should not cost the user the action:
-	// for a finished file the desktop handler is a reasonable second choice, and
-	// inside a Flatpak that is the portal, which reaches the host's application.
+	// media and deliberately not for anything else -- which is what used to send an
+	// archive to the video player. A player that could not be launched should not
+	// cost the user the action: for a finished file the desktop handler is a
+	// reasonable second choice, and inside a Flatpak that is the portal.
 	if (media && !player.IsEmpty() && LaunchWithPlayer(player, path, parent, false)) {
 		return;
 	}
@@ -379,10 +364,9 @@ void Reveal(const CKnownFile *file, wxWindow *WXUNUSED(parent))
 
 	bool ok = false;
 #if defined(__WXMAC__)
-	// NSWorkspace rather than spawning `open -R`: it selects the file in its
-	// folder, which is what "Show in Finder" means, and it needs no subprocess
-	// -- so nothing about the caller's environment (an unreadable working
-	// directory, for one) can perturb it.
+	// NSWorkspace rather than spawning `open -R`: it selects the file in its folder,
+	// which is what "Show in Finder" means, and needs no subprocess, so nothing
+	// about the caller's environment can perturb it.
 	ok = mac_reveal_in_finder(path.GetRaw().utf8_str());
 #elif defined(__WXMSW__)
 	// Explorer wants the path glued to the switch by a comma, and it exits

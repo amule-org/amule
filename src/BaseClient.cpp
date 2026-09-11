@@ -694,22 +694,19 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data)
 			break;
 
 		case CT_MOD_YOUR_IP:
-			// The address this peer says it saw us arrive from. Only the
-			// hash form is read: eMuleAI also accepts an integer form and
-			// sets its own public IPv4 from it, which lets a single
-			// unverified peer decide what this client believes its own
-			// address to be. emule-qt ignores the integer form, and this
-			// follows emule-qt.
+			// The address this peer says it saw us arrive from. Only the hash form
+			// is read: eMuleAI also accepts an integer form and sets its own public
+			// IPv4 from it, which lets a single unverified peer decide what this
+			// client believes its own address to be. emule-qt ignores the integer
+			// form, and this follows emule-qt.
 			//
-			// Even the hash form is not believed on one peer's word. It
-			// goes to a tracker that first checks the value is an address
-			// this machine actually holds -- so peers can never make us
-			// adopt a foreign one, only disambiguate between our own -- and
-			// then requires several distinct *observed* addresses to agree
-			// within a time window, keyed on where the packet actually came
-			// from rather than on the peer's self-declared user hash: a hash
-			// costs nothing to invent, a routable address does not. Nothing
-			// consumes the result yet; recognition only.
+			// Even the hash form is not believed on one peer's word. It goes to a
+			// tracker that first checks the value is an address this machine
+			// actually holds -- so peers can only disambiguate between our own,
+			// never make us adopt a foreign one -- and then requires several
+			// distinct *observed* addresses to agree within a time window, keyed on
+			// where the packet actually came from rather than on the peer's
+			// self-declared user hash. Nothing consumes the result yet.
 			if (temptag.IsHash()) {
 				ObservedPublicIPv6().AddClaim(
 					GetConnectIP(), temptag.GetHash().GetHash(), ::GetTickCount64());
@@ -717,11 +714,10 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data)
 			break;
 
 		default:
-			// An unrecognised tag is not a broken handshake. The switch
-			// has always fallen through silently for tags aMule does not
-			// know; the only thing added here is visibility for the
-			// vendor range, because a new CT_MOD_* tag arriving in the
-			// wild is worth knowing about and is otherwise invisible.
+			// An unrecognised tag is not a broken handshake. The switch has always
+			// fallen through silently for tags aMule does not know; the only thing
+			// added here is visibility for the vendor range, because a new CT_MOD_*
+			// tag arriving in the wild is worth knowing about.
 			if (temptag.GetNameID() >= 0xA0 && temptag.GetNameID() <= 0xAF) {
 				AddDebugLogLineN(logClient,
 					CFormat("Ignoring unknown vendor tag 0x%02X in hello from %s") %
@@ -794,9 +790,9 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data)
 	// A friend record can already be linked to this client from before the
 	// handshake, matched on address alone, and an address gets recycled. Now
 	// that the peer has said who it is, a record that turns out to be about
-	// somebody else has to let go: clearing only this client's side would
-	// leave that record pointing here and showing its friend as connected.
-	// Unlink first, because UnLinkClient() clears m_Friend as it goes.
+	// somebody else has to let go: clearing only this client's side would leave
+	// that record pointing here and showing its friend as connected. Unlink
+	// first, because UnLinkClient() clears m_Friend as it goes.
 	CFriend *previous = m_Friend;
 	CFriend *found = theApp->friendlist->FindFriend(m_UserHash, m_dwUserIP, m_nUserPort);
 	if (previous != nullptr && previous != found) {
@@ -813,16 +809,15 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data)
 
 	ReGetClientSoft();
 
-	// Everything worth remembering about this peer is populated by now: the
-	// name came out of the hello tags above, the address from the connection,
-	// and ReGetClientSoft() has just resolved the software and version. The
-	// credit record is the only thing that outlives the connection, so this is
-	// where a peer stops being anonymous in the history.
+	// Everything worth remembering about this peer is populated by now: the name
+	// came out of the hello tags above, the address from the connection, and
+	// ReGetClientSoft() has just resolved the software and version. The credit
+	// record is the only thing that outlives the connection, so this is where a
+	// peer stops being anonymous in the history.
 	//
 	// The session count is taken once per client object rather than once per
-	// call: an outgoing connection processes a hello answer as well as a
-	// hello, and a count that rose per packet would measure traffic instead of
-	// visits.
+	// call: an outgoing connection processes a hello answer as well as a hello,
+	// and a count that rose per packet would measure traffic instead of visits.
 	if (credits != nullptr) {
 		credits->UpdateMeta(m_Username,
 			m_dwUserIP,
@@ -979,12 +974,10 @@ bool CUpDownClient::ProcessMuleInfoPacket(const uint8_t *pachPacket, uint32 nSiz
 
 	const CMemFile data(pachPacket, nSize);
 
-	// The version number part of this packet will soon be useless since
-	// it is only able to go to v.99. Why the version is a uint8 and why
-	// it was not done as a tag like the eDonkey hello packet is not known.
-	// Therefore, sooner or later, we are going to have to switch over to
-	// using the eDonkey hello packet to set the version. No sense making
-	// a third value sent for versions.
+	// The version number part of this packet will soon be useless, since it can
+	// only go to v.99. Why the version is a uint8 rather than a tag like the
+	// eDonkey hello packet is not known -- sooner or later this has to switch to
+	// setting the version from the eDonkey hello packet instead.
 	uint8 mule_version = data.ReadUInt8();
 	protocol_version = data.ReadUInt8();
 	uint32 tagcount = data.ReadUInt32();
@@ -1282,16 +1275,15 @@ void CUpDownClient::SendHelloTypePacket(CMemFile *data)
 	// eMuleAI vendor capabilities (CT_MOD_MISCOPTIONS).
 	//
 	// Nothing is written, and that is the whole of the emit side for now:
-	// LocalAdvertisedModMiscOptions() is zero because aMule implements none
-	// of the five features, and eMuleAI treats an absent tag and an all-zero
-	// word identically. Advertising a capability aMule does not have is
-	// strictly worse than advertising none -- the peer opens a handshake that
-	// cannot complete and neither side logs a reason.
+	// LocalAdvertisedModMiscOptions() is zero because aMule implements none of
+	// the five features, and eMuleAI treats an absent tag and an all-zero word
+	// identically. Advertising a capability aMule does not have is strictly
+	// worse than advertising none -- the peer opens a handshake that cannot
+	// complete and neither side logs a reason.
 	//
 	// A later change that ships one of these transports turns its bit on in
 	// LocalAdvertisedModMiscOptions(), emits the tag here, and adds one to
-	// `tagcount` above. Both must happen together: the tagcount is written
-	// before the tags and a mismatch desynchronises the reader.
+	// `tagcount` above. Both must happen together.
 	static_assert(LocalAdvertisedModMiscOptions() == 0,
 		"a non-zero advertised capability word needs the CT_MOD_MISCOPTIONS tag emitted here "
 		"and tagcount incremented above");
@@ -1550,25 +1542,20 @@ bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon)
 }
 
 // Re-check the standing reasons to refuse this peer, disconnecting it on a hit:
-// incompatible obfuscation settings, a filtered IP, a banned IP.
-//
-// Returns Contacting when the peer is clean -- "carry on" rather than "we sent
-// something" -- and ClientDeleted or Declined otherwise, matching what the
-// callers already do with those.
+// incompatible obfuscation settings, a filtered IP, a banned IP. Returns
+// Contacting when the peer is clean -- "carry on" rather than "we sent
+// something" -- and ClientDeleted or Declined otherwise.
 //
 // Extracted so it can run on both routes to a peer: TryToContact, which is
 // about to open a connection, and the already-connected browse path, which is
-// not. All three share one property that makes them belong here rather than at
-// connect time only -- each is settings-derived and every one of those settings
-// is changeable while a connection is open. A peer admitted before the filter
-// list grew, or before "require obfuscation" was switched on, keeps its socket,
-// and a browse used to be one of the places that noticed. The max-sockets check
-// above is NOT here on purpose: it governs opening a new socket, which is
-// exactly what a peer we are already connected to does not need.
+// not. All three checks are settings-derived and every one of those settings is
+// changeable while a connection is open, so a peer admitted before the filter
+// list grew, or before "require obfuscation" was switched on, keeps its socket.
+// The max-sockets check is NOT here on purpose: it governs opening a new
+// socket, which a peer we are already connected to does not need.
 //
 // Keeping the Disconnected / Safe_Delete handling in one place matters more
-// than the two call sites: it can delete `this`, and the callers have to agree
-// on how that is reported.
+// than the two call sites: it can delete `this`.
 EContactResult CUpDownClient::CheckContactPreconditions()
 {
 	if ((RequiresCryptLayer() && !thePrefs::IsClientCryptLayerSupported()) ||
@@ -1730,10 +1717,10 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 			0);
 	} else if (HasLowID()) { // LOWID
 		// Set where a packet actually goes out. Several of the paths below reach
-		// the end having sent nothing -- a source we are merely queued at, a
-		// peer that is not a download source, a Kad lookup that fails to start --
-		// and reporting those as Contacting is what let a browse of them wait out
-		// the whole silence timeout instead of failing at once.
+		// the end having sent nothing -- a source we are merely queued at, a peer
+		// that is not a download source, a Kad lookup that fails to start -- and
+		// reporting those as Contacting let a browse of them wait out the whole
+		// silence timeout instead of failing at once.
 		bool contacted = false;
 		if (GetDownloadState() == DS_CONNECTING) {
 			SetDownloadState(DS_WAITCALLBACK);
@@ -1873,17 +1860,15 @@ bool CUpDownClient::Connect()
 // Put the browse's ask on the wire, if this browse is still waiting for it.
 //
 // One implementation, two callers: ConnectionEstablished (the ask follows the
-// connect) and RequestSharedFileList (the peer was already on the line, so
-// there is no connect to follow). Extracted rather than duplicated because the
-// packet is the smaller half of what has to happen -- the guard and the clock
-// below are the rest of it, and a copy that dropped either would either spam
-// the peer or charge it for our connect time.
+// connect) and RequestSharedFileList (the peer was already on the line).
+// Extracted rather than duplicated because the packet is the smaller half of
+// what has to happen -- the guard and the clock below are the rest, and a copy
+// that dropped either would spam the peer or charge it for our connect time.
 //
 // The guard: ConnectionEstablished runs on every reconnect, and a browsed peer
 // that is also a download source reconnects often -- re-asking each time put
-// unrequested packets on the wire and an error line in the peer's log. Note it
-// only makes the ask single-shot for a DIRECTORY browse; a flat one stays
-// askable for its whole life, deliberately (see BrowseStore::AwaitingDirectoryList).
+// unrequested packets on the wire and an error line in the peer's log. It only
+// makes the ask single-shot for a DIRECTORY browse; a flat one stays askable.
 void CUpDownClient::SendSharedFilesRequest()
 {
 	if (!theApp->browsemanager->AwaitingDirectoryList(this)) {
@@ -1896,8 +1881,7 @@ void CUpDownClient::SendSharedFilesRequest()
 	// Re-base the silence deadline: Store::Start already set one, but from the
 	// click, and the connect that got us here may have taken a while. Without
 	// this the peer is charged for our connect time and the browse can expire
-	// early -- most visibly on the ConnectionEstablished path, where the gap
-	// is a whole connection attempt.
+	// early -- most visibly on the ConnectionEstablished path.
 	theApp->browsemanager->OnRequestSent(this, ::GetTickCount64());
 #ifdef __DEBUG__
 	if (m_fSharedDirectories) {
@@ -2229,24 +2213,20 @@ void CUpDownClient::RequestSharedFileList()
 	}
 	AddDebugLogLineN(logClient, wxString("Requesting shared files from ") + GetUserName());
 
-	// Allocate the ID before the request goes out, for a local browse as much
-	// as an EC one. It used to be assigned when the first result arrived, so
-	// until then the browse was keyed on this client's pointer -- which left
-	// state behind that nothing pruned, and collided when an address was
-	// reused. The EC handler pins the ID it allocated before calling here.
-	// Use the ID the EC handler pinned for this browse, once. Otherwise this
-	// peer keeps the ID it was browsed under before: AllocateEd2kId is a
-	// monotonic counter that never reissues, so an ID we were given stays
-	// ours, and reusing it keeps one tab and one result bucket per peer
-	// however many times the user asks. Allocating afresh each time -- which
-	// is what replacing the old reuse condition did -- left the previous
-	// registration, results and browse record behind with nothing to free
-	// them, since only the newest ID ever reaches RemoveResults when the tab
-	// is closed.
+	// Allocate the ID before the request goes out, for a local browse as much as
+	// an EC one. It used to be assigned when the first result arrived, so until
+	// then the browse was keyed on this client's pointer -- which left state
+	// behind that nothing pruned, and collided when an address was reused.
+	//
+	// Otherwise this peer keeps the ID it was browsed under before:
+	// AllocateEd2kId is a monotonic counter that never reissues, so an ID we
+	// were given stays ours, and reusing it keeps one tab and one result bucket
+	// per peer however many times the user asks. Allocating afresh each time
+	// left the previous registration, results and browse record behind with
+	// nothing to free them.
 	//
 	// The previous record has to go before the new one can take its place:
-	// Store::Start refuses an ID it still holds, to protect whatever that
-	// record is still answering for.
+	// Store::Start refuses an ID it still holds.
 	if (m_browsePinned) {
 		m_browsePinned = false;
 	} else {
@@ -2269,12 +2249,11 @@ void CUpDownClient::RequestSharedFileList()
 		return;
 	}
 	// Describe it before any result arrives, so it is listable as a browse of
-	// this peer rather than as a nameless search -- but only when the ID is
-	// ours to describe. A caller that pinned one has already registered it,
-	// under the identity IT considers authoritative: the friend path keys on
-	// the friend's ECID, and re-registering here would overwrite that with
-	// this client's, which is a different number from the same counter. An
-	// adopting GUI would then open a second tab under a different name.
+	// this peer rather than as a nameless search -- but only when the ID is ours
+	// to describe. A caller that pinned one has already registered it under the
+	// identity IT considers authoritative: the friend path keys on the friend's
+	// ECID, and re-registering here would overwrite that with this client's,
+	// which is a different number from the same counter.
 	if (!m_browseEcInitiated) {
 		theApp->searchlist->RegisterBrowseSearch(m_browseSearchId, GetUserName(), ECID());
 	}
@@ -2286,39 +2265,31 @@ void CUpDownClient::RequestSharedFileList()
 	// Already on the line: ask over the socket we have, and skip TryToContact
 	// entirely.
 	//
-	// TryToContact answers a reachability question -- can we reach this peer
-	// if we are not already talking to it -- and for a LowID peer it answers
-	// Declined before it ever looks at the socket (the CanDoCallback block).
-	// Two of those declines do not imply we are unreachable at all: a LowID
-	// peer on our own server with Kad open, and being connected to neither
-	// network, both of which leave an established socket working. A browse
-	// over such a socket was failed on the spot even though the ask would
-	// have gone out fine.
+	// TryToContact answers a reachability question -- can we reach this peer if
+	// we are not already talking to it -- and for a LowID peer it answers
+	// Declined before it ever looks at the socket. Two of those declines do not
+	// imply we are unreachable at all: a LowID peer on our own server with Kad
+	// open, and being connected to neither network, both of which leave an
+	// established socket working. A browse over such a socket was failed on the
+	// spot even though the ask would have gone out fine.
 	//
 	// Deliberately narrow: TryToContact keeps its behaviour for every other
-	// caller. Hoisting the connected case inside it would also turn a
-	// connected LowID source's DS_LOWTOLOWIP into a SendFileRequest(), which
-	// is a download-path change with no business riding along here.
+	// caller. Hoisting the connected case inside it would also turn a connected
+	// LowID source's DS_LOWTOLOWIP into a SendFileRequest(), which is a
+	// download-path change with no business riding along here.
 	//
-	// Note what this caller gives up. A connected peer used to reach
+	// Note what this caller gives up: a connected peer used to reach
 	// TryToContact's `else` branch and so ConnectionEstablished(), which does
-	// far more than send the ask: Kad fw-check transitions, chat
-	// MS_CONNECTING -> MS_CHATTING with its pending-message flush,
-	// DS_WAITCALLBACK -> DS_CONNECTED plus SendFileRequest(), the upload
-	// OP_ACCEPTUPLOADREQ, and the m_WaitingPackets_list drain. Not taking that
-	// branch is the point rather than a side effect: re-running connection
-	// setup because someone clicked "View Files" is the odd behaviour, and the
-	// states it drives are unreachable over a live socket anyway --
-	// DS_WAITCALLBACK means we are waiting for a connection we already have.
-	// The ask is the only part a browse needs, and it is what stays.
+	// far more than send the ask -- Kad fw-check transitions, the chat
+	// MS_CONNECTING -> MS_CHATTING flush, DS_WAITCALLBACK -> DS_CONNECTED plus
+	// SendFileRequest(), the upload OP_ACCEPTUPLOADREQ, and the waiting-packet
+	// drain. Not taking that branch is the point rather than a side effect.
 	if (IsConnected()) {
-		// Re-validate first. TryToContact does this before it looks at the
-		// socket, so skipping straight past it would let a peer that became
-		// unacceptable since the connection came up -- filtered, banned, or
-		// incompatible with an obfuscation setting switched on meanwhile --
-		// be browsed and be sent a packet, where the old path would have
-		// severed the connection.
-		// ClientDeleted means `this` is gone; the browse died with it.
+		// Re-validate first. TryToContact does this before it looks at the socket,
+		// so skipping straight past it would let a peer that became unacceptable
+		// since the connection came up -- filtered, banned, or incompatible with
+		// an obfuscation setting switched on meanwhile -- be browsed and be sent a
+		// packet. ClientDeleted means `this` is gone; the browse died with it.
 		switch (CheckContactPreconditions()) {
 		case EContactResult::ClientDeleted:
 			return;
@@ -2333,12 +2304,10 @@ void CUpDownClient::RequestSharedFileList()
 		// return. The two callers want opposite things from it: on
 		// ConnectionEstablished a false guard is the reconnect suppression
 		// working, while here it would mean returning with the tab already
-		// announced, nothing on the wire and no terminal path -- the browse
-		// that waits out its deadline, which #1074 and #1088 removed.
-		// Start() guarantees the state, so this is a can't-happen -- and it
-		// has to be greppable as one, because in the log a bare Fail() here
-		// is indistinguishable from an ordinary browse failure, which is the
-		// one case worth spotting.
+		// announced, nothing on the wire and no terminal path -- the browse that
+		// waits out its deadline. Start() guarantees the state, so this is a
+		// can't-happen, and it has to be greppable as one: in the log a bare
+		// Fail() here is indistinguishable from an ordinary browse failure.
 		if (!theApp->browsemanager->AwaitingDirectoryList(this)) {
 			AddDebugLogLineC(logClient,
 				CFormat("Browse of user %s (%u): the request guard was unset immediately "
@@ -2359,11 +2328,11 @@ void CUpDownClient::RequestSharedFileList()
 		return;
 	case EContactResult::Declined:
 	case EContactResult::ConnectNotStarted:
-		// Nothing was sent, so no terminal path downstream will ever run.
-		// The deadline would catch it eventually; saying so now is both
-		// correct and cheaper. This used to be inferred from the client's
-		// side effects, because the bool could not distinguish "I tried" from
-		// "I decided not to" -- and the inference was wrong twice.
+		// Nothing was sent, so no terminal path downstream will ever run. The
+		// deadline would catch it eventually; saying so now is both correct and
+		// cheaper. This used to be inferred from the client's side effects,
+		// because the bool could not distinguish "I tried" from "I decided not
+		// to" -- and the inference was wrong twice.
 		theApp->browsemanager->Fail(this);
 		return;
 	case EContactResult::Contacting:
@@ -2841,13 +2810,12 @@ uint8 CUpDownClient::GetSecureIdentState()
 {
 	if (m_SecureIdentState != IS_UNAVAILABLE) {
 		if (!SecIdentSupRec) {
-			// This can be caused by a 0.30x based client which sends the old
-			// style Hello packet, and the mule info packet, but between them they
-			// send a secure ident state packet (after a hello but before we have
-			// the SUI capabilities). This is a misbehaving client, and somehow I
-			// feel like it should be dropped. But then again, it won't harm to use
-			// this SUI state if they are reporting no SUI (won't be used) and if
-			// they report using SUI on the mule info packet, it's ok to use it.
+			// This can be caused by a 0.30x based client which sends the old style
+			// Hello packet and the mule info packet, but sends a secure ident state
+			// packet between them, after a hello but before we have the SUI
+			// capabilities. A misbehaving client, but it does no harm to use this
+			// SUI state: if they report no SUI it will not be used, and if they
+			// report using SUI on the mule info packet, it is fine to use it.
 
 			AddDebugLogLineN(logClient,
 				"A client sent secure ident state before telling us the SUI capabilities");
@@ -2955,15 +2923,14 @@ void CUpDownClient::UpdateStats()
 
 // All five go through GetCurrentIdentState(), which is the one place that
 // decides what a missing credits object means (IS_NOTAVAILABLE). Testing
-// `credits &&` here instead made the boolean set unable to express that
-// state: with credits still NULL -- its value from construction until the
-// peer's user hash resolves -- every predicate answered false, including
-// SUINotSupported(), while the accessor on the same object was reporting
-// exactly IS_NOTAVAILABLE.
+// `credits &&` here instead made the boolean set unable to express that state:
+// with credits still NULL -- its value from construction until the peer's user
+// hash resolves -- every predicate answered false, including SUINotSupported(),
+// while the accessor on the same object reported exactly IS_NOTAVAILABLE.
 //
-// Only SUINotSupported() changes behaviour. For the other four the guard
-// was redundant: a NULL credits yields IS_NOTAVAILABLE, which already
-// compares unequal to the state each of them asks about.
+// Only SUINotSupported() changes behaviour: for the other four the guard was
+// redundant, since a NULL credits yields IS_NOTAVAILABLE, which already
+// compares unequal to the state each asks about.
 bool CUpDownClient::IsIdentified() const
 {
 	return GetCurrentIdentState() == IS_IDENTIFIED;
@@ -3105,11 +3072,11 @@ void CUpDownClient::ProcessCaptchaReqRes(uint8 nStatus)
 #endif // AMULE_DAEMON
 
 // Shared by both builds. The advanced spam filter (captcha + URL heuristic) is
-// GUI-only — CCaptchaGenerator lives in the monolithic target and the spam path
-// touches the chat window — so it is compiled out on the daemon, which relays
-// incoming messages to amulegui with the message filter alone.
+// GUI-only -- CCaptchaGenerator lives in the monolithic target and the spam
+// path touches the chat window -- so it is compiled out on the daemon, which
+// relays incoming messages to amulegui with the message filter alone.
 // By-value to match the header signature: the non-daemon path reassigns
-// `message` (captcha), so the parameter can't be const-ref.
+// `message` (captcha), so the parameter cannot be const-ref.
 // NOLINTNEXTLINE(performance-unnecessary-value-param)
 void CUpDownClient::ProcessChatMessage(wxString message)
 {

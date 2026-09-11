@@ -61,7 +61,6 @@ CMuleNotebook::CMuleNotebook(wxWindow *parent,
 
 CMuleNotebook::~CMuleNotebook()
 {
-	// Ensure that all notifications gets sent
 	DeleteAllPages();
 }
 
@@ -71,15 +70,12 @@ bool CMuleNotebook::DeletePage(int nPage)
 		false,
 		"Trying to delete invalid page-index in CMuleNotebook::DeletePage");
 
-	// Send out close event
 	wxNotebookEvent evt(wxEVT_COMMAND_MULENOTEBOOK_PAGE_CLOSING, GetId(), nPage);
 	evt.SetEventObject(this);
 	ProcessEvent(evt);
 
-	// and finally remove the actual page
 	bool result = wxNotebook::DeletePage(nPage);
 
-	// Ensure a valid selection
 	if (GetPageCount() && (int)GetSelection() >= (int)GetPageCount()) {
 		SetSelection(GetPageCount() - 1);
 	}
@@ -98,7 +94,6 @@ bool CMuleNotebook::DeletePage(int nPage)
 		event.SetEventObject(this);
 		ProcessEvent(event);
 	} else {
-		// Send an event when no pages are left open
 		wxNotebookEvent event(wxEVT_COMMAND_MULENOTEBOOK_ALL_PAGES_CLOSED, GetId());
 		event.SetEventObject(this);
 		ProcessEvent(event);
@@ -134,7 +129,6 @@ void CMuleNotebook::SetPopupHandler(wxWindow *widget)
 // #warning wxMac does not support selection by right-clicking on tabs!
 void CMuleNotebook::OnRMButton(wxMouseEvent &event)
 {
-	// Cases where we shouldn't be showing a popup-menu.
 	if (!GetPageCount() || !m_popup_enable) {
 		event.Skip();
 		return;
@@ -151,11 +145,9 @@ void CMuleNotebook::OnRMButton(wxMouseEvent &event)
 		return;
 	}
 
-	// Should we send the event to a specific widget?
 	if (m_popup_widget) {
 		wxMouseEvent evt = event;
 
-		// Map the coordinates onto the parent
 		wxPoint point = evt.GetPosition();
 		point = ClientToScreen(point);
 		point = m_popup_widget->ScreenToClient(point);

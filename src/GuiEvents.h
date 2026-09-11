@@ -101,24 +101,18 @@ void SharedCtrlAddClient(CKnownFile *owner, CClientRef client, SourceItemType ty
 void SharedCtrlRefreshClient(uint32 client, SourceItemType type);
 void SharedCtrlRemoveClient(uint32 client, const CKnownFile *owner);
 
-// Broadcast: a CKnownFile (or CPartFile, which is-a CKnownFile) is
-// about to be destroyed. Every component that holds a raw
-// CKnownFile* / CPartFile* outside the canonical owner containers
-// (CKnownFileList / CSharedFileList / CDownloadQueue / EC mirrors)
+// Broadcast: a CKnownFile (or CPartFile, which is-a CKnownFile) is about to be
+// destroyed. Every component holding a raw pointer outside the canonical owner
+// containers (CKnownFileList / CSharedFileList / CDownloadQueue / EC mirrors)
 // must subscribe and drop its reference before the delete returns.
 //
-// Contract for subscribers: handle the event using ONLY pointer-
-// value comparison (==), never dereference the pointer. By the
-// time a subscriber on the main thread sees the event, the file
-// has typically already been freed by the destruction site that
-// fired the broadcast. The pointer value is meaningful as a
-// stable key; the bytes it points at are not.
+// Contract for subscribers: use ONLY pointer-value comparison, never dereference.
+// By the time a subscriber on the main thread sees the event the file has
+// typically already been freed -- the pointer value is a stable key, the bytes it
+// points at are not.
 //
-// Fired from every CKnownFile / CPartFile destruction site BEFORE
-// the delete: CKnownFileList::~CKnownFileList, PruneDuplicates,
-// CPartFile::Delete(), CSharedFileList::Reload() (when destroying
-// stale entries during rebuild), and CKnownFilesRem::DeleteItem
-// in the amulegui build.
+// Fired BEFORE the delete from ~CKnownFileList, PruneDuplicates,
+// CPartFile::Delete(), CSharedFileList::Reload() and CKnownFilesRem::DeleteItem.
 void KnownFileBeingDestroyed(CKnownFile *file);
 
 // The other end of the same peer's life: CClientList has accepted it, so the
@@ -133,36 +127,31 @@ void KnownFileBeingDestroyed(CKnownFile *file);
 // its pointer instead of dangling. See CCommentDialogLst::DropReferencesTo.
 void SearchFileBeingDestroyed(CSearchFile *file);
 
-// Fired from CSearchList::RemoveResults, once per search whose bucket is
-// freed, so a tab still open on it closes instead of outliving the results.
-// Needed the moment closing a tab genuinely frees the search (got3nks, PR
-// #680 review): in a monolithic build the GUI and core share the same
-// CSearchFile objects, which CSearchListCtrl holds as raw pointers via
-// SetItemPtrData and in m_filteredOut, so a tab left open over a freed
-// bucket faults on the next repaint, sort, scroll or click. It also gives
-// the monolithic GUI the local counterpart of amulegui's remote-driven tab
-// close, rather than two mechanisms for one idea.
+// Fired from CSearchList::RemoveResults, once per search whose bucket is freed,
+// so a tab still open on it closes instead of outliving the results. Needed the
+// moment closing a tab genuinely frees the search: in a monolithic build the GUI
+// and core share the same CSearchFile objects, which CSearchListCtrl holds as raw
+// pointers, so a tab left open over a freed bucket faults on the next repaint,
+// sort, scroll or click. It also gives the monolithic GUI the local counterpart
+// of amulegui's remote-driven tab close.
 void Search_Removed(wxUIntPtr searchID);
 
-// A chat session was dropped from the core store, by whichever client asked.
-// The mirror of Search_Removed, and closing follows the same rule searches
-// already do: the core state is destroyed for everyone and each client is
-// TOLD, rather than left showing a tab the core no longer has. The monolithic
-// GUI closes its notebook page here; EC clients learn it from the session's
-// absence in the next EC_OP_CHAT_SESSIONS reply.
+// A chat session was dropped from the core store, by whichever client asked. The
+// mirror of Search_Removed, and closing follows the same rule: the core state is
+// destroyed for everyone and each client is TOLD, rather than left showing a tab
+// the core no longer has. The monolithic GUI closes its page here; EC clients
+// learn it from the session's absence in the next EC_OP_CHAT_SESSIONS reply.
 void Chat_SessionRemoved(uint64 gui_id);
 
 // Fired from CSearchList::StartNewSearch, once per search the core begins,
-// whoever asked for it. The mirror of Search_Removed: it lets the monolithic
-// GUI show a tab for a search started by an EC client (amulegui, amulecmd,
-// amuleapi), which until now it could not see at all -- amulegui and amuleapi
-// already discover each other's searches over EC_OP_SEARCH_LIST, so this is
-// the last direction left (amule-org/amule#703).
+// whoever asked for it. The mirror of Search_Removed: it lets the monolithic GUI
+// show a tab for a search started by an EC client, which it could not see at all
+// before -- amulegui and amuleapi already discover each other's searches over
+// EC_OP_SEARCH_LIST (#703).
 //
-// The tab is created unselected: it appears on its own, so it must not pull
-// the selection away from whatever the local user is doing, possibly
-// mid-typing. `kind` is the CSearchList::SearchType of the new search, used
-// only to seed the Kad "!" marker the way a locally-started tab does.
+// The tab is created unselected: it appears on its own, so it must not pull the
+// selection away from whatever the local user is doing. `kind` is the new
+// search's SearchType, used only to seed the Kad "!" marker.
 void Search_Added(wxUIntPtr searchID, wxString name, uint32 kind);
 
 void ServerAdd(CServer *server);

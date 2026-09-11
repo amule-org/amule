@@ -108,7 +108,6 @@ void CDownloadQueue::LoadMetFiles(const CPath &path, const LoadProgressCb &progr
 
 	std::vector<CPath> files;
 
-	// Locate part-files to be loaded
 	CDirIterator TempDir(path);
 	CPath fileName = TempDir.GetFirstFile(CDirIterator::File, "*.part.met");
 	while (fileName.IsOk()) {
@@ -121,7 +120,6 @@ void CDownloadQueue::LoadMetFiles(const CPath &path, const LoadProgressCb &progr
 	// file is broken in case of crashes, or the like.
 	std::sort(files.begin(), files.end());
 
-	// Load part-files
 	for (size_t i = 0; i < files.size(); i++) {
 		AddLogLineNS(CFormat(_("Loading PartFile %u of %u")) % (i + 1) % files.size());
 		if (progressCb) {
@@ -131,7 +129,6 @@ void CDownloadQueue::LoadMetFiles(const CPath &path, const LoadProgressCb &progr
 		CPartFile *toadd = new CPartFile();
 		bool result = toadd->LoadPartFile(path, fileName) != 0;
 		if (!result) {
-			// Try from backup
 			result = toadd->LoadPartFile(path, fileName, true) != 0;
 		}
 		if (result && !IsFileExisting(toadd->GetFileHash())) {
@@ -158,7 +155,6 @@ void CDownloadQueue::LoadMetFiles(const CPath &path, const LoadProgressCb &progr
 			}
 			AddLogLineCS(msg);
 
-			// Delete the partfile object in the end.
 			delete toadd;
 		}
 	}
@@ -257,7 +253,6 @@ void CDownloadQueue::AddSearchToDownload(CSearchFile *toadd, uint8 category)
 
 	if (newfile && newfile->GetStatus() != PS_ERROR) {
 		AddDownload(newfile, thePrefs::AddNewFilesPaused(), category);
-		// Add any possible sources
 		if (toadd->GetClientID() && toadd->GetClientPort()) {
 			CMemFile sources(1 + 4 + 2);
 			sources.WriteUInt8(1);
@@ -313,7 +308,6 @@ struct SFindBestPF
 				// happen if they have same name)
 				m_result = file;
 			} else {
-				// Lower priority file
 			}
 		}
 	}
@@ -335,20 +329,16 @@ void CDownloadQueue::StartNextFile(CPartFile *oldfile)
 			wxMutexLocker lock(m_mutex);
 
 			if (thePrefs::StartNextFileSame()) {
-				// Get a download in the same category
 				visitor.m_category = oldfile->GetCategory();
 
 				visitor = std::for_each(m_filelist.begin(), m_filelist.end(), visitor);
 			}
 
 			if (visitor.m_result == NULL) {
-				// Get a download, regardless of category
 				visitor.m_category = -1;
 
 				visitor = std::for_each(m_filelist.begin(), m_filelist.end(), visitor);
 			}
-
-			// Alpha doesn't need special cases
 		}
 
 		if (visitor.m_result) {
@@ -397,16 +387,15 @@ bool CDownloadQueue::IsFileExisting(const CMD4Hash &fileid, const wxString &requ
 			// manually reload the shares to download a file again.
 			CPath fullpath = file->GetFilePath().JoinPaths(file->GetFileName());
 			if (!fullpath.FileExists()) {
-				// The file is no longer available, unshare it
 				theApp->sharedfiles->RemoveFile(file);
 
 				return false;
 			}
 
 			// Files are matched by hash, so the already-present file can carry a
-			// different name than the one requested. Surface the requested name
-			// too when it differs, so the log can be correlated with the search
-			// result or ed2k link the download was started from.
+			// different name than the one requested. Surface the requested name too
+			// when it differs, so the log can be correlated with the search result
+			// or ed2k link the download started from.
 			if (!requestedName.IsEmpty() && requestedName != file->GetFileName().GetPrintable()) {
 				AddLogLineC(CFormat(_("You already have the file '%s' (requested as '%s')")) %
 					    fullpath % requestedName);
@@ -418,11 +407,10 @@ bool CDownloadQueue::IsFileExisting(const CMD4Hash &fileid, const wxString &requ
 		return true;
 	} else if ((file = GetFileByID(fileid))) {
 		// GetFileByID() also returns finished downloads still lingering in
-		// m_completedDownloads (kept so a remote GUI can act on them). Such an
-		// entry is not an active download, so if its file was deleted from disk
-		// it must not keep blocking a re-download. The shared-file branch above
-		// already allows that, but a prior shares rescan removes the file from
-		// the shared list and leaves only this entry, which had no such check.
+		// m_completedDownloads (kept so a remote GUI can act on them). Such an entry
+		// is not an active download, so a file deleted from disk must not keep
+		// blocking a re-download -- a prior shares rescan removes it from the shared
+		// list and leaves only this entry, which had no such check.
 		CPartFile *part = static_cast<CPartFile *>(file);
 		if (part->IsCompleted()) {
 			CPath fullpath = part->GetFilePath().JoinPaths(part->GetFileName());
@@ -445,26 +433,21 @@ bool CDownloadQueue::IsFileExisting(const CMD4Hash &fileid, const wxString &requ
 
 void CDownloadQueue::Process()
 {
-	// send src requests to local server
 	ProcessLocalRequests();
 	const uint64 curTick = ::GetTickCount64();
 
-	// Refill the global download bucket for this tick. The previous per-peer
-	// ratio controller (50-200% adaptive against the observed aggregate
-	// datarate) never actually enforced MaxDownload as a literal byte/sec
-	// cap. The throttler is a single shared atomic budget that every
-	// CEMSocket consults before each Read(); fast peers can claim unused
-	// capacity from slow ones within the same tick (demand-aware
-	// redistribution), and the global cap is the only constraint.
-	// MaxDownload=0 (UNLIMITED) sets the throttler to bypass mode.
+	// Refill the global download bucket for this tick. The throttler is a single
+	// shared atomic budget every CEMSocket consults before each Read(), so fast
+	// peers can claim unused capacity from slow ones within a tick and the global
+	// cap is the only constraint; the previous per-peer ratio controller never
+	// enforced MaxDownload as a literal byte/sec cap. MaxDownload=0 is bypass mode.
 	//
-	// Both of these run before the lock, and the wake runs immediately after
-	// the refill, because the part-file walk below reads from every
-	// downloading socket synchronously while holding the lock. Refilling
-	// inside that block and waking after it hands the whole tick's budget to
-	// the peers we are downloading from, and a socket parked mid-packet --
-	// the browse or chat answer this wake exists for -- finds an empty bucket
-	// again every tick and never finishes reading.
+	// Both calls run before the lock, and the wake immediately after the refill,
+	// because the part-file walk below reads from every downloading socket
+	// synchronously while holding the lock. Refilling inside that block and waking
+	// after it hands the whole tick's budget to the peers we are downloading from,
+	// so a socket parked mid-packet -- the browse or chat answer this wake exists
+	// for -- finds an empty bucket every tick and never finishes reading.
 	CDownloadBandwidthThrottler::Get().RefillBudget(thePrefs::GetMaxDownload(), CORE_TIMER_PERIOD);
 	// Outside the lock on purpose: this re-enters CEMSocket::OnReceive(),
 	// which parses packets and can reach back into the download queue.
@@ -498,16 +481,14 @@ void CDownloadQueue::Process()
 				file->StopPausedFile();
 
 				// Drain leftover Phase 3 hash work for paused files: their
-				// Process() doesn't run (gated above), but pre-pause
-				// m_aChangedPart entries still need verification.
+				// Process() does not run, but pre-pause m_aChangedPart entries
+				// still need verification.
 				//
-				// PS_INSUFFICIENT is intentionally excluded — driving
-				// FlushBuffer for a disk-full file re-enters its disk-space
-				// check at PartFile.cpp:3083 every tick, which logs
-				// "Not enough free disk-space" and re-pauses on every call,
-				// producing tens of log lines per second.  The destructor
-				// sync-hash drain still covers leftover dirty parts of
-				// disk-full files at shutdown.
+				// PS_INSUFFICIENT is excluded on purpose: driving FlushBuffer
+				// for a disk-full file re-enters its disk-space check every
+				// tick, logging "Not enough free disk-space" and re-pausing tens
+				// of times a second. The destructor's sync-hash drain still
+				// covers their leftover dirty parts at shutdown.
 				if (status == PS_PAUSED && file->HasPendingHashWork()) {
 					file->FlushBuffer();
 				}
@@ -536,7 +517,6 @@ void CDownloadQueue::Process()
 			PlatformSpecific::AllowSleepMode();
 		}
 
-		// Set the source rarity thresholds
 		int nSourceGroups = m_sourcecountlist.size();
 		if (nSourceGroups) {
 			m_sourcecountlist.sort();
@@ -598,7 +578,6 @@ void CDownloadQueue::Process()
 		if ((curTick - m_lastsorttime) > 10000) {
 			DoSortByPriority();
 		}
-		// Check if any paused files can be resumed
 
 		CheckDiskspace(thePrefs::GetTempDir());
 	}
@@ -699,7 +678,6 @@ void CDownloadQueue::CheckAndAddSource(CPartFile *sender, CUpDownClient *source)
 		return;
 	}
 
-	// Find all clients with the same hash
 	if (source->HasValidHash()) {
 		CClientList::SourceList found = theApp->clientlist->GetClientsByHash(source->GetUserHash());
 
@@ -707,13 +685,10 @@ void CDownloadQueue::CheckAndAddSource(CPartFile *sender, CUpDownClient *source)
 		for (; it != found.end(); ++it) {
 			CKnownFile *file = it->GetRequestFile();
 
-			// Only check files on the download-queue
 			if (file) {
 				// Is the found source queued for something else?
 				if (file != sender) {
-					// Try to add a request for the other file
 					if (it->GetClient()->AddRequestForAnotherFile(sender)) {
-						// Add it to downloadlistctrl
 						Notify_SourceCtrlAddSource(sender, *it, A4AF_SOURCE);
 					}
 				}
@@ -724,19 +699,17 @@ void CDownloadQueue::CheckAndAddSource(CPartFile *sender, CUpDownClient *source)
 		}
 	}
 
-	// Our new source is real new but maybe it is already uploading to us?
-	// If yes the known client will be attached to the var "source" and the old
-	// source-client will be deleted. However, if the request file of the known
-	// source is NULL, then we have to treat it almost like a new source and if
-	// it isn't NULL and not "sender", then we shouldn't move it, but rather add
-	// a request for the new file.
+	// The source may be new to us but already uploading to us. If so the known
+	// client is attached to `source` and the old source-client is deleted. A known
+	// source whose request file is NULL is treated almost like a new one; if it is
+	// neither NULL nor `sender`, add a request for the new file rather than moving
+	// it.
 	ESourceFrom nSourceFrom = source->GetSourceFrom();
 	if (theApp->clientlist->AttachToAlreadyKnown(&source, 0)) {
 		// Already queued for another file?
 		if (source->GetRequestFile()) {
 			// If we're already queued for the right file, then there's nothing to do
 			if (sender != source->GetRequestFile()) {
-				// Add the new file to the request list
 				source->AddRequestForAnotherFile(sender);
 			}
 		} else {
@@ -754,7 +727,6 @@ void CDownloadQueue::CheckAndAddSource(CPartFile *sender, CUpDownClient *source)
 				UNAVAILABLE_SOURCE);
 		}
 	} else {
-		// Unknown client, add it to the clients list
 		source->SetRequestFile(sender);
 
 		theApp->clientlist->AddClient(source);
@@ -772,7 +744,6 @@ void CDownloadQueue::CheckAndAddSource(CPartFile *sender, CUpDownClient *source)
 
 void CDownloadQueue::CheckAndAddKnownSource(CPartFile *sender, CUpDownClient *source)
 {
-	// Kad reviewed
 
 	if (sender->IsStopped()) {
 		return;
@@ -783,13 +754,10 @@ void CDownloadQueue::CheckAndAddKnownSource(CPartFile *sender, CUpDownClient *so
 		return;
 	}
 
-	// "Filter LAN IPs" -- this may be needed here in case we are connected to the internet and are also
-	// connected to a LAN and some client from within the LAN connected to us. Though this situation may
-	// be supported in future by adding that client to the source list and filtering that client's LAN IP
-	// when sending sources to a client within the internet.
-	//
-	// "IPfilter" is not needed here, because that "known" client was already IPfiltered when receiving
-	// OP_HELLO.
+	// "Filter LAN IPs" is needed here for the case where we are on the internet
+	// and also on a LAN, and a client from within the LAN connects to us.
+	// "IPfilter" is not, because that known client was already IPfiltered when
+	// receiving OP_HELLO.
 	if (!source->HasLowID()) {
 		uint32 nClientIP = wxUINT32_SWAP_ALWAYS(source->GetUserIDHybrid());
 		if (!IsGoodIP(nClientIP,
@@ -846,10 +814,8 @@ bool CDownloadQueue::RemoveSource(CUpDownClient *toremove, bool WXUNUSED(updatew
 	for (uint16 i = 0; i < GetFileCount(); i++) {
 		CPartFile *cur_file = GetFileByIndex(i);
 
-		// Remove from source-list
 		if (cur_file->DelSource(toremove)) {
 
-			// Remove from sourcelist widget
 			Notify_SourceCtrlRemoveSource(toremove->ECID(), cur_file);
 
 			cur_file->RemoveDownloadingSource(toremove);
@@ -859,7 +825,6 @@ bool CDownloadQueue::RemoveSource(CUpDownClient *toremove, bool WXUNUSED(updatew
 			}
 		}
 
-		// Remove from A4AF-list
 		cur_file->RemoveA4AFSource(toremove);
 	}
 
@@ -893,18 +858,17 @@ void CDownloadQueue::RemoveFile(CPartFile *file, bool keepAsCompleted)
 
 void CDownloadQueue::ClearCompleted(const ListOfUInts32 &ecids)
 {
-	// This used to walk and erase m_completedDownloads with m_mutex unheld,
-	// unlike every other mutator, while CopyFileList reads that same list
-	// under the lock. It mattered less when the EC file-list reconcile ran
-	// unconditionally: a reconcile that raced an erase healed on the next
-	// poll a second later. It matters now that the reconcile is skipped while
-	// the list generation is unchanged -- an erase observed as "already seen"
-	// is never reconciled at all, and the entry stays in the client's list
-	// for the life of the connection.
+	// This used to walk and erase m_completedDownloads with m_mutex unheld, unlike
+	// every other mutator, while CopyFileList reads that same list under the lock.
+	// It mattered less when the EC file-list reconcile ran unconditionally: a
+	// reconcile that raced an erase healed on the next poll. It matters now that
+	// the reconcile is skipped while the list generation is unchanged -- an erase
+	// observed as "already seen" is never reconciled, and the entry stays in the
+	// client's list for the life of the connection.
 	//
-	// Holding the lock across Notify_DownloadCtrlRemoveFile is safe here:
-	// m_mutex is constructed wxMUTEX_RECURSIVE, so a notify handler that
-	// re-enters the queue re-acquires it rather than deadlocking.
+	// Holding the lock across Notify_DownloadCtrlRemoveFile is safe: m_mutex is
+	// wxMUTEX_RECURSIVE, so a notify handler that re-enters the queue re-acquires
+	// it rather than deadlocking.
 	wxMutexLocker lock(m_mutex);
 	for (ListOfUInts32::const_iterator it1 = ecids.begin(); it1 != ecids.end(); ++it1) {
 		uint32 ecid = *it1;
@@ -961,7 +925,6 @@ bool CDownloadQueue::SendNextUDPPacket()
 		return false;
 	}
 
-	// Start monitoring the server and the files list
 	if (!m_queueServers.IsActive()) {
 		AddObserver(&m_queueFiles);
 
@@ -970,7 +933,6 @@ bool CDownloadQueue::SendNextUDPPacket()
 
 	bool packetSent = false;
 	while (!packetSent) {
-		// Get max files ids per packet for current server
 		int filesAllowed = GetMaxFilesPerUDPServerPacket();
 
 		if (filesAllowed < 1 || !m_udpserver || IsConnectedServer(m_udpserver)) {
@@ -1028,17 +990,13 @@ bool CDownloadQueue::SendNextUDPPacket()
 			}
 		}
 
-		// See if we have anything to send
 		if (hashlist.GetLength()) {
 			packetSent = SendGlobGetSourcesUDPPacket(hashlist);
 		}
 
-		// Check if we've covered every file
 		if (file == NULL) {
-			// Reset the list of asked files so that the loop will start over
 			m_queueFiles.Reset();
 
-			// Unset the server so that the next server will be used
 			m_udpserver = NULL;
 		}
 	}
@@ -1067,10 +1025,8 @@ void CDownloadQueue::DoStopUDPRequests()
 static bool ComparePartFiles(const CPartFile *file1, const CPartFile *file2)
 {
 	if (file1->GetDownPriority() != file2->GetDownPriority()) {
-		// To place high-priority files before low priority files we have to
-		// invert this test, since PR_LOW is lower than PR_HIGH, and since
-		// placing a PR_LOW file before a PR_HIGH file would mean that
-		// the PR_LOW file gets sources before the PR_HIGH file ...
+		// Inverted on purpose: PR_LOW is numerically lower than PR_HIGH, and
+		// placing a PR_LOW file first would give it sources before a PR_HIGH one.
 		return (file1->GetDownPriority() > file2->GetDownPriority());
 	} else {
 		int sourcesA = file1->GetSourceCount();
@@ -1176,13 +1132,11 @@ void CDownloadQueue::ProcessLocalRequests()
 					AddDebugLogLineN(logDownloadQueue,
 						CFormat("Creating local sources request packet for '%s'") %
 							cur_file->GetFileName());
-					// create request packet
 					CMemFile data(16 + (cur_file->IsLargeFile() ? 8 : 4));
 					data.WriteHash(cur_file->GetFileHash());
-					// Kry - lugdunum extended protocol on 17.3 to handle filesize
-					// properly. There is no need to check anything, old server ignore the
-					// extra 4 bytes. As of 17.9, servers accept a 0 32-bits size and then
-					// a 64bits size
+					// lugdunum's extended protocol handles filesize from 17.3
+					// on; older servers ignore the extra 4 bytes. From 17.9
+					// servers accept a 0 32-bit size followed by a 64-bit one.
 					if (cur_file->IsLargeFile()) {
 						wxASSERT(bServerSupportsLargeFiles);
 						data.WriteUInt32(0);
@@ -1366,7 +1320,6 @@ void CDownloadQueue::CheckDiskspace(const CPath &path)
 				file->ResumeFile();
 			}
 		} else if (free < min && !file->IsPaused()) {
-			// No space left, stop the files.
 			file->PauseFile(true);
 		}
 	}
@@ -1376,7 +1329,6 @@ int CDownloadQueue::GetMaxFilesPerUDPServerPacket() const
 {
 	if (m_udpserver) {
 		if (m_udpserver->GetUDPFlags() & SRV_UDPFLG_EXT_GETSOURCES) {
-			// get max. file ids per packet
 			if (m_cRequestsSentToServer < MAX_REQUESTS_PER_SERVER) {
 				return std::min(MAX_FILES_PER_UDP_PACKET,
 					MAX_REQUESTS_PER_SERVER - m_cRequestsSentToServer);
@@ -1422,7 +1374,6 @@ void CDownloadQueue::AddToResolve(const CMD4Hash &fileid,
 	Hostname_Entry entry = { fileid, pszHostname, port, hash, cryptoptions };
 	m_toresolve.push_front(entry);
 
-	// Check if there are other DNS lookups on queue
 	if (m_toresolve.size() == 1) {
 		// Check if it is a simple dot address
 		uint32 ip = StringIPtoUint32(pszHostname);
@@ -1570,7 +1521,6 @@ bool CDownloadQueue::AddED2KLink(const CED2KFileLink *link, uint8 category)
 {
 	CPartFile *file = NULL;
 	if (IsFileExisting(link->GetHashKey(), link->GetName())) {
-		// Must be a shared file if we are to add hashes or sources
 		if ((file = GetFileByID(link->GetHashKey())) == NULL) {
 			return false;
 		}
@@ -1712,9 +1662,7 @@ void CDownloadQueue::KademliaSearchFile(uint32_t searchID,
 		}
 		ctemp = new CUpDownClient(tcp, ip, 0, 0, temp, false, true);
 		ctemp->SetSourceFrom(SF_KADEMLIA);
-		// not actually sent or needed for HighID sources
-		// ctemp->SetServerIP(serverip);
-		// ctemp->SetServerPort(serverport);
+		// Server IP and port are not actually sent or needed for HighID sources.
 		ctemp->SetKadPort(udp);
 		uint8_t cID[16];
 		pcontactID->ToByteArray(cID);
@@ -1769,7 +1717,6 @@ void CDownloadQueue::KademliaSearchFile(uint32_t searchID,
 	}
 
 	if (ctemp) {
-		// add encryption settings
 		ctemp->SetConnectOptions(byCryptOptions);
 
 		AddDebugLogLineN(logKadSearch,

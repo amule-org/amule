@@ -165,25 +165,17 @@ CSearchDlg::CSearchDlg(wxWindow *pParent)
 	// Clear-history button, sitting in the action row directly after "Reset
 	// Fields" -- next to the other one-shot commands rather than among the
 	// search parameters, and beside "Clear Search Results" so the two
-	// destructive actions read as a pair.
+	// destructive actions read as a pair. Anchored ahead of Clear Search
+	// Results, so the three read most to least destructive rightwards.
 	//
 	// Still built here rather than in muuli_wdr because it is not a static
-	// control: it is shown or hidden with the remember-history preference
-	// (ApplySearchHistoryPref) and enabled only while the combo holds terms
-	// (UpdateClearHistoryButton), and it backs up a right-click route that is
-	// unreachable on wxMSW (the native combobox's child EDIT window never
-	// forwards WM_CONTEXTMENU to wx -- ShouldForwardFromEditToCombo in
-	// src/msw/combobox.cpp forwards only key, focus and clipboard messages).
-	// Bound directly on the instance, so no new window id is needed.
-	// (issue #697)
+	// control: it is shown or hidden with the remember-history preference and
+	// enabled only while the combo holds terms, and it backs up a right-click
+	// route that is unreachable on wxMSW -- the native combobox's child EDIT
+	// window never forwards WM_CONTEXTMENU to wx.
 	//
 	// The separator is inserted with it and tracked so the pref-driven hide
-	// takes both away; leaving a stray divider behind would open a gap in the
-	// row wherever history is switched off.
-	// Anchored ahead of Clear Search Results, so the three read most to least
-	// destructive rightwards (issue #911). Inserting after Reset Fields, as
-	// this did, put the one that discards saved terms between the two used
-	// most.
+	// takes both away; a stray divider would open a gap in the row.
 	if (wxWindow *clearResultsBtn = FindWindow(IDC_CLEAR_RESULTS)) {
 		if (wxSizer *row = clearResultsBtn->GetContainingSizer()) {
 			size_t at = row->GetItemCount();
@@ -259,11 +251,10 @@ wxTextEntry *CSearchDlg::RebuildSearchNameField(bool wantHistory)
 	const bool haveCombo = (dynamic_cast<wxComboBox *>(current) != nullptr);
 	if (haveCombo == wantHistory) {
 		// Right control already in place, so nothing to rebuild -- but it may
-		// still need the context menu. At construction the combo here is the
-		// one muuli_wdr built, which this class never created and therefore
-		// never bound; leaving the binding to the creation path below meant
-		// the "Clear search history" item was missing until the preference
-		// was toggled off and on, since only then was a combo created here.
+		// still need the context menu. At construction the combo here is the one
+		// muuli_wdr built, which this class never created and therefore never
+		// bound; leaving the binding to the creation path below meant the "Clear
+		// search history" item was missing until the preference was toggled.
 		if (wantHistory && !m_searchNameCtxBound) {
 			dynamic_cast<wxComboBox *>(current)->Bind(
 				wxEVT_CONTEXT_MENU, &CSearchDlg::OnSearchNameContextMenu, this);
@@ -291,16 +282,16 @@ wxTextEntry *CSearchDlg::RebuildSearchNameField(bool wantHistory)
 			0,
 			nullptr,
 			wxTE_PROCESS_ENTER);
-		// The context menu is bound per instance, so a freshly created combo
-		// needs it re-attached -- unlike the id-keyed event-table entries
-		// (EVT_TEXT_ENTER / wxEVT_TEXT), which survive the swap by themselves.
+		// The context menu is bound per instance, so a freshly created combo needs
+		// it re-attached -- unlike the id-keyed event-table entries, which survive
+		// the swap by themselves.
 		combo->Bind(wxEVT_CONTEXT_MENU, &CSearchDlg::OnSearchNameContextMenu, this);
 		m_searchNameCtxBound = true;
 		replacement = combo;
 	} else {
 		// wxTE_PROCESS_ENTER kept so Enter still starts the search through the
-		// existing EVT_TEXT_ENTER(IDC_SEARCHNAME) entry. A plain text control
-		// carries no history menu, so the binding is gone with the old combo.
+		// existing EVT_TEXT_ENTER entry. A plain text control carries no history
+		// menu, so the binding is gone with the old combo.
 		m_searchNameCtxBound = false;
 		replacement = new wxTextCtrl(this,
 			IDC_SEARCHNAME,
@@ -348,12 +339,10 @@ CSearchDlg::~CSearchDlg() {}
 namespace
 {
 // Search *query* history -- the strings typed into the Name field, not the
-// results they returned (that's the separate, not-yet-implemented result
-// persistence eMule does via StoredSearches.met; see #641). Deliberately
-// not stored in amule.conf: query terms are arguably private, and putting
-// them in the main config both bloats it and makes them travel with the
-// file (config backups, the --amule-config-file push to amuleweb/amuleapi).
-// A dedicated file mirrors eMule's own AC_SearchStrings.dat.
+// results they returned. Deliberately not stored in amule.conf: query terms are
+// arguably private, and putting them in the main config both bloats it and
+// makes them travel with the file (config backups, the --amule-config-file push
+// to amuleweb/amuleapi). A dedicated file mirrors eMule's AC_SearchStrings.dat.
 wxString SearchHistoryFilePath()
 {
 	return thePrefs::GetConfigDir() + "searchhistory.dat";
@@ -362,10 +351,9 @@ wxString SearchHistoryFilePath()
 
 void CSearchDlg::LoadSearchHistory()
 {
-	// With the preference off the Name field is a plain wxTextCtrl, so there is
-	// no dropdown to fill and the cast below would be null. Guarding here (as
-	// well as at the ApplySearchHistoryPref call site) keeps every future
-	// caller safe rather than relying on each one to check first.
+	// With the preference off the Name field is a plain wxTextCtrl, so there is no
+	// dropdown to fill and the cast below would be null. Guarding here as well as
+	// at the call site keeps every future caller safe.
 	wxComboBox *combo = CastChild(IDC_SEARCHNAME, wxComboBox);
 	if (combo == nullptr || !CPreferences::RememberSearchHistory()) {
 		UpdateClearHistoryButton();
@@ -377,13 +365,10 @@ void CSearchDlg::LoadSearchHistory()
 	CTextFile file;
 	wxArrayString entries;
 	if (file.Open(SearchHistoryFilePath(), CTextFile::read)) {
-		// txtIgnoreEmptyLines|txtStripWhitespace has no single named
-		// EReadTextFile enumerator to cast to (clang-tidy
-		// clang-analyzer-optin.core.EnumCastOutOfRange, rightly --
-		// EReadTextFile isn't declared as a flag enum), and
-		// txtReadDefault also drops '#'-led lines, which would silently
-		// eat a legitimate search term. Read unfiltered and do the
-		// trim/empty-drop by hand instead.
+		// txtIgnoreEmptyLines|txtStripWhitespace has no single named EReadTextFile
+		// enumerator to cast to, and txtReadDefault also drops '#'-led lines, which
+		// would silently eat a legitimate search term. Read unfiltered and do the
+		// trim and empty-drop by hand instead.
 		for (const wxString &line : file.ReadLines(txtReadAll)) {
 			wxString trimmed = line;
 			trimmed.Trim(true).Trim(false);
@@ -478,15 +463,13 @@ void CSearchDlg::OnSearchNameContextMenu(wxContextMenuEvent &WXUNUSED(evt))
 {
 	wxComboBox *combo = CastChild(IDC_SEARCHNAME, wxComboBox);
 
-	// Overriding the field's context menu (to append the history action
-	// below) must not silently drop the standard edit actions -- a plain
-	// wxComboBox's only other context menu is this one, so without these
-	// items right-clicking the field would offer no way to paste/copy
-	// (amule-org/amule#643 review). Same custom-Paste-ID idiom as
-	// CMuleTextCtrl::OnRightDown: wxMenu auto-enables Cut/Copy off Wx's own
-	// selection tracking for the wxID_CUT/wxID_COPY stock IDs, but is too
-	// permissive about wxID_PASTE (enabled even with an empty clipboard),
-	// so Paste gets a custom ID and an explicit clipboard-content check.
+	// Overriding the field's context menu (to append the history action below)
+	// must not silently drop the standard edit actions -- a plain wxComboBox's
+	// only other context menu is this one, so without these items right-clicking
+	// the field would offer no way to paste or copy. Same custom-Paste-ID idiom
+	// as CMuleTextCtrl::OnRightDown: wxMenu auto-enables Cut/Copy off wx's own
+	// selection tracking, but is too permissive about wxID_PASTE -- enabled even
+	// with an empty clipboard -- so Paste gets a custom ID and its own check.
 	enum
 	{
 		ID_SEARCHNAME_PASTE = wxID_HIGHEST + 668
@@ -521,10 +504,10 @@ void CSearchDlg::OnSearchNameContextMenu(wxContextMenuEvent &WXUNUSED(evt))
 	menu.Bind(wxEVT_MENU, [combo](wxCommandEvent &) { combo->Copy(); }, wxID_COPY);
 	menu.Bind(wxEVT_MENU, [combo](wxCommandEvent &) { combo->Paste(); }, ID_SEARCHNAME_PASTE);
 	menu.Bind(wxEVT_MENU, [combo](wxCommandEvent &) { combo->SetSelection(-1, -1); }, wxID_SELECTALL);
-	// Deferred off the popup's own modal loop: this handler runs while
-	// PopupMenu() is still unwinding, and putting a modal dialog up before the
-	// menu has finished tearing down misbehaves on wxOSX. The button route
-	// needs no such care -- no popup is involved there.
+	// Deferred off the popup's own modal loop: this handler runs while PopupMenu()
+	// is still unwinding, and putting a modal dialog up before the menu has
+	// finished tearing down misbehaves on wxOSX. The button route needs no such
+	// care -- no popup is involved there.
 	menu.Bind(
 		wxEVT_MENU,
 		[this](wxCommandEvent &) { CallAfter(&CSearchDlg::ConfirmAndClearSearchHistory); },
@@ -729,12 +712,11 @@ bool CSearchDlg::HasRunningEd2kSearch() const
 		// running percent. Same vocabulary in both builds, different source.
 		uint32 status;
 #ifdef CLIENT_GUI
-		// Remote GUI: the daemon pushes the sentinel through
-		// UpdateSearchProgress, which caches it per tab. A tab with no entry
-		// is one nothing has reported on this session -- a search restored
-		// from disk at startup -- so it is finished, not running. Treating
-		// the absence as "running" would prompt on every first search of a
-		// session that had stored results.
+		// Remote GUI: the daemon pushes the sentinel through UpdateSearchProgress,
+		// which caches it per tab. A tab with no entry is one nothing has reported
+		// on this session -- a search restored from disk at startup -- so it is
+		// finished, not running. Treating the absence as "running" would prompt on
+		// every first search of a session that had stored results.
 		const std::map<wxUIntPtr, uint32>::const_iterator it = m_searchProgress.find(sid);
 		if (it == m_searchProgress.end()) {
 			continue;
@@ -853,19 +835,16 @@ void CSearchDlg::OnSearchClosing(wxBookCtrlEvent &evt)
 {
 	CSearchListCtrl *ctrl = dynamic_cast<CSearchListCtrl *>(m_notebook->GetPage(evt.GetSelection()));
 	wxASSERT(ctrl);
-	// Capture the ID *before* ShowResults(0), which sets m_nResultsID = 0 --
-	// so every GetSearchId() after that line returns 0, and the stop/free
-	// calls below silently addressed search 0 rather than this tab's search:
-	// no EC_OP_SEARCH_STOP was ever sent, RemoveResults(0) freed nothing, and
-	// m_searchProgress.erase(0) left the real entry behind. Predates the
-	// multi-search work -- identical on master, ordering and all -- but it is
-	// what made the daemon-side close gate look correct while the request it
-	// gates never actually arrived (got3nks, PR #680 review).
+	// Capture the ID *before* ShowResults(0), which sets m_nResultsID = 0 -- so
+	// every GetSearchId() after that line returns 0, and the stop/free calls
+	// below silently addressed search 0 rather than this tab's search: no
+	// EC_OP_SEARCH_STOP was ever sent, RemoveResults(0) freed nothing, and the
+	// progress erase left the real entry behind. That is what made the
+	// daemon-side close gate look correct while the request never arrived.
 	const wxUIntPtr searchID = ctrl->GetSearchId();
 	// RemoveResults below fires MuleNotify::Search_Removed, which routes back
-	// into CloseSearchTab for this very tab; the flag makes that a no-op
-	// instead of a recursive close (see m_inSearchClosing). Scoped so it
-	// clears on every exit path.
+	// into CloseSearchTab for this very tab; the flag makes that a no-op instead
+	// of a recursive close. Scoped so it clears on every exit path.
 	CScopedFlag closingGuard(m_inSearchClosing);
 	// Zero to avoid results added while destructing.
 	ctrl->ShowResults(0);
@@ -875,14 +854,11 @@ void CSearchDlg::OnSearchClosing(wxBookCtrlEvent &evt)
 	// life of the session.
 	m_moreExhausted.erase((uint32_t)searchID);
 #ifdef CLIENT_GUI
-	// Remote multi-search: closing a tab stops *and* frees that specific
-	// search on the daemon (leaving other tabs' searches running). On a
-	// legacy daemon this degrades to a parameterless stop of the single
-	// search — which is the same "abort on close" behaviour as before.
-	// Skipped when CloseSearchTab is the one driving this (DeletePage
-	// fires this handler synchronously): the daemon already discarded
-	// this id, so a stop request for it would be a wasted round trip
-	// (got3nks, PR #680 review).
+	// Remote multi-search: closing a tab stops *and* frees that specific search
+	// on the daemon, leaving other tabs' searches running. On a legacy daemon
+	// this degrades to a parameterless stop of the single search. Skipped when
+	// CloseSearchTab is the one driving this -- DeletePage fires this handler
+	// synchronously -- since the daemon already discarded this id.
 	if (searchID != m_expiringSearchID) {
 		theApp->searchlist->StopSearchById(searchID, true);
 	}
@@ -906,11 +882,10 @@ void CSearchDlg::OnSearchClosing(wxBookCtrlEvent &evt)
 void CSearchDlg::OnStartRejected(wxUIntPtr searchID, const wxString &error)
 {
 	// A rejected browse ("View Files") reaches this same path in amuleGUI --
-	// SendBrowseRequest sends the same EC_TAG_SEARCH_REF and the daemon echoes
-	// it on its failure exits too. It needs the tab dropped and the reason
-	// shown, but NOT the search-button reset below: the user never pressed
-	// Search, so clearing Download/Stop would disable them for whatever search
-	// tab happens to be visible. Read the tab's kind before closing it.
+	// SendBrowseRequest sends the same EC_TAG_SEARCH_REF and the daemon echoes it
+	// on its failure exits too. It needs the tab dropped and the reason shown,
+	// but NOT the search-button reset below: the user never pressed Search, so
+	// clearing Download/Stop would disable them for whatever tab is visible.
 	const CSearchListCtrl *ctrl = GetSearchList(searchID);
 	const bool wasBrowse = ctrl && ctrl->IsBrowse();
 
@@ -920,16 +895,13 @@ void CSearchDlg::OnStartRejected(wxUIntPtr searchID, const wxString &error)
 
 	if (!error.IsEmpty()) {
 		// Deferred off the current call stack: in amuleGUI this runs inside
-		// CECSocket's reply handling, and wxMessageBox spins a nested event
-		// loop that re-enters CECSocket::OnInput and clobbers its rx state --
-		// the same hazard CAddLinkHandler documents. Harmless in the
-		// monolithic build, so both go through the one path.
+		// CECSocket's reply handling, and wxMessageBox spins a nested event loop
+		// that re-enters CECSocket::OnInput and clobbers its rx state -- the same
+		// hazard CAddLinkHandler documents. Harmless in the monolithic build, so
+		// both go through the one path.
 		//
-		// `error` is captured BY VALUE, not by reference: it is a const& to
-		// the caller's string and this body runs after that caller has
-		// returned. (The capture is also why there is no named local copy --
-		// performance-unnecessary-copy-initialization flags that, while the
-		// copy itself is required.)
+		// `error` is captured BY VALUE, not by reference: it is a const& to the
+		// caller's string and this body runs after that caller has returned.
 		const wxString title = wasBrowse ? _("ERROR") : _("Search warning");
 		wxTheApp->CallAfter([error, title]() {
 			wxMessageBox(error, title, wxOK | wxCENTRE | wxICON_INFORMATION);
@@ -957,13 +929,11 @@ void CSearchDlg::OnSearchAdded(wxUIntPtr searchID, const wxString &name, uint32 
 		return; // already have a tab for it
 	}
 	// Labelled like any other tab -- "(0)" hit count, "!" for a Kad search --
-	// since it is the same kind of thing and needs no separate vocabulary
-	// (got3nks, amule-org/amule#703). Unselected: it appears unprompted, so it
-	// must not pull the selection away from what the user is doing.
-	//
-	// Synchronous, matching its mirror Search_Removed -> CloseSearchTab: both
-	// run from wherever the core changed the search set, including inside EC
-	// packet handling.
+	// since it is the same kind of thing and needs no separate vocabulary.
+	// Unselected: it appears unprompted, so it must not pull the selection away
+	// from what the user is doing. Synchronous, matching its mirror
+	// Search_Removed -> CloseSearchTab: both run from wherever the core changed
+	// the search set, including inside EC packet handling.
 	CreateNewTab(((kind == KadSearch) ? "!" : "") + name + " (0)", searchID, false);
 }
 
@@ -985,14 +955,12 @@ void CSearchDlg::CloseSearchTab(wxUIntPtr searchID)
 		if (m_notebook->GetPage(i) != ctrl) {
 			continue;
 		}
-		// DeletePage fires PAGE_CLOSING synchronously (see MuleNotebook.cpp),
-		// which re-enters OnSearchClosing on this same call stack and does
-		// all the cleanup -- ShowResults(0), m_searchProgress.erase,
-		// RemoveResults, last-tab button disabling -- itself. Setting this
-		// first tells it to skip only the StopSearchById call: the core has
-		// already discarded this id (amuleGUI got EC_TAG_SEARCH_EXPIRED for
-		// it; monolithic freed the bucket), so a stop request for it would
-		// be a wasted round trip (got3nks, PR #680 review).
+		// DeletePage fires PAGE_CLOSING synchronously, which re-enters
+		// OnSearchClosing on this same call stack and does all the cleanup --
+		// ShowResults(0), the progress erase, RemoveResults, last-tab button
+		// disabling -- itself. Setting this first tells it to skip only the
+		// StopSearchById call: the core has already discarded this id, so a stop
+		// request for it would be a wasted round trip.
 		m_expiringSearchID = searchID;
 		m_notebook->DeletePage(i);
 		break;
@@ -1056,11 +1024,9 @@ void CSearchDlg::OnBnClickedStart(wxCommandEvent &WXUNUSED(evt))
 	// Starting a second ed2k search finalises the one in flight (see
 	// HasRunningEd2kSearch for why the protocol forces that), and until now it
 	// happened silently: the first tab's progress bar simply cleared, which
-	// reads exactly like a search that finished normally. Ask first, so
-	// stopping it is the user's decision rather than a surprise.
-	//
-	// Only ed2k-over-ed2k. Starting a Kad search alongside a running ed2k one
-	// is fine, and so is the reverse -- Kad results carry their own search ID.
+	// reads exactly like a search that finished normally. Ask first, so stopping
+	// it is the user's decision. Only ed2k-over-ed2k: starting a Kad search
+	// alongside a running ed2k one is fine, and so is the reverse.
 	const int newType = GetSelectedSearchTypeCanonical();
 	if ((newType == LocalSearch || newType == GlobalSearch) && HasRunningEd2kSearch()) {
 		const int answer =
@@ -1081,15 +1047,13 @@ void CSearchDlg::OnBnClickedStart(wxCommandEvent &WXUNUSED(evt))
 	uint64 now = GetTickCount64();
 	if ((now - m_last_search_time) > 500) {
 		m_last_search_time = now;
-		// Stop previous ED2K search state only (the server has a
-		// single in-flight search packet per session and m_searchPacket
-		// has to be reset).  Do NOT stop a previous Kad search: the
-		// Kad data layer (CSearchManager::m_searches) supports multiple
-		// concurrent searches keyed by target hash, and stopping the
-		// previous one immediately deletes its CSearch (which strips
-		// the "!" tab indicator and halts result delivery).
-		// Unconditionally calling OnBnClickedStop here was the reason
-		// starting a second Kad search appeared to cancel the first.
+		// Stop previous ED2K search state only -- the server has a single
+		// in-flight search packet per session and m_searchPacket has to be reset.
+		// Do NOT stop a previous Kad search: the Kad data layer supports multiple
+		// concurrent searches keyed by target hash, and stopping the previous one
+		// immediately deletes its CSearch, which strips the "!" tab indicator and
+		// halts result delivery. An unconditional stop here is why starting a
+		// second Kad search appeared to cancel the first.
 		theApp->searchlist->StopSearch(/*globalOnly=*/true);
 		StartNewSearch();
 	}
@@ -1232,15 +1196,14 @@ uint32 CSearchDlg::s_optimisticIdCounter = 0;
 // Single source of the remote-GUI OPTIMISTIC placeholder tab id, used by both a
 // new search (StartNewSearch) and a browse. A placeholder tab is created the
 // instant the user acts, then rekeyed to the daemon's real search id when the
-// START reply arrives (RemapSearch). The daemon allocates ed2k ids from the low
-// quarter [1, 0x3fffffff] and Kad ids from the top half (>= 0x80000000), so a
-// plain low placeholder could numerically equal an earlier tab's daemon id once
-// the counters drift apart — RekeySearch would then match the WRONG tab and
-// corrupt the tab map (searches silently stop). Reserving bit 30 puts every
-// placeholder in [0x40000000, 0x7fffffff], a range no daemon allocator ever
-// produces, so a placeholder can never collide with a daemon id — while staying
-// bottom-half, clear of Kad. Search and browse share the one counter, so their
-// placeholders never collide with each other either.
+// START reply arrives.
+//
+// The daemon allocates ed2k ids from the low quarter [1, 0x3fffffff] and Kad
+// ids from the top half (>= 0x80000000), so a plain low placeholder could
+// numerically equal an earlier tab's daemon id once the counters drift apart --
+// RekeySearch would then match the WRONG tab and corrupt the tab map. Reserving
+// bit 30 puts every placeholder in [0x40000000, 0x7fffffff], a range no daemon
+// allocator ever produces, while staying bottom-half and clear of Kad.
 wxUIntPtr CSearchDlg::AllocateOptimisticId()
 {
 	s_optimisticIdCounter = (s_optimisticIdCounter + 1) & 0x7fffffff;

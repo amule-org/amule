@@ -36,10 +36,10 @@ int Luminance(const wxColour &c)
 	return (c.Red() * 299 + c.Green() * 587 + c.Blue() * 114) / 1000;
 }
 
-// Whether two colours are far enough apart in brightness for text painted in
-// one over the other to be legible. The threshold is deliberately generous: a
-// false "too close" only forgoes the theme's exact foreground for a guaranteed-
-// readable black/white, which is always preferable to invisible text.
+// Whether two colours are far enough apart in brightness for text painted in one
+// over the other to be legible. The threshold is deliberately generous: a false
+// "too close" only forgoes the theme's exact foreground for a guaranteed-readable
+// black or white.
 bool Contrasts(const wxColour &a, const wxColour &b)
 {
 	return std::abs(Luminance(a) - Luminance(b)) >= 64;
@@ -67,34 +67,28 @@ CMuleLogCtrl::CMuleLogCtrl(wxWindow *parent,
 	for (int margin = 0; margin < 3; ++margin) {
 		SetMarginWidth(margin, 0);
 	}
-	// Zeroing the numbered margins above also removes the only inset Scintilla
-	// had, so text rendered hard against the control's frame -- most visible
-	// where the theme draws a tight, high-contrast border (issue #702). These
-	// are the text-area margins, a separate concept from the numbered margins,
-	// so they restore the padding without bringing the code-editor gutters
-	// back. Scintilla draws its own text area, so this is not theme- or
-	// platform-specific; DIP-scaled so the gap keeps its size on HiDPI.
-	// Scintilla's own default here is 1px (ViewStyle::Init), which is what
-	// made the text look flush -- so this has to be visibly larger than the
-	// default to be worth anything, not a nudge above it.
+	// Zeroing the numbered margins above also removes the only inset Scintilla had,
+	// so text rendered hard against the control's frame (issue #702). These are the
+	// text-area margins, a separate concept, so they restore the padding without
+	// bringing the code-editor gutters back. DIP-scaled so the gap keeps its size on
+	// HiDPI, and visibly larger than Scintilla's own 1px default, which is what made
+	// the text look flush.
 	const int textMargin = FromDIP(5);
 	SetMarginLeft(textMargin);
 	SetMarginRight(textMargin);
 
-	// Scintilla has no vertical counterpart to the text-area margins, so the
-	// first line otherwise sits directly on the frame. extraAscent feeds
-	// lineHeight (ViewStyle::Refresh: maxAscent += extraAscent), so this is
-	// line spacing rather than a one-off top gap -- which is what we want
-	// here: the log tails to the bottom, so a fixed band at the viewport top
-	// would only show above a partially scrolled line.
+	// Scintilla has no vertical counterpart to the text-area margins, so the first
+	// line otherwise sits directly on the frame. extraAscent feeds lineHeight, so
+	// this is line spacing rather than a one-off top gap -- which is what we want:
+	// the log tails to the bottom, so a fixed band at the viewport top would only
+	// show above a partially scrolled line.
 	SetExtraAscent(FromDIP(2));
 
-	// No caret: this pane is read-only, so there is no insertion point for one
-	// to mark. Scintilla draws it regardless, at the very left of the text
-	// area -- which went unnoticed while the text also started there, but once
-	// the margins above inset the text the caret was left sitting on the frame
-	// (issue #702). Selection highlighting is independent of caret visibility,
-	// so click-drag and Ctrl+C are unaffected.
+	// No caret: this pane is read-only, so there is no insertion point for one to
+	// mark. Scintilla draws it regardless, at the very left of the text area, which
+	// went unnoticed while the text started there too -- but once the margins inset
+	// the text the caret was left sitting on the frame (issue #702). Selection
+	// highlighting is independent of caret visibility.
 	SetCaretStyle(wxSTC_CARETSTYLE_INVISIBLE);
 
 	// Word-wrap long lines, as the old wxTE_RICH2 pane did, so nothing is clipped
@@ -118,12 +112,11 @@ void CMuleLogCtrl::SetupStyles()
 	wxColour fg = wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT);
 	const wxColour bg = wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW);
 
-	// On macOS the window/text system colours are appearance-aware and resolved
-	// to RGB at call time; in some configurations (seen with a self-built wx 3.3
-	// on macOS -- issue #569) they come back with too little contrast, which
-	// paints the whole log invisible. Windows/GTK return static, well-contrasted
-	// values and are unaffected. When the pair is unreadable, keep the theme's
-	// background but force a legible foreground from its brightness.
+	// On macOS the window/text system colours are appearance-aware and resolved to
+	// RGB at call time, and in some configurations come back with too little
+	// contrast, painting the whole log invisible (issue #569). Windows and GTK
+	// return static, well-contrasted values. When the pair is unreadable, keep the
+	// theme's background but force a legible foreground from its brightness.
 	if (!Contrasts(fg, bg)) {
 		fg = Luminance(bg) < 128 ? *wxWHITE : *wxBLACK;
 	}
@@ -146,11 +139,11 @@ void CMuleLogCtrl::OnSysColourChanged(wxSysColourChangedEvent &event)
 
 bool CMuleLogCtrl::AtBottom()
 {
-	// Compare in *display* lines: GetFirstVisibleLine()/LinesOnScreen() count
-	// wrapped rows, while GetLineCount() counts document lines, so with wrapping
-	// on the two must be reconciled. The total display-line count is the first
-	// display row of the last doc line plus how many rows it wraps to. Generous
-	// by one so "sitting at the end" always re-tails on append.
+	// Compare in DISPLAY lines: GetFirstVisibleLine()/LinesOnScreen() count wrapped
+	// rows while GetLineCount() counts document lines, so with wrapping on the two
+	// must be reconciled. The total is the first display row of the last doc line
+	// plus how many rows it wraps to, generous by one so "sitting at the end"
+	// always re-tails on append.
 	const int lastDoc = GetLineCount() - 1;
 	const int displayLines = VisibleFromDocLine(lastDoc) + WrapCount(lastDoc);
 	return GetFirstVisibleLine() + LinesOnScreen() >= displayLines - 1;
@@ -158,13 +151,12 @@ bool CMuleLogCtrl::AtBottom()
 
 void CMuleLogCtrl::ScrollToBottom()
 {
-	// Request only -- OnInternalIdle() is the sole scroller. Keeping every scroll
-	// in one place stops the batch/live tail-scroll from racing the idle
-	// re-scroll loop: that loop tells a manual scroll from an append by watching
-	// the first-visible line, and a direct ScrollToEnd() here would move it and
-	// be misread as the user scrolling -- which aborted the catch-up mid-load, so
-	// switching to the log while it was still replaying landed short (issue #547,
-	// @ghysler). Deferring also naturally waits until the pane is on screen.
+	// Request only -- OnInternalIdle() is the sole scroller. Keeping every scroll in
+	// one place stops the tail-scroll from racing the idle re-scroll loop: that loop
+	// tells a manual scroll from an append by watching the first-visible line, and a
+	// direct ScrollToEnd() here would move it and be misread as the user scrolling,
+	// aborting the catch-up mid-load (issue #547). Deferring also waits until the
+	// pane is on screen.
 	if (!IsShownOnScreen()) {
 		// No reliable first-visible baseline while hidden; let the first scroll
 		// after the pane appears run unconditionally.
@@ -177,23 +169,20 @@ void CMuleLogCtrl::OnInternalIdle()
 {
 	wxStyledTextCtrl::OnInternalIdle();
 
-	// Sole scroller for every tail-scroll (live line, batch, or deferred while
-	// hidden). IsShownOnScreen() is only evaluated while a scroll is pending, so
-	// the common idle path stays a single bool test; a scroll requested while the
-	// pane was hidden simply waits here until it is shown.
+	// Sole scroller for every tail-scroll: live line, batch, or deferred while
+	// hidden. IsShownOnScreen() is evaluated only while a scroll is pending, so the
+	// common idle path stays a single bool test.
 	if (!m_scrollPending || !IsShownOnScreen()) {
 		return;
 	}
 
-	// With word-wrap on, Scintilla lays out wrapped lines incrementally over
-	// several idles, so a single ScrollToEnd() the moment the pane appears (or
-	// while the log is still replaying) lands short -- against a display-line
-	// count that does not yet include the still-unwrapped tail (issue #547,
-	// reported by @ghysler with wrapped lines on a narrow window). Re-scroll each
-	// idle until the position stops moving (wrap has settled at the true bottom).
-	// Appends do not move the first-visible line, so if it has moved away from
-	// where our last auto-scroll left it the user scrolled -- bail and reset, so
-	// a manual scroll is never fought and a later return to the bottom re-tails.
+	// With word-wrap on, Scintilla lays out wrapped lines incrementally over several
+	// idles, so a single ScrollToEnd() the moment the pane appears lands short,
+	// against a display-line count that does not yet include the unwrapped tail
+	// (issue #547). Re-scroll each idle until the position stops moving. Appends do
+	// not move the first-visible line, so if it has moved away from where our last
+	// auto-scroll left it the user scrolled -- bail and reset, so a manual scroll is
+	// never fought and a later return to the bottom re-tails.
 	if (m_lastAutoScrollLine != -1 && GetFirstVisibleLine() != m_lastAutoScrollLine) {
 		m_scrollPending = false;
 		m_lastAutoScrollLine = -1;

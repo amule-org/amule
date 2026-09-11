@@ -217,7 +217,6 @@ void CLogger::DoLines(const wxString &lines, bool critical, bool toStdout, bool 
 	// Remove newspace at end
 	wxString bufferline = lines.Strip(wxString::trailing);
 
-	// Create the timestamp
 	wxString stamp = wxDateTime::Now().FormatISODate() + " " + wxDateTime::Now().FormatISOTime()
 #ifdef CLIENT_GUI
 			 + " (remote-GUI): ";
@@ -248,28 +247,20 @@ void CLogger::DoLine(const wxString &line, bool toStdout, bool GUI_ONLY(toGUI))
 		wxMutexLocker lock(m_lineLock);
 		++m_count;
 
-		// write to logfile
 		m_ApplogBuf += line;
 		FlushApplog();
 
-		// write to Stdout
 		if (m_StdoutLog || toStdout) {
-			// `utf8_str()` instead of `unicode2char()` so non-ASCII
-			// log content (filenames, server messages, etc.) survives
-			// in stdout regardless of the process locale. `unicode2char`
-			// uses `wxConvLibc`, which collapses non-ASCII to `?` /
-			// U+FFFD when running in the default `C` locale -- common
-			// in headless / containerized deployments where amuled is
-			// invoked without `LANG`/`LC_ALL` set and never calls
-			// `setlocale(LC_ALL, "")` itself (#40). The on-disk log
-			// path already uses `wxConvUTF8` via `FlushApplog`, so
-			// switching the stdout sink to `utf8_str()` makes the two
-			// sinks consistently UTF-8.
+			// `utf8_str()` instead of `unicode2char()`, so non-ASCII log content
+			// survives in stdout regardless of the process locale: `unicode2char`
+			// uses `wxConvLibc`, which collapses non-ASCII to `?` in the default
+			// `C` locale -- common in headless deployments where amuled runs
+			// without LANG or LC_ALL and never calls setlocale itself (#40). The
+			// on-disk log already writes UTF-8, so the two sinks now agree.
 			printf("%s", (const char *)line.utf8_str());
 		}
 	}
 #ifndef AMULE_DAEMON
-	// write to Listcontrol
 	if (toGUI) {
 		theApp->AddGuiLogLine(line);
 	}
@@ -283,23 +274,18 @@ void CLogger::EmergencyLog(const wxString &message, bool closeLog)
 	// survive whatever is going wrong.
 	fprintf(stderr, "%s", (const char *)message.utf8_str());
 
-	// The logfile copy needs the same one-character severity marker DoLine
-	// puts on every line. A remote GUI reads this log back over EC and
-	// CamuleDlg::AddLogLineToView strips one leading character from each line
-	// unconditionally, so appending emergency output raw meant that strip ate
-	// a real character per line -- "Assertion failed" reaching the GUI as
-	// "ssertion failed", "Backtrace follows" as "acktrace follows". Marker
-	// "!" because this only ever carries critical output; matching DoLine, a
-	// multi-line message gets the marker on each line rather than only the
-	// first.
+	// The logfile copy needs the same one-character severity marker DoLine puts on
+	// every line. A remote GUI reads this log back over EC and strips one leading
+	// character per line unconditionally, so appending emergency output raw meant
+	// that strip ate a real character -- "Assertion failed" reaching the GUI as
+	// "ssertion failed". Marker "!", since this only ever carries critical output,
+	// and on each line rather than only the first.
 	//
-	// Done with an explicit pass rather than wxStringTokenizer: this text is
-	// crash and assert output, where the blank lines between the banners and
-	// the backtrace are deliberate structure, and the tokenizer would eat
-	// them -- wxTOKEN_DEFAULT is strtok semantics for whitespace delimiters,
-	// which skips empty tokens. One reserve and one append also keeps the
-	// work here close to what it was, which matters on the fatal-exception
-	// path where the next instruction may never run.
+	// Done with an explicit pass rather than wxStringTokenizer: this text is crash
+	// and assert output, where the blank lines between the banners and the
+	// backtrace are deliberate structure and the tokenizer would eat them. One
+	// reserve and one append also keeps the work close to what it was, which
+	// matters on a path where the next instruction may never run.
 	wxString prefixed;
 	prefixed.reserve(message.length() + 16);
 	bool atLineStart = true;
@@ -386,18 +372,14 @@ bool CLoggerAccess::HasString()
 	while (!m_ready) {
 		int c = m_logfile->GetC();
 		if (c == wxEOF) {
-			// wxFFileInputStream wraps a stdio FILE* whose EOF flag is
-			// sticky: once GetC() returns wxEOF, subsequent reads keep
-			// returning wxEOF even when amuled has appended more lines
-			// to the logfile in the meantime. The amule-project/amule#215
-			// fix re-seeked to the current position to clear it, but wx 3.3
-			// short-circuits a seek to the current offset (no fseek is
-			// issued), so EOF is never cleared and EC clients (amuleGUI,
-			// amuleweb) stop seeing new lines after the batch captured at
-			// connect time. Reopen the stream instead: a fresh
-			// wxFFileInputStream has no EOF set, and seeking back to where we
-			// left off resumes at the first newly appended byte -- independent
-			// of seek-clears-EOF semantics (amule-project/amule#215, wx 3.3).
+			// wxFFileInputStream wraps a stdio FILE* whose EOF flag is sticky:
+			// once GetC() returns wxEOF, later reads keep returning it even
+			// after amuled has appended more lines. The old fix re-seeked to the
+			// current position to clear it, but wx 3.3 short-circuits a seek to
+			// the current offset, so EOF is never cleared and EC clients stop
+			// seeing new lines after the batch captured at connect time.
+			// Reopening instead gives a stream with no EOF set, and seeking back
+			// resumes at the first newly appended byte.
 			wxFileOffset pos = m_logfile->TellI();
 			if (pos != wxInvalidOffset) {
 				delete m_logfile;

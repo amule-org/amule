@@ -78,11 +78,10 @@ public:
 	// soon as the new database is loaded. No-op if no dialog is open.
 	static void RefreshIP2CountryStatusIfOpen();
 
-	// Public module hook: CIP2Country calls this on a *manual* update
-	// failure (the "Update now" button) so the user sees a modal popup,
-	// not just a buried log line. No-op if the prefs dialog isn't
-	// open — caller is expected to have already logged the same
-	// message via AddLogLineC so the failure is still recorded.
+	//! Public module hook: CIP2Country calls this on a MANUAL update failure (the
+	//! "Update now" button) so the user sees a modal popup rather than a buried log
+	//! line. No-op when the dialog is closed; the caller has already logged the
+	//! same message.
 	static void NotifyIP2CountryUpdateFailedIfOpen(const wxString &msg);
 #endif
 
@@ -117,20 +116,17 @@ protected:
 	//! edits, either by a session refresh or by a late GET_SHARED_DIRS reply.
 	bool m_sharedDirsDirty;
 
-	//! Whether this session's GET_SHARED_DIRS reply has arrived, i.e. whether
-	//! the editor is showing the daemon's list rather than whatever glob_prefs
-	//! happened to hold at open time. The edit controls stay disabled until it
-	//! is true: an edit made before the reply lands sets m_sharedDirsDirty,
-	//! which then makes RefreshSharedDirsIfOpen() discard that very reply to
-	//! protect the edit -- so OK would commit a list built without ever having
-	//! seen the daemon's, replacing its shares with the one row just added.
+	//! Whether this session's GET_SHARED_DIRS reply has arrived, i.e. whether the
+	//! editor shows the daemon's list rather than whatever glob_prefs held at open
+	//! time. The edit controls stay disabled until it is true: an edit made before
+	//! the reply lands sets m_sharedDirsDirty, which makes RefreshSharedDirsIfOpen()
+	//! discard that very reply, so OK would replace the daemon's shares with a list
+	//! built without ever having seen them.
 	bool m_sharedDirsLoaded;
 
-	//! The shared-folder rows' actual paths, indexed by the row's item data.
-	//! A list cell holds display text, and CPath's display form is not the
-	//! path -- see SetListRowPath() in the .cpp for why one cannot be rebuilt
-	//! from the other. Rebuilt by PopulateSharedDirsList(), appended to by
-	//! OnSharedDirAdd(), read back by HarvestSharedDirsList().
+	//! The shared-folder rows' actual paths, indexed by the row's item data. A list
+	//! cell holds display text, and CPath's display form is not the path -- see
+	//! SetListRowPath() in the .cpp for why one cannot be rebuilt from the other.
 	std::vector<CPath> m_sharedDirRowPaths;
 
 	//! Fill the shared-folders list widget from glob_prefs' roots.
@@ -140,11 +136,9 @@ protected:
 	void OnSharedDirAdd(wxCommandEvent &evt);
 	void OnSharedDirRemove(wxCommandEvent &evt);
 
-	//! The path-mapping rows' actual local prefixes, indexed by the row's
-	//! item data -- same rationale as m_sharedDirRowPaths (SetListRowPath()
-	//! in the .cpp): a list cell holds display text, not a round-trippable
-	//! CPath. Rebuilt by PopulatePathMappingList(), appended to by
-	//! OnPathMappingAdd(), read back by HarvestPathMappingList().
+	//! The path-mapping rows' actual local prefixes, indexed by the row's item
+	//! data. Same rationale as m_sharedDirRowPaths: a list cell holds display text,
+	//! not a round-trippable CPath.
 	std::vector<CPath> m_pathMappingRowPaths;
 
 	//! Fill the path-mapping list widget from glob_prefs' mappings (#843).
@@ -159,21 +153,18 @@ protected:
 	//! sense (it's the daemon's path, nothing here to browse to), but the
 	//! local side is a real folder on this machine.
 	void OnPathMappingBrowse(wxCommandEvent &evt);
-	//! Re-flows the explanatory paragraph above the path-mapping list when
-	//! the page is resized. Bound on the *page*, not on the paragraph:
-	//! wxStaticText::SetLabel() resizes the control to fit its label, so a
-	//! handler on the paragraph that rewrites the paragraph feeds itself
-	//! (it did -- stack exhaustion inside SetLabel). The page's width is
-	//! set by the dialog and is unmoved by anything the label does, so
-	//! driving the wrap from there cannot loop.
+	//! Re-flows the explanatory paragraph above the path-mapping list on resize.
+	//! Bound on the PAGE, not on the paragraph: wxStaticText::SetLabel() resizes the
+	//! control to fit its label, so a handler on the paragraph that rewrites the
+	//! paragraph feeds itself (stack exhaustion inside SetLabel). The page's width
+	//! is set by the dialog and unmoved by anything the label does.
 	void OnPathMappingPageResize(wxSizeEvent &evt);
 	//! Wraps that paragraph to the page's current client width.
 	void WrapPathMappingHint();
 
-	//! The paragraph with no line breaks in it. wxStaticText::Wrap() only
-	//! ever inserts breaks -- it reads the current label and treats any
-	//! newline already there as hard -- so re-flowing to a *wider* page has
-	//! to start from unwrapped text rather than from what is on screen.
+	//! The paragraph with no line breaks in it. wxStaticText::Wrap() only ever
+	//! inserts breaks and treats any newline already there as hard, so re-flowing to
+	//! a WIDER page has to start from unwrapped text.
 	wxString m_pathMappingHintText;
 	//! Width last wrapped to, so a resize that leaves the width alone (a
 	//! height-only change, say) does no work.
@@ -189,19 +180,17 @@ private:
 #endif
 
 public:
-	//! Re-seed the shared-folders editor at the start of an editing session.
-	//! The dialog is constructed once and reused, so without this it keeps
-	//! whatever it captured the first time Preferences was opened — stale the
-	//! moment anything else (amuleGUI over EC, say) changes the roots. Called
-	//! on show rather than on page change so it cannot discard edits the user
-	//! is part-way through, and skipped outright while edits are pending.
+	//! Re-seed the shared-folders editor at the start of an editing session. The
+	//! dialog is constructed once and reused, so without this it keeps whatever it
+	//! captured the first time Preferences was opened -- stale the moment anything
+	//! else changes the roots. Called on show rather than on page change so it
+	//! cannot discard edits in progress, and skipped while edits are pending.
 	void PrepareSharedDirsForSession();
 
-	//! Mark the end of an editing session: the pending-edit flags exist to stop
-	//! a refresh clobbering work in progress, so they have to be cleared when
-	//! that work is either applied or discarded. Without this they latch on the
-	//! first edit and suppress every later refresh for the dialog's lifetime —
-	//! and the dialog is never destroyed (OnClose vetoes).
+	//! Mark the end of an editing session: the pending-edit flags stop a refresh
+	//! clobbering work in progress, so they have to be cleared when that work is
+	//! applied or discarded. Otherwise they latch on the first edit and suppress
+	//! every later refresh for the dialog's lifetime -- and it is never destroyed.
 	void EndSharedDirsSession();
 
 private:
@@ -228,12 +217,11 @@ private:
 	//! when a tab (server / IP2Country) is hidden.
 	wxPanel *m_aMuleTweaksWidget = nullptr;
 	wxDataViewListCtrl *m_PrefsIcons;
-	//! `pages[]` index for every page widget, indexed by that same stable
-	//! position (never reordered -- only which pages are *visible* in
-	//! m_PrefsIcons changes). Each visible row's item data is one of these
-	//! indices, so OnPrefsPageChange identifies a page by that stable index
-	//! rather than by the row's live position in the sidebar, which shifts
-	//! whenever the server / IP2Country row is hidden or re-shown.
+	//! `pages[]` index for every page widget, by that same stable position (only
+	//! which pages are VISIBLE in m_PrefsIcons changes). Each visible row's item
+	//! data is one of these, so OnPrefsPageChange identifies a page by the stable
+	//! index rather than by the row's live position, which shifts whenever the
+	//! server / IP2Country row is hidden or re-shown.
 	std::vector<wxPanel *> m_pageWidgets;
 	//! Page icons, in `pages[]` order -- kept so EnableServerTab can
 	//! re-insert the server row's icon when the tab is re-shown.
@@ -294,13 +282,11 @@ private:
 	// callback can find an open dialog without a global pointer chain.
 	static PrefsUnifiedDlg *s_activeInstance;
 
-	// Snapshots taken at TransferToWindow so OnOk can detect "the user
-	// switched GeoIP source / pasted a new license / changed the URL
-	// during this dialog session" and kick off a download — otherwise
-	// the user has to remember to click Update now after each change.
-	// The Cfg system only tracks credential fields bound through
-	// NewCfgItem; the source dropdown is committed live, so we have
-	// to compare it manually.
+	// Snapshots taken at TransferToWindow so OnOk can tell that the user switched
+	// GeoIP source, pasted a new license or changed the URL during this session and
+	// kick off a download, rather than making them remember to click Update now.
+	// The Cfg system only tracks credential fields bound through NewCfgItem, and
+	// the source dropdown is committed live, so it is compared manually.
 	int m_GeoIPSourceAtOpen;
 	wxString m_GeoIPMaxMindLicenseAtOpen;
 	wxString m_GeoIPCustomUrlAtOpen;
@@ -313,9 +299,9 @@ public:
 	void OnProtocolEd2kToggle(wxCommandEvent &event);
 	void OnProtocolMagnetToggle(wxCommandEvent &event);
 	void OnAssocCollectionToggle(wxCommandEvent &event);
-	// Shared implementation for the two OnProtocol*Toggle handlers —
-	// same live-OS-state write model as autostart, gated by a wx
-	// confirm dialog when a non-aMule handler is currently in place.
+	// Shared implementation for the two OnProtocol*Toggle handlers: same
+	// live-OS-state write model as autostart, gated by a confirm dialog when a
+	// non-aMule handler is currently in place.
 	void HandleProtocolToggle(HandlerTarget scheme, int checkboxId, bool wanted);
 	void OnPrefsPageChange(wxDataViewEvent &event);
 	void OnToolTipDelayChange(wxSpinEvent &event);
@@ -327,14 +313,11 @@ public:
 
 	void OnInitDialog(wxInitDialogEvent &evt);
 
-	// Tri-state outcome of an attempt to commit the pending share
-	// selection. Used by OnOk to decide between three flows:
-	//   * Committed       → continue to Save() + Reload + Show(false)
-	//   * NothingToCommit → continue to Save() + Show(false), skip Reload
-	//   * CancelledByUser → return early from OnOk: keep the prefs
-	//                       dialog open so the user can adjust their
-	//                       selection without losing the rest of
-	//                       their pending pref changes
+	// Tri-state outcome of an attempt to commit the pending share selection:
+	//   * Committed       -> Save() + Reload + Show(false)
+	//   * NothingToCommit -> Save() + Show(false), skipping Reload
+	//   * CancelledByUser -> return early from OnOk, keeping the dialog open so the
+	//                        rest of the pending pref changes are not lost
 	enum class SharedDirsCommitResult
 	{
 		NothingToCommit,
@@ -342,12 +325,10 @@ public:
 		CancelledByUser,
 	};
 
-	// Commits the pending share selection from the directory tree
-	// into theApp->glob_prefs->shareddir_list. Confirms before
-	// committing recursive-share roots that look like sensitive
-	// system locations (e.g. home, /etc), then runs the recursive
-	// directory enumeration on a worker thread with a cancellable
-	// progress dialog so the UI never freezes on large roots.
+	// Commits the pending share selection from the directory tree into
+	// theApp->glob_prefs->shareddir_list. Confirms before committing recursive-share
+	// roots that look like sensitive system locations, then runs the recursive
+	// enumeration on a worker thread with a cancellable progress dialog.
 	SharedDirsCommitResult CommitSharedDirsWithProgress();
 
 	// Fills one of the amuleapi credential-state labels. A stored password
@@ -362,9 +343,8 @@ private:
 	bool m_toolbarOrientationChanged;
 
 	// Whether a guest password was stored when this dialog opened.
-	// TransferFromWindow overwrites the live preference with the
-	// checkbox's value, so OnOk cannot ask the preference itself whether
-	// anything was there to keep.
+	// TransferFromWindow overwrites the live preference with the checkbox's value,
+	// so OnOk cannot ask the preference itself.
 	bool m_amuleApiGuestWasSet = false;
 };
 

@@ -95,11 +95,10 @@ private:
 		const bool bFlat = thePrefs::UseFlatBar();
 		const wxRect barRect = InsetForBar(cell, bFlat);
 
-		// The completed-progress strip only makes sense for a file still
-		// assembling from gaps/pending blocks: DrawFileStatusBar's completed
-		// and hashing branches already fill the whole bar solid, so the strip
-		// would be redundant there (and, while hashing, actively wrong -- that
-		// fill tracks hashed bytes, not completed bytes).
+		// The completed-progress strip only makes sense for a file still assembling
+		// from gaps and pending blocks: DrawFileStatusBar's completed and hashing
+		// branches already fill the bar solid, and while hashing that fill tracks
+		// hashed bytes rather than completed ones.
 		const bool showStrip = !file->IsCompleted() && file->GetStatus() != PS_COMPLETING &&
 				       file->GetHashingProgress() == 0;
 		if (showStrip && barRect.GetWidth() > 0) {
@@ -108,12 +107,9 @@ private:
 							   static_cast<double>(file->GetCompletedSize()));
 			if (bFlat) {
 				// Deliberately no outline: master drew this strip into a fresh
-				// wxMemoryDC, whose default black pen gave it one, but that was
-				// incidental -- nothing set the pen on purpose, so it would
-				// have carried over whatever the list's own DC last used had
-				// this been drawn there instead. Transparent is the
-				// intentional, deterministic choice; wxBLACK_PEN would
-				// reproduce the old look if that turns out to be preferred.
+				// wxMemoryDC, whose default black pen gave it one incidentally.
+				// Transparent is the deterministic choice; wxBLACK_PEN would
+				// reproduce the old look.
 				dc->SetPen(*wxTRANSPARENT_PEN);
 				dc->SetBrush(crFlatProgress.GetBrush());
 				dc->DrawRectangle(barRect.x, barRect.y, width, 3);
@@ -248,12 +244,11 @@ void CDownloadListCtrl::AddFile(CPartFile *file, bool deferView)
 {
 	wxASSERT(file);
 
-	// Avoid duplicate entries of files
 	if (m_files.insert(file).second) {
-		// During a bulk load (remote GUI first sync) the caller defers the
-		// display: showing and, above all, re-sorting the list on every one
-		// of thousands of files is O(n^2) and freezes the GUI (issue #414).
-		// ShowFileList() shows and sorts the whole list once afterwards.
+		// During a bulk load (remote GUI first sync) the caller defers the display:
+		// showing and above all re-sorting the list on every one of thousands of
+		// files is O(n^2) and freezes the GUI (issue #414). ShowFileList() shows and
+		// sorts the whole list once afterwards.
 		if (deferView) {
 			return;
 		}
@@ -263,10 +258,9 @@ void CDownloadListCtrl::AddFile(CPartFile *file, bool deferView)
 			if (file->IsCompleted()) {
 				CastByID(ID_BTNCLRCOMPL, GetParent(), wxButton)->Enable(true);
 			}
-			// During a batch update (a reconnect resync -- issue #444) the row
-			// is still appended, but the per-item sort is deferred to
-			// EndBatchUpdate()'s single SortList() so a large add stays
-			// O(n log n) instead of O(n^2).
+			// During a batch update (a reconnect resync, issue #444) the row is
+			// still appended, but the per-item sort is deferred to
+			// EndBatchUpdate()'s single SortList(), keeping a large add O(n log n).
 			if (!m_batchUpdate) {
 				SortList();
 			}
@@ -276,10 +270,9 @@ void CDownloadListCtrl::AddFile(CPartFile *file, bool deferView)
 
 void CDownloadListCtrl::BeginBatchUpdate()
 {
-	// Coalesce a burst of AddFile()/UpdateItem() calls into a single repaint
-	// (Freeze) and suppress the per-item SortList; EndBatchUpdate() sorts
-	// once. Used when reconciling the whole list against a fresh server
-	// snapshot after a reconnect (issue #444).
+	// Coalesce a burst of AddFile()/UpdateItem() calls into a single repaint and
+	// suppress the per-item SortList; EndBatchUpdate() sorts once. Used when
+	// reconciling the list against a fresh snapshot after a reconnect (issue #444).
 	Freeze();
 	// Same reason as CSharedFilesCtrl::BeginBatchUpdate(): rows land unsorted
 	// and EndBatchUpdate() sorts once, while a live sort key makes macOS
@@ -487,11 +480,10 @@ void CDownloadListCtrl::OnItemRightClicked(wxDataViewEvent &event)
 	m_menu->Append(MP_WS, _("Copy feedback to clipboard"));
 	m_menu->AppendSeparator();
 
-	// Same entry the search list offers, on the same gate: a partfile's hash is
-	// the completed file's and is known from the link, so the lookup works
-	// before a single byte has arrived -- which is when sources and history are
-	// worth checking. Hidden, not greyed, when no stats server is configured,
-	// because an empty preference means the feature is off rather than
+	// Same entry the search list offers, on the same gate: a partfile's hash is the
+	// completed file's and is known from the link, so the lookup works before a
+	// single byte has arrived. Hidden rather than greyed when no stats server is
+	// configured, because an empty preference means the feature is off rather than
 	// unavailable for this row.
 	const wxString &statsServer = thePrefs::GetStatsServerName();
 	if (!statsServer.IsEmpty()) {
@@ -771,9 +763,8 @@ void CDownloadListCtrl::OnItemActivated(wxDataViewEvent &event)
 	if (!event.GetItem().IsOk()) {
 		return;
 	}
-	// Read the row straight off the event, the way GetRowLabel() does --
-	// touching the selection here (as an earlier version of this did) would
-	// discard whatever multi-selection the user already had, and firing
+	// Read the row straight off the event, the way GetRowLabel() does: touching the
+	// selection here would discard the user's multi-selection, and firing
 	// EVT_DATAVIEW_SELECTION_CHANGED as a side effect of a double-click would
 	// rebuild the sources panel for no reason.
 	const long row = GetModelRow(event.GetItem());
@@ -783,14 +774,11 @@ void CDownloadListCtrl::OnItemActivated(wxDataViewEvent &event)
 	}
 	CPartFile *file = reinterpret_cast<CPartFile *>(data);
 
-	// One rule for both file tables: a completed file opens whatever type it
-	// is, an unfinished one only once enough of the media is on disk to play
-	// -- PreviewAvailable()'s own test, the classic eMule gesture, and what
-	// the menu's Preview entry offers for the same row. IsPartFile() is
-	// exactly "not complete" (PartFile.h), so finishing a download no longer
-	// narrows what a double-click does to it; from that moment the same file
-	// is also in Shared Files, where CSharedFilesCtrl::OnItemActivated opens
-	// it whatever its type. Anything else opens the file-details modal.
+	// One rule for both file tables: a completed file opens whatever type it is, an
+	// unfinished one only once enough of the media is on disk to play -- the classic
+	// eMule gesture, and what the menu's Preview entry offers for the same row.
+	// IsPartFile() is exactly "not complete", so finishing a download never narrows
+	// what a double-click does to it. Anything else opens the file-details modal.
 	if ((!file->IsPartFile() || file->PreviewAvailable()) && FileLaunch::CanOpen(file)) {
 		FileLaunch::Open(file, this);
 	} else {
@@ -984,18 +972,16 @@ bool CDownloadListCtrl::GetItemAttr(wxUIntPtr item, unsigned WXUNUSED(column), w
 	}
 
 	// A category keeps colour 0 until the user picks one (Preferences writes
-	// "Color" as 0 for a new one), so 0 means unset rather than black. The old
-	// code painted those rows black because it predates the dark themes, where
-	// black on a dark list is unreadable.
+	// "Color" as 0 for a new one), so 0 means unset rather than black. The old code
+	// painted those rows black, which predates the dark themes.
 	const uint32 colour = theApp->glob_prefs->GetCatColor(cat);
 	if (!colour) {
 		return false;
 	}
 
 	// Selected rows keep the system highlight colour: wx overrides a custom
-	// foreground while a row is selected -- in common/datavcmn.cpp for the
-	// generic renderers, and explicitly in the macOS backend -- for the same
-	// readability reason the old OnDrawItem() skipped highlighted rows.
+	// foreground while a row is selected, for the same readability reason the old
+	// OnDrawItem() skipped highlighted rows.
 	attr.SetColour(CMuleColour(colour));
 	return true;
 }
@@ -1032,7 +1018,6 @@ void CDownloadListCtrl::GetItemBarFill(wxUIntPtr item, unsigned column, CBarFill
 		return;
 	}
 
-	// Part availability (of missing parts).
 	const CGapList &gaplist = file->GetGapList();
 	uint64 lastGapEnd = 0;
 	for (CGapList::const_iterator it = gaplist.begin(); it != gaplist.end(); ++it) {
@@ -1046,17 +1031,14 @@ void CDownloadListCtrl::GetItemBarFill(wxUIntPtr item, unsigned column, CBarFill
 			end = file->GetPartCount();
 		}
 
-		// Place each gap, one PART at a time.
 		for (uint64 i = start; i < end; ++i) {
 			CMuleColour colour;
 			if (i < file->m_SrcpartFrequency.size() && file->m_SrcpartFrequency[i]) {
-				// The same fade the shared-files bar draws. This used to be a
-				// linear ramp of its own, saturating one source later, written
-				// into the green channel through a local called "blue" while
-				// the blue channel stayed at 255 -- so the same file read as
-				// differently shared depending on which list you looked at.
-				// The suite greps this file for that ramp, which is why it is
-				// described here rather than quoted.
+				// The same fade the shared-files bar draws. This used to be a linear
+				// ramp of its own, saturating one source later and written into the
+				// green channel through a local called "blue" while the blue channel
+				// stayed at 255, so the same file read as differently shared
+				// depending on which list you looked at.
 				colour = ToMuleColour(
 					partbar::SourceAvailabilityColour(file->m_SrcpartFrequency[i]));
 			} else {
@@ -1209,10 +1191,9 @@ void CDownloadListCtrl::SetTotalSize(uint64 total)
 {
 	m_shownSize = total;
 
-	// This label lives in the sources pane (the bottom of the transfer
-	// splitter), a different window from the download list, so reach it via
-	// the transfer window rather than GetParent(). Guard the early calls
-	// before the transfer window is fully constructed.
+	// This label lives in the sources pane, a different window from the download
+	// list, so reach it via the transfer window rather than GetParent(). Guarded
+	// for the early calls before that window is fully constructed.
 	if (!theApp->amuledlg || !theApp->amuledlg->m_transferwnd) {
 		return;
 	}
@@ -1228,9 +1209,8 @@ void CDownloadListCtrl::UpdateFreeSpace()
 	if (!theApp->amuledlg || !theApp->amuledlg->m_transferwnd) {
 		return;
 	}
-	// Resolved once: this runs on the GUI timer, and the label outlives
-	// every call -- it belongs to the transfer window, which is built with
-	// the main dialog and torn down with it.
+	// Resolved once: this runs on the GUI timer, and the label outlives every call,
+	// belonging to the transfer window.
 	if (!m_freeSpaceLabel) {
 		m_freeSpaceLabel =
 			CastByName("downloadsFreeSpace", theApp->amuledlg->m_transferwnd, wxStaticText);
@@ -1245,15 +1225,14 @@ void CDownloadListCtrl::UpdateFreeSpace()
 
 	const sint64 freeSpace = theStats::GetTempFreeSpace();
 
-	// What the queue still has to write, over every category. Completed
-	// files are already out of temp, and the bytes a part file holds are
-	// already off the free-space figure, so what is left to download is
-	// exactly what the filesystem still has to find room for. Paused and
-	// stopped files count too: they are space the queue will need as soon
-	// as they resume.
+	// What the queue still has to write, over every category. Completed files are
+	// already out of temp, and the bytes a part file holds are already off the
+	// free-space figure, so what is left to download is exactly what the filesystem
+	// still has to find room for. Paused and stopped files count too: they are space
+	// the queue will need as soon as they resume.
 	//
-	// Skipped when there is no figure to compare against: without one there
-	// is nothing to warn about, and this walks the whole queue.
+	// Skipped when there is no figure to compare against -- nothing to warn about,
+	// and this walks the whole queue.
 	uint64 remaining = 0;
 	if (freeSpace != FREE_SPACE_UNKNOWN) {
 		for (CPartFile *file : m_files) {

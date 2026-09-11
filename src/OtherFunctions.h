@@ -249,10 +249,8 @@ wxString LabelWithColon(const wxString &label);
 wxString FormatLocalDateTime(const wxDateTime &when);
 // Date-only form of the above, for a column too narrow to carry both.
 wxString FormatLocalDate(const wxDateTime &when);
-// Maps an ed2k FT_MEDIA_CODEC FOURCC / format string to a friendlier
-// display name (e.g. "H264" -> "H.264", "XVID" -> "Xvid"). Unknown
-// values pass through unchanged. Used by SearchListCtrl to render the
-// Codec column.
+// Maps an ed2k FT_MEDIA_CODEC FOURCC / format string to a friendlier display
+// name ("H264" -> "H.264", "XVID" -> "Xvid"); unknown values pass through.
 wxString FormatMediaCodec(const wxString &raw);
 // Returns the amount of Bytes the provided size-type represents
 uint32 GetTypeSize(uint8 type);
@@ -314,15 +312,14 @@ EED2KFileType GetED2KFileTypeID(const CPath &fileName);
 //! metadata from -- audio or video by extension.
 //!
 //! Lives here, in muleappcommon, because the core and the GUI must agree on it:
-//! the scheduler uses it to decide what to probe, and the shared-files view
-//! uses it to decide whether to offer the action at all. Two copies of the same
-//! rule would eventually disagree, and the symptom would be a menu entry that
-//! is enabled and silently does nothing.
+//! the scheduler uses it to decide what to probe, and the shared-files view to
+//! decide whether to offer the action at all. Two copies of the rule would
+//! eventually disagree, and the symptom would be a menu entry that is enabled
+//! and silently does nothing.
 //!
-//! Says nothing about whether the file is COMPLETE. An in-progress download is
-//! in the shared list as a partfile with nothing readable on disk, and callers
-//! test that separately -- the core so it can log the two skips distinctly, the
-//! GUI so it can say how many of a selection it left out and why.
+//! Says nothing about whether the file is COMPLETE. An in-progress download is in
+//! the shared list as a partfile with nothing readable on disk, and callers test
+//! that separately.
 bool IsMediaProbeCandidate(const CPath &fileName);
 wxString GetED2KFileTypeSearchTerm(EED2KFileType iFileID);
 wxString GetFileTypeByName(const CPath &fileName);

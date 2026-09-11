@@ -228,27 +228,12 @@ int CEncryptedDatagramSocket::DecryptReceivedClient(uint8_t *bufIn,
 
 	if (value == MAGICVALUE_UDP_SYNC_CLIENT) {
 		// yup this is an encrypted packet
-		//		// debugoutput notices
-		//		// the following cases are "allowed" but shouldn't happen given that there is
-		// only our implementation yet 		if (bKad && (pbyBufIn[0] & 0x01) != 0)
-		// DebugLog(_T("Received obfuscated UDP packet from clientIP: %s with wrong key marker bits
-		// (kad packet, ed2k bit)"), ipstr(dwIP)); 		else if (bKad && !bKadRecvKeyUsed &&
-		// (pbyBufIn[0] & 0x02) != 0) 			DebugLog(_T("Received obfuscated UDP packet
-		// from clientIP: %s
-		// with wrong key marker bits (kad packet, nodeid key, recvkey bit)"), ipstr(dwIP));
-		// else if (bKad
-		//&& bKadRecvKeyUsed && (pbyBufIn[0] & 0x02) == 0) 			DebugLog(_T("Received
-		// obfuscated UDP packet from clientIP: %s with wrong key marker bits (kad packet, recvkey
-		// key,
-		// nodeid bit)"), ipstr(dwIP));
 
 		uint8_t padLen;
 		receivebuffer.RC4Crypt(bufIn + 7, (uint8_t *)&padLen, 1);
 		result -= CRYPT_HEADER_WITHOUTPADDING;
 
 		if (result <= padLen) {
-			// DebugLogError(_T("Invalid obfuscated UDP packet from clientIP: %s, Paddingsize (%u)
-			// larger than received bytes"), ipstr(dwIP), byPadLen);
 			return bufLen; // pass through, let the Receivefunction do the errorhandling on this
 				       // junk
 		}
@@ -261,8 +246,6 @@ int CEncryptedDatagramSocket::DecryptReceivedClient(uint8_t *bufIn,
 
 		if (kad) {
 			if (result <= 8) {
-				// DebugLogError(_T("Obfuscated Kad packet with mismatching size (verify keys
-				// missing) received from clientIP: %s"), ipstr(dwIP));
 				return bufLen; // pass through, let the Receivefunction do the errorhandling
 					       // on this junk;
 			}
@@ -284,8 +267,6 @@ int CEncryptedDatagramSocket::DecryptReceivedClient(uint8_t *bufIn,
 		theStats::AddDownOverheadCrypt(bufLen - result);
 		return result; // done
 	} else {
-		// DebugLogWarning(_T("Obfuscated packet expected but magicvalue mismatch on UDP packet from
-		// clientIP: %s"), ipstr(dwIP));
 		return bufLen; // pass through, let the Receivefunction do the errorhandling on this junk
 	}
 }
@@ -323,15 +304,11 @@ int CEncryptedDatagramSocket::EncryptSendClient(uint8_t **buf,
 			PokeUInt32(keyData, receiverVerifyKey);
 			PokeUInt16(keyData + 4, randomKeyPart);
 			md5.Calculate(keyData, sizeof(keyData));
-			// DEBUG_ONLY( DebugLog(_T("Creating obfuscated Kad packet encrypted by ReceiverKey
-			// (%u)"), nReceiverVerifyKey) );
 		} else if (clientHashOrKadID != NULL && !CMD4Hash(clientHashOrKadID).IsEmpty()) {
 			uint8_t keyData[18];
 			md4cpy(keyData, clientHashOrKadID);
 			PokeUInt16(keyData + 16, randomKeyPart);
 			md5.Calculate(keyData, sizeof(keyData));
-			// DEBUG_ONLY( DebugLog(_T("Creating obfuscated Kad packet encrypted by Hash/NodeID
-			// %s"), md4str(pachClientHashOrKadID)) );
 		} else {
 			delete[] cryptedBuffer;
 			wxFAIL;

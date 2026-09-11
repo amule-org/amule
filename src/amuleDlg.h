@@ -319,20 +319,18 @@ public:
 
 	int m_srv_split_pos;
 
-	// Last frame geometry seen while NOT iconized. SaveGUIPrefs uses
-	// it as the fallback when the user exits from a minimized state
-	// (otherwise the iconized GetPosition() returns sentinel values
-	// like -32000,-32000 on Windows and the saved pos is unusable).
+	// Last frame geometry seen while NOT iconized. SaveGUIPrefs uses it as the
+	// fallback when the user exits from a minimized state, where the iconized
+	// GetPosition() returns sentinel values like -32000,-32000 on Windows.
 	wxPoint m_lastShownPos;
 	wxSize m_lastShownSize;
 	bool m_lastShownMaximized;
 	bool m_lastShownValid;
 
 	wxImageList m_imagelist;
-	// Toolbar icons as resolution-aware bundles (the 32x32 art plus a
-	// smooth 2x upscale). The executable is per-monitor-DPI aware, so a
-	// plain 32px wxBitmap would be drawn at 32 *physical* pixels — tiny
-	// and blurry on hi-DPI screens.
+	// Toolbar icons as resolution-aware bundles (the 32x32 art plus a smooth 2x
+	// upscale). The executable is per-monitor-DPI aware, so a plain 32px wxBitmap
+	// would be drawn at 32 PHYSICAL pixels -- tiny and blurry on hi-DPI screens.
 	std::vector<wxBitmapBundle> m_tblist;
 
 protected:
@@ -372,12 +370,10 @@ private:
 	bool m_versionPopupShown = false;
 
 #if defined(ENABLE_VERSION_CHECK) && defined(CLIENT_GUI)
-	// amulegui-only: it is not a CamuleApp and so has no core version-check
-	// engine, so the remote GUI runs its own CVersionCheck. The monolithic
-	// app instead drives the popup from the shared core engine via
-	// Notify_VersionCheckResult -> ShowVersionAvailable(). Owned; created
-	// lazily by StartupVersionCheck() when the preference is on. A periodic
-	// re-check is fired from OnGUITimer.
+	// amulegui-only: it is not a CamuleApp and has no core version-check engine, so
+	// the remote GUI runs its own CVersionCheck. The monolithic app drives the popup
+	// from the shared core engine instead. Owned, created lazily by
+	// StartupVersionCheck() when the preference is on.
 	CVersionCheck *m_startupVersionCheck = nullptr;
 	time_t m_lastGuiVersionCheck = 0;
 	void StartupVersionCheck();
@@ -385,29 +381,25 @@ private:
 #endif // ENABLE_VERSION_CHECK && CLIENT_GUI
 
 public:
-	// Show the "a new version is available" popup: at most once per session
-	// (m_versionPopupShown), and never for a version the user muted via the
-	// dialog's "Don't ask again" checkbox (recorded per-version in
-	// last_version_notified, so a newer release still asks). Called from the
-	// core engine (Notify_VersionCheckResult) in the monolithic app and from
+	// Show the "a new version is available" popup: at most once per session, and
+	// never for a version the user muted via the dialog's "Don't ask again"
+	// checkbox, which is recorded per-version so a newer release still asks. Called
+	// from the core engine in the monolithic app and from
 	// OnStartupVersionCheckDone in amulegui.
 	void ShowVersionAvailable(const wxString &latest);
 
-	// Track iconize state from wxIconizeEvent::IsIconized(), which is
-	// reliable across platforms — unlike wxFrame::IsIconized() which
-	// can return false on wxGTK after a minimize-button click while
-	// the OS still has the window iconized. Tray menu and DoShowHide
-	// consult this to decide whether the window is "visible to the
-	// user" so the "Show aMule"/"Hide aMule" label and the click
-	// action stay in sync with reality.
+	// Track iconize state from wxIconizeEvent::IsIconized(), which is reliable
+	// across platforms -- unlike wxFrame::IsIconized(), which can return false on
+	// wxGTK after a minimize click while the OS still has the window iconized. The
+	// tray menu and DoShowHide consult this to keep the "Show aMule" / "Hide aMule"
+	// label and the click action in step with reality.
 	bool IsTrayLogicallyIconized() const { return m_iconized_logical; }
 
-	/// Whether the user can actually see the window. Both halves are needed
-	/// and neither is enough: minimized to Dock/taskbar keeps IsShown() true
-	/// while nothing is on screen, and hidden to tray (tray menu, minimize-to-
-	/// tray, HideOnClose) leaves the iconized bit clear while the frame is
-	/// gone. Used by the tray menu to label Show/Hide, and by amulegui to
-	/// decide whether a modal is worth putting up (issue #806).
+	/// Whether the user can actually see the window. Both halves are needed and
+	/// neither is enough: minimized to Dock/taskbar keeps IsShown() true while
+	/// nothing is on screen, and hidden to tray leaves the iconized bit clear while
+	/// the frame is gone. Used by the tray menu to label Show/Hide, and by amulegui
+	/// to decide whether a modal is worth putting up (issue #806).
 	bool IsVisibleToUser() const { return IsShown() && !m_iconized_logical; }
 
 private:
@@ -419,12 +411,11 @@ private:
 	WX_DECLARE_STRING_HASH_MAP(wxZipEntry *, ZipCatalog);
 	ZipCatalog cat;
 
-	// Network-conditional log tabs (Server Info / ED2K Info / Kad Info),
-	// captured by the control each page hosts rather than by notebook index:
-	// the tab layout differs between the monolithic build and amulegui (which
-	// adds an "aMuleGUI Log" tab), and index-based tracking silently broke Kad
-	// Info when that tab was inserted. DoNetworkRearrange() shows/hides these by
-	// identity; the always-on tabs (aMule Log, aMuleGUI Log) are left alone.
+	// Network-conditional log tabs (Server Info / ED2K Info / Kad Info), captured by
+	// the control each page hosts rather than by notebook index: the tab layout
+	// differs between the monolithic build and amulegui, and index-based tracking
+	// silently broke Kad Info when the "aMuleGUI Log" tab was inserted.
+	// DoNetworkRearrange() shows and hides these by identity.
 	PageType m_logServerInfo;
 	PageType m_logED2KInfo;
 	PageType m_logKadInfo;

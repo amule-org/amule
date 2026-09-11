@@ -94,16 +94,14 @@ void CServerConnect::TryAnotherConnectionrequest()
 							    ? _("Failed to connect to all static servers "
 								"listed.")
 							    : _("Failed to connect to all servers listed."));
-					// Wait before starting over instead of restarting the sweep
-					// here. Every server having failed says nothing about when
-					// one will answer, and with the link down they all fail the
-					// moment they are tried -- so the immediate restart this
-					// replaces meant a full pass per second, for as long as the
-					// outage lasted. The same timer the CS_FATALERROR path uses,
-					// so a caller that switched auto-reconnect off now gets what
-					// it asked for here too; it never consulted the setting
-					// before. StopConnectionTry() first: it stops the timer, so
-					// arming it earlier would be undone.
+					// Wait before starting over rather than restarting the sweep here.
+					// Every server having failed says nothing about when one will
+					// answer, and with the link down they all fail the moment they are
+					// tried -- so the immediate restart this replaces meant a full pass
+					// per second for as long as the outage lasted. The same timer the
+					// CS_FATALERROR path uses, so a caller that switched auto-reconnect
+					// off gets what it asked for. StopConnectionTry() first, since it
+					// stops the timer and would undo an earlier arm.
 					StopConnectionTry();
 					if (thePrefs::Reconnect()) {
 						AddLogLineN(
@@ -204,10 +202,10 @@ void CServerConnect::StopConnectionTry()
 	connectionattemps.clear();
 	connecting = false;
 	singleconnecting = false;
-	// Every sweep ends here, so this is where the DNS evidence expires. Outside
-	// a sweep there is nothing to have proved the resolver works, and a manual
-	// connect judged on a sweep that ran while the link was up would blame a
-	// name that cannot resolve now -- three of those delete the server.
+	// Every sweep ends here, so this is where the DNS evidence expires. Outside a
+	// sweep nothing has proved the resolver works, and a manual connect judged on a
+	// sweep that ran while the link was up would blame a name that cannot resolve
+	// now -- three of those delete the server.
 	m_hostnameResolvedThisSweep = false;
 
 	if (m_idRetryTimer.IsRunning()) {
@@ -237,15 +235,12 @@ void CServerConnect::ConnectionEstablished(CServerSocket *sender)
 		AddLogLineN(CFormat(_("Connected to %s (%s:%i)")) % sender->cur_server->GetListName() %
 			    sender->cur_server->GetFullIP() % sender->cur_server->GetPort());
 
-		// A new server connection is the moment our outward-facing address is
-		// most likely to have just changed -- a reconnect after a link came
-		// back up lands here. Peers reached through this connection will start
-		// telling us what address they see, and their claims are only ever
-		// believed against the set published here, so it has to be current
-		// before the first hello arrives.
+		// A new server connection is the moment our outward-facing address is most
+		// likely to have just changed -- a reconnect after a link came back up lands
+		// here. Peers reached through it will start telling us what address they see,
+		// and their claims are only believed against the set published here.
 		RefreshLocalPublicIPv6Addresses();
 
-		// send loginpacket
 		CServer *update = theApp->serverlist->GetServerByAddress(
 			sender->cur_server->GetAddress(), sender->cur_server->GetPort());
 		if (update) {
@@ -377,7 +372,6 @@ void CServerConnect::ConnectionFailed(CServerSocket *sender)
 		// just return, cleanup is done by the socket itself
 		return;
 	}
-	// messages
 	CServer *pServer = theApp->serverlist->GetServerByAddress(
 		sender->cur_server->GetAddress(), sender->cur_server->GetPort());
 	switch (sender->GetConnectionState()) {
@@ -554,7 +548,6 @@ CServerConnect::CServerConnect(CServerList *in_serverlist, amuleIPV4Address &add
 	m_bTryObfuscated = thePrefs::IsServerCryptLayerTCPRequested();
 	m_hostnameResolvedThisSweep = false;
 
-	// initialize socket for udp packets
 	if (thePrefs::GetNetworkED2K()) {
 		serverudpsocket = new CServerUDPSocket(address, thePrefs::GetProxyData());
 	} else {
@@ -565,12 +558,9 @@ CServerConnect::CServerConnect(CServerList *in_serverlist, amuleIPV4Address &add
 CServerConnect::~CServerConnect()
 {
 	m_idRetryTimer.Stop();
-	// stop all connections
 	StopConnectionTry();
-	// close connected socket, if any
 	DestroySocket(connectedsocket);
 	connectedsocket = NULL;
-	// close udp socket
 	delete serverudpsocket;
 }
 
@@ -619,11 +609,10 @@ bool CServerConnect::IsServerIP(uint32 ip) const
 	if (connectedsocket && connectedsocket->cur_server && connectedsocket->cur_server->GetIP() == ip) {
 		return true;
 	}
-	// Then any login still in flight.  m_lstOpenSockets includes
-	// connectedsocket too, but the early-out above keeps the common
-	// case to a single pointer chase; the loop only runs when we're
-	// actively trying multiple servers in parallel, which is bounded
-	// by max_simcons (typically 2-3) so it's negligible.
+	// Then any login still in flight. m_lstOpenSockets includes connectedsocket
+	// too, but the early-out above keeps the common case to a single pointer chase;
+	// the loop only runs while several servers are being tried in parallel, bounded
+	// by max_simcons.
 	for (SocketsList::const_iterator it = m_lstOpenSockets.begin(); it != m_lstOpenSockets.end(); ++it) {
 		const CServerSocket *sock = *it;
 		if (sock && sock->cur_server && sock->cur_server->GetIP() == ip) {

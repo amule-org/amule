@@ -77,12 +77,11 @@ int CMuleDataViewCtrl::ColumnWidthAdapter::GetColumnWidth(int col) const
 	if (width > 0) {
 		return width;
 	}
-	// A visible column should never report zero -- the spacer appended on
-	// macOS exists so the trailing-column sizing lands there instead. This
-	// is the backstop if it ever does anyway: CListColumnStore reads a width
-	// <= 0 as hidden and persists it negative, so a stray zero would hide a
-	// real column on the next launch, then do the same to whichever column
-	// became last, losing one per restart.
+	// A visible column should never report zero -- the spacer appended on macOS
+	// exists so the trailing-column sizing lands there instead. This is the
+	// backstop: CListColumnStore reads a width <= 0 as hidden and persists it
+	// negative, so a stray zero would hide a real column on the next launch, then
+	// do the same to whichever column became last, losing one per restart.
 	const int cached = m_ctrl->m_columnStore.GetCachedWidth(col);
 	return (cached > 0) ? cached : m_ctrl->m_columnStore.GetColumnDefaultWidth(col);
 }
@@ -133,14 +132,12 @@ void CMuleDataViewCtrl::AddIconTextColumn(const wxString &label,
 	// every row whether or not that row has an icon -- see the class comment.
 	CMuleIconTextRenderer *renderer = new CMuleIconTextRenderer();
 	renderer->SetMode(mode);
-	// Supply the vertical half of the alignment when the caller has not.
-	// wx's own text renderer resolves a missing vertical component to its
-	// default, which is centred, but a custom renderer gets exactly what it
-	// is given -- so a plain wxALIGN_LEFT top-aligns the text while the icon
-	// drawn beside it is centred, and the name columns sit visibly higher
-	// than every other column in the same row (#867). wxALIGN_TOP is 0 and
-	// so indistinguishable from "unspecified" (wx says as much in defs.h),
-	// which is why this tests for the two bits that do carry intent.
+	// Supply the vertical half of the alignment when the caller has not. wx's own
+	// text renderer resolves a missing vertical component to centred, but a custom
+	// renderer gets exactly what it is given, so a plain wxALIGN_LEFT top-aligns
+	// the text while the icon beside it is centred (#867). wxALIGN_TOP is 0 and so
+	// indistinguishable from "unspecified", which is why this tests the two bits
+	// that do carry intent.
 	const bool hasVertical = (align & (wxALIGN_BOTTOM | wxALIGN_CENTRE_VERTICAL)) != 0;
 	renderer->SetAlignment(hasVertical ? align : (align | wxALIGN_CENTRE_VERTICAL));
 	AppendColumn(new wxDataViewColumn(label, renderer, modelColumn, width, align, flags));
@@ -169,25 +166,23 @@ unsigned CMuleDataViewCtrl::RealColumnCount() const
 
 void CMuleDataViewCtrl::InitColumnState()
 {
-	// Every appended column must sit at the view position matching its model
-	// id. Several things here index by one and are read as the other:
-	// FitColumnsToContent() walks a single index as both, m_columnHidden and
-	// the header menu are keyed by view position, and RegisterColumn() by model
-	// id. They agree only because the two orders have always coincided, so
-	// inserting a column mid-list -- which is what surfaced this -- silently
-	// sizes and hides the wrong ones. Assert rather than document it: the
-	// failure is invisible at runtime and looks like a rendering bug.
+	// Every appended column must sit at the view position matching its model id.
+	// Several things here index by one and are read as the other:
+	// FitColumnsToContent() walks a single index as both, m_columnHidden and the
+	// header menu are keyed by view position, and RegisterColumn() by model id.
+	// They agree only because the two orders have always coincided, so inserting a
+	// column mid-list silently sizes and hides the wrong ones. Asserted rather than
+	// documented: the failure looks like a rendering bug at runtime.
 	for (unsigned i = 0; i < RealColumnCount(); ++i) {
 		wxASSERT_MSG(GetColumn(i)->GetModelColumn() == i,
 			"column ids must be declared in the order the columns are appended");
 	}
 
 #ifdef __WXOSX__
-	// Forgetting the spacer costs the last column: macOS gives the leftover
-	// width to the last *resizable* one, which collapses it to nothing as soon
-	// as the columns outgrow the control. Nothing about that is visible until
-	// somebody narrows the list far enough, which is how the clients list
-	// shipped without one -- so fail loudly here instead.
+	// Forgetting the spacer costs the last column: macOS gives the leftover width
+	// to the last *resizable* one, which collapses to nothing as soon as the
+	// columns outgrow the control, and nothing shows until somebody narrows the
+	// list far enough.
 	wxASSERT_MSG(m_hasSpacer, "every list must AppendSpacerColumn() before InitColumnState()");
 #endif
 
@@ -276,25 +271,22 @@ void CMuleDataViewCtrl::ShowSortCaret(unsigned column, unsigned order, SortTrigg
 	bool ascending = !(order & SORT_DES);
 
 #ifdef __WXGTK__
-	// Two GTK quirks stack up here, and they only cancel each other out on
-	// the click path -- which is why the caret used to come back up the wrong
-	// way round after a restart, then correct itself the moment a header was
-	// clicked.
+	// Two GTK quirks stack up here, and they cancel out only on the click path --
+	// which is why the caret used to come back up the wrong way round after a
+	// restart and correct itself on the first header click.
 	//
-	// The first is the glyph: with gtk-alternative-sort-arrows off (the
-	// default) GTK draws GTK_SORT_ASCENDING as "pan-down-symbolic", so an A-Z
-	// sort gets a *down* arrow, the opposite of macOS and MSW.
+	// The first is the glyph: with gtk-alternative-sort-arrows off (the default)
+	// GTK draws GTK_SORT_ASCENDING as "pan-down-symbolic", so an A-Z sort gets a
+	// DOWN arrow, the opposite of macOS and MSW.
 	//
-	// The second is that GTK sorts on its own. wx makes every sortable column
-	// call gtk_tree_view_column_set_sort_column_id(), which leaves GTK's own
-	// handler connected: on the button *release*, after this control has
-	// already handled the button press and set the caret, GTK flips the order
-	// it finds and writes it back. Two inversions, so a clicked header ends
-	// up looking right.
+	// The second is that GTK sorts on its own: wx makes every sortable column call
+	// gtk_tree_view_column_set_sort_column_id(), which leaves GTK's handler
+	// connected, so on the button release -- after this control has handled the
+	// press and set the caret -- GTK flips the order it finds and writes it back.
+	// Two inversions, so a clicked header ends up looking right.
 	//
-	// Nothing restores a saved sort, so hand wx the flipped value there and
-	// both paths agree. Only the arrow is affected -- rows are ordered from
-	// m_sort_orders, and the model deliberately ignores wx's ascending flag.
+	// Nothing restores a saved sort, so hand wx the flipped value there and both
+	// paths agree. Only the arrow is affected: rows are ordered from m_sort_orders.
 	if (trigger == SortTrigger::Programmatic) {
 		ascending = !ascending;
 	}
@@ -378,15 +370,13 @@ void CMuleDataViewCtrl::LoadColumnSettings()
 	// Restored widths can leave the default expander column hidden.
 	UpdateExpanderColumn();
 
-	// LoadSettings() returns the orders primary-LAST: CMuleListCtrl applied
-	// them by calling SetSorting() on each in turn, and each call pushes to
-	// the front, so the last one processed ends up primary. ApplySorting()
-	// has the same semantics, so replaying them in order reproduces it.
-	// Only replace what the list installed for itself when the config actually
-	// has something stored. A profile with no saved TableOrdering for this list
-	// decodes to an empty list, and clearing unconditionally would throw away
-	// the default the list set before calling here -- CServerListCtrl sorts by
-	// name in exactly that way.
+	// LoadSettings() returns the orders primary-LAST, because each SetSorting()
+	// call pushes to the front, so the last one processed ends up primary;
+	// ApplySorting() has the same semantics, so replaying in order reproduces it.
+	// Only replace what the list installed for itself when the config has something
+	// stored: a profile with no saved TableOrdering decodes to an empty list, and
+	// clearing unconditionally would throw away the list's own default (as
+	// CServerListCtrl's name sort).
 	if (!decoded.empty()) {
 		m_sort_orders.clear();
 		for (const CListColumnStore::CColPair &pair : decoded) {
@@ -394,10 +384,10 @@ void CMuleDataViewCtrl::LoadColumnSettings()
 		}
 	}
 
-	// A list that installs no default of its own (CSearchListCtrl) still has to
-	// end up with a sort chain: with none, CompareItems() answers 0 for every
-	// pair and nothing is ordered. CMuleListCtrl::LoadSettings() has always
-	// guaranteed at least one entry; keep that guarantee here.
+	// A list that installs no default of its own (CSearchListCtrl) still has to end
+	// up with a sort chain: with none, CompareItems() answers 0 for every pair and
+	// nothing is ordered. CMuleListCtrl::LoadSettings() guaranteed at least one
+	// entry; keep that guarantee.
 	if (m_sort_orders.empty()) {
 		ApplySorting(0, 0);
 	}
@@ -514,12 +504,11 @@ void CMuleDataViewCtrl::OnIdle(wxIdleEvent &event)
 		}
 	}
 
-	// Act when the drag ends, not on every step of it. Idle fires as long as
-	// the mouse moves, so a change on this tick means the pointer is still
-	// dragging and a further change is coming; the width that matters is the
-	// one it stops at. Firing per observed change instead ran a wxConfig write
-	// and, for a search list, a full column-sync across every other open tab
-	// for each pixel of travel -- the flicker and CPU spike of issue #1022.
+	// Act when the drag ends, not on every step. Idle fires as long as the mouse
+	// moves, so a change on this tick means the pointer is still dragging and the
+	// width that matters is the one it stops at. Firing per observed change ran a
+	// wxConfig write, and for a search list a full column-sync across every other
+	// open tab, for each pixel of travel (issue #1022).
 	if (changed) {
 		m_widthsSettling = true;
 	} else if (m_widthsSettling) {
@@ -532,10 +521,10 @@ void CMuleDataViewCtrl::OnIdle(wxIdleEvent &event)
 
 void CMuleDataViewCtrl::OnChar(wxKeyEvent &evt)
 {
-	// The list gets first refusal on every key. Doing this before the
-	// WXK_START test is deliberate: WXK_DELETE is 127, well below it, so a
-	// delete-key handler placed after that test would never see it, while
-	// WXK_NUMPAD_DELETE (above it) would be skipped to the backend instead.
+	// The list gets first refusal on every key. Before the WXK_START test on
+	// purpose: WXK_DELETE is 127, well below it, so a delete-key handler after that
+	// test would never see it, while WXK_NUMPAD_DELETE would be skipped to the
+	// backend instead.
 	if (OnListKey(evt)) {
 		return;
 	}
@@ -612,17 +601,15 @@ void CMuleDataViewCtrl::OnChar(wxKeyEvent &evt)
 void CMuleDataViewCtrl::OnContextMenuKey(wxContextMenuEvent &evt)
 {
 	if (evt.GetPosition() != wxDefaultPosition) {
-		// A real right-click, which every port turns into
-		// wxEVT_DATAVIEW_ITEM_CONTEXT_MENU by itself; this handler exists only
-		// for the keyboard-origin case (Shift+F10 / the Applications key on
-		// MSW and GTK, both measured to fire this separate, dataview-agnostic
-		// event instead -- see the review on amule-org/amule#877).
+		// A real right-click is turned into wxEVT_DATAVIEW_ITEM_CONTEXT_MENU by
+		// every port; this handler exists for the keyboard-origin case (Shift+F10 /
+		// the Applications key on MSW and GTK, both of which fire this separate,
+		// dataview-agnostic event instead).
 		//
-		// Skipping is load-bearing on macOS, where it is not merely tidy: that
-		// port raises the dataview event *from* this one, in
-		// wxDataViewCtrl::OnContextMenu() (osx/dataview_osx.cpp). Our handler
-		// runs first, being the derived class, so swallowing a mouse-origin
-		// event here would leave right-click with no context menu at all.
+		// Skipping is load-bearing on macOS, where that port raises the dataview
+		// event FROM this one in wxDataViewCtrl::OnContextMenu(). Our handler runs
+		// first, so swallowing a mouse-origin event would leave right-click with no
+		// context menu at all.
 		evt.Skip();
 		return;
 	}
@@ -634,13 +621,11 @@ void CMuleDataViewCtrl::RaiseItemContextMenu()
 {
 	const wxDataViewItem item = GetCurrentItem();
 	if (item.IsOk()) {
-		// GetItemRect() answers an empty rect for a row that is not on screen
-		// (the same limitation MoveByPage() documents above), and the menu
-		// would then open in the control's top-left corner rather than at the
-		// row it acts on -- reachable by clicking a row and scrolling away
-		// before pressing the key. Bringing it into view first also shows the
-		// user what the menu is about to apply to; it does not scroll when the
-		// row is already visible.
+		// GetItemRect() answers an empty rect for a row that is not on screen, and
+		// the menu would then open in the control's top-left corner rather than at
+		// the row it acts on -- reachable by clicking a row and scrolling away before
+		// pressing the key. Bringing it into view also shows what the menu applies
+		// to, and does not scroll when the row is already visible.
 		EnsureVisible(item);
 	}
 
@@ -654,32 +639,26 @@ void CMuleDataViewCtrl::OnKeyDown(wxKeyEvent &evt)
 {
 #ifdef __WXOSX__
 	// wx's Cocoa backend has no keyboard-triggered path to
-	// wxEVT_DATAVIEW_ITEM_CONTEXT_MENU. It does handle wxEVT_CONTEXT_MENU --
-	// that is how a right-click becomes a dataview event there, see
-	// OnContextMenuKey -- but nothing on this port ever raises that event
-	// from a keystroke, and there is no AXShowMenu implementation for any
-	// control on it
-	// (wxWidgets/wxWidgets#13010, open since 2011). VoiceOver's context-menu
-	// gesture (VO+Shift+M) performs AXShowMenu, so it never reaches wx here
-	// either (amule-org/amule#180). Ctrl+Return was tried as an alternative
-	// and rejected: NSOutlineView's keyDown: treats bare Return as "activate
-	// the row" before this handler ever sees it, Control held or not.
+	// wxEVT_DATAVIEW_ITEM_CONTEXT_MENU. It does handle wxEVT_CONTEXT_MENU -- that
+	// is how a right-click becomes a dataview event there -- but nothing on this
+	// port raises that event from a keystroke, and there is no AXShowMenu
+	// implementation for any control on it (wxWidgets/wxWidgets#13010, open since
+	// 2011), so VoiceOver's VO+Shift+M never reaches wx either. Ctrl+Return was
+	// tried and rejected: NSOutlineView's keyDown: treats bare Return as "activate
+	// the row" before this handler sees it, Control held or not.
 	if (evt.ShiftDown() && evt.GetKeyCode() == WXK_F10) {
 		RaiseItemContextMenu();
 		return;
 	}
 
-	// NSOutlineView scrolls the view for these keys without touching either
-	// the selection or the cursor, so on this platform they are ours to
-	// implement -- shifted, where GTK and MSW extend the selection and the
-	// native control does nothing at all, and unshifted too.
+	// NSOutlineView scrolls the view for these keys without touching the selection
+	// or the cursor, so on this platform they are ours to implement -- shifted,
+	// where GTK and MSW extend the selection, and unshifted too.
 	//
-	// Unshifted was left to the platform at first, on the grounds that
-	// scroll-without-select is the macOS convention. It reads as broken
-	// here: the cursor stays where it was, so the next arrow key jumps the
-	// view straight back to it, and the page key looks like it did nothing.
-	// Moving the cursor with the view is what the other two ports do, and it
-	// is what makes the following arrow key continue from what is on screen.
+	// Unshifted was left to the platform at first, scroll-without-select being the
+	// macOS convention, but it reads as broken: the cursor stays put, so the next
+	// arrow key jumps the view straight back and the page key looks like it did
+	// nothing. Moving the cursor with the view is what the other two ports do.
 	{
 		const bool extend = evt.ShiftDown();
 		switch (evt.GetKeyCode()) {
@@ -734,10 +713,9 @@ void CMuleDataViewCtrl::MoveByPage(PageMotion motion, bool extend)
 		target = last;
 		break;
 	default: {
-		// GetCountPerPage() is implemented by the native macOS backend;
-		// GetItemRect() is not a substitute, since it returns an empty rect
-		// for rows that aren't currently on screen and the resulting height
-		// of zero collapses a page to a single row.
+		// GetCountPerPage() is implemented by the native macOS backend. GetItemRect()
+		// is not a substitute: it returns an empty rect for rows not on screen, and
+		// the resulting zero height collapses a page to a single row.
 		int rows = GetCountPerPage();
 		if (rows <= 0) {
 			rows = 10;

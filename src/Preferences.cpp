@@ -843,13 +843,11 @@ public:
 			dataDir = wxStandardPaths::Get().GetResourcesDir();
 		}
 #if defined(__WINDOWS__)
-		// Windows portable layout puts amule.exe in bin\ and installable
-		// data (skins, webserver templates, ...) in ..\share\amule\.
-		// wxStandardPaths::GetDataDir() / GetResourcesDir() both return
-		// the exe directory on Windows, so relocate up one level and into
-		// the FHS-style share/amule/ tree the installer actually populates.
-		// Mirrors the BeforeLast('/') + "/amule" adjustment used on Linux
-		// below for the same purpose. (#783)
+		// Windows portable layout puts amule.exe in bin\ and installable data
+		// (skins, webserver templates, ...) in ..\share\amule\.
+		// wxStandardPaths::GetDataDir() / GetResourcesDir() both return the exe
+		// directory on Windows, so relocate up one level and into the FHS-style
+		// share/amule/ tree the installer actually populates.
 		dataDir = JoinPaths(JoinPaths(dataDir, ".."), "share");
 		dataDir = JoinPaths(dataDir, "amule");
 #elif !defined(__WXMAC__)
@@ -883,25 +881,19 @@ public:
 				id = 0;
 				m_value = defaultSelection;
 			} else if (placeholderAppended) {
-				// No real templates found and m_value doesn't match
-				// the placeholder we just appended. m_value is almost
-				// certainly a localized "no options available" string
-				// saved by a prior session under a different aMule
-				// locale (e.g. saved as "nessuna opzione disponibile"
-				// in Italian, now reopened with the locale set to
-				// English). Falling through to the cross-host preserve
-				// branch below would re-append the stale string and
-				// leave the dropdown showing two placeholders. Discard
-				// it instead — the placeholder is the only valid
-				// "selection" when no real templates exist. (#800)
+				// No real templates found and m_value does not match the placeholder
+				// just appended. m_value is almost certainly a localized "no options
+				// available" string saved by a prior session under a different aMule
+				// locale. Falling through to the cross-host preserve branch below
+				// would re-append the stale string and leave the dropdown showing two
+				// placeholders. Discard it instead.
 				id = 0;
 				m_value.Clear();
 			} else if (!m_value.IsEmpty()) {
-				// Template names are consumed by amuleweb, which may
-				// be running on a different host than amulegui or
-				// installing templates outside the GUI's scanned
-				// directories. Preserve the configured value in the
-				// dropdown so a Save round-trip doesn't erase it.
+				// Template names are consumed by amuleweb, which may be running on a
+				// different host than amulegui or installing templates outside the
+				// GUI's scanned directories. Preserve the configured value in the
+				// dropdown so a Save round-trip does not erase it.
 				id = skinSelector->Append(m_value);
 			} else {
 				id = 0;
@@ -1023,13 +1015,11 @@ CPreferences::CPreferences()
 #ifndef CLIENT_GUI
 	s_firstRun = !wxFileExists(fullpath);
 
-	// Migration for installs that predate the explicit first-run flag:
-	// they have a populated config but no /eMule/FirstRunWizardDone
-	// entry. Mark the wizard as already done for them so it never
-	// retroactively pops up. A genuine fresh install (no preferences.dat)
-	// is left alone, so the wizard runs once and then persists its own
-	// flag via FirstRunWizard::Apply(). LoadAllItems() has already run by
-	// this point, so the entry is the authoritative signal.
+	// Migration for installs that predate the explicit first-run flag: they have
+	// a populated config but no /eMule/FirstRunWizardDone entry. Mark the wizard
+	// as already done for them so it never retroactively pops up. A genuine
+	// fresh install is left alone, so the wizard runs once and then persists its
+	// own flag. LoadAllItems() has already run, so the entry is authoritative.
 	if (!s_firstRun) {
 		wxConfigBase *cfg = wxConfigBase::Get();
 		if (cfg && !cfg->HasEntry("/eMule/FirstRunWizardDone")) {
@@ -1055,11 +1045,10 @@ CPreferences::CPreferences()
 			RawPokeUInt16(s_userhash.GetHash() + (i * 2), rand());
 		}
 
-		// Persist only preferences.dat and amule.conf here. A full
-		// Save() would also call SaveSharedFolders() against
-		// still-empty in-memory lists (ReloadSharedFolders runs
-		// below), truncating any shareddir-*.dat files a pre-launch
-		// script may have populated.
+		// Persist only preferences.dat and amule.conf here. A full Save() would
+		// also call SaveSharedFolders() against still-empty in-memory lists,
+		// truncating any shareddir-*.dat files a pre-launch script may have
+		// populated.
 		CFile preffile;
 		if (!wxFileExists(fullpath)) {
 			preffile.Create(fullpath);
@@ -1293,8 +1282,7 @@ void CPreferences::BuildItemList(const wxString &appdir)
 	// network before the user has thought about it. Existing configs are
 	// untouched: aMule writes every key on save, so any config it has ever
 	// written already carries an ECAddress line, and wxConfig only applies a
-	// default when the key is *absent*. An empty value keeps meaning "any
-	// address" (see amule.cpp), so upgrades keep binding exactly as before.
+	// default when the key is *absent*. An empty value still means "any".
 	NewCfgItem(IDC_EXT_CONN_IP, (new Cfg_Str("/ExternalConnect/ECAddress", s_ECAddr, "127.0.0.1")));
 	NewCfgItem(IDC_EC_INTERFACE,
 		(new Cfg_Str("/ExternalConnect/ECNetworkInterface", s_ECNetworkInterface, "")));
@@ -1304,11 +1292,9 @@ void CPreferences::BuildItemList(const wxString &appdir)
 	NewCfgItem(IDC_UPNP_EC_ENABLED,
 		(new Cfg_Bool("/ExternalConnect/UPnPECEnabled", s_UPnPECEnabled, false)));
 	// Brute-force throttle for the EC password exchange. Config-only, with no
-	// dialog field: the defaults suit everyone who is not tuning for an
-	// unusual deployment, and a busy Remote Controls page is a poor place to
-	// explain a sliding window. amuleapi exposes the same three knobs for its
-	// own login, so an operator can now tune both front doors rather than only
-	// the narrower one.
+	// dialog field: the defaults suit everyone who is not tuning for an unusual
+	// deployment, and a busy Remote Controls page is a poor place to explain a
+	// sliding window. amuleapi exposes the same three knobs for its own login.
 	s_MiscList.push_back(
 		MkCfg_Int("/ExternalConnect/AuthFailureWindowSeconds", s_ECAuthFailureWindowSeconds, 60));
 	s_MiscList.push_back(

@@ -131,20 +131,17 @@ public:
 	void SendToRemote();
 
 	// Shared-directory roots. Unlike the rest of the preferences these are a
-	// variable-length list whose apply rewrites files and triggers a rescan,
-	// so they ride their own ops rather than the prefs packet. The replies go
-	// to a dedicated handler (HandlePacket above static_casts everything it
-	// receives to CEC_Prefs_Packet); results land in this object's
-	// shareddir_*_list members, which outlive the Preferences dialog.
+	// variable-length list whose apply rewrites files and triggers a rescan, so
+	// they ride their own ops rather than the prefs packet. The replies go to a
+	// dedicated handler; results land in this object's shareddir_*_list members,
+	// which outlive the Preferences dialog.
 	void LoadSharedDirsRemote();
 	void SendSharedDirsToRemote();
 };
 
-//
-// T - type if item in container
-// I - type of id of item
+// T - type of item in the container
+// I - type of the item's id
 // G - type of tag used to create/update items
-//
 template <class T, class I, class G = CECTag> class CRemoteContainer : public CECPacketHandlerBase
 {
 protected:
@@ -534,12 +531,11 @@ public:
 	uint32 GetItemID(CClientRef *);
 	void ProcessItemUpdate(const CEC_UpDownClient_Tag *, CClientRef *);
 
-	// Null out CUpDownClient::m_uploadingfile / m_reqfile on every
-	// client still pointing at `file`. Called by the broadcast
-	// handler MuleNotify::KnownFileBeingDestroyed before a
-	// CKnownFile is freed, so the dangling pointers don't get
-	// dereffed by a later CUpDownClientListRem::DeleteItem (the
-	// #748 / #755 UAF family). Pointer-value comparison only.
+	// Null out CUpDownClient::m_uploadingfile / m_reqfile on every client still
+	// pointing at `file`. Called by the broadcast handler
+	// MuleNotify::KnownFileBeingDestroyed before a CKnownFile is freed, so the
+	// dangling pointers are not dereffed by a later DeleteItem. Pointer-value
+	// comparison only.
 	void DropReferencesTo(const CKnownFile *file);
 };
 
@@ -552,17 +548,13 @@ public:
 
 	CPartFile *GetFileByID(uint32 id);
 
-	//
 	// User actions
-	//
 	void Prio(CPartFile *file, uint8 prio);
 	void AutoPrio(CPartFile *file, bool flag);
 	void Category(CPartFile *file, uint8 cat);
 
 	void SendFileCommand(CPartFile *file, ec_tagname_t cmd);
-	//
 	// Actions
-	//
 	void StopUDPRequests() {}
 	void AddFileLinkToDownload(CED2KFileLink *, uint8);
 	bool AddLink(const wxString &link, uint8 category = 0);
@@ -584,45 +576,38 @@ public:
 
 	void SetFilePrio(CKnownFile *file, uint8 prio);
 
-	//
 	// Actions
-	//
 	void Reload(bool sendtoserver = true, bool firstload = false);
 	bool RenameFile(CKnownFile *file, const CPath &newName);
 	void SetFileCommentRating(CKnownFile *file, const wxString &newComment, int8 newRating);
 	void VerifyLocalData(const CKnownFile *file) const;
 
 	// Mirrors CSharedFileList's signature so the one call site in
-	// CSharedFilesCtrl compiles for both binaries -- muleappgui is built once
-	// and carries no build-variant defines, so the split has to live in the
-	// type of theApp->sharedfiles rather than in an #ifdef at the call site.
+	// CSharedFilesCtrl compiles for both binaries -- muleappgui is built once and
+	// carries no build-variant defines, so the split has to live in the type of
+	// theApp->sharedfiles rather than in an #ifdef at the call site.
 	//
-	// Returns true when the request was SENT, not when anything was probed:
-	// the daemon decides eligibility and reports the outcome in its own log.
-	// The monolithic form can answer for real because it schedules inline.
+	// Returns true when the request was SENT, not when anything was probed: the
+	// daemon decides eligibility and reports the outcome in its own log.
 	bool RefreshMediaMetadata(const CMD4Hash &hash);
 	unsigned RefreshMediaMetadata(const std::vector<CMD4Hash> &hashes);
 	void SearchKadNotes(CAbstractFile *file);
 	void CopyFileList(std::vector<CKnownFile *> &out_list) const;
 
-	// Remote-side shim for the daemon's cancellable-progress Reload
-	// added in the shared-dirs deferred-apply flow. The actual file
-	// walk happens on amuled; here we just fall through to the
-	// existing EC-driven Reload(sendtoserver=true) and ignore the
-	// progress callback. Returns true (never "cancelled") because
-	// the local-thread part of the operation is essentially instant.
+	// Remote-side shim for the daemon's cancellable-progress Reload. The actual
+	// file walk happens on amuled; here we fall through to the existing EC-driven
+	// Reload(sendtoserver=true) and ignore the progress callback. Returns true --
+	// never "cancelled" -- because the local-thread part is essentially instant.
 	bool Reload(std::function<bool(size_t)> /* yieldCb */)
 	{
 		Reload();
 		return true;
 	}
 
-	// Remote-side shim for the daemon's deferred-reload request. On the
-	// daemon this defers the walk to the next Process() tick so an EC
-	// handler need not block on it; here Reload() only posts
-	// EC_OP_SHAREDFILES_RELOAD and returns, so it is already the
-	// non-blocking thing RequestReload() exists to provide. amuled then
-	// defers on its own side when it receives the packet.
+	// Remote-side shim for the daemon's deferred-reload request. On the daemon
+	// this defers the walk to the next Process() tick so an EC handler need not
+	// block on it; here Reload() only posts EC_OP_SHAREDFILES_RELOAD and returns,
+	// so it is already the non-blocking thing RequestReload() exists to provide.
 	void RequestReload() { Reload(); }
 
 	// Always false on the remote side: there is no local walk to owe. When a
@@ -630,9 +615,8 @@ public:
 	// schedules its own reload; the GUI must not also run or announce one.
 	bool IsReloadPending() const { return false; }
 
-	// Remote-side no-op. The actual watcher lives on amuled and is
-	// driven there by the EC-synced AutoRescanSharedDirs pref; on the
-	// GUI side there is nothing to enable/disable locally.
+	// Remote-side no-op. The actual watcher lives on amuled and is driven there
+	// by the EC-synced AutoRescanSharedDirs pref.
 	void EnableDirectoryWatcher(bool /* enable */) {}
 };
 

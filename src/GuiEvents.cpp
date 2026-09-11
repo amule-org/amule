@@ -125,16 +125,13 @@ void ShowUserCount(wxString NOT_ON_DAEMON(str))
 #endif
 }
 
-// Fired by the core version check (CamuleApp::CheckNewVersion) on the
-// monolithic app so the outdated-version popup is driven from the shared
-// engine instead of a separate GUI-only CVersionCheck. A no-op on the
-// daemon (headless) and never fired in amulegui (which runs its own
-// CVersionCheck and has no CamuleApp engine).
+// Fired by the core version check on the monolithic app so the outdated-version
+// popup is driven from the shared engine instead of a GUI-only CVersionCheck. A
+// no-op on the daemon, and never fired in amulegui, which runs its own check.
 //
-// `latest` is by value because MuleNotify stores every argument by value
-// (CMuleNotifier2::m_arg1, via DeepCopy) and invokes the handler with it; a
-// const& parameter would leave that stored member a dangling reference. This
-// matches every other notify handler, so the value-param check is suppressed.
+// `latest` is by value because MuleNotify stores every argument by value and
+// invokes the handler with it, so a const& parameter would leave that stored
+// member a dangling reference.
 // NOLINTNEXTLINE(performance-unnecessary-value-param)
 void VersionCheckResult(wxString NOT_ON_DAEMON(latest), bool NOT_ON_DAEMON(outdated))
 {
@@ -174,13 +171,11 @@ void Search_Update_Progress(uint32 NOT_ON_DAEMON(val))
 void DownloadCtrlUpdateItem(const void *item)
 {
 #ifndef CLIENT_GUI
-	// Notify can fire from PartFile load during early OnInit (#268
-	// crash from a wx2.8.12 / pre-ASIO build) and from background
-	// threads during shutdown after `delete ECServerHandler`.
-	// Master's OnInit currently builds ECServerHandler before
-	// LoadMetFiles, so the early-init crash is fixed by ordering;
-	// guard the dereference anyway so future reorders or
-	// shutdown races can't reintroduce the segfault.
+	// Notify can fire from PartFile load during early OnInit and from background
+	// threads during shutdown after `delete ECServerHandler`. OnInit currently
+	// builds ECServerHandler before LoadMetFiles, so the early-init crash (#268) is
+	// fixed by ordering; the guard keeps a future reorder or shutdown race from
+	// reintroducing the segfault.
 	if (theApp->ECServerHandler && theApp->ECServerHandler->m_ec_notifier) {
 		theApp->ECServerHandler->m_ec_notifier->DownloadFile_SetDirty(
 			static_cast<const CPartFile *>(item));
@@ -196,12 +191,10 @@ void DownloadCtrlUpdateItem(const void *item)
 void DownloadCtrlDoItemSelectionChanged()
 {
 #ifndef AMULE_DAEMON
-	// Checks the dialog itself, unlike its siblings: this one is queued
-	// through DoNotifyAlways(), so CMuleGUIEvent::IsAlways() is set and the
-	// handler runs even with no main window -- the exemption that lets the
-	// socket layer through during connect. Everything else on that path is a
-	// socket notification that never touches the GUI; these two are the
-	// exceptions, so they carry the test themselves.
+	// Checks the dialog itself, unlike its siblings: this one is queued through
+	// DoNotifyAlways(), so the handler runs even with no main window -- the
+	// exemption that lets the socket layer through during connect. Everything else
+	// on that path never touches the GUI, so these two carry the test themselves.
 	if (theApp->amuledlg && theApp->amuledlg->m_transferwnd &&
 		theApp->amuledlg->m_transferwnd->downloadlistctrl) {
 		theApp->amuledlg->m_transferwnd->downloadlistctrl->DoItemSelectionChanged();
@@ -226,10 +219,9 @@ void ServersURLChanged(wxString NOT_ON_DAEMON(url))
 void ShowGUI()
 {
 #ifndef AMULE_DAEMON
-	// Triggered by a duplicate-launch RAISE_DIALOG signal, which the
-	// running instance picks up via ED2KLinks polling. The signal can
-	// arrive before the main window exists -- the second launch only has
-	// to beat the first one to the point where it builds its GUI.
+	// Triggered by a duplicate-launch RAISE_DIALOG signal, which the running
+	// instance picks up via ED2KLinks polling. It can arrive before the main window
+	// exists: the second launch only has to beat the first one to building its GUI.
 	if (theApp->amuledlg) {
 		theApp->amuledlg->RestoreMainWindow();
 	}
@@ -400,11 +392,9 @@ void KnownFile_Comment_Set(CKnownFile *file, wxString comment, int8 rating)
 void Download_Set_Cat_Prio(uint8 cat, uint8 newprio)
 {
 	// EC has no per-category bulk priority opcode. Mirror the daemon's
-	// CDownloadQueue::SetCatPrio predicate (all files if cat == 0, else
-	// exact category match) and send one EC_OP_PARTFILE_PRIO_SET per
-	// file using the existing per-file helpers. Without this stub being
-	// filled in, amulegui's category-tab right-click priority items
-	// silently no-op'd (#697 sibling of the status case below).
+	// CDownloadQueue::SetCatPrio predicate (all files if cat == 0, else exact
+	// category match) and send one EC_OP_PARTFILE_PRIO_SET per file. Unfilled, this
+	// stub made amulegui's category-tab right-click priority items silently no-op.
 	std::vector<CPartFile *> targets;
 	for (CDownQueueRem::iterator it = theApp->downloadqueue->begin(); it != theApp->downloadqueue->end();
 		++it) {
@@ -425,13 +415,11 @@ void Download_Set_Cat_Prio(uint8 cat, uint8 newprio)
 void Download_Set_Cat_Status(uint8 cat, int newstatus)
 {
 	// EC has no per-category bulk status opcode. Mirror the daemon's
-	// CDownloadQueue::SetCatStatus: snapshot files that
-	// CheckShowItemInGivenCat() admits for this (cat, AllcatFilter)
-	// pair, then send one per-file EC command. Snapshot first so a
-	// late-arriving EC response can't mutate the queue mid-iteration.
-	// #697: previously empty -- tab-right-click Stop/Pause/Resume/
-	// Cancel silently no-op'd in amulegui (only the remote GUI, not
-	// the monolithic amule, hit this stub).
+	// CDownloadQueue::SetCatStatus: snapshot the files CheckShowItemInGivenCat()
+	// admits for this (cat, AllcatFilter) pair, then send one per-file EC command.
+	// Snapshot first so a late-arriving EC response cannot mutate the queue
+	// mid-iteration. Unfilled, this stub made tab-right-click
+	// Stop/Pause/Resume/Cancel silently no-op in amulegui.
 	ec_tagname_t cmd = 0;
 	switch (newstatus) {
 	case MP_CANCEL:
@@ -550,12 +538,10 @@ void DownloadCtrlRemoveFile(CPartFile *file)
 void DownloadCtrlSort()
 {
 #ifndef AMULE_DAEMON
-	// Checks the dialog itself, unlike its siblings: this one is queued
-	// through DoNotifyAlways(), so CMuleGUIEvent::IsAlways() is set and the
-	// handler runs even with no main window -- the exemption that lets the
-	// socket layer through during connect. Everything else on that path is a
-	// socket notification that never touches the GUI; these two are the
-	// exceptions, so they carry the test themselves.
+	// Checks the dialog itself, unlike its siblings: this one is queued through
+	// DoNotifyAlways(), so the handler runs even with no main window -- the
+	// exemption that lets the socket layer through during connect. Everything else
+	// on that path never touches the GUI, so these two carry the test themselves.
 	if (theApp->amuledlg && theApp->amuledlg->m_transferwnd &&
 		theApp->amuledlg->m_transferwnd->downloadlistctrl) {
 		theApp->amuledlg->m_transferwnd->downloadlistctrl->SortList();
@@ -703,21 +689,19 @@ void Browse_Status(uint64 NOT_ON_DAEMON(searchID), uint32 NOT_ON_DAEMON(status))
 #endif
 }
 
-// `name` is intentionally taken by value: the notify functor (CMuleNotifier3)
-// stores each argument by the handler's parameter type and deep-copies into it,
-// so a const-ref parameter would dangle. This mirrors every other wxString
-// notify handler here.
+// `name` is taken by value because the notify functor stores each argument by
+// the handler's parameter type and deep-copies into it, so a const-ref parameter
+// would dangle.
 // NOLINTNEXTLINE(performance-unnecessary-value-param)
 void Chat_SessionRemoved(uint64 NOT_ON_DAEMON(gui_id))
 {
 #ifndef AMULE_DAEMON
 	if (theApp->amuledlg && theApp->amuledlg->m_chatwnd) {
-		// EndSessionFromCore, not EndSession: the core has already dropped
-		// this session, so the tab must close WITHOUT its page-closing
-		// handler originating a close of its own. Without the distinction a
-		// close from one client makes every other client echo a redundant
-		// close back -- which the daemon answers EC_OP_FAILED, the session
-		// being gone already.
+		// EndSessionFromCore, not EndSession: the core has already dropped this
+		// session, so the tab must close WITHOUT its page-closing handler
+		// originating a close of its own -- otherwise a close from one client makes
+		// every other client echo a redundant close back, which the daemon answers
+		// EC_OP_FAILED.
 		theApp->amuledlg->m_chatwnd->EndSessionFromCore(gui_id);
 	}
 #endif
@@ -748,12 +732,10 @@ void Browse_Started(uint32 NOT_ON_DAEMON(ecid), wxString NOT_ON_DAEMON(name), ui
 {
 #ifndef AMULE_DAEMON
 	if (theApp->amuledlg && theApp->amuledlg->m_searchwnd) {
-		// Reveal only what this user started. The notification carries no such
-		// flag and CMuleNotifier stops at three arguments, but the client it
-		// names already knows -- so ask it rather than widen the notifier for
-		// one bool. CLIENT_GUI has neither this lookup nor a path that raises
-		// this notification (it is sent from CUpDownClient, which is core
-		// only), so there is nothing to answer there.
+		// Reveal only what this user started. The notification carries no such flag
+		// and CMuleNotifier stops at three arguments, but the client it names already
+		// knows, so ask it rather than widen the notifier for one bool. CLIENT_GUI
+		// has neither the lookup nor a path that raises this notification.
 		bool reveal = true;
 #ifndef CLIENT_GUI
 		const CUpDownClient *browsed = theApp->clientlist->FindClientByECID(ecid);
@@ -773,16 +755,14 @@ void ChatConnResult(bool NOT_ON_DAEMON(success), uint64 NOT_ON_DAEMON(id), wxStr
 #endif
 }
 
-// MuleNotify stores the notify args by value (CMuleNotifier DeepCopy), so a
-// `const wxString &` param would dangle — keep it by value like every other
-// notify handler. (NOLINT must sit on the line directly above the signature.)
+// MuleNotify stores the notify args by value, so a `const wxString &` param
+// would dangle -- keep it by value like every other notify handler.
 // NOLINTNEXTLINE(performance-unnecessary-value-param)
 void ChatProcessMsg(uint64 sender, wxString message)
 {
-	// No EC relay here any more: CUpDownClient::ProcessChatMessage records
-	// the message in the core store before this notify fires, and every EC
-	// client reads it from there. The built-in GUI below still handles its
-	// own local display.
+	// No EC relay here any more: CUpDownClient::ProcessChatMessage records the
+	// message in the core store before this notify fires, and every EC client reads
+	// it from there. The built-in GUI below still handles its own local display.
 #ifndef AMULE_DAEMON
 	if (theApp->amuledlg->m_chatwnd) {
 		theApp->amuledlg->m_chatwnd->ProcessMessage(sender, message);
@@ -1004,31 +984,24 @@ void ConvertReaddAllJobs()
 
 #endif // #ifndef CLIENT_GUI
 
-// Broadcast called from every CKnownFile destruction site BEFORE
-// the `delete file`. Subscribers MUST only compare the file pointer
-// by value (==) to entries they already hold — never dereference it.
-// By the time a subscriber on the main thread processes this event
-// the bytes pointed at by `file` may already have been recycled.
+// Broadcast from every CKnownFile destruction site BEFORE the `delete file`.
+// Subscribers MUST only compare the file pointer by value, never dereference it:
+// by the time a subscriber on the main thread processes this event, the bytes
+// pointed at may already have been recycled.
 //
-// Defined outside the CLIENT_GUI / non-CLIENT_GUI split so the same
-// function compiles into both `amule` and `amulegui`. The branches
-// inside select the right subscriber set per target.
+// Defined outside the CLIENT_GUI split so the same function compiles into both
+// `amule` and `amulegui`; the branches inside select the subscriber set.
 //
-// Sites that fire this:
-//   - CPartFile::Delete()                  (user cancel)
-//   - CKnownFileList::PruneDuplicates       (TTL eviction)
-//   - CKnownFileList::~CKnownFileList       (shutdown / via Clear())
-//   - CSharedFileList::Reload()             (rebuild)
-//   - CKnownFilesRem::DeleteItem            (amulegui EC_TAG_FILE_REMOVED)
+// Fired by CPartFile::Delete(), CKnownFileList::PruneDuplicates,
+// ~CKnownFileList, CSharedFileList::Reload() and CKnownFilesRem::DeleteItem.
 void KnownFileBeingDestroyed(CKnownFile *file)
 {
 #ifndef AMULE_DAEMON
 	// GUI subscribers (linked into `amule` and `amulegui`).
 	if (theApp->amuledlg) {
-		// #1: CGenericClientListCtrl in the transfer window's
-		// downloads pane caches selected files in m_knownfiles;
-		// stale entries crash on the next selection change
-		// (issue #755).
+		// #1: CGenericClientListCtrl in the transfer window's downloads pane
+		// caches selected files in m_knownfiles; stale entries crash on the next
+		// selection change (issue #755).
 		if (theApp->amuledlg->m_transferwnd && theApp->amuledlg->m_transferwnd->clientlistctrl) {
 			theApp->amuledlg->m_transferwnd->clientlistctrl->RemoveKnownFile(file);
 		}
@@ -1037,11 +1010,10 @@ void KnownFileBeingDestroyed(CKnownFile *file)
 		if (theApp->amuledlg->m_sharedfileswnd && theApp->amuledlg->m_sharedfileswnd->peerslistctrl) {
 			theApp->amuledlg->m_sharedfileswnd->peerslistctrl->RemoveKnownFile(file);
 		}
-		// #3, #4, #5: open modal dialogs that captured the file
-		// pointer at construction time (CommentDialog,
-		// CommentDialogLst, FileDetailDialog). Each class keeps
-		// its own static registry of live instances so the
-		// broadcast can iterate without needing a friend.
+		// #3, #4, #5: open modal dialogs that captured the file pointer at
+		// construction (CommentDialog, CommentDialogLst, FileDetailDialog). Each
+		// keeps its own static registry of live instances, so the broadcast can
+		// iterate without needing a friend.
 		CCommentDialog::DropReferencesTo(file);
 		CCommentDialogLst::DropReferencesTo(file);
 		CFileDetailDialog::DropReferencesTo(file);
@@ -1056,14 +1028,12 @@ void KnownFileBeingDestroyed(CKnownFile *file)
 	}
 #endif
 #ifndef CLIENT_GUI
-	// Daemon-side subscribers — drop pending requests/writes naming
-	// this file. Both lists are kept by background-thread machinery
-	// and would otherwise leave dangling pointers after the file is
-	// freed (see audit table in the PR description).
+	// Daemon-side subscribers: drop pending requests and writes naming this file.
+	// Both lists are kept by background-thread machinery and would otherwise leave
+	// dangling pointers.
 	//
-	// #5: AICH static recovery-request list. Strip-by-pointer; the
-	// existing RequestAICHRecovery() guard at SHAHashSet.cpp:990 can
-	// be spoofed by allocator reuse, which this prevents.
+	// #5: AICH static recovery-request list. Strip-by-pointer; the existing
+	// RequestAICHRecovery() guard can be spoofed by allocator reuse.
 	CAICHHashSet::DropReferencesTo(file);
 	// #8: pending writes the CPartFileWriteThread hasn't drained yet.
 	// Without this, ~CPartFile would race the write loop.
@@ -1076,15 +1046,13 @@ void KnownFileBeingDestroyed(CKnownFile *file)
 void SearchFileBeingDestroyed(CSearchFile *file)
 {
 #ifndef AMULE_DAEMON
-	// GUI subscribers (linked into `amule` and `amulegui`): a comments dialog
-	// opened on a search result must drop the pointer before the result is
-	// freed (a new search or result-list rebuild deletes CSearchFile objects
-	// while a modal Kad-notes lookup may still be open on one).
+	// GUI subscribers: a comments dialog opened on a search result must drop the
+	// pointer before the result is freed, since a new search or list rebuild deletes
+	// CSearchFile objects while a modal Kad-notes lookup may still be open.
 	CCommentDialogLst::DropReferencesTo(file);
-	// The search models hold arriving results between the notification and
-	// the idle that flushes them, and nothing unlinks a child from its
-	// parent's list -- so this is the only signal that one of those pointers
-	// has stopped being one.
+	// The search models hold arriving results between the notification and the idle
+	// that flushes them, and nothing unlinks a child from its parent's list, so this
+	// is the only signal that one of those pointers has stopped being one.
 	CSearchListModel::DropReferencesTo(file);
 #else
 	(void)file;

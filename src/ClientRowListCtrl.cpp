@@ -90,10 +90,9 @@ void CClientRowListCtrl::OnItemActivated(wxDataViewEvent &event)
 	ShowDetailsForSelection();
 }
 
-// Opening details is a read-only act: it never creates a client and never
-// opens a connection. A peer we are talking to is snapshotted live, because
-// that knows strictly more; otherwise the row's own record is rendered and
-// the session fields show as absent.
+// Opening details is a read-only act: it never creates a client and never opens
+// a connection. A peer we are talking to is snapshotted live, since that knows
+// strictly more; otherwise the row's own record is rendered.
 void CClientRowListCtrl::ShowDetailsForSelection()
 {
 	// Counted first: resolving the selection to discover it holds more than
@@ -128,13 +127,11 @@ void CClientRowListCtrl::OnItemRightClicked(wxDataViewEvent &event)
 		}
 	}
 
-	// A peer we are not connected to still gets a menu. Friending and the
-	// friend slot are persistent and need no connection at all; browsing and
-	// messaging open one when the user picks them.
-	//
-	// Only the row under the cursor is resolved. The menu describes that one,
-	// and building the whole selection to read its first entry would resolve
-	// every other selected row for nothing.
+	// A peer we are not connected to still gets a menu: friending and the friend
+	// slot are persistent and need no connection, while browsing and messaging open
+	// one when the user picks them. Only the row under the cursor is resolved --
+	// the menu describes that one, and building the whole selection to read its
+	// first entry would resolve every other row for nothing.
 	if (!event.GetItem().IsOk()) {
 		return;
 	}
@@ -153,13 +150,11 @@ void CClientRowListCtrl::OnItemRightClicked(wxDataViewEvent &event)
 	delete menu;
 }
 
-// Both lists are multi-select (CMuleDataViewCtrl forces wxDV_MULTIPLE) and the
-// connected-client paths act on the whole selection, so these do too. But the
-// history list is the entire credit store rather than the handful of peers we
-// happen to be talking to, and the menu is built for one row while the action
-// runs on all of them, so a large selection says so first. Same shape as the
-// shared-files media refresh: one row never costs a click, and what is about to
-// happen is stated in full.
+// Both lists are multi-select and the connected-client paths act on the whole
+// selection, so these do too. But the history list is the entire credit store
+// rather than the handful of peers we happen to be talking to, and the menu is
+// built for one row while the action runs on all of them, so a large selection
+// says so first.
 void CClientRowListCtrl::OnViewFiles(wxCommandEvent &WXUNUSED(event))
 {
 	// Counted from the control, not from resolving the rows: resolving is the

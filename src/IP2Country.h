@@ -51,13 +51,12 @@
 
 class CMaxMindDBDatabase;
 
-// Headless GeoIP resolver. Maps an IP to an ISO 3166-1 alpha-2 country code
-// via the on-disk MaxMind DB and manages downloading/updating that DB from the
-// user-configured source (thePrefs). Deliberately free of any GUI dependency
-// (no wxImage / flags / prefs-dialog) so it can live in the core (CamuleApp)
-// and run headless in amuled — the flag presentation is a separate GUI concern
-// (see CCountryFlags), and manual-update failure popups are delegated to the
-// GUI via SetUpdateFailedNotifier().
+// Headless GeoIP resolver. Maps an IP to an ISO 3166-1 alpha-2 country code via
+// the on-disk MaxMind DB, and manages downloading and updating that DB from the
+// user-configured source. Deliberately free of any GUI dependency so it can live
+// in the core and run headless in amuled: flag presentation is a separate GUI
+// concern (CCountryFlags), and manual-update failure popups are delegated via
+// SetUpdateFailedNotifier().
 class CIP2Country
 {
 public:
@@ -71,36 +70,34 @@ public:
 
 	// Same, from the numeric IP the callers already hold, and memoised.
 	//
-	// The returned reference is valid until the next call on this object, or
-	// any Enable()/Disable(): the cache is cleared wholesale on overflow and
-	// on either of those, and clear() invalidates references. Copy it if you
-	// need it to outlive the call -- in particular do not pass two of these
-	// into one expression.
+	// The returned reference is valid until the next call on this object, or any
+	// Enable()/Disable(): the cache is cleared wholesale on overflow and on either
+	// of those. Copy it if you need it to outlive the call, and in particular do
+	// not pass two of these into one expression.
 	//
-	// #439 moved this resolution from GUI paint into the core. Paint hid the
-	// cost: it ran only for visible rows, only while the list was on screen,
-	// only with someone watching. The EC client tag now resolves EVERY peer
-	// on EVERY poll -- roughly every 3 s, headless, forever -- and a peer's
-	// country cannot change while its IP does not. Measured at ~7.5us per
-	// peer per poll on a live daemon, about 37% of the client tag build.
+	// #439 moved this resolution from GUI paint into the core. Paint hid the cost:
+	// it ran only for visible rows, only while the list was on screen. The EC
+	// client tag now resolves EVERY peer on EVERY poll, headless, forever -- and a
+	// peer's country cannot change while its IP does not. Measured at ~7.5us per
+	// peer per poll, about 37% of the client tag build.
 	//
-	// Keyed on the numeric IP so the caller need not format a string first
-	// (Uint32toStringIP allocates); the string is only built on a miss.
+	// Keyed on the numeric IP so the caller need not format a string first; the
+	// string is only built on a miss.
 	const wxString &GetCountryCode(uint32 ip);
 
 	void Enable();
 	void Disable();
 	// Refresh the on-disk MMDB from the configured source.
-	// manualUpdate=true is set by the prefs "Update now" button so that
-	// failures (no credential, bad URL, HTTP error) surface via the
-	// update-failed notifier (a GUI popup) in addition to the network log;
-	// auto-update (startup) stays silent so users don't get a popup every
-	// cold boot if their chosen source is briefly down.
-	// showProgress=true renders the HTTP progress dialog — appropriate for a
-	// LOCAL monolithic "Update now". It is false for a REMOTE (amulegui, over
-	// EC) trigger: EC carries no download progress, so the dialog would be
-	// blank/unhelpful, and on a monolithic-app-as-backend it would pop on the
-	// core rather than the remote GUI. (No-op on a headless daemon either way.)
+	//
+	// manualUpdate=true is set by the prefs "Update now" button, so failures (no
+	// credential, bad URL, HTTP error) surface via the update-failed notifier as
+	// well as the network log; auto-update stays silent, or a briefly-down source
+	// would pop a dialog on every cold boot.
+	//
+	// showProgress=true renders the HTTP progress dialog, which suits a LOCAL
+	// monolithic "Update now". It is false for a REMOTE trigger: EC carries no
+	// download progress, and on a monolithic-app-as-backend the dialog would pop on
+	// the core rather than the remote GUI.
 	void Update(bool manualUpdate = false, bool showProgress = true);
 	bool IsEnabled();
 	void DownloadFinished(uint32 result);
@@ -109,10 +106,9 @@ public:
 	// preferences panel can show the status line ("Loaded — <path>"),
 	// without re-deriving the config-dir + filename convention.
 	const wxString &GetDatabasePath() const { return m_DataBasePath; }
-	// Live status for the prefs panel (local, and carried to amulegui over EC,
-	// #440 remote config). IsDownloading() is true while a refresh is in
-	// flight; GetLastResult() is a short human string describing the outcome
-	// of the last completed update (empty until the first one runs).
+	// Live status for the prefs panel, local and carried to amulegui over EC.
+	// IsDownloading() is true while a refresh is in flight; GetLastResult() is a
+	// short human string describing the last completed update.
 	bool IsDownloading() const { return m_downloading; }
 
 	const wxString &GetLastResult() const { return m_lastResult; }
@@ -128,19 +124,18 @@ public:
 private:
 	// Drop every memoised resolution. Called wherever the answer could change
 	// underneath the cache: enable and disable, which between them also cover a
-	// completed database refresh (DownloadFinished routes through both).
-	// Without this a headless daemon is the worst case -- entries resolved
-	// while GeoIP was off would stay empty forever, with no repaint to force a
-	// re-read and nobody watching to notice.
+	// completed database refresh. A headless daemon is the worst case without it --
+	// entries resolved while GeoIP was off would stay empty forever, with no repaint
+	// to force a re-read and nobody watching.
 	void InvalidateCountryCache();
 
-	// Numeric IP -> ISO code. Bounded: peers churn, so an unbounded map on a
-	// long-lived daemon would grow without limit. On overflow the whole map is
-	// dropped rather than evicting cleverly -- a rebuild costs one lookup per
-	// live peer, which is what a single poll cost before this existed.
+	// Numeric IP -> ISO code. Bounded, because peers churn and an unbounded map on
+	// a long-lived daemon would grow without limit. On overflow the whole map is
+	// dropped rather than evicting cleverly: a rebuild costs one lookup per live
+	// peer, which is what a single poll cost before this existed.
 	//
-	// Not synchronised. Like the rest of this class it is touched from the main
-	// thread only; a concurrent reader during a clear() would be a race.
+	// Not synchronised: like the rest of this class it is touched from the main
+	// thread only.
 	std::unordered_map<uint32, wxString> m_countryCache;
 	static const size_t kMaxCountryCacheEntries = 8192;
 
@@ -148,11 +143,10 @@ private:
 	wxString m_DataBaseName;
 	wxString m_DataBasePath;
 
-	// DB-IP fallback retry tracking. The first attempt fetches the
-	// current month's URL; if that fails (commonly a 404 in the first
-	// few days of a month before DB-IP publishes the new dataset), the
-	// download callback retries with monthOffset=-1. Reset to false on
-	// every Update() entry.
+	// DB-IP fallback retry tracking. The first attempt fetches the current month's
+	// URL; on failure -- commonly a 404 in the first few days of a month, before
+	// DB-IP publishes the new dataset -- the download callback retries with
+	// monthOffset=-1. Reset on every Update() entry.
 	bool m_TriedPreviousMonth;
 
 	// Set by Update(true) (the "Update now" button) so the failure

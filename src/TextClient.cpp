@@ -106,7 +106,6 @@ enum
 
 };
 
-// method to create a SearchFile
 SearchFile::SearchFile(const CEC_SearchFile_Tag *tag)
 : nHash(tag->FileHash())
 {
@@ -155,12 +154,11 @@ static bool ParseSizeWithSuffix(const wxString &s, uint64 &out)
 	return true;
 }
 
-// Strip optional --type / --extension / --avail / --min-size / --max-size
-// flags from `args`, leaving only the search keyword(s). Each flag takes
-// exactly one whitespace-separated value. Unknown tokens are preserved as
-// part of the search query, joined by single spaces in input order.
-// Returns true on success, false if a flag is missing its value or a value
-// fails to parse; on failure the output values are undefined.
+// Strip optional --type / --extension / --avail / --min-size / --max-size flags
+// from `args`, leaving only the search keyword(s). Each flag takes exactly one
+// whitespace-separated value; unknown tokens are preserved as part of the query,
+// joined by single spaces in input order. False if a flag is missing its value
+// or a value fails to parse, in which case the outputs are undefined.
 static bool ParseSearchFilters(wxString &args,
 	wxString &type,
 	wxString &extension,
@@ -440,7 +438,6 @@ int CamulecmdApp::ProcessCommand(int CmdId)
 			wxString token;
 			CMD4Hash hash;
 
-			// Grab the entire dl queue right away
 			CECPacket request_all(EC_OP_GET_DLOAD_QUEUE, EC_DETAIL_CMD);
 			const CECPacket *reply_all = SendRecvMsg_v2(&request_all);
 
@@ -459,13 +456,11 @@ int CamulecmdApp::ProcessCommand(int CmdId)
 					wxFAIL;
 				}
 
-				// We loop through all the arguments
 				while (argsTokenizer.HasMoreTokens()) {
 					token = argsTokenizer.GetNextToken();
 
-					// If the user requested all, then we select all files and exit the
-					// loop since there is little point to add anything more to
-					// "everything"
+					// "all" selects every file, so there is nothing more to add and the
+					// loop can stop.
 					if (token == "all") {
 						for (CECPacket::const_iterator it = reply_all->begin();
 							it != reply_all->end();
@@ -482,7 +477,6 @@ int CamulecmdApp::ProcessCommand(int CmdId)
 							request->AddTag(CECTag(EC_TAG_PARTFILE, hash));
 						}
 					} else {
-						// Go through the dl queue and look at each filename
 						for (CECPacket::const_iterator it = reply_all->begin();
 							it != reply_all->end();
 							++it) {
@@ -739,7 +733,6 @@ int CamulecmdApp::ProcessCommand(int CmdId)
 				SearchFile *file = m_Results_map[id];
 				Show(CFormat(_("Download File: %lu %s\n")) % id % file->sFileName);
 				request = new CECPacket(EC_OP_DOWNLOAD_SEARCH_RESULT);
-				// get with id the hash and category=0
 				uint32 category = 0;
 				CECTag hashtag(EC_TAG_PARTFILE, file->nHash);
 				hashtag.AddTag(CECTag(EC_TAG_PARTFILE_CAT, category));
@@ -955,8 +948,8 @@ void CamulecmdApp::Process_Answer_v2(const CECPacket *response)
 			filesize = tag->SizeFull();
 			donesize = tag->SizeDone();
 			// Still two lines per entry: the newline delimits records and the
-			// leading tab marks the continuation, so splitting each line on
-			// the separator stays unambiguous.
+			// leading tab marks the continuation, so splitting each line on the
+			// separator stays unambiguous.
 			s << tag->FileHashString() << Sep(" ") << Field(tag->FileName())
 			  << (CFormat("\n\t [%.1f%%]") % ((float)donesize / ((float)filesize) * 100.0))
 			  << Sep(" ")

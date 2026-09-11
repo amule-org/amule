@@ -226,13 +226,12 @@ wxSizer *statsDlg(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE)
 #define ID_DSNAME 10098
 #define IDT_OBFUSCATION 10099
 #define IDT_KAD 10100
-// Peer's protocol-extension word, Client Details. Appended at the end of the
-// id space rather than next to IDT_KAD: the ids are bound implicitly and by
-// value, so inserting one here would renumber every id below it.
-//
-// The label carries an id of its own -- unlike every other label in this
-// dialog -- because the row is hidden whole when the peer claims no
-// extension, and a label with id -1 cannot be found to hide.
+// Peer's protocol-extension word, Client Details. Appended at the end of the id
+// space rather than next to IDT_KAD: the ids are bound implicitly and by value,
+// so inserting one here would renumber every id below it. The label carries an
+// id of its own -- unlike every other label in this dialog -- because the row is
+// hidden whole when the peer claims no extension, and a label with id -1 cannot
+// be found to hide.
 #define IDT_MOD_CAPABILITIES 10510
 #define IDT_MOD_CAPABILITIES_LABEL 10511
 #define ID_DDOWNLOADING 10101
@@ -329,12 +328,11 @@ wxSizer *PreferencesServerTab(wxWindow *parent, bool call_fit = TRUE, bool set_s
 #define IDC_MINDISKSPACE 10168
 #define IDC_SRCSEEDS 10169
 #define IDC_UAP 10170
-// Media metadata extraction (issue #140). Sit in the high band (>= 10420)
-// so we don't clash with an eventual wxDesigner regeneration or with
-// other in-flight branches — bind-to-interface reserves 10410, so we
-// start at 10420 leaving a 10-ID cushion. The label at IDC_MEDIAMETA_
-// FFPROBEPATHTEXT lives in the 10355+ orphan-label band with the
-// other daemon-only labels (amuleguii hides via amuledOnlyPrefs[]).
+// Media metadata extraction (issue #140). In the high band (>= 10420) to clear
+// an eventual wxDesigner regeneration and other in-flight branches:
+// bind-to-interface reserves 10410, so this starts at 10420 with a 10-ID
+// cushion. The label lives in the 10355+ orphan-label band with the other
+// daemon-only ones.
 #define IDC_MEDIAMETA_ENABLED 10420
 #define IDC_MEDIAMETA_FFPROBEPATH 10421
 #define IDC_MEDIAMETA_FFPROBEBROWSE 10422
@@ -387,10 +385,9 @@ wxSizer *PreferencesDirectoriesTab(wxWindow *parent, bool call_fit = TRUE, bool 
 wxSizer *PreferencesPathMappingTab(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 #endif
 
-// IP2Country (GeoIP) preferences tab. 10400+ leaves a clear gap above
-// the existing toolbar / button IDs that crowd the 10350-10354 range
-// (ID_BUTTONMESSAGES, ID_BUTTONSTATISTICS, etc. — sharing an ID with a
-// toolbar button gets the wrong event delivered into the prefs panel).
+// IP2Country (GeoIP) preferences tab. 10400+ leaves a clear gap above the
+// toolbar / button IDs that crowd 10350-10354, where sharing an ID gets the
+// wrong event delivered into the prefs panel.
 #define IDC_GEOIP_SOURCE 10400
 #define IDC_GEOIP_MAXMIND_LIC 10401
 #define IDC_GEOIP_CUSTOM_URL 10402
@@ -511,9 +508,8 @@ wxSizer *aMuleLog(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE)
 // Interface (GUI Tweaks) tab: toggle live column auto-sorting of the lists.
 #define IDC_LIVELISTSORT 10483
 // Remote-GUI path-mapping editor (CLIENT_GUI only, issue #843): a
-// user-configured remote->local path-prefix table, so Open/Show-in-folder
-// work against a daemon on a different machine whose filesystem this one can
-// otherwise reach (a Samba/NFS mount, say). See CPreferences::PathMapping.
+// user-configured remote->local path-prefix table, so Open and Show-in-folder
+// work against a daemon on another machine this one can otherwise reach.
 #define IDC_PATHMAP_LIST 10496
 #define IDC_PATHMAP_REMOTE 10497
 #define IDC_PATHMAP_LOCAL 10498
@@ -664,10 +660,9 @@ wxSizer *messagePageMessages(wxWindow *parent, bool call_fit = TRUE, bool set_si
 #define ID_BUTTONNEWPREFERENCES 10352
 #define ID_BUTTONIMPORT 10353
 #define ID_ABOUT 10354
-// Appended rather than slotted between the panel buttons above: those values
-// are referenced by saved toolbar state, so renumbering them would silently
-// move a user's buttons. 10503 upwards is the first free pair -- the IDC_*
-// block runs to 10502 and the next value used anywhere is 16384.
+// Appended rather than slotted between the panel buttons above: those values are
+// referenced by saved toolbar state, so renumbering would silently move a user's
+// buttons. 10503 upwards is the first free pair.
 #define ID_BUTTONCLIENTS 10503
 #define ID_CLIENTSLIST 10504
 #define ID_CLIENTHISTORYLIST 10505

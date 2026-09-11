@@ -124,14 +124,12 @@ void CServerUDPSocket::ProcessPacket(CMemFile &packet, uint8 opcode, uint32 ip, 
 			port % opcode);
 
 	try {
-		// Imported: OP_GLOBSEARCHRES, OP_GLOBFOUNDSOURCES & OP_GLOBSERVSTATRES
-		// This makes Server UDP Flags to be set correctly so we use less bandwidth on asking servers
-		// for sources Also we process Search results and Found sources correctly now on 16.40
-		// behaviour.
+		// Imported: OP_GLOBSEARCHRES, OP_GLOBFOUNDSOURCES and OP_GLOBSERVSTATRES.
+		// This sets the server UDP flags correctly, so less bandwidth is spent asking
+		// servers for sources, and search results and found sources are processed as
+		// 16.40 does.
 		switch (opcode) {
 		case OP_GLOBSEARCHRES: {
-
-			// process all search result packets
 
 			do {
 				theApp->searchlist->ProcessUDPSearchAnswer(packet, true, ip, port - 4);
@@ -184,7 +182,6 @@ void CServerUDPSocket::ProcessPacket(CMemFile &packet, uint8 opcode, uint32 ip, 
 		}
 
 		case OP_GLOBSERVSTATRES: {
-			// Reviewed with 0.47c
 			if (!update) {
 				throw wxString(
 					CFormat("Unknown server on a OP_GLOBSERVSTATRES packet (%s:%d)") %
@@ -253,19 +250,17 @@ void CServerUDPSocket::ProcessPacket(CMemFile &packet, uint8 opcode, uint32 ip, 
 
 			update->SetLastDescPingedCount(false);
 			if (update->GetLastDescPingedCount() < 2) {
-				// eserver 16.45+ supports a new OP_SERVER_DESC_RES answer, if the
-				// OP_SERVER_DESC_REQ contains a uint32 challenge, the server returns
-				// additional info with OP_SERVER_DESC_RES. To properly distinguish the old
-				// and new OP_SERVER_DESC_RES answer, the challenge has to be selected
-				// carefully. The first 2 bytes of the challenge (in network byte order) MUST
-				// NOT be a valid string-len-int16!
+				// eserver 16.45+ answers OP_SERVER_DESC_REQ with extra info when the
+				// request carries a uint32 challenge. To tell the old and new
+				// OP_SERVER_DESC_RES apart, the challenge has to be chosen carefully:
+				// its first 2 bytes, in network byte order, MUST NOT be a valid
+				// string-len-int16.
 				CPacket *sendpacket = new CPacket(OP_SERVER_DESC_REQ, 4, OP_EDONKEYPROT);
 				uint32 uDescReqChallenge =
 					((uint32)GetRandomUint16() << 16) +
 					INV_SERV_DESC_LEN; // 0xF0FF = an 'invalid' string length.
 				update->SetDescReqChallenge(uDescReqChallenge);
 				sendpacket->CopyUInt32ToDataBuffer(uDescReqChallenge);
-				// theStats.AddUpDataOverheadServer(packet->size);
 				AddDebugLogLineN(logServerUDP,
 					CFormat(">>> Sending OP__ServDescReq     to server %s:%u, challenge "
 						"%08x\n") %
@@ -279,7 +274,6 @@ void CServerUDPSocket::ProcessPacket(CMemFile &packet, uint8 opcode, uint32 ip, 
 			break;
 		}
 		case OP_SERVER_DESC_RES: {
-			// Reviewed with 0.47c
 			if (!update) {
 				throw(wxString("Received OP_SERVER_DESC_RES from an unknown server"));
 			}
@@ -304,15 +298,11 @@ void CServerUDPSocket::ProcessPacket(CMemFile &packet, uint8 opcode, uint32 ip, 
 
 					uint32 uTags = packet.ReadUInt32();
 					for (uint32 i = 0; i < uTags; ++i) {
-						// Force Unicode=true rather than relying on the
-						// server's SRV_TCPFLG_UNICODE bit: many real-world
-						// servers ship UTF-8 strings (emoji in names,
-						// non-ASCII descriptions) without advertising the
-						// capability flag, and parsing as non-Unicode
-						// mangles them. The OP_SERVERIDENT handler in
-						// ServerSocket.cpp does the same, and the .met
-						// load-time parse uses hardcoded Unicode=true.
-						// (#831)
+						// Force Unicode=true rather than relying on the server's
+						// SRV_TCPFLG_UNICODE bit: many real-world servers ship
+						// UTF-8 strings without advertising the capability, and
+						// parsing as non-Unicode mangles them. The OP_SERVERIDENT
+						// handler and the .met load-time parse do the same (#831).
 						CTag tag(packet, true);
 						switch (tag.GetNameID()) {
 						case ST_SERVERNAME:
@@ -342,12 +332,10 @@ void CServerUDPSocket::ProcessPacket(CMemFile &packet, uint8 opcode, uint32 ip, 
 						}
 					}
 				} else {
-					// A server sent us a new server description packet (including a
-					// challenge) although we did not ask for it. This may happen, if
-					// there are multiple servers running on the same machine with
-					// multiple IPs. If such a server is asked for a description, the
-					// server will answer 2 times, but with the same IP. ignore this
-					// packet
+					// A server sent a new-style description packet, with a challenge,
+					// although we did not ask for one. That happens when several servers
+					// run on one machine with multiple IPs: asked for a description, such
+					// a server answers twice from the same IP. Ignore this packet.
 				}
 			} else {
 				update->SetDescription(packet.ReadString(update->GetUnicodeSupport()));

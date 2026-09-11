@@ -128,11 +128,9 @@ wxSizer *muleDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     // Connected core's version, left of the counters it heads. amulegui only:
     // this file is compiled per-executable, so CLIENT_GUI is the consuming
     // target's and monolithic aMule never builds it. Hidden until the EC
-    // handshake reports a version. Clickable, so it gets the hand cursor.
-    //
-    // 16x16 explicitly: with no size the bundle defaults to the icon's PNG
-    // twin, 256x256 for the logo. The size is logical, so it still renders
-    // from the SVG at the display's scale.
+    // handshake reports a version. Clickable, so it gets the hand cursor. 16x16
+    // explicitly: with no size the bundle defaults to the icon's PNG twin,
+    // 256x256 for the logo. The size is logical, so it still renders from SVG.
     wxStaticBitmap *coreVerIcon = new wxStaticBitmap( parent, -1, wxArtProvider::GetBitmapBundle( "amule:amule", wxART_OTHER, wxSize(16, 16) ), wxDefaultPosition, wxDefaultSize );
     coreVerIcon->SetName( "coreVersionImage" );
     coreVerIcon->SetCursor( wxCursor( wxCURSOR_HAND ) );
@@ -262,8 +260,8 @@ wxSizer *searchDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     item1->Add( item3, wxSizerFlags().Expand().CenterVertical() );
     // One row: the five filters sit side by side, each preceded by a separator
     // from the second onwards -- 14 cells. They were split across two rows of
-    // eight while Category lived here; #979 took Category out and left Min Size
-    // stranded at the end of the first row, away from Max Size (issue #1035).
+    // eight while Category lived here, which left Min Size stranded at the end
+    // of the first row, away from Max Size.
     wxFlexGridSizer *item13 = new wxFlexGridSizer( 14, 0, 0 );
     s_extended_sizer = item13;
 
@@ -283,9 +281,9 @@ wxSizer *searchDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     wxChoice *item15 = new wxChoice( item2, IDC_TypeSearch, wxDefaultPosition, wxDefaultSize, 8, strs15, 0 );
     item13->Add( item15, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 5) );
     // The category selector used to sit here, between File Type and Extension.
-    // It is not a search filter -- nothing about it travels with the query --
-    // so it moved to the button row next to Download, whose destination it is
-    // (issue #979). Five filters remain: three on this row, two on the next.
+    // It is not a search filter -- nothing about it travels with the query -- so
+    // it moved to the button row next to Download, whose destination it is.
+    // Five filters remain: three on this row, two on the next.
     wxStaticLine *item16 = new wxStaticLine( item2, -1, wxDefaultPosition, wxSize(-1,20), wxLI_VERTICAL );
     item13->Add( item16, wxSizerFlags().Center().Border(wxALL, 5) );
     wxStaticText *item20 = new wxStaticText( item2, -1, _("Extension"), wxDefaultPosition, wxDefaultSize, 0 );
@@ -354,10 +352,10 @@ wxSizer *searchDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     item34->Add( item41, wxSizerFlags().Center().Border(wxALL, 5) );
     wxCheckBox *item42 = new wxCheckBox( item2, ID_FILTER_KNOWN, _("Hide Known Files"), wxDefaultPosition, wxDefaultSize, 0 );
     item34->Add( item42, wxSizerFlags().Center().Border(wxALL, 5) );
-    // Clears the filter text and returns both checkboxes to their defaults
-    // (issue #698). Named in full rather than a bare "Reset" so it cannot be
-    // read as a second "Reset Fields": that button covers the search
-    // parameters, this one covers only the filter row it sits in.
+    // Clears the filter text and returns both checkboxes to their defaults. Named
+    // in full rather than a bare "Reset" so it cannot be read as a second "Reset
+    // Fields": that button covers the search parameters, this one covers only
+    // the filter row it sits in.
     wxStaticLine *item59 = new wxStaticLine( item2, -1, wxDefaultPosition, wxSize(-1,20), wxLI_VERTICAL );
     item34->Add( item59, wxSizerFlags().Center().Border(wxALL, 5) );
     wxButton *item60 = new wxButton( item2, ID_FILTER_RESET, _("Reset Filters"), wxDefaultPosition, wxDefaultSize, 0 );
@@ -384,12 +382,11 @@ wxSizer *searchDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     wxButton *item50 = new wxButton( item2, IDC_SDOWNLOAD, _("Download"), wxDefaultPosition, wxDefaultSize, 0 );
     item50->Enable( false );
     item43->Add( item50, wxSizerFlags().Center().Border(wxALL, 5) );
-    // Where the button beside it sends the file. It sat in the extended-
-    // parameters row until issue #979, which made it read as a search filter --
-    // something neither ed2k nor Kad can do -- and let a chosen category be
-    // hidden and then silently ignored. Here it is always visible and its
-    // meaning is positional. Same wording as the right-click action that does
-    // the same thing (SearchListCtrl.cpp), so the two cannot drift.
+    // Where the button beside it sends the file. It sat in the extended-parameters
+    // row until that made it read as a search filter -- something neither ed2k
+    // nor Kad can do -- and let a chosen category be hidden and then silently
+    // ignored. Here it is always visible and its meaning is positional. Same
+    // wording as the right-click action that does the same thing.
     wxStaticText *item17 = new wxStaticText( item2, ID_AUTOCATASSIGN_LABEL, _("Download in category"), wxDefaultPosition, wxDefaultSize, 0 );
     item43->Add( item17, wxSizerFlags().Center().Border(wxALL, 5) );
     // Empty item list: UpdateCatChoice() fills it and keeps it in step with the
@@ -402,11 +399,9 @@ wxSizer *searchDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     item43->Add( item51, wxSizerFlags().Center().Border(wxALL, 5) );
     // Ordered most to least destructive rightwards, so the mildest sits at the
     // edge where it is easiest to hit and the one that discards saved terms is
-    // furthest from it (issue #911). CSearchDlg inserts "Clear Search History"
-    // ahead of Clear Search Results at runtime, giving:
-    //   Clear Search History | Clear Search Results | Reset Fields
-    // Reset Fields last also puts it directly above "Reset Filters" in the row
-    // below, which is the control it parallels.
+    // furthest from it. CSearchDlg inserts "Clear Search History" ahead of Clear
+    // Search Results at runtime. Reset Fields last also puts it directly above
+    // "Reset Filters" in the row below, which is the control it parallels.
     wxButton *item54 = new wxButton( item2, IDC_CLEAR_RESULTS, _("Clear Search Results"), wxDefaultPosition, wxDefaultSize, 0 );
     item54->Enable( false );
     item43->Add( item54, wxSizerFlags().Center().Border(wxALL, 5) );
@@ -416,21 +411,20 @@ wxSizer *searchDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     item52->Enable( false );
     item43->Add( item52, wxSizerFlags().Center().Border(wxALL, 5) );
     item1->Add( item43, wxSizerFlags().Center().Border(wxALL, 5) );
-    // Rule between the buttons and the filter row (issue #911): with extended
-    // parameters and filtering both on, five rows of fields run together, and
-    // this marks where the search parameters stop and what filters the results
-    // already on screen begins. Full width rather than the button row's extent
-    // -- that row is centred and sized to its contents, so tracking it would
-    // mean measuring it. Shown and hidden with the row it introduces; see
-    // CSearchDlg::ApplyFilterSeparator().
+    // Rule between the buttons and the filter row: with extended parameters and
+    // filtering both on, five rows of fields run together, and this marks where
+    // the search parameters stop and what filters the results already on screen
+    // begins. Full width rather than the button row's extent -- that row is
+    // centred and sized to its contents. Shown and hidden with the row it
+    // introduces; see CSearchDlg::ApplyFilterSeparator().
     wxStaticLine *item61 = new wxStaticLine( item2, ID_FILTER_SEPARATOR, wxDefaultPosition, wxDefaultSize, wxLI_HORIZONTAL );
     item1->Add( item61, wxSizerFlags().Expand().Border(wxLEFT|wxRIGHT, 5) );
-    // Filter row goes BELOW the action buttons (issue #698): filtering is not a
-    // search parameter -- it applies to results already on screen and is not
-    // touched by "Reset Fields" -- so grouping it with the search parameters
-    // above the buttons misrepresented it, and it sits closer to the results
-    // list here. Added after item43 purely for sizer order; the row itself is
-    // still built above so s_filter_sizer keeps its show/hide wiring.
+    // Filter row goes BELOW the action buttons: filtering is not a search
+    // parameter -- it applies to results already on screen and is not touched by
+    // "Reset Fields" -- so grouping it with the search parameters above the
+    // buttons misrepresented it, and it sits closer to the results list here.
+    // Added after item43 purely for sizer order; the row is still built above so
+    // s_filter_sizer keeps its show/hide wiring.
     item1->Add( item34, wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 5) );
     item0->Add( item1, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 5) );
     wxStaticBox *item56 = new wxStaticBox( parent, -1, _("Results") );
@@ -510,29 +504,25 @@ wxSizer *transferBottomPane( wxWindow *parent, bool call_fit, bool set_sizer )
     item3->Add( item5, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT, 5) );
     item1->Add( item3, wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 5) );
 
-    // Combined size of the downloads currently visible (category + text
-    // filter), followed by the free space on the filesystem holding the part
-    // files. Both right-aligned in the growable header's third column, and
-    // both in one box sizer so the header keeps its three columns. Set by
-    // CDownloadListCtrl::SetTotalSize() and ::UpdateFreeSpace(). No
-    // wxST_NO_AUTORESIZE: the labels must grow to fit their text (they start
-    // empty, so the flag would pin them 0-wide).
+    // Combined size of the downloads currently visible (category + text filter),
+    // followed by the free space on the filesystem holding the part files. Both
+    // right-aligned in the growable header's third column, and both in one box
+    // sizer so the header keeps its three columns. No wxST_NO_AUTORESIZE: the
+    // labels must grow to fit their text, and they start empty.
     wxBoxSizer *item5a = new wxBoxSizer( wxHORIZONTAL );
 
     wxStaticText *item5b = new wxStaticText( parent, -1, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxALIGN_RIGHT );
     item5b->SetName( "downloadsTotalSize" );
     item5a->Add( item5b, wxSizerFlags().CenterVertical() );
 
-    // The "|" joining the two figures, in a label of its own for the same
-    // reason the figure has one: a wxStaticText colours all or nothing, so a
-    // separator sharing the label below would turn red along with the figure
-    // whenever the warning fires. Shown and hidden by SetFreeSpaceLabel()
-    // together with that figure, never recoloured.
+    // The "|" joining the two figures, in a label of its own for the same reason
+    // the figure has one: a wxStaticText colours all or nothing, so a separator
+    // sharing the label below would turn red along with the figure whenever the
+    // warning fires.
     //
-    // The gaps around it are sizer border, not spaces in the text: a static
-    // text is sized to its text extent, which ignores trailing whitespace, so
-    // a " | " label loses the space on one side and -- right-aligned inside a
-    // box sized for three glyphs -- doubles it on the other.
+    // The gaps around it are sizer border, not spaces in the text: a static text
+    // is sized to its text extent, which ignores trailing whitespace, so a " | "
+    // label loses the space on one side and doubles it on the other.
     wxStaticText *item5c = new wxStaticText( parent, -1, wxEmptyString );
     item5c->SetName( "downloadsFreeSpaceSep" );
     // Starts hidden: the labels either side start empty, and a shown separator
@@ -594,16 +584,14 @@ namespace
 // fileDetails(), so the relocated download rows and the Sharing box stay
 // visually consistent with the hand-written rows.
 //
-// `appendColon` renders the label as "label:" at display time. The Sharing
-// rows use it so they can reuse existing bare translations (e.g. "Requests")
-// instead of minting a second, colon-suffixed catalog string for each.
+// `appendColon` renders the label as "label:" at display time. The Sharing rows
+// use it so they can reuse existing bare translations instead of minting a
+// second, colon-suffixed catalog string for each.
 //
 // The punctuation goes through the catalog rather than being concatenated in
 // C++, because where the colon sits is a property of the language, not of the
 // layout: Russian typography forbids the space this used to hard-code, while
-// French requires it (amule-org/amule#1294). One format string lets a
-// translator settle the convention for every row at once, and keeps the reuse
-// that motivated the flag.
+// French requires it.
 void AddFileDetailRow(
     wxWindow *rowParent, wxSizer *grid, const wxString &label, int valueId, bool appendColon = false )
 {
@@ -1733,17 +1721,13 @@ wxSizer *PreferencesFilesTab( wxWindow *parent, bool call_fit, bool set_sizer )
     wxCheckBox *item13 = new wxCheckBox( item6, IDC_ALLOCFULLFILE, _("Preallocate disk space for new files"), wxDefaultPosition, wxDefaultSize, 0 );
     item13->SetToolTip( _("For new files preallocates disk space for the whole file, thus reduces fragmentation") );
     item5->Add( item13, wxSizerFlags().CenterVertical().Border(wxTOP, 0) );
-    // /eMule/CreateSparseFiles was EC-wired and settable via the Web UI
-    // (files.create_normal) but had no control here or in amuleGUI --
-    // hand-editing amule.conf was the only way (amule-org/amule#653).
-    // Only does real work when the *core* runs on Windows (PlatformSpecific.cpp
-    // vs. PartFile.cpp both call CFile::Create(name, true) identically on
-    // POSIX). Always created and bound here -- amuleGUI has no EC capability
-    // tag to know the core's platform, so it always shows the control; the
-    // monolithic non-Windows build (where the answer is a compile-time
-    // certainty) hides it post-creation in PrefsUnifiedDlg's ctor instead of
-    // skipping creation, so the Cfg_Tmpl binding still has a widget to
-    // connect to.
+    // /eMule/CreateSparseFiles was EC-wired and settable via the Web UI but had
+    // no control here or in amuleGUI -- hand-editing amule.conf was the only
+    // way. Only does real work when the *core* runs on Windows. Always created
+    // and bound here: amuleGUI has no EC capability tag to know the core's
+    // platform, so it always shows the control, and the monolithic non-Windows
+    // build hides it post-creation in PrefsUnifiedDlg's ctor rather than
+    // skipping creation, so the Cfg_Tmpl binding still has a widget.
     wxCheckBox *itemCreateSparse = new wxCheckBox( item6, IDC_CREATEFILESSPARSE, _("Create new files as sparse files"), wxDefaultPosition, wxDefaultSize, 0 );
     itemCreateSparse->SetToolTip( _("Sparse part files only occupy disk space for the parts already downloaded, so free space is used up gradually as the file fills in. Turn this off to use an ordinary file instead - useful where sparse files are unsupported or slow, or where backup/de-duplication tools handle them badly. Applies only when the core runs on Windows; on Linux and macOS part files are sparse anyway and this setting has no effect.") );
     item5->Add( itemCreateSparse, wxSizerFlags().CenterVertical().Border(wxTOP, 0) );
@@ -1785,14 +1769,12 @@ wxSizer *PreferencesFilesTab( wxWindow *parent, bool call_fit, bool set_sizer )
 
     item0->Add( item1, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 0) );
 
-    // Media metadata extraction (issue #140). Optional feature that
-    // runs ffprobe against each shared file at share-add / known.met
-    // load time to populate FT_MEDIA_LENGTH / _BITRATE / _CODEC on
-    // the CKnownFile; the ed2k + Kad publishers then advertise those
-    // tags automatically. The enable toggle and the path field are
-    // EC-wired and stay visible in amulegui; only "Browse" and "Detect"
-    // hide there (see PrefsUnifiedDlg's amuledOnlyPrefs[]), since both
-    // would search the GUI's filesystem rather than the daemon's.
+    // Media metadata extraction: an optional feature that runs ffprobe against
+    // each shared file at share-add / known.met load time to populate
+    // FT_MEDIA_LENGTH / _BITRATE / _CODEC on the CKnownFile; the ed2k and Kad
+    // publishers then advertise those tags automatically. The enable toggle and
+    // the path field are EC-wired and stay visible in amulegui; only "Browse"
+    // and "Detect" hide there, since both would search the GUI's filesystem.
     wxStaticBox *item22 = new wxStaticBox( parent, -1, _("Media metadata extraction") );
     wxStaticBoxSizer *item22sz = new wxStaticBoxSizer( item22, wxVERTICAL );
 
@@ -1952,13 +1934,12 @@ wxSizer *PreferencesPathMappingTab( wxWindow *parent, bool call_fit, bool set_si
     wxBoxSizer *item0 = new wxBoxSizer( wxVERTICAL );
 
     wxStaticText *itemHint = new wxStaticText( parent, IDC_PATHMAP_HINT, _("When the connected core's files live on a different machine, map a path prefix it reports to where that filesystem is reachable from here (a network share, say) so \"Open\" and \"Show in folder\" work."), wxDefaultPosition, wxDefaultSize, 0 );
-    // An unwrapped wxStaticText reports its whole single line as its best
-    // width, and the sizer turns that into the page's minimum width -- the
-    // dialog comes up as wide as this sentence. So it is wrapped here to
-    // bound that minimum, DPI-scaled rather than a raw pixel count.
-    // PrefsUnifiedDlg then re-flows it to the control's real width and keeps
-    // it current across resizes; it restores this text before each wrap,
-    // since Wrap() can only add line breaks, never remove them.
+    // An unwrapped wxStaticText reports its whole single line as its best width,
+    // and the sizer turns that into the page's minimum width -- the dialog comes
+    // up as wide as this sentence. So it is wrapped here to bound that minimum,
+    // DPI-scaled rather than a raw pixel count. PrefsUnifiedDlg then re-flows it
+    // to the control's real width and keeps it current across resizes; it
+    // restores this text before each wrap, since Wrap() can only add breaks.
     itemHint->Wrap( parent->FromDIP(380) );
     item0->Add( itemHint, wxSizerFlags().Expand().Border(wxBOTTOM, 6) );
 
@@ -2201,9 +2182,8 @@ wxSizer *PreferencesGuiTweaksTab( wxWindow *parent, bool call_fit, bool set_size
     itemLiveSort->SetValue( TRUE );
     item0->Add( itemLiveSort, wxSizerFlags().Expand().CenterVertical() );
     // The "Show country flags for clients" checkbox lives in the dedicated
-    // IP2Country preferences tab (PreferencesIP2CountryTab). The Cfg_Bool
-    // binding stays at IDC_SHOW_COUNTRY_FLAGS so amule.conf
-    // /eMule/GeoIPEnabled stays compatible across versions.
+    // IP2Country preferences tab. The Cfg_Bool binding stays at
+    // IDC_SHOW_COUNTRY_FLAGS so amule.conf /eMule/GeoIPEnabled stays compatible.
     wxStaticBox *item14 = new wxStaticBox( parent, -1, _("Download Queue Files") );
     wxStaticBoxSizer *item13 = new wxStaticBoxSizer( item14, wxVERTICAL );
 
@@ -2335,12 +2315,11 @@ wxSizer *PreferencesRemoteControlsTab( wxWindow *parent, bool call_fit, bool set
     CMuleTextCtrl *item46 = new CMuleTextCtrl( item37, IDC_AMULEAPI_PASSWD, "", wxDefaultPosition, wxDefaultSize, wxTE_PASSWORD );
     item46->SetToolTip( amuleapiPasswordHint );
     item46s->Add( item46, wxSizerFlags(1).Expand().CenterVertical() );
-    // Filled in at runtime by PrefsUnifiedDlg: the stored password is
-    // hashed and can never be shown, so this says whether one exists.
-    // Constructed with the wider of the two strings it can hold, not with
-    // "": the sizer takes its minimum width from the label present at
-    // construction, so an empty one reserves nothing and GTK then clips
-    // whatever SetLabel writes.
+    // Filled in at runtime by PrefsUnifiedDlg: the stored password is hashed and
+    // can never be shown, so this says whether one exists. Constructed with the
+    // wider of the two strings it can hold, not with "": the sizer takes its
+    // minimum width from the label present at construction, so an empty one
+    // reserves nothing and GTK then clips whatever SetLabel writes.
     wxStaticText *item46t = new wxStaticText( item37, IDC_AMULEAPI_PASSWD_STATE, _("A password is set."), wxDefaultPosition, wxDefaultSize, 0 );
     item46s->Add( item46t, wxSizerFlags().CenterVertical().Border(wxLEFT, 5) );
     item42->Add( item46s, wxSizerFlags(1).Expand().CenterVertical() );
@@ -2784,11 +2763,8 @@ wxSizer *KadDlg( wxWindow *parent, bool call_fit, bool set_sizer )
 
     // Graph, full width -- mirrors serverListDlgUp's shape (top row, then a
     // full-width primary area, then a manual-entry row below) rather than
-    // splitting the tab into two side-by-side columns (issue #402 review:
-    // "use more horizontal space for the graph"). item2 keeps the same
-    // wrapping depth around the graph box as the original two-column
-    // layout had (just added straight to item0 now, instead of via the
-    // dropped wxFlexGridSizer's first column).
+    // splitting the tab into two side-by-side columns. item2 keeps the same
+    // wrapping depth around the graph box as the original two-column layout had.
     wxBoxSizer *item2 = new wxBoxSizer( wxVERTICAL );
 
     wxStaticBox *item8 = new wxStaticBox( parent, -1, _("Nodes stats") );
@@ -2799,10 +2775,9 @@ item9->SetName("kadScope");
     wxASSERT( item9 );
     item7->Add( item9, wxSizerFlags(1).Expand() );
 
-    // Three legend entries packed tight at the left. No growable columns:
-    // the row is Expand()ed so Linux has room to draw every label (avoids
-    // clipping "Session average"), but without growable cols the entries
-    // stay next to each other instead of being spread across the width.
+    // Three legend entries packed tight at the left. No growable columns: the row
+    // is Expand()ed so Linux has room to draw every label, but without growable
+    // cols the entries stay next to each other instead of spread across.
     wxFlexGridSizer *item10 = new wxFlexGridSizer( 3, 0, 0 );
 
     wxBoxSizer *item11 = new wxBoxSizer( wxHORIZONTAL );
@@ -2834,10 +2809,8 @@ item9->SetName("kadScope");
     item0->Add( item2, wxSizerFlags(1).Expand() );
 
     // Bootstrap-from-node row, full width below the graph -- mirrors
-    // serverListDlgUp's "Add server manually" row: a single IP field (not
-    // eD2k's ID_NODE_IP1..4 four-octet split -- issue #402 review: "have
-    // the IP address in just one field, it's easier to copy") plus a port
-    // field and the Connect button.
+    // serverListDlgUp's "Add server manually" row: a single IP field, not
+    // eD2k's four-octet split, plus a port field and the Connect button.
     wxBoxSizer *item24 = new wxBoxSizer( wxHORIZONTAL );
 
     wxStaticText *item25 = new wxStaticText( parent, -1, _("Bootstrap from node: IP"), wxDefaultPosition, wxDefaultSize, wxST_NO_AUTORESIZE );

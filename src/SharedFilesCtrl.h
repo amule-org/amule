@@ -332,13 +332,11 @@ private:
 	//! disagree about what the action would do.
 	struct MediaRefreshSelection
 	{
-		// Hashes, not CKnownFile pointers. The confirmation dialog runs a
-		// nested event loop, and in amulegui the EC poll timer keeps running
-		// inside it -- CKnownFilesRem::DeleteItem ends in `delete file` for
-		// anything the daemon stops listing, so a pointer collected before the
-		// dialog can be dangling after it. A hash cannot dangle, and the
-		// refresh call takes one anyway; a file that went away in the meantime
-		// simply fails to resolve.
+		// Hashes, not CKnownFile pointers. The confirmation dialog runs a nested
+		// event loop, and in amulegui the EC poll timer keeps running inside it --
+		// CKnownFilesRem::DeleteItem ends in `delete file` for anything the daemon
+		// stops listing, so a pointer collected before the dialog can dangle after
+		// it. A hash cannot, and a file that went away simply fails to resolve.
 		std::vector<CMD4Hash> eligible;
 		unsigned incomplete = 0; //!< in-progress downloads, nothing complete to read
 		unsigned notMedia = 0;   //!< not audio or video

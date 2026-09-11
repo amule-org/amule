@@ -144,12 +144,10 @@ public:
 
 	// Drop every open tab's rows, keeping the tabs themselves.
 	//
-	// For a reconnect to a RESTARTED daemon: the stored searches come back
-	// under their original ids, so the tabs still correspond to something --
-	// but every result behind them has been freed, and a tab's rows are raw
-	// CSearchFile pointers (a wxDataViewItem IS the pointer). Resetting the
-	// models makes them re-read the now-empty index instead of painting
-	// through pointers the search list just deleted.
+	// For a reconnect to a RESTARTED daemon: the stored searches come back under
+	// their original ids, so the tabs still correspond to something, but every
+	// result behind them has been freed and a tab's rows are raw CSearchFile
+	// pointers. Resetting the models makes them re-read the now-empty index.
 	void ResetResultViews();
 
 	// Multi-search (remote GUI): remap a tab's search ID from the optimistic
@@ -157,48 +155,40 @@ public:
 	void RekeySearch(wxUIntPtr oldID, wxUIntPtr newID);
 
 	// The core rejected something this dialog optimistically opened a tab for:
-	// report the reason and undo the tab. Covers both a search start and a
-	// "View Files" browse, since in amuleGUI both are optimistic and both come
-	// back as EC_OP_FAILED carrying the same EC_TAG_SEARCH_REF (got3nks, PR
-	// #680 review).
+	// report the reason and undo the tab. Covers both a search start and a "View
+	// Files" browse, since in amuleGUI both are optimistic and both come back as
+	// EC_OP_FAILED carrying the same EC_TAG_SEARCH_REF.
 	//
-	// The monolithic build calls it directly from OnBnClickedStart, which has
-	// the error string in hand; amuleGUI reaches it from the EC_OP_FAILED
-	// reply, since CSearchListRem::StartNewSearch returns "" unconditionally
-	// and the rejection only arrives later over EC. Sharing the one path is
-	// what keeps a rejected start looking the same in both builds.
+	// The monolithic build calls it from OnBnClickedStart, which has the error
+	// string in hand; amuleGUI reaches it from the EC_OP_FAILED reply, since
+	// CSearchListRem::StartNewSearch returns "" unconditionally and the rejection
+	// arrives later over EC.
 	//
-	// searchID is the optimistic tab id: amuleGUI has already created that tab
-	// and needs it dropped, the monolithic build never created one and
-	// CloseSearchTab no-ops there. The search-button reset is skipped for a
-	// browse -- the user never pressed Search, so it would wrongly disable
-	// Download/Stop for whichever search tab is visible.
+	// searchID is the optimistic tab id: amuleGUI has already created that tab and
+	// needs it dropped, while CloseSearchTab no-ops in the monolithic build. The
+	// search-button reset is skipped for a browse, where the user never pressed
+	// Search and it would wrongly disable Download/Stop for the visible tab.
 	void OnStartRejected(wxUIntPtr searchID, const wxString &error);
 
-	// The core started a search (MuleNotify::Search_Added). Creates a tab for
-	// it unless this GUI already has one, or unless it is the local user's own
-	// search still inside OnBnClickedStart -- that path creates its own tab,
-	// selected, right after StartNewSearch returns, and would otherwise end up
-	// with two (amule-org/amule#703).
+	// The core started a search (MuleNotify::Search_Added). Creates a tab unless
+	// this GUI already has one, or unless it is the local user's own search still
+	// inside OnBnClickedStart -- that path creates its own tab, selected, right
+	// after StartNewSearch returns, and would otherwise end up with two (#703).
 	void OnSearchAdded(wxUIntPtr searchID, const wxString &name, uint32 kind);
 
-	// This search's results are gone -- close its tab, since a tab left open
-	// on a freed search can only mislead (in amuleGUI "Download" would
-	// silently do nothing, the daemon's m_results no longer having the hash;
-	// in the monolithic build the rows hold raw CSearchFile pointers that
-	// have just been deleted). One entry point for both builds, since it is
-	// one idea (got3nks, PR #680 review):
-	//   - amuleGUI: EC_TAG_SEARCH_EXPIRED, i.e. another client closed the
-	//     search or the daemon's LRU evicted it.
-	//   - monolithic: MuleNotify::Search_Removed, fired by
-	//     CSearchList::RemoveResults whenever a bucket is freed.
-	// Goes through the normal DeletePage path so OnSearchClosing does the
-	// actual cleanup in one place; m_expiringSearchID tells it to skip
-	// StopSearchById, which for both callers would address a search the core
-	// has already discarded. No-op if no tab matches id (e.g. it was never
-	// opened here), or if OnSearchClosing is already on the stack -- which
-	// is what stops the monolithic close path (OnSearchClosing ->
-	// RemoveResults -> Search_Removed -> here) from recursing.
+	// This search's results are gone, so close its tab: one left open on a freed
+	// search can only mislead (in amuleGUI "Download" silently does nothing, the
+	// daemon's m_results no longer having the hash; in the monolithic build the
+	// rows hold raw CSearchFile pointers that have just been deleted). One entry
+	// point for both builds:
+	//   - amuleGUI: EC_TAG_SEARCH_EXPIRED, another client closed the search or the
+	//     daemon's LRU evicted it.
+	//   - monolithic: MuleNotify::Search_Removed from CSearchList::RemoveResults.
+	// Goes through the normal DeletePage path so OnSearchClosing does the cleanup
+	// in one place; m_expiringSearchID tells it to skip StopSearchById, which for
+	// both callers would address a search the core has already discarded. No-op if
+	// no tab matches, or if OnSearchClosing is already on the stack -- which is what
+	// stops the monolithic close path from recursing.
 	void CloseSearchTab(wxUIntPtr searchID);
 
 	// "View Files" (browse): find-or-create the tab for a peer's shared-file
@@ -220,12 +210,10 @@ public:
 	void EnsureBrowseTab(
 		uint32 peerEcid, const wxString &userName, wxUIntPtr searchID, bool reveal = true);
 
-	// "View Files": if a browse tab for this peer's ECID is already open, bring
-	// the Search panel forward, select that tab, and return true. Lets the
-	// request sites skip re-browsing a peer whose listing is still on screen --
-	// which would otherwise fire a redundant request and duplicate the results
-	// in the existing tab. Returns false (and does nothing) for ecid 0 or when
-	// no such tab is open. Shared by monolithic and amuleGUI.
+	// "View Files": if a browse tab for this peer's ECID is open, bring the Search
+	// panel forward, select that tab and return true. Lets request sites skip
+	// re-browsing a peer whose listing is still on screen, which would fire a
+	// redundant request and duplicate the results. False for ecid 0 or no such tab.
 	bool ActivateBrowseTabIfOpen(uint32 peerEcid);
 
 	// Remote GUI: allocate a fresh optimistic placeholder tab ID in the reserved
@@ -270,10 +258,9 @@ public:
 	void UpdateProgress(uint32 new_value);
 
 #ifndef CLIENT_GUI
-	// Monolithic: drive the bottom bar from the visible tab's core search
-	// lifecycle (CSearchList::GetSearchBarStatusById), so the bar follows tab
-	// switches and shows the right search's progress — the local-core analogue
-	// of the remote GUI's per-search EC progress cache.
+	// Monolithic: drive the bottom bar from the visible tab's core search lifecycle
+	// so the bar follows tab switches -- the local-core analogue of the remote
+	// GUI's per-search EC progress cache.
 	void RefreshVisibleTabProgress();
 #endif
 
@@ -291,10 +278,8 @@ private:
 	// Event handlers
 	void OnFieldChanged(wxEvent &evt);
 
-	// Search *query* history: past search terms (not their results -- see
-	// #641 for that separate, not-yet-implemented follow-up) persisted to
-	// a dedicated searchhistory.dat and shown in the IDC_SEARCHNAME combo
-	// box's dropdown.
+	// Search QUERY history: past search terms, not their results, persisted to a
+	// dedicated searchhistory.dat and shown in the IDC_SEARCHNAME combo dropdown.
 	void LoadSearchHistory();
 	void RecordSearchHistory(const wxString &term);
 	void ClearSearchHistory();
@@ -304,13 +289,11 @@ private:
 	void OnSearchNameContextMenu(wxContextMenuEvent &evt);
 
 public:
-	// Brings the whole search-history UI in line with the "Remember search
-	// history" preference: with it off the Name field is a plain wxTextCtrl
-	// (no dropdown), the Clear button is hidden and no stored terms are
-	// loaded. searchhistory.dat is deliberately left on disk, so re-enabling
-	// the preference restores the previous history rather than starting over.
-	// Called at construction and live from PrefsUnifiedDlg::OnOk when the
-	// checkbox changes, so no restart is needed (issue #697).
+	// Brings the search-history UI in line with the "Remember search history"
+	// preference: with it off the Name field is a plain wxTextCtrl, the Clear button
+	// is hidden and no stored terms are loaded. searchhistory.dat is deliberately
+	// left on disk, so re-enabling restores the previous history. Called at
+	// construction and live from PrefsUnifiedDlg::OnOk, so no restart is needed.
 	void ApplySearchHistoryPref();
 	//! Show or hide the rule above the filter row, tracking the row itself.
 	void ApplyFilterSeparator(bool shown);
@@ -321,17 +304,16 @@ private:
 	// control now in place. A no-op when the right type is already there.
 	wxTextEntry *RebuildSearchNameField(bool wantHistory);
 
-	// Whether the combo currently in the Name slot has had the context-menu
-	// handler attached. The handler is bound per instance, and the combo built
-	// by muuli_wdr is one this class never created, so binding cannot be left
-	// to the creation path alone -- that is what made the "Clear search
-	// history" item missing until the preference was toggled.
+	// Whether the combo currently in the Name slot has had the context-menu handler
+	// attached. The handler is bound per instance and the combo built by muuli_wdr
+	// is one this class never created, so binding cannot be left to the creation
+	// path alone -- which is what made "Clear search history" missing until the
+	// preference was toggled.
 	bool m_searchNameCtxBound = false;
 
-	// Clear-history button, inserted into the action row after "Reset Fields"
-	// at construction, together with the divider that precedes it. Both are
-	// held rather than looked up by id so the pref-driven show/hide stays
-	// cheap and cannot silently miss one of them.
+	// Clear-history button, inserted into the action row after "Reset Fields" at
+	// construction together with the divider before it. Both are held rather than
+	// looked up by id, so the pref-driven show/hide cannot silently miss one.
 	wxButton *m_clearHistoryBtn = nullptr;
 	wxStaticLine *m_clearHistorySep = nullptr;
 	void OnBnClickedClearHistory(wxCommandEvent &evt);
@@ -376,25 +358,22 @@ private:
 	std::map<wxUIntPtr, uint32> m_searchProgress;
 
 	// Set by CloseSearchTab immediately before DeletePage(), which fires
-	// PAGE_CLOSING synchronously and re-enters OnSearchClosing on the same
-	// call stack. Tells that handler to skip StopSearchById for this one
-	// id -- the core has already discarded it -- while still running its
-	// other cleanup (ShowResults, m_searchProgress.erase, RemoveResults,
-	// last-tab button disabling), so that cleanup exists in exactly one
-	// place (got3nks, PR #680 review). 0 the rest of the time.
+	// PAGE_CLOSING synchronously and re-enters OnSearchClosing on the same stack.
+	// Tells that handler to skip StopSearchById for this one id -- the core has
+	// already discarded it -- while still running its other cleanup, so that
+	// cleanup lives in exactly one place. 0 the rest of the time.
 	wxUIntPtr m_expiringSearchID;
 
 	// True while OnBnClickedStart is inside StartNewSearch. That call fires
-	// MuleNotify::Search_Added before it returns, and this dialog creates the
-	// tab for its own search only afterwards -- so without this the local
-	// user's every search would get two tabs (amule-org/amule#703).
+	// MuleNotify::Search_Added before it returns and this dialog creates the tab for
+	// its own search only afterwards, so without this every local search would get
+	// two tabs (#703).
 	bool m_startingLocalSearch;
 
-	// True while OnSearchClosing is on the stack. In the monolithic build
-	// that handler calls CSearchList::RemoveResults, which now fires
-	// MuleNotify::Search_Removed -> CloseSearchTab for the very tab being
-	// closed; without this the pair would recurse (and double-delete the
-	// page). Set/cleared by a scoped guard in OnSearchClosing.
+	// True while OnSearchClosing is on the stack. In the monolithic build that
+	// handler calls CSearchList::RemoveResults, which fires Search_Removed ->
+	// CloseSearchTab for the very tab being closed; without this the pair would
+	// recurse and double-delete the page.
 	bool m_inSearchClosing;
 
 	// Set the bottom progress bar from a per-search status sentinel: a finished
@@ -405,11 +384,10 @@ private:
 	// When found and outPage is non-null, outPage receives the tab's page index.
 	CSearchListCtrl *GetBrowseList(uint32 ecid, int *outPage = nullptr);
 
-	// Monotonic counter behind search/browse tab IDs. On the remote GUI both a
-	// new search and a browse draw their optimistic placeholder from it via
-	// AllocateOptimisticId, so their placeholders never collide before the daemon
-	// rekeys them; the monolithic build reuses the same counter directly for its
-	// (non-remapped) search IDs.
+	// Monotonic counter behind search/browse tab IDs. On the remote GUI both a new
+	// search and a browse draw their optimistic placeholder from it via
+	// AllocateOptimisticId, so the placeholders cannot collide before the daemon
+	// rekeys them; the monolithic build uses the counter directly.
 	static uint32 s_optimisticIdCounter;
 
 	uint64 m_last_search_time;
@@ -434,13 +412,12 @@ private:
 	 */
 	std::set<CSearchListCtrl *> m_pendingHitCount;
 
-	// Kad searches whose "More" budget is spent, by searchID. The daemon
-	// reports this once per press and it never un-spends, so it is remembered
-	// here rather than re-asked: the button's enabled state is recomputed on
-	// every tab switch and progress tick, and without this a switch away and
-	// back would silently re-enable a control that can no longer do anything.
-	// Entries die with the tab (see the erase in the close path); re-running a
-	// search yields a new searchID and so starts clean.
+	// Kad searches whose "More" budget is spent, by searchID. The daemon reports
+	// this once per press and it never un-spends, so it is remembered rather than
+	// re-asked: the button's enabled state is recomputed on every tab switch and
+	// progress tick, and without this a switch away and back would re-enable a
+	// control that can no longer do anything. Entries die with the tab, and
+	// re-running a search yields a new searchID.
 	std::set<uint32_t> m_moreExhausted;
 
 	// Whether the "More" button should be live for this search: Kad-only, and

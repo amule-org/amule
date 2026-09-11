@@ -83,9 +83,8 @@ void CServerSocket::OnConnect(int nErrorCode)
 		if (cur_server->HasDynIP()) {
 			uint32 server_ip = GetPeerInt();
 			cur_server->SetID(server_ip);
-			// GetServerByAddress may return NULL, so we must test!
-			// This was the reason why amule would crash when trying to
-			// connect in wxWidgets 2.5.2
+			// GetServerByAddress may return NULL, so it must be tested: this was
+			// the reason aMule crashed when connecting under wxWidgets 2.5.2.
 			CServer *pServer = theApp->serverlist->GetServerByAddress(
 				cur_server->GetAddress(), cur_server->GetPort());
 			if (pServer) {
@@ -99,11 +98,10 @@ void CServerSocket::OnConnect(int nErrorCode)
 		SetConnectionState(CS_WAITFORLOGIN);
 		break;
 
-	// Only what the server itself answered counts against it, because
-	// CS_SERVERDEAD is what raises its failed count -- and a server whose
-	// count passes the "remove dead servers" threshold is deleted from the
-	// list for good. It refused the connection, or it accepted the SYN and
-	// then said nothing: either is evidence about that server.
+	// Only what the server itself answered counts against it, because CS_SERVERDEAD
+	// raises its failed count and a server past the "remove dead servers" threshold
+	// is deleted for good. A refused connection, or a SYN accepted in silence, is
+	// evidence about that server.
 	case boost::system::errc::connection_refused:
 	case boost::system::errc::timed_out:
 		m_bIsDeleting = true;
@@ -111,32 +109,25 @@ void CServerSocket::OnConnect(int nErrorCode)
 		serverconnect->DestroySocket(this);
 		return;
 
-	// Not counted against the server, but the sweep still carries on to the
-	// next candidate -- which is what separates these from the CS_FATALERROR
-	// default below.
+	// Not counted against the server, but the sweep carries on to the next
+	// candidate -- which is what separates these from the CS_FATALERROR default
+	// below.
 	//
-	// host_unreachable is the one that matters and the one that is ambiguous:
-	// a router can report it by ICMP for a remote host that genuinely no
-	// longer routes, so it is not purely a fault at our end. It is classified
-	// here anyway because of how it fails when it is ours: with the link down
-	// every server in the list answers that way within milliseconds, so the
-	// whole list used to accrue failures and then be deleted the moment
-	// connectivity returned -- RemoveDeadServers() only runs after a
-	// connection succeeds. A server that has genuinely stopped routing is
-	// still counted by the UDP status pings, which run while connected to
-	// some other server and have their own AddFailedCount(); it is no longer
-	// counted here, and the cost of the wrong call the other way is the list.
+	// host_unreachable is the ambiguous one: a router can report it by ICMP for a
+	// remote host that genuinely no longer routes. It is classified here anyway
+	// because of how it fails when the fault is ours: with the link down every
+	// server answers that way within milliseconds, so the whole list accrued
+	// failures and was deleted the moment connectivity returned --
+	// RemoveDeadServers() only runs after a connection succeeds. A server that has
+	// really stopped routing is still counted by the UDP status pings, which have
+	// their own AddFailedCount().
 	//
-	// The rest are unambiguous local socket faults -- an address in use or not
-	// available, a bad address, an invalid argument -- and were never about
-	// the server at all.
+	// The rest are unambiguous local socket faults and were never about the server.
 	//
-	// Deliberately not CS_FATALERROR: that one calls StopConnectionTry() and
-	// waits CS_RETRYCONNECTTIME before trying anything else, which is right
-	// when the whole network is gone (errc::network_unreachable and friends
-	// still land there, via default) but wrong for one unreachable host --
-	// a single stale entry would otherwise stall the sweep for 30 seconds
-	// instead of aMule moving on to the next server.
+	// Deliberately not CS_FATALERROR: that calls StopConnectionTry() and waits
+	// CS_RETRYCONNECTTIME, which is right when the whole network is gone
+	// (network_unreachable and friends still land there via default) but wrong for
+	// one unreachable host, where a stale entry would stall the sweep for 30 s.
 	case boost::system::errc::address_in_use:
 	case boost::system::errc::address_not_available:
 	case boost::system::errc::bad_address:
@@ -352,15 +343,13 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 						thePrefs::SetSmartIdState(state);
 					}
 				}
-				// The server explicitly assigned no client ID -- it
-				// gave up on its HighID-callback verification before
-				// we could complete it.  Pre-fix this silently broke
-				// out of OP_IDCHANGE without ever calling
-				// SetConnectionState(CS_CONNECTED), leaving the socket
-				// in limbo until the 15 s client-side timeout fired
-				// (#778).  Disconnect explicitly so the failure is
-				// surfaced as a clear log line and the next retry
-				// starts immediately instead of after the silent wait.
+				// The server explicitly assigned no client ID: it gave up on
+				// its HighID-callback verification before we could complete it.
+				// This used to break out of OP_IDCHANGE without ever calling
+				// SetConnectionState(CS_CONNECTED), leaving the socket in limbo
+				// until the 15 s client-side timeout fired (#778). Disconnect
+				// explicitly so the failure is logged and the next retry starts
+				// immediately.
 				AddLogLineC(
 					CFormat(_("Server %s (%s) rejected our login (no client ID "
 						  "assigned). Disconnecting.")) %
@@ -496,21 +485,14 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 
 				uint32 nTags = data.ReadUInt32();
 				for (uint32 i = 0; i < nTags; i++) {
-					// Force Unicode=true rather than relying on the
-					// server's SRV_TCPFLG_UNICODE bit: many
-					// real-world servers ship UTF-8 strings (emoji
-					// in names, non-ASCII descriptions) without
-					// advertising the capability flag, and parsing
-					// those bytes as non-Unicode mangles them.
-					// Matches the hardcoded Unicode=true already
-					// used for search-result parsing at the top
-					// of this file. The .met-file parse path
-					// (Server.cpp::AddTagFromFile) also uses
-					// hardcoded Unicode=true, so this aligns the
-					// runtime update with the load-time read and
-					// stops the "name correct on first display,
-					// garbled a few seconds later" regression.
-					// (#831)
+					// Force Unicode=true rather than relying on the server's
+					// SRV_TCPFLG_UNICODE bit: many real-world servers ship
+					// UTF-8 strings without advertising the capability, and
+					// parsing those bytes as non-Unicode mangles them. Matches
+					// the hardcoded Unicode=true used for search-result parsing
+					// and by the .met-file parse path, which is what stops the
+					// "name correct on first display, garbled a few seconds
+					// later" regression (#831).
 					CTag tag(data, true);
 					if (tag.GetNameID() == ST_SERVERNAME) {
 						update->SetListName(tag.GetStr());
@@ -528,11 +510,9 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 		case OP_SERVERLIST: {
 			AddDebugLogLineN(logServer, "Server: OP_SERVERLIST");
 
-			// Stack-allocated wrapper so a CEOFException out of any
-			// of the ReadUInt* calls below (empty or truncated
-			// payload from a malicious server) doesn't leak it on
-			// the way out to the function-level catch block at the
-			// end of ProcessPacket (#885).
+			// Stack-allocated wrapper so a CEOFException out of any of the
+			// ReadUInt* calls below (an empty or truncated payload from a
+			// malicious server) cannot leak it on the way out (#885).
 			CMemFile servers(packet, size);
 			uint8 count = servers.ReadUInt8();
 			if (((int32)(count * 6 + 1) > size)) {
@@ -760,10 +740,9 @@ void CServerSocket::OnHostnameResolved(uint32 ip)
 {
 
 	// ConnectToServer() calls straight in here with the address it already had
-	// whenever no lookup was needed, which is most of server.met -- and that
-	// path succeeds just as well with the link down. Only a resolver that
-	// actually answered is evidence about DNS, so record what got us here
-	// before the flag is cleared.
+	// whenever no lookup was needed, which is most of server.met, and that path
+	// succeeds just as well with the link down. Only a resolver that actually
+	// answered is evidence about DNS, so record what got us here.
 	const bool didLookup = m_IsSolving;
 	m_IsSolving = false;
 	if (ip) {
@@ -814,16 +793,14 @@ void CServerSocket::OnHostnameResolved(uint32 ip)
 		// resolve is not a socket error, and the two want opposite answers.
 		//
 		// An unresolvable hostname is the commonest way an eD2k server actually
-		// dies, so this is the main thing "remove dead servers" prunes on, and
-		// it has to keep working. But with the link down nothing resolves, and
-		// counting that against every server in turn is what emptied the list
-		// (issue #887). Blame it only once DNS has answered for something else
-		// this sweep -- then the failure is about this server, not about us.
+		// dies, so it is the main thing "remove dead servers" prunes on. But with
+		// the link down nothing resolves, and counting that against every server in
+		// turn is what emptied the list (issue #887). Blame it only once DNS has
+		// answered for something else this sweep.
 		//
-		// The first server in a sweep therefore cannot be blamed, since nothing
-		// has resolved yet; a genuinely dead entry is caught on a later sweep
-		// instead. Erring that way costs a delay, while erring the other way
-		// costs the server list.
+		// The first server in a sweep therefore cannot be blamed; a genuinely dead
+		// entry is caught on a later one. Erring that way costs a delay, while
+		// erring the other way costs the server list.
 		m_bIsDeleting = true;
 		SetConnectionState(serverconnect->HostnameResolvedThisSweep() ? CS_SERVERDEAD : CS_ERROR);
 		serverconnect->DestroySocket(this);

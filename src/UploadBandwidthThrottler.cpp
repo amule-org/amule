@@ -183,7 +183,6 @@ void UploadBandwidthThrottler::QueueForSendingControlPacket(ThrottledControlSock
 {
 	bool wasEmpty = false;
 	{
-		// Get critical section
 		wxMutexLocker lock(m_tempQueueLocker);
 
 		if (m_doRun) {
@@ -196,24 +195,17 @@ void UploadBandwidthThrottler::QueueForSendingControlPacket(ThrottledControlSock
 		}
 	}
 
-	// Wake the throttler when the temp control queue transitions from
-	// empty to non-empty.  Without this signal the throttler's adaptive
-	// backoff (extraSleepTime *= 5 per idle tick, capped at 1 sec) lets
-	// the thread doze through newly-queued packets, adding 5–25 ms of
-	// latency to every freshly-built OP_REQUESTPARTS — which directly
-	// caps per-peer download throughput on Windows where peer ramp is
-	// already sensitive to ACK clock jitter.
+	// Wake the throttler when the temp control queue goes from empty to non-empty.
+	// Without the signal its adaptive backoff (extraSleepTime *= 5 per idle tick,
+	// capped at 1 s) lets the thread doze through newly-queued packets, adding
+	// 5-25 ms of latency to every freshly-built OP_REQUESTPARTS -- which directly
+	// caps per-peer download throughput on Windows, where peer ramp is already
+	// sensitive to ACK clock jitter.
 	//
-	// Gating on the empty→non-empty transition (rather than signaling
-	// on every queue add) matches the CBatchDrainNotifier pattern: one
-	// wake per drain cycle, not per producer add.  Bursty enqueues
-	// from the same SendBlockRequests fan-out coalesce into a single
-	// signal.
-	//
-	// The disk I/O thread already wakes the throttler the same way
-	// via NewUploadDataAvailable() when fresh file-data lands on a
-	// socket; this closes the equivalent gap for the control-packet
-	// path.
+	// Gating on that transition rather than on every queue add matches the
+	// CBatchDrainNotifier pattern: one wake per drain cycle, so bursty enqueues
+	// from one SendBlockRequests fan-out coalesce into a single signal. The disk I/O
+	// thread already wakes the throttler the same way for file data.
 	if (wasEmpty) {
 		wxMutexLocker lock(m_newDataMutex);
 		m_newDataCondition.Signal();
@@ -230,7 +222,6 @@ void UploadBandwidthThrottler::QueueForSendingControlPacket(ThrottledControlSock
 void UploadBandwidthThrottler::DoRemoveFromAllQueues(ThrottledControlSocket *socket)
 {
 	if (m_doRun) {
-		// Remove this socket from control packet queue
 		EraseValue(m_ControlQueue_list, socket);
 		EraseValue(m_ControlQueueFirst_list, socket);
 
@@ -254,7 +245,6 @@ void UploadBandwidthThrottler::RemoveFromAllQueues(ThrottledFileSocket *socket)
 	if (m_doRun) {
 		DoRemoveFromAllQueues(socket);
 
-		// And remove it from upload slots
 		RemoveFromStandardListNoLock(socket);
 	}
 }
@@ -303,7 +293,6 @@ void *UploadBandwidthThrottler::Entry()
 	while (m_doRun && !TestDestroy()) {
 		uint64 timeSinceLastLoop = GetTickCount64() - lastLoopTick;
 
-		// Calculate data rate
 		if (thePrefs::GetMaxUpload() == UNLIMITED) {
 			// MaxUpload=0 means literal unlimited — bypass the per-iteration rate cap
 			// so SendFileAndControlData() is never throttled.
@@ -334,9 +323,8 @@ void *UploadBandwidthThrottler::Entry()
 		}
 
 		if (timeSinceLastLoop < sleepTime) {
-			// eMule ref: UploadBandwidthThrottler.cpp:580 — WaitForSingleObject replaced with
-			// wxCondition::WaitTimeout Wakes early if disk I/O thread signals
-			// NewUploadDataAvailable()
+			// wxCondition::WaitTimeout in place of eMule's WaitForSingleObject.
+			// Wakes early if the disk I/O thread signals NewUploadDataAvailable().
 			wxMutexLocker lock(m_newDataMutex);
 			m_newDataCondition.WaitTimeout(sleepTime - timeSinceLastLoop);
 		}
@@ -359,11 +347,10 @@ void *UploadBandwidthThrottler::Entry()
 			timeSinceLastLoop = sleepTime + 2000;
 		}
 
-		// Calculate how many bytes we can spend
-		// In UNLIMITED mode, allowedDataRate = UINT_MAX (~4 GB/s) would overflow the
-		// sint32 bytesToSpend accumulator when multiplied by timeSinceLastLoop.
-		// Cap the budget rate at 1 GB/s — still far above any real uplink, and every
-		// real socket send() will short-circuit far below this ceiling.
+		// Calculate how many bytes we can spend. In UNLIMITED mode allowedDataRate is
+		// UINT_MAX (~4 GB/s), which would overflow the sint32 bytesToSpend accumulator
+		// once multiplied by timeSinceLastLoop, so the budget rate is capped at
+		// 1 GB/s -- still far above any real uplink.
 		const uint32 bytesToSpendRate =
 			(allowedDataRate == UNLIMITED_RATE) ? (1024u * 1024u * 1024u) : allowedDataRate;
 		bytesToSpend += (sint32)(bytesToSpendRate / 1000.0 * timeSinceLastLoop);

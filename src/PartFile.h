@@ -139,11 +139,9 @@ public:
 	void ClearMetDirty() { m_metDirty = false; }
 	bool IsMetDirty() const { return m_metDirty; }
 
-	// Soft-dirty bit for upload-stat counters (AllTimeRequests,
-	// AllTimeAccepts, AllTimeTransferred).  Flipped by CFileStatistic's
-	// AddRequest / AddAccepted / AddTransferred so a popular sharer does
-	// not re-dirty the partfile on every served chunk.  See m_statsDirty
-	// in the private section.
+	// Soft-dirty bit for upload-stat counters (AllTimeRequests, AllTimeAccepts,
+	// AllTimeTransferred), flipped by CFileStatistic so a popular sharer does not
+	// re-dirty the partfile on every served chunk. See m_statsDirty.
 	void MarkStatsDirty() { m_statsDirty = true; }
 	void ClearStatsDirty() { m_statsDirty = false; }
 	bool IsStatsDirty() const { return m_statsDirty; }
@@ -233,9 +231,9 @@ public:
 	bool HasPendingHashWork() const;
 
 	// Called from CamuleApp's wxEVT_PARTFILE_HASH_RESULT handler when
-	// CPartFileHashThread reports a HashSinglePart result for this
-	// file. Runs the original Phase 3 success/failure logic (AICH
-	// recovery on bad part, SafeAddKFile on good complete part).
+	// CPartFileHashThread reports a HashSinglePart result for this file. Runs the
+	// Phase 3 success/failure logic: AICH recovery on a bad part, SafeAddKFile on a
+	// good complete one.
 	void OnAsyncHashComplete(uint16 partNumber, bool ok, bool fromAICHRecoveryDataAvailable);
 
 	// Barry - Added to prevent list containing deleted blocks on shutdown
@@ -278,9 +276,9 @@ public:
 	void SetDownPriority(uint8 newDownPriority, bool bSave = true, bool bRefresh = true);
 	bool IsAutoDownPriority() const { return m_bAutoDownPriority; }
 	// EC exports the priority with the auto flag folded in via
-	// EC_TAG_PARTFILE_PRIO; mark the change so amulegui/amuleweb see
-	// it without waiting for the next Process() tick (and at all when
-	// the file is paused/stopped — Process() doesn't run then).
+	// EC_TAG_PARTFILE_PRIO; mark the change so remote clients see it without waiting
+	// for the next Process() tick -- and at all when the file is paused or stopped,
+	// where Process() does not run.
 	void SetAutoDownPriority(bool flag)
 	{
 		if (m_bAutoDownPriority != flag) {
@@ -467,55 +465,43 @@ private:
 	// to the STATS_HEARTBEAT_MS cadence (see FlushBuffer).
 	uint64 m_lastMetSaveTick = 0;
 
-	// Soft-dirty bit for upload-stat counters that increment every time
-	// a peer requests / accepts / transfers a chunk
-	// (CFileStatistic::AddRequest / AddAccepted / AddTransferred).
-	// Promoted to a save only on the STATS_HEARTBEAT_MS cadence so a
-	// popular sharer does not write its .met on every served chunk -- a
-	// pure seeder with active uploads would otherwise re-dirty every
-	// partfile on every block served.  Cleared on a successful save.
+	// Soft-dirty bit for upload-stat counters that increment every time a peer
+	// requests, accepts or transfers a chunk. Promoted to a save only on the
+	// STATS_HEARTBEAT_MS cadence, since a pure seeder with active uploads would
+	// otherwise re-dirty every partfile on every block served. Cleared on a
+	// successful save.
 	bool m_statsDirty = false;
 
-	// True when in-memory partfile state has diverged from the on-disk
-	// .part.met since the last successful save.  Gates the periodic
-	// FlushBuffer-driven SavePartFile so idle/seeding partfiles do not
-	// rewrite their .met every 60 s with byte-identical content.
+	// True when in-memory partfile state has diverged from the on-disk .part.met
+	// since the last successful save. Gates the periodic FlushBuffer-driven
+	// SavePartFile, so idle partfiles do not rewrite their .met every 60 s with
+	// byte-identical content.
 	//
-	// Set by MarkMetDirty() at every mutation of a field that ends up
-	// in the .met (gap list, status, priorities, category, AICH state,
-	// corrupted list, lastseencomplete, filename).  Cleared by a
-	// successful SavePartFile().  Stat counters (transferred,
-	// AllTimeRequests, etc.) and download active time deliberately do
-	// NOT mark dirty -- they persist on the next hard-state change or
-	// at shutdown via the destructor's explicit save, and a session's
-	// counters surviving across a crash is best-effort by design.
+	// Set by MarkMetDirty() at every mutation of a field that ends up in the .met
+	// (gap list, status, priorities, category, AICH state, corrupted list,
+	// lastseencomplete, filename), and cleared by a successful SavePartFile().
+	// Stat counters and download active time deliberately do NOT mark dirty: they
+	// persist on the next hard-state change or at shutdown, and a session's
+	// counters surviving a crash is best-effort by design.
 	//
-	// Initialised false: the load path constructs CPartFile in a state
-	// matching the just-read .met, so nothing to flush.  LoadPartFile
-	// explicitly ClearMetDirty()s before each successful return to
-	// undo any MarkMetDirty()s incidentally produced by setters during
-	// tag parsing.  New-download path calls SavePartFile(true) which
-	// writes the initial .met and clears the flag.
+	// Initialised false, the load path constructing CPartFile in a state matching
+	// the just-read .met. LoadPartFile explicitly ClearMetDirty()s before each
+	// successful return, to undo MarkMetDirty()s produced incidentally by setters
+	// during tag parsing.
 	bool m_metDirty = false;
 
-	// Count of HashJobs in flight on CPartFileHashThread targeting
-	// this file. Incremented before enqueue, decremented by the worker
-	// after HashSinglePart and event-post complete. ~CPartFile waits
-	// for this to reach 0 so the worker is never reading m_hpartfile
-	// while the destructor is closing it.
+	// Count of HashJobs in flight on CPartFileHashThread for this file.
+	// Incremented before enqueue, decremented by the worker after HashSinglePart
+	// and the event post complete. ~CPartFile waits for it to reach 0, so the
+	// worker is never reading m_hpartfile while the destructor closes it.
 	std::atomic<int32> m_pendingHashes{ 0 };
 
-	// Serialises access to m_hpartfile across the main thread,
-	// CPartFileWriteThread and CPartFileHashThread. With ENABLE_MMAP=OFF
-	// (the default), CFileAutoClose::ReadAt / WriteAt both implement
-	// positional I/O as Seek+Read / Seek+Write on the same OS fd, so
-	// concurrent hash reads and disk writes would race on the fd's
-	// file position and corrupt one or the other. Held by:
-	//   * CPartFileWriteThread::Entry around pBuffer->area.FlushAt(...)
-	//   * CPartFileHashThread::Entry around HashSinglePart(...)
-	//   * ~CPartFile's sync-hash drain around HashSinglePart(...)
-	//   * FlushBuffer Phase 2's PB_READY synchronous fallback around
-	//     item->area.FlushAt(...)
+	// Serialises access to m_hpartfile across the main thread, CPartFileWriteThread
+	// and CPartFileHashThread. With ENABLE_MMAP=OFF (the default),
+	// CFileAutoClose::ReadAt / WriteAt are Seek+Read / Seek+Write on the same OS fd,
+	// so concurrent hash reads and disk writes would race on the file position.
+	// Held by CPartFileWriteThread::Entry, CPartFileHashThread::Entry, ~CPartFile's
+	// sync-hash drain, and FlushBuffer Phase 2's PB_READY synchronous fallback.
 	std::mutex m_hpartfileMutex;
 
 	/**

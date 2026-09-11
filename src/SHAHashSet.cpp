@@ -105,7 +105,6 @@ CAICHHashTree *CAICHHashTree::FindHash(uint64 nStartPos, uint64 nSize, uint8 *nL
 	wxCHECK(nSize <= m_nDataSize, NULL);
 
 	if (nStartPos == 0 && nSize == m_nDataSize) {
-		// this is the searched hash
 		return this;
 	} else if (m_nDataSize <= m_nBaseSize) { // sanity
 		// this is already the last level, can't go deeper
@@ -262,7 +261,6 @@ void CAICHHashTree::SetBlockHash(uint64 nSize, uint64 nStartPos, CAICHHashAlgo *
 		return;
 	}
 
-	// sanity
 	if (pToInsert->m_nBaseSize != EMBLOCKSIZE || pToInsert->m_nDataSize != nSize) {
 		wxFAIL;
 		AddDebugLogLineN(
@@ -414,7 +412,6 @@ bool CAICHHashTree::SetHash(CFileDataIO *fileInput, uint32 wHashIdent, sint8 nLe
 		}
 	}
 	if (nLevel == 0) {
-		// this is the searched hash
 		if (m_bHashValid && !bAllowOverwrite) {
 			// not allowed to overwrite this hash, however move the filepointer as if we read a
 			// hash
@@ -596,23 +593,14 @@ bool CAICHHashSet::ReadRecoveryData(uint64 nPartStartPos, CMemFile *fileDataIn)
 		if (fileDataIn->GetLength() - fileDataIn->GetPosition() < nHashsToRead * (HASHSIZE + 4u) ||
 			(nHashsToRead != nHashsAvailable && nHashsAvailable != 0)) {
 			// this check is redundant, CSafememfile would catch such an error too
-			// TODO:			theApp->QueueDebugLogLine(/*DLP_VERYHIGH,*/ false,
-			// _T("Failed to read RecoveryData for %s - Received datasize/amounts of hashs was
-			// invalid (2)"), m_pOwner->GetFileName() );
 			return false;
 		}
 
-		// TODO: DEBUG_ONLY( theApp->QueueDebugLogLine(/*DLP_VERYHIGH,*/ false, _T("read RecoveryData
-		// for %s - Received packet with  %u 32bit hash identifiers)"), m_pOwner->GetFileName(),
-		// nHashsAvailable ) );
 		for (uint32 i = 0; i != nHashsToRead; i++) {
 			uint32 wHashIdent = fileDataIn->ReadUInt32();
 			if (wHashIdent == 1 /*never allow masterhash to be overwritten*/
 				|| wHashIdent > 0x400000 ||
 				!m_pHashTree.SetHash(fileDataIn, wHashIdent, (-1), false)) {
-				// TODO:		theApp->QueueDebugLogLine(/*DLP_VERYHIGH,*/ false,
-				// _T("Failed to read RecoveryData for %s - Error when trying to read hash
-				// into tree (2)"), m_pOwner->GetFileName() );
 				VerifyHashTree(true); // remove invalid hashes which we have already written
 				return false;
 			}
@@ -620,8 +608,6 @@ bool CAICHHashSet::ReadRecoveryData(uint64 nPartStartPos, CMemFile *fileDataIn)
 	}
 
 	if (nHashsAvailable == 0) {
-		// TODO:		theApp->QueueDebugLogLine(/*DLP_VERYHIGH,*/ false, _T("Failed to read
-		// RecoveryData for %s - Packet didn't contained any hashs"), m_pOwner->GetFileName() );
 		return false;
 	}
 
@@ -638,7 +624,6 @@ bool CAICHHashSet::ReadRecoveryData(uint64 nPartStartPos, CMemFile *fileDataIn)
 				return false;
 			}
 		}
-		// all done
 		return true;
 	} else {
 		AddDebugLogLineN(logSHAHashSet,
@@ -658,9 +643,9 @@ void CAICHHashSet::InvalidateRootHashCache()
 
 void CAICHHashSet::LoadRootHashCacheLocked()
 {
-	// Walk known2.met once, collecting every root hash. Replaces the
-	// per-call in-file linear scan that turned bulk-hashing N files into
-	// O(N^2) on-disk work (issue #579).
+	// Walk known2.met once, collecting every root hash. Replaces the per-call
+	// in-file linear scan that turned bulk-hashing N files into O(N^2) on-disk work
+	// (issue #579).
 	s_rootHashCache.clear();
 	s_rootHashCacheLoaded = true; // marked early so a partial read still ends the loop
 
@@ -689,9 +674,8 @@ void CAICHHashSet::LoadRootHashCacheLocked()
 			return;
 		}
 		while (file.GetPosition() < nFileSize) {
-			// Remember the byte offset of the root-hash position so
-			// LoadHashSet can seek straight here later instead of
-			// rewalking the file.
+			// Remember the byte offset of the root-hash position, so LoadHashSet
+			// can seek straight here instead of rewalking the file.
 			const uint64 entryOffset = file.GetPosition();
 			CAICHHash rootHash;
 			rootHash.Read(&file);
@@ -737,9 +721,8 @@ bool CAICHHashSet::SaveHashSet()
 		return true;
 	}
 
-	// Byte offset at which the new entry's root hash will be appended.
-	// Captured inside the try block and used after it to update the
-	// cache once the write has succeeded.
+	// Byte offset at which the new entry's root hash will be appended; used after
+	// the try block to update the cache once the write has succeeded.
 	uint64 newEntryOffset = 0;
 
 	try {
@@ -769,12 +752,10 @@ bool CAICHHashSet::SaveHashSet()
 			nExistingSize += 1;
 		}
 
-		// This is the byte offset at which the new entry's root hash
-		// will land — capture it for the cache so LoadHashSet can
-		// seek straight here later.
+		// Where the new entry's root hash will land -- captured for the cache so
+		// LoadHashSet can seek straight to it later.
 		newEntryOffset = nExistingSize;
 
-		// write hashset
 		m_pHashTree.m_Hash.Write(&file);
 		uint32 nHashCount = (PARTSIZE / EMBLOCKSIZE + ((PARTSIZE % EMBLOCKSIZE != 0) ? 1 : 0)) *
 				    (m_pHashTree.m_nDataSize / PARTSIZE);
@@ -805,9 +786,8 @@ bool CAICHHashSet::SaveHashSet()
 		return false;
 	}
 
-	// Append succeeded — record offset in the cache so the next
-	// SaveHashSet for this root hash dedups in O(1), and LoadHashSet
-	// can seek straight to it.
+	// Append succeeded, so record the offset: the next SaveHashSet for this root
+	// hash dedups in O(1), and LoadHashSet can seek straight to it.
 	s_rootHashCache.emplace(m_pHashTree.m_Hash, newEntryOffset);
 	return true;
 }
@@ -824,12 +804,10 @@ bool CAICHHashSet::LoadHashSet()
 		return false;
 	}
 
-	// O(1) cache lookup: ask the offset index where this root hash
-	// lives in known2.met. The cache was the dedup-on-write index
-	// before; here we reuse it to skip the linear scan that used to
-	// happen on every incoming OP_AICHREQUEST (issue #166). If the
-	// cache miss-and-cold-load path is taken we still pay the one-shot
-	// walk, but only once across all subsequent calls.
+	// O(1) cache lookup: the offset index says where this root hash lives in
+	// known2.met. It was the dedup-on-write index; reusing it here skips the linear
+	// scan that used to happen on every incoming OP_AICHREQUEST (issue #166). A
+	// cold load still pays the one-shot walk, but only once.
 	uint64 cachedOffset = 0;
 	bool haveCachedOffset = false;
 	{
@@ -867,12 +845,10 @@ bool CAICHHashSet::LoadHashSet()
 
 		uint64 nExistingSize = file.GetLength();
 
-		// Fast path: seek straight to the cached entry. If the offset
-		// turns out to be stale -- past EOF, or first read at that
-		// position doesn't match our root hash -- rewind once to just
-		// past the version header and fall through to a true linear
-		// scan from the top as defensive recovery against external
-		// modification of known2.met between cache load and now.
+		// Fast path: seek straight to the cached entry. A stale offset -- past EOF,
+		// or a first read there that does not match our root hash -- rewinds once to
+		// just past the version header and falls through to a true linear scan, as
+		// recovery against external modification of known2.met.
 		if (haveCachedOffset) {
 			if (cachedOffset >= nExistingSize) {
 				haveCachedOffset = false;
@@ -885,13 +861,11 @@ bool CAICHHashSet::LoadHashSet()
 		uint32 nHashCount;
 		bool cacheFallbackTriggered = false;
 		while (file.GetPosition() < nExistingSize) {
-			// Position of the root-hash at the start of the entry we're
-			// about to examine — captured pre-read so we can stamp it
-			// back into the cache when a stale-cache rewind succeeds.
+			// Position of the root hash at the start of the entry we are about to
+			// examine, captured pre-read so a stale-cache rewind can stamp it back.
 			const uint64 entryStartPos = file.GetPosition();
 			CurrentHash.Read(&file);
 			if (m_pHashTree.m_Hash == CurrentHash) {
-				// found Hashset
 				uint32 nExpectedCount =
 					(PARTSIZE / EMBLOCKSIZE + ((PARTSIZE % EMBLOCKSIZE != 0) ? 1 : 0)) *
 					(m_pHashTree.m_nDataSize / PARTSIZE);
@@ -925,21 +899,17 @@ bool CAICHHashSet::LoadHashSet()
 						"given Masterhash - hashset corrupt!");
 					return false;
 				}
-				// Self-heal: if we got here via the stale-cache rewind,
-				// update the cache so future lookups for this root hash
-				// go straight to the new correct offset instead of
-				// paying the linear-scan penalty every time.
+				// Self-heal: reached via the stale-cache rewind, so update the cache
+				// and future lookups go straight to the correct offset.
 				if (cacheFallbackTriggered) {
 					wxMutexLocker lock(s_rootHashCacheMutex);
 					s_rootHashCache[m_pHashTree.m_Hash] = entryStartPos;
 				}
 				return true;
 			}
-			// First read after seeking to the cached offset didn't match
-			// our root hash. The cache must be stale -- known2.met was
-			// modified externally between cache load and now. Rewind once
-			// to just past the version header and restart as a true linear
-			// scan from the top.
+			// The first read after seeking to the cached offset did not match our
+			// root hash, so the cache is stale -- known2.met was modified externally.
+			// Rewind once to just past the version header and restart as a linear scan.
 			if (haveCachedOffset && !cacheFallbackTriggered) {
 				cacheFallbackTriggered = true;
 				haveCachedOffset = false;
@@ -1051,11 +1021,9 @@ void CAICHHashSet::UntrustedHashReceived(const CAICHHash &Hash, uint32 dwFromIP)
 		wxFAIL;
 		return;
 	}
-	// the check if we trust any hash
 	if (thePrefs::IsTrustingEveryHash() ||
 		(nMostTrustedIPs >= MINUNIQUEIPS_TOTRUST &&
 			(100 * nMostTrustedIPs) / nSigningIPsTotal >= MINPERCENTAGE_TOTRUST)) {
-		// trusted
 		AddDebugLogLineN(logSHAHashSet,
 			CFormat("AICH Hash received (%sadded), We have now %u hash(es) from %u unique IP(s). "
 				"We trust the Hash %s from %u client(s) (%u%%). File: %s") %
@@ -1069,7 +1037,6 @@ void CAICHHashSet::UntrustedHashReceived(const CAICHHash &Hash, uint32 dwFromIP)
 			FreeHashSet();
 		}
 	} else {
-		// untrusted
 		AddDebugLogLineN(logSHAHashSet,
 			CFormat("AICH Hash received (%sadded), We have now %u hash(es) from %u unique IP(s). "
 				"Best Hash %s from %u clients (%u%%) - but we don't trust it yet. File: %s") %
@@ -1130,21 +1097,16 @@ bool CAICHHashSet::IsClientRequestPending(const CPartFile *pForFile, uint16 nPar
 
 void CAICHHashSet::DropReferencesTo(const CKnownFile *file)
 {
-	// Pointer-value strip of any in-flight AICH recovery request that
-	// names `file`. Called from MuleNotify::KnownFileBeingDestroyed
-	// (GuiEvents.cpp) before the CKnownFile / CPartFile is freed by
-	// CPartFile::Delete() or CKnownFileList::PruneDuplicates. Without
-	// this, the pending request would deref the dangling partfile
-	// when the recovery data eventually arrives (RequestAICHRecovery's
-	// existing IsPartFile() guard at line ~990 catches some cases
-	// but a freed-then-reused pointer can spoof that check and
-	// route recovery to the wrong file).
+	// Pointer-value strip of any in-flight AICH recovery request naming `file`.
+	// Called from MuleNotify::KnownFileBeingDestroyed before the CKnownFile /
+	// CPartFile is freed, since the pending request would otherwise deref the
+	// dangling partfile when the recovery data arrives (RequestAICHRecovery's
+	// IsPartFile() guard catches some cases, but a freed-then-reused pointer can
+	// spoof it and route recovery to the wrong file).
 	//
-	// CPartFile inherits from CKnownFile (single inheritance, same
-	// address), so the cast in the comparison is no-deref. Same-
-	// thread call (main thread) so no synchronisation needed on
-	// the static list beyond the normal amule single-threaded GUI
-	// contract.
+	// CPartFile inherits from CKnownFile at the same address, so the cast in the
+	// comparison never derefs. Main-thread only, so the static list needs no
+	// synchronisation.
 	for (CAICHRequestedDataList::iterator it = m_liRequestedData.begin(); it != m_liRequestedData.end();
 		/* manual ++ */) {
 		if (static_cast<const CKnownFile *>(it->m_pPartFile) == file) {
@@ -1193,11 +1155,9 @@ bool CAICHHashSet::IsPartDataAvailable(uint64 nPartStartPos)
 void CAICHHashSet::DbgTest()
 {
 #ifdef _DEBUG
-	// define TESTSIZE 4294567295
 	uint8 maxLevel = 0;
 	uint32 cHash = 1;
 	uint8 curLevel = 0;
-	// uint32 cParts = 0;
 	maxLevel = 0;
 /*	CAICHHashTree* pTest = new CAICHHashTree(TESTSIZE, true, 9728000);
 	for (uint64 i = 0; i+9728000 < TESTSIZE; i += 9728000) {
@@ -1232,15 +1192,11 @@ void CAICHHashSet::DbgTest()
 		uint32 j;
 		for (j = 0; j + EMBLOCKSIZE < 9728000; j += EMBLOCKSIZE) {
 			VERIFY(m_pHashTree.FindHash(i + j, EMBLOCKSIZE, &curLevel));
-			// TRACE("%u - %s\r\n", cHash, m_pHashTree.FindHash(i+j, EMBLOCKSIZE,
-			// &curLevel)->m_Hash.GetString());
 			maxLevel = max(curLevel, maxLevel);
 			curLevel = 0;
 			cHash++;
 		}
 		VERIFY(m_pHashTree.FindHash(i + j, 9728000 - j, &curLevel));
-		// TRACE("%u - %s\r\n", cHash, m_pHashTree.FindHash(i+j, 9728000-j,
-		// &curLevel)->m_Hash.GetString());
 		maxLevel = max(curLevel, maxLevel);
 		curLevel = 0;
 		cHash++;
@@ -1252,15 +1208,10 @@ void CAICHHashSet::DbgTest()
 	TestHashSet.FreeHashSet();
 	for (uint64 j = 0; j + EMBLOCKSIZE < TESTSIZE - i; j += EMBLOCKSIZE) {
 		VERIFY(m_pHashTree.FindHash(i + j, EMBLOCKSIZE, &curLevel));
-		// TRACE("%u - %s\r\n", cHash,m_pHashTree.FindHash(i+j, EMBLOCKSIZE,
-		// &curLevel)->m_Hash.GetString());
 		maxLevel = max(curLevel, maxLevel);
 		curLevel = 0;
 		cHash++;
 	}
-	// VERIFY( m_pHashTree.FindHash(i+j, (TESTSIZE-i)-j, &curLevel) );
-	// TRACE("%u - %s\r\n", cHash,m_pHashTree.FindHash(i+j, (TESTSIZE-i)-j,
-	// &curLevel)->m_Hash.GetString());
 	maxLevel = max(curLevel, maxLevel);
 #endif
 }

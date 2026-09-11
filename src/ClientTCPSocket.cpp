@@ -114,14 +114,12 @@ bool CClientTCPSocket::InitNetworkData()
 
 bool CClientTCPSocket::IsDownloadThrottled() const
 {
-	// Inbound peer connection whose source IP is the ed2k server we're
-	// currently connected (or trying to connect) to -- this is the
-	// server's HighID-callback probe, not real peer download traffic.
-	// Skip the global download throttler so a saturated peer-side
-	// budget doesn't delay the probe's read path past the server's
-	// verification timer (#778). Same shape as CServerSocket's
-	// permanent bypass (#393 / 356a59c96), just gated on IP-match
-	// instead of being unconditional.
+	// An inbound peer connection whose source IP is the ed2k server we are
+	// connected (or connecting) to is the server's HighID-callback probe, not peer
+	// download traffic. Skip the global download throttler so a saturated peer-side
+	// budget cannot delay the probe's read path past the server's verification
+	// timer (#778). Same shape as CServerSocket's permanent bypass, gated on
+	// IP-match instead of being unconditional.
 	if (m_remoteip != 0 && theApp->serverconnect && theApp->serverconnect->IsServerIP(m_remoteip)) {
 		return false;
 	}
@@ -135,18 +133,14 @@ void CClientTCPSocket::ResetTimeOutTimer()
 
 bool CClientTCPSocket::CheckTimeOut()
 {
-	// 0.42x
 	uint64 uTimeout = GetTimeOut();
 	if (m_client) {
 
 		if (m_client->GetKadState() == KS_CONNECTED_BUDDY) {
-			// We originally ignored the timeout here for buddies.
-			// This was a stupid idea on my part. There is now a ping/pong system
-			// for buddies. This ping/pong system now prevents timeouts.
-			// This release will allow lowID clients with KadVersion 0 to remain connected.
-			// But a soon future version needs to allow these older clients to time out to prevent
-			// dead connections from continuing. JOHNTODO: Don't forget to remove backward support
-			// in a future release.
+			// The timeout used to be ignored for buddies; the ping/pong system
+			// now prevents those timeouts instead. lowID clients with KadVersion 0
+			// are still allowed to remain connected, but a future version needs to
+			// let them time out so dead connections do not persist.
 			if (m_client->GetKadVersion() == 0) {
 				return false;
 			}
@@ -179,7 +173,6 @@ void CClientTCPSocket::SetClient(CUpDownClient *pClient)
 
 void CClientTCPSocket::OnClose(int nErrorCode)
 {
-	// 0.42x
 	wxASSERT(theApp->listensocket->IsValidSocket(this));
 	CEMSocket::OnClose(nErrorCode);
 	if (nErrorCode) {
@@ -194,9 +187,8 @@ void CClientTCPSocket::Disconnect(const wxString &strReason)
 	byConnected = ES_DISCONNECTED;
 	if (m_client) {
 		if (m_client->Disconnected(strReason, true)) {
-			// Somehow, Safe_Delete() is being called by Disconnected(),
-			// or any other function that sets m_client to NULL,
-			// so we must check m_client first.
+			// Safe_Delete() can be reached from Disconnected(), or anything else
+			// that sets m_client to NULL, so check m_client first.
 			if (m_client) {
 				m_client->SetSocket(NULL);
 				m_client->Safe_Delete();
@@ -232,7 +224,6 @@ void CClientTCPSocket::Safe_Delete_Client()
 bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 opcode)
 {
 #ifdef __PACKET_RECV_DUMP__
-	// printf("Rec: OPCODE %x \n",opcode);
 	DumpMem(buffer, size);
 #endif
 	if (!m_client && opcode != OP_HELLO) {
@@ -248,9 +239,8 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 		theStats::AddDownOverheadOther(size);
 		m_client->ProcessHelloAnswer(buffer, size);
 
-		// start secure identification, if
-		//  - we have received OP_EMULEINFO and OP_HELLOANSWER (old eMule)
-		//	- we have received eMule-OP_HELLOANSWER (new eMule)
+		// Start secure identification once both info packets have arrived:
+		// OP_EMULEINFO + OP_HELLOANSWER (old eMule), or eMule-OP_HELLOANSWER (new).
 		if (m_client->GetInfoPacketsReceived() == IP_BOTH) {
 			m_client->InfoPacketsReceived();
 		}
@@ -272,7 +262,6 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 		theStats::AddDownOverheadOther(size);
 		bool bNewClient = !m_client;
 		if (bNewClient) {
-			// create new client to save standard information
 			m_client = new CUpDownClient(this);
 		}
 
@@ -320,19 +309,16 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 
 		wxASSERT(m_client);
 
-		// now we check if we know this client already. if yes this socket will
-		// be attached to the known client, the new client will be deleted
-		// and the var. "client" will point to the known client.
-		// if not we keep our new-constructed client ;)
+		// If we already know this client the socket is attached to the known one,
+		// the new client is deleted and m_client points at the known client;
+		// otherwise the freshly constructed one is kept.
 		if (theApp->clientlist->AttachToAlreadyKnown(&m_client, this)) {
-			// update the old client information
 			bIsMuleHello = m_client->ProcessHelloPacket(buffer, size);
 		} else {
 			theApp->clientlist->AddClient(m_client);
 			m_client->SetCommentDirty();
 		}
 		Notify_SharedCtrlRefreshClient(m_client->ECID(), AVAILABLE_SOURCE);
-		// send a response packet with standard information
 		if ((m_client->GetHashType() == SO_EMULE) && !bIsMuleHello) {
 			m_client->SendMuleInfoPacket(false);
 		}
@@ -342,8 +328,8 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 			m_client->SendHelloAnswer();
 		}
 
-		// Kry - If the other side supports it, send OS_INFO
-		// Client might die from Sending in SendHelloAnswer, so check
+		// Send OS_INFO if the other side supports it. Sending may kill the client,
+		// so it is re-checked.
 		if (m_client && m_client->GetOSInfoSupport()) {
 			m_client->SendMuleInfoPacket(
 				false, true); // Send the OS Info tag on the recycled Mule Info
@@ -394,7 +380,6 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 				}
 			}
 
-			// check to see if this is a new file they are asking for
 			if (m_client->GetUploadFileID() != reqfilehash) {
 				m_client->SetCommentDirty();
 			}
@@ -402,7 +387,6 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 			m_client->SetUploadFileID(reqfile);
 			m_client->ProcessExtendedInfo(&data_in, reqfile);
 
-			// send filename etc
 			CMemFile data_out(128);
 			data_out.WriteHash(reqfile->GetFileHash());
 
@@ -436,7 +420,6 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 			break;
 		}
 
-		// DbT:FileRequest
 		if (size == 16) {
 			if (!m_client->GetWaitStartTime()) {
 				m_client->SetWaitStartTime();
@@ -458,13 +441,11 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 				}
 			}
 
-			// check to see if this is a new file they are asking for
 			if (m_client->GetUploadFileID() != fileID) {
 				m_client->SetCommentDirty();
 			}
 
 			m_client->SetUploadFileID(reqfile);
-			// send filestatus
 			CMemFile data(16 + 16);
 			data.WriteHash(reqfile->GetFileHash());
 			if (reqfile->IsPartFile()) {
@@ -481,7 +462,6 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 		}
 		throw wxString("Invalid OP_FILEREQUEST packet size");
 		break;
-		// DbT:End
 	}
 
 	case OP_FILEREQANSNOFIL: { // 0.43b protocol, lacks ZZ's download manager on swap
@@ -789,7 +769,6 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 			throw wxString("invalid message packet");
 		}
 
-		// limit message length
 		static const uint16 MAX_CLIENT_MSG_LEN = 450;
 
 		if (length > MAX_CLIENT_MSG_LEN) {
@@ -834,7 +813,6 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 				}
 			}
 
-			// create a packet and send it
 			CPacket *replypacket = new CPacket(tempfile, OP_EDONKEYPROT, OP_ASKSHAREDFILESANSWER);
 			AddDebugLogLineN(logLocalClient,
 				"Local Client: OP_ASKSHAREDFILESANSWER to " + m_client->GetFullIP());
@@ -882,7 +860,6 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 			AddLogLineC(
 				CFormat(_("User %s (%u) requested your shareddirectories-list -> Accepted")) %
 				m_client->GetUserName() % m_client->GetUserIDHybrid());
-			// send the list of shared directories
 			m_client->SendSharedDirectories();
 		} else {
 			AddLogLineC(
@@ -925,7 +902,6 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 						(unsigned)(data.GetLength() - data.GetPosition()) %
 						m_client->GetFullIP());
 			}
-			// send the list of shared files for the requested directory
 			m_client->SendSharedFilesOfDirectory(strReqDir);
 		} else {
 			AddLogLineC(CFormat(_("User %s (%u) requested your sharedfiles-list for directory "
@@ -1038,18 +1014,14 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 bool CClientTCPSocket::ProcessExtPacket(const uint8_t *buffer, uint32 size, uint8 opcode)
 {
 #ifdef __PACKET_RECV_DUMP__
-	// printf("Rec: OPCODE %x \n",opcode);
 	DumpMem(buffer, size);
 #endif
 
-	// 0.42e - except the catches on mem exception and file exception
 	if (!m_client) {
 		throw wxString("Unknown clients sends extended protocol packet");
 	}
 	/*
 	if (!client->CheckHandshakeFinished()) {
-		// Here comes an extended packet without finishing the handshake.
-		// IMHO, we should disconnect the client.
 		throw wxString("Client send extended packet before finishing handshake");
 	}
 	*/
@@ -1070,8 +1042,6 @@ bool CClientTCPSocket::ProcessExtPacket(const uint8_t *buffer, uint32 size, uint
 		}
 
 		if (!m_client->CheckHandshakeFinished()) {
-			// Here comes an extended packet without finishing the handshake.
-			// IMHO, we should disconnect the client.
 			throw wxString("Client send OP_MULTIPACKET before finishing handshake");
 		}
 
@@ -1124,7 +1094,6 @@ bool CClientTCPSocket::ProcessExtPacket(const uint8_t *buffer, uint32 size, uint
 					static_cast<CPartFile *>(reqfile), m_client);
 			}
 		}
-		// check to see if this is a new file they are asking for
 		if (m_client->GetUploadFileID() != reqfilehash) {
 			m_client->SetCommentDirty();
 		}
@@ -1247,15 +1216,12 @@ bool CClientTCPSocket::ProcessExtPacket(const uint8_t *buffer, uint32 size, uint
 		}
 
 		if (!m_client->CheckHandshakeFinished()) {
-			// Here comes an extended packet without finishing the handshake.
-			// IMHO, we should disconnect the client.
 			throw wxString("Client send OP_MULTIPACKETANSWER before finishing handshake");
 		}
 
 		CMemFile data_in(buffer, size);
 		CMD4Hash reqfilehash = data_in.ReadHash();
 		const CPartFile *reqfile = theApp->downloadqueue->GetFileByID(reqfilehash);
-		// Make sure we are downloading this file.
 		if (!reqfile) {
 			throw wxString(" Wrong File ID: (OP_MULTIPACKETANSWER; reqfile==NULL)");
 		}
@@ -1343,8 +1309,6 @@ bool CClientTCPSocket::ProcessExtPacket(const uint8_t *buffer, uint32 size, uint
 			logRemoteClient, "Remote Client: OP_SECIDENTSTATE from " + m_client->GetFullIP());
 
 		if (!m_client->CheckHandshakeFinished()) {
-			// Here comes an extended packet without finishing the handshake.
-			// IMHO, we should disconnect the client.
 			throw wxString("Client send OP_SECIDENTSTATE before finishing handshake");
 		}
 		m_client->ProcessSecIdentStatePacket(buffer, size);
@@ -1373,8 +1337,6 @@ bool CClientTCPSocket::ProcessExtPacket(const uint8_t *buffer, uint32 size, uint
 		}
 
 		if (!m_client->CheckHandshakeFinished()) {
-			// Here comes an extended packet without finishing the handshake.
-			// IMHO, we should disconnect the client.
 			throw wxString("Client send OP_PUBLICKEY before finishing handshake");
 		}
 
@@ -1386,8 +1348,6 @@ bool CClientTCPSocket::ProcessExtPacket(const uint8_t *buffer, uint32 size, uint
 			logRemoteClient, "Remote Client: OP_SIGNATURE from " + m_client->GetFullIP());
 
 		if (!m_client->CheckHandshakeFinished()) {
-			// Here comes an extended packet without finishing the handshake.
-			// IMHO, we should disconnect the client.
 			throw wxString("Client send OP_COMPRESSEDPART before finishing handshake");
 		}
 
@@ -1409,8 +1369,6 @@ bool CClientTCPSocket::ProcessExtPacket(const uint8_t *buffer, uint32 size, uint
 				"Remote Client: OP_COMPRESSEDPART from " + m_client->GetFullIP());
 
 		if (!m_client->CheckHandshakeFinished()) {
-			// Here comes an extended packet without finishing the handshake.
-			// IMHO, we should disconnect the client.
 			throw wxString("Client send OP_COMPRESSEDPART before finishing handshake");
 		}
 
@@ -1484,8 +1442,6 @@ bool CClientTCPSocket::ProcessExtPacket(const uint8_t *buffer, uint32 size, uint
 		theStats::AddDownOverheadOther(size);
 
 		if (!m_client->CheckHandshakeFinished()) {
-			// Here comes an extended packet without finishing the handshake.
-			// IMHO, we should disconnect the client.
 			throw wxString("Client send OP_QUEUERANKING before finishing handshake");
 		}
 
@@ -1506,8 +1462,6 @@ bool CClientTCPSocket::ProcessExtPacket(const uint8_t *buffer, uint32 size, uint
 		theStats::AddDownOverheadSourceExchange(size);
 
 		if (!m_client->CheckHandshakeFinished()) {
-			// Here comes an extended packet without finishing the handshake.
-			// IMHO, we should disconnect the client.
 			throw wxString("Client send OP_REQUESTSOURCES before finishing handshake");
 		}
 
@@ -1530,13 +1484,11 @@ bool CClientTCPSocket::ProcessExtPacket(const uint8_t *buffer, uint32 size, uint
 				file = theApp->downloadqueue->GetFileByID(fileID);
 			}
 			if (file) {
-				// There are some clients which do not follow the correct protocol procedure
-				// of sending the sequence OP_REQUESTFILENAME, OP_SETREQFILEID,
-				// OP_REQUESTSOURCES. If those clients are doing this, they will not get the
-				// optimal set of sources which we could offer if they would follow the above
-				// noted protocol sequence. They better do it the right way or they will get
-				// just a random set of sources because we do not know their download part
-				// status which may get cleared with the call of 'SetUploadFileID'.
+				// Some clients do not follow the OP_REQUESTFILENAME,
+				// OP_SETREQFILEID, OP_REQUESTSOURCES sequence. Those get a
+				// random set of sources rather than the optimal one, because
+				// we do not know their download part status -- which
+				// SetUploadFileID may clear.
 				m_client->SetUploadFileID(file);
 
 				uint64 dwTimePassed = ::GetTickCount64() - m_client->GetLastSrcReqTime() +
@@ -1575,8 +1527,6 @@ bool CClientTCPSocket::ProcessExtPacket(const uint8_t *buffer, uint32 size, uint
 		theStats::AddDownOverheadSourceExchange(size);
 
 		if (!m_client->CheckHandshakeFinished()) {
-			// Here comes an extended packet without finishing the handshake.
-			// IMHO, we should disconnect the client.
 			throw wxString("Client send OP_ANSWERSOURCES before finishing handshake");
 		}
 
@@ -1585,9 +1535,7 @@ bool CClientTCPSocket::ProcessExtPacket(const uint8_t *buffer, uint32 size, uint
 		CKnownFile *file = theApp->downloadqueue->GetFileByID(hash);
 		if (file) {
 			if (file->IsPartFile()) {
-				// set the client's answer time
 				m_client->SetLastSrcAnswerTime();
-				// and set the file's last answer time
 				static_cast<CPartFile *>(file)->SetLastAnsweredTime();
 				static_cast<CPartFile *>(file)->AddClientSources(&data,
 					SF_SOURCE_EXCHANGE,
@@ -1599,12 +1547,9 @@ bool CClientTCPSocket::ProcessExtPacket(const uint8_t *buffer, uint32 size, uint
 		break;
 	}
 	case OP_ANSWERSOURCES2: {
-		// printf("Received OP_ANSWERSOURCES2\n");
 		theStats::AddDownOverheadSourceExchange(size);
 
 		if (!m_client->CheckHandshakeFinished()) {
-			// Here comes an extended packet without finishing the handshake.
-			// IMHO, we should disconnect the client.
 			throw wxString("Client send OP_ANSWERSOURCES2 before finishing handshake");
 		}
 
@@ -1614,9 +1559,7 @@ bool CClientTCPSocket::ProcessExtPacket(const uint8_t *buffer, uint32 size, uint
 		CKnownFile *file = theApp->downloadqueue->GetFileByID(hash);
 		if (file) {
 			if (file->IsPartFile()) {
-				// set the client's answer time
 				m_client->SetLastSrcAnswerTime();
-				// and set the file's last answer time
 				static_cast<CPartFile *>(file)->SetLastAnsweredTime();
 				static_cast<CPartFile *>(file)->AddClientSources(
 					&data, SF_SOURCE_EXCHANGE, byVersion, true, m_client);
@@ -1630,8 +1573,6 @@ bool CClientTCPSocket::ProcessExtPacket(const uint8_t *buffer, uint32 size, uint
 		theStats::AddDownOverheadFileRequest(size);
 
 		if (!m_client->CheckHandshakeFinished()) {
-			// Here comes an extended packet without finishing the handshake.
-			// IMHO, we should disconnect the client.
 			throw wxString("Client send OP_FILEDESC before finishing handshake");
 		}
 
@@ -1682,12 +1623,10 @@ bool CClientTCPSocket::ProcessExtPacket(const uint8_t *buffer, uint32 size, uint
 		AddDebugLogLineN(
 			logRemoteClient, "Remote Client: OP_AICHREQUEST from " + m_client->GetFullIP());
 		theStats::AddDownOverheadOther(size);
-		// Each OP_AICHREQUEST triggers an O(N) walk of known2.met
-		// via ProcessAICHRequest -> CreatePartRecoveryData ->
-		// LoadHashSet. Without rate-limiting, a hostile peer can
-		// hammer this with 16-byte packets and force the seeder to
-		// burn disk + CPU on each one. Treat repeated requests the
-		// same way the file-request paths do.
+		// Each OP_AICHREQUEST triggers an O(N) walk of known2.met via
+		// ProcessAICHRequest -> CreatePartRecoveryData -> LoadHashSet. Unlimited, a
+		// hostile peer can hammer this with 16-byte packets and force the seeder to
+		// burn disk and CPU on each one, so treat repeats like the file-request paths.
 		m_client->CheckForAggressive();
 		if (m_client->IsBanned()) {
 			break;
@@ -1843,16 +1782,12 @@ bool CClientTCPSocket::ProcessExtPacket(const uint8_t *buffer, uint32 size, uint
 			if (hash == sender->GetUploadFileID()) {
 				sender->AddAskedCount();
 				sender->SetLastUpRequest();
-				// I messed up when I first added extended info to UDP
-				// I should have originally used the entire ProcessExtenedInfo the first time.
-				// So now I am forced to check UDPVersion to see if we are sending all the
-				// extended info. For now on, we should not have to change anything here if we
-				// change anything to the extended info data as this will be taken care of in
-				// ProcessExtendedInfo() Update extended info.
+				// UDPVersion has to be checked because the first version of
+				// extended UDP info did not go through ProcessExtendedInfo.
+				// Later changes to the extended info need no change here.
 				if (sender->GetUDPVersion() > 3) {
 					sender->ProcessExtendedInfo(&data_in, reqfile);
 				} else if (sender->GetUDPVersion() > 2) {
-					// Update our complete source counts.
 					uint16 nCompleteCountLast = sender->GetUpCompleteSourcesCount();
 					uint16 nCompleteCountNew = data_in.ReadUInt16();
 					sender->SetUpCompleteSourcesCount(nCompleteCountNew);
@@ -1960,7 +1895,6 @@ bool CClientTCPSocket::ProcessExtPacket(const uint8_t *buffer, uint32 size, uint
 bool CClientTCPSocket::ProcessED2Kv2Packet(const uint8_t *buffer, uint32 size, uint8 opcode)
 {
 #ifdef __PACKET_RECV_DUMP__
-	// printf("Rec: OPCODE %x ED2Kv2\n",opcode);
 	DumpMem(buffer, size);
 #endif
 
@@ -2007,10 +1941,8 @@ void CClientTCPSocket::OnConnect(int nErrorCode)
 	if (nErrorCode) {
 		OnError(nErrorCode);
 	} else if (!m_client) {
-		// and now? Disconnect? not?
 		AddDebugLogLineN(logClient, "Couldn't send hello packet (Client deleted!)");
 	} else if (!m_client->SendHelloPacket()) {
-		// and now? Disconnect? not?
 		AddDebugLogLineN(
 			logClient, "Couldn't send hello packet (Client deleted by SendHelloPacket!)");
 	} else {
@@ -2044,8 +1976,7 @@ void CClientTCPSocket::OnReceive(int nErrorCode)
 
 void CClientTCPSocket::OnError(int nErrorCode)
 {
-	// printf("* Called OnError for %p\n",this);
-	//  0.42e + Kry changes for handling of socket lost events
+	// 0.42e + Kry changes for handling of socket lost events
 	wxString strError;
 
 	if ((nErrorCode == 0) || (nErrorCode == 7) || (nErrorCode == 0xFEFF)) {
@@ -2096,7 +2027,6 @@ void CClientTCPSocket::OnError(int nErrorCode)
 
 bool CClientTCPSocket::PacketReceived(CPacket *packet)
 {
-	// 0.42e
 	bool bResult = false;
 	uint32 uRawSize = packet->GetPacketSize();
 

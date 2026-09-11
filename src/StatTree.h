@@ -182,7 +182,6 @@ public:
 		return this;
 	}
 
-	//! Returns the stable machine key for this node (empty if none).
 	const wxString &GetKey() const { return m_key; }
 
 	/**
@@ -200,7 +199,6 @@ public:
 		return this;
 	}
 
-	//! Returns the raw machine value for this node (empty if none).
 	const wxString &GetRawValue() const { return m_rawvalue; }
 #endif
 
@@ -349,10 +347,8 @@ protected:
 	const wxString m_label;
 #ifndef CLIENT_GUI
 
-	//! Parent of this node.
 	CStatTreeItemBase *m_parent;
 
-	//! Flags for the node.
 	unsigned m_flags;
 
 	//! Stable, untranslated machine key (empty = none). @see SetKey
@@ -365,10 +361,8 @@ protected:
 
 private:
 #ifndef CLIENT_GUI
-	//! Function used when sorting children by value.
 	static bool ValueSort(const CStatTreeItemBase *a, const CStatTreeItemBase *b);
 
-	//! ID of this node.
 	uint32_t m_id;
 
 	//! Counter to keep track of displayed visible items
@@ -376,13 +370,10 @@ private:
 	uint32_t m_visible_counter;
 #endif
 
-	//! Unique ID of this node.
 	uint32_t m_uniqueid;
 
-	//! Children of this node.
 	std::list<CStatTreeItemBase *> m_children;
 
-	//! Lock to protect list from simultaneous access.
 	wxMutex m_lock;
 };
 
@@ -485,11 +476,8 @@ protected:
 	 */
 	virtual void AddECValues(CECTag *tag) const;
 
-	//! Type of the value.
 	enum EValueType m_valuetype;
-	//! Display mode of the value.
 	enum EDisplayMode m_displaymode;
-	//! Union to save space.
 	union
 	{
 		uint64_t m_intvalue; ///< Integer value.
@@ -588,10 +576,8 @@ protected:
 	 */
 	virtual void AddECValues(CECTag *tag) const;
 
-	//! Actual value of the counter.
 	_Tp m_value;
 
-	//! Display mode of the value.
 	enum EDisplayMode m_displaymode;
 };
 
@@ -630,7 +616,6 @@ public:
 	virtual bool IsVisible() const { return true; }
 
 protected:
-	//! Do nothing here.
 	virtual void AddECValues(CECTag *) const {}
 };
 
@@ -731,10 +716,8 @@ protected:
 	 */
 	virtual void AddECValues(CECTag *tag) const;
 
-	//! Actual value of the counter.
 	uint32_t m_value;
 
-	//! Maximal value the counter has ever reached.
 	uint32_t m_max_value;
 };
 
@@ -782,10 +765,8 @@ protected:
 	 */
 	virtual void AddECValues(CECTag *tag) const;
 
-	//! Total number of packets.
 	uint32_t m_packets;
 
-	//! Total bytes in the packets.
 	uint64_t m_bytes;
 };
 
@@ -827,7 +808,6 @@ protected:
 	 */
 	virtual void AddECValues(CECTag *tag) const;
 
-	//! List of packet counters to sum.
 	std::vector<CStatTreeItemPackets *> m_counters;
 };
 

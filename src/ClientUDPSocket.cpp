@@ -174,17 +174,14 @@ void CClientUDPSocket::OnPacketReceived(uint32 ip, uint16 port, uint8_t *buffer,
 				break;
 
 			case OP_UDPRESERVEDPROT2:
-				// eMuleAI NAT traversal. Not an eD2k opcode: the byte
-				// after the protocol byte is a frame type. Dispatched
-				// here rather than through ProcessPacket() above, whose
-				// second argument is an opcode.
+				// eMuleAI NAT traversal. Not an eD2k opcode: the byte after the
+				// protocol byte is a frame type, so it is dispatched here rather
+				// than through ProcessPacket(), whose second argument is an opcode.
 				//
-				// This branch reaches no packet accounting at all, which
-				// is what keeps a dropped frame from feeding a ban:
-				// CPacketTracking is only entered from the Kad listener
-				// (kademlia/net/KademliaUDPListener.cpp:263), and an
-				// eMuleAI peer's NAT-T traffic would otherwise arrive
-				// here as an unknown protocol and read as malformed.
+				// This branch reaches no packet accounting at all, which is what
+				// keeps a dropped frame from feeding a ban: CPacketTracking is only
+				// entered from the Kad listener, and an eMuleAI peer's NAT-T traffic
+				// would otherwise read as malformed.
 				ProcessReservedProt2Frame(decryptedBuffer + 1, packetLen - 1, ip, port);
 				break;
 
@@ -235,12 +232,11 @@ void CClientUDPSocket::ProcessReservedProt2Frame(
 		break;
 	}
 
-	// The registered types. Each is dropped in its own case rather than in a
-	// shared fallthrough, so that the change which ships a transport replaces
-	// its own case and nothing else -- which is what the uTP case below now is.
-	// The other four still belong to transports this build does not have, and a
-	// peer's attempt at one of them is a recognised frame aMule cannot serve
-	// rather than malformed traffic.
+	// The registered types. Each is dropped in its own case rather than in a shared
+	// fallthrough, so the change that ships a transport replaces its own case and
+	// nothing else -- which is what the uTP case below now is. The other four belong
+	// to transports this build does not have, so a peer's attempt at one is a
+	// recognised frame aMule cannot serve rather than malformed traffic.
 	switch (classified.type) {
 	case OP_NATT_FRAME_UTP:
 #ifdef AMULE_UTP_TRANSPORT
@@ -283,10 +279,9 @@ void CClientUDPSocket::ProcessReservedProt2Frame(
 		break;
 
 	default:
-		// Unreachable: ClassifyReservedProt2Frame only reports
-		// RP2_KNOWN_TYPE for the five cases above. Kept so that adding a
-		// type there without a case here fails loudly rather than
-		// silently taking the drop path.
+		// Unreachable: ClassifyReservedProt2Frame only reports RP2_KNOWN_TYPE for
+		// the five cases above. Kept so that adding a type there without a case here
+		// fails loudly rather than silently taking the drop path.
 		wxFAIL;
 		break;
 	}

@@ -134,8 +134,6 @@ void CStatTreeItemPeakConnections::AddECValues(CECTag *tag) const
 
 /*----- CStatistics -----*/
 
-// Static variables
-
 // Rate counters
 CPreciseRateCounter *CStatistics::s_upOverheadRate;
 CPreciseRateCounter *CStatistics::s_downOverheadRate;
@@ -192,8 +190,6 @@ CStatTreeItemSimple *CStatistics::s_avgConnections;
 // Clients
 CStatTreeItemHiddenCounter *CStatistics::s_clients;
 CStatTreeItemCounter *CStatistics::s_unknown;
-// CStatTreeItem			CStatistics::s_lowID;
-// CStatTreeItem			CStatistics::s_secIdentOnOff;
 #ifdef __DEBUG__
 CStatTreeItemNativeCounter *CStatistics::s_hasSocket;
 #endif
@@ -240,8 +236,6 @@ CStatistics::CStatistics()
 {
 	uint64 start_time = GetTickCount64();
 
-	// Init graphs
-
 	average_minutes = thePrefs::GetStatsAverageMinutes();
 
 	HR hr = { 0.0, 0.0, 0.0, 0.0, 0.0, 0, 0, 0, 0, 0 };
@@ -258,17 +252,12 @@ CStatistics::CStatistics()
 			listHR.push_back(hr);
 	}
 
-	// Init rate counters outside the tree
-
 	s_upOverheadRate = new CPreciseRateCounter(5000);
 	s_downOverheadRate = new CPreciseRateCounter(5000);
-
-	// Init Tree
 
 	InitStatsTree();
 	s_uptime->SetStartTime(start_time);
 
-	// Load saved statistics
 	Load();
 	s_statsNeedSave = false;
 }
@@ -281,10 +270,8 @@ CStatistics::~CStatistics()
 
 	delete s_statTree;
 
-	// delete items not in the tree
 	delete s_totalUploadTime;
 
-	// delete rate counters outside the tree
 	delete s_upOverheadRate;
 	delete s_downOverheadRate;
 }
@@ -358,18 +345,12 @@ a node to another place, so we have to erase and re-add nodes.
 void CStatistics::RecordHistory()
 { // First we query and compute some values, then we store them in the history list
 
-	// A few comments about the use of double and float in computations:
-	// Even on a hi-res screen our graphs will have 10 bits of resolution at most,
-	// so the 24 bits resolution of a float on 32 bit Intel processors is more than
-	// enough for all displayed values.  Rate computations however, and especially
-	// running average computations, use differences (delta bytes/ delta time), and
-	// for long uptimes the difference between two timestamps can lose too much
-	// accuracy because the large mantissa causes less significant bits to be dropped
-	// (same for the difference between two cumulative byte counts).  [We don't store
-	// these values as integers because they will be used in floating point calculations,
-	// and we want to perform the conversion only once).  Therefore timestamps and
-	// Kbyte counts are stored in the history as doubles, while computed values use
-	// float (to save space and execution time).
+	// Timestamps and Kbyte counts are stored in the history as doubles, computed
+	// values as float. A float's 24 bits are more than enough for anything the
+	// graphs display, but rate and running-average computations work on differences
+	// (delta bytes / delta time), and for long uptimes the large mantissa of a
+	// timestamp or cumulative byte count drops too many significant bits. They are
+	// not kept as integers because the conversion would then happen on every use.
 
 	/*
 		Store values; first determine the node to be recycled (using the bits in iClock)
@@ -435,10 +416,10 @@ unsigned CStatistics::GetHistory(        // Assemble arrays of sample points for
 		return (0);
 	}
 
-	// CLIENT_GUI builds start with an empty list -- unlike the monolithic
-	// constructor, which pre-allocates every record up front -- and the
-	// rbegin() below is dereferenced before the rend() test, so a paint
-	// arriving before the first graph reply would read an invalid iterator.
+	// CLIENT_GUI builds start with an empty list, unlike the monolithic
+	// constructor which pre-allocates every record, and the rbegin() below is
+	// dereferenced before the rend() test -- so a paint arriving before the first
+	// graph reply would read an invalid iterator.
 	if (listHR.empty()) {
 		return (0);
 	}
@@ -633,26 +614,20 @@ unsigned CStatistics::GetHistoryForGui(unsigned cntPoints,
 				(*connData)[2 * i] = (*connData)[2 * i + 1] = 0;
 			}
 		}
-		// Session totals are pulled from the latest sampled point so the
-		// graph's session-average line matches the daemon-side
-		// kBytesReceived / sTimestamp value monolithic amule plots —
-		// instead of forcing amulegui to integrate locally from connect
-		// time (which would diverge whenever the GUI attaches to a
-		// long-running daemon).
-		// pphr was filled walking rbegin() -> rend(), so [0] is the newest
-		// record and [cntFilled - 1] the oldest -- the reverse of the
-		// graphData loop above, which deliberately reads it backwards to
-		// emit points oldest-first. Taking [cntFilled - 1] here reported
-		// the session total as it stood at the START of the reply, which
-		// the client then treats as the total at the END and integrates
-		// backwards from: subtracting the whole span's transfer from a
-		// figure already that stale drives it negative at once, and every
-		// point but the newest reads as a session average of zero.
+		// Session totals come from the latest sampled point, so the graph's
+		// session-average line matches the kBytesReceived / sTimestamp value
+		// monolithic amule plots, rather than making amulegui integrate locally from
+		// connect time (which diverges whenever it attaches to a long-running
+		// daemon).
 		//
-		// Harmless while replies carried a point or two, since the two
-		// ends were seconds apart. A backfill makes them the width of the
-		// graph. [0] is also always a real record -- the NULL sentinel
-		// this loop can append lands at the oldest end.
+		// pphr was filled walking rbegin() -> rend(), so [0] is the NEWEST record --
+		// the reverse of the graphData loop above, which reads it backwards to emit
+		// points oldest-first. Taking [cntFilled - 1] reported the session total as
+		// it stood at the START of the reply, which the client treats as the total at
+		// the END and integrates backwards from, driving it negative at once. That
+		// was harmless while replies carried a point or two; a backfill makes the two
+		// ends the width of the graph. [0] is also always a real record, the NULL
+		// sentinel landing at the oldest end.
 		HR *latest = pphr[0];
 		if (latest) {
 			sessionDlKBytes = (uint64)latest->kBytesReceived;
@@ -925,10 +900,6 @@ void CStatistics::InitStatsTree()
 		new CStatTreeItemHiddenCounter(wxTRANSLATE("Clients"), stSortChildren | stSortByValue)));
 	s_unknown = static_cast<CStatTreeItemCounter *>(
 		s_clients->AddChild(new CStatTreeItemCounter(wxTRANSLATE("Unknown: %s")), 6));
-	// s_lowID = static_cast<CStatTreeItem*>(s_clients->AddChild(new CStatTreeItem(wxTRANSLATE("LowID: %u
-	// (%.2f%% Total %.2f%% Known)")), 5)); s_secIdentOnOff =
-	// static_cast<CStatTreeItem*>(s_clients->AddChild(new CStatTreeItem(wxTRANSLATE("SecIdent On/Off: %u
-	// (%.2f%%) : %u (%.2f%%)")), 4));
 #ifdef __DEBUG__
 	s_hasSocket = static_cast<CStatTreeItemNativeCounter *>(
 		s_clients->AddChild(new CStatTreeItemNativeCounter("HasSocket: %s"), 3));
@@ -938,10 +909,9 @@ void CStatistics::InitStatsTree()
 	s_banned = static_cast<CStatTreeItemNativeCounter *>(
 		s_clients->AddChild(new CStatTreeItemNativeCounter(wxTRANSLATE("Banned: %s")), 1));
 #ifdef ENABLE_KAD_NODE_PROTECTION
-	// Only when the protection that fills it is compiled in. Adding the row
-	// unconditionally would show every user a figure that is structurally
-	// always zero, which reads as "nothing is being banned" rather than
-	// "nothing here can ban".
+	// Only when the protection that fills it is compiled in: adding the row
+	// unconditionally would show a figure that is structurally always zero, which
+	// reads as "nothing is being banned" rather than "nothing here can ban".
 	s_kadBanned = static_cast<CStatTreeItemNativeCounter *>(s_clients->AddChild(
 		new CStatTreeItemNativeCounter(wxTRANSLATE("Kad banned addresses: %s")), 1));
 #endif
@@ -986,9 +956,8 @@ void CStatistics::InitStatsTree()
 			 wxTRANSLATE("Average file size: %s"), s_sizeOfShare, s_numberOfShared, dmBytes))
 			->SetKey("shared_avg_size"));
 
-	// Stable machine keys for API consumers (EC_TAG_STAT_NODE_KEY). Assigned
-	// here so they stay fixed regardless of label wording or translation.
-	// See docs/api/REFERENCE.md (GET /api/v0/stats/tree).
+	// Stable machine keys for API consumers (EC_TAG_STAT_NODE_KEY), assigned here so
+	// they stay fixed regardless of label wording or translation.
 	s_uptime->SetKey("uptime");
 	s_sessionUpload->SetKey("upload_data");
 	s_totalUpOverhead->SetKey("upload_total_overhead");
@@ -1271,10 +1240,8 @@ CStatistics::CStatistics(CRemoteConnect &conn)
 	HR hr = { 0.0, 0.0, 0.0, 0.0, 0.0, 0, 0, 0, 0, 0 };
 	hrInit = hr;
 
-	// Init Tree
 	s_statTree = new CStatTreeItemBase(_("Statistics"), 0);
 
-	// Clear stat data container
 	for (int i = 0; i < sdTotalItems; ++i) {
 		s_statData[i] = 0;
 	}
@@ -1288,23 +1255,21 @@ CStatistics::~CStatistics()
 
 void CStatistics::AddHistoryRecord(const HR &hr, double minSpacing)
 {
-	// Keep only what the graphs will actually plot: one record every
-	// minSpacing seconds, that being the seconds-per-point they draw at.
+	// Keep only what the graphs will actually plot: one record every minSpacing
+	// seconds, that being the seconds-per-point they draw at.
 	//
 	// Two things otherwise fill the ring with points no axis asks for.
-	// GetHistoryForGui appends a record before testing whether it is one
-	// the caller already has, so every poll returns at least the newest
-	// record again; and the daemon's newest record advances one second per
-	// poll whatever spacing was requested, so a graph drawing at 3 s was
-	// storing three records for every point it could show. Drawing never
-	// noticed -- GetHistory just skips what it does not need -- but
-	// kHistoryCap bounds the ring in records, so both effects cost real
-	// history: measured against a live daemon the graphs opened with 28
+	// GetHistoryForGui appends a record before testing whether the caller already
+	// has it, so every poll returns at least the newest record again; and the
+	// daemon's newest record advances one second per poll whatever spacing was
+	// requested, so a graph drawing at 3 s stored three records per point. Drawing
+	// never noticed, but kHistoryCap bounds the ring in RECORDS, so both effects
+	// cost real history: measured against a live daemon the graphs opened with 28
 	// minutes behind them and decayed toward 15.
 	//
-	// Safe against a daemon restart resetting its uptime clock: Startup()
-	// builds a new CStatistics (and a new CStatGraphRem) per connection,
-	// so timestamps only ever move forward within one ring's lifetime.
+	// Safe against a daemon restart resetting its uptime clock: Startup() builds a
+	// new CStatistics per connection, so timestamps only move forward within one
+	// ring's lifetime.
 	if (!listHR.empty() && hr.sTimestamp < listHR.back().sTimestamp + minSpacing) {
 		return;
 	}
@@ -1344,9 +1309,9 @@ void CStatistics::UpdateStats(const CECPacket *stats)
 		stats->GetTagByNameSafe(EC_TAG_STATS_TOTAL_RECEIVED_BYTES)->GetInt();
 	s_statData[sdSharedFileCount] = stats->GetTagByNameSafe(EC_TAG_STATS_SHARED_FILE_COUNT)->GetInt();
 
-	// Absence has to mean "unknown", not zero: a daemon older than these
-	// tags sends neither, and GetTagByNameSafe() would answer 0 for both --
-	// which the Downloads panel would read as a full disk and paint red.
+	// Absence has to mean "unknown", not zero: a daemon older than these tags sends
+	// neither, and GetTagByNameSafe() would answer 0 for both -- which the Downloads
+	// panel would read as a full disk and paint red.
 	const CECTag *tempFree = stats->GetTagByName(EC_TAG_STATS_TEMP_FREE_SPACE);
 	s_statData[sdTempFreeSpace] = tempFree ? tempFree->GetInt() : (uint64)FREE_SPACE_UNKNOWN;
 	const CECTag *incomingFree = stats->GetTagByName(EC_TAG_STATS_INCOMING_FREE_SPACE);
@@ -1354,9 +1319,9 @@ void CStatistics::UpdateStats(const CECPacket *stats)
 
 	const CECTag *LoggerTag = stats->GetTagByName(EC_TAG_STATS_LOGGER_MESSAGE);
 	if (LoggerTag) {
-		// Coalesce the whole poll's log lines into a single repaint + one
-		// scroll: a remote-GUI first-sync backlog can be thousands of lines
-		// and per-line rendering froze the GUI for minutes (issue #445).
+		// Coalesce the whole poll's log lines into a single repaint and one scroll:
+		// a remote-GUI first-sync backlog can be thousands of lines, and per-line
+		// rendering froze the GUI for minutes (issue #445).
 		theApp->BeginRemoteLogBatch();
 		for (const auto &tag : *LoggerTag) {
 			theApp->AddRemoteLogLine(tag.GetStringData());

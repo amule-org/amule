@@ -57,7 +57,6 @@
 bool CUpDownClient::Compare(const CUpDownClient *tocomp, bool bIgnoreUserhash) const
 {
 	if (!tocomp) {
-		// should we wxASSERT here?
 		return false;
 	}
 
@@ -69,13 +68,10 @@ bool CUpDownClient::Compare(const CUpDownClient *tocomp, bool bIgnoreUserhash) c
 	if (HasLowID()) {
 		// User is firewalled.. Must do two checks..
 		if (GetIP() != 0 && GetIP() == tocomp->GetIP()) {
-			// The IP of both match
 			if (GetUserPort() != 0 && GetUserPort() == tocomp->GetUserPort()) {
-				// IP-UserPort matches
 				return true;
 			}
 			if (GetKadPort() != 0 && GetKadPort() == tocomp->GetKadPort()) {
-				// IP-KadPort Matches
 				return true;
 			}
 		}
@@ -83,28 +79,23 @@ bool CUpDownClient::Compare(const CUpDownClient *tocomp, bool bIgnoreUserhash) c
 		if (GetUserIDHybrid() != 0 && GetUserIDHybrid() == tocomp->GetUserIDHybrid() &&
 			GetServerIP() != 0 && GetServerIP() == tocomp->GetServerIP() &&
 			GetServerPort() != 0 && GetServerPort() == tocomp->GetServerPort()) {
-			// Both have the same lowID, Same serverIP and Port..
 			return true;
 		}
 
-		// Both IP, and Server do not match..
 		return false;
 	}
 
 	// User is not firewalled.
 	if (GetUserPort() != 0) {
-		// User has a Port, lets check the rest.
 		if (GetIP() != 0 && tocomp->GetIP() != 0) {
 			// Both clients have a verified IP..
 			if (GetIP() == tocomp->GetIP() && GetUserPort() == tocomp->GetUserPort()) {
-				// IP and UserPort match..
 				return true;
 			}
 		} else {
 			// One of the two clients do not have a verified IP
 			if (GetUserIDHybrid() == tocomp->GetUserIDHybrid() &&
 				GetUserPort() == tocomp->GetUserPort()) {
-				// ID and Port Match..
 				return true;
 			}
 		}
@@ -115,27 +106,23 @@ bool CUpDownClient::Compare(const CUpDownClient *tocomp, bool bIgnoreUserhash) c
 		if (GetIP() != 0 && tocomp->GetIP() != 0) {
 			// Both clients have a verified IP.
 			if (GetIP() == tocomp->GetIP() && GetKadPort() == tocomp->GetKadPort()) {
-				// IP and KadPort Match..
 				return true;
 			}
 		} else {
 			// One of the users do not have a verified IP.
 			if (GetUserIDHybrid() == tocomp->GetUserIDHybrid() &&
 				GetKadPort() == tocomp->GetKadPort()) {
-				// ID and KadProt Match..
 				return true;
 			}
 		}
 	}
 
-	// No Matches..
 	return false;
 }
 #endif
 
 bool CUpDownClient::AskForDownload()
 {
-	// 0.42e
 	if (theApp->listensocket->TooManySockets()) {
 		if (!m_socket) {
 			if (GetDownloadState() != DS_TOOMANYCONNS) {
@@ -158,7 +145,6 @@ bool CUpDownClient::AskForDownload()
 
 void CUpDownClient::SendStartupLoadReq()
 {
-	// 0.42e
 	if (m_socket == NULL || m_reqfile == NULL) {
 		return;
 	}
@@ -173,8 +159,6 @@ void CUpDownClient::SendStartupLoadReq()
 
 bool CUpDownClient::IsSourceRequestAllowed()
 {
-	// #warning REWRITE - Source swapping from eMule.
-	//  0.42e
 	uint64 dwTickCount = ::GetTickCount64() + CONNECTION_LATENCY;
 	uint64 nTimePassedClient = dwTickCount - GetLastSrcAnswerTime();
 	uint64 nTimePassedFile = dwTickCount - m_reqfile->GetLastAnsweredTime();
@@ -186,7 +170,6 @@ bool CUpDownClient::IsSourceRequestAllowed()
 		ExtProtocolAvailable() && (SupportsSourceExchange2() || GetSourceExchange1Version() > 1) &&
 		// AND if we need more sources
 		thePrefs::GetMaxSourcePerFileSoft() > uSources &&
-		// AND if...
 		(
 			// source is not complete and file is very rare
 			(!m_bCompleteSource &&
@@ -222,7 +205,6 @@ void CUpDownClient::SendFileRequest()
 
 		dataFileReq.WriteUInt8(OP_REQUESTFILENAME);
 		DEBUG_ONLY(sent_opcodes += "|RFNM|";)
-		// Extended information
 		if (GetExtendedRequestsVersion() > 0) {
 			m_reqfile->WritePartStatus(&dataFileReq);
 		}
@@ -265,7 +247,6 @@ void CUpDownClient::SendFileRequest()
 				sent_opcodes % GetFullIP());
 		SendPacket(packet, true);
 	} else {
-		// This is extended information
 		if (GetExtendedRequestsVersion() > 0) {
 			m_reqfile->WritePartStatus(&dataFileReq);
 		}
@@ -276,12 +257,6 @@ void CUpDownClient::SendFileRequest()
 		theStats::AddUpOverheadFileRequest(packet->GetPacketSize());
 		AddDebugLogLineN(logLocalClient, "Local Client: OP_REQUESTFILENAME to " + GetFullIP());
 		SendPacket(packet, true);
-
-		// 26-Jul-2003: removed requesting the file status for files <= PARTSIZE for better
-		// compatibility with ed2k protocol (eDonkeyHybrid). if the remote client answers the
-		// OP_REQUESTFILENAME with OP_REQFILENAMEANSWER the file is shared by the remote client. if we
-		// know that the file is shared, we know also that the file is complete and don't need to
-		// request the file status.
 
 		// Sending the packet could have deleted the client, check m_reqfile
 		if (m_reqfile && (m_reqfile->GetPartCount() > 1)) {
@@ -335,7 +310,6 @@ void CUpDownClient::SendFileRequest()
 
 void CUpDownClient::ProcessFileInfo(const CMemFile *data, const CPartFile *file)
 {
-	// 0.42e
 	if (file == NULL) {
 		throw wxString("ERROR: Wrong file ID (ProcessFileInfo; file==NULL)");
 	}
@@ -348,10 +322,9 @@ void CUpDownClient::ProcessFileInfo(const CMemFile *data, const CPartFile *file)
 
 	m_clientFilename = data->ReadString((GetUnicodeSupport() != utf8strNone));
 
-	// 26-Jul-2003: removed requesting the file status for files <= PARTSIZE for better compatibility with
-	// ed2k protocol (eDonkeyHybrid). if the remote client answers the OP_REQUESTFILENAME with
-	// OP_REQFILENAMEANSWER the file is shared by the remote client. if we know that the file is shared,
-	// we know also that the file is complete and don't need to request the file status.
+	// The file status is not requested for files <= PARTSIZE, for compatibility
+	// with eDonkeyHybrid: an OP_REQFILENAMEANSWER already means the remote client
+	// shares the file, and so has it complete.
 	if (m_reqfile->GetPartCount() == 1) {
 		m_nPartCount = m_reqfile->GetPartCount();
 
@@ -387,7 +360,6 @@ void CUpDownClient::ProcessFileInfo(const CMemFile *data, const CPartFile *file)
 
 void CUpDownClient::ProcessFileStatus(bool bUdpPacket, const CMemFile *data, const CPartFile *file)
 {
-	// 0.42e
 	wxString strReqFileNull("ERROR: Wrong file ID (ProcessFileStatus; m_reqfile==NULL)");
 
 	if (!m_reqfile || file != m_reqfile) {
@@ -409,7 +381,6 @@ void CUpDownClient::ProcessFileStatus(bool bUdpPacket, const CMemFile *data, con
 		bPartsNeeded = true;
 		m_bCompleteSource = true;
 	} else {
-		// Somehow this happened.
 		if (!m_reqfile) {
 			throw strReqFileNull;
 		}
@@ -519,7 +490,6 @@ void CUpDownClient::SetDownloadState(uint8 byNewState)
 {
 	if (m_nDownloadState != byNewState) {
 		if (m_reqfile) {
-			// Notify the client that this source has changed its state
 			m_reqfile->ClientStateChanged(m_nDownloadState, byNewState);
 
 			if (byNewState == DS_DOWNLOADING) {
@@ -593,35 +563,29 @@ void CUpDownClient::SendBlockRequests()
 	}
 
 	// RTT/BDP-adaptive request-pipeline depth. The number of outstanding block
-	// requests needed to keep a link busy is the bandwidth-delay product:
-	// bytes_in_flight = rate * RTT. On a low-latency link (LAN) the BDP is a
-	// fraction of a 180 KB block, so we stay shallow and avoid the burst/starve
-	// oscillation a deep pipeline provokes against a fast local peer; on a
-	// high-latency link the BDP is large, so we go deep and hide the round-trip.
-	// Unlike a speed-only ladder this distinguishes a fast LAN peer from a fast
-	// WAN peer -- the thing that actually determines the depth needed. m_minRTT is
-	// the min-filtered request->first-byte round-trip (see ProcessBlockPacket).
+	// requests needed to keep a link busy is the bandwidth-delay product,
+	// rate * RTT: on a LAN that is a fraction of a 180 KB block, so we stay shallow
+	// and avoid the burst/starve oscillation a deep pipeline provokes against a
+	// fast local peer; on a high-latency link it is large, so we go deep and hide
+	// the round-trip. Unlike a speed-only ladder this tells a fast LAN peer from a
+	// fast WAN one. m_minRTT is the min-filtered request->first-byte round-trip
+	// (see ProcessBlockPacket).
 	//
-	// The flat cap-24 clamp is deliberate, not a placeholder. Benchmarking showed the
-	// WAN ceiling is the OS TCP socket-buffer autotune limit (~4 MB by default), which
-	// pins throughput near 40 MB/s at 100 ms RTT no matter how deep the request
-	// pipeline runs -- and cap 24 (24 * 180 KB = 4.3 MB of authorised in-flight data)
-	// already covers that. A deeper pipe buys no throughput, and 24 still sits inside
-	// eMule's own pending range (its gate is 2*blockCount = 18, with a top-up batch
-	// reaching ~27); lifting the OS buffer is host tuning, not a client concern. (The
-	// 2x overshoot factor below is still an empirical constant.)
+	// The flat cap of 24 is deliberate: the WAN ceiling is the OS TCP socket-buffer
+	// autotune limit (~4 MB by default), which pins throughput near 40 MB/s at
+	// 100 ms RTT however deep the pipeline runs, and 24 blocks is already 4.3 MB of
+	// authorised in-flight data. A deeper pipe buys no throughput, and 24 still
+	// sits inside eMule's own pending range.
 	const float rttMs = (m_minRTT > 0) ? (float)m_minRTT : 1.0f;
 	const float bdpBlocks = ((float)GetKBpsDown() * 1024.0f) * (rttMs / 1000.0f) / (float)EMBLOCKSIZE;
 	// 2x overshoot + margin: sizing the pipe to exactly the current BDP is
-	// self-limiting (the measured rate is itself capped by the current pipe, so it
-	// can never grow past a low equilibrium). Over-provisioning gives headroom for
-	// the rate to climb until it hits the link's real ceiling, at which point the
-	// BDP -- and thus the depth -- settles at the bandwidth-delay product.
+	// self-limiting, since the measured rate is itself capped by the current pipe
+	// and can never grow past a low equilibrium. Over-provisioning lets the rate
+	// climb to the link's real ceiling, where the depth settles at the BDP.
 	size_t pendingCap = 2 * (size_t)bdpBlocks + STANDARD_BLOCKS_REQUEST;
 	if (pendingCap < STANDARD_BLOCKS_REQUEST) {
-		// The floor doubles as the slow-source guard: a trickle source -- or one with
-		// no RTT sample yet (rttMs defaults to 1) -- has a near-zero BDP and is held at
-		// the 3-block minimum, never handed a deep pipe.
+		// The floor doubles as the slow-source guard: a trickle source, or one with
+		// no RTT sample yet, has a near-zero BDP and is never handed a deep pipe.
 		pendingCap = STANDARD_BLOCKS_REQUEST;
 	} else if (pendingCap > 24) {
 		pendingCap = 24; // OS-buffer ceiling (see above); still within eMule's pending range
@@ -629,10 +593,8 @@ void CUpDownClient::SendBlockRequests()
 
 	// Smooth continuous refill: top the in-flight + staged block count up to
 	// pendingCap by the exact shortfall each call, never in bursts. Bursty refill
-	// makes the leecher emit requests in clusters that overfill then starve a fast
-	// peer's send queue, leaving it idle between bursts (and tanking throughput on
-	// a low-latency link). Requests still ride the wire 3 to an OP_REQUESTPARTS
-	// packet, emitted across successive calls (see below).
+	// emits requests in clusters that overfill and then starve a fast peer's send
+	// queue. Requests still ride the wire 3 to an OP_REQUESTPARTS packet.
 	{
 		const size_t inSystem = m_PendingBlocks_list.size() + m_DownloadBlocks_list.size();
 		if (inSystem < pendingCap) {
@@ -679,10 +641,6 @@ void CUpDownClient::SendBlockRequests()
 		if (!slower_client->GetSentCancelTransfer()) {
 			CPacket *packet = new CPacket(OP_CANCELTRANSFER, 0, OP_EDONKEYPROT);
 			theStats::AddUpOverheadFileRequest(packet->GetPacketSize());
-			//			if (slower_client != this) {
-			//				printf("Dropped client %p to allow client %p to
-			// download\n",slower_client, this);
-			//			}
 			slower_client->ClearDownloadBlockRequests();
 			slower_client->SendPacket(packet, true, true);
 			slower_client->SetSentCancelTransfer(1);
@@ -696,7 +654,6 @@ void CUpDownClient::SendBlockRequests()
 		}
 
 		if (slower_client != this) {
-			// Re-request freed blocks.
 			AddDebugLogLineN(logLocalClient,
 				"Local Client: OP_CANCELTRANSFER (faster source eager to transfer) to " +
 					slower_client->GetFullIP());
@@ -739,7 +696,6 @@ void CUpDownClient::SendBlockRequests()
 				return;
 			}
 		} else {
-			// Drop this one.
 			AddDebugLogLineN(logLocalClient,
 				"Local Client: OP_CANCELTRANSFER (no free blocks) to " + GetFullIP());
 			// #warning Kry - Would be nice to swap A4AF here.
@@ -747,19 +703,15 @@ void CUpDownClient::SendBlockRequests()
 		}
 	}
 
-	// Collect up to 3 pending blocks that have not yet been written to a
-	// REQUESTPARTS packet (fQueued == 0). OP_REQUESTPARTS / OP_REQUESTPARTS_I64
-	// carry exactly 3 <start,end> pairs on the wire (see ProcessRequestPartsPacket
-	// in UploadClient.cpp, which unconditionally reads 3 pairs); asking for more
-	// in one packet corrupts the wire format and the sender ignores us. Pad with
-	// zero-pairs if we have fewer than 3 unqueued blocks.
+	// Collect up to 3 pending blocks not yet written to a REQUESTPARTS packet
+	// (fQueued == 0). OP_REQUESTPARTS / OP_REQUESTPARTS_I64 carry exactly 3
+	// <start,end> pairs on the wire (ProcessRequestPartsPacket in UploadClient.cpp
+	// unconditionally reads 3), so asking for more in one packet corrupts the wire
+	// format and the sender ignores us; pad with zero-pairs instead.
 	//
-	// To take more than 3 blocks in flight we emit one 3-block packet per call to
-	// SendBlockRequests() and let the caller's existing re-invocation loop (after
-	// each OP_SENDINGPART, OP_ACCEPTUPLOADREQ, etc.) issue further packets until
-	// m_PendingBlocks_list is fully queued -- the same pattern eMule uses
-	// (eMule0.70b srchybrid/DownloadClient.cpp ::CreateBlockRequests +
-	// ::SendBlockRequests).
+	// More than 3 blocks in flight means one 3-block packet per call, with the
+	// caller's re-invocation loop (after each OP_SENDINGPART, OP_ACCEPTUPLOADREQ,
+	// ...) issuing further packets until m_PendingBlocks_list is fully queued.
 	std::vector<Pending_Block_Struct *> toRequest;
 	bool bHasLongBlocks = false;
 	const size_t perPacketLimit = STANDARD_BLOCKS_REQUEST;
@@ -802,10 +754,9 @@ void CUpDownClient::SendBlockRequests()
 
 	CPacket *packet = NULL;
 
-	// OP_REQUESTPARTS / OP_REQUESTPARTS_I64: always 3 blocks on the wire. Pad
-	// missing entries with zero <start,end> pairs; the upload-side parser
-	// (UploadClient.cpp ProcessRequestPartsPacket) silently skips entries with
-	// end <= start, so zero pairs are inert.
+	// Always 3 blocks on the wire; pad missing entries with zero <start,end>
+	// pairs. The upload-side parser silently skips entries with end <= start, so
+	// the padding is inert.
 	const size_t kWireBlocks = STANDARD_BLOCKS_REQUEST;
 	const size_t offsetSize = bHasLongBlocks ? 8 : 4;
 	CMemFile data(16 + kWireBlocks * offsetSize * 2);
@@ -884,20 +835,15 @@ void CUpDownClient::ProcessBlockPacket(const uint8_t *packet, uint32 size, bool 
 	uint32 nBlockSize = 0;
 	uint32 lenUnzipped = 0;
 
-	// Update stats
 	m_dwLastBlockReceived = ::GetTickCount64();
 
 	try {
 
-		// Read data from packet
 		const CMemFile data(packet, size);
 
-		// Check that this data is for the correct file
 		if ((!m_reqfile) || data.ReadHash() != m_reqfile->GetFileHash()) {
 			throw wxString("Wrong fileid sent (ProcessBlockPacket)");
 		}
-
-		// Find the start & end positions, and size of this chunk of data
 
 		if (largeblocks) {
 			nStartPos = data.ReadUInt64();
@@ -933,22 +879,18 @@ void CUpDownClient::ProcessBlockPacket(const uint8_t *packet, uint32 size, bool 
 		// Move end back one, should be inclusive
 		nEndPos--;
 
-		// Loop through to find the reserved block that this is within
 		std::list<Pending_Block_Struct *>::iterator it = m_PendingBlocks_list.begin();
 		for (; it != m_PendingBlocks_list.end(); ++it) {
 			Pending_Block_Struct *cur_block = *it;
 
 			if ((cur_block->block->StartOffset <= nStartPos) &&
 				(cur_block->block->EndOffset >= nStartPos)) {
-				// Found reserved block
 
 				if (cur_block->block->StartOffset == nStartPos) {
-					// This block just started transferring. Set the start time.
 					m_last_block_start = ::GetTickCount64();
-					// RTT sample: the matched request->first-byte round-trip for
-					// this block. Min-filtered so pipeline queuing delay never
-					// inflates the estimate (BBR-style min-RTT floor); used to size
-					// the request pipeline to the bandwidth-delay product.
+					// RTT sample: the matched request->first-byte round-trip
+					// for this block. Min-filtered so pipeline queuing delay
+					// never inflates the estimate; sizes the request pipeline.
 					if (cur_block->sentTime != 0) {
 						uint64 sample = m_last_block_start - cur_block->sentTime;
 						if (m_minRTT == 0 || sample < m_minRTT) {
@@ -976,7 +918,6 @@ void CUpDownClient::ProcessBlockPacket(const uint8_t *packet, uint32 size, bool 
 				// This will be 0 in these cases, or the length written otherwise
 				uint32 lenWritten = 0;
 
-				// Handle differently depending on whether packed or not
 				if (!packed) {
 					// security sanitize check
 					if (nEndPos > cur_block->block->EndOffset) {
@@ -1003,7 +944,6 @@ void CUpDownClient::ProcessBlockPacket(const uint8_t *packet, uint32 size, bool 
 						cur_block->block,
 						this);
 				} else {
-					// Packed
 					wxASSERT((long int)size > 0);
 					// Create space to store unzipped data, the size is
 					// only an initial guess, will be resized in unzip()
@@ -1015,7 +955,6 @@ void CUpDownClient::ProcessBlockPacket(const uint8_t *packet, uint32 size, bool 
 					}
 					uint8_t *unzipped = new uint8_t[lenUnzipped];
 
-					// Try to unzip the packet
 					int result = unzip(cur_block,
 						(uint8_t *)(packet + header_size),
 						(size - header_size),
@@ -1026,7 +965,6 @@ void CUpDownClient::ProcessBlockPacket(const uint8_t *packet, uint32 size, bool 
 					// erroneous.
 					if (result == Z_OK && ((int)lenUnzipped >= 0)) {
 
-						// Write any unzipped data to disk
 						if (lenUnzipped > 0) {
 							wxASSERT((int)lenUnzipped > 0);
 
@@ -1048,7 +986,6 @@ void CUpDownClient::ProcessBlockPacket(const uint8_t *packet, uint32 size, bool 
 									cur_block->block->StartOffset,
 									cur_block->block->EndOffset);
 							} else {
-								// Write uncompressed data to file
 								lenWritten = m_reqfile->WriteToBuffer(
 									size - header_size,
 									unzipped,
@@ -1084,21 +1021,17 @@ void CUpDownClient::ProcessBlockPacket(const uint8_t *packet, uint32 size, bool 
 							cur_block->zStream = NULL;
 						}
 
-						// Although we can't further use the current zstream, there is
-						// no need to disconnect the sending client because the next
-						// zstream (a series of 10K-blocks which build a 180K-block)
-						// could be valid again. Just ignore all further blocks for
-						// the current zstream.
+						// No need to disconnect the sending client: the next
+						// zstream (a series of 10K-blocks building a 180K-block)
+						// may be valid again, so just ignore the rest of this one.
 						cur_block->fZStreamError = 1;
 						cur_block->totalUnzipped = 0; // bluecow's fix
 					}
 					delete[] unzipped;
 				}
-				// These checks only need to be done if any data was written
 				if (lenWritten > 0) {
 					m_nTransferredDown += lenWritten;
 
-					// If finished reserved block
 					if (nEndPos == cur_block->block->EndOffset) {
 
 						// Save last average speed based on data and time.
@@ -1127,11 +1060,9 @@ void CUpDownClient::ProcessBlockPacket(const uint8_t *packet, uint32 size, bool 
 						delete cur_block;
 						m_PendingBlocks_list.erase(it);
 
-						// Request next block
 						SendBlockRequests();
 					}
 				}
-				// Stop looping and exit method
 				return;
 			}
 		}
@@ -1155,16 +1086,13 @@ int CUpDownClient::unzip(Pending_Block_Struct *block,
 {
 	int err = Z_DATA_ERROR;
 
-	// Save some typing
 	z_stream *zS = block->zStream;
 
 	// Is this the first time this block has been unzipped
 	if (zS == NULL) {
-		// Create stream
 		block->zStream = new z_stream;
 		zS = block->zStream;
 
-		// Initialise stream values
 		zS->zalloc = (alloc_func)0;
 		zS->zfree = (free_func)0;
 		zS->opaque = (voidpf)0;
@@ -1173,14 +1101,12 @@ int CUpDownClient::unzip(Pending_Block_Struct *block,
 		zS->next_out = (*unzipped);
 		zS->avail_out = (*lenUnzipped);
 
-		// Initialise the z_stream
 		err = inflateInit(zS);
 		if (err != Z_OK) {
 			return err;
 		}
 	}
 
-	// Use whatever input is provided
 	zS->next_in = zipped;
 	zS->avail_in = lenZipped;
 
@@ -1190,13 +1116,11 @@ int CUpDownClient::unzip(Pending_Block_Struct *block,
 		zS->avail_out = (*lenUnzipped);
 	}
 
-	// Try to unzip the data
 	err = inflate(zS, Z_SYNC_FLUSH);
 
 	// Is zip finished reading all currently available input and writing
 	// all generated output
 	if (err == Z_STREAM_END) {
-		// Finish up
 		err = inflateEnd(zS);
 		if (err != Z_OK) {
 			return err;
@@ -1211,7 +1135,6 @@ int CUpDownClient::unzip(Pending_Block_Struct *block,
 		// Output array was not big enough,
 		// call recursively until there is enough space
 
-		// What size should we try next
 		uint32 newLength = (*lenUnzipped) *= 2;
 		if (newLength == 0) {
 			newLength = lenZipped * 2;
@@ -1228,7 +1151,6 @@ int CUpDownClient::unzip(Pending_Block_Struct *block,
 		zS->next_out = (*unzipped) + (zS->total_out - block->totalUnzipped);
 		zS->avail_out = (*lenUnzipped) - (zS->total_out - block->totalUnzipped);
 
-		// Try again
 		err = unzip(block, zS->next_in, zS->avail_in, unzipped, lenUnzipped, iRecursion + 1);
 	} else if ((err == Z_OK) && (zS->avail_in == 0)) {
 		// All available input has been processed, everything ok.
@@ -1258,10 +1180,8 @@ int CUpDownClient::unzip(Pending_Block_Struct *block,
 	return err;
 }
 
-// Speed is now updated only when data was received, calculated as
-// (data received) / (time since last reception)
-// and slightly filtered (10s average).
-// Result is quite precise now and makes the DownloadRateAdjust workaround obsolete.
+// Updated only when data was received: (data received) / (time since last
+// reception), lightly filtered over a 10 s average.
 
 float CUpDownClient::CalculateKBpsDown()
 {
@@ -1279,9 +1199,6 @@ float CUpDownClient::CalculateKBpsDown()
 		} else {
 			kBpsDown = (kBpsDown * (tAverage - dt) + kBpsDownCur * dt) / tAverage;
 		}
-		// AddDebugLogLineN(logLocalClient, CFormat("CalculateKBpsDown %p kbps %.1f kbpsCur %.1f dt
-		// %.3f rcv %d ") 			% this % kBpsDown  % kBpsDownCur % dt %
-		// bytesReceivedCycle);
 		bytesReceivedCycle = 0;
 		msReceivedPrev = msCur;
 	}
@@ -1324,7 +1241,6 @@ void CUpDownClient::SetRemoteQueueRank(uint16 nr)
 
 void CUpDownClient::UDPReaskACK(uint16 nNewQR)
 {
-	// 0.42e
 	m_bUDPPending = false;
 	SetRemoteQueueRank(nNewQR);
 	m_dwLastAskedTime = ::GetTickCount64();
@@ -1434,7 +1350,6 @@ void CUpDownClient::UDPReaskForDownload()
 	}
 }
 
-// Get the next part that is requested
 uint16 CUpDownClient::GetNextRequestedPart() const
 {
 	uint16 part = 0xffff;
@@ -1454,10 +1369,8 @@ void CUpDownClient::UpdateDisplayedInfo(bool force)
 {
 	uint64 curTick = ::GetTickCount64();
 	if (force || curTick - m_lastRefreshedDLDisplay > MINWAIT_BEFORE_DLDISPLAY_WINDOWUPDATE) {
-		// Check if we actually need to notify of changes
 		bool update = m_reqfile && m_reqfile->ShowSources();
 
-		// Check A4AF files only if needed
 		if (!update) {
 			A4AFList::iterator it = m_A4AF_list.begin();
 			for (; it != m_A4AF_list.end(); ++it) {
@@ -1468,7 +1381,6 @@ void CUpDownClient::UpdateDisplayedInfo(bool force)
 			}
 		}
 
-		// And finnaly trigger an event if there's any reason
 		if (update) {
 			SourceItemType type;
 			switch (GetDownloadState()) {
@@ -1522,7 +1434,6 @@ uint8 CUpDownClient::GetObfuscationStatus() const
 bool CUpDownClient::SwapToAnotherFile(
 	bool bIgnoreNoNeeded, bool ignoreSuspensions, bool bRemoveCompletely, CPartFile *toFile)
 {
-	// Fail if m_reqfile is invalid
 	if (m_reqfile == NULL) {
 		return false;
 	}
@@ -1532,17 +1443,14 @@ bool CUpDownClient::SwapToAnotherFile(
 		return false;
 	}
 
-	// The iterator of the final target
 	A4AFList::iterator target = m_A4AF_list.end();
 
-	// Do we want to swap to a specific file?
 	if (toFile != NULL) {
 		A4AFList::iterator it = m_A4AF_list.find(toFile);
 		if (it != m_A4AF_list.end()) {
 
 			// We force ignoring of timestamps
 			if (IsValidSwapTarget(it, bIgnoreNoNeeded, true)) {
-				// Set the target
 				target = it;
 			}
 		}
@@ -1561,11 +1469,9 @@ bool CUpDownClient::SwapToAnotherFile(
 				if (it->second.NeededParts)
 					cur_priority += 10;
 
-				// Change target if the current file has a higher rate than the previous
 				if (cur_priority > priority) {
 					priority = cur_priority;
 
-					// Set the new target
 					target = it;
 
 					// Break on the first High-priority file with needed parts
@@ -1577,7 +1483,6 @@ bool CUpDownClient::SwapToAnotherFile(
 		}
 	}
 
-	// Try to swap if we found a valid target
 	if (target != m_A4AF_list.end()) {
 
 		// Sanity check, if reqfile doesn't own the source, then something
@@ -1596,7 +1501,6 @@ bool CUpDownClient::SwapToAnotherFile(
 			if (!bRemoveCompletely) {
 				m_reqfile->AddA4AFSource(this);
 
-				// Set the status of the old file
 				m_A4AF_list[m_reqfile].NeededParts = (GetDownloadState() != DS_NONEEDEDPARTS);
 
 				// Avoid swapping to this file for a while
@@ -1660,7 +1564,6 @@ bool CUpDownClient::IsValidSwapTarget(A4AFList::iterator it, bool ignorenoneeded
 		}
 	}
 
-	// Final checks to see if the client is a valid target
 	CPartFile *cur_file = it->first;
 	if ((cur_file != m_reqfile && !cur_file->IsStopped()) &&
 		(cur_file->GetStatus() == PS_READY || cur_file->GetStatus() == PS_EMPTY) &&
@@ -1744,7 +1647,6 @@ void CUpDownClient::ProcessAICHAnswer(const uint8_t *packet, uint32 size)
 			ahMasterHash == pPartFile->GetAICHHashset()->GetMasterHash()) {
 			if (pPartFile->GetAICHHashset()->ReadRecoveryData(
 				    request.m_nPart * PARTSIZE, &data)) {
-				// finally all checks passed, everything seems to be fine
 				AddDebugLogLineN(logAICHTransfer,
 					"AICH Packet Answer: Succeeded to read and validate received "
 					"recoverydata");

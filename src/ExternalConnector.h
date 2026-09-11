@@ -221,19 +221,17 @@ public:
 	{
 		return m_ECClient && m_ECClient->ServerSupportsSearchProgressUnion();
 	}
-	// True when amuled answers EC_OP_GET_CLIENT_HISTORY. Null-checked for the
-	// same reason as the union accessor above -- and the check is not optional
-	// even beyond that: a daemon predating the request reaches the
-	// unknown-opcode branch of ProcessRequest2(), which asserts rather than
-	// answering EC_OP_FAILED, so asking an old core takes it down.
+	// True when amuled answers EC_OP_GET_CLIENT_HISTORY. Null-checked for the same
+	// reason as the union accessor above, and the check is load-bearing beyond
+	// that: a daemon predating the request reaches the unknown-opcode branch of
+	// ProcessRequest2(), which asserts rather than answering EC_OP_FAILED.
 	bool IsServerClientHistoryActive() const
 	{
 		return m_ECClient && m_ECClient->ServerSupportsClientHistory();
 	}
-	// True when amuled serves the chat session ops (EC_OP_GET_CHAT_SESSIONS
-	// and friends). Same null-check-is-load-bearing reasoning as above: a
-	// daemon predating them asserts on the unknown opcode instead of
-	// answering EC_OP_FAILED, so every chat request must be gated on this.
+	// True when amuled serves the chat session ops. Same load-bearing null check:
+	// a daemon predating them asserts on the unknown opcode instead of answering
+	// EC_OP_FAILED, so every chat request must be gated on this.
 	bool IsServerChatActive() const { return m_ECClient && m_ECClient->ServerSupportsChatSessions(); }
 	// Version string of the connected core, from the EC AUTH_OK handshake.
 	// Empty when not connected (m_ECClient null) or when the daemon is old
@@ -268,12 +266,10 @@ protected:
 	wxString m_host;
 	CMD4Hash m_password;
 	bool m_ZLIB;
-	// Force ZLIB regardless of dialed-IP locality (#728 follow-up).
-	// Set by `/EC/ForceZLIB=1` in the config or `--force-zlib` on the
-	// CLI. Use case: a WireGuard tunnel endpoint that resolves to an
-	// RFC1918 IP but whose transit is slow Internet — the locality
-	// check would otherwise strip ZLIB and the user loses the perf
-	// they actually want.
+	// Force ZLIB regardless of dialed-IP locality, via `/EC/ForceZLIB=1` or
+	// `--force-zlib`. For a WireGuard endpoint that resolves to an RFC1918 IP but
+	// whose transit is slow Internet, where the locality check would otherwise
+	// strip ZLIB.
 	bool m_forceZLIB;
 
 	// Offer EC transport encryption. On by default: the daemon only encrypts

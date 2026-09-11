@@ -91,10 +91,9 @@ enum EKadState
 	KS_CONNECTING_FWCHECK_UDP
 };
 
-// Lifecycle of a "View Files" (browse peer shared files) request. The values
-// are a wire contract: they are sent verbatim in EC_TAG_SEARCH_BROWSE_STATUS
-// (uint8) so a remote GUI can render the browse tab's marker. Both the
-// monolithic client and amuleGUI read the same enum.
+// Lifecycle of a "View Files" (browse peer shared files) request. The values are
+// a wire contract, sent verbatim in EC_TAG_SEARCH_BROWSE_STATUS so a remote GUI
+// can render the browse tab's marker.
 enum EBrowseStatus
 {
 	BROWSE_NONE = 0,    // no browse in flight for this client
@@ -136,8 +135,8 @@ enum class EContactResult
 	//! The client is still valid.
 	Declined,
 	//! Connect() declined to start, because the socket was already live. Kept
-	//! distinct only to preserve the historical bool -- callers have always
-	//! been told "false" here, and changing that is not this change's job.
+	//! distinct only to preserve the historical bool, which callers have always
+	//! been told is "false" here.
 	ConnectNotStarted,
 	//! The client was destroyed on the way out. Touching it is undefined.
 	ClientDeleted
@@ -187,7 +186,6 @@ private:
 #endif
 
 public:
-	// base
 	CUpDownClient(CClientTCPSocket *sender = 0);
 	CUpDownClient(uint16 in_port,
 		uint32 in_userid,
@@ -241,13 +239,12 @@ public:
 	wxString GetFullIP() const { return Uint32toStringIP(m_FullUserIP); }
 	// The numeric form of GetFullIP(), for callers that do not need the string.
 	// Named to be hard to confuse with it: the GeoIP resolver overloads on the
-	// argument type, so passing the string variant compiles and silently takes
-	// the uncached path.
+	// argument type, so passing the string variant compiles and silently takes the
+	// uncached path.
 	uint32 GetFullIPNumeric() const { return m_FullUserIP; }
-	// Country ISO code accessors (#439). Unconditional (libmaxminddb-free) so the
-	// shared client-list drawing code compiles regardless of the resolver gate.
-	// Unused by monolithic amule, which resolves country locally via
-	// theApp->GetIP2Country(); populated over EC on the remote-GUI client.
+	// Country ISO code accessors (#439). Unconditional, so the shared client-list
+	// drawing code compiles regardless of the resolver gate. Unused by monolithic
+	// amule, which resolves locally; populated over EC on the remote GUI.
 	const wxString &GetCountryCode() const { return m_countryCode; }
 	bool IsCountryFromCore() const { return m_countryFromCore; }
 	void SetCountryCode(const wxString &code)
@@ -360,8 +357,6 @@ public:
 	void ResetSessionUp();
 	uint32 GetUploadDatarate() const { return m_nUpDatarate; }
 
-	// uint32		GetWaitTime() const		{ return m_dwUploadTime - GetWaitStartTime();
-	// }
 	uint64 GetUpStartTimeDelay() const { return ::GetTickCount64() - m_dwUploadTime; }
 	uint64 GetWaitStartTime() const;
 
@@ -524,9 +519,8 @@ public:
 
 	// "View Files" (browse): the search ID this peer's listing is filed under.
 	// Allocated before the request goes out -- by the EC handler for a remote
-	// browse, by RequestSharedFileList itself for a local one -- so it is the
-	// single key for the browse everywhere, and CBrowseManager owns the
-	// lifecycle behind it. 0 = this client has never been browsed.
+	// browse, by RequestSharedFileList for a local one -- so it is the single key
+	// for the browse everywhere. 0 means never browsed.
 	uint32 GetBrowseSearchId() const { return m_browseSearchId; }
 	/**
 	 * Whether this browse was asked for by a remote client rather than here.
@@ -836,7 +830,6 @@ private:
 
 	CPartFile *m_reqfile;
 
-	// base
 	void Init();
 	bool ProcessHelloTypePacket(const CMemFile &data);
 	void SendHelloTypePacket(CMemFile *data);

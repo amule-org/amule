@@ -66,11 +66,9 @@ enum SearchType
 	GlobalSearch = 1,
 	KadSearch = 2,
 	// 3 is EC_SEARCH_WEB -- deliberately skipped, see above.
-	//! A "View Files" browse of one peer's share. Shares the id space and
-	//! the lifecycle machinery with real searches, but is started by
-	//! EnsureBrowseTab rather than a query, and is the kind a remote GUI
-	//! needs in order to rebuild the right sort of tab for a browse it did
-	//! not start itself.
+	//! A "View Files" browse of one peer's share. Shares the id space and the
+	//! lifecycle machinery with real searches, but is started by EnsureBrowseTab
+	//! rather than a query.
 	BrowseSearch = 4
 };
 
@@ -230,18 +228,17 @@ public:
 	};
 	SearchLifecycleState GetSearchLifecycleState() const;
 
-	// Per-search-ID lifecycle accessors for the multi-search EC path. For
-	// the most-recently-started search (== m_currentSearch) these delegate
-	// to the scalar accessors above (accurate live state); for older searches
-	// they infer state from the Kad manager (a still-active keyword search is
-	// RUNNING) and the retained result bucket (present => FINISHED).
+	// Per-search-ID lifecycle accessors for the multi-search EC path. For the
+	// most-recently-started search these delegate to the scalar accessors above;
+	// for older searches they infer state from the Kad manager (a still-active
+	// keyword search is RUNNING) and the retained result bucket (present means
+	// FINISHED).
 	SearchLifecycleState GetSearchLifecycleStateById(wxUIntPtr searchID) const;
 	uint8 GetSearchLifecyclePercentById(wxUIntPtr searchID) const;
-	// The overloaded progress-bar sentinel for a search: 0xffff when a finished
-	// ed2k search, 0xfffe when a finished Kad search (each resets the bar and,
-	// for Kad, clears the "!" marker on the client), otherwise the running
-	// percent. Single source of truth for the bottom bar, shared by the EC
-	// PROGRESS reply (remote GUI / amuleapi) and the monolithic search dialog.
+	// The overloaded progress-bar sentinel for a search: 0xffff for a finished ed2k
+	// search, 0xfffe for a finished Kad one (each resets the bar, and Kad also
+	// clears the "!" marker), otherwise the running percent. Single source of truth
+	// for the bottom bar, shared by the EC PROGRESS reply and the search dialog.
 	uint32 GetSearchBarStatusById(wxUIntPtr searchID) const;
 	// "View Files" browse tabs are not CSearchList searches: CBrowseManager
 	// owns their bar, and GetSearchBarStatusById consults it first, so the
@@ -250,12 +247,11 @@ public:
 	// Echoes m_searchType for the current/last search; meaningful only
 	// when state is RUNNING or FINISHED. Returns LocalSearch by default.
 	SearchType GetSearchLifecycleKind() const { return m_searchType; }
-	// Per-id search kind: the type recorded for THIS search when it started,
-	// so the EC PROGRESS reply reports the polled tab's kind rather than the
-	// scalar (most-recently-started) one — a remote GUI running several
-	// searches needs each tab's real kind (e.g. to enable the Kad-only "More"
-	// button). Kad is authoritative via IsOrWasKadSearch even if the recorded
-	// entry was pruned; unknown ids fall back to the scalar.
+	// Per-id search kind: the type recorded for THIS search when it started, so the
+	// EC PROGRESS reply reports the polled tab's kind rather than the scalar one --
+	// a remote GUI running several searches needs each tab's real kind, for the
+	// Kad-only "More" button. Kad is authoritative via IsOrWasKadSearch even if the
+	// recorded entry was pruned; unknown ids fall back to the scalar.
 	SearchType GetSearchLifecycleKindById(wxUIntPtr searchID) const;
 	/**
 	 * Records a browse under @a searchID so it appears in the search list
@@ -279,10 +275,9 @@ public:
 	// Result count for the current search; 0 if idle.
 	std::size_t GetCurrentSearchResultCount() const;
 	// Unified 0..100 completion for the current search, surfaced via
-	// EC_TAG_SEARCH_LIFECYCLE_PERCENT. Global uses the real server-queue
-	// percent; Kad — which has no measurable progress — gets a cosmetic
-	// time-ramp off the fixed keyword-search lifetime that the FINISHED
-	// lifecycle state authoritatively snaps to 100. Idle returns 0.
+	// EC_TAG_SEARCH_LIFECYCLE_PERCENT. Global uses the real server-queue percent;
+	// Kad, which has no measurable progress, gets a cosmetic time-ramp off the
+	// fixed keyword-search lifetime, which the FINISHED state snaps to 100.
 	uint8 GetSearchLifecyclePercent() const;
 
 	/** This function is called once the local (ed2k) search has ended. */
@@ -426,20 +421,17 @@ private:
 	//! On-disk name of the search-results persistence file, in the config dir.
 	static const wxChar *const s_storedSearchesFilename;
 
-	//! Ceiling on how many searches StoreSearches() writes / LoadSearches()
-	//! accepts. Matches kMaxEcSearches (ExternalConn.cpp) for consistency,
-	//! though m_searchStrings itself isn't EC-bounded -- a purely local,
-	//! monolithic-only set of open tabs could exceed it. The oldest (by
-	//! m_searchStartTimes) are dropped first, with a log line; never silent.
+	//! Ceiling on how many searches StoreSearches() writes and LoadSearches()
+	//! accepts. Matches kMaxEcSearches for consistency, though m_searchStrings
+	//! itself is not EC-bounded. The oldest are dropped first, with a log line.
 	static const std::size_t MAX_STORED_SEARCHES = 20;
 
-	//! Ceiling on how many results StoreSearches() writes / LoadSearches()
-	//! accepts per search. No existing loader (known.met, server.met) bounds
-	//! its record count, so this is a fresh, deliberately generous number --
-	//! not one mirrored from elsewhere. Unlike known.met (describes local
-	//! files), a search result describes an arbitrary remote peer's claims,
-	//! so the read side must fail closed on a record claiming more than this
-	//! rather than attempt an unbounded allocation.
+	//! Ceiling on how many results StoreSearches() writes and LoadSearches()
+	//! accepts per search. Deliberately generous, and not mirrored from any other
+	//! loader: unlike known.met, which describes local files, a search result
+	//! describes an arbitrary remote peer's claims, so the read side must fail
+	//! closed on a record claiming more than this rather than attempt an unbounded
+	//! allocation.
 	static const std::size_t MAX_STORED_RESULTS_PER_SEARCH = 5000;
 
 	/** Event-handler for global searches. */
@@ -535,11 +527,10 @@ private:
 	//! If the current search is a KAD search this signals if it is finished.
 	bool m_KadSearchFinished;
 
-	//! Per-search Kad completion (multi-search): the IDs of Kad searches that
-	//! have ended (their CSearch was destroyed on the result cap or the 45s
-	//! lifetime). Lets GetSearchLifecycleStateById report each search
-	//! independently, so one search finishing does not mark a different
-	//! still-running search as finished. Pruned in RemoveResults.
+	//! Per-search Kad completion (multi-search): the IDs of Kad searches that have
+	//! ended. Lets GetSearchLifecycleStateById report each search independently, so
+	//! one finishing does not mark a different still-running search as finished.
+	//! Pruned in RemoveResults.
 	std::set<uint32_t> m_finishedKadSearches;
 
 	//! Per-search start time (multi-search), so each search's cosmetic Kad
@@ -555,19 +546,15 @@ private:
 	//! Peer ecid per browse id; see RegisterBrowseSearch().
 	std::map<uint32_t, uint32> m_browsePeers;
 
-	//! This search's original query string, keyed by id (same lifetime as
-	//! m_searchKinds -- recorded in StartNewSearch, pruned in RemoveResults).
-	//! Needed to label a search enumerated via EC_OP_SEARCH_LIST for a
-	//! client that didn't start it locally and so has no tab-title string
-	//! of its own to fall back on.
+	//! This search's original query string, keyed by id (recorded in StartNewSearch,
+	//! pruned in RemoveResults). Needed to label a search enumerated via
+	//! EC_OP_SEARCH_LIST for a client that did not start it locally.
 	std::map<uint32_t, wxString> m_searchStrings;
 
-	//! ED2K-side counterpart of m_KadSearchFinished, covering both local
-	//! and global searches. Cleared to false in StartNewSearch when an
-	//! ED2K search is issued; set back to true in LocalSearchEnd (local)
-	//! or FinalizeGlobalSearch (global — both natural drain and
-	//! explicit abort). GetSearchLifecycleState uses this as the
-	//! RUNNING vs FINISHED signal for the ED2K branch.
+	//! ED2K-side counterpart of m_KadSearchFinished, covering both local and global
+	//! searches. Cleared in StartNewSearch when an ED2K search is issued, set again
+	//! in LocalSearchEnd or FinalizeGlobalSearch. GetSearchLifecycleState uses it as
+	//! the RUNNING vs FINISHED signal for the ED2K branch.
 	bool m_ed2kSearchFinished;
 	/**
 	 * True from an ed2k search going out until the connected server answers.
@@ -582,10 +569,9 @@ private:
 	//! GetSearchLifecyclePercent.
 	time_t m_searchStart;
 
-	//! Set by the destructor before it drains m_results, so RemoveResults
-	//! skips its MuleNotify::Search_Removed broadcast during teardown --
-	//! the GUI is being dismantled around us and there is no tab left worth
-	//! closing.
+	//! Set by the destructor before it drains m_results, so RemoveResults skips its
+	//! Search_Removed broadcast during teardown: the GUI is being dismantled around
+	//! us and there is no tab left worth closing.
 	bool m_shuttingDown;
 
 	//! Queue of servers to ask when doing global searches.

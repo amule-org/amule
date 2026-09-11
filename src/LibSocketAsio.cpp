@@ -116,17 +116,13 @@ void SetSocketBindInterface(const wxString &iface)
 	s_bindToInterface = iface;
 }
 
+// Mark a freshly-created socket close-on-exec so subprocesses launched via
+// wxExecute() (preview-with-vlc, etc.) do not inherit and pin our listen / UDP
+// file descriptors. Without this, vlc keeps the bind alive after aMule exits
+// and the next start fails with "Address already in use" until vlc is killed.
 //
-// Mark a freshly-created socket close-on-exec so subprocesses launched
-// via wxExecute() (preview-with-vlc, etc.) don't inherit and pin our
-// listen / UDP file descriptors. Without this, vlc keeps the bind alive
-// after aMule exits, and the next aMule start fails with
-// "Address already in use" until the user kills vlc (#172).
-//
-// No-op on Windows: WinSock SOCKET handles are non-inheritable by
-// default unless the parent passes bInheritHandle=TRUE to CreateProcess,
-// which wxExecute does not do.
-//
+// No-op on Windows: WinSock SOCKET handles are non-inheritable by default
+// unless the parent passes bInheritHandle=TRUE to CreateProcess.
 template <typename Handle> static inline void SetCloexecOnSocket(Handle native)
 {
 #ifndef __WINDOWS__
@@ -139,20 +135,17 @@ template <typename Handle> static inline void SetCloexecOnSocket(Handle native)
 #endif
 }
 
-// Turn on TCP keepalive with per-socket timings. Used by the EC sockets
-// to detect a half-open connection (peer gone, FIN/RST lost or never
-// sent — common after a network blip, OOM-kill, etc.) instead of
-// sitting idle until the default ~2h TCP retransmit timeout kicks in.
+// Turn on TCP keepalive with per-socket timings. Used by the EC sockets to
+// detect a half-open connection (peer gone, FIN/RST lost or never sent --
+// common after a network blip or an OOM-kill) instead of sitting idle until the
+// default ~2h TCP retransmit timeout.
 //
-// POSIX: SO_KEEPALIVE plus the three TCP-layer timing knobs. Linux
-// names (TCP_KEEPIDLE / TCP_KEEPINTVL / TCP_KEEPCNT) are the canonical
-// set; macOS / *BSD use TCP_KEEPALIVE for the idle time and inherit
-// the system defaults for interval and count, which is acceptable as
-// a fallback.
+// POSIX: SO_KEEPALIVE plus the three TCP-layer timing knobs. The Linux names
+// are the canonical set; macOS / *BSD use TCP_KEEPALIVE for the idle time and
+// inherit the system defaults for interval and count.
 //
-// Windows: SIO_KEEPALIVE_VALS via WSAIoctl. The Windows surface only
-// exposes idle and interval; the probe count uses the system default
-// (typically 10 on modern Windows).
+// Windows: SIO_KEEPALIVE_VALS via WSAIoctl, which exposes only idle and
+// interval; the probe count uses the system default.
 template <typename Handle>
 static inline void SetTcpKeepalive(Handle native, int idleSec, int intervalSec, int count)
 {
@@ -188,13 +181,11 @@ static inline void SetTcpKeepalive(Handle native, int idleSec, int intervalSec, 
 
 #ifdef __WINDOWS__
 // Map a Windows adapter FriendlyName (what the prefs dropdown shows, e.g.
-// "Ethernet", "Wi-Fi") to its interface index. if_nametoindex() can't do this
-// on Windows — it expects the adapter's GUID-style name, not the friendly one,
-// so the enumerated dropdown value is resolved here instead. Returns 0 if not
-// found (the caller then tries a bare numeric index).
-//
-// The friendly name comes out of the same enumeration the preferences dialog
-// filled the dropdown from, so a name that was offered there resolves here.
+// "Ethernet", "Wi-Fi") to its interface index. if_nametoindex() cannot do this
+// on Windows -- it expects the adapter's GUID-style name, not the friendly one.
+// Returns 0 if not found, and the caller then tries a bare numeric index. The
+// friendly name comes out of the same enumeration the preferences dialog filled
+// the dropdown from, so a name offered there resolves here.
 static unsigned int ResolveWindowsInterfaceIndex(const wxString &friendlyName)
 {
 	for (const NetworkInterface &iface : DetectNetworkInterfaces()) {
@@ -237,24 +228,20 @@ static unsigned int ResolveBindInterfaceIndex(const wxString &ifname)
 }
 
 // Bind a raw socket's egress to a network interface. Unlike binding to a local
-// IP (SetLocal), this pins the *route*, so traffic can't leak out via the
-// default-route interface — the VPN-leak case behind amule-org/amule#173.
+// IP (SetLocal), this pins the *route*, so traffic cannot leak out via the
+// default-route interface -- the VPN-leak case.
 //
 // Each platform needs the option that is a real egress *constraint*:
 //   Linux         : SO_BINDTODEVICE. IP_UNICAST_IF is only a routing preference
-//                   here (verified: it silently falls back to the default
-//                   route), so it can't prevent leaks. SO_BINDTODEVICE may
-//                   require CAP_NET_RAW on some kernels — the caller surfaces
-//                   that instead of pretending traffic is contained.
-//   macOS / Darwin: IP_BOUND_IF / IPV6_BOUND_IF (Darwin's SO_BINDTODEVICE
-//                   equivalent; a true constraint, no privileges needed).
-//   Windows       : IP_UNICAST_IF / IPV6_UNICAST_IF (a real constraint on
-//                   Windows, unlike Linux).
+//                   here -- verified: it silently falls back to the default
+//                   route -- so it cannot prevent leaks. SO_BINDTODEVICE may
+//                   require CAP_NET_RAW on some kernels, which the caller
+//                   surfaces rather than pretending traffic is contained.
+//   macOS / Darwin: IP_BOUND_IF / IPV6_BOUND_IF, a true constraint.
+//   Windows       : IP_UNICAST_IF / IPV6_UNICAST_IF, a real constraint there.
 //
 // Returns 0 on success or an errno-style code on failure; sets *notFound when
-// the interface can't be resolved (distinct from a permission error). aMule
-// sockets are IPv4, so callers pass isV6 == false; the v6 path is kept for
-// completeness.
+// the interface cannot be resolved, which is distinct from a permission error.
 static int ApplyBindToInterface(NativeSocketHandle native, const wxString &ifname, bool isV6, bool *notFound)
 {
 	*notFound = false;
@@ -524,17 +511,14 @@ public:
 		if (wait || m_sync) {
 			error_code ec;
 			if (m_connectTimeoutMs > 0) {
-				// Bounded synchronous connect: async_connect raced
-				// against a steady_timer, both driven here on the
-				// io_service. A synchronous EC connection may use the
-				// global s_io_service before the CAsioService thread pool
-				// is started. If the synchronous operation leaves the
-				// io_context stopped, it must be restarted before run()
-				// is called. Portable
-				// across every platform through asio, with no per-OS
-				// socket-timeout handling — a wrong or unreachable host
-				// now fails in m_connectTimeoutMs instead of hanging on
-				// the OS TCP connect timeout (minutes).
+				// Bounded synchronous connect: async_connect raced against a
+				// steady_timer, both driven here on the io_service. A synchronous EC
+				// connection may use the global s_io_service before the CAsioService
+				// thread pool is started, and if the synchronous operation leaves the
+				// io_context stopped it must be restarted before run() is called.
+				// Portable through asio with no per-OS socket-timeout handling: a wrong
+				// or unreachable host fails in m_connectTimeoutMs instead of hanging on
+				// the OS TCP connect timeout.
 				ec = boost::asio::error::would_block;
 				m_socket->async_connect(
 					adr.GetEndpoint(), [&ec](const error_code &e) { ec = e; });
@@ -618,13 +602,12 @@ public:
 	// Is writing blocked?
 	bool BlocksWrite() const { return m_blocksWrite.load(std::memory_order_acquire); }
 
-	// Problem: wx sends an event when data gets available, so first there is an event, then Read() is
-	// called Asio can read async with callback, so you first read, then you get an event. Strategy:
-	// - Read some data in background into a buffer
-	// - Callback posts event when something is there
-	// - Read data from buffer
-	// - If data is exhausted, start reading more in background
-	// - If not, post another event (making sure events don't pile up though)
+	// wx sends an event when data becomes available, so first there is an event,
+	// then Read() is called; asio reads asynchronously with a callback, so you
+	// read first and then get an event. Strategy: read some data in the
+	// background into a buffer, have the callback post an event when something is
+	// there, read from the buffer, and either start another background read when
+	// it is exhausted or post another event (without piling them up).
 	uint32 Read(char *buf, uint32 bytesToRead)
 	{
 		if (bytesToRead == 0) { // huh?
@@ -707,30 +690,26 @@ public:
 		}
 	}
 
-	// See the parallel comment on CAsioUDPSocketImpl::Destroy(). The TCP path
-	// has identical wake-from-sleep risk; the fix is identical too — drop the
+	// See the parallel comment on CAsioUDPSocketImpl::Destroy(). The TCP path has
+	// identical wake-from-sleep risk, and the fix is identical too -- drop the
 	// 1-second-timer band-aid in favour of shared_from_this lifetime.
 	//
-	// TCP routes wrapper deletion through CoreNotify_LibSocketDestroy (rather
-	// than deleting inline like UDP) because TCP wrappers are reachable from
-	// many parts of the core; the GUI-thread delete preserves the existing
-	// thread affinity for that cleanup.
+	// TCP routes wrapper deletion through CoreNotify_LibSocketDestroy rather than
+	// deleting inline like UDP, because TCP wrappers are reachable from many
+	// parts of the core and the GUI-thread delete preserves that thread affinity.
 	void Destroy()
 	{
 		if (m_destroying.exchange(true, std::memory_order_acq_rel)) {
-			// Not an error: the guard is here so callers can be sloppy, and
-			// several deliberately are. CClientTCPSocket::Safe_Delete() says
-			// "Destroy may be called several times" and calls it regardless,
-			// and StopConnectionTry() destroys sockets whose connect is still
-			// in flight -- when that connect later fails, OnConnect() destroys
-			// the same socket again. The wrapper is notified once, by whichever
-			// call won the exchange, so the second is a no-op by design; the
-			// UDP twin below says the same and stays silent about it.
+			// Not an error: the guard is here so callers can be sloppy, and several
+			// deliberately are. CClientTCPSocket::Safe_Delete() says "Destroy may be
+			// called several times" and calls it regardless, and StopConnectionTry()
+			// destroys sockets whose connect is still in flight -- when that connect
+			// later fails, OnConnect() destroys the same socket again. The wrapper is
+			// notified once, by whichever call won the exchange.
 			//
-			// Logged at 'F' rather than 'C' for that reason: AddDebugLogLineC
-			// survives a release build (see Logger.h -- only the N and F forms
-			// compile out), so a critical line here reached every user's log on
-			// an ordinary peer disconnect.
+			// Logged at 'F' rather than 'C' for that reason: AddDebugLogLineC survives
+			// a release build, so a critical line here reached every user's log on an
+			// ordinary peer disconnect.
 			CLibSocket *w = m_libSocket.load(std::memory_order_acquire);
 			AddDebugLogLineF(logAsio,
 				CFormat("Destroy() already dying socket %p %p %s") % w % this % m_IP);
@@ -761,9 +740,7 @@ public:
 
 	uint32 GetPeerInt() { return m_IPint; }
 
-	//
-	// Bind socket to local endpoint if user wants to choose the local address
-	//
+	// Bind socket to local endpoint if the user wants to choose the local address
 	void SetLocal(const amuleIPV4Address &local)
 	{
 		error_code ec;
@@ -774,12 +751,9 @@ public:
 				AddDebugLogLineC(logAsio, CFormat("Can't open socket : %s") % ec.message());
 			}
 		}
-		//
-		// We are using random (OS-defined) local ports.
-		// To set a constant output port, first call
-		// m_socket->set_option(socket_base::reuse_address(true));
+		// We are using random (OS-defined) local ports. To set a constant output
+		// port, first call m_socket->set_option(socket_base::reuse_address(true))
 		// and then set the endpoint's port to it.
-		//
 		CamuleIPV4Endpoint endpoint(local.GetEndpoint());
 		endpoint.port(0);
 		m_socket->bind(endpoint, ec);
@@ -847,12 +821,9 @@ public:
 	}
 
 private:
-	//
-	// Dispatch handlers
-	// Access to m_socket is all bundled in the thread running s_io_service to avoid
-	// concurrent access to the socket from several threads.
-	// So once things are running (after connect), all access goes through one of these handlers.
-	//
+	// Dispatch handlers. Access to m_socket is all bundled in the thread running
+	// s_io_service to avoid concurrent access from several threads, so once
+	// things are running (after connect) all access goes through one of these.
 	void DispatchClose()
 	{
 		error_code ec;
@@ -868,11 +839,9 @@ private:
 	{
 		AddDebugLogLineF(logAsio, CFormat("DispatchBackgroundRead %s") % m_IP);
 		// Why async_read_some and not async_wait(wait_read): on Windows
-		// boost.asio implements async_wait via its select_reactor (a single
-		// select() loop in a dedicated thread) because IOCP has no native
-		// "ready notification" without a buffer.  async_read_some maps to
-		// WSARecv on Windows (IOCP-native) and to epoll/kqueue on POSIX, so
-		// it is the fast path on every platform.
+		// boost.asio implements async_wait via its select_reactor, because IOCP
+		// has no native "ready notification" without a buffer. async_read_some
+		// maps to WSARecv on Windows (IOCP-native) and to epoll/kqueue on POSIX.
 		if (m_readBufferSize < READ_CHUNK) {
 			delete[] m_readBuffer;
 			m_readBuffer = new char[READ_CHUNK];
@@ -884,10 +853,10 @@ private:
 				[self](const error_code &ec, std::size_t n) { self->HandleRead(ec, n); }));
 	}
 
-	// The buffer pointer is passed explicitly so each HandleSend knows
-	// which buffer it owns and must delete.  m_sendBuffer only tracks the
+	// The buffer pointer is passed explicitly so each HandleSend knows which
+	// buffer it owns and must delete. m_sendBuffer only tracks the
 	// currently-in-flight write and is cleared by HandleSend when the send
-	// completes — it cannot be used to identify the buffer to free.
+	// completes, so it cannot identify the buffer to free.
 	void DispatchWrite(char *sendBuffer, uint32 nbytes)
 	{
 		auto self = shared_from_this();
@@ -898,9 +867,7 @@ private:
 			}));
 	}
 
-	//
 	// Completion handlers for async requests
-	//
 
 	void HandleConnect(const error_code &err)
 	{
@@ -979,30 +946,25 @@ private:
 		m_readBufferContent = (uint32)bytes_transferred;
 
 		// Release, and after the buffer writes above on purpose. A reader that
-		// acquire-loads this as false is then guaranteed to see the content
-		// and pointer that were written before it.
+		// acquire-loads this as false is then guaranteed to see the content and
+		// pointer written before it.
 		//
-		// Plain stores let the two become visible out of order. The main
-		// thread would see the new content with the pending flag still set,
-		// take the "a background read is still running" branch in Read(),
-		// and return without serving data that was already sitting in the
-		// buffer -- and without arming anything. Since that branch is reached
-		// from an event that has already been consumed, nothing looks again:
-		// the socket stays open with its bytes unread and answers nothing
-		// until the peer gives up. Caught in the act on arm64, where the
-		// reordering is permitted and does happen:
+		// Plain stores let the two become visible out of order. The main thread
+		// would see the new content with the pending flag still set, take the "a
+		// background read is still running" branch in Read(), and return without
+		// serving data already sitting in the buffer -- and without arming
+		// anything. Since that branch is reached from an event already consumed,
+		// nothing looks again: the socket stays open with its bytes unread.
+		// Caught in the act on arm64, where the reordering is permitted:
 		//
 		//   handleRead(10)[c=10 p=0]   <- strand: content set, pending cleared
 		//   block(8)     [c=10 p=1]    <- main: new content, stale flag
-		//
 		m_readPending.store(false, std::memory_order_release);
 		m_blocksRead = false;
 		PostReadEvent(2);
 	}
 
-	//
 	// Other functions
-	//
 
 	void StartBackgroundRead()
 	{
@@ -1014,22 +976,19 @@ private:
 
 	void PostReadEvent(int DEBUG_ONLY(from))
 	{
-		// One atomic step, so exactly one caller can win the right to notify:
-		// a plain test-then-set lets the ASIO thread and the main thread both
-		// see it clear and post twice, or -- the damaging direction -- lets
-		// this thread see it set and skip while the main thread is about to
-		// clear it, leaving data buffered with nothing left to announce it.
+		// One atomic step, so exactly one caller can win the right to notify: a
+		// plain test-then-set lets the ASIO thread and the main thread both see it
+		// clear and post twice, or -- the damaging direction -- lets this thread
+		// see it set and skip while the main thread is about to clear it, leaving
+		// data buffered with nothing left to announce it.
 		//
-		// The exchange writes unconditionally, so even the skipping path
-		// releases everything written before it (the buffer, and the cleared
-		// m_readPending). EventProcessed acquires that same value, which is
-		// what stops the reader from then acting on a stale read state.
-		// Checked before the latch is taken, not after: with no wrapper there
-		// is nothing to deliver a notification, and EventProcessed only runs
-		// off a delivered one. Taking the latch here would leave it set for
-		// the life of the socket and make every later post skip -- the same
-		// wedge, reached from the other side. HandleRead reaches this state
-		// deliberately: it logs "wrapper gone" and carries on to post.
+		// The exchange writes unconditionally, so even the skipping path releases
+		// everything written before it. EventProcessed acquires that same value,
+		// which stops the reader acting on a stale read state.
+		//
+		// Checked before the latch is taken, not after: with no wrapper there is
+		// nothing to deliver a notification, and taking the latch here would leave
+		// it set for the life of the socket and make every later post skip.
 		CLibSocket *wrapper = m_libSocket.load(std::memory_order_acquire);
 		if (!wrapper) {
 			AddDebugLogLineF(
@@ -1059,9 +1018,7 @@ private:
 		return m_ErrorCode != errc::success;
 	}
 
-	//
 	// Synchronous sockets (amulecmd)
-	//
 	uint32 ReadSync(char *buf, uint32 bytesToRead)
 	{
 		if (m_syncReadTimeoutMs <= 0) {
@@ -1075,25 +1032,22 @@ private:
 			return received;
 		}
 
-		// No-progress bounded read. Asio's synchronous read() falls back to
-		// an *unbounded* internal poll_read(-1) on EAGAIN, so SO_RCVTIMEO
-		// can't bound it (the wedge backtrace showed exactly that poll).
-		// Instead we gate each read_some behind a poll() carrying the
-		// remaining no-progress budget, which resets whenever bytes arrive:
-		// a slow-but-progressing large transfer never trips it, but a
-		// genuinely stalled / desynced peer (a reply that never completes)
-		// does — and is then reported as a lost peer (DispatchSyncLost),
-		// so the EC layer's reconnect / fail-fast path takes over instead
-		// of hanging forever holding the caller's EC mutex.
+		// No-progress bounded read. Asio's synchronous read() falls back to an
+		// *unbounded* internal poll_read(-1) on EAGAIN, so SO_RCVTIMEO cannot
+		// bound it. Instead each read_some is gated behind a poll() carrying the
+		// remaining no-progress budget, which resets whenever bytes arrive: a
+		// slow-but-progressing large transfer never trips it, but a genuinely
+		// stalled or desynced peer does -- and is then reported as a lost peer,
+		// so the EC layer's reconnect path takes over instead of hanging forever
+		// holding the caller's EC mutex.
 		const auto fd = m_socket->native_handle();
 		uint32 received = 0;
 		while (received < bytesToRead) {
-			// Wait up to the remaining no-progress budget for readability.
-			// POSIX uses poll() (no FD_SETSIZE cap — the EC socket can get a
-			// high fd after a reconnect under load); Windows uses select()
-			// because WSAPoll needs _WIN32_WINNT >= 0x0600 and this build
-			// targets 0x0501 (see top of file), and on Winsock fd_set is
-			// count-indexed so a single socket is always in range.
+			// Wait up to the remaining no-progress budget for readability. POSIX
+			// uses poll() -- no FD_SETSIZE cap, and the EC socket can get a high fd
+			// after a reconnect under load; Windows uses select() because WSAPoll
+			// needs _WIN32_WINNT >= 0x0600 and this build targets 0x0501, and on
+			// Winsock fd_set is count-indexed so a single socket is always in range.
 			bool timed_out = false;
 			bool poll_failed = false;
 			int poll_errno = 0;
@@ -1126,14 +1080,12 @@ private:
 			}
 #endif
 			if (timed_out) {
-				// No data for the whole budget — treat as a stalled peer so
-				// the EC layer reconnects / fails fast instead of hanging.
-				// This is fatal for the synchronous EC clients (amuleapi,
-				// amulecmd, amuleweb): the caller reports the peer lost and
-				// exits. Emit it unconditionally on stderr — NOT the
-				// debug-gated logAsio category — so it is visible in release
-				// builds, right before the "External Connection lost -
-				// exiting." the EC layer prints next.
+				// No data for the whole budget -- treat as a stalled peer so the EC
+				// layer reconnects or fails fast instead of hanging. This is fatal for
+				// the synchronous EC clients: the caller reports the peer lost and
+				// exits. Emitted unconditionally on stderr, NOT the debug-gated logAsio
+				// category, so it is visible in release builds right before the
+				// "External Connection lost - exiting." the EC layer prints next.
 				wxString msg =
 					CFormat(wxT("amule: synchronous socket read made no progress for %d "
 						    "ms (peer %s) - stalled or desynced peer; dropping the "
@@ -1187,18 +1139,15 @@ private:
 		return sent;
 	}
 
-	// Sync clients (amulecmd, amuleweb) don't have an async_read pending
-	// after auth, so the EOF that fires HandleRead → PostLostEvent for
-	// async clients never gets seen. Detection happens here instead, in
-	// ReadSync / WriteSync. PostLostEvent + wxQueueEvent would round-
-	// trip through the wx event loop — which amuleweb has (wxApp::OnRun)
-	// but amulecmd doesn't (its main thread is in fgets reading stdin,
-	// not in wxApp's event loop, so queued events are never processed).
-	// Direct synchronous dispatch through the same wrapper->OnLost(0)
-	// path the async reactor uses covers both: CECMuleSocket::OnLost(int)
-	// forwards to the EC-layer CECSocket::OnLost virtual, CRemoteConnect's
-	// override fires (NULL notifier → _exit fallback) and the headless
-	// EC client exits cleanly instead of serving stale data in limp mode.
+	// Sync clients (amulecmd, amuleweb) have no async_read pending after auth,
+	// so the EOF that fires HandleRead -> PostLostEvent for async clients is
+	// never seen. Detection happens here instead, in ReadSync / WriteSync.
+	// PostLostEvent + wxQueueEvent would round-trip through the wx event loop,
+	// which amuleweb has but amulecmd does not -- its main thread is in fgets
+	// reading stdin, so queued events are never processed. Direct synchronous
+	// dispatch through the same wrapper->OnLost(0) path the async reactor uses
+	// covers both, so the headless EC client exits cleanly rather than serving
+	// stale data in limp mode.
 	void DispatchSyncLost()
 	{
 		CLibSocket *wrapper = m_libSocket.load(std::memory_order_acquire);
@@ -1207,12 +1156,10 @@ private:
 		}
 	}
 
-	//
-	// Access to even const & wxString is apparently not thread-safe.
-	// Locks are set/removed in wx and reference counts can go astray.
-	// So store our IP string in a wxString which is used nowhere.
-	// Store a pointer to its string buffer as well and use THAT everywhere.
-	//
+	// Access to even a const & wxString is apparently not thread-safe: locks are
+	// set/removed in wx and reference counts can go astray. So the IP string is
+	// stored in a wxString used nowhere, and a pointer to its string buffer is
+	// what gets used everywhere.
 	void SetIp(const amuleIPV4Address &adr)
 	{
 		m_IPstring = adr.IPAddress();
@@ -1644,9 +1591,9 @@ bool CLibSocketServer::SocketAvailable()
  * ASIO UDP socket implementation
  */
 
-// Wake-from-sleep crash (issue #384) was caused by asio completion handlers
-// firing on a freed CAsioUDPSocketImpl: pending async_receive_from ops survive
-// a long suspend, complete on wake, and re-enter HandleRead → StartBackgroundRead
+// A wake-from-sleep crash was caused by asio completion handlers firing on a
+// freed CAsioUDPSocketImpl: pending async_receive_from ops survive a long
+// suspend, complete on wake, and re-enter HandleRead -> StartBackgroundRead
 // after the impl has been destroyed by the post-resume socket-recreation path.
 // The old 1-second-timer guard in Destroy() did not survive the time jump.
 //
@@ -1654,8 +1601,7 @@ bool CLibSocketServer::SocketAvailable()
 // [self = shared_from_this()], keeping the impl alive until the last in-flight
 // callback drops its ref. The wrapper's raw back-pointer m_libSocket is atomic
 // and nulled on the strand during Destroy(), so callbacks that fire after the
-// wrapper has been notified-destroyed silently no-op instead of dereferencing
-// freed memory.
+// wrapper has been notified-destroyed silently no-op.
 class CAsioUDPSocketImpl : public std::enable_shared_from_this<CAsioUDPSocketImpl>
 {
 private:
@@ -1765,17 +1711,15 @@ public:
 		}
 	}
 
-	// Destroy() schedules a single strand task that closes the socket, nulls
-	// the back-pointer, and deletes the wrapper. The impl itself stays alive
-	// as long as any in-flight async callback holds a shared_from_this() ref
-	// — it dies cleanly when the last drains, with no risk of a pending
-	// completion firing on freed memory.
+	// Destroy() schedules a single strand task that closes the socket, nulls the
+	// back-pointer, and deletes the wrapper. The impl itself stays alive as long
+	// as any in-flight async callback holds a shared_from_this() ref, and dies
+	// cleanly when the last drains.
 	//
-	// Note: unlike the TCP path which posts CoreNotify_LibSocketDestroy to
-	// route the wrapper delete through the GUI thread, UDP deletes the
-	// wrapper directly. By contract the caller (CMuleUDPSocket) has already
-	// nulled its pointer before calling Destroy(), so nothing else is
-	// expected to reach the wrapper.
+	// Unlike the TCP path, which posts CoreNotify_LibSocketDestroy to route the
+	// wrapper delete through the GUI thread, UDP deletes the wrapper directly:
+	// by contract the caller has already nulled its pointer before calling
+	// Destroy(), so nothing else is expected to reach the wrapper.
 	void Destroy()
 	{
 		if (m_destroying.exchange(true, std::memory_order_acq_rel)) {
@@ -1813,21 +1757,15 @@ public:
 	}
 
 private:
-	//
-	// Dispatch handlers
-	// Access to m_socket is all bundled in the thread running s_io_service to avoid
-	// concurrent access to the socket from several threads.
-	// So once things are running (after connect), all access goes through one of these handlers.
-	//
+	// Dispatch handlers. Access to m_socket is all bundled in the thread running
+	// s_io_service to avoid concurrent access from several threads.
 	void DispatchClose()
 	{
-		// CreateSocket() leaves m_socket NULL on bind failure (e.g. EADDRINUSE
-		// during the post-resume recovery path, where the old socket's close
-		// hasn't yet been processed on the strand before the new bind runs).
-		// Without this guard the subsequent CMuleUDPSocket::DestroySocket()
-		// → Close() → DispatchClose chain dereferences the NULL m_socket
-		// and SIGSEGVs — exposed by #384 once the shared_from_this fix lets
-		// amuled survive the first wake-from-sleep.
+		// CreateSocket() leaves m_socket NULL on bind failure -- EADDRINUSE during
+		// the post-resume recovery path, where the old socket's close has not yet
+		// been processed on the strand before the new bind runs. Without this
+		// guard the subsequent DestroySocket() -> Close() -> DispatchClose chain
+		// dereferences the NULL m_socket and SIGSEGVs.
 		if (!m_socket) {
 			AddDebugLogLineF(logAsio, "UDP Close: socket already null (CreateSocket failed)");
 			return;
@@ -1856,9 +1794,7 @@ private:
 			}));
 	}
 
-	//
 	// Completion handlers for async requests
-	//
 
 	void HandleRead(const error_code &ec, size_t received)
 	{
@@ -1904,9 +1840,7 @@ private:
 		delete recdata;
 	}
 
-	//
 	// Other functions
-	//
 
 	void CreateSocket()
 	{
@@ -1919,12 +1853,11 @@ private:
 			// without binding".
 			m_socket = new ip::udp::socket(s_io_service);
 			m_socket->open(endpoint.protocol());
-			// SO_REUSEADDR so a post-suspend rebind (DestroySocket +
-			// CreateSocket in CMuleUDPSocket::OnReceive when a read
-			// callback returns an error) doesn't hit EADDRINUSE while
-			// the kernel still considers the previous binding live.
-			// Without this Kad and the ed2k client UDP stay broken
-			// until the user restarts amule — see #103.
+			// SO_REUSEADDR so a post-suspend rebind (DestroySocket + CreateSocket
+			// in CMuleUDPSocket::OnReceive when a read callback returns an error)
+			// does not hit EADDRINUSE while the kernel still considers the previous
+			// binding live. Without this Kad and the ed2k client UDP stay broken
+			// until the user restarts amule.
 			m_socket->set_option(socket_base::reuse_address(true));
 			SetCloexecOnSocket(m_socket->native_handle());
 			// Pin this UDP socket (ed2k client/server + Kad all funnel
@@ -1945,11 +1878,10 @@ private:
 
 	void StartBackgroundRead()
 	{
-		// Skip if Destroy() has already nulled the socket via the strand
-		// teardown lambda. Without this guard the impl's last self ref
-		// (held by the in-flight async_receive_from completion that
-		// brought us here) would try to re-queue a recv on a closed-and-
-		// nulled socket.
+		// Skip if Destroy() has already nulled the socket via the strand teardown
+		// lambda. Without this guard the impl's last self ref -- held by the
+		// in-flight completion that brought us here -- would try to re-queue a
+		// recv on a closed-and-nulled socket.
 		if (!m_socket || m_destroying.load(std::memory_order_acquire)) {
 			return;
 		}
@@ -2157,19 +2089,15 @@ bool amuleIPV4Address::Hostname(const wxString &name)
 	AddDebugLogLineN(
 		logAsio, CFormat("Hostname(\"%s\") failed, not an IP address %s") % name % ec.message());
 
-	// Try to resolve (sync). Normally not required. Unless you type in your hostname as "local IP
-	// address" or something.
+	// Try to resolve (sync). Normally not required, unless you type in your
+	// hostname as "local IP address" or something.
 	//
-	// We only want IPv4 addresses. This has to be asked for explicitly:
-	// the resolve(host, service) overload passes a default-constructed
-	// flag set (0, so not even AI_ADDRCONFIG) and leaves the family
-	// unrestricted, so getaddrinfo answers with AAAA records too — on
-	// any host, whether or not it has IPv6 connectivity. Their order is
-	// up to the platform resolver, and IPv6 routinely comes first (on
-	// Windows, even for "localhost"), so taking the first result handed
-	// back would store an IPv6 address in what the rest of aMule treats
-	// as a v4-only endpoint: IPAddress() then fails StringIPtoUint32(),
-	// and connecting a v4 socket to it fails outright.
+	// Only IPv4 addresses, asked for explicitly: the resolve(host, service)
+	// overload passes a default-constructed flag set and leaves the family
+	// unrestricted, so getaddrinfo answers with AAAA records too, on any host.
+	// Their order is up to the platform resolver and IPv6 routinely comes
+	// first, so taking the first result would store an IPv6 address in what
+	// the rest of aMule treats as a v4-only endpoint.
 	error_code ec2;
 	ip::tcp::resolver res(s_io_service);
 	ip::tcp::resolver::results_type endpoint_iterator = res.resolve(ip::tcp::v4(), sname, "", ec2);
@@ -2179,8 +2107,8 @@ bool amuleIPV4Address::Hostname(const wxString &name)
 		return false;
 	}
 	// Belt and braces: the AF_INET query above should only ever yield v4
-	// entries, but the endpoint is v4-only by contract, so scan for one
-	// rather than trusting begin() the way the unrestricted query did.
+	// entries, but the endpoint is v4-only by contract, so scan for one rather
+	// than trusting begin() the way the unrestricted query did.
 	for (const auto &entry : endpoint_iterator) {
 		if (entry.endpoint().address().is_v4()) {
 			m_endpoint->address(entry.endpoint().address());

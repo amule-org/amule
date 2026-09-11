@@ -53,9 +53,9 @@
 #include "SharedFileList.h" // Needed for CSharedFileList
 #include "ClientRef.h"      // Needed for CClientRef
 // CUpDownClient (country accessors, #439). MUST match the build's client class:
-// the reduced EC client for amulegui, the full one for monolithic. Including the
-// wrong header gives this TU a different CUpDownClient layout than the rest of
-// the (remote) GUI, so member reads land at the wrong offset (garbage country).
+// the reduced EC client for amulegui, the full one for monolithic. The wrong
+// header gives this TU a different CUpDownClient layout than the rest of the
+// GUI, so member reads land at the wrong offset.
 #ifdef CLIENT_GUI
 #include "UpDownClientEC.h"
 #else
@@ -238,10 +238,9 @@ void CGenericClientListCtrl::InitColumnData()
 			AddBarColumn(title, i, key, width, baseFlags, CreateProgressBarRenderer());
 			break;
 		case ColumnUserAvailable:
-			// No Compare() case exists for this column (matches the
-			// pre-port behaviour, where it was never sortable either) --
-			// SORTABLE is deliberately left off so no non-functional sort
-			// caret is shown.
+			// No Compare() case exists for this column, as in the pre-port
+			// behaviour, so SORTABLE is left off rather than showing a
+			// non-functional sort caret.
 			AddBarColumn(title, i, key, width, wxDATAVIEW_COL_RESIZABLE, nullptr);
 			break;
 		default:
@@ -250,10 +249,10 @@ void CGenericClientListCtrl::InitColumnData()
 		}
 	}
 
-	// Absorbs the macOS trailing-column sizing, which would otherwise fall on
-	// the last real column and collapse it once the columns are wider than the
-	// control. n_columns is the id to use: the model answers every column past
-	// its own table with an empty value already.
+	// Absorbs the macOS trailing-column sizing, which would otherwise fall on the
+	// last real column and collapse it once the columns outgrow the control.
+	// n_columns is the id to use: the model already answers every column past its
+	// own table with an empty value.
 	AppendSpacerColumn(m_columndata.n_columns);
 
 	AssociateVirtualModel();
@@ -279,9 +278,8 @@ void CGenericClientListCtrl::RawAddSource(CKnownFile *owner, CClientRef source, 
 
 	m_ListItems.insert(ListItemsPair(source.ECID(), newitem));
 
-	// Append at the end (unsorted); ShowSources() sorts once at the end of a
-	// bulk add, a single runtime add just shows at the bottom -- same as the
-	// old InsertItem(GetItemCount()) behaviour.
+	// Append at the end, unsorted: ShowSources() sorts once at the end of a bulk
+	// add, and a single runtime add just shows at the bottom.
 	AppendItemDataNow(reinterpret_cast<wxUIntPtr>(newitem));
 }
 
@@ -290,7 +288,6 @@ void CGenericClientListCtrl::AddSource(CKnownFile *owner, const CClientRef &sour
 	wxCHECK_RET(owner, "NULL owner in CGenericClientListCtrl::AddSource");
 	wxCHECK_RET(source.IsLinked(), "Unlinked source in CGenericClientListCtrl::AddSource");
 
-	// Update the other instances of this source
 	bool bFound = false;
 	ListIteratorPair rangeIt = m_ListItems.equal_range(source.ECID());
 	for (ListItems::iterator it = rangeIt.first; it != rangeIt.second; ++it) {
@@ -333,7 +330,6 @@ void CGenericClientListCtrl::RawRemoveSource(ListItems::iterator &it)
 
 	delete item;
 
-	// Remove it from the m_ListItems
 	m_ListItems.erase(it);
 }
 
@@ -342,7 +338,6 @@ void CGenericClientListCtrl::RemoveSource(uint32 source, const CKnownFile *owner
 	// A NULL owner means remove it no matter what.
 	wxCHECK_RET(source, "NULL source in CGenericClientListCtrl::RemoveSource");
 
-	// Retrieve all entries matching the source
 	ListIteratorPair rangeIt = m_ListItems.equal_range(source);
 
 	int removedItems = 0;
@@ -363,7 +358,6 @@ void CGenericClientListCtrl::RemoveSource(uint32 source, const CKnownFile *owner
 
 void CGenericClientListCtrl::UpdateItem(uint32 toupdate, SourceItemType type)
 {
-	// Retrieve all entries matching the source
 	ListIteratorPair rangeIt = m_ListItems.equal_range(toupdate);
 
 	if (rangeIt.first != rangeIt.second) {
@@ -400,15 +394,13 @@ void CGenericClientListCtrl::ShowSources(const CKnownFileVector &files)
 		}
 	}
 
-	// This will call again SetShowSources in files that were in both vectors. Right now
-	// that function is just a inline setter, so any way to prevent it would be wasteful,
-	// but this must be reviewed if that fact changes.
+	// This calls SetShowSources again for files that were in both vectors. That is
+	// an inline setter today, so preventing it would be wasteful -- revisit if that
+	// changes.
 
 	for (unsigned i = 0; i < files.size(); ++i) {
 		SetShowSources(files[i], true);
 	}
-
-	// We must cleanup sources that are not in the received files.
 
 	int itemDiff = 0;
 
@@ -417,7 +409,6 @@ void CGenericClientListCtrl::ShowSources(const CKnownFileVector &files)
 		ListItems::iterator tmp = it++;
 		ClientCtrlItem_Struct *item = tmp->second;
 		if (!std::binary_search(files.begin(), files.end(), item->GetOwner())) {
-			// Remove it from the m_ListItems
 			RawRemoveSource(tmp);
 			--itemDiff;
 		}
@@ -442,7 +433,6 @@ void CGenericClientListCtrl::ShowSources(const CKnownFileVector &files)
 					const CKnownFile::SourceSet &a4afSources =
 						(dynamic_cast<CPartFile *>(file))->GetA4AFList();
 
-					// Adding normal sources
 					for (it = normSources.begin(); it != normSources.end(); ++it) {
 						switch (it->GetDownloadState()) {
 						case DS_DOWNLOADING:
@@ -457,7 +447,6 @@ void CGenericClientListCtrl::ShowSources(const CKnownFileVector &files)
 						}
 					}
 
-					// Adding A4AF sources
 					for (it = a4afSources.begin(); it != a4afSources.end(); ++it) {
 						// Only add if the A4AF file is not in the shown list.
 						if (!std::binary_search(files.begin(),
@@ -468,7 +457,6 @@ void CGenericClientListCtrl::ShowSources(const CKnownFileVector &files)
 						}
 					}
 				} else {
-					// Known file
 					const CKnownFile::SourceSet &sources = file->m_ClientUploadList;
 					for (it = sources.begin(); it != sources.end(); ++it) {
 						switch (it->GetUploadState()) {
@@ -499,27 +487,23 @@ void CGenericClientListCtrl::ShowSources(const CKnownFileVector &files)
 
 void CGenericClientListCtrl::RemoveKnownFile(CKnownFile *file)
 {
-	// Pure pointer-value comparison — `file` may already be freed by
-	// the destruction site that fired Notify_KnownFileBeingDestroyed.
-	// We must never dereference it; we only need its value as a key
-	// to drop from m_knownfiles and m_ListItems. See
-	// MuleNotify::KnownFileBeingDestroyed in GuiEvents.cpp.
+	// Pure pointer-value comparison: `file` may already be freed by the destruction
+	// site that fired Notify_KnownFileBeingDestroyed, so it is never dereferenced --
+	// only used as a key to drop from m_knownfiles and m_ListItems.
 	if (file == nullptr) {
 		return;
 	}
 
-	// Drop the cached "currently showing sources for" entry. This is
-	// #755's crash site: without this, the next ShowSources() loop
-	// would walk the dangling entry and write into the recycled heap
-	// region via SetShowSources(file, false).
+	// Drop the cached "currently showing sources for" entry. This is #755's crash
+	// site: without it the next ShowSources() loop walks the dangling entry and
+	// writes into the recycled heap region via SetShowSources(file, false).
 	CKnownFileVector::iterator kf = std::find(m_knownfiles.begin(), m_knownfiles.end(), file);
 	if (kf != m_knownfiles.end()) {
 		m_knownfiles.erase(kf);
 	}
 
-	// Strip any per-row state whose m_owner matches. We have to walk
-	// the multimap once because m_ListItems is keyed by client ECID,
-	// not by file.
+	// Strip any per-row state whose m_owner matches. The multimap has to be walked
+	// once because m_ListItems is keyed by client ECID, not by file.
 	for (ListItems::iterator it = m_ListItems.begin(); it != m_ListItems.end(); /* manual ++ */) {
 		ClientCtrlItem_Struct *item = it->second;
 		if (item && item->GetOwner() == file) {
@@ -589,12 +573,10 @@ void CGenericClientListCtrl::OnViewFiles(wxCommandEvent &WXUNUSED(event))
 
 void CGenericClientListCtrl::OnAddFriend(wxCommandEvent &WXUNUSED(event))
 {
-	// The direction comes from the first selected client, which is the row the
-	// menu was built for. Read from the live selection rather than the pointer
-	// stashed at popup time: PopupMenu() runs a nested event loop, a source
-	// removal during it deletes the ClientCtrlItem_Struct, and nothing clears
-	// that pointer. The selection cannot go stale the same way, because the
-	// control maintains it.
+	// The direction comes from the first selected client, which is the row the menu
+	// was built for. Read from the live selection rather than a pointer stashed at
+	// popup time: PopupMenu() runs a nested event loop, a source removal during it
+	// deletes the ClientCtrlItem_Struct, and nothing clears that pointer.
 	const std::vector<CClientRef> clients = SelectedClients(GetSelectedItemData());
 	if (clients.empty()) {
 		return;
@@ -660,9 +642,8 @@ int CGenericClientListCtrl::FindBarLegendColumn() const
 		if (partbar::LegendForColumn(m_columndata.columns[i].cid) == partbar::BarLegendKind::None) {
 			continue;
 		}
-		// A bar the user has hidden is not on screen to be explained. Model
-		// id and view position coincide here -- InitColumnState() requires
-		// it -- so one index answers both.
+		// A bar the user has hidden is not on screen to be explained. Model id and
+		// view position coincide here -- InitColumnState() requires it.
 		if (!IsColumnHidden(i)) {
 			return i;
 		}
@@ -680,9 +661,8 @@ void CGenericClientListCtrl::ShowBarLegend(partbar::BarLegendKind kind, const wx
 
 void CGenericClientListCtrl::OnShowBarLegend(wxCommandEvent &WXUNUSED(event))
 {
-	// Resolved again rather than remembered from when the menu was built: the
-	// entry only exists on menus built while a bar column was on screen, and
-	// re-asking costs a walk over at most a couple of dozen columns.
+	// Resolved again rather than remembered from when the menu was built: the entry
+	// only exists on menus built while a bar column was on screen.
 	const int column = FindBarLegendColumn();
 	if (column < 0) {
 		return;
@@ -711,22 +691,17 @@ void CGenericClientListCtrl::OnItemRightClicked(wxDataViewEvent &event)
 	CClientRef &client = item->GetSource();
 
 	delete m_menu;
-	// Same menu the global clients list offers.
 	m_menu = BuildClientContextMenu(client);
 
-	// Both of these are appended here rather than inside
-	// BuildClientContextMenu(): that builder is shared with CClientRowListCtrl,
-	// the Clients tab, which has no file in context and draws no chunk bar, so
-	// neither entry can mean anything there.
+	// Both are appended here rather than inside BuildClientContextMenu(): that
+	// builder is shared with the Clients tab, which has no file in context and draws
+	// no chunk bar.
 	//
-	// Swapping is a download notion: it moves a source off whatever it is
-	// currently downloading and onto this file, and A4AF only means anything
-	// among a download's sources. The shared-files peer list shows clients
-	// downloading FROM us, so there is nothing to swap and the entry is
-	// omitted rather than shown dead -- the same rule the Clients tab follows.
-	//
-	// Disabled for a non-A4AF source, where the peer is already on the file it
-	// would swap to: "not right now" rather than "never here".
+	// Swapping is a download notion -- it moves a source off whatever it is
+	// downloading and onto this file -- and the shared-files peer list shows clients
+	// downloading FROM us, so there is nothing to swap and the entry is omitted
+	// rather than shown dead. It is disabled for a non-A4AF source, where the peer
+	// is already on the file it would swap to: "not right now" rather than "never".
 	if (IsShowingDownloadSources()) {
 		m_menu->Append(MP_CHANGE2FILE, _("Swap to this file"));
 		m_menu->Enable(MP_CHANGE2FILE, item->GetType() == A4AF_SOURCE);
@@ -928,9 +903,8 @@ void CGenericClientListCtrl::GetItemBarFill(wxUIntPtr data, unsigned column, CBa
 		return;
 
 	case ColumnUserProgress: {
-		// Gate mirrors DrawClientItem's ColumnUserProgress case: nothing is
-		// computed (or drawn, including the A4AF badge) with the pref off --
-		// see CSourceBarRenderer::Render() for the matching gate.
+		// Gate mirrors DrawClientItem's ColumnUserProgress case: nothing is computed
+		// or drawn, the A4AF badge included, with the pref off.
 		if (!thePrefs::ShowProgBar()) {
 			return;
 		}
@@ -970,9 +944,8 @@ void CGenericClientListCtrl::GetItemBarFill(wxUIntPtr data, unsigned column, CBa
 				}
 				CMuleColour colour = ToMuleColour(partbar::SourcePartColour(state, bFlat));
 				if (stopped) {
-					// Not in the legend: a dimmed swatch out of
-					// context reads as a sixth state rather than as
-					// the same five turned down.
+					// Not in the legend: a dimmed swatch out of context reads
+					// as a sixth state rather than the same five turned down.
 					colour.Blend(50);
 				}
 				spans.push_back({ uStart, uEnd, colour });
@@ -1119,9 +1092,8 @@ int CGenericClientListCtrl::CompareByCid(
 	case ColumnUserSharedFiles:
 		return CmpAny(client1.HasDisabledSharedFiles(), client2.HasDisabledSharedFiles());
 
-	// ColumnUserAvailable intentionally has no case: unsortable, matching
-	// the pre-port behaviour (see InitColumnData()'s SORTABLE-less
-	// registration for this column).
+	// ColumnUserAvailable intentionally has no case: unsortable, matching the
+	// pre-port behaviour.
 	default:
 		return 0;
 	}
@@ -1133,12 +1105,10 @@ int CGenericClientListCtrl::CompareItemData(
 	ClientCtrlItem_Struct *item1 = reinterpret_cast<ClientCtrlItem_Struct *>(data1);
 	ClientCtrlItem_Struct *item2 = reinterpret_cast<ClientCtrlItem_Struct *>(data2);
 
-	// Available sources first, if we have both an available and an
-	// unavailable one -- the order is fixed regardless of sort direction, so
-	// `modifier` is deliberately not applied here. Runs identically at every
-	// level of a multi-column sort chain (CompareItemsFull calls this once
-	// per level with the same two items); harmless, since it always agrees
-	// with itself.
+	// Available sources first when we have both kinds. The order is fixed
+	// regardless of sort direction, so `modifier` is deliberately not applied.
+	// CompareItemsFull calls this once per level of a multi-column chain, which is
+	// harmless since it always agrees with itself.
 	const int typeOrder = item2->GetType() - item1->GetType();
 	if (typeOrder) {
 		return typeOrder;

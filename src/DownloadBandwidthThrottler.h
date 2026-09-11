@@ -23,31 +23,25 @@ class CEMSocket;
 // Global token bucket that enforces thePrefs::GetMaxDownload() as a literal
 // byte/sec cap across all downloading sockets.
 //
-// Mirrors UploadBandwidthThrottler in role, but intentionally simpler:
-// download is a PULL model where the kernel tells us when bytes are ready
-// (asio OnReceive fires from the I/O thread), so there's no need for a
-// dedicated throttler thread + condvar like the upload side. A shared
-// atomic budget that every CEMSocket consults before each Read() is
-// enough.
+// Mirrors UploadBandwidthThrottler in role, but intentionally simpler: download
+// is a PULL model where the kernel tells us when bytes are ready, so there is no
+// need for a dedicated throttler thread and condvar -- a shared atomic budget
+// every CEMSocket consults before each Read() is enough.
 //
-// Replaces the old per-peer ratio controller (DownloadQueue::Process +
-// CUpDownClient::SetDownloadLimit), which never enforced MaxDownload as a
-// literal cap and instead nudged each peer's transfer rate by ~5%/tick
-// against its own current speed. With a single global bucket, fast peers
-// can claim unused capacity from slow peers within the same tick
-// (demand-aware redistribution); the only constraint is the global cap.
+// Replaces the old per-peer ratio controller, which never enforced MaxDownload
+// as a literal cap and instead nudged each peer's rate by ~5%/tick against its
+// own current speed. With a single global bucket, fast peers can claim unused
+// capacity from slow ones within the same tick.
 class CDownloadBandwidthThrottler
 {
 public:
 	static CDownloadBandwidthThrottler &Get();
 
-	// Refill the bucket at the start of each DownloadQueue tick.
-	//   maxDownloadKBps == 0  -> unlimited mode (Reserve returns the full
-	//                            request, no decrement).
-	// Leftover from the previous tick is discarded: the cap is strict, not
-	// burst-friendly. A burst-friendly accumulating bucket would let a
-	// quiet period bank capacity and overshoot MaxDownload after data
-	// resumes -- that's exactly the surprise the PR is trying to remove.
+	// Refill the bucket at the start of each DownloadQueue tick;
+	// maxDownloadKBps == 0 is unlimited mode, where Reserve returns the full
+	// request. Leftover from the previous tick is discarded: the cap is strict, not
+	// burst-friendly, since an accumulating bucket would let a quiet period bank
+	// capacity and overshoot MaxDownload once data resumes.
 	void RefillBudget(uint32 maxDownloadKBps, uint32 tickPeriodMs);
 
 	// Reserve up to wantBytes from the shared budget. Returns the actual
@@ -62,32 +56,30 @@ public:
 	// the unused capacity stays available to other peers in the same tick.
 	void Refund(uint32 bytes);
 
-	// A socket that suspended its read because Reserve() came back empty,
-	// and the counterpart for one that goes away while suspended.
+	// A socket that suspended its read because Reserve() came back empty, and the
+	// counterpart for one that goes away while suspended.
 	//
-	// The throttler is what stopped these reads, so it is what has to
-	// restart them. Leaving that to whoever happens to tick the socket means
-	// a socket nobody ticks -- one we are browsing rather than downloading
-	// from -- never reads again: its half-received packet never completes,
-	// and the peer looks like it answered nothing at all.
-	// Registration is on an empty bucket, not on what the socket is doing,
-	// so under a saturated cap this also collects sockets a part file will
-	// wake anyway. Those get a second, cheap wake per tick (WakeIfPaused()
-	// is a bool test when nothing is pending); telling the two apart from
-	// here would mean teaching the throttler about download sources.
+	// The throttler is what stopped these reads, so it is what has to restart them.
+	// Leaving that to whoever happens to tick the socket means a socket nobody
+	// ticks -- one we are browsing rather than downloading from -- never reads
+	// again: its half-received packet never completes, and the peer looks like it
+	// answered nothing.
+	//
+	// Registration is on an empty bucket rather than on what the socket is doing,
+	// so under a saturated cap this also collects sockets a part file will wake
+	// anyway. Those get a second, cheap wake per tick.
 	void PauseUntilRefill(CEMSocket *socket);
 	void Forget(CEMSocket *socket);
 
 	// Restart the reads suspended before this call. Run once per tick after
 	// RefillBudget(), and OUTSIDE any lock the read path can reach: waking
-	// re-enters CEMSocket::OnReceive(), which parses packets and can run
-	// most of the core.
+	// re-enters CEMSocket::OnReceive(), which parses packets and can run most of
+	// the core.
 	//
-	// Only the sockets already waiting when it starts are woken. A socket
-	// that exhausts the refilled bucket suspends again immediately, and
-	// waking it a second time in the same pass would achieve nothing but
-	// spin the main loop until the next refill, which cannot arrive while
-	// that loop is blocked.
+	// Only the sockets already waiting when it starts are woken. One that exhausts
+	// the refilled bucket suspends again immediately, and waking it twice in the
+	// same pass would only spin the main loop until the next refill -- which cannot
+	// arrive while that loop is blocked.
 	void WakePaused();
 
 private:

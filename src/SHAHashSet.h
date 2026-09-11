@@ -290,12 +290,10 @@ public:
 	static void RemoveClientAICHRequest(const CUpDownClient *pClient);
 	static bool IsClientRequestPending(const CPartFile *pForFile, uint16 nPart);
 
-	// Pointer-value strip of any pending AICH-recovery request entry
-	// whose m_pPartFile == `file`. Called from MuleNotify::
-	// KnownFileBeingDestroyed before a CKnownFile / CPartFile is
-	// freed so the existing IsPartFile() guard in
-	// ClientAICHRequestFailed can't be spoofed by allocator reuse of
-	// the same address.
+	// Pointer-value strip of any pending AICH-recovery request entry whose
+	// m_pPartFile == `file`. Called from MuleNotify::KnownFileBeingDestroyed before
+	// the file is freed, so the IsPartFile() guard in ClientAICHRequestFailed
+	// cannot be spoofed by allocator reuse of the same address.
 	static void DropReferencesTo(const CKnownFile *file);
 	static CAICHRequestedData GetAICHReqDetails(const CUpDownClient *pClient);
 	void DbgTest();
@@ -308,20 +306,15 @@ public:
 	static void InvalidateRootHashCache();
 
 private:
-	// Cache mapping every root hash currently stored in known2.met to
-	// the byte offset of its entry's root-hash position in the file.
-	// Populated lazily on first SaveHashSet or LoadHashSet call (or
-	// refilled after invalidation).
+	// Cache mapping every root hash currently stored in known2.met to the byte
+	// offset of its entry's root-hash position, populated lazily on the first
+	// SaveHashSet or LoadHashSet call.
 	//
-	// - For SaveHashSet: replaces the per-call linear file walk that
-	//   made the dedup check O(N) per call / O(N^2) over a bulk-hash
-	//   batch.
-	// - For LoadHashSet (and the AICH request path that calls it):
-	//   replaces the per-call linear file walk that turned each
-	//   incoming OP_AICHREQUEST into an O(N) disk-backed scan. The
-	//   cached offset lets LoadHashSet seek straight to the matching
-	//   entry, making the AICH request path O(1) and closing the DoS
-	//   amplification noted in #166.
+	// For SaveHashSet it replaces the per-call linear file walk that made the dedup
+	// check O(N) per call and O(N^2) over a bulk-hash batch. For LoadHashSet, and
+	// the AICH request path that calls it, the cached offset lets it seek straight
+	// to the matching entry, making that path O(1) and closing the DoS
+	// amplification noted in #166.
 	static wxMutex s_rootHashCacheMutex;
 	static std::unordered_map<CAICHHash, uint64> s_rootHashCache;
 	static bool s_rootHashCacheLoaded;

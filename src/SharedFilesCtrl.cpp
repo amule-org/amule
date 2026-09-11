@@ -72,14 +72,12 @@ enum class MediaRefreshEligibility
 MediaRefreshEligibility ClassifyForMediaRefresh(const CKnownFile *file)
 {
 	// First, because it decides the answer for every file at once: with the
-	// feature off the scheduler drops the job before looking at the file, so
-	// the entry would be enabled and do nothing at all -- which is exactly
-	// what happens today and gives the user no clue why.
+	// feature off the scheduler drops the job before looking at the file, so the
+	// entry would be enabled and do nothing at all, with no clue why.
 	//
-	// Correct in amulegui too. The daemon sends this preference over EC as a
-	// presence tag, and the receiving side maps an absent tag to false
-	// (ApplyBoolean in ECSpecialMuleTags), so a remote GUI reports the
-	// DAEMON's setting rather than its own default.
+	// Correct in amulegui too: the daemon sends this preference over EC as a
+	// presence tag and the receiving side maps an absent tag to false, so a
+	// remote GUI reports the DAEMON's setting rather than its own default.
 	if (!thePrefs::GetMediaMetadataEnabled()) {
 		return MediaRefreshEligibility::FeatureDisabled;
 	}
@@ -186,13 +184,11 @@ CSharedFilesCtrl::CSharedFilesCtrl(wxWindow *parent, int id, const wxPoint &pos,
 	// when the config has something saved.
 	ApplySorting(COLUMN_SHARED_NAME, 0);
 
-	// The media columns are only filled for files ffprobe has been run over,
-	// so a share that has never been probed would gain three empty columns
-	// for everyone. Listed in the header menu, hidden until asked for --
-	// widths above are what they get when enabled, which is why they are not
-	// registered as zero-width. Set before LoadColumnSettings() so anything
-	// the user saved wins, the same ordering CServerListCtrl uses for its
-	// wire-flag columns.
+	// The media columns are only filled for files ffprobe has been run over, so a
+	// share that has never been probed would gain three empty columns for
+	// everyone. Listed in the header menu, hidden until asked for -- the widths
+	// above are what they get when enabled. Set before LoadColumnSettings() so
+	// anything the user saved wins.
 	SetColumnHidden(COLUMN_SHARED_MEDIA_LENGTH, true, 0);
 	SetColumnHidden(COLUMN_SHARED_MEDIA_BITRATE, true, 0);
 	SetColumnHidden(COLUMN_SHARED_MEDIA_CODEC, true, 0);
@@ -299,15 +295,13 @@ void CSharedFilesCtrl::OnItemRightClicked(wxDataViewEvent &event)
 		m_menu->Append(MP_EXPORTCOLLECTION, _("Export selected files to an emulecollection"));
 
 		// The bar column is the only cell in this list whose colours need
-		// explaining, and it explains two unrelated things depending on the
-		// row, so the legend is chosen from the clicked file: right-click a
-		// file being re-hashed and the hashing legend opens, not the
-		// availability one.
+		// explaining, and it explains two unrelated things depending on the row,
+		// so the legend is chosen from the clicked file: right-click a file being
+		// re-hashed and the hashing legend opens, not the availability one.
 		//
 		// Guarded by IsColumnHidden() rather than by
-		// CGenericClientListCtrl::FindBarLegendColumn(), which is a member of
-		// the other list and does not reach here. Model id and view position
-		// coincide -- InitColumnState() requires it -- so COLUMN_SHARED_PART
+		// CGenericClientListCtrl::FindBarLegendColumn(), which is a member of the
+		// other list. Model id and view position coincide, so COLUMN_SHARED_PART
 		// answers both. A bar the user has hidden is not on screen to explain.
 		const partbar::BarLegendKind legend =
 			partbar::LegendForSharedFilesRow(file->GetHashingProgress(), file->GetPartCount());
@@ -316,15 +310,15 @@ void CSharedFilesCtrl::OnItemRightClicked(wxDataViewEvent &event)
 			m_menu->Append(MP_BARLEGEND, _("Colour legend"));
 		}
 
-		// Offered only when the file is reachable from this host: the shared
-		// list carries the daemon's directory in amulegui, which resolves here
-		// only on a shared filesystem, and a locally shared file can have been
-		// moved or deleted since it was hashed.
+		// Offered only when the file is reachable from this host: the shared list
+		// carries the daemon's directory in amulegui, which resolves here only on
+		// a shared filesystem, and a locally shared file can have been moved since
+		// it was hashed.
+		//
 		// CSharedFileList shares PS_READY part files, so an entry here can be an
-		// in-progress download. Gate it exactly as the Downloads list does:
-		// a finished file of any type can be opened, an unfinished one only when
+		// in-progress download. Gated exactly as the Downloads list does it: a
+		// finished file of any type can be opened, an unfinished one only when
 		// enough of the media is on disk to play.
-		// IsPartFile() establishes the dynamic type, as in FileLaunch::ResolvePath.
 		const bool previewable =
 			file->IsPartFile() ? static_cast<CPartFile *>(file)->PreviewAvailable() : true;
 		m_menu->SetLabel(
@@ -336,10 +330,9 @@ void CSharedFilesCtrl::OnItemRightClicked(wxDataViewEvent &event)
 		m_menu->Enable(MP_VIEW, previewable && canOpen);
 		m_menu->Enable(MP_SHOWINFOLDER, canReveal);
 		if (isCollection) {
-			// Reading a collection means reading its bytes on this host, so it
-			// needs the same reachability as opening the file. A part file is
-			// excluded on top of that: it is a truncated collection, not a
-			// usable one.
+			// Reading a collection means reading its bytes on this host, so it needs
+			// the same reachability as opening the file. A part file is excluded on
+			// top of that: it is a truncated collection, not a usable one.
 			m_menu->Enable(MP_ADDCOLLECTION, canOpen && !file->IsPartFile());
 		}
 		m_menu->Enable(MP_GETAICHED2KLINK, file->HasProperAICHHashSet());

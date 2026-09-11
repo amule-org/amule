@@ -78,10 +78,9 @@ ClientDetailInfo ClientDetailInfoFromClient(const CClientRef &client)
 void CClientDetailDialog::Build()
 {
 	wxSizer *content = clientDetails(this, true);
-	// The Close button uses ID_CLOSEWND rather than wxID_CANCEL, so
-	// wxDialog doesn't auto-bind Escape to it. Tell wxDialog to treat
-	// ID_CLOSEWND as the escape target so pressing Escape dismisses
-	// the dialog the same way clicking Close does.
+	// The Close button uses ID_CLOSEWND rather than wxID_CANCEL, so wxDialog does
+	// not auto-bind Escape to it; name it as the escape target so Escape dismisses
+	// the dialog the way clicking Close does.
 	SetEscapeId(ID_CLOSEWND);
 	OnInitDialog();
 	content->SetSizeHints(this);
@@ -116,38 +115,32 @@ bool CClientDetailDialog::OnInitDialog()
 	// measurement, and these are the absence of one.
 	static const wxString kNoValue = "-";
 
-	// Username and hash are reported independently. A credit record keeps a
-	// hash long before it has a name, because the core only writes the name
-	// out at disconnect, so the two are not known together and the list row
-	// is already showing that hash beside this dialog.
+	// Username and hash are reported independently: a credit record keeps a hash
+	// long before it has a name, because the core only writes the name out at
+	// disconnect, so the two are not known together.
 	CastChild(ID_DNAME, wxStaticText)
 		->SetLabel(m_info.userName.IsEmpty() ? _("Unknown") : m_info.userName);
 	CastChild(ID_DHASH, wxStaticText)
 		->SetLabel(m_info.userHash.IsEmpty() ? _("Unknown") : m_info.userHash.Encode());
 
-	// Client Software
 	if (!m_info.osInfo.IsEmpty()) {
 		CastChild(ID_DSOFT, wxStaticText)->SetLabel(m_info.softStr + " (" + m_info.osInfo + ")");
 	} else {
 		CastChild(ID_DSOFT, wxStaticText)->SetLabel(m_info.softStr);
 	}
 
-	// Client Version
 	CastChild(ID_DVERSION, wxStaticText)->SetLabel(m_info.softVerStr);
 
-	// User ID
 	CastChild(ID_DID, wxStaticText)
 		->SetLabel(m_info.hasSession ? wxString(CFormat("%u (%s)") % m_info.userIdHybrid %
 							(m_info.lowId ? _("LowID") : _("HighID")))
 					     : kNoValue);
 
-	// Client IP/Port
 	CastChild(ID_DIP, wxStaticText)
 		->SetLabel(m_info.fullIp.IsEmpty()
 				   ? kNoValue
 				   : wxString(CFormat("%s:%i") % m_info.fullIp % m_info.userPort));
 
-	// Server IP/Port/Name
 	if (m_info.serverIp) {
 		wxString srvaddr = Uint32toStringIP(m_info.serverIp);
 		CastChild(ID_DSIP, wxStaticText)->SetLabel(CFormat("%s:%i") % srvaddr % m_info.serverPort);
