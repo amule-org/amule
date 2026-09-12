@@ -178,10 +178,16 @@ void CClientUDPSocket::OnPacketReceived(uint32 ip, uint16 port, uint8_t *buffer,
 				// protocol byte is a frame type, so it is dispatched here rather
 				// than through ProcessPacket(), whose second argument is an opcode.
 				//
-				// This branch reaches no packet accounting at all, which is what
+				// Counted as overhead like every sibling branch: these bytes cross
+				// the wire whether or not we can serve the frame, and leaving them
+				// out makes aMule's own figures disagree with what the link shows.
+				//
+				// This branch still reaches no *packet* accounting, which is what
 				// keeps a dropped frame from feeding a ban: CPacketTracking is only
 				// entered from the Kad listener, and an eMuleAI peer's NAT-T
-				// traffic would otherwise read as malformed.
+				// traffic would otherwise read as malformed. Statistics and bans are
+				// separate subsystems; only the second one must stay out of reach.
+				theStats::AddDownOverheadOther(length);
 				ProcessReservedProt2Frame(decryptedBuffer + 1, packetLen - 1, ip, port);
 				break;
 
@@ -210,9 +216,13 @@ void CClientUDPSocket::ProcessReservedProt2Frame(
 		// Nothing but the protocol byte arrived, so there is no type byte to read. Dropped
 		// without reading the window -- the guard is the point, this being the shortest
 		// datagram that can reach here.
-		AddDebugLogLineN(logClientUDP,
-			CFormat("Dropping truncated NAT-T datagram from %s:%u") % Uint32toStringIP(ip) %
-				port);
+		if (m_truncatedFrameLog.ShouldLog(::GetTickCount64())) {
+			AddDebugLogLineN(logClientUDP,
+				CFormat("Dropping truncated NAT-T datagram from %s:%u (%u further "
+					"occurrences suppressed)") %
+					Uint32toStringIP(ip) % port %
+					m_truncatedFrameLog.TakeSuppressedCount());
+		}
 		return;
 
 	case RP2_UNKNOWN_TYPE:
@@ -246,35 +256,55 @@ void CClientUDPSocket::ProcessReservedProt2Frame(
 		// Reached only when libutp has seen the datagram and disclaimed it: it belongs to
 		// no connection it holds. A different reason from the types below, so it does not
 		// borrow their message.
-		AddDebugLogLineN(logClientUDP,
-			CFormat("Dropping uTP frame from %s:%u: not for any open uTP connection") %
-				Uint32toStringIP(ip) % port);
+		if (m_utpUnmatchedFrameLog.ShouldLog(::GetTickCount64())) {
+			AddDebugLogLineN(logClientUDP,
+				CFormat("Dropping uTP frame from %s:%u: not for any open uTP connection "
+					"(%u further occurrences suppressed)") %
+					Uint32toStringIP(ip) % port %
+					m_utpUnmatchedFrameLog.TakeSuppressedCount());
+		}
 #else
-		AddDebugLogLineN(logClientUDP,
-			CFormat("Ignoring uTP NAT-T frame from %s:%u: no uTP transport in this build") %
-				Uint32toStringIP(ip) % port);
+		if (m_unservedFrameLog.ShouldLog(::GetTickCount64())) {
+			AddDebugLogLineN(logClientUDP,
+				CFormat("Ignoring uTP NAT-T frame from %s:%u: no uTP transport in this "
+					"build (%u further occurrences suppressed)") %
+					Uint32toStringIP(ip) % port %
+					m_unservedFrameLog.TakeSuppressedCount());
+		}
 #endif
 		break;
 
 	case OP_NATT_FRAME_QUIC:
-		AddDebugLogLineN(logClientUDP,
-			CFormat("Ignoring QUIC NAT-T frame from %s:%u: no QUIC transport in this build") %
-				Uint32toStringIP(ip) % port);
+		if (m_unservedFrameLog.ShouldLog(::GetTickCount64())) {
+			AddDebugLogLineN(logClientUDP,
+				CFormat("Ignoring QUIC NAT-T frame from %s:%u: no QUIC transport in this "
+					"build (%u further occurrences suppressed)") %
+					Uint32toStringIP(ip) % port %
+					m_unservedFrameLog.TakeSuppressedCount());
+		}
 		break;
 
 	case OP_NATT_FRAME_CAPS:
 	case OP_NATT_FRAME_CAPS_ACK:
 		// Answering the capability negotiation would claim a transport
 		// aMule does not have. Silence is the correct answer here.
-		AddDebugLogLineN(logClientUDP,
-			CFormat("Ignoring NAT-T capability frame 0x%02X from %s:%u: nothing to negotiate") %
-				classified.type % Uint32toStringIP(ip) % port);
+		if (m_unservedFrameLog.ShouldLog(::GetTickCount64())) {
+			AddDebugLogLineN(logClientUDP,
+				CFormat("Ignoring NAT-T capability frame 0x%02X from %s:%u: nothing to "
+					"negotiate (%u further occurrences suppressed)") %
+					classified.type % Uint32toStringIP(ip) % port %
+					m_unservedFrameLog.TakeSuppressedCount());
+		}
 		break;
 
 	case OP_NATT_FRAME_KEY:
-		AddDebugLogLineN(logClientUDP,
-			CFormat("Ignoring NAT-T key frame from %s:%u: no NAT traversal in this build") %
-				Uint32toStringIP(ip) % port);
+		if (m_unservedFrameLog.ShouldLog(::GetTickCount64())) {
+			AddDebugLogLineN(logClientUDP,
+				CFormat("Ignoring NAT-T key frame from %s:%u: no NAT traversal in this "
+					"build (%u further occurrences suppressed)") %
+					Uint32toStringIP(ip) % port %
+					m_unservedFrameLog.TakeSuppressedCount());
+		}
 		break;
 
 	default:

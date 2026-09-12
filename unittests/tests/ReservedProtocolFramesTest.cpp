@@ -147,7 +147,7 @@ TEST(ReservedProtocolFrames, ClassificationDoesNotMutateTheDatagram)
 // window is counted, and the count is reported with the next line that does get through.
 TEST(ReservedProtocolFrames, UnknownFrameLogIsRateLimited)
 {
-	CUnknownFrameLogThrottle throttle(1000);
+	CFrameLogThrottle throttle(1000);
 
 	ASSERT_TRUE(throttle.ShouldLog(10000));
 	ASSERT_EQUALS(0u, throttle.TakeSuppressedCount());
@@ -169,7 +169,7 @@ TEST(ReservedProtocolFrames, UnknownFrameLogIsRateLimited)
 // with a silence lasting until it catches up -- opens the window rather than closing it.
 TEST(ReservedProtocolFrames, ThrottleToleratesNonMonotonicClock)
 {
-	CUnknownFrameLogThrottle throttle(1000);
+	CFrameLogThrottle throttle(1000);
 
 	ASSERT_TRUE(throttle.ShouldLog(10000));
 	ASSERT_TRUE(throttle.ShouldLog(500));

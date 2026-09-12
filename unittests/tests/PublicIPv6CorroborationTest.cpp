@@ -265,6 +265,54 @@ TEST(PublicIPv6Corroboration, OneObserverRepeatingItselfNeverCorroborates)
 	ASSERT_EQUALS(1u, (unsigned)tracker.DistinctObserversFor(claimed.data()));
 }
 
+// The reason the cap sits above the quorum. Three peers corroborate an address, three more agree
+// later, and when the first three fall out of the window the address is still held up by the
+// others. With the cap equal to the quorum those later votes were refused, so the first expiry
+// dropped the candidate outright even though half the network was still agreeing.
+TEST(PublicIPv6Corroboration, SurplusVotesCarryAnAddressThroughAnExpiry)
+{
+	CPublicIPv6Corroboration tracker;
+	const Address claimed = MakeAddress(0x01);
+	tracker.SetLocalAddresses(Held(claimed), START_MS);
+
+	for (unsigned i = 0; i < PUBLIC_IPV6_CORROBORATION_THRESHOLD; ++i) {
+		tracker.AddClaim(MakeObserver((uint8_t)(i + 1)), claimed.data(), START_MS);
+	}
+	ASSERT_TRUE(tracker.IsCorroborated());
+
+	// A second, later set of peers saying the same thing.
+	const uint64_t later = START_MS + 1000;
+	for (unsigned i = 0; i < PUBLIC_IPV6_CORROBORATION_THRESHOLD; ++i) {
+		tracker.AddClaim(MakeObserver((uint8_t)(i + 1 + PUBLIC_IPV6_CORROBORATION_THRESHOLD)),
+			claimed.data(),
+			later);
+	}
+	ASSERT_EQUALS((unsigned)(PUBLIC_IPV6_CORROBORATION_THRESHOLD * 2),
+		(unsigned)tracker.DistinctObserversFor(claimed.data()));
+
+	// Past the window for the first set, inside it for the second.
+	tracker.SetLocalAddresses(Held(claimed), START_MS + PUBLIC_IPV6_CORROBORATION_WINDOW_MS + 500);
+
+	ASSERT_TRUE(tracker.IsCorroborated());
+	ASSERT_EQUALS((unsigned)PUBLIC_IPV6_CORROBORATION_THRESHOLD,
+		(unsigned)tracker.DistinctObserversFor(claimed.data()));
+}
+
+// The cap is still a cap. Surplus is redundancy, not an unbounded list a peer can grow.
+TEST(PublicIPv6Corroboration, ObserversStopGrowingAtTheCap)
+{
+	CPublicIPv6Corroboration tracker;
+	const Address claimed = MakeAddress(0x01);
+	tracker.SetLocalAddresses(Held(claimed), START_MS);
+
+	for (unsigned i = 0; i < PUBLIC_IPV6_CORROBORATION_MAX_OBSERVERS + 4; ++i) {
+		tracker.AddClaim(MakeObserver((uint8_t)(i + 1)), claimed.data(), START_MS);
+	}
+
+	ASSERT_EQUALS((unsigned)PUBLIC_IPV6_CORROBORATION_MAX_OBSERVERS,
+		(unsigned)tracker.DistinctObserversFor(claimed.data()));
+}
+
 // Votes are counted per value, never in total: three peers naming three
 // different addresses agree about nothing.
 TEST(PublicIPv6Corroboration, DisagreeingPeersDoNotPoolIntoAQuorum)

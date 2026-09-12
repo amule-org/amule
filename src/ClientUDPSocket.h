@@ -27,7 +27,7 @@
 #define CLIENTUDPSOCKET_H
 
 #include "MuleUDPSocket.h"
-#include "ReservedProtocolFrames.h" // Needed for CUnknownFrameLogThrottle
+#include "ReservedProtocolFrames.h" // Needed for CFrameLogThrottle
 
 #ifdef AMULE_UTP_TRANSPORT
 #include "UtpContext.h"
@@ -70,7 +70,14 @@ private:
 	//! One unknown-frame line per minute, with a suppressed count. A peer speaking a frame type
 	//! this build does not know retries, so the useful information is that it happened plus how
 	//! often.
-	CUnknownFrameLogThrottle m_unknownFrameLog{ 60 * 1000 };
+	// One throttle per reason rather than one for the branch: a peer flooding
+	// any single kind of frame must not be able to silence the diagnostics for
+	// the others. The uTP case keeps its own because it is the line a developer
+	// is usually looking for, meaning libutp saw the datagram and disclaimed it.
+	CFrameLogThrottle m_truncatedFrameLog{ 60 * 1000 };
+	CFrameLogThrottle m_unknownFrameLog{ 60 * 1000 };
+	CFrameLogThrottle m_unservedFrameLog{ 60 * 1000 };
+	CFrameLogThrottle m_utpUnmatchedFrameLog{ 60 * 1000 };
 };
 
 #endif // CLIENTUDPSOCKET_H
