@@ -196,7 +196,7 @@ TEST(AddressFamilyPolicy, AbsentIsNeverPermitted)
 	const CNetworkAddress absent = CNetworkAddress::Absent();
 	ScopedFamilies scope(Families::DualStack);
 	ASSERT_FALSE(Permits(absent));
-	ASSERT_FALSE(TcpProtocolForTarget(absent));
+	ASSERT_FALSE((bool)AsioTargetFor(absent));
 }
 
 TEST(AddressFamilyPolicy, RefusalNeverFallsBackToTheOtherFamily)
@@ -205,20 +205,20 @@ TEST(AddressFamilyPolicy, RefusalNeverFallsBackToTheOtherFamily)
 	const CNetworkAddress v6 = Addr("2001:db8::1");
 	{
 		ScopedFamilies scope(Families::IPv4Only);
-		ASSERT_TRUE(TcpProtocolForTarget(v4) == boost::asio::ip::tcp::v4());
-		// Not v4() as a fallback: no protocol at all.
-		ASSERT_FALSE(TcpProtocolForTarget(v6));
+		ASSERT_TRUE(AsioTargetFor(v4)->protocol == boost::asio::ip::tcp::v4());
+		// Not v4() as a fallback: no pair at all.
+		ASSERT_FALSE((bool)AsioTargetFor(v6));
 	}
 	{
 		ScopedFamilies scope(Families::IPv6Only);
-		ASSERT_FALSE(TcpProtocolForTarget(v4));
-		ASSERT_TRUE(TcpProtocolForTarget(v6) == boost::asio::ip::tcp::v6());
+		ASSERT_FALSE((bool)AsioTargetFor(v4));
+		ASSERT_TRUE(AsioTargetFor(v6)->protocol == boost::asio::ip::tcp::v6());
 	}
 	{
 		ScopedFamilies scope(Families::DualStack);
-		ASSERT_TRUE(TcpProtocolForTarget(v4) == boost::asio::ip::tcp::v4());
-		ASSERT_TRUE(TcpProtocolForTarget(v6) == boost::asio::ip::tcp::v6());
-		ASSERT_TRUE(TcpProtocolForTarget(Addr("::ffff:192.0.2.1")) == boost::asio::ip::tcp::v4());
+		ASSERT_TRUE(AsioTargetFor(v4)->protocol == boost::asio::ip::tcp::v4());
+		ASSERT_TRUE(AsioTargetFor(v6)->protocol == boost::asio::ip::tcp::v6());
+		ASSERT_TRUE(AsioTargetFor(Addr("::ffff:192.0.2.1"))->protocol == boost::asio::ip::tcp::v4());
 	}
 }
 

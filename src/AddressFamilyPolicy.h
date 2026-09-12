@@ -106,12 +106,6 @@ inline bool PermitsIPv6() noexcept
 }
 
 /**
- * Whether a socket may be opened towards @a target at all.
- *
- * An IPv4-mapped IPv6 target counts as IPv4: it narrows losslessly, so an IPv4-only configuration
- * can reach it.
- */
-/**
  * Whether @a target is reachable over IPv4, mapped form included.
  *
  * One definition, because the asio half asks the same question when it picks a protocol. Two
@@ -123,6 +117,17 @@ inline bool IsIPv4Reachable(const CNetworkAddress &target) noexcept
 	return target.IsIPv4() || target.IsIPv4Mapped();
 }
 
+/**
+ * Whether a socket may be opened towards @a target at all.
+ *
+ * An IPv4-mapped IPv6 target counts as IPv4: it narrows losslessly, so an IPv4-only configuration
+ * can reach it.
+ *
+ * Absence is refused, and so is the unspecified address in either spelling. It arrives as a
+ * present IPv4 value, so the family test alone would permit it under every configuration, and a
+ * call site replacing an old @c if(ip) guard would dial 0.0.0.0 -- which on Linux connects to
+ * this machine. A value that names nobody is not a target.
+ */
 inline bool Permits(const CNetworkAddress &target) noexcept
 {
 	// Absence names no peer, and neither does the unspecified address. It reaches here as a

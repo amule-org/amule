@@ -48,24 +48,6 @@
 namespace AddressFamilyPolicy
 {
 
-/**
- * The TCP protocol a socket towards @a target must be opened in.
- *
- * @return The protocol, or no value when @a target is absent or its family is not permitted by the
- *         configuration. There is no fallback: opening a v4 socket for a v6 target is how a
- *         truncated address turns into a connection to the wrong host.
- */
-inline boost::optional<boost::asio::ip::tcp> TcpProtocolForTarget(const CNetworkAddress &target) noexcept
-{
-	if (!Permits(target)) {
-		return boost::none;
-	}
-	if (IsIPv4Reachable(target)) {
-		return boost::asio::ip::tcp::v4();
-	}
-	return boost::asio::ip::tcp::v6();
-}
-
 /** A protocol and the endpoint address to use with it, guaranteed to be the same family. */
 struct SAsioTarget
 {
@@ -76,22 +58,32 @@ struct SAsioTarget
 /**
  * The protocol and address for one connection attempt, decided together.
  *
- * Asking TcpProtocolForTarget() and NetworkAddressAsio::ToAsioAddress() separately does not
- * work for an IPv4-mapped target: the first says @c tcp::v4() because a mapped address is
- * reachable over IPv4, the second preserves the family and hands back an @c address_v6, and
- * connecting the two gives EAFNOSUPPORT on every mapped peer. Narrowing the address here is
- * what makes the pair agree, and returning them together is what stops them drifting apart
- * again.
+ * Deciding the protocol and the address separately does not work for an IPv4-mapped target. The
+ * family test calls it IPv4, because a mapped address is reachable over IPv4, while
+ * NetworkAddressAsio::ToAsioAddress() preserves the family and hands back an @c address_v6, and
+ * connecting the two gives EAFNOSUPPORT on every mapped peer. Narrowing the address here is what
+ * makes the pair agree, and returning them together is what stops them drifting apart again.
+ *
+ * This supersedes a protocol-only accessor that took a target and returned just the @c tcp. It
+ * was removed rather than left beside this one: a caller reaching for it would pair it with
+ * ToAsioAddress() and land back on that same mismatch, and the protocol for a listening socket
+ * comes from the endpoint built on AnyAddress() rather than from a target.
  *
  * Returning one optional also removes the other half of that footgun. With two calls a caller
- * writes `sock.open(*TcpProtocolForTarget(t))` after a separate Permits() check, and
- * dereferences an empty optional if anything moved in between; here there is one decision and
- * one thing to test.
+ * writes `sock.open(*ProtocolFor(t))` after a separate Permits() check and dereferences an empty
+ * optional if anything moved in between; here there is one decision and one thing to test.
+ *
+ * There is no fallback: a v4 socket opened for a v6 target is how a truncated address turns into
+ * a connection to the wrong host, so a family the configuration refuses yields no pair at all.
+ *
+ * Not @c noexcept, unlike the predicates beside it: NetworkAddressAsio::ToAsioAddress() is an
+ * out-of-line function that makes no such promise, and inheriting one here would turn a future
+ * throw into a terminate rather than something a caller can handle.
  *
  * @return The pair, or no value when @a target is absent, unspecified, or of a family the
  *         configuration does not permit.
  */
-inline boost::optional<SAsioTarget> AsioTargetFor(const CNetworkAddress &target) noexcept
+inline boost::optional<SAsioTarget> AsioTargetFor(const CNetworkAddress &target)
 {
 	if (!Permits(target)) {
 		return boost::none;
