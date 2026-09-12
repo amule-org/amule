@@ -201,9 +201,6 @@ public:
 		m_blocksWrite = m_writeBuffer.size() >= m_writeBound;
 	}
 
-	//! The peer's window opened again.
-	void OnWritable() { m_blocksWrite = m_writeBuffer.size() >= m_writeBound; }
-
 	// -- ending -------------------------------------------------------
 
 	/**
@@ -249,10 +246,6 @@ public:
 	bool BlocksRead() const { return m_blocksRead; }
 	bool BlocksWrite() const { return m_blocksWrite; }
 
-	//! True for the one caller that owns utp_close(); false for every other.
-	bool TakeCloseOwnership() { return m_close.Take(); }
-	bool CloseTaken() const { return m_close.Taken(); }
-
 private:
 	//! Above errno, the WinSock range (10000-11999) and wxSocketError alike,
 	//! so a stray comparison against any of them cannot match.
@@ -266,7 +259,6 @@ private:
 	bool m_blocksWrite = false;
 	bool m_readDrainedDue = false;
 	EUtpTransportFailure m_failure = EUtpTransportFailure::None;
-	CUtpCloseOnce m_close;
 };
 
 #endif // UTPSTREAM_H

@@ -578,4 +578,59 @@ TEST(UtpSocketTransport, ReentrantFlushNeverOffersTheSameBytesTwice)
 	ASSERT_TRUE(payload == ops.offered);
 }
 
+TEST(UtpSocketTransport, ConnectingReportsOneWritableEvenWhenDrainingUnblocks)
+{
+	// One transition, one notification. Flush() already reports the
+	// blocked-to-writable edge, so MarkConnected() must not report it again.
+	FakeOperations ops;
+	ops.acceptLimit = 0;
+	FakeEvents events;
+	CUtpSocketTransport transport = MakeTransport(ops, &events);
+	const std::vector<uint8_t> payload = Pattern(CUtpStream::kDefaultWriteBound, 9);
+	transport.Write(payload.data(), static_cast<uint32_t>(payload.size()));
+	ASSERT_TRUE(transport.BlocksWrite());
+
+	ops.acceptLimit = CUtpStream::kDefaultWriteBound;
+	transport.MarkConnected();
+	ASSERT_FALSE(transport.BlocksWrite());
+	ASSERT_EQUALS(1, events.writable);
+}
+
+TEST(UtpSocketTransport, AReentrantFlushRequestIsHonouredNotDropped)
+{
+	// The outer flush is offering bytes the reentrant caller never saw, so
+	// returning silently would lose whatever edge asked for that flush.
+	FakeOperations ops;
+	ops.acceptLimit = 8;
+	FakeEvents events;
+	CUtpSocketTransport transport = MakeTransport(ops, &events);
+	const std::vector<uint8_t> payload = Pattern(64, 3);
+	transport.Write(payload.data(), static_cast<uint32_t>(payload.size()));
+	const int queued = events.flushRequests;
+
+	bool reentered = false;
+	ops.onWrite = [&]() {
+		if (!reentered) {
+			reentered = true;
+			transport.Flush();
+		}
+	};
+	transport.Flush();
+	ASSERT_TRUE(reentered);
+	// Partial acceptance alone would schedule nothing; the swallowed
+	// reentrant request is what must still be answered.
+	ASSERT_EQUALS(queued + 1, events.flushRequests);
+}
+
+TEST(UtpSocketTransport, ALocalCloseIsNotReportedAsThePeersEof)
+{
+	FakeOperations ops;
+	CUtpSocketTransport transport = MakeTransport(ops);
+	transport.MarkConnected();
+	transport.Close();
+	ASSERT_TRUE(transport.Failure() == EUtpTransportFailure::Closed);
+	ASSERT_EQUALS(0, transport.LastError());
+	ASSERT_FALSE(transport.IsOk());
+}
+
 // File_checked_for_headers

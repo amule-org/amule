@@ -28,6 +28,7 @@
 #include "StreamTransport.h"
 #include "UtpStream.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <mutex>
@@ -257,7 +258,9 @@ public:
 			socket = m_socket;
 			m_socket = nullptr;
 			m_connected = false;
-			m_stream.OnFailure(EUtpTransportFailure::Eof);
+			// Our own close, not the peer's FIN. Both are clean ends with no
+			// error, but Failure() must not claim we saw a FIN we never saw.
+			m_stream.OnFailure(EUtpTransportFailure::Closed);
 			m_flushPending = false;
 		}
 		if (socket != nullptr) {
@@ -284,6 +287,10 @@ public:
 		{
 			std::lock_guard<std::mutex> lock(m_mutex);
 			if (m_flushInProgress) {
+				// Record it rather than drop it: the outer flush offers bytes
+				// this caller has not seen, so returning silently would lose
+				// whatever edge asked for this one.
+				m_flushAgain = true;
 				return;
 			}
 			m_flushPending = false;
@@ -299,6 +306,7 @@ public:
 				return;
 			}
 			m_flushInProgress = true;
+			m_flushAgain = false;
 		}
 
 		// Offered with the lock released: IUtpSocketOperations' calls can
@@ -325,9 +333,14 @@ public:
 		{
 			std::lock_guard<std::mutex> lock(m_mutex);
 			m_flushInProgress = false;
-			// Only a fully accepted offer needs a local continuation. Partial
-			// writes wait for UTP_STATE_WRITABLE; nonpositive results must not spin.
-			if (accepted == pending.size()) {
+			// A fully accepted offer needs a local continuation: utp_writev
+			// returns as soon as it has sent everything it was given, without
+			// arming CS_CONNECTED_FULL, so no writable edge is coming for the
+			// rest of the queue. Partial and nonpositive results did arm it,
+			// or are not connected, and must not spin.
+			const bool reentered = m_flushAgain;
+			m_flushAgain = false;
+			if (accepted == pending.size() || reentered) {
 				flushEvents = RequestFlushLocked();
 			}
 		}
@@ -342,17 +355,23 @@ public:
 	// this from UTP_ON_ACCEPT. Only outgoing sockets get UTP_STATE_CONNECT.
 	void MarkConnected()
 	{
+		bool wasBlocked = false;
 		{
 			std::lock_guard<std::mutex> lock(m_mutex);
 			if (m_connected || m_socket == nullptr || !m_stream.IsOk()) {
 				return;
 			}
 			m_connected = true;
+			wasBlocked = m_stream.BlocksWrite();
 		}
 		// utp_write() takes nothing before the handshake completes, so
 		// anything queued until now was refused and is still waiting.
 		Flush();
-		NotifyEvents(&IStreamTransportEvents::OnStreamWritable);
+		// One transition, one notification: Flush() already reports the
+		// blocked-to-writable edge when draining the queue produced it.
+		if (!wasBlocked) {
+			NotifyEvents(&IStreamTransportEvents::OnStreamWritable);
+		}
 	}
 
 	void OnPayload(const uint8_t *data, size_t length)
@@ -388,6 +407,13 @@ public:
 	{
 		std::lock_guard<std::mutex> lock(m_mutex);
 		return m_socket;
+	}
+
+	//! How the stream ended, for a caller that needs more than IsOk().
+	EUtpTransportFailure Failure() const
+	{
+		std::lock_guard<std::mutex> lock(m_mutex);
+		return m_stream.Failure();
 	}
 
 	//! Current buffered bytes, pulled synchronously by UTP_GET_READ_BUFFER_SIZE.
@@ -444,6 +470,7 @@ private:
 	bool m_connected = false;
 	bool m_flushPending = false;
 	bool m_flushInProgress = false;
+	bool m_flushAgain = false;
 };
 
 #endif // UTPSOCKETTRANSPORT_H

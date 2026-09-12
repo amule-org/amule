@@ -34,9 +34,9 @@
  * the connection existed and no longer does. Collapsing them is how a dead peer and a firewalled
  * one become indistinguishable in the source list.
  *
- * @c Eof and @c Destroying are terminal but are @b not failures. A peer that closes cleanly after
- * sending what it owed has not failed, and reporting it as an error would penalise it in exactly
- * the accounting a clean close should leave alone.
+ * @c Eof, @c Closed and @c Destroying are terminal but are @b not failures. A peer that closes
+ * cleanly after sending what it owed has not failed, and reporting it as an error would penalise
+ * it in exactly the accounting a clean close should leave alone.
  */
 enum class EUtpTransportFailure
 {
@@ -50,6 +50,8 @@ enum class EUtpTransportFailure
 	Reset,
 	//! The peer finished sending. Not an error.
 	Eof,
+	//! We closed it. Not an error, and distinct from a FIN we never saw.
+	Closed,
 	//! The library is destroying the socket. Not an error.
 	Destroying
 };
@@ -64,36 +66,6 @@ inline bool IsUtpTerminal(EUtpTransportFailure failure) noexcept
 {
 	return failure != EUtpTransportFailure::None;
 }
-
-/**
- * The close bookkeeping, as a type rather than as a rule.
- *
- * libutp's @c utp_close() must be called exactly once per socket, and the pointer is invalid the
- * moment @c UTP_STATE_DESTROYING arrives. Both halves are easy to get wrong by hand -- a destructor
- * that closes, plus a state callback that closes, is a double free that only appears when a peer
- * disconnects at the wrong moment.
- *
- * So the permission to close is consumed rather than checked: Take() answers true once and false
- * forever after, and there is no way to ask "was it closed" and then close, which is the shape that
- * races.
- */
-class CUtpCloseOnce
-{
-public:
-	//! True exactly once, for the caller that owns the close.
-	bool Take() noexcept
-	{
-		const bool first = !m_taken;
-		m_taken = true;
-		return first;
-	}
-
-	//! True once the close has been handed out. For assertions, not for deciding.
-	bool Taken() const noexcept { return m_taken; }
-
-private:
-	bool m_taken = false;
-};
 
 #endif // UTPTRANSPORTFAILURE_H
 // File_checked_for_headers
