@@ -180,7 +180,8 @@ void CStatisticsDlg::UpdateStatGraphs(const uint32 peakconnections, const GraphU
 		wxStaticText *label = CastChild(ID_ACTIVEC, wxStaticText);
 
 		label->SetLabel(CFormat(_("Active connections (1:%u)")) % nScale);
-		label->GetParent()->Layout();
+		// The panel, not label->GetParent(): that parent is the static box now.
+		Layout();
 
 		pscopeConn->SetRange(0.0, (float)nScale * pscopeConn->GetUpperLimit(), 1);
 	}
