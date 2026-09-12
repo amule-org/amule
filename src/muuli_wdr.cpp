@@ -3384,6 +3384,8 @@ wxSizer *PreferencesEventsTab( wxWindow *parent, bool call_fit, bool set_sizer )
 wxSizer *s_sharedfilespeerHeader;
 wxSizer *sharedfilesBottomDlg( wxWindow *parent, bool call_fit, bool set_sizer )
 {
+    // Contents stay on the panel: this sizer is the panel's own, so box-parented children get
+    // the box origin re-applied on every layout and walk off the top (#1356).
     wxStaticBox *item1 = new wxStaticBox( parent, -1, _("Statistics and queued clients for selected file(s) : Session / All time") );
     wxStaticBoxSizer *item0 = new wxStaticBoxSizer( item1, wxVERTICAL );
 
@@ -3398,7 +3400,7 @@ wxSizer *sharedfilesBottomDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     item2->AddGrowableCol( 4 );
     s_sharedfilespeerHeader = item2;
 
-    wxBitmapButton *item3 = new wxBitmapButton( item1, ID_SHAREDCLIENTTOGGLE, wxArtProvider::GetBitmapBundle( "amule:arrows_down" ), wxDefaultPosition, wxDefaultSize );
+    wxBitmapButton *item3 = new wxBitmapButton( parent, ID_SHAREDCLIENTTOGGLE, wxArtProvider::GetBitmapBundle( "amule:arrows_down" ), wxDefaultPosition, wxDefaultSize );
     item2->Add( item3, wxSizerFlags().CenterVertical() );
 
     // Combined size of the shared files currently visible (text filter). Set by
@@ -3406,7 +3408,7 @@ wxSizer *sharedfilesBottomDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     // text. Its column's second row holds the free-space figure, so each size gets a full line of
     // its own and both line up with the statistics beside them -- the counters share this row, the
     // gauges the next.
-    wxStaticText *item13 = new wxStaticText( item1, -1, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item13 = new wxStaticText( parent, -1, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
     item13->SetName( "sharedFilesTotalSize" );
     item2->Add( item13, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT, 5) );
 
@@ -3414,25 +3416,25 @@ wxSizer *sharedfilesBottomDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     item4->AddGrowableCol( 1 );
     item4->AddGrowableCol( 2 );
 
-    wxStaticText *item5 = new wxStaticText( item1, -1, _("Requested"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item5 = new wxStaticText( parent, -1, _("Requested"), wxDefaultPosition, wxDefaultSize, 0 );
     item4->Add( item5, wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 5) );
-    wxStaticText *item6 = new wxStaticText( item1, IDC_SREQUESTED, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item6 = new wxStaticText( parent, IDC_SREQUESTED, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
     item6->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
     item4->Add( item6, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT, 5) );
     item2->Add( item4, wxSizerFlags().Center().Border(wxALL, 5) );
     wxFlexGridSizer *item7 = new wxFlexGridSizer( 3, 0, 0 );
 
-    wxStaticText *item8 = new wxStaticText( item1, -1, _("Active Uploads"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item8 = new wxStaticText( parent, -1, _("Active Uploads"), wxDefaultPosition, wxDefaultSize, 0 );
     item7->Add( item8, wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 5) );
-    wxStaticText *item9 = new wxStaticText( item1, IDC_SACCEPTED, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item9 = new wxStaticText( parent, IDC_SACCEPTED, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
     item9->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
     item7->Add( item9, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT, 5) );
     item2->Add( item7, wxSizerFlags().Center().Border(wxALL, 5) );
     wxFlexGridSizer *item10 = new wxFlexGridSizer( 3, 0, 0 );
 
-    wxStaticText *item11 = new wxStaticText( item1, -1, _("Transferred"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item11 = new wxStaticText( parent, -1, _("Transferred"), wxDefaultPosition, wxDefaultSize, 0 );
     item10->Add( item11, wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 5) );
-    wxStaticText *item12 = new wxStaticText( item1, IDC_STRANSFERRED, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item12 = new wxStaticText( parent, IDC_STRANSFERRED, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
     item12->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
     item10->Add( item12, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT, 5) );
     item2->Add( item10, wxSizerFlags().Center().Border(wxALL, 5) );
@@ -3444,23 +3446,23 @@ wxSizer *sharedfilesBottomDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     // Free space where finished downloads land (the default category's incoming directory).
     // Informational only -- no threshold here, unlike the Downloads panel, which is where running
     // out actually stops work. Set by CSharedFilesCtrl::UpdateFreeSpace().
-    wxStaticText *item13b = new wxStaticText( item1, -1, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item13b = new wxStaticText( parent, -1, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
     item13b->SetName( "sharedFilesFreeSpace" );
     item2->Add( item13b, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT, 5) );
 
-    wxGauge *item14 = new wxGauge( item1, -1, 100, wxDefaultPosition, wxSize(200,18), 0 );
+    wxGauge *item14 = new wxGauge( parent, -1, 100, wxDefaultPosition, wxSize(200,18), 0 );
     item14->SetName( "popbar" );
     item2->Add( item14, wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 5) );
-    wxGauge *item15 = new wxGauge( item1, -1, 100, wxDefaultPosition, wxSize(200,18), 0 );
+    wxGauge *item15 = new wxGauge( parent, -1, 100, wxDefaultPosition, wxSize(200,18), 0 );
     item15->SetName( "popbarAccept" );
     item2->Add( item15, wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 5) );
-    wxGauge *item16 = new wxGauge( item1, -1, 100, wxDefaultPosition, wxSize(200,18), 0 );
+    wxGauge *item16 = new wxGauge( parent, -1, 100, wxDefaultPosition, wxSize(200,18), 0 );
     item16->SetName( "popbarTrans" );
     item2->Add( item16, wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 5) );
     item0->Add( item2, wxSizerFlags().Expand().CenterVertical() );
-    wxStaticLine *item17 = new wxStaticLine( item1, ID_LINE, wxDefaultPosition, wxSize(20,-1), wxLI_HORIZONTAL );
+    wxStaticLine *item17 = new wxStaticLine( parent, ID_LINE, wxDefaultPosition, wxSize(20,-1), wxLI_HORIZONTAL );
     item0->Add( item17, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 5) );
-    CSharedFilePeersListCtrl *item18 = new CSharedFilePeersListCtrl( item1, ID_SHAREDCLIENTLIST, wxDefaultPosition, wxDefaultSize, 0 );
+    CSharedFilePeersListCtrl *item18 = new CSharedFilePeersListCtrl( parent, ID_SHAREDCLIENTLIST, wxDefaultPosition, wxDefaultSize, 0 );
     item18->SetName( "sharedFilesSrcCt" );
     item0->Add( item18, wxSizerFlags(1).Expand().CenterVertical() );
     if (set_sizer)
