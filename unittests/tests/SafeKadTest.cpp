@@ -330,8 +330,11 @@ TEST(SafeKad, ABanSurvivesAsLongAsItLasts)
 {
 	CSafeKad safe;
 	safe.BanAddress(IP_A, T0);
-	ASSERT_TRUE(safe.IsBanned(IP_A, T0 + 1));
 
+	// Deliberately no IsBanned() before the sweep. It refreshes m_lastReferenced, which is
+	// exactly what the horizon is measured against, so asking whether the address is banned
+	// would itself postpone the reclaim and hide the regression this pins.
+	//
 	// An hour of silence used to be enough to reclaim it.
 	safe.Cleanup(T0 + 3600 + 1);
 	ASSERT_EQUALS(1u, (unsigned)safe.GetBannedAddressCount());

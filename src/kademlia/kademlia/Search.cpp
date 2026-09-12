@@ -295,11 +295,11 @@ void CSearch::JumpStart()
 
 	const uint64_t nowTick = ::GetTickCount64();
 
-	// Stop waiting on requests that have passed the ceiling. The record is marked rather than
-	// erased and kept for PENDING_SAMPLE_GRACE_MS, because an answer arriving after the
-	// ceiling is exactly the sample the estimator needs: erasing here meant no round-trip
-	// longer than the current estimate could ever be recorded, so on a link slower than the
-	// starting value the estimate could only ratchet down and every request stalled.
+	// Stop waiting on requests that have passed the ceiling, but keep the record until
+	// PENDING_SAMPLE_GRACE_MS past it, because an answer arriving after the ceiling is exactly
+	// the sample the estimator needs: erasing on the ceiling meant no round-trip longer than
+	// the current estimate could ever be recorded, so on a link slower than the starting value
+	// the estimate could only ratchet down and every request stalled.
 	//
 	// A timeout deliberately does not reach safeKad. It is evidence of a slow or absent node,
 	// not of a misbehaving one, and TrackProblematicNode() is rung one of the ban ladder:
@@ -310,9 +310,6 @@ void CSearch::JumpStart()
 		if (waited >= maxPending + PENDING_SAMPLE_GRACE_MS) {
 			m_pendingRequests.erase(it++);
 			continue;
-		}
-		if (waited >= maxPending) {
-			it->second.m_timedOut = true;
 		}
 		++it;
 	}
@@ -1527,7 +1524,7 @@ void CSearch::SendFindValue(CContact *contact, bool reaskMore)
 			// shared response-time estimator, and JumpStart uses the same record to
 			// notice a request that has gone past the estimated ceiling.
 			sPendingRequest pending = {
-				::GetTickCount64(), contact->GetIPAddress(), contact->GetUDPPort(), false
+				::GetTickCount64(), contact->GetIPAddress(), contact->GetUDPPort()
 			};
 			m_pendingRequests[contact->GetClientID()] = pending;
 #endif
