@@ -95,13 +95,26 @@ inline CNetworkAddress IndexKey(const CNetworkAddress &address)
  * be published or persisted through them -- and must be @b omitted rather than written as a zero,
  * which would publish "0.0.0.0" to every peer that asked for sources.
  *
+ * The unspecified address is refused for the same reason, whether it arrives as @c 0.0.0.0 or as
+ * @c ::ffff:0.0.0.0 : it narrows successfully, to zero, which is the value the paragraph above
+ * says must never be written. Having a 32-bit form and being nameable in one are not the same
+ * question, and this predicate answers the second.
+ *
  * Widening those formats is a protocol change and needs its own capability bit, so this predicate
  * is the boundary until one exists.
  */
 inline bool HasEd2kWireForm(const CNetworkAddress &address) noexcept
 {
-	std::uint32_t unused = 0;
-	return address.ToIPv4NetworkOrder(unused);
+	std::uint32_t narrowed = 0;
+	if (!address.ToIPv4NetworkOrder(narrowed)) {
+		return false;
+	}
+	// The narrowing succeeding is not enough. 0.0.0.0 has a 32-bit form and ::ffff:0.0.0.0
+	// narrows to the same value, and writing either into these fields is the exact failure
+	// this predicate exists to prevent: a zero published as a source to every peer that asks,
+	// and persisted for the next start to dial. Absence is the correct answer for a peer we
+	// cannot name, so a value that names nobody is refused here rather than written out.
+	return narrowed != 0;
 }
 
 /**

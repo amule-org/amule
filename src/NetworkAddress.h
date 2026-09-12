@@ -43,7 +43,11 @@ struct IPv6ExcludedPrefix
 	const char *name;
 };
 
-constexpr IPv6ExcludedPrefix kIPv6ExcludedPrefixes[] = { { {}, 128, "Unspecified" },
+// inline, because constexpr at namespace scope implies const and therefore internal linkage.
+// IsGloballyRoutableIPv6() is an inline member that uses this, so without inline every
+// translation unit gets its own entity: ill-formed with no diagnostic required, and a separate
+// copy of the table in each of the ~155 units that will include this header once callers exist.
+inline constexpr IPv6ExcludedPrefix kIPv6ExcludedPrefixes[] = { { {}, 128, "Unspecified" },
 	{ { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 }, 128, "Loopback" },
 	{ { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff }, 96, "IPv4-mapped" },
 	// ::a.b.c.d, the deprecated IPv4-compatible form (RFC 4291). Its page also holds the
@@ -53,8 +57,13 @@ constexpr IPv6ExcludedPrefix kIPv6ExcludedPrefixes[] = { { {}, 128, "Unspecified
 	{ { 0x00, 0x64, 0xff, 0x9b }, 96, "Well-known NAT64" },
 	{ { 0x00, 0x64, 0xff, 0x9b, 0x00, 0x01 }, 48, "Local-use NAT64" },
 	{ { 0x01, 0x00 }, 64, "Discard-only" },
-	{ { 0x20, 0x01 }, 32, "Teredo" },
-	{ { 0x20, 0x01, 0x00, 0x20 }, 28, "ORCHIDv2" },
+	// The whole IETF Protocol Assignments block, rather than the handful of sub-blocks that
+	// have been carved out of it so far. None of 2001::/23 is globally routable unicast, and
+	// IANA keeps adding to it -- Teredo, ORCHID, benchmarking, AMT, ORCHIDv2 in 2014, Drone
+	// Remote ID in 2023 -- so a list of children is a list that goes stale. This entry
+	// replaces the separate Teredo (2001::/32) and ORCHIDv2 (2001:20::/28) ones and covers
+	// the rest for good. Documentation (2001:db8::/32) is outside the /23 and stays below.
+	{ { 0x20, 0x01 }, 23, "IETF Protocol Assignments" },
 	{ { 0x20, 0x01, 0x0d, 0xb8 }, 32, "Documentation" },
 	{ { 0x20, 0x02 }, 16, "6to4" },
 	{ { 0x5f, 0x00 }, 16, "Segment routing SIDs" },
@@ -66,13 +75,22 @@ constexpr IPv6ExcludedPrefix kIPv6ExcludedPrefixes[] = { { {}, 128, "Unspecified
 inline bool MatchesPrefix(
 	const std::array<std::uint8_t, 16> &address, const IPv6ExcludedPrefix &prefix) noexcept
 {
-	for (unsigned bit = 0; bit < prefix.bits; ++bit) {
-		const unsigned mask = 0x80u >> (bit % 8);
-		if ((address[bit / 8] & mask) != (prefix.bytes[bit / 8] & mask)) {
+	// Whole bytes first, then the one partial byte. The bit-at-a-time form was up to 128
+	// iterations per prefix on a path the callers below sit in front of obfuscation-key
+	// derivation, and every entry in the table is walked before an address is declared
+	// routable.
+	const unsigned wholeBytes = prefix.bits / 8u;
+	for (unsigned i = 0; i < wholeBytes; ++i) {
+		if (address[i] != prefix.bytes[i]) {
 			return false;
 		}
 	}
-	return true;
+	const unsigned remainder = prefix.bits % 8u;
+	if (remainder == 0) {
+		return true;
+	}
+	const std::uint8_t mask = static_cast<std::uint8_t>(0xFFu << (8u - remainder));
+	return (address[wholeBytes] & mask) == (prefix.bytes[wholeBytes] & mask);
 }
 } // namespace NetworkAddressPolicy
 
