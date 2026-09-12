@@ -186,10 +186,14 @@ CSearchDlg::CSearchDlg(wxWindow *pParent)
 			}
 			// Button first, then its divider, so both land before the anchor
 			// and the row stays button|divider|button all the way across.
-			m_clearHistoryBtn = new wxButton(this, wxID_ANY, _("Clear Search History"));
+			// Parent is the row's own, not the dialog: this sizer lives in a
+			// wxStaticBoxSizer and positions in the static box's client area, so a
+			// child of the dialog is drawn offset by the box frame and label.
+			wxWindow *const rowParent = clearResultsBtn->GetParent();
+			m_clearHistoryBtn = new wxButton(rowParent, wxID_ANY, _("Clear Search History"));
 			row->Insert(at, m_clearHistoryBtn, wxSizerFlags().Center().Border(wxALL, 5));
 			m_clearHistorySep = new wxStaticLine(
-				this, wxID_ANY, wxDefaultPosition, wxSize(-1, 20), wxLI_VERTICAL);
+				rowParent, wxID_ANY, wxDefaultPosition, wxSize(-1, 20), wxLI_VERTICAL);
 			row->Insert(at + 1, m_clearHistorySep, wxSizerFlags().Center().Border(wxALL, 5));
 			m_clearHistoryBtn->Bind(wxEVT_BUTTON, &CSearchDlg::OnBnClickedClearHistory, this);
 		}
@@ -267,9 +271,13 @@ wxTextEntry *CSearchDlg::RebuildSearchNameField(bool wantHistory)
 	// lose what the user was in the middle of typing.
 	const wxString typed = dynamic_cast<wxTextEntry *>(current)->GetValue();
 
+	// Same parent as the control being replaced, for the reason given at the
+	// clear-history button above.
+	wxWindow *const slotParent = current->GetParent();
+
 	wxWindow *replacement = nullptr;
 	if (wantHistory) {
-		wxComboBox *combo = new wxComboBox(this,
+		wxComboBox *combo = new wxComboBox(slotParent,
 			IDC_SEARCHNAME,
 			wxEmptyString,
 			wxDefaultPosition,
@@ -288,7 +296,7 @@ wxTextEntry *CSearchDlg::RebuildSearchNameField(bool wantHistory)
 		// EVT_TEXT_ENTER entry. A plain text control carries no history menu, so the binding is
 		// gone with the old combo.
 		m_searchNameCtxBound = false;
-		replacement = new wxTextCtrl(this,
+		replacement = new wxTextCtrl(slotParent,
 			IDC_SEARCHNAME,
 			wxEmptyString,
 			wxDefaultPosition,
