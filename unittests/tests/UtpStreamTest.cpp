@@ -271,12 +271,8 @@ TEST(UtpStream, WritableReopensAWindowOnlyWhenThereIsRoom)
 	ASSERT_TRUE(stream.BlocksWrite());
 
 	// The peer's window opening does not empty our queue, so it does not
-	// unblock a writer that is bounded by our own buffer.
-	stream.OnWritable();
-	ASSERT_TRUE(stream.BlocksWrite());
-
+	// unblock a writer that is bounded by our own buffer. Only draining does.
 	stream.ConsumeQueuedBytes(stream.WriteBufferSize());
-	stream.OnWritable();
 	ASSERT_FALSE(stream.BlocksWrite());
 }
 
@@ -379,18 +375,6 @@ TEST(UtpStream, BufferedBytesSurviveTheEnd)
 	for (size_t i = 0; i < 5; ++i) {
 		ASSERT_EQUALS((int)sent[i], (int)out[i]);
 	}
-}
-
-TEST(UtpStream, CloseOwnershipIsHandedOutExactlyOnce)
-{
-	CUtpStream stream;
-	ASSERT_FALSE(stream.CloseTaken());
-	ASSERT_TRUE(stream.TakeCloseOwnership());
-	ASSERT_TRUE(stream.CloseTaken());
-	// The destructor, the DESTROYING callback and an explicit Close() all ask;
-	// exactly one may call utp_close().
-	ASSERT_FALSE(stream.TakeCloseOwnership());
-	ASSERT_FALSE(stream.TakeCloseOwnership());
 }
 
 // File_checked_for_headers

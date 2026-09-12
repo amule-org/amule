@@ -444,6 +444,9 @@ SocketSentBytes CEMSocket::Send(
 	}
 
 	bool anErrorHasOccured = false;
+	// A stream that ended cleanly. Stops the loops like an error does, but is
+	// not one: the socket's own lost notification drives the disconnect.
+	bool streamIsGone = false;
 	uint32 sentStandardPacketBytesThisCall = 0;
 	uint32 sentControlPacketBytesThisCall = 0;
 
@@ -465,6 +468,7 @@ SocketSentBytes CEMSocket::Send(
 				maxNumberOfBytesToSend &&
 			anErrorHasOccured == false && // don't send more than allowed. Also, there should have
 						      // been no error in earlier loop
+			streamIsGone == false &&
 			(!m_control_queue.empty() || !m_standard_queue.empty() ||
 				sendbuffer != NULL) &&              // there must exist something to send
 			(onlyAllowedToSendControlPacket == false || // this means we are allowed to send both
@@ -551,7 +555,7 @@ SocketSentBytes CEMSocket::Send(
 					(sentStandardPacketBytesThisCall + sentControlPacketBytesThisCall) %
 							minFragSize !=
 						0) &&
-				anErrorHasOccured == false) {
+				anErrorHasOccured == false && streamIsGone == false) {
 				uint32 tosend = sendblen - sent;
 				if (!onlyAllowedToSendControlPacket || m_currentPacket_is_controlpacket) {
 					if (maxNumberOfBytesToSend >=
@@ -626,6 +630,32 @@ SocketSentBytes CEMSocket::Send(
 				} else if (LastError()) {
 					// Send() gave an error
 					anErrorHasOccured = true;
+				} else if (!IsOk()) {
+					// The stream is gone. A transport whose stream can end
+					// cleanly returns 0 here while blocked and error are both
+					// clear, and nothing in this loop advances on a retry, so
+					// without this arm it spins at full speed on the upload
+					// thread while holding m_sendLocker. Asked rather than
+					// inferred from that triple, because a healthy asio socket
+					// can show it for an instant if its send completion lands
+					// between Write() returning and BlocksWrite() being read.
+					// A clean end is not an error, so leave without claiming
+					// one and let the lost notification tear the socket down.
+					//
+					// Inert until the acceptor routes this call. IsOk() is not
+					// virtual anywhere in CLibSocket, CEncryptedStreamSocket or
+					// here, so it resolves statically to CLibSocket::IsOk(),
+					// whose m_OK is true for the whole life of a connected
+					// socket: this arm cannot fire for CClientTCPSocket or
+					// CServerSocket, which is why adding it changes nothing
+					// today. The uTP transport answers the same question on
+					// IStreamTransport, a separate hierarchy, so whatever wires
+					// a transport into CEMSocket must route IsOk() to it as
+					// well. Miss that and the arm stays dead after wiring, and
+					// the spin it exists to stop comes back silently.
+					m_bBusy = false;
+					streamIsGone = true;
+					break;
 				} else {
 					m_bBusy = false;
 				}

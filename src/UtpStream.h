@@ -51,6 +51,9 @@ public:
 	//! Default bound on unsent bytes. One eD2k block plus headroom.
 	static constexpr size_t kDefaultWriteBound = 256 * 1024;
 
+	//! PeekQueuedBytes() default: no cap, the whole queue.
+	static constexpr size_t kNoPeekLimit = static_cast<size_t>(-1);
+
 	/**
 	 * Default bound on buffered received bytes.
 	 *
@@ -166,10 +169,19 @@ public:
 
 	size_t WriteBufferSize() const { return m_writeBuffer.size(); }
 
-	//! The queued bytes, for the caller that will offer them to libutp.
-	std::vector<uint8_t> PeekQueuedBytes() const
+	/**
+	 * The queued bytes, for the caller that will offer them to libutp.
+	 *
+	 * @a limit caps the copy. libutp takes at most a window per call anyway,
+	 * so offering the whole backlog copies bytes that cannot be accepted --
+	 * and a blocked socket would pay that copy again on every attempt.
+	 */
+	std::vector<uint8_t> PeekQueuedBytes(size_t limit = kNoPeekLimit) const
 	{
-		return std::vector<uint8_t>(m_writeBuffer.begin(), m_writeBuffer.end());
+		const size_t queued = m_writeBuffer.size();
+		const size_t taken = limit < queued ? limit : queued;
+		return std::vector<uint8_t>(m_writeBuffer.begin(),
+			m_writeBuffer.begin() + static_cast<std::deque<uint8_t>::difference_type>(taken));
 	}
 
 	/**
@@ -188,9 +200,6 @@ public:
 			m_writeBuffer.begin() + static_cast<std::deque<uint8_t>::difference_type>(drop));
 		m_blocksWrite = m_writeBuffer.size() >= m_writeBound;
 	}
-
-	//! The peer's window opened again.
-	void OnWritable() { m_blocksWrite = m_writeBuffer.size() >= m_writeBound; }
 
 	// -- ending -------------------------------------------------------
 
@@ -237,10 +246,6 @@ public:
 	bool BlocksRead() const { return m_blocksRead; }
 	bool BlocksWrite() const { return m_blocksWrite; }
 
-	//! True for the one caller that owns utp_close(); false for every other.
-	bool TakeCloseOwnership() { return m_close.Take(); }
-	bool CloseTaken() const { return m_close.Taken(); }
-
 private:
 	//! Above errno, the WinSock range (10000-11999) and wxSocketError alike,
 	//! so a stray comparison against any of them cannot match.
@@ -254,7 +259,6 @@ private:
 	bool m_blocksWrite = false;
 	bool m_readDrainedDue = false;
 	EUtpTransportFailure m_failure = EUtpTransportFailure::None;
-	CUtpCloseOnce m_close;
 };
 
 #endif // UTPSTREAM_H

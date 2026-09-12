@@ -22,6 +22,32 @@ target_link_libraries (UtpStreamTest
 	muleunit
 )
 
+# One libutp socket behind IStreamTransport: the partial write whose refused
+# tail must stay queued, and the close that must happen exactly once. The
+# library is a seam here, so this runs in every build like UtpStreamTest.
+add_executable (UtpSocketTransportTest
+	UtpSocketTransportTest.cpp
+	${CMAKE_SOURCE_DIR}/src/NetworkAddress.cpp
+	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
+	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
+)
+
+add_test (NAME UtpSocketTransportTest
+	COMMAND UtpSocketTransportTest
+)
+
+target_include_directories (UtpSocketTransportTest
+	PRIVATE ${CMAKE_BINARY_DIR}
+	PRIVATE ${CMAKE_SOURCE_DIR}/src
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
+	PRIVATE ${Boost_INCLUDE_DIR}
+)
+
+target_link_libraries (UtpSocketTransportTest
+	muleunit
+	${Boost_LIBRARIES}
+)
+
 if (ENABLE_UTP)
 	add_executable (UtpContextTest
 		UtpContextTest.cpp
