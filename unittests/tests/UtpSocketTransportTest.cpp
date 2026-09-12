@@ -36,6 +36,7 @@
 #include <UtpSocketTransport.h>
 
 #include <functional>
+#include <stdexcept>
 #include <thread>
 
 using namespace muleunit;
@@ -631,6 +632,65 @@ TEST(UtpSocketTransport, ALocalCloseIsNotReportedAsThePeersEof)
 	ASSERT_TRUE(transport.Failure() == EUtpTransportFailure::Closed);
 	ASSERT_EQUALS(0, transport.LastError());
 	ASSERT_FALSE(transport.IsOk());
+}
+
+TEST(UtpSocketTransport, IncomingPayloadReleasesAReplyQueuedAtAccept)
+{
+	// libutp completes an inbound handshake silently: CS_SYN_RECV becomes
+	// CS_CONNECTED on the peer's first ST_DATA with no callback, and until
+	// then utp_writev refuses everything without arming a writable edge. So
+	// this payload is the only signal that the reply can now go out.
+	FakeOperations ops;
+	ops.acceptLimit = 0;
+	FakeEvents events;
+	CUtpSocketTransport transport = MakeTransport(ops, &events);
+	transport.MarkConnected();
+	const std::vector<uint8_t> reply = Pattern(16, 7);
+	transport.Write(reply.data(), static_cast<uint32_t>(reply.size()));
+	transport.Flush();
+	ASSERT_EQUALS(0u, (unsigned)ops.accepted.size());
+	const int before = events.flushRequests;
+
+	const std::vector<uint8_t> incoming = Pattern(8, 1);
+	transport.OnPayload(incoming.data(), incoming.size());
+	ASSERT_EQUALS(before + 1, events.flushRequests);
+
+	ops.acceptLimit = 64;
+	transport.Flush();
+	ASSERT_TRUE(reply == ops.accepted);
+}
+
+TEST(UtpSocketTransport, AThrowingWritableSinkDoesNotWedgeTheFlushPath)
+{
+	// The in-progress flag is what stops a reentrant flush duplicating bytes.
+	// Left set by an exception it would stop Write() requesting flushes at
+	// all -- silently, with IsOk() still true.
+	class CThrowingEvents : public FakeEvents
+	{
+	public:
+		void OnStreamWritable() override { throw std::runtime_error("sink"); }
+	};
+	FakeOperations ops;
+	ops.acceptLimit = CUtpStream::kDefaultWriteBound;
+	CThrowingEvents events;
+	CUtpSocketTransport transport = MakeTransport(ops, &events);
+	const std::vector<uint8_t> payload = Pattern(CUtpStream::kDefaultWriteBound, 5);
+	transport.Write(payload.data(), static_cast<uint32_t>(payload.size()));
+
+	bool threw = false;
+	try {
+		transport.Flush();
+	} catch (const std::runtime_error &) {
+		threw = true;
+	}
+	ASSERT_TRUE(threw);
+
+	// Still usable: the queue drains and queueing still asks for a flush.
+	const int before = events.flushRequests;
+	transport.Flush();
+	const std::vector<uint8_t> more = Pattern(8, 2);
+	transport.Write(more.data(), static_cast<uint32_t>(more.size()));
+	ASSERT_TRUE(events.flushRequests > before);
 }
 
 // File_checked_for_headers

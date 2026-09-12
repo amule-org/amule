@@ -444,6 +444,9 @@ SocketSentBytes CEMSocket::Send(
 	}
 
 	bool anErrorHasOccured = false;
+	// A stream that ended cleanly. Stops the loops like an error does, but is
+	// not one: the socket's own lost notification drives the disconnect.
+	bool streamIsGone = false;
 	uint32 sentStandardPacketBytesThisCall = 0;
 	uint32 sentControlPacketBytesThisCall = 0;
 
@@ -465,6 +468,7 @@ SocketSentBytes CEMSocket::Send(
 				maxNumberOfBytesToSend &&
 			anErrorHasOccured == false && // don't send more than allowed. Also, there should have
 						      // been no error in earlier loop
+			streamIsGone == false &&
 			(!m_control_queue.empty() || !m_standard_queue.empty() ||
 				sendbuffer != NULL) &&              // there must exist something to send
 			(onlyAllowedToSendControlPacket == false || // this means we are allowed to send both
@@ -551,7 +555,7 @@ SocketSentBytes CEMSocket::Send(
 					(sentStandardPacketBytesThisCall + sentControlPacketBytesThisCall) %
 							minFragSize !=
 						0) &&
-				anErrorHasOccured == false) {
+				anErrorHasOccured == false && streamIsGone == false) {
 				uint32 tosend = sendblen - sent;
 				if (!onlyAllowedToSendControlPacket || m_currentPacket_is_controlpacket) {
 					if (maxNumberOfBytesToSend >=
@@ -626,6 +630,16 @@ SocketSentBytes CEMSocket::Send(
 				} else if (LastError()) {
 					// Send() gave an error
 					anErrorHasOccured = true;
+				} else if (result == 0) {
+					// Took nothing, is not blocked and reports no error: the
+					// stream is gone. Nothing here advances on a retry, so
+					// without this arm the loop spins at full speed on the
+					// upload thread while holding m_sendLocker. A clean end is
+					// not an error, so leave the loop without claiming one and
+					// let the socket's own lost notification tear it down.
+					m_bBusy = false;
+					streamIsGone = true;
+					break;
 				} else {
 					m_bBusy = false;
 				}

@@ -308,6 +308,11 @@ public:
 			m_flushInProgress = true;
 			m_flushAgain = false;
 		}
+		// From here the in-progress flag must be cleared on every exit: the
+		// library call and the writable notification both reach code that can
+		// throw, and a flag left set stops Write() from ever requesting a
+		// flush again -- silently, with IsOk() still true.
+		CFlushGuard guard(*this);
 
 		// Offered with the lock released: IUtpSocketOperations' calls can
 		// re-enter, and a callback that reaches Flush() again would deadlock
@@ -332,15 +337,11 @@ public:
 		IStreamTransportEvents *flushEvents = nullptr;
 		{
 			std::lock_guard<std::mutex> lock(m_mutex);
-			m_flushInProgress = false;
 			// A fully accepted offer needs a local continuation: utp_writev
 			// returns as soon as it has sent everything it was given, without
 			// arming CS_CONNECTED_FULL, so no writable edge is coming for the
-			// rest of the queue. Partial and nonpositive results did arm it,
-			// or are not connected, and must not spin.
-			const bool reentered = m_flushAgain;
-			m_flushAgain = false;
-			if (accepted == pending.size() || reentered) {
+			// rest of the queue. A partial or window-full result did arm it.
+			if (accepted == pending.size() || guard.Release()) {
 				flushEvents = RequestFlushLocked();
 			}
 		}
@@ -376,9 +377,21 @@ public:
 
 	void OnPayload(const uint8_t *data, size_t length)
 	{
+		IStreamTransportEvents *flushEvents = nullptr;
 		{
 			std::lock_guard<std::mutex> lock(m_mutex);
 			m_stream.OnPayload(data, length);
+			// This ST_DATA is what completes an inbound handshake, and
+			// libutp makes that transition silently: CS_SYN_RECV becomes
+			// CS_CONNECTED with no callback at all. Until it happens
+			// utp_writev refuses everything without arming a writable edge,
+			// so a reply queued at accept has been waiting for this moment.
+			// Requested rather than flushed here, because this runs inside
+			// UTP_ON_READ and the offer must not be made from a callback.
+			flushEvents = RequestFlushLocked();
+		}
+		if (flushEvents != nullptr) {
+			flushEvents->OnFlushRequested();
 		}
 		NotifyEvents(&IStreamTransportEvents::OnStreamReadable);
 	}
@@ -431,6 +444,37 @@ public:
 	}
 
 private:
+	//! Clears the in-progress flag on every exit and reports any re-entry.
+	class CFlushGuard
+	{
+	public:
+		explicit CFlushGuard(CUtpSocketTransport &owner)
+		: m_owner(owner)
+		{
+		}
+
+		~CFlushGuard()
+		{
+			std::lock_guard<std::mutex> lock(m_owner.m_mutex);
+			m_owner.m_flushInProgress = false;
+		}
+
+		//! Caller holds the mutex. True when a flush was requested meanwhile.
+		bool Release()
+		{
+			m_owner.m_flushInProgress = false;
+			const bool again = m_owner.m_flushAgain;
+			m_owner.m_flushAgain = false;
+			return again;
+		}
+
+		CFlushGuard(const CFlushGuard &) = delete;
+		CFlushGuard &operator=(const CFlushGuard &) = delete;
+
+	private:
+		CUtpSocketTransport &m_owner;
+	};
+
 	// Caller holds m_mutex. The returned sink must be called unlocked.
 	IStreamTransportEvents *RequestFlushLocked()
 	{
