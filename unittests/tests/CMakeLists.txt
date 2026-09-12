@@ -248,6 +248,10 @@ target_link_libraries (BanRecordTest
 # compiles Boost.Asio.
 add_executable (NetworkAddressTest
 	NetworkAddressTest.cpp
+	# A second unit including NetworkAddress.h, so the linkage of the exclusion
+	# table is observable: without `inline` the table is internal to each unit
+	# and the two addresses differ.
+	NetworkAddressTableLinkage.cpp
 	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
 	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 	# CNetworkAddress::FromString/ToString live in NetworkAddress.cpp: they are

@@ -463,6 +463,22 @@ TEST(NetworkAddress, GloballyRoutableIPv4RejectsEveryUnroutableRange)
 	ASSERT_FALSE(CNetworkAddress::FromString("255.255.255.255").IsGloballyRoutableIPv4());
 }
 
+// Defined in NetworkAddressTableLinkage.cpp, a second unit that includes the same header.
+const void *ExcludedPrefixTableAddressFromOtherUnit() noexcept;
+
+// The exclusion table has to be one entity, not one per translation unit. `constexpr` at namespace
+// scope implies `const` and therefore internal linkage, and IsGloballyRoutableIPv6() is an inline
+// member that uses it: ill-formed with no diagnostic required, and a separate copy of the table in
+// every unit including the header.
+//
+// Nothing about that fails to compile or link, which is why it needs asking directly. Dropping the
+// `inline` makes this fail with two distinct addresses.
+TEST(NetworkAddress, TheExclusionTableIsOneEntityAcrossUnits)
+{
+	ASSERT_TRUE(ExcludedPrefixTableAddressFromOtherUnit() ==
+		    static_cast<const void *>(&NetworkAddressPolicy::kIPv6ExcludedPrefixes[0]));
+}
+
 // CNetworkAddress no longer stores a boost::asio::ip::address, so the three predicates that used to
 // be asio's -- loopback, link-local, unique-local -- are now prefix tests in NetworkAddress.h. This
 // pins each range it must reject, because getting one prefix wrong here does not fail a build: it
@@ -551,7 +567,7 @@ TEST(NetworkAddress, GloballyRoutableIPv6RejectsEveryUnreachableRange)
 	// Teredo and ORCHIDv2 still excluded, now by the containing block rather than their own.
 	ASSERT_FALSE(CNetworkAddress::FromString("2001::1").IsGloballyRoutableIPv6());
 	ASSERT_FALSE(CNetworkAddress::FromString("2001:20::1").IsGloballyRoutableIPv6());
-	// Just outside the block, and allocated: this is what stops the entry over-reaching.
+	// Immediately outside the block on both sides, which is what stops the entry over-reaching.
 	ASSERT_TRUE(CNetworkAddress::FromString("2001:200::1").IsGloballyRoutableIPv6());
 	ASSERT_TRUE(CNetworkAddress::FromString("2000:ffff::1").IsGloballyRoutableIPv6());
 
