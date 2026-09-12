@@ -83,6 +83,7 @@ bool CamuleAppCommon::ReportAssertFailure(const wxChar *file,
 	// watchdog script) sees a non-zero exit and can restart aMule. The errmsg above is already
 	// on stderr and in the log; nothing useful is lost by skipping the dialog.
 	if (m_disableFatal) {
+		SuppressNextAbortBacktrace();
 		raise(SIGABRT);
 		return false; // unreachable
 	}
@@ -96,6 +97,7 @@ bool CamuleAppCommon::ReportAssertFailure(const wxChar *file,
 		_wassert(s.wc_str(), file, line);
 #else
 		// Abort, allows gdb to catch the assertion
+		SuppressNextAbortBacktrace();
 		raise(SIGABRT);
 #endif
 		return false; // unreachable
@@ -606,6 +608,13 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 		wxHandleFatalExceptions(true);
 	}
 #endif
+	// Armed whether or not wx's handlers are: --disable-fatal turns off the dialog and the
+	// wx-caught signals, but a glibc heap abort still kills us silently, and that is the case
+	// this exists to report. wx covers SIGSEGV/SIGBUS/SIGILL/SIGFPE and never SIGABRT.
+	InstallFatalAbortHandler();
+	// The banner is written from a signal handler and cannot format anything, so the build is
+	// recorded up front; without it a pasted report does not say which binary produced it.
+	SetFatalAbortVersionLine((const char *)unicode2char(CFormat("%s on %s") % FullMuleVersion % OSType));
 #endif
 
 	theLogger.SetEnabledStdoutLog(cmdline.Found("log-stdout"));
@@ -849,6 +858,15 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 	if (!theLogger.OpenLogfile(logfileName.GetRaw())) {
 		fputs("ERROR: unable to open log file\n", stderr);
 		return false;
+	}
+
+	// Send the abort backtrace to the logfile, which is where EmergencyLog() already puts the
+	// SIGSEGV report, so both crash kinds land in the same place. Not conditional on
+	// --full-daemon: that mode points fd 0/1/2 at /dev/null, but a desktop-launched amule or
+	// amulegui has no useful stderr either. Nothing is given up by arming it: stderrUsable
+	// defaults to true, so a terminal still gets its copy.
+	if (theLogger.CrashFd() >= 0) {
+		SetFatalAbortRedirectFd(theLogger.CrashFd());
 	}
 
 	CPreferences::BuildItemList(thePrefs::GetConfigDir());

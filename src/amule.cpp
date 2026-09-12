@@ -35,6 +35,7 @@
 		    //   HAVE_SYS_RESOURCE_H, HAVE_SYS_STATVFS_H, VERSION
 		    //   and ENABLE_NLS
 #include <common/ClientVersion.h>
+#include <common/MuleDebug.h> // Needed for SuppressNextAbortBacktrace
 
 #include <wx/cmdline.h> // Needed for wxCmdLineParser
 #ifndef AMULE_DAEMON
@@ -1758,6 +1759,11 @@ void CamuleApp::OnFatalException()
 	    << "\n--------------------------------------------------------------------------------\n";
 
 	theLogger.EmergencyLog(msg, true);
+
+	// wx's handler calls abort() as soon as this returns, so without this the SIGABRT handler
+	// adds a second, raw backtrace under a banner that blames the allocator. The symbolicated
+	// one above is the report; this keeps it the only one.
+	SuppressNextAbortBacktrace();
 }
 #endif
 

@@ -35,6 +35,7 @@
 #include <glib.h> // g_set_prgname() -- wl_app_id / WM_CLASS binding
 #endif
 
+#include <common/MuleDebug.h> // Needed for get_backtrace and SuppressNextAbortBacktrace
 #include <common/Format.h>
 #include <common/StringFunctions.h>
 #include <common/MD5Sum.h>
@@ -301,6 +302,11 @@ void CamuleRemoteGuiApp::OnFatalException()
 	    << "\n--------------------------------------------------------------------------------\n";
 
 	theLogger.EmergencyLog(msg, true);
+
+	// wx's handler calls abort() as soon as this returns, so without this the SIGABRT handler
+	// adds a second, raw backtrace under a banner that blames the allocator. The symbolicated
+	// one above is the report; this keeps it the only one.
+	SuppressNextAbortBacktrace();
 }
 #endif
 

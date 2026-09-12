@@ -24,6 +24,8 @@
 
 #include "ExternalConnector.h"
 
+#include <common/MuleDebug.h> // Needed for InstallFatalAbortHandler
+
 #include <common/FileFunctions.h> // RestrictToOwner
 #include "config.h"               // Needed for VERSION and readline detection
 #include <common/Format.h>        // Needed for CFormat
@@ -722,6 +724,9 @@ bool CaMuleExternalConnector::OnInit()
 #if wxUSE_ON_FATAL_EXCEPTION
 	wxHandleFatalExceptions(true);
 #endif
+	// wx covers SIGSEGV/SIGBUS/SIGILL/SIGFPE and never SIGABRT, so a glibc heap abort kills the
+	// connector binaries as silently as it killed amuled in amule-org/amule#1338.
+	InstallFatalAbortHandler();
 #endif
 
 	// Pull the libc locale from the environment before any wxString -> char* conversion runs
@@ -739,6 +744,19 @@ bool CaMuleExternalConnector::OnInit()
 	InstallMuleExceptionHandler();
 
 	bool retval = wxApp::OnInit();
+
+	// Below wxApp::OnInit(), which is what runs OnInitCmdLine() and so sets m_appname: above it
+	// the name is still NULL and the banner would name no binary at all, which is the one thing
+	// it exists to say. amulecmd, amuleweb and amuleapi share a version string, so without the
+	// name a pasted report cannot be attributed. The handler is armed before this point and
+	// would report without a version line; that is strictly better than one that never has a
+	// name. Written from a signal handler, which cannot format, hence the fixed buffer.
+	// The casts matter: CFormat resolves char* to its pointer overload and would print the
+	// addresses, where const char* formats the string.
+	SetFatalAbortVersionLine((const char *)unicode2char(CFormat("%s %s on %s") % m_appname %
+							    (const char *)m_strFullVersion %
+							    (const char *)m_strOSDescription));
+
 	OnInitCommandSet();
 	InitCustomLanguages();
 	SetLocale(m_language);
@@ -797,6 +815,11 @@ void CaMuleExternalConnector::OnFatalException()
 
 	fprintf(stderr,
 		"\n--------------------------------------------------------------------------------\n");
+
+	// wx's handler calls abort() as soon as this returns, so without this the SIGABRT handler
+	// adds a second, raw backtrace under a banner that blames the allocator. The symbolicated
+	// one above is the report; this keeps it the only one.
+	SuppressNextAbortBacktrace();
 }
 #endif
 

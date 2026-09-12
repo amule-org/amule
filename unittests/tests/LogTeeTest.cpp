@@ -28,6 +28,12 @@
 
 #include <cstdio>
 #include <fstream>
+#ifdef _WIN32
+#include <io.h>
+#else
+#include <fcntl.h>
+#include <unistd.h>
+#endif
 #include <sstream>
 #include <string>
 
@@ -45,6 +51,16 @@ std::string ReadFile(const std::string &path)
 	std::ostringstream ss;
 	ss << f.rdbuf();
 	return ss.str();
+}
+
+// Raw write to a descriptor, the way the crash handler reaches the log.
+long OsWriteFd(int fd, const void *buf, unsigned n)
+{
+#ifdef _WIN32
+	return _write(fd, buf, n);
+#else
+	return ::write(fd, buf, n);
+#endif
 }
 
 bool Exists(const std::string &path)
@@ -159,3 +175,89 @@ TEST(LogTee, OversizedChunkOnEmptyFileIsNotRotated)
 	ASSERT_EQUALS(std::string("abcdefgh"), ReadFile(path));
 	Cleanup(path);
 }
+
+// Every platform has to hand the crash path something to write to while the log is open. The rest
+// of the contract differs -- POSIX reserves a number, Windows resolves the current file, since an
+// open handle there blocks the rename() that rotation needs -- but this much is common, and it is
+// what CLogTee::RedirectStderrToFileForCrash() depends on for amuleapi's wx fatal handler. The
+// other cases below are POSIX-only, which is how a Windows regression here went unnoticed.
+TEST(LogTee, CrashFdIsAvailableWhileOpen)
+{
+	const std::string path = TmpPath("_j.log");
+	Cleanup(path);
+	{
+		CRotatingLog log;
+		ASSERT_TRUE(log.Open(path, 0));
+		ASSERT_TRUE(log.CrashFd() >= 0);
+	}
+	Cleanup(path);
+}
+
+#ifndef _WIN32
+
+// The crash descriptor is a reserved number that the log's own open/close cycle cannot free. A
+// fatal handler cannot re-resolve it (every Fd lookup locks), so it holds this number from install
+// to exit. If it were the FILE*'s own descriptor, Rotate()'s fclose() would free it and whatever
+// the process opened next would inherit it -- in amuleapi, an accepted client socket.
+//
+// Rotation must not move it, and it must address the file that is current afterwards.
+TEST(LogTee, CrashFdSurvivesRotation)
+{
+	const std::string path = TmpPath("_g.log");
+	const std::string rot = path + ".1";
+	Cleanup(path);
+	{
+		CRotatingLog log;
+		ASSERT_TRUE(log.Open(path, 10));
+		const int crashFd = log.CrashFd();
+
+		log.Write("AAAAAAAAAA", 10); // fills the cap
+		log.Write("BBBBB", 5);       // crosses it -> rotate, reopen
+
+		ASSERT_EQUALS(crashFd, log.CrashFd());
+		ASSERT_EQUALS(2L, static_cast<long>(OsWriteFd(crashFd, "CC", 2)));
+	}
+	ASSERT_EQUALS(std::string("AAAAAAAAAA"), ReadFile(rot));
+	ASSERT_EQUALS(std::string("BBBBBCC"), ReadFile(path));
+	Cleanup(path);
+}
+
+// Close() leaves it open on the last file on purpose, so a holder of the number never has a closed
+// descriptor. Writing to it after Close() must reach the file rather than fail. This is also the
+// assertion that tells the reserved descriptor apart from the FILE*'s own: a rotation hands the
+// same number back in a single-threaded test, so only closing the file separates the two.
+TEST(LogTee, CrashFdStaysUsableAfterClose)
+{
+	const std::string path = TmpPath("_h.log");
+	Cleanup(path);
+	{
+		CRotatingLog log;
+		ASSERT_TRUE(log.Open(path, 0));
+		log.Write("live", 4);
+		const int crashFd = log.CrashFd();
+
+		log.Close();
+
+		ASSERT_EQUALS(4L, static_cast<long>(OsWriteFd(crashFd, "dead", 4)));
+	}
+	ASSERT_EQUALS(std::string("livedead"), ReadFile(path));
+	Cleanup(path);
+}
+
+// The reserved descriptor is never closed, so it must not follow an exec'd child and hold the log
+// file open there. aMule spawns children via wxExecute.
+TEST(LogTee, CrashFdIsCloseOnExec)
+{
+	const std::string path = TmpPath("_i.log");
+	Cleanup(path);
+	{
+		CRotatingLog log;
+		ASSERT_TRUE(log.Open(path, 0));
+		const int flags = fcntl(log.CrashFd(), F_GETFD);
+		ASSERT_TRUE(flags >= 0);
+		ASSERT_TRUE((flags & FD_CLOEXEC) != 0);
+	}
+	Cleanup(path);
+}
+
+#endif /* !_WIN32 */

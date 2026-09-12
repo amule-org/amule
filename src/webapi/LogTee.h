@@ -25,6 +25,7 @@
 #ifndef WEBAPI_LOG_TEE_H
 #define WEBAPI_LOG_TEE_H
 
+#include <csignal>
 #include <cstddef>
 #include <cstdio>
 #include <mutex>
@@ -61,18 +62,30 @@ public:
 
 	void Close();
 
-	// Underlying file descriptor of the current file, or -1. Used only by the
-	// crash path to point stderr straight at the file; not for concurrent I/O.
-	int Fd() const;
+	// A descriptor for the crash path to write to, or -1 when there is none.
+	//
+	// On POSIX it is reserved: one number for the life of the object, only ever re-pointed, so a
+	// signal handler can read it without taking m_mx and the number can never be freed
+	// mid-rotation and handed to another thread's socket. Close() leaves it open on the last
+	// file, so the number is never a closed one in a reader's hands.
+	//
+	// Windows reserves nothing, because an open handle there blocks the rename() that rotation
+	// needs. It resolves the current file under m_mx instead, which is what this did before the
+	// reserved descriptor existed. The lock is a hazard in a handler, but the only Windows caller
+	// is CLogTee::RedirectStderrToFileForCrash() from an SEH filter, and losing the redirect
+	// altogether is worse: the report would sit in a pipe whose pump dies with the process.
+	int CrashFd() const;
 
 private:
-	void Rotate(); // caller holds m_mx
+	void Rotate();       // caller holds m_mx
+	void PointCrashFd(); // caller holds m_mx
 
 	mutable std::mutex m_mx;
 	std::string m_path;
 	std::size_t m_maxBytes = 0;
 	std::size_t m_curSize = 0;
 	std::FILE *m_fp = nullptr;
+	volatile std::sig_atomic_t m_crashFd = -1;
 };
 
 // Duplicates the process's stdout and stderr into a log file while leaving the original console
@@ -103,6 +116,17 @@ public:
 	// written synchronously, without depending on the forwarding thread being scheduled before
 	// the process dies.
 	void RedirectStderrToFileForCrash();
+
+	// The reserved crash descriptor, or -1 when not installed. For a crash reporter that has to
+	// write somewhere the forwarding threads are not needed to drain; see
+	// SetFatalAbortRedirectFd(). Stays valid across rotations; clear the reporter's copy before
+	// destroying this object, which is what closes it.
+	int CrashFd() const { return m_installed ? m_log.CrashFd() : -1; }
+
+	// The dup of the original fd 2, or -1 when not installed. A crash reporter writes the console
+	// copy here rather than to fd 2: fd 2 is the tee pipe, which reaches the console only while
+	// the pump thread is still scheduled, and in a signal handler it is not.
+	int ConsoleFd() const { return m_installed ? m_savedErr : -1; }
 
 	bool IsInstalled() const { return m_installed; }
 
