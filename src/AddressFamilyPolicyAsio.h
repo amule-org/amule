@@ -26,6 +26,7 @@
 #define ADDRESSFAMILYPOLICYASIO_H
 
 #include "AddressFamilyPolicy.h"
+#include "NetworkAddressAsio.h" // Needed for ToAsioAddress in AsioTargetFor
 
 #include <boost/optional.hpp>
 
@@ -47,22 +48,51 @@
 namespace AddressFamilyPolicy
 {
 
+/** A protocol and the endpoint address to use with it, guaranteed to be the same family. */
+struct SAsioTarget
+{
+	boost::asio::ip::tcp protocol;
+	boost::asio::ip::address address;
+};
+
 /**
- * The TCP protocol a socket towards @a target must be opened in.
+ * The protocol and address for one connection attempt, decided together.
  *
- * @return The protocol, or no value when @a target is absent or its family is not permitted by the
- *         configuration. There is no fallback: opening a v4 socket for a v6 target is how a
- *         truncated address turns into a connection to the wrong host.
+ * Deciding the protocol and the address separately does not work for an IPv4-mapped target. The
+ * family test calls it IPv4, because a mapped address is reachable over IPv4, while
+ * NetworkAddressAsio::ToAsioAddress() preserves the family and hands back an @c address_v6, and
+ * connecting the two gives EAFNOSUPPORT on every mapped peer. Narrowing the address here is what
+ * makes the pair agree, and returning them together is what stops them drifting apart again.
+ *
+ * This supersedes a protocol-only accessor that took a target and returned just the @c tcp. It
+ * was removed rather than left beside this one: a caller reaching for it would pair it with
+ * ToAsioAddress() and land back on that same mismatch, and the protocol for a listening socket
+ * comes from the endpoint built on AnyAddress() rather than from a target.
+ *
+ * Returning one optional also removes the other half of that footgun. With two calls a caller
+ * writes `sock.open(*ProtocolFor(t))` after a separate Permits() check and dereferences an empty
+ * optional if anything moved in between; here there is one decision and one thing to test.
+ *
+ * There is no fallback: a v4 socket opened for a v6 target is how a truncated address turns into
+ * a connection to the wrong host, so a family the configuration refuses yields no pair at all.
+ *
+ * Not @c noexcept, unlike the predicates beside it: NetworkAddressAsio::ToAsioAddress() is an
+ * out-of-line function that makes no such promise, and inheriting one here would turn a future
+ * throw into a terminate rather than something a caller can handle.
+ *
+ * @return The pair, or no value when @a target is absent, unspecified, or of a family the
+ *         configuration does not permit.
  */
-inline boost::optional<boost::asio::ip::tcp> TcpProtocolForTarget(const CNetworkAddress &target) noexcept
+inline boost::optional<SAsioTarget> AsioTargetFor(const CNetworkAddress &target)
 {
 	if (!Permits(target)) {
 		return boost::none;
 	}
-	if (target.IsIPv4() || target.IsIPv4Mapped()) {
-		return boost::asio::ip::tcp::v4();
-	}
-	return boost::asio::ip::tcp::v6();
+	const CNetworkAddress narrowed = target.Unmapped();
+	SAsioTarget result = { IsIPv4Reachable(narrowed) ? boost::asio::ip::tcp::v4()
+							 : boost::asio::ip::tcp::v6(),
+		NetworkAddressAsio::ToAsioAddress(narrowed) };
+	return result;
 }
 
 /** An explicit lookup-family restriction; Any means unrestricted, not refusal. */
@@ -111,6 +141,12 @@ inline boost::asio::ip::address AnyIPv6Address() noexcept
  * Prefer the IPv4 wildcard whenever IPv4 is permitted, including dual stack, so a single-socket
  * service is not implicitly moved to another family. Accepting both families on an IPv6 socket
  * requires explicitly choosing AnyIPv6Address() and clearing @c IPV6_V6ONLY.
+ *
+ * Under @c IPv6Only this returns the IPv6 wildcard, and the caller must then @b set
+ * @c IPV6_V6ONLY rather than leave it at the platform default. Linux defaults it off, so the
+ * listener would accept IPv4 peers as mapped addresses while Permits() refuses mapped addresses
+ * under that configuration: connections arriving that the policy will not talk to. This header
+ * cannot set socket options, so the obligation is the caller's either way.
  */
 inline boost::asio::ip::address AnyAddress() noexcept
 {
