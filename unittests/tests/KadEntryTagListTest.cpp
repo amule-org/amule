@@ -70,6 +70,12 @@ public:
 		AdjustGlobalPublishTracking(ip, true, wxT("test publisher"));
 	}
 
+	// GetTrustValue() only recalculates when its last result is older than ten minutes, and the
+	// timestamp starts at zero, so on a freshly booted machine the comparison is against uptime
+	// and the recalculation never happens. Force it instead of depending on how long the runner
+	// has been up.
+	void RecalculateTrustNow() { ReCalculateTrustValue(); }
+
 	void AddDistinctTags(uint32_t count)
 	{
 		for (uint32_t i = 0; i < count; ++i) {
@@ -128,7 +134,9 @@ TEST(KadEntryTagList, CountDescribesEveryTagThatFollows)
 
 	// The publisher is registered in the global per-subnet map, so the trust calculation finds
 	// its /24 and scores it. A zero here means the registration was skipped and
-	// ReCalculateTrustValue() took its wxFAIL branch instead.
+	// ReCalculateTrustValue() took its wxFAIL branch instead -- which is silent on some
+	// platforms, so this assertion is what makes that visible everywhere.
+	entry.RecalculateTrustNow();
 	ASSERT_TRUE(entry.GetTrustValue() > 0.0);
 
 	CMemFile file;
