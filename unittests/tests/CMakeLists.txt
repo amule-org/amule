@@ -937,6 +937,17 @@ target_link_libraries (EtagTest
 	mulecommon
 )
 
+# The SIGABRT reporting path. Forks and corrupts the heap for real, so it covers the case the
+# handler exists for rather than only the easy raise(SIGABRT) one. mulecommon carries MuleDebug.
+add_executable (FatalAbortBacktraceTest
+	FatalAbortBacktraceTest.cpp
+)
+add_test (NAME FatalAbortBacktraceTest COMMAND FatalAbortBacktraceTest)
+target_link_libraries (FatalAbortBacktraceTest
+	muleunit
+	mulecommon
+)
+
 add_executable (StaticFsTest
 	StaticFsTest.cpp
 	${CMAKE_SOURCE_DIR}/src/webapi/StaticFs.cpp

@@ -24,6 +24,8 @@
 
 #include "App.h"
 
+#include <common/MuleDebug.h> // Needed for SetFatalAbortRedirectFd
+
 #include "Api.h"
 #include "HttpServer.h"
 #include "Jwt.h"
@@ -137,7 +139,14 @@ void TrimMallocArenas()
 } // namespace
 
 CamuleapiApp::CamuleapiApp() = default;
-CamuleapiApp::~CamuleapiApp() = default;
+CamuleapiApp::~CamuleapiApp()
+{
+	// wx skips OnExit() when OnInit() returns false, and destroying m_logTee below is what
+	// closes the descriptors the crash reporters hold. Drop both here so no exit path can leave
+	// one pointing at a closed, and by then possibly recycled, number.
+	SetFatalAbortRedirectFd(-1);
+	SetFatalAbortConsoleFd(-1);
+}
 
 void CamuleapiApp::OnInitCmdLine(wxCmdLineParser &parser)
 {
@@ -234,6 +243,31 @@ bool CamuleapiApp::OnInit()
 						 : m_logFile;
 		m_logTee = std::make_unique<webapi::CLogTee>();
 		if (m_logTee->Install(std::string(logPath.utf8_str()), kLogMaxBytes)) {
+			// fd 2 is now a pipe drained by a forwarding thread, and that thread is
+			// gone the moment an abort takes the process down. Send the SIGABRT
+			// backtrace straight to the file instead, the same way
+			// CamuleapiApp::OnFatalException already handles the SIGSEGV path.
+			// CrashFd() survives log rotation; see CRotatingLog::PointCrashFd().
+#ifndef _WIN32
+			// Windows reserves no crash descriptor on purpose and has no SIGABRT
+			// handler to feed, so the whole redirect is skipped there rather than
+			// warned about on every start.
+			//
+			// The console descriptor goes over too: fd 2 is this process's own tee
+			// pipe, which reaches the console only while the pump thread still runs,
+			// so a reporter writes the console copy to the saved fd 2 instead.
+			SetFatalAbortConsoleFd(m_logTee->ConsoleFd());
+			const int crashFd = m_logTee->CrashFd();
+			if (crashFd >= 0) {
+				SetFatalAbortRedirectFd(crashFd);
+			} else {
+				// Say so rather than fall back silently: without the redirect a
+				// backtrace goes into the pipe nobody drains, which is the exact
+				// silence the redirect exists to remove.
+				std::cerr << "amuleapi: WARN no crash descriptor for the log file, "
+					     "a fatal backtrace may be lost\n";
+			}
+#endif
 			Show(CFormat(_("amuleapi: logging to %s\n")) % logPath);
 		} else {
 			m_logTee.reset();
@@ -715,9 +749,20 @@ int CamuleapiApp::OnExit()
 	m_dispatcher.reset();
 	m_jwt.reset();
 	const int rc = CaMuleExternalConnector::OnExit();
-	// Tear the log tee down last so the shutdown output above is captured.
+	// Tear the log tee down last so the shutdown output above is captured. The two descriptors
+	// have different lifetimes and so are dropped at different points.
+	//
+	// The console one is the tee's dup of fd 2, which Uninstall() closes, so it goes first:
+	// between that close and the clear, the number is free for any thread's next socket, and a
+	// crash in the window would write the report into it.
+	//
+	// The crash redirect outlives the log file it points at, so it stays armed across
+	// Uninstall() and an abort mid-teardown still reaches the log. ~CLogTee via reset() is what
+	// finally closes that one.
 	if (m_logTee) {
+		SetFatalAbortConsoleFd(-1);
 		m_logTee->Uninstall();
+		SetFatalAbortRedirectFd(-1);
 		m_logTee.reset();
 	}
 	return rc;

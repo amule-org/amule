@@ -23,6 +23,8 @@
 //
 
 #include "Logger.h"
+
+#include <common/MuleDebug.h> // Needed for ReserveCrashFd
 #include "amule.h"
 #include "Preferences.h"
 #include <common/Macros.h>
@@ -193,6 +195,9 @@ bool CLogger::OpenLogfile(const wxString &name)
 	if (ret) {
 		FlushApplog();
 		m_LogfileName = name;
+		// A daemon's stderr is /dev/null, so the abort handler needs a real file to write to.
+		// Reserved rather than looked up on demand: it runs from a signal handler.
+		m_crashFd = ReserveCrashFd(m_crashFd, applog->GetFile()->fp());
 	} else {
 		CloseLogfile();
 	}

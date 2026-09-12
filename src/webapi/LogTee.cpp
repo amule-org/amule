@@ -31,6 +31,7 @@
 #include <fcntl.h>
 #include <io.h>
 #else
+#include <fcntl.h>
 #include <unistd.h>
 #endif
 
@@ -68,6 +69,10 @@ long OsWrite(int fd, const void *buf, unsigned n)
 {
 	return _write(fd, buf, n);
 }
+int OsFileno(std::FILE *fp)
+{
+	return _fileno(fp);
+}
 int StdoutFd()
 {
 	return _fileno(stdout);
@@ -104,6 +109,10 @@ long OsRead(int fd, void *buf, unsigned n)
 long OsWrite(int fd, const void *buf, unsigned n)
 {
 	return ::write(fd, buf, n);
+}
+int OsFileno(std::FILE *fp)
+{
+	return fileno(fp);
 }
 int StdoutFd()
 {
@@ -152,6 +161,51 @@ void WriteAll(int fd, const char *buf, std::size_t n)
 CRotatingLog::~CRotatingLog()
 {
 	Close();
+	if (m_crashFd >= 0) {
+		OsClose(m_crashFd);
+		m_crashFd = -1;
+	}
+}
+
+int CRotatingLog::CrashFd() const
+{
+#ifdef _WIN32
+	std::lock_guard<std::mutex> lk(m_mx);
+	return m_fp != nullptr ? OsFileno(m_fp) : -1;
+#else
+	return m_crashFd;
+#endif
+}
+
+void CRotatingLog::PointCrashFd()
+{
+	// m_mx held by caller. Reserve a number on the first open and only ever re-point it at the
+	// current file. Never closing it is the point: a number that gets freed can be handed to a
+	// client socket on another thread before the crash handler uses it.
+	//
+	// Not on Windows. There, a file with an open handle cannot be renamed, so holding this would
+	// make Rotate()'s rename() fail and the reopen truncate the log instead of rotating it. The
+	// descriptor buys nothing there either: wx handles fatal errors through SEH and calls
+	// ExitProcess() rather than raising SIGABRT, so the handler this feeds never runs.
+#ifndef _WIN32
+	// A failed reopen leaves the reserved descriptor on the file just rotated to "<path>.1".
+	// That is deliberate: it is still a real file on disk, so a crash report goes somewhere
+	// rather than nowhere, which matters most for amuleapi where this is the only sink.
+	if (m_fp == nullptr) {
+		return;
+	}
+	const int fd = OsFileno(m_fp);
+	if (m_crashFd < 0) {
+		m_crashFd = OsDup(fd);
+	} else {
+		OsDup2(fd, m_crashFd);
+	}
+	// Never closed, so without FD_CLOEXEC it would follow every exec'd child and keep the log
+	// file's inode alive there. dup() and dup2() both clear the flag.
+	if (m_crashFd >= 0) {
+		(void)fcntl(m_crashFd, F_SETFD, FD_CLOEXEC);
+	}
+#endif
 }
 
 bool CRotatingLog::Open(const std::string &path, std::size_t maxBytes)
@@ -172,6 +226,7 @@ bool CRotatingLog::Open(const std::string &path, std::size_t maxBytes)
 	m_path = path;
 	m_maxBytes = maxBytes;
 	m_fp = fp;
+	PointCrashFd();
 	return true;
 }
 
@@ -186,6 +241,7 @@ void CRotatingLog::Rotate()
 	std::rename(m_path.c_str(), rotated.c_str());
 	m_fp = std::fopen(m_path.c_str(), "wb");
 	m_curSize = 0;
+	PointCrashFd();
 }
 
 void CRotatingLog::Write(const char *buf, std::size_t n)
@@ -214,16 +270,6 @@ void CRotatingLog::Close()
 		std::fclose(m_fp);
 		m_fp = nullptr;
 	}
-}
-
-int CRotatingLog::Fd() const
-{
-	std::lock_guard<std::mutex> lk(m_mx);
-#ifdef _WIN32
-	return m_fp != nullptr ? _fileno(m_fp) : -1;
-#else
-	return m_fp != nullptr ? fileno(m_fp) : -1;
-#endif
 }
 
 // CLogTee
@@ -316,7 +362,8 @@ void CLogTee::Pump(int readFd, int consoleFd)
 
 void CLogTee::RedirectStderrToFileForCrash()
 {
-	const int fd = m_log.Fd();
+	// CrashFd() takes no lock, which matters: this runs from a fatal signal handler.
+	const int fd = m_log.CrashFd();
 	if (fd >= 0) {
 		OsDup2(fd, StderrFd());
 	}
