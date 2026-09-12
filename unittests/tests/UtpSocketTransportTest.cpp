@@ -205,7 +205,7 @@ TEST(UtpSocketTransport, FlushWithNothingQueuedMakesNoCall)
 	ASSERT_TRUE(ops.lastWriteSocket == nullptr);
 }
 
-TEST(UtpSocketTransport, ReadingToEmptyTellsTheLibraryOnce)
+TEST(UtpSocketTransport, EmptyingBelowBoundDoesNotTellTheLibrary)
 {
 	FakeOperations ops;
 	FakeEvents events;
@@ -219,14 +219,31 @@ TEST(UtpSocketTransport, ReadingToEmptyTellsTheLibraryOnce)
 	// Still buffered, so libutp has not been kept waiting.
 	ASSERT_EQUALS(0, ops.drainedCalls);
 
+	// Emptying below the bound never reopens a closed window; the old empty-only rule
+	// missed packet readers that cross the bound while retaining a backlog.
 	ASSERT_EQUALS(3u, transport.Read(out, 3));
-	ASSERT_EQUALS(1, ops.drainedCalls);
+	ASSERT_EQUALS(0, ops.drainedCalls);
 
-	// Reading an empty buffer is a would-block, not another drain.
 	ASSERT_EQUALS(0u, transport.Read(out, 3));
-	ASSERT_EQUALS(1, ops.drainedCalls);
+	ASSERT_EQUALS(0, ops.drainedCalls);
 	ASSERT_TRUE(transport.BlocksRead());
 	ASSERT_EQUALS(0, transport.LastError());
+}
+
+TEST(UtpSocketTransport, PacketReaderReopensWindowWithoutEmptying)
+{
+	FakeOperations ops;
+	CUtpSocketTransport transport = MakeTransport(ops);
+	const auto payload = Pattern(CUtpStream::kDefaultReadBound + 10);
+	transport.OnPayload(payload.data(), payload.size());
+	uint8_t out[16] = { 0 };
+	// CEMSocket reads a six-byte header, then a body, and returns with a backlog.
+	ASSERT_EQUALS(6u, transport.Read(out, 6));
+	ASSERT_EQUALS(0, ops.drainedCalls);
+	ASSERT_EQUALS(16u, transport.Read(out, sizeof(out)));
+	ASSERT_EQUALS(1, ops.drainedCalls);
+	ASSERT_EQUALS(6u, transport.Read(out, 6));
+	ASSERT_EQUALS(1, ops.drainedCalls);
 }
 
 TEST(UtpSocketTransport, CloseHappensExactlyOnce)

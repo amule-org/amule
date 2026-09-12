@@ -37,6 +37,7 @@
 #include <muleunit/test.h>
 
 #include <UtpStream.h>
+#include <common/Format.h>
 
 using namespace muleunit;
 
@@ -93,28 +94,100 @@ TEST(UtpStream, PayloadArrivesInOrderAndClearsTheBlock)
 	}
 }
 
-TEST(UtpStream, ReadDrainedIsDueExactlyOncePerDrain)
+TEST(UtpStream, ReadDrainedCrossingTable)
 {
-	CUtpStream stream;
-	const std::vector<uint8_t> sent = Pattern(8);
-	uint8_t out[8] = { 0 };
+	const struct
+	{
+		const char *label;
+		uint32_t initial;
+		uint32_t requested;
+		bool edge;
+	} cases[] = {
+		{ "above to nonempty below", 12, 6, true },
+		{ "exact bound to below", 8, 1, true },
+		{ "above to above", 12, 2, false },
+		{ "above to exact bound", 12, 4, false },
+		{ "above to empty", 12, 16, true },
+		{ "zero length at bound", 8, 0, false },
+		{ "empty returns zero", 0, 6, false },
+	};
+	for (const auto &row : cases) {
+		CFormat format("%s: initial=%u read=%u expected-edge=%u");
+		const wxString message =
+			format % row.label % row.initial % row.requested % unsigned(row.edge);
+		CUtpStream stream(CUtpStream::kDefaultWriteBound, 8);
+		const auto payload = Pattern(row.initial);
+		stream.OnPayload(payload.data(), payload.size());
+		uint8_t out[16] = { 0 };
+		const auto taken = std::min(row.initial, row.requested);
+		ASSERT_EQUALS_M(taken, stream.Read(out, row.requested), message);
+		ASSERT_EQUALS_M(size_t(row.initial - taken), stream.ReadBufferSize(), message);
+		ASSERT_EQUALS_M(row.edge, stream.ConsumeReadDrainedEdge(), message);
+	}
+}
 
-	// Nothing owed before anything has been buffered.
+TEST(UtpStream, EmptyingBelowBoundDoesNotNotify)
+{
+	// Empty is not the window-reopening transition: packet readers can keep a nonempty
+	// backlog forever. Only crossing the receive bound warrants utp_read_drained().
+	CUtpStream stream(CUtpStream::kDefaultWriteBound, 8);
+	const auto payload = Pattern(6);
+	stream.OnPayload(payload.data(), payload.size());
+	uint8_t out[6] = { 0 };
+	ASSERT_EQUALS(6u, stream.Read(out, sizeof(out)));
 	ASSERT_FALSE(stream.ConsumeReadDrainedEdge());
+}
 
-	stream.OnPayload(sent.data(), sent.size());
-	ASSERT_EQUALS(4u, stream.Read(out, 4));
-	// Still four bytes buffered: the reader is not behind, nothing is owed.
-	ASSERT_FALSE(stream.ConsumeReadDrainedEdge());
-
-	ASSERT_EQUALS(4u, stream.Read(out, 4));
+TEST(UtpStream, RefillAllowsASecondReadDrainedCrossing)
+{
+	CUtpStream stream(CUtpStream::kDefaultWriteBound, 8);
+	const auto payload = Pattern(12);
+	uint8_t out[6] = { 0 };
+	stream.OnPayload(payload.data(), payload.size());
+	ASSERT_EQUALS(6u, stream.Read(out, sizeof(out)));
 	ASSERT_TRUE(stream.ConsumeReadDrainedEdge());
-	// Consumed. Notifying twice is a wakeup for an already-empty buffer.
-	ASSERT_FALSE(stream.ConsumeReadDrainedEdge());
-
-	stream.OnPayload(sent.data(), sent.size());
-	ASSERT_EQUALS(8u, stream.Read(out, 8));
+	stream.OnPayload(payload.data(), 6);
+	ASSERT_EQUALS(size_t(12), stream.ReadBufferSize());
+	ASSERT_EQUALS(6u, stream.Read(out, sizeof(out)));
 	ASSERT_TRUE(stream.ConsumeReadDrainedEdge());
+	ASSERT_FALSE(stream.ConsumeReadDrainedEdge());
+}
+
+TEST(UtpStream, ReadDrainedConsumptionIsOneShot)
+{
+	CUtpStream stream(CUtpStream::kDefaultWriteBound, 8);
+	const auto payload = Pattern(8);
+	uint8_t out[2] = { 0 };
+	ASSERT_FALSE(stream.ConsumeReadDrainedEdge());
+	stream.OnPayload(payload.data(), payload.size());
+	ASSERT_EQUALS(1u, stream.Read(out, 1));
+	// A subsequent below-bound read must not erase a notification still owed.
+	ASSERT_EQUALS(1u, stream.Read(out, 1));
+	ASSERT_TRUE(stream.ConsumeReadDrainedEdge());
+	ASSERT_FALSE(stream.ConsumeReadDrainedEdge());
+}
+
+TEST(UtpStream, TerminalReadsNeverManufactureReadDrainedEdges)
+{
+	const EUtpTransportFailure endings[] = { EUtpTransportFailure::Eof,
+		EUtpTransportFailure::Destroying,
+		EUtpTransportFailure::Refused,
+		EUtpTransportFailure::TimedOut,
+		EUtpTransportFailure::Reset };
+	for (const auto ending : endings) {
+		const wxString message = CFormat("terminal ending=%u") % unsigned(ending);
+		CUtpStream stream(CUtpStream::kDefaultWriteBound, 8);
+		const auto payload = Pattern(12);
+		stream.OnPayload(payload.data(), payload.size());
+		stream.OnFailure(ending);
+		uint8_t out[6] = { 0 };
+		ASSERT_EQUALS_M(6u, stream.Read(out, sizeof(out)), message);
+		ASSERT_TRUE_M(!stream.ConsumeReadDrainedEdge(), message);
+		ASSERT_EQUALS_M(6u, stream.Read(out, sizeof(out)), message);
+		ASSERT_TRUE_M(!stream.ConsumeReadDrainedEdge(), message);
+		ASSERT_EQUALS_M(0u, stream.Read(out, sizeof(out)), message);
+		ASSERT_TRUE_M(!stream.ConsumeReadDrainedEdge(), message);
+	}
 }
 
 TEST(UtpStream, ReadBoundIsReportedRatherThanEnforced)

@@ -111,11 +111,9 @@ public:
 			static_cast<uint8_t *>(buffer));
 		m_readBuffer.erase(m_readBuffer.begin(), m_readBuffer.begin() + consumed);
 		m_blocksRead = false;
-		if (m_readBuffer.empty()) {
-			// libutp stops delivering while the application is behind, and resumes on
-			// utp_read_drained(). Owed exactly once per drain: sending it again with an
-			// already-empty buffer is a wakeup for nothing, and never sending it stalls
-			// the peer permanently.
+		if (!IsTerminal() && available >= ReadBound() && m_readBuffer.size() < ReadBound()) {
+			// Packet readers can keep a nonempty backlog indefinitely. Reopen the window
+			// when they cross below the bound, rather than waiting for an empty buffer.
 			m_readDrainedDue = true;
 		}
 		return static_cast<uint32_t>(taken);
@@ -127,13 +125,13 @@ public:
 	/**
 	 * The value the acceptor passes to utp_setsockopt(UTP_RCVBUF). libutp applies the bound
 	 * itself: get_rcv_window() advertises opt_rcvbuf minus what ReadBufferSize() reports, so a
-	 * reader that falls behind shrinks the window to zero and the peer stops. Nothing here
-	 * compares the two, because a predicate over them would only be useful for refusing a
-	 * payload, and refusing one drops bytes the peer already paid to send.
+	 * reader that falls behind shrinks the window to zero and the peer stops. Read() reports
+	 * the crossing back below this bound so the transport can advertise the reopened window.
+	 * This never refuses payloads, which would drop bytes the peer already paid to send.
 	 */
 	size_t ReadBound() const { return m_readBound; }
 
-	//! True once per drain, for the caller that owns the libutp notification.
+	//! True once per pending crossing below ReadBound(), for the libutp notification owner.
 	bool ConsumeReadDrainedEdge()
 	{
 		const bool due = m_readDrainedDue;
