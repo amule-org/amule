@@ -54,9 +54,10 @@ typedef std::array<uint8_t, KAD_AICH_HASH_SIZE> CKadAICHHash;
 // honest file has exactly one AICH hash, so several competing hashes -- or one hash with a single
 // publisher against a popular file -- is the signal a searcher wants.
 //
-// Slots are never removed once created, because publishers hold their hash by index;
-// DropReferenceAt() only decrements the popularity counter, and BuildCompactionMap() renumbers when
-// the entry is written to disk.
+// Publishers hold their hash by index, so DropReferenceAt() only decrements the popularity
+// counter and leaves the slot in place. Compact() is what actually removes the unreferenced ones
+// and renumbers, and the caller must apply the returned map to every index it holds.
+// BuildCompactionMap() is the same renumbering without the mutation, used when writing to disk.
 class CKadAICHHashList
 {
 public:
@@ -78,8 +79,15 @@ public:
 		CKadAICHHash m_hash;
 	};
 
-	// Adds one reference to `hash`, creating a slot for it if needed, and returns its index.
-	// Popularity saturates at 255 because it travels the wire as a uint8.
+	// A slot ceiling well under the 0xFFFF the index can express. With Compact() run after each
+	// merge the live count tracks the publisher list, which is capped at 100, so this is a
+	// backstop rather than a working limit: it exists so the index can never reach the
+	// INVALID_INDEX sentinel or wrap past it and alias an earlier slot.
+	static constexpr size_t MAX_SLOTS = 1024;
+
+	// Adds one reference to `hash`, creating a slot for it if needed, and returns its index, or
+	// INVALID_INDEX when the ceiling is reached. Popularity saturates at 255 because it travels
+	// the wire as a uint8.
 	uint16_t AddReference(const CKadAICHHash &hash);
 
 	// Drops one reference from the slot at `index`.  Out-of-range indexes
@@ -99,6 +107,12 @@ public:
 	// dropped, or INVALID_INDEX if it is dropped. Used when writing the keyword index to disk,
 	// so the stored publisher indexes stay consistent with the stored hashes.
 	std::vector<uint16_t> BuildCompactionMap() const;
+
+	// Drops every unreferenced slot and renumbers the rest, returning the same old-index to
+	// new-index map BuildCompactionMap() would. Without this the list only grows: a publisher
+	// that rotates its AICH hash leaves its previous slot behind on every republish, and the
+	// entry carries them all for as long as the process lives.
+	std::vector<uint16_t> Compact();
 
 	// Encodes the referenced hashes as a TAG_KADAICHHASHRESULT payload:
 	//   <Count 1>{<Publishers 1><AICH Hash KAD_AICH_HASH_SIZE>} Count
