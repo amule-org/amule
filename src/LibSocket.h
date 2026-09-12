@@ -29,6 +29,7 @@
 #include "Types.h"
 #include <memory> // shared_ptr for CAsioUDPSocketImpl ownership
 class amuleIPV4Address;
+class IStreamTransport;
 
 // Socket flags (unused in ASIO implementation, just provide the names)
 enum
@@ -145,9 +146,33 @@ public:
 	virtual void OnLost(int) {}
 	virtual void OnProxyEvent(int) {}
 
+	/**
+	 * Hands this socket's stream over to a transport that is not asio.
+	 *
+	 * Every accessor below that describes the stream -- its state, its bytes,
+	 * its peer -- then answers from the transport instead. That has to be all
+	 * of them, not just the ones a caller happens to use: none of them are
+	 * virtual anywhere in CLibSocket, CEncryptedStreamSocket or CEMSocket, so
+	 * each one a transport does not reach resolves statically to the asio
+	 * socket underneath and silently reports on a stream nobody is using.
+	 * CEMSocket::Send()'s !IsOk() arm is the case that made this concrete: left
+	 * unrouted it stays dead after wiring, and the upload-thread spin it exists
+	 * to stop comes back with no symptom.
+	 */
+	void AttachTransport(std::unique_ptr<IStreamTransport> transport);
+
+	//! True while a transport owns this socket's stream.
+	bool HasTransport() const { return m_transport != nullptr; }
+
 private:
 	// Replace the internal socket. Takes ownership of the passed shared_ptr.
 	void LinkSocketImpl(std::shared_ptr<class CAsioSocketImpl>);
+
+	// Owned: outlives nothing and is closed by Destroy() before the asio
+	// wrapper goes, so a libutp callback cannot arrive after teardown.
+	std::unique_ptr<IStreamTransport> m_transport;
+	// GetIP() hands back a borrowed pointer, so the text has to outlive the call.
+	mutable wxString m_peerText;
 
 	// shared_ptr so the asio impl can outlive this wrapper for as long as any in-flight async
 	// callback still holds a shared_from_this() ref. Required to fix the wake-from-sleep use-

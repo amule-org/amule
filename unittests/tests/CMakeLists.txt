@@ -48,6 +48,30 @@ target_link_libraries (UtpSocketTransportTest
 	${Boost_LIBRARIES}
 )
 
+add_executable (LibSocketTransportTest
+	LibSocketTransportTest.cpp
+	${CMAKE_SOURCE_DIR}/src/LibSocket.cpp
+	${CMAKE_SOURCE_DIR}/src/NetworkAddress.cpp
+	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
+	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
+)
+
+add_test (NAME LibSocketTransportTest
+	COMMAND LibSocketTransportTest
+)
+
+target_include_directories (LibSocketTransportTest
+	PRIVATE ${CMAKE_BINARY_DIR}
+	PRIVATE ${CMAKE_SOURCE_DIR}/src
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
+	PRIVATE ${Boost_INCLUDE_DIR}
+)
+
+target_link_libraries (LibSocketTransportTest
+	muleunit
+	${Boost_LIBRARIES}
+)
+
 if (ENABLE_UTP)
 	add_executable (UtpContextTest
 		UtpContextTest.cpp
@@ -570,6 +594,9 @@ add_executable (NetworkFunctionsTest
 	# library this test does not link, so the translation unit has to be
 	# compiled in here or the Windows link fails on the undefined symbol.
 	${CMAKE_SOURCE_DIR}/src/NetworkInterfaces.cpp
+	# LibSocketAsio.cpp reports an attached transport's peer, which is a
+	# CNetworkAddress, so its out-of-line members have to be here too.
+	${CMAKE_SOURCE_DIR}/src/NetworkAddress.cpp
 	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
 	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 )

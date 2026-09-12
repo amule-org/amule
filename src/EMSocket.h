@@ -53,7 +53,13 @@ public:
 		bool delpacket = true,
 		bool controlpacket = true,
 		uint32 actualPayloadSize = 0);
-	bool IsConnected() { return byConnected == ES_CONNECTED; };
+	// The extra term is guarded so the TCP path keeps answering exactly as it
+	// did: byConnected is this class's own state machine, and only a stream the
+	// asio socket does not own can disagree with it.
+	bool IsConnected()
+	{
+		return byConnected == ES_CONNECTED && (!HasTransport() || CLibSocket::IsConnected());
+	};
 	uint8 GetConState() { return byConnected; }
 	// Re-trigger OnReceive if this socket suspended its read loop last tick because
 	// CDownloadBandwidthThrottler's bucket was empty.
