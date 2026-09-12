@@ -49,9 +49,11 @@ using Kademlia::CKeyEntry;
 static const uint32_t SENTINEL = 0xA1C4DEADu;
 
 // WriteTagListWithPublishInfo() needs a publisher, or it wxFAILs and falls back to a plain tag
-// list. Pushed straight onto the list rather than through the publish handler: the global subnet
-// tracking is not what is under test here, and DirtyDeletePublishData() lets the entry go away
-// again without decrementing counts that were never incremented.
+// list. Registering one means two steps, not one: the entry's own list, and the global per-/24
+// count. ReCalculateTrustValue() looks the publisher's subnet up in that global map and wxFAILs
+// on a miss, so pushing onto the list alone leaves the entry in a state the trust calculation
+// treats as an inconsistency. The destructor decrements the same global count, so the two stay
+// balanced as long as the entry is left to destruct normally.
 class CTestKeyEntry : public CKeyEntry
 {
 public:
@@ -65,6 +67,7 @@ public:
 		publisher.m_lastPublish = 0;
 		publisher.m_aichHashIdx = CKadAICHHashList::INVALID_INDEX;
 		m_publishingIPs->push_back(publisher);
+		AdjustGlobalPublishTracking(ip, true, wxT("test publisher"));
 	}
 
 	void AddDistinctTags(uint32_t count)
@@ -123,6 +126,11 @@ TEST(KadEntryTagList, CountDescribesEveryTagThatFollows)
 	entry.AddDistinctTags(5);
 	ASSERT_EQUALS(7u, entry.GetTagCount()); // 5 + size + filename
 
+	// The publisher is registered in the global per-subnet map, so the trust calculation finds
+	// its /24 and scores it. A zero here means the registration was skipped and
+	// ReCalculateTrustValue() took its wxFAIL branch instead.
+	ASSERT_TRUE(entry.GetTrustValue() > 0.0);
+
 	CMemFile file;
 	const uint8_t declared = WriteAnswerWithSentinel(entry, file);
 
@@ -135,7 +143,6 @@ TEST(KadEntryTagList, CountDescribesEveryTagThatFollows)
 	ASSERT_TRUE(tags.size() > entry.GetTagCount()); // plus at least the publish-info tag
 
 	deleteTagPtrListEntries(&tags);
-	entry.DirtyDeletePublishData();
 }
 
 // More tags than one byte can describe. Before the clamp the count wrapped to 0 and every tag was
@@ -171,7 +178,6 @@ TEST(KadEntryTagList, AnOverFullEntrySendsAShortAnswerThatStillParses)
 	ASSERT_TRUE(publishInfoPresent);
 
 	deleteTagPtrListEntries(&tags);
-	entry.DirtyDeletePublishData();
 }
 
 // Exactly at the boundary, where an off-by-one in the reservation would show up.
@@ -193,5 +199,4 @@ TEST(KadEntryTagList, TheBoundaryIsDescribedExactly)
 	ASSERT_EQUALS(0xFFu, (uint32_t)tags.size());
 
 	deleteTagPtrListEntries(&tags);
-	entry.DirtyDeletePublishData();
 }
