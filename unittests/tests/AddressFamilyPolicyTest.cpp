@@ -72,6 +72,81 @@ CNetworkAddress Addr(const char *text)
 }
 } // namespace
 
+// Absence is not the only value that names no peer. 0.0.0.0 reaches Permits() as a present IPv4
+// address, so the family test alone permits it under every configuration, and a call site
+// replacing an old `if (ip)` guard would dial it -- which on Linux connects to this machine.
+TEST(AddressFamilyPolicy, TheUnspecifiedAddressIsNeverPermitted)
+{
+	const Families every[] = { Families::IPv4Only, Families::IPv6Only, Families::DualStack };
+	for (const Families families : every) {
+		ScopedFamilies scope(families);
+		ASSERT_FALSE(Permits(Addr("0.0.0.0")));
+		ASSERT_FALSE(Permits(Addr("::")));
+		ASSERT_FALSE(Permits(Addr("::ffff:0.0.0.0")));
+	}
+	// A real address of the permitted family still passes, so this did not just refuse
+	// everything.
+	{
+		ScopedFamilies scope(Families::DualStack);
+		ASSERT_TRUE(Permits(Addr("192.0.2.1")));
+		ASSERT_TRUE(Permits(Addr("2001:db8::1")));
+	}
+}
+
+// The protocol and the endpoint have to be the same family. Asked separately they are not for a
+// mapped target: the protocol is v4 because a mapped address is reachable over IPv4, while
+// ToAsioAddress() preserves the family and yields an address_v6. Connecting those is EAFNOSUPPORT.
+TEST(AddressFamilyPolicy, AsioTargetPairsTheProtocolWithAMatchingAddress)
+{
+	ScopedFamilies scope(Families::DualStack);
+
+	const boost::optional<SAsioTarget> mapped = AsioTargetFor(Addr("::ffff:192.0.2.1"));
+	ASSERT_TRUE((bool)mapped);
+	ASSERT_TRUE(mapped->protocol == boost::asio::ip::tcp::v4());
+	ASSERT_TRUE(mapped->address.is_v4());
+
+	const boost::optional<SAsioTarget> native = AsioTargetFor(Addr("192.0.2.1"));
+	ASSERT_TRUE((bool)native);
+	ASSERT_TRUE(native->protocol == boost::asio::ip::tcp::v4());
+	ASSERT_TRUE(native->address.is_v4());
+	// The mapped and native spellings of one peer reach the same wire target.
+	ASSERT_TRUE(mapped->address == native->address);
+
+	const boost::optional<SAsioTarget> v6 = AsioTargetFor(Addr("2001:db8::1"));
+	ASSERT_TRUE((bool)v6);
+	ASSERT_TRUE(v6->protocol == boost::asio::ip::tcp::v6());
+	ASSERT_TRUE(v6->address.is_v6());
+}
+
+// One decision, one thing to test: a refused target yields no pair at all, rather than a protocol
+// the caller might dereference after a separate and possibly stale Permits() check.
+TEST(AddressFamilyPolicy, AsioTargetIsEmptyForAnythingRefused)
+{
+	{
+		ScopedFamilies scope(Families::IPv4Only);
+		ASSERT_FALSE((bool)AsioTargetFor(Addr("2001:db8::1")));
+	}
+	{
+		ScopedFamilies scope(Families::DualStack);
+		ASSERT_FALSE((bool)AsioTargetFor(CNetworkAddress::Absent()));
+		ASSERT_FALSE((bool)AsioTargetFor(Addr("0.0.0.0")));
+	}
+}
+
+// Piece 4 will build this from a configuration integer, so a value outside the enum is reachable.
+// Testing inequality against one enumerator made such a value permit both families while the
+// resolver fell back to IPv4-only; every answer now agrees on the same fallback.
+TEST(AddressFamilyPolicy, AnOutOfRangeConfigurationFallsBackConsistently)
+{
+	ScopedFamilies scope(static_cast<Families>(99));
+
+	ASSERT_TRUE(PermitsIPv4());
+	ASSERT_FALSE(PermitsIPv6());
+	ASSERT_TRUE(ResolverFamilyForLookup() == ResolverFamily::IPv4Only);
+	ASSERT_TRUE(Permits(Addr("192.0.2.1")));
+	ASSERT_FALSE(Permits(Addr("2001:db8::1")));
+}
+
 TEST(AddressFamilyPolicy, DefaultIsIPv4Only)
 {
 	// Captured before any case ran. If this fails, the widening advertises a

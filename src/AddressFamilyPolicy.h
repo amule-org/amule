@@ -77,14 +77,32 @@ inline void SetConfigured(Families families) noexcept
 	ConfiguredStorage().store(families, std::memory_order_relaxed);
 }
 
+// Both predicates switch rather than test for inequality, so an out-of-range value falls back the
+// same way ResolverFamilyForLookup() does. Comparing against one enumerator made a value outside
+// the enum permit *both* families while the resolver fell back to IPv4Only, and piece 4 will build
+// this from a configuration integer, which is exactly where such a value comes from.
 inline bool PermitsIPv4() noexcept
 {
-	return Configured() != Families::IPv6Only;
+	switch (Configured()) {
+	case Families::IPv4Only:
+	case Families::DualStack:
+		return true;
+	case Families::IPv6Only:
+		return false;
+	}
+	return true; // Same IPv4-only fallback as the resolver.
 }
 
 inline bool PermitsIPv6() noexcept
 {
-	return Configured() != Families::IPv4Only;
+	switch (Configured()) {
+	case Families::IPv6Only:
+	case Families::DualStack:
+		return true;
+	case Families::IPv4Only:
+		return false;
+	}
+	return false; // Same IPv4-only fallback as the resolver.
 }
 
 /**
@@ -93,12 +111,28 @@ inline bool PermitsIPv6() noexcept
  * An IPv4-mapped IPv6 target counts as IPv4: it narrows losslessly, so an IPv4-only configuration
  * can reach it.
  */
+/**
+ * Whether @a target is reachable over IPv4, mapped form included.
+ *
+ * One definition, because the asio half asks the same question when it picks a protocol. Two
+ * copies would let a later change to what counts as IPv4, for NAT64 or 6to4, be applied to one
+ * of them and reintroduce a v4 socket opened towards a v6 endpoint.
+ */
+inline bool IsIPv4Reachable(const CNetworkAddress &target) noexcept
+{
+	return target.IsIPv4() || target.IsIPv4Mapped();
+}
+
 inline bool Permits(const CNetworkAddress &target) noexcept
 {
-	if (target.IsAbsent()) {
+	// Absence names no peer, and neither does the unspecified address. It reaches here as a
+	// present IPv4 value, so the family test would permit it under any configuration, and a
+	// call site replacing an old `if (ip)` guard would dial 0.0.0.0 -- which on Linux connects
+	// to this machine. "May a socket be opened towards this" has to answer no.
+	if (target.IsAbsent() || target.Unmapped().IsUnspecified()) {
 		return false;
 	}
-	if (target.IsIPv4() || target.IsIPv4Mapped()) {
+	if (IsIPv4Reachable(target)) {
 		return PermitsIPv4();
 	}
 	return PermitsIPv6();
