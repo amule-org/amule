@@ -284,7 +284,18 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        build_type: [Debug, Release]
+        # ENABLE_UTP on one leg only. The vendored libutp compiles
+        # libutp_inet_ntop.cpp under if(WIN32), and both jobs that set
+        # ENABLE_ALL_EXPERIMENTAL run on ubuntu-latest, so that source was
+        # built by nothing: a pin bump or an MSYS2 toolchain shift would break
+        # Windows silently and be found by whoever first turned the switch on
+        # there. One leg is enough to compile it, and keeps the cost of a
+        # snapshot that does not build on Windows to a single job.
+        include:
+          - build_type: Debug
+            extra_config_flags: -DENABLE_UTP=YES
+          - build_type: Release
+            extra_config_flags: ""
     defaults:
       run:
         shell: msys2 {0}
@@ -325,7 +336,8 @@ jobs:
           cmake \
             -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
             ${{ env.cmake_common_config_flags }} \
-            ${{ env.cmake_mingw_w64_config_flags }}
+            ${{ env.cmake_mingw_w64_config_flags }} \
+            ${{ matrix.extra_config_flags }}
       - name: zero ccache stats
         run: ccache --zero-stats
       - name: make

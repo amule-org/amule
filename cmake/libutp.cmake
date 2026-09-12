@@ -26,11 +26,38 @@ if (NOT EXISTS "${AMULE_LIBUTP_DIR}/CMakeLists.txt")
 endif()
 
 if (CMAKE_VERSION VERSION_LESS 3.12)
+	# Not "build without ENABLE_UTP": ENABLE_ALL_EXPERIMENTAL turns it on and
+	# wins over an individual switch, so -DENABLE_UTP=NO cannot be honoured as
+	# an opt-out (see the loop in cmake/options.cmake). Naming the switch that
+	# can actually be turned off is the difference between advice and a dead
+	# end, and 3.10 is this project's declared minimum.
 	message (FATAL_ERROR
 		"ENABLE_UTP requires CMake 3.12 or newer (the vendored libutp asks for "
-		"it); this is CMake ${CMAKE_VERSION}. Build without ENABLE_UTP, or "
-		"upgrade CMake.")
+		"it); this is CMake ${CMAKE_VERSION}. Upgrade CMake, or build without "
+		"uTP: turn ENABLE_UTP off, and if ENABLE_ALL_EXPERIMENTAL is on turn "
+		"that off too and name the other experimental switches individually.")
 endif()
+
+# Upstream's own switches, pinned before the subdirectory sees them. option()
+# leaves an existing cache entry alone, and INTERNAL keeps these out of
+# `cmake -LAH`, which docs/INSTALL.md tells users to run.
+#
+# Two of them are actively harmful here and none of them is ours to offer.
+# LIBUTP_BUILD_PROGRAMS wants ucat.c, which AMULE_PROVENANCE.md records as
+# deliberately not vendored, so turning it on fails configure with a missing
+# source that reads like a broken checkout. LIBUTP_ENABLE_INSTALL would make
+# `make install` write libutp.a, its headers and a cmake package into aMule's
+# prefix: a library we vendor for our own use is not one we ship. LIBUTP_SHARED
+# would build an uninstalled .so nothing links, and it defaults from
+# BUILD_SHARED_LIBS, so it is reachable without naming libutp at all.
+# FORCE, not just CACHE: a -D on the command line creates the entry before this
+# file runs, and set(CACHE) without FORCE adopts the type while keeping the
+# user's value. Without it the pin is decorative, which a probe run with
+# -DLIBUTP_BUILD_PROGRAMS=ON showed by still failing on the missing ucat.c.
+set (LIBUTP_SHARED OFF CACHE INTERNAL "aMule links the vendored libutp statically" FORCE)
+set (LIBUTP_ENABLE_INSTALL OFF CACHE INTERNAL "aMule does not install the vendored libutp" FORCE)
+set (LIBUTP_ENABLE_WERROR OFF CACHE INTERNAL "aMule does not gate on upstream's warnings" FORCE)
+set (LIBUTP_BUILD_PROGRAMS OFF CACHE INTERNAL "ucat.c is not vendored" FORCE)
 
 add_subdirectory ("${AMULE_LIBUTP_DIR}")
 
