@@ -93,7 +93,15 @@ public:
 	void OnStreamReadable() override { ++readable; }
 	void OnStreamWritable() override { ++writable; }
 	void OnStreamLost() override { ++lost; }
-	void OnFlushRequested() override { ++flushRequests; }
+	void OnFlushRequested() override
+	{
+		++flushRequests;
+		if (onFlushRequested) {
+			onFlushRequested();
+		}
+	}
+
+	std::function<void()> onFlushRequested;
 
 	int readable = 0, writable = 0, lost = 0, flushRequests = 0;
 };
@@ -359,7 +367,7 @@ TEST(UtpSocketTransport, QueueingAsksForAFlushOncePerIdlePeriod)
 	ASSERT_EQUALS(2, events.flushRequests);
 }
 
-TEST(UtpSocketTransport, ConnectingFlushesWhatTheHandshakeRefused)
+TEST(UtpSocketTransport, ConnectingRequestsWhatTheHandshakeRefused)
 {
 	// utp_write() takes nothing before the handshake completes, so everything
 	// queued until then is still waiting and has no writable edge coming.
@@ -373,7 +381,14 @@ TEST(UtpSocketTransport, ConnectingFlushesWhatTheHandshakeRefused)
 	ASSERT_EQUALS(0u, (unsigned)ops.accepted.size());
 
 	ops.acceptLimit = 64;
+	const int before = events.flushRequests;
+	const size_t offeredBefore = ops.offered.size();
 	transport.MarkConnected();
+	// Requested, never offered from inside the callback.
+	ASSERT_EQUALS((unsigned)offeredBefore, (unsigned)ops.offered.size());
+	ASSERT_EQUALS(before + 1, events.flushRequests);
+
+	transport.Flush();
 	ASSERT_EQUALS(12u, (unsigned)ops.accepted.size());
 	for (size_t i = 0; i < payload.size(); ++i) {
 		ASSERT_EQUALS((int)payload[i], (int)ops.accepted[i]);
@@ -579,21 +594,20 @@ TEST(UtpSocketTransport, ReentrantFlushNeverOffersTheSameBytesTwice)
 	ASSERT_TRUE(payload == ops.offered);
 }
 
-TEST(UtpSocketTransport, ConnectingReportsOneWritableEvenWhenDrainingUnblocks)
+TEST(UtpSocketTransport, ConnectingNeverCallsTheLibraryFromInsideTheCallback)
 {
-	// One transition, one notification. Flush() already reports the
-	// blocked-to-writable edge, so MarkConnected() must not report it again.
+	// MarkConnected() runs inside UTP_ON_ACCEPT, where the socket is still
+	// CS_SYN_RECV: utp_writev would refuse every byte at its state guard, so
+	// offering there copies a window for nothing.
 	FakeOperations ops;
-	ops.acceptLimit = 0;
+	ops.acceptLimit = CUtpStream::kDefaultWriteBound;
 	FakeEvents events;
 	CUtpSocketTransport transport = MakeTransport(ops, &events);
 	const std::vector<uint8_t> payload = Pattern(CUtpStream::kDefaultWriteBound, 9);
 	transport.Write(payload.data(), static_cast<uint32_t>(payload.size()));
-	ASSERT_TRUE(transport.BlocksWrite());
 
-	ops.acceptLimit = CUtpStream::kDefaultWriteBound;
 	transport.MarkConnected();
-	ASSERT_FALSE(transport.BlocksWrite());
+	ASSERT_EQUALS(0u, (unsigned)ops.offered.size());
 	ASSERT_EQUALS(1, events.writable);
 }
 
@@ -690,6 +704,52 @@ TEST(UtpSocketTransport, AThrowingWritableSinkDoesNotWedgeTheFlushPath)
 	transport.Flush();
 	const std::vector<uint8_t> more = Pattern(8, 2);
 	transport.Write(more.data(), static_cast<uint32_t>(more.size()));
+	ASSERT_TRUE(events.flushRequests > before);
+}
+
+TEST(UtpSocketTransport, AFullyAcceptedFlushStillConsumesTheReentryRecord)
+{
+	// The re-entry record and the in-progress flag must both be cleared before
+	// the sink runs. Leaving them set lets a synchronous sink re-enter, record
+	// a request nothing will ever consume, and strand the queue with IsOk()
+	// still true.
+	FakeOperations ops;
+	ops.acceptLimit = 64 * 1024;
+	FakeEvents events;
+	CUtpSocketTransport transport = MakeTransport(ops, &events);
+	const std::vector<uint8_t> payload = Pattern(CUtpStream::kDefaultWriteBound, 4);
+	transport.Write(payload.data(), static_cast<uint32_t>(payload.size()));
+
+	// A sink that flushes synchronously, the way a same-thread owner would.
+	events.onFlushRequested = [&]() { transport.Flush(); };
+	transport.Flush();
+
+	ASSERT_EQUALS(0u, (unsigned)transport.PendingWriteBytes());
+	ASSERT_TRUE(payload == ops.accepted);
+}
+
+TEST(UtpSocketTransport, AThrowingFlushSinkDoesNotStopLaterRequests)
+{
+	// m_flushPending gates every later request, so a throw with it left set
+	// stops the socket sending for good -- the same wedge as the in-progress
+	// flag, one flag over.
+	FakeOperations ops;
+	FakeEvents events;
+	CUtpSocketTransport transport = MakeTransport(ops, &events);
+	events.onFlushRequested = [&]() { throw std::runtime_error("sink"); };
+	const std::vector<uint8_t> payload = Pattern(8, 6);
+
+	bool threw = false;
+	try {
+		transport.Write(payload.data(), static_cast<uint32_t>(payload.size()));
+	} catch (const std::runtime_error &) {
+		threw = true;
+	}
+	ASSERT_TRUE(threw);
+
+	events.onFlushRequested = nullptr;
+	const int before = events.flushRequests;
+	transport.Write(payload.data(), static_cast<uint32_t>(payload.size()));
 	ASSERT_TRUE(events.flushRequests > before);
 }
 

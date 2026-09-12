@@ -630,13 +630,17 @@ SocketSentBytes CEMSocket::Send(
 				} else if (LastError()) {
 					// Send() gave an error
 					anErrorHasOccured = true;
-				} else if (result == 0) {
-					// Took nothing, is not blocked and reports no error: the
-					// stream is gone. Nothing here advances on a retry, so
-					// without this arm the loop spins at full speed on the
-					// upload thread while holding m_sendLocker. A clean end is
-					// not an error, so leave the loop without claiming one and
-					// let the socket's own lost notification tear it down.
+				} else if (!IsOk()) {
+					// The stream is gone. A transport whose stream can end
+					// cleanly returns 0 here while blocked and error are both
+					// clear, and nothing in this loop advances on a retry, so
+					// without this arm it spins at full speed on the upload
+					// thread while holding m_sendLocker. Asked rather than
+					// inferred from that triple, because a healthy asio socket
+					// can show it for an instant if its send completion lands
+					// between Write() returning and BlocksWrite() being read.
+					// A clean end is not an error, so leave without claiming
+					// one and let the lost notification tear the socket down.
 					m_bBusy = false;
 					streamIsGone = true;
 					break;

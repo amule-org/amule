@@ -37,11 +37,20 @@
 /**
  * The per-socket libutp calls a transport makes, behind a seam.
  *
- * Only four, and they are the ones that must not be made from inside a libutp
- * callback: each can re-enter, and utp_close() in particular can produce
- * UTP_STATE_DESTROYING before it returns. Naming them here keeps the transport
- * testable without the library, and keeps the re-entrancy rule in one place
- * rather than repeated at every call.
+ * Only four, and the re-entrancy rule differs per call rather than being one
+ * blanket ban, because a blanket ban is a rule the code would have to break:
+ *
+ * - CloseSocket() must never be made from inside a callback: utp_close() can
+ *   produce UTP_STATE_DESTROYING before it returns.
+ * - WriteToSocket() is what UTP_STATE_WRITABLE exists to invite, so it is
+ *   correct from there. From UTP_ON_ACCEPT it achieves nothing, since the
+ *   socket is still CS_SYN_RECV, and from UTP_ON_READ it re-enters
+ *   utp_process_incoming. Both of those request a flush instead.
+ * - NotifyReadDrained() assumes the reader is not reading synchronously from
+ *   inside UTP_ON_READ; every CoreNotify_* delivery queues, so it does not.
+ * - SetReceiveBuffer() is configuration, made once by the acceptor.
+ *
+ * Naming them here keeps the transport testable without the library.
  *
  * The handle is opaque on purpose: a utp_socket* never appears outside the
  * adapter's translation unit, which is what stops <libutp/utp.h> reaching the
@@ -234,9 +243,7 @@ public:
 				events = RequestFlushLocked();
 			}
 		}
-		if (events != nullptr) {
-			events->OnFlushRequested();
-		}
+		RaiseFlushRequest(events);
 		return taken;
 	}
 
@@ -337,17 +344,19 @@ public:
 		IStreamTransportEvents *flushEvents = nullptr;
 		{
 			std::lock_guard<std::mutex> lock(m_mutex);
+			// Released first and unconditionally: short-circuiting past it
+			// would leave the re-entry recorded but never consumed, and the
+			// in-progress flag set while the sink below runs.
+			const bool reentered = guard.Release();
 			// A fully accepted offer needs a local continuation: utp_writev
 			// returns as soon as it has sent everything it was given, without
 			// arming CS_CONNECTED_FULL, so no writable edge is coming for the
 			// rest of the queue. A partial or window-full result did arm it.
-			if (accepted == pending.size() || guard.Release()) {
+			if (accepted == pending.size() || reentered) {
 				flushEvents = RequestFlushLocked();
 			}
 		}
-		if (flushEvents != nullptr) {
-			flushEvents->OnFlushRequested();
-		}
+		RaiseFlushRequest(flushEvents);
 	}
 
 	// -- libutp callbacks, translated ---------------------------------
@@ -356,23 +365,20 @@ public:
 	// this from UTP_ON_ACCEPT. Only outgoing sockets get UTP_STATE_CONNECT.
 	void MarkConnected()
 	{
-		bool wasBlocked = false;
+		IStreamTransportEvents *flushEvents = nullptr;
 		{
 			std::lock_guard<std::mutex> lock(m_mutex);
 			if (m_connected || m_socket == nullptr || !m_stream.IsOk()) {
 				return;
 			}
 			m_connected = true;
-			wasBlocked = m_stream.BlocksWrite();
+			flushEvents = RequestFlushLocked();
 		}
-		// utp_write() takes nothing before the handshake completes, so
-		// anything queued until now was refused and is still waiting.
-		Flush();
-		// One transition, one notification: Flush() already reports the
-		// blocked-to-writable edge when draining the queue produced it.
-		if (!wasBlocked) {
-			NotifyEvents(&IStreamTransportEvents::OnStreamWritable);
-		}
+		// Requested, not flushed: this runs inside UTP_ON_ACCEPT, where the
+		// socket is still CS_SYN_RECV, so utp_writev would refuse every byte
+		// at its state guard and the peek would be copied for nothing.
+		RaiseFlushRequest(flushEvents);
+		NotifyEvents(&IStreamTransportEvents::OnStreamWritable);
 	}
 
 	void OnPayload(const uint8_t *data, size_t length)
@@ -387,12 +393,14 @@ public:
 			// utp_writev refuses everything without arming a writable edge,
 			// so a reply queued at accept has been waiting for this moment.
 			// Requested rather than flushed here, because this runs inside
-			// UTP_ON_READ and the offer must not be made from a callback.
+			// UTP_ON_READ, which would re-enter utp_process_incoming.
+			//
+			// A peer that connects and then says nothing never reaches this,
+			// and so never gets its reply -- unreachable for eD2k, where the
+			// side that opened the connection always speaks first.
 			flushEvents = RequestFlushLocked();
 		}
-		if (flushEvents != nullptr) {
-			flushEvents->OnFlushRequested();
-		}
+		RaiseFlushRequest(flushEvents);
 		NotifyEvents(&IStreamTransportEvents::OnStreamReadable);
 	}
 
@@ -484,6 +492,29 @@ private:
 		}
 		m_flushPending = true;
 		return m_events;
+	}
+
+	/**
+	 * Delivers a flush request, and does not leave the flag set if it throws.
+	 *
+	 * m_flushPending gates every later request, so a sink that throws with it
+	 * still set stops the socket sending for good, silently, with IsOk() still
+	 * reporting true. Same wedge CFlushGuard prevents, one flag over.
+	 */
+	void RaiseFlushRequest(IStreamTransportEvents *events)
+	{
+		if (events == nullptr) {
+			return;
+		}
+		try {
+			events->OnFlushRequested();
+		} catch (...) {
+			{
+				std::lock_guard<std::mutex> lock(m_mutex);
+				m_flushPending = false;
+			}
+			throw;
+		}
 	}
 
 	void NotifyEvents(void (IStreamTransportEvents::*callback)())
