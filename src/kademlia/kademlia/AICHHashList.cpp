@@ -43,6 +43,12 @@ uint16_t CKadAICHHashList::AddReference(const CKadAICHHash &hash)
 		}
 	}
 
+	if (m_hashes.size() >= MAX_SLOTS) {
+		// Refusing is the only safe answer: handing back a truncated index would alias an
+		// existing slot and credit this publisher's hash to a different one.
+		return INVALID_INDEX;
+	}
+
 	m_hashes.push_back(hash);
 	m_popularity.push_back(1);
 	return (uint16_t)(m_hashes.size() - 1);
@@ -81,6 +87,23 @@ const CKadAICHHash &CKadAICHHashList::GetHashAt(uint16_t index) const
 	// undefined behaviour.
 	static const CKadAICHHash s_empty = CKadAICHHash();
 	return (index < m_hashes.size()) ? m_hashes[index] : s_empty;
+}
+
+std::vector<uint16_t> CKadAICHHashList::Compact()
+{
+	std::vector<uint16_t> map = BuildCompactionMap();
+
+	std::vector<CKadAICHHash> hashes;
+	std::vector<uint8_t> popularity;
+	for (size_t i = 0; i < m_hashes.size(); ++i) {
+		if (map[i] != INVALID_INDEX) {
+			hashes.push_back(m_hashes[i]);
+			popularity.push_back(m_popularity[i]);
+		}
+	}
+	m_hashes.swap(hashes);
+	m_popularity.swap(popularity);
+	return map;
 }
 
 std::vector<uint16_t> CKadAICHHashList::BuildCompactionMap() const

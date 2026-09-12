@@ -185,22 +185,39 @@ void CEntry::WriteTagListInc(CFileDataIO *data, uint32_t increaseTagNumber)
 {
 	wxCHECK_RET(data != NULL, "data must not be NULL");
 
-	uint32_t count =
+	const uint32_t wanted =
 		GetTagCount() + increaseTagNumber; // will include name and size tag in the count if needed
-	wxASSERT(count <= 0xFF);
+
+	// The count goes on the wire as one byte, so it cannot describe more than 255 tags. Writing
+	// the truncated value and then all of them anyway is the worst of the options: the reader
+	// takes the wrapped count, stops early, and parses the remaining tags as whatever field it
+	// expected next, losing the rest of the packet. Clamp instead, so an over-full entry sends a
+	// short answer that still parses. The caller writes increaseTagNumber tags of its own after
+	// this returns, so they come out of the same budget.
+	const uint32_t count = wanted > 0xFF ? 0xFF : wanted;
+	if (wanted != count) {
+		AddDebugLogLineN(logKadEntryTracking,
+			CFormat("Kad entry has %u tags, more than the %u a search answer can "
+				"describe; dropping the surplus") %
+				wanted % count);
+	}
 	data->WriteUInt8((uint8_t)count);
 
-	if (!GetCommonFileName().IsEmpty()) {
-		wxASSERT(count > m_taglist.size());
+	// What this function may write, once the caller's own tags are reserved.
+	uint32_t budget = count > increaseTagNumber ? count - increaseTagNumber : 0;
+
+	if (!GetCommonFileName().IsEmpty() && budget > 0) {
 		data->WriteTag(CTagString(TAG_FILENAME, GetCommonFileName()));
+		budget--;
 	}
-	if (m_uSize != 0) {
-		wxASSERT(count > m_taglist.size());
+	if (m_uSize != 0 && budget > 0) {
 		data->WriteTag(CTagVarInt(TAG_FILESIZE, m_uSize));
+		budget--;
 	}
 
-	for (TagPtrList::const_iterator it = m_taglist.begin(); it != m_taglist.end(); ++it) {
+	for (TagPtrList::const_iterator it = m_taglist.begin(); it != m_taglist.end() && budget > 0; ++it) {
 		data->WriteTag(**it);
+		budget--;
 	}
 }
 
@@ -565,6 +582,23 @@ void CKeyEntry::MergeIPsAndFilenames(CKeyEntry *fromEntry)
 
 		ReCalculateTrustValue();
 	}
+
+	// Drop the slots no publisher points at any more and renumber the rest. DropReferenceAt()
+	// above only zeroes a popularity count, so without this the list keeps every AICH hash the
+	// entry has ever been told about: a publisher that rotates its hash each republish leaves a
+	// slot behind every time, and they accumulate for the life of the process. The publisher
+	// indexes are the only thing holding a slot, so they are remapped here in the same pass.
+	const std::vector<uint16_t> compacted = m_aichHashes.Compact();
+	for (auto &publisher : *m_publishingIPs) {
+		if (publisher.m_aichHashIdx < compacted.size()) {
+			publisher.m_aichHashIdx = compacted[publisher.m_aichHashIdx];
+		} else {
+			// INVALID_INDEX, or a stale index from a file written before the slot
+			// ceiling existed. Either way it points at no hash.
+			publisher.m_aichHashIdx = CKadAICHHashList::INVALID_INDEX;
+		}
+	}
+
 	AddDebugLogLineN(logKadEntryTracking,
 		CFormat("Indexed Keyword, Refresh: %s, Current Publisher: %s, Total Publishers: %u, Total "
 			"different Names: %u, TrustValue: %.2f, file: %s") %

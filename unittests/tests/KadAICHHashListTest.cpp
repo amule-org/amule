@@ -40,6 +40,19 @@ static CKadAICHHash MakeHash(uint8_t seed)
 	return hash;
 }
 
+// MakeHash() varies a single byte, so it can only produce 256 distinct values. The ceiling test
+// needs more than that.
+static CKadAICHHash MakeDistinctHash(uint16_t seed)
+{
+	CKadAICHHash hash;
+	for (size_t i = 0; i < hash.size(); ++i) {
+		hash[i] = (uint8_t)(i);
+	}
+	hash[0] = (uint8_t)(seed & 0xFF);
+	hash[1] = (uint8_t)(seed >> 8);
+	return hash;
+}
+
 DECLARE_SIMPLE(KadAICHHashList)
 
 TEST(KadAICHHashList, EmptyListEncodesNothing)
@@ -112,6 +125,65 @@ TEST(KadAICHHashList, BuildCompactionMapRenumbersReferencedSlotsOnly)
 	ASSERT_EQUALS((unsigned)CKadAICHHashList::INVALID_INDEX, (unsigned)map[1]);
 	ASSERT_EQUALS(1u, (unsigned)map[2]);
 	ASSERT_EQUALS(2u, (unsigned)list.GetReferencedCount());
+}
+
+// Compact() is BuildCompactionMap() plus the mutation: the dropped slots actually go away.
+TEST(KadAICHHashList, CompactRemovesUnreferencedSlotsAndRenumbers)
+{
+	CKadAICHHashList list;
+	list.AddReference(MakeHash(1)); // slot 0
+	list.AddReference(MakeHash(2)); // slot 1
+	list.AddReference(MakeHash(3)); // slot 2
+	list.DropReferenceAt(1);
+
+	const std::vector<uint16_t> map = list.Compact();
+	ASSERT_EQUALS(3u, (unsigned)map.size());
+	ASSERT_EQUALS(0u, (unsigned)map[0]);
+	ASSERT_EQUALS((unsigned)CKadAICHHashList::INVALID_INDEX, (unsigned)map[1]);
+	ASSERT_EQUALS(1u, (unsigned)map[2]);
+
+	// The difference from BuildCompactionMap(): the slot is gone, not just renumbered.
+	ASSERT_EQUALS(2u, (unsigned)list.GetSlotCount());
+	ASSERT_EQUALS(2u, (unsigned)list.GetReferencedCount());
+	ASSERT_TRUE(list.GetHashAt(0) == MakeHash(1));
+	ASSERT_TRUE(list.GetHashAt(1) == MakeHash(3));
+}
+
+// The reason Compact() exists. A publisher that reports a different AICH hash on every republish
+// used to leave its old slot behind each time, and the entry carried them all for the life of the
+// process. Compacting after each rotation keeps the list at the one hash actually referenced.
+TEST(KadAICHHashList, RotatingHashesDoNotAccumulateSlots)
+{
+	CKadAICHHashList list;
+	uint16_t held = list.AddReference(MakeDistinctHash(0));
+
+	for (uint16_t round = 1; round < 500; ++round) {
+		list.DropReferenceAt(held);
+		held = list.AddReference(MakeDistinctHash(round));
+		const std::vector<uint16_t> map = list.Compact();
+		ASSERT_TRUE(held < map.size());
+		held = map[held];
+	}
+
+	ASSERT_EQUALS(1u, (unsigned)list.GetSlotCount());
+	ASSERT_EQUALS(1u, (unsigned)list.GetReferencedCount());
+	ASSERT_TRUE(list.GetHashAt(held) == MakeDistinctHash(499));
+}
+
+// The backstop. An index is a uint16, so a list allowed to grow past 0xFFFF would hand back a
+// truncated index that aliases an earlier slot, crediting one publisher's hash to another.
+TEST(KadAICHHashList, AddReferenceRefusesPastTheSlotCeiling)
+{
+	CKadAICHHashList list;
+	for (size_t i = 0; i < CKadAICHHashList::MAX_SLOTS; ++i) {
+		const uint16_t index = list.AddReference(MakeDistinctHash((uint16_t)i));
+		ASSERT_EQUALS((unsigned)i, (unsigned)index);
+	}
+	ASSERT_EQUALS((unsigned)CKadAICHHashList::MAX_SLOTS, (unsigned)list.GetSlotCount());
+
+	const uint16_t refused = list.AddReference(MakeDistinctHash((uint16_t)CKadAICHHashList::MAX_SLOTS));
+	ASSERT_EQUALS((unsigned)CKadAICHHashList::INVALID_INDEX, (unsigned)refused);
+	ASSERT_EQUALS((unsigned)CKadAICHHashList::MAX_SLOTS, (unsigned)list.GetSlotCount());
 }
 
 // Wire format, pinned byte for byte:
@@ -279,7 +351,7 @@ TEST(KadAICHHashList, ALoneHashStillNeedsAThirdOfThePublishers)
 	ASSERT_TRUE(CKadAICHHashList::SelectTrusted(decoded, 10) == NULL);
 }
 
-// Task 1.5: mixed-version publish and search. Both the publish gate (TAG_KADAICHHASHPUB) and the
+// Mixed-version publish and search. Both the publish gate (TAG_KADAICHHASHPUB) and the
 // result gate (TAG_KADAICHHASHRESULT) consult this one predicate, so pinning it pins the version
 // behaviour of both directions.
 TEST(KadAICHHashList, AICHKeywordStorageIsGatedOnKadVersion0x09)

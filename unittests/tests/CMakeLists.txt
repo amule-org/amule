@@ -378,6 +378,38 @@ target_link_libraries (KadAICHHashListTest
 	mulecommon
 )
 
+# The single-byte tag count in a Kad search answer. CEntry/CKeyEntry pull in
+# nothing from the Kad core at link time -- every CIndexed reference in Entry.cpp
+# is in a comment -- so the writer can be driven directly and the answer parsed
+# back with the same CFileDataIO the receiver uses.
+add_executable (KadEntryTagListTest
+	KadEntryTagListTest.cpp
+	${CMAKE_SOURCE_DIR}/src/kademlia/kademlia/Entry.cpp
+	${CMAKE_SOURCE_DIR}/src/kademlia/kademlia/AICHHashList.cpp
+	${CMAKE_SOURCE_DIR}/src/SafeFile.cpp
+	${CMAKE_SOURCE_DIR}/src/MemFile.cpp
+	${CMAKE_SOURCE_DIR}/src/Tag.cpp
+	${CMAKE_SOURCE_DIR}/src/GetTickCount.cpp
+	# As for CValueMapTest: the no-op DoECLogLine / theLogger definitions, which
+	# Entry.cpp's AddDebugLogLine* calls resolve against in a Debug build.
+	${CMAKE_SOURCE_DIR}/src/LoggerConsole.cpp
+)
+
+add_test (NAME KadEntryTagListTest
+	COMMAND KadEntryTagListTest
+)
+
+target_include_directories (KadEntryTagListTest
+	PRIVATE ${CMAKE_BINARY_DIR}
+	PRIVATE ${CMAKE_SOURCE_DIR}/src
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
+)
+
+target_link_libraries (KadEntryTagListTest
+	muleunit
+	mulecommon
+)
+
 # The adaptive Kad response-time ceiling. CFastKad takes "now" as a parameter
 # rather than reading a clock, which is what lets the cold start, a known series
 # of samples, the eviction rule and the window bound all be pinned without
