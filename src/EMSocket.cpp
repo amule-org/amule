@@ -641,6 +641,18 @@ SocketSentBytes CEMSocket::Send(
 					// between Write() returning and BlocksWrite() being read.
 					// A clean end is not an error, so leave without claiming
 					// one and let the lost notification tear the socket down.
+					//
+					// Inert until the acceptor routes this call. IsOk() is not
+					// virtual anywhere in CLibSocket, CEncryptedStreamSocket or
+					// here, so it resolves statically to CLibSocket::IsOk(),
+					// whose m_OK is true for the whole life of a connected
+					// socket: this arm cannot fire for CClientTCPSocket or
+					// CServerSocket, which is why adding it changes nothing
+					// today. The uTP transport answers the same question on
+					// IStreamTransport, a separate hierarchy, so whatever wires
+					// a transport into CEMSocket must route IsOk() to it as
+					// well. Miss that and the arm stays dead after wiring, and
+					// the spin it exists to stop comes back silently.
 					m_bBusy = false;
 					streamIsGone = true;
 					break;

@@ -728,6 +728,48 @@ TEST(UtpSocketTransport, AFullyAcceptedFlushStillConsumesTheReentryRecord)
 	ASSERT_TRUE(payload == ops.accepted);
 }
 
+// The other half of the re-entry record: clearing the in-progress flag is not enough if the
+// pending flag survives. A request raised during the unlocked offer -- OnPayload() completing an
+// inbound handshake is the real case -- makes the sink re-enter Flush(), which returns early. If
+// that early return leaves m_flushPending set, the tail consumes the re-entry record and then gets
+// nothing from RequestFlushLocked(), which short-circuits on that same flag. Write() short-circuits
+// on it too, so nothing ever asks again and the queue strands with IsOk() still true.
+TEST(UtpSocketTransport, AReentryDuringTheOfferStillLeavesTheQueueFlushable)
+{
+	FakeOperations ops;
+	ops.acceptLimit = 8;
+	FakeEvents events;
+	CUtpSocketTransport transport = MakeTransport(ops, &events);
+
+	// A synchronous sink, the way a same-thread owner would be wired.
+	events.onFlushRequested = [&]() { transport.Flush(); };
+
+	const std::vector<uint8_t> payload = Pattern(64, 9);
+	transport.Write(payload.data(), static_cast<uint32_t>(payload.size()));
+
+	// Payload arriving while the offer is in flight: this is what raises a request inside the
+	// window where a re-entrant Flush() can only record itself.
+	const std::vector<uint8_t> inbound = Pattern(4, 200);
+	bool delivered = false;
+	ops.onWrite = [&]() {
+		if (!delivered) {
+			delivered = true;
+			transport.OnPayload(inbound.data(), inbound.size());
+		}
+	};
+
+	transport.Flush();
+	ASSERT_TRUE(delivered);
+
+	// The queue must still be drainable. Without the fix nothing requests a flush again, so
+	// this write cannot get one either and the bytes sit there for good.
+	const size_t before = transport.PendingWriteBytes();
+	ASSERT_TRUE(before > 0u);
+	const std::vector<uint8_t> more = Pattern(4, 77);
+	transport.Write(more.data(), static_cast<uint32_t>(more.size()));
+	ASSERT_TRUE(transport.PendingWriteBytes() < before + more.size());
+}
+
 TEST(UtpSocketTransport, AThrowingFlushSinkDoesNotStopLaterRequests)
 {
 	// m_flushPending gates every later request, so a throw with it left set

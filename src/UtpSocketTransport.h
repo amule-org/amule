@@ -293,6 +293,14 @@ public:
 		std::vector<uint8_t> pending;
 		{
 			std::lock_guard<std::mutex> lock(m_mutex);
+			// Cleared before the re-entrancy check, not after it. Any entry here
+			// absorbs the outstanding request, and the early return below is an
+			// entry: leaving the flag set there meant the re-entry was recorded,
+			// consumed by the tail, and then dropped anyway, because
+			// RequestFlushLocked() short-circuits on this very flag. Write()
+			// short-circuits on it too, so the queue stranded for good with
+			// IsOk() still reporting true.
+			m_flushPending = false;
 			if (m_flushInProgress) {
 				// Record it rather than drop it: the outer flush offers bytes
 				// this caller has not seen, so returning silently would lose
@@ -300,7 +308,6 @@ public:
 				m_flushAgain = true;
 				return;
 			}
-			m_flushPending = false;
 			if (m_socket == nullptr || !m_stream.IsOk()) {
 				return;
 			}
