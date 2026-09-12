@@ -127,11 +127,18 @@ inline bool ProcessUtpFrame(
 // one; the adapter does the sa_family comparison.
 constexpr std::uint64_t kUtpEnvelopeBytes = 2;
 
+// What CEncryptedDatagramSocket::EncryptSendClient() prepends: CRYPT_HEADER_WITHOUTPADDING.
+// Subtracted unconditionally rather than only for peers we encrypt to, because the budget is a
+// property of the libutp context while the decision is per-datagram, and a budget that is right
+// only sometimes is the fragmentation this override exists to prevent. The cost of being wrong
+// in this direction is eight bytes of payload on a plaintext datagram.
+constexpr std::uint64_t kUtpCryptHeaderBytes = 8;
+
 constexpr std::uint64_t UtpUdpMtu(bool isIPv6)
 {
 	// IPv4:   1500 ethernet - 20 IPv4 - 8 UDP - 24 GRE - 8 PPPoE - 2 MPPE - 36 fudge.
 	// Teredo: 1280 - 40 IPv6 - 8 UDP.
-	return (isIPv6 ? UINT64_C(1232) : UINT64_C(1402)) - kUtpEnvelopeBytes;
+	return (isIPv6 ? UINT64_C(1232) : UINT64_C(1402)) - kUtpEnvelopeBytes - kUtpCryptHeaderBytes;
 }
 
 constexpr std::uint64_t UtpUdpOverhead(bool isIPv6)

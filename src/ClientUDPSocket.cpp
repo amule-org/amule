@@ -85,14 +85,28 @@ void CClientUDPSocket::TickUtp()
 void CClientUDPSocket::SendUtpDatagram(const uint8_t *payload, size_t length, uint32_t ip, uint16_t port)
 {
 	wxASSERT(wxIsMainThread());
-	const auto *peer = theApp->clientlist->FindClientByIP(ip, port);
-	QueueUtpDatagram<CPacket>(*this,
-		payload,
-		length,
-		ip,
-		port,
-		peer != nullptr && peer->ShouldReceiveCryptUDPPackets(),
-		peer != nullptr ? peer->GetUserHash().GetHash() : nullptr);
+	// Sent unobfuscated, deliberately and for now.
+	//
+	// This used to resolve the peer with FindClientByIP(ip, port) to decide. That call cannot
+	// work here: it matches GetUserPort(), the ed2k TCP port, and every other caller in the
+	// tree passes a TCP port, while what arrives here is the peer's UDP port. With the aMule
+	// defaults of 4662 and 4672 it never matched, so the decision was always "no encryption"
+	// by accident rather than by choice. Worse, it could match the wrong client, whenever some
+	// other peer at the same address happened to listen on a TCP port equal to the UDP port
+	// being dialled: that one's user hash then derived the key and the real recipient could not
+	// decrypt. Sending in the clear is better than encrypting to the wrong peer.
+	//
+	// The fix is not a UDP-keyed lookup. Every other send site already holds the client and
+	// passes the destination and the crypt parameters together (see CUpDownClient's direct
+	// callback in BaseClient.cpp). The reverse lookup exists only because UTP_SENDTO hands back
+	// a bare address. The acceptor knows which peer a socket belongs to, so it must carry
+	// ShouldReceiveCryptUDPPackets() and the user hash down to here, and this comment goes with
+	// the change that does it.
+	// Counted here rather than inside QueueUtpDatagram(), which is deliberately free of the
+	// application's headers. The figure is the datagram that leaves: the payload plus the
+	// two-byte 0xB2 envelope, which is what the receive side counts at the other end.
+	theStats::AddUpOverheadOther(length + kUtpEnvelopeBytes);
+	QueueUtpDatagram<CPacket>(*this, payload, length, ip, port, false, nullptr);
 }
 #endif
 
@@ -253,13 +267,21 @@ void CClientUDPSocket::ProcessReservedProt2Frame(
 		if (ProcessUtpFrame(m_utp, classified, ip, port)) {
 			return;
 		}
-		// Reached only when libutp has seen the datagram and disclaimed it: it belongs to
-		// no connection it holds. A different reason from the types below, so it does not
-		// borrow their message.
+		// Reached only for a frame libutp would not even look at: shorter than a uTP
+		// header, or a version it does not implement. It is *not* the
+		// belongs-to-no-connection case, which the message used to claim.
+		//
+		// libutp answers a non-SYN frame that matches no connection by sending an
+		// unsolicited RST and returning 1 (utp_internal.cpp, the flags != ST_SYN branch),
+		// so ProcessUtpFrame() reports it handled and this code never runs for it. Those
+		// frames leave as RSTs to an unverified source address, with no line anywhere.
+		// Logging them, and deciding whether to answer a stranger at all, needs to know
+		// which peers hold a uTP socket, which is the acceptor's registry: see the note on
+		// the crypt parameters in SendUtpDatagram(), which defers for the same reason.
 		if (m_utpUnmatchedFrameLog.ShouldLog(::GetTickCount64())) {
 			AddDebugLogLineN(logClientUDP,
-				CFormat("Dropping uTP frame from %s:%u: not for any open uTP connection "
-					"(%u further occurrences suppressed)") %
+				CFormat("Dropping malformed uTP frame from %s:%u: too short or an "
+					"unsupported version (%u further occurrences suppressed)") %
 					Uint32toStringIP(ip) % port %
 					m_utpUnmatchedFrameLog.TakeSuppressedCount());
 		}

@@ -289,17 +289,31 @@ TEST(UtpContext, UdpSizingKeepsTheFamilyAwarenessLibutpHad)
 	// libutp's own defaults branch on the address family; overriding them for the two-byte
 	// envelope must not flatten that, or an IPv6 peer gets IPv4 numbers and libutp sizes
 	// packets 20 bytes too large.
-	ASSERT_EQUALS(1400ull, UtpUdpMtu(false));
-	ASSERT_EQUALS(1230ull, UtpUdpMtu(true));
+	ASSERT_EQUALS(1392ull, UtpUdpMtu(false));
+	ASSERT_EQUALS(1222ull, UtpUdpMtu(true));
 	ASSERT_EQUALS(30ull, UtpUdpOverhead(false));
 	ASSERT_EQUALS(78ull, UtpUdpOverhead(true));
 
 	// The envelope is what the override exists for: each is libutp's own
 	// constant moved by exactly two bytes, in the direction that leaves room.
-	ASSERT_EQUALS(1402ull - kUtpEnvelopeBytes, UtpUdpMtu(false));
-	ASSERT_EQUALS(1232ull - kUtpEnvelopeBytes, UtpUdpMtu(true));
+	ASSERT_EQUALS(1402ull - kUtpEnvelopeBytes - kUtpCryptHeaderBytes, UtpUdpMtu(false));
+	ASSERT_EQUALS(1232ull - kUtpEnvelopeBytes - kUtpCryptHeaderBytes, UtpUdpMtu(true));
 	ASSERT_EQUALS(28ull + kUtpEnvelopeBytes, UtpUdpOverhead(false));
 	ASSERT_EQUALS(76ull + kUtpEnvelopeBytes, UtpUdpOverhead(true));
+}
+
+// The obfuscation header is part of the datagram too. EncryptSendClient() prepends
+// CRYPT_HEADER_WITHOUTPADDING, so a budget that counts only the envelope lets a full-size
+// encrypted packet exceed the very limit the override exists to respect. Dormant while the send
+// path is unencrypted, and the reason the two must be fixed together rather than in either order.
+TEST(UtpContext, TheUdpBudgetLeavesRoomForTheObfuscationHeader)
+{
+	ASSERT_EQUALS(8ull, kUtpCryptHeaderBytes);
+
+	// A full-size payload plus everything aMule puts in front of it still fits the number
+	// libutp was sizing against before the crypt header was accounted for.
+	ASSERT_TRUE(UtpUdpMtu(false) + kUtpEnvelopeBytes + kUtpCryptHeaderBytes <= 1402ull);
+	ASSERT_TRUE(UtpUdpMtu(true) + kUtpEnvelopeBytes + kUtpCryptHeaderBytes <= 1232ull);
 }
 
 // File_checked_for_headers
