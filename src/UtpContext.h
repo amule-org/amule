@@ -127,7 +127,12 @@ inline bool ProcessUtpFrame(
 // one; the adapter does the sa_family comparison.
 constexpr std::uint64_t kUtpEnvelopeBytes = 2;
 
-// What CEncryptedDatagramSocket::EncryptSendClient() prepends: CRYPT_HEADER_WITHOUTPADDING.
+// What CEncryptedDatagramSocket::EncryptSendClient() prepends. Its cryptHeaderLen is
+// `padLen + CRYPT_HEADER_WITHOUTPADDING + (kad ? 8 : 0)`, which is 8 here because a uTP datagram
+// is not Kad and padLen is hardcoded to zero -- under a comment reading "padding disabled for UDP
+// currently". Enabling it makes this budget too small again, which is the defect this constant
+// exists to fix, so that switch has to come back here.
+//
 // Subtracted unconditionally rather than only for peers we encrypt to, because the budget is a
 // property of the libutp context while the decision is per-datagram, and a budget that is right
 // only sometimes is the fragmentation this override exists to prevent. The cost of being wrong

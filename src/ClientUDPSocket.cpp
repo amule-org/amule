@@ -104,7 +104,13 @@ void CClientUDPSocket::SendUtpDatagram(const uint8_t *payload, size_t length, ui
 	// the change that does it.
 	// Counted here rather than inside QueueUtpDatagram(), which is deliberately free of the
 	// application's headers. The figure is the datagram that leaves: the payload plus the
-	// two-byte 0xB2 envelope, which is what the receive side counts at the other end.
+	// two-byte 0xB2 envelope.
+	//
+	// That matches the receive side only while this path is unobfuscated. OnPacketReceived()
+	// counts its `length`, the raw datagram before decryption, so an obfuscated one is counted
+	// with its crypt header; this line has no header to add. The change that brings the crypt
+	// parameters down has to add kUtpCryptHeaderBytes here, or aMule under-reports its own
+	// upload by eight bytes a datagram.
 	theStats::AddUpOverheadOther(length + kUtpEnvelopeBytes);
 	QueueUtpDatagram<CPacket>(*this, payload, length, ip, port, false, nullptr);
 }
