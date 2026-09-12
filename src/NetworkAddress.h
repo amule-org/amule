@@ -45,6 +45,9 @@ struct IPv6ExcludedPrefix
 constexpr IPv6ExcludedPrefix kIPv6ExcludedPrefixes[] = { { {}, 128, "Unspecified" },
 	{ { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 }, 128, "Loopback" },
 	{ { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff }, 96, "IPv4-mapped" },
+	// ::a.b.c.d, the deprecated IPv4-compatible form (RFC 4291). Listed after the two entries
+	// above so the unspecified address and the loopback keep their own names in a log.
+	{ {}, 96, "IPv4-compatible" },
 	{ { 0x00, 0x64, 0xff, 0x9b }, 96, "Well-known NAT64" },
 	{ { 0x00, 0x64, 0xff, 0x9b, 0x00, 0x01 }, 48, "Local-use NAT64" },
 	{ { 0x01, 0x00 }, 64, "Discard-only" },
@@ -364,6 +367,32 @@ public:
 	 * at sites that must treat the mapped and native forms as one address; the
 	 * comparison operators never do it for you.
 	 */
+	/**
+	 * A hash over exactly what operator== compares.
+	 *
+	 * A member rather than a loose function so it cannot drift from the comparison, and
+	 * supplied at all because a caller writing their own would reach for the object's bytes:
+	 * sizeof is 32 against 25 bytes of members, and no member initialiser touches the seven
+	 * bytes of tail padding, so a byte-wise hash disagrees with operator== for values that
+	 * compare equal.
+	 */
+	std::size_t HashValue() const noexcept
+	{
+		std::size_t result = static_cast<std::size_t>(m_family);
+		for (const std::uint8_t octet : m_octets) {
+			result = result * 131u + octet;
+		}
+		return result * 131u + static_cast<std::size_t>(m_scopeId);
+	}
+
+	//! The same address with no interface scope. A prefix is not interface-scoped.
+	CNetworkAddress WithoutScope() const
+	{
+		CNetworkAddress result = *this;
+		result.m_scopeId = 0;
+		return result;
+	}
+
 	CNetworkAddress Unmapped() const
 	{
 		if (IsIPv4Mapped()) {
@@ -562,11 +591,19 @@ public:
 		if (IsAbsent()) {
 			return *this;
 		}
-		const unsigned width = IsIPv4() ? 32u : 128u;
+		// The effective family, not the stored one. An IPv4-mapped address is IPv4 for every
+		// other accessor here, and taking 128 for it truncated the embedded octets away
+		// entirely: ::ffff:203.0.113.5 at /24 came back as ::, so every mapped peer landed in
+		// one bucket of the per-prefix budget this exists to feed.
+		const CNetworkAddress subject = Unmapped();
+		const unsigned width = subject.IsIPv4() ? 32u : 128u;
 		if (prefixBits >= width) {
-			return *this;
+			// Scope dropped here too. The truncating path below drops it deliberately, and
+			// returning it only on this branch made fe80::1%7 and fe80::1%9 one value at
+			// /64 and two at /128, which is a discontinuity at the boundary.
+			return subject.WithoutScope();
 		}
-		Octets bytes = m_octets;
+		Octets bytes = subject.m_octets;
 		for (std::size_t i = 0; i < bytes.size(); ++i) {
 			const unsigned bitsBefore = static_cast<unsigned>(i) * 8u;
 			if (prefixBits >= bitsBefore + 8u) {
@@ -579,7 +616,7 @@ public:
 					bytes[i] & (0xFFu << (bitsBefore + 8u - prefixBits)));
 			}
 		}
-		if (IsIPv4()) {
+		if (subject.IsIPv4()) {
 			return FromIPv4HostOrder(PackOctets(bytes[0], bytes[1], bytes[2], bytes[3]));
 		}
 		// The scope id is deliberately not carried over: a prefix is not interface-scoped, and
@@ -674,6 +711,22 @@ private:
 	//! None when unset. Never conflated with the all-zero address.
 	Family m_family = Family::None;
 };
+
+/**
+ * Hashing, over exactly the three members operator== compares.
+ *
+ * Supplied because the class is framed as a container key and a caller writing their own would
+ * reach for the object's bytes: sizeof is 32 against 25 bytes of members, and no member
+ * initialiser touches the seven bytes of tail padding, so a byte-wise hash disagrees with
+ * operator== for values that compare equal.
+ */
+namespace std
+{
+template <> struct hash<CNetworkAddress>
+{
+	std::size_t operator()(const CNetworkAddress &address) const noexcept { return address.HashValue(); }
+};
+} // namespace std
 
 #endif // NETWORKADDRESS_H
 // File_checked_for_headers

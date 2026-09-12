@@ -66,7 +66,12 @@ public:
 	 * duration and not one tick longer, which is the reading its name gives. That is a
 	 * behaviour change, small and in one direction.
 	 */
-	static const uint64 BAN_DURATION_MS = CLIENTBANTIME;
+	// constexpr, not const: a plain static const member still needs an out-of-line definition
+	// the moment anything odr-uses it, and C++17 made only constexpr members implicitly inline.
+	// Every use today is arithmetic, which is a value computation, so it links; the first
+	// reference binding does not. ASSERT_EQUALS() is exactly that, since muleunit takes its
+	// arguments by const reference.
+	static constexpr uint64 BAN_DURATION_MS = CLIENTBANTIME;
 
 	/**
 	 * Ban @p ip, or refresh an existing ban.

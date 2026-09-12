@@ -43,6 +43,14 @@ const uint32 IP_B = 0x0200007f;
 // ban of the same address must answer false or the statistic drifts.
 // CUpDownClient::SetSpammer(true) calls Ban() with no IsBanned() check, which is how that second
 // call happens in practice.
+// ASSERT_EQUALS takes its arguments by const reference, so this odr-uses BAN_DURATION_MS. With
+// the member declared static const and defined nowhere, it does not link; constexpr is what makes
+// it work. The assertion itself is almost beside the point, the reference binding is the test.
+TEST(BanRecord, TheBanDurationConstantCanBeReferenced)
+{
+	ASSERT_EQUALS(static_cast<uint64>(CLIENTBANTIME), CBanRecord::BAN_DURATION_MS);
+}
+
 TEST(BanRecord, BanningTheSameAddressTwiceCountsOnce)
 {
 	CBanRecord record;
