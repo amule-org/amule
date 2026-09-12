@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-09-10 11:11+0200\n"
-"PO-Revision-Date: 2026-09-10 11:04+0000\n"
+"PO-Revision-Date: 2026-09-12 15:14+0000\n"
 "Last-Translator: David Watzke <david@watzke.cz>\n"
 "Language-Team: cs <cs@li.org>\n"
 "Language: cs\n"
@@ -7540,24 +7540,23 @@ msgstr "Zkopírovat eD2k odkaz do schránky (%zdroj)"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Copy eD2k link to clipboard (Source) (&With Crypt options)"
-msgstr ""
+msgstr "Kopírovat eD2k odkaz do schránky (zdroj) (&s možnostmi šifrování)"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Copy eD2k link to clipboard (&Hostname)"
-msgstr ""
+msgstr "Kopírovat eD2k odkaz do schránky (&název hostitele)"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Copy eD2k link to clipboard (Hostname) (With &Crypt options)"
-msgstr ""
+msgstr "Kopírovat eD2k odkaz do schránky (název hostitele) (s &možnostmi šifrování)"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Copy eD2k link to clipboard (&AICH info)"
-msgstr ""
+msgstr "Kopírovat eD2k odkaz do schránky (&info AICH)"
 
 #: src/SharedFilesCtrl.cpp
-#, fuzzy
 msgid "Copy eD2k link to clipboard (&AICH info + Source)"
-msgstr "Zkopírovat ED2K odkaz do schránky (AICH info)"
+msgstr "Kopírovat eD2k odkaz do schránky (&info AICH + zdroj)"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Export selected files to an emulecollection"
@@ -7566,7 +7565,7 @@ msgstr ""
 #: src/SharedFilesCtrl.cpp
 #, c-format
 msgid "Verify Local Data on PartFile is currently not supported: %s"
-msgstr ""
+msgstr "Ověření místních dat u částečného souboru PartFile momentálně není podporováno: %s"
 
 #: src/SharedFilesCtrl.cpp
 #, c-format
@@ -7675,9 +7674,9 @@ msgid "Shared Files (%i)"
 msgstr "Sdílené soubory (%i)"
 
 #: src/SharedFilesReloadProgress.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Reloading shared files: %u files scanned"
-msgstr "Znovu načte seznam sdílených souborů."
+msgstr "Znovu se načítají sdílené soubory: prohledáno %u souborů"
 
 #: src/SourceListCtrl.cpp
 #, fuzzy
@@ -7685,9 +7684,8 @@ msgid "Part Status"
 msgstr "Stav"
 
 #: src/SourceListCtrl.cpp
-#, fuzzy
 msgid "Remote File Name"
-msgstr "Název souboru"
+msgstr "Vzdálený název souboru"
 
 #: src/SourceListCtrl.cpp
 msgid "A4AF"
@@ -7706,7 +7704,7 @@ msgstr "Celková režie (pakety): %s"
 #: src/Statistics.cpp
 #, c-format
 msgid "File Request Overhead (Packets): %s"
-msgstr ""
+msgstr "Přebytek požadavků na soubor (pakety): %s"
 
 #: src/Statistics.cpp
 #, c-format
@@ -7741,12 +7739,12 @@ msgstr "Čekající odesílání: %s"
 #: src/Statistics.cpp
 #, c-format
 msgid "Total successful upload sessions: %s"
-msgstr ""
+msgstr "Celkem úspěšných relací odesílání: %s"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Total failed upload sessions: %s"
-msgstr ""
+msgstr "Celkem neúspěšných relací odesílání: %s"
 
 #: src/Statistics.cpp
 #, c-format
@@ -7826,7 +7824,7 @@ msgstr "Průměrný počet připojení (odhad): %g"
 #: src/Statistics.cpp
 #, c-format
 msgid "Peak Connections (estimate): %i"
-msgstr ""
+msgstr "Nejvyšší počet připojení (odhad): %i"
 
 #: src/Statistics.cpp
 #, c-format
@@ -7937,7 +7935,7 @@ msgstr "Nikdy"
 #: src/TerminationProcess.cpp
 #, c-format
 msgid "Command '%s' with pid '%d' has finished with status code '%d'."
-msgstr ""
+msgstr "Příkaz '%s' s pid '%d' skončil se stavovým kódem '%d'."
 
 #: src/TextClient.cpp
 msgid "Execute <str> and exit."
@@ -7973,39 +7971,42 @@ msgstr "Neplatné číslo\n"
 
 #: src/TextClient.cpp
 msgid "Not a valid hash (length should be exactly 32 chars)\n"
-msgstr ""
+msgstr "Neplatný hash (délka by měla být přesně 32 znaků)\n"
 
 #. TRANSLATORS:
 #. 'help search' is a command to the program, do not translate it.
 #: src/TextClient.cpp
-#, fuzzy
 msgid ""
 "Invalid search filter syntax.\n"
 "Type 'help search' to get more help.\n"
-msgstr "Pro nápovědu spusťte '%s'.\n"
+msgstr ""
+"Neplatná syntaxe filtru vyhledávání.\n"
+"Další nápovědu zobrazíte příkazem 'help search'.\n"
 
 #. TRANSLATORS:
 #. 'help search' is a command to the program, do not translate it.
 #: src/TextClient.cpp
-#, fuzzy
 msgid ""
 "No search keyword provided.\n"
 "Type 'help search' to get more help.\n"
-msgstr "Pro nápovědu spusťte '%s'.\n"
+msgstr ""
+"Nebylo zadáno klíčové slovo vyhledávání.\n"
+"Další nápovědu zobrazíte příkazem 'help search'.\n"
 
 #. TRANSLATORS:
 #. 'help search' is a command to the program, do not translate it.
 #: src/TextClient.cpp
-#, fuzzy
 msgid ""
 "No search type defined.\n"
 "Type 'help search' to get more help.\n"
-msgstr "Pro nápovědu spusťte '%s'.\n"
+msgstr ""
+"Nebyl zadán typ vyhledávání.\n"
+"Další nápovědu zobrazíte příkazem 'help search'.\n"
 
 #: src/TextClient.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Download File: %lu %s\n"
-msgstr "Stahování (%i)"
+msgstr "Stáhnout soubor: %lu %s\n"
 
 #: src/TextClient.cpp src/webserver/src/WebServer.cpp
 msgid "Request failed with an unknown error."
@@ -8023,7 +8024,7 @@ msgstr ""
 #: src/TextClient.cpp
 #, c-format
 msgid "IP filtering for clients is %s.\n"
-msgstr ""
+msgstr "Filtrování IP pro klienty je %s.\n"
 
 #: src/TextClient.cpp
 msgid "OFF"
@@ -8036,12 +8037,12 @@ msgstr "zapnuto"
 #: src/TextClient.cpp
 #, c-format
 msgid "IP filtering for servers is %s.\n"
-msgstr ""
+msgstr "Filtrování IP pro servery je %s.\n"
 
 #: src/TextClient.cpp
 #, c-format
 msgid "Current IPFilter Level is %d.\n"
-msgstr ""
+msgstr "Aktuální úroveň IP filtru je %d.\n"
 
 #: src/TextClient.cpp
 #, c-format
@@ -8051,12 +8052,12 @@ msgstr ""
 #: src/TextClient.cpp
 #, c-format
 msgid "Endgame source rotation is %s.\n"
-msgstr ""
+msgstr "Rotace zdrojů koncovky je %s.\n"
 
 #: src/TextClient.cpp
 #, c-format
 msgid "Search started (id %u).\n"
-msgstr ""
+msgstr "Hledání zahájeno (id %u).\n"
 
 #: src/TextClient.cpp
 #, c-format
@@ -8127,11 +8128,11 @@ msgstr "Obdržena neznámá odpověď od serveru, kód operace = %#x."
 
 #: src/TextClient.cpp
 msgid "Show short status information."
-msgstr ""
+msgstr "Zobrazit stručné stavové informace."
 
 #: src/TextClient.cpp
 msgid "Show connection status, current up/download speeds, etc.\n"
-msgstr ""
+msgstr "Zobrazit stav připojení, aktuální rychlosti odesílání/stahování atd.\n"
 
 #: src/TextClient.cpp
 msgid "Show full statistics tree."
@@ -8303,9 +8304,8 @@ msgid "Set download bandwidth limit."
 msgstr "Nastavit limit šířky pásma pro stahování."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Enable or disable endgame source rotation."
-msgstr "Povolí/zakáže autentizaci (uživatelské jméno a heslo)"
+msgstr "Povolí/zakáže rotaci zdroje koncovky"
 
 #: src/TextClient.cpp
 msgid "The given value must be 1/ON (enable) or 0/OFF (disable).\n"
@@ -8341,7 +8341,7 @@ msgstr ""
 
 #: src/TextClient.cpp
 msgid "Get endgame source rotation state."
-msgstr ""
+msgstr "Získat stav rotace zdrojů koncovky."
 
 #: src/TextClient.cpp
 msgid "Execute a search."
