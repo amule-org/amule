@@ -28,8 +28,10 @@
 #include "StreamTransport.h"
 #include "UtpStream.h"
 
+#include <atomic>
 #include <cstddef>
 #include <cstdint>
+#include <mutex>
 #include <vector>
 
 /**
@@ -57,6 +59,16 @@ public:
 
 	//! Tells libutp the application has caught up, so delivery may resume.
 	virtual void NotifyReadDrained(Handle socket) = 0;
+
+	/**
+	 * Reports bytes buffered, for UTP_GET_READ_BUFFER_SIZE.
+	 *
+	 * Paired with SetReceiveBuffer() and useless without it: libutp advertises
+	 * opt_rcvbuf minus this number, and with the callback unset the subtracted
+	 * value is zero, so the window never shrinks. Setting the buffer alone
+	 * therefore lowers the ceiling without adding any backpressure.
+	 */
+	virtual void ReportReadBufferSize(Handle socket, size_t bytes) = 0;
 
 	//! utp_close(). Exactly one caller may ever make this call per socket.
 	virtual void CloseSocket(Handle socket) = 0;
@@ -86,6 +98,17 @@ public:
 
 	//! The stream ended, cleanly or otherwise. Ask the transport which.
 	virtual void OnStreamLost() = 0;
+
+	/**
+	 * Asks for Flush() to be called on the main thread.
+	 *
+	 * Raised from the upload bandwidth thread, so the implementation must
+	 * marshal -- MuleNotify::DoNotify clones a functor and delivers it to
+	 * wxTheApp, which is how the asio layer already crosses the same boundary.
+	 * Only the first queue-up since the last flush raises it, so the cost is
+	 * one event per idle-to-busy transition rather than one per write.
+	 */
+	virtual void OnFlushRequested() = 0;
 };
 
 /**
@@ -105,11 +128,13 @@ public:
 	CUtpSocketTransport(IUtpSocketOperations &operations,
 		IUtpSocketOperations::Handle socket,
 		const CNetworkAddress &peer,
-		uint16_t peerPort)
+		uint16_t peerPort,
+		IStreamTransportEvents *events = nullptr)
 	: m_operations(operations)
 	, m_socket(socket)
 	, m_peer(peer)
 	, m_peerPort(peerPort)
+	, m_events(events)
 	{
 	}
 
@@ -118,32 +143,78 @@ public:
 	CUtpSocketTransport(const CUtpSocketTransport &) = delete;
 	CUtpSocketTransport &operator=(const CUtpSocketTransport &) = delete;
 
-	//! Applies the receive bound, which is what makes ReadBound() take effect.
+	/**
+	 * Applies the receive bound and reports current occupancy against it.
+	 *
+	 * Both halves, always: libutp advertises opt_rcvbuf minus what the
+	 * read-buffer-size callback reports, so setting the buffer without
+	 * reporting occupancy pins the window at a constant 64 KiB -- a sixteenth
+	 * of libutp's default, with no backpressure gained, since the reported
+	 * subtrahend stays zero however far behind the reader falls.
+	 */
 	void ApplyReceiveBound()
 	{
+		std::lock_guard<std::mutex> lock(m_mutex);
 		if (m_socket != nullptr) {
 			m_operations.SetReceiveBuffer(m_socket, m_stream.ReadBound());
+			m_operations.ReportReadBufferSize(m_socket, m_stream.ReadBufferSize());
 		}
 	}
 
 	// -- IStreamTransport ---------------------------------------------
 
-	bool IsConnected() const override { return m_connected && m_stream.IsOk(); }
-	bool IsOk() const override { return m_stream.IsOk(); }
-	bool BlocksRead() const override { return m_stream.BlocksRead(); }
-	bool BlocksWrite() const override { return m_stream.BlocksWrite(); }
-	int LastError() const override { return m_stream.LastError(); }
+	// These are read from the upload bandwidth thread inside CEMSocket's send
+	// loop while the main thread's callbacks write them, so they take the lock
+	// like everything else that touches the stream.
+	bool IsConnected() const override
+	{
+		std::lock_guard<std::mutex> lock(m_mutex);
+		return m_connected && m_stream.IsOk();
+	}
+	bool IsOk() const override
+	{
+		std::lock_guard<std::mutex> lock(m_mutex);
+		return m_stream.IsOk();
+	}
+	bool BlocksRead() const override
+	{
+		std::lock_guard<std::mutex> lock(m_mutex);
+		return m_stream.BlocksRead();
+	}
+	bool BlocksWrite() const override
+	{
+		std::lock_guard<std::mutex> lock(m_mutex);
+		return m_stream.BlocksWrite();
+	}
+	int LastError() const override
+	{
+		std::lock_guard<std::mutex> lock(m_mutex);
+		return m_stream.LastError();
+	}
+	//! Fixed for the transport's lifetime, so it needs no lock.
 	CNetworkAddress GetPeerAddress() const override { return m_peer; }
 	uint16_t GetPeerPort() const override { return m_peerPort; }
 
 	uint32_t Read(void *buffer, uint32_t length) override
 	{
-		const uint32_t taken = m_stream.Read(buffer, length);
-		// Owed only once the reader has emptied the buffer, and only to a
-		// socket that still exists: libutp stopped delivering while we were
-		// behind, and this is what resumes it.
-		if (m_stream.ConsumeReadDrainedEdge() && m_socket != nullptr) {
-			m_operations.NotifyReadDrained(m_socket);
+		IUtpSocketOperations::Handle socket = nullptr;
+		uint32_t taken = 0;
+		size_t buffered = 0;
+		{
+			std::lock_guard<std::mutex> lock(m_mutex);
+			taken = m_stream.Read(buffer, length);
+			// Owed only once the reader has emptied the buffer, and only to
+			// a socket that still exists: libutp stopped delivering while we
+			// were behind, and this is what resumes it.
+			if (m_stream.ConsumeReadDrainedEdge()) {
+				socket = m_socket;
+			}
+			buffered = m_stream.ReadBufferSize();
+		}
+		if (socket != nullptr) {
+			// Outside the lock: these re-enter.
+			m_operations.ReportReadBufferSize(socket, buffered);
+			m_operations.NotifyReadDrained(socket);
 		}
 		return taken;
 	}
@@ -157,7 +228,20 @@ public:
 	 */
 	uint32_t Write(const void *buffer, uint32_t length) override
 	{
-		return m_stream.Write(buffer, length);
+		uint32_t taken = 0;
+		{
+			std::lock_guard<std::mutex> lock(m_mutex);
+			taken = m_stream.Write(buffer, length);
+		}
+		// Nothing else would flush these: the only other trigger is a full
+		// window reopening, and a queue filled while the window was never
+		// full has no such edge behind it. Raised on the idle-to-busy
+		// transition only, so a busy socket costs one event, not one per
+		// write.
+		if (taken != 0 && !m_flushPending.exchange(true) && m_events != nullptr) {
+			m_events->OnFlushRequested();
+		}
+		return taken;
 	}
 
 	/**
@@ -172,12 +256,17 @@ public:
 	 */
 	void Close() override
 	{
-		if (m_socket == nullptr) {
-			return;
+		IUtpSocketOperations::Handle socket = nullptr;
+		{
+			std::lock_guard<std::mutex> lock(m_mutex);
+			socket = m_socket;
+			m_socket = nullptr;
 		}
-		IUtpSocketOperations::Handle socket = m_socket;
-		m_socket = nullptr;
-		m_operations.CloseSocket(socket);
+		if (socket != nullptr) {
+			// Unlocked: utp_close() can produce UTP_STATE_DESTROYING before
+			// it returns, and that callback comes back through OnEnded().
+			m_operations.CloseSocket(socket);
+		}
 	}
 
 	// -- main-thread pump ---------------------------------------------
@@ -192,72 +281,126 @@ public:
 	 */
 	void Flush()
 	{
-		if (m_socket == nullptr || !m_stream.IsOk()) {
-			return;
+		m_flushPending.store(false);
+
+		IUtpSocketOperations::Handle socket = nullptr;
+		std::vector<uint8_t> pending;
+		{
+			std::lock_guard<std::mutex> lock(m_mutex);
+			if (m_socket == nullptr || !m_stream.IsOk()) {
+				return;
+			}
+			socket = m_socket;
+			// Bounded: a blocked socket would otherwise have its whole
+			// backlog copied on every attempt, and libutp takes at most a
+			// window anyway.
+			pending = m_stream.PeekQueuedBytes(kFlushChunk);
 		}
-		const std::vector<uint8_t> pending = m_stream.PeekQueuedBytes();
 		if (pending.empty()) {
 			return;
 		}
-		const size_t accepted = m_operations.WriteToSocket(m_socket, pending.data(), pending.size());
+
+		// Offered with the lock released: IUtpSocketOperations' calls can
+		// re-enter, and a callback that reaches Flush() again would deadlock
+		// against a non-recursive mutex held across the call.
+		const size_t accepted = m_operations.WriteToSocket(socket, pending.data(), pending.size());
+
+		std::lock_guard<std::mutex> lock(m_mutex);
 		m_stream.ConsumeQueuedBytes(accepted);
 	}
 
 	// -- libutp callbacks, translated ---------------------------------
 
-	void OnConnected(IStreamTransportEvents *events)
+	void OnConnected()
 	{
-		m_connected = true;
-		if (events != nullptr) {
-			events->OnStreamWritable();
+		{
+			std::lock_guard<std::mutex> lock(m_mutex);
+			m_connected = true;
 		}
-	}
-
-	void OnPayload(const uint8_t *data, size_t length, IStreamTransportEvents *events)
-	{
-		m_stream.OnPayload(data, length);
-		if (events != nullptr) {
-			events->OnStreamReadable();
-		}
-	}
-
-	void OnWritable(IStreamTransportEvents *events)
-	{
-		const bool wasBlocked = m_stream.BlocksWrite();
-		m_stream.OnWritable();
+		// utp_write() takes nothing before the handshake completes, so
+		// anything queued until now was refused and is still waiting.
 		Flush();
-		if (wasBlocked && !m_stream.BlocksWrite() && events != nullptr) {
-			events->OnStreamWritable();
+		if (m_events != nullptr) {
+			m_events->OnStreamWritable();
 		}
 	}
 
-	void OnEnded(EUtpTransportFailure failure, IStreamTransportEvents *events)
+	void OnPayload(const uint8_t *data, size_t length)
 	{
-		m_stream.OnFailure(failure);
-		m_connected = false;
-		if (failure == EUtpTransportFailure::Destroying) {
-			// The handle dies with this callback, so it must not be closed
-			// and must not be touched again. Clearing it is what stops the
-			// destructor, and everything else, from reaching for it.
-			m_socket = nullptr;
+		{
+			std::lock_guard<std::mutex> lock(m_mutex);
+			m_stream.OnPayload(data, length);
 		}
-		if (events != nullptr) {
-			events->OnStreamLost();
+		if (m_events != nullptr) {
+			m_events->OnStreamReadable();
+		}
+	}
+
+	void OnWritable()
+	{
+		bool wasBlocked = false;
+		{
+			std::lock_guard<std::mutex> lock(m_mutex);
+			wasBlocked = m_stream.BlocksWrite();
+			m_stream.OnWritable();
+		}
+		Flush();
+		bool blocked = true;
+		{
+			std::lock_guard<std::mutex> lock(m_mutex);
+			blocked = m_stream.BlocksWrite();
+		}
+		if (wasBlocked && !blocked && m_events != nullptr) {
+			m_events->OnStreamWritable();
+		}
+	}
+
+	void OnEnded(EUtpTransportFailure failure)
+	{
+		{
+			std::lock_guard<std::mutex> lock(m_mutex);
+			m_stream.OnFailure(failure);
+			m_connected = false;
+			if (failure == EUtpTransportFailure::Destroying) {
+				// The handle dies with this callback, so it must not be
+				// closed and must not be touched again. Clearing it is
+				// what stops the destructor, and everything else, from
+				// reaching for it.
+				m_socket = nullptr;
+			}
+		}
+		if (m_events != nullptr) {
+			m_events->OnStreamLost();
 		}
 	}
 
 	//! For the acceptor and for tests; never leaves the adapter otherwise.
-	IUtpSocketOperations::Handle SocketHandle() const { return m_socket; }
+	IUtpSocketOperations::Handle SocketHandle() const
+	{
+		std::lock_guard<std::mutex> lock(m_mutex);
+		return m_socket;
+	}
 
-	const CUtpStream &Stream() const { return m_stream; }
+	//! Bytes queued and not yet accepted by libutp.
+	size_t PendingWriteBytes() const
+	{
+		std::lock_guard<std::mutex> lock(m_mutex);
+		return m_stream.WriteBufferSize();
+	}
 
 private:
+	//! One window's worth, so an offer costs a packet or two, not the backlog.
+	static constexpr size_t kFlushChunk = 64 * 1024;
+
 	IUtpSocketOperations &m_operations;
+	mutable std::mutex m_mutex;
 	IUtpSocketOperations::Handle m_socket;
-	CNetworkAddress m_peer;
-	uint16_t m_peerPort;
+	const CNetworkAddress m_peer;
+	const uint16_t m_peerPort;
+	IStreamTransportEvents *m_events;
 	CUtpStream m_stream;
 	bool m_connected = false;
+	std::atomic<bool> m_flushPending{ false };
 };
 
 #endif // UTPSOCKETTRANSPORT_H
