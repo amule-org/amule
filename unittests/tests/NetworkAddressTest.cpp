@@ -38,6 +38,7 @@
 #include <algorithm>
 #include <map>
 #include <set>
+#include <unordered_map>
 
 using namespace muleunit;
 
@@ -46,6 +47,75 @@ DECLARE_SIMPLE(NetworkAddress)
 // 192.0.2.1 (RFC 5737 documentation range) in each of the two conventions.
 static const uint32_t TEST_IP_HOST_ORDER = 0xC0000201u;
 static const uint32_t TEST_IP_ED2K_ORDER = 0x010200C0u;
+
+// An IPv4-mapped address is IPv4 for every other accessor, so truncation has to use the effective
+// family too. Taking 128 bits for it zeroed the embedded octets away entirely, which put every
+// mapped peer into one bucket of the per-prefix budget this function exists to feed.
+TEST(NetworkAddress, TruncatingAMappedAddressUsesTheIPv4Width)
+{
+	const CNetworkAddress mapped = CNetworkAddress::FromString("::ffff:203.0.113.5");
+	ASSERT_TRUE(mapped.IsIPv4Mapped());
+
+	const CNetworkAddress prefix = mapped.TruncatedToPrefix(24);
+	ASSERT_FALSE(prefix.IsUnspecified());
+	ASSERT_TRUE(prefix == CNetworkAddress::FromString("203.0.113.0"));
+
+	// Two mapped peers in different /24s must not share a bucket.
+	const CNetworkAddress other = CNetworkAddress::FromString("::ffff:198.51.100.5");
+	ASSERT_FALSE(other.TruncatedToPrefix(24) == prefix);
+}
+
+// The scope is dropped on every path, not just the truncating one. Returning it only when
+// prefixBits reached the family width made the same two addresses one value at /64 and two at
+// /128, a discontinuity at the boundary that contradicts the function's own comment.
+TEST(NetworkAddress, TruncationDropsTheScopeAtEveryWidth)
+{
+	// The scope ids are set directly rather than parsed out of "fe80::1%7". Whether a platform
+	// resolves a scope suffix is not what this pins, and skipping the comparison where it does
+	// not is indistinguishable from passing it.
+	const CNetworkAddress::Octets linkLocal = { 0xfe, 0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 };
+	const CNetworkAddress a = CNetworkAddress::IPv6FromOctets(linkLocal, 7);
+	const CNetworkAddress b = CNetworkAddress::IPv6FromOctets(linkLocal, 9);
+	ASSERT_EQUALS(7ul, a.GetScopeId());
+	ASSERT_EQUALS(9ul, b.GetScopeId());
+	ASSERT_FALSE(a == b); // the scope is the only thing separating them
+
+	ASSERT_TRUE(a.TruncatedToPrefix(64) == b.TruncatedToPrefix(64));
+	ASSERT_TRUE(a.TruncatedToPrefix(128) == b.TruncatedToPrefix(128));
+}
+
+// ::a.b.c.d, the deprecated IPv4-compatible form. Advertising one burns a peer's connect attempt,
+// which is the cost this predicate exists to avoid.
+TEST(NetworkAddress, IPv4CompatibleAddressesAreNotGloballyRoutable)
+{
+	ASSERT_FALSE(CNetworkAddress::FromString("::203.0.113.5").IsGloballyRoutableIPv6());
+	// Still distinguished from the two values that share the same page.
+	ASSERT_FALSE(CNetworkAddress::FromString("::").IsGloballyRoutableIPv6());
+	ASSERT_FALSE(CNetworkAddress::FromString("::1").IsGloballyRoutableIPv6());
+	// And a real address is unaffected.
+	ASSERT_TRUE(CNetworkAddress::FromString("2001:4860:4860::8888").IsGloballyRoutableIPv6());
+}
+
+// The hash has to agree with operator==, which a byte-wise hash would not: sizeof is larger than
+// the members and nothing initialises the tail padding.
+TEST(NetworkAddress, HashingAgreesWithEquality)
+{
+	const CNetworkAddress a = CNetworkAddress::FromString("2001:db8::1");
+	const CNetworkAddress b = CNetworkAddress::FromString("2001:db8::1");
+	ASSERT_TRUE(a == b);
+	ASSERT_EQUALS(std::hash<CNetworkAddress>()(a), std::hash<CNetworkAddress>()(b));
+
+	std::unordered_map<CNetworkAddress, int> byAddress;
+	byAddress[a] = 1;
+	byAddress[b] = 2;
+	ASSERT_EQUALS(1u, (unsigned)byAddress.size());
+	ASSERT_EQUALS(2, byAddress[a]);
+
+	// Distinct values, including the mapped and native forms the type keeps apart.
+	byAddress[CNetworkAddress::FromString("203.0.113.5")] = 3;
+	byAddress[CNetworkAddress::FromString("::ffff:203.0.113.5")] = 4;
+	ASSERT_EQUALS(3u, (unsigned)byAddress.size());
+}
 
 TEST(NetworkAddress, ByteOrderIsInTheSignature)
 {
