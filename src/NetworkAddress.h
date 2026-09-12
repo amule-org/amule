@@ -29,6 +29,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <functional>
 #include <string>
 
 #include <wx/string.h>
@@ -45,8 +46,9 @@ struct IPv6ExcludedPrefix
 constexpr IPv6ExcludedPrefix kIPv6ExcludedPrefixes[] = { { {}, 128, "Unspecified" },
 	{ { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 }, 128, "Loopback" },
 	{ { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff }, 96, "IPv4-mapped" },
-	// ::a.b.c.d, the deprecated IPv4-compatible form (RFC 4291). Listed after the two entries
-	// above so the unspecified address and the loopback keep their own names in a log.
+	// ::a.b.c.d, the deprecated IPv4-compatible form (RFC 4291). Its page also holds the
+	// unspecified address and the loopback, which have their own /128 entries above; the
+	// matcher stops at the first hit, so those keep the more specific name.
 	{ {}, 96, "IPv4-compatible" },
 	{ { 0x00, 0x64, 0xff, 0x9b }, 96, "Well-known NAT64" },
 	{ { 0x00, 0x64, 0xff, 0x9b, 0x00, 0x01 }, 48, "Local-use NAT64" },
@@ -580,9 +582,15 @@ public:
 	 * subscriber is delegated a prefix, not an address, so a per-address budget under
 	 * IPv6 counts to one forever (see PeerAddressing.h).
 	 *
+	 * The width is the effective family's, so an IPv4-mapped address is treated as the IPv4
+	 * address it carries and the result comes back in IPv4 form. The interface scope is
+	 * dropped at every width: a prefix is not interface-scoped, and returning it at one width
+	 * but not the next would make the same two addresses one value at /64 and two at /128.
+	 *
 	 * @param prefixBits Counted from the most significant bit of the address in its own
 	 *                   family: 0..32 for IPv4, 0..128 for IPv6. A value at or above the
-	 *                   family's width returns the address unchanged.
+	 *                   family's width returns the address with its scope dropped, and
+	 *                   otherwise unchanged.
 	 * @return The prefix's network address. An absent address is returned unchanged --
 	 *         there is no prefix to compute and none is invented.
 	 */
@@ -591,10 +599,11 @@ public:
 		if (IsAbsent()) {
 			return *this;
 		}
-		// The effective family, not the stored one. An IPv4-mapped address is IPv4 for every
-		// other accessor here, and taking 128 for it truncated the embedded octets away
-		// entirely: ::ffff:203.0.113.5 at /24 came back as ::, so every mapped peer landed in
-		// one bucket of the per-prefix budget this exists to feed.
+		// Normalising to the effective family is the fix. Truncating the stored octets of a
+		// mapped address zeroed the embedded ones away entirely: ::ffff:203.0.113.5 at /24
+		// came back as ::, so every mapped peer landed in one bucket of the per-prefix budget
+		// this exists to feed. Taking the width from the same subject only shortcuts the
+		// truncation below, which now reaches the same answer either way.
 		const CNetworkAddress subject = Unmapped();
 		const unsigned width = subject.IsIPv4() ? 32u : 128u;
 		if (prefixBits >= width) {

@@ -70,11 +70,15 @@ TEST(NetworkAddress, TruncatingAMappedAddressUsesTheIPv4Width)
 // /128, a discontinuity at the boundary that contradicts the function's own comment.
 TEST(NetworkAddress, TruncationDropsTheScopeAtEveryWidth)
 {
-	const CNetworkAddress a = CNetworkAddress::FromString("fe80::1%7");
-	const CNetworkAddress b = CNetworkAddress::FromString("fe80::1%9");
-	if (a.GetScopeId() == b.GetScopeId()) {
-		return; // The platform did not parse the scope suffixes; nothing to compare.
-	}
+	// The scope ids are set directly rather than parsed out of "fe80::1%7". Whether a platform
+	// resolves a scope suffix is not what this pins, and skipping the comparison where it does
+	// not is indistinguishable from passing it.
+	const CNetworkAddress::Octets linkLocal = { 0xfe, 0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 };
+	const CNetworkAddress a = CNetworkAddress::IPv6FromOctets(linkLocal, 7);
+	const CNetworkAddress b = CNetworkAddress::IPv6FromOctets(linkLocal, 9);
+	ASSERT_EQUALS(7ul, a.GetScopeId());
+	ASSERT_EQUALS(9ul, b.GetScopeId());
+	ASSERT_FALSE(a == b); // the scope is the only thing separating them
 
 	ASSERT_TRUE(a.TruncatedToPrefix(64) == b.TruncatedToPrefix(64));
 	ASSERT_TRUE(a.TruncatedToPrefix(128) == b.TruncatedToPrefix(128));
