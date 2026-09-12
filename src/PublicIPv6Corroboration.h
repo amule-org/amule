@@ -82,6 +82,18 @@
 //! addresses we hold.
 constexpr std::size_t PUBLIC_IPV6_CORROBORATION_THRESHOLD = 3;
 
+/**
+ * How many distinct observers are remembered per candidate.
+ *
+ * Deliberately above the threshold. Recording only as many votes as the quorum
+ * needs leaves no margin: when one observer falls out of the window the count
+ * drops below the quorum and the address is no longer corroborated, even though
+ * other peers had been agreeing the whole time and were turned away at the cap.
+ * The surplus is the redundancy that makes an expiry survivable, and it is what
+ * a peer cannot spend, since the bound still holds.
+ */
+constexpr std::size_t PUBLIC_IPV6_CORROBORATION_MAX_OBSERVERS = 8;
+
 //! How long one observer's claim keeps counting.
 //!
 //! Without a window, "three distinct peers agree" means "three peers said so at some point since
@@ -194,10 +206,11 @@ public:
 			// A peer that is still saying it keeps its vote alive. Without this the
 			// window would expire long-lived peers that never stopped agreeing.
 			observer->lastSeenMs = nowMs;
-		} else if (candidate->observers.size() < PUBLIC_IPV6_CORROBORATION_THRESHOLD) {
-			// Stops growing at the threshold: past it the count answers the only
-			// question asked of it, and extra addresses are just memory a peer can
-			// spend.
+		} else if (candidate->observers.size() < PUBLIC_IPV6_CORROBORATION_MAX_OBSERVERS) {
+			// Bounded, but above the quorum. Stopping at the threshold would mean
+			// the first observer to age out un-corroborates an address that other
+			// live peers still agree on, because their votes were refused at the
+			// cap and there is nothing left to fall back on.
 			Observer fresh;
 			fresh.address = observedFrom;
 			fresh.lastSeenMs = nowMs;

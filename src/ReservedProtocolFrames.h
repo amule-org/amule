@@ -119,11 +119,11 @@ inline SReservedProt2Frame ClassifyReservedProt2Frame(const uint8_t *frame, size
  * Not thread-safe, and does not need to be: the client UDP socket's receive path is posted to the
  * main thread.
  */
-class CUnknownFrameLogThrottle
+class CFrameLogThrottle
 {
 public:
 	//! @param intervalMs minimum gap between two logged lines.
-	explicit CUnknownFrameLogThrottle(uint64_t intervalMs)
+	explicit CFrameLogThrottle(uint64_t intervalMs)
 	: m_intervalMs(intervalMs)
 	{
 	}

@@ -625,11 +625,11 @@ from the session's absence in the next `EC_OP_CHAT_SESSIONS` reply.
 > `GetInt()` (which handles any integer width); clients sending them
 > should encode them as 32-bit values.
 
-### Peer vendor capabilities (`EC_TAG_CLIENT_MOD_CAPABILITIES = 0x0632`)
+### Peer vendor capabilities (`EC_TAG_CLIENT_MOD_CAPABILITIES = 0x0633`)
 
 | Tag                              | Code     | Type     | Description |
 | -------------------------------- | -------- | -------- | ----------- |
-| `EC_TAG_CLIENT_MOD_CAPABILITIES` | `0x0632` | `uint32` | Peer's eMuleAI vendor capability bitfield |
+| `EC_TAG_CLIENT_MOD_CAPABILITIES` | `0x0633` | `uint32` | Peer's eMuleAI vendor capability bitfield |
 
 A child of `EC_TAG_CLIENT`, carrying what the peer advertised in the
 eD2k handshake tag `CT_MOD_MISCOPTIONS` (`0xAA`):
