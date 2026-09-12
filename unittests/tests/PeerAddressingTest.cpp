@@ -351,10 +351,15 @@ TEST(PeerAddressing, Ed2kWireFormIsWhatMayBePublished)
 	// from those paths incidentally, by having no ed2k id and so reading as LowID. It is now
 	// correctly HighID, so the exclusion has to be this explicit test instead.
 	ASSERT_TRUE(HasEd2kWireForm(CNetworkAddress::FromString("192.0.2.1")));
-	ASSERT_TRUE(HasEd2kWireForm(CNetworkAddress::FromString("0.0.0.0")));
 	ASSERT_TRUE(HasEd2kWireForm(CNetworkAddress::FromString("::ffff:192.0.2.1")));
 	ASSERT_FALSE(HasEd2kWireForm(CNetworkAddress::FromString("2001:db8::1")));
 	ASSERT_FALSE(HasEd2kWireForm(CNetworkAddress::Absent()));
+
+	// The zero, in both spellings. It narrows successfully, which is why the old test passed
+	// it, but zero is the value the comment above says must never be written into these
+	// fields. Naming nobody is not the same as having a 32-bit form.
+	ASSERT_FALSE(HasEd2kWireForm(CNetworkAddress::FromString("0.0.0.0")));
+	ASSERT_FALSE(HasEd2kWireForm(CNetworkAddress::FromString("::ffff:0.0.0.0")));
 
 	// A peer that may be published is published with exactly the bytes it had before the
 	// widening -- the mapped spelling included, which narrows to its embedded IPv4 rather than

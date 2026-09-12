@@ -463,6 +463,22 @@ TEST(NetworkAddress, GloballyRoutableIPv4RejectsEveryUnroutableRange)
 	ASSERT_FALSE(CNetworkAddress::FromString("255.255.255.255").IsGloballyRoutableIPv4());
 }
 
+// Defined in NetworkAddressTableLinkage.cpp, a second unit that includes the same header.
+const void *ExcludedPrefixTableAddressFromOtherUnit() noexcept;
+
+// The exclusion table has to be one entity, not one per translation unit. `constexpr` at namespace
+// scope implies `const` and therefore internal linkage, and IsGloballyRoutableIPv6() is an inline
+// member that uses it: ill-formed with no diagnostic required, and a separate copy of the table in
+// every unit including the header.
+//
+// Nothing about that fails to compile or link, which is why it needs asking directly. Dropping the
+// `inline` makes this fail with two distinct addresses.
+TEST(NetworkAddress, TheExclusionTableIsOneEntityAcrossUnits)
+{
+	ASSERT_TRUE(ExcludedPrefixTableAddressFromOtherUnit() ==
+		    static_cast<const void *>(&NetworkAddressPolicy::kIPv6ExcludedPrefixes[0]));
+}
+
 // CNetworkAddress no longer stores a boost::asio::ip::address, so the three predicates that used to
 // be asio's -- loopback, link-local, unique-local -- are now prefix tests in NetworkAddress.h. This
 // pins each range it must reject, because getting one prefix wrong here does not fail a build: it
@@ -514,11 +530,14 @@ TEST(NetworkAddress, GloballyRoutableIPv6RejectsEveryUnreachableRange)
 			"100::",
 			"100::ffff:ffff:ffff:ffff",
 			"100:0:0:1::" },
-		// 2001:20::/28
-		{ "2001:1f:ffff:ffff:ffff:ffff:ffff:ffff",
-			"2001:20::",
-			"2001:2f:ffff:ffff:ffff:ffff:ffff:ffff",
-			"2001:30::" },
+		// 2001::/23, the IETF Protocol Assignments block. Coarser than the ORCHIDv2 row it
+		// replaces, and still a literal IANA bound rather than a restatement of our table:
+		// /23 fixes bits 0 to 22, so the block runs to 2001:01ff:ffff:... and the first
+		// globally routable address above it is 2001:200::.
+		{ "2000:ffff:ffff:ffff:ffff:ffff:ffff:ffff",
+			"2001::",
+			"2001:1ff:ffff:ffff:ffff:ffff:ffff:ffff",
+			"2001:200::" },
 		// 2001:db8::/32
 		{ "2001:db7:ffff:ffff:ffff:ffff:ffff:ffff",
 			"2001:db8::",
@@ -537,6 +556,20 @@ TEST(NetworkAddress, GloballyRoutableIPv6RejectsEveryUnreachableRange)
 		ASSERT_TRUE(CNetworkAddress::FromString(range.after).IsGloballyRoutableIPv6());
 	}
 	ASSERT_TRUE(CNetworkAddress::FromString("2606:4700::1111").IsGloballyRoutableIPv6());
+
+	// The sub-blocks 2001::/23 covers that had no entry of their own. Asserted individually
+	// rather than left implied by the prefix length, because the reason each one is not
+	// globally routable is a separate fact about the registry.
+	ASSERT_FALSE(CNetworkAddress::FromString("2001:2::1").IsGloballyRoutableIPv6());  // benchmarking
+	ASSERT_FALSE(CNetworkAddress::FromString("2001:3::1").IsGloballyRoutableIPv6());  // AMT
+	ASSERT_FALSE(CNetworkAddress::FromString("2001:10::1").IsGloballyRoutableIPv6()); // old ORCHID
+	ASSERT_FALSE(CNetworkAddress::FromString("2001:30::1").IsGloballyRoutableIPv6()); // drone RID
+	// Teredo and ORCHIDv2 still excluded, now by the containing block rather than their own.
+	ASSERT_FALSE(CNetworkAddress::FromString("2001::1").IsGloballyRoutableIPv6());
+	ASSERT_FALSE(CNetworkAddress::FromString("2001:20::1").IsGloballyRoutableIPv6());
+	// Immediately outside the block on both sides, which is what stops the entry over-reaching.
+	ASSERT_TRUE(CNetworkAddress::FromString("2001:200::1").IsGloballyRoutableIPv6());
+	ASSERT_TRUE(CNetworkAddress::FromString("2000:ffff::1").IsGloballyRoutableIPv6());
 
 	// Not an IPv6 address at all.
 	ASSERT_FALSE(CNetworkAddress::Absent().IsGloballyRoutableIPv6());
