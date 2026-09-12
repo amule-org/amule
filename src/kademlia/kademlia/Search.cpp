@@ -295,15 +295,26 @@ void CSearch::JumpStart()
 
 	const uint64_t nowTick = ::GetTickCount64();
 
-	// Stop waiting on requests that have passed the ceiling, and remember those addresses as
-	// problematic so the next search does not queue behind the same dead nodes.
+	// Stop waiting on requests that have passed the ceiling. The record is marked rather than
+	// erased and kept for PENDING_SAMPLE_GRACE_MS, because an answer arriving after the
+	// ceiling is exactly the sample the estimator needs: erasing here meant no round-trip
+	// longer than the current estimate could ever be recorded, so on a link slower than the
+	// starting value the estimate could only ratchet down and every request stalled.
+	//
+	// A timeout deliberately does not reach safeKad. It is evidence of a slow or absent node,
+	// not of a misbehaving one, and TrackProblematicNode() is rung one of the ban ladder:
+	// nothing reads problematic state for scheduling, so its only effect was that the next
+	// rejected identity change went straight to a four-hour ban.
 	for (PendingRequestMap::iterator it = m_pendingRequests.begin(); it != m_pendingRequests.end();) {
-		if (nowTick - it->second.m_sentTick < maxPending) {
-			++it;
+		const uint64_t waited = nowTick - it->second.m_sentTick;
+		if (waited >= maxPending + PENDING_SAMPLE_GRACE_MS) {
+			m_pendingRequests.erase(it++);
 			continue;
 		}
-		safeKad.TrackProblematicNode(it->second.m_ip, it->second.m_port, time(nullptr));
-		m_pendingRequests.erase(it++);
+		if (waited >= maxPending) {
+			it->second.m_timedOut = true;
+		}
+		++it;
 	}
 
 	// If we had a response within the derived ceiling, no need to jumpstart.
@@ -411,15 +422,26 @@ void CSearch::ProcessResponse(uint32_t fromIP, uint16_t fromPort, ContactList *r
 			m_pendingRequests.erase(pending);
 		}
 
-		// The contact may have gone bad since we sent the request, and this is the point at
-		// which we know the node stands behind this identity. onlyOneNodePerIP is off here
-		// because the contact is already in our routing table, so a second port on the
+		// The contact may have gone bad since we sent the request. onlyOneNodePerIP is off
+		// here because the contact is already in our routing table, so a second port on the
 		// address is that table's problem.
+		//
+		// idVerified is false, and deliberately not the contact's own flag. An answer to a
+		// search proves the address is live; it proves nothing about the identity, which we
+		// took from wherever we learned the contact. CContact::IsIPVerified() is no better
+		// here: Process2BootstrapResponse() sets it by assumption for every contact in the
+		// answer when the routing table is empty, so trusting it would let one bootstrap
+		// peer hand us twenty addresses that can be escalated to a ban.
+		//
+		// Nothing is lost by passing false. Per TrackNode(), idVerified gates the
+		// escalation and not the refusal, so a bad node is still refused here; and the
+		// three-way handshake in CRoutingZone already records the address as verified,
+		// where the proof is real. That is the only caller that should ever pass true.
 		if (safeKad.IsBadNode(fromIP,
 			    fromPort,
 			    fromContact->GetClientID(),
 			    fromContact->GetVersion(),
-			    true,
+			    false,
 			    false,
 			    time(nullptr))) {
 			AddDebugLogLineN(logKadSearch,
@@ -1505,7 +1527,7 @@ void CSearch::SendFindValue(CContact *contact, bool reaskMore)
 			// shared response-time estimator, and JumpStart uses the same record to
 			// notice a request that has gone past the estimated ceiling.
 			sPendingRequest pending = {
-				::GetTickCount64(), contact->GetIPAddress(), contact->GetUDPPort()
+				::GetTickCount64(), contact->GetIPAddress(), contact->GetUDPPort(), false
 			};
 			m_pendingRequests[contact->GetClientID()] = pending;
 #endif

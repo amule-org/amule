@@ -274,11 +274,71 @@ TEST(SafeKad, CleanupReclaimsEntriesPastTheirReferenceHorizon)
 	ASSERT_EQUALS(1u, (unsigned)safe.GetProblematicNodeCount());
 	ASSERT_EQUALS(1u, (unsigned)safe.GetBannedAddressCount());
 
-	// Nothing has referenced any of them for longer than every horizon.
+	// Past the node and problematic horizons, but not the ban one.
 	safe.Cleanup(T0 + CSafeKad::NODE_MAX_REFERENCE_AGE + 1);
 	ASSERT_EQUALS(0u, (unsigned)safe.GetTrackedNodeCount());
 	ASSERT_EQUALS(0u, (unsigned)safe.GetProblematicNodeCount());
+	ASSERT_EQUALS(1u, (unsigned)safe.GetBannedAddressCount());
+
+	// And past the ban horizon, which is the ban duration itself.
+	safe.Cleanup(T0 + CSafeKad::BAN_MAX_REFERENCE_AGE + 1);
 	ASSERT_EQUALS(0u, (unsigned)safe.GetBannedAddressCount());
+}
+
+// A refused claim must not be what marks an address verified. The flag gates the escalation
+// ladder, and m_lastID still holds the previous claim at that point, so promoting on a refusal
+// certifies an identity nobody proved.
+TEST(SafeKad, ARefusedRotationDoesNotConferVerification)
+{
+	CSafeKad safe;
+	// An unverified first claim: whoever spoke first, not necessarily the real node.
+	ASSERT_TRUE(safe.TrackNode(IP_A, PORT_A, Id(1), false, T0));
+
+	// A verified claim of a different ID, inside the interval, so it is refused.
+	ASSERT_FALSE(safe.TrackNode(IP_A, PORT_A, Id(2), true, T0 + 10));
+
+	// Nothing was ever verified at this address, so well past the interval an unverified
+	// claim is ordinary rotation and is accepted. It would be refused if the rejected claim
+	// above had been allowed to set the verified flag.
+	ASSERT_TRUE(safe.TrackNode(IP_A, PORT_A, Id(3), false, T0 + CSafeKad::MIN_ID_CHANGE_INTERVAL * 2));
+}
+
+// An entry holding an unproven ID must not be kept alive by the traffic it is refusing, or an
+// attacker who merely spoke first from an address owns it for as long as the honest node keeps
+// trying. A verified entry is the opposite: it is the protection, so refused traffic renews it.
+TEST(SafeKad, OnlyAVerifiedEntrySurvivesOnRefusedTrafficAlone)
+{
+	const time_t past = T0 + CSafeKad::NODE_MAX_REFERENCE_AGE + 1;
+
+	CSafeKad unproven;
+	ASSERT_TRUE(unproven.TrackNode(IP_A, PORT_A, Id(1), false, T0));
+	ASSERT_FALSE(unproven.TrackNode(IP_A, PORT_A, Id(2), false, T0 + 10));
+	unproven.Cleanup(past);
+	ASSERT_EQUALS(0u, (unsigned)unproven.GetTrackedNodeCount());
+
+	CSafeKad proven;
+	ASSERT_TRUE(proven.TrackNode(IP_A, PORT_A, Id(1), true, T0));
+	ASSERT_FALSE(proven.TrackNode(IP_A, PORT_A, Id(2), false, T0 + 10));
+	proven.Cleanup(past);
+	ASSERT_EQUALS(1u, (unsigned)proven.GetTrackedNodeCount());
+}
+
+// A ban has to outlive the quiet it causes. Reclaiming banned entries on a horizon shorter than
+// MAX_BAN_TIME ended the ban early for precisely the attacker who backs off, since an address
+// that stops sending stops being referenced.
+TEST(SafeKad, ABanSurvivesAsLongAsItLasts)
+{
+	CSafeKad safe;
+	safe.BanAddress(IP_A, T0);
+	ASSERT_TRUE(safe.IsBanned(IP_A, T0 + 1));
+
+	// An hour of silence used to be enough to reclaim it.
+	safe.Cleanup(T0 + 3600 + 1);
+	ASSERT_EQUALS(1u, (unsigned)safe.GetBannedAddressCount());
+	ASSERT_TRUE(safe.IsBanned(IP_A, T0 + 3600 + 1));
+
+	// It ends when the ban ends, not before.
+	ASSERT_FALSE(safe.IsBanned(IP_A, T0 + CSafeKad::MAX_BAN_TIME + 1));
 }
 
 TEST(SafeKad, CleanupKeepsRecentlyReferencedEntries)

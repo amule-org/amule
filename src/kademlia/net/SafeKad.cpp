@@ -103,10 +103,23 @@ bool CSafeKad::TrackNode(
 		}
 	}
 
-	tracked.m_lastReferenced = now;
-	// Verification is sticky: a node that once proved its identity is not
-	// downgraded by a later unverified packet.
-	if (!tracked.m_idVerified) {
+	// A verified entry is the protection itself, so refused traffic keeps it alive: letting it
+	// age out would mean an attacker only has to keep claiming a new ID until NODE_MAX_
+	// REFERENCE_AGE passes, and the identity it could not overwrite is reclaimed for it.
+	//
+	// An entry that is only ever refused and was never verified is the opposite case. It holds
+	// an ID nobody proved, so an attacker who merely spoke first from an address owns it, and
+	// every refused packet from the honest node at that address would renew the entry that is
+	// refusing it. Letting that one expire is what gives the honest node a way back.
+	if (accepted || tracked.m_idVerified) {
+		tracked.m_lastReferenced = now;
+	}
+	// Verification is sticky: a node that once proved its identity is not downgraded by a
+	// later unverified packet. Only on the accepted path, though: promoting here after a
+	// refusal would raise the flag for a claim we just rejected, while m_lastID still holds
+	// the previous one, marking an unproven ID verified and unlocking the escalation ladder
+	// against whoever actually holds the address.
+	if (accepted && !tracked.m_idVerified) {
 		tracked.m_idVerified = idVerified;
 	}
 	// The ban above may have dropped this entry, so only write it back if

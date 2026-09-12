@@ -205,7 +205,17 @@ private:
 		uint64_t m_sentTick;
 		uint32_t m_ip;
 		uint16_t m_port;
+		// Set once the request has passed the ceiling. The record is kept for a grace
+		// window afterwards rather than erased, so an answer that arrives late still
+		// feeds its round-trip time to the estimator. Erasing on the ceiling made the
+		// estimate unable to rise: no sample above it could ever be recorded, so a link
+		// slower than the starting estimate never taught it anything.
+		bool m_timedOut;
 	};
+
+	// How long a timed-out record is kept for its round-trip sample. Long enough to cover
+	// a link well beyond the ceiling, short enough that the map does not accumulate.
+	static const uint64_t PENDING_SAMPLE_GRACE_MS = 10000;
 	typedef std::map<CUInt128, sPendingRequest> PendingRequestMap;
 
 	PendingRequestMap m_pendingRequests;
