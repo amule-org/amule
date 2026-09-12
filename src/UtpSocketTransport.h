@@ -46,8 +46,9 @@
  *   correct from there. From UTP_ON_ACCEPT it achieves nothing, since the
  *   socket is still CS_SYN_RECV, and from UTP_ON_READ it re-enters
  *   utp_process_incoming. Both of those request a flush instead.
- * - NotifyReadDrained() assumes the reader is not reading synchronously from
- *   inside UTP_ON_READ; every CoreNotify_* delivery queues, so it does not.
+ * - NotifyReadDrained() is safe from anywhere, including inside UTP_ON_READ:
+ *   utp_read_drained() only recomputes the receive window and sends or
+ *   schedules an ACK, and never re-enters the incoming path.
  * - SetReceiveBuffer() is configuration, made once by the acceptor.
  *
  * Naming them here keeps the transport testable without the library.
@@ -175,6 +176,15 @@ public:
 	// These are read from the upload bandwidth thread inside CEMSocket's send
 	// loop while the main thread's callbacks write them, so they take the lock
 	// like everything else that touches the stream.
+	/**
+	 * True once accepted, which is not the same as libutp being ready to send.
+	 *
+	 * The acceptor marks it from UTP_ON_ACCEPT, where the socket is still
+	 * CS_SYN_RECV, and libutp reaches CS_CONNECTED silently on the peer's first
+	 * ST_DATA. So this answers "is there a stream here", not "will a write
+	 * leave now" -- a caller wanting the latter is asking the wrong question,
+	 * because Write() queues either way and the pump handles the rest.
+	 */
 	bool IsConnected() const override
 	{
 		std::lock_guard<std::mutex> lock(m_mutex);

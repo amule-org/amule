@@ -434,7 +434,21 @@ TEST(UtpSocketTransport, AnOfferIsBoundedRatherThanTheWholeBacklog)
 
 TEST(UtpSocketTransport, WritingWhileFlushingDoesNotCorruptTheQueue)
 {
-	// Concurrency smoke coverage only; passing is not proof of locking.
+	// Only meaningful under ThreadSanitizer: passing unsanitised proves
+	// nothing, because a data race is free to produce the right answer.
+	//
+	//   cmake -S . -B build -DBUILD_TESTING=YES
+	//   cmake -S . -B build -DBUILD_TESTING=YES \
+	//     -DCMAKE_CXX_FLAGS="-fsanitize=thread -g -O1" \
+	//     -DCMAKE_C_FLAGS="-fsanitize=thread -g -O1" \
+	//     -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=thread"
+	//   cmake --build build --target UtpSocketTransportTest
+	//
+	// The first configure is not redundant: TSan cannot run the crypto++
+	// version probe, so the cache has to be populated without it. In a
+	// container add --security-opt seccomp=unconfined, or TSan dies unable to
+	// disable ASLR. Removing this class's locks yields 16 reported races,
+	// naming CUtpStream::Write on the deque.
 	FakeOperations ops;
 	ops.acceptLimit = 32;
 	CUtpSocketTransport transport = MakeTransport(ops);
