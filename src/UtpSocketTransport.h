@@ -28,7 +28,6 @@
 #include "StreamTransport.h"
 #include "UtpStream.h"
 
-#include <atomic>
 #include <cstddef>
 #include <cstdint>
 #include <mutex>
@@ -54,8 +53,8 @@ public:
 
 	virtual ~IUtpSocketOperations() = default;
 
-	//! Offers bytes. Returns how many were taken, which is routinely fewer.
-	virtual size_t WriteToSocket(Handle socket, const uint8_t *data, size_t length) = 0;
+	//! Offers bytes. Nonpositive results (including libutp's -1) accept nothing.
+	virtual std::ptrdiff_t WriteToSocket(Handle socket, const uint8_t *data, size_t length) = 0;
 
 	//! Tells libutp the application has caught up, so delivery may resume.
 	virtual void NotifyReadDrained(Handle socket) = 0;
@@ -128,7 +127,14 @@ public:
 	{
 	}
 
-	~CUtpSocketTransport() override { Close(); }
+	~CUtpSocketTransport() override
+	{
+		{
+			std::lock_guard<std::mutex> lock(m_mutex);
+			m_events = nullptr;
+		}
+		Close();
+	}
 
 	CUtpSocketTransport(const CUtpSocketTransport &) = delete;
 	CUtpSocketTransport &operator=(const CUtpSocketTransport &) = delete;
@@ -142,9 +148,15 @@ public:
 	 */
 	void ApplyReceiveBound()
 	{
-		std::lock_guard<std::mutex> lock(m_mutex);
-		if (m_socket != nullptr) {
-			m_operations.SetReceiveBuffer(m_socket, m_stream.ReadBound());
+		IUtpSocketOperations::Handle socket = nullptr;
+		size_t bound = 0;
+		{
+			std::lock_guard<std::mutex> lock(m_mutex);
+			socket = m_socket;
+			bound = m_stream.ReadBound();
+		}
+		if (socket != nullptr) {
+			m_operations.SetReceiveBuffer(socket, bound);
 		}
 	}
 
@@ -213,17 +225,16 @@ public:
 	uint32_t Write(const void *buffer, uint32_t length) override
 	{
 		uint32_t taken = 0;
+		IStreamTransportEvents *events = nullptr;
 		{
 			std::lock_guard<std::mutex> lock(m_mutex);
 			taken = m_stream.Write(buffer, length);
+			if (taken != 0 && !m_flushInProgress) {
+				events = RequestFlushLocked();
+			}
 		}
-		// Nothing else would flush these: the only other trigger is a full
-		// window reopening, and a queue filled while the window was never
-		// full has no such edge behind it. Raised on the idle-to-busy
-		// transition only, so a busy socket costs one event, not one per
-		// write.
-		if (taken != 0 && !m_flushPending.exchange(true) && m_events != nullptr) {
-			m_events->OnFlushRequested();
+		if (events != nullptr) {
+			events->OnFlushRequested();
 		}
 		return taken;
 	}
@@ -245,6 +256,9 @@ public:
 			std::lock_guard<std::mutex> lock(m_mutex);
 			socket = m_socket;
 			m_socket = nullptr;
+			m_connected = false;
+			m_stream.OnFailure(EUtpTransportFailure::Eof);
+			m_flushPending = false;
 		}
 		if (socket != nullptr) {
 			// Unlocked: utp_close() can produce UTP_STATE_DESTROYING before
@@ -265,12 +279,14 @@ public:
 	 */
 	void Flush()
 	{
-		m_flushPending.store(false);
-
 		IUtpSocketOperations::Handle socket = nullptr;
 		std::vector<uint8_t> pending;
 		{
 			std::lock_guard<std::mutex> lock(m_mutex);
+			if (m_flushInProgress) {
+				return;
+			}
+			m_flushPending = false;
 			if (m_socket == nullptr || !m_stream.IsOk()) {
 				return;
 			}
@@ -279,34 +295,64 @@ public:
 			// backlog copied on every attempt, and libutp takes at most a
 			// window anyway.
 			pending = m_stream.PeekQueuedBytes(kFlushChunk);
-		}
-		if (pending.empty()) {
-			return;
+			if (pending.empty()) {
+				return;
+			}
+			m_flushInProgress = true;
 		}
 
 		// Offered with the lock released: IUtpSocketOperations' calls can
 		// re-enter, and a callback that reaches Flush() again would deadlock
 		// against a non-recursive mutex held across the call.
-		const size_t accepted = m_operations.WriteToSocket(socket, pending.data(), pending.size());
-
-		std::lock_guard<std::mutex> lock(m_mutex);
-		m_stream.ConsumeQueuedBytes(accepted);
+		const std::ptrdiff_t result =
+			m_operations.WriteToSocket(socket, pending.data(), pending.size());
+		const size_t accepted = result > 0 ? static_cast<size_t>(result) : 0;
+		IStreamTransportEvents *writableEvents = nullptr;
+		{
+			std::lock_guard<std::mutex> lock(m_mutex);
+			const bool wasBlocked = m_stream.BlocksWrite();
+			if (m_socket == socket && m_stream.IsOk()) {
+				m_stream.ConsumeQueuedBytes(std::min(accepted, pending.size()));
+				if (wasBlocked && !m_stream.BlocksWrite()) {
+					writableEvents = m_events;
+				}
+			}
+		}
+		if (writableEvents != nullptr) {
+			writableEvents->OnStreamWritable();
+		}
+		IStreamTransportEvents *flushEvents = nullptr;
+		{
+			std::lock_guard<std::mutex> lock(m_mutex);
+			m_flushInProgress = false;
+			// Only a fully accepted offer needs a local continuation. Partial
+			// writes wait for UTP_STATE_WRITABLE; nonpositive results must not spin.
+			if (accepted == pending.size()) {
+				flushEvents = RequestFlushLocked();
+			}
+		}
+		if (flushEvents != nullptr) {
+			flushEvents->OnFlushRequested();
+		}
 	}
 
 	// -- libutp callbacks, translated ---------------------------------
 
-	void OnConnected()
+	// Adapter transition, not a libutp callback: the future acceptor MUST call
+	// this from UTP_ON_ACCEPT. Only outgoing sockets get UTP_STATE_CONNECT.
+	void MarkConnected()
 	{
 		{
 			std::lock_guard<std::mutex> lock(m_mutex);
+			if (m_connected || m_socket == nullptr || !m_stream.IsOk()) {
+				return;
+			}
 			m_connected = true;
 		}
 		// utp_write() takes nothing before the handshake completes, so
 		// anything queued until now was refused and is still waiting.
 		Flush();
-		if (m_events != nullptr) {
-			m_events->OnStreamWritable();
-		}
+		NotifyEvents(&IStreamTransportEvents::OnStreamWritable);
 	}
 
 	void OnPayload(const uint8_t *data, size_t length)
@@ -315,29 +361,10 @@ public:
 			std::lock_guard<std::mutex> lock(m_mutex);
 			m_stream.OnPayload(data, length);
 		}
-		if (m_events != nullptr) {
-			m_events->OnStreamReadable();
-		}
+		NotifyEvents(&IStreamTransportEvents::OnStreamReadable);
 	}
 
-	void OnWritable()
-	{
-		bool wasBlocked = false;
-		{
-			std::lock_guard<std::mutex> lock(m_mutex);
-			wasBlocked = m_stream.BlocksWrite();
-			m_stream.OnWritable();
-		}
-		Flush();
-		bool blocked = true;
-		{
-			std::lock_guard<std::mutex> lock(m_mutex);
-			blocked = m_stream.BlocksWrite();
-		}
-		if (wasBlocked && !blocked && m_events != nullptr) {
-			m_events->OnStreamWritable();
-		}
-	}
+	void OnWritable() { Flush(); }
 
 	void OnEnded(EUtpTransportFailure failure)
 	{
@@ -353,9 +380,7 @@ public:
 				m_socket = nullptr;
 			}
 		}
-		if (m_events != nullptr) {
-			m_events->OnStreamLost();
-		}
+		NotifyEvents(&IStreamTransportEvents::OnStreamLost);
 	}
 
 	//! For the acceptor and for tests; never leaves the adapter otherwise.
@@ -380,6 +405,29 @@ public:
 	}
 
 private:
+	// Caller holds m_mutex. The returned sink must be called unlocked.
+	IStreamTransportEvents *RequestFlushLocked()
+	{
+		if (m_flushPending || m_socket == nullptr || !m_stream.IsOk() ||
+			m_stream.WriteBufferSize() == 0 || m_events == nullptr) {
+			return nullptr;
+		}
+		m_flushPending = true;
+		return m_events;
+	}
+
+	void NotifyEvents(void (IStreamTransportEvents::*callback)())
+	{
+		IStreamTransportEvents *events = nullptr;
+		{
+			std::lock_guard<std::mutex> lock(m_mutex);
+			events = m_events;
+		}
+		if (events != nullptr) {
+			(events->*callback)();
+		}
+	}
+
 	//! One window's worth, so an offer costs a packet or two, not the backlog.
 	static constexpr size_t kFlushChunk = 64 * 1024;
 
@@ -388,10 +436,14 @@ private:
 	IUtpSocketOperations::Handle m_socket;
 	const CNetworkAddress m_peer;
 	const uint16_t m_peerPort;
+	// Non-owning: the owner must quiesce Write()/queued pumps before destruction
+	// and keep the sink alive through all calls. Callbacks must not delete this
+	// transport synchronously. Destruction detaches before library re-entry.
 	IStreamTransportEvents *m_events;
 	CUtpStream m_stream;
 	bool m_connected = false;
-	std::atomic<bool> m_flushPending{ false };
+	bool m_flushPending = false;
+	bool m_flushInProgress = false;
 };
 
 #endif // UTPSOCKETTRANSPORT_H

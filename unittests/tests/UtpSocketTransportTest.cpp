@@ -35,6 +35,7 @@
 
 #include <UtpSocketTransport.h>
 
+#include <functional>
 #include <thread>
 
 using namespace muleunit;
@@ -47,9 +48,15 @@ namespace
 class FakeOperations : public IUtpSocketOperations
 {
 public:
-	size_t WriteToSocket(Handle socket, const uint8_t *data, size_t length) override
+	std::ptrdiff_t WriteToSocket(Handle socket, const uint8_t *data, size_t length) override
 	{
 		lastWriteSocket = socket;
+		if (onWrite) {
+			onWrite();
+		}
+		if (refuseWithError) {
+			return -1;
+		}
 		const size_t taken = length < acceptLimit ? length : acceptLimit;
 		offered.insert(offered.end(), data, data + length);
 		accepted.insert(accepted.end(), data, data + taken);
@@ -60,9 +67,15 @@ public:
 	{
 		++closeCalls;
 		lastClosed = socket;
+		if (onClose) {
+			onClose();
+		}
 	}
 	void SetReceiveBuffer(Handle, size_t bytes) override { receiveBound = bytes; }
 
+	std::function<void()> onWrite;
+	std::function<void()> onClose;
+	bool refuseWithError = false;
 	size_t acceptLimit = 1024 * 1024;
 	std::vector<uint8_t> offered;
 	std::vector<uint8_t> accepted;
@@ -288,13 +301,13 @@ TEST(UtpSocketTransport, ACleanEndIsNotAnError)
 	ASSERT_EQUALS(1, events.lost);
 }
 
-TEST(UtpSocketTransport, ConnectingReportsWritableOnce)
+TEST(UtpSocketTransport, AcceptorMarksInboundConnectedWithoutOutgoingConnectCallback)
 {
 	FakeOperations ops;
 	FakeEvents events;
 	CUtpSocketTransport transport = MakeTransport(ops, &events);
 	ASSERT_FALSE(transport.IsConnected());
-	transport.OnConnected();
+	transport.MarkConnected();
 	ASSERT_TRUE(transport.IsConnected());
 	ASSERT_EQUALS(1, events.writable);
 }
@@ -359,7 +372,7 @@ TEST(UtpSocketTransport, ConnectingFlushesWhatTheHandshakeRefused)
 	ASSERT_EQUALS(0u, (unsigned)ops.accepted.size());
 
 	ops.acceptLimit = 64;
-	transport.OnConnected();
+	transport.MarkConnected();
 	ASSERT_EQUALS(12u, (unsigned)ops.accepted.size());
 	for (size_t i = 0; i < payload.size(); ++i) {
 		ASSERT_EQUALS((int)payload[i], (int)ops.accepted[i]);
@@ -405,9 +418,7 @@ TEST(UtpSocketTransport, AnOfferIsBoundedRatherThanTheWholeBacklog)
 
 TEST(UtpSocketTransport, WritingWhileFlushingDoesNotCorruptTheQueue)
 {
-	// Write() runs on the upload bandwidth thread while Flush() runs on the
-	// main one, both over the same queue. Without a lock this is a data race
-	// on a std::deque, which no amount of careful ordering makes safe.
+	// Concurrency smoke coverage only; passing is not proof of locking.
 	FakeOperations ops;
 	ops.acceptLimit = 32;
 	CUtpSocketTransport transport = MakeTransport(ops);
@@ -432,6 +443,139 @@ TEST(UtpSocketTransport, WritingWhileFlushingDoesNotCorruptTheQueue)
 	for (size_t i = 0; i < ops.accepted.size(); ++i) {
 		ASSERT_EQUALS((int)chunk[i % chunk.size()], (int)ops.accepted[i]);
 	}
+}
+
+TEST(UtpSocketTransport, BoundedFlushSchedulesTheTailAndUnblocksWriter)
+{
+	FakeOperations ops;
+	FakeEvents events;
+	auto transport = MakeTransport(ops, &events);
+	const auto payload = Pattern(CUtpStream::kDefaultWriteBound);
+	transport.Write(payload.data(), static_cast<uint32_t>(payload.size()));
+	transport.Flush();
+	ASSERT_EQUALS(2, events.flushRequests);
+	ASSERT_EQUALS(1, events.writable);
+	while (transport.PendingWriteBytes() != 0) {
+		transport.Flush();
+	}
+	ASSERT_TRUE(payload == ops.accepted);
+	ASSERT_EQUALS(4, events.flushRequests);
+	ASSERT_EQUALS(1, events.writable);
+}
+
+TEST(UtpSocketTransport, DirectFlushNotifiesWhenTheQueueUnblocks)
+{
+	FakeOperations ops;
+	FakeEvents events;
+	auto transport = MakeTransport(ops, &events);
+	const auto payload = Pattern(CUtpStream::kDefaultWriteBound);
+	transport.Write(payload.data(), static_cast<uint32_t>(payload.size()));
+	transport.Flush();
+	ASSERT_FALSE(transport.BlocksWrite());
+	ASSERT_EQUALS(1, events.writable);
+}
+
+TEST(UtpSocketTransport, LocalCloseEndsTheStreamBeforeCallingTheLibrary)
+{
+	FakeOperations ops;
+	auto transport = MakeTransport(ops);
+	transport.MarkConnected();
+	ops.onClose = [&]() {
+		ASSERT_FALSE(transport.IsOk());
+		ASSERT_FALSE(transport.IsConnected());
+		const uint8_t byte = 1;
+		ASSERT_EQUALS(0u, transport.Write(&byte, 1));
+		transport.OnEnded(EUtpTransportFailure::Destroying);
+	};
+	transport.Close();
+	ASSERT_EQUALS(0, transport.LastError());
+	ASSERT_EQUALS(1, ops.closeCalls);
+}
+
+TEST(UtpSocketTransport, DestructorDetachesSinkBeforeDestroyingReentry)
+{
+	FakeOperations ops;
+	FakeEvents events;
+	{
+		auto transport = MakeTransport(ops, &events);
+		ops.onClose = [&]() { transport.OnEnded(EUtpTransportFailure::Destroying); };
+	}
+	ASSERT_EQUALS(1, ops.closeCalls);
+	ASSERT_EQUALS(0, events.lost);
+}
+
+TEST(UtpSocketTransport, NegativeAcceptancePreservesTheQueue)
+{
+	FakeOperations ops;
+	FakeEvents events;
+	auto transport = MakeTransport(ops, &events);
+	const auto payload = Pattern(12);
+	transport.Write(payload.data(), static_cast<uint32_t>(payload.size()));
+	ops.refuseWithError = true;
+	transport.Flush();
+	ASSERT_EQUALS(12u, (unsigned)transport.PendingWriteBytes());
+	ASSERT_EQUALS(1, events.flushRequests);
+	ops.refuseWithError = false;
+	transport.Flush();
+	ASSERT_TRUE(payload == ops.accepted);
+}
+
+TEST(UtpSocketTransport, ZeroAcceptanceDoesNotScheduleAnotherFlush)
+{
+	FakeOperations ops;
+	FakeEvents events;
+	auto transport = MakeTransport(ops, &events);
+	const auto payload = Pattern(12);
+	transport.Write(payload.data(), static_cast<uint32_t>(payload.size()));
+	ops.acceptLimit = 0;
+	transport.Flush();
+	ASSERT_EQUALS(1, events.flushRequests);
+	ASSERT_EQUALS(12u, (unsigned)transport.PendingWriteBytes());
+	ops.acceptLimit = 12;
+	transport.OnWritable();
+	ASSERT_TRUE(payload == ops.accepted);
+	ASSERT_EQUALS(1, events.flushRequests);
+}
+
+TEST(UtpSocketTransport, PartialAcceptanceWaitsForWritableWithoutScheduling)
+{
+	FakeOperations ops;
+	FakeEvents events;
+	auto transport = MakeTransport(ops, &events);
+	const auto payload = Pattern(12);
+	transport.Write(payload.data(), static_cast<uint32_t>(payload.size()));
+	ops.acceptLimit = 5;
+	transport.Flush();
+	ASSERT_EQUALS(1, events.flushRequests);
+	ASSERT_EQUALS(7u, (unsigned)transport.PendingWriteBytes());
+	ops.acceptLimit = 12;
+	transport.OnWritable();
+	ASSERT_TRUE(payload == ops.accepted);
+	ASSERT_EQUALS(0u, (unsigned)transport.PendingWriteBytes());
+	ASSERT_EQUALS(1, events.flushRequests);
+}
+
+TEST(UtpSocketTransport, ReentrantFlushNeverOffersTheSameBytesTwice)
+{
+	FakeOperations ops;
+	FakeEvents events;
+	auto transport = MakeTransport(ops, &events);
+	const auto payload = Pattern(96 * 1024);
+	transport.Write(payload.data(), static_cast<uint32_t>(payload.size()));
+	bool reentered = false;
+	ops.onWrite = [&]() {
+		if (!reentered) {
+			reentered = true;
+			transport.Flush();
+		}
+	};
+	transport.Flush();
+	ASSERT_TRUE(reentered);
+	ASSERT_EQUALS(64u * 1024u, (unsigned)ops.accepted.size());
+	ASSERT_EQUALS(2, events.flushRequests);
+	transport.Flush();
+	ASSERT_TRUE(payload == ops.accepted);
+	ASSERT_TRUE(payload == ops.offered);
 }
 
 // File_checked_for_headers
