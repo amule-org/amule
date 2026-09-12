@@ -60,16 +60,6 @@ public:
 	//! Tells libutp the application has caught up, so delivery may resume.
 	virtual void NotifyReadDrained(Handle socket) = 0;
 
-	/**
-	 * Reports bytes buffered, for UTP_GET_READ_BUFFER_SIZE.
-	 *
-	 * Paired with SetReceiveBuffer() and useless without it: libutp advertises
-	 * opt_rcvbuf minus this number, and with the callback unset the subtracted
-	 * value is zero, so the window never shrinks. Setting the buffer alone
-	 * therefore lowers the ceiling without adding any backpressure.
-	 */
-	virtual void ReportReadBufferSize(Handle socket, size_t bytes) = 0;
-
 	//! utp_close(). Exactly one caller may ever make this call per socket.
 	virtual void CloseSocket(Handle socket) = 0;
 
@@ -144,20 +134,17 @@ public:
 	CUtpSocketTransport &operator=(const CUtpSocketTransport &) = delete;
 
 	/**
-	 * Applies the receive bound and reports current occupancy against it.
+	 * Sets the receive-window ceiling, not backpressure on its own.
 	 *
-	 * Both halves, always: libutp advertises opt_rcvbuf minus what the
-	 * read-buffer-size callback reports, so setting the buffer without
-	 * reporting occupancy pins the window at a constant 64 KiB -- a sixteenth
-	 * of libutp's default, with no backpressure gained, since the reported
-	 * subtrahend stays zero however far behind the reader falls.
+	 * The adapter must register UTP_GET_READ_BUFFER_SIZE and synchronously
+	 * pull ReadBufferSize(): libutp advertises opt_rcvbuf minus those bytes.
+	 * Without that callback, occupancy is treated as zero.
 	 */
 	void ApplyReceiveBound()
 	{
 		std::lock_guard<std::mutex> lock(m_mutex);
 		if (m_socket != nullptr) {
 			m_operations.SetReceiveBuffer(m_socket, m_stream.ReadBound());
-			m_operations.ReportReadBufferSize(m_socket, m_stream.ReadBufferSize());
 		}
 	}
 
@@ -199,7 +186,6 @@ public:
 	{
 		IUtpSocketOperations::Handle socket = nullptr;
 		uint32_t taken = 0;
-		size_t buffered = 0;
 		{
 			std::lock_guard<std::mutex> lock(m_mutex);
 			taken = m_stream.Read(buffer, length);
@@ -209,11 +195,9 @@ public:
 			if (m_stream.ConsumeReadDrainedEdge()) {
 				socket = m_socket;
 			}
-			buffered = m_stream.ReadBufferSize();
 		}
 		if (socket != nullptr) {
-			// Outside the lock: these re-enter.
-			m_operations.ReportReadBufferSize(socket, buffered);
+			// Outside the lock: this can re-enter.
 			m_operations.NotifyReadDrained(socket);
 		}
 		return taken;
@@ -379,6 +363,13 @@ public:
 	{
 		std::lock_guard<std::mutex> lock(m_mutex);
 		return m_socket;
+	}
+
+	//! Current buffered bytes, pulled synchronously by UTP_GET_READ_BUFFER_SIZE.
+	size_t ReadBufferSize() const
+	{
+		std::lock_guard<std::mutex> lock(m_mutex);
+		return m_stream.ReadBufferSize();
 	}
 
 	//! Bytes queued and not yet accepted by libutp.

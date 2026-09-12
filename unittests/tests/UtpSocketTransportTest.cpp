@@ -62,11 +62,6 @@ public:
 		lastClosed = socket;
 	}
 	void SetReceiveBuffer(Handle, size_t bytes) override { receiveBound = bytes; }
-	void ReportReadBufferSize(Handle, size_t bytes) override
-	{
-		++reportCalls;
-		reportedBuffered = bytes;
-	}
 
 	size_t acceptLimit = 1024 * 1024;
 	std::vector<uint8_t> offered;
@@ -74,8 +69,6 @@ public:
 	Handle lastWriteSocket = nullptr;
 	Handle lastClosed = nullptr;
 	int drainedCalls = 0;
-	int reportCalls = 0;
-	size_t reportedBuffered = 0;
 	int closeCalls = 0;
 	size_t receiveBound = 0;
 };
@@ -373,27 +366,26 @@ TEST(UtpSocketTransport, ConnectingFlushesWhatTheHandshakeRefused)
 	}
 }
 
-TEST(UtpSocketTransport, TheReceiveBoundIsAlwaysPairedWithOccupancy)
+TEST(UtpSocketTransport, ReadBufferSizeTracksCurrentOccupancy)
 {
-	// libutp advertises opt_rcvbuf minus the reported occupancy, and an unset
-	// report is zero -- so setting the buffer alone lowers the ceiling to a
-	// sixteenth of the default and adds no backpressure at all.
 	FakeOperations ops;
 	CUtpSocketTransport transport = MakeTransport(ops);
+	const CUtpSocketTransport &reader = transport;
+	ASSERT_EQUALS(0u, (unsigned)reader.ReadBufferSize());
 	const std::vector<uint8_t> payload = Pattern(40);
 	transport.OnPayload(payload.data(), payload.size());
 
 	transport.ApplyReceiveBound();
 	ASSERT_EQUALS((unsigned)CUtpStream::kDefaultReadBound, (unsigned)ops.receiveBound);
-	ASSERT_EQUALS(1, ops.reportCalls);
-	ASSERT_EQUALS(40u, (unsigned)ops.reportedBuffered);
+	ASSERT_EQUALS(40u, (unsigned)reader.ReadBufferSize());
 
-	// And it has to keep tracking, or the window never reopens as the reader
-	// catches up.
 	uint8_t out[40] = { 0 };
-	transport.Read(out, sizeof(out));
-	ASSERT_EQUALS(2, ops.reportCalls);
-	ASSERT_EQUALS(0u, (unsigned)ops.reportedBuffered);
+	ASSERT_EQUALS(15u, transport.Read(out, 15));
+	ASSERT_EQUALS(25u, (unsigned)reader.ReadBufferSize());
+	ASSERT_EQUALS(25u, transport.Read(out, sizeof(out)));
+	ASSERT_EQUALS(0u, (unsigned)reader.ReadBufferSize());
+	ASSERT_EQUALS(0u, transport.Read(out, sizeof(out)));
+	ASSERT_EQUALS(0u, (unsigned)reader.ReadBufferSize());
 }
 
 TEST(UtpSocketTransport, AnOfferIsBoundedRatherThanTheWholeBacklog)
