@@ -206,6 +206,12 @@ private:
 		uint32_t m_ip;
 		uint16_t m_port;
 	};
+
+	// How long a record outlives the ceiling, so a late answer still feeds its round-trip
+	// time to the estimator. Erasing on the ceiling made the estimate unable to rise: no
+	// sample above it could ever be recorded, so a link slower than the starting estimate
+	// never taught it anything. Long enough to cover that, short enough not to accumulate.
+	static const uint64_t PENDING_SAMPLE_GRACE_MS = 10000;
 	typedef std::map<CUInt128, sPendingRequest> PendingRequestMap;
 
 	PendingRequestMap m_pendingRequests;

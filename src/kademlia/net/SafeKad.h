@@ -197,7 +197,11 @@ public:
 	// Eviction horizons for Cleanup(): an entry nothing has referenced for
 	// this long carries no information worth its memory.
 	static const time_t NODE_MAX_REFERENCE_AGE = 3600;
-	static const time_t BAN_MAX_REFERENCE_AGE = 3600;
+	// Must not be shorter than MAX_BAN_TIME. Cleanup() drops banned entries once they have
+	// gone this long without a reference, and a banned address stops being referenced as soon
+	// as it stops sending -- so a shorter horizon silently ends the ban early for exactly the
+	// attacker who backs off, which is the one the ban is for.
+	static const time_t BAN_MAX_REFERENCE_AGE = MAX_BAN_TIME;
 	static const time_t PROBLEMATIC_MAX_REFERENCE_AGE = 300;
 	// Cleanup() also runs from IsBadNode() at most this often.
 	static const time_t CLEANUP_INTERVAL = 600;
