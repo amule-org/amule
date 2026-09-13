@@ -83,6 +83,10 @@ private:
 	CFrameLogThrottle m_unknownFrameLog{ 60 * 1000 };
 	CFrameLogThrottle m_unservedFrameLog{ 60 * 1000 };
 	CFrameLogThrottle m_utpUnmatchedFrameLog{ 60 * 1000 };
+	// Separate from the unmatched one: a frame nobody can parse and a frame from
+	// a peer we have no socket for are different problems, and sharing a
+	// throttle would let a flood of one hide the other entirely.
+	CFrameLogThrottle m_utpMalformedFrameLog{ 60 * 1000 };
 };
 
 #endif // CLIENTUDPSOCKET_H

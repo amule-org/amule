@@ -28,6 +28,7 @@
 #include "ReservedProtocolFrames.h"
 
 #include <cstdint>
+#include <map>
 #include <memory>
 #include <utility>
 
@@ -59,6 +60,47 @@ public:
 	virtual void Destroy() = 0;
 	virtual bool ProcessDatagram(const uint8_t *payload, size_t length, uint32_t ip, uint16_t port) = 0;
 	virtual void Tick() = 0;
+
+	//! True while that endpoint holds at least one accepted uTP socket.
+	virtual bool HasRegisteredPeer(uint32_t ip, uint16_t port) const = 0;
+};
+
+/**
+ * Which endpoints hold a uTP socket.
+ *
+ * Counted rather than a set, because one endpoint can legitimately hold more
+ * than one socket: a peer behind a NAT that reuses its source port, or a second
+ * connection opened before the first has finished dying. Deregistering on the
+ * first close would then strand the survivor, and its traffic would be answered
+ * with an RST as though it were a stranger.
+ */
+class CUtpPeerRegistry
+{
+public:
+	void Add(uint32_t ip, uint16_t port) { ++m_peers[Key(ip, port)]; }
+
+	void Remove(uint32_t ip, uint16_t port)
+	{
+		const auto found = m_peers.find(Key(ip, port));
+		if (found == m_peers.end()) {
+			return;
+		}
+		if (--found->second == 0) {
+			m_peers.erase(found);
+		}
+	}
+
+	bool Has(uint32_t ip, uint16_t port) const { return m_peers.find(Key(ip, port)) != m_peers.end(); }
+
+	size_t Size() const { return m_peers.size(); }
+
+private:
+	static std::uint64_t Key(uint32_t ip, uint16_t port)
+	{
+		return (static_cast<std::uint64_t>(ip) << 16) | port;
+	}
+
+	std::map<std::uint64_t, unsigned> m_peers;
 };
 
 // Library seam: no libutp types or stream operations escape the adapter.
@@ -114,11 +156,67 @@ public:
 		}
 	}
 
+	bool HasRegisteredPeer(uint32_t ip, uint16_t port) const override { return m_peers.Has(ip, port); }
+
+	//! For the acceptor, once admission has succeeded and ownership is attached.
+	void RegisterPeer(uint32_t ip, uint16_t port) { m_peers.Add(ip, port); }
+
+	//! On UTP_STATE_DESTROYING, before the stream-lost notification.
+	void ForgetPeer(uint32_t ip, uint16_t port) { m_peers.Remove(ip, port); }
+
 private:
 	std::unique_ptr<IUtpLibrary> m_library;
 	IUtpDatagramSink &m_sink;
+	CUtpPeerRegistry m_peers;
 	bool m_active = false;
 };
+
+/**
+ * What a uTP frame is, before libutp is allowed to answer it.
+ *
+ * libutp replies to a non-SYN frame that matches no connection with an
+ * unsolicited RST, to whatever address the datagram claimed to come from. That
+ * makes this host a reflector for anyone who forges a source address, and the
+ * reply says "a uTP peer lives here" to a stranger who never connected. So the
+ * decision has to be made before the frame reaches the library, which means
+ * knowing here whether the sender holds a socket.
+ */
+enum class EUtpFrameKind
+{
+	//! Shorter than a header, or a version libutp does not implement.
+	Malformed,
+	//! A connection request. Admission decides; no prior registration needed.
+	Syn,
+	//! Traffic for a connection, which only an already-registered peer can have.
+	Existing
+};
+
+/**
+ * Classifies one uTP frame from its header alone.
+ *
+ * Mirrors libutp's own validity test (UTP_Version in utp_internal.cpp): a type
+ * below ST_NUM_STATES, a first extension below 3, and version 1. The layout is
+ * one byte -- type in the high nibble, version in the low -- so this needs no
+ * libutp header and stays testable without the library.
+ */
+inline EUtpFrameKind ClassifyUtpFrame(const uint8_t *payload, size_t length)
+{
+	// Header is 20 bytes in version 1; anything shorter cannot be parsed.
+	constexpr size_t kUtpHeaderBytes = 20;
+	constexpr uint8_t kUtpVersion = 1;
+	constexpr uint8_t kStNumStates = 5;
+	constexpr uint8_t kStSyn = 4;
+	if (payload == nullptr || length < kUtpHeaderBytes) {
+		return EUtpFrameKind::Malformed;
+	}
+	const uint8_t type = static_cast<uint8_t>(payload[0] >> 4);
+	const uint8_t version = static_cast<uint8_t>(payload[0] & 0x0F);
+	const uint8_t extension = payload[1];
+	if (type >= kStNumStates || extension >= 3 || version != kUtpVersion) {
+		return EUtpFrameKind::Malformed;
+	}
+	return type == kStSyn ? EUtpFrameKind::Syn : EUtpFrameKind::Existing;
+}
 
 inline bool ProcessUtpFrame(
 	IUtpContext &context, const SReservedProt2Frame &frame, uint32_t ip, uint16_t port)

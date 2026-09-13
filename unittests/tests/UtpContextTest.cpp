@@ -25,6 +25,7 @@
 #include <muleunit/test.h>
 #include "UtpContext.h"
 #include "Packet.h"
+#include "libs/common/Format.h"
 #include <vector>
 
 using namespace muleunit;
@@ -317,6 +318,83 @@ TEST(UtpContext, TheUdpBudgetLeavesRoomForTheObfuscationHeader)
 	// libutp was sizing against before the crypt header was accounted for.
 	ASSERT_TRUE(UtpUdpMtu(false) + kUtpEnvelopeBytes + kUtpCryptHeaderBytes <= 1402ull);
 	ASSERT_TRUE(UtpUdpMtu(true) + kUtpEnvelopeBytes + kUtpCryptHeaderBytes <= 1232ull);
+}
+
+TEST(UtpContext, FrameClassificationTable)
+{
+	// Mirrors libutp's own validity test (UTP_Version): type below ST_NUM_STATES,
+	// first extension below 3, version 1. Anything else it would not look at.
+	const struct
+	{
+		const char *label;
+		uint8_t verType;
+		uint8_t extension;
+		size_t length;
+		EUtpFrameKind expected;
+	} cases[] = {
+		{ "syn v1", 0x41, 0, 20, EUtpFrameKind::Syn },
+		{ "data v1", 0x01, 0, 20, EUtpFrameKind::Existing },
+		{ "fin v1", 0x11, 0, 20, EUtpFrameKind::Existing },
+		{ "state v1", 0x21, 0, 20, EUtpFrameKind::Existing },
+		{ "reset v1", 0x31, 0, 20, EUtpFrameKind::Existing },
+		{ "syn with extension 2", 0x41, 2, 20, EUtpFrameKind::Syn },
+		{ "unknown type 5", 0x51, 0, 20, EUtpFrameKind::Malformed },
+		{ "version 0", 0x40, 0, 20, EUtpFrameKind::Malformed },
+		{ "version 2", 0x42, 0, 20, EUtpFrameKind::Malformed },
+		{ "extension 3", 0x41, 3, 20, EUtpFrameKind::Malformed },
+		{ "one byte short", 0x41, 0, 19, EUtpFrameKind::Malformed },
+		{ "empty", 0x41, 0, 0, EUtpFrameKind::Malformed },
+	};
+	for (const auto &row : cases) {
+		CFormat format("%s: ver_type=0x%02x ext=%u len=%u");
+		const wxString message =
+			format % row.label % row.verType % row.extension % unsigned(row.length);
+		uint8_t frame[20] = { 0 };
+		frame[0] = row.verType;
+		frame[1] = row.extension;
+		const uint8_t *payload = row.length == 0 ? nullptr : frame;
+		ASSERT_TRUE_M(ClassifyUtpFrame(payload, row.length) == row.expected, message);
+	}
+}
+
+TEST(UtpContext, ARegisteredPeerSurvivesOneOfItsSocketsClosing)
+{
+	// One endpoint can hold more than one socket: a peer behind a NAT reusing
+	// its source port, or a second connection opened while the first is dying.
+	// Forgetting on the first close would strand the survivor, whose traffic
+	// would then be answered with an RST as though it came from a stranger.
+	CUtpPeerRegistry registry;
+	ASSERT_FALSE(registry.Has(0x0100007F, 4672));
+
+	registry.Add(0x0100007F, 4672);
+	registry.Add(0x0100007F, 4672);
+	ASSERT_TRUE(registry.Has(0x0100007F, 4672));
+	ASSERT_EQUALS(1u, (unsigned)registry.Size());
+
+	registry.Remove(0x0100007F, 4672);
+	ASSERT_TRUE(registry.Has(0x0100007F, 4672));
+	registry.Remove(0x0100007F, 4672);
+	ASSERT_FALSE(registry.Has(0x0100007F, 4672));
+	ASSERT_EQUALS(0u, (unsigned)registry.Size());
+}
+
+TEST(UtpContext, TheRegistryKeysOnAddressAndPortTogether)
+{
+	// Same address, different port is a different peer; so is the reverse.
+	CUtpPeerRegistry registry;
+	registry.Add(0x0100007F, 4672);
+	ASSERT_FALSE(registry.Has(0x0100007F, 4673));
+	ASSERT_FALSE(registry.Has(0x0200007F, 4672));
+	ASSERT_TRUE(registry.Has(0x0100007F, 4672));
+}
+
+TEST(UtpContext, ForgettingAnUnknownPeerIsHarmless)
+{
+	// DESTROYING can arrive for a socket that never got registered, because
+	// admission rejected it.
+	CUtpPeerRegistry registry;
+	registry.Remove(0x0100007F, 4672);
+	ASSERT_EQUALS(0u, (unsigned)registry.Size());
 }
 
 // File_checked_for_headers

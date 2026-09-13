@@ -264,29 +264,42 @@ void CClientUDPSocket::ProcessReservedProt2Frame(
 	// build does not have, so a peer's attempt at one is a recognised frame aMule cannot serve
 	// rather than malformed traffic.
 	switch (classified.type) {
-	case OP_NATT_FRAME_UTP:
+	case OP_NATT_FRAME_UTP: {
 #ifdef AMULE_UTP_TRANSPORT
 		wxASSERT(wxIsMainThread());
-		if (ProcessUtpFrame(m_utp, classified, ip, port)) {
-			return;
+		// Classified before libutp sees it, because libutp answers a non-SYN frame
+		// that matches no connection with an unsolicited RST to whatever source
+		// address the datagram claimed (utp_internal.cpp, the flags != ST_SYN
+		// branch). That makes this host a reflector for a forged source, and tells
+		// a stranger who never connected that a uTP peer lives here. A SYN is the
+		// one kind that may arrive from someone we do not know; everything else has
+		// to come from an endpoint that already holds a socket.
+		const EUtpFrameKind kind = ClassifyUtpFrame(classified.payload, classified.payloadLength);
+		const bool fromKnownPeer = m_utp.HasRegisteredPeer(ip, port);
+		if (kind != EUtpFrameKind::Malformed && (kind == EUtpFrameKind::Syn || fromKnownPeer)) {
+			if (ProcessUtpFrame(m_utp, classified, ip, port)) {
+				return;
+			}
+		} else if (kind == EUtpFrameKind::Existing) {
+			// The genuinely unmatched case, which used to leave as an RST with no
+			// line anywhere because libutp had already reported it handled.
+			if (m_utpUnmatchedFrameLog.ShouldLog(::GetTickCount64())) {
+				AddDebugLogLineN(logClientUDP,
+					CFormat("Dropping uTP frame from %s:%u: no uTP socket for that "
+						"peer (%u further occurrences suppressed)") %
+						Uint32toStringIP(ip) % port %
+						m_utpUnmatchedFrameLog.TakeSuppressedCount());
+			}
+			break;
 		}
 		// Reached only for a frame libutp would not even look at: shorter than a uTP
-		// header, or a version it does not implement. It is *not* the
-		// belongs-to-no-connection case, which the message used to claim.
-		//
-		// libutp answers a non-SYN frame that matches no connection by sending an
-		// unsolicited RST and returning 1 (utp_internal.cpp, the flags != ST_SYN branch),
-		// so ProcessUtpFrame() reports it handled and this code never runs for it. Those
-		// frames leave as RSTs to an unverified source address, with no line anywhere.
-		// Logging them, and deciding whether to answer a stranger at all, needs to know
-		// which peers hold a uTP socket, which is the acceptor's registry: see the note on
-		// the crypt parameters in SendUtpDatagram(), which defers for the same reason.
-		if (m_utpUnmatchedFrameLog.ShouldLog(::GetTickCount64())) {
+		// header, or a version it does not implement.
+		if (m_utpMalformedFrameLog.ShouldLog(::GetTickCount64())) {
 			AddDebugLogLineN(logClientUDP,
 				CFormat("Dropping malformed uTP frame from %s:%u: too short or an "
 					"unsupported version (%u further occurrences suppressed)") %
 					Uint32toStringIP(ip) % port %
-					m_utpUnmatchedFrameLog.TakeSuppressedCount());
+					m_utpMalformedFrameLog.TakeSuppressedCount());
 		}
 #else
 		if (m_unservedFrameLog.ShouldLog(::GetTickCount64())) {
@@ -298,6 +311,7 @@ void CClientUDPSocket::ProcessReservedProt2Frame(
 		}
 #endif
 		break;
+	}
 
 	case OP_NATT_FRAME_QUIC:
 		if (m_unservedFrameLog.ShouldLog(::GetTickCount64())) {
