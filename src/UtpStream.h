@@ -54,14 +54,7 @@ public:
 	//! One datagram's worth: how far short of the bound a stalled stream sits.
 	static constexpr size_t kWindowSlackBytes = 2048;
 
-	/**
-	 * How far below the bound counts as "the window is closed".
-	 *
-	 * A datagram's worth, except on a bound too small to hold one, where it
-	 * becomes a proportion so the rule still has a high-water mark to cross.
-	 * Only the tests configure a bound that small, but a rule that silently
-	 * stops firing there would make them prove nothing.
-	 */
+	//! A datagram's worth, or a proportion when the bound is smaller than one.
 	size_t WindowSlack() const
 	{
 		const size_t proportional = m_readBound / 8;
@@ -128,15 +121,12 @@ public:
 			static_cast<uint8_t *>(buffer));
 		m_readBuffer.erase(m_readBuffer.begin(), m_readBuffer.begin() + consumed);
 		m_blocksRead = false;
-		// Reopen the window on the crossing, not on an empty buffer: a packet
-		// reader keeps a backlog forever and would never signal.
-		//
-		// The crossing is measured a packet short of the bound because occupancy
-		// never reaches it. libutp advertises opt_rcvbuf minus occupancy and
-		// stops once that cannot hold another packet, so a stalled stream sits
-		// just below the bound -- 64954 of 65536 in the loopback test. Comparing
-		// against the bound itself therefore never fires, and the transfer hangs
-		// waiting for a zero-window probe.
+		// On the crossing, not on an empty buffer: a packet reader keeps a
+		// backlog forever and would never signal. Measured a packet short of
+		// the bound because occupancy never reaches it -- libutp advertises
+		// opt_rcvbuf minus occupancy and stops once that cannot hold another
+		// packet, stalling at 64954 of 65536. Comparing against the bound never
+		// fires, and the transfer hangs on a zero-window probe.
 		const size_t highWater = ReadBound() - WindowSlack();
 		if (!IsTerminal() && available >= highWater && m_readBuffer.size() < highWater) {
 			m_readDrainedDue = true;

@@ -416,11 +416,8 @@ public:
 	/**
 	 * Installs the sink events are delivered to.
 	 *
-	 * Set after construction because the thing that receives them -- the socket
-	 * this stream will belong to -- does not exist until admission has decided,
-	 * and the transport has to exist first for admission to have anything to
-	 * decide about. Nothing may be emitted before this is called, which holds
-	 * because libutp cannot deliver to a socket the acceptor has not returned.
+	 * After construction, because the socket that receives them does not exist
+	 * until admission has decided, and admission needs the transport first.
 	 */
 	void SetEvents(IStreamTransportEvents *events)
 	{
@@ -438,16 +435,10 @@ public:
 	/**
 	 * The crypt parameters for datagrams this socket sends.
 	 *
-	 * Carried per socket rather than looked up from the destination address.
-	 * The reverse lookup that used to decide this was removed because it could
-	 * not be made correct: it matched a UDP port against the ed2k TCP port, so
-	 * it never fired, and had it fired it could have picked another client at
-	 * the same address and keyed the datagram on that peer's hash, leaving the
-	 * real recipient unable to decrypt.
-	 *
-	 * The hash is copied, never borrowed: the client that owns it can be
-	 * replaced -- AttachToAlreadyKnown() does exactly that during the hello
-	 * exchange -- while this socket outlives the swap.
+	 * Per socket, not looked up from the destination: one address can host
+	 * several clients, and keying on the wrong one leaves the real recipient
+	 * unable to decrypt. The hash is copied because AttachToAlreadyKnown()
+	 * can replace the owning client while this socket outlives the swap.
 	 */
 	void SetCryptParameters(bool encrypt, const uint8_t *userHash)
 	{

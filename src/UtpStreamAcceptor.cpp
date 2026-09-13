@@ -43,23 +43,15 @@ bool CUtpStreamAcceptor::AcceptStream(
 	if (!theApp->IsRunning()) {
 		return false;
 	}
-	// The exception the TCP listener makes for itself: refusing while
-	// connecting to a server is what produces a LowID on every server, so the
-	// limit is allowed to be exceeded in exactly that window.
+	// The listener's own exception: refusing while connecting to a server is
+	// what produces a LowID on every server.
 	if (!theApp->serverconnect->IsConnecting() && theApp->listensocket->TooManySockets()) {
 		theStats::AddMaxConnectionLimitReached();
 		return false;
 	}
 
-	// Every refusal happens before ownership moves, and that ordering is not a
-	// style choice. Once the socket holds the transport, deleting it closes the
-	// libutp socket through the transport's destructor -- and returning false
-	// then has the adapter close the same socket again. Refusing first means
-	// exactly one close on every path.
-	//
-	// The same questions InitNetworkData() asks, against the address the stream
-	// arrived from. It runs below anyway once the socket exists, which is where
-	// m_remoteip gets set; here it only decides.
+	// Refusals come first: destroying a transport closes its socket, so a
+	// refusal after ownership moved would close what the adapter closes too.
 	if (ip == 0) {
 		return false;
 	}
@@ -75,15 +67,12 @@ bool CUtpStreamAcceptor::AcceptStream(
 	}
 
 	auto *socket = new CClientTCPSocket();
-	// Events wired before ownership moves: once the socket holds the transport,
-	// a libutp callback can reach it, and a stream event with nowhere to go is
-	// a connection nothing ever services.
+	// Wired before ownership moves, or a callback arriving first has nowhere
+	// to deliver.
 	auto *utp = static_cast<CUtpSocketTransport *>(transport.get());
 	utp->SetEvents(socket);
 	socket->AttachTransport(std::move(transport));
-	// Reached through the socket, so it sees the stream's peer rather than the
-	// asio socket's absent one, and sets m_remoteip from it. It cannot refuse
-	// here: the two checks it makes were made above, and the address is known.
+	// Records m_remoteip from the stream's peer; its two checks were made above.
 	socket->InitNetworkData();
 	AddDebugLogLineN(logClient, CFormat("Accepted uTP stream from %s:%u") % Uint32toStringIP(ip) % port);
 	return true;

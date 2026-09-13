@@ -149,25 +149,18 @@ public:
 	/**
 	 * Hands this socket's stream over to a transport that is not asio.
 	 *
-	 * Every accessor below that describes the stream -- its state, its bytes,
-	 * its peer -- then answers from the transport instead. That has to be all
-	 * of them, not just the ones a caller happens to use: none of them are
-	 * virtual anywhere in CLibSocket, CEncryptedStreamSocket or CEMSocket, so
-	 * each one a transport does not reach resolves statically to the asio
-	 * socket underneath and silently reports on a stream nobody is using.
-	 * CEMSocket::Send()'s !IsOk() arm is the case that made this concrete: left
-	 * unrouted it stays dead after wiring, and the upload-thread spin it exists
-	 * to stop comes back with no symptom.
+	 * Every stream accessor below then answers from it. That has to be all of
+	 * them: none are virtual here, in CEncryptedStreamSocket or in CEMSocket,
+	 * so one left unrouted resolves statically to the asio socket and reports
+	 * on a stream nobody is using -- which is how CEMSocket::Send()'s !IsOk()
+	 * arm would stay dead after wiring.
 	 */
 	void AttachTransport(std::unique_ptr<IStreamTransport> transport);
 
 	//! True while a transport owns this socket's stream.
 	bool HasTransport() const { return m_transport != nullptr; }
 
-	/**
-	 * Turns a transport's stream events into the socket events aMule already
-	 * has, so everything above this layer stays unaware there is a transport.
-	 */
+	//! Turns stream events into the socket events aMule already raises.
 	//! Offers an attached transport's queue. Main thread only.
 	void FlushTransport();
 

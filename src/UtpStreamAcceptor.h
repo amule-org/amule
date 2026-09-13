@@ -30,16 +30,9 @@
 /**
  * Decides whether an accepted uTP stream becomes a client connection.
  *
- * The same four questions the TCP listener asks, in the same order and for the
- * same reasons: are we running, are we already at the connection limit, is the
- * address filtered, is the peer banned. A stream that gets past libutp is not
- * yet a peer -- it has only proved it can complete a handshake, which any
- * address can.
- *
- * Deliberately not merged into CListenSocket::OnAccept(). That loop is driven
- * by an asio acceptor with a socket queue it polls; this arrives as a single
- * callback with the stream already built, so sharing the loop would mean
- * inventing a queue for one element.
+ * Asks what CListenSocket::OnAccept plus CClientTCPSocket::InitNetworkData ask
+ * for TCP: running, under the connection limit, not filtered, not banned.
+ * Completing a uTP handshake proves nothing about a peer that TCP would refuse.
  */
 class CUtpStreamAcceptor : public IUtpStreamAcceptor
 {

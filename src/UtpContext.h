@@ -68,11 +68,8 @@ public:
 /**
  * Which endpoints hold a uTP socket.
  *
- * Counted rather than a set, because one endpoint can legitimately hold more
- * than one socket: a peer behind a NAT that reuses its source port, or a second
- * connection opened before the first has finished dying. Deregistering on the
- * first close would then strand the survivor, and its traffic would be answered
- * with an RST as though it were a stranger.
+ * Counted, not a set: one endpoint can hold several sockets, and forgetting on
+ * the first close would leave the survivor's traffic answered with an RST.
  */
 class CUtpPeerRegistry
 {
@@ -106,14 +103,7 @@ private:
 // Library seam: no libutp types or stream operations escape the adapter.
 class IStreamTransport;
 
-/**
- * Where an accepted uTP stream is offered for admission.
- *
- * Separate from the library adapter because admission is the application's
- * question -- is it shutting down, is the connection limit reached, is this
- * address filtered or banned -- and none of that belongs next to libutp. The
- * adapter builds the stream and asks; it never decides.
- */
+//! Where an accepted uTP stream is offered for admission.
 class IUtpStreamAcceptor
 {
 public:
@@ -211,12 +201,8 @@ private:
 /**
  * What a uTP frame is, before libutp is allowed to answer it.
  *
- * libutp replies to a non-SYN frame that matches no connection with an
- * unsolicited RST, to whatever address the datagram claimed to come from. That
- * makes this host a reflector for anyone who forges a source address, and the
- * reply says "a uTP peer lives here" to a stranger who never connected. So the
- * decision has to be made before the frame reaches the library, which means
- * knowing here whether the sender holds a socket.
+ * libutp answers an unmatched non-SYN with an unsolicited RST to the claimed
+ * source, which makes this host a reflector for a forged address.
  */
 enum class EUtpFrameKind
 {
@@ -231,10 +217,8 @@ enum class EUtpFrameKind
 /**
  * Classifies one uTP frame from its header alone.
  *
- * Mirrors libutp's own validity test (UTP_Version in utp_internal.cpp): a type
- * below ST_NUM_STATES, a first extension below 3, and version 1. The layout is
- * one byte -- type in the high nibble, version in the low -- so this needs no
- * libutp header and stays testable without the library.
+ * Mirrors libutp's own validity test (UTP_Version, utp_internal.cpp): type
+ * below ST_NUM_STATES, first extension below 3, version 1.
  */
 inline EUtpFrameKind ClassifyUtpFrame(const uint8_t *payload, size_t length)
 {

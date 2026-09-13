@@ -41,9 +41,8 @@ public:
 	std::ptrdiff_t WriteToSocket(Handle socket, const uint8_t *data, size_t length) override
 	{
 		utp_iovec vector{ const_cast<uint8_t *>(data), length };
-		// Returned as it came: utp_writev answers -1 on a refusal, and clamping
-		// that to 0 here would turn the sentinel into "took nothing" at the one
-		// seam that can still tell the difference.
+		// As it came: clamping utp_writev's -1 to 0 would lose the sentinel at
+		// the one seam that can still tell them apart.
 		return utp_writev(static_cast<utp_socket *>(socket), &vector, 1);
 	}
 
@@ -55,10 +54,8 @@ public:
 	void CloseSocket(Handle socket) override
 	{
 		auto *raw = static_cast<utp_socket *>(socket);
-		// Cleared before closing. utp_close() only moves the socket towards
-		// death; UTP_STATE_DESTROYING can arrive much later, and any callback
-		// in between would recover userdata pointing at a transport that has
-		// already been destroyed by the owner that called this.
+		// utp_close() only starts the socket dying; DESTROYING can arrive after
+		// the owner is gone, and would hand a callback a freed transport.
 		utp_set_userdata(raw, nullptr);
 		utp_close(raw);
 	}
@@ -130,11 +127,9 @@ public:
 					     length,
 					     reinterpret_cast<const sockaddr *>(&address),
 					     sizeof(address)) != 0;
-		// Closed here rather than inside UTP_ON_ACCEPT: utp_close() can produce
-		// UTP_STATE_DESTROYING before it returns, which would re-enter the
-		// callback that is still deciding.
-		// Destroying each closes its socket exactly once, through the same
-		// path an owner would use.
+		// Not inside UTP_ON_ACCEPT: utp_close() can produce DESTROYING before
+		// it returns, re-entering the callback that is still deciding.
+		// Destruction is the close, exactly once.
 		m_refusedStreams.clear();
 		for (utp_socket *refused : m_refused) {
 			utp_close(refused);
@@ -159,10 +154,9 @@ private:
 			ip |= static_cast<uint32_t>(bytes[i]) << (8 * i);
 		}
 		auto *sink = static_cast<IUtpDatagramSink *>(utp_context_get_userdata(args->context));
-		// Resolved from the socket, never from the destination: the peer that owns
-		// this socket is known, whereas an address can belong to several clients.
-		// args->socket is null for a context-level send, such as the RST libutp
-		// answers an unmatched frame with, and there is no verified peer for that.
+		// From the socket, never the destination: an address can belong to
+		// several clients. A context-level send has no socket and no verified
+		// peer, so it stays in the clear.
 		bool encrypt = false;
 		const uint8_t *userHash = nullptr;
 		if (args->socket != nullptr) {
@@ -188,8 +182,7 @@ private:
 	{
 		if (s_self == nullptr || s_self->m_acceptor == nullptr || args->address == nullptr ||
 			args->address->sa_family != AF_INET) {
-			// No acceptor installed refuses every inbound SYN, which is what
-			// this build did before one existed.
+			// No acceptor refuses every SYN, as this build did before one.
 			if (s_self != nullptr && args->socket != nullptr) {
 				s_self->m_refused.push_back(args->socket);
 			}
@@ -203,26 +196,22 @@ private:
 		}
 		const uint16_t port = ntohs(address->sin_port);
 
-		// Held as the interface type so the acceptance seam can move out of it
-		// directly; the concrete pointer stays for the setup below.
+		// Interface type so the seam can move out of it; the concrete pointer
+		// stays for the setup below.
 		auto owned = std::make_unique<CUtpSocketTransport>(
 			*s_self, args->socket, CNetworkAddress::FromIPv4NetworkOrder(ip), port);
 		CUtpSocketTransport *raw = owned.get();
 		std::unique_ptr<IStreamTransport> transport(std::move(owned));
-		// Set before admission can produce any callback, so a stream event that
-		// arrives during it still finds its transport.
+		// Before admission can produce a callback that needs it.
 		utp_set_userdata(args->socket, raw);
-		// A4: until this runs, libutp's 1 MiB default is the effective receive
-		// bound rather than the 64 KiB kDefaultReadBound names.
+		// Until this runs, libutp's 1 MiB default is the receive bound.
 		raw->ApplyReceiveBound();
-		// The socket is connected from libutp's side but reaches CS_CONNECTED
-		// only on the peer's first ST_DATA, silently, so the acceptor marks it.
+		// libutp reaches CS_CONNECTED on the peer's first ST_DATA, silently.
 		raw->MarkConnected();
 
 		if (!s_self->m_acceptor->AcceptStream(transport, ip, port)) {
-			// Held, not closed here: destroying the transport is what closes
-			// the socket, and that must happen after libutp has finished with
-			// the datagram rather than inside this callback.
+			// Destroying it closes the socket, which must happen after libutp
+			// has finished with the datagram.
 			s_self->m_refusedStreams.push_back(std::move(transport));
 			return 0;
 		}
@@ -244,9 +233,8 @@ private:
 			transport->OnEnded(EUtpTransportFailure::Eof);
 			break;
 		case UTP_STATE_DESTROYING:
-			// Forgotten before the transport is told, so nothing can look the
-			// peer up and find a socket that is already dying. The handle dies
-			// with this callback, so userdata goes with it.
+			// Forgotten before the transport is told, and the handle dies with
+			// this callback.
 			if (s_self != nullptr) {
 				s_self->m_peers.Remove(transport->GetPeerAddress().ToIPv4NetworkOrderOrZero(),
 					transport->GetPeerPort());
@@ -255,9 +243,7 @@ private:
 			transport->OnEnded(EUtpTransportFailure::Destroying);
 			break;
 		case UTP_STATE_CONNECT:
-			// Outgoing only: libutp guards it with conn->state == CS_SYN_SENT,
-			// and this build never dials. Mapping it would be dead code that
-			// reads like a supported path.
+			// Outgoing only (guarded by CS_SYN_SENT); this build never dials.
 			break;
 		default:
 			break;
@@ -297,9 +283,8 @@ private:
 
 	static uint64 GetReadBufferSize(utp_callback_arguments *args)
 	{
-		// Occupancy, not free space. libutp advertises opt_rcvbuf minus this
-		// number, so reporting the free figure runs the feedback backwards and
-		// nothing fails loudly when it does.
+		// Occupancy, not free space: libutp advertises opt_rcvbuf minus this,
+		// so the free figure runs the feedback backwards, silently.
 		const CUtpSocketTransport *transport = TransportOf(args->socket);
 		return transport == nullptr ? 0 : transport->ReadBufferSize();
 	}
@@ -320,9 +305,8 @@ private:
 	std::vector<utp_socket *> m_refused;
 	// Refused streams, destroyed at the same point. Destruction is the close.
 	std::vector<std::unique_ptr<IStreamTransport>> m_refusedStreams;
-	// libutp's callbacks are free functions with no user pointer of their own
-	// beyond the context's, which already carries the datagram sink. One
-	// adapter exists per process, created in CamuleApp::OnInit.
+	// libutp's callbacks carry only the context's user pointer, which already
+	// holds the datagram sink. One adapter exists per process.
 	static CUtpLibraryAdapter *s_self;
 };
 

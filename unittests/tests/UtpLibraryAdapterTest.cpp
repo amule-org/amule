@@ -47,12 +47,9 @@ constexpr uint32_t kPeerIp = 0x0100007F; // 127.0.0.1 in aMule's low-byte-first 
 constexpr uint16_t kPeerPort = 4672;
 
 /**
- * The two halves of a loopback, wired through real libutp.
- *
- * The adapter under test is the server. The client is a bare libutp context
- * built only here, so production gains no dial API: the datagrams each side
- * emits are handed to the other by hand, which also makes delivery
- * deterministic -- no sockets, no scheduler, no timing.
+ * A loopback through real libutp. The client is built only here, so production
+ * gains no dial API, and datagrams are handed over by hand to stay
+ * deterministic.
  */
 struct SLoopback
 {
@@ -145,10 +142,8 @@ sockaddr_in Address(uint32_t ip, uint16_t port)
 void Pump(SLoopback &loop, int rounds = 64)
 {
 	const sockaddr_in peer = Address(kPeerIp, kPeerPort);
-	// Unconditionally, before the loop: utp_read_drained() answers a non-zero
-	// previous window with schedule_ack() rather than send_ack(), so the window
-	// update sits deferred. With both queues empty the loop below never runs,
-	// and the update that unblocks the sender would never leave.
+	// Before the loop: utp_read_drained() defers the window update through
+	// schedule_ack(), and with both queues empty the loop never runs.
 	loop.server->IssueDeferredAcks();
 	utp_issue_deferred_acks(loop.client);
 	for (int i = 0; i < rounds && (!loop.toServer.empty() || !loop.toClient.empty()); ++i) {
@@ -271,10 +266,8 @@ TEST(UtpLibraryAdapter, BytesCrossTheStreamInOrder)
 	for (size_t i = 0; i < payload.size(); ++i) {
 		payload[i] = static_cast<uint8_t>(i & 0xFF);
 	}
-	// Offered in a loop because utp_writev takes only what the congestion
-	// window allows -- the very behaviour CUtpStream's queue exists for. One
-	// call moves a single packet, so a test that ignored the return would
-	// "prove" the stream carries 1382 bytes.
+	// Looped because utp_writev takes only what the window allows: ignoring
+	// the return would "prove" the stream carries one packet.
 	std::vector<uint8_t> received(payload.size());
 	size_t offered = 0;
 	uint32_t total = 0;
@@ -306,15 +299,9 @@ TEST(UtpLibraryAdapter, BytesCrossTheStreamInOrder)
 
 TEST(UtpLibraryAdapter, DeliveryStopsAtTheConfiguredBoundAndResumesOnTheCrossing)
 {
-	// The two halves that only show together. UTP_RCVBUF makes 64 KiB the real
-	// receive bound instead of libutp's 1 MiB default, and the window is
-	// opt_rcvbuf minus the occupancy reported by UTP_GET_READ_BUFFER_SIZE, so
-	// a reader that stops fills the buffer and the peer stops with it.
-	//
-	// Resuming is the part a reader-less test cannot show: the window reopens
-	// when occupancy crosses back below the bound, not when the buffer empties.
-	// A packet reader never empties it, so without that crossing the peer waits
-	// for a zero-window probe and the transfer becomes a sawtooth.
+	// UTP_RCVBUF makes 64 KiB the real bound, and the window is opt_rcvbuf
+	// minus reported occupancy, so a reader that stops stops the peer too.
+	// Resuming needs the crossing back below the bound, not an empty buffer.
 	SLoopback loop;
 	g_loop = &loop;
 	CServerSink sink;
@@ -347,11 +334,9 @@ TEST(UtpLibraryAdapter, DeliveryStopsAtTheConfiguredBoundAndResumesOnTheCrossing
 	// than something every stream transport must expose.
 	auto *utp = static_cast<CUtpSocketTransport *>(acceptor.accepted.get());
 	const size_t buffered = utp->ReadBufferSize();
-	// Stalled short of the bound rather than exactly on it: libutp stops once
-	// the advertised window cannot hold another packet, so the last one's worth
-	// is missing. What matters is which bound stopped it -- without the
-	// UTP_RCVBUF call the governing figure is libutp's 1 MiB default and the
-	// whole payload would be sitting here.
+	// Short of the bound, not on it: libutp stops once the window cannot hold
+	// another packet. Without UTP_RCVBUF the 1 MiB default would govern and
+	// the whole payload would be here.
 	CFormat stalled("buffered %u, bound %u, payload %u");
 	const wxString detail = stalled % unsigned(buffered) % unsigned(bound) % unsigned(payload.size());
 	ASSERT_TRUE_M(buffered < payload.size(), detail);
@@ -418,11 +403,8 @@ TEST(UtpLibraryAdapter, DeliveryStopsAtTheConfiguredBoundAndResumesOnTheCrossing
 
 TEST(UtpLibraryAdapter, DestroyingTheContextEndsTheStreamsItOwned)
 {
-	// utp_destroy() destroys the sockets itself: struct_utp_context owns
-	// UTPSocketHT, whose map holds each one in a unique_ptr with a deleter,
-	// and ~UTPSocket emits UTP_STATE_DESTROYING. That callback is what makes
-	// each transport drop its handle, which is what this pins -- a teardown
-	// that stopped delivering it would leave streams holding dead sockets.
+	// utp_destroy() destroys the sockets it owns and ~UTPSocket emits
+	// DESTROYING, which is what makes each transport drop its handle.
 	SLoopback loop;
 	g_loop = &loop;
 	CServerSink sink;

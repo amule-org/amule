@@ -1209,9 +1209,7 @@ CLibSocket::~CLibSocket()
 bool CLibSocket::Connect(const amuleIPV4Address &adr, bool wait)
 {
 	if (m_transport) {
-		// An accepted stream has a peer already. Dialling from here would open
-		// a second, unrelated connection while the caller believed it had
-		// reconnected this one.
+		// An accepted stream has a peer; dialling would open a second one.
 		return false;
 	}
 	return m_aSocket->Connect(adr, wait);
@@ -1249,17 +1247,15 @@ wxString CLibSocket::GetPeer()
 
 uint32 CLibSocket::GetPeerInt()
 {
-	// Narrowed here and only here, because this accessor's type is the ed2k
-	// wire form. A peer with no IPv4 form answers 0, exactly as an unconnected
-	// asio socket does.
+	// Narrowed only here: this accessor's type is the ed2k wire form.
 	return m_transport ? m_transport->GetPeerAddress().ToIPv4NetworkOrderOrZero()
 			   : m_aSocket->GetPeerInt();
 }
 
 void CLibSocket::Destroy()
 {
-	// Closed first: the transport can produce callbacks while closing, and
-	// they must not land on a half-destroyed asio wrapper.
+	// First: closing can produce callbacks, which must not land on a
+	// half-destroyed wrapper.
 	if (m_transport) {
 		m_transport->Close();
 	}
@@ -1358,13 +1354,8 @@ void CLibSocket::AttachTransport(std::unique_ptr<IStreamTransport> transport)
 	m_transport = std::move(transport);
 }
 
-// The four below are the whole bridge: a transport reports on its stream, and
-// these turn that into the notifications the asio layer already raises, so
-// CEMSocket and everything above it never learns there is a transport.
-//
-// Queued rather than called: every CoreNotify_* delivery marshals to the main
-// thread, which is what makes a flush request raised on the upload bandwidth
-// thread safe to answer.
+// Queued rather than called: CoreNotify_* marshals to the main thread, which
+// is what makes a flush request raised on the upload thread safe to answer.
 void CLibSocket::OnStreamReadable()
 {
 	CoreNotify_LibSocketReceive(this, 0);
@@ -1382,10 +1373,9 @@ void CLibSocket::OnStreamLost()
 
 void CLibSocket::OnFlushRequested()
 {
-	// Its own notification, not LibSocketSend. That one reaches
-	// CEMSocket::OnSend, which reports a completed write and never offers the
-	// transport's queue to the library -- so bytes queued from the upload
-	// thread would sit there and the peer would never be answered.
+	// Not LibSocketSend: that reaches CEMSocket::OnSend, which reports a
+	// completed write and never offers the queue, so the peer is never
+	// answered.
 	CoreNotify_LibSocketFlush(this);
 }
 

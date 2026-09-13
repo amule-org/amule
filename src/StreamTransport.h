@@ -75,10 +75,8 @@ public:
 	/**
 	 * Offers whatever Write() queued to the underlying transport.
 	 *
-	 * Part of the contract rather than a uTP detail: Write() may be called
-	 * from another thread and only queues, so something on the owning thread
-	 * has to hand those bytes over. A transport with nothing to defer can
-	 * leave this empty.
+	 * Write() may run on another thread and only queues, so the owning thread
+	 * has to hand the bytes over. A transport with nothing to defer is empty.
 	 */
 	virtual void Flush() = 0;
 
