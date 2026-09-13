@@ -31,6 +31,7 @@
 
 #ifdef AMULE_UTP_TRANSPORT
 #include "UtpContext.h"
+#include "UtpStreamAcceptor.h"
 #endif
 
 class CClientUDPSocket : public CMuleUDPSocket
@@ -58,6 +59,7 @@ private:
 		bool encrypt,
 		const uint8_t *userHash) override;
 	CUtpContext m_utp;
+	CUtpStreamAcceptor m_utpAcceptor;
 #endif
 	void OnPacketReceived(uint32 ip, uint16 port, uint8_t *buffer, size_t length) override;
 	void ProcessPacket(uint8_t *packet, int16 size, int8 opcode, uint32 host, uint16 port);

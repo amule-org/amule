@@ -51,6 +51,7 @@
 #include "EncryptedDatagramSocket.h"
 #ifdef AMULE_UTP_TRANSPORT
 #include "UtpLibraryAdapter.h"
+#include "UtpStreamAcceptor.h"
 #endif
 
 //
@@ -66,6 +67,12 @@ CClientUDPSocket::CClientUDPSocket(const amuleIPV4Address &address, const CProxy
 	if (!thePrefs::IsUDPDisabled()) {
 		Open();
 	}
+#ifdef AMULE_UTP_TRANSPORT
+	// Installed here rather than lazily: without an acceptor every inbound SYN
+	// is refused, so a socket that answered frames before this ran would look
+	// like a peer that changed its mind.
+	m_utp.SetAcceptor(&m_utpAcceptor);
+#endif
 }
 
 #ifdef AMULE_UTP_TRANSPORT

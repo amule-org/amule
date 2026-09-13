@@ -26,10 +26,10 @@
 #ifndef LIBSOCKET_H
 #define LIBSOCKET_H
 
+#include "StreamTransport.h" // IStreamTransport and its event sink
 #include "Types.h"
 #include <memory> // shared_ptr for CAsioUDPSocketImpl ownership
 class amuleIPV4Address;
-class IStreamTransport;
 
 // Socket flags (unused in ASIO implementation, just provide the names)
 enum
@@ -60,7 +60,7 @@ enum
 // Abstraction class for a library TCP socket: either a wxSocket or an ASIO socket.
 
 // Client TCP socket
-class CLibSocket
+class CLibSocket : public IStreamTransportEvents
 {
 	friend class CAsioSocketImpl;
 	friend class CAsioSocketServerImpl;
@@ -163,6 +163,15 @@ public:
 
 	//! True while a transport owns this socket's stream.
 	bool HasTransport() const { return m_transport != nullptr; }
+
+	/**
+	 * Turns a transport's stream events into the socket events aMule already
+	 * has, so everything above this layer stays unaware there is a transport.
+	 */
+	void OnStreamReadable() override;
+	void OnStreamWritable() override;
+	void OnStreamLost() override;
+	void OnFlushRequested() override;
 
 private:
 	// Replace the internal socket. Takes ownership of the passed shared_ptr.

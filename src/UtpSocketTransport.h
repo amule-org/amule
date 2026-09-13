@@ -78,40 +78,6 @@ public:
 };
 
 /**
- * What the layer above a stream is told, in the order it is told.
- *
- * Deliberately not the CoreNotify_LibSocket* macros: those take a CLibSocket*,
- * which does not exist until something accepts a connection, and a transport
- * that reaches for theApp is a transport that cannot be tested. The acceptor
- * implements this by forwarding to those macros.
- */
-class IStreamTransportEvents
-{
-public:
-	virtual ~IStreamTransportEvents() = default;
-
-	//! Bytes are readable.
-	virtual void OnStreamReadable() = 0;
-
-	//! The send window opened; a blocked writer may continue.
-	virtual void OnStreamWritable() = 0;
-
-	//! The stream ended, cleanly or otherwise. Ask the transport which.
-	virtual void OnStreamLost() = 0;
-
-	/**
-	 * Asks for Flush() to be called on the main thread.
-	 *
-	 * Raised from the upload bandwidth thread, so the implementation must
-	 * marshal -- MuleNotify::DoNotify clones a functor and delivers it to
-	 * wxTheApp, which is how the asio layer already crosses the same boundary.
-	 * Only the first queue-up since the last flush raises it, so the cost is
-	 * one event per idle-to-busy transition rather than one per write.
-	 */
-	virtual void OnFlushRequested() = 0;
-};
-
-/**
  * An IStreamTransport over one libutp socket.
  *
  * Main thread only for everything that touches libutp -- Flush(), Read()'s
@@ -445,6 +411,21 @@ public:
 	{
 		std::lock_guard<std::mutex> lock(m_mutex);
 		return m_socket;
+	}
+
+	/**
+	 * Installs the sink events are delivered to.
+	 *
+	 * Set after construction because the thing that receives them -- the socket
+	 * this stream will belong to -- does not exist until admission has decided,
+	 * and the transport has to exist first for admission to have anything to
+	 * decide about. Nothing may be emitted before this is called, which holds
+	 * because libutp cannot deliver to a socket the acceptor has not returned.
+	 */
+	void SetEvents(IStreamTransportEvents *events)
+	{
+		std::lock_guard<std::mutex> lock(m_mutex);
+		m_events = events;
 	}
 
 	//! How the stream ended, for a caller that needs more than IsOk().

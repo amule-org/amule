@@ -63,6 +63,7 @@
 
 #include "LibSocket.h"
 #include "StreamTransport.h" // IStreamTransport, for the attached-stream branches
+#include "GuiEvents.h"       // CoreNotify_LibSocket*, the transport event bridge
 #include <wx/thread.h>       // wxMutex
 #include <wx/intl.h>         // _()
 #include <common/Format.h>   // Needed for CFormat
@@ -1355,6 +1356,35 @@ const wxChar *CLibSocket::GetIP() const
 void CLibSocket::AttachTransport(std::unique_ptr<IStreamTransport> transport)
 {
 	m_transport = std::move(transport);
+}
+
+// The four below are the whole bridge: a transport reports on its stream, and
+// these turn that into the notifications the asio layer already raises, so
+// CEMSocket and everything above it never learns there is a transport.
+//
+// Queued rather than called: every CoreNotify_* delivery marshals to the main
+// thread, which is what makes a flush request raised on the upload bandwidth
+// thread safe to answer.
+void CLibSocket::OnStreamReadable()
+{
+	CoreNotify_LibSocketReceive(this, 0);
+}
+
+void CLibSocket::OnStreamWritable()
+{
+	CoreNotify_LibSocketSend(this, 0);
+}
+
+void CLibSocket::OnStreamLost()
+{
+	CoreNotify_LibSocketLost(this);
+}
+
+void CLibSocket::OnFlushRequested()
+{
+	// Reuses the send notification: the main thread answering it offers the
+	// queue, which is exactly what the request asks for.
+	CoreNotify_LibSocketSend(this, 0);
 }
 
 bool CLibSocket::GetProxyState() const
