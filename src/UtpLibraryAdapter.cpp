@@ -27,7 +27,6 @@
 #include "UtpSocketTransport.h" // per-socket crypt parameters, resolved from userdata
 #include <libutp/utp.h>
 
-#include <set>
 #include <vector>
 
 namespace
@@ -61,7 +60,6 @@ public:
 		// in between would recover userdata pointing at a transport that has
 		// already been destroyed by the owner that called this.
 		utp_set_userdata(raw, nullptr);
-		m_live.erase(raw);
 		utp_close(raw);
 	}
 
@@ -99,16 +97,13 @@ public:
 		if (!m_context) {
 			return;
 		}
-		// Closed before the context goes. utp_destroy() is `delete ctx` and
-		// libutp declares no destructor for it, so a socket still alive at that
-		// point is neither closed nor announced: its transport would keep a
-		// handle into freed memory and close it later. Closing here produces
-		// UTP_STATE_DESTROYING for each, which is what clears those handles.
-		const std::vector<utp_socket *> live(m_live.begin(), m_live.end());
-		for (utp_socket *socket : live) {
-			utp_close(socket);
-		}
-		m_live.clear();
+		// Sockets are not closed here, and that is deliberate. utp_destroy() is
+		// `delete ctx`, and struct_utp_context owns UTPSocketHT, whose map
+		// holds each socket in a unique_ptr with a deleter (utp_internal.h).
+		// Destroying the context therefore destroys every socket, and
+		// ~UTPSocket emits UTP_STATE_DESTROYING (utp_internal.cpp:2499), which
+		// is what makes each transport drop its handle. Closing first would
+		// call utp_close() on sockets already dying, which it asserts against.
 		m_refusedStreams.clear();
 		for (utp_socket *refused : m_refused) {
 			utp_close(refused);
@@ -232,7 +227,6 @@ private:
 			return 0;
 		}
 		s_self->m_peers.Add(ip, port);
-		s_self->m_live.insert(args->socket);
 		return 0;
 	}
 
@@ -256,9 +250,6 @@ private:
 			if (s_self != nullptr) {
 				s_self->m_peers.Remove(transport->GetPeerAddress().ToIPv4NetworkOrderOrZero(),
 					transport->GetPeerPort());
-			}
-			if (s_self != nullptr) {
-				s_self->m_live.erase(args->socket);
 			}
 			utp_set_userdata(args->socket, nullptr);
 			transport->OnEnded(EUtpTransportFailure::Destroying);
@@ -329,9 +320,6 @@ private:
 	std::vector<utp_socket *> m_refused;
 	// Refused streams, destroyed at the same point. Destruction is the close.
 	std::vector<std::unique_ptr<IStreamTransport>> m_refusedStreams;
-	// Accepted sockets still alive, so shutdown can close them before the
-	// context they live in is deleted.
-	std::set<utp_socket *> m_live;
 	// libutp's callbacks are free functions with no user pointer of their own
 	// beyond the context's, which already carries the datagram sink. One
 	// adapter exists per process, created in CamuleApp::OnInit.

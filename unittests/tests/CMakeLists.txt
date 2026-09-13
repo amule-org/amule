@@ -51,6 +51,10 @@ target_link_libraries (UtpSocketTransportTest
 add_executable (LibSocketTransportTest
 	LibSocketTransportTest.cpp
 	${CMAKE_SOURCE_DIR}/src/LibSocket.cpp
+	# Same reason NetworkFunctionsTest compiles it: LibSocket.cpp includes
+	# LibSocketAsio.cpp, whose Windows interface-resolution path calls
+	# DetectNetworkInterfaces(), and this target does not link mulesocket.
+	${CMAKE_SOURCE_DIR}/src/NetworkInterfaces.cpp
 	${CMAKE_SOURCE_DIR}/src/NetworkAddress.cpp
 	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
 	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c

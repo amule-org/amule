@@ -416,17 +416,13 @@ TEST(UtpLibraryAdapter, DeliveryStopsAtTheConfiguredBoundAndResumesOnTheCrossing
 	Teardown(loop);
 }
 
-TEST(UtpLibraryAdapter, ShutdownClosesLiveSocketsBeforeTheContextGoes)
+TEST(UtpLibraryAdapter, DestroyingTheContextEndsTheStreamsItOwned)
 {
-	// utp_destroy() is `delete ctx` and libutp declares no destructor for it,
-	// so a socket still alive then is neither closed nor announced. Its
-	// transport would keep a handle into freed memory and close it later.
-	//
-	// This pins the shutdown ordering and does NOT discriminate: with the
-	// closing loop removed it still passes, because nothing here dereferences
-	// the dead handle. Showing the difference needs a sanitiser, not an
-	// assertion. The argument for the loop is libutp's own teardown, quoted
-	// above; the test is here so the ordering is not silently dropped.
+	// utp_destroy() destroys the sockets itself: struct_utp_context owns
+	// UTPSocketHT, whose map holds each one in a unique_ptr with a deleter,
+	// and ~UTPSocket emits UTP_STATE_DESTROYING. That callback is what makes
+	// each transport drop its handle, which is what this pins -- a teardown
+	// that stopped delivering it would leave streams holding dead sockets.
 	SLoopback loop;
 	g_loop = &loop;
 	CServerSink sink;
