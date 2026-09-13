@@ -104,6 +104,32 @@ private:
 };
 
 // Library seam: no libutp types or stream operations escape the adapter.
+class IStreamTransport;
+
+/**
+ * Where an accepted uTP stream is offered for admission.
+ *
+ * Separate from the library adapter because admission is the application's
+ * question -- is it shutting down, is the connection limit reached, is this
+ * address filtered or banned -- and none of that belongs next to libutp. The
+ * adapter builds the stream and asks; it never decides.
+ */
+class IUtpStreamAcceptor
+{
+public:
+	virtual ~IUtpStreamAcceptor() = default;
+
+	/**
+	 * Offers one accepted stream.
+	 *
+	 * @return true when it takes ownership. A refusal leaves the transport to
+	 * the adapter, which closes the socket only after libutp has finished
+	 * processing the datagram that produced it.
+	 */
+	virtual bool AcceptStream(
+		std::unique_ptr<IStreamTransport> transport, uint32_t ip, uint16_t port) = 0;
+};
+
 class IUtpLibrary
 {
 public:
@@ -113,6 +139,12 @@ public:
 	virtual bool ProcessDatagram(const uint8_t *payload, size_t length, uint32_t ip, uint16_t port) = 0;
 	virtual void IssueDeferredAcks() = 0;
 	virtual void CheckTimeouts() = 0;
+
+	//! Null refuses every inbound SYN, which is the state before an acceptor exists.
+	virtual void SetAcceptor(IUtpStreamAcceptor *acceptor) = 0;
+
+	//! True while that endpoint holds at least one accepted socket.
+	virtual bool HasRegisteredPeer(uint32_t ip, uint16_t port) const = 0;
 };
 
 // Main-thread only. Tick never recreates state abandoned by socket Close().
@@ -156,18 +188,19 @@ public:
 		}
 	}
 
-	bool HasRegisteredPeer(uint32_t ip, uint16_t port) const override { return m_peers.Has(ip, port); }
+	// Delegated rather than answered here: registration happens where sockets
+	// are created and destroyed, which is the library adapter.
+	bool HasRegisteredPeer(uint32_t ip, uint16_t port) const override
+	{
+		return m_library->HasRegisteredPeer(ip, port);
+	}
 
-	//! For the acceptor, once admission has succeeded and ownership is attached.
-	void RegisterPeer(uint32_t ip, uint16_t port) { m_peers.Add(ip, port); }
-
-	//! On UTP_STATE_DESTROYING, before the stream-lost notification.
-	void ForgetPeer(uint32_t ip, uint16_t port) { m_peers.Remove(ip, port); }
+	//! Installed once. Until then every inbound SYN is refused.
+	void SetAcceptor(IUtpStreamAcceptor *acceptor) { m_library->SetAcceptor(acceptor); }
 
 private:
 	std::unique_ptr<IUtpLibrary> m_library;
 	IUtpDatagramSink &m_sink;
-	CUtpPeerRegistry m_peers;
 	bool m_active = false;
 };
 

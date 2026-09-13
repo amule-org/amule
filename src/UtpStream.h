@@ -51,6 +51,23 @@ public:
 	//! Default bound on unsent bytes. One eD2k block plus headroom.
 	static constexpr size_t kDefaultWriteBound = 256 * 1024;
 
+	//! One datagram's worth: how far short of the bound a stalled stream sits.
+	static constexpr size_t kWindowSlackBytes = 2048;
+
+	/**
+	 * How far below the bound counts as "the window is closed".
+	 *
+	 * A datagram's worth, except on a bound too small to hold one, where it
+	 * becomes a proportion so the rule still has a high-water mark to cross.
+	 * Only the tests configure a bound that small, but a rule that silently
+	 * stops firing there would make them prove nothing.
+	 */
+	size_t WindowSlack() const
+	{
+		const size_t proportional = m_readBound / 8;
+		return proportional < kWindowSlackBytes ? proportional : kWindowSlackBytes;
+	}
+
 	//! PeekQueuedBytes() default: no cap, the whole queue.
 	static constexpr size_t kNoPeekLimit = static_cast<size_t>(-1);
 
@@ -111,9 +128,17 @@ public:
 			static_cast<uint8_t *>(buffer));
 		m_readBuffer.erase(m_readBuffer.begin(), m_readBuffer.begin() + consumed);
 		m_blocksRead = false;
-		if (!IsTerminal() && available >= ReadBound() && m_readBuffer.size() < ReadBound()) {
-			// Packet readers can keep a nonempty backlog indefinitely. Reopen the window
-			// when they cross below the bound, rather than waiting for an empty buffer.
+		// Reopen the window on the crossing, not on an empty buffer: a packet
+		// reader keeps a backlog forever and would never signal.
+		//
+		// The crossing is measured a packet short of the bound because occupancy
+		// never reaches it. libutp advertises opt_rcvbuf minus occupancy and
+		// stops once that cannot hold another packet, so a stalled stream sits
+		// just below the bound -- 64954 of 65536 in the loopback test. Comparing
+		// against the bound itself therefore never fires, and the transfer hangs
+		// waiting for a zero-window probe.
+		const size_t highWater = ReadBound() - WindowSlack();
+		if (!IsTerminal() && available >= highWater && m_readBuffer.size() < highWater) {
 			m_readDrainedDue = true;
 		}
 		return static_cast<uint32_t>(taken);

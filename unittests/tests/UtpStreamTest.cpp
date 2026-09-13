@@ -104,7 +104,8 @@ TEST(UtpStream, ReadDrainedCrossingTable)
 		bool edge;
 	} cases[] = {
 		{ "above to nonempty below", 12, 6, true },
-		{ "exact bound to below", 8, 1, true },
+		{ "at the bound, still above the high-water", 8, 1, false },
+		{ "at the bound, down past the high-water", 8, 3, true },
 		{ "above to above", 12, 2, false },
 		{ "above to exact bound", 12, 4, false },
 		{ "above to empty", 12, 16, true },
@@ -160,8 +161,9 @@ TEST(UtpStream, ReadDrainedConsumptionIsOneShot)
 	uint8_t out[2] = { 0 };
 	ASSERT_FALSE(stream.ConsumeReadDrainedEdge());
 	stream.OnPayload(payload.data(), payload.size());
-	ASSERT_EQUALS(1u, stream.Read(out, 1));
-	// A subsequent below-bound read must not erase a notification still owed.
+	// Two bytes cross the high-water; the second read is already below it and
+	// must not erase a notification still owed.
+	ASSERT_EQUALS(2u, stream.Read(out, 2));
 	ASSERT_EQUALS(1u, stream.Read(out, 1));
 	ASSERT_TRUE(stream.ConsumeReadDrainedEdge());
 	ASSERT_FALSE(stream.ConsumeReadDrainedEdge());

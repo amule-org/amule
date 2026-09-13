@@ -239,10 +239,16 @@ TEST(UtpSocketTransport, PacketReaderReopensWindowWithoutEmptying)
 	transport.OnPayload(payload.data(), payload.size());
 	uint8_t out[16] = { 0 };
 	// CEMSocket reads a six-byte header, then a body, and returns with a backlog.
+	// Still above the high-water, so the window is closed and nothing is owed.
 	ASSERT_EQUALS(6u, transport.Read(out, 6));
 	ASSERT_EQUALS(0, ops.drainedCalls);
-	ASSERT_EQUALS(16u, transport.Read(out, sizeof(out)));
+	// Crossing it reopens the window, with the buffer still far from empty.
+	uint8_t bulk[4096] = { 0 };
+	while (transport.ReadBufferSize() > CUtpStream::kDefaultReadBound - 4096) {
+		transport.Read(bulk, sizeof(bulk));
+	}
 	ASSERT_EQUALS(1, ops.drainedCalls);
+	ASSERT_TRUE(transport.ReadBufferSize() != 0);
 	ASSERT_EQUALS(6u, transport.Read(out, 6));
 	ASSERT_EQUALS(1, ops.drainedCalls);
 }

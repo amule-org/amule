@@ -41,6 +41,8 @@ struct State
 	uint16_t port = 0;
 	std::vector<uint8_t> payload;
 	IUtpDatagramSink *sink = nullptr;
+	IUtpStreamAcceptor *acceptor = nullptr;
+	CUtpPeerRegistry registered;
 };
 
 class FakeLibrary : public IUtpLibrary
@@ -55,6 +57,11 @@ public:
 		++s.creates;
 		s.sink = &sink;
 		return s.createSucceeds;
+	}
+	void SetAcceptor(IUtpStreamAcceptor *acceptor) override { s.acceptor = acceptor; }
+	bool HasRegisteredPeer(uint32_t ip, uint16_t port) const override
+	{
+		return s.registered.Has(ip, port);
 	}
 	void Destroy() override
 	{

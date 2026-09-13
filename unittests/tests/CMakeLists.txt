@@ -89,6 +89,25 @@ if (ENABLE_UTP)
 	)
 	target_link_libraries (UtpContextTest muleunit ZLIB::ZLIB)
 	add_test (NAME UtpContextTest COMMAND UtpContextTest)
+
+	# Drives the adapter through real libutp: the callbacks it registers cannot
+	# be exercised by a double, because what is under test is libutp's own
+	# dispatch and state machine reaching them.
+	add_executable (UtpLibraryAdapterTest
+		UtpLibraryAdapterTest.cpp
+		${CMAKE_SOURCE_DIR}/src/UtpLibraryAdapter.cpp
+		${CMAKE_SOURCE_DIR}/src/NetworkAddress.cpp
+		${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
+		${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
+	)
+	target_include_directories (UtpLibraryAdapterTest PRIVATE
+		${CMAKE_BINARY_DIR}
+		${CMAKE_SOURCE_DIR}/src
+		${CMAKE_SOURCE_DIR}/src/include
+		${Boost_INCLUDE_DIR}
+	)
+	target_link_libraries (UtpLibraryAdapterTest muleunit Utp::Utp ${Boost_LIBRARIES})
+	add_test (NAME UtpLibraryAdapterTest COMMAND UtpLibraryAdapterTest)
 endif()
 
 add_executable (CTagTest
