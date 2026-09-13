@@ -3429,6 +3429,11 @@ wxString CSearchListRem::StartNewSearch(
 	case KadSearch:
 		ec_search_type = EC_SEARCH_KAD;
 		break;
+	case BrowseSearch:
+		// Never a query: a browse goes out as EC_OP_FRIEND from SendBrowseRequest().
+		// Listed rather than defaulted, so a new kind still trips -Wswitch here.
+		wxFAIL;
+		break;
 	}
 	search_req.AddTag(CEC_Search_Tag(params.searchString,
 		ec_search_type,
