@@ -51,14 +51,13 @@ finish-args:
   - --share=ipc
   - --socket=fallback-x11
   - --socket=wayland
-  - --device=dri
-  # Full home access. aMule is a P2P client where users mark arbitrary
-  # folders as shared (uploads) and pick arbitrary destinations for
-  # Incoming / Temp / completed-files dirs (downloads). Restricting to
-  # xdg-download alone makes the most common config — "share my Music
-  # folder, save downloads to ~/Movies" — silently fail. This matches
-  # qBittorrent / Transmission on Flathub for the same reason.
-  - --filesystem=home
+  # Specific filesystem access
+  # This will allow the default use case without changing any settings
+  # Users can change the download directory to the aMule directory in their downloads folder.
+  # Using permission managers or manual editing, users can allow access to more directories
+  - --filesystem=~/.aMule:create
+  - --filesystem=xdg-download/aMule:create
+  - --filesystem=xdg-music:ro
   - --talk-name=org.freedesktop.PowerManagement.Inhibit
   - --talk-name=org.kde.StatusNotifierWatcher
   - --talk-name=com.canonical.AppMenu.Registrar
