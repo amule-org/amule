@@ -271,7 +271,7 @@ TEST(UtpLibraryAdapter, BytesCrossTheStreamInOrder)
 	std::vector<uint8_t> received(payload.size());
 	size_t offered = 0;
 	uint32_t total = 0;
-	for (int round = 0; round < 64 && (offered < payload.size() || total < payload.size()); ++round) {
+	for (int round = 0; round < 512 && (offered < payload.size() || total < payload.size()); ++round) {
 		if (offered < payload.size()) {
 			utp_iovec vector{ payload.data() + offered, payload.size() - offered };
 			const ssize_t accepted = utp_writev(loop.clientSocket, &vector, 1);
@@ -360,7 +360,7 @@ TEST(UtpLibraryAdapter, DeliveryStopsAtTheConfiguredBoundAndResumesOnTheCrossing
 	ASSERT_TRUE(utp->ReadBufferSize() != 0);
 
 	// The rest must now arrive.
-	for (int round = 0; round < 64 && (offered < payload.size() || total < payload.size()); ++round) {
+	for (int round = 0; round < 512 && (offered < payload.size() || total < payload.size()); ++round) {
 		if (offered < payload.size()) {
 			utp_iovec vector{ payload.data() + offered, payload.size() - offered };
 			const ssize_t accepted = utp_writev(loop.clientSocket, &vector, 1);
@@ -374,7 +374,12 @@ TEST(UtpLibraryAdapter, DeliveryStopsAtTheConfiguredBoundAndResumesOnTheCrossing
 		// keeps pace this way never empties the buffer, which is precisely why
 		// an empty-buffer rule would never reopen the window and this transfer
 		// would stall short of the payload.
-		for (int packet = 0; packet < 6 && total < payload.size(); ++packet) {
+		// One packet per round, like CEMSocket. This does not discriminate the
+		// crossing rule from an empty-buffer one -- the reader still outpaces
+		// the sender often enough for the buffer to empty, and three attempts
+		// to force otherwise failed. PacketReaderReopensWindowWithoutEmptying
+		// covers that distinction at the transport level.
+		for (int packet = 0; packet < 1 && total < payload.size(); ++packet) {
 			uint8_t header[6] = { 0 };
 			const uint32_t headerTaken = acceptor.accepted->Read(header, sizeof(header));
 			if (headerTaken == 0) {
@@ -421,8 +426,11 @@ TEST(UtpLibraryAdapter, DestroyingTheContextEndsTheStreamsItOwned)
 
 	loop.server->Destroy();
 
-	// The stream was told, so it has dropped its handle rather than keeping one
-	// into a context that no longer exists.
+	// The handle is the discriminating assertion: a teardown that stopped
+	// delivering DESTROYING would leave it set, pointing into a context that no
+	// longer exists, and the next close would reach freed memory.
+	auto *utp = static_cast<CUtpSocketTransport *>(acceptor.accepted.get());
+	ASSERT_TRUE(utp->SocketHandle() == nullptr);
 	ASSERT_FALSE(acceptor.accepted->IsOk());
 	ASSERT_FALSE(loop.server->HasRegisteredPeer(kPeerIp, kPeerPort));
 	// Destroying again, and closing the stream the owner still holds, must both

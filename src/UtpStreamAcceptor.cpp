@@ -40,29 +40,33 @@
 bool CUtpStreamAcceptor::AcceptStream(
 	std::unique_ptr<IStreamTransport> &transport, uint32_t ip, uint16_t port)
 {
-	if (!theApp->IsRunning()) {
-		return false;
-	}
-	// The listener's own exception: refusing while connecting to a server is
-	// what produces a LowID on every server.
-	if (!theApp->serverconnect->IsConnecting() && theApp->listensocket->TooManySockets()) {
+	// Every refusal happens before ownership moves: destroying a transport
+	// closes its socket, and the adapter closes a refused one too.
+	const EUtpAdmission decision = DecideUtpAdmission(theApp->IsRunning(),
+		theApp->serverconnect->IsConnecting(),
+		theApp->listensocket->TooManySockets(),
+		ip,
+		ip != 0 && theApp->ipfilter->IsFiltered(ip),
+		ip != 0 && theApp->clientlist->IsBannedClient(ip));
+
+	switch (decision) {
+	case EUtpAdmission::Admit:
+		break;
+	case EUtpAdmission::TooManySockets:
+		// Per refused stream, where the TCP listener counts once per accept
+		// burst: a uTP SYN arrives on its own, so there is no burst to fold.
 		theStats::AddMaxConnectionLimitReached();
 		return false;
-	}
-
-	// Refusals come first: destroying a transport closes its socket, so a
-	// refusal after ownership moved would close what the adapter closes too.
-	if (ip == 0) {
-		return false;
-	}
-	if (theApp->ipfilter->IsFiltered(ip)) {
+	case EUtpAdmission::Filtered:
 		AddDebugLogLineN(logClient,
 			CFormat("Denied uTP stream from %s:%u (Filtered IP)") % Uint32toStringIP(ip) % port);
 		return false;
-	}
-	if (theApp->clientlist->IsBannedClient(ip)) {
+	case EUtpAdmission::Banned:
 		AddDebugLogLineN(logClient,
 			CFormat("Denied uTP stream from %s:%u (Banned IP)") % Uint32toStringIP(ip) % port);
+		return false;
+	case EUtpAdmission::ShuttingDown:
+	case EUtpAdmission::NoAddress:
 		return false;
 	}
 
@@ -72,7 +76,7 @@ bool CUtpStreamAcceptor::AcceptStream(
 	auto *utp = static_cast<CUtpSocketTransport *>(transport.get());
 	utp->SetEvents(socket);
 	socket->AttachTransport(std::move(transport));
-	// Records m_remoteip from the stream's peer; its two checks were made above.
+	// Records m_remoteip from the stream's peer; its checks were made above.
 	socket->InitNetworkData();
 	AddDebugLogLineN(logClient, CFormat("Accepted uTP stream from %s:%u") % Uint32toStringIP(ip) % port);
 	return true;

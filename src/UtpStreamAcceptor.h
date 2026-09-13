@@ -27,12 +27,50 @@
 
 #include "UtpContext.h"
 
+//! Why an accepted uTP stream was, or was not, taken.
+enum class EUtpAdmission
+{
+	Admit,
+	ShuttingDown,
+	TooManySockets,
+	NoAddress,
+	Filtered,
+	Banned
+};
+
 /**
- * Decides whether an accepted uTP stream becomes a client connection.
+ * The admission decision, separated from gathering the facts it needs.
  *
  * Asks what CListenSocket::OnAccept plus CClientTCPSocket::InitNetworkData ask
  * for TCP: running, under the connection limit, not filtered, not banned.
- * Completing a uTP handshake proves nothing about a peer that TCP would refuse.
+ * Completing a uTP handshake proves nothing about a peer TCP would refuse.
+ *
+ * @a connectingToServer carries the listener's own exception: refusing while a
+ * server connection is in progress is what produces a LowID on every server.
+ */
+constexpr EUtpAdmission DecideUtpAdmission(
+	bool running, bool connectingToServer, bool tooManySockets, uint32_t ip, bool filtered, bool banned)
+{
+	if (!running) {
+		return EUtpAdmission::ShuttingDown;
+	}
+	if (!connectingToServer && tooManySockets) {
+		return EUtpAdmission::TooManySockets;
+	}
+	if (ip == 0) {
+		return EUtpAdmission::NoAddress;
+	}
+	if (filtered) {
+		return EUtpAdmission::Filtered;
+	}
+	if (banned) {
+		return EUtpAdmission::Banned;
+	}
+	return EUtpAdmission::Admit;
+}
+
+/**
+ * Gathers those facts from the application and acts on the decision.
  */
 class CUtpStreamAcceptor : public IUtpStreamAcceptor
 {

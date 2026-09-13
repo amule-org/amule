@@ -112,6 +112,21 @@ if (ENABLE_UTP)
 	)
 	target_link_libraries (UtpLibraryAdapterTest muleunit Utp::Utp ${Boost_LIBRARIES})
 	add_test (NAME UtpLibraryAdapterTest COMMAND UtpLibraryAdapterTest)
+
+	# The admission decision only. Gathering its inputs needs the application;
+	# deciding on them does not, which is why they are separated.
+	add_executable (UtpAdmissionTest
+		UtpAdmissionTest.cpp
+		${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
+		${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
+	)
+	target_include_directories (UtpAdmissionTest PRIVATE
+		${CMAKE_BINARY_DIR}
+		${CMAKE_SOURCE_DIR}/src
+		${CMAKE_SOURCE_DIR}/src/include
+	)
+	target_link_libraries (UtpAdmissionTest muleunit)
+	add_test (NAME UtpAdmissionTest COMMAND UtpAdmissionTest)
 endif()
 
 add_executable (CTagTest
