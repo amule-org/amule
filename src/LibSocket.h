@@ -179,8 +179,9 @@ private:
 	// Owned: outlives nothing and is closed by Destroy() before the asio
 	// wrapper goes, so a libutp callback cannot arrive after teardown.
 	std::unique_ptr<IStreamTransport> m_transport;
-	// GetIP() hands back a borrowed pointer, so the text has to outlive the call.
-	mutable wxString m_peerText;
+	// GetIP() hands back a borrowed pointer, so the text has to outlive the
+	// call. Written once at attach; never from a const accessor.
+	wxString m_peerText;
 
 	// shared_ptr so the asio impl can outlive this wrapper for as long as any in-flight async
 	// callback still holds a shared_from_this() ref. Required to fix the wake-from-sleep use-

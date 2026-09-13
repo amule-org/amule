@@ -1341,17 +1341,18 @@ void CLibSocket::LinkSocketImpl(std::shared_ptr<class CAsioSocketImpl> socket)
 
 const wxChar *CLibSocket::GetIP() const
 {
-	if (m_transport) {
-		// Cached because the accessor hands back a borrowed pointer.
-		m_peerText = wxString(m_transport->GetPeerAddress().ToString());
-		return m_peerText.c_str();
-	}
-	return m_aSocket->GetIP();
+	// Taken at attach, not built here: this hands back a borrowed pointer, and
+	// building it on demand would mutate a member from a const accessor that
+	// the upload thread is free to call.
+	return m_transport ? m_peerText.c_str() : m_aSocket->GetIP();
 }
 
 void CLibSocket::AttachTransport(std::unique_ptr<IStreamTransport> transport)
 {
 	m_transport = std::move(transport);
+	// Fixed for the transport's lifetime, so GetIP() can hand out a pointer
+	// into it without building anything.
+	m_peerText = wxString(m_transport->GetPeerAddress().ToString());
 }
 
 // Queued rather than called: CoreNotify_* marshals to the main thread, which
