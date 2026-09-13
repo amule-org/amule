@@ -27,6 +27,7 @@
 #include "UtpSocketTransport.h" // per-socket crypt parameters, resolved from userdata
 #include <libutp/utp.h>
 
+#include <set>
 #include <vector>
 
 namespace
@@ -85,9 +86,28 @@ public:
 	bool HasRegisteredPeer(uint32_t ip, uint16_t port) const override { return m_peers.Has(ip, port); }
 	void Destroy() override
 	{
-		if (m_context) {
-			utp_destroy(m_context);
-			m_context = nullptr;
+		if (!m_context) {
+			return;
+		}
+		// Closed before the context goes. utp_destroy() is `delete ctx` and
+		// libutp declares no destructor for it, so a socket still alive at that
+		// point is neither closed nor announced: its transport would keep a
+		// handle into freed memory and close it later. Closing here produces
+		// UTP_STATE_DESTROYING for each, which is what clears those handles.
+		const std::vector<utp_socket *> live(m_live.begin(), m_live.end());
+		for (utp_socket *socket : live) {
+			utp_close(socket);
+		}
+		m_live.clear();
+		for (utp_socket *refused : m_refused) {
+			utp_close(refused);
+		}
+		m_refused.clear();
+		utp_destroy(m_context);
+		m_context = nullptr;
+		m_acceptor = nullptr;
+		if (s_self == this) {
+			s_self = nullptr;
 		}
 	}
 	bool ProcessDatagram(const uint8_t *payload, size_t length, uint32_t ip, uint16_t port) override
@@ -193,6 +213,7 @@ private:
 			return 0;
 		}
 		s_self->m_peers.Add(ip, port);
+		s_self->m_live.insert(args->socket);
 		return 0;
 	}
 
@@ -216,6 +237,9 @@ private:
 			if (s_self != nullptr) {
 				s_self->m_peers.Remove(transport->GetPeerAddress().ToIPv4NetworkOrderOrZero(),
 					transport->GetPeerPort());
+			}
+			if (s_self != nullptr) {
+				s_self->m_live.erase(args->socket);
 			}
 			utp_set_userdata(args->socket, nullptr);
 			transport->OnEnded(EUtpTransportFailure::Destroying);
@@ -283,6 +307,9 @@ private:
 	CUtpPeerRegistry m_peers;
 	// Refused sockets, closed once libutp has finished with the datagram.
 	std::vector<utp_socket *> m_refused;
+	// Accepted sockets still alive, so shutdown can close them before the
+	// context they live in is deleted.
+	std::set<utp_socket *> m_live;
 	// libutp's callbacks are free functions with no user pointer of their own
 	// beyond the context's, which already carries the datagram sink. One
 	// adapter exists per process, created in CamuleApp::OnInit.

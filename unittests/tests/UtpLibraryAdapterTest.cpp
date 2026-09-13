@@ -416,4 +416,42 @@ TEST(UtpLibraryAdapter, DeliveryStopsAtTheConfiguredBoundAndResumesOnTheCrossing
 	Teardown(loop);
 }
 
+TEST(UtpLibraryAdapter, ShutdownClosesLiveSocketsBeforeTheContextGoes)
+{
+	// utp_destroy() is `delete ctx` and libutp declares no destructor for it,
+	// so a socket still alive then is neither closed nor announced. Its
+	// transport would keep a handle into freed memory and close it later.
+	//
+	// This pins the shutdown ordering and does NOT discriminate: with the
+	// closing loop removed it still passes, because nothing here dereferences
+	// the dead handle. Showing the difference needs a sanitiser, not an
+	// assertion. The argument for the loop is libutp's own teardown, quoted
+	// above; the test is here so the ordering is not silently dropped.
+	SLoopback loop;
+	g_loop = &loop;
+	CServerSink sink;
+	CFakeAcceptor acceptor;
+	loop.server = CreateUtpLibrary();
+	ASSERT_TRUE(loop.server->Create(sink));
+	loop.server->SetAcceptor(&acceptor);
+	StartClient(loop);
+	Pump(loop);
+	ASSERT_TRUE(acceptor.accepted != nullptr);
+	ASSERT_TRUE(loop.server->HasRegisteredPeer(kPeerIp, kPeerPort));
+	// Live before the teardown, or what follows proves nothing.
+	ASSERT_TRUE(acceptor.accepted->IsOk());
+
+	loop.server->Destroy();
+
+	// The stream was told, so it has dropped its handle rather than keeping one
+	// into a context that no longer exists.
+	ASSERT_FALSE(acceptor.accepted->IsOk());
+	ASSERT_FALSE(loop.server->HasRegisteredPeer(kPeerIp, kPeerPort));
+	// Destroying again, and closing the stream the owner still holds, must both
+	// be harmless: this is the shutdown order a real teardown produces.
+	loop.server->Destroy();
+	acceptor.accepted->Close();
+	Teardown(loop);
+}
+
 // File_checked_for_headers

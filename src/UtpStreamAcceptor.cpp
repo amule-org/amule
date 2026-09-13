@@ -26,6 +26,8 @@
 
 #include "ClientTCPSocket.h"
 #include "Logger.h"
+#include "ClientList.h"
+#include "IPFilter.h"
 #include "ListenSocket.h"
 #include "ServerConnect.h"
 #include "Statistics.h"
@@ -48,6 +50,29 @@ bool CUtpStreamAcceptor::AcceptStream(std::unique_ptr<IStreamTransport> transpor
 		return false;
 	}
 
+	// Every refusal happens before ownership moves, and that ordering is not a
+	// style choice. Once the socket holds the transport, deleting it closes the
+	// libutp socket through the transport's destructor -- and returning false
+	// then has the adapter close the same socket again. Refusing first means
+	// exactly one close on every path.
+	//
+	// The same questions InitNetworkData() asks, against the address the stream
+	// arrived from. It runs below anyway once the socket exists, which is where
+	// m_remoteip gets set; here it only decides.
+	if (ip == 0) {
+		return false;
+	}
+	if (theApp->ipfilter->IsFiltered(ip)) {
+		AddDebugLogLineN(logClient,
+			CFormat("Denied uTP stream from %s:%u (Filtered IP)") % Uint32toStringIP(ip) % port);
+		return false;
+	}
+	if (theApp->clientlist->IsBannedClient(ip)) {
+		AddDebugLogLineN(logClient,
+			CFormat("Denied uTP stream from %s:%u (Banned IP)") % Uint32toStringIP(ip) % port);
+		return false;
+	}
+
 	auto *socket = new CClientTCPSocket();
 	// Events wired before ownership moves: once the socket holds the transport,
 	// a libutp callback can reach it, and a stream event with nowhere to go is
@@ -55,13 +80,10 @@ bool CUtpStreamAcceptor::AcceptStream(std::unique_ptr<IStreamTransport> transpor
 	auto *utp = static_cast<CUtpSocketTransport *>(transport.get());
 	utp->SetEvents(socket);
 	socket->AttachTransport(std::move(transport));
-	// Asked through the socket, so the filter and ban checks see the stream's
-	// peer rather than the asio socket's absent one. Routing those accessors
-	// is what makes this work at all.
-	if (!socket->InitNetworkData()) {
-		socket->Safe_Delete();
-		return false;
-	}
+	// Reached through the socket, so it sees the stream's peer rather than the
+	// asio socket's absent one, and sets m_remoteip from it. It cannot refuse
+	// here: the two checks it makes were made above, and the address is known.
+	socket->InitNetworkData();
 	AddDebugLogLineN(logClient, CFormat("Accepted uTP stream from %s:%u") % Uint32toStringIP(ip) % port);
 	return true;
 }
