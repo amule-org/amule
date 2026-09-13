@@ -65,12 +65,8 @@ public:
 	virtual bool HasRegisteredPeer(uint32_t ip, uint16_t port) const = 0;
 };
 
-/**
- * Which endpoints hold a uTP socket.
- *
- * Counted, not a set: one endpoint can hold several sockets, and forgetting on
- * the first close would leave the survivor's traffic answered with an RST.
- */
+// Counted, not a set: one endpoint can hold several sockets, and forgetting on
+// the first close would leave the survivor answered with an RST.
 class CUtpPeerRegistry
 {
 public:
@@ -112,13 +108,8 @@ public:
 	/**
 	 * Offers one accepted stream.
 	 *
-	 * @return true when it takes ownership. A refusal leaves the transport to
-	 * the adapter, which closes the socket only after libutp has finished
-	 * processing the datagram that produced it.
-	 *
-	 * Taken by reference on purpose. A by-value parameter is destroyed by a
-	 * refusal, and destroying a transport closes its libutp socket -- which
-	 * the adapter would then close again. Ownership moves only on acceptance.
+	 * By reference on purpose: a by-value parameter is destroyed by a refusal,
+	 * and that closes the socket the adapter then closes again.
 	 */
 	virtual bool AcceptStream(
 		std::unique_ptr<IStreamTransport> &transport, uint32_t ip, uint16_t port) = 0;
@@ -198,12 +189,8 @@ private:
 	bool m_active = false;
 };
 
-/**
- * What a uTP frame is, before libutp is allowed to answer it.
- *
- * libutp answers an unmatched non-SYN with an unsolicited RST to the claimed
- * source, which makes this host a reflector for a forged address.
- */
+// libutp answers an unmatched non-SYN with an unsolicited RST to the claimed
+// source, which makes this host a reflector for a forged address.
 enum class EUtpFrameKind
 {
 	//! Shorter than a header, or a version libutp does not implement.
@@ -214,12 +201,8 @@ enum class EUtpFrameKind
 	Existing
 };
 
-/**
- * Classifies one uTP frame from its header alone.
- *
- * Mirrors libutp's own validity test (UTP_Version, utp_internal.cpp): type
- * below ST_NUM_STATES, first extension below 3, version 1.
- */
+//! Mirrors libutp's validity test (UTP_Version): type < ST_NUM_STATES,
+//! extension < 3, version 1.
 inline EUtpFrameKind ClassifyUtpFrame(const uint8_t *payload, size_t length)
 {
 	// Header is 20 bytes in version 1; anything shorter cannot be parsed.

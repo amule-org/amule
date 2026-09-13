@@ -41,12 +41,9 @@ enum class EUtpAdmission
 /**
  * The admission decision, separated from gathering the facts it needs.
  *
- * Asks what CListenSocket::OnAccept plus CClientTCPSocket::InitNetworkData ask
- * for TCP: running, under the connection limit, not filtered, not banned.
- * Completing a uTP handshake proves nothing about a peer TCP would refuse.
- *
- * @a connectingToServer carries the listener's own exception: refusing while a
- * server connection is in progress is what produces a LowID on every server.
+ * What CListenSocket::OnAccept and CClientTCPSocket::InitNetworkData ask for
+ * TCP. @a connectingToServer is the listener's exception: refusing then is what
+ * produces a LowID on every server.
  */
 constexpr EUtpAdmission DecideUtpAdmission(
 	bool running, bool connectingToServer, bool tooManySockets, uint32_t ip, bool filtered, bool banned)
@@ -69,9 +66,7 @@ constexpr EUtpAdmission DecideUtpAdmission(
 	return EUtpAdmission::Admit;
 }
 
-/**
- * Gathers those facts from the application and acts on the decision.
- */
+//! Gathers those facts from the application and acts on the decision.
 class CUtpStreamAcceptor : public IUtpStreamAcceptor
 {
 public:

@@ -143,13 +143,9 @@ public:
 	// loop while the main thread's callbacks write them, so they take the lock
 	// like everything else that touches the stream.
 	/**
-	 * True once accepted, which is not the same as libutp being ready to send.
-	 *
-	 * The acceptor marks it from UTP_ON_ACCEPT, where the socket is still
-	 * CS_SYN_RECV, and libutp reaches CS_CONNECTED silently on the peer's first
-	 * ST_DATA. So this answers "is there a stream here", not "will a write
-	 * leave now" -- a caller wanting the latter is asking the wrong question,
-	 * because Write() queues either way and the pump handles the rest.
+	 * True once accepted, which is not libutp being ready to send: the acceptor
+	 * marks it at CS_SYN_RECV, and CS_CONNECTED arrives silently on the peer's
+	 * first ST_DATA. Answers "is there a stream", not "will a write leave now".
 	 */
 	bool IsConnected() const override
 	{
@@ -413,12 +409,8 @@ public:
 		return m_socket;
 	}
 
-	/**
-	 * Installs the sink events are delivered to.
-	 *
-	 * After construction, because the socket that receives them does not exist
-	 * until admission has decided, and admission needs the transport first.
-	 */
+	//! After construction: the receiving socket does not exist until admission
+	//! has decided, and admission needs the transport first.
 	void SetEvents(IStreamTransportEvents *events)
 	{
 		std::lock_guard<std::mutex> lock(m_mutex);
@@ -433,12 +425,9 @@ public:
 	}
 
 	/**
-	 * The crypt parameters for datagrams this socket sends.
-	 *
 	 * Per socket, not looked up from the destination: one address can host
-	 * several clients, and keying on the wrong one leaves the real recipient
-	 * unable to decrypt. The hash is copied because AttachToAlreadyKnown()
-	 * can replace the owning client while this socket outlives the swap.
+	 * several clients, and the wrong hash leaves the recipient unable to
+	 * decrypt. Copied because AttachToAlreadyKnown() can replace the client.
 	 */
 	void SetCryptParameters(bool encrypt, const uint8_t *userHash)
 	{

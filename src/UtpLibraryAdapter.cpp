@@ -94,13 +94,11 @@ public:
 		if (!m_context) {
 			return;
 		}
-		// Sockets are not closed here, and that is deliberate. utp_destroy() is
-		// `delete ctx`, and struct_utp_context owns UTPSocketHT, whose map
-		// holds each socket in a unique_ptr with a deleter (utp_internal.h).
-		// Destroying the context therefore destroys every socket, and
-		// ~UTPSocket emits UTP_STATE_DESTROYING (utp_internal.cpp:2499), which
-		// is what makes each transport drop its handle. Closing first would
-		// call utp_close() on sockets already dying, which it asserts against.
+		// Not closed here: struct_utp_context owns UTPSocketHT, whose map holds
+		// each socket in a unique_ptr with a deleter, so `delete ctx` destroys
+		// them and ~UTPSocket emits DESTROYING (utp_internal.cpp:2499) -- the
+		// callback each transport needs. Closing first would utp_close() a
+		// dying socket, which it asserts against.
 		m_refusedStreams.clear();
 		for (utp_socket *refused : m_refused) {
 			utp_close(refused);
@@ -155,8 +153,7 @@ private:
 		}
 		auto *sink = static_cast<IUtpDatagramSink *>(utp_context_get_userdata(args->context));
 		// From the socket, never the destination: an address can belong to
-		// several clients. A context-level send has no socket and no verified
-		// peer, so it stays in the clear.
+		// several clients. A context-level send has no verified peer.
 		bool encrypt = false;
 		const uint8_t *userHash = nullptr;
 		if (args->socket != nullptr) {

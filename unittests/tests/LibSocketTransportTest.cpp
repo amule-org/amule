@@ -37,10 +37,9 @@ using namespace muleunit;
 
 DECLARE_SIMPLE(LibSocketTransport)
 
-// Link seams. CLibSocket's asio implementation reaches the notification layer
-// and the address helpers, both of which pull in the application. Nothing here
-// drives an asio callback -- every test answers from an attached transport or
-// from a socket that was never connected -- so these are never called.
+// Link seams: CLibSocket's asio side reaches the notification layer and the
+// address helpers, which pull in the application. Nothing here drives an asio
+// callback, so these are never called.
 namespace MuleNotify
 {
 class CMuleNotiferBase;
@@ -56,13 +55,8 @@ bool StringIPtoUint32(const wxString &, uint32 &)
 
 namespace
 {
-/**
- * A transport whose answers an asio socket would never give.
- *
- * That is the whole design of these tests: a fresh CLibSocket is not connected,
- * not ok, and has no peer, so every assertion below can only pass if the call
- * reached the transport instead of the socket underneath.
- */
+// Answers an asio socket would never give: a fresh CLibSocket is not connected,
+// not ok, and has no peer, so an assertion can only pass through the transport.
 class CFakeTransport : public IStreamTransport
 {
 public:
@@ -107,15 +101,9 @@ CFakeTransport *Attach(CLibSocket &socket)
 }
 } // namespace
 
-/**
- * Every stream accessor answers from the transport once one is attached.
- *
- * One table rather than one test each, because the value here is that the list
- * is exhaustive: none of these are virtual in CLibSocket, CEncryptedStreamSocket
- * or CEMSocket, so any one left unrouted resolves statically to the asio socket
- * and quietly reports on a stream nobody is using. That is exactly how
- * CEMSocket::Send()'s !IsOk() arm would stay dead after wiring.
- */
+// One table because the value is that the list is exhaustive: none of these are
+// virtual, so one left unrouted resolves statically to the asio socket -- which
+// is how CEMSocket::Send()'s !IsOk() arm would stay dead after wiring.
 TEST(LibSocketTransport, EveryStreamAccessorAnswersFromTheTransport)
 {
 	CLibSocket socket;
@@ -138,8 +126,7 @@ TEST(LibSocketTransport, EveryStreamAccessorAnswersFromTheTransport)
 		ASSERT_TRUE_M(row.fromTransport != row.fromSocket, message);
 	}
 
-	// Opaque by contract; what matters is that it is the transport's value and
-	// not the socket's zero.
+	// Opaque by contract; what matters is whose value it is.
 	ASSERT_EQUALS(0x7501, socket.LastError());
 }
 
@@ -170,14 +157,8 @@ TEST(LibSocketTransport, ThePeerIsTheTransportsPeer)
 
 TEST(LibSocketTransport, DiallingIsRefusedWhileATransportIsAttached)
 {
-	// An accepted stream already has a peer. Dialling from here would open a
-	// second, unrelated connection while the caller believed it had reconnected
-	// this one.
-	//
-	// This pins the intent and does NOT discriminate: an unconnected asio socket
-	// refuses this address too, so the assertion holds with the guard removed.
-	// Making it discriminate needs a connectable peer, which belongs to the
-	// acceptor's loopback test rather than here.
+	// Pins intent and does NOT discriminate: an unconnected asio socket refuses
+	// this address too. Discriminating needs a connectable peer.
 	CLibSocket socket;
 	Attach(socket);
 
@@ -194,15 +175,13 @@ TEST(LibSocketTransport, ClosingGoesToTheTransportAndIsIdempotent)
 
 	socket.Close();
 	socket.Close();
-	// The transport owns close-once itself; what matters here is that the calls
-	// arrive there at all rather than at the asio socket.
+	// Close-once lives in the transport; what matters is the calls arrive there.
 	ASSERT_EQUALS(2, fake->closeCalls);
 }
 
 TEST(LibSocketTransport, AnUnattachedSocketStillAnswersForItself)
 {
-	// The branch has to be a branch: a socket with no transport must behave
-	// exactly as it did before this façade existed.
+	// A socket with no transport behaves as it did before the facade existed.
 	CLibSocket socket;
 	ASSERT_FALSE(socket.HasTransport());
 	ASSERT_FALSE(socket.IsConnected());

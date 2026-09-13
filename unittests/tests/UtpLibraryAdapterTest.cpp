@@ -46,11 +46,8 @@ namespace
 constexpr uint32_t kPeerIp = 0x0100007F; // 127.0.0.1 in aMule's low-byte-first form
 constexpr uint16_t kPeerPort = 4672;
 
-/**
- * A loopback through real libutp. The client is built only here, so production
- * gains no dial API, and datagrams are handed over by hand to stay
- * deterministic.
- */
+// A loopback through real libutp. The client exists only here, so production
+// gains no dial API; datagrams are handed over by hand to stay deterministic.
 struct SLoopback
 {
 	std::unique_ptr<IUtpLibrary> server;
@@ -63,7 +60,7 @@ struct SLoopback
 
 SLoopback *g_loop = nullptr;
 
-//! The server's datagram sink: everything it sends goes to the client.
+//! Everything the server sends goes to the client.
 class CServerSink : public IUtpDatagramSink
 {
 public:
@@ -82,7 +79,7 @@ public:
 	unsigned datagrams = 0;
 };
 
-//! Admission, reduced to the one decision this test varies.
+//! Admission, reduced to the decision each test varies.
 class CFakeAcceptor : public IUtpStreamAcceptor
 {
 public:
@@ -138,12 +135,12 @@ sockaddr_in Address(uint32_t ip, uint16_t port)
 	return address;
 }
 
-//! Hands queued datagrams across until both directions are idle.
+//! Hands datagrams across until both directions are idle.
 void Pump(SLoopback &loop, int rounds = 64)
 {
 	const sockaddr_in peer = Address(kPeerIp, kPeerPort);
-	// Before the loop: utp_read_drained() defers the window update through
-	// schedule_ack(), and with both queues empty the loop never runs.
+	// Before the loop: the window update is deferred through schedule_ack(),
+	// and with both queues empty the loop never runs.
 	loop.server->IssueDeferredAcks();
 	utp_issue_deferred_acks(loop.client);
 	for (int i = 0; i < rounds && (!loop.toServer.empty() || !loop.toClient.empty()); ++i) {
@@ -205,16 +202,15 @@ TEST(UtpLibraryAdapter, AnInboundSynReachesAdmissionWithItsPeer)
 	ASSERT_TRUE(acceptor.accepted != nullptr);
 	ASSERT_EQUALS(kPeerIp, acceptor.lastIp);
 	ASSERT_EQUALS(kPeerPort, acceptor.lastPort);
-	// Registered only once admission succeeded, which is what lets an
-	// established peer's later non-SYN frames through the ingress filter.
+	// Registered only on success, which is what lets the peer's later non-SYN
+	// frames through the ingress filter.
 	ASSERT_TRUE(loop.server->HasRegisteredPeer(kPeerIp, kPeerPort));
 	Teardown(loop);
 }
 
 TEST(UtpLibraryAdapter, WithNoAcceptorInstalledEveryInboundSynIsRefused)
 {
-	// The state this build was in before an acceptor existed, and the state it
-	// must return to if one is ever detached.
+	// The state before an acceptor existed, and after one is detached.
 	SLoopback loop;
 	g_loop = &loop;
 	CServerSink sink;
@@ -250,7 +246,7 @@ TEST(UtpLibraryAdapter, ARefusedStreamIsNeverRegistered)
 
 TEST(UtpLibraryAdapter, BytesCrossTheStreamInOrder)
 {
-	// The whole point of the series: an accepted stream actually carries bytes.
+	// The point of the series: an accepted stream carries bytes.
 	SLoopback loop;
 	g_loop = &loop;
 	CServerSink sink;
@@ -266,8 +262,8 @@ TEST(UtpLibraryAdapter, BytesCrossTheStreamInOrder)
 	for (size_t i = 0; i < payload.size(); ++i) {
 		payload[i] = static_cast<uint8_t>(i & 0xFF);
 	}
-	// Looped because utp_writev takes only what the window allows: ignoring
-	// the return would "prove" the stream carries one packet.
+	// utp_writev takes only what the window allows; ignoring the return would
+	// "prove" the stream carries one packet.
 	std::vector<uint8_t> received(payload.size());
 	size_t offered = 0;
 	uint32_t total = 0;
@@ -299,9 +295,8 @@ TEST(UtpLibraryAdapter, BytesCrossTheStreamInOrder)
 
 TEST(UtpLibraryAdapter, DeliveryStopsAtTheConfiguredBoundAndResumesOnTheCrossing)
 {
-	// UTP_RCVBUF makes 64 KiB the real bound, and the window is opt_rcvbuf
-	// minus reported occupancy, so a reader that stops stops the peer too.
-	// Resuming needs the crossing back below the bound, not an empty buffer.
+	// The window is opt_rcvbuf minus reported occupancy, so a reader that stops
+	// stops the peer. Resuming needs the crossing, not an empty buffer.
 	SLoopback loop;
 	g_loop = &loop;
 	CServerSink sink;
@@ -330,13 +325,12 @@ TEST(UtpLibraryAdapter, DeliveryStopsAtTheConfiguredBoundAndResumesOnTheCrossing
 		}
 		Pump(loop);
 	}
-	// The adapter builds this concrete type; occupancy is its business rather
-	// than something every stream transport must expose.
+	// Occupancy is this type's business, not every transport's.
 	auto *utp = static_cast<CUtpSocketTransport *>(acceptor.accepted.get());
 	const size_t buffered = utp->ReadBufferSize();
-	// Short of the bound, not on it: libutp stops once the window cannot hold
-	// another packet. Without UTP_RCVBUF the 1 MiB default would govern and
-	// the whole payload would be here.
+	// Short of the bound: libutp stops once the window cannot hold a packet.
+	// Without UTP_RCVBUF the 1 MiB default would govern and all of it would be
+	// here.
 	CFormat stalled("buffered %u, bound %u, payload %u");
 	const wxString detail = stalled % unsigned(buffered) % unsigned(bound) % unsigned(payload.size());
 	ASSERT_TRUE_M(buffered < payload.size(), detail);
@@ -344,8 +338,7 @@ TEST(UtpLibraryAdapter, DeliveryStopsAtTheConfiguredBoundAndResumesOnTheCrossing
 
 	// Read just past the bound, leaving the buffer full but below it. An
 	// empty-buffer rule would signal nothing here and the peer would stall.
-	// Enough to reopen the window without emptying the buffer. Computed from
-	// the slack rather than from the bound, because occupancy stalls below it.
+	// Enough to reopen the window without emptying the buffer.
 	const size_t toRead = CUtpStream::kWindowSlackBytes * 2;
 	std::vector<uint8_t> received(payload.size());
 	size_t total = 0;
@@ -374,11 +367,10 @@ TEST(UtpLibraryAdapter, DeliveryStopsAtTheConfiguredBoundAndResumesOnTheCrossing
 		// keeps pace this way never empties the buffer, which is precisely why
 		// an empty-buffer rule would never reopen the window and this transfer
 		// would stall short of the payload.
-		// One packet per round, like CEMSocket. This does not discriminate the
-		// crossing rule from an empty-buffer one -- the reader still outpaces
-		// the sender often enough for the buffer to empty, and three attempts
-		// to force otherwise failed. PacketReaderReopensWindowWithoutEmptying
-		// covers that distinction at the transport level.
+		// One packet per round, like CEMSocket. Does NOT discriminate the
+		// crossing rule from an empty-buffer one: the reader outpaces the
+		// sender and the buffer empties. PacketReaderReopensWindowWithoutEmptying
+		// covers that.
 		for (int packet = 0; packet < 1 && total < payload.size(); ++packet) {
 			uint8_t header[6] = { 0 };
 			const uint32_t headerTaken = acceptor.accepted->Read(header, sizeof(header));
@@ -408,8 +400,8 @@ TEST(UtpLibraryAdapter, DeliveryStopsAtTheConfiguredBoundAndResumesOnTheCrossing
 
 TEST(UtpLibraryAdapter, DestroyingTheContextEndsTheStreamsItOwned)
 {
-	// utp_destroy() destroys the sockets it owns and ~UTPSocket emits
-	// DESTROYING, which is what makes each transport drop its handle.
+	// utp_destroy() destroys the sockets it owns; ~UTPSocket emits DESTROYING,
+	// which is what makes each transport drop its handle.
 	SLoopback loop;
 	g_loop = &loop;
 	CServerSink sink;
@@ -426,15 +418,13 @@ TEST(UtpLibraryAdapter, DestroyingTheContextEndsTheStreamsItOwned)
 
 	loop.server->Destroy();
 
-	// The handle is the discriminating assertion: a teardown that stopped
-	// delivering DESTROYING would leave it set, pointing into a context that no
-	// longer exists, and the next close would reach freed memory.
+	// The discriminating assertion: without DESTROYING the handle stays set,
+	// pointing into a destroyed context.
 	auto *utp = static_cast<CUtpSocketTransport *>(acceptor.accepted.get());
 	ASSERT_TRUE(utp->SocketHandle() == nullptr);
 	ASSERT_FALSE(acceptor.accepted->IsOk());
 	ASSERT_FALSE(loop.server->HasRegisteredPeer(kPeerIp, kPeerPort));
-	// Destroying again, and closing the stream the owner still holds, must both
-	// be harmless: this is the shutdown order a real teardown produces.
+	// The order a real teardown produces; both must be harmless.
 	loop.server->Destroy();
 	acceptor.accepted->Close();
 	Teardown(loop);

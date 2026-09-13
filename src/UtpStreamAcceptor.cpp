@@ -40,8 +40,8 @@
 bool CUtpStreamAcceptor::AcceptStream(
 	std::unique_ptr<IStreamTransport> &transport, uint32_t ip, uint16_t port)
 {
-	// Every refusal happens before ownership moves: destroying a transport
-	// closes its socket, and the adapter closes a refused one too.
+	// Refusals come before ownership moves: destroying a transport closes its
+	// socket, and the adapter closes a refused one too.
 	const EUtpAdmission decision = DecideUtpAdmission(theApp->IsRunning(),
 		theApp->serverconnect->IsConnecting(),
 		theApp->listensocket->TooManySockets(),
@@ -53,8 +53,7 @@ bool CUtpStreamAcceptor::AcceptStream(
 	case EUtpAdmission::Admit:
 		break;
 	case EUtpAdmission::TooManySockets:
-		// Per refused stream, where the TCP listener counts once per accept
-		// burst: a uTP SYN arrives on its own, so there is no burst to fold.
+		// Per stream: a uTP SYN arrives alone, with no accept burst to fold.
 		theStats::AddMaxConnectionLimitReached();
 		return false;
 	case EUtpAdmission::Filtered:
@@ -71,12 +70,11 @@ bool CUtpStreamAcceptor::AcceptStream(
 	}
 
 	auto *socket = new CClientTCPSocket();
-	// Wired before ownership moves, or a callback arriving first has nowhere
-	// to deliver.
+	// Before ownership moves, or an early callback has nowhere to deliver.
 	auto *utp = static_cast<CUtpSocketTransport *>(transport.get());
 	utp->SetEvents(socket);
 	socket->AttachTransport(std::move(transport));
-	// Records m_remoteip from the stream's peer; its checks were made above.
+	// Records m_remoteip; its checks were made above.
 	socket->InitNetworkData();
 	AddDebugLogLineN(logClient, CFormat("Accepted uTP stream from %s:%u") % Uint32toStringIP(ip) % port);
 	return true;
