@@ -222,6 +222,11 @@ void LibSocketConnect(CLibSocket *socket, int error);
 void LibSocketSend(CLibSocket *socket, int error);
 void LibSocketReceive(CLibSocket *socket, int error);
 void LibSocketLost(CLibSocket *socket);
+// Offers an attached transport's queue on the main thread. Separate from
+// LibSocketSend because that one reports a completed write and reaches
+// CEMSocket::OnSend; this one asks for bytes to be handed to the library, which
+// nothing in that chain does.
+void LibSocketFlush(CLibSocket *socket);
 void LibSocketDestroy(CLibSocket *socket);
 void ProxySocketEvent(CLibSocket *socket, int evt);
 void ServerTCPAccept(CLibSocketServer *socketServer);
@@ -634,6 +639,7 @@ typedef void (wxEvtHandler::*MuleNotifyEventFunction)(CMuleGUIEvent &);
 #define CoreNotify_LibSocketReceive(ptr, val) \
 	MuleNotify::DoNotifyAlways(&MuleNotify::LibSocketReceive, ptr, val)
 #define CoreNotify_LibSocketLost(ptr) MuleNotify::DoNotifyAlways(&MuleNotify::LibSocketLost, ptr)
+#define CoreNotify_LibSocketFlush(ptr) MuleNotify::DoNotifyAlways(&MuleNotify::LibSocketFlush, ptr)
 #define CoreNotify_LibSocketDestroy(ptr) MuleNotify::DoNotifyAlways(&MuleNotify::LibSocketDestroy, ptr)
 #define CoreNotify_ServerTCPAccept(ptr) MuleNotify::DoNotifyAlways(&MuleNotify::ServerTCPAccept, ptr)
 #define CoreNotify_UDPSocketSend(ptr) MuleNotify::DoNotifyAlways(&MuleNotify::UDPSocketSend, ptr)

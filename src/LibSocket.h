@@ -168,6 +168,12 @@ public:
 	 * Turns a transport's stream events into the socket events aMule already
 	 * has, so everything above this layer stays unaware there is a transport.
 	 */
+	//! Offers an attached transport's queue. Main thread only.
+	void FlushTransport();
+
+	//! The attached transport, or null. For owners that must configure it.
+	IStreamTransport *GetTransport() const { return m_transport.get(); }
+
 	void OnStreamReadable() override;
 	void OnStreamWritable() override;
 	void OnStreamLost() override;

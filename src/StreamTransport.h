@@ -72,6 +72,16 @@ public:
 	//! Ends the stream. Calling it twice must be harmless.
 	virtual void Close() = 0;
 
+	/**
+	 * Offers whatever Write() queued to the underlying transport.
+	 *
+	 * Part of the contract rather than a uTP detail: Write() may be called
+	 * from another thread and only queues, so something on the owning thread
+	 * has to hand those bytes over. A transport with nothing to defer can
+	 * leave this empty.
+	 */
+	virtual void Flush() = 0;
+
 	virtual bool BlocksRead() const = 0;
 	virtual bool BlocksWrite() const = 0;
 

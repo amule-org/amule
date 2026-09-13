@@ -89,7 +89,7 @@ public:
 class CFakeAcceptor : public IUtpStreamAcceptor
 {
 public:
-	bool AcceptStream(std::unique_ptr<IStreamTransport> transport, uint32_t ip, uint16_t port) override
+	bool AcceptStream(std::unique_ptr<IStreamTransport> &transport, uint32_t ip, uint16_t port) override
 	{
 		++offers;
 		lastIp = ip;

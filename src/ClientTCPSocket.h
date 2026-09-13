@@ -47,6 +47,10 @@ public:
 	void Disconnect(const wxString &strReason);
 
 	bool InitNetworkData();
+#ifdef AMULE_UTP_TRANSPORT
+	//! Hands this peer's obfuscation preference and hash to an attached stream.
+	void ApplyUtpCryptParameters();
+#endif
 
 	bool CheckTimeOut();
 

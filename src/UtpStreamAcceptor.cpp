@@ -37,7 +37,8 @@
 
 #ifdef AMULE_UTP_TRANSPORT
 
-bool CUtpStreamAcceptor::AcceptStream(std::unique_ptr<IStreamTransport> transport, uint32_t ip, uint16_t port)
+bool CUtpStreamAcceptor::AcceptStream(
+	std::unique_ptr<IStreamTransport> &transport, uint32_t ip, uint16_t port)
 {
 	if (!theApp->IsRunning()) {
 		return false;

@@ -125,9 +125,13 @@ public:
 	 * @return true when it takes ownership. A refusal leaves the transport to
 	 * the adapter, which closes the socket only after libutp has finished
 	 * processing the datagram that produced it.
+	 *
+	 * Taken by reference on purpose. A by-value parameter is destroyed by a
+	 * refusal, and destroying a transport closes its libutp socket -- which
+	 * the adapter would then close again. Ownership moves only on acceptance.
 	 */
 	virtual bool AcceptStream(
-		std::unique_ptr<IStreamTransport> transport, uint32_t ip, uint16_t port) = 0;
+		std::unique_ptr<IStreamTransport> &transport, uint32_t ip, uint16_t port) = 0;
 };
 
 class IUtpLibrary

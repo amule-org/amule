@@ -53,7 +53,17 @@ public:
 		utp_read_drained(static_cast<utp_socket *>(socket));
 	}
 
-	void CloseSocket(Handle socket) override { utp_close(static_cast<utp_socket *>(socket)); }
+	void CloseSocket(Handle socket) override
+	{
+		auto *raw = static_cast<utp_socket *>(socket);
+		// Cleared before closing. utp_close() only moves the socket towards
+		// death; UTP_STATE_DESTROYING can arrive much later, and any callback
+		// in between would recover userdata pointing at a transport that has
+		// already been destroyed by the owner that called this.
+		utp_set_userdata(raw, nullptr);
+		m_live.erase(raw);
+		utp_close(raw);
+	}
 
 	void SetReceiveBuffer(Handle socket, size_t bytes) override
 	{
@@ -99,6 +109,7 @@ public:
 			utp_close(socket);
 		}
 		m_live.clear();
+		m_refusedStreams.clear();
 		for (utp_socket *refused : m_refused) {
 			utp_close(refused);
 		}
@@ -127,6 +138,9 @@ public:
 		// Closed here rather than inside UTP_ON_ACCEPT: utp_close() can produce
 		// UTP_STATE_DESTROYING before it returns, which would re-enter the
 		// callback that is still deciding.
+		// Destroying each closes its socket exactly once, through the same
+		// path an owner would use.
+		m_refusedStreams.clear();
 		for (utp_socket *refused : m_refused) {
 			utp_close(refused);
 		}
@@ -194,9 +208,12 @@ private:
 		}
 		const uint16_t port = ntohs(address->sin_port);
 
-		auto transport = std::make_unique<CUtpSocketTransport>(
+		// Held as the interface type so the acceptance seam can move out of it
+		// directly; the concrete pointer stays for the setup below.
+		auto owned = std::make_unique<CUtpSocketTransport>(
 			*s_self, args->socket, CNetworkAddress::FromIPv4NetworkOrder(ip), port);
-		CUtpSocketTransport *raw = transport.get();
+		CUtpSocketTransport *raw = owned.get();
+		std::unique_ptr<IStreamTransport> transport(std::move(owned));
 		// Set before admission can produce any callback, so a stream event that
 		// arrives during it still finds its transport.
 		utp_set_userdata(args->socket, raw);
@@ -207,9 +224,11 @@ private:
 		// only on the peer's first ST_DATA, silently, so the acceptor marks it.
 		raw->MarkConnected();
 
-		if (!s_self->m_acceptor->AcceptStream(std::move(transport), ip, port)) {
-			utp_set_userdata(args->socket, nullptr);
-			s_self->m_refused.push_back(args->socket);
+		if (!s_self->m_acceptor->AcceptStream(transport, ip, port)) {
+			// Held, not closed here: destroying the transport is what closes
+			// the socket, and that must happen after libutp has finished with
+			// the datagram rather than inside this callback.
+			s_self->m_refusedStreams.push_back(std::move(transport));
 			return 0;
 		}
 		s_self->m_peers.Add(ip, port);
@@ -305,8 +324,11 @@ private:
 	utp_context *m_context = nullptr;
 	IUtpStreamAcceptor *m_acceptor = nullptr;
 	CUtpPeerRegistry m_peers;
-	// Refused sockets, closed once libutp has finished with the datagram.
+	// Sockets refused before a transport existed, closed once libutp has
+	// finished with the datagram.
 	std::vector<utp_socket *> m_refused;
+	// Refused streams, destroyed at the same point. Destruction is the close.
+	std::vector<std::unique_ptr<IStreamTransport>> m_refusedStreams;
 	// Accepted sockets still alive, so shutdown can close them before the
 	// context they live in is deleted.
 	std::set<utp_socket *> m_live;

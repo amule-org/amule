@@ -22,7 +22,11 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-#include "ClientTCPSocket.h" // Interface declarations.
+#include "ClientTCPSocket.h"
+
+#ifdef AMULE_UTP_TRANSPORT
+#include "UtpSocketTransport.h" // per-stream crypt parameters
+#endif                          // Interface declarations.
 
 #include "BrowseManager.h"
 
@@ -91,6 +95,22 @@ CClientTCPSocket::~CClientTCPSocket()
 		theApp->listensocket->RemoveSocket(this);
 	}
 }
+
+#ifdef AMULE_UTP_TRANSPORT
+void CClientTCPSocket::ApplyUtpCryptParameters()
+{
+	if (!HasTransport() || m_client == NULL) {
+		return;
+	}
+	// The same pair every other UDP send site passes together: whether this
+	// peer wants obfuscated datagrams, and the hash they are keyed on. Copied
+	// by the transport, because the client can be replaced while the stream
+	// outlives it.
+	static_cast<CUtpSocketTransport *>(GetTransport())
+		->SetCryptParameters(
+			m_client->ShouldReceiveCryptUDPPackets(), m_client->GetUserHash().GetHash());
+}
+#endif
 
 bool CClientTCPSocket::InitNetworkData()
 {
@@ -251,6 +271,15 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 
 		// Socket might die on ConnectionEstablished somehow. Check it.
 		if (m_client) {
+#ifdef AMULE_UTP_TRANSPORT
+			// Here and not earlier: this is the first point where the peer is
+			// identified, and AttachToAlreadyKnown() may just have replaced the
+			// client we would otherwise have keyed on. A uTP stream carries its own
+			// crypt parameters because the datagram layer cannot derive them from
+			// the destination -- an address can host several clients, and guessing
+			// wrong encrypts to a peer that cannot decrypt.
+			ApplyUtpCryptParameters();
+#endif
 			Notify_SharedCtrlRefreshClient(m_client->ECID(), AVAILABLE_SOURCE);
 		}
 

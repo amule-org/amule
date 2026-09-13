@@ -44,7 +44,7 @@
 class CUtpStreamAcceptor : public IUtpStreamAcceptor
 {
 public:
-	bool AcceptStream(std::unique_ptr<IStreamTransport> transport, uint32_t ip, uint16_t port) override;
+	bool AcceptStream(std::unique_ptr<IStreamTransport> &transport, uint32_t ip, uint16_t port) override;
 };
 
 #endif // UTPSTREAMACCEPTOR_H

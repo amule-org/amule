@@ -1382,9 +1382,18 @@ void CLibSocket::OnStreamLost()
 
 void CLibSocket::OnFlushRequested()
 {
-	// Reuses the send notification: the main thread answering it offers the
-	// queue, which is exactly what the request asks for.
-	CoreNotify_LibSocketSend(this, 0);
+	// Its own notification, not LibSocketSend. That one reaches
+	// CEMSocket::OnSend, which reports a completed write and never offers the
+	// transport's queue to the library -- so bytes queued from the upload
+	// thread would sit there and the peer would never be answered.
+	CoreNotify_LibSocketFlush(this);
+}
+
+void CLibSocket::FlushTransport()
+{
+	if (m_transport) {
+		m_transport->Flush();
+	}
 }
 
 bool CLibSocket::GetProxyState() const
@@ -2202,6 +2211,14 @@ void LibSocketSend(CLibSocket *socket, int error)
 		AddDebugLogLineF(logAsio, CFormat("LibSocketSend %s %d") % socket->GetIP() % error);
 		socket->OnSend(error);
 	}
+}
+
+void LibSocketFlush(CLibSocket *socket)
+{
+	if (socket->IsDestroying()) {
+		return;
+	}
+	socket->FlushTransport();
 }
 
 void LibSocketReceive(CLibSocket *socket, int error)

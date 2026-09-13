@@ -89,10 +89,12 @@ public:
 	}
 
 	void Close() override { ++closeCalls; }
+	void Flush() override { ++flushCalls; }
 
 	bool ok = true;
 	std::vector<uint8_t> written;
 	int closeCalls = 0;
+	int flushCalls = 0;
 };
 
 //! Attaches a fake and hands back a borrowed pointer; the socket owns it.
