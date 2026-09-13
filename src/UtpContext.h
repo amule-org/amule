@@ -36,7 +36,19 @@ class IUtpDatagramSink
 {
 public:
 	virtual ~IUtpDatagramSink() = default;
-	virtual void SendUtpDatagram(const uint8_t *payload, size_t length, uint32_t ip, uint16_t port) = 0;
+	/**
+	 * Sends one uTP datagram, with the crypt parameters of the socket it came
+	 * from rather than any derived from the destination address.
+	 *
+	 * @a userHash is borrowed for the duration of the call and is null exactly
+	 * when @a encrypt is false.
+	 */
+	virtual void SendUtpDatagram(const uint8_t *payload,
+		size_t length,
+		uint32_t ip,
+		uint16_t port,
+		bool encrypt,
+		const uint8_t *userHash) = 0;
 };
 
 class IUtpContext

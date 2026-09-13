@@ -84,15 +84,18 @@ public:
 	uint16_t port = 0;
 	bool encrypted = true, kad = true, hasHash = true;
 	uint32_t key = 1;
-	void SendUtpDatagram(const uint8_t *data, size_t len, uint32_t address, uint16_t service) override
+	void SendUtpDatagram(const uint8_t *data,
+		size_t len,
+		uint32_t address,
+		uint16_t service,
+		bool encrypt,
+		const uint8_t *userHash) override
 	{
-		QueueUtpDatagram<CPacket>(*this,
-			data,
-			len,
-			address,
-			service,
-			!peerHash.empty(),
-			peerHash.empty() ? nullptr : peerHash.data());
+		// The caller's parameters win when it supplies them; the peerHash
+		// member is the older per-sink default these cases were written around.
+		const bool obfuscate = encrypt || !peerHash.empty();
+		const uint8_t *hash = encrypt ? userHash : (peerHash.empty() ? nullptr : peerHash.data());
+		QueueUtpDatagram<CPacket>(*this, data, len, address, service, obfuscate, hash);
 	}
 	void SendPacket(CPacket *raw,
 		uint32_t address,
@@ -162,7 +165,7 @@ TEST(UtpContext, LibrarySendIsPlaintextWhenNoPeerKnown)
 	CUtpContext context(std::make_unique<FakeLibrary>(state), sink);
 	ASSERT_TRUE(context.Configure());
 	const uint8_t payload[] = { 0x41, 0x00, 0xFF, 0xB2 };
-	state.sink->SendUtpDatagram(payload, sizeof(payload), 0x04030201, 65535);
+	state.sink->SendUtpDatagram(payload, sizeof(payload), 0x04030201, 65535, false, nullptr);
 	ASSERT_EQUALS(6, (int)sink.wire.size());
 	ASSERT_EQUALS(0xB2, (int)sink.wire[0]);
 	ASSERT_EQUALS(0x00, (int)sink.wire[1]);
@@ -185,7 +188,7 @@ TEST(UtpContext, LibrarySendIsEncryptedWithHashWhenPeerKnown)
 	CUtpContext context(std::make_unique<FakeLibrary>(state), sink);
 	ASSERT_TRUE(context.Configure());
 	const uint8_t payload[] = { 0x41, 0x00, 0xFF, 0xB2 };
-	state.sink->SendUtpDatagram(payload, sizeof(payload), 0x04030201, 65535);
+	state.sink->SendUtpDatagram(payload, sizeof(payload), 0x04030201, 65535, false, nullptr);
 	ASSERT_EQUALS(6, (int)sink.wire.size());
 	ASSERT_EQUALS(0xB2, (int)sink.wire[0]);
 	ASSERT_EQUALS(0x00, (int)sink.wire[1]);
@@ -259,15 +262,15 @@ TEST(UtpContext, EmptyPayloadIsHandedToLibraryWithoutEnvelope)
 TEST(UtpContext, OutgoingEmptyAndInvalidPayloads)
 {
 	Sink sink;
-	sink.SendUtpDatagram(nullptr, 0, 1, 2);
+	sink.SendUtpDatagram(nullptr, 0, 1, 2, false, nullptr);
 	ASSERT_EQUALS(2, (int)sink.wire.size());
 	ASSERT_EQUALS(0xB2, (int)sink.wire[0]);
 	ASSERT_EQUALS(0x00, (int)sink.wire[1]);
 	sink.wire.clear();
-	sink.SendUtpDatagram(nullptr, 1, 1, 2);
+	sink.SendUtpDatagram(nullptr, 1, 1, 2, false, nullptr);
 	ASSERT_TRUE(sink.wire.empty());
 	const uint8_t payload[] = { 0x41 };
-	sink.SendUtpDatagram(payload, 65506, 1, 2);
+	sink.SendUtpDatagram(payload, 65506, 1, 2, false, nullptr);
 	ASSERT_TRUE(sink.wire.empty());
 }
 

@@ -35,6 +35,7 @@
 
 #include <UtpSocketTransport.h>
 
+#include <algorithm>
 #include <functional>
 #include <stdexcept>
 #include <thread>
@@ -824,6 +825,51 @@ TEST(UtpSocketTransport, AThrowingFlushSinkDoesNotStopLaterRequests)
 	const int before = events.flushRequests;
 	transport.Write(payload.data(), static_cast<uint32_t>(payload.size()));
 	ASSERT_TRUE(events.flushRequests > before);
+}
+
+TEST(UtpSocketTransport, CryptParametersTravelWithTheSocketNotTheAddress)
+{
+	// The removed reverse lookup keyed on the destination, which can host more
+	// than one client: it could pick the wrong peer's hash and leave the real
+	// recipient unable to decrypt. The socket knows its own peer.
+	FakeOperations ops;
+	CUtpSocketTransport transport = MakeTransport(ops);
+	const uint8_t *hash = nullptr;
+	ASSERT_FALSE(transport.CryptParameters(&hash));
+
+	const uint8_t peerHash[16] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
+	transport.SetCryptParameters(true, peerHash);
+	ASSERT_TRUE(transport.CryptParameters(&hash));
+	for (unsigned i = 0; i < 16; ++i) {
+		ASSERT_EQUALS((int)peerHash[i], (int)hash[i]);
+	}
+}
+
+TEST(UtpSocketTransport, TheUserHashIsCopiedBecauseItsOwnerCanBeReplaced)
+{
+	// AttachToAlreadyKnown() replaces the client during the hello exchange
+	// while the socket outlives the swap, so borrowing the hash would leave a
+	// pointer into a dead client.
+	FakeOperations ops;
+	CUtpSocketTransport transport = MakeTransport(ops);
+	uint8_t owned[16] = { 0xAA };
+	transport.SetCryptParameters(true, owned);
+	std::fill(std::begin(owned), std::end(owned), uint8_t(0xFF));
+
+	const uint8_t *hash = nullptr;
+	ASSERT_TRUE(transport.CryptParameters(&hash));
+	ASSERT_EQUALS(0xAA, (int)hash[0]);
+}
+
+TEST(UtpSocketTransport, AskingToEncryptWithoutAHashEncryptsNothing)
+{
+	// Encrypting with no key material would derive one from whatever happened
+	// to be there, which the peer cannot reproduce.
+	FakeOperations ops;
+	CUtpSocketTransport transport = MakeTransport(ops);
+	transport.SetCryptParameters(true, nullptr);
+	const uint8_t *hash = nullptr;
+	ASSERT_FALSE(transport.CryptParameters(&hash));
 }
 
 // File_checked_for_headers

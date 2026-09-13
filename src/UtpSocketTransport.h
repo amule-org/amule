@@ -454,6 +454,40 @@ public:
 		return m_stream.Failure();
 	}
 
+	/**
+	 * The crypt parameters for datagrams this socket sends.
+	 *
+	 * Carried per socket rather than looked up from the destination address.
+	 * The reverse lookup that used to decide this was removed because it could
+	 * not be made correct: it matched a UDP port against the ed2k TCP port, so
+	 * it never fired, and had it fired it could have picked another client at
+	 * the same address and keyed the datagram on that peer's hash, leaving the
+	 * real recipient unable to decrypt.
+	 *
+	 * The hash is copied, never borrowed: the client that owns it can be
+	 * replaced -- AttachToAlreadyKnown() does exactly that during the hello
+	 * exchange -- while this socket outlives the swap.
+	 */
+	void SetCryptParameters(bool encrypt, const uint8_t *userHash)
+	{
+		std::lock_guard<std::mutex> lock(m_mutex);
+		m_encrypt = encrypt && userHash != nullptr;
+		if (m_encrypt) {
+			std::copy(userHash, userHash + kUserHashBytes, m_userHash);
+		}
+	}
+
+	//! True when SendUtpDatagram() should obfuscate, with the hash to key on.
+	bool CryptParameters(const uint8_t **userHash) const
+	{
+		std::lock_guard<std::mutex> lock(m_mutex);
+		if (!m_encrypt) {
+			return false;
+		}
+		*userHash = m_userHash;
+		return true;
+	}
+
 	//! Current buffered bytes, pulled synchronously by UTP_GET_READ_BUFFER_SIZE.
 	size_t ReadBufferSize() const
 	{
@@ -549,6 +583,9 @@ private:
 	//! One window's worth, so an offer costs a packet or two, not the backlog.
 	static constexpr size_t kFlushChunk = 64 * 1024;
 
+	//! An ed2k user hash. Copied, so the owning client may be replaced.
+	static constexpr size_t kUserHashBytes = 16;
+
 	IUtpSocketOperations &m_operations;
 	mutable std::mutex m_mutex;
 	IUtpSocketOperations::Handle m_socket;
@@ -563,6 +600,8 @@ private:
 	bool m_flushPending = false;
 	bool m_flushInProgress = false;
 	bool m_flushAgain = false;
+	bool m_encrypt = false;
+	uint8_t m_userHash[kUserHashBytes] = { 0 };
 };
 
 #endif // UTPSOCKETTRANSPORT_H

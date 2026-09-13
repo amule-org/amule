@@ -51,7 +51,12 @@ protected:
 
 private:
 #ifdef AMULE_UTP_TRANSPORT
-	void SendUtpDatagram(const uint8_t *payload, size_t length, uint32_t ip, uint16_t port) override;
+	void SendUtpDatagram(const uint8_t *payload,
+		size_t length,
+		uint32_t ip,
+		uint16_t port,
+		bool encrypt,
+		const uint8_t *userHash) override;
 	CUtpContext m_utp;
 #endif
 	void OnPacketReceived(uint32 ip, uint16 port, uint8_t *buffer, size_t length) override;

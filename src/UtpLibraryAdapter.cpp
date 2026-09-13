@@ -23,6 +23,8 @@
 //
 
 #include "UtpLibraryAdapter.h"
+
+#include "UtpSocketTransport.h" // per-socket crypt parameters, resolved from userdata
 #include <libutp/utp.h>
 
 namespace
@@ -86,7 +88,20 @@ private:
 			ip |= static_cast<uint32_t>(bytes[i]) << (8 * i);
 		}
 		auto *sink = static_cast<IUtpDatagramSink *>(utp_context_get_userdata(args->context));
-		sink->SendUtpDatagram(args->buf, args->len, ip, ntohs(address->sin_port));
+		// Resolved from the socket, never from the destination: the peer that owns
+		// this socket is known, whereas an address can belong to several clients.
+		// args->socket is null for a context-level send, such as the RST libutp
+		// answers an unmatched frame with, and there is no verified peer for that.
+		bool encrypt = false;
+		const uint8_t *userHash = nullptr;
+		if (args->socket != nullptr) {
+			const auto *transport =
+				static_cast<const CUtpSocketTransport *>(utp_get_userdata(args->socket));
+			if (transport != nullptr) {
+				encrypt = transport->CryptParameters(&userHash);
+			}
+		}
+		sink->SendUtpDatagram(args->buf, args->len, ip, ntohs(address->sin_port), encrypt, userHash);
 		return 0;
 	}
 	static uint64 GetUdpMtu(utp_callback_arguments *args)
