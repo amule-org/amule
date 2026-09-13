@@ -76,6 +76,12 @@ target_link_libraries (LibSocketTransportTest
 	${Boost_LIBRARIES}
 )
 
+if (WIN32)
+	# Compiles NetworkInterfaces.cpp rather than linking the library that holds
+	# it, so it needs iphlpapi for GetAdaptersAddresses() itself.
+	target_link_libraries (LibSocketTransportTest iphlpapi)
+endif()
+
 if (ENABLE_UTP)
 	add_executable (UtpContextTest
 		UtpContextTest.cpp

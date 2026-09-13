@@ -263,7 +263,7 @@ public:
 	 * the accepted count is what may be dropped from the queue -- never the
 	 * whole of it.
 	 */
-	void Flush()
+	void Flush() override
 	{
 		IUtpSocketOperations::Handle socket = nullptr;
 		std::vector<uint8_t> pending;

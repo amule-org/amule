@@ -99,7 +99,7 @@ CClientTCPSocket::~CClientTCPSocket()
 #ifdef AMULE_UTP_TRANSPORT
 void CClientTCPSocket::ApplyUtpCryptParameters()
 {
-	if (!HasTransport() || m_client == NULL) {
+	if (!HasTransport() || m_client == nullptr) {
 		return;
 	}
 	// The same pair every other UDP send site passes together: whether this
