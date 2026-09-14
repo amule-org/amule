@@ -167,5 +167,5 @@ private:
 
 } // namespace Kademlia
 
-#endif //INDEXED_H
+#endif // INDEXED_H
 // File_checked_for_headers

@@ -191,5 +191,5 @@ inline bool Kademlia::CPrefs::GetUseExternKadPort() const
 	return m_useExternKadPort && !Kademlia::CKademlia::IsRunningInLANMode();
 }
 
-#endif //PREFS_H
+#endif // PREFS_H
 // File_checked_for_headers

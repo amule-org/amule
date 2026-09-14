@@ -255,5 +255,5 @@ private:
 
 } // namespace Kademlia
 
-#endif //KADEMLIAUDPLISTENER_H
+#endif // KADEMLIAUDPLISTENER_H
 // File_checked_for_headers

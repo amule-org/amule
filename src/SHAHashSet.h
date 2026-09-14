@@ -321,6 +321,6 @@ private:
 	static void LoadRootHashCacheLocked();
 };
 
-#endif //SHAHASHSET_H
+#endif // SHAHASHSET_H
 
 // File_checked_for_headers

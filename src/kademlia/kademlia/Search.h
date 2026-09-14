@@ -240,5 +240,5 @@ private:
 
 } // namespace Kademlia
 
-#endif //SEARCH_H
+#endif // SEARCH_H
 // File_checked_for_headers
