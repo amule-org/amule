@@ -7362,9 +7362,10 @@ CHttpServer::Response CApiDispatcher::HandleSearchResults(
 	// cross-reference /search to label its tab. For a browse, the peer's name.
 	w.Key("query");
 	w.ValueString(wxString::FromUTF8(m_state.SearchQuery(search_id).c_str()));
-	// Mirrors the `search_progress` SSE event field-for-field. `state` encodes the full
-	// lifecycle, so no redundant `active` / `complete` booleans -- consumers derive them
-	// and read the same shape polling or streaming.
+	// state/type/percent carry the same semantics as the `search_progress` SSE event;
+	// search_id and the result count (the envelope's `total`) sit at the top level here,
+	// not inside progress. `state` encodes the full lifecycle, so no redundant
+	// `active` / `complete` booleans -- consumers derive them.
 	w.Key("progress");
 	w.BeginObject();
 	w.Key("state");

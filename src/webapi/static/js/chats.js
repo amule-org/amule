@@ -301,7 +301,7 @@ function onFriends() {
   for (const conv of convs.values()) {
     if (!conv.friendEcid) continue;
     const f = friends.find((x) => x.ecid === conv.friendEcid);
-    if (f) conv.clientEcid = f.client_ecid || 0;
+    if (f) { conv.clientEcid = f.client_ecid || 0; conv.online = f.connected === true; }
   }
   publishTabsSoon();
 }
