@@ -45,6 +45,12 @@ struct State
 	CUtpPeerRegistry registered;
 };
 
+class CFakeAcceptor : public IUtpStreamAcceptor
+{
+public:
+	bool AcceptStream(std::unique_ptr<IStreamTransport> &, uint32_t, uint16_t) override { return false; }
+};
+
 class FakeLibrary : public IUtpLibrary
 {
 public:
@@ -402,6 +408,27 @@ TEST(UtpContext, ForgettingAnUnknownPeerIsHarmless)
 	CUtpPeerRegistry registry;
 	registry.Remove(0x0100007F, 4672);
 	ASSERT_EQUALS(0u, (unsigned)registry.Size());
+}
+
+TEST(UtpContext, TheAcceptorSurvivesTheContextBeingRebuilt)
+{
+	// CClientUDPSocket::Close() destroys the context and Open() lets it come
+	// back lazily, which is what a Kad reconnect does without rebuilding the
+	// object. An acceptor installed once at construction would be gone for the
+	// session, and every inbound SYN refused with no line anywhere.
+	State state;
+	Sink sink;
+	CUtpContext context(std::make_unique<FakeLibrary>(state), sink);
+	CFakeAcceptor acceptor;
+	context.SetAcceptor(&acceptor);
+	ASSERT_TRUE(context.Configure());
+	ASSERT_TRUE(state.acceptor == &acceptor);
+
+	context.Destroy();
+	state.acceptor = nullptr;
+
+	ASSERT_TRUE(context.Configure());
+	ASSERT_TRUE(state.acceptor == &acceptor);
 }
 
 // File_checked_for_headers

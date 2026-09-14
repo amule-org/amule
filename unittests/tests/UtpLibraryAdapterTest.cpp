@@ -430,4 +430,29 @@ TEST(UtpLibraryAdapter, DestroyingTheContextEndsTheStreamsItOwned)
 	Teardown(loop);
 }
 
+TEST(UtpLibraryAdapter, ClosingAStreamLeavesTheRegistry)
+{
+	// utp_close() only starts the socket dying, and the userdata it nulls is
+	// what the DESTROYING arm uses to find the transport -- so leaving the
+	// removal to that callback never removes anything. The endpoint would keep
+	// answering the ingress gate, which would hand libutp a frame it has no
+	// socket for and get the unsolicited RST the gate exists to prevent.
+	SLoopback loop;
+	g_loop = &loop;
+	CServerSink sink;
+	CFakeAcceptor acceptor;
+	loop.server = CreateUtpLibrary();
+	ASSERT_TRUE(loop.server->Create(sink));
+	loop.server->SetAcceptor(&acceptor);
+	StartClient(loop);
+	Pump(loop);
+	ASSERT_TRUE(acceptor.accepted != nullptr);
+	ASSERT_TRUE(loop.server->HasRegisteredPeer(kPeerIp, kPeerPort));
+
+	acceptor.accepted->Close();
+
+	ASSERT_FALSE(loop.server->HasRegisteredPeer(kPeerIp, kPeerPort));
+	Teardown(loop);
+}
+
 // File_checked_for_headers

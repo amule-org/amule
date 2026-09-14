@@ -146,6 +146,14 @@ public:
 	{
 		if (!m_active) {
 			m_active = m_library->Create(m_sink);
+			// Re-applied on every rebuild, not once at construction. Destroy()
+			// drops the library's acceptor, and CClientUDPSocket::Close() is
+			// followed by Open() on a Kad reconnect without the object being
+			// rebuilt -- so an acceptor installed only in the constructor is
+			// gone for the session and every SYN is refused silently.
+			if (m_active) {
+				m_library->SetAcceptor(m_acceptor);
+			}
 		}
 		return m_active;
 	}
@@ -180,12 +188,19 @@ public:
 		return m_library->HasRegisteredPeer(ip, port);
 	}
 
-	//! Installed once. Until then every inbound SYN is refused.
-	void SetAcceptor(IUtpStreamAcceptor *acceptor) { m_library->SetAcceptor(acceptor); }
+	//! Held, so it survives the context being destroyed and rebuilt.
+	void SetAcceptor(IUtpStreamAcceptor *acceptor)
+	{
+		m_acceptor = acceptor;
+		if (m_active) {
+			m_library->SetAcceptor(acceptor);
+		}
+	}
 
 private:
 	std::unique_ptr<IUtpLibrary> m_library;
 	IUtpDatagramSink &m_sink;
+	IUtpStreamAcceptor *m_acceptor = nullptr;
 	bool m_active = false;
 };
 

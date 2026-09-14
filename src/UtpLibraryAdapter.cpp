@@ -54,6 +54,17 @@ public:
 	void CloseSocket(Handle socket) override
 	{
 		auto *raw = static_cast<utp_socket *>(socket);
+		// Deregistered here, not left to UTP_STATE_DESTROYING. Nulling the
+		// userdata below is what stops a late callback reaching a freed
+		// transport, and it is also what makes that callback return at its
+		// TransportOf() guard -- so the removal in its DESTROYING arm would
+		// never run, HasRegisteredPeer() would keep answering true for a dead
+		// endpoint, and the ingress gate would let libutp answer it with the
+		// unsolicited RST that gate exists to prevent.
+		if (const auto *transport = TransportOf(raw)) {
+			m_peers.Remove(transport->GetPeerAddress().ToIPv4NetworkOrderOrZero(),
+				transport->GetPeerPort());
+		}
 		// utp_close() only starts the socket dying; DESTROYING can arrive after
 		// the owner is gone, and would hand a callback a freed transport.
 		utp_set_userdata(raw, nullptr);

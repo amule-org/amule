@@ -271,15 +271,6 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 
 		// Socket might die on ConnectionEstablished somehow. Check it.
 		if (m_client) {
-#ifdef AMULE_UTP_TRANSPORT
-			// Here and not earlier: this is the first point where the peer is
-			// identified, and AttachToAlreadyKnown() may just have replaced the
-			// client we would otherwise have keyed on. A uTP stream carries its own
-			// crypt parameters because the datagram layer cannot derive them from
-			// the destination -- an address can host several clients, and guessing
-			// wrong encrypts to a peer that cannot decrypt.
-			ApplyUtpCryptParameters();
-#endif
 			Notify_SharedCtrlRefreshClient(m_client->ECID(), AVAILABLE_SOURCE);
 		}
 
@@ -346,6 +337,12 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 			theApp->clientlist->AddClient(m_client);
 			m_client->SetCommentDirty();
 		}
+#ifdef AMULE_UTP_TRANSPORT
+		// After the attach above, which may have replaced the client this keys
+		// on. Every uTP stream is inbound, so this case is the only one an
+		// accepted socket reaches.
+		ApplyUtpCryptParameters();
+#endif
 		Notify_SharedCtrlRefreshClient(m_client->ECID(), AVAILABLE_SOURCE);
 		if ((m_client->GetHashType() == SO_EMULE) && !bIsMuleHello) {
 			m_client->SendMuleInfoPacket(false);
