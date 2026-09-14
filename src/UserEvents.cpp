@@ -153,7 +153,7 @@ static void ExecuteCommand(enum CUserEvents::EventType event, const void *object
 			// If wxExecute fails, we need to delete the CTerminationProcess
 			// otherwise it will leak.
 			delete p;
-			AddLogLineC(CFormat(_("Failed to execute command `%s' on `%s' event.")) % command %
+			AddLogLineC(CFormat(_("Failed to execute command '%s' on '%s' event.")) % command %
 				    s_EventList[event].name);
 		}
 	}

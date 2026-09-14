@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-10 11:11+0200\n"
+"POT-Creation-Date: 2026-09-14 11:03+0200\n"
 "PO-Revision-Date: 2026-09-10 11:06+0000\n"
 "Last-Translator: Piarres Beobide <pi@beobide.net>\n"
 "Language-Team: Euskara <librezale@librezale.org>\n"
@@ -2615,8 +2615,8 @@ msgstr "Fitxategi aurreikuspena"
 
 #: src/FileLaunch.cpp
 #, c-format
-msgid "ERROR: Failed to execute external media-player! Command: `%s'"
-msgstr "ERROREA: Huts kanpo bideo erreproduzigailua abiaraztean! Komandoa: `%s'"
+msgid "ERROR: Failed to execute external media-player! Command: '%s'"
+msgstr "ERROREA: Huts kanpo bideo erreproduzigailua abiaraztean! Komandoa: '%s'"
 
 #: src/FileLaunch.cpp
 #, c-format
@@ -8621,8 +8621,8 @@ msgstr "Fitxategiaren igoerak gelditzen: %s"
 
 #: src/UserEvents.cpp
 #, c-format
-msgid "Failed to execute command `%s' on `%s' event."
-msgstr "Huts `%s' komandoa `%s' gertaeran exekutatzean."
+msgid "Failed to execute command '%s' on '%s' event."
+msgstr "Huts '%s' komandoa '%s' gertaeran exekutatzean."
 
 #: src/UserEvents.h
 msgid "Download completed"

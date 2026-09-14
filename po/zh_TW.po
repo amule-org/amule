@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-10 11:11+0200\n"
+"POT-Creation-Date: 2026-09-14 11:03+0200\n"
 "PO-Revision-Date: 2026-09-10 11:17+0000\n"
 "Last-Translator: Wayne Su <mstarmstar@gmail.com>\n"
 "Language-Team: \n"
@@ -2607,7 +2607,7 @@ msgstr "檔案預覽"
 
 #: src/FileLaunch.cpp
 #, c-format
-msgid "ERROR: Failed to execute external media-player! Command: `%s'"
+msgid "ERROR: Failed to execute external media-player! Command: '%s'"
 msgstr "錯誤：無法執行媒體播放器！指令：「 %s 」"
 
 #: src/FileLaunch.cpp
@@ -8576,7 +8576,7 @@ msgstr "暫停上傳檔案：%s"
 
 #: src/UserEvents.cpp
 #, c-format
-msgid "Failed to execute command `%s' on `%s' event."
+msgid "Failed to execute command '%s' on '%s' event."
 msgstr "無法執行指令「 %s 」(事件：%s )。"
 
 #: src/UserEvents.h

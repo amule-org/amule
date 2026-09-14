@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-10 11:11+0200\n"
+"POT-Creation-Date: 2026-09-14 11:03+0200\n"
 "PO-Revision-Date: 2026-09-10 11:10+0000\n"
 "Last-Translator: Dovydas Sankauskas <laisve@gmail.com>\n"
 "Language-Team: Lithuanian <komp_lt@konf.lt>\n"
@@ -2642,7 +2642,7 @@ msgstr "Failo peržiūra"
 
 #: src/FileLaunch.cpp
 #, c-format
-msgid "ERROR: Failed to execute external media-player! Command: `%s'"
+msgid "ERROR: Failed to execute external media-player! Command: '%s'"
 msgstr "KLAIDA: nepavyko paleisti išorinio vaizdo grotuvo! Komanda: „%s“"
 
 #: src/FileLaunch.cpp
@@ -8726,7 +8726,7 @@ msgstr "Nutraukiamas failo siuntimas: %s"
 
 #: src/UserEvents.cpp
 #, c-format
-msgid "Failed to execute command `%s' on `%s' event."
+msgid "Failed to execute command '%s' on '%s' event."
 msgstr "Nepavyko įvykdyti komandos „%s„ įvykiui „%s“."
 
 #: src/UserEvents.h

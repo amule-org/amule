@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-10 11:11+0200\n"
+"POT-Creation-Date: 2026-09-14 11:03+0200\n"
 "PO-Revision-Date: 2026-09-10 11:09+0000\n"
 "Last-Translator: Dévai Tamás <gonosztopi@amule.org>\n"
 "Language-Team: Hungarian <hu@li.org>\n"
@@ -2601,8 +2601,8 @@ msgstr "Fájl előnézet"
 
 #: src/FileLaunch.cpp
 #, c-format
-msgid "ERROR: Failed to execute external media-player! Command: `%s'"
-msgstr "HIBA: Külső média-lejátszó indítása sikertelen! Parancs: `%s'"
+msgid "ERROR: Failed to execute external media-player! Command: '%s'"
+msgstr "HIBA: Külső média-lejátszó indítása sikertelen! Parancs: '%s'"
 
 #: src/FileLaunch.cpp
 #, c-format
@@ -8570,7 +8570,7 @@ msgstr "Fájl feltöltés felfüggesztése: %s"
 
 #: src/UserEvents.cpp
 #, c-format
-msgid "Failed to execute command `%s' on `%s' event."
+msgid "Failed to execute command '%s' on '%s' event."
 msgstr "A(z) '%s' parancsot a(z) '%s' esemény kapcsán nem sikerült végrehajtani."
 
 #: src/UserEvents.h

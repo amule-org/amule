@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-10 11:11+0200\n"
+"POT-Creation-Date: 2026-09-14 11:03+0200\n"
 "PO-Revision-Date: 2026-09-10 11:05+0000\n"
 "Last-Translator: Dimitris <dgalanak@yahoo.com>\n"
 "Language-Team: Greek\n"
@@ -2629,8 +2629,8 @@ msgstr "Προεπισκόπηση αρχείου"
 
 #: src/FileLaunch.cpp
 #, c-format
-msgid "ERROR: Failed to execute external media-player! Command: `%s'"
-msgstr "ΣΦΑΛΜΑ: Αποτυχία εκτέλεσης του εξωτερικού προγράμματος εμφάνισης πολυμέσων! Εντολή: `%s'"
+msgid "ERROR: Failed to execute external media-player! Command: '%s'"
+msgstr "ΣΦΑΛΜΑ: Αποτυχία εκτέλεσης του εξωτερικού προγράμματος εμφάνισης πολυμέσων! Εντολή: '%s'"
 
 #: src/FileLaunch.cpp
 #, c-format
@@ -8688,8 +8688,8 @@ msgstr "Αναστολή ανεβάσματος του αρχείου: %s"
 
 #: src/UserEvents.cpp
 #, c-format
-msgid "Failed to execute command `%s' on `%s' event."
-msgstr "Αποτυχία εκτέλεσης εντολής `%s' στο συμβάν `%s'."
+msgid "Failed to execute command '%s' on '%s' event."
+msgstr "Αποτυχία εκτέλεσης εντολής '%s' στο συμβάν '%s'."
 
 #: src/UserEvents.h
 msgid "Download completed"

@@ -19,7 +19,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule 2.3.3\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-10 11:11+0200\n"
+"POT-Creation-Date: 2026-09-14 11:03+0200\n"
 "PO-Revision-Date: 2026-09-11 13:14+0000\n"
 "Last-Translator: got3nks <got3nks@users.noreply.github.com>\n"
 "Language-Team: SebastianoPistore.info@protonmail.ch\n"
@@ -2614,8 +2614,8 @@ msgstr "Anteprima"
 
 #: src/FileLaunch.cpp
 #, c-format
-msgid "ERROR: Failed to execute external media-player! Command: `%s'"
-msgstr "ERRORE: Impossibile eseguire il lettore multimediale esterno! Comando: `%s'"
+msgid "ERROR: Failed to execute external media-player! Command: '%s'"
+msgstr "ERRORE: Impossibile eseguire il lettore multimediale esterno! Comando: '%s'"
 
 #: src/FileLaunch.cpp
 #, c-format
@@ -8569,8 +8569,8 @@ msgstr "Sospensione invio del file: %s"
 
 #: src/UserEvents.cpp
 #, c-format
-msgid "Failed to execute command `%s' on `%s' event."
-msgstr "Impossibile eseguire il comando `%s' per l'evento `%s'."
+msgid "Failed to execute command '%s' on '%s' event."
+msgstr "Impossibile eseguire il comando '%s' per l'evento '%s'."
 
 #: src/UserEvents.h
 msgid "Download completed"

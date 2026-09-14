@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-10 11:11+0200\n"
+"POT-Creation-Date: 2026-09-14 11:03+0200\n"
 "PO-Revision-Date: 2026-09-11 13:14+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
@@ -2604,8 +2604,8 @@ msgstr "文件预览"
 
 #: src/FileLaunch.cpp
 #, c-format
-msgid "ERROR: Failed to execute external media-player! Command: `%s'"
-msgstr "错误: 无法运行外部媒体播放器！ 命令: `%s'"
+msgid "ERROR: Failed to execute external media-player! Command: '%s'"
+msgstr "错误: 无法运行外部媒体播放器！ 命令: '%s'"
 
 #: src/FileLaunch.cpp
 #, c-format
@@ -8556,8 +8556,8 @@ msgstr "暂停上传此文件: %s"
 
 #: src/UserEvents.cpp
 #, c-format
-msgid "Failed to execute command `%s' on `%s' event."
-msgstr "无法执行命令 `%s' 于 `%s' 事件。"
+msgid "Failed to execute command '%s' on '%s' event."
+msgstr "无法执行命令 '%s' 于 '%s' 事件。"
 
 #: src/UserEvents.h
 msgid "Download completed"

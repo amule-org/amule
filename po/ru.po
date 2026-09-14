@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-10 11:11+0200\n"
+"POT-Creation-Date: 2026-09-14 11:03+0200\n"
 "PO-Revision-Date: 2026-09-11 13:14+0000\n"
 "Last-Translator: Radist Morse <radist.morse@gmail.com>\n"
 "Language-Team: Russian <kde-russian@lists.kde.ru>\n"
@@ -2629,7 +2629,7 @@ msgstr "Предпросмотр файла"
 
 #: src/FileLaunch.cpp
 #, c-format
-msgid "ERROR: Failed to execute external media-player! Command: `%s'"
+msgid "ERROR: Failed to execute external media-player! Command: '%s'"
 msgstr "ОШИБКА: невозможно запустить проигрыватель видео. Команда: «%s»"
 
 #: src/FileLaunch.cpp
@@ -8645,7 +8645,7 @@ msgstr "Приостановка отдачи файла: %s"
 
 #: src/UserEvents.cpp
 #, c-format
-msgid "Failed to execute command `%s' on `%s' event."
+msgid "Failed to execute command '%s' on '%s' event."
 msgstr "Не удалось выполнить команду «%s» при событии «%s»."
 
 #: src/UserEvents.h

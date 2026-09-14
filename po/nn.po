@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-10 11:11+0200\n"
+"POT-Creation-Date: 2026-09-14 11:03+0200\n"
 "PO-Revision-Date: 2026-09-10 11:11+0000\n"
 "Last-Translator: Hallvor Brunstad <Hallvor_1976@yahoo.com>\n"
 "Language-Team: <i18n-nn@lister.ping.uio.no>\n"
@@ -2628,7 +2628,7 @@ msgstr "Førehandssyning"
 
 #: src/FileLaunch.cpp
 #, c-format
-msgid "ERROR: Failed to execute external media-player! Command: `%s'"
+msgid "ERROR: Failed to execute external media-player! Command: '%s'"
 msgstr "FEIL: Greidde ikkje å starte ekstern mediespelar! Kommando: '%s'"
 
 #: src/FileLaunch.cpp
@@ -8678,8 +8678,8 @@ msgstr "Mellombels stogge opplastingar av fila: %s"
 
 #: src/UserEvents.cpp
 #, c-format
-msgid "Failed to execute command `%s' on `%s' event."
-msgstr "Greidde ikkje å utføre kommendoen `%s'·på·`%s hending."
+msgid "Failed to execute command '%s' on '%s' event."
+msgstr "Greidde ikkje å utføre kommendoen '%s'·på·`%s hending."
 
 #: src/UserEvents.h
 msgid "Download completed"

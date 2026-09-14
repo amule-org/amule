@@ -12,7 +12,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-10 11:11+0200\n"
+"POT-Creation-Date: 2026-09-14 11:03+0200\n"
 "PO-Revision-Date: 2026-09-11 13:14+0000\n"
 "Last-Translator: Marcel Pol <marcel@timelord.nl>\n"
 "Language-Team: Dutch <nl@li.org>\n"
@@ -2604,7 +2604,7 @@ msgstr "Voorbeeld"
 
 #: src/FileLaunch.cpp
 #, c-format
-msgid "ERROR: Failed to execute external media-player! Command: `%s'"
+msgid "ERROR: Failed to execute external media-player! Command: '%s'"
 msgstr "FOUT: Opstarten externe mediaspeler mislukt! Commando: '%s'"
 
 #: src/FileLaunch.cpp
@@ -8561,8 +8561,8 @@ msgstr "Stoppen van upload van bestand: %s"
 
 #: src/UserEvents.cpp
 #, c-format
-msgid "Failed to execute command `%s' on `%s' event."
-msgstr "Kon commando `%s' niet uitvoeren bij gebeurtenis `%s'."
+msgid "Failed to execute command '%s' on '%s' event."
+msgstr "Kon commando '%s' niet uitvoeren bij gebeurtenis '%s'."
 
 #: src/UserEvents.h
 msgid "Download completed"

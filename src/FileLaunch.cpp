@@ -134,7 +134,7 @@ bool LaunchWithPlayer(const wxString &player, const CPath &path, wxWindow *paren
 	wxArrayString parts = wxCmdLineParser::ConvertStringToArgs(player, wxCMD_LINE_SPLIT_UNIX);
 #endif
 	if (parts.IsEmpty()) {
-		Fail(CFormat(_("ERROR: Failed to execute external media-player! Command: `%s'")) % player,
+		Fail(CFormat(_("ERROR: Failed to execute external media-player! Command: '%s'")) % player,
 			parent,
 			reportModally);
 		return false;
@@ -192,7 +192,7 @@ bool LaunchWithPlayer(const wxString &player, const CPath &path, wxWindow *paren
 	}
 
 	if (!RunDetached(player, argv)) {
-		Fail(CFormat(_("ERROR: Failed to execute external media-player! Command: `%s'")) % player,
+		Fail(CFormat(_("ERROR: Failed to execute external media-player! Command: '%s'")) % player,
 			parent,
 			reportModally);
 		return false;

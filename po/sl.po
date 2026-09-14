@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-10 11:11+0200\n"
+"POT-Creation-Date: 2026-09-14 11:03+0200\n"
 "PO-Revision-Date: 2026-09-10 11:14+0000\n"
 "Last-Translator: Jure Repinc <jlp@holodeck1.com>\n"
 "Language-Team: Slovenian\n"
@@ -2645,7 +2645,7 @@ msgstr "Ogled datoteke"
 
 #: src/FileLaunch.cpp
 #, c-format
-msgid "ERROR: Failed to execute external media-player! Command: `%s'"
+msgid "ERROR: Failed to execute external media-player! Command: '%s'"
 msgstr "NAPAKA: Ni bilo mogoče zagnati zunanjega predvajalnika. Ukaz: »%s«"
 
 #: src/FileLaunch.cpp
@@ -8724,7 +8724,7 @@ msgstr "Ustavljanje pošiljanja za datoteko: %s"
 
 #: src/UserEvents.cpp
 #, c-format
-msgid "Failed to execute command `%s' on `%s' event."
+msgid "Failed to execute command '%s' on '%s' event."
 msgstr "Ni bilo mogoče izvesti ukaza »%s« za dogodek »%s«."
 
 #: src/UserEvents.h
