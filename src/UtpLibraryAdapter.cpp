@@ -217,13 +217,21 @@ private:
 		// libutp reaches CS_CONNECTED on the peer's first ST_DATA, silently.
 		raw->MarkConnected();
 
+		// Registered before admission so that this pairs with the removal in
+		// CloseSocket(), which runs for every socket that has a transport --
+		// including a refused one, whose destructor closes it. Registering only
+		// the admitted ones would make a refused stream decrement the count of a
+		// live stream from the same endpoint, since a peer uses one UDP port, and
+		// drop that live stream off the gate its own frames pass through.
+		// Briefly registering a refused endpoint costs nothing: libutp still holds
+		// the socket until the close below.
+		s_self->m_peers.Add(ip, port);
 		if (!s_self->m_acceptor->AcceptStream(transport, ip, port)) {
 			// Destroying it closes the socket, which must happen after libutp
 			// has finished with the datagram.
 			s_self->m_refusedStreams.push_back(std::move(transport));
 			return 0;
 		}
-		s_self->m_peers.Add(ip, port);
 		return 0;
 	}
 

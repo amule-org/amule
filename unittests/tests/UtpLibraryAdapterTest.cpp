@@ -455,4 +455,36 @@ TEST(UtpLibraryAdapter, ClosingAStreamLeavesTheRegistry)
 	Teardown(loop);
 }
 
+TEST(UtpLibraryAdapter, ARefusedSecondStreamMustNotDeregisterTheLivePeer)
+{
+	// A peer uses one client UDP port, so a second stream shares its endpoint
+	// with the first. CloseSocket() removes for every socket that has a
+	// transport, refused ones included, so registering only the admitted ones
+	// would have the refusal decrement the live stream's count and drop it off
+	// the gate its own frames pass through -- for about fifteen seconds, until
+	// the peer times out. TooManySockets is refused exactly when streams are
+	// live, so this is the busy case.
+	SLoopback loop;
+	g_loop = &loop;
+	CServerSink sink;
+	CFakeAcceptor acceptor;
+	loop.server = CreateUtpLibrary();
+	ASSERT_TRUE(loop.server->Create(sink));
+	loop.server->SetAcceptor(&acceptor);
+	StartClient(loop);
+	Pump(loop);
+	ASSERT_TRUE(acceptor.accepted != nullptr);
+	ASSERT_TRUE(loop.server->HasRegisteredPeer(kPeerIp, kPeerPort));
+
+	acceptor.admit = false;
+	utp_socket *second = utp_create_socket(loop.client);
+	const sockaddr_in peer = Address(kPeerIp, kPeerPort);
+	utp_connect(second, reinterpret_cast<const sockaddr *>(&peer), sizeof(peer));
+	Pump(loop);
+	Pump(loop);
+
+	ASSERT_TRUE(loop.server->HasRegisteredPeer(kPeerIp, kPeerPort));
+	Teardown(loop);
+}
+
 // File_checked_for_headers
