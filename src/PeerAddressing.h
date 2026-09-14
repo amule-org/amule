@@ -133,6 +133,13 @@ inline bool HasEd2kWireForm(const CNetworkAddress &address) noexcept
  * wrong guess decrypts garbage that fails the magic-value check, indistinguishable from a peer that
  * did not obfuscate at all.
  *
+ * Two traps in that layout. The magic byte sits at offset 32, not 20, because it follows the
+ * address. eMuleAI v1.6 writes it at 20 and then copies the 16 address bytes over 16 to 31
+ * (EncryptedDatagramSocket.cpp:227 and :338), so the magic is clobbered and byte 32 is never
+ * written at all, putting a byte of stack in the key: that end cannot reproduce its own key, let
+ * alone agree with a conforming one. And the IPv4 field is a host-order uint32 written in native
+ * byte order, a historical quirk that breaks every existing IPv4 peer if it is "corrected".
+ *
  * Implementing it depends on ingress normalisation landing first. A mapped IPv4 sender has to
  * become plain IPv4 before this question is asked, or the receiver picks the 35-byte layout for a
  * peer that keyed on 4 bytes and fails silently.
