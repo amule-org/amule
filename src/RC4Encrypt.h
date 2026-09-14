@@ -23,8 +23,8 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-#ifndef __RC4ENCRYPT_H__
-#define __RC4ENCRYPT_H__
+#ifndef RC4ENCRYPT_H
+#define RC4ENCRYPT_H
 
 #include <vector>
 
@@ -83,4 +83,4 @@ private:
 	void RC4CreateKey(const uint8 *pachKeyData, uint32 nLen, bool bSkipDiscard);
 };
 
-#endif // __RC4ENCRYPT_H__
+#endif // RC4ENCRYPT_H

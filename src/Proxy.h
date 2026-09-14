@@ -23,8 +23,8 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-#ifndef __PROXY_H__
-#define __PROXY_H__
+#ifndef PROXY_H
+#define PROXY_H
 
 #include "amuleIPV4Address.h" // For amuleIPV4address
 #include "StateMachine.h"     // For CStateMachine
@@ -453,6 +453,6 @@ private:
 
 /******************************************************************************/
 
-#endif /* __PROXY_H__ */
+#endif /* PROXY_H */
 
 // File_checked_for_headers

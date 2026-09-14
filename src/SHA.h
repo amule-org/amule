@@ -23,8 +23,8 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-#ifndef __SHA_H__
-#define __SHA_H__
+#ifndef SHA_H
+#define SHA_H
 
 #include "SHAHashSet.h"
 #include "CryptoPP_Inc.h"
@@ -59,5 +59,5 @@ private:
 	SHA1Digest m_hash;
 };
 
-#endif // __SHA_H__
+#endif // SHA_H
 // File_checked_for_headers

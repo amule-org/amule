@@ -36,8 +36,8 @@ Any mod that changes anything within the Kademlia side will not be allowed to ad
 there client on the eMule forum..
 */
 
-#ifndef __ROUTING_BIN__
-#define __ROUTING_BIN__
+#ifndef ROUTINGBIN_H
+#define ROUTINGBIN_H
 
 #include "Maps.h"
 #include "../../Types.h"
@@ -109,5 +109,5 @@ private:
 
 } // namespace Kademlia
 
-#endif // __ROUTING_BIN__
+#endif // ROUTINGBIN_H
 // File_checked_for_headers

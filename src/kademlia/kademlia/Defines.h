@@ -36,8 +36,8 @@ Any mod that changes anything within the Kademlia side will not be allowed to ad
 there client on the eMule forum..
 */
 
-#ifndef __KAD_DEFINES_H__
-#define __KAD_DEFINES_H__
+#ifndef DEFINES_H
+#define DEFINES_H
 
 ////////////////////////////////////////
 namespace Kademlia
@@ -88,5 +88,5 @@ const unsigned int K = 10;
 
 } // namespace Kademlia
 
-#endif // __KAD_DEFINES_H__
+#endif // DEFINES_H
 // File_checked_for_headers

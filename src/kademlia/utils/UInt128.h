@@ -37,8 +37,8 @@ Any mod that changes anything within the Kademlia side will not be allowed to ad
 there client on the eMule forum..
 */
 
-#ifndef __UINT128_H__
-#define __UINT128_H__
+#ifndef UINT128_H
+#define UINT128_H
 
 #include "../../Types.h"
 

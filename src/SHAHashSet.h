@@ -69,8 +69,8 @@ Version 2 of AICH also supports 32bit identifiers to support large files, check
 CAICHHashSet::CreatePartRecoveryData
 */
 
-#ifndef __SHAHAHSET_H__
-#define __SHAHAHSET_H__
+#ifndef SHAHASHSET_H
+#define SHAHASHSET_H
 
 #include <deque>
 #include <set>
@@ -321,6 +321,6 @@ private:
 	static void LoadRootHashCacheLocked();
 };
 
-#endif //__SHAHAHSET_H__
+#endif //SHAHASHSET_H
 
 // File_checked_for_headers

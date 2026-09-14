@@ -38,8 +38,8 @@ there client on the eMule forum..
 
 #include "Prefs.h"
 
-#ifndef __KAD_KADEMLIA_H__
-#define __KAD_KADEMLIA_H__
+#ifndef KADEMLIA_H
+#define KADEMLIA_H
 
 #include <map>
 #include "../utils/UInt128.h"
@@ -201,4 +201,4 @@ private:
 void KadGetKeywordHash(const wxString &rstrKeyword, Kademlia::CUInt128 *pKadID);
 wxString KadGetKeywordBytes(const wxString &rstrKeywordW);
 
-#endif // __KAD_KADEMLIA_H__
+#endif // KADEMLIA_H

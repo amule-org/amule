@@ -36,8 +36,8 @@ Any mod that changes anything within the Kademlia side will not be allowed to ad
 there client on the eMule forum..
 */
 
-#ifndef __SEARCH_H__
-#define __SEARCH_H__
+#ifndef SEARCH_H
+#define SEARCH_H
 
 #include <set>
 
@@ -240,5 +240,5 @@ private:
 
 } // namespace Kademlia
 
-#endif //__SEARCH_H__
+#endif //SEARCH_H
 // File_checked_for_headers

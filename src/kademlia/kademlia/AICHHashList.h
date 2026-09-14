@@ -23,8 +23,8 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-#ifndef __KAD_AICH_HASH_LIST_H__
-#define __KAD_AICH_HASH_LIST_H__
+#ifndef AICHHASHLIST_H
+#define AICHHASHLIST_H
 
 #include <array>
 #include <cstddef>
@@ -148,4 +148,4 @@ private:
 
 } // namespace Kademlia
 
-#endif // __KAD_AICH_HASH_LIST_H__
+#endif // AICHHASHLIST_H

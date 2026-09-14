@@ -30,8 +30,8 @@
    it uses no secret keys -- and, importantly for rc4, no unique ones.
 */
 
-#ifndef __ENCRYPTEDSTREAMSOCKET_H__
-#define __ENCRYPTEDSTREAMSOCKET_H__
+#ifndef ENCRYPTEDSTREAMSOCKET_H
+#define ENCRYPTEDSTREAMSOCKET_H
 
 #include <wx/wx.h>
 #include <wx/string.h>
@@ -140,4 +140,4 @@ private:
 	CryptoPP::Integer m_cryptDHA;
 };
 
-#endif // __ENCRYPTEDSTREAMSOCKET_H__
+#endif // ENCRYPTEDSTREAMSOCKET_H

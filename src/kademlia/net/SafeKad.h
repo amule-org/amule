@@ -23,8 +23,8 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-#ifndef __KAD_SAFEKAD_H__
-#define __KAD_SAFEKAD_H__
+#ifndef SAFEKAD_H
+#define SAFEKAD_H
 
 #include <cstddef>
 #include <map>
@@ -302,4 +302,4 @@ extern CSafeKad safeKad;
 
 } // namespace Kademlia
 
-#endif // __KAD_SAFEKAD_H__
+#endif // SAFEKAD_H

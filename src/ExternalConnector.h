@@ -27,8 +27,8 @@
  * configure time for console applications, because wx classes compile differently in each case.
  */
 
-#ifndef __EXTERNALCONNECTOR_H__
-#define __EXTERNALCONNECTOR_H__
+#ifndef EXTERNALCONNECTOR_H
+#define EXTERNALCONNECTOR_H
 
 #include <wx/app.h>     // For wxApp
 #include <wx/cmdline.h> // For wxCmdLineEntryDesc
@@ -292,5 +292,5 @@ private:
 	char *m_strOSDescription;
 };
 
-#endif // __EXTERNALCONNECTOR_H__
+#endif // EXTERNALCONNECTOR_H
 // File_checked_for_headers

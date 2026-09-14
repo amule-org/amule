@@ -24,12 +24,12 @@
 //
 
 #ifndef PARTFILECONVERT_H
-#if !defined __need_convertinfo
+#if !defined NEED_CONVERTINFO
 #define PARTFILECONVERT_H
 #endif
 
-#if !defined __have_convertinfo && (defined __need_convertinfo || defined PARTFILECONVERT_H)
-#define __have_convertinfo
+#if !defined HAVE_CONVERTINFO && (defined NEED_CONVERTINFO || defined PARTFILECONVERT_H)
+#define HAVE_CONVERTINFO
 
 #include "Constants.h"
 #include "Types.h"
@@ -50,7 +50,7 @@ struct ConvertInfo
 };
 
 #endif /* convertinfo */
-#undef __need_convertinfo
+#undef NEED_CONVERTINFO
 
 #ifdef PARTFILECONVERT_H
 

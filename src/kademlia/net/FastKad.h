@@ -23,8 +23,8 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-#ifndef __KAD_FASTKAD_H__
-#define __KAD_FASTKAD_H__
+#ifndef FASTKAD_H
+#define FASTKAD_H
 
 #include <cstddef>
 #include <map>
@@ -114,4 +114,4 @@ extern CFastKad fastKad;
 
 } // namespace Kademlia
 
-#endif // __KAD_FASTKAD_H__
+#endif // FASTKAD_H

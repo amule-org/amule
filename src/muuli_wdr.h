@@ -26,8 +26,8 @@
 // longer round-trippable; the file is now maintained by hand.
 //
 
-#ifndef __WDR_muuli_H__
-#define __WDR_muuli_H__
+#ifndef MUULI_WDR_H
+#define MUULI_WDR_H
 
 #if defined(__GNUG__) && !defined(NO_GCC_PRAGMA)
 #pragma interface "muuli_wdr.h"

@@ -36,8 +36,8 @@ Any mod that changes anything within the Kademlia side will not be allowed to ad
 there client on the eMule forum..
 */
 
-#ifndef __KAD_ENTRY_H__
-#define __KAD_ENTRY_H__
+#ifndef ENTRY_H
+#define ENTRY_H
 
 #include "AICHHashList.h"
 #include "../utils/UInt128.h"
@@ -167,5 +167,5 @@ protected:
 
 } // namespace Kademlia
 
-#endif // __KAD_ENTRY_H__
+#endif // ENTRY_H
 // File_checked_for_headers

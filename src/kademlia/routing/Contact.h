@@ -36,8 +36,8 @@ Any mod that changes anything within the Kademlia side will not be allowed to ad
 there client on the eMule forum..
 */
 
-#ifndef __CONTACT_H__
-#define __CONTACT_H__
+#ifndef CONTACT_H
+#define CONTACT_H
 
 #include "../kademlia/Kademlia.h"
 #include "../utils/KadUDPKey.h"
@@ -146,5 +146,5 @@ private:
 
 } // namespace Kademlia
 
-#endif // __CONTACT_H__
+#endif // CONTACT_H
 // File_checked_for_headers

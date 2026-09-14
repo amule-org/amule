@@ -23,8 +23,8 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-#ifndef __MULECOLLECTION_H__
-#define __MULECOLLECTION_H__
+#ifndef MULECOLLECTION_H
+#define MULECOLLECTION_H
 
 #include <istream>
 #include <string>
@@ -87,4 +87,4 @@ private:
 	std::string ReadString(std::istream &infile, int TagType);
 };
 
-#endif // __MULECOLLECTION_H__
+#endif // MULECOLLECTION_H

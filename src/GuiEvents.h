@@ -31,7 +31,7 @@
 
 #include "Types.h"
 #include "Constants.h"
-#define __need_convertinfo // We need only the ConvertInfo struct from PartFileConvert.h
+#define NEED_CONVERTINFO // We need only the ConvertInfo struct from PartFileConvert.h
 #include "PartFileConvert.h"
 
 class CKnownFile;

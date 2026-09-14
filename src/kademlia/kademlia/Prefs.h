@@ -36,8 +36,8 @@ Any mod that changes anything within the Kademlia side will not be allowed to ad
 there client on the eMule forum..
 */
 
-#ifndef __PREFS_H__
-#define __PREFS_H__
+#ifndef PREFS_H
+#define PREFS_H
 
 #include "../utils/UInt128.h"
 #include "../../Preferences.h"
@@ -191,5 +191,5 @@ inline bool Kademlia::CPrefs::GetUseExternKadPort() const
 	return m_useExternKadPort && !Kademlia::CKademlia::IsRunningInLANMode();
 }
 
-#endif //__PREFS_H__
+#endif //PREFS_H
 // File_checked_for_headers

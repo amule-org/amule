@@ -23,8 +23,8 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-#ifndef __PrefsUnifiedDlg_H__
-#define __PrefsUnifiedDlg_H__
+#ifndef PREFSUNIFIEDDLG_H
+#define PREFSUNIFIEDDLG_H
 
 #include <wx/bmpbndl.h> // Needed for wxBitmapBundle (m_pageIcons)
 #include <wx/dialog.h>  // Needed for wxDialog

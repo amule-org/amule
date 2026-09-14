@@ -36,8 +36,8 @@ Any mod that changes anything within the Kademlia side will not be allowed to ad
 there client on the eMule forum..
 */
 
-#ifndef __KAD_MAPS_H__
-#define __KAD_MAPS_H__
+#ifndef MAPS_H
+#define MAPS_H
 
 #include <map>
 #include <list>
@@ -58,5 +58,5 @@ typedef std::set<CUInt128> UIntSet;
 
 } // namespace Kademlia
 
-#endif // __KAD_MAPS_H__
+#endif // MAPS_H
 // File_checked_for_headers

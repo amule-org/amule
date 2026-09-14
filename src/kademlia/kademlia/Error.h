@@ -35,8 +35,8 @@ what all it does can cause great harm to the network if released in mass form..
 Any mod that changes anything within the Kademlia side will not be allowed to advertise
 there client on the eMule forum..
 */
-#ifndef __KAD_ERROR_H__
-#define __KAD_ERROR_H__
+#ifndef ERROR_H
+#define ERROR_H
 
 ////////////////////////////////////////
 namespace Kademlia
@@ -79,5 +79,5 @@ public:
 
 } // namespace Kademlia
 
-#endif // __KAD_ERROR_H__
+#endif // ERROR_H
 // File_checked_for_headers

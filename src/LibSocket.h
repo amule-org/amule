@@ -23,8 +23,8 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-#ifndef __LIBSOCKET_H__
-#define __LIBSOCKET_H__
+#ifndef LIBSOCKET_H
+#define LIBSOCKET_H
 
 #include "Types.h"
 #include <memory> // shared_ptr for CAsioUDPSocketImpl ownership
@@ -269,4 +269,4 @@ BindInterfaceStatus TestSocketBindInterface(const wxString &iface);
 // The fd is passed as uintptr_t so a Windows SOCKET survives without truncation.
 bool BindRawSocketToInterface(uintptr_t fd, const wxString &iface);
 
-#endif /* __LIBSOCKET_H__ */
+#endif /* LIBSOCKET_H */
