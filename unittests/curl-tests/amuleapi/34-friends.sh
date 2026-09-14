@@ -39,6 +39,7 @@ set -u
 set -o pipefail
 
 HOST=${HOST:-localhost:4713}
+API="$HOST/api/v1"
 ADMIN_PASS=${ADMIN_PASS:-adminpass}
 GUEST_PASS=${GUEST_PASS:-guestpass}
 
@@ -79,7 +80,7 @@ trap 'rm -f /tmp/amuleapi_34_head /tmp/amuleapi_34_body' EXIT
 
 command -v jq >/dev/null 2>&1 || _die "jq is required"
 
-if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health" 2>/dev/null; then
+if ! curl -s -o /dev/null --max-time 2 "$API/health" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable. Start amuleapi first."
 fi
 
@@ -88,12 +89,12 @@ echo "amuleapi 34-friends @ $HOST"
 # --- 0. Log in. ----------------------------------------------------
 TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 	-d "{\"password\":\"$ADMIN_PASS\"}" \
-	"$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
+	"$API/auth/login?include_token=true" | jq -r .token)
 [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ] || _die "could not log in for friends tests"
 AUTH=(-H "Authorization: Bearer $TOKEN")
 
 # --- 1. The envelope. ---------------------------------------------
-_curl "$HOST/api/v0/friends"
+_curl "$API/friends"
 _assert_status 200 "GET /friends"
 
 if [ "$(_jq 'has("friends")')" = "true" ]; then
@@ -114,30 +115,30 @@ BEFORE=$(_jq '.total')
 echo "        (list holds $BEFORE friend(s) before this run)"
 
 # --- 2. Shared list-parameter contract. ----------------------------
-_curl "$HOST/api/v0/friends?limit=1&offset=0"
+_curl "$API/friends?limit=1&offset=0"
 _assert_status 200 "GET /friends?limit=1"
 [ "$(_jq '.limit')" = "1" ] && _pass "limit is echoed" || _fail "limit echo" "got $(_jq '.limit')"
 
 # Over the cap is a rejection, not a silent clamp. It used to answer 200 with a
 # quietly reduced window, so a client asking for 99999 got 500 rows with nothing
 # in the response saying the request had been altered.
-_curl "$HOST/api/v0/friends?limit=1000000001"
+_curl "$API/friends?limit=1000000001"
 _assert_status 400 "GET /friends?limit=1000000001 is rejected, not clamped"
 
 # The cap itself is still valid.
-_curl "$HOST/api/v0/friends?limit=500"
+_curl "$API/friends?limit=500"
 _assert_status 200 "GET /friends?limit=500 (the cap is in range)"
 
 for bad in "limit=abc" "limit=-1" "offset=-1" "order=sideways"; do
-	_curl "$HOST/api/v0/friends?$bad"
+	_curl "$API/friends?$bad"
 	_assert_status 400 "GET /friends?$bad is rejected"
 done
 
 for key in name connected; do
-	_curl "$HOST/api/v0/friends?sort=$key&order=desc"
+	_curl "$API/friends?sort=$key&order=desc"
 	_assert_status 200 "sort=$key is accepted"
 done
-_curl "$HOST/api/v0/friends?sort=nonsuch"
+_curl "$API/friends?sort=nonsuch"
 _assert_status 400 "unknown sort key is rejected"
 
 # --- 3. Add by address, then read it back. -------------------------
@@ -147,7 +148,7 @@ TEST_IP="203.0.113.42"
 TEST_PORT=4662
 _curl -X POST -H "Content-Type: application/json" \
 	-d "{\"ip\":\"$TEST_IP\",\"port\":$TEST_PORT,\"name\":\"curltest-friend\"}" \
-	"$HOST/api/v0/friends"
+	"$API/friends"
 # 202 with no body. EC's FRIEND op answers success or failure and never
 # returns the record it created, so the handler used to name the new friend by
 # diffing the snapshot against a pre-add copy - the object when the inline
@@ -157,7 +158,7 @@ _assert_status 202 "POST /friends (address form)"
 [ -z "$CURL_BODY" ] && _pass "POST /friends sends no body" \
 	|| _fail "POST body" "expected empty, got: ${CURL_BODY:0:200}"
 
-_curl "$HOST/api/v0/friends?limit=500"
+_curl "$API/friends?limit=500"
 AFTER=$(_jq '.total')
 
 # Find the friend just added, by the address it was added with.
@@ -197,71 +198,71 @@ BADHASH=$(echo "$CURL_BODY" | jq -r '[.friends[] | select(.user_hash != "" and (
 
 # --- 4. The friend slot, the flag that needed the core change. -----
 _curl -X PATCH -H "Content-Type: application/json" \
-	-d '{"friend_slot":true}' "$HOST/api/v0/friends/$NEW_ECID"
+	-d '{"friend_slot":true}' "$API/friends/$NEW_ECID"
 _assert_status 200 "PATCH friend_slot=true"
 [ "$(_jq '.friend_slot')" = "true" ] && _pass "friend_slot reads back true" \
 	|| _fail "friend_slot" "expected true, got $(_jq '.friend_slot') — is the daemon serializing the tag?"
 
-_curl "$HOST/api/v0/friends?limit=500"
+_curl "$API/friends?limit=500"
 STILL=$(echo "$CURL_BODY" | jq -r --arg e "$NEW_ECID" '[.friends[] | select(.ecid == ($e|tonumber)) | .friend_slot] | first')
 [ "$STILL" = "true" ] && _pass "the slot survives into the list view" \
 	|| _fail "friend_slot in list" "expected true, got $STILL"
 
 _curl -X PATCH -H "Content-Type: application/json" \
-	-d '{"friend_slot":false}' "$HOST/api/v0/friends/$NEW_ECID"
+	-d '{"friend_slot":false}' "$API/friends/$NEW_ECID"
 _assert_status 200 "PATCH friend_slot=false"
 [ "$(_jq '.friend_slot')" = "false" ] && _pass "the slot clears again" \
 	|| _fail "friend_slot" "expected false, got $(_jq '.friend_slot')"
 
-_curl -X PATCH -H "Content-Type: application/json" -d '{}' "$HOST/api/v0/friends/$NEW_ECID"
+_curl -X PATCH -H "Content-Type: application/json" -d '{}' "$API/friends/$NEW_ECID"
 _assert_status 400 "PATCH with no recognized field is rejected"
 
 # --- 5. Bad input is rejected before any EC traffic. ---------------
 _curl -X POST -H "Content-Type: application/json" \
-	-d '{"client_ecid":1,"ip":"203.0.113.9","port":4662}' "$HOST/api/v0/friends"
+	-d '{"client_ecid":1,"ip":"203.0.113.9","port":4662}' "$API/friends"
 _assert_status 400 "POST with both body forms is rejected"
 
 _curl -X POST -H "Content-Type: application/json" \
-	-d '{"ip":"not-an-ip","port":4662}' "$HOST/api/v0/friends"
+	-d '{"ip":"not-an-ip","port":4662}' "$API/friends"
 _assert_status 400 "POST with a malformed ip is rejected"
 
 _curl -X POST -H "Content-Type: application/json" \
-	-d "{\"ip\":\"$TEST_IP\",\"port\":0}" "$HOST/api/v0/friends"
+	-d "{\"ip\":\"$TEST_IP\",\"port\":0}" "$API/friends"
 _assert_status 400 "POST with a zero port is rejected"
 
 _curl -X POST -H "Content-Type: application/json" \
-	-d "{\"ip\":\"$TEST_IP\",\"port\":4662,\"user_hash\":\"nothex\"}" "$HOST/api/v0/friends"
+	-d "{\"ip\":\"$TEST_IP\",\"port\":4662,\"user_hash\":\"nothex\"}" "$API/friends"
 _assert_status 400 "POST with a malformed user_hash is rejected"
 
 _curl -X POST -H "Content-Type: application/json" \
-	-d '{"client_ecid":4294967290}' "$HOST/api/v0/friends"
+	-d '{"client_ecid":4294967290}' "$API/friends"
 _assert_status 404 "POST naming an unknown client_ecid is a 404"
 
 # --- 6. HEAD and method routing. -----------------------------------
 # Status only, as the other phases do: `curl -I` prints the response headers
 # on stdout, so the -o capture holds those rather than a body, and asserting
 # emptiness here would be testing curl instead of the endpoint.
-_curl -I "$HOST/api/v0/friends"
+_curl -I "$API/friends"
 _assert_status 200 "HEAD /friends"
 
-_curl -X PUT "$HOST/api/v0/friends"
+_curl -X PUT "$API/friends"
 _assert_status 405 "PUT /friends is 405"
-_curl -X POST "$HOST/api/v0/friends/$NEW_ECID"
+_curl -X POST "$API/friends/$NEW_ECID"
 _assert_status 405 "POST /friends/{ecid} is 405"
 
 # --- 7. Guests read but cannot mutate. ------------------------------
 GUEST_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 	-d "{\"password\":\"$GUEST_PASS\"}" \
-	"$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
+	"$API/auth/login?include_token=true" | jq -r .token)
 if [ -n "$GUEST_TOKEN" ] && [ "$GUEST_TOKEN" != "null" ]; then
 	SAVED=("${AUTH[@]}")
 	AUTH=(-H "Authorization: Bearer $GUEST_TOKEN")
-	_curl "$HOST/api/v0/friends"
+	_curl "$API/friends"
 	_assert_status 200 "guest may GET /friends"
-	_curl -X DELETE "$HOST/api/v0/friends/$NEW_ECID"
+	_curl -X DELETE "$API/friends/$NEW_ECID"
 	_assert_status 403 "guest may not DELETE a friend"
 	_curl -X POST -H "Content-Type: application/json" \
-		-d "{\"ip\":\"$TEST_IP\",\"port\":4662}" "$HOST/api/v0/friends"
+		-d "{\"ip\":\"$TEST_IP\",\"port\":4662}" "$API/friends"
 	_assert_status 403 "guest may not POST a friend"
 	AUTH=("${SAVED[@]}")
 else
@@ -269,16 +270,16 @@ else
 fi
 
 # --- 8. Remove, and prove a stale id does not answer 200. ----------
-_curl -X DELETE "$HOST/api/v0/friends/$NEW_ECID"
+_curl -X DELETE "$API/friends/$NEW_ECID"
 # 204, no body: the ecid came from the URL and `ok` restated the status code.
 _assert_status 204 "DELETE /friends/$NEW_ECID"
 [ -z "$CURL_BODY" ] && _pass "DELETE sends no body" \
 	|| _fail "DELETE body" "expected empty, got: ${CURL_BODY:0:200}"
 
-_curl -X DELETE "$HOST/api/v0/friends/$NEW_ECID"
+_curl -X DELETE "$API/friends/$NEW_ECID"
 _assert_status 404 "a second DELETE of the same id is a 404"
 
-_curl "$HOST/api/v0/friends"
+_curl "$API/friends"
 FINAL=$(_jq '.total')
 [ "$FINAL" = "$BEFORE" ] && _pass "the list is back to its starting size ($BEFORE)" \
 	|| _fail "cleanup" "expected $BEFORE, got $FINAL"
@@ -290,7 +291,7 @@ FINAL=$(_jq '.total')
 # being connected. online answers the second question, so the implication
 # runs one way only: online true requires a live peer, but a live peer does
 # not make the friend online.
-_curl "$HOST/api/v0/friends?limit=200"
+_curl "$API/friends?limit=200"
 if [ "$(_jq '[.friends[] | select((.connected | type) as $t | $t != "boolean" and $t != "null")] | length')" = "0" ]; then
 	_pass "every friend connected is a boolean or null"
 else

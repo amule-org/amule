@@ -327,7 +327,7 @@ build_static() {
 
     # The WebUI ships inside this bundle. amuleapi serves no assets of its
     # own, so a static-binary operator who fetched this tarball had a daemon
-    # that answered /api/v0 and nothing on /, and had to find a separate
+    # that answered /api/v1 and nothing on /, and had to find a separate
     # download to fix it -- which is why that separate amuleapi-frontend zip
     # existed and why it no longer needs to. amuleapi finds this copy on its own because it
     # looks next to its own executable (ResolveDefaultStaticDir), so the

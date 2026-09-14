@@ -3,7 +3,7 @@
 # amuleapi 36-shared-reload — POST /shared_reload.
 #
 # Endpoint:
-#   POST /api/v0/shared_reload   → 202, no `ok` field
+#   POST /api/v1/shared_reload   → 202, no `ok` field
 #
 # amuled schedules a re-walk of every configured share root and answers
 # immediately, so the call is accepted (202), never completed (200). The walk
@@ -25,6 +25,7 @@ set -u
 set -o pipefail
 
 HOST=${HOST:-localhost:4713}
+API="$HOST/api/v1"
 ADMIN_PASS=${ADMIN_PASS:-adminpass}
 GUEST_PASS=${GUEST_PASS:-guestpass}
 
@@ -97,36 +98,36 @@ _assert_body_empty() {
 }
 
 if ! command -v jq >/dev/null 2>&1; then _die "jq is required."; fi
-if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health" 2>/dev/null; then
+if ! curl -s -o /dev/null --max-time 2 "$API/health" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable."
 fi
 
 echo "amuleapi 36-shared-reload smoke @ $HOST"
 
 ADMIN_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$ADMIN_PASS\"}" "$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
+	-d "{\"password\":\"$ADMIN_PASS\"}" "$API/auth/login?include_token=true" | jq -r .token)
 [ -n "$ADMIN_TOKEN" ] && [ "$ADMIN_TOKEN" != "null" ] || _die "admin login failed"
 
 GUEST_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$GUEST_PASS\"}" "$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
+	-d "{\"password\":\"$GUEST_PASS\"}" "$API/auth/login?include_token=true" | jq -r .token)
 HAVE_GUEST=0
 [ -n "$GUEST_TOKEN" ] && [ "$GUEST_TOKEN" != "null" ] && HAVE_GUEST=1
 
 sleep 4
 
 # --- 1. Auth guards. -----------------------------------------------
-_curl -X POST "$HOST/api/v0/shared_reload"
+_curl -X POST "$API/shared_reload"
 _assert_status 401 "POST /shared_reload (no creds) → 401"
 
 if [ "$HAVE_GUEST" -eq 1 ]; then
-	_curl -X POST -H "Authorization: Bearer $GUEST_TOKEN" "$HOST/api/v0/shared_reload"
+	_curl -X POST -H "Authorization: Bearer $GUEST_TOKEN" "$API/shared_reload"
 	_assert_status 403 "POST /shared_reload (guest) → 403"
 else
 	echo "    info: no guest password configured; skipping the 403 guard check"
 fi
 
 # --- 2. Accept path. -----------------------------------------------
-_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/shared_reload"
+_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" "$API/shared_reload"
 _assert_status 202 "POST /shared_reload (admin) → 202"
 _assert_no_body_or_message "/shared_reload"
 
@@ -135,7 +136,7 @@ _assert_no_body_or_message "/shared_reload"
 # must be accepted the same way, not rejected as a conflict and not queued
 # into a second walk. Only the status is observable from here; that the two
 # collapse into one walk is amuled-side and shows up in its log.
-_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/shared_reload"
+_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" "$API/shared_reload"
 _assert_status 202 "POST /shared_reload again immediately → 202"
 _assert_no_body_or_message "second /shared_reload"
 
@@ -144,7 +145,7 @@ _assert_no_body_or_message "second /shared_reload"
 # behaviour, not a timing guarantee. SimpleConnControlOp also runs an inline
 # RefresherTick, so a handful of EC roundtrips are included in the figure.
 START=$(date +%s)
-_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/shared_reload"
+_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" "$API/shared_reload"
 ELAPSED=$(( $(date +%s) - START ))
 _assert_status 202 "POST /shared_reload (timed) → 202"
 if [ "$ELAPSED" -le 10 ]; then
@@ -157,18 +158,18 @@ fi
 # --- 5. The API stays usable while the walk runs. ------------------
 # The reload request must not be the thing that occupies the EC service's
 # in-flight slot for the walk's duration; if it were, these would 503.
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/status"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/status"
 _assert_status 200 "GET /status right after a reload → 200 (not 503)"
 
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/shared"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/shared"
 _assert_status 200 "GET /shared right after a reload → 200"
 _assert_json_eq '.shared | type' array "/shared still serves a coherent list"
 
 # --- 6. Method gate. -----------------------------------------------
-_curl -X GET -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/shared_reload"
+_curl -X GET -H "Authorization: Bearer $ADMIN_TOKEN" "$API/shared_reload"
 _assert_status 405 "GET /shared_reload → 405"
 
-_curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/shared_reload"
+_curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" "$API/shared_reload"
 _assert_status 405 "DELETE /shared_reload → 405"
 
 # --- Summary. -----------------------------------------------------

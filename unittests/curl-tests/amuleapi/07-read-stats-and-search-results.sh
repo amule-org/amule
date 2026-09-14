@@ -9,6 +9,7 @@ set -u
 set -o pipefail
 
 HOST=${HOST:-localhost:4713}
+API="$HOST/api/v1"
 ADMIN_PASS=${ADMIN_PASS:-adminpass}
 
 FAIL_COUNT=0
@@ -59,7 +60,7 @@ _assert_json_eq() {
 if ! command -v jq >/dev/null 2>&1; then
 	_die "jq is required."
 fi
-if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health" 2>/dev/null; then
+if ! curl -s -o /dev/null --max-time 2 "$API/health" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable."
 fi
 
@@ -67,7 +68,7 @@ echo "amuleapi 07-read-stats-and-search-results smoke @ $HOST"
 
 TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 	-d "{\"password\":\"$ADMIN_PASS\"}" \
-	"$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
+	"$API/auth/login?include_token=true" | jq -r .token)
 [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ] || _die "login failed"
 
 # Wait for the refresher to populate the cache (3 new EC roundtrips
@@ -77,18 +78,18 @@ sleep 4
 # A search to address. Every search-scoped path names its id, so this
 # script starts one rather than relying on a removed implicit default.
 _curl -X POST -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
-	-d '{"query":"amuleapi-phase07","type":"local"}' "$HOST/api/v0/search"
+	-d '{"query":"amuleapi-phase07","type":"local"}' "$API/search"
 SID=$(printf '%s' "$CURL_BODY" | jq -r '.search_id // empty')
 [ -n "$SID" ] || _die "POST /search returned no search_id"
 
 # --- 1. Auth gate. -------------------------------------------------
 for ep in stats/tree stats/graphs/download_speed "search/$SID/results"; do
-	_curl "$HOST/api/v0/$ep"
+	_curl "$API/$ep"
 	_assert_status 401 "GET /$ep (no creds) → 401"
 done
 
 # --- 2. /stats/tree shape. -----------------------------------------
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/stats/tree"
+_curl -H "Authorization: Bearer $TOKEN" "$API/stats/tree"
 _assert_status 200 "GET /stats/tree → 200"
 _assert_json_eq '.nodes | type'            array  '/stats/tree .nodes is array'
 # amuled's stats tree always has at least Uptime + Transfer + Connection
@@ -161,7 +162,7 @@ _assert_json_eq '[.. | objects | .values? // empty | .[]? | (has("token") and ha
 
 # --- 3. /stats/graphs/{graph} — all four named graphs. -------------
 for g in download_speed upload_speed connections kad_nodes; do
-	_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/stats/graphs/$g"
+	_curl -H "Authorization: Bearer $TOKEN" "$API/stats/graphs/$g"
 	_assert_status 200 "GET /stats/graphs/$g → 200"
 	_assert_json_eq '.graph'                    "$g"  "/stats/graphs/$g reports graph=$g"
 	_assert_json_eq '.interval_seconds | type'  number "/stats/graphs/$g interval_seconds is numeric"
@@ -172,9 +173,9 @@ for g in download_speed upload_speed connections kad_nodes; do
 		"/stats/graphs/$g never returns more points than max_points"
 done
 # Per-graph unit mapping.
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/stats/graphs/download_speed"
+_curl -H "Authorization: Bearer $TOKEN" "$API/stats/graphs/download_speed"
 _assert_json_eq '.unit' bytes_per_second '/stats/graphs/download_speed reports unit=bytes_per_second'
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/stats/graphs/connections"
+_curl -H "Authorization: Bearer $TOKEN" "$API/stats/graphs/connections"
 _assert_json_eq '.unit' count '/stats/graphs/connections reports unit=count'
 
 # Session object: the two byte counters are scaled back from the KiB the
@@ -197,34 +198,34 @@ if [ "$(printf '%s' "$CURL_BODY" | jq '.points | length')" -gt 0 ]; then
 	_assert_json_eq '[.points[] | has("active_upload_count")] | (all(.) or (any(.) | not))' true \
 		'/stats/graphs/connections active_uploads is present on all points or none'
 fi
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/stats/graphs/download_speed"
+_curl -H "Authorization: Bearer $TOKEN" "$API/stats/graphs/download_speed"
 _assert_json_eq '[.points[]? | has("active_upload_count")] | any(.) | not' true \
 	'/stats/graphs/download_speed never carries the connections-only series'
 
 # --- 3b. ?interval_seconds=N and its validation. ---------------------------
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/stats/graphs/download_speed?interval_seconds=10"
+_curl -H "Authorization: Bearer $TOKEN" "$API/stats/graphs/download_speed?interval_seconds=10"
 _assert_status 200 "GET /stats/graphs/download_speed?interval_seconds=10 → 200"
 _assert_json_eq '.interval_seconds' 10 \
 	'/stats/graphs?interval_seconds=10 reports the interval it applied'
 for bad in 0 3601 abc; do
-	_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/stats/graphs/download_speed?interval_seconds=$bad"
+	_curl -H "Authorization: Bearer $TOKEN" "$API/stats/graphs/download_speed?interval_seconds=$bad"
 	_assert_status 400 "GET /stats/graphs/download_speed?interval_seconds=$bad → 400"
 	_assert_json_eq '.error.code' bad_request \
 		"/stats/graphs?interval_seconds=$bad carries error.code=bad_request"
 done
 
 # --- 3c. /stats/tree ?max_client_versions=N and its validation. ----
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/stats/tree?max_client_versions=3"
+_curl -H "Authorization: Bearer $TOKEN" "$API/stats/tree?max_client_versions=3"
 _assert_status 200 "GET /stats/tree?max_client_versions=3 → 200"
 for bad in -1 256 abc; do
-	_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/stats/tree?max_client_versions=$bad"
+	_curl -H "Authorization: Bearer $TOKEN" "$API/stats/tree?max_client_versions=$bad"
 	_assert_status 400 "GET /stats/tree?max_client_versions=$bad → 400"
 	_assert_json_eq '.error.code' bad_request \
 		"/stats/tree?max_client_versions=$bad carries error.code=bad_request"
 done
 
 # --- 4. /stats/graphs/{graph} ?width=N tailing. --------------------
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/stats/graphs/download_speed?width=5"
+_curl -H "Authorization: Bearer $TOKEN" "$API/stats/graphs/download_speed?width=5"
 _assert_status 200 "GET /stats/graphs/download_speed?width=5 → 200"
 _assert_json_eq '.points | length <= 5' true \
 	'/stats/graphs/download_speed?width=5 returns ≤5 points'
@@ -241,13 +242,13 @@ if [ "$(printf '%s' "$CURL_BODY" | jq '.points | length')" -gt 0 ]; then
 fi
 
 # --- 5. Unknown graph name → 404. ----------------------------------
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/stats/graphs/bogus"
+_curl -H "Authorization: Bearer $TOKEN" "$API/stats/graphs/bogus"
 _assert_status 404 "GET /stats/graphs/bogus → 404"
 _assert_json_eq '.error.code' not_found \
 	'/stats/graphs/{unknown} carries error.code=not_found'
 
 # --- 6. /search/{id}/results. --------------------------------------
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/search/$SID/results"
+_curl -H "Authorization: Bearer $TOKEN" "$API/search/$SID/results"
 _assert_status 200 "GET /search/{id}/results → 200"
 _assert_json_eq '.results | type'  array  '/search/{id}/results .results is array'
 _assert_json_eq '.search_id'       "$SID" '/search/{id}/results echoes its search_id'
@@ -268,8 +269,8 @@ fi
 
 # --- 7. Method gate. -----------------------------------------------
 for ep in stats/tree stats/graphs/download_speed "search/$SID/results"; do
-	_curl -X DELETE -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/$ep"
-	_assert_status 405 "DELETE /api/v0/$ep → 405"
+	_curl -X DELETE -H "Authorization: Bearer $TOKEN" "$API/$ep"
+	_assert_status 405 "DELETE /api/v1/$ep → 405"
 done
 
 # --- Summary. -----------------------------------------------------

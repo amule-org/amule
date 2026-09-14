@@ -501,7 +501,7 @@ void CamuleapiApp::TextShell(const wxString & /*prompt*/)
 	CApiDispatcher *const dispatcher = m_dispatcher.get();
 	auto handler = [dispatcher](const CHttpServer::Request &req) { return dispatcher->Dispatch(req); };
 
-	// Streaming resolver + handler for /api/v0/events. The resolver picks every GET that
+	// Streaming resolver + handler for /api/v1/events. The resolver picks every GET that
 	// matches the path; auth is enforced inside the streaming handler, under the same role gate
 	// as regular handlers.
 	auto streaming_resolver = [](const CHttpServer::Request &req) {
@@ -512,7 +512,7 @@ void CamuleapiApp::TextShell(const wxString & /*prompt*/)
 		const std::string &t = req.target;
 		const std::size_t q = t.find('?');
 		const std::string path = (q == std::string::npos) ? t : t.substr(0, q);
-		return web_api_path::StripTrailingSlash(path) == "/api/v0/events";
+		return web_api_path::StripTrailingSlash(path) == "/api/v1/events";
 	};
 	auto streaming_handler = [dispatcher](const CHttpServer::Request &req,
 					 CHttpServer::Writer &writer,
@@ -561,7 +561,7 @@ void CamuleapiApp::TextShell(const wxString & /*prompt*/)
 	Show(CFormat(_("amuleapi: listening on http://%s:%d/\n")) % wxString::FromUTF8(bind.c_str()) %
 		static_cast<int>(port));
 	Show(CFormat(_("amuleapi: config dir %s\n")) % m_apiConfig.ConfigDir());
-	Show(CFormat(_("amuleapi: aMule version %s; api v0\n")) % wxString::FromAscii(VERSION));
+	Show(CFormat(_("amuleapi: aMule version %s; api v1\n")) % wxString::FromAscii(VERSION));
 
 	// Refresher loop. One tick per second; HTTP threads read State concurrently. EC roundtrips
 	// run on this thread but go through `SendRecvSerialized` so HTTP-thread mutations can also

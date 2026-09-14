@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # amuleapi 01-version-and-errors — daemon skeleton smoke. Asserts the single
-# `/api/v0/version` endpoint and the error-shape envelope.
+# `/api/v1/version` endpoint and the error-shape envelope.
 #
 # Usage:
 #   amuleapi --config-dir=/tmp/amuleapi-test &
@@ -16,6 +16,7 @@ set -u
 set -o pipefail
 
 HOST=${HOST:-localhost:4713}
+API="$HOST/api/v1"
 ADMIN_PASS=${ADMIN_PASS:-adminpass}
 
 FAIL_COUNT=0
@@ -73,11 +74,11 @@ fi
 
 echo "amuleapi 01-version-and-errors smoke @ $HOST"
 
-# 1. GET /api/v0/version → 200 + JSON with name=amuleapi, api_version=v0.
-_curl "$HOST/api/v0/version"
-_assert_status 200 "GET /api/v0/version returns 200"
-_assert_json_eq '.service'     amuleapi '/api/v0/version reports service=amuleapi'
-_assert_json_eq '.api_version' v0       '/api/v0/version reports api_version=v0'
+# 1. GET /api/v1/version → 200 + JSON with name=amuleapi, api_version=v1.
+_curl "$API/version"
+_assert_status 200 "GET /api/v1/version returns 200"
+_assert_json_eq '.service'     amuleapi '/api/v1/version reports service=amuleapi'
+_assert_json_eq '.api_version' v1       '/api/v1/version reports api_version=v1'
 
 # 2. amuleapi_version field — non-empty. On release builds it's
 #    e.g. "3.0.1"; on the `master` line it's the literal "GIT"
@@ -85,7 +86,7 @@ _assert_json_eq '.api_version' v0       '/api/v0/version reports api_version=v0'
 #    Pinning a shape would force the smoke to know which kind of
 #    build it's poking at, so just assert the field is populated.
 _assert_json_eq '.amuleapi_version | length > 0' \
-	true '/api/v0/version reports a non-empty amuleapi_version'
+	true '/api/v1/version reports a non-empty amuleapi_version'
 
 # 2b. daemon_version field — the connected amuled's version, taken from
 #     the EC_TAG_SERVER_VERSION handshake tag. Distinct from
@@ -94,7 +95,7 @@ _assert_json_eq '.amuleapi_version | length > 0' \
 #     assert it's populated. (Against a daemon old enough to omit the
 #     tag, or before EC connects, this field is legitimately empty.)
 _assert_json_eq '.daemon_version | length > 0' \
-	true '/api/v0/version reports a non-empty daemon_version'
+	true '/api/v1/version reports a non-empty daemon_version'
 
 # 2c. update object. The identity fields above are unauthenticated because this
 #     is the version-negotiation probe (liveness is /health's job), but `update`
@@ -102,17 +103,17 @@ _assert_json_eq '.daemon_version | length > 0' \
 #     unauthenticated caller on a reachable interface has no business learning.
 #     Absent without credentials, present with them.
 _assert_json_eq '. | has("update")' false \
-	'/api/v0/version omits the update object when unauthenticated'
+	'/api/v1/version omits the update object when unauthenticated'
 
 ADMIN_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$ADMIN_PASS\"}" "$HOST/api/v0/auth/login" \
+	-d "{\"password\":\"$ADMIN_PASS\"}" "$API/auth/login" \
 	| jq -r '.token // empty')
 if [ -z "$ADMIN_TOKEN" ]; then
 	# Cookie-session build: fall back to the jar so the authenticated half
 	# still runs rather than silently reporting a pass it never made.
 	JAR=$(mktemp)
 	curl -s -c "$JAR" -X POST -H "Content-Type: application/json" \
-		-d "{\"password\":\"$ADMIN_PASS\"}" "$HOST/api/v0/auth/login" >/dev/null
+		-d "{\"password\":\"$ADMIN_PASS\"}" "$API/auth/login" >/dev/null
 	AUTH=(-b "$JAR")
 else
 	AUTH=(-H "Authorization: Bearer $ADMIN_TOKEN")
@@ -121,9 +122,9 @@ fi
 #     Whether the daemon has actually completed a check depends on its build
 #     (ENABLE_VERSION_CHECK) and network access, so assert the shape (keys +
 #     types) rather than concrete values.
-_curl "${AUTH[@]}" "$HOST/api/v0/version"
-_assert_status 200 "GET /api/v0/version (authenticated) returns 200"
-_assert_json_eq '.update | type' object '/api/v0/version has an update object when authenticated'
+_curl "${AUTH[@]}" "$API/version"
+_assert_status 200 "GET /api/v1/version (authenticated) returns 200"
+_assert_json_eq '.update | type' object '/api/v1/version has an update object when authenticated'
 _assert_json_eq '.update.check_enabled | type' boolean 'update.check_enabled is boolean'
 _assert_json_eq '.update.checked | type' boolean 'update.checked is boolean'
 # latest_version is null until a check completes (R10), so it is string-or-null
@@ -138,8 +139,8 @@ _assert_json_eq '.update | has("last_checked_at")' true 'update has last_checked
 #     something else. Unauthenticated like /version, no EC roundtrip, and always
 #     200 while the server answers, so a probe never restarts a healthy process
 #     because amuled went away. Readiness is in the body instead.
-_curl "$HOST/api/v0/health"
-_assert_status 200 "GET /api/v0/health returns 200 unauthenticated"
+_curl "$API/health"
+_assert_status 200 "GET /api/v1/health returns 200 unauthenticated"
 _assert_json_eq '.status' ok '/health reports status=ok'
 _assert_json_eq '.ec_connected | type' boolean '/health reports ec_connected'
 _assert_json_eq '.snapshot_ready | type' boolean '/health reports snapshot_ready'
@@ -147,15 +148,15 @@ _assert_json_eq '.snapshot_ready | type' boolean '/health reports snapshot_ready
 # reading the old key would silently see `undefined` rather than a boolean.
 _assert_json_eq '.snapshot | type' null '/health no longer emits the bare snapshot key'
 
-_curl -I "$HOST/api/v0/health"
-_assert_status 200 "HEAD /api/v0/health returns 200"
+_curl -I "$API/health"
+_assert_status 200 "HEAD /api/v1/health returns 200"
 
-_curl -X POST "$HOST/api/v0/health"
-_assert_status 405 "POST /api/v0/health yields 405"
+_curl -X POST "$API/health"
+_assert_status 405 "POST /api/v1/health yields 405"
 _assert_json_eq '.error.code' method_not_allowed '/health 405 carries method_not_allowed'
 # _curl captures the body and status only, so read the header directly rather
 # than asserting against a variable that does not exist.
-ALLOW=$(curl -s -o /dev/null -D - --max-time 10 -X POST "$HOST/api/v0/health" \
+ALLOW=$(curl -s -o /dev/null -D - --max-time 10 -X POST "$API/health" \
 	| tr -d '\r' | awk -F': ' 'tolower($1)=="allow"{print $2}')
 case "$ALLOW" in
 *GET*HEAD*) _pass "/health 405 carries Allow: $ALLOW" ;;
@@ -163,26 +164,26 @@ case "$ALLOW" in
 esac
 
 # 3. Method other than GET/HEAD → 405 with the canonical error envelope.
-_curl -X DELETE "$HOST/api/v0/version"
-_assert_status 405 "DELETE /api/v0/version yields 405"
+_curl -X DELETE "$API/version"
+_assert_status 405 "DELETE /api/v1/version yields 405"
 _assert_json_eq '.error.code' method_not_allowed \
-	'/api/v0/version 405 carries error.code=method_not_allowed'
+	'/api/v1/version 405 carries error.code=method_not_allowed'
 
 # 4. Unknown route → 404 with the canonical error envelope.
-_curl "$HOST/api/v0/does-not-exist"
-_assert_status 404 "GET /api/v0/does-not-exist yields 404"
+_curl "$API/does-not-exist"
+_assert_status 404 "GET /api/v1/does-not-exist yields 404"
 _assert_json_eq '.error.code' not_found \
 	'404 carries error.code=not_found'
 
-# 5. HEAD /api/v0/version — same status code as GET, no body required.
-_curl -I "$HOST/api/v0/version"
-_assert_status 200 "HEAD /api/v0/version returns 200"
+# 5. HEAD /api/v1/version — same status code as GET, no body required.
+_curl -I "$API/version"
+_assert_status 200 "HEAD /api/v1/version returns 200"
 
-# 6. POST /api/v0/version/check is admin-only: unauthenticated → 401. (The
+# 6. POST /api/v1/version/check is admin-only: unauthenticated → 401. (The
 #    admin-authenticated happy path — 202 started / 429 throttled — is
 #    exercised where an admin token is available.)
-_curl -X POST "$HOST/api/v0/version/check"
-_assert_status 401 "POST /api/v0/version/check without auth yields 401"
+_curl -X POST "$API/version/check"
+_assert_status 401 "POST /api/v1/version/check without auth yields 401"
 
 # 6b. The throttled check answers its own code, not the auth limiter's.
 #     Both are 429, and a client that cannot tell them apart has to read a
@@ -192,8 +193,8 @@ _assert_status 401 "POST /api/v0/version/check without auth yields 401"
 #     Two POSTs back to back: the daemon's cooldown is 60 s and its startup
 #     check already consumed one attempt, so whichever way the first lands, the
 #     second is inside the window. Deterministic regardless of daemon uptime.
-_curl "${AUTH[@]}" -X POST "$HOST/api/v0/version/check"
-_curl "${AUTH[@]}" -X POST "$HOST/api/v0/version/check"
+_curl "${AUTH[@]}" -X POST "$API/version/check"
+_curl "${AUTH[@]}" -X POST "$API/version/check"
 _assert_status 429 "second POST /version/check inside the cooldown yields 429"
 # Asserted as the exact code rather than "not rate_limited": the negative form
 # also passes on an `unauthorized` body, so it would go green on a broken
@@ -201,11 +202,11 @@ _assert_status 429 "second POST /version/check inside the cooldown yields 429"
 _assert_json_eq '.error.code' version_check_throttled \
 	'throttled /version/check carries error.code=version_check_throttled'
 
-# 7. GET /api/v0/version/check → 405 (POST only).
-_curl "$HOST/api/v0/version/check"
-_assert_status 405 "GET /api/v0/version/check yields 405"
+# 7. GET /api/v1/version/check → 405 (POST only).
+_curl "$API/version/check"
+_assert_status 405 "GET /api/v1/version/check yields 405"
 _assert_json_eq '.error.code' method_not_allowed \
-	'/api/v0/version/check GET 405 carries error.code=method_not_allowed'
+	'/api/v1/version/check GET 405 carries error.code=method_not_allowed'
 
 # 8. An unauthenticated /version must NOT spend the generic-401 budget.
 #    Emitting `update` only to an authenticated caller is the only reason this
@@ -220,12 +221,12 @@ _assert_json_eq '.error.code' method_not_allowed \
 #    lockout it arms would poison every assertion after it.
 i=0
 while [ "$i" -lt 35 ]; do
-	curl -s -o /dev/null --max-time 10 "$HOST/api/v0/version"
+	curl -s -o /dev/null --max-time 10 "$API/version"
 	i=$((i + 1))
 done
 # /auth/session rather than /status: authenticated, but with no EC dependency
 # that could answer 503 and mask the 429 this is looking for.
-_curl "${AUTH[@]}" "$HOST/api/v0/auth/session"
+_curl "${AUTH[@]}" "$API/auth/session"
 _assert_status 200 \
 	"35 anonymous /version requests do not rate-limit an authenticated caller"
 

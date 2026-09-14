@@ -16,6 +16,7 @@ set -u
 set -o pipefail
 
 HOST=${HOST:-localhost:4713}
+API="$HOST/api/v1"
 ADMIN_PASS=${ADMIN_PASS:-adminpass}
 
 FAIL_COUNT=0
@@ -41,11 +42,11 @@ _status() { [ "$STATUS" = "$1" ] && _pass "$2 (HTTP $STATUS)" || _fail "$2" "wan
 _jq()     { local a; a=$(printf %s "$CURL_BODY" | jq -r "$1" 2>/dev/null); [ "$a" = "$2" ] && _pass "$3" || _fail "$3" "want '$2' got '$a'" "body: $CURL_BODY"; }
 
 command -v jq >/dev/null 2>&1 || _die "jq required"
-curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health" || _die "amuleapi at $HOST not reachable"
+curl -s -o /dev/null --max-time 2 "$API/health" || _die "amuleapi at $HOST not reachable"
 
 echo "amuleapi 29-bulk-mutations @ $HOST"
 TOKEN=$(curl -s -X POST -H "Content-Type: application/json" -d "{\"password\":\"$ADMIN_PASS\"}" \
-	"$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
+	"$API/auth/login?include_token=true" | jq -r .token)
 [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ] || _die "login failed"
 sleep 2
 
@@ -54,12 +55,12 @@ H1="11111111111111111111111111111111"
 
 # --- auth gate --------------------------------------------------------
 S=$(curl -s -o /dev/null -w '%{http_code}' -X PATCH -H "Content-Type: application/json" \
-	-d "{\"hashes\":[\"$H0\"],\"priority\":\"high\"}" "$HOST/api/v0/shared")
+	-d "{\"hashes\":[\"$H0\"],\"priority\":\"high\"}" "$API/shared")
 [ "$S" = 401 ] && _pass "PATCH /shared without creds -> 401" || _fail "PATCH /shared no-creds" "want 401 got $S"
 
 # --- per-item not_found => 207 Multi-Status ---------------------------
 echo "  --- 207 per-item not_found ---"
-_req PATCH /api/v0/downloads "{\"hashes\":[\"$H0\"],\"priority\":\"high\"}"
+_req PATCH /api/v1/downloads "{\"hashes\":[\"$H0\"],\"priority\":\"high\"}"
 _status 207 "PATCH /downloads [bogus hash]"
 _jq '.results | length' 1                "  results has 1 entry"
 _jq '.results[0].id'    "$H0"            "  results[0].id echoes the hash"
@@ -69,43 +70,43 @@ _jq '.results[0].error.code' not_found   "  results[0].error.code is not_found"
 # action:"stop" is a recognized bulk value — it reaches the per-hash
 # loop (bogus hash → not_found), proving the parse accepts it, unlike a
 # bad enum (see the 400 section).
-_req PATCH /api/v0/downloads "{\"hashes\":[\"$H0\"],\"action\":\"stop\"}"
+_req PATCH /api/v1/downloads "{\"hashes\":[\"$H0\"],\"action\":\"stop\"}"
 _status 207 "PATCH /downloads action=stop [bogus hash]"
 _jq '.results[0].error.code' not_found   "  bulk action=stop results[0] not_found (value accepted)"
 
-_req DELETE /api/v0/downloads "{\"hashes\":[\"$H0\"]}"
+_req DELETE /api/v1/downloads "{\"hashes\":[\"$H0\"]}"
 _status 207 "DELETE /downloads [bogus hash]"
 _jq '.results[0].error.code' not_found   "  DELETE results[0] not_found"
 
-_req PATCH /api/v0/shared "{\"hashes\":[\"$H0\"],\"priority\":\"high\"}"
+_req PATCH /api/v1/shared "{\"hashes\":[\"$H0\"],\"priority\":\"high\"}"
 _status 207 "PATCH /shared [bogus hash]"
 _jq '.results[0].error.code' not_found   "  PATCH /shared results[0] not_found"
 
 # --- multiple items => length matches --------------------------------
-_req PATCH /api/v0/shared "{\"hashes\":[\"$H0\",\"$H1\"],\"priority\":\"low\"}"
+_req PATCH /api/v1/shared "{\"hashes\":[\"$H0\",\"$H1\"],\"priority\":\"low\"}"
 _status 207 "PATCH /shared [2 bogus hashes]"
 _jq '.results | length' 2                "  results has 2 entries"
 _jq '[.results[].ok] | any'  false       "  no item succeeded"
 
 # --- bad requests => 400 ---------------------------------------------
 echo "  --- 400 validation ---"
-_req PATCH /api/v0/downloads "{\"priority\":\"high\"}";            _status 400 "PATCH /downloads missing hashes"
-_req PATCH /api/v0/downloads "{\"hashes\":[]}";                    _status 400 "PATCH /downloads empty hashes"
-_req PATCH /api/v0/downloads "{\"hashes\":[\"$H0\"]}";            _status 400 "PATCH /downloads no patch fields"
-_req PATCH /api/v0/downloads "{\"hashes\":[\"$H0\"],\"priority\":\"bogus\"}"; _status 400 "PATCH /downloads bad priority"
-_req PATCH /api/v0/downloads "{\"hashes\":[\"$H0\"],\"status\":\"bogus\"}";   _status 400 "PATCH /downloads bad status"
-_req DELETE /api/v0/downloads "{}";                               _status 400 "DELETE /downloads missing hashes"
-_req PATCH /api/v0/shared "{\"hashes\":[\"$H0\"]}";              _status 400 "PATCH /shared missing priority"
-_req PATCH /api/v0/shared "{\"hashes\":[\"$H0\"],\"priority\":\"nope\"}";     _status 400 "PATCH /shared bad priority"
+_req PATCH /api/v1/downloads "{\"priority\":\"high\"}";            _status 400 "PATCH /downloads missing hashes"
+_req PATCH /api/v1/downloads "{\"hashes\":[]}";                    _status 400 "PATCH /downloads empty hashes"
+_req PATCH /api/v1/downloads "{\"hashes\":[\"$H0\"]}";            _status 400 "PATCH /downloads no patch fields"
+_req PATCH /api/v1/downloads "{\"hashes\":[\"$H0\"],\"priority\":\"bogus\"}"; _status 400 "PATCH /downloads bad priority"
+_req PATCH /api/v1/downloads "{\"hashes\":[\"$H0\"],\"status\":\"bogus\"}";   _status 400 "PATCH /downloads bad status"
+_req DELETE /api/v1/downloads "{}";                               _status 400 "DELETE /downloads missing hashes"
+_req PATCH /api/v1/shared "{\"hashes\":[\"$H0\"]}";              _status 400 "PATCH /shared missing priority"
+_req PATCH /api/v1/shared "{\"hashes\":[\"$H0\"],\"priority\":\"nope\"}";     _status 400 "PATCH /shared bad priority"
 
 # --- method routing ---------------------------------------------------
-_req PUT /api/v0/downloads "{}";  _status 405 "PUT /downloads -> 405"
-_req PUT /api/v0/shared "{}";     _status 405 "PUT /shared -> 405"
+_req PUT /api/v1/downloads "{}";  _status 405 "PUT /downloads -> 405"
+_req PUT /api/v1/shared "{}";     _status 405 "PUT /shared -> 405"
 
 # --- POST /downloads unified shape (no legacy counters) --------------
 echo "  --- POST /downloads unified results shape ---"
 LINK="ed2k://|file|bulk-test.bin|1024|0123456789ABCDEF0123456789ABCDEF|/"
-_req POST /api/v0/downloads "{\"links\":[\"$LINK\"]}"
+_req POST /api/v1/downloads "{\"links\":[\"$LINK\"]}"
 _jq '.results | type' array              "POST /downloads has results[] array"
 _jq '.results | length' 1                "  one result entry"
 _jq '.results[0].id' "$LINK"             "  result id echoes the link"

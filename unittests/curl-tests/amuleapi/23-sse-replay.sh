@@ -24,6 +24,7 @@ set -u
 set -o pipefail
 
 HOST=${HOST:-localhost:4713}
+API="$HOST/api/v1"
 ADMIN_PASS=${ADMIN_PASS:-adminpass}
 
 TEST_LINK="ed2k://|file|ubuntu-24.04.4-desktop-amd64.iso|6655619072|0031C9CBA65C50DD2015C184B2CA2C88|/"
@@ -46,21 +47,21 @@ _fail() {
 }
 
 if ! command -v jq >/dev/null 2>&1; then _die "jq is required."; fi
-if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health" 2>/dev/null; then
+if ! curl -s -o /dev/null --max-time 2 "$API/health" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable."
 fi
 
 echo "amuleapi 23-sse-replay smoke @ $HOST"
 
 ADMIN_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$ADMIN_PASS\"}" "$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
+	-d "{\"password\":\"$ADMIN_PASS\"}" "$API/auth/login?include_token=true" | jq -r .token)
 [ -n "$ADMIN_TOKEN" ] && [ "$ADMIN_TOKEN" != "null" ] || _die "admin login failed"
 
 sleep 4
 
 # Make sure the ISO isn't lingering from a prior smoke.
 curl -s -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/downloads/$TEST_HASH" > /dev/null 2>&1 || true
+	"$API/downloads/$TEST_HASH" > /dev/null 2>&1 || true
 sleep 2
 
 # --- 1. Capture a Last-Event-ID, disconnect, mutate, reconnect. ---
@@ -72,14 +73,14 @@ sleep 2
 
 : > "$SSE1"
 (curl -s -m 8 -N -H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/events" >> "$SSE1" 2>&1) &
+	"$API/events" >> "$SSE1" 2>&1) &
 PID1=$!
 sleep 1
 echo "    info: POST Ubuntu ISO..."
 curl -s -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d "{\"links\":[\"$TEST_LINK\"]}" \
-	"$HOST/api/v0/downloads" > /dev/null
+	"$API/downloads" > /dev/null
 # Wait for the download_added so we have at least one ratcheted id.
 for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 \
          21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40; do
@@ -111,7 +112,7 @@ fi
 # contract -- covered by 24-sse-resync's `idle` case.
 echo "    info: DELETE while disconnected..."
 curl -s -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/downloads/$TEST_HASH" > /dev/null
+	"$API/downloads/$TEST_HASH" > /dev/null
 sleep 4
 
 # --- 2. Reconnect with Last-Event-ID, verify the gap is replayed. -
@@ -119,7 +120,7 @@ sleep 4
 (curl -s -m 6 -N \
 	-H "Last-Event-ID: $LAST_ID" \
 	-H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/events" >> "$SSE2" 2>&1) &
+	"$API/events" >> "$SSE2" 2>&1) &
 PID2=$!
 # Replayed events should land essentially immediately; poll for the
 # expected download_removed up to a few seconds.
@@ -197,7 +198,7 @@ CLAMP_ID=999999999999
 (curl -s -m 4 -N \
 	-H "Last-Event-ID: $CLAMP_ID" \
 	-H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/events" >> "$SSE2" 2>&1) &
+	"$API/events" >> "$SSE2" 2>&1) &
 PID3=$!
 sleep 3.5
 kill $PID3 2>/dev/null

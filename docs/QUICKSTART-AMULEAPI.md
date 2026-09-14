@@ -121,18 +121,18 @@ All are readable only by you.
 # Is it up? /health is the probe: no login, and it answers from amuleapi's own
 # state without waiting on amuled, so it stays fast even when the daemon is
 # busy. The body also tells you whether the link to amuled is up.
-curl -s http://127.0.0.1:4713/api/v0/health
+curl -s http://127.0.0.1:4713/api/v1/health
 
 # Log in, then use the token.
-TOKEN=$(curl -s -X POST "http://127.0.0.1:4713/api/v0/auth/login?include_token=true" \
+TOKEN=$(curl -s -X POST "http://127.0.0.1:4713/api/v1/auth/login?include_token=true" \
     -H 'Content-Type: application/json' \
     -d '{"password":"mySecret123"}' | jq -r .token)
 
-curl -s -H "Authorization: Bearer $TOKEN" http://127.0.0.1:4713/api/v0/status
+curl -s -H "Authorization: Bearer $TOKEN" http://127.0.0.1:4713/api/v1/status
 
 # Which versions are these? /version answers without a login too, but it only
 # reports the daemon's update-availability to a caller that has one.
-curl -s -H "Authorization: Bearer $TOKEN" http://127.0.0.1:4713/api/v0/version
+curl -s -H "Authorization: Bearer $TOKEN" http://127.0.0.1:4713/api/v1/version
 ```
 
 Browsers should call `/auth/login` *without* `?include_token=true` — they get a
@@ -276,7 +276,7 @@ needs its origin listed.
 
 ## What you get
 
-Everything under `/api/v0/`, with full details in
+Everything under `/api/v1/`, with full details in
 [`docs/api/REFERENCE.md`](api/REFERENCE.md):
 
 - **Downloads** — the queue: add, pause, cancel, clear completed, plus
@@ -293,7 +293,7 @@ paging). `limit` defaults to 100, so a list request returns the first page
 unless it asks for more — see [`docs/api/REFERENCE.md`](api/REFERENCE.md). Bulk
 actions report each item's outcome separately rather than one overall result.
 
-`GET /api/v0/events` streams changes as they happen and can resume where it
+`GET /api/v1/events` streams changes as they happen and can resume where it
 left off after a dropped connection — see
 [`docs/api/EVENTS.md`](api/EVENTS.md).
 

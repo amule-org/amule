@@ -3,7 +3,7 @@
 # amuleapi 30-shared-verify — POST /shared/{hash}/verify.
 #
 # Endpoint:
-#   POST /api/v0/shared/{hash}/verify   → 202 {"ok":true}
+#   POST /api/v1/shared/{hash}/verify   → 202 {"ok":true}
 #
 # Re-hashes a shared file against its on-disk data (EC_OP_VERIFY_LOCAL_DATA).
 # amuled queues a CVerifyLocalDataTask and answers immediately, so the call
@@ -21,6 +21,7 @@ set -u
 set -o pipefail
 
 HOST=${HOST:-localhost:4713}
+API="$HOST/api/v1"
 ADMIN_PASS=${ADMIN_PASS:-adminpass}
 GUEST_PASS=${GUEST_PASS:-guestpass}
 AMULE_SHARED_DIR=${AMULE_SHARED_DIR:-}
@@ -80,18 +81,18 @@ _assert_body_empty() {
 }
 
 if ! command -v jq >/dev/null 2>&1; then _die "jq is required."; fi
-if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health" 2>/dev/null; then
+if ! curl -s -o /dev/null --max-time 2 "$API/health" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable."
 fi
 
 echo "amuleapi 30-shared-verify smoke @ $HOST"
 
 ADMIN_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$ADMIN_PASS\"}" "$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
+	-d "{\"password\":\"$ADMIN_PASS\"}" "$API/auth/login?include_token=true" | jq -r .token)
 [ -n "$ADMIN_TOKEN" ] && [ "$ADMIN_TOKEN" != "null" ] || _die "admin login failed"
 
 GUEST_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$GUEST_PASS\"}" "$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
+	-d "{\"password\":\"$GUEST_PASS\"}" "$API/auth/login?include_token=true" | jq -r .token)
 HAVE_GUEST=0
 [ -n "$GUEST_TOKEN" ] && [ "$GUEST_TOKEN" != "null" ] && HAVE_GUEST=1
 
@@ -100,7 +101,7 @@ sleep 4
 # Verify only applies to completed knownfiles, so the fixture path is the
 # same one 17-shared-priority-patch uses: plant a real file in a directory
 # amuled shares and let it hash in. Reused across runs once it exists.
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/shared"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/shared"
 COUNT=$(printf '%s' "$CURL_BODY" | jq '.shared | length')
 
 if [ "$COUNT" = "0" ]; then
@@ -113,10 +114,10 @@ if [ "$COUNT" = "0" ]; then
 	fi
 	echo "    info: planted fixture $FIXTURE; reloading shares"
 	curl -s -o /dev/null -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
-		"$HOST/api/v0/shared_reload"
+		"$API/shared_reload"
 	for _ in $(seq 1 30); do
 		sleep 1
-		_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/shared"
+		_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/shared"
 		COUNT=$(printf '%s' "$CURL_BODY" | jq '.shared | length')
 		[ "$COUNT" != "0" ] && break
 	done
@@ -132,7 +133,7 @@ TEST_HASH=""
 PART_HASH=""
 for h in $(printf '%s' "$CURL_BODY" | jq -r '.shared[].hash' | head -20); do
 	INCOMPLETE=$(curl -s --max-time 10 -H "Authorization: Bearer $ADMIN_TOKEN" \
-		"$HOST/api/v0/shared/$h" | jq -r '.incomplete')
+		"$API/shared/$h" | jq -r '.incomplete')
 	if [ "$INCOMPLETE" = "true" ]; then
 		[ -z "$PART_HASH" ] && PART_HASH=$h
 	else
@@ -144,18 +145,18 @@ done
 echo "    info: verifying hash=$TEST_HASH"
 
 # --- 1. Auth + admin gate. -----------------------------------------
-_curl -X POST "$HOST/api/v0/shared/$TEST_HASH/verify"
+_curl -X POST "$API/shared/$TEST_HASH/verify"
 _assert_status 401 "POST /shared/{hash}/verify (no token) → 401"
 
 if [ "$HAVE_GUEST" = "1" ]; then
 	_curl -X POST -H "Authorization: Bearer $GUEST_TOKEN" \
-		"$HOST/api/v0/shared/$TEST_HASH/verify"
+		"$API/shared/$TEST_HASH/verify"
 	_assert_status 403 "POST /shared/{hash}/verify (guest) → 403"
 fi
 
 # --- 2. Happy path: accepted, not completed. -----------------------
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/shared/$TEST_HASH/verify"
+	"$API/shared/$TEST_HASH/verify"
 # 202 with no body: the hash came from the URL, and the outcome only arrives
 # later, on hashed_part_count and the log line.
 _assert_status 202 "POST /shared/{hash}/verify → 202"
@@ -164,23 +165,23 @@ _assert_body_empty "verify sends no body"
 # Uppercase hash resolves the same file (lookup lowercases the capture).
 UPPER_HASH=$(printf '%s' "$TEST_HASH" | tr 'a-f' 'A-F')
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/shared/$UPPER_HASH/verify"
+	"$API/shared/$UPPER_HASH/verify"
 _assert_status 202 "POST /shared/{HASH}/verify (uppercase) → 202"
 
 # --- 3. Unknown hash → 404. ----------------------------------------
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/shared/00000000000000000000000000000000/verify"
+	"$API/shared/00000000000000000000000000000000/verify"
 _assert_status 404 "POST /shared/{unknown}/verify → 404"
 _assert_json_eq '.error.code' not_found "unknown hash → error.code=not_found"
 
 # --- 4. Method gate. -----------------------------------------------
 _curl -X GET -H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/shared/$TEST_HASH/verify"
+	"$API/shared/$TEST_HASH/verify"
 _assert_status 405 "GET /shared/{hash}/verify → 405"
 
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" -d '{}' \
-	"$HOST/api/v0/shared/$TEST_HASH/verify"
+	"$API/shared/$TEST_HASH/verify"
 _assert_status 405 "PATCH /shared/{hash}/verify → 405"
 
 # --- 5. Partfile guard (only when the library has one). ------------
@@ -189,7 +190,7 @@ _assert_status 405 "PATCH /shared/{hash}/verify → 405"
 # half-finished download isn't reproducible in a smoke run.
 if [ -n "$PART_HASH" ]; then
 	_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
-		"$HOST/api/v0/shared/$PART_HASH/verify"
+		"$API/shared/$PART_HASH/verify"
 	_assert_status 409 "POST /shared/{partfile}/verify → 409"
 	_assert_json_eq '.error.code' partfile_unsupported \
 		"partfile → error.code=partfile_unsupported"

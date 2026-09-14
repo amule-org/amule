@@ -31,6 +31,7 @@ set -u
 set -o pipefail
 
 HOST=${HOST:-localhost:4713}
+API="$HOST/api/v1"
 ADMIN_PASS=${ADMIN_PASS:-adminpass}
 CONFIG_DIR=${AMULEAPI_CONFIG_DIR:-/tmp/amuleapi-regtest}
 # Locate the amuleapi binary the sub-instances need. Deliberately NOT falling
@@ -90,7 +91,7 @@ _fail() {
 }
 
 if ! command -v jq >/dev/null 2>&1; then _die "jq is required."; fi
-if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health" 2>/dev/null; then
+if ! curl -s -o /dev/null --max-time 2 "$API/health" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable."
 fi
 if [ ! -x "$BIN" ]; then
@@ -130,7 +131,7 @@ EOF
 		> "$LOG" 2>&1 &
 	# Wait for /health to respond.
 	for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
-		if curl -s -o /dev/null --max-time 1 "$HOST/api/v0/health" 2>/dev/null; then
+		if curl -s -o /dev/null --max-time 1 "$API/health" 2>/dev/null; then
 			return 0
 		fi
 		sleep 0.5
@@ -165,7 +166,7 @@ _hdr() {
 # --- Mode A: AllowCORS=0 (default). ------------------------------
 _rewrite_cors_and_restart 0 ""
 
-_curl -H "Origin: https://app.example.com" "$HOST/api/v0/version"
+_curl -H "Origin: https://app.example.com" "$API/version"
 ACAO=$(_hdr "Access-Control-Allow-Origin")
 VARY=$(_hdr "Vary")
 if [ -z "$ACAO" ]; then
@@ -182,7 +183,7 @@ fi
 # --- Mode B: AllowCORS=1 with empty allowlist (wildcard). --------
 _rewrite_cors_and_restart 1 ""
 
-_curl -H "Origin: https://wild.example.com" "$HOST/api/v0/version"
+_curl -H "Origin: https://wild.example.com" "$API/version"
 ACAO=$(_hdr "Access-Control-Allow-Origin")
 ACAC=$(_hdr "Access-Control-Allow-Credentials")
 ACEH=$(_hdr "Access-Control-Expose-Headers")
@@ -215,7 +216,7 @@ fi
 # Same daemon, but request without an Origin header. The server
 # should NOT add Access-Control-Allow-Origin (no origin to echo)
 # but SHOULD still set Vary: Origin (CORS is on).
-_curl "$HOST/api/v0/version"
+_curl "$API/version"
 ACAO=$(_hdr "Access-Control-Allow-Origin")
 VARY=$(_hdr "Vary")
 if [ -z "$ACAO" ]; then
@@ -232,7 +233,7 @@ fi
 # --- Mode C: AllowCORS=1 with a per-origin allowlist. ------------
 _rewrite_cors_and_restart 1 "https://allowed.example.com,https://also.example.com"
 
-_curl -H "Origin: https://allowed.example.com" "$HOST/api/v0/version"
+_curl -H "Origin: https://allowed.example.com" "$API/version"
 ACAO=$(_hdr "Access-Control-Allow-Origin")
 if [ "$ACAO" = "https://allowed.example.com" ]; then
 	_pass "Allowlist: matching Origin echoes back"
@@ -240,7 +241,7 @@ else
 	_fail "Allowlist match" "expected echo, got '$ACAO'"
 fi
 
-_curl -H "Origin: https://also.example.com" "$HOST/api/v0/version"
+_curl -H "Origin: https://also.example.com" "$API/version"
 ACAO=$(_hdr "Access-Control-Allow-Origin")
 if [ "$ACAO" = "https://also.example.com" ]; then
 	_pass "Allowlist: second entry matches and echoes"
@@ -248,7 +249,7 @@ else
 	_fail "Allowlist second entry" "expected echo, got '$ACAO'"
 fi
 
-_curl -H "Origin: https://attacker.example.com" "$HOST/api/v0/version"
+_curl -H "Origin: https://attacker.example.com" "$API/version"
 ACAO=$(_hdr "Access-Control-Allow-Origin")
 VARY=$(_hdr "Vary")
 if [ -z "$ACAO" ]; then
@@ -275,7 +276,7 @@ if command -v python3 >/dev/null 2>&1 &&
 		> "$BIG_BODY" 2>/dev/null && [ -s "$BIG_BODY" ]; then
 	_curl -X POST -H "Origin: https://allowed.example.com" \
 		-H "Content-Type: application/json" \
-		--data-binary @"$BIG_BODY" "$HOST/api/v0/auth/login"
+		--data-binary @"$BIG_BODY" "$API/auth/login"
 	BIG_STATUS=$(head -1 "$HDR" | awk '{print $2}')
 	BIG_ACAO=$(_hdr "Access-Control-Allow-Origin")
 	if [ "$BIG_STATUS" = "413" ]; then
@@ -302,7 +303,7 @@ _curl -X OPTIONS \
 	-H "Origin: https://allowed.example.com" \
 	-H "Access-Control-Request-Method: POST" \
 	-H "Access-Control-Request-Headers: Authorization, Content-Type" \
-	"$HOST/api/v0/downloads"
+	"$API/downloads"
 STATUS=$(head -1 "$HDR" | awk '{print $2}')
 ACAO=$(_hdr "Access-Control-Allow-Origin")
 ACAM=$(_hdr "Access-Control-Allow-Methods")
@@ -325,7 +326,7 @@ if echo "$ACAM" | grep -q "POST" && echo "$ACAM" | grep -q "PATCH" \
 else
 	_fail "Allow-Methods" "expected POST/PATCH/DELETE listed, got '$ACAM'"
 fi
-# PUT specifically: PUT /api/v0/share_directories is a real route (the
+# PUT specifically: PUT /api/v1/share_directories is a real route (the
 # replace-the-whole-share-root-list form), and it was missing from the
 # advertised list. A browser doing a cross-origin PUT there was told the
 # method is not allowed and blocked the request before sending it -- the
@@ -340,7 +341,7 @@ fi
 _curl -X OPTIONS \
 	-H "Origin: https://allowed.example.com" \
 	-H "Access-Control-Request-Method: PUT" \
-	"$HOST/api/v0/share_directories"
+	"$API/share_directories"
 PUT_STATUS=$(head -1 "$HDR" | awk '{print $2}')
 PUT_ACAM=$(_hdr "Access-Control-Allow-Methods")
 if [ "$PUT_STATUS" = "204" ] && echo "$PUT_ACAM" | grep -q "PUT"; then
@@ -367,7 +368,7 @@ fi
 _curl -X OPTIONS \
 	-H "Origin: https://attacker.example.com" \
 	-H "Access-Control-Request-Method: POST" \
-	"$HOST/api/v0/downloads"
+	"$API/downloads"
 STATUS=$(head -1 "$HDR" | awk '{print $2}')
 ACAO=$(_hdr "Access-Control-Allow-Origin")
 if [ "$STATUS" = "204" ] && [ -z "$ACAO" ]; then
@@ -385,12 +386,12 @@ fi
 # HEAD doesn't trigger the streaming handler, so we do a short -m 2.
 : > "$HDR"; : > "$SSE"
 ADMIN_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$ADMIN_PASS\"}" "$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
+	-d "{\"password\":\"$ADMIN_PASS\"}" "$API/auth/login?include_token=true" | jq -r .token)
 [ -n "$ADMIN_TOKEN" ] && [ "$ADMIN_TOKEN" != "null" ] || _die "admin login failed"
 curl -sS -m 2 -D "$HDR" -o "$SSE" \
 	-H "Origin: https://allowed.example.com" \
 	-H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/events" >/dev/null 2>&1 || true
+	"$API/events" >/dev/null 2>&1 || true
 ACAO=$(_hdr "Access-Control-Allow-Origin")
 ACAC=$(_hdr "Access-Control-Allow-Credentials")
 CT=$(_hdr "Content-Type")

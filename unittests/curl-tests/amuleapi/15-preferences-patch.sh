@@ -3,7 +3,7 @@
 # amuleapi 15-preferences-patch — PATCH /preferences.
 #
 # Endpoint:
-#   PATCH /api/v0/preferences
+#   PATCH /api/v1/preferences
 #       body: { general?, connection?, directories?, files?, servers?,
 #               security?, message_filter?, remote_controls?,
 #               online_signature?, advanced?, kad? }  (issue #437)
@@ -27,6 +27,7 @@ set -u
 set -o pipefail
 
 HOST=${HOST:-localhost:4713}
+API="$HOST/api/v1"
 ADMIN_PASS=${ADMIN_PASS:-adminpass}
 GUEST_PASS=${GUEST_PASS:-guestpass}
 
@@ -76,18 +77,18 @@ _assert_json_eq() {
 }
 
 if ! command -v jq >/dev/null 2>&1; then _die "jq is required."; fi
-if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health" 2>/dev/null; then
+if ! curl -s -o /dev/null --max-time 2 "$API/health" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable."
 fi
 
 echo "amuleapi 15-preferences-patch smoke @ $HOST"
 
 ADMIN_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$ADMIN_PASS\"}" "$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
+	-d "{\"password\":\"$ADMIN_PASS\"}" "$API/auth/login?include_token=true" | jq -r .token)
 [ -n "$ADMIN_TOKEN" ] && [ "$ADMIN_TOKEN" != "null" ] || _die "admin login failed"
 
 GUEST_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$GUEST_PASS\"}" "$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
+	-d "{\"password\":\"$GUEST_PASS\"}" "$API/auth/login?include_token=true" | jq -r .token)
 HAVE_GUEST=0
 [ -n "$GUEST_TOKEN" ] && [ "$GUEST_TOKEN" != "null" ] && HAVE_GUEST=1
 
@@ -96,20 +97,20 @@ sleep 4
 # Save the pre-mutation state so we can restore everything at the
 # end. We only modify two fields (max_upload_kibibytes_per_second + autoconnect) so
 # the operator's daemon doesn't end the smoke in an unexpected state.
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
 SAVED_MAX_UPLOAD=$(printf '%s' "$CURL_BODY" | jq -r '.connection.max_upload_kibibytes_per_second')
 SAVED_AUTOCONNECT=$(printf '%s' "$CURL_BODY" | jq -r '.connection.autoconnect')
 echo "    info: saved state max_upload_kibibytes_per_second=$SAVED_MAX_UPLOAD autoconnect=$SAVED_AUTOCONNECT"
 
 # --- 1. Auth + admin gate. -----------------------------------------
 _curl -X PATCH -H "Content-Type: application/json" \
-	-d '{"connection":{"max_upload_kibibytes_per_second":42}}' "$HOST/api/v0/preferences"
+	-d '{"connection":{"max_upload_kibibytes_per_second":42}}' "$API/preferences"
 _assert_status 401 "PATCH /preferences (no token) → 401"
 
 if [ "$HAVE_GUEST" = "1" ]; then
 	_curl -X PATCH -H "Authorization: Bearer $GUEST_TOKEN" \
 		-H "Content-Type: application/json" \
-		-d '{"connection":{"max_upload_kibibytes_per_second":42}}' "$HOST/api/v0/preferences"
+		-d '{"connection":{"max_upload_kibibytes_per_second":42}}' "$API/preferences"
 	_assert_status 403 "PATCH /preferences (guest) → 403"
 else
 	echo "    info: no guest pass; admin-gate skipped"
@@ -118,31 +119,31 @@ fi
 # --- 2. PATCH numeric field — response + no-stale GET. -------------
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"connection":{"max_upload_kibibytes_per_second":42}}' "$HOST/api/v0/preferences"
+	-d '{"connection":{"max_upload_kibibytes_per_second":42}}' "$API/preferences"
 _assert_status 200 "PATCH max_upload_kibibytes_per_second=42 → 200"
 _assert_json_eq '.connection.max_upload_kibibytes_per_second' 42 \
 	'PATCH response.connection.max_upload_kibibytes_per_second == 42'
 
 # Immediate GET — no stale cache.
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
 _assert_json_eq '.connection.max_upload_kibibytes_per_second' 42 \
 	'IMMEDIATE GET after PATCH shows max_upload_kibibytes_per_second=42 (no stale cache)'
 
 # --- 3. PATCH boolean field — bool tags need DETAIL_FULL on EC. ----
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"connection":{"autoconnect":false}}' "$HOST/api/v0/preferences"
+	-d '{"connection":{"autoconnect":false}}' "$API/preferences"
 _assert_status 200 "PATCH autoconnect=false → 200"
 _assert_json_eq '.connection.autoconnect' false \
 	'PATCH response.connection.autoconnect == false'
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
 _assert_json_eq '.connection.autoconnect' false \
 	'IMMEDIATE GET shows autoconnect=false (EC_DETAIL_FULL honored bool)'
 
 # Flip it back to verify the symmetric direction.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"connection":{"autoconnect":true}}' "$HOST/api/v0/preferences"
+	-d '{"connection":{"autoconnect":true}}' "$API/preferences"
 _assert_json_eq '.connection.autoconnect' true \
 	'PATCH autoconnect=true response shows autoconnect=true'
 
@@ -150,38 +151,38 @@ _assert_json_eq '.connection.autoconnect' true \
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d '{"connection":{"max_upload_kibibytes_per_second":77,"autoconnect":false}}' \
-	"$HOST/api/v0/preferences"
+	"$API/preferences"
 _assert_status 200 "PATCH combined (max_upload + autoconnect) → 200"
 _assert_json_eq '.connection.max_upload_kibibytes_per_second' 77    'combined PATCH response max_upload_kibibytes_per_second=77'
 _assert_json_eq '.connection.autoconnect'     false 'combined PATCH response autoconnect=false'
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
 _assert_json_eq '.connection.max_upload_kibibytes_per_second' 77    'IMMEDIATE GET max_upload_kibibytes_per_second=77'
 _assert_json_eq '.connection.autoconnect'     false 'IMMEDIATE GET autoconnect=false'
 
 # --- 5. Error paths. -----------------------------------------------
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{}' "$HOST/api/v0/preferences"
+	-d '{}' "$API/preferences"
 _assert_status 400 "PATCH empty body → 400"
 
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"general":"not an object"}' "$HOST/api/v0/preferences"
+	-d '{"general":"not an object"}' "$API/preferences"
 _assert_status 400 "PATCH general non-object → 400"
 
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"connection":{"max_upload_kibibytes_per_second":"forty-two"}}' "$HOST/api/v0/preferences"
+	-d '{"connection":{"max_upload_kibibytes_per_second":"forty-two"}}' "$API/preferences"
 _assert_status 400 "PATCH max_upload_kibibytes_per_second as string → 400"
 
 # Saved because the 65532 probe below is a real write: leaving the daemon's
 # ed2k port on the ceiling would outlive the script.
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
 SAVED_TCPPORT=$(printf '%s' "$CURL_BODY" | jq -r '.connection.tcp_port')
 
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"connection":{"tcp_port":99999}}' "$HOST/api/v0/preferences"
+	-d '{"connection":{"tcp_port":99999}}' "$API/preferences"
 _assert_status 400 "PATCH tcp_port out of range (>65532) → 400"
 
 # 65533..65535 parse as a port but the core cannot use them: SetPort()
@@ -190,27 +191,27 @@ _assert_status 400 "PATCH tcp_port out of range (>65532) → 400"
 # (#1174).
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"connection":{"tcp_port":65534}}' "$HOST/api/v0/preferences"
+	-d '{"connection":{"tcp_port":65534}}' "$API/preferences"
 _assert_status 400 "PATCH tcp_port=65534 → 400 (TCP+3 would overflow)"
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"connection":{"tcp_port":65532}}' "$HOST/api/v0/preferences"
+	-d '{"connection":{"tcp_port":65532}}' "$API/preferences"
 _assert_status 200 "PATCH tcp_port=65532 → 200 (the real ceiling)"
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
 _assert_json_eq '.connection.tcp_port' 65532 "tcp_port=65532 reads back unchanged"
 
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"connection":{"autoconnect":"yes"}}' "$HOST/api/v0/preferences"
+	-d '{"connection":{"autoconnect":"yes"}}' "$API/preferences"
 _assert_status 400 "PATCH autoconnect as string → 400"
 
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d 'not json' "$HOST/api/v0/preferences"
+	-d 'not json' "$API/preferences"
 _assert_status 400 "PATCH malformed JSON → 400"
 
 # --- 5b. Extended EC categories: presence + round-trip (issue #437). -
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
 _assert_json_eq '(.directories|type)' object '/preferences has directories object'
 _assert_json_eq '(.files|type)' object '/preferences has files object'
 _assert_json_eq '(.servers|type)' object '/preferences has servers object'
@@ -233,30 +234,30 @@ SAVED_RETRIES=$(printf '%s' "$CURL_BODY" | jq -r '.servers.dead_server_retry_cou
 NEW_PAUSED_TOGGLE=$([ "$SAVED_NEW_PAUSED" = "true" ] && echo false || echo true)
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
 	-d "{\"files\":{\"add_new_downloads_paused\":$NEW_PAUSED_TOGGLE},\"servers\":{\"dead_server_retry_count\":9}}" \
-	"$HOST/api/v0/preferences"
+	"$API/preferences"
 _assert_status 200 "PATCH files+servers categories → 200"
 _assert_json_eq '.files.add_new_downloads_paused' "$NEW_PAUSED_TOGGLE" 'files.add_new_downloads_paused toggled in response'
 _assert_json_eq '.servers.dead_server_retry_count' 9 'servers.dead_server_retry_count=9 in response'
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
 _assert_json_eq '.files.add_new_downloads_paused' "$NEW_PAUSED_TOGGLE" 'files.add_new_downloads_paused persisted (no stale GET)'
 _assert_json_eq '.servers.dead_server_retry_count' 9 'servers.dead_server_retry_count persisted'
 
 # Wrong type on a new-category field → 400.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
-	-d '{"files":{"min_free_space_mebibytes":"lots"}}' "$HOST/api/v0/preferences"
+	-d '{"files":{"min_free_space_mebibytes":"lots"}}' "$API/preferences"
 _assert_status 400 "PATCH files.min_free_space_mebibytes as string → 400"
 
 # Restore the #437 fields we touched.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
 	-d "{\"files\":{\"add_new_downloads_paused\":$SAVED_NEW_PAUSED},\"servers\":{\"dead_server_retry_count\":$SAVED_RETRIES}}" \
-	"$HOST/api/v0/preferences"
+	"$API/preferences"
 _assert_status 200 "PATCH (restore #437 fields) → 200"
 
 # --- 5c. Newly EC-wired prefs: media-probe + hidden-pref promotions. ---
 # These eight keys were previously amulegui-local (hidden in the remote GUI
 # because they were never packed into CEC_Prefs_Packet). They now round-trip
 # over EC, so the REST surface must read + write them too.
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
 _assert_json_eq '(.files.media_metadata_enabled|type)' boolean 'files.media_metadata_enabled is bool'
 _assert_json_eq '(.files.ffprobe_path|type)' string 'files.ffprobe_path is string'
 _assert_json_eq '(.files.on_finished_start_next_alphabetically|type)' boolean 'files.on_finished_start_next_alphabetically is bool'
@@ -281,21 +282,21 @@ MM_TOGGLE=$([ "$SAVED_MM" = "true" ] && echo false || echo true)
 PARANOID_TOGGLE=$([ "$SAVED_PARANOID" = "true" ] && echo false || echo true)
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
 	-d "{\"files\":{\"media_metadata_enabled\":$MM_TOGGLE,\"ffprobe_path\":\"/usr/bin/ffprobe\"},\"security\":{\"reject_spoofed_source_ips\":$PARANOID_TOGGLE},\"online_signature\":{\"update_frequency_seconds\":123},\"connection\":{\"bind_interface\":\"tun0\"}}" \
-	"$HOST/api/v0/preferences"
+	"$API/preferences"
 _assert_status 200 "PATCH media-probe + security + onlinesig + iface → 200"
 _assert_json_eq '.files.media_metadata_enabled' "$MM_TOGGLE" 'files.media_metadata_enabled toggled in response'
 _assert_json_eq '.files.ffprobe_path' /usr/bin/ffprobe 'files.ffprobe_path set in response'
 _assert_json_eq '.security.reject_spoofed_source_ips' "$PARANOID_TOGGLE" 'security.reject_spoofed_source_ips toggled in response'
 _assert_json_eq '.online_signature.update_frequency_seconds' 123 'online_signature.update_frequency_seconds=123 in response'
 _assert_json_eq '.connection.bind_interface' tun0 'connection.bind_interface set in response'
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
 _assert_json_eq '.files.ffprobe_path' /usr/bin/ffprobe 'files.ffprobe_path persisted (no stale GET)'
 _assert_json_eq '.online_signature.update_frequency_seconds' 123 'online_signature.update_frequency_seconds persisted'
 _assert_json_eq '.connection.bind_interface' tun0 'connection.bind_interface persisted'
 
 # --- 5c-bis. message_filter show-in-log + comment filter (#596). ----------
 # Newly EC-wired: previously amulegui-local / unreachable over EC.
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
 _assert_json_eq '(.message_filter.log_filtered_messages|type)' boolean 'message_filter.log_filtered_messages is bool'
 _assert_json_eq '(.message_filter.filter_comments|type)' boolean 'message_filter.filter_comments is bool'
 _assert_json_eq '(.message_filter.comment_keywords|type)' string 'message_filter.comment_keywords is string'
@@ -306,17 +307,17 @@ SHOW_TOGGLE=$([ "$SAVED_SHOW_IN_LOG" = "true" ] && echo false || echo true)
 FC_TOGGLE=$([ "$SAVED_FILTER_COMMENTS" = "true" ] && echo false || echo true)
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
 	-d "{\"message_filter\":{\"log_filtered_messages\":$SHOW_TOGGLE,\"filter_comments\":$FC_TOGGLE,\"comment_keywords\":\"spam,ads\"}}" \
-	"$HOST/api/v0/preferences"
+	"$API/preferences"
 _assert_status 200 "PATCH message_filter (log_filtered_messages+filter_comments+comment_keywords) → 200"
 _assert_json_eq '.message_filter.log_filtered_messages' "$SHOW_TOGGLE" 'message_filter.log_filtered_messages toggled in response'
 _assert_json_eq '.message_filter.filter_comments' "$FC_TOGGLE" 'message_filter.filter_comments toggled in response'
 _assert_json_eq '.message_filter.comment_keywords' 'spam,ads' 'message_filter.comment_keywords set in response'
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
 _assert_json_eq '.message_filter.comment_keywords' 'spam,ads' 'message_filter.comment_keywords persisted (no stale GET)'
 # Restore.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
 	-d "{\"message_filter\":{\"log_filtered_messages\":$SAVED_SHOW_IN_LOG,\"filter_comments\":$SAVED_FILTER_COMMENTS,\"comment_keywords\":\"$SAVED_COMMENT_KW\"}}" \
-	"$HOST/api/v0/preferences"
+	"$API/preferences"
 _assert_status 200 "PATCH (restore message_filter fields) → 200"
 
 # --- 5d. mmap (#565): capability flag + capability-gated round-trip. ------
@@ -324,7 +325,7 @@ _assert_status 200 "PATCH (restore message_filter fields) → 200"
 # only settable when it is true. This branch adapts to whichever daemon runs
 # the smoke: a mmap-capable core exercises the round-trip, a non-mmap core
 # (e.g. Windows, -DENABLE_MMAP=OFF) exercises the 409 capability gate.
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
 _assert_json_eq '(.files.mmap_supported|type)' boolean 'files.mmap_supported is bool (read-only capability)'
 _assert_json_eq '(.files.mmap_enabled|type)' boolean 'files.mmap_enabled is bool'
 MMAP_SUPPORTED=$(printf '%s' "$CURL_BODY" | jq -r '.files.mmap_supported')
@@ -335,26 +336,26 @@ if [ "$MMAP_SUPPORTED" = "true" ]; then
 	# ignored (not rejected), and GET must still report support = true.
 	_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
 		-d "{\"files\":{\"mmap_enabled\":$MMAP_TOGGLE,\"mmap_supported\":false}}" \
-		"$HOST/api/v0/preferences"
+		"$API/preferences"
 	_assert_status 200 "PATCH files.mmap_enabled (daemon supports mmap) → 200"
 	_assert_json_eq '.files.mmap_enabled' "$MMAP_TOGGLE" 'files.mmap_enabled toggled in response'
 	_assert_json_eq '.files.mmap_supported' true 'files.mmap_supported read-only (ignored on PATCH)'
-	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
+	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
 	_assert_json_eq '.files.mmap_enabled' "$MMAP_TOGGLE" 'files.mmap_enabled persisted (no stale GET)'
 	# Restore.
 	_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
-		-d "{\"files\":{\"mmap_enabled\":$SAVED_MMAP}}" "$HOST/api/v0/preferences" >/dev/null 2>&1
+		-d "{\"files\":{\"mmap_enabled\":$SAVED_MMAP}}" "$API/preferences" >/dev/null 2>&1
 else
 	echo "    info: daemon built without mmap — exercising the 409 capability gate"
 	_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
-		-d '{"files":{"mmap_enabled":true}}' "$HOST/api/v0/preferences"
+		-d '{"files":{"mmap_enabled":true}}' "$API/preferences"
 	_assert_status 409 "PATCH files.mmap_enabled on non-mmap daemon → 409"
 	_assert_json_eq '.error.code' option_not_supported \
 		'the 409 names option_not_supported, not a bare conflict'
 fi
 
 # --- Proxy: readable fields present, round-trip, write-only password. -----
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
 _assert_json_eq '(.connection.proxy_enabled|type)' boolean 'connection.proxy_enabled is bool'
 _assert_json_eq '(.connection.proxy_type|type)'    string  'connection.proxy_type is an enum string (#655)'
 _assert_json_eq '(.connection.proxy_host|type)'    string  'connection.proxy_host is string'
@@ -372,7 +373,7 @@ SAVED_PXPORT=$(printf '%s' "$CURL_BODY" | jq -r '.connection.proxy_port')
 # Round-trip the readable fields + PATCH the write-only password in one go.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
 	-d '{"connection":{"proxy_enabled":true,"proxy_type":"http","proxy_host":"proxy.example","proxy_port":8080,"proxy_auth_enabled":true,"proxy_user":"alice","proxy_password":"s3cret"}}' \
-	"$HOST/api/v0/preferences"
+	"$API/preferences"
 _assert_status 200 "PATCH proxy (incl. write-only password) → 200"
 _assert_json_eq '.connection.proxy_enabled' true 'proxy_enabled=true in response'
 _assert_json_eq '.connection.proxy_type' http 'proxy_type="http" in response'
@@ -380,17 +381,17 @@ _assert_json_eq '.connection.proxy_host' proxy.example 'proxy_host set in respon
 _assert_json_eq '.connection.proxy_port' 8080 'proxy_port=8080 in response'
 _assert_json_eq '.connection.proxy_user' alice 'proxy_user set in response'
 _assert_json_eq '(.connection|has("proxy_password"))' false 'proxy_password still absent after PATCH (write-only)'
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
 _assert_json_eq '.connection.proxy_host' proxy.example 'proxy_host persisted (no stale GET)'
 _assert_json_eq '.connection.proxy_port' 8080 'proxy_port persisted'
 
 # proxy_type outside the enum → 400, and the pre-#655 wire int is no
 # longer accepted either.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
-	-d '{"connection":{"proxy_type":"telepathy"}}' "$HOST/api/v0/preferences"
+	-d '{"connection":{"proxy_type":"telepathy"}}' "$API/preferences"
 _assert_status 400 "PATCH proxy_type unknown enum value → 400"
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
-	-d '{"connection":{"proxy_type":2}}' "$HOST/api/v0/preferences"
+	-d '{"connection":{"proxy_type":2}}' "$API/preferences"
 _assert_status 400 "PATCH proxy_type as the old wire int → 400 (#655)"
 
 # Restore proxy readable fields (password left as-is — write-only).
@@ -403,53 +404,53 @@ else
 fi
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
 	-d "{\"connection\":{\"proxy_enabled\":$SAVED_PXEN,$RESTORE_PXTYPE\"proxy_host\":\"$SAVED_PXHOST\",\"proxy_port\":$SAVED_PXPORT}}" \
-	"$HOST/api/v0/preferences"
+	"$API/preferences"
 _assert_status 200 "PATCH (restore proxy fields) → 200"
 
 # --- Nested remote_controls (#655): round-trip through the sub-objects. ---
 # Both subsystems pack into one EC category, so this also proves the two
 # sub-objects can be sent together without one clobbering the other.
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
 SAVED_WS_PORT=$(printf '%s' "$CURL_BODY" | jq -r '.remote_controls.webserver.port')
 SAVED_WS_REFRESH=$(printf '%s' "$CURL_BODY" | jq -r '.remote_controls.webserver.refresh_seconds')
 SAVED_API_BIND=$(printf '%s' "$CURL_BODY" | jq -r '.remote_controls.amuleapi.bind_address')
 
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
 	-d '{"remote_controls":{"webserver":{"port":4711,"refresh_seconds":123},"amuleapi":{"bind_address":"127.0.0.1"}}}' \
-	"$HOST/api/v0/preferences"
+	"$API/preferences"
 _assert_status 200 "PATCH nested remote_controls (webserver + amuleapi) → 200"
 _assert_json_eq '.remote_controls.webserver.port' 4711 'webserver.port=4711 in response'
 _assert_json_eq '.remote_controls.webserver.refresh_seconds' 123 'webserver.refresh_seconds=123 in response'
 _assert_json_eq '.remote_controls.amuleapi.bind_address' 127.0.0.1 'amuleapi.bind_address set in response'
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
 _assert_json_eq '.remote_controls.webserver.port' 4711 'webserver.port persisted (no stale GET)'
 _assert_json_eq '.remote_controls.amuleapi.bind_address' 127.0.0.1 'amuleapi.bind_address persisted'
 
 # The flat pre-#655 keys are no longer a write path — they are simply
 # unknown fields now, so a body carrying only those changes nothing.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
-	-d '{"remote_controls":{"webserver_port":9999}}' "$HOST/api/v0/preferences"
+	-d '{"remote_controls":{"webserver_port":9999}}' "$API/preferences"
 _assert_status 400 "PATCH flat remote_controls.webserver_port → 400 (no known fields, #655)"
 
 # A sub-object that is not an object is rejected, like the categories are.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
-	-d '{"remote_controls":{"webserver":"nope"}}' "$HOST/api/v0/preferences"
+	-d '{"remote_controls":{"webserver":"nope"}}' "$API/preferences"
 _assert_status 400 "PATCH remote_controls.webserver non-object → 400"
 
 # amuleapi's own passwords stay owned by PATCH /auth/passwords, now under
 # the nested key.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
-	-d '{"remote_controls":{"amuleapi":{"password":"nope"}}}' "$HOST/api/v0/preferences"
+	-d '{"remote_controls":{"amuleapi":{"password":"nope"}}}' "$API/preferences"
 _assert_status 400 "PATCH remote_controls.amuleapi.password → 400 (managed via /auth/passwords)"
 
 # Restore.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
 	-d "{\"remote_controls\":{\"webserver\":{\"port\":$SAVED_WS_PORT,\"refresh_seconds\":$SAVED_WS_REFRESH},\"amuleapi\":{\"bind_address\":\"$SAVED_API_BIND\"}}}" \
-	"$HOST/api/v0/preferences"
+	"$API/preferences"
 _assert_status 200 "PATCH (restore remote_controls fields) → 200"
 
 # --- P2P-router UPnP: readable, round-trip, read-only capability. --------
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
 _assert_json_eq '(.connection.upnp_supported|type)' boolean 'connection.upnp_supported is bool'
 _assert_json_eq '(.connection.upnp_enabled|type)'   boolean 'connection.upnp_enabled is bool'
 _assert_json_eq '(.connection.upnp_control_point_port|type)'  number  'connection.upnp_control_point_port is numeric'
@@ -462,39 +463,39 @@ AVAIL_FLIP=$([ "$SAVED_UPNPAVAIL" = "true" ] && echo false || echo true)
 # the same body to prove it is ignored (response reflects the daemon, not us).
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
 	-d "{\"connection\":{\"upnp_enabled\":$UPNP_TOGGLE,\"upnp_control_point_port\":51234,\"upnp_supported\":$AVAIL_FLIP}}" \
-	"$HOST/api/v0/preferences"
+	"$API/preferences"
 _assert_status 200 "PATCH upnp_enabled + upnp_control_point_port (+ ignored upnp_supported) → 200"
 _assert_json_eq '.connection.upnp_enabled' "$UPNP_TOGGLE" 'upnp_enabled toggled in response'
 _assert_json_eq '.connection.upnp_control_point_port' 51234 'upnp_control_point_port=51234 in response'
 _assert_json_eq '.connection.upnp_supported' "$SAVED_UPNPAVAIL" 'upnp_supported unchanged (read-only, reflects daemon)'
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
 _assert_json_eq '.connection.upnp_enabled' "$UPNP_TOGGLE" 'upnp_enabled persisted (no stale GET)'
 _assert_json_eq '.connection.upnp_control_point_port' 51234 'upnp_control_point_port persisted'
 # Restore.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
 	-d "{\"connection\":{\"upnp_enabled\":$SAVED_UPNPEN,\"upnp_control_point_port\":$SAVED_UPNPPORT}}" \
-	"$HOST/api/v0/preferences"
+	"$API/preferences"
 _assert_status 200 "PATCH (restore UPnP fields) → 200"
 
 # Wrong type: a string field given a number, and a bool field given a string → 400.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
-	-d '{"files":{"ffprobe_path":42}}' "$HOST/api/v0/preferences"
+	-d '{"files":{"ffprobe_path":42}}' "$API/preferences"
 _assert_status 400 "PATCH files.ffprobe_path as number → 400"
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
-	-d '{"security":{"reject_spoofed_source_ips":"maybe"}}' "$HOST/api/v0/preferences"
+	-d '{"security":{"reject_spoofed_source_ips":"maybe"}}' "$API/preferences"
 _assert_status 400 "PATCH security.reject_spoofed_source_ips as string → 400"
 
 # Restore the newly-wired fields we touched.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
 	-d "{\"files\":{\"media_metadata_enabled\":$SAVED_MM,\"ffprobe_path\":\"$SAVED_FFPROBE\"},\"security\":{\"reject_spoofed_source_ips\":$SAVED_PARANOID},\"online_signature\":{\"update_frequency_seconds\":$SAVED_OSFREQ},\"connection\":{\"bind_interface\":\"$SAVED_IFACE\"}}" \
-	"$HOST/api/v0/preferences"
+	"$API/preferences"
 _assert_status 200 "PATCH (restore newly-wired fields) → 200"
 
 # --- 6. Restore pre-mutation state. --------------------------------
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d "{\"connection\":{\"max_upload_kibibytes_per_second\":$SAVED_MAX_UPLOAD,\"autoconnect\":$SAVED_AUTOCONNECT}}" \
-	"$HOST/api/v0/preferences"
+	"$API/preferences"
 _assert_status 200 "PATCH (restore pre-mutation state) → 200"
 _assert_json_eq '.connection.max_upload_kibibytes_per_second' "$SAVED_MAX_UPLOAD" \
 	'restored max_upload_kibibytes_per_second to saved value'
@@ -519,9 +520,9 @@ for FIELD_PROBE in "kad_source_reask_minutes 31" "source_reask_minutes 16"; do
 	VALUE=$2
 	_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 		-H "Content-Type: application/json" \
-		-d "{\"advanced\":{\"$FIELD\":$VALUE}}" "$HOST/api/v0/preferences"
+		-d "{\"advanced\":{\"$FIELD\":$VALUE}}" "$API/preferences"
 	_assert_status 200 "PATCH advanced.$FIELD=$VALUE -> 200"
-	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
+	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
 	_assert_json_eq ".advanced.$FIELD" "$VALUE" "advanced.$FIELD reads back what was written"
 done
 
@@ -532,9 +533,9 @@ done
 # the daemon would not keep. Below the floor is a 400 now (#1174).
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"advanced":{"kad_source_reask_minutes":1}}' "$HOST/api/v0/preferences"
+	-d '{"advanced":{"kad_source_reask_minutes":1}}' "$API/preferences"
 _assert_status 400 "PATCH advanced.kad_source_reask_minutes=1 -> 400 (below the 30 floor)"
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
 _assert_json_eq '.advanced.kad_source_reask_minutes' 31 "the rejected write left the previous value alone"
 
 # --- online_signature.update_frequency_seconds is bounded (#1159 section 4).
@@ -547,19 +548,19 @@ _assert_json_eq '.advanced.kad_source_reask_minutes' 31 "the rejected write left
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d '{"online_signature":{"update_frequency_seconds":86400}}' \
-	"$HOST/api/v0/preferences"
+	"$API/preferences"
 _assert_status 400 "PATCH online_signature.update_frequency_seconds=86400 -> 400 (would wrap to 20864)"
 
 # The boundary itself is still accepted.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d '{"online_signature":{"update_frequency_seconds":65535}}' \
-	"$HOST/api/v0/preferences"
+	"$API/preferences"
 _assert_status 200 "PATCH online_signature.update_frequency_seconds=65535 -> 200"
 
 # Saved before the boundary sweep below, which leaves every field it touches on
 # an endpoint. Restored with the rest at the end of the file.
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
 SAVED_FILEBUF=$(printf '%s' "$CURL_BODY" | jq -r '.advanced.file_buffer_bytes')
 SAVED_ULQUEUE=$(printf '%s' "$CURL_BODY" | jq -r '.advanced.max_upload_queue_client_count')
 SAVED_CONN5=$(printf '%s' "$CURL_BODY" | jq -r '.advanced.max_new_connections_per_5_seconds')
@@ -590,7 +591,7 @@ for CASE in \
 	set -- $CASE
 	_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 		-H "Content-Type: application/json" \
-		-d "{\"$1\":{\"$2\":$3}}" "$HOST/api/v0/preferences"
+		-d "{\"$1\":{\"$2\":$3}}" "$API/preferences"
 	_assert_status 400 "PATCH $1.$2=$3 -> 400 (was silently $4)"
 done
 
@@ -599,12 +600,12 @@ done
 # value was refused. Assert the message for one range case and one step case.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"connection":{"tcp_port":99999}}' "$HOST/api/v0/preferences"
+	-d '{"connection":{"tcp_port":99999}}' "$API/preferences"
 _assert_json_eq '.error.message | contains("(1-65532)")' true \
 	"tcp_port 400 names the range in the message"
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"advanced":{"file_buffer_bytes":20000}}' "$HOST/api/v0/preferences"
+	-d '{"advanced":{"file_buffer_bytes":20000}}' "$API/preferences"
 _assert_json_eq '.error.message | contains("multiple of 15000")' true \
 	"file_buffer_bytes 400 names the step in the message"
 
@@ -622,7 +623,7 @@ for CASE in \
 	set -- $CASE
 	_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 		-H "Content-Type: application/json" \
-		-d "{\"$1\":{\"$2\":$3}}" "$HOST/api/v0/preferences"
+		-d "{\"$1\":{\"$2\":$3}}" "$API/preferences"
 	_assert_status 400 "PATCH $1.$2=$3 -> 400 ($4)"
 	_assert_json_eq '.error.message | contains("non-negative integer")' true \
 		"$1.$2 fractional 400 says non-negative integer"
@@ -647,9 +648,9 @@ for CASE in \
 	set -- $CASE
 	_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 		-H "Content-Type: application/json" \
-		-d "{\"$1\":{\"$2\":$3}}" "$HOST/api/v0/preferences"
+		-d "{\"$1\":{\"$2\":$3}}" "$API/preferences"
 	_assert_status 200 "PATCH $1.$2=$3 -> 200 (domain boundary)"
-	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
+	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
 	_assert_json_eq ".$1.$2" "$3" "$1.$2=$3 reads back unchanged"
 done
 
@@ -660,7 +661,7 @@ done
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d '{"connection":{"max_upload_kibibytes_per_second":3,"max_download_kibibytes_per_second":100}}' \
-	"$HOST/api/v0/preferences"
+	"$API/preferences"
 _assert_status 200 "PATCH max_upload_kibibytes_per_second=3 -> 200"
 _assert_json_eq '.connection.max_download_kibibytes_per_second' 9 \
 	"a sub-4 kB/s upload cap forces max_download_kibibytes_per_second to 3x, echoed in the PATCH reply"
@@ -673,12 +674,12 @@ _assert_json_eq '.connection.max_download_kibibytes_per_second' 9 \
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d "{\"advanced\":{\"kad_source_reask_minutes\":$SAVED_KADREASK,\"source_reask_minutes\":$SAVED_SRCREASK,\"file_buffer_bytes\":$SAVED_FILEBUF,\"max_upload_queue_client_count\":$SAVED_ULQUEUE,\"max_new_connections_per_5_seconds\":$SAVED_CONN5,\"kad_max_concurrent_source_search_count\":$SAVED_KADSEARCH},\"connection\":{\"tcp_port\":$SAVED_TCPPORT,\"max_upload_kibibytes_per_second\":$SAVED_MAXUL,\"max_download_kibibytes_per_second\":$SAVED_MAXDL},\"online_signature\":{\"update_frequency_seconds\":$SAVED_OSFREQ}}" \
-	"$HOST/api/v0/preferences"
+	"$API/preferences"
 _assert_status 200 "PATCH (restore advanced + connection + onlinesig) -> 200"
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
 _assert_json_eq '.connection.tcp_port' "$SAVED_TCPPORT" \
 	'restored connection.tcp_port to the saved value'
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
 _assert_json_eq '.advanced.kad_source_reask_minutes' "$SAVED_KADREASK" \
 	'restored advanced.kad_source_reask_minutes to the saved value'
 _assert_json_eq '.advanced.source_reask_minutes' "$SAVED_SRCREASK" \
@@ -701,25 +702,25 @@ _assert_json_eq '.online_signature.update_frequency_seconds' "$SAVED_OSFREQ" \
 # restore has to stay the last *mutation* in this file.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"geoip":{"update_now":true}}' "$HOST/api/v0/preferences"
+	-d '{"geoip":{"update_now":true}}' "$API/preferences"
 _assert_status 400 "PATCH geoip.update_now -> 400 (moved to POST /geoip/update)"
 _assert_json_eq '.error.code' bad_request \
 	'the refusal carries error.code=bad_request'
 _assert_json_eq '(.error.message | test("POST /geoip/update"))' true \
 	'the refusal names the endpoint that took the action over'
 
-_curl "$HOST/api/v0/geoip/update"
+_curl "$API/geoip/update"
 _assert_status 405 "GET /geoip/update -> 405 (POST only)"
 _assert_json_eq '.error.code' method_not_allowed \
 	'/geoip/update GET 405 carries error.code=method_not_allowed'
 
-_curl -X POST "$HOST/api/v0/geoip/update"
+_curl -X POST "$API/geoip/update"
 _assert_status 401 "POST /geoip/update without auth -> 401"
 
 # GUEST is not ADMIN: the fetch writes daemon state, so it is admin-only like
 # its three sibling update routes.
 if [ "$HAVE_GUEST" = "1" ]; then
-	_curl -X POST -H "Authorization: Bearer $GUEST_TOKEN" "$HOST/api/v0/geoip/update"
+	_curl -X POST -H "Authorization: Bearer $GUEST_TOKEN" "$API/geoip/update"
 	_assert_status 403 "POST /geoip/update as guest -> 403"
 else
 	echo "    info: no guest pass; /geoip/update admin-gate skipped"
@@ -730,14 +731,14 @@ fi
 # minimum a 0 answered 200 and read back as 1 -- exactly the silent
 # daemon-side rewrite the schema bounds exist to turn into a 400.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
-	-d '{"connection":{"upload_slot_min_kibibytes_per_second":0}}' "$HOST/api/v0/preferences"
+	-d '{"connection":{"upload_slot_min_kibibytes_per_second":0}}' "$API/preferences"
 _assert_status 400 "PATCH upload_slot_min_kibibytes_per_second=0 -> 400 (below the floor)"
 _assert_json_eq '.error.code' bad_request \
 	'the below-floor slot value carries error.code=bad_request'
 
 # 1 is the floor itself, so it must still be accepted.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
-	-d '{"connection":{"upload_slot_min_kibibytes_per_second":1}}' "$HOST/api/v0/preferences"
+	-d '{"connection":{"upload_slot_min_kibibytes_per_second":1}}' "$API/preferences"
 _assert_status 200 "PATCH upload_slot_min_kibibytes_per_second=1 -> 200 (the floor is inclusive)"
 _assert_json_eq '.connection.upload_slot_min_kibibytes_per_second' 1 \
 	'the floor value round-trips unchanged'

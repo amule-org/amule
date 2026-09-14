@@ -27,6 +27,7 @@ set -u
 set -o pipefail
 
 HOST=${HOST:-localhost:4713}
+API="$HOST/api/v1"
 ADMIN_PASS=${ADMIN_PASS:-adminpass}
 
 FAIL_COUNT=0
@@ -82,14 +83,14 @@ _get_etag() {
 }
 
 if ! command -v jq >/dev/null 2>&1; then _die "jq is required."; fi
-if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health" 2>/dev/null; then
+if ! curl -s -o /dev/null --max-time 2 "$API/health" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable."
 fi
 
 echo "amuleapi 20-etag-conditional-get smoke @ $HOST"
 
 ADMIN_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$ADMIN_PASS\"}" "$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
+	-d "{\"password\":\"$ADMIN_PASS\"}" "$API/auth/login?include_token=true" | jq -r .token)
 [ -n "$ADMIN_TOKEN" ] && [ "$ADMIN_TOKEN" != "null" ] || _die "admin login failed"
 
 sleep 4
@@ -99,7 +100,7 @@ sleep 4
 # /version is the smallest, most stable response — perfect for ETag
 # regression because the digest stays constant across daemon
 # restarts (only changes when the build's VERSION macro flips).
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/version"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/version"
 _assert_status 200 "GET /version → 200"
 
 ETAG=$(_get_etag)
@@ -132,7 +133,7 @@ fi
 
 # --- 2. Conditional GET — RFC-canonical (quoted) → 304. ----------
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" \
-	-H "If-None-Match: $ETAG" "$HOST/api/v0/version"
+	-H "If-None-Match: $ETAG" "$API/version"
 _assert_status 304 "GET /version + If-None-Match (quoted) → 304"
 
 # Body must be empty on 304.
@@ -153,28 +154,28 @@ fi
 
 # --- 3. Conditional GET — bare hex (backward-compat) → 304. ------
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" \
-	-H "If-None-Match: $BARE_HEX" "$HOST/api/v0/version"
+	-H "If-None-Match: $BARE_HEX" "$API/version"
 _assert_status 304 "GET /version + If-None-Match (bare hex) → 304"
 
 # --- 4. Conditional GET — weak validator → 304. ------------------
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" \
-	-H "If-None-Match: W/$ETAG" "$HOST/api/v0/version"
+	-H "If-None-Match: W/$ETAG" "$API/version"
 _assert_status 304 "GET /version + If-None-Match (W/-prefixed) → 304"
 
 # --- 5. Conditional GET — wildcard → 304. ------------------------
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" \
-	-H "If-None-Match: *" "$HOST/api/v0/version"
+	-H "If-None-Match: *" "$API/version"
 _assert_status 304 "GET /version + If-None-Match: * → 304"
 
 # --- 6. Conditional GET — wrong hex → 200 (no match). ------------
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" \
-	-H 'If-None-Match: "feedfacefeedface"' "$HOST/api/v0/version"
+	-H 'If-None-Match: "feedfacefeedface"' "$API/version"
 _assert_status 200 "GET /version + If-None-Match (wrong hex) → 200"
 
 # --- 7. Comma-separated list — any-match wins. -------------------
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "If-None-Match: \"feedfacefeedface\", $ETAG" \
-	"$HOST/api/v0/version"
+	"$API/version"
 _assert_status 304 "GET /version + If-None-Match (list, hit in 2nd entry) → 304"
 
 # --- 8. HEAD honors If-None-Match too. ---------------------------
@@ -186,7 +187,7 @@ _assert_status 304 "GET /version + If-None-Match (list, hit in 2nd entry) → 30
 # HEAD with a wrong `Content-Length: 0`. The wire-level "no content on any
 # status" guarantee is asserted in 40-http-conformance, which reads the
 # socket directly rather than through curl.
-_curl --head -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/version"
+_curl --head -H "Authorization: Bearer $ADMIN_TOKEN" "$API/version"
 _assert_status 200 "HEAD /version → 200"
 HEAD_ETAG=$(_get_etag)
 if [ "$HEAD_ETAG" = "$ETAG" ]; then
@@ -196,7 +197,7 @@ else
 		"GET ETag=$ETAG, HEAD ETag=$HEAD_ETAG"
 fi
 _curl --head -H "Authorization: Bearer $ADMIN_TOKEN" \
-	-H "If-None-Match: $ETAG" "$HOST/api/v0/version"
+	-H "If-None-Match: $ETAG" "$API/version"
 _assert_status 304 "HEAD /version + If-None-Match → 304"
 
 # --- 9. ETag is stamped on every safe-method 200 response. -------
@@ -204,7 +205,7 @@ _assert_status 304 "HEAD /version + If-None-Match → 304"
 # Walk a representative subset of GET endpoints — every one must
 # carry an ETag header per the Dispatch wrapper contract.
 for ep in status downloads shared clients servers kad categories preferences; do
-	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/$ep"
+	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/$ep"
 	if [ "$CURL_STATUS" != "200" ]; then
 		_fail "GET /$ep status" "expected 200, got $CURL_STATUS"
 		continue
@@ -226,13 +227,13 @@ done
 # Capture the ETag of /preferences before mutating, then PATCH with
 # If-None-Match: matching the GET's ETag. The PATCH must execute
 # (returns 200) — not skip with 304.
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
 PREF_ETAG=$(_get_etag)
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-H "If-None-Match: $PREF_ETAG" \
 	-d '{"connection":{"max_upload_kibibytes_per_second":0}}' \
-	"$HOST/api/v0/preferences"
+	"$API/preferences"
 if [ "$CURL_STATUS" = "200" ]; then
 	_pass "PATCH ignores If-None-Match (status=200, not 304)"
 else
@@ -245,7 +246,7 @@ _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-H "If-None-Match: $PREF_ETAG" \
 	-d '{"query":"ubuntu"}' \
-	"$HOST/api/v0/search"
+	"$API/search"
 if [ "$CURL_STATUS" = "202" ]; then
 	_pass "POST ignores If-None-Match (status=202, not 304)"
 else
@@ -258,7 +259,7 @@ fi
 SID=$(printf '%s' "$CURL_BODY" | jq -r '.search_id // empty')
 if [ -n "$SID" ]; then
 	curl -s -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
-		"$HOST/api/v0/search/$SID" > /dev/null
+		"$API/search/$SID" > /dev/null
 fi
 
 # --- 11. Error responses (4xx/5xx) don't get ETag stamped. -------
@@ -267,7 +268,7 @@ fi
 # error responses — anti-feature. Phase 7's Dispatch wrapper guards
 # `resp.status == 200` so 4xx passes through unchanged.
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/downloads/baadbaadbaadbaadbaadbaadbaadbaad"
+	"$API/downloads/baadbaadbaadbaadbaadbaadbaadbaad"
 _assert_status 404 "GET /downloads/{nonexistent} → 404"
 ERR_ETAG=$(_get_etag)
 if [ -z "$ERR_ETAG" ]; then
@@ -283,10 +284,10 @@ fi
 # now only churn their ETag when actual data churns. /preferences is
 # the most reliable "stable" surface for this check (no per-tick
 # refresh — it changes only when an operator runs PATCH).
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
 P1=$(_get_etag)
 sleep 2
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/preferences"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
 P2=$(_get_etag)
 if [ "$P1" = "$P2" ] && [ -n "$P1" ]; then
 	_pass "ETag stable on /preferences across 2 s (no churn → cacheable)"
@@ -298,7 +299,7 @@ fi
 # A second cache-hit observable: the second request with
 # If-None-Match: <P1> against /preferences MUST 304.
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" \
-	-H "If-None-Match: $P1" "$HOST/api/v0/preferences"
+	-H "If-None-Match: $P1" "$API/preferences"
 _assert_status 304 "GET /preferences + If-None-Match (cached) → 304 (Phase 7.1 cache works)"
 
 # --- Summary. -----------------------------------------------------

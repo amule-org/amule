@@ -271,15 +271,15 @@ TEST(PathPatterns, ShapeEqual_DifferentLengths)
 // literal route misses outright, a capture route matches with an empty capture.
 TEST(PathPatterns, StripTrailingSlash_RemovesOne)
 {
-	ASSERT_EQUALS(std::string("/api/v0/status"), StripTrailingSlash("/api/v0/status/"));
-	ASSERT_EQUALS(std::string("/api/v0/clients"), StripTrailingSlash("/api/v0/clients/"));
+	ASSERT_EQUALS(std::string("/api/v1/status"), StripTrailingSlash("/api/v1/status/"));
+	ASSERT_EQUALS(std::string("/api/v1/clients"), StripTrailingSlash("/api/v1/clients/"));
 }
 
 // Already-bare paths are returned unchanged, and the root is not a spelling
 // of the empty string.
 TEST(PathPatterns, StripTrailingSlash_LeavesBareAndRootAlone)
 {
-	ASSERT_EQUALS(std::string("/api/v0/status"), StripTrailingSlash("/api/v0/status"));
+	ASSERT_EQUALS(std::string("/api/v1/status"), StripTrailingSlash("/api/v1/status"));
 	ASSERT_EQUALS(std::string("/"), StripTrailingSlash("/"));
 	ASSERT_EQUALS(std::string(""), StripTrailingSlash(""));
 }
@@ -299,12 +299,12 @@ TEST(PathPatterns, StripTrailingSlash_StripsOnlyOne)
 // a 404.
 TEST(PathPatterns, Match_RejectsAnEmptyCapture)
 {
-	const auto pat = ParsePattern("/api/v0/clients/{ecid}");
+	const auto pat = ParsePattern("/api/v1/clients/{ecid}");
 	std::map<std::string, std::string> caps;
-	ASSERT_TRUE(!Match(pat, SplitPath("/api/v0/clients/"), caps));
+	ASSERT_TRUE(!Match(pat, SplitPath("/api/v1/clients/"), caps));
 	// The non-empty case still matches, so the guard is not just refusing
 	// everything.
-	ASSERT_TRUE(Match(pat, SplitPath("/api/v0/clients/42"), caps));
+	ASSERT_TRUE(Match(pat, SplitPath("/api/v1/clients/42"), caps));
 	ASSERT_EQUALS(std::string("42"), caps["ecid"]);
 }
 
@@ -314,9 +314,9 @@ TEST(PathPatterns, Match_StillRejectsAMissegmentedLiteral)
 {
 	// Same segment count, so the rejection has to come from the literal
 	// comparison rather than from the length check.
-	const auto pat = ParsePattern("/api/v0/version/check");
+	const auto pat = ParsePattern("/api/v1/version/check");
 	std::map<std::string, std::string> caps;
-	ASSERT_TRUE(!Match(pat, SplitPath("/api/v0/version/"), caps));
+	ASSERT_TRUE(!Match(pat, SplitPath("/api/v1/version/"), caps));
 }
 
 // ParseBoundedUint / ParseBoolValue

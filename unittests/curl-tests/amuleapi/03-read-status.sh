@@ -29,6 +29,7 @@ set -u
 set -o pipefail
 
 HOST=${HOST:-localhost:4713}
+API="$HOST/api/v1"
 ADMIN_PASS=${ADMIN_PASS:-adminpass}
 GUEST_PASS=${GUEST_PASS:-guestpass}
 
@@ -81,22 +82,22 @@ _assert_json_eq() {
 if ! command -v jq >/dev/null 2>&1; then
 	_die "jq is required. brew install jq."
 fi
-if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health" 2>/dev/null; then
+if ! curl -s -o /dev/null --max-time 2 "$API/health" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable. Start amuleapi first."
 fi
 
 echo "amuleapi 03-read-status smoke @ $HOST"
 
 # --- 1. /status without auth → 401 unauthorized. -------------------
-_curl "$HOST/api/v0/status"
-_assert_status 401 "GET /api/v0/status (no creds) → 401"
+_curl "$API/status"
+_assert_status 401 "GET /api/v1/status (no creds) → 401"
 _assert_json_eq '.error.code' unauthorized \
 	'unauthenticated /status carries error.code=unauthorized'
 
 # --- 2. Log in as admin and capture the bearer. --------------------
 TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 	-d "{\"password\":\"$ADMIN_PASS\"}" \
-	"$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
+	"$API/auth/login?include_token=true" | jq -r .token)
 [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ] \
 	|| _die "could not log in for /status tests"
 
@@ -108,14 +109,14 @@ TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 for _ in $(seq 1 30); do
 	probe=$(curl -s -o /dev/null -w "%{http_code}" \
 		-H "Authorization: Bearer $TOKEN" \
-		"$HOST/api/v0/status")
+		"$API/status")
 	[ "$probe" = "200" ] && break
 	sleep 0.5
 done
 
 # --- 3. /status with bearer → 200 + envelope shape. ----------------
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/status"
-_assert_status 200 "GET /api/v0/status (admin bearer) → 200"
+_curl -H "Authorization: Bearer $TOKEN" "$API/status"
+_assert_status 200 "GET /api/v1/status (admin bearer) → 200"
 
 # Envelope metadata.
 _assert_json_eq '.ec_connected | type' boolean \
@@ -207,10 +208,10 @@ _assert_json_eq '[paths | join(".")] | map(select(test("low_id|upload_queue_leng
 # --- 4. /status with guest bearer also works (any-role read gate). --
 GUEST_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 	-d "{\"password\":\"$GUEST_PASS\"}" \
-	"$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
+	"$API/auth/login?include_token=true" | jq -r .token)
 if [ -n "$GUEST_TOKEN" ] && [ "$GUEST_TOKEN" != "null" ]; then
-	_curl -H "Authorization: Bearer $GUEST_TOKEN" "$HOST/api/v0/status"
-	_assert_status 200 "GET /api/v0/status (guest bearer) → 200"
+	_curl -H "Authorization: Bearer $GUEST_TOKEN" "$API/status"
+	_assert_status 200 "GET /api/v1/status (guest bearer) → 200"
 else
 	# run-all.sh always configures a guest password; if a future
 	# fixture drops it, surface the gap rather than silently
@@ -219,12 +220,12 @@ else
 fi
 
 # --- 5. Method gate. ----------------------------------------------
-_curl -X DELETE -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/status"
-_assert_status 405 "DELETE /api/v0/status → 405 method_not_allowed"
+_curl -X DELETE -H "Authorization: Bearer $TOKEN" "$API/status"
+_assert_status 405 "DELETE /api/v1/status → 405 method_not_allowed"
 
 # --- 6. HEAD /status. ----------------------------------------------
-_curl -I -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/status"
-_assert_status 200 "HEAD /api/v0/status → 200"
+_curl -I -H "Authorization: Bearer $TOKEN" "$API/status"
+_assert_status 200 "HEAD /api/v1/status → 200"
 
 # --- Summary. -----------------------------------------------------
 echo

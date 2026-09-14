@@ -1,5 +1,5 @@
 // Live data layer: seeds domain collections from REST, then keeps them
-// fresh from the SSE stream (/api/v0/events). If SSE can't connect it
+// fresh from the SSE stream (/api/v1/events). If SSE can't connect it
 // transparently falls back to periodic polling so the UI stays live.
 //
 // A "resource" is a list endpoint that has matching SSE deltas, e.g.
@@ -138,7 +138,7 @@ async function refreshStatus() {
 // --- SSE ---------------------------------------------------------------
 function openSse() {
   if (es) return;
-  es = new EventSource(window.location.pathname.replace(/\/?$/, "/") + "api/v0/events");
+  es = new EventSource(window.location.pathname.replace(/\/?$/, "/") + "api/v1/events");
 
   es.addEventListener("open", () => {
     sseFails = 0;

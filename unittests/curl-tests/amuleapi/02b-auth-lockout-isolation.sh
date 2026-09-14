@@ -34,6 +34,7 @@ set -u
 set -o pipefail
 
 HOST=${HOST:-localhost:4713}
+API="$HOST/api/v1"
 ADMIN_PASS=${ADMIN_PASS:-adminpass}
 GUEST_PASS=${GUEST_PASS:-guestpass}
 
@@ -90,13 +91,13 @@ _assert_json_eq() {
 
 _login() { # $1 = plaintext password
 	_curl -X POST -H "Content-Type: application/json" \
-		-d "{\"password\":\"$1\"}" "$HOST/api/v0/auth/login"
+		-d "{\"password\":\"$1\"}" "$API/auth/login"
 }
 
 if ! command -v jq >/dev/null 2>&1; then
 	_die "jq is required. brew install jq."
 fi
-if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health" 2>/dev/null; then
+if ! curl -s -o /dev/null --max-time 2 "$API/health" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable. Start amuleapi first."
 fi
 

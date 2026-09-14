@@ -104,7 +104,7 @@ KadSnapshot CState::Kad() const
 
 CState::DashboardSnapshot CState::Dashboard() const
 {
-	// Single shared_lock acquisition: callers of /api/v0/status get a coherent (status, kad,
+	// Single shared_lock acquisition: callers of /api/v1/status get a coherent (status, kad,
 	// snapshot_at, ec_connected) tuple instead of a four-lock dance that can interleave with a
 	// refresher tick.
 	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
@@ -589,7 +589,7 @@ bool MemoizableTarget(const std::string &target)
 	//
 	// Before adding a target it must be BOTH governed by the refresher snapshot AND identical
 	// for every caller -- see State.h.
-	return path == "/api/v0/downloads" || path == "/api/v0/shared";
+	return path == "/api/v1/downloads" || path == "/api/v1/shared";
 }
 
 // See State.h. Ordered cheap-test-first: the revision comparison is two

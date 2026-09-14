@@ -27,6 +27,7 @@ set -u
 set -o pipefail
 
 HOST=${HOST:-localhost:4713}
+API="$HOST/api/v1"
 ADMIN_PASS=${ADMIN_PASS:-adminpass}
 
 # Stable test artifact (same as Phase 5a).
@@ -44,7 +45,7 @@ trap '
 	# pressure mitigation per feedback_clean_temp_partfiles_after_test).
 	if [ -n "${ADMIN_TOKEN:-}" ]; then
 		curl -s -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
-			"$HOST/api/v0/downloads/$TEST_HASH" > /dev/null 2>&1 || true
+			"$API/downloads/$TEST_HASH" > /dev/null 2>&1 || true
 	fi
 ' EXIT
 
@@ -58,14 +59,14 @@ _fail() {
 }
 
 if ! command -v jq >/dev/null 2>&1; then _die "jq is required."; fi
-if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health" 2>/dev/null; then
+if ! curl -s -o /dev/null --max-time 2 "$API/health" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable."
 fi
 
 echo "amuleapi 22-sse-diff-emission smoke @ $HOST"
 
 ADMIN_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$ADMIN_PASS\"}" "$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
+	-d "{\"password\":\"$ADMIN_PASS\"}" "$API/auth/login?include_token=true" | jq -r .token)
 [ -n "$ADMIN_TOKEN" ] && [ "$ADMIN_TOKEN" != "null" ] || _die "admin login failed"
 
 sleep 4
@@ -76,7 +77,7 @@ _sse_start() {
 	local seconds=$1
 	: > "$SSE_OUT"
 	(curl -s -m "$seconds" -N -H "Authorization: Bearer $ADMIN_TOKEN" \
-		"$HOST/api/v0/events" >> "$SSE_OUT" 2>&1) &
+		"$API/events" >> "$SSE_OUT" 2>&1) &
 	echo $!
 }
 
@@ -107,7 +108,7 @@ fi
 # a prior smoke). DELETE the existing entry if present, then start
 # from a clean slate.
 curl -s -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/downloads/$TEST_HASH" > /dev/null 2>&1 || true
+	"$API/downloads/$TEST_HASH" > /dev/null 2>&1 || true
 sleep 2
 
 SSE_PID=$(_sse_start 15)
@@ -116,7 +117,7 @@ echo "    info: POST Ubuntu ISO..."
 curl -s -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d "{\"links\":[\"$TEST_LINK\"]}" \
-	"$HOST/api/v0/downloads" > /dev/null
+	"$API/downloads" > /dev/null
 
 # Wait for the download_added event. Poll the stream file every
 # 200 ms for up to 12 s.
@@ -212,7 +213,7 @@ fi
 SSE_PID=$(_sse_start 10)
 sleep 1
 curl -s -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/downloads/$TEST_HASH" > /dev/null
+	"$API/downloads/$TEST_HASH" > /dev/null
 REMOVED=""
 for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30; do
 	if grep -q "^event: download_removed$" "$SSE_OUT"; then
@@ -245,21 +246,21 @@ fi
 SSE_A=$(mktemp -t amuleapi_22_sse_diff_emission_a.XXXXXX)
 SSE_B=$(mktemp -t amuleapi_22_sse_diff_emission_b.XXXXXX)
 (curl -s -m 10 -N -H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/events" >> "$SSE_A" 2>&1) &
+	"$API/events" >> "$SSE_A" 2>&1) &
 PID_A=$!
 (curl -s -m 10 -N -H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/events" >> "$SSE_B" 2>&1) &
+	"$API/events" >> "$SSE_B" 2>&1) &
 PID_B=$!
 sleep 2
 # Add ISO again — emit download_added.
 curl -s -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d "{\"links\":[\"$TEST_LINK\"]}" \
-	"$HOST/api/v0/downloads" > /dev/null
+	"$API/downloads" > /dev/null
 sleep 5
 # Then delete to clean up.
 curl -s -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/downloads/$TEST_HASH" > /dev/null
+	"$API/downloads/$TEST_HASH" > /dev/null
 wait $PID_A $PID_B 2>/dev/null
 
 A_HAS=$(grep -c "^event: download_added$" "$SSE_A" || true)
@@ -289,7 +290,7 @@ SEARCH_QUERY=ubuntu
 SSE_SEARCH=$(curl -s -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d "{\"query\":\"$SEARCH_QUERY\",\"type\":\"local\"}" \
-	"$HOST/api/v0/search")
+	"$API/search")
 SSE_SID=$(printf '%s' "$SSE_SEARCH" | jq -r '.search_id // empty')
 SEARCH_FINISHED=""
 for _ in $(seq 1 110); do
@@ -364,7 +365,7 @@ if [ -n "$SSE_SID" ]; then
 	SSE_PID=$(_sse_start 8)
 	sleep 1
 	curl -s -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
-		"$HOST/api/v0/search/$SSE_SID" > /dev/null
+		"$API/search/$SSE_SID" > /dev/null
 	CLOSED_JSON=""
 	for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
 		if grep -q "^event: search_closed$" "$SSE_OUT"; then
@@ -401,13 +402,13 @@ fi
 curl -s -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d "{\"links\":[\"$TEST_LINK\"]}" \
-	"$HOST/api/v0/downloads" > /dev/null
+	"$API/downloads" > /dev/null
 sleep 3
 SSE_PID=$(_sse_start 8)
 sleep 1
 KAD_NOTES_STATUS=$(curl -s -o /dev/null -w '%{http_code}' \
 	-X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/downloads/$TEST_HASH/comments")
+	"$API/downloads/$TEST_HASH/comments")
 if [ "$KAD_NOTES_STATUS" = "202" ]; then
 	CU=""
 	for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
@@ -446,7 +447,7 @@ else
 fi
 # Leave the queue as this section found it.
 curl -s -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/downloads/$TEST_HASH" > /dev/null 2>&1 || true
+	"$API/downloads/$TEST_HASH" > /dev/null 2>&1 || true
 
 # --- status_changed carries the same keys as GET /status. ----------
 # EVENTS.md promises the payload is "identical to the REST /status
@@ -478,7 +479,7 @@ done
 kill $SSE_PID 2>/dev/null
 wait $SSE_PID 2>/dev/null
 if [ -n "$STATUS_JSON" ]; then
-	REST_JSON=$(curl -s -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/status")
+	REST_JSON=$(curl -s -H "Authorization: Bearer $ADMIN_TOKEN" "$API/status")
 	# The two subtractions need their own parentheses: inside object
 	# construction jq parses `k: a - b` as `k: a` and then chokes on the `-`,
 	# so the expression failed to compile and this check reported a failure
@@ -571,10 +572,10 @@ fi
 # passes with media never compared -- the guard reporting green precisely when
 # it should be red. Detail builds through a different writer, so it still
 # answers truthfully when the list is the broken one.
-PARITY_BODY=$(curl -s -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/shared")
+PARITY_BODY=$(curl -s -H "Authorization: Bearer $ADMIN_TOKEN" "$API/shared")
 PARITY_HASH=
 for CAND in $(printf '%s' "$PARITY_BODY" | jq -r '.shared[0:20][].hash'); do
-	if curl -s -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/shared/$CAND" \
+	if curl -s -H "Authorization: Bearer $ADMIN_TOKEN" "$API/shared/$CAND" \
 		| jq -e '.media != null' >/dev/null 2>&1; then
 		PARITY_HASH=$CAND
 		break
@@ -587,7 +588,7 @@ PARITY_AUTO=$(printf '%s' "$PARITY_BODY" \
 	| jq -r --arg h "$PARITY_HASH" '.shared[] | select(.hash == $h) | .priority_auto')
 PARITY_HAS_MEDIA=0
 if [ -n "$PARITY_HASH" ] && curl -s -H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/shared/$PARITY_HASH" | jq -e '.media != null' >/dev/null 2>&1; then
+	"$API/shared/$PARITY_HASH" | jq -e '.media != null' >/dev/null 2>&1; then
 	PARITY_HAS_MEDIA=1
 fi
 SHARED_JSON=""
@@ -612,7 +613,7 @@ done
 if [ "$PARITY_PRIO" = "high" ]; then NEW_PRIO=low; else NEW_PRIO=high; fi
 curl -s -o /dev/null -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d "{\"priority\":\"$NEW_PRIO\"}" "$HOST/api/v0/shared/$PARITY_HASH"
+	-d "{\"priority\":\"$NEW_PRIO\"}" "$API/shared/$PARITY_HASH"
 # Take the frame for THIS file: any other file's frame would be a valid
 # parity pair but not necessarily the one carrying media.
 for _ in $(seq 1 40); do
@@ -625,7 +626,7 @@ done
 kill $SSE_PID 2>/dev/null
 wait $SSE_PID 2>/dev/null
 if [ -n "$SHARED_JSON" ]; then
-	REST_ITEM=$(curl -s -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/shared" \
+	REST_ITEM=$(curl -s -H "Authorization: Bearer $ADMIN_TOKEN" "$API/shared" \
 		| jq -c --arg h "$PARITY_HASH" '.shared[] | select(.hash == $h)')
 	if [ -z "$REST_ITEM" ]; then
 		# The file left the share between the frame and the GET; no contract
@@ -670,7 +671,7 @@ fi
 curl -s -o /dev/null -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d "{\"priority\":\"$PARITY_PRIO\",\"priority_auto\":$PARITY_AUTO}" \
-	"$HOST/api/v0/shared/$PARITY_HASH"
+	"$API/shared/$PARITY_HASH"
 fi
 
 # --- search_result_updated fires on a held result's mutable fields. -----
@@ -685,7 +686,7 @@ fi
 # curl directly, same as every section above.
 SSE_SEARCH_SID=$(curl -s -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"query":"ubuntu"}' "$HOST/api/v0/search" | jq -r '.search_id // empty')
+	-d '{"query":"ubuntu"}' "$API/search" | jq -r '.search_id // empty')
 UPD_HASH=""
 UPD_NAME=""
 UPD_SIZE=""
@@ -694,7 +695,7 @@ if [ -n "$SSE_SEARCH_SID" ]; then
 	for _ in $(seq 1 30); do
 		sleep 1
 		UPD_ROW=$(curl -s -H "Authorization: Bearer $ADMIN_TOKEN" \
-			"$HOST/api/v0/search/$SSE_SEARCH_SID/results" \
+			"$API/search/$SSE_SEARCH_SID/results" \
 			| jq -c '[.results[] | select(.already_downloaded == false)] | first // empty')
 		UPD_HASH=$(printf '%s' "$UPD_ROW" | jq -r '.hash // empty')
 		UPD_NAME=$(printf '%s' "$UPD_ROW" | jq -r '.name // empty' | sed 's/|/_/g')
@@ -707,7 +708,7 @@ if [ -n "$UPD_HASH" ]; then
 	# routes there rather than needing its own channel name.
 	: > "$SSE_OUT"
 	(curl -s -m 20 -N -H "Authorization: Bearer $ADMIN_TOKEN" \
-		"$HOST/api/v0/events?channels=search" >> "$SSE_OUT" 2>&1) &
+		"$API/events?channels=search" >> "$SSE_OUT" 2>&1) &
 	UPD_PID=$!
 	# Wait for the stream to actually be up before provoking the change, or
 	# the frame lands before the subscription and the section flakes.
@@ -725,7 +726,7 @@ if [ -n "$UPD_HASH" ]; then
 	curl -s -o /dev/null -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 		-H "Content-Type: application/json" \
 		-d "{\"links\":[\"ed2k://|file|$UPD_NAME|$UPD_SIZE|$UPD_HASH|/\"]}" \
-		"$HOST/api/v0/downloads"
+		"$API/downloads"
 	UPD_FRAME=""
 	for _ in $(seq 1 60); do
 		UPD_FRAME=$(grep -A2 "^event: search_result_updated$" "$SSE_OUT" 2>/dev/null \
@@ -762,9 +763,9 @@ if [ -n "$UPD_HASH" ]; then
 	fi
 	# Leave the daemon as we found it: drop the partfile we planted.
 	curl -s -o /dev/null -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
-		"$HOST/api/v0/downloads/$UPD_HASH" 2>/dev/null
+		"$API/downloads/$UPD_HASH" 2>/dev/null
 	curl -s -o /dev/null -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
-		"$HOST/api/v0/search/$SSE_SEARCH_SID" 2>/dev/null
+		"$API/search/$SSE_SEARCH_SID" 2>/dev/null
 else
 	echo "    info: no search results available; search_result_updated check skipped"
 fi

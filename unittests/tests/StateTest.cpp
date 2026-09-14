@@ -1343,25 +1343,25 @@ TEST(State, ConcurrentReadersDontTearSnapshot)
 // the body belongs to rev_before while the key would claim rev_after.
 TEST(State, MemoUsableRejectsAMovedRevision)
 {
-	ASSERT_TRUE(MemoUsable("/api/v0/downloads", 7, 7));
-	ASSERT_TRUE(!MemoUsable("/api/v0/downloads", 7, 8));
+	ASSERT_TRUE(MemoUsable("/api/v1/downloads", 7, 7));
+	ASSERT_TRUE(!MemoUsable("/api/v1/downloads", 7, 8));
 	// Direction does not matter -- any inequality means the body cannot be
 	// attributed to a revision.
-	ASSERT_TRUE(!MemoUsable("/api/v0/downloads", 8, 7));
-	ASSERT_TRUE(MemoUsable("/api/v0/shared?limit=10", 3, 3));
-	ASSERT_TRUE(!MemoUsable("/api/v0/shared?limit=10", 3, 4));
+	ASSERT_TRUE(!MemoUsable("/api/v1/downloads", 8, 7));
+	ASSERT_TRUE(MemoUsable("/api/v1/shared?limit=10", 3, 3));
+	ASSERT_TRUE(!MemoUsable("/api/v1/shared?limit=10", 3, 4));
 }
 
 // Both conditions are required, so an ineligible target stays ineligible even
 // with a perfectly stable revision, and vice versa.
 TEST(State, MemoUsableNeedsBothConditions)
 {
-	ASSERT_TRUE(!MemoUsable("/api/v0/auth/session", 5, 5));
-	ASSERT_TRUE(!MemoUsable("/api/v0/status", 5, 5));
-	ASSERT_TRUE(!MemoUsable("/api/v0/auth/session", 5, 6));
+	ASSERT_TRUE(!MemoUsable("/api/v1/auth/session", 5, 5));
+	ASSERT_TRUE(!MemoUsable("/api/v1/status", 5, 5));
+	ASSERT_TRUE(!MemoUsable("/api/v1/auth/session", 5, 6));
 	// Revision 0 is the pre-first-tick value; eligibility does not depend on the number, only
 	// on it holding still. The caller separately refuses to serve a memo entry stamped 0.
-	ASSERT_TRUE(MemoUsable("/api/v0/downloads", 0, 0));
+	ASSERT_TRUE(MemoUsable("/api/v1/downloads", 0, 0));
 }
 
 // A handler that computed its own ETag owns it. Stamping over the top is what gave the static path
@@ -1387,11 +1387,11 @@ TEST(State, ShouldStampEtagOnlyForSafe200sWithABody)
 // anything.
 TEST(State, MemoizableTargetCoversTheTwoBigCollections)
 {
-	ASSERT_TRUE(MemoizableTarget("/api/v0/downloads"));
-	ASSERT_TRUE(MemoizableTarget("/api/v0/shared"));
+	ASSERT_TRUE(MemoizableTarget("/api/v1/downloads"));
+	ASSERT_TRUE(MemoizableTarget("/api/v1/shared"));
 	// A query string picks a page, not a different resource.
-	ASSERT_TRUE(MemoizableTarget("/api/v0/downloads?limit=10&offset=20"));
-	ASSERT_TRUE(MemoizableTarget("/api/v0/shared?sort=name&order=desc"));
+	ASSERT_TRUE(MemoizableTarget("/api/v1/downloads?limit=10&offset=20"));
+	ASSERT_TRUE(MemoizableTarget("/api/v1/shared?sort=name&order=desc"));
 }
 
 // Everything else hashes per request. Each of these was a live bug at some point in this PR's
@@ -1400,21 +1400,21 @@ TEST(State, MemoizableTargetCoversTheTwoBigCollections)
 TEST(State, MemoizableTargetExcludesEverythingElse)
 {
 	// own TTL caches / append-only mirror / refresh-on-read
-	ASSERT_TRUE(!MemoizableTarget("/api/v0/stats/tree"));
-	ASSERT_TRUE(!MemoizableTarget("/api/v0/stats/graphs/download_speed?width=3"));
-	ASSERT_TRUE(!MemoizableTarget("/api/v0/logs/amule"));
-	ASSERT_TRUE(!MemoizableTarget("/api/v0/logs/server_info"));
-	ASSERT_TRUE(!MemoizableTarget("/api/v0/search/7/results"));
+	ASSERT_TRUE(!MemoizableTarget("/api/v1/stats/tree"));
+	ASSERT_TRUE(!MemoizableTarget("/api/v1/stats/graphs/download_speed?width=3"));
+	ASSERT_TRUE(!MemoizableTarget("/api/v1/logs/amule"));
+	ASSERT_TRUE(!MemoizableTarget("/api/v1/logs/server_info"));
+	ASSERT_TRUE(!MemoizableTarget("/api/v1/search/7/results"));
 	// live EC roundtrip per read, and the bare collection a trailing-slash
 	// prefix could never match
-	ASSERT_TRUE(!MemoizableTarget("/api/v0/search"));
-	ASSERT_TRUE(!MemoizableTarget("/api/v0/share_directories"));
+	ASSERT_TRUE(!MemoizableTarget("/api/v1/search"));
+	ASSERT_TRUE(!MemoizableTarget("/api/v1/share_directories"));
 	// per-principal: one key cannot describe two callers' documents
-	ASSERT_TRUE(!MemoizableTarget("/api/v0/auth/session"));
+	ASSERT_TRUE(!MemoizableTarget("/api/v1/auth/session"));
 	// snapshot-backed, but not worth a memo -- and absent by default
-	ASSERT_TRUE(!MemoizableTarget("/api/v0/status"));
-	ASSERT_TRUE(!MemoizableTarget("/api/v0/clients"));
-	ASSERT_TRUE(!MemoizableTarget("/api/v0/servers"));
+	ASSERT_TRUE(!MemoizableTarget("/api/v1/status"));
+	ASSERT_TRUE(!MemoizableTarget("/api/v1/clients"));
+	ASSERT_TRUE(!MemoizableTarget("/api/v1/servers"));
 }
 
 // A sub-resource of an eligible collection is NOT itself eligible: it is a different body, so an
@@ -1423,12 +1423,12 @@ TEST(State, MemoizableTargetExcludesEverythingElse)
 // is no longer under /shared at all, and the excluded-set test above covers it.)
 TEST(State, MemoizableTargetDoesNotExtendToSubResources)
 {
-	ASSERT_TRUE(!MemoizableTarget("/api/v0/downloads/8b54a3c2"));
-	ASSERT_TRUE(!MemoizableTarget("/api/v0/downloads/8b54a3c2/clients"));
-	ASSERT_TRUE(!MemoizableTarget("/api/v0/shared/8b54a3c2"));
+	ASSERT_TRUE(!MemoizableTarget("/api/v1/downloads/8b54a3c2"));
+	ASSERT_TRUE(!MemoizableTarget("/api/v1/downloads/8b54a3c2/clients"));
+	ASSERT_TRUE(!MemoizableTarget("/api/v1/shared/8b54a3c2"));
 	// and no prefix bleed onto a neighbour that merely starts the same
-	ASSERT_TRUE(!MemoizableTarget("/api/v0/downloads_archive"));
-	ASSERT_TRUE(!MemoizableTarget("/api/v0/sharedfiles"));
+	ASSERT_TRUE(!MemoizableTarget("/api/v1/downloads_archive"));
+	ASSERT_TRUE(!MemoizableTarget("/api/v1/sharedfiles"));
 }
 
 // Snapshot revision. The ETag memo is keyed on this, not on snapshot_at. snapshot_at cannot serve:

@@ -3,7 +3,7 @@
 # amuleapi 41-shared-content — GET / HEAD /shared/{hash}/content.
 #
 # Endpoint:
-#   GET|HEAD /api/v0/shared/{hash}/content   → 200 / 206 / 304 / 416
+#   GET|HEAD /api/v1/shared/{hash}/content   → 200 / 206 / 304 / 416
 #
 # Serves the bytes of a COMPLETED shared file straight off the filesystem
 # amuleapi is running on. The response is deliberately hostile to the
@@ -71,6 +71,7 @@ set -u
 set -o pipefail
 
 HOST=${HOST:-localhost:4713}
+API="$HOST/api/v1"
 ADMIN_PASS=${ADMIN_PASS:-adminpass}
 GUEST_PASS=${GUEST_PASS:-guestpass}
 AMULE_SHARED_DIR=${AMULE_SHARED_DIR:-}
@@ -221,7 +222,7 @@ _assert_hdr_eq() {
 
 # --- Preconditions. -------------------------------------------------
 if ! command -v jq >/dev/null 2>&1; then _die "jq is required."; fi
-if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health" 2>/dev/null; then
+if ! curl -s -o /dev/null --max-time 2 "$API/health" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable. Start amuleapi first."
 fi
 
@@ -241,11 +242,11 @@ if [ ! -d "$AMULE_SHARED_DIR" ] || [ ! -w "$AMULE_SHARED_DIR" ]; then
 fi
 
 ADMIN_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$ADMIN_PASS\"}" "$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
+	-d "{\"password\":\"$ADMIN_PASS\"}" "$API/auth/login?include_token=true" | jq -r .token)
 [ -n "$ADMIN_TOKEN" ] && [ "$ADMIN_TOKEN" != "null" ] || _die "admin login failed"
 
 GUEST_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$GUEST_PASS\"}" "$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
+	-d "{\"password\":\"$GUEST_PASS\"}" "$API/auth/login?include_token=true" | jq -r .token)
 HAVE_GUEST=0
 [ -n "$GUEST_TOKEN" ] && [ "$GUEST_TOKEN" != "null" ] && HAVE_GUEST=1
 
@@ -298,12 +299,12 @@ fi
 # Ask amuled to re-walk its shares, then wait for the fixture to be hashed
 # in. A cold hash of a few MiB is sub-second; the generous poll is for the
 # scheduling latency, not the hashing.
-curl -s -o /dev/null -X POST "${AUTH[@]}" "$HOST/api/v0/shared_reload"
+curl -s -o /dev/null -X POST "${AUTH[@]}" "$API/shared_reload"
 TEST_HASH=""
 ODD_HASH=""
 for _ in $(seq 1 40); do
 	sleep 1
-	_curl "${AUTH[@]}" "$HOST/api/v0/shared"
+	_curl "${AUTH[@]}" "$API/shared"
 	TEST_HASH=$(printf '%s' "$CURL_BODY" \
 		| jq -r --arg n "$FIXTURE_NAME" '.shared[] | select(.name == $n) | .hash' | head -1)
 	[ -n "$TEST_HASH" ] && break
@@ -325,7 +326,7 @@ if [ "$HAVE_CAP_FIXTURE" = "1" ]; then
 			| head -1)
 		[ -n "$CAP_HASH" ] && break
 		sleep 1
-		_curl "${AUTH[@]}" "$HOST/api/v0/shared"
+		_curl "${AUTH[@]}" "$API/shared"
 	done
 	[ -n "$CAP_HASH" ] \
 		|| echo "    info: $CAP_FIXTURE_NAME never appeared in /shared;" \
@@ -347,13 +348,13 @@ fi
 PART_HASH=""
 for h in $(printf '%s' "$CURL_BODY" | jq -r '.shared[].hash' | head -20); do
 	INCOMPLETE=$(curl -s --max-time 10 "${AUTH[@]}" \
-		"$HOST/api/v0/shared/$h" | jq -r '.incomplete')
+		"$API/shared/$h" | jq -r '.incomplete')
 	if [ "$INCOMPLETE" = "true" ]; then PART_HASH=$h; break; fi
 done
 
 echo "    info: serving hash=$TEST_HASH size=$FIXTURE_SIZE"
 
-CONTENT_URL="$HOST/api/v0/shared/$TEST_HASH/content"
+CONTENT_URL="$API/shared/$TEST_HASH/content"
 
 # --- 1. Auth gate. ---------------------------------------------------
 _curl "$CONTENT_URL"
@@ -367,7 +368,7 @@ if [ "$HAVE_GUEST" = "1" ]; then
 fi
 
 # --- 2. Unknown hash → 404. ------------------------------------------
-_curl "${AUTH[@]}" "$HOST/api/v0/shared/00000000000000000000000000000000/content"
+_curl "${AUTH[@]}" "$API/shared/00000000000000000000000000000000/content"
 _assert_status 404 "GET /shared/{unknown}/content → 404"
 _assert_json_eq '.error.code' not_found "unknown hash → error.code=not_found"
 
@@ -658,7 +659,7 @@ PYEOF
 if ! command -v python3 >/dev/null 2>&1; then
 	_skip "wire-level HEAD / 304 checks (python3 unavailable)"
 else
-	CONTENT_PATH="/api/v0/shared/$TEST_HASH/content"
+	CONTENT_PATH="/api/v1/shared/$TEST_HASH/content"
 	AUTH_HDR="Authorization: Bearer $ADMIN_TOKEN"
 
 	read -r h_status h_len h_bytes <<<"$(_raw_probe "HEAD" "$CONTENT_PATH" "$AUTH_HDR")"
@@ -710,7 +711,7 @@ if ! command -v python3 >/dev/null 2>&1; then
 elif [ -z "$CAP_HASH" ]; then
 	_skip "concurrent-file-response cap (no $CAP_FIXTURE_SIZE-byte fixture to hold the slots open)"
 else
-	CAP_RESULT=$(python3 - "$HOST" "/api/v0/shared/$CAP_HASH/content" "$ADMIN_TOKEN" "$CAP_TOTAL" <<'PYEOF'
+	CAP_RESULT=$(python3 - "$HOST" "/api/v1/shared/$CAP_HASH/content" "$ADMIN_TOKEN" "$CAP_TOTAL" <<'PYEOF'
 import socket, sys
 hostport, path, token = sys.argv[1], sys.argv[2], sys.argv[3]
 total = int(sys.argv[4])
@@ -801,7 +802,7 @@ if [ "$HAVE_ODD" = "1" ]; then
 	# Bounded, and loud when it expires: a poll that waited forever would
 	# turn a genuine regression in slot release into a hung suite, which is
 	# strictly worse than a failed assertion.
-	ODD_URL="$HOST/api/v0/shared/$ODD_HASH/content"
+	ODD_URL="$API/shared/$ODD_HASH/content"
 	ODD_SETTLE=000
 	for _ in $(seq 1 10); do
 		ODD_SETTLE=$(curl -s -o /dev/null -I --max-time 10 \
@@ -852,7 +853,7 @@ fi
 # to the completed file's, so any window out of it would be silently wrong.
 # Refused outright rather than served partially.
 if [ -n "$PART_HASH" ]; then
-	_curl "${AUTH[@]}" "$HOST/api/v0/shared/$PART_HASH/content"
+	_curl "${AUTH[@]}" "$API/shared/$PART_HASH/content"
 	_assert_status 409 "GET content of a partfile → 409"
 	_assert_json_eq '.error.code' partfile_unsupported \
 		"partfile → error.code=partfile_unsupported"

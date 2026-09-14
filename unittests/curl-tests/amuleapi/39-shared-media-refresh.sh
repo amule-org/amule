@@ -19,6 +19,7 @@ set -u
 set -o pipefail
 
 HOST=${HOST:-localhost:4713}
+API="$HOST/api/v1"
 ADMIN_PASS=${ADMIN_PASS:-adminpass}
 GUEST_PASS=${GUEST_PASS:-guestpass}
 
@@ -61,18 +62,18 @@ _assert_json_eq() {
 }
 
 command -v jq >/dev/null 2>&1 || _die "jq is required."
-curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health" 2>/dev/null \
+curl -s -o /dev/null --max-time 2 "$API/health" 2>/dev/null \
 	|| _die "amuleapi at $HOST is not reachable."
 
 echo "amuleapi 39-shared-media-refresh smoke @ $HOST"
 
 TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 	-d "{\"password\":\"$ADMIN_PASS\"}" \
-	"$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
+	"$API/auth/login?include_token=true" | jq -r .token)
 [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ] || _die "login failed"
 
 # --- 1. Whole-share refresh. ---------------------------------------
-_curl -X POST -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/shared/media/refresh"
+_curl -X POST -H "Authorization: Bearer $TOKEN" "$API/shared/media/refresh"
 # 503 covers two different situations and only one of them is a skip:
 # ec_unsupported is an amuled that predates the op, ec_unavailable is no
 # usable EC link at all -- which is a broken rig, not a reason to report
@@ -105,16 +106,16 @@ _assert_json_eq '.scope'         all   'whole-share refresh reports scope=all'
 _assert_json_eq '.queued_file_count | type' number 'queued_file_count is numeric'
 
 # --- 2. Method + auth gating. --------------------------------------
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/shared/media/refresh"
+_curl -H "Authorization: Bearer $TOKEN" "$API/shared/media/refresh"
 _assert_status 405 "GET /shared/media/refresh → 405"
-_curl -X POST "$HOST/api/v0/shared/media/refresh"
+_curl -X POST "$API/shared/media/refresh"
 _assert_status 401 "POST without a token → 401"
 
 GUEST_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 	-d "{\"password\":\"${GUEST_PASS}\"}" \
-	"$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
+	"$API/auth/login?include_token=true" | jq -r .token)
 if [ -n "$GUEST_TOKEN" ] && [ "$GUEST_TOKEN" != "null" ]; then
-	_curl -X POST -H "Authorization: Bearer $GUEST_TOKEN" "$HOST/api/v0/shared/media/refresh"
+	_curl -X POST -H "Authorization: Bearer $GUEST_TOKEN" "$API/shared/media/refresh"
 	_assert_status 403 "POST as guest → 403 (refresh is admin-only)"
 else
 	echo "    info: guest login unavailable; guest check skipped"
@@ -122,12 +123,12 @@ fi
 
 # --- 3. Unknown hash. ----------------------------------------------
 _curl -X POST -H "Authorization: Bearer $TOKEN" \
-	"$HOST/api/v0/shared/00000000000000000000000000000000/media/refresh"
+	"$API/shared/00000000000000000000000000000000/media/refresh"
 _assert_status 404 "POST /shared/{unknown}/media/refresh → 404"
 _assert_json_eq '.error.code' not_found 'unknown hash carries error.code=not_found'
 
 # --- 4. Single-file refresh, when there is a file to refresh. ------
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/shared"
+_curl -H "Authorization: Bearer $TOKEN" "$API/shared"
 COUNT=$(printf '%s' "$CURL_BODY" | jq '.shared | length')
 echo "    info: $COUNT files currently shared"
 # Pick an audio/video entry rather than shared[0]: a share whose first file is
@@ -139,7 +140,7 @@ echo "    info: $COUNT files currently shared"
 # if the first 20 are all documents the phase skips rather than misreporting.
 HASH=
 for CANDIDATE in $(printf '%s' "$CURL_BODY" | jq -r '.shared[0:20][].hash'); do
-	_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/shared/$CANDIDATE"
+	_curl -H "Authorization: Bearer $TOKEN" "$API/shared/$CANDIDATE"
 	FTYPE=$(printf '%s' "$CURL_BODY" | jq -r '.file_type // empty')
 	if [ "$FTYPE" = "audio" ] || [ "$FTYPE" = "video" ]; then
 		HASH=$CANDIDATE
@@ -149,7 +150,7 @@ for CANDIDATE in $(printf '%s' "$CURL_BODY" | jq -r '.shared[0:20][].hash'); do
 done
 if [ -n "$HASH" ]; then
 	_curl -X POST -H "Authorization: Bearer $TOKEN" \
-		"$HOST/api/v0/shared/$HASH/media/refresh"
+		"$API/shared/$HASH/media/refresh"
 	# 409 is a legitimate answer for an incomplete download; both shapes are
 	# contract, so accept either and check the one that came back.
 	if [ "$CURL_STATUS" = "409" ]; then
@@ -164,7 +165,7 @@ if [ -n "$HASH" ]; then
 
 	UPPER=$(echo "$HASH" | tr 'a-f' 'A-F')
 	_curl -X POST -H "Authorization: Bearer $TOKEN" \
-		"$HOST/api/v0/shared/$UPPER/media/refresh"
+		"$API/shared/$UPPER/media/refresh"
 	if [ "$CURL_STATUS" = "202" ] || [ "$CURL_STATUS" = "409" ]; then
 		_pass "uppercase hash is accepted (HTTP $CURL_STATUS)"
 	else

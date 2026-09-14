@@ -75,7 +75,7 @@ public:
 	struct Request
 	{
 		std::string method; // "GET", "POST", ...
-		std::string target; // raw URI: "/api/v0/version?x=1"
+		std::string target; // raw URI: "/api/v1/version?x=1"
 		std::map<std::string, std::string> headers;
 		std::string body;
 		// Client IP as observed by the accept socket. amuleapi rate-limits by this
@@ -148,7 +148,7 @@ public:
 
 	// Optional resolver: tells the HTTP server whether an incoming request goes to the
 	// streaming handler (true) or the normal Handler (false). The current wiring matches "GET
-	// /api/v0/events".
+	// /api/v1/events".
 	using StreamingResolver = std::function<bool(const Request &)>;
 
 	// Optional preflight: runs synchronously on the I/O thread BEFORE the per-session worker

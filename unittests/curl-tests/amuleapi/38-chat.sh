@@ -27,6 +27,7 @@ set -u
 set -o pipefail
 
 HOST=${HOST:-localhost:4713}
+API="$HOST/api/v1"
 ADMIN_PASS=${ADMIN_PASS:-adminpass}
 GUEST_PASS=${GUEST_PASS:-guestpass}
 
@@ -90,14 +91,14 @@ _assert_body_empty() {
 }
 
 command -v jq >/dev/null 2>&1 || _die "jq is required."
-curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health" 2>/dev/null \
+curl -s -o /dev/null --max-time 2 "$API/health" 2>/dev/null \
 	|| _die "amuleapi at $HOST is not reachable."
 
 echo "amuleapi 38-chat smoke @ $HOST"
 
 TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 	-d "{\"password\":\"$ADMIN_PASS\"}" \
-	"$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
+	"$API/auth/login?include_token=true" | jq -r .token)
 [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ] || _die "login failed"
 
 # --- 1. Capability gate. ------------------------------------------
@@ -105,7 +106,7 @@ TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 # Against an amuled that predates the chat ops every route must answer
 # 503 ec_unsupported rather than sending an opcode the daemon would land
 # in its unknown-opcode branch (which asserts before it can answer).
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/chats"
+_curl -H "Authorization: Bearer $TOKEN" "$API/chats"
 if [ "$CURL_STATUS" = "503" ]; then
 	CODE=$(printf '%s' "$CURL_BODY" | jq -r '.error.code')
 	if [ "$CODE" = "ec_unsupported" ]; then
@@ -125,7 +126,7 @@ _assert_json_eq '.chats | type' array '/chats .chats is array'
 # No 404 for an unknown peer: the core creates the session, so POST
 # doubles as "start a chat with this address".
 _curl -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-	-d '{"text":"curl-test hello"}' "$HOST/api/v0/chats/$PEER/messages"
+	-d '{"text":"curl-test hello"}' "$API/chats/$PEER/messages"
 _assert_status 202 "POST /chats/{address}/messages → 202 Accepted"
 # The created message stays in the body: no per-message GET defines a shape
 # for it, so the id and the timestamp the store assigned are only readable
@@ -145,7 +146,7 @@ FIRST_ID=$(printf '%s' "$CURL_BODY" | jq -r '.message.id')
 sleep 3
 
 # --- 3. The conversation is now on the list. ----------------------
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/chats"
+_curl -H "Authorization: Bearer $TOKEN" "$API/chats"
 _assert_status 200 "GET /chats → 200 after send"
 FOUND=$(printf '%s' "$CURL_BODY" | jq --arg p "$PEER" '[.chats[] | select(.address == $p)] | length')
 if [ "$FOUND" = "1" ]; then
@@ -179,7 +180,7 @@ _assert_json_eq '.last_message.text'  "curl-test hello" 'row carries last_messag
 _assert_json_eq '.name' "IP: $PEER_IP Port: $PEER_PORT" 'name falls back to the address form'
 
 # --- 4. Reading the transcript. -----------------------------------
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/chats/$PEER/messages"
+_curl -H "Authorization: Bearer $TOKEN" "$API/chats/$PEER/messages"
 _assert_status 200 "GET /chats/{address}/messages → 200"
 _assert_json_eq '.address'            "$PEER" 'messages echo the conversation key'
 _assert_json_eq '.messages | type' array   'messages is an array'
@@ -199,16 +200,16 @@ fi
 # ids are monotonic per daemon process, so a client polling with the
 # highest id it holds must never see a duplicate and never skip one.
 _curl -H "Authorization: Bearer $TOKEN" \
-	"$HOST/api/v0/chats/$PEER/messages?since_message_id=$FIRST_ID"
+	"$API/chats/$PEER/messages?since_message_id=$FIRST_ID"
 _assert_status 200 "GET messages?since_message_id → 200"
 _assert_json_eq '.messages | length' 0 'since_message_id at the head returns nothing new'
 
 _curl -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-	-d '{"text":"second message"}' "$HOST/api/v0/chats/$PEER/messages"
+	-d '{"text":"second message"}' "$API/chats/$PEER/messages"
 _assert_status 202 "POST second message → 202"
 sleep 3
 _curl -H "Authorization: Bearer $TOKEN" \
-	"$HOST/api/v0/chats/$PEER/messages?since_message_id=$FIRST_ID"
+	"$API/chats/$PEER/messages?since_message_id=$FIRST_ID"
 _assert_json_eq '.messages | length'   1                'since_message_id returns exactly the new message'
 _assert_json_eq '.messages[0].text'    "second message" 'since_message_id returns the right message'
 
@@ -219,7 +220,7 @@ _assert_json_eq '.messages[0].text'    "second message" 'since_message_id return
 # on nine other collections means a window paired with `offset` -- one word
 # with two meanings is a rule a client has to learn twice.
 _curl -H "Authorization: Bearer $TOKEN" \
-	"$HOST/api/v0/chats/$PEER/messages?tail=1"
+	"$API/chats/$PEER/messages?tail=1"
 _assert_status 200 "GET messages?tail=1 → 200"
 _assert_json_eq '.messages | length' 1 'tail=1 returns just the newest message'
 _assert_json_eq '.messages[0].text' "second message" 'tail keeps the newest, not the oldest'
@@ -227,71 +228,71 @@ _assert_json_eq '.messages[0].text' "second message" 'tail keeps the newest, not
 # The old spelling is now an unknown parameter, which is simply ignored --
 # it is not a count the endpoint honours under another name.
 _curl -H "Authorization: Bearer $TOKEN" \
-	"$HOST/api/v0/chats/$PEER/messages?limit=1"
+	"$API/chats/$PEER/messages?limit=1"
 _assert_status 200 "GET messages?limit=1 → 200 (unknown param, ignored)"
 _assert_json_eq '.messages | length' 2 'limit no longer truncates the chat window'
 
 # Same strict parsing as every other count on the surface.
 _curl -H "Authorization: Bearer $TOKEN" \
-	"$HOST/api/v0/chats/$PEER/messages?tail=abc"
+	"$API/chats/$PEER/messages?tail=abc"
 _assert_status 400 "GET messages?tail=abc → 400"
 
 # --- 6. Input validation. -----------------------------------------
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/chats/notanaddress/messages"
+_curl -H "Authorization: Bearer $TOKEN" "$API/chats/notanaddress/messages"
 _assert_status 400 "GET messages with a malformed {peer} → 400"
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/chats/$PEER_IP:99999/messages"
+_curl -H "Authorization: Bearer $TOKEN" "$API/chats/$PEER_IP:99999/messages"
 _assert_status 400 "GET messages with an out-of-range port → 400"
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/chats/198.51.100.7:4662/messages"
+_curl -H "Authorization: Bearer $TOKEN" "$API/chats/198.51.100.7:4662/messages"
 _assert_status 404 "GET messages for an unknown conversation → 404"
 _curl -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-	-d '{"text":""}' "$HOST/api/v0/chats/$PEER/messages"
+	-d '{"text":""}' "$API/chats/$PEER/messages"
 _assert_status 400 "POST with empty text → 400"
 _curl -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-	-d '{}' "$HOST/api/v0/chats/$PEER/messages"
+	-d '{}' "$API/chats/$PEER/messages"
 _assert_status 400 "POST with no text field → 400"
 _curl -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-	-d '{"text":"x"}' "$HOST/api/v0/clients/4294967290/messages"
+	-d '{"text":"x"}' "$API/clients/4294967290/messages"
 _assert_status 404 "POST to an unknown client ECID → 404"
 _curl -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-	-d '{"text":"x"}' "$HOST/api/v0/friends/4294967290/messages"
+	-d '{"text":"x"}' "$API/friends/4294967290/messages"
 _assert_status 404 "POST to an unknown friend ECID → 404"
 
 # --- 7. Method gating. --------------------------------------------
-_curl -X PUT -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/chats"
+_curl -X PUT -H "Authorization: Bearer $TOKEN" "$API/chats"
 _assert_status 405 "PUT /chats → 405"
-_curl -X PATCH -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/chats/$PEER"
+_curl -X PATCH -H "Authorization: Bearer $TOKEN" "$API/chats/$PEER"
 _assert_status 405 "PATCH /chats/{address} → 405"
 
 # --- 8. Guests read but do not write. -----------------------------
 GUEST_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 	-d "{\"password\":\"$GUEST_PASS\"}" \
-	"$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
+	"$API/auth/login?include_token=true" | jq -r .token)
 if [ -n "$GUEST_TOKEN" ] && [ "$GUEST_TOKEN" != "null" ]; then
-	_curl -H "Authorization: Bearer $GUEST_TOKEN" "$HOST/api/v0/chats"
+	_curl -H "Authorization: Bearer $GUEST_TOKEN" "$API/chats"
 	_assert_status 200 "GET /chats as guest → 200 (read-only data)"
 	_curl -X POST -H "Authorization: Bearer $GUEST_TOKEN" -H "Content-Type: application/json" \
-		-d '{"text":"nope"}' "$HOST/api/v0/chats/$PEER/messages"
+		-d '{"text":"nope"}' "$API/chats/$PEER/messages"
 	_assert_status 403 "POST as guest → 403 (sending is admin-only)"
-	_curl -X DELETE -H "Authorization: Bearer $GUEST_TOKEN" "$HOST/api/v0/chats/$PEER"
+	_curl -X DELETE -H "Authorization: Bearer $GUEST_TOKEN" "$API/chats/$PEER"
 	_assert_status 403 "DELETE as guest → 403"
 else
 	echo "    info: guest login unavailable; guest checks skipped"
 fi
 
 # --- 9. Closing is global and actually removes it. ----------------
-_curl -X DELETE -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/chats/$PEER"
+_curl -X DELETE -H "Authorization: Bearer $TOKEN" "$API/chats/$PEER"
 # 204, no body: `peer` came from the URL and `ok` restated the status code.
 _assert_status 204 "DELETE /chats/{address} → 204"
 _assert_body_empty 'close sends no body'
 sleep 3
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/chats"
+_curl -H "Authorization: Bearer $TOKEN" "$API/chats"
 GONE=$(printf '%s' "$CURL_BODY" | jq --arg p "$PEER" '[.chats[] | select(.address == $p)] | length')
 if [ "$GONE" = "0" ]; then
 	_pass "closed conversation is gone from /chats"
 else
 	_fail "close removal" "conversation still listed after DELETE"
 fi
-_curl -X DELETE -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/chats/$PEER"
+_curl -X DELETE -H "Authorization: Bearer $TOKEN" "$API/chats/$PEER"
 _assert_status 404 "DELETE an already-closed conversation → 404"
 
 # --- Summary. -----------------------------------------------------

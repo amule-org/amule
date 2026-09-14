@@ -9,7 +9,7 @@
 // (at your option) any later version.
 //
 
-// Pure helpers behind GET /api/v0/shared/{hash}/content -- the endpoint that hands back the bytes
+// Pure helpers behind GET /api/v1/shared/{hash}/content -- the endpoint that hands back the bytes
 // of a completed shared file. Everything here decides something an attacker can influence: which
 // path on disk we are willing to open, how much of it we send, and what we echo back into a
 // response header. All four are the kind of decision that wants a test per branch rather than a

@@ -337,12 +337,12 @@ AuthOutcome AuthenticateRequestRateLimited(const CHttpServer::Request &req,
 	return out;
 }
 
-// `<name>=<value>; HttpOnly; SameSite=Strict; Path=/api/v0; Max-Age=<lifetime>`
+// `<name>=<value>; HttpOnly; SameSite=Strict; Path=/api/v1; Max-Age=<lifetime>`
 //
 // No `Secure`: amuleapi serves HTTP by design, with TLS terminated in front.
 // Shared with the clear-cookie path because RFC 6265 5.3 requires (name, path,
 // domain) to match for a delete.
-const char *const kSessionCookieAttrs = "; HttpOnly; SameSite=Strict; Path=/api/v0";
+const char *const kSessionCookieAttrs = "; HttpOnly; SameSite=Strict; Path=/api/v1";
 
 std::string MakeSetCookie(const std::string &name, const std::string &value, std::time_t expires_at)
 {
@@ -844,56 +844,56 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		return ErrorResponse(400, "bad_request", "path contains a traversal/injection token");
 	}
 
-	// `/api/v0/status/` and `/api/v0/status` name one resource. Confined to the API
+	// `/api/v1/status/` and `/api/v1/status` name one resource. Confined to the API
 	// prefix: the static fallthrough maps a path onto a filesystem, where a trailing
 	// slash is a directory rather than a spelling.
 	if (path.compare(0, 5, "/api/") == 0) {
 		path = web_api_path::StripTrailingSlash(path);
 	}
 
-	if (path == "/api/v0/health") {
+	if (path == "/api/v1/health") {
 		if (req.method != "GET" && req.method != "HEAD") {
 			return MethodNotAllowed("GET, HEAD", "only GET / HEAD on /health");
 		}
 		return HandleHealth(req);
 	}
 
-	if (path == "/api/v0/version") {
+	if (path == "/api/v1/version") {
 		if (req.method != "GET" && req.method != "HEAD") {
-			return MethodNotAllowed("GET, HEAD", "method not allowed on /api/v0/version");
+			return MethodNotAllowed("GET, HEAD", "method not allowed on /api/v1/version");
 		}
 		return HandleVersion(req);
 	}
 
-	if (path == "/api/v0/version/check") {
+	if (path == "/api/v1/version/check") {
 		if (req.method != "POST") {
-			return MethodNotAllowed("POST", "only POST on /api/v0/version/check");
+			return MethodNotAllowed("POST", "only POST on /api/v1/version/check");
 		}
 		return HandleVersionCheck(req);
 	}
 
-	if (path == "/api/v0/auth/login") {
+	if (path == "/api/v1/auth/login") {
 		if (req.method != "POST") {
 			return MethodNotAllowed("POST", "only POST on /auth/login");
 		}
 		return HandleLogin(req);
 	}
 
-	if (path == "/api/v0/auth/logout") {
+	if (path == "/api/v1/auth/logout") {
 		if (req.method != "POST") {
 			return MethodNotAllowed("POST", "only POST on /auth/logout");
 		}
 		return HandleLogout(req);
 	}
 
-	if (path == "/api/v0/auth/session") {
+	if (path == "/api/v1/auth/session") {
 		if (req.method != "GET" && req.method != "HEAD") {
 			return MethodNotAllowed("GET, HEAD", "only GET on /auth/session");
 		}
 		return HandleSession(req);
 	}
 
-	if (path == "/api/v0/auth/passwords") {
+	if (path == "/api/v1/auth/passwords") {
 		if (req.method == "GET" || req.method == "HEAD") {
 			return HandleAuthPasswords(req);
 		}
@@ -906,18 +906,18 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 	// /events reaches the dispatcher only on a method the streaming resolver declined,
 	// since it diverts GET and HEAD earlier. Without an arm here it fell to the
 	// catch-all 404 and was the one route to escape the Allow sweep.
-	if (path == "/api/v0/events") {
+	if (path == "/api/v1/events") {
 		return MethodNotAllowed("GET, HEAD", "only GET / HEAD on /events");
 	}
 
-	if (path == "/api/v0/status") {
+	if (path == "/api/v1/status") {
 		if (req.method != "GET" && req.method != "HEAD") {
 			return MethodNotAllowed("GET, HEAD", "only GET on /status");
 		}
 		return HandleStatus(req);
 	}
 
-	if (path == "/api/v0/downloads") {
+	if (path == "/api/v1/downloads") {
 		if (req.method == "GET" || req.method == "HEAD") {
 			return HandleDownloads(req);
 		}
@@ -934,7 +934,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 			"only GET / HEAD / POST / PATCH / DELETE on /downloads");
 	}
 
-	if (path == "/api/v0/downloads_clear_completed") {
+	if (path == "/api/v1/downloads_clear_completed") {
 		if (req.method != "POST") {
 			return MethodNotAllowed("POST", "only POST on /downloads_clear_completed");
 		}
@@ -943,7 +943,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 
 	// The whole peer surface, every upload_state including queue waiters.
 	// Consumers filter client-side rather than asking for a pre-filtered view.
-	if (path == "/api/v0/clients") {
+	if (path == "/api/v1/clients") {
 		if (req.method != "GET" && req.method != "HEAD") {
 			return MethodNotAllowed("GET, HEAD", "only GET on /clients");
 		}
@@ -954,7 +954,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 	// resource rather than a sub-path of /clients because these are keyed by user
 	// hash, outlive the ECID-issuing process, and carry stored history. Matched before
 	// /clients/{ecid}, which accepts any single segment.
-	if (path == "/api/v0/known_clients") {
+	if (path == "/api/v1/known_clients") {
 		if (req.method != "GET" && req.method != "HEAD") {
 			return MethodNotAllowed("GET, HEAD", "only GET on /known_clients");
 		}
@@ -963,7 +963,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 
 	// Single-peer detail. {ecid} is unique per live EC connection.
 	{
-		static const auto client_detail = web_api_path::ParsePattern("/api/v0/clients/{ecid}");
+		static const auto client_detail = web_api_path::ParsePattern("/api/v1/clients/{ecid}");
 		const auto path_segs = web_api_path::SplitPath(path);
 		std::map<std::string, std::string> caps;
 		if (web_api_path::Match(client_detail, path_segs, caps)) {
@@ -977,7 +977,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 	// Browse the peer's shared files; POST starts it and returns a search_id.
 	{
 		static const auto client_browse =
-			web_api_path::ParsePattern("/api/v0/clients/{ecid}/shared_files");
+			web_api_path::ParsePattern("/api/v1/clients/{ecid}/shared_files");
 		const auto path_segs = web_api_path::SplitPath(path);
 		std::map<std::string, std::string> caps;
 		if (web_api_path::Match(client_browse, path_segs, caps)) {
@@ -988,7 +988,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		}
 	}
 
-	if (path == "/api/v0/shared") {
+	if (path == "/api/v1/shared") {
 		if (req.method == "GET" || req.method == "HEAD") {
 			return HandleSharedList(req);
 		}
@@ -998,7 +998,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		return MethodNotAllowed("GET, HEAD, PATCH", "only GET / HEAD / PATCH on /shared");
 	}
 
-	if (path == "/api/v0/shared_reload") {
+	if (path == "/api/v1/shared_reload") {
 		if (req.method != "POST") {
 			return MethodNotAllowed("POST", "only POST on /shared_reload");
 		}
@@ -1007,7 +1007,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 
 	// Literal path, so it must be matched before the /shared/{hash} patterns or
 	// "media" would be captured as a hash.
-	if (path == "/api/v0/shared/media/refresh") {
+	if (path == "/api/v1/shared/media/refresh") {
 		if (req.method != "POST") {
 			return MethodNotAllowed("POST", "only POST on /shared/media/refresh");
 		}
@@ -1016,7 +1016,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 
 	// The configured share roots, as opposed to /shared, which lists the files those
 	// roots produced. Its own top-level path, so no ordering against /shared/{hash}.
-	if (path == "/api/v0/share_directories") {
+	if (path == "/api/v1/share_directories") {
 		if (req.method == "GET" || req.method == "HEAD") {
 			return HandleSharedDirectories(req);
 		}
@@ -1033,7 +1033,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 			"only GET / HEAD / PUT / POST / DELETE on /share_directories");
 	}
 
-	if (path == "/api/v0/servers") {
+	if (path == "/api/v1/servers") {
 		if (req.method == "GET" || req.method == "HEAD") {
 			return HandleServers(req);
 		}
@@ -1043,7 +1043,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		return MethodNotAllowed("GET, HEAD, POST", "only GET / HEAD / POST on /servers");
 	}
 
-	if (path == "/api/v0/friends") {
+	if (path == "/api/v1/friends") {
 		if (req.method == "GET" || req.method == "HEAD") {
 			return HandleFriends(req);
 		}
@@ -1057,8 +1057,8 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 	// rationale as the server routes.
 	{
 		static const auto friend_browse =
-			web_api_path::ParsePattern("/api/v0/friends/{ecid}/shared_files");
-		static const auto friend_one = web_api_path::ParsePattern("/api/v0/friends/{ecid}");
+			web_api_path::ParsePattern("/api/v1/friends/{ecid}/shared_files");
+		static const auto friend_one = web_api_path::ParsePattern("/api/v1/friends/{ecid}");
 		const auto path_segs = web_api_path::SplitPath(path);
 		std::map<std::string, std::string> caps;
 		if (web_api_path::Match(friend_browse, path_segs, caps)) {
@@ -1078,7 +1078,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		}
 	}
 
-	if (path == "/api/v0/chats") {
+	if (path == "/api/v1/chats") {
 		if (req.method == "GET" || req.method == "HEAD") {
 			return HandleChats(req);
 		}
@@ -1089,8 +1089,8 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 	// first or the longer pattern would be shadowed.
 	{
 		static const auto chat_messages =
-			web_api_path::ParsePattern("/api/v0/chats/{address}/messages");
-		static const auto chat_one = web_api_path::ParsePattern("/api/v0/chats/{address}");
+			web_api_path::ParsePattern("/api/v1/chats/{address}/messages");
+		static const auto chat_one = web_api_path::ParsePattern("/api/v1/chats/{address}");
 		const auto path_segs = web_api_path::SplitPath(path);
 		std::map<std::string, std::string> caps;
 		if (web_api_path::Match(chat_messages, path_segs, caps)) {
@@ -1115,9 +1115,9 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 	// The friend form is the one that reaches an OFFLINE friend.
 	{
 		static const auto friend_messages =
-			web_api_path::ParsePattern("/api/v0/friends/{ecid}/messages");
+			web_api_path::ParsePattern("/api/v1/friends/{ecid}/messages");
 		static const auto client_messages =
-			web_api_path::ParsePattern("/api/v0/clients/{ecid}/messages");
+			web_api_path::ParsePattern("/api/v1/clients/{ecid}/messages");
 		const auto path_segs = web_api_path::SplitPath(path);
 		std::map<std::string, std::string> caps;
 		if (web_api_path::Match(friend_messages, path_segs, caps)) {
@@ -1134,7 +1134,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		}
 	}
 
-	if (path == "/api/v0/servers_update") {
+	if (path == "/api/v1/servers_update") {
 		if (req.method != "POST") {
 			return MethodNotAllowed("POST", "only POST on /servers_update");
 		}
@@ -1147,12 +1147,12 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 	// otherwise match the ECID pattern with `ecid == "by-address"`.
 	{
 		static const auto server_connect =
-			web_api_path::ParsePattern("/api/v0/servers/{ecid}/connect");
-		static const auto server_one = web_api_path::ParsePattern("/api/v0/servers/{ecid}");
+			web_api_path::ParsePattern("/api/v1/servers/{ecid}/connect");
+		static const auto server_one = web_api_path::ParsePattern("/api/v1/servers/{ecid}");
 		static const auto server_addr_connect =
-			web_api_path::ParsePattern("/api/v0/servers/by-address/{address}/connect");
+			web_api_path::ParsePattern("/api/v1/servers/by-address/{address}/connect");
 		static const auto server_addr_one =
-			web_api_path::ParsePattern("/api/v0/servers/by-address/{address}");
+			web_api_path::ParsePattern("/api/v1/servers/by-address/{address}");
 		const auto path_segs = web_api_path::SplitPath(path);
 		std::map<std::string, std::string> caps;
 		// The address form has its own path rather than sharing {ecid}: one capture with
@@ -1189,33 +1189,33 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		}
 	}
 
-	if (path == "/api/v0/kad") {
+	if (path == "/api/v1/kad") {
 		if (req.method != "GET" && req.method != "HEAD") {
 			return MethodNotAllowed("GET, HEAD", "only GET on /kad");
 		}
 		return HandleKad(req);
 	}
 
-	if (path == "/api/v0/networks/connect") {
+	if (path == "/api/v1/networks/connect") {
 		if (req.method != "POST") {
 			return MethodNotAllowed("POST", "only POST on /networks/connect");
 		}
 		return HandleNetworksConnect(req);
 	}
-	if (path == "/api/v0/networks/disconnect") {
+	if (path == "/api/v1/networks/disconnect") {
 		if (req.method != "POST") {
 			return MethodNotAllowed("POST", "only POST on /networks/disconnect");
 		}
 		return HandleNetworksDisconnect(req);
 	}
-	if (path == "/api/v0/kad/update") {
+	if (path == "/api/v1/kad/update") {
 		if (req.method != "POST") {
 			return MethodNotAllowed("POST", "only POST on /kad/update");
 		}
 		return HandleKadUpdateFromUrl(req);
 	}
 
-	if (path == "/api/v0/kad/bootstrap") {
+	if (path == "/api/v1/kad/bootstrap") {
 		if (req.method != "POST") {
 			return MethodNotAllowed("POST", "only POST on /kad/bootstrap");
 		}
@@ -1225,14 +1225,14 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 	// IP filter actions. The IP-filter *settings* are ordinary preferences; these two
 	// are the operations behind the desktop Security page's "Reload List" and "Update
 	// now" buttons.
-	if (path == "/api/v0/ipfilter/reload") {
+	if (path == "/api/v1/ipfilter/reload") {
 		if (req.method != "POST") {
 			return MethodNotAllowed("POST", "only POST on /ipfilter/reload");
 		}
 		return HandleIpfilterReload(req);
 	}
 
-	if (path == "/api/v0/ipfilter/update") {
+	if (path == "/api/v1/ipfilter/update") {
 		if (req.method != "POST") {
 			return MethodNotAllowed("POST", "only POST on /ipfilter/update");
 		}
@@ -1242,7 +1242,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 	// GeoIP action. The GeoIP *settings* are ordinary preferences under [geoip]; this
 	// is the standalone "update now" operation, a route rather than a write-only
 	// boolean inside PATCH /preferences.
-	if (path == "/api/v0/geoip/update") {
+	if (path == "/api/v1/geoip/update") {
 		if (req.method != "POST") {
 			return MethodNotAllowed("POST", "only POST on /geoip/update");
 		}
@@ -1254,8 +1254,8 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 	// cannot collide, this one carries an extra path segment.
 	{
 		static const auto shared_media_refresh =
-			web_api_path::ParsePattern("/api/v0/shared/{hash}/media/refresh");
-		static const auto shared_verify = web_api_path::ParsePattern("/api/v0/shared/{hash}/verify");
+			web_api_path::ParsePattern("/api/v1/shared/{hash}/media/refresh");
+		static const auto shared_verify = web_api_path::ParsePattern("/api/v1/shared/{hash}/verify");
 		const auto path_segs = web_api_path::SplitPath(path);
 		std::map<std::string, std::string> caps;
 		if (web_api_path::Match(shared_media_refresh, path_segs, caps)) {
@@ -1276,7 +1276,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 	// carrying their relation to the file; matched before `/shared/{hash}`.
 	{
 		static const auto shared_clients =
-			web_api_path::ParsePattern("/api/v0/shared/{hash}/clients");
+			web_api_path::ParsePattern("/api/v1/shared/{hash}/clients");
 		const auto path_segs = web_api_path::SplitPath(path);
 		std::map<std::string, std::string> caps;
 		if (web_api_path::Match(shared_clients, path_segs, caps)) {
@@ -1293,7 +1293,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 	// the ordering is locality rather than necessity.
 	{
 		static const auto shared_content =
-			web_api_path::ParsePattern("/api/v0/shared/{hash}/content");
+			web_api_path::ParsePattern("/api/v1/shared/{hash}/content");
 		const auto path_segs = web_api_path::SplitPath(path);
 		std::map<std::string, std::string> caps;
 		if (web_api_path::Match(shared_content, path_segs, caps)) {
@@ -1308,7 +1308,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 	// shared file priority PATCH. `{hash}` is the lowercase 32-char hex
 	// MD4 hash.
 	{
-		static const auto shared_detail = web_api_path::ParsePattern("/api/v0/shared/{hash}");
+		static const auto shared_detail = web_api_path::ParsePattern("/api/v1/shared/{hash}");
 		const auto path_segs = web_api_path::SplitPath(path);
 		std::map<std::string, std::string> caps;
 		if (web_api_path::Match(shared_detail, path_segs, caps)) {
@@ -1323,7 +1323,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		}
 	}
 
-	if (path == "/api/v0/categories") {
+	if (path == "/api/v1/categories") {
 		if (req.method == "GET" || req.method == "HEAD") {
 			return HandleCategories(req);
 		}
@@ -1335,7 +1335,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 
 	// single-category PATCH/DELETE.
 	{
-		static const auto category_one = web_api_path::ParsePattern("/api/v0/categories/{index}");
+		static const auto category_one = web_api_path::ParsePattern("/api/v1/categories/{index}");
 		const auto path_segs = web_api_path::SplitPath(path);
 		std::map<std::string, std::string> caps;
 		if (web_api_path::Match(category_one, path_segs, caps)) {
@@ -1353,7 +1353,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		}
 	}
 
-	if (path == "/api/v0/preferences") {
+	if (path == "/api/v1/preferences") {
 		if (req.method == "GET" || req.method == "HEAD") {
 			return HandlePreferences(req);
 		}
@@ -1363,7 +1363,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		return MethodNotAllowed("GET, HEAD, PATCH", "only GET / HEAD / PATCH on /preferences");
 	}
 
-	if (path == "/api/v0/logs/amule") {
+	if (path == "/api/v1/logs/amule") {
 		if (req.method == "GET" || req.method == "HEAD") {
 			return HandleLogAmule(req);
 		}
@@ -1373,7 +1373,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		return MethodNotAllowed("GET, HEAD, DELETE", "only GET / HEAD / DELETE on /logs/amule");
 	}
 
-	if (path == "/api/v0/logs/server_info") {
+	if (path == "/api/v1/logs/server_info") {
 		if (req.method == "GET" || req.method == "HEAD") {
 			return HandleLogServerinfo(req);
 		}
@@ -1383,7 +1383,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		return MethodNotAllowed("GET, HEAD, DELETE", "only GET / HEAD / DELETE on /logs/server_info");
 	}
 
-	if (path == "/api/v0/stats/tree") {
+	if (path == "/api/v1/stats/tree") {
 		if (req.method != "GET" && req.method != "HEAD") {
 			return MethodNotAllowed("GET, HEAD", "only GET on /stats/tree");
 		}
@@ -1392,7 +1392,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 
 	// search. Every search-scoped operation names its search in the path;
 	// there is no implicit "current search" to fall back to.
-	if (path == "/api/v0/search") {
+	if (path == "/api/v1/search") {
 		if (req.method == "GET" || req.method == "HEAD") {
 			return HandleSearchList(req);
 		}
@@ -1411,7 +1411,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 	// does not exist.
 	{
 		static const auto search_download =
-			web_api_path::ParsePattern("/api/v0/search/results/{hash}/download");
+			web_api_path::ParsePattern("/api/v1/search/results/{hash}/download");
 		const auto path_segs = web_api_path::SplitPath(path);
 		std::map<std::string, std::string> caps;
 		if (web_api_path::Match(search_download, path_segs, caps)) {
@@ -1428,7 +1428,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 	// /download sibling (distinct trailing segment).
 	{
 		static const auto search_comments =
-			web_api_path::ParsePattern("/api/v0/search/results/{hash}/comments");
+			web_api_path::ParsePattern("/api/v1/search/results/{hash}/comments");
 		const auto path_segs = web_api_path::SplitPath(path);
 		std::map<std::string, std::string> caps;
 		if (web_api_path::Match(search_comments, path_segs, caps)) {
@@ -1445,7 +1445,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 
 	// /search/{id} -- DELETE stops the search AND frees it (results included).
 	{
-		static const auto search_one = web_api_path::ParsePattern("/api/v0/search/{id}");
+		static const auto search_one = web_api_path::ParsePattern("/api/v1/search/{id}");
 		const auto path_segs = web_api_path::SplitPath(path);
 		std::map<std::string, std::string> caps;
 		if (web_api_path::Match(search_one, path_segs, caps)) {
@@ -1464,7 +1464,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 
 	// /search/{id}/{action} -- results / stop / more.
 	{
-		static const auto search_action = web_api_path::ParsePattern("/api/v0/search/{id}/{action}");
+		static const auto search_action = web_api_path::ParsePattern("/api/v1/search/{id}/{action}");
 		const auto path_segs = web_api_path::SplitPath(path);
 		std::map<std::string, std::string> caps;
 		if (web_api_path::Match(search_action, path_segs, caps)) {
@@ -1500,7 +1500,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 	// Path-pattern matches the four allowed graph names; HandleStatsGraph
 	// rejects anything else.
 	{
-		static const auto graph_pattern = web_api_path::ParsePattern("/api/v0/stats/graphs/{graph}");
+		static const auto graph_pattern = web_api_path::ParsePattern("/api/v1/stats/graphs/{graph}");
 		const auto segs = web_api_path::SplitPath(path);
 		std::map<std::string, std::string> caps;
 		if (web_api_path::Match(graph_pattern, segs, caps)) {
@@ -1515,7 +1515,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 	// before /downloads/{hash} (more segments).
 	{
 		static const auto dl_comments =
-			web_api_path::ParsePattern("/api/v0/downloads/{hash}/comments");
+			web_api_path::ParsePattern("/api/v1/downloads/{hash}/comments");
 		const auto path_segs = web_api_path::SplitPath(path);
 		std::map<std::string, std::string> caps;
 		if (web_api_path::Match(dl_comments, path_segs, caps)) {
@@ -1534,7 +1534,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 	// Source-reported filenames and counts. Downloads-only.
 	{
 		static const auto dl_filenames =
-			web_api_path::ParsePattern("/api/v0/downloads/{hash}/filenames");
+			web_api_path::ParsePattern("/api/v1/downloads/{hash}/filenames");
 		const auto path_segs = web_api_path::SplitPath(path);
 		std::map<std::string, std::string> caps;
 		if (web_api_path::Match(dl_filenames, path_segs, caps)) {
@@ -1548,7 +1548,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 
 	// A4AF swap actions. Downloads-only.
 	{
-		static const auto dl_a4af = web_api_path::ParsePattern("/api/v0/downloads/{hash}/a4af");
+		static const auto dl_a4af = web_api_path::ParsePattern("/api/v1/downloads/{hash}/a4af");
 		const auto path_segs = web_api_path::SplitPath(path);
 		std::map<std::string, std::string> caps;
 		if (web_api_path::Match(dl_a4af, path_segs, caps)) {
@@ -1564,7 +1564,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 	// sources and A4AF rows of one partfile. Matched before the bare
 	// `/downloads/{hash}` pattern, which accepts any single segment.
 	{
-		static const auto dl_clients = web_api_path::ParsePattern("/api/v0/downloads/{hash}/clients");
+		static const auto dl_clients = web_api_path::ParsePattern("/api/v1/downloads/{hash}/clients");
 		const auto path_segs = web_api_path::SplitPath(path);
 		std::map<std::string, std::string> caps;
 		if (web_api_path::Match(dl_clients, path_segs, caps)) {
@@ -1579,7 +1579,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 	// Single-resource detail plus the mutation surface. `{hash}` is the
 	// lowercase 32-char hex MD4; the dispatcher lower-cases input on the way in.
 	{
-		static const auto download_detail = web_api_path::ParsePattern("/api/v0/downloads/{hash}");
+		static const auto download_detail = web_api_path::ParsePattern("/api/v1/downloads/{hash}");
 		const auto path_segs = web_api_path::SplitPath(path);
 		std::map<std::string, std::string> caps;
 		if (web_api_path::Match(download_detail, path_segs, caps)) {
@@ -1598,7 +1598,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 	}
 
 	// Ahead of the static fallthrough so the route answers identically whether or not
-	// StaticRoot is set: the bytes are compiled in. Outside /api/v0 because it is an
+	// StaticRoot is set: the bytes are compiled in. Outside /api/v1 because it is an
 	// image an <img src> points at, carrying no per-installation data.
 	if (path.compare(0, 7, "/flags/") == 0) {
 		if (req.method != "GET" && req.method != "HEAD") {
@@ -1607,7 +1607,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		return ServeCountryFlag(req, path);
 	}
 
-	// Anything that matched no /api/v0 route and is a safe method for a non-API path.
+	// Anything that matched no /api/v1 route and is a safe method for a non-API path.
 	// ServeStaticFile 404s when StaticRoot is unset, so API-only deployments are
 	// unaffected. Auth is deliberately NOT required: the shell is public, and the API
 	// calls it makes still pass the per-handler role gates.
@@ -1832,7 +1832,7 @@ CHttpServer::Response CApiDispatcher::HandleVersion(const CHttpServer::Request &
 	w.Key("service");
 	w.ValueString(wxT("amuleapi"));
 	w.Key("api_version");
-	w.ValueString(wxT("v0"));
+	w.ValueString(wxT("v1"));
 	// `amuleapi_version`, not `amule_version`: the version the amuleapi binary was
 	// built from, which need not match the daemon it talks to.
 	w.Key("amuleapi_version");
@@ -7522,7 +7522,7 @@ CHttpServer::Response CApiDispatcher::HandleLogAmule(const CHttpServer::Request 
 	if (!a.ok)
 		return a.rejection;
 
-	// request.target is the literal URI, e.g. "/api/v0/logs/amule?tail=200".
+	// request.target is the literal URI, e.g. "/api/v1/logs/amule?tail=200".
 	std::string path, query;
 	const size_t q = req.target.find('?');
 	if (q != std::string::npos) {
@@ -10219,7 +10219,7 @@ CHttpServer::Response CApiDispatcher::HandleBrowse(
 	CHttpServer::Response r;
 	r.status = 202;
 	r.content_type = "application/json";
-	r.headers["Location"] = "/api/v0/search/" + std::to_string(search_id);
+	r.headers["Location"] = "/api/v1/search/" + std::to_string(search_id);
 	CJsonWriter w;
 	WriteSearchListRow(w, row);
 	FinalizeJsonBody(w, r);
@@ -10402,7 +10402,7 @@ CHttpServer::Response CApiDispatcher::HandleSearchStart(const CHttpServer::Reque
 	CHttpServer::Response r;
 	r.status = 202;
 	r.content_type = "application/json";
-	r.headers["Location"] = "/api/v0/search/" + std::to_string(search_id);
+	r.headers["Location"] = "/api/v1/search/" + std::to_string(search_id);
 	CJsonWriter w;
 	WriteSearchListRow(w, row);
 	FinalizeJsonBody(w, r);

@@ -30,6 +30,7 @@ set -u
 set -o pipefail
 
 HOST=${HOST:-localhost:4713}
+API="$HOST/api/v1"
 ADMIN_PASS=${ADMIN_PASS:-adminpass}
 
 FAIL_COUNT=0
@@ -76,12 +77,12 @@ _has_hdr() {
 }
 
 if ! command -v jq >/dev/null 2>&1; then _die "jq is required."; fi
-if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health" 2>/dev/null; then
+if ! curl -s -o /dev/null --max-time 2 "$API/health" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable. Start it first."
 fi
 
 TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$ADMIN_PASS\"}" "$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
+	-d "{\"password\":\"$ADMIN_PASS\"}" "$API/auth/login?include_token=true" | jq -r .token)
 [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ] || _die "admin login failed"
 AUTH=(-H "Authorization: Bearer $TOKEN")
 
@@ -134,7 +135,7 @@ PYEOF
 if ! command -v python3 >/dev/null 2>&1; then
 	_skip "HEAD wire-level checks (python3 unavailable)"
 else
-	for probe in "/api/v0/nope:404" "/api/v0/status:401"; do
+	for probe in "/api/v1/nope:404" "/api/v1/status:401"; do
 		url=${probe%:*}
 		want=${probe##*:}
 		read -r got_status _got_len got_bytes <<<"$(_head_probe "$url")"
@@ -145,10 +146,10 @@ else
 	# 200 too, and there Content-Length must describe what a GET returns
 	# rather than the zero bytes HEAD writes -- otherwise the header is
 	# useless to a client sizing a fetch.
-	read -r v_status v_len v_bytes <<<"$(_head_probe /api/v0/version)"
+	read -r v_status v_len v_bytes <<<"$(_head_probe /api/v1/version)"
 	_assert_eq "200" "$v_status" "HEAD /version -> 200"
 	_assert_eq "0" "$v_bytes" "HEAD /version puts no content on the wire"
-	GET_LEN=$(curl -s --max-time 10 "$HOST/api/v0/version" | wc -c | tr -d ' ')
+	GET_LEN=$(curl -s --max-time 10 "$API/version" | wc -c | tr -d ' ')
 	_assert_eq "$GET_LEN" "$v_len" "HEAD /version Content-Length matches the GET body"
 fi
 
@@ -164,9 +165,9 @@ fi
 # HEAD a 200 where GET answers 401, skipping the auth-failure rate bucket
 # too -- so the unauthenticated case is asserted first, and deliberately.
 if command -v python3 >/dev/null 2>&1; then
-	read -r anon_status _anon_len _anon_bytes <<<"$(_head_probe /api/v0/events)"
+	read -r anon_status _anon_len _anon_bytes <<<"$(_head_probe /api/v1/events)"
 	_assert_eq "401" "$anon_status" "HEAD /events without credentials -> 401 (no auth bypass)"
-	read -r ev_status _ev_len ev_bytes <<<"$(_head_probe /api/v0/events "Authorization: Bearer $TOKEN")"
+	read -r ev_status _ev_len ev_bytes <<<"$(_head_probe /api/v1/events "Authorization: Bearer $TOKEN")"
 	_assert_eq "200" "$ev_status" "HEAD /events with credentials -> 200"
 	_assert_eq "0" "$ev_bytes" "HEAD /events does not stream content"
 else
@@ -175,7 +176,7 @@ fi
 
 # The same gate, cross-checked through curl so a regression shows up as a
 # plain status mismatch even if the socket probe is skipped.
-_assert_eq "401" "$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "$HOST/api/v0/events")" \
+_assert_eq "401" "$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "$API/events")" \
 	"GET /events without credentials -> 401"
 
 # ---------------------------------------------------------------------------
@@ -190,7 +191,7 @@ _assert_eq "401" "$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "$HOST/a
 _qp() {
 	# $1 = query, $2 = expected status, $3 = label
 	_assert_eq "$2" "$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 \
-		"${AUTH[@]}" "$HOST/api/v0/$1")" "$3"
+		"${AUTH[@]}" "$API/$1")" "$3"
 }
 
 # Enumerations: one vocabulary, and anything outside it is answerable.
@@ -232,8 +233,8 @@ _qp "logs/amule?tail=999999" 400 "tail=999999 -> 400 (was a silent clamp to 1000
 # These assert the wiring, which the unit tests for StripTrailingSlash and the
 # empty-capture guard cannot: that the dispatcher actually applies the rule.
 for p in status version downloads clients shared servers friends; do
-	bare=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "${AUTH[@]}" "$HOST/api/v0/$p")
-	slash=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "${AUTH[@]}" "$HOST/api/v0/$p/")
+	bare=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "${AUTH[@]}" "$API/$p")
+	slash=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "${AUTH[@]}" "$API/$p/")
 	_assert_eq "$bare" "$slash" "/$p and /$p/ answer alike ($bare)"
 done
 
@@ -257,7 +258,7 @@ fi
 # 404 -- reporting that the endpoint does not exist, on the one resource a
 # client is most likely to probe, and escaping the Allow sweep entirely.
 curl -s -o "$BODY_FILE" -D "$HDR_FILE" --max-time 10 "${AUTH[@]}" \
-	-X POST "$HOST/api/v0/events" >/dev/null
+	-X POST "$API/events" >/dev/null
 _assert_eq "405" "$(awk 'NR==1{print $2}' "$HDR_FILE" | tr -d '\r')" \
 	"POST /events -> 405 (not 404)"
 EV_ALLOW=$(_hdr Allow)
@@ -287,7 +288,7 @@ host, _, port = hostport.partition(":")
 try:
     s = socket.create_connection((host or "localhost", int(port or 4713)), timeout=8)
     enc_line = "" if enc == "identity" else ("Accept-Encoding: %s\r\n" % enc)
-    s.sendall(("%s /api/v0/events HTTP/1.1\r\nHost: x\r\n%s"
+    s.sendall(("%s /api/v1/events HTTP/1.1\r\nHost: x\r\n%s"
                "Authorization: Bearer %s\r\n\r\n" % (method, enc_line, tok)).encode())
     data = b""
     while b"\r\n\r\n" not in data:
@@ -356,7 +357,7 @@ fi
 # assertion below would fail on a bring-up run for a reason that has nothing
 # to do with codings. /preferences is a fixed settings schema, kilobytes
 # regardless of what the daemon is doing.
-CODING_TARGET="$HOST/api/v0/preferences"
+CODING_TARGET="$API/preferences"
 # ...and assert that premise instead of trusting it: if this body ever drops
 # under the floor the block stops testing what it claims to, and an
 # un-suffixed ETag would read as "the coding marker is missing".
@@ -432,7 +433,7 @@ done
 # only ever in the human-readable message, which generic tooling and
 # capability discovery do not read.
 curl -s -o "$BODY_FILE" -D "$HDR_FILE" --max-time 10 \
-	"${AUTH[@]}" -X DELETE "$HOST/api/v0/status" >/dev/null
+	"${AUTH[@]}" -X DELETE "$API/status" >/dev/null
 _assert_eq "405" "$(awk 'NR==1{print $2}' "$HDR_FILE" | tr -d '\r')" \
 	"DELETE /status -> 405"
 ALLOW=$(_hdr Allow)
@@ -454,7 +455,7 @@ fi
 
 # A route with a richer verb set reports all of it.
 curl -s -o "$BODY_FILE" -D "$HDR_FILE" --max-time 10 \
-	"${AUTH[@]}" -X PATCH "$HOST/api/v0/share_directories" >/dev/null
+	"${AUTH[@]}" -X PATCH "$API/share_directories" >/dev/null
 ALLOW_DIRS=$(_hdr Allow)
 for m in GET HEAD POST PUT DELETE; do
 	case "$ALLOW_DIRS" in
@@ -469,12 +470,12 @@ done
 # the writer used to emit the header anyway with an empty value. A
 # Content-Type whose value is not a media type is malformed.
 ETAG=$(curl -s -o /dev/null -D "$HDR_FILE" --max-time 10 "${AUTH[@]}" \
-	"$HOST/api/v0/version" >/dev/null; _hdr ETag)
+	"$API/version" >/dev/null; _hdr ETag)
 if [ -z "$ETAG" ]; then
 	_skip "304 Content-Type check (no ETag on /version)"
 else
 	curl -s -o /dev/null -D "$HDR_FILE" --max-time 10 "${AUTH[@]}" \
-		-H "If-None-Match: $ETAG" "$HOST/api/v0/version" >/dev/null
+		-H "If-None-Match: $ETAG" "$API/version" >/dev/null
 	_assert_eq "304" "$(awk 'NR==1{print $2}' "$HDR_FILE" | tr -d '\r')" \
 		"If-None-Match on the current ETag -> 304"
 	if _has_hdr Content-Type; then
@@ -495,7 +496,7 @@ fi
 curl -s -o /dev/null -D "$HDR_FILE" --max-time 10 -X OPTIONS \
 	-H "Origin: http://example.invalid" \
 	-H "Access-Control-Request-Method: GET" \
-	"$HOST/api/v0/version" >/dev/null
+	"$API/version" >/dev/null
 PRE_STATUS=$(awk 'NR==1{print $2}' "$HDR_FILE" | tr -d '\r')
 if [ "$PRE_STATUS" = "204" ]; then
 	if _has_hdr Content-Type; then
@@ -509,7 +510,7 @@ fi
 
 # --- 4. The CORS preflight advertises every method the route serves. --
 #
-# PUT /api/v0/share_directories is a real route (the replace-the-whole-list
+# PUT /api/v1/share_directories is a real route (the replace-the-whole-list
 # form). It was missing from the advertised list, so a browser doing a
 # cross-origin PUT there was told the method is not allowed and blocked the
 # request before it was ever sent -- reachable from curl, unreachable from a
@@ -517,7 +518,7 @@ fi
 curl -s -o /dev/null -D "$HDR_FILE" --max-time 10 -X OPTIONS \
 	-H "Origin: http://example.invalid" \
 	-H "Access-Control-Request-Method: PUT" \
-	"$HOST/api/v0/share_directories" >/dev/null
+	"$API/share_directories" >/dev/null
 ACAM=$(_hdr Access-Control-Allow-Methods)
 if [ -z "$ACAM" ]; then
 	_skip "preflight method list (CORS disabled; no Access-Control-Allow-Methods)"
@@ -551,7 +552,7 @@ fi
 if [ "$BIG_READY" -eq 1 ]; then
 BIG_STATUS=$(curl -s -o "$BODY_FILE" -w '%{http_code}' --max-time 20 \
 	-X POST -H "Content-Type: application/json" \
-	--data-binary @"$BIG_FILE" "$HOST/api/v0/auth/login" 2>/dev/null || echo "000")
+	--data-binary @"$BIG_FILE" "$API/auth/login" 2>/dev/null || echo "000")
 _assert_eq "413" "$BIG_STATUS" "a 2 MiB body -> 413 (not a silent close)"
 if [ "$BIG_STATUS" = "413" ]; then
 	_assert_eq "payload_too_large" \
@@ -575,7 +576,7 @@ host, _, port = hostport.partition(":")
 try:
     s = socket.create_connection((host or "localhost", int(port or 4713)), timeout=15)
     pad = ("X-Pad: " + "a" * padlen + "\r\n") if padlen else ""
-    s.sendall(("%s /api/v0/version HTTP/1.1\r\nHost: x\r\n%sConnection: close\r\n\r\n"
+    s.sendall(("%s /api/v1/version HTTP/1.1\r\nHost: x\r\n%sConnection: close\r\n\r\n"
                % (method, pad)).encode())
     data = b""
     while True:
@@ -609,7 +610,7 @@ TIMEOUT_OUT=$(python3 - "$HOST" <<'PYEOF' 2>/dev/null || echo "PYFAIL"
 import socket, sys, time
 host, _, port = sys.argv[1].partition(":")
 s = socket.create_connection((host or "localhost", int(port or 4713)), timeout=30)
-s.sendall(b"GET /api/v0/version HTTP/1.1\r\nHost: x\r\nX-Dangling: ")
+s.sendall(b"GET /api/v1/version HTTP/1.1\r\nHost: x\r\nX-Dangling: ")
 s.settimeout(25)
 buf = b""
 try:
@@ -639,7 +640,7 @@ if command -v python3 >/dev/null 2>&1; then
 import socket, sys
 host, _, port = sys.argv[1].partition(":")
 s = socket.create_connection((host or "localhost", int(port or 4713)), timeout=30)
-s.sendall(b"HEAD /api/v0/version HTTP/1.1\r\nHost: x\r\nX-Drip: ")
+s.sendall(b"HEAD /api/v1/version HTTP/1.1\r\nHost: x\r\nX-Drip: ")
 s.settimeout(25)
 data = b""
 try:
@@ -768,7 +769,7 @@ fi
 # was not computed from. RFC 9110 §8.8.1 requires the entity-tag to change
 # whenever the representation does; any conformant cache is otherwise
 # entitled to keep serving the stale copy.
-GRAPH="$HOST/api/v0/stats/graphs/download_speed?width=3"
+GRAPH="$API/stats/graphs/download_speed?width=3"
 PREV_BODY=""; PREV_ETAG=""; VIOLATION=""; OBSERVED=0
 for _ in $(seq 1 40); do
 	curl -s -o "$BODY_FILE" -D "$HDR_FILE" --max-time 10 "${AUTH[@]}" "$GRAPH" >/dev/null
@@ -819,17 +820,17 @@ fi
 # different documents, and the second was answered 304 against the first's.
 GUEST_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 	-d "{\"password\":\"${GUEST_PASS:-guestpass}\"}" \
-	"$HOST/api/v0/auth/login?include_token=true" 2>/dev/null | jq -r .token)
+	"$API/auth/login?include_token=true" 2>/dev/null | jq -r .token)
 if [ -z "$GUEST_TOKEN" ] || [ "$GUEST_TOKEN" = "null" ]; then
 	_skip "per-principal ETag check (no guest password configured)"
 else
 	curl -s -o "$BODY_FILE" -D "$HDR_FILE" --max-time 10 "${AUTH[@]}" \
-		"$HOST/api/v0/auth/session" >/dev/null
+		"$API/auth/session" >/dev/null
 	ADMIN_SESS_ETAG=$(_hdr ETag)
 	ADMIN_ROLE=$(jq -r '.role // ""' < "$BODY_FILE" 2>/dev/null)
 	curl -s -o "$BODY_FILE" -D "$HDR_FILE" --max-time 10 \
 		-H "Authorization: Bearer $GUEST_TOKEN" \
-		"$HOST/api/v0/auth/session" >/dev/null
+		"$API/auth/session" >/dev/null
 	GUEST_SESS_ETAG=$(_hdr ETag)
 	GUEST_ROLE=$(jq -r '.role // ""' < "$BODY_FILE" 2>/dev/null)
 	if [ "$ADMIN_ROLE" = "$GUEST_ROLE" ]; then
@@ -842,7 +843,7 @@ else
 		# ...and the guest is not 304'd against the admin's.
 		CROSS=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 \
 			-H "Authorization: Bearer $GUEST_TOKEN" \
-			-H "If-None-Match: $ADMIN_SESS_ETAG" "$HOST/api/v0/auth/session")
+			-H "If-None-Match: $ADMIN_SESS_ETAG" "$API/auth/session")
 		_assert_eq "200" "$CROSS" \
 			"a guest is not served 304 against an admin's session validator"
 	fi
@@ -856,7 +857,7 @@ fi
 # stood still, and the next conditional GET was answered 304 for content
 # that had just changed. Measured at 19 of 20 attempts before the key moved
 # to a per-refresh revision.
-PREFS="$HOST/api/v0/preferences"
+PREFS="$API/preferences"
 curl -s -o "$BODY_FILE" -D "$HDR_FILE" --max-time 10 "${AUTH[@]}" "$PREFS" >/dev/null
 PREF_ETAG=$(_hdr ETag)
 PREF_BEFORE=$(cat "$BODY_FILE")
@@ -902,7 +903,7 @@ fi
 for cred in "Authorization: Bearer $TOKEN" "Cookie: amuleapi_token=$TOKEN"; do
 	label=${cred%%:*}
 	curl -s -o /dev/null -D "$HDR_FILE" --max-time 10 -H "$cred" \
-		"$HOST/api/v0/downloads" >/dev/null
+		"$API/downloads" >/dev/null
 	# `private`, deliberately NOT `no-store`: no-store forbids the client's
 	# own cache too, so nothing would ever hold an entry to revalidate and
 	# no authenticated route would see an If-None-Match at all -- which
@@ -918,7 +919,7 @@ done
 
 # ...and an unauthenticated public probe stays cacheable, or it loses the
 # conditional GET the ETag exists for.
-curl -s -o /dev/null -D "$HDR_FILE" --max-time 10 "$HOST/api/v0/health" >/dev/null
+curl -s -o /dev/null -D "$HDR_FILE" --max-time 10 "$API/health" >/dev/null
 if [ -z "$(_hdr Cache-Control)" ]; then
 	_pass "an unauthenticated probe is left cacheable"
 else
@@ -1010,7 +1011,7 @@ fi
 # The field carried brackets and the port -- "[77.42.68.79:4232]" -- inside
 # a field named server_ip, beside a server_port that already held the port.
 # A client joining the two got "[77.42.68.79:4232]:4232".
-curl -s -o "$BODY_FILE" --max-time 10 "${AUTH[@]}" "$HOST/api/v0/status" >/dev/null
+curl -s -o "$BODY_FILE" --max-time 10 "${AUTH[@]}" "$API/status" >/dev/null
 SRV_IP=$(jq -r '.ed2k.server_ip // ""' < "$BODY_FILE" 2>/dev/null)
 if [ -z "$SRV_IP" ]; then
 	_skip "status.ed2k.server_ip shape (not connected to a server)"

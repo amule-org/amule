@@ -57,7 +57,7 @@ static std::vector<Event> DrainAll(CEventBus &bus)
 }
 
 // log_appended cold start: the first tick must not emit log_appended for pre-existing lines.
-// Clients GET /api/v0/logs/amule for the history; the event channel is live-tail only.
+// Clients GET /api/v1/logs/amule for the history; the event channel is live-tail only.
 TEST(EventDiff, LogAppendedColdStartSilent)
 {
 	CState state;

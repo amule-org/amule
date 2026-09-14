@@ -3,7 +3,7 @@
 # amuleapi 17-shared-priority-patch — PATCH /shared/{hash} priority.
 #
 # Endpoint:
-#   PATCH /api/v0/shared/{hash}
+#   PATCH /api/v1/shared/{hash}
 #       body: {priority: <enum>}
 #
 # Priority input enum (base levels + "auto"):
@@ -18,6 +18,7 @@ set -u
 set -o pipefail
 
 HOST=${HOST:-localhost:4713}
+API="$HOST/api/v1"
 ADMIN_PASS=${ADMIN_PASS:-adminpass}
 GUEST_PASS=${GUEST_PASS:-guestpass}
 
@@ -67,18 +68,18 @@ _assert_json_eq() {
 }
 
 if ! command -v jq >/dev/null 2>&1; then _die "jq is required."; fi
-if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health" 2>/dev/null; then
+if ! curl -s -o /dev/null --max-time 2 "$API/health" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable."
 fi
 
 echo "amuleapi 17-shared-priority-patch smoke @ $HOST"
 
 ADMIN_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$ADMIN_PASS\"}" "$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
+	-d "{\"password\":\"$ADMIN_PASS\"}" "$API/auth/login?include_token=true" | jq -r .token)
 [ -n "$ADMIN_TOKEN" ] && [ "$ADMIN_TOKEN" != "null" ] || _die "admin login failed"
 
 GUEST_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$GUEST_PASS\"}" "$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
+	-d "{\"password\":\"$GUEST_PASS\"}" "$API/auth/login?include_token=true" | jq -r .token)
 HAVE_GUEST=0
 [ -n "$GUEST_TOKEN" ] && [ "$GUEST_TOKEN" != "null" ] && HAVE_GUEST=1
 
@@ -87,7 +88,7 @@ sleep 4
 # Pick the first shared file for testing — order-independent across
 # operator's libraries. /shared is the broader surface (completed
 # knownfiles + downloading-and-shared partfiles per Phase 4f).
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/shared"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/shared"
 COUNT=$(printf '%s' "$CURL_BODY" | jq '.shared | length')
 
 # Self-provision a fixture when the daemon shares nothing. /shared only
@@ -108,11 +109,11 @@ if [ "$COUNT" = "0" ]; then
 	fi
 	echo "    info: planted fixture $FIXTURE; reloading shares"
 	curl -s -o /dev/null -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
-		"$HOST/api/v0/shared_reload"
+		"$API/shared_reload"
 	# Wait for amuled to hash the file and surface it in /shared.
 	for _ in $(seq 1 30); do
 		sleep 1
-		_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/shared"
+		_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/shared"
 		COUNT=$(printf '%s' "$CURL_BODY" | jq '.shared | length')
 		[ "$COUNT" != "0" ] && break
 	done
@@ -127,13 +128,13 @@ echo "    info: saved hash=$TEST_HASH priority=$SAVED_PRIORITY priority_auto=$SA
 
 # --- 1. Auth + admin gate. -----------------------------------------
 _curl -X PATCH -H "Content-Type: application/json" \
-	-d '{"priority":"high"}' "$HOST/api/v0/shared/$TEST_HASH"
+	-d '{"priority":"high"}' "$API/shared/$TEST_HASH"
 _assert_status 401 "PATCH /shared/{hash} (no token) → 401"
 
 if [ "$HAVE_GUEST" = "1" ]; then
 	_curl -X PATCH -H "Authorization: Bearer $GUEST_TOKEN" \
 		-H "Content-Type: application/json" \
-		-d '{"priority":"high"}' "$HOST/api/v0/shared/$TEST_HASH"
+		-d '{"priority":"high"}' "$API/shared/$TEST_HASH"
 	_assert_status 403 "PATCH /shared/{hash} (guest) → 403"
 fi
 
@@ -141,12 +142,12 @@ fi
 for p in low normal high release very_low; do
 	_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 		-H "Content-Type: application/json" \
-		-d "{\"priority\":\"$p\"}" "$HOST/api/v0/shared/$TEST_HASH"
+		-d "{\"priority\":\"$p\"}" "$API/shared/$TEST_HASH"
 	_assert_status 200 "PATCH priority=$p → 200"
 	_assert_json_eq '.priority' "$p" "PATCH response shows priority=$p"
 	_assert_json_eq '.priority_auto' false "PATCH priority=$p → priority_auto=false"
 
-	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/shared"
+	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/shared"
 	OBS=$(printf '%s' "$CURL_BODY" \
 		| jq -r --arg h "$TEST_HASH" \
 		  '.shared[] | select(.hash == $h) | .priority')
@@ -164,7 +165,7 @@ done
 # level is a known base enum (never a combined "*_auto" string).
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"priority":"auto"}' "$HOST/api/v0/shared/$TEST_HASH"
+	-d '{"priority":"auto"}' "$API/shared/$TEST_HASH"
 _assert_status 200 "PATCH priority=auto → 200"
 _assert_json_eq '.priority_auto' true "PATCH priority=auto → priority_auto=true"
 BASE_PRIO=$(printf '%s' "$CURL_BODY" | jq -r '.priority')
@@ -174,7 +175,7 @@ case "$BASE_PRIO" in
 esac
 
 # Immediate GET reflects the auto flag (no stale cache).
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/shared"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/shared"
 GAUTO=$(printf '%s' "$CURL_BODY" \
 	| jq -r --arg h "$TEST_HASH" '.shared[] | select(.hash == $h) | .priority_auto')
 if [ "$GAUTO" = "true" ]; then
@@ -186,28 +187,28 @@ fi
 # The combined "*_auto" strings are no longer accepted as input.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"priority":"high_auto"}' "$HOST/api/v0/shared/$TEST_HASH"
+	-d '{"priority":"high_auto"}' "$API/shared/$TEST_HASH"
 _assert_status 400 "PATCH removed variant high_auto → 400"
 
 # --- 3c. PATCH comment + rating (issue #419). ---------------------
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"my_comment":"nice file","my_rating":4}' "$HOST/api/v0/shared/$TEST_HASH"
+	-d '{"my_comment":"nice file","my_rating":4}' "$API/shared/$TEST_HASH"
 _assert_status 200 "PATCH comment+rating → 200"
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/shared/$TEST_HASH"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/shared/$TEST_HASH"
 _assert_json_eq '.my_comment' "nice file" "GET /shared/{hash} shows the set comment"
 _assert_json_eq '.my_rating' 4 "GET /shared/{hash} shows the set rating"
 
 # Partial (comment without rating) → 400 (both required together).
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"my_comment":"solo"}' "$HOST/api/v0/shared/$TEST_HASH"
+	-d '{"my_comment":"solo"}' "$API/shared/$TEST_HASH"
 _assert_status 400 "PATCH comment without rating → 400"
 
 # Rating out of range → 400.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"comment":"x","rating":9}' "$HOST/api/v0/shared/$TEST_HASH"
+	-d '{"comment":"x","rating":9}' "$API/shared/$TEST_HASH"
 _assert_status 400 "PATCH rating out of range → 400"
 
 # --- 3d. PATCH name (rename; issue #420). -------------------------
@@ -225,49 +226,49 @@ if [ "$SAVED_NAME" = "$RENAME_TO" ]; then
 fi
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d "$(jq -nc --arg n "$RENAME_TO" '{name: $n}')" "$HOST/api/v0/shared/$TEST_HASH"
+	-d "$(jq -nc --arg n "$RENAME_TO" '{name: $n}')" "$API/shared/$TEST_HASH"
 _assert_status 200 "PATCH name (rename) → 200"
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/shared/$TEST_HASH"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/shared/$TEST_HASH"
 _assert_json_eq '.name' "$RENAME_TO" 'IMMEDIATE GET /shared/{hash} shows the renamed file (no stale)'
 
 # Path separators rejected (directory-traversal guard).
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"name":"../evil.dat"}' "$HOST/api/v0/shared/$TEST_HASH"
+	-d '{"name":"../evil.dat"}' "$API/shared/$TEST_HASH"
 _assert_status 400 "PATCH name with path separator → 400"
 
 # Empty name rejected.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"name":""}' "$HOST/api/v0/shared/$TEST_HASH"
+	-d '{"name":""}' "$API/shared/$TEST_HASH"
 _assert_status 400 "PATCH empty name → 400"
 
 # Restore the original name so the real shared file is left untouched.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d "$(jq -nc --arg n "$SAVED_NAME" '{name: $n}')" "$HOST/api/v0/shared/$TEST_HASH"
+	-d "$(jq -nc --arg n "$SAVED_NAME" '{name: $n}')" "$API/shared/$TEST_HASH"
 _assert_status 200 "PATCH name (restore original) → 200"
 
 # --- 4. Error paths. ----------------------------------------------
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"priority":"bogus"}' "$HOST/api/v0/shared/$TEST_HASH"
+	-d '{"priority":"bogus"}' "$API/shared/$TEST_HASH"
 _assert_status 400 "PATCH unknown priority enum → 400"
 
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{}' "$HOST/api/v0/shared/$TEST_HASH"
+	-d '{}' "$API/shared/$TEST_HASH"
 _assert_status 400 "PATCH empty body (no priority) → 400"
 
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d '{"priority":"low"}' \
-	"$HOST/api/v0/shared/baadbaadbaadbaadbaadbaadbaadbaad"
+	"$API/shared/baadbaadbaadbaadbaadbaadbaadbaad"
 _assert_status 404 "PATCH unknown hash → 404"
 
 # --- 5. Method gate (POST/DELETE not allowed). --------------------
 _curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/shared/$TEST_HASH"
+	"$API/shared/$TEST_HASH"
 _assert_status 405 "DELETE /shared/{hash} → 405"
 
 # --- 5b. Both-file priority independence. --------------------------
@@ -281,9 +282,9 @@ _assert_status 405 "DELETE /shared/{hash} → 405"
 # requires a live source), so skip when none exists; the unit test
 # (RefresherTest.BothFilePrioritiesAreIndependent) covers the split
 # against crafted EC packets.
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/downloads"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/downloads"
 DL_BODY=$CURL_BODY
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/shared"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/shared"
 SH_BODY=$CURL_BODY
 BOTH_HASH=$(jq -rn --argjson d "$DL_BODY" --argjson s "$SH_BODY" \
 	'([$d.downloads[].hash] - ([$d.downloads[].hash] - [$s.shared[].hash]))[0] // ""')
@@ -303,14 +304,14 @@ else
 	# pass clobbers the download value, so /downloads reports "low".
 	_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 		-H "Content-Type: application/json" \
-		-d '{"priority":"high"}' "$HOST/api/v0/downloads/$BOTH_HASH"
+		-d '{"priority":"high"}' "$API/downloads/$BOTH_HASH"
 	_assert_status 200 "PATCH download priority=high (both-file) → 200"
 	_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 		-H "Content-Type: application/json" \
-		-d '{"priority":"low"}' "$HOST/api/v0/shared/$BOTH_HASH"
+		-d '{"priority":"low"}' "$API/shared/$BOTH_HASH"
 	_assert_status 200 "PATCH shared priority=low (both-file) → 200"
 
-	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/downloads"
+	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/downloads"
 	OBS_DL=$(printf '%s' "$CURL_BODY" | jq -r --arg h "$BOTH_HASH" \
 		'.downloads[] | select(.hash == $h) | .priority')
 	if [ "$OBS_DL" = "high" ]; then
@@ -319,7 +320,7 @@ else
 		_fail "/downloads priority independence" \
 			"expected high, got $OBS_DL (shared priority leaked onto /downloads)"
 	fi
-	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/shared"
+	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/shared"
 	OBS_SH=$(printf '%s' "$CURL_BODY" | jq -r --arg h "$BOTH_HASH" \
 		'.shared[] | select(.hash == $h) | .priority')
 	if [ "$OBS_SH" = "low" ]; then
@@ -335,10 +336,10 @@ else
 	[ "$B_SH_AUTO" = "true" ] && B_SH_RESTORE=auto || B_SH_RESTORE=$B_SH_PRIO
 	curl -s -o /dev/null -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 		-H "Content-Type: application/json" \
-		-d "{\"priority\":\"$B_DL_RESTORE\"}" "$HOST/api/v0/downloads/$BOTH_HASH"
+		-d "{\"priority\":\"$B_DL_RESTORE\"}" "$API/downloads/$BOTH_HASH"
 	curl -s -o /dev/null -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 		-H "Content-Type: application/json" \
-		-d "{\"priority\":\"$B_SH_RESTORE\"}" "$HOST/api/v0/shared/$BOTH_HASH"
+		-d "{\"priority\":\"$B_SH_RESTORE\"}" "$API/shared/$BOTH_HASH"
 fi
 
 # --- 6. Restore saved priority. -----------------------------------
@@ -352,7 +353,7 @@ else
 fi
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d "{\"priority\":\"$RESTORE\"}" "$HOST/api/v0/shared/$TEST_HASH"
+	-d "{\"priority\":\"$RESTORE\"}" "$API/shared/$TEST_HASH"
 _assert_status 200 "PATCH (restore saved priority) → 200"
 
 # --- Summary. -----------------------------------------------------

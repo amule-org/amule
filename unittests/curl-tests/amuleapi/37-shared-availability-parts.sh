@@ -27,6 +27,7 @@ set -u
 set -o pipefail
 
 HOST=${HOST:-localhost:4713}
+API="$HOST/api/v1"
 ADMIN_PASS=${ADMIN_PASS:-adminpass}
 
 FAIL_COUNT=0
@@ -77,7 +78,7 @@ _assert_json_eq() {
 if ! command -v jq >/dev/null 2>&1; then
 	_die "jq is required."
 fi
-if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health" 2>/dev/null; then
+if ! curl -s -o /dev/null --max-time 2 "$API/health" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable."
 fi
 
@@ -85,7 +86,7 @@ echo "amuleapi 37-shared-availability-parts smoke @ $HOST"
 
 TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 	-d "{\"password\":\"$ADMIN_PASS\"}" \
-	"$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
+	"$API/auth/login?include_token=true" | jq -r .token)
 [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ] || _die "login failed"
 
 # The RLE decoder needs the first EC_TAG_KNOWNFILE frame to seed itself
@@ -98,7 +99,7 @@ sleep 4
 # A 100 GB file has ~10 800 parts; carrying the array across a
 # five-figure share on every list read (and every shared_updated SSE
 # tick) is not viable. Same call as the downloads list makes.
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/shared"
+_curl -H "Authorization: Bearer $TOKEN" "$API/shared"
 _assert_status 200 "GET /shared → 200"
 _assert_json_eq '.shared | type' array '/shared .shared is array'
 
@@ -120,7 +121,7 @@ if [ "$COUNT" -gt 0 ]; then
 	FIRST_SIZE=$(printf '%s' "$CURL_BODY" | jq -r '.shared | max_by(.size) | .size')
 
 	# --- 2. Detail endpoint carries `parts`. -----------------------
-	_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/shared/$FIRST_HASH"
+	_curl -H "Authorization: Bearer $TOKEN" "$API/shared/$FIRST_HASH"
 	_assert_status 200 "GET /shared/{hash} → 200"
 	_assert_json_eq '.hash' "$FIRST_HASH" \
 		'/shared/{hash} echoes hash (bare object, not enveloped)'
@@ -195,7 +196,7 @@ if [ "$COUNT" -gt 0 ]; then
 
 		# --- 7. URL hash case-insensitive. ----------------------
 		UPPER_HASH=$(echo "$FIRST_HASH" | tr 'a-f' 'A-F')
-		_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/shared/$UPPER_HASH"
+		_curl -H "Authorization: Bearer $TOKEN" "$API/shared/$UPPER_HASH"
 		_assert_status 200 "GET /shared/{HASH} (uppercase) → 200"
 		_assert_json_eq '.parts | type' array \
 			'/shared/{HASH} uppercase still carries parts'
@@ -204,9 +205,9 @@ if [ "$COUNT" -gt 0 ]; then
 	# --- 8. Guest sessions see the bar too (read-only data). -------
 	GUEST_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 		-d "{\"password\":\"${GUEST_PASS:-guestpass}\"}" \
-		"$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
+		"$API/auth/login?include_token=true" | jq -r .token)
 	if [ -n "$GUEST_TOKEN" ] && [ "$GUEST_TOKEN" != "null" ]; then
-		_curl -H "Authorization: Bearer $GUEST_TOKEN" "$HOST/api/v0/shared/$FIRST_HASH"
+		_curl -H "Authorization: Bearer $GUEST_TOKEN" "$API/shared/$FIRST_HASH"
 		_assert_status 200 "GET /shared/{hash} as guest → 200"
 	else
 		echo "    info: guest login unavailable; guest-visibility check skipped"
@@ -217,7 +218,7 @@ fi
 
 # --- 9. 404 on unknown hash. ---------------------------------------
 _curl -H "Authorization: Bearer $TOKEN" \
-	"$HOST/api/v0/shared/00000000000000000000000000000000"
+	"$API/shared/00000000000000000000000000000000"
 _assert_status 404 "GET /shared/{nonexistent} → 404"
 _assert_json_eq '.error.code' not_found \
 	'/shared/{nonexistent} carries error.code=not_found'

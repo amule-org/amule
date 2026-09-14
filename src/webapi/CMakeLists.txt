@@ -1,6 +1,6 @@
 # amuleapi — REST API + SSE daemon. Standalone executable that
 # connects to amuled via the existing EC protocol (same wire as
-# amulecmd / amuleweb) and serves /api/v0/* over HTTP via Boost.Beast.
+# amulecmd / amuleweb) and serves /api/v1/* over HTTP via Boost.Beast.
 
 add_executable (amuleapi
 	${CMAKE_SOURCE_DIR}/src/ExternalConnector.cpp

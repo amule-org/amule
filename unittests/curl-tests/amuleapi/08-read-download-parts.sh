@@ -26,6 +26,7 @@ set -u
 set -o pipefail
 
 HOST=${HOST:-localhost:4713}
+API="$HOST/api/v1"
 ADMIN_PASS=${ADMIN_PASS:-adminpass}
 
 FAIL_COUNT=0
@@ -76,7 +77,7 @@ _assert_json_eq() {
 if ! command -v jq >/dev/null 2>&1; then
 	_die "jq is required."
 fi
-if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health" 2>/dev/null; then
+if ! curl -s -o /dev/null --max-time 2 "$API/health" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable."
 fi
 
@@ -84,7 +85,7 @@ echo "amuleapi 08-read-download-parts smoke @ $HOST"
 
 TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 	-d "{\"password\":\"$ADMIN_PASS\"}" \
-	"$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
+	"$API/auth/login?include_token=true" | jq -r .token)
 [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ] || _die "login failed"
 
 # Refresher needs at least 2 ticks for the two-phase INC protocol to
@@ -100,7 +101,7 @@ sleep 4
 # of 1000 downloads × ~150 parts/file would be 150k objects in the
 # response; clients walk the list endpoint for queue state and the
 # detail endpoint when they need the per-part breakdown.
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/downloads"
+_curl -H "Authorization: Bearer $TOKEN" "$API/downloads"
 _assert_status 200 "GET /downloads → 200"
 _assert_json_eq '.downloads | type' array '/downloads .downloads is array'
 
@@ -121,7 +122,7 @@ if [ "$COUNT" -gt 0 ]; then
 	FIRST_SIZE=$(printf '%s' "$CURL_BODY" | jq -r '.downloads[0].size')
 
 	# --- 2. Detail endpoint carries `progress.parts`. --------------
-	_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/downloads/$FIRST_HASH"
+	_curl -H "Authorization: Bearer $TOKEN" "$API/downloads/$FIRST_HASH"
 	_assert_status 200 "GET /downloads/{hash} → 200"
 	_assert_json_eq '.hash'                  "$FIRST_HASH" \
 		'/downloads/{hash} echoes hash (bare object, not enveloped)'
@@ -213,7 +214,7 @@ if [ "$COUNT" -gt 0 ]; then
 	# --- 8. URL hash case-insensitive (already covered in 4b but
 	# the detail endpoint changed shape so re-pin). ---------------
 	UPPER_HASH=$(echo "$FIRST_HASH" | tr 'a-f' 'A-F')
-	_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/downloads/$UPPER_HASH"
+	_curl -H "Authorization: Bearer $TOKEN" "$API/downloads/$UPPER_HASH"
 	_assert_status 200 "GET /downloads/{HASH} (uppercase) → 200"
 	_assert_json_eq '.progress.parts | type' array \
 		'/downloads/{HASH} uppercase still carries progress.parts'
@@ -224,7 +225,7 @@ fi
 
 # --- 9. 404 on unknown hash. ---------------------------------------
 _curl -H "Authorization: Bearer $TOKEN" \
-	"$HOST/api/v0/downloads/00000000000000000000000000000000"
+	"$API/downloads/00000000000000000000000000000000"
 _assert_status 404 "GET /downloads/{nonexistent} → 404"
 _assert_json_eq '.error.code' not_found \
 	'/downloads/{nonexistent} carries error.code=not_found'

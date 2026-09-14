@@ -3,10 +3,10 @@
 # amuleapi 14-servers-mutations — server lifecycle mutations.
 #
 # Endpoints:
-#   POST   /api/v0/servers                   — add by {address, name?}
-#   POST   /api/v0/servers/{ecid}/connect    — connect to one server
-#   PATCH  /api/v0/servers/{ecid}            — set priority / permanent flag
-#   DELETE /api/v0/servers/{ecid}            — remove from the list
+#   POST   /api/v1/servers                   — add by {address, name?}
+#   POST   /api/v1/servers/{ecid}/connect    — connect to one server
+#   PATCH  /api/v1/servers/{ecid}            — set priority / permanent flag
+#   DELETE /api/v1/servers/{ecid}            — remove from the list
 #
 # All keyed by ECID on the URL — the EC ops (CONNECT/REMOVE) actually
 # identify the server by IPv4+port server-side, so the handler looks
@@ -26,6 +26,7 @@ set -u
 set -o pipefail
 
 HOST=${HOST:-localhost:4713}
+API="$HOST/api/v1"
 ADMIN_PASS=${ADMIN_PASS:-adminpass}
 GUEST_PASS=${GUEST_PASS:-guestpass}
 
@@ -90,25 +91,25 @@ _assert_body_empty() {
 }
 
 if ! command -v jq >/dev/null 2>&1; then _die "jq is required."; fi
-if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health" 2>/dev/null; then
+if ! curl -s -o /dev/null --max-time 2 "$API/health" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable."
 fi
 
 echo "amuleapi 14-servers-mutations smoke @ $HOST"
 
 ADMIN_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$ADMIN_PASS\"}" "$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
+	-d "{\"password\":\"$ADMIN_PASS\"}" "$API/auth/login?include_token=true" | jq -r .token)
 [ -n "$ADMIN_TOKEN" ] && [ "$ADMIN_TOKEN" != "null" ] || _die "admin login failed"
 
 GUEST_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$GUEST_PASS\"}" "$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
+	-d "{\"password\":\"$GUEST_PASS\"}" "$API/auth/login?include_token=true" | jq -r .token)
 HAVE_GUEST=0
 [ -n "$GUEST_TOKEN" ] && [ "$GUEST_TOKEN" != "null" ] && HAVE_GUEST=1
 
 sleep 4
 
 # --- 1. /servers[] address parse fix — must not be "0.0.0.0:0". ---
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/servers"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/servers"
 _assert_status 200 "GET /servers → 200"
 
 # The operator's daemon has servers in its list with real IPs.
@@ -139,25 +140,25 @@ fi
 
 # --- 2. Auth + admin gate. -----------------------------------------
 _curl -X POST -H "Content-Type: application/json" \
-	-d "{\"address\":\"$TEST_ADDRESS\"}" "$HOST/api/v0/servers"
+	-d "{\"address\":\"$TEST_ADDRESS\"}" "$API/servers"
 _assert_status 401 "POST /servers (no token) → 401"
 
-_curl -X DELETE "$HOST/api/v0/servers/1"
+_curl -X DELETE "$API/servers/1"
 _assert_status 401 "DELETE /servers/{ecid} (no token) → 401"
 
-_curl -X POST "$HOST/api/v0/servers/1/connect"
+_curl -X POST "$API/servers/1/connect"
 _assert_status 401 "POST /servers/{ecid}/connect (no token) → 401"
 
 if [ "$HAVE_GUEST" = "1" ]; then
 	_curl -X POST -H "Authorization: Bearer $GUEST_TOKEN" \
 		-H "Content-Type: application/json" \
-		-d "{\"address\":\"$TEST_ADDRESS\"}" "$HOST/api/v0/servers"
+		-d "{\"address\":\"$TEST_ADDRESS\"}" "$API/servers"
 	_assert_status 403 "POST /servers (guest) → 403"
 	_curl -X DELETE -H "Authorization: Bearer $GUEST_TOKEN" \
-		"$HOST/api/v0/servers/1"
+		"$API/servers/1"
 	_assert_status 403 "DELETE /servers/{ecid} (guest) → 403"
 	_curl -X POST -H "Authorization: Bearer $GUEST_TOKEN" \
-		"$HOST/api/v0/servers/1/connect"
+		"$API/servers/1/connect"
 	_assert_status 403 "POST /servers/{ecid}/connect (guest) → 403"
 else
 	echo "    info: no guest pass; admin-gate skipped"
@@ -173,7 +174,7 @@ fi
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d "{\"address\":\"$TEST_ADDRESS\",\"name\":\"$TEST_NAME\"}" \
-	"$HOST/api/v0/servers"
+	"$API/servers"
 # Accept 202 (accepted) OR 400 (already in list — server was added
 # by a prior smoke or the operator). Both are valid endings.
 #
@@ -200,7 +201,7 @@ fi
 
 # Wait for the new server to land in cache (no inline refresh needed
 # — POST handler runs RefresherTick before returning).
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/servers"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/servers"
 ECID=$(printf '%s' "$CURL_BODY" \
 	| jq -r --arg n "$TEST_NAME" \
 	  '[.servers[] | select(.name == $n)] | first | .ecid // empty')
@@ -215,17 +216,17 @@ fi
 # --- 4. POST /servers error paths. ---------------------------------
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{}' "$HOST/api/v0/servers"
+	-d '{}' "$API/servers"
 _assert_status 400 "POST /servers (no address) → 400"
 
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"address":"no-colon"}' "$HOST/api/v0/servers"
+	-d '{"address":"no-colon"}' "$API/servers"
 _assert_status 400 "POST /servers (no colon in address) → 400"
 
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d 'not json' "$HOST/api/v0/servers"
+	-d 'not json' "$API/servers"
 _assert_status 400 "POST /servers (malformed JSON) → 400"
 
 # --- 5. POST /servers/{ecid}/connect. ------------------------------
@@ -235,17 +236,17 @@ _assert_status 400 "POST /servers (malformed JSON) → 400"
 # `ecid` came from the URL and the outcome only shows up later on
 # /status.ed2k.state and the SSE stream.
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/servers/$ECID/connect"
+	"$API/servers/$ECID/connect"
 _assert_status 202 "POST /servers/{ecid}/connect → 202"
 _assert_body_empty 'connect sends no body'
 
 # Bad ECID → 400 (path can't parse), or 404 (parses but no match).
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/servers/not-a-number/connect"
+	"$API/servers/not-a-number/connect"
 _assert_status 400 "POST /servers/not-a-number/connect → 400"
 
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/servers/4294967295/connect"
+	"$API/servers/4294967295/connect"
 _assert_status 404 "POST /servers/{unknown ecid}/connect → 404"
 
 # --- 5b. PATCH /servers/{ecid} — priority + permanent (#692). ------
@@ -255,9 +256,9 @@ _assert_status 404 "POST /servers/{unknown ecid}/connect → 404"
 for PRIO in high low normal; do
 	_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 		-H "Content-Type: application/json" \
-		-d "{\"priority\":\"$PRIO\"}" "$HOST/api/v0/servers/$ECID"
+		-d "{\"priority\":\"$PRIO\"}" "$API/servers/$ECID"
 	_assert_status 200 "PATCH /servers/{ecid} priority=$PRIO → 200"
-	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/servers"
+	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/servers"
 	GOT=$(printf '%s' "$CURL_BODY" | jq -r --argjson e "$ECID" \
 		'.servers[] | select(.ecid == $e) | .priority')
 	if [ "$GOT" = "$PRIO" ]; then
@@ -271,9 +272,9 @@ done
 for FLAG in true false; do
 	_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 		-H "Content-Type: application/json" \
-		-d "{\"permanent\":$FLAG}" "$HOST/api/v0/servers/$ECID"
+		-d "{\"permanent\":$FLAG}" "$API/servers/$ECID"
 	_assert_status 200 "PATCH /servers/{ecid} permanent=$FLAG → 200"
-	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/servers"
+	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/servers"
 	GOT=$(printf '%s' "$CURL_BODY" | jq -r --argjson e "$ECID" \
 		'.servers[] | select(.ecid == $e) | .permanent')
 	if [ "$GOT" = "$FLAG" ]; then
@@ -286,7 +287,7 @@ done
 # Both fields in one body.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"priority":"high","permanent":true}' "$HOST/api/v0/servers/$ECID"
+	-d '{"priority":"high","permanent":true}' "$API/servers/$ECID"
 _assert_status 200 "PATCH /servers/{ecid} priority+permanent together → 200"
 # The response is the full server object as it now stands, not an {ok} ack:
 # a PATCH answers with the state the caller just produced, so no re-read is
@@ -298,49 +299,49 @@ _assert_json_eq '. | has("ok")' false 'PATCH response has no constant ok field'
 
 # --- 5c. PATCH error paths. ----------------------------------------
 _curl -X PATCH -H "Content-Type: application/json" \
-	-d '{"priority":"high"}' "$HOST/api/v0/servers/$ECID"
+	-d '{"priority":"high"}' "$API/servers/$ECID"
 _assert_status 401 "PATCH /servers/{ecid} (no token) → 401"
 
 if [ "$HAVE_GUEST" = "1" ]; then
 	_curl -X PATCH -H "Authorization: Bearer $GUEST_TOKEN" \
 		-H "Content-Type: application/json" \
-		-d '{"priority":"high"}' "$HOST/api/v0/servers/$ECID"
+		-d '{"priority":"high"}' "$API/servers/$ECID"
 	_assert_status 403 "PATCH /servers/{ecid} (guest) → 403"
 fi
 
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
-	-H "Content-Type: application/json" -d '{}' "$HOST/api/v0/servers/$ECID"
+	-H "Content-Type: application/json" -d '{}' "$API/servers/$ECID"
 _assert_status 400 "PATCH /servers/{ecid} empty body → 400"
 
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"priority":"urgent"}' "$HOST/api/v0/servers/$ECID"
+	-d '{"priority":"urgent"}' "$API/servers/$ECID"
 _assert_status 400 "PATCH /servers/{ecid} unknown priority → 400"
 
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"permanent":"yes"}' "$HOST/api/v0/servers/$ECID"
+	-d '{"permanent":"yes"}' "$API/servers/$ECID"
 _assert_status 400 "PATCH /servers/{ecid} non-bool permanent → 400"
 
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"priority":"high"}' "$HOST/api/v0/servers/not-a-number"
+	-d '{"priority":"high"}' "$API/servers/not-a-number"
 _assert_status 400 "PATCH /servers/not-a-number → 400"
 
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"priority":"high"}' "$HOST/api/v0/servers/999999"
+	-d '{"priority":"high"}' "$API/servers/999999"
 _assert_status 404 "PATCH /servers/{unknown ecid} → 404 (EC no-ops silently, #692)"
 
 # --- 6. DELETE /servers/{ecid} happy path + no-stale invariant. ---
 _curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/servers/$ECID"
+	"$API/servers/$ECID"
 # 204, no body: `ecid` came from the URL and `ok` restated the status code.
 _assert_status 204 "DELETE /servers/$ECID → 204"
 _assert_body_empty 'DELETE sends no body'
 
 # Immediate GET — entry must be gone from the cache.
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/servers"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/servers"
 STILL_THERE=$(printf '%s' "$CURL_BODY" \
 	| jq --arg n "$TEST_NAME" \
 	  '[.servers[] | select(.name == $n)] | length')
@@ -353,11 +354,11 @@ fi
 
 # --- 7. DELETE error paths. ----------------------------------------
 _curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/servers/$ECID"
+	"$API/servers/$ECID"
 _assert_status 404 "DELETE /servers/{just-deleted ecid} → 404"
 
 _curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/servers/not-a-number"
+	"$API/servers/not-a-number"
 _assert_status 400 "DELETE /servers/not-a-number → 400"
 
 # --- 8. ip:port selector: malformed is 400, unknown is 404. --------
@@ -373,29 +374,29 @@ _assert_status 400 "DELETE /servers/not-a-number → 400"
 for bad in "not-an-ip:4242" "1.2.3.4:" ":4242" "1.2.3.4:0" "1.2.3.4:70000" \
 	"1.2.3.4:abc" "999.1.1.1:4242" "no-colon-at-all"; do
 	_curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
-		"$HOST/api/v0/servers/by-address/$bad"
+		"$API/servers/by-address/$bad"
 	_assert_status 400 "DELETE /servers/by-address/$bad (malformed address) → 400"
 done
 
 # Well-formed but absent: TEST-NET-1 (RFC 5737), never a real server.
 _curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/servers/by-address/192.0.2.1:4242"
+	"$API/servers/by-address/192.0.2.1:4242"
 _assert_status 404 "DELETE /servers/by-address/192.0.2.1:4242 (unknown server) → 404"
 _assert_json_eq '.error.code' not_found \
 	'unknown ip:port carries error.code=not_found'
 
 # Same split on the other two routes that take the selector.
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/servers/by-address/not-an-ip:4242/connect"
+	"$API/servers/by-address/not-an-ip:4242/connect"
 _assert_status 400 "POST /servers/by-address/not-an-ip:4242/connect (malformed) → 400"
 
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/servers/by-address/192.0.2.1:4242/connect"
+	"$API/servers/by-address/192.0.2.1:4242/connect"
 _assert_status 404 "POST /servers/by-address/192.0.2.1:4242/connect (unknown) → 404"
 
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" -d '{"permanent":true}' \
-	"$HOST/api/v0/servers/by-address/not-an-ip:4242"
+	"$API/servers/by-address/not-an-ip:4242"
 _assert_status 400 "PATCH /servers/by-address/not-an-ip:4242 (malformed) → 400"
 
 # --- Summary. -----------------------------------------------------

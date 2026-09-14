@@ -3,11 +3,11 @@
 # amuleapi 18-categories-crud — categories CRUD.
 #
 # Endpoints:
-#   POST   /api/v0/categories             — create
+#   POST   /api/v1/categories             — create
 #       body: {name, save_path?, comment?, color?, priority?}
-#   PATCH  /api/v0/categories/{index}     — update
+#   PATCH  /api/v1/categories/{index}     — update
 #       body: any subset of {name, save_path, comment, color, priority}
-#   DELETE /api/v0/categories/{index}     — remove
+#   DELETE /api/v1/categories/{index}     — remove
 #
 # The default (index=0) "All" category cannot be deleted —
 # DELETE /categories/0 returns 400. Custom categories are 1..255.
@@ -16,6 +16,7 @@ set -u
 set -o pipefail
 
 HOST=${HOST:-localhost:4713}
+API="$HOST/api/v1"
 ADMIN_PASS=${ADMIN_PASS:-adminpass}
 GUEST_PASS=${GUEST_PASS:-guestpass}
 
@@ -77,7 +78,7 @@ _assert_body_empty() {
 }
 
 if ! command -v jq >/dev/null 2>&1; then _die "jq is required."; fi
-if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health" 2>/dev/null; then
+if ! curl -s -o /dev/null --max-time 2 "$API/health" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable."
 fi
 
@@ -86,11 +87,11 @@ mkdir -p "$TEST_PATH"
 echo "amuleapi 18-categories-crud smoke @ $HOST"
 
 ADMIN_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$ADMIN_PASS\"}" "$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
+	-d "{\"password\":\"$ADMIN_PASS\"}" "$API/auth/login?include_token=true" | jq -r .token)
 [ -n "$ADMIN_TOKEN" ] && [ "$ADMIN_TOKEN" != "null" ] || _die "admin login failed"
 
 GUEST_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$GUEST_PASS\"}" "$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
+	-d "{\"password\":\"$GUEST_PASS\"}" "$API/auth/login?include_token=true" | jq -r .token)
 HAVE_GUEST=0
 [ -n "$GUEST_TOKEN" ] && [ "$GUEST_TOKEN" != "null" ] && HAVE_GUEST=1
 
@@ -102,7 +103,7 @@ sleep 4
 # Every other resource with a member path has a member GET. This one had PATCH
 # and DELETE only, so a client that had just created a category and wanted the
 # stored result had to re-fetch the whole collection and search it by index.
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/categories/0"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/categories/0"
 _assert_status 200 "GET /categories/0 → 200"
 _assert_json_eq '.index' 0 '/categories/0 reports index 0'
 
@@ -113,7 +114,7 @@ _assert_json_eq '.index' 0 '/categories/0 reports index 0'
 # directories.incoming_path, which is genuinely where such a file is saved.
 _assert_json_eq '.name' Default '/categories/0 is named Default'
 INCOMING=$(curl -s -H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/preferences" | jq -r '.directories.incoming_path')
+	"$API/preferences" | jq -r '.directories.incoming_path')
 _assert_json_eq '.save_path' "$INCOMING" '/categories/0 save_path is directories.incoming_path'
 # color is "#rrggbb", not the raw 24-bit integer. The core packs it as
 # 0x00BBGGRR (red in the low byte), so a naive hex print of the integer
@@ -126,13 +127,13 @@ _assert_json_eq '(.color | test("^#[0-9a-f]{6}$"))' true \
 # index 0 itself; asserting again after that would be the real regression
 # test, so section 6b does exactly that before the cleanup.
 
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/categories/250"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/categories/250"
 _assert_status 404 "GET /categories/{absent} → 404"
 
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/categories/999"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/categories/999"
 _assert_status 400 "GET /categories/{out-of-range} → 400"
 
-_curl -X PUT -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/categories/0"
+_curl -X PUT -H "Authorization: Bearer $ADMIN_TOKEN" "$API/categories/0"
 _assert_status 405 "PUT /categories/0 → 405"
 
 # --- Shared list contract. -----------------------------------------
@@ -141,41 +142,41 @@ _assert_status 405 "PUT /categories/0 → 405"
 # ?limit/&offset/&sort/&order: the same query string was a hard error on
 # /downloads and a silent no-op here, while the response still carried the
 # page-meta trio a caller could not influence.
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/categories"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/categories"
 _assert_status 200 "GET /categories → 200"
 _assert_json_eq '.total | type'  number '/categories carries total'
 _assert_json_eq '.offset | type' number '/categories carries offset'
 _assert_json_eq '.limit' 100 '/categories omitted limit echoes the default 100'
 
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/categories?limit=1"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/categories?limit=1"
 _assert_status 200 "GET /categories?limit=1 → 200"
 _assert_json_eq '.categories | length' 1 '/categories?limit=1 returns one row'
 _assert_json_eq '.limit' 1 '/categories?limit=1 echoes the limit'
 
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/categories?sort=index&order=desc"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/categories?sort=index&order=desc"
 _assert_status 200 "GET /categories?sort=index&order=desc → 200"
 
 # The parameters are validated now, not ignored.
 for bad in "limit=abc" "limit=1000000001" "offset=-1" "order=sideways" "sort=nonexistent_field"; do
-	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/categories?$bad"
+	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/categories?$bad"
 	_assert_status 400 "GET /categories?$bad → 400"
 done
 
 _curl -X POST -H "Content-Type: application/json" \
-	-d "{\"name\":\"$TEST_NAME\"}" "$HOST/api/v0/categories"
+	-d "{\"name\":\"$TEST_NAME\"}" "$API/categories"
 _assert_status 401 "POST /categories (no token) → 401"
 
 _curl -X PATCH -H "Content-Type: application/json" \
-	-d '{"name":"x"}' "$HOST/api/v0/categories/1"
+	-d '{"name":"x"}' "$API/categories/1"
 _assert_status 401 "PATCH /categories/{idx} (no token) → 401"
 
-_curl -X DELETE "$HOST/api/v0/categories/1"
+_curl -X DELETE "$API/categories/1"
 _assert_status 401 "DELETE /categories/{idx} (no token) → 401"
 
 if [ "$HAVE_GUEST" = "1" ]; then
 	_curl -X POST -H "Authorization: Bearer $GUEST_TOKEN" \
 		-H "Content-Type: application/json" \
-		-d "{\"name\":\"$TEST_NAME\"}" "$HOST/api/v0/categories"
+		-d "{\"name\":\"$TEST_NAME\"}" "$API/categories"
 	_assert_status 403 "POST /categories (guest) → 403"
 fi
 
@@ -187,13 +188,13 @@ fi
 # holding a category by that name (a previous run of this smoke that died
 # before its cleanup, say), and a name lookup would then hand back the older
 # row and delete that instead.
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/categories?limit=500"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/categories?limit=500"
 BEFORE_IDX=$(printf '%s' "$CURL_BODY" | jq -c '[.categories[].index]')
 
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d "{\"name\":\"$TEST_NAME\",\"save_path\":\"$TEST_PATH\",\"comment\":\"18-categories-crud test\",\"priority\":\"high\"}" \
-	"$HOST/api/v0/categories"
+	"$API/categories"
 # 202 with no body. EC_OP_CREATE_CATEGORY answers success or failure and never
 # returns the index it assigned, so naming the new category here meant scanning
 # the snapshot for one with a matching name and falling back to a bodiless 201
@@ -203,7 +204,7 @@ _assert_status 202 "POST /categories (create) → 202"
 _assert_body_empty 'create sends no body'
 
 # Verify by GET /categories, which is also where the assigned index comes from.
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/categories?limit=500"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/categories?limit=500"
 NEW_IDX=$(printf '%s' "$CURL_BODY" \
 	| jq -r --argjson b "$BEFORE_IDX" \
 	  '[.categories[].index] - $b | first // empty')
@@ -230,12 +231,12 @@ done
 # --- 3. POST error paths. -----------------------------------------
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{}' "$HOST/api/v0/categories"
+	-d '{}' "$API/categories"
 _assert_status 400 "POST /categories (no name) → 400"
 
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d "{\"name\":\"x\",\"priority\":\"bogus\"}" "$HOST/api/v0/categories"
+	-d "{\"name\":\"x\",\"priority\":\"bogus\"}" "$API/categories"
 _assert_status 400 "POST /categories (bad priority enum) → 400"
 
 # R9: a category's priority is rendered on read from the full six-level file
@@ -246,26 +247,26 @@ for p in very_low release; do
 	_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 		-H "Content-Type: application/json" \
 		-d "{\"name\":\"prio-$p\",\"save_path\":\"$TEST_PATH\",\"priority\":\"$p\"}" \
-		"$HOST/api/v0/categories"
+		"$API/categories"
 	_assert_status 202 "POST /categories (priority=$p accepted, R9) → 202"
 	# Leave no residue: a leftover category poisons the next run's create.
-	PRIO_IDX=$(curl -s -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/categories" \
+	PRIO_IDX=$(curl -s -H "Authorization: Bearer $ADMIN_TOKEN" "$API/categories" \
 		| jq -r --arg n "prio-$p" '[.categories[] | select(.name == $n)][0].index // empty')
 	[ -n "$PRIO_IDX" ] && curl -s -o /dev/null -X DELETE \
-		-H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/categories/$PRIO_IDX"
+		-H "Authorization: Bearer $ADMIN_TOKEN" "$API/categories/$PRIO_IDX"
 done
 
 # --- 4. PATCH /categories/{idx}. ----------------------------------
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d '{"comment":"updated by 18-categories-crud","priority":"low"}' \
-	"$HOST/api/v0/categories/$NEW_IDX"
+	"$API/categories/$NEW_IDX"
 _assert_status 200 "PATCH /categories/$NEW_IDX → 200"
 _assert_json_eq '.comment'  'updated by 18-categories-crud' 'PATCH response shows new comment'
 _assert_json_eq '.priority' low                  'PATCH response shows priority=low'
 
 # Immediate GET (no-stale).
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/categories"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/categories"
 OBS_COMMENT=$(printf '%s' "$CURL_BODY" \
 	| jq -r --arg n "$TEST_NAME" \
 	  '.categories[] | select(.name == $n) | .comment')
@@ -279,29 +280,29 @@ fi
 # --- 5. PATCH error paths. ----------------------------------------
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"priority":"bogus"}' "$HOST/api/v0/categories/$NEW_IDX"
+	-d '{"priority":"bogus"}' "$API/categories/$NEW_IDX"
 _assert_status 400 "PATCH /categories bogus enum → 400"
 
 for p in very_low release; do
 	_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 		-H "Content-Type: application/json" \
-		-d "{\"priority\":\"$p\"}" "$HOST/api/v0/categories/$NEW_IDX"
+		-d "{\"priority\":\"$p\"}" "$API/categories/$NEW_IDX"
 	_assert_status 200 "PATCH /categories (priority=$p accepted, R9) → 200"
 done
 # ...and back to a value the rest of the phase expects.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"priority":"high"}' "$HOST/api/v0/categories/$NEW_IDX"
+	-d '{"priority":"high"}' "$API/categories/$NEW_IDX"
 _assert_status 200 "PATCH /categories priority restored to high → 200"
 
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"name":"unknown"}' "$HOST/api/v0/categories/199"
+	-d '{"name":"unknown"}' "$API/categories/199"
 _assert_status 404 "PATCH /categories unknown index → 404"
 
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"name":"x"}' "$HOST/api/v0/categories/not-a-number"
+	-d '{"name":"x"}' "$API/categories/not-a-number"
 _assert_status 400 "PATCH /categories non-numeric index → 400"
 
 # --- 5b. Category 0 reads the same now that amuled sends the row. ---
@@ -311,13 +312,13 @@ _assert_status 400 "PATCH /categories non-numeric index → 400"
 # side of that switch. Filling name/path in only for the synthesised row would
 # have made /categories/0 answer "Default" before this point and "" after it,
 # which is a response shape that depends on unrelated state.
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/categories/0"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/categories/0"
 _assert_status 200 "GET /categories/0 (amuled now sends it) → 200"
 _assert_json_eq '.name' Default '/categories/0 is still named Default'
 _assert_json_eq '.save_path' "$INCOMING" '/categories/0 save_path is still directories.incoming_path'
 
 # The collection agrees with the member route, on the same daemon state.
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/categories?limit=500"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/categories?limit=500"
 _assert_json_eq '[.categories[] | select(.index == 0)][0].name' Default \
 	'/categories lists index 0 as Default too'
 _assert_json_eq '[.categories[] | select(.index == 0)][0].save_path' "$INCOMING" \
@@ -325,16 +326,16 @@ _assert_json_eq '[.categories[] | select(.index == 0)][0].save_path' "$INCOMING"
 
 # --- 6. DELETE happy path + cannot-delete-default + no-stale. ----
 _curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/categories/0"
+	"$API/categories/0"
 _assert_status 400 "DELETE /categories/0 (default) → 400"
 
 _curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/categories/$NEW_IDX"
+	"$API/categories/$NEW_IDX"
 # 204, no body: the index came from the URL and `ok` restated the status code.
 _assert_status 204 "DELETE /categories/$NEW_IDX → 204"
 _assert_body_empty 'DELETE sends no body'
 
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/categories"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/categories"
 STILL=$(printf '%s' "$CURL_BODY" \
 	| jq --arg n "$TEST_NAME" \
 	  '[.categories[] | select(.name == $n)] | length')
@@ -346,7 +347,7 @@ else
 fi
 
 _curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/categories/$NEW_IDX"
+	"$API/categories/$NEW_IDX"
 _assert_status 404 "DELETE same index twice → 404"
 
 # --- 8. The path-substitution contract (partial success, not failure). ---
@@ -364,16 +365,16 @@ _assert_status 404 "DELETE same index twice → 404"
 #     directory, so this is an ordinary create, not an error.
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"name":"18-cat-nopath"}' "$HOST/api/v0/categories"
+	-d '{"name":"18-cat-nopath"}' "$API/categories"
 _assert_status 202 "POST /categories with no save_path -> 202 (defaults to incoming)"
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/categories"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/categories"
 NOPATH_IDX=$(printf '%s' "$CURL_BODY" \
 	| jq -r '[.categories[] | select(.name == "18-cat-nopath")][0].index // empty')
 if [ -n "$NOPATH_IDX" ]; then
 	_pass "the category created without save_path is in the list (index=$NOPATH_IDX)"
 	_assert_json_eq '[.categories[] | select(.name == "18-cat-nopath")][0].save_path' \
 		"$INCOMING" 'a create with no save_path lands on directories.incoming_path'
-	_curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/categories/$NOPATH_IDX"
+	_curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" "$API/categories/$NOPATH_IDX"
 	_assert_status 204 "cleanup: DELETE /categories/$NOPATH_IDX -> 204"
 else
 	_fail "create without save_path" "202 returned but no such category in /categories"
@@ -385,9 +386,9 @@ fi
 UNUSABLE=/18-cat-unusable-$$/sub
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d "{\"name\":\"18-cat-badpath\",\"save_path\":\"$UNUSABLE\"}" "$HOST/api/v0/categories"
+	-d "{\"name\":\"18-cat-badpath\",\"save_path\":\"$UNUSABLE\"}" "$API/categories"
 _assert_status 202 "POST /categories with an uncreatable save_path -> 202 (path substituted)"
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/categories"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/categories"
 BAD_IDX=$(printf '%s' "$CURL_BODY" \
 	| jq -r '[.categories[] | select(.name == "18-cat-badpath")][0].index // empty')
 if [ -n "$BAD_IDX" ]; then
@@ -407,14 +408,14 @@ if [ -n "$BAD_IDX" ]; then
 	_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 		-H "Content-Type: application/json" \
 		-d "{\"name\":\"18-cat-badpath-renamed\",\"save_path\":\"$UNUSABLE\"}" \
-		"$HOST/api/v0/categories/$BAD_IDX"
+		"$API/categories/$BAD_IDX"
 	_assert_status 200 "PATCH /categories/$BAD_IDX with an uncreatable save_path -> 200"
 	_assert_json_eq '.name' '18-cat-badpath-renamed' \
 		'the rest of the PATCH lands even when the path is refused'
 	_assert_json_eq "(.save_path == \"$UNUSABLE\")" false \
 		'the echoed save_path is the kept one, not the refused one'
 
-	_curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/categories/$BAD_IDX"
+	_curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" "$API/categories/$BAD_IDX"
 	_assert_status 204 "cleanup: DELETE /categories/$BAD_IDX -> 204"
 else
 	_fail "create with an uncreatable save_path" "202 returned but no such category in /categories"

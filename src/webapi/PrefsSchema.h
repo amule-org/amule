@@ -34,7 +34,7 @@
 namespace webapi
 {
 
-// One declarative description of every field on /api/v0/preferences, used by all three code paths
+// One declarative description of every field on /api/v1/preferences, used by all three code paths
 // that touch them: the EC decode (Refresher), the GET emitter and the PATCH applier (Api). Before
 // this table each field was spelled out three times in three different idioms, which is how a
 // rename could land in two places and be missed in the third.

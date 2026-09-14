@@ -33,6 +33,7 @@ set -u
 set -o pipefail
 
 HOST=${HOST:-localhost:4713}
+API="$HOST/api/v1"
 ADMIN_PASS=${ADMIN_PASS:-adminpass}
 
 FAIL_COUNT=0
@@ -83,7 +84,7 @@ _assert_json_eq() {
 if ! command -v jq >/dev/null 2>&1; then
 	_die "jq is required."
 fi
-if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health" 2>/dev/null; then
+if ! curl -s -o /dev/null --max-time 2 "$API/health" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable."
 fi
 
@@ -91,7 +92,7 @@ echo "amuleapi 09-refresher-consolidation smoke @ $HOST"
 
 TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 	-d "{\"password\":\"$ADMIN_PASS\"}" \
-	"$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
+	"$API/auth/login?include_token=true" | jq -r .token)
 [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ] || _die "login failed"
 
 # Let the refresher complete at least one full tick after auth so the
@@ -104,7 +105,7 @@ sleep 4
 #
 # Phase 4b asserted these field types on the list shape; if GET_UPDATE
 # dispatch broke any of them, the wire contract is broken.
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/downloads"
+_curl -H "Authorization: Bearer $TOKEN" "$API/downloads"
 _assert_status 200 "GET /downloads → 200"
 _assert_json_eq '.downloads | type'     array '/downloads .downloads is array'
 
@@ -139,14 +140,14 @@ if [ "$DCOUNT" -gt 0 ]; then
 	# call at ExternalConn.cpp:942) so the decoder gets its frames.
 	# If the consolidation broke the RLE wiring, parts would come back
 	# empty or with the wrong length.
-	_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/downloads/$FIRST_HASH"
+	_curl -H "Authorization: Bearer $TOKEN" "$API/downloads/$FIRST_HASH"
 	_assert_status 200 "GET /downloads/{hash} → 200"
 	_assert_json_eq '.progress.parts | type' array \
 		'/downloads/{hash}.progress.parts is array (RLE decoder still wired)'
 fi
 
 # --- 3. /shared — list endpoint shape preserved. -------------------
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/shared"
+_curl -H "Authorization: Bearer $TOKEN" "$API/shared"
 _assert_status 200 "GET /shared → 200"
 _assert_json_eq '.shared | type'        array '/shared .shared is array'
 
@@ -171,7 +172,7 @@ fi
 # Now populated by walking the EC_TAG_SERVER container inside the
 # GET_UPDATE response (one level deeper than the legacy GET_SERVER_LIST
 # response, where servers were top-level).
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/servers"
+_curl -H "Authorization: Bearer $TOKEN" "$API/servers"
 _assert_status 200 "GET /servers → 200"
 _assert_json_eq '.servers | type'       array '/servers .servers is array'
 
@@ -194,11 +195,11 @@ fi
 # --- 5. /status, /kad, /preferences — unaffected by the consolidation
 # (they ride on STAT_REQ and GET_PREFERENCES, which we did not touch).
 # A sanity glance to catch unrelated regressions slipping in.
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/status"
+_curl -H "Authorization: Bearer $TOKEN" "$API/status"
 _assert_status 200 "GET /status → 200 (unaffected by Phase 4f)"
 _assert_json_eq '.ed2k.state | type' string '/status.ed2k.state still populated'
 
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/kad"
+_curl -H "Authorization: Bearer $TOKEN" "$API/kad"
 _assert_status 200 "GET /kad → 200 (unaffected by Phase 4f)"
 
 # --- Summary. -----------------------------------------------------

@@ -35,7 +35,7 @@
 
 #include "Role.h"
 
-// HS256 JWT machinery for the /api/v0 surface. Token shape per RFC 7519:
+// HS256 JWT machinery for the /api/v1 surface. Token shape per RFC 7519:
 // <base64url(header)>.<base64url(payload)>.<base64url(sig)>
 //
 //   header  = {"alg":"HS256","typ":"JWT"}

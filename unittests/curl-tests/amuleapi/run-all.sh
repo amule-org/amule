@@ -175,7 +175,7 @@ run_phase() {
 	local i
 	for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
 		if curl -s -o /dev/null --max-time 1 \
-		    http://localhost:4713/api/v0/health 2>/dev/null; then
+		    http://localhost:4713/api/v1/health 2>/dev/null; then
 			break
 		fi
 		sleep 0.5
@@ -205,7 +205,7 @@ run_phase() {
 		local probe=$(curl -s -X POST -H "Content-Type: application/json" \
 			-o /dev/null -w "%{http_code}" \
 			-d "{\"password\":\"adminpass\"}" \
-			http://localhost:4713/api/v0/auth/login 2>/dev/null)
+			http://localhost:4713/api/v1/auth/login 2>/dev/null)
 		if [ "$probe" = "429" ]; then
 			echo "TIP: amuleapi is currently rate-limiting login (HTTP 429)." \
 			     "If you ran 02-auth.sh right before this, that's the 7-bad-pass" \

@@ -13,6 +13,7 @@ set -u
 set -o pipefail
 
 HOST=${HOST:-localhost:4713}
+API="$HOST/api/v1"
 ADMIN_PASS=${ADMIN_PASS:-adminpass}
 
 FAIL_COUNT=0
@@ -63,7 +64,7 @@ _assert_json_eq() {
 if ! command -v jq >/dev/null 2>&1; then
 	_die "jq is required."
 fi
-if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health" 2>/dev/null; then
+if ! curl -s -o /dev/null --max-time 2 "$API/health" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable."
 fi
 
@@ -71,7 +72,7 @@ echo "amuleapi 06-read-logs smoke @ $HOST"
 
 TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 	-d "{\"password\":\"$ADMIN_PASS\"}" \
-	"$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
+	"$API/auth/login?include_token=true" | jq -r .token)
 [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ] || _die "login failed"
 
 # Give the refresher a few seconds to drain the initial log baseline
@@ -80,13 +81,13 @@ TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 sleep 5
 
 # --- 1. Auth gate. -------------------------------------------------
-_curl "$HOST/api/v0/logs/amule"
+_curl "$API/logs/amule"
 _assert_status 401 "GET /logs/amule (no creds) → 401"
-_curl "$HOST/api/v0/logs/server_info"
+_curl "$API/logs/server_info"
 _assert_status 401 "GET /logs/server_info (no creds) → 401"
 
 # --- 2. /logs/amule full response shape. ---------------------------
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/logs/amule"
+_curl -H "Authorization: Bearer $TOKEN" "$API/logs/amule"
 _assert_status 200 "GET /logs/amule → 200"
 _assert_json_eq '.lines | type'         array  '/logs/amule.lines is an array'
 _assert_json_eq '.total_lines | type'  number '/logs/amule.total_lines is numeric'
@@ -99,7 +100,7 @@ _assert_json_eq '(.returned_lines == .total_lines)' true \
 TOTAL=$(printf '%s' "$CURL_BODY" | jq '.total_lines')
 
 # --- 3. /logs/amule?tail=N. ----------------------------------------
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/logs/amule?tail=2"
+_curl -H "Authorization: Bearer $TOKEN" "$API/logs/amule?tail=2"
 _assert_status 200 "GET /logs/amule?tail=2 → 200"
 _assert_json_eq '.returned_lines'           2      '/logs/amule?tail=2 returns 2 lines'
 _assert_json_eq '.lines | length'     2      '/logs/amule?tail=2 array length is 2'
@@ -107,7 +108,7 @@ _assert_json_eq '.total_lines'       "$TOTAL" '/logs/amule?tail=2 still reports 
 
 # tail=0 means "no tailing" → all lines. The wire contract makes 0
 # the inert default (matches the helper's behaviour: 0 = unbounded).
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/logs/amule?tail=0"
+_curl -H "Authorization: Bearer $TOKEN" "$API/logs/amule?tail=0"
 _assert_status 200 "GET /logs/amule?tail=0 → 200"
 _assert_json_eq '(.returned_lines == .total_lines)' true \
 	'/logs/amule?tail=0 returns all (tail=0 is "no tailing")'
@@ -115,15 +116,15 @@ _assert_json_eq '(.returned_lines == .total_lines)' true \
 # A non-numeric tail is a 400, not a silent "return all". It used to parse as
 # 0 and quietly hand back the whole buffer, so a typo changed the response
 # without saying so; the count is now validated like every other on the surface.
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/logs/amule?tail=notanumber"
+_curl -H "Authorization: Bearer $TOKEN" "$API/logs/amule?tail=notanumber"
 _assert_status 400 "GET /logs/amule?tail=notanumber → 400"
 
 # Out of range is the same answer, where it used to clamp to 100000.
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/logs/amule?tail=999999"
+_curl -H "Authorization: Bearer $TOKEN" "$API/logs/amule?tail=999999"
 _assert_status 400 "GET /logs/amule?tail=999999 → 400"
 
 # --- 4. /logs/server_info shape. ------------------------------------
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/logs/server_info"
+_curl -H "Authorization: Bearer $TOKEN" "$API/logs/server_info"
 _assert_status 200 "GET /logs/server_info → 200"
 _assert_json_eq '.text | type'           string '/logs/server_info.text is string'
 _assert_json_eq '.total_bytes | type'    number '/logs/server_info.total_bytes is numeric'
@@ -134,7 +135,7 @@ _assert_json_eq '(.returned_bytes == .total_bytes)' true \
 TOTAL_BYTES=$(printf '%s' "$CURL_BODY" | jq '.total_bytes')
 
 # --- 5. /logs/server_info?tail=3 — line-boundary slicing. -----------
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/logs/server_info?tail=3"
+_curl -H "Authorization: Bearer $TOKEN" "$API/logs/server_info?tail=3"
 _assert_status 200 "GET /logs/server_info?tail=3 → 200"
 _assert_json_eq '(.returned_bytes <= .total_bytes)' true \
 	'/logs/server_info?tail=3: returned_bytes <= total_bytes'
@@ -145,8 +146,8 @@ _assert_json_eq '.total_bytes' "$TOTAL_BYTES" \
 # DELETE on /logs/{amule,serverinfo} clears the buffer. PATCH is a 405:
 # the logs are read+reset only, never partially mutable.
 for ep in logs/amule logs/server_info; do
-	_curl -X PATCH -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/$ep"
-	_assert_status 405 "PATCH /api/v0/$ep → 405"
+	_curl -X PATCH -H "Authorization: Bearer $TOKEN" "$API/$ep"
+	_assert_status 405 "PATCH /api/v1/$ep → 405"
 done
 
 # --- Summary. -----------------------------------------------------

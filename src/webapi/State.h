@@ -1460,7 +1460,7 @@ public:
 
 	StatusSnapshot Status() const;
 	KadSnapshot Kad() const;
-	// One-shot snapshot of the four scalars /api/v0/status composes from, taken under a
+	// One-shot snapshot of the four scalars /api/v1/status composes from, taken under a
 	// single shared_lock so they describe the same refresher tick -- no risk of `status`
 	// and `kad` straddling a tick boundary.
 	struct DashboardSnapshot

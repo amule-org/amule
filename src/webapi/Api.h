@@ -59,7 +59,7 @@ namespace webapi
 class CState;
 }
 
-// Request dispatcher for the `/api/v0/*` surface. Lives between the transport (CHttpServer) and the
+// Request dispatcher for the `/api/v1/*` surface. Lives between the transport (CHttpServer) and the
 // per-endpoint handlers. Owns the CJwt instance, the revocation set and the rate limiter. Config
 // and jwt are held by reference: the App constructs them once at startup and outlives every
 // Request.
@@ -72,7 +72,7 @@ public:
 	CHttpServer::Response Dispatch(const CHttpServer::Request &req);
 
 	// Streaming entry point, called by HttpServer when the streaming_resolver matches
-	// `/api/v0/events`. Runs the SSE loop until the writer goes dead (peer disconnect) or it
+	// `/api/v1/events`. Runs the SSE loop until the writer goes dead (peer disconnect) or it
 	// returns voluntarily.
 	void DispatchEvents(const CHttpServer::Request &req,
 		CHttpServer::Writer &writer,
@@ -227,7 +227,7 @@ private:
 	// Cache miss on a search_id: ask the core once (EC_OP_SEARCH_LIST) whether it holds this id
 	// anyway -- a search another client, or the monolithic GUI, started. Seeds the local slot
 	// and returns true when found. Shared by every endpoint that addresses a search by id, so
-	// none of them can 404 on an id GET /api/v0/search just enumerated. Deliberately a one-off
+	// none of them can 404 on an id GET /api/v1/search just enumerated. Deliberately a one-off
 	// roundtrip on the miss, not a per-tick poll: discovery is rare.
 	bool DiscoverSearchIfHeldByCore(std::uint32_t search_id);
 	// Resolve a path-supplied search_id to a live slot, seeding it from the core on a cache

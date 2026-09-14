@@ -32,6 +32,7 @@ set -u
 set -o pipefail
 
 HOST=${HOST:-localhost:4713}
+API="$HOST/api/v1"
 ADMIN_PASS=${ADMIN_PASS:-adminpass}
 
 FAIL_COUNT=0
@@ -82,7 +83,7 @@ _assert_json_eq() {
 if ! command -v jq >/dev/null 2>&1; then
 	_die "jq is required."
 fi
-if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health" 2>/dev/null; then
+if ! curl -s -o /dev/null --max-time 2 "$API/health" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable."
 fi
 
@@ -90,12 +91,12 @@ echo "amuleapi 11-downloads-default-filter smoke @ $HOST"
 
 TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 	-d "{\"password\":\"$ADMIN_PASS\"}" \
-	"$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
+	"$API/auth/login?include_token=true" | jq -r .token)
 [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ] || _die "login failed"
 sleep 4
 
 # --- 1. Default /downloads — completed entries filtered out. ------
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/downloads"
+_curl -H "Authorization: Bearer $TOKEN" "$API/downloads"
 _assert_status 200 "GET /downloads → 200"
 _assert_json_eq '.downloads | type' array '/downloads .downloads is array'
 
@@ -114,7 +115,7 @@ DEFAULT_COUNT=$(printf '%s' "$CURL_BODY" | jq '.downloads | length')
 echo "    info: /downloads default returned $DEFAULT_COUNT entries (completed filtered)"
 
 # --- 2. ?status=all opt-in. ---------------------------------------
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/downloads?status=all"
+_curl -H "Authorization: Bearer $TOKEN" "$API/downloads?status=all"
 _assert_status 200 "GET /downloads?status=all → 200"
 _assert_json_eq '.downloads | type' array '/downloads?status=all .downloads is array'
 
@@ -144,7 +145,7 @@ if [ "$ALL_COUNT" -gt 0 ]; then
 fi
 
 # --- 3. ?status=active is what the default already does. ----------
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/downloads?status=active"
+_curl -H "Authorization: Bearer $TOKEN" "$API/downloads?status=active"
 _assert_status 200 "GET /downloads?status=active → 200"
 ACTIVE_COUNT=$(printf '%s' "$CURL_BODY" | jq '.downloads | length')
 if [ "$ACTIVE_COUNT" = "$DEFAULT_COUNT" ]; then
@@ -160,7 +161,7 @@ _assert_json_eq '[.downloads[].status | select(. == "completed")] | length' 0 \
 #
 # This is the third state the collection has and the reason
 # include_completed was replaced: completed-only was unreachable.
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/downloads?status=completed"
+_curl -H "Authorization: Bearer $TOKEN" "$API/downloads?status=completed"
 _assert_status 200 "GET /downloads?status=completed → 200"
 _assert_json_eq '.downloads | type' array '/downloads?status=completed .downloads is array'
 COMPLETED_COUNT=$(printf '%s' "$CURL_BODY" | jq '.downloads | length')
@@ -182,14 +183,14 @@ fi
 #
 # A value outside the enum is a 400, not a silent fallthrough to the
 # default: a typo must not quietly change what the caller gets.
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/downloads?status=bogus"
+_curl -H "Authorization: Bearer $TOKEN" "$API/downloads?status=bogus"
 _assert_status 400 "GET /downloads?status=bogus → 400"
 _assert_json_eq '.error.code' bad_request 'status=bogus 400 carries error.code=bad_request'
 
 # The old boolean is refused rather than ignored, and the message names
 # its replacement so a caller on the old spelling is told where to go.
 for v in 1 0 true false; do
-	_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/downloads?include_completed=$v"
+	_curl -H "Authorization: Bearer $TOKEN" "$API/downloads?include_completed=$v"
 	_assert_status 400 "GET /downloads?include_completed=$v → 400"
 done
 _assert_json_eq '.error.code' bad_request \
@@ -206,11 +207,11 @@ fi
 # Pick a hash from the completed slice. If at least one entry is
 # completed, hitting its detail must still return 200 (consumers
 # asking for a specific file shouldn't be filtered).
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/downloads?status=completed"
+_curl -H "Authorization: Bearer $TOKEN" "$API/downloads?status=completed"
 COMPLETED_HASH=$(printf '%s' "$CURL_BODY" | jq -r \
 	'.downloads | first | .hash // empty')
 if [ -n "$COMPLETED_HASH" ]; then
-	_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/downloads/$COMPLETED_HASH"
+	_curl -H "Authorization: Bearer $TOKEN" "$API/downloads/$COMPLETED_HASH"
 	_assert_status 200 "GET /downloads/{completed-hash} → 200 (detail not filtered)"
 	_assert_json_eq '.status' completed \
 		'/downloads/{completed-hash} carries status=completed (decoder fix observable)'

@@ -134,7 +134,7 @@ void CServer::Init()
 	// Empty, not _("Unknown"): this is a display placeholder, and every non-display consumer of
 	// the field is worse off holding a translated one. server.met would persist the running
 	// locale's word (an Italian aMule wrote ST_VERSION="Sconosciuta"), EC would ship it to
-	// amulegui and amuleapi, and /api/v0/servers would answer a localized string on a surface
+	// amulegui and amuleapi, and /api/v1/servers would answer a localized string on a surface
 	// documented as English-only. The server list renders the placeholder itself when this is
 	// empty.
 	m_strVersion.Clear();

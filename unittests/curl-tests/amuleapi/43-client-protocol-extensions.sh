@@ -42,6 +42,7 @@ set -u
 set -o pipefail
 
 HOST=${HOST:-localhost:4713}
+API="$HOST/api/v1"
 ADMIN_PASS=${ADMIN_PASS:-adminpass}
 
 FAIL_COUNT=0
@@ -119,7 +120,7 @@ trap 'rm -f /tmp/amuleapi_43_head /tmp/amuleapi_43_body /tmp/amuleapi_43_sse' EX
 
 command -v jq >/dev/null 2>&1 || _die "jq is required"
 
-if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health" 2>/dev/null; then
+if ! curl -s -o /dev/null --max-time 2 "$API/health" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable. Start amuleapi first."
 fi
 
@@ -128,13 +129,13 @@ echo "amuleapi 43-client-protocol-extensions @ $HOST"
 # --- 0. Log in. ----------------------------------------------------
 TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 	-d "{\"password\":\"$ADMIN_PASS\"}" \
-	"$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
+	"$API/auth/login?include_token=true" | jq -r .token)
 [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ] \
 	|| _die "could not log in for protocol-extension tests"
 AUTH=(-H "Authorization: Bearer $TOKEN")
 
 # --- 1. The list row. ----------------------------------------------
-_curl "$HOST/api/v0/clients"
+_curl "$API/clients"
 _assert_status 200 "GET /clients"
 
 COUNT=$(_jq '.clients | length')
@@ -169,7 +170,7 @@ fi
 
 # --- 2. The detail object. -----------------------------------------
 if [ -n "$ECID" ] && [ "$ECID" != "null" ]; then
-	_curl "$HOST/api/v0/clients/$ECID"
+	_curl "$API/clients/$ECID"
 	_assert_status 200 "GET /clients/$ECID"
 
 	if [ "$(_jq 'has("protocol_extensions")')" = "true" ]; then
@@ -183,9 +184,9 @@ if [ -n "$ECID" ] && [ "$ECID" != "null" ]; then
 
 	# The detail object is documented as a superset of the list row, so the
 	# two must agree about this peer rather than merely both have the key.
-	_curl "$HOST/api/v0/clients"
+	_curl "$API/clients"
 	LIST_WORD=$(_jq ".clients[] | select(.ecid == $ECID) | .protocol_extensions")
-	_curl "$HOST/api/v0/clients/$ECID"
+	_curl "$API/clients/$ECID"
 	DETAIL_WORD=$(_jq '.protocol_extensions')
 	if [ "$LIST_WORD" = "$DETAIL_WORD" ]; then
 		_pass "list and detail report the same word for ecid $ECID ($DETAIL_WORD)"
@@ -203,7 +204,7 @@ fi
 # is exactly the failure that guarantee exists to catch, and it is invisible
 # from REST alone.
 curl -s --max-time 12 -N "${AUTH[@]}" \
-	"$HOST/api/v0/events?filter=client_added,client_updated" \
+	"$API/events?filter=client_added,client_updated" \
 	> /tmp/amuleapi_43_sse 2>/dev/null &
 SSE_PID=$!
 sleep 10

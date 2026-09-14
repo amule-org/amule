@@ -33,6 +33,7 @@ set -u
 set -o pipefail
 
 HOST=${HOST:-localhost:4713}
+API="$HOST/api/v1"
 
 FAIL_COUNT=0
 TEST_COUNT=0
@@ -83,7 +84,7 @@ _assert_status() {
 
 _header() { echo "$CURL_HEAD" | awk -F': ' -v k="$1" 'tolower($1) == k {gsub(/\r/,""); print $2}'; }
 
-if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health" 2>/dev/null; then
+if ! curl -s -o /dev/null --max-time 2 "$API/health" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable. Start amuleapi first."
 fi
 

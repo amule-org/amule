@@ -24,6 +24,7 @@ set -u
 set -o pipefail
 
 HOST=${HOST:-localhost:4713}
+API="$HOST/api/v1"
 ADMIN_PASS=${ADMIN_PASS:-adminpass}
 
 FAIL_COUNT=0
@@ -100,7 +101,7 @@ _assert_json_ge() {
 if ! command -v jq >/dev/null 2>&1; then
 	_die "jq is required. brew install jq."
 fi
-if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health" 2>/dev/null; then
+if ! curl -s -o /dev/null --max-time 2 "$API/health" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable. Start amuleapi first."
 fi
 
@@ -109,7 +110,7 @@ echo "amuleapi 28-list-pagination-sort smoke @ $HOST"
 # --- 0. Log in. ----------------------------------------------------
 TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 	-d "{\"password\":\"$ADMIN_PASS\"}" \
-	"$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
+	"$API/auth/login?include_token=true" | jq -r .token)
 [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ] \
 	|| _die "could not log in for pagination tests"
 
@@ -120,7 +121,7 @@ AUTH=(-H "Authorization: Bearer $TOKEN")
 # The search list is addressed per search, so start one to have an id
 # rather than relying on a removed implicit default.
 SEARCH_SID=$(curl -s -X POST "${AUTH[@]}" -H "Content-Type: application/json" \
-	-d '{"query":"amuleapi-phase28","type":"local"}' "$HOST/api/v0/search" \
+	-d '{"query":"amuleapi-phase28","type":"local"}' "$API/search" \
 	| jq -r '.search_id // empty')
 [ -n "$SEARCH_SID" ] || _die "POST /search returned no search_id"
 
@@ -143,7 +144,7 @@ for pair in "${ENDPOINTS[@]}"; do
 	echo "  --- /$ep (key .$key) ---"
 
 	# 1. Baseline: array + always-present pagination metadata.
-	_curl "${AUTH[@]}" "$HOST/api/v0/$ep"
+	_curl "${AUTH[@]}" "$API/$ep"
 	_assert_status 200 "GET /$ep → 200"
 	_assert_json_eq ".$key | type"  array  "/$ep .$key is an array"
 	_assert_json_eq ".total | type"  number "/$ep total is a number"
@@ -158,7 +159,7 @@ for pair in "${ENDPOINTS[@]}"; do
 	_assert_json_eq ".offset"        0      "/$ep default offset is 0"
 
 	# 2. limit bounds the array length; limit echoes back.
-	_curl "${AUTH[@]}" "$HOST/api/v0/$ep?limit=1"
+	_curl "${AUTH[@]}" "$API/$ep?limit=1"
 	_assert_status 200 "GET /$ep?limit=1 → 200"
 	_assert_json_le ".$key | length" 1 "/$ep?limit=1 returns <= 1 item"
 	_assert_json_eq ".limit" 1 "/$ep?limit=1 echoes limit=1"
@@ -168,39 +169,39 @@ for pair in "${ENDPOINTS[@]}"; do
 	_assert_json_eq ".limit | type" number "/$ep?limit=1 limit is a number"
 
 	# 3. limit=0 → empty window, total still reported.
-	_curl "${AUTH[@]}" "$HOST/api/v0/$ep?limit=0"
+	_curl "${AUTH[@]}" "$API/$ep?limit=0"
 	_assert_status 200 "GET /$ep?limit=0 → 200"
 	_assert_json_eq ".$key | length" 0 "/$ep?limit=0 returns empty array"
 
 	# 4. offset past the end → empty window, no error.
-	_curl "${AUTH[@]}" "$HOST/api/v0/$ep?offset=100000"
+	_curl "${AUTH[@]}" "$API/$ep?offset=100000"
 	_assert_status 200 "GET /$ep?offset=100000 → 200"
 	_assert_json_eq ".$key | length" 0 "/$ep offset past end → empty array"
 
 	# 5. valid sort field is accepted (every list has a `name` field).
-	_curl "${AUTH[@]}" "$HOST/api/v0/$ep?sort=name&order=desc"
+	_curl "${AUTH[@]}" "$API/$ep?sort=name&order=desc"
 	_assert_status 200 "GET /$ep?sort=name&order=desc → 200"
 
 	# 6. Malformed params → 400.
-	_curl "${AUTH[@]}" "$HOST/api/v0/$ep?limit=-1"
+	_curl "${AUTH[@]}" "$API/$ep?limit=-1"
 	_assert_status 400 "GET /$ep?limit=-1 → 400"
-	_curl "${AUTH[@]}" "$HOST/api/v0/$ep?limit=notanumber"
+	_curl "${AUTH[@]}" "$API/$ep?limit=notanumber"
 	_assert_status 400 "GET /$ep?limit=notanumber → 400"
-	_curl "${AUTH[@]}" "$HOST/api/v0/$ep?offset=-5"
+	_curl "${AUTH[@]}" "$API/$ep?offset=-5"
 	_assert_status 400 "GET /$ep?offset=-5 → 400"
-	_curl "${AUTH[@]}" "$HOST/api/v0/$ep?order=sideways"
+	_curl "${AUTH[@]}" "$API/$ep?order=sideways"
 	_assert_status 400 "GET /$ep?order=sideways → 400"
-	_curl "${AUTH[@]}" "$HOST/api/v0/$ep?sort=nonexistent_field"
+	_curl "${AUTH[@]}" "$API/$ep?sort=nonexistent_field"
 	_assert_status 400 "GET /$ep?sort=nonexistent_field → 400"
 
 	# 7. The ceiling is 1e9, past any collection that can exist, so a caller
 	# asking for the whole set gets it and a fat-fingered value is still a
 	# rejection rather than a silent reduction.
-	_curl "${AUTH[@]}" "$HOST/api/v0/$ep?limit=1000000001"
+	_curl "${AUTH[@]}" "$API/$ep?limit=1000000001"
 	_assert_status 400 "GET /$ep?limit=1000000001 → 400 (over the ceiling)"
-	_curl "${AUTH[@]}" "$HOST/api/v0/$ep?limit=99999"
+	_curl "${AUTH[@]}" "$API/$ep?limit=99999"
 	_assert_status 200 "GET /$ep?limit=99999 → 200 (legal now; was the old cap's rejection)"
-	_curl "${AUTH[@]}" "$HOST/api/v0/$ep?limit=1000000000"
+	_curl "${AUTH[@]}" "$API/$ep?limit=1000000000"
 	_assert_status 200 "GET /$ep?limit=1000000000 → 200 (the ceiling is in range)"
 	_assert_json_eq ".limit" 1000000000 "/$ep?limit=1000000000 echoes the limit it used"
 
@@ -209,14 +210,14 @@ for pair in "${ENDPOINTS[@]}"; do
 	# happened before the clamp and wrapped on a 32-bit size_t; an inverted
 	# iterator range is undefined behaviour, not a large page. The count is
 	# clamped before it is added now.
-	_curl "${AUTH[@]}" "$HOST/api/v0/$ep?limit=1000000000&offset=5"
+	_curl "${AUTH[@]}" "$API/$ep?limit=1000000000&offset=5"
 	_assert_status 200 "GET /$ep?limit=1e9&offset=5 → 200 (no overflow)"
 	_assert_json_eq ".offset" 5 "/$ep?offset=5 echoes offset=5"
 
 	# 9. `after` needs an identity sort and ascending order; both refusals are
 	# explicit rather than a silent fall back to the first page, which would
 	# read to a paging client as "the collection never grows".
-	_curl "${AUTH[@]}" "$HOST/api/v0/$ep?after=zzz"
+	_curl "${AUTH[@]}" "$API/$ep?after=zzz"
 	_assert_status 400 "GET /$ep?after= without sort → 400"
 done
 
@@ -231,7 +232,7 @@ done
 # page slides every later index down by one, so an offset walk skips a row --
 # and since that row was not itself added, updated or removed, no SSE event
 # repairs it. That is the whole reason `after` exists.
-_curl "${AUTH[@]}" "$HOST/api/v0/shared?limit=1000000000&sort=hash"
+_curl "${AUTH[@]}" "$API/shared?limit=1000000000&sort=hash"
 SWEEP_TOTAL=$(printf '%s' "$CURL_BODY" | jq -r '.total')
 ALL_HASHES=$(printf '%s' "$CURL_BODY" | jq -r '.shared[].hash' | sort)
 echo "    info: /shared holds $SWEEP_TOTAL rows"
@@ -244,9 +245,9 @@ if [ "$SWEEP_TOTAL" -gt 0 ]; then
 	# pages, plus one for the short final page that ends the walk.
 	while [ "$PAGES" -le "$SWEEP_TOTAL" ]; do
 		if [ -z "$AFTER" ]; then
-			_curl "${AUTH[@]}" "$HOST/api/v0/shared?sort=hash&limit=1"
+			_curl "${AUTH[@]}" "$API/shared?sort=hash&limit=1"
 		else
-			_curl "${AUTH[@]}" "$HOST/api/v0/shared?sort=hash&limit=1&after=$AFTER"
+			_curl "${AUTH[@]}" "$API/shared?sort=hash&limit=1&after=$AFTER"
 		fi
 		[ "$CURL_STATUS" = "200" ] || break
 		GOT=$(printf '%s' "$CURL_BODY" | jq -r '.shared | length')
@@ -272,14 +273,14 @@ if [ "$SWEEP_TOTAL" -gt 0 ]; then
 
 	# An anchor past the end is an empty page, not an error: that is how a
 	# sweep terminates when the last row is deleted mid-walk.
-	_curl "${AUTH[@]}" "$HOST/api/v0/shared?sort=hash&after=ffffffffffffffffffffffffffffffff"
+	_curl "${AUTH[@]}" "$API/shared?sort=hash&after=ffffffffffffffffffffffffffffffff"
 	_assert_status 200 "after= past the last row → 200"
 	_assert_json_eq '.shared | length' 0 "after= past the last row returns an empty page"
 
 	# Mutable column refused as an anchor, and desc refused outright.
-	_curl "${AUTH[@]}" "$HOST/api/v0/shared?sort=name&after=x"
+	_curl "${AUTH[@]}" "$API/shared?sort=name&after=x"
 	_assert_status 400 "after= on a mutable sort column → 400"
-	_curl "${AUTH[@]}" "$HOST/api/v0/shared?sort=hash&order=desc&after=x"
+	_curl "${AUTH[@]}" "$API/shared?sort=hash&order=desc&after=x"
 	_assert_status 400 "after= with order=desc → 400"
 else
 	echo "    info: nothing shared; keyset sweep skipped"
@@ -292,31 +293,31 @@ fi
 # direction. A stock daemon holds only category 0, so seed one row to step past
 # and delete it after. Assert the precondition rather than assume it: a failed
 # GET yields total="null", which must fail loudly, not skip and pass empty.
-_curl "${AUTH[@]}" "$HOST/api/v0/categories?limit=1000000000&sort=index"
+_curl "${AUTH[@]}" "$API/categories?limit=1000000000&sort=index"
 BEFORE_IDX=$(printf '%s' "$CURL_BODY" | jq -c '[.categories[].index]')
 curl -s -X POST "${AUTH[@]}" -H "Content-Type: application/json" \
 	-d '{"name":"phase28-cat","save_path":"/tmp/28-cat-sweep"}' \
-	"$HOST/api/v0/categories" > /dev/null 2>&1
-_curl "${AUTH[@]}" "$HOST/api/v0/categories?limit=1000000000&sort=index"
+	"$API/categories" > /dev/null 2>&1
+_curl "${AUTH[@]}" "$API/categories?limit=1000000000&sort=index"
 _assert_json_ge '.total' 2 '/categories seeded a row to step past'
 NEW_IDX=$(printf '%s' "$CURL_BODY" \
 	| jq -r --argjson b "$BEFORE_IDX" '[.categories[].index] - $b | first // empty')
 
 # after=0 seeks past category 0 and returns the rest -- a real numeric advance,
 # not just a parse edge. A reversed comparator would return nothing here.
-_curl "${AUTH[@]}" "$HOST/api/v0/categories?sort=index&after=0"
+_curl "${AUTH[@]}" "$API/categories?sort=index&after=0"
 _assert_status 200 "after=0 (numeric) → 200"
 _assert_json_ge ".categories | length" 1 "after=0 returns the rows past index 0"
 _assert_json_eq "[.categories[].index] | any(. == 0)" false "after=0 excludes index 0"
 
 # A non-numeric token sorts before everything -> first page (the strtoull-failed
 # branch), the same shape as an out-of-range offset.
-_curl "${AUTH[@]}" "$HOST/api/v0/categories?sort=index&after=notanumber"
+_curl "${AUTH[@]}" "$API/categories?sort=index&after=notanumber"
 _assert_status 200 "after=<non-numeric> on a numeric anchor → 200 (first page)"
 _assert_json_eq ".categories[0].index" 0 "after=<non-numeric> falls back to the first page"
 
 # A parsed token past every index -> empty page, not an error.
-_curl "${AUTH[@]}" "$HOST/api/v0/categories?sort=index&after=1000000000"
+_curl "${AUTH[@]}" "$API/categories?sort=index&after=1000000000"
 _assert_status 200 "after= past the last index → 200"
 _assert_json_eq ".categories | length" 0 "after= past the last index returns an empty page"
 
@@ -327,23 +328,23 @@ _assert_json_eq ".categories | length" 0 "after= past the last index returns an 
 # pair, not /downloads' progress.percent or status, which describe a transfer a
 # shared row does not report -- sorting by an absent column is not a sort.
 for key in uploaded_bytes_total downloaded_bytes_total upload_speed_bytes_per_second download_speed_bytes_per_second; do
-	_curl "${AUTH[@]}" "$HOST/api/v0/clients?sort=$key"
+	_curl "${AUTH[@]}" "$API/clients?sort=$key"
 	_assert_status 200 "GET /clients?sort=$key -> 200"
 done
 for key in uploaded_bytes_total upload_speed_bytes_per_second; do
-	_curl "${AUTH[@]}" "$HOST/api/v0/shared?sort=$key"
+	_curl "${AUTH[@]}" "$API/shared?sort=$key"
 	_assert_status 200 "GET /shared?sort=$key -> 200"
 done
 # The download-only keys stay rejected on /shared: the row has no such column.
 for key in progress.percent status; do
-	_curl "${AUTH[@]}" "$HOST/api/v0/shared?sort=$key"
+	_curl "${AUTH[@]}" "$API/shared?sort=$key"
 	_assert_status 400 "GET /shared?sort=$key -> 400 (not a column of this row)"
 done
 
 # Delete the seeded row (a single row, so no index-renumber concern).
-[ -n "$NEW_IDX" ] && curl -s -X DELETE "${AUTH[@]}" "$HOST/api/v0/categories/$NEW_IDX" > /dev/null 2>&1
+[ -n "$NEW_IDX" ] && curl -s -X DELETE "${AUTH[@]}" "$API/categories/$NEW_IDX" > /dev/null 2>&1
 
-curl -s -X DELETE "${AUTH[@]}" "$HOST/api/v0/search/$SEARCH_SID" > /dev/null 2>&1
+curl -s -X DELETE "${AUTH[@]}" "$API/search/$SEARCH_SID" > /dev/null 2>&1
 
 echo
 echo "28-list-pagination-sort: $((TEST_COUNT-FAIL_COUNT))/$TEST_COUNT passed"

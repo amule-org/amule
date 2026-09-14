@@ -1,4 +1,4 @@
-// REST client for the amuleapi /api/v0 surface.
+// REST client for the amuleapi /api/v1 surface.
 //
 // - Always sends the session cookie (credentials: "include").
 // - Latches "session dead" on the first 401 and fails every later call
@@ -11,9 +11,9 @@
 
 import { t } from "./i18n.js";
 
-const BASE = window.location.pathname.replace(/\/?$/, "/") + "api/v0";
+const BASE = window.location.pathname.replace(/\/?$/, "/") + "api/v1";
 
-// Root-relative URL for an /api/v0 path, for the one case that must not go
+// Root-relative URL for an /api/v1 path, for the one case that must not go
 // through fetch(): a browser navigation, which carries the HttpOnly session
 // cookie by itself — no token in the URL. Shares BASE with the fetch client.
 export function apiUrl(path) {

@@ -3,10 +3,10 @@
 # amuleapi 31-shared-directories — the configured share roots.
 #
 # Endpoints:
-#   GET    /api/v0/share_directories            → {"directories":[{path,recursive}]}
-#   PUT    /api/v0/share_directories            → replace the whole set
-#   POST   /api/v0/share_directories            → add one (idempotent)
-#   DELETE /api/v0/share_directories?path=...   → remove one
+#   GET    /api/v1/share_directories            → {"directories":[{path,recursive}]}
+#   PUT    /api/v1/share_directories            → replace the whole set
+#   POST   /api/v1/share_directories            → add one (idempotent)
+#   DELETE /api/v1/share_directories?path=...   → remove one
 #
 # These are the roots amuled is configured with, as opposed to /shared which
 # lists the files those roots produced. A recursive root is a single entry here
@@ -25,6 +25,7 @@ set -u
 set -o pipefail
 
 HOST=${HOST:-localhost:4713}
+API="$HOST/api/v1"
 ADMIN_PASS=${ADMIN_PASS:-adminpass}
 GUEST_PASS=${GUEST_PASS:-guestpass}
 
@@ -82,59 +83,59 @@ _restore() {
 			-H "Authorization: Bearer ${ADMIN_TOKEN:-}" \
 			-H "Content-Type: application/json" \
 			-d "{\"directories\":$ORIGINAL_DIRS}" \
-			"$HOST/api/v0/share_directories" 2>/dev/null || true
+			"$API/share_directories" 2>/dev/null || true
 	fi
 	rm -f "$CURL_BODY_FILE"
 	rm -rf "$SCRATCH_DIR"
 }
 trap _restore EXIT
 
-if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health" 2>/dev/null; then
+if ! curl -s -o /dev/null --max-time 2 "$API/health" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable."
 fi
 
 echo "amuleapi 31-shared-directories smoke @ $HOST"
 
 ADMIN_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$ADMIN_PASS\"}" "$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
+	-d "{\"password\":\"$ADMIN_PASS\"}" "$API/auth/login?include_token=true" | jq -r .token)
 [ -n "$ADMIN_TOKEN" ] && [ "$ADMIN_TOKEN" != "null" ] || _die "admin login failed"
 
 GUEST_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$GUEST_PASS\"}" "$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
+	-d "{\"password\":\"$GUEST_PASS\"}" "$API/auth/login?include_token=true" | jq -r .token)
 HAVE_GUEST=0
 [ -n "$GUEST_TOKEN" ] && [ "$GUEST_TOKEN" != "null" ] && HAVE_GUEST=1
 
 # --- 1. Auth + method gates. ----------------------------------------
-_curl "$HOST/api/v0/share_directories"
+_curl "$API/share_directories"
 _assert_status 401 "GET /share_directories (no token) → 401"
 
 _curl -X PUT -H "Content-Type: application/json" \
-	-d '{"directories":[]}' "$HOST/api/v0/share_directories"
+	-d '{"directories":[]}' "$API/share_directories"
 _assert_status 401 "PUT /share_directories (no token) → 401"
 
 if [ "$HAVE_GUEST" = "1" ]; then
 	# Reading the roots is GUEST, matching GET /shared and GET /preferences.
-	_curl -H "Authorization: Bearer $GUEST_TOKEN" "$HOST/api/v0/share_directories"
+	_curl -H "Authorization: Bearer $GUEST_TOKEN" "$API/share_directories"
 	_assert_status 200 "GET /share_directories (guest) → 200"
 
 	_curl -X PUT -H "Authorization: Bearer $GUEST_TOKEN" -H "Content-Type: application/json" \
-		-d '{"directories":[]}' "$HOST/api/v0/share_directories"
+		-d '{"directories":[]}' "$API/share_directories"
 	_assert_status 403 "PUT /share_directories (guest) → 403"
 
 	_curl -X POST -H "Authorization: Bearer $GUEST_TOKEN" -H "Content-Type: application/json" \
-		-d "{\"path\":\"$SCRATCH_DIR\"}" "$HOST/api/v0/share_directories"
+		-d "{\"path\":\"$SCRATCH_DIR\"}" "$API/share_directories"
 	_assert_status 403 "POST /share_directories (guest) → 403"
 
 	_curl -X DELETE -H "Authorization: Bearer $GUEST_TOKEN" \
-		"$HOST/api/v0/share_directories?path=%2Ftmp"
+		"$API/share_directories?path=%2Ftmp"
 	_assert_status 403 "DELETE /share_directories (guest) → 403"
 fi
 
-_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/share_directories"
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" "$API/share_directories"
 _assert_status 405 "PATCH /share_directories → 405"
 
 # --- 2. Read the current configuration (and snapshot it). -----------
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/share_directories"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/share_directories"
 _assert_status 200 "GET /share_directories → 200"
 _assert_json_eq '.directories | type' 'array' "directories is an array"
 ORIGINAL_DIRS=$(printf '%s' "$CURL_BODY" | jq -c '.directories')
@@ -142,27 +143,27 @@ ORIGINAL_DIRS=$(printf '%s' "$CURL_BODY" | jq -c '.directories')
 
 # --- 3. Body validation. --------------------------------------------
 _curl -X PUT -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
-	-d 'not json' "$HOST/api/v0/share_directories"
+	-d 'not json' "$API/share_directories"
 _assert_status 400 "PUT (malformed JSON) → 400"
 
 _curl -X PUT -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
-	-d '{}' "$HOST/api/v0/share_directories"
+	-d '{}' "$API/share_directories"
 _assert_status 400 "PUT (no directories array) → 400"
 
 _curl -X PUT -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
-	-d '{"directories":[{"path":""}]}' "$HOST/api/v0/share_directories"
+	-d '{"directories":[{"path":""}]}' "$API/share_directories"
 _assert_status 400 "PUT (empty path) → 400"
 
 _curl -X PUT -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
 	-d "{\"directories\":[{\"path\":\"$SCRATCH_DIR\",\"recursive\":\"yes\"}]}" \
-	"$HOST/api/v0/share_directories"
+	"$API/share_directories"
 _assert_status 400 "PUT (non-boolean recursive) → 400"
 
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
-	-d '{}' "$HOST/api/v0/share_directories"
+	-d '{}' "$API/share_directories"
 _assert_status 400 "POST (no path) → 400"
 
-_curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/share_directories"
+_curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" "$API/share_directories"
 _assert_status 400 "DELETE (no path parameter) → 400"
 
 # --- 4. Add a real directory, then read it back. ---------------------
@@ -180,7 +181,7 @@ _assert_status 400 "DELETE (no path parameter) → 400"
 SCRATCH_ENC=$(jq -rn --arg p "$SCRATCH_DIR" '$p|@uri')
 
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
-	-d "{\"path\":\"$SCRATCH_DIR\",\"recursive\":true}" "$HOST/api/v0/share_directories"
+	-d "{\"path\":\"$SCRATCH_DIR\",\"recursive\":true}" "$API/share_directories"
 SCRATCH_REJECTION=$(printf '%s' "$CURL_BODY" |
 	jq -r "[.results[] | select(.id==\"$SCRATCH_DIR\" and .ok==false)][0].error.code" 2>/dev/null)
 SHARE_FS_VISIBLE=1
@@ -199,7 +200,7 @@ _assert_status 200 "POST (add scratch dir, recursive) → 200"
 _assert_json_eq '.results | type' array "POST returns a results array"
 _assert_json_eq '[.results[] | select(.ok==false)] | length' '0' "POST rejected nothing"
 
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/share_directories"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/share_directories"
 _assert_json_eq \
 	"[.directories[] | select(.path==\"$SCRATCH_DIR\")] | length" '1' \
 	"added directory is listed"
@@ -209,10 +210,10 @@ _assert_json_eq \
 
 # Idempotent re-add: no duplicate, and the flag follows the new value.
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
-	-d "{\"path\":\"$SCRATCH_DIR\",\"recursive\":false}" "$HOST/api/v0/share_directories"
+	-d "{\"path\":\"$SCRATCH_DIR\",\"recursive\":false}" "$API/share_directories"
 _assert_status 200 "POST (re-add same path) → 200"
 
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/share_directories"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/share_directories"
 _assert_json_eq \
 	"[.directories[] | select(.path==\"$SCRATCH_DIR\")] | length" '1' \
 	"re-add did not duplicate the entry"
@@ -226,7 +227,7 @@ fi # SHARE_FS_VISIBLE -- section 4
 # nowhere is rejected either way.
 BOGUS="$SCRATCH_DIR/definitely-not-here"
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
-	-d "{\"path\":\"$BOGUS\"}" "$HOST/api/v0/share_directories"
+	-d "{\"path\":\"$BOGUS\"}" "$API/share_directories"
 # A rejection makes the whole response 207, as with every other multi-item
 # mutation. It was 200, which meant a caller had to read the body to learn that
 # part of the request had not applied.
@@ -235,7 +236,7 @@ _assert_json_eq \
 	"[.results[] | select(.id==\"$BOGUS\")][0].error.code" 'not_found' \
 	"nonexistent path rejected as not_found"
 
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/share_directories"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/share_directories"
 _assert_json_eq \
 	"[.directories[] | select(.path==\"$BOGUS\")] | length" '0' \
 	"rejected path was not stored"
@@ -247,10 +248,10 @@ _assert_json_eq \
 
 # --- 6. Remove it again. --------------------------------------------
 _curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/share_directories?path=$SCRATCH_ENC"
+	"$API/share_directories?path=$SCRATCH_ENC"
 _assert_status 200 "DELETE (configured path) → 200"
 
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/share_directories"
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/share_directories"
 _assert_json_eq \
 	"[.directories[] | select(.path==\"$SCRATCH_DIR\")] | length" '0' \
 	"deleted directory is gone"
@@ -258,7 +259,7 @@ fi # SHARE_FS_VISIBLE -- sections 5b and 6
 
 # Never configured, whether or not the scratch dir ever was.
 _curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/share_directories?path=$SCRATCH_ENC"
+	"$API/share_directories?path=$SCRATCH_ENC"
 _assert_status 404 "DELETE (path not configured) → 404"
 
 # --- Summary. -------------------------------------------------------

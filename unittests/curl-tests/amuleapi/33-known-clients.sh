@@ -43,6 +43,7 @@ set -u
 set -o pipefail
 
 HOST=${HOST:-localhost:4713}
+API="$HOST/api/v1"
 ADMIN_PASS=${ADMIN_PASS:-adminpass}
 
 FAIL_COUNT=0
@@ -89,7 +90,7 @@ trap 'rm -f /tmp/amuleapi_33_head /tmp/amuleapi_33_body' EXIT
 
 command -v jq >/dev/null 2>&1 || _die "jq is required"
 
-if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health" 2>/dev/null; then
+if ! curl -s -o /dev/null --max-time 2 "$API/health" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable. Start amuleapi first."
 fi
 
@@ -98,13 +99,13 @@ echo "amuleapi 33-known-clients @ $HOST"
 # --- 0. Log in. ----------------------------------------------------
 TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 	-d "{\"password\":\"$ADMIN_PASS\"}" \
-	"$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
+	"$API/auth/login?include_token=true" | jq -r .token)
 [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ] \
 	|| _die "could not log in for known-clients tests"
 AUTH=(-H "Authorization: Bearer $TOKEN")
 
 # --- 1. The envelope. ---------------------------------------------
-_curl "$HOST/api/v0/known_clients"
+_curl "$API/known_clients"
 _assert_status 200 "GET /known_clients"
 
 if [ "$(_jq 'has("known_clients")')" = "true" ]; then
@@ -125,7 +126,7 @@ TOTAL=$(_jq '.total')
 echo "        (store holds $TOTAL record(s))"
 
 # --- 2. Pagination, through the shared helpers. -------------------
-_curl "$HOST/api/v0/known_clients?limit=1"
+_curl "$API/known_clients?limit=1"
 _assert_status 200 "GET /known_clients?limit=1"
 N=$(_jq '.known_clients | length')
 if [ "${N:-0}" -le 1 ]; then
@@ -134,7 +135,7 @@ else
 	_fail "limit=1" "returned $N records"
 fi
 
-_curl "$HOST/api/v0/known_clients?limit=1&offset=99999999"
+_curl "$API/known_clients?limit=1&offset=99999999"
 _assert_status 200 "GET /known_clients with a far offset"
 N=$(_jq '.known_clients | length')
 if [ "${N:-1}" -eq 0 ]; then
@@ -144,24 +145,24 @@ else
 fi
 
 for bad in "limit=abc" "limit=99999999999" "offset=-1" "order=sideways"; do
-	_curl "$HOST/api/v0/known_clients?$bad"
+	_curl "$API/known_clients?$bad"
 	_assert_status 400 "GET /known_clients?$bad is rejected"
 done
 
 # --- 3. Sort keys. -------------------------------------------------
 for key in name software first_seen_at last_seen_at session_count uploaded_bytes_total downloaded_bytes_total; do
-	_curl "$HOST/api/v0/known_clients?sort=$key&limit=1"
+	_curl "$API/known_clients?sort=$key&limit=1"
 	_assert_status 200 "sort=$key is accepted"
 done
-_curl "$HOST/api/v0/known_clients?sort=nonsense"
+_curl "$API/known_clients?sort=nonsense"
 _assert_status 400 "an unknown sort key is rejected"
 
-_curl "$HOST/api/v0/known_clients?sort=last_seen_at&order=desc&limit=1"
+_curl "$API/known_clients?sort=last_seen_at&order=desc&limit=1"
 _assert_status 200 "sort=last_seen_at&order=desc is accepted"
 
 # --- 4. Record shape. ----------------------------------------------
 if [ "${TOTAL:-0}" -gt 0 ]; then
-	_curl "$HOST/api/v0/known_clients?limit=1"
+	_curl "$API/known_clients?limit=1"
 
 	for k in user_hash uploaded_bytes_total downloaded_bytes_total last_seen_at connected; do
 		if [ "$(_jq ".known_clients[0] | has(\"$k\")")" = "true" ]; then
@@ -226,13 +227,13 @@ fi
 # Sorted, for the same reason as the row check below: an unsorted page of a
 # large store contains no online records at all, and the check would skip
 # itself forever while looking like it had run.
-_curl "$HOST/api/v0/known_clients?sort=last_seen_at&order=desc&limit=500"
+_curl "$API/known_clients?sort=last_seen_at&order=desc&limit=500"
 ACTIVE_HASH=$(_jq '[.known_clients[] | select(.connected)][0].user_hash')
 if [ -n "$ACTIVE_HASH" ] && [ "$ACTIVE_HASH" != "null" ]; then
 	BEFORE=$(_jq "[.known_clients[] | select(.user_hash == \"$ACTIVE_HASH\")][0]
 		| .downloaded_bytes_total + .uploaded_bytes_total")
 	sleep 4
-	_curl "$HOST/api/v0/known_clients?sort=last_seen_at&order=desc&limit=500"
+	_curl "$API/known_clients?sort=last_seen_at&order=desc&limit=500"
 	AFTER=$(_jq "[.known_clients[] | select(.user_hash == \"$ACTIVE_HASH\")][0]
 		| .downloaded_bytes_total + .uploaded_bytes_total")
 	if [ "${AFTER:-0}" -gt "${BEFORE:-0}" ]; then
@@ -263,12 +264,12 @@ fi
 # ReconcileKnownClientsLocked() skips: the all-zero one is the placeholder a peer
 # reports before sending its real hash, and folding those in would collapse
 # every unidentified peer into one fabricated record.
-LIVE_CLIENTS_JSON=$(curl -s --max-time 10 "${AUTH[@]}" "$HOST/api/v0/clients?limit=500")
+LIVE_CLIENTS_JSON=$(curl -s --max-time 10 "${AUTH[@]}" "$API/clients?limit=500")
 LIVE_TOTAL=$(printf '%s' "$LIVE_CLIENTS_JSON" | jq -r '.clients | length' 2>/dev/null)
 LIVE_HASHES=$(printf '%s' "$LIVE_CLIENTS_JSON" \
 	| jq -r '.clients[].user_hash // empty | select(. != "" and (test("^0+$") | not))' | sort -u)
 if [ -n "$LIVE_HASHES" ]; then
-	_curl "$HOST/api/v0/known_clients?sort=last_seen_at&order=desc&limit=500"
+	_curl "$API/known_clients?sort=last_seen_at&order=desc&limit=500"
 	MISSING=0
 	CHECKED=0
 	for h in $LIVE_HASHES; do
@@ -301,22 +302,22 @@ else
 fi
 
 # --- 5. Caching. ---------------------------------------------------
-_curl "$HOST/api/v0/known_clients?limit=1"
+_curl "$API/known_clients?limit=1"
 ETAG=$(_header etag)
 if [ -n "$ETAG" ]; then
 	_pass "response carries an ETag"
-	_curl -H "If-None-Match: $ETAG" "$HOST/api/v0/known_clients?limit=1"
+	_curl -H "If-None-Match: $ETAG" "$API/known_clients?limit=1"
 	_assert_status 304 "If-None-Match on the same ETag is a 304"
 else
 	_fail "caching" "no ETag on /known_clients"
 fi
 
 # --- 6. HEAD and method rejection. ---------------------------------
-_curl -I "$HOST/api/v0/known_clients"
+_curl -I "$API/known_clients"
 _assert_status 200 "HEAD /known_clients"
 
 for m in POST PUT DELETE PATCH; do
-	_curl -X "$m" "$HOST/api/v0/known_clients"
+	_curl -X "$m" "$API/known_clients"
 	_assert_status 405 "$m /known_clients is rejected"
 done
 
@@ -335,12 +336,12 @@ done
 # Re-read both and require the SAME hash to still be inconsistent before
 # failing: a real defect persists, a race does not.
 _cross_check_online() {
-	_curl "$HOST/api/v0/known_clients?limit=200"
+	_curl "$API/known_clients?limit=200"
 	local online_hashes connected_hashes h missing=""
 	online_hashes=$(printf '%s' "$CURL_BODY" \
 		| jq -r '[.known_clients[] | select(.connected == true) | .user_hash] | .[]')
 	[ -z "$online_hashes" ] && { echo "__NONE__"; return; }
-	_curl "$HOST/api/v0/clients?limit=1000"
+	_curl "$API/clients?limit=1000"
 	# Flattened to one space-separated line: the membership test below is a
 	# `case` glob looking for " $h ", and jq -r emits one hash per LINE, so a
 	# newline-separated list matched nothing and reported every online hash

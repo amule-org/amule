@@ -3,8 +3,8 @@
 # amuleapi 12-downloads-add-patch — download lifecycle mutations.
 #
 # Endpoints landed:
-#   POST  /api/v0/downloads             — add downloads by `links` array
-#   PATCH /api/v0/downloads/{hash}      — status/priority/category
+#   POST  /api/v1/downloads             — add downloads by `links` array
+#   PATCH /api/v1/downloads/{hash}      — status/priority/category
 #
 # Mutate-then-refresh contract: every mutation handler runs
 # RefresherTick inline after the EC roundtrip succeeds, so the
@@ -25,6 +25,7 @@ set -u
 set -o pipefail
 
 HOST=${HOST:-localhost:4713}
+API="$HOST/api/v1"
 ADMIN_PASS=${ADMIN_PASS:-adminpass}
 GUEST_PASS=${GUEST_PASS:-guestpass}
 
@@ -45,7 +46,7 @@ trap '
 	# feedback_clean_temp_partfiles_after_test).
 	if [ -n "${ADMIN_TOKEN:-}" ]; then
 		curl -s -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
-			"$HOST/api/v0/downloads/$TEST_HASH" > /dev/null 2>&1 || true
+			"$API/downloads/$TEST_HASH" > /dev/null 2>&1 || true
 	fi
 ' EXIT
 
@@ -91,7 +92,7 @@ _assert_json_eq() {
 if ! command -v jq >/dev/null 2>&1; then
 	_die "jq is required."
 fi
-if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health" 2>/dev/null; then
+if ! curl -s -o /dev/null --max-time 2 "$API/health" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable."
 fi
 
@@ -99,13 +100,13 @@ echo "amuleapi 12-downloads-add-patch smoke @ $HOST"
 
 ADMIN_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 	-d "{\"password\":\"$ADMIN_PASS\"}" \
-	"$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
+	"$API/auth/login?include_token=true" | jq -r .token)
 [ -n "$ADMIN_TOKEN" ] && [ "$ADMIN_TOKEN" != "null" ] \
 	|| _die "admin login failed (need --set-admin-pass=$ADMIN_PASS on the daemon)"
 
 GUEST_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 	-d "{\"password\":\"$GUEST_PASS\"}" \
-	"$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
+	"$API/auth/login?include_token=true" | jq -r .token)
 HAVE_GUEST=0
 if [ -n "$GUEST_TOKEN" ] && [ "$GUEST_TOKEN" != "null" ]; then
 	HAVE_GUEST=1
@@ -115,25 +116,25 @@ sleep 4
 
 # --- 1. Auth gate (no token → 401). --------------------------------
 _curl -X POST -H "Content-Type: application/json" \
-	-d "{\"links\":[\"$TEST_LINK\"]}" "$HOST/api/v0/downloads"
+	-d "{\"links\":[\"$TEST_LINK\"]}" "$API/downloads"
 _assert_status 401 "POST /downloads (no token) → 401"
 
 _curl -X PATCH -H "Content-Type: application/json" \
-	-d '{"action":"pause"}' "$HOST/api/v0/downloads/$TEST_HASH"
+	-d '{"action":"pause"}' "$API/downloads/$TEST_HASH"
 _assert_status 401 "PATCH /downloads/{hash} (no token) → 401"
 
 # --- 2. Admin gate (guest → 403). ----------------------------------
 if [ "$HAVE_GUEST" = "1" ]; then
 	_curl -X POST -H "Authorization: Bearer $GUEST_TOKEN" \
 		-H "Content-Type: application/json" \
-		-d "{\"links\":[\"$TEST_LINK\"]}" "$HOST/api/v0/downloads"
+		-d "{\"links\":[\"$TEST_LINK\"]}" "$API/downloads"
 	_assert_status 403 "POST /downloads (guest token) → 403"
 	_assert_json_eq '.error.code' forbidden \
 		'POST /downloads guest carries error.code=forbidden'
 
 	_curl -X PATCH -H "Authorization: Bearer $GUEST_TOKEN" \
 		-H "Content-Type: application/json" \
-		-d '{"action":"pause"}' "$HOST/api/v0/downloads/$TEST_HASH"
+		-d '{"action":"pause"}' "$API/downloads/$TEST_HASH"
 	_assert_status 403 "PATCH /downloads/{hash} (guest token) → 403"
 
 	# The comments POST drives an unbounded Kad NOTES lookup on the daemon
@@ -141,7 +142,7 @@ if [ "$HAVE_GUEST" = "1" ]; then
 	# purposes even though it writes nothing locally. The matching GET is a
 	# plain read and stays open to guests.
 	_curl -X POST -H "Authorization: Bearer $GUEST_TOKEN" \
-		"$HOST/api/v0/downloads/$TEST_HASH/comments"
+		"$API/downloads/$TEST_HASH/comments"
 	_assert_status 403 "POST /downloads/{hash}/comments (guest token) → 403"
 	_assert_json_eq '.error.code' forbidden \
 		'POST downloads comments guest carries error.code=forbidden'
@@ -152,7 +153,7 @@ fi
 # --- 3. POST /downloads happy: add the test ISO. -------------------
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d "{\"links\":[\"$TEST_LINK\"]}" "$HOST/api/v0/downloads"
+	-d "{\"links\":[\"$TEST_LINK\"]}" "$API/downloads"
 _assert_status 202 "POST /downloads (Ubuntu ISO) → 202"
 # Unified per-item envelope (#358): one accepted result keyed by the link.
 _assert_json_eq '.results | length' 1 'POST /downloads returns one result'
@@ -165,7 +166,7 @@ _assert_json_eq ".results[0].id" "$TEST_LINK" 'POST /downloads results[0].id ech
 APPEARED=0
 for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25; do
 	_curl -H "Authorization: Bearer $ADMIN_TOKEN" \
-		"$HOST/api/v0/downloads?status=all"
+		"$API/downloads?status=all"
 	if printf '%s' "$CURL_BODY" \
 	   | jq -e --arg h "$TEST_HASH" '.downloads[] | select(.hash == $h)' \
 	   >/dev/null 2>&1; then
@@ -183,14 +184,14 @@ fi
 # --- 4. POST /downloads error paths. -------------------------------
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"links":["http://not-an-ed2k.com/foo"]}' "$HOST/api/v0/downloads"
+	-d '{"links":["http://not-an-ed2k.com/foo"]}' "$API/downloads"
 _assert_status 400 "POST /downloads (non-ed2k URL) → 400"
 _assert_json_eq '.error.code' bad_request \
 	'POST /downloads invalid URL carries error.code=bad_request'
 
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{}' "$HOST/api/v0/downloads"
+	-d '{}' "$API/downloads"
 _assert_status 400 "POST /downloads (missing links) → 400"
 
 # `links` is the only spelling. The singular `ed2k_link` alias this used to
@@ -198,21 +199,21 @@ _assert_status 400 "POST /downloads (missing links) → 400"
 # that answers with the bulk `results` envelope even for a single item.
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d "{\"ed2k_link\":\"$TEST_LINK\"}" "$HOST/api/v0/downloads"
+	-d "{\"ed2k_link\":\"$TEST_LINK\"}" "$API/downloads"
 _assert_status 400 "POST /downloads (singular ed2k_link) → 400"
 _assert_json_eq '.error.message | test("`links`")' true \
 	'the ed2k_link 400 names `links` as the replacement'
 
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d 'not json' "$HOST/api/v0/downloads"
+	-d 'not json' "$API/downloads"
 _assert_status 400 "POST /downloads (malformed JSON) → 400"
 
 # --- 5. PATCH happy paths + no-stale-cache invariant. --------------
 #
 # Save the pre-mutation state so we can restore it at the end.
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/downloads/$TEST_HASH"
+	"$API/downloads/$TEST_HASH"
 SAVED_STATUS=$(printf '%s' "$CURL_BODY" | jq -r '.status')
 SAVED_PRIORITY=$(printf '%s' "$CURL_BODY" | jq -r '.priority')
 SAVED_CATEGORY=$(printf '%s' "$CURL_BODY" | jq -r '.category')
@@ -223,24 +224,24 @@ echo "    info: saved state status=$SAVED_STATUS priority=$SAVED_PRIORITY catego
 # contract.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"action":"pause"}' "$HOST/api/v0/downloads/$TEST_HASH"
+	-d '{"action":"pause"}' "$API/downloads/$TEST_HASH"
 _assert_status 200 "PATCH /downloads/{hash} status=paused → 200"
 _assert_json_eq '.status' paused \
 	'PATCH response body shows status=paused'
 
 # No sleep — IMMEDIATE GET. Must see the post-mutation value.
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/downloads/$TEST_HASH"
+	"$API/downloads/$TEST_HASH"
 _assert_json_eq '.status' paused \
 	'IMMEDIATE GET after PATCH paused shows status=paused (no stale cache)'
 
 # 5b. PATCH status=resumed. Same invariant in the opposite direction.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"action":"resume"}' "$HOST/api/v0/downloads/$TEST_HASH"
+	-d '{"action":"resume"}' "$API/downloads/$TEST_HASH"
 _assert_status 200 "PATCH /downloads/{hash} status=resumed → 200"
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/downloads/$TEST_HASH"
+	"$API/downloads/$TEST_HASH"
 # Resumed maps back to one of the live statuses (downloading / waiting).
 RESUMED=$(printf '%s' "$CURL_BODY" | jq -r '.status')
 if [ "$RESUMED" = "paused" ]; then
@@ -256,11 +257,11 @@ fi
 # sources). Response body + immediate GET must both show it.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"action":"stop"}' "$HOST/api/v0/downloads/$TEST_HASH"
+	-d '{"action":"stop"}' "$API/downloads/$TEST_HASH"
 _assert_status 200 "PATCH /downloads/{hash} status=stopped → 200"
 _assert_json_eq '.status' stopped 'PATCH response body shows status=stopped'
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/downloads/$TEST_HASH"
+	"$API/downloads/$TEST_HASH"
 _assert_json_eq '.status' stopped \
 	'IMMEDIATE GET after PATCH stopped shows status=stopped (no stale cache)'
 
@@ -268,10 +269,10 @@ _assert_json_eq '.status' stopped \
 # paused and stopped flags), so the next GET must be neither.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"action":"resume"}' "$HOST/api/v0/downloads/$TEST_HASH"
+	-d '{"action":"resume"}' "$API/downloads/$TEST_HASH"
 _assert_status 200 "PATCH status=resumed (clear stop) → 200"
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/downloads/$TEST_HASH"
+	"$API/downloads/$TEST_HASH"
 UNSTOPPED=$(printf '%s' "$CURL_BODY" | jq -r '.status')
 if [ "$UNSTOPPED" = "stopped" ] || [ "$UNSTOPPED" = "paused" ]; then
 	_fail "IMMEDIATE GET after resume-from-stopped" \
@@ -285,11 +286,11 @@ fi
 # shared/upload-side levels — rejected below in section 6).
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"priority":"high"}' "$HOST/api/v0/downloads/$TEST_HASH"
+	-d '{"priority":"high"}' "$API/downloads/$TEST_HASH"
 _assert_status 200 "PATCH priority=high → 200"
 _assert_json_eq '.priority' high 'PATCH response shows priority=high'
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/downloads/$TEST_HASH"
+	"$API/downloads/$TEST_HASH"
 _assert_json_eq '.priority' high \
 	'IMMEDIATE GET after PATCH priority=high shows priority=high'
 
@@ -297,7 +298,7 @@ _assert_json_eq '.priority' high \
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d '{"action":"pause","priority":"low","category_index":0}' \
-	"$HOST/api/v0/downloads/$TEST_HASH"
+	"$API/downloads/$TEST_HASH"
 _assert_status 200 "PATCH combined (action+priority+category_index) → 200"
 _assert_json_eq '.status'   paused 'combined PATCH response status=paused'
 _assert_json_eq '.priority' low    'combined PATCH response priority=low'
@@ -309,23 +310,23 @@ _assert_json_eq '.category_index' 0      'combined PATCH response category_index
 # own message promised being my_rating.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"category_index":2.9}' "$HOST/api/v0/downloads/$TEST_HASH"
+	-d '{"category_index":2.9}' "$API/downloads/$TEST_HASH"
 _assert_status 400 "PATCH category_index=2.9 -> 400 (not truncated to 2)"
 _assert_json_eq '.error.code' bad_request 'fractional category_index carries error.code=bad_request'
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/downloads/$TEST_HASH"
+	"$API/downloads/$TEST_HASH"
 _assert_json_eq '.status'   paused 'IMMEDIATE GET after combined PATCH status=paused'
 _assert_json_eq '.priority' low    'IMMEDIATE GET after combined PATCH priority=low'
 
 # --- 6. PATCH error paths. -----------------------------------------
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{}' "$HOST/api/v0/downloads/$TEST_HASH"
+	-d '{}' "$API/downloads/$TEST_HASH"
 _assert_status 400 "PATCH empty body → 400"
 
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"priority":"bogus"}' "$HOST/api/v0/downloads/$TEST_HASH"
+	-d '{"priority":"bogus"}' "$API/downloads/$TEST_HASH"
 _assert_status 400 "PATCH unknown priority enum → 400"
 
 # Downloads reject the shared/upload-only levels: very_low and release
@@ -333,22 +334,22 @@ _assert_status 400 "PATCH unknown priority enum → 400"
 # normal), so the API refuses them rather than silently downgrading.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"priority":"very_low"}' "$HOST/api/v0/downloads/$TEST_HASH"
+	-d '{"priority":"very_low"}' "$API/downloads/$TEST_HASH"
 _assert_status 400 "PATCH priority=very_low (shared-only) → 400"
 
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"priority":"release"}' "$HOST/api/v0/downloads/$TEST_HASH"
+	-d '{"priority":"release"}' "$API/downloads/$TEST_HASH"
 _assert_status 400 "PATCH priority=release (shared-only) → 400"
 
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"status":"flapped"}' "$HOST/api/v0/downloads/$TEST_HASH"
+	-d '{"status":"flapped"}' "$API/downloads/$TEST_HASH"
 _assert_status 400 "PATCH unknown status enum → 400"
 
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{"action":"pause"}' "$HOST/api/v0/downloads/baadbaadbaadbaadbaadbaadbaadbaad"
+	-d '{"action":"pause"}' "$API/downloads/baadbaadbaadbaadbaadbaadbaadbaad"
 _assert_status 404 "PATCH unknown hash → 404"
 
 # --- 7. Restore the pre-mutation state so the Ubuntu ISO ends up
@@ -363,7 +364,7 @@ esac
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d "{\"status\":\"$RESTORE_STATUS\",\"priority\":\"$SAVED_PRIORITY\",\"category\":$SAVED_CATEGORY}" \
-	"$HOST/api/v0/downloads/$TEST_HASH"
+	"$API/downloads/$TEST_HASH"
 _assert_status 200 "PATCH (restore pre-mutation state) → 200"
 
 # --- Summary. -----------------------------------------------------

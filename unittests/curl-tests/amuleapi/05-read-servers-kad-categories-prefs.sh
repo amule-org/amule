@@ -17,6 +17,7 @@ set -u
 set -o pipefail
 
 HOST=${HOST:-localhost:4713}
+API="$HOST/api/v1"
 ADMIN_PASS=${ADMIN_PASS:-adminpass}
 
 FAIL_COUNT=0
@@ -67,7 +68,7 @@ _assert_json_eq() {
 if ! command -v jq >/dev/null 2>&1; then
 	_die "jq is required."
 fi
-if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health" 2>/dev/null; then
+if ! curl -s -o /dev/null --max-time 2 "$API/health" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable."
 fi
 
@@ -76,7 +77,7 @@ echo "amuleapi 05-read-servers-kad-categories-prefs smoke @ $HOST"
 # Log in.
 TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 	-d "{\"password\":\"$ADMIN_PASS\"}" \
-	"$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
+	"$API/auth/login?include_token=true" | jq -r .token)
 [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ] || _die "login failed"
 
 # Wait for the first full refresher tick (servers + prefs land at the
@@ -84,10 +85,10 @@ TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 sleep 3
 
 # --- 1. /servers ---------------------------------------------------
-_curl "$HOST/api/v0/servers"
+_curl "$API/servers"
 _assert_status 401 "GET /servers (no creds) → 401"
 
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/servers"
+_curl -H "Authorization: Bearer $TOKEN" "$API/servers"
 _assert_status 200 "GET /servers (admin) → 200"
 _assert_json_eq '.servers | type'          array  '/servers .servers is an array'
 COUNT=$(printf '%s' "$CURL_BODY" | jq '.servers | length')
@@ -142,10 +143,10 @@ if [ "$COUNT" -gt 0 ]; then
 fi
 
 # --- 2. /kad -------------------------------------------------------
-_curl "$HOST/api/v0/kad"
+_curl "$API/kad"
 _assert_status 401 "GET /kad (no creds) → 401"
 
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/kad"
+_curl -H "Authorization: Bearer $TOKEN" "$API/kad"
 _assert_status 200 "GET /kad (admin) → 200"
 _assert_json_eq '.state | test("^(disabled|connecting|connected)$")' \
 	true '/kad.state is a known enum value'
@@ -219,10 +220,10 @@ _assert_json_eq '(.state != "connected") or (.buddy.state | test("^(no_buddy|con
 	true '/kad.buddy.state is a known enum value while Kad is connected'
 
 # --- 3. /categories -----------------------------------------------
-_curl "$HOST/api/v0/categories"
+_curl "$API/categories"
 _assert_status 401 "GET /categories (no creds) → 401"
 
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/categories"
+_curl -H "Authorization: Bearer $TOKEN" "$API/categories"
 _assert_status 200 "GET /categories (admin) → 200"
 _assert_json_eq '.categories | type' array '/categories.categories is an array'
 CATCOUNT=$(printf '%s' "$CURL_BODY" | jq '.categories | length')
@@ -235,10 +236,10 @@ if [ "$CATCOUNT" -gt 0 ]; then
 fi
 
 # --- 4. /preferences ----------------------------------------------
-_curl "$HOST/api/v0/preferences"
+_curl "$API/preferences"
 _assert_status 401 "GET /preferences (no creds) → 401"
 
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/preferences"
+_curl -H "Authorization: Bearer $TOKEN" "$API/preferences"
 _assert_status 200 "GET /preferences (admin) → 200"
 # Bare object (no envelope) per Q3 — preferences is a single resource.
 _assert_json_eq '.snapshot_at | type' null \
@@ -324,8 +325,8 @@ _assert_json_eq '.connection.proxy_type | type' string '/preferences.connection.
 
 # --- Method gate. ----------------------------------------------
 for ep in servers kad categories preferences; do
-	_curl -X DELETE -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/$ep"
-	_assert_status 405 "DELETE /api/v0/$ep → 405"
+	_curl -X DELETE -H "Authorization: Bearer $TOKEN" "$API/$ep"
+	_assert_status 405 "DELETE /api/v1/$ep → 405"
 done
 
 # --- Summary. -----------------------------------------------------

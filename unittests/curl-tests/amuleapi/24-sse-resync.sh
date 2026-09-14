@@ -27,6 +27,7 @@ set -u
 set -o pipefail
 
 HOST=${HOST:-localhost:4713}
+API="$HOST/api/v1"
 ADMIN_PASS=${ADMIN_PASS:-adminpass}
 BIN=${AMULEAPI_BIN:?orchestrator must export AMULEAPI_BIN}
 CONFIG_DIR=${AMULEAPI_CONFIG_DIR:?orchestrator must export AMULEAPI_CONFIG_DIR}
@@ -61,7 +62,7 @@ _fail() {
 }
 
 if ! command -v jq >/dev/null 2>&1; then _die "jq is required."; fi
-if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health" 2>/dev/null; then
+if ! curl -s -o /dev/null --max-time 2 "$API/health" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable."
 fi
 
@@ -96,7 +97,7 @@ EOF
 	--host="$EC_HOST" --port="$EC_PORT" \
 	> "$LOG" 2>&1 &
 for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
-	if curl -s -o /dev/null --max-time 1 "$HOST/api/v0/health" 2>/dev/null; then
+	if curl -s -o /dev/null --max-time 1 "$API/health" 2>/dev/null; then
 		break
 	fi
 	sleep 0.5
@@ -105,7 +106,7 @@ done
 # token from before the bounce is unrelated (its rate-limit bucket
 # is empty too).
 ADMIN_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$ADMIN_PASS\"}" "$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
+	-d "{\"password\":\"$ADMIN_PASS\"}" "$API/auth/login?include_token=true" | jq -r .token)
 [ -n "$ADMIN_TOKEN" ] && [ "$ADMIN_TOKEN" != "null" ] || _die "admin login failed after bounce"
 
 # Deterministically rotate the ring past id 1 instead of hoping the
@@ -125,16 +126,16 @@ FILL_LINK="ed2k://|file|ubuntu-24.04.4-desktop-amd64.iso|6655619072|0031C9CBA65C
 FILL_HASH="0031c9cba65c50dd2015c184b2ca2c88"
 FILL_SUB=$(mktemp -t amuleapi_24_fillsub.XXXXXX)
 (curl -s -m 30 -N -H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/events" > "$FILL_SUB" 2>&1) &
+	"$API/events" > "$FILL_SUB" 2>&1) &
 FILL_PID=$!
 sleep 1
 for _ in 1 2 3 4; do
 	curl -s -o /dev/null -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 		-H "Content-Type: application/json" \
-		-d "{\"links\":[\"$FILL_LINK\"]}" "$HOST/api/v0/downloads"
+		-d "{\"links\":[\"$FILL_LINK\"]}" "$API/downloads"
 	sleep 2
 	curl -s -o /dev/null -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
-		"$HOST/api/v0/downloads/$FILL_HASH"
+		"$API/downloads/$FILL_HASH"
 	sleep 2
 done
 # Final settle so the last download_removed is in the ring, then drop the
@@ -153,7 +154,7 @@ rm -f "$FILL_SUB"
 (curl -s -m 3 -N \
 	-H "Last-Event-ID: 1" \
 	-H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/events" >> "$SSE" 2>&1) &
+	"$API/events" >> "$SSE" 2>&1) &
 PID=$!
 sleep 2.5
 kill $PID 2>/dev/null
@@ -206,7 +207,7 @@ fi
 (curl -s -m 3 -N \
 	-H "Last-Event-ID: 999999999999" \
 	-H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/events" >> "$SSE" 2>&1) &
+	"$API/events" >> "$SSE" 2>&1) &
 PID=$!
 sleep 2.5
 kill $PID 2>/dev/null
@@ -251,19 +252,19 @@ fi
 TEST_HASH="0031c9cba65c50dd2015c184b2ca2c88"
 TEST_LINK="ed2k://|file|ubuntu-24.04.4-desktop-amd64.iso|6655619072|0031C9CBA65C50DD2015C184B2CA2C88|/"
 curl -s -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/downloads/$TEST_HASH" > /dev/null 2>&1 || true
+	"$API/downloads/$TEST_HASH" > /dev/null 2>&1 || true
 sleep 3
 
 : > "$SSE"
 (curl -s -m 14 -N \
 	-H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/events" >> "$SSE" 2>&1) &
+	"$API/events" >> "$SSE" 2>&1) &
 PID=$!
 sleep 2
 curl -s -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d "{\"links\":[\"$TEST_LINK\"]}" \
-	"$HOST/api/v0/downloads" > /dev/null
+	"$API/downloads" > /dev/null
 sleep 11
 kill $PID 2>/dev/null
 wait $PID 2>/dev/null
@@ -312,7 +313,7 @@ fi
 # the first.
 : > "$SSE"
 (curl -s -m 4 -N -H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/events" >> "$SSE" 2>&1) &
+	"$API/events" >> "$SSE" 2>&1) &
 PID=$!
 sleep 3
 kill $PID 2>/dev/null
@@ -327,7 +328,7 @@ sleep 9
 (curl -s -m 6 -N \
 	-H "Last-Event-ID: $IDLE_CURSOR" \
 	-H "Authorization: Bearer $ADMIN_TOKEN" \
-	"$HOST/api/v0/events?channels=servers" >> "$SSE" 2>&1) &
+	"$API/events?channels=servers" >> "$SSE" 2>&1) &
 PID=$!
 sleep 4
 kill $PID 2>/dev/null

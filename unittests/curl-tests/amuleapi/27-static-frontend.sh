@@ -27,6 +27,7 @@ set -u
 set -o pipefail
 
 HOST=${HOST:-localhost:4713}
+API="$HOST/api/v1"
 ADMIN_PASS=${ADMIN_PASS:-adminpass}
 
 FAIL_COUNT=0
@@ -69,7 +70,7 @@ _assert_status() {
 if ! command -v jq >/dev/null 2>&1; then
 	_die "jq is required for JSON assertions. brew install jq."
 fi
-if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health" 2>/dev/null; then
+if ! curl -s -o /dev/null --max-time 2 "$API/health" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable. Start amuleapi first."
 fi
 
@@ -157,9 +158,9 @@ _assert_status 200 "GET /transfers (extension-less unknown) → 200 SPA fallback
 _curl "$HOST/missing.css"
 _assert_status 404 "GET /missing.css → 404"
 
-# --- 7. /api/v0/* still routes through the API dispatcher. --------
-_curl "$HOST/api/v0/version"
-_assert_status 200 "GET /api/v0/version is still routed to API (200)"
+# --- 7. /api/v1/* still routes through the API dispatcher. --------
+_curl "$API/version"
+_assert_status 200 "GET /api/v1/version is still routed to API (200)"
 
 # --- 8. Symlink-escape containment (extension-bearing). -----------
 # `realpath` resolves through the symlink. If the result escapes

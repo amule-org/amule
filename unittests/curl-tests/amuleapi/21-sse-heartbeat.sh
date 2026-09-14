@@ -4,7 +4,7 @@
 # heartbeat-only /events endpoint.
 #
 # Wire contract for Phase 8a:
-#   * GET /api/v0/events → 200 with Content-Type: text/event-stream
+#   * GET /api/v1/events → 200 with Content-Type: text/event-stream
 #     and Transfer-Encoding: chunked. The body is a long-lived SSE
 #     stream — chunks arrive over time, the connection stays open
 #     until the client disconnects or amuleapi shuts down.
@@ -24,6 +24,7 @@ set -u
 set -o pipefail
 
 HOST=${HOST:-localhost:4713}
+API="$HOST/api/v1"
 ADMIN_PASS=${ADMIN_PASS:-adminpass}
 
 FAIL_COUNT=0
@@ -59,18 +60,18 @@ _sse_grab() {
 }
 
 if ! command -v jq >/dev/null 2>&1; then _die "jq is required."; fi
-if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health" 2>/dev/null; then
+if ! curl -s -o /dev/null --max-time 2 "$API/health" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable."
 fi
 
 echo "amuleapi 21-sse-heartbeat smoke @ $HOST"
 
 ADMIN_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$ADMIN_PASS\"}" "$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
+	-d "{\"password\":\"$ADMIN_PASS\"}" "$API/auth/login?include_token=true" | jq -r .token)
 [ -n "$ADMIN_TOKEN" ] && [ "$ADMIN_TOKEN" != "null" ] || _die "admin login failed"
 
 # --- 1. Auth gate. -------------------------------------------------
-_sse_grab 3 -i "$HOST/api/v0/events"
+_sse_grab 3 -i "$API/events"
 HEAD=$(printf '%s' "$(cat "$CURL_BODY_FILE")")  # curl -i to body
 STATUS=$(printf '%s' "$HEAD" | head -1 | awk '{print $2}')
 if [ "$STATUS" = "401" ]; then
@@ -93,11 +94,11 @@ else
 fi
 
 # --- 2. Authed connect — head shape. -------------------------------
-_sse_grab 3 -i -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/events"
+_sse_grab 3 -i -H "Authorization: Bearer $ADMIN_TOKEN" "$API/events"
 HEAD=$(cat "$CURL_HEAD_FILE")
 # curl -D writes ONLY the head to CURL_HEAD_FILE when -o is the body.
 # But with -i + -o, all goes to body. Use -D explicit.
-_sse_grab 3 -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/events"
+_sse_grab 3 -H "Authorization: Bearer $ADMIN_TOKEN" "$API/events"
 HEAD=$(cat "$CURL_HEAD_FILE")
 
 STATUS=$(printf '%s' "$HEAD" | head -1 | awk '{print $2}')
@@ -157,7 +158,7 @@ fi
 # named event in the 17 s window. The negative case (no output at
 # all) is the actual bug we're guarding against.
 echo "    info: 17 s SSE snapshot to capture heartbeat / events..."
-_sse_grab 17 -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/events"
+_sse_grab 17 -H "Authorization: Bearer $ADMIN_TOKEN" "$API/events"
 BODY=$(cat "$CURL_BODY_FILE")
 
 KEEPALIVES=$(printf '%s' "$BODY" | grep -c "^: keepalive$" || true)
@@ -183,9 +184,9 @@ fi
 # Two SSE subscribers should be served independently — one
 # disconnecting must not break the other. Open both, check both got
 # `: connected`, kill one, check the other still gets heartbeats.
-(_sse_grab 5 -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/events" > /tmp/sse_a.body 2> /dev/null) &
+(_sse_grab 5 -H "Authorization: Bearer $ADMIN_TOKEN" "$API/events" > /tmp/sse_a.body 2> /dev/null) &
 PID_A=$!
-(_sse_grab 17 -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/events" > /tmp/sse_b.body 2> /dev/null) &
+(_sse_grab 17 -H "Authorization: Bearer $ADMIN_TOKEN" "$API/events" > /tmp/sse_b.body 2> /dev/null) &
 PID_B=$!
 sleep 2
 # Both should be open and have seen ': connected'.
@@ -206,7 +207,7 @@ _pass "Two concurrent SSE subscribers ran to completion without interfering"
 # and was handed the full firehose. The surface's own query rule already makes
 # an empty value an error rather than an omission; this was its exception.
 CODE=$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 \
-	-H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/events?channels=")
+	-H "Authorization: Bearer $ADMIN_TOKEN" "$API/events?channels=")
 if [ "$CODE" = "400" ]; then
 	_pass "GET /events?channels= (empty) -> 400"
 else
@@ -219,7 +220,7 @@ timeout_head() {
 	curl -s -N --max-time 3 -o /dev/null -w '%{http_code}' \
 		-H "Authorization: Bearer $ADMIN_TOKEN" "$1" 2>/dev/null || true
 }
-CODE=$(timeout_head "$HOST/api/v0/events")
+CODE=$(timeout_head "$API/events")
 case "$CODE" in
 200|000) _pass "GET /events with no channels parameter still streams (HTTP ${CODE:-timeout})" ;;
 *) _fail "GET /events with no channels parameter still streams" "got HTTP $CODE" ;;

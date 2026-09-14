@@ -22,6 +22,7 @@ set -u
 set -o pipefail
 
 HOST=${HOST:-localhost:4713}
+API="$HOST/api/v1"
 ADMIN_PASS=${ADMIN_PASS:-adminpass}
 
 TEST_HASH="0031c9cba65c50dd2015c184b2ca2c88"
@@ -42,7 +43,7 @@ trap '
 	# because the daemon may already be down on a CI tear-down.
 	if [ -n "${ADMIN_TOKEN:-}" ]; then
 		curl -s -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
-			"$HOST/api/v0/downloads/$TEST_HASH" > /dev/null 2>&1 || true
+			"$API/downloads/$TEST_HASH" > /dev/null 2>&1 || true
 	fi
 ' EXIT
 
@@ -57,20 +58,20 @@ _fail() {
 }
 
 if ! command -v jq >/dev/null 2>&1; then _die "jq is required."; fi
-if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health"; then
+if ! curl -s -o /dev/null --max-time 2 "$API/health"; then
 	_die "amuleapi at $HOST is not reachable."
 fi
 
 echo "amuleapi 26-rfc-followup-endpoints smoke @ $HOST"
 
 ADMIN_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$ADMIN_PASS\"}" "$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
+	-d "{\"password\":\"$ADMIN_PASS\"}" "$API/auth/login?include_token=true" | jq -r .token)
 [ -n "$ADMIN_TOKEN" ] && [ "$ADMIN_TOKEN" != "null" ] || _die "admin login failed"
 H_AUTH=(-H "Authorization: Bearer $ADMIN_TOKEN")
 sleep 4
 
 # --- 1. /status kad.network rollup. ------------------------------
-STATUS=$(curl -s "${H_AUTH[@]}" "$HOST/api/v0/status")
+STATUS=$(curl -s "${H_AUTH[@]}" "$API/status")
 if echo "$STATUS" | jq -e '.kad.network | type == "object"' >/dev/null 2>&1; then
 	_pass "/status .kad.network exists"
 else
@@ -86,7 +87,7 @@ done
 
 # --- 2. POST /shared_reload. -------------------------------------
 RC=$(curl -s -o /tmp/p11_shared_reload.json -w "%{http_code}" -X POST "${H_AUTH[@]}" \
-	"$HOST/api/v0/shared_reload")
+	"$API/shared_reload")
 if [ "$RC" = "202" ]; then
 	_pass "POST /shared_reload → 202"
 else
@@ -106,7 +107,7 @@ fi
 
 # --- 3. POST /servers_update — body validation. ------------------
 RC=$(curl -s -o /tmp/p11_su.json -w "%{http_code}" -X POST "${H_AUTH[@]}" \
-	-H "Content-Type: application/json" -d '{}' "$HOST/api/v0/servers_update")
+	-H "Content-Type: application/json" -d '{}' "$API/servers_update")
 if [ "$RC" = "400" ]; then
 	_pass "POST /servers_update missing url → 400"
 else
@@ -114,7 +115,7 @@ else
 fi
 RC=$(curl -s -o /tmp/p11_su.json -w "%{http_code}" -X POST "${H_AUTH[@]}" \
 	-H "Content-Type: application/json" \
-	-d '{"url":"ftp://nope"}' "$HOST/api/v0/servers_update")
+	-d '{"url":"ftp://nope"}' "$API/servers_update")
 if [ "$RC" = "400" ]; then
 	_pass "POST /servers_update non-http url → 400"
 else
@@ -123,7 +124,7 @@ fi
 RC=$(curl -s -o /tmp/p11_su.json -w "%{http_code}" -X POST "${H_AUTH[@]}" \
 	-H "Content-Type: application/json" \
 	-d '{"url":"http://upd.emule-security.org/server.met"}' \
-	"$HOST/api/v0/servers_update")
+	"$API/servers_update")
 if [ "$RC" = "202" ]; then
 	_pass "POST /servers_update valid url → 202"
 else
@@ -137,14 +138,14 @@ fi
 # than being turned away earlier as bad input.
 UNKNOWN_SRV=192.0.2.1:1
 RC=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${H_AUTH[@]}" \
-	"$HOST/api/v0/servers/by-address/$UNKNOWN_SRV/connect")
+	"$API/servers/by-address/$UNKNOWN_SRV/connect")
 if [ "$RC" = "404" ]; then
 	_pass "POST /servers/by-address/<unknown-ip:port>/connect → 404"
 else
 	_fail "address alias 404" "expected 404, got $RC"
 fi
 RC=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE "${H_AUTH[@]}" \
-	"$HOST/api/v0/servers/by-address/$UNKNOWN_SRV")
+	"$API/servers/by-address/$UNKNOWN_SRV")
 if [ "$RC" = "404" ]; then
 	_pass "DELETE /servers/by-address/<unknown-ip:port> → 404"
 else
@@ -155,9 +156,9 @@ fi
 # ip == 0, so a 0.0.0.0 selector could otherwise resolve to whichever
 # such row shared the port. Rejected as bad input, and the message says
 # so rather than claiming a malformed quad.
-BODY=$(curl -s -X POST "${H_AUTH[@]}" "$HOST/api/v0/servers/by-address/0.0.0.0:4242/connect")
+BODY=$(curl -s -X POST "${H_AUTH[@]}" "$API/servers/by-address/0.0.0.0:4242/connect")
 RC=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${H_AUTH[@]}" \
-	"$HOST/api/v0/servers/by-address/0.0.0.0:4242/connect")
+	"$API/servers/by-address/0.0.0.0:4242/connect")
 if [ "$RC" = "400" ] && printf '%s' "$BODY" | jq -e '.error.code == "bad_request"' >/dev/null 2>&1; then
 	_pass "POST /servers/by-address/0.0.0.0:<port>/connect → 400 (not a server address)"
 else
@@ -169,7 +170,7 @@ else
 	_fail "0.0.0.0 rejection message" "still reports a syntax error: $BODY"
 fi
 # A genuinely malformed selector still reports malformed.
-BODY=$(curl -s -X POST "${H_AUTH[@]}" "$HOST/api/v0/servers/by-address/not-an-ip:4242/connect")
+BODY=$(curl -s -X POST "${H_AUTH[@]}" "$API/servers/by-address/not-an-ip:4242/connect")
 if printf '%s' "$BODY" | jq -e '.error.message | test("malformed")' >/dev/null 2>&1; then
 	_pass "a malformed selector still reports malformed"
 else
@@ -179,11 +180,11 @@ fi
 # The address field is the canonical "<ip-or-hostname>:<port>" string
 # the daemon reports, so we use it verbatim (no need to convert the
 # numeric `ip` field — `address` is the operator-meaningful form).
-ADDR=$(curl -s "${H_AUTH[@]}" "$HOST/api/v0/servers" \
+ADDR=$(curl -s "${H_AUTH[@]}" "$API/servers" \
 	| jq -r '.servers[0].address // empty')
 if [ -n "$ADDR" ] && [ "$ADDR" != "null" ]; then
 	RC=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${H_AUTH[@]}" \
-		"$HOST/api/v0/servers/by-address/$ADDR/connect")
+		"$API/servers/by-address/$ADDR/connect")
 	if [ "$RC" = "202" ] || [ "$RC" = "200" ]; then
 		_pass "POST /servers/$ADDR/connect resolves alias and accepts ($RC)"
 	else
@@ -195,14 +196,14 @@ fi
 
 # --- 5. DELETE /logs/amule + freshness. --------------------------
 RC=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE "${H_AUTH[@]}" \
-	"$HOST/api/v0/logs/amule")
+	"$API/logs/amule")
 if [ "$RC" = "204" ]; then
 	_pass "DELETE /logs/amule → 204"
 else
 	_fail "logs/amule DELETE" "expected 204, got $RC"
 fi
 # Fast GET immediately after — must show empty / post-reset state.
-GET_BODY=$(curl -s "${H_AUTH[@]}" "$HOST/api/v0/logs/amule")
+GET_BODY=$(curl -s "${H_AUTH[@]}" "$API/logs/amule")
 LINES=$(echo "$GET_BODY" | jq -r '.lines | length' 2>/dev/null)
 TOTAL=$(echo "$GET_BODY" | jq -r '.total_lines' 2>/dev/null)
 if [ "$LINES" = "0" ] && [ "$TOTAL" = "0" ]; then
@@ -214,14 +215,14 @@ fi
 
 # --- 6. DELETE /logs/server_info + freshness (lazy cache!). -------
 RC=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE "${H_AUTH[@]}" \
-	"$HOST/api/v0/logs/server_info")
+	"$API/logs/server_info")
 if [ "$RC" = "204" ]; then
 	_pass "DELETE /logs/server_info → 204"
 else
 	_fail "logs/server_info DELETE" "expected 204, got $RC"
 fi
 # Fast GET immediately after — must show empty / post-reset.
-GET_BODY=$(curl -s "${H_AUTH[@]}" "$HOST/api/v0/logs/server_info")
+GET_BODY=$(curl -s "${H_AUTH[@]}" "$API/logs/server_info")
 BYTES=$(echo "$GET_BODY" | jq -r '.total_bytes' 2>/dev/null)
 if [ "$BYTES" = "0" ]; then
 	_pass "GET /logs/server_info immediately after DELETE returns empty (lazy cache invalidated)"
@@ -240,7 +241,7 @@ fi
 # wire shape verdict.
 _wait_for_no_download() {
 	for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
-		local present=$(curl -s "${H_AUTH[@]}" "$HOST/api/v0/downloads" \
+		local present=$(curl -s "${H_AUTH[@]}" "$API/downloads" \
 			| jq -r --arg h "$TEST_HASH" \
 				'.downloads | map(select(.hash == $h)) | length')
 		if [ "$present" = "0" ]; then return 0; fi
@@ -248,13 +249,13 @@ _wait_for_no_download() {
 	done
 	return 1
 }
-curl -s -X DELETE "${H_AUTH[@]}" "$HOST/api/v0/downloads/$TEST_HASH" > /dev/null
+curl -s -X DELETE "${H_AUTH[@]}" "$API/downloads/$TEST_HASH" > /dev/null
 _wait_for_no_download || true
 
 # Array form
 RC=$(curl -s -o /tmp/p11_dl.json -w "%{http_code}" -X POST "${H_AUTH[@]}" \
 	-H "Content-Type: application/json" \
-	-d "{\"links\":[\"$TEST_LINK\"]}" "$HOST/api/v0/downloads")
+	-d "{\"links\":[\"$TEST_LINK\"]}" "$API/downloads")
 if [ "$RC" = "202" ]; then
 	_pass "POST /downloads array form → 202"
 else
@@ -273,7 +274,7 @@ for BODY in \
 	"{\"ed2k_link\":\"$TEST_LINK\",\"links\":[\"$TEST_LINK\"]}" \
 	"{\"ed2k_link\":\"$TEST_LINK\"}"; do
 	RC=$(curl -s -o /tmp/p11_dl_alias.json -w "%{http_code}" -X POST "${H_AUTH[@]}" \
-		-H "Content-Type: application/json" -d "$BODY" "$HOST/api/v0/downloads")
+		-H "Content-Type: application/json" -d "$BODY" "$API/downloads")
 	if [ "$RC" = "400" ]; then
 		_pass "POST /downloads with ed2k_link → 400"
 	else
@@ -289,7 +290,7 @@ fi
 # --- 8. POST /networks/disconnect selector. ----------------------
 # Default (no body) = both
 RC=$(curl -s -o /tmp/p11_nd.json -w "%{http_code}" -X POST "${H_AUTH[@]}" \
-	"$HOST/api/v0/networks/disconnect")
+	"$API/networks/disconnect")
 if [ "$RC" = "202" ]; then
 	_pass "POST /networks/disconnect (no body) → 202 default=both"
 else
@@ -299,7 +300,7 @@ sleep 2
 # selector=ed2k
 RC=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${H_AUTH[@]}" \
 	-H "Content-Type: application/json" \
-	-d '{"network":"ed2k"}' "$HOST/api/v0/networks/disconnect")
+	-d '{"network":"ed2k"}' "$API/networks/disconnect")
 if [ "$RC" = "202" ]; then
 	_pass "POST /networks/disconnect {\"network\":\"ed2k\"} → 202"
 else
@@ -309,7 +310,7 @@ sleep 1
 # selector=kad
 RC=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${H_AUTH[@]}" \
 	-H "Content-Type: application/json" \
-	-d '{"network":"kad"}' "$HOST/api/v0/networks/disconnect")
+	-d '{"network":"kad"}' "$API/networks/disconnect")
 if [ "$RC" = "202" ]; then
 	_pass "POST /networks/disconnect {\"network\":\"kad\"} → 202"
 else
@@ -318,7 +319,7 @@ fi
 # Invalid selector
 RC=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${H_AUTH[@]}" \
 	-H "Content-Type: application/json" \
-	-d '{"network":"icq"}' "$HOST/api/v0/networks/disconnect")
+	-d '{"network":"icq"}' "$API/networks/disconnect")
 if [ "$RC" = "400" ]; then
 	_pass "POST /networks/disconnect bogus selector → 400"
 else
@@ -327,13 +328,13 @@ fi
 
 # --- 9. /clients filter. -----------------------------------------
 # Get baseline first
-TOTAL_CLIENTS=$(curl -s "${H_AUTH[@]}" "$HOST/api/v0/clients" \
+TOTAL_CLIENTS=$(curl -s "${H_AUTH[@]}" "$API/clients" \
 	| jq '.clients | length')
-UP_CLIENTS=$(curl -s "${H_AUTH[@]}" "$HOST/api/v0/clients?activity=uploading" \
+UP_CLIENTS=$(curl -s "${H_AUTH[@]}" "$API/clients?activity=uploading" \
 	| jq '.clients | length')
-DOWN_CLIENTS=$(curl -s "${H_AUTH[@]}" "$HOST/api/v0/clients?activity=downloading" \
+DOWN_CLIENTS=$(curl -s "${H_AUTH[@]}" "$API/clients?activity=downloading" \
 	| jq '.clients | length')
-ACTIVE_CLIENTS=$(curl -s "${H_AUTH[@]}" "$HOST/api/v0/clients?activity=active" \
+ACTIVE_CLIENTS=$(curl -s "${H_AUTH[@]}" "$API/clients?activity=active" \
 	| jq '.clients | length')
 if [ "$UP_CLIENTS" -le "$TOTAL_CLIENTS" ] 2>/dev/null \
    && [ "$DOWN_CLIENTS" -le "$TOTAL_CLIENTS" ] 2>/dev/null \
@@ -361,7 +362,7 @@ else
 		"active=$ACTIVE_CLIENTS up=$UP_CLIENTS down=$DOWN_CLIENTS (expected max..sum)"
 fi
 # Verify every entry in /clients?activity=uploading truly has upload_state=uploading
-BAD=$(curl -s "${H_AUTH[@]}" "$HOST/api/v0/clients?activity=uploading" \
+BAD=$(curl -s "${H_AUTH[@]}" "$API/clients?activity=uploading" \
 	| jq -r '.clients[] | select(.upload_state != "uploading") | .ecid' \
 	| head -1)
 if [ -z "$BAD" ]; then
@@ -372,7 +373,7 @@ else
 fi
 # Bogus filter → 400
 RC=$(curl -s -o /dev/null -w "%{http_code}" "${H_AUTH[@]}" \
-	"$HOST/api/v0/clients?activity=alphabetical")
+	"$API/clients?activity=alphabetical")
 if [ "$RC" = "400" ]; then
 	_pass "/clients?activity=<bogus> → 400"
 else
@@ -388,9 +389,9 @@ fi
 # the WebUI because upload_file_name was serialized only by the detail
 # endpoint. Guarded on a live peer so the assertion is real (non-vacuous)
 # when a peer exists, and skips cleanly when none are connected.
-FIRST_CLIENT=$(curl -s "${H_AUTH[@]}" "$HOST/api/v0/clients" | jq -r '.clients[0] // empty')
+FIRST_CLIENT=$(curl -s "${H_AUTH[@]}" "$API/clients" | jq -r '.clients[0] // empty')
 if [ -n "$FIRST_CLIENT" ]; then
-	if curl -s "${H_AUTH[@]}" "$HOST/api/v0/clients" | jq -e '
+	if curl -s "${H_AUTH[@]}" "$API/clients" | jq -e '
 		.clients | all(.[];
 			((.upload_file_name | type) as $t | $t == "string" or $t == "null")
 			and ((.download_file_name | type) as $t | $t == "string" or $t == "null"))' \
@@ -407,10 +408,10 @@ fi
 # --- 9b. /clients/{ecid} detail (issue #422). --------------------
 # A superset of the list object: every list field plus the detail-only
 # B fields. Guarded on a live peer; the negative cases run regardless.
-FIRST_ECID=$(curl -s "${H_AUTH[@]}" "$HOST/api/v0/clients" \
+FIRST_ECID=$(curl -s "${H_AUTH[@]}" "$API/clients" \
 	| jq -r '.clients[0].ecid // empty')
 if [ -n "$FIRST_ECID" ]; then
-	DETAIL=$(curl -s "${H_AUTH[@]}" "$HOST/api/v0/clients/$FIRST_ECID")
+	DETAIL=$(curl -s "${H_AUTH[@]}" "$API/clients/$FIRST_ECID")
 	OK=$(echo "$DETAIL" | jq -r --argjson e "$FIRST_ECID" '
 		(.ecid == $e)
 		and has("user_hash")
@@ -430,21 +431,21 @@ else
 	_skip "/clients/{ecid} detail 200 (no peers connected)"
 fi
 # Unknown ecid → 404 (0xFFFFFFFF is effectively never a live ECID)
-RC=$(curl -s -o /dev/null -w "%{http_code}" "${H_AUTH[@]}" "$HOST/api/v0/clients/4294967295")
+RC=$(curl -s -o /dev/null -w "%{http_code}" "${H_AUTH[@]}" "$API/clients/4294967295")
 if [ "$RC" = "404" ]; then
 	_pass "/clients/{unknown-ecid} → 404"
 else
 	_fail "clients detail 404" "expected 404, got $RC"
 fi
 # Non-numeric ecid path → 400
-RC=$(curl -s -o /dev/null -w "%{http_code}" "${H_AUTH[@]}" "$HOST/api/v0/clients/not-a-number")
+RC=$(curl -s -o /dev/null -w "%{http_code}" "${H_AUTH[@]}" "$API/clients/not-a-number")
 if [ "$RC" = "400" ]; then
 	_pass "/clients/{non-numeric} → 400"
 else
 	_fail "clients detail 400" "expected 400, got $RC"
 fi
 # Non-GET → 405
-RC=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${H_AUTH[@]}" "$HOST/api/v0/clients/1")
+RC=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${H_AUTH[@]}" "$API/clients/1")
 if [ "$RC" = "405" ]; then
 	_pass "POST /clients/{ecid} → 405"
 else
@@ -454,18 +455,18 @@ fi
 # --- 10. /events ?channels= filter. ------------------------------
 # Test 8 left the daemon disconnected; reconnect so download_* /
 # status_* events have a reason to fire.
-curl -s -X POST "${H_AUTH[@]}" "$HOST/api/v0/networks/connect" > /dev/null
+curl -s -X POST "${H_AUTH[@]}" "$API/networks/connect" > /dev/null
 sleep 6
-curl -s -X DELETE "${H_AUTH[@]}" "$HOST/api/v0/downloads/$TEST_HASH" > /dev/null
+curl -s -X DELETE "${H_AUTH[@]}" "$API/downloads/$TEST_HASH" > /dev/null
 _wait_for_no_download || true
 : > "$SSE"
 ( curl -s -m 10 -N "${H_AUTH[@]}" \
-	"$HOST/api/v0/events?channels=downloads,status" \
+	"$API/events?channels=downloads,status" \
 	>> "$SSE" 2>&1 ) &
 PID=$!
 sleep 2
 curl -s -X POST "${H_AUTH[@]}" -H "Content-Type: application/json" \
-	-d "{\"links\":[\"$TEST_LINK\"]}" "$HOST/api/v0/downloads" > /dev/null
+	-d "{\"links\":[\"$TEST_LINK\"]}" "$API/downloads" > /dev/null
 sleep 6
 kill $PID 2>/dev/null
 wait $PID 2>/dev/null
@@ -495,12 +496,12 @@ fi
 # Positive: ?channels=search delivers search events and excludes downloads.
 : > "$SSE"
 ( curl -s -m 12 -N "${H_AUTH[@]}" \
-	"$HOST/api/v0/events?channels=search" \
+	"$API/events?channels=search" \
 	>> "$SSE" 2>&1 ) &
 PID=$!
 sleep 1
 curl -s -X POST "${H_AUTH[@]}" -H "Content-Type: application/json" \
-	-d '{"query":"ubuntu","type":"local"}' "$HOST/api/v0/search" > /dev/null
+	-d '{"query":"ubuntu","type":"local"}' "$API/search" > /dev/null
 sleep 8
 kill $PID 2>/dev/null
 wait $PID 2>/dev/null

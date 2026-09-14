@@ -155,7 +155,7 @@ public:
 	/**
 	 * The same bits as stable API tokens, in bit order.
 	 *
-	 * The /api/v0 surface spells every other multi-state field as an enumerated token, and an
+	 * The /api/v1 surface spells every other multi-state field as an enumerated token, and an
 	 * integer there would make each consumer carry its own copy of the table below --
 	 * reimplemented in JS for the Web UI and again in every third-party client, each free to
 	 * drift from this file. A peer claims any combination of the bits rather than one state,

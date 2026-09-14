@@ -523,7 +523,7 @@ const size_t kMaxTagChars = 256;
 // RunBoundedFFProbe.
 //
 // Control characters are dropped because the value reaches a log line (and through it GET
-// /api/v0/logs/amule) and several list controls, where a raw newline lets one field impersonate
+// /api/v1/logs/amule) and several list controls, where a raw newline lets one field impersonate
 // several.
 wxString SanitiseTagValue(const wxString &value)
 {

@@ -1,4 +1,4 @@
-// About view: application info from GET /api/v0/version (versions + daemon
+// About view: application info from GET /api/v1/version (versions + daemon
 // update-availability), plus static project links and license. See app.js
 // VersionBanner for the mismatch/update banners driven by the same endpoint.
 

@@ -3,8 +3,8 @@
 # amuleapi 35-ipfilter-actions — POST /ipfilter/reload, POST /ipfilter/update.
 #
 # Endpoints:
-#   POST /api/v0/ipfilter/reload   → 202, no `ok` field
-#   POST /api/v0/ipfilter/update   → 202, no body at all
+#   POST /api/v1/ipfilter/reload   → 202, no `ok` field
+#   POST /api/v1/ipfilter/update   → 202, no body at all
 #
 # The two actions the desktop Security page's "Reload List" and "Update now"
 # buttons drive, as EC opcodes that have existed for years. Both are accepted,
@@ -34,6 +34,7 @@ set -u
 set -o pipefail
 
 HOST=${HOST:-localhost:4713}
+API="$HOST/api/v1"
 ADMIN_PASS=${ADMIN_PASS:-adminpass}
 GUEST_PASS=${GUEST_PASS:-guestpass}
 
@@ -98,7 +99,7 @@ _assert_body_empty() {
 # Read one preference out of GET /preferences.
 _pref() {
 	curl -s --max-time 10 -H "Authorization: Bearer $ADMIN_TOKEN" \
-		"$HOST/api/v0/preferences" | jq -r "$1"
+		"$API/preferences" | jq -r "$1"
 }
 
 # Write security.ipfilter_update_url and wait for the snapshot to catch up —
@@ -106,7 +107,7 @@ _pref() {
 _set_url() {
 	curl -s -o /dev/null -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 		-H "Content-Type: application/json" \
-		-d "{\"security\":{\"ipfilter_update_url\":\"$1\"}}" "$HOST/api/v0/preferences"
+		-d "{\"security\":{\"ipfilter_update_url\":\"$1\"}}" "$API/preferences"
 	for _ in $(seq 1 15); do
 		[ "$(_pref '.security.ipfilter_update_url')" = "$1" ] && return 0
 		sleep 1
@@ -115,18 +116,18 @@ _set_url() {
 }
 
 if ! command -v jq >/dev/null 2>&1; then _die "jq is required."; fi
-if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health" 2>/dev/null; then
+if ! curl -s -o /dev/null --max-time 2 "$API/health" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable."
 fi
 
 echo "amuleapi 35-ipfilter-actions smoke @ $HOST"
 
 ADMIN_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$ADMIN_PASS\"}" "$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
+	-d "{\"password\":\"$ADMIN_PASS\"}" "$API/auth/login?include_token=true" | jq -r .token)
 [ -n "$ADMIN_TOKEN" ] && [ "$ADMIN_TOKEN" != "null" ] || _die "admin login failed"
 
 GUEST_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$GUEST_PASS\"}" "$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
+	-d "{\"password\":\"$GUEST_PASS\"}" "$API/auth/login?include_token=true" | jq -r .token)
 HAVE_GUEST=0
 [ -n "$GUEST_TOKEN" ] && [ "$GUEST_TOKEN" != "null" ] && HAVE_GUEST=1
 
@@ -139,15 +140,15 @@ restore_url() { _set_url "$ORIGINAL_URL" >/dev/null 2>&1 || true; }
 trap 'restore_url; rm -f "$CURL_BODY_FILE"' EXIT
 
 # --- 1. /ipfilter/reload: auth, admin gate, happy path, verbs. -----
-_curl -X POST "$HOST/api/v0/ipfilter/reload"
+_curl -X POST "$API/ipfilter/reload"
 _assert_status 401 "POST /ipfilter/reload (no token) → 401"
 
 if [ "$HAVE_GUEST" = "1" ]; then
-	_curl -X POST -H "Authorization: Bearer $GUEST_TOKEN" "$HOST/api/v0/ipfilter/reload"
+	_curl -X POST -H "Authorization: Bearer $GUEST_TOKEN" "$API/ipfilter/reload"
 	_assert_status 403 "POST /ipfilter/reload (guest) → 403"
 fi
 
-_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/ipfilter/reload"
+_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" "$API/ipfilter/reload"
 _assert_status 202 "POST /ipfilter/reload → 202"
 # amuled answers this one with no status string, so there is nothing to report
 # and the reply carries no body -- the same shape /ipfilter/update beside it
@@ -161,33 +162,33 @@ else
 		"a reload body exists only to carry the daemon's message"
 fi
 
-_curl -X GET -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/ipfilter/reload"
+_curl -X GET -H "Authorization: Bearer $ADMIN_TOKEN" "$API/ipfilter/reload"
 _assert_status 405 "GET /ipfilter/reload → 405"
 
-_curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/ipfilter/reload"
+_curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" "$API/ipfilter/reload"
 _assert_status 405 "DELETE /ipfilter/reload → 405"
 
 # --- 2. /ipfilter/update: auth + admin gate. -----------------------
 _curl -X POST -H "Content-Type: application/json" \
-	-d "{\"url\":\"$TEST_URL\"}" "$HOST/api/v0/ipfilter/update"
+	-d "{\"url\":\"$TEST_URL\"}" "$API/ipfilter/update"
 _assert_status 401 "POST /ipfilter/update (no token) → 401"
 
 if [ "$HAVE_GUEST" = "1" ]; then
 	_curl -X POST -H "Authorization: Bearer $GUEST_TOKEN" \
 		-H "Content-Type: application/json" \
-		-d "{\"url\":\"$TEST_URL\"}" "$HOST/api/v0/ipfilter/update"
+		-d "{\"url\":\"$TEST_URL\"}" "$API/ipfilter/update"
 	_assert_status 403 "POST /ipfilter/update (guest) → 403"
 fi
 
 # --- 3. Body validation. -------------------------------------------
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" -d '{"url":""}' \
-	"$HOST/api/v0/ipfilter/update"
+	"$API/ipfilter/update"
 _assert_status 400 "POST /ipfilter/update empty url → 400"
 
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" -d '{"url":123}' \
-	"$HOST/api/v0/ipfilter/update"
+	"$API/ipfilter/update"
 _assert_status 400 "POST /ipfilter/update non-string url → 400"
 
 # Scheme gate: amuled hands the string to the HTTP downloader, so a
@@ -196,7 +197,7 @@ _assert_status 400 "POST /ipfilter/update non-string url → 400"
 for BAD in "ftp://example.com/ipfilter.dat" "file:///etc/passwd" "example.com/ipfilter.dat"; do
 	_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 		-H "Content-Type: application/json" \
-		-d "{\"url\":\"$BAD\"}" "$HOST/api/v0/ipfilter/update"
+		-d "{\"url\":\"$BAD\"}" "$API/ipfilter/update"
 	_assert_status 400 "POST /ipfilter/update rejects scheme: $BAD → 400"
 done
 
@@ -204,7 +205,7 @@ done
 # CIPFilter::Update() returns immediately on an empty URL, so accepting
 # this would promise work that never happens.
 if _set_url ""; then
-	_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/ipfilter/update"
+	_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" "$API/ipfilter/update"
 	_assert_status 400 "POST /ipfilter/update no body, no configured URL → 400"
 	_assert_json_eq '.error.code' bad_request "no URL available → error.code=bad_request"
 else
@@ -214,7 +215,7 @@ fi
 # --- 5. Explicit URL: accepted, echoed, and persisted. -------------
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d "{\"url\":\"$TEST_URL\"}" "$HOST/api/v0/ipfilter/update"
+	-d "{\"url\":\"$TEST_URL\"}" "$API/ipfilter/update"
 _assert_status 202 "POST /ipfilter/update explicit URL → 202"
 _assert_body_empty "update sends no body"
 
@@ -240,22 +241,22 @@ fi
 # no body, the same request is a 400. Reaching 202 here is what says the
 # handler fell back to security.ipfilter_update_url, which section 5 just
 # proved holds $TEST_URL.
-_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/ipfilter/update"
+_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" "$API/ipfilter/update"
 _assert_status 202 "POST /ipfilter/update no body, configured URL → 202"
 _assert_body_empty "bodyless update sends no body"
 
 # An empty JSON object is the same case as no body at all.
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
-	-H "Content-Type: application/json" -d '{}' "$HOST/api/v0/ipfilter/update"
+	-H "Content-Type: application/json" -d '{}' "$API/ipfilter/update"
 _assert_status 202 "POST /ipfilter/update {} with configured URL → 202"
 _assert_body_empty "{} update sends no body"
 
 # --- 7. Method gate. -----------------------------------------------
-_curl -X GET -H "Authorization: Bearer $ADMIN_TOKEN" "$HOST/api/v0/ipfilter/update"
+_curl -X GET -H "Authorization: Bearer $ADMIN_TOKEN" "$API/ipfilter/update"
 _assert_status 405 "GET /ipfilter/update → 405"
 
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
-	-H "Content-Type: application/json" -d '{}' "$HOST/api/v0/ipfilter/update"
+	-H "Content-Type: application/json" -d '{}' "$API/ipfilter/update"
 _assert_status 405 "PATCH /ipfilter/update → 405"
 
 # --- Summary. -----------------------------------------------------

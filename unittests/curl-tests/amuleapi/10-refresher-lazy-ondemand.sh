@@ -26,6 +26,7 @@ set -u
 set -o pipefail
 
 HOST=${HOST:-localhost:4713}
+API="$HOST/api/v1"
 ADMIN_PASS=${ADMIN_PASS:-adminpass}
 
 FAIL_COUNT=0
@@ -76,7 +77,7 @@ _assert_json_eq() {
 if ! command -v jq >/dev/null 2>&1; then
 	_die "jq is required."
 fi
-if ! curl -s -o /dev/null --max-time 2 "$HOST/api/v0/health" 2>/dev/null; then
+if ! curl -s -o /dev/null --max-time 2 "$API/health" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable."
 fi
 
@@ -84,7 +85,7 @@ echo "amuleapi 10-refresher-lazy-ondemand smoke @ $HOST"
 
 TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 	-d "{\"password\":\"$ADMIN_PASS\"}" \
-	"$HOST/api/v0/auth/login?include_token=true" | jq -r .token)
+	"$API/auth/login?include_token=true" | jq -r .token)
 [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ] || _die "login failed"
 
 # Refresher has 3 ops/tick now (STAT_REQ + GET_UPDATE + PREFERENCES).
@@ -96,7 +97,7 @@ sleep 4
 # Phase 4g unified peer surface. Every alive peer in
 # theApp->clientlist surfaces, populated from the EC_TAG_CLIENT
 # container inside the GET_UPDATE response.
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/clients"
+_curl -H "Authorization: Bearer $TOKEN" "$API/clients"
 _assert_status 200 "GET /clients → 200"
 _assert_json_eq '.clients | type'        array '/clients .clients is array'
 
@@ -155,11 +156,11 @@ fi
 # drives its own EC roundtrip on first call, coalesced via 1 s TTL.
 # The `snapshot_at` field on each reflects the per-endpoint fetch
 # time, not the refresher tick.
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/stats/tree"
+_curl -H "Authorization: Bearer $TOKEN" "$API/stats/tree"
 _assert_status 200 "GET /stats/tree → 200 (lazy fetch)"
 _assert_json_eq '.nodes | type'        array '/stats/tree .nodes is array'
 
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/stats/graphs/download_speed"
+_curl -H "Authorization: Bearer $TOKEN" "$API/stats/graphs/download_speed"
 _assert_status 200 "GET /stats/graphs/download_speed → 200 (lazy fetch)"
 _assert_json_eq '.graph' download_speed '/stats/graphs/download_speed reports graph=download_speed'
 _assert_json_eq '.unit' bytes_per_second '/stats/graphs/download_speed reports unit=bytes_per_second'
@@ -172,10 +173,10 @@ _assert_json_eq '.points | type' array    '/stats/graphs/download_speed .points 
 # stay constant within a cache window; only between fetches do they
 # advance.
 GRAPH_ETAG_1=$(curl -s -I -H "Authorization: Bearer $TOKEN" \
-	"$HOST/api/v0/stats/graphs/download_speed" \
+	"$API/stats/graphs/download_speed" \
 	| sed -n 's/^[Ee][Tt][Aa][Gg]:[[:space:]]*\([^[:cntrl:]]*\).*/\1/p' | head -1)
 GRAPH_ETAG_2=$(curl -s -I -H "Authorization: Bearer $TOKEN" \
-	"$HOST/api/v0/stats/graphs/download_speed" \
+	"$API/stats/graphs/download_speed" \
 	| sed -n 's/^[Ee][Tt][Aa][Gg]:[[:space:]]*\([^[:cntrl:]]*\).*/\1/p' | head -1)
 if [ "$GRAPH_ETAG_1" = "$GRAPH_ETAG_2" ] && [ -n "$GRAPH_ETAG_1" ]; then
 	_pass "/stats/graphs/download_speed back-to-back share the same fetch (1 s TTL coalescing; ETag stable: $GRAPH_ETAG_1)"
@@ -184,26 +185,26 @@ else
 		"first ETag=$GRAPH_ETAG_1, second=$GRAPH_ETAG_2 — expected identical within the 1 s window"
 fi
 
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/stats/graphs/bogus"
+_curl -H "Authorization: Bearer $TOKEN" "$API/stats/graphs/bogus"
 _assert_status 404 "GET /stats/graphs/bogus → 404 (still validated)"
 
 # Results are addressed per search, so start one to have an id. A read of
 # a FINISHED search also refreshes it on demand (coalesced by a ~1 s TTL),
 # which is the lazy-fetch behaviour this phase is about.
 _curl -X POST -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
-	-d '{"query":"amuleapi-phase10","type":"local"}' "$HOST/api/v0/search"
+	-d '{"query":"amuleapi-phase10","type":"local"}' "$API/search"
 SID=$(printf '%s' "$CURL_BODY" | jq -r '.search_id // empty')
 [ -n "$SID" ] || _die "POST /search returned no search_id"
 
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/search/$SID/results"
+_curl -H "Authorization: Bearer $TOKEN" "$API/search/$SID/results"
 _assert_status 200 "GET /search/{id}/results → 200 (lazy fetch)"
 _assert_json_eq '.results | type' array '/search/{id}/results .results is array'
 
 # An id that names no search never falls back to another one.
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/search/4294967290/results"
+_curl -H "Authorization: Bearer $TOKEN" "$API/search/4294967290/results"
 _assert_status 404 "GET /search/{unknown}/results → 404 (no implicit fallback)"
 
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/logs/server_info"
+_curl -H "Authorization: Bearer $TOKEN" "$API/logs/server_info"
 _assert_status 200 "GET /logs/server_info → 200 (lazy fetch)"
 _assert_json_eq '.text | type' string '/logs/server_info .text is string'
 _assert_json_eq '.total_bytes | type' number '/logs/server_info .total_bytes is numeric'
@@ -214,24 +215,24 @@ _assert_json_eq '.total_bytes | type' number '/logs/server_info .total_bytes is 
 # downloads / shared / servers / clients / status / kad — they all
 # pull `snapshot_at` from CState::SnapshotAt which marks tick
 # completion.
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/status"
+_curl -H "Authorization: Bearer $TOKEN" "$API/status"
 _assert_status 200 "GET /status → 200 (still per-tick)"
 _assert_json_eq '.ed2k.state | type' string '/status.ed2k.state populated'
 
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/downloads"
+_curl -H "Authorization: Bearer $TOKEN" "$API/downloads"
 _assert_status 200 "GET /downloads → 200 (still per-tick)"
 _assert_json_eq '.downloads | type' array '/downloads .downloads is array'
 
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/shared"
+_curl -H "Authorization: Bearer $TOKEN" "$API/shared"
 _assert_status 200 "GET /shared → 200 (still per-tick)"
 _assert_json_eq '.shared | type' array '/shared .shared is array'
 
-_curl -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/servers"
+_curl -H "Authorization: Bearer $TOKEN" "$API/servers"
 _assert_status 200 "GET /servers → 200 (still per-tick)"
 _assert_json_eq '.servers | type' array '/servers .servers is array'
 
 # --- 5. Method gate on /clients. -----------------------------------
-_curl -X DELETE -H "Authorization: Bearer $TOKEN" "$HOST/api/v0/clients"
+_curl -X DELETE -H "Authorization: Bearer $TOKEN" "$API/clients"
 _assert_status 405 "DELETE /clients → 405"
 
 # --- Summary. -----------------------------------------------------

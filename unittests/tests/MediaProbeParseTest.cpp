@@ -425,7 +425,7 @@ TEST(MediaProbeParse, OversizedTagValueIsCapped)
 TEST(MediaProbeParse, ControlCharactersAreStrippedFromTagValues)
 {
 	// The unflattened value still contains real newlines -- flat only stopped the PARSER being
-	// confused by them. They reach the log line and, through it, GET /api/v0/logs/amule, where
+	// confused by them. They reach the log line and, through it, GET /api/v1/logs/amule, where
 	// one field could impersonate several.
 	const wxChar *const ctrl[] = { wxT("streams.stream.0.codec_name=\"mp3\""),
 		wxT("streams.stream.0.codec_type=\"audio\""),
