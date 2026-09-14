@@ -120,15 +120,26 @@ inline bool HasEd2kWireForm(const CNetworkAddress &address) noexcept
 /**
  * Whether an inbound ed2k UDP datagram from this peer can be de-obfuscated.
  *
- * The ed2k UDP obfuscation key is MD5 over our user hash, a 32-bit address and a magic byte -- see
- * CEncryptedDatagramSocket::DecryptReceivedClient(), where the receiver derives it from the
- * sender's address, and EncryptSendClient(), where the sender derives it from its own public IPv4.
- * The protocol has no IPv6 input to that key, so an obfuscated ed2k datagram from a native IPv6
- * peer is undecryptable by any implementation, not just by this one.
+ * This build's key is MD5 over 23 bytes -- user hash, a 32-bit address, MAGICVALUE_UDP, a random
+ * pair -- see CEncryptedDatagramSocket::DecryptReceivedClient(), where the receiver derives it from
+ * the sender's address, and EncryptSendClient() at the keyData[23] block, where the sender derives
+ * it from its own public IPv4. There is no IPv6 input to that layout, so a native IPv6 peer has no
+ * address to feed it and this build cannot obfuscate with one.
  *
- * Feeding the derivation a zero would produce a wrong key, the packet would fail its magic-value
- * check and be handled as junk, and nothing would record why. So the boundary is reported here
- * instead.
+ * That is a limit of what is implemented here, not of the protocol. emule-qt's ipv6-spec.md 3.4
+ * defines a second layout for exactly this case -- 35 bytes, the same fields with the 16 IPv6 bytes
+ * in network order in place of the 4 -- chosen from the source family rather than negotiated, which
+ * leaves IPv4 bit-identical. It cannot be probed for: both layouts are valid key material, so a
+ * wrong guess decrypts garbage that fails the magic-value check, indistinguishable from a peer that
+ * did not obfuscate at all.
+ *
+ * Implementing it depends on ingress normalisation landing first. A mapped IPv4 sender has to
+ * become plain IPv4 before this question is asked, or the receiver picks the 35-byte layout for a
+ * peer that keyed on 4 bytes and fails silently.
+ *
+ * Feeding the current derivation a zero would produce a wrong key, the packet would fail its
+ * magic-value check and be handled as junk, and nothing would record why. So the boundary is
+ * reported here instead.
  */
 inline bool SupportsEd2kUdpObfuscation(const CNetworkAddress &address) noexcept
 {
