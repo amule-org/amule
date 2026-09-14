@@ -647,6 +647,6 @@ typedef void (wxEvtHandler::*MuleNotifyEventFunction)(CMuleGUIEvent &);
 #define NotifyAlways_IPFilter_Reload() MuleNotify::DoNotifyAlways(&MuleNotify::IPFilter_Reload)
 #define NotifyAlways_IPFilter_Update(url) MuleNotify::DoNotifyAlways(&MuleNotify::IPFilter_Update, url)
 
-#endif // __GUIEVENTS_H__
+#endif // GUIEVENTS_H
 
 // File_checked_for_headers
