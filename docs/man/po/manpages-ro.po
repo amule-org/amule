@@ -519,8 +519,8 @@ msgstr "Pornește descărcarea unui fișier."
 
 #. type: Plain text
 #: amulecmd.1.in
-msgid "The I<E<lt>numberE<gt>> of a file from the last search has to be given.  Example: `download 12' will start to download the file with the number 12 of the previous search."
-msgstr "Un I<E<lt>numberE<gt>> a unui fișier de la ultima căutare trebuie dat. Exemplu: `descărcarea 12' va porni descărcarea fișierului cu numărul 12 al căutării anterioare."
+msgid "The I<E<lt>numberE<gt>> of a file from the last search has to be given.  Example: 'download 12' will start to download the file with the number 12 of the previous search."
+msgstr "Un I<E<lt>numberE<gt>> a unui fișier de la ultima căutare trebuie dat. Exemplu: 'descărcarea 12' va porni descărcarea fișierului cu numărul 12 al căutării anterioare."
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -633,8 +633,8 @@ msgstr "Reia descărcarea specificată de I<E<lt>hashE<gt>> sau I<E<lt>numberE<g
 #: amulecmd.1.in
 #, fuzzy
 #| msgid "Makes a search for the given I<E<lt>keywordE<gt>>. A search type and a keyword to search is mandatory to do this.  Example: `search kad amule' performs a kad search for `amule'."
-msgid "Makes a search for the given I<E<lt>keywordE<gt>>. A search type and a keyword to search is mandatory to do this.  Example: `search kad amule' performs a kad search for `amule'.  Prints a search id; pass it to B<results> or B<progress> to address this search. Several searches can run at once, each with its own id."
-msgstr "Face o căutare a cuvântului cheie dat I<E<lt>keywordE<gt>>. Un tip de căutare și un un cuvânt cheie sunt obligatorii pentru a face asta. Exemplu: `caută kad amule' efectuează o căutare kad pentru `amule'."
+msgid "Makes a search for the given I<E<lt>keywordE<gt>>. A search type and a keyword to search is mandatory to do this.  Example: 'search kad amule' performs a kad search for 'amule'.  Prints a search id; pass it to B<results> or B<progress> to address this search. Several searches can run at once, each with its own id."
+msgstr "Face o căutare a cuvântului cheie dat I<E<lt>keywordE<gt>>. Un tip de căutare și un un cuvânt cheie sunt obligatorii pentru a face asta. Exemplu: 'caută kad amule' efectuează o căutare kad pentru 'amule'."
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -688,7 +688,7 @@ msgstr ""
 
 #. type: Plain text
 #: amulecmd.1.in
-msgid "Example: `search global linux iso --type Iso --min-size 100M' returns results for \\(lqlinux iso\\(rq of file-type Iso at least 100 MiB."
+msgid "Example: 'search global linux iso --type Iso --min-size 100M' returns results for 'linux iso' of file-type Iso at least 100 MiB."
 msgstr ""
 
 #. type: Plain text
@@ -750,13 +750,13 @@ msgstr "Arată arborele statisticilor."
 
 #. type: Plain text
 #: amulecmd.1.in
-msgid "The optional I<E<lt>numberE<gt>> in the range of 0-255 can be passed as argument to this command, which tells how many entries of the client version subtree should be shown. Passing 0, or omitting it means `unlimited'."
-msgstr "Numărul facultativ I<E<lt>numberE<gt>> în domeniul 0-255 poate fi trecut ca argument la această comandă, care spune cât de multe intrări de subdiviziuni a versiunii clientului vor fi afișate. Trecând 0, sau lăsând gol va însemna `nelimitat'."
+msgid "The optional I<E<lt>numberE<gt>> in the range of 0-255 can be passed as argument to this command, which tells how many entries of the client version subtree should be shown. Passing 0, or omitting it means 'unlimited'."
+msgstr "Numărul facultativ I<E<lt>numberE<gt>> în domeniul 0-255 poate fi trecut ca argument la această comandă, care spune cât de multe intrări de subdiviziuni a versiunii clientului vor fi afișate. Trecând 0, sau lăsând gol va însemna 'nelimitat'."
 
 #. type: Plain text
 #: amulecmd.1.in
-msgid "Example: `statistics 5' will show only the top 5 versions for each client type."
-msgstr "Exemplu: `statistici 5' va afișa numai primele 5 versiuni pentru fiecare tip de client."
+msgid "Example: 'statistics 5' will show only the top 5 versions for each client type."
+msgstr "Exemplu: 'statistici 5' va afișa numai primele 5 versiuni pentru fiecare tip de client."
 
 #. type: Plain text
 #: amulecmd.1.in

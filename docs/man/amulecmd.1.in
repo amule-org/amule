@@ -113,7 +113,7 @@ specified network.
 Start downloading a file.
 
 The \fI<number>\fR of a file from the last search has to be given.
-Example: `download 12' will start to download the file with the number 12 of the
+Example: 'download 12' will start to download the file with the number 12 of the
 previous search.
 .SS_untranslated Exit
 Disconnect from amule/amuled and quit amulecmd.
@@ -173,7 +173,7 @@ Resumes the download specified by \fI<hash>\fR or \fI<number>\fR. To get the val
 .SS_untranslated Search \fI<type>\fP [\fI<filters>\fP] \fI<keyword>\fR
 Makes a search for the given \fI<keyword>\fR. A search type and a keyword
 to search is mandatory to do this.
-Example: `search kad amule' performs a kad search for `amule'.
+Example: 'search kad amule' performs a kad search for 'amule'.
 Prints a search id; pass it to \fBresults\fR or \fBprogress\fR to address this
 search. Several searches can run at once, each with its own id.
 
@@ -203,8 +203,8 @@ Smallest file size to return. Suffixes use binary multipliers
 Largest file size to return. Same suffixes as \fB\-\-min\-size\fR.
 .RE
 .PP
-Example: `search global linux iso \-\-type Iso \-\-min-size 100M' returns
-results for \(lqlinux iso\(rq of file-type Iso at least 100 MiB.
+Example: 'search global linux iso \-\-type Iso \-\-min-size 100M' returns
+results for 'linux iso' of file-type Iso at least 100 MiB.
 .SS_untranslated Set \fI<what>\fR
 Sets a given preferences value.
 
@@ -239,9 +239,9 @@ Show statistics tree.
 
 The optional \fI<number>\fR in the range of 0-255 can be passed as argument to this
 command, which tells how many entries of the client version subtree should be
-shown. Passing 0, or omitting it means `unlimited'.
+shown. Passing 0, or omitting it means 'unlimited'.
 
-Example: `statistics 5' will show only the top 5 versions for each client
+Example: 'statistics 5' will show only the top 5 versions for each client
 type.
 .SS_untranslated Status
 Show connection status, current up/download speeds, etc.

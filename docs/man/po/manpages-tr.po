@@ -513,8 +513,8 @@ msgstr "Bir dosyayı indirmeye başlar."
 
 #. type: Plain text
 #: amulecmd.1.in
-msgid "The I<E<lt>numberE<gt>> of a file from the last search has to be given.  Example: `download 12' will start to download the file with the number 12 of the previous search."
-msgstr "Bir dosyanın son aramadan I<E<lt>sayıE<gt>> değeri girilmesi gerekir. Örneğin `download 12' son aramadaki 12 numaralı dosyayı indirmeye başlar."
+msgid "The I<E<lt>numberE<gt>> of a file from the last search has to be given.  Example: 'download 12' will start to download the file with the number 12 of the previous search."
+msgstr "Bir dosyanın son aramadan I<E<lt>sayıE<gt>> değeri girilmesi gerekir. Örneğin 'download 12' son aramadaki 12 numaralı dosyayı indirmeye başlar."
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -623,8 +623,8 @@ msgstr "I<E<lt>hashE<gt>> ya da I<E<lt>sayıE<gt>> ile belirtilen indirmeye kald
 
 #. type: Plain text
 #: amulecmd.1.in
-msgid "Makes a search for the given I<E<lt>keywordE<gt>>. A search type and a keyword to search is mandatory to do this.  Example: `search kad amule' performs a kad search for `amule'.  Prints a search id; pass it to B<results> or B<progress> to address this search. Several searches can run at once, each with its own id."
-msgstr "Girilen I<E<lt>anahtarkelimeE<gt>> için bir arama yapar. Bir arama türü ve bir anahtar kelime kullanmanız mecburidir. Örneğin `search kad amule' kad ağında `amule' sözcüğü ile arama yapar.  Bir arama kimliği görüntüler; bu aramayı hedef almak için onu B<results> veya B<progress> ile kullanın. Birden fazla arama aynı anda çalışabilir, her biri kendi kimliğine sahip olur."
+msgid "Makes a search for the given I<E<lt>keywordE<gt>>. A search type and a keyword to search is mandatory to do this.  Example: 'search kad amule' performs a kad search for 'amule'.  Prints a search id; pass it to B<results> or B<progress> to address this search. Several searches can run at once, each with its own id."
+msgstr "Girilen I<E<lt>anahtarkelimeE<gt>> için bir arama yapar. Bir arama türü ve bir anahtar kelime kullanmanız mecburidir. Örneğin 'search kad amule' kad ağında 'amule' sözcüğü ile arama yapar.  Bir arama kimliği görüntüler; bu aramayı hedef almak için onu B<results> veya B<progress> ile kullanın. Birden fazla arama aynı anda çalışabilir, her biri kendi kimliğine sahip olur."
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -678,8 +678,8 @@ msgstr "Geri gönderilecek azami dosya boyutu. B<--min-size> ile aynı uzantıla
 
 #. type: Plain text
 #: amulecmd.1.in
-msgid "Example: `search global linux iso --type Iso --min-size 100M' returns results for \\(lqlinux iso\\(rq of file-type Iso at least 100 MiB."
-msgstr "Örnek: `search global linux iso --type Iso --min-size 100M', \\(lqlinux iso\\(rq için asgari 100 MiB boyutunda ve Iso dosya türünde sonuçlar geri gönderir."
+msgid "Example: 'search global linux iso --type Iso --min-size 100M' returns results for 'linux iso' of file-type Iso at least 100 MiB."
+msgstr "Örnek: 'search global linux iso --type Iso --min-size 100M', 'linux iso' için asgari 100 MiB boyutunda ve Iso dosya türünde sonuçlar geri gönderir."
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -738,13 +738,13 @@ msgstr "İstatistikler ağacını gösterir."
 
 #. type: Plain text
 #: amulecmd.1.in
-msgid "The optional I<E<lt>numberE<gt>> in the range of 0-255 can be passed as argument to this command, which tells how many entries of the client version subtree should be shown. Passing 0, or omitting it means `unlimited'."
-msgstr "0-255 arası I<E<lt>sayıE<gt>> isteğe bağlı argüman olarak komuta aktarılabilir, bu kaç tane istemci sürümü alt ağacının gösterileceğini belirtir. 0 kullanımı ya da hiçbir argüman kullanılmaması `sınırsız' anlamına gelir."
+msgid "The optional I<E<lt>numberE<gt>> in the range of 0-255 can be passed as argument to this command, which tells how many entries of the client version subtree should be shown. Passing 0, or omitting it means 'unlimited'."
+msgstr "0-255 arası I<E<lt>sayıE<gt>> isteğe bağlı argüman olarak komuta aktarılabilir, bu kaç tane istemci sürümü alt ağacının gösterileceğini belirtir. 0 kullanımı ya da hiçbir argüman kullanılmaması 'sınırsız' anlamına gelir."
 
 #. type: Plain text
 #: amulecmd.1.in
-msgid "Example: `statistics 5' will show only the top 5 versions for each client type."
-msgstr "Örneğin `statistics 5' her istemcinin en çok kullanılan 5 sürümünü gösterir."
+msgid "Example: 'statistics 5' will show only the top 5 versions for each client type."
+msgstr "Örneğin 'statistics 5' her istemcinin en çok kullanılan 5 sürümünü gösterir."
 
 #. type: Plain text
 #: amulecmd.1.in

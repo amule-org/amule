@@ -519,8 +519,8 @@ msgstr "Letölt egy fájlt."
 
 #. type: Plain text
 #: amulecmd.1.in
-msgid "The I<E<lt>numberE<gt>> of a file from the last search has to be given.  Example: `download 12' will start to download the file with the number 12 of the previous search."
-msgstr "Meg kell adni egy fájl számát a legutóbbi keresésből. Például: a \\(Bqdownload 12\\(rq parancs az előző keresés eredményei közül a 12-es sorszámú fájlt fogja letölteni."
+msgid "The I<E<lt>numberE<gt>> of a file from the last search has to be given.  Example: 'download 12' will start to download the file with the number 12 of the previous search."
+msgstr "Meg kell adni egy fájl számát a legutóbbi keresésből. Például: a \\(Bqdownload 12' parancs az előző keresés eredményei közül a 12-es sorszámú fájlt fogja letölteni."
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -633,8 +633,8 @@ msgstr "Folytatja a I<E<lt>hashE<gt>> vagy I<E<lt>számE<gt>> által azonosítot
 #: amulecmd.1.in
 #, fuzzy
 #| msgid "Makes a search for the given I<E<lt>keywordE<gt>>. A search type and a keyword to search is mandatory to do this.  Example: `search kad amule' performs a kad search for `amule'."
-msgid "Makes a search for the given I<E<lt>keywordE<gt>>. A search type and a keyword to search is mandatory to do this.  Example: `search kad amule' performs a kad search for `amule'.  Prints a search id; pass it to B<results> or B<progress> to address this search. Several searches can run at once, each with its own id."
-msgstr "Elindít egy keresést a megadott I<E<lt>kulcsszóE<gt>>-ra. Kötelező megadni a keresés típusát és a kulcsszót. Példa: a \\(Bqsearch kad amule\\(rq parancs egy Kademlia keresést indít az \\(Bqamule\\(rq kulcsszóra."
+msgid "Makes a search for the given I<E<lt>keywordE<gt>>. A search type and a keyword to search is mandatory to do this.  Example: 'search kad amule' performs a kad search for 'amule'.  Prints a search id; pass it to B<results> or B<progress> to address this search. Several searches can run at once, each with its own id."
+msgstr "Elindít egy keresést a megadott I<E<lt>kulcsszóE<gt>>-ra. Kötelező megadni a keresés típusát és a kulcsszót. Példa: a \\(Bqsearch kad amule' parancs egy Kademlia keresést indít az \\(Bqamule' kulcsszóra."
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -688,7 +688,7 @@ msgstr ""
 
 #. type: Plain text
 #: amulecmd.1.in
-msgid "Example: `search global linux iso --type Iso --min-size 100M' returns results for \\(lqlinux iso\\(rq of file-type Iso at least 100 MiB."
+msgid "Example: 'search global linux iso --type Iso --min-size 100M' returns results for 'linux iso' of file-type Iso at least 100 MiB."
 msgstr ""
 
 #. type: Plain text
@@ -750,13 +750,13 @@ msgstr "A statisztika fa megjelenítése."
 
 #. type: Plain text
 #: amulecmd.1.in
-msgid "The optional I<E<lt>numberE<gt>> in the range of 0-255 can be passed as argument to this command, which tells how many entries of the client version subtree should be shown. Passing 0, or omitting it means `unlimited'."
+msgid "The optional I<E<lt>numberE<gt>> in the range of 0-255 can be passed as argument to this command, which tells how many entries of the client version subtree should be shown. Passing 0, or omitting it means 'unlimited'."
 msgstr "Lehetséges megadni egy számot a 0-255 tartományban, amely megadja az ügyfél-verziók al-fák maximális nagyságát. Nulla megadása vagy a szám teljes elhagyása nem korlátoz."
 
 #. type: Plain text
 #: amulecmd.1.in
-msgid "Example: `statistics 5' will show only the top 5 versions for each client type."
-msgstr "Példa: a \\(Bqstatistics 5\\(rq parancs csak az 5 leggyakoribb ügyfél változatot mutatja minden ügyfél típusra."
+msgid "Example: 'statistics 5' will show only the top 5 versions for each client type."
+msgstr "Példa: a \\(Bqstatistics 5' parancs csak az 5 leggyakoribb ügyfél változatot mutatja minden ügyfél típusra."
 
 #. type: Plain text
 #: amulecmd.1.in

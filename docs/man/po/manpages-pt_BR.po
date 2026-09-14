@@ -515,8 +515,8 @@ msgstr "Começar a baixar um arquivo."
 
 #. type: Plain text
 #: amulecmd.1.in
-msgid "The I<E<lt>numberE<gt>> of a file from the last search has to be given.  Example: `download 12' will start to download the file with the number 12 of the previous search."
-msgstr "O I<E<lt>numeroE<gt>> de um arquivo da última busca tem que ser dado.  Exemplo: `download 12' começará a baixar o arquivo com o número 12 da última busca."
+msgid "The I<E<lt>numberE<gt>> of a file from the last search has to be given.  Example: 'download 12' will start to download the file with the number 12 of the previous search."
+msgstr "O I<E<lt>numeroE<gt>> de um arquivo da última busca tem que ser dado.  Exemplo: 'download 12' começará a baixar o arquivo com o número 12 da última busca."
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -625,8 +625,8 @@ msgstr "Retoma o download especificado por I<E<lt>hashE<gt>> ou I<E<lt>numeroE<g
 
 #. type: Plain text
 #: amulecmd.1.in
-msgid "Makes a search for the given I<E<lt>keywordE<gt>>. A search type and a keyword to search is mandatory to do this.  Example: `search kad amule' performs a kad search for `amule'.  Prints a search id; pass it to B<results> or B<progress> to address this search. Several searches can run at once, each with its own id."
-msgstr "Realiza uma pesquisa pela I<E<lt>palavra-chaveE<gt>> fornecida. Um tipo de pesquisa e uma palavra-chave são obrigatórios para realizar esta operação. Exemplo: `search kad amule' realiza uma pesquisa na rede kad por `amule'. Exibe um id de pesquisa; passe-o para B<results> ou B<progress> para acessar essa pesquisa. Várias pesquisas podem ser executadas ao mesmo tempo, cada uma com seu próprio id."
+msgid "Makes a search for the given I<E<lt>keywordE<gt>>. A search type and a keyword to search is mandatory to do this.  Example: 'search kad amule' performs a kad search for 'amule'.  Prints a search id; pass it to B<results> or B<progress> to address this search. Several searches can run at once, each with its own id."
+msgstr "Realiza uma pesquisa pela I<E<lt>palavra-chaveE<gt>> fornecida. Um tipo de pesquisa e uma palavra-chave são obrigatórios para realizar esta operação. Exemplo: 'search kad amule' realiza uma pesquisa na rede kad por 'amule'. Exibe um id de pesquisa; passe-o para B<results> ou B<progress> para acessar essa pesquisa. Várias pesquisas podem ser executadas ao mesmo tempo, cada uma com seu próprio id."
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -680,8 +680,8 @@ msgstr "Maior tamanho de arquivo a ser retornado. Mesmos sufixos que B<--min-siz
 
 #. type: Plain text
 #: amulecmd.1.in
-msgid "Example: `search global linux iso --type Iso --min-size 100M' returns results for \\(lqlinux iso\\(rq of file-type Iso at least 100 MiB."
-msgstr "Exemplo: `earch global linux iso --type Iso --min-size 100M' retorna resultados para \\(lqlinux iso\\(rq do tipo de arquivo Iso com no mínimo 100 MiB."
+msgid "Example: 'search global linux iso --type Iso --min-size 100M' returns results for 'linux iso' of file-type Iso at least 100 MiB."
+msgstr "Exemplo: 'earch global linux iso --type Iso --min-size 100M' retorna resultados para 'linux iso' do tipo de arquivo Iso com no mínimo 100 MiB."
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -740,13 +740,13 @@ msgstr "Mostra a árvore de estatísticas."
 
 #. type: Plain text
 #: amulecmd.1.in
-msgid "The optional I<E<lt>numberE<gt>> in the range of 0-255 can be passed as argument to this command, which tells how many entries of the client version subtree should be shown. Passing 0, or omitting it means `unlimited'."
-msgstr "O I<E<lt>numeroE<gt>> opcional na faixa de 0-255 pode ser passado como argumento para este comando, que diz quantas entradas da sub-árvore de versão do cliente deve ser mostrada. Passar 0 ou omitir significa `ilimitado'."
+msgid "The optional I<E<lt>numberE<gt>> in the range of 0-255 can be passed as argument to this command, which tells how many entries of the client version subtree should be shown. Passing 0, or omitting it means 'unlimited'."
+msgstr "O I<E<lt>numeroE<gt>> opcional na faixa de 0-255 pode ser passado como argumento para este comando, que diz quantas entradas da sub-árvore de versão do cliente deve ser mostrada. Passar 0 ou omitir significa 'ilimitado'."
 
 #. type: Plain text
 #: amulecmd.1.in
-msgid "Example: `statistics 5' will show only the top 5 versions for each client type."
-msgstr "Exemplo: `statistics 5' vai mostrar apenas as 5 versões mais altas para cada tipo de cliente."
+msgid "Example: 'statistics 5' will show only the top 5 versions for each client type."
+msgstr "Exemplo: 'statistics 5' vai mostrar apenas as 5 versões mais altas para cada tipo de cliente."
 
 #. type: Plain text
 #: amulecmd.1.in

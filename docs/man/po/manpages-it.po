@@ -595,8 +595,8 @@ msgstr "Inizia il download di un file."
 # type: Plain text
 #. type: Plain text
 #: amulecmd.1.in
-msgid "The I<E<lt>numberE<gt>> of a file from the last search has to be given.  Example: `download 12' will start to download the file with the number 12 of the previous search."
-msgstr "Deve essere fornito il I<E<lt>numeroE<gt>> di un file dall'ultima ricerca.Esempio: `download 12' inizierà il download del file numero 12 della ricerca precedente."
+msgid "The I<E<lt>numberE<gt>> of a file from the last search has to be given.  Example: 'download 12' will start to download the file with the number 12 of the previous search."
+msgstr "Deve essere fornito il I<E<lt>numeroE<gt>> di un file dall'ultima ricerca.Esempio: 'download 12' inizierà il download del file numero 12 della ricerca precedente."
 
 # type: Plain text
 #. type: Plain text
@@ -725,7 +725,7 @@ msgstr "Riprende il download specificato da I<E<lt>hashE<gt>> o I<E<lt>numeroE<g
 # type: Plain text
 #. type: Plain text
 #: amulecmd.1.in
-msgid "Makes a search for the given I<E<lt>keywordE<gt>>. A search type and a keyword to search is mandatory to do this.  Example: `search kad amule' performs a kad search for `amule'.  Prints a search id; pass it to B<results> or B<progress> to address this search. Several searches can run at once, each with its own id."
+msgid "Makes a search for the given I<E<lt>keywordE<gt>>. A search type and a keyword to search is mandatory to do this.  Example: 'search kad amule' performs a kad search for 'amule'.  Prints a search id; pass it to B<results> or B<progress> to address this search. Several searches can run at once, each with its own id."
 msgstr "Esegue una ricerca per la data I<E<lt>parola-chiaveE<gt>>. Il tipo della ricerca e una parola chiave da cercare sono obbligatori. Esempio: ' search kad amule' esegue una ricerca sulla rete kad per ' amule'. Stampa un id di ricerca, da passare a B<results> o B<progress> per indirizzare questa ricerca. È possibile eseguire più ricerche contemporaneamente, ciascuna con il proprio id."
 
 # type: Plain text
@@ -791,8 +791,8 @@ msgstr "Dimensione massima del file da restituire. Stessi suffissi di B<--min-si
 # AI-GENERATED — please review.
 #. type: Plain text
 #: amulecmd.1.in
-msgid "Example: `search global linux iso --type Iso --min-size 100M' returns results for \\(lqlinux iso\\(rq of file-type Iso at least 100 MiB."
-msgstr "Esempio: `search global linux iso --type Iso --min-size 100M' restituisce risultati per \\(lqlinux iso\\(rq di tipo file Iso di almeno 100 MiB."
+msgid "Example: 'search global linux iso --type Iso --min-size 100M' returns results for 'linux iso' of file-type Iso at least 100 MiB."
+msgstr "Esempio: 'search global linux iso --type Iso --min-size 100M' restituisce risultati per 'linux iso' di tipo file Iso di almeno 100 MiB."
 
 # type: Plain text
 #. type: Plain text
@@ -864,14 +864,14 @@ msgstr "Mostra l'albero delle statistiche."
 # type: Plain text
 #. type: Plain text
 #: amulecmd.1.in
-msgid "The optional I<E<lt>numberE<gt>> in the range of 0-255 can be passed as argument to this command, which tells how many entries of the client version subtree should be shown. Passing 0, or omitting it means `unlimited'."
-msgstr "Il I<E<lt>numeroE<gt>> opzionale, nell'intervallo 0-255, può essere passato come argomento a questo comando per indicare quante righe del ramo delle versioni dei client devono essere mostrate. Indicando 0, o omettendo il parametro significa `illimitato'."
+msgid "The optional I<E<lt>numberE<gt>> in the range of 0-255 can be passed as argument to this command, which tells how many entries of the client version subtree should be shown. Passing 0, or omitting it means 'unlimited'."
+msgstr "Il I<E<lt>numeroE<gt>> opzionale, nell'intervallo 0-255, può essere passato come argomento a questo comando per indicare quante righe del ramo delle versioni dei client devono essere mostrate. Indicando 0, o omettendo il parametro significa 'illimitato'."
 
 # type: Plain text
 #. type: Plain text
 #: amulecmd.1.in
-msgid "Example: `statistics 5' will show only the top 5 versions for each client type."
-msgstr "Esempio: `statistics 5' mostrerà solo le prime 5 versioni per ogni tipo di client."
+msgid "Example: 'statistics 5' will show only the top 5 versions for each client type."
+msgstr "Esempio: 'statistics 5' mostrerà solo le prime 5 versioni per ogni tipo di client."
 
 # type: Plain text
 #. type: Plain text

@@ -508,7 +508,7 @@ msgstr ""
 
 #. type: Plain text
 #: amulecmd.1.in:108
-msgid "The I<E<lt>numberE<gt>> of a file from the last search has to be given.  Example: `download 12' will start to download the file with the number 12 of the previous search."
+msgid "The I<E<lt>numberE<gt>> of a file from the last search has to be given.  Example: 'download 12' will start to download the file with the number 12 of the previous search."
 msgstr ""
 
 #. type: Plain text
@@ -618,7 +618,7 @@ msgstr ""
 
 #. type: Plain text
 #: amulecmd.1.in:164
-msgid "Makes a search for the given I<E<lt>keywordE<gt>>. A search type and a keyword to search is mandatory to do this.  Example: `search kad amule' performs a kad search for `amule'."
+msgid "Makes a search for the given I<E<lt>keywordE<gt>>. A search type and a keyword to search is mandatory to do this.  Example: 'search kad amule' performs a kad search for 'amule'."
 msgstr ""
 
 #. type: Plain text
@@ -673,7 +673,7 @@ msgstr ""
 
 #. type: Plain text
 #: amulecmd.1.in:193
-msgid "Example: `search global linux iso --type Iso --min-size 100M' returns results for \\(lqlinux iso\\(rq of file-type Iso at least 100 MiB."
+msgid "Example: 'search global linux iso --type Iso --min-size 100M' returns results for 'linux iso' of file-type Iso at least 100 MiB."
 msgstr ""
 
 #. type: Plain text
@@ -733,12 +733,12 @@ msgstr ""
 
 #. type: Plain text
 #: amulecmd.1.in:228
-msgid "The optional I<E<lt>numberE<gt>> in the range of 0-255 can be passed as argument to this command, which tells how many entries of the client version subtree should be shown. Passing 0, or omitting it means `unlimited'."
+msgid "The optional I<E<lt>numberE<gt>> in the range of 0-255 can be passed as argument to this command, which tells how many entries of the client version subtree should be shown. Passing 0, or omitting it means 'unlimited'."
 msgstr ""
 
 #. type: Plain text
 #: amulecmd.1.in:231
-msgid "Example: `statistics 5' will show only the top 5 versions for each client type."
+msgid "Example: 'statistics 5' will show only the top 5 versions for each client type."
 msgstr ""
 
 #. type: Plain text
