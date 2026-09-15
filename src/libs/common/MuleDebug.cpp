@@ -764,6 +764,17 @@ void SuppressNextTrapBacktrace()
 	s_suppressTrapBacktrace = 1;
 }
 
+void SuppressTrapBacktraceIfWxWillTrap()
+{
+#if wxDEBUG_LEVEL
+	// wxASSERT_MSG_AT traps at the assert site once wxOnAssert() has returned, so this belongs on
+	// the way out of OnAssertFailure(), not around it.
+	if (wxTrapInAssert) {
+		SuppressNextTrapBacktrace();
+	}
+#endif
+}
+
 // -1 until a caller redirects; read by the handler, so sig_atomic_t rather than int.
 static volatile sig_atomic_t s_abortRedirectFd = -1;
 
@@ -1038,19 +1049,16 @@ extern "C" void MuleFatalAbortHandler(int sig)
 		}
 	}
 
-	// SIGILL is wx's signal as much as ours: wxHandleFatalExceptions(true) installs a handler for
-	// it, and installing ours on top took OnFatalException() away from every ud2 death on x86_64
-	// -- which is where __builtin_trap() and hardened libc++ land. Hand control to whoever held
-	// the disposition before us, so the raw trace above is added to wx's report rather than
-	// replacing it.
+	// SIGILL is wx's as much as ours: wxHandleFatalExceptions(true) installs a handler for it, and
+	// installing ours on top took OnFatalException() away from every ud2 death on x86_64, where
+	// __builtin_trap() and hardened libc++ land. Chain to whoever held it, so the frames above add
+	// to wx's report instead of replacing it.
 	//
-	// Called directly rather than re-raised: SA_RESETHAND has already put the disposition back to
-	// SIG_DFL, so a raise() here would kill the process without ever reaching wx. Only the plain
-	// sa_handler form is chained; a SA_SIGINFO handler would need a siginfo_t and a ucontext_t we
-	// do not have, and wx does not use one. wx's handler ends in abort(), which re-enters this
-	// function through the still-armed SIGABRT disposition -- the re-entry guard above is what
-	// keeps that from printing a second trace.
-	if (sig == SIGILL && s_havePrevIll != 0 && (s_prevIll.sa_flags & SA_SIGINFO) == 0 &&
+	// Called, not re-raised: SA_RESETHAND has already restored SIG_DFL. Only the plain sa_handler
+	// form, because a SA_SIGINFO one needs a siginfo_t we do not have, and wx does not use one.
+	// Skipped on re-entry, like the report: wx's handler ends in abort(), and a second SIGILL taken
+	// while another thread is mid-report would re-arm the alarm and symbolicate over its output.
+	if (!reentered && sig == SIGILL && s_havePrevIll != 0 && (s_prevIll.sa_flags & SA_SIGINFO) == 0 &&
 		s_prevIll.sa_handler != SIG_DFL && s_prevIll.sa_handler != SIG_IGN) {
 		// A bound of its own, not our leftovers: wx symbolicates, and get_backtrace() popen()s
 		// addr2line on the non-BFD path. Dying of SIGALRM halfway through that report is exactly

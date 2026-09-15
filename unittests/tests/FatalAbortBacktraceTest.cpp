@@ -358,6 +358,30 @@ void ChildTrapOnAnotherThread()
 	_exit(42); // not reached
 }
 
+#if wxDEBUG_LEVEL
+// The arming condition itself: wxTrapInAssert is what wx's dialog sets when the user chooses to
+// stop, and the assert macro traps right after OnAssertFailure() returns.
+void ChildWxWillTrap()
+{
+	InstallFatalAbortHandler();
+	wxTrapInAssert = true;
+	SuppressTrapBacktraceIfWxWillTrap();
+	wxTrapInAssert = false;
+	raise(SIGTRAP);
+	_exit(42); // not reached
+}
+
+// An assert the user let continue arms nothing, so a later trap still reports.
+void ChildWxWillNotTrap()
+{
+	InstallFatalAbortHandler();
+	wxTrapInAssert = false;
+	SuppressTrapBacktraceIfWxWillTrap();
+	raise(SIGTRAP);
+	_exit(42); // not reached
+}
+#endif
+
 // It mutes a trap, not the next death of any kind.
 void ChildTrapSuppressionThenAbort()
 {
@@ -611,6 +635,28 @@ TEST(FatalAbortBacktrace, ATrapOnAnotherThreadIsStillReported)
 	ASSERT_EQUALS(SIGTRAP, r.signal_number);
 	ASSERT_TRUE(Contains(r.stderr_text, "FATAL BACKTRACE FOLLOWS"));
 }
+
+#if wxDEBUG_LEVEL
+TEST(FatalAbortBacktrace, AnAssertTheUserStoppedMutesItsTrap)
+{
+	const ChildResult r = RunInChild(ChildWxWillTrap);
+
+	ASSERT_FALSE(r.timed_out);
+	ASSERT_TRUE(r.exited_on_signal);
+	ASSERT_EQUALS(SIGTRAP, r.signal_number);
+	ASSERT_FALSE(Contains(r.stderr_text, "FATAL BACKTRACE FOLLOWS"));
+}
+
+TEST(FatalAbortBacktrace, AnAssertTheUserContinuedArmsNothing)
+{
+	const ChildResult r = RunInChild(ChildWxWillNotTrap);
+
+	ASSERT_FALSE(r.timed_out);
+	ASSERT_TRUE(r.exited_on_signal);
+	ASSERT_EQUALS(SIGTRAP, r.signal_number);
+	ASSERT_TRUE(Contains(r.stderr_text, "FATAL BACKTRACE FOLLOWS"));
+}
+#endif
 
 TEST(FatalAbortBacktrace, TheTrapSuppressionDoesNotMuteAnAbort)
 {

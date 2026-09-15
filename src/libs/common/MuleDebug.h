@@ -101,6 +101,14 @@ void SuppressNextAbortBacktrace();
 void SuppressNextTrapBacktrace();
 
 /**
+ * Arms the above when wx is about to trap, and does nothing otherwise.
+ *
+ * Call on the way out of OnAssertFailure(): wxTrapInAssert is what the dialog sets when the user
+ * chooses to stop, and the assert macro reads it and calls wxTrap() after this returns.
+ */
+void SuppressTrapBacktraceIfWxWillTrap();
+
+/**
  * Gives the crash reporters a durable descriptor to report to.
  *
  * For a process that has put something other than a terminal on fd 2. amuleapi tees stdout and

@@ -1833,14 +1833,9 @@ void CamuleApp::OnAssertFailure(
 	// down.
 	if (ReportAssertFailure(file, line, func, cond, msg, wxThread::IsMain() && IsRunning())) {
 		AMULE_APP_BASE::OnAssertFailure(file, line, func, cond, msg);
-#if wxDEBUG_LEVEL
-		// The dialog sets wxTrapInAssert when the user chooses to stop, and the wxASSERT macro
-		// then calls wxTrap() at the assert site, on the way out of here. That SIGTRAP is ours,
-		// and the symbolicated backtrace is already in the log, so mute the raw one.
-		if (wxTrapInAssert) {
-			SuppressNextTrapBacktrace();
-		}
-#endif
+		// If the user chose to stop, wx traps at the assert site on the way out of here. The
+		// symbolicated backtrace is already in the log, so mute the raw one for that trap.
+		SuppressTrapBacktraceIfWxWillTrap();
 	}
 }
 
