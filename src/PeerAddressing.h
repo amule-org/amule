@@ -278,9 +278,13 @@ inline bool IsDirectlyReachable(const CNetworkAddress &address) noexcept
  * fe80::1%3 and fe80::1%9 are different peers on different interfaces, and merging them would be
  * worse than splitting one.
  *
- * Global routability answers it, and covers the rest for free. Loopback, unique-local, NAT64 and
- * the unspecified address are all either unnameable across hosts or undialable from here, so a peer
- * that sends one has told us nothing we can act on. Absence is the honest result.
+ * Global routability answers it: loopback, NAT64 and the unspecified address cannot name a peer
+ * across hosts either. Unique-local is the one excluded on the other ground -- a ULA is globally
+ * unique by construction and names a peer fine, but nothing here can dial one, and whether the
+ * dual-stack change serves site-local peers is a decision for it. Absence is honest until then.
+ *
+ * Same body as IsDirectlyReachable() above by choice rather than coincidence: this adopts the
+ * stricter of the two rules. Loosening one is not a reason to loosen the other.
  */
 inline bool IsUsableTagIdentity(const CNetworkAddress &address) noexcept
 {
