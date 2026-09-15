@@ -920,12 +920,19 @@ static void WriteAbortReport(int fd, int sig, void *const *frames, int count)
 {
 	WRITE_LITERAL(
 		fd, "\n-------------------------=| ABORT BACKTRACE FOLLOWS |=-------------------------\n");
-	// Two literals rather than a formatted name: nothing here may allocate or call snprintf.
-	if (sig == SIGTRAP) {
+	// Fixed literals rather than a formatted name: nothing here may allocate or call snprintf.
+	if (sig == SIGTRAP || sig == SIGILL) {
+		// Same construct, different encoding: __builtin_trap() is brk on arm64 and ud2 on
+		// x86_64, so the very same corruption check arrives as a different signal per target.
+		if (sig == SIGILL) {
+			WRITE_LITERAL(fd, "aMule was killed by an illegal instruction (SIGILL).\n");
+		} else {
+			WRITE_LITERAL(fd, "aMule was killed by a trap (SIGTRAP).\n");
+		}
 		WRITE_LITERAL(fd,
-			"aMule was killed by a trap (SIGTRAP). An allocator or a hardened library\n"
-			"check found state it will not continue past. The frames below are where the\n"
-			"damage was NOTICED, not where it was caused. Please report them at\n"
+			"An allocator or a hardened library check found state it would not continue\n"
+			"past. The frames below are where the damage was NOTICED, not where it was\n"
+			"caused. Please report them at\n"
 			"    https://github.com/amule-org/amule/issues\n\n");
 	} else {
 		WRITE_LITERAL(fd,
@@ -1029,10 +1036,17 @@ void InstallFatalAbortHandler()
 	sa.sa_flags = SA_RESETHAND;
 	sigaction(SIGABRT, &sa, nullptr);
 	// macOS libmalloc reports some heap corruption with a trap instruction instead of abort(),
-	// and hardened libc++ and __builtin_trap() do the same. Without this the backtrace this
-	// file exists for is missing for exactly those deaths. Debuggers are unaffected: lldb and
-	// gdb take the trap through Mach exception ports and ptrace, ahead of signal delivery.
+	// and hardened libc++ and __builtin_trap() do the same. Without these the backtrace this
+	// file exists for is missing for exactly those deaths.
+	//
+	// Both signals, because the encoding is per-target: __builtin_trap() is brk on arm64, which
+	// raises SIGTRAP, and ud2 on x86_64, which raises SIGILL. Installing only one covers only
+	// half the machines we ship to.
+	//
+	// Debuggers are unaffected: lldb and gdb take these through Mach exception ports and
+	// ptrace, ahead of signal delivery.
 	sigaction(SIGTRAP, &sa, nullptr);
+	sigaction(SIGILL, &sa, nullptr);
 }
 
 #else /* !HAVE_EXECINFO */

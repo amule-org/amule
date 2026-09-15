@@ -165,7 +165,8 @@ void ChildDoubleFree()
 
 // The trap path on its own, without depending on what an allocator decides to do. __builtin_trap()
 // is what hardened libc++ and a violated std::unreachable() reach for, so this is not a synthetic
-// case.
+// case. Which signal it raises is the target's business: brk on arm64 gives SIGTRAP, ud2 on x86_64
+// gives SIGILL.
 void ChildTrap()
 {
 	InstallFatalAbortHandler();
@@ -333,7 +334,7 @@ TEST(FatalAbortBacktrace, RealHeapCorruptionStillProducesABacktrace)
 	// Which signal carries the corruption is the allocator's business: glibc abort()s, macOS
 	// libmalloc may trap for the very same double free. Asserting one of them is what made this
 	// case fail intermittently on macOS. The report is the behaviour under test.
-	ASSERT_TRUE(r.signal_number == SIGABRT || r.signal_number == SIGTRAP);
+	ASSERT_TRUE(r.signal_number == SIGABRT || r.signal_number == SIGTRAP || r.signal_number == SIGILL);
 	ASSERT_TRUE(Contains(r.stderr_text, "ABORT BACKTRACE FOLLOWS"));
 	// Frames, not just the banner. Deliberately matched on the module name rather than on the
 	// allocator's own wording: glibc says "free(): double free detected in tcache 2" and macOS
@@ -471,9 +472,11 @@ TEST(FatalAbortBacktrace, ATrapReportsAndStillDies)
 
 	ASSERT_FALSE(r.timed_out);
 	ASSERT_TRUE(r.exited_on_signal);
-	ASSERT_EQUALS(SIGTRAP, r.signal_number);
+	const bool trapSignal = r.signal_number == SIGTRAP || r.signal_number == SIGILL;
+	ASSERT_TRUE(trapSignal);
 	ASSERT_TRUE(Contains(r.stderr_text, "ABORT BACKTRACE FOLLOWS"));
-	ASSERT_TRUE(Contains(r.stderr_text, "SIGTRAP"));
+	// The report has to name the one that arrived, not a guess.
+	ASSERT_TRUE(Contains(r.stderr_text, r.signal_number == SIGILL ? "SIGILL" : "SIGTRAP"));
 }
 
 TEST(FatalAbortBacktrace, TheProcessStillDiesOfSigabrt)
