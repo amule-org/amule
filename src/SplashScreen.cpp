@@ -156,8 +156,10 @@ void CSplashScreen::RenderBackdrop()
 	dc.SetTextForeground(*wxWHITE);
 
 	const int logoSize = FromDIP(kLogoSize);
+	// The icon bank's own "amule" raster, scaled down from its 256x256 natural size. Not the
+	// SVG twin behind GetBitmapBundle(): wx 3.2's NanoSVG mis-renders it into a black blob.
 	const wxBitmap logo = wxArtProvider::GetBitmap(
-		CamuleArtProvider::MakeId("splash_logo"), wxART_OTHER, wxSize(logoSize, logoSize));
+		CamuleArtProvider::MakeId("amule"), wxART_OTHER, wxSize(logoSize, logoSize));
 	int y = FromDIP(28);
 	if (logo.IsOk()) {
 		dc.DrawBitmap(logo, (size.x - logo.GetWidth()) / 2, y, true);

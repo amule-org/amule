@@ -24,12 +24,13 @@
 
 #include "AboutDialog.h"
 
+#include "CamuleArtProvider.h" // Needed for CamuleArtProvider::MakeId
+
 #include "config.h" // Needed for VERSION, GITDATE
 
 #include <common/Format.h> // Needed for CFormat
 
 #include <wx/artprov.h>
-#include <wx/bmpbndl.h> // Needed for wxBitmapBundle
 #include <wx/button.h>
 #include <wx/hyperlink.h>
 #include <wx/settings.h>
@@ -90,18 +91,17 @@ CAboutDlg::CAboutDlg(wxWindow *parent)
 
 	// aMule logo on the left, matching the previous wxMessageBox About.
 	//
-	// A bundle rather than a bitmap: GetBitmap() resolves through
-	// CamuleArtProvider::CreateBitmap(), which decodes the embedded PNG and nothing else, so
-	// the logo arrived at its 32px natural size and the compositor scaled it up on a HiDPI
-	// display. Only the bundle path consults the icon's SVG twin, which renders at whatever
-	// size the display actually wants.
+	// The raster rather than the SVG twin: GetBitmapBundle() would prefer the vector, but
+	// wx 3.2's NanoSVG mis-renders this artwork -- most of the mule is swallowed by a black
+	// blob -- and 3.2 is what the AppImage ships (packaging/linux/versions.env pins
+	// WX_VERSION). GetBitmap() resolves through CamuleArtProvider::CreateBitmap(), which
+	// decodes the embedded PNG and rescales it with wxIMAGE_QUALITY_HIGH; the icon's raster is
+	// 256x256, so there is ample detail to come down from.
 	//
-	// 42px rather than the icon's 32px natural size: the dialog has the room, and the artwork
-	// this replaced was 32x42, so the logo keeps the height it had before it was squared off.
-	// The size is the bundle's logical one, so it is still rendered from the SVG at the
-	// display's scale rather than stretched to fit.
-	const wxBitmapBundle logoBmp =
-		wxArtProvider::GetBitmapBundle(wxT("amule:amule"), wxART_MESSAGE_BOX, wxSize(42, 42));
+	// 42px: the dialog has the room, and the artwork this replaced was 32x42, so the logo keeps
+	// the height it had before it was squared off.
+	const wxBitmap logoBmp = wxArtProvider::GetBitmap(
+		CamuleArtProvider::MakeId("amule"), wxART_MESSAGE_BOX, wxSize(42, 42));
 
 	// The project links, as native clickable hyperlinks.
 	wxFlexGridSizer *linkGrid = new wxFlexGridSizer(2, wxSize(6, 2));
