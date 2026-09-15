@@ -148,11 +148,11 @@ void ChildDoubleFree()
 	// error path. Deliberately not raise(SIGABRT): that would test the handler with a healthy
 	// heap and prove nothing about the hard case.
 	//
-	// The size is per-allocator, and both ends of it matter. glibc's tcache absorbs frees up to
-	// 1032 bytes and catches a double free there before taking the arena lock; above that
-	// ceiling the check runs inside the locked region, which is the state the handler has to
-	// survive. macOS goes the other way: a large block traps (SIGTRAP) rather than aborting, so
-	// the handler would never be entered and the case would test nothing.
+	// glibc's tcache absorbs frees up to 1032 bytes and catches a double free there before
+	// taking the arena lock; above that ceiling the check runs inside the locked region, which
+	// is the state the handler has to survive. macOS picks between abort() and a trap on its
+	// own, and not purely by size -- this case ran for weeks on 64 bytes and then trapped
+	// anyway. Both signals are handled, so it no longer matters which it chooses.
 #if defined(__GLIBC__)
 	void *p = Launder(malloc(2048));
 #else
@@ -161,6 +161,16 @@ void ChildDoubleFree()
 	free(p);
 	free(Launder(p));
 	_exit(0); // not reached while the allocator detects the double free
+}
+
+// The trap path on its own, without depending on what an allocator decides to do. __builtin_trap()
+// is what hardened libc++ and a violated std::unreachable() reach for, so this is not a synthetic
+// case.
+void ChildTrap()
+{
+	InstallFatalAbortHandler();
+	__builtin_trap();
+	_exit(42); // not reached: a trap instruction cannot be resumed
 }
 
 void ChildPlainAbort()
@@ -320,7 +330,10 @@ TEST(FatalAbortBacktrace, RealHeapCorruptionStillProducesABacktrace)
 
 	ASSERT_FALSE(r.timed_out); // a handler that allocates deadlocks here
 	ASSERT_TRUE(r.exited_on_signal);
-	ASSERT_EQUALS(SIGABRT, r.signal_number);
+	// Which signal carries the corruption is the allocator's business: glibc abort()s, macOS
+	// libmalloc may trap for the very same double free. Asserting one of them is what made this
+	// case fail intermittently on macOS. The report is the behaviour under test.
+	ASSERT_TRUE(r.signal_number == SIGABRT || r.signal_number == SIGTRAP);
 	ASSERT_TRUE(Contains(r.stderr_text, "ABORT BACKTRACE FOLLOWS"));
 	// Frames, not just the banner. Deliberately matched on the module name rather than on the
 	// allocator's own wording: glibc says "free(): double free detected in tcache 2" and macOS
@@ -450,6 +463,19 @@ TEST(FatalAbortBacktrace, TheBacktraceCarriesFrames)
 // The process must still die, and die of SIGABRT. A handler that reports and returns would swallow
 // the signal, and a supervisor watching for a non-zero exit would never restart. This raises the
 // signal in-process rather than from outside; delivery to a single-threaded child is the same path.
+// A trap must report and then still kill the process. Returning from the handler would re-execute
+// the trap instruction and spin, so the timeout here is load-bearing rather than belt and braces.
+TEST(FatalAbortBacktrace, ATrapReportsAndStillDies)
+{
+	const ChildResult r = RunInChild(ChildTrap);
+
+	ASSERT_FALSE(r.timed_out);
+	ASSERT_TRUE(r.exited_on_signal);
+	ASSERT_EQUALS(SIGTRAP, r.signal_number);
+	ASSERT_TRUE(Contains(r.stderr_text, "ABORT BACKTRACE FOLLOWS"));
+	ASSERT_TRUE(Contains(r.stderr_text, "SIGTRAP"));
+}
+
 TEST(FatalAbortBacktrace, TheProcessStillDiesOfSigabrt)
 {
 	const ChildResult r = RunInChild(ChildRaiseAbrt);
