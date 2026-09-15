@@ -350,8 +350,26 @@ jobs:
       - name: Install Homebrew deps
         run: |
           BREW=${{ matrix.brew_prefix }}/bin/brew
+          MAINDEPS="cmake wxwidgets cryptopp libupnp gd gettext boost dylibbundler libmaxminddb ccache"
           if [ "${{ matrix.arch }}" = "x86_64" ]; then
               SRCBUILD="pcre2 openssl@3 aom jpeg-turbo json-c libmaxminddb libtiff libupnp lz4 pkgconf wxwidgets"
+              # Several of these build against a Homebrew python, whose bin names
+              # (python3, pip3, idle3) are already symlinks to the python.org
+              # framework in /usr/local/bin. Its link step fails, and brew carries
+              # that into the exit status of the whole install even though every
+              # keg built -- which under bash -e ends the step. Only x86_64
+              # collides: arm64 brew lives in /opt/homebrew.
+              #
+              # Before any install, because which formula drags python in depends
+              # on what the cache restored: warm it is gd, cold it is aom, and aom
+              # is in the first install below. Resolved over both lists rather than
+              # pinned, so a python bump does not quietly bring this back. The
+              # install may fail on the very conflict being settled, so the link is
+              # what is checked.
+              for p in $(${{ matrix.archcmd }} $BREW deps --union --include-build $SRCBUILD $MAINDEPS | grep '^python@' || true); do
+                  ${{ matrix.archcmd }} $BREW install "$p" || true
+                  ${{ matrix.archcmd }} $BREW link --overwrite "$p"
+              done
               # No-op for each keg the cache restored at the same version.
               ${{ matrix.archcmd }} $BREW install --build-from-source $SRCBUILD
               # A restored keg has no /usr/local/{lib,include} symlinks --
@@ -367,9 +385,7 @@ jobs:
           # the reason has to be in the log. It was suppressed here, so
           # this step failed with a bare exit 1 and the breakage only
           # surfaced two steps later as "ccache: command not found".
-          ${{ matrix.archcmd }} $BREW install \
-              cmake wxwidgets cryptopp libupnp gd gettext boost dylibbundler libmaxminddb \
-              ccache
+          ${{ matrix.archcmd }} $BREW install $MAINDEPS
           # Prepend the matrix-selected brew prefix to PATH so every
           # `brew --prefix` / `cmake` / `pkg-config` invocation in the
           # build script resolves against the right install. gettext
