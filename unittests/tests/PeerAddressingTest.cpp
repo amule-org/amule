@@ -41,6 +41,7 @@
 #include <muleunit/test.h>
 
 #include <PeerAddressing.h>
+#include <libs/common/Format.h>
 
 #include <map>
 
@@ -412,6 +413,53 @@ TEST(PeerAddressing, AdvertisedUDPPortMatchesOnlyItself)
 	ASSERT_FALSE(MatchesUdpSource({ v6, 4672 }, { address, 4672 }));
 	ASSERT_FALSE(MatchesUdpSource({ CNetworkAddress::FromString("fe80::1%1"), 4672 },
 		{ CNetworkAddress::FromString("fe80::1%2"), 4672 }));
+}
+
+TEST(PeerAddressing, TagIdentityTable)
+{
+	// A wire tag carries sixteen bytes and no scope id, so an address that needs one to be
+	// meaningful arrives here as a second identity for a peer the socket already named.
+	const struct
+	{
+		const char *label;
+		const char *address;
+		bool usable;
+	} cases[] = {
+		{ "global unicast", "2001:4860:4860::8888", true },
+		{ "documentation range is not routable", "2001:db8::1", false },
+		{ "link-local, the case that splits an identity", "fe80::1", false },
+		{ "unique-local", "fd00::1", false },
+		{ "loopback", "::1", false },
+		{ "unspecified", "::", false },
+		{ "IPv4-mapped is not an IPv6 identity", "::ffff:192.0.2.1", false },
+		{ "NAT64", "64:ff9b::192.0.2.1", false },
+		{ "plain IPv4 never reaches this edge", "192.0.2.1", false },
+		{ "absent", "", false },
+	};
+	for (const auto &row : cases) {
+		const CNetworkAddress address = row.address[0] == '\0'
+							? CNetworkAddress::Absent()
+							: CNetworkAddress::FromString(row.address);
+		CFormat format("%s: %s expected usable=%u");
+		const wxString message = format % row.label % row.address % unsigned(row.usable);
+		ASSERT_EQUALS_M(row.usable, IsUsableTagIdentity(address), message);
+	}
+}
+
+TEST(PeerAddressing, TheSameLinkLocalPeerWouldBeTwoIdentities)
+{
+	// The defect the rule exists to prevent, stated as values: the socket knows the scope,
+	// the tag cannot carry it, and the two forms are not equal. Dropping the scope from
+	// IndexKey() is not the alternative -- these two are different peers.
+	const CNetworkAddress fromSocket = CNetworkAddress::FromString("fe80::1%3");
+	const CNetworkAddress fromTag = CNetworkAddress::FromString("fe80::1");
+	ASSERT_FALSE(IndexKey(fromSocket) == IndexKey(fromTag));
+
+	const CNetworkAddress otherInterface = CNetworkAddress::FromString("fe80::1%9");
+	ASSERT_FALSE(IndexKey(fromSocket) == IndexKey(otherInterface));
+
+	// So the tag form is refused rather than stored beside the socket's.
+	ASSERT_FALSE(IsUsableTagIdentity(fromTag));
 }
 
 // File_checked_for_headers

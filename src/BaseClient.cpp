@@ -50,6 +50,8 @@
 #include "DownloadQueue.h"     // Needed for CDownloadQueue
 #include "UploadQueue.h"       // Needed for CUploadQueue
 #include "IPFilter.h"          // Needed for CIPFilter
+#include "NetworkAddress.h"    // Needed for the IPv6 tag-edge rule
+#include "PeerAddressing.h"    // Needed for IsUsableTagIdentity
 #include "ServerConnect.h"     // Needed for CServerConnect
 #include "ClientCredits.h"     // Needed for CClientCredits
 #include "ClientCreditsList.h" // Needed for CClientCreditsList
@@ -668,9 +670,15 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data)
 			break;
 
 		case CT_MOD_IP_V6:
-			// 16 bytes, big-endian. aMule has no IPv6 stack yet, so this
-			// is stored for the dual-stack change and otherwise unused.
-			if (temptag.IsHash()) {
+			// 16 bytes, big-endian. aMule has no IPv6 stack yet, so this is stored for the
+			// dual-stack change and otherwise unused.
+			//
+			// Kept only when this edge can name it unambiguously: a tag carries no scope id,
+			// so a link-local address here and the same peer's socket address are two
+			// identities. See PeerAddressing::IsUsableTagIdentity.
+			if (temptag.IsHash() &&
+				PeerAddressing::IsUsableTagIdentity(
+					CNetworkAddress::FromIPv6Bytes(temptag.GetHash().GetHash()))) {
 				md4cpy(m_modIPv6, temptag.GetHash().GetHash());
 				m_hasModIPv6 = true;
 			}
@@ -681,7 +689,11 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data)
 			// IPv6 stack yet, so like CT_MOD_IP_V6 this is stored for the dual-stack change and
 			// otherwise unused. Without it the buddy's v6 address arrives over Kad ("bi6") and
 			// is dropped in the hello.
-			if (temptag.IsHash()) {
+			// Same rule as CT_MOD_IP_V6: a buddy is an address aMule dials, so one it cannot
+			// name unambiguously is worse than none.
+			if (temptag.IsHash() &&
+				PeerAddressing::IsUsableTagIdentity(
+					CNetworkAddress::FromIPv6Bytes(temptag.GetHash().GetHash()))) {
 				md4cpy(m_servingBuddyIPv6, temptag.GetHash().GetHash());
 				m_hasServingBuddyIPv6 = true;
 			}
