@@ -63,3 +63,5 @@ TEST(SecIdent, ReservedFeatureBitsDoNotEnableSecureIdentification)
 	ASSERT_EQUALS(SecIdent::V2, SecIdent::SignatureVersion(0xfe, true));
 	ASSERT_EQUALS(SecIdent::Unavailable, SecIdent::SignatureVersion(0xfe, false));
 }
+
+// File_checked_for_headers
