@@ -54,6 +54,7 @@
 #include <exception>
 #include <fcntl.h>
 #include <stdexcept>
+#include <thread>
 #include <string>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -342,16 +343,38 @@ void ChildIllWithPriorHandler()
 void ChildTrapSuppressed()
 {
 	InstallFatalAbortHandler();
-	SuppressNextTrapBacktrace();
+	BeginTrapBacktraceSuppression();
 	raise(SIGTRAP);
+	_exit(42); // not reached
+}
+
+// Asserts nest, so the suppression counts rather than flags: the inner scope ending must not
+// unsuppress the outer one.
+void ChildTrapNestedSuppression()
+{
+	InstallFatalAbortHandler();
+	BeginTrapBacktraceSuppression();
+	BeginTrapBacktraceSuppression();
+	EndTrapBacktraceSuppression();
+	raise(SIGTRAP);
+	_exit(42); // not reached
+}
+
+// The suppression belongs to the thread showing the assert dialog. A trap on any other thread is a
+// real one and must still be reported.
+void ChildTrapOnAnotherThread()
+{
+	InstallFatalAbortHandler();
+	BeginTrapBacktraceSuppression();
+	std::thread([] { raise(SIGTRAP); }).join();
 	_exit(42); // not reached
 }
 
 void ChildTrapSuppressionCleared()
 {
 	InstallFatalAbortHandler();
-	SuppressNextTrapBacktrace();
-	ClearTrapBacktraceSuppression();
+	BeginTrapBacktraceSuppression();
+	EndTrapBacktraceSuppression();
 	raise(SIGTRAP);
 	_exit(42); // not reached
 }
@@ -590,6 +613,26 @@ TEST(FatalAbortBacktrace, SuppressedTrapPrintsNoBacktrace)
 	ASSERT_TRUE(r.exited_on_signal);
 	ASSERT_EQUALS(SIGTRAP, r.signal_number);
 	ASSERT_FALSE(Contains(r.stderr_text, "FATAL BACKTRACE FOLLOWS"));
+}
+
+TEST(FatalAbortBacktrace, NestedTrapSuppressionStaysSuppressed)
+{
+	const ChildResult r = RunInChild(ChildTrapNestedSuppression);
+
+	ASSERT_FALSE(r.timed_out);
+	ASSERT_TRUE(r.exited_on_signal);
+	ASSERT_EQUALS(SIGTRAP, r.signal_number);
+	ASSERT_FALSE(Contains(r.stderr_text, "FATAL BACKTRACE FOLLOWS"));
+}
+
+TEST(FatalAbortBacktrace, ATrapOnAnotherThreadIsStillReported)
+{
+	const ChildResult r = RunInChild(ChildTrapOnAnotherThread);
+
+	ASSERT_FALSE(r.timed_out);
+	ASSERT_TRUE(r.exited_on_signal);
+	ASSERT_EQUALS(SIGTRAP, r.signal_number);
+	ASSERT_TRUE(Contains(r.stderr_text, "FATAL BACKTRACE FOLLOWS"));
 }
 
 // And the scope has to end where it was closed: control comes back from the assert dialog unless

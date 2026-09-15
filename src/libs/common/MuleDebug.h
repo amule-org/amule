@@ -87,20 +87,31 @@ void InstallFatalAbortHandler();
 void SuppressNextAbortBacktrace();
 
 /**
- * Tells the SIGTRAP handler to stay quiet until the suppression is cleared.
+ * Tells the SIGTRAP handler to stay quiet on this thread until the suppression ends.
  *
  * For the same reason, on the other assert path: when ReportAssertFailure() lets the wx assert
- * dialog run, wx reaches it through wxTrap(), which raises SIGTRAP under a debugger-shaped
- * disposition that is now ours. The symbolicated backtrace has already been printed by then.
+ * dialog run, wx reaches it through wxTrap(), which raises SIGTRAP under a disposition that is now
+ * ours. The symbolicated backtrace has already been printed by then.
  *
  * Scoped rather than one-shot, because control comes back from that dialog unless the user chose
- * Stop: arm it immediately before handing over to wx and clear it immediately after, so an
- * unrelated trap later in the run is still reported.
+ * Stop. Per-thread and counted, so a trap on another thread is still reported and nested asserts
+ * do not unsuppress each other. Prefer CTrapBacktraceSuppressor over calling these directly.
  */
-void SuppressNextTrapBacktrace();
+void BeginTrapBacktraceSuppression();
 
-/** Ends the suppression armed by SuppressNextTrapBacktrace(). */
-void ClearTrapBacktraceSuppression();
+/** Ends one BeginTrapBacktraceSuppression(). */
+void EndTrapBacktraceSuppression();
+
+/// RAII for the pair above: wx's assert dialog runs a nested event loop, which an exception can
+/// leave through.
+class CTrapBacktraceSuppressor
+{
+public:
+	CTrapBacktraceSuppressor() { BeginTrapBacktraceSuppression(); }
+	~CTrapBacktraceSuppressor() { EndTrapBacktraceSuppression(); }
+	CTrapBacktraceSuppressor(const CTrapBacktraceSuppressor &) = delete;
+	CTrapBacktraceSuppressor &operator=(const CTrapBacktraceSuppressor &) = delete;
+};
 
 /**
  * Gives the crash reporters a durable descriptor to report to.
@@ -114,8 +125,9 @@ void ClearTrapBacktraceSuppression();
  *
  * This covers the SIGABRT, SIGTRAP, SIGILL and std::terminate paths. It does NOT replace
  * CamuleapiApp::OnFatalException's call to CLogTee::RedirectStderrToFileForCrash(): wx's own
- * SIGSEGV/SIGBUS/SIGFPE handler reports through stderr, so without that dup2() the SIGSEGV
- * backtrace still dies in the tee pipe.
+ * SIGSEGV/SIGBUS/SIGILL/SIGFPE handler reports through stderr -- still true for SIGILL, which
+ * reaches wx by chaining -- so without that dup2() the SIGSEGV backtrace still dies in the tee
+ * pipe.
  */
 void SetFatalAbortRedirectFd(int fd);
 

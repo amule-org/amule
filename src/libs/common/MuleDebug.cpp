@@ -746,20 +746,23 @@ void SuppressNextAbortBacktrace()
 	s_suppressAbortBacktrace = 1;
 }
 
-// Set for the duration of wx's assert dialog, which reaches it through wxTrap(). Separate from the
-// abort flag because it is scoped rather than one-shot: control comes back from the dialog unless
-// the user chose Stop, so a one-shot flag armed before it would still be set afterwards and would
-// swallow the next unrelated abort.
-static volatile sig_atomic_t s_suppressTrapBacktrace = 0;
+// Held for the duration of wx's assert dialog, which reaches wxTrap(). Thread-local, because the
+// trap being muted is raised by the thread showing the dialog and a trap on any other thread is a
+// real one. The handler reads it on that same thread, and the setter below has already touched the
+// block by then, so no TLS is allocated from inside a handler. A count rather than a flag: asserts
+// nest.
+static thread_local volatile sig_atomic_t s_suppressTrapBacktrace = 0;
 
-void SuppressNextTrapBacktrace()
+void BeginTrapBacktraceSuppression()
 {
-	s_suppressTrapBacktrace = 1;
+	++s_suppressTrapBacktrace;
 }
 
-void ClearTrapBacktraceSuppression()
+void EndTrapBacktraceSuppression()
 {
-	s_suppressTrapBacktrace = 0;
+	if (s_suppressTrapBacktrace > 0) {
+		--s_suppressTrapBacktrace;
+	}
 }
 
 // -1 until a caller redirects; read by the handler, so sig_atomic_t rather than int.
@@ -985,21 +988,21 @@ extern "C" void MuleFatalAbortHandler(int sig)
 	// a lock some other thread already holds. SIG_DFL first, in case something installed a
 	// SIGALRM handler; both calls are async-signal-safe.
 	//
-	// SA_RESETHAND only resets the signal that was delivered, so entering through SIGABRT leaves
-	// SIGTRAP and SIGILL armed. A trap taken inside this handler would re-enter it, re-arm the
-	// alarm below and stretch its 10 s bound to 30, interleaving a second report into the first.
-	// Never cleared: one report is all a dying process owes anyone.
+	// SA_RESETHAND resets only the signal that was delivered, so a handler entered for one of
+	// these three can still be re-entered through another. Re-entry gets neither a second report
+	// nor a fresh alarm, or the bound the first entry set would keep sliding. Never cleared: one
+	// report is all a dying process owes anyone.
 	static volatile sig_atomic_t s_inHandler = 0;
 	const bool reentered = s_inHandler != 0;
 	s_inHandler = 1;
 
-	signal(SIGALRM, SIG_DFL);
-	alarm(10);
+	if (!reentered) {
+		signal(SIGALRM, SIG_DFL);
+		alarm(10);
+	}
 
-	// Clear it here so the name stays true: the suppression covers this abort only. The
-	// trap-scoped flag is separate and is NOT cleared here: it is armed and cleared around wx's
-	// assert dialog, and clearing it from a handler entered for an unrelated signal would open
-	// the window it exists to close.
+	// Cleared here so the name stays true: the suppression covers this abort only. The trap count
+	// is not, because it is owned by the scope that took it.
 	const bool suppressed =
 		s_suppressAbortBacktrace != 0 || (sig == SIGTRAP && s_suppressTrapBacktrace != 0);
 	s_suppressAbortBacktrace = 0;
@@ -1045,6 +1048,10 @@ extern "C" void MuleFatalAbortHandler(int sig)
 	// keeps that from printing a second trace.
 	if (sig == SIGILL && s_havePrevIll != 0 && (s_prevIll.sa_flags & SA_SIGINFO) == 0 &&
 		s_prevIll.sa_handler != SIG_DFL && s_prevIll.sa_handler != SIG_IGN) {
+		// A bound of its own, not our leftovers: wx symbolicates, and get_backtrace() popen()s
+		// addr2line on the non-BFD path. Dying of SIGALRM halfway through that report is exactly
+		// what chaining exists to avoid.
+		alarm(10);
 		s_prevIll.sa_handler(sig);
 	}
 
