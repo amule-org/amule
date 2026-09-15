@@ -119,7 +119,18 @@ bool CClientTCPSocket::InitNetworkData()
 	m_remoteAddress = GetPeerAddress();
 	m_remoteip = m_remoteAddress.ToIPv4NetworkOrderOrZero();
 
-	// Retain the native peer, but do not admit IPv6 into IPv4-only filters and indexes.
+	// A peer with no 32-bit form is refused rather than narrowed: the filters, bans and client
+	// indexes below are all keyed on the ed2k uint32. That is a decision, not an impossibility,
+	// so it is logged and returned -- MULE_CHECK is wxCHECK, which also asserts in a debug build,
+	// and an inbound IPv6 peer becomes an ordinary event the moment a listener accepts one.
+	uint32 narrowed = 0;
+	if (m_remoteAddress.IsPresent() && !m_remoteAddress.ToIPv4NetworkOrder(narrowed)) {
+		AddDebugLogLineN(logClient,
+			"Denied connection from " + GetPeer() + " (no IPv4 form for the ed2k path)");
+		return false;
+	}
+
+	// Absent, on the other hand, means the accept gave us no address at all.
 	MULE_CHECK(m_remoteip, false);
 
 	if (theApp->ipfilter->IsFiltered(m_remoteip)) {
