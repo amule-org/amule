@@ -65,6 +65,7 @@ public:
 	void OnError(int nErrorCode) override;
 
 	uint32 GetRemoteIP() const { return m_remoteip; }
+	const CNetworkAddress &GetRemoteAddress() const { return m_remoteAddress; }
 
 	CUpDownClient *GetClient() { return m_client; }
 
@@ -100,6 +101,7 @@ private:
 
 	uint64 timeout_timer;
 	uint32 m_remoteip;
+	CNetworkAddress m_remoteAddress; // Native peer captured at accepted TCP ingress.
 };
 
 #endif // CLIENTTCPSOCKET_H

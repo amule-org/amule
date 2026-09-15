@@ -116,8 +116,10 @@ bool CClientTCPSocket::InitNetworkData()
 {
 	wxASSERT(!m_remoteip);
 	wxASSERT(!m_client);
-	m_remoteip = GetPeerInt();
+	m_remoteAddress = GetPeerAddress();
+	m_remoteip = m_remoteAddress.ToIPv4NetworkOrderOrZero();
 
+	// Retain the native peer, but do not admit IPv6 into IPv4-only filters and indexes.
 	MULE_CHECK(m_remoteip, false);
 
 	if (theApp->ipfilter->IsFiltered(m_remoteip)) {

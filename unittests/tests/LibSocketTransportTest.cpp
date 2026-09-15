@@ -31,6 +31,7 @@
 
 #include <cstring>
 #include <memory>
+#include <utility>
 #include <vector>
 
 using namespace muleunit;
@@ -60,12 +61,17 @@ namespace
 class CFakeTransport : public IStreamTransport
 {
 public:
+	explicit CFakeTransport(CNetworkAddress peer = CNetworkAddress::FromString("192.0.2.7"))
+	: peer(std::move(peer))
+	{
+	}
+
 	bool IsConnected() const override { return true; }
 	bool IsOk() const override { return ok; }
 	bool BlocksRead() const override { return true; }
 	bool BlocksWrite() const override { return true; }
 	int LastError() const override { return 0x7501; }
-	CNetworkAddress GetPeerAddress() const override { return CNetworkAddress::FromString("192.0.2.7"); }
+	CNetworkAddress GetPeerAddress() const override { return peer; }
 	uint16_t GetPeerPort() const override { return 4662; }
 
 	uint32_t Read(void *buffer, uint32_t length) override
@@ -89,12 +95,13 @@ public:
 	std::vector<uint8_t> written;
 	int closeCalls = 0;
 	int flushCalls = 0;
+	CNetworkAddress peer;
 };
 
 //! Attaches a fake and hands back a borrowed pointer; the socket owns it.
-CFakeTransport *Attach(CLibSocket &socket)
+CFakeTransport *Attach(CLibSocket &socket, CNetworkAddress peer = CNetworkAddress::FromString("192.0.2.7"))
 {
-	auto owned = std::make_unique<CFakeTransport>();
+	auto owned = std::make_unique<CFakeTransport>(std::move(peer));
 	CFakeTransport *borrowed = owned.get();
 	socket.AttachTransport(std::move(owned));
 	return borrowed;
@@ -150,9 +157,21 @@ TEST(LibSocketTransport, ThePeerIsTheTransportsPeer)
 	Attach(socket);
 
 	ASSERT_TRUE(socket.GetPeer() == wxString("192.0.2.7"));
+	ASSERT_TRUE(socket.GetPeerAddress() == CNetworkAddress::FromString("192.0.2.7"));
 	// Narrowed at this accessor only, because its type is the ed2k wire form.
 	ASSERT_TRUE(socket.GetPeerInt() != 0);
 	ASSERT_TRUE(wxString(socket.GetIP()) == wxString("192.0.2.7"));
+}
+
+TEST(LibSocketTransport, NativePeerAddressSurvivesTheTransportFacade)
+{
+	const CNetworkAddress peer = CNetworkAddress::IPv6FromOctets(
+		{ 0x20, 0x01, 0x0d, 0xb8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 });
+	CLibSocket socket;
+	Attach(socket, peer);
+
+	ASSERT_TRUE(socket.GetPeerAddress() == peer);
+	ASSERT_EQUALS(0u, socket.GetPeerInt());
 }
 
 TEST(LibSocketTransport, DiallingIsRefusedWhileATransportIsAttached)

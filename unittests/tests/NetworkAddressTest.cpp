@@ -44,6 +44,28 @@ using namespace muleunit;
 
 DECLARE_SIMPLE(NetworkAddress)
 
+TEST(NetworkAddress, AsioAddressPreservesNativeIPv6AndScope)
+{
+	const CNetworkAddress::Octets octets = { 0xfe, 0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 };
+	const auto peer = NetworkAddressAsio::FromAsioAddress(boost::asio::ip::address_v6(octets, 7));
+	ASSERT_TRUE(peer == CNetworkAddress::IPv6FromOctets(octets, 7));
+	ASSERT_TRUE(peer.IsPresent());
+	ASSERT_FALSE(peer.IsUnspecified());
+	ASSERT_EQUALS(7ul, peer.GetScopeId());
+	ASSERT_EQUALS(0u, peer.ToIPv4NetworkOrderOrZero());
+}
+
+TEST(NetworkAddress, AsioAddressIPv4AndMappedNarrowToTheSameEd2kBytes)
+{
+	for (const char *text : { "192.0.2.7", "::ffff:192.0.2.7" }) {
+		const auto address = CNetworkAddress::FromString(text);
+		const auto peer =
+			NetworkAddressAsio::FromAsioAddress(NetworkAddressAsio::ToAsioAddress(address));
+		ASSERT_TRUE(peer == address);
+		ASSERT_EQUALS(0x070200C0u, peer.ToIPv4NetworkOrderOrZero());
+	}
+}
+
 // 192.0.2.1 (RFC 5737 documentation range) in each of the two conventions.
 static const uint32_t TEST_IP_HOST_ORDER = 0xC0000201u;
 static const uint32_t TEST_IP_ED2K_ORDER = 0x010200C0u;

@@ -62,6 +62,7 @@
 #endif
 
 #include "LibSocket.h"
+#include "NetworkAddressAsio.h"
 #include "StreamTransport.h" // IStreamTransport, for the attached-stream branches
 #include "GuiEvents.h"       // CoreNotify_LibSocket*, the transport event bridge
 #include <wx/thread.h>       // wxMutex
@@ -727,6 +728,12 @@ public:
 
 	wxString GetPeer() { return m_IP; }
 
+	CNetworkAddress GetPeerAddress()
+	{
+		return m_peerAddress.IsPresent() ? m_peerAddress
+						 : CNetworkAddress::FromIPv4NetworkOrderOrAbsent(m_IPint);
+	}
+
 	uint32 GetPeerInt() { return m_IPint; }
 
 	// Bind socket to local endpoint if the user wants to choose the local address
@@ -775,13 +782,17 @@ public:
 	bool UpdateIP()
 	{
 		error_code ec;
-		amuleIPV4Address addr = CamuleIPV4Endpoint(m_socket->remote_endpoint(ec));
+		const auto endpoint = m_socket->remote_endpoint(ec);
 		if (SetError(ec)) {
 			AddDebugLogLineN(logAsio, CFormat("UpdateIP failed %p %s") % this % ec.message());
 			return false;
 		}
-		SetIp(addr);
-		m_port = addr.Service();
+		m_peerAddress = NetworkAddressAsio::FromAsioAddress(endpoint.address());
+		m_IPstring = wxString(m_peerAddress.ToString());
+		m_IP = m_IPstring.c_str();
+		// Keep the legacy ed2k value separate from the native peer address.
+		m_IPint = m_peerAddress.ToIPv4NetworkOrderOrZero();
+		m_port = endpoint.port();
 		AddDebugLogLineF(logAsio, CFormat("UpdateIP %s %d %p") % m_IP % m_port % this);
 		return true;
 	}
@@ -1143,6 +1154,7 @@ private:
 		m_IPstring = adr.IPAddress();
 		m_IP = m_IPstring.c_str();
 		m_IPint = StringIPtoUint32(m_IPstring);
+		m_peerAddress = CNetworkAddress::Absent();
 	}
 
 	// Atomic so OnWrapperGone() (called from the wrapper's dtor on any thread) and the
@@ -1150,10 +1162,11 @@ private:
 	std::atomic<CLibSocket *> m_libSocket;
 	ip::tcp::socket *m_socket;
 	// remote IP
-	wxString m_IPstring; // as String (use nowhere because of threading!)
-	const wxChar *m_IP;  // as char*  (use in debug logs)
-	uint32 m_IPint;      // as int
-	uint16 m_port;       // remote port
+	wxString m_IPstring;           // as String (use nowhere because of threading!)
+	const wxChar *m_IP;            // as char*  (use in debug logs)
+	uint32 m_IPint;                // as int
+	CNetworkAddress m_peerAddress; // Native accepted TCP peer; absent before UpdateIP.
+	uint16 m_port;                 // remote port
 	bool m_OK;
 	int m_ErrorCode;
 	bool m_blocksRead;
@@ -1243,6 +1256,11 @@ void CLibSocket::SetConnectTimeout(int ms)
 wxString CLibSocket::GetPeer()
 {
 	return m_transport ? wxString(m_transport->GetPeerAddress().ToString()) : m_aSocket->GetPeer();
+}
+
+CNetworkAddress CLibSocket::GetPeerAddress()
+{
+	return m_transport ? m_transport->GetPeerAddress() : m_aSocket->GetPeerAddress();
 }
 
 uint32 CLibSocket::GetPeerInt()

@@ -121,6 +121,8 @@ public:
 
 	// Get peer address (better API than wx)
 	wxString GetPeer();
+	CNetworkAddress GetPeerAddress();
+	// Legacy ed2k IPv4 narrowing; native IPv6 has no uint32 representation.
 	uint32 GetPeerInt();
 
 	// Turn on TCP keepalive with per-socket timings, so a half-open connection (peer gone,
