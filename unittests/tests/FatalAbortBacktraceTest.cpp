@@ -16,13 +16,17 @@
 // SIGABRT. InstallFatalAbortHandler() closes that, and the interesting question is not whether it
 // prints -- it is whether it prints when the allocator is already broken.
 //
-// So the cases below fork, corrupt the heap in the child for real, and read what reaches the
-// child's stderr through a pipe. A handler that allocates would deadlock against the arena lock
-// malloc_printerr can hold, and that shows up here as the child never exiting, which the alarm
-// turns into a failure rather than a hung suite. That is the property worth the machinery: the
-// naive version of this handler passes every test that does not actually corrupt the heap.
+// The glibc-specific case below forks, corrupts the heap in the child for real, and reads what
+// reaches the child's stderr through a pipe. A handler that allocates would deadlock against the
+// arena lock malloc_printerr can hold, and that shows up here as the child never exiting, which the
+// alarm turns into a failure rather than a hung suite. That is the property worth the machinery:
+// the naive version of this handler passes every test that does not actually corrupt the heap.
 //
-// What these cases deliberately do NOT cover is the difference between this handler and an
+// Other allocators do not promise the same signal for a double free: macOS may raise SIGTRAP from
+// libmalloc instead of SIGABRT. The deterministic SIGABRT cases below still exercise the handler
+// there; the real allocator-abort case is compiled only where its signal contract is defined.
+//
+// What the glibc case deliberately does NOT cover is the difference between this handler and an
 // allocating one, because that difference is not reachable from here. Measured directly on glibc
 // 2.43 with standalone probes: under corruption detected inside malloc() ("corrupted top size"),
 // an allocating handler re-enters malloc_printerr and dies having printed nothing, and a handler
@@ -141,6 +145,7 @@ void *Launder(void *p)
 	return p;
 }
 
+#if defined(__GLIBC__)
 void ChildDoubleFree()
 {
 	InstallFatalAbortHandler();
@@ -151,17 +156,13 @@ void ChildDoubleFree()
 	// The size is per-allocator, and both ends of it matter. glibc's tcache absorbs frees up to
 	// 1032 bytes and catches a double free there before taking the arena lock; above that
 	// ceiling the check runs inside the locked region, which is the state the handler has to
-	// survive. macOS goes the other way: a large block traps (SIGTRAP) rather than aborting, so
-	// the handler would never be entered and the case would test nothing.
-#if defined(__GLIBC__)
+	// survive.
 	void *p = Launder(malloc(2048));
-#else
-	void *p = Launder(malloc(64));
-#endif
 	free(p);
 	free(Launder(p));
 	_exit(0); // not reached while the allocator detects the double free
 }
+#endif
 
 void ChildPlainAbort()
 {
@@ -313,7 +314,9 @@ bool Contains(const std::string &haystack, const char *needle)
 
 DECLARE_SIMPLE(FatalAbortBacktrace)
 
-// The case the feature exists for. Everything else here is a control for this one.
+// The case the feature exists for on glibc. Other platforms use the deterministic SIGABRT controls
+// below because their allocators do not promise that a double free raises SIGABRT.
+#if defined(__GLIBC__)
 TEST(FatalAbortBacktrace, RealHeapCorruptionStillProducesABacktrace)
 {
 	const ChildResult r = RunInChild(ChildDoubleFree);
@@ -329,6 +332,7 @@ TEST(FatalAbortBacktrace, RealHeapCorruptionStillProducesABacktrace)
 	// in its explanatory line, so asserting that passes whenever the banner prints at all.
 	ASSERT_TRUE(Contains(r.stderr_text, "FatalAbortBacktraceTest"));
 }
+#endif
 
 // A terminate with nothing to describe must not end up silent. The suppression exists to stop a
 // second backtrace when a symbolicated one was already printed; when none was, it must not fire.
