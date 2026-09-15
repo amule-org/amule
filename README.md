@@ -1,6 +1,6 @@
 # aMule
 
-![aMule](https://raw.githubusercontent.com/amule-org/amule/master/org.amule.aMule.svg)
+![aMule](https://raw.githubusercontent.com/amule-org/amule/master/src/icons/amule.svg)
 
 aMule is an eMule-like client for the eDonkey and Kademlia networks.
 
