@@ -65,6 +65,10 @@ public:
 	void OnError(int nErrorCode) override;
 
 	uint32 GetRemoteIP() const { return m_remoteip; }
+	//! The native accepted peer, mapped IPv4 included: `::ffff:a.b.c.d` is kept rather than
+	//! unmapped, so the same peer reached over IPv4 is a different value here. Identify through
+	//! IndexKey(), never by comparing this directly. emule-qt normalises at ingress instead; we
+	//! keep the distinction and normalise at the identity boundary.
 	const CNetworkAddress &GetRemoteAddress() const { return m_remoteAddress; }
 
 	CUpDownClient *GetClient() { return m_client; }
