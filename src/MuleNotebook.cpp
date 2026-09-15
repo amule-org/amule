@@ -25,6 +25,9 @@
 
 #include <wx/menu.h>
 #include <wx/intl.h>
+#include <wx/artprov.h>  // Needed for wxArtProvider
+#include <wx/image.h>    // Needed for wxImage
+#include <wx/settings.h> // Needed for wxSystemSettings
 
 #include "MuleNotebook.h" // Interface declarations
 
@@ -46,6 +49,28 @@ wxBEGIN_EVENT_TABLE(CMuleNotebook, wxNotebook)
 	EVT_MIDDLE_UP(CMuleNotebook::OnMouseButton)
 	EVT_MOTION(CMuleNotebook::OnMouseMotion)
 wxEND_EVENT_TABLE()
+
+wxBitmap ThemedCloseIcon(const wxSize &size)
+{
+	wxBitmap bmp = wxArtProvider::GetBitmap(wxART_CLOSE, wxART_OTHER, size);
+	if (!bmp.IsOk() || !wxSystemSettings::GetAppearance().IsDark()) {
+		return bmp;
+	}
+	// src/msw/artmsw.cpp handles no wxART_CLOSE, so MSW falls through to artstd.cpp's
+	// art/close.xpm -- an X hardcoded to black, which vanishes against a dark tab. GTK maps
+	// the id to the icon theme's window-close and already answers in the right colour, so
+	// there the replacement below finds nothing to do.
+	wxImage img = bmp.ConvertToImage();
+	if (img.HasMask()) {
+		// Mask to alpha first: Replace() matches on colour, so with the mask still in place
+		// it would repaint the transparent pixels too and yield a solid white block.
+		img.InitAlpha();
+	}
+	img.Replace(0, 0, 0, 255, 255, 255);
+	// Carry the scale factor across: the wxImage round-trip drops it, and a 2x icon rebuilt
+	// as 1x draws at twice the size on a HiDPI display.
+	return wxBitmap(img, -1, bmp.GetScaleFactor());
+}
 
 CMuleNotebook::CMuleNotebook(wxWindow *parent,
 	wxWindowID id,

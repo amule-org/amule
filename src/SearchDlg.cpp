@@ -133,7 +133,7 @@ CSearchDlg::CSearchDlg(wxWindow *pParent)
 	// differing only by a hover-highlight border colour; wx's own stock close icon covers both
 	// states just as well without a second custom asset.
 	wxImageList *m_ImageList = new wxImageList(16, 16);
-	wxBitmap closeIcon = wxArtProvider::GetBitmap(wxART_CLOSE, wxART_OTHER, wxSize(16, 16));
+	wxBitmap closeIcon = ThemedCloseIcon(wxSize(16, 16));
 	m_ImageList->Add(closeIcon);
 	m_ImageList->Add(closeIcon);
 	m_notebook->AssignImageList(m_ImageList);

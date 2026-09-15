@@ -106,7 +106,7 @@ CChatSelector::CChatSelector(wxWindow *parent, wxWindowID id, const wxPoint &pos
 	// Chat icon -- default state
 	imagelist->Add(wxArtProvider::GetBitmap("amule:chat"));
 	// Close icon -- on mouseover
-	imagelist->Add(wxArtProvider::GetBitmap(wxART_CLOSE, wxART_OTHER, wxSize(16, 16)));
+	imagelist->Add(ThemedCloseIcon(wxSize(16, 16)));
 
 	AssignImageList(imagelist);
 }

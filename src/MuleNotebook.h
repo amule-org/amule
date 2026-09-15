@@ -42,6 +42,17 @@ wxDECLARE_EVENT(wxEVT_COMMAND_MULENOTEBOOK_ALL_PAGES_CLOSED, wxEvent);
 
 class wxWindow;
 
+class wxBitmap;
+class wxSize;
+
+/**
+ * The stock close icon for a tab, recoloured when the desktop is dark.
+ *
+ * wx has no themed close icon on MSW, so the icon would otherwise stay black
+ * against a dark tab (issue #1399).
+ */
+wxBitmap ThemedCloseIcon(const wxSize &size);
+
 /**
  * A wxNotebook with a few extra features: images on the tabs for closing pages, a popup menu for
  * closing one or more pages, and events triggered when pages are closed.
