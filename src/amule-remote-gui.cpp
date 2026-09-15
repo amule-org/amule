@@ -317,9 +317,13 @@ void CamuleRemoteGuiApp::OnAssertFailure(
 	// of IsRunning(), and its window is either up or the assert came from a thread that
 	// cannot show a dialog anyway.
 	if (ReportAssertFailure(file, line, func, cond, msg, wxThread::IsMain())) {
-		// See CamuleApp::OnAssertFailure: wx reaches its dialog through wxTrap().
-		const CTrapBacktraceSuppressor quiet;
 		wxApp::OnAssertFailure(file, line, func, cond, msg);
+#if wxDEBUG_LEVEL
+		// See CamuleApp::OnAssertFailure: wx traps at the assert site on the way out of here.
+		if (wxTrapInAssert) {
+			SuppressNextTrapBacktrace();
+		}
+#endif
 	}
 }
 

@@ -42,6 +42,7 @@
 
 #ifndef __WINDOWS__
 #include <fcntl.h>    // Needed for FD_CLOEXEC on the reserved descriptor
+#include <pthread.h>  // Needed for the trap suppression's owning thread
 #include <poll.h>     // Needed for the writability waits in WriteAll and the handler
 #include <sys/stat.h> // Needed for fstat in SameFile
 #include <unistd.h>   // Needed for dup/dup2 in ReserveCrashFd and write in WriteAll
@@ -746,23 +747,21 @@ void SuppressNextAbortBacktrace()
 	s_suppressAbortBacktrace = 1;
 }
 
-// Held for the duration of wx's assert dialog, which reaches wxTrap(). Thread-local, because the
-// trap being muted is raised by the thread showing the dialog and a trap on any other thread is a
-// real one. The handler reads it on that same thread, and the setter below has already touched the
-// block by then, so no TLS is allocated from inside a handler. A count rather than a flag: asserts
-// nest.
-static thread_local volatile sig_atomic_t s_suppressTrapBacktrace = 0;
+// One-shot, consumed by the first trap on the thread that armed it. The owner is tracked rather
+// than the flag made thread_local: on macOS the first touch of a TLS block per thread is an
+// indirect call into dyld that allocates, and on any other thread the handler would be that first
+// touch -- allocating from a handler entered for a heap trap is what this file exists to avoid.
+static volatile sig_atomic_t s_suppressTrapBacktrace = 0;
+#ifndef __WINDOWS__
+static volatile pthread_t s_trapSuppressOwner;
+#endif
 
-void BeginTrapBacktraceSuppression()
+void SuppressNextTrapBacktrace()
 {
-	++s_suppressTrapBacktrace;
-}
-
-void EndTrapBacktraceSuppression()
-{
-	if (s_suppressTrapBacktrace > 0) {
-		--s_suppressTrapBacktrace;
-	}
+#ifndef __WINDOWS__
+	s_trapSuppressOwner = pthread_self();
+#endif
+	s_suppressTrapBacktrace = 1;
 }
 
 // -1 until a caller redirects; read by the handler, so sig_atomic_t rather than int.
@@ -1001,11 +1000,16 @@ extern "C" void MuleFatalAbortHandler(int sig)
 		alarm(10);
 	}
 
-	// Cleared here so the name stays true: the suppression covers this abort only. The trap count
-	// is not, because it is owned by the scope that took it.
-	const bool suppressed =
-		s_suppressAbortBacktrace != 0 || (sig == SIGTRAP && s_suppressTrapBacktrace != 0);
+	// Both flags cover one death only, so both are consumed here. The trap one also has to be the
+	// right thread's: it is armed for the trap wx is about to take at an assert site, and a trap
+	// on any other thread is a real one.
+	const bool trapArmed = sig == SIGTRAP && s_suppressTrapBacktrace != 0;
+	const bool trapSuppressed = trapArmed && pthread_equal(s_trapSuppressOwner, pthread_self()) != 0;
+	const bool suppressed = s_suppressAbortBacktrace != 0 || trapSuppressed;
 	s_suppressAbortBacktrace = 0;
+	if (trapSuppressed) {
+		s_suppressTrapBacktrace = 0;
+	}
 
 	if (!suppressed && !reentered) {
 		// 64 frames: the deepest real trace on amule-org/amule#1338 was 31, and the array is

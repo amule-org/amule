@@ -87,31 +87,18 @@ void InstallFatalAbortHandler();
 void SuppressNextAbortBacktrace();
 
 /**
- * Tells the SIGTRAP handler to stay quiet on this thread until the suppression ends.
+ * Tells the SIGTRAP handler to stay quiet for the next trap on this thread.
  *
- * For the same reason, on the other assert path: when ReportAssertFailure() lets the wx assert
- * dialog run, wx reaches it through wxTrap(), which raises SIGTRAP under a disposition that is now
- * ours. The symbolicated backtrace has already been printed by then.
+ * For the same reason, on the other assert path: when the user tells the wx assert dialog to stop,
+ * wx sets wxTrapInAssert and the wxASSERT macro calls wxTrap() at the assert site, after
+ * OnAssertFailure() has returned. That SIGTRAP is ours now, and the symbolicated backtrace is
+ * already printed by then.
  *
- * Scoped rather than one-shot, because control comes back from that dialog unless the user chose
- * Stop. Per-thread and counted, so a trap on another thread is still reported and nested asserts
- * do not unsuppress each other. Prefer CTrapBacktraceSuppressor over calling these directly.
+ * Arm it where the trap is taken, not around the dialog: a suppression held across the dialog's
+ * nested event loop would be released before wx traps, and would swallow a real trap meanwhile.
+ * Consumed by the first trap on the arming thread, so a trap elsewhere is still reported.
  */
-void BeginTrapBacktraceSuppression();
-
-/** Ends one BeginTrapBacktraceSuppression(). */
-void EndTrapBacktraceSuppression();
-
-/// RAII for the pair above: wx's assert dialog runs a nested event loop, which an exception can
-/// leave through.
-class CTrapBacktraceSuppressor
-{
-public:
-	CTrapBacktraceSuppressor() { BeginTrapBacktraceSuppression(); }
-	~CTrapBacktraceSuppressor() { EndTrapBacktraceSuppression(); }
-	CTrapBacktraceSuppressor(const CTrapBacktraceSuppressor &) = delete;
-	CTrapBacktraceSuppressor &operator=(const CTrapBacktraceSuppressor &) = delete;
-};
+void SuppressNextTrapBacktrace();
 
 /**
  * Gives the crash reporters a durable descriptor to report to.

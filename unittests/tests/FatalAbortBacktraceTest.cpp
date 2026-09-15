@@ -343,40 +343,27 @@ void ChildIllWithPriorHandler()
 void ChildTrapSuppressed()
 {
 	InstallFatalAbortHandler();
-	BeginTrapBacktraceSuppression();
+	SuppressNextTrapBacktrace();
 	raise(SIGTRAP);
 	_exit(42); // not reached
 }
 
-// Asserts nest, so the suppression counts rather than flags: the inner scope ending must not
-// unsuppress the outer one.
-void ChildTrapNestedSuppression()
-{
-	InstallFatalAbortHandler();
-	BeginTrapBacktraceSuppression();
-	BeginTrapBacktraceSuppression();
-	EndTrapBacktraceSuppression();
-	raise(SIGTRAP);
-	_exit(42); // not reached
-}
-
-// The suppression belongs to the thread showing the assert dialog. A trap on any other thread is a
-// real one and must still be reported.
+// The suppression belongs to the thread about to trap at an assert site. A trap on any other
+// thread is a real one and must still be reported.
 void ChildTrapOnAnotherThread()
 {
 	InstallFatalAbortHandler();
-	BeginTrapBacktraceSuppression();
+	SuppressNextTrapBacktrace();
 	std::thread([] { raise(SIGTRAP); }).join();
 	_exit(42); // not reached
 }
 
-void ChildTrapSuppressionCleared()
+// It mutes a trap, not the next death of any kind.
+void ChildTrapSuppressionThenAbort()
 {
 	InstallFatalAbortHandler();
-	BeginTrapBacktraceSuppression();
-	EndTrapBacktraceSuppression();
-	raise(SIGTRAP);
-	_exit(42); // not reached
+	SuppressNextTrapBacktrace();
+	abort();
 }
 
 int CountOccurrences(const std::string &haystack, const char *needle)
@@ -615,16 +602,6 @@ TEST(FatalAbortBacktrace, SuppressedTrapPrintsNoBacktrace)
 	ASSERT_FALSE(Contains(r.stderr_text, "FATAL BACKTRACE FOLLOWS"));
 }
 
-TEST(FatalAbortBacktrace, NestedTrapSuppressionStaysSuppressed)
-{
-	const ChildResult r = RunInChild(ChildTrapNestedSuppression);
-
-	ASSERT_FALSE(r.timed_out);
-	ASSERT_TRUE(r.exited_on_signal);
-	ASSERT_EQUALS(SIGTRAP, r.signal_number);
-	ASSERT_FALSE(Contains(r.stderr_text, "FATAL BACKTRACE FOLLOWS"));
-}
-
 TEST(FatalAbortBacktrace, ATrapOnAnotherThreadIsStillReported)
 {
 	const ChildResult r = RunInChild(ChildTrapOnAnotherThread);
@@ -635,16 +612,13 @@ TEST(FatalAbortBacktrace, ATrapOnAnotherThreadIsStillReported)
 	ASSERT_TRUE(Contains(r.stderr_text, "FATAL BACKTRACE FOLLOWS"));
 }
 
-// And the scope has to end where it was closed: control comes back from the assert dialog unless
-// the user chose Stop, so a suppression that outlived it would swallow an unrelated trap later in
-// the same run.
-TEST(FatalAbortBacktrace, ClearingTheTrapSuppressionRestoresReporting)
+TEST(FatalAbortBacktrace, TheTrapSuppressionDoesNotMuteAnAbort)
 {
-	const ChildResult r = RunInChild(ChildTrapSuppressionCleared);
+	const ChildResult r = RunInChild(ChildTrapSuppressionThenAbort);
 
 	ASSERT_FALSE(r.timed_out);
 	ASSERT_TRUE(r.exited_on_signal);
-	ASSERT_EQUALS(SIGTRAP, r.signal_number);
+	ASSERT_EQUALS(SIGABRT, r.signal_number);
 	ASSERT_TRUE(Contains(r.stderr_text, "FATAL BACKTRACE FOLLOWS"));
 }
 

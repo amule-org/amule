@@ -1832,11 +1832,15 @@ void CamuleApp::OnAssertFailure(
 	// dialog because wxWidgets cannot show one before the app is up or once it is tearing
 	// down.
 	if (ReportAssertFailure(file, line, func, cond, msg, wxThread::IsMain() && IsRunning())) {
-		// wx shows its assert dialog from here and reaches it through wxTrap(), whose SIGTRAP
-		// is ours now. The symbolicated backtrace is already in the log, so keep the raw one
-		// out of it.
-		const CTrapBacktraceSuppressor quiet;
 		AMULE_APP_BASE::OnAssertFailure(file, line, func, cond, msg);
+#if wxDEBUG_LEVEL
+		// The dialog sets wxTrapInAssert when the user chooses to stop, and the wxASSERT macro
+		// then calls wxTrap() at the assert site, on the way out of here. That SIGTRAP is ours,
+		// and the symbolicated backtrace is already in the log, so mute the raw one.
+		if (wxTrapInAssert) {
+			SuppressNextTrapBacktrace();
+		}
+#endif
 	}
 }
 
