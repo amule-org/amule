@@ -2274,7 +2274,7 @@ std::string FileTypeToken(const std::string &name)
 		{ "videos", "video" },
 		{ "audio", "audio" },
 		{ "archives", "archive" },
-		{ "cd-images", "cd_image" },
+		{ "disc images", "disc_image" },
 		{ "pictures", "picture" },
 		{ "texts", "text" },
 		{ "programs", "program" },

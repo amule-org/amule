@@ -128,7 +128,7 @@ void ParsePreferencesFromPacket(
 	const CECPacket *resp, PreferencesSnapshot &out_prefs, std::vector<CategorySnapshot> &out_cats);
 
 // Locale-independent file-type token from a filename: the desktop's own category label
-// (GetFiletypeByName, untranslated) lowercased -- "audio", "video", "cd-images", "any". Reuses the
+// (GetFiletypeByName, untranslated) lowercased -- "audio", "video", "disc images", "any". Reuses the
 // GUI categorization rather than duplicating the extension table. One owner, because this lived
 // twice character for character and the two keys could drift apart silently.
 std::string FileTypeToken(const std::string &name);

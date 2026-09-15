@@ -383,7 +383,7 @@ void CTransferWnd::OnNMRclickDLtab(wxMouseEvent &evt)
 			catmenu->Append(MP_CAT_SET0 + 9, _("Video"));
 			catmenu->Append(MP_CAT_SET0 + 10, _("Audio"));
 			catmenu->Append(MP_CAT_SET0 + 11, _("Archive"));
-			catmenu->Append(MP_CAT_SET0 + 12, _("CD-Images"));
+			catmenu->Append(MP_CAT_SET0 + 12, _("Disc images"));
 			catmenu->Append(MP_CAT_SET0 + 13, _("Pictures"));
 			catmenu->Append(MP_CAT_SET0 + 14, _("Text"));
 

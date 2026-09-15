@@ -243,9 +243,9 @@ wxString GetFiletypeDesc(FileType type, bool translated)
 		break;
 	case ftCDImage:
 		if (translated) {
-			return _("CD-Images");
+			return _("Disc images");
 		} else {
-			return "CD-Images";
+			return "Disc images";
 		}
 		break;
 	case ftPicture:
@@ -688,7 +688,7 @@ wxString GetCatTitle(AllCategoryFilter cat)
 	case acfArchive:
 		return _("Archive");
 	case acfCDImages:
-		return _("CD-Images");
+		return _("Disc images");
 	case acfPictures:
 		return _("Pictures");
 	case acfText:
@@ -1296,7 +1296,7 @@ wxString GetED2KFileTypeSearchTerm(EED2KFileType iFileID)
 		return ED2KFTSTR_DOCUMENT;
 	if (iFileID == ED2KFT_PROGRAM)
 		return ED2KFTSTR_PROGRAM;
-	// NOTE: Archives and CD-Images are published with file type "Pro"
+	// NOTE: Archives and disc images are published with file type "Pro"
 	if (iFileID == ED2KFT_ARCHIVE)
 		return ED2KFTSTR_PROGRAM;
 	if (iFileID == ED2KFT_CDIMAGE)
@@ -1343,7 +1343,7 @@ EED2KFileType GetED2KFileTypeSearchID(EED2KFileType iFileID)
 		return ED2KFT_DOCUMENT;
 	case ED2KFT_PROGRAM:
 		return ED2KFT_PROGRAM;
-	// NOTE: Archives and CD-Images are published+searched with file type "Pro"
+	// NOTE: Archives and disc images are published+searched with file type "Pro"
 	// NOTE: If this gets changed, the function 'GetED2KFileTypeSearchTerm' also needs to get updated!
 	case ED2KFT_ARCHIVE:
 		return ED2KFT_PROGRAM;

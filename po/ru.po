@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-14 11:03+0200\n"
+"POT-Creation-Date: 2026-09-15 16:22+0200\n"
 "PO-Revision-Date: 2026-09-15 13:14+0000\n"
 "Last-Translator: Radist Morse <radist.morse@gmail.com>\n"
 "Language-Team: Russian <kde-russian@lists.kde.ru>\n"
@@ -3851,7 +3851,8 @@ msgid "Click here to add the eD2k link in the text control to your download queu
 msgstr "Нажмите сюда, чтобы добавить ссылку eD2k из текстового поля в очередь загрузок."
 
 #: src/muuli_wdr.cpp
-msgid "Events are displayed here. For a complete list of events, refer to the log in the Servers-tab."
+#, fuzzy
+msgid "Events are displayed here. For a complete list of events, refer to the log in the Networks tab."
 msgstr "События отображаются здесь. Для полного списка событий обратитесь к журналу во вкладке «Сети»."
 
 #: src/muuli_wdr.cpp
@@ -3935,7 +3936,8 @@ msgid "Audio"
 msgstr "Аудио"
 
 #: src/muuli_wdr.cpp src/OtherFunctions.cpp src/TransferWnd.cpp
-msgid "CD-Images"
+#, fuzzy
+msgid "Disc images"
 msgstr "Образ диска"
 
 #: src/muuli_wdr.cpp src/OtherFunctions.cpp src/TransferWnd.cpp

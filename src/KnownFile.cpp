@@ -1333,7 +1333,7 @@ void CKnownFile::CreateOfferedFilePacket(CMemFile *files, CServer *pServer, CUpD
 		tags.push_back(new CTagVarInt(FT_FILERATING, ratingValue, 32));
 	}
 
-	// NOTE: Archives and CD-Images are published+searched with file type "Pro"
+	// NOTE: Archives and disc images are published+searched with file type "Pro"
 	bool bAddedFileType = false;
 	if (pServer && (pServer->GetTCPFlags() & SRV_TCPFLG_TYPETAGINTEGER)) {
 		// Send integer file type tags to newer servers

@@ -1624,7 +1624,7 @@ void CSearch::PreparePacketForTags(CMemFile *bio, CKnownFile *file, uint8_t targ
 #endif
 
 			// eD2K file type (Audio, Video, ...)
-			// NOTE: Archives and CD-Images are published with file type "Pro"
+			// NOTE: Archives and disc images are published with file type "Pro"
 			wxString strED2KFileType(
 				GetED2KFileTypeSearchTerm(GetED2KFileTypeID(file->GetFileName())));
 			if (!strED2KFileType.IsEmpty()) {

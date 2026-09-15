@@ -1579,7 +1579,7 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 
 | Field | Type | Meaning |
 |---|---|---|
-| `file_type` | string | Category token derived from the extension: `"audio"`, `"video"`, `"archive"`, `"cd_image"`, `"picture"`, `"text"`, `"program"`, or `"unknown"`. |
+| `file_type` | string | Category token derived from the extension: `"audio"`, `"video"`, `"archive"`, `"disc_image"`, `"picture"`, `"text"`, `"program"`, or `"unknown"`. |
 | `upload_ratio` | number | `xfer.total / size`; `0` when `size == 0`. |
 | `directory` | string | Directory path of the on-disk file — the temp directory while the file is still an incomplete partfile, the destination directory once it has completed. Identical to `directory` on `/downloads/{hash}` for the same file. |
 | `incomplete` | bool | `true` while the file is still an incomplete partfile, `false` once complete. Always present. A download that has finished but has not been cleared yet reports `false`, since its data already sits in the destination directory. |

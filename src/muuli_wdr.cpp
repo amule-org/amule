@@ -114,7 +114,7 @@ wxSizer *muleDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     wxBoxSizer *item6 = new wxBoxSizer( wxHORIZONTAL );
 
     wxStaticBitmap *item7 = new wxStaticBitmap( parent, -1, wxArtProvider::GetBitmapBundle( "amule:status_log_info" ), wxDefaultPosition, wxDefaultSize );
-    item7->SetToolTip( _("Events are displayed here. For a complete list of events, refer to the log in the Servers-tab.") );
+    item7->SetToolTip( _("Events are displayed here. For a complete list of events, refer to the log in the Networks tab.") );
     item6->Add( item7, wxSizerFlags().Center() );
 
     wxStaticText *item8 = new wxStaticText( parent, -1, _("Loading ..."), wxDefaultPosition, wxSize(140,-1), wxST_NO_AUTORESIZE );
@@ -269,7 +269,7 @@ wxSizer *searchDlg( wxWindow *parent, bool call_fit, bool set_sizer )
         _("Any"), 
         _("Archives"), 
         _("Audio"), 
-        _("CD-Images"), 
+        _("Disc images"), 
         _("Pictures"), 
         _("Programs"), 
         _("Texts"), 
