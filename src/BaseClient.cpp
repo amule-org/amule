@@ -211,6 +211,7 @@ void CUpDownClient::Init()
 
 	m_SecureIdentState = IS_UNAVAILABLE;
 	m_dwLastSignatureIP = 0;
+	m_hasReceivedSignature = false;
 
 	m_byInfopacketsReceived = IP_NONE;
 
@@ -2547,7 +2548,7 @@ void CUpDownClient::ProcessSignaturePacket(const uint8_t *pachPacket, uint32 nSi
 		return;
 
 	// we accept only one signature per IP, to avoid floods which need a lot cpu time for cryptfunctions
-	if (m_dwLastSignatureIP == GetIP()) {
+	if (m_hasReceivedSignature && m_dwLastSignatureIP == GetIP()) {
 		AddDebugLogLineN(logClient, "received multiple signatures from one client");
 		return;
 	}
@@ -2577,6 +2578,7 @@ void CUpDownClient::ProcessSignaturePacket(const uint8_t *pachPacket, uint32 nSi
 	}
 
 	m_dwLastSignatureIP = GetIP();
+	m_hasReceivedSignature = true;
 }
 
 void CUpDownClient::SendSecIdentStatePacket()
@@ -2588,7 +2590,7 @@ void CUpDownClient::SendSecIdentStatePacket()
 	if (theApp->CryptoAvailable()) {
 		if (credits->GetSecIDKeyLen() == 0) {
 			nValue = IS_KEYANDSIGNEEDED;
-		} else if (m_dwLastSignatureIP != GetIP()) {
+		} else if (!m_hasReceivedSignature || m_dwLastSignatureIP != GetIP()) {
 			nValue = IS_SIGNATURENEEDED;
 		}
 	}

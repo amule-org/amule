@@ -785,6 +785,7 @@ private:
 	uint8 m_byInfopacketsReceived; // have we received the edonkeyprot and emuleprot packet already (see
 				       // InfoPacketsReceived() )
 	uint32 m_dwLastSignatureIP;
+	bool m_hasReceivedSignature;
 	uint8 m_bySupportSecIdent;
 
 	uint32 m_byCompatibleClient;
