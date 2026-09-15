@@ -923,7 +923,7 @@ void CUpDownClient::SendMuleInfoPacket(bool bAnswer, bool OSInfo)
 		CTagInt32 tag6(ET_EXTENDEDREQUEST, 2);
 		tag6.WriteTagToFile(&data);
 
-		uint32 dwTagValue = (theApp->CryptoAvailable() ? 3 : 0);
+		uint32 dwTagValue = SecIdent::SupportedVersions(theApp->CryptoAvailable(), GetIP() != 0);
 		// Kry - Needs the preview code from eMule
 		/*
 		// set 'Preview supported' only if 'View Shared Files' allowed
@@ -1209,7 +1209,7 @@ void CUpDownClient::SendHelloTypePacket(CMemFile *data)
 	// eMule Misc. Options #1
 	const uint32 uUdpVer = 4;
 	const uint32 uDataCompVer = 1;
-	const uint32 uSupportSecIdent = theApp->CryptoAvailable() ? 3 : 0;
+	const uint32 uSupportSecIdent = SecIdent::SupportedVersions(theApp->CryptoAvailable(), GetIP() != 0);
 	const uint32 uSourceExchangeVer = 3;
 	const uint32 uExtendedRequestsVer = 2;
 	const uint32 uAcceptCommentVer = 1;
@@ -2438,13 +2438,13 @@ void CUpDownClient::SendSignaturePacket()
 				GetUserName());
 		return;
 	}
-	// v2
-	// we will use v1 as default, except if only v2 is supported
-	bool bUseV2;
-	if ((m_bySupportSecIdent & 1) == 1)
-		bUseV2 = false;
-	else
-		bUseV2 = true;
+	// GetIP is the legacy IPv4 endpoint, not the peer's advertised IPv6
+	// capability. A future native IPv6 connection must not invent an IPv4 here.
+	const SecIdent::Version version = SecIdent::SignatureVersion(m_bySupportSecIdent, GetIP() != 0);
+	if (version == SecIdent::Unavailable) {
+		return; // No mutually usable version; do not send v1 to a v2-only peer.
+	}
+	const bool bUseV2 = version == SecIdent::V2;
 
 	uint8 byChaIPKind = 0;
 	uint32 ChallengeIP = 0;
@@ -2534,7 +2534,8 @@ void CUpDownClient::ProcessSignaturePacket(const uint8_t *pachPacket, uint32 nSi
 	uint8 byChaIPKind;
 	if (pachPacket[0] == nSize - 1)
 		byChaIPKind = 0;
-	else if (pachPacket[0] == nSize - 2 && (m_bySupportSecIdent & 2) > 0) // v2
+	else if (pachPacket[0] == nSize - 2 && (m_bySupportSecIdent & SecIdent::V2) > 0 &&
+		 GetIP() != 0) // v2 requires the IPv4 endpoint used by VerifyIdent
 		byChaIPKind = pachPacket[nSize - 1];
 	else {
 		// Unknown or invalid format
@@ -2643,7 +2644,7 @@ void CUpDownClient::InfoPacketsReceived()
 	wxASSERT(m_byInfopacketsReceived == IP_BOTH);
 	m_byInfopacketsReceived = IP_NONE;
 
-	if (m_bySupportSecIdent) {
+	if (SecIdent::SignatureVersion(m_bySupportSecIdent, GetIP() != 0) != SecIdent::Unavailable) {
 		SendSecIdentStatePacket();
 	}
 }

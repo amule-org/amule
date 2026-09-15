@@ -1,3 +1,13 @@
+# SecIdent negotiation is pure policy. The packet handlers and RSA entry points
+# depend on theApp, sockets and the live credit store; this target needs none of
+# them and exercises the no-IPv4 prerequisite before native IPv6 peers exist.
+add_executable (SecIdentTest SecIdentTest.cpp)
+add_test (NAME SecIdentTest COMMAND SecIdentTest)
+target_include_directories (SecIdentTest
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
+)
+target_link_libraries (SecIdentTest muleunit mulecommon)
+
 # The buffering between libutp and the eD2k stack: the would-block contract
 # CEMSocket depends on, and the close that must happen exactly once. Header-only
 # and free of libutp, so it is compiled and run in every build rather than only
