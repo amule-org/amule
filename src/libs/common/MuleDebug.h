@@ -51,9 +51,8 @@ wxString get_backtrace(unsigned n);
  * the process dies silently. That is what left amule-org/amule#1338 with no backtrace at all.
  *
  * SIGTRAP and SIGILL are here because __builtin_trap(), hardened libc++ and macOS libmalloc report
- * through a trap instruction rather than abort(): brk on arm64 raises SIGTRAP, ud2 on x86_64
- * raises SIGILL. SIGILL is the one wx also claims, so that handler chains back into wx's after
- * writing its own frames -- OnFatalException() still runs. The other two were nobody's before.
+ * through a trap instruction rather than abort(): brk on arm64 raises SIGTRAP, ud2 on x86_64 raises
+ * SIGILL. wx claims SIGILL, so that handler chains back into wx's once it has written its frames.
  *
  * Deliberately NOT get_backtrace(): we are entered from abort(), which glibc calls from
  * malloc_printerr with the allocator's state already inconsistent and, above the tcache ceiling,
@@ -89,24 +88,27 @@ void SuppressNextAbortBacktrace();
 /**
  * Tells the SIGTRAP handler to stay quiet for the next trap on this thread.
  *
- * For the same reason, on the other assert path: when the user tells the wx assert dialog to stop,
- * wx sets wxTrapInAssert and the wxASSERT macro calls wxTrap() at the assert site, after
- * OnAssertFailure() has returned. That SIGTRAP is ours now, and the symbolicated backtrace is
- * already printed by then.
- *
- * Arm it where the trap is taken, not around the dialog: a suppression held across the dialog's
- * nested event loop would be released before wx traps, and would swallow a real trap meanwhile.
- * Consumed by the first trap on the arming thread, so a trap elsewhere is still reported.
+ * Same reason as above, on the other assert path: an assert the user stops ends in wxTrap(), and
+ * ReportAssertFailure() has already printed the symbolicated backtrace. Consumed by the first trap
+ * on the arming thread, so a trap elsewhere is still reported.
  */
 void SuppressNextTrapBacktrace();
 
-/**
- * Arms the above when wx is about to trap, and does nothing otherwise.
- *
- * Call on the way out of OnAssertFailure(): wxTrapInAssert is what the dialog sets when the user
- * chooses to stop, and the assert macro reads it and calls wxTrap() after this returns.
- */
+/** Arms the above when wxTrapInAssert says wx is about to trap. Prefer RunWxAssertHandler(). */
 void SuppressTrapBacktraceIfWxWillTrap();
+
+/**
+ * Runs wx's assert handler and mutes the raw trace for the trap it may take on the way out.
+ *
+ * The ordering lives here rather than at each call site because it is easy to get wrong: wx traps
+ * after the handler returns, not inside it, so a suppression scoped around the call would be
+ * released before the trap it is meant to mute -- and would swallow a real one meanwhile.
+ */
+template <typename F> void RunWxAssertHandler(F &&handler)
+{
+	handler();
+	SuppressTrapBacktraceIfWxWillTrap();
+}
 
 /**
  * Gives the crash reporters a durable descriptor to report to.
@@ -120,9 +122,8 @@ void SuppressTrapBacktraceIfWxWillTrap();
  *
  * This covers the SIGABRT, SIGTRAP, SIGILL and std::terminate paths. It does NOT replace
  * CamuleapiApp::OnFatalException's call to CLogTee::RedirectStderrToFileForCrash(): wx's own
- * SIGSEGV/SIGBUS/SIGILL/SIGFPE handler reports through stderr -- still true for SIGILL, which
- * reaches wx by chaining -- so without that dup2() the SIGSEGV backtrace still dies in the tee
- * pipe.
+ * SIGSEGV/SIGBUS/SIGILL/SIGFPE handler reports through stderr -- SIGILL included, since it reaches
+ * wx by chaining -- so without that dup2() the SIGSEGV backtrace still dies in the tee pipe.
  */
 void SetFatalAbortRedirectFd(int fd);
 

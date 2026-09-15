@@ -610,9 +610,8 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 #endif
 	// Armed whether or not wx's handlers are: --disable-fatal turns off the dialog and the
 	// wx-caught signals, but a glibc heap abort still kills us silently, and that is the case
-	// this exists to report. wx covers SIGSEGV/SIGBUS/SIGILL/SIGFPE and never SIGABRT or
-	// SIGTRAP. Must come after wxHandleFatalExceptions() above: the SIGILL handler chains back
-	// into wx's, so wx has to have installed its own first.
+	// this exists to report. wx covers SIGSEGV/SIGBUS/SIGILL/SIGFPE and never SIGABRT or SIGTRAP.
+	// After wxHandleFatalExceptions() above, so the SIGILL handler has wx's to chain into.
 	InstallFatalAbortHandler();
 	// The banner is written from a signal handler and cannot format anything, so the build is
 	// recorded up front; without it a pasted report does not say which binary produced it.

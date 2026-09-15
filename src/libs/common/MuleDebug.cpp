@@ -747,10 +747,9 @@ void SuppressNextAbortBacktrace()
 	s_suppressAbortBacktrace = 1;
 }
 
-// One-shot, consumed by the first trap on the thread that armed it. The owner is tracked rather
-// than the flag made thread_local: on macOS the first touch of a TLS block per thread is an
-// indirect call into dyld that allocates, and on any other thread the handler would be that first
-// touch -- allocating from a handler entered for a heap trap is what this file exists to avoid.
+// One-shot, consumed by the first trap on the thread that armed it. Not thread_local: on macOS the
+// first touch of a TLS block calls into dyld and allocates, and on another thread the handler would
+// be that first touch.
 static volatile sig_atomic_t s_suppressTrapBacktrace = 0;
 #ifndef __WINDOWS__
 static volatile pthread_t s_trapSuppressOwner;
@@ -767,8 +766,6 @@ void SuppressNextTrapBacktrace()
 void SuppressTrapBacktraceIfWxWillTrap()
 {
 #if wxDEBUG_LEVEL
-	// wxASSERT_MSG_AT traps at the assert site once wxOnAssert() has returned, so this belongs on
-	// the way out of OnAssertFailure(), not around it.
 	if (wxTrapInAssert) {
 		SuppressNextTrapBacktrace();
 	}
@@ -998,10 +995,9 @@ extern "C" void MuleFatalAbortHandler(int sig)
 	// a lock some other thread already holds. SIG_DFL first, in case something installed a
 	// SIGALRM handler; both calls are async-signal-safe.
 	//
-	// SA_RESETHAND resets only the signal that was delivered, so a handler entered for one of
-	// these three can still be re-entered through another. Re-entry gets neither a second report
-	// nor a fresh alarm, or the bound the first entry set would keep sliding. Never cleared: one
-	// report is all a dying process owes anyone.
+	// SA_RESETHAND resets only the delivered signal, so one of the three can re-enter through
+	// another. Re-entry gets no report, no fresh alarm and no chain, or the bound the first entry
+	// set would keep sliding. Never cleared: one report is all a dying process owes anyone.
 	static volatile sig_atomic_t s_inHandler = 0;
 	const bool reentered = s_inHandler != 0;
 	s_inHandler = 1;
@@ -1012,8 +1008,7 @@ extern "C" void MuleFatalAbortHandler(int sig)
 	}
 
 	// Both flags cover one death only, so both are consumed here. The trap one also has to be the
-	// right thread's: it is armed for the trap wx is about to take at an assert site, and a trap
-	// on any other thread is a real one.
+	// arming thread's, because a trap on any other thread is a real one.
 	const bool trapArmed = sig == SIGTRAP && s_suppressTrapBacktrace != 0;
 	const bool trapSuppressed = trapArmed && pthread_equal(s_trapSuppressOwner, pthread_self()) != 0;
 	const bool suppressed = s_suppressAbortBacktrace != 0 || trapSuppressed;
@@ -1049,20 +1044,14 @@ extern "C" void MuleFatalAbortHandler(int sig)
 		}
 	}
 
-	// SIGILL is wx's as much as ours: wxHandleFatalExceptions(true) installs a handler for it, and
-	// installing ours on top took OnFatalException() away from every ud2 death on x86_64, where
-	// __builtin_trap() and hardened libc++ land. Chain to whoever held it, so the frames above add
-	// to wx's report instead of replacing it.
-	//
-	// Called, not re-raised: SA_RESETHAND has already restored SIG_DFL. Only the plain sa_handler
-	// form, because a SA_SIGINFO one needs a siginfo_t we do not have, and wx does not use one.
-	// Skipped on re-entry, like the report: wx's handler ends in abort(), and a second SIGILL taken
-	// while another thread is mid-report would re-arm the alarm and symbolicate over its output.
+	// wx claims SIGILL too, so installing ours on top took OnFatalException() away from every ud2
+	// death on x86_64. Chain to whoever held it, so the frames above add to wx's report instead of
+	// replacing it. Called, not re-raised: SA_RESETHAND has already restored SIG_DFL. Only the
+	// plain sa_handler form, because a SA_SIGINFO one needs a siginfo_t we do not have.
 	if (!reentered && sig == SIGILL && s_havePrevIll != 0 && (s_prevIll.sa_flags & SA_SIGINFO) == 0 &&
 		s_prevIll.sa_handler != SIG_DFL && s_prevIll.sa_handler != SIG_IGN) {
 		// A bound of its own, not our leftovers: wx symbolicates, and get_backtrace() popen()s
-		// addr2line on the non-BFD path. Dying of SIGALRM halfway through that report is exactly
-		// what chaining exists to avoid.
+		// addr2line on the non-BFD path.
 		alarm(10);
 		s_prevIll.sa_handler(sig);
 	}
@@ -1115,9 +1104,8 @@ void InstallFatalAbortHandler()
 	// Debuggers are unaffected: lldb and gdb take these through Mach exception ports and
 	// ptrace, ahead of signal delivery.
 	sigaction(SIGTRAP, &sa, nullptr);
-	// SIGILL keeps its previous disposition, because wx owns this one too and our handler chains
-	// back into it. Install order matters: this must run after wxHandleFatalExceptions(true), or
-	// there is nothing to chain to.
+	// SIGILL keeps wx's disposition, which the handler chains into. So this must run after
+	// wxHandleFatalExceptions(true), or there is nothing to chain to.
 	memset(&s_prevIll, 0, sizeof(s_prevIll));
 	if (sigaction(SIGILL, &sa, &s_prevIll) == 0) {
 		s_havePrevIll = 1;

@@ -316,9 +316,8 @@ void ChildNoHandler()
 	abort();
 }
 
-// Stands in for wx's SIGILL handler, which is what wxHandleFatalExceptions(true) installs and what
-// our own install would otherwise have taken away. wx's ends in abort(), so this one does too:
-// that is the path that re-enters our handler through the still-armed SIGABRT disposition.
+// Stands in for wx's SIGILL handler. wx's ends in abort(), so this one does too: that is the path
+// that re-enters our handler through the still-armed SIGABRT disposition.
 extern "C" void PriorIllHandler(int)
 {
 	static const char marker[] = "PRIOR SIGILL HANDLER RAN\n";
@@ -359,14 +358,13 @@ void ChildTrapOnAnotherThread()
 }
 
 #if wxDEBUG_LEVEL
-// The arming condition itself: wxTrapInAssert is what wx's dialog sets when the user chooses to
-// stop, and the assert macro traps right after OnAssertFailure() returns.
+// Choosing Stop is wx setting wxTrapInAssert inside its handler, and the trap follows once the
+// handler returns. So the suppression has to outlive the call, which a scoped guard would not.
 void ChildWxWillTrap()
 {
 	InstallFatalAbortHandler();
-	wxTrapInAssert = true;
-	SuppressTrapBacktraceIfWxWillTrap();
-	wxTrapInAssert = false;
+	RunWxAssertHandler([] { wxTrapInAssert = true; });
+	wxTrapInAssert = false; // the assert macro clears it before trapping
 	raise(SIGTRAP);
 	_exit(42); // not reached
 }
@@ -375,8 +373,7 @@ void ChildWxWillTrap()
 void ChildWxWillNotTrap()
 {
 	InstallFatalAbortHandler();
-	wxTrapInAssert = false;
-	SuppressTrapBacktraceIfWxWillTrap();
+	RunWxAssertHandler([] { wxTrapInAssert = false; });
 	raise(SIGTRAP);
 	_exit(42); // not reached
 }
@@ -599,10 +596,9 @@ TEST(FatalAbortBacktrace, WithoutTheHandlerThereIsNoBacktrace)
 	ASSERT_FALSE(Contains(r.stderr_text, "FATAL BACKTRACE FOLLOWS"));
 }
 
-// SIGILL is not ours alone: wx claims it too, so installing over it has to hand control back.
-// Whoever held the disposition must still run, and the banner must appear once and not once per
-// handler entry -- the chained handler aborts, exactly as wx's does, which comes straight back
-// into this handler through the SIGABRT disposition SA_RESETHAND did not touch.
+// wx claims SIGILL too, so installing over it has to hand control back: whoever held the
+// disposition must still run, and the banner must appear once and not once per handler entry. The
+// chained handler aborts, exactly as wx's does, which re-enters through the SIGABRT disposition.
 TEST(FatalAbortBacktrace, ASigillChainsToThePreviousHandler)
 {
 	const ChildResult r = RunInChild(ChildIllWithPriorHandler);
