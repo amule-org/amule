@@ -724,8 +724,9 @@ bool CaMuleExternalConnector::OnInit()
 #if wxUSE_ON_FATAL_EXCEPTION
 	wxHandleFatalExceptions(true);
 #endif
-	// wx covers SIGSEGV/SIGBUS/SIGILL/SIGFPE and never SIGABRT, so a glibc heap abort kills the
-	// connector binaries as silently as it killed amuled in amule-org/amule#1338.
+	// wx covers SIGSEGV/SIGBUS/SIGILL/SIGFPE and never SIGABRT or SIGTRAP, so a glibc heap abort
+	// kills the connector binaries as silently as it killed amuled in amule-org/amule#1338.
+	// After wxHandleFatalExceptions() above, so the SIGILL handler has wx's to chain back into.
 	InstallFatalAbortHandler();
 #endif
 

@@ -44,11 +44,16 @@ void print_backtrace(unsigned n);
 wxString get_backtrace(unsigned n);
 
 /**
- * Arms a SIGABRT handler that writes a raw backtrace to stderr.
+ * Arms handlers for SIGABRT, SIGTRAP and SIGILL that write a raw backtrace to stderr.
  *
  * wx's fatal-exception support covers SIGSEGV, SIGBUS, SIGILL and SIGFPE, so a glibc heap abort
  * ("double free or corruption", "free(): invalid pointer") bypasses the whole reporting path and
  * the process dies silently. That is what left amule-org/amule#1338 with no backtrace at all.
+ *
+ * SIGTRAP and SIGILL are here because __builtin_trap(), hardened libc++ and macOS libmalloc report
+ * through a trap instruction rather than abort(): brk on arm64 raises SIGTRAP, ud2 on x86_64
+ * raises SIGILL. SIGILL is the one wx also claims, so that handler chains back into wx's after
+ * writing its own frames -- OnFatalException() still runs. The other two were nobody's before.
  *
  * Deliberately NOT get_backtrace(): we are entered from abort(), which glibc calls from
  * malloc_printerr with the allocator's state already inconsistent and, above the tcache ceiling,
@@ -82,6 +87,22 @@ void InstallFatalAbortHandler();
 void SuppressNextAbortBacktrace();
 
 /**
+ * Tells the SIGTRAP handler to stay quiet until the suppression is cleared.
+ *
+ * For the same reason, on the other assert path: when ReportAssertFailure() lets the wx assert
+ * dialog run, wx reaches it through wxTrap(), which raises SIGTRAP under a debugger-shaped
+ * disposition that is now ours. The symbolicated backtrace has already been printed by then.
+ *
+ * Scoped rather than one-shot, because control comes back from that dialog unless the user chose
+ * Stop: arm it immediately before handing over to wx and clear it immediately after, so an
+ * unrelated trap later in the run is still reported.
+ */
+void SuppressNextTrapBacktrace();
+
+/** Ends the suppression armed by SuppressNextTrapBacktrace(). */
+void ClearTrapBacktraceSuppression();
+
+/**
  * Gives the crash reporters a durable descriptor to report to.
  *
  * For a process that has put something other than a terminal on fd 2. amuleapi tees stdout and
@@ -91,9 +112,9 @@ void SuppressNextAbortBacktrace();
  * The reporters write here and to the console descriptor both, so a container keeps the report in
  * `docker logs` and a terminal still shows it. Pass -1 to go back to fd 2 alone.
  *
- * This covers the SIGABRT and std::terminate paths. It does NOT replace
+ * This covers the SIGABRT, SIGTRAP, SIGILL and std::terminate paths. It does NOT replace
  * CamuleapiApp::OnFatalException's call to CLogTee::RedirectStderrToFileForCrash(): wx's own
- * SIGSEGV/SIGBUS/SIGILL/SIGFPE handler reports through stderr, so without that dup2() the SIGSEGV
+ * SIGSEGV/SIGBUS/SIGFPE handler reports through stderr, so without that dup2() the SIGSEGV
  * backtrace still dies in the tee pipe.
  */
 void SetFatalAbortRedirectFd(int fd);
@@ -112,7 +133,7 @@ void SetFatalAbortRedirectFd(int fd);
 void SetFatalAbortConsoleFd(int fd);
 
 /**
- * A one-line build identifier for the raw SIGABRT banner, copied into a fixed buffer.
+ * A one-line build identifier for the raw fatal-signal banner, copied into a fixed buffer.
  *
  * The banner is written from a signal handler, so it cannot format anything: a report pasted from
  * the field would otherwise not say which build produced it. Call once the version is known.

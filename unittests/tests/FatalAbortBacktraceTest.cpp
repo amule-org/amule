@@ -315,6 +315,58 @@ void ChildNoHandler()
 	abort();
 }
 
+// Stands in for wx's SIGILL handler, which is what wxHandleFatalExceptions(true) installs and what
+// our own install would otherwise have taken away. wx's ends in abort(), so this one does too:
+// that is the path that re-enters our handler through the still-armed SIGABRT disposition.
+extern "C" void PriorIllHandler(int)
+{
+	static const char marker[] = "PRIOR SIGILL HANDLER RAN\n";
+	const ssize_t ignored = write(STDERR_FILENO, marker, sizeof(marker) - 1);
+	(void)ignored;
+	abort();
+}
+
+void ChildIllWithPriorHandler()
+{
+	struct sigaction prior;
+	memset(&prior, 0, sizeof(prior));
+	prior.sa_handler = PriorIllHandler;
+	sigemptyset(&prior.sa_mask);
+	sigaction(SIGILL, &prior, nullptr);
+
+	InstallFatalAbortHandler();
+	raise(SIGILL);
+	_exit(42); // not reached: the chained handler aborts
+}
+
+void ChildTrapSuppressed()
+{
+	InstallFatalAbortHandler();
+	SuppressNextTrapBacktrace();
+	raise(SIGTRAP);
+	_exit(42); // not reached
+}
+
+void ChildTrapSuppressionCleared()
+{
+	InstallFatalAbortHandler();
+	SuppressNextTrapBacktrace();
+	ClearTrapBacktraceSuppression();
+	raise(SIGTRAP);
+	_exit(42); // not reached
+}
+
+int CountOccurrences(const std::string &haystack, const char *needle)
+{
+	int found = 0;
+	const std::string what(needle);
+	for (std::string::size_type at = haystack.find(what); at != std::string::npos;
+		at = haystack.find(what, at + what.size())) {
+		++found;
+	}
+	return found;
+}
+
 bool Contains(const std::string &haystack, const char *needle)
 {
 	return haystack.find(needle) != std::string::npos;
@@ -335,7 +387,7 @@ TEST(FatalAbortBacktrace, RealHeapCorruptionStillProducesABacktrace)
 	// libmalloc may trap for the very same double free. Asserting one of them is what made this
 	// case fail intermittently on macOS. The report is the behaviour under test.
 	ASSERT_TRUE(r.signal_number == SIGABRT || r.signal_number == SIGTRAP || r.signal_number == SIGILL);
-	ASSERT_TRUE(Contains(r.stderr_text, "ABORT BACKTRACE FOLLOWS"));
+	ASSERT_TRUE(Contains(r.stderr_text, "FATAL BACKTRACE FOLLOWS"));
 	// Frames, not just the banner. Deliberately matched on the module name rather than on the
 	// allocator's own wording: glibc says "free(): double free detected in tcache 2" and macOS
 	// reports through libmalloc, so any assertion on that text is a platform check. Matching a
@@ -353,7 +405,7 @@ TEST(FatalAbortBacktrace, TerminateWithoutExceptionStillReports)
 	ASSERT_FALSE(r.timed_out);
 	ASSERT_TRUE(r.exited_on_signal);
 	ASSERT_EQUALS(SIGABRT, r.signal_number);
-	ASSERT_TRUE(Contains(r.stderr_text, "ABORT BACKTRACE FOLLOWS"));
+	ASSERT_TRUE(Contains(r.stderr_text, "FATAL BACKTRACE FOLLOWS"));
 }
 
 // The terminate report goes to the console and to the durable descriptor both. Redirecting instead
@@ -457,13 +509,10 @@ TEST(FatalAbortBacktrace, TheBacktraceCarriesFrames)
 	const ChildResult r = RunInChild(ChildPlainAbort);
 
 	ASSERT_FALSE(r.timed_out);
-	ASSERT_TRUE(Contains(r.stderr_text, "ABORT BACKTRACE FOLLOWS"));
+	ASSERT_TRUE(Contains(r.stderr_text, "FATAL BACKTRACE FOLLOWS"));
 	ASSERT_TRUE(Contains(r.stderr_text, "FatalAbortBacktraceTest"));
 }
 
-// The process must still die, and die of SIGABRT. A handler that reports and returns would swallow
-// the signal, and a supervisor watching for a non-zero exit would never restart. This raises the
-// signal in-process rather than from outside; delivery to a single-threaded child is the same path.
 // A trap must report and then still kill the process. Returning from the handler would re-execute
 // the trap instruction and spin, so the timeout here is load-bearing rather than belt and braces.
 TEST(FatalAbortBacktrace, ATrapReportsAndStillDies)
@@ -474,11 +523,14 @@ TEST(FatalAbortBacktrace, ATrapReportsAndStillDies)
 	ASSERT_TRUE(r.exited_on_signal);
 	const bool trapSignal = r.signal_number == SIGTRAP || r.signal_number == SIGILL;
 	ASSERT_TRUE(trapSignal);
-	ASSERT_TRUE(Contains(r.stderr_text, "ABORT BACKTRACE FOLLOWS"));
+	ASSERT_TRUE(Contains(r.stderr_text, "FATAL BACKTRACE FOLLOWS"));
 	// The report has to name the one that arrived, not a guess.
 	ASSERT_TRUE(Contains(r.stderr_text, r.signal_number == SIGILL ? "SIGILL" : "SIGTRAP"));
 }
 
+// The process must still die, and die of SIGABRT. A handler that reports and returns would swallow
+// the signal, and a supervisor watching for a non-zero exit would never restart. This raises the
+// signal in-process rather than from outside; delivery to a single-threaded child is the same path.
 TEST(FatalAbortBacktrace, TheProcessStillDiesOfSigabrt)
 {
 	const ChildResult r = RunInChild(ChildRaiseAbrt);
@@ -497,7 +549,7 @@ TEST(FatalAbortBacktrace, SuppressedAbortPrintsNoBacktrace)
 	ASSERT_FALSE(r.timed_out);
 	ASSERT_TRUE(r.exited_on_signal);
 	ASSERT_EQUALS(SIGABRT, r.signal_number);
-	ASSERT_FALSE(Contains(r.stderr_text, "ABORT BACKTRACE FOLLOWS"));
+	ASSERT_FALSE(Contains(r.stderr_text, "FATAL BACKTRACE FOLLOWS"));
 }
 
 // The control that stops the assertions above passing for the wrong reason: without the handler
@@ -510,7 +562,47 @@ TEST(FatalAbortBacktrace, WithoutTheHandlerThereIsNoBacktrace)
 	ASSERT_FALSE(r.timed_out);
 	ASSERT_TRUE(r.exited_on_signal);
 	ASSERT_EQUALS(SIGABRT, r.signal_number);
-	ASSERT_FALSE(Contains(r.stderr_text, "ABORT BACKTRACE FOLLOWS"));
+	ASSERT_FALSE(Contains(r.stderr_text, "FATAL BACKTRACE FOLLOWS"));
+}
+
+// SIGILL is not ours alone: wx claims it too, so installing over it has to hand control back.
+// Whoever held the disposition must still run, and the banner must appear once and not once per
+// handler entry -- the chained handler aborts, exactly as wx's does, which comes straight back
+// into this handler through the SIGABRT disposition SA_RESETHAND did not touch.
+TEST(FatalAbortBacktrace, ASigillChainsToThePreviousHandler)
+{
+	const ChildResult r = RunInChild(ChildIllWithPriorHandler);
+
+	ASSERT_FALSE(r.timed_out);
+	ASSERT_TRUE(r.exited_on_signal);
+	ASSERT_EQUALS(SIGABRT, r.signal_number);
+	ASSERT_TRUE(Contains(r.stderr_text, "PRIOR SIGILL HANDLER RAN"));
+	ASSERT_EQUALS(1, CountOccurrences(r.stderr_text, "FATAL BACKTRACE FOLLOWS"));
+}
+
+// The assert path reaches wx's dialog through wxTrap(), and the symbolicated backtrace is already
+// printed by then, so a suppressed trap must stay quiet.
+TEST(FatalAbortBacktrace, SuppressedTrapPrintsNoBacktrace)
+{
+	const ChildResult r = RunInChild(ChildTrapSuppressed);
+
+	ASSERT_FALSE(r.timed_out);
+	ASSERT_TRUE(r.exited_on_signal);
+	ASSERT_EQUALS(SIGTRAP, r.signal_number);
+	ASSERT_FALSE(Contains(r.stderr_text, "FATAL BACKTRACE FOLLOWS"));
+}
+
+// And the scope has to end where it was closed: control comes back from the assert dialog unless
+// the user chose Stop, so a suppression that outlived it would swallow an unrelated trap later in
+// the same run.
+TEST(FatalAbortBacktrace, ClearingTheTrapSuppressionRestoresReporting)
+{
+	const ChildResult r = RunInChild(ChildTrapSuppressionCleared);
+
+	ASSERT_FALSE(r.timed_out);
+	ASSERT_TRUE(r.exited_on_signal);
+	ASSERT_EQUALS(SIGTRAP, r.signal_number);
+	ASSERT_TRUE(Contains(r.stderr_text, "FATAL BACKTRACE FOLLOWS"));
 }
 
 #else /* !MULE_HAVE_ABORT_BACKTRACE */

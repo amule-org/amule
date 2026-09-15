@@ -746,6 +746,22 @@ void SuppressNextAbortBacktrace()
 	s_suppressAbortBacktrace = 1;
 }
 
+// Set for the duration of wx's assert dialog, which reaches it through wxTrap(). Separate from the
+// abort flag because it is scoped rather than one-shot: control comes back from the dialog unless
+// the user chose Stop, so a one-shot flag armed before it would still be set afterwards and would
+// swallow the next unrelated abort.
+static volatile sig_atomic_t s_suppressTrapBacktrace = 0;
+
+void SuppressNextTrapBacktrace()
+{
+	s_suppressTrapBacktrace = 1;
+}
+
+void ClearTrapBacktraceSuppression()
+{
+	s_suppressTrapBacktrace = 0;
+}
+
 // -1 until a caller redirects; read by the handler, so sig_atomic_t rather than int.
 static volatile sig_atomic_t s_abortRedirectFd = -1;
 
@@ -919,7 +935,7 @@ int ReserveCrashFd(int reserved, std::FILE *fp)
 static void WriteAbortReport(int fd, int sig, void *const *frames, int count)
 {
 	WRITE_LITERAL(
-		fd, "\n-------------------------=| ABORT BACKTRACE FOLLOWS |=-------------------------\n");
+		fd, "\n-------------------------=| FATAL BACKTRACE FOLLOWS |=-------------------------\n");
 	// Fixed literals rather than a formatted name: nothing here may allocate or call snprintf.
 	if (sig == SIGTRAP || sig == SIGILL) {
 		// Same construct, different encoding: __builtin_trap() is brk on arm64 and ud2 on
@@ -955,6 +971,10 @@ static void WriteAbortReport(int fd, int sig, void *const *frames, int count)
 		fd, "-------------------------------------------------------------------------------\n");
 }
 
+// wx's own SIGILL disposition, saved at install time. See InstallFatalAbortHandler().
+static struct sigaction s_prevIll;
+static volatile sig_atomic_t s_havePrevIll = 0;
+
 extern "C" void MuleFatalAbortHandler(int sig)
 {
 	// Bound the handler before doing anything that can block. backtrace() unwinds through
@@ -964,14 +984,27 @@ extern "C" void MuleFatalAbortHandler(int sig)
 	// restarts it. The install-time warm-up removes the dlopen this handler would do itself, not
 	// a lock some other thread already holds. SIG_DFL first, in case something installed a
 	// SIGALRM handler; both calls are async-signal-safe.
+	//
+	// SA_RESETHAND only resets the signal that was delivered, so entering through SIGABRT leaves
+	// SIGTRAP and SIGILL armed. A trap taken inside this handler would re-enter it, re-arm the
+	// alarm below and stretch its 10 s bound to 30, interleaving a second report into the first.
+	// Never cleared: one report is all a dying process owes anyone.
+	static volatile sig_atomic_t s_inHandler = 0;
+	const bool reentered = s_inHandler != 0;
+	s_inHandler = 1;
+
 	signal(SIGALRM, SIG_DFL);
 	alarm(10);
 
-	// Clear it here so the name stays true: the suppression covers this abort only.
-	const bool suppressed = s_suppressAbortBacktrace != 0;
+	// Clear it here so the name stays true: the suppression covers this abort only. The
+	// trap-scoped flag is separate and is NOT cleared here: it is armed and cleared around wx's
+	// assert dialog, and clearing it from a handler entered for an unrelated signal would open
+	// the window it exists to close.
+	const bool suppressed =
+		s_suppressAbortBacktrace != 0 || (sig == SIGTRAP && s_suppressTrapBacktrace != 0);
 	s_suppressAbortBacktrace = 0;
 
-	if (!suppressed) {
+	if (!suppressed && !reentered) {
 		// 64 frames: the deepest real trace on amule-org/amule#1338 was 31, and the array is
 		// on the handler's stack, which is the process stack here rather than a sigaltstack.
 		void *frames[64];
@@ -996,6 +1029,23 @@ extern "C" void MuleFatalAbortHandler(int sig)
 		if (!consoleFirst && !haveDurable) {
 			WriteAbortReport(console, sig, frames, count);
 		}
+	}
+
+	// SIGILL is wx's signal as much as ours: wxHandleFatalExceptions(true) installs a handler for
+	// it, and installing ours on top took OnFatalException() away from every ud2 death on x86_64
+	// -- which is where __builtin_trap() and hardened libc++ land. Hand control to whoever held
+	// the disposition before us, so the raw trace above is added to wx's report rather than
+	// replacing it.
+	//
+	// Called directly rather than re-raised: SA_RESETHAND has already put the disposition back to
+	// SIG_DFL, so a raise() here would kill the process without ever reaching wx. Only the plain
+	// sa_handler form is chained; a SA_SIGINFO handler would need a siginfo_t and a ucontext_t we
+	// do not have, and wx does not use one. wx's handler ends in abort(), which re-enters this
+	// function through the still-armed SIGABRT disposition -- the re-entry guard above is what
+	// keeps that from printing a second trace.
+	if (sig == SIGILL && s_havePrevIll != 0 && (s_prevIll.sa_flags & SA_SIGINFO) == 0 &&
+		s_prevIll.sa_handler != SIG_DFL && s_prevIll.sa_handler != SIG_IGN) {
+		s_prevIll.sa_handler(sig);
 	}
 
 	// Die of the signal that arrived, rather than returning. Returning would swallow a plain
@@ -1046,7 +1096,13 @@ void InstallFatalAbortHandler()
 	// Debuggers are unaffected: lldb and gdb take these through Mach exception ports and
 	// ptrace, ahead of signal delivery.
 	sigaction(SIGTRAP, &sa, nullptr);
-	sigaction(SIGILL, &sa, nullptr);
+	// SIGILL keeps its previous disposition, because wx owns this one too and our handler chains
+	// back into it. Install order matters: this must run after wxHandleFatalExceptions(true), or
+	// there is nothing to chain to.
+	memset(&s_prevIll, 0, sizeof(s_prevIll));
+	if (sigaction(SIGILL, &sa, &s_prevIll) == 0) {
+		s_havePrevIll = 1;
+	}
 }
 
 #else /* !HAVE_EXECINFO */
