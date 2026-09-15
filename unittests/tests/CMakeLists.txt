@@ -4,7 +4,7 @@
 add_executable (SecIdentTest SecIdentTest.cpp)
 add_test (NAME SecIdentTest COMMAND SecIdentTest)
 target_include_directories (SecIdentTest
-	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
+	PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include
 )
 target_link_libraries (SecIdentTest muleunit mulecommon)
 

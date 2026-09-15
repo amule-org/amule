@@ -23,7 +23,8 @@
 //
 
 #include <muleunit/test.h>
-#include <tags/ClientTags.h>
+
+#include "SecIdentPolicy.h"
 
 using namespace muleunit;
 

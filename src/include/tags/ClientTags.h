@@ -91,32 +91,6 @@ enum MuleInfo_tags
 	ET_OS_INFO = 0x94u // Reused rand tag (MOD_OXY), because the type is unknown
 };
 
-// SecIdent v2 binds signatures to IPv4. Keep this policy independent of socket
-// and application state so a connection without usable IPv4 can negotiate v1.
-namespace SecIdent
-{
-enum Version
-{
-	Unavailable = 0,
-	V1 = 1,
-	V2 = 2
-};
-
-inline unsigned SupportedVersions(bool cryptoAvailable, bool hasPeerIPv4)
-{
-	return cryptoAvailable ? (hasPeerIPv4 ? V1 | V2 : V1) : Unavailable;
-}
-
-inline Version SignatureVersion(unsigned peerVersions, bool hasPeerIPv4)
-{
-	// Preserve the historical v1 preference, even on IPv4 connections.
-	if (peerVersions & V1) {
-		return V1;
-	}
-	return (hasPeerIPv4 && (peerVersions & V2)) ? V2 : Unavailable;
-}
-} // namespace SecIdent
-
 // Server capabilities, values for CT_SERVER_FLAGS
 enum ServerCapabilites
 {

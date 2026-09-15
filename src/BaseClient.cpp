@@ -52,6 +52,7 @@
 #include "IPFilter.h"          // Needed for CIPFilter
 #include "NetworkAddress.h"    // Needed for the IPv6 tag-edge rule
 #include "PeerAddressing.h"    // Needed for IsUsableTagIdentity
+#include "SecIdentPolicy.h"    // Needed for SecIdent version negotiation
 #include "ServerConnect.h"     // Needed for CServerConnect
 #include "ClientCredits.h"     // Needed for CClientCredits
 #include "ClientCreditsList.h" // Needed for CClientCreditsList
