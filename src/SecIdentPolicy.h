@@ -27,6 +27,17 @@
 
 namespace SecIdent
 {
+/**
+ * SecIdent v2 signs an IPv4 ChallengeIP that both ends must derive identically, so it is usable
+ * only with a peer that has one. Callers pass that as hasPeerIPv4, today GetIP() != 0.
+ *
+ * An obligation for whatever adds IPv6 sockets: CLibSocket::GetPeerInt() must keep yielding zero
+ * for a peer with no IPv4 endpoint. True now on both paths, the transport one through
+ * ToIPv4NetworkOrderOrZero() and the asio one because SetIp() takes an amuleIPV4Address, and
+ * widening the second is what dual stack does. Narrow a native IPv6 address to anything non-zero
+ * and v2 is selected for a peer that cannot agree on the value, which fails verification with no
+ * log line -- the failure this policy exists to prevent.
+ */
 enum Version
 {
 	Unavailable = 0,
