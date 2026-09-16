@@ -1202,33 +1202,7 @@ uint32 CDatagramSocketProxy::RecvFrom(CNetworkAddress &addr, uint16 &port, void 
 			uint16 relayPort = 0;
 			read = CLibUDPSocket::RecvFrom(
 				relay, relayPort, bufUDP, nBytes + PROXY_UDP_MAXIMUM_OVERHEAD);
-			unsigned int offset = 0;
-			addr = CNetworkAddress::Absent();
-			port = 0;
-			// Reject truncated, fragmented and unsupported source headers before publication.
-			if (read >= 4 && bufUDP[0] == 0 && bufUDP[1] == 0 && bufUDP[2] == 0) {
-				if (bufUDP[3] == SOCKS5_ATYP_IPV4_ADDRESS &&
-					read >= PROXY_UDP_OVERHEAD_IPV4) {
-					offset = PROXY_UDP_OVERHEAD_IPV4;
-					addr = CNetworkAddress::FromIPv4NetworkOrder(PeekUInt32(bufUDP + 4));
-				} else if (bufUDP[3] == SOCKS5_ATYP_IPV6_ADDRESS &&
-					   read >= PROXY_UDP_OVERHEAD_IPV6) {
-					offset = PROXY_UDP_OVERHEAD_IPV6;
-					addr = CNetworkAddress::FromIPv6Bytes(
-						reinterpret_cast<const uint8_t *>(bufUDP + 4))
-						       .Unmapped();
-				}
-			}
-			if (offset) {
-				port = ENDIAN_NTOHS(RawPeekUInt16(bufUDP + offset - 2));
-				read -= offset;
-				if (read > nBytes) {
-					read = nBytes;
-				}
-				memcpy(buf, bufUDP + offset, read);
-			} else {
-				read = 0;
-			}
+			read = ParseSocks5UDPDatagram(bufUDP, read, addr, port, buf, nBytes);
 
 			/* Only delete buffer if it was dynamically created */
 			if (bufUDP != m_proxyTCPSocket.GetBuffer()) {

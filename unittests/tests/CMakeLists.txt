@@ -382,6 +382,23 @@ target_link_libraries (NetworkAddressTest
 	${Boost_LIBRARIES}
 )
 
+# Exercise the same byte-buffer parser as RecvFrom without constructing sockets
+# or linking Proxy.cpp's application-dependent negotiation state machines.
+add_executable (ProxyTest
+	ProxyTest.cpp
+	${CMAKE_SOURCE_DIR}/src/NetworkAddress.cpp
+	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
+	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
+)
+add_test (NAME ProxyTest COMMAND ProxyTest)
+target_include_directories (ProxyTest PRIVATE
+	${CMAKE_BINARY_DIR}
+	${CMAKE_SOURCE_DIR}/src
+	${CMAKE_SOURCE_DIR}/src/include
+	${Boost_INCLUDE_DIR}
+)
+target_link_libraries (ProxyTest muleunit ${Boost_LIBRARIES} wxWidgets::NET)
+
 # Peer identity: what makes two peers the same peer once a peer can be IPv6, how
 # much of an IPv6 address a rate limit counts against, and how far an inbound
 # datagram can be routed. All decision logic over CNetworkAddress, so it is
