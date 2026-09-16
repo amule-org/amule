@@ -2598,82 +2598,9 @@ Both `ipfilter.dat` and `ipfilter_static.dat` also accept native IPv6 CIDRs:
 2001:db8::1/128,0,Single address
 ```
 
-The syntax is `address/prefix,level,description`: an unbracketed hex/colon IPv6
-literal, a prefix length from `0` through `128`, and a level from `0` through
-`255`. Host bits are cleared. Scope suffixes, IPv4-mapped literals and dotted
-IPv4 tails are not accepted. Descriptions may contain commas and colons.
-Existing IPv4 PeerGuardian and AntiP2P lines keep their syntax and byte order.
+The syntax is `address/prefix,level,description`: an unbracketed IPv6 literal, a prefix length from `0` through `128`, and a level from `0` through `255`. Host bits are cleared. Scope suffixes, IPv4-mapped literals and dotted IPv4 tails are not accepted. Descriptions may contain commas and colons. Existing IPv4 PeerGuardian and AntiP2P lines are unchanged.
 
-A matching rule blocks only when its level is **below** the configured threshold
-captured at reload. Later IPv6 rules override earlier overlapping rules (not
-longest-prefix wins); static-file rules are loaded last and can exempt addresses
-with a higher level. Reload replaces both families together, retaining the old
-snapshot until loading finishes. The ban count includes below-threshold IPv6
-rules individually, without merging overlaps.
-
-This is ingestion and query support, **not IPv6 contact/admission enablement**.
-Existing native-IPv6 safety guards remain in place; no listener, transport,
-preference or API field is added. The typed query routes IPv4-mapped addresses
-through the existing IPv4 filter rather than the IPv6 rules.
-
-
-#### On-disk IPv6 filter entries
-
-Both `ipfilter.dat` and `ipfilter_static.dat` also accept native IPv6 CIDRs:
-
-```text
-2001:db8::/32,100,Example network
-2001:db8::1/128,0,Single address
-```
-
-The syntax is `address/prefix,level,description`: an unbracketed hex/colon IPv6
-literal, a prefix length from `0` through `128`, and a level from `0` through
-`255`. Host bits are cleared. Scope suffixes, IPv4-mapped literals and dotted
-IPv4 tails are not accepted. Descriptions may contain commas and colons.
-Existing IPv4 PeerGuardian and AntiP2P lines keep their syntax and byte order.
-
-A matching rule blocks only when its level is **below** the configured threshold
-captured at reload. Later IPv6 rules override earlier overlapping rules (not
-longest-prefix wins); static-file rules are loaded last and can exempt addresses
-with a higher level. Reload replaces both families together, retaining the old
-snapshot until loading finishes. The ban count includes below-threshold IPv6
-rules individually, without merging overlaps.
-
-This is ingestion and query support, **not IPv6 contact/admission enablement**.
-Existing native-IPv6 safety guards remain in place; no listener, transport,
-preference or API field is added. The typed query routes IPv4-mapped addresses
-through the existing IPv4 filter rather than the IPv6 rules.
-
-
-#### On-disk IPv6 filter entries
-
-Both `ipfilter.dat` and `ipfilter_static.dat` also accept native IPv6 CIDRs:
-
-```text
-2001:db8::/32,100,Example network
-2001:db8::1/128,0,Single address
-```
-
-The syntax is `address/prefix,level,description`: an unbracketed hex/colon IPv6
-literal, a prefix length from `0` through `128`, and a level from `0` through
-`255`. Host bits are cleared. Scope suffixes, IPv4-mapped literals and dotted
-IPv4 tails are not accepted. Descriptions may contain commas and colons.
-Existing IPv4 PeerGuardian and AntiP2P lines keep their syntax and byte order.
-
-A matching rule blocks only when its level is **below** the configured threshold
-captured at reload. Later IPv6 rules override earlier overlapping rules (not
-longest-prefix wins); static-file rules are loaded last and can exempt addresses
-with a higher level. Reload replaces both families together, retaining the old
-snapshot until loading finishes. The ban count includes below-threshold IPv6
-rules individually, without merging overlaps.
-
-This is ingestion and query support, **not IPv6 contact/admission enablement**.
-Existing native-IPv6 safety guards remain in place; no listener, transport,
-preference or API field is added. The typed query routes IPv4-mapped addresses
-through the existing IPv4 filter rather than the IPv6 rules.
-
-
-
+A matching rule blocks only when its level is **below** the configured filter level. When IPv6 rules overlap, the later rule wins, not the longest prefix. `ipfilter_static.dat` loads last, so its rules can exempt addresses with a higher level. A reload replaces IPv4 and IPv6 rules together and keeps the old filter live until loading finishes.
 
 #### `POST /api/v1/ipfilter/reload`
 
