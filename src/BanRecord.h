@@ -26,6 +26,7 @@
 #define BANRECORD_H
 
 #include "Types.h" // Needed for uint32, uint64
+#include "PeerAddressing.h"
 
 #include <protocol/ed2k/Constants.h> // Needed for CLIENTBANTIME
 
@@ -84,9 +85,12 @@ public:
 	 * the address to zero when there is no socket -- so a single entry under that key would
 	 * make every such client read back as banned.
 	 */
-	bool Ban(uint32 ip, uint64 nowMs)
+	bool Ban(uint32 ip, uint64 nowMs) { return Ban(CNetworkAddress::FromIPv4NetworkOrder(ip), nowMs); }
+
+	bool Ban(const CNetworkAddress &address, uint64 nowMs)
 	{
-		if (ip == 0) {
+		const auto ip = PeerAddressing::IndexKey(address);
+		if (!PeerAddressing::IsSecurityKey(ip)) {
 			return false;
 		}
 		const bool isNew = m_banned.find(ip) == m_banned.end();
@@ -97,7 +101,13 @@ public:
 	/**
 	 * Lift the ban on @p ip. @return true only when there was one to lift.
 	 */
-	bool Unban(uint32 ip) { return m_banned.erase(ip) != 0; }
+	bool Unban(uint32 ip) { return Unban(CNetworkAddress::FromIPv4NetworkOrder(ip)); }
+
+	bool Unban(const CNetworkAddress &address)
+	{
+		return PeerAddressing::IsSecurityKey(address) &&
+		       m_banned.erase(PeerAddressing::IndexKey(address)) != 0;
+	}
 
 	/**
 	 * Whether @p ip is banned as of @p nowMs. A lapsed ban is dropped here rather than reported
@@ -107,13 +117,19 @@ public:
 	 */
 	bool IsBanned(uint32 ip, uint64 nowMs, bool *dropped = nullptr) const
 	{
+		return IsBanned(CNetworkAddress::FromIPv4NetworkOrder(ip), nowMs, dropped);
+	}
+
+	bool IsBanned(const CNetworkAddress &address, uint64 nowMs, bool *dropped = nullptr) const
+	{
+		const auto ip = PeerAddressing::IndexKey(address);
 		if (dropped != nullptr) {
 			*dropped = false;
 		}
-		if (ip == 0) {
+		if (!PeerAddressing::IsSecurityKey(ip)) {
 			return false;
 		}
-		std::map<uint32, uint64>::iterator it = m_banned.find(ip);
+		auto it = m_banned.find(ip);
 		if (it == m_banned.end()) {
 			return false;
 		}
@@ -136,11 +152,11 @@ public:
 	std::size_t DropLapsed(uint64 nowMs)
 	{
 		std::size_t removed = 0;
-		std::map<uint32, uint64>::iterator it = m_banned.begin();
+		auto it = m_banned.begin();
 		while (it != m_banned.end()) {
 			// Post-increment before erasing: the iterator being erased is
 			// invalidated, and the next one has to be in hand already.
-			std::map<uint32, uint64>::iterator current = it++;
+			auto current = it++;
 			if (current->second + BAN_DURATION_MS <= nowMs) {
 				m_banned.erase(current);
 				++removed;
@@ -159,7 +175,7 @@ private:
 	// Mutable so IsBanned() can stay const while reclaiming a lapsed entry: dropping one
 	// changes no answer this record gives, and the alternative is a non-const query that every
 	// caller has to hold a mutable reference for.
-	mutable std::map<uint32, uint64> m_banned;
+	mutable std::map<CNetworkAddress, uint64> m_banned;
 };
 
 #endif // BANRECORD_H

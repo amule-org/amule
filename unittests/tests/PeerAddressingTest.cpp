@@ -41,6 +41,7 @@
 #include <muleunit/test.h>
 
 #include <PeerAddressing.h>
+#include <IPFilter.h>
 #include <CanonicalPeerIndex.h>
 #include <libs/common/Format.h>
 
@@ -50,6 +51,65 @@ using namespace muleunit;
 using namespace PeerAddressing;
 
 DECLARE_SIMPLE(PeerAddressing)
+
+TEST(PeerAddressing, ProgrammaticFilterPrefixes)
+{
+	const auto host = CNetworkAddress::FromString("2001:db8:1:2:7fff::1");
+	const auto network = CNetworkAddress::FromString("2001:db8:1:2::");
+	ASSERT_TRUE(CIPFilter::MatchesPrefix(host, network, 65));
+	ASSERT_FALSE(
+		CIPFilter::MatchesPrefix(CNetworkAddress::FromString("2001:db8:1:2:8000::1"), network, 65));
+	ASSERT_TRUE(CIPFilter::MatchesPrefix(host, host, 128));
+	ASSERT_FALSE(CIPFilter::MatchesPrefix(host, network, 128));
+	ASSERT_FALSE(CIPFilter::MatchesPrefix(host, host, 129));
+	ASSERT_TRUE(CIPFilter::MatchesPrefix(host, CNetworkAddress::AnyIPv6(), 0));
+	ASSERT_TRUE(CIPFilter::MatchesPrefix(
+		CNetworkAddress::FromString("fe80::1%3"), CNetworkAddress::FromString("fe80::1%9"), 128));
+	const auto v4 = CNetworkAddress::FromIPv4NetworkOrder(0x010200c0);
+	const auto mapped = CNetworkAddress::FromString("::ffff:192.0.2.1");
+	ASSERT_TRUE(CIPFilter::MatchesPrefix(mapped, v4, 32));
+	ASSERT_TRUE(CIPFilter::MatchesPrefix(v4, mapped, 24));
+	ASSERT_FALSE(CIPFilter::MatchesPrefix(v4, mapped, 33));
+	ASSERT_FALSE(CIPFilter::MatchesPrefix(v4, host, 0));
+}
+
+TEST(PeerAddressing, ProgrammaticFilterRanges)
+{
+	const auto first = CNetworkAddress::FromString("2001:db8::ff");
+	const auto middle = CNetworkAddress::FromString("2001:db8::100");
+	const auto last = CNetworkAddress::FromString("2001:db8::101");
+	for (const auto &host : { first, middle, last }) {
+		ASSERT_TRUE(CIPFilter::MatchesRange(host, first, last));
+	}
+	ASSERT_FALSE(CIPFilter::MatchesRange(CNetworkAddress::FromString("2001:db8::fe"), first, last));
+	ASSERT_FALSE(CIPFilter::MatchesRange(CNetworkAddress::FromString("2001:db8::102"), first, last));
+	ASSERT_FALSE(CIPFilter::MatchesRange(middle, last, first));
+	ASSERT_TRUE(CIPFilter::MatchesRange(middle, middle, middle));
+	const auto v4 = CNetworkAddress::FromIPv4NetworkOrder(0x010200c0);
+	const auto mapped = CNetworkAddress::FromString("::ffff:192.0.2.1");
+	ASSERT_TRUE(CIPFilter::MatchesRange(mapped, v4, v4));
+	ASSERT_TRUE(CIPFilter::MatchesRange(v4, mapped, mapped));
+	ASSERT_FALSE(CIPFilter::MatchesRange(middle, v4, last));
+	ASSERT_TRUE(CIPFilter::MatchesRange(CNetworkAddress::FromString("fe80::1%3"),
+		CNetworkAddress::FromString("fe80::1%9"),
+		CNetworkAddress::FromString("fe80::1%9")));
+}
+
+TEST(PeerAddressing, FilterMatchingRejectsUnknownAndUnspecifiedHosts)
+{
+	const auto host = CNetworkAddress::FromString("2001:db8::1");
+	const auto absent = CNetworkAddress::Absent();
+	for (const auto &invalid : { absent,
+		     CNetworkAddress::AnyIPv6(),
+		     CNetworkAddress::FromIPv4HostOrder(0),
+		     CNetworkAddress::FromString("::ffff:0.0.0.0") }) {
+		ASSERT_FALSE(CIPFilter::MatchesPrefix(invalid, invalid, 0));
+		ASSERT_FALSE(CIPFilter::MatchesRange(invalid, invalid, invalid));
+	}
+	ASSERT_FALSE(CIPFilter::MatchesPrefix(host, absent, 0));
+	ASSERT_FALSE(CIPFilter::MatchesRange(host, absent, host));
+	ASSERT_FALSE(CIPFilter::MatchesRange(host, host, absent));
+}
 
 // Production contact/callback admission seams. Native IPv6 is deliberately dormant.
 TEST(PeerAddressing, ContactSecurityChecksFailClosedForNativeIPv6)

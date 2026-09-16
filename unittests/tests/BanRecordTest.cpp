@@ -46,6 +46,65 @@ const uint32 IP_B = 0x0200007f;
 // ASSERT_EQUALS takes its arguments by const reference, so this odr-uses BAN_DURATION_MS. With
 // the member declared static const and defined nowhere, it does not link; constexpr is what makes
 // it work. The assertion itself is almost beside the point, the reference binding is the test.
+TEST(BanRecord, AddressKeysNormalizeIPv4WithoutChangingByteOrder)
+{
+	CBanRecord record;
+	const auto v4 = CNetworkAddress::FromIPv4NetworkOrder(0x010200c0);
+	const auto mapped =
+		CNetworkAddress::IPv6FromOctets({ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff, 192, 0, 2, 1 });
+	ASSERT_TRUE(record.Ban(0x010200c0, T0));
+	ASSERT_TRUE(record.IsBanned(v4, T0));
+	ASSERT_FALSE(record.Ban(mapped, T0 + 10));
+	ASSERT_EQUALS(1u, (unsigned)record.Size());
+	ASSERT_FALSE(record.IsBanned(0xc0000201, T0));
+	ASSERT_TRUE(record.IsBanned(v4, T0 + CBanRecord::BAN_DURATION_MS));
+	bool dropped = false;
+	ASSERT_FALSE(record.IsBanned(mapped, T0 + 10 + CBanRecord::BAN_DURATION_MS, &dropped));
+	ASSERT_TRUE(dropped);
+	ASSERT_TRUE(record.Ban(mapped, T0));
+	ASSERT_TRUE(record.Unban(0x010200c0));
+}
+
+TEST(BanRecord, IPv6BansRemainPerHostAndScoped)
+{
+	CBanRecord record;
+	CNetworkAddress::Octets bytes = { 0x20, 1, 0x0d, 0xb8 };
+	bytes[15] = 1;
+	const auto first = CNetworkAddress::IPv6FromOctets(bytes);
+	bytes[15] = 2;
+	const auto second = CNetworkAddress::IPv6FromOctets(bytes);
+	ASSERT_TRUE(record.Ban(first, T0));
+	ASSERT_FALSE(record.IsBanned(second, T0));
+	ASSERT_TRUE(record.Ban(second, T0 + 1));
+	ASSERT_EQUALS(1u, (unsigned)record.DropLapsed(T0 + CBanRecord::BAN_DURATION_MS));
+	ASSERT_TRUE(record.IsBanned(second, T0 + CBanRecord::BAN_DURATION_MS));
+	ASSERT_TRUE(record.Unban(second));
+	bytes = { 0xfe, 0x80 };
+	bytes[15] = 1;
+	const auto scoped = CNetworkAddress::IPv6FromOctets(bytes, 3);
+	ASSERT_TRUE(record.Ban(scoped, T0));
+	ASSERT_FALSE(record.IsBanned(CNetworkAddress::IPv6FromOctets(bytes, 9), T0));
+	record.Clear();
+	ASSERT_EQUALS(0u, (unsigned)record.Size());
+}
+
+TEST(BanRecord, AbsentAndUnspecifiedKeysNeverEnterTheRecord)
+{
+	CBanRecord record;
+	const auto mappedZero = CNetworkAddress::IPv6FromOctets({ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff });
+	for (const auto &address : { CNetworkAddress::Absent(),
+		     CNetworkAddress::AnyIPv6(),
+		     CNetworkAddress::FromIPv4NetworkOrder(0),
+		     mappedZero }) {
+		ASSERT_FALSE(record.Ban(address, T0));
+		bool dropped = true;
+		ASSERT_FALSE(record.IsBanned(address, T0, &dropped));
+		ASSERT_FALSE(dropped);
+		ASSERT_FALSE(record.Unban(address));
+	}
+	ASSERT_EQUALS(0u, (unsigned)record.Size());
+}
+
 TEST(BanRecord, TheBanDurationConstantCanBeReferenced)
 {
 	ASSERT_EQUALS(static_cast<uint64>(CLIENTBANTIME), CBanRecord::BAN_DURATION_MS);
