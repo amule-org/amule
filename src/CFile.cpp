@@ -28,7 +28,8 @@
 #include <common/Path.h> // Needed for CPath
 #include "config.h"      // Needed for HAVE_SYS_PARAM_H
 
-#include <vector> // Needed for the CopyFile stream buffer
+#include <exception> // Needed for std::exception_ptr
+#include <vector>    // Needed for the CopyFile stream buffer
 
 #ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
@@ -173,7 +174,14 @@ CFile::~CFile()
 		// The dtor still runs if the writing was aborted. Do NOT replace the original file
 		// with the probably broken new one.
 		m_safeWrite = false;
-		Close();
+		// A destructor must not throw: the process would terminate. Buffered writes surface
+		// their errors here (e.g. ENOSPC), so callers that care must Close() explicitly.
+		try {
+			Close();
+		} catch (const CSafeIOException &e) {
+			AddDebugLogLineC(logCFile,
+				CFormat("Error closing %s: %s") % m_filePath.GetPrintable() % e.what());
+		}
 	}
 }
 
@@ -298,8 +306,15 @@ bool CFile::Close()
 	std::lock_guard<std::recursive_mutex> lock(m_mutex);
 
 	// Flush userspace write buffer to the fd before closing -- otherwise
-	// any pending bytes from doWrite() would be silently dropped.
-	DrainWriteBuffer();
+	// any pending bytes from doWrite() would be silently dropped. A failed drain still
+	// closes the fd, so the file is not leaked and a retried Close() cannot fail again.
+	std::exception_ptr drainError;
+	try {
+		DrainWriteBuffer();
+	} catch (const CIOFailureException &) {
+		drainError = std::current_exception();
+		m_writeBufferPending = 0;
+	}
 
 	bool closed = (close(m_fd) != -1);
 	syscall_check(closed, m_filePath, "closing file");
@@ -309,9 +324,14 @@ bool CFile::Close()
 	if (m_safeWrite) {
 		CPath filePathTemp(m_filePath);
 		m_filePath = m_filePath.RemoveExt(); // restore m_filePath for Reopen()
-		if (closed) {
+		// A short write must not replace the original file.
+		if (closed && !drainError) {
 			closed = CPath::RenameFile(filePathTemp, m_filePath, true);
 		}
+	}
+
+	if (drainError) {
+		std::rethrow_exception(drainError);
 	}
 
 	return closed;

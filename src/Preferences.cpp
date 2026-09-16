@@ -1020,6 +1020,7 @@ CPreferences::CPreferences()
 			try {
 				preffile.WriteUInt8(PREFFILE_VERSION);
 				preffile.WriteHash(s_userhash);
+				preffile.Close();
 			} catch (const CIOFailureException &e) {
 				AddDebugLogLineC(
 					logGeneral, "IO failure while saving user-hash: " + e.what());
@@ -1762,6 +1763,7 @@ void CPreferences::Save()
 		try {
 			preffile.WriteUInt8(PREFFILE_VERSION);
 			preffile.WriteHash(s_userhash);
+			preffile.Close();
 		} catch (const CIOFailureException &e) {
 			AddDebugLogLineC(logGeneral, "IO failure while saving user-hash: " + e.what());
 		}

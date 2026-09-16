@@ -96,6 +96,8 @@ void CCanceledFileList::Save()
 		for (; it != m_canceledFileList.end(); ++it) {
 			file.Write(it->GetHash(), 16);
 		}
+		// Explicit so a buffered write error is caught here, not in the destructor.
+		file.Close();
 	} catch (const CIOFailureException &e) {
 		AddLogLineC(CFormat(_("Error while saving %s file: %s")) % m_filename % e.what());
 	}

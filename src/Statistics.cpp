@@ -300,12 +300,19 @@ void CStatistics::Save()
 	if (s_statsNeedSave) {
 		CFile f;
 
-		if (f.Open(JoinPaths(thePrefs::GetConfigDir(), "statistics.dat"), CFile::write)) {
-			f.WriteUInt8(0); /* version */
-			f.WriteUInt64(s_totalSent);
-			f.WriteUInt64(s_totalReceived);
+		try {
+			if (f.Open(JoinPaths(thePrefs::GetConfigDir(), "statistics.dat"), CFile::write)) {
+				f.WriteUInt8(0); /* version */
+				f.WriteUInt64(s_totalSent);
+				f.WriteUInt64(s_totalReceived);
+				// Explicit so a buffered write error surfaces here, not in the destructor.
+				f.Close();
+			}
+			s_statsNeedSave = false;
+		} catch (const CIOFailureException &e) {
+			// Leave s_statsNeedSave set so the next tick retries.
+			AddDebugLogLineC(logGeneral, "IO failure while saving statistics: " + e.what());
 		}
-		s_statsNeedSave = false;
 	}
 }
 

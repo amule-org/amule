@@ -29,6 +29,12 @@
 #include <vector>
 #include <cstdlib> // getenv / atoi for the opt-in huge-file test
 #include <cstring> // memcmp
+#include <fcntl.h> // open, for the write-failure tests
+#ifdef _WIN32
+#include <io.h> // dup2, close
+#else
+#include <unistd.h> // dup2, close
+#endif
 
 using namespace muleunit;
 
@@ -279,4 +285,68 @@ TEST(CFileCloneFile, HugeFileOptIn)
 
 	CPath::RemoveFile(src);
 	CPath::RemoveFile(dst);
+}
+
+DECLARE_SIMPLE(CFileWriteFailure)
+
+// Points `file`'s descriptor at a read-only one, so the next write(2) fails. The drain takes the
+// same path for EBADF as for the ENOSPC a full disk gives.
+static void BreakWrites(CFile &file, const CPath &readable)
+{
+#ifdef _WIN32
+	int ro = _wopen(readable.GetRaw().wc_str(), O_RDONLY);
+#else
+	int ro = open(readable.GetRaw().fn_str(), O_RDONLY);
+#endif
+	ASSERT_TRUE(ro != -1);
+	ASSERT_TRUE(dup2(ro, file.fd()) != -1);
+	close(ro);
+}
+
+// Positive control for the destructor test below: without it, a drain that did not fail would let
+// that test pass vacuously.
+TEST(CFileWriteFailure, CloseThrowsAndReleasesTheFile)
+{
+	CPath path = FreshTemp();
+	CFile file;
+	ASSERT_TRUE(file.Open(path, CFile::write));
+	file.WriteUInt32(0x12345678); // small enough to stay in the userspace buffer
+	BreakWrites(file, path);
+
+	ASSERT_RAISES(CIOFailureException, file.Close());
+	// A failed Close() used to leave the fd open, so a retry failed again and the file leaked.
+	ASSERT_FALSE(file.IsOpened());
+
+	CPath::RemoveFile(path);
+}
+
+// Issue 1423: a buffered write error surfacing in the destructor terminated the process.
+TEST(CFileWriteFailure, DestructorDoesNotThrow)
+{
+	CPath path = FreshTemp();
+	{
+		CFile file;
+		ASSERT_TRUE(file.Open(path, CFile::write));
+		file.WriteUInt32(0x12345678);
+		BreakWrites(file, path);
+	}
+	CPath::RemoveFile(path);
+}
+
+TEST(CFileWriteFailure, SafeWriteKeepsTheOriginal)
+{
+	CPath path = FreshTemp();
+	WriteData(path, 16);
+	const uint64 before = FileLength(path);
+
+	CFile file;
+	ASSERT_TRUE(file.Open(path, CFile::write_safe));
+	file.WriteUInt32(0x12345678);
+	BreakWrites(file, path);
+
+	ASSERT_RAISES(CIOFailureException, file.Close());
+	ASSERT_TRUE(FileLength(path) == before);
+
+	CPath::RemoveFile(path);
+	CPath::RemoveFile(path.AppendExt(".new"));
 }
