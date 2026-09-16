@@ -1186,7 +1186,8 @@ void CClientList::AddTrackCallbackRequests(const CNetworkAddress &address)
 	CallbackAddressAndTicks add = { PeerAddressing::RateLimitScope(address), now };
 	m_directCallbackRequests.push_front(add);
 	while (!m_directCallbackRequests.empty()) {
-		if (now - m_directCallbackRequests.back().inserted > MIN2MS(3)) {
+		if (now - m_directCallbackRequests.back().inserted >
+			PeerAddressing::kCallbackRequestThrottleMs) {
 			m_directCallbackRequests.pop_back();
 		} else {
 			break;

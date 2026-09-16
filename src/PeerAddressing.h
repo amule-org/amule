@@ -33,8 +33,7 @@
  * What identifies a peer, once a peer can be IPv6.
  *
  * These value policies support peer-address widening at production call sites.
- * Socket-ingress normalization belongs to the later call-sites PR; local unmapping here
- * defensively handles both native and mapped IPv4.
+ * Socket ingress already canonicalizes mapped IPv4; local unmapping here stays defensive.
  *
  * Three separate questions live here, and they deliberately give different answers for the same
  * address:
@@ -226,6 +225,9 @@ inline bool MatchesUdpSource(const UdpEndpoint &advertised, const UdpEndpoint &s
  */
 constexpr unsigned kIPv6RateLimitPrefixBits = 64;
 
+//! How long one callback request from a scope throttles the next; also the list's eviction age.
+constexpr std::uint64_t kCallbackRequestThrottleMs = 3 * 60 * 1000;
+
 /**
  * The address a per-peer rate limit is counted against.
  *
@@ -272,7 +274,7 @@ inline bool IsCallbackRequestThrottled(
 	const CNetworkAddress &address, const CNetworkAddress &previous, std::uint64_t elapsed) noexcept
 {
 	return address.IsPresent() && previous.IsPresent() &&
-	       RateLimitScope(address) == RateLimitScope(previous) && elapsed < 3 * 60 * 1000;
+	       RateLimitScope(address) == RateLimitScope(previous) && elapsed < kCallbackRequestThrottleMs;
 }
 
 /**
