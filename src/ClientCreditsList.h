@@ -31,6 +31,7 @@
 #include <map>
 #include <vector>
 
+class CNetworkAddress;
 class CClientCredits;
 class CFile;
 
@@ -50,7 +51,7 @@ public:
 	bool VerifyIdent(CClientCredits *pTarget,
 		const uint8_t *pachSignature,
 		uint8 nInputSize,
-		uint32 dwForIP,
+		const CNetworkAddress &address,
 		uint8 byChaIPKind);
 
 	CClientCredits *GetCredit(const CMD4Hash &key);

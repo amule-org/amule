@@ -382,7 +382,7 @@ uint64 CUpDownClient::GetWaitStartTime() const
 	uint64 dwResult = 0;
 
 	if (credits) {
-		dwResult = credits->GetSecureWaitStartTime(GetIP());
+		dwResult = credits->GetSecureWaitStartTime(GetUserAddress());
 
 		if (dwResult > m_dwUploadTime && IsDownloading()) {
 			// This happens only if two clients with invalid securehash are in the queue - if at
@@ -397,7 +397,7 @@ uint64 CUpDownClient::GetWaitStartTime() const
 void CUpDownClient::SetWaitStartTime()
 {
 	if (credits) {
-		credits->SetSecWaitStartTime(GetIP());
+		credits->SetSecWaitStartTime(GetUserAddress());
 	}
 }
 
@@ -437,8 +437,9 @@ uint32 CUpDownClient::SendBlockData()
 		sentBytesPartFile = s->GetSentBytesPartFileSinceLastCallAndReset();
 
 		m_nTransferredUp += sentBytesCompleteFile + sentBytesPartFile;
-		credits->AddUploaded(
-			sentBytesCompleteFile + sentBytesPartFile, GetIP(), theApp->CryptoAvailable());
+		credits->AddUploaded(sentBytesCompleteFile + sentBytesPartFile,
+			GetUserAddress(),
+			theApp->CryptoAvailable());
 
 		sentBytesPayload = s->GetSentPayloadSinceLastCallAndReset();
 		m_nCurQueueSessionPayloadUp += sentBytesPayload;

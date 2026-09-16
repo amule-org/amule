@@ -498,9 +498,12 @@ bool CClientList::IsIPAlreadyKnown(uint32_t ip)
 	return FindClientByIP(ip) != nullptr;
 }
 
-bool CClientList::ComparePriorUserhash(uint32 dwIP, uint16 nPort, void *pNewHash)
+bool CClientList::ComparePriorUserhash(const CNetworkAddress &address, uint16 nPort, void *pNewHash)
 {
-	std::map<uint32, CDeletedClient *>::iterator it = m_trackedClientsList.find(dwIP);
+	if (address.IsAbsent()) {
+		return true; // No endpoint on which to base a prior-hash comparison.
+	}
+	auto it = m_trackedClientsList.find(address.Unmapped());
 
 	if (it != m_trackedClientsList.end()) {
 		CDeletedClient *pResult = it->second;
@@ -521,7 +524,11 @@ bool CClientList::ComparePriorUserhash(uint32 dwIP, uint16 nPort, void *pNewHash
 
 void CClientList::AddTrackClient(CUpDownClient *toadd)
 {
-	std::map<uint32, CDeletedClient *>::iterator it = m_trackedClientsList.find(toadd->GetIP());
+	const CNetworkAddress address = toadd->GetUserAddress().Unmapped();
+	if (address.IsAbsent()) {
+		return;
+	}
+	auto it = m_trackedClientsList.find(address);
 
 	if (it != m_trackedClientsList.end()) {
 		CDeletedClient *pResult = it->second;
@@ -539,7 +546,7 @@ void CClientList::AddTrackClient(CUpDownClient *toadd)
 		CDeletedClient::PortAndHash porthash = { toadd->GetUserPort(), toadd->GetCreditsHash() };
 		pResult->m_ItemsList.push_back(porthash);
 	} else {
-		m_trackedClientsList[toadd->GetIP()] = new CDeletedClient(toadd);
+		m_trackedClientsList[address] = new CDeletedClient(toadd);
 	}
 }
 
@@ -561,9 +568,9 @@ void CClientList::Process()
 	if (m_dwLastTrackedCleanUp + TRACKED_CLEANUP_TIME < cur_tick) {
 		m_dwLastTrackedCleanUp = cur_tick;
 
-		std::map<uint32, CDeletedClient *>::iterator it = m_trackedClientsList.begin();
+		auto it = m_trackedClientsList.begin();
 		while (it != m_trackedClientsList.end()) {
-			std::map<uint32, CDeletedClient *>::iterator cur_src = it++;
+			auto cur_src = it++;
 
 			if (cur_src->second->m_dwInserted + KEEPTRACK_TIME < cur_tick) {
 				delete cur_src->second;

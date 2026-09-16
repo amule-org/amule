@@ -526,11 +526,17 @@ uint8 CClientCreditsList::CreateSignature(CClientCredits *pTarget,
 bool CClientCreditsList::VerifyIdent(CClientCredits *pTarget,
 	const uint8_t *pachSignature,
 	uint8 nInputSize,
-	uint32 dwForIP,
+	const CNetworkAddress &address,
 	uint8 byChaIPKind)
 {
 	wxASSERT(pTarget);
 	wxASSERT(pachSignature);
+	// v1 binds the result to the full endpoint; v2 still signs exactly four IPv4 bytes.
+	uint32 peerIPv4 = 0;
+	if (address.IsAbsent() ||
+		(byChaIPKind != 0 && (!address.ToIPv4NetworkOrder(peerIPv4) || peerIPv4 == 0))) {
+		return false;
+	}
 	if (!CryptoAvailable()) {
 		pTarget->SetIdentState(IS_NOTAVAILABLE);
 		return false;
@@ -554,7 +560,7 @@ bool CClientCreditsList::VerifyIdent(CClientCredits *pTarget,
 			uint32 ChallengeIP = 0;
 			switch (byChaIPKind) {
 			case CRYPT_CIP_LOCALCLIENT:
-				ChallengeIP = dwForIP;
+				ChallengeIP = peerIPv4;
 				break;
 			case CRYPT_CIP_REMOTECLIENT:
 				// Ignore local ip...
@@ -593,7 +599,7 @@ bool CClientCreditsList::VerifyIdent(CClientCredits *pTarget,
 		if (pTarget->GetIdentState() == IS_IDNEEDED)
 			pTarget->SetIdentState(IS_IDFAILED);
 	} else {
-		pTarget->Verified(dwForIP);
+		pTarget->Verified(address);
 	}
 
 	return bResult;
@@ -638,7 +644,7 @@ bool CClientCreditsList::Debug_CheckCrypting()
 	newcredits2.SetSecureIdent(abyPublicKey, PublicKeyLen);
 
 	// now verify this signature - if it's true everything is fine
-	return VerifyIdent(&newcredits2, pachSignature, sigsize, 0, 0);
+	return VerifyIdent(&newcredits2, pachSignature, sigsize, CNetworkAddress::FromIPv4NetworkOrder(0), 0);
 }
 #endif
 // File_checked_for_headers

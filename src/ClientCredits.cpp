@@ -46,7 +46,7 @@ CClientCredits::CClientCredits(CreditStruct *in_credits)
 	InitalizeIdent();
 	m_dwUnSecureWaitTime = 0;
 	m_dwSecureWaitTime = 0;
-	m_dwWaitTimeIP = 0;
+	m_waitTimeAddress = CNetworkAddress::Absent();
 }
 
 CClientCredits::CClientCredits(const CMD4Hash &key)
@@ -56,7 +56,7 @@ CClientCredits::CClientCredits(const CMD4Hash &key)
 
 	InitalizeIdent();
 	m_dwUnSecureWaitTime = m_dwSecureWaitTime = ::GetTickCount64();
-	m_dwWaitTimeIP = 0;
+	m_waitTimeAddress = CNetworkAddress::Absent();
 }
 
 CClientCredits::~CClientCredits()
@@ -64,7 +64,7 @@ CClientCredits::~CClientCredits()
 	delete m_pCredits;
 }
 
-void CClientCredits::AddDownloaded(uint32 bytes, uint32 dwForIP, bool cryptoavail)
+void CClientCredits::AddDownloaded(uint32 bytes, const CNetworkAddress &dwForIP, bool cryptoavail)
 {
 	switch (GetCurrentIdentState(dwForIP)) {
 	case IS_IDFAILED:
@@ -82,7 +82,7 @@ void CClientCredits::AddDownloaded(uint32 bytes, uint32 dwForIP, bool cryptoavai
 	m_pCredits->downloaded += bytes;
 }
 
-void CClientCredits::AddUploaded(uint32 bytes, uint32 dwForIP, bool cryptoavail)
+void CClientCredits::AddUploaded(uint32 bytes, const CNetworkAddress &dwForIP, bool cryptoavail)
 {
 	switch (GetCurrentIdentState(dwForIP)) {
 	case IS_IDFAILED:
@@ -110,7 +110,7 @@ uint64 CClientCredits::GetDownloadedTotal() const
 	return m_pCredits->downloaded;
 }
 
-float CClientCredits::GetScoreRatio(uint32 dwForIP, bool cryptoavail)
+float CClientCredits::GetScoreRatio(const CNetworkAddress &dwForIP, bool cryptoavail)
 {
 	// check the client ident status
 	switch (GetCurrentIdentState(dwForIP)) {
@@ -207,12 +207,15 @@ void CClientCredits::InitalizeIdent()
 	}
 	m_dwCryptRndChallengeFor = 0;
 	m_dwCryptRndChallengeFrom = 0;
-	m_dwIdentIP = 0;
+	m_identAddress = CNetworkAddress::Absent();
 }
 
-void CClientCredits::Verified(uint32 dwForIP)
+void CClientCredits::Verified(const CNetworkAddress &dwForIP)
 {
-	m_dwIdentIP = dwForIP;
+	if (dwForIP.IsAbsent()) {
+		return; // No endpoint to bind the verified identity to.
+	}
+	m_identAddress = dwForIP.Unmapped();
 	// client was verified, copy the keyto store him if not done already
 	if (m_pCredits->nKeySize == 0) {
 		m_pCredits->nKeySize = m_nPublicKeyLen;
@@ -239,12 +242,12 @@ bool CClientCredits::SetSecureIdent(const uint8_t *pachIdent, uint8 nIdentLen)
 	return true;
 }
 
-EIdentState CClientCredits::GetCurrentIdentState(uint32 dwForIP) const
+EIdentState CClientCredits::GetCurrentIdentState(const CNetworkAddress &dwForIP) const
 {
 	if (m_identState != IS_IDENTIFIED)
 		return m_identState;
 	else {
-		if (dwForIP == m_dwIdentIP)
+		if (dwForIP.IsPresent() && dwForIP.Unmapped() == m_identAddress)
 			return IS_IDENTIFIED;
 		else
 			return IS_IDBADGUY;
@@ -254,7 +257,7 @@ EIdentState CClientCredits::GetCurrentIdentState(uint32 dwForIP) const
 	}
 }
 
-uint64 CClientCredits::GetSecureWaitStartTime(uint32 dwForIP)
+uint64 CClientCredits::GetSecureWaitStartTime(const CNetworkAddress &dwForIP)
 {
 	if (m_dwUnSecureWaitTime == 0 || m_dwSecureWaitTime == 0)
 		SetSecWaitStartTime(dwForIP);
@@ -263,14 +266,14 @@ uint64 CClientCredits::GetSecureWaitStartTime(uint32 dwForIP)
 		if (GetCurrentIdentState(dwForIP) == IS_IDENTIFIED) { // good boy
 			return m_dwSecureWaitTime;
 		} else { // not so good boy
-			if (dwForIP == m_dwWaitTimeIP) {
+			if (dwForIP.Unmapped() == m_waitTimeAddress) {
 				return m_dwUnSecureWaitTime;
 			} else { // bad boy
 				// this can also happen if the client has not identified himself yet, but will
 				// do later - so maybe he is not a bad boy :) .
 
 				m_dwUnSecureWaitTime = ::GetTickCount64();
-				m_dwWaitTimeIP = dwForIP;
+				m_waitTimeAddress = dwForIP.Unmapped();
 				return m_dwUnSecureWaitTime;
 			}
 		}
@@ -279,10 +282,10 @@ uint64 CClientCredits::GetSecureWaitStartTime(uint32 dwForIP)
 	}
 }
 
-void CClientCredits::SetSecWaitStartTime(uint32 dwForIP)
+void CClientCredits::SetSecWaitStartTime(const CNetworkAddress &dwForIP)
 {
 	m_dwUnSecureWaitTime = m_dwSecureWaitTime = ::GetTickCount64() - 1;
-	m_dwWaitTimeIP = dwForIP;
+	m_waitTimeAddress = dwForIP.Unmapped();
 }
 
 void CClientCredits::ClearWaitStartTime()

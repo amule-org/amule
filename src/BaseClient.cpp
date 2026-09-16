@@ -211,7 +211,7 @@ void CUpDownClient::Init()
 	m_dwLastAskedForSources = 0;
 
 	m_SecureIdentState = IS_UNAVAILABLE;
-	m_dwLastSignatureIP = 0;
+	m_lastSignatureAddress = CNetworkAddress::Absent();
 	m_hasReceivedSignature = false;
 
 	m_byInfopacketsReceived = IP_NONE;
@@ -777,7 +777,7 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data)
 	CClientCredits *pFoundCredits = theApp->clientcredits->GetCredit(m_UserHash);
 	if (credits == NULL) {
 		credits = pFoundCredits;
-		if (!theApp->clientlist->ComparePriorUserhash(m_dwUserIP, m_nUserPort, pFoundCredits)) {
+		if (!theApp->clientlist->ComparePriorUserhash(GetUserAddress(), m_nUserPort, pFoundCredits)) {
 			AddDebugLogLineN(logClient,
 				CFormat("Client: %s (%s) Banreason: Userhash changed (Found in "
 					"TrackedClientsList)") %
@@ -2448,9 +2448,10 @@ void CUpDownClient::SendSignaturePacket()
 				GetUserName());
 		return;
 	}
-	// GetIP is the legacy IPv4 endpoint, not the peer's advertised IPv6
-	// capability. A future native IPv6 connection must not invent an IPv4 here.
-	const SecIdent::Version version = SecIdent::SignatureVersion(m_bySupportSecIdent, GetIP() != 0);
+	// Only a real IPv4 endpoint can supply the unchanged SecureIdent v2 wire value.
+	uint32 peerIPv4 = 0;
+	const bool hasIPv4 = GetUserAddress().ToIPv4NetworkOrder(peerIPv4) && peerIPv4 != 0;
+	const SecIdent::Version version = SecIdent::SignatureVersion(m_bySupportSecIdent, hasIPv4);
 	if (version == SecIdent::Unavailable) {
 		return; // No mutually usable version; do not send v1 to a v2-only peer.
 	}
@@ -2461,7 +2462,7 @@ void CUpDownClient::SendSignaturePacket()
 	if (bUseV2) {
 		if (::IsLowID(theApp->GetED2KID())) {
 			// we cannot do not know for sure our public ip, so use the remote clients one
-			ChallengeIP = GetIP();
+			ChallengeIP = peerIPv4;
 			byChaIPKind = CRYPT_CIP_REMOTECLIENT;
 		} else {
 			ChallengeIP = theApp->GetED2KID();
@@ -2541,11 +2542,13 @@ void CUpDownClient::ProcessSignaturePacket(const uint8_t *pachPacket, uint32 nSi
 		return;
 	}
 
+	uint32 peerIPv4 = 0;
+	const bool hasIPv4 = GetUserAddress().ToIPv4NetworkOrder(peerIPv4) && peerIPv4 != 0;
 	uint8 byChaIPKind;
 	if (pachPacket[0] == nSize - 1)
 		byChaIPKind = 0;
 	else if (pachPacket[0] == nSize - 2 && (m_bySupportSecIdent & SecIdent::V2) > 0 &&
-		 GetIP() != 0) // v2 requires the IPv4 endpoint used by VerifyIdent
+		 hasIPv4) // v2 requires the IPv4 endpoint used by VerifyIdent
 		byChaIPKind = pachPacket[nSize - 1];
 	else {
 		// Unknown or invalid format
@@ -2557,7 +2560,7 @@ void CUpDownClient::ProcessSignaturePacket(const uint8_t *pachPacket, uint32 nSi
 		return;
 
 	// we accept only one signature per IP, to avoid floods which need a lot cpu time for cryptfunctions
-	if (m_hasReceivedSignature && m_dwLastSignatureIP == GetIP()) {
+	if (m_hasReceivedSignature && m_lastSignatureAddress == GetUserAddress().Unmapped()) {
 		AddDebugLogLineN(logClient, "received multiple signatures from one client");
 		return;
 	}
@@ -2575,7 +2578,7 @@ void CUpDownClient::ProcessSignaturePacket(const uint8_t *pachPacket, uint32 nSi
 
 	// cppcheck-suppress duplicateBranch
 	if (theApp->clientcredits->VerifyIdent(
-		    credits, pachPacket + 1, pachPacket[0], GetIP(), byChaIPKind)) {
+		    credits, pachPacket + 1, pachPacket[0], GetUserAddress(), byChaIPKind)) {
 		// result is saved in function above
 		AddDebugLogLineN(logClient,
 			CFormat("'%s' has passed the secure identification, V2 State: %i") % GetUserName() %
@@ -2586,7 +2589,7 @@ void CUpDownClient::ProcessSignaturePacket(const uint8_t *pachPacket, uint32 nSi
 				byChaIPKind);
 	}
 
-	m_dwLastSignatureIP = GetIP();
+	m_lastSignatureAddress = GetUserAddress().Unmapped();
 	m_hasReceivedSignature = true;
 }
 
@@ -2599,7 +2602,7 @@ void CUpDownClient::SendSecIdentStatePacket()
 	if (theApp->CryptoAvailable()) {
 		if (credits->GetSecIDKeyLen() == 0) {
 			nValue = IS_KEYANDSIGNEEDED;
-		} else if (!m_hasReceivedSignature || m_dwLastSignatureIP != GetIP()) {
+		} else if (!m_hasReceivedSignature || m_lastSignatureAddress != GetUserAddress().Unmapped()) {
 			nValue = IS_SIGNATURENEEDED;
 		}
 	}
@@ -2968,7 +2971,7 @@ uint64 CUpDownClient::GetUploadedTotal() const
 
 double CUpDownClient::GetScoreRatio() const
 {
-	return credits ? credits->GetScoreRatio(GetIP(), theApp->CryptoAvailable()) : 0;
+	return credits ? credits->GetScoreRatio(GetUserAddress(), theApp->CryptoAvailable()) : 0;
 }
 
 const wxString CUpDownClient::GetServerName() const

@@ -659,7 +659,7 @@ public:
 
 	EIdentState GetCurrentIdentState() const
 	{
-		return credits ? credits->GetCurrentIdentState(GetIP()) : IS_NOTAVAILABLE;
+		return credits ? credits->GetCurrentIdentState(GetUserAddress()) : IS_NOTAVAILABLE;
 	}
 
 #ifdef __DEBUG__
@@ -789,7 +789,7 @@ private:
 	ESecureIdentState m_SecureIdentState;
 	uint8 m_byInfopacketsReceived; // have we received the edonkeyprot and emuleprot packet already (see
 				       // InfoPacketsReceived() )
-	uint32 m_dwLastSignatureIP;
+	CNetworkAddress m_lastSignatureAddress;
 	bool m_hasReceivedSignature;
 	uint8 m_bySupportSecIdent;
 

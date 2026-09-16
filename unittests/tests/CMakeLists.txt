@@ -14,6 +14,21 @@ target_include_directories (IPFilterIPv6Test PRIVATE
 )
 target_link_libraries (IPFilterIPv6Test muleunit mulecommon ${Boost_LIBRARIES})
 
+# Credit identity and wait ownership run without the application. The test supplies
+# a deterministic GetTickCount64; do not link the production clock into this target.
+add_executable (ClientCreditsTest
+	ClientCreditsTest.cpp
+	${CMAKE_SOURCE_DIR}/src/ClientCredits.cpp
+	${CMAKE_SOURCE_DIR}/src/LoggerConsole.cpp
+)
+add_test (NAME ClientCreditsTest COMMAND ClientCreditsTest)
+target_include_directories (ClientCreditsTest PRIVATE
+	${CMAKE_BINARY_DIR}
+	${CMAKE_SOURCE_DIR}/src
+	${CMAKE_SOURCE_DIR}/src/include
+)
+target_link_libraries (ClientCreditsTest muleunit mulecommon)
+
 # SecIdent negotiation is pure policy. The packet handlers and RSA entry points
 # depend on theApp, sockets and the live credit store; this target needs none of
 # them and exercises the no-IPv4 prerequisite before native IPv6 peers exist.
