@@ -2450,7 +2450,7 @@ void CUpDownClient::SendSignaturePacket()
 	}
 	// Only a real IPv4 endpoint can supply the unchanged SecureIdent v2 wire value.
 	uint32 peerIPv4 = 0;
-	const bool hasIPv4 = GetUserAddress().ToIPv4NetworkOrder(peerIPv4) && peerIPv4 != 0;
+	const bool hasIPv4 = SecIdent::PeerIPv4(GetUserAddress(), peerIPv4);
 	const SecIdent::Version version = SecIdent::SignatureVersion(m_bySupportSecIdent, hasIPv4);
 	if (version == SecIdent::Unavailable) {
 		return; // No mutually usable version; do not send v1 to a v2-only peer.
@@ -2543,7 +2543,7 @@ void CUpDownClient::ProcessSignaturePacket(const uint8_t *pachPacket, uint32 nSi
 	}
 
 	uint32 peerIPv4 = 0;
-	const bool hasIPv4 = GetUserAddress().ToIPv4NetworkOrder(peerIPv4) && peerIPv4 != 0;
+	const bool hasIPv4 = SecIdent::PeerIPv4(GetUserAddress(), peerIPv4);
 	uint8 byChaIPKind;
 	if (pachPacket[0] == nSize - 1)
 		byChaIPKind = 0;

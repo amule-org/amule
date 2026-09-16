@@ -90,7 +90,7 @@ CClientList::CClientList()
 
 CClientList::~CClientList()
 {
-	DeleteContents(m_trackedClientsList);
+	m_trackedClientsList.Clear();
 
 	wxASSERT(m_clientList.empty());
 }
@@ -500,54 +500,13 @@ bool CClientList::IsIPAlreadyKnown(uint32_t ip)
 
 bool CClientList::ComparePriorUserhash(const CNetworkAddress &address, uint16 nPort, void *pNewHash)
 {
-	if (address.IsAbsent()) {
-		return true; // No endpoint on which to base a prior-hash comparison.
-	}
-	auto it = m_trackedClientsList.find(address.Unmapped());
-
-	if (it != m_trackedClientsList.end()) {
-		CDeletedClient *pResult = it->second;
-
-		CDeletedClient::PaHList::iterator it2 = pResult->m_ItemsList.begin();
-		for (; it2 != pResult->m_ItemsList.end(); ++it2) {
-			if (it2->nPort == nPort) {
-				if (it2->pHash != pNewHash) {
-					return false;
-				} else {
-					break;
-				}
-			}
-		}
-	}
-	return true;
+	return m_trackedClientsList.Compare(address, nPort, pNewHash);
 }
 
 void CClientList::AddTrackClient(CUpDownClient *toadd)
 {
-	const CNetworkAddress address = toadd->GetUserAddress().Unmapped();
-	if (address.IsAbsent()) {
-		return;
-	}
-	auto it = m_trackedClientsList.find(address);
-
-	if (it != m_trackedClientsList.end()) {
-		CDeletedClient *pResult = it->second;
-
-		pResult->m_dwInserted = ::GetTickCount64();
-
-		CDeletedClient::PaHList::iterator it2 = pResult->m_ItemsList.begin();
-		for (; it2 != pResult->m_ItemsList.end(); ++it2) {
-			if (it2->nPort == toadd->GetUserPort()) {
-				it2->pHash = toadd->GetCreditsHash();
-				return;
-			}
-		}
-
-		CDeletedClient::PortAndHash porthash = { toadd->GetUserPort(), toadd->GetCreditsHash() };
-		pResult->m_ItemsList.push_back(porthash);
-	} else {
-		m_trackedClientsList[address] = new CDeletedClient(toadd);
-	}
+	m_trackedClientsList.Add(
+		toadd->GetUserAddress(), toadd->GetUserPort(), toadd->GetCreditsHash(), ::GetTickCount64());
 }
 
 void CClientList::Process()
@@ -568,15 +527,7 @@ void CClientList::Process()
 	if (m_dwLastTrackedCleanUp + TRACKED_CLEANUP_TIME < cur_tick) {
 		m_dwLastTrackedCleanUp = cur_tick;
 
-		auto it = m_trackedClientsList.begin();
-		while (it != m_trackedClientsList.end()) {
-			auto cur_src = it++;
-
-			if (cur_src->second->m_dwInserted + KEEPTRACK_TIME < cur_tick) {
-				delete cur_src->second;
-				m_trackedClientsList.erase(cur_src);
-			}
-		}
+		m_trackedClientsList.DropLapsed(cur_tick, KEEPTRACK_TIME);
 	}
 
 	// Try to connect to the clients in m_KadList. If connected, remove them from the list and

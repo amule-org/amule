@@ -25,11 +25,20 @@
 #ifndef SECIDENTPOLICY_H
 #define SECIDENTPOLICY_H
 
+#include "NetworkAddress.h"
+
 namespace SecIdent
 {
+// v2's ChallengeIP is exactly four nonzero IPv4 bytes, never an IPv6 projection.
+inline bool PeerIPv4(const CNetworkAddress &address, uint32_t &ip)
+{
+	ip = 0;
+	return address.ToIPv4NetworkOrder(ip) && ip != 0;
+}
+
 /**
  * SecIdent v2 signs an IPv4 ChallengeIP that both ends must derive identically, so it is usable
- * only with a peer that has one. Callers pass that as hasPeerIPv4, today GetIP() != 0.
+ * only with a peer that has one. PeerIPv4 supplies that prerequisite at the wire boundary.
  *
  * An obligation for whatever adds IPv6 sockets: CLibSocket::GetPeerInt() must keep yielding zero
  * for a peer with no IPv4 endpoint. True now on both paths, the transport one through

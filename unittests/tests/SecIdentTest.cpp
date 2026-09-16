@@ -64,4 +64,42 @@ TEST(SecIdent, ReservedFeatureBitsDoNotEnableSecureIdentification)
 	ASSERT_EQUALS(SecIdent::Unavailable, SecIdent::SignatureVersion(0xfe, false));
 }
 
+// Exercise the exact prerequisite used by VerifyIdent before crypto or credit-state
+// mutation. This is policy coverage, not an RSA/application integration test.
+TEST(SecIdent, VerifyIdentV2RefusesEndpointsWithoutNonzeroIPv4)
+{
+	uint32_t ip = 123;
+	CNetworkAddress::Octets bytes{};
+	bytes[0] = 0x20;
+	bytes[1] = 0x01;
+	bytes[15] = 1;
+	ASSERT_FALSE(SecIdent::PeerIPv4(CNetworkAddress::IPv6FromOctets(bytes), ip));
+	ASSERT_EQUALS(uint32_t(0), ip);
+	ip = 123;
+	ASSERT_FALSE(SecIdent::PeerIPv4(CNetworkAddress::Absent(), ip));
+	ASSERT_EQUALS(uint32_t(0), ip);
+	ASSERT_FALSE(SecIdent::PeerIPv4(CNetworkAddress::FromIPv4NetworkOrder(0), ip));
+	ASSERT_EQUALS(uint32_t(0), ip);
+	bytes = {};
+	bytes[10] = bytes[11] = 0xff;
+	ASSERT_FALSE(SecIdent::PeerIPv4(CNetworkAddress::IPv6FromOctets(bytes), ip));
+	ASSERT_EQUALS(uint32_t(0), ip);
+}
+
+TEST(SecIdent, VerifyIdentV2DerivesIdenticalMappedAndPlainChallengeIP)
+{
+	const uint32_t expected = 0x010200c0;
+	uint32_t plain = 0;
+	ASSERT_TRUE(SecIdent::PeerIPv4(CNetworkAddress::FromIPv4NetworkOrder(expected), plain));
+	ASSERT_EQUALS(expected, plain);
+	CNetworkAddress::Octets bytes{};
+	bytes[10] = bytes[11] = 0xff;
+	bytes[12] = 192;
+	bytes[14] = 2;
+	bytes[15] = 1;
+	uint32_t mapped = 0;
+	ASSERT_TRUE(SecIdent::PeerIPv4(CNetworkAddress::IPv6FromOctets(bytes), mapped));
+	ASSERT_EQUALS(plain, mapped);
+}
+
 // File_checked_for_headers

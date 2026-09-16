@@ -24,6 +24,7 @@
 //
 
 #include "ClientCredits.h" // Interface declarations
+#include "PeerAddressing.h"
 
 #include <cmath>
 
@@ -64,9 +65,9 @@ CClientCredits::~CClientCredits()
 	delete m_pCredits;
 }
 
-void CClientCredits::AddDownloaded(uint32 bytes, const CNetworkAddress &dwForIP, bool cryptoavail)
+void CClientCredits::AddDownloaded(uint32 bytes, const CNetworkAddress &address, bool cryptoavail)
 {
-	switch (GetCurrentIdentState(dwForIP)) {
+	switch (GetCurrentIdentState(address)) {
 	case IS_IDFAILED:
 	case IS_IDBADGUY:
 	case IS_IDNEEDED:
@@ -82,9 +83,9 @@ void CClientCredits::AddDownloaded(uint32 bytes, const CNetworkAddress &dwForIP,
 	m_pCredits->downloaded += bytes;
 }
 
-void CClientCredits::AddUploaded(uint32 bytes, const CNetworkAddress &dwForIP, bool cryptoavail)
+void CClientCredits::AddUploaded(uint32 bytes, const CNetworkAddress &address, bool cryptoavail)
 {
-	switch (GetCurrentIdentState(dwForIP)) {
+	switch (GetCurrentIdentState(address)) {
 	case IS_IDFAILED:
 	case IS_IDBADGUY:
 	case IS_IDNEEDED:
@@ -110,10 +111,10 @@ uint64 CClientCredits::GetDownloadedTotal() const
 	return m_pCredits->downloaded;
 }
 
-float CClientCredits::GetScoreRatio(const CNetworkAddress &dwForIP, bool cryptoavail)
+float CClientCredits::GetScoreRatio(const CNetworkAddress &address, bool cryptoavail)
 {
 	// check the client ident status
-	switch (GetCurrentIdentState(dwForIP)) {
+	switch (GetCurrentIdentState(address)) {
 	case IS_IDFAILED:
 	case IS_IDBADGUY:
 	case IS_IDNEEDED:
@@ -210,12 +211,12 @@ void CClientCredits::InitalizeIdent()
 	m_identAddress = CNetworkAddress::Absent();
 }
 
-void CClientCredits::Verified(const CNetworkAddress &dwForIP)
+bool CClientCredits::Verified(const CNetworkAddress &address)
 {
-	if (dwForIP.IsAbsent()) {
-		return; // No endpoint to bind the verified identity to.
+	if (address.IsAbsent()) {
+		return false; // No endpoint to bind the verified identity to.
 	}
-	m_identAddress = dwForIP.Unmapped();
+	m_identAddress = PeerAddressing::IndexKey(address);
 	// client was verified, copy the keyto store him if not done already
 	if (m_pCredits->nKeySize == 0) {
 		m_pCredits->nKeySize = m_nPublicKeyLen;
@@ -229,6 +230,7 @@ void CClientCredits::Verified(const CNetworkAddress &dwForIP)
 		}
 	}
 	m_identState = IS_IDENTIFIED;
+	return true;
 }
 
 bool CClientCredits::SetSecureIdent(const uint8_t *pachIdent, uint8 nIdentLen)
@@ -242,12 +244,12 @@ bool CClientCredits::SetSecureIdent(const uint8_t *pachIdent, uint8 nIdentLen)
 	return true;
 }
 
-EIdentState CClientCredits::GetCurrentIdentState(const CNetworkAddress &dwForIP) const
+EIdentState CClientCredits::GetCurrentIdentState(const CNetworkAddress &address) const
 {
 	if (m_identState != IS_IDENTIFIED)
 		return m_identState;
 	else {
-		if (dwForIP.IsPresent() && dwForIP.Unmapped() == m_identAddress)
+		if (PeerAddressing::IndexKey(address) == m_identAddress)
 			return IS_IDENTIFIED;
 		else
 			return IS_IDBADGUY;
@@ -257,23 +259,23 @@ EIdentState CClientCredits::GetCurrentIdentState(const CNetworkAddress &dwForIP)
 	}
 }
 
-uint64 CClientCredits::GetSecureWaitStartTime(const CNetworkAddress &dwForIP)
+uint64 CClientCredits::GetSecureWaitStartTime(const CNetworkAddress &address)
 {
 	if (m_dwUnSecureWaitTime == 0 || m_dwSecureWaitTime == 0)
-		SetSecWaitStartTime(dwForIP);
+		SetSecWaitStartTime(address);
 
 	if (m_pCredits->nKeySize != 0) {                              // this client is a SecureHash Client
-		if (GetCurrentIdentState(dwForIP) == IS_IDENTIFIED) { // good boy
+		if (GetCurrentIdentState(address) == IS_IDENTIFIED) { // good boy
 			return m_dwSecureWaitTime;
 		} else { // not so good boy
-			if (dwForIP.Unmapped() == m_waitTimeAddress) {
+			if (PeerAddressing::IndexKey(address) == m_waitTimeAddress) {
 				return m_dwUnSecureWaitTime;
 			} else { // bad boy
 				// this can also happen if the client has not identified himself yet, but will
 				// do later - so maybe he is not a bad boy :) .
 
 				m_dwUnSecureWaitTime = ::GetTickCount64();
-				m_waitTimeAddress = dwForIP.Unmapped();
+				m_waitTimeAddress = PeerAddressing::IndexKey(address);
 				return m_dwUnSecureWaitTime;
 			}
 		}
@@ -282,10 +284,10 @@ uint64 CClientCredits::GetSecureWaitStartTime(const CNetworkAddress &dwForIP)
 	}
 }
 
-void CClientCredits::SetSecWaitStartTime(const CNetworkAddress &dwForIP)
+void CClientCredits::SetSecWaitStartTime(const CNetworkAddress &address)
 {
 	m_dwUnSecureWaitTime = m_dwSecureWaitTime = ::GetTickCount64() - 1;
-	m_waitTimeAddress = dwForIP.Unmapped();
+	m_waitTimeAddress = PeerAddressing::IndexKey(address);
 }
 
 void CClientCredits::ClearWaitStartTime()

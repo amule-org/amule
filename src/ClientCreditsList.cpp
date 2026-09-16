@@ -24,6 +24,7 @@
 //
 
 #include "ClientCreditsList.h" // Interface declarations
+#include "SecIdentPolicy.h"
 
 #include <protocol/ed2k/Constants.h>
 #include <common/Macros.h>
@@ -533,8 +534,7 @@ bool CClientCreditsList::VerifyIdent(CClientCredits *pTarget,
 	wxASSERT(pachSignature);
 	// v1 binds the result to the full endpoint; v2 still signs exactly four IPv4 bytes.
 	uint32 peerIPv4 = 0;
-	if (address.IsAbsent() ||
-		(byChaIPKind != 0 && (!address.ToIPv4NetworkOrder(peerIPv4) || peerIPv4 == 0))) {
+	if (byChaIPKind != 0 && !SecIdent::PeerIPv4(address, peerIPv4)) {
 		return false;
 	}
 	if (!CryptoAvailable()) {
@@ -599,7 +599,7 @@ bool CClientCreditsList::VerifyIdent(CClientCredits *pTarget,
 		if (pTarget->GetIdentState() == IS_IDNEEDED)
 			pTarget->SetIdentState(IS_IDFAILED);
 	} else {
-		pTarget->Verified(address);
+		return pTarget->Verified(address);
 	}
 
 	return bResult;

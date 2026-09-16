@@ -99,11 +99,11 @@ TEST(ClientCredits, UnverifiedWaitResetsForDifferentIPv6Endpoint)
 TEST(ClientCredits, AbsenceCannotBecomeVerified)
 {
 	CClientCredits credits(SecureRecord());
-	credits.Verified(CNetworkAddress::Absent());
+	ASSERT_FALSE(credits.Verified(CNetworkAddress::Absent()));
 	ASSERT_EQUALS(IS_IDNEEDED, credits.GetIdentState());
 }
 
-TEST(ClientCredits, IPv4CreditsKeepLegacyScoreAdapter)
+TEST(ClientCredits, IPv4CreditsKeepMappedScoreEquivalence)
 {
 	const auto plain = CNetworkAddress::FromIPv4NetworkOrder(0x010200c0);
 	CClientCredits credits(SecureRecord());
@@ -111,5 +111,5 @@ TEST(ClientCredits, IPv4CreditsKeepLegacyScoreAdapter)
 	credits.AddDownloaded(2000000, plain, true);
 	credits.AddUploaded(1000000, MappedIPv4(), true);
 	ASSERT_EQUALS(uint64(1000000), credits.GetUploadedTotal());
-	ASSERT_EQUALS(credits.GetScoreRatio(plain, true), credits.GetScoreRatio(0x010200c0, true));
+	ASSERT_EQUALS(credits.GetScoreRatio(plain, true), credits.GetScoreRatio(MappedIPv4(), true));
 }

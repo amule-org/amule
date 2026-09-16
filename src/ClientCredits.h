@@ -119,11 +119,6 @@ public:
 	uint64 GetUploadedTotal() const;
 	uint64 GetDownloadedTotal() const;
 	float GetScoreRatio(const CNetworkAddress &address, bool cryptoavail);
-	// Remote GUI compatibility: this boundary still receives legacy IPv4 values.
-	float GetScoreRatio(uint32 ip, bool cryptoavail)
-	{
-		return GetScoreRatio(CNetworkAddress::FromIPv4NetworkOrderOrAbsent(ip), cryptoavail);
-	}
 	void SetLastSeen();
 	bool SetSecureIdent(const uint8_t *pachIdent,
 		uint8 nIdentLen); // Public key cannot change, use only if there is not public key yet
@@ -132,7 +127,7 @@ public:
 	EIdentState GetCurrentIdentState(const CNetworkAddress &address) const; // can be != m_identState
 	uint64 GetSecureWaitStartTime(const CNetworkAddress &address);
 	void SetSecWaitStartTime(const CNetworkAddress &address);
-	void Verified(const CNetworkAddress &address);
+	bool Verified(const CNetworkAddress &address);
 	EIdentState GetIdentState() const { return m_identState; }
 	void SetIdentState(EIdentState state) { m_identState = state; }
 
