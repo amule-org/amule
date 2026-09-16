@@ -40,6 +40,27 @@ extern "C" void mac_set_table_view_flush(void *windowHandle)
 	}
 }
 
+extern "C" double mac_tab_view_buttons_mid_y(void *windowHandle)
+{
+	NSView *view = (NSView *)windowHandle;
+	if (![view isKindOfClass:[NSTabView class]] || view.superview == nil) {
+		return -1;
+	}
+	NSTabView *tabView = (NSTabView *)view;
+	[tabView layoutSubtreeIfNeeded];
+
+	// The buttons are a private segmented-control subview; its frame is the only public way to
+	// learn where AppKit placed them.
+	for (NSView *sub in tabView.subviews) {
+		if ([sub isKindOfClass:[NSSegmentedControl class]]) {
+			NSView *parent = tabView.superview;
+			NSRect r = [sub convertRect:sub.bounds toView:parent];
+			return parent.isFlipped ? NSMidY(r) : NSHeight(parent.bounds) - NSMidY(r);
+		}
+	}
+	return -1;
+}
+
 extern "C" void mac_set_accessory_mode(bool accessory)
 {
 	[NSApp setActivationPolicy:

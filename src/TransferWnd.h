@@ -129,6 +129,11 @@ private:
 	 */
 	void OnBtnClearDownloads(wxCommandEvent &evt);
 
+#ifdef __WXMAC__
+	//! Vertically centres the header controls on the category tabs' page bezel.
+	void CentreHeaderOnCategoryBar();
+#endif
+
 	/** Live text-filter box changed: push the new text to the download list. */
 	void OnFilterChanged(wxCommandEvent &evt);
 

@@ -53,6 +53,12 @@
 // ReloadSharedFilesIfPending
 #include "SharedFilesReloadProgress.h"
 
+#ifdef __WXMAC__
+#include "MacAppHelper.h" // Needed for mac_tab_view_buttons_mid_y
+
+#include <vector>
+#endif
+
 wxBEGIN_EVENT_TABLE(CTransferWnd, wxPanel)
 	EVT_RIGHT_DOWN(CTransferWnd::OnNMRclickDLtab)
 	EVT_NOTEBOOK_PAGE_CHANGED(ID_CATEGORIES, CTransferWnd::OnCategoryChanged)
@@ -87,6 +93,13 @@ CTransferWnd::CTransferWnd(wxWindow *pParent)
 	downloadlistctrl = CastChild("downloadList", CDownloadListCtrl);
 	clientlistctrl = CastChild(ID_CLIENTLIST, CSourceListCtrl);
 	m_dlTab = CastChild(ID_CATEGORIES, CMuleNotebook);
+
+#ifdef __WXMAC__
+	// The native tab view draws its buttons across the top edge of its page bezel, so the dark bar
+	// sits below the row's centre and the controls beside it looked misaligned. Move them down onto
+	// the bar's centre, measured from where AppKit put the buttons. Deferred until laid out.
+	CallAfter([this]() { CentreHeaderOnCategoryBar(); });
+#endif
 
 	// Render the initial "Total size: 0 bytes" so the field is visible for an empty queue.
 	// CDownloadListCtrl::SetTotalSize() cannot do it yet: it reaches the label through
@@ -522,4 +535,50 @@ void CTransferWnd::OnSashPositionChanging(wxSplitterEvent &evt)
 		}
 	}
 }
+#ifdef __WXMAC__
+void CTransferWnd::CentreHeaderOnCategoryBar()
+{
+	wxSizer *row = m_dlTab->GetContainingSizer();
+	const double buttonsMid = mac_tab_view_buttons_mid_y(m_dlTab->GetHandle());
+	if (!row || buttonsMid <= 0) {
+		return;
+	}
+	const wxRect tabs = m_dlTab->GetRect();
+	const double barCentre = (buttonsMid + tabs.GetBottom() + 1) / 2.0;
+	const int topBorder = wxRound(2 * (barCentre - (tabs.y + tabs.height / 2.0)));
+	if (topBorder <= 0) {
+		return;
+	}
+
+	// A sizer item has one border width for every side it names, so the existing left/right gaps
+	// become spacers and the border is left to shift the control down.
+	std::vector<wxWindow *> controls;
+	for (wxSizerItem *item : row->GetChildren()) {
+		if (item->IsWindow() && item->GetWindow() != m_dlTab) {
+			controls.push_back(item->GetWindow());
+		}
+	}
+	for (wxWindow *control : controls) {
+		size_t index = 0;
+		for (wxSizerItem *item : row->GetChildren()) {
+			if (item->GetWindow() == control) {
+				break;
+			}
+			++index;
+		}
+		wxSizerItem *item = row->GetItem(control);
+		const int flags = item->GetFlag();
+		const int gap = item->GetBorder();
+		item->SetFlag((flags & ~wxALL) | wxTOP);
+		item->SetBorder(topBorder);
+		if (flags & wxRIGHT) {
+			row->Insert(index + 1, gap, 0);
+		}
+		if (flags & wxLEFT) {
+			row->Insert(index, gap, 0);
+		}
+	}
+	m_dlTab->GetParent()->Layout();
+}
+#endif
 // File_checked_for_headers

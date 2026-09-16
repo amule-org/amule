@@ -32,6 +32,11 @@ void mac_set_accessory_mode(bool accessory);
 // nothing if the handle is not backed by a table view, or below macOS 11.
 void mac_set_table_view_flush(void *windowHandle);
 
+// Returns the vertical centre of the tab buttons of the NSTabView backing the passed wxWindow
+// handle, in the coordinates of the tab view's superview (top-left origin, points). Negative if
+// the handle is not a tab view or it has no tab buttons.
+double mac_tab_view_buttons_mid_y(void *windowHandle);
+
 // Reveals `path` in Finder, selected in its containing folder.
 //
 // Goes through NSWorkspace rather than spawning `open -R`: LaunchServices does the work out of
