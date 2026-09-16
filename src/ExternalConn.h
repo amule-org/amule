@@ -120,6 +120,8 @@ public:
 	void AddSocket(CECServerSocket *s);
 	void RemoveSocket(CECServerSocket *s);
 	void KillAllSockets();
+	// Drop the incremental-update cache entry for an object that no longer exists.
+	void ForgetObject(uint32 ecid);
 	void ResetAllLogs();
 
 	// Brute-force protection for the password exchange, shared by every connection. It lives

@@ -431,6 +431,7 @@ void CUpDownClient::Safe_Delete()
 	// For security, remove it from the lists unconditionally.
 	Notify_SharedCtrlRemoveClient(ECID(), (CKnownFile *)NULL);
 	Notify_SourceCtrlRemoveSource(ECID(), (CPartFile *)NULL);
+	theApp->ForgetECObject(ECID());
 
 	if (IsAICHReqPending()) {
 		m_fAICHRequested = FALSE;

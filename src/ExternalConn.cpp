@@ -471,6 +471,11 @@ private:
 	CLoggerAccess m_LoggerAccess;
 	CFileEncoderMap m_FileEncoder;
 	CObjTagMap m_obj_tagmap;
+
+public:
+	void ForgetObject(uint32 ecid) { m_obj_tagmap.EraseValueMap(ecid); }
+
+private:
 	CECPacket *ProcessRequest2(const CECPacket *request);
 
 	virtual bool IsAuthorized() { return m_conn_state == CONN_ESTABLISHED; }
@@ -921,6 +926,13 @@ ExternalConn::~ExternalConn()
 	KillAllSockets();
 	delete m_ECServer;
 	delete m_ec_notifier;
+}
+
+void ExternalConn::ForgetObject(uint32 ecid)
+{
+	for (CECServerSocket *s : socket_list) {
+		s->ForgetObject(ecid);
+	}
 }
 
 void ExternalConn::AddSocket(CECServerSocket *s)

@@ -375,6 +375,7 @@ void CServerList::RemoveServer(CServer *in_server)
 			theStats::DeleteServer();
 
 			Notify_ServerRemove(in_server);
+			theApp->ForgetECObject(in_server->ECID());
 			delete in_server;
 		}
 	}
@@ -387,6 +388,7 @@ void CServerList::RemoveAllServers()
 	theStats::DeleteAllServers();
 	// no connection, safely remove all servers
 	while (!m_servers.empty()) {
+		theApp->ForgetECObject(m_servers.back()->ECID());
 		delete m_servers.back();
 		m_servers.pop_back();
 	}

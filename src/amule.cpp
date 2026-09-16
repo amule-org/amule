@@ -1866,6 +1866,13 @@ void CamuleApp::OnTCPTimer(CTimerEvent &WXUNUSED(evt))
 	serverconnect->ConnectToAnyServer();
 }
 
+void CamuleApp::ForgetECObject(uint32 ecid)
+{
+	if (ECServerHandler) {
+		ECServerHandler->ForgetObject(ecid);
+	}
+}
+
 void CamuleApp::OnCoreTimer(CTimerEvent &WXUNUSED(evt))
 {
 	// Former TimerProc section

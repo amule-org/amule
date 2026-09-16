@@ -364,6 +364,9 @@ public:
 	virtual int ShowAlert(wxString msg, wxString title, int flags) = 0;
 
 	bool IsRunning() const { return (m_app_state == APP_STATE_RUNNING); }
+	// Called where a client, server or friend is removed. EC connections cache the last
+	// value sent per object and only an entry's own removal can free it.
+	void ForgetECObject(uint32 ecid);
 	bool IsOnShutDown() const { return (m_app_state == APP_STATE_SHUTTINGDOWN); }
 
 	// Check ED2K and Kademlia state

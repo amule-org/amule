@@ -97,6 +97,7 @@ void CFriendList::RemoveFriend(CFriend *toremove)
 
 		SaveList();
 
+		theApp->ForgetECObject(toremove->ECID());
 		Notify_ChatRemoveFriend(toremove); // this deletes the friend
 	}
 }
