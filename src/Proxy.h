@@ -430,6 +430,12 @@ const unsigned int PROXY_UDP_OVERHEAD_IPV6 = 22;
 const unsigned int PROXY_UDP_MAXIMUM_OVERHEAD = PROXY_UDP_OVERHEAD_DOMAIN_NAME;
 
 /** Decode one SOCKS5 UDP datagram without socket state.
+ *
+ * Here rather than in its own header because it reads the ATYP and overhead constants above, which
+ * the TCP handshake in Proxy.cpp also uses, and because RecvFrom() below already puts
+ * CNetworkAddress in this header's interface. A separate header would have to include this one to
+ * reach the constants, so it would move the code without moving the dependency.
+ *
  * Invalid headers clear the source and port and leave the output buffer untouched.
  * Valid empty payloads still publish the source. Input and output must not overlap.
  */

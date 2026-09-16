@@ -97,6 +97,10 @@ TEST(Proxy, ReservedBytesAndFragmentsAreRejected)
 
 TEST(Proxy, DomainAndUnknownAddressTypesAreRejected)
 {
+	// SOCKS5_ATYP_DOMAINNAME is refused deliberately, not left unimplemented. The name is
+	// length-prefixed, so its header has no fixed size; the code this replaced assumed a flat 262
+	// bytes and mis-offset every such datagram. If support is ever added, this row changes to an
+	// expectation rather than being deleted as an obsolete restriction.
 	CheckRejected({ 0, 0, 0, 3, 3, 'a', 'b', 'c', 0x12, 0x80, 0xde });
 	for (unsigned char type : { 0, 2, 5, 0xff }) {
 		auto invalid = ipv6;
