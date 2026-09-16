@@ -74,16 +74,14 @@ void ShowInfoGridDialog(wxWindow *parent,
 		} else {
 			wxBoxSizer *introRow = new wxBoxSizer(wxHORIZONTAL);
 			introRow->Add(new wxStaticBitmap(&dialog, wxID_ANY, introBmp),
-				0,
-				wxALIGN_CENTRE_VERTICAL | wxRIGHT,
-				6);
+				wxSizerFlags().CenterVertical().Border(wxRIGHT, 6));
 			introRow->Add(introText, 0, wxALIGN_CENTRE_VERTICAL);
 			top->Add(introRow, 0, wxALL, 10);
 		}
 	}
 	top->Add(grid, 0, wxLEFT | wxRIGHT | wxBOTTOM, 10);
 	if (wxSizer *buttons = dialog.CreateButtonSizer(wxOK)) {
-		top->Add(buttons, 0, wxALIGN_RIGHT | wxLEFT | wxRIGHT | wxBOTTOM, 10);
+		top->Add(buttons, wxSizerFlags().Right().Border(wxLEFT | wxRIGHT | wxBOTTOM, 10));
 	}
 
 	dialog.SetSizerAndFit(top);
