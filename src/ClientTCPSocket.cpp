@@ -113,26 +113,25 @@ void CClientTCPSocket::ApplyUtpCryptParameters()
 }
 #endif
 
-bool CClientTCPSocket::InitNetworkData()
+bool CClientTCPSocket::InitNetworkData(AdmissionTransport transport)
 {
 	wxASSERT(!m_remoteip);
 	wxASSERT(!m_client);
-	m_remoteAddress = GetPeerAddress();
+	m_remoteAddress = GetPeerAddress().Unmapped();
 	m_remoteip = m_remoteAddress.ToIPv4NetworkOrderOrZero();
 
-	// A peer with no 32-bit form is refused rather than narrowed: m_remoteip still feeds the
-	// server check below and the hello's user ID check. That is a decision, not an impossibility,
-	// so it is logged and returned -- MULE_CHECK is wxCHECK, which also asserts in a debug build,
-	// and an inbound IPv6 peer becomes an ordinary event the moment a listener accepts one.
-	uint32 narrowed = 0;
-	if (m_remoteAddress.IsPresent() && !m_remoteAddress.ToIPv4NetworkOrder(narrowed)) {
+	// Stream adapters retain their IPv4 boundary. Only TCP opts into native admission.
+	if (transport != AdmissionTransport::TCP && m_remoteAddress.IsIPv6()) {
 		AddDebugLogLineN(logClient,
 			"Denied connection from " + GetPeer() + " (no IPv4 form for the ed2k path)");
 		return false;
 	}
 
-	// Absent, on the other hand, means the accept gave us no address at all.
-	MULE_CHECK(m_remoteip, false);
+	// No usable address or unavailable security controls must fail closed.
+	if (!m_remoteAddress.IsPresent() || m_remoteAddress.IsUnspecified() || !theApp->ipfilter ||
+		!theApp->clientlist) {
+		return false;
+	}
 
 	if (theApp->ipfilter->IsFiltered(m_remoteAddress)) {
 		AddDebugLogLineN(logClient, "Denied connection from " + GetPeer() + "(Filtered IP)");
@@ -1997,7 +1996,7 @@ void CClientTCPSocket::OnReceive(int nErrorCode)
 {
 	ResetTimeOutTimer();
 	// We might have updated ipfilter
-	wxASSERT(m_remoteip);
+	wxASSERT(m_remoteAddress.IsPresent());
 
 	if (theApp->ipfilter->IsFiltered(m_remoteAddress)) {
 		if (m_client) {

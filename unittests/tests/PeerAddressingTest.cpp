@@ -119,14 +119,17 @@ TEST(PeerAddressing, FilterMatchingRejectsUnknownAndUnspecifiedHosts)
 	ASSERT_FALSE(MatchesFilterRange(host, host, absent));
 }
 
-// Production contact/callback admission seams. Native IPv6 is deliberately dormant.
-TEST(PeerAddressing, ContactSecurityChecksFailClosedForNativeIPv6)
+// Production contact/callback admission seams. Native IPv6 is security-checkable, but callbacks
+// remain IPv4-only and unspecified addresses fail closed.
+TEST(PeerAddressing, ContactSecurityChecksAllowNativeIPv6)
 {
-	for (const char *text : { "2001:4860::1", "2001:db8::1", "fe80::1", "fd00::1", "::1", "::" }) {
+	for (const char *text : { "2001:4860::1", "2001:db8::1", "fe80::1", "fd00::1", "::1" }) {
 		const auto address = CNetworkAddress::FromString(text);
-		ASSERT_FALSE(CanCheckContactAddress(address));
+		ASSERT_TRUE(CanCheckContactAddress(address));
 		ASSERT_FALSE(CanRequestCallback(address));
 	}
+	ASSERT_FALSE(CanCheckContactAddress(CNetworkAddress::AnyIPv6()));
+	ASSERT_FALSE(CanCheckContactAddress(CNetworkAddress::FromString("::")));
 	// Unknown clients still use the existing LowID/server-ID path, not a made-up address.
 	ASSERT_TRUE(CanCheckContactAddress(CNetworkAddress::Absent()));
 	ASSERT_FALSE(CanRequestCallback(CNetworkAddress::Absent()));
@@ -176,7 +179,7 @@ TEST(PeerAddressing, DormantIPv6CallbackScopeRemainsPerSubscriber)
 	ASSERT_FALSE(IsCallbackRequestThrottled(address, CNetworkAddress::FromString("2001:4860:1:3::1"), 0));
 	// Accounting support is not permission to skip the contact guard.
 	ASSERT_FALSE(CanRequestCallback(address));
-	ASSERT_FALSE(CanCheckContactAddress(address));
+	ASSERT_TRUE(CanCheckContactAddress(address));
 }
 
 // Indexability

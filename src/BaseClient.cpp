@@ -1565,18 +1565,18 @@ EContactResult CUpDownClient::CheckContactPreconditions()
 		return EContactResult::Declined;
 	}
 
-	// Do not narrow native IPv6 to zero and then skip the contact security checks
-	// or fall back to a server ID. This also protects already-connected browse requests.
-	if (!PeerAddressing::CanCheckContactAddress(GetUserAddress())) {
-		if (Disconnected("IPv6 contact security checks unavailable")) {
+	const CNetworkAddress contactAddress = PeerAddressing::ContactCheckAddress(
+		GetUserAddress(), HasLowID(), wxUINT32_SWAP_ALWAYS(m_nUserIDHybrid));
+	// A present address must never bypass unavailable security controls.
+	if (!PeerAddressing::CanCheckContactAddress(contactAddress) ||
+		(contactAddress.IsPresent() && (!theApp->ipfilter || !theApp->clientlist))) {
+		if (Disconnected("Contact security checks unavailable")) {
 			Safe_Delete();
 			return EContactResult::ClientDeleted;
 		}
 		return EContactResult::Declined;
 	}
 
-	const CNetworkAddress contactAddress = PeerAddressing::ContactCheckAddress(
-		GetUserAddress(), HasLowID(), wxUINT32_SWAP_ALWAYS(m_nUserIDHybrid));
 	if (contactAddress.IsAbsent()) {
 		return EContactResult::Contacting;
 	}
@@ -1598,6 +1598,14 @@ EContactResult CUpDownClient::CheckContactPreconditions()
 		AddDebugLogLineN(
 			logClient, "Refused to connect to banned client " + contactAddress.ToWxString());
 		if (Disconnected("Banned IP")) {
+			Safe_Delete();
+			return EContactResult::ClientDeleted;
+		}
+		return EContactResult::Declined;
+	}
+	// Native IPv6 may reuse an admitted socket, but Connect still dials IPv4 only.
+	if (contactAddress.IsIPv6() && !(m_socket && m_socket->IsConnected())) {
+		if (Disconnected("Outbound IPv6 connections unavailable")) {
 			Safe_Delete();
 			return EContactResult::ClientDeleted;
 		}

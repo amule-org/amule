@@ -46,7 +46,13 @@ public:
 
 	void Disconnect(const wxString &strReason);
 
-	bool InitNetworkData();
+	//! Native IPv6 admission is opt-in for the TCP listener only.
+	enum class AdmissionTransport
+	{
+		IPv4Only,
+		TCP
+	};
+	bool InitNetworkData(AdmissionTransport transport = AdmissionTransport::IPv4Only);
 #ifdef AMULE_UTP_TRANSPORT
 	//! Hands this peer's obfuscation preference and hash to an attached stream.
 	void ApplyUtpCryptParameters();

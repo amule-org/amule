@@ -296,14 +296,12 @@ inline CNetworkAddress RateLimitScope(const CNetworkAddress &address)
 }
 
 /**
- * Contact admission while IPv6 contacts stay disabled.
+ * Address families supported by contact security checks, not outbound dialing or callbacks.
  * Absence retains legacy LowID/server-ID handling; it is not fabricated IPv4 zero.
- * Native IPv6 must fail closed even when globally routable or already connected.
- * Direct IPv6 reachability below remains dormant until activation lifts this guard.
  */
 inline bool CanCheckContactAddress(const CNetworkAddress &address) noexcept
 {
-	return address.IsAbsent() || address.IsIPv4() || address.IsIPv4Mapped();
+	return address.IsAbsent() || address.IsIPv4() || (address.IsIPv6() && !address.IsUnspecified());
 }
 
 /**
@@ -315,15 +313,15 @@ inline CNetworkAddress ContactCheckAddress(
 	const CNetworkAddress &userAddress, bool hasLowID, std::uint32_t userIDNetworkOrder) noexcept
 {
 	if (userAddress.IsPresent() || hasLowID) {
-		return userAddress;
+		return IndexKey(userAddress);
 	}
 	return CNetworkAddress::FromIPv4NetworkOrderOrAbsent(userIDNetworkOrder);
 }
 
-/** Callback admission requires an address supported by the contact security controls. */
+/** Callback wire formats remain IPv4-only, independently of security-check support. */
 inline bool CanRequestCallback(const CNetworkAddress &address) noexcept
 {
-	return address.IsPresent() && CanCheckContactAddress(address);
+	return address.IsIPv4() || address.IsIPv4Mapped();
 }
 
 /** Production callback throttle seam; the exact three-minute boundary remains allowed. */
