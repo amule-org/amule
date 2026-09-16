@@ -440,7 +440,7 @@ public:
 	void SetUDPSocketOk() { m_udpSocketOk = true; }
 
 	/* wxDatagramSocket Interface */
-	virtual uint32 RecvFrom(amuleIPV4Address &addr, void *buf, uint32 nBytes);
+	virtual uint32 RecvFrom(CNetworkAddress &addr, uint16 &port, void *buf, uint32 nBytes);
 	virtual uint32 SendTo(const amuleIPV4Address &addr, const void *buf, uint32 nBytes);
 
 private:

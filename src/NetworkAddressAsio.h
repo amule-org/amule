@@ -73,6 +73,14 @@ boost::asio::ip::address ToAsioAddress(const CNetworkAddress &address);
  */
 CNetworkAddress FromAsioAddress(const boost::asio::ip::address &address);
 
+/** Publish a socket ingress address with one identity for plain and mapped IPv4.
+ * Native IPv6, including its scope, is preserved. The general bridge above stays lossless.
+ */
+inline CNetworkAddress FromIngressAddress(const boost::asio::ip::address &address)
+{
+	return FromAsioAddress(address).Unmapped();
+}
+
 } // namespace NetworkAddressAsio
 
 #endif // NETWORKADDRESSASIO_H

@@ -44,6 +44,29 @@ using namespace muleunit;
 
 DECLARE_SIMPLE(NetworkAddress)
 
+TEST(NetworkAddress, SocketIngressCanonicalizesMappedIPv4)
+{
+	const auto plain = CNetworkAddress::FromString("192.0.2.7");
+	const auto mapped = CNetworkAddress::FromString("::ffff:192.0.2.7");
+	for (const auto &address : { plain, mapped }) {
+		const auto asio = NetworkAddressAsio::ToAsioAddress(address);
+		const auto peer = NetworkAddressAsio::FromIngressAddress(asio);
+		ASSERT_TRUE(peer == plain);
+		ASSERT_EQUALS(0x070200C0u, peer.ToIPv4NetworkOrderOrZero());
+		// Normalization is an ingress policy, not a change to the lossless bridge.
+		ASSERT_TRUE(NetworkAddressAsio::FromAsioAddress(asio) == address);
+	}
+}
+
+TEST(NetworkAddress, SocketIngressPreservesNativeIPv6AndScope)
+{
+	const CNetworkAddress::Octets octets = { 0xfe, 0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 };
+	const auto peer = NetworkAddressAsio::FromIngressAddress(boost::asio::ip::address_v6(octets, 7));
+	ASSERT_TRUE(peer == CNetworkAddress::IPv6FromOctets(octets, 7));
+	ASSERT_EQUALS(7ul, peer.GetScopeId());
+	ASSERT_EQUALS(0u, peer.ToIPv4NetworkOrderOrZero());
+}
+
 TEST(NetworkAddress, AsioAddressPreservesNativeIPv6AndScope)
 {
 	const CNetworkAddress::Octets octets = { 0xfe, 0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 };

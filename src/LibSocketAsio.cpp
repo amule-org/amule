@@ -787,7 +787,7 @@ public:
 			AddDebugLogLineN(logAsio, CFormat("UpdateIP failed %p %s") % this % ec.message());
 			return false;
 		}
-		m_peerAddress = NetworkAddressAsio::FromAsioAddress(endpoint.address());
+		m_peerAddress = NetworkAddressAsio::FromIngressAddress(endpoint.address());
 		m_IPstring = wxString(m_peerAddress.ToString());
 		m_IP = m_IPstring.c_str();
 		// Keep the legacy ed2k value separate from the native peer address.
@@ -1656,10 +1656,21 @@ private:
 		char *buffer;
 		uint32 size;
 		amuleIPV4Address ipadr;
+		CNetworkAddress sourceAddress;
+		uint16 sourcePort = 0;
 
 		CUDPData(const void *src, uint32 _size, amuleIPV4Address adr)
 		: size(_size)
 		, ipadr(adr)
+		{
+			buffer = new char[size];
+			memcpy(buffer, src, size);
+		}
+
+		CUDPData(const void *src, uint32 _size, CNetworkAddress address, uint16 port)
+		: size(_size)
+		, sourceAddress(std::move(address))
+		, sourcePort(port)
 		{
 			buffer = new char[size];
 			memcpy(buffer, src, size);
@@ -1707,7 +1718,7 @@ public:
 		m_muleSocket = muleSocket;
 	}
 
-	uint32 RecvFrom(amuleIPV4Address &addr, void *buf, uint32 nBytes)
+	uint32 RecvFrom(CNetworkAddress &addr, uint16 &port, void *buf, uint32 nBytes)
 	{
 		CUDPData *recdata;
 		{
@@ -1726,7 +1737,8 @@ public:
 			read = nBytes;
 		}
 		memcpy(buf, recdata->buffer, read);
-		addr = recdata->ipadr;
+		addr = recdata->sourceAddress;
+		port = recdata->sourcePort;
 		delete recdata;
 		return read;
 	}
@@ -1844,13 +1856,15 @@ private:
 			AddDebugLogLineN(logAsio, "UDP HandleReadError no handler");
 		} else {
 
-			amuleIPV4Address ipadr = amuleIPV4Address(CamuleIPV4Endpoint(m_receiveEndpoint));
+			const CNetworkAddress sourceAddress =
+				NetworkAddressAsio::FromIngressAddress(m_receiveEndpoint.address());
 			AddDebugLogLineF(logAsio,
-				CFormat("UDP HandleRead %d %s:%d") % received % ipadr.IPAddress() %
-					ipadr.Service());
+				CFormat("UDP HandleRead %d %s:%d") % received % sourceAddress.ToString() %
+					m_receiveEndpoint.port());
 
 			// create our read buffer
-			CUDPData *recdata = new CUDPData(m_readBuffer, received, ipadr);
+			CUDPData *recdata =
+				new CUDPData(m_readBuffer, received, sourceAddress, m_receiveEndpoint.port());
 			{
 				wxMutexLocker lock(m_receiveBuffersLock);
 				m_receiveBuffers.push_back(recdata);
@@ -1976,9 +1990,9 @@ bool CLibUDPSocket::IsOk() const
 	return m_aSocket->IsOk();
 }
 
-uint32 CLibUDPSocket::RecvFrom(amuleIPV4Address &addr, void *buf, uint32 nBytes)
+uint32 CLibUDPSocket::RecvFrom(CNetworkAddress &addr, uint16 &port, void *buf, uint32 nBytes)
 {
-	return m_aSocket->RecvFrom(addr, buf, nBytes);
+	return m_aSocket->RecvFrom(addr, port, buf, nBytes);
 }
 
 uint32 CLibUDPSocket::SendTo(const amuleIPV4Address &addr, const void *buf, uint32 nBytes)

@@ -127,7 +127,8 @@ void CMuleUDPSocket::OnReceive(int errorCode)
 		CFormat("Got UDP callback for read: Error %i Socket state %i") % errorCode % Ok());
 
 	char buffer[UDP_BUFFER_SIZE];
-	amuleIPV4Address addr;
+	CNetworkAddress addr;
+	uint16 port = 0;
 	unsigned length = 0;
 	bool error = false;
 	int lastError = 0;
@@ -142,13 +143,14 @@ void CMuleUDPSocket::OnReceive(int errorCode)
 			return;
 		}
 
-		length = m_socket->RecvFrom(addr, buffer, UDP_BUFFER_SIZE);
+		length = m_socket->RecvFrom(addr, port, buffer, UDP_BUFFER_SIZE);
 		lastError = m_socket->LastError();
 		error = lastError != 0;
 	}
 
-	const uint32 ip = StringIPtoUint32(addr.IPAddress());
-	const uint16 port = addr.Service();
+	// The encrypted/Kad packet handlers still require the legacy IPv4 representation.
+	const uint32 ip = addr.ToIPv4NetworkOrderOrZero();
+	const wxString source(addr.ToString());
 	if (error) {
 		OnReceiveError(lastError, ip, port);
 	} else if (length < 2) {
@@ -156,17 +158,15 @@ void CMuleUDPSocket::OnReceive(int errorCode)
 		AddDebugLogLineN(logMuleUDP, m_name + ": Invalid Packet received");
 	} else if (!ip) {
 		// wxFAIL;
-		AddDebugLogLineN(logMuleUDP,
-			"Unknown ip receiving a UDP packet! Ignoring: '" + addr.IPAddress() + "'");
+		AddDebugLogLineN(logMuleUDP, "Unknown ip receiving a UDP packet! Ignoring: '" + source + "'");
 	} else if (!port) {
 		// wxFAIL;
 		AddDebugLogLineN(logMuleUDP, "Unknown port receiving a UDP packet! Ignoring");
 	} else if (theApp->clientlist->IsBannedClient(ip)) {
-		AddDebugLogLineN(logMuleUDP, m_name + ": Dropped packet from banned IP " + addr.IPAddress());
+		AddDebugLogLineN(logMuleUDP, m_name + ": Dropped packet from banned IP " + source);
 	} else {
 		AddDebugLogLineN(logMuleUDP,
-			(m_name + ": Packet received (")
-				<< addr.IPAddress() << ":" << port << "): " << length << "b");
+			(m_name + ": Packet received (") << source << ":" << port << "): " << length << "b");
 		OnPacketReceived(ip, port, (uint8_t *)buffer, length);
 	}
 }

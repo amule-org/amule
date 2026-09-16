@@ -121,7 +121,7 @@ public:
 
 	// Get peer address (better API than wx)
 	wxString GetPeer();
-	// Native peer; a mapped IPv4 stays mapped. See CClientTCPSocket::GetRemoteAddress().
+	// Socket ingress canonicalizes mapped IPv4; native IPv6 retains its scope.
 	CNetworkAddress GetPeerAddress();
 	// Legacy ed2k IPv4 narrowing; native IPv6 has no uint32 representation.
 	uint32 GetPeerInt();
@@ -242,7 +242,7 @@ public:
 
 	// wx Stuff
 	bool IsOk() const;
-	virtual uint32 RecvFrom(amuleIPV4Address &addr, void *buf, uint32 nBytes);
+	virtual uint32 RecvFrom(CNetworkAddress &addr, uint16 &port, void *buf, uint32 nBytes);
 	virtual uint32 SendTo(const amuleIPV4Address &addr, const void *buf, uint32 nBytes);
 	int LastError() const;
 	void Close();

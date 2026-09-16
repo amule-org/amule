@@ -1185,7 +1185,7 @@ CDatagramSocketProxy::~CDatagramSocketProxy()
 	// request arrived terminates."
 }
 
-uint32 CDatagramSocketProxy::RecvFrom(amuleIPV4Address &addr, void *buf, uint32 nBytes)
+uint32 CDatagramSocketProxy::RecvFrom(CNetworkAddress &addr, uint16 &port, void *buf, uint32 nBytes)
 {
 	uint32 read = 0;
 	wxMutexLocker lock(m_socketLocker);
@@ -1198,38 +1198,37 @@ uint32 CDatagramSocketProxy::RecvFrom(amuleIPV4Address &addr, void *buf, uint32 
 			} else {
 				bufUDP = m_proxyTCPSocket.GetBuffer();
 			}
-			read = CLibUDPSocket::RecvFrom(m_proxyTCPSocket.GetProxyBoundAddress(),
-				bufUDP,
-				nBytes + PROXY_UDP_MAXIMUM_OVERHEAD);
-			unsigned int offset;
-			switch (m_proxyTCPSocket.GetBuffer()[3]) {
-			case SOCKS5_ATYP_IPV4_ADDRESS: {
-				offset = PROXY_UDP_OVERHEAD_IPV4;
-				try {
-					amuleIPV4Address &a = dynamic_cast<amuleIPV4Address &>(addr);
-					a.Hostname(PeekUInt32(m_proxyTCPSocket.GetBuffer() + 4));
-					a.Service(ENDIAN_NTOHS(
-						RawPeekUInt16(m_proxyTCPSocket.GetBuffer() + 8)));
-				} catch (const std::bad_cast &WXUNUSED(e)) {
-					AddDebugLogLineN(logProxy, "(2)bad_cast exception!");
-					wxFAIL;
+			CNetworkAddress relay;
+			uint16 relayPort = 0;
+			read = CLibUDPSocket::RecvFrom(
+				relay, relayPort, bufUDP, nBytes + PROXY_UDP_MAXIMUM_OVERHEAD);
+			unsigned int offset = 0;
+			addr = CNetworkAddress::Absent();
+			port = 0;
+			// Reject truncated, fragmented and unsupported source headers before publication.
+			if (read >= 4 && bufUDP[0] == 0 && bufUDP[1] == 0 && bufUDP[2] == 0) {
+				if (bufUDP[3] == SOCKS5_ATYP_IPV4_ADDRESS &&
+					read >= PROXY_UDP_OVERHEAD_IPV4) {
+					offset = PROXY_UDP_OVERHEAD_IPV4;
+					addr = CNetworkAddress::FromIPv4NetworkOrder(PeekUInt32(bufUDP + 4));
+				} else if (bufUDP[3] == SOCKS5_ATYP_IPV6_ADDRESS &&
+					   read >= PROXY_UDP_OVERHEAD_IPV6) {
+					offset = PROXY_UDP_OVERHEAD_IPV6;
+					addr = CNetworkAddress::FromIPv6Bytes(
+						reinterpret_cast<const uint8_t *>(bufUDP + 4))
+						       .Unmapped();
 				}
-			} break;
-
-			case SOCKS5_ATYP_DOMAINNAME:
-				offset = PROXY_UDP_OVERHEAD_DOMAIN_NAME;
-				break;
-
-			case SOCKS5_ATYP_IPV6_ADDRESS:
-				offset = PROXY_UDP_OVERHEAD_IPV6;
-				break;
-
-			default:
-				/* Error! */
-				offset = 0;
-				break;
 			}
-			memcpy(buf, bufUDP + offset, nBytes);
+			if (offset) {
+				port = ENDIAN_NTOHS(RawPeekUInt16(bufUDP + offset - 2));
+				read -= offset;
+				if (read > nBytes) {
+					read = nBytes;
+				}
+				memcpy(buf, bufUDP + offset, read);
+			} else {
+				read = 0;
+			}
 
 			/* Only delete buffer if it was dynamically created */
 			if (bufUDP != m_proxyTCPSocket.GetBuffer()) {
@@ -1241,7 +1240,7 @@ uint32 CDatagramSocketProxy::RecvFrom(amuleIPV4Address &addr, void *buf, uint32 
 			 * or drop fragmented messages. Drop. */
 		}
 	} else {
-		read = CLibUDPSocket::RecvFrom(addr, buf, nBytes);
+		read = CLibUDPSocket::RecvFrom(addr, port, buf, nBytes);
 	}
 
 	return read;
