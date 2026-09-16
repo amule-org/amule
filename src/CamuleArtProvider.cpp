@@ -11,26 +11,66 @@
 
 const wxString CamuleArtProvider::PREFIX = "amule:";
 
+namespace
+{
+const struct AMuleIconEntry *FindIcon(const wxArtID &id)
+{
+	// Only resolve our own art ids; let other providers handle the rest.
+	if (!id.StartsWith(CamuleArtProvider::PREFIX)) {
+		return nullptr;
+	}
+	return amule_find_icon(id.Mid(CamuleArtProvider::PREFIX.length()).utf8_str().data());
+}
+
+bool LoadPng(const struct AMuleIconEntry *entry, wxImage &image)
+{
+	wxMemoryInputStream stream(entry->png_data, entry->png_len);
+	return image.LoadFile(stream, wxBITMAP_TYPE_PNG);
+}
+
+// The icon's SVG twin as a bundle, or an invalid bundle when there is none or it does not parse.
+// wxDefaultSize takes the PNG twin's natural size, which FromSVG needs as its default.
+wxBitmapBundle SvgBundle(const struct AMuleIconEntry *entry, const wxSize &size)
+{
+#ifdef wxHAS_SVG
+	if (entry->svg_data != nullptr && entry->svg_len > 0) {
+		wxSize sizeDef(size);
+		wxImage probe;
+		if (sizeDef == wxDefaultSize && LoadPng(entry, probe)) {
+			sizeDef = probe.GetSize();
+		}
+		if (sizeDef != wxDefaultSize) {
+			return wxBitmapBundle::FromSVG(entry->svg_data, entry->svg_len, sizeDef);
+		}
+	}
+#else
+	wxUnusedVar(entry);
+	wxUnusedVar(size);
+#endif
+	return wxBitmapBundle();
+}
+} // namespace
+
 wxBitmap CamuleArtProvider::CreateBitmap(
 	const wxArtID &id, const wxArtClient &WXUNUSED(client), const wxSize &size)
 {
-	// Only resolve our own art ids; let other providers handle the rest.
-	if (!id.StartsWith(PREFIX)) {
+	const struct AMuleIconEntry *entry = FindIcon(id);
+	if (entry == nullptr) {
 		return wxNullBitmap;
 	}
 
-	const wxString short_name = id.Mid(PREFIX.length());
-	const struct AMuleIconEntry *entry = amule_find_icon(short_name.utf8_str().data());
-	if (entry == NULL) {
-		return wxNullBitmap;
+	// Rendered from the SVG twin at the requested pixel size when there is one, so raster
+	// consumers (image lists, DC drawing) get the same artwork as bundle consumers.
+	const wxBitmapBundle svg = SvgBundle(entry, size);
+	if (svg.IsOk()) {
+		return svg.GetBitmap(size == wxDefaultSize ? svg.GetDefaultSize() : size);
 	}
 
 	// Decode the embedded PNG bytes. wxImage::LoadFile via a wxMemoryInputStream wins over
 	// wxBitmap::NewFromPNGData here because we may need to rescale below, and Scale() is on
 	// wxImage, not wxBitmap.
-	wxMemoryInputStream stream(entry->png_data, entry->png_len);
 	wxImage image;
-	if (!image.LoadFile(stream, wxBITMAP_TYPE_PNG)) {
+	if (!LoadPng(entry, image)) {
 		return wxNullBitmap;
 	}
 
@@ -47,48 +87,24 @@ wxBitmap CamuleArtProvider::CreateBitmap(
 wxBitmapBundle CamuleArtProvider::CreateBitmapBundle(
 	const wxArtID &id, const wxArtClient &WXUNUSED(client), const wxSize &size)
 {
-	if (!id.StartsWith(PREFIX)) {
-		return wxBitmapBundle();
-	}
-
-	const wxString short_name = id.Mid(PREFIX.length());
-	const struct AMuleIconEntry *entry = amule_find_icon(short_name.utf8_str().data());
+	const struct AMuleIconEntry *entry = FindIcon(id);
 	if (entry == nullptr) {
 		return wxBitmapBundle();
 	}
 
-#ifdef wxHAS_SVG
-	if (entry->svg_data != nullptr && entry->svg_len > 0) {
-		// FromSVG needs an explicit default (logical) size; when the
-		// caller doesn't request one, the PNG twin's natural size wins.
-		wxSize sizeDef(size);
-		if (sizeDef == wxDefaultSize) {
-			wxMemoryInputStream probe_stream(entry->png_data, entry->png_len);
-			wxImage probe;
-			if (probe.LoadFile(probe_stream, wxBITMAP_TYPE_PNG)) {
-				sizeDef = wxSize(probe.GetWidth(), probe.GetHeight());
-			}
-		}
-		if (sizeDef != wxDefaultSize) {
-			// A malformed SVG, or one using features NanoSVG cannot render, yields a
-			// non-ok bundle; fall through to the PNG raster path below rather than
-			// returning nothing.
-			wxBitmapBundle svg =
-				wxBitmapBundle::FromSVG(entry->svg_data, entry->svg_len, sizeDef);
-			if (svg.IsOk()) {
-				return svg;
-			}
-		}
+	// A malformed SVG, or one using features NanoSVG cannot render, yields a non-ok bundle;
+	// fall through to the PNG raster path below rather than returning nothing.
+	wxBitmapBundle svg = SvgBundle(entry, size);
+	if (svg.IsOk()) {
+		return svg;
 	}
-#endif
 
 	// No SVG twin (or wx built without NanoSVG support): serve the PNG at the requested logical
 	// size plus a smooth 2x upscale, so DPI-aware widgets still get something better than
 	// stretched 1x art. The mask is turned into an alpha channel first, because high-quality
 	// scaling of a masked image smears the mask colour into the icon edges.
-	wxMemoryInputStream stream(entry->png_data, entry->png_len);
 	wxImage image;
-	if (!image.LoadFile(stream, wxBITMAP_TYPE_PNG)) {
+	if (!LoadPng(entry, image)) {
 		return wxBitmapBundle();
 	}
 	if (!image.HasAlpha()) {

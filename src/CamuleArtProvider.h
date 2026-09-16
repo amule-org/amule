@@ -1,13 +1,14 @@
 //
 // CamuleArtProvider -- wxArtProvider subclass exposing aMule's bundled
-// PNG icons through wxArtProvider::GetBitmap() / GetIcon().
+// icons through wxArtProvider::GetBitmap() / GetIcon() / GetBitmapBundle().
 //
 // The icon data itself lives in src/icons/icon_data.c (build-time
-// generated from src/icons/*.png by src/icons/embed_icons.py).
+// generated from src/icons/ by src/icons/embed_icons.py).
 // CamuleArtProvider just glues that lookup table to the wx art-id
-// system: art ids of the form "amule:<name>" map to the PNG entry of
-// the same name.  Examples: "amule:amule", "amule:sort_dn",
-// "amule:flag_us".
+// system: art ids of the form "amule:<name>" map to the entry of the
+// same name.  Examples: "amule:amule", "amule:sort_dn", "amule:flag_us".
+// An icon with an SVG twin is rendered from it on every path; the PNG is
+// the fallback for icons without one.
 //
 // Push one instance during app init (CamuleApp::OnInit and
 // CamuleRemoteGuiApp::OnInit do this) so every later
@@ -33,10 +34,8 @@ public:
 protected:
 	wxBitmap CreateBitmap(const wxArtID &id, const wxArtClient &client, const wxSize &size) override;
 
-	// Bundle-aware lookup behind wxArtProvider::GetBitmapBundle(). Icons with an embedded SVG
-	// twin become resolution-independent bundles, wx rasterizing the SVG at whatever size/DPI
-	// the consuming widget asks for; PNG-only icons fall back to the PNG plus a smooth 2x
-	// upscale.
+	// Bundle-aware lookup behind wxArtProvider::GetBitmapBundle(). PNG-only icons get the PNG
+	// plus a smooth 2x upscale.
 	wxBitmapBundle CreateBitmapBundle(
 		const wxArtID &id, const wxArtClient &client, const wxSize &size) override;
 };

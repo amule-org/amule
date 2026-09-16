@@ -24,13 +24,12 @@
 
 #include "AboutDialog.h"
 
-#include "CamuleArtProvider.h" // Needed for CamuleArtProvider::MakeId
-
 #include "config.h" // Needed for VERSION, GITDATE
 
 #include <common/Format.h> // Needed for CFormat
 
 #include <wx/artprov.h>
+#include <wx/bmpbndl.h> // Needed for wxBitmapBundle
 #include <wx/button.h>
 #include <wx/hyperlink.h>
 #include <wx/settings.h>
@@ -89,19 +88,11 @@ CAboutDlg::CAboutDlg(wxWindow *parent)
 		<< _(" Copyright (c) 2002-2011 Petar Maymounkov ( petar@maymounkov.org )\n");
 	credits.Trim();
 
-	// aMule logo on the left, matching the previous wxMessageBox About.
-	//
-	// The raster rather than the SVG twin: GetBitmapBundle() would prefer the vector, but
-	// wx 3.2's NanoSVG mis-renders this artwork -- most of the mule is swallowed by a black
-	// blob -- and 3.2 is what the AppImage ships (packaging/linux/versions.env pins
-	// WX_VERSION). GetBitmap() resolves through CamuleArtProvider::CreateBitmap(), which
-	// decodes the embedded PNG and rescales it with wxIMAGE_QUALITY_HIGH; the icon's raster is
-	// 256x256, so there is ample detail to come down from.
-	//
-	// 42px: the dialog has the room, and the artwork this replaced was 32x42, so the logo keeps
-	// the height it had before it was squared off.
-	const wxBitmap logoBmp = wxArtProvider::GetBitmap(
-		CamuleArtProvider::MakeId("amule"), wxART_MESSAGE_BOX, wxSize(42, 42));
+	// aMule logo on the left, matching the previous wxMessageBox About. A bundle, so it renders
+	// at the display's scale. 42px: the artwork this replaced was 32x42, so the logo keeps its
+	// height.
+	const wxBitmapBundle logoBmp =
+		wxArtProvider::GetBitmapBundle("amule:amule", wxART_MESSAGE_BOX, wxSize(42, 42));
 
 	// The project links, as native clickable hyperlinks.
 	wxFlexGridSizer *linkGrid = new wxFlexGridSizer(2, wxSize(6, 2));

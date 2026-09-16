@@ -347,9 +347,8 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 			m_pageIcons.push_back(art);
 		} else
 #ifdef GEOIP_GUI
-			// Art-provider miss: the IP2Country tab uses an embedded-PNG icon via
-			// wxArtProvider::GetBitmap, every other tab the hardcoded amuleSpecial raster
-			// data.
+			// Art-provider miss: the IP2Country tab asks the art provider once more for a
+			// plain bitmap, every other tab uses the hardcoded amuleSpecial raster data.
 			if (pages[i].m_function == PreferencesIP2CountryTab) {
 				m_pageIcons.push_back(
 					makeIcon(wxArtProvider::GetBitmap("amule:prefs_ip2country",

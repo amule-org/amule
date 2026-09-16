@@ -28,12 +28,13 @@ Icons in <icons_dir>/<name>.png get the art-id "<name>".
 Icons in <icons_dir>/flags/<code>.png get the art-id "flag_<code>".
 
 A <name>.svg next to <name>.png is embedded as the icon's vector twin;
-CamuleArtProvider serves it preferentially for wxBitmapBundle requests
-on wx builds with SVG (NanoSVG) support.  The PNG stays mandatory: it
-is the raster fallback and defines the icon's natural size, so an .svg
-without a matching .png is an error.
+CamuleArtProvider renders every request for the icon from it on wx
+builds with SVG (NanoSVG) support.  The PNG stays mandatory: it is the
+raster fallback and defines the icon's natural size, so an .svg without
+a matching .png is an error.
 """
 
+import re
 import sys
 from pathlib import Path
 
@@ -90,6 +91,40 @@ def find_orphan_svgs(icons_dir: Path, entries):
             if svg not in known:
                 orphans.append(svg)
     return orphans
+
+
+_NUMBER = re.compile(r"[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?")
+
+
+def count_packed_arc_flags(svg_path: Path) -> int:
+    """
+    Count arc commands whose flags are packed against the next value, e.g.
+    "a7 7 0 00-1.4-1.1". Valid SVG, but wx 3.2's NanoSVG reads "00" as one
+    number, shifts the remaining arguments and fills a large wrong area.
+    """
+    packed = 0
+    text = svg_path.read_text(encoding="utf-8")
+    for path_data in re.findall(r'\bd="([^"]*)"', text):
+        for args in re.findall(r"[aA]([^A-Za-z]*)", path_data):
+            i, pos = 0, 0
+            while True:
+                while i < len(args) and args[i] in " ,\t\r\n":
+                    i += 1
+                if i >= len(args):
+                    break
+                # Arc arguments repeat as rx ry rotation large-arc sweep x y.
+                if pos % 7 in (3, 4):
+                    if i + 1 < len(args) and args[i + 1] not in " ,\t\r\n":
+                        packed += 1
+                        break
+                    i += 1
+                else:
+                    match = _NUMBER.match(args, i)
+                    if match is None:
+                        break
+                    i = match.end()
+                pos += 1
+    return packed
 
 
 def emit_byte_array(chunks, c_name: str, data: bytes):
@@ -203,6 +238,15 @@ def main(argv):
     if orphans:
         for svg in orphans:
             print(f"error: {svg} has no matching .png fallback", file=sys.stderr)
+        return 1
+
+    packed = False
+    for _art_id, _c_ident, _png, svg in entries:
+        if svg is not None and count_packed_arc_flags(svg):
+            print(f"error: {svg} packs arc flags against the next value (e.g. 'a7 7 0 00-1.4'); "
+                  "wx 3.2 mis-renders that. Separate them: 'a7 7 0 0 0 -1.4'.", file=sys.stderr)
+            packed = True
+    if packed:
         return 1
 
     # A duplicate art id, or a duplicate C identifier (distinct names that

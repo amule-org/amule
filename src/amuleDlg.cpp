@@ -288,11 +288,9 @@ CamuleDlg::CamuleDlg(wxWindow *pParent, const wxString &title, wxPoint where, wx
 	// from the size the .ico already carries.
 	SetIcons(wxIconBundle("aMule", wxGetInstance()));
 #else
-	// Elsewhere the icon comes from CamuleArtProvider. A bundle, and a set of sizes rather
-	// than one: GetIcon() resolves through CreateBitmap(), which decodes the embedded PNG and
-	// nothing else, so the window manager got a single 32px raster to scale for the taskbar,
-	// the alt-tab switcher and the window frame alike. The bundle path consults the icon's
-	// SVG twin instead.
+	// Elsewhere the icon comes from CamuleArtProvider. A set of sizes rather than one, so the
+	// taskbar, the alt-tab switcher and the window frame each get a rendering of their own
+	// instead of scaling a single raster.
 	wxIconBundle icons;
 	const wxBitmapBundle logo = wxArtProvider::GetBitmapBundle("amule:amule");
 	for (const int side : { 16, 24, 32, 48, 64, 128, 256 }) {
@@ -950,9 +948,7 @@ void CamuleDlg::ShowVersionAvailable(const wxString &latest)
 	wxCheckBox *dontAsk = new wxCheckBox(&dlg, wxID_ANY, _("Don't ask again"));
 
 	wxBoxSizer *topRow = new wxBoxSizer(wxHORIZONTAL);
-	// A bundle at a stated size, like the About dialog: GetBitmap() would resolve through
-	// CreateBitmap(), which decodes the PNG and never the icon's SVG twin, leaving the
-	// compositor to stretch a 32px raster.
+	// A bundle at a stated size, like the About dialog, so it renders at the display's scale.
 	const wxBitmapBundle logoBmp =
 		wxArtProvider::GetBitmapBundle(wxT("amule:amule"), wxART_MESSAGE_BOX, wxSize(42, 42));
 	if (logoBmp.IsOk()) {
