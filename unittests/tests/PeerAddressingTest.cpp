@@ -41,9 +41,10 @@
 #include <muleunit/test.h>
 
 #include <PeerAddressing.h>
+#include <CanonicalPeerIndex.h>
 #include <libs/common/Format.h>
 
-#include <map>
+#include <memory>
 
 using namespace muleunit;
 using namespace PeerAddressing;
@@ -68,7 +69,7 @@ TEST(PeerAddressing, AbsentAndAllZeroAreDifferentKeys)
 {
 	// Prevention invariant: absence must not share an address bucket or acquire
 	// a bucket of its own.
-	std::multimap<CNetworkAddress, int> index;
+	CCanonicalPeerIndex<int> index;
 
 	const CNetworkAddress absent = CNetworkAddress::Absent();
 	const CNetworkAddress allZeroV4 = CNetworkAddress::FromString("0.0.0.0");
@@ -78,8 +79,9 @@ TEST(PeerAddressing, AbsentAndAllZeroAreDifferentKeys)
 	ASSERT_TRUE(absent != allZeroV6);
 	ASSERT_TRUE(allZeroV4 != allZeroV6);
 
-	index.insert(std::make_pair(allZeroV4, 1));
-	index.insert(std::make_pair(allZeroV6, 2));
+	index.Insert(absent, 3);
+	index.Insert(allZeroV4, 1);
+	index.Insert(allZeroV6, 2);
 
 	ASSERT_EQUALS((size_t)1, index.count(allZeroV4));
 	ASSERT_EQUALS((size_t)1, index.count(allZeroV6));
@@ -118,11 +120,11 @@ TEST(PeerAddressing, DistinctIPv6PeersNeverShareAKey)
 	};
 	static const size_t count = sizeof(addresses) / sizeof(addresses[0]);
 
-	std::multimap<CNetworkAddress, int> index;
+	CCanonicalPeerIndex<int> index;
 	for (size_t i = 0; i < count; ++i) {
 		const CNetworkAddress address = CNetworkAddress::FromString(addresses[i]);
 		ASSERT_TRUE(address.IsPresent());
-		index.insert(std::make_pair(IndexKey(address), (int)i));
+		index.Insert(address, (int)i);
 	}
 
 	for (size_t i = 0; i < count; ++i) {
@@ -130,6 +132,135 @@ TEST(PeerAddressing, DistinctIPv6PeersNeverShareAKey)
 		ASSERT_EQUALS((size_t)1, index.count(IndexKey(address)));
 	}
 	ASSERT_EQUALS(count, index.size());
+}
+
+TEST(PeerAddressing, CanonicalAddressRangeRetainsEveryClient)
+{
+	// The address index is a multimap: clients sharing a host must remain
+	// available for the caller's port/hash checks, including mapped IPv4.
+	CCanonicalPeerIndex<int> index;
+	const auto native = CNetworkAddress::FromString("192.0.2.1");
+	const auto mapped = CNetworkAddress::FromString("::ffff:192.0.2.1");
+	index.Insert(native, 1);
+	index.Insert(mapped, 2);
+	index.Insert(CNetworkAddress::FromString("2001:db8::1"), 3);
+
+	const auto range = index.equal_range(mapped);
+	ASSERT_EQUALS((size_t)2, index.count(native));
+	ASSERT_TRUE(range.first->first == native);
+	auto it = range.first;
+	ASSERT_TRUE(it != range.second);
+	ASSERT_EQUALS(1, it->second);
+	++it;
+	ASSERT_TRUE(it != range.second);
+	ASSERT_EQUALS(2, it->second);
+	++it;
+	ASSERT_TRUE(it == range.second);
+}
+
+TEST(PeerAddressing, CanonicalAddressIndexRekeysWithoutStaleEntries)
+{
+	CCanonicalPeerIndex<int> index;
+	const auto oldAddress = CNetworkAddress::FromString("::ffff:192.0.2.7");
+	const auto newAddress = CNetworkAddress::FromString("2001:db8::7");
+	const auto absent = CNetworkAddress::Absent();
+	const auto isSeven = [](int value) { return value == 7; };
+	index.Insert(oldAddress, 7);
+	index.Insert(oldAddress, 8);
+
+	index.Update(oldAddress, newAddress, 7, isSeven);
+	ASSERT_EQUALS((size_t)1, index.count(oldAddress));
+	ASSERT_EQUALS(8, index.equal_range(oldAddress).first->second);
+	ASSERT_EQUALS((size_t)1, index.count(newAddress));
+
+	index.Update(newAddress, absent, 7, isSeven);
+	ASSERT_EQUALS((size_t)0, index.count(newAddress));
+	ASSERT_EQUALS((size_t)0, index.count(absent));
+	index.Update(absent, oldAddress, 7, isSeven);
+	ASSERT_EQUALS((size_t)2, index.count(oldAddress));
+	index.Update(oldAddress, CNetworkAddress::FromString("192.0.2.7"), 7, isSeven);
+	ASSERT_EQUALS((size_t)2, index.count(oldAddress));
+	ASSERT_EQUALS(8, index.equal_range(oldAddress).first->second);
+}
+
+TEST(PeerAddressing, CanonicalAddressIndexRemovesOnlySelectedClient)
+{
+	CCanonicalPeerIndex<int> index;
+	const auto address = CNetworkAddress::FromString("192.0.2.7");
+	const auto mapped = CNetworkAddress::FromString("::ffff:192.0.2.7");
+	index.Insert(address, 1);
+	index.Insert(mapped, 2);
+	ASSERT_FALSE(index.Remove(address, [](int value) { return value == 3; }));
+	ASSERT_TRUE(index.Remove(mapped, [](int value) { return value == 1; }));
+	ASSERT_EQUALS((size_t)1, index.count(address));
+	ASSERT_EQUALS(2, index.equal_range(address).first->second);
+	ASSERT_FALSE(index.Remove(address, [](int value) { return value == 1; }));
+	ASSERT_TRUE(index.Remove(address, [](int value) { return value == 2; }));
+	ASSERT_EQUALS((size_t)0, index.size());
+}
+
+TEST(PeerAddressing, CanonicalAddressIndexRetainsOwnershipAcrossRekey)
+{
+	using Reference = std::shared_ptr<int>;
+	CCanonicalPeerIndex<Reference> index;
+	const auto oldAddress = CNetworkAddress::FromString("192.0.2.7");
+	const auto newAddress = CNetworkAddress::FromString("2001:db8::7");
+	std::weak_ptr<int> lifetime;
+	{
+		auto reference = std::make_shared<int>(7);
+		lifetime = reference;
+		index.Insert(oldAddress, reference);
+	}
+	ASSERT_FALSE(lifetime.expired());
+	// Pass the index's own reference: erasing its node must not destroy the peer
+	// while Update still needs it for the new entry.
+	index.Update(oldAddress, newAddress, index.begin()->second, [](const Reference &reference) {
+		return *reference == 7;
+	});
+	ASSERT_FALSE(lifetime.expired());
+	ASSERT_EQUALS((size_t)0, index.count(oldAddress));
+	ASSERT_EQUALS(7, *index.equal_range(newAddress).first->second);
+	ASSERT_TRUE(index.Remove(newAddress, [](const Reference &reference) { return *reference == 7; }));
+	ASSERT_TRUE(lifetime.expired());
+
+	{
+		auto reference = std::make_shared<int>(8);
+		lifetime = reference;
+		index.Insert(newAddress, reference);
+	}
+	index.clear();
+	ASSERT_TRUE(lifetime.expired());
+}
+
+TEST(PeerAddressing, CanonicalAddressIndexKeepsLinkLocalScopesSeparate)
+{
+	CCanonicalPeerIndex<int> index;
+	const auto first = CNetworkAddress::FromString("fe80::1%3");
+	const auto second = CNetworkAddress::FromString("fe80::1%9");
+	index.Insert(first, 1);
+	index.Insert(second, 2);
+	ASSERT_EQUALS((size_t)1, index.count(first));
+	ASSERT_EQUALS((size_t)1, index.count(second));
+	ASSERT_EQUALS(1, index.equal_range(first).first->second);
+	ASSERT_EQUALS(2, index.equal_range(second).first->second);
+}
+
+TEST(PeerAddressing, LegacyZeroCannotFindPresentZeroOrIPv6)
+{
+	CCanonicalPeerIndex<int> index;
+	for (const char *text : { "0.0.0.0", "::", "2001:db8::1", "2001:db8::2" }) {
+		const auto key = IndexKey(CNetworkAddress::FromString(text));
+		ASSERT_TRUE(IsIndexable(key));
+		ASSERT_EQUALS(0u, key.ToIPv4NetworkOrderOrZero());
+		index.Insert(key, 1);
+	}
+
+	// Narrowing is only a compatibility adapter, never an identity key.
+	ASSERT_EQUALS((size_t)4, index.size());
+	ASSERT_EQUALS((size_t)0, index.count(IndexKey(CNetworkAddress::FromIPv4NetworkOrderOrAbsent(0))));
+	for (const auto &entry : index) {
+		ASSERT_EQUALS((size_t)1, index.count(entry.first));
+	}
 }
 
 // IPv4 characterisation -- must not change
@@ -297,13 +428,9 @@ TEST(PeerAddressing, GlobalIPv6PeerIsDirectlyReachable)
 
 TEST(PeerAddressing, RateLimitScopeMembersAreContiguousInTheIndexOrder)
 {
-	// CClientList counts a peer's slots by starting at its scope's network address and walking
-	// while the scope holds. That is only correct if every member of a prefix occupies one
-	// contiguous run of the ordering -- otherwise the walk would stop early and the limit would
-	// under-count, which is a limit that silently does not apply. The ordering is octet-wise,
-	// most significant first, so it does; asserted here because the scan depends on it and the
-	// ordering lives in another file.
-	std::multimap<CNetworkAddress, int> index;
+	// Prefix members remain contiguous in the canonical index's address order.
+	// This is an ordering contract, not production rate-limit integration.
+	CCanonicalPeerIndex<int> index;
 
 	static const char *const addresses[] = { // Inside the /64 under test, deliberately out of order.
 		"2001:db8:1:2:ffff:ffff:ffff:ffff",
@@ -321,16 +448,14 @@ TEST(PeerAddressing, RateLimitScopeMembersAreContiguousInTheIndexOrder)
 	for (size_t i = 0; i < count; ++i) {
 		const CNetworkAddress address = CNetworkAddress::FromString(addresses[i]);
 		ASSERT_TRUE(address.IsPresent());
-		index.insert(std::make_pair(IndexKey(address), (int)i));
+		index.Insert(address, (int)i);
 	}
 
 	const CNetworkAddress scope = RateLimitScope(CNetworkAddress::FromString("2001:db8:1:2::5"));
 	ASSERT_TRUE(scope == CNetworkAddress::FromString("2001:db8:1:2::"));
 
 	size_t visited = 0;
-	for (std::multimap<CNetworkAddress, int>::const_iterator it = index.lower_bound(scope);
-		it != index.end();
-		++it) {
+	for (auto it = index.lower_bound(scope); it != index.end(); ++it) {
 		if (RateLimitScope(it->first) != scope) {
 			break;
 		}

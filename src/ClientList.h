@@ -29,6 +29,7 @@
 #include "DeadSourceList.h"
 #include "BanRecord.h" // Needed for CBanRecord // Needed for CDeadSourceList
 #include "ClientRef.h"
+#include "CanonicalPeerIndex.h"
 
 #include <deque>
 #include <set>
@@ -73,6 +74,7 @@ public:
 	 * any that identifies as somebody else.
 	 */
 	CUpDownClient *FindReusableClient(const CMD4Hash &hash, uint32 ip, uint16 port);
+	CUpDownClient *FindReusableClient(const CMD4Hash &hash, const CNetworkAddress &address, uint16 port);
 
 	/**
 	 * A client for the peer at this address, added to the list.
@@ -94,10 +96,11 @@ public:
 	void RemoveClient(CUpDownClient *client);
 
 	/**
-	 * Updates the recorded IP of the specified client, before it actually changes its address.
-	 * An entry is only added when the new IP is non-zero.
+	 * Updates the recorded address before the client changes it.
+	 * Present addresses are indexed canonically; the uint32 adapter treats zero as absent.
 	 */
 	void UpdateClientIP(CUpDownClient *client, uint32 newIP);
+	void UpdateClientIP(CUpDownClient *client, const CNetworkAddress &address);
 
 	/**
 	 * Updates the recorded ID of the specified client, before it actually changes its ID.
@@ -134,11 +137,13 @@ public:
 	 * Finds a client with the specified ip and port.
 	 */
 	CUpDownClient *FindClientByIP(uint32 clientip, uint16 port);
+	CUpDownClient *FindClientByIP(const CNetworkAddress &address, uint16 port);
 
 	/**
 	 * Finds a client with the specified ip, returning the first if several share it.
 	 */
 	CUpDownClient *FindClientByIP(uint32 clientip);
+	CUpDownClient *FindClientByIP(const CNetworkAddress &address);
 
 	/**
 	 * Finds a client with the specified ECID.
@@ -192,13 +197,15 @@ public:
 	SourceList GetClientsByHash(const CMD4Hash &hash);
 
 	/**
-	 * Returns the clients with the specified IP, provided it is non-zero. Zero finds nothing.
+	 * Returns clients with the canonical address. Absence finds nothing;
+	 * the legacy integer adapter treats zero as absent.
 	 */
 	SourceList GetClientsByIP(unsigned long ip);
+	SourceList GetClientsByIP(const CNetworkAddress &address);
 
-	//! The type of the lists used to store IPs and IDs.
+	//! The type of the list used to store legacy user IDs.
 	typedef std::multimap<uint32, CClientRef> IDMap;
-	//! The pairs of the IP/ID list.
+	//! The pairs of the user ID list.
 	typedef std::pair<uint32, CClientRef> IDMapPair;
 
 	/**
@@ -291,8 +298,9 @@ private:
 	//! The map of clients with valid hashes
 	HashMap m_hashList;
 
-	//! The map of clients with valid IPs
-	IDMap m_ipList;
+	//! Canonical peer addresses; absent peers have no entry.
+	typedef CCanonicalPeerIndex<CClientRef> AddressMap;
+	AddressMap m_ipList;
 
 	//! The full lists of clients
 	IDMap m_clientList;

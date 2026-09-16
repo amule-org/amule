@@ -32,6 +32,7 @@
 #include <common/StringFunctions.h>
 #include <common/Macros.h>
 #include "NetworkFunctions.h"
+#include "NetworkAddress.h"
 #include "OtherStructs.h"
 #include "ClientCredits.h"    // Needed for EIdentState
 #include <ec/cpp/ECID.h>      // Needed for CECID
@@ -208,6 +209,8 @@ public:
 	const wxString &GetUserName() const { return m_Username; }
 	// Only use this when you know the real IP or when your clearing it.
 	void SetIP(uint32 val);
+	void SetPeerAddress(const CNetworkAddress &address);
+	const CNetworkAddress &GetPeerAddress() const { return m_peerAddress; }
 	uint32 GetIP() const { return m_dwUserIP; }
 	bool HasLowID() const { return IsLowID(m_nUserIDHybrid); }
 	wxString GetFullIP() const { return Uint32toStringIP(m_FullUserIP); }
@@ -733,6 +736,8 @@ private:
 	void SendFirewallCheckUDPRequest();
 	void ClearHelloProperties(); // eMule 0.42
 
+	CNetworkAddress m_peerAddress;
+	// Legacy IPv4 adapter; zero when the peer has no IPv4 form.
 	uint32 m_dwUserIP;
 	uint32 m_nConnectIP; // holds the supposed IP or (after we had a connection) the real IP
 	uint32 m_dwServerIP;
