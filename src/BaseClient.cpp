@@ -272,7 +272,7 @@ void CUpDownClient::Init()
 	m_nSourceFrom = SF_NONE;
 
 	if (m_socket) {
-		SetPeerAddress(m_socket->GetPeerAddress());
+		SetUserAddress(m_socket->GetPeerAddress());
 	} else {
 		SetIP(0);
 	}
@@ -751,7 +751,7 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data)
 	}
 
 	if (m_socket) {
-		SetPeerAddress(m_socket->GetPeerAddress());
+		SetUserAddress(m_socket->GetPeerAddress());
 	} else {
 		throw wxString("Huh, socket failure. Avoided crash this time.");
 	}
@@ -2759,14 +2759,14 @@ void CUpDownClient::SetUserIDHybrid(uint32 nUserID)
 
 void CUpDownClient::SetIP(uint32 val)
 {
-	SetPeerAddress(CNetworkAddress::FromIPv4NetworkOrderOrAbsent(val));
+	SetUserAddress(CNetworkAddress::FromIPv4NetworkOrderOrAbsent(val));
 }
 
-void CUpDownClient::SetPeerAddress(const CNetworkAddress &address)
+void CUpDownClient::SetUserAddress(const CNetworkAddress &address)
 {
 	const CNetworkAddress key = PeerAddressing::IndexKey(address);
 	theApp->clientlist->UpdateClientIP(this, key);
-	m_peerAddress = key;
+	m_userAddress = key;
 	const uint32 val = key.ToIPv4NetworkOrderOrZero();
 	m_dwUserIP = val;
 

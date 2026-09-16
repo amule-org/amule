@@ -209,8 +209,8 @@ public:
 	const wxString &GetUserName() const { return m_Username; }
 	// Only use this when you know the real IP or when your clearing it.
 	void SetIP(uint32 val);
-	void SetPeerAddress(const CNetworkAddress &address);
-	const CNetworkAddress &GetPeerAddress() const { return m_peerAddress; }
+	void SetUserAddress(const CNetworkAddress &address);
+	const CNetworkAddress &GetUserAddress() const { return m_userAddress; }
 	uint32 GetIP() const { return m_dwUserIP; }
 	bool HasLowID() const { return IsLowID(m_nUserIDHybrid); }
 	wxString GetFullIP() const { return Uint32toStringIP(m_FullUserIP); }
@@ -736,7 +736,7 @@ private:
 	void SendFirewallCheckUDPRequest();
 	void ClearHelloProperties(); // eMule 0.42
 
-	CNetworkAddress m_peerAddress;
+	CNetworkAddress m_userAddress;
 	// Legacy IPv4 adapter; zero when the peer has no IPv4 form.
 	uint32 m_dwUserIP;
 	uint32 m_nConnectIP; // holds the supposed IP or (after we had a connection) the real IP

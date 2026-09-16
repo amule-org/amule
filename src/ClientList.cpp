@@ -177,7 +177,7 @@ void CClientList::AddClient(CUpDownClient *toadd)
 			CCLIENTREF(toadd, "CClientList::AddClient m_clientList.insert")));
 
 		m_ipList.Insert(
-			toadd->GetPeerAddress(), CCLIENTREF(toadd, "CClientList::AddClient m_ipList.insert"));
+			toadd->GetUserAddress(), CCLIENTREF(toadd, "CClientList::AddClient m_ipList.insert"));
 
 		// We only add the hash if it is valid
 		if (toadd->HasValidHash()) {
@@ -227,7 +227,7 @@ void CClientList::UpdateClientIP(CUpDownClient *client, const CNetworkAddress &a
 	if (client->GetClientState() != CS_LISTED)
 		return;
 
-	m_ipList.Update(client->GetPeerAddress(),
+	m_ipList.Update(client->GetUserAddress(),
 		address,
 		CCLIENTREF(client, "CClientList::UpdateClientIP"),
 		[client](const CClientRef &entry) { return entry.GetClient() == client; });
@@ -268,7 +268,7 @@ bool CClientList::RemoveIDFromList(CUpDownClient *client)
 
 void CClientList::RemoveIPFromList(CUpDownClient *client)
 {
-	m_ipList.Remove(client->GetPeerAddress(),
+	m_ipList.Remove(client->GetUserAddress(),
 		[client](const CClientRef &entry) { return entry.GetClient() == client; });
 }
 
@@ -295,7 +295,7 @@ CUpDownClient *CClientList::FindMatchingClient(CUpDownClient *client)
 	typedef std::pair<IDMap::const_iterator, IDMap::const_iterator> IDMapIteratorPair;
 	wxCHECK(client, NULL);
 
-	const CNetworkAddress userIP = PeerAddressing::IndexKey(client->GetPeerAddress());
+	const CNetworkAddress userIP = PeerAddressing::IndexKey(client->GetUserAddress());
 	const uint32 userID = client->GetUserIDHybrid();
 	const uint16 userPort = client->GetUserPort();
 	const uint16 userKadPort = client->GetKadPort();
@@ -308,7 +308,7 @@ CUpDownClient *CClientList::FindMatchingClient(CUpDownClient *client)
 
 			for (; range.first != range.second; ++range.first) {
 				CUpDownClient *other = range.first->second.GetClient();
-				wxASSERT(userIP == other->GetPeerAddress());
+				wxASSERT(userIP == other->GetUserAddress());
 
 				if (userPort && (userPort == other->GetUserPort())) {
 					return other;
@@ -416,7 +416,7 @@ bool CClientList::AttachToAlreadyKnown(CUpDownClient **client, CClientTCPSocket 
 		if (sender) {
 			if (found_client->GetSocket()) {
 				if (found_client->IsConnected() &&
-					(found_client->GetPeerAddress() != tocheck->GetPeerAddress() ||
+					(found_client->GetUserAddress() != tocheck->GetUserAddress() ||
 						found_client->GetUserPort() != tocheck->GetUserPort())) {
 					// if found_client is connected and has the IS_IDENTIFIED, it's safe
 					// to say that the other one is a bad guy
