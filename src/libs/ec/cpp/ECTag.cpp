@@ -147,23 +147,30 @@ CECTag::CECTag(ec_tagname_t name, uint64 data)
 
 void CECTag::InitInt(uint64 data)
 {
+	// Chosen in locals and switched on below, not read back from the members. GCC 13 treats
+	// operator new[] as able to change m_dataType, so it pairs a 1-byte buffer with the uint32
+	// write and reports an overflow under _FORTIFY_SOURCE that cannot happen (issue #1435).
+	ec_tagtype_t type;
+	ec_taglen_t length;
 	if (data <= 0xFF) {
-		m_dataType = EC_TAGTYPE_UINT8;
-		m_dataLen = 1;
+		type = EC_TAGTYPE_UINT8;
+		length = 1;
 	} else if (data <= 0xFFFF) {
-		m_dataType = EC_TAGTYPE_UINT16;
-		m_dataLen = 2;
+		type = EC_TAGTYPE_UINT16;
+		length = 2;
 	} else if (data <= 0xFFFFFFFF) {
-		m_dataType = EC_TAGTYPE_UINT32;
-		m_dataLen = 4;
+		type = EC_TAGTYPE_UINT32;
+		length = 4;
 	} else {
-		m_dataType = EC_TAGTYPE_UINT64;
-		m_dataLen = 8;
+		type = EC_TAGTYPE_UINT64;
+		length = 8;
 	}
+	m_dataType = type;
+	m_dataLen = length;
 
 	NewData();
 
-	switch (m_dataType) {
+	switch (type) {
 	case EC_TAGTYPE_UINT8:
 		PokeUInt8(m_tagData, (uint8)data);
 		break;

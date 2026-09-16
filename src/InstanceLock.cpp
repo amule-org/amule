@@ -228,7 +228,10 @@ InstanceLock::Result InstanceLock::Acquire(
 	// `cat`) and so a later launch can tell a raisable GUI holder from a headless daemon. The
 	// kernel -- not this integer -- is the source of truth. Under a PID-namespaced sandbox
 	// (Flatpak, docker) this is the sandbox-local pid and may match nothing on the host.
-	(void)ftruncate(m_fd, 0);
+	// Best-effort, like the write below. A (void) cast does not silence warn_unused_result on
+	// GCC, so the result is taken and dropped the same way.
+	int truncated = ftruncate(m_fd, 0);
+	(void)truncated;
 	char buf[96];
 	int n = snprintf(buf, sizeof(buf), "%d\n%s\n", (int)getpid(), (const char *)selfKind.utf8_str());
 	if (n > 0) {
