@@ -422,7 +422,7 @@ enum UDPOperation
 
 const unsigned int PROXY_UDP_OVERHEAD_IPV4 = 10;
 const unsigned int PROXY_UDP_OVERHEAD_DOMAIN_NAME = 262;
-const unsigned int PROXY_UDP_OVERHEAD_IPV6 = 20;
+const unsigned int PROXY_UDP_OVERHEAD_IPV6 = 22;
 const unsigned int PROXY_UDP_MAXIMUM_OVERHEAD = PROXY_UDP_OVERHEAD_DOMAIN_NAME;
 
 class CDatagramSocketProxy : public CLibUDPSocket
