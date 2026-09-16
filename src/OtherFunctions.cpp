@@ -44,6 +44,7 @@
 
 #include "OtherFunctions.h" // Interface declarations
 
+#include <clocale> // Needed for setlocale
 #include <map>
 
 #ifdef __WXBASE__
@@ -1525,6 +1526,12 @@ void InitCustomLanguages()
 void InitLocale(wxLocale &locale, int language)
 {
 	locale.Init(language, wxLOCALE_LOAD_DEFAULT);
+
+#ifdef __WXMAC__
+	// Init() also sets LC_NUMERIC. Under a decimal-comma locale (LANG=it_IT.UTF-8 from a terminal)
+	// macOS 27 AppKit then aborts laying out the window. A Finder launch has no LANG and stays C.
+	std::setlocale(LC_NUMERIC, "C");
+#endif
 
 #if defined(__WXMAC__) || defined(__WINDOWS__)
 	// On macOS, GetDataDir() returns <bundle>/Contents/SharedSupport while the .mo catalogs
