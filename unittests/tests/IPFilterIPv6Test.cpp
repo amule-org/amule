@@ -12,6 +12,8 @@
 using namespace muleunit;
 DECLARE_SIMPLE(IPFilterIPv6)
 
+extern FILE *yyipout;
+
 namespace
 {
 struct Entry
@@ -22,6 +24,9 @@ struct Entry
 	std::string description;
 };
 
+// Bytes the scanner wrote to its output during the last Scan().
+long g_echoed = 0;
+
 // Drive the actual generated scanner, including restart across consecutive files.
 std::vector<Entry> Scan(const std::string &text)
 {
@@ -31,6 +36,11 @@ std::vector<Entry> Scan(const std::string &text)
 	}
 	std::fwrite(text.data(), 1, text.size(), file);
 	std::rewind(file);
+	FILE *echo = std::tmpfile();
+	if (!echo) {
+		throw std::runtime_error("Could not create scanner output");
+	}
+	yyipout = echo;
 	yyiprestart(file);
 	yyip_Line = 1;
 	yyip_Bad = 0;
@@ -42,6 +52,9 @@ std::vector<Entry> Scan(const std::string &text)
 		entry.description = description;
 		result.push_back(entry);
 	}
+	g_echoed = std::ftell(echo);
+	yyipout = stdout;
+	std::fclose(echo);
 	std::fclose(file);
 	return result;
 }
@@ -93,7 +106,19 @@ TEST(IPFilterIPv6, InvalidCIDRsDoNotBecomeRules)
 		ASSERT_EQUALS(1u, entries.size());
 		ASSERT_EQUALS(1, yyip_Bad);
 		ASSERT_EQUALS(2, entries[0].family);
+		ASSERT_EQUALS(0L, g_echoed);
 	}
+}
+
+TEST(IPFilterIPv6, BadLinesAreConsumedWhole)
+{
+	const auto entries = Scan("garbage line\n"
+				  "Org:1.2.3.4-1.2.3.5 trailing text\n"
+				  "2001:db8::/32,0,valid\n");
+	ASSERT_EQUALS(1u, entries.size());
+	ASSERT_EQUALS(2, yyip_Bad);
+	ASSERT_EQUALS(2, entries[0].family);
+	ASSERT_EQUALS(0L, g_echoed);
 }
 
 TEST(IPFilterIPv6, PrefixBoundariesAndFamilySeparation)
