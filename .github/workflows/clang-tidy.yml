@@ -276,7 +276,9 @@ jobs:
           # only to be discarded. Without this, vendoring a dependency lands a
           # gate demanding edits to third-party sources that the provenance
           # notes say not to touch.
+          # Generated lexer/parser output is maintained through its source grammar.
           git diff -U0 "${{ steps.base.outputs.sha }}"...HEAD -- 'src/**' ':(exclude)src/extern/**' \
+            ':(exclude)src/Parser.cpp' ':(exclude)src/Scanner.cpp' ':(exclude)src/IPFilterScanner.cpp' \
             | clang-tidy-diff-${LLVM_VERSION}.py \
                 -clang-tidy-binary clang-tidy-${LLVM_VERSION} \
                 -p1 -path build -config-file .clang-tidy-new-code -quiet 2>&1 \

@@ -1,3 +1,19 @@
+# The checked-in lexer and native IPv6 rule store, without the application.
+add_executable (IPFilterIPv6Test
+	IPFilterIPv6Test.cpp
+	${CMAKE_SOURCE_DIR}/src/IPFilterScanner.cpp
+	${CMAKE_SOURCE_DIR}/src/NetworkAddress.cpp
+	${CMAKE_SOURCE_DIR}/src/LoggerConsole.cpp
+)
+add_test (NAME IPFilterIPv6Test COMMAND IPFilterIPv6Test)
+target_include_directories (IPFilterIPv6Test PRIVATE
+	${CMAKE_BINARY_DIR}
+	${CMAKE_SOURCE_DIR}/src
+	${CMAKE_SOURCE_DIR}/src/include
+	${Boost_INCLUDE_DIR}
+)
+target_link_libraries (IPFilterIPv6Test muleunit mulecommon ${Boost_LIBRARIES})
+
 # SecIdent negotiation is pure policy. The packet handlers and RSA entry points
 # depend on theApp, sockets and the live credit store; this target needs none of
 # them and exercises the no-IPv4 prerequisite before native IPv6 peers exist.

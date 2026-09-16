@@ -30,7 +30,18 @@
 #define IPFS_EXTERN extern
 #endif
 
-#define YY_DECL int yyiplex(uint32 &IPStart, uint32 &IPEnd, uint32 &IPLevel, char *&IPDescription)
+#include <cstdio>
+#include "Types.h"
+#include "NetworkAddress.h"
+
+// Tokens: 0 = EOF, 1 = legacy IPv4 range, 2 = native IPv6 CIDR.
+#define YY_DECL \
+	int yyiplex(uint32 &IPStart, \
+		uint32 &IPEnd, \
+		uint32 &IPLevel, \
+		char *&IPDescription, \
+		CNetworkAddress &IPv6Network, \
+		uint32 &IPv6Prefix)
 YY_DECL;
 void yyiprestart(FILE *new_file);
 

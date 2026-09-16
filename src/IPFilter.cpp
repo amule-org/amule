@@ -56,7 +56,9 @@ class CIPFilterEvent : public wxEvent
 public:
 	CIPFilterEvent(CIPFilter::RangeIPs rangeIPs,
 		CIPFilter::RangeLengths rangeLengths,
-		CIPFilter::RangeNames rangeNames)
+		CIPFilter::RangeNames rangeNames,
+		CIPFilterIPv6Ranges ipv6Ranges,
+		unsigned ipv6AccessLevel)
 	: wxEvent(wxID_ANY, MULE_EVT_IPFILTER_LOADED)
 	{
 		// Physically copy the vectors, this will hopefully resize them back to their needed capacity.
@@ -64,6 +66,8 @@ public:
 		m_rangeLengths = rangeLengths;
 		// This one is usually empty, and should always be swapped, not copied.
 		std::swap(m_rangeNames, rangeNames);
+		std::swap(m_ipv6Ranges, ipv6Ranges);
+		m_ipv6AccessLevel = ipv6AccessLevel;
 	}
 
 	/** @see wxEvent::Clone */
@@ -72,6 +76,8 @@ public:
 	CIPFilter::RangeIPs m_rangeIPs;
 	CIPFilter::RangeLengths m_rangeLengths;
 	CIPFilter::RangeNames m_rangeNames;
+	CIPFilterIPv6Ranges m_ipv6Ranges;
+	unsigned m_ipv6AccessLevel;
 };
 
 wxDEFINE_EVENT(MULE_EVT_IPFILTER_LOADED, CIPFilterEvent);
@@ -120,6 +126,7 @@ private:
 		}
 
 		LoadFromFile(thePrefs::GetConfigDir() + "ipfilter_static.dat");
+		m_ipv6Ranges.Resolve();
 
 		uint8 accessLevel = thePrefs::GetIPFilterLevel();
 		uint32 size = m_result.size();
@@ -185,7 +192,7 @@ private:
 		AddDebugLogLineN(logIPFilter,
 			CFormat("Ranges in map: %d  blocked ranges in table: %d") % size % m_rangeIPs.size());
 
-		CIPFilterEvent evt(m_rangeIPs, m_rangeLengths, m_rangeNames);
+		CIPFilterEvent evt(m_rangeIPs, m_rangeLengths, m_rangeNames, m_ipv6Ranges, accessLevel);
 		wxQueueEvent(m_owner, (evt).Clone());
 	}
 
@@ -216,6 +223,7 @@ private:
 	CIPFilter::RangeIPs m_rangeIPs;
 	CIPFilter::RangeLengths m_rangeLengths;
 	CIPFilter::RangeNames m_rangeNames;
+	CIPFilterIPv6Ranges m_ipv6Ranges;
 
 	wxEvtHandler *m_owner;
 	// temporary map for filter generation
@@ -291,8 +299,20 @@ private:
 #ifdef __DEBUG__
 			uint64 time1 = GetTickCount64();
 #endif
-			while (yyiplex(IPStart, IPEnd, IPAccessLevel, IPDescription)) {
-				AddIPRange(IPStart, IPEnd, IPAccessLevel, IPDescription);
+			CNetworkAddress ipv6Network;
+			uint32 ipv6Prefix = 0;
+			int token;
+			while ((token = yyiplex(IPStart,
+					IPEnd,
+					IPAccessLevel,
+					IPDescription,
+					ipv6Network,
+					ipv6Prefix))) {
+				if (token == 2) {
+					m_ipv6Ranges.Append(ipv6Network, ipv6Prefix, IPAccessLevel);
+				} else {
+					AddIPRange(IPStart, IPEnd, IPAccessLevel, IPDescription);
+				}
 				filtercount++;
 			}
 #ifdef __DEBUG__
@@ -391,7 +411,7 @@ uint32 CIPFilter::BanCount() const
 {
 	wxMutexLocker lock(m_mutex);
 
-	return m_rangeIPs.size();
+	return m_rangeIPs.size() + m_ipv6Ranges.BanCount(m_ipv6AccessLevel);
 }
 
 bool CIPFilter::IsFiltered(uint32 IPTest, bool isServer)
@@ -444,6 +464,31 @@ bool CIPFilter::IsFiltered(uint32 IPTest, bool isServer)
 						? (" (" + wxString(char2unicode(m_rangeNames[i].c_str())) +
 							  ")")
 						: wxString("")));
+		if (isServer) {
+			theStats::AddFilteredServer();
+		} else {
+			theStats::AddFilteredClient();
+		}
+		return true;
+	}
+	return false;
+}
+
+bool CIPFilter::IsFiltered(const CNetworkAddress &address, bool isServer)
+{
+	uint32 ipv4;
+	if (address.ToIPv4NetworkOrder(ipv4)) {
+		return IsFiltered(ipv4, isServer);
+	}
+	if (address.IsAbsent()) {
+		return true;
+	}
+	if ((!thePrefs::IsFilteringClients() && !isServer) || (!thePrefs::IsFilteringServers() && isServer)) {
+		return false;
+	}
+	wxMutexLocker lock(m_mutex);
+	if (!m_ready || m_ipv6Ranges.IsFiltered(address, m_ipv6AccessLevel)) {
+		AddDebugLogLineN(logIPFilter, CFormat("Filtered IP %s") % address.ToWxString());
 		if (isServer) {
 			theStats::AddFilteredServer();
 		} else {
@@ -515,6 +560,8 @@ void CIPFilter::OnIPFilterEvent(CIPFilterEvent &evt)
 		std::swap(m_rangeIPs, evt.m_rangeIPs);
 		std::swap(m_rangeLengths, evt.m_rangeLengths);
 		std::swap(m_rangeNames, evt.m_rangeNames);
+		std::swap(m_ipv6Ranges, evt.m_ipv6Ranges);
+		m_ipv6AccessLevel = evt.m_ipv6AccessLevel;
 		m_ready = true;
 	}
 	if (theApp->IsOnShutDown()) {

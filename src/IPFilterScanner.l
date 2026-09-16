@@ -105,6 +105,29 @@ WS		[ \t\r]*
 
 %%
 
+^{WS}[0-9a-fA-F:]+"/"{NO}{WS},{WS}{NO}{WS},.* {
+		/* Native IPv6 CIDR: <address>/<prefix>,<level>,<description>.
+		   Restrict the literal alphabet: no scopes, brackets or dotted tails. */
+		char *address = yytext;
+		while (*address == ' ' || *address == '\t' || *address == '\r') {
+			++address;
+		}
+		char *slash = strchr(address, '/');
+		*slash = 0;
+		char *acc = strchr(slash + 1, ',') + 1;
+		char *dsc = strchr(acc, ',') + 1;
+		CNetworkAddress parsed = CNetworkAddress::FromString(address);
+		if (!parsed.IsIPv6() || parsed.IsIPv4Mapped() ||
+			!ScanInt(slash + 1, IPv6Prefix) || IPv6Prefix > 128 ||
+			!ScanInt(acc, IPLevel)) {
+			yyip_Bad++;
+		} else {
+			IPv6Network = parsed.TruncatedToPrefix(IPv6Prefix);
+			IPDescription = dsc;
+			return 2;
+		}
+	}
+
 ^{WS}{IP}{WS}-{WS}{IP}{WS},{WS}{NO}{WS},.*		{
 		/* PeerGuardian filter line
 		   <IPStart> - <IPEnd> , <AccessLevel> , <Description>
