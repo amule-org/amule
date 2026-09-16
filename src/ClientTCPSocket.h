@@ -103,7 +103,7 @@ private:
 
 	uint64 timeout_timer;
 	uint32 m_remoteip;
-	CNetworkAddress m_remoteAddress; // Native peer captured at accepted TCP ingress.
+	CNetworkAddress m_remoteAddress; // Dial target, or the peer captured at accepted TCP ingress.
 };
 
 #endif // CLIENTTCPSOCKET_H

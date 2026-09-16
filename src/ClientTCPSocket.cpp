@@ -75,6 +75,7 @@ CClientTCPSocket::CClientTCPSocket(CUpDownClient *in_client, const CProxyData *P
 	} else {
 		m_remoteip = 0;
 	}
+	m_remoteAddress = CNetworkAddress::FromIPv4NetworkOrderOrAbsent(m_remoteip);
 
 	ResetTimeOutTimer();
 
@@ -119,8 +120,8 @@ bool CClientTCPSocket::InitNetworkData()
 	m_remoteAddress = GetPeerAddress();
 	m_remoteip = m_remoteAddress.ToIPv4NetworkOrderOrZero();
 
-	// A peer with no 32-bit form is refused rather than narrowed: the ed2k transport path
-	// still requires IPv4. That is a decision, not an impossibility,
+	// A peer with no 32-bit form is refused rather than narrowed: m_remoteip still feeds the
+	// server check below and the hello's user ID check. That is a decision, not an impossibility,
 	// so it is logged and returned -- MULE_CHECK is wxCHECK, which also asserts in a debug build,
 	// and an inbound IPv6 peer becomes an ordinary event the moment a listener accepts one.
 	uint32 narrowed = 0;
@@ -1998,11 +1999,7 @@ void CClientTCPSocket::OnReceive(int nErrorCode)
 	// We might have updated ipfilter
 	wxASSERT(m_remoteip);
 
-	// Outbound sockets retain the legacy remote IP until a peer address is captured.
-	const CNetworkAddress address = m_remoteAddress.IsPresent()
-						? m_remoteAddress
-						: CNetworkAddress::FromIPv4NetworkOrder(m_remoteip);
-	if (theApp->ipfilter->IsFiltered(address)) {
+	if (theApp->ipfilter->IsFiltered(m_remoteAddress)) {
 		if (m_client) {
 			m_client->Safe_Delete();
 		}

@@ -1575,22 +1575,17 @@ EContactResult CUpDownClient::CheckContactPreconditions()
 		return EContactResult::Declined;
 	}
 
-	CNetworkAddress contactAddress = PeerAddressing::IndexKey(GetUserAddress());
-	if (!contactAddress.IsPresent() && !HasLowID()) {
-		contactAddress =
-			CNetworkAddress::FromIPv4NetworkOrderOrAbsent(wxUINT32_SWAP_ALWAYS(m_nUserIDHybrid));
-	}
-	const uint32 uClientIP = contactAddress.ToIPv4NetworkOrderOrZero();
-	if (!uClientIP) {
+	const CNetworkAddress contactAddress = PeerAddressing::ContactCheckAddress(
+		GetUserAddress(), HasLowID(), wxUINT32_SWAP_ALWAYS(m_nUserIDHybrid));
+	if (contactAddress.IsAbsent()) {
 		return EContactResult::Contacting;
 	}
 	// Although all received IPs (server sources, source exchange) and all incoming connection
 	// attempts are filtered, outgoing connection attempts have to be filtered here too, because
 	// the ip filter list may have been updated since.
 	if (theApp->ipfilter->IsFiltered(contactAddress)) {
-		AddDebugLogLineN(logIPFilter,
-			CFormat("Filtered ip %u (%s) on TryToConnect\n") % uClientIP %
-				Uint32toStringIP(uClientIP));
+		AddDebugLogLineN(
+			logIPFilter, "Filtered ip " + contactAddress.ToWxString() + " on TryToConnect");
 		if (Disconnected("IPFilter")) {
 			Safe_Delete();
 			return EContactResult::ClientDeleted;
@@ -1601,7 +1596,7 @@ EContactResult CUpDownClient::CheckContactPreconditions()
 	// for safety: check again whether that IP is banned
 	if (theApp->clientlist->IsBannedClient(contactAddress)) {
 		AddDebugLogLineN(
-			logClient, "Refused to connect to banned client " + Uint32toStringIP(uClientIP));
+			logClient, "Refused to connect to banned client " + contactAddress.ToWxString());
 		if (Disconnected("Banned IP")) {
 			Safe_Delete();
 			return EContactResult::ClientDeleted;

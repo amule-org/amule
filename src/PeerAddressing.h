@@ -296,14 +296,28 @@ inline CNetworkAddress RateLimitScope(const CNetworkAddress &address)
 }
 
 /**
- * Contact admission while IP filtering and ban lookup remain IPv4-only.
+ * Contact admission while IPv6 contacts stay disabled.
  * Absence retains legacy LowID/server-ID handling; it is not fabricated IPv4 zero.
  * Native IPv6 must fail closed even when globally routable or already connected.
- * Direct IPv6 reachability below remains dormant until these security controls widen.
+ * Direct IPv6 reachability below remains dormant until activation lifts this guard.
  */
 inline bool CanCheckContactAddress(const CNetworkAddress &address) noexcept
 {
 	return address.IsAbsent() || address.IsIPv4() || address.IsIPv4Mapped();
+}
+
+/**
+ * The address an outbound contact is filtered and ban-checked at, from the canonical user
+ * address. A HighID peer not yet greeted is reached at its user ID. Absent means no check can
+ * run yet (LowID, reached by callback), and the contact must not be treated as filtered.
+ */
+inline CNetworkAddress ContactCheckAddress(
+	const CNetworkAddress &userAddress, bool hasLowID, std::uint32_t userIDNetworkOrder) noexcept
+{
+	if (userAddress.IsPresent() || hasLowID) {
+		return userAddress;
+	}
+	return CNetworkAddress::FromIPv4NetworkOrderOrAbsent(userIDNetworkOrder);
 }
 
 /** Callback admission requires an address supported by the contact security controls. */
