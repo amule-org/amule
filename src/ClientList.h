@@ -257,7 +257,9 @@ public:
 		m_currentDirectCallbacks.remove(CCLIENTREF(toRemove, ""));
 	}
 	void AddTrackCallbackRequests(uint32_t ip);
+	void AddTrackCallbackRequests(const CNetworkAddress &address);
 	bool AllowCallbackRequest(uint32_t ip) const;
+	bool AllowCallbackRequest(const CNetworkAddress &address) const;
 
 protected:
 	/* Avoids unwanted clients staying in the client list forever */
@@ -338,7 +340,12 @@ private:
 
 	typedef CClientRefList DirectCallbackList;
 	DirectCallbackList m_currentDirectCallbacks;
-	IpAndTicksList m_directCallbackRequests;
+	struct CallbackAddressAndTicks
+	{
+		CNetworkAddress address;
+		uint64 inserted;
+	};
+	std::list<CallbackAddressAndTicks> m_directCallbackRequests;
 };
 
 #endif

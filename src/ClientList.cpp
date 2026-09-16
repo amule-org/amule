@@ -1173,8 +1173,17 @@ void CClientList::ProcessDirectCallbackList()
 
 void CClientList::AddTrackCallbackRequests(uint32_t ip)
 {
+	// Preserve the legacy zero-address bucket as well as every nonzero IPv4 value.
+	AddTrackCallbackRequests(CNetworkAddress::FromIPv4NetworkOrder(ip));
+}
+
+void CClientList::AddTrackCallbackRequests(const CNetworkAddress &address)
+{
+	if (!PeerAddressing::CanRequestCallback(address)) {
+		return;
+	}
 	uint64_t now = ::GetTickCount64();
-	IpAndTicks add = { ip, now };
+	CallbackAddressAndTicks add = { PeerAddressing::RateLimitScope(address), now };
 	m_directCallbackRequests.push_front(add);
 	while (!m_directCallbackRequests.empty()) {
 		if (now - m_directCallbackRequests.back().inserted > MIN2MS(3)) {
@@ -1187,11 +1196,18 @@ void CClientList::AddTrackCallbackRequests(uint32_t ip)
 
 bool CClientList::AllowCallbackRequest(uint32_t ip) const
 {
+	return AllowCallbackRequest(CNetworkAddress::FromIPv4NetworkOrder(ip));
+}
+
+bool CClientList::AllowCallbackRequest(const CNetworkAddress &address) const
+{
+	if (!PeerAddressing::CanRequestCallback(address)) {
+		return false;
+	}
 	uint64_t now = ::GetTickCount64();
-	for (IpAndTicksList::const_iterator it = m_directCallbackRequests.begin();
-		it != m_directCallbackRequests.end();
-		++it) {
-		if (it->ip == ip && now - it->inserted < MIN2MS(3)) {
+	for (const auto &request : m_directCallbackRequests) {
+		if (PeerAddressing::IsCallbackRequestThrottled(
+			    address, request.address, now - request.inserted)) {
 			return false;
 		}
 	}

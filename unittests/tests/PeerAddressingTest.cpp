@@ -51,6 +51,50 @@ using namespace PeerAddressing;
 
 DECLARE_SIMPLE(PeerAddressing)
 
+// Production contact/callback admission seams. Native IPv6 is deliberately dormant.
+TEST(PeerAddressing, ContactSecurityChecksFailClosedForNativeIPv6)
+{
+	for (const char *text : { "2001:4860::1", "2001:db8::1", "fe80::1", "fd00::1", "::1", "::" }) {
+		const auto address = CNetworkAddress::FromString(text);
+		ASSERT_FALSE(CanCheckContactAddress(address));
+		ASSERT_FALSE(CanRequestCallback(address));
+	}
+	// Unknown clients still use the existing LowID/server-ID path, not a made-up address.
+	ASSERT_TRUE(CanCheckContactAddress(CNetworkAddress::Absent()));
+	ASSERT_FALSE(CanRequestCallback(CNetworkAddress::Absent()));
+	for (const char *text : { "192.0.2.1", "::ffff:192.0.2.1", "0.0.0.0", "::ffff:0.0.0.0" }) {
+		const auto address = CNetworkAddress::FromString(text);
+		ASSERT_TRUE(CanCheckContactAddress(address));
+		ASSERT_TRUE(CanRequestCallback(address));
+	}
+}
+
+TEST(PeerAddressing, CallbackThrottlePreservesIPv4AndExpiryBoundary)
+{
+	const auto address = CNetworkAddress::FromString("192.0.2.1");
+	const auto mapped = CNetworkAddress::FromString("::ffff:192.0.2.1");
+	ASSERT_TRUE(IsCallbackRequestThrottled(address, address, 0));
+	ASSERT_TRUE(IsCallbackRequestThrottled(mapped, address, 179999));
+	ASSERT_TRUE(IsCallbackRequestThrottled(address, mapped, 179999));
+	ASSERT_FALSE(IsCallbackRequestThrottled(address, address, 180000));
+	ASSERT_FALSE(IsCallbackRequestThrottled(address, address, 180001));
+	ASSERT_FALSE(IsCallbackRequestThrottled(address, CNetworkAddress::FromString("192.0.2.2"), 0));
+	const auto zero = CNetworkAddress::FromIPv4NetworkOrder(0);
+	ASSERT_TRUE(IsCallbackRequestThrottled(zero, zero, 0));
+	ASSERT_FALSE(IsCallbackRequestThrottled(CNetworkAddress::Absent(), zero, 0));
+	ASSERT_FALSE(IsCallbackRequestThrottled(zero, CNetworkAddress::Absent(), 0));
+}
+
+TEST(PeerAddressing, DormantIPv6CallbackScopeRemainsPerSubscriber)
+{
+	const auto address = CNetworkAddress::FromString("2001:4860:1:2::1");
+	ASSERT_TRUE(IsCallbackRequestThrottled(address, CNetworkAddress::FromString("2001:4860:1:2::2"), 0));
+	ASSERT_FALSE(IsCallbackRequestThrottled(address, CNetworkAddress::FromString("2001:4860:1:3::1"), 0));
+	// Accounting support is not permission to skip the IPv4-only security controls.
+	ASSERT_FALSE(CanRequestCallback(address));
+	ASSERT_FALSE(CanCheckContactAddress(address));
+}
+
 // Indexability
 
 TEST(PeerAddressing, AbsentIsNeverIndexable)

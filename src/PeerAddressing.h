@@ -32,7 +32,7 @@
 /**
  * What identifies a peer, once a peer can be IPv6.
  *
- * These value policies prepare peer-address widening without changing production call sites.
+ * These value policies support peer-address widening at production call sites.
  * Socket-ingress normalization belongs to the later call-sites PR; local unmapping here
  * defensively handles both native and mapped IPv4.
  *
@@ -248,6 +248,31 @@ inline CNetworkAddress RateLimitScope(const CNetworkAddress &address)
 		return unmapped;
 	}
 	return unmapped.TruncatedToPrefix(kIPv6RateLimitPrefixBits);
+}
+
+/**
+ * Contact admission while IP filtering and ban lookup remain IPv4-only.
+ * Absence retains legacy LowID/server-ID handling; it is not fabricated IPv4 zero.
+ * Native IPv6 must fail closed even when globally routable or already connected.
+ * Direct IPv6 reachability below remains dormant until these security controls widen.
+ */
+inline bool CanCheckContactAddress(const CNetworkAddress &address) noexcept
+{
+	return address.IsAbsent() || address.IsIPv4() || address.IsIPv4Mapped();
+}
+
+/** Callback admission requires an address supported by the contact security controls. */
+inline bool CanRequestCallback(const CNetworkAddress &address) noexcept
+{
+	return address.IsPresent() && CanCheckContactAddress(address);
+}
+
+/** Production callback throttle seam; the exact three-minute boundary remains allowed. */
+inline bool IsCallbackRequestThrottled(
+	const CNetworkAddress &address, const CNetworkAddress &previous, std::uint64_t elapsed) noexcept
+{
+	return address.IsPresent() && previous.IsPresent() &&
+	       RateLimitScope(address) == RateLimitScope(previous) && elapsed < 3 * 60 * 1000;
 }
 
 /**

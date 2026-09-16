@@ -1564,6 +1564,16 @@ EContactResult CUpDownClient::CheckContactPreconditions()
 		return EContactResult::Declined;
 	}
 
+	// Do not narrow native IPv6 to zero and then skip the IPv4-only security checks
+	// or fall back to a server ID. This also protects already-connected browse requests.
+	if (!PeerAddressing::CanCheckContactAddress(GetUserAddress())) {
+		if (Disconnected("IPv6 contact security checks unavailable")) {
+			Safe_Delete();
+			return EContactResult::ClientDeleted;
+		}
+		return EContactResult::Declined;
+	}
+
 	uint32 uClientIP = GetIP();
 	if (uClientIP == 0 && !HasLowID()) {
 		uClientIP = wxUINT32_SWAP_ALWAYS(m_nUserIDHybrid);
