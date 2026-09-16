@@ -94,13 +94,17 @@ inline bool IsSecurityKey(const CNetworkAddress &address) noexcept
 
 /**
  * Programmatic filter-prefix matching, independent of the IPv4 filter-file parser.
- * Width is in the canonical family (mapped IPv4 uses 0..32). Host bits in the
+ * Width is in the canonical family, or IPv6 width for a mapped prefix. Host bits in the
  * prefix are ignored. Prefixes are interface-independent, including at /128.
  * An unspecified network base is valid (e.g. ::/0), but never a matching host.
  */
 inline bool MatchesFilterPrefix(
 	const CNetworkAddress &address, const CNetworkAddress &prefix, unsigned bits) noexcept
 {
+	// ::ffff:10.0.0.0/104 is written in IPv6 width; 96 of those bits are the mapping itself.
+	if (prefix.IsIPv4Mapped() && bits >= 96) {
+		bits -= 96;
+	}
 	const auto key = IndexKey(address);
 	const auto network = IndexKey(prefix);
 	if (!IsSecurityKey(key) || network.IsAbsent() || key.IsIPv4() != network.IsIPv4() ||

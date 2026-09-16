@@ -32,7 +32,6 @@
 #include <vector>
 
 #include "Types.h" // Needed for uint8, uint16 and uint32
-#include "PeerAddressing.h"
 
 class CIPFilterEvent;
 
@@ -47,25 +46,6 @@ class CIPFilter : public wxEvtHandler
 {
 public:
 	CIPFilter();
-
-	/**
-	 * Pure programmatic matching API. These predicates do not install rules or
-	 * consult preferences/statistics. Filter-file ingestion remains IPv4-only.
-	 * Mapped IPv4 uses IPv4 prefix widths; ranges are inclusive. Interface scope
-	 * is ignored for filter rules, unlike host identity in CBanRecord.
-	 */
-	static bool MatchesPrefix(
-		const CNetworkAddress &address, const CNetworkAddress &prefix, unsigned bits) noexcept
-	{
-		return PeerAddressing::MatchesFilterPrefix(address, prefix, bits);
-	}
-
-	static bool MatchesRange(const CNetworkAddress &address,
-		const CNetworkAddress &first,
-		const CNetworkAddress &last) noexcept
-	{
-		return PeerAddressing::MatchesFilterRange(address, first, last);
-	}
 
 	/**
 	 * True if @a IP2test is filtered by the current list and access level. @a isServer says
