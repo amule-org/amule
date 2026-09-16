@@ -119,8 +119,8 @@ bool CClientTCPSocket::InitNetworkData()
 	m_remoteAddress = GetPeerAddress();
 	m_remoteip = m_remoteAddress.ToIPv4NetworkOrderOrZero();
 
-	// A peer with no 32-bit form is refused rather than narrowed: the filters, bans and client
-	// indexes below are all keyed on the ed2k uint32. That is a decision, not an impossibility,
+	// A peer with no 32-bit form is refused rather than narrowed: the ed2k transport path
+	// still requires IPv4. That is a decision, not an impossibility,
 	// so it is logged and returned -- MULE_CHECK is wxCHECK, which also asserts in a debug build,
 	// and an inbound IPv6 peer becomes an ordinary event the moment a listener accepts one.
 	uint32 narrowed = 0;
@@ -133,10 +133,10 @@ bool CClientTCPSocket::InitNetworkData()
 	// Absent, on the other hand, means the accept gave us no address at all.
 	MULE_CHECK(m_remoteip, false);
 
-	if (theApp->ipfilter->IsFiltered(m_remoteip)) {
+	if (theApp->ipfilter->IsFiltered(m_remoteAddress)) {
 		AddDebugLogLineN(logClient, "Denied connection from " + GetPeer() + "(Filtered IP)");
 		return false;
-	} else if (theApp->clientlist->IsBannedClient(m_remoteip)) {
+	} else if (theApp->clientlist->IsBannedClient(m_remoteAddress)) {
 		AddDebugLogLineN(logClient, "Denied connection from " + GetPeer() + "(Banned IP)");
 		return false;
 	} else {
@@ -330,7 +330,7 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 		}
 
 		// if IP is filtered, dont reply but disconnect...
-		if (theApp->ipfilter->IsFiltered(m_client->GetIP())) {
+		if (theApp->ipfilter->IsFiltered(m_client->GetUserAddress())) {
 			if (bNewClient) {
 				m_client->Safe_Delete();
 				m_client = NULL;
@@ -1998,7 +1998,11 @@ void CClientTCPSocket::OnReceive(int nErrorCode)
 	// We might have updated ipfilter
 	wxASSERT(m_remoteip);
 
-	if (theApp->ipfilter->IsFiltered(m_remoteip)) {
+	// Outbound sockets retain the legacy remote IP until a peer address is captured.
+	const CNetworkAddress address = m_remoteAddress.IsPresent()
+						? m_remoteAddress
+						: CNetworkAddress::FromIPv4NetworkOrder(m_remoteip);
+	if (theApp->ipfilter->IsFiltered(address)) {
 		if (m_client) {
 			m_client->Safe_Delete();
 		}

@@ -761,21 +761,31 @@ void CClientList::Process()
 
 void CClientList::AddBannedClient(uint32 dwIP)
 {
+	AddBannedClient(CNetworkAddress::FromIPv4NetworkOrder(dwIP));
+}
+
+void CClientList::AddBannedClient(const CNetworkAddress &address)
+{
 	// Counted only when the address was not already banned. Ban() overwrote the tick on an
 	// address already present and counted it again, and CUpDownClient::SetSpammer(true) calls
 	// Ban() with no IsBanned() check, so a client banned for aggressiveness and later flagged
 	// as a spammer counted twice while UnBan() gave back one.
-	if (m_bannedList.Ban(dwIP, ::GetTickCount64())) {
+	if (m_bannedList.Ban(address, ::GetTickCount64())) {
 		theStats::AddBannedClient();
 	}
 }
 
 bool CClientList::IsBannedClient(uint32 dwIP)
 {
+	return IsBannedClient(CNetworkAddress::FromIPv4NetworkOrder(dwIP));
+}
+
+bool CClientList::IsBannedClient(const CNetworkAddress &address)
+{
 	// A lapsed ban is dropped inside the lookup, so the decrement has to
 	// follow what the lookup did rather than the answer it gave.
 	bool dropped = false;
-	const bool banned = m_bannedList.IsBanned(dwIP, ::GetTickCount64(), &dropped);
+	const bool banned = m_bannedList.IsBanned(address, ::GetTickCount64(), &dropped);
 	if (dropped) {
 		theStats::RemoveBannedClient();
 	}
@@ -784,9 +794,14 @@ bool CClientList::IsBannedClient(uint32 dwIP)
 
 void CClientList::RemoveBannedClient(uint32 dwIP)
 {
+	RemoveBannedClient(CNetworkAddress::FromIPv4NetworkOrder(dwIP));
+}
+
+void CClientList::RemoveBannedClient(const CNetworkAddress &address)
+{
 	// The mirror of the add path: erase() removed nothing when the address
 	// was not banned, and the count followed the call anyway.
-	if (m_bannedList.Unban(dwIP)) {
+	if (m_bannedList.Unban(address)) {
 		theStats::RemoveBannedClient();
 	}
 }
@@ -796,7 +811,7 @@ void CClientList::FilterQueues()
 	for (AddressMap::const_iterator it = m_ipList.begin(); it != m_ipList.end();) {
 		AddressMap::const_iterator tmp = it++; // Don't change this to a ++it!
 		CUpDownClient *client = tmp->second.GetClient();
-		if (theApp->ipfilter->IsFiltered(client->GetConnectIP())) {
+		if (theApp->ipfilter->IsFiltered(tmp->first)) {
 			client->Disconnected("Filtered by IPFilter");
 			client->Safe_Delete();
 		}

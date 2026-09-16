@@ -165,16 +165,19 @@ public:
 	 * Bans an IP address for 2 hours.
 	 */
 	void AddBannedClient(uint32 dwIP);
+	void AddBannedClient(const CNetworkAddress &address);
 
 	/**
 	 * @return True if the IP is banned.
 	 */
 	bool IsBannedClient(uint32 dwIP);
+	bool IsBannedClient(const CNetworkAddress &address);
 
 	/**
 	 * Unbans an IP address, if it has been banned.
 	 */
 	void RemoveBannedClient(uint32 dwIP);
+	void RemoveBannedClient(const CNetworkAddress &address);
 
 	/**
 	 * Main loop: cleans the various lists and deletes pending clients on the deletion queue.
