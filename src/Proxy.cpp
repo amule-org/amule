@@ -645,38 +645,21 @@ void CSocks5StateMachine::process_process_command_reply(bool entry)
 {
 	if (entry) {
 		m_lastReply = m_buffer[1];
-		unsigned char addressType = m_buffer[3];
-		// Process the server's reply
-		m_ok = m_ok && m_buffer[0] == SOCKS5_VERSION && m_buffer[1] == SOCKS5_REPLY_SUCCEED;
+		// Process the server's reply. An IPv6 or unknown bound address fails the negotiation:
+		// the bound address is kept as IPv4.
+		const unsigned int portOffset = Socks5ReplyPortOffset(m_buffer, m_lastRead);
+		m_ok = m_ok && portOffset && m_buffer[0] == SOCKS5_VERSION &&
+		       m_buffer[1] == SOCKS5_REPLY_SUCCEED;
 		if (m_ok) {
-			unsigned int portOffset = 0;
-			switch (addressType) {
-			case SOCKS5_ATYP_IPV4_ADDRESS: {
-				const unsigned int addrOffset = 4;
-				portOffset = 8;
-				m_proxyBoundAddressIPV4.Hostname(PeekUInt32(m_buffer + addrOffset));
-				m_proxyBoundAddress = &m_proxyBoundAddressIPV4;
-				break;
-			}
-			case SOCKS5_ATYP_DOMAINNAME: {
-				// Read the domain name
-				const unsigned int addrOffset = 5;
-				portOffset = 10 + m_buffer[4];
-				char c = m_buffer[portOffset];
+			if (m_buffer[3] == SOCKS5_ATYP_IPV4_ADDRESS) {
+				m_proxyBoundAddressIPV4.Hostname(PeekUInt32(m_buffer + 4));
+			} else {
+				const char c = m_buffer[portOffset];
 				m_buffer[portOffset] = 0;
-				m_proxyBoundAddressIPV4.Hostname(char2unicode(m_buffer + addrOffset));
-				m_proxyBoundAddress = &m_proxyBoundAddressIPV4;
+				m_proxyBoundAddressIPV4.Hostname(char2unicode(m_buffer + 5));
 				m_buffer[portOffset] = c;
-				break;
 			}
-			case SOCKS5_ATYP_IPV6_ADDRESS: {
-				portOffset = 20;
-				// TODO: IPv6 is not yet implemented in wx.
-				m_ok = false;
-				break;
-			}
-			}
-			// Set the packet length at last
+			m_proxyBoundAddress = &m_proxyBoundAddressIPV4;
 			m_packetLength = portOffset + 2;
 			m_proxyBoundAddress->Service(ENDIAN_NTOHS(RawPeekUInt16(m_buffer + portOffset)));
 		}
@@ -1202,7 +1185,17 @@ uint32 CDatagramSocketProxy::RecvFrom(CNetworkAddress &addr, uint16 &port, void 
 			uint16 relayPort = 0;
 			read = CLibUDPSocket::RecvFrom(
 				relay, relayPort, bufUDP, nBytes + PROXY_UDP_MAXIMUM_OVERHEAD);
-			read = ParseSocks5UDPDatagram(bufUDP, read, addr, port, buf, nBytes);
+			// Anything else reaching this port could forge the SOCKS header and its source.
+			const amuleIPV4Address &bound = m_proxyTCPSocket.GetProxyBoundAddress();
+			const CNetworkAddress boundIP =
+				CNetworkAddress::FromIPv4NetworkOrder(StringIPtoUint32(bound.IPAddress()));
+			if (IsFromSocks5Relay(relay, relayPort, boundIP, bound.Service())) {
+				read = ParseSocks5UDPDatagram(bufUDP, read, addr, port, buf, nBytes);
+			} else {
+				addr = CNetworkAddress::Absent();
+				port = 0;
+				read = 0;
+			}
 
 			/* Only delete buffer if it was dynamically created */
 			if (bufUDP != m_proxyTCPSocket.GetBuffer()) {

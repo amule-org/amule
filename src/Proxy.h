@@ -470,6 +470,30 @@ inline uint32 ParseSocks5UDPDatagram(const char *packet,
 	return length;
 }
 
+/** Offset of the port in a SOCKS5 command reply, or 0 when the reply is truncated or its bound
+ * address cannot be used here (IPv6 or an unknown type).
+ */
+inline unsigned int Socks5ReplyPortOffset(const char *reply, uint32 available)
+{
+	unsigned int portOffset = 0;
+	if (available >= 5 && reply[3] == SOCKS5_ATYP_IPV4_ADDRESS) {
+		portOffset = 8;
+	} else if (available >= 5 && reply[3] == SOCKS5_ATYP_DOMAINNAME) {
+		portOffset = 5 + static_cast<unsigned char>(reply[4]);
+	}
+	return portOffset && available >= portOffset + 2 ? portOffset : 0;
+}
+
+/** Whether a datagram came from the relay named in the UDP ASSOCIATE reply. An unspecified
+ * relay address (0.0.0.0) pins only the port.
+ */
+inline bool IsFromSocks5Relay(
+	const CNetworkAddress &source, uint16 sourcePort, const CNetworkAddress &relay, uint16 relayPort)
+{
+	return source.IsPresent() && sourcePort == relayPort &&
+	       (relay.IsUnspecified() || source.Unmapped() == relay.Unmapped());
+}
+
 class CDatagramSocketProxy : public CLibUDPSocket
 {
 public:

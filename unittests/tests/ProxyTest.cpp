@@ -152,4 +152,50 @@ TEST(Proxy, PortDecodesBothOctetsInNetworkOrder)
 	}
 }
 
+namespace
+{
+unsigned int PortOffset(const std::vector<unsigned char> &reply)
+{
+	return Socks5ReplyPortOffset(reinterpret_cast<const char *>(reply.data()), reply.size());
+}
+} // namespace
+
+TEST(Proxy, CommandReplyPortOffsetFollowsTheAddressType)
+{
+	const std::vector<unsigned char> v4 = { 5, 0, 0, 1, 192, 0, 2, 7, 0x12, 0x80 };
+	ASSERT_EQUALS(8u, PortOffset(v4));
+	// RFC 1928: VER REP RSV ATYP, one length octet, the name, then the port.
+	const std::vector<unsigned char> domain = { 5, 0, 0, 3, 3, 'a', '.', 'b', 0x12, 0x80 };
+	ASSERT_EQUALS(8u, PortOffset(domain));
+	for (const auto &reply : { v4, domain }) {
+		for (std::size_t size = 0; size < reply.size(); ++size) {
+			ASSERT_EQUALS(0u,
+				PortOffset(std::vector<unsigned char>(reply.begin(), reply.begin() + size)));
+		}
+	}
+	// The bound address is kept as IPv4, so an IPv6 or unknown one cannot be used.
+	std::vector<unsigned char> v6(22, 0);
+	v6[0] = 5;
+	v6[3] = 4;
+	ASSERT_EQUALS(0u, PortOffset(v6));
+	auto unknown = v4;
+	unknown[3] = 2;
+	ASSERT_EQUALS(0u, PortOffset(unknown));
+}
+
+TEST(Proxy, RelayDatagramsMustComeFromTheBoundRelay)
+{
+	const auto relay = CNetworkAddress::FromString("192.0.2.1");
+	ASSERT_TRUE(IsFromSocks5Relay(relay, 1080, relay, 1080));
+	ASSERT_TRUE(IsFromSocks5Relay(CNetworkAddress::FromString("::ffff:192.0.2.1"), 1080, relay, 1080));
+	ASSERT_FALSE(IsFromSocks5Relay(relay, 1081, relay, 1080));
+	ASSERT_FALSE(IsFromSocks5Relay(CNetworkAddress::FromString("192.0.2.2"), 1080, relay, 1080));
+	ASSERT_FALSE(IsFromSocks5Relay(CNetworkAddress::Absent(), 1080, relay, 1080));
+	// A relay reported as 0.0.0.0 pins only the port.
+	const auto any = CNetworkAddress::FromString("0.0.0.0");
+	ASSERT_TRUE(IsFromSocks5Relay(CNetworkAddress::FromString("198.51.100.9"), 1080, any, 1080));
+	ASSERT_FALSE(IsFromSocks5Relay(CNetworkAddress::FromString("198.51.100.9"), 1081, any, 1080));
+	ASSERT_FALSE(IsFromSocks5Relay(CNetworkAddress::Absent(), 1080, any, 1080));
+}
+
 // File_checked_for_headers

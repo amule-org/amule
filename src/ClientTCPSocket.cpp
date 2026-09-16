@@ -1787,6 +1787,14 @@ bool CClientTCPSocket::ProcessExtPacket(const uint8_t *buffer, uint32 size, uint
 			logRemoteClient, "Remote Client: OP_REASKCALLBACKTCP from " + m_client->GetFullIP());
 		CMemFile data_in(buffer, size);
 		uint32 destip = data_in.ReadUInt32();
+		if (destip == 0xFFFFFFFF) {
+			// eMuleAI and eMule-Qt send an IPv6 requester as this plus 16 address bytes. There is
+			// no IPv6 UDP to answer on, and reading it as IPv4 would aim at 255.255.255.255.
+			AddDebugLogLineN(logRemoteClient,
+				"Remote Client: OP_REASKCALLBACKTCP for an IPv6 requester from " +
+					m_client->GetFullIP() + ", ignored");
+			break;
+		}
 		uint16 destport = data_in.ReadUInt16();
 		CMD4Hash hash = data_in.ReadHash();
 		CKnownFile *reqfile = theApp->sharedfiles->GetFileByID(hash);
