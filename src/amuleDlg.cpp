@@ -1574,9 +1574,12 @@ void CamuleDlg::OnBnClickedFast(wxCommandEvent &WXUNUSED(evt))
 		return;
 	}
 
+	// Split on real line breaks: on MSW, GetLineText() returns wrapped screen
+	// lines, which cuts a long link in two.
 	wxArrayString links;
-	for (int i = 0; i < ctl->GetNumberOfLines(); i++) {
-		wxString strlink = ctl->GetLineText(i);
+	wxStringTokenizer lines(ctl->GetValue(), "\r\n", wxTOKEN_STRTOK);
+	while (lines.HasMoreTokens()) {
+		wxString strlink = lines.GetNextToken();
 		strlink.Trim(true);
 		strlink.Trim(false);
 		if (!strlink.IsEmpty()) {
