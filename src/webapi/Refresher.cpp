@@ -120,14 +120,14 @@ const char *ClientObfuscationName(std::uint8_t code)
 	}
 }
 // Map EC_TAG_CLIENT_FROM (ESourceFrom, Constants.h) to a stable lowercase token,
-// mirroring the GUI's Origin column without leaking the daemon locale. Local/remote server
-// both collapse to "server".
+// mirroring the GUI's Origin column without leaking the daemon locale.
 std::string SourceOriginName(std::uint32_t from)
 {
 	switch (from) {
 	case SF_LOCAL_SERVER:
+		return "local_server";
 	case SF_REMOTE_SERVER:
-		return "server";
+		return "remote_server";
 	case SF_KADEMLIA:
 		return "kad";
 	case SF_SOURCE_EXCHANGE:

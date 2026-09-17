@@ -737,6 +737,20 @@ else
 	_skip "no connected peer, cannot check the client null-string contract"
 fi
 
+# --- 9. source_origin is always a documented token, on the live clients and
+# the known ones alike: local and remote server stay distinct, as in the GUI's
+# Origin column. Reads only, appended at the end for the same reason as 8.
+ORIGIN_TOKENS='["local_server","remote_server","kad","source_exchange","passive","link","source_seeds","search_result","unknown"]'
+for path in clients known_clients; do
+	_curl -H "Authorization: Bearer $TOKEN" "$API/$path"
+	if [ "$(echo "$CURL_BODY" | jq -r --arg k "$path" '.[$k] | length')" != "0" ]; then
+		_assert_json_eq "[.$path[].source_origin | select(. != null)] - $ORIGIN_TOKENS | length" 0 \
+			"/$path: every source_origin is a documented token"
+	else
+		_skip "/$path: no rows, cannot check the source_origin tokens"
+	fi
+done
+
 # --- Summary. -----------------------------------------------------
 echo
 SKIP_NOTE=""

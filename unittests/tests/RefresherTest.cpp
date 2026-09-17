@@ -29,6 +29,8 @@
 #include "PrefsSchema.h"
 #include "Server.h" // SRV_PR_*
 #include "PrefsSchema.h"
+#include "ClientTagNames.h"
+#include "Constants.h" // ESourceFrom
 #include "Refresher.h"
 #include "State.h"
 
@@ -2150,6 +2152,21 @@ TEST(Refresher, ClientDetailFieldsDecode)
 	// #423 fields absent on the wire => defaults preserved.
 	ASSERT_TRUE(!it2->second.is_friend);
 	ASSERT_TRUE(it2->second.credit_ratio == 0.0);
+}
+
+// Every origin the GUI tells apart stays apart on the API, local and remote server included.
+TEST(Refresher, SourceOriginNameMapsEveryOrigin)
+{
+	ASSERT_EQUALS(std::string("local_server"), SourceOriginName(SF_LOCAL_SERVER));
+	ASSERT_EQUALS(std::string("remote_server"), SourceOriginName(SF_REMOTE_SERVER));
+	ASSERT_EQUALS(std::string("kad"), SourceOriginName(SF_KADEMLIA));
+	ASSERT_EQUALS(std::string("source_exchange"), SourceOriginName(SF_SOURCE_EXCHANGE));
+	ASSERT_EQUALS(std::string("passive"), SourceOriginName(SF_PASSIVE));
+	ASSERT_EQUALS(std::string("link"), SourceOriginName(SF_LINK));
+	ASSERT_EQUALS(std::string("source_seeds"), SourceOriginName(SF_SOURCE_SEEDS));
+	ASSERT_EQUALS(std::string("search_result"), SourceOriginName(SF_SEARCH_RESULT));
+	ASSERT_EQUALS(std::string("unknown"), SourceOriginName(SF_NONE));
+	ASSERT_EQUALS(std::string("unknown"), SourceOriginName(SF_SEARCH_RESULT + 1));
 }
 
 // #437: extended EC preference categories decode. Covers both boolean encodings the core serializer

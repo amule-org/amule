@@ -50,8 +50,7 @@ const char *ClientSoftwareName(std::uint32_t code);
 //! EC_TAG_CLIENT_OBFUSCATION_STATUS (EObfuscationState) to a token.
 const char *ClientObfuscationName(std::uint8_t code);
 
-//! EC_TAG_CLIENT_FROM (ESourceFrom) to a token. Local and remote server both
-//! collapse to "server".
+//! EC_TAG_CLIENT_FROM (ESourceFrom) to a token, e.g. "local_server".
 std::string SourceOriginName(std::uint32_t from);
 
 } // namespace webapi
