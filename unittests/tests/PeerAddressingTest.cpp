@@ -147,18 +147,21 @@ TEST(PeerAddressing, ContactSecurityChecksAllowNativeIPv6)
 
 TEST(PeerAddressing, ContactCheckAddressKeepsLowIDUnchecked)
 {
+	const auto absent = CNetworkAddress::Absent();
 	const auto user = CNetworkAddress::FromString("192.0.2.1");
-	ASSERT_TRUE(ContactCheckAddress(user, false, 0x02000000u) == user);
-	ASSERT_TRUE(ContactCheckAddress(user, true, 0) == user);
+	ASSERT_TRUE(ContactCheckAddress(user, absent, false, 0x02000000u) == user);
+	ASSERT_TRUE(ContactCheckAddress(user, absent, true, 0) == user);
 	// A HighID source built from its user ID has no user address until its hello.
-	ASSERT_TRUE(ContactCheckAddress(CNetworkAddress::Absent(), false, 0x010200C0u) ==
+	ASSERT_TRUE(ContactCheckAddress(absent, absent, false, 0x010200C0u) ==
 		    CNetworkAddress::FromString("192.0.2.1"));
-	// LowID and zero IDs stay absent: filtering one would disconnect every callback contact.
-	ASSERT_TRUE(ContactCheckAddress(CNetworkAddress::Absent(), true, 0x010200C0u).IsAbsent());
-	ASSERT_TRUE(ContactCheckAddress(CNetworkAddress::Absent(), false, 0).IsAbsent());
-	// Native IPv6 is returned for checking, not narrowed to "no address".
+	// A HighID source with a native connect address uses it until its hello.
 	const auto native = CNetworkAddress::FromString("2001:4860::1");
-	ASSERT_TRUE(ContactCheckAddress(native, false, 0) == native);
+	ASSERT_TRUE(ContactCheckAddress(absent, native, false, 0) == native);
+	ASSERT_FALSE(CanOpenConnection(native, false));
+	ASSERT_TRUE(CanOpenConnection(native, true));
+	// LowID and zero IDs stay absent: filtering one would disconnect every callback contact.
+	ASSERT_TRUE(ContactCheckAddress(absent, native, true, 0x010200C0u).IsAbsent());
+	ASSERT_TRUE(ContactCheckAddress(absent, absent, false, 0).IsAbsent());
 }
 
 TEST(PeerAddressing, CallbackThrottlePreservesIPv4AndExpiryBoundary)

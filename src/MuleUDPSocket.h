@@ -29,6 +29,7 @@
 #include "ThrottledSocket.h"  // Needed for ThrottledControlSocket
 #include "amuleIPV4Address.h" // Needed for amuleIPV4Address
 #include "NetworkAddress.h"   // Needed for typed packet source addresses
+#include "Logger.h"           // Needed for DebugType
 
 #include <wx/thread.h> // Needed for wxMutex
 
@@ -128,6 +129,11 @@ protected:
 
 	/** See ThrottledControlSocket::SendControlData */
 	SocketSentBytes SendControlData(uint32 maxNumberOfBytesToSend, uint32 minFragSize);
+
+	bool GetIPv4PacketAddress(const CNetworkAddress &address,
+		uint32_t &ip,
+		DebugType logType,
+		const wxString &packetKind) const;
 
 private:
 	/**

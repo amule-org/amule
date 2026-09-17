@@ -39,7 +39,7 @@ public:
 
 	void SendPacket(CPacket *packet, CServer *host, bool delPacket, bool rawpacket, uint16 port_offset);
 	void OnHostnameResolved(uint32 ip);
-	virtual void OnReceiveError(int errorCode, uint32 ip, uint16 port);
+	void OnReceiveError(int errorCode, uint32 ip, uint16 port) override;
 
 private:
 	void OnPacketReceived(

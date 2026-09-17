@@ -133,13 +133,12 @@ CUpDownClient::CUpDownClient(uint16 in_port,
 
 	if (!HasLowID()) {
 		if (ed2kID) {
-			m_nConnectIP = in_userid;
+			m_connectAddress = CNetworkAddress::FromIPv4NetworkOrder(in_userid);
 		} else {
-			m_nConnectIP = wxUINT32_SWAP_ALWAYS(in_userid);
+			m_connectAddress =
+				CNetworkAddress::FromIPv4NetworkOrder(wxUINT32_SWAP_ALWAYS(in_userid));
 		}
-		m_connectAddress = CNetworkAddress::FromIPv4NetworkOrder(m_nConnectIP);
-		// Will be on right endianness now
-		m_FullUserIP = m_nConnectIP;
+		m_FullUserIP = m_connectAddress.ToIPv4NetworkOrderOrZero();
 	}
 
 	m_dwServerIP = in_serverip;
@@ -253,7 +252,6 @@ void CUpDownClient::Init()
 
 	m_dwUserIP = 0;
 	m_connectAddress = CNetworkAddress::Absent();
-	m_nConnectIP = 0;
 	m_dwServerIP = 0;
 
 	m_fNeedOurPublicIP = false;
@@ -1567,13 +1565,9 @@ EContactResult CUpDownClient::CheckContactPreconditions()
 		return EContactResult::Declined;
 	}
 
-	// Do not narrow native IPv6 to zero and then skip the contact security checks
-	// or fall back to a server ID. This also protects already-connected browse requests.
 	const bool hasLowID = HasLowID();
-	const CNetworkAddress userAddress =
-		hasLowID || GetUserAddress().IsPresent() ? GetUserAddress() : GetConnectAddress();
 	const CNetworkAddress contactAddress = PeerAddressing::ContactCheckAddress(
-		userAddress, hasLowID, wxUINT32_SWAP_ALWAYS(m_nUserIDHybrid));
+		GetUserAddress(), GetConnectAddress(), hasLowID, wxUINT32_SWAP_ALWAYS(m_nUserIDHybrid));
 	if (!PeerAddressing::CanCheckContactAddress(contactAddress)) {
 		if (Disconnected("Contact security checks unavailable")) {
 			Safe_Delete();
@@ -1605,6 +1599,9 @@ EContactResult CUpDownClient::CheckContactPreconditions()
 			Safe_Delete();
 			return EContactResult::ClientDeleted;
 		}
+		return EContactResult::Declined;
+	}
+	if (!PeerAddressing::CanOpenConnection(contactAddress, IsConnected())) {
 		return EContactResult::Declined;
 	}
 	return EContactResult::Contacting;
@@ -2786,7 +2783,6 @@ void CUpDownClient::SetUserAddress(const CNetworkAddress &address)
 	m_dwUserIP = val;
 
 	m_connectAddress = key;
-	m_nConnectIP = val;
 
 	m_FullUserIP = val;
 }

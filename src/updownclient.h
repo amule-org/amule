@@ -741,7 +741,6 @@ private:
 	CNetworkAddress m_connectAddress;
 	// Legacy IPv4 adapter; zero when the peer has no IPv4 form.
 	uint32 m_dwUserIP;
-	uint32 m_nConnectIP; // Legacy adapter; GetConnectAddress() is authoritative
 	uint32 m_dwServerIP;
 	uint32 m_nUserIDHybrid;
 	uint16_t m_nUserPort;

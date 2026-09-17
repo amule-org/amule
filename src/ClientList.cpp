@@ -1119,8 +1119,7 @@ void CClientList::ProcessDirectCallbackList()
 
 void CClientList::AddTrackCallbackRequests(uint32_t ip)
 {
-	// Preserve the legacy zero-address bucket as well as every nonzero IPv4 value.
-	AddTrackCallbackRequests(CNetworkAddress::FromIPv4NetworkOrder(ip));
+	AddTrackCallbackRequests(CNetworkAddress::FromIPv4NetworkOrderOrAbsent(ip));
 }
 
 void CClientList::AddTrackCallbackRequests(const CNetworkAddress &address)
@@ -1143,7 +1142,7 @@ void CClientList::AddTrackCallbackRequests(const CNetworkAddress &address)
 
 bool CClientList::AllowCallbackRequest(uint32_t ip) const
 {
-	return AllowCallbackRequest(CNetworkAddress::FromIPv4NetworkOrder(ip));
+	return AllowCallbackRequest(CNetworkAddress::FromIPv4NetworkOrderOrAbsent(ip));
 }
 
 bool CClientList::AllowCallbackRequest(const CNetworkAddress &address) const

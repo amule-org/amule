@@ -136,10 +136,8 @@ void CClientUDPSocket::OnPacketReceived(
 	wxCHECK_RET(length >= 2, "Invalid packet.");
 
 	// Legacy encrypted/Kad packet handlers remain IPv4-only; keep the family boundary explicit.
-	const uint32 ip = address.ToIPv4NetworkOrderOrZero();
-	if (!ip) {
-		AddDebugLogLineN(logClientUDP,
-			"Ignoring UDP packet from native IPv6 address " + wxString(address.ToString()));
+	uint32 ip;
+	if (!GetIPv4PacketAddress(address, ip, logClientUDP, "client")) {
 		return;
 	}
 

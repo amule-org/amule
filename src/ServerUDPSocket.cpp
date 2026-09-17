@@ -60,11 +60,8 @@ void CServerUDPSocket::OnPacketReceived(
 	const CNetworkAddress &address, uint16 serverport, uint8_t *buffer, size_t length)
 {
 	wxCHECK_RET(length >= 2, "Invalid packet.");
-	const uint32 serverip = address.ToIPv4NetworkOrderOrZero();
-	if (!serverip) {
-		AddDebugLogLineN(logMuleUDP,
-			"Ignoring server UDP packet from native IPv6 address " +
-				wxString(address.ToString()));
+	uint32 serverip;
+	if (!GetIPv4PacketAddress(address, serverip, logMuleUDP, "server")) {
 		return;
 	}
 

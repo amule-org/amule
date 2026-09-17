@@ -177,6 +177,18 @@ void CMuleUDPSocket::OnReceiveError(int DEBUG_ONLY(errorCode), uint32 WXUNUSED(i
 	AddDebugLogLineN(logMuleUDP, (m_name + ": Error while reading: ") << errorCode);
 }
 
+bool CMuleUDPSocket::GetIPv4PacketAddress(
+	const CNetworkAddress &address, uint32_t &ip, DebugType logType, const wxString &packetKind) const
+{
+	ip = address.ToIPv4NetworkOrderOrZero();
+	if (ip) {
+		return true;
+	}
+	AddDebugLogLineN(
+		logType, "Ignoring " + packetKind + " UDP packet from " + wxString(address.ToString()));
+	return false;
+}
+
 void CMuleUDPSocket::OnDisconnected(int WXUNUSED(errorCode))
 {
 	/* Due to bugs in wxWidgets, UDP sockets will sometimes be closed. This is caused by wx

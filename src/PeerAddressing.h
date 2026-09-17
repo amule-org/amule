@@ -309,11 +309,16 @@ inline bool CanCheckContactAddress(const CNetworkAddress &address) noexcept
  * address. A HighID peer not yet greeted is reached at its connect address. Absent means no check
  * can run yet (LowID, reached by callback), and the contact must not be treated as filtered.
  */
-inline CNetworkAddress ContactCheckAddress(
-	const CNetworkAddress &userAddress, bool hasLowID, std::uint32_t userIDNetworkOrder) noexcept
+inline CNetworkAddress ContactCheckAddress(const CNetworkAddress &userAddress,
+	const CNetworkAddress &connectAddress,
+	bool hasLowID,
+	std::uint32_t userIDNetworkOrder) noexcept
 {
 	if (userAddress.IsPresent() || hasLowID) {
 		return userAddress;
+	}
+	if (connectAddress.IsPresent()) {
+		return connectAddress;
 	}
 	return CNetworkAddress::FromIPv4NetworkOrderOrAbsent(userIDNetworkOrder);
 }
@@ -322,6 +327,12 @@ inline CNetworkAddress ContactCheckAddress(
 inline bool CanRequestCallback(const CNetworkAddress &address) noexcept
 {
 	return (address.IsIPv4() || address.IsIPv4Mapped()) && !IndexKey(address).IsUnspecified();
+}
+
+/** An unconnected socket can only be opened when the contact has a legacy IPv4 form. */
+inline bool CanOpenConnection(const CNetworkAddress &address, bool socketConnected) noexcept
+{
+	return socketConnected || address.IsIPv4() || address.IsIPv4Mapped();
 }
 
 /** Production callback throttle seam; the exact three-minute boundary remains allowed. */
