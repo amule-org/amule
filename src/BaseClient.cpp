@@ -137,6 +137,7 @@ CUpDownClient::CUpDownClient(uint16 in_port,
 		} else {
 			m_nConnectIP = wxUINT32_SWAP_ALWAYS(in_userid);
 		}
+		m_connectAddress = CNetworkAddress::FromIPv4NetworkOrder(m_nConnectIP);
 		// Will be on right endianness now
 		m_FullUserIP = m_nConnectIP;
 	}
@@ -251,6 +252,7 @@ void CUpDownClient::Init()
 	m_fIsSpammer = 0;
 
 	m_dwUserIP = 0;
+	m_connectAddress = CNetworkAddress::Absent();
 	m_nConnectIP = 0;
 	m_dwServerIP = 0;
 
@@ -1567,16 +1569,18 @@ EContactResult CUpDownClient::CheckContactPreconditions()
 
 	// Do not narrow native IPv6 to zero and then skip the contact security checks
 	// or fall back to a server ID. This also protects already-connected browse requests.
-	if (!PeerAddressing::CanCheckContactAddress(GetUserAddress())) {
-		if (Disconnected("IPv6 contact security checks unavailable")) {
+	const bool hasLowID = HasLowID();
+	const CNetworkAddress userAddress =
+		hasLowID || GetUserAddress().IsPresent() ? GetUserAddress() : GetConnectAddress();
+	const CNetworkAddress contactAddress = PeerAddressing::ContactCheckAddress(
+		userAddress, hasLowID, wxUINT32_SWAP_ALWAYS(m_nUserIDHybrid));
+	if (!PeerAddressing::CanCheckContactAddress(contactAddress)) {
+		if (Disconnected("Contact security checks unavailable")) {
 			Safe_Delete();
 			return EContactResult::ClientDeleted;
 		}
 		return EContactResult::Declined;
 	}
-
-	const CNetworkAddress contactAddress = PeerAddressing::ContactCheckAddress(
-		GetUserAddress(), HasLowID(), wxUINT32_SWAP_ALWAYS(m_nUserIDHybrid));
 	if (contactAddress.IsAbsent()) {
 		return EContactResult::Contacting;
 	}
@@ -2781,6 +2785,7 @@ void CUpDownClient::SetUserAddress(const CNetworkAddress &address)
 	const uint32 val = key.ToIPv4NetworkOrderOrZero();
 	m_dwUserIP = val;
 
+	m_connectAddress = key;
 	m_nConnectIP = val;
 
 	m_FullUserIP = val;

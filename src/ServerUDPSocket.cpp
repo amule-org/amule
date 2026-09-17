@@ -56,9 +56,17 @@ CServerUDPSocket::CServerUDPSocket(amuleIPV4Address &address, const CProxyData *
 	Open();
 }
 
-void CServerUDPSocket::OnPacketReceived(uint32 serverip, uint16 serverport, uint8_t *buffer, size_t length)
+void CServerUDPSocket::OnPacketReceived(
+	const CNetworkAddress &address, uint16 serverport, uint8_t *buffer, size_t length)
 {
 	wxCHECK_RET(length >= 2, "Invalid packet.");
+	const uint32 serverip = address.ToIPv4NetworkOrderOrZero();
+	if (!serverip) {
+		AddDebugLogLineN(logMuleUDP,
+			"Ignoring server UDP packet from native IPv6 address " +
+				wxString(address.ToString()));
+		return;
+	}
 
 	size_t nPayLoadLen = length;
 	uint8_t *pBuffer = buffer;

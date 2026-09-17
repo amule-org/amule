@@ -61,7 +61,8 @@ private:
 	CUtpContext m_utp;
 	CUtpStreamAcceptor m_utpAcceptor;
 #endif
-	void OnPacketReceived(uint32 ip, uint16 port, uint8_t *buffer, size_t length) override;
+	void OnPacketReceived(
+		const CNetworkAddress &address, uint16 port, uint8_t *buffer, size_t length) override;
 	void ProcessPacket(uint8_t *packet, int16 size, int8 opcode, uint32 host, uint16 port);
 
 	/**

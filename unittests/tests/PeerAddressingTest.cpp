@@ -119,21 +119,29 @@ TEST(PeerAddressing, FilterMatchingRejectsUnknownAndUnspecifiedHosts)
 	ASSERT_FALSE(MatchesFilterRange(host, host, absent));
 }
 
-// Production contact/callback admission seams. Native IPv6 is deliberately dormant.
-TEST(PeerAddressing, ContactSecurityChecksFailClosedForNativeIPv6)
+// Contact security checks support native IPv6, while callbacks remain IPv4-only and unspecified
+// addresses fail closed.
+TEST(PeerAddressing, ContactSecurityChecksAllowNativeIPv6)
 {
-	for (const char *text : { "2001:4860::1", "2001:db8::1", "fe80::1", "fd00::1", "::1", "::" }) {
+	for (const char *text : { "2001:4860::1", "2001:db8::1", "fe80::1", "fd00::1", "::1" }) {
 		const auto address = CNetworkAddress::FromString(text);
-		ASSERT_FALSE(CanCheckContactAddress(address));
+		ASSERT_TRUE(CanCheckContactAddress(address));
 		ASSERT_FALSE(CanRequestCallback(address));
 	}
+	ASSERT_FALSE(CanCheckContactAddress(CNetworkAddress::AnyIPv6()));
+	ASSERT_FALSE(CanCheckContactAddress(CNetworkAddress::FromString("::")));
 	// Unknown clients still use the existing LowID/server-ID path, not a made-up address.
 	ASSERT_TRUE(CanCheckContactAddress(CNetworkAddress::Absent()));
 	ASSERT_FALSE(CanRequestCallback(CNetworkAddress::Absent()));
-	for (const char *text : { "192.0.2.1", "::ffff:192.0.2.1", "0.0.0.0", "::ffff:0.0.0.0" }) {
+	for (const char *text : { "192.0.2.1", "::ffff:192.0.2.1" }) {
 		const auto address = CNetworkAddress::FromString(text);
 		ASSERT_TRUE(CanCheckContactAddress(address));
 		ASSERT_TRUE(CanRequestCallback(address));
+	}
+	for (const char *text : { "0.0.0.0", "::ffff:0.0.0.0" }) {
+		const auto address = CNetworkAddress::FromString(text);
+		ASSERT_FALSE(CanCheckContactAddress(address));
+		ASSERT_FALSE(CanRequestCallback(address));
 	}
 }
 
@@ -174,9 +182,9 @@ TEST(PeerAddressing, DormantIPv6CallbackScopeRemainsPerSubscriber)
 	const auto address = CNetworkAddress::FromString("2001:4860:1:2::1");
 	ASSERT_TRUE(IsCallbackRequestThrottled(address, CNetworkAddress::FromString("2001:4860:1:2::2"), 0));
 	ASSERT_FALSE(IsCallbackRequestThrottled(address, CNetworkAddress::FromString("2001:4860:1:3::1"), 0));
-	// Accounting support is not permission to skip the contact guard.
+	// Accounting support is independent from callback permission.
 	ASSERT_FALSE(CanRequestCallback(address));
-	ASSERT_FALSE(CanCheckContactAddress(address));
+	ASSERT_TRUE(CanCheckContactAddress(address));
 }
 
 // Indexability

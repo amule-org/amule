@@ -228,7 +228,8 @@ public:
 		m_countryCode = code;
 		m_countryFromCore = true;
 	}
-	uint32 GetConnectIP() const { return m_nConnectIP; }
+	uint32 GetConnectIP() const { return m_connectAddress.ToIPv4NetworkOrderOrZero(); }
+	const CNetworkAddress &GetConnectAddress() const { return m_connectAddress; }
 	uint32 GetUserIDHybrid() const { return m_nUserIDHybrid; }
 	void SetUserIDHybrid(uint32 val);
 	uint16_t GetUserPort() const { return m_nUserPort; }
@@ -737,9 +738,10 @@ private:
 	void ClearHelloProperties(); // eMule 0.42
 
 	CNetworkAddress m_userAddress;
+	CNetworkAddress m_connectAddress;
 	// Legacy IPv4 adapter; zero when the peer has no IPv4 form.
 	uint32 m_dwUserIP;
-	uint32 m_nConnectIP; // holds the supposed IP or (after we had a connection) the real IP
+	uint32 m_nConnectIP; // Legacy adapter; GetConnectAddress() is authoritative
 	uint32 m_dwServerIP;
 	uint32 m_nUserIDHybrid;
 	uint16_t m_nUserPort;
