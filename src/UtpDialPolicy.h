@@ -25,9 +25,9 @@
 #ifndef UTP_DIAL_POLICY_H
 #define UTP_DIAL_POLICY_H
 
-#include "NetworkFunctions.h"
-
 #include <cstdint>
+
+bool IsGoodIP(uint32_t ip, bool filterLAN) noexcept;
 
 // Preserve the TCP/callback/buddy/refusal path unless direct uTP is eligible.
 // This policy does not replace security checks or authorize NAT rendezvous.
