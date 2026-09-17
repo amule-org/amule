@@ -2560,7 +2560,7 @@ void CUpDownClient::ProcessSignaturePacket(const uint8_t *pachPacket, uint32 nSi
 		return;
 
 	// we accept only one signature per IP, to avoid floods which need a lot cpu time for cryptfunctions
-	if (m_hasReceivedSignature && m_lastSignatureAddress == GetUserAddress().Unmapped()) {
+	if (m_hasReceivedSignature && m_lastSignatureAddress == GetUserAddress()) {
 		AddDebugLogLineN(logClient, "received multiple signatures from one client");
 		return;
 	}
@@ -2589,7 +2589,7 @@ void CUpDownClient::ProcessSignaturePacket(const uint8_t *pachPacket, uint32 nSi
 				byChaIPKind);
 	}
 
-	m_lastSignatureAddress = GetUserAddress().Unmapped();
+	m_lastSignatureAddress = GetUserAddress();
 	m_hasReceivedSignature = true;
 }
 
@@ -2602,7 +2602,7 @@ void CUpDownClient::SendSecIdentStatePacket()
 	if (theApp->CryptoAvailable()) {
 		if (credits->GetSecIDKeyLen() == 0) {
 			nValue = IS_KEYANDSIGNEEDED;
-		} else if (!m_hasReceivedSignature || m_lastSignatureAddress != GetUserAddress().Unmapped()) {
+		} else if (!m_hasReceivedSignature || m_lastSignatureAddress != GetUserAddress()) {
 			nValue = IS_SIGNATURENEEDED;
 		}
 	}

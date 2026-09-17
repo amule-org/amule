@@ -30,14 +30,14 @@ target_include_directories (ClientCreditsTest PRIVATE
 target_link_libraries (ClientCreditsTest muleunit mulecommon)
 
 # Tracked endpoint history is independent of live clients and the application clock.
-add_executable (ClientListTest ClientListTest.cpp)
-add_test (NAME ClientListTest COMMAND ClientListTest)
-target_include_directories (ClientListTest PRIVATE
+add_executable (TrackedClientRecordTest TrackedClientRecordTest.cpp)
+add_test (NAME TrackedClientRecordTest COMMAND TrackedClientRecordTest)
+target_include_directories (TrackedClientRecordTest PRIVATE
 	${CMAKE_BINARY_DIR}
 	${CMAKE_SOURCE_DIR}/src
 	${CMAKE_SOURCE_DIR}/src/include
 )
-target_link_libraries (ClientListTest muleunit mulecommon)
+target_link_libraries (TrackedClientRecordTest muleunit mulecommon)
 
 # SecIdent negotiation is pure policy. The packet handlers and RSA entry points
 # depend on theApp, sockets and the live credit store; this target needs none of

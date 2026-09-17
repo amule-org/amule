@@ -30,6 +30,7 @@
 #include "BanRecord.h" // Needed for CBanRecord // Needed for CDeadSourceList
 #include "ClientRef.h"
 #include "CanonicalPeerIndex.h"
+#include "TrackedClientRecord.h"
 
 #include <deque>
 #include <set>
@@ -51,54 +52,6 @@ enum buddyState
 };
 
 #define BAN_CLEANUP_TIME 1200000 // 20 min
-
-// Endpoint history independent of live clients and the application clock.
-class CTrackedClientRecord
-{
-public:
-	bool Add(const CNetworkAddress &address, uint16 port, void *hash, uint64 now)
-	{
-		const auto key = PeerAddressing::IndexKey(address);
-		if (key.IsAbsent()) {
-			return false;
-		}
-		auto &record = m_clients[key];
-		record.inserted = now;
-		record.hashes[port] = hash;
-		return true;
-	}
-
-	bool Compare(const CNetworkAddress &address, uint16 port, void *hash) const
-	{
-		const auto client = m_clients.find(PeerAddressing::IndexKey(address));
-		if (client == m_clients.end()) {
-			return true;
-		}
-		const auto prior = client->second.hashes.find(port);
-		return prior == client->second.hashes.end() || prior->second == hash;
-	}
-
-	void DropLapsed(uint64 now, uint64 duration)
-	{
-		for (auto it = m_clients.begin(); it != m_clients.end();) {
-			if (it->second.inserted + duration < now) {
-				it = m_clients.erase(it);
-			} else {
-				++it;
-			}
-		}
-	}
-
-	void Clear() { m_clients.clear(); }
-
-private:
-	struct Record
-	{
-		uint64 inserted = 0;
-		std::map<uint16, void *> hashes;
-	};
-	std::map<CNetworkAddress, Record> m_clients;
-};
 
 /**
  * Manages existing clients: tracks existing, banned, dead and dying ones, and matches a new

@@ -2725,7 +2725,7 @@ uint64 CUpDownClient::GetUploadedTotal() const
 double CUpDownClient::GetScoreRatio() const
 {
 	return credits->GetScoreRatio(
-		CNetworkAddress::FromIPv4NetworkOrder(GetIP()), theApp->CryptoAvailable());
+		CNetworkAddress::FromIPv4NetworkOrderOrAbsent(GetIP()), theApp->CryptoAvailable());
 }
 
 /* End Warning */

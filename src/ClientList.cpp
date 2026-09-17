@@ -54,31 +54,6 @@
 #include "kademlia/net/KademliaUDPListener.h"
 #include "kademlia/routing/Contact.h"
 
-/**
- * CDeletedClient: keeps a deleted peer's IP, port and user hash for 2 hours, after the
- * CUpDownClient object itself is gone. A bit overkill, but currently needed to close an exploit.
- */
-class CDeletedClient
-{
-public:
-	CDeletedClient(CUpDownClient *pClient)
-	{
-		m_dwInserted = ::GetTickCount64();
-		PortAndHash porthash = { pClient->GetUserPort(), pClient->GetCreditsHash() };
-		m_ItemsList.push_back(porthash);
-	}
-
-	struct PortAndHash
-	{
-		uint16 nPort;
-		void *pHash;
-	};
-
-	typedef std::list<PortAndHash> PaHList;
-	PaHList m_ItemsList;
-	uint64 m_dwInserted;
-};
-
 CClientList::CClientList()
 : m_deadSources(true)
 {
@@ -90,8 +65,6 @@ CClientList::CClientList()
 
 CClientList::~CClientList()
 {
-	m_trackedClientsList.Clear();
-
 	wxASSERT(m_clientList.empty());
 }
 

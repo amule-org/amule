@@ -3,7 +3,7 @@
 // Licensed under the GNU General Public License, version 2 or later.
 
 #include <muleunit/test.h>
-#include "ClientList.h"
+#include "TrackedClientRecord.h"
 
 using namespace muleunit;
 
@@ -26,9 +26,9 @@ static CNetworkAddress MappedIPv4()
 	return CNetworkAddress::IPv6FromOctets(bytes);
 }
 
-DECLARE_SIMPLE(ClientList)
+DECLARE_SIMPLE(TrackedClientRecord)
 
-TEST(ClientList, TrackedIPv6EndpointsKeepSeparateHashes)
+TEST(TrackedClientRecord, TrackedIPv6EndpointsKeepSeparateHashes)
 {
 	CTrackedClientRecord record;
 	int first, second;
@@ -41,7 +41,7 @@ TEST(ClientList, TrackedIPv6EndpointsKeepSeparateHashes)
 	ASSERT_TRUE(record.Compare(IPv6(1), 4663, &second));
 }
 
-TEST(ClientList, TrackedMappedAndPlainIPv4ShareHistory)
+TEST(TrackedClientRecord, TrackedMappedAndPlainIPv4ShareHistory)
 {
 	CTrackedClientRecord record;
 	int first, second;
@@ -54,7 +54,7 @@ TEST(ClientList, TrackedMappedAndPlainIPv4ShareHistory)
 	ASSERT_FALSE(record.Compare(MappedIPv4(), 4662, &first));
 }
 
-TEST(ClientList, TrackedAbsenceNeverStoresHistory)
+TEST(TrackedClientRecord, TrackedAbsenceNeverStoresHistory)
 {
 	CTrackedClientRecord record;
 	int first, second;
@@ -64,7 +64,7 @@ TEST(ClientList, TrackedAbsenceNeverStoresHistory)
 	ASSERT_TRUE(record.Compare(CNetworkAddress::Absent(), 4662, &second));
 }
 
-TEST(ClientList, TrackedRefreshExpiryAndClearPreserveLegacyBoundaries)
+TEST(TrackedClientRecord, TrackedRefreshAndExpiryPreserveLegacyBoundaries)
 {
 	CTrackedClientRecord record;
 	int first, second;
@@ -73,8 +73,5 @@ TEST(ClientList, TrackedRefreshExpiryAndClearPreserveLegacyBoundaries)
 	record.DropLapsed(300, 100);
 	ASSERT_FALSE(record.Compare(IPv6(1), 4662, &second));
 	record.DropLapsed(301, 100);
-	ASSERT_TRUE(record.Compare(IPv6(1), 4662, &second));
-	record.Add(IPv6(1), 4662, &first, 400);
-	record.Clear();
 	ASSERT_TRUE(record.Compare(IPv6(1), 4662, &second));
 }
