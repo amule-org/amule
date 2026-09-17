@@ -77,19 +77,22 @@ function FriendsPane({ friends, isGuest, activePeer, onAdd }) {
     // No ip (added by hash alone) means no conversation key, so disable the
     // open action rather than build one the chat routes would 400 on.
     const peer = f.ip && f.port ? f.ip + ":" + f.port : "";
+    // "Online" mirrors the desktop's blue-name rule: a friend is shown online while a live
+    // client is linked (client_ecid set), not only while the TCP link is up right now.
+    const online = !!f.client_ecid;
     // A real <button>, not an <li> click handler, for keyboard/a11y.
     return html`
       <li class=${"friend-row" + (peer && peer === activePeer ? " active" : "")} key=${f.ecid}>
-        <button type="button" class=${"friend-open" + (f.connected ? " online" : "")} disabled=${!peer}
-                title=${f.name + (peer ? " — " + peer : "") + " · " + (f.connected ? t("messages_online") : t("messages_offline"))}
+        <button type="button" class=${"friend-open" + (online ? " online" : "")} disabled=${!peer}
+                title=${f.name + (peer ? " — " + peer : "") + " · " + (online ? t("messages_online") : t("messages_offline"))}
                 onClick=${() => chats.open({ peer, ip: f.ip, port: f.port, name: f.name, friendEcid: f.ecid, clientEcid: f.client_ecid || 0 })}>
-          <span class=${"friend-dot" + (f.connected ? " online" : "")}></span>
+          <span class=${"friend-dot" + (online ? " online" : "")}></span>
           <span class="friend-name">${f.name}</span>
         </button>
         ${isGuest ? null : html`
           <span class="row-actions admin-only">
             <button class=${"btn btn-icon btn-sm" + (f.friend_slot ? " active" : "")}
-                    title=${t("messages_friend_slot")} disabled=${!f.connected}
+                    title=${t("messages_friend_slot")}
                     onClick=${() => toggleSlot(f)}><${Icon} name="star" /></button>
             <button class="btn btn-icon btn-sm" title=${t("messages_view_files")}
                     onClick=${() => viewFiles(f)}><${Icon} name="search" /></button>
@@ -190,7 +193,7 @@ function ChatPane({ reg, active, isGuest }) {
 
   const addToFriends = async () => {
     try {
-      // Promoting the live peer, so only reachable while it is connected.
+      // Promoting the live peer, so offered only while a client is linked.
       await api.post("friends", { client_ecid: active.clientEcid });
       toast(t("messages_toast_friend_added"), "success");
     } catch (e) { toast(terr(e) || t("messages_error"), "error"); }

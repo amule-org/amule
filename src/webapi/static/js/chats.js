@@ -73,10 +73,9 @@ function tabList() {
   return Array.from(convs.values()).map((c) => ({
     peer: c.peer, name: displayName(c),
     clientEcid: c.clientEcid, friendEcid: c.friendEcid,
-    // Straight from the API. Deriving it from clientEcid, as this did, made
-    // a peer online the moment the daemon started TRYING to reach it -- an
-    // unroutable address included. null means the core did not say; render
-    // that as offline rather than inventing a third dot.
+    // Online mirrors the desktop: a linked live client (clientEcid set), not the
+    // momentary TCP state. Like the desktop's blue name, this lights on a contact
+    // attempt too, including to an unroutable address.
     online: c.online === true, unread: c.unread,
   }));
 }
@@ -168,7 +167,7 @@ async function adopt() {
       const cEcid = s.client_ecid || 0, fEcid = s.friend_ecid || 0;
       if (cEcid !== cur.clientEcid) { cur.clientEcid = cEcid; added = true; }
       if (fEcid !== cur.friendEcid) { cur.friendEcid = fEcid; added = true; }
-      const onl = s.connected === true;
+      const onl = cEcid !== 0;
       if (onl !== cur.online) { cur.online = onl; added = true; }
       if (cur.loaded && s.last_message_id > cur.lastMsgId) loadMessages(s.address);
       continue;
@@ -176,7 +175,7 @@ async function adopt() {
     const conv = newConv({
       peer: s.address, ip: s.ip, port: s.port, name: s.name,
       clientEcid: s.client_ecid || 0, friendEcid: s.friend_ecid || 0,
-      online: s.connected === true,
+      online: (s.client_ecid || 0) !== 0,
     });
     conv.known = true;
     convs.set(s.address, conv);
@@ -211,12 +210,14 @@ function setActive(peer, read = true) {
 function open({ peer, ip, port, name, friendEcid = 0, clientEcid = 0 }) {
   const conv = convs.get(peer);
   if (!conv) {
-    convs.set(peer, newConv({ peer, ip, port, name, friendEcid, clientEcid }));
+    // A passed clientEcid is a live linked client, so it is online right away;
+    // the daemon's session reconciliation takes over once a message goes out.
+    convs.set(peer, newConv({ peer, ip, port, name, friendEcid, clientEcid, online: !!clientEcid }));
   } else {
     // The caller's links/name may be fresher than the listing.
     if (name) conv.name = name;
     if (friendEcid) conv.friendEcid = friendEcid;
-    if (clientEcid) conv.clientEcid = clientEcid;
+    if (clientEcid) { conv.clientEcid = clientEcid; conv.online = true; }
   }
   setActive(peer);
   return peer;
@@ -301,7 +302,7 @@ function onFriends() {
   for (const conv of convs.values()) {
     if (!conv.friendEcid) continue;
     const f = friends.find((x) => x.ecid === conv.friendEcid);
-    if (f) { conv.clientEcid = f.client_ecid || 0; conv.online = f.connected === true; }
+    if (f) { conv.clientEcid = f.client_ecid || 0; conv.online = conv.clientEcid !== 0; }
   }
   publishTabsSoon();
 }

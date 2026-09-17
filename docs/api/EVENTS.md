@@ -431,7 +431,7 @@ Identical to the REST [`/api/v1/friends`](REFERENCE.md#get-apiv1friends) list-it
 
 `ip` and `port` are `null` for a friend with no address, exactly as the [`GET /friends`](REFERENCE.md#get-apiv1friends) row emits them - the payloads are key-for-key identical, so a subscriber hydrating from REST never sees a value flip `null` to `""` on the first tick that touches the row.
 
-`friend_updated` fires on any observable change, including a friend coming online or going offline — that transition is `client_ecid` moving between a live client's ECID and `null`, which is what drives the connected indicator in the desktop client.
+`friend_updated` fires on any observable change, including a friend coming online or going offline. Two fields move here and are easy to conflate: `client_ecid` is the live client the friend is linked to (or `null`), while `connected` is the separate reachability field — whether a connection to that client is actually up. A friend can carry a `client_ecid` and still be `connected: false`, the ordinary state for one the daemon is trying, or failing, to reach. See [`GET /friends`](REFERENCE.md#get-apiv1friends).
 
 One `PATCH /api/v1/friends/{ecid}` can produce **two** `friend_updated` events. Only one friend may hold the friend slot, so granting it to one clears it on whoever held it before, and both records change.
 

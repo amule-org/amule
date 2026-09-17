@@ -932,8 +932,9 @@ table.data.virtual td.name .name-select { width: 100%; max-width: 100%; }
 /* Desktop paints a connected friend blue (#0000FF); a theme token instead. */
 .friend-open.online .friend-name { color: var(--accent); }
 .friend-row .row-actions { flex: none; display: flex; gap: 2px; }
-/* the friend holding the friend slot */
+/* the friend holding the friend slot: solid star, not just an accent outline */
 .friend-row .btn.active { color: var(--accent); border-color: var(--accent); }
+.friend-row .btn.active .icon { fill: currentColor; }
 
 /* conversation */
 .chat-body { display: flex; flex-direction: column; gap: 6px; overflow: hidden; }
