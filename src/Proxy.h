@@ -29,6 +29,10 @@
 #include "amuleIPV4Address.h" // For amuleIPV4address
 #include "StateMachine.h"     // For CStateMachine
 #include "LibSocket.h"
+#include "ArchSpecific.h"
+#include "NetworkAddress.h"
+
+#include <cstring>
 
 #include <wx/wx.h>
 #include <wx/socket.h>
@@ -424,6 +428,41 @@ const unsigned int PROXY_UDP_OVERHEAD_IPV4 = 10;
 const unsigned int PROXY_UDP_OVERHEAD_DOMAIN_NAME = 262;
 const unsigned int PROXY_UDP_OVERHEAD_IPV6 = 22;
 const unsigned int PROXY_UDP_MAXIMUM_OVERHEAD = PROXY_UDP_OVERHEAD_DOMAIN_NAME;
+
+/** Decode one SOCKS5 UDP datagram without socket state.
+ * Invalid headers clear the source and port and leave the output buffer untouched.
+ * Valid empty payloads still publish the source. Input and output must not overlap.
+ */
+inline uint32 ParseSocks5UDPDatagram(const char *packet,
+	uint32 available,
+	CNetworkAddress &addr,
+	uint16 &port,
+	void *payload,
+	uint32 capacity)
+{
+	addr = CNetworkAddress::Absent();
+	port = 0;
+	unsigned int offset = 0;
+	if (available >= 4 && packet[0] == 0 && packet[1] == 0 && packet[2] == 0) {
+		if (packet[3] == SOCKS5_ATYP_IPV4_ADDRESS && available >= PROXY_UDP_OVERHEAD_IPV4) {
+			offset = PROXY_UDP_OVERHEAD_IPV4;
+			addr = CNetworkAddress::FromIPv4NetworkOrder(PeekUInt32(packet + 4));
+		} else if (packet[3] == SOCKS5_ATYP_IPV6_ADDRESS && available >= PROXY_UDP_OVERHEAD_IPV6) {
+			offset = PROXY_UDP_OVERHEAD_IPV6;
+			addr = CNetworkAddress::FromIPv6Bytes(reinterpret_cast<const uint8_t *>(packet + 4))
+				       .Unmapped();
+		}
+	}
+	if (!offset) {
+		return 0;
+	}
+	port = ENDIAN_NTOHS(RawPeekUInt16(packet + offset - 2));
+	const uint32 length = available - offset > capacity ? capacity : available - offset;
+	if (length) {
+		std::memcpy(payload, packet + offset, length);
+	}
+	return length;
+}
 
 class CDatagramSocketProxy : public CLibUDPSocket
 {
