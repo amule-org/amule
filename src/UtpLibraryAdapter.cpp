@@ -97,6 +97,45 @@ public:
 		return true;
 	}
 
+	bool Dial(uint32_t ip,
+		uint16_t port,
+		bool encrypt,
+		const uint8_t *userHash,
+		std::unique_ptr<IStreamTransport> &transport) override
+	{
+		if (!m_context || transport || !IsUsableUtpEndpoint(ip, port) ||
+			(encrypt && userHash == nullptr)) {
+			return false;
+		}
+		auto *socket = utp_create_socket(m_context);
+		if (socket == nullptr) {
+			return false;
+		}
+		// No application event sink: this seam is deliberately not connected
+		// to BaseClient. IsConnected() can be inspected after pumping ingress.
+		auto pending = std::make_unique<CUtpSocketTransport>(
+			*this, socket, CNetworkAddress::FromIPv4NetworkOrder(ip), port);
+		utp_set_userdata(socket, pending.get());
+		pending->ApplyReceiveBound();
+		pending->SetCryptParameters(encrypt, userHash);
+		// Register before the SYN, so its reply passes the ingress gate. The
+		// transport's close path removes this entry even on immediate failure.
+		m_peers.Add(ip, port);
+		sockaddr_in address{};
+		address.sin_family = AF_INET;
+		address.sin_port = htons(port);
+		auto *bytes = reinterpret_cast<uint8_t *>(&address.sin_addr.s_addr);
+		for (unsigned i = 0; i < 4; ++i) {
+			bytes[i] = static_cast<uint8_t>(ip >> (8 * i));
+		}
+		if (utp_connect(socket, reinterpret_cast<const sockaddr *>(&address), sizeof(address)) != 0 ||
+			!pending->IsOk()) {
+			return false;
+		}
+		transport = std::move(pending);
+		return true;
+	}
+
 	void SetAcceptor(IUtpStreamAcceptor *acceptor) override { m_acceptor = acceptor; }
 
 	bool HasRegisteredPeer(uint32_t ip, uint16_t port) const override { return m_peers.Has(ip, port); }
@@ -259,7 +298,9 @@ private:
 			transport->OnEnded(EUtpTransportFailure::Destroying);
 			break;
 		case UTP_STATE_CONNECT:
-			// Outgoing only (guarded by CS_SYN_SENT); this build never dials.
+			// Transport state only. Dial installs no application event sink;
+			// client connection-completion plumbing remains a separate task.
+			transport->MarkConnected();
 			break;
 		default:
 			break;

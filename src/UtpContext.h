@@ -26,6 +26,7 @@
 #define UTP_CONTEXT_H
 
 #include "ReservedProtocolFrames.h"
+#include "UtpDialPolicy.h"
 
 #include <cstdint>
 #include <map>
@@ -52,6 +53,8 @@ public:
 		const uint8_t *userHash) = 0;
 };
 
+class IStreamTransport;
+
 class IUtpContext
 {
 public:
@@ -61,7 +64,19 @@ public:
 	virtual bool ProcessDatagram(const uint8_t *payload, size_t length, uint32_t ip, uint16_t port) = 0;
 	virtual void Tick() = 0;
 
-	//! True while that endpoint holds at least one accepted uTP socket.
+	// Unactivated prerequisite. Success transfers a pending stream into an
+	// initially empty output; it is NOT an application connection notification.
+	// False leaves output untouched, allowing the caller's legacy fallback.
+	// The caller must first apply DecideUtpDial and existing security checks.
+	// Polling transport state is possible, but attaching it to a client awaits
+	// explicit connection-completion plumbing (never a writability event).
+	// Default refusal keeps contexts without outbound support fail-closed.
+	virtual bool Dial(uint32_t, uint16_t, bool, const uint8_t *, std::unique_ptr<IStreamTransport> &)
+	{
+		return false;
+	}
+
+	//! True while that endpoint holds at least one accepted or outbound socket.
 	virtual bool HasRegisteredPeer(uint32_t ip, uint16_t port) const = 0;
 };
 
@@ -96,8 +111,7 @@ private:
 	std::map<std::uint64_t, unsigned> m_peers;
 };
 
-// Library seam: no libutp types or stream operations escape the adapter.
-class IStreamTransport;
+// Library seam: no libutp types escape the adapter.
 
 //! Where an accepted uTP stream is offered for admission.
 class IUtpStreamAcceptor
@@ -125,10 +139,17 @@ public:
 	virtual void IssueDeferredAcks() = 0;
 	virtual void CheckTimeouts() = 0;
 
+	// IPv4/host-order port; crypt parameters are installed before the SYN.
+	// Caller must retain the library until the returned transport is destroyed.
+	virtual bool Dial(uint32_t, uint16_t, bool, const uint8_t *, std::unique_ptr<IStreamTransport> &)
+	{
+		return false;
+	}
+
 	//! Null refuses every inbound SYN, which is the state before an acceptor exists.
 	virtual void SetAcceptor(IUtpStreamAcceptor *acceptor) = 0;
 
-	//! True while that endpoint holds at least one accepted socket.
+	//! True while that endpoint holds at least one accepted or outbound socket.
 	virtual bool HasRegisteredPeer(uint32_t ip, uint16_t port) const = 0;
 };
 
@@ -179,6 +200,20 @@ public:
 			m_library->IssueDeferredAcks();
 			m_library->CheckTimeouts();
 		}
+	}
+
+	bool Dial(uint32_t ip,
+		uint16_t port,
+		bool encrypt,
+		const uint8_t *userHash,
+		std::unique_ptr<IStreamTransport> &transport) override
+	{
+		// Never reopen a closed UDP service as a side effect of dialing.
+		if (!m_active || transport || !IsUsableUtpEndpoint(ip, port) ||
+			(encrypt && userHash == nullptr)) {
+			return false;
+		}
+		return m_library->Dial(ip, port, encrypt, userHash, transport);
 	}
 
 	// Delegated rather than answered here: registration happens where sockets
