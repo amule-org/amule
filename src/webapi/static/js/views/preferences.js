@@ -428,6 +428,25 @@ export default function Preferences({ isGuest }) {
     }).catch((e) => setError(terr(e) || t("prefs_error")));
   }, []);
 
+  // Gecko leaves blank rows in the multicol .prefs-groups after its subtree is
+  // re-rendered in place (#1330): force a repaint on every subtree change (tab
+  // switch, async SharedDirectories load). column-count "4" never matches a
+  // breakpoint so it always reflows; the offsetHeight read flushes it.
+  useEffect(() => {
+    if (!loaded) return;
+    const g = document.querySelector(".prefs-groups");
+    if (!g) return;
+    const repaint = () => {
+      g.style.columnCount = "4";
+      void g.offsetHeight;
+      g.style.columnCount = "";
+    };
+    repaint();
+    const mo = new MutationObserver(repaint);
+    mo.observe(g, { childList: true, subtree: true });
+    return () => mo.disconnect();
+  }, [loaded]);
+
   const setVal = (id, val) => setValues((vs) => ({ ...vs, [id]: val }));
 
   // gatedBy: disable when any listed flag is explicitly false (capability flags

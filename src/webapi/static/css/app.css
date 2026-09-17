@@ -597,6 +597,8 @@ table.data.virtual td.name .name-select { width: 100%; max-width: 100%; }
    under them: up to 3 on wide desktop, 2 on medium, 1 on phones (see @media).
    Cards keep source order down each column, so the phone view (1 column) is
    that same sequence. */
+/* The JS reflow nudge in preferences.js repaints this box after re-renders:
+   Gecko otherwise leaves blank rows in multicol content (#1330). */
 .prefs-groups { column-count: 3; column-gap: 14px; margin-bottom: 14px; }
 .prefs-panel fieldset {
   border: 1px solid var(--border); border-radius: var(--radius);
