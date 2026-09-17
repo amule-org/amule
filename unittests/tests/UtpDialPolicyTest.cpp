@@ -1,54 +1,57 @@
+//
 // This file is part of the aMule Project.
-// Copyright (c) 2026 aMule Team ( https://amule-org.github.io )
-// Licensed under the GNU GPL version 2 or later.
+//
+// Copyright (c) 2003-2026 aMule Team ( https://amule-org.github.io )
+//
+// Any parts of this program derived from the xMule, lMule or eMule project,
+// or contributed by third-party developers are copyrighted by their
+// respective authors.
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
+//
 
+#include <muleunit/test.h>
 #include "UtpDialPolicy.h"
 
-namespace
-{
-constexpr uint32_t kPeer = 0x04030201; // 1.2.3.4, low byte first
+using namespace muleunit;
 
-constexpr bool DecisionMatrix()
+DECLARE_SIMPLE(UtpDialPolicy)
+
+TEST(UtpDialPolicy, DecisionMatrix)
 {
-	// Exhaust every combination of capabilities, service, route, proxy,
-	// address family, address presence, and port presence. Legacy preserves
-	// callbacks/buddy lookup for LowID and refusal for unsupported addresses.
-	for (unsigned bits = 0; bits < 128; ++bits) {
+	constexpr uint32_t peer = 0x04030201; // 1.2.3.4, low byte first
+	for (unsigned bits = 0; bits < 64; ++bits) {
 		const SUtpDialFacts facts{ (bits % 2) != 0,
 			((bits / 2) % 2) != 0,
 			((bits / 4) % 2) != 0,
 			((bits / 8) % 2) != 0,
-			((bits / 16) % 2) != 0,
-			((bits / 32) % 2) != 0 ? kPeer : 0,
-			static_cast<uint16_t>((bits / 64) != 0 ? 4672 : 0) };
-		const bool eligible = bits == (1 | 2 | 4 | 16 | 32 | 64);
-		if ((DecideUtpDial(facts) == EUtpDialDecision::TryUtp) != eligible) {
-			return false;
-		}
+			((bits / 16) % 2) != 0 ? peer : 0,
+			static_cast<uint16_t>((bits / 32) != 0 ? 4672 : 0) };
+		ASSERT_EQUALS(bits == 55, DecideUtpDial(facts) == EUtpDialDecision::TryUtp);
 	}
-	return true;
 }
 
-constexpr bool EndpointBoundaries()
+TEST(UtpDialPolicy, EndpointBoundaries)
 {
-	return !IsUsableUtpEndpoint(0, 4672) && !IsUsableUtpEndpoint(0x01020300, 4672) && // 0/8
-	       !IsUsableUtpEndpoint(0x010000E0, 4672) &&                                  // multicast
-	       !IsUsableUtpEndpoint(0x010000F0, 4672) &&                                  // reserved
-	       !IsUsableUtpEndpoint(0xffffffff, 4672) &&                                  // broadcast
-	       !IsUsableUtpEndpoint(kPeer, 0) && IsUsableUtpEndpoint(kPeer, 1) &&
-	       IsUsableUtpEndpoint(kPeer, 65535) && IsUsableUtpEndpoint(0x0100007f, 4672) && // loopback
-	       IsUsableUtpEndpoint(0x0100000a, 4672);                                        // private
-}
-
-// These are compile-time behavior tests too, allowing focused validation
-// without generating build artifacts or linking the application/dependencies.
-static_assert(DecisionMatrix(), "uTP requires every prerequisite and no proxy");
-static_assert(EndpointBoundaries(), "only usable IPv4 UDP endpoints may dial");
-static_assert(
-	DecideUtpDial({}) == EUtpDialDecision::PreserveLegacy, "unknown facts must preserve legacy behavior");
-} // namespace
-
-int main()
-{
-	return DecisionMatrix() && EndpointBoundaries() ? 0 : 1;
+	for (uint32_t ip : { 0u, 0x01020300u, 0x010000E0u, 0x010000F0u, 0xffffffffu }) {
+		ASSERT_FALSE(IsUsableUtpEndpoint(ip, 4672));
+	}
+	ASSERT_FALSE(IsUsableUtpEndpoint(0x04030201, 0));
+	ASSERT_TRUE(IsUsableUtpEndpoint(0x04030201, 1));
+	ASSERT_TRUE(IsUsableUtpEndpoint(0x04030201, 65535));
+	ASSERT_TRUE(IsUsableUtpEndpoint(0x0100007f, 4672));
+	ASSERT_TRUE(IsUsableUtpEndpoint(0x0100000a, 4672));
+	ASSERT_TRUE(DecideUtpDial({}) == EUtpDialDecision::PreserveLegacy);
 }

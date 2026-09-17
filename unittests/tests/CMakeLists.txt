@@ -49,10 +49,10 @@ target_include_directories (SecIdentTest
 )
 target_link_libraries (SecIdentTest muleunit mulecommon)
 
-# Pure outbound eligibility, deliberately not activated in BaseClient. No
-# application or libutp dependency; assertions also run at compile time.
+# Direct outbound eligibility, without the application or libutp.
 add_executable (UtpDialPolicyTest UtpDialPolicyTest.cpp)
 target_include_directories (UtpDialPolicyTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries (UtpDialPolicyTest muleunit mulecommon)
 add_test (NAME UtpDialPolicyTest COMMAND UtpDialPolicyTest)
 
 # The buffering between libutp and the eD2k stack: the would-block contract
