@@ -262,6 +262,8 @@ void CLogger::DoLine(const wxString &line, bool toStdout, bool GUI_ONLY(toGUI))
 			// LC_ALL and never calls setlocale (#40). The on-disk log already writes
 			// UTF-8, so the two sinks now agree.
 			printf("%s", (const char *)line.utf8_str());
+			// stdout is block-buffered when it is not a TTY (pipe, file, Docker without -t).
+			fflush(stdout);
 		}
 	}
 #ifndef AMULE_DAEMON
