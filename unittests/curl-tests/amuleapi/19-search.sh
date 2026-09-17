@@ -17,7 +17,7 @@
 #   POST /api/v1/search/results/{hash}/comments           — EC_OP_SHARED_FILE_SEARCH_KAD_NOTES
 #   POST /api/v1/clients/{ecid}/shared_files              — browse a peer ("View Files"), returns a search_id
 #
-# /search/{id}/results is no longer a per-GET fetch — POST /search marks
+# /search/{id}/results reads from state — POST /search marks
 # the search active in state and the refresher polls amuled every
 # tick while it stays active. GET /search/{id}/results reads straight
 # from that state, so subsequent polls already see the fresh query's
@@ -247,7 +247,7 @@ _assert_status 202 "POST /search (query=$TEST_QUERY, type=global) → 202"
 # does hand one back: SEARCH_START returns EC_TAG_SEARCH_ID. The body is the
 # same row GET /search lists, written through the same writer, so a client can
 # drop it straight into the collection it keeps -- which is why `kind` and
-# `state` are asserted here and not just on the list. `ok` is gone; the 202
+# `state` are asserted here and not just on the list. There is no `ok`; the 202
 # carried it.
 _assert_json_eq '. | has("ok")' false 'POST /search response has no constant ok field'
 _assert_json_eq '.query' "$TEST_QUERY" 'POST /search echoes query'
@@ -264,9 +264,9 @@ _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/search/$FIRST_SID/results"
 _assert_json_eq '.search_id' "$FIRST_SID" 'GET /search/{id}/results echoes its search_id'
 _assert_json_eq '.query' "$TEST_QUERY" 'GET /search/{id}/results reports the query it was started with'
 
-# A malformed or zero {id} is rejected outright. Zero used to be the
-# "whichever search ran last" sentinel, so letting it through would
-# quietly resurrect the implicit target these routes removed.
+# A malformed or zero {id} is rejected outright. Zero is not a
+# "whichever search ran last" sentinel; these routes have no implicit
+# target to resurrect.
 for bad in 0 abc -1 99999999999; do
 	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/search/$bad/results"
 	_assert_status 400 "GET /search/$bad/results → 400 (not a usable search id)"
@@ -323,7 +323,7 @@ _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/search?limit=1"
 _assert_status 200 "GET /search?limit=1 → 200"
 _assert_json_eq '.searches | length' 1 '/search?limit=1 returns one row'
 
-# The recency signal the docs point at is now actually askable.
+# The recency signal the docs point at is sortable.
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/search?sort=started_at&order=desc"
 _assert_status 200 "GET /search?sort=started_at&order=desc → 200"
 
@@ -494,10 +494,10 @@ if [ -n "$RESULT_HASH" ]; then
 	_assert_json_eq '.results[0].alternate_names | type' array '/search/{id}/results[0].alternate_names is an array'
 	_assert_json_eq '[.results[].alternate_names[]?] | all(has("ecid") and has("name") and has("sources"))' \
 		true 'every alternate name has ecid/name/sources'
-	# `hash` was dropped from the entries: it is by construction the parent's,
-	# so repeating it per entry said nothing.
+	# alternate-name entries carry no `hash`: it is by construction the parent's,
+	# so repeating it per entry would say nothing.
 	_assert_json_eq '[.results[].alternate_names[]?] | all(has("hash") | not)' \
-		true 'alternate names no longer repeat the parent hash'
+		true 'alternate names do not repeat the parent hash'
 	_assert_json_eq '[.results[].alternate_names[]?] | all(has("directory"))' \
 		true 'every child carries its own directory (per-result, not per-search)'
 
@@ -510,8 +510,8 @@ if [ -n "$RESULT_HASH" ]; then
 
 	# progress envelope. `progress` exists on every GET /search/{id}/results
 	# response (even before any POST /search). `state` is canonical
-	# (running | finished | idle) and replaces the old complete/active
-	# booleans. Once we have results, state is "running" (still polling)
+	# (running | finished | idle), a single string rather than separate
+	# complete/active booleans. Once we have results, state is "running" (still polling)
 	# or "finished" (percent == 100).
 	_assert_json_eq '.progress.percent | type' number 'search progress.percent is numeric'
 	_assert_json_eq '.progress.state | type'   string 'search progress.state is a string'
@@ -594,7 +594,7 @@ fi
 # --- 5. POST /search/{id}/stop. -----------------------------------
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	"$API/search/$FIRST_SID/stop"
-# 204, the same as DELETE /search/{id}: with `ok` gone there is nothing left
+# 204, the same as DELETE /search/{id}: with no `ok` field there is nothing left
 # to report, and only the results-survive check below tells the two apart.
 _assert_status 204 "POST /search/{id}/stop → 204"
 _assert_body_empty 'search stop sends no body'
@@ -810,10 +810,10 @@ if [ -n "$CMT_HASH" ]; then
 	# Trigger an on-demand Kad notes lookup for the result.
 	_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 		"$API/search/results/$CMT_HASH/comments"
-	# 202 with no body. The `status` it used to carry could hold exactly one
-	# value, so it restated the status code -- and `status` everywhere else on
-	# this surface is a transfer state, so a client switching on it had to know
-	# which kind of object it held first. The lookup's progress is read from
+	# 202 with no body. It carries no `status`: such a field could hold exactly
+	# one value, so it would restate the status code -- and `status` everywhere
+	# else on this surface is a transfer state, so a client switching on it would
+	# have to know which kind of object it held first. The lookup's progress is read from
 	# `kad_comment_lookup_running` on the GET below.
 	_assert_status 202 "POST /search/results/{hash}/comments → 202"
 	_assert_body_empty 'search comments POST sends no body'
@@ -1473,8 +1473,8 @@ if [ -n "$PEER_ECID" ]; then
 		_assert_status 200 "GET /search/{browse id}/results?sort=directory → 200"
 
 		# Same check after the browse has had time to settle: a peer that
-		# denied or never answered leaves no results at all, which is exactly
-		# the case the pre-#1060 listing reported as `idle` in perpetuity.
+		# denied or never answered leaves no results at all, and reports a
+		# terminal state rather than `idle` in perpetuity.
 		# `running` is still legitimate for a peer genuinely still streaming.
 		_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/search"
 		LIST_STATE=$(printf '%s' "$CURL_BODY" | \

@@ -589,8 +589,8 @@ struct KadSnapshot
 	// are what carries that -- one per JSON object rather than one per field, since they
 	// share a single gate.
 	//
-	// These used to be plain values with a `0`/`false` default, so a disconnected daemon
-	// answered with numbers that looked live: measured on a real node with Kad stopped,
+	// Gated so a disconnected daemon does not answer with numbers that look live:
+	// measured on a real node with Kad stopped,
 	// `nodes` reported 2 and `firewalled_tcp` true. `nodes` is the worst, being the size
 	// of our OWN routing table, whose contacts outlive the disconnect.
 	//
@@ -1129,8 +1129,8 @@ struct PreferencesSnapshot
 			std::uint32_t port = 0;
 			bool gzip_enabled = false;
 			std::uint32_t refresh_seconds = 0;
-			// `template_name`, not `template`: the JSON key was renamed to
-			// match the member, which could never be `template` (C++ keyword).
+			// `template_name`, not `template`: the JSON key matches the member,
+			// which could never be `template` (C++ keyword).
 			std::string template_name;
 			bool guest_enabled = false;
 		} webserver;

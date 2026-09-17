@@ -84,9 +84,9 @@ public:
 		unsigned login_failure_threshold = 5;
 		unsigned login_lockout_seconds = 300;
 		// The generic 401 limiter, counting every rejected token on any authenticated route
-		// rather than password failures on /auth/login. It was hard-coded while the three
-		// above were documented knobs, so an operator could not loosen the one a browser
-		// tab left open overnight actually trips.
+		// rather than password failures on /auth/login. A documented knob like the three
+		// above, so an operator can loosen the one a browser tab left open overnight
+		// actually trips.
 		unsigned token_failure_window_seconds = 60;
 		unsigned token_failure_threshold = 30;
 		unsigned token_lockout_seconds = 300;

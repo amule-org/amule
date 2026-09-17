@@ -200,9 +200,9 @@ _qp "downloads?status=all"       200 "status=all -> 200"
 _qp "downloads?status=completed" 200 "status=completed -> 200"
 _qp "downloads?status=maybe"     400 "status=maybe -> 400, not a silent default"
 
-# The boolean `status` replaced is refused, not ignored: a caller left on the
-# old spelling is told so instead of silently getting the default slice.
-_qp "downloads?include_completed=1" 400 "include_completed=1 -> 400 (replaced by status=)"
+# The boolean `include_completed` is refused, not ignored: a caller sending it
+# is told so instead of silently getting the default slice.
+_qp "downloads?include_completed=1" 400 "include_completed=1 -> 400 (not a valid parameter; use status=)"
 
 # Counts: garbage and out-of-range are the same answer.
 _qp "downloads?limit=abc"   400 "limit=abc -> 400"
@@ -212,13 +212,13 @@ _qp "downloads?limit="      400 "limit= (empty) -> 400, not an omission"
 
 # Two numeric parameters on one endpoint used to disagree with each other.
 _qp "stats/graphs/download_speed?interval_seconds=abc" 400 "interval_seconds=abc -> 400"
-_qp "stats/graphs/download_speed?width=abc"    400 "width=abc -> 400 (was a silent 200)"
-_qp "stats/graphs/download_speed?width=99999"  400 "width=99999 -> 400 (was a silent clamp)"
+_qp "stats/graphs/download_speed?width=abc"    400 "width=abc -> 400"
+_qp "stats/graphs/download_speed?width=99999"  400 "width=99999 -> 400 (out of range)"
 _qp "stats/graphs/download_speed?interval_seconds=0"   400 "interval_seconds=0 -> 400 (below the documented minimum)"
 
 # The log tail clamped silently too.
 _qp "logs/amule?tail=abc"    400 "tail=abc -> 400"
-_qp "logs/amule?tail=999999" 400 "tail=999999 -> 400 (was a silent clamp to 100000)"
+_qp "logs/amule?tail=999999" 400 "tail=999999 -> 400 (out of range)"
 
 # ---------------------------------------------------------------------------
 # Trailing slash: `/x/` names the same resource as `/x`
@@ -535,7 +535,7 @@ fi
 # three used to close the connection with nothing written, so a caller could
 # not tell "too large" from "daemon crashed" or "firewall ate it".
 # Guarded like the other python3 probes: a runner without it should skip
-# these checks, not abort the phase at exit 2 and silently drop everything
+# these checks, not abort the run at exit 2 and silently drop everything
 # that follows.
 BIG_READY=0
 if ! command -v python3 >/dev/null 2>&1; then

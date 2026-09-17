@@ -2,8 +2,8 @@
 #
 # amuleapi 24-sse-resync — typed `resync` event + log_appended.
 #
-# Wire contract for Phase 8d:
-#   * `resync` event replaces Phase 8c's `: replay-gap` SSE
+# Wire contract:
+#   * the `resync` event is a typed event, not a `: replay-gap` SSE
 #     comment. It's a synthetic per-subscriber event (never on the
 #     shared bus) with payload:
 #       {"reason":"gap"|"restart","since_id":N,"newest_id":M}
@@ -193,13 +193,13 @@ else
 	_fail "resync data line" "no 'data:' line under resync event in $SSE"
 fi
 
-# Phase 8c's `: replay-gap` comment must NOT appear anymore —
-# replaced by the typed event.
+# A `: replay-gap` SSE comment must NOT appear —
+# the resync is a typed event.
 if grep -q "^: replay-gap$" "$SSE"; then
-	_fail "Phase 8c comment is gone" \
-		"': replay-gap' comment still appears alongside resync event — should be removed"
+	_fail "no ': replay-gap' comment" \
+		"': replay-gap' comment appears alongside resync event — should not"
 else
-	_pass "Phase 8c ': replay-gap' comment is no longer emitted"
+	_pass "no ': replay-gap' comment is emitted alongside the resync event"
 fi
 
 # --- 2. resync(reason=restart) — Last-Event-ID above NewestId. ---

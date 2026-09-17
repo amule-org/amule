@@ -365,11 +365,10 @@ _assert_status 400 "DELETE /servers/not-a-number → 400"
 # /servers/by-address/{address} takes an "<ip>:<port>" selector where the
 # ECID routes take a number. Parsing and lookup are separate outcomes: a
 # selector that cannot be parsed is the caller's mistake (400), one that
-# parses but names no server we hold is simply absent (404). They used to
-# collapse onto the same 404 because the resolver signalled every failure by
-# returning ECID 0.
-# The address form has its own path now, so a colon is no longer what selects
-# the handler: a value without one reaches the same place and is rejected for
+# parses but names no server we hold is simply absent (404), so the two do
+# not collapse onto one status.
+# The address form has its own path, so a colon is not what selects the
+# handler: a value without one reaches the same place and is rejected for
 # being a malformed address rather than for looking like an ECID.
 for bad in "not-an-ip:4242" "1.2.3.4:" ":4242" "1.2.3.4:0" "1.2.3.4:70000" \
 	"1.2.3.4:abc" "999.1.1.1:4242" "no-colon-at-all"; do

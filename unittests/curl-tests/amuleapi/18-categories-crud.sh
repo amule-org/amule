@@ -240,9 +240,9 @@ _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 _assert_status 400 "POST /categories (bad priority enum) → 400"
 
 # R9: a category's priority is rendered on read from the full six-level file
-# set, so the write side accepts the same six. very_low and release used to be
-# refused here, which meant a read-modify-write round-trip failed on a field
-# the client never touched.
+# set, so the write side accepts the same six, very_low and release included,
+# so a read-modify-write round-trip does not fail on a field the client never
+# touched.
 for p in very_low release; do
 	_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 		-H "Content-Type: application/json" \
@@ -355,9 +355,9 @@ _assert_status 404 "DELETE same index twice → 404"
 # amuled answers EC_OP_FAILED for these two ops when it created or updated the
 # category but could not use the path, keeping another one and returning it in
 # EC_TAG_CATEGORY_PATH. The category exists either way, so the API reports
-# success and `save_path` carries the path that was actually kept. Relaying it
-# as a 400 used to claim the request failed while the category was sitting in
-# the list.
+# success and `save_path` carries the path that was actually kept, rather than
+# a 400 that would claim the request failed while the category sat in the
+# list.
 #
 # Placed last because each case creates a category; each cleans up its own.
 

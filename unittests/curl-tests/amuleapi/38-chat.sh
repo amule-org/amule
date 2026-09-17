@@ -130,7 +130,7 @@ _curl -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/js
 _assert_status 202 "POST /chats/{address}/messages → 202 Accepted"
 # The created message stays in the body: no per-message GET defines a shape
 # for it, so the id and the timestamp the store assigned are only readable
-# here. `ok` is gone; the 202 already carried it.
+# here. There is no `ok` field; the 202 already carries it.
 _assert_json_eq '. | has("ok")' false 'send response has no constant ok field'
 _assert_json_eq '.address'                "$PEER" 'send echoes the conversation key'
 _assert_json_eq '.message.direction'   out     'sent message is direction=out'
@@ -161,9 +161,9 @@ _assert_json_eq '.ip'                 "$PEER_IP"   'row carries the split ip'
 _assert_json_eq '.port'               "$PEER_PORT" 'row carries the split port'
 # The peer is a TEST-NET-3 address nothing can reach, so we are definitively
 # not connected to it -- whether or not the daemon minted a client object
-# while trying. That is the whole point of the field: `online` is
-# reachability, and it used to be inferred from client_ecid merely existing,
-# which is true from the first contact ATTEMPT.
+# while trying. That is the whole point of the field: `connected` is
+# reachability, not the mere existence of a client_ecid, which is true from
+# the first contact ATTEMPT.
 _assert_json_eq '.connected'          false        'unrouted peer is offline'
 # client_ecid is deliberately NOT asserted null here any more. The daemon
 # legitimately holds a client object for a peer it is trying to reach, so
@@ -225,12 +225,12 @@ _assert_status 200 "GET messages?tail=1 → 200"
 _assert_json_eq '.messages | length' 1 'tail=1 returns just the newest message'
 _assert_json_eq '.messages[0].text' "second message" 'tail keeps the newest, not the oldest'
 
-# The old spelling is now an unknown parameter, which is simply ignored --
-# it is not a count the endpoint honours under another name.
+# `limit` is an unknown parameter here and is simply ignored --
+# the count parameter is `tail`, honoured under no other name.
 _curl -H "Authorization: Bearer $TOKEN" \
 	"$API/chats/$PEER/messages?limit=1"
 _assert_status 200 "GET messages?limit=1 → 200 (unknown param, ignored)"
-_assert_json_eq '.messages | length' 2 'limit no longer truncates the chat window'
+_assert_json_eq '.messages | length' 2 'limit does not truncate the chat window'
 
 # Same strict parsing as every other count on the surface.
 _curl -H "Authorization: Bearer $TOKEN" \

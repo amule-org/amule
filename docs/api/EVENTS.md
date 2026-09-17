@@ -106,7 +106,7 @@ If the daemon restarts between steps 1 and 2, or the ring buffer overflows on a 
 
 `GET /api/v1/events` opens the stream. Auth runs synchronously BEFORE the worker thread is spawned and before the 32-slot streaming budget is touched, so an unauthenticated client can't tie up a slot for the read-timeout window.
 
-`HEAD` returns the stream's headers and no body. Any other method is `405` with `Allow: GET, HEAD`, like every other route — it used to be a `404` here, which read as "the endpoint does not exist" to a client probing the surface. A trailing slash is stripped first, so `/api/v1/events/` opens the same stream.
+`HEAD` returns the stream's headers and no body. Any other method is `405` with `Allow: GET, HEAD`, like every other route. A trailing slash is stripped first, so `/api/v1/events/` opens the same stream.
 
 ```sh
 TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \

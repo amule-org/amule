@@ -177,9 +177,8 @@ function ServersPanel({ isGuest }) {
 
   // The two sides format the address differently — the list ships "ip:port"
   // while status.ed2k.server_ip is a bare dotted quad — so compare the quad
-  // pulled out of each, plus the port. The regex also tolerates the older
-  // "[ip:port]" form that server_ip used to carry, so this keeps working
-  // against a daemon that predates the fix.
+  // pulled out of each, plus the port. The regex also tolerates a bracketed
+  // "[ip:port]" address, so a non-dotted-quad value still matches.
   const ipv4 = (v) => { const m = String(v || "").match(/\d+\.\d+\.\d+\.\d+/); return m ? m[0] : ""; };
   const isConnected = (s) =>
     ed2k && ed2k.state === "connected"

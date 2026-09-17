@@ -392,7 +392,7 @@ _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: applica
 _assert_status 400 "PATCH proxy_type unknown enum value → 400"
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
 	-d '{"connection":{"proxy_type":2}}' "$API/preferences"
-_assert_status 400 "PATCH proxy_type as the old wire int → 400 (#655)"
+_assert_status 400 "PATCH proxy_type as a raw wire int → 400 (#655)"
 
 # Restore proxy readable fields (password left as-is — write-only).
 # proxy_type is omitted when it came back empty: that is CProxyType
@@ -426,8 +426,8 @@ _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
 _assert_json_eq '.remote_controls.webserver.port' 4711 'webserver.port persisted (no stale GET)'
 _assert_json_eq '.remote_controls.amuleapi.bind_address' 127.0.0.1 'amuleapi.bind_address persisted'
 
-# The flat pre-#655 keys are no longer a write path — they are simply
-# unknown fields now, so a body carrying only those changes nothing.
+# The flat remote_controls keys are not a write path — they are simply
+# unknown fields, so a body carrying only those changes nothing.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
 	-d '{"remote_controls":{"webserver_port":9999}}' "$API/preferences"
 _assert_status 400 "PATCH flat remote_controls.webserver_port → 400 (no known fields, #655)"
@@ -505,10 +505,9 @@ _assert_json_eq '.connection.autoconnect' "$SAVED_AUTOCONNECT" \
 # --- advanced intervals round-trip exactly (#1159 section 5). ---------
 #
 # The core stores whole minutes and its accessors multiply by 60000, so EC
-# carries milliseconds that are always a multiple of 60000. The API used to
-# expose that raw: a client writing 90000 read back 60000, and one writing
-# 30000 read back 0 -- accepted, reported as success, changed underneath. The
-# fields speak minutes now, so what goes in comes back.
+# carries milliseconds that are always a multiple of 60000. The API fields
+# speak whole minutes, so what goes in comes back rather than being snapped to
+# a multiple of 60000 underneath.
 # The probe values sit INSIDE each field's supported range and are not the
 # range's own endpoints, so they prove the value is carried rather than snapped
 # to a bound: LoadAllItems() clamps kad_reask to 30..60 and source_reask to
@@ -687,12 +686,12 @@ _assert_json_eq '.advanced.source_reask_minutes' "$SAVED_SRCREASK" \
 _assert_json_eq '.online_signature.update_frequency_seconds' "$SAVED_OSFREQ" \
 	'restored online_signature.update_frequency_seconds to the saved value'
 
-# --- 7. `geoip.update_now` moved out to POST /geoip/update (#1189). --
+# --- 7. `geoip.update_now` is POST /geoip/update, not a preferences key (#1189). --
 #
-# It was a write-only boolean in this payload; it is an action, so it is a
-# route now. Both halves of that move are contract, so both are asserted:
-# the old key is refused with a message naming the endpoint, and the endpoint
-# exists with the right method and auth.
+# It is an action, so it is a route, not a write-only boolean in this payload.
+# Both halves are contract, so both are asserted: the `geoip.update_now` key is
+# refused with a message naming the endpoint, and the endpoint exists with the
+# right method and auth.
 #
 # The 202 happy path is deliberately NOT exercised: it makes the daemon fetch
 # a real database from db-ip.com, and a smoke suite should not hit a third
@@ -703,11 +702,11 @@ _assert_json_eq '.online_signature.update_frequency_seconds' "$SAVED_OSFREQ" \
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d '{"geoip":{"update_now":true}}' "$API/preferences"
-_assert_status 400 "PATCH geoip.update_now -> 400 (moved to POST /geoip/update)"
+_assert_status 400 "PATCH geoip.update_now -> 400 (it is POST /geoip/update)"
 _assert_json_eq '.error.code' bad_request \
 	'the refusal carries error.code=bad_request'
 _assert_json_eq '(.error.message | test("POST /geoip/update"))' true \
-	'the refusal names the endpoint that took the action over'
+	'the refusal names the endpoint for the action'
 
 _curl "$API/geoip/update"
 _assert_status 405 "GET /geoip/update -> 405 (POST only)"

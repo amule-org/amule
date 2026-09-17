@@ -62,10 +62,8 @@ export function CategoriesPanel({ isGuest }) {
     e.preventDefault();
     const n = name.trim(), p = path.trim();
     if (!n || !p) { toast(t("downloads_cat_toast_name_path_required"), "warn"); return; }
-    // `color` is now "#rrggbb" on the wire in both directions, so no
-    // conversion here. The old intToHex/hexToInt pair printed the raw
-    // integer naively and had red and blue swapped: the core packs
-    // 0x00BBGGRR, red in the low byte.
+    // `color` is "#rrggbb" on the wire in both directions, so no conversion
+    // here (the core packs 0x00BBGGRR, red in the low byte).
     const body = { name: n, save_path: p, color, priority: prio };
     if (comment.trim()) body.comment = comment.trim();
     try {

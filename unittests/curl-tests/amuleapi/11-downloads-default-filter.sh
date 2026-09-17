@@ -14,14 +14,13 @@
 #      `m_completedDownloads` is amuled's own awaiting-clear list;
 #      surfacing those alongside the active queue confuses consumers.
 #      Select a different slice with `?status=active|all|completed`.
-#      `include_completed` is gone (a boolean could not express
-#      completed-only) and sending it is a 400 naming the
-#      replacement.
+#      `include_completed` is not accepted (a boolean cannot express
+#      completed-only); sending it is a 400 naming `status=`.
 #      The detail endpoint (`GET /downloads/{hash}`) is UNCHANGED —
 #      a consumer asking for a specific file by hash gets it
 #      regardless of its status.
 #
-# Phase 5b exercises the clear-completed mutations:
+# The clear-completed mutations:
 #   `POST /downloads_clear_completed`              (bulk-clear, no body)
 #   `POST /downloads_clear_completed {"hash":...}` (single-entry clear)
 # Both wire to EC_OP_CLEAR_COMPLETED. `DELETE /downloads/{hash}` is
@@ -159,8 +158,8 @@ _assert_json_eq '[.downloads[].status | select(. == "completed")] | length' 0 \
 
 # --- 4. ?status=completed - the slice a boolean could not express. --
 #
-# This is the third state the collection has and the reason
-# include_completed was replaced: completed-only was unreachable.
+# This is the third state the collection has, and a boolean could not
+# express completed-only on its own.
 _curl -H "Authorization: Bearer $TOKEN" "$API/downloads?status=completed"
 _assert_status 200 "GET /downloads?status=completed → 200"
 _assert_json_eq '.downloads | type' array '/downloads?status=completed .downloads is array'
@@ -187,8 +186,8 @@ _curl -H "Authorization: Bearer $TOKEN" "$API/downloads?status=bogus"
 _assert_status 400 "GET /downloads?status=bogus → 400"
 _assert_json_eq '.error.code' bad_request 'status=bogus 400 carries error.code=bad_request'
 
-# The old boolean is refused rather than ignored, and the message names
-# its replacement so a caller on the old spelling is told where to go.
+# include_completed is refused rather than ignored, and the message names
+# `status=` so a caller sending it is told where to go.
 for v in 1 0 true false; do
 	_curl -H "Authorization: Bearer $TOKEN" "$API/downloads?include_completed=$v"
 	_assert_status 400 "GET /downloads?include_completed=$v → 400"

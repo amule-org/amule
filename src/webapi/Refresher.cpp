@@ -225,8 +225,8 @@ void ParseStatusFromPacket(const CECPacket *resp, StatusSnapshot &out)
 					out.server_name = std::string(name->GetStringData().utf8_str());
 				}
 				// Not StringIP(): every overload appends ":port" and wraps the result
-				// in brackets, so `server_ip` used to read "[77.42.68.79:4232]" --
-				// contradicting its declared dotted-quad contract. The port stays in
+				// in brackets, which would contradict `server_ip`'s declared dotted-quad
+				// contract. The port stays in
 				// `server_port`.
 				out.server_ip = FormatClientIpv4(server->GetIPv4Data().IP());
 				out.server_port = server->GetIPv4Data().m_port;

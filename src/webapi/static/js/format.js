@@ -41,8 +41,8 @@ export function formatInt(n) {
 
 // "session / total" pair from a row's two sibling counter fields (e.g.
 // uploaded_bytes_session + uploaded_bytes_total). Shared by the Shared table
-// and its detail panel. The counters used to live in `xfer` / `requests` /
-// `accepts` wrapper objects; they were flattened, so this takes the row and
+// and its detail panel. The counters are flat sibling fields, not in `xfer` /
+// `requests` / `accepts` wrappers, so this takes the row and
 // two key names rather than a sub-object.
 export function twin(row, a, b, fmt) {
   return fmt((row && row[a]) || 0) + " / " + fmt((row && row[b]) || 0);

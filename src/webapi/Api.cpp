@@ -655,9 +655,9 @@ void WriteKadNetworkObject(CJsonWriter &w, const webapi::KadSnapshot &k)
 }
 
 // The {id} segment of every search-scoped route: a non-zero decimal fitting a
-// uint32. Zero is rejected rather than read as "no search": it used to mean
-// "whichever search this session started last", and letting it through would
-// resurrect the implicit-target behaviour these routes exist to remove.
+// uint32. Zero is rejected rather than read as "no search": an implicit
+// "last search this session started" target would defeat the explicit search_id
+// these routes require.
 const char *const kBadSearchIdMessage = "`{id}` must be a positive decimal search_id (see GET /search)";
 
 bool ParseSearchIdSegment(const std::string &seg, std::uint32_t &out)
@@ -2009,8 +2009,8 @@ void CApiDispatcher::BeginSession(
 	// One `expires_at`, unix seconds, like every other `_at` on the surface.
 	w.Key("expires_at");
 	w.ValueInt(static_cast<int64_t>(issued.expires_at));
-	// `session_id`, not `jti` (a JWT internal), and unconditional: it used to appear
-	// only in the token shape, so cookie-auth logins lacked the id /auth/session
+	// `session_id`, not `jti` (a JWT internal), and unconditional: emitted for token
+	// and cookie logins alike, so every session carries the id /auth/session
 	// returns for the same session.
 	w.Key("session_id");
 	w.ValueString(wxString::FromUTF8(issued.jti.c_str()));
@@ -2086,8 +2086,8 @@ CHttpServer::Response CApiDispatcher::HandleLogout(const CHttpServer::Request &r
 	m_authRateLimiter.NoteSuccess(ip);
 
 	CHttpServer::Response r;
-	// 204 with no body: everything this used to echo came from the request URL,
-	// and `ok` restated the status code.
+	// 204 with no body: any echo would only repeat the request URL,
+	// and `ok` would restate the status code.
 	r.status = 204;
 	r.content_type.clear();
 	r.headers["Set-Cookie"] = MakeClearCookie(kSessionCookieName);
@@ -2470,7 +2470,7 @@ void WriteProgressParts(CJsonWriter &w, const webapi::FileSnapshot &f)
 						      ? part_sources[static_cast<std::size_t>(i)]
 						      : static_cast<std::uint16_t>(0);
 		// "pending": we lack it and a source has it. "unavailable": we lack it and
-		// none does. The old spellings both read as "we lack it".
+		// none does. The two spellings distinguish a gap a source can fill from one nobody can.
 		const char *state = !has_gap[static_cast<std::size_t>(i)]
 					    ? "complete"
 					    : (sources > 0 ? "pending" : "unavailable");
@@ -2621,7 +2621,7 @@ void WriteDownloadObject(
 	if (detail) {
 		// Detail-only fields, omitted from the list. `remaining_seconds` is computed
 		// here -- no EC tag exists -- and is null when stalled or paused, where there
-		// is nothing to compute from. It was -1, which a client had to read as unknown.
+		// is nothing to compute from, rather than a -1 a client would have to read as unknown.
 		bool has_remaining_seconds = false;
 		std::int64_t remaining_seconds = 0;
 		if (f.download.speed_bytes_per_second > 0) {
@@ -2660,8 +2660,7 @@ void WriteDownloadObject(
 		WriteStringOrNull(w, "aich_hash", !f.aich_hash.empty(), f.aich_hash);
 		// The ".part" control-file basename, omitted once the download completes: a
 		// completed file structurally has no partfile, which is the absent-key case
-		// rather than the null of "not reported". It used to be a manufactured "" a
-		// client had to read as "completed". Nothing to surface either way: on a
+		// rather than the null of "not reported". Nothing to surface either way: on a
 		// completed file the daemon reuses the _FILENAME tag to carry the directory path.
 		if (f.download.status != "completed") {
 			w.Key("part_file_name");
@@ -2718,9 +2717,9 @@ void WriteClientBaseFields(CJsonWriter &w, const webapi::ClientSnapshot &c)
 	WriteStringOrNull(w, "upload_file_name", !c.upload_file_name.empty(), c.upload_file_name);
 	WriteStringOrNull(w, "upload_file_hash", !c.upload_file_hash.empty(), c.upload_file_hash);
 	WriteStringOrNull(w, "download_file_hash", !c.download_file_hash.empty(), c.download_file_hash);
-	// R11: flattened out of the old `xfer` wrapper. A sub-object earns its place by
-	// grouping DIFFERENT quantities; this grouped one quantity split by time window,
-	// which belongs in the key.
+	// R11: kept flat, not in a sub-object. A sub-object earns its place by
+	// grouping DIFFERENT quantities; one quantity split by time window belongs
+	// in the key.
 	w.Key("uploaded_bytes_session");
 	w.ValueInt(static_cast<int64_t>(c.uploaded_bytes_session));
 	w.Key("downloaded_bytes_session");
@@ -2780,7 +2779,7 @@ void WriteClientBaseFields(CJsonWriter &w, const webapi::ClientSnapshot &c)
 		c.has_parts_offered_count,
 		static_cast<int64_t>(c.parts_offered_count));
 	WriteStringOrNull(w, "client_mod_name", !c.client_mod_name.empty(), c.client_mod_name);
-	// Inverted from the old `view_shared_disabled`: a negated boolean forces
+	// Positive form, not a negated boolean: a negated flag forces
 	// `=== false` at every call site, and R4 wants the positive form.
 	w.Key("shared_files_browsable");
 	w.ValueBool(!c.view_shared_disabled);
@@ -2974,7 +2973,7 @@ void WriteSharedBaseFields(CJsonWriter &w, const webapi::FileSnapshot &f, bool d
 	w.ValueInt(static_cast<int64_t>(f.shared.request_count_session));
 	w.Key("request_count_total");
 	w.ValueInt(static_cast<int64_t>(f.shared.request_count_total));
-	// `accepts` was a verb doing duty as a plural noun.
+	// `accepted_request_count_*`, a noun, not the verb `accepts`.
 	w.Key("accepted_request_count_session");
 	w.ValueInt(static_cast<int64_t>(f.shared.accepted_request_count_session));
 	w.Key("accepted_request_count_total");
@@ -3029,9 +3028,8 @@ void WriteSharedDetailObject(CJsonWriter &w, const webapi::FileSnapshot &f)
 			   : 0.0);
 	w.Key("directory");
 	// The on-disk directory (Temp while downloading, destination once completed), the
-	// same value /downloads/{hash} reports. It was once masked with a placeholder while
-	// incomplete, which hid nothing and cost clients a usable field; `incomplete` below
-	// carries that state explicitly.
+	// same value /downloads/{hash} reports. Reported directly rather than masked with a
+	// placeholder while incomplete; `incomplete` below carries that state explicitly.
 	w.ValueString(wxString::FromUTF8(f.on_disk_dir.c_str()));
 	w.Key("incomplete");
 	// Always present, so clients test it rather than probe for absence.
@@ -3056,9 +3054,8 @@ void WriteSharedDetailObject(CJsonWriter &w, const webapi::FileSnapshot &f)
 // `offset` and `limit` are always emitted so a paging consumer can size its
 // requests.
 //
-// `limit` DEFAULTS rather than meaning "everything when omitted". The old rule was
-// not monotonic -- 500 rows, an error at 501, the whole collection at zero -- and
-// it capped the explicit caller while leaving the naive one unbounded.
+// `limit` DEFAULTS rather than meaning "everything when omitted", so the rule is
+// monotonic and bounds the naive caller as well as the explicit one.
 struct ListParams
 {
 	static const std::size_t kDefaultLimit = 100;
@@ -3167,9 +3164,8 @@ const ListComparators<SearchListRow> &SearchListComparators()
 	return kComps;
 }
 
-// /categories was the only list endpoint that never parsed ?limit/&offset/&sort/
-// &order, so the same query string was a hard error on /downloads and a silent
-// no-op here.
+// /categories parses ?limit/&offset/&sort/&order too, so that query string behaves
+// the same here as on the other list endpoints rather than being a silent no-op.
 const ListComparators<webapi::CategorySnapshot> &CategoryComparators()
 {
 	static const ListComparators<webapi::CategorySnapshot> kComps = {
@@ -3232,9 +3228,9 @@ std::unique_ptr<CHttpServer::Response> ParseUintParam(const std::map<std::string
 }
 
 // Optional boolean query parameter: 1/0, true/false, yes/no, and 400 on anything
-// else. One vocabulary for the whole surface -- `include_completed` used to read
-// every other value as false while its neighbour `include_parts` answered 400, so
-// the same typo was silent on one endpoint and fatal on the next.
+// else. One vocabulary for the whole surface, so a typo in a boolean query
+// param is a 400 everywhere rather than silently false on one endpoint and
+// fatal on the next.
 std::unique_ptr<CHttpServer::Response> ParseBoolParam(
 	const std::map<std::string, std::string> &qmap, const char *name, bool &out)
 {
@@ -3366,10 +3362,10 @@ std::unique_ptr<CHttpServer::Response> BuildListWindow(const std::vector<T> &ite
 
 // Emit the `total` / `offset` / `limit` pagination metadata.
 //
-// `limit` echoes the page size the caller asked for. It used to report the row count
-// instead, which is not a page size and could not be used as one: a caller that
-// stored it pinned its window to whatever the first response held, and re-sending
-// it was a 400 once the list outgrew the cap.
+// `limit` echoes the page size the caller asked for -- a value a caller can store
+// and re-send, unlike the row count, which is not a page size and could not be
+// used as one: storing the row count would pin the window to the first response,
+// and re-sending it would be a 400 once the list outgrew the cap.
 void WritePageMeta(CJsonWriter &w, std::size_t total, const ListParams &params)
 {
 	w.Key("total");
@@ -3772,9 +3768,9 @@ CHttpServer::Response CApiDispatcher::HandleDownloads(const CHttpServer::Request
 	// downloads in m_completedDownloads as a separate "awaiting clear" list, so "what
 	// is transferring" and "what finished" are different row sets.
 	//
-	// It replaced `?include_completed=`, a boolean over a three-state axis: there was
-	// no way to ask for completed-only, which is what a Finished view needs. `status`
-	// is the key the download object already reports, so filter and field agree.
+	// `?status=` is a three-state axis, not a boolean like `?include_completed=`, so a
+	// Finished view can ask for completed-only. `status` is the key the download object
+	// already reports, so filter and field agree.
 	//
 	// GET /downloads/{hash} is unaffected: the caller named the file.
 	enum class DownloadsFilter
@@ -4024,8 +4020,8 @@ CHttpServer::Response CApiDispatcher::HandleFileClients(
 		}
 
 		FileClientRow row;
-		// R12: named by direction. The old pair was `source` / `peer`, which is not
-		// one axis -- `source` names a relation to the file, `peer` the entity.
+		// R12: named by direction (`downloading_from` / `uploading_to`), one axis --
+		// not a mix of a file-relation (`source`) and an entity (`peer`).
 		row.role = is_source && is_peer
 				   ? "both"
 				   : (is_source ? "downloading_from" : (is_peer ? "uploading_to" : "none"));
@@ -4339,8 +4335,8 @@ CHttpServer::Response CApiDispatcher::HandleDownloadCommentsKadSearch(
 	delete ec_resp;
 
 	CHttpServer::Response r;
-	// 202 with no body. The field it used to carry could hold exactly one value, so it
-	// said nothing the status code had not -- and `status` everywhere else on this
+	// 202 with no body. Any field here could hold exactly one value, so it
+	// would say nothing the status code has not -- and `status` everywhere else on this
 	// surface is a transfer state.
 	r.status = 202;
 	r.content_type.clear();
@@ -4447,9 +4443,9 @@ CHttpServer::Response CApiDispatcher::HandleDownloadA4afAction(
 	else if (action == "swap_others")
 		op = EC_OP_PARTFILE_SWAP_A4AF_OTHERS;
 	else if (action == "swap_this_auto") {
-		// A third action here was the odd one out: the other two move sources, while
-		// this flipped a flag the download object reports. A flip cannot be retried
-		// safely, so it is now PATCH /downloads/{hash} {"a4af_auto":...}.
+		// The other two actions move sources; flipping the `a4af_auto` flag the download
+		// object reports belongs on PATCH /downloads/{hash}, because a flip cannot be
+		// retried safely. The rejection points a client there.
 		return ErrorResponse(400,
 			"bad_request",
 			"`swap_this_auto` is not accepted; set the flag with PATCH "
@@ -4647,9 +4643,9 @@ CHttpServer::Response CApiDispatcher::HandleVersionCheck(const CHttpServer::Requ
 		return *rej;
 
 	// Before the first EC snapshot there are no preferences to read and
-	// version_check_available defaults to false, so the capability check below used to
-	// answer 409 "disabled on the connected daemon" during the window every client hits
-	// at startup. 503 ec_unavailable is the retryable answer.
+	// version_check_available defaults to false, so without a snapshot the capability
+	// check below would answer 409 "disabled on the connected daemon" during the
+	// startup window every client hits. 503 ec_unavailable is the retryable answer.
 	if (auto r = RequireSnapshot(m_state))
 		return *r;
 
@@ -5143,8 +5139,8 @@ CHttpServer::Response CApiDispatcher::HandleDownloadPatch(
 	r.content_type = "application/json";
 	CJsonWriter w;
 	// The same shape GET /downloads/{hash} returns, not the narrower list row: a client
-	// that PATCHed and stored the response used to hold a different object than one
-	// that PATCHed and re-GETed, missing progress.parts and sixteen other keys.
+	// that PATCHes and stores the response holds the same object it would get by
+	// re-GETing, including progress.parts and sixteen other keys.
 	WriteDownloadObject(w, d_after, /*include_parts=*/true, /*detail=*/true);
 	FinalizeJsonBody(w, r);
 	return r;
@@ -5209,8 +5205,8 @@ CHttpServer::Response CApiDispatcher::HandleDownloadDelete(
 	(void)RefresherTick(m_app, m_state);
 
 	CHttpServer::Response r;
-	// 204 with no body: everything this used to echo came from the request URL,
-	// and `ok` restated the status code.
+	// 204 with no body: any echo would only repeat the request URL,
+	// and `ok` would restate the status code.
 	r.status = 204;
 	r.content_type.clear();
 	return r;
@@ -5319,9 +5315,9 @@ CHttpServer::Response CApiDispatcher::HandleDownloadsClearCompleted(const CHttpS
 	// show the post-clear state.
 	(void)RefresherTick(m_app, m_state);
 
-	// One entry per hash, in the envelope every other multi-item mutation uses.
-	// `cleared` was a count and `cleared_hashes` a bare array, so a per-entry failure
-	// had nowhere to appear.
+	// One entry per hash, in the envelope every other multi-item mutation uses, so a
+	// per-entry failure has somewhere to appear rather than the response being a count
+	// plus a bare hash array.
 	std::vector<BulkItem> results;
 	results.reserve(hashes_cleared.size());
 	for (const auto &h : hashes_cleared) {
@@ -8362,7 +8358,7 @@ CHttpServer::Response CApiDispatcher::HandleNetworksDisconnect(const CHttpServer
 		return *rej;
 
 	// Optional `{"network": "ed2k" | "kad" | "both"}` selector; default "both",
-	// and an empty body is fine -- that is the v0 contract callers built against.
+	// and an empty body is fine -- that is the contract callers build against.
 	std::string network = "both";
 	if (!req.body.empty()) {
 		picojson::value root;
@@ -8561,8 +8557,8 @@ CHttpServer::Response CApiDispatcher::HandleKadBootstrap(const CHttpServer::Requ
 			return ErrorResponse(400, "bad_request", "required integer field `port` is missing");
 		}
 		const double v = it->second.get<double>();
-		// Same contract as the `port` on POST /friends. 0 used to be accepted
-		// here, which no Kad contact can be reached on.
+		// Same contract as the `port` on POST /friends. 0 is rejected: no Kad
+		// contact can be reached on it.
 		if (!IsIntegralJsonNumber(v) || v < 1 || v > 65535) {
 			return ErrorResponse(400, "bad_request", "`port` must be an integer in 1..65535");
 		}
@@ -10754,8 +10750,8 @@ CHttpServer::Response CApiDispatcher::HandleSearchCommentsKadSearch(
 	RefreshSearchIfStale(owner_search_id);
 
 	CHttpServer::Response r;
-	// 202 with no body: the field it used to carry could hold exactly one value,
-	// so it said nothing the status code had not already said.
+	// 202 with no body: any field here could hold exactly one value,
+	// so it would say nothing the status code has not already said.
 	r.status = 202;
 	r.content_type.clear();
 	return r;
@@ -10777,7 +10773,7 @@ void CApiDispatcher::StampCorsForTransport(
 
 boost::optional<CHttpServer::Response> CApiDispatcher::PreflightEvents(const CHttpServer::Request &req)
 {
-	// Same bearer/cookie check the live handler used to do, but run on the I/O thread
+	// Same bearer/cookie check the live handler does, but run on the I/O thread
 	// BEFORE a worker is spawned and BEFORE the 32-slot SSE budget is touched, so the
 	// slot stays free for legitimate subscribers.
 	auto a = Authenticate(req);

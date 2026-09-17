@@ -180,12 +180,12 @@ if [ "${TOTAL:-0}" -gt 0 ]; then
 	fi
 
 	# boolean, or null on a daemon that does not report peer connectivity.
-	# The pre-rename spelling must be absent, not merely shadowed: a client
-	# reading `online` would silently see undefined rather than a boolean.
+	# The `online` key must be absent, not merely shadowed: a client
+	# reading it would silently see undefined rather than a boolean.
 	if [ "$(_jq '.known_clients[0].online | type')" = "null" ]; then
-		_pass "known_clients no longer emits the old online key"
+		_pass "known_clients emits no online key"
 	else
-		_fail "known_clients online" "the retired key is still present"
+		_fail "known_clients online" "an online key is present"
 	fi
 	ONLINE_TYPE=$(_jq '.known_clients[0].connected | type')
 	if [ "$ONLINE_TYPE" = "boolean" ] || [ "$ONLINE_TYPE" = "null" ]; then
@@ -325,8 +325,8 @@ done
 #
 # The daemon holds a client object from the first contact ATTEMPT, so a peer
 # it is still trying to reach -- or can never reach -- has a /clients row.
-# online used to be exactly that row's presence, which called such a peer
-# online. It is now the peer's real connection state, so every record that
+# `connected` is the peer's real connection state, not the mere presence of
+# that row, so every record that
 # claims online must have a live counterpart that also says connected.
 #
 # Appended at the end: both requests are reads, but a new section in the

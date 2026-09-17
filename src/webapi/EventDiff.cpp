@@ -329,7 +329,7 @@ std::string ToJson(const ClientSnapshot &c)
 	  << ",\"upload_file_hash\":" << JsonStrOrNull(!c.upload_file_hash.empty(), c.upload_file_hash)
 	  << ",\"download_file_hash\":"
 	  << JsonStrOrNull(!c.download_file_hash.empty(), c.download_file_hash)
-	  // Flattened out of the old `xfer` wrapper (R11).
+	  // Kept flat, not in a sub-object (R11).
 	  << ",\"uploaded_bytes_session\":" << c.uploaded_bytes_session
 	  << ",\"downloaded_bytes_session\":" << c.downloaded_bytes_session
 	  << ",\"uploaded_bytes_total\":" << c.uploaded_bytes_total

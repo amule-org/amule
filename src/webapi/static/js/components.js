@@ -144,8 +144,7 @@ export function Section(rows, titleKey, actions) {
 // download will land rather than what is on disk right now.
 //
 // Reads `directory` with a `path` fallback because this helper serves both
-// detail panels and only /downloads has been renamed so far. Drop the fallback
-// when /shared moves.
+// detail panels: /downloads uses `directory` while /shared uses `path`.
 function fullPath(file) {
   const dir = file.directory || file.path || "";
   return dir + (dir.includes("\\") ? "\\" : "/") + (file.name || "");

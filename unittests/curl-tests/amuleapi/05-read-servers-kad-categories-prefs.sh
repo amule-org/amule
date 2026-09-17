@@ -113,7 +113,7 @@ if [ "$COUNT" -gt 0 ]; then
 	_assert_json_eq '.servers[0].permanent | type' boolean '/servers[0].permanent is boolean'
 	# #440 server country: always-present ISO 3166-1 alpha-2 string,
 	# empty when GeoIP is off/unresolved (never absent/null).
-	# Nullable since the R10 pass, same as the client row.
+	# Nullable per R10, same as the client row.
 	_assert_json_eq '(.servers[0].country_code == null or (.servers[0].country_code | type) == "string")' \
 		true '/servers[0].country_code is a string or null'
 	# Consecutive failed connection attempts -- a counter, not a boolean,
@@ -151,21 +151,21 @@ _assert_status 200 "GET /kad (admin) → 200"
 _assert_json_eq '.state | test("^(disabled|connecting|connected)$")' \
 	true '/kad.state is a known enum value'
 # firewalled_tcp and firewalled_udp are two independent measurements, not a
-# verdict and a refinement -- which is what the unqualified `firewalled` used
-# to imply. The TCP one is a vote (two peers must confirm reachability over an
-# incoming connection); the UDP one is a directed test with its own timeout.
-# Typed by connection state now: a measured bool while connected, null while
-# not. `false` used to mean both "measured open" and "never measured", and for
-# firewalled_udp specifically that read as "UDP is open" on a stopped Kad.
+# verdict and a refinement. The TCP one is a vote (two peers must confirm
+# reachability over an incoming connection); the UDP one is a directed test
+# with its own timeout.
+# Typed by connection state: a measured bool while connected, null while not,
+# so `false` means "measured open" rather than also standing in for "never
+# measured" -- which for firewalled_udp would read as "UDP is open" on a stopped Kad.
 for F in firewalled_tcp firewalled_udp lan_mode; do
 	_assert_json_eq "(.state == \"connected\") or (.$F == null)" true \
 		"/kad.$F is null while Kad is not connected"
 	_assert_json_eq "(.state != \"connected\") or ((.$F | type) == \"boolean\")" true \
 		"/kad.$F is boolean while Kad is connected"
 done
-# The pre-rename spellings must be gone, not merely shadowed by the new ones.
-_assert_json_eq 'has("firewalled")'   false '/kad.firewalled is gone'
-_assert_json_eq 'has("in_lan_mode")'  false '/kad.in_lan_mode is gone'
+# The unqualified spellings are not keys here, only the typed ones.
+_assert_json_eq 'has("firewalled")'   false '/kad has no firewalled key'
+_assert_json_eq 'has("in_lan_mode")'  false '/kad has no in_lan_mode key'
 # LAN mode forces both firewall flags false (Kademlia.h, UDPFirewallTester.cpp),
 # so the three cannot all be true at once.
 _assert_json_eq '(.lan_mode | not) or ((.firewalled_tcp | not) and (.firewalled_udp | not))' \
@@ -256,18 +256,18 @@ _assert_json_eq '.connection.ed2k_enabled      | type' boolean '/preferences.con
 _assert_json_eq '.connection.kad_enabled       | type' boolean '/preferences.connection.kad_enabled is boolean'
 _assert_json_eq '.connection.autoconnect       | type' boolean '/preferences.connection.autoconnect is boolean'
 _assert_json_eq '.connection.max_sources_per_file_count | type' number '/preferences.connection.max_sources_per_file_count is numeric'
-# Statistics graph-scale caps were dropped from /preferences (#596).
-_assert_json_eq '.connection.max_upload_cap_kbps   | type' null '/preferences.connection.max_upload_cap_kbps removed (#596)'
-_assert_json_eq '.connection.max_download_cap_kbps | type' null '/preferences.connection.max_download_cap_kbps removed (#596)'
+# /preferences carries no statistics graph-scale caps (#596).
+_assert_json_eq '.connection.max_upload_cap_kbps   | type' null '/preferences.connection.max_upload_cap_kbps is not exposed (#596)'
+_assert_json_eq '.connection.max_download_cap_kbps | type' null '/preferences.connection.max_download_cap_kbps is not exposed (#596)'
 
-# 3-state enum string, not a bool (#596, renamed + spelled out in #655);
+# 3-state enum string, not a bool (#596, #655);
 # endgame newly exposed (#596).
 _assert_json_eq '.security.shared_files_visibility | test("^(everybody|friends|nobody)$")' \
 	true '/preferences.security.shared_files_visibility is a known 3-state enum value (#655)'
 _assert_json_eq '.files.endgame_mode_enabled        | type' boolean '/preferences.files.endgame_mode_enabled is boolean (#596)'
-# Old names must be gone, not merely shadowed by the new ones (#655).
-_assert_json_eq '.security.can_see_shares      | type' null    '/preferences.security.can_see_shares removed (#655)'
-_assert_json_eq '.files.endgame                | type' null    '/preferences.files.endgame removed (#655)'
+# These spellings are not keys here, only the current ones (#655).
+_assert_json_eq '.security.can_see_shares      | type' null    '/preferences.security.can_see_shares is not a key (#655)'
+_assert_json_eq '.files.endgame                | type' null    '/preferences.files.endgame is not a key (#655)'
 
 # The four stateful-noun booleans the _enabled sweep missed: `auto_update` and
 # `auto_priority` are modes, not imperative verbs, so they read as states and
@@ -275,11 +275,11 @@ _assert_json_eq '.files.endgame                | type' null    '/preferences.fil
 _assert_json_eq '.files.new_downloads_auto_priority_enabled    | type' boolean '/preferences.files.new_downloads_auto_priority_enabled is boolean'
 _assert_json_eq '.files.new_shared_files_auto_priority_enabled | type' boolean '/preferences.files.new_shared_files_auto_priority_enabled is boolean'
 _assert_json_eq '.security.ipfilter_auto_update_enabled        | type' boolean '/preferences.security.ipfilter_auto_update_enabled is boolean'
-# Old names must be gone, not merely shadowed by the new ones.
-_assert_json_eq '.files.new_downloads_auto_priority    | type' null '/preferences.files.new_downloads_auto_priority removed'
-_assert_json_eq '.files.new_shared_files_auto_priority | type' null '/preferences.files.new_shared_files_auto_priority removed'
-_assert_json_eq '.security.ipfilter_auto_update        | type' null '/preferences.security.ipfilter_auto_update removed'
-_assert_json_eq '.geoip.auto_update                    | type' null '/preferences.geoip.auto_update removed'
+# These spellings are not keys here, only the current ones.
+_assert_json_eq '.files.new_downloads_auto_priority    | type' null '/preferences.files.new_downloads_auto_priority is not a key'
+_assert_json_eq '.files.new_shared_files_auto_priority | type' null '/preferences.files.new_shared_files_auto_priority is not a key'
+_assert_json_eq '.security.ipfilter_auto_update        | type' null '/preferences.security.ipfilter_auto_update is not a key'
+_assert_json_eq '.geoip.auto_update                    | type' null '/preferences.geoip.auto_update is not a key'
 
 # message_filter show-in-log + comment filter, wired over EC (#596).
 _assert_json_eq '.message_filter.log_filtered_messages      | type' boolean '/preferences.message_filter.log_filtered_messages is boolean (#596)'
@@ -313,8 +313,8 @@ _assert_json_eq '.remote_controls.webserver.template_name        | type' string 
 _assert_json_eq '.remote_controls.amuleapi.enabled          | type' boolean '/preferences.remote_controls.amuleapi.enabled is boolean'
 _assert_json_eq '.remote_controls.amuleapi.port             | type' number  '/preferences.remote_controls.amuleapi.port is numeric'
 _assert_json_eq '.remote_controls.amuleapi.bind_address     | type' string  '/preferences.remote_controls.amuleapi.bind_address is string'
-_assert_json_eq '.remote_controls.webserver_enabled | type' null '/preferences.remote_controls.webserver_enabled removed (#655)'
-_assert_json_eq '.remote_controls.amuleapi_bind     | type' null '/preferences.remote_controls.amuleapi_bind removed (#655)'
+_assert_json_eq '.remote_controls.webserver_enabled | type' null '/preferences.remote_controls.webserver_enabled is not a key (#655)'
+_assert_json_eq '.remote_controls.amuleapi_bind     | type' null '/preferences.remote_controls.amuleapi_bind is not a key (#655)'
 # Passwords stay write-only in both sub-objects.
 _assert_json_eq '.remote_controls.webserver.password       | type' null '/preferences.remote_controls.webserver.password is not emitted'
 _assert_json_eq '.remote_controls.webserver.guest_password | type' null '/preferences.remote_controls.webserver.guest_password is not emitted'

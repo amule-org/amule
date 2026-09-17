@@ -119,7 +119,7 @@ sleep 3 # let the refresher build its caches
 AUTH=(-H "Authorization: Bearer $TOKEN")
 
 # The search list is addressed per search, so start one to have an id
-# rather than relying on a removed implicit default.
+# rather than relying on an implicit default, which these paths do not have.
 SEARCH_SID=$(curl -s -X POST "${AUTH[@]}" -H "Content-Type: application/json" \
 	-d '{"query":"amuleapi-phase28","type":"local"}' "$API/search" \
 	| jq -r '.search_id // empty')
@@ -165,7 +165,7 @@ for pair in "${ENDPOINTS[@]}"; do
 	_assert_json_eq ".limit" 1 "/$ep?limit=1 echoes limit=1"
 
 	# ...and it comes back as a number, confirming the default 100 asserted
-	# above is a real page size (#1179 dropped the old null "no window" echo).
+	# above is a real page size (#1179: limit is echoed as a number, not null).
 	_assert_json_eq ".limit | type" number "/$ep?limit=1 limit is a number"
 
 	# 3. limit=0 → empty window, total still reported.
@@ -200,7 +200,7 @@ for pair in "${ENDPOINTS[@]}"; do
 	_curl "${AUTH[@]}" "$API/$ep?limit=1000000001"
 	_assert_status 400 "GET /$ep?limit=1000000001 → 400 (over the ceiling)"
 	_curl "${AUTH[@]}" "$API/$ep?limit=99999"
-	_assert_status 200 "GET /$ep?limit=99999 → 200 (legal now; was the old cap's rejection)"
+	_assert_status 200 "GET /$ep?limit=99999 → 200 (within the cap)"
 	_curl "${AUTH[@]}" "$API/$ep?limit=1000000000"
 	_assert_status 200 "GET /$ep?limit=1000000000 → 200 (the ceiling is in range)"
 	_assert_json_eq ".limit" 1000000000 "/$ep?limit=1000000000 echoes the limit it used"
@@ -322,8 +322,8 @@ _assert_status 200 "after= past the last index → 200"
 _assert_json_eq ".categories | length" 0 "after= past the last index returns an empty page"
 
 # --- The sort surface a collection's own row can support. ----------
-# /clients and /shared used to expose three keys each while their twins
-# (/known_clients, /downloads) exposed eight and six. The keys added here are
+# The sort keys /clients and /shared expose are the ones their own rows emit.
+# The keys checked here are
 # only the ones each row actually emits, per R7: /shared gets the upload-side
 # pair, not /downloads' progress.percent or status, which describe a transfer a
 # shared row does not report -- sorting by an absent column is not a sort.

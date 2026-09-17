@@ -76,7 +76,7 @@ _assert_json_eq() {
 
 # A 202 from shared_reload carries a body only when amuled had
 # something to say: `{"message": ...}` if it did, no body at all if it did not
-# (the empty `{}` was dropped so this matches the URL-fetch triggers). Either is correct; a constant `ok` field is not.
+# (no empty `{}`, so this matches the URL-fetch triggers). Either is correct; a constant `ok` field is not.
 _assert_no_body_or_message() {
 	local what=$1
 	if [ -z "$CURL_BODY" ]; then

@@ -293,7 +293,7 @@ TEST(EventDiff, StatusEventFiresWhenOnlyKadFirewalledTcpMoved)
 
 	ASSERT_TRUE(!payload.empty());
 	ASSERT_TRUE(payload.find("\"firewalled_tcp\":true") != std::string::npos);
-	// The pre-rename spelling must not survive anywhere in the payload.
+	// The unqualified `firewalled` spelling must not appear anywhere in the payload.
 	ASSERT_TRUE(payload.find("\"firewalled\":") == std::string::npos);
 }
 
@@ -536,9 +536,9 @@ TEST(EventDiff, ServerUpdatedFiresOnTcpFlagsChange)
 }
 
 // The peer-version key must be spelled the same on the event bus as in the REST list item.
-// `WriteServerObject` renamed it `version` -> `software_version` and the SSE twin was left behind,
-// so the same value shipped under two names: a client hydrating from GET /servers and then applying
-// server_updated diffs got the version under two keys and could not merge them. Equal() compares
+// `WriteServerObject` spells it `software_version`, and the SSE twin must match: if it spelled the
+// same value differently, a client hydrating from GET /servers and then applying server_updated
+// diffs would get the version under two keys and could not merge them. Equal() compares
 // s.version either way, so nothing failed loudly -- which is why this is pinned by name rather than
 // left to the shape assertions above.
 TEST(EventDiff, ServerPayloadSpellsTheVersionKeyLikeRest)
@@ -566,7 +566,7 @@ TEST(EventDiff, ServerPayloadSpellsTheVersionKeyLikeRest)
 
 	ASSERT_TRUE(!payload.empty());
 	ASSERT_TRUE(payload.find("\"software_version\":\"17.15\"") != std::string::npos);
-	// And not under the pre-rename spelling. Quoted so it cannot match inside
+	// And not under a bare `version` spelling. Quoted so it cannot match inside
 	// "software_version" itself.
 	ASSERT_TRUE(payload.find("\"version\":") == std::string::npos);
 }
@@ -1325,9 +1325,9 @@ TEST(EventDiff, SharedUpdatedFiresWhenOnlyHashingProgressMoved)
 
 TEST(EventDiff, DownloadUpdatedFiresWhenOnlyHashingProgressMoved)
 {
-	// The download side needs the same treatment: hashing_progress used to be GET
-	// /downloads/{hash}-only and absent from EqualDownload, so a Verify Local Data pass
-	// produced no download_updated at all.
+	// The download side needs the same treatment: hashing_progress must be compared in
+	// EqualDownload, not treated as GET /downloads/{hash}-only, so a Verify Local Data pass
+	// produces a download_updated.
 	CState state;
 	state.MutateDownloads([](FileMap &files) {
 		FileSnapshot f;
@@ -1588,8 +1588,8 @@ TEST(EventDiff, RoleFlipRefreshesFieldsTheOtherRoleNeverCompared)
 }
 
 // comments_updated payload. EVENTS.md promises the payload is the GET /downloads/{hash}/comments
-// body plus `hash`. It used to carry `hash` but NOT `kad_comment_lookup_running`, so a client that
-// followed the document and fed the event into the view it built from the endpoint silently lost
+// body plus `hash`, and it must carry `kad_comment_lookup_running`: a client that follows the
+// document and feeds the event into the view it built from the endpoint would otherwise lose
 // the in-flight-lookup flag -- exactly the flag it needs while a POST /downloads/{hash}/comments
 // Kad lookup runs.
 TEST(EventDiff, CommentsUpdatedIsASupersetOfTheRestBody)
@@ -1819,10 +1819,10 @@ TEST(EventDiff, ClientEventKeepsTheStateEnumsAsStrings)
 	ASSERT_TRUE(payload.find("\"ident_state\":\"identified\"") != std::string::npos);
 }
 
-// #1290 follow-up. `online` used to be `client_ecid != 0`, which is true from the moment the daemon
-// starts TRYING to reach a peer -- so a friend it can never reach read as online. The field now
-// carries EC_TAG_CLIENT_CONNECTED, and a daemon that never sends it leaves the answer unknown
-// rather than guessing "offline".
+// #1290 follow-up. The friend's reachability is not `client_ecid != 0`, which is true from the moment
+// the daemon starts TRYING to reach a peer -- that would read a friend it can never reach as
+// connected. The field carries EC_TAG_CLIENT_CONNECTED, and a daemon that never sends it leaves the answer
+// unknown rather than guessing "offline".
 TEST(EventDiff, FriendEventReportsReachabilityNotClientObjectExistence)
 {
 	CState state;
@@ -1831,7 +1831,7 @@ TEST(EventDiff, FriendEventReportsReachabilityNotClientObjectExistence)
 		f.ecid = 91;
 		f.name = "linked-but-unreachable";
 		// A live client object exists -- the daemon is trying -- but no
-		// socket is up. The old rule called this connected.
+		// socket is up, so this friend is not connected.
 		f.client_ecid = 4242;
 		f.connected = false;
 		f.has_connected = true;

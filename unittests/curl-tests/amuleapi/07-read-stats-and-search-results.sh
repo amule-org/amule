@@ -3,7 +3,7 @@
 # amuleapi 07-read-stats-and-search-results — /stats/tree, /stats/graphs/{graph}, /search/{id}/results.
 # /stats/tree is a recursive structure; /stats/graphs is a time-series with
 # per-graph path-param + ?width=N tailing; /search/{id}/results is read-only
-# until Phase 5 adds POST /search.
+# (POST /search is covered in 19-search).
 
 set -u
 set -o pipefail
@@ -76,7 +76,7 @@ TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 sleep 4
 
 # A search to address. Every search-scoped path names its id, so this
-# script starts one rather than relying on a removed implicit default.
+# script starts one explicitly; these paths have no implicit default.
 _curl -X POST -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
 	-d '{"query":"amuleapi-phase07","type":"local"}' "$API/search"
 SID=$(printf '%s' "$CURL_BODY" | jq -r '.search_id // empty')
@@ -133,7 +133,7 @@ _assert_json_eq '[.. | objects | select(.key? == "ul_dl_ratio") | .values[0].typ
 _assert_json_eq '[.. | objects | (.ratio_session, .ratio_total)
 	| select(. != null) | type] | all(. == "number")' \
 	true '/stats/tree ratio fields, when present, are numbers'
-# Flattened per R11: the window belongs in the key, so there is no wrapper left.
+# The window belongs in the key (R11), so there is no wrapping ratio object.
 _assert_json_eq '[.. | objects | select(has("ratio"))] | length' 0 \
 	'/stats/tree emits no wrapping ratio object'
 # label_value: the untranslated version/OS value on per-client-software rows.
@@ -188,9 +188,9 @@ _assert_json_eq '.session | has("downloaded_bytes") and has("uploaded_bytes")
 # client and shared rows: the `session` wrapper scopes the quantity, it does
 # not license a second spelling of it.
 _assert_json_eq '.session | has("download_bytes") or has("upload_bytes")' false \
-	'/stats/graphs session no longer reports the present-tense spellings'
+	'/stats/graphs session does not report present-tense spellings'
 _assert_json_eq '.session | has("kad_bytes")' false \
-	'/stats/graphs session no longer reports the misnamed kad_bytes'
+	'/stats/graphs session does not report a kad_bytes key'
 
 # The connections graph carries the second data blob's two series when the
 # daemon reports it; the other graphs never do.
@@ -229,14 +229,14 @@ _curl -H "Authorization: Bearer $TOKEN" "$API/stats/graphs/download_speed?width=
 _assert_status 200 "GET /stats/graphs/download_speed?width=5 → 200"
 _assert_json_eq '.points | length <= 5' true \
 	'/stats/graphs/download_speed?width=5 returns ≤5 points'
-# One timestamp per point, unix seconds, named `at` (R3). The ISO-8601 twin
-# was dropped: formatting is a client concern, and it cost a key plus its
+# One timestamp per point, unix seconds, named `at` (R3). There is no ISO-8601
+# twin: formatting is a client concern, and it would cost a key plus its
 # value on every point of an array that runs to max_points.
 if [ "$(printf '%s' "$CURL_BODY" | jq '.points | length')" -gt 0 ]; then
 	_assert_json_eq '.points[0].at | type' number \
 		'/stats/graphs/download_speed point.at is numeric (unix seconds)'
 	_assert_json_eq '.points[0] | has("t")' false \
-		'/stats/graphs point no longer carries the ISO-8601 twin'
+		'/stats/graphs point carries no ISO-8601 twin'
 	_assert_json_eq '.points[0].value | type' number \
 		'/stats/graphs/download_speed point.value is numeric'
 fi

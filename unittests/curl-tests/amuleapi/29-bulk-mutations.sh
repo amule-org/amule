@@ -103,15 +103,15 @@ _req PATCH /api/v1/shared "{\"hashes\":[\"$H0\"],\"priority\":\"nope\"}";     _s
 _req PUT /api/v1/downloads "{}";  _status 405 "PUT /downloads -> 405"
 _req PUT /api/v1/shared "{}";     _status 405 "PUT /shared -> 405"
 
-# --- POST /downloads unified shape (no legacy counters) --------------
+# --- POST /downloads results shape ----------------------------------
 echo "  --- POST /downloads unified results shape ---"
 LINK="ed2k://|file|bulk-test.bin|1024|0123456789ABCDEF0123456789ABCDEF|/"
 _req POST /api/v1/downloads "{\"links\":[\"$LINK\"]}"
 _jq '.results | type' array              "POST /downloads has results[] array"
 _jq '.results | length' 1                "  one result entry"
 _jq '.results[0].id' "$LINK"             "  result id echoes the link"
-_jq '.accepted // "absent"' absent       "  legacy 'accepted' counter removed"
-_jq '.ok // "absent"' absent             "  legacy 'ok' bool removed"
+_jq '.accepted // "absent"' absent       "  no 'accepted' counter"
+_jq '.ok // "absent"' absent             "  no 'ok' bool"
 
 echo
 echo "29-bulk-mutations: $((TEST_COUNT-FAIL_COUNT))/$TEST_COUNT passed"

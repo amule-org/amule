@@ -412,8 +412,8 @@ else
 fi
 
 # --- Cleanup: restore AllowCORS=0 so subsequent manual smokes don't
-#     inherit phase 9's CORS-enabled config when re-run in the same
-#     /tmp/amuleapi-regtest. run-all.sh wipes between phases anyway,
+#     inherit a CORS-enabled config when re-run in the same
+#     /tmp/amuleapi-regtest. run-all.sh wipes between tests anyway,
 #     but this protects standalone invocations.
 _rewrite_cors_and_restart 0 ""
 

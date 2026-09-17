@@ -18,7 +18,7 @@
 #     re-stamp the cached representation).
 #   * Mutations (POST / PATCH / DELETE) are passed through unchanged.
 #     If-None-Match on a mutation is ignored — the operation always
-#     runs and its response always lands. Phase 5's mutation contract
+#     runs and its response always lands. The mutation contract
 #     would otherwise silently no-op on retries.
 #   * HEAD returns 200 + ETag + empty body (the GET path's body is
 #     stripped). HEAD also honors If-None-Match for cache validation.
@@ -221,7 +221,7 @@ done
 # --- 10. Mutation responses are NEVER 304'd. ---------------------
 #
 # Even with If-None-Match matching, POST / PATCH / DELETE must run.
-# Otherwise Phase 5's mutate-then-refresh contract silently no-ops
+# Otherwise the mutate-then-refresh contract silently no-ops
 # on retries — a wire-contract footgun.
 #
 # Capture the ETag of /preferences before mutating, then PATCH with
@@ -265,7 +265,7 @@ fi
 # --- 11. Error responses (4xx/5xx) don't get ETag stamped. -------
 #
 # Stamping a 4xx body with ETag would lure clients into caching
-# error responses — anti-feature. Phase 7's Dispatch wrapper guards
+# error responses — anti-feature. The Dispatch wrapper guards
 # `resp.status == 200` so 4xx passes through unchanged.
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" \
 	"$API/downloads/baadbaadbaadbaadbaadbaadbaadbaad"
@@ -293,14 +293,14 @@ if [ "$P1" = "$P2" ] && [ -n "$P1" ]; then
 	_pass "ETag stable on /preferences across 2 s (no churn → cacheable)"
 else
 	_fail "ETag stability on /preferences" \
-		"E1=$P1, E2=$P2 — Phase 7.1's snapshot_at removal should make this stable"
+		"E1=$P1, E2=$P2 — a stable body must keep a stable ETag"
 fi
 
 # A second cache-hit observable: the second request with
 # If-None-Match: <P1> against /preferences MUST 304.
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "If-None-Match: $P1" "$API/preferences"
-_assert_status 304 "GET /preferences + If-None-Match (cached) → 304 (Phase 7.1 cache works)"
+_assert_status 304 "GET /preferences + If-None-Match (cached) → 304 (conditional GET cache works)"
 
 # --- Summary. -----------------------------------------------------
 echo

@@ -710,9 +710,9 @@ void CState::ReconcileKnownClientsLocked()
 		k.has_connected = c.has_connected;
 		// Not-connected to connected is a new session, which is what the daemon counts:
 		// UpdateMeta() bumps it once per client object at the hello, and a hello needs a
-		// connection. This used to fire on the peer merely APPEARING in the client list,
-		// which is earlier and also happens for a peer that never connects -- so the count
-		// ran ahead of the daemon's, permanently. It can still over-count by one if a peer
+		// connection. Firing on the peer merely APPEARING in the client list would run the
+		// count ahead of the daemon's, since that is earlier and also happens for a peer
+		// that never connects. It can still over-count by one if a peer
 		// drops out of the update for a tick and returns, because the departure sweep
 		// clears connected for it.
 		if (!was_connected && k.connected)

@@ -12,9 +12,9 @@
 #   * any other status      → EC_OP_PARTFILE_DELETE (by hash; targets
 #                            active partfiles in m_filelist)
 #
-# The Phase 4h status-decode fix is load-bearing here: a finished
+# The status decode is load-bearing here: a finished
 # partfile that the prior decoder reported as "paused" would never
-# be enumerable by clear_completed. Phase 5b's bulk endpoint walks
+# be enumerable by clear_completed. The bulk clear-completed endpoint walks
 # the cache for `status=="completed"` entries, so the decoder must
 # surface the wire string correctly.
 #

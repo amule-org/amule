@@ -799,8 +799,8 @@ TEST(Refresher, DownloadDetailTagsDecodeIntoSnapshot)
 	pf.AddTag(CECTag(EC_TAG_PARTFILE_LOST_CORRUPTION, static_cast<std::uint64_t>(9728000)));
 	pf.AddTag(CECTag(EC_TAG_PARTFILE_GAINED_COMPRESSION, static_cast<std::uint64_t>(4096)));
 	pf.AddTag(CECTag(EC_TAG_PARTFILE_SAVED_ICH, static_cast<std::uint32_t>(7)));
-	// Still sent by the daemon, deliberately not decoded any more: partmet_id was dropped from
-	// the surface, and an undecoded tag must not disturb the rest of the parse.
+	// Still sent by the daemon, deliberately not decoded: partmet_id is not on the surface,
+	// and an undecoded tag must not disturb the rest of the parse.
 	pf.AddTag(CECTag(EC_TAG_PARTFILE_PARTMETID, static_cast<std::uint32_t>(42)));
 	// Base CKnownFile tags carried on the partfile tag too.
 	pf.AddTag(CECTag(EC_TAG_KNOWNFILE_ON_QUEUE, static_cast<std::uint32_t>(5)));
@@ -2053,7 +2053,7 @@ TEST(Refresher, ClientVersionUnknownIsLeftEmptyRatherThanTranslated)
 	// The locale leak is what this test exists to catch: whatever the
 	// representation of "no version", it must not be the daemon's string.
 	ASSERT_TRUE(cache[7].software_version != "Desconocido");
-	// Empty here, null on the wire. Not the "unknown" sentinel it used to be: software_version
+	// Empty here, null on the wire. Not an "unknown" sentinel: software_version
 	// is free text, so there is no enum member to fall back to, and R10 spells an unknown value
 	// null.
 	ASSERT_EQUALS(std::string(), cache[7].software_version);
@@ -3195,8 +3195,8 @@ TEST(Refresher, StatusConnectingSentinelNeverReachesTheSnapshot)
 
 TEST(Refresher, StatusDisconnectedIsNotReportedAsLowId)
 {
-	// The bug the high_id rename fixed: with no EC_TAG_ED2K_ID the id reads 0, and HasLowID()
-	// is "id < 16777216", so the old negative spelling reported low_id: true for a daemon that
+	// The high_id contract, positive sense: with no EC_TAG_ED2K_ID the id reads 0, and HasLowID()
+	// is "id < 16777216", so a negative low_id spelling would report low_id: true for a daemon that
 	// simply has no id yet -- a firewall diagnosis out of thin air. Positive sense reads
 	// correctly.
 	CECPacket resp(EC_OP_STATS);

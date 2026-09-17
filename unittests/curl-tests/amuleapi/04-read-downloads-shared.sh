@@ -93,7 +93,7 @@ TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 	-d "{\"password\":\"$ADMIN_PASS\"}" \
 	"$API/auth/login?include_token=true" | jq -r .token)
 [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ] \
-	|| _die "could not log in for phase 4b tests"
+	|| _die "could not log in"
 
 # Allow the first two refresher ticks to populate the cache (cold
 # start: Phase 1 surfaces every existing file as "new", Phase 2 ships
@@ -138,8 +138,8 @@ if [ "$COUNT" -gt 0 ]; then
 		'/downloads[0].sources.total is numeric'
 	_assert_json_eq '.downloads[0].kad_comment_lookup_running | type' boolean \
 		'/downloads[0].kad_comment_lookup_running is boolean (issue #434)'
-	# Moved onto the list by issue #1054 — it used to be detail-only, which
-	# left a list-driven client with no way to see a hash running.
+	# On the list row (#1054) so a list-driven client can see a hash running,
+	# not only the detail response.
 	_assert_json_eq '.downloads[0].hashed_part_count | type' number \
 		'/downloads[0].hashed_part_count is numeric (#1054)'
 	# A4AF membership on the list, so the SSE download event carries it and a
@@ -173,15 +173,15 @@ if [ "$COUNT" -gt 0 ]; then
 		'/downloads/{hash} last_seen_complete_at is a number or null'
 	_assert_json_eq '.last_seen_complete_at != 0' true \
 		'/downloads/{hash} last_seen_complete_at never uses 0 as "never"'
-	# R10: null until the hashset exists, never the "" sentinel it used to be.
+	# R10: null until the hashset exists, never a "" sentinel.
 	_assert_json_eq '(.aich_hash == null or (.aich_hash | type) == "string")' true \
 		'/downloads/{hash} aich_hash is a string or null, never ""'
 	_assert_json_eq '.aich_hash != ""' true \
 		'/downloads/{hash} aich_hash never uses the empty-string sentinel'
 	# Present while the file is still a partfile, and the key is OMITTED once
 	# the download completes -- a completed file structurally has no partfile,
-	# which is the absent-key case rather than the null of "not reported". It
-	# used to be a manufactured "" a client had to read as "completed".
+	# which is the absent-key case rather than the null of "not reported", not
+	# a manufactured "" a client would read as "completed".
 	_assert_json_eq 'if .status == "completed" then (has("part_file_name") | not) else (.part_file_name | type) == "string" end' \
 		true '/downloads/{hash} carries part_file_name unless completed, where the key is absent'
 	_assert_json_eq '.part_file_name != ""' true \
@@ -248,14 +248,14 @@ if [ "$COUNT" -gt 0 ]; then
 	_curl -X POST -H "Authorization: Bearer $TOKEN" \
 		-H "Content-Type: application/json" \
 		-d '{"action":"swap_this_auto"}' "$API/downloads/$HASH/a4af"
-	_assert_status 400 "POST a4af swap_this_auto → 400 (moved to PATCH)"
+	_assert_status 400 "POST a4af swap_this_auto → 400 (it is a PATCH action)"
 	_assert_json_eq '.error.message | test("a4af_auto")' true \
 		'the swap_this_auto 400 names the PATCH field'
 
 	# --- a4af_auto is a set, and setting it twice is not an undo. -------
 	#
-	# This is the whole point of moving it: EC_OP_PARTFILE_SWAP_A4AF_THIS_AUTO
-	# maps to SetA4AFAuto(!IsA4AFAuto()), so the old action landed on the
+	# This is the whole point of a4af_auto being a set: EC_OP_PARTFILE_SWAP_A4AF_THIS_AUTO
+	# maps to SetA4AFAuto(!IsA4AFAuto()), so a bare swap would land on the
 	# opposite value whenever a request was repeated -- which an HTTP library
 	# or a browser can do without the caller knowing.
 	for want in true false true; do
@@ -328,15 +328,15 @@ if [ "$COUNT" -gt 0 ]; then
 	fi
 
 	# R7: a sort value is spelled exactly like the response key it orders by,
-	# so a field rename can never orphan one. These three moved with the keys;
-	# the old spellings must now be rejected rather than silently accepted.
+	# so a field name can never orphan one. These three match the response
+	# keys; other spellings are rejected rather than silently accepted.
 	for _sk in size_bytes progress.percent speed_bytes_per_second hash name status; do
 		_curl -H "Authorization: Bearer $TOKEN" "$API/downloads?sort=$_sk&limit=1"
 		_assert_status 200 "/downloads?sort=$_sk (R7: sort value == response key) → 200"
 	done
 	for _sk in size progress speed; do
 		_curl -H "Authorization: Bearer $TOKEN" "$API/downloads?sort=$_sk&limit=1"
-		_assert_status 400 "/downloads?sort=$_sk (pre-rename spelling) → 400"
+		_assert_status 400 "/downloads?sort=$_sk (not a valid sort key) → 400"
 	done
 	# The two part indices the desktop's source bar paints over the bitmap.
 	# Under include_parts both keys are ALWAYS present on every row, null
@@ -505,9 +505,9 @@ if [ "$SHCOUNT" -gt 0 ]; then
 		'/shared[0].hash is 32-char hex'
 	_assert_json_eq '.shared[0].ecid | type' null \
 		'/shared[0] does not expose internal ecid'
-	# xfer / requests / accepts were flattened (R11).
+	# xfer / requests / accepts are top-level counters, not a wrapper (R11).
 	_assert_json_eq '.shared[0] | has("xfer")' false \
-		'/shared[0] no longer wraps counters in xfer'
+		'/shared[0] does not wrap counters in xfer'
 	_assert_json_eq '.shared[0].uploaded_bytes_total | type' number \
 		'/shared[0].uploaded_bytes_total is numeric'
 	_assert_json_eq '.shared[0].priority | type' string \

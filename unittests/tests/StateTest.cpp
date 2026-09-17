@@ -1419,8 +1419,8 @@ TEST(State, MemoizableTargetExcludesEverythingElse)
 
 // A sub-resource of an eligible collection is NOT itself eligible: it is a different body, so an
 // "everything under /downloads" or "everything under /shared" rule would sweep back in exactly what
-// the opt-in set leaves out. (/share_directories used to be listed here as /shared/directories; it
-// is no longer under /shared at all, and the excluded-set test above covers it.)
+// the opt-in set leaves out. (/share_directories is not under /shared, and the excluded-set test
+// above covers it.)
 TEST(State, MemoizableTargetDoesNotExtendToSubResources)
 {
 	ASSERT_TRUE(!MemoizableTarget("/api/v1/downloads/8b54a3c2"));

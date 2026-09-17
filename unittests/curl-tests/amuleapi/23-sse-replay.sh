@@ -2,7 +2,7 @@
 #
 # amuleapi 23-sse-replay — Last-Event-ID replay.
 #
-# Wire contract for Phase 8c:
+# Wire contract:
 #   * SSE clients reconnecting with a `Last-Event-ID: <N>` request
 #     header are sent every event with id > N that's still in the
 #     bus's ring (default 16384 slots, operator-tunable via
@@ -10,9 +10,8 @@
 #   * Replay is monotonic and gap-free: the first id seen after
 #     reconnect is N+1 (provided that id is still in the ring).
 #   * If the requested Last-Event-ID is older than the bus's oldest
-#     retained event, the daemon emits a `: replay-gap` SSE comment
-#     and clamps the start to oldest-1. (Phase 8d upgrades this to
-#     a typed `resync` event.)
+#     retained event, the daemon emits a typed `resync` event and
+#     clamps the start to oldest-1 (see 24-sse-resync).
 #   * If the requested Last-Event-ID is higher than the bus's newest
 #     id (e.g. stale id from a prior daemon process), the daemon
 #     clamps to NewestId and proceeds — no infinite wait.
@@ -225,8 +224,7 @@ else
 fi
 
 # Below-OldestId gap detection is tested in 24-sse-resync.sh with the
-# typed `resync` event (the wire shape 8c shipped as a `: replay-gap`
-# SSE comment was upgraded to the typed event in 8d).
+# typed `resync` event.
 
 # --- Summary. -----------------------------------------------------
 echo

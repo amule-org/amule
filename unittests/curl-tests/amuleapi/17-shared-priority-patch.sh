@@ -87,7 +87,7 @@ sleep 4
 
 # Pick the first shared file for testing — order-independent across
 # operator's libraries. /shared is the broader surface (completed
-# knownfiles + downloading-and-shared partfiles per Phase 4f).
+# knownfiles + downloading-and-shared partfiles).
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/shared"
 COUNT=$(printf '%s' "$CURL_BODY" | jq '.shared | length')
 
@@ -184,11 +184,11 @@ else
 	_fail "IMMEDIATE GET /shared priority_auto" "expected true, got $GAUTO (stale cache)"
 fi
 
-# The combined "*_auto" strings are no longer accepted as input.
+# The combined "*_auto" strings are not accepted as input.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d '{"priority":"high_auto"}' "$API/shared/$TEST_HASH"
-_assert_status 400 "PATCH removed variant high_auto → 400"
+_assert_status 400 "PATCH rejected variant high_auto → 400"
 
 # --- 3c. PATCH comment + rating (issue #419). ---------------------
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \

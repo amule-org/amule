@@ -194,9 +194,9 @@ _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-d '{}' "$API/downloads"
 _assert_status 400 "POST /downloads (missing links) → 400"
 
-# `links` is the only spelling. The singular `ed2k_link` alias this used to
-# take is refused, not ignored: one input with two spellings, on the endpoint
-# that answers with the bulk `results` envelope even for a single item.
+# `links` is the only spelling. The singular `ed2k_link` is refused, not
+# ignored: one input with two spellings, on the endpoint that answers with
+# the bulk `results` envelope even for a single item.
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d "{\"ed2k_link\":\"$TEST_LINK\"}" "$API/downloads"
@@ -305,9 +305,8 @@ _assert_json_eq '.priority' low    'combined PATCH response priority=low'
 _assert_json_eq '.category_index' 0      'combined PATCH response category_index=0'
 
 # `category_index` says "must be a non-negative integer", so it has to mean it:
-# a fractional value used to pass the is<double>() + range test and be
-# truncated to 2, the one integer field on the surface that enforced what its
-# own message promised being my_rating.
+# a fractional value is a 400, not truncated to 2, so it enforces what its
+# own message promises, the same as my_rating.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d '{"category_index":2.9}' "$API/downloads/$TEST_HASH"

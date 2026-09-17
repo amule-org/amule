@@ -119,9 +119,9 @@ _curl "$API/friends?limit=1&offset=0"
 _assert_status 200 "GET /friends?limit=1"
 [ "$(_jq '.limit')" = "1" ] && _pass "limit is echoed" || _fail "limit echo" "got $(_jq '.limit')"
 
-# Over the cap is a rejection, not a silent clamp. It used to answer 200 with a
-# quietly reduced window, so a client asking for 99999 got 500 rows with nothing
-# in the response saying the request had been altered.
+# Over the cap is a rejection (400), not a silent clamp: a client asking for
+# 99999 is told, rather than getting a quietly reduced window with nothing in
+# the response saying the request had been altered.
 _curl "$API/friends?limit=1000000001"
 _assert_status 400 "GET /friends?limit=1000000001 is rejected, not clamped"
 
@@ -150,10 +150,8 @@ _curl -X POST -H "Content-Type: application/json" \
 	-d "{\"ip\":\"$TEST_IP\",\"port\":$TEST_PORT,\"name\":\"curltest-friend\"}" \
 	"$API/friends"
 # 202 with no body. EC's FRIEND op answers success or failure and never
-# returns the record it created, so the handler used to name the new friend by
-# diffing the snapshot against a pre-add copy - the object when the inline
-# refresh had landed, a bare {ok} when it had not. The caller re-reads
-# /friends instead, which is what the rest of this phase does.
+# returns the record it created, so the caller re-reads /friends to see the
+# new friend, which is what the rest of this phase does.
 _assert_status 202 "POST /friends (address form)"
 [ -z "$CURL_BODY" ] && _pass "POST /friends sends no body" \
 	|| _fail "POST body" "expected empty, got: ${CURL_BODY:0:200}"
@@ -179,9 +177,9 @@ NEW=$(echo "$CURL_BODY" | jq -r --argjson e "$NEW_ECID" \
 [ "$(echo "$NEW" | jq -r .connected)" = "false" ] \
 	&& _pass "a friend with no linked peer is offline" \
 	|| _fail "connected" "expected false, got $(echo "$NEW" | jq -r .connected)"
-# ...and reports that as null, not as the 0 sentinel it used to send. 0 is not
-# how this surface spells "no value" anywhere else, and a client joining
-# naively on the raw number was building GET /clients/0 and taking a 404.
+# ...and reports that as null, not a 0 sentinel. 0 is not how this surface
+# spells "no value" anywhere else, and a client joining naively on the raw
+# number would build GET /clients/0 and take a 404.
 [ "$(echo "$NEW" | jq -r '.client_ecid')" = "null" ] \
 	&& _pass "an offline friend reports client_ecid null, not a 0 sentinel" \
 	|| _fail "client_ecid" "expected null, got $(echo "$NEW" | jq -r .client_ecid)"

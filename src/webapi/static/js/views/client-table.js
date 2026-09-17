@@ -31,7 +31,7 @@ const bytesOf = (c, k) => formatBytes(c[k]);
 // peer-advertised name of what we're pulling FROM them; upload_file_name is
 // the partfile they're pulling FROM us. An upload-only peer has no
 // download_file_name, so falling back to upload_file_name is what actually
-// makes the column non-blank for uploads (previously always "—" there).
+// makes the column non-blank for uploads.
 export const fileNameOf = (c) => c.download_file_name || c.upload_file_name || "";
 
 // Default order when no column sort is chosen: busiest peers first.

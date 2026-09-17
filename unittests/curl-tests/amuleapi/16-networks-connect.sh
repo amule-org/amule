@@ -8,8 +8,8 @@
 #                                         EC_OP_SERVER_CONNECT / EC_OP_KAD_START
 #                                         when a network selector is passed
 #   POST /api/v1/networks/disconnect    — EC_OP_DISCONNECT (all nets)
-#   (Dedicated /api/v1/kad/{connect,disconnect} were dropped in
-#   favour of the network-selector form on /networks/*.)
+#   (Kad connect/disconnect use the network-selector form on
+#   /networks/*.)
 #   POST /api/v1/kad/bootstrap          — EC_OP_KAD_BOOTSTRAP_FROM_IP
 #       body: {ip: "1.2.3.4" | uint32, port: uint16}
 #   POST /api/v1/kad/update             — EC_OP_KAD_UPDATE_FROM_URL
@@ -17,8 +17,8 @@
 #
 # amuled's CONNECT/DISCONNECT return EC_OP_STRINGS with status
 # messages — the handler relays those into `response.message`. That
-# message is the whole body: `ok` was dropped because the status code
-# already carried it, while the daemon's own explanation of what it did
+# message is the whole body: there is no `ok` field because the status code
+# already carries it, while the daemon's own explanation of what it did
 # is not recoverable from any later read.
 
 set -u
@@ -76,7 +76,7 @@ _assert_json_eq() {
 
 # A 202 from a connection-control trigger carries a body only when amuled had
 # something to say: `{"message": ...}` if it did, no body at all if it did not
-# (the empty `{}` was dropped so these match the URL-fetch triggers beside
+# (no empty `{}`, so these match the URL-fetch triggers beside
 # them). Either is correct; a constant `ok` field is not.
 _assert_no_body_or_message() {
 	local what=$1
@@ -132,8 +132,8 @@ _assert_json_eq '. | has("ok")' false 'connect response has no constant ok field
 _assert_json_eq '.message | type' string 'connect response carries .message'
 
 # --- 4. networks/{disconnect,connect} (Kad-only via selector). ----
-# The dedicated /kad/connect + /kad/disconnect endpoints were dropped
-# in favour of /networks/{connect,disconnect} with `{"network":"kad"}`.
+# Kad connect/disconnect go through /networks/{connect,disconnect} with
+# `{"network":"kad"}`.
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d '{"network":"kad"}' \
@@ -174,7 +174,7 @@ _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 _assert_status 202 "POST /kad/bootstrap (dotted-quad) → 202"
 # `ip`/`port` are the documented exception to the no-body rule for actions:
 # the echo reports which address the daemon actually parsed, which the caller
-# cannot read back anywhere else. `ok` is gone; the 202 carried it.
+# cannot read back anywhere else. There is no `ok` field; the 202 carries it.
 _assert_json_eq '. | has("ok")' false 'kad/bootstrap response has no constant ok field'
 _assert_json_eq '.port' 4672   'kad/bootstrap response echoes port'
 
@@ -269,9 +269,9 @@ _assert_status 405 "GET /kad/update → 405"
 #
 # The handler answers with the address it parsed, and that echo is a quad --
 # the same spelling the request used, and the one every other IP on this
-# surface uses. It used to answer with the host-order integer, so a client that
-# posted "1.2.3.4" and stored the reply held 16909060, which it could not post
-# back without converting and which no other field on this surface produces.
+# surface uses. It answers with the dotted quad, not a host-order integer, so
+# a client that posts "1.2.3.4" and stores the reply can post it back without
+# converting, and it matches every other field on this surface.
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d '{"ip":"127.0.0.1","port":4672}' \

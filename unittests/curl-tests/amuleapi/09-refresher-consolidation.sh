@@ -103,7 +103,7 @@ sleep 4
 
 # --- 1. /downloads — list endpoint shape preserved. ----------------
 #
-# Phase 4b asserted these field types on the list shape; if GET_UPDATE
+# These field types define the list shape; if GET_UPDATE
 # dispatch broke any of them, the wire contract is broken.
 _curl -H "Authorization: Bearer $TOKEN" "$API/downloads"
 _assert_status 200 "GET /downloads → 200"
@@ -135,7 +135,7 @@ if [ "$DCOUNT" -gt 0 ]; then
 
 	# --- 2. /downloads/{hash} detail — progress.parts still ships. -
 	#
-	# Phase 4e relies on the stateful RLE decoder. GET_UPDATE at
+	# progress.parts relies on the stateful RLE decoder. GET_UPDATE at
 	# INC_UPDATE ships the GAP/PART blobs (via the encoder's Encode
 	# call at ExternalConn.cpp:942) so the decoder gets its frames.
 	# If the consolidation broke the RLE wiring, parts would come back
@@ -196,11 +196,11 @@ fi
 # (they ride on STAT_REQ and GET_PREFERENCES, which we did not touch).
 # A sanity glance to catch unrelated regressions slipping in.
 _curl -H "Authorization: Bearer $TOKEN" "$API/status"
-_assert_status 200 "GET /status → 200 (unaffected by Phase 4f)"
+_assert_status 200 "GET /status → 200"
 _assert_json_eq '.ed2k.state | type' string '/status.ed2k.state still populated'
 
 _curl -H "Authorization: Bearer $TOKEN" "$API/kad"
-_assert_status 200 "GET /kad → 200 (unaffected by Phase 4f)"
+_assert_status 200 "GET /kad → 200"
 
 # --- Summary. -----------------------------------------------------
 echo

@@ -5,11 +5,11 @@
 #
 # 1. A `{hash}` that is not 32 hex characters is a MALFORMED REQUEST, so it
 #    answers `400 bad_request`, on every route that takes one. The
-#    find-based routes used to skip the format check and fall through to
-#    their own `404`, which left a client unable to tell "not a hash" from
-#    "valid hash, no such file" -- and the split ran through a single route:
-#    `GET /search/results/{hash}/comments` answered `404` where its own
-#    `POST` answered `400`. `{ecid}` has always drawn this line
+#    every route runs the format check rather than falling through to its
+#    own `404`, so a client can tell "not a hash" from "valid hash, no such
+#    file", and a single route answers the same on both verbs:
+#    `GET /search/results/{hash}/comments` and its `POST` both answer `400`
+#    on a malformed hash. `{ecid}` has always drawn this line
 #    (`RequireEcidPath`); these are its hash twin.
 #
 # 2. A body field documented as an integer rejects a fractional value
@@ -220,8 +220,8 @@ _assert_bad_request "POST /friends (fractional port)"
 
 # --- 4. One port contract on both routes that take one. -----------
 #
-# 0 used to be accepted by /kad/bootstrap and rejected by /friends. No Kad
-# contact is reachable on port 0, so the probe was sent and went nowhere.
+# Port 0 is a 400 on both /kad/bootstrap and /friends. No Kad contact is
+# reachable on port 0, so accepting it would send a probe that goes nowhere.
 echo
 echo "  -- port 0 → 400 on both routes --"
 

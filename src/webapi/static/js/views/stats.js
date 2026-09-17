@@ -64,8 +64,8 @@ export default function Stats() {
         const ys = pts.map((p) => p.value);
         // The connections graph gets its two extra lines from the daemon, so
         // no client-side stand-in is needed there. They are omitted whole (not
-        // zeroed) by an amuled that does not report them — then it draws as the
-        // single line it used to be.
+        // zeroed) by an amuled that does not report them — then it draws as a
+        // single line.
         const rest = g.name !== "connections" ? [sma(ys, SMA_WINDOW)]
           : pts.length && pts[0].active_download_count !== undefined
             ? [pts.map((p) => p.active_download_count), pts.map((p) => p.active_upload_count)]

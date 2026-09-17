@@ -129,10 +129,9 @@ _assert_json_eq '.ed2k.high_id | type' boolean \
 	'ed2k.high_id is boolean'
 _assert_json_eq '.ed2k.user_id | type' number \
 	'ed2k.user_id is numeric'
-# The old spelling was a bare `id`, which read as a local handle rather than
-# the server-assigned identity it actually is.
+# `user_id` is the server-assigned identity, not a local handle.
 _assert_json_eq '.ed2k | has("id")' false \
-	'ed2k.id is gone, replaced by ed2k.user_id'
+	'ed2k exposes user_id, not id'
 _assert_json_eq '.ed2k.public_ip | type | . == "string" or . == "null"' true \
 	'ed2k.public_ip is a string or null'
 # A public address exists exactly when we hold a HighID on a live connection;
@@ -143,9 +142,8 @@ _assert_json_eq '(.ed2k.public_ip != null) == (.ed2k.high_id and .ed2k.state == 
 # The 0xffffffff "connect in flight" sentinel must never surface.
 _assert_json_eq '.ed2k.user_id != 4294967295' true \
 	'ed2k.user_id never reports the connecting sentinel'
-# The connected-server triple nulls together. server_name used to be the odd
-# one out, spelling "not connected" as "" beside two nulls in the same object,
-# so it is asserted against server_ip rather than by type alone.
+# The connected-server triple nulls together, so server_name is asserted
+# against server_ip rather than by type alone.
 _assert_json_eq '(.ed2k.server_name == null) == (.ed2k.server_ip == null)' true \
 	'ed2k.server_name is null exactly when server_ip is'
 _assert_json_eq '.ed2k.server_name | type | test("^(string|null)$")' true \
@@ -174,7 +172,7 @@ for P in "ed2k user_count" "ed2k file_count" "kad user_count" "kad file_count" "
 		"$1.network.$2 is numeric while $1 is connected"
 done
 _assert_json_eq '.kad | has("firewalled")' false \
-	'kad.firewalled is gone, replaced by kad.firewalled_tcp'
+	'kad exposes firewalled_tcp, not firewalled'
 
 # speeds + queue subtrees.
 _assert_json_eq '.speeds.download_speed_bytes_per_second | type' number \

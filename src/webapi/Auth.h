@@ -41,8 +41,8 @@
 //
 // Thread-safety model: today every caller runs on the Boost.Asio I/O thread (single io_context,
 // single std::thread). The std::mutex in each container is forward-compat insurance -- the SSE
-// channel adds a heartbeat timer that fires on the same I/O thread, so the mutex never contends in
-// v0.1 -- but a future worker-pool model gets correctness for free.
+// channel adds a heartbeat timer that fires on the same I/O thread, so the mutex never contends
+// today -- but a future worker-pool model gets correctness for free.
 
 namespace webapi
 {

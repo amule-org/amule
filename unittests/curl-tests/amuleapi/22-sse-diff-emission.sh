@@ -2,7 +2,7 @@
 #
 # amuleapi 22-sse-diff-emission — EventBus + Refresher diff emission.
 #
-# Wire contract for Phase 8b:
+# Wire contract:
 #   * After each successful refresher tick, the daemon walks the
 #     prior-vs-current cache diff and publishes typed SSE events:
 #       - download_added / _updated / _removed
@@ -15,9 +15,9 @@
 #   * `_added` and `_updated` payloads are the full snapshot object;
 #     `_removed` payloads are identity-only (`{"hash":"..."}` or
 #     `{"ecid":N}`).
-#   * Phase 8b subscribers see only events that fire AFTER they
-#     connect (`since_id` starts at `NewestId()`). Phase 8c lands
-#     `Last-Event-ID` replay.
+#   * subscribers see only events that fire AFTER they
+#     connect (`since_id` starts at `NewestId()`); reconnecting with
+#     `Last-Event-ID` replays missed events.
 #
 # This smoke triggers real mutations through the API, captures the
 # SSE stream, and asserts the corresponding events arrived with the
@@ -30,7 +30,7 @@ HOST=${HOST:-localhost:4713}
 API="$HOST/api/v1"
 ADMIN_PASS=${ADMIN_PASS:-adminpass}
 
-# Stable test artifact (same as Phase 5a).
+# Stable test artifact.
 TEST_LINK="ed2k://|file|ubuntu-24.04.4-desktop-amd64.iso|6655619072|0031C9CBA65C50DD2015C184B2CA2C88|/"
 TEST_HASH="0031c9cba65c50dd2015c184b2ca2c88"
 
@@ -279,7 +279,7 @@ rm -f "$SSE_A" "$SSE_B"
 # frame (state="finished") within seconds without needing a real ed2k
 # network. Even on a fully-disconnected daemon `local` returns
 # immediately with 0 results, which still triggers the finished frame.
-# (search_progress supersedes the old standalone search_finished event.)
+# (the terminal search_progress frame reports completion.)
 # 25 s, not 15: the terminal frame arrives when the SERVER declares the search
 # done, which on a LowID link is routinely slower than the old 8 s poll allowed
 # -- the check failed intermittently for that reason alone, which is the kind
@@ -452,8 +452,8 @@ curl -s -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
 # --- status_changed carries the same keys as GET /status. ----------
 # EVENTS.md promises the payload is "identical to the REST /status
 # envelope", and the API contract turns on that: a subscriber must never
-# have to fall back to a poll for a field a poller can see. This drifted
-# once already -- both connected_since timestamps were REST-only.
+# have to fall back to a poll for a field a poller can see, both
+# connected_since timestamps included.
 #
 # `paths` rather than `paths(scalars)`: jq's `scalars` drops nulls, and
 # disk.{temp,incoming}_free_bytes are null whenever the daemon has no

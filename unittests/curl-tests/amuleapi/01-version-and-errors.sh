@@ -144,9 +144,9 @@ _assert_status 200 "GET /api/v1/health returns 200 unauthenticated"
 _assert_json_eq '.status' ok '/health reports status=ok'
 _assert_json_eq '.ec_connected | type' boolean '/health reports ec_connected'
 _assert_json_eq '.snapshot_ready | type' boolean '/health reports snapshot_ready'
-# The bare `snapshot` it replaced must be gone, not merely duplicated: a client
-# reading the old key would silently see `undefined` rather than a boolean.
-_assert_json_eq '.snapshot | type' null '/health no longer emits the bare snapshot key'
+# Readiness is reported as `snapshot_ready`; `snapshot` is not a key on /health,
+# so a client cannot read a bare boolean under the wrong name.
+_assert_json_eq '.snapshot | type' null '/health does not emit a bare snapshot key'
 
 _curl -I "$API/health"
 _assert_status 200 "HEAD /api/v1/health returns 200"

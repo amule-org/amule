@@ -261,15 +261,15 @@ if [ "$RC" = "202" ]; then
 else
 	_fail "downloads array status" "expected 202, got $RC: $(cat /tmp/p11_dl.json)"
 fi
-# Unified per-item envelope (#358): one accepted result, no legacy counters.
+# Per-item results envelope (#358): one accepted result.
 if jq -e '(.results | length) == 1 and .results[0].ok == true' /tmp/p11_dl.json >/dev/null 2>&1; then
 	_pass "POST /downloads array reports one ok result"
 else
 	_fail "downloads array results" "$(cat /tmp/p11_dl.json)"
 fi
-# `links` is the only spelling. The singular `ed2k_link` alias is refused
+# `links` is the only spelling. The singular `ed2k_link` is refused
 # rather than ignored, with or without `links` alongside it, and the message
-# names the array form so a caller on the old field is told where to go.
+# names the array form so a caller sending it is told where to go.
 for BODY in \
 	"{\"ed2k_link\":\"$TEST_LINK\",\"links\":[\"$TEST_LINK\"]}" \
 	"{\"ed2k_link\":\"$TEST_LINK\"}"; do
@@ -385,9 +385,9 @@ fi
 # downloading FROM us) and download_file_name (the name the peer
 # advertised) are both part of the base client field set, so they must
 # appear on every /clients LIST object -- not only /clients/{ecid}.
-# Regression: an upload-only peer used to render a blank File column in
-# the WebUI because upload_file_name was serialized only by the detail
-# endpoint. Guarded on a live peer so the assertion is real (non-vacuous)
+# This keeps an upload-only peer's File column in the WebUI populated, since
+# upload_file_name is on the LIST object and not only the detail endpoint.
+# Guarded on a live peer so the assertion is real (non-vacuous)
 # when a peer exists, and skips cleanly when none are connected.
 FIRST_CLIENT=$(curl -s "${H_AUTH[@]}" "$API/clients" | jq -r '.clients[0] // empty')
 if [ -n "$FIRST_CLIENT" ]; then

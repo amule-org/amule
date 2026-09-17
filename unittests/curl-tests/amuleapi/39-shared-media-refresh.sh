@@ -100,7 +100,7 @@ if [ "$CURL_STATUS" = "503" ]; then
 fi
 _assert_status 202 "POST /shared/media/refresh → 202 Accepted"
 # `scope` and the count stay: it is a real count of what the scheduler
-# accepted, which no later read reports. `ok` is gone; the 202 carried it.
+# accepted, which no later read reports. There is no `ok` field; the 202 carries it.
 _assert_json_eq '. | has("ok")' false 'whole-share refresh has no constant ok field'
 _assert_json_eq '.scope'         all   'whole-share refresh reports scope=all'
 _assert_json_eq '.queued_file_count | type' number 'queued_file_count is numeric'

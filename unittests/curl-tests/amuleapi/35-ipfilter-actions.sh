@@ -14,9 +14,9 @@
 # the accept path, the URL resolution and the guards.
 #
 # Neither reports anything the caller did not already have. update answers
-# with no body at all: the URL it used to echo came straight back out of the
-# request, and where it came from preferences instead the caller reads it from
-# GET /preferences, which section 5 already does. reload shares the
+# with no body at all: the caller already has the URL, either from its own
+# request or from GET /preferences, which section 5 already reads. reload
+# shares the
 # connection-control shape, so its body is an object carrying whatever status
 # string amuled returned - for this opcode, none - and never a constant `ok`.
 #

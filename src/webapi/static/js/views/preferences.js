@@ -101,8 +101,8 @@ const TABS = [
     { legendKey: "prefs_group_incoming", fields: [{ key: "incoming_path", type: "text" }] },
     { legendKey: "prefs_group_temp", fields: [{ key: "temp_path", type: "text" }] },
     // Share roots are edited through /share_directories, not PATCH /preferences
-    // (the old `shared_paths` textarea lost the recursive flag and got
-    // reverted): a fields-less group whose panel the `after` hook renders.
+    // (which cannot carry the recursive flag each root needs): a fields-less group
+    // whose panel the `after` hook renders.
     { legendKey: "prefs_group_shared", after: "shared_directories", fields: [] },
     { legendKey: "prefs_group_shared_options", fields: [
       { key: "share_hidden", type: "bool" },

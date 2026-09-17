@@ -162,8 +162,8 @@ _curl -H "Authorization: Bearer not.a.real.jwt" "$API/auth/session"
 _assert_status 401 "GET /auth/session (bogus bearer) → 401"
 
 # --- 7. /auth/logout (bearer) → 204 + clearing Set-Cookie. ---------
-# 204, not 200: the old body was a constant {ok:true} restating the status
-# code, and the clearing Set-Cookie is the only thing the caller needs.
+# 204, not 200: the clearing Set-Cookie is the only thing the caller needs,
+# so there is no body.
 _curl -X POST -H "Authorization: Bearer $TOKEN" "$API/auth/logout"
 _assert_status 204 "POST /auth/logout (bearer) → 204"
 _assert_body_empty 'logout sends no body'
@@ -258,9 +258,8 @@ _curl -X PATCH -H "Authorization: Bearer $PW_TOKEN" \
 _assert_status 200 "PATCH /auth/passwords enabling guest → 200"
 _assert_json_eq '.admin_password_set'              true 'admin_password_set still true after enabling guest'
 _assert_json_eq '.guest_access_enabled'          true 'guest_access_enabled=true after setting a guest password'
-# The old always-true `other_sessions_revoked` carried no information and is
-# gone; revocation is unconditional and the re-issued token below is the
-# observable half.
+# Revocation is unconditional, so there is no `other_sessions_revoked` field;
+# the re-issued token below is the observable half.
 _assert_json_eq '. | has("other_sessions_revoked")' false \
 	'no always-true other_sessions_revoked key'
 _assert_json_eq '.token | length > 100'   true 'password change re-issues the caller a token'

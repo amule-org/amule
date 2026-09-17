@@ -291,8 +291,8 @@ const PrefField kSchema[] = {
 	PREF_STR("geoip", "maxmind_license", EC_TAG_IP2COUNTRY_MAXMIND_LICENSE, PrefAccess::ReadWrite, geoip.maxmind_license),
 	PREF_ENUM("geoip", "source", EC_TAG_IP2COUNTRY_SOURCE, kIp2CountrySources, PrefAccess::ReadWrite, geoip.source),
 	PREF_BOOL("geoip", "supported", EC_TAG_IP2COUNTRY_SUPPORTED, PrefEnc::Value, false, PrefAccess::ReadOnly, geoip.supported),
-	// `update_now` was a write-only boolean here; it is POST /geoip/update now, an action rather
-	// than a setting. The row stays Rejected so a client still sending it is told where it went.
+	// `update_now` is POST /geoip/update, an action, not a setting. The row stays Rejected
+	// so a client sending it here is told where it went.
 	PREF_REJECT("geoip", "update_now"),
 };
 

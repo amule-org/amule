@@ -3,7 +3,7 @@
 # amuleapi 21-sse-heartbeat — Server-Sent Events: streaming infrastructure +
 # heartbeat-only /events endpoint.
 #
-# Wire contract for Phase 8a:
+# Wire contract:
 #   * GET /api/v1/events → 200 with Content-Type: text/event-stream
 #     and Transfer-Encoding: chunked. The body is a long-lived SSE
 #     stream — chunks arrive over time, the connection stays open
@@ -16,9 +16,9 @@
 #     credentials → 401 with the standard JSON error body. (No 403
 #     for guest tokens — SSE is a read-only push, guest-friendly.)
 #
-# Phase 8b layers event generation (download_added / _updated /
-# _removed / status / etc.); 8c adds Last-Event-ID replay; 8d adds
-# resync + log events.
+# This surface layers event generation (download_added / _updated /
+# _removed / status / etc.), Last-Event-ID replay, and resync + log
+# events.
 
 set -u
 set -o pipefail
@@ -151,7 +151,7 @@ fi
 # --- 4. Heartbeat / liveness after 15 s. --------------------------
 #
 # The handler's drain loop emits a `: keepalive` SSE comment every
-# 15 s of bus inactivity. Once events start flowing (Phase 8b+),
+# 15 s of bus inactivity. Once events start flowing,
 # real events replace the keepalive as the "connection is alive"
 # signal — the drain loop returns events before the 15 s timeout.
 # So we accept either: at least one `: keepalive` OR at least one
@@ -202,10 +202,10 @@ _pass "Two concurrent SSE subscribers ran to completion without interfering"
 
 # --- `?channels=` is a 400, not "every channel" (#1159 section 8). --------
 #
-# An empty value used to disable filtering, so a UI that joined an empty
-# selection list -- the ordinary way to end up with one -- asked for nothing
-# and was handed the full firehose. The surface's own query rule already makes
-# an empty value an error rather than an omission; this was its exception.
+# An empty value is an error, not a way to disable filtering, so a UI that
+# joins an empty selection list -- the ordinary way to end up with one -- is
+# told rather than handed the full firehose. This matches the surface's own
+# query rule that an empty value is an error rather than an omission.
 CODE=$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 \
 	-H "Authorization: Bearer $ADMIN_TOKEN" "$API/events?channels=")
 if [ "$CODE" = "400" ]; then

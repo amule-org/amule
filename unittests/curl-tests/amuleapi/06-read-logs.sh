@@ -113,13 +113,13 @@ _assert_status 200 "GET /logs/amule?tail=0 → 200"
 _assert_json_eq '(.returned_lines == .total_lines)' true \
 	'/logs/amule?tail=0 returns all (tail=0 is "no tailing")'
 
-# A non-numeric tail is a 400, not a silent "return all". It used to parse as
-# 0 and quietly hand back the whole buffer, so a typo changed the response
-# without saying so; the count is now validated like every other on the surface.
+# A non-numeric tail is a 400, not a silent "return all": the count is
+# validated like every other on the surface, so a typo is reported rather than
+# quietly handing back the whole buffer.
 _curl -H "Authorization: Bearer $TOKEN" "$API/logs/amule?tail=notanumber"
 _assert_status 400 "GET /logs/amule?tail=notanumber → 400"
 
-# Out of range is the same answer, where it used to clamp to 100000.
+# Out of range is the same answer: a 400, not a clamp.
 _curl -H "Authorization: Bearer $TOKEN" "$API/logs/amule?tail=999999"
 _assert_status 400 "GET /logs/amule?tail=999999 → 400"
 

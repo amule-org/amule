@@ -94,7 +94,7 @@ sleep 4
 
 # --- 1. /clients shape. --------------------------------------------
 #
-# Phase 4g unified peer surface. Every alive peer in
+# /clients is the unified peer surface. Every alive peer in
 # theApp->clientlist surfaces, populated from the EC_TAG_CLIENT
 # container inside the GET_UPDATE response.
 _curl -H "Authorization: Bearer $TOKEN" "$API/clients"
@@ -118,12 +118,12 @@ if [ "$CCOUNT" -gt 0 ]; then
 		'/clients[0].software is a string or null'
 	# #439 peer country: always-present ISO 3166-1 alpha-2 string,
 	# empty when GeoIP is off/unresolved (never absent/null).
-	# Nullable since the R10 pass: null means GeoIP is off or the lookup has
-	# not resolved, which used to be spelled "".
+	# Nullable per R10: null means GeoIP is off or the lookup has
+	# not resolved, not "".
 	_assert_json_eq '(.clients[0].country_code == null or (.clients[0].country_code | type) == "string")' \
 		true '/clients[0].country_code is a string or null'
-	# xfer was flattened (R11): the window belongs in the key, not a wrapper.
-	_assert_json_eq '.clients[0] | has("xfer")' false '/clients[0] no longer wraps counters in xfer'
+	# counters are top-level, not wrapped in xfer (R11): the window belongs in the key.
+	_assert_json_eq '.clients[0] | has("xfer")' false '/clients[0] does not wrap counters in xfer'
 	_assert_json_eq '.clients[0].uploaded_bytes_session | type'   number '/clients[0].uploaded_bytes_session is numeric'
 	_assert_json_eq '.clients[0].downloaded_bytes_session | type' number '/clients[0].downloaded_bytes_session is numeric'
 
@@ -151,7 +151,7 @@ fi
 
 # --- 3. Lazy-fetch endpoints — fresh per-endpoint snapshot_at. -----
 #
-# Per Phase 4g, /stats/tree, /stats/graphs/{X}, /search/{id}/results, and
+# /stats/tree, /stats/graphs/{X}, /search/{id}/results, and
 # /logs/server_info no longer ride the refresher tick. Each handler
 # drives its own EC roundtrip on first call, coalesced via 1 s TTL.
 # The `snapshot_at` field on each reflects the per-endpoint fetch
@@ -167,7 +167,7 @@ _assert_json_eq '.unit' bytes_per_second '/stats/graphs/download_speed reports u
 _assert_json_eq '.points | type' array    '/stats/graphs/download_speed .points is array'
 
 # TTL coalescing — two same-endpoint GETs within the 1 s window must
-# share the cached backing fetch. Observable via ETag (Phase 7): same
+# share the cached backing fetch. Observable via ETag: same
 # cached body bytes → same ETag. The per-point timestamps inside
 # /stats/graphs are anchored to the cache's `fetched_at`, so they
 # stay constant within a cache window; only between fetches do they

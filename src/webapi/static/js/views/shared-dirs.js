@@ -1,9 +1,7 @@
 // Shared directories editor, shown in Preferences -> Directories -> Shared
-// folders. Replaces the old `directories.shared_paths` textarea, which wrote
-// the derived union back through PATCH /preferences: that lost the recursive
-// flag, validated nothing, persisted nothing and got reverted by the next
-// reconcile. This panel talks to /share_directories, the endpoint that
-// validates each path server-side, sets both intent lists and saves.
+// folders. Talks to /share_directories, the endpoint that validates each path
+// server-side, sets both intent lists and saves -- carrying the recursive flag
+// that a `shared_paths` union over PATCH /preferences cannot.
 //
 // Immediate per-row: add and recursive-toggle POST one entry (idempotent), and
 // delete removes one; the core applies each under its own lock, so there is no
