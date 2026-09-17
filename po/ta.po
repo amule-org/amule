@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-15 16:22+0200\n"
+"POT-Creation-Date: 2026-09-17 08:44+0200\n"
 "PO-Revision-Date: 2026-09-15 16:00+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
@@ -7209,7 +7209,7 @@ msgstr ""
 
 #: src/SharedFileList.cpp
 #, c-format
-msgid "No shareable files found in directory: %s"
+msgid "Shared directory not readable, skipping: %s"
 msgstr ""
 
 #: src/SharedFileList.cpp

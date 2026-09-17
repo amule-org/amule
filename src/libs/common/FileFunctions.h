@@ -48,6 +48,9 @@ public:
 	CDirIterator(const CPath &dir);
 	~CDirIterator();
 
+	// False when the directory could not be opened, e.g. without read permission.
+	using wxDir::IsOpened;
+
 	// extraFlags is OR'd into the wxDir search flags on top of `type`, so a caller needing
 	// wxDIR_NO_FOLLOW (or any other wx flag) can pass it through without this common library
 	// knowing about application-level preferences.

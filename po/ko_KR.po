@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-15 16:22+0200\n"
+"POT-Creation-Date: 2026-09-17 08:44+0200\n"
 "PO-Revision-Date: 2026-09-15 15:40+0000\n"
 "Last-Translator: Hyunju Kang <rexington@gmail.com>\n"
 "Language-Team: Korean <hoenny@daum.net>\n"
@@ -7476,9 +7476,9 @@ msgid "Shared directory not found, skipping: %s"
 msgstr "서버가 발견되지 않음: %s"
 
 #: src/SharedFileList.cpp
-#, c-format
-msgid "No shareable files found in directory: %s"
-msgstr ""
+#, fuzzy, c-format
+msgid "Shared directory not readable, skipping: %s"
+msgstr "서버가 발견되지 않음: %s"
 
 #: src/SharedFileList.cpp
 msgid "Media metadata extraction is disabled in preferences, so there is nothing to re-extract."

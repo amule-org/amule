@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-15 16:22+0200\n"
+"POT-Creation-Date: 2026-09-17 08:44+0200\n"
 "PO-Revision-Date: 2026-09-16 17:12+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
@@ -7358,9 +7358,9 @@ msgid "Shared directory not found, skipping: %s"
 msgstr "找不到共享目录，跳过：%s"
 
 #: src/SharedFileList.cpp
-#, c-format
-msgid "No shareable files found in directory: %s"
-msgstr "在目录中没有找到可以共享的文件：%s"
+#, fuzzy, c-format
+msgid "Shared directory not readable, skipping: %s"
+msgstr "找不到共享目录，跳过：%s"
 
 #: src/SharedFileList.cpp
 msgid "Media metadata extraction is disabled in preferences, so there is nothing to re-extract."
@@ -9319,6 +9319,10 @@ msgstr "aMule 似乎正在运行。请将其关闭并重新运行卸载程序。
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "正在删除 $APPDATA\\aMule 中的用户数据..."
+
+#, c-format
+#~ msgid "No shareable files found in directory: %s"
+#~ msgstr "在目录中没有找到可以共享的文件：%s"
 
 #~ msgid "Change Language"
 #~ msgstr "更改语言"

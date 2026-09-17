@@ -24,7 +24,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-15 16:22+0200\n"
+"POT-Creation-Date: 2026-09-17 08:44+0200\n"
 "PO-Revision-Date: 2026-09-15 15:30+0000\n"
 "Last-Translator: Pablo <parodper@gmail.com>\n"
 "Language-Team: http://forum.amule.org/index.php?topic=13883\n"
@@ -7441,9 +7441,9 @@ msgid "Shared directory not found, skipping: %s"
 msgstr "Directorio compartido non atopado, saltando: %s"
 
 #: src/SharedFileList.cpp
-#, c-format
-msgid "No shareable files found in directory: %s"
-msgstr "Non se atoparon ficheiros que se puideran compartir: %s"
+#, fuzzy, c-format
+msgid "Shared directory not readable, skipping: %s"
+msgstr "Directorio compartido non atopado, saltando: %s"
 
 #: src/SharedFileList.cpp
 msgid "Media metadata extraction is disabled in preferences, so there is nothing to re-extract."
@@ -9404,6 +9404,10 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#, c-format
+#~ msgid "No shareable files found in directory: %s"
+#~ msgstr "Non se atoparon ficheiros que se puideran compartir: %s"
 
 #~ msgid "Change Language"
 #~ msgstr "Cambiar idioma"

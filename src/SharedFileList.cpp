@@ -533,6 +533,12 @@ unsigned CSharedFileList::AddFilesFromDirectory(const CPath &directory,
 	constexpr size_t kYieldEvery = 256;
 
 	CDirIterator SharedDir(directory);
+	if (!SharedDir.IsOpened()) {
+		AddLogLineNS(
+			CFormat(_("Shared directory not readable, skipping: %s")) % directory.GetPrintable());
+
+		return 0;
+	}
 
 	for (CPath fname = SharedDir.GetFirstFile(searchFor, wxEmptyString, extraFlags); fname.IsOk();
 		fname = SharedDir.GetNextFile()) {
@@ -562,9 +568,10 @@ unsigned CSharedFileList::AddFilesFromDirectory(const CPath &directory,
 		}
 	}
 
+	// Debug only: an empty folder is normal when a tree is shared with its subfolders.
 	if ((addedFiles == 0) && (knownFiles == 0)) {
-		AddLogLineN(
-			CFormat(_("No shareable files found in directory: %s")) % directory.GetPrintable());
+		AddDebugLogLineN(logKnownFiles,
+			CFormat("No shareable files found in directory: %s") % directory.GetPrintable());
 	}
 
 	return addedFiles;
