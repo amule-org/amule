@@ -65,12 +65,24 @@ if (NEED_LIB_MULEAPPCORE)
 				check_function_exists (sysconf HAVE_SYSCONF)
 
 				if (HAVE_SYSCONF AND STDC_HEADERS)
-					try_run (PS_RUN_RESULT PS_COMPILE_RESULT
-						${CMAKE_BINARY_DIR}
-						${amule_SOURCE_DIR}/cmake/mmap-test.cpp
-						RUN_OUTPUT_VARIABLE PS_OUTPUT
-						WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-					)
+					if (CMAKE_CROSSCOMPILING)
+						# try_run() cannot execute a host binary, so check that the
+						# constant exists rather than that sysconf() answers for it.
+						include (CheckSymbolExists)
+						check_symbol_exists (_SC_PAGESIZE unistd.h HAVE__SC_PAGESIZE_DEFINED)
+						if (HAVE__SC_PAGESIZE_DEFINED)
+							set (PS_RUN_RESULT 0)
+						else()
+							set (PS_RUN_RESULT 1)
+						endif()
+					else()
+						try_run (PS_RUN_RESULT PS_COMPILE_RESULT
+							${CMAKE_BINARY_DIR}
+							${amule_SOURCE_DIR}/cmake/mmap-test.cpp
+							RUN_OUTPUT_VARIABLE PS_OUTPUT
+							WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+						)
+					endif()
 
 					if (PS_RUN_RESULT EQUAL 0)
 						message (STATUS "_SC_PAGESIZE found")

@@ -139,24 +139,76 @@ if (NOT CRYPTOPP_CONFIG_FILE)
 endif()
 
 if (NOT CRYPTOPP_VERSION)# AND CRYPTO_COMPLETE)
-	set (CMAKE_CONFIGURABLE_FILE_CONTENT
-		"#include <${CRYPTOPP_CONFIG_FILE}>\n
-		#include <stdio.h>\n
-		int main(){\n
-			printf (\"%d\", CRYPTOPP_VERSION);\n
-		}\n"
-	)
+	if (CMAKE_CROSSCOMPILING)
+		# try_run() cannot execute a binary built for the host, so read the macro out of
+		# the header instead. Kept to the cross path: running the probe is the stronger
+		# check, since it proves the header compiles and yields the value the compiler
+		# sees, not the one a regex found.
+		find_file (CRYPTOPP_VERSION_HEADER
+			NAMES ${CRYPTOPP_INCLUDE_PREFIX}/config_ver.h ${CRYPTOPP_INCLUDE_PREFIX}/config.h
+			HINTS ${CRYPTOPP_INCLUDE_DIR}
+		)
 
-	configure_file ("${CMAKE_ROOT}/Modules/CMakeConfigurableFile.in"
-		"${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/CheckCryptoppVersion.cxx" @ONLY IMMEDIATE
-	)
+		if (CRYPTOPP_VERSION_HEADER)
+			file (STRINGS ${CRYPTOPP_VERSION_HEADER} _cryptopp_version_lines
+				REGEX "^[ \t]*#[ \t]*define[ \t]+CRYPTOPP_VERSION[ \t]+[0-9]+"
+			)
 
-	try_run (RUNRESULT
-		COMPILERESULT
-		${CMAKE_BINARY_DIR}
-		${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/CheckCryptoppVersion.cxx
-		RUN_OUTPUT_VARIABLE CRYPTOPP_VERSION
-	)
+			if (_cryptopp_version_lines)
+				list (GET _cryptopp_version_lines 0 _cryptopp_version_line)
+				string (REGEX REPLACE "^.*CRYPTOPP_VERSION[ \t]+([0-9]+).*$" "\\1"
+					CRYPTOPP_VERSION "${_cryptopp_version_line}"
+				)
+			else()
+				# Some forks derive CRYPTOPP_VERSION from the parts rather than spelling
+				# it out, which the regex above cannot see. Rebuild it the way classic
+				# Crypto++ does (config_ver.h:53).
+				foreach (_part MAJOR MINOR REVISION)
+					file (STRINGS ${CRYPTOPP_VERSION_HEADER} _cryptopp_part_line
+						REGEX "^[ \t]*#[ \t]*define[ \t]+CRYPTOPP_${_part}[ \t]+[0-9]+"
+					)
+					if (_cryptopp_part_line)
+						list (GET _cryptopp_part_line 0 _cryptopp_part_line)
+						string (REGEX REPLACE "^.*CRYPTOPP_${_part}[ \t]+([0-9]+).*$" "\\1"
+							_cryptopp_${_part} "${_cryptopp_part_line}"
+						)
+					endif()
+				endforeach()
+
+				if (DEFINED _cryptopp_MAJOR AND DEFINED _cryptopp_MINOR AND DEFINED _cryptopp_REVISION)
+					math (EXPR CRYPTOPP_VERSION
+						"${_cryptopp_MAJOR} * 100 + ${_cryptopp_MINOR} * 10 + ${_cryptopp_REVISION}"
+					)
+				endif()
+			endif()
+		endif()
+
+		if (NOT CRYPTOPP_VERSION)
+			message (FATAL_ERROR
+				"could not read CRYPTOPP_VERSION from the crypto++ headers while cross-compiling; "
+				"pass -DCRYPTOPP_VERSION=<n> (the integer the headers define, e.g. 890)"
+			)
+		endif()
+	else()
+		set (CMAKE_CONFIGURABLE_FILE_CONTENT
+			"#include <${CRYPTOPP_CONFIG_FILE}>\n
+			#include <stdio.h>\n
+			int main(){\n
+				printf (\"%d\", CRYPTOPP_VERSION);\n
+			}\n"
+		)
+
+		configure_file ("${CMAKE_ROOT}/Modules/CMakeConfigurableFile.in"
+			"${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/CheckCryptoppVersion.cxx" @ONLY IMMEDIATE
+		)
+
+		try_run (RUNRESULT
+			COMPILERESULT
+			${CMAKE_BINARY_DIR}
+			${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/CheckCryptoppVersion.cxx
+			RUN_OUTPUT_VARIABLE CRYPTOPP_VERSION
+		)
+	endif()
 
 	# Two CRYPTOPP_VERSION encodings exist in the wild:
 	#
