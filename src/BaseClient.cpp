@@ -1602,6 +1602,10 @@ EContactResult CUpDownClient::CheckContactPreconditions()
 		return EContactResult::Declined;
 	}
 	if (!PeerAddressing::CanOpenConnection(contactAddress, IsConnected())) {
+		if (Disconnected("Outbound IPv6 connections unavailable")) {
+			Safe_Delete();
+			return EContactResult::ClientDeleted;
+		}
 		return EContactResult::Declined;
 	}
 	return EContactResult::Contacting;
