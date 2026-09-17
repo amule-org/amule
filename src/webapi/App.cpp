@@ -231,49 +231,51 @@ bool CamuleapiApp::OnInit()
 	// no third fallback -- one resolver for both daemons.
 	const wxString config_dir = m_cliConfigDirOverride.IsEmpty() ? m_configDir : m_cliConfigDirOverride;
 
-	// Tee stdout/stderr into a log file (unless --no-log-file), as early as possible so config-
-	// load errors, EC warnings and a crash backtrace are all captured. Create the config dir
-	// first so the very first run can open it.
+	// Tee stdout/stderr early, so startup errors and a crash backtrace are captured and
+	// timestamped. Without a log file the tee keeps the console copy only.
+	wxString logPath;
 	if (!m_noLogFile) {
 		if (!wxDirExists(config_dir)) {
 			wxFileName::Mkdir(config_dir, 0700, wxPATH_MKDIR_FULL);
 		}
-		const wxString logPath = m_logFile.IsEmpty()
-						 ? wxFileName(config_dir, "amuleapi.log").GetFullPath()
-						 : m_logFile;
-		m_logTee = std::make_unique<webapi::CLogTee>();
-		if (m_logTee->Install(std::string(logPath.utf8_str()), kLogMaxBytes)) {
-			// fd 2 is now a pipe drained by a forwarding thread, and that thread is
-			// gone the moment an abort takes the process down. Send the SIGABRT
-			// backtrace straight to the file instead, the same way
-			// CamuleapiApp::OnFatalException already handles the SIGSEGV path.
-			// CrashFd() survives log rotation; see CRotatingLog::PointCrashFd().
+		logPath = m_logFile.IsEmpty() ? wxFileName(config_dir, "amuleapi.log").GetFullPath()
+					      : m_logFile;
+	}
+	m_logTee = std::make_unique<webapi::CLogTee>();
+	const bool toFile =
+		!logPath.IsEmpty() && m_logTee->Install(std::string(logPath.utf8_str()), kLogMaxBytes);
+	if (toFile || m_logTee->Install(std::string(), kLogMaxBytes)) {
+		// fd 2 is now a pipe drained by a forwarding thread, and that thread is gone the moment an
+		// abort takes the process down. Send the SIGABRT backtrace straight to the file instead,
+		// the same way CamuleapiApp::OnFatalException already handles the SIGSEGV path.
+		// CrashFd() survives log rotation; see CRotatingLog::PointCrashFd().
 #ifndef _WIN32
-			// Windows reserves no crash descriptor on purpose and has no SIGABRT
-			// handler to feed, so the whole redirect is skipped there rather than
-			// warned about on every start.
-			//
-			// The console descriptor goes over too: fd 2 is this process's own tee
-			// pipe, which reaches the console only while the pump thread still runs,
-			// so a reporter writes the console copy to the saved fd 2 instead.
-			SetFatalAbortConsoleFd(m_logTee->ConsoleFd());
-			const int crashFd = m_logTee->CrashFd();
-			if (crashFd >= 0) {
-				SetFatalAbortRedirectFd(crashFd);
-			} else {
-				// Say so rather than fall back silently: without the redirect a
-				// backtrace goes into the pipe nobody drains, which is the exact
-				// silence the redirect exists to remove.
-				std::cerr << "amuleapi: WARN no crash descriptor for the log file, "
-					     "a fatal backtrace may be lost\n";
-			}
-#endif
-			Show(CFormat(_("amuleapi: logging to %s\n")) % logPath);
-		} else {
-			m_logTee.reset();
-			std::cerr << "amuleapi: WARN could not open log file '"
-				  << (const char *)logPath.utf8_str() << "', continuing without it\n";
+		// Windows reserves no crash descriptor on purpose and has no SIGABRT handler to feed, so
+		// the whole redirect is skipped there rather than warned about on every start.
+		//
+		// The console descriptor goes over too: fd 2 is this process's own tee pipe, which
+		// reaches the console only while the pump thread still runs, so a reporter writes the
+		// console copy to the saved fd 2 instead.
+		SetFatalAbortConsoleFd(m_logTee->ConsoleFd());
+		const int crashFd = m_logTee->CrashFd();
+		if (crashFd >= 0) {
+			SetFatalAbortRedirectFd(crashFd);
+		} else if (toFile) {
+			// Say so rather than fall back silently: without the redirect a backtrace goes into
+			// the pipe nobody drains, which is the exact silence the redirect exists to remove.
+			std::cerr << "amuleapi: WARN no crash descriptor for the log file, "
+				     "a fatal backtrace may be lost\n";
 		}
+#endif
+		if (toFile) {
+			Show(CFormat(_("amuleapi: logging to %s\n")) % logPath);
+		}
+	} else {
+		m_logTee.reset();
+	}
+	if (!toFile && !logPath.IsEmpty()) {
+		std::cerr << "amuleapi: WARN could not open log file '" << (const char *)logPath.utf8_str()
+			  << "', continuing without it\n";
 	}
 
 	// Route wxWidgets' own log channel to stderr. amuleapi is a wxApp with the GUI core linked,
@@ -771,11 +773,11 @@ int CamuleapiApp::OnExit()
 #if wxUSE_ON_FATAL_EXCEPTION
 void CamuleapiApp::OnFatalException()
 {
-	// Point stderr straight at the log file so the base's backtrace is written synchronously,
-	// even if the tee's forwarding thread is never scheduled again before the process dies. The
-	// console loses it; the file keeps it.
+	// Point stderr straight at the log file, or the console without one, so the base's backtrace
+	// is written synchronously even if the tee's forwarding thread is never scheduled again before
+	// the process dies. With a file the console loses it; the file keeps it.
 	if (m_logTee) {
-		m_logTee->RedirectStderrToFileForCrash();
+		m_logTee->RedirectStderrForCrash();
 	}
 	CaMuleExternalConnector::OnFatalException();
 }

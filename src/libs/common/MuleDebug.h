@@ -121,7 +121,7 @@ template <typename F> void RunWxAssertHandler(F &&handler)
  * `docker logs` and a terminal still shows it. Pass -1 to go back to fd 2 alone.
  *
  * This covers the SIGABRT, SIGTRAP, SIGILL and std::terminate paths. It does NOT replace
- * CamuleapiApp::OnFatalException's call to CLogTee::RedirectStderrToFileForCrash(): wx's own
+ * CamuleapiApp::OnFatalException's call to CLogTee::RedirectStderrForCrash(): wx's own
  * SIGSEGV/SIGBUS/SIGILL/SIGFPE handler reports through stderr -- SIGILL included, since it reaches
  * wx by chaining -- so without that dup2() the SIGSEGV backtrace still dies in the tee pipe.
  */

@@ -156,8 +156,8 @@ private:
 	std::unique_ptr<CJwt> m_jwt;
 	std::unique_ptr<CApiDispatcher> m_dispatcher;
 	std::unique_ptr<CHttpServer> m_http;
-	// stdout/stderr tee into the log file; empty when --no-log-file or the file
-	// could not be opened. Installed early in OnInit, torn down in OnExit.
+	// Timestamping stdout/stderr tee; console-only without a log file. Installed early in OnInit,
+	// torn down in OnExit.
 	std::unique_ptr<webapi::CLogTee> m_logTee;
 	std::map<std::uint32_t, PartFileEncoderData> m_partfile_rle;
 	std::unique_ptr<webapi::CEventBus> m_event_bus;

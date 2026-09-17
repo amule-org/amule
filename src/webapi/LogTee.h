@@ -28,6 +28,7 @@
 #include <csignal>
 #include <cstddef>
 #include <cstdio>
+#include <functional>
 #include <mutex>
 #include <string>
 #include <thread>
@@ -72,7 +73,7 @@ public:
 	// Windows reserves nothing, because an open handle there blocks the rename() that rotation
 	// needs. It resolves the current file under m_mx instead, which is what this did before the
 	// reserved descriptor existed. The lock is a hazard in a handler, but the only Windows caller
-	// is CLogTee::RedirectStderrToFileForCrash() from an SEH filter, and losing the redirect
+	// is CLogTee::RedirectStderrForCrash() from an SEH filter, and losing the redirect
 	// altogether is worse: the report would sit in a pipe whose pump dies with the process.
 	int CrashFd() const;
 
@@ -88,15 +89,56 @@ private:
 	volatile std::sig_atomic_t m_crashFd = -1;
 };
 
+// The local "YYYY-MM-DD HH:MM:SS: " prefix. Same format as amuled's CLogger::DoLines().
+std::string LocalLogStamp();
+
+// Prefixes each line with a timestamp as the bytes stream past. Stateful because a line can
+// span two reads. A line is stamped when its first byte arrives; blank lines are not stamped,
+// matching amuled.
+class CLineStamper
+{
+public:
+	using Clock = std::function<std::string()>;
+
+	explicit CLineStamper(Clock clock = LocalLogStamp);
+
+	// The input with a stamp inserted at every line start.
+	std::string Feed(const char *buf, std::size_t n);
+
+private:
+	Clock m_clock;
+	bool m_atLineStart = true;
+};
+
+// Holds back a trailing partial line, so a file shared by two streams only ever gets whole lines
+// and a stamp never lands mid-line. A partial line longer than kMaxPending is released anyway.
+class CLineAssembler
+{
+public:
+	static constexpr std::size_t kMaxPending = 64 * 1024;
+
+	// The complete lines in the pending text plus buf; keeps the rest.
+	std::string Take(const char *buf, std::size_t n);
+
+	// Whatever is left, as a whole line, for the end of the stream.
+	std::string Flush();
+
+private:
+	std::string m_pending;
+};
+
 // Duplicates the process's stdout and stderr into a log file while leaving the original console
 // streams intact (a "tee"). It works at the file-descriptor level -- fd 1 and fd 2 are routed
 // through pipes and a forwarding thread copies each chunk to both the saved console fd and the log
 // file -- so it captures C stdio, C++ streams and anything else that writes to those descriptors,
-// including the fatal-signal backtrace. Cross-platform via the POSIX and Windows pipe/dup2/read
-// equivalents.
+// including the fatal-signal backtrace. Every line is timestamped on the way through, for both
+// sinks. Cross-platform via the POSIX and Windows pipe/dup2/read equivalents.
 class CLogTee
 {
 public:
+	// Bytes read from a pipe per call.
+	static constexpr std::size_t kReadChunk = 4096;
+
 	CLogTee() = default;
 	~CLogTee();
 
@@ -104,18 +146,18 @@ public:
 	CLogTee &operator=(const CLogTee &) = delete;
 
 	// Opens logPath (append, capped at maxBytes), redirects fd 1 and 2 through pipes and starts
-	// the forwarding threads. On any failure it restores the descriptors and returns false,
-	// leaving stdout/stderr untouched.
+	// the forwarding threads. An empty logPath tees to the console only, still timestamped. On
+	// any failure it restores the descriptors and returns false, leaving stdout/stderr untouched.
 	bool Install(const std::string &logPath, std::size_t maxBytes);
 
 	// Restores the original descriptors, drains and joins the forwarding
 	// threads and closes the file. Idempotent; also called by the destructor.
 	void Uninstall();
 
-	// Crash path: point fd 2 straight at the log file so a backtrace from the fatal handler is
-	// written synchronously, without depending on the forwarding thread being scheduled before
-	// the process dies.
-	void RedirectStderrToFileForCrash();
+	// Crash path: point fd 2 at the log file, or at the console when there is none, so a
+	// backtrace from the fatal handler is written synchronously rather than into a pipe whose
+	// forwarding thread dies with the process.
+	void RedirectStderrForCrash();
 
 	// The reserved crash descriptor, or -1 when not installed. For a crash reporter that has to
 	// write somewhere the forwarding threads are not needed to drain; see
@@ -131,8 +173,8 @@ public:
 	bool IsInstalled() const { return m_installed; }
 
 private:
-	// One forwarding worker per stream: blocking-reads a pipe and writes each chunk to its
-	// console fd and the log file. Two threads rather than one poll() loop so the same code
+	// One forwarding worker per stream: blocking-reads a pipe, stamps each chunk and writes it to
+	// its console fd and the log file. Two threads rather than one poll() loop so the same code
 	// runs on Windows, which cannot poll() pipes.
 	void Pump(int readFd, int consoleFd);
 

@@ -26,6 +26,9 @@
 
 #include <cerrno>
 #include <cstdio>
+#include <cstring>
+#include <ctime>
+#include <utility>
 
 #ifdef _WIN32
 #include <fcntl.h>
@@ -156,6 +159,76 @@ void WriteAll(int fd, const char *buf, std::size_t n)
 
 } // namespace
 
+std::string LocalLogStamp()
+{
+	const std::time_t now = std::time(nullptr);
+	std::tm local{};
+#ifdef _WIN32
+	localtime_s(&local, &now);
+#else
+	localtime_r(&now, &local);
+#endif
+	char buf[32];
+	const std::size_t len = std::strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S: ", &local);
+	return std::string(buf, len);
+}
+
+CLineStamper::CLineStamper(Clock clock)
+: m_clock(std::move(clock))
+{
+}
+
+std::string CLineStamper::Feed(const char *buf, std::size_t n)
+{
+	std::string out;
+	out.reserve(n + 32);
+	std::size_t i = 0;
+	while (i < n) {
+		if (m_atLineStart) {
+			// \r too, so a Windows "\r\n" blank line stays unstamped.
+			if (buf[i] == '\n' || buf[i] == '\r') {
+				out += buf[i++];
+				continue;
+			}
+			out += m_clock();
+			m_atLineStart = false;
+		}
+		const void *nl = std::memchr(buf + i, '\n', n - i);
+		const std::size_t end =
+			nl != nullptr ? static_cast<std::size_t>(static_cast<const char *>(nl) - buf) + 1 : n;
+		out.append(buf + i, end - i);
+		i = end;
+		m_atLineStart = nl != nullptr;
+	}
+	return out;
+}
+
+std::string CLineAssembler::Take(const char *buf, std::size_t n)
+{
+	m_pending.append(buf, n);
+	std::size_t end = m_pending.rfind('\n');
+	if (end == std::string::npos) {
+		if (m_pending.size() < kMaxPending) {
+			return std::string();
+		}
+		end = m_pending.size() - 1;
+	}
+	std::string whole = m_pending.substr(0, end + 1);
+	m_pending.erase(0, end + 1);
+	return whole;
+}
+
+std::string CLineAssembler::Flush()
+{
+	std::string rest;
+	rest.swap(m_pending);
+	// Terminated, or the other stream's next line would land on the end of it.
+	if (!rest.empty() && rest.back() != '\n') {
+		rest += '\n';
+	}
+	return rest;
+}
+
 // CRotatingLog  (portable C stdio)
 
 CRotatingLog::~CRotatingLog()
@@ -284,7 +357,7 @@ bool CLogTee::Install(const std::string &logPath, std::size_t maxBytes)
 	if (m_installed) {
 		return false;
 	}
-	if (!m_log.Open(logPath, maxBytes)) {
+	if (!logPath.empty() && !m_log.Open(logPath, maxBytes)) {
 		return false;
 	}
 
@@ -342,14 +415,19 @@ bool CLogTee::Install(const std::string &logPath, std::size_t maxBytes)
 
 void CLogTee::Pump(int readFd, int consoleFd)
 {
-	char buf[4096];
+	char buf[kReadChunk];
+	CLineStamper stamper;
+	CLineAssembler lines;
 	for (;;) {
 		const long n = OsRead(readFd, buf, sizeof(buf));
 		if (n > 0) {
+			const std::string out = stamper.Feed(buf, static_cast<std::size_t>(n));
 			// Console first so the terminal keeps behaving as it did, then the
-			// file copy (locked + rotated inside CRotatingLog).
-			WriteAll(consoleFd, buf, static_cast<std::size_t>(n));
-			m_log.Write(buf, static_cast<std::size_t>(n));
+			// file copy (locked + rotated inside CRotatingLog). The file takes whole
+			// lines only: the other stream's pump writes to it too.
+			WriteAll(consoleFd, out.data(), out.size());
+			const std::string whole = lines.Take(out.data(), out.size());
+			m_log.Write(whole.data(), whole.size());
 		} else if (n == 0) {
 			break; // write end closed
 		} else if (RetryErrno()) {
@@ -358,12 +436,17 @@ void CLogTee::Pump(int readFd, int consoleFd)
 			break;
 		}
 	}
+	const std::string rest = lines.Flush();
+	m_log.Write(rest.data(), rest.size());
 }
 
-void CLogTee::RedirectStderrToFileForCrash()
+void CLogTee::RedirectStderrForCrash()
 {
 	// CrashFd() takes no lock, which matters: this runs from a fatal signal handler.
-	const int fd = m_log.CrashFd();
+	int fd = m_log.CrashFd();
+	if (fd < 0) {
+		fd = m_savedErr;
+	}
 	if (fd >= 0) {
 		OsDup2(fd, StderrFd());
 	}

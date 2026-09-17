@@ -1112,7 +1112,7 @@ if (LIBATOMIC)
 	target_link_libraries (EventBusTest ${LIBATOMIC})
 endif()
 
-# amuleapi log-file tee: exercises CRotatingLog's append + two-file size cap.
+# amuleapi log tee: CRotatingLog's size cap, line stamping and the tee itself.
 # LogTee.cpp is plain POSIX/std (no wx), so only muleunit + mulecommon are
 # needed for the harness.
 add_executable (LogTeeTest

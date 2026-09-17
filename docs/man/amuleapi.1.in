@@ -84,10 +84,12 @@ that wraps the foreground command.
 Write a copy of the console output to \fI<path>\fR. On by default at
 \fI<config\-dir>/amuleapi.log\fR, so there is always a log to attach to a
 bug report; use this to put it somewhere else. It is capped at 10 MiB and
-rotated to \fI<path>.1\fR, so it cannot grow without bound.
+rotated to \fI<path>.1\fR, so it cannot grow without bound. Each line
+starts with the local date and time, on the console as well as in the file.
 .TP
 \fB[ \-\-no\-log\-file ]\fR
-Disable the log file entirely and print to the console only.
+Disable the log file entirely and print to the console only, still
+timestamped.
 .TP
 \fB[ \-\-version ]\fR
 Print version information and exit.

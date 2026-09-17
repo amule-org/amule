@@ -26,6 +26,7 @@
 
 #include "LogTee.h"
 
+#include <algorithm>
 #include <cstdio>
 #include <fstream>
 #ifdef _WIN32
@@ -36,6 +37,7 @@
 #endif
 #include <sstream>
 #include <string>
+#include <vector>
 
 using namespace muleunit;
 using namespace webapi;
@@ -179,7 +181,7 @@ TEST(LogTee, OversizedChunkOnEmptyFileIsNotRotated)
 // Every platform has to hand the crash path something to write to while the log is open. The rest
 // of the contract differs -- POSIX reserves a number, Windows resolves the current file, since an
 // open handle there blocks the rename() that rotation needs -- but this much is common, and it is
-// what CLogTee::RedirectStderrToFileForCrash() depends on for amuleapi's wx fatal handler. The
+// what CLogTee::RedirectStderrForCrash() depends on for amuleapi's wx fatal handler. The
 // other cases below are POSIX-only, which is how a Windows regression here went unnoticed.
 TEST(LogTee, CrashFdIsAvailableWhileOpen)
 {
@@ -191,6 +193,396 @@ TEST(LogTee, CrashFdIsAvailableWhileOpen)
 		ASSERT_TRUE(log.CrashFd() >= 0);
 	}
 	Cleanup(path);
+}
+
+namespace
+{
+
+// A fixed stamp, so outputs compare byte for byte, and a count of lines stamped.
+struct FakeClock
+{
+	int calls = 0;
+	CLineStamper::Clock Get()
+	{
+		return [this] {
+			++calls;
+			return std::string("[T]");
+		};
+	}
+};
+
+std::string Feed(CLineStamper &stamper, const std::string &in)
+{
+	return stamper.Feed(in.data(), in.size());
+}
+
+std::string Take(CLineAssembler &lines, const std::string &in)
+{
+	return lines.Take(in.data(), in.size());
+}
+
+std::string FeedInChunks(CLineStamper &stamper, const std::string &in, std::size_t chunk)
+{
+	std::string out;
+	for (std::size_t i = 0; i < in.size(); i += chunk) {
+		out += stamper.Feed(in.data() + i, std::min(chunk, in.size() - i));
+	}
+	return out;
+}
+
+// "YYYY-MM-DD HH:MM:SS: "
+bool HasStampShape(const std::string &line)
+{
+	static const char kShape[] = "dddd-dd-dd dd:dd:dd: ";
+	if (line.size() < sizeof(kShape) - 1) {
+		return false;
+	}
+	for (std::size_t i = 0; i < sizeof(kShape) - 1; ++i) {
+		const bool ok = kShape[i] == 'd' ? (line[i] >= '0' && line[i] <= '9') : line[i] == kShape[i];
+		if (!ok) {
+			return false;
+		}
+	}
+	return true;
+}
+
+// Lines without their terminator; a trailing newline adds no empty last line.
+std::vector<std::string> SplitLines(const std::string &text)
+{
+	std::vector<std::string> lines;
+	std::size_t start = 0;
+	while (start < text.size()) {
+		std::size_t nl = text.find('\n', start);
+		if (nl == std::string::npos) {
+			nl = text.size();
+		}
+		lines.push_back(text.substr(start, nl - start));
+		start = nl + 1;
+	}
+	return lines;
+}
+
+int TestDup(int fd)
+{
+#ifdef _WIN32
+	return _dup(fd);
+#else
+	return ::dup(fd);
+#endif
+}
+
+int TestDup2(int from, int to)
+{
+#ifdef _WIN32
+	return _dup2(from, to);
+#else
+	return ::dup2(from, to);
+#endif
+}
+
+void TestClose(int fd)
+{
+#ifdef _WIN32
+	_close(fd);
+#else
+	::close(fd);
+#endif
+}
+
+int TestFileno(std::FILE *fp)
+{
+#ifdef _WIN32
+	return _fileno(fp);
+#else
+	return fileno(fp);
+#endif
+}
+
+// Points fd 1 and 2 at files for the life of the object, so a tee installed inside it takes
+// those files as its console and a test can read back what the console got.
+class CConsoleCapture
+{
+public:
+	CConsoleCapture(const std::string &outPath, const std::string &errPath)
+	{
+		std::fflush(stdout);
+		std::fflush(stderr);
+		m_savedOut = TestDup(1);
+		m_savedErr = TestDup(2);
+		m_out = std::fopen(outPath.c_str(), "wb");
+		m_err = std::fopen(errPath.c_str(), "wb");
+		TestDup2(TestFileno(m_out), 1);
+		TestDup2(TestFileno(m_err), 2);
+	}
+	~CConsoleCapture()
+	{
+		std::fflush(stdout);
+		std::fflush(stderr);
+		TestDup2(m_savedOut, 1);
+		TestDup2(m_savedErr, 2);
+		TestClose(m_savedOut);
+		TestClose(m_savedErr);
+		std::fclose(m_out);
+		std::fclose(m_err);
+	}
+
+private:
+	int m_savedOut = -1;
+	int m_savedErr = -1;
+	std::FILE *m_out = nullptr;
+	std::FILE *m_err = nullptr;
+};
+
+} // namespace
+
+TEST(LogTee, StamperStampsEachLine)
+{
+	FakeClock clock;
+	CLineStamper stamper(clock.Get());
+	ASSERT_EQUALS(std::string("[T]one\n[T]two\n"), Feed(stamper, "one\ntwo\n"));
+	ASSERT_EQUALS(2, clock.calls);
+}
+
+// amuled writes blank lines without a stamp. "\r\n" counts as blank, for Windows.
+TEST(LogTee, StamperLeavesBlankLinesUnstamped)
+{
+	FakeClock clock;
+	CLineStamper stamper(clock.Get());
+	ASSERT_EQUALS(std::string("[T]a\n\n[T]b\n"), Feed(stamper, "a\n\nb\n"));
+	ASSERT_EQUALS(std::string("[T]c\r\n\r\n[T]d\r\n"), Feed(stamper, "c\r\n\r\nd\r\n"));
+	ASSERT_EQUALS(4, clock.calls);
+}
+
+// A line split across reads gets one stamp, taken when its first byte arrives.
+TEST(LogTee, StamperStampsASplitLineOnce)
+{
+	FakeClock clock;
+	CLineStamper stamper(clock.Get());
+	ASSERT_EQUALS(std::string("[T]par"), Feed(stamper, "par"));
+	ASSERT_EQUALS(1, clock.calls);
+	ASSERT_EQUALS(std::string("tial\n"), Feed(stamper, "tial\n"));
+	ASSERT_EQUALS(1, clock.calls);
+	ASSERT_EQUALS(std::string(""), Feed(stamper, ""));
+	ASSERT_EQUALS(1, clock.calls);
+	ASSERT_EQUALS(std::string("[T]next"), Feed(stamper, "next"));
+	ASSERT_EQUALS(2, clock.calls);
+}
+
+// A newline as the last byte of a read: the next read starts a line.
+TEST(LogTee, StamperNewlineEndingARead)
+{
+	FakeClock clock;
+	CLineStamper stamper(clock.Get());
+	ASSERT_EQUALS(std::string("[T]abc\n"), Feed(stamper, "abc\n"));
+	ASSERT_EQUALS(std::string("[T]def\n"), Feed(stamper, "def\n"));
+}
+
+// The pump reads CLogTee::kReadChunk bytes at a time, but a pipe read can return fewer, so a
+// read boundary can fall anywhere. Splitting at every offset must give the same stamped text.
+TEST(LogTee, StamperOutputIndependentOfReadBoundaries)
+{
+	const std::size_t chunk = CLogTee::kReadChunk;
+	const std::string longX(chunk + 100, 'x');
+	const std::string longY(chunk - 1, 'y');
+	const std::string input = longX + "\n" + "short\n\n" + longY + "\r\n" + "tail";
+	const std::string expected =
+		"[T]" + longX + "\n" + "[T]short\n\n" + "[T]" + longY + "\r\n" + "[T]tail";
+
+	for (std::size_t split = 0; split <= input.size(); ++split) {
+		FakeClock clock;
+		CLineStamper stamper(clock.Get());
+		std::string out = stamper.Feed(input.data(), split);
+		out += stamper.Feed(input.data() + split, input.size() - split);
+		ASSERT_EQUALS(expected, out);
+		ASSERT_EQUALS(4, clock.calls);
+	}
+
+	for (const std::size_t size : { chunk, chunk - 1, chunk + 1, static_cast<std::size_t>(1) }) {
+		FakeClock clock;
+		CLineStamper stamper(clock.Get());
+		ASSERT_EQUALS(expected, FeedInChunks(stamper, input, size));
+	}
+}
+
+TEST(LogTee, AssemblerHoldsAPartialLine)
+{
+	CLineAssembler lines;
+	ASSERT_EQUALS(std::string(""), Take(lines, "par"));
+	ASSERT_EQUALS(std::string("partial\none\n"), Take(lines, "tial\none\ntwo"));
+	ASSERT_EQUALS(std::string("two\n"), lines.Flush());
+	ASSERT_EQUALS(std::string(""), lines.Flush());
+}
+
+// One line that never ends must not grow without bound.
+TEST(LogTee, AssemblerReleasesAnOverlongLine)
+{
+	CLineAssembler lines;
+	const std::string chunk(CLineAssembler::kMaxPending - 1, 'q');
+	ASSERT_EQUALS(std::string(""), Take(lines, chunk));
+	ASSERT_EQUALS(chunk + "qq", Take(lines, "qq"));
+	ASSERT_EQUALS(std::string(""), lines.Flush());
+}
+
+TEST(LogTee, LocalLogStampShape)
+{
+	const std::string stamp = LocalLogStamp();
+	ASSERT_EQUALS(static_cast<size_t>(21), stamp.size());
+	ASSERT_TRUE(HasStampShape(stamp));
+}
+
+// Through the real pipes, both streams, a line longer than one read: the console and the file
+// get the same stamped lines.
+TEST(LogTee, TeeStampsConsoleAndFile)
+{
+	const std::string logPath = TmpPath("_k.log");
+	const std::string outPath = TmpPath("_k.out");
+	const std::string errPath = TmpPath("_k.err");
+	Cleanup(logPath);
+	const std::string longLine(CLogTee::kReadChunk + 10, 'z');
+	bool installed = false;
+	{
+		CConsoleCapture capture(outPath, errPath);
+		CLogTee tee;
+		installed = tee.Install(logPath, 0);
+		if (installed) {
+			// Raw write, not fwrite(stdout): muleunit prints with wxPuts, which leaves glibc's
+			// stdout wide-oriented, and glibc then drops byte writes to it.
+			const std::string out = longLine + "\nout-two\n";
+			OsWriteFd(1, out.data(), static_cast<unsigned>(out.size()));
+			OsWriteFd(2, "err-one\n\nerr-two\n", 17);
+			tee.Uninstall();
+		}
+	}
+	ASSERT_TRUE(installed);
+
+	const std::vector<std::string> outLines = SplitLines(ReadFile(outPath));
+	ASSERT_EQUALS(static_cast<size_t>(2), outLines.size());
+	ASSERT_TRUE(HasStampShape(outLines[0]));
+	ASSERT_EQUALS(longLine, outLines[0].substr(21));
+	ASSERT_EQUALS(std::string("out-two"), outLines[1].substr(21));
+
+	const std::vector<std::string> errLines = SplitLines(ReadFile(errPath));
+	ASSERT_EQUALS(static_cast<size_t>(3), errLines.size());
+	ASSERT_TRUE(HasStampShape(errLines[0]));
+	ASSERT_EQUALS(std::string("err-one"), errLines[0].substr(21));
+	ASSERT_EQUALS(std::string(""), errLines[1]);
+	ASSERT_EQUALS(std::string("err-two"), errLines[2].substr(21));
+
+	// The two streams interleave in the file, so compare contents rather than order.
+	std::vector<std::string> fileLines = SplitLines(ReadFile(logPath));
+	ASSERT_EQUALS(static_cast<size_t>(5), fileLines.size());
+	int blank = 0;
+	std::vector<std::string> payloads;
+	for (const std::string &line : fileLines) {
+		if (line.empty()) {
+			++blank;
+			continue;
+		}
+		ASSERT_TRUE(HasStampShape(line));
+		payloads.push_back(line.substr(21));
+	}
+	ASSERT_EQUALS(1, blank);
+	std::sort(payloads.begin(), payloads.end());
+	const std::vector<std::string> expected = { "err-one", "err-two", "out-two", longLine };
+	ASSERT_TRUE(payloads == expected);
+
+	Cleanup(logPath);
+	std::remove(outPath.c_str());
+	std::remove(errPath.c_str());
+}
+
+// A line one stream never finishes (getpass() leaves its prompt that way) must still end its own
+// line in the file, so the other stream's next line is not appended to it.
+TEST(LogTee, TeeEndsAnUnfinishedLineInTheFile)
+{
+	const std::string logPath = TmpPath("_n.log");
+	const std::string outPath = TmpPath("_n.out");
+	const std::string errPath = TmpPath("_n.err");
+	Cleanup(logPath);
+	const std::string prompt = "prompt: ";
+	const std::string after = "after\n";
+	bool installed = false;
+	{
+		CConsoleCapture capture(outPath, errPath);
+		CLogTee tee;
+		installed = tee.Install(logPath, 0);
+		if (installed) {
+			OsWriteFd(2, prompt.data(), static_cast<unsigned>(prompt.size()));
+			OsWriteFd(1, after.data(), static_cast<unsigned>(after.size()));
+			tee.Uninstall();
+		}
+	}
+	ASSERT_TRUE(installed);
+
+	std::vector<std::string> payloads;
+	for (const std::string &line : SplitLines(ReadFile(logPath))) {
+		ASSERT_TRUE(HasStampShape(line));
+		payloads.push_back(line.substr(21));
+	}
+	std::sort(payloads.begin(), payloads.end());
+	const std::vector<std::string> expected = { "after", "prompt: " };
+	ASSERT_TRUE(payloads == expected);
+
+	Cleanup(logPath);
+	std::remove(outPath.c_str());
+	std::remove(errPath.c_str());
+}
+
+// An empty path tees to the console only, still stamped, with no crash descriptor.
+TEST(LogTee, ConsoleOnlyInstallStamps)
+{
+	const std::string outPath = TmpPath("_l.out");
+	const std::string errPath = TmpPath("_l.err");
+	bool installed = false;
+	int crashFd = 0;
+	int consoleFd = -1;
+	{
+		CConsoleCapture capture(outPath, errPath);
+		CLogTee tee;
+		installed = tee.Install(std::string(), 0);
+		if (installed) {
+			crashFd = tee.CrashFd();
+			consoleFd = tee.ConsoleFd();
+			OsWriteFd(2, "hello\n", 6);
+			tee.Uninstall();
+		}
+	}
+	ASSERT_TRUE(installed);
+	ASSERT_EQUALS(-1, crashFd);
+	ASSERT_TRUE(consoleFd >= 0);
+
+	const std::vector<std::string> errLines = SplitLines(ReadFile(errPath));
+	ASSERT_EQUALS(static_cast<size_t>(1), errLines.size());
+	ASSERT_TRUE(HasStampShape(errLines[0]));
+	ASSERT_EQUALS(std::string("hello"), errLines[0].substr(21));
+
+	std::remove(outPath.c_str());
+	std::remove(errPath.c_str());
+}
+
+// Without a file the crash redirect falls back to the console. Otherwise wx's backtrace goes into
+// the tee pipe, whose pump thread dies with the process.
+TEST(LogTee, CrashRedirectWithoutFileReachesConsole)
+{
+	const std::string outPath = TmpPath("_m.out");
+	const std::string errPath = TmpPath("_m.err");
+	bool installed = false;
+	{
+		CConsoleCapture capture(outPath, errPath);
+		CLogTee tee;
+		installed = tee.Install(std::string(), 0);
+		if (installed) {
+			tee.RedirectStderrForCrash();
+			OsWriteFd(2, "backtrace\n", 10);
+			tee.Uninstall();
+		}
+	}
+	ASSERT_TRUE(installed);
+	// Written straight to the console, not through the pump, so unstamped.
+	ASSERT_EQUALS(std::string("backtrace\n"), ReadFile(errPath));
+
+	std::remove(outPath.c_str());
+	std::remove(errPath.c_str());
 }
 
 #ifndef _WIN32
