@@ -25,6 +25,8 @@
 #ifndef UTP_DIAL_POLICY_H
 #define UTP_DIAL_POLICY_H
 
+#include "NetworkFunctions.h"
+
 #include <cstdint>
 
 // Preserve the TCP/callback/buddy/refusal path unless direct uTP is eligible.
@@ -45,15 +47,12 @@ struct SUtpDialFacts
 	uint16_t udpPort = 0;
 };
 
-constexpr bool IsUsableUtpEndpoint(uint32_t ip, uint16_t port)
+inline bool IsUsableUtpEndpoint(uint32_t ip, uint16_t port)
 {
-	// Unspecified, multicast and reserved/broadcast addresses cannot be dialed.
-	// Private and loopback endpoints remain usable; this is not a WAN policy.
-	const uint32_t firstOctet = ip & 0xff;
-	return port != 0 && firstOctet != 0 && firstOctet < 224;
+	return IsGoodIP(ip, false) && port != 0;
 }
 
-constexpr EUtpDialDecision DecideUtpDial(const SUtpDialFacts &facts)
+inline EUtpDialDecision DecideUtpDial(const SUtpDialFacts &facts)
 {
 	return facts.peerSupportsUtp && facts.localOutboundService && facts.directHighId &&
 			       !facts.proxyEnabled && IsUsableUtpEndpoint(facts.ip, facts.udpPort)

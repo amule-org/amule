@@ -1375,6 +1375,11 @@ void CLibSocket::AttachTransport(std::unique_ptr<IStreamTransport> transport)
 
 // Queued rather than called: CoreNotify_* marshals to the main thread, which
 // is what makes a flush request raised on the upload thread safe to answer.
+void CLibSocket::OnStreamConnected()
+{
+	CoreNotify_LibSocketConnect(this, 0);
+}
+
 void CLibSocket::OnStreamReadable()
 {
 	CoreNotify_LibSocketReceive(this, 0);

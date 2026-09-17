@@ -170,6 +170,7 @@ public:
 	//! The attached transport, or null. For owners that must configure it.
 	IStreamTransport *GetTransport() const { return m_transport.get(); }
 
+	void OnStreamConnected() override;
 	void OnStreamReadable() override;
 	void OnStreamWritable() override;
 	void OnStreamLost() override;

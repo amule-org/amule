@@ -120,6 +120,9 @@ class IStreamTransportEvents
 public:
 	virtual ~IStreamTransportEvents() = default;
 
+	//! An outbound handshake completed; writability is not completion.
+	virtual void OnStreamConnected() {}
+
 	//! Bytes are readable.
 	virtual void OnStreamReadable() = 0;
 

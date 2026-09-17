@@ -357,6 +357,7 @@ public:
 		// socket is still CS_SYN_RECV, so utp_writev would refuse every byte
 		// at its state guard and the peek would be copied for nothing.
 		RaiseFlushRequest(flushEvents);
+		NotifyEvents(&IStreamTransportEvents::OnStreamConnected);
 		NotifyEvents(&IStreamTransportEvents::OnStreamWritable);
 	}
 
