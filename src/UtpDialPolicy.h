@@ -27,7 +27,15 @@
 
 #include <cstdint>
 
+#ifdef MULEUNIT
+inline bool IsGoodIP(uint32_t ip, bool) noexcept
+{
+	const uint32_t firstOctet = ip & 0xff;
+	return firstOctet != 0 && firstOctet < 224 && ip != 0xffffffff;
+}
+#else
 bool IsGoodIP(uint32_t ip, bool filterLAN) noexcept;
+#endif
 
 // Preserve the TCP/callback/buddy/refusal path unless direct uTP is eligible.
 // This policy does not replace security checks or authorize NAT rendezvous.
