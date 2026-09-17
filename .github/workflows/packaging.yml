@@ -224,6 +224,16 @@ jobs:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ runner.os }}-flatpak-${{ matrix.arch }}-ccache-${{ hashFiles('**/CMakeLists.txt', 'cmake/**', 'packaging/linux/flatpak/**.yml.in') }}
           restore-keys: ${{ runner.os }}-flatpak-${{ matrix.arch }}-ccache-
+      # flatpak-builder compiles inside the build sandbox, which CCACHE_MAXSIZE
+      # does not reach, so ccache applied its own 5 GB default and the x86_64
+      # entry had grown to 4.4 GB of the repository's 10 GB budget -- evicting
+      # the caches every other job depends on. max_size in the cache's own
+      # config travels with it and is read wherever ccache runs. One build
+      # writes ~350 MB, so 1 GB keeps the current generation and two behind it.
+      - name: Cap the flatpak-builder ccache
+        run: |
+          mkdir -p "$CCACHE_DIR"
+          echo "max_size = 1.0G" > "$CCACHE_DIR/ccache.conf"
       - name: Build Flatpak
         run: packaging/linux/build.sh flatpak
       - name: Save flatpak-builder ccache
