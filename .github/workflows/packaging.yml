@@ -313,46 +313,41 @@ jobs:
         id: intelkegs
         if: matrix.arch == 'x86_64'
         run: |
-          # Key on the versions brew resolved after `update`, not a
-          # literal: a stale keg must never shadow a newer release.
-          V=$(${{ matrix.archcmd }} ${{ matrix.brew_prefix }}/bin/brew info --json=v2 \
-                  pcre2 openssl@3 aom jpeg-turbo json-c libmaxminddb libtiff libupnp lz4 pkgconf wxwidgets \
-              | python3 -c 'import sys,json;print("-".join(f["versions"]["stable"] for f in json.load(sys.stdin)["formulae"]))')
-          echo "vers=$V" >> "$GITHUB_OUTPUT"
+          # Everything x86_64 compiles from source, listed once. The last
+          # four are dependencies of the rest with no Intel bottle either:
+          # uncached, they rebuilt on every run for ~12 minutes.
+          KEGS="pcre2 openssl@3 aom jpeg-turbo json-c libmaxminddb libtiff libupnp lz4 pkgconf wxwidgets xz readline mpdecimal libvmaf"
+          ${{ matrix.archcmd }} ${{ matrix.brew_prefix }}/bin/brew info --json=v2 $KEGS > "$RUNNER_TEMP/kegs.json"
+          python3 - "$RUNNER_TEMP/kegs.json" "$GITHUB_OUTPUT" <<'EOF'
+          import json, sys
+          formulae = json.load(open(sys.argv[1]))["formulae"]
+          names = [f["name"] for f in formulae]
+          with open(sys.argv[2], "a") as out:
+              out.write("kegs=%s\n" % " ".join(names))
+              # Keg-only formulae stay out of /usr/local; readline would shadow libedit.
+              out.write("linkable=%s\n" % " ".join(f["name"] for f in formulae if not f["keg_only"]))
+              out.write("paths<<PATHS\n")
+              for n in names:
+                  out.write("/usr/local/Cellar/%s\n/usr/local/opt/%s\n" % (n, n))
+              out.write("PATHS\n")
+          EOF
       - name: Restore x86_64 source-built kegs
         if: matrix.arch == 'x86_64' && github.event_name != 'workflow_call'
         uses: actions/cache/restore@v6
         with:
-          path: |
-            /usr/local/Cellar/pcre2
-            /usr/local/Cellar/openssl@3
-            /usr/local/Cellar/aom
-            /usr/local/Cellar/jpeg-turbo
-            /usr/local/Cellar/json-c
-            /usr/local/Cellar/libmaxminddb
-            /usr/local/Cellar/libtiff
-            /usr/local/Cellar/libupnp
-            /usr/local/Cellar/lz4
-            /usr/local/Cellar/pkgconf
-            /usr/local/Cellar/wxwidgets
-            /usr/local/opt/pcre2
-            /usr/local/opt/openssl@3
-            /usr/local/opt/aom
-            /usr/local/opt/jpeg-turbo
-            /usr/local/opt/json-c
-            /usr/local/opt/libmaxminddb
-            /usr/local/opt/libtiff
-            /usr/local/opt/libupnp
-            /usr/local/opt/lz4
-            /usr/local/opt/pkgconf
-            /usr/local/opt/wxwidgets
-          key: ${{ runner.os }}-macos-intel-kegs-${{ steps.intelkegs.outputs.vers }}
+          path: ${{ steps.intelkegs.outputs.paths }}
+          # Keyed by run like ccache, so the newest set is always what restores
+          # and retention prunes the rest. Which kegs are stale is not the key's
+          # job: `brew install` below upgrades only what is outdated, along with
+          # any dependent Homebrew marks for a rebuild.
+          key: ${{ runner.os }}-macos-intel-kegs-${{ github.run_id }}
+          restore-keys: ${{ runner.os }}-macos-intel-kegs-
       - name: Install Homebrew deps
         run: |
           BREW=${{ matrix.brew_prefix }}/bin/brew
           MAINDEPS="cmake wxwidgets cryptopp libupnp gd gettext boost dylibbundler libmaxminddb ccache"
           if [ "${{ matrix.arch }}" = "x86_64" ]; then
-              SRCBUILD="pcre2 openssl@3 aom jpeg-turbo json-c libmaxminddb libtiff libupnp lz4 pkgconf wxwidgets"
+              SRCBUILD="${{ steps.intelkegs.outputs.kegs }}"
               # Several of these build against a Homebrew python, whose bin names
               # (python3, pip3, idle3) are already symlinks to the python.org
               # framework in /usr/local/bin. Its link step fails, and brew carries
@@ -370,13 +365,16 @@ jobs:
                   ${{ matrix.archcmd }} $BREW install "$p" || true
                   ${{ matrix.archcmd }} $BREW link --overwrite "$p"
               done
-              # No-op for each keg the cache restored at the same version.
+              # What the restored set is missing or has outdated: the only
+              # formulae the install below will compile.
+              ${{ matrix.archcmd }} $BREW outdated $SRCBUILD || true
+              # No-op for each keg the cache restored at the current version.
               ${{ matrix.archcmd }} $BREW install --build-from-source $SRCBUILD
               # A restored keg has no /usr/local/{lib,include} symlinks --
               # only the Cellar and opt paths are cached -- so relink or
-              # dependents will not find the headers. openssl@3 is keg-only
-              # and is found through its opt path, which is cached.
-              for f in $SRCBUILD; do
+              # dependents will not find the headers. openssl@3 is found
+              # through its opt path, which is cached.
+              for f in ${{ steps.intelkegs.outputs.linkable }}; do
                   [ "$f" = "openssl@3" ] && continue
                   ${{ matrix.archcmd }} $BREW link --overwrite "$f"
               done
@@ -386,6 +384,11 @@ jobs:
           # this step failed with a bare exit 1 and the breakage only
           # surfaced two steps later as "ccache: command not found".
           ${{ matrix.archcmd }} $BREW install $MAINDEPS
+          if [ "${{ matrix.arch }}" = "x86_64" ]; then
+              # An upgrade leaves the old version beside the new one in Cellar;
+              # drop it so the saved cache does not grow with every bump.
+              ${{ matrix.archcmd }} $BREW cleanup $SRCBUILD
+          fi
           # Prepend the matrix-selected brew prefix to PATH so every
           # `brew --prefix` / `cmake` / `pkg-config` invocation in the
           # build script resolves against the right install. gettext
@@ -393,33 +396,13 @@ jobs:
           echo "${{ matrix.brew_prefix }}/bin" >> "$GITHUB_PATH"
           echo "${{ matrix.brew_prefix }}/opt/gettext/bin" >> "$GITHUB_PATH"
       - name: Save x86_64 source-built kegs
-        if: matrix.arch == 'x86_64' && github.event_name != 'workflow_call'
+        # Master only, as for ccache: retention compares keys across branches,
+        # and a branch-scoped entry that ranked newest would cost master its own.
+        if: matrix.arch == 'x86_64' && github.event_name == 'push' && github.ref == 'refs/heads/master'
         uses: actions/cache/save@v6
         with:
-          path: |
-            /usr/local/Cellar/pcre2
-            /usr/local/Cellar/openssl@3
-            /usr/local/Cellar/aom
-            /usr/local/Cellar/jpeg-turbo
-            /usr/local/Cellar/json-c
-            /usr/local/Cellar/libmaxminddb
-            /usr/local/Cellar/libtiff
-            /usr/local/Cellar/libupnp
-            /usr/local/Cellar/lz4
-            /usr/local/Cellar/pkgconf
-            /usr/local/Cellar/wxwidgets
-            /usr/local/opt/pcre2
-            /usr/local/opt/openssl@3
-            /usr/local/opt/aom
-            /usr/local/opt/jpeg-turbo
-            /usr/local/opt/json-c
-            /usr/local/opt/libmaxminddb
-            /usr/local/opt/libtiff
-            /usr/local/opt/libupnp
-            /usr/local/opt/lz4
-            /usr/local/opt/pkgconf
-            /usr/local/opt/wxwidgets
-          key: ${{ runner.os }}-macos-intel-kegs-${{ steps.intelkegs.outputs.vers }}
+          path: ${{ steps.intelkegs.outputs.paths }}
+          key: ${{ runner.os }}-macos-intel-kegs-${{ github.run_id }}
       - name: Restore ccache
         if: github.event_name != 'workflow_call'
         uses: actions/cache/restore@v6
