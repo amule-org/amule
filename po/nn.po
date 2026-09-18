@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-17 08:44+0200\n"
+"POT-Creation-Date: 2026-09-18 22:25+0100\n"
 "PO-Revision-Date: 2026-09-17 09:08+0000\n"
 "Last-Translator: Hallvor Brunstad <Hallvor_1976@yahoo.com>\n"
 "Language-Team: <i18n-nn@lister.ping.uio.no>\n"
@@ -1449,10 +1449,9 @@ msgstr "Lasta opp"
 msgid "Total Downloaded"
 msgstr "Total nedlasting: "
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#, fuzzy
-msgid "Ratio"
-msgstr "Verdi"
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/muuli_wdr.cpp
+msgid "DL/UP modifier"
+msgstr "NL/OL endringsfaktor"
 
 #: src/ClientHistoryListCtrl.cpp
 #, fuzzy
@@ -4385,10 +4384,6 @@ msgstr "Lasta ned (totalt)"
 #: src/muuli_wdr.cpp
 msgid "Scores"
 msgstr "Scorar"
-
-#: src/muuli_wdr.cpp
-msgid "DL/UP modifier"
-msgstr "NL/OL endringsfaktor"
 
 #: src/muuli_wdr.cpp
 msgid "Secure ident"
@@ -9439,6 +9434,10 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#, fuzzy
+#~ msgid "Ratio"
+#~ msgstr "Verdi"
 
 #, fuzzy
 #~ msgid "Change Language"

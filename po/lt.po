@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-17 08:44+0200\n"
+"POT-Creation-Date: 2026-09-18 22:25+0100\n"
 "PO-Revision-Date: 2026-09-17 09:06+0000\n"
 "Last-Translator: Dovydas Sankauskas <laisve@gmail.com>\n"
 "Language-Team: Lithuanian <komp_lt@konf.lt>\n"
@@ -1459,10 +1459,9 @@ msgstr "Išsiųsta"
 msgid "Total Downloaded"
 msgstr "Išviso atsiųsta: "
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#, fuzzy
-msgid "Ratio"
-msgstr "Reitingas"
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/muuli_wdr.cpp
+msgid "DL/UP modifier"
+msgstr "Ats./išs. indeksas"
 
 #: src/ClientHistoryListCtrl.cpp
 #, fuzzy
@@ -4408,10 +4407,6 @@ msgstr "Atsiųsta (iš viso)"
 #: src/muuli_wdr.cpp
 msgid "Scores"
 msgstr "Reitingas"
-
-#: src/muuli_wdr.cpp
-msgid "DL/UP modifier"
-msgstr "Ats./išs. indeksas"
 
 #: src/muuli_wdr.cpp
 msgid "Secure ident"
@@ -9487,6 +9482,10 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#, fuzzy
+#~ msgid "Ratio"
+#~ msgstr "Reitingas"
 
 #, fuzzy
 #~ msgid "Change Language"

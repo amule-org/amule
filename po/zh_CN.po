@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-17 08:44+0200\n"
+"POT-Creation-Date: 2026-09-18 22:25+0100\n"
 "PO-Revision-Date: 2026-09-18 11:20+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
@@ -1443,9 +1443,9 @@ msgstr "总上传"
 msgid "Total Downloaded"
 msgstr "总下载"
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-msgid "Ratio"
-msgstr "比例"
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/muuli_wdr.cpp
+msgid "DL/UP modifier"
+msgstr "下载/上传比率"
 
 #: src/ClientHistoryListCtrl.cpp
 msgid "Online now"
@@ -4338,10 +4338,6 @@ msgstr "下载 (总共)"
 #: src/muuli_wdr.cpp
 msgid "Scores"
 msgstr "得分"
-
-#: src/muuli_wdr.cpp
-msgid "DL/UP modifier"
-msgstr "下载/上传比率"
 
 #: src/muuli_wdr.cpp
 msgid "Secure ident"
@@ -9319,6 +9315,9 @@ msgstr "aMule 似乎正在运行。请将其关闭并重新运行卸载程序。
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "正在删除 $APPDATA\\aMule 中的用户数据..."
+
+#~ msgid "Ratio"
+#~ msgstr "比例"
 
 #, c-format
 #~ msgid "No shareable files found in directory: %s"

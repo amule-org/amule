@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-17 08:44+0200\n"
+"POT-Creation-Date: 2026-09-18 22:25+0100\n"
 "PO-Revision-Date: 2026-09-17 08:59+0000\n"
 "Last-Translator: Sebastiano Pistore <sebastiano.pistore.info@aol.com>\n"
 "Language-Team: https://github.com/amule-org/amule <forum@aMule.org>\n"
@@ -1435,10 +1435,9 @@ msgstr "Brzina uploada"
 msgid "Total Downloaded"
 msgstr "Download"
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#, fuzzy
-msgid "Ratio"
-msgstr "Ocjena"
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/muuli_wdr.cpp
+msgid "DL/UP modifier"
+msgstr ""
 
 #: src/ClientHistoryListCtrl.cpp
 msgid "Online now"
@@ -4346,10 +4345,6 @@ msgstr "Downloads (%i)"
 #: src/muuli_wdr.cpp
 msgid "Scores"
 msgstr "Rezultati"
-
-#: src/muuli_wdr.cpp
-msgid "DL/UP modifier"
-msgstr ""
 
 #: src/muuli_wdr.cpp
 #, fuzzy
@@ -9320,6 +9315,10 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#, fuzzy
+#~ msgid "Ratio"
+#~ msgstr "Ocjena"
 
 #~ msgid "Change Language"
 #~ msgstr "Promijeniti jezik"

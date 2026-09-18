@@ -15,7 +15,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-17 08:44+0200\n"
+"POT-Creation-Date: 2026-09-18 22:25+0100\n"
 "PO-Revision-Date: 2026-09-17 08:52+0000\n"
 "Last-Translator: Diego Heras <ngosang@hotmail.es>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/amule/amule-application/es/>\n"
@@ -1447,9 +1447,9 @@ msgstr "Total Subido"
 msgid "Total Downloaded"
 msgstr "Total descargado"
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-msgid "Ratio"
-msgstr "Proporción"
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/muuli_wdr.cpp
+msgid "DL/UP modifier"
+msgstr "Modificador desc./sub."
 
 #: src/ClientHistoryListCtrl.cpp
 msgid "Online now"
@@ -4344,10 +4344,6 @@ msgstr "Descargado (total)"
 #: src/muuli_wdr.cpp
 msgid "Scores"
 msgstr "Resultados"
-
-#: src/muuli_wdr.cpp
-msgid "DL/UP modifier"
-msgstr "Modificador desc./sub."
 
 #: src/muuli_wdr.cpp
 msgid "Secure ident"
@@ -9332,6 +9328,9 @@ msgstr "aMule parece estar en ejecución. Por favor, ciérrelo y vuelva a ejecut
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Eliminando los datos de usuario en $APPDATA\\aMule..."
+
+#~ msgid "Ratio"
+#~ msgstr "Proporción"
 
 #, c-format
 #~ msgid "No shareable files found in directory: %s"

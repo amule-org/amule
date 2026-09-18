@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-17 08:44+0200\n"
+"POT-Creation-Date: 2026-09-18 22:25+0100\n"
 "PO-Revision-Date: 2026-09-17 08:41+0000\n"
 "Last-Translator: astur <malditoastur@gmail.com>\n"
 "Language-Team: Language ast <malditoastur@gmail.com>\n"
@@ -1443,10 +1443,9 @@ msgstr "Xubío"
 msgid "Total Downloaded"
 msgstr "Total Descargáu: "
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#, fuzzy
-msgid "Ratio"
-msgstr "Valoración"
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/muuli_wdr.cpp
+msgid "DL/UP modifier"
+msgstr "Modificador DE/XU"
 
 #: src/ClientHistoryListCtrl.cpp
 #, fuzzy
@@ -4377,10 +4376,6 @@ msgstr "Descargáu (total)"
 #: src/muuli_wdr.cpp
 msgid "Scores"
 msgstr "Resultaos"
-
-#: src/muuli_wdr.cpp
-msgid "DL/UP modifier"
-msgstr "Modificador DE/XU"
 
 #: src/muuli_wdr.cpp
 msgid "Secure ident"
@@ -9432,6 +9427,10 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#, fuzzy
+#~ msgid "Ratio"
+#~ msgstr "Valoración"
 
 #, c-format
 #~ msgid "No shareable files found in directory: %s"

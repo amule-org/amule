@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-17 08:44+0200\n"
+"POT-Creation-Date: 2026-09-18 22:25+0100\n"
 "PO-Revision-Date: 2026-09-17 09:00+0000\n"
 "Last-Translator: Dévai Tamás <gonosztopi@amule.org>\n"
 "Language-Team: Hungarian <hu@li.org>\n"
@@ -1433,10 +1433,9 @@ msgstr "Feltöltve"
 msgid "Total Downloaded"
 msgstr "Összes letöltés: "
 
-#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
-#, fuzzy
-msgid "Ratio"
-msgstr "Értékelés"
+#: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp src/muuli_wdr.cpp
+msgid "DL/UP modifier"
+msgstr "Le/Fel módosító"
 
 #: src/ClientHistoryListCtrl.cpp
 #, fuzzy
@@ -4335,10 +4334,6 @@ msgstr "Letöltve (összesen)"
 #: src/muuli_wdr.cpp
 msgid "Scores"
 msgstr "Eredmények"
-
-#: src/muuli_wdr.cpp
-msgid "DL/UP modifier"
-msgstr "Le/Fel módosító"
 
 #: src/muuli_wdr.cpp
 msgid "Secure ident"
@@ -9331,6 +9326,10 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#, fuzzy
+#~ msgid "Ratio"
+#~ msgstr "Értékelés"
 
 #, c-format
 #~ msgid "No shareable files found in directory: %s"
