@@ -1269,6 +1269,7 @@ curl -s -H "Authorization: Bearer $TOKEN" \
       "protocol_extensions": [],
       "friend_slot": false,
       "friend": false,
+      "credit_ratio": 2.34,
       "source_origin": "kad",
       "parts_offered_count": 42,
       "client_mod_name": null,
@@ -1305,6 +1306,8 @@ Every one of them falls back to `"unknown"` for a code the daemon does not map, 
 `connected` says whether a socket to this peer is up right now. A row existing in this list does not answer that: the daemon holds a client object from the first contact attempt, so a peer it is still trying to reach - or can never reach - appears here with `connected: false`. It is `null` on a daemon that does not report peer connectivity. [`GET /friends`](#get-apiv1friends), [`GET /chats`](#get-apiv1chats) and [`GET /known_clients`](#get-apiv1known_clients) carry the same fact under the same key, so joining any of them against this list does not meet it under a second name.
 
 `friend` is `true` when the peer is in your friends list (`CUpDownClient::IsFriend()`). It is **distinct** from `friend_slot`, the *reserved upload slot*, which can be granted to a peer that is not a friend - a row carries either flag without the other, and a front-end that renders one as the other will mislabel both. Grant and clear the slot through [`PATCH /friends/{ecid}`](#patch-apiv1friendsecid); neither flag is writable here. Both read `false` against a daemon predating the EC tags that carry them.
+
+`credit_ratio` is the credit modifier the core computes for this peer from its transfer history (`CClientCredits::GetCreditRatio()`), the value the desktop labels "DL/UP modifier" and both peer lists show as their Ratio column. It runs from `1` to `10`: a peer you have downloaded under 1 MB from reads `1`, and the value climbs with how much you have taken from it relative to what you sent back. It is **not** `downloaded_bytes_total / uploaded_bytes_total` - do not re-derive it, and do not expect the two to agree. [`GET /known_clients`](#get-apiv1known_clients) carries the same key computed the same way, so a peer reads the same number online or offline. `null` on a daemon that does not send it, which is not the same as a peer whose history earns exactly `1`.
 
 `protocol_extensions` is the set of protocol extensions the peer claimed in its handshake, as stable tokens: `extended_source_exchange`, `nat_traversal_utp`, `ipv6`, `serving_buddy_pull`, `nat_traversal_quic`. A list rather than one token because a peer claims any combination of them, and tokens rather than the `EC_TAG_CLIENT_MOD_CAPABILITIES` bitfield they arrive in so no consumer has to carry its own copy of aMule's bit meanings. The order is stable. The daemon has already dropped every extension it does not define, so a token here is one aMule names, and an extension aMule does not name is absent rather than unknown. `[]` means the peer claimed nothing, which is what nearly every peer on the network does — a peer that sent no capability tag and one that sent an all-zero word are the same state on the wire and report the same here. The desktop GUI renders the same set as its *Protocol extensions* row.
 
@@ -1360,6 +1363,7 @@ curl -s -H "Authorization: Bearer $TOKEN" \
   "protocol_extensions": [],
   "friend_slot": false,
   "friend": false,
+  "credit_ratio": 2.34,
   "ed2k_user_id": 3232238090,
   "high_id": true,
   "server_ip": "203.0.113.9",
@@ -1371,14 +1375,11 @@ curl -s -H "Authorization: Bearer $TOKEN" \
   "parts_offered_count": 42,
   "client_mod_name": null,
   "shared_files_browsable": false,
-  "credit_ratio": 1.0,
   "part_progress_percent": 87.5
 }
 ```
 
-The detail fields mirror the desktop "Client Details" modal. Five of the fields below — `source_origin`, `parts_offered_count`, `client_mod_name`, `shared_files_browsable` and `part_progress_percent` — are **not** detail-only: they are on the [`GET /clients`](#get-apiv1clients) row and the SSE payload too, and are described here because this is where the rest of their neighbours live. `ed2k_user_id` is the client's hybrid eD2k id; `high_id` is `true` for a HighID client (id ≥ `16777216`, i.e. `0x1000000`) and `false` for LowID — the same threshold and the same spelling as `ed2k.high_id` on [`GET /status`](#get-apiv1status), so the value means the same thing on both ends of the API. `server_ip` / `server_port` / `server_name` describe the eD2k server the client connects through, and all three are `null` together when the server is unknown. `kad_port` is non-zero when the client is reachable on Kad, and `null` when the client has no recorded address at all — it is nulled together with `ip` and `port`, the way [`GET /known_clients`](#get-apiv1known_clients) has always nulled the three. `source_origin` is how the client was discovered (values in the enumerated-fields table under [`GET /clients`](#get-apiv1clients)). (`upload_file_name` and `friend` are part of the base field set — see [`GET /clients`](#get-apiv1clients) above.) `parts_offered_count` is the count of parts the client holds of the linked file, or `null` when the client has not reported a part map (see [Unknown values](#unknown-values)); `client_mod_name` is the client's client-mod string (often `null`); `shared_files_browsable` is `true` when the client allows browsing its shared files, and `false` when it forbids it. `credit_ratio` is the upload score modifier the GUI labels "DL/UP modifier" (`GetScoreRatio()`). `part_progress_percent` is the client's completeness of the file we are downloading **from** them (`parts_offered_count` over that file's part count) and is `null` when there is no linked download or the part count is unknown (see [Unknown values](#unknown-values)).
-
-> `credit_ratio` rides an EC tag added for this endpoint, as `friend` does for the list row. A webapi built against a newer core talking to an **older** amuled that doesn't send them degrades gracefully - `credit_ratio` reads `0` and `friend` reads `false`.
+The detail fields mirror the desktop "Client Details" modal. Five of the fields below — `source_origin`, `parts_offered_count`, `client_mod_name`, `shared_files_browsable` and `part_progress_percent` — are **not** detail-only: they are on the [`GET /clients`](#get-apiv1clients) row and the SSE payload too, and are described here because this is where the rest of their neighbours live. `ed2k_user_id` is the client's hybrid eD2k id; `high_id` is `true` for a HighID client (id ≥ `16777216`, i.e. `0x1000000`) and `false` for LowID — the same threshold and the same spelling as `ed2k.high_id` on [`GET /status`](#get-apiv1status), so the value means the same thing on both ends of the API. `server_ip` / `server_port` / `server_name` describe the eD2k server the client connects through, and all three are `null` together when the server is unknown. `kad_port` is non-zero when the client is reachable on Kad, and `null` when the client has no recorded address at all — it is nulled together with `ip` and `port`, the way [`GET /known_clients`](#get-apiv1known_clients) has always nulled the three. `source_origin` is how the client was discovered (values in the enumerated-fields table under [`GET /clients`](#get-apiv1clients)). (`upload_file_name`, `friend` and `credit_ratio` are part of the base field set — see [`GET /clients`](#get-apiv1clients) above.) `parts_offered_count` is the count of parts the client holds of the linked file, or `null` when the client has not reported a part map (see [Unknown values](#unknown-values)); `client_mod_name` is the client's client-mod string (often `null`); `shared_files_browsable` is `true` when the client allows browsing its shared files, and `false` when it forbids it. `part_progress_percent` is the client's completeness of the file we are downloading **from** them (`parts_offered_count` over that file's part count) and is `null` when there is no linked download or the part count is unknown (see [Unknown values](#unknown-values)).
 
 **Errors:** `400 bad_request` (`{ecid}` is not a non-negative integer), `404 not_found` (no client with that ecid in the current snapshot), `405 method_not_allowed` (non-GET), `503 ec_unavailable`.
 
@@ -1465,6 +1466,7 @@ curl -s -H "Authorization: Bearer $TOKEN" \
       "obfuscation_state": "supported",
       "uploaded_bytes_total": 0,
       "downloaded_bytes_total": 0,
+      "credit_ratio": 1.0,
       "last_seen_at": 1786652714,
       "first_seen_at": 1786652714,
       "session_count": 1,
@@ -1485,6 +1487,7 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 | `source_origin` | How the client was first found — `local_server`, `remote_server`, `kad`, `source_exchange`, … |
 | `obfuscation_state` | Protocol-obfuscation state as of the last session. |
 | `uploaded_bytes_total`, `downloaded_bytes_total` | Lifetime bytes, from the credit record. Always present. |
+| `credit_ratio` | The credit modifier the core computes from those totals, the same key and the same value [`GET /clients`](#get-apiv1clients) carries. `null` on a daemon that does not send it. Never re-derive it from the two totals above. |
 | `last_seen_at` | Unix seconds. Always present. For a client that is connected this is *now* — it is being seen — so the connected records are the most recent in the store under `sort=last_seen_at&order=desc`. A client that left during the current tick carries the same timestamp and ties with them; ties keep a stable order across requests. |
 | `first_seen_at`, `session_count` | `null` together, and non-null only for a record the daemon holds metadata for. |
 | `connected` | Whether a connection to this peer is up right now, correlated by `user_hash`. Same key and same quantity as on [`GET /clients`](#get-apiv1clients), so a join by `user_hash` does not meet it under a second name. `null` when the daemon does not report peer connectivity. Not the same as having a row in [`GET /clients`](#get-apiv1clients): the daemon holds a client object from the first contact attempt, including for a peer it never reaches. |
@@ -1494,7 +1497,7 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 The store is read from the daemon **once**, on the first request, and maintained from there: every refresher tick folds the connected clients back in, so later requests never touch EC at all. That is sound rather than a shortcut — a record whose client is not connected cannot change, since credit totals only move during a transfer and `last_seen_at` is written at disconnect. What the maintenance covers:
 
 - a client that connects is added, with `first_seen_at` and `session_count` set to what the daemon recorded when it said hello;
-- a connected client's `connected`, `uploaded_bytes_total` and `downloaded_bytes_total` track the live client state;
+- a connected client's `connected`, `uploaded_bytes_total`, `downloaded_bytes_total` and `credit_ratio` track the live client state;
 - a bare record gains its name, address, software and origin once its client identifies;
 - a connected client's `last_seen_at` is now, and a client that leaves has `connected` cleared with `last_seen_at` stamped at the moment it went.
 
@@ -2103,7 +2106,7 @@ The friends list amuled persists to `emfriends.met`. The daemon ships the whole 
 
 `client_ecid` is the live client this friend is currently linked to, joinable against [`GET /api/v1/clients`](#get-apiv1clients), and `null` when no client object is held for the friend. `connected` is a different question and answers it directly: whether a connection to the peer is up. A friend can have a `client_ecid` and be `false` here, which is the ordinary state for one the daemon is trying, or failing, to reach. `null` means the daemon does not report peer connectivity. `user_hash` is `""` for a friend added by address only; `ip` and `port` are `null` for a zero address, and the `friend_*` events emit the same nulls.
 
-`friend_slot` reads `false` against a daemon predating the tag that carries it, the same way `friend` and `credit_ratio` degrade on `/clients`.
+`friend_slot` reads `false` against a daemon predating the tag that carries it, the same way `friend` does on `/clients`. (`credit_ratio` reads `null` there rather than a value, being a number with no safe default.)
 
 **Errors:** `503 ec_unavailable`.
 

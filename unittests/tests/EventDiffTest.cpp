@@ -532,6 +532,80 @@ TEST(EventDiff, ClientUpdatedFiresOnFriendChange)
 	ASSERT_TRUE(payload.find("\"friend_slot\":false") != std::string::npos);
 }
 
+// credit_ratio rides the same promotion as friend (issue #1474): the peer lists render it, so it
+// has to reach the diff payload, and a comparator that ignored it would leave a subscriber showing
+// the modifier a peer had when it connected. null and a number are different answers -- a daemon
+// that never sent the tag is not a peer whose history earns exactly 1.
+TEST(EventDiff, ClientUpdatedFiresOnCreditRatioChange)
+{
+	CState state;
+	CEventBus bus;
+	LastSeenState prev;
+
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	state.MutateClients([](std::map<std::uint32_t, ClientSnapshot> &cache) {
+		ClientSnapshot c;
+		c.ecid = 12;
+		c.client_name = "peer-credits";
+		c.credit_ratio = 2.5;
+		c.has_credit_ratio = true;
+		cache.emplace(c.ecid, c);
+	});
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	state.MutateClients(
+		[](std::map<std::uint32_t, ClientSnapshot> &cache) { cache.at(12).credit_ratio = 3.25; });
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	const auto drained = DrainAll(bus);
+	int updated = 0;
+	std::string payload;
+	for (const auto &ev : drained) {
+		if (ev.name == "client_updated") {
+			++updated;
+			payload = ev.data;
+		}
+	}
+	ASSERT_EQUALS(1, updated);
+	ASSERT_TRUE(payload.find("\"credit_ratio\":3.25") != std::string::npos);
+}
+
+// The tag going missing is a change in its own right: without has_credit_ratio in the comparator,
+// a peer whose ratio was 1.0 and then stopped being reported keeps rendering 1.0 forever.
+TEST(EventDiff, ClientCreditRatioNullsWhenTheDaemonStopsSendingIt)
+{
+	CState state;
+	CEventBus bus;
+	LastSeenState prev;
+
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	state.MutateClients([](std::map<std::uint32_t, ClientSnapshot> &cache) {
+		ClientSnapshot c;
+		c.ecid = 13;
+		c.client_name = "peer-dropping-tag";
+		c.credit_ratio = 1.0;
+		c.has_credit_ratio = true;
+		cache.emplace(c.ecid, c);
+	});
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	state.MutateClients([](std::map<std::uint32_t, ClientSnapshot> &cache) {
+		cache.at(13).has_credit_ratio = false;
+	});
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	const auto drained = DrainAll(bus);
+	std::string payload;
+	for (const auto &ev : drained) {
+		if (ev.name == "client_updated") {
+			payload = ev.data;
+		}
+	}
+	ASSERT_TRUE(payload.find("\"credit_ratio\":null") != std::string::npos);
+}
+
 // The same contract as the client test above, for the capability bitmasks issue #974 added: a
 // server announcing its flags after the first UDP status reply has to fire exactly one
 // server_updated, and the payload has to carry the decoded object, not just the raw bitmask.

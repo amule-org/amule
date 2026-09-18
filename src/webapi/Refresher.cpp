@@ -1051,6 +1051,7 @@ void MergeClientTag(const CEC_UpDownClient_Tag *c, ClientSnapshot &cs, bool is_n
 	}
 	if (const CECTag *t = c->GetTagByName(EC_TAG_CLIENT_SCORE_RATIO)) {
 		cs.credit_ratio = t->GetDoubleData();
+		cs.has_credit_ratio = true;
 	}
 }
 

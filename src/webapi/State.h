@@ -286,6 +286,9 @@ struct KnownClientSnapshot
 	std::string obfuscation_state;
 	std::uint64_t uploaded_bytes_total = 0;
 	std::uint64_t downloaded_bytes_total = 0;
+	//! Same quantity as the live row, computed by the core rather than re-derived here.
+	double credit_ratio = 0.0;
+	bool has_credit_ratio = false;
 	std::time_t first_seen_at = 0; // 0 when the record carries no metadata
 	std::time_t last_seen_at = 0;
 	std::uint32_t session_count = 0;
@@ -428,9 +431,13 @@ struct ClientSnapshot
 	bool has_next_requested_part = false;
 	bool has_last_downloading_part = false;
 
-	// --- Detail-only fields (issue #423, new EC tags) ----------------
+	// --- Fields from the EC tags issue #423 added. On the list row and the SSE
+	// payload as well as the detail object, so every peer list can render them.
 	bool is_friend = false;    // CUpDownClient::IsFriend(); distinct from friend_slot
 	double credit_ratio = 0.0; // CUpDownClient::GetCreditRatio() ("DL/UP modifier")
+	//! False on a daemon that never sent the tag. The wire then carries null, which is not
+	//! the same answer as a peer whose transfer history earns exactly 1.
+	bool has_credit_ratio = false;
 };
 
 // One per eD2k server in the configured server list. Identity is the EC ECID (stable

@@ -125,6 +125,31 @@ done
 TOTAL=$(_jq '.total')
 echo "        (store holds $TOTAL record(s))"
 
+# --- 1b. credit_ratio comes from the core (issue #1474). ----------
+# The credit modifier rides the credit-store payload now, so a front-end renders
+# it instead of re-deriving the formula from the two totals. Number or null on
+# every row, never absent, and inside the [1,10] the core clamps it to. Read-only,
+# so it is safe here rather than at the end of the file.
+_curl "$API/known_clients?limit=50"
+if [ "$(_jq '.known_clients | length')" -gt 0 ]; then
+	if [ "$(_jq '.known_clients | all(.[]; has("credit_ratio")
+			and ((.credit_ratio | type) == "number" or .credit_ratio == null))')" = "true" ]; then
+		_pass "/known_clients rows carry credit_ratio (number or null)"
+	else
+		_fail "known_clients credit_ratio" \
+			"a record is missing credit_ratio or it is neither number nor null"
+	fi
+	if [ "$(_jq '.known_clients | all(.[]; .credit_ratio == null
+			or (.credit_ratio >= 1 and .credit_ratio <= 10))')" = "true" ]; then
+		_pass "credit_ratio stays inside the core's [1,10] clamp"
+	else
+		_fail "known_clients credit_ratio range" \
+			"a record reports a modifier the core could not have produced"
+	fi
+else
+	_skip "credit_ratio shape check (credit store is empty)"
+fi
+
 # --- 2. Pagination, through the shared helpers. -------------------
 _curl "$API/known_clients?limit=1"
 _assert_status 200 "GET /known_clients?limit=1"

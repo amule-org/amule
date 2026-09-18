@@ -541,6 +541,16 @@ if [ -n "$CLIENT_JSON" ]; then
 	else
 		_fail "client payload friend" "absent or wrong type in: $CLIENT_JSON"
 	fi
+	# credit_ratio moves as the peer's totals move, so a subscriber must see it here
+	# rather than re-GETting the row (issue #1474).
+	if echo "$CLIENT_JSON" | jq -e \
+		'has("credit_ratio")
+		 and ((.credit_ratio|type)=="number" or .credit_ratio==null)' \
+		>/dev/null 2>&1; then
+		_pass "client_added/updated carries credit_ratio (number or null)"
+	else
+		_fail "client payload credit_ratio" "absent or wrong type in: $CLIENT_JSON"
+	fi
 else
 	_pass "no client frame this run (no peer changed; shape asserted when one fires)"
 fi

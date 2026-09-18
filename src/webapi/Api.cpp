@@ -136,6 +136,15 @@ void WriteUIntOrNull(CJsonWriter &w, const char *key, bool known, std::uint64_t 
 		w.ValueNull();
 }
 
+void WriteDoubleOrNull(CJsonWriter &w, const char *key, bool known, double value)
+{
+	w.Key(key);
+	if (known)
+		w.ValueDouble(value);
+	else
+		w.ValueNull();
+}
+
 // Callers pass the predicate rather than letting this guess: `false` and "not
 // measured" are different answers for a firewall verdict.
 void WriteBoolOrNull(CJsonWriter &w, const char *key, bool known, bool value)
@@ -2771,6 +2780,10 @@ void WriteClientBaseFields(CJsonWriter &w, const webapi::ClientSnapshot &c)
 	// `friend` is a keyword. The one place key and member deliberately differ.
 	w.Key("friend");
 	w.ValueBool(c.is_friend);
+	// The credit modifier the core applies, never re-derived from the totals: the desktop
+	// lists and GET /known_clients render this same number. null on a daemon that does not
+	// send it, which is not the same as a peer whose history earns exactly 1.
+	WriteDoubleOrNull(w, "credit_ratio", c.has_credit_ratio, c.credit_ratio);
 	// On the list because the desktop's per-file peer panels render Origin and "Shares
 	// File List" as columns. Anything added here must also reach the SSE payload --
 	// both ToJson AND Equal in EventDiff.cpp; a field in one but not the other never
@@ -2821,6 +2834,10 @@ webapi::KnownClientSnapshot DecodeKnownClient(const CECTag &entry)
 		c.uploaded_bytes_total = t->GetInt();
 	if (const CECTag *t = entry.GetTagByName(EC_TAG_CLIENT_DOWNLOAD_TOTAL))
 		c.downloaded_bytes_total = t->GetInt();
+	if (const CECTag *t = entry.GetTagByName(EC_TAG_CLIENT_SCORE_RATIO)) {
+		c.credit_ratio = t->GetDoubleData();
+		c.has_credit_ratio = true;
+	}
 	if (const CECTag *t = entry.GetTagByName(EC_TAG_CLIENT_LAST_SEEN))
 		c.last_seen_at = static_cast<std::time_t>(t->GetInt());
 	if (const CECTag *t = entry.GetTagByName(EC_TAG_CLIENT_FIRST_SEEN))
@@ -2881,6 +2898,9 @@ void WriteKnownClientObject(CJsonWriter &w, const webapi::KnownClientSnapshot &c
 	w.ValueUInt(static_cast<uint64_t>(c.uploaded_bytes_total));
 	w.Key("downloaded_bytes_total");
 	w.ValueUInt(static_cast<uint64_t>(c.downloaded_bytes_total));
+	// Same key and same source as the live row (R6). A record from a daemon predating the
+	// tag on this payload reads null rather than a number this side worked out.
+	WriteDoubleOrNull(w, "credit_ratio", c.has_credit_ratio, c.credit_ratio);
 	// Bare, not nulled like the two below, because 0 cannot reach here. nLastSeen
 	// predates the clients.met metadata trailer, so it lives in the fixed credit record
 	// every accepted file version carries, is stamped by GetCredit on both branches,
@@ -2923,8 +2943,6 @@ void WriteClientDetailObject(CJsonWriter &w, const webapi::ClientSnapshot &c)
 	// recorded Kad port either, and a raw 0 would spell absence differently from the
 	// fields it is paired with.
 	WriteIntOrNull(w, "kad_port", !c.ip.empty(), static_cast<int64_t>(c.kad_port));
-	w.Key("credit_ratio");
-	w.ValueDouble(c.credit_ratio);
 	w.EndObject();
 }
 

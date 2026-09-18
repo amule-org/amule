@@ -723,6 +723,11 @@ void CState::ReconcileKnownClientsLocked()
 		k.last_seen_at = now;
 		k.uploaded_bytes_total = c.uploaded_bytes_total;
 		k.downloaded_bytes_total = c.downloaded_bytes_total;
+		// Moves with the totals it is computed from. The store's copy was taken when the
+		// history was read, so a transferring peer would otherwise pair growing totals
+		// with the ratio it had when amuleapi started.
+		k.credit_ratio = c.credit_ratio;
+		k.has_credit_ratio = c.has_credit_ratio;
 		// Identity, when the peer in front of us knows more than the record. A record only
 		// gains a name once the core writes its metadata. Guarded on the live name being
 		// known: a peer mid-handshake must not blank a stored one.

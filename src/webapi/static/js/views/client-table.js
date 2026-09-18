@@ -41,6 +41,14 @@ export const bySpeed = (a, b) =>
 
 // Each column carries key + sortVal so the header is clickable-to-sort. Peer
 // status flags ride inside the name cell (see peerFlags), not a column of their own.
+// The core's credit modifier, served by both /clients and /known_clients. Never computed here:
+// the formula lives in CClientCredits and a copy of it in JavaScript went stale the moment the
+// core stopped applying its identity gate to the displayed value.
+const RATIO_COL =
+  { key: "ratio", th: "downloads_peer_col_ratio", num: true, width: "90px", sortable: true,
+    sortVal: (c) => c.credit_ratio ?? 0,
+    cell: (c) => c.credit_ratio == null ? "\u2014" : Number(c.credit_ratio).toFixed(2) };
+
 export const COLS = [
   // Identity block, each field next to the one it qualifies: where the peer is
   // (country, address), who it claims (name, user_hash), what it runs (software, os).
@@ -100,6 +108,7 @@ export const COLS = [
     sortVal: (c) => c.uploaded_bytes_total || 0, cell: (c) => bytesOf(c, "uploaded_bytes_total") },
   { key: "ul_session", th: "downloads_peer_col_uploaded_session", num: true, width: "100px", sortable: true,
     sortVal: (c) => c.uploaded_bytes_session || 0, cell: (c) => bytesOf(c, "uploaded_bytes_session") },
+  RATIO_COL,
   { key: "queue_pos", th: "downloads_peer_col_queue_pos", num: true, width: "90px", sortable: true,
     sortVal: (c) => c.upload_queue_position || 0, cell: (c) => c.upload_queue_position || "—" },
   { key: "score", th: "downloads_peer_col_score", num: true, width: "80px", sortable: true,
@@ -148,23 +157,12 @@ export const COLS = [
 
 // Raw-detail columns no consumer leads with; each adds its own defaultHidden set
 // on top of these.
-export const HIDDEN_EVERYWHERE = ["address", "os", "user_hash", "ident", "origin"];
+export const HIDDEN_EVERYWHERE = ["address", "os", "user_hash", "ident", "origin", "ratio"];
 
 // 1:1 with ClientIdentStateName() in src/webapi/Refresher.cpp.
 export const IDENT_STATES = ["identified", "not_available", "id_needed", "id_failed", "bad_guy", "unknown"];
 export const identLabel = (s) => t("downloads_peer_ident_" + (s || "unknown"));
 export const IDENT_FILTERS = ["all", ...IDENT_STATES].map((v) => [v, t("downloads_peer_ident_" + v)]);
-
-// The credit ratio the desktop shows ("DL/UP modifier"), mirroring the core's
-// CClientCredits::GetScoreRatio (ClientCredits.cpp). Known clients carry the raw
-// credit totals but neither the precomputed ratio nor ident_state, so the
-// identity/crypto special case (→ 1.0 for a bad identity) can't be reproduced.
-function creditRatio(downloaded, uploaded) {
-  if (downloaded < 1000000) return 1;
-  let r = uploaded ? (downloaded * 2) / uploaded : 10;
-  r = Math.min(r, Math.sqrt(downloaded / 1048576 + 2));
-  return Math.min(10, Math.max(1, r));
-}
 
 // Column set for the Known-clients tab (GET /known_clients, the credit store).
 // Reuses the identity cells; swaps live transfer columns for first/last seen,
@@ -208,9 +206,7 @@ export const KNOWN_COLS = [
     sortVal: (c) => c.upload_speed_bytes_per_second || 0, cell: (c) => formatSpeed(c.upload_speed_bytes_per_second) },
   { key: "uploaded", th: "downloads_peer_col_uploaded", num: true, width: "100px", sortable: true,
     sortVal: (c) => c.uploaded_bytes_total || 0, cell: (c) => bytesOf(c, "uploaded_bytes_total") },
-  { key: "ratio", th: "downloads_peer_col_ratio", num: true, width: "90px", sortable: true,
-    sortVal: (c) => creditRatio(c.downloaded_bytes_total || 0, c.uploaded_bytes_total || 0),
-    cell: (c) => creditRatio(c.downloaded_bytes_total || 0, c.uploaded_bytes_total || 0).toFixed(2) },
+  RATIO_COL,
 ];
 
 export const KNOWN_HIDDEN = ["user_hash", "address", "origin"];

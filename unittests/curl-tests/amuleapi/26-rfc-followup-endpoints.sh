@@ -422,6 +422,19 @@ if [ -n "$FIRST_CLIENT" ]; then
 		_fail "clients friend field" \
 			"a /clients object is missing friend/friend_slot or it is not a boolean"
 	fi
+	# credit_ratio moved to the list row with it (issue #1474): the core's modifier,
+	# null when the daemon does not send the tag, never re-derived from the totals.
+	if curl -s "${H_AUTH[@]}" "$API/clients" | jq -e '
+		.clients | all(.[];
+			has("credit_ratio")
+			and ((.credit_ratio | type) == "number" or .credit_ratio == null)
+			and (.credit_ratio == null or (.credit_ratio >= 1 and .credit_ratio <= 10)))' \
+		>/dev/null 2>&1; then
+		_pass "/clients list objects carry credit_ratio (number in [1,10] or null)"
+	else
+		_fail "clients credit_ratio field" \
+			"a /clients object is missing credit_ratio, has the wrong type, or is out of range"
+	fi
 else
 	_skip "/clients friend-field check (no peers connected)"
 fi
