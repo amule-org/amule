@@ -132,6 +132,8 @@ size_t CClientHistoryListCtrl::AppendLiveRow(const CMD4Hash &hash, const LiveCli
 	row.hash = hash;
 	row.uploaded = live.uploaded;
 	row.downloaded = live.downloaded;
+	row.creditRatio = live.creditRatio;
+	row.hasCreditRatio = true;
 	row.upSpeed = live.upSpeed;
 	row.downSpeed = live.downSpeed;
 	row.name = live.name;
@@ -190,10 +192,15 @@ void CClientHistoryListCtrl::ReconcileLive(const std::unordered_map<CMD4Hash, Li
 
 		bool changed = !row.online || row.uploaded != entry.second.uploaded ||
 			       row.downloaded != entry.second.downloaded ||
+			       row.creditRatio != entry.second.creditRatio ||
 			       row.upSpeed != entry.second.upSpeed || row.downSpeed != entry.second.downSpeed;
 		row.online = true;
 		row.uploaded = entry.second.uploaded;
 		row.downloaded = entry.second.downloaded;
+		// Moves with the totals: the store's copy was computed when the tab loaded, and a
+		// transferring peer would otherwise show growing totals beside a frozen ratio.
+		row.creditRatio = entry.second.creditRatio;
+		row.hasCreditRatio = true;
 		row.upSpeed = entry.second.upSpeed;
 		row.downSpeed = entry.second.downSpeed;
 
@@ -422,13 +429,12 @@ wxString CClientHistoryListCtrl::GetItemColumnText(wxUIntPtr item, unsigned colu
 		return CastItoXBytes(row->downloaded);
 
 	case COLUMN_HISTORY_RATIO:
-		// Blank unless both directions moved -- see the same reasoning in
-		// CClientsListCtrl.
-		if (row->uploaded == 0 || row->downloaded == 0) {
+		// The core's credit modifier, not a ratio computed here: one definition, shared
+		// with the live list and the API. Blank only when the daemon never sent one.
+		if (!row->hasCreditRatio) {
 			return wxEmptyString;
 		}
-		return CFormat(wxT("%.2f")) %
-		       (static_cast<double>(row->downloaded) / static_cast<double>(row->uploaded));
+		return CFormat(wxT("%.2f")) % row->creditRatio;
 
 	default:
 		return wxEmptyString;
@@ -465,6 +471,11 @@ int CClientHistoryListCtrl::CompareItemData(
 		return modifier * CmpAny(r1->uploaded, r2->uploaded);
 	case COLUMN_HISTORY_TOTAL_DOWN:
 		return modifier * CmpAny(r1->downloaded, r2->downloaded);
+	// Numerically, not as the rendered text the default arm compares: "10.00" sorts below
+	// "9.50" as a string. The column was blank on most rows before it carried the core's
+	// value, which is why nobody had hit it.
+	case COLUMN_HISTORY_RATIO:
+		return modifier * CmpAny(r1->creditRatio, r2->creditRatio);
 	default:
 		return modifier *
 		       GetItemColumnText(data1, column).CmpNoCase(GetItemColumnText(data2, column));

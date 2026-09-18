@@ -482,10 +482,11 @@ CEC_UpDownClient_Tag::CEC_UpDownClient_Tag(
 		return;
 	}
 	// Friend status + DL/UP modifier (issue #423). IsFriend() is the friends-list membership,
-	// distinct from the FRIEND_SLOT reserved upload slot above; GetScoreRatio() is the GUI
-	// "DL/UP modifier".
+	// distinct from the FRIEND_SLOT reserved upload slot above; GetCreditRatio() is the GUI
+	// "DL/UP modifier" -- the ungated value, the same one the credit store sends for a peer
+	// that is not connected, so a row reads the same online and offline.
 	AddDiffTag(this, EC_TAG_CLIENT_IS_FRIEND, client->IsFriend(), valuemap);
-	AddDiffTag(this, EC_TAG_CLIENT_SCORE_RATIO, (double)client->GetScoreRatio(), valuemap);
+	AddDiffTag(this, EC_TAG_CLIENT_SCORE_RATIO, (double)client->GetCreditRatio(), valuemap);
 	AddDiffTag(this, EC_TAG_CLIENT_DISABLE_VIEW_SHARED, client->HasDisabledSharedFiles(), valuemap);
 	AddDiffTag(this, EC_TAG_CLIENT_VERSION, client->GetVersion(), valuemap);
 	AddDiffTag(this, EC_TAG_CLIENT_MOD_VERSION, client->GetClientModString(), valuemap);

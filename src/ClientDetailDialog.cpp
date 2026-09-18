@@ -66,7 +66,7 @@ ClientDetailInfo ClientDetailInfoFromClient(const CClientRef &client)
 	info.transferredUp = c.GetTransferredUp();
 	info.kBpsDown = c.GetKBpsDown();
 	info.uploadDatarate = c.GetUploadDatarate();
-	info.scoreRatio = c.GetScoreRatio();
+	info.creditRatio = c.GetCreditRatio();
 	info.secureIdentStatus = c.GetSecureIdentTextStatus();
 	info.uploadState = c.GetUploadState();
 	info.queueRank = c.GetUploadQueueWaitingPosition();
@@ -231,7 +231,7 @@ bool CClientDetailDialog::OnInitDialog()
 
 	// DL/UP Modifier
 	CastChild(ID_DRATIO, wxStaticText)
-		->SetLabel(m_info.hasSession ? wxString(CFormat("%.1f") % m_info.scoreRatio) : kNoValue);
+		->SetLabel(m_info.hasSession ? wxString(CFormat("%.1f") % m_info.creditRatio) : kNoValue);
 
 	// Secure Ident
 	CastChild(IDC_CDIDENT, wxStaticText)

@@ -61,7 +61,7 @@ ClientNameCell MakeClientNameCell(const CUpDownClient *client, bool a4af)
 	cell.identified = client->IsIdentified();
 	cell.badGuy = client->IsBadGuy();
 	cell.extProtocol = client->ExtProtocolAvailable();
-	cell.highCredits = client->GetScoreRatio() > 1;
+	cell.highCredits = client->GetCreditRatio() > 1;
 
 #ifdef GEOIP_GUI
 	// GetDisplayCountryCode() holds the shared gate (see CountryDisplay.h) so

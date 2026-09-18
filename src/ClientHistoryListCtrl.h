@@ -67,6 +67,10 @@ struct ClientHistoryRow
 	wxString version;
 	uint64 uploaded = 0;
 	uint64 downloaded = 0;
+	//! Credit modifier from the core, never re-derived here. A daemon too old to send it
+	//! leaves hasCreditRatio false and the column blank, like every other optional field.
+	double creditRatio = 0.0;
+	bool hasCreditRatio = false;
 	uint32 lastSeen = 0;
 	uint32 firstSeen = 0;
 	uint32 sessions = 0;
@@ -124,6 +128,7 @@ public:
 	{
 		uint64 uploaded = 0;
 		uint64 downloaded = 0;
+		double creditRatio = 0.0;
 		uint32 upSpeed = 0;
 		double downSpeed = 0.0;
 		ClientNameCell nameCell;

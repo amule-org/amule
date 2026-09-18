@@ -2728,6 +2728,11 @@ double CUpDownClient::GetScoreRatio() const
 		CNetworkAddress::FromIPv4NetworkOrderOrAbsent(GetIP()), theApp->CryptoAvailable());
 }
 
+double CUpDownClient::GetCreditRatio() const
+{
+	return credits->GetCreditRatio();
+}
+
 /* End Warning */
 
 CUpDownClient::~CUpDownClient()

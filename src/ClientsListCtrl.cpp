@@ -264,11 +264,14 @@ wxString CClientsListCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) co
 		return CastItoXBytes(row->totalDown);
 
 	case COLUMN_CLIENTS_RATIO:
-		if (row->totalUp == 0 || row->totalDown == 0) {
+		// The core's credit modifier (CClientCredits::GetCreditRatio), not a ratio worked
+		// out here: the Known tab and the API render the same number from the same source.
+		// A peer with no credit record yet reads 0, which is not a modifier the core can
+		// apply, so the cell stays blank.
+		if (row->creditRatio <= 0.0) {
 			return wxEmptyString;
 		}
-		return CFormat(wxT("%.2f")) %
-		       (static_cast<double>(row->totalDown) / static_cast<double>(row->totalUp));
+		return CFormat(wxT("%.2f")) % row->creditRatio;
 
 	default:
 		return wxEmptyString;
@@ -316,6 +319,10 @@ int CClientsListCtrl::CompareItemData(
 		return modifier * CmpAny(r1->totalUp, r2->totalUp);
 	case COLUMN_CLIENTS_TOTAL_DOWN:
 		return modifier * CmpAny(r1->totalDown, r2->totalDown);
+	// Numerically: the default arm compares the rendered text, where "10.00" sorts below
+	// "9.50". Same fix as the Known tab's Ratio column.
+	case COLUMN_CLIENTS_RATIO:
+		return modifier * CmpAny(r1->creditRatio, r2->creditRatio);
 	default:
 		return modifier *
 		       GetItemColumnText(data1, column).CmpNoCase(GetItemColumnText(data2, column));

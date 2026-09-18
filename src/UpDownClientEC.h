@@ -110,6 +110,9 @@ public:
 	CPartFile *GetRequestFile() const { return m_reqfile; }
 	uint32 GetScore() const { return m_score; }
 	double GetScoreRatio() const;
+
+	//! The credit modifier to show the user: no identity gate, unlike GetScoreRatio.
+	double GetCreditRatio() const;
 	uint32 GetServerIP() const { return m_dwServerIP; }
 	const wxString GetServerName() const { return m_ServerName; }
 	uint16 GetServerPort() const { return m_nServerPort; }

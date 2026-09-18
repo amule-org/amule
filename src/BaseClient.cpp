@@ -3025,6 +3025,11 @@ double CUpDownClient::GetScoreRatio() const
 	return credits ? credits->GetScoreRatio(GetUserAddress(), theApp->CryptoAvailable()) : 0;
 }
 
+double CUpDownClient::GetCreditRatio() const
+{
+	return credits ? credits->GetCreditRatio() : 0;
+}
+
 const wxString CUpDownClient::GetServerName() const
 {
 	wxString ret;

@@ -111,7 +111,7 @@ uint64 CClientCredits::GetDownloadedTotal() const
 	return m_pCredits->downloaded;
 }
 
-float CClientCredits::GetScoreRatio(const CNetworkAddress &address, bool cryptoavail)
+float CClientCredits::GetScoreRatio(const CNetworkAddress &address, bool cryptoavail) const
 {
 	// check the client ident status
 	switch (GetCurrentIdentState(address)) {
@@ -128,6 +128,17 @@ float CClientCredits::GetScoreRatio(const CNetworkAddress &address, bool cryptoa
 		break;
 	}
 
+	return GetCreditRatio();
+}
+
+// The credit modifier without the identity gate above: what the peer's transfer history alone
+// earns it. This is the display value, shown by every peer list and by the API. Scoring calls
+// GetScoreRatio, which gates it -- a peer that has not proved itself is worth 1.0 to the queue,
+// but saying so in a Ratio column would only repeat what the Ident column already shows, and it
+// would swing to 1.0 for the second or two a reconnecting peer spends in IS_IDNEEDED. It also
+// has no identity to check in the credit store, where the record outlives every connection.
+float CClientCredits::GetCreditRatio() const
+{
 	if (GetDownloadedTotal() < 1000000) {
 		return 1.0f;
 	}

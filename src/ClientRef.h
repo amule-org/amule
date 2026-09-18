@@ -141,6 +141,7 @@ public:
 	CPartFile *GetRequestFile() const;
 	uint32 GetScore() const;
 	double GetScoreRatio() const;
+	double GetCreditRatio() const;
 	uint32 GetServerIP() const;
 	const wxString GetServerName() const;
 	uint16 GetServerPort() const;

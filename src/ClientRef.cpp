@@ -129,6 +129,7 @@ uint16 WRAPC(GetOldRemoteQueueRank) const BitVector &WRAPC(GetPartStatus) uint16
 CPartFile *WRAPC(GetRequestFile)
 uint32 WRAPC(GetScore)
 double WRAPC(GetScoreRatio)
+double WRAPC(GetCreditRatio)
 uint32 WRAPC(GetServerIP) const wxString WRAPC(GetServerName)
 uint16 WRAPC(GetServerPort) const wxString &WRAPC(GetSoftStr) const wxString &WRAPC(GetSoftVerStr) int WRAPC(
 	GetSourceFrom)

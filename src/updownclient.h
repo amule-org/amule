@@ -658,6 +658,9 @@ public:
 
 	double GetScoreRatio() const;
 
+	//! The credit modifier to show the user: no identity gate, unlike GetScoreRatio.
+	double GetCreditRatio() const;
+
 	bool SupportsLargeFiles() const { return m_fSupportsLargeFiles; }
 
 	EIdentState GetCurrentIdentState() const

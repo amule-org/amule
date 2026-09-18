@@ -73,7 +73,7 @@ struct ClientDetailInfo
 	uint64 transferredUp = 0;
 	float kBpsDown = 0.0f;
 	uint32 uploadDatarate = 0;
-	double scoreRatio = 0.0;
+	double creditRatio = 0.0;
 	wxString secureIdentStatus;
 	uint8 uploadState = 0;
 	uint16 queueRank = 0;

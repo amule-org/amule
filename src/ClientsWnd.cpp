@@ -202,6 +202,8 @@ void CClientsWnd::LoadHistory()
 		row.hash = data->key;
 		row.uploaded = cur->GetUploadedTotal();
 		row.downloaded = cur->GetDownloadedTotal();
+		row.creditRatio = cur->GetCreditRatio();
+		row.hasCreditRatio = true;
 		row.lastSeen = data->nLastSeen;
 		if (cur->HasMeta()) {
 			const ClientMetaStruct &meta = cur->GetMeta();
@@ -267,6 +269,12 @@ void CClientsWnd::CHistoryHandler::HandlePacket(const CECPacket *packet)
 		}
 		if (const CECTag *t = tag->GetTagByName(EC_TAG_CLIENT_DOWNLOAD_TOTAL)) {
 			row.downloaded = t->GetInt();
+		}
+		// Absent from a daemon predating the tag on this payload; the column stays blank
+		// there rather than showing a number this side worked out for itself.
+		if (const CECTag *t = tag->GetTagByName(EC_TAG_CLIENT_SCORE_RATIO)) {
+			row.creditRatio = t->GetDoubleData();
+			row.hasCreditRatio = true;
 		}
 		if (const CECTag *t = tag->GetTagByName(EC_TAG_CLIENT_LAST_SEEN)) {
 			row.lastSeen = t->GetInt();
@@ -362,6 +370,7 @@ void CClientsWnd::UpdateAll()
 			CClientHistoryListCtrl::LiveClient entry;
 			entry.uploaded = c->GetUploadedTotal();
 			entry.downloaded = c->GetDownloadedTotal();
+			entry.creditRatio = c->GetCreditRatio();
 			entry.upSpeed = c->GetUploadDatarate();
 			entry.downSpeed = c->GetKBpsDown();
 			entry.name = c->GetUserName();
@@ -401,6 +410,7 @@ void CClientsWnd::UpdateAll()
 		row.sessionDown = c->GetTransferredDown();
 		row.totalUp = c->GetUploadedTotal();
 		row.totalDown = c->GetDownloadedTotal();
+		row.creditRatio = c->GetCreditRatio();
 
 		// The Files column names one file, not a list, because which file it is
 		// follows from which pane the row is in.

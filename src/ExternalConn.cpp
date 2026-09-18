@@ -1766,6 +1766,9 @@ static CECPacket *Get_EC_Response_ClientHistory()
 		CECTag entry(EC_TAG_CLIENT, data->key);
 		entry.AddTag(CECTag(EC_TAG_CLIENT_UPLOAD_TOTAL, cur->GetUploadedTotal()));
 		entry.AddTag(CECTag(EC_TAG_CLIENT_DOWNLOAD_TOTAL, cur->GetDownloadedTotal()));
+		// The same tag the live client payload carries, computed from the same totals, so a
+		// history row does not have to re-derive the formula to fill its Ratio column.
+		entry.AddTag(CECTag(EC_TAG_CLIENT_SCORE_RATIO, (double)cur->GetCreditRatio()));
 		entry.AddTag(CECTag(EC_TAG_CLIENT_LAST_SEEN, data->nLastSeen));
 
 		if (cur->HasMeta()) {

@@ -109,6 +109,8 @@ public:
 		uint64 sessionDown = 0;
 		uint64 totalUp = 0;
 		uint64 totalDown = 0;
+		//! Credit modifier from the core, the same value the Known tab and the API show.
+		double creditRatio = 0.0;
 
 		/**
 		 * Whole-row comparison, so a caller asking "did this row change" cannot test a
@@ -123,7 +125,8 @@ public:
 			       port == other.port && sourceFrom == other.sourceFrom && files == other.files &&
 			       upSpeed == other.upSpeed && downSpeed == other.downSpeed &&
 			       sessionUp == other.sessionUp && sessionDown == other.sessionDown &&
-			       totalUp == other.totalUp && totalDown == other.totalDown;
+			       totalUp == other.totalUp && totalDown == other.totalDown &&
+			       creditRatio == other.creditRatio;
 		}
 		bool operator!=(const Row &other) const { return !(*this == other); }
 	};

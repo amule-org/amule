@@ -118,7 +118,11 @@ public:
 	void AddUploaded(uint32 bytes, const CNetworkAddress &address, bool cryptoavail);
 	uint64 GetUploadedTotal() const;
 	uint64 GetDownloadedTotal() const;
-	float GetScoreRatio(const CNetworkAddress &address, bool cryptoavail);
+	//! The queue-scoring value: GetCreditRatio(), forced to 1.0 for a peer that fails
+	//! secure identification. Callers that only display the number want GetCreditRatio().
+	float GetScoreRatio(const CNetworkAddress &address, bool cryptoavail) const;
+	//! The credit modifier earned by transfer history alone, with no identity gate.
+	float GetCreditRatio() const;
 	void SetLastSeen();
 	bool SetSecureIdent(const uint8_t *pachIdent,
 		uint8 nIdentLen); // Public key cannot change, use only if there is not public key yet

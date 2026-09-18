@@ -430,7 +430,7 @@ struct ClientSnapshot
 
 	// --- Detail-only fields (issue #423, new EC tags) ----------------
 	bool is_friend = false;    // CUpDownClient::IsFriend(); distinct from friend_slot
-	double credit_ratio = 0.0; // CUpDownClient::GetScoreRatio() ("DL/UP modifier")
+	double credit_ratio = 0.0; // CUpDownClient::GetCreditRatio() ("DL/UP modifier")
 };
 
 // One per eD2k server in the configured server list. Identity is the EC ECID (stable

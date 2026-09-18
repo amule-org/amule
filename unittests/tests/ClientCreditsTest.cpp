@@ -113,3 +113,53 @@ TEST(ClientCredits, IPv4CreditsKeepMappedScoreEquivalence)
 	ASSERT_EQUALS(uint64(1000000), credits.GetUploadedTotal());
 	ASSERT_EQUALS(credits.GetScoreRatio(plain, true), credits.GetScoreRatio(MappedIPv4(), true));
 }
+
+// The identity gate belongs to scoring, not to the number the lists show (issue #1474). A record
+// with a public key it has not answered for sits in IS_IDNEeded, which used to force every display
+// surface to 1.0 -- including the credit store, where there is no live peer to challenge.
+TEST(ClientCredits, CreditRatioIgnoresTheIdentityGateThatScoringApplies)
+{
+	const auto peer = CNetworkAddress::FromIPv4NetworkOrder(0x010200c0);
+	CClientCredits credits(SecureRecord());
+	// 100 MB down, nothing back: the volume formula's upper region, far from 1.0. Recorded with
+	// cryptoavail false because AddDownloaded applies the same gate and would drop the bytes.
+	credits.AddDownloaded(100000000, peer, false);
+
+	// Unverified secure-ident record + crypto available = the scoring gate fires.
+	ASSERT_EQUALS(1.0f, credits.GetScoreRatio(peer, true));
+	ASSERT_TRUE(credits.GetCreditRatio() > 1.0f);
+	// Without crypto the gate cannot fire, so scoring already agreed with the display value.
+	ASSERT_EQUALS(credits.GetCreditRatio(), credits.GetScoreRatio(peer, false));
+
+	// Once the peer has answered for its key, both agree.
+	credits.Verified(peer);
+	ASSERT_EQUALS(credits.GetCreditRatio(), credits.GetScoreRatio(peer, true));
+}
+
+// The formula itself, at the three edges the column renders. Guards the split: GetCreditRatio has
+// to keep computing what GetScoreRatio used to compute inline.
+TEST(ClientCredits, CreditRatioClampsAtBothEnds)
+{
+	const auto peer = CNetworkAddress::FromIPv4NetworkOrder(0x010200c0);
+
+	// Under 1 MB downloaded there is not enough history to earn a modifier.
+	CClientCredits small(SecureRecord());
+	small.AddDownloaded(999999, peer, false);
+	ASSERT_EQUALS(1.0f, small.GetCreditRatio());
+
+	// Nothing uploaded: the sqrt term is the cap, not the flat 10.
+	CClientCredits leech(SecureRecord());
+	leech.AddDownloaded(10485760, peer, false); // 10 MiB -> sqrt(12) ~ 3.46
+	ASSERT_TRUE(leech.GetCreditRatio() > 3.4f && leech.GetCreditRatio() < 3.5f);
+
+	// Enough volume that both terms clear 10.
+	CClientCredits heavy(SecureRecord());
+	heavy.AddDownloaded(4000000000u, peer, false);
+	ASSERT_EQUALS(10.0f, heavy.GetCreditRatio());
+
+	// Uploaded more than downloaded: the ratio floors at 1.0 rather than going below.
+	CClientCredits seeder(SecureRecord());
+	seeder.AddDownloaded(2000000, peer, false);
+	seeder.AddUploaded(100000000, peer, false);
+	ASSERT_EQUALS(1.0f, seeder.GetCreditRatio());
+}
