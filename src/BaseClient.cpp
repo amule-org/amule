@@ -1843,10 +1843,17 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 				    ShouldReceiveCryptUDPPackets(),
 				    HasValidHash() ? GetUserHash().GetHash() : nullptr,
 				    transport)) {
-				// uTP already provides its own cryptographic envelope. Do not
-				// negotiate eD2k stream obfuscation inside uTP datagrams.
-				m_socket->SetConnectionEncryption(false, nullptr, false);
+				// Attached first: the socket refuses stream obfuscation once
+				// it is carried by a transport that obfuscates its own frames.
 				m_socket->AttachTransport(std::move(transport));
+				if (HasValidHash() && SupportsCryptLayer() &&
+					thePrefs::IsClientCryptLayerSupported() &&
+					(RequestsCryptLayer() || thePrefs::IsClientCryptLayerRequested())) {
+					m_socket->SetConnectionEncryption(
+						true, GetUserHash().GetHash(), false);
+				} else {
+					m_socket->SetConnectionEncryption(false, nullptr, false);
+				}
 				return EContactResult::Contacting;
 			}
 		}

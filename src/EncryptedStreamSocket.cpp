@@ -225,6 +225,13 @@ void CEncryptedStreamSocket::SetConnectionEncryption(
 		return;
 	}
 
+	if (bEnabled && TransportObfuscates()) {
+		// A second handshake inside frames the transport already obfuscates
+		// would encrypt the stream twice, and eMuleAI skips it on uTP too.
+		m_StreamCryptState = ECS_NONE;
+		return;
+	}
+
 	if (bEnabled && pTargetClientHash != NULL && !bServerConnection) {
 		m_StreamCryptState = ECS_PENDING;
 		// create obfuscation keys, see on top for key format
@@ -389,6 +396,11 @@ void CEncryptedStreamSocket::OnSend(int)
 {
 	// if the socket just connected and this is outgoing, we might want to start the handshake here
 	if (m_StreamCryptState == ECS_PENDING || m_StreamCryptState == ECS_PENDING_SERVER) {
+		if (TransportObfuscates()) {
+			// Attached after the state was set, so the refusal above was missed.
+			m_StreamCryptState = ECS_NONE;
+			return;
+		}
 		StartNegotiation(true);
 		return;
 	}

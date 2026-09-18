@@ -116,6 +116,8 @@ protected:
 
 	void CryptPrepareSendData(uint8_t *pBuffer, uint32_t nLen);
 	bool IsEncryptionLayerReady();
+	//! True when the transport below obfuscates the stream already.
+	bool TransportObfuscates() const { return HasTransport(); }
 	uint8_t GetSemiRandomNotProtocolMarker() const;
 
 	uint32_t m_nObfusicationBytesReceived;
