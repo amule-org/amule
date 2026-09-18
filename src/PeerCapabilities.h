@@ -216,17 +216,17 @@ private:
 /**
  * The CT_MOD_MISCOPTIONS word aMule puts in its own handshake.
  *
- * Zero, and deliberately so: none of the five features exists in this tree yet. Recognising a
- * capability and implementing it are separate changes, and advertising one aMule does not have is
- * worse than advertising nothing -- the peer opens a handshake that cannot complete and neither
- * side logs a reason. Each bit turns on in the change that ships its transport.
- *
- * Because the word is zero, no CT_MOD_MISCOPTIONS tag is emitted at all: an absent tag and an all-
- * zero one mean the same thing to eMuleAI, and the absent one costs no bytes.
+ * The legacy uTP transport is advertised only when that build is enabled. Keeping this tied to
+ * the compile-time transport flag prevents a client from claiming a capability that its runtime
+ * cannot serve.
  */
 constexpr uint32_t LocalAdvertisedModMiscOptions()
 {
+#ifdef AMULE_UTP_TRANSPORT
+	return MOD_MISCOPT_NAT_TRAVERSAL;
+#else
 	return 0;
+#endif
 }
 
 /**

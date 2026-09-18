@@ -297,8 +297,8 @@ private:
 			transport->OnEnded(EUtpTransportFailure::Destroying);
 			break;
 		case UTP_STATE_CONNECT:
-			// Transport state only. Dial installs no application event sink;
-			// client connection-completion plumbing remains a separate task.
+			// The transport notifies its attached socket after the state transition;
+			// outbound and inbound streams use the same connection-completion path.
 			transport->MarkConnected();
 			break;
 		default:

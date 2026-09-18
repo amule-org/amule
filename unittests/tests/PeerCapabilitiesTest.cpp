@@ -151,13 +151,13 @@ TEST(PeerCapabilities, ReservedBitsAreMaskedOff)
 	ASSERT_EQUALS(MOD_MISCOPT_KNOWN_MASK, caps.KnownBits());
 }
 
-// The whole point of the change: aMule reads these capabilities but implements none of them, so it
-// must advertise none of them. This assertion is expected to change exactly once per shipped
-// feature -- and a change to it not accompanied by a shipped transport is the bug the spec warns
-// about.
-TEST(PeerCapabilities, AdvertisesNoUnimplementedCapability)
+TEST(PeerCapabilities, AdvertisesOnlyImplementedCapability)
 {
+#ifdef AMULE_UTP_TRANSPORT
+	ASSERT_EQUALS(MOD_MISCOPT_NAT_TRAVERSAL, LocalAdvertisedModMiscOptions());
+#else
 	ASSERT_EQUALS(0x00000000u, LocalAdvertisedModMiscOptions());
+#endif
 }
 
 // Setters exist for the advertise side; they must land on the same bits the
