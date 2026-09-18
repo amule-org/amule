@@ -1843,9 +1843,11 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 				    ShouldReceiveCryptUDPPackets(),
 				    HasValidHash() ? GetUserHash().GetHash() : nullptr,
 				    transport)) {
-				if (HasValidHash() && SupportsCryptLayer() && thePrefs::IsClientCryptLayerSupported() &&
+				if (HasValidHash() && SupportsCryptLayer() &&
+					thePrefs::IsClientCryptLayerSupported() &&
 					(RequestsCryptLayer() || thePrefs::IsClientCryptLayerRequested())) {
-					m_socket->SetConnectionEncryption(true, GetUserHash().GetHash(), false);
+					m_socket->SetConnectionEncryption(
+						true, GetUserHash().GetHash(), false);
 				} else {
 					m_socket->SetConnectionEncryption(false, nullptr, false);
 				}
