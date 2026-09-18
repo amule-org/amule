@@ -1829,14 +1829,28 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 #ifdef AMULE_UTP_TRANSPORT
 		IUtpContext *utp = theApp->clientudp->GetUtpContext();
 		// Only a port learned from this peer is a remote endpoint. Our own
-		// UDP port says nothing about where an unknown peer listens.
-		const uint16_t utpPort = GetKadPort();
+		// UDP port says nothing about where an unknown peer listens. The Kad
+		// half is preferred because it carries the verified external port when
+		// the peer has one, and both halves name the same UDP socket.
+		const uint16_t utpPort = GetKadPort() != 0 ? GetKadPort() : GetUDPPort();
+		// An armed context is not a sendable one: CMuleUDPSocket::SendTo()
+		// reports success on a closed socket, so the SYN would vanish and the
+		// TCP fallback below would be skipped.
+		const bool canSend = utp != nullptr && utp->IsAvailable() && theApp->clientudp->Ok();
+		// Refuse rather than downgrade: the stream handshake never runs over a
+		// transport, so uTP without frame obfuscation would send in the clear
+		// what TCP would have obfuscated. The two predicates differ, because
+		// the frame one also demands a known public IP.
+		const bool obfuscationSatisfied = !WantsStreamObfuscation() || ShouldReceiveCryptUDPPackets();
 		const SUtpDialFacts facts{ m_modCapabilities.SupportsNatTraversal(),
-			utp != nullptr && utp->IsAvailable(),
+			canSend,
 			true,
 			thePrefs::GetProxyData()->m_proxyEnable,
-			utpPort != 0 && IsGoodIP(GetConnectIP(), thePrefs::FilterLanIPs()) };
-		if (DecideUtpDial(facts) == EUtpDialDecision::TryUtp) {
+			utpPort != 0 && IsGoodIP(GetConnectIP(), thePrefs::FilterLanIPs()),
+			obfuscationSatisfied };
+		// Connect() is a no-op on a live socket. Without the same guard the
+		// uTP path would attach a transport over a connection already in use.
+		if (!m_socket->IsOk() && DecideUtpDial(facts) == EUtpDialDecision::TryUtp) {
 			std::unique_ptr<IStreamTransport> transport;
 			if (utp->Dial(GetConnectIP(),
 				    utpPort,
@@ -1846,9 +1860,7 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 				// Attached first: the socket refuses stream obfuscation once
 				// it is carried by a transport that obfuscates its own frames.
 				m_socket->AttachTransport(std::move(transport));
-				if (HasValidHash() && SupportsCryptLayer() &&
-					thePrefs::IsClientCryptLayerSupported() &&
-					(RequestsCryptLayer() || thePrefs::IsClientCryptLayerRequested())) {
+				if (WantsStreamObfuscation()) {
 					m_socket->SetConnectionEncryption(
 						true, GetUserHash().GetHash(), false);
 				} else {
@@ -1873,8 +1885,7 @@ bool CUpDownClient::Connect()
 
 	if (!m_socket->IsOk()) {
 		// Enable or disable crypting based on our and the remote clients preference
-		if (HasValidHash() && SupportsCryptLayer() && thePrefs::IsClientCryptLayerSupported() &&
-			(RequestsCryptLayer() || thePrefs::IsClientCryptLayerRequested())) {
+		if (WantsStreamObfuscation()) {
 			m_socket->SetConnectionEncryption(true, GetUserHash().GetHash(), false);
 		} else {
 			m_socket->SetConnectionEncryption(false, NULL, false);
@@ -3026,6 +3037,12 @@ const wxString CUpDownClient::GetServerName() const
 	}
 
 	return ret;
+}
+
+bool CUpDownClient::WantsStreamObfuscation() const
+{
+	return HasValidHash() && SupportsCryptLayer() && thePrefs::IsClientCryptLayerSupported() &&
+	       (RequestsCryptLayer() || thePrefs::IsClientCryptLayerRequested());
 }
 
 bool CUpDownClient::ShouldReceiveCryptUDPPackets() const

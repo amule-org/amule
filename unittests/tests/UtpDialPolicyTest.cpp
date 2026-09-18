@@ -31,20 +31,33 @@ DECLARE_SIMPLE(UtpDialPolicy)
 
 TEST(UtpDialPolicy, DecisionMatrix)
 {
-	for (unsigned bits = 0; bits < 32; ++bits) {
+	// The one accepting combination: every fact set except the proxy.
+	for (unsigned bits = 0; bits < 64; ++bits) {
 		const SUtpDialFacts facts{ (bits % 2) != 0,
 			((bits / 2) % 2) != 0,
 			((bits / 4) % 2) != 0,
 			((bits / 8) % 2) != 0,
-			((bits / 16) % 2) != 0 };
-		ASSERT_EQUALS(bits == 23, DecideUtpDial(facts) == EUtpDialDecision::TryUtp);
+			((bits / 16) % 2) != 0,
+			((bits / 32) % 2) != 0 };
+		ASSERT_EQUALS(bits == 55, DecideUtpDial(facts) == EUtpDialDecision::TryUtp);
 	}
 }
 
 TEST(UtpDialPolicy, EndpointRoutability)
 {
-	SUtpDialFacts facts{ true, true, true, false, true };
+	SUtpDialFacts facts{ true, true, true, false, true, true };
 	ASSERT_TRUE(DecideUtpDial(facts) == EUtpDialDecision::TryUtp);
 	facts.routableEndpoint = false;
+	ASSERT_TRUE(DecideUtpDial(facts) == EUtpDialDecision::PreserveLegacy);
+}
+
+// A peer owed obfuscation is kept on TCP rather than dialled in the clear: the
+// stream handshake does not run over a transport, so the frames are the only
+// thing that could carry it.
+TEST(UtpDialPolicy, ObfuscationOwedButUnavailableStaysOnTcp)
+{
+	SUtpDialFacts facts{ true, true, true, false, true, true };
+	ASSERT_TRUE(DecideUtpDial(facts) == EUtpDialDecision::TryUtp);
+	facts.obfuscationSatisfied = false;
 	ASSERT_TRUE(DecideUtpDial(facts) == EUtpDialDecision::PreserveLegacy);
 }

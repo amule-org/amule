@@ -689,6 +689,8 @@ public:
 		bool encryption = true,
 		bool callback = true); // shortcut, sets crypt, callback, etc from the tagvalue we receive
 	bool ShouldReceiveCryptUDPPackets() const;
+	//! Whether an ed2k stream to this peer should carry obfuscation.
+	bool WantsStreamObfuscation() const;
 
 	bool HasDisabledSharedFiles() const { return m_fNoViewSharedFiles; }
 

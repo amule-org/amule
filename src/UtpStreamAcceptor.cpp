@@ -32,7 +32,6 @@
 #include "ServerConnect.h"
 #include "Statistics.h"
 #include "StreamTransport.h"
-#include "UtpSocketTransport.h"
 #include "amule.h"
 
 #ifdef AMULE_UTP_TRANSPORT
@@ -70,9 +69,8 @@ bool CUtpStreamAcceptor::AcceptStream(
 	}
 
 	auto *socket = new CClientTCPSocket();
-	// Before ownership moves, or an early callback has nowhere to deliver.
-	auto *utp = static_cast<CUtpSocketTransport *>(transport.get());
-	utp->SetEvents(socket);
+	// AttachTransport() installs the event sink before it takes ownership, so
+	// an early callback always has somewhere to deliver.
 	socket->AttachTransport(std::move(transport));
 	// Records m_remoteip; its checks were made above. Refusal still has to delete
 	// the socket, as CListenSocket::OnAccept does, or it stays with no address.

@@ -42,12 +42,15 @@ struct SUtpDialFacts
 	bool directHighId = false;
 	bool proxyEnabled = false;
 	bool routableEndpoint = false;
+	// The stream handshake never runs over a transport, so a peer owed
+	// obfuscation may only be dialled when the frames carry it themselves.
+	bool obfuscationSatisfied = false;
 };
 
 inline EUtpDialDecision DecideUtpDial(const SUtpDialFacts &facts)
 {
 	return facts.peerSupportsUtp && facts.localOutboundService && facts.directHighId &&
-			       !facts.proxyEnabled && facts.routableEndpoint
+			       !facts.proxyEnabled && facts.routableEndpoint && facts.obfuscationSatisfied
 		       ? EUtpDialDecision::TryUtp
 		       : EUtpDialDecision::PreserveLegacy;
 }
