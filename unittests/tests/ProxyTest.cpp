@@ -183,6 +183,18 @@ TEST(Proxy, CommandReplyPortOffsetFollowsTheAddressType)
 	ASSERT_EQUALS(0u, PortOffset(unknown));
 }
 
+TEST(Proxy, AnUnspecifiedBoundAddressFallsBackToTheProxyItself)
+{
+	const auto proxy = CNetworkAddress::FromString("198.51.100.9");
+	const auto bound = CNetworkAddress::FromString("192.0.2.1");
+	ASSERT_TRUE(Socks5ExpectedRelay(bound, proxy) == bound);
+	ASSERT_TRUE(Socks5ExpectedRelay(CNetworkAddress::FromString("0.0.0.0"), proxy) == proxy);
+	// Whatever the reply named, a datagram from anywhere else is refused.
+	const auto expected = Socks5ExpectedRelay(CNetworkAddress::FromString("0.0.0.0"), proxy);
+	ASSERT_TRUE(IsFromSocks5Relay(proxy, 1080, expected, 1080));
+	ASSERT_FALSE(IsFromSocks5Relay(bound, 1080, expected, 1080));
+}
+
 TEST(Proxy, RelayDatagramsMustComeFromTheBoundRelay)
 {
 	const auto relay = CNetworkAddress::FromString("192.0.2.1");

@@ -926,7 +926,7 @@ void CUpDownClient::SendMuleInfoPacket(bool bAnswer, bool OSInfo)
 		CTagInt32 tag6(ET_EXTENDEDREQUEST, 2);
 		tag6.WriteTagToFile(&data);
 
-		uint32 dwTagValue = SecIdent::SupportedVersions(theApp->CryptoAvailable(), GetIP() != 0);
+		uint32 dwTagValue = SecIdent::SupportedVersions(theApp->CryptoAvailable(), HasPeerIPv4());
 		// Kry - Needs the preview code from eMule
 		/*
 		// set 'Preview supported' only if 'View Shared Files' allowed
@@ -1212,7 +1212,7 @@ void CUpDownClient::SendHelloTypePacket(CMemFile *data)
 	// eMule Misc. Options #1
 	const uint32 uUdpVer = 4;
 	const uint32 uDataCompVer = 1;
-	const uint32 uSupportSecIdent = SecIdent::SupportedVersions(theApp->CryptoAvailable(), GetIP() != 0);
+	const uint32 uSupportSecIdent = SecIdent::SupportedVersions(theApp->CryptoAvailable(), HasPeerIPv4());
 	const uint32 uSourceExchangeVer = 3;
 	const uint32 uExtendedRequestsVer = 2;
 	const uint32 uAcceptCommentVer = 1;
@@ -2663,7 +2663,7 @@ void CUpDownClient::InfoPacketsReceived()
 	wxASSERT(m_byInfopacketsReceived == IP_BOTH);
 	m_byInfopacketsReceived = IP_NONE;
 
-	if (SecIdent::SignatureVersion(m_bySupportSecIdent, GetIP() != 0) != SecIdent::Unavailable) {
+	if (SecIdent::SignatureVersion(m_bySupportSecIdent, HasPeerIPv4()) != SecIdent::Unavailable) {
 		SendSecIdentStatePacket();
 	}
 }
@@ -2776,6 +2776,15 @@ void CUpDownClient::SetUserIDHybrid(uint32 nUserID)
 void CUpDownClient::SetIP(uint32 val)
 {
 	SetUserAddress(CNetworkAddress::FromIPv4NetworkOrderOrAbsent(val));
+}
+
+bool CUpDownClient::HasPeerIPv4() const
+{
+	// The user address stays absent until the peer's hello, so an outbound connection has to
+	// ask the address it dialled, or it would advertise SecIdent v1 to an IPv4 peer.
+	uint32 peerIPv4 = 0;
+	return SecIdent::PeerIPv4(
+		GetUserAddress().IsPresent() ? GetUserAddress() : GetConnectAddress(), peerIPv4);
 }
 
 void CUpDownClient::SetUserAddress(const CNetworkAddress &address)

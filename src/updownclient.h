@@ -230,6 +230,8 @@ public:
 	}
 	uint32 GetConnectIP() const { return m_connectAddress.ToIPv4NetworkOrderOrZero(); }
 	const CNetworkAddress &GetConnectAddress() const { return m_connectAddress; }
+	//! Whether the peer has an IPv4 form, from the best address known so far.
+	bool HasPeerIPv4() const;
 	uint32 GetUserIDHybrid() const { return m_nUserIDHybrid; }
 	void SetUserIDHybrid(uint32 val);
 	uint16_t GetUserPort() const { return m_nUserPort; }

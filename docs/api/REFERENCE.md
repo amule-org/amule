@@ -2596,7 +2596,7 @@ Both `ipfilter.dat` and `ipfilter_static.dat` also accept native IPv6 CIDRs:
 2001:db8::1/128,0,Single address
 ```
 
-The syntax is `address/prefix,level,description`: an unbracketed IPv6 literal, a prefix length from `0` through `128`, and a level from `0` through `255`. Host bits are cleared. Scope suffixes, IPv4-mapped literals and dotted IPv4 tails are not accepted. Descriptions may contain commas and colons. Existing IPv4 PeerGuardian and AntiP2P lines are unchanged.
+The syntax is `address/prefix,level,description`: an unbracketed IPv6 literal, a prefix length from `0` through `128`, and a level from `0` through `255`. Host bits are cleared. Scope suffixes, IPv4-mapped literals and dotted IPv4 tails are not accepted. Descriptions may contain commas and colons. PeerGuardian lines keep their syntax. An AntiP2P line is rejected whole when anything other than whitespace follows its end address.
 
 A matching rule blocks only when its level is **below** the configured filter level. When IPv6 rules overlap, the later rule wins, not the longest prefix. `ipfilter_static.dat` loads last, so its rules can exempt addresses with a higher level. A reload replaces IPv4 and IPv6 rules together and keeps the old filter live until loading finishes.
 

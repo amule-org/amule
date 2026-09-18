@@ -480,14 +480,12 @@ bool CIPFilter::IsFiltered(const CNetworkAddress &address, bool isServer)
 	if (address.ToIPv4NetworkOrder(ipv4)) {
 		return IsFiltered(ipv4, isServer);
 	}
-	if (address.IsAbsent()) {
-		return true;
-	}
 	if ((!thePrefs::IsFilteringClients() && !isServer) || (!thePrefs::IsFilteringServers() && isServer)) {
 		return false;
 	}
 	wxMutexLocker lock(m_mutex);
-	if (!m_ready || m_ipv6Ranges.IsFiltered(address, m_ipv6AccessLevel)) {
+	// An address we cannot read counts as filtered: a security check that cannot run must refuse.
+	if (address.IsAbsent() || !m_ready || m_ipv6Ranges.IsFiltered(address, m_ipv6AccessLevel)) {
 		AddDebugLogLineN(logIPFilter, CFormat("Filtered IP %s") % address.ToWxString());
 		if (isServer) {
 			theStats::AddFilteredServer();

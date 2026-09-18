@@ -652,13 +652,15 @@ void CSocks5StateMachine::process_process_command_reply(bool entry)
 		       m_buffer[1] == SOCKS5_REPLY_SUCCEED;
 		if (m_ok) {
 			if (m_buffer[3] == SOCKS5_ATYP_IPV4_ADDRESS) {
-				m_proxyBoundAddressIPV4.Hostname(PeekUInt32(m_buffer + 4));
-			} else {
-				const char c = m_buffer[portOffset];
-				m_buffer[portOffset] = 0;
-				m_proxyBoundAddressIPV4.Hostname(char2unicode(m_buffer + 5));
-				m_buffer[portOffset] = c;
+				m_ok = m_proxyBoundAddressIPV4.Hostname(PeekUInt32(m_buffer + 4));
+			} else if (m_proxyCommand == PROXY_CMD_UDP_ASSOCIATE) {
+				// Datagrams are sent to and accepted from this address, and resolving a
+				// name the server chose would block the event loop on its resolver.
+				m_ok = false;
 			}
+			// Otherwise the bound address is informational, so only its port is read.
+		}
+		if (m_ok) {
 			m_proxyBoundAddress = &m_proxyBoundAddressIPV4;
 			m_packetLength = portOffset + 2;
 			m_proxyBoundAddress->Service(ENDIAN_NTOHS(RawPeekUInt16(m_buffer + portOffset)));
@@ -1187,11 +1189,17 @@ uint32 CDatagramSocketProxy::RecvFrom(CNetworkAddress &addr, uint16 &port, void 
 				relay, relayPort, bufUDP, nBytes + PROXY_UDP_MAXIMUM_OVERHEAD);
 			// Anything else reaching this port could forge the SOCKS header and its source.
 			const amuleIPV4Address &bound = m_proxyTCPSocket.GetProxyBoundAddress();
-			const CNetworkAddress boundIP =
-				CNetworkAddress::FromIPv4NetworkOrder(StringIPtoUint32(bound.IPAddress()));
-			if (IsFromSocks5Relay(relay, relayPort, boundIP, bound.Service())) {
+			const CNetworkAddress expected = Socks5ExpectedRelay(
+				CNetworkAddress::FromIPv4NetworkOrder(StringIPtoUint32(bound.IPAddress())),
+				CNetworkAddress::FromIPv4NetworkOrder(
+					StringIPtoUint32(m_proxyTCPSocket.GetProxyAddress().IPAddress())));
+			if (IsFromSocks5Relay(relay, relayPort, expected, bound.Service())) {
 				read = ParseSocks5UDPDatagram(bufUDP, read, addr, port, buf, nBytes);
 			} else {
+				AddDebugLogLineN(logProxy,
+					CFormat("Dropped a datagram from %s:%u; the SOCKS5 relay is %s:%u") %
+						relay.ToString() % relayPort % expected.ToString() %
+						bound.Service());
 				addr = CNetworkAddress::Absent();
 				port = 0;
 				read = 0;

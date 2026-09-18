@@ -363,6 +363,7 @@ public:
 	/* Interface */
 	void SetProxyData(const CProxyData *proxyData);
 	bool GetUseProxy() const { return m_useProxy; }
+	const amuleIPV4Address &GetProxyAddress() const { return m_proxyAddress; }
 	char *GetBuffer() { return m_proxyStateMachine->GetBuffer(); }
 	amuleIPV4Address &GetProxyBoundAddress(void) const
 	{
@@ -427,7 +428,8 @@ enum UDPOperation
 const unsigned int PROXY_UDP_OVERHEAD_IPV4 = 10;
 const unsigned int PROXY_UDP_OVERHEAD_DOMAIN_NAME = 262;
 const unsigned int PROXY_UDP_OVERHEAD_IPV6 = 22;
-const unsigned int PROXY_UDP_MAXIMUM_OVERHEAD = PROXY_UDP_OVERHEAD_DOMAIN_NAME;
+// Domain-name headers are refused, so the IPv6 form is the widest one accepted.
+const unsigned int PROXY_UDP_MAXIMUM_OVERHEAD = PROXY_UDP_OVERHEAD_IPV6;
 
 /** Decode one SOCKS5 UDP datagram without socket state.
  *
@@ -482,6 +484,14 @@ inline unsigned int Socks5ReplyPortOffset(const char *reply, uint32 available)
 		portOffset = 5 + static_cast<unsigned char>(reply[4]);
 	}
 	return portOffset && available >= portOffset + 2 ? portOffset : 0;
+}
+
+/** Where relayed datagrams come from. RFC 1928 leaves BND.ADDR unspecified to mean "the address
+ * you reached the proxy at", so pinning the port alone would accept any host.
+ */
+inline CNetworkAddress Socks5ExpectedRelay(const CNetworkAddress &bound, const CNetworkAddress &proxy)
+{
+	return bound.IsUnspecified() ? proxy : bound;
 }
 
 /** Whether a datagram came from the relay named in the UDP ASSOCIATE reply. An unspecified
