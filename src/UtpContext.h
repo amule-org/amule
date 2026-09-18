@@ -60,6 +60,7 @@ class IUtpContext
 public:
 	virtual ~IUtpContext() = default;
 	virtual bool Configure() = 0;
+	virtual bool IsAvailable() const = 0;
 	virtual void Destroy() = 0;
 	virtual bool ProcessDatagram(const uint8_t *payload, size_t length, uint32_t ip, uint16_t port) = 0;
 	virtual void Tick() = 0;
@@ -178,6 +179,7 @@ public:
 		}
 		return m_active;
 	}
+	bool IsAvailable() const override { return m_active; }
 	void Destroy() override
 	{
 		if (m_active) {

@@ -1831,6 +1831,21 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 			return EContactResult::Declined;
 		}
 	} else { // HIGHID
+#ifdef AMULE_UTP_TRANSPORT
+		IUtpContext *utp = theApp->clientudp->GetUtpContext();
+		const SUtpDialFacts facts{ m_modCapabilities.SupportsNatTraversal(),
+			utp != nullptr && utp->IsAvailable(), true, m_socket->GetProxyState(),
+			IsGoodIPPort(GetConnectIP(), GetUserPort()) };
+		if (DecideUtpDial(facts) == EUtpDialDecision::TryUtp) {
+			std::unique_ptr<IStreamTransport> transport;
+			if (utp->Dial(GetConnectIP(), GetUserPort(),
+					SupportsCryptLayer() && thePrefs::IsClientCryptLayerSupported(),
+					HasValidHash() ? GetUserHash().GetHash() : nullptr, transport)) {
+				m_socket->AttachTransport(std::move(transport));
+				return EContactResult::Contacting;
+			}
+		}
+#endif
 		if (!Connect()) {
 			return EContactResult::ConnectNotStarted;
 		}

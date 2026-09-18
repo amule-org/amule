@@ -45,6 +45,7 @@ public:
 #ifdef AMULE_UTP_TRANSPORT
 	void Close() override;
 	void TickUtp();
+	IUtpContext *GetUtpContext() { return &m_utp; }
 #endif
 
 protected:

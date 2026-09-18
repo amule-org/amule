@@ -46,8 +46,7 @@ namespace
 constexpr uint32_t kPeerIp = 0x0100007F; // 127.0.0.1 in aMule's low-byte-first form
 constexpr uint16_t kPeerPort = 4672;
 
-// A loopback through real libutp. The client exists only here, so production
-// gains no dial API; datagrams are handed over by hand to stay deterministic.
+// A deterministic loopback through real libutp; datagrams are handed over by hand.
 struct SLoopback
 {
 	std::unique_ptr<IUtpLibrary> server;
@@ -108,6 +107,12 @@ uint64 ClientSendTo(utp_callback_arguments *args)
 	return 0;
 }
 
+uint64 ClientOnAccept(utp_callback_arguments *args)
+{
+	g_loop->clientSocket = args->socket;
+	return 0;
+}
+
 uint64 ClientOnState(utp_callback_arguments *args)
 {
 	if (args->state == UTP_STATE_CONNECT || args->state == UTP_STATE_WRITABLE) {
@@ -163,15 +168,26 @@ void Pump(SLoopback &loop, int rounds = 64)
 	}
 }
 
-void StartClient(SLoopback &loop)
+void ConfigureClient(SLoopback &loop)
 {
 	loop.client = utp_init(2);
 	utp_set_callback(loop.client, UTP_SENDTO, ClientSendTo);
+	utp_set_callback(loop.client, UTP_ON_ACCEPT, ClientOnAccept);
 	utp_set_callback(loop.client, UTP_ON_STATE_CHANGE, ClientOnState);
 	utp_set_callback(loop.client, UTP_ON_READ, ClientOnRead);
+}
+
+void StartClient(SLoopback &loop)
+{
+	ConfigureClient(loop);
 	loop.clientSocket = utp_create_socket(loop.client);
 	const sockaddr_in peer = Address(kPeerIp, kPeerPort);
 	utp_connect(loop.clientSocket, reinterpret_cast<const sockaddr *>(&peer), sizeof(peer));
+}
+
+void StartClientAcceptor(SLoopback &loop)
+{
+	ConfigureClient(loop);
 }
 
 void Teardown(SLoopback &loop)
@@ -205,6 +221,24 @@ TEST(UtpLibraryAdapter, AnInboundSynReachesAdmissionWithItsPeer)
 	// Registered only on success, which is what lets the peer's later non-SYN
 	// frames through the ingress filter.
 	ASSERT_TRUE(loop.server->HasRegisteredPeer(kPeerIp, kPeerPort));
+	Teardown(loop);
+}
+
+TEST(UtpLibraryAdapter, DialCompletesThroughTheRealLoopbackAcceptor)
+{
+	SLoopback loop;
+	g_loop = &loop;
+	CServerSink sink;
+	loop.server = CreateUtpLibrary();
+	ASSERT_TRUE(loop.server->Create(sink));
+	StartClientAcceptor(loop);
+
+	std::unique_ptr<IStreamTransport> transport;
+	ASSERT_TRUE(loop.server->Dial(kPeerIp, kPeerPort, false, nullptr, transport));
+	ASSERT_TRUE(transport != nullptr);
+	Pump(loop);
+	ASSERT_TRUE(transport->IsConnected());
+	ASSERT_TRUE(loop.clientSocket != nullptr);
 	Teardown(loop);
 }
 
