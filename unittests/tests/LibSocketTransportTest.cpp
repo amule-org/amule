@@ -67,6 +67,7 @@ public:
 	}
 
 	bool IsConnected() const override { return true; }
+	void SetEvents(IStreamTransportEvents *) override {}
 	bool IsOk() const override { return ok; }
 	bool BlocksRead() const override { return true; }
 	bool BlocksWrite() const override { return true; }
