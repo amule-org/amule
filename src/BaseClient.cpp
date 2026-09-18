@@ -147,8 +147,8 @@ CUpDownClient::CUpDownClient(uint16 in_port,
 	ReGetClientSoft();
 
 	if (checkfriend) {
-		if ((m_Friend = theApp->friendlist->FindFriend(CMD4Hash(), m_dwUserIP, m_nUserPort)) !=
-			NULL) {
+		if ((m_Friend = theApp->friendlist->FindFriend(CMD4Hash(), GetIP(), m_nUserPort)) !=
+			nullptr) {
 			m_Friend->LinkClient(
 				CCLIENTREF(this, "CUpDownClient::CUpDownClient m_Friend->LinkClient"));
 		} else {
@@ -250,7 +250,7 @@ void CUpDownClient::Init()
 	m_fExtMultiPacket = 0;
 	m_fIsSpammer = 0;
 
-	m_dwUserIP = 0;
+	m_userAddress = CNetworkAddress::Absent();
 	m_connectAddress = CNetworkAddress::Absent();
 	m_dwServerIP = 0;
 
@@ -769,8 +769,8 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data)
 	// will not send an ID; those are HighID users not connected to a server. (c) Kad users
 	// with a *.*.*.0 IP look like a lowID user but are actually highID -- easily detected,
 	// because they send an ID that is the same as their IP.
-	if (!HasLowID() || m_nUserIDHybrid == 0 || m_nUserIDHybrid == m_dwUserIP) {
-		SetUserIDHybrid(wxUINT32_SWAP_ALWAYS(m_dwUserIP));
+	if (!HasLowID() || m_nUserIDHybrid == 0 || m_nUserIDHybrid == GetIP()) {
+		SetUserIDHybrid(wxUINT32_SWAP_ALWAYS(GetIP()));
 	}
 
 	// get client credits
@@ -798,7 +798,7 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data)
 	// client's side would leave that record pointing here and showing its friend as connected.
 	// Unlink first, because UnLinkClient() clears m_Friend as it goes.
 	CFriend *previous = m_Friend;
-	CFriend *found = theApp->friendlist->FindFriend(m_UserHash, m_dwUserIP, m_nUserPort);
+	CFriend *found = theApp->friendlist->FindFriend(m_UserHash, GetIP(), m_nUserPort);
 	if (previous != nullptr && previous != found) {
 		previous->UnLinkClient();
 	}
@@ -823,7 +823,7 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data)
 	// would measure traffic instead of visits.
 	if (credits != nullptr) {
 		credits->UpdateMeta(m_Username,
-			m_dwUserIP,
+			GetIP(),
 			m_nUserPort,
 			m_nKadPort,
 			m_nClientVersion,
@@ -2792,12 +2792,8 @@ void CUpDownClient::SetUserAddress(const CNetworkAddress &address)
 	const CNetworkAddress key = PeerAddressing::IndexKey(address);
 	theApp->clientlist->UpdateClientIP(this, key);
 	m_userAddress = key;
-	const uint32 val = key.ToIPv4NetworkOrderOrZero();
-	m_dwUserIP = val;
-
 	m_connectAddress = key;
-
-	m_FullUserIP = val;
+	m_FullUserIP = key.ToIPv4NetworkOrderOrZero();
 }
 
 void CUpDownClient::SetUserHash(const CMD4Hash &userhash)

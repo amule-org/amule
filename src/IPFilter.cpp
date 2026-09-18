@@ -192,7 +192,8 @@ private:
 		AddDebugLogLineN(logIPFilter,
 			CFormat("Ranges in map: %d  blocked ranges in table: %d") % size % m_rangeIPs.size());
 
-		CIPFilterEvent evt(m_rangeIPs, m_rangeLengths, m_rangeNames, m_ipv6Ranges, accessLevel);
+		CIPFilterEvent evt(
+			m_rangeIPs, m_rangeLengths, m_rangeNames, std::move(m_ipv6Ranges), accessLevel);
 		wxQueueEvent(m_owner, (evt).Clone());
 	}
 
@@ -309,11 +310,13 @@ private:
 					ipv6Network,
 					ipv6Prefix))) {
 				if (token == 2) {
-					m_ipv6Ranges.Append(ipv6Network, ipv6Prefix, IPAccessLevel);
+					if (m_ipv6Ranges.Append(ipv6Network, ipv6Prefix, IPAccessLevel)) {
+						filtercount++;
+					}
 				} else {
 					AddIPRange(IPStart, IPEnd, IPAccessLevel, IPDescription);
+					filtercount++;
 				}
-				filtercount++;
 			}
 #ifdef __DEBUG__
 			uint64 time2 = GetTickCount64();

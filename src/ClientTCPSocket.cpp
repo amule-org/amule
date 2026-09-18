@@ -118,14 +118,12 @@ bool CClientTCPSocket::InitNetworkData()
 	wxASSERT(!m_remoteip);
 	wxASSERT(!m_client);
 	m_remoteAddress = GetPeerAddress();
-	m_remoteip = m_remoteAddress.ToIPv4NetworkOrderOrZero();
 
 	// A peer with no 32-bit form is refused rather than narrowed: m_remoteip still feeds the
 	// server check below and the hello's user ID check. That is a decision, not an impossibility,
 	// so it is logged and returned -- MULE_CHECK is wxCHECK, which also asserts in a debug build,
 	// and an inbound IPv6 peer becomes an ordinary event the moment a listener accepts one.
-	uint32 narrowed = 0;
-	if (m_remoteAddress.IsPresent() && !m_remoteAddress.ToIPv4NetworkOrder(narrowed)) {
+	if (m_remoteAddress.IsPresent() && !m_remoteAddress.ToIPv4NetworkOrder(m_remoteip)) {
 		AddDebugLogLineN(logClient,
 			"Denied connection from " + GetPeer() + " (no IPv4 form for the ed2k path)");
 		return false;

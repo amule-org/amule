@@ -190,11 +190,6 @@ void CClientList::UpdateClientID(CUpDownClient *client, uint32 newID)
 	m_clientList.insert(IDMapPair(newID, CCLIENTREF(client, "CClientList::UpdateClientID")));
 }
 
-void CClientList::UpdateClientIP(CUpDownClient *client, uint32 newIP)
-{
-	UpdateClientIP(client, CNetworkAddress::FromIPv4NetworkOrderOrAbsent(newIP));
-}
-
 void CClientList::UpdateClientIP(CUpDownClient *client, const CNetworkAddress &address)
 {
 	if (client->GetClientState() != CS_LISTED)

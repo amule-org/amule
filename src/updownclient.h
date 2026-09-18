@@ -211,7 +211,7 @@ public:
 	void SetIP(uint32 val);
 	void SetUserAddress(const CNetworkAddress &address);
 	const CNetworkAddress &GetUserAddress() const { return m_userAddress; }
-	uint32 GetIP() const { return m_dwUserIP; }
+	uint32 GetIP() const { return m_userAddress.ToIPv4NetworkOrderOrZero(); }
 	bool HasLowID() const { return IsLowID(m_nUserIDHybrid); }
 	wxString GetFullIP() const { return Uint32toStringIP(m_FullUserIP); }
 	// The numeric form of GetFullIP(), for callers that do not need the string. Named to be
@@ -741,8 +741,6 @@ private:
 
 	CNetworkAddress m_userAddress;
 	CNetworkAddress m_connectAddress;
-	// Legacy IPv4 adapter; zero when the peer has no IPv4 form.
-	uint32 m_dwUserIP;
 	uint32 m_dwServerIP;
 	uint32 m_nUserIDHybrid;
 	uint16_t m_nUserPort;
