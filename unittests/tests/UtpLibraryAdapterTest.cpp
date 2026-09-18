@@ -464,13 +464,13 @@ TEST(UtpLibraryAdapter, DestroyingTheContextEndsTheStreamsItOwned)
 	Teardown(loop);
 }
 
-TEST(UtpLibraryAdapter, ClosingAStreamLeavesTheRegistry)
+TEST(UtpLibraryAdapter, AClosingStreamKeepsItsEndpointUntilTheSocketDies)
 {
-	// utp_close() only starts the socket dying, and the userdata it nulls is
-	// what the DESTROYING arm uses to find the transport -- so leaving the
-	// removal to that callback never removes anything. The endpoint would keep
-	// answering the ingress gate, which would hand libutp a frame it has no
-	// socket for and get the unsolicited RST the gate exists to prevent.
+	// utp_close() only starts the socket dying: the peer still has to
+	// acknowledge our FIN, and the ingress gate drops anything from an endpoint
+	// it does not know. Deregistering at close therefore hid that acknowledgement
+	// from libutp, which retransmitted the FIN until it gave up. The endpoint is
+	// dropped when the socket is destroyed, which is what the registry is for.
 	SLoopback loop;
 	g_loop = &loop;
 	CServerSink sink;
@@ -484,7 +484,12 @@ TEST(UtpLibraryAdapter, ClosingAStreamLeavesTheRegistry)
 	ASSERT_TRUE(loop.server->HasRegisteredPeer(kPeerIp, kPeerPort));
 
 	acceptor.accepted->Close();
+	ASSERT_TRUE(loop.server->HasRegisteredPeer(kPeerIp, kPeerPort));
+	// The peer's answer to the FIN still reaches libutp rather than the gate.
+	Pump(loop);
+	ASSERT_TRUE(loop.server->HasRegisteredPeer(kPeerIp, kPeerPort));
 
+	loop.server->Destroy();
 	ASSERT_FALSE(loop.server->HasRegisteredPeer(kPeerIp, kPeerPort));
 	Teardown(loop);
 }

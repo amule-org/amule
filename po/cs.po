@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-09-17 08:44+0200\n"
-"PO-Revision-Date: 2026-09-17 09:49+0000\n"
+"PO-Revision-Date: 2026-09-18 11:20+0000\n"
 "Last-Translator: David Watzke <david@watzke.cz>\n"
 "Language-Team: cs <cs@li.org>\n"
 "Language: cs\n"
@@ -6644,11 +6644,11 @@ msgstr "Sdílená složka"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Both the remote and local prefix must be filled in."
-msgstr ""
+msgstr "Vzdálená a místní předpona musí být vyplněna."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "This remote prefix is already mapped."
-msgstr ""
+msgstr "Tato vzdálená předpona je již mapována."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Choose the local folder"
@@ -6682,11 +6682,15 @@ msgid ""
 "\n"
 "Start the new search anyway?"
 msgstr ""
+"eD2k vyhledávání stále probíhá. Dojde k jeho zastavení, pokud zahájíte nové vyhledávání, protože protokol eD2k umožňuje pouze jedno aktivní vyhledávání.\n"
+"\n"
+"Výsledky již nalezené jsou zachovány; pouze nové přestanou přibývat.\n"
+"\n"
+"Přesto zahájit nové vyhledávání?"
 
 #: src/SearchDlg.cpp
-#, fuzzy
 msgid "Search in progress"
-msgstr "Probíhá"
+msgstr "Vyhledávání probíhá"
 
 #: src/SearchDlg.cpp
 msgid "Min size must be smaller than max size. Max size ignored."
@@ -6699,12 +6703,12 @@ msgstr "Hlavní"
 #: src/SearchList.cpp
 #, c-format
 msgid "Only saving the %u most recent of %u open searches to %s."
-msgstr ""
+msgstr "Ukládání jen %u nejnovějších vyhledávání z %u otevřených do %s."
 
 #: src/SearchList.cpp
 #, c-format
 msgid "Only saving the first %u of %u results for search \"%s\"."
-msgstr ""
+msgstr "Ukládání jen prvních %u z %u výsledků vyhledávání \"%s\"."
 
 #: src/SearchList.cpp
 #, fuzzy

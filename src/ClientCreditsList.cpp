@@ -532,9 +532,8 @@ bool CClientCreditsList::VerifyIdent(CClientCredits *pTarget,
 {
 	wxASSERT(pTarget);
 	wxASSERT(pachSignature);
-	// v1 binds the result to the full endpoint; v2 still signs exactly four IPv4 bytes.
-	uint32 peerIPv4 = 0;
-	if (byChaIPKind != 0 && !SecIdent::PeerIPv4(address, peerIPv4)) {
+	// A verified identity is bound to the endpoint it was proved on, so there has to be one.
+	if (address.IsAbsent()) {
 		return false;
 	}
 	if (!CryptoAvailable()) {
@@ -560,7 +559,11 @@ bool CClientCreditsList::VerifyIdent(CClientCredits *pTarget,
 			uint32 ChallengeIP = 0;
 			switch (byChaIPKind) {
 			case CRYPT_CIP_LOCALCLIENT:
-				ChallengeIP = peerIPv4;
+				// The only kind that signs the peer's own address, so the only one that
+				// needs it. v2 signs exactly four IPv4 bytes.
+				if (!SecIdent::PeerIPv4(address, ChallengeIP)) {
+					return false;
+				}
 				break;
 			case CRYPT_CIP_REMOTECLIENT:
 				// Ignore local ip...

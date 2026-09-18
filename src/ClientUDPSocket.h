@@ -43,6 +43,7 @@ class CClientUDPSocket : public CMuleUDPSocket
 public:
 	CClientUDPSocket(const amuleIPV4Address &address, const CProxyData *ProxyData = NULL);
 #ifdef AMULE_UTP_TRANSPORT
+	~CClientUDPSocket() override;
 	void Close() override;
 	void TickUtp();
 	IUtpContext *GetUtpContext() { return &m_utp; }

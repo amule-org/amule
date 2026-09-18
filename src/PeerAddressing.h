@@ -57,18 +57,6 @@ namespace PeerAddressing
 {
 
 /**
- * Whether a peer with this address can be recorded in an address index.
- *
- * Only absence disqualifies. @c 0.0.0.0 and @c :: are odd addresses but they are addresses: a peer
- * claiming one is a peer whose claim we know, which is not the same thing as a peer whose address
- * we do not know. Keeping those two apart is the reason CNetworkAddress exists.
- */
-inline bool IsIndexable(const CNetworkAddress &address) noexcept
-{
-	return address.IsPresent();
-}
-
-/**
  * The key a peer is indexed under.
  *
  * IPv4-mapped forms are collapsed to plain IPv4 here, once. A peer that connects as @c 192.0.2.1
@@ -93,9 +81,22 @@ inline bool IsSecurityKey(const CNetworkAddress &address) noexcept
 }
 
 /**
+ * Whether a peer with this address can be recorded in an address index.
+ *
+ * The same rule as a security key: an index entry has to name a host, and neither absence nor the
+ * unspecified address does. Indexing a peer under a key the ban record refuses would let the two
+ * disagree about the same peer.
+ */
+inline bool IsIndexable(const CNetworkAddress &address) noexcept
+{
+	return IsSecurityKey(address);
+}
+
+/**
  * Programmatic filter-prefix matching, independent of the IPv4 filter-file parser.
  * Width is in the canonical family, or IPv6 width for a mapped prefix. Host bits in the
  * prefix are ignored. Prefixes are interface-independent, including at /128.
+ * A prefix matches only inside its own family: ::/0 covers every IPv6 address and no IPv4 one.
  * An unspecified network base is valid (e.g. ::/0), but never a matching host.
  */
 inline bool MatchesFilterPrefix(
@@ -192,7 +193,7 @@ inline bool HasEd2kWireForm(const CNetworkAddress &address) noexcept
  */
 inline bool SupportsEd2kUdpObfuscation(const CNetworkAddress &address) noexcept
 {
-	return address.IsIPv4() || address.IsIPv4Mapped();
+	return HasEd2kWireForm(address);
 }
 
 /** How far an inbound datagram from a given peer can be routed. */
@@ -285,6 +286,7 @@ constexpr std::uint64_t kCallbackRequestThrottleMs = 3 * 60 * 1000;
  * A mapped IPv4 address shares the IPv4 budget -- a peer must not double its allowance by
  * respelling its address -- and absence has no budget, because it identifies nobody.
  */
+// The scope id is dropped: a budget aggregates, where identity (IndexKey) keeps interfaces apart.
 inline CNetworkAddress RateLimitScope(const CNetworkAddress &address)
 {
 	const CNetworkAddress unmapped = address.Unmapped();
@@ -326,20 +328,20 @@ inline CNetworkAddress ContactCheckAddress(const CNetworkAddress &userAddress,
 /** Callback wire formats remain IPv4-only, independently of contact security support. */
 inline bool CanRequestCallback(const CNetworkAddress &address) noexcept
 {
-	return (address.IsIPv4() || address.IsIPv4Mapped()) && !IndexKey(address).IsUnspecified();
+	return HasEd2kWireForm(address);
 }
 
 /** An unconnected socket can only be opened when the contact has a legacy IPv4 form. */
 inline bool CanOpenConnection(const CNetworkAddress &address, bool socketConnected) noexcept
 {
-	return socketConnected || address.IsIPv4() || address.IsIPv4Mapped();
+	return socketConnected || HasEd2kWireForm(address);
 }
 
 /** Production callback throttle seam; the exact three-minute boundary remains allowed. */
 inline bool IsCallbackRequestThrottled(
 	const CNetworkAddress &address, const CNetworkAddress &previous, std::uint64_t elapsed) noexcept
 {
-	return address.IsPresent() && previous.IsPresent() &&
+	return IsSecurityKey(address) && IsSecurityKey(previous) &&
 	       RateLimitScope(address) == RateLimitScope(previous) && elapsed < kCallbackRequestThrottleMs;
 }
 

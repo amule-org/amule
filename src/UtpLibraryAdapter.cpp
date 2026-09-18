@@ -27,6 +27,8 @@
 #include "UtpSocketTransport.h" // per-socket crypt parameters, resolved from userdata
 #include <libutp/utp.h>
 
+#include <map>
+#include <utility>
 #include <vector>
 
 namespace
@@ -54,21 +56,16 @@ public:
 	void CloseSocket(Handle socket) override
 	{
 		auto *raw = static_cast<utp_socket *>(socket);
-		// Deregistered here, not left to UTP_STATE_DESTROYING. Nulling the
-		// userdata below is what stops a late callback reaching a freed
-		// transport, and it is also what makes that callback return at its
-		// TransportOf() guard -- so the removal in its DESTROYING arm would
-		// never run, HasRegisteredPeer() would keep answering true for a dead
-		// endpoint, and the ingress gate would let libutp answer it with the
-		// unsolicited RST that gate exists to prevent.
-		if (const auto *transport = TransportOf(raw)) {
-			m_peers.Remove(transport->GetPeerAddress().ToIPv4NetworkOrderOrZero(),
-				transport->GetPeerPort());
-		}
-		// utp_close() only starts the socket dying; DESTROYING can arrive after
-		// the owner is gone, and would hand a callback a freed transport.
-		utp_set_userdata(raw, nullptr);
+		// Closed before the userdata goes, so the FIN this sends carries the
+		// stream's crypt parameters like every other datagram on it.
 		utp_close(raw);
+		// utp_close() only starts the socket dying; DESTROYING arrives later and
+		// would hand a callback a freed transport.
+		utp_set_userdata(raw, nullptr);
+		// The endpoint stays registered until DESTROYING: a closing socket still
+		// has to receive the peer's acknowledgement of that FIN, and the ingress
+		// gate drops anything from an endpoint it does not know. m_endpoints is
+		// what lets the removal happen without the userdata this just cleared.
 	}
 
 	void SetReceiveBuffer(Handle socket, size_t bytes) override
@@ -154,6 +151,9 @@ public:
 		}
 		m_refused.clear();
 		utp_destroy(m_context);
+		// Every live socket emitted DESTROYING above; anything left is a socket
+		// libutp never told us about, and its endpoint is dead either way.
+		m_endpoints.clear();
 		m_context = nullptr;
 		m_acceptor = nullptr;
 		if (s_self == this) {
@@ -263,8 +263,12 @@ private:
 		// drop that live stream off the gate its own frames pass through.
 		// Briefly registering a refused endpoint costs nothing: libutp still holds
 		// the socket until the close below.
-		s_self->m_peers.Add(ip, port);
+		s_self->Register(args->socket, ip, port);
 		if (!s_self->m_acceptor->AcceptStream(transport, ip, port)) {
+			// Forgotten at once, unlike an admitted stream: a refused peer has no
+			// FIN to acknowledge, and leaving its endpoint on the gate until the
+			// socket is destroyed would let its next frames reach libutp.
+			s_self->Forget(args->socket);
 			// Destroying it closes the socket, which must happen after libutp
 			// has finished with the datagram.
 			s_self->m_refusedStreams.push_back(std::move(transport));
@@ -275,6 +279,11 @@ private:
 
 	static uint64 OnStateChange(utp_callback_arguments *args)
 	{
+		if (args->state == UTP_STATE_DESTROYING && s_self != nullptr) {
+			// Before the transport check: a closed socket has no userdata left,
+			// and this is the only notice that its endpoint is now dead.
+			s_self->Forget(args->socket);
+		}
 		CUtpSocketTransport *transport = TransportOf(args->socket);
 		if (transport == nullptr) {
 			return 0;
@@ -289,10 +298,6 @@ private:
 		case UTP_STATE_DESTROYING:
 			// Forgotten before the transport is told, and the handle dies with
 			// this callback.
-			if (s_self != nullptr) {
-				s_self->m_peers.Remove(transport->GetPeerAddress().ToIPv4NetworkOrderOrZero(),
-					transport->GetPeerPort());
-			}
 			utp_set_userdata(args->socket, nullptr);
 			transport->OnEnded(EUtpTransportFailure::Destroying);
 			break;
@@ -353,9 +358,28 @@ private:
 	{
 		return UtpUdpOverhead(args->address->sa_family == AF_INET6);
 	}
+	void Register(utp_socket *socket, uint32_t ip, uint16_t port)
+	{
+		m_peers.Add(ip, port);
+		m_endpoints[socket] = { ip, port };
+	}
+
+	void Forget(utp_socket *socket)
+	{
+		const auto found = m_endpoints.find(socket);
+		if (found == m_endpoints.end()) {
+			return;
+		}
+		m_peers.Remove(found->second.first, found->second.second);
+		m_endpoints.erase(found);
+	}
+
 	utp_context *m_context = nullptr;
 	IUtpStreamAcceptor *m_acceptor = nullptr;
 	CUtpPeerRegistry m_peers;
+	// Which endpoint each socket holds, so the registry can be kept until the
+	// socket is destroyed rather than until its userdata is cleared.
+	std::map<utp_socket *, std::pair<uint32_t, uint16_t>> m_endpoints;
 	// Sockets refused before a transport existed, closed once libutp has
 	// finished with the datagram.
 	std::vector<utp_socket *> m_refused;

@@ -70,8 +70,12 @@ private:
 		}
 		m_rules.push_back({ network.GetOctets(), last, network, bits, level });
 		++m_levelCounts[level];
+		m_resolved = false;
 		return true;
 	}
+
+	//! Whether the rules are in the sorted, disjoint form IsFiltered() searches.
+	bool IsResolved() const { return m_resolved; }
 
 	void Resolve()
 	{
@@ -116,11 +120,15 @@ private:
 			}
 		}
 		m_rules.swap(resolved);
+		m_resolved = true;
 	}
 
 public:
 	bool IsFiltered(const CNetworkAddress &address, unsigned level) const
 	{
+		// The search below is a binary one, so appended rules have to have been
+		// resolved into the sorted, disjoint form first, or it reads past them.
+		wxASSERT(m_resolved);
 		if (!address.IsIPv6() || address.IsIPv4Mapped()) {
 			return false;
 		}
@@ -180,6 +188,8 @@ private:
 	std::vector<Rule> m_rules;
 	// Keep the public count of input rules independent of range splitting.
 	std::array<unsigned, 256> m_levelCounts{};
+	// An empty store is trivially in resolved form.
+	bool m_resolved = true;
 };
 
 class CIPFilterEvent;

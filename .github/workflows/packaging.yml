@@ -51,6 +51,8 @@ on:
 
 permissions:
   contents: read
+  # The cache-save-newest guard lists the repository's caches.
+  actions: read
 
 # ccache wiring. Every compile job (appimage / flatpak / macos / windows-
 # zip) installs ccache and persists its cache across runs via
@@ -114,7 +116,7 @@ jobs:
         run: packaging/linux/build.sh validate
       - name: Save ccache
         if: always() && github.event_name == 'push' && github.ref == 'refs/heads/master'
-        uses: actions/cache/save@v6
+        uses: ./.github/actions/cache-save-newest
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ runner.os }}-appimage-${{ matrix.arch }}-ccache-${{ github.run_id }}
@@ -224,11 +226,21 @@ jobs:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ runner.os }}-flatpak-${{ matrix.arch }}-ccache-${{ hashFiles('**/CMakeLists.txt', 'cmake/**', 'packaging/linux/flatpak/**.yml.in') }}
           restore-keys: ${{ runner.os }}-flatpak-${{ matrix.arch }}-ccache-
+      # flatpak-builder compiles inside the build sandbox, which CCACHE_MAXSIZE
+      # does not reach, so ccache applied its own 5 GB default and the x86_64
+      # entry had grown to 4.4 GB of the repository's 10 GB budget -- evicting
+      # the caches every other job depends on. max_size in the cache's own
+      # config travels with it and is read wherever ccache runs. One build
+      # writes ~350 MB, so 1 GB keeps the current generation and two behind it.
+      - name: Cap the flatpak-builder ccache
+        run: |
+          mkdir -p "$CCACHE_DIR"
+          echo "max_size = 1.0G" > "$CCACHE_DIR/ccache.conf"
       - name: Build Flatpak
         run: packaging/linux/build.sh flatpak
       - name: Save flatpak-builder ccache
         if: always() && github.event_name == 'push' && github.ref == 'refs/heads/master'
-        uses: actions/cache/save@v6
+        uses: ./.github/actions/cache-save-newest
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ runner.os }}-flatpak-${{ matrix.arch }}-ccache-${{ github.run_id }}
@@ -307,52 +319,51 @@ jobs:
       # "no bottle available!" abort one level down.
       #
       # Building costs upwards of an hour, so the kegs are cached and
-      # only a version bump pays it again. The formula list, the two
-      # cache path blocks and the relink loop must stay in step.
+      # only a version bump pays it again. One list drives the cache
+      # paths and the relink below, so they cannot drift apart.
       - name: Resolve x86_64 source-built versions
         id: intelkegs
         if: matrix.arch == 'x86_64'
         run: |
-          # Key on the versions brew resolved after `update`, not a
-          # literal: a stale keg must never shadow a newer release.
-          V=$(${{ matrix.archcmd }} ${{ matrix.brew_prefix }}/bin/brew info --json=v2 \
-                  pcre2 openssl@3 aom jpeg-turbo json-c libmaxminddb libtiff libupnp lz4 pkgconf wxwidgets \
-              | python3 -c 'import sys,json;print("-".join(f["versions"]["stable"] for f in json.load(sys.stdin)["formulae"]))')
-          echo "vers=$V" >> "$GITHUB_OUTPUT"
+          # Everything x86_64 compiles from source, listed once. The last
+          # four are dependencies of the rest with no Intel bottle either:
+          # uncached, they rebuilt on every run for ~12 minutes.
+          KEGS="pcre2 openssl@3 aom jpeg-turbo json-c libmaxminddb libtiff libupnp lz4 pkgconf wxwidgets xz readline mpdecimal libvmaf"
+          ${{ matrix.archcmd }} ${{ matrix.brew_prefix }}/bin/brew info --json=v2 $KEGS > "$RUNNER_TEMP/kegs.json"
+          python3 - "$RUNNER_TEMP/kegs.json" "$GITHUB_OUTPUT" <<'EOF'
+          import json, sys
+          formulae = json.load(open(sys.argv[1]))["formulae"]
+          names = [f["name"] for f in formulae]
+          with open(sys.argv[2], "a") as out:
+              out.write("kegs=%s\n" % " ".join(names))
+              # Keg-only formulae stay out of /usr/local; readline would shadow libedit.
+              out.write("linkable=%s\n" % " ".join(f["name"] for f in formulae if not f["keg_only"]))
+              out.write("paths<<PATHS\n")
+              for f in formulae:
+                  out.write("/usr/local/Cellar/%s\n" % f["name"])
+                  # Aliases and old names get an opt link too, and the build
+                  # shims go through those: pkg-config, never pkgconf.
+                  for n in [f["name"], *f.get("aliases", []), *f.get("oldnames", [])]:
+                      out.write("/usr/local/opt/%s\n" % n)
+              out.write("PATHS\n")
+          EOF
       - name: Restore x86_64 source-built kegs
         if: matrix.arch == 'x86_64' && github.event_name != 'workflow_call'
         uses: actions/cache/restore@v6
         with:
-          path: |
-            /usr/local/Cellar/pcre2
-            /usr/local/Cellar/openssl@3
-            /usr/local/Cellar/aom
-            /usr/local/Cellar/jpeg-turbo
-            /usr/local/Cellar/json-c
-            /usr/local/Cellar/libmaxminddb
-            /usr/local/Cellar/libtiff
-            /usr/local/Cellar/libupnp
-            /usr/local/Cellar/lz4
-            /usr/local/Cellar/pkgconf
-            /usr/local/Cellar/wxwidgets
-            /usr/local/opt/pcre2
-            /usr/local/opt/openssl@3
-            /usr/local/opt/aom
-            /usr/local/opt/jpeg-turbo
-            /usr/local/opt/json-c
-            /usr/local/opt/libmaxminddb
-            /usr/local/opt/libtiff
-            /usr/local/opt/libupnp
-            /usr/local/opt/lz4
-            /usr/local/opt/pkgconf
-            /usr/local/opt/wxwidgets
-          key: ${{ runner.os }}-macos-intel-kegs-${{ steps.intelkegs.outputs.vers }}
+          path: ${{ steps.intelkegs.outputs.paths }}
+          # Keyed by run like ccache, so the newest set is always what restores
+          # and retention prunes the rest. Which kegs are stale is not the key's
+          # job: `brew install` below upgrades only what is outdated, along with
+          # any dependent Homebrew marks for a rebuild.
+          key: ${{ runner.os }}-macos-intel-kegs-${{ github.run_id }}
+          restore-keys: ${{ runner.os }}-macos-intel-kegs-
       - name: Install Homebrew deps
         run: |
           BREW=${{ matrix.brew_prefix }}/bin/brew
           MAINDEPS="cmake wxwidgets cryptopp libupnp gd gettext boost dylibbundler libmaxminddb ccache"
           if [ "${{ matrix.arch }}" = "x86_64" ]; then
-              SRCBUILD="pcre2 openssl@3 aom jpeg-turbo json-c libmaxminddb libtiff libupnp lz4 pkgconf wxwidgets"
+              SRCBUILD="${{ steps.intelkegs.outputs.kegs }}"
               # Several of these build against a Homebrew python, whose bin names
               # (python3, pip3, idle3) are already symlinks to the python.org
               # framework in /usr/local/bin. Its link step fails, and brew carries
@@ -370,22 +381,39 @@ jobs:
                   ${{ matrix.archcmd }} $BREW install "$p" || true
                   ${{ matrix.archcmd }} $BREW link --overwrite "$p"
               done
-              # No-op for each keg the cache restored at the same version.
+              # A restored keg has no /usr/local/{lib,include} symlinks and no
+              # alias opt links -- only the Cellar and opt paths are cached --
+              # so relink or dependents will not find the headers. openssl@3 is
+              # found through its opt path, which is cached. The -d guard skips
+              # what a cold cache has not installed yet.
+              relink() {
+                  for f in ${{ steps.intelkegs.outputs.linkable }}; do
+                      [ "$f" = "openssl@3" ] && continue
+                      [ -d "${{ matrix.brew_prefix }}/Cellar/$f" ] || continue
+                      ${{ matrix.archcmd }} $BREW link --overwrite "$f"
+                  done
+              }
+              # Before the install as well: whatever the cache restored stale
+              # compiles here, and configure reaches pkgconf through the shim's
+              # opt/pkg-config -- an alias link only `brew link` restores.
+              relink
+              # What the restored set is missing or has outdated: the only
+              # formulae the install below will compile.
+              ${{ matrix.archcmd }} $BREW outdated $SRCBUILD || true
+              # No-op for each keg the cache restored at the current version.
               ${{ matrix.archcmd }} $BREW install --build-from-source $SRCBUILD
-              # A restored keg has no /usr/local/{lib,include} symlinks --
-              # only the Cellar and opt paths are cached -- so relink or
-              # dependents will not find the headers. openssl@3 is keg-only
-              # and is found through its opt path, which is cached.
-              for f in $SRCBUILD; do
-                  [ "$f" = "openssl@3" ] && continue
-                  ${{ matrix.archcmd }} $BREW link --overwrite "$f"
-              done
+              relink
           fi
           # NOT --quiet: when the next formula loses its Intel bottle,
           # the reason has to be in the log. It was suppressed here, so
           # this step failed with a bare exit 1 and the breakage only
           # surfaced two steps later as "ccache: command not found".
           ${{ matrix.archcmd }} $BREW install $MAINDEPS
+          if [ "${{ matrix.arch }}" = "x86_64" ]; then
+              # An upgrade leaves the old version beside the new one in Cellar;
+              # drop it so the saved cache does not grow with every bump.
+              ${{ matrix.archcmd }} $BREW cleanup $SRCBUILD
+          fi
           # Prepend the matrix-selected brew prefix to PATH so every
           # `brew --prefix` / `cmake` / `pkg-config` invocation in the
           # build script resolves against the right install. gettext
@@ -393,33 +421,13 @@ jobs:
           echo "${{ matrix.brew_prefix }}/bin" >> "$GITHUB_PATH"
           echo "${{ matrix.brew_prefix }}/opt/gettext/bin" >> "$GITHUB_PATH"
       - name: Save x86_64 source-built kegs
-        if: matrix.arch == 'x86_64' && github.event_name != 'workflow_call'
-        uses: actions/cache/save@v6
+        # Master only, as for ccache: retention compares keys across branches,
+        # and a branch-scoped entry that ranked newest would cost master its own.
+        if: matrix.arch == 'x86_64' && github.event_name == 'push' && github.ref == 'refs/heads/master'
+        uses: ./.github/actions/cache-save-newest
         with:
-          path: |
-            /usr/local/Cellar/pcre2
-            /usr/local/Cellar/openssl@3
-            /usr/local/Cellar/aom
-            /usr/local/Cellar/jpeg-turbo
-            /usr/local/Cellar/json-c
-            /usr/local/Cellar/libmaxminddb
-            /usr/local/Cellar/libtiff
-            /usr/local/Cellar/libupnp
-            /usr/local/Cellar/lz4
-            /usr/local/Cellar/pkgconf
-            /usr/local/Cellar/wxwidgets
-            /usr/local/opt/pcre2
-            /usr/local/opt/openssl@3
-            /usr/local/opt/aom
-            /usr/local/opt/jpeg-turbo
-            /usr/local/opt/json-c
-            /usr/local/opt/libmaxminddb
-            /usr/local/opt/libtiff
-            /usr/local/opt/libupnp
-            /usr/local/opt/lz4
-            /usr/local/opt/pkgconf
-            /usr/local/opt/wxwidgets
-          key: ${{ runner.os }}-macos-intel-kegs-${{ steps.intelkegs.outputs.vers }}
+          path: ${{ steps.intelkegs.outputs.paths }}
+          key: ${{ runner.os }}-macos-intel-kegs-${{ github.run_id }}
       - name: Restore ccache
         if: github.event_name != 'workflow_call'
         uses: actions/cache/restore@v6
@@ -460,7 +468,7 @@ jobs:
           hdiutil detach "${MNT}"
       - name: Save ccache
         if: always() && github.event_name == 'push' && github.ref == 'refs/heads/master'
-        uses: actions/cache/save@v6
+        uses: ./.github/actions/cache-save-newest
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ runner.os }}-macos-${{ matrix.arch }}-ccache-${{ github.run_id }}
@@ -693,7 +701,7 @@ jobs:
           grep -q '^aMuleD ' /tmp/version.txt
       - name: Save ccache
         if: always() && github.event_name == 'push' && github.ref == 'refs/heads/master'
-        uses: actions/cache/save@v6
+        uses: ./.github/actions/cache-save-newest
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ runner.os }}-windows-${{ matrix.arch }}-ccache-${{ github.run_id }}

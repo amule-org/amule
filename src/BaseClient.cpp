@@ -147,8 +147,8 @@ CUpDownClient::CUpDownClient(uint16 in_port,
 	ReGetClientSoft();
 
 	if (checkfriend) {
-		if ((m_Friend = theApp->friendlist->FindFriend(CMD4Hash(), m_dwUserIP, m_nUserPort)) !=
-			NULL) {
+		if ((m_Friend = theApp->friendlist->FindFriend(CMD4Hash(), GetIP(), m_nUserPort)) !=
+			nullptr) {
 			m_Friend->LinkClient(
 				CCLIENTREF(this, "CUpDownClient::CUpDownClient m_Friend->LinkClient"));
 		} else {
@@ -250,7 +250,7 @@ void CUpDownClient::Init()
 	m_fExtMultiPacket = 0;
 	m_fIsSpammer = 0;
 
-	m_dwUserIP = 0;
+	m_userAddress = CNetworkAddress::Absent();
 	m_connectAddress = CNetworkAddress::Absent();
 	m_dwServerIP = 0;
 
@@ -769,8 +769,8 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data)
 	// will not send an ID; those are HighID users not connected to a server. (c) Kad users
 	// with a *.*.*.0 IP look like a lowID user but are actually highID -- easily detected,
 	// because they send an ID that is the same as their IP.
-	if (!HasLowID() || m_nUserIDHybrid == 0 || m_nUserIDHybrid == m_dwUserIP) {
-		SetUserIDHybrid(wxUINT32_SWAP_ALWAYS(m_dwUserIP));
+	if (!HasLowID() || m_nUserIDHybrid == 0 || m_nUserIDHybrid == GetIP()) {
+		SetUserIDHybrid(wxUINT32_SWAP_ALWAYS(GetIP()));
 	}
 
 	// get client credits
@@ -798,7 +798,7 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data)
 	// client's side would leave that record pointing here and showing its friend as connected.
 	// Unlink first, because UnLinkClient() clears m_Friend as it goes.
 	CFriend *previous = m_Friend;
-	CFriend *found = theApp->friendlist->FindFriend(m_UserHash, m_dwUserIP, m_nUserPort);
+	CFriend *found = theApp->friendlist->FindFriend(m_UserHash, GetIP(), m_nUserPort);
 	if (previous != nullptr && previous != found) {
 		previous->UnLinkClient();
 	}
@@ -823,7 +823,7 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data)
 	// would measure traffic instead of visits.
 	if (credits != nullptr) {
 		credits->UpdateMeta(m_Username,
-			m_dwUserIP,
+			GetIP(),
 			m_nUserPort,
 			m_nKadPort,
 			m_nClientVersion,
@@ -926,7 +926,7 @@ void CUpDownClient::SendMuleInfoPacket(bool bAnswer, bool OSInfo)
 		CTagInt32 tag6(ET_EXTENDEDREQUEST, 2);
 		tag6.WriteTagToFile(&data);
 
-		uint32 dwTagValue = SecIdent::SupportedVersions(theApp->CryptoAvailable(), GetIP() != 0);
+		uint32 dwTagValue = SecIdent::SupportedVersions(theApp->CryptoAvailable(), HasPeerIPv4());
 		// Kry - Needs the preview code from eMule
 		/*
 		// set 'Preview supported' only if 'View Shared Files' allowed
@@ -1215,7 +1215,7 @@ void CUpDownClient::SendHelloTypePacket(CMemFile *data)
 	// eMule Misc. Options #1
 	const uint32 uUdpVer = 4;
 	const uint32 uDataCompVer = 1;
-	const uint32 uSupportSecIdent = SecIdent::SupportedVersions(theApp->CryptoAvailable(), GetIP() != 0);
+	const uint32 uSupportSecIdent = SecIdent::SupportedVersions(theApp->CryptoAvailable(), HasPeerIPv4());
 	const uint32 uSourceExchangeVer = 3;
 	const uint32 uExtendedRequestsVer = 2;
 	const uint32 uAcceptCommentVer = 1;
@@ -2619,8 +2619,11 @@ void CUpDownClient::ProcessSignaturePacket(const uint8_t *pachPacket, uint32 nSi
 				byChaIPKind);
 	}
 
-	m_lastSignatureAddress = GetUserAddress();
-	m_hasReceivedSignature = true;
+	if (GetUserAddress().IsPresent()) {
+		// A signature we could not bind to an endpoint must not block the peer's next attempt.
+		m_lastSignatureAddress = GetUserAddress();
+		m_hasReceivedSignature = true;
+	}
 }
 
 void CUpDownClient::SendSecIdentStatePacket()
@@ -2688,7 +2691,7 @@ void CUpDownClient::InfoPacketsReceived()
 	wxASSERT(m_byInfopacketsReceived == IP_BOTH);
 	m_byInfopacketsReceived = IP_NONE;
 
-	if (SecIdent::SignatureVersion(m_bySupportSecIdent, GetIP() != 0) != SecIdent::Unavailable) {
+	if (SecIdent::SignatureVersion(m_bySupportSecIdent, HasPeerIPv4()) != SecIdent::Unavailable) {
 		SendSecIdentStatePacket();
 	}
 }
@@ -2803,17 +2806,22 @@ void CUpDownClient::SetIP(uint32 val)
 	SetUserAddress(CNetworkAddress::FromIPv4NetworkOrderOrAbsent(val));
 }
 
+bool CUpDownClient::HasPeerIPv4() const
+{
+	// The user address stays absent until the peer's hello, so an outbound connection has to
+	// ask the address it dialled, or it would advertise SecIdent v1 to an IPv4 peer.
+	uint32 peerIPv4 = 0;
+	return SecIdent::PeerIPv4(
+		GetUserAddress().IsPresent() ? GetUserAddress() : GetConnectAddress(), peerIPv4);
+}
+
 void CUpDownClient::SetUserAddress(const CNetworkAddress &address)
 {
 	const CNetworkAddress key = PeerAddressing::IndexKey(address);
 	theApp->clientlist->UpdateClientIP(this, key);
 	m_userAddress = key;
-	const uint32 val = key.ToIPv4NetworkOrderOrZero();
-	m_dwUserIP = val;
-
 	m_connectAddress = key;
-
-	m_FullUserIP = val;
+	m_FullUserIP = key.ToIPv4NetworkOrderOrZero();
 }
 
 void CUpDownClient::SetUserHash(const CMD4Hash &userhash)

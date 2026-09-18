@@ -1040,6 +1040,7 @@ target_link_libraries (ChatSessionStoreTest
 add_executable (MediaProbeParseTest
 	MediaProbeParseTest.cpp
 	${CMAKE_SOURCE_DIR}/src/MediaProbe.cpp
+	${CMAKE_SOURCE_DIR}/src/AppImageEnv.cpp
 )
 add_test (NAME MediaProbeParseTest COMMAND MediaProbeParseTest)
 target_include_directories (MediaProbeParseTest
@@ -1048,6 +1049,22 @@ target_include_directories (MediaProbeParseTest
 	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
 )
 target_link_libraries (MediaProbeParseTest
+	muleunit
+	mulecommon
+)
+
+add_executable (MediaProbeEnvTest
+	MediaProbeEnvTest.cpp
+	${CMAKE_SOURCE_DIR}/src/MediaProbe.cpp
+	${CMAKE_SOURCE_DIR}/src/AppImageEnv.cpp
+)
+add_test (NAME MediaProbeEnvTest COMMAND MediaProbeEnvTest)
+target_include_directories (MediaProbeEnvTest
+	PRIVATE ${CMAKE_BINARY_DIR}
+	PRIVATE ${CMAKE_SOURCE_DIR}/src
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
+)
+target_link_libraries (MediaProbeEnvTest
 	muleunit
 	mulecommon
 )

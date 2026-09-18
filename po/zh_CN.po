@@ -14,7 +14,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-09-17 08:44+0200\n"
-"PO-Revision-Date: 2026-09-17 09:18+0000\n"
+"PO-Revision-Date: 2026-09-18 11:20+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
 "Language: zh_CN\n"
@@ -7358,9 +7358,9 @@ msgid "Shared directory not found, skipping: %s"
 msgstr "找不到共享目录，跳过：%s"
 
 #: src/SharedFileList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Shared directory not readable, skipping: %s"
-msgstr "找不到共享目录，跳过：%s"
+msgstr "无法读取共享目录，跳过：%s"
 
 #: src/SharedFileList.cpp
 msgid "Media metadata extraction is disabled in preferences, so there is nothing to re-extract."

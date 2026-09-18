@@ -19,6 +19,26 @@ on:
   push:
     branches:
       - master
+  # As each cache-writing run ends, which a push alone does not cover: the
+  # heavy runs finish long after the push that started them, so the superseded
+  # generation would otherwise sit in the store until the next merge. That
+  # overlap is what holds the store over its 10 GB limit, and GitHub then
+  # evicts by least recent read -- which is how the macOS keg cache kept
+  # disappearing and costing the Intel leg a 2h40m rebuild.
+  #
+  # `C/C++ CI` is deliberately absent. A name the trigger cannot resolve does
+  # not merely fail to match: it stops this workflow compiling for the event,
+  # and every completion then produces a startup_failure with no job and no
+  # log. Reproduced on a fork, where a probe listing a slash-named workflow
+  # broke completions that a sibling probe handled fine. Its ccache is small
+  # and its runs end close to the push that started them, so the push trigger
+  # already covers it. Keep every entry here slash-free.
+  workflow_run:
+    workflows:
+      - Packaging
+      - clang-tidy
+    types:
+      - completed
   # Backstop for stretches with no merges, and a manual handle.
   schedule:
     - cron: '0 3 * * *'
@@ -44,9 +64,8 @@ jobs:
           for line in open("caches.tsv"):
               cid, created, size, key = line.rstrip("\n").split("\t", 3)
               rows.append((int(cid), created, int(size), key))
-          # Group by the key with a trailing numeric run id removed. Keys that
-          # carry no run id (e.g. the macOS Intel keg cache, whose key is the
-          # formula versions) form single-entry groups and are always kept.
+          # Group by the key with a trailing numeric run id removed. A key that
+          # carries no run id forms a single-entry group and is always kept.
           # Normalise the run id AND embedded hashes: CodeQL and msys2 key on a
           # commit sha rather than a run id, so without this each lands in its
           # own group and survives forever (5 CodeQL TRAP entries alone were

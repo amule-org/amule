@@ -99,7 +99,6 @@ public:
 	 * Updates the recorded address before the client changes it.
 	 * Present addresses are indexed canonically; the uint32 adapter treats zero as absent.
 	 */
-	void UpdateClientIP(CUpDownClient *client, uint32 newIP);
 	void UpdateClientIP(CUpDownClient *client, const CNetworkAddress &address);
 
 	/**

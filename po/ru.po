@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-09-17 08:44+0200\n"
-"PO-Revision-Date: 2026-09-17 09:12+0000\n"
+"PO-Revision-Date: 2026-09-18 11:20+0000\n"
 "Last-Translator: Radist Morse <radist.morse@gmail.com>\n"
 "Language-Team: Russian <kde-russian@lists.kde.ru>\n"
 "Language: ru\n"
@@ -1095,7 +1095,7 @@ msgstr "Не удалось удалить категорию: %s"
 #: src/amule-remote-gui.cpp
 #, c-format
 msgid "Can't create directory '%s' for category '%s', keeping directory '%s'."
-msgstr "Не удается создать директорию '%s' для категории '%s', оставляем директорию '%s'."
+msgstr "Не удаётся создать каталог «%s» для категории «%s», сохраняется каталог «%s»."
 
 #: src/amule-remote-gui.cpp
 #, c-format
@@ -5267,7 +5267,7 @@ msgstr "Статистика узлов"
 # Похоже, bootstrap в eMule перевели как инициализация
 #: src/muuli_wdr.cpp
 msgid "Bootstrap from node: IP"
-msgstr "Начальная загрузка от узла: IP"
+msgstr "Начальная загрузка с узла: IP"
 
 #: src/muuli_wdr.cpp
 msgid "Enter the IP of the node here, using the x.x.x.x format."
@@ -5794,7 +5794,7 @@ msgstr "Текст"
 #: src/OtherFunctions.cpp
 #, c-format
 msgid "Using config dir: %s"
-msgstr "Используем директорию конфигурации: %s"
+msgstr "Используемый каталог конфигурации: %s"
 
 #: src/PartBarLegendUI.cpp
 msgid "This source does not have the part"
@@ -7426,12 +7426,12 @@ msgstr "ОШИБКА: попытка опубликовать %s"
 #: src/SharedFileList.cpp
 #, c-format
 msgid "Shared directory not found, skipping: %s"
-msgstr "Публикуемая директория не найдена, пропускается: %s"
+msgstr "Общий каталог не найден, пропускается: %s"
 
 #: src/SharedFileList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Shared directory not readable, skipping: %s"
-msgstr "Публикуемая директория не найдена, пропускается: %s"
+msgstr "Общий каталог недоступен для чтения, пропускается: %s"
 
 #: src/SharedFileList.cpp
 msgid "Media metadata extraction is disabled in preferences, so there is nothing to re-extract."

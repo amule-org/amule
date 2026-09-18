@@ -192,7 +192,8 @@ private:
 		AddDebugLogLineN(logIPFilter,
 			CFormat("Ranges in map: %d  blocked ranges in table: %d") % size % m_rangeIPs.size());
 
-		CIPFilterEvent evt(m_rangeIPs, m_rangeLengths, m_rangeNames, m_ipv6Ranges, accessLevel);
+		CIPFilterEvent evt(
+			m_rangeIPs, m_rangeLengths, m_rangeNames, std::move(m_ipv6Ranges), accessLevel);
 		wxQueueEvent(m_owner, (evt).Clone());
 	}
 
@@ -309,11 +310,13 @@ private:
 					ipv6Network,
 					ipv6Prefix))) {
 				if (token == 2) {
-					m_ipv6Ranges.Append(ipv6Network, ipv6Prefix, IPAccessLevel);
+					if (m_ipv6Ranges.Append(ipv6Network, ipv6Prefix, IPAccessLevel)) {
+						filtercount++;
+					}
 				} else {
 					AddIPRange(IPStart, IPEnd, IPAccessLevel, IPDescription);
+					filtercount++;
 				}
-				filtercount++;
 			}
 #ifdef __DEBUG__
 			uint64 time2 = GetTickCount64();
@@ -480,14 +483,12 @@ bool CIPFilter::IsFiltered(const CNetworkAddress &address, bool isServer)
 	if (address.ToIPv4NetworkOrder(ipv4)) {
 		return IsFiltered(ipv4, isServer);
 	}
-	if (address.IsAbsent()) {
-		return true;
-	}
 	if ((!thePrefs::IsFilteringClients() && !isServer) || (!thePrefs::IsFilteringServers() && isServer)) {
 		return false;
 	}
 	wxMutexLocker lock(m_mutex);
-	if (!m_ready || m_ipv6Ranges.IsFiltered(address, m_ipv6AccessLevel)) {
+	// An address we cannot read counts as filtered: a security check that cannot run must refuse.
+	if (address.IsAbsent() || !m_ready || m_ipv6Ranges.IsFiltered(address, m_ipv6AccessLevel)) {
 		AddDebugLogLineN(logIPFilter, CFormat("Filtered IP %s") % address.ToWxString());
 		if (isServer) {
 			theStats::AddFilteredServer();

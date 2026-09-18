@@ -78,8 +78,16 @@ CClientUDPSocket::CClientUDPSocket(const amuleIPV4Address &address, const CProxy
 void CClientUDPSocket::Close()
 {
 	wxASSERT(wxIsMainThread());
-	m_utp.Destroy();
+	// The uTP context is not destroyed here. Close() and Open() are how a lost
+	// Kad connection is recovered, and libutp does not own this socket: it only
+	// asks us to send. Destroying the context would end every live uTP stream
+	// for a reconnect that leaves TCP peers untouched.
 	CMuleUDPSocket::Close();
+}
+
+CClientUDPSocket::~CClientUDPSocket()
+{
+	m_utp.Destroy();
 }
 
 void CClientUDPSocket::TickUtp()
