@@ -276,10 +276,10 @@ if (NEED_LIB_MULEAPPCOMMON OR BUILD_WEBSERVER)
 	option (ENABLE_UPNP "enable UPnP support in aMule" ON)
 endif()
 
-# Experimental IPv4 uTP datagram framing in amule/amuled only. No stream
-# acceptance, dialing, or capability advertisement. Requires CMake 3.12;
-# see cmake/libutp.cmake.
-option (ENABLE_UTP "enable experimental uTP datagram framing (no stream transport)" OFF)
+# Experimental IPv4 uTP in amule/amuled only: datagram framing and inbound
+# stream acceptance. No dialing or capability advertisement. Requires CMake
+# 3.12; see cmake/libutp.cmake.
+option (ENABLE_UTP "enable experimental uTP: datagram framing and inbound stream acceptance (no dialing)" OFF)
 
 # Master switch for the in-app "check for a new aMule version" feature: the
 # startup notification, the "Check for new version at startup" preference, and

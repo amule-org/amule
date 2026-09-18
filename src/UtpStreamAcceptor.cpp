@@ -74,8 +74,12 @@ bool CUtpStreamAcceptor::AcceptStream(
 	auto *utp = static_cast<CUtpSocketTransport *>(transport.get());
 	utp->SetEvents(socket);
 	socket->AttachTransport(std::move(transport));
-	// Records m_remoteip; its checks were made above.
-	socket->InitNetworkData();
+	// Records m_remoteip; its checks were made above. Refusal still has to delete
+	// the socket, as CListenSocket::OnAccept does, or it stays with no address.
+	if (!socket->InitNetworkData()) {
+		socket->Safe_Delete();
+		return false;
+	}
 	AddDebugLogLineN(logClient, CFormat("Accepted uTP stream from %s:%u") % Uint32toStringIP(ip) % port);
 	return true;
 }
