@@ -75,7 +75,10 @@ CClientHistoryListCtrl::CClientHistoryListCtrl(
 	AddTextColumn(_("Download Speed"), COLUMN_HISTORY_DOWN_SPEED, "D", 100, wxALIGN_LEFT, colFlags);
 	AddTextColumn(_("Total Uploaded"), COLUMN_HISTORY_TOTAL_UP, "T", 110, wxALIGN_LEFT, colFlags);
 	AddTextColumn(_("Total Downloaded"), COLUMN_HISTORY_TOTAL_DOWN, "t", 110, wxALIGN_LEFT, colFlags);
-	AddTextColumn(_("Ratio"), COLUMN_HISTORY_RATIO, "R", 70, wxALIGN_LEFT, colFlags);
+	// Named for what the value is, not what it looks like: it is the credit modifier the
+	// detail dialog already labels this way, with a 2x on the downloaded side, so "Ratio"
+	// invited reading it as uploaded-vs-downloaded.
+	AddTextColumn(_("DL/UP modifier"), COLUMN_HISTORY_RATIO, "R", 120, wxALIGN_LEFT, colFlags);
 
 	AppendSpacerColumn(COLUMN_HISTORY_SPACER);
 
@@ -344,6 +347,8 @@ bool CClientHistoryListCtrl::PeerForItem(wxUIntPtr data, PeerIdentity &out) cons
 	// Same direction the list's own Total Up / Total Down columns use.
 	out.detail.uploadedTotal = row->uploaded;
 	out.detail.downloadedTotal = row->downloaded;
+	out.detail.creditRatio = row->creditRatio;
+	out.detail.hasCreditRatio = row->hasCreditRatio;
 	out.detail.hasSession = false;
 	out.hasDetail = true;
 #ifdef CLIENT_GUI

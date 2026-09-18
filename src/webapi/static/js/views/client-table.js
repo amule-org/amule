@@ -45,7 +45,7 @@ export const bySpeed = (a, b) =>
 // the formula lives in CClientCredits and a copy of it in JavaScript went stale the moment the
 // core stopped applying its identity gate to the displayed value.
 const RATIO_COL =
-  { key: "ratio", th: "downloads_peer_col_ratio", num: true, width: "90px", sortable: true,
+  { key: "ratio", th: "downloads_peer_col_ratio", num: true, width: "130px", sortable: true,
     sortVal: (c) => c.credit_ratio ?? 0,
     cell: (c) => c.credit_ratio == null ? "\u2014" : Number(c.credit_ratio).toFixed(2) };
 

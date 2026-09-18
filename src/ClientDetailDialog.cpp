@@ -67,6 +67,8 @@ ClientDetailInfo ClientDetailInfoFromClient(const CClientRef &client)
 	info.kBpsDown = c.GetKBpsDown();
 	info.uploadDatarate = c.GetUploadDatarate();
 	info.creditRatio = c.GetCreditRatio();
+	// 0 is what the getter returns for a peer with no credit record, which is not a modifier.
+	info.hasCreditRatio = info.creditRatio > 0.0;
 	info.secureIdentStatus = c.GetSecureIdentTextStatus();
 	info.uploadState = c.GetUploadState();
 	info.queueRank = c.GetUploadQueueWaitingPosition();
@@ -229,9 +231,10 @@ bool CClientDetailDialog::OnInitDialog()
 	CastChild(ID_DUPTOTAL, wxStaticText)->SetLabel(CastItoXBytes(m_info.downloadedTotal));
 	CastChild(ID_DDOWNTOTAL, wxStaticText)->SetLabel(CastItoXBytes(m_info.uploadedTotal));
 
-	// DL/UP Modifier
+	// DL/UP modifier. Keyed on having one, not on hasSession: it is lifetime credit like the
+	// two totals above, so a stored record answers it as well as a live peer does.
 	CastChild(ID_DRATIO, wxStaticText)
-		->SetLabel(m_info.hasSession ? wxString(CFormat("%.1f") % m_info.creditRatio) : kNoValue);
+		->SetLabel(m_info.hasCreditRatio ? wxString(CFormat("%.2f") % m_info.creditRatio) : kNoValue);
 
 	// Secure Ident
 	CastChild(IDC_CDIDENT, wxStaticText)

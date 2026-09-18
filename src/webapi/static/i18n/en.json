@@ -673,7 +673,7 @@
   "downloads_peer_col_ul_state": "UL state",
   "downloads_peer_col_ul_speed": "UL speed",
   "downloads_peer_col_uploaded": "UL total",
-  "downloads_peer_col_ratio": "Ratio",
+  "downloads_peer_col_ratio": "DL/UP modifier",
   "downloads_peer_col_uploaded_session": "UL session",
   "downloads_peer_col_queue_pos": "Queue pos.",
   "downloads_peer_col_score": "Score",

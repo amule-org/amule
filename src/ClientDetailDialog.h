@@ -74,6 +74,9 @@ struct ClientDetailInfo
 	float kBpsDown = 0.0f;
 	uint32 uploadDatarate = 0;
 	double creditRatio = 0.0;
+	//! The record carries a modifier at all. False against a daemon too old to send one, and
+	//! for a live peer with no credit record yet.
+	bool hasCreditRatio = false;
 	wxString secureIdentStatus;
 	uint8 uploadState = 0;
 	uint16 queueRank = 0;

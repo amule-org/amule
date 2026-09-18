@@ -82,7 +82,10 @@ CClientsListCtrl::CClientsListCtrl(
 	AddTextColumn(_("Downloaded"), COLUMN_CLIENTS_SESSION_DOWN, "d", 100, wxALIGN_LEFT, colFlags);
 	AddTextColumn(_("Total Uploaded"), COLUMN_CLIENTS_TOTAL_UP, "T", 110, wxALIGN_LEFT, colFlags);
 	AddTextColumn(_("Total Downloaded"), COLUMN_CLIENTS_TOTAL_DOWN, "t", 110, wxALIGN_LEFT, colFlags);
-	AddTextColumn(_("Ratio"), COLUMN_CLIENTS_RATIO, "R", 70, wxALIGN_LEFT, colFlags);
+	// Named for what the value is, not what it looks like: it is the credit modifier the
+	// detail dialog already labels this way, with a 2x on the downloaded side, so "Ratio"
+	// invited reading it as uploaded-vs-downloaded.
+	AddTextColumn(_("DL/UP modifier"), COLUMN_CLIENTS_RATIO, "R", 120, wxALIGN_LEFT, colFlags);
 
 	AppendSpacerColumn(COLUMN_CLIENTS_SPACER);
 
