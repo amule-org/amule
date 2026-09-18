@@ -64,7 +64,11 @@ unset GTK_MODULES
 # argv[0] dispatch. ARGV0 is set by the AppImage runtime; fall back to
 # $0 for direct invocation (e.g. when extracted via --appimage-extract).
 INVOCATION="${ARGV0:-$0}"
-NAME="$(basename "${INVOCATION}")"
+# Bash's own suffix removal, not basename: LD_LIBRARY_PATH already points into
+# the bundle, so a host program started here loads our older libraries and can
+# fail to resolve its own symbols. Ubuntu 26.04's basename wants LIBSYSTEMD_254,
+# the bundled libsystemd stops at 252 (#1463). Keep every step below builtin.
+NAME="${INVOCATION##*/}"
 # Strip a trailing .AppImage so renaming aMule-2.4.0-Linux-x64.AppImage
 # to amuled.AppImage still dispatches.
 NAME="${NAME%.AppImage}"
