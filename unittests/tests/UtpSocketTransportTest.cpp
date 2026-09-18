@@ -878,4 +878,26 @@ TEST(UtpSocketTransport, AskingToEncryptWithoutAHashEncryptsNothing)
 	ASSERT_FALSE(transport.CryptParameters(&hash));
 }
 
+TEST(UtpSocketTransport, ObfuscationIsReportedFromTheCryptParametersItWasGiven)
+{
+	// The socket above suppresses the ed2k stream handshake on this answer, so
+	// a transport that claims to obfuscate and does not would send in the clear
+	// what the peer was owed obfuscated.
+	FakeOperations ops;
+	CUtpSocketTransport transport = MakeTransport(ops);
+	ASSERT_FALSE(transport.ObfuscatesStream());
+
+	const uint8_t peerHash[16] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
+	transport.SetCryptParameters(true, peerHash);
+	ASSERT_TRUE(transport.ObfuscatesStream());
+
+	transport.SetCryptParameters(false, peerHash);
+	ASSERT_FALSE(transport.ObfuscatesStream());
+
+	// Asking to encrypt with no key material encrypts nothing, so it must not
+	// report otherwise either.
+	transport.SetCryptParameters(true, nullptr);
+	ASSERT_FALSE(transport.ObfuscatesStream());
+}
+
 // File_checked_for_headers

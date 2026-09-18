@@ -62,6 +62,15 @@ public:
 	//! Whether the stream has completed its handshake and not yet ended.
 	virtual bool IsConnected() const = 0;
 
+	/**
+	 * Whether this transport obfuscates the bytes it carries.
+	 *
+	 * True suppresses the ed2k stream handshake, which would otherwise obfuscate them twice.
+	 * Deliberately asked of the transport rather than assumed from its presence: answering
+	 * wrongly sends in the clear what the peer was owed obfuscated.
+	 */
+	virtual bool ObfuscatesStream() const = 0;
+
 	virtual void SetEvents(IStreamTransportEvents *events) = 0;
 
 	//! Whether the stream is usable. False once it has failed or been closed.

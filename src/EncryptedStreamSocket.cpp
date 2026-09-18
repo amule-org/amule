@@ -72,6 +72,7 @@
  * sizeof(a) and sizeof(b) = 128 bits, g = 2, p = dh768_p (see below), sizeof p, s etc. = 768 bits.
  */
 #include "EncryptedStreamSocket.h"
+#include "StreamTransport.h"
 #include "amule.h"
 #include "Logger.h"
 #include "Preferences.h"
@@ -214,6 +215,12 @@ CEncryptedStreamSocket::CEncryptedStreamSocket(muleSocketFlags flags, const CPro
 CEncryptedStreamSocket::~CEncryptedStreamSocket() {}
 
 /* External interface */
+
+bool CEncryptedStreamSocket::TransportObfuscates() const
+{
+	const IStreamTransport *transport = GetTransport();
+	return transport != nullptr && transport->ObfuscatesStream();
+}
 
 void CEncryptedStreamSocket::SetConnectionEncryption(
 	bool bEnabled, const uint8_t *pTargetClientHash, bool bServerConnection)

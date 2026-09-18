@@ -152,6 +152,12 @@ public:
 		std::lock_guard<std::mutex> lock(m_mutex);
 		return m_connected && m_stream.IsOk();
 	}
+
+	bool ObfuscatesStream() const override
+	{
+		std::lock_guard<std::mutex> lock(m_mutex);
+		return m_encrypt;
+	}
 	bool IsOk() const override
 	{
 		std::lock_guard<std::mutex> lock(m_mutex);
