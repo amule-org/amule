@@ -33,6 +33,8 @@
 #include <protocol/kad/Constants.h>
 #include <protocol/kad2/Client2Client/TCP.h>
 
+#include <cstring>
+
 #include "amule.h"            // Needed for theApp
 #include "ChatSessionStore.h" // Needed for CChatSessionStore
 #include "ClientTCPSocket.h"  // Needed for CClientTCPSocket
@@ -405,7 +407,26 @@ bool CClientList::AttachToAlreadyKnown(CUpDownClient **client, CClientTCPSocket 
 							found_client->GetFullIP() + ")");
 					return false;
 				}
-				found_client->GetSocket()->Safe_Delete();
+				CClientTCPSocket *foundSocket = found_client->GetSocket();
+#ifdef AMULE_UTP_TRANSPORT
+				if (foundSocket->HasTransport() && sender->HasTransport() &&
+					foundSocket->IsUtpInbound() != sender->IsUtpInbound() &&
+					found_client->HasValidHash()) {
+					const bool localKeepsInbound =
+						std::memcmp(thePrefs::GetUserHash().GetHash(),
+							tocheck->GetUserHash().GetHash(),
+							16) > 0;
+					const bool keepFound =
+						foundSocket->IsUtpInbound() == localKeepsInbound;
+					if (keepFound) {
+						sender->Safe_Delete();
+						tocheck->SetSocket(nullptr);
+						*client = found_client;
+						return true;
+					}
+				}
+#endif
+				foundSocket->Safe_Delete();
 			}
 			found_client->SetSocket(sender);
 			tocheck->SetSocket(NULL);

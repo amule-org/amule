@@ -50,6 +50,7 @@ public:
 #ifdef AMULE_UTP_TRANSPORT
 	//! Hands this peer's obfuscation preference and hash to an attached stream.
 	void ApplyUtpCryptParameters();
+	bool IsUtpInbound() const;
 #endif
 
 	bool CheckTimeOut();
@@ -94,6 +95,10 @@ protected:
 
 private:
 	CUpDownClient *m_client;
+#ifdef AMULE_UTP_TRANSPORT
+	bool TryUtpTcpFallback();
+	bool m_utpFallbackAttempted = false;
+#endif
 
 	bool ProcessPacket(const uint8_t *packet, uint32 size, uint8 opcode);
 	bool ProcessExtPacket(const uint8_t *packet, uint32 size, uint8 opcode);

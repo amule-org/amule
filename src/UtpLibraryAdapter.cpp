@@ -108,7 +108,7 @@ public:
 			return false;
 		}
 		auto pending = std::make_unique<CUtpSocketTransport>(
-			*this, socket, CNetworkAddress::FromIPv4NetworkOrder(ip), port);
+			*this, socket, CNetworkAddress::FromIPv4NetworkOrder(ip), port, false);
 		utp_set_userdata(socket, pending.get());
 		pending->ApplyReceiveBound();
 		pending->SetCryptParameters(encrypt, userHash);
@@ -243,7 +243,7 @@ private:
 		// Interface type so the seam can move out of it; the concrete pointer
 		// stays for the setup below.
 		auto owned = std::make_unique<CUtpSocketTransport>(
-			*s_self, args->socket, CNetworkAddress::FromIPv4NetworkOrder(ip), port);
+			*s_self, args->socket, CNetworkAddress::FromIPv4NetworkOrder(ip), port, true);
 		CUtpSocketTransport *raw = owned.get();
 		std::unique_ptr<IStreamTransport> transport(std::move(owned));
 		// Before admission can produce a callback that needs it.

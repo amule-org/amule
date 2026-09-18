@@ -95,11 +95,13 @@ public:
 		IUtpSocketOperations::Handle socket,
 		const CNetworkAddress &peer,
 		uint16_t peerPort,
+		bool inbound = false,
 		IStreamTransportEvents *events = nullptr)
 	: m_operations(operations)
 	, m_socket(socket)
 	, m_peer(peer)
 	, m_peerPort(peerPort)
+	, m_inbound(inbound)
 	, m_events(events)
 	{
 	}
@@ -152,6 +154,7 @@ public:
 		std::lock_guard<std::mutex> lock(m_mutex);
 		return m_connected && m_stream.IsOk();
 	}
+	bool IsInbound() const override { return m_inbound; }
 
 	bool ObfuscatesStream() const override
 	{
@@ -559,6 +562,7 @@ private:
 	IUtpSocketOperations::Handle m_socket;
 	const CNetworkAddress m_peer;
 	const uint16_t m_peerPort;
+	const bool m_inbound;
 	// Non-owning: the owner must quiesce Write()/queued pumps before destruction
 	// and keep the sink alive through all calls. Callbacks must not delete this
 	// transport synchronously. Destruction detaches before library re-entry.

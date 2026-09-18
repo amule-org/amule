@@ -26,3 +26,8 @@
 // Intentional single-translation-unit include of the Asio implementation.
 // NOLINTNEXTLINE(bugprone-suspicious-include)
 #include "LibSocketAsio.cpp"
+
+std::unique_ptr<IStreamTransport> CLibSocket::DetachTransport()
+{
+	return std::move(m_transport);
+}

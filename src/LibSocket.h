@@ -159,6 +159,7 @@ public:
 	 * arm would stay dead after wiring.
 	 */
 	void AttachTransport(std::unique_ptr<IStreamTransport> transport);
+	std::unique_ptr<IStreamTransport> DetachTransport();
 
 	//! True while a transport owns this socket's stream.
 	bool HasTransport() const { return m_transport != nullptr; }

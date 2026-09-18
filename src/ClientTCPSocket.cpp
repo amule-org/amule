@@ -111,6 +111,11 @@ void CClientTCPSocket::ApplyUtpCryptParameters()
 		->SetCryptParameters(m_client->ShouldReceiveCryptUDPPackets(),
 			m_client->HasValidHash() ? m_client->GetUserHash().GetHash() : nullptr);
 }
+
+bool CClientTCPSocket::IsUtpInbound() const
+{
+	return HasTransport() && GetTransport()->IsInbound();
+}
 #endif
 
 bool CClientTCPSocket::InitNetworkData()
@@ -165,6 +170,11 @@ void CClientTCPSocket::ResetTimeOutTimer()
 bool CClientTCPSocket::CheckTimeOut()
 {
 	uint64 uTimeout = GetTimeOut();
+#ifdef AMULE_UTP_TRANSPORT
+	if (HasTransport() && !GetTransport()->IsConnected()) {
+		uTimeout = MIN2MS(4);
+	}
+#endif
 	if (m_client) {
 
 		if (m_client->GetKadState() == KS_CONNECTED_BUDDY) {
@@ -187,6 +197,11 @@ bool CClientTCPSocket::CheckTimeOut()
 	uint64 now = ::GetTickCount64();
 	if (now - timeout_timer > uTimeout) {
 		timeout_timer = now;
+#ifdef AMULE_UTP_TRANSPORT
+		if (TryUtpTcpFallback()) {
+			return true;
+		}
+#endif
 		Disconnect("Timeout");
 		return true;
 	}
@@ -202,10 +217,33 @@ void CClientTCPSocket::SetClient(CUpDownClient *pClient)
 	}
 }
 
+#ifdef AMULE_UTP_TRANSPORT
+bool CClientTCPSocket::TryUtpTcpFallback()
+{
+	if (m_utpFallbackAttempted || m_client == nullptr || !HasTransport()) {
+		return false;
+	}
+	if (m_client->GetDownloadState() != DS_CONNECTING && m_client->GetUploadState() != US_CONNECTING) {
+		return false;
+	}
+
+	m_utpFallbackAttempted = true;
+	// Destroy only the failed uTP stream; keep the client and socket wrapper so
+	// the normal TCP Connect() path can reuse its identity and timeout state.
+	DetachTransport().reset();
+	return m_client->Connect();
+}
+#endif
+
 void CClientTCPSocket::OnClose(int nErrorCode)
 {
 	wxASSERT(theApp->listensocket->IsValidSocket(this));
 	CEMSocket::OnClose(nErrorCode);
+#ifdef AMULE_UTP_TRANSPORT
+	if (TryUtpTcpFallback()) {
+		return;
+	}
+#endif
 	if (nErrorCode) {
 		Disconnect(CFormat("Closed: %u") % nErrorCode);
 	} else {
