@@ -1833,16 +1833,17 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 	} else { // HIGHID
 #ifdef AMULE_UTP_TRANSPORT
 		IUtpContext *utp = theApp->clientudp->GetUtpContext();
+		const uint16_t utpPort = GetKadPort() ? GetKadPort() : thePrefs::GetEffectiveUDPPort();
 		const SUtpDialFacts facts{ m_modCapabilities.SupportsNatTraversal(),
 			utp != nullptr && utp->IsAvailable(),
 			true,
-			m_socket->GetProxyState(),
-			IsGoodIPPort(GetConnectIP(), GetUserPort()) };
+			thePrefs::GetProxyData()->m_proxyEnable,
+			IsGoodIPPort(GetConnectIP(), utpPort) };
 		if (DecideUtpDial(facts) == EUtpDialDecision::TryUtp) {
 			std::unique_ptr<IStreamTransport> transport;
 			if (utp->Dial(GetConnectIP(),
-				    GetUserPort(),
-				    SupportsCryptLayer() && thePrefs::IsClientCryptLayerSupported(),
+				    utpPort,
+				    ShouldReceiveCryptUDPPackets(),
 				    HasValidHash() ? GetUserHash().GetHash() : nullptr,
 				    transport)) {
 				m_socket->AttachTransport(std::move(transport));

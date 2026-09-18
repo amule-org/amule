@@ -1367,6 +1367,7 @@ const wxChar *CLibSocket::GetIP() const
 
 void CLibSocket::AttachTransport(std::unique_ptr<IStreamTransport> transport)
 {
+	transport->SetEvents(this);
 	m_transport = std::move(transport);
 	// Fixed for the transport's lifetime, so GetIP() can hand out a pointer
 	// into it without building anything.

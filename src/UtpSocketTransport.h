@@ -412,7 +412,7 @@ public:
 
 	//! After construction: the receiving socket does not exist until admission
 	//! has decided, and admission needs the transport first.
-	void SetEvents(IStreamTransportEvents *events)
+	void SetEvents(IStreamTransportEvents *events) override
 	{
 		std::lock_guard<std::mutex> lock(m_mutex);
 		m_events = events;

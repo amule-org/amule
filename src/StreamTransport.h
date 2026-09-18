@@ -52,6 +52,8 @@
  * Deliberately free of Boost.Asio and of libutp. Both exist below this line; neither belongs in the
  * include closure of code that only wants bytes.
  */
+class IStreamTransportEvents;
+
 class IStreamTransport
 {
 public:
@@ -59,6 +61,8 @@ public:
 
 	//! Whether the stream has completed its handshake and not yet ended.
 	virtual bool IsConnected() const = 0;
+
+	virtual void SetEvents(IStreamTransportEvents *events) = 0;
 
 	//! Whether the stream is usable. False once it has failed or been closed.
 	virtual bool IsOk() const = 0;
