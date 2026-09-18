@@ -37,6 +37,7 @@
 
 #include <common/Format.h>
 
+#include "AppImageEnv.h" // Needed for GetSanitizedExecEnv
 #include "Logger.h"
 #include "libs/common/Path.h"
 
@@ -199,6 +200,26 @@ int RunBoundedFFProbe(const wxString &exe,
 	}
 	cargv.push_back(nullptr);
 
+	// ffprobe is a host program, so it must not inherit the bundle's library paths: inside an
+	// AppImage our libraries are older than the host's and the loader rejects the mismatch
+	// (#1463). The wxExecute call sites strip them the same way.
+	wxExecuteEnv execEnv;
+	std::vector<std::string> envStorage;
+	std::vector<char *> cenvp;
+	char **envp = environ;
+	if (AppImageEnv::GetSanitizedExecEnv(execEnv)) {
+		envStorage.reserve(execEnv.env.size());
+		for (const auto &var : execEnv.env) {
+			envStorage.emplace_back((var.first + wxT("=") + var.second).fn_str());
+		}
+		cenvp.reserve(envStorage.size() + 1);
+		for (std::string &s : envStorage) {
+			cenvp.push_back(const_cast<char *>(s.c_str()));
+		}
+		cenvp.push_back(nullptr);
+		envp = cenvp.data();
+	}
+
 	const std::string tmpNative(tmpPath.fn_str());
 
 	posix_spawn_file_actions_t fa;
@@ -218,7 +239,7 @@ int RunBoundedFFProbe(const wxString &exe,
 	posix_spawnattr_setpgroup(&attr, 0);
 
 	pid_t pid = 0;
-	const int rc = posix_spawnp(&pid, cargv[0], &fa, &attr, cargv.data(), environ);
+	const int rc = posix_spawnp(&pid, cargv[0], &fa, &attr, cargv.data(), envp);
 	posix_spawnattr_destroy(&attr);
 	posix_spawn_file_actions_destroy(&fa);
 	if (rc != 0) {
