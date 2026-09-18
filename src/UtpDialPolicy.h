@@ -27,16 +27,6 @@
 
 #include <cstdint>
 
-#ifdef MULEUNIT
-inline bool IsGoodIP(uint32_t ip, bool) noexcept
-{
-	const uint32_t firstOctet = ip & 0xff;
-	return firstOctet != 0 && firstOctet < 224 && ip != 0xffffffff;
-}
-#else
-bool IsGoodIP(uint32_t ip, bool filterLAN) noexcept;
-#endif
-
 // Preserve the TCP/callback/buddy/refusal path unless direct uTP is eligible.
 // This policy does not replace security checks or authorize NAT rendezvous.
 enum class EUtpDialDecision
@@ -51,19 +41,13 @@ struct SUtpDialFacts
 	bool localOutboundService = false;
 	bool directHighId = false;
 	bool proxyEnabled = false;
-	uint32_t ip = 0; // aMule low-byte-first IPv4 representation
-	uint16_t udpPort = 0;
+	bool routableEndpoint = false;
 };
-
-inline bool IsUsableUtpEndpoint(uint32_t ip, uint16_t port)
-{
-	return IsGoodIP(ip, false) && port != 0;
-}
 
 inline EUtpDialDecision DecideUtpDial(const SUtpDialFacts &facts)
 {
 	return facts.peerSupportsUtp && facts.localOutboundService && facts.directHighId &&
-			       !facts.proxyEnabled && IsUsableUtpEndpoint(facts.ip, facts.udpPort)
+			       !facts.proxyEnabled && facts.routableEndpoint
 		       ? EUtpDialDecision::TryUtp
 		       : EUtpDialDecision::PreserveLegacy;
 }

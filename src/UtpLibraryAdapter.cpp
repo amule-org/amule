@@ -103,7 +103,7 @@ public:
 		const uint8_t *userHash,
 		std::unique_ptr<IStreamTransport> &transport) override
 	{
-		if (!m_context || transport || !IsUsableUtpEndpoint(ip, port) ||
+		if (!m_context || transport || ip == 0 || port == 0 ||
 			(encrypt && userHash == nullptr)) {
 			return false;
 		}

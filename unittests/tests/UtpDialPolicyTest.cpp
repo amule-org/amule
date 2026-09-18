@@ -31,27 +31,20 @@ DECLARE_SIMPLE(UtpDialPolicy)
 
 TEST(UtpDialPolicy, DecisionMatrix)
 {
-	constexpr uint32_t peer = 0x04030201; // 1.2.3.4, low byte first
-	for (unsigned bits = 0; bits < 64; ++bits) {
+	for (unsigned bits = 0; bits < 32; ++bits) {
 		const SUtpDialFacts facts{ (bits % 2) != 0,
 			((bits / 2) % 2) != 0,
 			((bits / 4) % 2) != 0,
 			((bits / 8) % 2) != 0,
-			((bits / 16) % 2) != 0 ? peer : 0,
-			static_cast<uint16_t>((bits / 32) != 0 ? 4672 : 0) };
-		ASSERT_EQUALS(bits == 55, DecideUtpDial(facts) == EUtpDialDecision::TryUtp);
+			((bits / 16) % 2) != 0 };
+		ASSERT_EQUALS(bits == 23, DecideUtpDial(facts) == EUtpDialDecision::TryUtp);
 	}
 }
 
-TEST(UtpDialPolicy, EndpointBoundaries)
+TEST(UtpDialPolicy, EndpointRoutability)
 {
-	for (uint32_t ip : { 0u, 0x01020300u, 0x010000E0u, 0x010000F0u, 0xffffffffu }) {
-		ASSERT_FALSE(IsUsableUtpEndpoint(ip, 4672));
-	}
-	ASSERT_FALSE(IsUsableUtpEndpoint(0x04030201, 0));
-	ASSERT_TRUE(IsUsableUtpEndpoint(0x04030201, 1));
-	ASSERT_TRUE(IsUsableUtpEndpoint(0x04030201, 65535));
-	ASSERT_TRUE(IsUsableUtpEndpoint(0x0100007f, 4672));
-	ASSERT_TRUE(IsUsableUtpEndpoint(0x0100000a, 4672));
-	ASSERT_TRUE(DecideUtpDial({}) == EUtpDialDecision::PreserveLegacy);
+	SUtpDialFacts facts{ true, true, true, false, true };
+	ASSERT_TRUE(DecideUtpDial(facts) == EUtpDialDecision::TryUtp);
+	facts.routableEndpoint = false;
+	ASSERT_TRUE(DecideUtpDial(facts) == EUtpDialDecision::PreserveLegacy);
 }
