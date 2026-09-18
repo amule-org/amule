@@ -19,22 +19,19 @@ on:
   push:
     branches:
       - master
-  # And as each cache-writing run ends, which a push alone does not cover: the
-  # heavy runs finish long after the push that started them, so the superseded
-  # generation would otherwise sit there until the NEXT merge. That overlap is
-  # what pushes the store past its 10 GB limit, and what GitHub evicts to get
-  # back under is whatever was least recently read -- the macOS keg cache,
-  # which only packaging runs ever touch.
-  workflow_run:
-    workflows:
-      - Packaging
-      - C/C++ CI
-      - clang-tidy
-    types:
-      - completed
-  # Backstop for stretches with no merges, and a manual handle.
+  # The heavy runs finish long after the push that started them, so a push
+  # alone leaves the superseded generation in place until the next merge, and
+  # that overlap is what holds the store over its 10 GB limit. GitHub then
+  # evicts by least recent read, which is how the macOS keg cache kept
+  # disappearing and costing the Intel leg a 2h40m rebuild.
+  #
+  # A `workflow_run: [completed]` trigger would close that gap exactly, and it
+  # does not work here: all 14 runs it started ended in startup_failure, with
+  # no job, no log and no annotation, whatever branch the finished run was on,
+  # while the same file kept running fine on push. The half-hourly sweep below
+  # covers the gap instead. It is one API listing plus a few DELETEs, no build.
   schedule:
-    - cron: '0 3 * * *'
+    - cron: '*/30 * * * *'
   workflow_dispatch:
 
 permissions:
