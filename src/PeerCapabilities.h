@@ -216,17 +216,14 @@ private:
 /**
  * The CT_MOD_MISCOPTIONS word aMule puts in its own handshake.
  *
- * The legacy uTP transport is advertised only when that build is enabled. Keeping this tied to
- * the compile-time transport flag prevents a client from claiming a capability that its runtime
- * cannot serve.
+ * The local uTP implementation is deliberately not advertised yet. The wire bit represents the
+ * complete NAT-traversal family, including rendezvous, which this branch does not implement. The
+ * local transport remains available for controlled peers/tests without making an incomplete field
+ * promise.
  */
 constexpr uint32_t LocalAdvertisedModMiscOptions()
 {
-#ifdef AMULE_UTP_TRANSPORT
-	return MOD_MISCOPT_NAT_TRAVERSAL;
-#else
 	return 0;
-#endif
 }
 
 /**

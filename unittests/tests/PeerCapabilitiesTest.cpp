@@ -151,13 +151,9 @@ TEST(PeerCapabilities, ReservedBitsAreMaskedOff)
 	ASSERT_EQUALS(MOD_MISCOPT_KNOWN_MASK, caps.KnownBits());
 }
 
-TEST(PeerCapabilities, AdvertisesOnlyImplementedCapability)
+TEST(PeerCapabilities, DoesNotAdvertiseIncompleteNatTraversal)
 {
-#ifdef AMULE_UTP_TRANSPORT
-	ASSERT_EQUALS(MOD_MISCOPT_NAT_TRAVERSAL, LocalAdvertisedModMiscOptions());
-#else
 	ASSERT_EQUALS(0x00000000u, LocalAdvertisedModMiscOptions());
-#endif
 }
 
 // Setters exist for the advertise side; they must land on the same bits the
