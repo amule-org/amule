@@ -211,8 +211,7 @@ public:
 		std::unique_ptr<IStreamTransport> &transport) override
 	{
 		// Never reopen a closed UDP service as a side effect of dialing.
-		if (!m_active || transport || ip == 0 || port == 0 ||
-			(encrypt && userHash == nullptr)) {
+		if (!m_active || transport || ip == 0 || port == 0 || (encrypt && userHash == nullptr)) {
 			return false;
 		}
 		return m_library->Dial(ip, port, encrypt, userHash, transport);

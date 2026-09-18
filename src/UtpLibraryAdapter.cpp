@@ -103,8 +103,7 @@ public:
 		const uint8_t *userHash,
 		std::unique_ptr<IStreamTransport> &transport) override
 	{
-		if (!m_context || transport || ip == 0 || port == 0 ||
-			(encrypt && userHash == nullptr)) {
+		if (!m_context || transport || ip == 0 || port == 0 || (encrypt && userHash == nullptr)) {
 			return false;
 		}
 		auto *socket = utp_create_socket(m_context);

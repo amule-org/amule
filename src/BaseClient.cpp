@@ -1834,13 +1834,17 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 #ifdef AMULE_UTP_TRANSPORT
 		IUtpContext *utp = theApp->clientudp->GetUtpContext();
 		const SUtpDialFacts facts{ m_modCapabilities.SupportsNatTraversal(),
-			utp != nullptr && utp->IsAvailable(), true, m_socket->GetProxyState(),
+			utp != nullptr && utp->IsAvailable(),
+			true,
+			m_socket->GetProxyState(),
 			IsGoodIPPort(GetConnectIP(), GetUserPort()) };
 		if (DecideUtpDial(facts) == EUtpDialDecision::TryUtp) {
 			std::unique_ptr<IStreamTransport> transport;
-			if (utp->Dial(GetConnectIP(), GetUserPort(),
-					SupportsCryptLayer() && thePrefs::IsClientCryptLayerSupported(),
-					HasValidHash() ? GetUserHash().GetHash() : nullptr, transport)) {
+			if (utp->Dial(GetConnectIP(),
+				    GetUserPort(),
+				    SupportsCryptLayer() && thePrefs::IsClientCryptLayerSupported(),
+				    HasValidHash() ? GetUserHash().GetHash() : nullptr,
+				    transport)) {
 				m_socket->AttachTransport(std::move(transport));
 				return EContactResult::Contacting;
 			}
