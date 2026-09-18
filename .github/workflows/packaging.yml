@@ -317,8 +317,8 @@ jobs:
       # "no bottle available!" abort one level down.
       #
       # Building costs upwards of an hour, so the kegs are cached and
-      # only a version bump pays it again. The formula list, the two
-      # cache path blocks and the relink loop must stay in step.
+      # only a version bump pays it again. One list drives the cache
+      # paths and the relink below, so they cannot drift apart.
       - name: Resolve x86_64 source-built versions
         id: intelkegs
         if: matrix.arch == 'x86_64'
@@ -337,8 +337,12 @@ jobs:
               # Keg-only formulae stay out of /usr/local; readline would shadow libedit.
               out.write("linkable=%s\n" % " ".join(f["name"] for f in formulae if not f["keg_only"]))
               out.write("paths<<PATHS\n")
-              for n in names:
-                  out.write("/usr/local/Cellar/%s\n/usr/local/opt/%s\n" % (n, n))
+              for f in formulae:
+                  out.write("/usr/local/Cellar/%s\n" % f["name"])
+                  # Aliases and old names get an opt link too, and the build
+                  # shims go through those: pkg-config, never pkgconf.
+                  for n in [f["name"], *f.get("aliases", []), *f.get("oldnames", [])]:
+                      out.write("/usr/local/opt/%s\n" % n)
               out.write("PATHS\n")
           EOF
       - name: Restore x86_64 source-built kegs
@@ -375,19 +379,28 @@ jobs:
                   ${{ matrix.archcmd }} $BREW install "$p" || true
                   ${{ matrix.archcmd }} $BREW link --overwrite "$p"
               done
+              # A restored keg has no /usr/local/{lib,include} symlinks and no
+              # alias opt links -- only the Cellar and opt paths are cached --
+              # so relink or dependents will not find the headers. openssl@3 is
+              # found through its opt path, which is cached. The -d guard skips
+              # what a cold cache has not installed yet.
+              relink() {
+                  for f in ${{ steps.intelkegs.outputs.linkable }}; do
+                      [ "$f" = "openssl@3" ] && continue
+                      [ -d "${{ matrix.brew_prefix }}/Cellar/$f" ] || continue
+                      ${{ matrix.archcmd }} $BREW link --overwrite "$f"
+                  done
+              }
+              # Before the install as well: whatever the cache restored stale
+              # compiles here, and configure reaches pkgconf through the shim's
+              # opt/pkg-config -- an alias link only `brew link` restores.
+              relink
               # What the restored set is missing or has outdated: the only
               # formulae the install below will compile.
               ${{ matrix.archcmd }} $BREW outdated $SRCBUILD || true
               # No-op for each keg the cache restored at the current version.
               ${{ matrix.archcmd }} $BREW install --build-from-source $SRCBUILD
-              # A restored keg has no /usr/local/{lib,include} symlinks --
-              # only the Cellar and opt paths are cached -- so relink or
-              # dependents will not find the headers. openssl@3 is found
-              # through its opt path, which is cached.
-              for f in ${{ steps.intelkegs.outputs.linkable }}; do
-                  [ "$f" = "openssl@3" ] && continue
-                  ${{ matrix.archcmd }} $BREW link --overwrite "$f"
-              done
+              relink
           fi
           # NOT --quiet: when the next formula loses its Intel bottle,
           # the reason has to be in the log. It was suppressed here, so
