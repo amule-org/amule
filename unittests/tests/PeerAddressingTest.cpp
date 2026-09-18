@@ -117,6 +117,12 @@ TEST(PeerAddressing, FilterMatchingRejectsUnknownAndUnspecifiedHosts)
 	ASSERT_FALSE(MatchesFilterPrefix(host, absent, 0));
 	ASSERT_FALSE(MatchesFilterRange(host, absent, host));
 	ASSERT_FALSE(MatchesFilterRange(host, host, absent));
+	// A prefix matches only inside its own family, whatever its width: ::/0 covers every IPv6
+	// address and no IPv4 one.
+	const auto ipv4Host = CNetworkAddress::FromString("192.0.2.1");
+	ASSERT_FALSE(MatchesFilterPrefix(ipv4Host, CNetworkAddress::FromString("2001:db8::"), 0));
+	ASSERT_TRUE(MatchesFilterPrefix(host, CNetworkAddress::FromString("2001:db8::"), 0));
+	ASSERT_FALSE(MatchesFilterPrefix(host, CNetworkAddress::FromString("0.0.0.0"), 0));
 }
 
 // Contact security checks support native IPv6, while callbacks remain IPv4-only and unspecified
@@ -174,8 +180,12 @@ TEST(PeerAddressing, CallbackThrottlePreservesIPv4AndExpiryBoundary)
 	ASSERT_FALSE(IsCallbackRequestThrottled(address, address, 180000));
 	ASSERT_FALSE(IsCallbackRequestThrottled(address, address, 180001));
 	ASSERT_FALSE(IsCallbackRequestThrottled(address, CNetworkAddress::FromString("192.0.2.2"), 0));
+	// An address that names nobody is not a budget: every seam refuses it.
 	const auto zero = CNetworkAddress::FromIPv4NetworkOrder(0);
-	ASSERT_TRUE(IsCallbackRequestThrottled(zero, zero, 0));
+	ASSERT_FALSE(IsCallbackRequestThrottled(zero, zero, 0));
+	ASSERT_FALSE(CanRequestCallback(zero));
+	ASSERT_FALSE(CanOpenConnection(zero, false));
+	ASSERT_TRUE(CanOpenConnection(zero, true));
 	ASSERT_FALSE(IsCallbackRequestThrottled(CNetworkAddress::Absent(), zero, 0));
 	ASSERT_FALSE(IsCallbackRequestThrottled(zero, CNetworkAddress::Absent(), 0));
 }
@@ -192,14 +202,17 @@ TEST(PeerAddressing, DormantIPv6CallbackScopeRemainsPerSubscriber)
 
 // Indexability
 
-TEST(PeerAddressing, AbsentIsNeverIndexable)
+TEST(PeerAddressing, OnlyAnAddressThatNamesAHostIsIndexable)
 {
-	// The whole point of the type: absence is not an address, so it is not a group in any
-	// index. 0.0.0.0 and :: are addresses -- odd ones, but a peer claiming one is a peer, not
-	// an unknown.
+	// Absence is not an address, and the unspecified address names nobody. An index entry under
+	// either would group unrelated peers, and bans would refuse the same key, so the two would
+	// disagree about one peer.
 	ASSERT_FALSE(IsIndexable(CNetworkAddress::Absent()));
-	ASSERT_TRUE(IsIndexable(CNetworkAddress::FromString("0.0.0.0")));
-	ASSERT_TRUE(IsIndexable(CNetworkAddress::FromString("::")));
+	for (const char *text : { "0.0.0.0", "::", "::ffff:0.0.0.0" }) {
+		const auto address = CNetworkAddress::FromString(text);
+		ASSERT_FALSE(IsIndexable(address));
+		ASSERT_EQUALS(IsSecurityKey(address), IsIndexable(address));
+	}
 	ASSERT_TRUE(IsIndexable(CNetworkAddress::FromString("192.0.2.1")));
 	ASSERT_TRUE(IsIndexable(CNetworkAddress::FromString("2001:db8::1")));
 }
@@ -218,14 +231,16 @@ TEST(PeerAddressing, AbsentAndAllZeroAreDifferentKeys)
 	ASSERT_TRUE(absent != allZeroV6);
 	ASSERT_TRUE(allZeroV4 != allZeroV6);
 
+	// None of the three names a host, so none is indexed, and each reads back empty. That is
+	// what keeps "unknown address" un-bannable rather than banned, and it is the rule the ban
+	// record applies to the same values.
 	index.Insert(absent, 3);
 	index.Insert(allZeroV4, 1);
 	index.Insert(allZeroV6, 2);
 
-	ASSERT_EQUALS((size_t)1, index.count(allZeroV4));
-	ASSERT_EQUALS((size_t)1, index.count(allZeroV6));
-	// Nothing was recorded under absence, so nothing reads back under it --
-	// which is what makes "unknown address" un-bannable rather than banned.
+	ASSERT_EQUALS((size_t)0, index.size());
+	ASSERT_EQUALS((size_t)0, index.count(allZeroV4));
+	ASSERT_EQUALS((size_t)0, index.count(allZeroV6));
 	ASSERT_EQUALS((size_t)0, index.count(absent));
 }
 
@@ -255,7 +270,7 @@ TEST(PeerAddressing, DistinctIPv6PeersNeverShareAKey)
 	// Two peers in the same /64 are two peers. The rate-limit scope aggregates
 	// them on purpose (below); the identity index must not.
 	static const char *const addresses[] = {
-		"2001:db8::1", "2001:db8::2", "2001:db8:0:0:1::1", "2001:db8:1::1", "fe80::1", "::1", "::"
+		"2001:db8::1", "2001:db8::2", "2001:db8:0:0:1::1", "2001:db8:1::1", "fe80::1", "::1"
 	};
 	static const size_t count = sizeof(addresses) / sizeof(addresses[0]);
 
@@ -387,7 +402,13 @@ TEST(PeerAddressing, CanonicalAddressIndexKeepsLinkLocalScopesSeparate)
 TEST(PeerAddressing, LegacyZeroCannotFindPresentZeroOrIPv6)
 {
 	CCanonicalPeerIndex<int> index;
-	for (const char *text : { "0.0.0.0", "::", "2001:db8::1", "2001:db8::2" }) {
+	// The unspecified spellings are refused outright; the IPv6 peers are stored and keep their
+	// own keys even though all four narrow to the same legacy zero.
+	for (const char *text : { "0.0.0.0", "::" }) {
+		index.Insert(IndexKey(CNetworkAddress::FromString(text)), 1);
+	}
+	ASSERT_EQUALS((size_t)0, index.size());
+	for (const char *text : { "2001:db8::1", "2001:db8::2" }) {
 		const auto key = IndexKey(CNetworkAddress::FromString(text));
 		ASSERT_TRUE(IsIndexable(key));
 		ASSERT_EQUALS(0u, key.ToIPv4NetworkOrderOrZero());
@@ -395,7 +416,7 @@ TEST(PeerAddressing, LegacyZeroCannotFindPresentZeroOrIPv6)
 	}
 
 	// Narrowing is only a compatibility adapter, never an identity key.
-	ASSERT_EQUALS((size_t)4, index.size());
+	ASSERT_EQUALS((size_t)2, index.size());
 	ASSERT_EQUALS((size_t)0, index.count(IndexKey(CNetworkAddress::FromIPv4NetworkOrderOrAbsent(0))));
 	for (const auto &entry : index) {
 		ASSERT_EQUALS((size_t)1, index.count(entry.first));
@@ -491,6 +512,9 @@ TEST(PeerAddressing, Ed2kUdpObfuscationNeedsAThirtyTwoBitPeer)
 	ASSERT_TRUE(SupportsEd2kUdpObfuscation(CNetworkAddress::FromString("::ffff:192.0.2.1")));
 	ASSERT_FALSE(SupportsEd2kUdpObfuscation(CNetworkAddress::FromString("2001:db8::1")));
 	ASSERT_FALSE(SupportsEd2kUdpObfuscation(CNetworkAddress::Absent()));
+	// The zero the key derivation must never see, in both spellings.
+	ASSERT_FALSE(SupportsEd2kUdpObfuscation(CNetworkAddress::FromString("0.0.0.0")));
+	ASSERT_FALSE(SupportsEd2kUdpObfuscation(CNetworkAddress::FromString("::ffff:0.0.0.0")));
 }
 
 // Rate-limit scope

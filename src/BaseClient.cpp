@@ -2594,8 +2594,11 @@ void CUpDownClient::ProcessSignaturePacket(const uint8_t *pachPacket, uint32 nSi
 				byChaIPKind);
 	}
 
-	m_lastSignatureAddress = GetUserAddress();
-	m_hasReceivedSignature = true;
+	if (GetUserAddress().IsPresent()) {
+		// A signature we could not bind to an endpoint must not block the peer's next attempt.
+		m_lastSignatureAddress = GetUserAddress();
+		m_hasReceivedSignature = true;
+	}
 }
 
 void CUpDownClient::SendSecIdentStatePacket()
