@@ -524,6 +524,7 @@ table.data.virtual td.name .name-select { width: 100%; max-width: 100%; }
 .row-actions .btn { vertical-align: middle; }
 .peer-flags { white-space: nowrap; }
 .peer-flags .icon { vertical-align: middle; margin-right: 3px; color: var(--text-dim); }
+.peer-flags .icon.flag-warn { color: var(--warn); }
 .row-actions .btn + .btn { margin-left: 4px; }
 .row-actions select + .btn { margin-left: 6px; }
 /* A select sizes itself to its longest option, so a long category name would

@@ -39,10 +39,9 @@ export const bySpeed = (a, b) =>
   ((b.download_speed_bytes_per_second || 0) + (b.upload_speed_bytes_per_second || 0)) -
   ((a.download_speed_bytes_per_second || 0) + (a.upload_speed_bytes_per_second || 0));
 
-// Each column carries key + sortVal so the header is clickable-to-sort (the
-// flags column has no key → stays non-sortable).
+// Each column carries key + sortVal so the header is clickable-to-sort. Peer
+// status flags ride inside the name cell (see peerFlags), not a column of their own.
 export const COLS = [
-  { cls: "peer-flags", width: "60px", cell: (c) => peerFlags(c) },
   // Identity block, each field next to the one it qualifies: where the peer is
   // (country, address), who it claims (name, user_hash), what it runs (software, os).
   // Abbreviated header: a spelled-out "Country" would still be wider than the cell.
@@ -51,9 +50,9 @@ export const COLS = [
   // Empty ip: a peer we never connected to directly (LowID).
   { key: "address", th: "downloads_peer_col_address", num: true, width: "180px", sortable: true,
     sortVal: (c) => ipNum(c.ip), cell: (c) => c.ip ? c.ip + ":" + c.port : "—" },
-  { key: "name", th: "downloads_peer_col_name", width: "170px", sortable: true,
+  { key: "name", th: "downloads_peer_col_name", width: "180px", sortable: true,
     sortVal: (c) => (c.name || "").toLowerCase(),
-    cell: (c) => html`<span title=${c.name}>${c.name || "—"}</span>` },
+    cell: (c) => { const flags = peerFlags(c); return html`<div class="name-cell">${flags.length ? html`<span class="peer-flags">${flags}</span>` : null}<span class="name-text" title=${c.name}>${c.name || "—"}</span></div>`; } },
   { key: "user_hash", th: "downloads_peer_col_user_hash", width: "150px", sortable: true,
     sortVal: (c) => c.user_hash || "",
     cell: (c) => html`<span title=${c.user_hash}>${c.user_hash || "—"}</span>` },
@@ -115,17 +114,22 @@ export const COLS = [
   // A browse is an ordinary search on the API, so it opens as a tab in the
   // Search section, which is where this jumps to. Rides the shared column set,
   // so it also appears in the detail panels' Clients tab -- it targets a peer,
-  // not a file, so that is correct.
+  // not a file, so that is correct. Shown only when the peer allows browsing
+  // (shared_files_browsable); most forbid it, and a browse there just fails.
   //
   // "Send message" opens the Messages section with this peer selected (no
   // request; the core creates the conversation on the first message). Only for
   // a peer with an address, the conversation key.
-  { key: "actions", th: "downloads_peer_col_actions", cls: "row-actions admin-only", width: "104px",
+  { key: "actions", th: "downloads_peer_col_actions", cls: "row-actions admin-only", width: "132px",
     cell: (c) => html`
-      <button class="btn btn-icon btn-sm" type="button" title=${t("search_view_files")}
-              onClick=${() => searches.browse(c.ecid, c.name).catch((e) => toast(terr(e), "error"))}>
-        <${Icon} name="shared" />
-      </button>
+      ${c.a4af && c.a4af_target_hash ? html`
+        <button class="btn btn-icon btn-sm" type="button" title=${t("downloads_a4af_swap_source")}
+                onClick=${() => api.post("downloads/" + c.a4af_target_hash + "/a4af",
+                                         { action: "swap_this", client_ecid: c.ecid })
+                  .then(() => toast(t("downloads_a4af_done"), "success"))
+                  .catch((e) => toast(terr(e), "error"))}>
+          <${Icon} name="download" />
+        </button>` : null}
       ${c.ip && c.port ? html`
         <button class="btn btn-icon btn-sm" type="button" title=${t("messages_send_message")}
                 onClick=${() => {
@@ -134,17 +138,33 @@ export const COLS = [
                   location.hash = "#/messages";
                 }}>
           <${Icon} name="messages" />
+        </button>` : null}
+      ${c.shared_files_browsable ? html`
+        <button class="btn btn-icon btn-sm" type="button" title=${t("search_view_files")}
+                onClick=${() => searches.browse(c.ecid, c.name).catch((e) => toast(terr(e), "error"))}>
+          <${Icon} name="shared" />
         </button>` : null}` },
 ];
 
 // Raw-detail columns no consumer leads with; each adds its own defaultHidden set
 // on top of these.
-export const HIDDEN_EVERYWHERE = ["address", "os", "user_hash", "ident"];
+export const HIDDEN_EVERYWHERE = ["address", "os", "user_hash", "ident", "origin"];
 
 // 1:1 with ClientIdentStateName() in src/webapi/Refresher.cpp.
 export const IDENT_STATES = ["identified", "not_available", "id_needed", "id_failed", "bad_guy", "unknown"];
 export const identLabel = (s) => t("downloads_peer_ident_" + (s || "unknown"));
 export const IDENT_FILTERS = ["all", ...IDENT_STATES].map((v) => [v, t("downloads_peer_ident_" + v)]);
+
+// The credit ratio the desktop shows ("DL/UP modifier"), mirroring the core's
+// CClientCredits::GetScoreRatio (ClientCredits.cpp). Known clients carry the raw
+// credit totals but neither the precomputed ratio nor ident_state, so the
+// identity/crypto special case (→ 1.0 for a bad identity) can't be reproduced.
+function creditRatio(downloaded, uploaded) {
+  if (downloaded < 1000000) return 1;
+  let r = uploaded ? (downloaded * 2) / uploaded : 10;
+  r = Math.min(r, Math.sqrt(downloaded / 1048576 + 2));
+  return Math.min(10, Math.max(1, r));
+}
 
 // Column set for the Known-clients tab (GET /known_clients, the credit store).
 // Reuses the identity cells; swaps live transfer columns for first/last seen,
@@ -188,9 +208,12 @@ export const KNOWN_COLS = [
     sortVal: (c) => c.upload_speed_bytes_per_second || 0, cell: (c) => formatSpeed(c.upload_speed_bytes_per_second) },
   { key: "uploaded", th: "downloads_peer_col_uploaded", num: true, width: "100px", sortable: true,
     sortVal: (c) => c.uploaded_bytes_total || 0, cell: (c) => bytesOf(c, "uploaded_bytes_total") },
+  { key: "ratio", th: "downloads_peer_col_ratio", num: true, width: "90px", sortable: true,
+    sortVal: (c) => creditRatio(c.downloaded_bytes_total || 0, c.uploaded_bytes_total || 0),
+    cell: (c) => creditRatio(c.downloaded_bytes_total || 0, c.uploaded_bytes_total || 0).toFixed(2) },
 ];
 
-export const KNOWN_HIDDEN = ["user_hash"];
+export const KNOWN_HIDDEN = ["user_hash", "address", "origin"];
 
 // Known clients (GET /known_clients): the daemon's credit store. A plain fetch,
 // not an SSE resource -- "online" and live activity are derived by the caller
@@ -222,20 +245,21 @@ export function useClients() {
   return useStore("clients");
 }
 
-// Compact status icons (replacing the ident/obfuscation/friend columns). Each
-// icon carries an explanatory tooltip; only meaningful states show an icon.
+// Ident state → icon shown before the peer name: shield when identified, dim info
+// for the neutral states, warning when it failed (amber for bad_guy, via flag-warn).
+const IDENT_ICON = { identified: "verified", not_available: "about", id_needed: "about", id_failed: "warning", bad_guy: "warning" };
+
 export function peerFlags(c) {
   const flags = [];
-  const identTip = () => t("downloads_peer_ident") + ": " + identLabel(c.ident_state);
-  // bad_guy / id_failed both mean "this peer's identity is wrong"; the other
-  // states are just an absence of SecIdent and earn no icon.
-  if (c.ident_state === "identified") flags.push(["verified", identTip()]);
-  else if (c.ident_state === "bad_guy" || c.ident_state === "id_failed") flags.push(["warning", identTip()]);
+  const ic = IDENT_ICON[c.ident_state];
+  if (ic)
+    flags.push([ic, t("downloads_peer_ident") + ": " + identLabel(c.ident_state),
+      c.ident_state === "bad_guy" ? "flag-warn" : null]);
   if (c.obfuscation_state === "enabled")
     flags.push(["lock", t("downloads_peer_obfuscation") + ": " + t("downloads_peer_enabled")]);
   if (c.friend_slot)
     flags.push(["star", t("downloads_peer_friend")]);
-  return flags.map(([name, tip]) => html`<${Icon} name=${name} size=${18} title=${tip} />`);
+  return flags.map(([name, tip, cls]) => html`<${Icon} name=${name} size=${18} title=${tip} class=${cls} />`);
 }
 
 const IDENT_KIND = { identified: "downloading", id_failed: "stopped", bad_guy: "stopped", id_needed: "waiting" };
@@ -312,7 +336,7 @@ export function FileClients({ hash, prefsKey, defaultHidden, defaultSort, a4afEc
   for (const c of clients || []) {
     const a4af = a4afSet.has(c.ecid);
     if (!a4af && !inThisFile(c)) continue;
-    rows.push({ ...c, a4af, partsTotal,
+    rows.push({ ...c, a4af, partsTotal, a4af_target_hash: a4af ? hash : undefined,
                 a4af_name: a4af ? (nameByHash.get(c.download_file_hash) || c.download_file_name || "?") : undefined });
   }
   if (ident !== "all") rows = rows.filter((c) => c.ident_state === ident);
