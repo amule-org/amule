@@ -44,6 +44,8 @@ concurrency:
 
 permissions:
   contents: read
+  # The cache-save-newest guard lists the repository's caches.
+  actions: read
 
 env:
   CCACHE_DIR: ${{ github.workspace }}/.ccache
@@ -155,7 +157,7 @@ jobs:
       - name: build (generate headers + compile_commands.json)
         run: cmake --build build
       - name: save ccache
-        uses: actions/cache/save@v6
+        uses: ./.github/actions/cache-save-newest
         if: always() && github.event_name == 'push' && github.ref == 'refs/heads/master'
         with:
           path: ${{ env.CCACHE_DIR }}
@@ -211,7 +213,7 @@ jobs:
       # stored; if: always() so a Tier-1 failure still saves the hits computed
       # this run. Unlike ccache (filled by the build), ctcache is filled here.
       - name: save ctcache
-        uses: actions/cache/save@v6
+        uses: ./.github/actions/cache-save-newest
         if: always() && github.event_name == 'push' && github.ref == 'refs/heads/master'
         with:
           path: ${{ env.CTCACHE_DIR }}
@@ -261,7 +263,7 @@ jobs:
       - name: build (generate headers + compile_commands.json)
         run: cmake --build build
       - name: save ccache
-        uses: actions/cache/save@v6
+        uses: ./.github/actions/cache-save-newest
         if: always() && github.event_name == 'push' && github.ref == 'refs/heads/master'
         with:
           path: ${{ env.CCACHE_DIR }}

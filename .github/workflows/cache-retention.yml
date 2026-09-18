@@ -19,6 +19,19 @@ on:
   push:
     branches:
       - master
+  # And as each cache-writing run ends, which a push alone does not cover: the
+  # heavy runs finish long after the push that started them, so the superseded
+  # generation would otherwise sit there until the NEXT merge. That overlap is
+  # what pushes the store past its 10 GB limit, and what GitHub evicts to get
+  # back under is whatever was least recently read -- the macOS keg cache,
+  # which only packaging runs ever touch.
+  workflow_run:
+    workflows:
+      - Packaging
+      - C/C++ CI
+      - clang-tidy
+    types:
+      - completed
   # Backstop for stretches with no merges, and a manual handle.
   schedule:
     - cron: '0 3 * * *'

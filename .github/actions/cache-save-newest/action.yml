@@ -1,0 +1,72 @@
+# actions/cache/save, minus the writes a newer run has already made pointless.
+#
+# Every cache key here ends in the run id, so a run never collides with an
+# earlier one. Runs on master overlap, though, and an older run that finishes
+# last still uploads: the store then carries two generations of the same family
+# until retention prunes it (1.6 GB across 8 families when measured), and
+# restores go to the wrong one, because `restore-keys` resolves a prefix to the
+# most recently CREATED entry rather than the highest run id.
+#
+# Both stop here: if the family already holds an entry from a newer run, this
+# run's copy is worth nothing and is not uploaded. The reverse order still
+# writes -- a newer generation has to land before the older one can go.
+name: Save cache if newest
+description: Save a cache entry unless a newer run already saved one for the same key family.
+
+inputs:
+  path:
+    description: Files to cache, as actions/cache/save takes them.
+    required: true
+  key:
+    description: Cache key. Must end in `-<run id>`, which is what names the family.
+    required: true
+  token:
+    description: "Token for reading the repository's cache list. Needs `actions: read` permission."
+    required: false
+    default: ${{ github.token }}
+
+runs:
+  using: composite
+  steps:
+    - name: Check for a newer saved generation
+      id: guard
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        REPO: ${{ github.repository }}
+        KEY: ${{ inputs.key }}
+        RUN_ID: ${{ github.run_id }}
+      run: |
+        set -euo pipefail
+        prefix="${KEY%-${RUN_ID}}"
+        if [ "$prefix" = "$KEY" ]; then
+            # Not a run-keyed family, so there is no ordering to compare.
+            echo "key does not end in the run id, saving"
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+            exit 0
+        fi
+        # A listing failure must not cost the save: without the cache the next
+        # run compiles everything, while a redundant entry only waits for the
+        # prune.
+        newest=$(gh api --paginate "repos/${REPO}/actions/caches?per_page=100" \
+                     --jq '.actions_caches[].key' 2>/dev/null \
+                 | awk -v p="${prefix}-" '
+                       index($0, p) == 1 {
+                           id = substr($0, length(p) + 1)
+                           # Run ids only; a longer suffix is another family.
+                           if (id ~ /^[0-9]+$/ && id + 0 > max) max = id + 0
+                       }
+                       END { printf "%d\n", max + 0 }') || newest=0
+        if [ "$newest" -gt "$RUN_ID" ]; then
+            echo "run ${newest} already saved ${prefix}, skipping this one"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+        else
+            echo "newest saved for ${prefix} is ${newest}, saving ${RUN_ID}"
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+        fi
+    - name: Save cache
+      if: steps.guard.outputs.skip != 'true'
+      uses: actions/cache/save@v6
+      with:
+        path: ${{ inputs.path }}
+        key: ${{ inputs.key }}

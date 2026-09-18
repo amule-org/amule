@@ -24,6 +24,8 @@ on:
 
 permissions:
   contents: read
+  # The cache-save-newest guard lists the repository's caches.
+  actions: read
   pull-requests: write
 
 env:
@@ -155,7 +157,7 @@ jobs:
       - name: make
         run: cmake --build build
       - name: save ccache
-        uses: actions/cache/save@v6
+        uses: ./.github/actions/cache-save-newest
         if: always() && github.event_name == 'push' && github.ref == 'refs/heads/master'
         with:
           path: ${{ env.CCACHE_DIR }}
@@ -216,7 +218,7 @@ jobs:
       - name: make
         run: cmake --build build
       - name: save ccache
-        uses: actions/cache/save@v6
+        uses: ./.github/actions/cache-save-newest
         if: always() && github.event_name == 'push' && github.ref == 'refs/heads/master'
         with:
           path: ${{ env.CCACHE_DIR }}
@@ -267,7 +269,7 @@ jobs:
       - name: make
         run: cmake --build build
       - name: save ccache
-        uses: actions/cache/save@v6
+        uses: ./.github/actions/cache-save-newest
         if: always() && github.event_name == 'push' && github.ref == 'refs/heads/master'
         with:
           path: ${{ env.CCACHE_DIR }}
@@ -343,7 +345,7 @@ jobs:
       - name: make
         run: cmake --build build
       - name: save ccache
-        uses: actions/cache/save@v6
+        uses: ./.github/actions/cache-save-newest
         if: always() && github.event_name == 'push' && github.ref == 'refs/heads/master'
         with:
           path: ${{ env.CCACHE_DIR }}
