@@ -1833,12 +1833,14 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 	} else { // HIGHID
 #ifdef AMULE_UTP_TRANSPORT
 		IUtpContext *utp = theApp->clientudp->GetUtpContext();
-		const uint16_t utpPort = GetKadPort() ? GetKadPort() : thePrefs::GetEffectiveUDPPort();
+		// Only a port learned from this peer is a remote endpoint. Our own
+		// UDP port says nothing about where an unknown peer listens.
+		const uint16_t utpPort = GetKadPort();
 		const SUtpDialFacts facts{ m_modCapabilities.SupportsNatTraversal(),
 			utp != nullptr && utp->IsAvailable(),
 			true,
 			thePrefs::GetProxyData()->m_proxyEnable,
-			IsGoodIPPort(GetConnectIP(), utpPort) };
+			utpPort != 0 && IsGoodIP(GetConnectIP(), thePrefs::FilterLanIPs()) };
 		if (DecideUtpDial(facts) == EUtpDialDecision::TryUtp) {
 			std::unique_ptr<IStreamTransport> transport;
 			if (utp->Dial(GetConnectIP(),

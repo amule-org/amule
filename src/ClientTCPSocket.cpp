@@ -108,8 +108,8 @@ void CClientTCPSocket::ApplyUtpCryptParameters()
 	// by the transport, because the client can be replaced while the stream
 	// outlives it.
 	static_cast<CUtpSocketTransport *>(GetTransport())
-		->SetCryptParameters(
-			m_client->ShouldReceiveCryptUDPPackets(), m_client->GetUserHash().GetHash());
+		->SetCryptParameters(m_client->ShouldReceiveCryptUDPPackets(),
+			m_client->HasValidHash() ? m_client->GetUserHash().GetHash() : nullptr);
 }
 #endif
 
@@ -271,6 +271,11 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 			logRemoteClient, "Remote Client: OP_HELLOANSWER from " + m_client->GetFullIP());
 		theStats::AddDownOverheadOther(size);
 		m_client->ProcessHelloAnswer(buffer, size);
+#ifdef AMULE_UTP_TRANSPORT
+		// The answer refreshes both the peer's hash and crypt preferences.
+		// Apply them before secure identification queues any reply.
+		ApplyUtpCryptParameters();
+#endif
 
 		// Start secure identification once both info packets have arrived:
 		// OP_EMULEINFO + OP_HELLOANSWER (old eMule), or eMule-OP_HELLOANSWER (new).
@@ -353,8 +358,7 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 		}
 #ifdef AMULE_UTP_TRANSPORT
 		// After the attach above, which may have replaced the client this keys
-		// on. Every uTP stream is inbound, so this case is the only one an
-		// accepted socket reaches.
+		// on. Outbound streams also refresh their parameters on HELLOANSWER.
 		ApplyUtpCryptParameters();
 #endif
 		Notify_SharedCtrlRefreshClient(m_client->ECID(), AVAILABLE_SOURCE);
