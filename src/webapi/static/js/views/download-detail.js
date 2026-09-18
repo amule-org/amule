@@ -289,7 +289,7 @@ function DownloadFilenames({ hash, name, onRenamed }) {
   // Server returns map-iteration order; sort by popularity then name.
   const list = ((data && data.filenames) || [])
     .slice()
-    .sort((a, b) => (b.count - a.count) || a.name.localeCompare(b.name));
+    .sort((a, b) => (b.source_count - a.source_count) || a.filename.localeCompare(b.filename));
 
   const takeover = (n) => api.patch("downloads/" + hash, { name: n })
     .then(() => { toast(t("rename_saved"), "success"); if (onRenamed) onRenamed(); })
@@ -308,10 +308,10 @@ function DownloadFilenames({ hash, name, onRenamed }) {
           <tbody>
             ${list.map((f, i) => html`
               <tr key=${i}>
-                <td class="comments-fname" title=${f.name}>${f.name}</td>
-                <td>${f.count}</td>
+                <td class="comments-fname" title=${f.filename}>${f.filename}</td>
+                <td>${f.source_count}</td>
                 <td class="admin-only">
-                  <button class="btn btn-sm" type="button" onClick=${() => takeover(f.name)}>
+                  <button class="btn btn-sm" type="button" onClick=${() => takeover(f.filename)}>
                     ${t("filename_takeover")}
                   </button>
                 </td>
