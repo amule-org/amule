@@ -532,6 +532,15 @@ if [ -n "$CLIENT_JSON" ]; then
 	else
 		_fail "client payload part_progress_percent" "absent or wrong type in: $CLIENT_JSON"
 	fi
+	# friend rides the same promotion (issue #1475): on the diff payload as well as
+	# the list row, or a subscriber never learns a peer joined the friends list.
+	if echo "$CLIENT_JSON" | jq -e \
+		'(.friend|type)=="boolean" and (.friend_slot|type)=="boolean"' \
+		>/dev/null 2>&1; then
+		_pass "client_added/updated carries friend + friend_slot booleans"
+	else
+		_fail "client payload friend" "absent or wrong type in: $CLIENT_JSON"
+	fi
 else
 	_pass "no client frame this run (no peer changed; shape asserted when one fires)"
 fi

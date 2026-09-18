@@ -405,6 +405,27 @@ else
 	_skip "/clients base filename-field check (no peers connected)"
 fi
 
+# --- 9a-ter. friends-list flag on the LIST object (issue #1475) ---
+# friend is friends-list membership and used to be detail-only, which left a
+# front-end unable to mark a friend in the peer lists. It is a plain boolean,
+# never null: an absent EC tag degrades to false. friend_slot is checked
+# alongside it because the two are easy to confuse and carry different meanings.
+# Read-only, so it is safe here rather than at the end of the file.
+if [ -n "$FIRST_CLIENT" ]; then
+	if curl -s "${H_AUTH[@]}" "$API/clients" | jq -e '
+		.clients | all(.[];
+			(.friend | type) == "boolean"
+			and (.friend_slot | type) == "boolean")' \
+		>/dev/null 2>&1; then
+		_pass "/clients list objects carry friend + friend_slot booleans"
+	else
+		_fail "clients friend field" \
+			"a /clients object is missing friend/friend_slot or it is not a boolean"
+	fi
+else
+	_skip "/clients friend-field check (no peers connected)"
+fi
+
 # --- 9b. /clients/{ecid} detail (issue #422). --------------------
 # A superset of the list object: every list field plus the detail-only
 # B fields. Guarded on a live peer; the negative cases run regardless.

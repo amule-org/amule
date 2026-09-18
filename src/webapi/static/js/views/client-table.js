@@ -257,8 +257,12 @@ export function peerFlags(c) {
       c.ident_state === "bad_guy" ? "flag-warn" : null]);
   if (c.obfuscation_state === "enabled")
     flags.push(["lock", t("downloads_peer_obfuscation") + ": " + t("downloads_peer_enabled")]);
+  // Two different facts, two icons: the slot is an upload privilege we granted,
+  // `friend` is friends-list membership. A peer can carry either alone.
   if (c.friend_slot)
-    flags.push(["star", t("downloads_peer_friend")]);
+    flags.push(["star", t("downloads_peer_friend_slot")]);
+  if (c.friend)
+    flags.push(["friend", t("downloads_peer_friend")]);
   return flags.map(([name, tip, cls]) => html`<${Icon} name=${name} size=${18} title=${tip} class=${cls} />`);
 }
 

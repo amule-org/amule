@@ -2766,6 +2766,11 @@ void WriteClientBaseFields(CJsonWriter &w, const webapi::ClientSnapshot &c)
 	w.EndArray();
 	w.Key("friend_slot");
 	w.ValueBool(c.friend_slot);
+	// Friends-list membership, distinct from the `friend_slot` reserved upload slot
+	// above. The key drops the `is_` prefix per R4; the C++ member cannot, because
+	// `friend` is a keyword. The one place key and member deliberately differ.
+	w.Key("friend");
+	w.ValueBool(c.is_friend);
 	// On the list because the desktop's per-file peer panels render Origin and "Shares
 	// File List" as columns. Anything added here must also reach the SSE payload --
 	// both ToJson AND Equal in EventDiff.cpp; a field in one but not the other never
@@ -2918,11 +2923,6 @@ void WriteClientDetailObject(CJsonWriter &w, const webapi::ClientSnapshot &c)
 	// recorded Kad port either, and a raw 0 would spell absence differently from the
 	// fields it is paired with.
 	WriteIntOrNull(w, "kad_port", !c.ip.empty(), static_cast<int64_t>(c.kad_port));
-	// Friends-list membership, distinct from the `friend_slot` reserved upload slot
-	// above. The key drops the `is_` prefix per R4; the C++ member cannot, because
-	// `friend` is a keyword. The one place key and member deliberately differ.
-	w.Key("friend");
-	w.ValueBool(c.is_friend);
 	w.Key("credit_ratio");
 	w.ValueDouble(c.credit_ratio);
 	w.EndObject();

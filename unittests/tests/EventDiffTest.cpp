@@ -491,6 +491,47 @@ TEST(EventDiff, ClientUpdatedFiresOnUploadFileNameChange)
 	ASSERT_TRUE(payload.find("b.iso") != std::string::npos);
 }
 
+// The same ToJson/Equal contract for the friends-list flag issue #1475 put on the list rows.
+// Adding a peer to the friends list changes nothing else about it, so an is_friend the
+// comparator ignored would leave every subscriber rendering the peer as a stranger until
+// some unrelated field moved.
+TEST(EventDiff, ClientUpdatedFiresOnFriendChange)
+{
+	CState state;
+	CEventBus bus;
+	LastSeenState prev;
+
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	state.MutateClients([](std::map<std::uint32_t, ClientSnapshot> &cache) {
+		ClientSnapshot c;
+		c.ecid = 11;
+		c.client_name = "peer-stranger";
+		cache.emplace(c.ecid, c);
+	});
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	// Only the friends-list membership changes -> must fire client_updated.
+	state.MutateClients(
+		[](std::map<std::uint32_t, ClientSnapshot> &cache) { cache.at(11).is_friend = true; });
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	const auto drained = DrainAll(bus);
+	int updated = 0;
+	std::string payload;
+	for (const auto &ev : drained) {
+		if (ev.name == "client_updated") {
+			++updated;
+			payload = ev.data;
+		}
+	}
+	ASSERT_EQUALS(1, updated);
+	// The key, not just the value: friend_slot is the other boolean in the payload and
+	// carries the opposite meaning.
+	ASSERT_TRUE(payload.find("\"friend\":true") != std::string::npos);
+	ASSERT_TRUE(payload.find("\"friend_slot\":false") != std::string::npos);
+}
+
 // The same contract as the client test above, for the capability bitmasks issue #974 added: a
 // server announcing its flags after the first UDP status reply has to fire exactly one
 // server_updated, and the payload has to carry the decoded object, not just the raw bitmask.

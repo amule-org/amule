@@ -50,6 +50,9 @@ const ICONS = {
   warning: () => html`<path d="M12 3l9 16H3z"/><line x1="12" y1="10" x2="12" y2="14"/><line x1="12" y1="16.5" x2="12.01" y2="16.5"/>`,
   lock: () => html`<rect x="5" y="11" width="14" height="9" rx="1.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>`,
   star: () => html`<path d="M12 3l2.7 5.5 6 .9-4.3 4.2 1 6-5.4-2.8-5.4 2.8 1-6L3.3 9.4l6-.9z"/>`,
+  // One peer with a check: friends-list membership. Deliberately not `star`,
+  // which marks the reserved upload slot and can sit on the same row.
+  friend: () => html`<circle cx="10" cy="8" r="3.2"/><path d="M3.8 19a6.2 6.2 0 0 1 10.4-4.3"/><path d="M15.5 17.6l2 2 3.5-4.2"/>`,
   logout: () => html`<path d="M15 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4"/><path d="M10 17l5-5-5-5"/><line x1="15" y1="12" x2="3" y2="12"/>`,
   reset: () => html`<path d="M3 12a9 9 0 1 1 3 6.7"/><path d="M3 21v-6h6"/>`,
 

@@ -344,6 +344,7 @@ std::string ToJson(const ClientSnapshot &c)
 	  << ",\"connected\":" << JsonBoolOrNull(c.has_connected, c.connected)
 	  << ",\"protocol_extensions\":" << JsonProtocolExtensions(c.protocol_extensions)
 	  << ",\"friend_slot\":" << (c.friend_slot ? "true" : "false")
+	  << ",\"friend\":" << (c.is_friend ? "true" : "false")
 	  << ",\"source_origin\":" << JsonStrOrNull(!c.source_origin.empty(), c.source_origin)
 	  << ",\"parts_offered_count\":"
 	  << (c.has_parts_offered_count ? std::to_string(c.parts_offered_count) : std::string("null"))
@@ -528,7 +529,7 @@ bool Equal(const ClientSnapshot &a, const ClientSnapshot &b)
 	       a.upload_queue_position == b.upload_queue_position &&
 	       a.remote_queue_position == b.remote_queue_position && a.score == b.score &&
 	       a.obfuscation_state == b.obfuscation_state && a.protocol_extensions == b.protocol_extensions &&
-	       a.friend_slot == b.friend_slot && a.connected == b.connected &&
+	       a.friend_slot == b.friend_slot && a.is_friend == b.is_friend && a.connected == b.connected &&
 	       a.has_connected == b.has_connected && a.source_origin == b.source_origin &&
 	       a.parts_offered_count == b.parts_offered_count &&
 	       // Without the flag, null -> 0 (the part map arriving and reporting

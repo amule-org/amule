@@ -510,10 +510,11 @@ Identical to the REST [`/api/v1/clients`](REFERENCE.md#get-apiv1clients) list-it
   "connected":            true,
   "protocol_extensions":    [],
   "friend_slot":            false,
+  "friend":                 false,
   "part_progress_percent":  75.0
 }
 ```
-Carries the same field set as the [`/clients`](REFERENCE.md#get-apiv1clients) list row, including `source_origin`, `protocol_extensions`, `parts_offered_count`, `client_mod_name` and `shared_files_browsable`.
+Carries the same field set as the [`/clients`](REFERENCE.md#get-apiv1clients) list row, including `source_origin`, `protocol_extensions`, `parts_offered_count`, `client_mod_name` and `shared_files_browsable`. `friend` is friends-list membership and `friend_slot` is the reserved upload slot: a peer carries either without the other, and `client_updated` fires when either moves.
 
 `part_progress_percent` follows the same rule as on the REST row: it is how much of the file we are downloading **from** this client the client already holds, and it is `null` when there is no such file, rather than sent as a negative sentinel. It is derived from `parts_offered_count` and the linked download's part count, so it moves when `parts_offered_count` does, and goes back to `null` if that download goes away. The key is always present -- see [REFERENCE.md's unknown-value rule](REFERENCE.md#unknown-values), under which `null` means "no value" and an absent key means "not reported".
 
