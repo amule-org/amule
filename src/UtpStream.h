@@ -146,10 +146,6 @@ public:
 	 */
 	size_t ReadBound() const { return m_readBound; }
 
-	//! What the queue accepts before it blocks the writer; also what libutp is told
-	//! to keep in flight, so the two cannot disagree.
-	size_t WriteBound() const { return m_writeBound; }
-
 	//! True once per pending crossing below ReadBound(), for the libutp notification owner.
 	bool ConsumeReadDrainedEdge()
 	{

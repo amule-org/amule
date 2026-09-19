@@ -72,10 +72,6 @@ public:
 	{
 		utp_setsockopt(static_cast<utp_socket *>(socket), UTP_RCVBUF, static_cast<int>(bytes));
 	}
-	void SetSendBuffer(Handle socket, size_t bytes) override
-	{
-		utp_setsockopt(static_cast<utp_socket *>(socket), UTP_SNDBUF, static_cast<int>(bytes));
-	}
 	bool Create(IUtpDatagramSink &sink) override
 	{
 		if (m_context) {
@@ -114,7 +110,7 @@ public:
 		auto pending = std::make_unique<CUtpSocketTransport>(
 			*this, socket, CNetworkAddress::FromIPv4NetworkOrder(ip), port, nullptr, false);
 		utp_set_userdata(socket, pending.get());
-		pending->ApplyBufferBounds();
+		pending->ApplyReceiveBound();
 		pending->SetCryptParameters(encrypt, userHash);
 		// Register before the SYN, so its reply passes the ingress gate and the
 		// socket-to-endpoint record removes it on every close path.
@@ -257,7 +253,7 @@ private:
 		// Before admission can produce a callback that needs it.
 		utp_set_userdata(args->socket, raw);
 		// Until this runs, libutp's 1 MiB default is the receive bound.
-		raw->ApplyBufferBounds();
+		raw->ApplyReceiveBound();
 		// libutp reaches CS_CONNECTED on the peer's first ST_DATA, silently.
 		raw->MarkConnected();
 

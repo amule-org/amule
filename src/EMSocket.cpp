@@ -161,9 +161,9 @@ void CEMSocket::QuiesceForRedial()
 		byConnected = ES_DISCONNECTED;
 	}
 
-	if (theApp->uploadBandwidthThrottler) {
-		theApp->uploadBandwidthThrottler->RemoveFromAllQueues(this);
-	}
+	// Unguarded, as in OnClose(): this runs while the app is up. The destructor
+	// guards the same call because it also runs during shutdown.
+	theApp->uploadBandwidthThrottler->RemoveFromAllQueues(this);
 	CDownloadBandwidthThrottler::Get().Forget(this);
 
 	ClearQueues();
