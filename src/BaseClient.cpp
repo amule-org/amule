@@ -1579,7 +1579,6 @@ EContactResult CUpDownClient::CheckContactPreconditions()
 		return EContactResult::Declined;
 	}
 
-	const bool hasLowID = HasLowID();
 	const CNetworkAddress contactAddress = ContactAddress();
 	if (!PeerAddressing::CanCheckContactAddress(contactAddress)) {
 		if (Disconnected("Contact security checks unavailable")) {
