@@ -1863,7 +1863,10 @@ bool CClientTCPSocket::ProcessExtPacket(const uint8_t *buffer, uint32 size, uint
 
 		bool bSenderMultipleIpUnknown = false;
 		CUpDownClient *sender = theApp->uploadqueue->GetWaitingClientByIP_UDP(
-			destip, destport, true, &bSenderMultipleIpUnknown);
+			CNetworkAddress::FromIPv4NetworkOrderOrAbsent(destip),
+			destport,
+			true,
+			&bSenderMultipleIpUnknown);
 		if (!reqfile) {
 			AddDebugLogLineN(
 				logLocalClient, "Local Client: OP_FILENOTFOUND to " + m_client->GetFullIP());

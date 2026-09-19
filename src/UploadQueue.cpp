@@ -24,6 +24,7 @@
 //
 
 #include "UploadQueue.h" // Interface declarations
+#include "UploadQueueAddressPolicy.h"
 
 #include <protocol/Protocols.h>
 #include <protocol/ed2k/Client2Client/TCP.h>
@@ -348,7 +349,7 @@ bool CUploadQueue::IsDownloading(const CUpDownClient *client) const
 }
 
 CUpDownClient *CUploadQueue::GetWaitingClientByIP_UDP(
-	uint32 dwIP, uint16 nUDPPort, bool bIgnorePortOnUniqueIP, bool *pbMultipleIPs)
+	const CNetworkAddress &address, uint16 nUDPPort, bool bIgnorePortOnUniqueIP, bool *pbMultipleIPs)
 {
 	CUpDownClient *pMatchingIPClient = NULL;
 
@@ -357,10 +358,12 @@ CUpDownClient *CUploadQueue::GetWaitingClientByIP_UDP(
 	CClientRefList::iterator it = m_waitinglist.begin();
 	for (; it != m_waitinglist.end(); ++it) {
 		CUpDownClient *cur_client = it->GetClient();
+		const bool sameAddress =
+			UploadQueueAddressPolicy::Matches(address, cur_client->GetUserAddress());
 
-		if ((dwIP == cur_client->GetIP()) && (nUDPPort == cur_client->GetUDPPort())) {
+		if (sameAddress && nUDPPort == cur_client->GetUDPPort()) {
 			return cur_client;
-		} else if ((dwIP == cur_client->GetIP()) && bIgnorePortOnUniqueIP) {
+		} else if (sameAddress && bIgnorePortOnUniqueIP) {
 			pMatchingIPClient = cur_client;
 			cMatches++;
 		}
@@ -460,7 +463,7 @@ void CUploadQueue::AddClientToQueue(CUpDownClient *client)
 	}
 
 	// Count the number of clients with the same IP-address
-	found = theApp->clientlist->GetClientsByIP(client->GetIP());
+	found = theApp->clientlist->GetClientsByIP(client->GetUserAddress());
 
 	int ipCount = 0;
 	for (it = found.begin(); it != found.end(); ++it) {

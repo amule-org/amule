@@ -414,7 +414,10 @@ void CClientUDPSocket::ProcessPacket(uint8_t *packet, int16 size, int8 opcode, u
 		CKnownFile *reqfile = theApp->sharedfiles->GetFileByID(reqfilehash);
 		bool bSenderMultipleIpUnknown = false;
 		CUpDownClient *sender = theApp->uploadqueue->GetWaitingClientByIP_UDP(
-			host, port, true, &bSenderMultipleIpUnknown);
+			CNetworkAddress::FromIPv4NetworkOrderOrAbsent(host),
+			port,
+			true,
+			&bSenderMultipleIpUnknown);
 
 		if (!reqfile) {
 			CPacket *response = new CPacket(OP_FILENOTFOUND, 0, OP_EMULEPROT);

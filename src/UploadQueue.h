@@ -26,9 +26,10 @@
 #ifndef UPLOADQUEUE_H
 #define UPLOADQUEUE_H
 
-#include "ClientRef.h" // Needed for CClientRefList
-#include "MD4Hash.h"   // Needed for CMD4Hash
-#include <wx/thread.h> // Needed for wxMutex
+#include "ClientRef.h"      // Needed for CClientRefList
+#include "MD4Hash.h"        // Needed for CMD4Hash
+#include "NetworkAddress.h" // Needed for CNetworkAddress
+#include <wx/thread.h>      // Needed for wxMutex
 
 // Experimental extended upload queue population.
 //
@@ -64,8 +65,10 @@ public:
 	// iteration
 	wxMutex &GetUploadingListLock() { return m_uploadingListMutex; }
 
-	CUpDownClient *GetWaitingClientByIP_UDP(
-		uint32 dwIP, uint16 nUDPPort, bool bIgnorePortOnUniqueIP, bool *pbMultipleIPs = NULL);
+	CUpDownClient *GetWaitingClientByIP_UDP(const CNetworkAddress &address,
+		uint16 nUDPPort,
+		bool bIgnorePortOnUniqueIP,
+		bool *pbMultipleIPs = nullptr);
 
 	uint16 SuspendUpload(const CMD4Hash &, bool terminate);
 	void ResumeUpload(const CMD4Hash &);

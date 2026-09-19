@@ -479,6 +479,22 @@ target_link_libraries (PeerAddressingTest
 	${Boost_LIBRARIES}
 )
 
+# Canonical address matching for upload-queue UDP lookups, without the application.
+add_executable (UploadQueueAddressPolicyTest
+	UploadQueueAddressPolicyTest.cpp
+	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
+	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
+	${CMAKE_SOURCE_DIR}/src/NetworkAddress.cpp
+)
+add_test (NAME UploadQueueAddressPolicyTest COMMAND UploadQueueAddressPolicyTest)
+target_include_directories (UploadQueueAddressPolicyTest PRIVATE
+	${CMAKE_BINARY_DIR}
+	${CMAKE_SOURCE_DIR}/src
+	${CMAKE_SOURCE_DIR}/src/include
+	${Boost_INCLUDE_DIR}
+)
+target_link_libraries (UploadQueueAddressPolicyTest muleunit ${Boost_LIBRARIES})
+
 # Address families: which families sockets are opened in, and the refusal that
 # never falls back to the other family. Header-only policy over CNetworkAddress,
 # so it is testable without an app; NetworkAddress.cpp is linked for
