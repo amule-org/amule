@@ -48,6 +48,7 @@
 #include "amule.h"                      // Needed for theApp
 #include "SharedFileList.h"             // Needed for CSharedFileList
 #include "ClientList.h"                 // Needed for CClientList
+#include "PeerAddressing.h"             // Needed for address admission policies
 #include "UploadQueue.h"                // Needed for CUploadQueue
 #include "ClientUDPSocket.h"            // Needed for CClientUDPSocket
 #include "PartFile.h"                   // Needed for CPartFile
@@ -120,24 +121,20 @@ bool CClientTCPSocket::IsUtpInbound() const
 }
 #endif
 
-bool CClientTCPSocket::InitNetworkData()
+bool CClientTCPSocket::InitNetworkData(AdmissionTransport transport)
 {
 	wxASSERT(!m_remoteip);
 	wxASSERT(!m_client);
-	m_remoteAddress = GetPeerAddress();
+	m_remoteAddress = GetPeerAddress().Unmapped();
+	m_remoteip = m_remoteAddress.ToIPv4NetworkOrderOrZero();
 
-	// A peer with no 32-bit form is refused rather than narrowed: m_remoteip still feeds the
-	// server check below and the hello's user ID check. That is a decision, not an impossibility,
-	// so it is logged and returned -- MULE_CHECK is wxCHECK, which also asserts in a debug build,
-	// and an inbound IPv6 peer becomes an ordinary event the moment a listener accepts one.
-	if (m_remoteAddress.IsPresent() && !m_remoteAddress.ToIPv4NetworkOrder(m_remoteip)) {
-		AddDebugLogLineN(logClient,
-			"Denied connection from " + GetPeer() + " (no IPv4 form for the ed2k path)");
+	const bool admissible = transport == AdmissionTransport::TCP
+					? PeerAddressing::CanAdmitTcpPeer(m_remoteAddress)
+					: PeerAddressing::CanAdmitUtpPeer(m_remoteAddress);
+	if (!admissible || !theApp->ipfilter || !theApp->clientlist) {
+		AddDebugLogLineN(logClient, "Denied connection from " + GetPeer());
 		return false;
 	}
-
-	// Absent, on the other hand, means the accept gave us no address at all.
-	MULE_CHECK(m_remoteip, false);
 
 	if (theApp->ipfilter->IsFiltered(m_remoteAddress)) {
 		AddDebugLogLineN(logClient, "Denied connection from " + GetPeer() + "(Filtered IP)");
@@ -2070,7 +2067,7 @@ void CClientTCPSocket::OnReceive(int nErrorCode)
 {
 	ResetTimeOutTimer();
 	// We might have updated ipfilter
-	wxASSERT(m_remoteip);
+	wxASSERT(m_remoteAddress.IsPresent());
 
 	if (theApp->ipfilter->IsFiltered(m_remoteAddress)) {
 		if (m_client) {

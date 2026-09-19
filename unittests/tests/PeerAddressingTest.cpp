@@ -127,6 +127,17 @@ TEST(PeerAddressing, FilterMatchingRejectsUnknownAndUnspecifiedHosts)
 
 // Contact security checks support native IPv6, while callbacks remain IPv4-only and unspecified
 // addresses fail closed.
+TEST(PeerAddressing, TcpAdmissionAllowsNativeIPv6ButUtpRemainsIpv4Only)
+{
+	ASSERT_TRUE(CanAdmitTcpPeer(CNetworkAddress::FromString("2001:db8::1")));
+	ASSERT_FALSE(CanAdmitUtpPeer(CNetworkAddress::FromString("2001:db8::1")));
+	ASSERT_TRUE(CanAdmitTcpPeer(CNetworkAddress::FromString("192.0.2.1")));
+	ASSERT_TRUE(CanAdmitUtpPeer(CNetworkAddress::FromString("192.0.2.1")));
+	ASSERT_FALSE(CanAdmitTcpPeer(CNetworkAddress::Absent()));
+	ASSERT_FALSE(CanAdmitTcpPeer(CNetworkAddress::AnyIPv6()));
+	ASSERT_FALSE(CanAdmitUtpPeer(CNetworkAddress::FromString("0.0.0.0")));
+}
+
 TEST(PeerAddressing, ContactSecurityChecksAllowNativeIPv6)
 {
 	for (const char *text : { "2001:4860::1", "2001:db8::1", "fe80::1", "fd00::1", "::1" }) {

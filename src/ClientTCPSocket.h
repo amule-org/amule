@@ -41,12 +41,18 @@ class CTimerWnd;
 class CClientTCPSocket : public CEMSocket
 {
 public:
+	enum class AdmissionTransport
+	{
+		TCP,
+		UTP
+	};
+
 	CClientTCPSocket(CUpDownClient *in_client = NULL, const CProxyData *ProxyData = NULL);
 	virtual ~CClientTCPSocket();
 
 	void Disconnect(const wxString &strReason);
 
-	bool InitNetworkData();
+	bool InitNetworkData(AdmissionTransport transport = AdmissionTransport::TCP);
 #ifdef AMULE_UTP_TRANSPORT
 	//! Hands this peer's obfuscation preference and hash to an attached stream.
 	void ApplyUtpCryptParameters();

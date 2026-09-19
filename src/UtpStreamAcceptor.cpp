@@ -74,7 +74,7 @@ bool CUtpStreamAcceptor::AcceptStream(
 	socket->AttachTransport(std::move(transport));
 	// Records m_remoteip; its checks were made above. Refusal still has to delete
 	// the socket, as CListenSocket::OnAccept does, or it stays with no address.
-	if (!socket->InitNetworkData()) {
+	if (!socket->InitNetworkData(CClientTCPSocket::AdmissionTransport::UTP)) {
 		socket->Safe_Delete();
 		return false;
 	}
