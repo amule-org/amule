@@ -7,21 +7,16 @@ import { api } from "../api.js";
 import { html, useState, useEffect, useStore } from "../dom.js";
 import { Badge, checkCell, listPlaceholder, Tabs, CommentsList, ratingLabel, toast } from "../components.js";
 import { VirtualTable, sortRows, textMatcher, useTablePrefs, ColumnPicker } from "../table.js";
-import { formatBytes, formatDuration, formatInt } from "../format.js";
+import { formatBytes, formatDuration, formatInt, fileTypeLabel } from "../format.js";
 import { Icon } from "../icons.js";
 import { searches } from "../searches.js";
 import { categoryOptions } from "./categories.js";
 import { t, tn, terr } from "../i18n.js";
 
 const SIZE_UNITS = { B: 1, KiB: 1024, MiB: 1048576, GiB: 1073741824 };
-// [API value, label key] - the same tokens the rows report in `file_type`, so a
-// filter can be built from a result. amuleapi translates them to the ed2k terms.
-const FILE_TYPES = [
-  ["", "search_ftype_any"], ["audio", "search_ftype_audio"], ["video", "search_ftype_video"],
-  ["picture", "search_ftype_image"], ["text", "search_ftype_document"],
-  ["program", "search_ftype_program"], ["archive", "search_ftype_archive"],
-  ["disc_image", "search_ftype_cddvd"],
-];
+// The file_type tokens the API rows report and accept as a filter; amuleapi
+// maps them to the ed2k terms. "" = any type.
+const FILE_TYPES = ["", "audio", "video", "picture", "text", "program", "archive", "disc_image"];
 // A tab is as wide as its label, so a long query gets cut; the full string
 // stays in the tab's title attribute.
 const TAB_LABEL_MAX = 24;
@@ -101,7 +96,7 @@ export default function Search({ isGuest }) {
           <option value="global">${t("search_type_global")}</option><option value="local">${t("search_type_local")}</option><option value="kad">${t("search_type_kad")}</option>
         </select>`)}
         ${field(t("search_file_type"), html`<select class="input" name="search_file_type" value=${fileType} onChange=${(e) => setFileType(e.target.value)}>
-          ${FILE_TYPES.map(([v, k]) => html`<option value=${v}>${t(k)}</option>`)}
+          ${FILE_TYPES.map((v) => html`<option value=${v}>${v ? fileTypeLabel(v) : t("search_ftype_any")}</option>`)}
         </select>`)}
         ${field(t("search_extension"), html`<input class="input" name="search_extension" type="text" placeholder=${t("search_ext_ph")} value=${ext} onInput=${(e) => setExt(e.target.value)} />`)}
         ${field(t("search_min_availability"), html`<input class="input" name="search_min_availability" type="number" min="0" placeholder="0" value=${minAvail} onInput=${(e) => setMinAvail(e.target.value)} />`)}
@@ -273,7 +268,7 @@ function ResultsPane({ tab, categories }) {
       // rating only ever surfaces per-comment in the ratings dialog.
       cell: (r) => (r.rating ? html`<span title=${ratingLabel(r.rating)}>${r.rating}</span>` : "—") },
     { key: "type", label: t("search_type"), width: "100px", sortable: true,
-      sortVal: (r) => r.file_type || "", cell: (r) => typeLabel(r.file_type) },
+      sortVal: (r) => r.file_type || "", cell: (r) => fileTypeLabel(r.file_type) },
     { key: "status", label: t("downloads_status_label"), width: "120px", sortable: true,
       sortVal: (r) => r.status || "", cell: (r) => searchStatusBadge(r.status) },
     // Browse-only: the folder inside the peer's share, empty on every
@@ -421,13 +416,6 @@ function ResultComments({ result, onClose }) {
 
 function field(label, control, cls = "") {
   return html`<div class=${"field " + cls}><label>${label}</label>${control}</div>`;
-}
-
-// Lowercase file-type token ("videos"/"audio"/…) -> capitalized label, "—" when
-// the hit has no extension. ponytail: token capitalizado; añadir i18n por valor
-// si se pide traducción por tipo.
-function typeLabel(type) {
-  return type ? type.replace(/^./, (c) => c.toUpperCase()) : "—";
 }
 
 // Search-result download status -> badge, mirroring downloads.js statusBadge.

@@ -68,6 +68,9 @@ export function formatFreeSpace(temp, incoming) {
 // Unix seconds -> locale date+time; 0 means unknown.
 export const formatTimestamp = (s) => s ? new Date(s * 1000).toLocaleString() : "—";
 
+// file_type token -> its label (i18n keys are search_ftype_<token>).
+export const fileTypeLabel = (token) => token ? t("search_ftype_" + token) : "—";
+
 // Seconds -> human duration, mirroring CastSecondsToHM (src/OtherFunctions.cpp).
 export function formatDuration(s) {
   s = Math.floor(Number(s) || 0);
