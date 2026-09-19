@@ -971,11 +971,6 @@ table.data.virtual td.name .name-select { width: 100%; max-width: 100%; }
   .route-title { display: block; font-size: 18px; font-weight: 600; }
   .brand-logo { height: 34px; }
   .stats-grid { grid-template-columns: 1fr; }
-  /* notebook tab strips: single scrolling row instead of wrapping to 2 lines.
-     overflow-y:hidden stops the browser from computing overflow-x:auto's pair
-     to auto and showing a spurious 1px vertical scrollbar. */
-  .net-pane .tabs { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; }
-  .net-pane .tab { flex: 0 0 auto; }
   .prefs-groups { column-count: 1; }
 
   /* Downloads on phones: no viewport-fit/splitter. The table stacks and the
