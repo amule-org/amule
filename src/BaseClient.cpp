@@ -1494,7 +1494,7 @@ bool CUpDownClient::Disconnected(const wxString &DEBUG_ONLY(strReason), bool bFr
 	if (GetChatState() != MS_NONE) {
 		bDelete = false;
 		m_pendingMessage.Clear();
-		Notify_ChatConnResult(false, GUI_ID(GetIP(), GetUserPort()), "");
+		Notify_ChatConnResult(false, ECID(), "");
 	}
 
 	// Delete socket
@@ -2029,7 +2029,7 @@ void CUpDownClient::ConnectionEstablished()
 		if (!m_pendingMessage.IsEmpty()) {
 			result = SendChatMessage(m_pendingMessage);
 		}
-		Notify_ChatConnResult(result, GUI_ID(GetIP(), GetUserPort()), m_pendingMessage);
+		Notify_ChatConnResult(result, ECID(), m_pendingMessage);
 		m_pendingMessage.Clear();
 	}
 
@@ -3098,7 +3098,7 @@ void CUpDownClient::ProcessCaptchaReqRes(uint8 WXUNUSED(nStatus)) {}
 
 void CUpDownClient::ProcessCaptchaRequest(CMemFile *data)
 {
-	uint64 id = GUI_ID(GetIP(), GetUserPort());
+	uint64 id = ECID();
 	// received a captcha request, check if we actually accept it (only after sending a message ourself to
 	// this client)
 	if (GetChatCaptchaState() == CA_ACCEPTING && GetChatState() != MS_NONE &&
@@ -3151,7 +3151,7 @@ void CUpDownClient::ProcessCaptchaRequest(CMemFile *data)
 
 void CUpDownClient::ProcessCaptchaReqRes(uint8 nStatus)
 {
-	uint64 id = GUI_ID(GetIP(), GetUserPort());
+	uint64 id = ECID();
 	if (GetChatCaptchaState() == CA_SOLUTIONSENT && GetChatState() != MS_NONE &&
 		theApp->amuledlg->m_chatwnd->IsIdValid(id)) {
 		wxASSERT(nStatus < 3);
@@ -3320,7 +3320,7 @@ void CUpDownClient::ProcessChatMessage(wxString message)
 			AddDebugLogLineN(
 				logClient, CFormat("'%s' has been marked as spammer") % GetUserName());
 			SetSpammer(true);
-			theApp->amuledlg->m_chatwnd->EndSession(GUI_ID(GetIP(), GetUserPort()));
+			theApp->amuledlg->m_chatwnd->EndSession(ECID());
 			return;
 		}
 	}
@@ -3338,10 +3338,10 @@ void CUpDownClient::ProcessChatMessage(wxString message)
 	// all, and what lets the local GUI and every EC client agree on one. Placed after the
 	// filter / spammer branches above so a filtered message is not stored.
 	if (theApp->chatsessions) {
-		theApp->chatsessions->AddIncoming(GUI_ID(GetIP(), GetUserPort()), GetUserName(), message);
+		theApp->chatsessions->AddIncoming(ECID(), GetUserName(), message);
 	}
 
-	Notify_ChatProcessMsg(GUI_ID(GetIP(), GetUserPort()), GetUserName() + "|" + message);
+	Notify_ChatProcessMsg(ECID(), GetUserName() + "|" + message);
 }
 
 // Prefs-based and GUI-free, so it's shared by both builds -- the daemon's
