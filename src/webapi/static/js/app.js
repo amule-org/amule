@@ -96,65 +96,33 @@ function Shell({ role, onLogout }) {
 
   return html`
     <${Toolbar} route=${route} onLogout=${onLogout} />
-    <${VersionBanner} />
     <main class="view" id="view">
       <${RouteView} route=${route} role=${role} />
     </main>
     <${StatusBar} />`;
 }
 
-// Persistent alerts from the one-shot GET /version fetch, both linking to About:
-//   - version mismatch: amuleapi's build (amuleapi_version) differs from the
-//     connected amuled (daemon_version) — a config mismatch a toast would miss.
-//   - update available: the daemon's version check found a newer release
-//     (update.check_enabled && update.available).
-// Lives in Shell so a dismiss sticks for the session; each row dismisses on its
-// own. daemon_version is empty when EC isn't connected; skip mismatch then.
-function VersionBanner() {
-  const [mismatch, setMismatch] = useState(null);
-  const [update, setUpdate] = useState(null);
-  const [mismatchGone, setMismatchGone] = useState(false);
-  const [updateGone, setUpdateGone] = useState(false);
+function Toolbar({ route, onLogout }) {
+  const [link, setLink] = useState("");
+  const [menuOpen, setMenuOpen] = useState(false);
+  const unread = (useStore("chats") || {}).unread || 0;
+  // One-shot /version check. A red dot on About (and, on mobile, on the
+  // hamburger) flags a version mismatch or an available update; the message
+  // itself lives in the About view. daemon_version is empty without EC.
+  const [aboutAlert, setAboutAlert] = useState(false);
 
   useEffect(() => {
     let alive = true;
     api.get("version")
       .then((v) => {
         if (!alive) return;
-        if (v.daemon_version && v.amuleapi_version !== v.daemon_version) {
-          setMismatch({ ui: v.amuleapi_version, daemon: v.daemon_version });
-        }
-        if (v.update && v.update.check_enabled && v.update.available === true) {
-          setUpdate({ version: v.update.latest_version });
-        }
+        const mismatch = v.daemon_version && v.amuleapi_version !== v.daemon_version;
+        const update = v.update && v.update.check_enabled && v.update.available === true;
+        if (mismatch || update) setAboutAlert(true);
       })
       .catch(() => {});
     return () => { alive = false; };
   }, []);
-
-  const banner = (cls, icon, text, onClose) => html`
-    <div class=${"version-banner" + cls} role="alert">
-      <${Icon} name=${icon} size=${18} />
-      <a class="version-banner-link" href="#/about">${text}</a>
-      <button class="btn btn-ghost version-banner-close" aria-label=${t("common_close")}
-              onClick=${onClose}>
-        <${Icon} name="cancel" size=${16} />
-      </button>
-    </div>`;
-
-  return html`
-    ${update && !updateGone
-      ? banner(" update", "downloads", t("app_update_banner", update), () => setUpdateGone(true))
-      : null}
-    ${mismatch && !mismatchGone
-      ? banner("", "warning", t("about_version_mismatch", mismatch), () => setMismatchGone(true))
-      : null}`;
-}
-
-function Toolbar({ route, onLogout }) {
-  const [link, setLink] = useState("");
-  const [menuOpen, setMenuOpen] = useState(false);
-  const unread = (useStore("chats") || {}).unread || 0;
 
   const addEd2k = async () => {
     const value = link.trim();
@@ -201,9 +169,10 @@ function Toolbar({ route, onLogout }) {
   return html`
     <header class="app-toolbar">
       <button class="btn btn-ghost nav-toggle" aria-expanded=${menuOpen}
-              aria-controls="main-nav" aria-label=${t("app_menu")}
+              aria-controls="main-nav" aria-label=${unread || aboutAlert ? t("app_menu_alert") : t("app_menu")}
               onClick=${() => setMenuOpen(!menuOpen)}>
         <${Icon} name="menu" size=${20} />
+        ${unread || aboutAlert ? html`<span class="nav-toggle-dot"></span>` : null}
       </button>
       <div class="brand">
         <img class="brand-logo" src="img/logo.png" alt="aMule" />
@@ -219,6 +188,9 @@ function Toolbar({ route, onLogout }) {
             <span class="tool-label">${r.label}</span>
             ${r.key === "messages" && unread
               ? html`<span class="tool-badge" title=${t("messages_unread_tip", { n: unread })}>${unread}</span>`
+              : null}
+            ${r.key === "about" && aboutAlert
+              ? html`<span class="tool-dot" title=${t("about_alert_tip")}></span>`
               : null}
           </a>`)}
         <div class="nav-tools">

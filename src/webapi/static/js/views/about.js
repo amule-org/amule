@@ -1,6 +1,6 @@
 // About view: application info from GET /api/v1/version (versions + daemon
-// update-availability), plus static project links and license. See app.js
-// VersionBanner for the mismatch/update banners driven by the same endpoint.
+// update-availability), plus static project links and license. Shows the
+// mismatch/update message here; app.js only flags it with a nav dot.
 
 import { api } from "../api.js";
 import { html, useState, useEffect } from "../dom.js";
@@ -50,8 +50,20 @@ export default function About() {
 
   const daemon = info.daemon_version || t("about_daemon_disconnected");
   const u = info.update || {};
+  const mismatch = info.daemon_version && info.amuleapi_version !== info.daemon_version;
+  const updateAvailable = u.check_enabled && u.available === true;
 
   return html`
+    ${updateAvailable ? html`
+    <div class="card about-alert update" role="alert">
+      <${Icon} name="downloads" size=${18} />
+      <span>${t("app_update_banner", { version: u.latest_version })}</span>
+    </div>` : null}
+    ${mismatch ? html`
+    <div class="card about-alert" role="alert">
+      <${Icon} name="warning" size=${18} />
+      <span>${t("about_version_mismatch", { ui: info.amuleapi_version, daemon: info.daemon_version })}</span>
+    </div>` : null}
     <div class="card">
       <h3>aMule Web</h3>
       <div class="form-grid form-grid-2">
