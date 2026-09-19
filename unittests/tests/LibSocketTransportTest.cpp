@@ -67,6 +67,7 @@ public:
 	}
 
 	bool IsConnected() const override { return true; }
+	bool IsInbound() const override { return false; }
 	void SetEvents(IStreamTransportEvents *) override {}
 	bool ObfuscatesStream() const override { return false; }
 	bool IsOk() const override { return ok; }

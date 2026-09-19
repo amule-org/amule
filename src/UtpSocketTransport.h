@@ -95,8 +95,8 @@ public:
 		IUtpSocketOperations::Handle socket,
 		const CNetworkAddress &peer,
 		uint16_t peerPort,
-		bool inbound = false,
-		IStreamTransportEvents *events = nullptr)
+		IStreamTransportEvents *events,
+		bool inbound)
 	: m_operations(operations)
 	, m_socket(socket)
 	, m_peer(peer)

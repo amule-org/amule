@@ -116,7 +116,8 @@ IUtpSocketOperations::Handle Handle()
 
 CUtpSocketTransport MakeTransport(FakeOperations &ops, IStreamTransportEvents *events = nullptr)
 {
-	return CUtpSocketTransport(ops, Handle(), CNetworkAddress::FromString("192.0.2.7"), 4662, events);
+	return CUtpSocketTransport(
+		ops, Handle(), CNetworkAddress::FromString("192.0.2.7"), 4662, events, false);
 }
 
 std::vector<uint8_t> Pattern(size_t length, uint8_t seed = 0)
@@ -350,7 +351,8 @@ TEST(UtpSocketTransport, AWindowOpeningFlushesAndUnblocksOnlyWhenItHelps)
 	FakeOperations ops;
 	ops.acceptLimit = 0;
 	FakeEvents events;
-	CUtpSocketTransport transport(ops, Handle(), CNetworkAddress::FromString("192.0.2.7"), 4662, &events);
+	CUtpSocketTransport transport(
+		ops, Handle(), CNetworkAddress::FromString("192.0.2.7"), 4662, &events, false);
 
 	// Fill the queue past its bound so the writer is blocked.
 	const std::vector<uint8_t> payload = Pattern(CUtpStream::kDefaultWriteBound + 16, 5);

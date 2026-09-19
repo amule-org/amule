@@ -47,6 +47,7 @@
 #include "Logger.h"
 #include "GuiEvents.h" // Needed for Notify_*
 #include "Packet.h"
+#include "UtpDialPolicy.h" // Needed for simultaneous uTP tie-breaking
 
 #include <common/Format.h>
 
@@ -411,16 +412,14 @@ bool CClientList::AttachToAlreadyKnown(CUpDownClient **client, CClientTCPSocket 
 #ifdef AMULE_UTP_TRANSPORT
 				if (foundSocket->HasTransport() && sender->HasTransport() &&
 					foundSocket->IsUtpInbound() != sender->IsUtpInbound() &&
-					found_client->HasValidHash()) {
-					const bool localKeepsInbound =
-						std::memcmp(thePrefs::GetUserHash().GetHash(),
-							tocheck->GetUserHash().GetHash(),
-							16) > 0;
-					const bool keepFound =
-						foundSocket->IsUtpInbound() == localKeepsInbound;
+					found_client->HasValidHash() && tocheck->HasValidHash()) {
+					const bool keepFound = ShouldKeepFoundUtp(foundSocket->IsUtpInbound(),
+						thePrefs::GetUserHash().GetHash(),
+						tocheck->GetUserHash().GetHash());
 					if (keepFound) {
 						sender->Safe_Delete();
 						tocheck->SetSocket(nullptr);
+						tocheck->Safe_Delete();
 						*client = found_client;
 						return true;
 					}

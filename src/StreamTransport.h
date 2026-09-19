@@ -62,7 +62,7 @@ public:
 	//! Whether the stream has completed its handshake and not yet ended.
 	virtual bool IsConnected() const = 0;
 
-	virtual bool IsInbound() const { return false; }
+	virtual bool IsInbound() const = 0;
 
 	/**
 	 * Whether this transport obfuscates the bytes it carries.

@@ -24,6 +24,8 @@
 
 #include "ClientTCPSocket.h"
 
+#include <algorithm>
+
 #ifdef AMULE_UTP_TRANSPORT
 #include "UtpSocketTransport.h" // per-stream crypt parameters
 #endif                          // Interface declarations.
@@ -172,7 +174,9 @@ bool CClientTCPSocket::CheckTimeOut()
 	uint64 uTimeout = GetTimeOut();
 #ifdef AMULE_UTP_TRANSPORT
 	if (HasTransport() && !GetTransport()->IsConnected()) {
-		uTimeout = MIN2MS(4);
+		// Give uTP a shorter handshake window than the normal TCP timeout, then use
+		// the same socket wrapper for the one-shot TCP fallback.
+		uTimeout = std::min<uint64>(uTimeout, CONNECTION_TIMEOUT / 2);
 	}
 #endif
 	if (m_client) {
@@ -220,14 +224,15 @@ void CClientTCPSocket::SetClient(CUpDownClient *pClient)
 #ifdef AMULE_UTP_TRANSPORT
 bool CClientTCPSocket::TryUtpTcpFallback()
 {
-	if (m_utpFallbackAttempted || m_client == nullptr || !HasTransport()) {
+	if (m_client == nullptr || !HasTransport()) {
 		return false;
 	}
 	if (m_client->GetDownloadState() != DS_CONNECTING && m_client->GetUploadState() != US_CONNECTING) {
 		return false;
 	}
-
-	m_utpFallbackAttempted = true;
+	if (!ConsumeUtpFallback(m_utpFallbackAttempted)) {
+		return false;
+	}
 	// Destroy only the failed uTP stream; keep the client and socket wrapper so
 	// the normal TCP Connect() path can reuse its identity and timeout state.
 	DetachTransport().reset();
