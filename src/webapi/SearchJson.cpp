@@ -26,6 +26,8 @@
 
 #include "State.h"
 
+#include <common/MediaCodecName.h> // Needed for MediaCodecLabel
+
 #include <JsonWriter.h>
 
 #include <wx/string.h>
@@ -76,7 +78,7 @@ void WriteSearchResultFields(CJsonWriter &w, const SearchResult &r)
 		w.Key("bitrate_kilobits_per_second");
 		w.ValueInt(static_cast<int64_t>(r.media.bitrate_kilobits_per_second));
 		w.Key("codec");
-		w.ValueString(wxString::FromUTF8(r.media.codec.c_str()));
+		w.ValueString(wxString::FromUTF8(MediaCodecLabel(r.media.codec).c_str()));
 		w.Key("artist");
 		w.ValueString(wxString::FromUTF8(r.media.artist.c_str()));
 		w.Key("album");

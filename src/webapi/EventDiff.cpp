@@ -29,6 +29,8 @@
 #include "SearchJson.h"      // WriteSearchResultFields, shared with GET /search/{id}/results
 #include "ServerFlagNames.h" // Shared server capability-bit tables, decoded to JSON
 
+#include <common/MediaCodecName.h> // Needed for MediaCodecLabel
+
 #include <JsonWriter.h>
 
 #include <algorithm>
@@ -247,7 +249,7 @@ std::string ToJsonSharedEvent(const FileSnapshot &f)
 	if (f.has_media) {
 		o << "{\"duration_seconds\":" << f.media.duration_seconds
 		  << ",\"bitrate_kilobits_per_second\":" << f.media.bitrate_kilobits_per_second
-		  << ",\"codec\":\"" << EscJson(f.media.codec) << "\""
+		  << ",\"codec\":\"" << EscJson(MediaCodecLabel(f.media.codec)) << "\""
 		  << ",\"artist\":\"" << EscJson(f.media.artist) << "\""
 		  << ",\"album\":\"" << EscJson(f.media.album) << "\""
 		  << ",\"title\":\"" << EscJson(f.media.title) << "\"}";

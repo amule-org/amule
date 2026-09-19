@@ -48,8 +48,8 @@ namespace webapi
  * call the same function and emit the same bytes. Only the two tables below decide what a flags
  * object contains; adding a bit is a one-line change both paths pick up.
  *
- * EventDiff.cpp is compiled into EventDiffTest, which is stdlib-only by design, so nothing here may
- * reach for wxWidgets or EC.
+ * EventDiff.cpp is compiled into EventDiffTest, whose source list is deliberately a handful of
+ * files, so nothing here may pull in EC or drag further translation units behind it.
  *
  * These are protocol tokens, not display text: untranslated and stable. The desktop's TCP/UDP Flags
  * columns render the same bits as single letters (ServerListCtrl.cpp).

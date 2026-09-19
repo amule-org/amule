@@ -350,7 +350,7 @@ Identical to the REST [`/api/v1/shared`](REFERENCE.md#get-apiv1shared) list-item
   "last_upload_at":   1700000500,
   "shared_since_at":  1699000000,
   "hashed_part_count": 0,
-  "media": { "duration_seconds": 5400, "bitrate_kilobits_per_second": 1500, "codec": "h264", "artist": "", "album": "", "title": "" }
+  "media": { "duration_seconds": 5400, "bitrate_kilobits_per_second": 1500, "codec": "H.264", "artist": "", "album": "", "title": "" }
 }
 ```
 
@@ -606,7 +606,7 @@ It does **not** fire on `sources` or `alternate_names[]`. Those churn on essenti
   "rating": 0,
   "status": "new",
   "file_type": "video",
-  "media": { "duration_seconds": 5400, "bitrate_kilobits_per_second": 1500, "codec": "h264", "artist": "", "album": "", "title": "" },
+  "media": { "duration_seconds": 5400, "bitrate_kilobits_per_second": 1500, "codec": "H.264", "artist": "", "album": "", "title": "" },
   "alternate_names": []
 }
 ```

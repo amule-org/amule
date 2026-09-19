@@ -3,6 +3,7 @@ add_library (mulecommon STATIC
 	Format.cpp
 	LocaleInit.cpp
 	MD5Sum.cpp
+	MediaCodecName.cpp
 	MuleDebug.cpp
 	Path.cpp
 	RateLimiter.cpp

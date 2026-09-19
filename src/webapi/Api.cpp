@@ -53,9 +53,10 @@
 #include "State.h"
 
 #include "Constants.h"
-#include "OtherFunctions.h" // GetFiletypeByName for the shared file_type token
-#include <common/Path.h>    // CPath
-#include <icon_data.h>      // amule_find_icon -- country flags for GET /flags/{code}.png
+#include "OtherFunctions.h"        // GetFiletypeByName for the shared file_type token
+#include <common/MediaCodecName.h> // Needed for MediaCodecLabel
+#include <common/Path.h>           // CPath
+#include <icon_data.h>             // amule_find_icon -- country flags for GET /flags/{code}.png
 
 #include <ec/cpp/ECPacket.h>
 #include <ec/cpp/ECCodes.h>
@@ -2550,7 +2551,7 @@ void WriteMediaIfPresent(CJsonWriter &w, const webapi::FileSnapshot &f)
 	w.Key("bitrate_kilobits_per_second");
 	w.ValueInt(static_cast<int64_t>(f.media.bitrate_kilobits_per_second));
 	w.Key("codec");
-	w.ValueString(wxString::FromUTF8(f.media.codec.c_str()));
+	w.ValueString(wxString::FromUTF8(MediaCodecLabel(f.media.codec).c_str()));
 	w.Key("artist");
 	w.ValueString(wxString::FromUTF8(f.media.artist.c_str()));
 	w.Key("album");

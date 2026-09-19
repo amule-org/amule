@@ -196,6 +196,8 @@ wxString FormatLocalDateTime(const wxDateTime &when);
 wxString FormatLocalDate(const wxDateTime &when);
 // Maps an ed2k FT_MEDIA_CODEC FOURCC / format string to a friendlier display
 // name ("H264" -> "H.264", "XVID" -> "Xvid"); unknown values pass through.
+//! Codec FOURCC to its display label, e.g. "h264" to "H.264". Thin wrapper over
+//! MediaCodecLabel() (common/MediaCodecName.h), which amuleapi calls directly.
 wxString FormatMediaCodec(const wxString &raw);
 // Returns the amount of Bytes the provided size-type represents
 uint32 GetTypeSize(uint8 type);

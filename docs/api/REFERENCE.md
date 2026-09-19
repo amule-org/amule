@@ -922,7 +922,7 @@ The `media` object (on both `GET /downloads/{hash}` and `GET /shared/{hash}`) ca
 "media": {
   "duration_seconds": 5400,
   "bitrate_kilobits_per_second": 1500,
-  "codec": "h264",
+  "codec": "H.264",
   "artist": "…",
   "album": "…",
   "title": "…"
@@ -933,7 +933,7 @@ The `media` object (on both `GET /downloads/{hash}` and `GET /shared/{hash}`) ca
 |---|---|---|
 | `duration_seconds` | int | Duration in seconds. |
 | `bitrate_kilobits_per_second` | int | Bitrate (kbps). |
-| `codec` | string | Codec identifier (e.g. `"h264"`). |
+| `codec` | string | Codec as the interface shows it (e.g. `"H.264"`). A display label, mapped from the FOURCC the file or the remote server advertised; an unmapped codec is passed through as advertised. The desktop renders the same label. |
 | `artist` / `album` / `title` | string | Tag metadata; `""` when the file carries none. |
 
 #### `GET /api/v1/downloads/{hash}/comments`
@@ -1544,7 +1544,7 @@ curl -s -H "Authorization: Bearer $TOKEN" "http://$HOST/api/v1/shared"
       "media": {
         "duration_seconds": 212,
         "bitrate_kilobits_per_second": 320,
-        "codec":    "mp3",
+        "codec":    "MP3",
         "artist":   "Some Artist",
         "album":    "Some Album",
         "title":    "Some Title"
@@ -2992,7 +2992,7 @@ amuled keeps a bounded ring of recent searches (20). A search evicted from that 
       "status":       "new",
       "file_type":    "video",
       "directory":    "",
-      "media":        { "duration_seconds": 5400, "bitrate_kilobits_per_second": 1500, "codec": "h264", "artist": "", "album": "", "title": "" },
+      "media":        { "duration_seconds": 5400, "bitrate_kilobits_per_second": 1500, "codec": "H.264", "artist": "", "album": "", "title": "" },
       "alternate_names": [
         { "ecid": 621, "name": "example-distribution-26.04.iso", "sources": { "total": 40, "complete": 22 }, "directory": "" },
         { "ecid": 622, "name": "example_distro_2604_amd64.iso",  "sources": { "total": 10, "complete":  3 }, "directory": "" }

@@ -154,3 +154,25 @@ TEST(VersionCompare, ParseErrorNonNumeric)
 	CVersionCompareResult r = CompareLatestReleaseVersion(wxT("{\"tag_name\": \"3.x.0\"}"));
 	ASSERT_TRUE(r.state == CVersionCompareResult::ParseError);
 }
+
+DECLARE_SIMPLE(MediaCodec)
+
+// ffprobe reports lowercase, the ed2k tag carries uppercase FOURCCs, and both have to land on the
+// same label -- the GUI and the API render this string side by side for the same file.
+TEST(MediaCodec, MapsKnownCodecsWhateverTheCase)
+{
+	ASSERT_EQUALS(wxT("H.264"), FormatMediaCodec(wxT("h264")));
+	ASSERT_EQUALS(wxT("H.264"), FormatMediaCodec(wxT("H264")));
+	ASSERT_EQUALS(wxT("H.264"), FormatMediaCodec(wxT("avc1")));
+	ASSERT_EQUALS(wxT("H.265 / HEVC"), FormatMediaCodec(wxT("hevc")));
+	ASSERT_EQUALS(wxT("Vorbis"), FormatMediaCodec(wxT("vorb")));
+	ASSERT_EQUALS(wxT("Xvid"), FormatMediaCodec(wxT("XviD")));
+}
+
+// An unmapped codec still has to show something, and an empty one stays empty rather than becoming
+// a label for nothing.
+TEST(MediaCodec, PassesThroughWhatItDoesNotKnow)
+{
+	ASSERT_EQUALS(wxT("theora"), FormatMediaCodec(wxT("theora")));
+	ASSERT_EQUALS(wxT(""), FormatMediaCodec(wxT("")));
+}

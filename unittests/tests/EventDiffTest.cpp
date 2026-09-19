@@ -1338,7 +1338,8 @@ TEST(EventDiff, SharedEventCarriesMediaWhenPresent)
 	}
 	ASSERT_TRUE(!payload.empty());
 	ASSERT_TRUE(payload.find("\"media\":{\"duration_seconds\":5400") != std::string::npos);
-	ASSERT_TRUE(payload.find("\"codec\":\"h264\"") != std::string::npos);
+	// The label, not the raw FOURCC: the desktop shows "H.264" for this file and the API agrees.
+	ASSERT_TRUE(payload.find("\"codec\":\"H.264\"") != std::string::npos);
 }
 
 // Hashing progress on the shared side (issue #1054). amuled emits one tag kind per ECID, so a file
