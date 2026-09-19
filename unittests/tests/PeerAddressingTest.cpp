@@ -162,6 +162,13 @@ TEST(PeerAddressing, ContactSecurityChecksAllowNativeIPv6)
 	}
 }
 
+TEST(PeerAddressing, PublicIPv4RequestsRequireAnIPv4Socket)
+{
+	ASSERT_TRUE(CanAnswerPublicIPv4Request(CNetworkAddress::FromString("192.0.2.1")));
+	ASSERT_FALSE(CanAnswerPublicIPv4Request(CNetworkAddress::FromString("2001:db8::1")));
+	ASSERT_FALSE(CanAnswerPublicIPv4Request(CNetworkAddress::Absent()));
+}
+
 TEST(PeerAddressing, ContactCheckAddressKeepsLowIDUnchecked)
 {
 	const auto absent = CNetworkAddress::Absent();
