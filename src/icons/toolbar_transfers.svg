@@ -6,11 +6,9 @@
       <stop offset="1" stop-color="#ef8a10"/>
     </linearGradient>
   </defs>
-  <path d="M17.2 1 L20 1 L20 4 Q24.6 5.2 27.4 9 Q29.9 12.4 29.9 15.6 L29.9 20 L29.1 21 L24 21 L24 14.2 L20 10.2 L19.2 10.2 L19.2 13 L16 13 L10 7 L10 5.2 Q13.6 3 17.2 1 Z"
+  <path d="M11.4 1.6 L20.6 1.6 L20.6 12.6 L26.4 12.6 L16 25 L5.6 12.6 L11.4 12.6 Z"
     fill="url(#ar)" stroke="#9d3c00" stroke-width="1" stroke-linejoin="round"/>
-  <path d="M20.6 5.4 Q24.6 6.6 26.8 9.8" fill="none" stroke="#ffe9b0" stroke-width="1.2" stroke-linecap="round" opacity="0.8"/>
-  <path d="M16.4 2.6 L12.8 4.8" fill="none" stroke="#ffe9b0" stroke-width="1" stroke-linecap="round" opacity="0.8"/>
-  <path d="M15 18 L19.2 23.2 L23 26 L23 27.8 Q19.4 30 16 31 L12.2 31 L12.2 28 Q7.6 26.9 4.8 23.4 Q2.1 19.8 2.1 16.4 L2.1 12.9 L2.9 12 L8 12 L8 16.8 L12 20.8 L12.8 21 L12.8 19.2 L15 18 Z"
-    fill="url(#ar)" stroke="#9d3c00" stroke-width="1" stroke-linejoin="round"/>
-  <path d="M5 22.6 Q7.2 25.6 10.8 26.6" fill="none" stroke="#ffe9b0" stroke-width="1.2" stroke-linecap="round" opacity="0.6"/>
+  <path d="M13 3 L13 13.4 L9 13.4" fill="none" stroke="#ffe9b0" stroke-width="1.2" stroke-linecap="round" opacity="0.85"/>
+  <rect x="6" y="27.6" width="20" height="2.8" rx="1.4" fill="url(#ar)" stroke="#9d3c00" stroke-width="0.9"/>
+  <line x1="7.5" y1="28.4" x2="24.5" y2="28.4" stroke="#ffe9b0" stroke-width="0.7" opacity="0.7"/>
 </svg>
