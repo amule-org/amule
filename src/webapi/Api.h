@@ -275,12 +275,8 @@ private:
 	CHttpServer::Response HandleChatSend(const CHttpServer::Request &, const std::string &peer);
 	CHttpServer::Response HandleChatClose(const CHttpServer::Request &, const std::string &peer);
 	// Shared body of all three send forms; `target` is the EC tag naming the
-	// recipient (GUI_ID, client ECID or friend ECID).
+	// recipient, always a GUI_ID: the chat target is an address, and the caller has it.
 	CHttpServer::Response SendChatMessageTo(const CHttpServer::Request &, const CECTag &target);
-	// Address a conversation by friend / peer ECID instead of ip:port. The friend
-	// form is the one that reaches an OFFLINE friend, through their stored address.
-	CHttpServer::Response HandleFriendMessageSend(const CHttpServer::Request &, const std::string &ecid);
-	CHttpServer::Response HandleClientMessageSend(const CHttpServer::Request &, const std::string &ecid);
 	// POST /clients/{ecid}/shared_files -- browse a peer's shared file list ("View Files").
 	// Returns a search_id addressed like any search: results via GET /search/{id}/results,
 	// progress and SSE via the standard machinery.

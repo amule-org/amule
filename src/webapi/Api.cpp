@@ -1121,29 +1121,6 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		}
 	}
 
-	// Address a conversation by ECID, for a caller holding a peer or friend row.
-	// The friend form is the one that reaches an OFFLINE friend.
-	{
-		static const auto friend_messages =
-			web_api_path::ParsePattern("/api/v1/friends/{ecid}/messages");
-		static const auto client_messages =
-			web_api_path::ParsePattern("/api/v1/clients/{ecid}/messages");
-		const auto path_segs = web_api_path::SplitPath(path);
-		std::map<std::string, std::string> caps;
-		if (web_api_path::Match(friend_messages, path_segs, caps)) {
-			if (req.method != "POST") {
-				return MethodNotAllowed("POST", "only POST on /friends/{ecid}/messages");
-			}
-			return HandleFriendMessageSend(req, caps["ecid"]);
-		}
-		if (web_api_path::Match(client_messages, path_segs, caps)) {
-			if (req.method != "POST") {
-				return MethodNotAllowed("POST", "only POST on /clients/{ecid}/messages");
-			}
-			return HandleClientMessageSend(req, caps["ecid"]);
-		}
-	}
-
 	if (path == "/api/v1/servers_update") {
 		if (req.method != "POST") {
 			return MethodNotAllowed("POST", "only POST on /servers_update");
@@ -6044,42 +6021,6 @@ CHttpServer::Response CApiDispatcher::HandleChatSend(const CHttpServer::Request 
 	// No 404 for an unknown peer here: the core creates the session if it does
 	// not exist, so this doubles as "start a chat with this address".
 	return SendChatMessageTo(req, CECTag(EC_TAG_CHAT_CLIENT_ID, gui_id));
-}
-
-CHttpServer::Response CApiDispatcher::HandleFriendMessageSend(
-	const CHttpServer::Request &req, const std::string &ecid_str)
-{
-	auto a = Authenticate(req);
-	if (!a.ok)
-		return a.rejection;
-	if (auto rej = RequireAdmin(a))
-		return *rej;
-	if (!m_app.IsServerChatActive()) {
-		return ErrorResponse(
-			503, "ec_unsupported", "the connected amuled does not serve chat sessions");
-	}
-	std::uint32_t ecid = 0;
-	if (auto r = RequireEcidPath(ecid_str, ecid))
-		return *r;
-	return SendChatMessageTo(req, CECTag(EC_TAG_FRIEND, ecid));
-}
-
-CHttpServer::Response CApiDispatcher::HandleClientMessageSend(
-	const CHttpServer::Request &req, const std::string &ecid_str)
-{
-	auto a = Authenticate(req);
-	if (!a.ok)
-		return a.rejection;
-	if (auto rej = RequireAdmin(a))
-		return *rej;
-	if (!m_app.IsServerChatActive()) {
-		return ErrorResponse(
-			503, "ec_unsupported", "the connected amuled does not serve chat sessions");
-	}
-	std::uint32_t ecid = 0;
-	if (auto r = RequireEcidPath(ecid_str, ecid))
-		return *r;
-	return SendChatMessageTo(req, CECTag(EC_TAG_CLIENT, ecid));
 }
 
 CHttpServer::Response CApiDispatcher::HandleChatClose(

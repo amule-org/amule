@@ -1568,31 +1568,15 @@ CECTag EncodeChatSession(const CChatSessionStore::Session &session, uint32 curso
 	return tag;
 }
 
-// Resolve an EC_OP_CHAT_SEND target to a GUI_ID. Three addressing modes so a caller
-// can reply without a lookup (CHAT_CLIENT_ID), address a live peer it already has
-// (CLIENT), or reach a friend who is currently OFFLINE (FRIEND) -- the last resolves
-// through the friend's stored ip:port.
+// Resolve an EC_OP_CHAT_SEND target to a GUI_ID. One addressing mode: the target of a chat
+// IS an address, and every caller has it -- amulegui from the session it is replying in, the
+// API from the ip:port in its own client and friend rows. The ECID modes that used to sit
+// here resolved to this same GUI_ID and only saved the caller a lookup it does not need.
 bool ResolveChatTarget(const CECPacket *request, uint64 &out_gui_id)
 {
 	if (const CECTag *tag = request->GetTagByName(EC_TAG_CHAT_CLIENT_ID)) {
 		out_gui_id = tag->GetInt();
 		return out_gui_id != 0;
-	}
-	if (const CECTag *tag = request->GetTagByName(EC_TAG_CLIENT)) {
-		const CUpDownClient *client = theApp->clientlist->FindClientByECID(tag->GetInt());
-		if (!client) {
-			return false;
-		}
-		out_gui_id = GUI_ID(client->GetIP(), client->GetUserPort());
-		return true;
-	}
-	if (const CECTag *tag = request->GetTagByName(EC_TAG_FRIEND)) {
-		CFriend *f = theApp->friendlist->FindFriend(tag->GetInt());
-		if (!f || !f->GetIP() || !f->GetPort()) {
-			return false;
-		}
-		out_gui_id = GUI_ID(f->GetIP(), f->GetPort());
-		return true;
 	}
 	return false;
 }

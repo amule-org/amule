@@ -11,8 +11,6 @@
 #   GET    /chats/{address}/messages   → { peer, messages[], total, last_message_id }
 #   POST   /chats/{address}/messages   → 202 + the created message
 #   DELETE /chats/{address}            → 204, no body
-#   POST   /friends/{ecid}/messages → 202 (reaches an OFFLINE friend)
-#   POST   /clients/{ecid}/messages → 202
 #
 # `{peer}` is "<ip>:<port>". Every route answers 503 ec_unsupported when
 # the connected amuled predates the chat ops.
@@ -250,12 +248,15 @@ _assert_status 400 "POST with empty text → 400"
 _curl -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
 	-d '{}' "$API/chats/$PEER/messages"
 _assert_status 400 "POST with no text field → 400"
+# The ECID-keyed send routes are gone (issue #1497): a conversation is addressed by
+# ip:port, which every caller already has on its own rows. Both paths now fall through
+# to the catch-all 404 -- asserted so a re-added route cannot slip back in unnoticed.
 _curl -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
 	-d '{"text":"x"}' "$API/clients/4294967290/messages"
-_assert_status 404 "POST to an unknown client ECID → 404"
+_assert_status 404 "POST /clients/{ecid}/messages is not a route → 404"
 _curl -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
 	-d '{"text":"x"}' "$API/friends/4294967290/messages"
-_assert_status 404 "POST to an unknown friend ECID → 404"
+_assert_status 404 "POST /friends/{ecid}/messages is not a route → 404"
 
 # --- 7. Method gating. --------------------------------------------
 _curl -X PUT -H "Authorization: Bearer $TOKEN" "$API/chats"

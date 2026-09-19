@@ -75,12 +75,10 @@ The API is versioned in the path. **`/api/v1/` is frozen**: anything that could 
 - [`DELETE /api/v1/friends/{ecid}`](#delete-apiv1friendsecid) — remove a friend
 - [`PATCH /api/v1/friends/{ecid}`](#patch-apiv1friendsecid) — grant or clear the friend slot
 - [`POST /api/v1/friends/{ecid}/shared_files`](#post-apiv1friendsecidshared_files) — browse a friend's shared files
-- [`POST /api/v1/friends/{ecid}/messages`](#post-apiv1friendsecidmessages) — message a friend, online or offline
 - [`GET /api/v1/chats`](#get-apiv1chats) — list chat conversations
 - [`GET /api/v1/chats/{address}/messages`](#get-apiv1chatsaddressmessages) — read a conversation's history
 - [`POST /api/v1/chats/{address}/messages`](#post-apiv1chatsaddressmessages) — send a message to a client address
 - [`DELETE /api/v1/chats/{address}`](#delete-apiv1chatsaddress) — close a conversation
-- [`POST /api/v1/clients/{ecid}/messages`](#post-apiv1clientsecidmessages) — message a connected client
 
 **Categories**
 - [`GET /api/v1/categories`](#get-apiv1categories) — list categories
@@ -3256,29 +3254,11 @@ The created message stays in the body because the store-assigned `id` is only re
 
 The core creates the conversation if it does not exist, so this doubles as "start a chat with this address" — an unknown `{address}` is not a `404` here.
 
+This is the only way to send: a conversation is addressed by `ip:port`, never by ECID. The address is already on the rows a caller holds — [`GET /friends`](#get-apiv1friends) and [`GET /clients`](#get-apiv1clients) both carry `ip` and `port` — and the core opens the session for an address it has never seen, so an ECID-keyed form would only save a lookup. Browsing is the other way round for a real reason: [`POST /friends/{ecid}/shared_files`](#post-apiv1friendsecidshared_files) reaches an offline friend through an address only the daemon holds, which no caller can supply.
+
 Returns `202 Accepted`, not `200`: the core acknowledges that it queued the message on the client connection, not that the client received it. An unreachable client is not an error — the desktop behaves the same, optimistically showing `*** Connecting to Client ***`.
 
 **Errors:** `400 bad_request`, `404 not_found` (no client at that address to send to), `503 ec_unsupported`, `503 ec_unavailable`.
-
-#### `POST /api/v1/friends/{ecid}/messages`
-
-**Auth:** `ADMIN`
-
-Message a friend by friend ECID. This is the form that reaches an **offline** friend: the daemon resolves the ECID to the friend's stored address, so no live connection is needed.
-
-**Body:** `{ "text": "hello" }`
-
-**Response:** `202 Accepted` → `{ "address": "203.0.113.42:4662", "message": { … } }`, so the caller learns the conversation key to read back.
-
-**Errors:** `404 not_found` (no friend with that ECID), plus the set above.
-
-#### `POST /api/v1/clients/{ecid}/messages`
-
-**Auth:** `ADMIN`
-
-The client-addressed form, for a caller holding a client row that should not have to compose an `ip:port` key. Same body and response as above.
-
-**Errors:** `404 not_found` (no live client with that ECID), plus the set above.
 
 #### `DELETE /api/v1/chats/{address}`
 
