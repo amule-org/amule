@@ -29,17 +29,33 @@
 
 namespace UploadQueueAddressPolicy
 {
-/** Match a UDP requester to a queued peer without narrowing native IPv6 to zero. */
+/**
+ * Whether an address can take part in a match at all.
+ *
+ * Absent and unspecified addresses name nobody, so two of them are not the same peer. Hoisting this
+ * out of the loop is also what keeps a requester that can never match from walking the queue.
+ */
+inline bool IsMatchable(const CNetworkAddress &address) noexcept
+{
+	return PeerAddressing::IsIndexable(address);
+}
+
+/**
+ * Match a UDP requester to a queued peer without narrowing native IPv6 to zero.
+ *
+ * Address only. The caller that needs the port dimension as well goes through
+ * PeerAddressing::MatchesUdpSource(), whose zero-port refusal this must not silently duplicate.
+ */
 inline bool Matches(const CNetworkAddress &requester, const CNetworkAddress &peer) noexcept
 {
-	return PeerAddressing::IsIndexable(requester) && PeerAddressing::IsIndexable(peer) &&
+	return IsMatchable(requester) && IsMatchable(peer) &&
 	       PeerAddressing::IndexKey(requester) == PeerAddressing::IndexKey(peer);
 }
 
 /** Match upload-capacity accounting scopes without widening peer identity. */
 inline bool MatchesRateLimitScope(const CNetworkAddress &first, const CNetworkAddress &second) noexcept
 {
-	return PeerAddressing::IsIndexable(first) && PeerAddressing::IsIndexable(second) &&
+	return IsMatchable(first) && IsMatchable(second) &&
 	       PeerAddressing::RateLimitScope(first) == PeerAddressing::RateLimitScope(second);
 }
 } // namespace UploadQueueAddressPolicy

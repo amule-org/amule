@@ -213,7 +213,20 @@ public:
 	const CNetworkAddress &GetUserAddress() const { return m_userAddress; }
 	uint32 GetIP() const { return m_userAddress.ToIPv4NetworkOrderOrZero(); }
 	bool HasLowID() const { return IsLowID(m_nUserIDHybrid); }
-	wxString GetFullIP() const { return Uint32toStringIP(m_FullUserIP); }
+	/**
+	 * The peer's address as text.
+	 *
+	 * m_FullUserIP is the IPv4 form and is zero for a peer that has none, so rendering it
+	 * unconditionally printed "0.0.0.0" for every such peer -- in the client list, in the logs
+	 * and over EC, where they were then indistinguishable from each other. The address itself
+	 * is what the reader wants; the numeric form stays IPv4-only, and GetFullIPNumeric() is
+	 * still the accessor for callers that need it.
+	 */
+	wxString GetFullIP() const
+	{
+		return m_FullUserIP != 0 || m_userAddress.IsAbsent() ? Uint32toStringIP(m_FullUserIP)
+								     : m_userAddress.ToWxString();
+	}
 	// The numeric form of GetFullIP(), for callers that do not need the string. Named to be
 	// hard to confuse with it: the GeoIP resolver overloads on the argument type, so passing
 	// the string variant compiles and silently takes the uncached path.

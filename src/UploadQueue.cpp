@@ -355,13 +355,26 @@ CUpDownClient *CUploadQueue::GetWaitingClientByIP_UDP(
 
 	int cMatches = 0;
 
+	// Hoisted: the requester is one value for the whole walk, and the list runs to
+	// thePrefs::GetQueueSize() entries.
+	if (!UploadQueueAddressPolicy::IsMatchable(address)) {
+		return nullptr;
+	}
+	const PeerAddressing::UdpEndpoint source{ address, nUDPPort };
+
 	CClientRefList::iterator it = m_waitinglist.begin();
 	for (; it != m_waitinglist.end(); ++it) {
 		CUpDownClient *cur_client = it->GetClient();
 		const bool sameAddress =
 			UploadQueueAddressPolicy::Matches(address, cur_client->GetUserAddress());
 
-		if (sameAddress && nUDPPort == cur_client->GetUDPPort()) {
+		// Through MatchesUdpSource() rather than == on the two ports: a queued client
+		// that never advertised a UDP port carries zero, and a relayed request naming
+		// port zero would otherwise be an exact match against it. That client is then
+		// charged an ask count, and on the UDP twin can be banned for it.
+		if (sameAddress &&
+			PeerAddressing::MatchesUdpSource(
+				{ cur_client->GetUserAddress(), cur_client->GetUDPPort() }, source)) {
 			return cur_client;
 		} else if (sameAddress && bIgnorePortOnUniqueIP) {
 			pMatchingIPClient = cur_client;
@@ -466,12 +479,17 @@ void CUploadQueue::AddClientToQueue(CUpDownClient *client)
 	// canonical address, while IPv6 rate limiting aggregates a delegated /64. A client without
 	// an address has no host identity and is intentionally outside this cap.
 	const CNetworkAddress clientAddress = client->GetUserAddress();
-	int ipCount = PeerAddressing::IsIndexable(clientAddress) ? 1 : 0;
-	if (ipCount != 0) {
+	int ipCount = 0;
+	if (UploadQueueAddressPolicy::IsMatchable(clientAddress)) {
+		// The scope is one value for the whole walk, and the list runs to
+		// thePrefs::GetQueueSize() entries.
+		const CNetworkAddress clientScope = PeerAddressing::RateLimitScope(clientAddress);
+		ipCount = 1;
 		for (const auto &entry : m_waitinglist) {
 			CUpDownClient *cur_client = entry.GetClient();
-			if (cur_client != client && UploadQueueAddressPolicy::MatchesRateLimitScope(
-							    clientAddress, cur_client->GetUserAddress())) {
+			const CNetworkAddress &otherAddress = cur_client->GetUserAddress();
+			if (cur_client != client && UploadQueueAddressPolicy::IsMatchable(otherAddress) &&
+				PeerAddressing::RateLimitScope(otherAddress) == clientScope) {
 				ipCount++;
 			}
 		}
@@ -484,9 +502,10 @@ void CUploadQueue::AddClientToQueue(CUpDownClient *client)
 	// the aggressiveness/ban path's job.
 	if (ipCount > 3) {
 		AddDebugLogLineN(logLocalClient,
-			CFormat("Rejected upload request from %s: too many clients (%d) from the same IP "
-				"already on the upload queue") %
-				client->GetFullIP() % ipCount);
+			CFormat("Rejected upload request from %s: too many clients (%d) in the same "
+				"accounting scope (%s) already on the upload queue") %
+				clientAddress.ToWxString() % ipCount %
+				PeerAddressing::RateLimitScope(clientAddress).ToWxString());
 		return;
 	}
 

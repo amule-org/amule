@@ -128,6 +128,12 @@ bool CClientTCPSocket::InitNetworkData(AdmissionTransport transport)
 	m_remoteAddress = GetPeerAddress().Unmapped();
 	m_remoteip = m_remoteAddress.ToIPv4NetworkOrderOrZero();
 
+	// An accept that produced no address at all is a socket-layer bug, not a peer we
+	// are declining: it was a wxCHECK before native IPv6 made a non-IPv4 address
+	// ordinary. Keep it loud in a debug build, and out of the refusals below, which
+	// would otherwise report it as the wrong thing entirely.
+	MULE_CHECK(m_remoteAddress.IsPresent(), false);
+
 	if (transport == AdmissionTransport::UTP && !PeerAddressing::CanAdmitUtpPeer(m_remoteAddress)) {
 		AddDebugLogLineN(logClient,
 			"Denied uTP connection from " + GetPeer() + " (uTP requires an IPv4 address)");
@@ -1317,7 +1323,9 @@ bool CClientTCPSocket::ProcessExtPacket(const uint8_t *buffer, uint32 size, uint
 			break;
 		}
 
-		if (m_client->GetKadPort() && m_client->GetKadVersion() > 1) {
+		// See ProcessHelloTypePacket(): zero is not an address Kad can bootstrap
+		// from, and asking it to burns the throttle that paces real attempts.
+		if (m_client->GetIP() != 0 && m_client->GetKadPort() && m_client->GetKadVersion() > 1) {
 			Kademlia::CKademlia::Bootstrap(
 				wxUINT32_SWAP_ALWAYS(m_client->GetIP()), m_client->GetKadPort());
 		}
@@ -1710,6 +1718,16 @@ bool CClientTCPSocket::ProcessExtPacket(const uint8_t *buffer, uint32 size, uint
 		AddDebugLogLineN(
 			logRemoteClient, "Remote Client: OP_PUBLICIP_REQ from " + m_client->GetFullIP());
 		theStats::AddDownOverheadOther(size);
+		// The answer carries four bytes, so a peer with no ed2k wire form has no
+		// answer to give. Zero is not one: it names nobody, and a peer that took it
+		// for its public address would advertise 0.0.0.0 to everyone else. Staying
+		// silent is what the field already means by absent.
+		if (m_client->GetIP() == 0) {
+			AddDebugLogLineN(logRemoteClient,
+				"Remote Client: OP_PUBLICIP_REQ unanswerable, no IPv4 form for " +
+					m_client->GetUserAddress().ToWxString());
+			break;
+		}
 		CPacket *pPacket = new CPacket(OP_PUBLICIP_ANSWER, 4, OP_EMULEPROT);
 		pPacket->CopyUInt32ToDataBuffer(m_client->GetIP());
 		theStats::AddUpOverheadOther(pPacket->GetPacketSize());

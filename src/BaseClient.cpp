@@ -843,7 +843,11 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data)
 		m_byInfopacketsReceived |= IP_EMULEPROTPACK;
 	}
 
-	if (GetKadPort() && GetKadVersion() > 1) {
+	// GetIP() is zero for a peer with no ed2k wire form, and Kad speaks 32-bit
+	// addresses only: bootstrapping from zero asserts in a debug build, and in a
+	// release one sends KADEMLIA2_BOOTSTRAP_REQ to 0.0.0.0 while still arming the
+	// ten-second throttle, so a run of such peers starves Kad of real attempts.
+	if (GetIP() != 0 && GetKadPort() && GetKadVersion() > 1) {
 		Kademlia::CKademlia::Bootstrap(wxUINT32_SWAP_ALWAYS(GetIP()), GetKadPort());
 	}
 

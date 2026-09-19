@@ -134,6 +134,26 @@ TEST(PeerAddressing, TcpAdmissionAllowsNativeIPv6ButUtpRemainsIpv4Only)
 	ASSERT_FALSE(CanAdmitTcpPeer(CNetworkAddress::Absent()));
 	ASSERT_FALSE(CanAdmitTcpPeer(CNetworkAddress::AnyIPv6()));
 	ASSERT_FALSE(CanAdmitUtpPeer(CNetworkAddress::FromString("0.0.0.0")));
+	// Production routes an absent peer through the uTP predicate too, and an accept that
+	// produced no address is not a peer to admit on either transport.
+	ASSERT_FALSE(CanAdmitUtpPeer(CNetworkAddress::Absent()));
+	ASSERT_FALSE(CanAdmitUtpPeer(CNetworkAddress::AnyIPv6()));
+	// Mapped IPv4 is unmapped before admission, so it travels as the IPv4 peer it is.
+	ASSERT_TRUE(CanAdmitUtpPeer(CNetworkAddress::FromString("::ffff:192.0.2.1").Unmapped()));
+}
+
+// The rate-limit scope aggregates a delegated /64 and nothing else: outside globally routable
+// space the prefix is shared by unrelated peers, so the address itself is the scope.
+TEST(PeerAddressing, RateLimitScopeAggregatesOnlyDelegatedPrefixes)
+{
+	ASSERT_TRUE(RateLimitScope(CNetworkAddress::FromString("2001:db8:1:2::1")) ==
+		    RateLimitScope(CNetworkAddress::FromString("2001:db8:1:2::2")));
+	ASSERT_TRUE(RateLimitScope(CNetworkAddress::FromString("fe80::1")) ==
+		    CNetworkAddress::FromString("fe80::1"));
+	ASSERT_TRUE(RateLimitScope(CNetworkAddress::FromString("64:ff9b::1")) ==
+		    CNetworkAddress::FromString("64:ff9b::1"));
+	ASSERT_TRUE(RateLimitScope(CNetworkAddress::FromString("192.0.2.1")) ==
+		    CNetworkAddress::FromString("192.0.2.1"));
 }
 
 // Contact security checks support native IPv6, while callbacks remain IPv4-only and unspecified

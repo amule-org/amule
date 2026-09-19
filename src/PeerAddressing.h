@@ -266,6 +266,9 @@ inline bool MatchesUdpSource(const UdpEndpoint &advertised, const UdpEndpoint &s
  * The eMuleQt /128 alternative is consciously rejected: rotating addresses within a delegated /64
  * would evade per-host accounting. This /64 policy is accounting only, never identity, index, ban
  * or routing policy.
+ *
+ * It applies to globally routable addresses only, because those are the ones a subscriber is
+ * delegated. See RateLimitScope() for what the rest are counted against and why.
  */
 constexpr unsigned kIPv6RateLimitPrefixBits = 64;
 
@@ -287,11 +290,56 @@ constexpr std::uint64_t kCallbackRequestThrottleMs = 3 * 60 * 1000;
  * respelling its address -- and absence has no budget, because it identifies nobody.
  */
 // The scope id is dropped: a budget aggregates, where identity (IndexKey) keeps interfaces apart.
+/**
+ * Whether a /64 of this address names one subscriber.
+ *
+ * Almost everywhere it does: global unicast, unique-local and 6to4 all subnet at /64 under an
+ * allocation one party holds. The exceptions are prefixes whose /64 is shared by construction, and
+ * aggregating those would hand a budget meant for one customer to a whole population: every
+ * link-local address on every link sits under fe80::/64, every host behind one NAT64 translator
+ * under its pool, and every client of one Teredo server under a /64 built from that server's
+ * address. Four aMule hosts on an IPv6-only LAN is the concrete case -- the fourth would never get
+ * an upload slot. Those are counted per address instead, which is the strictest reading and cannot
+ * be evaded, since there is no prefix to rotate within that anyone owns.
+ *
+ * Deliberately not NetworkAddress::IsGloballyRoutableIPv6(): that answers "may this be published",
+ * so it also excludes documentation and unique-local space, where a /64 is a normal delegation.
+ */
+inline bool AggregatesAtDelegatedPrefix(const CNetworkAddress &address) noexcept
+{
+	static constexpr NetworkAddressPolicy::IPv6ExcludedPrefix kSharedPrefixes[] = {
+		{ {}, 128, "Unspecified" },
+		{ { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 }, 128, "Loopback" },
+		{ {}, 96, "IPv4-compatible" },
+		{ { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff }, 96, "IPv4-mapped" },
+		{ { 0x00, 0x64, 0xff, 0x9b }, 96, "Well-known NAT64" },
+		{ { 0x00, 0x64, 0xff, 0x9b, 0x00, 0x01 }, 48, "Local-use NAT64" },
+		// The first 64 bits carry the Teredo server's address, so one /64 is one
+		// server's whole client population.
+		{ { 0x20, 0x01, 0x00, 0x00 }, 32, "Teredo" },
+		{ { 0xfe, 0x80 }, 10, "Link-local" },
+		{ { 0xfe, 0xc0 }, 10, "Deprecated site-local" },
+		{ { 0xff }, 8, "Multicast" }
+	};
+	if (!address.IsIPv6()) {
+		return false;
+	}
+	for (const auto &prefix : kSharedPrefixes) {
+		if (NetworkAddressPolicy::MatchesPrefix(address.GetOctets(), prefix)) {
+			return false;
+		}
+	}
+	return true;
+}
+
 inline CNetworkAddress RateLimitScope(const CNetworkAddress &address)
 {
 	const CNetworkAddress unmapped = address.Unmapped();
 	if (!unmapped.IsIPv6()) {
 		// IPv4, or absent. Either way this is already the scope.
+		return unmapped;
+	}
+	if (!AggregatesAtDelegatedPrefix(unmapped)) {
 		return unmapped;
 	}
 	return unmapped.TruncatedToPrefix(kIPv6RateLimitPrefixBits);
