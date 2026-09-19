@@ -44,3 +44,12 @@ export function savePref(key, val) {
     localStorage.setItem("amule." + key, JSON.stringify(val));
   } catch (_) {}
 }
+
+// Wipe every persisted WebUI pref: theme, lang, table layouts, panel heights --
+// all live under the "amule." prefix.
+export function clearPrefs() {
+  try {
+    for (const k of Object.keys(localStorage))
+      if (k.startsWith("amule.")) localStorage.removeItem(k);
+  } catch (_) {}
+}

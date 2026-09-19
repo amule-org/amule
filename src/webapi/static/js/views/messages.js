@@ -146,7 +146,7 @@ function AddFriendModal({ onClose }) {
   const field = (label, value, setter, extra) => html`
     <label class="field">
       <span>${label}</span>
-      <input class="input" value=${value} onInput=${(e) => setter(e.target.value)} ...${extra || {}} />
+      <input class="input" name="friend_field" value=${value} onInput=${(e) => setter(e.target.value)} ...${extra || {}} />
     </label>`;
 
   return html`
@@ -233,7 +233,7 @@ function ChatPane({ reg, active, isGuest }) {
             : html`<${Placeholder} kind="info">${t("messages_empty")}<//>`}
       </div>
       <form class="chat-compose admin-only" onSubmit=${send}>
-        <input class="input" type="text" maxlength="1024" placeholder=${t("messages_ph")}
+        <input class="input" name="message" type="text" maxlength="1024" placeholder=${t("messages_ph")}
                aria-label=${t("messages_ph")} disabled=${!active} value=${draft}
                onInput=${(e) => setDraft(e.target.value)} />
         <button class="btn btn-primary" type="submit" title=${t("messages_send_tip")}

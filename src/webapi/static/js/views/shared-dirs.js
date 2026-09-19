@@ -93,7 +93,7 @@ export function SharedDirectories({ isGuest }) {
               <tr>
                 <td class="name">${d.path}</td>
                 <td>
-                  <input type="checkbox" checked=${!!d.recursive} disabled=${isGuest || busy}
+                  <input type="checkbox" name="dir_recursive" checked=${!!d.recursive} disabled=${isGuest || busy}
                          title=${t("prefs_shdir_col_recursive")}
                          onChange=${() => upsert(d.path, !d.recursive, false)} />
                 </td>
@@ -113,10 +113,10 @@ export function SharedDirectories({ isGuest }) {
       </div>
       ${isGuest ? null : html`
         <div class="shared-dirs-add toolbar admin-only" onKeyDown=${onKeyDown}>
-          <input class="input" type="text" placeholder=${t("prefs_shdir_path_ph")}
+          <input class="input" name="shared_dir_path" type="text" placeholder=${t("prefs_shdir_path_ph")}
                  value=${path} disabled=${busy} onInput=${(e) => setPath(e.target.value)} />
           <label class="field-inline">
-            <input type="checkbox" checked=${recursive} disabled=${busy}
+            <input type="checkbox" name="dir_recursive" checked=${recursive} disabled=${busy}
                    onChange=${(e) => setRecursive(e.target.checked)} />
             ${t("prefs_shdir_recursive")}
           </label>

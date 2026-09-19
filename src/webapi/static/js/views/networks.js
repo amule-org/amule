@@ -236,7 +236,7 @@ function ServersPanel({ isGuest }) {
       cell: (s) => isGuest
         ? (s.permanent ? t("networks_server_static_yes") : t("networks_server_static_no"))
         : html`
-            <select class="input input-sm admin-only" value=${s.permanent ? "yes" : "no"}
+            <select class="input input-sm admin-only" name="server_permanent" value=${s.permanent ? "yes" : "no"}
                     onChange=${(e) => patchServer(s.ecid, { permanent: e.target.value === "yes" })}>
               <option value="yes">${t("networks_server_static_yes")}</option>
               <option value="no">${t("networks_server_static_no")}</option>
@@ -248,7 +248,7 @@ function ServersPanel({ isGuest }) {
         return isGuest
           ? (found ? found[1] : s.priority || "")
           : html`
-              <select class="input input-sm admin-only" value=${found ? s.priority : "normal"}
+              <select class="input input-sm admin-only" name="server_priority" value=${found ? s.priority : "normal"}
                       onChange=${(e) => patchServer(s.ecid, { priority: e.target.value })}>
                 ${SERVER_PRIORITIES.map(([v, l]) => html`<option value=${v}>${l}</option>`)}
               </select>`;
@@ -270,8 +270,8 @@ function ServersPanel({ isGuest }) {
   return html`
     <div class="server-toolbars admin-only">
       <form class="toolbar admin-only" onSubmit=${addServer}>
-        <input class="input input-sm" placeholder=${t("networks_server_host_port_ph")} value=${addr} onInput=${(e) => setAddr(e.target.value)} />
-        <input class="input input-sm" placeholder=${t("networks_server_name_ph")} value=${name} onInput=${(e) => setName(e.target.value)} />
+        <input class="input input-sm" name="server_host" placeholder=${t("networks_server_host_port_ph")} value=${addr} onInput=${(e) => setAddr(e.target.value)} />
+        <input class="input input-sm" name="server_name" placeholder=${t("networks_server_name_ph")} value=${name} onInput=${(e) => setName(e.target.value)} />
         <button class="btn btn-sm" type="submit">${t("networks_server_add")}</button>
         <div class="spacer"></div>
         <${NetworkConnectButton} network="ed2k" />
@@ -315,7 +315,7 @@ function KadPanel() {
 
   return html`
     <form class="toolbar admin-only" onSubmit=${bootstrap}>
-      <input class="input input-sm" placeholder=${t("networks_kad_ip_port_ph")} value=${node} onInput=${(e) => setNode(e.target.value)} />
+      <input class="input input-sm" name="kad_node" placeholder=${t("networks_kad_ip_port_ph")} value=${node} onInput=${(e) => setNode(e.target.value)} />
       <button class="btn btn-sm" type="submit">${t("networks_kad_bootstrap_from_node")}</button>
       <div class="spacer"></div>
       <${NetworkConnectButton} network="kad" />

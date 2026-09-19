@@ -132,11 +132,11 @@ export function CategoriesPanel({ isGuest }) {
               <h3>${editing !== null ? t("downloads_cat_edit_title") : t("downloads_cat_add")}</h3>
             </div>
             <div class="form-grid form-grid-2">
-              ${field(t("downloads_cat_name"), html`<input class="input" placeholder=${t("downloads_cat_name_ph")} required value=${name} onInput=${(e) => setName(e.target.value)} />`)}
-              ${field(t("downloads_cat_comment"), html`<input class="input" placeholder=${t("downloads_cat_comment_ph")} value=${comment} onInput=${(e) => setComment(e.target.value)} />`)}
-              ${field(t("downloads_cat_path"), html`<input class="input" placeholder=${t("downloads_cat_incoming_path_ph")} required value=${path} onInput=${(e) => setPath(e.target.value)} />`)}
-              ${field(t("downloads_cat_priority"), html`<select class="input" value=${prio} onChange=${(e) => setPrio(e.target.value)}>${PRIORITIES.map(([v, l]) => html`<option value=${v}>${l}</option>`)}</select>`)}
-              ${field(t("downloads_cat_color"), html`<input class="input" type="color" value=${color} onInput=${(e) => setColor(e.target.value)} />`)}
+              ${field(t("downloads_cat_name"), html`<input class="input" name="category_name" placeholder=${t("downloads_cat_name_ph")} required value=${name} onInput=${(e) => setName(e.target.value)} />`)}
+              ${field(t("downloads_cat_comment"), html`<input class="input" name="category_comment" placeholder=${t("downloads_cat_comment_ph")} value=${comment} onInput=${(e) => setComment(e.target.value)} />`)}
+              ${field(t("downloads_cat_path"), html`<input class="input" name="category_incoming" placeholder=${t("downloads_cat_incoming_path_ph")} required value=${path} onInput=${(e) => setPath(e.target.value)} />`)}
+              ${field(t("downloads_cat_priority"), html`<select class="input" name="category_priority" value=${prio} onChange=${(e) => setPrio(e.target.value)}>${PRIORITIES.map(([v, l]) => html`<option value=${v}>${l}</option>`)}</select>`)}
+              ${field(t("downloads_cat_color"), html`<input class="input" name="category_color" type="color" value=${color} onInput=${(e) => setColor(e.target.value)} />`)}
             </div>
             <div class="modal-actions">
               <button class="btn" type="button" onClick=${() => setFormOpen(false)}>${t("downloads_cat_cancel")}</button>

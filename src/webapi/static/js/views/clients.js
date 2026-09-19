@@ -92,7 +92,7 @@ export default function ClientsPanel() {
 
   // Known has no ident/direction, so its toolbar is just the text filter.
   const toolbar = isKnown
-    ? html`<input class="input input-sm" type="text" placeholder=${t("downloads_peer_filter")}
+    ? html`<input class="input input-sm" name="filter" type="text" placeholder=${t("downloads_peer_filter")}
                   value=${q} onInput=${(e) => setQ(e.target.value)} />`
     : ClientFilters({ ident, setIdent, q, setQ });
 

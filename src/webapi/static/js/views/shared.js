@@ -191,7 +191,7 @@ export default function Shared({ isGuest }) {
       sortVal: (s) => s.priority || "", cell: (s) => isGuest
         ? prioLabel(s)
         : html`
-            <select class="input input-sm admin-only" value=${prioValue(s)}
+            <select class="input input-sm admin-only" name="priority" value=${prioValue(s)}
                     onChange=${(e) => setPriority(s.hash, e.target.value)}>
               ${PRIORITIES.map(([v, l]) => html`<option value=${v}>${v === "auto" && s.priority_auto ? prioLabel(s) : l}</option>`)}
             </select>` },
@@ -220,7 +220,7 @@ export default function Shared({ isGuest }) {
     <section class="card">
       <div class="view-header">
         <div class="toolbar admin-only">
-          <select class="input input-sm" value=""
+          <select class="input input-sm" name="bulk_priority" value=""
                   onChange=${(e) => { const v = e.target.value; e.target.value = ""; if (v) bulkPriority(v); }}>
             <option value="">${t("shared_priority")}…</option>
             ${PRIORITIES.map(([v, l]) => html`<option value=${v}>${l}</option>`)}
@@ -235,10 +235,10 @@ export default function Shared({ isGuest }) {
         </div>
         <div class="spacer"></div>
         <div class="toolbar">
-          <select class="input input-sm" title=${t("shared_status_label")} value=${filterStatus} onChange=${(e) => setFilterStatus(e.target.value)}>
+          <select class="input input-sm" name="status_filter" title=${t("shared_status_label")} value=${filterStatus} onChange=${(e) => setFilterStatus(e.target.value)}>
             ${STATUS_FILTERS.map(([v, l]) => html`<option value=${v}>${l}</option>`)}
           </select>
-          <input class="input input-sm" type="text" placeholder=${t("shared_filter")} value=${filterText} onInput=${(e) => setFilterText(e.target.value)} />
+          <input class="input input-sm" name="filter" type="text" placeholder=${t("shared_filter")} value=${filterText} onInput=${(e) => setFilterText(e.target.value)} />
           <${ColumnPicker} columns=${columns} hidden=${hidden} onToggle=${toggleCol} onReset=${resetPrefs} />
         </div>
       </div>

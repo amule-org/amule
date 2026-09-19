@@ -14,9 +14,8 @@ import { chats } from "./chats.js";
 import { html, render, useState, useEffect, useStore } from "./dom.js";
 import { toast, Placeholder } from "./components.js";
 import { formatSpeed, formatInt } from "./format.js";
-import { t, terr, getLang, setLang, LANGS, langName } from "./i18n.js";
+import { t, terr } from "./i18n.js";
 import { Icon } from "./icons.js";
-import { getTheme, cycleTheme } from "./theme.js";
 import { Login } from "./views/login.js";
 
 // Toolbar pages, ordered like the aMule desktop ("Networks" folds the ED2K
@@ -224,13 +223,11 @@ function Toolbar({ route, onLogout }) {
           </a>`)}
         <div class="nav-tools">
           <form class="ed2k-add admin-only" onSubmit=${(e) => { e.preventDefault(); addEd2k(); }}>
-            <input class="input ed2k-input" type="text" placeholder="ed2k://|file|…"
+            <input class="input ed2k-input" type="text" name="ed2k_link" placeholder="ed2k://|file|…"
                    aria-label=${t("app_add_ed2k_link")} value=${link}
                    onInput=${(e) => setLink(e.target.value)} />
             <button class="btn admin-only" type="submit">${t("app_add")}</button>
           </form>
-          <${LangSelect} />
-          <${ThemeButton} />
           <button class="btn btn-ghost" title=${t("app_logout")} onClick=${doLogout}>
             <${Icon} name="logout" /><span class="sr-only">${t("app_logout")}</span>
           </button>
@@ -238,46 +235,16 @@ function Toolbar({ route, onLogout }) {
       </nav>
       <div class="header-tools">
         <form class="ed2k-add admin-only" onSubmit=${(e) => { e.preventDefault(); addEd2k(); }}>
-          <input class="input ed2k-input" type="text" placeholder="ed2k://|file|…"
+          <input class="input ed2k-input" type="text" name="ed2k_link" placeholder="ed2k://|file|…"
                  aria-label=${t("app_add_ed2k_link")} value=${link}
                  onInput=${(e) => setLink(e.target.value)} />
           <button class="btn admin-only" type="submit">${t("app_add")}</button>
         </form>
-        <${LangSelect} />
-        <${ThemeButton} />
         <button class="btn btn-ghost" title=${t("app_logout")} onClick=${doLogout}>
           <${Icon} name="logout" /><span class="sr-only">${t("app_logout")}</span>
         </button>
       </div>
     </header>`;
-}
-
-// Dropdown of every language in LANGS; selecting one reloads the page so
-// module-level t() calls re-resolve. Native <select> scales to any language
-// count and gives the platform picker on mobile for free.
-function LangSelect() {
-  const lang = getLang();
-  return html`
-    <label class="lang-select btn btn-ghost" title=${t("app_language")}>
-      <${Icon} name="language" />
-      <select aria-label=${t("app_language")}
-              onChange=${(e) => setLang(e.target.value)}>
-        ${LANGS.map((c) => html`
-          <option value=${c} selected=${c === lang}>${langName(c)}</option>`)}
-      </select>
-    </label>`;
-}
-
-// Cycles system -> light -> dark and shows the matching icon.
-function ThemeButton() {
-  const [pref, setPref] = useState(getTheme());
-  const labels = { system: t("app_theme_system"), light: t("app_theme_light"), dark: t("app_theme_dark") };
-  return html`
-    <button class="btn btn-ghost" title=${t("app_theme") + ": " + labels[pref]}
-            onClick=${() => setPref(cycleTheme())}>
-      <${Icon} name=${"theme-" + pref} />
-      <span class="sr-only">${labels[pref]}</span>
-    </button>`;
 }
 
 // --- status bar ---------------------------------------------------------

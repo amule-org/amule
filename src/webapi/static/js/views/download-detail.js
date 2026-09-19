@@ -208,7 +208,7 @@ function DetailActions({ d, isGuest, categories, onPatch, onDelete, onClear }) {
       <div class="field field-inline" title=${t("downloads_detail_tip_priority")}>
         <label>${t("downloads_priority")}</label>
         ${isGuest ? html`<b>${prioLabel(d)}</b>` : html`
-          <select class="input input-sm" value=${prioValue(d)}
+          <select class="input input-sm" name="priority" value=${prioValue(d)}
                   onChange=${(e) => onPatch(d.hash, { priority: e.target.value })}>
             ${PRIORITIES.map(([v, l]) => html`<option value=${v}>${v === "auto" && d.priority_auto ? prioLabel(d) : l}</option>`)}
           </select>`}
@@ -216,7 +216,7 @@ function DetailActions({ d, isGuest, categories, onPatch, onDelete, onClear }) {
       <div class="field field-inline" title=${t("downloads_detail_tip_category")}>
         <label>${t("downloads_category")}</label>
         ${isGuest ? html`<b>${categoryName(categories, d.category_index)}</b>` : html`
-          <select class="input input-sm" value=${d.category_index}
+          <select class="input input-sm" name="category" value=${d.category_index}
                   onChange=${(e) => onPatch(d.hash, { category_index: Number(e.target.value) })}>
             ${categoryOptions(categories)}
           </select>`}

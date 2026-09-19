@@ -354,8 +354,8 @@ export function FileClients({ hash, prefsKey, defaultHidden, defaultSort, a4afEc
 // The identity <select> + free-text box, identical in both consumers.
 export function ClientFilters({ ident, setIdent, q, setQ }) {
   return html`
-    <select class="input input-sm" value=${ident} onChange=${(e) => setIdent(e.target.value)}>
+    <select class="input input-sm" name="identity_filter" value=${ident} onChange=${(e) => setIdent(e.target.value)}>
       ${IDENT_FILTERS.map(([v, l]) => html`<option value=${v}>${l}</option>`)}
     </select>
-    <input class="input input-sm" type="text" placeholder=${t("downloads_peer_filter")} value=${q} onInput=${(e) => setQ(e.target.value)} />`;
+    <input class="input input-sm" name="filter" type="text" placeholder=${t("downloads_peer_filter")} value=${q} onInput=${(e) => setQ(e.target.value)} />`;
 }

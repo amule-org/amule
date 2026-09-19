@@ -74,7 +74,7 @@ export default function Search({ isGuest }) {
   };
 
   const unitSelect = (value, onChange) => html`
-    <select class="input input-sm" value=${value} onChange=${onChange}>
+    <select class="input input-sm" name="size_unit" value=${value} onChange=${onChange}>
       ${Object.keys(SIZE_UNITS).map((u) => html`<option value=${u}>${u}</option>`)}
     </select>`;
 
@@ -94,21 +94,21 @@ export default function Search({ isGuest }) {
     <div class="fill-view">
     <form class="card search-form" onSubmit=${startSearch}>
       <div class="search-grid">
-        ${field(t("search_query"), html`<input class="input" type="text" placeholder=${t("search_terms_ph")} required value=${query} onInput=${(e) => setQuery(e.target.value)} />`, "field-wide")}
-        ${field(t("search_type"), html`<select class="input" value=${type} onChange=${(e) => setType(e.target.value)}>
+        ${field(t("search_query"), html`<input class="input" name="query" type="text" placeholder=${t("search_terms_ph")} required value=${query} onInput=${(e) => setQuery(e.target.value)} />`, "field-wide")}
+        ${field(t("search_type"), html`<select class="input" name="search_type" value=${type} onChange=${(e) => setType(e.target.value)}>
           <option value="global">${t("search_type_global")}</option><option value="local">${t("search_type_local")}</option><option value="kad">${t("search_type_kad")}</option>
         </select>`)}
-        ${field(t("search_file_type"), html`<select class="input" value=${fileType} onChange=${(e) => setFileType(e.target.value)}>
+        ${field(t("search_file_type"), html`<select class="input" name="search_file_type" value=${fileType} onChange=${(e) => setFileType(e.target.value)}>
           ${FILE_TYPES.map(([v, k]) => html`<option value=${v}>${t(k)}</option>`)}
         </select>`)}
-        ${field(t("search_extension"), html`<input class="input" type="text" placeholder=${t("search_ext_ph")} value=${ext} onInput=${(e) => setExt(e.target.value)} />`)}
-        ${field(t("search_min_availability"), html`<input class="input" type="number" min="0" placeholder="0" value=${minAvail} onInput=${(e) => setMinAvail(e.target.value)} />`)}
+        ${field(t("search_extension"), html`<input class="input" name="search_extension" type="text" placeholder=${t("search_ext_ph")} value=${ext} onInput=${(e) => setExt(e.target.value)} />`)}
+        ${field(t("search_min_availability"), html`<input class="input" name="search_min_availability" type="number" min="0" placeholder="0" value=${minAvail} onInput=${(e) => setMinAvail(e.target.value)} />`)}
         ${field(t("search_min_size"), html`<div class="field-inline">
-          <input class="input" type="number" min="0" value=${minSize} onInput=${(e) => setMinSize(e.target.value)} />
+          <input class="input" name="search_min_size" type="number" min="0" value=${minSize} onInput=${(e) => setMinSize(e.target.value)} />
           ${unitSelect(minUnit, (e) => setMinUnit(e.target.value))}
         </div>`)}
         ${field(t("search_max_size"), html`<div class="field-inline">
-          <input class="input" type="number" min="0" value=${maxSize} onInput=${(e) => setMaxSize(e.target.value)} />
+          <input class="input" name="search_max_size" type="number" min="0" value=${maxSize} onInput=${(e) => setMaxSize(e.target.value)} />
           ${unitSelect(maxUnit, (e) => setMaxUnit(e.target.value))}
         </div>`)}
       </div>
@@ -239,7 +239,7 @@ function ResultsPane({ tab, categories }) {
         const kids = (r.alternate_names || []).filter((c) => c.name !== r.name);
         if (!kids.length) return r.name;
         return html`
-          <select class="input input-sm name-select" title=${t("search_alt_names_title")}
+          <select class="input input-sm name-select" name="alt_name" title=${t("search_alt_names_title")}
                   value=${ui.rowEcid[r.hash] || ""}
                   onChange=${(e) => setUi({ rowEcid: { ...ui.rowEcid, [r.hash]: e.target.value } })}>
             <option value="">${r.name}</option>
@@ -294,7 +294,7 @@ function ResultsPane({ tab, categories }) {
     { key: "actions", label: t("search_actions"), cls: "row-actions", width: "220px",
       cell: (r) => html`
         <span class="admin-only">
-          <select class="input input-sm" value=${catFor(r.hash)}
+          <select class="input input-sm" name="category" value=${catFor(r.hash)}
                   onChange=${(e) => setUi({ rowCat: { ...ui.rowCat, [r.hash]: Number(e.target.value) } })}>
             ${categoryOptions(categories)}
           </select>
@@ -332,7 +332,7 @@ function ResultsPane({ tab, categories }) {
     : t("search_extend_title");
   return html`
     <div class="toolbar pane-toolbar">
-      <select class="input input-sm admin-only" value=${Number(ui.cat) || 0}
+      <select class="input input-sm admin-only" name="category" value=${Number(ui.cat) || 0}
               onChange=${(e) => setUi({ cat: Number(e.target.value) })}>
         ${categoryOptions(categories)}
       </select>
@@ -348,12 +348,12 @@ function ResultsPane({ tab, categories }) {
       <button class="btn btn-sm" type="button" onClick=${() => searches.refresh(tab.id)}>${t("search_update_results")}</button>
       <span class="search-progress">${running ? t("search_searching_fmt", { percent: tab.percent || 0 }) : ""}</span>
       <div class="spacer"></div>
-      <select class="input input-sm" value=${ui.filterHave} onChange=${(e) => setFilterHave(e.target.value)}>
+      <select class="input input-sm" name="have_filter" value=${ui.filterHave} onChange=${(e) => setFilterHave(e.target.value)}>
         <option value="all">${t("downloads_status_all")}</option>
         <option value="not_have">${t("search_have_no")}</option>
         <option value="have">${t("search_have_yes")}</option>
       </select>
-      <input class="input input-sm" type="text" placeholder=${t("search_filter")} value=${ui.filter} onInput=${(e) => setFilter(e.target.value)} />
+      <input class="input input-sm" name="filter" type="text" placeholder=${t("search_filter")} value=${ui.filter} onInput=${(e) => setFilter(e.target.value)} />
       <${ColumnPicker} columns=${columns} hidden=${hidden} onToggle=${toggleCol} onReset=${resetPrefs} />
     </div>
 

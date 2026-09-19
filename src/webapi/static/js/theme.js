@@ -36,11 +36,5 @@ export function setTheme(pref) {
   return next;
 }
 
-// system -> light -> dark -> system
-export function cycleTheme() {
-  const i = ORDER.indexOf(read());
-  return setTheme(ORDER[(i + 1) % ORDER.length]);
-}
-
 // Apply the saved choice as soon as the module loads.
 applyTheme(read());

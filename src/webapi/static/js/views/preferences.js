@@ -16,10 +16,12 @@
 
 import { api } from "../api.js";
 import { html, useState, useEffect } from "../dom.js";
-import { Placeholder, toast, Tabs } from "../components.js";
+import { Placeholder, toast, Tabs, confirmDialog } from "../components.js";
 import { Icon } from "../icons.js";
 import { SharedDirectories } from "./shared-dirs.js";
-import { t, terr } from "../i18n.js";
+import { t, terr, getLang, setLang, LANGS, langName } from "../i18n.js";
+import { getTheme, setTheme } from "../theme.js";
+import { clearPrefs } from "../store.js";
 
 // Field types: text (default), int, bool, select, password, textarea.
 // Flags: readonly (shown disabled, never sent), hidden (capability flag loaded
@@ -51,9 +53,12 @@ const GEOIP_SOURCES = [
   { value: "custom", labelKey: "prefs_opt_source_custom" },
 ];
 
-// Tabs follow the desktop pages[] order (skipping pages the API does not
-// expose: Interface, Statistics, Events, Debugging).
+// WebUI is client-only (browser localStorage, not the /preferences API); the
+// rest follow the desktop pages[] order (skipping pages the API does not expose:
+// Interface, Statistics, Events, Debugging). Empty groups keep the generic
+// read/collect loops no-ops for WebUI; its body is rendered by WebUiSettings.
 const TABS = [
+  { id: "webui", labelKey: "prefs_webui", noteKey: "prefs_webui_warning", webui: true, groups: [] },
   { id: "general", labelKey: "prefs_general", cat: "general", groups: [
     { legendKey: "prefs_group_general", fields: [
       { key: "nickname", type: "text" },
@@ -403,12 +408,53 @@ function AmuleApiCredentials({ isGuest }) {
     </div>`;
 }
 
+// Client-only settings kept in the browser (localStorage), not /preferences.
+// The selects only stage changes; the tab's Apply button commits them all at
+// once. Rendered inside the prefs <form>, so buttons are type="button".
+function WebUiSettings({ lang, theme, onLang, onTheme }) {
+  const reset = async () => {
+    if (!(await confirmDialog(t("prefs_webui_reset_confirm")))) return;
+    clearPrefs();
+    location.reload();
+  };
+  return html`
+    <fieldset>
+      <legend>${t("prefs_group_webui")}</legend>
+      <div class="form-grid">
+        <div class="field">
+          <label for="webui_lang">${t("app_language")}</label>
+          <select id="webui_lang" value=${lang} onChange=${(e) => onLang(e.target.value)}>
+            ${LANGS.map((c) => html`<option value=${c}>${langName(c)}</option>`)}
+          </select>
+        </div>
+        <div class="field">
+          <label for="webui_theme">${t("app_theme")}</label>
+          <select id="webui_theme" value=${theme} onChange=${(e) => onTheme(e.target.value)}>
+            <option value="system">${t("app_theme_system")}</option>
+            <option value="light">${t("app_theme_light")}</option>
+            <option value="dark">${t("app_theme_dark")}</option>
+          </select>
+        </div>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>${t("prefs_group_webui_reset")}</legend>
+      <p class="hint">${t("prefs_webui_reset_hint")}</p>
+      <div class="toolbar webui-reset-actions">
+        <button class="btn btn-primary" type="button" onClick=${reset}>${t("prefs_webui_reset")}</button>
+      </div>
+    </fieldset>`;
+}
+
 export default function Preferences({ isGuest }) {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState("");
   const [values, setValues] = useState({}); // "cat.key" -> value (display units)
-  const [active, setActive] = useState("general");
+  const [active, setActive] = useState("webui");
   const [busy, setBusy] = useState(false);
+  // Staged WebUI (browser) settings; committed by applyWebui.
+  const [webuiLang, setWebuiLang] = useState(getLang());
+  const [webuiTheme, setWebuiTheme] = useState(getTheme());
 
   useEffect(() => {
     api.get("preferences").then((p) => {
@@ -591,6 +637,14 @@ export default function Preferences({ isGuest }) {
     finally { setBusy(false); }
   };
 
+  // Commit staged WebUI settings: theme applies live; a language change reloads
+  // to re-resolve module-level t() (so the toast only shows when it doesn't).
+  const applyWebui = () => {
+    setTheme(webuiTheme);
+    if (webuiLang !== getLang()) { setLang(webuiLang); return; }
+    toast(t("prefs_toast_saved"), "success");
+  };
+
   if (error) return html`<p>${error}</p>`;
   if (!loaded) return html`<${Placeholder} kind="loading">${t("prefs_loading")}<//>`;
 
@@ -603,7 +657,9 @@ export default function Preferences({ isGuest }) {
       <div class="net-pane-body prefs-panel">
         ${tab.noteKey ? html`<p class="hint prefs-warning">${t(tab.noteKey)}</p>` : null}
         <div class="prefs-groups">
-          ${tab.groups.map((grp) => html`
+          ${tab.webui ? html`<${WebUiSettings} lang=${webuiLang} theme=${webuiTheme}
+                                               onLang=${setWebuiLang} onTheme=${setWebuiTheme} />`
+            : tab.groups.map((grp) => html`
             <fieldset>
               <legend>${t(grp.legendKey)}</legend>
               <div class="form-grid">${grp.fields.map((f) => buildField(catOf(tab, f), f))}</div>
@@ -613,7 +669,9 @@ export default function Preferences({ isGuest }) {
                 ? html`<${SharedDirectories} isGuest=${isGuest} />` : null}
             </fieldset>`)}
         </div>
-        ${isGuest
+        ${tab.webui
+          ? html`<div class="toolbar prefs-actions"><button class="btn btn-primary" type="button" onClick=${applyWebui}>${t("prefs_apply")}</button></div>`
+          : isGuest
           ? html`<p class="hint">${t("prefs_guest_readonly")}</p>`
           : html`<div class="toolbar prefs-actions"><button class="btn btn-primary admin-only" type="submit" disabled=${busy}>${t("prefs_apply")}</button></div>`}
       </div>

@@ -170,7 +170,7 @@ export default function Downloads({ isGuest }) {
       sortVal: (d) => d.priority || "", cell: (d) => isGuest
         ? prioLabel(d)
         : html`
-            <select class="input input-sm admin-only" value=${prioValue(d)}
+            <select class="input input-sm admin-only" name="priority" value=${prioValue(d)}
                     onChange=${(e) => setPriority(d.hash, e.target.value)}>
               ${PRIORITIES.map(([v, l]) => html`<option value=${v}>${v === "auto" && d.priority_auto ? prioLabel(d) : l}</option>`)}
             </select>` },
@@ -179,7 +179,7 @@ export default function Downloads({ isGuest }) {
       cell: (d) => isGuest
         ? categoryName(categories, d.category_index)
         : html`
-            <select class="input input-sm admin-only" value=${d.category_index}
+            <select class="input input-sm admin-only" name="category" value=${d.category_index}
                     onChange=${(e) => setCategory(d.hash, Number(e.target.value))}>
               ${categoryOptions(categories)}
             </select>` },
@@ -244,12 +244,12 @@ export default function Downloads({ isGuest }) {
           <button class="btn btn-sm" onClick=${() => bulk("resume")}><${Icon} name="play" /> ${t("downloads_resume")}</button>
           <button class="btn btn-sm" onClick=${() => bulk("stop")}><${Icon} name="stop" /> ${t("downloads_stop")}</button>
           <button class="btn btn-sm btn-danger" onClick=${() => bulk("delete")}><${Icon} name="cancel" /> ${t("downloads_cancel")}</button>
-          <select class="input input-sm" value=""
+          <select class="input input-sm" name="bulk_priority" value=""
                   onChange=${(e) => { const v = e.target.value; e.target.value = ""; if (v) bulkPatch({ priority: v }); }}>
             <option value="">${t("downloads_priority")}…</option>
             ${PRIORITIES.map(([v, l]) => html`<option value=${v}>${l}</option>`)}
           </select>
-          <select class="input input-sm" value=""
+          <select class="input input-sm" name="bulk_category" value=""
                   onChange=${(e) => { const v = e.target.value; e.target.value = ""; if (v !== "") bulkPatch({ category_index: Number(v) }); }}>
             <option value="">${t("downloads_category")}…</option>
             ${categoryOptions(categories)}
@@ -258,10 +258,10 @@ export default function Downloads({ isGuest }) {
         </div>
         <div class="spacer"></div>
         <div class="toolbar">
-          <select class="input input-sm" title=${t("downloads_status_label")} value=${filterStatus} onChange=${(e) => setFilterStatus(e.target.value)}>
+          <select class="input input-sm" name="status_filter" title=${t("downloads_status_label")} value=${filterStatus} onChange=${(e) => setFilterStatus(e.target.value)}>
             ${STATUS_FILTERS.map(([v, l]) => html`<option value=${v}>${l}</option>`)}
           </select>
-          <input class="input input-sm" type="text" placeholder=${t("downloads_filter")} value=${filterText} onInput=${(e) => setFilterText(e.target.value)} />
+          <input class="input input-sm" name="filter" type="text" placeholder=${t("downloads_filter")} value=${filterText} onInput=${(e) => setFilterText(e.target.value)} />
           <${ColumnPicker} columns=${columns} hidden=${hidden} onToggle=${toggleCol} onReset=${resetPrefs} />
         </div>
       </div>

@@ -114,7 +114,7 @@ export function ColumnPicker({ columns, hidden, onToggle, onReset }) {
       <div class="col-picker-menu">
         ${toggleable.map((c) => html`
           <label class="col-picker-item">
-            <input type="checkbox" checked=${!hidden.has(c.key)}
+            <input type="checkbox" name="column_toggle" checked=${!hidden.has(c.key)}
                    onChange=${() => onToggle(c.key)} />
             <span>${c.label}</span>
           </label>`)}

@@ -70,7 +70,7 @@ export function listPlaceholder(loading, emptyMsg) {
 // cell (see .cell-check), so the whole cell is the click target -- a bare box
 // is a poor one.
 export function checkCell(checked, onToggle, title) {
-  return html`<label class="cell-check"><input type="checkbox" title=${title}
+  return html`<label class="cell-check"><input type="checkbox" name="row_select" title=${title}
     checked=${checked} onChange=${(e) => onToggle(e.target.checked)} /></label>`;
 }
 
@@ -272,11 +272,11 @@ export function CommentEditor({ hash, kind, comment, rating, onSaved, disabled =
   return html`
     <form class="comment-editor admin-only" onSubmit=${(e) => { e.preventDefault(); save(); }}>
       <label class="comment-editor-label">${t("comments_your_comment")}</label>
-      <textarea class="input comment-editor-text" maxlength="50" rows="2"
+      <textarea class="input comment-editor-text" name="comment" maxlength="50" rows="2"
                 placeholder=${t("comments_placeholder")} disabled=${disabled}
                 value=${text} onInput=${(e) => setText(e.target.value)}></textarea>
       <div class="comment-editor-row">
-        <select class="input input-sm" value=${rate} disabled=${disabled}
+        <select class="input input-sm" name="rating" value=${rate} disabled=${disabled}
                 onChange=${(e) => setRate(e.target.value)}>
           ${RATING_OPTIONS.map((r) => html`<option value=${r}>${ratingLabel(r)}</option>`)}
         </select>
@@ -315,7 +315,7 @@ export function RenameForm({ hash, kind, name, onSaved, disabled = false }) {
     <form class="rename-form admin-only" onSubmit=${(e) => { e.preventDefault(); save(); }}>
       <label class="rename-label">${t("filename_rename_label")}</label>
       <div class="rename-row">
-        <input class="input input-sm" type="text" disabled=${disabled}
+        <input class="input input-sm" name="rename_file" type="text" disabled=${disabled}
                placeholder=${t("filename_rename_placeholder")}
                value=${val} onInput=${(e) => setVal(e.target.value)} />
         <button class="btn btn-primary btn-sm" type="submit"

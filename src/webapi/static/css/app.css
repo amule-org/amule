@@ -4,7 +4,7 @@
    Theme resolution (light by default):
      - :root                         -> light tokens
      - prefers-color-scheme: dark    -> dark tokens (when no manual override)
-     - :root[data-theme="dark|light"]-> manual override from the toolbar button
+     - :root[data-theme="dark|light"]-> manual override from the WebUI preferences
 */
 
 :root {
@@ -121,7 +121,7 @@ b { font-weight: 600; }
   flex: none;
 }
 .brand { display: flex; align-items: center; padding-right: 4px; }
-.brand-logo { height: 30px; width: auto; }
+.brand-logo { height: 40px; width: auto; }
 /* hamburger, shown only on small screens (.app-toolbar prefix outranks .btn) */
 .app-toolbar .nav-toggle { display: none; }
 .route-title { display: none; }    /* current section name, mobile only */
@@ -156,7 +156,7 @@ b { font-weight: 600; }
 .tool-btn.active { background: var(--sel); color: var(--accent); }
 
 .header-tools { display: flex; align-items: center; gap: 8px; }
-/* Keep the right-hand buttons (Add, theme, logout) the same height. */
+/* Keep the right-hand buttons (Add, logout) the same height. */
 .header-tools .btn, .header-tools .input { height: 34px; }
 .ed2k-add { display: flex; gap: 6px; }
 .ed2k-input { width: 180px; max-width: 38vw; }
@@ -271,12 +271,6 @@ b { font-weight: 600; }
   cursor: col-resize; touch-action: none; z-index: 2;
 }
 .col-resize-handle:hover, .col-resize-handle:active { background: var(--accent); opacity: .5; }
-
-/* Language picker: globe icon + native <select>, blended into the ghost toolbar. */
-.lang-select { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
-.lang-select select {
-  border: none; background: var(--toolbar); padding: 2px 4px; cursor: pointer;
-}
 
 .input, select, textarea {
   padding: 7px 9px;
@@ -627,6 +621,7 @@ table.data.virtual td.name .name-select { width: 100%; max-width: 100%; }
 .prefs-panel textarea { resize: vertical; font: inherit; }
 .prefs-warning { color: var(--warn); font-weight: 600; margin-bottom: 16px; }
 .prefs-actions { justify-content: center; }
+.webui-reset-actions { margin-top: 14px; }
 
 /* --- log/pre views --- */
 .logbox-wrap { position: relative; min-width: 0; }
@@ -974,7 +969,7 @@ table.data.virtual td.name .name-select { width: 100%; max-width: 100%; }
   /* header shrinks to: hamburger + logo + section name (tools move into the drawer) */
   .header-tools { display: none; }
   .route-title { display: block; font-size: 18px; font-weight: 600; }
-  .brand-logo { height: 26px; }
+  .brand-logo { height: 34px; }
   .stats-grid { grid-template-columns: 1fr; }
   /* notebook tab strips: single scrolling row instead of wrapping to 2 lines.
      overflow-y:hidden stops the browser from computing overflow-x:auto's pair
@@ -1062,17 +1057,15 @@ table.data.virtual td.name .name-select { width: 100%; max-width: 100%; }
     min-height: 44px; padding: 8px 12px; width: 100%;
   }
   .nav .tool-label { font-size: 14px; }
-  .nav-tools .lang-select { min-height: 44px; width: 100%; border-color: transparent; }
-  .nav-tools .lang-select select { flex: 1 1 auto; }
   .nav-backdrop {
     position: fixed; inset: var(--toolbar-h) 0 0 0;
     background: rgba(0, 0, 0, .35); z-index: 79;
   }
   .nav-tools {
     display: flex; flex-direction: column; gap: 2px;
-    margin-top: auto; padding-top: 8px; border-top: 1px solid var(--border);
+    margin-top: auto; padding-top: 8px;
   }
-  .nav-tools .ed2k-add { padding: 4px 8px; margin-bottom: 4px; border-bottom: 1px solid var(--border); }
+  .nav-tools .ed2k-add { padding: 4px 8px; margin-bottom: 4px; }
   .nav-tools .ed2k-add .btn { justify-content: center; min-height: 34px; border-color: var(--border); flex: 0 0 auto; padding: 0 12px; }
   .nav-tools .ed2k-input { flex: 1 1 auto; width: 100%; max-width: none; }
   .nav-tools .btn { justify-content: flex-start; min-height: 44px; border-color: transparent; }

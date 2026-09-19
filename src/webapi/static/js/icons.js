@@ -12,23 +12,22 @@ import { html } from "./dom.js";
 // icon can be rendered in many places at once without preact reusing nodes.
 const ICONS = {
   // --- navigation -------------------------------------------------------
-  networks: () => html`<circle cx="12" cy="4.5" r="2.5"/><circle cx="5" cy="18" r="2.5"/><circle cx="19" cy="18" r="2.5"/><path d="M10.5 6.4 6.3 15.7M13.5 6.4l4.2 9.3M7.5 18h9"/>`,
+  networks: () => html`<circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18z"/>`,
   downloads: () => html`<path d="M12 3v10"/><path d="M8 9l4 4 4-4"/><path d="M4 17v2a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2"/>`,
   search: () => html`<circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/>`,
-  shared: () => html`<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="10.7" x2="15.4" y2="6.3"/><line x1="8.6" y1="13.3" x2="15.4" y2="17.7"/>`,
-  clients: () => html`<circle cx="9" cy="8" r="3"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><path d="M16 5.5a3 3 0 0 1 0 5.8"/><path d="M17.5 13.5a5.5 5.5 0 0 1 3 5.5"/>`,
+  shared: () => html`<circle cx="18" cy="6" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="18" r="3"/><line x1="8.6" y1="10.7" x2="15.4" y2="7.3"/><line x1="8.6" y1="13.3" x2="15.4" y2="16.7"/>`,
+  clients: () => html`<circle cx="12" cy="7" r="3.5"/><path d="M4 21a8 8 0 0 1 16 0"/>`,
   servers: () => html`<rect x="3" y="4" width="18" height="7" rx="1.5"/><rect x="3" y="13" width="18" height="7" rx="1.5"/><line x1="7" y1="7.5" x2="7.01" y2="7.5"/><line x1="7" y1="16.5" x2="7.01" y2="16.5"/>`,
   kad: () => html`<circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 1 0 18"/><path d="M12 3a14 14 0 0 0 0 18"/>`,
-  messages: () => html`<path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9a1.5 1.5 0 0 1-1.5 1.5H12l-4 4v-4H5.5A1.5 1.5 0 0 1 4 14.5z"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="11.5" x2="13" y2="11.5"/>`,
-  stats: () => html`<path d="M5 20V12"/><path d="M12 20V5"/><path d="M19 20V9"/><line x1="3" y1="20" x2="21" y2="20"/>`,
+  messages: () => html`<path d="M3 4.69A1.69 1.69 0 0 1 4.69 3h14.63A1.69 1.69 0 0 1 21 4.69v10.13a1.69 1.69 0 0 1-1.69 1.69H12l-4.5 4.5v-4.5H4.69A1.69 1.69 0 0 1 3 15z"/><line x1="7.5" y1="7.5" x2="16.5" y2="7.5"/><line x1="7.5" y1="11.44" x2="13.13" y2="11.44"/>`,
+  stats: () => html`<path d="M3 3v18h18"/><path d="M7 15l3-4 3 3 4-6"/>`,
   logs: () => html`<line x1="5" y1="7" x2="19" y2="7"/><line x1="5" y1="12" x2="19" y2="12"/><line x1="5" y1="17" x2="14" y2="17"/>`,
   categories: () => html`<path d="M20.6 13.4 12 22l-9-9V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.2" fill="currentColor"/>`,
-  preferences: () => html`<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9 7 7M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1"/>`,
+  preferences: () => html`<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>`,
   about: () => html`<circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="16"/><line x1="12" y1="8" x2="12.01" y2="8"/>`,
 
   // --- actions / status -------------------------------------------------
   menu: () => html`<line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/>`,
-  language: () => html`<path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9a1.5 1.5 0 0 1-1.5 1.5H12l-4 4v-4H5.5A1.5 1.5 0 0 1 4 14.5z"/><path d="M9.5 13.5 12 7l2.5 6.5M10.4 11.5h3.2"/>`,
   connect: () => html`<path d="M9 2v6M15 2v6M7 8h10v2a5 5 0 0 1-10 0z"/><path d="M12 15v7"/>`,
   cancel: () => html`<line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/>`,
   remove: () => html`<line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/>`,
@@ -52,11 +51,6 @@ const ICONS = {
   star: () => html`<path d="M12 3l2.7 5.5 6 .9-4.3 4.2 1 6-5.4-2.8-5.4 2.8 1-6L3.3 9.4l6-.9z"/>`,
   logout: () => html`<path d="M15 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4"/><path d="M10 17l5-5-5-5"/><line x1="15" y1="12" x2="3" y2="12"/>`,
   reset: () => html`<path d="M3 12a9 9 0 1 1 3 6.7"/><path d="M3 21v-6h6"/>`,
-
-  // --- theme ------------------------------------------------------------
-  "theme-system": () => html`<rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M8 20h8M12 16v4"/>`,
-  "theme-light": () => html`<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M19 5l-1.5 1.5M6.5 17.5 5 19"/>`,
-  "theme-dark": () => html`<path d="M21 12.8A8 8 0 1 1 11.2 3a6 6 0 0 0 9.8 9.8z"/>`,
 };
 
 export function Icon({ name, size = 18, title, class: cls }) {
