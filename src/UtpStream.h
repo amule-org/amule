@@ -77,8 +77,17 @@ public:
 	 * a value rather than inventing one, and so both directions are bounded: an unbounded read
 	 * buffer is how a peer that sends faster than the application reads grows memory without
 	 * limit.
+	 *
+	 * 256 KiB, because this is the number that goes on the wire. libutp advertises opt_rcvbuf
+	 * minus what is queued as the window in every packet, and the peer will not have more than
+	 * that in flight, so the bound is a per-connection speed limit: at 300 ms round trip 64 KiB
+	 * is about 218 KB/s, where TCP has no such limit at all because the OS autotunes its window
+	 * into megabytes. It cannot be raised on its own -- whatever is advertised is what arrives,
+	 * and OnPayload() never refuses bytes the peer already paid to send -- so this value is also
+	 * the memory a single slow-reading connection may hold. eMuleAI settled on the same 256 KiB
+	 * (eMuleAI/UtpSocket.cpp), which is the interoperability argument for it as well.
 	 */
-	static constexpr size_t kDefaultReadBound = 64 * 1024;
+	static constexpr size_t kDefaultReadBound = 256 * 1024;
 
 	explicit CUtpStream(size_t writeBound = kDefaultWriteBound, size_t readBound = kDefaultReadBound)
 	: m_writeBound(writeBound)
