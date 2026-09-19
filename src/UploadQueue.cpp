@@ -356,8 +356,12 @@ CUpDownClient *CUploadQueue::GetWaitingClientByIP_UDP(
 	int cMatches = 0;
 
 	// Hoisted: the requester is one value for the whole walk, and the list runs to
-	// thePrefs::GetQueueSize() entries.
+	// thePrefs::GetQueueSize() entries. The out-parameter is answered on the way out,
+	// as the walk below does, rather than left to whatever the caller initialised.
 	if (!UploadQueueAddressPolicy::IsMatchable(address)) {
+		if (pbMultipleIPs) {
+			*pbMultipleIPs = false;
+		}
 		return nullptr;
 	}
 	const PeerAddressing::UdpEndpoint source{ address, nUDPPort };
@@ -479,11 +483,11 @@ void CUploadQueue::AddClientToQueue(CUpDownClient *client)
 	// canonical address, while IPv6 rate limiting aggregates a delegated /64. A client without
 	// an address has no host identity and is intentionally outside this cap.
 	const CNetworkAddress clientAddress = client->GetUserAddress();
+	// The scope is one value for the whole walk, and the list runs to
+	// thePrefs::GetQueueSize() entries. Held past the loop for the refusal below.
+	const CNetworkAddress clientScope = PeerAddressing::RateLimitScope(clientAddress);
 	int ipCount = 0;
 	if (UploadQueueAddressPolicy::IsMatchable(clientAddress)) {
-		// The scope is one value for the whole walk, and the list runs to
-		// thePrefs::GetQueueSize() entries.
-		const CNetworkAddress clientScope = PeerAddressing::RateLimitScope(clientAddress);
 		ipCount = 1;
 		for (const auto &entry : m_waitinglist) {
 			CUpDownClient *cur_client = entry.GetClient();
@@ -504,8 +508,7 @@ void CUploadQueue::AddClientToQueue(CUpDownClient *client)
 		AddDebugLogLineN(logLocalClient,
 			CFormat("Rejected upload request from %s: too many clients (%d) in the same "
 				"accounting scope (%s) already on the upload queue") %
-				clientAddress.ToWxString() % ipCount %
-				PeerAddressing::RateLimitScope(clientAddress).ToWxString());
+				clientAddress.ToWxString() % ipCount % clientScope.ToWxString());
 		return;
 	}
 
