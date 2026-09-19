@@ -21,7 +21,7 @@ import { Icon } from "../icons.js";
 import { SharedDirectories } from "./shared-dirs.js";
 import { t, terr, getLang, setLang, LANGS, langName } from "../i18n.js";
 import { getTheme, setTheme } from "../theme.js";
-import { clearPrefs } from "../store.js";
+import { clearPrefs, GRAPH_RANGES, loadGraphInterval, saveGraphInterval } from "../store.js";
 
 // Field types: text (default), int, bool, select, password, textarea.
 // Flags: readonly (shown disabled, never sent), hidden (capability flag loaded
@@ -411,7 +411,7 @@ function AmuleApiCredentials({ isGuest }) {
 // Client-only settings kept in the browser (localStorage), not /preferences.
 // The selects only stage changes; the tab's Apply button commits them all at
 // once. Rendered inside the prefs <form>, so buttons are type="button".
-function WebUiSettings({ lang, theme, onLang, onTheme }) {
+function WebUiSettings({ lang, theme, range, onLang, onTheme, onRange }) {
   const reset = async () => {
     if (!(await confirmDialog(t("prefs_webui_reset_confirm")))) return;
     clearPrefs();
@@ -435,6 +435,12 @@ function WebUiSettings({ lang, theme, onLang, onTheme }) {
             <option value="dark">${t("app_theme_dark")}</option>
           </select>
         </div>
+        <div class="field">
+          <label for="webui_graph_range">${t("prefs_graph_range")}</label>
+          <select id="webui_graph_range" value=${String(range)} onChange=${(e) => onRange(Number(e.target.value))}>
+            ${GRAPH_RANGES.map((r) => html`<option value=${String(r.interval)}>${t(r.labelKey)}</option>`)}
+          </select>
+        </div>
       </div>
     </fieldset>
     <fieldset>
@@ -455,6 +461,7 @@ export default function Preferences({ isGuest }) {
   // Staged WebUI (browser) settings; committed by applyWebui.
   const [webuiLang, setWebuiLang] = useState(getLang());
   const [webuiTheme, setWebuiTheme] = useState(getTheme());
+  const [webuiRange, setWebuiRange] = useState(loadGraphInterval());
 
   useEffect(() => {
     api.get("preferences").then((p) => {
@@ -637,10 +644,12 @@ export default function Preferences({ isGuest }) {
     finally { setBusy(false); }
   };
 
-  // Commit staged WebUI settings: theme applies live; a language change reloads
+  // Commit staged WebUI settings: theme applies live; the graph range is read
+  // by the Stats/Networks views when they next mount; a language change reloads
   // to re-resolve module-level t() (so the toast only shows when it doesn't).
   const applyWebui = () => {
     setTheme(webuiTheme);
+    saveGraphInterval(webuiRange);
     if (webuiLang !== getLang()) { setLang(webuiLang); return; }
     toast(t("prefs_toast_saved"), "success");
   };
@@ -657,8 +666,8 @@ export default function Preferences({ isGuest }) {
       <div class="net-pane-body prefs-panel">
         ${tab.noteKey ? html`<p class="hint prefs-warning">${t(tab.noteKey)}</p>` : null}
         <div class="prefs-groups">
-          ${tab.webui ? html`<${WebUiSettings} lang=${webuiLang} theme=${webuiTheme}
-                                               onLang=${setWebuiLang} onTheme=${setWebuiTheme} />`
+          ${tab.webui ? html`<${WebUiSettings} lang=${webuiLang} theme=${webuiTheme} range=${webuiRange}
+                                               onLang=${setWebuiLang} onTheme=${setWebuiTheme} onRange=${setWebuiRange} />`
             : tab.groups.map((grp) => html`
             <fieldset>
               <legend>${t(grp.legendKey)}</legend>

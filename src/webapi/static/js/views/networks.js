@@ -8,11 +8,11 @@
 
 import { api } from "../api.js";
 import { data } from "../events.js";
-import { store } from "../store.js";
+import { store, loadGraphInterval } from "../store.js";
 import { html, useState, useEffect, useRef, useStore } from "../dom.js";
 import { Tabs, listPlaceholder, toast, confirmDialog, CountryCell, Section, statRow } from "../components.js";
 import { VirtualTable, sortRows, useTablePrefs, ColumnPicker, ipNum } from "../table.js";
-import { Chart } from "../charts.js";
+import { Chart, graphPollMs } from "../charts.js";
 import { formatInt, formatTimestamp } from "../format.js";
 import { Icon } from "../icons.js";
 import { t, terr } from "../i18n.js";
@@ -20,10 +20,12 @@ import { useSplitHeight } from "./split-detail.js";
 
 const SRV_POLL_MS = 5000;
 const AMULE_TAIL = 500; // initial history; live lines then arrive via log_appended
-const GRAPH_POLL_MS = 2000;
 const GRAPH_WIDTH = 300; // samples per fetch (~chart pixel width; full window is ~1800)
+// series[0] is labelled "Current" for the legend, not the card title it reused
+// when the node count was the only line.
 const KAD_GRAPH = { name: "kad_nodes", title: t("networks_kad_nodes"), fmt: formatInt,
-  series: [{ color: "#8a5cd6", label: t("networks_kad_nodes") }] };
+  series: [{ color: "#8a5cd6", label: t("common_legend_current") },
+           { color: "#3b86e0", label: t("common_legend_session_avg") }] };
 // The three values ServerPriorityCode() accepts, in rank order (also the sort order).
 const SERVER_PRIORITIES = ["low", "normal", "high"].map((v) => [v, t("networks_server_prio_" + v)]);
 // The letters the desktop's TCP/UDP Flags columns render (ServerListCtrl.cpp),
@@ -286,20 +288,28 @@ function ServersPanel({ isGuest }) {
 
 // --- Kad tab: connect toggle, bootstrap, live nodes graph -----------------
 function KadPanel() {
-  const [graphData, setGraphData] = useState(null); // [xs, ys]
+  const [graphData, setGraphData] = useState(null); // [xs, ys, avg?]
   const [node, setNode] = useState("");
+  // Read once per mount; the router remounts this view when the user changes the
+  // range in Preferences and returns (see stats.js for the same pattern).
+  const interval = loadGraphInterval();
 
   useEffect(() => {
     let alive = true;
     const tick = async () => {
       try {
-        const r = await api.get("stats/graphs/" + KAD_GRAPH.name + "?width=" + GRAPH_WIDTH);
+        const r = await api.get("stats/graphs/" + KAD_GRAPH.name + "?width=" + GRAPH_WIDTH + "&interval_seconds=" + interval);
         const pts = r.points || [];
-        if (alive) setGraphData([pts.map((p) => p.at), pts.map((p) => p.value)]);
+        const xs = pts.map((p) => p.at);
+        const ys = pts.map((p) => p.value);
+        // Session average, skipped when the daemon reports no uptime (see stats.js).
+        const s = r.session || {};
+        const rest = s.duration_seconds ? [new Array(ys.length).fill(s.kad_node_seconds / s.duration_seconds)] : [];
+        if (alive) setGraphData([xs, ys, ...rest]);
       } catch (_) { /* leave previous data */ }
     };
     tick();
-    const timer = setInterval(tick, GRAPH_POLL_MS);
+    const timer = setInterval(tick, graphPollMs(interval));
     return () => { alive = false; clearInterval(timer); };
   }, []);
 

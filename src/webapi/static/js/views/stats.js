@@ -1,47 +1,36 @@
 // Statistics view, mirroring the desktop statsDlg 2×2 grid: Download |
-// Upload speed on top, Connections | Statistics Tree below. Each speed
-// chart shows current + running average (computed client-side, like
-// amulegui's CStatGraphRem); the connections chart draws the three lines
-// the daemon itself reports. Graphs and tree are polled. (The Kad nodes
-// graph lives in the Networks/Kad tab.)
+// Upload speed on top, Connections | Statistics Tree below. Speed charts show
+// current + the daemon's session average; the connections chart draws the
+// three lines the daemon reports. Sampling interval comes from the WebUI
+// preference. (The Kad nodes graph lives in the Networks/Kad tab.)
 
 import { api } from "../api.js";
 import { html, useState, useEffect } from "../dom.js";
 import { Placeholder } from "../components.js";
-import { Chart } from "../charts.js";
+import { Chart, graphPollMs } from "../charts.js";
 import { formatBytes, formatSpeed, formatInt, formatDuration, bytesAxis } from "../format.js";
+import { loadGraphInterval } from "../store.js";
 import { t, terr } from "../i18n.js";
 
-const GRAPH_POLL_MS = 2000;
-const TREE_EVERY = 3; // refresh tree every N graph ticks
+const TREE_POLL_MS = 6000; // tree refresh, independent of the graph interval
 const GRAPH_WIDTH = 300; // samples per fetch (~chart pixel width; full window is ~1800)
-const SMA_WINDOW = 50; // ponytail: SMA over ~5 min of samples; amulegui makes this a pref
 
 const speedAxis = (max) => bytesAxis(max, true);
 // `series` is parallel to the arrays each graph loads below: entry 0 is the
 // endpoint's own `value`, the rest are whatever that graph adds beside it.
+// `avg` picks the session-average numerator (divided by duration in loadGraph).
 const GRAPHS = [
   { name: "download_speed", title: t("stats_download_speed"), fmt: formatSpeed, axis: speedAxis,
-    series: [{ color: "#3aaf5d", label: t("common_legend_current") }, { color: "#1fb5ad", label: t("common_legend_running_avg") }] },
+    avg: (s) => s.downloaded_bytes,
+    series: [{ color: "#3aaf5d", label: t("common_legend_current") }, { color: "#1fb5ad", label: t("common_legend_session_avg") }] },
   { name: "upload_speed", title: t("stats_upload_speed"), fmt: formatSpeed, axis: speedAxis,
-    series: [{ color: "#3b86e0", label: t("common_legend_current") }, { color: "#8a5cd6", label: t("common_legend_running_avg") }] },
+    avg: (s) => s.uploaded_bytes,
+    series: [{ color: "#3b86e0", label: t("common_legend_current") }, { color: "#8a5cd6", label: t("common_legend_session_avg") }] },
   { name: "connections", title: t("stats_connections"), fmt: formatInt,
     series: [{ color: "#d68a0c", label: t("stats_legend_active_connections") },
              { color: "#c94f7c", label: t("stats_legend_active_downloads") },
              { color: "#1fb5ad", label: t("stats_legend_active_uploads") }] },
 ];
-
-// Simple moving average over the fetched window.
-function sma(ys, w) {
-  const out = new Array(ys.length);
-  let sum = 0;
-  for (let i = 0; i < ys.length; i++) {
-    sum += ys[i];
-    if (i >= w) sum -= ys[i - w];
-    out[i] = sum / Math.min(i + 1, w);
-  }
-  return out;
-}
 
 export default function Stats() {
   const [graphData, setGraphData] = useState({}); // name -> [xs, ...series]
@@ -53,23 +42,29 @@ export default function Stats() {
   // structural shifts in dynamic subtrees.
   const [expanded, setExpanded] = useState(new Set());
 
+  // Read once per mount: the router remounts this view (key=route) when the
+  // user returns from Preferences, so a changed range takes effect on its own.
+  const interval = loadGraphInterval();
+
   useEffect(() => {
     let alive = true;
-    let tick = 0;
 
     const loadGraph = async (g) => {
       try {
-        const r = await api.get("stats/graphs/" + g.name + "?width=" + GRAPH_WIDTH);
+        const r = await api.get("stats/graphs/" + g.name + "?width=" + GRAPH_WIDTH + "&interval_seconds=" + interval);
         const pts = r.points || [];
         const ys = pts.map((p) => p.value);
-        // The connections graph gets its two extra lines from the daemon, so
-        // no client-side stand-in is needed there. They are omitted whole (not
-        // zeroed) by an amuled that does not report them — then it draws as a
-        // single line.
-        const rest = g.name !== "connections" ? [sma(ys, SMA_WINDOW)]
-          : pts.length && pts[0].active_download_count !== undefined
-            ? [pts.map((p) => p.active_download_count), pts.map((p) => p.active_upload_count)]
-            : [];
+        // Speed charts add a flat session-average line (total / uptime), skipped
+        // when the daemon reports no uptime (duration_seconds === 0, old daemons)
+        // rather than dividing by zero. The connections graph instead carries two
+        // daemon lines, omitted whole (not zeroed) when unreported.
+        let rest = [];
+        if (g.avg) {
+          const s = r.session || {};
+          if (s.duration_seconds) rest = [new Array(ys.length).fill(g.avg(s) / s.duration_seconds)];
+        } else if (pts.length && pts[0].active_download_count !== undefined) {
+          rest = [pts.map((p) => p.active_download_count), pts.map((p) => p.active_upload_count)];
+        }
         if (alive) setGraphData((d) => ({ ...d, [g.name]: [pts.map((p) => p.at), ys, ...rest] }));
       } catch (_) { /* leave previous data */ }
     };
@@ -86,15 +81,15 @@ export default function Stats() {
       }
       catch (e) { if (alive) setTreeErr(terr(e) || t("stats_error")); }
     };
-    const refresh = () => {
-      GRAPHS.forEach(loadGraph);
-      if (tick % TREE_EVERY === 0) loadTree();
-      tick++;
-    };
+    const refreshGraphs = () => GRAPHS.forEach(loadGraph);
 
-    refresh();
-    const timer = setInterval(refresh, GRAPH_POLL_MS);
-    return () => { alive = false; clearInterval(timer); };
+    refreshGraphs();
+    loadTree();
+    // Two timers: graphs follow the interval, the tree keeps a fixed 6s so a
+    // long graph range never slows the uptime/totals it shows.
+    const graphTimer = setInterval(refreshGraphs, graphPollMs(interval));
+    const treeTimer = setInterval(loadTree, TREE_POLL_MS);
+    return () => { alive = false; clearInterval(graphTimer); clearInterval(treeTimer); };
   }, []);
 
   const onToggle = (path, open) => setExpanded((prev) => {

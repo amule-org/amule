@@ -10,11 +10,12 @@
 import { html, useEffect, useRef } from "./dom.js";
 import { getLang } from "./i18n.js";
 
-// Time-axis clock, localized to the UI language, 24h (no AM/PM). The axis uses
-// hour:minute; the hover readout adds seconds. Formatters are built once —
-// constructing Intl.DateTimeFormat per label is expensive.
+// Time-axis clocks, localized to the UI language, 24h (no AM/PM): hour:minute,
+// with-seconds, and date + hour:minute. draw() picks one per the span drawn.
+// Built once — Intl.DateTimeFormat per label is expensive.
 const clockHM = new Intl.DateTimeFormat(getLang(), { hour: "2-digit", minute: "2-digit", hour12: false });
 const clockHMS = new Intl.DateTimeFormat(getLang(), { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
+const clockDate = new Intl.DateTimeFormat(getLang(), { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false });
 const clock = (unixSeconds, withSeconds) =>
   (withSeconds ? clockHMS : clockHM).format(new Date((Number(unixSeconds) || 0) * 1000));
 
@@ -91,6 +92,12 @@ export function Chart({ g, data, bare }) {
     </div>`;
 }
 
+// Graph poll interval: no faster than a new sample can appear (every `interval`
+// seconds), capped so the chart still feels live and floored at 2s.
+export function graphPollMs(interval) {
+  return Math.min(30000, Math.max(2000, interval * 1000));
+}
+
 // Round `raw` up to a "nice" tick step: 1/2/5 × 10^n.
 function niceStep(raw) {
   const mag = Math.pow(10, Math.floor(Math.log10(raw)));
@@ -117,6 +124,15 @@ function draw(cv, g, [xs, ...series], hover) {
 
   const n = xs.length;
   if (!n) return;
+
+  // Prefix the date once the window crosses a day so axis labels aren't
+  // "11:46 … 11:46" across two days; drop hover seconds past ~2h, where
+  // samples are minutes apart.
+  const spanSeconds = n > 1 ? Number(xs[n - 1]) - Number(xs[0]) : 0;
+  const crossesDay = n > 1 &&
+    new Date(Number(xs[0]) * 1000).toDateString() !== new Date(Number(xs[n - 1]) * 1000).toDateString();
+  const axisFmt = crossesDay ? clockDate : clockHM;
+  const hoverSeconds = spanSeconds <= 2 * 3600;
 
   const ys = series[0];
   // y scale: 0 .. max*1.05, ticks on a nice step (shared by every series)
@@ -173,7 +189,7 @@ function draw(cv, g, [xs, ...series], hover) {
   const nLabels = Math.min(4, n);
   for (let k = 0; k < nLabels; k++) {
     const i = Math.round((k / Math.max(1, nLabels - 1)) * (n - 1));
-    const label = clock(xs[i]);
+    const label = axisFmt.format(new Date(Number(xs[i]) * 1000));
     // keep edge labels inside the plot
     const x = Math.max(x0 + 20, Math.min(x1 - 20, sx(i)));
     ctx.fillText(label, x, y1 + 5);
@@ -210,7 +226,7 @@ function draw(cv, g, [xs, ...series], hover) {
     ctx.fillStyle = fg;
     ctx.textBaseline = "top";
     ctx.textAlign = hx > (x0 + x1) / 2 ? "right" : "left";
-    const text = g.fmt(ys[hover]) + " · " + clock(xs[hover], true);
+    const text = g.fmt(ys[hover]) + " · " + clock(xs[hover], hoverSeconds);
     ctx.fillText(text, hx > (x0 + x1) / 2 ? hx - 8 : hx + 8, y0);
   }
 

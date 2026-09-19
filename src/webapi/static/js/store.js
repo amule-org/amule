@@ -53,3 +53,28 @@ export function clearPrefs() {
       if (k.startsWith("amule.")) localStorage.removeItem(k);
   } catch (_) {}
 }
+
+// --- Graph time range (Statistics + Networks/Kad) ------------------------
+// The persisted sampling interval (seconds) sent as
+// /stats/graphs?interval_seconds=N; at 300 samples it sets how far back the
+// window reaches. interval -> window: 5min / 1h / 6h / 24h. Each is well above
+// the record spacing at its window's far edge, so amuled never repeats records
+// (see docs/api/REFERENCE.md, GET /stats/graphs/{graph}).
+export const GRAPH_RANGES = [
+  { interval: 1, labelKey: "prefs_graph_range_5m" },
+  { interval: 12, labelKey: "prefs_graph_range_1h" },
+  { interval: 72, labelKey: "prefs_graph_range_6h" },
+  { interval: 288, labelKey: "prefs_graph_range_24h" },
+];
+
+const DEFAULT_GRAPH_INTERVAL = 12; // 1 hour
+
+// Validate against the presets so a stale/edited value can't reach amuled.
+export function loadGraphInterval() {
+  const v = loadPref("stats.graphRange", DEFAULT_GRAPH_INTERVAL);
+  return GRAPH_RANGES.some((r) => r.interval === v) ? v : DEFAULT_GRAPH_INTERVAL;
+}
+
+export function saveGraphInterval(interval) {
+  savePref("stats.graphRange", interval);
+}
