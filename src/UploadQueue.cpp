@@ -463,23 +463,25 @@ void CUploadQueue::AddClientToQueue(CUpDownClient *client)
 	}
 
 	// Count clients in the same address-accounting scope. Identity remains keyed by the exact
-	// canonical address, while IPv6 rate limiting aggregates a delegated /64.
-	int ipCount = 0;
-	for (const auto &entry : theApp->clientlist->GetClientList()) {
-		CUpDownClient *cur_client = entry.second.GetClient();
-		if (UploadQueueAddressPolicy::MatchesRateLimitScope(
-			    client->GetUserAddress(), cur_client->GetUserAddress()) &&
-			((cur_client == client) || IsOnUploadQueue(cur_client))) {
-			ipCount++;
+	// canonical address, while IPv6 rate limiting aggregates a delegated /64. A client without
+	// an address has no host identity and is intentionally outside this cap.
+	const CNetworkAddress clientAddress = client->GetUserAddress();
+	int ipCount = PeerAddressing::IsIndexable(clientAddress) ? 1 : 0;
+	if (ipCount != 0) {
+		for (const auto &entry : m_waitinglist) {
+			CUpDownClient *cur_client = entry.GetClient();
+			if (cur_client != client && UploadQueueAddressPolicy::MatchesRateLimitScope(
+							    clientAddress, cur_client->GetUserAddress())) {
+				ipCount++;
+			}
 		}
 	}
 
 	// No more than 3 clients from the same address-accounting scope may be on the upload queue.
 	// Only clients actually queued are counted: an earlier check also counted the tracked
-	// "deleted clients" list, so
-	// a client behind a shared or NAT IP that simply cancelled a few downloads was locked out
-	// for up to two hours, cleared only by a restart. Flood protection is the
-	// aggressiveness/ban path's job.
+	// "deleted clients" list, so a client behind a shared or NAT IP that simply cancelled a few
+	// downloads was locked out for up to two hours, cleared only by a restart. Flood protection is
+	// the aggressiveness/ban path's job.
 	if (ipCount > 3) {
 		AddDebugLogLineN(logLocalClient,
 			CFormat("Rejected upload request from %s: too many clients (%d) from the same IP "
