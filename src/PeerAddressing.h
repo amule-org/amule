@@ -331,6 +331,12 @@ inline bool CanRequestCallback(const CNetworkAddress &address) noexcept
 	return HasEd2kWireForm(address);
 }
 
+/** OP_PUBLICIP_REQ is meaningful only on an IPv4 socket. */
+inline bool CanAnswerPublicIPv4Request(const CNetworkAddress &address) noexcept
+{
+	return address.IsIPv4();
+}
+
 /** An unconnected socket can only be opened when the contact has a legacy IPv4 form. */
 inline bool CanOpenConnection(const CNetworkAddress &address, bool socketConnected) noexcept
 {

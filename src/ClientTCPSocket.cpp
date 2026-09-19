@@ -1710,6 +1710,10 @@ bool CClientTCPSocket::ProcessExtPacket(const uint8_t *buffer, uint32 size, uint
 		AddDebugLogLineN(
 			logRemoteClient, "Remote Client: OP_PUBLICIP_REQ from " + m_client->GetFullIP());
 		theStats::AddDownOverheadOther(size);
+		if (!PeerAddressing::CanAnswerPublicIPv4Request(m_remoteAddress)) {
+			AddDebugLogLineN(logRemoteClient, "Ignoring OP_PUBLICIP_REQ from a non-IPv4 socket");
+			break;
+		}
 		CPacket *pPacket = new CPacket(OP_PUBLICIP_ANSWER, 4, OP_EMULEPROT);
 		pPacket->CopyUInt32ToDataBuffer(m_client->GetIP());
 		theStats::AddUpOverheadOther(pPacket->GetPacketSize());
