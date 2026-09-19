@@ -369,7 +369,8 @@ void CClientList::DeleteAll()
 	}
 }
 
-bool CClientList::AttachToAlreadyKnown(CUpDownClient **client, CClientTCPSocket *sender)
+bool CClientList::AttachToAlreadyKnown(
+	CUpDownClient **client, CClientTCPSocket *sender, bool *senderDiscarded)
 {
 	CUpDownClient *tocheck = (*client);
 
@@ -415,10 +416,16 @@ bool CClientList::AttachToAlreadyKnown(CUpDownClient **client, CClientTCPSocket 
 						thePrefs::GetUserHash().GetHash(),
 						tocheck->GetUserHash().GetHash());
 					if (keepFound) {
+						// `client` aliases sender->m_client, so the survivor
+						// must not be written back: ~CClientTCPSocket() would
+						// then strip found_client of the socket just kept.
+						// Safe_Delete() leaves that member null, and the
+						// caller is told to stop touching the socket.
 						sender->Safe_Delete();
-						tocheck->SetSocket(nullptr);
 						tocheck->Safe_Delete();
-						*client = found_client;
+						if (senderDiscarded != nullptr) {
+							*senderDiscarded = true;
+						}
 						return true;
 					}
 				}

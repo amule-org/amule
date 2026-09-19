@@ -243,6 +243,10 @@ bool CClientTCPSocket::TryUtpTcpFallback()
 	// Destroy only the failed uTP stream; keep the client and socket wrapper so
 	// the normal TCP Connect() path can reuse its identity and timeout state.
 	DetachTransport().reset();
+	// The OnClose() route has already marked this socket disconnected, and that
+	// state is terminal: the hello would be dropped by SendPacket() and nothing
+	// would ever set it back, leaving a connected socket that never speaks.
+	ReopenForConnect();
 	return m_client->Connect();
 }
 #endif
@@ -398,7 +402,13 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 		// If we already know this client the socket is attached to the known one, the new
 		// client is deleted and m_client points at the known one; otherwise the freshly
 		// constructed one is kept.
-		if (theApp->clientlist->AttachToAlreadyKnown(&m_client, this)) {
+		bool senderDiscarded = false;
+		if (theApp->clientlist->AttachToAlreadyKnown(&m_client, this, &senderDiscarded)) {
+			if (senderDiscarded) {
+				// Simultaneous uTP dials, and the tie-break kept the other
+				// socket. This one is detached and on its way out.
+				return false;
+			}
 			bIsMuleHello = m_client->ProcessHelloPacket(buffer, size);
 		} else {
 			theApp->clientlist->AddClient(m_client);

@@ -130,7 +130,10 @@ public:
 	 * clients, and on a match the new instance is deleted and the pointer set to the existing
 	 * one.
 	 */
-	bool AttachToAlreadyKnown(CUpDownClient **client, CClientTCPSocket *sender);
+	//! `senderDiscarded`, when given, reports that `sender` was destroyed here and
+	//! `*client` left null: the caller owns that socket and must stop using it.
+	bool AttachToAlreadyKnown(
+		CUpDownClient **client, CClientTCPSocket *sender, bool *senderDiscarded = nullptr);
 
 	/**
 	 * Finds a client with the specified ip and port.

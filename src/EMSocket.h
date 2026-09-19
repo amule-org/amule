@@ -127,6 +127,10 @@ protected:
 	virtual bool PacketReceived(CPacket *WXUNUSED(packet)) { return false; };
 	virtual void OnClose(int nErrorCode);
 
+	//! Return to the pre-connection state so the socket can be dialled again.
+	//! OnClose() leaves ES_DISCONNECTED, which no send or receive path clears.
+	void ReopenForConnect();
+
 	uint8 byConnected;
 	uint32 m_uTimeOut;
 

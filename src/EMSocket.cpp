@@ -147,6 +147,12 @@ void CEMSocket::ClearQueues()
 	sent = 0;
 }
 
+void CEMSocket::ReopenForConnect()
+{
+	std::lock_guard<std::mutex> lock(m_sendLocker);
+	byConnected = ES_NOTCONNECTED;
+}
+
 void CEMSocket::OnClose(int WXUNUSED(nErrorCode))
 {
 	// need to be locked here to know that the other methods
