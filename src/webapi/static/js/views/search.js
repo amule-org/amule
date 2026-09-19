@@ -14,11 +14,13 @@ import { categoryOptions } from "./categories.js";
 import { t, tn, terr } from "../i18n.js";
 
 const SIZE_UNITS = { B: 1, KiB: 1024, MiB: 1048576, GiB: 1073741824 };
-// [API value, label key] — the value goes to the backend verbatim.
+// [API value, label key] — the value goes into the ed2k packet's file-type
+// field verbatim, so it must be the ed2k token amuled matches (ED2KFTSTR_*),
+// not the display label. amulegui's SearchDlg maps its dropdown the same way.
 const FILE_TYPES = [
   ["", "search_ftype_any"], ["Audio", "search_ftype_audio"], ["Video", "search_ftype_video"],
-  ["Image", "search_ftype_image"], ["Document", "search_ftype_document"], ["Program", "search_ftype_program"],
-  ["Archive", "search_ftype_archive"], ["CD/DVD", "search_ftype_cddvd"],
+  ["Image", "search_ftype_image"], ["Doc", "search_ftype_document"], ["Pro", "search_ftype_program"],
+  ["Arc", "search_ftype_archive"], ["Iso", "search_ftype_cddvd"],
 ];
 // A tab is as wide as its label, so a long query gets cut; the full string
 // stays in the tab's title attribute.
