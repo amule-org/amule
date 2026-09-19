@@ -238,22 +238,36 @@ bool CClientTCPSocket::TryUtpTcpFallback()
 		return false;
 	}
 	// Connect() is otherwise reached only through TryToContact(), which filters,
-	// re-checks bans and sends a LowID peer down its callback path instead. An
-	// inbound stream reaches this too, so neither check is hypothetical.
-	if (m_client->HasLowID() || !m_client->IsContactAddressAllowed()) {
+	// re-checks bans, refuses an address it cannot dial, drops an obfuscation
+	// mismatch and sends a LowID peer down its callback path instead. An inbound
+	// stream reaches this too, so none of those checks is hypothetical.
+	if (m_client->HasLowID() || !m_client->IsRedialAllowed()) {
+		return false;
+	}
+	// A stream handshake that already started cannot be re-keyed: Connect() would
+	// reach SetConnectionEncryption()'s wxFAIL and leave the keystreams at their
+	// mid-stream position, so the peer would decode the new connection's first
+	// bytes from position zero. Only an inbound peer that runs the ed2k handshake
+	// inside frames we already obfuscate gets here, and TCP is the right answer
+	// for it -- just not on this socket.
+	if (StreamCryptInProgress()) {
 		return false;
 	}
 	if (m_utpFallbackAttempted) {
 		return false;
 	}
 	m_utpFallbackAttempted = true;
+	// Before the transport goes: this waits out a send running on the throttler
+	// thread, which would otherwise be inside the stream we are about to free,
+	// and clears what the dead stream left half-written.
+	QuiesceForRedial();
 	// Destroy only the failed uTP stream; keep the client and socket wrapper so
-	// the normal TCP Connect() path can reuse its identity and timeout state.
+	// the normal TCP Connect() path can reuse its identity.
 	DetachTransport().reset();
-	// The OnClose() route has already marked this socket disconnected, and that
-	// state is terminal: the hello would be dropped by SendPacket() and nothing
-	// would ever set it back, leaving a connected socket that never speaks.
-	ReopenForConnect();
+	// The uTP window is spent. Give the TCP connect its own, rather than whatever
+	// remained of it -- the OnClose() route arrives here without CheckTimeOut()'s
+	// reset, so it would otherwise inherit an already-elapsed timer.
+	ResetTimeOutTimer();
 	return m_client->Connect();
 }
 #endif

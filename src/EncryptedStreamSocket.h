@@ -118,6 +118,12 @@ protected:
 	bool IsEncryptionLayerReady();
 	//! True when the transport below obfuscates the stream already.
 	bool TransportObfuscates() const;
+	//! True once the stream handshake has started: its keystreams are mid-position, and
+	//! SetConnectionEncryption() refuses to re-key from here (it wxFAILs).
+	bool StreamCryptInProgress() const
+	{
+		return m_StreamCryptState != ECS_NONE && m_StreamCryptState != ECS_UNKNOWN;
+	}
 	uint8_t GetSemiRandomNotProtocolMarker() const;
 
 	uint32_t m_nObfusicationBytesReceived;

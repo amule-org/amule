@@ -276,8 +276,9 @@ public:
 	EContactResult CheckContactPreconditions();
 	//! The address the security checks below are made against.
 	CNetworkAddress ContactAddress() const;
-	//! Whether that address passes the filter and ban checks, without acting on the answer.
-	bool IsContactAddressAllowed() const;
+	//! Whether a socket whose stream died may be dialled again over TCP: every refusal
+	//! CheckContactPreconditions() makes, asked without acting on the answer.
+	bool IsRedialAllowed() const;
 	void ProcessSharedFileList(const uint8_t *pachPacket, uint32 nSize, wxString &pszDirectory);
 	void SendSharedDirectories();
 	void SendSharedFilesOfDirectory(const wxString &strReqDir);

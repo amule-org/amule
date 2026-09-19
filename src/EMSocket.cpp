@@ -147,10 +147,33 @@ void CEMSocket::ClearQueues()
 	sent = 0;
 }
 
-void CEMSocket::ReopenForConnect()
+void CEMSocket::QuiesceForRedial()
 {
-	std::lock_guard<std::mutex> lock(m_sendLocker);
-	byConnected = ES_NOTCONNECTED;
+	// Same order as OnClose(), and for the same reasons. Park the state first so
+	// no other thread queues anything more, then leave the throttler -- which
+	// takes the lock it holds across SendControlData(), so this waits out a send
+	// already running on its thread -- and only then drop what the dead stream
+	// left behind. Without the wait, freeing the transport here races that send;
+	// without the queues going, a half-written packet from the old stream is
+	// replayed onto the new connection and the peer reads a bogus header.
+	{
+		std::lock_guard<std::mutex> lock(m_sendLocker);
+		byConnected = ES_DISCONNECTED;
+	}
+
+	if (theApp->uploadBandwidthThrottler) {
+		theApp->uploadBandwidthThrottler->RemoveFromAllQueues(this);
+	}
+	CDownloadBandwidthThrottler::Get().Forget(this);
+
+	ClearQueues();
+
+	// Reopened last: ES_DISCONNECTED is terminal for every send and receive path,
+	// so a socket left in it connects and then never speaks.
+	{
+		std::lock_guard<std::mutex> lock(m_sendLocker);
+		byConnected = ES_NOTCONNECTED;
+	}
 }
 
 void CEMSocket::OnClose(int WXUNUSED(nErrorCode))

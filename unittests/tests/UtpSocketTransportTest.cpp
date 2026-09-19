@@ -74,6 +74,7 @@ public:
 		}
 	}
 	void SetReceiveBuffer(Handle, size_t bytes) override { receiveBound = bytes; }
+	void SetSendBuffer(Handle, size_t bytes) override { sendBound = bytes; }
 
 	std::function<void()> onWrite;
 	std::function<void()> onClose;
@@ -86,6 +87,7 @@ public:
 	int drainedCalls = 0;
 	int closeCalls = 0;
 	size_t receiveBound = 0;
+	size_t sendBound = 0;
 };
 
 class FakeEvents : public IStreamTransportEvents
@@ -430,8 +432,11 @@ TEST(UtpSocketTransport, ReadBufferSizeTracksCurrentOccupancy)
 	const std::vector<uint8_t> payload = Pattern(40);
 	transport.OnPayload(payload.data(), payload.size());
 
-	transport.ApplyReceiveBound();
+	transport.ApplyBufferBounds();
 	ASSERT_EQUALS((unsigned)CUtpStream::kDefaultReadBound, (unsigned)ops.receiveBound);
+	// Both bounds travel together: libutp's default send buffer is smaller than one
+	// hello exchange, and a stream that stalls there never reaches admission.
+	ASSERT_EQUALS((unsigned)CUtpStream::kDefaultWriteBound, (unsigned)ops.sendBound);
 	ASSERT_EQUALS(40u, (unsigned)reader.ReadBufferSize());
 
 	uint8_t out[40] = { 0 };

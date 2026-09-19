@@ -1541,17 +1541,28 @@ CNetworkAddress CUpDownClient::ContactAddress() const
 		GetUserAddress(), GetConnectAddress(), HasLowID(), wxUINT32_SWAP_ALWAYS(m_nUserIDHybrid));
 }
 
-bool CUpDownClient::IsContactAddressAllowed() const
+bool CUpDownClient::IsRedialAllowed() const
 {
+	// Every refusal CheckContactPreconditions() makes, asked without acting on the
+	// answer: a redial happens where that function never runs, so anything it would
+	// have caught has to be caught here instead.
+	if ((RequiresCryptLayer() && !thePrefs::IsClientCryptLayerSupported()) ||
+		(thePrefs::IsClientCryptLayerRequired() && !SupportsCryptLayer())) {
+		return false;
+	}
 	const CNetworkAddress contactAddress = ContactAddress();
 	if (!PeerAddressing::CanCheckContactAddress(contactAddress)) {
 		return false;
 	}
 	if (contactAddress.IsAbsent()) {
-		return true;
+		// The contact path tolerates absence, because a LowID peer is reached
+		// through a server or a buddy rather than dialled. A redial has no such
+		// route: Connect() would aim at the zero address.
+		return false;
 	}
 	return !theApp->ipfilter->IsFiltered(contactAddress) &&
-	       !theApp->clientlist->IsBannedClient(contactAddress);
+	       !theApp->clientlist->IsBannedClient(contactAddress) &&
+	       PeerAddressing::CanOpenConnection(contactAddress, IsConnected());
 }
 
 // Re-check the standing reasons to refuse this peer, disconnecting it on a hit:

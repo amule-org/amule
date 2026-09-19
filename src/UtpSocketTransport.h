@@ -49,7 +49,7 @@
  * - NotifyReadDrained() is safe from anywhere, including inside UTP_ON_READ:
  *   utp_read_drained() only recomputes the receive window and sends or
  *   schedules an ACK, and never re-enters the incoming path.
- * - SetReceiveBuffer() is configuration, made once by the acceptor.
+ * - SetReceiveBuffer()/SetSendBuffer() are configuration, made once by the acceptor.
  *
  * Naming them here keeps the transport testable without the library.
  *
@@ -75,6 +75,9 @@ public:
 
 	//! Sets the receive-buffer size libutp advertises window against.
 	virtual void SetReceiveBuffer(Handle socket, size_t bytes) = 0;
+
+	//! Sets how much unacknowledged data libutp keeps in flight.
+	virtual void SetSendBuffer(Handle socket, size_t bytes) = 0;
 };
 
 /**
@@ -125,18 +128,26 @@ public:
 	 * pull ReadBufferSize(): libutp advertises opt_rcvbuf minus those bytes.
 	 * Without that callback, occupancy is treated as zero.
 	 */
-	void ApplyReceiveBound()
+	void ApplyBufferBounds()
 	{
 		IUtpSocketOperations::Handle socket = nullptr;
-		size_t bound = 0;
+		size_t readBound = 0;
+		size_t writeBound = 0;
 		{
 			std::lock_guard<std::mutex> lock(m_mutex);
 			socket = m_socket;
-			bound = m_stream.ReadBound();
+			readBound = m_stream.ReadBound();
+			writeBound = m_stream.WriteBound();
 		}
-		if (socket != nullptr) {
-			m_operations.SetReceiveBuffer(socket, bound);
+		if (socket == nullptr) {
+			return;
 		}
+		m_operations.SetReceiveBuffer(socket, readBound);
+		// The send side was left at libutp's default, which is smaller than one
+		// hello exchange: eMuleAI records that default stalling the handshake.
+		// Matching the queue this stream already accepts keeps the two bounds
+		// from disagreeing about how much may be in flight.
+		m_operations.SetSendBuffer(socket, writeBound);
 	}
 
 	// -- IStreamTransport ---------------------------------------------
