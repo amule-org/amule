@@ -141,8 +141,8 @@ CSearchListCtrl::CSearchListCtrl(
 		wxALIGN_LEFT,
 		wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE);
 	// Media tag columns: ed2k/Kad publishers (eMule, eMule AI, aMule) can advertise per-file
-	// media metadata in FT_MEDIA_LENGTH / _BITRATE / _CODEC. Cells stay empty for non-media
-	// results.
+	// media metadata in FT_MEDIA_LENGTH / _BITRATE / _CODEC / _ARTIST / _ALBUM / _TITLE. Cells
+	// stay empty for non-media results.
 	AddTextColumn(_("Length"),
 		CSearchListModel::COL_LENGTH,
 		"L",

@@ -189,10 +189,11 @@ function DetailActions({ d, isGuest, categories, onPatch, onDelete, onClear }) {
   // admin-only per button, not on the bar: guests keep the priority/category_index readout.
   return html`
     <div class="detail-actions">
-      <button class="btn btn-sm admin-only" type="button"
-              onClick=${() => onPatch(d.hash, { action: inactive ? "resume" : "pause" })}>
-        <${Icon} name=${inactive ? "play" : "pause"} /> ${inactive ? t("downloads_resume") : t("downloads_pause")}
-      </button>
+      ${done ? null : html`
+        <button class="btn btn-sm admin-only" type="button"
+                onClick=${() => onPatch(d.hash, { action: inactive ? "resume" : "pause" })}>
+          <${Icon} name=${inactive ? "play" : "pause"} /> ${inactive ? t("downloads_resume") : t("downloads_pause")}
+        </button>`}
       ${canStop ? html`
         <button class="btn btn-sm admin-only" type="button" onClick=${() => onPatch(d.hash, { action: "stop" })}>
           <${Icon} name="stop" /> ${t("downloads_stop")}
@@ -200,7 +201,7 @@ function DetailActions({ d, isGuest, categories, onPatch, onDelete, onClear }) {
       ${done ? html`
         <${DownloadLink} hash=${d.hash} tipKey="downloads_download_tip" />
         <button class="btn btn-sm admin-only" type="button" onClick=${clear}>
-          <${Icon} name="cancel" /> ${t("downloads_clear_this")}
+          <${Icon} name="trash" /> ${t("downloads_clear_this")}
         </button>` : html`
         <button class="btn btn-sm btn-danger admin-only" type="button" onClick=${() => onDelete(d)}>
           <${Icon} name="cancel" /> ${t("downloads_cancel")}

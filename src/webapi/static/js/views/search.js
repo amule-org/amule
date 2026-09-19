@@ -155,7 +155,9 @@ function ResultsPane({ tab, categories }) {
 
   const visible = (all, filter, filterHave) => {
     const m = textMatcher(filter);
-    let out = filter ? all.filter((r) => m(r.name)) : all;
+    let out = filter
+      ? all.filter((r) => m(r.name) || m(r.media?.artist) || m(r.media?.album) || m(r.media?.title))
+      : all;
     if (filterHave !== "all") out = out.filter((r) => (filterHave === "have") === !!r.already_downloaded);
     return out;
   };

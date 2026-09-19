@@ -737,6 +737,7 @@
   "client_detail_dl_total": "Total downloaded",
   "client_detail_ul_total": "Total uploaded",
   "client_detail_ratio": "DL/UP modifier",
+  "client_detail_tip_ratio": "Credit modifier from your transfer history with this peer, 1 to 10. Higher means you have downloaded more than you uploaded back; 10 is the cap. Not downloaded ÷ uploaded.",
   "client_detail_queue": "Queue position",
   "client_detail_score": "Score",
   "client_detail_progress": "Parts progress",

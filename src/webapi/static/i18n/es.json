@@ -737,6 +737,7 @@
   "client_detail_dl_total": "Total descargado",
   "client_detail_ul_total": "Total subido",
   "client_detail_ratio": "Modificador DL/UP",
+  "client_detail_tip_ratio": "Modificador de crédito según tu historial de transferencia con este par, de 1 a 10. Cuanto más alto, más has descargado respecto a lo que has subido; 10 es el máximo. No es descargado ÷ subido.",
   "client_detail_queue": "Posición en cola",
   "client_detail_score": "Puntuación",
   "client_detail_progress": "Progreso de partes",

@@ -82,7 +82,7 @@ function clientSections(c) {
     has("upload_speed_bytes_per_second") ? statRow("client_detail_ul_speed", formatSpeed(c.upload_speed_bytes_per_second)) : null,
     total("downloaded_bytes_session", "downloaded_bytes_total", "client_detail_downloaded", "client_detail_dl_total"),
     total("uploaded_bytes_session", "uploaded_bytes_total", "client_detail_uploaded", "client_detail_ul_total"),
-    has("credit_ratio") ? statRow("client_detail_ratio", c.credit_ratio != null ? Number(c.credit_ratio).toFixed(2) : "—") : null,
+    has("credit_ratio") ? statRow("client_detail_ratio", c.credit_ratio != null ? Number(c.credit_ratio).toFixed(2) : "—", "client_detail_tip_ratio") : null,
     has("part_progress_percent") ? statRow("client_detail_progress", c.part_progress_percent != null ? formatPercent(c.part_progress_percent) : "—") : null,
     has("upload_queue_position") ? statRow("client_detail_queue", c.upload_queue_position || "—") : null,
     has("upload_queue_score") ? statRow("client_detail_score", c.upload_queue_score || "—") : null,
