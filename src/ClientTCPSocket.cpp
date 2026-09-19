@@ -128,19 +128,29 @@ bool CClientTCPSocket::InitNetworkData(AdmissionTransport transport)
 	m_remoteAddress = GetPeerAddress().Unmapped();
 	m_remoteip = m_remoteAddress.ToIPv4NetworkOrderOrZero();
 
-	const bool admissible = transport == AdmissionTransport::TCP
-					? PeerAddressing::CanAdmitTcpPeer(m_remoteAddress)
-					: PeerAddressing::CanAdmitUtpPeer(m_remoteAddress);
-	if (!admissible || !theApp->ipfilter || !theApp->clientlist) {
-		AddDebugLogLineN(logClient, "Denied connection from " + GetPeer());
+	if (transport == AdmissionTransport::UTP && !PeerAddressing::CanAdmitUtpPeer(m_remoteAddress)) {
+		AddDebugLogLineN(logClient,
+			"Denied uTP connection from " + GetPeer() + " (uTP requires an IPv4 address)");
+		return false;
+	}
+#ifndef ENABLE_IPV6
+	if (transport == AdmissionTransport::TCP && m_remoteAddress.IsIPv6()) {
+		AddDebugLogLineN(
+			logClient, "Denied connection from " + GetPeer() + " (IPv6 admission is disabled)");
+		return false;
+	}
+#endif
+	if (!PeerAddressing::CanAdmitTcpPeer(m_remoteAddress)) {
+		AddDebugLogLineN(logClient,
+			"Denied connection from " + GetPeer() + " (address unavailable or unspecified)");
 		return false;
 	}
 
 	if (theApp->ipfilter->IsFiltered(m_remoteAddress)) {
-		AddDebugLogLineN(logClient, "Denied connection from " + GetPeer() + "(Filtered IP)");
+		AddDebugLogLineN(logClient, "Denied connection from " + GetPeer() + " (Filtered IP)");
 		return false;
 	} else if (theApp->clientlist->IsBannedClient(m_remoteAddress)) {
-		AddDebugLogLineN(logClient, "Denied connection from " + GetPeer() + "(Banned IP)");
+		AddDebugLogLineN(logClient, "Denied connection from " + GetPeer() + " (Banned IP)");
 		return false;
 	} else {
 		AddDebugLogLineN(logClient, "Accepted connection from " + GetPeer());

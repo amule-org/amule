@@ -93,7 +93,7 @@ void CListenSocket::OnAccept()
 				newclient->Safe_Delete();
 				m_pending = false;
 			} else {
-				if (!newclient->InitNetworkData()) {
+				if (!newclient->InitNetworkData(CClientTCPSocket::AdmissionTransport::TCP)) {
 					// IP or port were not returned correctly
 					// from the accepted address, or filtered.
 					newclient->Safe_Delete();

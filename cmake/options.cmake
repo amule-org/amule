@@ -281,6 +281,10 @@ endif()
 # advertisement of our own. Requires CMake 3.12; see cmake/libutp.cmake.
 option (ENABLE_UTP "enable experimental uTP: datagram framing, inbound streams and outbound dialing" OFF)
 
+# IPv6 TCP admission is intentionally separate from listener activation and the
+# remaining IPv6 identity work. Keep it off until those consumers are migrated.
+option (ENABLE_IPV6 "enable experimental native IPv6 TCP admission (IPv6 identity migration remains incomplete)" OFF)
+
 # Master switch for the in-app "check for a new aMule version" feature: the
 # startup notification, the "Check for new version at startup" preference, and
 # the About dialog's "Check for updates" button. When OFF the whole feature
@@ -339,6 +343,7 @@ option (ENABLE_KAD_NODE_PROTECTION "enable the local Kad node-protection heurist
 # the latter would sweep in ENABLE_UPNP, ENABLE_NLS and the rest, which are
 # ordinary build options rather than unfinished features.
 set (AMULE_EXPERIMENTAL_OPTIONS
+	ENABLE_IPV6
 	ENABLE_KAD_PROTOCOL_10
 	ENABLE_KAD_NODE_PROTECTION
 	ENABLE_UTP

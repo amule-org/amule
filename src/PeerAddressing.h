@@ -337,10 +337,10 @@ inline bool CanOpenConnection(const CNetworkAddress &address, bool socketConnect
 	return socketConnected || HasEd2kWireForm(address);
 }
 
-/** Native IPv6 is admissible on the TCP stream; absent and unspecified peers are not. */
+/** TCP admission and security keying answer the same question. */
 inline bool CanAdmitTcpPeer(const CNetworkAddress &address) noexcept
 {
-	return address.IsPresent() && !IndexKey(address).IsUnspecified();
+	return IsSecurityKey(address);
 }
 
 /** The current uTP framing remains IPv4-only until its IPv6 wire format is implemented. */
