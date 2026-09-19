@@ -1698,6 +1698,45 @@ else
 	_skip 'late-discovery: no amuleapi binary to start a third instance'
 fi
 
+# --- file_type takes the tokens the rows report, and nothing else. Appended at
+# the end of the phase: an accepted token starts a real search, which shifts the
+# daemon state the sections above were written against.
+#
+# The accepted cases assert what amuleapi decides, not what amuled can do: a
+# daemon with no eD2k connection rejects every search start with
+# `amuled_rejected`, which still says the token passed validation. Only
+# `bad_request` means the filter refused it.
+for FT in audio video picture text program archive disc_image; do
+	_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+		-H "Content-Type: application/json" \
+		-d "{\"query\":\"$TEST_QUERY\",\"type\":\"local\",\"file_type\":\"$FT\"}" "$API/search"
+	FT_CODE=$(printf '%s' "$CURL_BODY" | jq -r '.error.code // empty')
+	if [ "$CURL_STATUS" = "202" ]; then
+		_pass "POST /search (file_type=$FT) accepted (HTTP 202)"
+		FT_SID=$(printf '%s' "$CURL_BODY" | jq -r '.search_id // empty')
+		[ -n "$FT_SID" ] && curl -s -o /dev/null -X DELETE \
+			-H "Authorization: Bearer $ADMIN_TOKEN" "$API/search/$FT_SID"
+	elif [ "$FT_CODE" = "amuled_rejected" ]; then
+		_skip "file_type=$FT passed validation; amuled cannot search (not connected)"
+	else
+		_fail "POST /search (file_type=$FT) accepted" \
+			"expected 202 or amuled_rejected, got $CURL_STATUS" \
+			"body head: $(printf '%s' "$CURL_BODY" | head -c 200)"
+	fi
+done
+
+# The ed2k spellings the filter used to require, and the one token the rows
+# report that no ed2k category matches, are mistakes now rather than searches
+# that quietly return nothing. These hold whether or not amuled is connected,
+# because the filter rejects them before the daemon is asked.
+for FT in Audio Iso iso image document unknown nonsuch; do
+	_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+		-H "Content-Type: application/json" \
+		-d "{\"query\":\"$TEST_QUERY\",\"type\":\"local\",\"file_type\":\"$FT\"}" "$API/search"
+	_assert_status 400 "POST /search (file_type=$FT) → 400"
+	_assert_json_eq '.error.code' bad_request "POST /search (file_type=$FT) → bad_request"
+done
+
 # --- Summary. -----------------------------------------------------
 echo
 SKIP_NOTE=""

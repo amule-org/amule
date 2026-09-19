@@ -10298,7 +10298,19 @@ CHttpServer::Response CApiDispatcher::HandleSearchStart(const CHttpServer::Reque
 			if (!it->second.is<std::string>()) {
 				return ErrorResponse(400, "bad_request", "`file_type` must be a string");
 			}
-			file_type = it->second.get<std::string>();
+			// The tokens the rows report, translated to the ed2k term amuled matches on. An
+			// unknown token used to travel to the daemon untouched and match nothing, so a
+			// typo read as "no results" rather than as a mistake.
+			const std::string token = it->second.get<std::string>();
+			if (!token.empty()) {
+				file_type = webapi::SearchFileTypeTerm(token);
+				if (file_type.empty()) {
+					const std::string msg = "`file_type` must be one of " +
+								webapi::SearchFileTypeTokenList() +
+								", or omitted for any type";
+					return ErrorResponse(400, "bad_request", msg.c_str());
+				}
+			}
 		}
 	}
 	std::string extension;

@@ -3246,6 +3246,33 @@ TEST(Refresher, StatusOverheadAndFreeSpaceTagsDecode)
 	ASSERT_EQUALS(static_cast<std::int64_t>(24159191040LL), out.incoming_free_bytes);
 }
 
+// The search filter takes the tokens the rows report, so a client can filter by a value it was
+// given. Every category a row can carry has a term, except "unknown", which no ed2k category
+// matches: it is rejected rather than quietly matching nothing.
+TEST(Refresher, SearchFileTypeTermCoversEveryReportedToken)
+{
+	ASSERT_EQUALS(std::string("Audio"), SearchFileTypeTerm("audio"));
+	ASSERT_EQUALS(std::string("Video"), SearchFileTypeTerm("video"));
+	ASSERT_EQUALS(std::string("Image"), SearchFileTypeTerm("picture"));
+	ASSERT_EQUALS(std::string("Doc"), SearchFileTypeTerm("text"));
+	ASSERT_EQUALS(std::string("Pro"), SearchFileTypeTerm("program"));
+	ASSERT_EQUALS(std::string("Arc"), SearchFileTypeTerm("archive"));
+	ASSERT_EQUALS(std::string("Iso"), SearchFileTypeTerm("disc_image"));
+}
+
+// Everything else is a caller mistake, including the ed2k spellings the filter used to require and
+// the tokens the issue's first draft proposed.
+TEST(Refresher, SearchFileTypeTermRejectsAnythingElse)
+{
+	ASSERT_EQUALS(std::string(""), SearchFileTypeTerm("unknown"));
+	ASSERT_EQUALS(std::string(""), SearchFileTypeTerm(""));
+	ASSERT_EQUALS(std::string(""), SearchFileTypeTerm("Audio"));
+	ASSERT_EQUALS(std::string(""), SearchFileTypeTerm("Iso"));
+	ASSERT_EQUALS(std::string(""), SearchFileTypeTerm("image"));
+	ASSERT_EQUALS(std::string(""), SearchFileTypeTerm("document"));
+	ASSERT_EQUALS(std::string(""), SearchFileTypeTerm("iso"));
+}
+
 TEST(Refresher, StatusFreeSpaceUnknownSentinelReadsBackAsMinusOne)
 {
 	// amuled's FREE_SPACE_UNKNOWN is a signed -1 and its EC serializer casts it straight to

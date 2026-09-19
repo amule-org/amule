@@ -48,6 +48,8 @@
 #include <ec/cpp/ECSpecialTags.h>
 #include <ec/cpp/ECPacket.h>
 
+#include <tags/FileTags.h> // ED2KFTSTR_* search terms for SearchFileTypeTerm
+
 #include <map>
 #include <algorithm>
 #include <cctype>
@@ -2285,6 +2287,49 @@ std::string FileTypeToken(const std::string &name)
 	// An unrecognised label means the core grew a type this build does not
 	// know; "unknown" is the honest answer, and matches what "any" meant.
 	return it != kNormalised.end() ? it->second : std::string("unknown");
+}
+
+namespace
+{
+
+// "unknown" is deliberately absent: the rows report it for a file whose extension names no
+// category, and ed2k has no term for that, so a search filtered on it would quietly match nothing.
+// Rejecting it says so instead. Ordered as the desktop's dropdown is, because the error message
+// lists them in this order.
+const std::pair<const char *, const wxChar *> kSearchFileTypes[] = {
+	{ "audio", ED2KFTSTR_AUDIO },
+	{ "video", ED2KFTSTR_VIDEO },
+	{ "picture", ED2KFTSTR_IMAGE },
+	{ "text", ED2KFTSTR_DOCUMENT },
+	{ "program", ED2KFTSTR_PROGRAM },
+	{ "archive", ED2KFTSTR_ARCHIVE },
+	{ "disc_image", ED2KFTSTR_CDIMAGE },
+};
+
+} // namespace
+
+std::string SearchFileTypeTerm(const std::string &token)
+{
+	for (const auto &entry : kSearchFileTypes) {
+		if (token == entry.first) {
+			return std::string(wxString(entry.second).utf8_str());
+		}
+	}
+	return std::string();
+}
+
+std::string SearchFileTypeTokenList()
+{
+	std::string list;
+	for (const auto &entry : kSearchFileTypes) {
+		if (!list.empty()) {
+			list += ", ";
+		}
+		list += '"';
+		list += entry.first;
+		list += '"';
+	}
+	return list;
 }
 
 // Merge one EC_TAG_SEARCHFILE onto a result, writing only the fields the tag actually

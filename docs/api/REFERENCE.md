@@ -2934,7 +2934,7 @@ Kicks off a new search. amuleapi supports **several concurrent searches** — a 
 {
   "query":     "ubuntu desktop iso",
   "type":      "global",
-  "file_type": "iso",
+  "file_type": "disc_image",
   "extension": "iso",
   "min_size_bytes":  1000000000,
   "max_size_bytes":  5000000000,
@@ -2942,7 +2942,7 @@ Kicks off a new search. amuleapi supports **several concurrent searches** — a 
 }
 ```
 
-Only `query` is required. `type` defaults to `"global"`; valid values are `"local"`, `"global"`, `"kad"`. `min_size_bytes`, `max_size_bytes` and `min_source_count` are integers: a fractional value is a `400` rather than being truncated, so a client that computed a size cannot half-apply a filter it thinks it set. A `"global"`/`"local"` (ed2k) search and a `"kad"` search run independently and can be in flight at the same time; starting one never disturbs the other.
+Only `query` is required. `type` defaults to `"global"`; valid values are `"local"`, `"global"`, `"kad"`. `file_type` filters by category and takes the same tokens the result rows report: `"audio"`, `"video"`, `"picture"`, `"text"`, `"program"`, `"archive"`, `"disc_image"`. Omit it, or send `""`, for any type; anything else is `400 bad_request`, `"unknown"` included, since no ed2k category corresponds to it. `min_size_bytes`, `max_size_bytes` and `min_source_count` are integers: a fractional value is a `400` rather than being truncated, so a client that computed a size cannot half-apply a filter it thinks it set. A `"global"`/`"local"` (ed2k) search and a `"kad"` search run independently and can be in flight at the same time; starting one never disturbs the other.
 
 **Response:** `202 Accepted`, with a `Location: /api/v1/search/{search_id}` header and the created search as the body -- the same row [`GET /search`](#get-apiv1search) lists, so it can go straight into a collection the client already keeps:
 
@@ -2959,7 +2959,7 @@ Only `query` is required. `type` defaults to `"global"`; valid values are `"loca
 
 Keep the `search_id` to read this search's results/progress or to stop it. This is one of the two creations that answer with the resource, because `EC_OP_SEARCH_START` really does hand one back; the ones whose EC op answers success or failure and nothing more are a bare `202` with no body.
 
-**Errors:** `400 bad_request` for any body validation (missing or non-string `query`, an unknown `type`, a malformed `file_type`, out-of-range size or availability bounds, and the rest of the body rules above); `400 amuled_rejected` when the daemon refuses the search (its own message is passed through); `502 amuled_rejected` when the daemon accepts it but returns no search_id; `503 ec_unavailable`.
+**Errors:** `400 bad_request` for any body validation (missing or non-string `query`, an unknown `type`, an unknown `file_type`, out-of-range size or availability bounds, and the rest of the body rules above); `400 amuled_rejected` when the daemon refuses the search (its own message is passed through); `502 amuled_rejected` when the daemon accepts it but returns no search_id; `503 ec_unavailable`.
 
 #### `GET /api/v1/search/{id}/results`
 

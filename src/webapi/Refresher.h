@@ -133,6 +133,16 @@ void ParsePreferencesFromPacket(
 // twice character for character and the two keys could drift apart silently.
 std::string FileTypeToken(const std::string &name);
 
+// The same vocabulary read backwards, for the POST /search filter: one of the tokens above to the
+// ed2k FT_FILETYPE term amuled matches on, or "" for a token it does not accept. Here rather than
+// in the handler so both directions of the token set are in one place: a client filters with the
+// value the rows report, and adding a category means touching one file.
+std::string SearchFileTypeTerm(const std::string &token);
+
+// The accepted tokens as a quoted, comma-separated list, for the error message the handler returns.
+// Built from the same table, so a category added there names itself in the error too.
+std::string SearchFileTypeTokenList();
+
 // EC_OP_GET_UPDATE at EC_DETAIL_INC_UPDATE is the consolidated fetch backing downloads + shared +
 // servers in a single roundtrip. Response shape:
 //  * top-level interleaved EC_TAG_PARTFILE (downloads) and EC_TAG_KNOWNFILE (shared) -- full
