@@ -6,7 +6,6 @@
 // percent-decode path captures, so an encoded colon is a 400.
 
 import { api } from "./api.js";
-import { data } from "./events.js";
 import { store } from "./store.js";
 import { toast } from "./components.js";
 import { t, terr } from "./i18n.js";
@@ -309,13 +308,22 @@ function onFriends() {
 
 // --- fallback polling ----------------------------------------------------
 
+// Chat isn't a resource in events.js's poll loop, so mirror the "polling" flag
+// it owns rather than a second liveness check that could drift and poll while live.
 function startPolling() {
   if (pollTimer) return;
   pollTimer = setInterval(() => {
-    if (data.isLive()) return; // SSE is the normal path; this is the fallback
     adopt();
     if (activePeer) loadMessages(activePeer);
   }, POLL_MS);
+}
+
+function stopPolling() {
+  if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+}
+
+function onPolling(fallback) {
+  if (fallback) startPolling(); else stopPolling();
 }
 
 // --- public API ----------------------------------------------------------
@@ -332,11 +340,13 @@ export const chats = {
     offs.push(store.subscribe("chat:closed", onClosed));
     offs.push(store.subscribe("resync", onResync));
     offs.push(store.subscribe("friends", onFriends));
+    // Poll only in events.js's SSE fallback; subscribe() fires with the current
+    // value, so a session that mounts already degraded starts polling at once.
+    offs.push(store.subscribe("polling", onPolling));
     // Our nick for outbound labels; one read, no poll.
     api.get("preferences")
       .then((p) => { myNick = ((p || {}).general || {}).nickname || ""; publishTabs(); })
       .catch(() => {});
-    startPolling();
     adopt();
   },
 
@@ -345,7 +355,7 @@ export const chats = {
   reset() {
     for (const off of offs) off();
     offs = [];
-    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+    stopPolling();
     if (tabsTimer) { clearTimeout(tabsTimer); tabsTimer = 0; }
     if (logTimer) { clearTimeout(logTimer); logTimer = 0; }
     for (const peer of convs.keys()) store.set("chat:" + peer, []);
