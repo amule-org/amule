@@ -26,6 +26,16 @@ TEST(UploadQueueAddressPolicy, MatchesMappedIPv4AsCanonicalIPv4)
 	ASSERT_TRUE(UploadQueueAddressPolicy::Matches(mapped, plain));
 }
 
+TEST(UploadQueueAddressPolicy, MatchesRateLimitScopeWithinIpv6Prefix)
+{
+	ASSERT_TRUE(UploadQueueAddressPolicy::MatchesRateLimitScope(
+		CNetworkAddress::FromString("2001:db8:1:2::1"),
+		CNetworkAddress::FromString("2001:db8:1:2::ffff")));
+	ASSERT_FALSE(UploadQueueAddressPolicy::MatchesRateLimitScope(
+		CNetworkAddress::FromString("2001:db8:1:2::1"),
+		CNetworkAddress::FromString("2001:db8:1:3::1")));
+}
+
 TEST(UploadQueueAddressPolicy, RejectsAbsentAndUnspecifiedAddresses)
 {
 	const CNetworkAddress absent;

@@ -462,18 +462,21 @@ void CUploadQueue::AddClientToQueue(CUpDownClient *client)
 		}
 	}
 
-	// Count the number of clients with the same IP-address
-	found = theApp->clientlist->GetClientsByIP(client->GetUserAddress());
-
+	// Count clients in the same address-accounting scope. Identity remains keyed by the exact
+	// canonical address, while IPv6 rate limiting aggregates a delegated /64.
 	int ipCount = 0;
-	for (it = found.begin(); it != found.end(); ++it) {
-		if ((it->GetClient() == client) || IsOnUploadQueue(it->GetClient())) {
+	for (const auto &entry : theApp->clientlist->GetClientList()) {
+		CUpDownClient *cur_client = entry.second.GetClient();
+		if (UploadQueueAddressPolicy::MatchesRateLimitScope(
+			    client->GetUserAddress(), cur_client->GetUserAddress()) &&
+			((cur_client == client) || IsOnUploadQueue(cur_client))) {
 			ipCount++;
 		}
 	}
 
-	// No more than 3 clients from the same IP may be on the upload queue. Only clients actually
-	// queued are counted: an earlier check also counted the tracked "deleted clients" list, so
+	// No more than 3 clients from the same address-accounting scope may be on the upload queue.
+	// Only clients actually queued are counted: an earlier check also counted the tracked
+	// "deleted clients" list, so
 	// a client behind a shared or NAT IP that simply cancelled a few downloads was locked out
 	// for up to two hours, cleared only by a restart. Flood protection is the
 	// aggressiveness/ban path's job.
