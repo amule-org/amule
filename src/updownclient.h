@@ -274,6 +274,10 @@ public:
 	/// checks are settings-derived, and every one of those settings can change while a
 	/// connection is open.
 	EContactResult CheckContactPreconditions();
+	//! The address the security checks below are made against.
+	CNetworkAddress ContactAddress() const;
+	//! Whether that address passes the filter and ban checks, without acting on the answer.
+	bool IsContactAddressAllowed() const;
 	void ProcessSharedFileList(const uint8_t *pachPacket, uint32 nSize, wxString &pszDirectory);
 	void SendSharedDirectories();
 	void SendSharedFilesOfDirectory(const wxString &strReqDir);

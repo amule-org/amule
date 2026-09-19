@@ -51,16 +51,6 @@ TEST(UtpDialPolicy, EndpointRoutability)
 	ASSERT_TRUE(DecideUtpDial(facts) == EUtpDialDecision::PreserveLegacy);
 }
 
-// A peer owed obfuscation is kept on TCP rather than dialled in the clear: the
-// stream handshake does not run over a transport, so the frames are the only
-// thing that could carry it.
-TEST(UtpDialPolicy, FallbackCanOnlyBeConsumedOnce)
-{
-	bool attempted = false;
-	ASSERT_TRUE(ConsumeUtpFallback(attempted));
-	ASSERT_FALSE(ConsumeUtpFallback(attempted));
-}
-
 TEST(UtpDialPolicy, SimultaneousConnectionsUseOppositeDirectionDecisions)
 {
 	const uint8_t lower[16] = { 0 };
@@ -72,6 +62,9 @@ TEST(UtpDialPolicy, SimultaneousConnectionsUseOppositeDirectionDecisions)
 	ASSERT_FALSE(ShouldKeepFoundUtp(false, higher, lower));
 }
 
+// A peer owed obfuscation is kept on TCP rather than dialled in the clear: the
+// stream handshake does not run over a transport, so the frames are the only
+// thing that could carry it.
 TEST(UtpDialPolicy, ObfuscationOwedButUnavailableStaysOnTcp)
 {
 	SUtpDialFacts facts{ true, true, true, false, true, true };

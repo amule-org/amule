@@ -1535,6 +1535,25 @@ bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon)
 	return result != EContactResult::ClientDeleted && result != EContactResult::ConnectNotStarted;
 }
 
+CNetworkAddress CUpDownClient::ContactAddress() const
+{
+	return PeerAddressing::ContactCheckAddress(
+		GetUserAddress(), GetConnectAddress(), HasLowID(), wxUINT32_SWAP_ALWAYS(m_nUserIDHybrid));
+}
+
+bool CUpDownClient::IsContactAddressAllowed() const
+{
+	const CNetworkAddress contactAddress = ContactAddress();
+	if (!PeerAddressing::CanCheckContactAddress(contactAddress)) {
+		return false;
+	}
+	if (contactAddress.IsAbsent()) {
+		return true;
+	}
+	return !theApp->ipfilter->IsFiltered(contactAddress) &&
+	       !theApp->clientlist->IsBannedClient(contactAddress);
+}
+
 // Re-check the standing reasons to refuse this peer, disconnecting it on a hit:
 // incompatible obfuscation settings, a filtered IP, a banned IP. Returns Contacting when
 // the peer is clean -- "carry on" rather than "we sent something" -- and ClientDeleted or
@@ -1561,8 +1580,7 @@ EContactResult CUpDownClient::CheckContactPreconditions()
 	}
 
 	const bool hasLowID = HasLowID();
-	const CNetworkAddress contactAddress = PeerAddressing::ContactCheckAddress(
-		GetUserAddress(), GetConnectAddress(), hasLowID, wxUINT32_SWAP_ALWAYS(m_nUserIDHybrid));
+	const CNetworkAddress contactAddress = ContactAddress();
 	if (!PeerAddressing::CanCheckContactAddress(contactAddress)) {
 		if (Disconnected("Contact security checks unavailable")) {
 			Safe_Delete();

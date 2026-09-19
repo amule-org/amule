@@ -33,8 +33,6 @@
 #include <protocol/kad/Constants.h>
 #include <protocol/kad2/Client2Client/TCP.h>
 
-#include <cstring>
-
 #include "amule.h"            // Needed for theApp
 #include "ChatSessionStore.h" // Needed for CChatSessionStore
 #include "ClientTCPSocket.h"  // Needed for CClientTCPSocket

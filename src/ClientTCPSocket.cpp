@@ -230,9 +230,16 @@ bool CClientTCPSocket::TryUtpTcpFallback()
 	if (m_client->GetDownloadState() != DS_CONNECTING && m_client->GetUploadState() != US_CONNECTING) {
 		return false;
 	}
-	if (!ConsumeUtpFallback(m_utpFallbackAttempted)) {
+	// Connect() is otherwise reached only through TryToContact(), which filters,
+	// re-checks bans and sends a LowID peer down its callback path instead. An
+	// inbound stream reaches this too, so neither check is hypothetical.
+	if (m_client->HasLowID() || !m_client->IsContactAddressAllowed()) {
 		return false;
 	}
+	if (m_utpFallbackAttempted) {
+		return false;
+	}
+	m_utpFallbackAttempted = true;
 	// Destroy only the failed uTP stream; keep the client and socket wrapper so
 	// the normal TCP Connect() path can reuse its identity and timeout state.
 	DetachTransport().reset();

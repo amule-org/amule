@@ -62,14 +62,4 @@ inline bool ShouldKeepFoundUtp(bool foundInbound, const uint8_t *localHash, cons
 	return foundInbound == (std::memcmp(localHash, peerHash, 16) > 0);
 }
 
-/** Consume the single TCP fallback permitted for a failed uTP attempt. */
-inline bool ConsumeUtpFallback(bool &attempted) noexcept
-{
-	if (attempted) {
-		return false;
-	}
-	attempted = true;
-	return true;
-}
-
 #endif // UTP_DIAL_POLICY_H
