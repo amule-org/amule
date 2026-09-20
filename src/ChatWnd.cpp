@@ -39,6 +39,7 @@
 #ifndef CLIENT_GUI
 #include "ChatSessionStore.h" // Needed for CChatSessionStore
 #include "ClientList.h"       // Needed for CClientList
+#include "updownclient.h"
 #endif
 #include "muuli_wdr.h" // Needed for messagePage
 #include "OtherFunctions.h"
@@ -74,22 +75,45 @@ CChatWnd::CChatWnd(wxWindow *pParent)
 	friendlistctrl = CastChild(ID_FRIENDLIST, CFriendListCtrl);
 }
 
+namespace
+{
+CChatTarget FriendChatTarget(const CFriend *peer)
+{
+#ifdef CLIENT_GUI
+	return GUI_ID(peer->GetIP(), peer->GetPort());
+#else
+	if (peer->GetLinkedClient().IsLinked()) {
+		return peer->GetLinkedClient().GetClient()->GetChatPeer();
+	}
+	return peer->GetUserHash();
+#endif
+}
+} // namespace
+
 bool CChatWnd::StartSession(CFriend *friend_client, bool setfocus)
 {
-	// A tab is keyed on GUI_ID(ip, port). A friend can be known by hash alone -- added from an
-	// offline row whose credit record carries no address -- and keying its tab on zero would
-	// put every such friend in one tab, under whichever name opened it first, with nothing
-	// sendable from it. Refuse until a handshake supplies the address.
-	if (friend_client->GetName().IsEmpty() || friend_client->GetIP() == 0 ||
-		friend_client->GetPort() == 0) {
+	const CChatTarget target = FriendChatTarget(friend_client);
+	if (!ChatTargetValid(target) || friend_client->GetName().IsEmpty()) {
 		return false;
 	}
+#ifdef CLIENT_GUI
+	if (!friend_client->GetIP() || !friend_client->GetPort()) {
+		return false;
+	}
+#else
+	if (!theApp->clientlist->FindChatClient(target)) {
+		if (!friend_client->GetIP() || !friend_client->GetPort()) {
+			return false;
+		}
+		theApp->clientlist->CreateForAddress(
+			target, friend_client->GetIP(), friend_client->GetPort(), friend_client->GetName());
+	}
+#endif
 
 	if (setfocus) {
 		theApp->amuledlg->SetActiveDialog(CamuleDlg::DT_CHAT_WND, this);
 	}
-	chatselector->StartSession(
-		GUI_ID(friend_client->GetIP(), friend_client->GetPort()), friend_client->GetName(), true);
+	chatselector->StartSession(target, friend_client->GetName(), true);
 
 	// Check to enable the window controls if needed
 	CheckNewButtonsState();
@@ -183,23 +207,24 @@ void CChatWnd::OnAllPagesClosed(wxNotebookEvent &WXUNUSED(evt))
 
 void CChatWnd::UpdateFriend(CFriend *toupdate)
 {
-	if (toupdate->GetLinkedClient().IsLinked()) {
-		chatselector->RefreshFriend(
-			GUI_ID(toupdate->GetIP(), toupdate->GetPort()), toupdate->GetName());
-	} else {
-		// drop Chat session
-		chatselector->EndSession(GUI_ID(toupdate->GetIP(), toupdate->GetPort()));
+	const auto target = FriendChatTarget(toupdate);
+	if (ChatTargetValid(target)) {
+		// A disconnect or client replacement does not end a hash-keyed conversation.
+		chatselector->RefreshFriend(target, toupdate->GetName());
 	}
 	friendlistctrl->UpdateFriend(toupdate);
 }
 
 void CChatWnd::RemoveFriend(CFriend *todel)
 {
-	chatselector->EndSession(GUI_ID(todel->GetIP(), todel->GetPort()));
+	const auto target = FriendChatTarget(todel);
+	if (ChatTargetValid(target)) {
+		chatselector->EndSession(target);
+	}
 	friendlistctrl->RemoveFriend(todel);
 }
 
-void CChatWnd::ProcessMessage(uint64 sender, const wxString &message)
+void CChatWnd::ProcessMessage(CChatTarget sender, const wxString &message)
 {
 	if (!theApp->amuledlg->IsDialogVisible(CamuleDlg::DT_CHAT_WND)) {
 		theApp->amuledlg->SetMessageBlink(true);
@@ -210,12 +235,12 @@ void CChatWnd::ProcessMessage(uint64 sender, const wxString &message)
 	}
 }
 
-void CChatWnd::ConnectionResult(bool success, const wxString &message, uint64 id)
+void CChatWnd::ConnectionResult(bool success, const wxString &message, CChatTarget id)
 {
 	chatselector->ConnectionResult(success, message, id);
 }
 
-void CChatWnd::SendMessage(const wxString &message, const wxString &client_name, uint64 to_id)
+void CChatWnd::SendMessage(const wxString &message, const wxString &client_name, CChatTarget to_id)
 {
 
 	if (chatselector->SendMessage(message, client_name, to_id)) {
@@ -251,22 +276,24 @@ void CChatWnd::CheckNewButtonsState()
 	}
 }
 
-bool CChatWnd::IsIdValid(uint64 id)
+bool CChatWnd::IsIdValid(CChatTarget id)
 {
 	return chatselector->GetTabByClientID(id) >= 0;
 }
 
-void CChatWnd::ShowCaptchaResult(uint64 id, bool ok)
+void CChatWnd::ShowCaptchaResult(CChatTarget id, bool ok)
 {
 	chatselector->ShowCaptchaResult(id, ok);
 }
 
-void CChatWnd::EndSession(uint64 id)
+void CChatWnd::EndSession(CChatTarget id)
 {
-	chatselector->EndSession(id);
+	if (ChatTargetValid(id)) {
+		chatselector->EndSession(id);
+	}
 }
 
-void CChatWnd::StartSessionByID(uint64 gui_id, const wxString &name)
+void CChatWnd::StartSessionByID(CChatTarget gui_id, const wxString &name)
 {
 	// show=false: a session can appear on its own, opened by another client or by a peer
 	// messaging us, and must not pull the selection away from whatever the local user is doing.
@@ -275,7 +302,7 @@ void CChatWnd::StartSessionByID(uint64 gui_id, const wxString &name)
 }
 
 void CChatWnd::AppendStoredMessage(
-	uint64 gui_id, const wxString &name, const wxString &text, bool outgoing, bool blink)
+	CChatTarget gui_id, const wxString &name, const wxString &text, bool outgoing, bool blink)
 {
 	chatselector->AppendStoredMessage(gui_id, name, text, outgoing);
 	// `blink` is false while replaying history on connect: a reconnect must not light the
@@ -287,7 +314,7 @@ void CChatWnd::AppendStoredMessage(
 	CheckNewButtonsState();
 }
 
-void CChatWnd::EndSessionFromCore(uint64 gui_id)
+void CChatWnd::EndSessionFromCore(CChatTarget gui_id)
 {
 	// The core has already forgotten this session, so the tab must go without originating a
 	// close of its own. The guard keeps OnChatClosing from sending one when this DeletePage
@@ -306,11 +333,11 @@ void CChatWnd::OnChatClosing(wxBookCtrlEvent &evt)
 		return;
 	}
 	CChatSession *session = static_cast<CChatSession *>(chatselector->GetPage(evt.GetSelection()));
-	if (!session || !session->m_client_id) {
+	if (!session || !ChatTargetValid(session->m_client_id)) {
 		evt.Skip();
 		return;
 	}
-	const uint64 gui_id = session->m_client_id;
+	const CChatTarget gui_id = session->m_client_id;
 	CScopedFlag closingGuard(m_inChatClosing);
 #ifdef CLIENT_GUI
 	if (theApp->m_connect && theApp->m_connect->ServerSupportsChatSessions()) {

@@ -28,7 +28,7 @@
 
 #include <wx/panel.h>    // Needed for wxPanel
 #include <wx/notebook.h> // Needed for wxNotebookEvent
-#include "Types.h"
+#include "ChatSessionStore.h"
 
 class CFriend;
 class CChatSelector;
@@ -50,30 +50,30 @@ public:
 	void UpdateFriend(CFriend *toupdate);
 	void RemoveFriend(CFriend *todel);
 
-	void ProcessMessage(uint64 sender, const wxString &message);
-	void ConnectionResult(bool success, const wxString &message, uint64 id);
+	void ProcessMessage(CChatTarget sender, const wxString &message);
+	void ConnectionResult(bool success, const wxString &message, CChatTarget id);
 
-	void SendMessage(const wxString &message, const wxString &client_name = "", uint64 to_id = 0);
+	void SendMessage(const wxString &message, const wxString &client_name = "", CChatTarget to_id = {});
 
-	bool IsIdValid(uint64 id);
-	void ShowCaptchaResult(uint64 id, bool ok);
-	void EndSession(uint64 id);
+	bool IsIdValid(CChatTarget id);
+	void ShowCaptchaResult(CChatTarget id, bool ok);
+	void EndSession(CChatTarget id);
 
 	// --- Driven by the core's chat session store, over EC --- Open (or reuse) a tab for a
 	// session the core reports, without stealing the selection: a session can appear on its
 	// own, started by another client, while the user is doing something else.
-	void StartSessionByID(uint64 gui_id, const wxString &name);
+	void StartSessionByID(CChatTarget gui_id, const wxString &name);
 
 	// Render one message the core already holds. `blink` is false while replaying history on
 	// connect -- a reconnect must not light the Messages button up for messages already read --
 	// and true for anything arriving afterwards.
 	void AppendStoredMessage(
-		uint64 gui_id, const wxString &name, const wxString &text, bool outgoing, bool blink);
+		CChatTarget gui_id, const wxString &name, const wxString &text, bool outgoing, bool blink);
 
 	// The core no longer has this session (closed by another client, or evicted). Closes the
 	// tab WITHOUT sending a close back: distinct from EndSession, which is the user's own
 	// close.
-	void EndSessionFromCore(uint64 gui_id);
+	void EndSessionFromCore(CChatTarget gui_id);
 
 protected:
 	/**

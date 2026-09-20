@@ -815,47 +815,83 @@ bool CClientList::IsDeadSource(const CUpDownClient *client)
 	return m_deadSources.IsDeadSource(client);
 }
 
-bool CClientList::SendChatMessage(uint64 client_id, const wxString &message)
+CUpDownClient *CClientList::FindChatClient(const CMD4Hash &peer) const
 {
-	if (client_id == 0) {
-		// Names no peer: every such message would allocate another client
-		// aimed at 0.0.0.0, since a zero address is never indexed.
-		return false;
+	if (peer.IsEmpty()) {
+		return nullptr;
 	}
-	CUpDownClient *client = FindClientByIP(IP_FROM_GUI_ID(client_id), PORT_FROM_GUI_ID(client_id));
-	AddDebugLogLineN(logClient, "Trying to Send Message.");
-	if (client) {
-		AddDebugLogLineN(logClient, "Sending.");
-	} else {
-		AddDebugLogLineC(logClient,
-			CFormat("No client (GUI_ID %lli [%s:%llu]) found in CClientList::SendChatMessage(). "
-				"Creating") %
-				client_id % Uint32toStringIP(IP_FROM_GUI_ID(client_id)) %
-				PORT_FROM_GUI_ID(client_id));
-		// Through CreateForAddress(), which seeds GetIP() and reuses any client we already
-		// hold for this peer. Constructing one here directly leaves GetIP() at 0, so
-		// AddClient() keeps it out of the address index and the lookup above misses it next
-		// time: one unreachable client per message sent. Both builds arrive here, amulegui
-		// by way of EC_OP_CHAT_SEND.
-		CClientRef ref = CreateForAddress(
-			CMD4Hash(), IP_FROM_GUI_ID(client_id), PORT_FROM_GUI_ID(client_id), wxEmptyString);
-		if (!ref.IsLinked()) {
-			return false;
+	CUpDownClient *found = nullptr;
+	for (const auto &entry : m_clientList) {
+		CUpDownClient *client = entry.second.GetClient();
+		if (client->HasValidHash() && client->GetUserHash() == peer) {
+			if (client->IsConnected()) {
+				return client;
+			}
+			found = client;
 		}
-		client = ref.GetClient();
+	}
+	return found;
+}
+
+CMD4Hash CClientList::ResolveLegacyChatPeer(uint64 gui_id) const
+{
+	CMD4Hash peer;
+	if (!gui_id || !IP_FROM_GUI_ID(gui_id) || !PORT_FROM_GUI_ID(gui_id)) {
+		return peer;
+	}
+	if (theApp->chatsessions) {
+		for (const auto *session : theApp->chatsessions->Sessions()) {
+			if (session->LegacyGuiId() == gui_id) {
+				if (!peer.IsEmpty() && peer != session->peer) {
+					return CMD4Hash();
+				}
+				peer = session->peer;
+			}
+		}
+	}
+	for (const auto &entry : m_clientList) {
+		CUpDownClient *client = entry.second.GetClient();
+		if (client->GetIP() == IP_FROM_GUI_ID(gui_id) &&
+			client->GetUserPort() == PORT_FROM_GUI_ID(gui_id)) {
+			if (!client->HasValidHash() || (!peer.IsEmpty() && peer != client->GetUserHash())) {
+				return CMD4Hash(); // Hashless or ambiguous: legacy EC cannot address this
+						   // peer.
+			}
+			peer = client->GetUserHash();
+		}
+	}
+	const CUpDownClient *client = FindChatClient(peer);
+	if (!client || !client->GetUserAddress().IsIPv4() || client->GetIP() != IP_FROM_GUI_ID(gui_id) ||
+		client->GetUserPort() != PORT_FROM_GUI_ID(gui_id)) {
+		return CMD4Hash();
+	}
+	return peer;
+}
+
+CClientList::ChatSendResult CClientList::SendChatMessage(const CMD4Hash &peer, const wxString &message)
+{
+	if (peer.IsEmpty()) {
+		return ChatSendResult::Unavailable;
+	}
+	CUpDownClient *client = FindChatClient(peer);
+	// A stored route is not proof that its current occupant is this peer. Wait for
+	// an identified live client rather than seed a placeholder with an assumed hash.
+	if (!client || !client->HasValidHash()) {
+		return ChatSendResult::Unavailable;
 	}
 	// Record before sending, and regardless of the result: a false return from
 	// CUpDownClient::SendChatMessage means "queued while connecting", not "failed", so gating
 	// the store on it would drop exactly the messages a slow peer receives a moment later.
 	if (theApp->chatsessions) {
-		theApp->chatsessions->AddOutgoing(client_id, message);
+		theApp->chatsessions->AddOutgoing(
+			peer, message, client->GetUserAddress(), client->GetUserPort());
 	}
-	return client->SendChatMessage(message);
+	return client->SendChatMessage(message) ? ChatSendResult::Sent : ChatSendResult::Queued;
 }
 
-void CClientList::SetChatState(uint64 client_id, uint8 state)
+void CClientList::SetChatState(const CMD4Hash &peer, uint8 state)
 {
-	CUpDownClient *client = FindClientByIP(IP_FROM_GUI_ID(client_id), PORT_FROM_GUI_ID(client_id));
+	CUpDownClient *client = FindChatClient(peer);
 	if (client) {
 		client->SetChatState(state);
 	}

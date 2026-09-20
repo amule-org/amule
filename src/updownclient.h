@@ -258,6 +258,8 @@ public:
 	void SetUserHash(const CMD4Hash &userhash);
 	void ValidateHash() { m_HasValidHash = !m_UserHash.IsEmpty(); }
 	bool HasValidHash() const { return m_HasValidHash; }
+	// No endpoint/object-ID fallback: chat remains unavailable until identity is known.
+	CMD4Hash GetChatPeer() const { return HasValidHash() ? GetUserHash() : CMD4Hash(); }
 	uint32 GetVersion() const { return m_nClientVersion; }
 	uint8 GetMuleVersion() const { return m_byEmuleVersion; }
 	bool ExtProtocolAvailable() const { return m_bEmuleProtocol; }

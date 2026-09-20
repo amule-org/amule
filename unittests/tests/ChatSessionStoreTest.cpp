@@ -33,11 +33,20 @@ DECLARE_SIMPLE(ChatSessionStore)
 
 namespace
 {
-// Distinct peers that stay distinct as GUI_IDs, so a test asserting on
-// session count is not accidentally asserting on hash collisions.
-uint64 Peer(uint32 n)
+CMD4Hash Peer(uint32 n)
 {
-	return GUI_ID(0xC0000000u + n, 4662);
+	unsigned char bytes[16] = { 1 };
+	for (unsigned i = 0; i < 4; ++i) {
+		bytes[i + 1] = static_cast<unsigned char>(n >> (8 * i));
+	}
+	return CMD4Hash(bytes);
+}
+
+CNetworkAddress IPv6Route()
+{
+	CNetworkAddress::Octets bytes = { 0x20, 0x01, 0x48, 0x60 };
+	bytes[15] = 1;
+	return CNetworkAddress::IPv6FromOctets(bytes);
 }
 } // namespace
 
@@ -168,9 +177,9 @@ TEST(ChatSessionStore, SessionsAreMostRecentlyActiveFirst)
 
 	std::vector<const CChatSessionStore::Session *> list = store.Sessions();
 	ASSERT_EQUALS(static_cast<size_t>(3), list.size());
-	ASSERT_EQUALS(Peer(1), list[0]->gui_id);
-	ASSERT_EQUALS(Peer(3), list[1]->gui_id);
-	ASSERT_EQUALS(Peer(2), list[2]->gui_id);
+	ASSERT_TRUE(Peer(1) == list[0]->peer);
+	ASSERT_TRUE(Peer(3) == list[1]->peer);
+	ASSERT_TRUE(Peer(2) == list[2]->peer);
 }
 
 TEST(ChatSessionStore, CloseRemovesOnlyThatSession)
@@ -205,14 +214,99 @@ TEST(ChatSessionStore, IdsKeepAdvancingAfterAClose)
 	ASSERT_EQUALS(static_cast<size_t>(1), store.Find(Peer(1))->messages.size());
 }
 
-TEST(ChatSessionStore, SessionCarriesTheDecodedIpAndPort)
+TEST(ChatSessionStore, RouteChangesFromIPv4ToIPv6WithoutChangingIdentity)
 {
-	// The REST layer keys conversations on "<ip>:<port>", so the split has
-	// to survive the GUI_ID round trip.
 	CChatSessionStore store;
-	store.AddIncoming(GUI_ID(0x0A000001u, 4662), "alice", "hi");
-	const CChatSessionStore::Session *s = store.Find(GUI_ID(0x0A000001u, 4662));
-	ASSERT_TRUE(s != nullptr);
-	ASSERT_EQUALS(static_cast<uint32>(0x0A000001u), s->ip);
-	ASSERT_EQUALS(static_cast<uint16>(4662), s->port);
+	const auto v4 = CNetworkAddress::FromIPv4NetworkOrder(0x0100000Au);
+	store.AddIncoming(Peer(1), "alice", "hi", v4, 4662);
+	const uint64 legacy = GUI_ID(0x0100000Au, 4662);
+	ASSERT_TRUE(store.FindLegacy(legacy) == store.Find(Peer(1)));
+	store.AddOutgoing(Peer(1), "reply", IPv6Route(), 4663);
+	const auto *s = store.Find(Peer(1));
+	ASSERT_EQUALS(static_cast<size_t>(1), store.SessionCount());
+	ASSERT_EQUALS(static_cast<size_t>(2), s->messages.size());
+	ASSERT_TRUE(s->address == IPv6Route());
+	ASSERT_EQUALS(static_cast<uint16>(4663), s->port);
+	ASSERT_EQUALS(static_cast<uint64>(0), s->LegacyGuiId());
+	ASSERT_TRUE(store.FindLegacy(legacy) == nullptr);
+}
+
+TEST(ChatSessionStore, ReplacementClientWithSameHashContinuesTranscript)
+{
+	// The store boundary deliberately accepts no object pointer or ECID. These
+	// independently reconstructed hash values model two successive client objects.
+	CChatSessionStore store;
+	{
+		const CMD4Hash firstClientHash = Peer(7);
+		store.AddIncoming(firstClientHash, "alice", "before replacement");
+	}
+	const CMD4Hash replacementClientHash = Peer(7);
+	store.AddOutgoing(replacementClientHash, "after replacement", IPv6Route(), 4662);
+	ASSERT_EQUALS(static_cast<size_t>(1), store.SessionCount());
+	ASSERT_EQUALS(static_cast<size_t>(2), store.Find(replacementClientHash)->messages.size());
+}
+
+TEST(ChatSessionStore, DistinctPeersAtSameEndpointAreNeverMerged)
+{
+	CChatSessionStore store;
+	const auto route = CNetworkAddress::FromIPv4NetworkOrder(0x0100000Au);
+	store.AddIncoming(Peer(1), "alice", "a", route, 4662);
+	store.AddIncoming(Peer(2), "bob", "b", route, 4662);
+	ASSERT_EQUALS(static_cast<size_t>(2), store.SessionCount());
+	ASSERT_EQUALS(wxString("a"), store.Find(Peer(1))->messages.front().text);
+	ASSERT_EQUALS(wxString("b"), store.Find(Peer(2))->messages.front().text);
+	ASSERT_TRUE(store.FindLegacy(GUI_ID(0x0100000Au, 4662)) == nullptr);
+	store.CloseSession(Peer(1));
+	ASSERT_TRUE(store.FindLegacy(GUI_ID(0x0100000Au, 4662)) == store.Find(Peer(2)));
+}
+
+TEST(ChatSessionStore, AbsentLowIDRouteDoesNotBecomeAnIdentity)
+{
+	// A callback-only LowID is not an IPv4 address. Its route can be absent,
+	// while its hash still identifies a conversation and keeps peers separate.
+	CChatSessionStore store;
+	store.AddIncoming(Peer(1), "alice", "a", CNetworkAddress::Absent(), 4662);
+	store.AddIncoming(Peer(2), "bob", "b", CNetworkAddress::Absent(), 4662);
+	ASSERT_EQUALS(static_cast<size_t>(2), store.SessionCount());
+	ASSERT_TRUE(store.Find(Peer(1))->address.IsAbsent());
+	ASSERT_EQUALS(static_cast<uint64>(0), store.Find(Peer(1))->LegacyGuiId());
+	ASSERT_TRUE(store.FindLegacy(0) == nullptr);
+	store.AddOutgoing(Peer(1), "route acquired", IPv6Route(), 4662);
+	ASSERT_EQUALS(static_cast<size_t>(2), store.Find(Peer(1))->messages.size());
+}
+
+TEST(ChatSessionStore, EmptyHashesAreUnavailableAndDoNotConsumeMessageIds)
+{
+	CChatSessionStore store;
+	ASSERT_EQUALS(static_cast<uint32>(0), store.AddIncoming(CMD4Hash(), "unknown", "hi"));
+	ASSERT_EQUALS(static_cast<uint32>(0), store.AddOutgoing(CMD4Hash(), "reply", IPv6Route(), 4662));
+	ASSERT_EQUALS(static_cast<size_t>(0), store.SessionCount());
+	ASSERT_EQUALS(static_cast<uint32>(0), store.LastMsgId());
+	ASSERT_TRUE(!store.CloseSession(CMD4Hash()));
+	ASSERT_EQUALS(static_cast<uint32>(1), store.AddIncoming(Peer(1), "known", "hi"));
+}
+
+TEST(ChatSessionStore, LegacyProjectionRequiresIPv4AddressAndPort)
+{
+	CChatSessionStore store;
+	const auto route = CNetworkAddress::FromIPv4NetworkOrder(0x0100000Au);
+	store.AddIncoming(Peer(1), "alice", "hi", route, 4662);
+	ASSERT_EQUALS(GUI_ID(0x0100000Au, 4662), store.Find(Peer(1))->LegacyGuiId());
+	store.AddOutgoing(Peer(1), "no port", route, 0);
+	ASSERT_EQUALS(static_cast<uint64>(0), store.Find(Peer(1))->LegacyGuiId());
+	store.AddOutgoing(Peer(1), "no address", CNetworkAddress::FromIPv4NetworkOrder(0), 4662);
+	ASSERT_EQUALS(static_cast<uint64>(0), store.Find(Peer(1))->LegacyGuiId());
+	store.AddOutgoing(Peer(1), "v6", IPv6Route(), 4662);
+	ASSERT_EQUALS(static_cast<uint64>(0), store.Find(Peer(1))->LegacyGuiId());
+	CNetworkAddress::Octets mapped = {};
+	mapped[10] = mapped[11] = 0xff;
+	mapped[12] = 10;
+	mapped[15] = 1;
+	store.AddOutgoing(Peer(1), "mapped", CNetworkAddress::IPv6FromOctets(mapped), 4662);
+	ASSERT_EQUALS(static_cast<uint64>(0), store.Find(Peer(1))->LegacyGuiId());
+	store.AddOutgoing(Peer(1), "route lost", CNetworkAddress::Absent(), 0);
+	ASSERT_TRUE(store.Find(Peer(1))->address.IsAbsent());
+	ASSERT_EQUALS(static_cast<size_t>(1), store.SessionCount());
+	store.AddOutgoing(Peer(1), "v4 restored", route, 4662);
+	ASSERT_TRUE(store.FindLegacy(GUI_ID(0x0100000Au, 4662)) == store.Find(Peer(1)));
 }

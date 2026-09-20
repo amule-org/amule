@@ -30,6 +30,7 @@
 #include <wx/event.h>
 
 #include "Types.h"
+#include "ChatSessionStore.h" // CChatTarget: hash locally, legacy projection in amulegui
 #include "Constants.h"
 #define NEED_CONVERTINFO // We need only the ConvertInfo struct from PartFileConvert.h
 #include "PartFileConvert.h"
@@ -122,7 +123,7 @@ void Search_Removed(wxUIntPtr searchID);
 // each client is TOLD, rather than left showing a tab the core no longer has. The monolithic GUI
 // closes its page here; EC clients learn it from the session's absence in the next
 // EC_OP_CHAT_SESSIONS reply.
-void Chat_SessionRemoved(uint64 gui_id);
+void Chat_SessionRemoved(CChatTarget peer);
 
 // Fired from CSearchList::StartNewSearch, once per search the core begins, whoever asked for it.
 // The mirror of Search_Removed: it lets the monolithic GUI show a tab for a search started by an EC
@@ -161,9 +162,9 @@ void Browse_Started(uint32 ecid, wxString name, uint64 searchID);
 
 void ChatUpdateFriend(CFriend *Friend);
 void ChatRemoveFriend(CFriend *Friend);
-void ChatConnResult(bool success, uint64 id, wxString message);
-void ChatProcessMsg(uint64 sender, wxString message);
-void ChatSendCaptcha(wxString captcha, uint64 to_id);
+void ChatConnResult(bool success, CChatTarget id, wxString message);
+void ChatProcessMsg(CChatTarget sender, wxString message);
+void ChatSendCaptcha(wxString captcha, CChatTarget to_id);
 
 void ShowConnState(long state);
 void ShowUserCount(wxString str);

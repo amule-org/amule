@@ -230,14 +230,22 @@ public:
 	bool IsDeadSource(const CUpDownClient *client);
 
 	/**
-	 * Sends a message to a client, identified by a GUI_ID. @return Success
+	 * Sends to a stable peer hash. Unavailable is distinct from queued while connecting.
 	 */
-	bool SendChatMessage(uint64 client_id, const wxString &message);
+	enum class ChatSendResult
+	{
+		Unavailable,
+		Queued,
+		Sent
+	};
+	ChatSendResult SendChatMessage(const CMD4Hash &peer, const wxString &message);
+	CUpDownClient *FindChatClient(const CMD4Hash &peer) const;
+	CMD4Hash ResolveLegacyChatPeer(uint64 gui_id) const;
 
 	/**
 	 * Stops a chat session with a client.
 	 */
-	void SetChatState(uint64 client_id, uint8 state);
+	void SetChatState(const CMD4Hash &peer, uint8 state);
 
 	uint8 GetBuddyStatus() const { return m_nBuddyStatus; }
 	// This must be used on CreateKadSourceLink and if we ever add the columns

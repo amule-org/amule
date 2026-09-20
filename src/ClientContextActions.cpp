@@ -41,6 +41,9 @@
 #include "FriendList.h"         // Needed for CFriendList
 #include "OtherFunctions.h"     // Needed for GUI_ID
 #include "SearchDlg.h"          // Needed for CSearchDlg::ActivateBrowseTabIfOpen
+#ifndef CLIENT_GUI
+#include "updownclient.h"
+#endif
 
 wxMenu *BuildClientContextMenu(const CClientRef &client)
 {
@@ -70,8 +73,11 @@ wxMenu *BuildClientContextMenu(const CClientRef &client)
 	menu->Append(MP_SHOWLIST, _("View Files"));
 	menu->Append(MP_SENDMESSAGE, _("Send message"));
 
-	// We need a valid IP if we are to message the client.
+#ifdef CLIENT_GUI
 	menu->Enable(MP_SENDMESSAGE, c.GetIP() != 0);
+#else
+	menu->Enable(MP_SENDMESSAGE, c.GetClient()->HasValidHash());
+#endif
 	menu->Enable(MP_SHOWLIST, !c.HasDisabledSharedFiles());
 
 	return menu;
@@ -81,9 +87,15 @@ namespace
 {
 
 // Asks for the message and hands it to the chat window. Shared so the live and
-// stored-row paths cannot drift: all either has is a display name and a GUI_ID.
-void PromptAndSendChatMessage(const wxString &userName, uint64 userID)
+// stored-row paths cannot drift. Only the remote GUI carries an EC projection.
+void PromptAndSendChatMessage(const wxString &userName, CChatTarget userID)
 {
+	if (!ChatTargetValid(userID)) {
+		wxMessageBox(_("Chat is unavailable until the peer supplies a valid identity."),
+			_("Chat unavailable"),
+			wxOK | wxICON_INFORMATION);
+		return;
+	}
 	const wxString message = ::wxGetTextFromUser(_("Send message to user"), _("Message to send:"));
 	if (!message.IsEmpty()) {
 		theApp->amuledlg->m_chatwnd->SendMessage(message, userName, userID);
@@ -223,14 +235,19 @@ void PeerActionSendMessage(const PeerIdentity &peer)
 	if (!peer.CanOpenConnection()) {
 		return;
 	}
-	// The address is the whole target: monolithic looks the client up by it, and amulegui sends
-	// the GUI_ID over EC for the daemon to resolve. Either way CClientList::SendChatMessage()
-	// makes the client if there is none.
-	//
-	// The hash stands in for a missing name here, and only here: this label titles the chat tab
-	// and is not stored anywhere.
+#ifdef CLIENT_GUI
 	PromptAndSendChatMessage(
 		peer.name.IsEmpty() ? peer.hash.Encode() : peer.name, GUI_ID(peer.ip, peer.port));
+#else
+	if (peer.hash.IsEmpty()) {
+		PromptAndSendChatMessage(peer.name, CMD4Hash());
+		return;
+	}
+	CClientRef client = theApp->clientlist->CreateForAddress(peer.hash, peer.ip, peer.port, peer.name);
+	if (client.IsLinked()) {
+		ClientActionSendMessage({ client });
+	}
+#endif
 }
 
 CFriend *FriendForClient(const CClientRef &client)
@@ -421,7 +438,11 @@ void ClientActionSendMessage(const std::vector<CClientRef> &clients)
 	// These values are cached, since calling wxGetTextFromUser will start an
 	// event-loop, in which the client may be deleted.
 	const wxString userName = source.GetUserName();
-	const uint64 userID = GUI_ID(source.GetIP(), source.GetUserPort());
+#ifdef CLIENT_GUI
+	const CChatTarget userID = GUI_ID(source.GetIP(), source.GetUserPort());
+#else
+	const CChatTarget userID = source.GetClient()->GetChatPeer();
+#endif
 
 	PromptAndSendChatMessage(userName, userID);
 }

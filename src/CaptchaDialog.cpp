@@ -30,7 +30,7 @@ wxBEGIN_EVENT_TABLE(CCaptchaDialog, wxDialog)
 	EVT_BUTTON(wxID_OK, CCaptchaDialog::OnBnClose)
 wxEND_EVENT_TABLE()
 
-CCaptchaDialog::CCaptchaDialog(wxWindow *parent, const wxImage &captchaImage, uint64 id)
+CCaptchaDialog::CCaptchaDialog(wxWindow *parent, const wxImage &captchaImage, CChatTarget id)
 : wxDialog(parent, -1, _("Enter Captcha"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE)
 {
 	m_captchaBitmap = new wxBitmap(captchaImage);

@@ -26,7 +26,7 @@
 #define CAPTCHADIALOG_H
 
 #include <wx/dialog.h> // Needed for wxDialog
-#include "Types.h"
+#include "ChatSessionStore.h"
 
 /**
  * Shows a peer's captcha image and takes the user's answer. A modal wxDialog whose return value is
@@ -43,7 +43,7 @@ public:
 	 * @param captchaImage The image to show.
 	 * @param id The captcha's id.
 	 */
-	CCaptchaDialog(wxWindow *parent, const wxImage &captchaImage, uint64 id);
+	CCaptchaDialog(wxWindow *parent, const wxImage &captchaImage, CChatTarget id);
 
 	virtual ~CCaptchaDialog();
 
@@ -67,7 +67,7 @@ private:
 
 	class wxBitmap *m_captchaBitmap;
 	class wxTextCtrl *m_TextCtrl;
-	uint64 m_id;
+	CChatTarget m_id;
 };
 #endif // CAPTCHADIALOG_H
 // File_checked_for_headers

@@ -57,7 +57,7 @@ CChatSession::CChatSession(wxWindow *parent,
 : CMuleTextCtrl(
 	  parent, id, value, pos, size, style | wxTE_READONLY | wxTE_RICH | wxTE_MULTILINE, validator, name)
 {
-	m_client_id = 0;
+	m_client_id = {};
 	m_active = false;
 	SetBackgroundColour(*wxWHITE);
 }
@@ -111,8 +111,11 @@ CChatSelector::CChatSelector(wxWindow *parent, wxWindowID id, const wxPoint &pos
 	AssignImageList(imagelist);
 }
 
-CChatSession *CChatSelector::StartSession(uint64 client_id, const wxString &client_name, bool show)
+CChatSession *CChatSelector::StartSession(CChatTarget client_id, const wxString &client_name, bool show)
 {
+	if (!ChatTargetValid(client_id)) {
+		return nullptr;
+	}
 	// Check to see if we've already opened a session for this user
 	if (GetPageByClientID(client_id)) {
 		if (show) {
@@ -126,11 +129,10 @@ CChatSession *CChatSelector::StartSession(uint64 client_id, const wxString &clie
 
 	chatsession->m_client_id = client_id;
 
-	wxString text;
-	text = wxString(" *** ") +
-	       wxString(CFormat(_("Chat-Session Started: %s (%s:%u) - %s %s")) % client_name %
-			Uint32toStringIP(IP_FROM_GUI_ID(client_id)) % PORT_FROM_GUI_ID(client_id) %
-			FormatLocalDate(wxDateTime::Now()) % wxDateTime::Now().Format("%X"));
+	// The title identifies the peer, not its mutable route.
+	const wxString text = wxString(" *** ") +
+			      wxString(CFormat(_("Chat-Session Started: %s - %s %s")) % client_name %
+				       FormatLocalDate(wxDateTime::Now()) % wxDateTime::Now().Format("%X"));
 
 	chatsession->AddText(text, COLOR_RED);
 	AddPage(chatsession, client_name, show, 0);
@@ -140,7 +142,7 @@ CChatSession *CChatSelector::StartSession(uint64 client_id, const wxString &clie
 	return chatsession;
 }
 
-CChatSession *CChatSelector::GetPageByClientID(uint64 client_id)
+CChatSession *CChatSelector::GetPageByClientID(CChatTarget client_id)
 {
 	for (unsigned int i = 0; i < (unsigned int)GetPageCount(); i++) {
 		CChatSession *page = static_cast<CChatSession *>(GetPage(i));
@@ -153,7 +155,7 @@ CChatSession *CChatSelector::GetPageByClientID(uint64 client_id)
 	return NULL;
 }
 
-int CChatSelector::GetTabByClientID(uint64 client_id)
+int CChatSelector::GetTabByClientID(CChatTarget client_id)
 {
 	for (unsigned int i = 0; i < (unsigned int)GetPageCount(); i++) {
 		CChatSession *page = static_cast<CChatSession *>(GetPage(i));
@@ -166,8 +168,11 @@ int CChatSelector::GetTabByClientID(uint64 client_id)
 	return -1;
 }
 
-bool CChatSelector::ProcessMessage(uint64 sender_id, const wxString &message)
+bool CChatSelector::ProcessMessage(CChatTarget sender_id, const wxString &message)
 {
+	if (!ChatTargetValid(sender_id)) {
+		return false;
+	}
 	CChatSession *session = GetPageByClientID(sender_id);
 
 	// Try to get the name (core sent it?)
@@ -187,9 +192,13 @@ bool CChatSelector::ProcessMessage(uint64 sender_id, const wxString &message)
 	if (!session) {
 		// This must be a message from a client that is not already chatting
 		if (client_name.IsEmpty()) {
-			// The core did not send us the name, which must NOT happen. Build a client
-			// name from the ID.
+// The core did not send us the name, which must NOT happen. Build a client
+// name from the ID.
+#ifdef CLIENT_GUI
 			client_name = ChatPeerFallbackName(sender_id);
+#else
+			client_name = sender_id.Encode();
+#endif
 		}
 
 		session = StartSession(sender_id, client_name, true);
@@ -210,7 +219,7 @@ bool CChatSelector::ProcessMessage(uint64 sender_id, const wxString &message)
 }
 
 void CChatSelector::AppendStoredMessage(
-	uint64 gui_id, const wxString &name, const wxString &text, bool outgoing)
+	CChatTarget gui_id, const wxString &name, const wxString &text, bool outgoing)
 {
 	CChatSession *session = GetPageByClientID(gui_id);
 	if (!session) {
@@ -228,7 +237,7 @@ void CChatSelector::AppendStoredMessage(
 	session->AddText(": " + text, COLOR_BLACK);
 }
 
-bool CChatSelector::SendMessage(const wxString &message, const wxString &client_name, uint64 to_id)
+bool CChatSelector::SendMessage(const wxString &message, const wxString &client_name, CChatTarget to_id)
 {
 	// Dont let the user send empty messages
 	// This is also a user-fix for people who mash the enter-key ...
@@ -236,7 +245,7 @@ bool CChatSelector::SendMessage(const wxString &message, const wxString &client_
 		return false;
 	}
 
-	if (to_id) {
+	if (ChatTargetValid(to_id)) {
 		// Checks if there's a page with this client, and selects it or creates it
 		StartSession(to_id, client_name, true);
 	}
@@ -264,7 +273,13 @@ bool CChatSelector::SendMessage(const wxString &message, const wxString &client_
 	req.AddTag(CECTag(EC_TAG_CHAT_CLIENT_ID, ci->m_client_id));
 	theApp->m_connect->SendPacket(&req);
 #else
-	if (theApp->clientlist->SendChatMessage(ci->m_client_id, message)) {
+	const auto result = theApp->clientlist->SendChatMessage(ci->m_client_id, message);
+	if (result == CClientList::ChatSendResult::Unavailable) {
+		ci->AddText(
+			_("*** Chat unavailable: peer identity or route is not available ***"), COLOR_RED);
+		return false;
+	}
+	if (result == CClientList::ChatSendResult::Sent) {
 		ci->AddText(thePrefs::GetUserNick(), COLOR_GREEN, false);
 		ci->AddText(": " + message, COLOR_BLACK);
 	} else {
@@ -290,7 +305,7 @@ bool CChatSelector::SendMessage(const wxString &message, const wxString &client_
    jgs (______)\_)_)
 */
 
-void CChatSelector::ConnectionResult(bool success, const wxString &message, uint64 id)
+void CChatSelector::ConnectionResult(bool success, const wxString &message, CChatTarget id)
 {
 	CChatSession *ci = GetPageByClientID(id);
 	if (!ci) {
@@ -311,10 +326,10 @@ void CChatSelector::ConnectionResult(bool success, const wxString &message, uint
 	}
 }
 
-void CChatSelector::EndSession(uint64 client_id)
+void CChatSelector::EndSession(CChatTarget client_id)
 {
 	int usedtab;
-	if (client_id) {
+	if (ChatTargetValid(client_id)) {
 		usedtab = GetTabByClientID(client_id);
 	} else {
 		usedtab = GetSelection();
@@ -328,9 +343,11 @@ void CChatSelector::EndSession(uint64 client_id)
 }
 
 // Refresh the tab associated with a client
-void CChatSelector::RefreshFriend(uint64 toupdate_id, const wxString &new_name)
+void CChatSelector::RefreshFriend(CChatTarget toupdate_id, const wxString &new_name)
 {
-	wxASSERT(toupdate_id);
+	if (!ChatTargetValid(toupdate_id)) {
+		return;
+	}
 
 	int tab = GetTabByClientID(toupdate_id);
 
@@ -343,7 +360,7 @@ void CChatSelector::RefreshFriend(uint64 toupdate_id, const wxString &new_name)
 	}
 }
 
-void CChatSelector::ShowCaptchaResult(uint64 id, bool ok)
+void CChatSelector::ShowCaptchaResult(CChatTarget id, bool ok)
 {
 	CChatSession *ci = GetPageByClientID(id);
 	if (ci) {
@@ -368,8 +385,7 @@ bool CChatSelector::GetCurrentClient(CClientRef &clientref) const
 
 	// Get the client that the session is open to
 	if (ci) {
-		CUpDownClient *client = theApp->clientlist->FindClientByIP(
-			IP_FROM_GUI_ID(ci->m_client_id), PORT_FROM_GUI_ID(ci->m_client_id));
+		CUpDownClient *client = theApp->clientlist->FindChatClient(ci->m_client_id);
 		if (client) {
 			clientref.Link(client CLIENT_DEBUGSTRING("CChatSelector::GetCurrentClient"));
 			return true;

@@ -26,6 +26,24 @@
 #define CHATSESSIONSTORE_H
 
 #include "Types.h" // uint64 / uint32 / uint8
+#include "MD4Hash.h"
+#include "NetworkAddress.h"
+
+// Only the remote GUI uses the legacy EC address projection. Local chat identity
+// is always a hash; there is deliberately no implicit conversion between them.
+#ifdef CLIENT_GUI
+using CChatTarget = uint64;
+inline bool ChatTargetValid(CChatTarget id)
+{
+	return id != 0;
+}
+#else
+using CChatTarget = CMD4Hash;
+inline bool ChatTargetValid(const CChatTarget &id)
+{
+	return !id.IsEmpty();
+}
+#endif
 
 #include <deque>
 #include <list>
@@ -70,12 +88,15 @@ public:
 
 	struct Session
 	{
-		uint64 gui_id = 0; //!< GUI_ID(ip, port) -- the key
-		wxString name;     //!< peer display name; may be empty
-		uint32 ip = 0;
+		CMD4Hash peer;           //!< stable identity, never an endpoint or object ID
+		wxString name;           //!< peer display name; may be empty
+		CNetworkAddress address; //!< mutable route, may be absent
 		uint16 port = 0;
 		uint32 last_activity = 0; //!< unix seconds, drives session eviction
 		std::deque<Message> messages;
+
+		// Legacy EC only: zero means this route cannot be represented as IPv4.
+		uint64 LegacyGuiId() const;
 
 		//! Highest message id in this session, 0 when it holds none.
 		uint32 LastMsgId() const { return messages.empty() ? 0 : messages.back().id; }
@@ -90,14 +111,25 @@ public:
 	// Record one message, creating the session when it is the first. `name` updates the stored
 	// display name when non-empty, so a peer that only reveals its nick later still ends up
 	// named. Returns the id assigned.
-	uint32 AddIncoming(uint64 gui_id, const wxString &name, const wxString &text);
-	uint32 AddOutgoing(uint64 gui_id, const wxString &text);
+	// Empty hashes are unavailable: return 0 without creating a session. A hash
+	// is a protocol identity, not proof of authentication. Never merge by route.
+	uint32 AddIncoming(const CMD4Hash &peer,
+		const wxString &name,
+		const wxString &text,
+		const CNetworkAddress &address = CNetworkAddress(),
+		uint16 port = 0);
+	uint32 AddOutgoing(const CMD4Hash &peer,
+		const wxString &text,
+		const CNetworkAddress &address = CNetworkAddress(),
+		uint16 port = 0);
 
 	// Drop one session. Returns false when there was none, so the EC handler
 	// can answer 404-equivalent rather than silently succeeding.
-	bool CloseSession(uint64 gui_id);
+	bool CloseSession(const CMD4Hash &peer);
 
-	const Session *Find(uint64 gui_id) const;
+	const Session *Find(const CMD4Hash &peer) const;
+	// Ambiguous endpoints are not projected: EC cannot distinguish their peers.
+	const Session *FindLegacy(uint64 gui_id) const;
 
 	// Sessions in most-recently-active-first order -- the order a client wants
 	// to render, and the order eviction walks backwards through.
@@ -109,13 +141,14 @@ public:
 	size_t SessionCount() const { return m_sessions.size(); }
 
 private:
-	Session &Touch(uint64 gui_id, const wxString &name);
+	Session &Touch(
+		const CMD4Hash &peer, const wxString &name, const CNetworkAddress &address, uint16 port);
 	uint32 Append(Session &s, uint8 direction, const wxString &text);
 	void EvictSessionsIfNeeded();
 
 	// A list, not a map: the working set is at most MAX_SESSIONS, and the dominant operations
 	// are "walk in activity order" and "move to front", both O(1) here and both awkward on a
-	// map keyed by GUI_ID. Front is the most recently active session.
+	// map keyed by peer hash. Front is the most recently active session.
 	std::list<Session> m_sessions;
 	uint32 m_lastMsgId = 0;
 };
