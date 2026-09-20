@@ -117,7 +117,7 @@ export default function Search({ isGuest }) {
 
     ${active ? html`
     <section class="net-pane pane-fill">
-      <${Tabs} cls="search-tabs" tabs=${tabItems} active=${String(reg.activeId)}
+      <${Tabs} tabs=${tabItems} active=${String(reg.activeId)}
                onSelect=${(k) => searches.setActive(Number(k))}
                onClose=${(k) => searches.close(Number(k))}
                extra=${reg.tabs.length > 1 ? html`

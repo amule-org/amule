@@ -664,15 +664,6 @@ table.data.virtual td.name .name-select { width: 100%; max-width: 100%; }
 }
 .tab.active .tab-badge { background: var(--accent); color: var(--accent-contrast); }
 
-/* Search: one tab per search, so the strip scrolls instead of wrapping at
-   every width (the .net-pane rule below only does that on phones).
-   flex-shrink:0 because an overflow other than `visible` drops a flex item's
-   automatic min-height and the strip would collapse to a few pixels inside
-   .net-pane's column flexbox. */
-.tabs.search-tabs {
-  flex: 0 0 auto; flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden;
-  scrollbar-width: thin; /* same as .nav: the bar only shows up once tabs overflow */
-}
 .tab-item { display: inline-flex; align-items: stretch; flex: 0 0 auto; }
 .tab-item .tab { border-top-right-radius: 0; }
 .tab-close {
@@ -1002,10 +993,6 @@ table.data.virtual td.name .name-select { width: 100%; max-width: 100%; }
   .friend-list-wrap { max-height: 30vh; }
   .msg-split .chat-body { min-height: 0; }
   .msg-split .chatlog { max-height: 45vh; }
-  /* Wrap the strip so the close-all button isn't clipped off the row's end. */
-  .msg-tabs { flex-wrap: wrap; }
-  .msg-tabs .tab-item, .msg-tabs .tab { flex: 0 0 auto; }
-  .msg-tabs .tabs-extra { flex: 0 0 100%; margin: 4px 0 0; }
   /* No room to overlay the nav label in the drawer; sit at the row's end. */
   .tool-badge, .tool-btn .tool-dot { position: static; margin-left: auto; }
 

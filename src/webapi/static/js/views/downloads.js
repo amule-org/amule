@@ -228,13 +228,10 @@ export default function Downloads({ isGuest }) {
     })),
   ];
 
-  // View-level actions ride the right of the category_index tab strip (no separate
-  // title row — the nav already names the page). The manage-categories mode has
-  // no tab strip, so they get a plain toolbar row there.
-  const actions = html`
-    <button class="btn btn-sm admin-only" type="button" onClick=${clearCompleted}>
-      ${t("downloads_clear_completed")}
-    </button>
+  // The manage-categories toggle rides the right of the category tab strip (no
+  // separate title row — the nav already names the page). In manage-categories
+  // mode there is no tab strip, so it gets a plain toolbar row instead.
+  const manageCatsBtn = html`
     <button class=${"btn btn-sm admin-only" + (manageCats ? " btn-primary" : "")}
             type="button" aria-pressed=${manageCats}
             onClick=${() => { const next = !manageCats; setManageCats(next); if (!next) loadCategories(); }}>
@@ -244,20 +241,19 @@ export default function Downloads({ isGuest }) {
   return html`
     <div class="split-view">
     ${manageCats
-      ? html`<div class="view-header"><div class="spacer"></div>${actions}</div>
+      ? html`<div class="view-header"><div class="spacer"></div>${manageCatsBtn}</div>
              <${CategoriesPanel} isGuest=${isGuest} />`
       : html`<${SplitDetail} storageKey="dl_detail_height" open=${!!detailHash}
                       onClose=${() => setDetailHash(null)}
                       top=${html`
       <section class="net-pane">
       <${Tabs} tabs=${categoryTabs} active=${filterCategory}
-               onSelect=${(k) => setFilterCategory(k)} extra=${actions} />
+               onSelect=${(k) => setFilterCategory(k)} extra=${manageCatsBtn} />
       <div class="net-pane-body">
       <div class="view-header">
         <div class="toolbar admin-only">
-          <button class="btn btn-sm" onClick=${() => bulk("pause")}><${Icon} name="pause" /> ${t("downloads_pause")}</button>
           <button class="btn btn-sm" onClick=${() => bulk("resume")}><${Icon} name="play" /> ${t("downloads_resume")}</button>
-          <button class="btn btn-sm" onClick=${() => bulk("stop")}><${Icon} name="stop" /> ${t("downloads_stop")}</button>
+          <button class="btn btn-sm" onClick=${() => bulk("pause")}><${Icon} name="pause" /> ${t("downloads_pause")}</button>
           <button class="btn btn-sm btn-danger" onClick=${() => bulk("delete")}><${Icon} name="cancel" /> ${t("downloads_cancel")}</button>
           <select class="input input-sm" name="bulk_priority" value=""
                   onChange=${(e) => { const v = e.target.value; e.target.value = ""; if (v) bulkPatch({ priority: v }); }}>
@@ -270,6 +266,8 @@ export default function Downloads({ isGuest }) {
             ${categoryOptions(categories)}
           </select>
           <span class="selected-count">${t("downloads_selected")} ${selectedCount}</span>
+          <span class="vsep" aria-hidden="true"></span>
+          <button class="btn btn-sm" type="button" onClick=${clearCompleted}>${t("downloads_clear_completed")}</button>
         </div>
         <div class="spacer"></div>
         <div class="toolbar">
