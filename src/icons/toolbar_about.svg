@@ -19,7 +19,7 @@
       <stop offset="1" stop-color="#e2edff"/>
     </linearGradient>
   </defs>
-  <g transform="translate(2.400 2.400) scale(0.8500)">
+  <g transform="translate(1.600 1.600) scale(0.9000)">
   <circle cx="16" cy="16" r="14.2" fill="url(#orb)" stroke="url(#rim)" stroke-width="1.5"/>
   <path d="M6.9 23.4 A11.7 11.7 0 0 0 25.1 23.4" fill="none" stroke="#2b71ff" stroke-width="2" stroke-linecap="round" opacity="0.55"/>
   <path d="M9.93 12.13 A5.9 5.9 0 1 1 20.81 13.85 Q19.3 16.2 17.55 16.9 L17.55 20.4 L14.25 20.4 L14.25 16.35 Q14.25 14.6 16.36 13.36 A2.55 2.55 0 1 0 13.21 11.43 Z" fill="url(#glyph)"/>
