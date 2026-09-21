@@ -47,6 +47,11 @@ on:
 
 permissions:
   contents: write
+  # A called workflow can only ask for permissions the caller already holds, and naming
+  # one scope sets every other to none. packaging.yml needs actions:read for its cache
+  # guard, so without this the whole run fails to start -- before any job exists, which
+  # is why it reads as a startup failure with nothing to open.
+  actions: read
 
 jobs:
   # One-click entry point: turn the dispatched version into a real tag
