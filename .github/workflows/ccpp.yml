@@ -125,7 +125,7 @@ env:
 jobs:
   build_cmake_ubuntu:
     name: Build CMake Ubuntu (${{ matrix.build_type }})
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
@@ -189,7 +189,7 @@ jobs:
   # platform-dependent code.
   build_cmake_ubuntu_experimental:
     name: Build CMake Ubuntu Experimental (${{ matrix.build_type }})
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
@@ -231,7 +231,7 @@ jobs:
 
   build_cmake_macos:
     name: Build CMake MacOS (${{ matrix.build_type }})
-    runs-on: macos-latest
+    runs-on: macos-26
     strategy:
       fail-fast: false
       matrix:
@@ -282,7 +282,7 @@ jobs:
 
   build_cmake_windows_mingw_w64:
     name: Build CMake mingw-w64 (${{ matrix.build_type }})
-    runs-on: windows-latest
+    runs-on: windows-2025
     strategy:
       fail-fast: false
       matrix:

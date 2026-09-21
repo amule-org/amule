@@ -112,7 +112,7 @@ jobs:
   # zero warnings anywhere under src/.
   clang-tidy-full:
     name: clang-tidy (whole tree, Tier-1)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
       - name: restore ccache
@@ -223,7 +223,7 @@ jobs:
   # must not fire on any line the change touches.
   clang-tidy-diff:
     name: clang-tidy (changed lines, Tier-2)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
         with:

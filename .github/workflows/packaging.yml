@@ -328,7 +328,12 @@ jobs:
           # Everything x86_64 compiles from source, listed once. The last
           # four are dependencies of the rest with no Intel bottle either:
           # uncached, they rebuilt on every run for ~12 minutes.
-          KEGS="pcre2 openssl@3 aom jpeg-turbo json-c libmaxminddb libtiff libupnp lz4 pkgconf wxwidgets xz readline mpdecimal libvmaf"
+          # Every formula in the dependency closure that Homebrew publishes no Intel bottle
+          # for, and that a build actually installs. The four at the end were found by
+          # timing the 3.1.0 release build, where they compiled on every run because the
+          # cache never covered them: gettext alone was 69m30s, webp 6m10s, libpng 5m30s.
+          # The audit step after the install names anything else that drifts into this set.
+          KEGS="pcre2 openssl@3 aom jpeg-turbo json-c libmaxminddb libtiff libupnp lz4 pkgconf wxwidgets xz readline mpdecimal libvmaf gettext libpng webp xxhash"
           ${{ matrix.archcmd }} ${{ matrix.brew_prefix }}/bin/brew info --json=v2 $KEGS > "$RUNNER_TEMP/kegs.json"
           python3 - "$RUNNER_TEMP/kegs.json" "$GITHUB_OUTPUT" <<'EOF'
           import json, sys
@@ -420,6 +425,34 @@ jobs:
           # is keg-only on macOS; add msgfmt to PATH for the NLS probe.
           echo "${{ matrix.brew_prefix }}/bin" >> "$GITHUB_PATH"
           echo "${{ matrix.brew_prefix }}/opt/gettext/bin" >> "$GITHUB_PATH"
+      # A formula loses its Intel bottle the day Homebrew stops publishing one, and the
+      # first symptom is a build that takes an extra hour for no visible reason. Homebrew
+      # records how each keg arrived, so ask it rather than reading the log: anything it
+      # compiled that the cache does not carry is named here, and the next run keeps
+      # paying for it until KEGS above is extended.
+      - name: Audit what was built from source but is not cached
+        if: matrix.arch == 'x86_64'
+        run: |
+          ${{ matrix.archcmd }} ${{ matrix.brew_prefix }}/bin/brew info --json=v2 --installed \
+              > "$RUNNER_TEMP/installed.json"
+          python3 - "$RUNNER_TEMP/installed.json" <<'EOF'
+          import json, sys
+          cached = set("${{ steps.intelkegs.outputs.kegs }}".split())
+          built = sorted(
+              f["name"]
+              for f in json.load(open(sys.argv[1]))["formulae"]
+              for i in f.get("installed", [])
+              if i.get("poured_from_bottle") is False
+          )
+          missing = [n for n in built if n not in cached]
+          print("built from source: " + (" ".join(built) or "(none)"))
+          if missing:
+              print("::warning::source-built but not cached, so it recompiles every run: "
+                    + " ".join(missing) + " -- add them to KEGS in packaging.yml")
+          else:
+              print("every source-built formula is covered by the cache")
+          EOF
+
       - name: Save x86_64 source-built kegs
         # Master only, as for ccache: retention compares keys across branches,
         # and a branch-scoped entry that ranked newest would cost master its own.
