@@ -355,37 +355,23 @@ jobs:
           # cache never covered them: gettext alone was 69m30s, webp 6m10s, libpng 5m30s.
           # The audit step after the install names anything else that drifts into this set.
           KEGS="pcre2 openssl@3 aom jpeg-turbo json-c libmaxminddb libtiff libupnp lz4 pkgconf wxwidgets xz readline mpdecimal libvmaf gettext libpng webp xxhash giflib libunistring ninja"
-          # MIGRATION: the formulae behind the last path-keyed entry, so the legacy restore
-          # below still resolves to the same cache version. Delete this, and that step,
-          # once an archive has been saved.
-          LEGACY_KEGS="pcre2 openssl@3 aom jpeg-turbo json-c libmaxminddb libtiff libupnp lz4 pkgconf wxwidgets xz readline mpdecimal libvmaf gettext libpng webp xxhash"
-          BREW=${{ matrix.brew_prefix }}/bin/brew
-          ${{ matrix.archcmd }} $BREW info --json=v2 $KEGS > "$RUNNER_TEMP/kegs.json"
-          ${{ matrix.archcmd }} $BREW info --json=v2 $LEGACY_KEGS > "$RUNNER_TEMP/legacykegs.json"
-          python3 - "$RUNNER_TEMP/kegs.json" "$RUNNER_TEMP/legacykegs.json" \
-              "$RUNNER_TEMP/kegpaths" "$GITHUB_OUTPUT" <<'EOF'
+          ${{ matrix.archcmd }} ${{ matrix.brew_prefix }}/bin/brew info --json=v2 $KEGS \
+              > "$RUNNER_TEMP/kegs.json"
+          python3 - "$RUNNER_TEMP/kegs.json" "$RUNNER_TEMP/kegpaths" "$GITHUB_OUTPUT" <<'EOF'
           import json, sys
-
-          def paths(formulae):
+          formulae = json.load(open(sys.argv[1]))["formulae"]
+          # Relative, for `tar -C /`. The pack step drops whatever is not on disk.
+          with open(sys.argv[2], "w") as out:
               for f in formulae:
-                  yield "usr/local/Cellar/%s" % f["name"]
+                  out.write("usr/local/Cellar/%s\n" % f["name"])
                   # Aliases and old names get an opt link too, and the build
                   # shims go through those: pkg-config, never pkgconf.
                   for n in [f["name"], *f.get("aliases", []), *f.get("oldnames", [])]:
-                      yield "usr/local/opt/%s" % n
-
-          formulae = json.load(open(sys.argv[1]))["formulae"]
-          legacy = json.load(open(sys.argv[2]))["formulae"]
-          # Relative, for `tar -C /`. The pack step drops whatever is not on disk.
-          with open(sys.argv[3], "w") as out:
-              out.write("".join("%s\n" % p for p in paths(formulae)))
-          with open(sys.argv[4], "a") as out:
+                      out.write("usr/local/opt/%s\n" % n)
+          with open(sys.argv[3], "a") as out:
               out.write("kegs=%s\n" % " ".join(f["name"] for f in formulae))
               # Keg-only formulae stay out of /usr/local; readline would shadow libedit.
               out.write("linkable=%s\n" % " ".join(f["name"] for f in formulae if not f["keg_only"]))
-              out.write("legacy_paths<<PATHS\n")
-              out.write("".join("/%s\n" % p for p in paths(legacy)))
-              out.write("PATHS\n")
           EOF
       - name: Restore x86_64 source-built kegs
         id: kegcache
@@ -402,16 +388,6 @@ jobs:
       - name: Unpack restored kegs
         if: matrix.arch == 'x86_64' && steps.kegcache.outputs.cache-matched-key != ''
         run: tar -C / -xpf ~/intel-kegs.tar
-      # MIGRATION: carries the last path-keyed entry into the archive, so the
-      # switch does not cost one full source build of the whole list. Delete
-      # with LEGACY_KEGS above once an archive has been saved.
-      - name: Restore x86_64 kegs saved before the archive
-        if: matrix.arch == 'x86_64' && github.event_name != 'workflow_call' && steps.kegcache.outputs.cache-matched-key == ''
-        uses: actions/cache/restore@v6
-        with:
-          path: ${{ steps.intelkegs.outputs.legacy_paths }}
-          key: ${{ runner.os }}-macos-intel-kegs-${{ github.run_id }}
-          restore-keys: ${{ runner.os }}-macos-intel-kegs-
       - name: Install Homebrew deps
         run: |
           BREW=${{ matrix.brew_prefix }}/bin/brew
