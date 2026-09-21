@@ -740,8 +740,12 @@ void Browse_Started(uint32 NOT_ON_DAEMON(ecid), wxString NOT_ON_DAEMON(name), ui
 #endif
 }
 
+// MuleNotify stores notification arguments by value, so this handler must retain the value
+// signature even though the GUI only reads the string and target.
+// NOLINTBEGIN(performance-unnecessary-value-param)
 void ChatConnResult(
 	bool NOT_ON_DAEMON(success), CChatTarget NOT_ON_DAEMON(id), wxString NOT_ON_DAEMON(message))
+// NOLINTEND(performance-unnecessary-value-param)
 {
 #ifndef AMULE_DAEMON
 	if (theApp->amuledlg->m_chatwnd) {
@@ -765,7 +769,11 @@ void ChatProcessMsg(CChatTarget sender, wxString message)
 #endif
 }
 
+// MuleNotify stores notification arguments by value; a reference would not match the queued
+// callback signature.
+// NOLINTBEGIN(performance-unnecessary-value-param)
 void ChatSendCaptcha(wxString NOT_ON_DAEMON(captcha), CChatTarget NOT_ON_DAEMON(to_id))
+// NOLINTEND(performance-unnecessary-value-param)
 {
 #ifndef AMULE_DAEMON
 	if (theApp->amuledlg->m_chatwnd) {
