@@ -14,6 +14,7 @@ For building from source, see [INSTALL.md](INSTALL.md).
 - [Linux](#linux)
   - [AppImage (recommended)](#appimage-recommended)
   - [Flatpak](#flatpak)
+  - [Static binaries (headless)](#static-binaries-headless)
   - [Distro packages (older release)](#distro-packages-older-release)
 - [macOS](#macos)
 - [Windows](#windows)
@@ -26,6 +27,7 @@ For building from source, see [INSTALL.md](INSTALL.md).
   - [macOS .dmg](#macos-dmg)
   - [Linux AppImage](#linux-appimage)
   - [Linux Flatpak](#linux-flatpak)
+  - [Linux static tarball](#linux-static-tarball)
 
 
 ## Linux
@@ -75,6 +77,45 @@ your home directory and stores state in `~/.aMule/` — the same
 path as a native install. Existing config, shared files, and
 partfiles from a previous non-Flatpak install are picked up
 automatically.
+
+### Static binaries (headless)
+
+A self-contained tarball for running aMule without a desktop: a
+NAS, a VPS, a container, or any Linux too old or too minimal to
+satisfy the AppImage. The binaries are built against musl and
+linked fully static, so they depend on no shared library at all -
+not wxWidgets, not Boost, not Crypto++, not even libc. Both `x64`
+and `arm64` builds are published.
+
+1. Download `aMule-<version>-Linux-<arch>-static.tar.gz` from the
+   [Releases page][rel].
+2. Unpack and run:
+
+   ```sh
+   tar xzf aMule-*-Linux-*-static.tar.gz
+   cd aMule-*-Linux-*-static
+   ./amuled
+   ```
+
+What is in it:
+
+* `amuled` - the headless daemon.
+* `amulecmd` - the command-line client, for driving the daemon.
+* `amuleapi` - the REST + SSE daemon, which also serves the Web UI.
+* `amuleapi-static/` - the Web UI itself. `amuleapi` finds it next
+  to its own executable, so keep it beside the binary; moving or
+  renaming that directory leaves the API answering `/api/v1` and
+  nothing on `/`.
+
+What is **not** in it: the GUIs (`amule`, `amulegui`) and
+`amuleweb`. This track is daemon, CLI and API only. To drive it
+from a desktop, run `amulegui` from any other package on your own
+machine and point it at this daemon over External Connect, or open
+the Web UI that `amuleapi` serves.
+
+State lives in `~/.aMule/` exactly as it does for every other
+package, so a static daemon picks up an existing config, shared
+files and partfiles without conversion.
 
 ### Distro packages (older release)
 
@@ -299,3 +340,21 @@ flatpak run --command=amuleweb  org.amule.aMule --admin-pass=<password>
 
 The Flatpak grants `--filesystem=home`, so `~/.aMule/` is shared
 with native installs and other package formats on the same machine.
+
+### Linux static tarball
+
+The one package that needs no path advice: `amuled`, `amulecmd`
+and `amuleapi` sit together in the directory you unpacked, and
+none of them resolve anything through `$PATH`. Run them from there
+with `./amuled`, or put that directory on your `$PATH` yourself.
+
+```sh
+./amuled                      # start the daemon
+./amulecmd                    # drive it from the CLI
+./amuleapi                    # REST API + Web UI on http://localhost:4713
+```
+
+`amuleapi` serves the bundled Web UI from `amuleapi-static/` next
+to the binary, so no extra download is needed for the web
+interface. See [QUICKSTART-AMULEAPI.md](QUICKSTART-AMULEAPI.md)
+for its first-run setup.

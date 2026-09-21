@@ -27,8 +27,11 @@ import re
 import sys
 from html import escape
 
-# "## Version 3.0.1 — "bugfixes and polish"" -> "3.0.1"
-_HEADER = re.compile(r"^## Version\s+(\S+)\s+—")
+# "## Version 3.0.1 - "bugfixes and polish"" -> "3.0.1". The separator may be an
+# em dash or a plain hyphen: older entries use one, newer ones the other, and a
+# parser that accepts only its own house style drops a release from the store
+# listing without failing the build.
+_HEADER = re.compile(r"^## Version\s+(\S+)\s+[-\u2013\u2014]")
 _DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 

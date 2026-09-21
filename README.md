@@ -75,13 +75,14 @@ Download the latest release for your platform from the
 * **Linux**
   * Flatpak: `flatpak install ./appname.flatpak`
   * AppImage: `chmod +x` and run
+  * Static tarball (headless, x64 / arm64): unpack and run — `amuled`, `amulecmd` and `amuleapi` with no shared-library dependencies, Web UI included
 * **macOS** — Universal2 `.dmg`: download, drag to `/Applications`.
 * **Windows** — choose either the **NSIS installer** `.exe` (Start-menu shortcuts, uninstaller, x64 / ARM64) or the **portable `.zip`** (no install, unzip and run).
 
 See [docs/INSTALL_BINARIES.md](docs/INSTALL_BINARIES.md) for
 per-platform notes — including the macOS unsigned-binary
-workaround, the Windows SmartScreen prompt, and the Linux FUSE
-dependency for AppImage.
+workaround, the Windows SmartScreen prompt, the Linux FUSE
+dependency for AppImage, and what the static tarball contains.
 
 [Releases page]: https://github.com/amule-org/amule/releases/latest
 

@@ -64,8 +64,8 @@
 #endif
 
 #define VERSION_MJR 3
-#define VERSION_MIN 0
-#define VERSION_UPDATE 1
+#define VERSION_MIN 1
+#define VERSION_UPDATE 0
 
 #ifndef PACKAGE
 #define PACKAGE "amule"

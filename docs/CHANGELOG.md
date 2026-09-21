@@ -4,6 +4,183 @@ The history of every aMule release. Versions are listed newest first.
 
 ---
 
+## Version 3.1.0 - "Three versions in a year! Can we have some REST?"
+2026-09-21
+
+The largest release since the 3.0.0 rebirth: 893 merged PRs on top of 3.0.1. The headline is a new way to drive aMule - `amuleapi`, a REST + Server-Sent-Events daemon shipping a complete new Web UI that covers the same ground as the desktop GUI. Around it landed transfer-performance work that lifts real-world throughput, authenticated encryption for External Connect, a top-to-bottom modernization of the GUI list controls, media metadata that now travels end to end, searches that survive a restart, a dedicated Clients page, and a sweep of memory and CPU work across the daemon, the remote GUI and the API.
+
+Upgrading is a drop-in. No config migration, and nothing an older build cannot read back: the new per-peer metadata rides in an appended `clients.met` trailer that every existing reader ignores (#902), and EC encryption is negotiated per session and off by default, so older amulegui / amulecmd clients keep connecting untouched (#714).
+
+### Highlights
+
+- **amuleapi: a REST API and SSE stream for aMule.** A standalone daemon that speaks to `amuled` as an ordinary EC client and serves `/api/v1/*` plus a live event stream, with ETag-versioned reads and per-endpoint contracts in `docs/api/` (#201). The `v0` prefix was retired before release (#1393).
+- **A complete new Web UI, shipped with amuleapi.** Not a cut-down remote panel: Networks with the log panes, Search with multiple tabs, Downloads, Shared Files, Clients, Messages, Statistics and Preferences - the same sections the desktop GUI has, driven by SSE with throttled re-renders, in light and dark themes, responsive down to a phone, in English and Spanish (#220). It is the replacement path for `amuleweb`, which is now deprecated.
+- **Faster transfers.** Endgame mode requests the final blocks from several sources at once, so a download no longer parks at 99% behind one dead peer (#225). Request and upload depth are now sized to each link's bandwidth-delay product instead of a fixed queue of three, worth up to roughly 12x on high-latency paths (#598). Kad source discovery limits, inherited from eMule and long obsolete, are raised and made configurable (#308).
+- **Leaner and quicker under load.** A per-connection EC cache that never released entries for departed peers is fixed, which is what drove daemon memory growth on long-running nodes (#1424); the startup share scan does one `stat` per file instead of four (#1310); and the EC update path, the remote GUI and the API all stop redoing work nothing asked for (#775, #776, #777, #772, #878, #922, #1098, #1091).
+- **External Connect is encrypted.** Authenticated encryption over the EC packet layer (AES-128-GCM baseline, ChaCha20-Poly1305 where Crypto++ offers it), keyed by an ephemeral X25519 exchange so a credential leaked later cannot decrypt a recording made earlier (#714, #785). Authentication is rate-limited (#741, #742), the daemon listens on loopback by default (#737), and amule, amuled and amuleapi share one credential store (#665).
+- **Crypto++ for SHA1 and MD5.** aMule's own implementations are gone in favour of the library it already linked, picking up hardware SHA instructions where the CPU has them (#238).
+- **The GUI lists are modern widgets.** Every major list control moved to `wxDataViewCtrl`: preferences sidebar, servers, friends, file details, shared files, downloads, clients and search results, with live column sorting and native dark-mode painting (#671, #830, #839, #842, #848, #850, #540).
+- **Remote-to-local path mappings.** An easy one to overlook and a large quality-of-life win for anyone running amulegui against a daemon on another machine: map the core's paths to the ones the GUI can actually reach, and Open / Show in Folder start working on a remote setup (#854).
+- **Media metadata, end to end.** aMule extracts Length, Bitrate and Codec from shared media with ffprobe and advertises them to servers and Kad, so other clients see them too (#280); they surface in search results, shared files, the API and the Web UI, with Artist, Album and Title columns alongside (#1343, #1344, #436, #442), and can be re-extracted on demand (#1106).
+- **A Clients page.** Active peers split by direction plus a known-clients history backed by the credit store, with the same context menu and details dialog as everywhere else (#904, #902, #1271).
+- **Search that remembers.** History and results both persist across restarts (#643, #856), results filter as you type (#821), and searches started by other clients are visible in the GUI (#710).
+- **Chat and friends everywhere.** Peer and friend messaging works over EC and REST, not just the monolithic GUI (#1053), and the friends list is exposed over REST (#986).
+- **Bind to an interface, not just an address.** A real egress-interface bind that a VPN user can rely on, using `IP_UNICAST_IF` / `IP_BOUND_IF` rather than privileged `SO_BINDTODEVICE` (#281).
+- **Looks right on modern desktops.** Windows follows the system light/dark appearance (#818), toolbar and preferences icons are resolution-independent SVG for hi-DPI (#487), and the toolbar artwork was redrawn (#1494).
+- **Friendlier first run.** A setup wizard on first launch (#264), a startup splash for the monolithic build (#760), and an in-app new-version check with a GUI popup and an About button, gated off for OS packages (#277, #406).
+- **Packaging.** A fully static musl track producing self-contained `amuled`, `amulecmd` and `amuleapi` binaries with no shared-library dependencies (#629), libupnp 22.0.4 across every bundle (#681), and `ed2k://` and `magnet:` registered with the OS on all three platforms (#324).
+
+### Deprecations
+
+- **`amuleweb` is deprecated.** It still ships in 3.1.0, still works, and nothing is removed this release - but it now prints a notice at startup and carries one in its manual page (#371). Its replacement is `amuleapi` with the new Web UI, which covers the same ground as the desktop GUI rather than the subset the old PHP templates reached. A future release will retire `amuleweb`; this one gives you a cycle to move.
+- **The ed2k v2 VBT code path was removed** as part of the transfer rework (#598). It was dead code no peer exercised.
+
+### amuleapi and the Web UI
+
+New in this release, so the entries below describe where they ended up rather than each step.
+
+- REST surface: downloads, shared files, search, servers, Kad, clients, known clients, friends, chats, categories, preferences, statistics, logs and IP filter actions, with SSE events for everything that moves.
+- Locale-independent by design: typed values and stable keys rather than the GUI's translated strings, and English error text (#293, #311, #380).
+- Media metadata, client details, friend status and the credit modifier are served from the same core values the desktop shows (#436, #442, #443, #1479, #1480).
+- Web UI features beyond the section list: a download button that pulls a finished file straight to the browser (#1216, #1203), per-peer detail panels, a shared-files tree, category management, version alerts, country flags, and a comments tab driven by SSE rather than polling (#731).
+- Security: amuleapi receives an ephemeral EC token instead of the stored password (#749, #751), and config files are restricted to 0600 (#746).
+
+### Performance and memory
+
+- **EC incremental-update cache.** Each connection kept the last value it sent for every field of every object, and entries for clients, servers and friends that went away were never released - unbounded growth for the life of the connection, which is what long-running daemons were seeing. Entries are now dropped where the object is removed (#1424).
+- **Startup share scan.** `AddPathToShares()` asked the filesystem four separate questions per file; on 10,000 shared files almost three quarters of the walk was syscalls that did not need to happen. Now one `stat` (#1310).
+- **EC update path.** The file list is no longer rebuilt on every `GET_UPDATE` poll (#775), encoders live in a sorted vector rather than a `std::map` (#776), reconciliation is skipped when neither side changed (#777), a client's tags are built only for fields that moved (#772), and unchanged search results are skipped on the multi-search union poll (#723). AES is preferred for the EC channel where the hardware backs it (#798).
+- **GUI.** Lists nobody is looking at are not re-sorted (#878), off-screen rows skip change notifications (#885), the Clients page refreshes once a second instead of ten times (#922), and the remote GUI polls its active page about once a second instead of every three (#773), with remote log delivery batched (#445).
+- **amuleapi.** The file map is diffed in place instead of being copied twice a tick (#1098, #1092), JSON accumulates as UTF-8 rather than UTF-32 (#1091), the SSE diff is skipped when nothing is listening (#1102), the known-clients store is maintained rather than re-read (#912), and glibc's malloc arenas are capped so a request's peak is not retained per pool thread (#1095).
+- **Hashing.** The one-second network-quiescent guard is gone, so per-part verification keeps up in real time on fast links (#791).
+
+### Transfers, sources and performance
+
+- Endgame mode for the last blocks of a file (#225).
+- BDP-adaptive request and upload depth, and the dead VBT code path removed (#598).
+- Kad source-search and connection limits raised and exposed in Preferences (#308).
+- Complete-source counts recomputed when uploaders leave, not only when they arrive (#1052, #1066).
+- Runtime-toggleable memory-mapped file I/O (#565).
+- AICH recovery for parts found corrupt during the completion re-hash (#270), and the post-hashing sync no longer prunes a file it just hashed (#526).
+- A completed file deleted from disk can be downloaded again (#815); a partfile whose handle has been closed is no longer read (#954).
+- Throttled reads that stalled browsing and chat now resume (#1276).
+
+### Networking and protocol
+
+- Interface binding for every socket aMule opens (#281).
+- Hostnames resolve to IPv4 only, so a AAAA answer cannot strand a connection (#699).
+- Connections arriving during startup are no longer dropped (#926).
+- Servers are not marked dead when the fault is at our end, with back-off between sweeps (#893).
+- UPnP: search only for the internet gateway, rate-limit ALIVE-triggered fetches (#310), raise the content-length limit for large router descriptions (#469), and classify IGD devices regardless of UPnP version (#472).
+- SOCKS5 replies and relayed datagrams hardened (#1433).
+- Two long-standing Asio races in the read handoff, each capable of wedging an amulegui / amuled pair until the watchdog fired (#871, #882).
+- eMuleAI peer capabilities are recognised and its reserved frames demultiplexed (#1288).
+
+**Groundwork, not switched on.** A large block of addressing work landed this cycle: an internal address type that can hold IPv6, typed peer identity, address-aware security and filtering, and a uTP transport (#1318 through #1504). A stock 3.1.0 build behaves exactly as before - uTP sits behind `ENABLE_UTP`, off by default, as do the experimental Kad switches (#1297, #1304) - and the work is here so the next cycle has somewhere to stand.
+
+### External Connect and security
+
+- Negotiated authenticated encryption, with forward secrecy from an ephemeral X25519 exchange (#714, #785).
+- Authentication throttling, configurable (#741, #742).
+- Loopback-only listening by default, with detected addresses offered in Preferences (#737).
+- One credential store shared by amule, amuled and amuleapi (#665); config files restricted to 0600 (#746).
+- Remote GUIs can now manage the core's shared folders (#530), browse a peer's shares (#520), follow chat (#517), and poll every search's progress in one request (#758).
+
+### GUI
+
+- List controls migrated to `wxDataViewCtrl` with live sorting, keyboard context menus, and lists that no longer paint blank under an open menu or lose the user's place (#540, #860, #877).
+- Statistics and Kad graphs rewritten: new renderer, hover readout, and the history behind them fixed, which on a remote GUI had been nearly empty (#897).
+- A browsed peer's shared files are shown as a folder tree instead of one flat run (#917).
+- File details for shared files (#495), on double-click for downloading files (#628), and an export of the selection to an emulecollection (#769).
+- Free disk space and total size on the Downloads and Shared Files panels (#847, #689, #929).
+- Open a file or show it in the file manager from both lists (#831), and `.emulecollection` files open from the OS file manager (#647).
+- Alt+letter tab shortcuts mirrored as a macOS menu (#642), server country flags (#691), per-user server file limits (#841), "Connected since" in the ED2K and Kad panes (#650).
+- Byte sizes and rates are labelled in IEC units that match the arithmetic (#931), timestamps follow the user's locale (#928), and the app icon is rendered from one vector source at every size (#932).
+- Verify Local Data is available from the GUI, amuled and amulegui, with progress.
+- amulegui: remote-to-local path mappings (#854), reconnects instead of exiting when the link drops (#452), quietly while minimised (#817), keeps its own log apart from the daemon's (#508), and shows the connected core's version (#1224).
+
+### Search
+
+- History (#643) and results (#856) persist across restarts; 100 past queries instead of 30 (#822).
+- Filter results as you type (#821); rating in its own sortable column (#632).
+- Kad notes and community ratings retrieved and shown, with eMule parity (#462, #500).
+- Searches started by other clients appear in the monolithic GUI (#710); a new eD2k search asks before stopping the running one (#1046).
+- Result grouping and download-under-name over EC and REST (#447).
+
+### Shared files and metadata
+
+- Media metadata advertised over ed2k and Kad (#280), re-extractable from the context menu (#1124, #1106).
+- Exclude shared files by name pattern (#350).
+- Live upload activity per shared file over EC (#473).
+- Shared-folder path index fixes: re-keyed on completion (#309), NFC-normalized on macOS (#312), cleared with the map it mirrors (#1034).
+- The directory watcher handles rename and delete correctly and notifies the GUI when it re-shares a known file (#289, #313).
+
+### Preferences and defaults
+
+- IP filter defaults to emule-security's list (#577) with auto-update off (#582).
+- Free-disk-space floor raised to 500 MB (#578).
+- A GUI control for sparse part files (#662).
+- Media-probe and previously hidden daemon preferences wired over EC and exposed in amuleapi (#479).
+- External connections are required for the web server and amuleapi, instead of failing silently later.
+
+### Platform and packaging
+
+- Fully static musl build of `amuled`, `amulecmd` and `amuleapi` (#629).
+- libupnp 22.0.4 everywhere, source-built on Windows where MSYS2 has no 22.x (#681).
+- `ed2k://` and `magnet:` scheme registration on Windows, macOS and Linux (#324).
+- AppImage: amulegui launcher and shell shortcuts (#328), host GLib and GTK modules kept out of the bundle (#903), sanitized child environment for external programs (#336).
+- Windows: dark mode (#818), correct icon sizes for scaled displays (#933, #934), prevent-sleep under MinGW (#416).
+- macOS: daemonize before `wxEntry` so `amuled -f` no longer aborts (#297), UTF-8 file names (#318), and `LC_NUMERIC` kept at C so a terminal launch does not crash (#1430).
+
+### Known Limitations
+
+Carried over from 3.0.1, unchanged this cycle:
+
+- macOS `.dmg` is **not yet code-signed or notarized** - Gatekeeper warnings on first launch.
+- **Flathub submission still pending** - install the `.flatpak` directly with `flatpak install <file>` for now.
+- AppImage isn't yet in AppImageLauncher's catalogue.
+
+### Contributors
+
+This release is 893 merged PRs. Particular thanks to:
+
+- **got3nks** - 580 PRs. amuleapi and its REST surface, EC encryption and forward secrecy, the transfer pipeline, media metadata, search persistence, chat and friends parity, the Clients page, packaging and the release tooling.
+- **ngosang** (Diego Heras) - 118 PRs. The Web UI: its shape, its features and most of its polish (#220), plus the Spanish catalogue, the redesigned toolbar icons and the API reviews that drove much of the v1 cleanup.
+- **kno** - 40 PRs. The addressing and uTP groundwork: the internal address type, typed peer identity, address-aware security and filtering, and the uTP transport.
+- **LSalami** (Lorenzo Salami) - 35 PRs. The `wxDataViewCtrl` list migration - downloads, shared files, client lists - plus remote-to-local path mappings, search-result persistence and accessibility fixes.
+- **mrjimenez** (Marcelo Roberto Jimenez) - 14 PRs across the build system, compile tooling, deprecation warnings and the README distro table.
+- **danim7** - 9 PRs, including the Crypto++ migration for SHA1 and MD5 (#238) and Verify Local Data across the GUI, daemon and remote GUI.
+- **Cflsft** - 5 PRs, including endgame mode (#225).
+- **adem4ik** (Andrei Stepanov) - 5 PRs on icons and the Russian `.desktop` localization.
+- **Zeyckler** (Carlos Barrero) - 3 PRs, including the hi-DPI SVG toolbar and preferences icons (#487).
+- **tbo47** (Teebo) - 3 PRs, including the first-run setup wizard (#264).
+- **gbcox** (Gerald Cox) - 3 PRs.
+- **ZiTAL**, **ed29**, **frnjjq**, **secretmango** - one PR each.
+
+#### Testing and bug reports
+
+A release this size is only as good as the people who use it before it ships and say what broke.
+
+- **ghysler** - 47 issues filed this cycle, 44 already fixed: remote-GUI performance on large queues, the search lifecycle end to end, and a long run of interface details that would otherwise have shipped. Much of the amulegui and search polish in this release exists because of those reports.
+- **mifritscher2** (9), **slrslr** (5), **Send8213** (4), **irmu** (4), **quimm2003** (3), **falcogiallo** (3) - issues filed and, in almost every case, closed this cycle.
+- Thanks also to everyone who reported a single bug, confirmed a fix, or tried a pre-release build.
+
+#### Translators
+
+Translation flows through [Weblate](https://hosted.weblate.org/projects/amule/). Credited on this cycle's translation commits, with the largest contributions first:
+
+**Coool**, **தமிழ்நேரம்**, **mslr8**, **Watchman89**, **Michal Várady**, **Francisco José Juan Quintanilla**, **Kisnov**, **reducedradius**, **Guzleon**, **Marcell Balla**, **Samuel García Del Campo**, **Jaume Casado Ruiz**, **Alec Bourenkov**, **Nioh**, **Libre**, **Артур**, **nathanael**, **lazizkhalilov**, **alexandre.detourne**, **Steven Liu**, and the contributors who translate anonymously.
+
+Several developers credited above also carried catalogues: Diego Heras, Marcelo Roberto Jimenez, Andrei Stepanov, Lorenzo Salami and danim7.
+
+### Merged PRs in this release
+
+At 893 PRs a numbered index stopped being useful, so this release links the record instead of reprinting it: [the full compare view](https://github.com/amule-org/amule/compare/3.0.1...3.1.0) lists every merged pull request between 3.0.1 and this tag.
+
+Fixes to features added during this same cycle - most of the amuleapi and Web UI churn - are folded into the entries above rather than listed as separate bug fixes, since no released aMule ever carried those bugs.
+
+---
+
 ## Version 3.0.1 — "bugfixes and polish"
 2026-06-24
 
