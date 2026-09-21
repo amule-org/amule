@@ -54,7 +54,7 @@
 #endif
 
 #ifndef VERSION
-#define VERSION "3.0.0-dev"
+#define VERSION "3.1.0-dev"
 #endif
 
 #ifdef __GIT__
