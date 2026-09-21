@@ -29,6 +29,7 @@
 #include "Constants.h"    // Needed for ESourceFrom
 #include "GetTickCount.h" // Needed for GetTickCount64
 #include "MD4Hash.h"
+#include "ChatSessionStore.h"
 #include <common/StringFunctions.h>
 #include <common/Macros.h>
 #include "NetworkFunctions.h"
@@ -258,8 +259,13 @@ public:
 	void SetUserHash(const CMD4Hash &userhash);
 	void ValidateHash() { m_HasValidHash = !m_UserHash.IsEmpty(); }
 	bool HasValidHash() const { return m_HasValidHash; }
-	// No endpoint/object-ID fallback: chat remains unavailable until identity is known.
-	CMD4Hash GetChatPeer() const { return HasValidHash() ? GetUserHash() : CMD4Hash(); }
+	CChatPeer GetChatPeer() const { return m_chatPeer.IsEmpty() ? CChatPeer(GetUserHash()) : m_chatPeer; }
+	void BindChatPeer(const CChatPeer &peer) { m_chatPeer = peer; }
+
+private:
+	CChatPeer m_chatPeer;
+
+public:
 	uint32 GetVersion() const { return m_nClientVersion; }
 	uint8 GetMuleVersion() const { return m_byEmuleVersion; }
 	bool ExtProtocolAvailable() const { return m_bEmuleProtocol; }

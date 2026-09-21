@@ -86,10 +86,11 @@ CUpDownClient *CClientList::FindReusableClient(
 		if (cur_client->GetUserPort() != port) {
 			continue;
 		}
-		// Unidentified is a candidate: it is either this peer before its handshake, or a
-		// placeholder an earlier call made for it. An identified one is only this peer if
-		// the hashes agree.
-		if (cur_client->GetUserHash().IsEmpty() || cur_client->GetUserHash() == hash) {
+		// An endpoint alone cannot establish continuity with a transient client.
+		// Only an identified hash or an explicitly bound expected hash can.
+		if (!hash.IsEmpty() &&
+			(cur_client->GetUserHash() == hash ||
+				(!cur_client->HasValidHash() && cur_client->GetChatPeer().Hash() == hash))) {
 			return cur_client;
 		}
 	}
@@ -115,6 +116,10 @@ CClientRef CClientList::CreateForAddress(const CMD4Hash &hash, uint32 ip, uint16
 		client = FindReusableClient(hash, ip, port);
 	}
 	if (client != nullptr) {
+		if (theApp->chatsessions && !client->HasValidHash()) {
+			client->BindChatPeer(theApp->chatsessions->Open(
+				hash, client->GetUserAddress(), client->GetUserPort(), name));
+		}
 		return CCLIENTREF(client, wxT("CClientList::CreateForAddress"));
 	}
 
@@ -132,6 +137,9 @@ CClientRef CClientList::CreateForAddress(const CMD4Hash &hash, uint32 ip, uint16
 	// whether it can message -- sees 0.0.0.0.
 	client->SetIP(ip);
 	client->SetUserName(name);
+	if (theApp->chatsessions) {
+		client->BindChatPeer(theApp->chatsessions->Open(hash, client->GetUserAddress(), port, name));
+	}
 	// The hash is deliberately NOT seeded. This client has never connected, so it carries no
 	// credits and reports zero for every lifetime total, while a hash is exactly what makes the
 	// Clients page treat it as a peer whose totals are known: it would publish those zeroes
@@ -815,7 +823,7 @@ bool CClientList::IsDeadSource(const CUpDownClient *client)
 	return m_deadSources.IsDeadSource(client);
 }
 
-CUpDownClient *CClientList::FindChatClient(const CMD4Hash &peer) const
+CUpDownClient *CClientList::FindChatClient(const CChatPeer &peer) const
 {
 	if (peer.IsEmpty()) {
 		return nullptr;
@@ -823,7 +831,8 @@ CUpDownClient *CClientList::FindChatClient(const CMD4Hash &peer) const
 	CUpDownClient *found = nullptr;
 	for (const auto &entry : m_clientList) {
 		CUpDownClient *client = entry.second.GetClient();
-		if (client->HasValidHash() && client->GetUserHash() == peer) {
+		if (client->GetChatPeer() == peer &&
+			(!client->HasValidHash() || client->GetUserHash() == peer.Hash())) {
 			if (client->IsConnected()) {
 				return client;
 			}
@@ -833,9 +842,9 @@ CUpDownClient *CClientList::FindChatClient(const CMD4Hash &peer) const
 	return found;
 }
 
-CMD4Hash CClientList::ResolveLegacyChatPeer(uint64 gui_id) const
+CChatPeer CClientList::ResolveLegacyChatPeer(uint64 gui_id) const
 {
-	CMD4Hash peer;
+	CChatPeer peer;
 	if (!gui_id || !IP_FROM_GUI_ID(gui_id) || !PORT_FROM_GUI_ID(gui_id)) {
 		return peer;
 	}
@@ -843,7 +852,7 @@ CMD4Hash CClientList::ResolveLegacyChatPeer(uint64 gui_id) const
 		for (const auto *session : theApp->chatsessions->Sessions()) {
 			if (session->LegacyGuiId() == gui_id) {
 				if (!peer.IsEmpty() && peer != session->peer) {
-					return CMD4Hash();
+					return CChatPeer();
 				}
 				peer = session->peer;
 			}
@@ -853,30 +862,65 @@ CMD4Hash CClientList::ResolveLegacyChatPeer(uint64 gui_id) const
 		CUpDownClient *client = entry.second.GetClient();
 		if (client->GetIP() == IP_FROM_GUI_ID(gui_id) &&
 			client->GetUserPort() == PORT_FROM_GUI_ID(gui_id)) {
-			if (!client->HasValidHash() || (!peer.IsEmpty() && peer != client->GetUserHash())) {
-				return CMD4Hash(); // Hashless or ambiguous: legacy EC cannot address this
-						   // peer.
+			if (!client->HasValidHash()) {
+				continue; // Transient occupants do not contradict an identified session.
 			}
-			peer = client->GetUserHash();
+			if (!peer.IsEmpty() && peer.Hash() != client->GetUserHash()) {
+				return CChatPeer();
+			}
+			peer = client->GetChatPeer();
 		}
 	}
 	const CUpDownClient *client = FindChatClient(peer);
-	if (!client || !client->GetUserAddress().IsIPv4() || client->GetIP() != IP_FROM_GUI_ID(gui_id) ||
-		client->GetUserPort() != PORT_FROM_GUI_ID(gui_id)) {
-		return CMD4Hash();
+	if (client && (!client->GetUserAddress().IsIPv4() || client->GetIP() != IP_FROM_GUI_ID(gui_id) ||
+			      client->GetUserPort() != PORT_FROM_GUI_ID(gui_id))) {
+		return CChatPeer();
+	}
+	if (peer.IsEmpty()) {
+		// An explicit legacy address target may be a peer the daemon has never seen. Keep the
+		// route as a provisional identity so SendChatMessage() can create the dialing client;
+		// this is not a claim that the endpoint identifies the peer permanently.
+		return CChatPeer(CMD4Hash(),
+			CNetworkAddress::FromIPv4NetworkOrderOrAbsent(IP_FROM_GUI_ID(gui_id)),
+			PORT_FROM_GUI_ID(gui_id));
 	}
 	return peer;
 }
 
-CClientList::ChatSendResult CClientList::SendChatMessage(const CMD4Hash &peer, const wxString &message)
+CClientList::ChatSendResult CClientList::SendChatMessage(const CChatPeer &peer, const wxString &message)
 {
-	if (peer.IsEmpty()) {
+	if (peer.IsEmpty() ||
+		(peer.Hash().IsEmpty() && (!theApp->chatsessions || !theApp->chatsessions->Find(peer)))) {
 		return ChatSendResult::Unavailable;
 	}
 	CUpDownClient *client = FindChatClient(peer);
-	// A stored route is not proof that its current occupant is this peer. Wait for
-	// an identified live client rather than seed a placeholder with an assumed hash.
-	if (!client || !client->HasValidHash()) {
+	CClientRef routeClient;
+	if (!client && theApp->chatsessions) {
+		const auto *session = theApp->chatsessions->Find(peer);
+		const auto address = session ? session->address : peer.Address();
+		const uint16 port = session ? session->port : peer.Port();
+		if (address.IsIPv4()) {
+			const wxString name = session ? session->name : wxString();
+			if (peer.Hash().IsEmpty() && port && address.ToIPv4NetworkOrderOrZero()) {
+				// Reconnect this handle, not a new route-only session at the same endpoint.
+				client = new CUpDownClient(
+					port, address.ToIPv4NetworkOrderOrZero(), 0, 0, nullptr, true, true);
+				client->SetIP(address.ToIPv4NetworkOrderOrZero());
+				client->SetUserName(name);
+				client->BindChatPeer(peer);
+				AddClient(client);
+				routeClient = CCLIENTREF(client, wxT("CClientList::SendChatMessage"));
+			} else {
+				routeClient = CreateForAddress(
+					peer.Hash(), address.ToIPv4NetworkOrderOrZero(), port, name);
+			}
+			client = routeClient.GetClient();
+			if (client && !client->HasValidHash()) {
+				client->BindChatPeer(peer);
+			}
+		}
+	}
+	if (!client || (client->HasValidHash() && client->GetUserHash() != peer.Hash())) {
 		return ChatSendResult::Unavailable;
 	}
 	// Record before sending, and regardless of the result: a false return from
@@ -889,7 +933,7 @@ CClientList::ChatSendResult CClientList::SendChatMessage(const CMD4Hash &peer, c
 	return client->SendChatMessage(message) ? ChatSendResult::Sent : ChatSendResult::Queued;
 }
 
-void CClientList::SetChatState(const CMD4Hash &peer, uint8 state)
+void CClientList::SetChatState(const CChatPeer &peer, uint8 state)
 {
 	CUpDownClient *client = FindChatClient(peer);
 	if (client) {

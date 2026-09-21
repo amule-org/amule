@@ -82,17 +82,28 @@ CChatTarget FriendChatTarget(const CFriend *peer)
 #ifdef CLIENT_GUI
 	return GUI_ID(peer->GetIP(), peer->GetPort());
 #else
-	if (peer->GetLinkedClient().IsLinked()) {
-		return peer->GetLinkedClient().GetClient()->GetChatPeer();
+	// The persisted hash remains authoritative even if the linked route client
+	// has not completed its handshake yet.
+	if (!peer->GetUserHash().IsEmpty()) {
+		return CChatPeer(peer->GetUserHash(),
+			CNetworkAddress::FromIPv4NetworkOrderOrAbsent(peer->GetIP()),
+			peer->GetPort());
 	}
-	return peer->GetUserHash();
+	if (peer->GetLinkedClient().IsLinked()) {
+		const auto target = peer->GetLinkedClient().GetClient()->GetChatPeer();
+		if (!target.IsEmpty()) {
+			return target;
+		}
+	}
+	return CChatPeer(
+		CMD4Hash(), CNetworkAddress::FromIPv4NetworkOrderOrAbsent(peer->GetIP()), peer->GetPort());
 #endif
 }
 } // namespace
 
 bool CChatWnd::StartSession(CFriend *friend_client, bool setfocus)
 {
-	const CChatTarget target = FriendChatTarget(friend_client);
+	CChatTarget target = FriendChatTarget(friend_client);
 	if (!ChatTargetValid(target) || friend_client->GetName().IsEmpty()) {
 		return false;
 	}
@@ -105,8 +116,15 @@ bool CChatWnd::StartSession(CFriend *friend_client, bool setfocus)
 		if (!friend_client->GetIP() || !friend_client->GetPort()) {
 			return false;
 		}
-		theApp->clientlist->CreateForAddress(
-			target, friend_client->GetIP(), friend_client->GetPort(), friend_client->GetName());
+		const CClientRef client = theApp->clientlist->CreateForAddress(friend_client->GetUserHash(),
+			friend_client->GetIP(),
+			friend_client->GetPort(),
+			friend_client->GetName());
+		if (!client.IsLinked()) {
+			return false;
+		}
+		friend_client->LinkClient(client);
+		target = client.GetClient()->GetChatPeer();
 	}
 #endif
 

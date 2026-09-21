@@ -29,6 +29,7 @@
 #include "DeadSourceList.h"
 #include "BanRecord.h" // Needed for CBanRecord // Needed for CDeadSourceList
 #include "ClientRef.h"
+#include "ChatSessionStore.h"
 #include "CanonicalPeerIndex.h"
 #include "TrackedClientRecord.h"
 
@@ -238,14 +239,14 @@ public:
 		Queued,
 		Sent
 	};
-	ChatSendResult SendChatMessage(const CMD4Hash &peer, const wxString &message);
-	CUpDownClient *FindChatClient(const CMD4Hash &peer) const;
-	CMD4Hash ResolveLegacyChatPeer(uint64 gui_id) const;
+	ChatSendResult SendChatMessage(const CChatPeer &peer, const wxString &message);
+	CUpDownClient *FindChatClient(const CChatPeer &peer) const;
+	CChatPeer ResolveLegacyChatPeer(uint64 gui_id) const;
 
 	/**
 	 * Stops a chat session with a client.
 	 */
-	void SetChatState(const CMD4Hash &peer, uint8 state);
+	void SetChatState(const CChatPeer &peer, uint8 state);
 
 	uint8 GetBuddyStatus() const { return m_nBuddyStatus; }
 	// This must be used on CreateKadSourceLink and if we ever add the columns

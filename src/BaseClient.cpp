@@ -2876,6 +2876,16 @@ void CUpDownClient::SetUserHash(const CMD4Hash &userhash)
 	m_UserHash = userhash;
 
 	ValidateHash();
+	if (!m_chatPeer.IsEmpty() && HasValidHash() && theApp->chatsessions) {
+		if (!theApp->chatsessions->Promote(m_chatPeer, userhash)) {
+			// A stale friend route reached somebody else. Do not deliver the
+			// queued text or attach the stranger to the friend's transcript.
+			m_pendingMessage.Clear();
+			Notify_ChatConnResult(false, m_chatPeer, "");
+			SetChatState(MS_NONE);
+			m_chatPeer = CChatPeer();
+		}
+	}
 }
 
 EUtf8Str CUpDownClient::GetUnicodeSupport() const
@@ -3098,7 +3108,7 @@ void CUpDownClient::ProcessCaptchaReqRes(uint8 WXUNUSED(nStatus)) {}
 
 void CUpDownClient::ProcessCaptchaRequest(CMemFile *data)
 {
-	const CMD4Hash id = GetChatPeer();
+	const CChatPeer id = GetChatPeer();
 	// received a captcha request, check if we actually accept it (only after sending a message ourself to
 	// this client)
 	if (GetChatCaptchaState() == CA_ACCEPTING && GetChatState() != MS_NONE &&
@@ -3151,7 +3161,7 @@ void CUpDownClient::ProcessCaptchaRequest(CMemFile *data)
 
 void CUpDownClient::ProcessCaptchaReqRes(uint8 nStatus)
 {
-	const CMD4Hash id = GetChatPeer();
+	const CChatPeer id = GetChatPeer();
 	if (GetChatCaptchaState() == CA_SOLUTIONSENT && GetChatState() != MS_NONE &&
 		theApp->amuledlg->m_chatwnd->IsIdValid(id)) {
 		wxASSERT(nStatus < 3);

@@ -39,7 +39,7 @@ uint64 CChatSessionStore::Session::LegacyGuiId() const
 }
 
 CChatSessionStore::Session &CChatSessionStore::Touch(
-	const CMD4Hash &peer, const wxString &name, const CNetworkAddress &address, uint16 port)
+	const CChatPeer &peer, const wxString &name, const CNetworkAddress &address, uint16 port)
 {
 	const uint32 now = static_cast<uint32>(time(nullptr));
 
@@ -91,22 +91,28 @@ uint32 CChatSessionStore::Append(Session &s, uint8 direction, const wxString &te
 	return m_lastMsgId;
 }
 
-uint32 CChatSessionStore::AddIncoming(const CMD4Hash &peer,
+uint32 CChatSessionStore::AddIncoming(const CChatPeer &peer,
 	const wxString &name,
 	const wxString &text,
 	const CNetworkAddress &address,
 	uint16 port)
 {
-	return peer.IsEmpty() ? 0 : Append(Touch(peer, name, address, port), DIR_IN, text);
+	if (peer.IsEmpty() || (peer.Hash().IsEmpty() && !Find(peer))) {
+		return 0;
+	}
+	return Append(Touch(peer, name, address, port), DIR_IN, text);
 }
 
 uint32 CChatSessionStore::AddOutgoing(
-	const CMD4Hash &peer, const wxString &text, const CNetworkAddress &address, uint16 port)
+	const CChatPeer &peer, const wxString &text, const CNetworkAddress &address, uint16 port)
 {
-	return peer.IsEmpty() ? 0 : Append(Touch(peer, wxEmptyString, address, port), DIR_OUT, text);
+	if (peer.IsEmpty() || (peer.Hash().IsEmpty() && !Find(peer))) {
+		return 0;
+	}
+	return Append(Touch(peer, wxEmptyString, address, port), DIR_OUT, text);
 }
 
-bool CChatSessionStore::CloseSession(const CMD4Hash &peer)
+bool CChatSessionStore::CloseSession(const CChatPeer &peer)
 {
 	for (auto it = m_sessions.begin(); it != m_sessions.end(); ++it) {
 		if (it->peer == peer) {
@@ -117,7 +123,7 @@ bool CChatSessionStore::CloseSession(const CMD4Hash &peer)
 	return false;
 }
 
-const CChatSessionStore::Session *CChatSessionStore::Find(const CMD4Hash &peer) const
+const CChatSessionStore::Session *CChatSessionStore::Find(const CChatPeer &peer) const
 {
 	for (const Session &s : m_sessions) {
 		if (s.peer == peer) {
@@ -152,6 +158,58 @@ std::vector<const CChatSessionStore::Session *> CChatSessionStore::Sessions() co
 		out.push_back(&s);
 	}
 	return out;
+}
+
+CChatPeer CChatSessionStore::Open(
+	const CMD4Hash &hash, const CNetworkAddress &address, uint16 port, const wxString &name)
+{
+	if (hash.IsEmpty() &&
+		(address.IsAbsent() || !port || (address.IsIPv4() && !address.ToIPv4NetworkOrderOrZero()))) {
+		return CChatPeer();
+	}
+	for (const auto &session : m_sessions) {
+		if (!hash.IsEmpty() && session.peer.Hash() == hash) {
+			return session.peer;
+		}
+	}
+	CChatPeer peer(hash, address, port);
+	Touch(peer, name, address, port);
+	return peer;
+}
+
+bool CChatSessionStore::Promote(const CChatPeer &peer, const CMD4Hash &hash)
+{
+	if (peer.IsEmpty() || hash.IsEmpty() || (peer.Hash().IsEmpty() && !Find(peer)) ||
+		(!peer.Hash().IsEmpty() && peer.Hash() != hash)) {
+		return false;
+	}
+	peer.m_state->hash = hash;
+	// Existing copies (tabs, notifications and replacement clients) now resolve
+	// by hash. Merge in global message order, without issuing new cursor IDs.
+	auto survivor = m_sessions.end();
+	for (auto it = m_sessions.begin(); it != m_sessions.end();) {
+		if (it->peer.Hash() != hash) {
+			++it;
+		} else if (survivor == m_sessions.end()) {
+			survivor = it++;
+		} else {
+			survivor->messages.insert(
+				survivor->messages.end(), it->messages.begin(), it->messages.end());
+			if (survivor->name.IsEmpty()) {
+				survivor->name = it->name;
+			}
+			it = m_sessions.erase(it);
+		}
+	}
+	if (survivor != m_sessions.end()) {
+		std::sort(survivor->messages.begin(),
+			survivor->messages.end(),
+			[](const Message &a, const Message &b) { return a.id < b.id; });
+		while (survivor->messages.size() > MAX_MESSAGES_PER_SESSION) {
+			survivor->messages.pop_front();
+		}
+	}
+	return true;
 }
 
 void CChatSessionStore::EvictSessionsIfNeeded()

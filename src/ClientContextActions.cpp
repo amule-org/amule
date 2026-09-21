@@ -239,10 +239,6 @@ void PeerActionSendMessage(const PeerIdentity &peer)
 	PromptAndSendChatMessage(
 		peer.name.IsEmpty() ? peer.hash.Encode() : peer.name, GUI_ID(peer.ip, peer.port));
 #else
-	if (peer.hash.IsEmpty()) {
-		PromptAndSendChatMessage(peer.name, CMD4Hash());
-		return;
-	}
 	CClientRef client = theApp->clientlist->CreateForAddress(peer.hash, peer.ip, peer.port, peer.name);
 	if (client.IsLinked()) {
 		ClientActionSendMessage({ client });
@@ -441,7 +437,14 @@ void ClientActionSendMessage(const std::vector<CClientRef> &clients)
 #ifdef CLIENT_GUI
 	const CChatTarget userID = GUI_ID(source.GetIP(), source.GetUserPort());
 #else
-	const CChatTarget userID = source.GetClient()->GetChatPeer();
+	CChatTarget userID = source.GetClient()->GetChatPeer();
+	if (userID.IsEmpty() && theApp->chatsessions) {
+		userID = theApp->chatsessions->Open(source.GetUserHash(),
+			source.GetClient()->GetUserAddress(),
+			source.GetUserPort(),
+			userName);
+		source.GetClient()->BindChatPeer(userID);
+	}
 #endif
 
 	PromptAndSendChatMessage(userName, userID);

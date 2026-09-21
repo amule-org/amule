@@ -1551,7 +1551,7 @@ CECTag EncodeChatSession(const CChatSessionStore::Session &session, uint32 curso
 		// unroutable address read as online.
 		tag.AddTag(CECTag(EC_TAG_CLIENT_CONNECTED, client->IsConnected()));
 	}
-	if (const CFriend *f = theApp->friendlist->FindFriend(session.peer, 0, 0)) {
+	if (const CFriend *f = theApp->friendlist->FindFriend(session.peer.Hash(), 0, 0)) {
 		tag.AddTag(CECTag(EC_TAG_FRIEND, f->ECID()));
 	}
 
@@ -4107,7 +4107,7 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 			response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("Unknown chat target")));
 			break;
 		}
-		const CMD4Hash peer = theApp->clientlist->ResolveLegacyChatPeer(gui_id);
+		const CChatPeer peer = theApp->clientlist->ResolveLegacyChatPeer(gui_id);
 		const auto result = theApp->clientlist->SendChatMessage(peer, text);
 		if (result == CClientList::ChatSendResult::Unavailable) {
 			response = new CECPacket(EC_OP_FAILED);
@@ -4135,7 +4135,7 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 			response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("No such chat session")));
 			break;
 		}
-		const CMD4Hash peer = session->peer;
+		const CChatPeer peer = session->peer;
 		theApp->chatsessions->CloseSession(peer);
 		theApp->clientlist->SetChatState(peer, MS_NONE);
 		// Closing is global, matching how closing a search tab destroys the core bucket for
