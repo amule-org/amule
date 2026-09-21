@@ -68,6 +68,21 @@ env:
   CCACHE_DIR: ${{ github.workspace }}/.ccache
   CCACHE_MAXSIZE: 1G
 
+# Runner versions here are compatibility decisions, not drift, and each job's is
+# different on purpose. Do not harmonise them:
+#
+#   appimage      ubuntu-22.04  an AppImage links the host glibc, so this runner sets
+#                               the OLDEST system the artifact runs on. Bumping it
+#                               raises that floor and strands users.
+#   linux-static  ubuntu-22.04  builds inside Alpine, host barely matters.
+#   flatpak       ubuntu-24.04  needs appstream 1.0+ for appstream-compose, absent on 22.04.
+#   macos-build   macos-15      the SDK the shipped .app is built against, and the
+#                               Intel leg needs Rosetta on the runner.
+#   windows       windows-2025 / windows-11-arm
+#
+# release.yml's own jobs are a different matter: they ship nothing that links against
+# the runner, so they all sit on one current image.
+
 jobs:
 
   # ------------------------------------------------------------------

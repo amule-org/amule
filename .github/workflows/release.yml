@@ -191,7 +191,11 @@ jobs:
   release:
     name: Assemble draft Release
     needs: [build, source-bundle]
-    runs-on: ubuntu-22.04
+    # Same image as the other two jobs here. This one only runs gh and shell, so the
+    # version is free; it sat on 22.04 since the workflow was written, for no reason
+    # anyone recorded. Unlike packaging.yml, where each runner version is a
+    # compatibility decision, nothing here is pinned to reach older systems.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
         with:
