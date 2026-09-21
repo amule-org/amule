@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-18 22:25+0100\n"
+"POT-Creation-Date: 2026-09-21 12:20+0200\n"
 "PO-Revision-Date: 2026-09-20 21:04+0000\n"
 "Last-Translator: Jure Repinc <jlp@holodeck1.com>\n"
 "Language-Team: Slovenian\n"
@@ -1222,13 +1222,17 @@ msgid "Failed to create incoming dir for category. Please specify a valid path!"
 msgstr "Ni bilo mogoče ustvariti mape prejetih datotek za kategorijo. Prosimo, navedite veljavno pot."
 
 #: src/ChatSelector.cpp
-#, c-format
-msgid "Chat-Session Started: %s (%s:%u) - %s %s"
+#, fuzzy, c-format
+msgid "Chat-Session Started: %s - %s %s"
 msgstr "Pogovorna seja se je začela: %s (%s:%u) – %s %s"
 
 #: src/ChatSelector.cpp
 msgid "*** Connected to Client ***"
 msgstr "*** Povezan z odjemalcem ***"
+
+#: src/ChatSelector.cpp
+msgid "*** Chat unavailable: peer identity or route is not available ***"
+msgstr ""
 
 #: src/ChatSelector.cpp
 msgid "*** Connecting to Client ***"
@@ -1285,6 +1289,15 @@ msgstr "Prikaži datoteke"
 #: src/ClientContextActions.cpp
 msgid "Send message"
 msgstr "Pošlji sporočilo"
+
+#: src/ClientContextActions.cpp
+msgid "Chat is unavailable until the peer supplies a valid identity."
+msgstr ""
+
+#: src/ClientContextActions.cpp
+#, fuzzy
+msgid "Chat unavailable"
+msgstr "Ni na voljo"
 
 #: src/ClientContextActions.cpp
 msgid "Send message to user"
@@ -2366,6 +2379,10 @@ msgstr ""
 #, fuzzy
 msgid "Unknown chat target"
 msgstr "(neznano ime)"
+
+#: src/ExternalConn.cpp
+msgid "Chat unavailable: peer identity or route is not available"
+msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "Kad is disabled in preferences."

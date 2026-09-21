@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-18 22:25+0100\n"
+"POT-Creation-Date: 2026-09-21 12:20+0200\n"
 "PO-Revision-Date: 2026-09-20 21:08+0000\n"
 "Last-Translator: Wayne Su <mstarmstar@gmail.com>\n"
 "Language-Team: \n"
@@ -1213,13 +1213,17 @@ msgid "Failed to create incoming dir for category. Please specify a valid path!"
 msgstr "無法建立該分類的目錄。請輸入有效的路徑！"
 
 #: src/ChatSelector.cpp
-#, c-format
-msgid "Chat-Session Started: %s (%s:%u) - %s %s"
+#, fuzzy, c-format
+msgid "Chat-Session Started: %s - %s %s"
 msgstr "已開始交談：%s (%s:%u) - %s %s"
 
 #: src/ChatSelector.cpp
 msgid "*** Connected to Client ***"
 msgstr "*** 已連線到客戶端 ***"
+
+#: src/ChatSelector.cpp
+msgid "*** Chat unavailable: peer identity or route is not available ***"
+msgstr ""
 
 #: src/ChatSelector.cpp
 msgid "*** Connecting to Client ***"
@@ -1276,6 +1280,15 @@ msgstr "檢視檔案"
 #: src/ClientContextActions.cpp
 msgid "Send message"
 msgstr "傳送訊息"
+
+#: src/ClientContextActions.cpp
+msgid "Chat is unavailable until the peer supplies a valid identity."
+msgstr ""
+
+#: src/ClientContextActions.cpp
+#, fuzzy
+msgid "Chat unavailable"
+msgstr "不可用"
 
 #: src/ClientContextActions.cpp
 msgid "Send message to user"
@@ -2327,6 +2340,10 @@ msgstr ""
 #, fuzzy
 msgid "Unknown chat target"
 msgstr "(不明名稱)"
+
+#: src/ExternalConn.cpp
+msgid "Chat unavailable: peer identity or route is not available"
+msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "Kad is disabled in preferences."

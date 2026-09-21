@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-18 22:25+0100\n"
+"POT-Creation-Date: 2026-09-21 12:20+0200\n"
 "PO-Revision-Date: 2026-09-20 20:33+0000\n"
 "Last-Translator: \n"
 "Language-Team: Estonian <kde-i18n-doc@kde.org>\n"
@@ -1212,13 +1212,17 @@ msgid "Failed to create incoming dir for category. Please specify a valid path!"
 msgstr "Ei suutnud luua kategooria sisendkataloogi. Palun defineeri kehtiv asukoht!"
 
 #: src/ChatSelector.cpp
-#, c-format
-msgid "Chat-Session Started: %s (%s:%u) - %s %s"
+#, fuzzy, c-format
+msgid "Chat-Session Started: %s - %s %s"
 msgstr "VestlusSeanss Alustatud: %s (%s:%u) - %s %s"
 
 #: src/ChatSelector.cpp
 msgid "*** Connected to Client ***"
 msgstr "*** Ühenduses Kliendiga ***"
+
+#: src/ChatSelector.cpp
+msgid "*** Chat unavailable: peer identity or route is not available ***"
+msgstr ""
 
 #: src/ChatSelector.cpp
 msgid "*** Connecting to Client ***"
@@ -1275,6 +1279,15 @@ msgstr "Vaata faile"
 #: src/ClientContextActions.cpp
 msgid "Send message"
 msgstr "Saada teade"
+
+#: src/ClientContextActions.cpp
+msgid "Chat is unavailable until the peer supplies a valid identity."
+msgstr ""
+
+#: src/ClientContextActions.cpp
+#, fuzzy
+msgid "Chat unavailable"
+msgstr "Info puudub"
 
 #: src/ClientContextActions.cpp
 msgid "Send message to user"
@@ -2335,6 +2348,10 @@ msgstr ""
 #, fuzzy
 msgid "Unknown chat target"
 msgstr "(Tundmatu nimi)"
+
+#: src/ExternalConn.cpp
+msgid "Chat unavailable: peer identity or route is not available"
+msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "Kad is disabled in preferences."

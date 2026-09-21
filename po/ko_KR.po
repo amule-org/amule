@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-18 22:25+0100\n"
+"POT-Creation-Date: 2026-09-21 12:20+0200\n"
 "PO-Revision-Date: 2026-09-20 20:52+0000\n"
 "Last-Translator: Hyunju Kang <rexington@gmail.com>\n"
 "Language-Team: Korean <hoenny@daum.net>\n"
@@ -1220,13 +1220,17 @@ msgid "Failed to create incoming dir for category. Please specify a valid path!"
 msgstr "분류를 저장할 폴더를 생성하지 못했습니다. 유효한 경로를 지정하세요."
 
 #: src/ChatSelector.cpp
-#, c-format
-msgid "Chat-Session Started: %s (%s:%u) - %s %s"
+#, fuzzy, c-format
+msgid "Chat-Session Started: %s - %s %s"
 msgstr "채팅세션이 시작됨: %s (%s:%u) - %s %s"
 
 #: src/ChatSelector.cpp
 msgid "*** Connected to Client ***"
 msgstr "***클라이언트에 연결되었습니다***"
+
+#: src/ChatSelector.cpp
+msgid "*** Chat unavailable: peer identity or route is not available ***"
+msgstr ""
 
 #: src/ChatSelector.cpp
 msgid "*** Connecting to Client ***"
@@ -1283,6 +1287,15 @@ msgstr "파일 보기"
 #: src/ClientContextActions.cpp
 msgid "Send message"
 msgstr "메시지 보내기"
+
+#: src/ClientContextActions.cpp
+msgid "Chat is unavailable until the peer supplies a valid identity."
+msgstr ""
+
+#: src/ClientContextActions.cpp
+#, fuzzy
+msgid "Chat unavailable"
+msgstr "유효하지 않음"
 
 #: src/ClientContextActions.cpp
 msgid "Send message to user"
@@ -2348,6 +2361,10 @@ msgstr ""
 #, fuzzy
 msgid "Unknown chat target"
 msgstr "(알수없는 이름)"
+
+#: src/ExternalConn.cpp
+msgid "Chat unavailable: peer identity or route is not available"
+msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "Kad is disabled in preferences."
