@@ -405,6 +405,8 @@ void CSharedFileList::FindSharedFiles(const ReloadYieldCb &yieldCb, bool &aborte
 		// has -- neither may be observed between here and the end of the walk, which is the rule
 		// that already forbids pumping the event loop during a walk.
 		m_pathIndex.clear();
+		m_excludedNames.Clear();
+		m_excludedNamesTruncated = false;
 		m_listGeneration.fetch_add(1, std::memory_order_relaxed);
 	}
 
@@ -562,6 +564,7 @@ unsigned CSharedFileList::AddFilesFromDirectory(const CPath &directory,
 			break;
 		case kAddPathExcluded:
 			excluded++;
+			RecordExcludedName(fname.GetPrintable());
 			break;
 		case kAddPathSkipped:
 			break;
@@ -1364,14 +1367,27 @@ void CSharedFileList::CopyFileList(std::vector<CKnownFile *> &out_list) const
 	}
 }
 
-void CSharedFileList::GetSharedFileNames(wxArrayString &out) const
+void CSharedFileList::RecordExcludedName(const wxString &fileName)
 {
 	wxMutexLocker lock(list_mut);
 
-	out.Alloc(m_Files_map.size());
+	if (m_excludedNames.GetCount() >= kMaxExcludedNamesTracked) {
+		m_excludedNamesTruncated = true;
+		return;
+	}
+	m_excludedNames.Add(fileName);
+}
+
+void CSharedFileList::GetShareCandidateNames(wxArrayString &out, bool &truncated) const
+{
+	wxMutexLocker lock(list_mut);
+
+	out.Alloc(m_Files_map.size() + m_excludedNames.GetCount());
 	for (const auto &entry : m_Files_map) {
 		out.Add(entry.second->GetFileName().GetPrintable());
 	}
+	WX_APPEND_ARRAY(out, m_excludedNames);
+	truncated = m_excludedNamesTruncated;
 }
 
 void CSharedFileList::UpdateItem(CKnownFile *toupdate)

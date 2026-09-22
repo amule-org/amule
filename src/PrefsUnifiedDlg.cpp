@@ -1930,15 +1930,22 @@ void PrefsUnifiedDlg::OnButtonExcludePreview(wxCommandEvent &WXUNUSED(event))
 	const wxString patterns = CastChild(IDC_EXCLUDE_SHARE_PATTERNS, wxTextCtrl)->GetValue();
 	const bool useRegex = CastChild(IDC_EXCLUDE_SHARE_REGEX, wxCheckBox)->GetValue();
 
+	// Counted over what the last walk saw, shared files and rejected ones alike. The shared
+	// list on its own holds only what the saved filter let through, so a pattern already in
+	// force previewed as near zero while the log reported thousands excluded (issue #1530).
 	wxArrayString names;
-	theApp->sharedfiles->GetSharedFileNames(names);
+	bool truncated = false;
+	theApp->sharedfiles->GetShareCandidateNames(names, truncated);
 
 	const int excluded = thePrefs::PreviewExcludeCount(patterns, useRegex, names);
 	if (excluded == wxNOT_FOUND) {
 		info->SetLabel(_("Invalid regular expression"));
+	} else if (truncated) {
+		info->SetLabel(CFormat(_("Would exclude %u or more of the files in your shared folders")) %
+			       (unsigned)excluded);
 	} else {
-		info->SetLabel(CFormat(wxPLURAL("Would exclude %u of %u shared file",
-				       "Would exclude %u of %u shared files",
+		info->SetLabel(CFormat(wxPLURAL("Would exclude %u of %u file in your shared folders",
+				       "Would exclude %u of %u files in your shared folders",
 				       names.GetCount())) %
 			       (unsigned)excluded % (unsigned)names.GetCount());
 	}

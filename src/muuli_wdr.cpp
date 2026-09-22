@@ -1874,12 +1874,12 @@ wxSizer *PreferencesDirectoriesTab( wxWindow *parent, bool call_fit, bool set_si
     wxStaticText *itemExcludeLabel = new wxStaticText( item10, -1, _("Exclude files matching:"), wxDefaultPosition, wxDefaultSize, 0 );
     itemExcludeRow->Add( itemExcludeLabel, wxSizerFlags().CenterVertical().Border(wxRIGHT, 4) );
     CMuleTextCtrl *itemExcludePatterns = new CMuleTextCtrl( item10, IDC_EXCLUDE_SHARE_PATTERNS, "", wxDefaultPosition, wxSize(80,-1), 0 );
-    itemExcludePatterns->SetToolTip(_("Wildcard patterns separated by '|', e.g. .DS_Store|Thumbs.db|*.tmp. Files whose name matches are not shared. Matching is case-insensitive."));
+    itemExcludePatterns->SetToolTip(_("Files whose name matches are not shared. Matching is case-insensitive. As wildcards: patterns separated by '|', e.g. .DS_Store|Thumbs.db|*.tmp, where '*' matches any run of characters and '?' a single one. Tick the box below to write one regular expression instead."));
     itemExcludeRow->Add( itemExcludePatterns, wxSizerFlags(1).Expand().CenterVertical() );
     item9->Add( itemExcludeRow, wxSizerFlags().Expand().Border(wxTOP, 4) );
 
     wxCheckBox *itemExcludeRegex = new wxCheckBox( item10, IDC_EXCLUDE_SHARE_REGEX, _("Patterns are regular expressions"), wxDefaultPosition, wxDefaultSize, 0 );
-    itemExcludeRegex->SetToolTip(_("When set, the whole field is one regular expression ('|' is alternation). When unset, it is a list of '|'-separated wildcards."));
+    itemExcludeRegex->SetToolTip(_("When set, the whole field is one regular expression: '|' is alternation, and '*' and '?' take their regular-expression meaning rather than the wildcard one. When unset, it is a list of '|'-separated wildcards."));
     item9->Add( itemExcludeRegex, 0, wxALIGN_CENTER_VERTICAL, 0 );
 
     // Live preview: how many currently-shared files the typed pattern would exclude. Needs the
@@ -1888,7 +1888,7 @@ wxSizer *PreferencesDirectoriesTab( wxWindow *parent, bool call_fit, bool set_si
     // runtime there. The pattern/regex fields still work and sync over EC.
     wxBoxSizer *itemPreviewRow = new wxBoxSizer( wxHORIZONTAL );
     wxButton *itemPreviewBtn = new wxButton( item10, IDC_EXCLUDE_SHARE_PREVIEW, _("Preview"), wxDefaultPosition, wxDefaultSize, 0 );
-    itemPreviewBtn->SetToolTip(_("Show how many shared files the current pattern would exclude."));
+    itemPreviewBtn->SetToolTip(_("Show how many of the files in your shared folders the current pattern would exclude, counted over the last scan."));
     itemPreviewRow->Add( itemPreviewBtn, wxSizerFlags().CenterVertical().Border(wxRIGHT, 6) );
     wxStaticText *itemPreviewInfo = new wxStaticText( item10, IDC_EXCLUDE_SHARE_PREVIEW_INFO, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
     itemPreviewRow->Add( itemPreviewInfo, wxSizerFlags(1).CenterVertical() );

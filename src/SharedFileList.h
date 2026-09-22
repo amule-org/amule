@@ -123,9 +123,13 @@ public:
 	uint64 GetListGeneration() const { return m_listGeneration.load(std::memory_order_relaxed); }
 
 	void CopyFileList(std::vector<CKnownFile *> &out_list) const;
-	// Fill `out` with the basenames of all currently shared files. Used by
-	// the Directories panel's exclusion-filter live preview.
-	void GetSharedFileNames(wxArrayString &out) const;
+	// Fill `out` with the basenames the last walk considered: the shared files plus the ones
+	// the saved filter rejected. The exclusion preview needs this rather than the shared list,
+	// which by construction holds only what the saved filter already let through -- previewing
+	// against it cannot see the files that filter removed, so it contradicted the "Excluded N
+	// files from sharing by filter" log line (issue #1530). `truncated` reports that the
+	// rejected names hit their cap, which makes any count taken from `out` a lower bound.
+	void GetShareCandidateNames(wxArrayString &out, bool &truncated) const;
 	void UpdateItem(CKnownFile *toupdate);
 	void GetSharedFilesByDirectory(const wxString &directory, CKnownFilePtrList &list);
 	void ClearED2KPublishInfo();
@@ -292,6 +296,8 @@ private:
 		size_t &excluded,
 		bool &aborted);
 	void FindSharedFiles(const ReloadYieldCb &yieldCb, bool &aborted);
+	//! Remembers a name the filter rejected, up to kMaxExcludedNamesTracked. Takes list_mut.
+	void RecordExcludedName(const wxString &fileName);
 	// Atomic: RemoveFile() reads it off the upload worker thread (issue #1028).
 	std::atomic<bool> reloading;
 	// Set by RequestReload(), drained by Process(). Its rules -- coalescing, a mid-walk request
@@ -354,6 +360,18 @@ private:
 	// #1028). Both containers are empty from that clear until the walk refills them, and
 	// neither may be observed in between.
 	std::unordered_map<wxString, CKnownFile *> m_pathIndex;
+
+	// Basenames the walk rejected for the user's exclusion filter, for GetShareCandidateNames().
+	// Filled by the bulk walk only, so it and the "Excluded N files" log line always describe
+	// the same scan; the watcher leaves it alone and the next reload refreshes it.
+	wxArrayString m_excludedNames;
+	//! Whether m_excludedNames stopped short of the cap below.
+	bool m_excludedNamesTruncated = false;
+	// A name costs a wxString, and nothing bounds how many files a filter can reject, so the
+	// list stops here. Enough that no plausible share reaches it, small enough that one that
+	// does costs a few MB rather than the share's whole name table.
+	static const size_t kMaxExcludedNamesTracked = 100000;
+
 	mutable wxMutex list_mut;
 
 	StringPathMap m_PublicSharedDirNames; //! used for mapping strings to shared directories
