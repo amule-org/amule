@@ -2201,6 +2201,7 @@ void CamuleApp::OnFinishedHashing(CHashingEvent &evt)
 		}
 	} else {
 		static uint64 bytecount = 0;
+		static wxLongLong lastFailsafeSave = 0;
 
 		// CHashingTask runs against a stable file descriptor, so the hash completes even if
 		// the file is renamed or unlinked mid-hash. Re-check the path at completion: if the
@@ -2221,13 +2222,21 @@ void CamuleApp::OnFinishedHashing(CHashingEvent &evt)
 			sharedfiles->SafeAddKFile(result);
 
 			bytecount += result->GetFileSize();
-			// If we have added files with a total size of ~3000mb
-			if (bytecount >= wxULL(3145728000)) {
+			// Save once ~30 GB of new hashes would be lost to a crash, but at most once per
+			// window: each save rewrites all of known.met on this thread, seconds on a large
+			// library. Waiting drops nothing -- the bytes keep counting, and the hashing worker
+			// saves when its queue drains.
+			constexpr uint64 kFailsafeSaveBytes = 30ULL * 1024 * 1024 * 1024;
+			constexpr long kFailsafeSaveWindowMs = 5 * 60 * 1000;
+			const wxLongLong now = wxGetUTCTimeMillis();
+			if (bytecount >= kFailsafeSaveBytes &&
+				now - lastFailsafeSave >= kFailsafeSaveWindowMs) {
 				AddDebugLogLineN(
 					logKnownFiles, "Failsafe for crash on file hashing creation");
 				if (m_app_state != APP_STATE_SHUTTINGDOWN) {
 					knownfiles->Save();
 					bytecount = 0;
+					lastFailsafeSave = now;
 				}
 			}
 		} else {
