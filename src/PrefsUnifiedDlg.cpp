@@ -1474,7 +1474,7 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 			break;
 		}
 		if (sourceChanged || credentialChangedForActive) {
-			theApp->GetIP2Country()->Update(true);
+			theApp->GetIP2Country()->Update(true, true);
 		}
 	}
 #endif
@@ -2068,7 +2068,13 @@ void PrefsUnifiedDlg::OnButtonIPFilterReload(wxCommandEvent &WXUNUSED(event))
 
 void PrefsUnifiedDlg::OnButtonIPFilterUpdate(wxCommandEvent &WXUNUSED(event))
 {
-	theApp->ipfilter->Update(CastChild(IDC_IPFILTERURL, wxTextCtrl)->GetValue());
+	const wxString url = CastChild(IDC_IPFILTERURL, wxTextCtrl)->GetValue();
+#ifdef CLIENT_GUI
+	// Runs on the core, which shows no dialog for a remote request.
+	theApp->ipfilter->Update(url);
+#else
+	theApp->ipfilter->Update(url, true);
+#endif
 }
 
 #ifdef GEOIP_GUI
@@ -2145,7 +2151,7 @@ void PrefsUnifiedDlg::OnGeoIPUpdateNow(wxCommandEvent &WXUNUSED(event))
 	// panel is shown (the running download is not blocking, so polling would just show
 	// "...").
 	if (theApp->GetIP2Country()) {
-		theApp->GetIP2Country()->Update(true);
+		theApp->GetIP2Country()->Update(true, true);
 	}
 #endif
 }

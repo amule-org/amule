@@ -229,9 +229,10 @@ public:
 
 	/**
 	 * Starts a download of the ipfilter list at @a strURL. Once it has downloaded, ipfilter.dat
-	 * is replaced with the new file and Reload is called.
+	 * is replaced with the new file and Reload is called. @a showDialog shows the HTTP progress
+	 * dialog, for a local, user-initiated update only.
 	 */
-	void Update(const wxString &strURL);
+	void Update(const wxString &strURL, bool showDialog = false);
 
 	/**
 	 * Called when a download completes.

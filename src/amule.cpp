@@ -1189,7 +1189,7 @@ bool CamuleApp::OnInit()
 				serverlist->UpdateServerMetFromURL(thePrefs::GetEd2kServersUrl());
 			}
 			if (wizardWantsNodesDat) {
-				UpdateNotesDat(thePrefs::GetKadNodesUrl());
+				UpdateNotesDat(thePrefs::GetKadNodesUrl(), true);
 			}
 		} else {
 			const bool needServerMet =
@@ -1241,7 +1241,7 @@ bool CamuleApp::OnInit()
 							thePrefs::GetEd2kServersUrl());
 					}
 					if (nodesDatCheck && nodesDatCheck->GetValue()) {
-						UpdateNotesDat(thePrefs::GetKadNodesUrl());
+						UpdateNotesDat(thePrefs::GetKadNodesUrl(), true);
 					}
 				}
 			}
@@ -3198,12 +3198,16 @@ void CamuleApp::BootstrapKad(uint32 ip, uint16 port)
 	Kademlia::CKademlia::Bootstrap(ip, port);
 }
 
-void CamuleApp::UpdateNotesDat(const wxString &url)
+void CamuleApp::UpdateNotesDat(const wxString &url, bool showDialog)
 {
 	wxString strTempFilename(thePrefs::GetConfigDir() + "nodes.dat.download");
 
-	CHTTPDownloadThread *downloader = new CHTTPDownloadThread(
-		url, strTempFilename, thePrefs::GetConfigDir() + "nodes.dat", HTTP_NodesDat, true, false);
+	CHTTPDownloadThread *downloader = new CHTTPDownloadThread(url,
+		strTempFilename,
+		thePrefs::GetConfigDir() + "nodes.dat",
+		HTTP_NodesDat,
+		showDialog,
+		false);
 	downloader->Create();
 	downloader->Run();
 }

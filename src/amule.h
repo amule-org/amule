@@ -482,8 +482,8 @@ public:
 
 	/** Bootstraps kad from the specified IP (must be in hostorder). */
 	void BootstrapKad(uint32 ip, uint16 port);
-	/** Updates the nodes.dat file from the specified url. */
-	void UpdateNotesDat(const wxString &str);
+	/** Updates the nodes.dat file from the specified url, with the progress dialog if @a showDialog. */
+	void UpdateNotesDat(const wxString &str, bool showDialog = false);
 
 	void DisconnectED2K();
 

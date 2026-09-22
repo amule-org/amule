@@ -140,9 +140,7 @@ void CIP2Country::StartDownload(int monthOffset)
 	}
 	AddLogLineN(CFormat(_("Download new %s from %s")) % m_DataBaseName % url);
 	m_downloading = true;
-	// showDialog = m_showProgress: shown for a local monolithic "Update now", suppressed for a
-	// remote trigger, where EC carries no progress and on a monolithic-app-as-backend the
-	// dialog would pop on the core. checkDownloadNewer stays true, honouring If-Modified.
+	// checkDownloadNewer stays true, honouring If-Modified-Since.
 	CHTTPDownloadThread *downloader = new CHTTPDownloadThread(
 		url, m_DataBasePath + ".download", m_DataBasePath, HTTP_GeoIP, m_showProgress, true);
 	downloader->Create();
