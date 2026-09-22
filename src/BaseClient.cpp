@@ -2867,6 +2867,42 @@ void CUpDownClient::SetUserAddress(const CNetworkAddress &address)
 	m_userAddress = key;
 	m_connectAddress = key;
 	m_FullUserIP = key.ToIPv4NetworkOrderOrZero();
+	// Here as well as in SetUserHash(): a hello sets the hash first and the address
+	// last, so this is the point at which an inbound client knows both.
+	AdoptProvisionalChatSession();
+}
+
+/**
+ * Claim a provisional session waiting at this peer's route.
+ *
+ * A provisional session is keyed on a route because nothing better was known when the user opened
+ * it. Promotion otherwise runs only from the client that carries the binding, which is the client
+ * that dialled. A peer that identifies through any other object -- an inbound connection arriving
+ * while our attempt is still pending, or after it failed -- would leave that session provisional
+ * forever, and its first message would open a second transcript beside the tab the user is already
+ * looking at. Both directions shared one tab before sessions were keyed on identity.
+ *
+ * The route is the only identity a provisional session has, so a stranger reaching the same
+ * endpoint is adopted by it. That is the same trade the provisional state already makes, and it
+ * ends the moment either side is identified. A session that carries a hash is never claimed here:
+ * CChatPeer only compares routes when neither side has one.
+ */
+void CUpDownClient::AdoptProvisionalChatSession()
+{
+	if (!HasValidHash() || !m_chatPeer.IsEmpty() || theApp->chatsessions == nullptr) {
+		return;
+	}
+	CChatPeer route(CMD4Hash(), GetUserAddress(), GetUserPort());
+	if (route.IsEmpty() || !theApp->chatsessions->Find(route)) {
+		return;
+	}
+	// Kept for the notification: promotion writes the hash into the handle above.
+	const CChatPeer oldPeer(CMD4Hash(), route.Address(), route.Port());
+	if (!theApp->chatsessions->Promote(route, GetUserHash())) {
+		return;
+	}
+	m_chatPeer = route;
+	Notify_ChatRekeySession(oldPeer, m_chatPeer);
 }
 
 void CUpDownClient::SetUserHash(const CMD4Hash &userhash)
@@ -2889,6 +2925,10 @@ void CUpDownClient::SetUserHash(const CMD4Hash &userhash)
 		} else if (oldPeer != m_chatPeer) {
 			Notify_ChatRekeySession(oldPeer, m_chatPeer);
 		}
+	} else {
+		// No binding, but the address may already be known: a client identified
+		// after its route was learned reaches the provisional session from here.
+		AdoptProvisionalChatSession();
 	}
 }
 

@@ -263,6 +263,8 @@ public:
 	void BindChatPeer(const CChatPeer &peer) { m_chatPeer = peer; }
 
 private:
+	//! Claims a provisional session waiting at this peer's route, once it is identified.
+	void AdoptProvisionalChatSession();
 	CChatPeer m_chatPeer;
 
 public:
