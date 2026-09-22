@@ -65,7 +65,7 @@ inline bool CKnownFileList::KnownFileMatches(
 	       (knownFile->GetFileSize() == in_size) && (knownFile->GetFileName() == filename);
 }
 
-CKnownFileList::CKnownFileList()
+CKnownFileList::CKnownFileList(const LoadProgressCb &progressCb)
 {
 	accepted = 0;
 	requested = 0;
@@ -74,7 +74,7 @@ CKnownFileList::CKnownFileList()
 	m_knownSizeMap = NULL;
 	m_duplicateSizeMap = NULL;
 	m_initialShareScanComplete = false;
-	Init();
+	Init(progressCb);
 }
 
 CKnownFileList::~CKnownFileList()
@@ -82,7 +82,7 @@ CKnownFileList::~CKnownFileList()
 	Clear();
 }
 
-bool CKnownFileList::Init()
+bool CKnownFileList::Init(const LoadProgressCb &progressCb)
 {
 	CFile file;
 
@@ -118,6 +118,9 @@ bool CKnownFileList::Init()
 		// incrementally, so every collision check takes the equal_range fast path (issue
 		// #562, a ~36 s startup gap on a 200 k-file library).
 		PrepareIndex();
+		// Coarse enough that the callback costs nothing against the record parse, fine
+		// enough that a 300k-entry load still reports about 300 times.
+		constexpr uint32 kProgressEvery = 1024;
 		for (uint32 i = 0; i < RecordsNumber; i++) {
 			CScopedPtr<CKnownFile> record;
 			if (record->LoadFromFile(&file)) {
@@ -127,6 +130,9 @@ bool CKnownFileList::Init()
 			} else {
 				AddLogLineC(
 					_("Failed to load entry in known file list, file may be corrupt"));
+			}
+			if (progressCb && (i % kProgressEvery) == 0) {
+				progressCb(i, RecordsNumber);
 			}
 		}
 		ReleaseIndex();

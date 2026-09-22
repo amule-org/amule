@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-22 15:47+0100\n"
+"POT-Creation-Date: 2026-09-22 16:11+0100\n"
 "PO-Revision-Date: 2026-09-20 21:10+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
@@ -338,6 +338,26 @@ msgstr ""
 #: src/amule.cpp src/KadDlg.cpp src/PrefsUnifiedDlg.cpp src/SharedFilesCtrl.cpp
 msgid "WARNING"
 msgstr "BRĪDINĀJUMS"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Loading known files"
+msgstr "Ielādē pagaidu datnes"
+
+#: src/amule.cpp
+#, fuzzy, c-format
+msgid "Loading known files (%u of %u)"
+msgstr "Ielādē pagaidu datnes (%u no %u)"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Loading credits"
+msgstr "Ielādē kopīgotās datnes"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Loading IP filter"
+msgstr "Ielādē pagaidu datnes"
 
 #: src/amule.cpp
 msgid "Initializing network"

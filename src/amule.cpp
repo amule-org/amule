@@ -830,17 +830,54 @@ bool CamuleApp::OnInit()
 
 	m_statistics = new CStatistics();
 
+#ifdef AMULE_SHOW_SPLASH
+	// Up here rather than after InitGui() because known.met, clients.met and the IP filter are
+	// all read below, and on a large library that is the longest stretch of the whole startup
+	// with nothing on screen at all. Nothing between here and InitGui() can abort -- the last
+	// bail-out is the incoming-directory check above -- so the splash cannot outlive a run that
+	// never gets a window. No parent: amuledlg does not exist yet, and the splash centres on
+	// the screen rather than on it anyway.
+	constexpr int kPreloadKnownEnd = 2;
+	constexpr int kPreloadBandEnd = 3;
+	CSplashScreen *splash = new CSplashScreen(nullptr);
+	m_splash = splash;
+	splash->Show();
+	// One pump so the window is mapped and painted before the loads begin.
+	wxYield();
+	const wxLongLong preloadStart = wxGetUTCTimeMillis();
+	splash->SetProgress(_("Loading known files"), 0, true);
+#endif
+
+	// Empty outside the splash build, which the daemon and the remote GUI are.
+	CKnownFileList::LoadProgressCb knownProgress;
+#ifdef AMULE_SHOW_SPLASH
+	knownProgress = [splash](uint32 loaded, uint32 total) {
+		const int percent =
+			total ? static_cast<int>((kPreloadKnownEnd * static_cast<uint64>(loaded)) / total)
+			      : 0;
+		splash->SetProgress(CFormat(_("Loading known files (%u of %u)")) % loaded % total, percent);
+	};
+#endif
+
 	clientlist = new CClientList();
 	friendlist = new CFriendList();
 	chatsessions = new CChatSessionStore();
 	searchlist = new CSearchList();
 	browsemanager = new CBrowseManager();
-	knownfiles = new CKnownFileList();
+	knownfiles = new CKnownFileList(knownProgress);
+#ifdef AMULE_SHOW_SPLASH
+	const wxLongLong knownDoneAt = wxGetUTCTimeMillis();
+	splash->SetProgress(_("Loading credits"), kPreloadKnownEnd, true);
+#endif
 	canceledfiles = new CCanceledFileList;
 	serverlist = new CServerList();
 
 	sharedfiles = new CSharedFileList(knownfiles);
 	clientcredits = new CClientCreditsList();
+#ifdef AMULE_SHOW_SPLASH
+	const wxLongLong creditsDoneAt = wxGetUTCTimeMillis();
+	splash->SetProgress(_("Loading IP filter"), kPreloadBandEnd, true);
+#endif
 
 	// bugfix - do this before creating the uploadqueue
 	downloadqueue = new CDownloadQueue();
@@ -853,6 +890,9 @@ bool CamuleApp::OnInit()
 	// items would never drain and the `.part` file would stay at 0 bytes while the network
 	// side received chunks.
 	ipfilter = new CIPFilter();
+#ifdef AMULE_SHOW_SPLASH
+	const wxLongLong filterDoneAt = wxGetUTCTimeMillis();
+#endif
 
 	// Creates all needed listening sockets
 	wxString msg;
@@ -871,13 +911,6 @@ bool CamuleApp::OnInit()
 	InitGui(m_geometryEnabled, m_geometryString);
 
 #ifdef AMULE_SHOW_SPLASH
-	// Up before the heavy local I/O below, which holds the main thread long enough that the
-	// main window -- already created by InitGui -- never gets painted. Shown here rather
-	// than earlier so it does not outlive a failed GUI init.
-	CSplashScreen *splash = new CSplashScreen(theApp->amuledlg);
-	m_splash = splash;
-	splash->Show();
-
 	// Both list controls are batched for the whole startup: part-file loading fills the
 	// download list and the scan plus hashing fill the shared list, and each
 	// individually-sorted insert rebuilds the row index, so a burst of thousands is
@@ -954,11 +987,11 @@ bool CamuleApp::OnInit()
 	// populated ones a real Temp directory holds. Capped well short of half the bar: the
 	// scan is the phase that usually runs long, and it must keep room to show it.
 	constexpr int kPartFileWeight = 2;
-	constexpr int kNetworkBandEnd = 2;
+	constexpr int kNetworkBandEnd = kPreloadBandEnd + 2;
 	constexpr int kTempBandMaxEnd = 40;
 	constexpr int kScanBandEnd = 100;
 
-	splash->SetProgress(_("Initializing network"), 0, true);
+	splash->SetProgress(_("Initializing network"), kPreloadBandEnd, true);
 #endif
 	if (thePrefs::GetNetworkED2K()) {
 		serverlist->Init();
@@ -1017,8 +1050,11 @@ bool CamuleApp::OnInit()
 	// nobody will report back. Both phases report count then duration, and the estimate
 	// says what it estimates -- it is a file count from known.met, and printing it as a
 	// bare number after a millisecond figure read as an estimated duration.
-	AddLogLineN(CFormat(LOG_DIAGNOSTIC("Startup phases: network %lld ms, %u part files %lld ms, shared "
+	AddLogLineN(CFormat(LOG_DIAGNOSTIC("Startup phases: known files %lld ms, credits %lld ms, IP filter "
+					   "%lld ms, network %lld ms, %u part files %lld ms, shared "
 					   "scan %u files ") "%lld ms (estimated %u files)") %
+		    (knownDoneAt - preloadStart).GetValue() % (creditsDoneAt - knownDoneAt).GetValue() %
+		    (filterDoneAt - creditsDoneAt).GetValue() %
 		    (networkDoneAt - splashPhaseStart).GetValue() % partFilesLoaded %
 		    (tempDoneAt - networkDoneAt).GetValue() % sharedScanned %
 		    (sharedDoneAt - tempDoneAt).GetValue() % sharedEstimate);

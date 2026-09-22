@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-22 15:47+0100\n"
+"POT-Creation-Date: 2026-09-22 16:11+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
@@ -331,6 +331,23 @@ msgstr ""
 
 #: src/amule.cpp src/KadDlg.cpp src/PrefsUnifiedDlg.cpp src/SharedFilesCtrl.cpp
 msgid "WARNING"
+msgstr ""
+
+#: src/amule.cpp
+msgid "Loading known files"
+msgstr ""
+
+#: src/amule.cpp
+#, c-format
+msgid "Loading known files (%u of %u)"
+msgstr ""
+
+#: src/amule.cpp
+msgid "Loading credits"
+msgstr ""
+
+#: src/amule.cpp
+msgid "Loading IP filter"
 msgstr ""
 
 #: src/amule.cpp

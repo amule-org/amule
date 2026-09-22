@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-22 15:47+0100\n"
+"POT-Creation-Date: 2026-09-22 16:11+0100\n"
 "PO-Revision-Date: 2026-09-20 20:58+0000\n"
 "Last-Translator: Hallvor Brunstad <Hallvor_1976@yahoo.com>\n"
 "Language-Team: <i18n-nn@lister.ping.uio.no>\n"
@@ -351,6 +351,26 @@ msgstr "Ny ekstern kopling akseptert"
 #: src/amule.cpp src/KadDlg.cpp src/PrefsUnifiedDlg.cpp src/SharedFilesCtrl.cpp
 msgid "WARNING"
 msgstr "ÅTVARING"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Loading known files"
+msgstr "Lastar server.met fila: %s"
+
+#: src/amule.cpp
+#, fuzzy, c-format
+msgid "Loading known files (%u of %u)"
+msgstr "Lastar server.met fila: %s"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Loading credits"
+msgstr "Lastar inn att delte filer"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Loading IP filter"
+msgstr "Lastar server.met fila: %s"
 
 #: src/amule.cpp
 msgid "Initializing network"

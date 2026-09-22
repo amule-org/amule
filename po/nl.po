@@ -12,7 +12,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-22 15:47+0100\n"
+"POT-Creation-Date: 2026-09-22 16:11+0100\n"
 "PO-Revision-Date: 2026-09-20 20:56+0000\n"
 "Last-Translator: Marcel Pol <marcel@timelord.nl>\n"
 "Language-Team: Dutch <nl@li.org>\n"
@@ -362,6 +362,26 @@ msgstr "Wachtwoord ingesteld en externe verbindingen ingeschakeld."
 #: src/amule.cpp src/KadDlg.cpp src/PrefsUnifiedDlg.cpp src/SharedFilesCtrl.cpp
 msgid "WARNING"
 msgstr "WAARSCHUWING"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Loading known files"
+msgstr "Tijdelijke bestanden worden geladen"
+
+#: src/amule.cpp
+#, fuzzy, c-format
+msgid "Loading known files (%u of %u)"
+msgstr "Tijdelijke bestanden worden geladen (%u van %u)"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Loading credits"
+msgstr "Gedeelde bestanden worden geladen"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Loading IP filter"
+msgstr "Tijdelijke bestanden worden geladen"
 
 #: src/amule.cpp
 msgid "Initializing network"

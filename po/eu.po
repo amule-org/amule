@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-22 15:47+0100\n"
+"POT-Creation-Date: 2026-09-22 16:11+0100\n"
 "PO-Revision-Date: 2026-09-20 20:35+0000\n"
 "Last-Translator: Piarres Beobide <pi@beobide.net>\n"
 "Language-Team: Euskara <librezale@librezale.org>\n"
@@ -351,6 +351,26 @@ msgstr "Pasahitza ezarria eta kanpo konexioak gaiturik."
 #: src/amule.cpp src/KadDlg.cpp src/PrefsUnifiedDlg.cpp src/SharedFilesCtrl.cpp
 msgid "WARNING"
 msgstr "OHARRA"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Loading known files"
+msgstr "%sd-tik aldiroko fitxategiak kargatzen."
+
+#: src/amule.cpp
+#, fuzzy, c-format
+msgid "Loading known files (%u of %u)"
+msgstr "%sd-tik aldiroko fitxategiak kargatzen."
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Loading credits"
+msgstr "Berritu zure partekatutako fitxategiak"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Loading IP filter"
+msgstr "%sd-tik aldiroko fitxategiak kargatzen."
 
 #: src/amule.cpp
 msgid "Initializing network"

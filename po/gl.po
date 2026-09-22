@@ -24,7 +24,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-22 15:47+0100\n"
+"POT-Creation-Date: 2026-09-22 16:11+0100\n"
 "PO-Revision-Date: 2026-09-20 20:39+0000\n"
 "Last-Translator: Pablo <parodper@gmail.com>\n"
 "Language-Team: http://forum.amule.org/index.php?topic=13883\n"
@@ -371,6 +371,26 @@ msgstr "Establecido o contrasinal e habilitadas conexións externas."
 #: src/amule.cpp src/KadDlg.cpp src/PrefsUnifiedDlg.cpp src/SharedFilesCtrl.cpp
 msgid "WARNING"
 msgstr "AVISO"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Loading known files"
+msgstr "Cargando ficheiros temporais dende %s."
+
+#: src/amule.cpp
+#, fuzzy, c-format
+msgid "Loading known files (%u of %u)"
+msgstr "Cargando ficheiros temporais dende %s."
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Loading credits"
+msgstr "Recargando os ficheiros compartidos..."
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Loading IP filter"
+msgstr "Cargando ficheiros temporais dende %s."
 
 #: src/amule.cpp
 msgid "Initializing network"

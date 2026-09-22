@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-22 15:47+0100\n"
+"POT-Creation-Date: 2026-09-22 16:11+0100\n"
 "PO-Revision-Date: 2026-09-20 20:55+0000\n"
 "Last-Translator: Dovydas Sankauskas <laisve@gmail.com>\n"
 "Language-Team: Lithuanian <komp_lt@konf.lt>\n"
@@ -352,6 +352,26 @@ msgstr "Naujas išorinis ryšys priimtas"
 #: src/amule.cpp src/KadDlg.cpp src/PrefsUnifiedDlg.cpp src/SharedFilesCtrl.cpp
 msgid "WARNING"
 msgstr "DĖMESIO"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Loading known files"
+msgstr "Įkeliamas server.met failas: %s"
+
+#: src/amule.cpp
+#, fuzzy, c-format
+msgid "Loading known files (%u of %u)"
+msgstr "Įkeliamas server.met failas: %s"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Loading credits"
+msgstr "Atnaujinti dalinamų failų sąrašą"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Loading IP filter"
+msgstr "Įkeliamas server.met failas: %s"
 
 #: src/amule.cpp
 msgid "Initializing network"

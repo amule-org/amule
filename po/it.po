@@ -19,7 +19,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule 2.3.3\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-22 15:47+0100\n"
+"POT-Creation-Date: 2026-09-22 16:11+0100\n"
 "PO-Revision-Date: 2026-09-20 20:46+0000\n"
 "Last-Translator: got3nks <got3nks@users.noreply.github.com>\n"
 "Language-Team: SebastianoPistore.info@protonmail.ch\n"
@@ -369,6 +369,26 @@ msgstr "Password impostata, connessioni esterne abilitate."
 #: src/amule.cpp src/KadDlg.cpp src/PrefsUnifiedDlg.cpp src/SharedFilesCtrl.cpp
 msgid "WARNING"
 msgstr "ATTENZIONE"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Loading known files"
+msgstr "Caricamento dei file parziali"
+
+#: src/amule.cpp
+#, fuzzy, c-format
+msgid "Loading known files (%u of %u)"
+msgstr "Caricamento dei file parziali (%u di %u)"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Loading credits"
+msgstr "Caricamento dei file condivisi"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Loading IP filter"
+msgstr "Caricamento dei file parziali"
 
 #: src/amule.cpp
 msgid "Initializing network"

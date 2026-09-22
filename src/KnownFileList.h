@@ -26,6 +26,7 @@
 #ifndef KNOWNFILELIST_H
 #define KNOWNFILELIST_H
 
+#include <functional>
 #include <unordered_set>
 
 #include "SharedFileList.h" // CKnownFileMap
@@ -37,10 +38,16 @@ class CAICHHash;
 class CKnownFileList
 {
 public:
-	CKnownFileList();
+	// Progress hook for the known.met load, mirroring CDownloadQueue::LoadProgressCb. The
+	// total comes from the file header, so it is known before the loop starts. Called every
+	// few hundred records rather than per record: a 300k-entry library would otherwise pay a
+	// formatted string per entry for a bar that repaints at 10 Hz.
+	using LoadProgressCb = std::function<void(uint32 /*loaded*/, uint32 /*total*/)>;
+
+	explicit CKnownFileList(const LoadProgressCb &progressCb = nullptr);
 	~CKnownFileList();
 	bool SafeAddKFile(CKnownFile *toadd, bool afterHashing = false);
-	bool Init();
+	bool Init(const LoadProgressCb &progressCb = nullptr);
 	void Save();
 	void Clear();
 	CKnownFile *FindKnownFile(const CPath &filename, time_t in_date, uint64 in_size);
