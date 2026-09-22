@@ -219,6 +219,16 @@ void CMuleVirtualDataViewCtrl::RebuildRowIndex()
 	}
 }
 
+// Only rows at or after an insert or erase change index. Rebuilding the whole map
+// instead reallocates a node per row, which on a 300k-row list is seconds per item
+// added or removed (issue #1522).
+void CMuleVirtualDataViewCtrl::ReindexFrom(size_t first)
+{
+	for (size_t i = first; i < m_items.size(); ++i) {
+		m_rowOf[m_items[i]] = static_cast<long>(i);
+	}
+}
+
 int CMuleVirtualDataViewCtrl::CompareItemsFull(wxUIntPtr data1, wxUIntPtr data2) const
 {
 	// Walks the sort chain the base maintains: primary column first, then
@@ -294,7 +304,7 @@ void CMuleVirtualDataViewCtrl::AddItemData(wxUIntPtr data)
 		(shifts && HasSelection()) ? GetSelectedItemData() : std::vector<wxUIntPtr>();
 
 	m_items.insert(m_items.begin() + pos, data);
-	RebuildRowIndex();
+	ReindexFrom(static_cast<size_t>(pos));
 	m_virtualModel->RowInserted(static_cast<unsigned>(pos));
 
 	if (!selected.empty()) {
@@ -424,7 +434,8 @@ void CMuleVirtualDataViewCtrl::RemoveItemData(wxUIntPtr data)
 	selected.erase(std::remove(selected.begin(), selected.end(), data), selected.end());
 
 	m_items.erase(m_items.begin() + pos);
-	RebuildRowIndex();
+	m_rowOf.erase(data);
+	ReindexFrom(static_cast<size_t>(pos));
 	// Told before the caller frees whatever `data` points at: the control
 	// must not be left holding a row for an object that no longer exists.
 	m_virtualModel->RowDeleted(static_cast<unsigned>(pos));

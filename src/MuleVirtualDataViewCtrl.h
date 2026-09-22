@@ -238,8 +238,10 @@ private:
 	//! nothing -- the caller decides what notification its situation needs.
 	void SortItems();
 
-	//! m_rowOf is a cache of m_items; every structural change rebuilds it.
+	//! m_rowOf is a cache of m_items. A reorder rebuilds it; a single insert or erase
+	//! only moves the rows from that position on, so those are reindexed in place.
 	void RebuildRowIndex();
+	void ReindexFrom(size_t first);
 
 	/**
 	 * Coalesces live re-sorts. A burst of RefreshItemData() calls schedules exactly one
