@@ -357,10 +357,24 @@ private:
 	long m_result;
 };
 
+/**
+ * Writes known.met. Queued by the main thread once a hashing batch has drained and every result
+ * has been registered, so the save includes the last file instead of racing its registration.
+ */
+class CKnownFileSaveTask : public CThreadTask
+{
+public:
+	CKnownFileSaveTask();
+
+protected:
+	void Entry() override;
+};
+
 wxDECLARE_EVENT(MULE_EVT_HASHING, wxEvent);
 wxDECLARE_EVENT(MULE_EVT_AICH_HASHING, wxEvent);
 wxDECLARE_EVENT(MULE_EVT_FILE_COMPLETED, wxEvent);
 wxDECLARE_EVENT(MULE_EVT_MEDIA_PROBE, wxEvent);
+wxDECLARE_EVENT(MULE_EVT_HASHING_DRAINED, wxThreadEvent);
 
 typedef void (wxEvtHandler::*MuleHashingEventFunction)(CHashingEvent &);
 typedef void (wxEvtHandler::*MuleCompletionEventFunction)(CCompletionEvent &);
@@ -370,6 +384,9 @@ typedef void (wxEvtHandler::*MuleMediaProbeEventFunction)(CMediaProbeEvent &);
 //! Event-handler for completed hashings of new shared files and partfiles.
 #define EVT_MULE_HASHING(func) \
 	wx__DECLARE_EVT0(MULE_EVT_HASHING, wxEVENT_HANDLER_CAST(MuleHashingEventFunction, func))
+
+//! Event-handler for the shared hashing queue running empty.
+#define EVT_MULE_HASHING_DRAINED(func) wx__DECLARE_EVT0(MULE_EVT_HASHING_DRAINED, wxThreadEventHandler(func))
 
 //! Event-handler for completed hashings of files that were missing a AICH hash.
 #define EVT_MULE_AICH_HASHING(func) \

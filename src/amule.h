@@ -509,6 +509,7 @@ protected:
 	void OnCoreTimer(CTimerEvent &evt);
 
 	void OnFinishedHashing(CHashingEvent &evt);
+	void OnHashingDrained(wxThreadEvent &evt);
 	void OnPartFileHashResult(CPartFileHashResultEvent &evt);
 	void OnFinishedAICHHashing(CHashingEvent &evt);
 

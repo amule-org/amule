@@ -264,15 +264,24 @@ bool CHashingTask::CreateNextPartHash(CFileAutoClose &file, uint16 part, CKnownF
 void CHashingTask::OnLastTask()
 {
 	if (GetType() == "Hashing") {
-		// To prevent rehashing in case of crashes, we
-		// explicitly save the list of hashed files here.
-		theApp->knownfiles->Save();
-
-		// Make sure the AICH hashes are up to date. No orphan-prune here: this runs right
-		// after hashing and races the main-thread SafeAddKFile that registers those files,
-		// so pruning could delete a hashset we just wrote. Only the startup sync prunes.
-		CThreadScheduler::AddTask(new CAICHSyncTask());
+		// Hand the save to the main thread instead of writing known.met here. This runs the
+		// moment the last hash finishes, while its result is still queued for the main thread:
+		// a save now would miss that file, and would hold the known-file lock for the whole
+		// write while the main thread waits on it to register the file -- seconds on a large
+		// library (issue #1522). This event is queued after that result and the main thread
+		// handles them in order, so the save is only scheduled once the file is registered.
+		wxQueueEvent(wxTheApp, new wxThreadEvent(MULE_EVT_HASHING_DRAINED));
 	}
+}
+
+CKnownFileSaveTask::CKnownFileSaveTask()
+: CThreadTask("Saving known files", "", ETP_High)
+{
+}
+
+void CKnownFileSaveTask::Entry()
+{
+	theApp->knownfiles->Save();
 }
 
 ////////////////////////////////////////////////////////////
@@ -943,6 +952,7 @@ void CAllocateFileTask::OnExit()
 wxDEFINE_EVENT(MULE_EVT_HASHING, wxEvent);
 wxDEFINE_EVENT(MULE_EVT_AICH_HASHING, wxEvent);
 wxDEFINE_EVENT(MULE_EVT_MEDIA_PROBE, wxEvent);
+wxDEFINE_EVENT(MULE_EVT_HASHING_DRAINED, wxThreadEvent);
 
 CMediaProbeEvent::CMediaProbeEvent(
 	const CMD4Hash &hash, const MediaInfo &info, bool succeeded, bool markUnprobeable)

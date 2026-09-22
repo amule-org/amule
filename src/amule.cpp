@@ -2261,6 +2261,25 @@ void CamuleApp::OnFinishedHashing(CHashingEvent &evt)
 	}
 }
 
+void CamuleApp::OnHashingDrained(wxThreadEvent &WXUNUSED(evt))
+{
+	if (m_app_state == APP_STATE_SHUTTINGDOWN) {
+		return;
+	}
+
+	// Queued after the batch's last result, so every file it hashed is registered by now. The
+	// save itself still runs on the scheduler thread, as it did from OnLastTask. Overwrite, not
+	// drop, a duplicate: a request while a save is pending replaces it, and one while a save is
+	// running queues another after it, so nothing registered during that write is left out.
+	// Save() never checks the abort flag this sets on a running save, so it still completes.
+	CThreadScheduler::AddTask(new CKnownFileSaveTask(), true);
+
+	// Make sure the AICH hashes are up to date. No orphan-prune: a file hashed after this batch
+	// may still be waiting to be registered when this runs, and pruning would delete its freshly
+	// written hashset. Only the startup sync prunes.
+	CThreadScheduler::AddTask(new CAICHSyncTask());
+}
+
 void CamuleApp::OnPartFileHashResult(CPartFileHashResultEvent &evt)
 {
 	if (m_app_state == APP_STATE_SHUTTINGDOWN || !theApp || !theApp->IsRunning()) {
