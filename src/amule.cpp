@@ -837,8 +837,17 @@ bool CamuleApp::OnInit()
 	// bail-out is the incoming-directory check above -- so the splash cannot outlive a run that
 	// never gets a window. No parent: amuledlg does not exist yet, and the splash centres on
 	// the screen rather than on it anyway.
-	constexpr int kPreloadKnownEnd = 2;
-	constexpr int kPreloadBandEnd = 3;
+	//
+	// known.met gets a band sized by work, like the temp and scan bands below, in the same
+	// unit: one file of the shared scan. A 300k-file library reported 21.5 s to load
+	// known.met and 22 s to scan, so a record costs about what a scanned file does; retune
+	// from the Startup phases line. The scan is estimated from that same record count, so the
+	// count cancels and only the weights set the split.
+	constexpr int kKnownRecordWeight = 1;
+	constexpr int kScanFileWeight = 1;
+	constexpr int kScanBandEnd = 100;
+	// Stays 0 unless known.met has records: a first run has nothing to load or to estimate.
+	int knownBandEnd = 0;
 	CSplashScreen *splash = new CSplashScreen(nullptr);
 	m_splash = splash;
 	splash->Show();
@@ -851,10 +860,13 @@ bool CamuleApp::OnInit()
 	// Empty outside the splash build, which the daemon and the remote GUI are.
 	CKnownFileList::LoadProgressCb knownProgress;
 #ifdef AMULE_SHOW_SPLASH
-	knownProgress = [splash](uint32 loaded, uint32 total) {
+	knownProgress = [splash, &knownBandEnd](uint32 loaded, uint32 total) {
+		if (loaded == 0) {
+			knownBandEnd =
+				(kScanBandEnd * kKnownRecordWeight) / (kKnownRecordWeight + kScanFileWeight);
+		}
 		const int percent =
-			total ? static_cast<int>((kPreloadKnownEnd * static_cast<uint64>(loaded)) / total)
-			      : 0;
+			total ? static_cast<int>((knownBandEnd * static_cast<uint64>(loaded)) / total) : 0;
 		splash->SetProgress(CFormat(_("Loading known files (%u of %u)")) % loaded % total, percent);
 	};
 #endif
@@ -867,7 +879,7 @@ bool CamuleApp::OnInit()
 	knownfiles = new CKnownFileList(knownProgress);
 #ifdef AMULE_SHOW_SPLASH
 	const wxLongLong knownDoneAt = wxGetUTCTimeMillis();
-	splash->SetProgress(_("Loading credits"), kPreloadKnownEnd, true);
+	splash->SetProgress(_("Loading credits"), knownBandEnd, true);
 #endif
 	canceledfiles = new CCanceledFileList;
 	serverlist = new CServerList();
@@ -876,7 +888,7 @@ bool CamuleApp::OnInit()
 	clientcredits = new CClientCreditsList();
 #ifdef AMULE_SHOW_SPLASH
 	const wxLongLong creditsDoneAt = wxGetUTCTimeMillis();
-	splash->SetProgress(_("Loading IP filter"), kPreloadBandEnd, true);
+	splash->SetProgress(_("Loading IP filter"), knownBandEnd, true);
 #endif
 
 	// bugfix - do this before creating the uploadqueue
@@ -985,13 +997,15 @@ bool CamuleApp::OnInit()
 	// each against 0.60 ms -- a part file is actually the cheaper item, since loading one
 	// reads its .met and only stats the .part. Two rather than one leaves room for the
 	// populated ones a real Temp directory holds. Capped well short of half the bar: the
-	// scan is the phase that usually runs long, and it must keep room to show it.
+	// scan is the phase that usually runs long, and it must keep room to show it. Both ends are
+	// relative to where known.met left the bar.
 	constexpr int kPartFileWeight = 2;
-	constexpr int kNetworkBandEnd = kPreloadBandEnd + 2;
-	constexpr int kTempBandMaxEnd = 40;
-	constexpr int kScanBandEnd = 100;
+	constexpr int kTempBandMaxShare = 40; // percent of what is left after network
+	const int networkBandEnd = knownBandEnd + 2;
+	const int tempBandMaxEnd =
+		networkBandEnd + ((kScanBandEnd - networkBandEnd) * kTempBandMaxShare) / 100;
 
-	splash->SetProgress(_("Initializing network"), kPreloadBandEnd, true);
+	splash->SetProgress(_("Initializing network"), knownBandEnd, true);
 #endif
 	if (thePrefs::GetNetworkED2K()) {
 		serverlist->Init();
@@ -999,23 +1013,23 @@ bool CamuleApp::OnInit()
 
 #ifdef AMULE_SHOW_SPLASH
 	const wxLongLong networkDoneAt = wxGetUTCTimeMillis();
-	splash->SetProgress(_("Loading temp files"), kNetworkBandEnd, true);
+	splash->SetProgress(_("Loading temp files"), networkBandEnd, true);
 	// Part-file totals are exact: LoadMetFiles enumerates the directory into a vector
 	// before loading any of them, so the band end can be sized against the shared estimate
 	// on the first callback.
 	size_t partFilesLoaded = 0;
-	int tempBandEnd = kNetworkBandEnd;
+	int tempBandEnd = networkBandEnd;
 	downloadqueue->LoadMetFiles(thePrefs::GetTempDir(), [&](size_t loaded, size_t total) {
 		if (partFilesLoaded == 0) {
 			partFilesLoaded = total;
 			const size_t weighted = kPartFileWeight * total;
 			const size_t whole = weighted + sharedEstimate;
-			tempBandEnd = kNetworkBandEnd +
-				      static_cast<int>(((kScanBandEnd - kNetworkBandEnd) * weighted) / whole);
-			tempBandEnd = std::min(tempBandEnd, kTempBandMaxEnd);
+			tempBandEnd = networkBandEnd +
+				      static_cast<int>(((kScanBandEnd - networkBandEnd) * weighted) / whole);
+			tempBandEnd = std::min(tempBandEnd, tempBandMaxEnd);
 		}
-		const int percent = kNetworkBandEnd +
-				    static_cast<int>(((tempBandEnd - kNetworkBandEnd) * loaded) / total);
+		const int percent =
+			networkBandEnd + static_cast<int>(((tempBandEnd - networkBandEnd) * loaded) / total);
 		splash->SetProgress(CFormat(_("Loading temp files (%u of %u)")) % loaded % total, percent);
 	});
 	const wxLongLong tempDoneAt = wxGetUTCTimeMillis();
