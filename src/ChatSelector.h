@@ -73,6 +73,7 @@ public:
 	virtual ~CChatSelector() {};
 	CChatSession *StartSession(CChatTarget client_id, const wxString &client_name, bool show = true);
 	void EndSession(CChatTarget client_id = {});
+	void RekeySession(CChatTarget old_id, CChatTarget new_id);
 	CChatSession *GetPageByClientID(CChatTarget client_id);
 	int GetTabByClientID(CChatTarget client_id);
 	bool ProcessMessage(CChatTarget sender_id, const wxString &message);

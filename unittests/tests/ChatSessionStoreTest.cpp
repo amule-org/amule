@@ -50,7 +50,7 @@ CNetworkAddress IPv6Route()
 }
 } // namespace
 
-TEST(ChatSessionStore, ProvisionalOpenRequiresRouteAndNeverReusesEndpoint)
+TEST(ChatSessionStore, ProvisionalOpenRequiresRouteAndReusesEndpoint)
 {
 	CChatSessionStore store;
 	const auto route = CNetworkAddress::FromIPv4NetworkOrder(0x0100000Au);
@@ -58,12 +58,15 @@ TEST(ChatSessionStore, ProvisionalOpenRequiresRouteAndNeverReusesEndpoint)
 	ASSERT_TRUE(store.Open(CMD4Hash(), route, 0, "").IsEmpty());
 	const auto first = store.Open(CMD4Hash(), route, 4662, "first");
 	const auto second = store.Open(CMD4Hash(), route, 4662, "second");
-	ASSERT_TRUE(first != second);
-	ASSERT_EQUALS(static_cast<size_t>(2), store.SessionCount());
-	ASSERT_TRUE(store.FindLegacy(GUI_ID(0x0100000Au, 4662)) == nullptr);
+	ASSERT_TRUE(first == second);
+	ASSERT_EQUALS(static_cast<size_t>(1), store.SessionCount());
+	ASSERT_TRUE(store.FindLegacy(GUI_ID(0x0100000Au, 4662)) == store.Find(first));
 	ASSERT_EQUALS(static_cast<uint32>(1), store.AddOutgoing(first, "hello", route, 4662));
-	ASSERT_TRUE(store.Find(second)->messages.empty());
-	ASSERT_TRUE(!store.Promote(CChatPeer(CMD4Hash(), route, 4662), Peer(1)));
+	ASSERT_EQUALS(static_cast<size_t>(1), store.Find(second)->messages.size());
+	const CChatPeer independent(CMD4Hash(), route, 4662);
+	ASSERT_TRUE(store.Promote(independent, Peer(1)));
+	ASSERT_TRUE(first.Hash() == Peer(1));
+	ASSERT_TRUE(independent == first);
 }
 
 TEST(ChatSessionStore, PromotionPreservesCopiedHandleAndReplacementTranscript)
@@ -94,13 +97,51 @@ TEST(ChatSessionStore, PromotionDoesNotMergeOtherProvisionalOccupants)
 	CChatSessionStore store;
 	const auto route = CNetworkAddress::FromIPv4NetworkOrder(0x0100000Au);
 	const auto first = store.Open(CMD4Hash(), route, 4662, "first");
-	const auto second = store.Open(CMD4Hash(), route, 4662, "second");
 	ASSERT_TRUE(store.Promote(first, Peer(1)));
+	const auto second = store.Open(CMD4Hash(), route, 4662, "second");
 	ASSERT_TRUE(second.Hash().IsEmpty());
 	ASSERT_EQUALS(static_cast<size_t>(2), store.SessionCount());
 	ASSERT_TRUE(store.FindLegacy(GUI_ID(0x0100000Au, 4662)) == nullptr);
 	ASSERT_TRUE(store.Promote(second, Peer(2)));
 	ASSERT_TRUE(first != second);
+}
+
+TEST(ChatSessionStore, ProvisionalRoutesNormalizeMappedIPv4AndKeepPortsDistinct)
+{
+	CChatSessionStore store;
+	const auto route = CNetworkAddress::FromIPv4NetworkOrder(0x0100000Au);
+	CNetworkAddress::Octets mapped = {};
+	mapped[10] = mapped[11] = 0xff;
+	mapped[12] = 10;
+	mapped[15] = 1;
+	const auto first = store.Open(CMD4Hash(), route, 4662, "alice");
+	const auto normalized =
+		store.Open(CMD4Hash(), CNetworkAddress::IPv6FromOctets(mapped), 4662, "alice");
+	ASSERT_TRUE(first == normalized);
+	ASSERT_TRUE(first != store.Open(CMD4Hash(), route, 4663, "other port"));
+	ASSERT_TRUE(first != store.Open(CMD4Hash(), IPv6Route(), 4662, "v6"));
+	ASSERT_EQUALS(static_cast<size_t>(3), store.SessionCount());
+	ASSERT_TRUE(!store.Promote(CChatPeer(CMD4Hash(), route, 9999), Peer(1)));
+}
+
+TEST(ChatSessionStore, IndependentPromotionMergesInterleavedHistoryInCursorOrder)
+{
+	CChatSessionStore store;
+	const auto route = IPv6Route();
+	const auto provisional = store.Open(CMD4Hash(), route, 4662, "alice");
+	store.AddOutgoing(provisional, "one", route, 4662);
+	store.AddIncoming(Peer(7), "alice", "two", route, 4662);
+	store.AddOutgoing(provisional, "three", route, 4662);
+	const CChatPeer independent(CMD4Hash(), route, 4662);
+	ASSERT_TRUE(store.Promote(independent, Peer(7)));
+	ASSERT_EQUALS(static_cast<size_t>(1), store.SessionCount());
+	const auto *session = store.Find(Peer(7));
+	ASSERT_EQUALS(static_cast<size_t>(3), session->messages.size());
+	for (size_t i = 0; i < 3; ++i) {
+		ASSERT_EQUALS(static_cast<uint32>(i + 1), session->messages[i].id);
+	}
+	ASSERT_TRUE(provisional == independent);
+	ASSERT_TRUE(!store.Promote(independent, Peer(8)));
 }
 
 TEST(ChatSessionStore, StartsEmpty)

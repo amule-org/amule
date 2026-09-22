@@ -242,6 +242,11 @@ void CChatWnd::RemoveFriend(CFriend *todel)
 	friendlistctrl->RemoveFriend(todel);
 }
 
+void CChatWnd::RekeySession(CChatTarget old_id, CChatTarget new_id)
+{
+	chatselector->RekeySession(old_id, new_id);
+}
+
 void CChatWnd::ProcessMessage(CChatTarget sender, const wxString &message)
 {
 	if (!theApp->amuledlg->IsDialogVisible(CamuleDlg::DT_CHAT_WND)) {

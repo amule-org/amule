@@ -2877,6 +2877,8 @@ void CUpDownClient::SetUserHash(const CMD4Hash &userhash)
 
 	ValidateHash();
 	if (!m_chatPeer.IsEmpty() && HasValidHash() && theApp->chatsessions) {
+		// Promotion mutates shared handles; preserve the route key for GUI tabs.
+		const CChatPeer oldPeer(m_chatPeer.Hash(), m_chatPeer.Address(), m_chatPeer.Port());
 		if (!theApp->chatsessions->Promote(m_chatPeer, userhash)) {
 			// A stale friend route reached somebody else. Do not deliver the
 			// queued text or attach the stranger to the friend's transcript.
@@ -2884,6 +2886,8 @@ void CUpDownClient::SetUserHash(const CMD4Hash &userhash)
 			Notify_ChatConnResult(false, m_chatPeer, "");
 			SetChatState(MS_NONE);
 			m_chatPeer = CChatPeer();
+		} else if (oldPeer != m_chatPeer) {
+			Notify_ChatRekeySession(oldPeer, m_chatPeer);
 		}
 	}
 }

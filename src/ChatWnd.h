@@ -50,6 +50,7 @@ public:
 	void UpdateFriend(CFriend *toupdate);
 	void RemoveFriend(CFriend *todel);
 
+	void RekeySession(CChatTarget old_id, CChatTarget new_id);
 	void ProcessMessage(CChatTarget sender, const wxString &message);
 	void ConnectionResult(bool success, const wxString &message, CChatTarget id);
 

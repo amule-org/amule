@@ -127,7 +127,12 @@ CChatSession *CChatSelector::StartSession(CChatTarget client_id, const wxString 
 
 	CChatSession *chatsession = new CChatSession(this);
 
+#ifdef CLIENT_GUI
 	chatsession->m_client_id = client_id;
+#else
+	// Keep a value snapshot: promotion is delivered explicitly by RekeySession.
+	chatsession->m_client_id = CChatPeer(client_id.Hash(), client_id.Address(), client_id.Port());
+#endif
 
 	// The title identifies the peer, not its mutable route.
 	const wxString text = wxString(" *** ") +
@@ -140,6 +145,32 @@ CChatSession *CChatSelector::StartSession(CChatTarget client_id, const wxString 
 	CUserEvents::ProcessEvent(CUserEvents::NewChatSession, &client_name);
 
 	return chatsession;
+}
+
+void CChatSelector::RekeySession(CChatTarget old_id, CChatTarget new_id)
+{
+	if (old_id == new_id || !ChatTargetValid(new_id)) {
+		return;
+	}
+	CChatSession *oldPage = GetPageByClientID(old_id);
+	if (!oldPage) {
+		return;
+	}
+	CChatSession *newPage = GetPageByClientID(new_id);
+	if (newPage) {
+		// Preserve both visible histories without issuing a core close notification.
+		newPage->AppendText(oldPage->GetValue());
+		newPage->m_active = newPage->m_active || oldPage->m_active;
+		const int oldTab = GetTabByClientID(old_id);
+		const bool selected = GetSelection() == oldTab;
+		RemovePage(oldTab);
+		oldPage->Destroy();
+		if (selected) {
+			SetSelection(GetTabByClientID(new_id));
+		}
+	} else {
+		oldPage->m_client_id = new_id;
+	}
 }
 
 CChatSession *CChatSelector::GetPageByClientID(CChatTarget client_id)

@@ -167,12 +167,12 @@ CChatPeer CChatSessionStore::Open(
 		(address.IsAbsent() || !port || (address.IsIPv4() && !address.ToIPv4NetworkOrderOrZero()))) {
 		return CChatPeer();
 	}
+	const CChatPeer peer(hash, address, port);
 	for (const auto &session : m_sessions) {
-		if (!hash.IsEmpty() && session.peer.Hash() == hash) {
+		if (session.peer == peer) {
 			return session.peer;
 		}
 	}
-	CChatPeer peer(hash, address, port);
 	Touch(peer, name, address, port);
 	return peer;
 }
@@ -182,6 +182,14 @@ bool CChatSessionStore::Promote(const CChatPeer &peer, const CMD4Hash &hash)
 	if (peer.IsEmpty() || hash.IsEmpty() || (peer.Hash().IsEmpty() && !Find(peer)) ||
 		(!peer.Hash().IsEmpty() && peer.Hash() != hash)) {
 		return false;
+	}
+	// Resolve by value before mutating: callers may hold independently constructed
+	// route targets. Claim only the provisional record, never another route occupant.
+	for (auto &session : m_sessions) {
+		if (session.peer == peer) {
+			session.peer.m_state->hash = hash;
+			break;
+		}
 	}
 	peer.m_state->hash = hash;
 	// Existing copies (tabs, notifications and replacement clients) now resolve

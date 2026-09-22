@@ -754,6 +754,17 @@ void ChatConnResult(
 #endif
 }
 
+// Keep value parameters for MuleNotify's queued argument storage.
+// NOLINTNEXTLINE(performance-unnecessary-value-param)
+void ChatRekeySession(CChatTarget NOT_ON_DAEMON(old_id), CChatTarget NOT_ON_DAEMON(new_id))
+{
+#ifndef AMULE_DAEMON
+	if (theApp->amuledlg->m_chatwnd) {
+		theApp->amuledlg->m_chatwnd->RekeySession(old_id, new_id);
+	}
+#endif
+}
+
 // MuleNotify stores the notify args by value, so a `const wxString &` param would dangle -- keep
 // it by value like every other notify handler.
 // NOLINTNEXTLINE(performance-unnecessary-value-param)

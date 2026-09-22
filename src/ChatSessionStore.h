@@ -28,14 +28,14 @@
 #include "Types.h" // uint64 / uint32 / uint8
 #include "MD4Hash.h"
 #include "NetworkAddress.h"
+#include "PeerAddressing.h"
 
 #include <memory>
 
 #include <wx/string.h>
 
-// Copies retain the same provisional identity across queued GUI notifications and
-// client replacement. Only an explicit handshake promotion can change its hash;
-// sharing an endpoint is never sufficient to join two transcripts.
+// Hashes identify peers; hashless targets temporarily share a normalized route.
+// Promotion requires an explicit handshake, never an endpoint-only identity match.
 class CChatPeer
 {
 public:
@@ -65,8 +65,13 @@ public:
 	wxString Encode() const { return Hash().Encode(); }
 	friend bool operator==(const CChatPeer &a, const CChatPeer &b)
 	{
-		return a.m_state == b.m_state || (a.IsEmpty() && b.IsEmpty()) ||
-		       (!a.Hash().IsEmpty() && a.Hash() == b.Hash());
+		if (!a.Hash().IsEmpty() || !b.Hash().IsEmpty()) {
+			return !a.Hash().IsEmpty() && a.Hash() == b.Hash();
+		}
+		return (a.IsEmpty() && b.IsEmpty()) ||
+		       (!a.IsEmpty() && !b.IsEmpty() && a.Port() == b.Port() &&
+			       PeerAddressing::IndexKey(a.Address()) ==
+				       PeerAddressing::IndexKey(b.Address()));
 	}
 	friend bool operator!=(const CChatPeer &a, const CChatPeer &b) { return !(a == b); }
 
@@ -178,8 +183,9 @@ public:
 
 	const Session *Find(const CChatPeer &peer) const;
 
-	// Reuse a known hash; every hashless open creates a distinct identity.
-	// Keep the returned handle to reopen the same provisional conversation.
+	// Reuse a known hash or a normalized provisional route. A route-only transcript
+	// is temporary: the first successful handshake claims it. Other identified
+	// occupants remain separate even when they share that route.
 	CChatPeer Open(
 		const CMD4Hash &hash, const CNetworkAddress &address, uint16 port, const wxString &name);
 	bool Promote(const CChatPeer &peer, const CMD4Hash &hash);

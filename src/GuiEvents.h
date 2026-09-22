@@ -163,6 +163,7 @@ void Browse_Started(uint32 ecid, wxString name, uint64 searchID);
 void ChatUpdateFriend(CFriend *Friend);
 void ChatRemoveFriend(CFriend *Friend);
 void ChatConnResult(bool success, CChatTarget id, wxString message);
+void ChatRekeySession(CChatTarget old_id, CChatTarget new_id);
 void ChatProcessMsg(CChatTarget sender, wxString message);
 void ChatSendCaptcha(wxString captcha, CChatTarget to_id);
 
@@ -557,6 +558,8 @@ typedef void (wxEvtHandler::*MuleNotifyEventFunction)(CMuleGUIEvent &);
 #define Notify_ChatUpdateFriend(ptr) MuleNotify::DoNotify(&MuleNotify::ChatUpdateFriend, ptr)
 #define Notify_ChatRemoveFriend(ptr) MuleNotify::DoNotify(&MuleNotify::ChatRemoveFriend, ptr)
 #define Notify_ChatConnResult(val0, val1, s) MuleNotify::DoNotify(&MuleNotify::ChatConnResult, val0, val1, s)
+#define Notify_ChatRekeySession(old_id, new_id) \
+	MuleNotify::DoNotify(&MuleNotify::ChatRekeySession, old_id, new_id)
 #define Notify_ChatProcessMsg(val0, s) MuleNotify::DoNotify(&MuleNotify::ChatProcessMsg, val0, s)
 // A chat session was closed -- see MuleNotify::Chat_SessionRemoved above.
 #define Notify_Chat_SessionRemoved(id) MuleNotify::DoNotify(&MuleNotify::Chat_SessionRemoved, id)
