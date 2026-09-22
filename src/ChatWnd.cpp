@@ -242,12 +242,12 @@ void CChatWnd::RemoveFriend(CFriend *todel)
 	friendlistctrl->RemoveFriend(todel);
 }
 
-void CChatWnd::RekeySession(CChatTarget old_id, CChatTarget new_id)
+void CChatWnd::RekeySession(const CChatTarget &old_id, const CChatTarget &new_id)
 {
 	chatselector->RekeySession(old_id, new_id);
 }
 
-void CChatWnd::ProcessMessage(CChatTarget sender, const wxString &message)
+void CChatWnd::ProcessMessage(const CChatTarget &sender, const wxString &message)
 {
 	if (!theApp->amuledlg->IsDialogVisible(CamuleDlg::DT_CHAT_WND)) {
 		theApp->amuledlg->SetMessageBlink(true);
@@ -258,12 +258,12 @@ void CChatWnd::ProcessMessage(CChatTarget sender, const wxString &message)
 	}
 }
 
-void CChatWnd::ConnectionResult(bool success, const wxString &message, CChatTarget id)
+void CChatWnd::ConnectionResult(bool success, const wxString &message, const CChatTarget &id)
 {
 	chatselector->ConnectionResult(success, message, id);
 }
 
-void CChatWnd::SendMessage(const wxString &message, const wxString &client_name, CChatTarget to_id)
+void CChatWnd::SendMessage(const wxString &message, const wxString &client_name, const CChatTarget &to_id)
 {
 
 	if (chatselector->SendMessage(message, client_name, to_id)) {
@@ -299,24 +299,24 @@ void CChatWnd::CheckNewButtonsState()
 	}
 }
 
-bool CChatWnd::IsIdValid(CChatTarget id)
+bool CChatWnd::IsIdValid(const CChatTarget &id)
 {
 	return chatselector->GetTabByClientID(id) >= 0;
 }
 
-void CChatWnd::ShowCaptchaResult(CChatTarget id, bool ok)
+void CChatWnd::ShowCaptchaResult(const CChatTarget &id, bool ok)
 {
 	chatselector->ShowCaptchaResult(id, ok);
 }
 
-void CChatWnd::EndSession(CChatTarget id)
+void CChatWnd::EndSession(const CChatTarget &id)
 {
 	if (ChatTargetValid(id)) {
 		chatselector->EndSession(id);
 	}
 }
 
-void CChatWnd::StartSessionByID(CChatTarget gui_id, const wxString &name)
+void CChatWnd::StartSessionByID(const CChatTarget &gui_id, const wxString &name)
 {
 	// show=false: a session can appear on its own, opened by another client or by a peer
 	// messaging us, and must not pull the selection away from whatever the local user is doing.
@@ -325,7 +325,7 @@ void CChatWnd::StartSessionByID(CChatTarget gui_id, const wxString &name)
 }
 
 void CChatWnd::AppendStoredMessage(
-	CChatTarget gui_id, const wxString &name, const wxString &text, bool outgoing, bool blink)
+	const CChatTarget &gui_id, const wxString &name, const wxString &text, bool outgoing, bool blink)
 {
 	chatselector->AppendStoredMessage(gui_id, name, text, outgoing);
 	// `blink` is false while replaying history on connect: a reconnect must not light the
@@ -337,7 +337,7 @@ void CChatWnd::AppendStoredMessage(
 	CheckNewButtonsState();
 }
 
-void CChatWnd::EndSessionFromCore(CChatTarget gui_id)
+void CChatWnd::EndSessionFromCore(const CChatTarget &gui_id)
 {
 	// The core has already forgotten this session, so the tab must go without originating a
 	// close of its own. The guard keeps OnChatClosing from sending one when this DeletePage

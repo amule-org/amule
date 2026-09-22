@@ -71,12 +71,13 @@ class CChatSelector : public CMuleNotebook
 public:
 	CChatSelector(wxWindow *parent, wxWindowID id, const wxPoint &pos, wxSize siz, long style);
 	virtual ~CChatSelector() {};
-	CChatSession *StartSession(CChatTarget client_id, const wxString &client_name, bool show = true);
-	void EndSession(CChatTarget client_id = {});
-	void RekeySession(CChatTarget old_id, CChatTarget new_id);
-	CChatSession *GetPageByClientID(CChatTarget client_id);
-	int GetTabByClientID(CChatTarget client_id);
-	bool ProcessMessage(CChatTarget sender_id, const wxString &message);
+	CChatSession *StartSession(
+		const CChatTarget &client_id, const wxString &client_name, bool show = true);
+	void EndSession(const CChatTarget &client_id = {});
+	void RekeySession(const CChatTarget &old_id, const CChatTarget &new_id);
+	CChatSession *GetPageByClientID(const CChatTarget &client_id);
+	int GetTabByClientID(const CChatTarget &client_id);
+	bool ProcessMessage(const CChatTarget &sender_id, const wxString &message);
 
 	/**
 	 * Render one message the core's session store already holds.
@@ -87,11 +88,12 @@ public:
 	 * must not light the Messages button up for messages already read elsewhere.
 	 */
 	void AppendStoredMessage(
-		CChatTarget gui_id, const wxString &name, const wxString &text, bool outgoing);
-	bool SendMessage(const wxString &message, const wxString &client_name = "", CChatTarget to_id = {});
-	void ConnectionResult(bool success, const wxString &message, CChatTarget id);
-	void RefreshFriend(CChatTarget toupdate_id, const wxString &new_name);
-	void ShowCaptchaResult(CChatTarget id, bool ok);
+		const CChatTarget &gui_id, const wxString &name, const wxString &text, bool outgoing);
+	bool SendMessage(
+		const wxString &message, const wxString &client_name = "", const CChatTarget &to_id = {});
+	void ConnectionResult(bool success, const wxString &message, const CChatTarget &id);
+	void RefreshFriend(const CChatTarget &toupdate_id, const wxString &new_name);
+	void ShowCaptchaResult(const CChatTarget &id, bool ok);
 	bool GetCurrentClient(CClientRef &) const;
 };
 

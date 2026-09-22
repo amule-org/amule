@@ -50,31 +50,35 @@ public:
 	void UpdateFriend(CFriend *toupdate);
 	void RemoveFriend(CFriend *todel);
 
-	void RekeySession(CChatTarget old_id, CChatTarget new_id);
-	void ProcessMessage(CChatTarget sender, const wxString &message);
-	void ConnectionResult(bool success, const wxString &message, CChatTarget id);
+	void RekeySession(const CChatTarget &old_id, const CChatTarget &new_id);
+	void ProcessMessage(const CChatTarget &sender, const wxString &message);
+	void ConnectionResult(bool success, const wxString &message, const CChatTarget &id);
 
-	void SendMessage(const wxString &message, const wxString &client_name = "", CChatTarget to_id = {});
+	void SendMessage(
+		const wxString &message, const wxString &client_name = "", const CChatTarget &to_id = {});
 
-	bool IsIdValid(CChatTarget id);
-	void ShowCaptchaResult(CChatTarget id, bool ok);
-	void EndSession(CChatTarget id);
+	bool IsIdValid(const CChatTarget &id);
+	void ShowCaptchaResult(const CChatTarget &id, bool ok);
+	void EndSession(const CChatTarget &id);
 
 	// --- Driven by the core's chat session store, over EC --- Open (or reuse) a tab for a
 	// session the core reports, without stealing the selection: a session can appear on its
 	// own, started by another client, while the user is doing something else.
-	void StartSessionByID(CChatTarget gui_id, const wxString &name);
+	void StartSessionByID(const CChatTarget &gui_id, const wxString &name);
 
 	// Render one message the core already holds. `blink` is false while replaying history on
 	// connect -- a reconnect must not light the Messages button up for messages already read --
 	// and true for anything arriving afterwards.
-	void AppendStoredMessage(
-		CChatTarget gui_id, const wxString &name, const wxString &text, bool outgoing, bool blink);
+	void AppendStoredMessage(const CChatTarget &gui_id,
+		const wxString &name,
+		const wxString &text,
+		bool outgoing,
+		bool blink);
 
 	// The core no longer has this session (closed by another client, or evicted). Closes the
 	// tab WITHOUT sending a close back: distinct from EndSession, which is the user's own
 	// close.
-	void EndSessionFromCore(CChatTarget gui_id);
+	void EndSessionFromCore(const CChatTarget &gui_id);
 
 protected:
 	/**

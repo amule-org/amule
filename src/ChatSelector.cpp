@@ -111,7 +111,8 @@ CChatSelector::CChatSelector(wxWindow *parent, wxWindowID id, const wxPoint &pos
 	AssignImageList(imagelist);
 }
 
-CChatSession *CChatSelector::StartSession(CChatTarget client_id, const wxString &client_name, bool show)
+CChatSession *CChatSelector::StartSession(
+	const CChatTarget &client_id, const wxString &client_name, bool show)
 {
 	if (!ChatTargetValid(client_id)) {
 		return nullptr;
@@ -147,7 +148,7 @@ CChatSession *CChatSelector::StartSession(CChatTarget client_id, const wxString 
 	return chatsession;
 }
 
-void CChatSelector::RekeySession(CChatTarget old_id, CChatTarget new_id)
+void CChatSelector::RekeySession(const CChatTarget &old_id, const CChatTarget &new_id)
 {
 	if (old_id == new_id || !ChatTargetValid(new_id)) {
 		return;
@@ -173,7 +174,7 @@ void CChatSelector::RekeySession(CChatTarget old_id, CChatTarget new_id)
 	}
 }
 
-CChatSession *CChatSelector::GetPageByClientID(CChatTarget client_id)
+CChatSession *CChatSelector::GetPageByClientID(const CChatTarget &client_id)
 {
 	for (unsigned int i = 0; i < (unsigned int)GetPageCount(); i++) {
 		CChatSession *page = static_cast<CChatSession *>(GetPage(i));
@@ -186,7 +187,7 @@ CChatSession *CChatSelector::GetPageByClientID(CChatTarget client_id)
 	return NULL;
 }
 
-int CChatSelector::GetTabByClientID(CChatTarget client_id)
+int CChatSelector::GetTabByClientID(const CChatTarget &client_id)
 {
 	for (unsigned int i = 0; i < (unsigned int)GetPageCount(); i++) {
 		CChatSession *page = static_cast<CChatSession *>(GetPage(i));
@@ -199,7 +200,7 @@ int CChatSelector::GetTabByClientID(CChatTarget client_id)
 	return -1;
 }
 
-bool CChatSelector::ProcessMessage(CChatTarget sender_id, const wxString &message)
+bool CChatSelector::ProcessMessage(const CChatTarget &sender_id, const wxString &message)
 {
 	if (!ChatTargetValid(sender_id)) {
 		return false;
@@ -250,7 +251,7 @@ bool CChatSelector::ProcessMessage(CChatTarget sender_id, const wxString &messag
 }
 
 void CChatSelector::AppendStoredMessage(
-	CChatTarget gui_id, const wxString &name, const wxString &text, bool outgoing)
+	const CChatTarget &gui_id, const wxString &name, const wxString &text, bool outgoing)
 {
 	CChatSession *session = GetPageByClientID(gui_id);
 	if (!session) {
@@ -268,7 +269,8 @@ void CChatSelector::AppendStoredMessage(
 	session->AddText(": " + text, COLOR_BLACK);
 }
 
-bool CChatSelector::SendMessage(const wxString &message, const wxString &client_name, CChatTarget to_id)
+bool CChatSelector::SendMessage(
+	const wxString &message, const wxString &client_name, const CChatTarget &to_id)
 {
 	// Dont let the user send empty messages
 	// This is also a user-fix for people who mash the enter-key ...
@@ -336,7 +338,7 @@ bool CChatSelector::SendMessage(const wxString &message, const wxString &client_
    jgs (______)\_)_)
 */
 
-void CChatSelector::ConnectionResult(bool success, const wxString &message, CChatTarget id)
+void CChatSelector::ConnectionResult(bool success, const wxString &message, const CChatTarget &id)
 {
 	CChatSession *ci = GetPageByClientID(id);
 	if (!ci) {
@@ -357,7 +359,7 @@ void CChatSelector::ConnectionResult(bool success, const wxString &message, CCha
 	}
 }
 
-void CChatSelector::EndSession(CChatTarget client_id)
+void CChatSelector::EndSession(const CChatTarget &client_id)
 {
 	int usedtab;
 	if (ChatTargetValid(client_id)) {
@@ -374,7 +376,7 @@ void CChatSelector::EndSession(CChatTarget client_id)
 }
 
 // Refresh the tab associated with a client
-void CChatSelector::RefreshFriend(CChatTarget toupdate_id, const wxString &new_name)
+void CChatSelector::RefreshFriend(const CChatTarget &toupdate_id, const wxString &new_name)
 {
 	if (!ChatTargetValid(toupdate_id)) {
 		return;
@@ -391,7 +393,7 @@ void CChatSelector::RefreshFriend(CChatTarget toupdate_id, const wxString &new_n
 	}
 }
 
-void CChatSelector::ShowCaptchaResult(CChatTarget id, bool ok)
+void CChatSelector::ShowCaptchaResult(const CChatTarget &id, bool ok)
 {
 	CChatSession *ci = GetPageByClientID(id);
 	if (ci) {

@@ -88,7 +88,7 @@ namespace
 
 // Asks for the message and hands it to the chat window. Shared so the live and
 // stored-row paths cannot drift. Only the remote GUI carries an EC projection.
-void PromptAndSendChatMessage(const wxString &userName, CChatTarget userID)
+void PromptAndSendChatMessage(const wxString &userName, const CChatTarget &userID)
 {
 	if (!ChatTargetValid(userID)) {
 		wxMessageBox(_("Chat is unavailable until the peer supplies a valid identity."),
