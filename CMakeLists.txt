@@ -478,12 +478,25 @@ if ((BUILD_MONOLITHIC OR BUILD_REMOTEGUI) AND CMAKE_SYSTEM_NAME STREQUAL "Linux"
 		# that's the maintained one; fall back to Canonical's legacy
 		# `appindicator3-0.1` for distros that haven't migrated yet.
 		# The two are API-compatible at the headers/symbols level.
+		# Which fork answered is recorded here rather than read back from
+		# pkg_check_modules: only the Ayatana one carries the `activate`
+		# signal and a title the host shows on hover, so the summary has
+		# to be able to say which of the two a build actually got.
 		pkg_check_modules (AYATANA_APPINDICATOR QUIET ayatana-appindicator3-0.1)
-		if (NOT AYATANA_APPINDICATOR_FOUND)
+		if (AYATANA_APPINDICATOR_FOUND)
+			set (APPINDICATOR_MODULE "ayatana-appindicator3-0.1")
+		else()
 			pkg_check_modules (AYATANA_APPINDICATOR QUIET appindicator3-0.1)
+			if (AYATANA_APPINDICATOR_FOUND)
+				set (APPINDICATOR_MODULE "appindicator3-0.1")
+				set (APPINDICATOR_IS_LEGACY ON)
+			endif()
 		endif()
 		if (AYATANA_APPINDICATOR_FOUND)
-			message (STATUS "AppIndicator3 found: ${AYATANA_APPINDICATOR_MODULE_NAME} ${AYATANA_APPINDICATOR_VERSION} — tray icon uses SNI backend")
+			message (STATUS "AppIndicator3 found: ${APPINDICATOR_MODULE} ${AYATANA_APPINDICATOR_VERSION} — tray icon uses SNI backend")
+			if (APPINDICATOR_IS_LEGACY)
+				message (WARNING "Building against Canonical's ${APPINDICATOR_MODULE}. The tray icon works, but left-click show/hide and the hover title need the Ayatana fork: install ayatana-appindicator3-0.1 instead.")
+			endif()
 			set (WITH_LIBAYATANA_APPINDICATOR ON)
 		else()
 			message (STATUS "AppIndicator3 not found (looked for ayatana-appindicator3-0.1 and appindicator3-0.1) — tray icon falls back to legacy GtkStatusIcon, invisible on modern GNOME/wlroots")
@@ -704,8 +717,10 @@ if (NEED_ZLIB)
 endif()
 
 if ((BUILD_MONOLITHIC OR BUILD_REMOTEGUI) AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
-	if (WITH_LIBAYATANA_APPINDICATOR)
-		message ("			tray-icon backend		StatusNotifierItem (libayatana-appindicator ${AYATANA_APPINDICATOR_VERSION})")
+	if (APPINDICATOR_IS_LEGACY)
+		message ("			tray-icon backend		StatusNotifierItem (${APPINDICATOR_MODULE} ${AYATANA_APPINDICATOR_VERSION}) — legacy fork: no left-click show/hide, no hover title")
+	elseif (WITH_LIBAYATANA_APPINDICATOR)
+		message ("			tray-icon backend		StatusNotifierItem (${APPINDICATOR_MODULE} ${AYATANA_APPINDICATOR_VERSION})")
 	else()
 		message ("			tray-icon backend		legacy GtkStatusIcon (invisible on modern GNOME/wlroots — install libayatana-appindicator3-dev for SNI)")
 	endif()
