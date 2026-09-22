@@ -16,6 +16,14 @@
 
 #include "SharedDirWatcher.h"
 
+#include <set>
+#include <utility>
+#include <vector>
+
+#ifndef __WXMSW__
+#include <sys/stat.h> // Needed for stat() -- inotify keys a watch by inode, not by path
+#endif
+
 #include <wx/app.h>
 #include <wx/evtloop.h>
 #include <wx/filename.h>
@@ -254,6 +262,20 @@ void CSharedDirWatcher::RegisterAllPaths()
 		shared.push_back(extra);
 	};
 
+	// Counted across both platform branches below and reported once at the end. The names are
+	// kept as well as the count: which directories failed is what shows whether this is a flat
+	// limit or something about particular paths. Capped because the point of the cap is to not
+	// be the per-directory flood this replaced.
+	constexpr size_t kMaxNamedFailures = 10;
+	unsigned failed = 0;
+	std::vector<wxString> failedPaths;
+	auto note_failure = [&](const CPath &path) {
+		if (failedPaths.size() < kMaxNamedFailures) {
+			failedPaths.push_back(path.GetRaw());
+		}
+		++failed;
+	};
+
 	append_unique(thePrefs::GetIncomingDir());
 	for (unsigned int i = 1; i < theApp->glob_prefs->GetCatCount(); ++i) {
 		append_unique(theApp->glob_prefs->GetCatPath(i));
@@ -286,8 +308,7 @@ void CSharedDirWatcher::RegisterAllPaths()
 		}
 		wxFileName fn = wxFileName::DirName(p.GetRaw());
 		if (!m_watcher->AddTree(fn, kWatchMask)) {
-			AddDebugLogLineC(logKnownFiles,
-				CFormat("Shared-dir watcher: failed to AddTree %s") % p.GetRaw());
+			note_failure(p);
 		}
 	}
 #else
@@ -295,20 +316,59 @@ void CSharedDirWatcher::RegisterAllPaths()
 	// shareddir_list already enumerates every subdirectory individually when the user uses the
 	// recursive-share button, so the inotify watch count tracks shareddir_list.size() rather
 	// than total subtree depth.
+#ifndef __WXMSW__
+	// inotify keys a watch by inode, so a second path reaching the same directory is refused
+	// rather than watched twice. That happens whenever "Follow symbolic links" pulls in a
+	// symlink whose target is already shared. Skip those instead of letting the add fail: the
+	// watch already in place reports their events, under the target's name.
+	std::set<std::pair<dev_t, ino_t>> seen;
+#endif
+	unsigned aliased = 0;
 	for (size_t i = 0; i < shared.size(); ++i) {
 		const CPath &p = shared[i];
 		if (!p.IsOk() || !p.DirExists()) {
 			continue;
 		}
+#ifndef __WXMSW__
+		struct stat st;
+		if (stat((const char *)p.GetRaw().utf8_str(), &st) == 0 &&
+			!seen.emplace(st.st_dev, st.st_ino).second) {
+			++aliased;
+			continue;
+		}
+#endif
 		wxFileName fn = wxFileName::DirName(p.GetRaw());
 		if (!m_watcher->Add(fn, kWatchMask)) {
-			// Most likely cause on Linux is hitting /proc/sys/fs/inotify/max_user_watches.
-			// Log and continue -- partial coverage is better than zero coverage.
-			AddDebugLogLineC(
-				logKnownFiles, CFormat("Shared-dir watcher: failed to add %s") % p.GetRaw());
+			note_failure(p);
 		}
 	}
+	if (aliased) {
+		AddDebugLogLineN(logKnownFiles,
+			CFormat("Shared-dir watcher: %u shared path(s) already watched under another "
+				"name") %
+				aliased);
+	}
 #endif
+
+	// One line for the lot. This used to print per directory, which on a large share meant
+	// hundreds of identical-looking lines the user could do nothing with, at a level that is
+	// always compiled in.
+	if (failed) {
+		AddDebugLogLineC(logKnownFiles,
+			CFormat("Shared-dir watcher: could not watch %u of %u shared directories. On "
+				"Linux this is usually the inotify watch limit "
+				"(fs.inotify.max_user_watches). Those files stay shared; only automatic "
+				"pickup of changes in them is lost.") %
+				failed % (unsigned)shared.size());
+		for (const wxString &path : failedPaths) {
+			AddDebugLogLineC(logKnownFiles, CFormat("Shared-dir watcher:   %s") % path);
+		}
+		if (failed > failedPaths.size()) {
+			AddDebugLogLineC(logKnownFiles,
+				CFormat("Shared-dir watcher:   ... and %u more") %
+					(unsigned)(failed - failedPaths.size()));
+		}
+	}
 }
 
 void CSharedDirWatcher::OnFileSystemEvent(wxFileSystemWatcherEvent &event)
