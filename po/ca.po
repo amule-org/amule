@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-21 12:20+0200\n"
+"POT-Creation-Date: 2026-09-22 15:47+0100\n"
 "PO-Revision-Date: 2026-09-20 20:19+0000\n"
 "Last-Translator: minterior <minterior@gmail.com>\n"
 "Language-Team: Català\n"
@@ -4776,19 +4776,21 @@ msgid "Exclude files matching:"
 msgstr "Exclou els fitxers que coincideixin amb:"
 
 #: src/muuli_wdr.cpp
-msgid "Wildcard patterns separated by '|', e.g. .DS_Store|Thumbs.db|*.tmp. Files whose name matches are not shared. Matching is case-insensitive."
-msgstr "Patrons de comodins separats per «|», per exemple .DS_Store|Thumbs.db|*.tmp. Els fitxers amb un nom que hi coincideixi no es comparteixen. No es distingeixen majúscules i minúscules."
+msgid "Files whose name matches are not shared. Matching is case-insensitive. As wildcards: patterns separated by '|', e.g. .DS_Store|Thumbs.db|*.tmp, where '*' matches any run of characters and '?' a single one. Tick the box below to write one regular expression instead."
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Patterns are regular expressions"
 msgstr "Els patrons són expressions regulars"
 
 #: src/muuli_wdr.cpp
-msgid "When set, the whole field is one regular expression ('|' is alternation). When unset, it is a list of '|'-separated wildcards."
+#, fuzzy
+msgid "When set, the whole field is one regular expression: '|' is alternation, and '*' and '?' take their regular-expression meaning rather than the wildcard one. When unset, it is a list of '|'-separated wildcards."
 msgstr "Quan està activat, tot el camp és una sola expressió regular («|» és alternança). Quan està desactivat, és una llista de comodins separats per «|»."
 
 #: src/muuli_wdr.cpp
-msgid "Show how many shared files the current pattern would exclude."
+#, fuzzy
+msgid "Show how many of the files in your shared folders the current pattern would exclude, counted over the last scan."
 msgstr "Mostra quants fitxers compartits excloria el patró actual."
 
 #: src/muuli_wdr.cpp
@@ -6433,9 +6435,14 @@ msgid "Choose a folder for %s"
 msgstr "Carpeta per a %s"
 
 #: src/PrefsUnifiedDlg.cpp
-#, c-format
-msgid "Would exclude %u of %u shared file"
-msgid_plural "Would exclude %u of %u shared files"
+#, fuzzy, c-format
+msgid "Would exclude %u or more of the files in your shared folders"
+msgstr "Excloiria %u de %u fitxer compartit"
+
+#: src/PrefsUnifiedDlg.cpp
+#, fuzzy, c-format
+msgid "Would exclude %u of %u file in your shared folders"
+msgid_plural "Would exclude %u of %u files in your shared folders"
 msgstr[0] "Excloiria %u de %u fitxer compartit"
 msgstr[1] "Excloiria %u de %u fitxers compartits"
 
@@ -9334,6 +9341,9 @@ msgstr "Sembla que l'aMule s'està executant. Tanqueu-lo i torneu a executar el 
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "S'estan eliminant les dades d'usuari a $APPDATA\\aMule..."
+
+#~ msgid "Wildcard patterns separated by '|', e.g. .DS_Store|Thumbs.db|*.tmp. Files whose name matches are not shared. Matching is case-insensitive."
+#~ msgstr "Patrons de comodins separats per «|», per exemple .DS_Store|Thumbs.db|*.tmp. Els fitxers amb un nom que hi coincideixi no es comparteixen. No es distingeixen majúscules i minúscules."
 
 #~ msgid "Ratio"
 #~ msgstr "Proporció"

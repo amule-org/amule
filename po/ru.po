@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-21 12:20+0200\n"
+"POT-Creation-Date: 2026-09-22 15:47+0100\n"
 "PO-Revision-Date: 2026-09-20 21:04+0000\n"
 "Last-Translator: Radist Morse <radist.morse@gmail.com>\n"
 "Language-Team: Russian <kde-russian@lists.kde.ru>\n"
@@ -4819,19 +4819,21 @@ msgid "Exclude files matching:"
 msgstr "Исключать файлы по шаблону:"
 
 #: src/muuli_wdr.cpp
-msgid "Wildcard patterns separated by '|', e.g. .DS_Store|Thumbs.db|*.tmp. Files whose name matches are not shared. Matching is case-insensitive."
-msgstr "Шаблоны с подстановочными знаками, разделённые «|», напр. .DS_Store|Thumbs.db|*.tmp. Файлы с совпадающим именем не публикуются. Регистр не учитывается."
+msgid "Files whose name matches are not shared. Matching is case-insensitive. As wildcards: patterns separated by '|', e.g. .DS_Store|Thumbs.db|*.tmp, where '*' matches any run of characters and '?' a single one. Tick the box below to write one regular expression instead."
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Patterns are regular expressions"
 msgstr "Шаблоны являются регулярными выражениями"
 
 #: src/muuli_wdr.cpp
-msgid "When set, the whole field is one regular expression ('|' is alternation). When unset, it is a list of '|'-separated wildcards."
+#, fuzzy
+msgid "When set, the whole field is one regular expression: '|' is alternation, and '*' and '?' take their regular-expression meaning rather than the wildcard one. When unset, it is a list of '|'-separated wildcards."
 msgstr "Если включено, всё поле является одним регулярным выражением («|» означает альтернативу). Если выключено, это список подстановочных шаблонов, разделённых «|»."
 
 #: src/muuli_wdr.cpp
-msgid "Show how many shared files the current pattern would exclude."
+#, fuzzy
+msgid "Show how many of the files in your shared folders the current pattern would exclude, counted over the last scan."
 msgstr "Показать, сколько общих файлов исключит текущий шаблон."
 
 #: src/muuli_wdr.cpp
@@ -6488,9 +6490,14 @@ msgid "Choose a folder for %s"
 msgstr "Выберите каталог для %s"
 
 #: src/PrefsUnifiedDlg.cpp
-#, c-format
-msgid "Would exclude %u of %u shared file"
-msgid_plural "Would exclude %u of %u shared files"
+#, fuzzy, c-format
+msgid "Would exclude %u or more of the files in your shared folders"
+msgstr "Будет исключён %u из %u общих файлов"
+
+#: src/PrefsUnifiedDlg.cpp
+#, fuzzy, c-format
+msgid "Would exclude %u of %u file in your shared folders"
+msgid_plural "Would exclude %u of %u files in your shared folders"
 msgstr[0] "Будет исключён %u из %u общих файлов"
 msgstr[1] "Будут исключены %u из %u общих файлов"
 msgstr[2] "Будет исключено %u из %u общих файлов"
@@ -9423,6 +9430,9 @@ msgstr "Похоже, что aMule запущен. Закройте его и п
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Удаление пользовательских данных в $APPDATA\\aMule…"
+
+#~ msgid "Wildcard patterns separated by '|', e.g. .DS_Store|Thumbs.db|*.tmp. Files whose name matches are not shared. Matching is case-insensitive."
+#~ msgstr "Шаблоны с подстановочными знаками, разделённые «|», напр. .DS_Store|Thumbs.db|*.tmp. Файлы с совпадающим именем не публикуются. Регистр не учитывается."
 
 #~ msgid "Ratio"
 #~ msgstr "Соотношение"

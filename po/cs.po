@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-21 12:20+0200\n"
+"POT-Creation-Date: 2026-09-22 15:47+0100\n"
 "PO-Revision-Date: 2026-09-20 20:20+0000\n"
 "Last-Translator: David Watzke <david@watzke.cz>\n"
 "Language-Team: cs <cs@li.org>\n"
@@ -4796,19 +4796,21 @@ msgid "Exclude files matching:"
 msgstr "Vyloučit soubory odpovídající:"
 
 #: src/muuli_wdr.cpp
-msgid "Wildcard patterns separated by '|', e.g. .DS_Store|Thumbs.db|*.tmp. Files whose name matches are not shared. Matching is case-insensitive."
-msgstr "Zástupné vzory oddělené znakem '|', např. .DS_Store|Thumbs.db|*.tmp. Soubory, jejichž název odpovídá těmto vzorům, nejsou sdíleny. Porovnávání nebere ohled na velikost písmen."
+msgid "Files whose name matches are not shared. Matching is case-insensitive. As wildcards: patterns separated by '|', e.g. .DS_Store|Thumbs.db|*.tmp, where '*' matches any run of characters and '?' a single one. Tick the box below to write one regular expression instead."
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Patterns are regular expressions"
 msgstr "Vzory jsou regulárními výrazy"
 
 #: src/muuli_wdr.cpp
-msgid "When set, the whole field is one regular expression ('|' is alternation). When unset, it is a list of '|'-separated wildcards."
+#, fuzzy
+msgid "When set, the whole field is one regular expression: '|' is alternation, and '*' and '?' take their regular-expression meaning rather than the wildcard one. When unset, it is a list of '|'-separated wildcards."
 msgstr "Je-li nastaveno, celé pole je jeden regulární výraz ('|' znamená alternaci). Není-li nastaveno, jedná se o seznam zástupných vzorů oddělených znakem '|'."
 
 #: src/muuli_wdr.cpp
-msgid "Show how many shared files the current pattern would exclude."
+#, fuzzy
+msgid "Show how many of the files in your shared folders the current pattern would exclude, counted over the last scan."
 msgstr "Zobrazit, kolik sdílených souborů by aktuální vzor vyloučil."
 
 #: src/muuli_wdr.cpp
@@ -6457,9 +6459,14 @@ msgid "Choose a folder for %s"
 msgstr "Zvolte složku pro %s"
 
 #: src/PrefsUnifiedDlg.cpp
-#, c-format
-msgid "Would exclude %u of %u shared file"
-msgid_plural "Would exclude %u of %u shared files"
+#, fuzzy, c-format
+msgid "Would exclude %u or more of the files in your shared folders"
+msgstr "Bylo by vyloučeno %u z %u sdíleného souboru"
+
+#: src/PrefsUnifiedDlg.cpp
+#, fuzzy, c-format
+msgid "Would exclude %u of %u file in your shared folders"
+msgid_plural "Would exclude %u of %u files in your shared folders"
 msgstr[0] "Bylo by vyloučeno %u z %u sdíleného souboru"
 msgstr[1] "Bylo by vyloučeno %u z %u sdílených souborů"
 msgstr[2] "Bylo by vyloučeno %u z %u sdílených souborů"
@@ -9381,6 +9388,9 @@ msgstr "Zdá se, že aMule je spuštěn. Zavřete jej prosím a spusťte odinsta
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Odstraňuji uživatelská data z $APPDATA\\aMule..."
+
+#~ msgid "Wildcard patterns separated by '|', e.g. .DS_Store|Thumbs.db|*.tmp. Files whose name matches are not shared. Matching is case-insensitive."
+#~ msgstr "Zástupné vzory oddělené znakem '|', např. .DS_Store|Thumbs.db|*.tmp. Soubory, jejichž název odpovídá těmto vzorům, nejsou sdíleny. Porovnávání nebere ohled na velikost písmen."
 
 #~ msgid "Ratio"
 #~ msgstr "Poměr"
