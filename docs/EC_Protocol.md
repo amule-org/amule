@@ -557,6 +557,17 @@ echoed must not send `EC_TAG_CHAT_PEER_HASH` either; it addresses and
 lists chat sessions by GUI_ID only, exactly as a build that predates the
 tag would.
 
+Such a client sees conversations the way 3.1.0 kept them: one per IPv4
+route. The daemon keys a session by the peer's hash and follows the peer
+across routes, so for these connections it lists one view per route the
+session exchanged messages on, each holding only that route's messages.
+A peer that moves from `a:p` to `b:q` therefore keeps its `a:p`
+conversation and gains a `b:q` one. For such a connection,
+`EC_OP_GET_CHAT_MESSAGES`, `EC_OP_CHAT_SEND` and
+`EC_OP_CHAT_CLOSE_SESSION` act on the view its GUI_ID names: a reply
+sent under `a:p` is filed there even though it reaches the peer on
+`b:q`, and closing `a:p` drops only that view.
+
 #### `EC_OP_GET_CHAT_SESSIONS` (`0x63`) → `EC_OP_CHAT_SESSIONS` (`0x64`)
 
 The polling workhorse: one roundtrip returns the session list *and*
@@ -640,6 +651,10 @@ no such session.
 Closing is **global**, matching the semantics search tabs already have:
 the core state is destroyed for every client, and the others learn of it
 from the session's absence in the next `EC_OP_CHAT_SESSIONS` reply.
+
+From a client without `EC_TAG_CAN_CHAT_PEER_HASH`, a GUI_ID closes one
+route's view: its messages are dropped for every client, and the session
+itself only once no route holds messages.
 
 ### Connection preferences (`EC_TAG_PREFS_CONNECTIONS = 0x1300`)
 
