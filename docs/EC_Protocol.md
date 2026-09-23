@@ -600,23 +600,32 @@ no such session.
 
 #### `EC_OP_CHAT_SEND` (`0x65`)
 
-Takes `EC_TAG_CHAT` (the text, non-empty) plus exactly one target:
+Takes `EC_TAG_CHAT` (the text, non-empty) plus one or both target tags:
 
 | Target tag              | Addresses |
 | ----------------------- | --------- |
 | `EC_TAG_CHAT_PEER_HASH` | A peer by its stable identity — the only target that reaches an IPv6 route, a provisional session, or a peer sharing an endpoint with another. Prefer this whenever the session carries a hash. |
-| `EC_TAG_CHAT_CLIENT_ID` | A GUI_ID — kept for clients that predate the hash tag; refused when the GUI_ID is ambiguous or unprojectable |
+| `EC_TAG_CHAT_CLIENT_ID` | A GUI_ID — kept for clients that predate the hash tag; refused alone when the GUI_ID is ambiguous or unprojectable |
+
+When both are present, the hash is the identity and the GUI_ID is a dial
+hint: it gives the daemon a route for a peer it has no session or live
+client for yet, e.g. an offline friend the sender only knows by address
+and hash. Sent together, an IPv4 GUI_ID is never discarded just because
+a hash also identified the target.
 
 The server creates the session when it does not exist, so this doubles
 as "start a chat with this address" for a `EC_TAG_CHAT_CLIENT_ID` target.
-A `EC_TAG_CHAT_PEER_HASH` target with no prior session and no known route
-answers `EC_OP_FAILED`: a hash alone gives the daemon nowhere to dial.
+A `EC_TAG_CHAT_PEER_HASH` target with no prior session and no usable
+GUI_ID dial hint answers `EC_OP_FAILED`: nothing gives the daemon
+somewhere to dial.
 
 **Reply:** `EC_OP_NOOP` with `EC_TAG_CHAT_CLIENT_ID` (`0` when the
 session's route is not IPv4-projectable), `EC_TAG_CHAT_PEER_HASH` when
-the peer has one, and `EC_TAG_CHAT_MSG_ID` (the id assigned), so the
-sender can correlate without waiting for the next poll. `EC_OP_FAILED`
-with an `EC_TAG_STRING` on an unknown target or empty text.
+the peer has one and this connection advertised
+`EC_TAG_CAN_CHAT_PEER_HASH`, and `EC_TAG_CHAT_MSG_ID` (the id assigned),
+so the sender can correlate without waiting for the next poll.
+`EC_OP_FAILED` with an `EC_TAG_STRING` on an unknown target or empty
+text.
 
 Note that the core's own send returning `false` means *queued while
 connecting*, not *failed*, and does not produce an `EC_OP_FAILED`.

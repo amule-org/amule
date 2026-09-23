@@ -430,6 +430,12 @@ wxString ChatPeerFallbackName(const CChatPeer &peer)
 }
 
 #ifdef CLIENT_GUI
+CChatTarget BuildLocalChatTarget(const CMD4Hash &hash, uint32 ip, uint16 port)
+{
+	const bool serverKnowsHash = theApp->m_connect && theApp->m_connect->ServerSupportsChatPeerHash();
+	return BuildChatPeer(serverKnowsHash ? hash : CMD4Hash(), ip, port);
+}
+
 void AddChatTargetTags(CECPacket &req, const CChatTarget &target)
 {
 	const uint32 ip = target.Address().ToIPv4NetworkOrderOrZero();

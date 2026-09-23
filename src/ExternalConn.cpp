@@ -1621,10 +1621,18 @@ uint64 ChatTargetGuiId(const CECPacket *request)
 CChatPeer ResolveChatSendTarget(const CECPacket *request)
 {
 	const CMD4Hash hash = ChatTargetHash(request);
+	const uint64 gui_id = ChatTargetGuiId(request);
 	if (!hash.IsEmpty()) {
+		// The GUI_ID sent alongside a hash is a dial hint, not a fallback target: keep it as
+		// the route so SendChatMessage() can reach an offline peer through CreateForAddress(),
+		// exactly as the monolithic GUI already does for a friend with no live client.
+		if (gui_id && IP_FROM_GUI_ID(gui_id) && PORT_FROM_GUI_ID(gui_id)) {
+			return CChatPeer(hash,
+				CNetworkAddress::FromIPv4NetworkOrderOrAbsent(IP_FROM_GUI_ID(gui_id)),
+				PORT_FROM_GUI_ID(gui_id));
+		}
 		return CChatPeer(hash);
 	}
-	const uint64 gui_id = ChatTargetGuiId(request);
 	if (!gui_id) {
 		return CChatPeer();
 	}
@@ -4194,7 +4202,7 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 		const auto *sentSession = theApp->chatsessions->Find(peer);
 		response->AddTag(
 			CECTag(EC_TAG_CHAT_CLIENT_ID, sentSession ? sentSession->LegacyGuiId() : uint64(0)));
-		if (!peer.Hash().IsEmpty()) {
+		if (m_chatPeerHashActive && !peer.Hash().IsEmpty()) {
 			response->AddTag(CECTag(EC_TAG_CHAT_PEER_HASH, peer.Hash()));
 		}
 		response->AddTag(CECTag(EC_TAG_CHAT_MSG_ID, theApp->chatsessions->LastMsgId()));

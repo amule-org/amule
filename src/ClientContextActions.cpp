@@ -34,6 +34,7 @@
 
 #include "amule.h"              // Needed for theApp
 #include "amuleDlg.h"           // Needed for CamuleDlg
+#include "ChatSelector.h"       // Needed for BuildLocalChatTarget
 #include "ChatWnd.h"            // Needed for CChatWnd::SendMessage
 #include "ClientDetailDialog.h" // Needed for CClientDetailDialog
 #include "ClientList.h"         // Needed for CClientList::CreateForAddress
@@ -236,7 +237,7 @@ void PeerActionSendMessage(const PeerIdentity &peer)
 		return;
 	}
 #ifdef CLIENT_GUI
-	const CChatTarget target = BuildChatPeer(peer.hash, peer.ip, peer.port);
+	const CChatTarget target = BuildLocalChatTarget(peer.hash, peer.ip, peer.port);
 	PromptAndSendChatMessage(peer.name.IsEmpty() ? peer.hash.Encode() : peer.name, target);
 #else
 	CClientRef client = theApp->clientlist->CreateForAddress(peer.hash, peer.ip, peer.port, peer.name);
@@ -435,7 +436,8 @@ void ClientActionSendMessage(const std::vector<CClientRef> &clients)
 	// event-loop, in which the client may be deleted.
 	const wxString userName = source.GetUserName();
 #ifdef CLIENT_GUI
-	const CChatTarget userID = BuildChatPeer(source.GetUserHash(), source.GetIP(), source.GetUserPort());
+	const CChatTarget userID =
+		BuildLocalChatTarget(source.GetUserHash(), source.GetIP(), source.GetUserPort());
 #else
 	CChatTarget userID = source.GetClient()->GetChatPeer();
 	if (userID.IsEmpty() && theApp->chatsessions) {

@@ -81,8 +81,9 @@ CChatTarget FriendChatTarget(const CFriend *peer)
 {
 #ifdef CLIENT_GUI
 	// The persisted hash remains authoritative even when the route is stale or absent;
-	// BuildChatPeer keeps the route alongside it, as a dial hint if the daemon ever needs one.
-	return BuildChatPeer(peer->GetUserHash(), peer->GetIP(), peer->GetPort());
+	// BuildLocalChatTarget keeps the route alongside it, as a dial hint, and drops the
+	// hash itself when the daemon cannot address a session by it.
+	return BuildLocalChatTarget(peer->GetUserHash(), peer->GetIP(), peer->GetPort());
 #else
 	// The persisted hash remains authoritative even if the linked route client
 	// has not completed its handshake yet.

@@ -41,6 +41,13 @@ class CECPacket;
 wxString ChatPeerFallbackName(const CChatPeer &peer);
 
 #ifdef CLIENT_GUI
+// Builds a locally-originated target (from a friend or a live client), dropping the
+// hash when the daemon has not confirmed EC_TAG_CAN_CHAT_PEER_HASH. A hash-keyed local
+// tab would never match a poll reply from such a daemon, which never carries the hash
+// tag and always decodes a route-only CChatPeer -- so building the SAME shape here is
+// what keeps StartSessionByID() finding the existing tab instead of opening a second one.
+CChatTarget BuildLocalChatTarget(const CMD4Hash &hash, uint32 ip, uint16 port);
+
 // Adds whichever chat target tags this connection's capabilities and this target's known
 // route/hash allow: EC_TAG_CHAT_CLIENT_ID whenever the route is IPv4 -- the pre-hash addressing
 // mode, and also a dial hint alongside a hash -- and EC_TAG_CHAT_PEER_HASH only once the daemon
