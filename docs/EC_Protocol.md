@@ -537,9 +537,16 @@ must send none of the operations below unless it saw `0x27` echoed.
 | `EC_TAG_CHAT_DIRECTION` | `0x0905` | `uint8`  | `0` = incoming, `1` = outgoing |
 | `EC_TAG_CHAT_TIMESTAMP` | `0x0906` | `uint32` | Unix seconds, stamped by the core |
 | `EC_TAG_CHAT_PEER_NAME` | `0x0907` | `string` | Peer display name; may be empty |
+| `EC_TAG_CHAT_PEER_HASH` | `0x0908` | `CMD4Hash` | Peer's stable identity; omitted while the peer is still provisional |
 
 The IP inside a GUI_ID uses the same byte order as
 `EC_TAG_CLIENT_USER_IP`.
+
+`EC_TAG_CHAT_PEER_HASH` is additive: a daemon that omits it from a session
+predates this tag. It is the only way to address a peer a GUI_ID cannot
+express -- an IPv6 route, a provisional session, or an endpoint two
+identified peers share -- so a client should prefer it over the GUI_ID
+whenever a session carries one.
 
 #### `EC_OP_GET_CHAT_SESSIONS` (`0x63`) → `EC_OP_CHAT_SESSIONS` (`0x64`)
 
@@ -581,26 +588,29 @@ Takes `EC_TAG_CHAT` (the text, non-empty) plus exactly one target:
 
 | Target tag              | Addresses |
 | ----------------------- | --------- |
-| `EC_TAG_CHAT_CLIENT_ID` | A GUI_ID — replying needs no lookup, it is the id messages arrive with |
-| `EC_TAG_CLIENT`         | A live peer by ECID |
-| `EC_TAG_FRIEND`         | A friend by ECID — resolved through the friend's stored address, so an **offline** friend is reachable |
+| `EC_TAG_CHAT_PEER_HASH` | A peer by its stable identity — the only target that reaches an IPv6 route, a provisional session, or a peer sharing an endpoint with another. Prefer this whenever the session carries a hash. |
+| `EC_TAG_CHAT_CLIENT_ID` | A GUI_ID — kept for clients that predate the hash tag; refused when the GUI_ID is ambiguous or unprojectable |
 
 The server creates the session when it does not exist, so this doubles
-as "start a chat with this address".
+as "start a chat with this address" for a `EC_TAG_CHAT_CLIENT_ID` target.
+A `EC_TAG_CHAT_PEER_HASH` target with no prior session and no known route
+queues the message pending identification rather than creating one.
 
-**Reply:** `EC_OP_NOOP` with `EC_TAG_CHAT_CLIENT_ID` (the resolved
-GUI_ID) and `EC_TAG_CHAT_MSG_ID` (the id assigned), so the sender can
-correlate without waiting for the next poll. `EC_OP_FAILED` with an
-`EC_TAG_STRING` on an unknown target or empty text.
+**Reply:** `EC_OP_NOOP` with `EC_TAG_CHAT_CLIENT_ID` (`0` when the
+session's route is not IPv4-projectable), `EC_TAG_CHAT_PEER_HASH` when
+the peer has one, and `EC_TAG_CHAT_MSG_ID` (the id assigned), so the
+sender can correlate without waiting for the next poll. `EC_OP_FAILED`
+with an `EC_TAG_STRING` on an unknown target or empty text.
 
 Note that the core's own send returning `false` means *queued while
 connecting*, not *failed*, and does not produce an `EC_OP_FAILED`.
 
 #### `EC_OP_CHAT_CLOSE_SESSION` (`0x66`)
 
-Takes `EC_TAG_CHAT_CLIENT_ID`; drops the session from the store and
-resets the peer's chat state. Replies `EC_OP_NOOP`, or `EC_OP_FAILED`
-when there is no such session.
+Takes `EC_TAG_CHAT_PEER_HASH` or `EC_TAG_CHAT_CLIENT_ID`; drops the
+session from the store and resets the peer's chat state. Replies
+`EC_OP_NOOP`, or `EC_OP_FAILED` when neither tag is present or there is
+no such session.
 
 Closing is **global**, matching the semantics search tabs already have:
 the core state is destroyed for every client, and the others learn of it

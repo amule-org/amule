@@ -492,7 +492,10 @@ EC_TAG_FRIEND                             0x0800
 
 ## EC_TAG_CHAT carries the message text as its value; EC_TAG_CHAT_CLIENT_ID is
 ## the peer's GUI_ID, a uint64 packed as (ip << 16) | port, with the IP in the
-## same byte order as EC_TAG_CLIENT_USER_IP.
+## same byte order as EC_TAG_CLIENT_USER_IP. EC_TAG_CHAT_PEER_HASH is the peer's
+## CMD4Hash: the only target that reaches a peer GUI_ID cannot express -- IPv6,
+## a provisional session, or an ambiguous shared endpoint. A daemon that omits it
+## from a session is one built before this tag existed.
 EC_TAG_CHAT                               0x0900
 	EC_TAG_CHAT_CLIENT_ID                     0x0901
 	EC_TAG_CHAT_SESSION                       0x0902
@@ -501,6 +504,7 @@ EC_TAG_CHAT                               0x0900
 	EC_TAG_CHAT_DIRECTION                     0x0905
 	EC_TAG_CHAT_TIMESTAMP                     0x0906
 	EC_TAG_CHAT_PEER_NAME                     0x0907
+	EC_TAG_CHAT_PEER_HASH                     0x0908
 
 EC_TAG_SELECT_PREFS                       0x1000
 

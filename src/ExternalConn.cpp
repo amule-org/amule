@@ -1539,6 +1539,11 @@ CECTag EncodeChatSession(const CChatSessionStore::Session &session, uint32 curso
 	CECTag tag(EC_TAG_CHAT_SESSION, session.LegacyGuiId());
 	tag.AddTag(CECTag(EC_TAG_CHAT_PEER_NAME, session.name));
 	tag.AddTag(CECTag(EC_TAG_CHAT_MSG_ID, session.LastMsgId()));
+	// Omitted while the peer is still provisional: a route alone is not an identity a
+	// client should address by, only LegacyGuiId() can reach it.
+	if (!session.peer.Hash().IsEmpty()) {
+		tag.AddTag(CECTag(EC_TAG_CHAT_PEER_HASH, session.peer.Hash()));
+	}
 
 	// Link the live peer and the friend entry when they exist, so a client can join
 	// against its own /clients and /friends views without a lookup of its own. Both are
@@ -1568,15 +1573,19 @@ CECTag EncodeChatSession(const CChatSessionStore::Session &session, uint32 curso
 	return tag;
 }
 
-// PR1 retains the IPv4 EC wire target. Resolve it explicitly at this boundary;
-// no address-encoded integer is allowed into the core/local-GUI identity APIs.
-bool ResolveChatTarget(const CECPacket *request, uint64 &out_gui_id)
+// EC_TAG_CHAT_PEER_HASH addresses a peer directly by its stable identity, and is the
+// only way to reach an IPv6 route, a provisional session, or an ambiguous shared
+// endpoint -- all of which ResolveLegacyChatPeer() must refuse. EC_TAG_CHAT_CLIENT_ID
+// stays for clients that predate the hash tag and for its own reply correlation.
+CChatPeer ResolveChatTarget(const CECPacket *request)
 {
-	if (const CECTag *tag = request->GetTagByName(EC_TAG_CHAT_CLIENT_ID)) {
-		out_gui_id = tag->GetInt();
-		return out_gui_id != 0;
+	if (const CECTag *tag = request->GetTagByName(EC_TAG_CHAT_PEER_HASH)) {
+		return CChatPeer(tag->GetMD4Data());
 	}
-	return false;
+	if (const CECTag *tag = request->GetTagByName(EC_TAG_CHAT_CLIENT_ID)) {
+		return theApp->clientlist->ResolveLegacyChatPeer(tag->GetInt());
+	}
+	return CChatPeer();
 }
 
 } // namespace
@@ -4101,13 +4110,12 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 			response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("Empty chat message")));
 			break;
 		}
-		uint64 gui_id = 0;
-		if (!ResolveChatTarget(request, gui_id)) {
+		const CChatPeer peer = ResolveChatTarget(request);
+		if (peer.IsEmpty()) {
 			response = new CECPacket(EC_OP_FAILED);
 			response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("Unknown chat target")));
 			break;
 		}
-		const CChatPeer peer = theApp->clientlist->ResolveLegacyChatPeer(gui_id);
 		const auto result = theApp->clientlist->SendChatMessage(peer, text);
 		if (result == CClientList::ChatSendResult::Unavailable) {
 			response = new CECPacket(EC_OP_FAILED);
@@ -4117,25 +4125,35 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 		}
 		// Queued while connecting is still success; do not claim a queued send failed.
 		response = new CECPacket(EC_OP_NOOP);
-		response->AddTag(CECTag(EC_TAG_CHAT_CLIENT_ID, gui_id));
+		// The session now holds the route the send just resolved (freshly dialled or
+		// already known), so its projection is current even for a peer sent by hash.
+		const auto *sentSession = theApp->chatsessions->Find(peer);
+		response->AddTag(
+			CECTag(EC_TAG_CHAT_CLIENT_ID, sentSession ? sentSession->LegacyGuiId() : uint64(0)));
+		if (!peer.Hash().IsEmpty()) {
+			response->AddTag(CECTag(EC_TAG_CHAT_PEER_HASH, peer.Hash()));
+		}
 		response->AddTag(CECTag(EC_TAG_CHAT_MSG_ID, theApp->chatsessions->LastMsgId()));
 		break;
 	}
 	case EC_OP_CHAT_CLOSE_SESSION: {
-		const CECTag *idTag = request->GetTagByName(EC_TAG_CHAT_CLIENT_ID);
-		if (!idTag) {
+		CChatPeer peer;
+		if (const CECTag *hashTag = request->GetTagByName(EC_TAG_CHAT_PEER_HASH)) {
+			peer = CChatPeer(hashTag->GetMD4Data());
+		} else if (const CECTag *idTag = request->GetTagByName(EC_TAG_CHAT_CLIENT_ID)) {
+			if (const auto *session = theApp->chatsessions->FindLegacy(idTag->GetInt())) {
+				peer = session->peer;
+			}
+		} else {
 			response = new CECPacket(EC_OP_FAILED);
 			response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("Missing chat session id")));
 			break;
 		}
-		const uint64 gui_id = idTag->GetInt();
-		const auto *session = theApp->chatsessions->FindLegacy(gui_id);
-		if (!session) {
+		if (peer.IsEmpty() || !theApp->chatsessions->Find(peer)) {
 			response = new CECPacket(EC_OP_FAILED);
 			response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("No such chat session")));
 			break;
 		}
-		const CChatPeer peer = session->peer;
 		theApp->chatsessions->CloseSession(peer);
 		theApp->clientlist->SetChatState(peer, MS_NONE);
 		// Closing is global, matching how closing a search tab destroys the core bucket for
