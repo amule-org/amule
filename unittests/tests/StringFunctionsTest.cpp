@@ -231,3 +231,24 @@ TEST(StringFunctions, RestoreEncodedPipesLeavesOtherEscapesAlone)
 	ASSERT_EQUALS(wxString("nothing to do"), RestoreEncodedPipes("nothing to do"));
 	ASSERT_EQUALS(wxEmptyString, RestoreEncodedPipes(wxEmptyString));
 }
+
+// Every string contains "", so an empty entry from a doubled, leading or blank-only comma used to
+// match everything: one stray comma in a filter list dropped every message.
+TEST(StringFunctions, ContainsAnyKeywordSkipsEmptyEntries)
+{
+	const wxString text("hello friend");
+	ASSERT_FALSE(ContainsAnyKeyword(text, "spam,viagra"));
+	ASSERT_FALSE(ContainsAnyKeyword(text, "spam,,viagra"));
+	ASSERT_FALSE(ContainsAnyKeyword(text, "spam, ,viagra"));
+	ASSERT_FALSE(ContainsAnyKeyword(text, ",spam"));
+	ASSERT_FALSE(ContainsAnyKeyword(text, "spam,"));
+	ASSERT_FALSE(ContainsAnyKeyword(text, " "));
+	ASSERT_FALSE(ContainsAnyKeyword(text, wxEmptyString));
+}
+
+TEST(StringFunctions, ContainsAnyKeywordMatchesTrimmedAndCaseInsensitive)
+{
+	ASSERT_TRUE(ContainsAnyKeyword("Buy VIAGRA now", "spam,,viagra"));
+	ASSERT_TRUE(ContainsAnyKeyword("buy now please", " spam , Buy Now "));
+	ASSERT_FALSE(ContainsAnyKeyword(wxEmptyString, "spam"));
+}

@@ -30,12 +30,12 @@
 #include <common/Constants.h>
 #include <common/DataFileVersion.h>
 #include <common/Path.h> // Needed for StripSeparators (path-mapping prefixes)
+#include <common/StringFunctions.h>
 
 #include <wx/config.h>
 #include <wx/dir.h>
 #include <wx/stdpaths.h>
 #include <wx/stopwatch.h>
-#include <wx/tokenzr.h>
 
 #include "amule.h"
 #include "FileArea.h" // Needed to push MMapEnabled into CFileArea
@@ -2454,15 +2454,7 @@ bool CPreferences::IsMessageFiltered(const wxString &message)
 				// Filter anything
 				return true;
 			} else {
-				wxStringTokenizer tokenizer(s_MessageFilterString, ",");
-				while (tokenizer.HasMoreTokens()) {
-					if (message.Lower().Trim(false).Trim(true).Contains(
-						    tokenizer.GetNextToken().Lower().Trim(false).Trim(
-							    true))) {
-						return true;
-					}
-				}
-				return false;
+				return ContainsAnyKeyword(message, s_MessageFilterString);
 			}
 		} else {
 			return false;
@@ -2472,16 +2464,7 @@ bool CPreferences::IsMessageFiltered(const wxString &message)
 
 bool CPreferences::IsCommentFiltered(const wxString &comment)
 {
-	if (s_FilterComments) {
-		wxStringTokenizer tokenizer(s_CommentFilterString, ",");
-		while (tokenizer.HasMoreTokens()) {
-			if (comment.Lower().Trim(false).Trim(true).Contains(
-				    tokenizer.GetNextToken().Lower().Trim(false).Trim(true))) {
-				return true;
-			}
-		}
-	}
-	return false;
+	return s_FilterComments && ContainsAnyKeyword(comment, s_CommentFilterString);
 }
 
 wxString CPreferences::GetLastHTTPDownloadURL(uint8 t)

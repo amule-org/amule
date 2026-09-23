@@ -26,6 +26,7 @@
 #include "StringFunctions.h"
 
 #include <wx/filename.h> // Needed for wxFileName
+#include <wx/tokenzr.h>  // Needed for wxStringTokenizer
 #include <wx/uri.h>      // Needed for wxURI
 
 #include <cstring> // Needed for std::strlen()
@@ -252,6 +253,20 @@ int FuzzyStrCmp(const wxString &a, const wxString &b)
 int FuzzyStrCaseCmp(const wxString &a, const wxString &b)
 {
 	return FuzzyStrCmp(a.Lower(), b.Lower());
+}
+
+bool ContainsAnyKeyword(const wxString &text, const wxString &keywords)
+{
+	const wxString haystack = text.Lower();
+	wxStringTokenizer tokenizer(keywords, ",");
+	while (tokenizer.HasMoreTokens()) {
+		wxString keyword = tokenizer.GetNextToken().Lower();
+		keyword.Trim(false).Trim(true);
+		if (!keyword.IsEmpty() && haystack.Contains(keyword)) {
+			return true;
+		}
+	}
+	return false;
 }
 
 CSimpleTokenizer::CSimpleTokenizer(const wxString &str, wxChar token)
