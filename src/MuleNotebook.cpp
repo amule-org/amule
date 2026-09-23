@@ -237,23 +237,23 @@ void CMuleNotebook::OnMouseButton(wxMouseEvent &event)
 	long flags = 0;
 	int tab = HitTest(wxPoint(xpos, ypos), &flags);
 	static int tab_down_icon = -1;
-	static int tab_down_label = -1;
+	static int tab_down_middle = -1;
 
 	if (event.LeftDown() && (flags == wxNB_HITTEST_ONICON)) {
 		tab_down_icon = tab;
-	} else if (event.MiddleDown() && (flags == wxNB_HITTEST_ONLABEL)) {
-		tab_down_label = tab;
+	} else if (event.MiddleDown() && (tab != -1)) {
+		// Anywhere on the tab, the 'x' included: it is the tab's image, not its label.
+		tab_down_middle = tab;
 	} else if (event.LeftDown() || event.MiddleDown()) {
 		tab_down_icon = -1;
-		tab_down_label = -1;
+		tab_down_middle = -1;
 	}
 
-	if (((tab != -1) && (((flags == wxNB_HITTEST_ONICON) && event.LeftUp() && (tab == tab_down_icon)) ||
-				    ((flags == wxNB_HITTEST_ONLABEL) && event.MiddleUp() &&
-					    (tab == tab_down_label))))) {
-		// User did click on a 'x' or middle click on the label
+	if ((tab != -1) && (((flags == wxNB_HITTEST_ONICON) && event.LeftUp() && (tab == tab_down_icon)) ||
+				   (event.MiddleUp() && (tab == tab_down_middle)))) {
+		// User did click on a 'x' or middle click on the tab
 		tab_down_icon = -1;
-		tab_down_label = -1;
+		tab_down_middle = -1;
 		DeletePage(tab);
 	} else {
 		// Is not a 'x'. Send this event up.
