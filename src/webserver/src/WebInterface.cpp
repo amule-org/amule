@@ -414,8 +414,10 @@ void CamulewebApp::LoadAmuleConfig(CECFileConfig &cfg)
 	cfg.ReadHash("/WebServer/Password", &m_AdminPass);
 	cfg.ReadHash("/WebServer/PasswordLow", &m_GuestPass);
 	m_WebserverPort = cfg.Read("/WebServer/Port", 4711l);
-	m_UPnPWebServerEnabled = (cfg.Read("/Webserver/UPnPWebServerEnabled", 0l) == 1l);
-	m_UPnPTCPPort = cfg.Read("/WebServer/UPnPTCPPort", 50001l);
+	m_UPnPWebServerEnabled = (cfg.Read("/WebServer/UPnPWebServerEnabled", 0l) == 1l);
+	// aMule saves the port as WebUPnPTCPPort; UPnPTCPPort covers an amule.conf edited by hand.
+	m_UPnPTCPPort = static_cast<int>(
+		cfg.Read("/WebServer/WebUPnPTCPPort", cfg.Read("/WebServer/UPnPTCPPort", 50001l)));
 	m_PageRefresh = cfg.Read("/WebServer/PageRefreshTime", 120l);
 	m_TemplateName = cfg.Read("/WebServer/Template", "default");
 }
