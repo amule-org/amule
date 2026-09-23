@@ -3409,12 +3409,16 @@ bool CUpDownClient::IsMessageFiltered(const wxString &message)
 {
 	bool filtered = false;
 	// If we're chatting to the guy, we don't want to filter!
-	if (GetChatState() != MS_CHATTING) {
+	//
+	// MustFilterMessages() gates every rule below it: the friends-only and
+	// unknown-client rules are presented as sub-options of that switch by both
+	// the desktop dialog and the Web UI, which grey them out while it is off.
+	if (GetChatState() != MS_CHATTING && thePrefs::MustFilterMessages()) {
 		if (thePrefs::MsgOnlyFriends() && !IsFriend()) {
 			filtered = true;
 		} else if (thePrefs::MsgOnlySecure() && GetUserName().IsEmpty()) {
 			filtered = true;
-		} else if (thePrefs::MustFilterMessages()) {
+		} else {
 			filtered = thePrefs::IsMessageFiltered(message);
 		}
 	}
