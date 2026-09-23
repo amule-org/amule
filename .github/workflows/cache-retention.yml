@@ -11,6 +11,10 @@
 # Restores key on hashFiles() but fall back through `restore-keys: <prefix>-`,
 # which resolves to the newest match, so older generations are never chosen.
 # Deleting them loses nothing.
+#
+# The cache-save-newest action now deletes a family's older generations as soon
+# as it saves the new one. This workflow is the backstop, for the caches that
+# action does not write (msys2, CodeQL) and for any prune it could not finish.
 name: Cache retention
 
 on:
@@ -57,35 +61,52 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           gh api --paginate "repos/${REPO}/actions/caches?per_page=100" \
-            --jq '.actions_caches[] | [.id, .created_at, .size_in_bytes, .key] | @tsv' > caches.tsv
+            --jq '.actions_caches[] | [.id, .created_at, .size_in_bytes, .ref, .key] | @tsv' > caches.tsv
+          DEFAULT_REF="refs/heads/$(gh api "repos/${REPO}" --jq .default_branch)"
+          export DEFAULT_REF
           python3 - <<'PY' > to_delete.txt
           import re, collections, os
           rows = []
           for line in open("caches.tsv"):
-              cid, created, size, key = line.rstrip("\n").split("\t", 3)
-              rows.append((int(cid), created, int(size), key))
-          # Group by the key with a trailing numeric run id removed. A key that
-          # carries no run id forms a single-entry group and is always kept.
+              cid, created, size, ref, key = line.rstrip("\n").split("\t", 4)
+              rows.append((int(cid), created, int(size), ref, key))
+          # Only the default branch's entries are kept. Our own saves are master-only,
+          # but setup-msys2 caches on every event with no way to restrict it, so each
+          # PR whose packages differ from master's uploads its own 400 MB copy. Master
+          # can never restore those, and grouped with master's by key, a newer PR copy
+          # used to get master's deleted.
+          #
+          # On the default branch, group by the key with its trailing run id removed.
+          # A key that carries no run id forms a single-entry group and is always kept.
+          #
+          # The run id may be followed by an attempt number, as in CodeQL's
+          # `-<run id>-<attempt>`; without that, every run is a family of its own.
+          RUN_ID = re.compile(r"-(\d{6,})(?:-(\d{1,3}))?$")
           # Normalise the run id AND embedded hashes: CodeQL and msys2 key on a
           # commit sha rather than a run id, so without this each lands in its
           # own group and survives forever (5 CodeQL TRAP entries alone were
           # 4.3 GB).
           def family(key):
-              k = re.sub(r"-\d{6,}$", "", key)
+              k = RUN_ID.sub("", key)
               return re.sub(r"[0-9a-f]{16,}", "<h>", k)
           # Rank by the run id in the key, not by created_at. Two master merges
           # in quick succession can finish out of order, and the later WRITE may
           # be the older COMMIT; the run id orders by when the run started, so
           # the newer commit's cache is the one kept. Falls back to the
-          # timestamp for keys that carry no run id.
+          # timestamp for keys that carry no run id. A re-run keeps its run id and
+          # bumps the attempt, so the attempt breaks the tie.
           def rank(entry):
               created, cid, size, key = entry
-              m = re.search(r"-(\d{6,})$", key)
-              return (1, int(m.group(1))) if m else (0, created)
+              m = RUN_ID.search(key)
+              return (1, int(m.group(1)), int(m.group(2) or 0)) if m else (0, created)
           groups = collections.defaultdict(list)
-          for cid, created, size, key in rows:
-              groups[family(key)].append((created, cid, size, key))
           freed = kept = 0
+          for cid, created, size, ref, key in rows:
+              if ref != os.environ["DEFAULT_REF"]:
+                  freed += size
+                  print(cid)
+                  continue
+              groups[family(key)].append((created, cid, size, key))
           for prefix, entries in groups.items():
               entries.sort(key=rank, reverse=True)   # newest run first
               kept += 1

@@ -1,17 +1,23 @@
-# actions/cache/save, minus the writes a newer run has already made pointless.
+# actions/cache/save that keeps one generation per key family.
 #
 # Every cache key here ends in the run id, so a run never collides with an
-# earlier one. Runs on master overlap, though, and an older run that finishes
-# last still uploads: the store then carries two generations of the same family
-# until retention prunes it (1.6 GB across 8 families when measured), and
-# restores go to the wrong one, because `restore-keys` resolves a prefix to the
-# most recently CREATED entry rather than the highest run id.
+# earlier one and nothing is replaced in place. Two rules keep the family at one
+# entry:
 #
-# Both stop here: if the family already holds an entry from a newer run, this
-# run's copy is worth nothing and is not uploaded. The reverse order still
-# writes -- a newer generation has to land before the older one can go.
+# - Skip the save when a newer run already saved the family. Runs on master
+#   overlap, and an older run that finishes last would otherwise upload a copy
+#   that `restore-keys` then prefers, since it resolves a prefix to the most
+#   recently CREATED entry rather than the highest run id.
+# - After saving, delete the family's older generations on the same ref. Left to
+#   cache-retention.yml they lasted until the whole workflow ended, hours on the
+#   Packaging Intel leg, so each master push briefly held two generations of
+#   nearly every family and went past the 10 GB limit. GitHub then evicts by
+#   least recent use, entries still needed included.
+#
+# Only lower run ids are deleted, so an older run finishing late never removes a
+# newer entry. cache-retention.yml remains the backstop.
 name: Save cache if newest
-description: Save a cache entry unless a newer run already saved one for the same key family.
+description: Save a cache entry unless a newer run already saved one for the same key family, then drop the older ones.
 
 inputs:
   path:
@@ -21,7 +27,7 @@ inputs:
     description: Cache key. Must end in `-<run id>`, which is what names the family.
     required: true
   token:
-    description: "Token for reading the repository's cache list. Needs `actions: read` permission."
+    description: "Token for listing and deleting the repository's caches. Needs `actions: write` permission."
     required: false
     default: ${{ github.token }}
 
@@ -34,21 +40,25 @@ runs:
       env:
         GH_TOKEN: ${{ inputs.token }}
         REPO: ${{ github.repository }}
+        REF: ${{ github.ref }}
         KEY: ${{ inputs.key }}
         RUN_ID: ${{ github.run_id }}
       run: |
         set -euo pipefail
-        prefix="${KEY%-${RUN_ID}}"
+        prefix="${KEY%-"${RUN_ID}"}"
         if [ "$prefix" = "$KEY" ]; then
             # Not a run-keyed family, so there is no ordering to compare.
             echo "key does not end in the run id, saving"
             echo "skip=false" >> "$GITHUB_OUTPUT"
+            echo "prefix=" >> "$GITHUB_OUTPUT"
             exit 0
         fi
+        echo "prefix=${prefix}" >> "$GITHUB_OUTPUT"
         # A listing failure must not cost the save: without the cache the next
         # run compiles everything, while a redundant entry only waits for the
         # prune.
-        newest=$(gh api --paginate "repos/${REPO}/actions/caches?per_page=100" \
+        newest=$(gh api -X GET --paginate "repos/${REPO}/actions/caches" \
+                     -f per_page=100 -f ref="${REF}" -f key="${prefix}-" \
                      --jq '.actions_caches[].key' 2>/dev/null \
                  | awk -v p="${prefix}-" '
                        index($0, p) == 1 {
@@ -70,3 +80,47 @@ runs:
       with:
         path: ${{ inputs.path }}
         key: ${{ inputs.key }}
+    - name: Delete older generations
+      if: steps.guard.outputs.skip != 'true' && steps.guard.outputs.prefix != ''
+      # Pruning is housekeeping: a failure here must not fail the build.
+      continue-on-error: true
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        REPO: ${{ github.repository }}
+        REF: ${{ github.ref }}
+        KEY: ${{ inputs.key }}
+        PREFIX: ${{ steps.guard.outputs.prefix }}
+        RUN_ID: ${{ github.run_id }}
+      run: |
+        set -uo pipefail
+        # Delete nothing until this run's entry is listed: with the save lost, the
+        # older generation is all the next run has. The listing can trail the
+        # upload by a few seconds.
+        listed=""
+        for _ in 1 2 3 4 5 6; do
+            entries=$(gh api -X GET --paginate "repos/${REPO}/actions/caches" \
+                          -f per_page=100 -f ref="${REF}" -f key="${PREFIX}-" \
+                          --jq '.actions_caches[] | "\(.id) \(.key)"' 2>/dev/null) || entries=""
+            if awk -v k="${KEY}" '$2 == k { found = 1 } END { exit !found }' <<<"$entries"; then
+                listed=1
+                break
+            fi
+            sleep 5
+        done
+        if [ -z "$listed" ]; then
+            echo "::notice::${KEY} is not listed yet; leaving older generations to cache-retention"
+            exit 0
+        fi
+        while read -r id key; do
+            [ -n "$id" ] || continue
+            run="${key#"${PREFIX}"-}"
+            # Run ids only; a longer suffix is another family.
+            [[ "$run" =~ ^[0-9]+$ ]] || continue
+            [ "$run" -lt "$RUN_ID" ] || continue
+            if gh api -X DELETE "repos/${REPO}/actions/caches/${id}" >/dev/null 2>&1; then
+                echo "deleted ${key}"
+            else
+                echo "could not delete ${key}, already gone or not permitted"
+            fi
+        done <<<"$entries"
