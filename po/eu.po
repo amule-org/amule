@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-22 16:11+0100\n"
+"POT-Creation-Date: 2026-09-23 09:04+0100\n"
 "PO-Revision-Date: 2026-09-22 17:13+0000\n"
 "Last-Translator: Piarres Beobide <pi@beobide.net>\n"
 "Language-Team: Euskara <librezale@librezale.org>\n"
@@ -5776,6 +5776,14 @@ msgstr "ordu"
 #: src/OtherFunctions.cpp
 msgid "days"
 msgstr "egunak"
+
+#. TRANSLATORS:
+#. Bitrate of an audio or video file. kbps is kilobits per second, 1000 bits
+#. each -- not kilobytes, and not the KiB/s used for transfer speeds.
+#: src/OtherFunctions.cpp
+#, c-format
+msgid "%u kbps"
+msgstr ""
 
 #. TRANSLATORS:
 #. Punctuation for a "label: value" pair. %s is the already-translated

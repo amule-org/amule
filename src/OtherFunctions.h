@@ -166,6 +166,8 @@ wxString CastItoXBytes(uint64 count);
 wxString CastItoIShort(uint64 number);
 // Converts a number of bytes to a human readable speed value.
 wxString CastItoSpeed(uint32 bytes);
+// Media bitrate for display, from kilobits (1000 bits) per second.
+wxString CastItoBitrate(uint32 kbps);
 // Converts an amount of seconds to human readable time.
 wxString CastSecondsToHM(uint32 seconds, uint16 msecs = 0);
 /**
