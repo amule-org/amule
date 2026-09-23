@@ -51,9 +51,16 @@
 #define COLUMN_SHARED_MEDIA_ARTIST 17
 #define COLUMN_SHARED_MEDIA_ALBUM 18
 #define COLUMN_SHARED_MEDIA_TITLE 19
+#ifndef CLIENT_GUI
+//! Last Verify Local Data result and date (CKnownFile::GetVerifyResult). Monolithic only: EC does
+//! not carry the result, so the remote GUI would show it empty.
+#define COLUMN_SHARED_VERIFY 20
 //! Always empty. Absorbs the macOS trailing-column sizing; see
 //! CMuleDataViewCtrl::AppendSpacerColumn().
+#define COLUMN_SHARED_SPACER 21
+#else
 #define COLUMN_SHARED_SPACER 20
+#endif
 
 class CSharedFileList;
 class CKnownFile;

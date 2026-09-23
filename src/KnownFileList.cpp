@@ -465,6 +465,36 @@ bool CKnownFileList::PromoteToCanonical(CKnownFile *file)
 	return true;
 }
 
+std::vector<CKnownFileList::OtherCopy> CKnownFileList::FindOtherCopies(
+	const CMD4Hash &hash, const CKnownFile *except) const
+{
+	wxMutexLocker sLock(list_mut);
+
+	std::vector<OtherCopy> copies;
+	auto consider = [&](CKnownFile *record) {
+		if (record == except || record->GetFileHash() != hash) {
+			return;
+		}
+		const bool located = record->GetFilePath().IsOk();
+		const bool seenByScan = m_pinnedDuplicates.count(record) > 0;
+		if (located || seenByScan) {
+			copies.push_back({ record->GetFileName(),
+				located ? record->GetFilePath().JoinPaths(record->GetFileName()) : CPath(),
+				record->GetLastChangeDatetime(),
+				record->GetFileSize(),
+				seenByScan });
+		}
+	};
+	const auto it = m_knownFileMap.find(hash);
+	if (it != m_knownFileMap.end()) {
+		consider(it->second);
+	}
+	for (CKnownFile *dup : m_duplicateFileList) {
+		consider(dup);
+	}
+	return copies;
+}
+
 bool CKnownFileList::SafeAddKFile(CKnownFile *toadd, bool afterHashing)
 {
 	bool ret;
@@ -574,6 +604,10 @@ bool CKnownFileList::Append(CKnownFile *Record, bool afterHashing)
 					}
 					Record->SetLastChangeDatetime(newDate);
 					Record->SetFileName(newName);
+					// A Verify Local Data result is about the data as it was checked.
+					// Record was just hashed in full to this same MD4, which proves
+					// that data is intact now, so a copied "corrupt" verdict is stale.
+					Record->ClearVerifyResult();
 				}
 				// The file is a duplicated hash. Add THE OLD ONE to the duplicates
 				// list. (Used when reading the known file list, where the
