@@ -167,6 +167,24 @@ jobs:
         run: ccache --show-stats
       - name: run tests
         run: ctest ${{ env.ctest_flags }}
+      # amuleapi_curl_smoke drives these two against a live daemon rather than
+      # compiling its own copy. Release only: the smoke times SSE windows, and
+      # a Debug daemon makes those flaky.
+      #
+      # A tar rather than the two paths directly, because the artifact upload
+      # drops the executable bit (packaging.yml chmods every mach-o back after
+      # its download for the same reason) and because it pins the layout
+      # run-all.sh discovers binaries through.
+      - name: pack amuled + amuleapi for the curl smoke
+        if: matrix.build_type == 'Release'
+        run: tar -cf curl-smoke-binaries.tar build/src/amuled build/src/webapi/amuleapi
+      - uses: actions/upload-artifact@v7
+        if: matrix.build_type == 'Release'
+        with:
+          name: curl-smoke-binaries
+          path: curl-smoke-binaries.tar
+          if-no-files-found: error
+          retention-days: 1
 
   # The gate-off build is what every other job already covers, because every
   # experimental switch defaults to OFF. This job is the other half: one Linux
@@ -228,6 +246,170 @@ jobs:
         run: ccache --show-stats
       - name: run tests
         run: ctest ${{ env.ctest_flags }}
+
+  # The amuleapi curl-smoke matrix, which nothing else in CI runs. Every other
+  # job here compiles the REST surface; none of them exercises it. This one
+  # drives the whole chain in one piece -- amuled, EC, amuleapi, HTTP -- which
+  # is the only way a break in the wiring between those shows up before a user
+  # or an operator running the suite by hand finds it.
+  amuleapi_curl_smoke:
+    name: amuleapi curl smoke (Ubuntu)
+    runs-on: ubuntu-24.04
+    # Reuses the Release leg's amuled and amuleapi instead of compiling a
+    # fifth Ubuntu tree. `needs` also means a build or ctest failure skips
+    # this job rather than reporting a second, derived failure.
+    needs: build_cmake_ubuntu
+    # A fork only ever fast-forwards its master from here, so a push to it
+    # re-tests a commit that already passed and mails the fork owner about a
+    # failure they did not cause. Their own branches and their PRs still run.
+    if: github.repository == 'amule-org/amule' || github.ref != 'refs/heads/master'
+    # This job starts daemons and waits on sockets; a hung one should cost
+    # minutes, not hours.
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: curl-smoke-binaries
+      - name: unpack amuled + amuleapi
+        run: tar -xf curl-smoke-binaries.tar
+      # Nothing is compiled here, but the binaries still need their shared
+      # libraries. Installing the same -dev list is what keeps those matched
+      # to the build job; naming runtime sonames instead would drift the
+      # moment that list changes.
+      - name: install runtime deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ${{ env.cmake_ubuntu_deps }} jq
+      # Every peer-to-peer switch is off, so the daemon joins no ed2k server,
+      # bootstraps no Kad and opens no UPnP mapping. It still makes the two
+      # ordinary startup fetches over HTTPS -- the release check and the GeoIP
+      # database -- because 01-version-and-errors.sh and 32-country-flags.sh
+      # are the tests for those. 38-chat.sh addresses its peer at 203.0.113.42
+      # (RFC 5737 TEST-NET-3), which is unroutable by design, so the chat it
+      # creates never leaves the runner either.
+      - name: start an isolated amuled
+        run: |
+          set -euo pipefail
+          CONF="$RUNNER_TEMP/amuled-conf"
+          mkdir -p "$CONF/Incoming" "$CONF/Temp"
+          # amuled stores the EC password as its md5. Derive it from the
+          # plaintext run-all.sh expects so the two cannot drift apart.
+          EC_HASH=$(printf '%s' amule | md5sum | cut -d' ' -f1)
+          cat > "$CONF/amule.conf" <<EOF
+          [eMule]
+          Port=14662
+          UDPPort=14672
+          UDPEnable=0
+          Autoconnect=0
+          ConnectToED2K=0
+          ConnectToKad=0
+          Reconnect=0
+          UPnPEnabled=0
+          IncomingDir=$CONF/Incoming
+          TempDir=$CONF/Temp
+          [ExternalConnect]
+          AcceptExternalConnections=1
+          ECAddress=127.0.0.1
+          ECPort=4712
+          ECPassword=$EC_HASH
+          [WebServer]
+          Enabled=0
+          EOF
+          nohup build/src/amuled -c "$CONF" > "$CONF/stdout.log" 2>&1 &
+          # Wait for the EC listener instead of sleeping: cold start is a
+          # second or two here, and a fixed sleep either wastes it or races it.
+          ready=
+          for _ in $(seq 1 60); do
+            if (exec 3<>/dev/tcp/127.0.0.1/4712) 2>/dev/null; then
+              ready=1
+              break
+            fi
+            sleep 0.5
+          done
+          if [ -z "$ready" ]; then
+            echo "::error::amuled never opened its EC port"
+            cat "$CONF/stdout.log"
+            exit 1
+          fi
+      - name: run the amuleapi curl smoke
+        run: |
+          set -uo pipefail
+          LOG="$RUNNER_TEMP/curl-smoke.log"
+          cd unittests/curl-tests/amuleapi
+          # Named the other way round on purpose: the job runs every phase on
+          # disk except these, so a phase added later is covered without
+          # anyone remembering to list it here. If it needs something this
+          # daemon has not got, it fails loudly and gets a line below with the
+          # reason, which is the direction of failure we want.
+          #
+          # 07, 10, 19, 20, 22 and 28 need a real ed2k search to come back
+          # with hits; 14, 16 and 26 need a live ed2k or Kad connection; 24
+          # needs enough event churn to be handed a cursor, which a daemon
+          # with no peers never produces, so it sees resync(gap) where it
+          # asserts resync(idle). Running any of them would mean putting a CI
+          # runner on the ed2k network. 00 and 99 bracket the full suite with
+          # a peer fixture built from a real search hit, so they go too.
+          EXCLUDED=(
+            00-peer-fixture.sh
+            07-read-stats-and-search-results.sh
+            10-refresher-lazy-ondemand.sh
+            14-servers-mutations.sh
+            16-networks-connect.sh
+            19-search.sh
+            20-etag-conditional-get.sh
+            22-sse-diff-emission.sh
+            24-sse-resync.sh
+            26-rfc-followup-endpoints.sh
+            28-list-pagination-sort.sh
+            99-peer-fixture-teardown.sh
+          )
+          # An excluded phase that no longer exists means the list has gone
+          # stale against the suite, and would quietly shrink what runs.
+          for e in "${EXCLUDED[@]}"; do
+            if [ ! -f "$e" ]; then
+              echo "::error::excluded phase $e no longer exists; the list above has drifted"
+              exit 1
+            fi
+          done
+          # Numeric prefixes are zero-padded, so the glob is already in the
+          # canonical order run-all.sh documents. That order is load-bearing:
+          # the phases share one daemon and its state carries forward.
+          PHASES=()
+          for f in [0-9]*.sh; do
+            skip=
+            for e in "${EXCLUDED[@]}"; do
+              if [ "$f" = "$e" ]; then
+                skip=1
+                break
+              fi
+            done
+            if [ -z "$skip" ]; then
+              PHASES+=("$f")
+            fi
+          done
+          if [ "${#PHASES[@]}" -eq 0 ]; then
+            echo "::error::no phases selected; the suite or the glob has moved"
+            exit 1
+          fi
+          echo "running ${#PHASES[@]} phases: ${PHASES[*]}"
+          set +e
+          AMULEAPI_BIN="$GITHUB_WORKSPACE/build/src/webapi/amuleapi" \
+          AMULE_SHARED_DIR="$RUNNER_TEMP/amuled-conf/Incoming" \
+            ./run-all.sh "${PHASES[@]}" 2>&1 | tee "$LOG"
+          rc=${PIPESTATUS[0]}
+          set -e
+          exit "$rc"
+      - name: daemon logs on failure
+        if: failure()
+        run: |
+          echo "----- amuleapi -----"
+          tail -n 200 /tmp/amuleapi.log || true
+          echo "----- amuled -----"
+          tail -n 200 "$RUNNER_TEMP/amuled-conf/logfile" || true
+      - name: stop amuled
+        if: always()
+        run: pkill -f "amuled -c $RUNNER_TEMP/amuled-conf" || true
 
   build_cmake_macos:
     name: Build CMake MacOS (${{ matrix.build_type }})
