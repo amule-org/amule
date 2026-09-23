@@ -2359,16 +2359,14 @@ bool LoadDirListFile(const wxString &path, CPreferences::PathList &out)
 }
 
 // Walk `root` recursively, appending `root` itself and every descendant directory to
-// `out`. Uses CDirIterator::Dir so hidden subdirs are included, matching the runtime
-// watcher's AddTree().
+// `out`. Hidden subdirs are included, matching the runtime watcher's AddTree().
 void ExpandRecursiveRoot(const CPath &root, CPreferences::PathList &out)
 {
 	if (!root.IsOk() || !root.DirExists()) {
 		return;
 	}
 	out.push_back(root);
-	CDirIterator dir(root);
-	for (CPath sub = dir.GetFirstFile(CDirIterator::Dir); sub.IsOk(); sub = dir.GetNextFile()) {
+	for (const CPath &sub : ListSubdirectories(root)) {
 		ExpandRecursiveRoot(root.JoinPaths(sub), out);
 	}
 }

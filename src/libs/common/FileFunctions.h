@@ -31,6 +31,8 @@
 
 #include <wx/dir.h>
 
+#include <vector>
+
 // Dir iterator: needed because wxWidget's wxFindNextFile and
 // wxFindFirstFile are bugged like hell.
 class CDirIterator : private wxDir
@@ -59,6 +61,10 @@ public:
 
 	bool HasSubDirs(const wxString &spec = "");
 };
+
+// The subdirectory names CDirIterator(dir) lists for Dir, hidden ones and symlinks to folders
+// included, without its stat() per entry: that cost one stat per file just to skip the file.
+std::vector<CPath> ListSubdirectories(const CPath &dir);
 
 //! Filetypes understood by UnpackArchive
 enum EFileType

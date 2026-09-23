@@ -782,6 +782,21 @@ target_link_libraries (PathTest
 	muleunit
 )
 
+add_executable (FileFunctionsTest
+	FileFunctionsTest.cpp
+)
+
+add_test (NAME FileFunctionsTest
+	COMMAND FileFunctionsTest
+)
+
+# mulecommon's FileFunctions.cpp uses zlib, which the library leaves to whoever links it.
+target_link_libraries (FileFunctionsTest
+	muleunit
+	mulecommon
+	ZLIB::ZLIB
+)
+
 add_executable (RangeMapTest
 	RangeMapTest.cpp
 	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp

@@ -36,6 +36,7 @@
 #include <algorithm> // Needed for std::min
 
 #ifndef __WINDOWS__
+#include <dirent.h>   // opendir / readdir for ListSubdirectories
 #include <sys/stat.h> // chmod / stat for RestrictToOwner
 #endif
 
@@ -77,6 +78,47 @@ CPath CDirIterator::GetNextFile()
 	}
 
 	return CPath(fileName);
+}
+
+std::vector<CPath> ListSubdirectories(const CPath &dir)
+{
+	std::vector<CPath> subdirs;
+#if !defined(__WINDOWS__) && defined(DT_DIR)
+	// readdir() already says what each entry is. Only a symlink, or an entry the filesystem
+	// leaves untyped, needs a stat() -- one that follows the link, as wxDir does. Paths and
+	// names go through wxConvFileName both ways, again as wxDir does.
+	const wxCharBuffer base = dir.GetRaw().mb_str(*wxConvFileName);
+	DIR *handle = opendir(base.data());
+	if (handle == nullptr) {
+		return subdirs;
+	}
+	const std::string prefix = std::string(base.data()) + '/';
+	for (const dirent *entry = readdir(handle); entry != nullptr; entry = readdir(handle)) {
+		const char *name = entry->d_name;
+		if (name[0] == '.' && (name[1] == '\0' || (name[1] == '.' && name[2] == '\0'))) {
+			continue;
+		}
+		bool isDir = entry->d_type == DT_DIR;
+		if (entry->d_type == DT_LNK || entry->d_type == DT_UNKNOWN) {
+			struct stat st;
+			isDir = ::stat((prefix + name).c_str(), &st) == 0 && S_ISDIR(st.st_mode);
+		}
+		if (isDir) {
+			const wxString converted(name, *wxConvFileName);
+			if (!converted.empty()) {
+				subdirs.emplace_back(converted);
+			}
+		}
+	}
+	closedir(handle);
+#else
+	// FindNextFile() hands wxDir each entry's attributes, so there is no per-entry cost here.
+	CDirIterator it(dir);
+	for (CPath sub = it.GetFirstFile(CDirIterator::Dir); sub.IsOk(); sub = it.GetNextFile()) {
+		subdirs.push_back(sub);
+	}
+#endif
+	return subdirs;
 }
 
 bool CDirIterator::HasSubDirs(const wxString &spec)
