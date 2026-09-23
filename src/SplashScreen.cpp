@@ -67,6 +67,10 @@ constexpr long kRepaintIntervalMs = 100;
 // the splash for a couple of frames, which looks like a flicker.
 constexpr long kMinimumVisibleMs = 1500;
 
+// Upper bound on AwaitFirstPaint(). A window that has not been drawn by then is not waiting on
+// us, and startup should not wait on it either.
+constexpr long kFirstPaintTimeoutMs = 1000;
+
 // Shrinks @a font until @a text fits @a maxWidth, and draws it centred.
 //
 // A guard rather than a layout scheme: every string here is short enough at the intended size, but
@@ -100,6 +104,7 @@ wxColour GradientAt(double nx, double ny)
 wxBEGIN_EVENT_TABLE(CSplashScreen, wxFrame)
 	EVT_PAINT(CSplashScreen::OnPaint)
 	EVT_TIMER(wxID_ANY, CSplashScreen::OnCloseTimer)
+	EVT_CLOSE(CSplashScreen::OnClose)
 wxEND_EVENT_TABLE()
 
 CSplashScreen::CSplashScreen(wxWindow *parent)
@@ -279,4 +284,21 @@ void CSplashScreen::OnCloseTimer(wxTimerEvent &WXUNUSED(evt))
 {
 	Hide();
 	Destroy();
+}
+
+void CSplashScreen::AwaitFirstPaint()
+{
+	const wxLongLong deadline = wxGetUTCTimeMillis() + kFirstPaintTimeoutMs;
+	while (m_paintCount == 0 && IsShown() && wxGetUTCTimeMillis() < deadline) {
+		wxSafeYield(this, true);
+		wxMilliSleep(10);
+	}
+}
+
+void CSplashScreen::OnClose(wxCloseEvent &WXUNUSED(evt))
+{
+	// wxFrame's default handler destroys the window, and the yields in SetProgress() run the
+	// idle processing that frees it -- so a user closing the splash mid-startup left every
+	// later progress call writing into freed memory (issue #1522).
+	Hide();
 }

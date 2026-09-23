@@ -584,6 +584,11 @@ static bool ServerMetHasServers(const wxString &path)
 // Application initialization
 bool CamuleApp::OnInit()
 {
+#ifdef AMULE_SHOW_SPLASH
+	// Everything until the splash is up runs with nothing on screen; the Startup phases line
+	// reports it as "to splash".
+	const wxLongLong initStart = wxGetUTCTimeMillis();
+#endif
 #if wxUSE_MEMORY_TRACING
 	// any text before call of Localize_mule needs not to be translated.
 	AddLogLineNS("Checkpoint set on app init for memory debug"); // debug output
@@ -649,7 +654,14 @@ bool CamuleApp::OnInit()
 		return false;
 	}
 
+#ifdef AMULE_SHOW_SPLASH
+	const wxLongLong prefsStart = wxGetUTCTimeMillis();
+#endif
+	// Includes ReloadSharedFolders(), which walks the whole tree of every recursive shared root.
 	glob_prefs = new CPreferences();
+#ifdef AMULE_SHOW_SPLASH
+	const wxLongLong prefsDoneAt = wxGetUTCTimeMillis();
+#endif
 
 	// Push the bind-to-interface preference into the socket library before any socket is
 	// opened -- mulesocket cannot read CPreferences itself. It is a security-relevant
@@ -851,8 +863,7 @@ bool CamuleApp::OnInit()
 	CSplashScreen *splash = new CSplashScreen(nullptr);
 	m_splash = splash;
 	splash->Show();
-	// One pump so the window is mapped and painted before the loads begin.
-	wxYield();
+	splash->AwaitFirstPaint();
 	const wxLongLong preloadStart = wxGetUTCTimeMillis();
 	splash->SetProgress(_("Loading known files"), 0, true);
 #endif
@@ -1063,15 +1074,18 @@ bool CamuleApp::OnInit()
 	// be tuned from, and a measurement that needs verbose logging turned on first is one
 	// nobody will report back. Both phases report count then duration, and the estimate
 	// says what it estimates -- it is a file count from known.met, and printing it as a
-	// bare number after a millisecond figure read as an estimated duration.
-	AddLogLineN(CFormat(LOG_DIAGNOSTIC("Startup phases: known files %lld ms, credits %lld ms, IP filter "
-					   "%lld ms, network %lld ms, %u part files %lld ms, shared "
-					   "scan %u files ") "%lld ms (estimated %u files)") %
-		    (knownDoneAt - preloadStart).GetValue() % (creditsDoneAt - knownDoneAt).GetValue() %
-		    (filterDoneAt - creditsDoneAt).GetValue() %
-		    (networkDoneAt - splashPhaseStart).GetValue() % partFilesLoaded %
-		    (tempDoneAt - networkDoneAt).GetValue() % sharedScanned %
-		    (sharedDoneAt - tempDoneAt).GetValue() % sharedEstimate);
+	// bare number after a millisecond figure read as an estimated duration. The preferences
+	// figure is bracketed because it is part of "to splash", not added to it.
+	AddLogLineN(
+		CFormat(LOG_DIAGNOSTIC("Startup phases: to splash %lld ms (preferences and shared "
+				       "folders %lld ms), known files %lld ms, credits %lld ms, IP filter "
+				       "%lld ms, network %lld ms, %u part files %lld ms, shared "
+				       "scan %u files ") "%lld ms (estimated %u files)") %
+		(preloadStart - initStart).GetValue() % (prefsDoneAt - prefsStart).GetValue() %
+		(knownDoneAt - preloadStart).GetValue() % (creditsDoneAt - knownDoneAt).GetValue() %
+		(filterDoneAt - creditsDoneAt).GetValue() % (networkDoneAt - splashPhaseStart).GetValue() %
+		partFilesLoaded % (tempDoneAt - networkDoneAt).GetValue() % sharedScanned %
+		(sharedDoneAt - tempDoneAt).GetValue() % sharedEstimate);
 
 	// The scan has everything it is going to have: the files it recognised are listed, and
 	// the ones it did not are now queued for hashing. That drain is the slowest part of a

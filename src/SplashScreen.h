@@ -43,10 +43,15 @@
 class CSplashScreen : public wxFrame
 {
 public:
-	// Parented to the main window, so the window manager keeps it above aMule and nothing else.
-	// As a parentless wxSTAY_ON_TOP frame it sat at a desktop-global level, covering every
+	// Startup creates it before the main window exists, so without a parent. Deliberately not
+	// wxSTAY_ON_TOP: a parentless stay-on-top frame sits at a desktop-global level, covering every
 	// other application with no taskbar button to raise over it or dismiss it with.
 	explicit CSplashScreen(wxWindow *parent);
+
+	// Run the event loop until the splash has been painted once, for at most about a second.
+	// Whatever follows blocks the main thread, and under Wayland one yield is not enough: the
+	// compositor answers a few round-trips before a new window is drawn at all.
+	void AwaitFirstPaint();
 
 	// Update the phase text and the bar. Cheap to call often: repainting is rate-limited
 	// internally, so callers can report every file scanned.
@@ -72,6 +77,9 @@ public:
 private:
 	void OnPaint(wxPaintEvent &evt);
 	void OnCloseTimer(wxTimerEvent &evt);
+	// Hides rather than destroys. Startup owns the window: it keeps reporting progress through
+	// it and destroys it in Finish().
+	void OnClose(wxCloseEvent &evt);
 
 	// Runs down the remainder of the minimum display time when Finish() is
 	// called early, so that wait costs the main thread nothing.
