@@ -451,7 +451,7 @@ One event per message, **inbound and outbound alike**. An outbound one is how a 
 
 ```json
 {
-  "address": "0123456789abcdef0123456789abcdef",
+  "address": "203.0.113.42:4662",
   "hash":    "0123456789abcdef0123456789abcdef",
   "ip":          "203.0.113.42",
   "port":        4662,
@@ -462,7 +462,7 @@ One event per message, **inbound and outbound alike**. An outbound one is how a 
 }
 ```
 
-`message` is identical to a `messages[]` entry on [`GET /api/v1/chats/{address}/messages`](REFERENCE.md#get-apiv1chatsaddressmessages) - including `sent_at`, which is `null` rather than `0` for an unstamped message, exactly as the REST row spells it. `address` is the stable hash when available and the legacy route otherwise; `name` uses the same fallback as the REST list: `"IP: <ip> Port: <port>"` for routed peers, or `"Peer: <hash>"` for hash-only peers.
+`message` is identical to a `messages[]` entry on [`GET /api/v1/chats/{address}/messages`](REFERENCE.md#get-apiv1chatsaddressmessages) - including `sent_at`, which is `null` rather than `0` for an unstamped message, exactly as the REST row spells it. `address` is the current IPv4 `ip:port` when available, otherwise the hash. `hash` remains the separate stable identity. `name` falls back to the uppercase hash when known, otherwise `"IP: <ip> Port: <port>"`, matching desktop `ChatPeerFallbackName`.
 
 There is no separate "conversation started" event: a conversation that did not exist yet is implied by the first message carrying its `address`.
 
@@ -472,7 +472,7 @@ There is no separate "conversation started" event: a conversation that did not e
 { "address": "0123456789abcdef0123456789abcdef", "hash": "0123456789abcdef0123456789abcdef" }
 ```
 
-`address` is the stable public key at closure. `hash` is that same hash when known, otherwise `null` and `address` is the legacy route string. Route-to-hash promotion is not a closure; viewers should re-key the provisional conversation without discarding its transcript.
+`address` is the retired public address; `hash` is the stable peer hash when known, otherwise `null`. A route change emits closure for the old address while preserving the session transcript. Re-fetch `/chats` before removing a hash-keyed conversation: the same identity may now have a different address. Learning a hash without changing the route is not a closure.
 
 Closing is global — see [`DELETE /api/v1/chats/{address}`](REFERENCE.md#delete-apiv1chatsaddress). This fires whichever client closed it, including the desktop GUI, so a viewer should drop the conversation rather than assume it still exists.
 

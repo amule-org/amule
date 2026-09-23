@@ -5730,7 +5730,7 @@ const webapi::ChatSessionSnapshot *FindChat(
 	const std::vector<webapi::ChatSessionSnapshot> &chats, const std::string &key)
 {
 	for (const webapi::ChatSessionSnapshot &s : chats) {
-		if (s.PeerKey() == key)
+		if (!s.peer_hash.empty() && s.peer_hash == key)
 			return &s;
 	}
 	// A legacy URL remains usable after promotion, but never selects arbitrarily
@@ -6042,8 +6042,8 @@ CHttpServer::Response CApiDispatcher::SendChatMessageTo(
 	// GET /chats/{address}/messages uses. `sent_at` is null here and only here:
 	// EC_OP_CHAT_SEND answers with ids and no timestamp.
 	w.Key("address");
-	w.ValueString(wxString::FromUTF8(
-		(peer_hash.empty() ? webapi::ChatPeerKeyFromGuiId(gui_id) : peer_hash).c_str()));
+	w.ValueString(
+		wxString::FromUTF8((gui_id ? webapi::ChatPeerKeyFromGuiId(gui_id) : peer_hash).c_str()));
 	w.Key("hash");
 	if (peer_hash.empty())
 		w.ValueNull();

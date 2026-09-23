@@ -698,7 +698,7 @@ std::string ChatMessageJson(const ChatMessageSnapshot &msg)
 
 void PublishChatEvents(CEventBus &bus,
 	const std::vector<ChatSessionSnapshot> &new_messages,
-	const std::vector<std::string> &closed)
+	const std::vector<ChatSessionClosure> &closed)
 {
 	if (new_messages.empty() && closed.empty())
 		return;
@@ -729,11 +729,11 @@ void PublishChatEvents(CEventBus &bus,
 			batch.emplace_back("chat_message", std::move(payload));
 		}
 	}
-	for (const auto &peer : closed) {
+	for (const auto &session : closed) {
 		const std::string hash =
-			peer.find(':') == std::string::npos ? "\"" + EscJson(peer) + "\"" : "null";
+			session.peer_hash.empty() ? "null" : "\"" + EscJson(session.peer_hash) + "\"";
 		batch.emplace_back("chat_session_closed",
-			"{\"address\":\"" + EscJson(peer) + "\",\"hash\":" + hash + "}");
+			"{\"address\":\"" + EscJson(session.address) + "\",\"hash\":" + hash + "}");
 	}
 	bus.PublishBatch(batch);
 }

@@ -1794,7 +1794,7 @@ void ApplyChatSessions(const CECPacket *resp,
 	std::vector<ChatSessionSnapshot> &cache,
 	std::uint32_t &cursor,
 	std::vector<ChatSessionSnapshot> &out_new_messages,
-	std::vector<std::string> &out_closed)
+	std::vector<ChatSessionClosure> &out_closed)
 {
 	if (!resp)
 		return;
@@ -1857,6 +1857,8 @@ void ApplyChatSessions(const CECPacket *resp,
 				present.insert(prev->first);
 		}
 		if (prev != previous.end()) {
+			if (prev->second.PeerKey() != session.PeerKey())
+				out_closed.push_back({ prev->second.PeerKey(), prev->second.peer_hash });
 			session.messages = std::move(prev->second.messages);
 			// A name the daemon stops sending must not blank one we have.
 			if (session.name.empty())
@@ -1906,7 +1908,7 @@ void ApplyChatSessions(const CECPacket *resp,
 	// it.
 	for (const auto &kv : previous) {
 		if (!present.count(kv.first)) {
-			out_closed.push_back(kv.second.PeerKey());
+			out_closed.push_back({ kv.second.PeerKey(), kv.second.peer_hash });
 		}
 	}
 

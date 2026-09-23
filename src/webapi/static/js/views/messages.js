@@ -176,7 +176,7 @@ function ChatPane({ reg, active, isGuest }) {
   const tabItems = reg.tabs.map((x) => ({
     key: x.peer,
     label: x.name.length > TAB_LABEL_MAX ? x.name.slice(0, TAB_LABEL_MAX - 1) + "…" : x.name,
-    title: x.name + " — " + x.peer,
+    title: x.name + " — " + x.address,
     badge: x.unread || null,
     cls: x.online ? "online" : "",
     closeLabel: t("messages_tab_close"),
@@ -218,7 +218,7 @@ function ChatPane({ reg, active, isGuest }) {
             ? html`
               <div class="chat-peer">
                 <strong>${active.name}</strong>
-                <span class="mono">${active.peer}</span>
+                <span class="mono">${active.address}</span>
                 <span class=${"status-chip " + (active.online ? "ok" : "off")}>
                   ${active.online ? t("messages_online") : t("messages_offline")}
                 </span>

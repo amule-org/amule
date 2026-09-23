@@ -3169,7 +3169,7 @@ Clients whose country could not be resolved — GeoIP disabled, unsupported by t
 
 Conversations with clients, backed by the chat session store in `amuled`. The store is shared: a message sent from the desktop GUI, from amulegui or through this API lands in the same transcript, and every client sees the same conversation.
 
-A conversation is keyed on `{address}`. For a hash-capable daemon this is the lowercase 32-character MD4 peer hash; for a legacy daemon it is the IPv4 route `"<ip>:<port>"` (for example `203.0.113.42:4662`). Hash is the stable identity and survives route changes; `ip` and `port` are independent route metadata and may be `null`. A key that is neither a valid MD4 hash nor a valid IPv4 route is a `400`. Provisional sessions without a known hash also use the route key on capable daemons. After promotion, an old route URL still resolves while exactly one session holds that current route; the response reports its canonical hash `address`. Distinct hashes sharing an endpoint remain distinct conversations.
+`address` remains the current IPv4 route `"<ip>:<port>"` whenever available (for example `203.0.113.42:4662`), including on hash-capable daemons. Without an IPv4 route it is the lowercase MD4 hash. The separate nullable `hash` is the stable conversation identity: use it for UI tabs and use `address` for API requests. Route changes preserve history and emit `chat_session_closed` for the old address; re-fetch the list to reconcile the identity. Learning a hash at the same route does not close it. Hash URLs remain accepted for known sessions; route URLs resolve only when unambiguous. A malformed hash or IPv4 route is a `400`. Distinct hashes sharing an endpoint remain distinct conversations.
 
 The store is **in memory**: an `amuled` restart empties every conversation, exactly as the desktop's own transcript dies with its notebook tab. Retention is bounded at 200 messages per conversation and 50 conversations, evicting the least recently active first.
 
@@ -3189,7 +3189,7 @@ curl -s -H "Authorization: Bearer $TOKEN" "http://$HOST/api/v1/chats"
 {
   "chats": [
     {
-      "address":            "0123456789abcdef0123456789abcdef",
+      "address":            "203.0.113.42:4662",
       "hash":               "0123456789abcdef0123456789abcdef",
       "ip":                 "203.0.113.42",
       "port":               4662,
@@ -3207,7 +3207,7 @@ curl -s -H "Authorization: Bearer $TOKEN" "http://$HOST/api/v1/chats"
 }
 ```
 
-`name` falls back to `"IP: <ip> Port: <port>"` when the core has no nickname for the client, matching what the desktop shows; hash-only peers instead use `"Peer: <hash>"`. The same string appears in the SSE payload. `client_ecid` is `null` when the client is offline and `friend_ecid` is `null` when the client is not a friend — join either against [`GET /clients`](#get-apiv1clients) and [`GET /friends`](#get-apiv1friends). `connected` says whether a connection to the peer is actually up, which is not the same as `client_ecid` being non-null: the daemon holds a client object from the first contact attempt, so a conversation opened against an unreachable address has an ecid and is not online. `null` means the daemon does not report peer connectivity.
+`name` falls back to the uppercase hash when known, otherwise `"IP: <ip> Port: <port>"`, matching desktop `ChatPeerFallbackName`. The same string appears in the SSE payload. `client_ecid` is `null` when the client is offline and `friend_ecid` is `null` when the client is not a friend — join either against [`GET /clients`](#get-apiv1clients) and [`GET /friends`](#get-apiv1friends). `connected` says whether a connection to the peer is actually up, which is not the same as `client_ecid` being non-null: the daemon holds a client object from the first contact attempt, so a conversation opened against an unreachable address has an ecid and is not online. `null` means the daemon does not report peer connectivity.
 
 `last_message` is `null` for a conversation that holds none; the key is always present. The full transcript is deliberately **not** on the list: 50 conversations at 200 messages each would be 10 000 objects per read. Use the messages endpoint below.
 
@@ -3223,7 +3223,7 @@ Served from the refresher snapshot — no EC roundtrip per request. Standard [li
 
 ```json
 {
-  "address": "0123456789abcdef0123456789abcdef",
+  "address": "203.0.113.42:4662",
   "hash": "0123456789abcdef0123456789abcdef",
   "messages": [
     { "id": 90, "direction": "out", "text": "hi",      "sent_at": 1786652700 },

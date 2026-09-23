@@ -250,7 +250,7 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 		// Collected under the write lock, published after it: emitting SSE frames
 		// from inside the lambda would hold CState exclusively across the bus.
 		std::vector<webapi::ChatSessionSnapshot> new_messages;
-		std::vector<std::string> closed;
+		std::vector<webapi::ChatSessionClosure> closed;
 		state.MutateChats([&](std::vector<webapi::ChatSessionSnapshot> &cache, std::uint32_t &cur) {
 			ApplyChatSessions(resp, cache, cur, new_messages, closed);
 		});

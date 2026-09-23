@@ -319,7 +319,7 @@ TEST(Refresher, ChatSessionDecodesIdentityAndMessages)
 	std::vector<ChatSessionSnapshot> cache;
 	std::uint32_t cursor = 0;
 	std::vector<ChatSessionSnapshot> fresh;
-	std::vector<std::string> closed;
+	std::vector<ChatSessionClosure> closed;
 
 	CECPacket resp(EC_OP_CHAT_SESSIONS);
 	resp.AddTag(CECTag(EC_TAG_CHAT_MSG_ID, static_cast<std::uint32_t>(2)));
@@ -362,7 +362,7 @@ TEST(Refresher, ChatHashIdentitySurvivesRouteChangesAndSeparatesAbsentRoutes)
 	const CMD4Hash bob(bytes);
 	for (unsigned tick = 0; tick < 3; ++tick) {
 		std::vector<ChatSessionSnapshot> fresh;
-		std::vector<std::string> closed;
+		std::vector<ChatSessionClosure> closed;
 		CECPacket resp(EC_OP_CHAT_SESSIONS);
 		CECTag a = MakeChatSession(tick == 0 ? kPeerA : 0, "alice");
 		a.AddTag(CECTag(EC_TAG_CHAT_PEER_HASH, alice));
@@ -384,12 +384,20 @@ TEST(Refresher, ChatHashIdentitySurvivesRouteChangesAndSeparatesAbsentRoutes)
 			ASSERT_EQUALS(static_cast<std::uint16_t>(0), cache[0].port);
 		}
 		if (tick < 2) {
-			ASSERT_TRUE(closed.empty());
+			if (tick == 0) {
+				ASSERT_TRUE(closed.empty());
+				ASSERT_EQUALS(std::string("10.0.0.1:4662"), cache[0].PeerKey());
+			} else {
+				ASSERT_EQUALS(static_cast<size_t>(1), closed.size());
+				ASSERT_EQUALS(std::string("10.0.0.1:4662"), closed[0].address);
+				ASSERT_EQUALS(cache[0].peer_hash, closed[0].peer_hash);
+			}
 			ASSERT_EQUALS(static_cast<size_t>(tick + 1), cache[1].messages.size());
 			ASSERT_EQUALS(std::string("bob message"), cache[1].messages[0].text);
 		} else {
 			ASSERT_EQUALS(static_cast<size_t>(1), closed.size());
-			ASSERT_EQUALS(std::string("cd000000000000000000000000000000"), closed[0]);
+			ASSERT_EQUALS(std::string("cd000000000000000000000000000000"), closed[0].address);
+			ASSERT_EQUALS(closed[0].address, closed[0].peer_hash);
 		}
 	}
 }
@@ -399,7 +407,7 @@ TEST(Refresher, ChatLegacySessionValueDoesNotInventHash)
 	std::vector<ChatSessionSnapshot> cache;
 	std::uint32_t cursor = 0;
 	std::vector<ChatSessionSnapshot> fresh;
-	std::vector<std::string> closed;
+	std::vector<ChatSessionClosure> closed;
 	CECPacket resp(EC_OP_CHAT_SESSIONS);
 	CECTag s = MakeChatSession(kPeerA, "legacy");
 	resp.AddTag(s);
@@ -414,7 +422,7 @@ TEST(Refresher, ChatProvisionalRoutePromotesWithoutLosingHistoryOrClosing)
 {
 	std::vector<ChatSessionSnapshot> cache;
 	std::vector<ChatSessionSnapshot> fresh;
-	std::vector<std::string> closed;
+	std::vector<ChatSessionClosure> closed;
 	std::uint32_t cursor = 0;
 	CECPacket provisional(EC_OP_CHAT_SESSIONS);
 	CECTag route = MakeChatSession(kPeerA, "alice");
@@ -433,7 +441,7 @@ TEST(Refresher, ChatProvisionalRoutePromotesWithoutLosingHistoryOrClosing)
 	ASSERT_EQUALS(static_cast<size_t>(1), cache.size());
 	ASSERT_EQUALS(static_cast<size_t>(2), cache[0].messages.size());
 	ASSERT_EQUALS(std::string("before identity"), cache[0].messages[0].text);
-	ASSERT_EQUALS(std::string("ab000000000000000000000000000000"), cache[0].PeerKey());
+	ASSERT_EQUALS(std::string("10.0.0.1:4662"), cache[0].PeerKey());
 	ASSERT_EQUALS(kPeerA, cache[0].gui_id);
 	ASSERT_TRUE(closed.empty());
 	ASSERT_EQUALS(static_cast<size_t>(1), fresh[0].messages.size());
@@ -441,7 +449,8 @@ TEST(Refresher, ChatProvisionalRoutePromotesWithoutLosingHistoryOrClosing)
 	CECPacket empty(EC_OP_CHAT_SESSIONS);
 	ApplyChatSessions(&empty, cache, cursor, fresh, closed);
 	ASSERT_EQUALS(static_cast<size_t>(1), closed.size());
-	ASSERT_EQUALS(std::string("ab000000000000000000000000000000"), closed[0]);
+	ASSERT_EQUALS(std::string("10.0.0.1:4662"), closed[0].address);
+	ASSERT_EQUALS(std::string("ab000000000000000000000000000000"), closed[0].peer_hash);
 }
 
 TEST(Refresher, ChatDistinctHashesAtOneRouteDoNotShareHistory)
@@ -450,7 +459,7 @@ TEST(Refresher, ChatDistinctHashesAtOneRouteDoNotShareHistory)
 	std::uint32_t cursor = 0;
 	for (unsigned tick = 0; tick < 2; ++tick) {
 		std::vector<ChatSessionSnapshot> fresh;
-		std::vector<std::string> closed;
+		std::vector<ChatSessionClosure> closed;
 		CECPacket resp(EC_OP_CHAT_SESSIONS);
 		for (unsigned peer = 0; peer < 2; ++peer) {
 			unsigned char bytes[16] = { 0 };
@@ -475,7 +484,10 @@ TEST(Refresher, ChatHashOnlyDisplayNamesRemainDistinct)
 	ChatSessionSnapshot alice, bob;
 	alice.peer_hash = "ab000000000000000000000000000000";
 	bob.peer_hash = "cd000000000000000000000000000000";
-	ASSERT_EQUALS(std::string("Peer: ") + alice.peer_hash, alice.DisplayName());
+	ASSERT_EQUALS(std::string("AB000000000000000000000000000000"), alice.DisplayName());
+	alice.ip = "10.0.0.1";
+	alice.port = 4662;
+	ASSERT_EQUALS(std::string("AB000000000000000000000000000000"), alice.DisplayName());
 	ASSERT_TRUE(alice.DisplayName() != bob.DisplayName());
 }
 
@@ -488,7 +500,7 @@ TEST(Refresher, ChatMessagesAccumulateAcrossTicks)
 	std::uint32_t cursor = 0;
 	{
 		std::vector<ChatSessionSnapshot> fresh;
-		std::vector<std::string> closed;
+		std::vector<ChatSessionClosure> closed;
 		CECPacket resp(EC_OP_CHAT_SESSIONS);
 		resp.AddTag(CECTag(EC_TAG_CHAT_MSG_ID, static_cast<std::uint32_t>(1)));
 		CECTag s = MakeChatSession(kPeerA, "alice");
@@ -498,7 +510,7 @@ TEST(Refresher, ChatMessagesAccumulateAcrossTicks)
 	}
 	{
 		std::vector<ChatSessionSnapshot> fresh;
-		std::vector<std::string> closed;
+		std::vector<ChatSessionClosure> closed;
 		CECPacket resp(EC_OP_CHAT_SESSIONS);
 		resp.AddTag(CECTag(EC_TAG_CHAT_MSG_ID, static_cast<std::uint32_t>(2)));
 		CECTag s = MakeChatSession(kPeerA, "alice");
@@ -526,7 +538,7 @@ TEST(Refresher, ChatSessionAbsentFromReplyIsReportedClosed)
 	std::uint32_t cursor = 0;
 	{
 		std::vector<ChatSessionSnapshot> fresh;
-		std::vector<std::string> closed;
+		std::vector<ChatSessionClosure> closed;
 		CECPacket resp(EC_OP_CHAT_SESSIONS);
 		CECTag a = MakeChatSession(kPeerA, "alice");
 		AddChatMessage(a, 1, false, 1000, "hi");
@@ -537,14 +549,15 @@ TEST(Refresher, ChatSessionAbsentFromReplyIsReportedClosed)
 	}
 	{
 		std::vector<ChatSessionSnapshot> fresh;
-		std::vector<std::string> closed;
+		std::vector<ChatSessionClosure> closed;
 		CECPacket resp(EC_OP_CHAT_SESSIONS);
 		resp.AddTag(MakeChatSession(kPeerB, "bob"));
 		ApplyChatSessions(&resp, cache, cursor, fresh, closed);
 		ASSERT_EQUALS(static_cast<size_t>(1), cache.size());
 		ASSERT_EQUALS(kPeerB, cache[0].gui_id);
 		ASSERT_EQUALS(static_cast<size_t>(1), closed.size());
-		ASSERT_EQUALS(std::string("10.0.0.1:4662"), closed[0]);
+		ASSERT_EQUALS(std::string("10.0.0.1:4662"), closed[0].address);
+		ASSERT_TRUE(closed[0].peer_hash.empty());
 	}
 }
 
@@ -555,7 +568,7 @@ TEST(Refresher, ChatSessionWithNoNewMessagesIsStillListed)
 	std::vector<ChatSessionSnapshot> cache;
 	std::uint32_t cursor = 0;
 	std::vector<ChatSessionSnapshot> fresh;
-	std::vector<std::string> closed;
+	std::vector<ChatSessionClosure> closed;
 
 	CECPacket resp(EC_OP_CHAT_SESSIONS);
 	resp.AddTag(CECTag(EC_TAG_CHAT_MSG_ID, static_cast<std::uint32_t>(9)));
@@ -580,14 +593,14 @@ TEST(Refresher, ChatSessionKeepsAKnownNameWhenTheReplyOmitsIt)
 	std::uint32_t cursor = 0;
 	{
 		std::vector<ChatSessionSnapshot> fresh;
-		std::vector<std::string> closed;
+		std::vector<ChatSessionClosure> closed;
 		CECPacket resp(EC_OP_CHAT_SESSIONS);
 		resp.AddTag(MakeChatSession(kPeerA, "alice"));
 		ApplyChatSessions(&resp, cache, cursor, fresh, closed);
 	}
 	{
 		std::vector<ChatSessionSnapshot> fresh;
-		std::vector<std::string> closed;
+		std::vector<ChatSessionClosure> closed;
 		CECPacket resp(EC_OP_CHAT_SESSIONS);
 		resp.AddTag(CECTag(EC_TAG_CHAT_SESSION, kPeerA)); // no name child
 		ApplyChatSessions(&resp, cache, cursor, fresh, closed);
@@ -601,7 +614,7 @@ TEST(Refresher, ChatSessionWithoutANameFallsBackToAddress)
 	std::vector<ChatSessionSnapshot> cache;
 	std::uint32_t cursor = 0;
 	std::vector<ChatSessionSnapshot> fresh;
-	std::vector<std::string> closed;
+	std::vector<ChatSessionClosure> closed;
 
 	CECPacket resp(EC_OP_CHAT_SESSIONS);
 	resp.AddTag(CECTag(EC_TAG_CHAT_SESSION, kPeerA));

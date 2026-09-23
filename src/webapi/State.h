@@ -532,10 +532,10 @@ struct ChatSessionSnapshot
 		return peer_hash.empty() ? ("gui:" + std::to_string(gui_id)) : ("hash:" + peer_hash);
 	}
 
-	//! Stable REST/SSE conversation key; route metadata is independent.
+	//! REST/SSE address: retain the legacy IPv4 route whenever available.
 	std::string PeerKey() const
 	{
-		return peer_hash.empty() ? ip + ":" + std::to_string(port) : peer_hash;
+		return !ip.empty() && port ? ip + ":" + std::to_string(port) : peer_hash;
 	}
 
 	//! Display name, falling back to the desktop's own rendering when the core has no
@@ -545,8 +545,13 @@ struct ChatSessionSnapshot
 	{
 		if (!name.empty())
 			return name;
-		if (ip.empty() && !peer_hash.empty())
-			return "Peer: " + peer_hash;
+		if (!peer_hash.empty()) {
+			std::string hash = peer_hash;
+			for (char &c : hash)
+				if (c >= 'a' && c <= 'f')
+					c -= 'a' - 'A';
+			return hash;
+		}
 		return "IP: " + ip + " Port: " + std::to_string(port);
 	}
 };

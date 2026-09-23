@@ -188,13 +188,17 @@ void ApplyGetUpdateToFriends(const CECPacket *resp, std::map<std::uint32_t, Frie
 //
 // The reply is the daemon's COMPLETE session set, so this replaces the vector rather than merging:
 // a session missing from a reply was closed, and that absence is the only signal a close produces.
-// Messages arrive incrementally. Closed sessions carry their stable public keys:
-// peer hashes when known, legacy route strings otherwise.
+// Messages arrive incrementally. Closures retain the old public address and actual peer hash.
+struct ChatSessionClosure
+{
+	std::string address;
+	std::string peer_hash;
+};
 void ApplyChatSessions(const CECPacket *resp,
 	std::vector<ChatSessionSnapshot> &cache,
 	std::uint32_t &cursor,
 	std::vector<ChatSessionSnapshot> &out_new_messages,
-	std::vector<std::string> &out_closed);
+	std::vector<ChatSessionClosure> &out_closed);
 
 // ed2k server priority, both directions. The SRV_PR_* wire values are not monotone (NORMAL=0,
 // HIGH=1, LOW=2), so callers must never assume a name's position in a list is its code.

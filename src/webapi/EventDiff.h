@@ -26,6 +26,7 @@
 #define WEBAPI_EVENT_DIFF_H
 
 #include "State.h"
+#include "Refresher.h"
 
 #include <map>
 #include <cstdint>
@@ -101,11 +102,10 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 //
 // One `chat_message` per message, inbound AND outbound alike -- an outbound one is how a message
 // sent from amulegui reaches every other viewer. A session that did not exist is implied by the
-// first message carrying its `address`. Closed keys use the same public identity:
-// a peer hash when known, otherwise a legacy route string.
+// first message carrying its `address`. Closures preserve the old public address and peer hash.
 void PublishChatEvents(CEventBus &bus,
 	const std::vector<ChatSessionSnapshot> &new_messages,
-	const std::vector<std::string> &closed);
+	const std::vector<ChatSessionClosure> &closed);
 
 } // namespace webapi
 

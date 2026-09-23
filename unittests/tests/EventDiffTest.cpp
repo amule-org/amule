@@ -2077,6 +2077,7 @@ TEST(EventDiff, ChatMessageSentAtIsTheStampWhenPresent)
 	stamped.id = 92;
 	stamped.text = "stamped";
 	stamped.timestamp = 1786652714;
+	session.peer_hash = "ab000000000000000000000000000000";
 	session.messages.push_back(stamped);
 
 	PublishChatEvents(bus, { session }, {});
@@ -2088,6 +2089,30 @@ TEST(EventDiff, ChatMessageSentAtIsTheStampWhenPresent)
 	}
 	ASSERT_TRUE(!payload.empty());
 	ASSERT_TRUE(payload.find("\"sent_at\":1786652714") != std::string::npos);
+	ASSERT_TRUE(payload.find("\"address\":\"203.0.113.43:4662\"") != std::string::npos);
+	ASSERT_TRUE(payload.find("\"hash\":\"ab000000000000000000000000000000\"") != std::string::npos);
+	ASSERT_TRUE(payload.find("\"name\":\"AB000000000000000000000000000000\"") != std::string::npos);
+}
+
+TEST(EventDiff, ChatClosuresPreserveAddressAndActualHash)
+{
+	CEventBus bus;
+	const std::string hash = "ab000000000000000000000000000000";
+	// A route transition and a normal identified closure share this payload contract.
+	PublishChatEvents(bus,
+		{},
+		{
+			{ "10.0.0.1:4662", hash },
+			{ hash, hash },
+			{ "10.0.0.2:4662", "" },
+		});
+	const auto events = DrainAll(bus);
+	ASSERT_EQUALS(static_cast<size_t>(3), events.size());
+	for (const auto &event : events)
+		ASSERT_EQUALS(std::string("chat_session_closed"), event.name);
+	ASSERT_EQUALS("{\"address\":\"10.0.0.1:4662\",\"hash\":\"" + hash + "\"}", events[0].data);
+	ASSERT_EQUALS("{\"address\":\"" + hash + "\",\"hash\":\"" + hash + "\"}", events[1].data);
+	ASSERT_EQUALS(std::string("{\"address\":\"10.0.0.2:4662\",\"hash\":null}"), events[2].data);
 }
 
 // The server row's `software_version` is null when the server has reported none, matching
