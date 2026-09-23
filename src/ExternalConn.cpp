@@ -4107,7 +4107,14 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 			response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("Unknown chat target")));
 			break;
 		}
-		const CChatPeer peer = theApp->clientlist->ResolveLegacyChatPeer(gui_id);
+		CChatPeer peer = theApp->clientlist->ResolveLegacyChatPeer(gui_id);
+		// An address the daemon has never seen resolves to a bare route. Open it as a
+		// provisional session, as the local GUI does: 3.1.0 dialed such a target, and the
+		// handshake claims the session once the peer identifies.
+		if (peer.Hash().IsEmpty() && !peer.IsEmpty() && !theApp->chatsessions->Find(peer)) {
+			peer = theApp->chatsessions->Open(
+				CMD4Hash(), peer.Address(), peer.Port(), wxEmptyString);
+		}
 		const auto result = theApp->clientlist->SendChatMessage(peer, text);
 		if (result == CClientList::ChatSendResult::Unavailable) {
 			response = new CECPacket(EC_OP_FAILED);
