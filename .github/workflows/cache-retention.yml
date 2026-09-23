@@ -34,13 +34,16 @@ on:
   # not merely fail to match: it stops this workflow compiling for the event,
   # and every completion then produces a startup_failure with no job and no
   # log. Reproduced on a fork, where a probe listing a slash-named workflow
-  # broke completions that a sibling probe handled fine. Its ccache is small
-  # and its runs end close to the push that started them, so the push trigger
-  # already covers it. Keep every entry here slash-free.
+  # broke completions that a sibling probe handled fine. Its ccache is pruned by
+  # cache-save-newest as it saves it; only its msys2 copies wait for the next
+  # trigger. Keep every entry here slash-free.
   workflow_run:
     workflows:
       - Packaging
       - clang-tidy
+      # Saves its ~1 GB TRAP cache itself, at the end of an hour-long run, after
+      # the rest of the push has triggered this: four merges in an hour left 3.8 GB.
+      - CodeQL Advanced
     types:
       - completed
   # Backstop for stretches with no merges, and a manual handle.
