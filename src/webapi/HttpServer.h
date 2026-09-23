@@ -167,13 +167,17 @@ public:
 	// Bind and listen on `bind_address`:`port`. Returns false, and populates LastError, on bind
 	// failure -- most commonly the port being in use by another amuleapi instance or a stale
 	// TIME_WAIT socket.
+	//
+	// `base_path` is a NormalizeBasePath() result. Handlers see targets with it stripped; the
+	// base itself is redirected to its trailing-slash form so the WebUI's relative URLs resolve.
 	bool Start(const std::string &bind_address,
 		unsigned port,
 		Handler handler,
 		StreamingResolver streaming_resolver = nullptr,
 		StreamingHandler streaming_handler = nullptr,
 		StreamingPreflight streaming_preflight = nullptr,
-		CorsStamper cors_stamper = nullptr);
+		CorsStamper cors_stamper = nullptr,
+		std::string base_path = std::string());
 
 	// Process-wide cap on concurrent file-backed responses (`Response::file`), from
 	// `[Streaming]/MaxConcurrentFileResponses`. Zero or negative is ignored, so a caller that

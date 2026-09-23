@@ -182,6 +182,38 @@ keeps idle connections from being dropped. File downloads from
 through instead of spooling a gigabyte to its own disk first. A proxy that
 ignores `X-Accel-Buffering` wants `proxy_buffering off;` in that location.
 
+### Sharing a hostname with other apps
+
+To serve amuleapi under a path, such as `https://home.example.com/amule/`, set
+the path in `amuleapi.conf`:
+
+```ini
+[Server]
+BasePath=/amule
+```
+
+Then forward that path to amuleapi. With Caddy:
+
+```caddy
+home.example.com {
+    redir /amule /amule/
+    reverse_proxy /amule/* 127.0.0.1:4713
+}
+```
+
+With nginx, inside your existing `server` block:
+
+```nginx
+location /amule/ {
+    proxy_pass http://127.0.0.1:4713;
+    proxy_http_version 1.1;
+}
+```
+
+amuleapi accepts requests with the prefix and without it, so a proxy that
+strips the prefix (Caddy's `handle_path`, or nginx's `proxy_pass` with a
+trailing `/`) works too. No cookie or header rewriting is needed.
+
 On a home network, with no domain name, an SSH tunnel does the same job with
 no certificate at all:
 
@@ -203,6 +235,7 @@ Port=4713                 ; amuleapi's own HTTP port
 AllowCORS=0               ; see CORS below
 CorsOriginAllowlist=      ; origins allowed to log in cross-origin
 StaticRoot=               ; folder to serve a web frontend from
+BasePath=                 ; path prefix behind a proxy, e.g. /amule
 
 [EC]
 Host=127.0.0.1            ; where amuled is

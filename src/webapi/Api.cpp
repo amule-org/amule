@@ -347,14 +347,20 @@ AuthOutcome AuthenticateRequestRateLimited(const CHttpServer::Request &req,
 	return out;
 }
 
-// `<name>=<value>; HttpOnly; SameSite=Strict; Path=/api/v1; Max-Age=<lifetime>`
+// `<name>=<value>; HttpOnly; SameSite=Strict; Path=<BasePath>/api/v1; Max-Age=<lifetime>`
 //
 // No `Secure`: amuleapi serves HTTP by design, with TLS terminated in front.
 // Shared with the clear-cookie path because RFC 6265 5.3 requires (name, path,
 // domain) to match for a delete.
-const char *const kSessionCookieAttrs = "; HttpOnly; SameSite=Strict; Path=/api/v1";
+std::string SessionCookieAttrs(const std::string &base_path)
+{
+	return "; HttpOnly; SameSite=Strict; Path=" + base_path + "/api/v1";
+}
 
-std::string MakeSetCookie(const std::string &name, const std::string &value, std::time_t expires_at)
+std::string MakeSetCookie(const std::string &name,
+	const std::string &value,
+	std::time_t expires_at,
+	const std::string &base_path)
 {
 	const std::time_t now = std::time(nullptr);
 	// An already-expired `expires_at` yields Max-Age=0, which deletes the cookie on
@@ -365,7 +371,7 @@ std::string MakeSetCookie(const std::string &name, const std::string &value, std
 	out += name;
 	out += '=';
 	out += value;
-	out += kSessionCookieAttrs;
+	out += SessionCookieAttrs(base_path);
 	out += "; Max-Age=";
 	out += std::to_string(static_cast<long long>(lifetime));
 	return out;
@@ -373,15 +379,20 @@ std::string MakeSetCookie(const std::string &name, const std::string &value, std
 
 // Max-Age=0 invalidates whatever a prior login set. MUST use the same
 // (name, path, domain) tuple as MakeSetCookie or the browser keeps the original.
-std::string MakeClearCookie(const std::string &name)
+std::string MakeClearCookie(const std::string &name, const std::string &base_path)
 {
 	std::string out;
 	out.reserve(name.size() + 64);
 	out += name;
 	out += '=';
-	out += kSessionCookieAttrs;
+	out += SessionCookieAttrs(base_path);
 	out += "; Max-Age=0";
 	return out;
+}
+
+std::string SearchLocation(const std::string &base_path, std::uint32_t search_id)
+{
+	return base_path + "/api/v1/search/" + std::to_string(search_id);
 }
 
 // Namespaced apart from amuleweb's `amule_token` so the two daemons can
@@ -1959,7 +1970,8 @@ void CApiDispatcher::BeginSession(
 	const CHttpServer::Request &req, Role role, CHttpServer::Response &r, CJsonWriter &w)
 {
 	const CJwt::IssuedToken issued = m_jwt.Issue(role);
-	r.headers["Set-Cookie"] = MakeSetCookie(kSessionCookieName, issued.token, issued.expires_at);
+	r.headers["Set-Cookie"] = MakeSetCookie(
+		kSessionCookieName, issued.token, issued.expires_at, m_config.ServerCfg().base_path);
 
 	// Cookie-auth default: the HttpOnly+SameSite cookie carries the token, and echoing
 	// it into the body would defeat HttpOnly -- any XSS that could call
@@ -2077,7 +2089,7 @@ CHttpServer::Response CApiDispatcher::HandleLogout(const CHttpServer::Request &r
 	// and `ok` would restate the status code.
 	r.status = 204;
 	r.content_type.clear();
-	r.headers["Set-Cookie"] = MakeClearCookie(kSessionCookieName);
+	r.headers["Set-Cookie"] = MakeClearCookie(kSessionCookieName, m_config.ServerCfg().base_path);
 
 	return r;
 }
@@ -10175,7 +10187,7 @@ CHttpServer::Response CApiDispatcher::HandleBrowse(
 	CHttpServer::Response r;
 	r.status = 202;
 	r.content_type = "application/json";
-	r.headers["Location"] = "/api/v1/search/" + std::to_string(search_id);
+	r.headers["Location"] = SearchLocation(m_config.ServerCfg().base_path, search_id);
 	CJsonWriter w;
 	WriteSearchListRow(w, row);
 	FinalizeJsonBody(w, r);
@@ -10370,7 +10382,7 @@ CHttpServer::Response CApiDispatcher::HandleSearchStart(const CHttpServer::Reque
 	CHttpServer::Response r;
 	r.status = 202;
 	r.content_type = "application/json";
-	r.headers["Location"] = "/api/v1/search/" + std::to_string(search_id);
+	r.headers["Location"] = SearchLocation(m_config.ServerCfg().base_path, search_id);
 	CJsonWriter w;
 	WriteSearchListRow(w, row);
 	FinalizeJsonBody(w, r);

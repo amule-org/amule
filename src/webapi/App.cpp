@@ -554,7 +554,8 @@ void CamuleapiApp::TextShell(const wxString & /*prompt*/)
 		    streaming_resolver,
 		    streaming_handler,
 		    streaming_preflight,
-		    cors_stamper)) {
+		    cors_stamper,
+		    m_apiConfig.ServerCfg().base_path)) {
 		Show(CFormat("amuleapi: HTTP server failed to start: %s\n") %
 			wxString::FromUTF8(m_http->LastError().c_str()));
 		return;

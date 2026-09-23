@@ -66,6 +66,9 @@ public:
 		// GET/HEAD for paths outside /api/ from here, with an index.html SPA fallback for
 		// extension-less misses.
 		std::string static_root;
+		// URL prefix a reverse proxy serves us under, as NormalizeBasePath() leaves it: "" or
+		// "/seg[/seg...]". Requests are accepted with or without it.
+		std::string base_path;
 	};
 
 	struct Ec

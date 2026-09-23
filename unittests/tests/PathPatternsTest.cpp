@@ -384,3 +384,73 @@ TEST(PathPatterns, ParseBoolValue_RejectsAnythingElse)
 	// Left alone on rejection.
 	ASSERT_TRUE(b);
 }
+
+TEST(PathPatterns, NormalizeBasePath_RootSpellingsMeanNoBase)
+{
+	std::string out = "x";
+	ASSERT_TRUE(NormalizeBasePath("", out) && out.empty());
+	ASSERT_TRUE(NormalizeBasePath("/", out) && out.empty());
+	ASSERT_TRUE(NormalizeBasePath("///", out) && out.empty());
+}
+
+TEST(PathPatterns, NormalizeBasePath_AddsLeadingDropsTrailing)
+{
+	std::string out;
+	ASSERT_TRUE(NormalizeBasePath("amule", out));
+	ASSERT_EQUALS(std::string("/amule"), out);
+	ASSERT_TRUE(NormalizeBasePath("/amule/", out));
+	ASSERT_EQUALS(std::string("/amule"), out);
+	ASSERT_TRUE(NormalizeBasePath("/apps/a-Mule_2.x~/", out));
+	ASSERT_EQUALS(std::string("/apps/a-Mule_2.x~"), out);
+}
+
+TEST(PathPatterns, NormalizeBasePath_RejectsWhatCannotGoInAHeader)
+{
+	std::string out = "keep";
+	ASSERT_TRUE(!NormalizeBasePath("/a//b", out));
+	ASSERT_TRUE(!NormalizeBasePath("/a/../b", out));
+	ASSERT_TRUE(!NormalizeBasePath("/./a", out));
+	ASSERT_TRUE(!NormalizeBasePath("/a b", out));
+	ASSERT_TRUE(!NormalizeBasePath("/a;Path=/", out));
+	ASSERT_TRUE(!NormalizeBasePath("/a%2Fb", out));
+	ASSERT_TRUE(!NormalizeBasePath("/a?x", out));
+	ASSERT_TRUE(!NormalizeBasePath("/\xC3\xA0", out));
+	ASSERT_EQUALS(std::string("keep"), out);
+}
+
+TEST(PathPatterns, StripBasePath_Inside)
+{
+	std::string t = "/amule/api/v1/status?x=1";
+	ASSERT_TRUE(StripBasePath("/amule", t) == BasePathMatch::Inside);
+	ASSERT_EQUALS(std::string("/api/v1/status?x=1"), t);
+	t = "/amule/";
+	ASSERT_TRUE(StripBasePath("/amule", t) == BasePathMatch::Inside);
+	ASSERT_EQUALS(std::string("/"), t);
+}
+
+TEST(PathPatterns, StripBasePath_Bare)
+{
+	std::string t = "/amule";
+	ASSERT_TRUE(StripBasePath("/amule", t) == BasePathMatch::Bare);
+	ASSERT_EQUALS(std::string("/amule"), t);
+	t = "/amule?lang=it";
+	ASSERT_TRUE(StripBasePath("/amule", t) == BasePathMatch::Bare);
+	ASSERT_EQUALS(std::string("/amule?lang=it"), t);
+}
+
+TEST(PathPatterns, StripBasePath_OutsideIsUntouched)
+{
+	// A proxy that strips the prefix itself sends the bare API path.
+	std::string t = "/api/v1/status";
+	ASSERT_TRUE(StripBasePath("/amule", t) == BasePathMatch::Outside);
+	ASSERT_EQUALS(std::string("/api/v1/status"), t);
+	// Segment boundary, not a string prefix.
+	t = "/amuleweb/x";
+	ASSERT_TRUE(StripBasePath("/amule", t) == BasePathMatch::Outside);
+	ASSERT_EQUALS(std::string("/amuleweb/x"), t);
+	t = "/Amule/x";
+	ASSERT_TRUE(StripBasePath("/amule", t) == BasePathMatch::Outside);
+	t = "/amule/x";
+	ASSERT_TRUE(StripBasePath("", t) == BasePathMatch::Outside);
+	ASSERT_EQUALS(std::string("/amule/x"), t);
+}

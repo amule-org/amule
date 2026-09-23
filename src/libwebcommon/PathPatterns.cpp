@@ -110,6 +110,50 @@ std::string StripTrailingSlash(const std::string &path)
 }
 
 // See PathPatterns.h.
+bool NormalizeBasePath(const std::string &in, std::string &out)
+{
+	std::string path = (in.empty() || in[0] != '/') ? "/" + in : in;
+	while (path.size() > 1 && path.back() == '/') {
+		path.pop_back();
+	}
+	if (path == "/") {
+		out.clear();
+		return true;
+	}
+	for (const std::string &seg : SplitPath(path)) {
+		if (seg.empty() || seg == "." || seg == "..") {
+			return false;
+		}
+		for (const char c : seg) {
+			const bool unreserved = (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') ||
+						(c >= '0' && c <= '9') || c == '-' || c == '.' || c == '_' ||
+						c == '~';
+			if (!unreserved) {
+				return false;
+			}
+		}
+	}
+	out = path;
+	return true;
+}
+
+// See PathPatterns.h.
+BasePathMatch StripBasePath(const std::string &base, std::string &target)
+{
+	if (base.empty() || target.compare(0, base.size(), base) != 0) {
+		return BasePathMatch::Outside;
+	}
+	if (target.size() == base.size() || target[base.size()] == '?') {
+		return BasePathMatch::Bare;
+	}
+	if (target[base.size()] != '/') {
+		return BasePathMatch::Outside;
+	}
+	target.erase(0, base.size());
+	return BasePathMatch::Inside;
+}
+
+// See PathPatterns.h.
 bool ParseBoundedUint(const std::string &s, std::uint64_t min, std::uint64_t max, std::uint64_t &out)
 {
 	if (s.empty()) {

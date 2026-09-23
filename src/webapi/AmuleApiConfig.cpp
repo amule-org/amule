@@ -25,6 +25,7 @@
 #include "AmuleApiConfig.h"
 
 #include <AtomicFile.h>
+#include <PathPatterns.h>
 
 #include <wx/file.h>
 #include <wx/fileconf.h>
@@ -161,6 +162,7 @@ bool CAmuleApiConfig::LoadAmuleapiConf(const wxString &path)
 			       // client that logs in needs its origin listed here.
 			       "CorsOriginAllowlist=\n"
 			       "StaticRoot=\n"
+			       "BasePath=\n"
 			       "\n"
 			       "[EC]\n"
 			       "Host=127.0.0.1\n"
@@ -228,6 +230,16 @@ bool CAmuleApiConfig::LoadAmuleapiConf(const wxString &path)
 		const wxString trimmed = s.Trim(true).Trim(false);
 		if (!trimmed.IsEmpty()) {
 			m_server.static_root = std::string(trimmed.utf8_str());
+		}
+	}
+	if (cfg.Read("/Server/BasePath", &s)) {
+		// Refused rather than defaulted: served at the root instead, the WebUI would load
+		// through the proxy and then fail every login.
+		const std::string raw(s.Trim(true).Trim(false).utf8_str());
+		if (!web_api_path::NormalizeBasePath(raw, m_server.base_path)) {
+			m_lastError = "invalid [Server]/BasePath '" + raw +
+				      "': use /name, with letters, digits, '-', '.', '_', '~' and '/' only";
+			return false;
 		}
 	}
 

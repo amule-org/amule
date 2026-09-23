@@ -151,8 +151,10 @@ run_phase() {
 	# read-only in container CI; copy the placeholder out to a /tmp
 	# scratch dir and point StaticRoot at the copy. Every other script
 	# leaves it unset, which is what keeps the install-path discovery
-	# chain exercised: these two pin it, the rest do not.
-	if [ "$script" = "27-static-frontend.sh" ] || [ "$script" = "40-http-conformance.sh" ]; then
+	# chain exercised: these pin it, the rest do not. 44 loads the WebUI
+	# under its BasePath, so it needs the same.
+	if [ "$script" = "27-static-frontend.sh" ] || [ "$script" = "40-http-conformance.sh" ] ||
+		[ "$script" = "44-base-path.sh" ]; then
 		STATIC_SRC="$ROOT/src/webapi/static"
 		STATIC_DIR=/tmp/amuleapi-static-frontend
 		rm -rf "$STATIC_DIR"
@@ -163,6 +165,10 @@ run_phase() {
 		sed -i'.bak' \
 			"s|^StaticRoot=.*|StaticRoot=$STATIC_DIR|" \
 			/tmp/amuleapi-regtest/amuleapi.conf
+		rm -f /tmp/amuleapi-regtest/amuleapi.conf.bak
+	fi
+	if [ "$script" = "44-base-path.sh" ]; then
+		sed -i'.bak' "s|^BasePath=.*|BasePath=/amule|" /tmp/amuleapi-regtest/amuleapi.conf
 		rm -f /tmp/amuleapi-regtest/amuleapi.conf.bak
 	fi
 	"$BIN" --config-dir=/tmp/amuleapi-regtest \
@@ -275,6 +281,7 @@ PHASES=(
 	41-shared-content.sh
 	42-path-and-body-contracts.sh
 	43-client-protocol-extensions.sh
+	44-base-path.sh
 	99-peer-fixture-teardown.sh
 )
 

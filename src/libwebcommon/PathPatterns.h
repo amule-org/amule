@@ -56,6 +56,22 @@ bool LooksMalicious(const std::string &path);
 // and collapsing it would let `/a//b` reach the route for `/a/b`.
 std::string StripTrailingSlash(const std::string &path);
 
+// Brings a configured base path to "" (served at the root) or "/seg[/seg...]": adds the leading
+// slash, drops trailing ones. False for an empty segment, `.`, `..`, or a byte outside RFC 3986's
+// unreserved set -- the result goes verbatim into Set-Cookie and Location headers.
+bool NormalizeBasePath(const std::string &in, std::string &out);
+
+enum class BasePathMatch
+{
+	Outside, // `target` does not start with the base; left as is
+	Inside,  // the base was stripped from `target`
+	Bare     // `target` names the base with no trailing slash; left as is
+};
+
+// Strips a NormalizeBasePath() result from the front of a request target, on a segment
+// boundary. An empty base matches nothing.
+BasePathMatch StripBasePath(const std::string &base, std::string &target);
+
 // Parses ?k=v&k2=v2 into a map. Percent-decodes `%hh` pairs and converts `+` to space per
 // application/x-www-form-urlencoded. Malformed `%hh` triplets pass through verbatim, so a stray `%`
 // does not silently drop characters.

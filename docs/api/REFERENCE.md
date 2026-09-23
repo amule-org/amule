@@ -131,6 +131,8 @@ The API is versioned in the path. **`/api/v1/` is frozen**: anything that could 
 
 `amuleapi` serves HTTP on the address declared in `amuleapi.conf[Server]/Port` (default `4713`). The server is HTTP-only by design — terminate TLS in a reverse proxy (nginx, Caddy, etc.) for any non-loopback deployment. The cookie is deliberately NOT marked `Secure` so the same Set-Cookie works whether the operator runs amuleapi behind TLS or directly. See QUICKSTART for the full bind-vs-listen story.
 
+A proxy can also serve amuleapi under a path of a shared hostname, such as `https://home.example.com/amule/`. Set `amuleapi.conf[Server]/BasePath` to that path (`/amule`). Every path on this page then works with the prefix and without it, so the proxy can forward the prefix or strip it. `GET /amule` redirects with `308` to `/amule/`, the cookie path and every `Location` header carry the prefix, and the bundled frontend loads from `/amule/`. `BasePath` accepts letters, digits, `-`, `.`, `_`, `~` and `/`; amuleapi refuses to start on anything else.
+
 JSON in, JSON out. Every request body that carries a payload is `Content-Type: application/json`. Every response that carries a payload is `application/json` unless explicitly noted (the SSE endpoint emits `text/event-stream`).
 
 ## Authentication
@@ -140,7 +142,7 @@ Two carriers, one token. amuleapi mints HS256 JWTs at `/auth/login` and accepts 
 - An `Authorization: Bearer <jwt>` header (SDK / curl / server-to-server clients).
 - An HttpOnly session cookie named `amuleapi_token` (browser clients).
 
-If both arrive on the same request, the bearer header wins. The cookie attributes are `HttpOnly; SameSite=Strict; Path=/api/v1`. Cookie lifetime tracks the JWT's `exp` claim (`Max-Age = expires_at - now`).
+If both arrive on the same request, the bearer header wins. The cookie attributes are `HttpOnly; SameSite=Strict; Path=/api/v1`, with the path prefixed by [`BasePath`](#base-url-and-transport) when one is set. Cookie lifetime tracks the JWT's `exp` claim (`Max-Age = expires_at - now`).
 
 ### Login response shape
 

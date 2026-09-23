@@ -25,6 +25,7 @@
 #include "HttpServer.h"
 
 #include "JsonWriter.h"
+#include "PathPatterns.h"
 
 #include <Etag.h> // webcommon::WithCodingSuffix
 
@@ -378,7 +379,8 @@ public:
 		CHttpServer::StreamingResolver streaming_resolver,
 		CHttpServer::StreamingHandler streaming_handler,
 		CHttpServer::StreamingPreflight streaming_preflight,
-		CHttpServer::CorsStamper cors_stamper)
+		CHttpServer::CorsStamper cors_stamper,
+		std::string base_path)
 	: m_stream(std::move(socket))
 	, m_request_timer(m_stream.get_executor())
 	, m_handler_pool(std::move(handler_pool))
@@ -387,6 +389,7 @@ public:
 	, m_streaming_handler(std::move(streaming_handler))
 	, m_streaming_preflight(std::move(streaming_preflight))
 	, m_cors_stamper(std::move(cors_stamper))
+	, m_base_path(std::move(base_path))
 	{
 	}
 
@@ -583,6 +586,11 @@ private:
 				r.remote_addr = ep.address().to_string();
 		}
 
+		if (web_api_path::StripBasePath(m_base_path, r.target) == web_api_path::BasePathMatch::Bare) {
+			WriteBaseRedirect(r.target);
+			return;
+		}
+
 		// Streaming dispatch. The streaming_resolver is invoked synchronously and
 		// short-circuits the standard request/response/close path when it returns true.
 		if (m_streaming_resolver && m_streaming_handler && m_streaming_resolver(r)) {
@@ -624,6 +632,17 @@ private:
 			boost::asio::post(self->m_stream.get_executor(),
 				[self, out]() { self->WriteResponse(std::move(*out)); });
 		});
+	}
+
+	// `/base?q` -> `/base/?q`. Without the slash the page loads but `css/app.css` resolves
+	// against the parent directory.
+	void WriteBaseRedirect(const std::string &target)
+	{
+		CHttpServer::Response r;
+		r.status = 308;
+		r.content_type.clear();
+		r.headers["Location"] = m_base_path + "/" + target.substr(m_base_path.size());
+		WriteResponse(std::move(r));
 	}
 
 	// Short 503 for the concurrent-session cap and other exhaustion paths.
@@ -1353,6 +1372,7 @@ private:
 	CHttpServer::StreamingHandler m_streaming_handler;
 	CHttpServer::StreamingPreflight m_streaming_preflight;
 	CHttpServer::CorsStamper m_cors_stamper;
+	std::string m_base_path;
 	std::atomic<bool> m_stream_alive{ false };
 	// Set true by the worker on exit. The Session destructor asserts on it before detach()ing
 	// the thread handle -- the dtor only runs after the last ref drops, and that ref is held
@@ -1393,7 +1413,8 @@ public:
 		CHttpServer::StreamingResolver streaming_resolver,
 		CHttpServer::StreamingHandler streaming_handler,
 		CHttpServer::StreamingPreflight streaming_preflight,
-		CHttpServer::CorsStamper cors_stamper)
+		CHttpServer::CorsStamper cors_stamper,
+		std::string base_path)
 	: m_ioc(ioc)
 	, m_acceptor(asio::make_strand(ioc))
 	, m_handler_pool(std::move(handler_pool))
@@ -1402,6 +1423,7 @@ public:
 	, m_streaming_handler(std::move(streaming_handler))
 	, m_streaming_preflight(std::move(streaming_preflight))
 	, m_cors_stamper(std::move(cors_stamper))
+	, m_base_path(std::move(base_path))
 	{
 		beast::error_code ec;
 		m_acceptor.open(endpoint.protocol(), ec);
@@ -1465,7 +1487,8 @@ private:
 						self->m_streaming_resolver,
 						self->m_streaming_handler,
 						self->m_streaming_preflight,
-						self->m_cors_stamper)
+						self->m_cors_stamper,
+						self->m_base_path)
 						->Start();
 				}
 				// Loop unless the acceptor has been closed. operation_aborted
@@ -1484,6 +1507,7 @@ private:
 	CHttpServer::StreamingHandler m_streaming_handler;
 	CHttpServer::StreamingPreflight m_streaming_preflight;
 	CHttpServer::CorsStamper m_cors_stamper;
+	std::string m_base_path;
 	std::string m_error;
 };
 
@@ -1529,7 +1553,8 @@ bool CHttpServer::Start(const std::string &bind_address,
 	StreamingResolver streaming_resolver,
 	StreamingHandler streaming_handler,
 	StreamingPreflight streaming_preflight,
-	CorsStamper cors_stamper)
+	CorsStamper cors_stamper,
+	std::string base_path)
 // NOLINTEND(performance-unnecessary-value-param)
 {
 	if (m_impl) {
@@ -1569,7 +1594,8 @@ bool CHttpServer::Start(const std::string &bind_address,
 		std::move(streaming_resolver),
 		std::move(streaming_handler),
 		std::move(streaming_preflight),
-		std::move(cors_stamper));
+		std::move(cors_stamper),
+		std::move(base_path));
 	if (!m_impl->listener->Ok()) {
 		m_lastError = "bind to " + bind_address + ":" + std::to_string(port) +
 			      " failed: " + m_impl->listener->Error();

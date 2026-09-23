@@ -87,10 +87,10 @@ TEST(AmuleApiConfig, FreshLoadProducesStreamingDefaults)
 	ASSERT_EQUALS(static_cast<unsigned>(6), cfg.StreamingCfg().max_concurrent_file_responses);
 }
 
-// Hand-writes an amuleapi.conf carrying one `[Streaming]` line, at the 0600 Load() insists on, and
-// reports what the parser made of the file-response cap. The dir is created first so the first-run
-// path cannot get in ahead and write the defaults we are trying to override.
-unsigned LoadedFileResponseCap(const char *tag, const char *streaming_line)
+// Hand-writes an amuleapi.conf with `extra` after the [Server] basics, at the 0600 Load() insists
+// on, and loads it. The dir is created first so the first-run path cannot get in ahead and write
+// the defaults we are trying to override.
+bool LoadHandWrittenConf(const char *tag, const std::string &extra, CAmuleApiConfig &cfg)
 {
 	// Not MakeTmpDir: that one is a member of the DECLARE block and these
 	// helpers live outside it. Same naming scheme, same straggler cleanup.
@@ -105,9 +105,7 @@ unsigned LoadedFileResponseCap(const char *tag, const char *streaming_line)
 	::wxRmdir(dir);
 	::wxMkdir(dir, 0700);
 
-	const std::string conf = std::string("[Server]\nBindAddress=127.0.0.1\nPort=4713\n"
-					     "\n[Streaming]\n") +
-				 streaming_line + "\n";
+	const std::string conf = "[Server]\nBindAddress=127.0.0.1\nPort=4713\n" + extra + "\n";
 	wxFile f(dir + "/amuleapi.conf", wxFile::write);
 	f.Write(conf.c_str(), conf.size());
 	f.Close();
@@ -115,8 +113,14 @@ unsigned LoadedFileResponseCap(const char *tag, const char *streaming_line)
 	::chmod(std::string((dir + "/amuleapi.conf").utf8_str()).c_str(), S_IRUSR | S_IWUSR);
 #endif
 
+	return cfg.Load(dir);
+}
+
+// What the parser made of one `[Streaming]` line's file-response cap.
+unsigned LoadedFileResponseCap(const char *tag, const char *streaming_line)
+{
 	CAmuleApiConfig cfg;
-	if (!cfg.Load(dir)) {
+	if (!LoadHandWrittenConf(tag, std::string("\n[Streaming]\n") + streaming_line, cfg)) {
 		return 0;
 	}
 	return cfg.StreamingCfg().max_concurrent_file_responses;
@@ -391,4 +395,27 @@ TEST(AmuleApiConfig, ConfDefaultsArePopulated)
 	ASSERT_EQUALS(std::string("127.0.0.1"), cfg.EcCfg().host);
 	ASSERT_EQUALS(static_cast<unsigned>(4712), cfg.EcCfg().port);
 	ASSERT_TRUE(!cfg.ServerCfg().allow_cors);
+}
+
+TEST(AmuleApiConfig, BasePathDefaultsToRoot)
+{
+	const wxString dir = MakeTmpDir("base-default");
+	CAmuleApiConfig cfg;
+	ASSERT_TRUE(cfg.Load(dir));
+	ASSERT_EQUALS(std::string(""), cfg.ServerCfg().base_path);
+}
+
+TEST(AmuleApiConfig, BasePathIsNormalized)
+{
+	CAmuleApiConfig cfg;
+	ASSERT_TRUE(LoadHandWrittenConf("base-norm", "BasePath= amule/ ", cfg));
+	ASSERT_EQUALS(std::string("/amule"), cfg.ServerCfg().base_path);
+}
+
+TEST(AmuleApiConfig, InvalidBasePathFailsLoad)
+{
+	// A cookie attribute smuggled in through the prefix must not reach Set-Cookie.
+	CAmuleApiConfig cfg;
+	ASSERT_TRUE(!LoadHandWrittenConf("base-bad", "BasePath=/amule;Domain=evil", cfg));
+	ASSERT_TRUE(cfg.LastError().find("BasePath") != std::string::npos);
 }
