@@ -28,6 +28,7 @@
 #include "Types.h" // uint64 / uint32 / uint8
 #include "MD4Hash.h"
 #include "NetworkAddress.h"
+#include "OtherFunctions.h" // Needed for CFormat, Uint32toStringIP
 #include "PeerAddressing.h"
 
 #include <memory>
@@ -86,20 +87,27 @@ private:
 	std::shared_ptr<State> m_state;
 };
 
-// Only the remote GUI uses the legacy EC address projection.
-#ifdef CLIENT_GUI
-using CChatTarget = uint64;
-inline bool ChatTargetValid(CChatTarget id)
-{
-	return id != 0;
-}
-#else
+// One target type for both builds. The remote GUI decodes it from EC_TAG_CHAT_PEER_HASH or
+// the legacy GUI_ID; everything downstream (CChatSelector, CChatWnd) is shared code that only
+// ever compares CChatTarget values, so unifying the type is what keeps that code build-agnostic.
 using CChatTarget = CChatPeer;
 inline bool ChatTargetValid(const CChatTarget &id)
 {
 	return !id.IsEmpty();
 }
-#endif
+
+// Fallback label for a peer the core sent no nickname for. Deliberately NOT translated: the
+// same label is rendered by the monolithic chat selector, amulegui and amuleapi's /chats, and
+// the API contract fixes it as English. Inline: needed in both GUI_SOURCES (ChatSelector.cpp,
+// amule-remote-gui.cpp) and CORE_SOURCES, and ChatSessionStore.cpp itself is core-only.
+inline wxString ChatPeerFallbackName(const CChatPeer &peer)
+{
+	if (!peer.Hash().IsEmpty()) {
+		return peer.Hash().Encode();
+	}
+	return CFormat(wxT("IP: %s Port: %u")) % Uint32toStringIP(peer.Address().ToIPv4NetworkOrderOrZero()) %
+	       peer.Port();
+}
 
 #include <deque>
 #include <list>

@@ -303,7 +303,13 @@ bool CChatSelector::SendMessage(
 	// it twice, and printing it from the poll is also what keeps the ordering the core sees.
 	CECPacket req(EC_OP_CHAT_SEND);
 	req.AddTag(CECTag(EC_TAG_CHAT, message));
-	req.AddTag(CECTag(EC_TAG_CHAT_CLIENT_ID, ci->m_client_id));
+	if (!ci->m_client_id.Hash().IsEmpty()) {
+		req.AddTag(CECTag(EC_TAG_CHAT_PEER_HASH, ci->m_client_id.Hash()));
+	} else {
+		req.AddTag(CECTag(EC_TAG_CHAT_CLIENT_ID,
+			GUI_ID(ci->m_client_id.Address().ToIPv4NetworkOrderOrZero(),
+				ci->m_client_id.Port())));
+	}
 	theApp->m_connect->SendPacket(&req);
 #else
 	const auto result = theApp->clientlist->SendChatMessage(ci->m_client_id, message);

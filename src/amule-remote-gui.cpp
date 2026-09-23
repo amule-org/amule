@@ -60,6 +60,7 @@
 #include "Friend.h"
 #include "GetTickCount.h" // Needed for GetTickCount64
 #include "GuiEvents.h"
+#include "OtherFunctions.h" // Needed for IP_FROM_GUI_ID / PORT_FROM_GUI_ID
 #ifdef GEOIP_GUI
 #include "IP2Country.h" // Needed for IP2Country
 #endif
@@ -1291,26 +1292,38 @@ void CChatMsgHandlerRem::HandlePacket(const CECPacket *packet)
 	// another client. Only what arrives after we have a cursor is genuinely new.
 	const bool backfill = (m_cursor == 0);
 
-	std::set<uint64> present;
+	// Not a std::set: CChatPeer has no operator<, and the bounded session count (the
+	// core caps it, see CChatSessionStore::MAX_SESSIONS) makes a linear scan cheap enough.
+	std::vector<CChatPeer> present;
 	for (const CECTag &sessionTag : *packet) {
 		if (sessionTag.GetTagName() != EC_TAG_CHAT_SESSION) {
 			continue;
 		}
-		const uint64 gui_id = sessionTag.GetInt();
-		present.insert(gui_id);
+		// A hash identifies the peer regardless of route; a session with none yet is still
+		// only reachable through the legacy GUI_ID, so that becomes its provisional route.
+		CChatPeer peer;
+		if (const CECTag *hashTag = sessionTag.GetTagByName(EC_TAG_CHAT_PEER_HASH)) {
+			peer = CChatPeer(hashTag->GetMD4Data());
+		} else {
+			const uint64 gui_id = sessionTag.GetInt();
+			peer = CChatPeer(CMD4Hash(),
+				CNetworkAddress::FromIPv4NetworkOrderOrAbsent(IP_FROM_GUI_ID(gui_id)),
+				PORT_FROM_GUI_ID(gui_id));
+		}
+		present.push_back(peer);
 
 		wxString name;
 		if (const CECTag *nameTag = sessionTag.GetTagByName(EC_TAG_CHAT_PEER_NAME)) {
 			name = nameTag->GetStringData();
 		}
 		if (name.IsEmpty()) {
-			name = ChatPeerFallbackName(gui_id);
+			name = ChatPeerFallbackName(peer);
 		}
 
 		// Open the tab even when the session has no new messages: that is how a session
 		// started before we connected becomes visible at all. Unfocused, so a session
 		// appearing on its own cannot steal the selection.
-		chatwnd->StartSessionByID(gui_id, name);
+		chatwnd->StartSessionByID(peer, name);
 
 		for (const CECTag &msgTag : sessionTag) {
 			if (msgTag.GetTagName() != EC_TAG_CHAT_MESSAGE) {
@@ -1319,17 +1332,18 @@ void CChatMsgHandlerRem::HandlePacket(const CECPacket *packet)
 			const CECTag *dirTag = msgTag.GetTagByName(EC_TAG_CHAT_DIRECTION);
 			const bool outgoing = dirTag && dirTag->GetInt() != 0;
 			chatwnd->AppendStoredMessage(
-				gui_id, name, msgTag.GetStringData(), outgoing, /*blink=*/!backfill);
+				peer, name, msgTag.GetStringData(), outgoing, /*blink=*/!backfill);
 		}
 	}
 
 	// A session we are tracking that is absent from the reply was closed by another
 	// client, or evicted. Drop the tab without sending a close of our own -- the core has
-	// already forgotten it. Snapshot first: closing a tab mutates the set being iterated.
-	const std::set<uint64> tracked = m_sessions;
-	for (uint64 gui_id : tracked) {
-		if (!present.count(gui_id)) {
-			chatwnd->EndSessionFromCore(gui_id);
+	// already forgotten it. Snapshot first: closing a tab mutates the container being
+	// iterated.
+	const std::vector<CChatPeer> tracked = m_sessions;
+	for (const CChatPeer &peer : tracked) {
+		if (std::find(present.begin(), present.end(), peer) == present.end()) {
+			chatwnd->EndSessionFromCore(peer);
 		}
 	}
 	m_sessions = present;

@@ -4016,13 +4016,16 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 		// conversation it has no transcript for. The polling path is
 		// EC_OP_GET_CHAT_SESSIONS; this exists so opening an old tab does not have to
 		// replay the whole store.
-		const CECTag *idTag = request->GetTagByName(EC_TAG_CHAT_CLIENT_ID);
-		if (!idTag) {
+		const CChatSessionStore::Session *session = nullptr;
+		if (const CECTag *hashTag = request->GetTagByName(EC_TAG_CHAT_PEER_HASH)) {
+			session = theApp->chatsessions->Find(CChatPeer(hashTag->GetMD4Data()));
+		} else if (const CECTag *idTag = request->GetTagByName(EC_TAG_CHAT_CLIENT_ID)) {
+			session = theApp->chatsessions->FindLegacy(idTag->GetInt());
+		} else {
 			response = new CECPacket(EC_OP_FAILED);
 			response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("Missing chat session id")));
 			break;
 		}
-		const CChatSessionStore::Session *session = theApp->chatsessions->FindLegacy(idTag->GetInt());
 		if (!session) {
 			response = new CECPacket(EC_OP_FAILED);
 			response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("No such chat session")));
@@ -4091,8 +4094,11 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 		// messages that were evicted rather than re-asking for them forever.
 		response->AddTag(CECTag(EC_TAG_CHAT_MSG_ID, theApp->chatsessions->LastMsgId()));
 		for (const CChatSessionStore::Session *session : theApp->chatsessions->Sessions()) {
-			// IPv6, absent routes and colliding endpoints have no safe legacy projection.
-			if (theApp->chatsessions->FindLegacy(session->LegacyGuiId()) != session) {
+			// A hash identifies a session unambiguously regardless of its route, so only a
+			// still-provisional session (no hash yet) needs a safe legacy projection to be
+			// listed at all -- IPv6, an absent route or a colliding endpoint has none.
+			if (session->peer.Hash().IsEmpty() &&
+				theApp->chatsessions->FindLegacy(session->LegacyGuiId()) != session) {
 				continue;
 			}
 			// Sessions with nothing new are still listed, with no message children: that is

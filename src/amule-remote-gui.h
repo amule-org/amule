@@ -26,7 +26,7 @@
 #define AMULE_REMOTE_GUI_H
 
 #include <functional>             // std::function for the CSharedFilesRem
-#include <set>                    // std::set for CChatMsgHandlerRem's tracked sessions
+#include <vector>                 // std::vector for CChatMsgHandlerRem's tracked sessions
 				  // Reload(yieldCb) shim -- matches the daemon-side
 				  // signature added in PrefsUnifiedDlg's commit path.
 #include <ec/cpp/RemoteConnect.h> // Needed for CRemoteConnect
@@ -35,6 +35,7 @@
 #include "Preferences.h"
 #include "Statistics.h"
 #include "RLE.h"
+#include "ChatSessionStore.h"       // Needed for CChatPeer
 #include "SearchList.h"             // Needed for CSearchFile
 #include "kademlia/utils/UInt128.h" // Needed for CUInt128
 
@@ -794,7 +795,7 @@ public:
 
 private:
 	uint32 m_cursor = 0;
-	std::set<uint64> m_sessions;
+	std::vector<CChatPeer> m_sessions;
 };
 
 class CStatTreeRem : public CECPacketHandlerBase
