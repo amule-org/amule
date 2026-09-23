@@ -962,7 +962,9 @@ CPreferences::CPreferences()
 
 #ifndef CLIENT_GUI
 	LoadPreferences();
-	ReloadSharedFolders();
+	// Not ReloadSharedFolders(): expanding recursive roots walks their whole trees before
+	// anything is on screen, and the startup scan does it again anyway.
+	LoadSavedSharedFolders();
 
 	// serverlist addresses
 	CTextFile slistfile;
@@ -2284,31 +2286,32 @@ bool LoadDirListFile(const wxString &path, CPreferences::PathList &out)
 	return true;
 }
 
+// The explicit and recursive lists as saved. Migration: an older aMule wrote only
+// shareddir.dat. On first load with this version neither shareddir-explicit.dat nor
+// shareddir-recursive.dat exists. Treat every existing entry in shareddir.dat as explicit
+// (non-recursive). This is the safe default -- the watcher's auto-add-new-subdir behaviour
+// (#591/#606) is gated on recursive ancestry, so existing users keep their current path set
+// but stop silently auto-recursing. They opt into recursion per root via the UI tree
+// right-click.
+void LoadSharedFolderIntents(const wxString &configDir,
+	CPreferences::PathList &explicitList,
+	CPreferences::PathList &recursiveList)
+{
+	const bool haveExplicit = LoadDirListFile(configDir + "shareddir-explicit.dat", explicitList);
+	const bool haveRecursive = LoadDirListFile(configDir + "shareddir-recursive.dat", recursiveList);
+	if (!haveExplicit && !haveRecursive) {
+		LoadDirListFile(configDir + "shareddir.dat", explicitList);
+	}
+}
+
 } // namespace
 
 void CPreferences::ReloadSharedFolders()
 {
 #ifndef CLIENT_GUI
 	shareddir_list.clear();
-	shareddir_explicit_list.clear();
-	shareddir_recursive_list.clear();
-
-	const wxString explicitPath = s_configDir + "shareddir-explicit.dat";
-	const wxString recursivePath = s_configDir + "shareddir-recursive.dat";
 	const wxString unionPath = s_configDir + "shareddir.dat";
-
-	const bool haveExplicit = LoadDirListFile(explicitPath, shareddir_explicit_list);
-	const bool haveRecursive = LoadDirListFile(recursivePath, shareddir_recursive_list);
-
-	// Migration: an older aMule wrote only shareddir.dat. On first load with this version
-	// neither shareddir-explicit.dat nor shareddir-recursive.dat exists. Treat every
-	// existing entry in shareddir.dat as explicit (non-recursive). This is the safe default
-	// -- the watcher's auto-add-new-subdir behaviour (#591/#606) is gated on recursive
-	// ancestry, so existing users keep their current path set but stop silently
-	// auto-recursing. They opt into recursion per root via the UI tree right-click.
-	if (!haveExplicit && !haveRecursive) {
-		LoadDirListFile(unionPath, shareddir_explicit_list);
-	}
+	LoadSharedFolderIntents(s_configDir, shareddir_explicit_list, shareddir_recursive_list);
 
 	// Recursive expansion: for each marked root walk its subtree and collect every existing
 	// directory. This is the *runtime* expansion -- newly-created subdirs of recursive roots
@@ -2413,6 +2416,14 @@ void CPreferences::ReloadSharedFolders()
 	// Persist all three files so a crash mid-session does not leave reconciled state
 	// un-written, and so the union is up-to-date for any external reader.
 	SaveSharedFolders();
+#endif
+}
+
+void CPreferences::LoadSavedSharedFolders()
+{
+#ifndef CLIENT_GUI
+	LoadSharedFolderIntents(s_configDir, shareddir_explicit_list, shareddir_recursive_list);
+	LoadDirListFile(s_configDir + "shareddir.dat", shareddir_list);
 #endif
 }
 

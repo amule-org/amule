@@ -172,6 +172,10 @@ public:
 	// entrypoint editing shareddir.dat directly, then calling Reload over EC) and rewrite
 	// shareddir.dat as the new union.
 	void ReloadSharedFolders();
+	// The three shared-dir files as saved: no expansion, no reconciliation, nothing written.
+	// shareddir.dat holds the union the last expansion saved, so until ReloadSharedFolders()
+	// runs, anyone asking for the shared folders gets that rather than an empty list.
+	void LoadSavedSharedFolders();
 	// Persist all three shared-dir files: the two canonical sources of truth plus shareddir.dat,
 	// regenerated as the union for older binaries and scripts that read it. Called by
 	// CSharedDirWatcher after it auto-appends a new subdir, so the change survives a restart
