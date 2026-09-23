@@ -15,8 +15,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-23 09:04+0100\n"
-"PO-Revision-Date: 2026-09-23 09:54+0000\n"
+"POT-Creation-Date: 2026-09-23 12:47+0100\n"
+"PO-Revision-Date: 2026-09-23 14:38+0000\n"
 "Last-Translator: Marcelo Jimenez <mroberto@users.sourceforge.com>\n"
 "Language-Team: Português (Brasileiro) <pt@li.org>\n"
 "Language: pt_BR\n"
@@ -4793,11 +4793,13 @@ msgid "Follow symbolic links in shared folders"
 msgstr "Segue links simbólicos em pastas compartilhadas"
 
 #: src/muuli_wdr.cpp
-msgid "Exclude files matching:"
+#, fuzzy
+msgid "Exclude files and folders matching:"
 msgstr "Exclui arquivos correspondendo a:"
 
 #: src/muuli_wdr.cpp
-msgid "Files whose name matches are not shared. Matching is case-insensitive. As wildcards: patterns separated by '|', e.g. .DS_Store|Thumbs.db|*.tmp, where '*' matches any run of characters and '?' a single one. Tick the box below to write one regular expression instead."
+#, fuzzy
+msgid "Files and folders whose name matches are not shared. A matching folder inside a share that includes its subfolders is skipped with everything in it; a folder you share yourself is always shared. Matching is case-insensitive. As wildcards: patterns separated by '|', e.g. .DS_Store|Thumbs.db|*.tmp, where '*' matches any run of characters and '?' a single one. Tick the box below to write one regular expression instead."
 msgstr "Arquivos cujos nomes casarem não são compartilhados. O casamento é sensível à letras maiúsculas/minúsculas. Como caracteres coringas: padrões separados por '|', e.g. .DS_Store|Thumbs.db|*.tmp, onde '*' casa com qualquer sequência de caracteres e '?' casa com um único. Marque a caixa abaixo para ao invés disso escrever uma expressão regular."
 
 #: src/muuli_wdr.cpp
@@ -4809,7 +4811,8 @@ msgid "When set, the whole field is one regular expression: '|' is alternation, 
 msgstr "Quando ligado, o campo inteiro é uma expressão regular: '|' é alternativa, '*' e '?' têm o seu significado em expressões regulares ao invés do de caracteres coringa). Quando desligado, é uma lista de caracteres coringa separados por '|'."
 
 #: src/muuli_wdr.cpp
-msgid "Show how many of the files in your shared folders the current pattern would exclude, counted over the last scan."
+#, fuzzy
+msgid "Show how many of the files and folders in your shared folders the current pattern would exclude, counted over the last scan."
 msgstr "Mostra quantos arquivos em sua pasta de arquivos compartilhados o padrão atual excluiria, contados sobre a última varredura."
 
 #: src/muuli_wdr.cpp
@@ -6261,6 +6264,14 @@ msgid "No password set."
 msgstr "Nenhuma senha configurada."
 
 #: src/PrefsUnifiedDlg.cpp
+msgid "The shared-file exclusion pattern is not a valid regular expression. The filter has been left disabled."
+msgstr "Este padrão de exclusão de arquivos compartilhados não é uma expressão regular válida. O filtro ficou desabilitado."
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "Invalid regular expression"
+msgstr "Expressão regular inválida"
+
+#: src/PrefsUnifiedDlg.cpp
 msgid "Guest access needs a password. Type one in the guest password field, or untick Enable guest access."
 msgstr "O acesso de convidado requer uma senha. Digite uma no campo de senha do convidado, ou desmarque \"Habilitar acesso de convidado\"."
 
@@ -6340,14 +6351,6 @@ msgstr "-Diretório temporário alterado.\n"
 #: src/PrefsUnifiedDlg.cpp
 msgid "- ED2K network enabled.\n"
 msgstr "- Rede ED2K conectada.\n"
-
-#: src/PrefsUnifiedDlg.cpp
-msgid "The shared-file exclusion pattern is not a valid regular expression. The filter has been left disabled."
-msgstr "Este padrão de exclusão de arquivos compartilhados não é uma expressão regular válida. O filtro ficou desabilitado."
-
-#: src/PrefsUnifiedDlg.cpp
-msgid "Invalid regular expression"
-msgstr "Expressão regular inválida"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
@@ -6472,6 +6475,18 @@ msgid "Would exclude %u of %u file in your shared folders"
 msgid_plural "Would exclude %u of %u files in your shared folders"
 msgstr[0] "Excluiria %u de %u arquivo em suas pastas compartilhadas"
 msgstr[1] "Excluiria %u de %u arquivos em suas pastas compartilhadas"
+
+#: src/PrefsUnifiedDlg.cpp
+#, fuzzy, c-format
+msgid "Would also exclude %u or more folders, with everything in them"
+msgstr "Excluiria %u ou mais dos arquivo em suas pastas compartilhadas"
+
+#: src/PrefsUnifiedDlg.cpp
+#, c-format
+msgid "Would also exclude %u folder, with everything in it"
+msgid_plural "Would also exclude %u folders, with everything in them"
+msgstr[0] ""
+msgstr[1] ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Browse for videoplayer"

@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-23 09:04+0100\n"
-"PO-Revision-Date: 2026-09-23 09:46+0000\n"
+"POT-Creation-Date: 2026-09-23 12:47+0100\n"
+"PO-Revision-Date: 2026-09-23 14:34+0000\n"
 "Last-Translator: Dévai Tamás <gonosztopi@amule.org>\n"
 "Language-Team: Hungarian <hu@li.org>\n"
 "Language: hu\n"
@@ -4793,11 +4793,11 @@ msgid "Follow symbolic links in shared folders"
 msgstr "Szimbólikus hivatkozások követése megosztott könyvtárakban"
 
 #: src/muuli_wdr.cpp
-msgid "Exclude files matching:"
+msgid "Exclude files and folders matching:"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Files whose name matches are not shared. Matching is case-insensitive. As wildcards: patterns separated by '|', e.g. .DS_Store|Thumbs.db|*.tmp, where '*' matches any run of characters and '?' a single one. Tick the box below to write one regular expression instead."
+msgid "Files and folders whose name matches are not shared. A matching folder inside a share that includes its subfolders is skipped with everything in it; a folder you share yourself is always shared. Matching is case-insensitive. As wildcards: patterns separated by '|', e.g. .DS_Store|Thumbs.db|*.tmp, where '*' matches any run of characters and '?' a single one. Tick the box below to write one regular expression instead."
 msgstr ""
 
 #: src/muuli_wdr.cpp
@@ -4809,7 +4809,7 @@ msgid "When set, the whole field is one regular expression: '|' is alternation, 
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Show how many of the files in your shared folders the current pattern would exclude, counted over the last scan."
+msgid "Show how many of the files and folders in your shared folders the current pattern would exclude, counted over the last scan."
 msgstr ""
 
 #: src/muuli_wdr.cpp
@@ -6281,6 +6281,15 @@ msgid "No password set."
 msgstr "Jelszó ellenőrzése\n"
 
 #: src/PrefsUnifiedDlg.cpp
+msgid "The shared-file exclusion pattern is not a valid regular expression. The filter has been left disabled."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
+#, fuzzy
+msgid "Invalid regular expression"
+msgstr "Érvénytelen protokoll verzió."
+
+#: src/PrefsUnifiedDlg.cpp
 msgid "Guest access needs a password. Type one in the guest password field, or untick Enable guest access."
 msgstr ""
 
@@ -6362,15 +6371,6 @@ msgstr "- Ideiglenes mappa megváltozott.\n"
 #: src/PrefsUnifiedDlg.cpp
 msgid "- ED2K network enabled.\n"
 msgstr "- ED2K hálózat engedélyezve.\n"
-
-#: src/PrefsUnifiedDlg.cpp
-msgid "The shared-file exclusion pattern is not a valid regular expression. The filter has been left disabled."
-msgstr ""
-
-#: src/PrefsUnifiedDlg.cpp
-#, fuzzy
-msgid "Invalid regular expression"
-msgstr "Érvénytelen protokoll verzió."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
@@ -6497,6 +6497,17 @@ msgstr "%i ismert megosztott fájlt találtam"
 msgid "Would exclude %u of %u file in your shared folders"
 msgid_plural "Would exclude %u of %u files in your shared folders"
 msgstr[0] "%i ismert megosztott fájlt találtam"
+
+#: src/PrefsUnifiedDlg.cpp
+#, fuzzy, c-format
+msgid "Would also exclude %u or more folders, with everything in them"
+msgstr "%i ismert megosztott fájlt találtam"
+
+#: src/PrefsUnifiedDlg.cpp
+#, c-format
+msgid "Would also exclude %u folder, with everything in it"
+msgid_plural "Would also exclude %u folders, with everything in them"
+msgstr[0] ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Browse for videoplayer"

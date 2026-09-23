@@ -322,7 +322,89 @@ TEST(ChatSessionStore, RouteChangesFromIPv4ToIPv6WithoutChangingIdentity)
 	ASSERT_TRUE(s->address == IPv6Route());
 	ASSERT_EQUALS(static_cast<uint16>(4663), s->port);
 	ASSERT_EQUALS(static_cast<uint64>(0), s->LegacyGuiId());
-	ASSERT_TRUE(store.FindLegacy(legacy) == nullptr);
+	// A legacy client keeps the IPv4 conversation it already holds.
+	ASSERT_TRUE(store.FindLegacy(legacy) == s);
+}
+
+TEST(ChatSessionStore, RouteChangeKeepsOneLegacyViewPerRoute)
+{
+	// 3.1.0 keyed conversations by route, so a peer that moved had two. A legacy client
+	// must still see both, each holding only its own messages.
+	CChatSessionStore store;
+	const auto ip = CNetworkAddress::FromIPv4NetworkOrder(0x0100000Au);
+	const uint64 routeA = GUI_ID(0x0100000Au, 4662);
+	const uint64 routeB = GUI_ID(0x0100000Au, 4663);
+	store.AddIncoming(Peer(1), "alice", "on a", ip, 4662);
+	store.AddIncoming(Peer(1), "alice", "on b", ip, 4663);
+	const auto *s = store.Find(Peer(1));
+	ASSERT_EQUALS(static_cast<size_t>(1), store.SessionCount());
+	ASSERT_EQUALS(routeB, s->LegacyGuiId());
+
+	const auto views = store.LegacySessions();
+	ASSERT_EQUALS(static_cast<size_t>(2), views.size());
+	ASSERT_EQUALS(routeB, views[0].gui_id);
+	ASSERT_EQUALS(routeA, views[1].gui_id);
+	ASSERT_TRUE(views[0].session == s && views[1].session == s);
+	ASSERT_TRUE(store.FindLegacy(routeA) == s);
+	ASSERT_TRUE(store.FindLegacy(routeB) == s);
+
+	// A reply written in the old conversation stays there, although it is delivered on B.
+	store.AddOutgoing(Peer(1), "reply in a", ip, 4663, routeA);
+	ASSERT_EQUALS(routeA, s->messages.back().legacy_route);
+	ASSERT_EQUALS(routeB, s->LegacyGuiId());
+	ASSERT_EQUALS(routeA, s->LegacyRoutes().front());
+}
+
+TEST(ChatSessionStore, LegacyCloseDropsOneRouteUntilNothingIsLeft)
+{
+	CChatSessionStore store;
+	const auto ip = CNetworkAddress::FromIPv4NetworkOrder(0x0100000Au);
+	const uint64 routeA = GUI_ID(0x0100000Au, 4662);
+	const uint64 routeB = GUI_ID(0x0100000Au, 4663);
+	store.AddIncoming(Peer(1), "alice", "on a", ip, 4662);
+	store.AddIncoming(Peer(1), "alice", "on b", ip, 4663);
+
+	CChatPeer closed;
+	ASSERT_TRUE(store.CloseLegacy(routeA, closed) == CChatSessionStore::LegacyClose::View);
+	ASSERT_TRUE(store.FindLegacy(routeA) == nullptr);
+	ASSERT_TRUE(store.FindLegacy(routeB) == store.Find(Peer(1)));
+	ASSERT_EQUALS(static_cast<size_t>(1), store.Find(Peer(1))->messages.size());
+
+	ASSERT_TRUE(store.CloseLegacy(routeB, closed) == CChatSessionStore::LegacyClose::Session);
+	ASSERT_TRUE(closed == CChatPeer(Peer(1)));
+	ASSERT_EQUALS(static_cast<size_t>(0), store.SessionCount());
+	ASSERT_TRUE(store.CloseLegacy(routeB, closed) == CChatSessionStore::LegacyClose::None);
+}
+
+TEST(ChatSessionStore, LegacyRouteClaimedByTwoPeersIsNotProjected)
+{
+	// Peer 1 left route A for B, then peer 2 appeared on A. EC cannot tell the two A
+	// conversations apart, so neither is listed or addressable under A.
+	CChatSessionStore store;
+	const auto ip = CNetworkAddress::FromIPv4NetworkOrder(0x0100000Au);
+	const uint64 routeA = GUI_ID(0x0100000Au, 4662);
+	const uint64 routeB = GUI_ID(0x0100000Au, 4663);
+	store.AddIncoming(Peer(1), "alice", "on a", ip, 4662);
+	store.AddIncoming(Peer(1), "alice", "on b", ip, 4663);
+	store.AddIncoming(Peer(2), "bob", "also on a", ip, 4662);
+
+	bool ambiguous = false;
+	ASSERT_TRUE(store.FindLegacy(routeA, &ambiguous) == nullptr);
+	ASSERT_TRUE(ambiguous);
+	const auto views = store.LegacySessions();
+	ASSERT_EQUALS(static_cast<size_t>(1), views.size());
+	ASSERT_EQUALS(routeB, views[0].gui_id);
+}
+
+TEST(ChatSessionStore, OpenedSessionWithoutMessagesIsListedUnderItsRoute)
+{
+	CChatSessionStore store;
+	const auto ip = CNetworkAddress::FromIPv4NetworkOrder(0x0100000Au);
+	const CChatPeer peer = store.Open(CMD4Hash(), ip, 4662, wxEmptyString);
+	const auto views = store.LegacySessions();
+	ASSERT_EQUALS(static_cast<size_t>(1), views.size());
+	ASSERT_EQUALS(GUI_ID(0x0100000Au, 4662), views[0].gui_id);
+	ASSERT_TRUE(views[0].session == store.Find(peer));
 }
 
 TEST(ChatSessionStore, ReplacementClientWithSameHashContinuesTranscript)

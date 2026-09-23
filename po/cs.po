@@ -9,8 +9,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-23 09:04+0100\n"
-"PO-Revision-Date: 2026-09-23 09:32+0000\n"
+"POT-Creation-Date: 2026-09-23 12:47+0100\n"
+"PO-Revision-Date: 2026-09-23 14:29+0000\n"
 "Last-Translator: David Watzke <david@watzke.cz>\n"
 "Language-Team: cs <cs@li.org>\n"
 "Language: cs\n"
@@ -363,24 +363,21 @@ msgid "WARNING"
 msgstr "VAROVÁNÍ"
 
 #: src/amule.cpp
-#, fuzzy
 msgid "Loading known files"
-msgstr "Načítání dočasných souborů"
+msgstr "Načítání známých souborů"
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Loading known files (%u of %u)"
-msgstr "Načítání dočasných souborů (%u z %u)"
+msgstr "Načítání známých souborů (%u z %u)"
 
 #: src/amule.cpp
-#, fuzzy
 msgid "Loading credits"
-msgstr "Načítání sdílených souborů"
+msgstr "Načítání kreditů"
 
 #: src/amule.cpp
-#, fuzzy
 msgid "Loading IP filter"
-msgstr "Načítání dočasných souborů"
+msgstr "Načítání IP filtru"
 
 #: src/amule.cpp
 msgid "Initializing network"
@@ -1241,9 +1238,9 @@ msgid "Failed to create incoming dir for category. Please specify a valid path!"
 msgstr "Nemohu vytvořit příchozí adresář pro kategorii. Zadejte prosím platnou cestu!"
 
 #: src/ChatSelector.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Chat-Session Started: %s - %s %s"
-msgstr "Zahájeno sezení chatu: %s (%s:%u) - %s %s"
+msgstr "Zahájeno sezení chatu: %s - %s %s"
 
 #: src/ChatSelector.cpp
 msgid "*** Connected to Client ***"
@@ -1251,7 +1248,7 @@ msgstr "*** Připojen ke klientovi ***"
 
 #: src/ChatSelector.cpp
 msgid "*** Chat unavailable: peer identity or route is not available ***"
-msgstr ""
+msgstr "*** Chat je nedostupný: není dostupná identita peera nebo cesta k němu ***"
 
 #: src/ChatSelector.cpp
 msgid "*** Connecting to Client ***"
@@ -1311,12 +1308,11 @@ msgstr "Poslat zprávu"
 
 #: src/ClientContextActions.cpp
 msgid "Chat is unavailable until the peer supplies a valid identity."
-msgstr ""
+msgstr "Chat je nedostupný, dokud peer neposkytne platnou identitu."
 
 #: src/ClientContextActions.cpp
-#, fuzzy
 msgid "Chat unavailable"
-msgstr "Nedostupný"
+msgstr "Chat je nedostupný"
 
 #: src/ClientContextActions.cpp
 msgid "Send message to user"
@@ -2372,7 +2368,7 @@ msgstr "Neznámý cíl chatu"
 
 #: src/ExternalConn.cpp
 msgid "Chat unavailable: peer identity or route is not available"
-msgstr ""
+msgstr "Chat je nedostupný: není dostupná identita peera nebo cesta k němu"
 
 #: src/ExternalConn.cpp
 msgid "Kad is disabled in preferences."
@@ -4812,11 +4808,12 @@ msgid "Follow symbolic links in shared folders"
 msgstr "Sledovat symbolické odkazy ve sdílených složkách"
 
 #: src/muuli_wdr.cpp
-msgid "Exclude files matching:"
+#, fuzzy
+msgid "Exclude files and folders matching:"
 msgstr "Vyloučit soubory odpovídající:"
 
 #: src/muuli_wdr.cpp
-msgid "Files whose name matches are not shared. Matching is case-insensitive. As wildcards: patterns separated by '|', e.g. .DS_Store|Thumbs.db|*.tmp, where '*' matches any run of characters and '?' a single one. Tick the box below to write one regular expression instead."
+msgid "Files and folders whose name matches are not shared. A matching folder inside a share that includes its subfolders is skipped with everything in it; a folder you share yourself is always shared. Matching is case-insensitive. As wildcards: patterns separated by '|', e.g. .DS_Store|Thumbs.db|*.tmp, where '*' matches any run of characters and '?' a single one. Tick the box below to write one regular expression instead."
 msgstr ""
 
 #: src/muuli_wdr.cpp
@@ -4824,13 +4821,12 @@ msgid "Patterns are regular expressions"
 msgstr "Vzory jsou regulárními výrazy"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "When set, the whole field is one regular expression: '|' is alternation, and '*' and '?' take their regular-expression meaning rather than the wildcard one. When unset, it is a list of '|'-separated wildcards."
-msgstr "Je-li nastaveno, celé pole je jeden regulární výraz ('|' znamená alternaci). Není-li nastaveno, jedná se o seznam zástupných vzorů oddělených znakem '|'."
+msgstr "Je-li nastaveno, celé pole je jedním regulárním výrazem: '|' znamená alternaci, '*' a '?' nejsou použity jako zástupné znaky ale mají svůj běžný význam regulárního výrazu. Pokud není nastaveno jako reg. výraz, tak jde o seznam zástupných vzorů oddělených '|'."
 
 #: src/muuli_wdr.cpp
 #, fuzzy
-msgid "Show how many of the files in your shared folders the current pattern would exclude, counted over the last scan."
+msgid "Show how many of the files and folders in your shared folders the current pattern would exclude, counted over the last scan."
 msgstr "Zobrazit, kolik sdílených souborů by aktuální vzor vyloučil."
 
 #: src/muuli_wdr.cpp
@@ -5767,7 +5763,7 @@ msgstr "dní"
 #: src/OtherFunctions.cpp
 #, c-format
 msgid "%u kbps"
-msgstr ""
+msgstr "%u kbps"
 
 #. TRANSLATORS:
 #. Punctuation for a "label: value" pair. %s is the already-translated
@@ -6286,6 +6282,14 @@ msgid "No password set."
 msgstr "Heslo není nastaveno."
 
 #: src/PrefsUnifiedDlg.cpp
+msgid "The shared-file exclusion pattern is not a valid regular expression. The filter has been left disabled."
+msgstr "Vzor pro vyloučení sdílených souborů není platný regulární výraz. Filtr zůstal zakázán."
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "Invalid regular expression"
+msgstr "Neplatný regulární výraz"
+
+#: src/PrefsUnifiedDlg.cpp
 msgid "Guest access needs a password. Type one in the guest password field, or untick Enable guest access."
 msgstr "Přístup pro hosty vyžaduje heslo. Zadejte jej do pole heslo hosta, nebo zrušte zaškrtnutí volby Povolit přístup pro hosty."
 
@@ -6365,14 +6369,6 @@ msgstr "- Dočasná složka změněna.\n"
 #: src/PrefsUnifiedDlg.cpp
 msgid "- ED2K network enabled.\n"
 msgstr "- Síť eD2k povolena.\n"
-
-#: src/PrefsUnifiedDlg.cpp
-msgid "The shared-file exclusion pattern is not a valid regular expression. The filter has been left disabled."
-msgstr "Vzor pro vyloučení sdílených souborů není platný regulární výraz. Filtr zůstal zakázán."
-
-#: src/PrefsUnifiedDlg.cpp
-msgid "Invalid regular expression"
-msgstr "Neplatný regulární výraz"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
@@ -6487,17 +6483,30 @@ msgid "Choose a folder for %s"
 msgstr "Zvolte složku pro %s"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Would exclude %u or more of the files in your shared folders"
-msgstr "Bylo by vyloučeno %u z %u sdíleného souboru"
+msgstr "Vyloučí %u nebo více souborů ve vašich sdílených složkách"
+
+#: src/PrefsUnifiedDlg.cpp
+#, c-format
+msgid "Would exclude %u of %u file in your shared folders"
+msgid_plural "Would exclude %u of %u files in your shared folders"
+msgstr[0] "Vyloučí %u z %u souboru ve vašich sdílených složkách"
+msgstr[1] "Vyloučí %u z %u souborů ve vašich sdílených složkách"
+msgstr[2] "Vyloučí %u z %u souborů ve vašich sdílených složkách"
 
 #: src/PrefsUnifiedDlg.cpp
 #, fuzzy, c-format
-msgid "Would exclude %u of %u file in your shared folders"
-msgid_plural "Would exclude %u of %u files in your shared folders"
-msgstr[0] "Bylo by vyloučeno %u z %u sdíleného souboru"
-msgstr[1] "Bylo by vyloučeno %u z %u sdílených souborů"
-msgstr[2] "Bylo by vyloučeno %u z %u sdílených souborů"
+msgid "Would also exclude %u or more folders, with everything in them"
+msgstr "Bylo by vyloučeno %u z %u sdíleného souboru"
+
+#: src/PrefsUnifiedDlg.cpp
+#, c-format
+msgid "Would also exclude %u folder, with everything in it"
+msgid_plural "Would also exclude %u folders, with everything in them"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Browse for videoplayer"
@@ -7498,7 +7507,7 @@ msgstr "Uživatelské jméno"
 
 #: src/SharedFilePeersListCtrl.cpp
 msgid "Parts on Peer"
-msgstr "Částí na peera"
+msgstr "Části u peera"
 
 #: src/SharedFilePeersListCtrl.cpp
 msgid "Upload Status"

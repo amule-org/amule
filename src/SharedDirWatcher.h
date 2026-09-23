@@ -25,10 +25,11 @@
 #include <unordered_map>
 #include <vector>
 
+#include <common/Path.h>
+
 #include "Types.h"
 
 class CSharedFileList;
-class CPath;
 
 // Watches every directory in CPreferences::shareddir_list for file/dir creation, deletion, rename
 // and modification, and triggers a debounced CSharedFileList::Reload() so newly-added files become
@@ -107,6 +108,8 @@ private:
 	// Is `path` in the runtime shared set? Distinguishes a dir event from a
 	// file event once the path is gone from disk.
 	bool IsInSharedSet(const wxString &path) const;
+	// Is the file at `filePath` inside an excluded folder of a recursive share?
+	bool IsInExcludedFolder(const wxString &filePath) const;
 
 	// Closes the inotify/kqueue race window inside RegisterNewSubdirectory: between the kernel
 	// mkdir and our wxFileSystemWatcher::Add(), anything created inside the new directory fires
@@ -177,6 +180,8 @@ private:
 	ResyncReason m_resyncReason = ResyncNone;
 	//! Subdirectory count for the ResyncColdDiscovery message.
 	unsigned m_coldDiscoveredDirs = 0;
+	// macOS: recursive roots whose symlink-resolved form differs, as FSEvents reports them.
+	std::vector<CPath> m_resolvedRecursiveRoots;
 #ifdef __APPLE__
 	wxTimer m_macPumpTimer;
 #endif

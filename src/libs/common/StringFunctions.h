@@ -256,6 +256,13 @@ int FuzzyStrCmp(const wxString &a, const wxString &b);
  */
 int FuzzyStrCaseCmp(const wxString &a, const wxString &b);
 
+/**
+ * Whether text contains any of the comma-separated keywords, ignoring case and
+ * the blanks around each keyword. Empty keywords are skipped: every string
+ * contains "", so a stray comma would otherwise match everything.
+ */
+bool ContainsAnyKeyword(const wxString &text, const wxString &keywords);
+
 class CSimpleTokenizer
 {
 public:

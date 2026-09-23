@@ -34,7 +34,8 @@
 
 #include <common/StringFunctions.h>
 #include <common/FileFunctions.h>
-#include "amule.h" // Needed for theApp
+#include "amule.h"       // Needed for theApp
+#include "Preferences.h" // Needed for thePrefs::HasExcludedFolderBelow
 
 wxBEGIN_EVENT_TABLE(CDirectoryTreeCtrl, wxTreeCtrl)
 	EVT_TREE_ITEM_RIGHT_CLICK(wxID_ANY, CDirectoryTreeCtrl::OnRButtonDown)
@@ -592,9 +593,10 @@ bool CDirectoryTreeCtrl::IsRecursiveShare(const CPath &path)
 
 bool CDirectoryTreeCtrl::IsInsideRecursiveShare(const CPath &path)
 {
-	// True iff `path` is a strict descendant of any recursive-share root. Used by AddChildItem
-	// to bold subtree items when the tree is expanded long after the right-click that set the
-	// intent.
+	// True iff `path` is a strict descendant of any recursive-share root, through no excluded
+	// folder. Used by AddChildItem to bold subtree items when the tree is expanded long after
+	// the right-click that set the intent. An excluded folder is left clickable, so it can
+	// still be shared by hand.
 	if (m_lstSharedRecursive.empty() || !path.IsOk()) {
 		return false;
 	}
@@ -604,7 +606,8 @@ bool CDirectoryTreeCtrl::IsInsideRecursiveShare(const CPath &path)
 		const wxString rootKey = it->first;
 		if (key.length() > rootKey.length() && key.StartsWith(rootKey) &&
 			(rootKey.empty() || rootKey.Last() == wxFileName::GetPathSeparator() ||
-				key[rootKey.length()] == wxFileName::GetPathSeparator())) {
+				key[rootKey.length()] == wxFileName::GetPathSeparator()) &&
+			!thePrefs::HasExcludedFolderBelow(it->second, path)) {
 			return true;
 		}
 	}

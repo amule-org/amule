@@ -239,7 +239,9 @@ public:
 		Queued,
 		Sent
 	};
-	ChatSendResult SendChatMessage(const CChatPeer &peer, const wxString &message);
+	// `legacyRoute`: see CChatSessionStore::AddOutgoing().
+	ChatSendResult SendChatMessage(
+		const CChatPeer &peer, const wxString &message, uint64 legacyRoute = 0);
 	CUpDownClient *FindChatClient(const CChatPeer &peer) const;
 	CChatPeer ResolveLegacyChatPeer(uint64 gui_id) const;
 

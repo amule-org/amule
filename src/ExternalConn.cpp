@@ -1555,11 +1555,22 @@ uint32 ChatCursorFrom(const CECPacket *request)
 // that is how a late-connecting client learns it exists. `peerHashCapable` is this
 // connection's EC_TAG_CAN_CHAT_PEER_HASH echo: a client that predates the hash tag
 // would misread it, or a duplicate GUI_ID sharing one value, as one session.
-CECTag EncodeChatSession(const CChatSessionStore::Session &session, uint32 cursor, bool peerHashCapable)
+// A non-zero `legacyView` encodes only what a legacy client sees under that GUI_ID.
+CECTag EncodeChatSession(
+	const CChatSessionStore::Session &session, uint32 cursor, bool peerHashCapable, uint64 legacyView = 0)
 {
-	CECTag tag(EC_TAG_CHAT_SESSION, session.LegacyGuiId());
+	const auto inView = [legacyView](const CChatSessionStore::Message &msg) {
+		return !legacyView || msg.legacy_route == legacyView;
+	};
+	uint32 lastMsgId = 0;
+	for (const CChatSessionStore::Message &msg : session.messages) {
+		if (inView(msg)) {
+			lastMsgId = msg.id;
+		}
+	}
+	CECTag tag(EC_TAG_CHAT_SESSION, legacyView ? legacyView : session.LegacyGuiId());
 	tag.AddTag(CECTag(EC_TAG_CHAT_PEER_NAME, session.name));
-	tag.AddTag(CECTag(EC_TAG_CHAT_MSG_ID, session.LastMsgId()));
+	tag.AddTag(CECTag(EC_TAG_CHAT_MSG_ID, lastMsgId));
 	// Omitted while the peer is still provisional: a route alone is not an identity a
 	// client should address by, only LegacyGuiId() can reach it.
 	if (peerHashCapable && !session.peer.Hash().IsEmpty()) {
@@ -1568,8 +1579,12 @@ CECTag EncodeChatSession(const CChatSessionStore::Session &session, uint32 curso
 
 	// Link the live peer and the friend entry when they exist, so a client can join
 	// against its own /clients and /friends views without a lookup of its own. Both are
-	// omitted when absent rather than sent as 0.
-	if (const CUpDownClient *client = theApp->clientlist->FindChatClient(session.peer)) {
+	// omitted when absent rather than sent as 0. A route the peer has left keeps its
+	// transcript but not the live link.
+	const bool currentRoute = !legacyView || legacyView == session.LegacyGuiId();
+	const CUpDownClient *client =
+		currentRoute ? theApp->clientlist->FindChatClient(session.peer) : nullptr;
+	if (client) {
 		tag.AddTag(CECTag(EC_TAG_CLIENT, client->ECID()));
 		// Sent whenever the client is, so "we are talking to a peer that is actually
 		// reachable" is answerable without inferring it from the ECID being present --
@@ -1582,7 +1597,7 @@ CECTag EncodeChatSession(const CChatSessionStore::Session &session, uint32 curso
 	}
 
 	for (const CChatSessionStore::Message &msg : session.messages) {
-		if (msg.id <= cursor) {
+		if (msg.id <= cursor || !inView(msg)) {
 			continue;
 		}
 		CECTag msgTag(EC_TAG_CHAT_MESSAGE, msg.text);
@@ -4089,7 +4104,12 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 			response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("Missing chat session id")));
 			break;
 		}
-		const CChatSessionStore::Session *session = ResolveChatSessionTarget(request);
+		// A legacy client reads the conversation it holds under that GUI_ID, not the
+		// peer's whole transcript.
+		const uint64 legacyView = m_chatPeerHashActive ? 0 : ChatTargetGuiId(request);
+		const CChatSessionStore::Session *session =
+			legacyView ? theApp->chatsessions->FindLegacy(legacyView)
+				   : ResolveChatSessionTarget(request);
 		if (!session) {
 			response = new CECPacket(EC_OP_FAILED);
 			response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("No such chat session")));
@@ -4097,7 +4117,8 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 		}
 		response = new CECPacket(EC_OP_CHAT_MESSAGES);
 		response->AddTag(CECTag(EC_TAG_CHAT_MSG_ID, theApp->chatsessions->LastMsgId()));
-		response->AddTag(EncodeChatSession(*session, ChatCursorFrom(request), m_chatPeerHashActive));
+		response->AddTag(EncodeChatSession(
+			*session, ChatCursorFrom(request), m_chatPeerHashActive, legacyView));
 		break;
 	}
 	case EC_OP_REFRESH_MEDIA_METADATA: {
@@ -4157,6 +4178,15 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 		// Top-level cursor even when nothing came back, so a client can advance past
 		// messages that were evicted rather than re-asking for them forever.
 		response->AddTag(CECTag(EC_TAG_CHAT_MSG_ID, theApp->chatsessions->LastMsgId()));
+		if (!m_chatPeerHashActive) {
+			// Keyed by GUI_ID, as 3.1.0 did: one conversation per route, so a peer that
+			// changes route keeps its old conversation and gets a new one.
+			for (const auto &view : theApp->chatsessions->LegacySessions()) {
+				response->AddTag(
+					EncodeChatSession(*view.session, cursor, false, view.gui_id));
+			}
+			break;
+		}
 		for (const CChatSessionStore::Session *session : theApp->chatsessions->Sessions()) {
 			// A hash identifies a session unambiguously regardless of its route, so it may
 			// skip the safe-legacy-projection check below -- but only for a connection
@@ -4188,7 +4218,10 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 			response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("Unknown chat target")));
 			break;
 		}
-		const auto result = theApp->clientlist->SendChatMessage(peer, text);
+		// A legacy client files the message under the conversation it wrote in, even when
+		// the peer has since moved to another route.
+		const uint64 legacyRoute = m_chatPeerHashActive ? 0 : ChatTargetGuiId(request);
+		const auto result = theApp->clientlist->SendChatMessage(peer, text, legacyRoute);
 		if (result == CClientList::ChatSendResult::Unavailable) {
 			response = new CECPacket(EC_OP_FAILED);
 			response->AddTag(CECTag(EC_TAG_STRING,
@@ -4200,8 +4233,11 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 		// The session now holds the route the send just resolved (freshly dialled or
 		// already known), so its projection is current even for a peer sent by hash.
 		const auto *sentSession = theApp->chatsessions->Find(peer);
-		response->AddTag(
-			CECTag(EC_TAG_CHAT_CLIENT_ID, sentSession ? sentSession->LegacyGuiId() : uint64(0)));
+		uint64 replyId = legacyRoute;
+		if (!replyId && sentSession) {
+			replyId = sentSession->LegacyGuiId();
+		}
+		response->AddTag(CECTag(EC_TAG_CHAT_CLIENT_ID, replyId));
 		if (m_chatPeerHashActive && !peer.Hash().IsEmpty()) {
 			response->AddTag(CECTag(EC_TAG_CHAT_PEER_HASH, peer.Hash()));
 		}
@@ -4215,14 +4251,30 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 			response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("Missing chat session id")));
 			break;
 		}
-		const CChatSessionStore::Session *session = ResolveChatSessionTarget(request);
-		if (!session) {
-			response = new CECPacket(EC_OP_FAILED);
-			response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("No such chat session")));
-			break;
+		CChatPeer peer;
+		if (const uint64 legacyView = m_chatPeerHashActive ? 0 : ChatTargetGuiId(request)) {
+			// A legacy client closes the conversation it holds under that GUI_ID. The
+			// peer's session survives while other routes still hold messages.
+			const auto closed = theApp->chatsessions->CloseLegacy(legacyView, peer);
+			if (closed == CChatSessionStore::LegacyClose::None) {
+				response = new CECPacket(EC_OP_FAILED);
+				response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("No such chat session")));
+				break;
+			}
+			if (closed == CChatSessionStore::LegacyClose::View) {
+				response = new CECPacket(EC_OP_NOOP);
+				break;
+			}
+		} else {
+			const CChatSessionStore::Session *session = ResolveChatSessionTarget(request);
+			if (!session) {
+				response = new CECPacket(EC_OP_FAILED);
+				response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("No such chat session")));
+				break;
+			}
+			peer = session->peer;
+			theApp->chatsessions->CloseSession(peer);
 		}
-		const CChatPeer peer = session->peer;
-		theApp->chatsessions->CloseSession(peer);
 		theApp->clientlist->SetChatState(peer, MS_NONE);
 		// Closing is global, matching how closing a search tab destroys the core bucket for
 		// every client: the next EC_OP_CHAT_SESSIONS reply simply omits the session and

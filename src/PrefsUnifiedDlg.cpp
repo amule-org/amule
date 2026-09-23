@@ -1091,6 +1091,27 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 {
 	TransferFromWindow();
 
+	// Before the share commit below, whose reload must already use the new filter.
+	const bool excludeFilterChanged =
+		CfgChanged(IDC_EXCLUDE_SHARE_PATTERNS) || CfgChanged(IDC_EXCLUDE_SHARE_REGEX);
+	if (excludeFilterChanged) {
+		// Reject-on-apply: in regex mode an invalid expression leaves the filter disabled
+		// (fail-open, never exclude-all), so tell the user rather than silently sharing
+		// everything.
+		if (thePrefs::ExcludeSharePatternsUseRegex()) {
+			CShareExcludeFilter probe;
+			probe.Compile(thePrefs::GetExcludeSharePatterns(), true);
+			if (!probe.IsValid()) {
+				wxMessageBox(_("The shared-file exclusion pattern is not a valid "
+					       "regular expression. The filter has been left disabled."),
+					_("Invalid regular expression"),
+					wxOK | wxICON_WARNING,
+					this);
+			}
+		}
+		thePrefs::RecompileShareExcludeFilter();
+	}
+
 	// Commit the share list with the recursive-expand-on-worker-thread path. After
 	// TransferFromWindow, so other prefs are already in glob_prefs, but before Save() so a
 	// successful commit ends up in shareddir.dat alongside the rest. If the user cancels at
@@ -1307,27 +1328,10 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 		needsSharedReload = true;
 	}
 
-	if (CfgChanged(IDC_EXCLUDE_SHARE_PATTERNS) || CfgChanged(IDC_EXCLUDE_SHARE_REGEX)) {
-		// Reject-on-apply: in regex mode an invalid expression leaves the filter disabled
-		// (fail-open, never exclude-all), so tell the user rather than silently sharing
-		// everything.
-		if (thePrefs::ExcludeSharePatternsUseRegex()) {
-			CShareExcludeFilter probe;
-			probe.Compile(thePrefs::GetExcludeSharePatterns(), true);
-			if (!probe.IsValid()) {
-				wxMessageBox(_("The shared-file exclusion pattern is not a valid "
-					       "regular expression. The filter has been left disabled."),
-					_("Invalid regular expression"),
-					wxOK | wxICON_WARNING,
-					this);
-			}
-		}
-		thePrefs::RecompileShareExcludeFilter();
-		// Re-scan so newly excluded files leave the shareset and files no
+	if (excludeFilterChanged && !sharedDirsCommitted) {
+		// Re-scan so newly excluded files and folders leave the shareset and those no
 		// longer matching return.
-		if (!sharedDirsCommitted) {
-			needsSharedReload = true;
-		}
+		needsSharedReload = true;
 	}
 
 	// One walk for whichever of the three settings changed. Progress-and-yield rather than
@@ -1941,16 +1945,40 @@ void PrefsUnifiedDlg::OnButtonExcludePreview(wxCommandEvent &WXUNUSED(event))
 	const int excluded = thePrefs::PreviewExcludeCount(patterns, useRegex, names);
 	if (excluded == wxNOT_FOUND) {
 		info->SetLabel(_("Invalid regular expression"));
-	} else if (truncated) {
-		info->SetLabel(CFormat(_("Would exclude %u or more of the files in your shared folders")) %
-			       (unsigned)excluded);
 	} else {
-		info->SetLabel(CFormat(wxPLURAL("Would exclude %u of %u file in your shared folders",
-				       "Would exclude %u of %u files in your shared folders",
-				       names.GetCount())) %
-			       (unsigned)excluded % (unsigned)names.GetCount());
+		wxString label;
+		if (truncated) {
+			label = CFormat(_("Would exclude %u or more of the files in your shared folders")) %
+				(unsigned)excluded;
+		} else {
+			label = CFormat(wxPLURAL("Would exclude %u of %u file in your shared folders",
+					"Would exclude %u of %u files in your shared folders",
+					names.GetCount())) %
+				(unsigned)excluded % (unsigned)names.GetCount();
+		}
+
+		// Subfolders of shares that include their subfolders, as the last expansion saw them.
+		wxArrayString folders;
+		bool foldersTruncated = false;
+		theApp->glob_prefs->GetExpandedFolderNames(folders, foldersTruncated);
+		const int excludedFolders = thePrefs::PreviewExcludeCount(patterns, useRegex, folders);
+		if (excludedFolders > 0) {
+			label += "\n";
+			if (foldersTruncated) {
+				label += CFormat(_("Would also exclude %u or more folders, with everything "
+						   "in them")) %
+					 (unsigned)excludedFolders;
+			} else {
+				label += CFormat(wxPLURAL(
+						 "Would also exclude %u folder, with everything in it",
+						 "Would also exclude %u folders, with everything in them",
+						 excludedFolders)) %
+					 (unsigned)excludedFolders;
+			}
+		}
+		info->SetLabel(label);
 	}
-	// The label width just changed; re-lay-out its row so it is not clipped.
+	// The label size just changed; re-lay-out its row so it is not clipped.
 	info->GetParent()->Layout();
 }
 #endif

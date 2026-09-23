@@ -1053,6 +1053,24 @@ target_link_libraries (SharedFilesReloadLatchTest
 	mulecommon
 )
 
+add_executable (ShareExcludeTest
+	ShareExcludeTest.cpp
+	${CMAKE_SOURCE_DIR}/src/ShareExclude.cpp
+)
+add_test (NAME ShareExcludeTest COMMAND ShareExcludeTest)
+target_include_directories (ShareExcludeTest
+	PRIVATE ${CMAKE_BINARY_DIR}
+	PRIVATE ${CMAKE_SOURCE_DIR}/src
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
+)
+# CDirIterator lives in mulecommon's FileFunctions.cpp, which also holds the gzip helpers.
+target_link_libraries (ShareExcludeTest
+	muleunit
+	mulecommon
+	wxWidgets::BASE
+	ZLIB::ZLIB
+)
+
 add_executable (ChatSessionStoreTest
 	ChatSessionStoreTest.cpp
 	${CMAKE_SOURCE_DIR}/src/ChatSessionStore.cpp

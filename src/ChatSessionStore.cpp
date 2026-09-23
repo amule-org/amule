@@ -27,6 +27,7 @@
 #include "OtherFunctions.h" // GUI_ID: legacy EC projection only
 
 #include <algorithm>
+#include <map>
 #include <ctime>
 
 uint64 CChatSessionStore::Session::LegacyGuiId() const
@@ -36,6 +37,37 @@ uint64 CChatSessionStore::Session::LegacyGuiId() const
 	}
 	const uint32 ip = address.ToIPv4NetworkOrderOrZero();
 	return ip && port ? GUI_ID(ip, port) : 0;
+}
+
+std::vector<uint64> CChatSessionStore::Session::LegacyRoutes() const
+{
+	std::vector<uint64> routes;
+	if (messages.empty()) {
+		if (const uint64 current = LegacyGuiId()) {
+			routes.push_back(current);
+		}
+		return routes;
+	}
+	for (auto it = messages.rbegin(); it != messages.rend(); ++it) {
+		if (it->legacy_route &&
+			std::find(routes.begin(), routes.end(), it->legacy_route) == routes.end()) {
+			routes.push_back(it->legacy_route);
+		}
+	}
+	return routes;
+}
+
+bool CChatSessionStore::Session::HasLegacyRoute(uint64 gui_id) const
+{
+	if (!gui_id) {
+		return false;
+	}
+	if (messages.empty()) {
+		return LegacyGuiId() == gui_id;
+	}
+	return std::any_of(messages.begin(), messages.end(), [gui_id](const Message &m) {
+		return m.legacy_route == gui_id;
+	});
 }
 
 CChatSessionStore::Session &CChatSessionStore::Touch(
@@ -75,7 +107,7 @@ CChatSessionStore::Session &CChatSessionStore::Touch(
 	return m_sessions.front();
 }
 
-uint32 CChatSessionStore::Append(Session &s, uint8 direction, const wxString &text)
+uint32 CChatSessionStore::Append(Session &s, uint8 direction, const wxString &text, uint64 legacyRoute)
 {
 	Message m;
 	// Pre-increment: id 0 is reserved as the "no cursor / nothing yet"
@@ -84,6 +116,7 @@ uint32 CChatSessionStore::Append(Session &s, uint8 direction, const wxString &te
 	m.direction = direction;
 	m.timestamp = static_cast<uint32>(time(nullptr));
 	m.text = text;
+	m.legacy_route = legacyRoute ? legacyRoute : s.LegacyGuiId();
 	s.messages.push_back(std::move(m));
 	while (s.messages.size() > MAX_MESSAGES_PER_SESSION) {
 		s.messages.pop_front();
@@ -103,13 +136,16 @@ uint32 CChatSessionStore::AddIncoming(const CChatPeer &peer,
 	return Append(Touch(peer, name, address, port), DIR_IN, text);
 }
 
-uint32 CChatSessionStore::AddOutgoing(
-	const CChatPeer &peer, const wxString &text, const CNetworkAddress &address, uint16 port)
+uint32 CChatSessionStore::AddOutgoing(const CChatPeer &peer,
+	const wxString &text,
+	const CNetworkAddress &address,
+	uint16 port,
+	uint64 legacyRoute)
 {
 	if (peer.IsEmpty() || (peer.Hash().IsEmpty() && !Find(peer))) {
 		return 0;
 	}
-	return Append(Touch(peer, wxEmptyString, address, port), DIR_OUT, text);
+	return Append(Touch(peer, wxEmptyString, address, port), DIR_OUT, text, legacyRoute);
 }
 
 bool CChatSessionStore::CloseSession(const CChatPeer &peer)
@@ -133,21 +169,64 @@ const CChatSessionStore::Session *CChatSessionStore::Find(const CChatPeer &peer)
 	return nullptr;
 }
 
-const CChatSessionStore::Session *CChatSessionStore::FindLegacy(uint64 gui_id) const
+const CChatSessionStore::Session *CChatSessionStore::FindLegacy(uint64 gui_id, bool *ambiguous) const
 {
-	if (!gui_id) {
-		return nullptr;
+	if (ambiguous) {
+		*ambiguous = false;
 	}
 	const Session *found = nullptr;
 	for (const Session &s : m_sessions) {
-		if (s.LegacyGuiId() == gui_id) {
+		if (s.HasLegacyRoute(gui_id)) {
 			if (found) {
+				if (ambiguous) {
+					*ambiguous = true;
+				}
 				return nullptr; // Never choose an arbitrary peer sharing an endpoint.
 			}
 			found = &s;
 		}
 	}
 	return found;
+}
+
+std::vector<CChatSessionStore::LegacyView> CChatSessionStore::LegacySessions() const
+{
+	std::map<uint64, unsigned> claims;
+	for (const Session &s : m_sessions) {
+		for (uint64 route : s.LegacyRoutes()) {
+			++claims[route];
+		}
+	}
+	std::vector<LegacyView> out;
+	for (const Session &s : m_sessions) {
+		for (uint64 route : s.LegacyRoutes()) {
+			if (claims[route] == 1) {
+				out.push_back({ &s, route });
+			}
+		}
+	}
+	return out;
+}
+
+CChatSessionStore::LegacyClose CChatSessionStore::CloseLegacy(uint64 gui_id, CChatPeer &closed)
+{
+	const Session *target = FindLegacy(gui_id);
+	const auto it = std::find_if(
+		m_sessions.begin(), m_sessions.end(), [target](const Session &s) { return &s == target; });
+	if (it == m_sessions.end()) {
+		return LegacyClose::None;
+	}
+	auto &messages = it->messages;
+	messages.erase(std::remove_if(messages.begin(),
+			       messages.end(),
+			       [gui_id](const Message &m) { return m.legacy_route == gui_id; }),
+		messages.end());
+	if (!messages.empty()) {
+		return LegacyClose::View;
+	}
+	closed = it->peer;
+	m_sessions.erase(it);
+	return LegacyClose::Session;
 }
 
 std::vector<const CChatSessionStore::Session *> CChatSessionStore::Sessions() const

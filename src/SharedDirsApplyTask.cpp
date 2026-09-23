@@ -35,6 +35,8 @@ CSharedDirsApplyTask::CSharedDirsApplyTask(
 , m_recursive(recursive_shares)
 , m_owner(owner)
 {
+	m_excludeFilter.Compile(
+		thePrefs::GetExcludeSharePatterns(), thePrefs::ExcludeSharePatternsUseRegex());
 }
 
 void CSharedDirsApplyTask::Cancel()
@@ -113,6 +115,9 @@ void CSharedDirsApplyTask::ExpandRecursive(const CPath &root)
 		for (CPath sub = finder.GetFirstFile(CDirIterator::DirNoHidden, wxEmptyString, extraFlags);
 			sub.IsOk();
 			sub = finder.GetNextFile()) {
+			if (m_excludeFilter.Matches(sub.GetPrintable())) {
+				continue;
+			}
 			CPath fullSub = dir.JoinPaths(sub);
 			if (m_output.empty() || m_output.back().GetRaw() != fullSub.GetRaw()) {
 				// Cheap last-write dedup; full dedup happens via

@@ -44,8 +44,9 @@ concurrency:
 
 permissions:
   contents: read
-  # The cache-save-newest guard lists the repository's caches.
-  actions: read
+  # cache-save-newest lists the repository's caches and deletes the generations
+  # its save replaces.
+  actions: write
 
 env:
   CCACHE_DIR: ${{ github.workspace }}/.ccache

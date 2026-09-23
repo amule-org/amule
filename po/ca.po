@@ -14,8 +14,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-23 09:04+0100\n"
-"PO-Revision-Date: 2026-09-23 09:32+0000\n"
+"POT-Creation-Date: 2026-09-23 12:47+0100\n"
+"PO-Revision-Date: 2026-09-23 14:29+0000\n"
 "Last-Translator: minterior <minterior@gmail.com>\n"
 "Language-Team: Català\n"
 "Language: ca\n"
@@ -4792,11 +4792,12 @@ msgid "Follow symbolic links in shared folders"
 msgstr "Segueix els enllaços simbòlics de les carpetes compartides"
 
 #: src/muuli_wdr.cpp
-msgid "Exclude files matching:"
+#, fuzzy
+msgid "Exclude files and folders matching:"
 msgstr "Exclou els fitxers que coincideixin amb:"
 
 #: src/muuli_wdr.cpp
-msgid "Files whose name matches are not shared. Matching is case-insensitive. As wildcards: patterns separated by '|', e.g. .DS_Store|Thumbs.db|*.tmp, where '*' matches any run of characters and '?' a single one. Tick the box below to write one regular expression instead."
+msgid "Files and folders whose name matches are not shared. A matching folder inside a share that includes its subfolders is skipped with everything in it; a folder you share yourself is always shared. Matching is case-insensitive. As wildcards: patterns separated by '|', e.g. .DS_Store|Thumbs.db|*.tmp, where '*' matches any run of characters and '?' a single one. Tick the box below to write one regular expression instead."
 msgstr ""
 
 #: src/muuli_wdr.cpp
@@ -4810,7 +4811,7 @@ msgstr "Quan està activat, tot el camp és una sola expressió regular («|» �
 
 #: src/muuli_wdr.cpp
 #, fuzzy
-msgid "Show how many of the files in your shared folders the current pattern would exclude, counted over the last scan."
+msgid "Show how many of the files and folders in your shared folders the current pattern would exclude, counted over the last scan."
 msgstr "Mostra quants fitxers compartits excloria el patró actual."
 
 #: src/muuli_wdr.cpp
@@ -6262,6 +6263,14 @@ msgid "No password set."
 msgstr "No hi ha cap contrasenya definida."
 
 #: src/PrefsUnifiedDlg.cpp
+msgid "The shared-file exclusion pattern is not a valid regular expression. The filter has been left disabled."
+msgstr "El patró d'exclusió de fitxers compartits no és una expressió regular vàlida. El filtre s'ha deixat desactivat."
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "Invalid regular expression"
+msgstr "L'expressió regular no és vàlida"
+
+#: src/PrefsUnifiedDlg.cpp
 msgid "Guest access needs a password. Type one in the guest password field, or untick Enable guest access."
 msgstr "L'accés de convidat necessita una contrasenya. Escriviu-ne una al camp de contrasenya de convidat, o desmarqueu Activa l'accés de convidat."
 
@@ -6341,14 +6350,6 @@ msgstr "- El directori temporal ha canviat.\n"
 #: src/PrefsUnifiedDlg.cpp
 msgid "- ED2K network enabled.\n"
 msgstr "- Xarxa ED2K habilitada.\n"
-
-#: src/PrefsUnifiedDlg.cpp
-msgid "The shared-file exclusion pattern is not a valid regular expression. The filter has been left disabled."
-msgstr "El patró d'exclusió de fitxers compartits no és una expressió regular vàlida. El filtre s'ha deixat desactivat."
-
-#: src/PrefsUnifiedDlg.cpp
-msgid "Invalid regular expression"
-msgstr "L'expressió regular no és vàlida"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
@@ -6473,6 +6474,18 @@ msgid "Would exclude %u of %u file in your shared folders"
 msgid_plural "Would exclude %u of %u files in your shared folders"
 msgstr[0] "Excloiria %u de %u fitxer compartit"
 msgstr[1] "Excloiria %u de %u fitxers compartits"
+
+#: src/PrefsUnifiedDlg.cpp
+#, fuzzy, c-format
+msgid "Would also exclude %u or more folders, with everything in them"
+msgstr "Excloiria %u de %u fitxer compartit"
+
+#: src/PrefsUnifiedDlg.cpp
+#, c-format
+msgid "Would also exclude %u folder, with everything in it"
+msgid_plural "Would also exclude %u folders, with everything in them"
+msgstr[0] ""
+msgstr[1] ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Browse for videoplayer"

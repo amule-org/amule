@@ -848,14 +848,14 @@ CChatPeer CClientList::ResolveLegacyChatPeer(uint64 gui_id) const
 	if (!gui_id || !IP_FROM_GUI_ID(gui_id) || !PORT_FROM_GUI_ID(gui_id)) {
 		return peer;
 	}
+	bool ownedByConversation = false;
 	if (theApp->chatsessions) {
-		for (const auto *session : theApp->chatsessions->Sessions()) {
-			if (session->LegacyGuiId() == gui_id) {
-				if (!peer.IsEmpty() && peer != session->peer) {
-					return CChatPeer();
-				}
-				peer = session->peer;
-			}
+		bool ambiguous = false;
+		if (const auto *session = theApp->chatsessions->FindLegacy(gui_id, &ambiguous)) {
+			peer = session->peer;
+			ownedByConversation = true;
+		} else if (ambiguous) {
+			return CChatPeer();
 		}
 	}
 	for (const auto &entry : m_clientList) {
@@ -871,9 +871,12 @@ CChatPeer CClientList::ResolveLegacyChatPeer(uint64 gui_id) const
 			peer = client->GetChatPeer();
 		}
 	}
+	// A conversation that owns this GUI_ID reaches its peer wherever the peer is now: a legacy
+	// client replying under a route the peer has since left means that peer, as in 3.1.0.
 	const CUpDownClient *client = FindChatClient(peer);
-	if (client && (!client->GetUserAddress().IsIPv4() || client->GetIP() != IP_FROM_GUI_ID(gui_id) ||
-			      client->GetUserPort() != PORT_FROM_GUI_ID(gui_id))) {
+	if (!ownedByConversation && client &&
+		(!client->GetUserAddress().IsIPv4() || client->GetIP() != IP_FROM_GUI_ID(gui_id) ||
+			client->GetUserPort() != PORT_FROM_GUI_ID(gui_id))) {
 		return CChatPeer();
 	}
 	if (peer.IsEmpty()) {
@@ -887,7 +890,8 @@ CChatPeer CClientList::ResolveLegacyChatPeer(uint64 gui_id) const
 	return peer;
 }
 
-CClientList::ChatSendResult CClientList::SendChatMessage(const CChatPeer &peer, const wxString &message)
+CClientList::ChatSendResult CClientList::SendChatMessage(
+	const CChatPeer &peer, const wxString &message, uint64 legacyRoute)
 {
 	if (peer.IsEmpty() ||
 		(peer.Hash().IsEmpty() && (!theApp->chatsessions || !theApp->chatsessions->Find(peer)))) {
@@ -928,7 +932,7 @@ CClientList::ChatSendResult CClientList::SendChatMessage(const CChatPeer &peer, 
 	// the store on it would drop exactly the messages a slow peer receives a moment later.
 	if (theApp->chatsessions) {
 		theApp->chatsessions->AddOutgoing(
-			peer, message, client->GetUserAddress(), client->GetUserPort());
+			peer, message, client->GetUserAddress(), client->GetUserPort(), legacyRoute);
 	}
 	return client->SendChatMessage(message) ? ChatSendResult::Sent : ChatSendResult::Queued;
 }

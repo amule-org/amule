@@ -33,6 +33,7 @@
 #include <map>
 
 #include "Proxy.h"
+#include "ShareExclude.h"
 #include "OtherStructs.h"
 
 #include <common/ClientVersion.h> // Needed for __GIT__
@@ -40,38 +41,6 @@
 class CPreferences;
 class wxConfigBase;
 class wxWindow;
-class wxRegEx;
-
-// Compiled shared-file-name exclusion filter. Holds either a set of wildcard globs (matched
-// case-insensitively with wxMatchWild) or a single regex, chosen by the useRegex flag passed
-// to Compile(). An empty pattern -- or a regex that fails to compile -- yields an inactive
-// filter (Matches() always false): a bad pattern fails open, it never excludes everything.
-// Owns a heap wxRegEx, so non-copyable.
-class CShareExcludeFilter
-{
-public:
-	CShareExcludeFilter();
-	~CShareExcludeFilter();
-
-	// In wildcard mode the string is split on '|' into globs. In regex mode the whole string is
-	// one regex, so '|' is native alternation and is NOT split.
-	void Compile(const wxString &patterns, bool useRegex);
-
-	bool Matches(const wxString &fileName) const;
-
-	bool IsActive() const { return m_active; }
-	bool IsValid() const { return m_valid; }
-
-private:
-	CShareExcludeFilter(const CShareExcludeFilter &);
-	CShareExcludeFilter &operator=(const CShareExcludeFilter &);
-
-	wxArrayString m_globs; // lowercased globs (wildcard mode)
-	wxRegEx *m_regex;      // compiled regex (regex mode), owned
-	bool m_useRegex;
-	bool m_active;
-	bool m_valid;
-};
 
 enum EViewSharedFilesAccess
 {
@@ -203,15 +172,26 @@ public:
 	// entrypoint editing shareddir.dat directly, then calling Reload over EC) and rewrite
 	// shareddir.dat as the new union.
 	void ReloadSharedFolders();
+	// The three shared-dir files as saved: no expansion, no reconciliation, nothing written.
+	// shareddir.dat holds the union the last expansion saved, so until ReloadSharedFolders()
+	// runs, anyone asking for the shared folders gets that rather than an empty list.
+	void LoadSavedSharedFolders();
 	// Persist all three shared-dir files: the two canonical sources of truth plus shareddir.dat,
 	// regenerated as the union for older binaries and scripts that read it. Called by
 	// CSharedDirWatcher after it auto-appends a new subdir, so the change survives a restart
 	// without a full preferences.dat write.
 	void SaveSharedFolders();
-	// True iff `path` is in shareddir_recursive_list or descends from an entry there. The watcher
-	// gates auto-add on this: non-recursive share roots do not collect new subdirs, recursive
-	// ones do.
+	// True iff `path` is in shareddir_recursive_list or descends from an entry there through no
+	// excluded folder. The watcher gates auto-add on this: non-recursive share roots do not
+	// collect new subdirs, recursive ones do.
 	bool IsRecursiveAncestor(const CPath &path) const;
+	// True iff `path` lies under a recursive share root only through an excluded folder.
+	bool IsInExcludedFolder(const CPath &path) const;
+	// The same, against `roots` instead of shareddir_recursive_list.
+	static bool IsInExcludedFolder(const std::vector<CPath> &roots, const CPath &path);
+	// Subfolder names seen by the last recursive expansion, excluded ones included, for the
+	// exclusion preview. `truncated` makes any count taken from `out` a lower bound.
+	void GetExpandedFolderNames(wxArrayString &out, bool &truncated) const;
 
 	static const wxString &GetConfigDir() { return s_configDir; }
 	static void SetConfigDir(const wxString &dir) { s_configDir = dir; }
@@ -739,11 +719,14 @@ public:
 	{
 		s_ShareExcludeFilter.Compile(s_ExcludeSharePatterns, s_ExcludeSharePatternsUseRegex);
 	}
-	// True if the shared-file basename matches the live exclusion filter.
+	// True if the shared-file or folder basename matches the live exclusion filter.
 	static bool IsShareExcluded(const wxString &fileName)
 	{
 		return s_ShareExcludeFilter.Matches(fileName);
 	}
+	// True if a folder below `root`, up to and including `path`, matches the live exclusion
+	// filter. `root` itself is never tested: the user picked it.
+	static bool HasExcludedFolderBelow(const CPath &root, const CPath &path);
 	// How many names in the list a candidate (pattern, useRegex) would exclude -- for the
 	// Directories panel's live preview, which tests a typed-but-unsaved pattern without touching
 	// the live filter. wxNOT_FOUND if the regex does not compile.
@@ -912,6 +895,12 @@ private:
 	void SavePathMappings();
 
 	PathMappingList m_pathMappings;
+
+	// See GetExpandedFolderNames(). Capped like CSharedFileList's excluded file names: nothing
+	// bounds how many folders a tree holds.
+	wxArrayString m_expandedFolderNames;
+	bool m_expandedFolderNamesTruncated = false;
+	static const size_t kMaxExpandedFolderNamesTracked = 100000;
 
 protected:
 	static wxString s_configDir;

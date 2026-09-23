@@ -140,6 +140,9 @@ public:
 		uint8 direction = DIR_IN;
 		uint32 timestamp = 0; //!< unix seconds, stamped by the core
 		wxString text;
+		//! GUI_ID of the IPv4 route this message was exchanged on, or of the conversation a
+		//! legacy client addressed it to. 0 when the route had no IPv4 form.
+		uint64 legacy_route = 0;
 	};
 
 	struct Session
@@ -153,6 +156,11 @@ public:
 
 		// Legacy EC only: zero means this route cannot be represented as IPv4.
 		uint64 LegacyGuiId() const;
+
+		// GUI_IDs a legacy client sees this session under, most recent first: every route
+		// its messages used, or the current route while it holds none.
+		std::vector<uint64> LegacyRoutes() const;
+		bool HasLegacyRoute(uint64 gui_id) const;
 
 		//! Highest message id in this session, 0 when it holds none.
 		uint32 LastMsgId() const { return messages.empty() ? 0 : messages.back().id; }
@@ -174,10 +182,13 @@ public:
 		const wxString &text,
 		const CNetworkAddress &address = CNetworkAddress(),
 		uint16 port = 0);
+	// `legacyRoute` files the message under the conversation a legacy client addressed,
+	// rather than under the route it was delivered on.
 	uint32 AddOutgoing(const CChatPeer &peer,
 		const wxString &text,
 		const CNetworkAddress &address = CNetworkAddress(),
-		uint16 port = 0);
+		uint16 port = 0,
+		uint64 legacyRoute = 0);
 
 	// Drop one session. Returns false when there was none, so the EC handler
 	// can answer 404-equivalent rather than silently succeeding.
@@ -192,7 +203,28 @@ public:
 		const CMD4Hash &hash, const CNetworkAddress &address, uint16 port, const wxString &name);
 	bool Promote(const CChatPeer &peer, const CMD4Hash &hash);
 	// Ambiguous endpoints are not projected: EC cannot distinguish their peers.
-	const Session *FindLegacy(uint64 gui_id) const;
+	// `ambiguous` reports a GUI_ID that two sessions share.
+	const Session *FindLegacy(uint64 gui_id, bool *ambiguous = nullptr) const;
+
+	// A client without EC_TAG_CAN_CHAT_PEER_HASH keys conversations by GUI_ID, as 3.1.0 did.
+	// When a peer changes route it must keep the old conversation and get a new one, each
+	// holding only its own messages, so it sees one view per legacy route.
+	struct LegacyView
+	{
+		const Session *session;
+		uint64 gui_id;
+	};
+	std::vector<LegacyView> LegacySessions() const;
+
+	// Closes what a legacy client sees under `gui_id`: that route's messages, and the
+	// session itself once it holds nothing else. `closed` receives the peer in that case.
+	enum class LegacyClose
+	{
+		None,
+		View,
+		Session
+	};
+	LegacyClose CloseLegacy(uint64 gui_id, CChatPeer &closed);
 
 	// Sessions in most-recently-active-first order -- the order a client wants
 	// to render, and the order eviction walks backwards through.
@@ -206,7 +238,7 @@ public:
 private:
 	Session &Touch(
 		const CChatPeer &peer, const wxString &name, const CNetworkAddress &address, uint16 port);
-	uint32 Append(Session &s, uint8 direction, const wxString &text);
+	uint32 Append(Session &s, uint8 direction, const wxString &text, uint64 legacyRoute = 0);
 	void EvictSessionsIfNeeded();
 
 	// A list, not a map: the working set is at most MAX_SESSIONS, and the dominant operations

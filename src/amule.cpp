@@ -657,7 +657,6 @@ bool CamuleApp::OnInit()
 #ifdef AMULE_SHOW_SPLASH
 	const wxLongLong prefsStart = wxGetUTCTimeMillis();
 #endif
-	// Includes ReloadSharedFolders(), which walks the whole tree of every recursive shared root.
 	glob_prefs = new CPreferences();
 #ifdef AMULE_SHOW_SPLASH
 	const wxLongLong prefsDoneAt = wxGetUTCTimeMillis();
@@ -1076,16 +1075,16 @@ bool CamuleApp::OnInit()
 	// says what it estimates -- it is a file count from known.met, and printing it as a
 	// bare number after a millisecond figure read as an estimated duration. The preferences
 	// figure is bracketed because it is part of "to splash", not added to it.
-	AddLogLineN(
-		CFormat(LOG_DIAGNOSTIC("Startup phases: to splash %lld ms (preferences and shared "
-				       "folders %lld ms), known files %lld ms, credits %lld ms, IP filter "
-				       "%lld ms, network %lld ms, %u part files %lld ms, shared "
-				       "scan %u files ") "%lld ms (estimated %u files)") %
-		(preloadStart - initStart).GetValue() % (prefsDoneAt - prefsStart).GetValue() %
-		(knownDoneAt - preloadStart).GetValue() % (creditsDoneAt - knownDoneAt).GetValue() %
-		(filterDoneAt - creditsDoneAt).GetValue() % (networkDoneAt - splashPhaseStart).GetValue() %
-		partFilesLoaded % (tempDoneAt - networkDoneAt).GetValue() % sharedScanned %
-		(sharedDoneAt - tempDoneAt).GetValue() % sharedEstimate);
+	AddLogLineN(CFormat(LOG_DIAGNOSTIC("Startup phases: to splash %lld ms (preferences %lld ms), known "
+					   "files %lld ms, credits %lld ms, IP filter "
+					   "%lld ms, network %lld ms, %u part files %lld ms, shared "
+					   "scan %u files ") "%lld ms (estimated %u files)") %
+		    (preloadStart - initStart).GetValue() % (prefsDoneAt - prefsStart).GetValue() %
+		    (knownDoneAt - preloadStart).GetValue() % (creditsDoneAt - knownDoneAt).GetValue() %
+		    (filterDoneAt - creditsDoneAt).GetValue() %
+		    (networkDoneAt - splashPhaseStart).GetValue() % partFilesLoaded %
+		    (tempDoneAt - networkDoneAt).GetValue() % sharedScanned %
+		    (sharedDoneAt - tempDoneAt).GetValue() % sharedEstimate);
 
 	// The scan has everything it is going to have: the files it recognised are listed, and
 	// the ones it did not are now queued for hashing. That drain is the slowest part of a
