@@ -65,6 +65,7 @@ public:
 		bool canMultiSearch = false,
 		bool canChat = false,
 		bool canChatSessions = false,
+		bool canChatPeerHash = false,
 		bool canAEAD = false,
 		const std::vector<uint8_t> &clientNonce = std::vector<uint8_t>(),
 		const std::vector<uint8_t> &clientPubKey = std::vector<uint8_t>());
@@ -252,6 +253,12 @@ private:
 	// that predate the session ops entirely, so gating on it would send
 	// EC_OP_GET_CHAT_SESSIONS straight into the unknown-opcode branch, which asserts.
 	bool m_serverChatSessions;
+	// Client understands EC_TAG_CHAT_PEER_HASH (advertise `EC_TAG_CAN_CHAT_PEER_HASH`).
+	bool m_canChatPeerHash;
+	// Server echoed EC_TAG_CAN_CHAT_PEER_HASH: it may target/list sessions by hash and
+	// include one with no unique GUI_ID. Distinct from m_serverChatSessions: a client
+	// that predates the hash tag would merge two such sessions under one legacy id.
+	bool m_serverChatPeerHash;
 
 	void WriteDoneAndQueueEmpty();
 
@@ -291,6 +298,10 @@ public:
 	// Opt into the chat session ops. Call BEFORE ConnectToCore().
 	void SetCanChatSessions(bool can) noexcept { m_canChatSessions = can; }
 
+	// Opt into hash-addressed chat (EC_TAG_CHAT_PEER_HASH). Call BEFORE ConnectToCore(),
+	// and only alongside SetCanChatSessions(true).
+	void SetCanChatPeerHash(bool can) noexcept { m_canChatPeerHash = can; }
+
 	bool ServerSupportsPartialUpdate() const { return m_serverPartialUpdate; }
 	//! See m_serverClientHistory. False means: do not send the request at all.
 	bool ServerSupportsClientHistory() const { return m_serverClientHistory; }
@@ -305,6 +316,10 @@ public:
 	//! See m_serverChatSessions. False means: do not send the chat session
 	//! opcodes at all.
 	bool ServerSupportsChatSessions() const { return m_serverChatSessions; }
+
+	//! See m_serverChatPeerHash. False means: address and list chat sessions by
+	//! GUI_ID only, exactly as a build that predates the hash tag would.
+	bool ServerSupportsChatPeerHash() const { return m_serverChatPeerHash; }
 
 	bool ServerSupportsSharedDirsConfig() const { return m_serverSharedDirsConfig; }
 

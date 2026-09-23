@@ -302,16 +302,6 @@ void DumpMem_DW(const uint32 *ptr, int count);
 #define PORT_FROM_GUI_ID(x) (x & 0xFFFF)
 #define IP_FROM_GUI_ID(x) (x >> 16)
 
-// Label for a chat peer the core has no nickname for, built from its GUI_ID. Deliberately NOT
-// translated: the same label is rendered by the monolithic chat selector, by amulegui and by
-// amuleapi's /chats, and the API contract fixes it as English. Translating the GUI copies alone
-// would show one conversation under two names depending on which client you opened.
-inline wxString ChatPeerFallbackName(uint64 gui_id)
-{
-	return CFormat(wxT("IP: %s Port: %u")) % Uint32toStringIP(IP_FROM_GUI_ID(gui_id)) %
-	       PORT_FROM_GUI_ID(gui_id);
-}
-
 inline long int make_full_ed2k_version(int a, int b, int c)
 {
 	return ((a << 17) | (b << 10) | (c << 7));

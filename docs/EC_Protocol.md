@@ -548,6 +548,15 @@ express -- an IPv6 route, a provisional session, or an endpoint two
 identified peers share -- so a client should prefer it over the GUI_ID
 whenever a session carries one.
 
+Gated by its own `EC_TAG_CAN_CHAT_PEER_HASH` (`0x28`), distinct from
+`EC_TAG_CAN_CHAT_SESSIONS`: a client that predates the hash tag would
+merge two sessions that share one GUI_ID under a single legacy id, so
+the daemon includes such a session -- and the hash tag on any session --
+only for a connection that advertised it. A client that never saw `0x28`
+echoed must not send `EC_TAG_CHAT_PEER_HASH` either; it addresses and
+lists chat sessions by GUI_ID only, exactly as a build that predates the
+tag would.
+
 #### `EC_OP_GET_CHAT_SESSIONS` (`0x63`) → `EC_OP_CHAT_SESSIONS` (`0x64`)
 
 The polling workhorse: one roundtrip returns the session list *and*
@@ -568,19 +577,26 @@ The top-level cursor is present even when no messages come back, so a
 client can advance past ids that were evicted rather than requesting
 them forever.
 
-The reply is the server's **complete** session set. A session the client
-is tracking that is absent from it was closed — by another client, or by
-eviction — which is the only signal a close produces. No expiry tag is
-needed, and a client must drop such a session rather than assume it
-still exists.
+The reply is the server's complete session set **for this connection's
+capabilities**: a session with no unique GUI_ID (an IPv6 route, a
+provisional session, or an endpoint shared with another peer) is included,
+with its `EC_TAG_CHAT_PEER_HASH`, only once the connection advertised
+`EC_TAG_CAN_CHAT_PEER_HASH`; otherwise it is omitted exactly as it always
+was.
+
+A session the client is tracking that is absent from the reply was
+closed — by another client, or by eviction — which is the only signal a
+close produces. No expiry tag is needed, and a client must drop such a
+session rather than assume it still exists.
 
 #### `EC_OP_GET_CHAT_MESSAGES` (`0x5B`) → `EC_OP_CHAT_MESSAGES` (`0x5C`)
 
 Non-destructive backfill of **one** session, for a client opening a
-conversation it has no transcript for. Takes a required
+conversation it has no transcript for. Takes `EC_TAG_CHAT_PEER_HASH` or
 `EC_TAG_CHAT_CLIENT_ID` and an optional `EC_TAG_CHAT_MSG_ID` cursor, and
 replies with the same shape as above containing a single session
-container.
+container. `EC_OP_FAILED` when neither target tag is present or there is
+no such session.
 
 #### `EC_OP_CHAT_SEND` (`0x65`)
 
@@ -594,7 +610,7 @@ Takes `EC_TAG_CHAT` (the text, non-empty) plus exactly one target:
 The server creates the session when it does not exist, so this doubles
 as "start a chat with this address" for a `EC_TAG_CHAT_CLIENT_ID` target.
 A `EC_TAG_CHAT_PEER_HASH` target with no prior session and no known route
-queues the message pending identification rather than creating one.
+answers `EC_OP_FAILED`: a hash alone gives the daemon nowhere to dial.
 
 **Reply:** `EC_OP_NOOP` with `EC_TAG_CHAT_CLIENT_ID` (`0` when the
 session's route is not IPv4-projectable), `EC_TAG_CHAT_PEER_HASH` when

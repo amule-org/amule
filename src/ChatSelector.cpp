@@ -128,12 +128,8 @@ CChatSession *CChatSelector::StartSession(
 
 	CChatSession *chatsession = new CChatSession(this);
 
-#ifdef CLIENT_GUI
-	chatsession->m_client_id = client_id;
-#else
 	// Keep a value snapshot: promotion is delivered explicitly by RekeySession.
 	chatsession->m_client_id = CChatPeer(client_id.Hash(), client_id.Address(), client_id.Port());
-#endif
 
 	// The title identifies the peer, not its mutable route.
 	const wxString text = wxString(" *** ") +
@@ -224,13 +220,9 @@ bool CChatSelector::ProcessMessage(const CChatTarget &sender_id, const wxString 
 	if (!session) {
 		// This must be a message from a client that is not already chatting
 		if (client_name.IsEmpty()) {
-// The core did not send us the name, which must NOT happen. Build a client
-// name from the ID.
-#ifdef CLIENT_GUI
+			// The core did not send us the name, which must NOT happen. Build a
+			// client name from the ID.
 			client_name = ChatPeerFallbackName(sender_id);
-#else
-			client_name = sender_id.Encode();
-#endif
 		}
 
 		session = StartSession(sender_id, client_name, true);
@@ -303,13 +295,7 @@ bool CChatSelector::SendMessage(
 	// it twice, and printing it from the poll is also what keeps the ordering the core sees.
 	CECPacket req(EC_OP_CHAT_SEND);
 	req.AddTag(CECTag(EC_TAG_CHAT, message));
-	if (!ci->m_client_id.Hash().IsEmpty()) {
-		req.AddTag(CECTag(EC_TAG_CHAT_PEER_HASH, ci->m_client_id.Hash()));
-	} else {
-		req.AddTag(CECTag(EC_TAG_CHAT_CLIENT_ID,
-			GUI_ID(ci->m_client_id.Address().ToIPv4NetworkOrderOrZero(),
-				ci->m_client_id.Port())));
-	}
+	AddChatTargetTags(req, ci->m_client_id);
 	theApp->m_connect->SendPacket(&req);
 #else
 	const auto result = theApp->clientlist->SendChatMessage(ci->m_client_id, message);
@@ -431,6 +417,29 @@ bool CChatSelector::GetCurrentClient(CClientRef &clientref) const
 		}
 	}
 	return false;
+}
+#endif
+
+wxString ChatPeerFallbackName(const CChatPeer &peer)
+{
+	if (!peer.Hash().IsEmpty()) {
+		return peer.Hash().Encode();
+	}
+	return CFormat(wxT("IP: %s Port: %u")) % Uint32toStringIP(peer.Address().ToIPv4NetworkOrderOrZero()) %
+	       peer.Port();
+}
+
+#ifdef CLIENT_GUI
+void AddChatTargetTags(CECPacket &req, const CChatTarget &target)
+{
+	const uint32 ip = target.Address().ToIPv4NetworkOrderOrZero();
+	if (ip && target.Port()) {
+		req.AddTag(CECTag(EC_TAG_CHAT_CLIENT_ID, GUI_ID(ip, target.Port())));
+	}
+	if (!target.Hash().IsEmpty() && theApp->m_connect &&
+		theApp->m_connect->ServerSupportsChatPeerHash()) {
+		req.AddTag(CECTag(EC_TAG_CHAT_PEER_HASH, target.Hash()));
+	}
 }
 #endif
 

@@ -28,7 +28,6 @@
 #include "Types.h" // uint64 / uint32 / uint8
 #include "MD4Hash.h"
 #include "NetworkAddress.h"
-#include "OtherFunctions.h" // Needed for CFormat, Uint32toStringIP
 #include "PeerAddressing.h"
 
 #include <memory>
@@ -96,17 +95,12 @@ inline bool ChatTargetValid(const CChatTarget &id)
 	return !id.IsEmpty();
 }
 
-// Fallback label for a peer the core sent no nickname for. Deliberately NOT translated: the
-// same label is rendered by the monolithic chat selector, amulegui and amuleapi's /chats, and
-// the API contract fixes it as English. Inline: needed in both GUI_SOURCES (ChatSelector.cpp,
-// amule-remote-gui.cpp) and CORE_SOURCES, and ChatSessionStore.cpp itself is core-only.
-inline wxString ChatPeerFallbackName(const CChatPeer &peer)
+// Builds a target that carries both an identity and a route when either is known, so
+// neither a promotion nor a re-dial loses information the caller already had. hash
+// empty and ip/port zero together mean "no target at all" -- see CChatPeer::IsEmpty().
+inline CChatPeer BuildChatPeer(const CMD4Hash &hash, uint32 ip, uint16 port)
 {
-	if (!peer.Hash().IsEmpty()) {
-		return peer.Hash().Encode();
-	}
-	return CFormat(wxT("IP: %s Port: %u")) % Uint32toStringIP(peer.Address().ToIPv4NetworkOrderOrZero()) %
-	       peer.Port();
+	return CChatPeer(hash, CNetworkAddress::FromIPv4NetworkOrderOrAbsent(ip), port);
 }
 
 #include <deque>

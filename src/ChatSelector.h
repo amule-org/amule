@@ -32,6 +32,22 @@
 
 class CClientRef;
 class CFriend;
+class CECPacket;
+
+// Label for a chat peer the core sent no nickname for. Deliberately NOT translated: the same
+// label is rendered by the monolithic chat selector, amulegui and amuleapi's /chats, and the
+// API contract fixes it as English. Translating the GUI copies alone would show one
+// conversation under two names depending on which client you opened.
+wxString ChatPeerFallbackName(const CChatPeer &peer);
+
+#ifdef CLIENT_GUI
+// Adds whichever chat target tags this connection's capabilities and this target's known
+// route/hash allow: EC_TAG_CHAT_CLIENT_ID whenever the route is IPv4 -- the pre-hash addressing
+// mode, and also a dial hint alongside a hash -- and EC_TAG_CHAT_PEER_HASH only once the daemon
+// has confirmed EC_TAG_CAN_CHAT_PEER_HASH. An old daemon must never be sent a request it cannot
+// resolve at all, so the legacy id is never the one that gets dropped.
+void AddChatTargetTags(CECPacket &req, const CChatTarget &target);
+#endif
 
 /**
  * Displays chat sessions.

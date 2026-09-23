@@ -261,6 +261,13 @@ EC_TAG_CAN_CLIENT_HISTORY                 0x0026
 ## make such a daemon look capable and earn it an unknown opcode.
 EC_TAG_CAN_CHAT_SESSIONS                  0x0027
 
+## Client understands EC_TAG_CHAT_PEER_HASH: it sends/reads the hash target on
+## EC_OP_CHAT_SEND, EC_OP_CHAT_CLOSE_SESSION and EC_OP_GET_CHAT_MESSAGES, and
+## its own EC_OP_GET_CHAT_SESSIONS listing may include a session with no unique
+## GUI_ID. Deliberately distinct from EC_TAG_CAN_CHAT_SESSIONS: a client that
+## predates the hash tag would merge two such sessions under one legacy id.
+EC_TAG_CAN_CHAT_PEER_HASH                 0x0028
+
 
 EC_TAG_CLIENT_NAME                        0x0100
 	EC_TAG_CLIENT_VERSION                     0x0101

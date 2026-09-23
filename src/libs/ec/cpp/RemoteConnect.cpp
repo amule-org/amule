@@ -66,6 +66,7 @@ CECLoginPacket::CECLoginPacket(const wxString &client,
 	bool canMultiSearch,
 	bool canChat,
 	bool canChatSessions,
+	bool canChatPeerHash,
 	bool canAEAD,
 	const std::vector<uint8_t> &clientNonce,
 	const std::vector<uint8_t> &clientPubKey)
@@ -133,6 +134,10 @@ CECLoginPacket::CECLoginPacket(const wxString &client,
 	// none of the session opcodes.
 	if (canChatSessions)
 		AddTag(CECEmptyTag(EC_TAG_CAN_CHAT_SESSIONS));
+	// Client sends/reads EC_TAG_CHAT_PEER_HASH and may be listed a session with no
+	// unique GUI_ID. Only meaningful alongside canChatSessions.
+	if (canChatPeerHash)
+		AddTag(CECEmptyTag(EC_TAG_CAN_CHAT_PEER_HASH));
 	// Transport encryption: our ciphers in preference order, our half of the
 	// derivation salt, and our ephemeral public key. A daemon that does not know
 	// these tags ignores them and the session stays in clear. The public key needs no
@@ -194,6 +199,8 @@ m_req_fifo_thr(20)
 , m_serverChat(false)
 , m_canChatSessions(false)
 , m_serverChatSessions(false)
+, m_canChatPeerHash(false)
+, m_serverChatPeerHash(false)
 , m_serverSharedDirsConfig(false)
 , m_serverSearchList(false)
 , m_serverSearchProgressUnion(false)
@@ -305,6 +312,7 @@ bool CRemoteConnect::ConnectToCore(
 			m_canMultiSearch,
 			m_canChat,
 			m_canChatSessions,
+			m_canChatPeerHash,
 			m_canAEAD,
 			m_aeadClientNonce,
 			m_aeadEphPub);
@@ -365,6 +373,7 @@ void CRemoteConnect::OnConnect()
 			m_canMultiSearch,
 			m_canChat,
 			m_canChatSessions,
+			m_canChatPeerHash,
 			m_canAEAD,
 			m_aeadClientNonce,
 			m_aeadEphPub);
@@ -380,7 +389,7 @@ uint64 CRemoteConnect::MillisecondsSinceLastReply() const
 {
 	return static_cast<uint64>(std::chrono::duration_cast<std::chrono::milliseconds>(
 		std::chrono::steady_clock::now() - m_lastReplyAt)
-					   .count());
+			.count());
 }
 
 void CRemoteConnect::OnLost()
@@ -722,6 +731,12 @@ bool CRemoteConnect::ProcessAuthPacket(const CECPacket *reply)
 			// core whose dispatcher asserts on it.
 			if (reply->GetTagByName(EC_TAG_CAN_CHAT_SESSIONS)) {
 				m_serverChatSessions = true;
+			}
+			// Server accepts/lists chat sessions by hash. Old daemons omit the echo and
+			// we address and list by GUI_ID only, exactly as a build that predates the
+			// hash tag would.
+			if (reply->GetTagByName(EC_TAG_CAN_CHAT_PEER_HASH)) {
+				m_serverChatPeerHash = true;
 			}
 			// Server serves EC_OP_SEARCH_LIST. Old daemons omit the echo and the client
 			// must not send the opcode: it lands in ProcessRequest2's unknown-opcode

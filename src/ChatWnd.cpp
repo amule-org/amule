@@ -80,12 +80,9 @@ namespace
 CChatTarget FriendChatTarget(const CFriend *peer)
 {
 #ifdef CLIENT_GUI
-	// The persisted hash remains authoritative even when the route is stale or absent.
-	if (!peer->GetUserHash().IsEmpty()) {
-		return CChatPeer(peer->GetUserHash());
-	}
-	return CChatPeer(
-		CMD4Hash(), CNetworkAddress::FromIPv4NetworkOrderOrAbsent(peer->GetIP()), peer->GetPort());
+	// The persisted hash remains authoritative even when the route is stale or absent;
+	// BuildChatPeer keeps the route alongside it, as a dial hint if the daemon ever needs one.
+	return BuildChatPeer(peer->GetUserHash(), peer->GetIP(), peer->GetPort());
 #else
 	// The persisted hash remains authoritative even if the linked route client
 	// has not completed its handshake yet.
@@ -371,12 +368,7 @@ void CChatWnd::OnChatClosing(wxBookCtrlEvent &evt)
 #ifdef CLIENT_GUI
 	if (theApp->m_connect && theApp->m_connect->ServerSupportsChatSessions()) {
 		CECPacket req(EC_OP_CHAT_CLOSE_SESSION);
-		if (!gui_id.Hash().IsEmpty()) {
-			req.AddTag(CECTag(EC_TAG_CHAT_PEER_HASH, gui_id.Hash()));
-		} else {
-			req.AddTag(CECTag(EC_TAG_CHAT_CLIENT_ID,
-				GUI_ID(gui_id.Address().ToIPv4NetworkOrderOrZero(), gui_id.Port())));
-		}
+		AddChatTargetTags(req, gui_id);
 		theApp->m_connect->SendPacket(&req);
 	}
 #else

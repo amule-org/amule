@@ -236,11 +236,7 @@ void PeerActionSendMessage(const PeerIdentity &peer)
 		return;
 	}
 #ifdef CLIENT_GUI
-	const CChatTarget target = peer.hash.IsEmpty()
-					   ? CChatPeer(CMD4Hash(),
-						     CNetworkAddress::FromIPv4NetworkOrderOrAbsent(peer.ip),
-						     peer.port)
-					   : CChatPeer(peer.hash);
+	const CChatTarget target = BuildChatPeer(peer.hash, peer.ip, peer.port);
 	PromptAndSendChatMessage(peer.name.IsEmpty() ? peer.hash.Encode() : peer.name, target);
 #else
 	CClientRef client = theApp->clientlist->CreateForAddress(peer.hash, peer.ip, peer.port, peer.name);
@@ -439,12 +435,7 @@ void ClientActionSendMessage(const std::vector<CClientRef> &clients)
 	// event-loop, in which the client may be deleted.
 	const wxString userName = source.GetUserName();
 #ifdef CLIENT_GUI
-	const CChatTarget userID =
-		source.GetUserHash().IsEmpty()
-			? CChatPeer(CMD4Hash(),
-				  CNetworkAddress::FromIPv4NetworkOrderOrAbsent(source.GetIP()),
-				  source.GetUserPort())
-			: CChatPeer(source.GetUserHash());
+	const CChatTarget userID = BuildChatPeer(source.GetUserHash(), source.GetIP(), source.GetUserPort());
 #else
 	CChatTarget userID = source.GetClient()->GetChatPeer();
 	if (userID.IsEmpty() && theApp->chatsessions) {

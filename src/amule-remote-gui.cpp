@@ -53,6 +53,7 @@
 #include <wx/button.h>   // CReconnectDialog abort button
 #include "ClientCredits.h"
 #include "SourceListCtrl.h"
+#include "ChatSelector.h" // Needed for ChatPeerFallbackName
 #include "ChatWnd.h"
 #include "ClientsWnd.h"       // Needed for CClientsWnd
 #include "DataToText.h"       // Needed for GetSoftName()
@@ -593,6 +594,9 @@ bool CamuleRemoteGuiApp::OnInit()
 	// amulegui shows incoming friend/chat messages read-only; ask the daemon to relay
 	// them. An old daemon will not echo the capability and amulegui simply never polls.
 	m_connect->SetCanChatSessions(true);
+	// amulegui addresses and lists chat sessions by hash, including one with no unique
+	// GUI_ID. An old daemon will not echo it and amulegui falls back to GUI_ID only.
+	m_connect->SetCanChatPeerHash(true);
 	// The ForceZLIB override is read from the connection dialog (see
 	// ShowConnectionDialog) so the user's checkbox choice in this session overrides the
 	// persisted /EC/ForceZLIB value.
@@ -710,6 +714,7 @@ void CamuleRemoteGuiApp::ResetEcConnect()
 	m_connect->SetCapabilities(enableZLIB != 0, true, false);
 	m_connect->SetCanMultiSearch(true);
 	m_connect->SetCanChatSessions(true);
+	m_connect->SetCanChatPeerHash(true);
 }
 
 void CamuleRemoteGuiApp::OnECConnection(wxEvent &event)
@@ -1295,20 +1300,35 @@ void CChatMsgHandlerRem::HandlePacket(const CECPacket *packet)
 	// Not a std::set: CChatPeer has no operator<, and the bounded session count (the
 	// core caps it, see CChatSessionStore::MAX_SESSIONS) makes a linear scan cheap enough.
 	std::vector<CChatPeer> present;
+	// Provisional peers this poll rekeyed into an identified one: excluded from the
+	// close-diff below, or the tab RekeySession just relabelled would be closed again.
+	std::vector<CChatPeer> rekeyedAway;
 	for (const CECTag &sessionTag : *packet) {
 		if (sessionTag.GetTagName() != EC_TAG_CHAT_SESSION) {
 			continue;
 		}
 		// A hash identifies the peer regardless of route; a session with none yet is still
 		// only reachable through the legacy GUI_ID, so that becomes its provisional route.
-		CChatPeer peer;
-		if (const CECTag *hashTag = sessionTag.GetTagByName(EC_TAG_CHAT_PEER_HASH)) {
-			peer = CChatPeer(hashTag->GetMD4Data());
-		} else {
-			const uint64 gui_id = sessionTag.GetInt();
-			peer = CChatPeer(CMD4Hash(),
+		const uint64 gui_id = sessionTag.GetInt();
+		const CECTag *hashTag = sessionTag.GetTagByName(EC_TAG_CHAT_PEER_HASH);
+		const CChatPeer peer = BuildChatPeer(hashTag ? hashTag->GetMD4Data() : CMD4Hash(),
+			IP_FROM_GUI_ID(gui_id),
+			PORT_FROM_GUI_ID(gui_id));
+
+		if (hashTag && gui_id) {
+			// This session just identified. If its route matches a provisional tab we
+			// are already tracking, that tab IS this peer, not a new conversation:
+			// rekey it in place, or the transcript is lost between polls (#1551).
+			const CChatPeer routeOnly(CMD4Hash(),
 				CNetworkAddress::FromIPv4NetworkOrderOrAbsent(IP_FROM_GUI_ID(gui_id)),
 				PORT_FROM_GUI_ID(gui_id));
+			for (const CChatPeer &old : m_sessions) {
+				if (old.Hash().IsEmpty() && old == routeOnly) {
+					chatwnd->RekeySession(old, peer);
+					rekeyedAway.push_back(old);
+					break;
+				}
+			}
 		}
 		present.push_back(peer);
 
@@ -1342,7 +1362,10 @@ void CChatMsgHandlerRem::HandlePacket(const CECPacket *packet)
 	// iterated.
 	const std::vector<CChatPeer> tracked = m_sessions;
 	for (const CChatPeer &peer : tracked) {
-		if (std::find(present.begin(), present.end(), peer) == present.end()) {
+		const bool stillPresent = std::find(present.begin(), present.end(), peer) != present.end();
+		const bool wasRekeyed =
+			std::find(rekeyedAway.begin(), rekeyedAway.end(), peer) != rekeyedAway.end();
+		if (!stillPresent && !wasRekeyed) {
 			chatwnd->EndSessionFromCore(peer);
 		}
 	}
