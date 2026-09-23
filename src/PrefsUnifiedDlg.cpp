@@ -1441,7 +1441,7 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 
 	if (CfgChanged(IDC_SHOW_COUNTRY_FLAGS)) {
 		// Local enable/disable toggle -- treat as startup so enabling refreshes.
-		theApp->EnableIP2Country(true);
+		theApp->EnableIP2Country(true, true);
 	}
 
 #if defined(ENABLE_IP2COUNTRY) && !defined(CLIENT_GUI)

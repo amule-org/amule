@@ -163,7 +163,12 @@ CServerWnd::~CServerWnd()
 void CServerWnd::UpdateServerMetFromURL(const wxString &strURL)
 {
 	thePrefs::SetEd2kServersUrl(strURL);
+#ifdef CLIENT_GUI
+	// Runs on the core, which shows no dialog for a remote request.
 	theApp->serverlist->UpdateServerMetFromURL(strURL);
+#else
+	theApp->serverlist->UpdateServerMetFromURL(strURL, true);
+#endif
 }
 
 void CServerWnd::OnBnClickedAddserver(wxCommandEvent &WXUNUSED(evt))

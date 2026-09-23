@@ -82,7 +82,7 @@ public:
 	// built on a miss.
 	const wxString &GetCountryCode(uint32 ip);
 
-	void Enable();
+	void Enable(bool showProgress);
 	void Disable();
 	// Refresh the on-disk MMDB from the configured source.
 	//

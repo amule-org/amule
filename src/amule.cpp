@@ -286,7 +286,7 @@ CamuleApp::~CamuleApp()
 }
 
 #ifdef ENABLE_IP2COUNTRY
-void CamuleApp::EnableIP2Country(bool startup)
+void CamuleApp::EnableIP2Country(bool startup, bool showProgress)
 {
 	if (thePrefs::IsGeoIPEnabled()) {
 		if (!m_IP2Country) {
@@ -299,21 +299,21 @@ void CamuleApp::EnableIP2Country(bool startup)
 			});
 #endif
 		}
-		m_IP2Country->Enable();
+		m_IP2Country->Enable(showProgress);
 		// Auto-update refresh from the selected source so the user sees current data
 		// without opening Preferences. Fires only at startup or a local enable toggle --
 		// NOT on every remote prefs-apply, which would download on each amulegui OK and,
 		// alongside an explicit "Update now", double the request. First-run / missing-file
 		// is handled inside Enable() regardless.
 		if (startup && thePrefs::IsGeoIPAutoUpdate() && m_IP2Country->IsEnabled()) {
-			m_IP2Country->Update();
+			m_IP2Country->Update(false, showProgress);
 		}
 	} else if (m_IP2Country) {
 		m_IP2Country->Disable();
 	}
 }
 #else
-void CamuleApp::EnableIP2Country(bool) {}
+void CamuleApp::EnableIP2Country(bool, bool) {}
 #endif
 
 int CamuleApp::OnExit()
@@ -1189,7 +1189,7 @@ bool CamuleApp::OnInit()
 				serverlist->UpdateServerMetFromURL(thePrefs::GetEd2kServersUrl());
 			}
 			if (wizardWantsNodesDat) {
-				UpdateNotesDat(thePrefs::GetKadNodesUrl(), true);
+				UpdateNotesDat(thePrefs::GetKadNodesUrl());
 			}
 		} else {
 			const bool needServerMet =
@@ -1241,7 +1241,7 @@ bool CamuleApp::OnInit()
 							thePrefs::GetEd2kServersUrl());
 					}
 					if (nodesDatCheck && nodesDatCheck->GetValue()) {
-						UpdateNotesDat(thePrefs::GetKadNodesUrl(), true);
+						UpdateNotesDat(thePrefs::GetKadNodesUrl());
 					}
 				}
 			}
@@ -1279,7 +1279,7 @@ bool CamuleApp::OnInit()
 	// Enable GeoIP. The resolver is headless and core-owned so the daemon resolves country
 	// codes for the EC tag exactly as monolithic amule does for local display. The flag
 	// *images* are a GUI concern layered on top.
-	EnableIP2Country(true); // startup: allow the auto-update refresh
+	EnableIP2Country(true, false); // startup: allow the auto-update refresh, in the background
 
 	// Run webserver?
 	if (thePrefs::GetWSIsEnabled()) {

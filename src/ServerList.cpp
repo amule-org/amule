@@ -828,7 +828,7 @@ void CServerList::RemoveDeadServers()
 	}
 }
 
-void CServerList::UpdateServerMetFromURL(const wxString &strURL)
+void CServerList::UpdateServerMetFromURL(const wxString &strURL, bool showDialog)
 {
 	if (strURL.Find("://") == -1) {
 		AddLogLineC(_("Invalid URL"));
@@ -840,7 +840,7 @@ void CServerList::UpdateServerMetFromURL(const wxString &strURL)
 		strTempFilename,
 		thePrefs::GetConfigDir() + "server.met",
 		HTTP_ServerMet,
-		false,
+		showDialog,
 		false);
 	downloader->Create();
 	downloader->Run();

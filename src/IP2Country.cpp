@@ -66,13 +66,13 @@ bool CIP2Country::IsEnabled()
 	return m_db && m_db->IsOpen();
 }
 
-void CIP2Country::Enable()
+void CIP2Country::Enable(bool showProgress)
 {
 	// Disable() clears the cache, so no separate invalidation here.
 	Disable();
 
 	if (!CPath::FileExists(m_DataBasePath)) {
-		Update();
+		Update(false, showProgress);
 		return;
 	}
 
@@ -204,7 +204,7 @@ void CIP2Country::DownloadFinished(uint32 result)
 			return;
 		}
 
-		Enable();
+		Enable(false);
 		if (IsEnabled()) {
 			const wxString msg = CFormat(_("Successfully updated %s")) % m_DataBaseName;
 			AddLogLineN(msg);
@@ -312,7 +312,7 @@ CIP2Country::CIP2Country(const wxString &)
 }
 
 CIP2Country::~CIP2Country() {}
-void CIP2Country::Enable() {}
+void CIP2Country::Enable(bool) {}
 void CIP2Country::Disable() {}
 void CIP2Country::InvalidateCountryCache() {}
 

@@ -271,8 +271,8 @@ public:
 	// disabling it when turned off. No-op on amulegui, which configures the daemon's GeoIP over
 	// EC. startup=true also kicks the auto-update refresh; it is false on a remote prefs-apply
 	// so an amulegui OK does not download on every save -- an explicit "Update now" carries
-	// that intent.
-	virtual void EnableIP2Country(bool startup) {}
+	// that intent. showProgress shows the download dialog, for a local Preferences change.
+	virtual void EnableIP2Country(bool startup, bool showProgress) {}
 
 	void AddLinksFromFile();
 	// URL functions
@@ -350,7 +350,7 @@ public:
 	// thePrefs::IsGeoIPEnabled), serving the daemon's country EC tag and the monolithic build's
 	// display.
 	CIP2Country *GetIP2Country() override { return m_IP2Country; }
-	void EnableIP2Country(bool startup) override;
+	void EnableIP2Country(bool startup, bool showProgress) override;
 
 	virtual int InitGui(bool geometry_enable, wxString &geometry_string);
 
