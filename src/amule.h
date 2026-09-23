@@ -97,6 +97,7 @@ class CTimerEvent;
 class InstanceLock;
 class CHashingEvent;
 class CMediaProbeEvent;
+class CVerifyLocalDataEvent;
 class CMuleInternalEvent;
 class CCompletionEvent;
 class CAllocFinishedEvent;
@@ -542,6 +543,8 @@ protected:
 	// CMediaProbeTask marshals results back here so FT_MEDIA_* tags are attached
 	// on the main thread -- the worker never touches CKnownFile state.
 	void OnMediaProbeFinished(CMediaProbeEvent &evt);
+	// CVerifyLocalDataTask likewise hands its result back here, to be recorded on the file.
+	void OnVerifyLocalDataFinished(CVerifyLocalDataEvent &evt);
 	void OnFinishedCompletion(CCompletionEvent &evt);
 	void OnFinishedAllocation(CAllocFinishedEvent &evt);
 	void OnFinishedHTTPDownload(CMuleInternalEvent &evt);
@@ -552,11 +555,11 @@ protected:
 
 	APPState m_app_state;
 
-	// Media-probe tag writes coalesce into one known.met save: every OnMediaProbeFinished
-	// stamps this (uptime ms) and OnCoreTimer flushes a single Save() once probing has been
-	// idle for 30 s, avoiding the O(N^2) full-file rewrite when the whole library is probed at
-	// startup. 0 = nothing pending.
-	uint64 m_mediaTagsDirtiedMs = 0;
+	// Media-probe tag and Verify Local Data writes coalesce into one known.met save: every
+	// OnMediaProbeFinished / OnVerifyLocalDataFinished stamps this (uptime ms) and OnCoreTimer
+	// flushes a single Save() once they have been idle for 30 s, avoiding the O(N^2) full-file
+	// rewrite when the whole library is probed at startup. 0 = nothing pending.
+	uint64 m_knownMetDirtiedMs = 0;
 
 	// Headless GeoIP resolver, owned by the core (created in OnInit under
 	// ENABLE_IP2COUNTRY). NULL when GeoIP is disabled/unsupported.

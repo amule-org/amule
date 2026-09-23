@@ -31,6 +31,9 @@
 #include "MediaProbe.h" // Needed for MediaInfo
 #include "MD4Hash.h"    // Needed for CMD4Hash on CMediaProbeTask + CMediaProbeEvent
 #include <common/Path.h>
+#include <wx/event.h>              // Needed for wxEvent and wxDECLARE_EVENT
+#include "SHAHashSet.h"            // Needed for CAICHHash, EAICHStatus
+#include "VerifyLocalDataResult.h" // Needed for CVerifyLocalDataResult
 
 class CKnownFile;
 class CPartFile;
@@ -136,22 +139,39 @@ private:
 /**
  * Calculates MD4 and AICH hashes for a known file, to check file integrity against the hashes
  * stored in the .met files.
+ *
+ * Everything the check needs is copied from the file on the main thread at construction, so the
+ * task checks exactly the copy the user asked for -- not whichever record a hash lookup returns,
+ * which for content held at several paths can be another copy -- and never reads CKnownFile
+ * state from the worker.
  */
 class CVerifyLocalDataTask : public CThreadTask
 {
 public:
-	explicit CVerifyLocalDataTask(const CMD4Hash &md4);
+	explicit CVerifyLocalDataTask(const CKnownFile *file);
 
 protected:
 	/** See CThreadTask::Entry */
 	virtual void Entry();
 
-	std::vector<uint16> m_corruptedMD4;
-	std::vector<std::pair<uint16, std::vector<uint8>>> m_corruptedAICH;
+	CVerifyLocalDataResult::PartList m_corruptedMD4;
+	CVerifyLocalDataResult::BlockList m_corruptedAICH;
 	CMD4Hash m_fileID;
 
 private:
 	void PrintReport(const CPath &fullPath, const bool checkedAICH);
+	// Whether m_owner is still the file shared under m_fileID. m_owner is only compared, and
+	// dereferenced only after this says it is still alive.
+	bool OwnerStillShared() const;
+
+	// The file as it was when the check was requested.
+	const CKnownFile *m_owner;
+	CPath m_fullPath;
+	uint64 m_fileSize;
+	uint32 m_fileDate;
+	std::vector<CMD4Hash> m_md4Hashes;
+	CAICHHash m_aichRootHash;
+	EAICHStatus m_aichStatus;
 };
 
 /**
@@ -284,6 +304,38 @@ private:
 };
 
 /**
+ * Carries a completed CVerifyLocalDataTask's result to the main thread, which records it on the
+ * CKnownFile (persisted in known.met as FT_VERIFY_*). Only sent when the check ran to the end:
+ * a file that could not be read, or a cancelled task, says nothing about the data.
+ */
+class CVerifyLocalDataEvent : public wxEvent
+{
+public:
+	// fullPath, fileDate and fileSize identify the copy that was read, so the result is only
+	// recorded on a file that is still that copy.
+	CVerifyLocalDataEvent(const CMD4Hash &hash,
+		const CPath &fullPath,
+		uint32 fileDate,
+		uint64 fileSize,
+		const CVerifyLocalDataResult &result);
+
+	virtual wxEvent *Clone() const;
+
+	const CMD4Hash &GetHash() const { return m_hash; }
+	const CPath &GetFullPath() const { return m_fullPath; }
+	uint32 GetFileDate() const { return m_fileDate; }
+	uint64 GetFileSize() const { return m_fileSize; }
+	const CVerifyLocalDataResult &GetResult() const { return m_result; }
+
+private:
+	CMD4Hash m_hash;
+	CPath m_fullPath;
+	uint32 m_fileDate;
+	uint64 m_fileSize;
+	CVerifyLocalDataResult m_result;
+};
+
+/**
  * Sent when a part-file has been completed.
  */
 class CCompletionEvent : public wxEvent
@@ -374,12 +426,14 @@ wxDECLARE_EVENT(MULE_EVT_HASHING, wxEvent);
 wxDECLARE_EVENT(MULE_EVT_AICH_HASHING, wxEvent);
 wxDECLARE_EVENT(MULE_EVT_FILE_COMPLETED, wxEvent);
 wxDECLARE_EVENT(MULE_EVT_MEDIA_PROBE, wxEvent);
+wxDECLARE_EVENT(MULE_EVT_VERIFY_LOCAL_DATA, wxEvent);
 wxDECLARE_EVENT(MULE_EVT_HASHING_DRAINED, wxThreadEvent);
 
 typedef void (wxEvtHandler::*MuleHashingEventFunction)(CHashingEvent &);
 typedef void (wxEvtHandler::*MuleCompletionEventFunction)(CCompletionEvent &);
 typedef void (wxEvtHandler::*MuleAllocFinishedEventFunction)(CAllocFinishedEvent &);
 typedef void (wxEvtHandler::*MuleMediaProbeEventFunction)(CMediaProbeEvent &);
+typedef void (wxEvtHandler::*MuleVerifyLocalDataEventFunction)(CVerifyLocalDataEvent &);
 
 //! Event-handler for completed hashings of new shared files and partfiles.
 #define EVT_MULE_HASHING(func) \
@@ -403,6 +457,11 @@ typedef void (wxEvtHandler::*MuleMediaProbeEventFunction)(CMediaProbeEvent &);
 //! Event-handler for MediaProbe-completed events.
 #define EVT_MULE_MEDIA_PROBE(func) \
 	wx__DECLARE_EVT0(MULE_EVT_MEDIA_PROBE, wxEVENT_HANDLER_CAST(MuleMediaProbeEventFunction, func))
+
+//! Event-handler for completed Verify Local Data checks.
+#define EVT_MULE_VERIFY_LOCAL_DATA(func) \
+	wx__DECLARE_EVT0( \
+		MULE_EVT_VERIFY_LOCAL_DATA, wxEVENT_HANDLER_CAST(MuleVerifyLocalDataEventFunction, func))
 
 #endif // TASKS_H
 // File_checked_for_headers

@@ -87,6 +87,9 @@ wxBEGIN_EVENT_TABLE(CamuleGuiApp, wxApp)
 	// MediaProbe (#140) -- attaches media tags on the main thread.
 	EVT_MULE_MEDIA_PROBE(CamuleGuiApp::OnMediaProbeFinished)
 
+	// Verify Local Data -- records the check's result on the main thread.
+	EVT_MULE_VERIFY_LOCAL_DATA(CamuleGuiApp::OnVerifyLocalDataFinished)
+
 	// CPartFileHashThread per-part result
 	EVT_PARTFILE_HASH_RESULT(CamuleGuiApp::OnPartFileHashResult)
 

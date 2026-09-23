@@ -29,7 +29,7 @@
 #include <algorithm> // Needed for std::find, std::sort, std::min, std::max
 #include <vector>    // Needed for std::vector
 
-#include <common/MenuIDs.h> // Needed for MP_LISTCOL_1 .. MP_LISTCOL_15
+#include <common/MenuIDs.h> // Needed for MP_LISTCOL_1 .. MP_LISTCOL_25
 
 #include "GetTickCount.h"         // Needed for GetTickCount64()
 #include "MuleBarRenderer.h"      // Needed for CMuleBarRenderer
@@ -44,7 +44,7 @@ const uint64 kTypeAheadResetMs = 1500;
 wxBEGIN_EVENT_TABLE(CMuleDataViewCtrl, wxDataViewCtrl)
 	EVT_DATAVIEW_COLUMN_HEADER_CLICK(wxID_ANY, CMuleDataViewCtrl::OnColumnHeaderClick)
 	EVT_DATAVIEW_COLUMN_HEADER_RIGHT_CLICK(wxID_ANY, CMuleDataViewCtrl::OnColumnHeaderRightClick)
-	EVT_MENU_RANGE(MP_LISTCOL_1, MP_LISTCOL_20, CMuleDataViewCtrl::OnColumnMenuSelected)
+	EVT_MENU_RANGE(MP_LISTCOL_1, MP_LISTCOL_25, CMuleDataViewCtrl::OnColumnMenuSelected)
 	EVT_IDLE(CMuleDataViewCtrl::OnIdle)
 	EVT_CHAR(CMuleDataViewCtrl::OnChar)
 	EVT_KEY_DOWN(CMuleDataViewCtrl::OnKeyDown)
@@ -444,7 +444,7 @@ void CMuleDataViewCtrl::OnColumnHeaderRightClick(wxDataViewEvent &event)
 	wxMenu menu;
 	// Truncating here hides a column from the menu with no other symptom, so
 	// say so rather than let it pass: the range is meant to cover every list.
-	const unsigned menuSlots = MP_LISTCOL_20 - MP_LISTCOL_1 + 1;
+	const unsigned menuSlots = MP_LISTCOL_25 - MP_LISTCOL_1 + 1;
 	wxASSERT_MSG(RealColumnCount() <= menuSlots,
 		"more columns than MP_LISTCOL_* slots -- the extra ones cannot be shown or hidden");
 	const unsigned columns = std::min<unsigned>(RealColumnCount(), menuSlots);

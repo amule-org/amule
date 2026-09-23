@@ -561,7 +561,15 @@ void CKnownFile::RemoveUploadingClient(CUpDownClient *client)
 #ifndef CLIENT_GUI
 void CKnownFile::VerifyLocalData() const
 {
-	CThreadScheduler::AddTask(new CVerifyLocalDataTask(GetFileHash()));
+	// The task snapshots this file, so the check reads this copy and its result is recorded on
+	// it -- not on whichever record a hash lookup would return for the same content.
+	if (IsPartFile()) {
+		AddLogLineN(CFormat(_("Verify Local Data: %s is still downloading, so it was not "
+				      "checked.")) %
+			    GetFileName());
+		return;
+	}
+	CThreadScheduler::AddTask(new CVerifyLocalDataTask(this));
 }
 
 // Live upload activity summarised from m_ClientUploadList (issue #466). Core-only: the list is
@@ -677,6 +685,8 @@ bool CKnownFile::LoadTagsFromFile(const CFileDataIO *file)
 {
 	uint32 tagcount = file->ReadUInt32();
 	m_taglist.clear();
+	m_verifyResult = CVerifyLocalDataResult();
+	wxString verifyCorruptMD4, verifyCorruptAICH;
 	for (uint32 j = 0; j != tagcount; ++j) {
 		CTag newtag(*file, true);
 		switch (newtag.GetNameID()) {
@@ -781,10 +791,28 @@ bool CKnownFile::LoadTagsFromFile(const CFileDataIO *file)
 			m_dateShared = static_cast<time_t>(newtag.GetInt());
 			break;
 
+		case FT_VERIFY_DATE:
+			m_verifyResult.date = newtag.GetInt();
+			break;
+
+		case FT_VERIFY_CORRUPTMD4:
+			verifyCorruptMD4 = newtag.GetStr();
+			break;
+
+		case FT_VERIFY_CORRUPTAICH:
+			verifyCorruptAICH = newtag.GetStr();
+			break;
+
 		default:
 			// Store them here and write them back on saving.
 			m_taglist.push_back(newtag);
 		}
+	}
+
+	// Corrupt lists without a date are orphans of a damaged record; drop them. Decoded after
+	// the loop, as validating them needs FT_FILESIZE.
+	if (m_verifyResult.date) {
+		m_verifyResult.DecodeCorrupted(verifyCorruptMD4, verifyCorruptAICH, GetFileSize());
 	}
 
 	return true;
@@ -863,6 +891,19 @@ bool CKnownFile::WriteToFile(CFileDataIO *file)
 		++tagcount;
 	}
 
+	// Verify Local Data: the date after any completed check, the lists only on damage.
+	const wxString verifyCorruptMD4 = m_verifyResult.EncodeCorruptedMD4();
+	const wxString verifyCorruptAICH = m_verifyResult.EncodeCorruptedAICH();
+	if (m_verifyResult.date) {
+		++tagcount;
+		if (!verifyCorruptMD4.IsEmpty()) {
+			++tagcount;
+		}
+		if (!verifyCorruptAICH.IsEmpty()) {
+			++tagcount;
+		}
+	}
+
 	// standard tags
 
 	file->WriteUInt32(tagcount);
@@ -933,6 +974,16 @@ bool CKnownFile::WriteToFile(CFileDataIO *file)
 	if (m_dateShared) {
 		CTagInt32 sharedSinceTag(FT_SHAREDSINCE, (uint32)m_dateShared);
 		sharedSinceTag.WriteTagToFile(file);
+	}
+
+	if (m_verifyResult.date) {
+		CTagInt32(FT_VERIFY_DATE, m_verifyResult.date).WriteTagToFile(file);
+		if (!verifyCorruptMD4.IsEmpty()) {
+			CTagString(FT_VERIFY_CORRUPTMD4, verifyCorruptMD4).WriteTagToFile(file);
+		}
+		if (!verifyCorruptAICH.IsEmpty()) {
+			CTagString(FT_VERIFY_CORRUPTAICH, verifyCorruptAICH).WriteTagToFile(file);
+		}
 	}
 
 	// other tags

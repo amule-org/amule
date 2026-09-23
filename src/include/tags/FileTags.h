@@ -89,6 +89,19 @@
 // A media refresh (issue #1079) ignores it and clears it on success, so the marker is a default,
 // never a life sentence.
 #define FT_MEDIA_PROBE_FAILED 0x57 // <uint32> aMule-internal, see above
+// Outcome of the last completed "Verify Local Data" (CVerifyLocalDataTask) on a complete file,
+// re-read from disk and checked against the stored MD4 and AICH hashes. aMule-internal like
+// FT_MEDIA_PROBE_FAILED: stored in known.met, never published.
+//
+// FT_VERIFY_DATE is written after every completed check, OK or not. The two lists are written
+// only when the check found damage, so a file with a date and no lists verified clean then:
+//   FT_VERIFY_CORRUPTMD4  "p,p,p"         corrupt parts, same format as FT_CORRUPTEDPARTS
+//   FT_VERIFY_CORRUPTAICH "p:b.b;p:b"     corrupt AICH blocks (EMBLOCKSIZE) within each part
+// A new FT_CORRUPTEDPARTS-style id rather than reusing 0x24: that one means "part re-opened as a
+// gap" in a .part.met, and giving it a second meaning in known.met would only confuse readers.
+#define FT_VERIFY_DATE 0x58        // <uint32> aMule-internal, see above
+#define FT_VERIFY_CORRUPTMD4 0x59  // <string> aMule-internal, see above
+#define FT_VERIFY_CORRUPTAICH 0x5A // <string> aMule-internal, see above
 #define FT_FILERATING 0xF7         // <uint8>
 
 // Kad search + some unused tags to mirror the ed2k ones.

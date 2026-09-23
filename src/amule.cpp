@@ -29,6 +29,7 @@
 
 #include <csignal>
 #include <cstring>
+#include <set> // Needed for std::set (OnVerifyLocalDataFinished)
 #include <wx/process.h>
 #include <wx/sstream.h>
 #include "config.h" // Needed for HAVE_GETRLIMIT, HAVE_SETRLIMIT,
@@ -2095,13 +2096,13 @@ void CamuleApp::OnCoreTimer(CTimerEvent &WXUNUSED(evt))
 		msPrevKnownMet = msCur;
 	}
 
-	// Coalesced flush of media-probe tag updates: OnMediaProbeFinished bumps
-	// m_mediaTagsDirtiedMs on every probe instead of saving inline; save once here when
-	// probing has been idle for 30 s. Resets the periodic timer above so known.met is not
-	// rewritten twice in quick succession.
-	if (m_mediaTagsDirtiedMs && msCur - m_mediaTagsDirtiedMs >= 30000) {
+	// Coalesced flush of media-probe tag and Verify Local Data updates: OnMediaProbeFinished
+	// and OnVerifyLocalDataFinished bump m_knownMetDirtiedMs instead of saving inline; save
+	// once here when they have been idle for 30 s. Resets the periodic timer above so
+	// known.met is not rewritten twice in quick succession.
+	if (m_knownMetDirtiedMs && msCur - m_knownMetDirtiedMs >= 30000) {
 		knownfiles->Save();
-		m_mediaTagsDirtiedMs = 0;
+		m_knownMetDirtiedMs = 0;
 		msPrevKnownMet = msCur;
 	}
 
@@ -2394,7 +2395,7 @@ void CamuleApp::OnMediaProbeFinished(CMediaProbeEvent &evt)
 			if (sharedFile) {
 				sharedFile->AddTagUnique(CTagInt32(FT_MEDIA_PROBE_FAILED, 1));
 			}
-			m_mediaTagsDirtiedMs = theStats::GetUptimeMillis();
+			m_knownMetDirtiedMs = theStats::GetUptimeMillis();
 		}
 		return;
 	}
@@ -2483,7 +2484,69 @@ void CamuleApp::OnMediaProbeFinished(CMediaProbeEvent &evt)
 	// could re-enter Save mid-write. Bump the last-change stamp on every probe; OnCoreTimer
 	// flushes a single Save once probing has been idle for 30 s. The 30-min periodic save
 	// is the backstop.
-	m_mediaTagsDirtiedMs = theStats::GetUptimeMillis();
+	m_knownMetDirtiedMs = theStats::GetUptimeMillis();
+}
+
+void CamuleApp::OnVerifyLocalDataFinished(CVerifyLocalDataEvent &evt)
+{
+	// The result is about one file on disk, so it is recorded only on the record that still IS
+	// the copy that was read: same path, date and size. Unlike media tags, it must not spread to
+	// other records of the same hash -- content held at several paths can be intact at one and
+	// damaged at another. The task checked the shared file, but the known-file map may hold a
+	// different record for the hash, so both are looked at; if the file was renamed, touched or
+	// unshared meanwhile, neither matches and the result is dropped. An OK result replaces an
+	// earlier failure, so a repaired file does not stay marked.
+	const CMD4Hash &hash = evt.GetHash();
+	auto isCheckedCopy = [&evt, &hash](const CKnownFile *f) {
+		return f && !f->IsPartFile() && f->GetFileHash() == hash &&
+		       f->GetFilePath().JoinPaths(f->GetFileName()) == evt.GetFullPath() &&
+		       (uint32)f->GetLastChangeDatetime() == evt.GetFileDate() &&
+		       f->GetFileSize() == evt.GetFileSize();
+	};
+	CKnownFile *checked = sharedfiles ? sharedfiles->GetFileByID(hash) : nullptr;
+	if (!isCheckedCopy(checked)) {
+		checked = knownfiles->FindKnownFileByID(hash);
+		if (!isCheckedCopy(checked)) {
+			AddDebugLogLineN(logVerifyLocalData,
+				CFormat("Verified file changed or is no longer known, result discarded: %s") %
+					evt.GetFullPath());
+			return;
+		}
+	}
+	checked->SetVerifyResult(evt.GetResult());
+	// Redraw the row: the task's last progress update has already gone out before this.
+	Notify_SharedFilesUpdateItem(checked);
+	m_knownMetDirtiedMs = theStats::GetUptimeMillis();
+
+	// Point the user at other files with the same content in the shared folders: one of them
+	// may be an intact copy of the corrupt data. Only the name is given -- known.met stores no
+	// directory, and keeping one per copy would cost memory for a rare case. A copy is reported
+	// if the share scan matched it this session (a pinned duplicate, which is what a copy the
+	// scan refused to share always is), or if its record still holds a directory from this
+	// session -- set when it was shared or hashed -- and the file there is unchanged. The copy
+	// itself is not verified, hence "may".
+	if (evt.GetResult().IsCorrupt()) {
+		std::set<wxString> reported;
+		for (const CKnownFileList::OtherCopy &copy : knownfiles->FindOtherCopies(hash, checked)) {
+			if (copy.fullPath.IsOk() && copy.fullPath == evt.GetFullPath()) {
+				continue;
+			}
+			const bool onDisk = copy.fullPath.IsOk() &&
+					    CPath::GetModificationTime(copy.fullPath) == copy.date &&
+					    copy.fullPath.GetFileSize() == (sint64)copy.size;
+			if (!onDisk && !copy.seenByScan) {
+				continue;
+			}
+			if (!reported.insert(copy.fileName.GetRaw()).second) {
+				continue;
+			}
+			AddLogLineC(
+				CFormat(_("Verify Local Data: another file named '%s' in your shared "
+					  "folders has the same content as '%s' and may be an intact copy "
+					  "of it.")) %
+				copy.fileName % evt.GetFullPath());
+		}
+	}
 }
 
 void CamuleApp::OnFinishedCompletion(CCompletionEvent &evt)
