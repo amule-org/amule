@@ -16,6 +16,7 @@
 
 #include "SharedDirWatcher.h"
 
+#include <cstdlib> // realpath, free
 #include <set>
 #include <utility>
 #include <vector>
@@ -282,6 +283,20 @@ void CSharedDirWatcher::RegisterAllPaths()
 	}
 
 #ifdef __WXOSX__
+	// FSEvents reports symlink-resolved paths (/private/tmp for /tmp), which the recursive roots
+	// as stored would not prefix-match.
+	m_resolvedRecursiveRoots.clear();
+	for (const CPath &root : theApp->glob_prefs->shareddir_recursive_list) {
+		char *resolved = realpath(root.GetRaw().fn_str(), nullptr);
+		if (resolved) {
+			const CPath real(wxString(resolved, wxConvFile));
+			free(resolved);
+			if (real.GetRaw() != root.GetRaw()) {
+				m_resolvedRecursiveRoots.push_back(real);
+			}
+		}
+	}
+
 	// macOS: route through AddTree(), which uses FSEvents (kernel-level recursive watch). wx
 	// 3.3.2's bare Add() falls through to the kqueue base and returns false on otherwise-openable
 	// directories -- verified against wx upstream and reproduced locally. AddTree() is also the
@@ -509,6 +524,18 @@ void CSharedDirWatcher::RegisterNewSubdirectory(const wxString &path)
 	ScanNewSubdirRace(p);
 }
 
+bool CSharedDirWatcher::IsInExcludedFolder(const wxString &filePath) const
+{
+	// macOS watches whole trees, so files inside an excluded folder raise events too.
+	const CPath dir = CPath(filePath).GetPath();
+	if (!dir.IsOk()) {
+		return false;
+	}
+	return theApp->glob_prefs->IsInExcludedFolder(dir) ||
+	       (!m_resolvedRecursiveRoots.empty() &&
+		       CPreferences::IsInExcludedFolder(m_resolvedRecursiveRoots, dir));
+}
+
 bool CSharedDirWatcher::IsInSharedSet(const wxString &path) const
 {
 	CPath p(path);
@@ -701,6 +728,9 @@ void CSharedDirWatcher::WalkForUnknownSubdirs(
 	CDirIterator dir(root);
 	for (CPath sub = dir.GetFirstFile(CDirIterator::Dir, wxEmptyString, extraFlags); sub.IsOk();
 		sub = dir.GetNextFile()) {
+		if (thePrefs::IsShareExcluded(sub.GetPrintable())) {
+			continue;
+		}
 		CPath full = root.JoinPaths(sub);
 		const wxString key = full.GetRaw();
 		if (known.find(key) == known.end()) {
@@ -794,7 +824,7 @@ void CSharedDirWatcher::FlushPendingEvents()
 				continue;
 			}
 			m_parent->NotifyPathRemoved(path);
-			if (!ev.renamedTo.IsEmpty()) {
+			if (!ev.renamedTo.IsEmpty() && !IsInExcludedFolder(ev.renamedTo)) {
 				m_parent->NotifyPathAdded(ev.renamedTo);
 			}
 			continue;
@@ -822,7 +852,9 @@ void CSharedDirWatcher::FlushPendingEvents()
 		// CREATE means add. MODIFY-only without CREATE means modify, which in NotifyPathModified
 		// is a stat-and-rehash-if-changed path -- cheap when nothing actually moved.
 		if (ev.flags & wxFSW_EVENT_CREATE) {
-			m_parent->NotifyPathAdded(path);
+			if (!IsInExcludedFolder(path)) {
+				m_parent->NotifyPathAdded(path);
+			}
 		} else if (ev.flags & wxFSW_EVENT_MODIFY) {
 			m_parent->NotifyPathModified(path);
 		}

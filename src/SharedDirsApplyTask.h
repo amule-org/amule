@@ -25,6 +25,8 @@
 
 #include <common/Path.h>
 
+#include "ShareExclude.h" // CShareExcludeFilter
+
 // Worker thread that flattens the user's pending share intent (explicit-shared paths + recursive-
 // share roots) into a single flat path list ready to drop into CPreferences::shareddir_list. The
 // recursive expansion is the historically long-running step that used to freeze the Directories
@@ -70,6 +72,9 @@ private:
 	PathList m_recursive; // copy of the caller's recursive intents
 	wxEvtHandler *m_owner;
 	PathList m_output; // flat path list, filled during Entry()
+	// Private copy: the live filter's wxRegEx is not safe to match from this thread while the
+	// main thread uses it.
+	CShareExcludeFilter m_excludeFilter;
 
 	std::atomic<size_t> m_scanned{ 0 }; // directories visited so far
 	std::atomic<bool> m_cancelled{ false };

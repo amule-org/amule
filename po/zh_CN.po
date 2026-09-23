@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-23 09:04+0100\n"
+"POT-Creation-Date: 2026-09-23 12:47+0100\n"
 "PO-Revision-Date: 2026-09-23 10:02+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
@@ -4789,11 +4789,13 @@ msgid "Follow symbolic links in shared folders"
 msgstr "在共享文件夹中跟踪符号链接"
 
 #: src/muuli_wdr.cpp
-msgid "Exclude files matching:"
+#, fuzzy
+msgid "Exclude files and folders matching:"
 msgstr "排除文件匹配："
 
 #: src/muuli_wdr.cpp
-msgid "Files whose name matches are not shared. Matching is case-insensitive. As wildcards: patterns separated by '|', e.g. .DS_Store|Thumbs.db|*.tmp, where '*' matches any run of characters and '?' a single one. Tick the box below to write one regular expression instead."
+#, fuzzy
+msgid "Files and folders whose name matches are not shared. A matching folder inside a share that includes its subfolders is skipped with everything in it; a folder you share yourself is always shared. Matching is case-insensitive. As wildcards: patterns separated by '|', e.g. .DS_Store|Thumbs.db|*.tmp, where '*' matches any run of characters and '?' a single one. Tick the box below to write one regular expression instead."
 msgstr "名称匹配不共享的文件。匹配不区分大小写。通配符：以“|”分隔的模式，例如 .DS_Store|Thumbs.db|*.tmp，“*”匹配任意连续字符，“?”匹配单个字符。勾选下面的方框写一个正则表达式。"
 
 #: src/muuli_wdr.cpp
@@ -4805,7 +4807,8 @@ msgid "When set, the whole field is one regular expression: '|' is alternation, 
 msgstr "启用后，整个字段是一个正则表达式（'|' 表示交替，'*' 和 '?' 表示的是正则表达式含义，而不是通配符含义。）。禁用后，它是一个以 '|' 分隔的通配符列表。"
 
 #: src/muuli_wdr.cpp
-msgid "Show how many of the files in your shared folders the current pattern would exclude, counted over the last scan."
+#, fuzzy
+msgid "Show how many of the files and folders in your shared folders the current pattern would exclude, counted over the last scan."
 msgstr "在上次扫描基础上显示当前模式会排除共享文件夹中多少个文件。"
 
 #: src/muuli_wdr.cpp
@@ -6257,6 +6260,14 @@ msgid "No password set."
 msgstr "未设置密码。"
 
 #: src/PrefsUnifiedDlg.cpp
+msgid "The shared-file exclusion pattern is not a valid regular expression. The filter has been left disabled."
+msgstr "共享文件排除模式不是有效的正则表达式。已禁用该筛选器。"
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "Invalid regular expression"
+msgstr "无效的正则表达式"
+
+#: src/PrefsUnifiedDlg.cpp
 msgid "Guest access needs a password. Type one in the guest password field, or untick Enable guest access."
 msgstr "访客访问需要密码。请在访客密码字段中输入密码，或取消勾选启用访客访问。"
 
@@ -6336,14 +6347,6 @@ msgstr "- 临时文件目录已更改。\n"
 #: src/PrefsUnifiedDlg.cpp
 msgid "- ED2K network enabled.\n"
 msgstr "-ED2K网络已启用。\n"
-
-#: src/PrefsUnifiedDlg.cpp
-msgid "The shared-file exclusion pattern is not a valid regular expression. The filter has been left disabled."
-msgstr "共享文件排除模式不是有效的正则表达式。已禁用该筛选器。"
-
-#: src/PrefsUnifiedDlg.cpp
-msgid "Invalid regular expression"
-msgstr "无效的正则表达式"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
@@ -6468,6 +6471,18 @@ msgid "Would exclude %u of %u file in your shared folders"
 msgid_plural "Would exclude %u of %u files in your shared folders"
 msgstr[0] "将排除共享文件夹中 %u 个共享文件，共 %u 个"
 msgstr[1] "将排除共享文件夹中 %u 个共享文件，共 %u 个"
+
+#: src/PrefsUnifiedDlg.cpp
+#, fuzzy, c-format
+msgid "Would also exclude %u or more folders, with everything in them"
+msgstr "将排除共享文件夹中至少 %u 个共享文件"
+
+#: src/PrefsUnifiedDlg.cpp
+#, c-format
+msgid "Would also exclude %u folder, with everything in it"
+msgid_plural "Would also exclude %u folders, with everything in them"
+msgstr[0] ""
+msgstr[1] ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Browse for videoplayer"

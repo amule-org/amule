@@ -33,7 +33,6 @@
 
 #include <wx/config.h>
 #include <wx/dir.h>
-#include <wx/regex.h> // Needed for wxRegEx (shared-file exclusion filter)
 #include <wx/stdpaths.h>
 #include <wx/stopwatch.h>
 #include <wx/tokenzr.h>
@@ -874,79 +873,6 @@ public:
 protected:
 	bool m_is_skin;
 };
-
-CShareExcludeFilter::CShareExcludeFilter()
-: m_regex(nullptr)
-, m_useRegex(false)
-, m_active(false)
-, m_valid(true)
-{
-}
-
-CShareExcludeFilter::~CShareExcludeFilter()
-{
-	delete m_regex;
-}
-
-void CShareExcludeFilter::Compile(const wxString &patterns, bool useRegex)
-{
-	m_globs.Clear();
-	delete m_regex;
-	m_regex = nullptr;
-	m_useRegex = useRegex;
-	m_active = false;
-	m_valid = true;
-
-	wxString trimmed = patterns;
-	trimmed.Trim(true).Trim(false);
-	if (trimmed.IsEmpty()) {
-		return;
-	}
-
-	if (useRegex) {
-		// The whole string is one regex: '|' is native alternation, so
-		// it is NOT split. Case-insensitive to match the wildcard mode.
-		m_regex = new wxRegEx(trimmed, wxRE_ADVANCED | wxRE_ICASE | wxRE_NOSUB);
-		if (m_regex->IsValid()) {
-			m_active = true;
-		} else {
-			// Fail open: a bad regex disables the filter rather than
-			// excluding everything.
-			delete m_regex;
-			m_regex = nullptr;
-			m_valid = false;
-		}
-	} else {
-		// Wildcard mode: '|' separates globs, matched case-insensitively (globs are
-		// lowercased here, the filename is lowercased in Matches()).
-		wxStringTokenizer tokenizer(trimmed, wxT("|"));
-		while (tokenizer.HasMoreTokens()) {
-			wxString glob = tokenizer.GetNextToken();
-			glob.Trim(true).Trim(false);
-			if (!glob.IsEmpty()) {
-				m_globs.Add(glob.Lower());
-			}
-		}
-		m_active = !m_globs.IsEmpty();
-	}
-}
-
-bool CShareExcludeFilter::Matches(const wxString &fileName) const
-{
-	if (!m_active) {
-		return false;
-	}
-	if (m_useRegex) {
-		return m_regex && m_regex->Matches(fileName);
-	}
-	const wxString lower = fileName.Lower();
-	for (size_t i = 0; i < m_globs.GetCount(); ++i) {
-		if (wxMatchWild(m_globs[i], lower, false)) {
-			return true;
-		}
-	}
-	return false;
-}
 
 int CPreferences::PreviewExcludeCount(const wxString &patterns, bool useRegex, const wxArrayString &fileNames)
 {
@@ -2358,19 +2284,6 @@ bool LoadDirListFile(const wxString &path, CPreferences::PathList &out)
 	return true;
 }
 
-// Walk `root` recursively, appending `root` itself and every descendant directory to
-// `out`. Hidden subdirs are included, matching the runtime watcher's AddTree().
-void ExpandRecursiveRoot(const CPath &root, CPreferences::PathList &out)
-{
-	if (!root.IsOk() || !root.DirExists()) {
-		return;
-	}
-	out.push_back(root);
-	for (const CPath &sub : ListSubdirectories(root)) {
-		ExpandRecursiveRoot(root.JoinPaths(sub), out);
-	}
-}
-
 } // namespace
 
 void CPreferences::ReloadSharedFolders()
@@ -2401,8 +2314,19 @@ void CPreferences::ReloadSharedFolders()
 	// directory. This is the *runtime* expansion -- newly-created subdirs of recursive roots
 	// are caught here on the next ReloadSharedFolders.
 	PathList expansion;
+	m_expandedFolderNames.Clear();
+	m_expandedFolderNamesTruncated = false;
 	for (size_t i = 0; i < shareddir_recursive_list.size(); ++i) {
-		ExpandRecursiveRoot(shareddir_recursive_list[i], expansion);
+		ShareExclude::ExpandRecursiveRoot(s_ShareExcludeFilter,
+			shareddir_recursive_list[i],
+			expansion,
+			m_expandedFolderNames,
+			kMaxExpandedFolderNamesTracked,
+			m_expandedFolderNamesTruncated,
+			[](const CPath &dir) {
+				AddDebugLogLineN(
+					logKnownFiles, CFormat("Excluded from shares by filter: %s") % dir);
+			});
 	}
 
 	// Build the expected union as a set for cheap membership tests. The set is keyed on raw
@@ -2442,8 +2366,13 @@ void CPreferences::ReloadSharedFolders()
 		// restart. The check is safe because shareddir-explicit/recursive.dat are loaded above
 		// without an existence filter (#703), so a temporarily-offline network share marked as
 		// explicit or recursive persists across restarts regardless.
+		//
+		// Excluded-folder gate: an entry under a recursive root that only an excluded folder
+		// keeps out of the expansion is what an earlier expansion wrote, before the filter
+		// matched it. Importing it would share the folder the user just excluded.
 		for (size_t i = 0; i < onDisk.size(); ++i) {
-			if (expected.find(onDisk[i].GetRaw()) == expected.end() && onDisk[i].DirExists()) {
+			if (expected.find(onDisk[i].GetRaw()) == expected.end() && onDisk[i].DirExists() &&
+				!IsInExcludedFolder(onDisk[i])) {
 				shareddir_explicit_list.push_back(onDisk[i]);
 				expected.insert(onDisk[i].GetRaw());
 			}
@@ -2489,29 +2418,30 @@ void CPreferences::ReloadSharedFolders()
 
 bool CPreferences::IsRecursiveAncestor(const CPath &path) const
 {
-	if (!path.IsOk()) {
-		return false;
-	}
-	const wxString target = path.GetRaw();
-	for (size_t i = 0; i < shareddir_recursive_list.size(); ++i) {
-		const wxString root = shareddir_recursive_list[i].GetRaw();
-		if (root.IsEmpty()) {
-			continue;
-		}
-		// Exact match: the path *is* a recursive root.
-		if (target == root) {
-			return true;
-		}
-		// Prefix match with a separator boundary, so /home is not reported as an ancestor of
-		// /home2. A trailing separator on root is tolerated.
-		const wxChar sep = wxFileName::GetPathSeparator();
-		const wxChar lastChar = root.Last();
-		if (target.length() > root.length() && target.StartsWith(root) &&
-			(lastChar == sep || target[root.length()] == sep)) {
-			return true;
-		}
-	}
-	return false;
+	return ShareExclude::GetRecursiveCoverage(s_ShareExcludeFilter, shareddir_recursive_list, path) ==
+	       ShareExclude::RecursiveCoverage::Covered;
+}
+
+bool CPreferences::IsInExcludedFolder(const CPath &path) const
+{
+	return IsInExcludedFolder(shareddir_recursive_list, path);
+}
+
+bool CPreferences::IsInExcludedFolder(const PathList &roots, const CPath &path)
+{
+	return ShareExclude::GetRecursiveCoverage(s_ShareExcludeFilter, roots, path) ==
+	       ShareExclude::RecursiveCoverage::Excluded;
+}
+
+void CPreferences::GetExpandedFolderNames(wxArrayString &out, bool &truncated) const
+{
+	out = m_expandedFolderNames;
+	truncated = m_expandedFolderNamesTruncated;
+}
+
+bool CPreferences::HasExcludedFolderBelow(const CPath &root, const CPath &path)
+{
+	return ShareExclude::HasExcludedFolderBelow(s_ShareExcludeFilter, root, path);
 }
 
 bool CPreferences::IsMessageFiltered(const wxString &message)

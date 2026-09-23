@@ -158,6 +158,7 @@ if (BUILD_MONOLITHIC OR BUILD_DAEMON OR BUILD_REMOTEGUI)
 		PartFile.cpp
 		Preferences.cpp
 		Proxy.cpp
+		ShareExclude.cpp
 		Server.cpp
 		Statistics.cpp
 		StatTree.cpp

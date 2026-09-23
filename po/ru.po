@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-23 09:04+0100\n"
+"POT-Creation-Date: 2026-09-23 12:47+0100\n"
 "PO-Revision-Date: 2026-09-23 09:57+0000\n"
 "Last-Translator: Radist Morse <radist.morse@gmail.com>\n"
 "Language-Team: Russian <kde-russian@lists.kde.ru>\n"
@@ -4831,11 +4831,13 @@ msgid "Follow symbolic links in shared folders"
 msgstr "Переходить по символическим ссылкам в общих папках"
 
 #: src/muuli_wdr.cpp
-msgid "Exclude files matching:"
+#, fuzzy
+msgid "Exclude files and folders matching:"
 msgstr "Исключать файлы по шаблону:"
 
 #: src/muuli_wdr.cpp
-msgid "Files whose name matches are not shared. Matching is case-insensitive. As wildcards: patterns separated by '|', e.g. .DS_Store|Thumbs.db|*.tmp, where '*' matches any run of characters and '?' a single one. Tick the box below to write one regular expression instead."
+#, fuzzy
+msgid "Files and folders whose name matches are not shared. A matching folder inside a share that includes its subfolders is skipped with everything in it; a folder you share yourself is always shared. Matching is case-insensitive. As wildcards: patterns separated by '|', e.g. .DS_Store|Thumbs.db|*.tmp, where '*' matches any run of characters and '?' a single one. Tick the box below to write one regular expression instead."
 msgstr "Файлы с совпадающим именем не публикуются. Регистр не учитывается. Как подстановочные знаки: шаблоны, разделённые «|», например .DS_Store|Thumbs.db|*.tmp, где «*» соответствует любой последовательности символов, а «?» — одному. Установите флажок ниже, чтобы вместо этого задать одно регулярное выражение."
 
 #: src/muuli_wdr.cpp
@@ -4847,7 +4849,8 @@ msgid "When set, the whole field is one regular expression: '|' is alternation, 
 msgstr "Если включено, всё поле является одним регулярным выражением: «|» означает альтернативу, а «*» и «?» имеют смысл регулярного выражения, а не подстановочных знаков. Если выключено, это список подстановочных шаблонов, разделённых «|»."
 
 #: src/muuli_wdr.cpp
-msgid "Show how many of the files in your shared folders the current pattern would exclude, counted over the last scan."
+#, fuzzy
+msgid "Show how many of the files and folders in your shared folders the current pattern would exclude, counted over the last scan."
 msgstr "Показать, сколько файлов в ваших общих папках исключит текущий шаблон, по результатам последнего сканирования."
 
 #: src/muuli_wdr.cpp
@@ -6311,6 +6314,14 @@ msgid "No password set."
 msgstr "Пароль не задан."
 
 #: src/PrefsUnifiedDlg.cpp
+msgid "The shared-file exclusion pattern is not a valid regular expression. The filter has been left disabled."
+msgstr "Шаблон исключения общих файлов не является допустимым регулярным выражением. Фильтр оставлен отключённым."
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "Invalid regular expression"
+msgstr "Недопустимое регулярное выражение"
+
+#: src/PrefsUnifiedDlg.cpp
 msgid "Guest access needs a password. Type one in the guest password field, or untick Enable guest access."
 msgstr "Для гостевого доступа требуется пароль. Введите его в поле гостевого пароля или снимите отметку с пункта «Включить гостевой доступ»."
 
@@ -6390,14 +6401,6 @@ msgstr "- Изменен временный каталог.\n"
 #: src/PrefsUnifiedDlg.cpp
 msgid "- ED2K network enabled.\n"
 msgstr "- сеть eD2k включена. \n"
-
-#: src/PrefsUnifiedDlg.cpp
-msgid "The shared-file exclusion pattern is not a valid regular expression. The filter has been left disabled."
-msgstr "Шаблон исключения общих файлов не является допустимым регулярным выражением. Фильтр оставлен отключённым."
-
-#: src/PrefsUnifiedDlg.cpp
-msgid "Invalid regular expression"
-msgstr "Недопустимое регулярное выражение"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
@@ -6523,6 +6526,19 @@ msgid_plural "Would exclude %u of %u files in your shared folders"
 msgstr[0] "Будет исключён %u из %u файла в ваших общих папках"
 msgstr[1] "Будут исключены %u из %u файлов в ваших общих папках"
 msgstr[2] "Будет исключено %u из %u файлов в ваших общих папках"
+
+#: src/PrefsUnifiedDlg.cpp
+#, fuzzy, c-format
+msgid "Would also exclude %u or more folders, with everything in them"
+msgstr "Будет исключено %u или более файлов в ваших общих папках"
+
+#: src/PrefsUnifiedDlg.cpp
+#, c-format
+msgid "Would also exclude %u folder, with everything in it"
+msgid_plural "Would also exclude %u folders, with everything in them"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Browse for videoplayer"

@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-23 09:04+0100\n"
+"POT-Creation-Date: 2026-09-23 12:47+0100\n"
 "PO-Revision-Date: 2026-09-23 10:00+0000\n"
 "Last-Translator: raffe <raffe@localhost.se>\n"
 "Language-Team: Swedish <tp-sv@listor.tp-sv.se>\n"
@@ -4790,11 +4790,12 @@ msgid "Follow symbolic links in shared folders"
 msgstr "Följ symboliska länkar i delade mappar"
 
 #: src/muuli_wdr.cpp
-msgid "Exclude files matching:"
+#, fuzzy
+msgid "Exclude files and folders matching:"
 msgstr "Uteslut filer som matchar:"
 
 #: src/muuli_wdr.cpp
-msgid "Files whose name matches are not shared. Matching is case-insensitive. As wildcards: patterns separated by '|', e.g. .DS_Store|Thumbs.db|*.tmp, where '*' matches any run of characters and '?' a single one. Tick the box below to write one regular expression instead."
+msgid "Files and folders whose name matches are not shared. A matching folder inside a share that includes its subfolders is skipped with everything in it; a folder you share yourself is always shared. Matching is case-insensitive. As wildcards: patterns separated by '|', e.g. .DS_Store|Thumbs.db|*.tmp, where '*' matches any run of characters and '?' a single one. Tick the box below to write one regular expression instead."
 msgstr ""
 
 #: src/muuli_wdr.cpp
@@ -4807,7 +4808,7 @@ msgstr ""
 
 #: src/muuli_wdr.cpp
 #, fuzzy
-msgid "Show how many of the files in your shared folders the current pattern would exclude, counted over the last scan."
+msgid "Show how many of the files and folders in your shared folders the current pattern would exclude, counted over the last scan."
 msgstr "Visa hur många delade filer det aktuella mönstret skulle utesluta."
 
 #: src/muuli_wdr.cpp
@@ -6259,6 +6260,14 @@ msgid "No password set."
 msgstr "Inget lösenord angivet."
 
 #: src/PrefsUnifiedDlg.cpp
+msgid "The shared-file exclusion pattern is not a valid regular expression. The filter has been left disabled."
+msgstr "Uteslutningsmönstret för delade filer är inte ett giltigt reguljärt uttryck. Filtret har lämnats inaktiverat."
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "Invalid regular expression"
+msgstr "Ogiltigt reguljärt uttryck"
+
+#: src/PrefsUnifiedDlg.cpp
 msgid "Guest access needs a password. Type one in the guest password field, or untick Enable guest access."
 msgstr "Gäståtkomst kräver ett lösenord. Ange ett i fältet för gästlösenord eller avmarkera Aktivera gäståtkomst."
 
@@ -6338,14 +6347,6 @@ msgstr "- Mappen Temp ändrades.\n"
 #: src/PrefsUnifiedDlg.cpp
 msgid "- ED2K network enabled.\n"
 msgstr "- ED2K-nätverk aktiverad.\n"
-
-#: src/PrefsUnifiedDlg.cpp
-msgid "The shared-file exclusion pattern is not a valid regular expression. The filter has been left disabled."
-msgstr "Uteslutningsmönstret för delade filer är inte ett giltigt reguljärt uttryck. Filtret har lämnats inaktiverat."
-
-#: src/PrefsUnifiedDlg.cpp
-msgid "Invalid regular expression"
-msgstr "Ogiltigt reguljärt uttryck"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
@@ -6470,6 +6471,18 @@ msgid "Would exclude %u of %u file in your shared folders"
 msgid_plural "Would exclude %u of %u files in your shared folders"
 msgstr[0] "Skulle utesluta %u av %u delad fil"
 msgstr[1] "Skulle utesluta %u av %u delade filer"
+
+#: src/PrefsUnifiedDlg.cpp
+#, fuzzy, c-format
+msgid "Would also exclude %u or more folders, with everything in them"
+msgstr "Skulle utesluta %u av %u delad fil"
+
+#: src/PrefsUnifiedDlg.cpp
+#, c-format
+msgid "Would also exclude %u folder, with everything in it"
+msgid_plural "Would also exclude %u folders, with everything in them"
+msgstr[0] ""
+msgstr[1] ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Browse for videoplayer"

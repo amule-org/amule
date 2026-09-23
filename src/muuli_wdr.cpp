@@ -1871,10 +1871,10 @@ wxSizer *PreferencesDirectoriesTab( wxWindow *parent, bool call_fit, bool set_si
 
     // Shared-file exclusion filter: files whose name matches are not shared.
     wxBoxSizer *itemExcludeRow = new wxBoxSizer( wxHORIZONTAL );
-    wxStaticText *itemExcludeLabel = new wxStaticText( item10, -1, _("Exclude files matching:"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *itemExcludeLabel = new wxStaticText( item10, -1, _("Exclude files and folders matching:"), wxDefaultPosition, wxDefaultSize, 0 );
     itemExcludeRow->Add( itemExcludeLabel, wxSizerFlags().CenterVertical().Border(wxRIGHT, 4) );
     CMuleTextCtrl *itemExcludePatterns = new CMuleTextCtrl( item10, IDC_EXCLUDE_SHARE_PATTERNS, "", wxDefaultPosition, wxSize(80,-1), 0 );
-    itemExcludePatterns->SetToolTip(_("Files whose name matches are not shared. Matching is case-insensitive. As wildcards: patterns separated by '|', e.g. .DS_Store|Thumbs.db|*.tmp, where '*' matches any run of characters and '?' a single one. Tick the box below to write one regular expression instead."));
+    itemExcludePatterns->SetToolTip(_("Files and folders whose name matches are not shared. A matching folder inside a share that includes its subfolders is skipped with everything in it; a folder you share yourself is always shared. Matching is case-insensitive. As wildcards: patterns separated by '|', e.g. .DS_Store|Thumbs.db|*.tmp, where '*' matches any run of characters and '?' a single one. Tick the box below to write one regular expression instead."));
     itemExcludeRow->Add( itemExcludePatterns, wxSizerFlags(1).Expand().CenterVertical() );
     item9->Add( itemExcludeRow, wxSizerFlags().Expand().Border(wxTOP, 4) );
 
@@ -1888,7 +1888,7 @@ wxSizer *PreferencesDirectoriesTab( wxWindow *parent, bool call_fit, bool set_si
     // runtime there. The pattern/regex fields still work and sync over EC.
     wxBoxSizer *itemPreviewRow = new wxBoxSizer( wxHORIZONTAL );
     wxButton *itemPreviewBtn = new wxButton( item10, IDC_EXCLUDE_SHARE_PREVIEW, _("Preview"), wxDefaultPosition, wxDefaultSize, 0 );
-    itemPreviewBtn->SetToolTip(_("Show how many of the files in your shared folders the current pattern would exclude, counted over the last scan."));
+    itemPreviewBtn->SetToolTip(_("Show how many of the files and folders in your shared folders the current pattern would exclude, counted over the last scan."));
     itemPreviewRow->Add( itemPreviewBtn, wxSizerFlags().CenterVertical().Border(wxRIGHT, 6) );
     wxStaticText *itemPreviewInfo = new wxStaticText( item10, IDC_EXCLUDE_SHARE_PREVIEW_INFO, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
     itemPreviewRow->Add( itemPreviewInfo, wxSizerFlags(1).CenterVertical() );
