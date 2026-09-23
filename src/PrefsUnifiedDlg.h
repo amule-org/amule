@@ -283,7 +283,6 @@ public:
 	// place.
 	void HandleProtocolToggle(HandlerTarget scheme, int checkboxId, bool wanted);
 	void OnPrefsPageChange(wxDataViewEvent &event);
-	void OnToolTipDelayChange(wxSpinEvent &event);
 	void OnScrollBarChange(wxScrollEvent &event);
 	void OnRateLimitChanged(wxSpinEvent &event);
 	void OnTCPClientPortChange(wxSpinEvent &event);

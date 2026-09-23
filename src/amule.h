@@ -662,6 +662,9 @@ public:
 	/// anywhere later silently does nothing.
 	static void FollowSystemAppearance();
 
+	/// Applies the stored tooltip delay, which wx keeps process-wide.
+	static void ApplyToolTipDelay();
+
 	virtual int InitGui(bool geometry_enable, wxString &geometry_string);
 	//! See CamuleApp::RestoreSearchTabs().
 	void CreateRestoredSearchTabs();

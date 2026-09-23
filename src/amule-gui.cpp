@@ -31,6 +31,7 @@
 #include <wx/clipbrd.h> // Needed for wxClipBoard
 #include <wx/sizer.h>
 #include <wx/tokenzr.h> // Needed for wxStringTokenizer
+#include <wx/tooltip.h> // Needed for wxToolTip
 
 #include "SharedFilesWnd.h"      // Needed for CSharedFilesWnd
 #include "Timer.h"               // Needed for CTimer
@@ -156,6 +157,11 @@ void CamuleGuiBase::FollowSystemAppearance()
 #endif
 }
 
+void CamuleGuiBase::ApplyToolTipDelay()
+{
+	wxToolTip::SetDelay(thePrefs::GetToolTipDelay() * 1000);
+}
+
 int CamuleGuiBase::InitGui(bool geometry_enabled, wxString &geom_string)
 {
 	// Standard size is 800x600 at position (0,0)
@@ -212,6 +218,7 @@ int CamuleGuiBase::InitGui(bool geometry_enabled, wxString &geom_string)
 		}
 	}
 
+	ApplyToolTipDelay();
 	ResetTitle();
 
 	if (geometry_enabled) {

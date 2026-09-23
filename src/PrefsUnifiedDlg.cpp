@@ -43,7 +43,6 @@
 
 #include <memory> // std::unique_ptr (progress dialog lifetime)
 #include <wx/stdpaths.h>
-#include <wx/tooltip.h>
 #include <wx/utils.h> // wxGetUserHome
 
 // Network-interface enumeration for the "Bind to interface" and "Bind to IP"
@@ -177,8 +176,6 @@ wxBEGIN_EVENT_TABLE(PrefsUnifiedDlg, wxDialog)
 #ifndef CLIENT_GUI
 	EVT_BUTTON(IDC_EXCLUDE_SHARE_PREVIEW, PrefsUnifiedDlg::OnButtonExcludePreview)
 #endif
-
-	EVT_SPINCTRL(IDC_TOOLTIPDELAY, PrefsUnifiedDlg::OnToolTipDelayChange)
 
 	EVT_BUTTON(IDC_EDITADR, PrefsUnifiedDlg::OnButtonEditAddr)
 	EVT_BUTTON(IDC_IPFRELOAD, PrefsUnifiedDlg::OnButtonIPFilterReload)
@@ -1439,6 +1436,10 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 		theApp->amuledlg->DoNetworkRearrange();
 	}
 
+	if (CfgChanged(IDC_TOOLTIPDELAY)) {
+		CamuleGuiBase::ApplyToolTipDelay();
+	}
+
 	if (CfgChanged(IDC_SHOW_COUNTRY_FLAGS)) {
 		// Local enable/disable toggle -- treat as startup so enabling refreshes.
 		theApp->EnableIP2Country(true, true);
@@ -2405,11 +2406,6 @@ void PrefsUnifiedDlg::OnPrefsPageChange(wxDataViewEvent &event)
 	Layout();
 
 	event.Skip();
-}
-
-void PrefsUnifiedDlg::OnToolTipDelayChange(wxSpinEvent &event)
-{
-	wxToolTip::SetDelay(event.GetPosition() * 1000);
 }
 
 void PrefsUnifiedDlg::OnInitDialog(wxInitDialogEvent &WXUNUSED(evt))
