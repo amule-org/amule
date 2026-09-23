@@ -9,8 +9,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-22 15:47+0100\n"
-"PO-Revision-Date: 2026-09-20 20:29+0000\n"
+"POT-Creation-Date: 2026-09-23 09:04+0100\n"
+"PO-Revision-Date: 2026-09-22 17:07+0000\n"
 "Last-Translator: Dimitris <dgalanak@yahoo.com>\n"
 "Language-Team: Greek\n"
 "Language: el\n"
@@ -353,6 +353,26 @@ msgstr "Νέα εξωτερική σύνδεση έγινε δεκτή"
 #: src/amule.cpp src/KadDlg.cpp src/PrefsUnifiedDlg.cpp src/SharedFilesCtrl.cpp
 msgid "WARNING"
 msgstr "ΠΡΟΕΙΔΟΠΟΙΗΣΗ"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Loading known files"
+msgstr "Φόρτωση του αρχείου διακομιστών: %s"
+
+#: src/amule.cpp
+#, fuzzy, c-format
+msgid "Loading known files (%u of %u)"
+msgstr "Φόρτωση του αρχείου διακομιστών: %s"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Loading credits"
+msgstr "Επαναφόρτωση των κοινόχρηστων αρχείων"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Loading IP filter"
+msgstr "Φόρτωση του αρχείου διακομιστών: %s"
 
 #: src/amule.cpp
 msgid "Initializing network"
@@ -5790,6 +5810,14 @@ msgstr "ώρες"
 #: src/OtherFunctions.cpp
 msgid "days"
 msgstr "μέρες"
+
+#. TRANSLATORS:
+#. Bitrate of an audio or video file. kbps is kilobits per second, 1000 bits
+#. each -- not kilobytes, and not the KiB/s used for transfer speeds.
+#: src/OtherFunctions.cpp
+#, c-format
+msgid "%u kbps"
+msgstr ""
 
 #. TRANSLATORS:
 #. Punctuation for a "label: value" pair. %s is the already-translated

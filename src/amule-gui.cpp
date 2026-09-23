@@ -80,6 +80,7 @@ wxBEGIN_EVENT_TABLE(CamuleGuiApp, wxApp)
 
 	// Hash ended notifier
 	EVT_MULE_HASHING(CamuleGuiApp::OnFinishedHashing)
+	EVT_MULE_HASHING_DRAINED(CamuleGuiApp::OnHashingDrained)
 	EVT_MULE_AICH_HASHING(CamuleGuiApp::OnFinishedAICHHashing)
 
 	// MediaProbe (#140) -- attaches media tags on the main thread.

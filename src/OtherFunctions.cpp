@@ -116,6 +116,14 @@ wxString CastSecondsToHM(uint32 count, uint16 msecs)
 	}
 }
 
+wxString CastItoBitrate(uint32 kbps)
+{
+	/* TRANSLATORS:
+	   Bitrate of an audio or video file. kbps is kilobits per second, 1000 bits
+	   each -- not kilobytes, and not the KiB/s used for transfer speeds. */
+	return CFormat(_("%u kbps")) % kbps;
+}
+
 wxString LabelWithColon(const wxString &label)
 {
 	/* TRANSLATORS:

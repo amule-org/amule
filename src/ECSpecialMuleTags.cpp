@@ -989,7 +989,7 @@ void CEC_Prefs_Packet::Apply() const
 		// new settings; a no-op on amulegui, which merely absorbs the settings for display.
 		// Do NOT auto-download here -- an explicit "Update now" below carries that intent,
 		// and doing both fires twice.
-		theApp->EnableIP2Country(false);
+		theApp->EnableIP2Country(false, false);
 #ifndef CLIENT_GUI
 		// Explicit "Update now" trigger from a remote GUI: re-download the DB from the
 		// just-applied source. Daemon and monolithic only, since amulegui sends this tag

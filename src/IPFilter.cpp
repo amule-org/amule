@@ -500,7 +500,7 @@ bool CIPFilter::IsFiltered(const CNetworkAddress &address, bool isServer)
 	return false;
 }
 
-void CIPFilter::Update(const wxString &strURL)
+void CIPFilter::Update(const wxString &strURL, bool showDialog)
 {
 	if (!strURL.IsEmpty()) {
 		m_URL = strURL;
@@ -517,8 +517,8 @@ void CIPFilter::Update(const wxString &strURL)
 
 		wxString filename = thePrefs::GetConfigDir() + "ipfilter.download";
 		wxString oldfilename = thePrefs::GetConfigDir() + "ipfilter.dat";
-		CHTTPDownloadThread *downloader =
-			new CHTTPDownloadThread(m_URL, filename, oldfilename, HTTP_IPFilter, true, true);
+		CHTTPDownloadThread *downloader = new CHTTPDownloadThread(
+			m_URL, filename, oldfilename, HTTP_IPFilter, showDialog, true);
 
 		downloader->Create();
 		downloader->Run();

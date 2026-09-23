@@ -286,7 +286,7 @@ void CSearchListModel::GetValue(wxVariant &variant, const wxDataViewItem &item, 
 
 	case COL_BITRATE: {
 		uint32 bitrate = file->GetIntTagValue(FT_MEDIA_BITRATE);
-		variant = bitrate ? wxString(CFormat(wxT("%u kbps")) % bitrate) : wxString();
+		variant = bitrate ? CastItoBitrate(bitrate) : wxString();
 		break;
 	}
 

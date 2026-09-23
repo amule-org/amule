@@ -672,7 +672,7 @@ wxString CSharedFilesCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) co
 
 	case COLUMN_SHARED_MEDIA_BITRATE: {
 		uint32 bitrate = file->GetIntTagValue(FT_MEDIA_BITRATE);
-		return bitrate ? wxString(CFormat(wxT("%u kbps")) % bitrate) : wxString();
+		return bitrate ? CastItoBitrate(bitrate) : wxString();
 	}
 
 	case COLUMN_SHARED_MEDIA_CODEC: {

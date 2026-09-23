@@ -251,7 +251,7 @@ void CFileDetailDialog::UpdateData(bool resetFilename)
 		CastChild(IDC_FD_MEDIA_LENGTH, wxControl)->SetLabel(CastSecondsToHM(len));
 	}
 	if (uint32 br = m_file->GetIntTagValue(FT_MEDIA_BITRATE)) {
-		CastChild(IDC_FD_MEDIA_BITRATE, wxControl)->SetLabel(CFormat(wxT("%u kbps")) % br);
+		CastChild(IDC_FD_MEDIA_BITRATE, wxControl)->SetLabel(CastItoBitrate(br));
 	}
 	const struct
 	{

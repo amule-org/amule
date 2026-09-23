@@ -271,8 +271,8 @@ public:
 	// disabling it when turned off. No-op on amulegui, which configures the daemon's GeoIP over
 	// EC. startup=true also kicks the auto-update refresh; it is false on a remote prefs-apply
 	// so an amulegui OK does not download on every save -- an explicit "Update now" carries
-	// that intent.
-	virtual void EnableIP2Country(bool startup) {}
+	// that intent. showProgress shows the download dialog, for a local Preferences change.
+	virtual void EnableIP2Country(bool startup, bool showProgress) {}
 
 	void AddLinksFromFile();
 	// URL functions
@@ -350,7 +350,7 @@ public:
 	// thePrefs::IsGeoIPEnabled), serving the daemon's country EC tag and the monolithic build's
 	// display.
 	CIP2Country *GetIP2Country() override { return m_IP2Country; }
-	void EnableIP2Country(bool startup) override;
+	void EnableIP2Country(bool startup, bool showProgress) override;
 
 	virtual int InitGui(bool geometry_enable, wxString &geometry_string);
 
@@ -482,8 +482,8 @@ public:
 
 	/** Bootstraps kad from the specified IP (must be in hostorder). */
 	void BootstrapKad(uint32 ip, uint16 port);
-	/** Updates the nodes.dat file from the specified url. */
-	void UpdateNotesDat(const wxString &str);
+	/** Updates the nodes.dat file from the specified url, with the progress dialog if @a showDialog. */
+	void UpdateNotesDat(const wxString &str, bool showDialog = false);
 
 	void DisconnectED2K();
 
@@ -509,6 +509,7 @@ protected:
 	void OnCoreTimer(CTimerEvent &evt);
 
 	void OnFinishedHashing(CHashingEvent &evt);
+	void OnHashingDrained(wxThreadEvent &evt);
 	void OnPartFileHashResult(CPartFileHashResultEvent &evt);
 	void OnFinishedAICHHashing(CHashingEvent &evt);
 

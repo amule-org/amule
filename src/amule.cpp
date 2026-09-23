@@ -286,7 +286,7 @@ CamuleApp::~CamuleApp()
 }
 
 #ifdef ENABLE_IP2COUNTRY
-void CamuleApp::EnableIP2Country(bool startup)
+void CamuleApp::EnableIP2Country(bool startup, bool showProgress)
 {
 	if (thePrefs::IsGeoIPEnabled()) {
 		if (!m_IP2Country) {
@@ -299,21 +299,21 @@ void CamuleApp::EnableIP2Country(bool startup)
 			});
 #endif
 		}
-		m_IP2Country->Enable();
+		m_IP2Country->Enable(showProgress);
 		// Auto-update refresh from the selected source so the user sees current data
 		// without opening Preferences. Fires only at startup or a local enable toggle --
 		// NOT on every remote prefs-apply, which would download on each amulegui OK and,
 		// alongside an explicit "Update now", double the request. First-run / missing-file
 		// is handled inside Enable() regardless.
 		if (startup && thePrefs::IsGeoIPAutoUpdate() && m_IP2Country->IsEnabled()) {
-			m_IP2Country->Update();
+			m_IP2Country->Update(false, showProgress);
 		}
 	} else if (m_IP2Country) {
 		m_IP2Country->Disable();
 	}
 }
 #else
-void CamuleApp::EnableIP2Country(bool) {}
+void CamuleApp::EnableIP2Country(bool, bool) {}
 #endif
 
 int CamuleApp::OnExit()
@@ -830,17 +830,66 @@ bool CamuleApp::OnInit()
 
 	m_statistics = new CStatistics();
 
+#ifdef AMULE_SHOW_SPLASH
+	// Up here rather than after InitGui() because known.met, clients.met and the IP filter are
+	// all read below, and on a large library that is the longest stretch of the whole startup
+	// with nothing on screen at all. Nothing between here and InitGui() can abort -- the last
+	// bail-out is the incoming-directory check above -- so the splash cannot outlive a run that
+	// never gets a window. No parent: amuledlg does not exist yet, and the splash centres on
+	// the screen rather than on it anyway.
+	//
+	// known.met gets a band sized by work, like the temp and scan bands below, in the same
+	// unit: one file of the shared scan. A 300k-file library reported 21.5 s to load
+	// known.met and 22 s to scan, so a record costs about what a scanned file does; retune
+	// from the Startup phases line. The scan is estimated from that same record count, so the
+	// count cancels and only the weights set the split.
+	constexpr int kKnownRecordWeight = 1;
+	constexpr int kScanFileWeight = 1;
+	constexpr int kScanBandEnd = 100;
+	// Stays 0 unless known.met has records: a first run has nothing to load or to estimate.
+	int knownBandEnd = 0;
+	CSplashScreen *splash = new CSplashScreen(nullptr);
+	m_splash = splash;
+	splash->Show();
+	// One pump so the window is mapped and painted before the loads begin.
+	wxYield();
+	const wxLongLong preloadStart = wxGetUTCTimeMillis();
+	splash->SetProgress(_("Loading known files"), 0, true);
+#endif
+
+	// Empty outside the splash build, which the daemon and the remote GUI are.
+	CKnownFileList::LoadProgressCb knownProgress;
+#ifdef AMULE_SHOW_SPLASH
+	knownProgress = [splash, &knownBandEnd](uint32 loaded, uint32 total) {
+		if (loaded == 0) {
+			knownBandEnd =
+				(kScanBandEnd * kKnownRecordWeight) / (kKnownRecordWeight + kScanFileWeight);
+		}
+		const int percent =
+			total ? static_cast<int>((knownBandEnd * static_cast<uint64>(loaded)) / total) : 0;
+		splash->SetProgress(CFormat(_("Loading known files (%u of %u)")) % loaded % total, percent);
+	};
+#endif
+
 	clientlist = new CClientList();
 	friendlist = new CFriendList();
 	chatsessions = new CChatSessionStore();
 	searchlist = new CSearchList();
 	browsemanager = new CBrowseManager();
-	knownfiles = new CKnownFileList();
+	knownfiles = new CKnownFileList(knownProgress);
+#ifdef AMULE_SHOW_SPLASH
+	const wxLongLong knownDoneAt = wxGetUTCTimeMillis();
+	splash->SetProgress(_("Loading credits"), knownBandEnd, true);
+#endif
 	canceledfiles = new CCanceledFileList;
 	serverlist = new CServerList();
 
 	sharedfiles = new CSharedFileList(knownfiles);
 	clientcredits = new CClientCreditsList();
+#ifdef AMULE_SHOW_SPLASH
+	const wxLongLong creditsDoneAt = wxGetUTCTimeMillis();
+	splash->SetProgress(_("Loading IP filter"), knownBandEnd, true);
+#endif
 
 	// bugfix - do this before creating the uploadqueue
 	downloadqueue = new CDownloadQueue();
@@ -853,6 +902,9 @@ bool CamuleApp::OnInit()
 	// items would never drain and the `.part` file would stay at 0 bytes while the network
 	// side received chunks.
 	ipfilter = new CIPFilter();
+#ifdef AMULE_SHOW_SPLASH
+	const wxLongLong filterDoneAt = wxGetUTCTimeMillis();
+#endif
 
 	// Creates all needed listening sockets
 	wxString msg;
@@ -871,13 +923,6 @@ bool CamuleApp::OnInit()
 	InitGui(m_geometryEnabled, m_geometryString);
 
 #ifdef AMULE_SHOW_SPLASH
-	// Up before the heavy local I/O below, which holds the main thread long enough that the
-	// main window -- already created by InitGui -- never gets painted. Shown here rather
-	// than earlier so it does not outlive a failed GUI init.
-	CSplashScreen *splash = new CSplashScreen(theApp->amuledlg);
-	m_splash = splash;
-	splash->Show();
-
 	// Both list controls are batched for the whole startup: part-file loading fills the
 	// download list and the scan plus hashing fill the shared list, and each
 	// individually-sorted insert rebuilds the row index, so a burst of thousands is
@@ -952,13 +997,15 @@ bool CamuleApp::OnInit()
 	// each against 0.60 ms -- a part file is actually the cheaper item, since loading one
 	// reads its .met and only stats the .part. Two rather than one leaves room for the
 	// populated ones a real Temp directory holds. Capped well short of half the bar: the
-	// scan is the phase that usually runs long, and it must keep room to show it.
+	// scan is the phase that usually runs long, and it must keep room to show it. Both ends are
+	// relative to where known.met left the bar.
 	constexpr int kPartFileWeight = 2;
-	constexpr int kNetworkBandEnd = 2;
-	constexpr int kTempBandMaxEnd = 40;
-	constexpr int kScanBandEnd = 100;
+	constexpr int kTempBandMaxShare = 40; // percent of what is left after network
+	const int networkBandEnd = knownBandEnd + 2;
+	const int tempBandMaxEnd =
+		networkBandEnd + ((kScanBandEnd - networkBandEnd) * kTempBandMaxShare) / 100;
 
-	splash->SetProgress(_("Initializing network"), 0, true);
+	splash->SetProgress(_("Initializing network"), knownBandEnd, true);
 #endif
 	if (thePrefs::GetNetworkED2K()) {
 		serverlist->Init();
@@ -966,23 +1013,23 @@ bool CamuleApp::OnInit()
 
 #ifdef AMULE_SHOW_SPLASH
 	const wxLongLong networkDoneAt = wxGetUTCTimeMillis();
-	splash->SetProgress(_("Loading temp files"), kNetworkBandEnd, true);
+	splash->SetProgress(_("Loading temp files"), networkBandEnd, true);
 	// Part-file totals are exact: LoadMetFiles enumerates the directory into a vector
 	// before loading any of them, so the band end can be sized against the shared estimate
 	// on the first callback.
 	size_t partFilesLoaded = 0;
-	int tempBandEnd = kNetworkBandEnd;
+	int tempBandEnd = networkBandEnd;
 	downloadqueue->LoadMetFiles(thePrefs::GetTempDir(), [&](size_t loaded, size_t total) {
 		if (partFilesLoaded == 0) {
 			partFilesLoaded = total;
 			const size_t weighted = kPartFileWeight * total;
 			const size_t whole = weighted + sharedEstimate;
-			tempBandEnd = kNetworkBandEnd +
-				      static_cast<int>(((kScanBandEnd - kNetworkBandEnd) * weighted) / whole);
-			tempBandEnd = std::min(tempBandEnd, kTempBandMaxEnd);
+			tempBandEnd = networkBandEnd +
+				      static_cast<int>(((kScanBandEnd - networkBandEnd) * weighted) / whole);
+			tempBandEnd = std::min(tempBandEnd, tempBandMaxEnd);
 		}
-		const int percent = kNetworkBandEnd +
-				    static_cast<int>(((tempBandEnd - kNetworkBandEnd) * loaded) / total);
+		const int percent =
+			networkBandEnd + static_cast<int>(((tempBandEnd - networkBandEnd) * loaded) / total);
 		splash->SetProgress(CFormat(_("Loading temp files (%u of %u)")) % loaded % total, percent);
 	});
 	const wxLongLong tempDoneAt = wxGetUTCTimeMillis();
@@ -1017,8 +1064,11 @@ bool CamuleApp::OnInit()
 	// nobody will report back. Both phases report count then duration, and the estimate
 	// says what it estimates -- it is a file count from known.met, and printing it as a
 	// bare number after a millisecond figure read as an estimated duration.
-	AddLogLineN(CFormat(LOG_DIAGNOSTIC("Startup phases: network %lld ms, %u part files %lld ms, shared "
+	AddLogLineN(CFormat(LOG_DIAGNOSTIC("Startup phases: known files %lld ms, credits %lld ms, IP filter "
+					   "%lld ms, network %lld ms, %u part files %lld ms, shared "
 					   "scan %u files ") "%lld ms (estimated %u files)") %
+		    (knownDoneAt - preloadStart).GetValue() % (creditsDoneAt - knownDoneAt).GetValue() %
+		    (filterDoneAt - creditsDoneAt).GetValue() %
 		    (networkDoneAt - splashPhaseStart).GetValue() % partFilesLoaded %
 		    (tempDoneAt - networkDoneAt).GetValue() % sharedScanned %
 		    (sharedDoneAt - tempDoneAt).GetValue() % sharedEstimate);
@@ -1229,7 +1279,7 @@ bool CamuleApp::OnInit()
 	// Enable GeoIP. The resolver is headless and core-owned so the daemon resolves country
 	// codes for the EC tag exactly as monolithic amule does for local display. The flag
 	// *images* are a GUI concern layered on top.
-	EnableIP2Country(true); // startup: allow the auto-update refresh
+	EnableIP2Country(true, false); // startup: allow the auto-update refresh, in the background
 
 	// Run webserver?
 	if (thePrefs::GetWSIsEnabled()) {
@@ -2165,6 +2215,7 @@ void CamuleApp::OnFinishedHashing(CHashingEvent &evt)
 		}
 	} else {
 		static uint64 bytecount = 0;
+		static wxLongLong lastFailsafeSave = 0;
 
 		// CHashingTask runs against a stable file descriptor, so the hash completes even if
 		// the file is renamed or unlinked mid-hash. Re-check the path at completion: if the
@@ -2185,13 +2236,21 @@ void CamuleApp::OnFinishedHashing(CHashingEvent &evt)
 			sharedfiles->SafeAddKFile(result);
 
 			bytecount += result->GetFileSize();
-			// If we have added files with a total size of ~3000mb
-			if (bytecount >= wxULL(3145728000)) {
+			// Save once ~30 GB of new hashes would be lost to a crash, but at most once per
+			// window: each save rewrites all of known.met on this thread, seconds on a large
+			// library. Waiting drops nothing -- the bytes keep counting, and the hashing worker
+			// saves when its queue drains.
+			constexpr uint64 kFailsafeSaveBytes = 30ULL * 1024 * 1024 * 1024;
+			constexpr long kFailsafeSaveWindowMs = 5 * 60 * 1000;
+			const wxLongLong now = wxGetUTCTimeMillis();
+			if (bytecount >= kFailsafeSaveBytes &&
+				now - lastFailsafeSave >= kFailsafeSaveWindowMs) {
 				AddDebugLogLineN(
 					logKnownFiles, "Failsafe for crash on file hashing creation");
 				if (m_app_state != APP_STATE_SHUTTINGDOWN) {
 					knownfiles->Save();
 					bytecount = 0;
+					lastFailsafeSave = now;
 				}
 			}
 		} else {
@@ -2200,6 +2259,25 @@ void CamuleApp::OnFinishedHashing(CHashingEvent &evt)
 			delete result;
 		}
 	}
+}
+
+void CamuleApp::OnHashingDrained(wxThreadEvent &WXUNUSED(evt))
+{
+	if (m_app_state == APP_STATE_SHUTTINGDOWN) {
+		return;
+	}
+
+	// Queued after the batch's last result, so every file it hashed is registered by now. The
+	// save itself still runs on the scheduler thread, as it did from OnLastTask. Overwrite, not
+	// drop, a duplicate: a request while a save is pending replaces it, and one while a save is
+	// running queues another after it, so nothing registered during that write is left out.
+	// Save() never checks the abort flag this sets on a running save, so it still completes.
+	CThreadScheduler::AddTask(new CKnownFileSaveTask(), true);
+
+	// Make sure the AICH hashes are up to date. No orphan-prune: a file hashed after this batch
+	// may still be waiting to be registered when this runs, and pruning would delete its freshly
+	// written hashset. Only the startup sync prunes.
+	CThreadScheduler::AddTask(new CAICHSyncTask());
 }
 
 void CamuleApp::OnPartFileHashResult(CPartFileHashResultEvent &evt)
@@ -3139,12 +3217,16 @@ void CamuleApp::BootstrapKad(uint32 ip, uint16 port)
 	Kademlia::CKademlia::Bootstrap(ip, port);
 }
 
-void CamuleApp::UpdateNotesDat(const wxString &url)
+void CamuleApp::UpdateNotesDat(const wxString &url, bool showDialog)
 {
 	wxString strTempFilename(thePrefs::GetConfigDir() + "nodes.dat.download");
 
-	CHTTPDownloadThread *downloader = new CHTTPDownloadThread(
-		url, strTempFilename, thePrefs::GetConfigDir() + "nodes.dat", HTTP_NodesDat, true, false);
+	CHTTPDownloadThread *downloader = new CHTTPDownloadThread(url,
+		strTempFilename,
+		thePrefs::GetConfigDir() + "nodes.dat",
+		HTTP_NodesDat,
+		showDialog,
+		false);
 	downloader->Create();
 	downloader->Run();
 }

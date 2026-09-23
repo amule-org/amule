@@ -58,7 +58,8 @@ public:
 	void GetUserFileStatus(uint32 &user, uint32 &file);
 	bool IsInitialized() const { return m_initialized; }
 	void Sort();
-	void UpdateServerMetFromURL(const wxString &strURL);
+	// showDialog shows the HTTP progress dialog, for a local, user-initiated update only.
+	void UpdateServerMetFromURL(const wxString &strURL, bool showDialog = false);
 	bool DownloadFinished(uint32 result);
 	void AutoDownloadFinished(uint32 result);
 	uint32 GetAvgFile() const;

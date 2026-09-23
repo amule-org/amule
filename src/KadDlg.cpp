@@ -224,7 +224,12 @@ void CKadDlg::OnBnClickedUpdateNodeList(wxCommandEvent &WXUNUSED(evt))
 		wxString strURL = dynamic_cast<wxTextCtrl *>(FindWindowById(IDC_NODESLISTURL))->GetValue();
 
 		thePrefs::SetKadNodesUrl(strURL);
+#ifdef CLIENT_GUI
+		// Runs on the core, which shows no dialog for a remote request.
 		theApp->UpdateNotesDat(strURL);
+#else
+		theApp->UpdateNotesDat(strURL, true);
+#endif
 	}
 }
 // File_checked_for_headers

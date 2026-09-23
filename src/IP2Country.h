@@ -82,7 +82,7 @@ public:
 	// built on a miss.
 	const wxString &GetCountryCode(uint32 ip);
 
-	void Enable();
+	void Enable(bool showProgress);
 	void Disable();
 	// Refresh the on-disk MMDB from the configured source.
 	//
@@ -90,10 +90,9 @@ public:
 	// bad URL, HTTP error) surface via the update-failed notifier as well as the network log;
 	// auto-update stays silent, or a briefly-down source would pop a dialog on every cold boot.
 	//
-	// showProgress=true renders the HTTP progress dialog, which suits a LOCAL monolithic
-	// "Update now". It is false for a REMOTE trigger: EC carries no download progress, and on a
-	// monolithic-app-as-backend the dialog would pop on the core rather than the remote GUI.
-	void Update(bool manualUpdate = false, bool showProgress = true);
+	// showProgress renders the HTTP progress dialog. Only a local, user-initiated update asks for
+	// it: a background refresh must not pop a window, and a remote trigger would pop it on the core.
+	void Update(bool manualUpdate = false, bool showProgress = false);
 	bool IsEnabled();
 	void DownloadFinished(uint32 result);
 

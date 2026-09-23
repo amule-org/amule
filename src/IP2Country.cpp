@@ -66,13 +66,13 @@ bool CIP2Country::IsEnabled()
 	return m_db && m_db->IsOpen();
 }
 
-void CIP2Country::Enable()
+void CIP2Country::Enable(bool showProgress)
 {
 	// Disable() clears the cache, so no separate invalidation here.
 	Disable();
 
 	if (!CPath::FileExists(m_DataBasePath)) {
-		Update();
+		Update(false, showProgress);
 		return;
 	}
 
@@ -140,9 +140,7 @@ void CIP2Country::StartDownload(int monthOffset)
 	}
 	AddLogLineN(CFormat(_("Download new %s from %s")) % m_DataBaseName % url);
 	m_downloading = true;
-	// showDialog = m_showProgress: shown for a local monolithic "Update now", suppressed for a
-	// remote trigger, where EC carries no progress and on a monolithic-app-as-backend the
-	// dialog would pop on the core. checkDownloadNewer stays true, honouring If-Modified.
+	// checkDownloadNewer stays true, honouring If-Modified-Since.
 	CHTTPDownloadThread *downloader = new CHTTPDownloadThread(
 		url, m_DataBasePath + ".download", m_DataBasePath, HTTP_GeoIP, m_showProgress, true);
 	downloader->Create();
@@ -206,7 +204,7 @@ void CIP2Country::DownloadFinished(uint32 result)
 			return;
 		}
 
-		Enable();
+		Enable(false);
 		if (IsEnabled()) {
 			const wxString msg = CFormat(_("Successfully updated %s")) % m_DataBaseName;
 			AddLogLineN(msg);
@@ -314,7 +312,7 @@ CIP2Country::CIP2Country(const wxString &)
 }
 
 CIP2Country::~CIP2Country() {}
-void CIP2Country::Enable() {}
+void CIP2Country::Enable(bool) {}
 void CIP2Country::Disable() {}
 void CIP2Country::InvalidateCountryCache() {}
 
