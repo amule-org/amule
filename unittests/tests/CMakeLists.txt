@@ -1053,6 +1053,23 @@ target_link_libraries (ChatSessionStoreTest
 	mulecommon
 )
 
+# Queue bookkeeping only; the scheduler is never started, so no task runs.
+add_executable (ThreadSchedulerTest
+	ThreadSchedulerTest.cpp
+	${CMAKE_SOURCE_DIR}/src/ThreadScheduler.cpp
+	${CMAKE_SOURCE_DIR}/src/LoggerConsole.cpp
+)
+add_test (NAME ThreadSchedulerTest COMMAND ThreadSchedulerTest)
+target_include_directories (ThreadSchedulerTest
+	PRIVATE ${CMAKE_BINARY_DIR}
+	PRIVATE ${CMAKE_SOURCE_DIR}/src
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
+)
+target_link_libraries (ThreadSchedulerTest
+	muleunit
+	mulecommon
+)
+
 add_executable (MediaProbeParseTest
 	MediaProbeParseTest.cpp
 	${CMAKE_SOURCE_DIR}/src/MediaProbe.cpp

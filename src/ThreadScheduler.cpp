@@ -255,8 +255,13 @@ bool CThreadScheduler::DoAddTask(CThreadTask *task, bool overwrite)
 			// The duplicate is already being executed, abort it.
 			m_currentTask->m_abort = true;
 		} else {
-			// Task not yet started, simply remove and delete.
+			// Not started yet. Its queue entry must go too, or the worker runs freed memory.
 			wxCHECK2(map.erase(existingTask->GetDesc()), /* Do nothing. */);
+			const auto isExisting = [existingTask](const CEntryPair &queued) {
+				return queued.first == existingTask;
+			};
+			m_tasks.erase(
+				std::remove_if(m_tasks.begin(), m_tasks.end(), isExisting), m_tasks.end());
 			delete existingTask;
 		}
 
