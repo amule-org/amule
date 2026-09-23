@@ -101,12 +101,11 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 //
 // One `chat_message` per message, inbound AND outbound alike -- an outbound one is how a message
 // sent from amulegui reaches every other viewer. A session that did not exist is implied by the
-// first message carrying its `address`. Production supplies stable closed_keys;
-// the GUI_ID-only argument remains a compatibility fallback for legacy callers.
+// first message carrying its `address`. Closed keys use the same public identity:
+// a peer hash when known, otherwise a legacy route string.
 void PublishChatEvents(CEventBus &bus,
 	const std::vector<ChatSessionSnapshot> &new_messages,
-	const std::vector<std::uint64_t> &closed,
-	const std::vector<std::string> *closed_keys = nullptr);
+	const std::vector<std::string> &closed);
 
 } // namespace webapi
 

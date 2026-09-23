@@ -74,9 +74,8 @@ function FriendsPane({ friends, isGuest, activePeer, onAdd }) {
   };
 
   const row = (f) => {
-    // No ip (added by hash alone) means no conversation key, so disable the
-    // open action rather than build one the chat routes would 400 on.
-    const peer = f.ip && f.port ? f.ip + ":" + f.port : "";
+    // Hash-only friends are usable when the API already holds their session.
+    const peer = chats.peerFor(f);
     // "Online" mirrors the desktop's blue-name rule: a friend is shown online while a live
     // client is linked (client_ecid set), not only while the TCP link is up right now.
     const online = !!f.client_ecid;
@@ -85,7 +84,7 @@ function FriendsPane({ friends, isGuest, activePeer, onAdd }) {
       <li class=${"friend-row" + (peer && peer === activePeer ? " active" : "")} key=${f.ecid}>
         <button type="button" class=${"friend-open" + (online ? " online" : "")} disabled=${!peer}
                 title=${f.name + (peer ? " — " + peer : "") + " · " + (online ? t("messages_online") : t("messages_offline"))}
-                onClick=${() => chats.open({ peer, ip: f.ip, port: f.port, name: f.name, friendEcid: f.ecid, clientEcid: f.client_ecid || 0 })}>
+                onClick=${() => chats.open({ peer, hash: f.user_hash, ip: f.ip, port: f.port, name: f.name, friendEcid: f.ecid, clientEcid: f.client_ecid || 0 })}>
           <span class=${"friend-dot" + (online ? " online" : "")}></span>
           <span class="friend-name">${f.name}</span>
         </button>

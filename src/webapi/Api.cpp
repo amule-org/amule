@@ -1640,7 +1640,9 @@ CHttpServer::Response CApiDispatcher::ServeStaticFile(
 		(url_path == "/" || url_path.empty()) ? std::string("index.html") : url_path.substr(1);
 
 	std::string fs_path;
-	struct stat st{};
+	struct stat st
+	{
+	};
 	std::string body;
 	bool found = webapi::ResolveWithinRoot(root, rel, fs_path) && ReadStaticFile(fs_path, body, st);
 
@@ -5731,7 +5733,17 @@ const webapi::ChatSessionSnapshot *FindChat(
 		if (s.PeerKey() == key)
 			return &s;
 	}
-	return nullptr;
+	// A legacy URL remains usable after promotion, but never selects arbitrarily
+	// between distinct identities sharing an endpoint.
+	const webapi::ChatSessionSnapshot *match = nullptr;
+	for (const auto &s : chats) {
+		if (s.gui_id && s.ip + ":" + std::to_string(s.port) == key) {
+			if (match)
+				return nullptr;
+			match = &s;
+		}
+	}
+	return match;
 }
 
 } // namespace
@@ -5968,9 +5980,8 @@ CHttpServer::Response CApiDispatcher::HandleChatMessages(
 	return r;
 }
 
-// Shared by all three send forms. `target` is the already-built EC tag naming the
-// recipient -- a peer hash, legacy route, live peer ECID, or friend ECID. The friend form is
-// the one that reaches an OFFLINE friend, via the stored ip:port.
+// `target` names the recipient by peer hash with an optional legacy route hint,
+// or by the legacy route alone. ECIDs are not chat identities.
 CHttpServer::Response CApiDispatcher::SendChatMessageTo(
 	const CHttpServer::Request &req, const CECTag &target, std::uint64_t route_hint)
 {
@@ -6078,6 +6089,9 @@ CHttpServer::Response CApiDispatcher::HandleChatSend(const CHttpServer::Request 
 	const auto *session = FindChat(chats, key);
 	if (!session)
 		return ErrorResponse(404, "not_found", "no chat session with that peer");
+	if (!m_app.IsServerChatPeerHashActive())
+		return ErrorResponse(
+			503, "ec_unsupported", "the connected amuled does not support chat hashes");
 	if (!session->peer_hash.empty()) {
 		CMD4Hash hash;
 		HashFromHex(session->peer_hash, hash);
@@ -6099,23 +6113,29 @@ CHttpServer::Response CApiDispatcher::HandleChatClose(
 			503, "ec_unsupported", "the connected amuled does not serve chat sessions");
 	}
 	std::string key;
-	if (!ParseChatPeerKey(peer, key))
+	std::uint64_t route = 0;
+	if (!ParseChatPeerKey(peer, key, &route))
 		return ErrorResponse(
 			400, "bad_request", "path `{address}` must be a peer hash or IPv4 `<ip>:<port>`");
-	if (auto r = RequireSnapshot(m_state))
-		return *r;
+	if (!route) {
+		if (auto r = RequireSnapshot(m_state))
+			return *r;
+	}
 	const auto chats = m_state.Chats();
 	const auto *session = FindChat(chats, key);
-	if (!session)
+	if (!session && !route)
 		return ErrorResponse(404, "not_found", "no chat session with that peer");
+	if (!route && !m_app.IsServerChatPeerHashActive())
+		return ErrorResponse(
+			503, "ec_unsupported", "the connected amuled does not support chat hashes");
 
 	std::unique_ptr<CECPacket> ec_req(new CECPacket(EC_OP_CHAT_CLOSE_SESSION));
-	if (!session->peer_hash.empty()) {
+	if (session && !session->peer_hash.empty() && m_app.IsServerChatPeerHashActive()) {
 		CMD4Hash hash;
 		HashFromHex(session->peer_hash, hash);
 		ec_req->AddTag(CECTag(EC_TAG_CHAT_PEER_HASH, hash));
 	} else {
-		ec_req->AddTag(CECTag(EC_TAG_CHAT_CLIENT_ID, session->gui_id));
+		ec_req->AddTag(CECTag(EC_TAG_CHAT_CLIENT_ID, session ? session->gui_id : route));
 	}
 	const CECPacket *ec_resp = m_app.SendRecvSerialized(ec_req.get());
 	if (!ec_resp) {
@@ -9184,7 +9204,9 @@ CHttpServer::Response CApiDispatcher::HandleSharedContent(
 		// of the remote GUI's path-mapping layer, so a remote deployment resolves the
 		// daemon's paths against the wrong filesystem. Distinguishing it costs one stat.
 		std::string joined;
-		struct stat probe{};
+		struct stat probe
+		{
+		};
 		if (webapi::JoinSharedPath(s.on_disk_dir, s.name, joined) &&
 			::stat(joined.c_str(), &probe) != 0) {
 			return ErrorResponse(503,
@@ -9197,7 +9219,9 @@ CHttpServer::Response CApiDispatcher::HandleSharedContent(
 	// Re-stat the RESOLVED path. ResolveSharedContentPath does not hand back its stat,
 	// and the window, the Content-Length and the validator all have to come from one
 	// observation of one path.
-	struct stat st{};
+	struct stat st
+	{
+	};
 	if (::stat(fs_path.c_str(), &st) != 0 || !S_ISREG(st.st_mode)) {
 		return ErrorResponse(503,
 			"ec_content_unreachable",

@@ -139,10 +139,10 @@ export const COLS = [
                   .catch((e) => toast(terr(e), "error"))}>
           <${Icon} name="download" />
         </button>` : null}
-      ${c.ip && c.port ? html`
+      ${chats.peerFor(c) ? html`
         <button class="btn btn-icon btn-sm" type="button" title=${t("messages_send_message")}
                 onClick=${() => {
-                  chats.open({ peer: c.ip + ":" + c.port, ip: c.ip, port: c.port,
+                  chats.open({ peer: chats.peerFor(c), hash: c.user_hash, ip: c.ip, port: c.port,
                                name: c.name, clientEcid: c.ecid });
                   location.hash = "#/messages";
                 }}>

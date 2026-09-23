@@ -1794,8 +1794,7 @@ void ApplyChatSessions(const CECPacket *resp,
 	std::vector<ChatSessionSnapshot> &cache,
 	std::uint32_t &cursor,
 	std::vector<ChatSessionSnapshot> &out_new_messages,
-	std::vector<std::uint64_t> &out_closed,
-	std::vector<std::string> *out_closed_keys)
+	std::vector<std::string> &out_closed)
 {
 	if (!resp)
 		return;
@@ -1810,6 +1809,11 @@ void ApplyChatSessions(const CECPacket *resp,
 
 	std::vector<ChatSessionSnapshot> fresh;
 	std::set<std::string> present;
+	std::map<std::uint64_t, unsigned> route_count;
+	for (const CECTag &tag : *resp) {
+		if (tag.GetTagName() == EC_TAG_CHAT_SESSION && tag.GetInt() != 0)
+			++route_count[tag.GetInt()];
+	}
 
 	for (const CECTag &tag : *resp) {
 		const CECTag *t = &tag;
@@ -1818,8 +1822,6 @@ void ApplyChatSessions(const CECPacket *resp,
 
 		ChatSessionSnapshot session;
 		session.gui_id = t->GetInt();
-		if (const CECTag *routeTag = t->GetTagByName(EC_TAG_CHAT_CLIENT_ID))
-			session.gui_id = routeTag->GetInt();
 		if (const CECTag *hashTag = t->GetTagByName(EC_TAG_CHAT_PEER_HASH)) {
 			const auto hash = hashTag->GetMD4Data();
 			if (!hash.IsEmpty())
@@ -1848,7 +1850,8 @@ void ApplyChatSessions(const CECPacket *resp,
 		// Carry over the history this tick's reply did not repeat.
 		auto prev = previous.find(session.IdentityKey());
 		// Promote only a provisional route identity, never another hash at this endpoint.
-		if (prev == previous.end() && !session.peer_hash.empty() && session.gui_id != 0) {
+		if (prev == previous.end() && !session.peer_hash.empty() && session.gui_id != 0 &&
+			route_count[session.gui_id] == 1) {
 			prev = previous.find("gui:" + std::to_string(session.gui_id));
 			if (prev != previous.end())
 				present.insert(prev->first);
@@ -1903,9 +1906,7 @@ void ApplyChatSessions(const CECPacket *resp,
 	// it.
 	for (const auto &kv : previous) {
 		if (!present.count(kv.first)) {
-			out_closed.push_back(kv.second.gui_id);
-			if (out_closed_keys)
-				out_closed_keys->push_back(kv.second.PeerKey());
+			out_closed.push_back(kv.second.PeerKey());
 		}
 	}
 

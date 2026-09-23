@@ -131,6 +131,8 @@ _assert_status 202 "POST /chats/{address}/messages → 202 Accepted"
 # here. There is no `ok` field; the 202 already carries it.
 _assert_json_eq '. | has("ok")' false 'send response has no constant ok field'
 _assert_json_eq '.address'                "$PEER" 'send echoes the conversation key'
+_assert_json_eq '. | has("hash")' true 'send carries the hash field'
+_assert_json_eq '.hash' null 'provisional route send has no hash'
 _assert_json_eq '.message.direction'   out     'sent message is direction=out'
 _assert_json_eq '.message.text'        "curl-test hello" 'send echoes the text'
 # Same object shape the GET returns, from the same writer -- including the
@@ -182,6 +184,8 @@ _assert_json_eq '.name' "IP: $PEER_IP Port: $PEER_PORT" 'name falls back to the 
 _curl -H "Authorization: Bearer $TOKEN" "$API/chats/$PEER/messages"
 _assert_status 200 "GET /chats/{address}/messages → 200"
 _assert_json_eq '.address'            "$PEER" 'messages echo the conversation key'
+_assert_json_eq '. | has("hash")' true 'transcript carries the hash field'
+_assert_json_eq '.hash' null 'provisional route transcript has no hash'
 _assert_json_eq '.messages | type' array   'messages is an array'
 _assert_json_eq '.messages[0].direction' out 'first message is direction=out'
 
@@ -248,6 +252,10 @@ _assert_status 400 "GET messages with an invalid hash key → 400"
 _curl -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
 	-d '{"text":"x"}' "$API/chats/0123456789abcdef0123456789abcdef/messages"
 _assert_status 404 "POST to an unknown hash conversation → 404"
+_curl -H "Authorization: Bearer $TOKEN" "$API/chats/0123456789abcdef0123456789abcdef/messages"
+_assert_status 404 "GET an unknown hash conversation → 404"
+_curl -X DELETE -H "Authorization: Bearer $TOKEN" "$API/chats/0123456789abcdef0123456789abcdef"
+_assert_status 404 "DELETE an unknown hash conversation → 404"
 _curl -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
 	-d '{"text":""}' "$API/chats/$PEER/messages"
 _assert_status 400 "POST with empty text → 400"
@@ -301,6 +309,16 @@ else
 fi
 _curl -X DELETE -H "Authorization: Bearer $TOKEN" "$API/chats/$PEER"
 _assert_status 404 "DELETE an already-closed conversation → 404"
+
+# A route DELETE must not depend on the refresher having observed the POST.
+_curl -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+	-d '{"text":"close immediately"}' "$API/chats/$PEER/messages"
+_assert_status 202 "POST before immediate close → 202"
+_curl -X DELETE -H "Authorization: Bearer $TOKEN" "$API/chats/$PEER"
+_assert_status 204 "DELETE immediately after route POST → 204"
+
+# Route-to-hash promotion requires a peer handshake, which TEST-NET cannot provide.
+# RefresherTest exercises the real session-value route + identity-child wire shape.
 
 # --- Summary. -----------------------------------------------------
 echo

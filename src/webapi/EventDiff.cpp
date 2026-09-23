@@ -698,10 +698,9 @@ std::string ChatMessageJson(const ChatMessageSnapshot &msg)
 
 void PublishChatEvents(CEventBus &bus,
 	const std::vector<ChatSessionSnapshot> &new_messages,
-	const std::vector<std::uint64_t> &closed,
-	const std::vector<std::string> *closed_keys)
+	const std::vector<std::string> &closed)
 {
-	if (new_messages.empty() && closed.empty() && (!closed_keys || closed_keys->empty()))
+	if (new_messages.empty() && closed.empty())
 		return;
 
 	std::vector<std::pair<std::string, std::string>> batch;
@@ -730,14 +729,11 @@ void PublishChatEvents(CEventBus &bus,
 			batch.emplace_back("chat_message", std::move(payload));
 		}
 	}
-	if (closed_keys) {
-		for (const auto &peer : *closed_keys)
-			batch.emplace_back("chat_session_closed", "{\"address\":\"" + EscJson(peer) + "\"}");
-	} else {
-		for (std::uint64_t gui_id : closed) {
-			const std::string peer = ChatPeerKeyFromGuiId(gui_id);
-			batch.emplace_back("chat_session_closed", "{\"address\":\"" + EscJson(peer) + "\"}");
-		}
+	for (const auto &peer : closed) {
+		const std::string hash =
+			peer.find(':') == std::string::npos ? "\"" + EscJson(peer) + "\"" : "null";
+		batch.emplace_back("chat_session_closed",
+			"{\"address\":\"" + EscJson(peer) + "\",\"hash\":" + hash + "}");
 	}
 	bus.PublishBatch(batch);
 }

@@ -543,7 +543,11 @@ struct ChatSessionSnapshot
 	//! the detail read and the SSE payload so they cannot disagree.
 	std::string DisplayName() const
 	{
-		return name.empty() ? ("IP: " + ip + " Port: " + std::to_string(port)) : name;
+		if (!name.empty())
+			return name;
+		if (ip.empty() && !peer_hash.empty())
+			return "Peer: " + peer_hash;
+		return "IP: " + ip + " Port: " + std::to_string(port);
 	}
 };
 
