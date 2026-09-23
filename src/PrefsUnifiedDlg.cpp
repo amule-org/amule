@@ -2032,18 +2032,17 @@ void PrefsUnifiedDlg::OnButtonTweaksReset(wxCommandEvent &WXUNUSED(evt))
 		return;
 	}
 
-	// Walk the currently shown page's controls and reset each one that is bound to a
-	// preference. Only the widgets are updated; the change is committed on OK and discarded
-	// on Cancel. The button is shown only on the Advanced page, so m_CurrentPanel is that
-	// page.
+	// Reset every preference whose control is on the currently shown page. Only the widgets
+	// are updated; the change is committed on OK and discarded on Cancel. The button is shown
+	// only on the Advanced page, so m_CurrentPanel is that page.
 	if (!m_CurrentPanel) {
 		return;
 	}
 
-	for (wxWindow *child : m_CurrentPanel->GetChildren()) {
-		Cfg_Base *cfg = GetCfg(child->GetId());
-		if (cfg) {
-			cfg->ResetToDefault();
+	// FindWindow, not GetChildren: the controls sit inside a static box, not on the panel.
+	for (const auto &entry : thePrefs::s_CfgList) {
+		if (m_CurrentPanel->FindWindow(entry.first)) {
+			entry.second->ResetToDefault();
 		}
 	}
 }
