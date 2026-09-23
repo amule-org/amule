@@ -188,12 +188,14 @@ void ApplyGetUpdateToFriends(const CECPacket *resp, std::map<std::uint32_t, Frie
 //
 // The reply is the daemon's COMPLETE session set, so this replaces the vector rather than merging:
 // a session missing from a reply was closed, and that absence is the only signal a close produces.
-// Messages arrive incrementally.
+// Messages arrive incrementally. Production passes out_closed_keys for stable SSE identity;
+// out_closed retains the legacy GUI_ID output for existing callers.
 void ApplyChatSessions(const CECPacket *resp,
 	std::vector<ChatSessionSnapshot> &cache,
 	std::uint32_t &cursor,
 	std::vector<ChatSessionSnapshot> &out_new_messages,
-	std::vector<std::uint64_t> &out_closed);
+	std::vector<std::uint64_t> &out_closed,
+	std::vector<std::string> *out_closed_keys = nullptr);
 
 // ed2k server priority, both directions. The SRV_PR_* wire values are not monotone (NORMAL=0,
 // HIGH=1, LOW=2), so callers must never assume a name's position in a list is its code.

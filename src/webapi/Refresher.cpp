@@ -1794,20 +1794,22 @@ void ApplyChatSessions(const CECPacket *resp,
 	std::vector<ChatSessionSnapshot> &cache,
 	std::uint32_t &cursor,
 	std::vector<ChatSessionSnapshot> &out_new_messages,
-	std::vector<std::uint64_t> &out_closed)
+	std::vector<std::uint64_t> &out_closed,
+	std::vector<std::string> *out_closed_keys)
 {
 	if (!resp)
 		return;
 
 	// Index what we already hold so the incremental messages can be carried
 	// over: the reply only contains what is newer than the cursor we sent.
-	std::map<std::uint64_t, ChatSessionSnapshot> previous;
+	std::map<std::string, ChatSessionSnapshot> previous;
 	for (ChatSessionSnapshot &s : cache) {
-		previous.emplace(s.gui_id, std::move(s));
+		const std::string key = s.IdentityKey();
+		previous.emplace(key, std::move(s));
 	}
 
 	std::vector<ChatSessionSnapshot> fresh;
-	std::set<std::uint64_t> present;
+	std::set<std::string> present;
 
 	for (const CECTag &tag : *resp) {
 		const CECTag *t = &tag;
@@ -1816,11 +1818,19 @@ void ApplyChatSessions(const CECPacket *resp,
 
 		ChatSessionSnapshot session;
 		session.gui_id = t->GetInt();
-		present.insert(session.gui_id);
+		if (const CECTag *routeTag = t->GetTagByName(EC_TAG_CHAT_CLIENT_ID))
+			session.gui_id = routeTag->GetInt();
+		if (const CECTag *hashTag = t->GetTagByName(EC_TAG_CHAT_PEER_HASH)) {
+			const auto hash = hashTag->GetMD4Data();
+			if (!hash.IsEmpty())
+				session.peer_hash = std::string(hash.Encode().Lower().utf8_str());
+		}
+		present.insert(session.IdentityKey());
 		// GUI_ID is (ip << 16) | port, with the IP in the same byte order EC_TAG_CLIENT_USER_IP
 		// uses, so it renders with the peer formatter every other address on this surface goes
 		// through.
-		session.ip = FormatClientIpv4(static_cast<std::uint32_t>(session.gui_id >> 16));
+		if (session.gui_id != 0)
+			session.ip = FormatClientIpv4(static_cast<std::uint32_t>(session.gui_id >> 16));
 		session.port = static_cast<std::uint16_t>(session.gui_id & 0xFFFFu);
 
 		if (const CECTag *nameTag = t->GetTagByName(EC_TAG_CHAT_PEER_NAME))
@@ -1836,7 +1846,13 @@ void ApplyChatSessions(const CECPacket *resp,
 			session.friend_ecid = static_cast<std::uint32_t>(friendTag->GetInt());
 
 		// Carry over the history this tick's reply did not repeat.
-		auto prev = previous.find(session.gui_id);
+		auto prev = previous.find(session.IdentityKey());
+		// Promote only a provisional route identity, never another hash at this endpoint.
+		if (prev == previous.end() && !session.peer_hash.empty() && session.gui_id != 0) {
+			prev = previous.find("gui:" + std::to_string(session.gui_id));
+			if (prev != previous.end())
+				present.insert(prev->first);
+		}
 		if (prev != previous.end()) {
 			session.messages = std::move(prev->second.messages);
 			// A name the daemon stops sending must not blank one we have.
@@ -1845,6 +1861,7 @@ void ApplyChatSessions(const CECPacket *resp,
 		}
 
 		ChatSessionSnapshot arrivals;
+		arrivals.peer_hash = session.peer_hash;
 		arrivals.gui_id = session.gui_id;
 		arrivals.ip = session.ip;
 		arrivals.port = session.port;
@@ -1885,8 +1902,11 @@ void ApplyChatSessions(const CECPacket *resp,
 	// chat_session_closed; the vector is replaced wholesale below, which is what actually drops
 	// it.
 	for (const auto &kv : previous) {
-		if (!present.count(kv.first))
-			out_closed.push_back(kv.first);
+		if (!present.count(kv.first)) {
+			out_closed.push_back(kv.second.gui_id);
+			if (out_closed_keys)
+				out_closed_keys->push_back(kv.second.PeerKey());
+		}
 	}
 
 	cache = std::move(fresh);

@@ -352,6 +352,65 @@ TEST(Refresher, ChatSessionDecodesIdentityAndMessages)
 	ASSERT_TRUE(closed.empty());
 }
 
+TEST(Refresher, ChatHashIdentitySurvivesRouteChangesAndSeparatesAbsentRoutes)
+{
+	std::vector<ChatSessionSnapshot> cache;
+	std::uint32_t cursor = 0;
+	unsigned char bytes[16] = { 0xab };
+	const CMD4Hash alice(bytes);
+	bytes[0] = 0xcd;
+	const CMD4Hash bob(bytes);
+	for (unsigned tick = 0; tick < 3; ++tick) {
+		std::vector<ChatSessionSnapshot> fresh;
+		std::vector<std::uint64_t> closed;
+		CECPacket resp(EC_OP_CHAT_SESSIONS);
+		CECTag a = MakeChatSession(tick == 0 ? kPeerA : 0, "alice");
+		a.AddTag(CECTag(EC_TAG_CHAT_PEER_HASH, alice));
+		AddChatMessage(a, tick + 1, false, 1000 + tick, "alice message");
+		resp.AddTag(a);
+		if (tick < 2) {
+			CECTag b = MakeChatSession(0, "bob");
+			b.AddTag(CECTag(EC_TAG_CHAT_PEER_HASH, bob));
+			AddChatMessage(b, tick + 10, false, 1000 + tick, "bob message");
+			resp.AddTag(b);
+		}
+		ApplyChatSessions(&resp, cache, cursor, fresh, closed);
+		ASSERT_EQUALS(static_cast<size_t>(tick + 1), cache[0].messages.size());
+		ASSERT_EQUALS(std::string("ab000000000000000000000000000000"), cache[0].peer_hash);
+		ASSERT_EQUALS(cache[0].peer_hash, fresh[0].peer_hash);
+		ASSERT_EQUALS(static_cast<size_t>(1), fresh[0].messages.size());
+		if (tick != 0) {
+			ASSERT_TRUE(cache[0].ip.empty());
+			ASSERT_EQUALS(static_cast<std::uint16_t>(0), cache[0].port);
+		}
+		if (tick < 2) {
+			ASSERT_TRUE(closed.empty());
+			ASSERT_EQUALS(static_cast<size_t>(tick + 1), cache[1].messages.size());
+			ASSERT_EQUALS(std::string("bob message"), cache[1].messages[0].text);
+		} else {
+			ASSERT_EQUALS(static_cast<size_t>(1), closed.size());
+			ASSERT_EQUALS(static_cast<std::uint64_t>(0), closed[0]);
+		}
+	}
+}
+
+TEST(Refresher, ChatLegacyClientIdDoesNotInventHash)
+{
+	std::vector<ChatSessionSnapshot> cache;
+	std::uint32_t cursor = 0;
+	std::vector<ChatSessionSnapshot> fresh;
+	std::vector<std::uint64_t> closed;
+	CECPacket resp(EC_OP_CHAT_SESSIONS);
+	CECTag s = MakeChatSession(0, "legacy");
+	s.AddTag(CECTag(EC_TAG_CHAT_CLIENT_ID, kPeerA));
+	resp.AddTag(s);
+	ApplyChatSessions(&resp, cache, cursor, fresh, closed);
+	ASSERT_EQUALS(static_cast<size_t>(1), cache.size());
+	ASSERT_TRUE(cache[0].peer_hash.empty());
+	ASSERT_EQUALS(kPeerA, cache[0].gui_id);
+	ASSERT_EQUALS(std::string("10.0.0.1:4662"), cache[0].PeerKey());
+}
+
 TEST(Refresher, ChatMessagesAccumulateAcrossTicks)
 {
 	// Later replies carry only what is past the cursor, so the walker must carry the earlier

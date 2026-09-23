@@ -274,9 +274,9 @@ private:
 	CHttpServer::Response HandleChatMessages(const CHttpServer::Request &, const std::string &peer);
 	CHttpServer::Response HandleChatSend(const CHttpServer::Request &, const std::string &peer);
 	CHttpServer::Response HandleChatClose(const CHttpServer::Request &, const std::string &peer);
-	// Shared body of all three send forms; `target` is the EC tag naming the
-	// recipient, always a GUI_ID: the chat target is an address, and the caller has it.
-	CHttpServer::Response SendChatMessageTo(const CHttpServer::Request &, const CECTag &target);
+	// Hash identity or legacy route target; an optional IPv4 route is only a dial hint.
+	CHttpServer::Response SendChatMessageTo(
+		const CHttpServer::Request &, const CECTag &target, std::uint64_t route_hint = 0);
 	// POST /clients/{ecid}/shared_files -- browse a peer's shared file list ("View Files").
 	// Returns a search_id addressed like any search: results via GET /search/{id}/results,
 	// progress and SSE via the standard machinery.

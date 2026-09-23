@@ -157,6 +157,7 @@ ROW=$(printf '%s' "$CURL_BODY" | jq --arg p "$PEER" -c '.chats[] | select(.addre
 printf '%s' "$ROW" > "$CURL_BODY_FILE"; CURL_BODY=$ROW
 _assert_json_eq '.ip'                 "$PEER_IP"   'row carries the split ip'
 _assert_json_eq '.port'               "$PEER_PORT" 'row carries the split port'
+_assert_json_eq '.hash'               null         'legacy route row has no hash identity'
 # The peer is a TEST-NET-3 address nothing can reach, so we are definitively
 # not connected to it -- whether or not the daemon minted a client object
 # while trying. That is the whole point of the field: `connected` is
@@ -242,6 +243,11 @@ _curl -H "Authorization: Bearer $TOKEN" "$API/chats/$PEER_IP:99999/messages"
 _assert_status 400 "GET messages with an out-of-range port → 400"
 _curl -H "Authorization: Bearer $TOKEN" "$API/chats/198.51.100.7:4662/messages"
 _assert_status 404 "GET messages for an unknown conversation → 404"
+_curl -H "Authorization: Bearer $TOKEN" "$API/chats/not-a-md4-hash/messages"
+_assert_status 400 "GET messages with an invalid hash key → 400"
+_curl -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+	-d '{"text":"x"}' "$API/chats/0123456789abcdef0123456789abcdef/messages"
+_assert_status 404 "POST to an unknown hash conversation → 404"
 _curl -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
 	-d '{"text":""}' "$API/chats/$PEER/messages"
 _assert_status 400 "POST with empty text → 400"

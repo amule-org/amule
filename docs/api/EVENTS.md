@@ -451,7 +451,8 @@ One event per message, **inbound and outbound alike**. An outbound one is how a 
 
 ```json
 {
-  "address": "203.0.113.42:4662",
+  "address": "0123456789abcdef0123456789abcdef",
+  "hash":    "0123456789abcdef0123456789abcdef",
   "ip":          "203.0.113.42",
   "port":        4662,
   "name":        "alice",
@@ -461,14 +462,14 @@ One event per message, **inbound and outbound alike**. An outbound one is how a 
 }
 ```
 
-`message` is identical to a `messages[]` entry on [`GET /api/v1/chats/{address}/messages`](REFERENCE.md#get-apiv1chatsaddressmessages) - including `sent_at`, which is `null` rather than `0` for an unstamped message, exactly as the REST row spells it. `name` uses the same `"IP: <ip> Port: <port>"` fallback the REST list does.
+`message` is identical to a `messages[]` entry on [`GET /api/v1/chats/{address}/messages`](REFERENCE.md#get-apiv1chatsaddressmessages) - including `sent_at`, which is `null` rather than `0` for an unstamped message, exactly as the REST row spells it. `address` is the stable hash when available and the legacy route otherwise; `name` uses the same `"IP: <ip> Port: <port>"` fallback the REST list does.
 
 There is no separate "conversation started" event: a conversation that did not exist yet is implied by the first message carrying its `address`.
 
 #### `chat_session_closed`
 
 ```json
-{ "address": "203.0.113.42:4662" }
+{ "address": "0123456789abcdef0123456789abcdef", "hash": "0123456789abcdef0123456789abcdef" }
 ```
 
 Closing is global — see [`DELETE /api/v1/chats/{address}`](REFERENCE.md#delete-apiv1chatsaddress). This fires whichever client closed it, including the desktop GUI, so a viewer should drop the conversation rather than assume it still exists.

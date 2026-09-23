@@ -251,11 +251,12 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 		// from inside the lambda would hold CState exclusively across the bus.
 		std::vector<webapi::ChatSessionSnapshot> new_messages;
 		std::vector<std::uint64_t> closed;
+		std::vector<std::string> closed_keys;
 		state.MutateChats([&](std::vector<webapi::ChatSessionSnapshot> &cache, std::uint32_t &cur) {
-			ApplyChatSessions(resp, cache, cur, new_messages, closed);
+			ApplyChatSessions(resp, cache, cur, new_messages, closed, &closed_keys);
 		});
 		delete resp;
-		PublishChatEvents(app.EventBus(), new_messages, closed);
+		PublishChatEvents(app.EventBus(), new_messages, closed, &closed_keys);
 	}
 
 	// /logs/server_info, /stats/tree and /stats/graphs/{graph} are lazy-fetched on first GET

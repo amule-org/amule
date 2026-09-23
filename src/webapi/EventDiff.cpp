@@ -698,34 +698,46 @@ std::string ChatMessageJson(const ChatMessageSnapshot &msg)
 
 void PublishChatEvents(CEventBus &bus,
 	const std::vector<ChatSessionSnapshot> &new_messages,
-	const std::vector<std::uint64_t> &closed)
+	const std::vector<std::uint64_t> &closed,
+	const std::vector<std::string> *closed_keys)
 {
-	if (new_messages.empty() && closed.empty())
+	if (new_messages.empty() && closed.empty() && (!closed_keys || closed_keys->empty()))
 		return;
 
 	std::vector<std::pair<std::string, std::string>> batch;
 	for (const ChatSessionSnapshot &session : new_messages) {
 		const std::string peer = session.PeerKey();
 		for (const ChatMessageSnapshot &msg : session.messages) {
-			std::string payload = "{\"address\":\"" + EscJson(peer) + "\",\"ip\":\"" +
-					      EscJson(session.ip) +
-					      "\",\"port\":" + std::to_string(session.port) + ",\"name\":\"" +
-					      EscJson(session.DisplayName()) +
-					      // client_ecid / friend_ecid are null rather than the 0
-					      // sentinel, matching the REST row (R10).
-					      "\",\"client_ecid\":" +
-					      (session.client_ecid ? std::to_string(session.client_ecid)
-								   : std::string("null")) +
-					      ",\"friend_ecid\":" +
-					      (session.friend_ecid ? std::to_string(session.friend_ecid)
-								   : std::string("null")) +
-					      ",\"message\":" + ChatMessageJson(msg) + "}";
+			std::string payload =
+				"{\"address\":\"" + EscJson(peer) + "\",\"hash\":" +
+				(session.peer_hash.empty() ? std::string("null")
+							   : "\"" + EscJson(session.peer_hash) + "\"") +
+				",\"ip\":" +
+				(session.ip.empty() ? std::string("null")
+						    : "\"" + EscJson(session.ip) + "\"") +
+				",\"port\":" +
+				(session.ip.empty() ? std::string("null") : std::to_string(session.port)) +
+				",\"name\":\"" + EscJson(session.DisplayName()) +
+				// client_ecid / friend_ecid are null rather than the 0
+				// sentinel, matching the REST row (R10).
+				"\",\"client_ecid\":" +
+				(session.client_ecid ? std::to_string(session.client_ecid)
+						     : std::string("null")) +
+				",\"friend_ecid\":" +
+				(session.friend_ecid ? std::to_string(session.friend_ecid)
+						     : std::string("null")) +
+				",\"message\":" + ChatMessageJson(msg) + "}";
 			batch.emplace_back("chat_message", std::move(payload));
 		}
 	}
-	for (std::uint64_t gui_id : closed) {
-		const std::string peer = ChatPeerKeyFromGuiId(gui_id);
-		batch.emplace_back("chat_session_closed", "{\"address\":\"" + EscJson(peer) + "\"}");
+	if (closed_keys) {
+		for (const auto &peer : *closed_keys)
+			batch.emplace_back("chat_session_closed", "{\"address\":\"" + EscJson(peer) + "\"}");
+	} else {
+		for (std::uint64_t gui_id : closed) {
+			const std::string peer = ChatPeerKeyFromGuiId(gui_id);
+			batch.emplace_back("chat_session_closed", "{\"address\":\"" + EscJson(peer) + "\"}");
+		}
 	}
 	bus.PublishBatch(batch);
 }
