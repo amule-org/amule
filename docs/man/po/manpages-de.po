@@ -4,7 +4,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: manpages-de\n"
-"POT-Creation-Date: 2026-08-24 19:02+0200\n"
+"POT-Creation-Date: 2026-09-24 19:19+0100\n"
 "PO-Revision-Date: 2026-09-23 14:43+0000\n"
 "Last-Translator: Balla Marcell <marcell.balla@gmx.at>\n"
 "Language-Team: German <kde-i18n-de@kde.org>\n"
@@ -84,7 +84,7 @@ msgid "[B<-w> I<E<lt>pathE<gt>>]"
 msgstr "[B<-w> I<E<lt>PfadE<gt>>]"
 
 #. type: Plain text
-#: amule.1.in amuled.1.in
+#: amule.1.in amuled.1.in amulegui.1.in
 #, fuzzy
 #| msgid "[B<-t> I<E<lt>numE<gt>>] [I<eD2k-link>]"
 msgid "[B<-t> I<E<lt>numE<gt>>] [I<eD2k-link>|I<collection-file>]"
@@ -145,6 +145,16 @@ msgstr "Setzt die Konfiguration auf die Standardwerte zurück."
 msgid "Enable or disable starting aMule on user login, then exit.  The OS-specific store is selected automatically: Windows registry Run key, macOS LaunchAgent, Linux XDG I<.desktop> autostart entry."
 msgstr "Aktiviert bzw. deaktiviert den automatischen Start von aMule beim Benutzerlogin, beendet danach.  Der betriebssystemspezifische Speicherort wird automatisch ausgewählt: Windows Registrierung run Schlüssel, macOS LaunchAgent, Linux XDG I<.desktop> Autostart Eintrag."
 
+#. type: Plain text
+#: amule.1.in amuled.1.in amulegui.1.in
+msgid "Enable or disable aMule as the current user's default handler for ed2k:// and magnet: links, then exit.  I<E<lt>valueE<gt>> is B<on> or B<off> for both kinds of link, or B<ed2k:on>, B<ed2k:off>, B<magnet:on> or B<magnet:off> for one of them.  The OS-specific store is selected automatically: Windows registry, macOS LaunchServices, Linux XDG I<mimeapps.list>."
+msgstr ""
+
+#. type: Plain text
+#: amule.1.in amuled.1.in amulegui.1.in
+msgid "Enable or disable aMule as the current user's handler for I<.emulecollection> files, then exit."
+msgstr ""
+
 # type: Plain text
 #. type: TP
 #: amule.1.in amuled.1.in
@@ -196,7 +206,7 @@ msgid "Prints a short usage description."
 msgstr "Gibt eine kurze Nutzungsbeschreibung aus."
 
 #. type: TP
-#: amule.1.in amuled.1.in
+#: amule.1.in amuled.1.in amulegui.1.in
 #, fuzzy, no-wrap
 #| msgid "B<[ eD2k-link ]>"
 msgid "B<[ eD2k-link | collection-file ]>"
@@ -212,61 +222,61 @@ msgstr "Fügt einen eD2k- oder Magnetverweis dem Kern hinzu."
 
 # type: Plain text
 #. type: Plain text
-#: amule.1.in amulecmd.1.in amuled.1.in ed2k.1.in
+#: amule.1.in amulecmd.1.in amuled.1.in amulegui.1.in ed2k.1.in
 msgid "The eD2k link to be added can be:"
 msgstr "Der eD2k-Verweis darf enthalten:"
 
 # type: Plain text
 #. type: Plain text
-#: amule.1.in amulecmd.1.in amuled.1.in ed2k.1.in
+#: amule.1.in amulecmd.1.in amuled.1.in amulegui.1.in ed2k.1.in
 msgid "a file link (ed2k://|file|...), it will be added to the download queue;"
 msgstr "ein Link zu einer Datei (ed2k://|file|...), dieser wird Downloadliste hinzugefügt;"
 
 # type: Plain text
 #. type: Plain text
-#: amule.1.in amulecmd.1.in amuled.1.in ed2k.1.in
+#: amule.1.in amulecmd.1.in amuled.1.in amulegui.1.in ed2k.1.in
 msgid "a server link (ed2k://|server|...), it will be added to the server list;"
 msgstr "ein Link zu einem Server (ed2k://|server|...), dieser wird der Serverliste hinzugefügt;"
 
 # type: Plain text
 #. type: Plain text
-#: amule.1.in amuled.1.in ed2k.1.in
+#: amule.1.in amuled.1.in amulegui.1.in ed2k.1.in
 msgid "a serverlist link, in which case all servers in the list will be added to the server list;"
 msgstr "ein Serverlisten-Verweis, in diesem Fall werden alle Server dieser Liste der Serverliste hinzugefügt;"
 
 #. type: Plain text
-#: amule.1.in amuled.1.in
+#: amule.1.in amuled.1.in amulegui.1.in
 msgid "a magnet link."
 msgstr "ein Magnet Verweis."
 
 #. type: Plain text
-#: amule.1.in amuled.1.in
+#: amule.1.in amuled.1.in amulegui.1.in
 msgid "Alternatively the argument can be the path to an .emulecollection file, or a file:// URL naming one, in which case every link it contains is added to the download queue.  This is what lets a file manager open a collection with aMule."
 msgstr ""
 
 # type: SH
 #. type: SH
-#: amule.1.in amulecmd.1.in amuleweb.1.in
+#: amule.1.in amulecmd.1.in amulegui.1.in amuleweb.1.in
 #, no-wrap
 msgid "NOTES"
 msgstr "ANMERKUNGEN"
 
 # type: SS
 #. type: SS
-#: amule.1.in amulecmd.1.in amuleweb.1.in
+#: amule.1.in amulecmd.1.in amulegui.1.in amuleweb.1.in
 #, no-wrap
 msgid "Paths"
 msgstr "Pfade"
 
 # type: Plain text
 #. type: Plain text
-#: amule.1.in amulecmd.1.in amuleweb.1.in
+#: amule.1.in amulecmd.1.in amulegui.1.in amuleweb.1.in
 msgid "For all options which take a I<E<lt>pathE<gt>> value, if the I<path> contains no directory part (i.e. just a plain filename), then it is considered to be under the aMule configuration directory, I<~/.aMule>."
 msgstr "Für alle Optionen die ein I<E<lt>PfadE<gt>> Argument erwarten, wenn der I<Pfad> kein Verzeichnis enthält(z.B. nur einen Dateinamen), dann wird angenommen, diese Datei liegt um aMule-Konfigurationsverzeichnis, I<~/.aMule>."
 
 # type: SH
 #. type: SH
-#: amule.1.in amulecmd.1.in amuled.1.in amuleweb.1.in ed2k.1.in
+#: amule.1.in amulecmd.1.in amuled.1.in amulegui.1.in amuleweb.1.in ed2k.1.in
 #: ../../src/utils/cas/docs/cas.1.in
 #, no-wrap
 msgid "FILES"
@@ -1052,12 +1062,6 @@ msgstr "aMuleGUI"
 msgid "amulegui - aMule control program with GUI"
 msgstr "amulegui - aMule Steuerungsprogramm mit GUI"
 
-# type: TP
-#. type: Plain text
-#: amulegui.1.in
-msgid "[B<-t> I<E<lt>numE<gt>>]"
-msgstr "[B<-t> I<E<lt>NumE<gt>>]"
-
 #. type: Plain text
 #: amulegui.1.in
 msgid "B<amulegui> is a client program, and can be connected to amule or amuled via EC. You can manage your amule program with it. It provides almost the same functionalities as amule, even if the core works on another computer."
@@ -1072,6 +1076,55 @@ msgstr "Überspringe den Verbindungsdialog."
 #: amulegui.1.in
 msgid "Enable or disable starting amulegui on user login, then exit.  The OS-specific store is selected automatically: Windows registry Run key, macOS LaunchAgent, Linux XDG I<.desktop> autostart entry."
 msgstr "Aktiviert bzw. deaktiviert den automatischen Start von amulegui beim Benutzerlogin, beendet danach.  Der betriebssystemspezifische Speicherort wird automatisch ausgewählt: Windows Registrierung run Schlüssel, macOS LaunchAgent, Linux XDG I<.desktop> Autostart Eintrag."
+
+# type: Plain text
+#. type: Plain text
+#: amulegui.1.in
+#, fuzzy
+#| msgid "Adds an eD2k-link or a magnet-link to the core."
+msgid "Sends an eD2k-link, or every link in an eMule collection file, to the connected core."
+msgstr "Fügt einen eD2k- oder Magnetverweis dem Kern hinzu."
+
+# type: Plain text
+#. type: TP
+#: amulegui.1.in
+#, fuzzy, no-wrap
+#| msgid "~/.aMule/remote.conf"
+msgid "I<~/.aMule/remote.conf>"
+msgstr "~/.aMule/remote.conf"
+
+#. type: Plain text
+#: amulegui.1.in
+msgid "Settings, including the core to connect to."
+msgstr ""
+
+# type: Plain text
+#. type: TP
+#: amulegui.1.in
+#, fuzzy, no-wrap
+#| msgid "~/.aMule/remote.conf"
+msgid "I<~/.aMule/remotelogfile>"
+msgstr "~/.aMule/remote.conf"
+
+#. type: Plain text
+#: amulegui.1.in
+#, fuzzy
+#| msgid "Show log."
+msgid "The log."
+msgstr "Log anzeigen."
+
+# type: Plain text
+#. type: TP
+#: amulegui.1.in
+#, fuzzy, no-wrap
+#| msgid "~/.aMule/ED2KLinks"
+msgid "I<~/.aMule/ED2KLinks>"
+msgstr "~/.aMule/ED2KLinks"
+
+#. type: Plain text
+#: amulegui.1.in
+msgid "Links passed on the command line, waiting to be sent to the core."
+msgstr ""
 
 #. type: Plain text
 #: amulegui.1.in
@@ -1578,6 +1631,10 @@ msgstr "B<wxcas> ist ein Programm zum Anzeigen des Inhaltes deiner Online Signat
 #: ../../src/utils/wxCas/docs/wxcas.1.in
 msgid "Based on Pedro de Oliveira's B<cas>(1).  B<wxcas> was written by ThePolish E<lt>thepolish@vipmail.ruE<gt>"
 msgstr "Basierend auf Pedro de Oliveira's B<cas>(1).  B<wxcas> wurde geschrieben von ThePolish E<lt>thepolish@vipmail.ruE<gt>"
+
+# type: TP
+#~ msgid "[B<-t> I<E<lt>numE<gt>>]"
+#~ msgstr "[B<-t> I<E<lt>NumE<gt>>]"
 
 # type: Plain text
 #~ msgid "Shows the progress of an on-going search."

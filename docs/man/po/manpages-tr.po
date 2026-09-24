@@ -4,7 +4,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
-"POT-Creation-Date: 2026-08-24 19:02+0200\n"
+"POT-Creation-Date: 2026-09-24 19:19+0100\n"
 "PO-Revision-Date: 2026-09-23 14:44+0000\n"
 "Last-Translator: Sebastiano Pistore <SebastianoPistore.info@protonmail.ch>\n"
 "Language-Team: \n"
@@ -76,7 +76,7 @@ msgid "[B<-w> I<E<lt>pathE<gt>>]"
 msgstr "[B<-w> I<E<lt>yolE<gt>>]"
 
 #. type: Plain text
-#: amule.1.in amuled.1.in
+#: amule.1.in amuled.1.in amulegui.1.in
 msgid "[B<-t> I<E<lt>numE<gt>>] [I<eD2k-link>|I<collection-file>]"
 msgstr "[B<-t> I<E<lt>sayıE<gt>>] [I<eD2k-bağlantısı>|I<koleksiyon-dosyası>]"
 
@@ -128,6 +128,16 @@ msgstr "Yapılandırmayı varsayılan değerlere sıfırlar."
 msgid "Enable or disable starting aMule on user login, then exit.  The OS-specific store is selected automatically: Windows registry Run key, macOS LaunchAgent, Linux XDG I<.desktop> autostart entry."
 msgstr "Kullanıcı oturum açtığında aMule'ün başlatılmasını etkinleştirir veya devre dışı bırakır.  İşletim sistemine has depo otomatik olarak seçilir: Windows için kayıt defteri (registry) Çalıştırma anahtarı, macOS için LaunchAgent, GNU/Linux için XDG I<.desktop> otomatik başlatma unsuru."
 
+#. type: Plain text
+#: amule.1.in amuled.1.in amulegui.1.in
+msgid "Enable or disable aMule as the current user's default handler for ed2k:// and magnet: links, then exit.  I<E<lt>valueE<gt>> is B<on> or B<off> for both kinds of link, or B<ed2k:on>, B<ed2k:off>, B<magnet:on> or B<magnet:off> for one of them.  The OS-specific store is selected automatically: Windows registry, macOS LaunchServices, Linux XDG I<mimeapps.list>."
+msgstr ""
+
+#. type: Plain text
+#: amule.1.in amuled.1.in amulegui.1.in
+msgid "Enable or disable aMule as the current user's handler for I<.emulecollection> files, then exit."
+msgstr ""
+
 #. type: TP
 #: amule.1.in amuled.1.in
 #, no-wrap
@@ -173,7 +183,7 @@ msgid "Prints a short usage description."
 msgstr "Kısa bir kullanım açıklaması görüntüler."
 
 #. type: TP
-#: amule.1.in amuled.1.in
+#: amule.1.in amuled.1.in amulegui.1.in
 #, no-wrap
 msgid "B<[ eD2k-link | collection-file ]>"
 msgstr "B<[ eD2k-bağlantısı | koleksiyon-dosyası ]>"
@@ -184,54 +194,54 @@ msgid "Adds an eD2k-link, or every link in an eMule collection file, to the core
 msgstr "Çekirdeğe bir eD2k bağlantısını ya da bir eMule koleksiyon dosyasındaki her bağlantıyı ekler."
 
 #. type: Plain text
-#: amule.1.in amulecmd.1.in amuled.1.in ed2k.1.in
+#: amule.1.in amulecmd.1.in amuled.1.in amulegui.1.in ed2k.1.in
 msgid "The eD2k link to be added can be:"
 msgstr "Eklenecek eD2k bağlantısı şunlardan biri olabilir:"
 
 #. type: Plain text
-#: amule.1.in amulecmd.1.in amuled.1.in ed2k.1.in
+#: amule.1.in amulecmd.1.in amuled.1.in amulegui.1.in ed2k.1.in
 msgid "a file link (ed2k://|file|...), it will be added to the download queue;"
 msgstr "bir dosya bağlantısı (ed2k://|file|...) ki indirmeler kuyruğuna eklenir;"
 
 #. type: Plain text
-#: amule.1.in amulecmd.1.in amuled.1.in ed2k.1.in
+#: amule.1.in amulecmd.1.in amuled.1.in amulegui.1.in ed2k.1.in
 msgid "a server link (ed2k://|server|...), it will be added to the server list;"
 msgstr "bir sunucu bağlantısı (ed2k://|server|...) ki sunucu listesine eklenir;"
 
 #. type: Plain text
-#: amule.1.in amuled.1.in ed2k.1.in
+#: amule.1.in amuled.1.in amulegui.1.in ed2k.1.in
 msgid "a serverlist link, in which case all servers in the list will be added to the server list;"
 msgstr "bir sunucu listesi bağlantısı, bu durumda listedeki tüm sunucular sunucu listesine eklenir;"
 
 #. type: Plain text
-#: amule.1.in amuled.1.in
+#: amule.1.in amuled.1.in amulegui.1.in
 msgid "a magnet link."
 msgstr "bir magnet bağlantısı."
 
 #. type: Plain text
-#: amule.1.in amuled.1.in
+#: amule.1.in amuled.1.in amulegui.1.in
 msgid "Alternatively the argument can be the path to an .emulecollection file, or a file:// URL naming one, in which case every link it contains is added to the download queue.  This is what lets a file manager open a collection with aMule."
 msgstr "Alternatif olarak, argüman bir .emulecollection dosyasının yolu veya onu isimlendiren bir file:// URL'i olabilir, ki bu durumda içerdiği her bağlantı indirme kuyruğuna eklenir.  Bu, bir dosya yöneticisinin koleksiyonları aMule ile açmasına imkân sağlar."
 
 #. type: SH
-#: amule.1.in amulecmd.1.in amuleweb.1.in
+#: amule.1.in amulecmd.1.in amulegui.1.in amuleweb.1.in
 #, no-wrap
 msgid "NOTES"
 msgstr "NOTLAR"
 
 #. type: SS
-#: amule.1.in amulecmd.1.in amuleweb.1.in
+#: amule.1.in amulecmd.1.in amulegui.1.in amuleweb.1.in
 #, no-wrap
 msgid "Paths"
 msgstr "Yollar"
 
 #. type: Plain text
-#: amule.1.in amulecmd.1.in amuleweb.1.in
+#: amule.1.in amulecmd.1.in amulegui.1.in amuleweb.1.in
 msgid "For all options which take a I<E<lt>pathE<gt>> value, if the I<path> contains no directory part (i.e. just a plain filename), then it is considered to be under the aMule configuration directory, I<~/.aMule>."
 msgstr "I<E<lt>yolE<gt>> değeri alan  tüm seçenekler için eğer I<yol> hiçbir dizin içermiyorsa (yani sadece bir dosya ismiyse) aMule yapılandırma dizini (I<~/.aMule>) varsayılır."
 
 #. type: SH
-#: amule.1.in amulecmd.1.in amuled.1.in amuleweb.1.in ed2k.1.in
+#: amule.1.in amulecmd.1.in amuled.1.in amulegui.1.in amuleweb.1.in ed2k.1.in
 #: ../../src/utils/cas/docs/cas.1.in
 #, no-wrap
 msgid "FILES"
@@ -913,11 +923,6 @@ msgstr "amulegui - Grafik arayüzlü aMule yönetme programı"
 
 #. type: Plain text
 #: amulegui.1.in
-msgid "[B<-t> I<E<lt>numE<gt>>]"
-msgstr "[B<-t> I<E<lt>sayıE<gt>>]"
-
-#. type: Plain text
-#: amulegui.1.in
 msgid "B<amulegui> is a client program, and can be connected to amule or amuled via EC. You can manage your amule program with it. It provides almost the same functionalities as amule, even if the core works on another computer."
 msgstr "B<amulegui> istemci bir programdır ve amule ya da amuled'e DB yoluyla bağlanabilir. aMule'ü bu şekilde yönetebilirsiniz. Çekirdeğin başka bir bilgisayarda çalışmasına rağmen amule'ün neredeyse tüm işlevlerine erişim sağlar."
 
@@ -930,6 +935,51 @@ msgstr "Bağlantı diyaloğunu geç."
 #: amulegui.1.in
 msgid "Enable or disable starting amulegui on user login, then exit.  The OS-specific store is selected automatically: Windows registry Run key, macOS LaunchAgent, Linux XDG I<.desktop> autostart entry."
 msgstr "Kullanıcı oturum açtığında amulegui'nin başlatılmasını etkinleştirir veya devre dışı bırakır.  İşletim sistemine has depo otomatik olarak seçilir: Windows için kayıt defteri (registry) Çalıştırma anahtarı, macOS için LaunchAgent, GNU/Linux için XDG I<.desktop> otomatik başlatma unsuru."
+
+#. type: Plain text
+#: amulegui.1.in
+#, fuzzy
+#| msgid "Adds an eD2k-link, or every link in an eMule collection file, to the core."
+msgid "Sends an eD2k-link, or every link in an eMule collection file, to the connected core."
+msgstr "Çekirdeğe bir eD2k bağlantısını ya da bir eMule koleksiyon dosyasındaki her bağlantıyı ekler."
+
+#. type: TP
+#: amulegui.1.in
+#, fuzzy, no-wrap
+#| msgid "~/.aMule/remote.conf"
+msgid "I<~/.aMule/remote.conf>"
+msgstr "~/.aMule/remote.conf"
+
+#. type: Plain text
+#: amulegui.1.in
+msgid "Settings, including the core to connect to."
+msgstr ""
+
+#. type: TP
+#: amulegui.1.in
+#, fuzzy, no-wrap
+#| msgid "~/.aMule/remote.conf"
+msgid "I<~/.aMule/remotelogfile>"
+msgstr "~/.aMule/remote.conf"
+
+#. type: Plain text
+#: amulegui.1.in
+#, fuzzy
+#| msgid "Show log."
+msgid "The log."
+msgstr "Günlüğü (log) gösterir."
+
+#. type: TP
+#: amulegui.1.in
+#, fuzzy, no-wrap
+#| msgid "~/.aMule/ED2KLinks"
+msgid "I<~/.aMule/ED2KLinks>"
+msgstr "~/.aMule/ED2KLinks"
+
+#. type: Plain text
+#: amulegui.1.in
+msgid "Links passed on the command line, waiting to be sent to the core."
+msgstr ""
 
 #. type: Plain text
 #: amulegui.1.in
@@ -1377,6 +1427,9 @@ msgstr "B<wxcas> çevrimiçi imzanızın içeriklerini güzel bir wx penceresind
 #: ../../src/utils/wxCas/docs/wxcas.1.in
 msgid "Based on Pedro de Oliveira's B<cas>(1).  B<wxcas> was written by ThePolish E<lt>thepolish@vipmail.ruE<gt>"
 msgstr "Pedro de Oliveira'nın B<cas>(1) programına dayalıdır. B<wxcas> ThePolish E<lt>thepolish@vipmail.ruE<gt> tarafından yazılmıştır"
+
+#~ msgid "[B<-t> I<E<lt>numE<gt>>]"
+#~ msgstr "[B<-t> I<E<lt>sayıE<gt>>]"
 
 #~ msgid "Shows the progress of an on-going search."
 #~ msgstr "Sürmekte olan bir aramanın ilerlemesini gösterir."
