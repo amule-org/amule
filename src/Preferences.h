@@ -492,8 +492,6 @@ public:
 	// WebServer
 	static uint16 GetWSPort() { return s_nWebPort; }
 	static void SetWSPort(uint16 uPort) { s_nWebPort = uPort; }
-	static uint16 GetWebUPnPTCPPort() { return s_nWebUPnPTCPPort; }
-	static void SetWebUPnPTCPPort(uint16 val) { s_nWebUPnPTCPPort = val; }
 	static const wxString &GetWSPass() { return s_sWebPassword; }
 	static void SetWSPass(const wxString &pass) { s_sWebPassword = pass; }
 	static const wxString &GetWSPath() { return s_sWebPath; }

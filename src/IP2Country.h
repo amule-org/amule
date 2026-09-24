@@ -153,7 +153,7 @@ private:
 
 	// Whether the in-flight download should render an HTTP progress dialog.
 	// Carried across the DB-IP previous-month retry in StartDownload. See Update().
-	bool m_showProgress = true;
+	bool m_showProgress = false;
 
 	void StartDownload(int monthOffset);
 	void NotifyUpdateFailed(const wxString &msg);
