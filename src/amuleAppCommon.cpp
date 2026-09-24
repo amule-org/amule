@@ -390,6 +390,21 @@ wxString CamuleAppCommon::CreateED2kLink(
 	return strURL;
 }
 
+// Reads the value of a one-shot on|off switch, also taking yes|no, true|false and 1|0. Expects it
+// lowercased. False for anything else, with `enable` untouched.
+static bool ParseOnOff(const wxString &value, bool &enable)
+{
+	if (value == "on" || value == "yes" || value == "true" || value == "1") {
+		enable = true;
+		return true;
+	}
+	if (value == "off" || value == "no" || value == "false" || value == "0") {
+		enable = false;
+		return true;
+	}
+	return false;
+}
+
 bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 {
 	theApp->SetAppName("aMule");
@@ -490,18 +505,17 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 	if (cmdline.Found("configure-autostart", &autostart_arg)) {
 		autostart_arg.MakeLower();
 		bool ok = false;
-		if (autostart_arg == wxT("on") || autostart_arg == wxT("yes") ||
-			autostart_arg == wxT("true") || autostart_arg == wxT("1")) {
-			ok = AutostartManager::Enable();
-			printf(ok ? "autostart enabled\n" : "autostart enable FAILED\n");
-		} else if (autostart_arg == wxT("off") || autostart_arg == wxT("no") ||
-			   autostart_arg == wxT("false") || autostart_arg == wxT("0")) {
-			ok = AutostartManager::Disable();
-			printf(ok ? "autostart disabled\n" : "autostart disable FAILED\n");
-		} else {
+		bool enable = false;
+		if (!ParseOnOff(autostart_arg, enable)) {
 			fprintf(stderr,
 				"configure-autostart expects 'on' or 'off' (got '%s')\n",
 				(const char *)unicode2char(autostart_arg));
+		} else if (enable) {
+			ok = AutostartManager::Enable();
+			printf(ok ? "autostart enabled\n" : "autostart enable FAILED\n");
+		} else {
+			ok = AutostartManager::Disable();
+			printf(ok ? "autostart disabled\n" : "autostart disable FAILED\n");
 		}
 		// Exit either way: this flag is a one-shot toggle, not a "run aMule WITH autostart
 		// enabled" combo. Returning false propagates to OnInit, so wxApp terminates cleanly
@@ -517,14 +531,8 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 		bool doEd2k = false, doMagnet = false;
 		bool wantEnable = false;
 		bool parsed = true;
-		if (protocols_arg == wxT("on") || protocols_arg == wxT("yes") ||
-			protocols_arg == wxT("true") || protocols_arg == wxT("1")) {
+		if (ParseOnOff(protocols_arg, wantEnable)) {
 			doEd2k = doMagnet = true;
-			wantEnable = true;
-		} else if (protocols_arg == wxT("off") || protocols_arg == wxT("no") ||
-			   protocols_arg == wxT("false") || protocols_arg == wxT("0")) {
-			doEd2k = doMagnet = true;
-			wantEnable = false;
 		} else if (protocols_arg == wxT("ed2k:on")) {
 			doEd2k = true;
 			wantEnable = true;
@@ -568,19 +576,17 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 	wxString fileassoc_arg;
 	if (cmdline.Found("configure-file-assoc", &fileassoc_arg)) {
 		fileassoc_arg.MakeLower();
-		bool ok = false;
-		if (fileassoc_arg == wxT("on") || fileassoc_arg == wxT("yes") ||
-			fileassoc_arg == wxT("true") || fileassoc_arg == wxT("1")) {
-			ok = ProtocolHandlerManager::Enable(HandlerTarget::CollectionFile);
-			printf(ok ? "file association enabled\n" : "file association enable FAILED\n");
-		} else if (fileassoc_arg == wxT("off") || fileassoc_arg == wxT("no") ||
-			   fileassoc_arg == wxT("false") || fileassoc_arg == wxT("0")) {
-			ok = ProtocolHandlerManager::Disable(HandlerTarget::CollectionFile);
-			printf(ok ? "file association disabled\n" : "file association disable FAILED\n");
-		} else {
+		bool enable = false;
+		if (!ParseOnOff(fileassoc_arg, enable)) {
 			fprintf(stderr,
 				"configure-file-assoc expects 'on' or 'off' (got '%s')\n",
 				(const char *)unicode2char(fileassoc_arg));
+		} else if (enable) {
+			const bool ok = ProtocolHandlerManager::Enable(HandlerTarget::CollectionFile);
+			printf(ok ? "file association enabled\n" : "file association enable FAILED\n");
+		} else {
+			const bool ok = ProtocolHandlerManager::Disable(HandlerTarget::CollectionFile);
+			printf(ok ? "file association disabled\n" : "file association disable FAILED\n");
 		}
 		// Same one-shot exit semantics as --configure-autostart above.
 		return false;
