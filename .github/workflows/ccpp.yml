@@ -120,8 +120,12 @@ env:
 
   ctest_flags: |-
     --test-dir build \
-    --output-on-failure \
-    --timeout 10
+    --output-on-failure
+  # CredentialsTest and AmuleApiConfigTest run the production 210,000-iteration PBKDF2 on
+  # every password set and check, 5-7 s on the macOS runners, so they get 60 s where every
+  # other test gets 10 s. The budget lives here rather than in a TIMEOUT property, which
+  # would also cap distro builds that run ctest with no limit.
+  ctest_kdf_tests: '^(CredentialsTest|AmuleApiConfigTest)$'
 
 jobs:
   build_cmake_ubuntu:
@@ -167,7 +171,9 @@ jobs:
         if: always()
         run: ccache --show-stats
       - name: run tests
-        run: ctest ${{ env.ctest_flags }}
+        run: |
+          ctest ${{ env.ctest_flags }} --timeout 10 -E '${{ env.ctest_kdf_tests }}' &&
+          ctest ${{ env.ctest_flags }} --timeout 60 -R '${{ env.ctest_kdf_tests }}'
       # amuleapi_curl_smoke drives these two against a live daemon rather than
       # compiling its own copy. Release only: the smoke times SSE windows, and
       # a Debug daemon makes those flaky.
@@ -246,7 +252,9 @@ jobs:
         if: always()
         run: ccache --show-stats
       - name: run tests
-        run: ctest ${{ env.ctest_flags }}
+        run: |
+          ctest ${{ env.ctest_flags }} --timeout 10 -E '${{ env.ctest_kdf_tests }}' &&
+          ctest ${{ env.ctest_flags }} --timeout 60 -R '${{ env.ctest_kdf_tests }}'
 
   # The amuleapi curl-smoke matrix, which nothing else in CI runs. Every other
   # job here compiles the REST surface; none of them exercises it. This one
@@ -461,7 +469,9 @@ jobs:
         if: always()
         run: ccache --show-stats
       - name: run tests
-        run: ctest ${{ env.ctest_flags }}
+        run: |
+          ctest ${{ env.ctest_flags }} --timeout 10 -E '${{ env.ctest_kdf_tests }}' &&
+          ctest ${{ env.ctest_flags }} --timeout 60 -R '${{ env.ctest_kdf_tests }}'
 
   build_cmake_windows_mingw_w64:
     name: Build CMake mingw-w64 (${{ matrix.build_type }})
@@ -537,4 +547,6 @@ jobs:
         if: always()
         run: ccache --show-stats
       - name: run tests
-        run: ctest ${{ env.ctest_flags }}
+        run: |
+          ctest ${{ env.ctest_flags }} --timeout 10 -E '${{ env.ctest_kdf_tests }}' &&
+          ctest ${{ env.ctest_flags }} --timeout 60 -R '${{ env.ctest_kdf_tests }}'
