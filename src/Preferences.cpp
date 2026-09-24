@@ -139,7 +139,6 @@ uint16 CPreferences::s_OSUpdate;
 wxString CPreferences::s_languageID;
 uint8 CPreferences::s_iSeeShares;
 uint8 CPreferences::s_iToolDelayTime;
-uint8 CPreferences::s_splitterbarPosition;
 uint16 CPreferences::s_deadserverretries;
 uint64 CPreferences::s_dwServerKeepAliveTimeoutMins;
 uint8 CPreferences::s_statsMax;
@@ -171,13 +170,11 @@ bool CPreferences::s_showVersionOnTitle;
 #endif
 uint8_t CPreferences::s_showRatesOnTitle;
 wxString CPreferences::s_VideoPlayer;
-bool CPreferences::s_showAllNotCats;
 bool CPreferences::s_msgonlyfriends;
 bool CPreferences::s_msgsecure;
 uint8 CPreferences::s_filterlevel;
 uint8 CPreferences::s_iFileBufferSize;
 uint8 CPreferences::s_iQueueSize;
-wxString CPreferences::s_datetimeformat;
 wxString CPreferences::s_sWebPath;
 wxString CPreferences::s_sWebPassword;
 wxString CPreferences::s_sWebLowPassword;
@@ -1379,12 +1376,9 @@ void CPreferences::BuildItemList(const wxString &appdir)
 
 	/** The following does not have an associated widget or section */
 	s_MiscList.push_back(new Cfg_Str("/eMule/Language", s_languageID));
-	s_MiscList.push_back(MkCfg_Int("/eMule/SplitterbarPosition", s_splitterbarPosition, 75));
 	s_MiscList.push_back(new Cfg_Str("/eMule/YourHostname", s_yourHostname, ""));
-	s_MiscList.push_back(new Cfg_Str("/eMule/DateTimeFormat", s_datetimeformat, "%A, %x, %X"));
 
 	s_MiscList.push_back(MkCfg_Int("/eMule/AllcatType", s_allcatFilter, 0));
-	s_MiscList.push_back(new Cfg_Bool("/eMule/ShowAllNotCats", s_showAllNotCats, false));
 
 	s_MiscList.push_back(MkCfg_Int("/eMule/SmartIdState", s_smartidstate, 0));
 
@@ -1409,6 +1403,11 @@ void CPreferences::BuildItemList(const wxString &appdir)
 	// Drop the v3.0.x-WIP /eMule/GeoIPMaxMindAccount key if a previous
 	// fork build wrote one -- never released, kept only to avoid clutter.
 	wxConfigBase::Get()->DeleteEntry("/eMule/GeoIPMaxMindAccount");
+
+	// Stored for years but never read.
+	wxConfigBase::Get()->DeleteEntry("/eMule/DateTimeFormat");
+	wxConfigBase::Get()->DeleteEntry("/eMule/ShowAllNotCats");
+	wxConfigBase::Get()->DeleteEntry("/eMule/SplitterbarPosition");
 
 	// Legacy single-URL setting -- preserved on disk for the one-shot migration that runs
 	// from LoadPreferences(); after that the value is surfaced as Custom URL in the new UI

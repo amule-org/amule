@@ -459,7 +459,6 @@ public:
 	static bool IsManualHighPrio() { return s_bmanualhighprio; }
 	static void SetManualHighPrio(bool val) { s_bmanualhighprio = val; }
 	void LoadCats();
-	static const wxString &GetDateTimeFormat() { return s_datetimeformat; }
 	// Download Categories
 	uint32 AddCat(Category_Struct *cat);
 	void RemoveCat(size_t index);
@@ -486,8 +485,6 @@ public:
 
 	static AllCategoryFilter GetAllcatFilter() { return s_allcatFilter; }
 	static void SetAllcatFilter(AllCategoryFilter in) { s_allcatFilter = in; }
-
-	static bool ShowAllNotCats() { return s_showAllNotCats; }
 
 	// WebServer
 	static uint16 GetWSPort() { return s_nWebPort; }
@@ -969,7 +966,6 @@ protected:
 	static wxString s_languageID;
 	static uint8 s_iSeeShares;     // 0=everybody 1=friends only 2=noone
 	static uint8 s_iToolDelayTime; // tooltip delay time in seconds
-	static uint8 s_splitterbarPosition;
 	static uint16 s_deadserverretries;
 	static uint64 s_dwServerKeepAliveTimeoutMins;
 
@@ -1007,15 +1003,12 @@ protected:
 	static uint8_t s_showRatesOnTitle; // 0=no, 1=after app name, 2=before app name
 
 	static wxString s_VideoPlayer;
-	static bool s_showAllNotCats;
 
 	static bool s_msgonlyfriends;
 	static bool s_msgsecure;
 
 	static uint8 s_iFileBufferSize;
 	static uint8 s_iQueueSize;
-
-	static wxString s_datetimeformat;
 
 	static bool s_ToolbarOrientation;
 	static bool s_liveListSort;
