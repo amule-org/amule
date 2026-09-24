@@ -215,6 +215,11 @@ CDownloadListCtrl::CDownloadListCtrl(wxWindow *parent,
 	// when the config has something saved.
 	ApplySorting(COLUMN_DL_NAME, 0);
 
+	// The part number only names the file's .part.met in the temp dir, which File Details already
+	// shows. Listed in the header menu, hidden until asked for -- the width above is what it gets
+	// when enabled. Set before LoadColumnSettings() so anything the user saved wins.
+	SetColumnHidden(COLUMN_DL_PART, true, 0);
+
 	m_columnStore.SetTableName("Download");
 	LoadColumnSettings();
 	InitColumnState();
