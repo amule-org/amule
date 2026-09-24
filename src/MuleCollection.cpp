@@ -33,7 +33,6 @@
 
 #include "MuleCollection.h"
 
-#include <cstring>
 #include <fstream>
 #include <sstream>
 
@@ -76,11 +75,20 @@ bool IsSafeLinkField(const std::string &field)
  * True when the buffer opens with a collection version header. The caller has already checked that
  * at least four bytes are available.
  */
+// Collections are little-endian on disk. The ed2k tool builds this file without wx, so the
+// ArchSpecific.h helpers are out of reach.
+template <typename T> T FromLittleEndian(const unsigned char *bytes)
+{
+	T value = 0;
+	for (size_t i = sizeof(T); i-- > 0;) {
+		value = static_cast<T>((value << 8) | bytes[i]);
+	}
+	return value;
+}
+
 bool LooksLikeBinary(const char *data)
 {
-	uint32_t version = 0;
-	memcpy(&version, data, sizeof(version));
-	// TODO: byte-sex, as in ReadInt().
+	const uint32_t version = FromLittleEndian<uint32_t>(reinterpret_cast<const unsigned char *>(data));
 	return version == 0x01 || version == 0x02;
 }
 } // namespace
@@ -188,10 +196,9 @@ bool CMuleCollection::Open(const wxString &File)
 
 template <typename intType> intType CMuleCollection::ReadInt(std::istream &infile)
 {
-	intType integer = 0;
-	infile.read(reinterpret_cast<char *>(&integer), sizeof(intType));
-	// TODO: byte-sex
-	return integer;
+	unsigned char bytes[sizeof(intType)] = {};
+	infile.read(reinterpret_cast<char *>(bytes), sizeof(bytes));
+	return FromLittleEndian<intType>(bytes);
 }
 
 std::string CMuleCollection::ReadString(std::istream &infile, int TagType)

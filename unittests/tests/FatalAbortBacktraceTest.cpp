@@ -570,11 +570,16 @@ TEST(FatalAbortBacktrace, ATrapReportsAndStillDies)
 
 	ASSERT_FALSE(r.timed_out);
 	ASSERT_TRUE(r.exited_on_signal);
+#ifdef __hppa__
+	// hppa's trap is a conditional trap, which raises SIGFPE. wx reports that one, not this handler.
+	ASSERT_EQUALS(SIGFPE, r.signal_number);
+#else
 	const bool trapSignal = r.signal_number == SIGTRAP || r.signal_number == SIGILL;
 	ASSERT_TRUE(trapSignal);
 	ASSERT_TRUE(Contains(r.stderr_text, "FATAL BACKTRACE FOLLOWS"));
 	// The report has to name the one that arrived, not a guess.
 	ASSERT_TRUE(Contains(r.stderr_text, r.signal_number == SIGILL ? "SIGILL" : "SIGTRAP"));
+#endif
 }
 
 // The process must still die, and die of SIGABRT. A handler that reports and returns would swallow
