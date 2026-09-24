@@ -944,6 +944,8 @@ The comments and ratings this download's **sources** report for the file (the de
 
 The list also includes any **Kad community notes** retrieved on demand via `POST` on this same path (see below). A Kad note's `username` is the responding node's IP address when the note carries one, otherwise the placeholder `Kad user`.
 
+Entries whose comment matches the comment filter ([`message_filter.filter_comments`](#patch-apiv1preferences) with `comment_keywords`) are left out, as in the desktop list. The filter applies when the list is built, so changing it needs no new Kad lookup.
+
 ```sh
 curl -s -H "Authorization: Bearer $TOKEN" \
   "http://$HOST/api/v1/downloads/8b54a3c2…/comments"
@@ -3104,6 +3106,8 @@ Promote a search result into the transfer queue. Equivalent to clicking "Downloa
 **Auth:** `GUEST`
 
 Community ratings/comments for a single search result — the Kad notes retrieved so far plus the running flag. The same data rides each result on [`GET /search/{id}/results`](#get-apiv1searchidresults); this per-hash endpoint mirrors [`GET /downloads/{hash}/comments`](#get-apiv1downloadshashcomments) for polling one result after starting a lookup.
+
+Notes matching the comment filter (`message_filter.filter_comments` with `comment_keywords`) are left out, here and on the results list.
 
 The route is deliberately **not** nested under a search id: amuled runs one Kad notes lookup per hash and fans the notes out to every result carrying it, so the lookup is not scoped to one search. This endpoint refreshes whichever search owns the hit before answering, which is what makes the flag below observable on a search that has already finished.
 

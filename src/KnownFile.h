@@ -155,6 +155,11 @@ public:
 	// ride the EC channel as a prebuilt list.
 	void GetKadNotesComments(FileRatingList &list) const;
 
+	// GetRatingAndComments() minus the entries the comment filter hides. Everything that shows
+	// comments goes through this, so the filter applies alike to source comments and Kad notes,
+	// in the dialog and over EC.
+	void GetShownRatingAndComments(FileRatingList &list) const;
+
 	// Collect the ratings/comments to display for this file. On the daemon the base version
 	// returns just the Kad notes, and CPartFile overrides it to prepend its connected-source
 	// comments. On amulegui every file type returns the same EC-streamed cache through the

@@ -235,10 +235,10 @@ const TABS = [
     { legendKey: "prefs_group_messages", fields: [
       { key: "enabled", type: "bool" },
       { key: "filter_all_messages", type: "bool", sub: true, gatedBy: "enabled" },
-      { key: "accept_from_friends_only", type: "bool", sub: true, gatedBy: "enabled" },
-      { key: "accept_from_known_clients_only", type: "bool", sub: true, gatedBy: "enabled" },
-      { key: "filter_by_keyword", type: "bool", sub: true, gatedBy: "enabled" },
-      { key: "keywords", type: "text", sub: 2, gatedBy: ["enabled", "filter_by_keyword"] },
+      { key: "accept_from_friends_only", type: "bool", sub: true, gatedBy: "enabled", gatedByNot: "filter_all_messages" },
+      { key: "accept_from_known_clients_only", type: "bool", sub: true, gatedBy: "enabled", gatedByNot: "filter_all_messages" },
+      { key: "filter_by_keyword", type: "bool", sub: true, gatedBy: "enabled", gatedByNot: "filter_all_messages" },
+      { key: "keywords", type: "text", sub: 2, gatedBy: ["enabled", "filter_by_keyword"], gatedByNot: "filter_all_messages" },
       { key: "log_filtered_messages", type: "bool" },
     ] },
     { legendKey: "prefs_group_comments", fields: [
@@ -505,7 +505,7 @@ export default function Preferences({ isGuest }) {
   // gatedBy: disable when any listed flag is explicitly false (capability flags
   // or an "enable" parent); a missing flag (older daemon) leaves it editable.
   // gatedByNot: disable when any listed flag is true (an inverted parent shown
-  // as an "Enable ..." checkbox).
+  // as an "Enable ..." checkbox, or an option that makes this one moot).
   // gatedByEq: enable only when a sibling equals a value (e.g. show the MaxMind
   // license only when source === "maxmind"); disabled otherwise.
   const isGated = (cat, f) =>

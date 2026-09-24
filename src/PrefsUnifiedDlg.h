@@ -314,6 +314,10 @@ public:
 	// whether one exists.
 	void SetCredentialStateLabel(int id, bool isSet);
 
+	// Enables the message-filter options from the checkboxes above them: the master switch gates
+	// all of them, and "Filter all messages" makes the rest moot.
+	void UpdateMessageFilterControls();
+
 	wxDECLARE_EVENT_TABLE();
 
 private:

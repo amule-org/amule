@@ -542,7 +542,7 @@ void CDownloadListCtrl::OnItemRightClicked(wxDataViewEvent &event)
 	m_menu->Enable(MP_SHOWINFOLDER, canReveal);
 
 	FileRatingList ratingList;
-	file->GetRatingAndComments(ratingList);
+	file->GetShownRatingAndComments(ratingList);
 	// Enable when there are source comments to show, or when Kad is connected so the dialog's
 	// "Get from Kad" lookup can retrieve community notes (#434) even for a file that has no
 	// per-source comments yet.

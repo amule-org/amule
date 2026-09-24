@@ -402,6 +402,12 @@ void CAbstractFile::GetRatingAndComments(FileRatingList &list) const
 }
 #endif
 
+void CAbstractFile::GetShownRatingAndComments(FileRatingList &list) const
+{
+	GetRatingAndComments(list);
+	list.remove_if([](const SFileRating &entry) { return thePrefs::IsCommentFiltered(entry.Comment); });
+}
+
 /* Known File */
 
 CKnownFile::CKnownFile()

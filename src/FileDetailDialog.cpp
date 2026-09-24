@@ -296,7 +296,7 @@ void CFileDetailDialog::UpdateData(bool resetFilename)
 	// well as an in-progress download since a Kad notes lookup only needs the file's hash and
 	// size. Enabled whenever there are comments already or Kad is connected (#434).
 	FileRatingList list;
-	m_file->GetRatingAndComments(list);
+	m_file->GetShownRatingAndComments(list);
 	CastChild(IDC_CMTBT, wxControl)->Enable(!list.empty() || theApp->IsConnectedKad());
 	FillSourcenameList();
 	Layout();

@@ -340,14 +340,13 @@ CEC_SharedFile_Tag::CEC_SharedFile_Tag(
 #endif
 	AddTag(EC_TAG_KNOWNFILE_LAST_UPLOAD, (uint32)file->GetLastUpload(), valuemap);
 
-	// Community ratings/comments plus the on-demand Kad-notes running flag, shared by downloads
-	// and shared files via the virtual GetRatingAndComments. Emitted before the UPDATE early-
-	// return so the flag's start -> finish and notes streaming in are visible on every poll;
-	// the valuemap suppresses unchanged values, so idle files cost nothing after the first
-	// send.
+	// Community ratings/comments, comment filter applied, plus the on-demand Kad-notes running
+	// flag, shared by downloads and shared files. Emitted before the UPDATE early-return so the
+	// flag's start -> finish and notes streaming in are visible on every poll; the valuemap
+	// suppresses unchanged values, so idle files cost nothing after the first send.
 	CECEmptyTag sc(EC_TAG_PARTFILE_COMMENTS);
 	FileRatingList list;
-	file->GetRatingAndComments(list);
+	file->GetShownRatingAndComments(list);
 	for (FileRatingList::const_iterator it = list.begin(); it != list.end(); ++it) {
 		// Tag children are evaluated by index, not by name.
 		sc.AddTag(CECTag(EC_TAG_PARTFILE_COMMENTS, it->UserName));
@@ -547,7 +546,7 @@ CEC_SearchFile_Tag::CEC_SearchFile_Tag(
 	// the common case -- would be deduped out and the dialog would stay empty. The block is
 	// gated on the built list, so idle results cost nothing.
 	FileRatingList list;
-	file->GetRatingAndComments(list);
+	file->GetShownRatingAndComments(list);
 	// Always emitted, and through the valuemap -- the same shape the download side uses for
 	// this tag.
 	//

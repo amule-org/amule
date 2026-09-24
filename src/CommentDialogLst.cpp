@@ -27,9 +27,8 @@
 #include "muuli_wdr.h"        // Needed for commentLstDlg
 #include "PartFile.h"         // Needed for CAbstractFile / CPartFile
 #include <common/Format.h>    // Needed for CFormat
-#include "Preferences.h"
-#include "amule.h"    // Needed for theApp
-#include "amuleDlg.h" // Needed for CamuleDlg::m_imagelist and the Client_*_Smiley ids
+#include "amule.h"            // Needed for theApp
+#include "amuleDlg.h"         // Needed for CamuleDlg::m_imagelist and the Client_*_Smiley ids
 
 #include <set>
 
@@ -201,23 +200,21 @@ void CCommentDialogLst::UpdateList()
 	ClearList();
 
 	FileRatingList list;
-	m_file->GetRatingAndComments(list);
+	m_file->GetShownRatingAndComments(list);
 	for (FileRatingList::const_iterator it = list.begin(); it != list.end(); ++it) {
-		if (!thePrefs::IsCommentFiltered(it->Comment)) {
-			m_list->InsertItem(count, it->UserName);
-			m_list->SetItem(count, 1, it->FileName);
-			// Ratings reach here as 0..5: the wire value is a uint8 that CUpDownClient
-			// clamps to 0 when it exceeds 5, and 0 is a comment with no rating. The old
-			// -1 branch, which drew a stray untranslated "on", could not be reached.
-			m_list->SetItem(count, 2, GetRateString(it->Rating));
-			const int ratingImage = RatingImage(it->Rating);
-			if (ratingImage >= 0) {
-				m_list->SetItemColumnImage(count, 2, ratingImage);
-			}
-			m_list->SetItem(count, 3, it->Comment);
-			m_list->SetItemPtrData(count, reinterpret_cast<wxUIntPtr>(new SFileRating(*it)));
-			++count;
+		m_list->InsertItem(count, it->UserName);
+		m_list->SetItem(count, 1, it->FileName);
+		// Ratings reach here as 0..5: the wire value is a uint8 that CUpDownClient
+		// clamps to 0 when it exceeds 5, and 0 is a comment with no rating. The old
+		// -1 branch, which drew a stray untranslated "on", could not be reached.
+		m_list->SetItem(count, 2, GetRateString(it->Rating));
+		const int ratingImage = RatingImage(it->Rating);
+		if (ratingImage >= 0) {
+			m_list->SetItemColumnImage(count, 2, ratingImage);
 		}
+		m_list->SetItem(count, 3, it->Comment);
+		m_list->SetItemPtrData(count, reinterpret_cast<wxUIntPtr>(new SFileRating(*it)));
+		++count;
 	}
 
 	wxString info;

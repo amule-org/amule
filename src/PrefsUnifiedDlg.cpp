@@ -853,20 +853,7 @@ bool PrefsUnifiedDlg::TransferToWindow()
 #endif
 	FindWindow(IDC_MINTRAY)->Enable(minTrayUsable);
 
-	if (!CastChild(IDC_MSGFILTER, wxCheckBox)->IsChecked()) {
-		FindWindow(IDC_MSGFILTER_ALL)->Enable(false);
-		FindWindow(IDC_MSGFILTER_NONSECURE)->Enable(false);
-		FindWindow(IDC_MSGFILTER_NONFRIENDS)->Enable(false);
-		FindWindow(IDC_MSGFILTER_WORD)->Enable(false);
-		FindWindow(IDC_MSGWORD)->Enable(false);
-	} else if (CastChild(IDC_MSGFILTER_ALL, wxCheckBox)->IsChecked()) {
-		FindWindow(IDC_MSGFILTER_NONSECURE)->Enable(false);
-		FindWindow(IDC_MSGFILTER_NONFRIENDS)->Enable(false);
-		FindWindow(IDC_MSGFILTER_WORD)->Enable(false);
-		FindWindow(IDC_MSGWORD)->Enable(false);
-	}
-
-	FindWindow(IDC_MSGWORD)->Enable(CastChild(IDC_MSGFILTER_WORD, wxCheckBox)->IsChecked());
+	UpdateMessageFilterControls();
 	FindWindow(IDC_COMMENTWORD)->Enable(CastChild(IDC_FILTERCOMMENTS, wxCheckBox)->IsChecked());
 
 #ifdef CLIENT_GUI
@@ -1080,6 +1067,17 @@ bool PrefsUnifiedDlg::CfgChanged(int ID)
 	}
 
 	return false;
+}
+
+void PrefsUnifiedDlg::UpdateMessageFilterControls()
+{
+	const bool filtering = CastChild(IDC_MSGFILTER, wxCheckBox)->IsChecked();
+	const bool selective = filtering && !CastChild(IDC_MSGFILTER_ALL, wxCheckBox)->IsChecked();
+	FindWindow(IDC_MSGFILTER_ALL)->Enable(filtering);
+	FindWindow(IDC_MSGFILTER_NONSECURE)->Enable(selective);
+	FindWindow(IDC_MSGFILTER_NONFRIENDS)->Enable(selective);
+	FindWindow(IDC_MSGFILTER_WORD)->Enable(selective);
+	FindWindow(IDC_MSGWORD)->Enable(selective && CastChild(IDC_MSGFILTER_WORD, wxCheckBox)->IsChecked());
 }
 
 void PrefsUnifiedDlg::SetCredentialStateLabel(int id, bool isSet)
@@ -1765,35 +1763,9 @@ void PrefsUnifiedDlg::OnCheckBoxChange(wxCommandEvent &event)
 		break;
 
 	case IDC_MSGFILTER:
-		// Toggle All filter options
-		FindWindow(IDC_MSGFILTER_ALL)->Enable(value);
-		FindWindow(IDC_MSGFILTER_NONSECURE)->Enable(value);
-		FindWindow(IDC_MSGFILTER_NONFRIENDS)->Enable(value);
-		FindWindow(IDC_MSGFILTER_WORD)->Enable(value);
-		if (value) {
-			FindWindow(IDC_MSGWORD)
-				->Enable(CastChild(IDC_MSGFILTER_WORD, wxCheckBox)->IsChecked());
-		} else {
-			FindWindow(IDC_MSGWORD)->Enable(false);
-		}
-		break;
-
 	case IDC_MSGFILTER_ALL:
-		// Toggle filtering by data.
-		FindWindow(IDC_MSGFILTER_NONSECURE)->Enable(!value);
-		FindWindow(IDC_MSGFILTER_NONFRIENDS)->Enable(!value);
-		FindWindow(IDC_MSGFILTER_WORD)->Enable(!value);
-		if (!value) {
-			FindWindow(IDC_MSGWORD)
-				->Enable(CastChild(IDC_MSGFILTER_WORD, wxCheckBox)->IsChecked());
-		} else {
-			FindWindow(IDC_MSGWORD)->Enable(false);
-		}
-		break;
-
 	case IDC_MSGFILTER_WORD:
-		// Toggle filter word list.
-		FindWindow(IDC_MSGWORD)->Enable(value);
+		UpdateMessageFilterControls();
 		break;
 
 	case IDC_FILTERCOMMENTS:

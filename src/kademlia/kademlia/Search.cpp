@@ -1172,8 +1172,6 @@ void CSearch::ProcessResultNotes(const CUInt128 &answer, TagPtrList *info)
 	entry->m_uKeyID = m_target;
 	entry->m_uSourceID = answer;
 
-	bool bFilterComment = false;
-
 	// Loop through tags and pull wanted into. Currently we only keep Filename, Rating, Comment.
 	for (TagPtrList::iterator it = info->begin(); it != info->end(); ++it) {
 		CTag *tag = *it;
@@ -1183,20 +1181,11 @@ void CSearch::ProcessResultNotes(const CUInt128 &answer, TagPtrList *info)
 			entry->m_uTCPport = tag->GetInt();
 		} else if (!tag->GetName().Cmp(TAG_FILENAME)) {
 			entry->SetFileName(tag->GetStr());
-		} else if (!tag->GetName().Cmp(TAG_DESCRIPTION)) {
-			wxString strComment(tag->GetStr());
-			bFilterComment = thePrefs::IsMessageFiltered(strComment);
-			entry->AddTag(tag, entry->m_uIP);
-			*it = NULL; // Prevent actual data being freed
-		} else if (!tag->GetName().Cmp(TAG_FILERATING)) {
+		} else if (!tag->GetName().Cmp(TAG_DESCRIPTION) || !tag->GetName().Cmp(TAG_FILERATING)) {
+			// Kept whatever it says: the comment filter applies when notes are shown.
 			entry->AddTag(tag, entry->m_uIP);
 			*it = NULL; // Prevent actual data being freed
 		}
-	}
-
-	if (bFilterComment) {
-		delete entry;
-		return;
 	}
 
 	uint8_t fileid[16];
