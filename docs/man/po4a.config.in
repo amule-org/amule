@@ -1,6 +1,8 @@
 [po4a_langs] de es fr hu it pt_BR ro ru tr zh_TW
 [po4a_paths] @CMAKE_CURRENT_SOURCE_DIR@/po/manpages.pot $lang:@CMAKE_CURRENT_SOURCE_DIR@/po/manpages-$lang.po
-[options] --master-charset UTF-8 --localized-charset UTF-8 --addendum-charset UTF-8 --wrap-po no --msgmerge-opt "--no-wrap"
+# --keep: po4a skips a page translated below this, and the build lists every page as an output,
+# so a skipped page fails it. po4a's default of 80 left no room for strings awaiting translation.
+[options] --master-charset UTF-8 --localized-charset UTF-8 --addendum-charset UTF-8 --wrap-po no --msgmerge-opt "--no-wrap" --keep 70
 [po4a_alias:man] man opt:"-o untranslated=als,B_untranslated,RB_untranslated,IP,SS_untranslated"
 [type: man] @CMAKE_CURRENT_SOURCE_DIR@/amule.1.in $lang:@CMAKE_CURRENT_BINARY_DIR@/amule.$lang.1.in add_$lang:?@CMAKE_CURRENT_SOURCE_DIR@/po/manpages-$lang.add
 [type: man] @CMAKE_CURRENT_SOURCE_DIR@/amulecmd.1.in $lang:@CMAKE_CURRENT_BINARY_DIR@/amulecmd.$lang.1.in add_$lang:?@CMAKE_CURRENT_SOURCE_DIR@/po/manpages-$lang.add
