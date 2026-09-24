@@ -3,8 +3,8 @@
 // "chats" and the active transcript on "chat:<peer>".
 //
 // `peer` is the stable conversation identity (hash when known).
-// `address` is the current route, independent of tab identity. Requests use
-// the hash instead when multiple identities share that route.
+// `address` is what requests use: the route, or the hash when the route is
+// absent or shared. It can change while the tab identity stays.
 
 import { api } from "./api.js";
 import { store } from "./store.js";
@@ -53,13 +53,6 @@ function newConv({ peer, address = peer, hash = "", ip, port, name = "", clientE
     loaded: false,
     fetching: false,
   };
-}
-
-// Keep the displayed route intact; only disambiguate the API path target.
-function requestTarget(conv, conversations) {
-  const shared = conv.hash && Array.from(conversations).some((other) =>
-    other.hash && other.hash !== conv.hash && other.address === conv.address);
-  return shared ? conv.hash : conv.address;
 }
 
 function messageList(conv) {
@@ -130,7 +123,7 @@ async function loadMessages(peer) {
   conv.fetching = true;
   try {
     const q = conv.loaded ? "?since_message_id=" + conv.lastMsgId : "?tail=" + HISTORY_LIMIT;
-    const r = await api.get("chats/" + requestTarget(conv, convs.values()) + "/messages" + q);
+    const r = await api.get("chats/" + conv.address + "/messages" + q);
     if (convs.get(conv.peer) !== conv) return;
     adoptKey(conv, r);
     for (const m of r.messages || []) addMessage(conv, m);
@@ -438,7 +431,7 @@ export const chats = {
     const conv = convs.get(peer);
     if (!conv || !text) return;
     try {
-      const r = await api.post("chats/" + requestTarget(conv, convs.values()) + "/messages", { text });
+      const r = await api.post("chats/" + conv.address + "/messages", { text });
       adoptKey(conv, r || {});
       peer = conv.peer;
       conv.known = true; // the core creates the conversation on this call
@@ -461,7 +454,7 @@ export const chats = {
     const conv = convs.get(peer);
     // One the daemon never had is ours alone to forget.
     if (conv && !conv.known) { drop(peer, false); return; }
-    try { await api.del("chats/" + (conv ? requestTarget(conv, convs.values()) : peer)); }
+    try { await api.del("chats/" + (conv ? conv.address : peer)); }
     catch (e) {
       if (!e || e.status !== 404) { toast(terr(noteError(e)) || t("messages_error"), "error"); return; }
     }

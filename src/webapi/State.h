@@ -516,6 +516,7 @@ struct ChatSessionSnapshot
 	std::uint64_t gui_id = 0; //!< legacy IPv4 route, 0 when unavailable (including IPv6)
 	std::string ip;           //!< dotted quad; empty when no legacy IPv4 route is supplied
 	std::uint16_t port = 0;
+	bool shared_route = false;     //!< another listed session holds the same route
 	std::string name;              //!< peer display name; "" when the core has none
 	std::uint32_t client_ecid = 0; //!< live peer, 0 when offline
 	bool connected = false;        //!< a socket to that peer is actually up
@@ -532,10 +533,11 @@ struct ChatSessionSnapshot
 		return peer_hash.empty() ? ("gui:" + std::to_string(gui_id)) : ("hash:" + peer_hash);
 	}
 
-	//! REST/SSE address: retain the legacy IPv4 route whenever available.
+	//! REST/SSE address: the legacy IPv4 route whenever it names this session alone.
 	std::string PeerKey() const
 	{
-		return !ip.empty() && port ? ip + ":" + std::to_string(port) : peer_hash;
+		const bool routeIsUnique = !ip.empty() && port && !(shared_route && !peer_hash.empty());
+		return routeIsUnique ? ip + ":" + std::to_string(port) : peer_hash;
 	}
 
 	//! Display name, falling back to the desktop's own rendering when the core has no

@@ -476,7 +476,59 @@ TEST(Refresher, ChatDistinctHashesAtOneRouteDoNotShareHistory)
 		ASSERT_EQUALS(static_cast<size_t>(tick + 1), cache[1].messages.size());
 		ASSERT_EQUALS(std::string("alice"), cache[0].messages[0].text);
 		ASSERT_EQUALS(std::string("bob"), cache[1].messages[0].text);
+		// A shared route names neither peer, so each is addressed by its hash.
+		ASSERT_EQUALS(cache[0].peer_hash, cache[0].PeerKey());
+		ASSERT_EQUALS(cache[1].peer_hash, cache[1].PeerKey());
 	}
+}
+
+TEST(Refresher, ChatAddressFollowsWhetherTheRouteIsShared)
+{
+	std::vector<ChatSessionSnapshot> cache;
+	std::uint32_t cursor = 0;
+	const std::string route("10.0.0.1:4662");
+	const std::string alice("01000000000000000000000000000000");
+	const std::string bob("02000000000000000000000000000000");
+	std::uint32_t id = 0;
+	const auto tick = [&](bool withBob, std::vector<ChatSessionClosure> &closed) {
+		std::vector<ChatSessionSnapshot> fresh;
+		CECPacket resp(EC_OP_CHAT_SESSIONS);
+		for (unsigned peer = 0; peer < (withBob ? 2u : 1u); ++peer) {
+			unsigned char bytes[16] = { 0 };
+			bytes[0] = peer + 1;
+			CECTag session = MakeChatSession(kPeerA, "");
+			session.AddTag(CECTag(EC_TAG_CHAT_PEER_HASH, CMD4Hash(bytes)));
+			AddChatMessage(session, ++id, false, 1000, "hi");
+			resp.AddTag(session);
+		}
+		ApplyChatSessions(&resp, cache, cursor, fresh, closed);
+		// SSE arrivals must carry the same address as the list.
+		for (size_t i = 0; i < fresh.size(); ++i) {
+			ASSERT_EQUALS(cache[i].PeerKey(), fresh[i].PeerKey());
+		}
+	};
+
+	std::vector<ChatSessionClosure> closed;
+	tick(false, closed);
+	ASSERT_EQUALS(route, cache[0].PeerKey());
+	ASSERT_TRUE(closed.empty());
+
+	// Bob arrives on alice's route: alice's route address retires.
+	closed.clear();
+	tick(true, closed);
+	ASSERT_EQUALS(alice, cache[0].PeerKey());
+	ASSERT_EQUALS(bob, cache[1].PeerKey());
+	ASSERT_EQUALS(static_cast<size_t>(1), closed.size());
+	ASSERT_EQUALS(route, closed[0].address);
+	ASSERT_EQUALS(alice, closed[0].peer_hash);
+
+	// Bob leaves: alice gets the route back, and bob's hash address closes.
+	closed.clear();
+	tick(false, closed);
+	ASSERT_EQUALS(route, cache[0].PeerKey());
+	ASSERT_EQUALS(static_cast<size_t>(2), closed.size());
+	ASSERT_EQUALS(alice, closed[0].address);
+	ASSERT_EQUALS(bob, closed[1].address);
 }
 
 TEST(Refresher, ChatHashOnlyDisplayNamesRemainDistinct)

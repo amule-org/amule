@@ -6041,9 +6041,18 @@ CHttpServer::Response CApiDispatcher::SendChatMessageTo(
 	// The nested `message` object is the created resource, built through the same writer
 	// GET /chats/{address}/messages uses. `sent_at` is null here and only here:
 	// EC_OP_CHAT_SEND answers with ids and no timestamp.
+	// Same rule as the list: a route another identity holds is not this peer's address.
+	std::string address = gui_id ? webapi::ChatPeerKeyFromGuiId(gui_id) : peer_hash;
+	if (gui_id && !peer_hash.empty()) {
+		for (const webapi::ChatSessionSnapshot &s : m_state.Chats()) {
+			if (s.gui_id == gui_id && !s.peer_hash.empty() && s.peer_hash != peer_hash) {
+				address = peer_hash;
+				break;
+			}
+		}
+	}
 	w.Key("address");
-	w.ValueString(
-		wxString::FromUTF8((gui_id ? webapi::ChatPeerKeyFromGuiId(gui_id) : peer_hash).c_str()));
+	w.ValueString(wxString::FromUTF8(address.c_str()));
 	w.Key("hash");
 	if (peer_hash.empty())
 		w.ValueNull();

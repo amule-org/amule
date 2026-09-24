@@ -462,7 +462,7 @@ One event per message, **inbound and outbound alike**. An outbound one is how a 
 }
 ```
 
-`message` is identical to a `messages[]` entry on [`GET /api/v1/chats/{address}/messages`](REFERENCE.md#get-apiv1chatsaddressmessages) - including `sent_at`, which is `null` rather than `0` for an unstamped message, exactly as the REST row spells it. `address` is the current IPv4 `ip:port` when available, otherwise the hash. `hash` remains the separate stable identity. `name` falls back to the uppercase hash when known, otherwise `"IP: <ip> Port: <port>"`, matching desktop `ChatPeerFallbackName`.
+`message` is identical to a `messages[]` entry on [`GET /api/v1/chats/{address}/messages`](REFERENCE.md#get-apiv1chatsaddressmessages) - including `sent_at`, which is `null` rather than `0` for an unstamped message, exactly as the REST row spells it. `address` is the current IPv4 `ip:port` when available and not shared with another conversation, otherwise the hash. `hash` remains the separate stable identity. `name` falls back to the uppercase hash when known, otherwise `"IP: <ip> Port: <port>"`, matching desktop `ChatPeerFallbackName`.
 
 There is no separate "conversation started" event: a conversation that did not exist yet is implied by the first message carrying its `address`.
 

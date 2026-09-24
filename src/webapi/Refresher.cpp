@@ -1822,6 +1822,7 @@ void ApplyChatSessions(const CECPacket *resp,
 
 		ChatSessionSnapshot session;
 		session.gui_id = t->GetInt();
+		session.shared_route = session.gui_id && route_count[session.gui_id] > 1;
 		if (const CECTag *hashTag = t->GetTagByName(EC_TAG_CHAT_PEER_HASH)) {
 			const auto hash = hashTag->GetMD4Data();
 			if (!hash.IsEmpty())
@@ -1870,6 +1871,7 @@ void ApplyChatSessions(const CECPacket *resp,
 		arrivals.gui_id = session.gui_id;
 		arrivals.ip = session.ip;
 		arrivals.port = session.port;
+		arrivals.shared_route = session.shared_route;
 		arrivals.name = session.name;
 		arrivals.client_ecid = session.client_ecid;
 		arrivals.friend_ecid = session.friend_ecid;
