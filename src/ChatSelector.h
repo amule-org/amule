@@ -117,7 +117,11 @@ public:
 	void ConnectionResult(bool success, const wxString &message, const CChatTarget &id);
 	void RefreshFriend(const CChatTarget &toupdate_id, const wxString &new_name);
 	void ShowCaptchaResult(const CChatTarget &id, bool ok);
+	// The active tab's peer and name; false when no tab is open.
+	bool GetCurrentPeer(CChatTarget &peer, wxString &name) const;
+#ifndef CLIENT_GUI
 	bool GetCurrentClient(CClientRef &) const;
+#endif
 };
 
 #endif

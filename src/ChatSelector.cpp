@@ -225,7 +225,10 @@ bool CChatSelector::ProcessMessage(const CChatTarget &sender_id, const wxString 
 			client_name = ChatPeerFallbackName(sender_id);
 		}
 
-		session = StartSession(sender_id, client_name, true);
+		// In the background, as the remote GUI opens one: every tab shares the message box and
+		// Send goes to the selected tab, so selecting this one under someone typing would send
+		// their text to this peer.
+		session = StartSession(sender_id, client_name, false);
 	}
 
 	// Other client connected after disconnection or a new session
@@ -397,12 +400,23 @@ void CChatSelector::ShowCaptchaResult(const CChatTarget &id, bool ok)
 	}
 }
 
-#ifdef CLIENT_GUI
-bool CChatSelector::GetCurrentClient(CClientRef &) const
+bool CChatSelector::GetCurrentPeer(CChatTarget &peer, wxString &name) const
 {
-	return false;
+	const int sel = GetSelection();
+	if (sel < 0 || sel >= static_cast<int>(GetPageCount())) {
+		return false;
+	}
+	const size_t page = static_cast<size_t>(sel);
+	const CChatSession *ci = static_cast<const CChatSession *>(GetPage(page));
+	if (ci == nullptr || !ChatTargetValid(ci->m_client_id)) {
+		return false;
+	}
+	peer = ci->m_client_id;
+	name = GetPageText(page);
+	return true;
 }
-#else
+
+#ifndef CLIENT_GUI
 bool CChatSelector::GetCurrentClient(CClientRef &clientref) const
 {
 	// Get the chat session associated with the active tab

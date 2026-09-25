@@ -77,6 +77,17 @@ CChatWnd::CChatWnd(wxWindow *pParent)
 
 namespace
 {
+// Not a friend yet, and something to identify it by: its hash, or an IPv4 address and port the
+// friend list can match on until the peer's next hello supplies the hash.
+bool CanAddAsFriend(const CChatTarget &peer)
+{
+	const uint32 ip = peer.Address().ToIPv4NetworkOrderOrZero();
+	if (peer.Hash().IsEmpty() && (ip == 0 || peer.Port() == 0)) {
+		return false;
+	}
+	return theApp->friendlist->LookupFriend(peer.Hash(), ip, peer.Port()) == nullptr;
+}
+
 CChatTarget FriendChatTarget(const CFriend *peer)
 {
 #ifdef CLIENT_GUI
@@ -164,11 +175,9 @@ void CChatWnd::OnNMRclickChatTab(wxMouseEvent &evt)
 
 		wxMenuItem *addFriend = m_menu->Append(MP_ADDFRIEND, _("Add to Friends"));
 
-		// Disable this client if it is already a friend
-		CClientRef client;
-		if (chatselector->GetCurrentClient(client) && client.IsFriend()) {
-			addFriend->Enable(false);
-		}
+		CChatTarget peer;
+		wxString name;
+		addFriend->Enable(chatselector->GetCurrentPeer(peer, name) && CanAddAsFriend(peer));
 
 		PopupMenu(m_menu, evt.GetPosition());
 
@@ -199,13 +208,22 @@ void CChatWnd::OnPopupCloseOthers(wxCommandEvent &WXUNUSED(evt))
 
 void CChatWnd::OnAddFriend(wxCommandEvent &WXUNUSED(evt))
 {
-	// Get the client that the session is open to
-	CClientRef client;
-
-	// Add the client as friend unless it's already a friend
-	if (chatselector->GetCurrentClient(client) && !client.IsFriend()) {
-		theApp->friendlist->AddFriend(client);
+	CChatTarget peer;
+	wxString name;
+	if (!chatselector->GetCurrentPeer(peer, name) || !CanAddAsFriend(peer)) {
+		return;
 	}
+#ifndef CLIENT_GUI
+	// A live client is linked to its new friend at once; without one, the link waits for the
+	// peer's next hello, which also adopts the hash onto an entry added by address.
+	CClientRef client;
+	if (chatselector->GetCurrentClient(client)) {
+		theApp->friendlist->AddFriend(client);
+		return;
+	}
+#endif
+	theApp->friendlist->AddFriend(
+		peer.Hash(), peer.Address().ToIPv4NetworkOrderOrZero(), peer.Port(), name);
 }
 
 void CChatWnd::OnBnClickedCsend(wxCommandEvent &WXUNUSED(evt))
