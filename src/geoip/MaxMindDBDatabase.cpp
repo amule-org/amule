@@ -52,6 +52,15 @@ bool CMaxMindDBDatabase::Open(const wxString &path)
 	}
 
 	m_isOpen = true;
+
+	// Opening is not enough: a MaxMind .tar.gz saved unextracted opens (the metadata sits near
+	// its end), but every lookup fails. Probe an address any country database knows.
+	if (GetCountryCode("8.8.8.8").IsEmpty()) {
+		AddLogLineC(
+			CFormat(_("Failed to open MaxMindDB database '%s': %s")) % path % "no country data");
+		Close();
+		return false;
+	}
 	return true;
 }
 

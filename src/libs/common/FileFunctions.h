@@ -75,6 +75,8 @@ enum EFileType
 	EFT_Zip,
 	//! GZip archives, will be unpacked
 	EFT_GZip,
+	//! Tar archive, will be unpacked
+	EFT_Tar,
 	//! Met file, will be left unchanged.
 	EFT_Met,
 	//! Unknown filetype, will be left unchanged.
@@ -89,12 +91,12 @@ typedef std::pair<bool, EFileType> UnpackResult;
  * Unpacks a single file from an archive, replacing the archive.
  *
  * @param file The archive.
- * @param files Filenames to unpack, terminated by a NULL entry.
+ * @param files Filenames to unpack, terminated by a NULL entry. Wildcards (`*.mmdb`) are allowed.
  * @return True if the archive was unpacked, plus the resulting filetype.
  *
  * A file that is not an archive is left unchanged and its type returned. A GZip archive is unpacked
- * and replaced by the new file. In a Zip archive the first file matching any in @a files (case-
- * insensitively) is unpacked over the archive.
+ * and replaced by the new file. In a Zip or Tar archive the first file whose name, without its
+ * folder, matches any in @a files (case-insensitively) is unpacked over the archive.
  */
 UnpackResult UnpackArchive(const CPath &file, const char *files[]);
 

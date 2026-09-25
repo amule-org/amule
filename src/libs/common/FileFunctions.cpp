@@ -25,6 +25,7 @@
 
 #include <wx/dir.h>      // Needed for wxDir
 #include <wx/fs_zip.h>   // Needed for wxZipFSHandler
+#include <wx/tarstrm.h>  // Needed for wxTarInputStream
 #include <wx/wfstream.h> // wxFileInputStream
 #include <wx/zipstrm.h>  // Needed for wxZipInputStream
 #include <wx/zstream.h>  // Needed for wxZlibInputStream
@@ -34,6 +35,8 @@
 #include <zlib.h> // Do_not_auto_remove
 #endif
 #include <algorithm> // Needed for std::min
+#include <cstring>   // Needed for memcmp
+#include <memory>    // Needed for std::unique_ptr
 
 #ifndef __WINDOWS__
 #include <dirent.h>   // opendir / readdir for ListSubdirectories
@@ -150,6 +153,13 @@ static EFileType GuessFiletype(const wxString &file)
 		return EFT_Met;
 	}
 
+	// Tar has no magic at the start: the header opens with the member's name, which would pass
+	// the text check below. POSIX ("ustar\0") and GNU ("ustar  ") both put "ustar" at 257.
+	char tarMagic[5];
+	if (archive.Seek(257) == 257 && archive.Read(tarMagic, 5) == 5 && memcmp(tarMagic, "ustar", 5) == 0) {
+		return EFT_Tar;
+	}
+
 	// Check at most the first ten chars, if all are printable,
 	// then we can probably assume it is ascii text-file.
 	for (int i = 0; i < read; ++i) {
@@ -162,7 +172,21 @@ static EFileType GuessFiletype(const wxString &file)
 }
 
 /**
- * Replaces the zip archive with "guarding.p2p" or "ipfilter.dat", if either is found inside it.
+ * True if the member's name, without its folder, matches any pattern in @a files.
+ */
+static bool IsWantedMember(const wxString &internalName, const char *files[])
+{
+	const wxString name = internalName.AfterLast('/').Lower();
+	for (int i = 0; files[i]; i++) {
+		if (wxMatchWild(wxString(files[i]).Lower(), name, false)) {
+			return true;
+		}
+	}
+	return false;
+}
+
+/**
+ * Replaces the zip archive with the first member matching @a files.
  */
 static bool UnpackZipFile(const wxString &file, const char *files[])
 {
@@ -170,41 +194,34 @@ static bool UnpackZipFile(const wxString &file, const char *files[])
 	CSmartPtr<wxZipEntry> entry;
 	wxFFileInputStream fileInputStream(file);
 	wxZipInputStream zip(fileInputStream);
-	bool run = true;
-	while (run) {
+	while (true) {
 		entry.reset(zip.GetNextEntry());
 		if (entry.get() == NULL) {
 			break;
 		}
-		// access meta-data
-		wxString name = entry->GetName();
 		// We only care about the files specified in the array
 		// probably needed to weed out included nfos
-		for (int i = 0; run && files[i]; i++) {
-			if (name.CmpNoCase(files[i]) == 0) {
-				// we found the entry we want
-				// read 'zip' to access the entry's data
-				char buffer[10240];
-				while (!zip.Eof()) {
-					zip.Read(buffer, sizeof(buffer));
-					if (zip.LastRead() == 0) {
-						// Stream stuck, e.g. an unsupported compression
-						// method on this entry. wxZipInputStream does not
-						// advance its EOF flag then, so the original loop
-						// spun forever -- on a malformed eMule-security
-						// IPFilter feed it emitted gigabytes of "Error:
-						// unsupported Zip compression method" within
-						// seconds (#376). Bail and let the caller treat
-						// this download as failed; the next fetch picks up
-						// the clean copy. (run is set false after the loop,
-						// so no assignment is needed here.)
-						break;
-					}
-					target.Write(buffer, zip.LastRead());
-				}
-				run = false;
-			}
+		if (entry->IsDir() || !IsWantedMember(entry->GetInternalName(), files)) {
+			continue;
 		}
+		char buffer[10240];
+		while (!zip.Eof()) {
+			zip.Read(buffer, sizeof(buffer));
+			if (zip.LastRead() == 0) {
+				// Stream stuck, e.g. an unsupported compression
+				// method on this entry. wxZipInputStream does not
+				// advance its EOF flag then, so the original loop
+				// spun forever -- on a malformed eMule-security
+				// IPFilter feed it emitted gigabytes of "Error:
+				// unsupported Zip compression method" within
+				// seconds (#376). Bail and let the caller treat
+				// this download as failed; the next fetch picks up
+				// the clean copy.
+				break;
+			}
+			target.Write(buffer, zip.LastRead());
+		}
+		break;
 	}
 
 	if (target.Length()) {
@@ -213,6 +230,35 @@ static bool UnpackZipFile(const wxString &file, const char *files[])
 	}
 
 	return false;
+}
+
+/**
+ * Replaces the tar archive with the first member matching @a files.
+ */
+static bool UnpackTarFile(const wxString &file, const char *files[])
+{
+	wxTempFile target(file);
+	wxFFileInputStream fileInputStream(file);
+	wxTarInputStream tar(fileInputStream);
+	while (true) {
+		std::unique_ptr<wxTarEntry> entry(tar.GetNextEntry());
+		if (!entry) {
+			return false;
+		}
+		if (entry->IsDir() || !IsWantedMember(entry->GetInternalName(), files)) {
+			continue;
+		}
+		char buffer[10240];
+		size_t written = 0;
+		while (tar.Read(buffer, sizeof(buffer)).LastRead() > 0) {
+			if (!target.Write(buffer, tar.LastRead())) {
+				return false;
+			}
+			written += tar.LastRead();
+		}
+		// A truncated download ends the member early: keep nothing rather than half a file.
+		return written > 0 && written == static_cast<size_t>(entry->GetSize()) && target.Commit();
+	}
 }
 
 /**
@@ -309,6 +355,14 @@ UnpackResult UnpackArchive(const CPath &path, const char *files[])
 
 	case EFT_GZip:
 		if (UnpackGZipFile(file)) {
+			// Unpack nested archives if needed.
+			return UnpackResult(true, UnpackArchive(path, files).second);
+		} else {
+			return UnpackResult(false, EFT_Error);
+		}
+
+	case EFT_Tar:
+		if (UnpackTarFile(file, files)) {
 			// Unpack nested archives if needed.
 			return UnpackResult(true, UnpackArchive(path, files).second);
 		} else {

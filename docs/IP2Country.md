@@ -190,9 +190,17 @@ both:
 For MaxMind this also satisfies their EULA's "refresh at least every
 30 days" requirement.
 
+The startup update skips the download when the server reports that its
+file has not changed. `Update now` always downloads, so it can replace
+a bad file on disk.
+
 On any failure path aMule continues using whatever database file is
 already on disk — the feature degrades gracefully rather than dropping
 all flag display.
+
+aMule checks each database it loads with a test lookup. A file that
+opens but returns no country is discarded and logged, and a fresh copy
+is downloaded on the next start.
 
 ### DB-IP early-month fallback
 

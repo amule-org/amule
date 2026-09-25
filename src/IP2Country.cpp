@@ -140,9 +140,14 @@ void CIP2Country::StartDownload(int monthOffset)
 	}
 	AddLogLineN(CFormat(_("Download new %s from %s")) % m_DataBaseName % url);
 	m_downloading = true;
-	// checkDownloadNewer stays true, honouring If-Modified-Since.
-	CHTTPDownloadThread *downloader = new CHTTPDownloadThread(
-		url, m_DataBasePath + ".download", m_DataBasePath, HTTP_GeoIP, m_showProgress, true);
+	// Scheduled updates honour If-Modified-Since. "Update now" always downloads, so it can
+	// replace a bad file the server reports as unchanged.
+	CHTTPDownloadThread *downloader = new CHTTPDownloadThread(url,
+		m_DataBasePath + ".download",
+		m_DataBasePath,
+		HTTP_GeoIP,
+		m_showProgress,
+		!m_ManualUpdate);
 	downloader->Create();
 	downloader->Run();
 }
@@ -168,8 +173,8 @@ void CIP2Country::DownloadFinished(uint32 result)
 		Disable();
 		wxString newDat = m_DataBasePath + ".download";
 
-		wxScopedCharBuffer dataBaseName = m_DataBaseName.utf8_str();
-		const char *geoip_files[] = { dataBaseName, NULL };
+		// MaxMind ships GeoLite2-Country_<date>/GeoLite2-Country.mmdb inside a .tar.gz.
+		const char *geoip_files[] = { "*.mmdb", nullptr };
 
 		if (UnpackArchive(CPath(newDat), geoip_files).second == EFT_Error) {
 			const wxString msg =

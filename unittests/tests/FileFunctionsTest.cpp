@@ -30,8 +30,12 @@
 #include <wx/file.h>
 #include <wx/filefn.h>
 #include <wx/filename.h>
+#include <wx/tarstrm.h>
+#include <wx/wfstream.h>
+#include <wx/zstream.h>
 
 #include <set>
+#include <string>
 
 #ifndef __WINDOWS__
 #include <unistd.h> // Needed for symlink
@@ -77,6 +81,51 @@ struct CTempTree
 	~CTempTree() { wxFileName::Rmdir(root, wxPATH_RMDIR_RECURSIVE); }
 };
 
+struct CTempFile
+{
+	wxString path = wxFileName::CreateTempFileName("amule-unpack");
+	~CTempFile() { wxRemoveFile(path); }
+};
+
+// Binary, like an .mmdb: GuessFiletype() sees it as EFT_Unknown once unpacked.
+std::string Payload()
+{
+	std::string data(3000, '\0');
+	for (size_t i = 0; i < data.size(); ++i) {
+		data[i] = static_cast<char>(i * 7);
+	}
+	return data;
+}
+
+void AddMember(wxTarOutputStream &tar, const wxString &name, const std::string &data)
+{
+	tar.PutNextEntry(name, wxDateTime::Now(), static_cast<wxFileOffset>(data.size()));
+	tar.Write(data.data(), data.size());
+}
+
+// The layout MaxMind ships.
+void WriteMaxMindTar(wxOutputStream &out, bool withMmdb = true)
+{
+	wxTarOutputStream tar(out);
+	tar.PutNextDirEntry("GeoLite2-Country_20260925");
+	if (withMmdb) {
+		AddMember(tar, "GeoLite2-Country_20260925/GeoLite2-Country.mmdb", Payload());
+	}
+	AddMember(tar, "GeoLite2-Country_20260925/COPYRIGHT.txt", "Copyright text\n");
+	AddMember(tar, "GeoLite2-Country_20260925/LICENSE.txt", "License text\n");
+	tar.Close();
+}
+
+std::string ReadAll(const wxString &path)
+{
+	wxFile in(path);
+	std::string data(in.Length(), '\0');
+	in.Read(&data[0], data.size());
+	return data;
+}
+
+const char *mmdbFiles[] = { "*.mmdb", nullptr };
+
 } // namespace
 
 DECLARE_SIMPLE(FileFunctions)
@@ -112,4 +161,51 @@ TEST(FileFunctions, ListSubdirectoriesMatchesDirIterator)
 TEST(FileFunctions, ListSubdirectoriesOfMissingDirIsEmpty)
 {
 	ASSERT_EQUALS(wxString(), Listed(CPath("/nonexistent/amule-subdirs-test")));
+}
+
+TEST(FileFunctions, UnpackArchiveExtractsMmdbFromMaxMindTarGz)
+{
+	CTempFile file;
+	{
+		wxFileOutputStream out(file.path);
+		wxZlibOutputStream gzip(out, -1, wxZLIB_GZIP);
+		WriteMaxMindTar(gzip);
+		gzip.Close();
+	}
+
+	const UnpackResult result = UnpackArchive(CPath(file.path), mmdbFiles);
+	ASSERT_TRUE(result.first);
+	ASSERT_EQUALS(static_cast<int>(EFT_Unknown), static_cast<int>(result.second));
+	ASSERT_TRUE(ReadAll(file.path) == Payload());
+}
+
+TEST(FileFunctions, UnpackArchiveFailsOnTarWithoutMatchingMember)
+{
+	CTempFile file;
+	{
+		wxFileOutputStream out(file.path);
+		WriteMaxMindTar(out, false);
+	}
+
+	const UnpackResult result = UnpackArchive(CPath(file.path), mmdbFiles);
+	ASSERT_EQUALS(static_cast<int>(EFT_Error), static_cast<int>(result.second));
+}
+
+TEST(FileFunctions, UnpackArchiveFailsOnTruncatedTar)
+{
+	CTempFile file;
+	{
+		wxFileOutputStream out(file.path);
+		WriteMaxMindTar(out);
+	}
+	// Cut into the .mmdb member: two 512-byte headers (folder, file) plus part of its data.
+	const std::string whole = ReadAll(file.path);
+	ASSERT_TRUE(whole.size() > 2048);
+	{
+		wxFile out(file.path, wxFile::write);
+		ASSERT_TRUE(out.Write(whole.data(), 2048) == 2048);
+	}
+
+	const UnpackResult result = UnpackArchive(CPath(file.path), mmdbFiles);
+	ASSERT_EQUALS(static_cast<int>(EFT_Error), static_cast<int>(result.second));
 }

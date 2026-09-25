@@ -37,7 +37,8 @@ public:
 	CMaxMindDBDatabase();
 	~CMaxMindDBDatabase();
 
-	// Open the .mmdb at `path` in MMAP mode. Returns false (and logs) on failure.
+	// Open the .mmdb at `path` in MMAP mode. Returns false (and logs) on failure, including a
+	// file that opens but has no country data.
 	// Calling Open() on an already-open instance closes the previous handle first.
 	bool Open(const wxString &path);
 
