@@ -122,15 +122,19 @@ TEST(NatRendezvousProtocol, RejectsTruncationTrailingBytesWrongOpcodeAndInvalidM
 
 	auto nonzeroMarker = valid;
 	nonzeroMarker[NatRendezvous::kHashSize] = 1;
-	ASSERT_FALSE(NatRendezvous::ParseRendezvousEnvelope(nonzeroMarker.data(), nonzeroMarker.size())
-			.has_value());
+	const bool nonzeroMarkerAccepted =
+		NatRendezvous::ParseRendezvousEnvelope(nonzeroMarker.data(), nonzeroMarker.size())
+			.has_value();
+	ASSERT_FALSE(nonzeroMarkerAccepted);
 
 	auto nullRequester = valid;
 	std::fill(nullRequester.begin() + NatRendezvous::kRendezvousPrefixSize + 1,
 		nullRequester.begin() + NatRendezvous::kRendezvousPrefixSize + 1 + NatRendezvous::kHashSize,
 		0);
-	ASSERT_FALSE(NatRendezvous::ParseRendezvousEnvelope(nullRequester.data(), nullRequester.size())
-			.has_value());
+	const bool nullRequesterAccepted =
+		NatRendezvous::ParseRendezvousEnvelope(nullRequester.data(), nullRequester.size())
+			.has_value();
+	ASSERT_FALSE(nullRequesterAccepted);
 }
 
 TEST(NatRendezvousProtocol, RejectsInvalidOptionalEndpointHint)
