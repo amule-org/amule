@@ -670,16 +670,16 @@ wxSizer *fileDetails( wxWindow *parent, bool call_fit, bool set_sizer )
 
     // Completed Size keeps its composite "value / (percent)" display.
     wxBoxSizer *item46 = new wxBoxSizer( wxHORIZONTAL );
-    item46->Add( new wxStaticText( item23, -1, LabelWithColon( _("Completed Size") ), wxDefaultPosition, wxDefaultSize, 0 ), wxSizerFlags().Expand().CenterVertical() );
+    item46->Add( new wxStaticText( dlPanel, -1, LabelWithColon( _("Completed Size") ), wxDefaultPosition, wxDefaultSize, 0 ), wxSizerFlags().Expand().CenterVertical() );
     wxBoxSizer *item48 = new wxBoxSizer( wxHORIZONTAL );
-    wxStaticText *item49 = new wxStaticText( item23, IDC_COMPLSIZE, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText *item49 = new wxStaticText( dlPanel, IDC_COMPLSIZE, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
     item49->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
     item48->Add( item49, wxSizerFlags().CenterVertical() );
-    item48->Add( new wxStaticText( item23, -1, " / (", wxDefaultPosition, wxDefaultSize, 0 ), wxSizerFlags().CenterVertical() );
-    wxStaticText *item51 = new wxStaticText( item23, IDC_PROCCOMPL, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
+    item48->Add( new wxStaticText( dlPanel, -1, " / (", wxDefaultPosition, wxDefaultSize, 0 ), wxSizerFlags().CenterVertical() );
+    wxStaticText *item51 = new wxStaticText( dlPanel, IDC_PROCCOMPL, _("N/A"), wxDefaultPosition, wxDefaultSize, 0 );
     item51->SetForegroundColour( wxSystemSettings::GetColour(wxSYS_COLOUR_HOTLIGHT) );
     item48->Add( item51, wxSizerFlags().CenterVertical() );
-    item48->Add( new wxStaticText( item23, -1, ")", wxDefaultPosition, wxDefaultSize, 0 ), 0, wxALIGN_CENTER_VERTICAL, 0 );
+    item48->Add( new wxStaticText( dlPanel, -1, ")", wxDefaultPosition, wxDefaultSize, 0 ), 0, wxALIGN_CENTER_VERTICAL, 0 );
     item46->Add( item48, wxSizerFlags().Center().Border(wxLEFT, 5) );
     item24->Add( item46, wxSizerFlags().Expand().CenterVertical() );
 
