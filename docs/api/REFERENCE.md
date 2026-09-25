@@ -2362,7 +2362,11 @@ Returns every preference category amuled carries over EC. The `general` and `con
       "enabled": false, "port": 4711, "gzip_enabled": true,
       "refresh_seconds": 120, "template_name": "", "guest_enabled": false
     },
-    "amuleapi": { "enabled": true, "port": 4713, "bind_address": "0.0.0.0" }
+    "amuleapi": { "enabled": true, "port": 4713, "bind_address": "0.0.0.0" },
+    "external_connections": {
+      "enabled": true, "bind_address": "127.0.0.1", "bind_interface": "", "port": 4712,
+      "upnp_enabled": false, "encryption_required": false, "password_set": true
+    }
   },
   "online_signature": { "enabled": false, "directory": "/home/me/.aMule", "update_frequency_seconds": 5 },
   "advanced": {
@@ -2391,7 +2395,7 @@ Booleans are plain JSON `true`/`false` regardless of how amuled encodes them on 
 
 `files.mmap_supported` is **read-only** — the daemon advertises whether it was built with memory-mapped file I/O (`false` on a core without mmap support, e.g. Windows or a build with `-DENABLE_MMAP=OFF`); it is ignored if sent on PATCH. `files.mmap_enabled` is the runtime toggle for memory-mapped block I/O — download writes to part files, upload reads of both shared (completed) and partial files, and hashing (lower per-process memory use, at some write-path cost; best for upload-heavy or memory-constrained hosts). It is **capability-gated**: a PATCH that sets `files.mmap_enabled` is rejected with **409 `option_not_supported`** when `files.mmap_supported` is `false`, so the option is only writable against a daemon that can actually use it. Safe to toggle with active transfers.
 
-`connection.upnp_enabled` toggles UPnP router forwarding of the daemon's P2P ports — the ports themselves are `connection.tcp_port` (ed2k TCP) and `connection.udp_port` (ed2k/Kad UDP). `connection.upnp_control_point_port` is a separate optional knob: the fixed local port the UPnP control point (libupnp) binds to for the router's callbacks, `0` meaning auto-assign — **not** a forwarded port. `connection.upnp_supported` is **read-only** — the daemon advertises whether it was built with UPnP (`false` on a core built `-DENABLE_UPNP=OFF`, where `upnp_enabled` has no effect); it is ignored if sent on PATCH. (Web-server and EC-port UPnP are intentionally not exposed — amuleweb is deprecated and the EC port is not a P2P port.)
+`connection.upnp_enabled` toggles UPnP router forwarding of the daemon's P2P ports — the ports themselves are `connection.tcp_port` (ed2k TCP) and `connection.udp_port` (ed2k/Kad UDP). `connection.upnp_control_point_port` is a separate optional knob: the fixed local port the UPnP control point (libupnp) binds to for the router's callbacks, `0` meaning auto-assign — **not** a forwarded port. `connection.upnp_supported` is **read-only** — the daemon advertises whether it was built with UPnP (`false` on a core built `-DENABLE_UPNP=OFF`, where `upnp_enabled` has no effect); it is ignored if sent on PATCH. (Web-server UPnP is not exposed, since amuleweb is deprecated. EC-port UPnP is reported read-only, as `remote_controls.external_connections.upnp_enabled`.)
 
 The `connection.proxy_*` fields configure the proxy the **daemon** routes its P2P and HTTP traffic through. `proxy_type` is one of `"socks5"` / `"socks4"` / `"http"` / `"socks4a"` — any other value is a `400`. It is the empty string when the daemon has no proxy type configured at all (the core's `PROXY_NONE`), a state that cannot be set back through this API; use `proxy_enabled: false` to turn the proxy off. `proxy_auth_enabled` toggles username/password authentication. `proxy_password` is **write-only** — accepted on PATCH but never returned on GET (same as the `remote_controls` passwords); PATCH the other proxy fields without it to leave the stored password unchanged.
 
@@ -2405,8 +2409,8 @@ The `connection.proxy_*` fields configure the proxy the **daemon** routes its P2
 
 | Kind | What `PATCH` does | Examples |
 | --- | --- | --- |
-| Settable | applied | most of the 125 -- `files.mmap_enabled`, `connection.max_connection_count`, … |
-| Read-only status | ignored, request still succeeds | `files.mmap_supported`, `connection.upnp_supported`, the six `geoip.*` |
+| Settable | applied | most of the 132 -- `files.mmap_enabled`, `connection.max_connection_count`, … |
+| Read-only status | ignored, request still succeeds | `files.mmap_supported`, `connection.upnp_supported`, the six `geoip.*`, the seven `remote_controls.external_connections.*` |
 | Write-only | applied, never echoed on `GET` | `remote_controls.webserver.password`, `.guest_password` |
 | Refused | `400 bad_request` | `remote_controls.amuleapi.password`, `.guest_password`, `.guest_enabled` |
 
@@ -2418,7 +2422,9 @@ Body shape mirrors the GET; every sub-object and every field is optional, and fi
 { "files": { "add_new_downloads_paused": true }, "servers": { "dead_server_retry_count": 5 } }
 ```
 
-`remote_controls` nests its two independent subsystems as `remote_controls.webserver` and `remote_controls.amuleapi` rather than prefixing every field. It reports amuleapi's `enabled` / `port` / `bind_address`, but **not** whether its admin or guest password is set. Those live in `amuleapi-passwords`, which amuleapi owns and which may sit on a different host from amuled — so the daemon's view of that file can be the wrong one. Ask the API that actually reads it: [`GET /auth/passwords`](#get-apiv1authpasswords), which is admin-only, whereas this endpoint is readable by any authenticated role. `webserver.guest_enabled` is reported because it is a genuine amuled preference rather than a fact about another process's file.
+`remote_controls` nests its three independent subsystems as `remote_controls.webserver`, `remote_controls.amuleapi` and `remote_controls.external_connections` rather than prefixing every field. It reports amuleapi's `enabled` / `port` / `bind_address`, but **not** whether its admin or guest password is set. Those live in `amuleapi-passwords`, which amuleapi owns and which may sit on a different host from amuled — so the daemon's view of that file can be the wrong one. Ask the API that actually reads it: [`GET /auth/passwords`](#get-apiv1authpasswords), which is admin-only, whereas this endpoint is readable by any authenticated role. `webserver.guest_enabled` is reported because it is a genuine amuled preference rather than a fact about another process's file.
+
+`remote_controls.external_connections` is the EC listener amuleapi itself reaches the core through, and it is **read-only**. `enabled` is whether external connections are accepted, `bind_address` and `bind_interface` are the address and network interface it listens on (empty for any), `port` is its TCP port, `upnp_enabled` is whether UPnP forwards that port (no effect when `connection.upnp_supported` is `false`), and `encryption_required` is whether a client that cannot encrypt is refused. `password_set` says whether an EC password is configured; the password itself is never returned. These are the saved settings, which the core applies on its next start, so after a change they can differ from the listener serving this connection. Against an amuled that predates them, all seven are `null`.
 
 **Write-only passwords** (accepted here, never echoed on GET) live under `remote_controls.webserver`: `password`, `guest_password`. Send the plaintext — amuled stores the hash. `guest_password` is accepted whether or not the webserver's guest access is enabled: amuled stores the hash either way, and it simply sits inert until `guest_enabled` is turned on. (amuleapi's own [`PATCH /auth/passwords`](#patch-apiv1authpasswords) does enforce the pairing, and answers `400`; these are different credentials on different daemons.)
 

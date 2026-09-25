@@ -1146,8 +1146,8 @@ struct PreferencesSnapshot
 
 	// [RemoteControls] EC_TAG_PREFS_REMOTECTRL. Passwords are write-only.
 	//
-	// Two unrelated remote-control subsystems live under one EC category, so the JSON
-	// nests them instead of prefixing every field. Both sub-objects still pack into the
+	// Three unrelated remote-control subsystems live under one EC category, so the JSON
+	// nests them instead of prefixing every field. All of them still pack into the
 	// single EC_TAG_PREFS_REMOTECTRL group on the write path.
 	struct RemoteControlsPrefs
 	{
@@ -1168,6 +1168,17 @@ struct PreferencesSnapshot
 			std::uint32_t port = 0;
 			std::string bind_address;
 		} amuleapi;
+		// The EC listener amuleapi itself reaches the core through. Read-only.
+		struct ExternalConnectionsPrefs
+		{
+			bool enabled = false;
+			std::string bind_address;
+			std::string bind_interface;
+			std::uint32_t port = 0;
+			bool upnp_enabled = false;
+			bool encryption_required = false;
+			bool password_set = false;
+		} external_connections;
 	} remote_controls;
 
 	// [OnlineSignature] EC_TAG_PREFS_ONLINESIG
@@ -1217,6 +1228,10 @@ struct PreferencesSnapshot
 		bool download_in_progress = false;
 		std::string last_update_status;
 	} geoip;
+
+	// Categories the daemon predates: their known_by tag was missing, so every field in them is
+	// emitted as null rather than as the default it was left at.
+	std::set<std::string> unknown_categories;
 };
 
 struct StatusSnapshot

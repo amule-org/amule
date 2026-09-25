@@ -7784,12 +7784,16 @@ bool PrefFieldIsEmitted(const webapi::PrefField &f)
 
 void WritePrefCategoryFields(CJsonWriter &w, const char *category, const webapi::PreferencesSnapshot &p)
 {
+	const bool known = p.unknown_categories.count(category) == 0;
 	for (std::size_t i = 0; i < webapi::PrefSchemaSize(); ++i) {
 		const webapi::PrefField &f = webapi::PrefSchema()[i];
 		if (!PrefFieldIsEmitted(f) || std::strcmp(f.category, category) != 0)
 			continue;
 		w.Key(f.key);
-		WritePrefFieldValue(w, f, p);
+		if (known)
+			WritePrefFieldValue(w, f, p);
+		else
+			w.ValueNull();
 	}
 }
 

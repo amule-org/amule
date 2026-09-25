@@ -2935,6 +2935,16 @@ void ParsePreferencesFromPacket(
 			ApplyPrefFieldFromTag(f, group, out_prefs);
 	}
 
+	out_prefs.unknown_categories.clear();
+	for (std::size_t c = 0; c < PrefCategoryCount(); ++c) {
+		const PrefCategory &cat = PrefCategories()[c];
+		if (cat.known_by == 0)
+			continue;
+		const CECTag *group = resp->GetTagByName(cat.group_tag);
+		if (!group || !group->GetTagByName(cat.known_by))
+			out_prefs.unknown_categories.insert(cat.name);
+	}
+
 	// Capability flag that is not a /preferences field: it is reported by /version, so it has
 	// no schema row. Absent means a pre-3.1 daemon that cannot relay a result over EC anyway,
 	// so it stays false.

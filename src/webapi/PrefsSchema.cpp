@@ -250,6 +250,15 @@ const PrefField kSchema[] = {
 	PREF_REJECT("remote_controls.amuleapi", "password"),
 	PREF_REJECT("remote_controls.amuleapi", "guest_password"),
 	PREF_REJECT("remote_controls.amuleapi", "guest_enabled"),
+	// The EC listener's settings. Read-only: they take effect only on a restart, and the
+	// password itself never leaves the daemon.
+	PREF_BOOL("remote_controls.external_connections", "enabled", EC_TAG_EXTERNALCONN_ENABLED, PrefEnc::Value, false, PrefAccess::ReadOnly, remote_controls.external_connections.enabled),
+	PREF_STR("remote_controls.external_connections", "bind_address", EC_TAG_EXTERNALCONN_ADDRESS, PrefAccess::ReadOnly, remote_controls.external_connections.bind_address),
+	PREF_STR("remote_controls.external_connections", "bind_interface", EC_TAG_EXTERNALCONN_INTERFACE, PrefAccess::ReadOnly, remote_controls.external_connections.bind_interface),
+	PREF_U32("remote_controls.external_connections", "port", EC_TAG_EXTERNALCONN_PORT, 65535u, PrefAccess::ReadOnly, remote_controls.external_connections.port),
+	PREF_BOOL("remote_controls.external_connections", "upnp_enabled", EC_TAG_EXTERNALCONN_UPNP, PrefEnc::Value, false, PrefAccess::ReadOnly, remote_controls.external_connections.upnp_enabled),
+	PREF_BOOL("remote_controls.external_connections", "encryption_required", EC_TAG_EXTERNALCONN_REQUIRE_ENCRYPTION, PrefEnc::Value, false, PrefAccess::ReadOnly, remote_controls.external_connections.encryption_required),
+	PREF_BOOL("remote_controls.external_connections", "password_set", EC_TAG_EXTERNALCONN_PASSWD_SET, PrefEnc::Value, false, PrefAccess::ReadOnly, remote_controls.external_connections.password_set),
 
 	// [online_signature]
 	PREF_STR("online_signature", "directory", EC_TAG_ONLINESIG_DIRECTORY, PrefAccess::ReadWrite, online_signature.directory),
@@ -297,22 +306,23 @@ const PrefField kSchema[] = {
 };
 
 const PrefCategory kCategories[] = {
-	{"general", EC_TAG_PREFS_GENERAL},
-	{"connection", EC_TAG_PREFS_CONNECTIONS},
-	{"directories", EC_TAG_PREFS_DIRECTORIES},
-	{"files", EC_TAG_PREFS_FILES},
-	{"servers", EC_TAG_PREFS_SERVERS},
-	{"security", EC_TAG_PREFS_SECURITY},
-	{"message_filter", EC_TAG_PREFS_MESSAGEFILTER},
-	// Both nested remote-control sub-objects pack into the one EC group.
-	{"remote_controls.webserver", EC_TAG_PREFS_REMOTECTRL},
-	{"remote_controls.amuleapi", EC_TAG_PREFS_REMOTECTRL},
-	{"online_signature", EC_TAG_PREFS_ONLINESIG},
+	{"general", EC_TAG_PREFS_GENERAL, 0},
+	{"connection", EC_TAG_PREFS_CONNECTIONS, 0},
+	{"directories", EC_TAG_PREFS_DIRECTORIES, 0},
+	{"files", EC_TAG_PREFS_FILES, 0},
+	{"servers", EC_TAG_PREFS_SERVERS, 0},
+	{"security", EC_TAG_PREFS_SECURITY, 0},
+	{"message_filter", EC_TAG_PREFS_MESSAGEFILTER, 0},
+	// All nested remote-control sub-objects pack into the one EC group.
+	{"remote_controls.webserver", EC_TAG_PREFS_REMOTECTRL, 0},
+	{"remote_controls.amuleapi", EC_TAG_PREFS_REMOTECTRL, 0},
+	{"remote_controls.external_connections", EC_TAG_PREFS_REMOTECTRL, EC_TAG_EXTERNALCONN_PORT},
+	{"online_signature", EC_TAG_PREFS_ONLINESIG, 0},
 	// `advanced`, not `core_tweaks`: there is no such amule.conf section, "core"
 	// means nothing to an API consumer, and the desktop tab is called Advanced.
-	{"advanced", EC_TAG_PREFS_CORETWEAKS},
+	{"advanced", EC_TAG_PREFS_CORETWEAKS, 0},
 	// Everything else in the API says kad.
-	{"kad", EC_TAG_PREFS_KADEMLIA},
+	{"kad", EC_TAG_PREFS_KADEMLIA, 0},
 	// The rest of the API says GeoIP (country_code, /flags/{code}.png).
 	{"geoip", EC_TAG_PREFS_IP2COUNTRY},
 };

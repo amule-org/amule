@@ -284,6 +284,15 @@ CEC_Prefs_Packet::CEC_Prefs_Packet(
 			}
 			rc_prefs.AddTag(guestTag);
 		}
+		// Read-only: Apply() has no counterpart, as the listener only rereads these on restart.
+		rc_prefs.AddTag(CECTag(EC_TAG_EXTERNALCONN_ENABLED, thePrefs::AcceptExternalConnections()));
+		rc_prefs.AddTag(CECTag(EC_TAG_EXTERNALCONN_ADDRESS, thePrefs::GetECAddress()));
+		rc_prefs.AddTag(CECTag(EC_TAG_EXTERNALCONN_INTERFACE, thePrefs::GetECNetworkInterface()));
+		rc_prefs.AddTag(CECTag(EC_TAG_EXTERNALCONN_PORT, thePrefs::ECPort()));
+		rc_prefs.AddTag(CECTag(EC_TAG_EXTERNALCONN_UPNP, thePrefs::GetUPnPECEnabled()));
+		rc_prefs.AddTag(
+			CECTag(EC_TAG_EXTERNALCONN_REQUIRE_ENCRYPTION, thePrefs::ECRequireEncryption()));
+		rc_prefs.AddTag(CECTag(EC_TAG_EXTERNALCONN_PASSWD_SET, !thePrefs::ECPassword().IsEmpty()));
 		AddTag(rc_prefs);
 	}
 

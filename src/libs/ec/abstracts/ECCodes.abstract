@@ -584,6 +584,15 @@ EC_TAG_SELECT_PREFS                       0x1000
 		EC_TAG_AMULEAPI_PASSWD                    0x1509
 		EC_TAG_AMULEAPI_BIND                      0x150A
 		EC_TAG_AMULEAPI_GUEST_PASSWD              0x150B
+# The EC listener's own settings, read-only. Value tags, never presence: a missing
+# EC_TAG_EXTERNALCONN_PORT means the daemon predates them, not that they are off.
+		EC_TAG_EXTERNALCONN_ENABLED               0x150C
+		EC_TAG_EXTERNALCONN_ADDRESS               0x150D
+		EC_TAG_EXTERNALCONN_INTERFACE             0x150E
+		EC_TAG_EXTERNALCONN_PORT                  0x150F
+		EC_TAG_EXTERNALCONN_UPNP                  0x1510
+		EC_TAG_EXTERNALCONN_REQUIRE_ENCRYPTION    0x1511
+		EC_TAG_EXTERNALCONN_PASSWD_SET            0x1512
 
 	EC_TAG_PREFS_ONLINESIG                    0x1600
 		EC_TAG_ONLINESIG_ENABLED                  0x1601

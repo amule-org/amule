@@ -2550,6 +2550,65 @@ TEST(Refresher, PreferencesEnumAndNestedRemoteControlsDecode)
 	ASSERT_EQUALS(std::string("127.0.0.1"), p.remote_controls.amuleapi.bind_address);
 }
 
+// The EC listener's settings are value tags, so a false bool arrives as false rather than as
+// nothing, and a daemon that predates them is told apart by the missing port tag. Its sibling
+// sub-objects in the same EC group must keep decoding either way.
+TEST(Refresher, PreferencesExternalConnectionsDecodeOrStayUnknown)
+{
+	const std::string category("remote_controls.external_connections");
+	{
+		CECPacket resp(EC_OP_SET_PREFERENCES);
+		CECEmptyTag rc(EC_TAG_PREFS_REMOTECTRL);
+		rc.AddTag(CECTag(EC_TAG_EXTERNALCONN_ENABLED, true));
+		rc.AddTag(CECTag(EC_TAG_EXTERNALCONN_ADDRESS, wxString::FromUTF8("127.0.0.1")));
+		rc.AddTag(CECTag(EC_TAG_EXTERNALCONN_INTERFACE, wxString::FromUTF8("eth0")));
+		rc.AddTag(CECTag(EC_TAG_EXTERNALCONN_PORT, static_cast<std::uint32_t>(4712)));
+		rc.AddTag(CECTag(EC_TAG_EXTERNALCONN_UPNP, false));
+		rc.AddTag(CECTag(EC_TAG_EXTERNALCONN_REQUIRE_ENCRYPTION, true));
+		rc.AddTag(CECTag(EC_TAG_EXTERNALCONN_PASSWD_SET, true));
+		resp.AddTag(rc);
+
+		PreferencesSnapshot p;
+		std::vector<CategorySnapshot> cats;
+		ParsePreferencesFromPacket(&resp, p, cats);
+
+		const auto &ec = p.remote_controls.external_connections;
+		ASSERT_TRUE(ec.enabled);
+		ASSERT_EQUALS(std::string("127.0.0.1"), ec.bind_address);
+		ASSERT_EQUALS(std::string("eth0"), ec.bind_interface);
+		ASSERT_EQUALS(static_cast<std::uint32_t>(4712), ec.port);
+		ASSERT_TRUE(!ec.upnp_enabled);
+		ASSERT_TRUE(ec.encryption_required);
+		ASSERT_TRUE(ec.password_set);
+		ASSERT_EQUALS(static_cast<std::size_t>(0), p.unknown_categories.count(category));
+	}
+	{
+		// A daemon from before these tags: the group is there, the port tag is not.
+		CECPacket resp(EC_OP_SET_PREFERENCES);
+		CECEmptyTag rc(EC_TAG_PREFS_REMOTECTRL);
+		rc.AddTag(CECTag(EC_TAG_WEBSERVER_PORT, static_cast<std::uint32_t>(4711)));
+		resp.AddTag(rc);
+
+		PreferencesSnapshot p;
+		std::vector<CategorySnapshot> cats;
+		ParsePreferencesFromPacket(&resp, p, cats);
+
+		ASSERT_EQUALS(static_cast<std::size_t>(1), p.unknown_categories.count(category));
+		ASSERT_EQUALS(static_cast<std::size_t>(1), p.unknown_categories.size());
+		ASSERT_EQUALS(static_cast<std::uint32_t>(4711), p.remote_controls.webserver.port);
+	}
+	{
+		CECPacket resp(EC_OP_SET_PREFERENCES);
+		PreferencesSnapshot p;
+		p.unknown_categories.insert("stale");
+		std::vector<CategorySnapshot> cats;
+		ParsePreferencesFromPacket(&resp, p, cats);
+
+		ASSERT_EQUALS(static_cast<std::size_t>(1), p.unknown_categories.count(category));
+		ASSERT_EQUALS(static_cast<std::size_t>(0), p.unknown_categories.count("stale"));
+	}
+}
+
 // Every 3-state / 4-state wire value maps to its documented enum string, and
 // an out-of-range value is not invented into a valid one (#655).
 TEST(Refresher, PreferencesEnumStringsCoverEveryWireValue)
@@ -2648,9 +2707,9 @@ TEST(Refresher, PrefsSchemaIsWellFormed)
 			++emitted;
 	}
 
-	// The documented payload is 119 fields. A row added or dropped without
+	// The documented payload is 126 fields. A row added or dropped without
 	// updating docs/api/REFERENCE.md should trip this.
-	ASSERT_EQUALS(static_cast<std::size_t>(119), emitted);
+	ASSERT_EQUALS(static_cast<std::size_t>(126), emitted);
 }
 
 // The schema's irregularities are enumerated rather than merely counted: each is deliberate and
@@ -2681,6 +2740,28 @@ TEST(Refresher, PrefsSchemaIrregularitiesStayContained)
 	ASSERT_EQUALS(static_cast<std::size_t>(2), inverted);
 	ASSERT_EQUALS(static_cast<std::size_t>(1), foreign_group);
 	ASSERT_EQUALS(static_cast<std::size_t>(1), bespoke);
+
+	// One category is gated on a tag proving the daemon has it. That tag must be one of the
+	// category's own value-encoded rows: a presence-encoded one is absent whenever it is false,
+	// which would null a whole category that is merely off.
+	std::size_t gated_categories = 0;
+	for (std::size_t c = 0; c < PrefCategoryCount(); ++c) {
+		const PrefCategory &cat = PrefCategories()[c];
+		if (cat.known_by == 0)
+			continue;
+		++gated_categories;
+		ASSERT_EQUALS(std::string("remote_controls.external_connections"), std::string(cat.name));
+		bool found = false;
+		for (std::size_t i = 0; i < PrefSchemaSize(); ++i) {
+			const PrefField &f = PrefSchema()[i];
+			if (f.tag == cat.known_by && std::string(f.category) == cat.name) {
+				ASSERT_TRUE(f.enc == PrefEnc::Value);
+				found = true;
+			}
+		}
+		ASSERT_TRUE(found);
+	}
+	ASSERT_EQUALS(static_cast<std::size_t>(1), gated_categories);
 }
 
 // #692: ed2k server priority maps both ways. The SRV_PR_* wire values are not monotone (NORMAL=0,

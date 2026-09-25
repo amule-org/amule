@@ -223,10 +223,11 @@ _assert_json_eq '(.advanced|type)' object '/preferences has advanced object'
 _assert_json_eq '(.kad|type)' object '/preferences has kad object'
 _assert_json_eq '(.directories.shared_paths|type)' array 'directories.shared_paths is an array'
 _assert_json_eq '(.files.min_free_space_mebibytes|type)' number 'files.min_free_space_mebibytes is numeric'
-# Passwords are write-only — no password key ever appears on GET
-# (user_hash is the identity hash, deliberately not matched here).
-_assert_json_eq '[paths(scalars) as $p | select($p[-1]|tostring|test("password";"i"))] | length' \
-	0 'no password key present in GET /preferences'
+# Passwords are write-only — no password value ever appears on GET
+# (user_hash is the identity hash, deliberately not matched here). A boolean such as
+# external_connections.password_set only says whether one exists, so it is exempt.
+_assert_json_eq '[paths(scalars) as $p | select(($p[-1]|tostring|test("password";"i")) and (getpath($p)|type) != "boolean")] | length' \
+	0 'no password value present in GET /preferences'
 SAVED_NEW_PAUSED=$(printf '%s' "$CURL_BODY" | jq -r '.files.add_new_downloads_paused')
 SAVED_RETRIES=$(printf '%s' "$CURL_BODY" | jq -r '.servers.dead_server_retry_count')
 
@@ -741,6 +742,28 @@ _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: applica
 _assert_status 200 "PATCH upload_slot_min_kibibytes_per_second=1 -> 200 (the floor is inclusive)"
 _assert_json_eq '.connection.upload_slot_min_kibibytes_per_second' 1 \
 	'the floor value round-trips unchanged'
+
+# --- remote_controls.external_connections: read-only, never applied. -------
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
+EC_BEFORE=$(printf '%s' "$CURL_BODY" | jq -c '.remote_controls.external_connections')
+WS_REFRESH=$(printf '%s' "$CURL_BODY" | jq -r '.remote_controls.webserver.refresh_seconds')
+
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
+	-d '{"remote_controls":{"external_connections":{"port":1,"enabled":false}}}' "$API/preferences"
+_assert_status 400 'PATCH naming only external_connections fields -> 400'
+_assert_json_eq '.error.message | contains("remote_controls.external_connections.")' true \
+	'the 400 names the read-only external_connections fields'
+
+# Alongside a writable field, set to its own value, they are ignored rather than rejected.
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
+	-d "{\"remote_controls\":{\"webserver\":{\"refresh_seconds\":$WS_REFRESH},\"external_connections\":{\"port\":1,\"enabled\":false,\"password_set\":false}}}" \
+	"$API/preferences"
+_assert_status 200 'PATCH with external_connections beside a writable field -> 200'
+_assert_json_eq '.remote_controls.external_connections | tojson' "$EC_BEFORE" \
+	'external_connections unchanged in the PATCH response'
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
+_assert_json_eq '.remote_controls.external_connections | tojson' "$EC_BEFORE" \
+	'external_connections unchanged on the next GET'
 
 # --- Summary. -----------------------------------------------------
 echo

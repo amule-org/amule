@@ -137,6 +137,10 @@ struct PrefCategory
 {
 	const char *name;
 	ec_tagname_t group_tag;
+	// A value tag the daemon always sends once it has this category. Missing means the daemon
+	// predates the category, so its fields are emitted as null (R10) rather than as defaults a
+	// presence-encoded bool would make indistinguishable from "off". 0: always known.
+	ec_tagname_t known_by;
 };
 
 const PrefField *PrefSchema();

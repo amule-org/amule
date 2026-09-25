@@ -329,6 +329,30 @@ for ep in servers kad categories preferences; do
 	_assert_status 405 "DELETE /api/v1/$ep → 405"
 done
 
+# --- remote_controls.external_connections: the EC listener, read-only. ------
+# amuleapi reaches the core through this very listener, which the core opens only when
+# external connections are enabled with a password, so both must read true here.
+EC_PATH='.remote_controls.external_connections'
+_curl -H "Authorization: Bearer $TOKEN" "$API/preferences"
+_assert_status 200 'GET /preferences (external_connections)'
+_assert_json_eq "$EC_PATH | keys | join(\",\")" \
+	'bind_address,bind_interface,enabled,encryption_required,password_set,port,upnp_enabled' \
+	'external_connections carries exactly its seven keys, no password'
+_assert_json_eq "$EC_PATH.enabled" true 'external_connections.enabled is true (we are connected through it)'
+_assert_json_eq "$EC_PATH.password_set" true 'external_connections.password_set is true (the listener requires one)'
+_assert_json_eq "$EC_PATH.port | (type == \"number\" and . >= 1 and . <= 65535)" true \
+	'external_connections.port is a real port'
+_assert_json_eq "$EC_PATH.bind_address | type" string 'external_connections.bind_address is string'
+_assert_json_eq "$EC_PATH.bind_interface | type" string 'external_connections.bind_interface is string'
+_assert_json_eq "$EC_PATH.upnp_enabled | type" boolean 'external_connections.upnp_enabled is boolean'
+_assert_json_eq "$EC_PATH.encryption_required | type" boolean 'external_connections.encryption_required is boolean'
+# Over a loopback link the port the daemon listens on is the one amuleapi dialed.
+case "${EC_HOST:-127.0.0.1}" in
+127.* | localhost | ::1)
+	_assert_json_eq "$EC_PATH.port" "${EC_PORT:-4712}" 'external_connections.port is the EC port amuleapi dialed'
+	;;
+esac
+
 # --- Summary. -----------------------------------------------------
 echo
 if [ "$FAIL_COUNT" -eq 0 ]; then
