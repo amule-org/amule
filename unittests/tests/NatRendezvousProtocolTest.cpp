@@ -34,18 +34,32 @@ Hash HashValue(std::uint8_t first)
 	return hash;
 }
 
-Bytes Rendezvous(std::uint8_t options = 0, bool withFileHash = false)
+void AppendHash(Bytes &bytes, std::uint8_t first)
+{
+	const auto hash = HashValue(first);
+	bytes.insert(bytes.end(), hash.begin(), hash.end());
+}
+
+// This is the OP_REASKCALLBACKUDP payload built by eMuleAI's BaseClient.cpp. The outer
+// OP_REASKCALLBACKUDP opcode is not part of the payload passed to the handler.
+Bytes Rendezvous(bool withEndpointHint, bool withFileContext)
 {
 	Bytes bytes;
-	bytes.reserve(withFileHash ? NatRendezvous::kRendezvousWithFileHashSize
-				   : NatRendezvous::kRendezvousWithoutFileHashSize);
+	bytes.reserve(withEndpointHint ? NatRendezvous::kRendezvousEnvelopeWithHintSize
+				       : NatRendezvous::kRendezvousEnvelopeSize);
+	AppendHash(bytes, 0x10); // ServingBuddyID selects the target on the relay.
+	bytes.insert(bytes.end(), NatRendezvous::kHashSize, 0); // Extended-payload marker.
 	bytes.push_back(NatRendezvous::OP_RENDEZVOUS);
-	const auto userHash = HashValue(1);
-	bytes.insert(bytes.end(), userHash.begin(), userHash.end());
-	bytes.push_back(options);
-	if (withFileHash) {
-		const auto fileHash = HashValue(2);
-		bytes.insert(bytes.end(), fileHash.begin(), fileHash.end());
+	AppendHash(bytes, 0x01); // Requester's own user hash.
+	bytes.push_back(0x82);   // Connect options, including the endpoint-hint capability.
+	if (withFileContext) {
+		AppendHash(bytes, 0x02);
+	} else {
+		bytes.insert(bytes.end(), NatRendezvous::kHashSize, 0);
+	}
+	if (withEndpointHint) {
+		// 192.0.2.7, UDP port 4672, transport hint 2, all in eMuleAI wire order.
+		bytes.insert(bytes.end(), { 192, 0, 2, 7, 0x12, 0x40, 2 });
 	}
 	return bytes;
 }
@@ -59,73 +73,99 @@ bool Relay(const Bytes &bytes,
 }
 } // namespace
 
-TEST(NatRendezvousProtocol, ParsesEMuleAIRendezvousWithoutFileContext)
+TEST(NatRendezvousProtocol, ParsesEMuleAIRendezvousWithZeroFilePlaceholder)
 {
-	const auto bytes = Rendezvous(0x82);
-	const auto parsed = NatRendezvous::ParseRendezvousRequest(bytes.data(), bytes.size());
+	const auto bytes = Rendezvous(false, false);
+	const auto parsed = NatRendezvous::ParseRendezvousEnvelope(bytes.data(), bytes.size());
 
 	ASSERT_TRUE(parsed.has_value());
-	ASSERT_EQUALS(std::uint8_t(1), parsed->userHash[0]);
-	ASSERT_EQUALS(std::uint8_t(0x82), parsed->connectOptions);
-	ASSERT_FALSE(parsed->fileHash.has_value());
+	ASSERT_EQUALS(std::uint8_t(0x10), parsed->servingBuddyId[0]);
+	ASSERT_EQUALS(std::uint8_t(1), parsed->request.requesterHash[0]);
+	ASSERT_EQUALS(std::uint8_t(0x82), parsed->request.connectOptions);
+	ASSERT_FALSE(parsed->request.fileHash.has_value());
+	ASSERT_FALSE(parsed->request.requesterHint.has_value());
 }
 
-TEST(NatRendezvousProtocol, ParsesOptionalFileContext)
+TEST(NatRendezvousProtocol, ParsesFileContextAndUnverifiedEndpointHint)
 {
-	const auto bytes = Rendezvous(0x80, true);
-	const auto parsed = NatRendezvous::ParseRendezvousRequest(bytes.data(), bytes.size());
+	const auto bytes = Rendezvous(true, true);
+	const auto parsed = NatRendezvous::ParseRendezvousEnvelope(bytes.data(), bytes.size());
 
 	ASSERT_TRUE(parsed.has_value());
-	ASSERT_TRUE(parsed->fileHash.has_value());
-	ASSERT_EQUALS(std::uint8_t(2), parsed->fileHash->at(0));
+	ASSERT_TRUE(parsed->request.fileHash.has_value());
+	ASSERT_EQUALS(std::uint8_t(2), parsed->request.fileHash->at(0));
+	ASSERT_TRUE(parsed->request.requesterHint.has_value());
+	ASSERT_TRUE(parsed->request.requesterHint->address == CNetworkAddress::FromString("192.0.2.7"));
+	ASSERT_EQUALS(std::uint16_t(4672), parsed->request.requesterHint->port);
+	ASSERT_EQUALS(std::uint8_t(2), parsed->request.requesterHint->transportHint);
 }
 
-TEST(NatRendezvousProtocol, RejectsTruncationTrailingBytesWrongOpcodeAndInvalidIdentity)
+TEST(NatRendezvousProtocol, RejectsTruncationTrailingBytesWrongOpcodeAndInvalidMarkers)
 {
-	const auto valid = Rendezvous();
-	ASSERT_FALSE(NatRendezvous::ParseRendezvousRequest(nullptr, 0).has_value());
+	const auto valid = Rendezvous(false, false);
 	for (std::size_t size = 0; size < valid.size(); ++size) {
-		ASSERT_FALSE(NatRendezvous::ParseRendezvousRequest(valid.data(), size).has_value());
+		ASSERT_FALSE(NatRendezvous::ParseRendezvousEnvelope(valid.data(), size).has_value());
 	}
 
 	auto trailing = valid;
 	trailing.push_back(0);
-	ASSERT_FALSE(NatRendezvous::ParseRendezvousRequest(trailing.data(), trailing.size()).has_value());
+	ASSERT_FALSE(NatRendezvous::ParseRendezvousEnvelope(trailing.data(), trailing.size()).has_value());
 
 	auto wrongOpcode = valid;
-	wrongOpcode[0] = 0xA1;
+	wrongOpcode[NatRendezvous::kRendezvousPrefixSize] = 0xA1;
 	ASSERT_FALSE(
-		NatRendezvous::ParseRendezvousRequest(wrongOpcode.data(), wrongOpcode.size()).has_value());
+		NatRendezvous::ParseRendezvousEnvelope(wrongOpcode.data(), wrongOpcode.size()).has_value());
 
-	auto nullUser = valid;
-	std::fill(nullUser.begin() + 1, nullUser.begin() + 1 + NatRendezvous::kUserHashSize, 0);
-	ASSERT_FALSE(NatRendezvous::ParseRendezvousRequest(nullUser.data(), nullUser.size()).has_value());
+	auto nullBuddy = valid;
+	std::fill(nullBuddy.begin(), nullBuddy.begin() + NatRendezvous::kHashSize, 0);
+	ASSERT_FALSE(NatRendezvous::ParseRendezvousEnvelope(nullBuddy.data(), nullBuddy.size()).has_value());
 
-	auto nullFile = Rendezvous(0, true);
-	std::fill(nullFile.begin() + NatRendezvous::kRendezvousWithoutFileHashSize, nullFile.end(), 0);
-	ASSERT_FALSE(NatRendezvous::ParseRendezvousRequest(nullFile.data(), nullFile.size()).has_value());
+	auto nonzeroMarker = valid;
+	nonzeroMarker[NatRendezvous::kHashSize] = 1;
+	ASSERT_FALSE(NatRendezvous::ParseRendezvousEnvelope(nonzeroMarker.data(), nonzeroMarker.size())
+			.has_value());
+
+	auto nullRequester = valid;
+	std::fill(nullRequester.begin() + NatRendezvous::kRendezvousPrefixSize + 1,
+		nullRequester.begin() + NatRendezvous::kRendezvousPrefixSize + 1 + NatRendezvous::kHashSize,
+		0);
+	ASSERT_FALSE(NatRendezvous::ParseRendezvousEnvelope(nullRequester.data(), nullRequester.size())
+			.has_value());
 }
 
-TEST(NatRendezvousProtocol, UsesOnlyObservedEndpointAndPreservesOptions)
+TEST(NatRendezvousProtocol, RejectsInvalidOptionalEndpointHint)
+{
+	for (const auto invalid : { std::array<std::uint8_t, 7>{ 0, 0, 0, 0, 0x12, 0x40, 2 },
+		     std::array<std::uint8_t, 7>{ 192, 0, 2, 7, 0, 0, 2 } }) {
+		auto bytes = Rendezvous(false, false);
+		bytes.insert(bytes.end(), invalid.begin(), invalid.end());
+		ASSERT_FALSE(NatRendezvous::ParseRendezvousEnvelope(bytes.data(), bytes.size()).has_value());
+	}
+}
+
+TEST(NatRendezvousProtocol, RelayCarriesBuddyRequesterOptionsAndObservedEndpoint)
 {
 	NatRendezvous::CRequesterLimiter limiter;
 	const auto observed = Endpoint("192.0.2.8", 4673);
-	const auto bytes = Rendezvous(0x80);
+	const auto bytes = Rendezvous(true, true);
 	const auto action = NatRendezvous::DecideRelay(bytes.data(), bytes.size(), observed, limiter, 1000);
 
 	ASSERT_TRUE(action.has_value());
+	ASSERT_EQUALS(std::uint8_t(0x10), action->servingBuddyId[0]);
+	ASSERT_EQUALS(std::uint8_t(1), action->requesterHash[0]);
+	ASSERT_EQUALS(std::uint8_t(0x82), action->connectOptions);
+	ASSERT_TRUE(action->fileHash.has_value());
+	ASSERT_TRUE(action->requesterHint.has_value());
 	ASSERT_TRUE(action->observed.address == observed.address);
 	ASSERT_EQUALS(observed.port, action->observed.port);
-	ASSERT_EQUALS(std::uint8_t(0x80), action->connectOptions);
-	ASSERT_EQUALS(std::uint8_t(1), action->userHash[0]);
 }
 
 TEST(NatRendezvousProtocol, RejectsUnusableObservedEndpoint)
 {
 	NatRendezvous::CRequesterLimiter limiter;
-	ASSERT_FALSE(Relay(Rendezvous(), Endpoint("0.0.0.0"), limiter));
-	ASSERT_FALSE(Relay(Rendezvous(), Endpoint("::", 4672), limiter));
-	ASSERT_FALSE(Relay(Rendezvous(), Endpoint("192.0.2.7", 0), limiter));
+	ASSERT_FALSE(Relay(Rendezvous(false, false), Endpoint("0.0.0.0"), limiter));
+	ASSERT_FALSE(Relay(Rendezvous(false, false), Endpoint("::", 4672), limiter));
+	ASSERT_FALSE(Relay(Rendezvous(false, false), Endpoint("192.0.2.7", 0), limiter));
 }
 
 TEST(NatRendezvousProtocol, ObservedMappedIPv4SharesExistingIPv4Policy)
@@ -134,24 +174,8 @@ TEST(NatRendezvousProtocol, ObservedMappedIPv4SharesExistingIPv4Policy)
 	const auto plain = Endpoint("192.0.2.7");
 	const auto mapped = Endpoint("::ffff:192.0.2.7");
 
-	ASSERT_TRUE(Relay(Rendezvous(), plain, limiter));
-	ASSERT_FALSE(Relay(Rendezvous(), mapped, limiter, 1001));
-}
-
-TEST(NatRendezvousProtocol, DoesNotParseAnAddressFromThePayload)
-{
-	NatRendezvous::CRequesterLimiter limiter;
-	const auto payload = Rendezvous();
-	Bytes withAddress = payload;
-	withAddress.insert(withAddress.end(), 16, 0);
-	ASSERT_FALSE(
-		NatRendezvous::ParseRendezvousRequest(withAddress.data(), withAddress.size()).has_value());
-	const auto observed = Endpoint("2001:db8:1:2::1");
-	const auto bytes = Rendezvous();
-	const auto action = NatRendezvous::DecideRelay(bytes.data(), bytes.size(), observed, limiter, 1000);
-
-	ASSERT_TRUE(action.has_value());
-	ASSERT_TRUE(action->observed.address == observed.address);
+	ASSERT_TRUE(Relay(Rendezvous(false, false), plain, limiter));
+	ASSERT_FALSE(Relay(Rendezvous(false, false), mapped, limiter, 1001));
 }
 
 TEST(NatRendezvousProtocol, AppliesRateLimitBeforeProducingRelayAction)
@@ -159,9 +183,10 @@ TEST(NatRendezvousProtocol, AppliesRateLimitBeforeProducingRelayAction)
 	NatRendezvous::CRequesterLimiter limiter;
 	const auto observed = Endpoint("192.0.2.7");
 
-	ASSERT_TRUE(Relay(Rendezvous(), observed, limiter));
-	ASSERT_FALSE(Relay(Rendezvous(), observed, limiter, 1001));
-	ASSERT_TRUE(Relay(Rendezvous(), observed, limiter, 1000 + NatRendezvous::kRequestThrottleMs));
+	ASSERT_TRUE(Relay(Rendezvous(false, false), observed, limiter));
+	ASSERT_FALSE(Relay(Rendezvous(false, false), observed, limiter, 1001));
+	ASSERT_TRUE(
+		Relay(Rendezvous(false, false), observed, limiter, 1000 + NatRendezvous::kRequestThrottleMs));
 }
 
 // The observed source is a routing input, not proof of origin. Return-routability belongs to a
@@ -170,7 +195,7 @@ TEST(NatRendezvousProtocol, AppliesRateLimitBeforeProducingRelayAction)
 TEST(NatRendezvousProtocol, RelayDecisionDoesNotClaimAuthentication)
 {
 	NatRendezvous::CRequesterLimiter limiter;
-	const auto bytes = Rendezvous();
+	const auto bytes = Rendezvous(false, false);
 	const auto action =
 		NatRendezvous::DecideRelay(bytes.data(), bytes.size(), Endpoint("192.0.2.7"), limiter, 1000);
 	ASSERT_TRUE(action.has_value());
