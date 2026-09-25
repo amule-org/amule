@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <optional>
 #include <vector>
 
 /**
@@ -30,31 +31,31 @@ namespace NatRendezvous
 constexpr std::uint64_t kRequestThrottleMs = 3 * 1000;
 constexpr std::size_t kMaxTrackedRequesters = 256;
 
-inline bool AcceptObservedEndpoint(const PeerAddressing::UdpEndpoint &claimed,
-	const PeerAddressing::UdpEndpoint &observed,
-	PeerAddressing::UdpEndpoint &accepted) noexcept
+inline std::optional<PeerAddressing::UdpEndpoint> AcceptObservedEndpoint(
+	const PeerAddressing::UdpEndpoint &claimed, const PeerAddressing::UdpEndpoint &observed) noexcept
 {
 	if (!PeerAddressing::MatchesUdpSource(claimed, observed)) {
-		return false;
+		return std::nullopt;
 	}
-	accepted = observed;
-	return true;
+	return observed;
 }
 
 class CRequesterLimiter
 {
 public:
+	/** @p now is a monotonic millisecond tick; rollback re-anchors the request window. */
 	bool Admit(const CNetworkAddress &requester, std::uint64_t now) noexcept
 	{
-		const CNetworkAddress key = PeerAddressing::RateLimitScope(requester);
-		if (key.IsAbsent() || key.IsUnspecified()) {
+		if (!PeerAddressing::IsSecurityKey(requester)) {
 			return false;
 		}
+		const CNetworkAddress key = PeerAddressing::RateLimitScope(requester);
 
 		Evict(now);
 		for (auto &entry : m_entries) {
 			if (entry.address == key) {
-				if (now < entry.lastRequest || now - entry.lastRequest < kRequestThrottleMs) {
+				if (now >= entry.lastRequest &&
+					now - entry.lastRequest < kRequestThrottleMs) {
 					return false;
 				}
 				entry.lastRequest = now;
@@ -63,7 +64,12 @@ public:
 		}
 
 		if (m_entries.size() >= kMaxTrackedRequesters) {
-			return false;
+			const auto oldest = std::min_element(m_entries.begin(),
+				m_entries.end(),
+				[](const SEntry &left, const SEntry &right) {
+					return left.lastRequest < right.lastRequest;
+				});
+			m_entries.erase(oldest);
 		}
 		m_entries.push_back({ key, now });
 		return true;
