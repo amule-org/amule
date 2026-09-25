@@ -14,70 +14,88 @@
 
 #include "NatRendezvousPolicy.h"
 
+#include <algorithm>
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <optional>
+
 namespace NatRendezvous
 {
-// Local control-payload abstraction, NOT eD2k opcodes or an eMuleAI wire contract.
-// Layout: opcode (1), options (1), family (1: 4 or 6), address (4 or 16
-// network-order octets), UDP port (2, big endian). Exact size: 9 or 21 bytes.
-// No scope-id, target lookup, uTP envelope or extension bytes are encoded here.
-// Future socket integration must remain behind the experimental uTP gate.
-constexpr std::uint8_t OP_RENDEZVOUS = 0x01;
-constexpr std::uint8_t CONNECT_OPT_NATT_RELAYED = 0x01;
+// These are nested control-payload opcodes, not eD2k opcodes. eMuleAI reserves 0xA1 for
+// OP_HOLEPUNCH and 0xAA for OP_NATT_ENDPOINT_HINT; those handlers belong to later slices.
+constexpr std::uint8_t OP_RENDEZVOUS = 0xA0;
+constexpr std::size_t kUserHashSize = 16;
+constexpr std::size_t kRendezvousWithoutFileHashSize = 1 + kUserHashSize + 1;
+constexpr std::size_t kRendezvousWithFileHashSize = kRendezvousWithoutFileHashSize + kUserHashSize;
 
-struct ControlPayload
+using UserHash = std::array<std::uint8_t, kUserHashSize>;
+using FileHash = std::array<std::uint8_t, kUserHashSize>;
+
+struct RendezvousRequest
 {
-	PeerAddressing::UdpEndpoint claimed;
-	std::uint8_t options;
+	UserHash userHash;
+	std::uint8_t connectOptions;
+	std::optional<FileHash> fileHash;
 };
 
-inline std::optional<ControlPayload> ParseControlPayload(const std::uint8_t *data, std::size_t size) noexcept
+inline bool IsZeroHash(const UserHash &hash) noexcept
 {
-	if (!data || size < 3 || data[0] != OP_RENDEZVOUS || (data[1] & ~CONNECT_OPT_NATT_RELAYED) != 0) {
-		return std::nullopt;
-	}
-	const std::size_t addressSize = data[2] == 4 ? 4 : data[2] == 6 ? 16 : 0;
-	if (addressSize == 0 || size != addressSize + 5) {
-		return std::nullopt;
-	}
-	CNetworkAddress address;
-	if (addressSize == 4) {
-		const auto ip = (std::uint32_t(data[3]) << 24) | (std::uint32_t(data[4]) << 16) |
-				(std::uint32_t(data[5]) << 8) | std::uint32_t(data[6]);
-		address = CNetworkAddress::FromIPv4HostOrder(ip);
-	} else {
-		address = CNetworkAddress::FromIPv6Bytes(data + 3);
-	}
-	const auto port = static_cast<std::uint16_t>((std::uint16_t(data[size - 2]) << 8) | data[size - 1]);
-	const PeerAddressing::UdpEndpoint claimed{ address, port };
-	if (PeerAddressing::ClassifyUdpPeer(claimed) == PeerAddressing::EUdpRoute::Reject) {
-		return std::nullopt;
-	}
-	return ControlPayload{ claimed, data[1] };
+	return std::all_of(hash.begin(), hash.end(), [](std::uint8_t byte) { return byte == 0; });
 }
 
-// A decision only, not a destination or permission to send on a socket. The caller
-// owns peer selection. Carry the observed representation, even for mapped IPv4.
+inline std::optional<RendezvousRequest> ParseRendezvousRequest(
+	const std::uint8_t *data, std::size_t size) noexcept
+{
+	if (!data || (size != kRendezvousWithoutFileHashSize && size != kRendezvousWithFileHashSize) ||
+		data[0] != OP_RENDEZVOUS) {
+		return std::nullopt;
+	}
+
+	RendezvousRequest request{};
+	std::copy_n(data + 1, kUserHashSize, request.userHash.begin());
+	request.connectOptions = data[1 + kUserHashSize];
+	if (IsZeroHash(request.userHash)) {
+		return std::nullopt;
+	}
+
+	if (size == kRendezvousWithFileHashSize) {
+		FileHash fileHash{};
+		std::copy_n(data + kRendezvousWithoutFileHashSize, kUserHashSize, fileHash.begin());
+		if (IsZeroHash(fileHash)) {
+			return std::nullopt;
+		}
+		request.fileHash = fileHash;
+	}
+
+	return request;
+}
+
+// The endpoint is deliberately not read from the payload. eMuleAI receives this request through a
+// buddy, whose observed source endpoint is the only endpoint the relay may carry forward. An
+// observed source is not authentication: a later handler must require an established session or a
+// cookie-based return-routability check before sending relay traffic. This slice only decides.
 struct RelayAction
 {
+	UserHash userHash;
+	std::uint8_t connectOptions;
+	std::optional<FileHash> fileHash;
 	PeerAddressing::UdpEndpoint observed;
-	std::uint8_t options;
 };
 
 inline std::optional<RelayAction> DecideRelay(const std::uint8_t *data,
 	std::size_t size,
 	const PeerAddressing::UdpEndpoint &observed,
 	CRequesterLimiter &limiter,
-	std::uint64_t now)
+	std::uint64_t now) noexcept
 {
-	const auto payload = ParseControlPayload(data, size);
-	if (!payload || (payload->options & CONNECT_OPT_NATT_RELAYED) != 0) {
+	const auto request = ParseRendezvousRequest(data, size);
+	if (!request || PeerAddressing::ClassifyUdpPeer(observed) == PeerAddressing::EUdpRoute::Reject ||
+		!limiter.Admit(observed.address, now)) {
 		return std::nullopt;
 	}
-	const auto accepted = AcceptObservedEndpoint(payload->claimed, observed);
-	if (!accepted || !limiter.Admit(observed.address, now)) {
-		return std::nullopt;
-	}
-	return RelayAction{ *accepted, CONNECT_OPT_NATT_RELAYED };
+
+	return RelayAction{ request->userHash, request->connectOptions, request->fileHash, observed };
 }
 } // namespace NatRendezvous
 
