@@ -71,6 +71,22 @@ target_include_directories (NatRendezvousPolicyTest PRIVATE
 )
 target_link_libraries (NatRendezvousPolicyTest muleunit ${Boost_LIBRARIES})
 
+# Local control framing and pure relay decisions; no sockets or libutp.
+add_executable (NatRendezvousProtocolTest
+	NatRendezvousProtocolTest.cpp
+	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
+	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
+	${CMAKE_SOURCE_DIR}/src/NetworkAddress.cpp
+)
+add_test (NAME NatRendezvousProtocolTest COMMAND NatRendezvousProtocolTest)
+target_include_directories (NatRendezvousProtocolTest PRIVATE
+	${CMAKE_BINARY_DIR}
+	${CMAKE_SOURCE_DIR}/src
+	${CMAKE_SOURCE_DIR}/src/include
+	${Boost_INCLUDE_DIR}
+)
+target_link_libraries (NatRendezvousProtocolTest muleunit ${Boost_LIBRARIES})
+
 # The buffering between libutp and the eD2k stack: the would-block contract
 # CEMSocket depends on, and the close that must happen exactly once. Header-only
 # and free of libutp, so it is compiled and run in every build rather than only
