@@ -14,10 +14,12 @@
  *
  * Notes for translators reading this in po/<lang>.po:
  *
- *   - $INSTDIR, $0, $APPDATA, $\r, $\n in the source strings are NSIS
- *     runtime escapes / variables. Keep them verbatim in your
- *     translation -- NSIS evaluates them at install time, and the
- *     po-to-nsh bridge passes them through.
+ *   - $INSTDIR, $0 and $APPDATA are NSIS runtime variables. Keep them
+ *     verbatim in your translation -- NSIS evaluates them at install
+ *     time, and the po-to-nsh bridge passes them through.
+ *
+ *   - Keep a line break where the source has one; the bridge turns it
+ *     into a Windows line break for the installer dialogs.
  *
  *   - %APPDATA% (with percent signs) in the "Permanently delete..."
  *     string is the literal Windows environment-variable reference
