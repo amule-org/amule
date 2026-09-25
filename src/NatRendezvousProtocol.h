@@ -86,26 +86,26 @@ inline std::optional<RendezvousRequest> ParseRendezvousRequest(
 inline std::optional<RendezvousRequest> ParseRendezvousRequestWithHint(
 	const std::uint8_t *data, std::size_t size) noexcept
 {
-	if (size != kRendezvousPayloadSize && size != kRendezvousPayloadSize + 7) {
+	if (size < kRendezvousPayloadSize) {
 		return std::nullopt;
 	}
 	const auto request = ParseRendezvousRequest(data, kRendezvousPayloadSize);
 	if (!request) {
 		return std::nullopt;
 	}
-	if (size == kRendezvousPayloadSize) {
+	if (size < kRendezvousPayloadSize + 6) {
 		return request;
 	}
 
 	RendezvousRequest result = *request;
 	const auto *hint = data + kRendezvousPayloadSize;
 	const std::uint32_t address = ReadNetworkIPv4(hint);
-	const std::uint16_t port = std::uint16_t(hint[4] << 8) | hint[5];
-	if (address == 0 || port == 0) {
-		return std::nullopt;
+	const std::uint16_t port = std::uint16_t(hint[4]) | (std::uint16_t(hint[5]) << 8);
+	const CNetworkAddress endpoint = CNetworkAddress::FromIPv4NetworkOrder(address);
+	if (address != 0 && port != 0 && endpoint.IsGloballyRoutableIPv4()) {
+		const std::uint8_t transportHint = size >= kRendezvousPayloadSize + 7 ? hint[6] : 0;
+		result.requesterHint = RequesterEndpointHint{ endpoint, port, transportHint };
 	}
-	result.requesterHint =
-		RequesterEndpointHint{ CNetworkAddress::FromIPv4NetworkOrder(address), port, hint[6] };
 	return result;
 }
 
@@ -120,7 +120,7 @@ struct RendezvousEnvelope
 inline std::optional<RendezvousEnvelope> ParseRendezvousEnvelope(
 	const std::uint8_t *data, std::size_t size) noexcept
 {
-	if (!data || (size != kRendezvousEnvelopeSize && size != kRendezvousEnvelopeWithHintSize)) {
+	if (!data || size < kRendezvousEnvelopeSize) {
 		return std::nullopt;
 	}
 

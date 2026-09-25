@@ -58,8 +58,8 @@ Bytes Rendezvous(bool withEndpointHint, bool withFileContext)
 		bytes.insert(bytes.end(), NatRendezvous::kHashSize, 0);
 	}
 	if (withEndpointHint) {
-		// 192.0.2.7, UDP port 4672, transport hint 2, all in eMuleAI wire order.
-		bytes.insert(bytes.end(), { 192, 0, 2, 7, 0x12, 0x40, 2 });
+		// 8.8.8.8, UDP port 4672, transport hint 2; the port is native little-endian.
+		bytes.insert(bytes.end(), { 8, 8, 8, 8, 0x40, 0x12, 2 });
 	}
 	return bytes;
 }
@@ -95,7 +95,7 @@ TEST(NatRendezvousProtocol, ParsesFileContextAndUnverifiedEndpointHint)
 	ASSERT_TRUE(parsed->request.fileHash.has_value());
 	ASSERT_EQUALS(std::uint8_t(2), parsed->request.fileHash->at(0));
 	ASSERT_TRUE(parsed->request.requesterHint.has_value());
-	ASSERT_TRUE(parsed->request.requesterHint->address == CNetworkAddress::FromString("192.0.2.7"));
+	ASSERT_TRUE(parsed->request.requesterHint->address == CNetworkAddress::FromString("8.8.8.8"));
 	ASSERT_EQUALS(std::uint16_t(4672), parsed->request.requesterHint->port);
 	ASSERT_EQUALS(std::uint8_t(2), parsed->request.requesterHint->transportHint);
 }
@@ -109,7 +109,8 @@ TEST(NatRendezvousProtocol, RejectsTruncationTrailingBytesWrongOpcodeAndInvalidM
 
 	auto trailing = valid;
 	trailing.push_back(0);
-	ASSERT_FALSE(NatRendezvous::ParseRendezvousEnvelope(trailing.data(), trailing.size()).has_value());
+	trailing.push_back(1);
+	ASSERT_TRUE(NatRendezvous::ParseRendezvousEnvelope(trailing.data(), trailing.size()).has_value());
 
 	auto wrongOpcode = valid;
 	wrongOpcode[NatRendezvous::kRendezvousPrefixSize] = 0xA1;
@@ -137,13 +138,15 @@ TEST(NatRendezvousProtocol, RejectsTruncationTrailingBytesWrongOpcodeAndInvalidM
 	ASSERT_FALSE(nullRequesterAccepted);
 }
 
-TEST(NatRendezvousProtocol, RejectsInvalidOptionalEndpointHint)
+TEST(NatRendezvousProtocol, DropsInvalidOptionalEndpointHintButKeepsRequest)
 {
-	for (const auto invalid : { std::array<std::uint8_t, 7>{ 0, 0, 0, 0, 0x12, 0x40, 2 },
+	for (const auto invalid : { std::array<std::uint8_t, 7>{ 0, 0, 0, 0, 0x40, 0x12, 2 },
 		     std::array<std::uint8_t, 7>{ 192, 0, 2, 7, 0, 0, 2 } }) {
 		auto bytes = Rendezvous(false, false);
 		bytes.insert(bytes.end(), invalid.begin(), invalid.end());
-		ASSERT_FALSE(NatRendezvous::ParseRendezvousEnvelope(bytes.data(), bytes.size()).has_value());
+		const auto parsed = NatRendezvous::ParseRendezvousEnvelope(bytes.data(), bytes.size());
+		ASSERT_TRUE(parsed.has_value());
+		ASSERT_FALSE(parsed->request.requesterHint.has_value());
 	}
 }
 
