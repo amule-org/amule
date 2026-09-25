@@ -7,7 +7,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: aMule SVN\n"
-"POT-Creation-Date: 2026-09-24 19:19+0100\n"
+"POT-Creation-Date: 2026-09-25 16:39+0100\n"
 "PO-Revision-Date: 2026-09-25 11:30+0000\n"
 "Last-Translator: Sebastiano Pistore <SebastianoPistore.info@protonmail.ch>\n"
 "Language-Team: none\n"
@@ -154,8 +154,10 @@ msgstr ""
 
 #. type: Plain text
 #: amule.1.in amuled.1.in amulegui.1.in
-msgid "Enable or disable aMule as the current user's handler for I<.emulecollection> files, then exit."
-msgstr ""
+#, fuzzy
+#| msgid "Enable or disable starting aMule on user login, then exit.  The OS-specific store is selected automatically: Windows registry Run key, macOS LaunchAgent, Linux XDG I<.desktop> autostart entry."
+msgid "Enable or disable aMule as the current user's handler for I<.emulecollection> files, then exit.  The OS-specific store is selected automatically: Windows registry, macOS LaunchServices, Linux XDG I<mimeapps.list>."
+msgstr "Abilita o disabilita l'avvio di aMule all'accesso dell'utente, poi esce.  L'archivio specifico del sistema operativo viene selezionato automaticamente: chiave Run del registro di Windows, LaunchAgent su macOS, voce di avvio automatico XDG I<.desktop> su Linux."
 
 # type: TP
 #. type: TP

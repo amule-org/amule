@@ -4,7 +4,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: manpages-de\n"
-"POT-Creation-Date: 2026-09-24 19:19+0100\n"
+"POT-Creation-Date: 2026-09-25 16:39+0100\n"
 "PO-Revision-Date: 2026-09-25 11:29+0000\n"
 "Last-Translator: Balla Marcell <marcell.balla@gmx.at>\n"
 "Language-Team: German <kde-i18n-de@kde.org>\n"
@@ -152,8 +152,10 @@ msgstr ""
 
 #. type: Plain text
 #: amule.1.in amuled.1.in amulegui.1.in
-msgid "Enable or disable aMule as the current user's handler for I<.emulecollection> files, then exit."
-msgstr ""
+#, fuzzy
+#| msgid "Enable or disable starting aMule on user login, then exit.  The OS-specific store is selected automatically: Windows registry Run key, macOS LaunchAgent, Linux XDG I<.desktop> autostart entry."
+msgid "Enable or disable aMule as the current user's handler for I<.emulecollection> files, then exit.  The OS-specific store is selected automatically: Windows registry, macOS LaunchServices, Linux XDG I<mimeapps.list>."
+msgstr "Aktiviert bzw. deaktiviert den automatischen Start von aMule beim Benutzerlogin, beendet danach.  Der betriebssystemspezifische Speicherort wird automatisch ausgewählt: Windows Registrierung run Schlüssel, macOS LaunchAgent, Linux XDG I<.desktop> Autostart Eintrag."
 
 # type: Plain text
 #. type: TP

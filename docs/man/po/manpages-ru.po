@@ -6,7 +6,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: manpages-ru\n"
-"POT-Creation-Date: 2026-09-24 19:19+0100\n"
+"POT-Creation-Date: 2026-09-25 16:39+0100\n"
 "PO-Revision-Date: 2026-09-25 11:30+0000\n"
 "Last-Translator: Sebastiano Pistore <SebastianoPistore.info@protonmail.ch>\n"
 "Language-Team: Russian <LL@li.org>\n"
@@ -138,8 +138,10 @@ msgstr "Включает или отключает aMule как обработч
 
 #. type: Plain text
 #: amule.1.in amuled.1.in amulegui.1.in
-msgid "Enable or disable aMule as the current user's handler for I<.emulecollection> files, then exit."
-msgstr "Включает или отключает aMule как обработчик файлов I<.emulecollection> для текущего пользователя, затем завершает работу."
+#, fuzzy
+#| msgid "Enable or disable starting aMule on user login, then exit.  The OS-specific store is selected automatically: Windows registry Run key, macOS LaunchAgent, Linux XDG I<.desktop> autostart entry."
+msgid "Enable or disable aMule as the current user's handler for I<.emulecollection> files, then exit.  The OS-specific store is selected automatically: Windows registry, macOS LaunchServices, Linux XDG I<mimeapps.list>."
+msgstr "Включить или отключить запуск aMule при входе пользователя в систему, затем завершить работу. Хранилище, зависящее от ОС, выбирается автоматически: ключ реестра Windows Run, macOS LaunchAgent, запись автозапуска XDG I<.desktop> в Linux."
 
 #. type: TP
 #: amule.1.in amuled.1.in
@@ -1423,6 +1425,9 @@ msgstr "B<wxcas> - программа для отображения содерж
 #: ../../src/utils/wxCas/docs/wxcas.1.in
 msgid "Based on Pedro de Oliveira's B<cas>(1).  B<wxcas> was written by ThePolish E<lt>thepolish@vipmail.ruE<gt>"
 msgstr "Основана на программе B<cas>(1) написанной Pedro de Oliveira. B<wxcas> была написана ThePolish E<lt>thepolish@vipmail.ruE<gt>"
+
+#~ msgid "Enable or disable aMule as the current user's handler for I<.emulecollection> files, then exit."
+#~ msgstr "Включает или отключает aMule как обработчик файлов I<.emulecollection> для текущего пользователя, затем завершает работу."
 
 #~ msgid "[B<-t> I<E<lt>numE<gt>>]"
 #~ msgstr "[B<-t> I<E<lt>номерE<gt>>]"

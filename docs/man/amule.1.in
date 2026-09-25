@@ -49,6 +49,7 @@ The OS\-specific store is selected automatically: Windows registry, macOS Launch
 .TP
 .B_untranslated [ \-\-configure\-file\-assoc\fR=\fI<on|off>\fR \fB]\fR
 Enable or disable aMule as the current user's handler for \fI.emulecollection\fR files, then exit.
+The OS\-specific store is selected automatically: Windows registry, macOS LaunchServices, Linux XDG \fImimeapps.list\fR.
 .TP
 \fB[ \-w\fR \fI<path>\fR, \fB\-\-use\-amuleweb\fR=\fI<path>\fR \fB]\fR
 Specify location of amuleweb binary to \fI<path>\fR.

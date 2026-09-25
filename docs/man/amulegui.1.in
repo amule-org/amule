@@ -54,6 +54,7 @@ The OS\-specific store is selected automatically: Windows registry, macOS Launch
 .TP
 .B_untranslated [ \-\-configure\-file\-assoc\fR=\fI<on|off>\fR \fB]\fR
 Enable or disable aMule as the current user's handler for \fI.emulecollection\fR files, then exit.
+The OS\-specific store is selected automatically: Windows registry, macOS LaunchServices, Linux XDG \fImimeapps.list\fR.
 .TP
 .B_untranslated [ \-d\fR, \fB\-\-disable\-fatal ]\fR
 Don't catch fatal exceptions and don't block exit on assertions.
