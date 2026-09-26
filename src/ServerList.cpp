@@ -249,6 +249,14 @@ bool CServerList::AddServer(CServer *in_server, bool fromUser)
 	return true;
 }
 
+// A non-static server that failed as often as "remove dead server after N retries" allows. At
+// least once, whatever the setting holds: 0 would remove servers that never failed.
+static bool IsPastDeadThreshold(const CServer *server)
+{
+	return !server->IsStaticMember() &&
+	       server->GetFailedCount() >= std::max<uint32>(thePrefs::GetDeadserverRetries(), 1);
+}
+
 void CServerList::ServerStats()
 {
 	uint64 tNow = ::GetTickCount64();
@@ -269,8 +277,7 @@ void CServerList::ServerStats()
 			}
 		}
 
-		if (ping_server->GetFailedCount() >= thePrefs::GetDeadserverRetries() &&
-			thePrefs::DeadServer() && !ping_server->IsStaticMember()) {
+		if (thePrefs::DeadServer() && IsPastDeadThreshold(ping_server)) {
 			RemoveServer(ping_server);
 			return;
 		}
@@ -820,8 +827,7 @@ void CServerList::RemoveDeadServers()
 	if (thePrefs::DeadServer()) {
 		for (CInternalList::const_iterator it = m_servers.begin(); it != m_servers.end();) {
 			CServer *server = *it++;
-			if (server->GetFailedCount() > thePrefs::GetDeadserverRetries() &&
-				!server->IsStaticMember()) {
+			if (IsPastDeadThreshold(server)) {
 				RemoveServer(server);
 			}
 		}
