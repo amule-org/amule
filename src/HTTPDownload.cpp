@@ -268,12 +268,22 @@ static wxWebSession &GetAmuleWebSession(bool &isCurlBackend)
 extern "C" int amuleHttpSockoptCallback(void *, curl_socket_t curlfd, curlsocktype)
 {
 	const wxString &iface = thePrefs::GetNetworkInterface();
-	if (!iface.IsEmpty()) {
-		BindRawSocketToInterface(static_cast<uintptr_t>(curlfd), iface);
+	if (!iface.IsEmpty() && !BindRawSocketToInterface(static_cast<uintptr_t>(curlfd), iface)) {
+		// Failing the request is what keeps it off the default route.
+		return CURL_SOCKOPT_ERROR;
 	}
 	return CURL_SOCKOPT_OK;
 }
 #endif
+
+bool CanBindHttpToInterface()
+{
+#if defined(AMULE_HAVE_LIBCURL) && defined(AMULE_HTTP_CURL_BIND)
+	return wxWebSession::IsBackendAvailable(wxWebSessionBackendCURL);
+#else
+	return false;
+#endif
+}
 
 // Tune the libcurl handle backing an HTTP request: CURLOPT_NOSIGNAL so the synchronous-resolver
 // fallback does not raise SIGALRM in this multi-threaded process, CURLOPT_CONNECTTIMEOUT_MS so the

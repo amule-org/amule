@@ -299,9 +299,12 @@ static int ApplyBindToInterface(NativeSocketHandle native, const wxString &ifnam
 #endif
 }
 
-// Per-socket egress bind (reads the interface pushed in by the core). Kept on the debug
-// channel to avoid spamming the normal log on every connect -- the core reports the overall
-// outcome once at startup via TestSocketBindInterface.
+// Set while binding fails, so a failure is reported once, not on every connect. The core reports
+// the startup outcome via TestSocketBindInterface; this catches an interface lost later, such as a
+// VPN going down.
+static std::atomic<bool> s_bindFailing{ false };
+
+// Per-socket egress bind (reads the interface pushed in by the core).
 template <typename Handle> static void SetBoundInterface(Handle native, const wxString &ifname, bool isV6)
 {
 	if (ifname.IsEmpty()) {
@@ -310,9 +313,17 @@ template <typename Handle> static void SetBoundInterface(Handle native, const wx
 	bool notFound = false;
 	int err = ApplyBindToInterface(static_cast<NativeSocketHandle>(native), ifname, isV6, &notFound);
 	if (err == 0) {
+		s_bindFailing = false;
 		AddDebugLogLineF(logAsio, CFormat("Bind-to-interface: bound socket to '%s'") % ifname);
+	} else if (!s_bindFailing.exchange(true)) {
+		AddLogLineC(
+			CFormat(notFound ? _("WARNING: network interface '%s' is gone - traffic is no "
+					     "longer bound to it and may leave via the default route.")
+					 : _("WARNING: could not bind to network interface '%s' - traffic "
+					     "may leave via the default route.")) %
+			ifname);
 	} else {
-		AddDebugLogLineC(logAsio,
+		AddDebugLogLineN(logAsio,
 			CFormat("Bind-to-interface: could not bind socket to '%s' (%s)") % ifname %
 				(notFound ? "no such interface" : "error"));
 	}
@@ -332,7 +343,7 @@ bool BindRawSocketToInterface(uintptr_t fd, const wxString &iface)
 // Validate the configured interface once, on a throwaway socket, so the core can report the
 // real outcome at startup (found / not-found / permission denied) rather than discovering
 // it silently per socket.
-BindInterfaceStatus TestSocketBindInterface(const wxString &ifname)
+static BindInterfaceStatus ProbeBindInterface(const wxString &ifname)
 {
 	if (ifname.IsEmpty()) {
 		return BindIface_Empty;
@@ -370,6 +381,14 @@ BindInterfaceStatus TestSocketBindInterface(const wxString &ifname)
 	}
 #endif
 	return BindIface_Unsupported;
+}
+
+BindInterfaceStatus TestSocketBindInterface(const wxString &ifname)
+{
+	const BindInterfaceStatus status = ProbeBindInterface(ifname);
+	// The core reports this outcome, so the sockets that follow do not repeat it.
+	s_bindFailing = status == BindIface_NotFound || status == BindIface_Denied;
+	return status;
 }
 
 // Number of threads in the Asio thread pool

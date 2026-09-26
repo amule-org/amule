@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-26 12:53+0100\n"
+"POT-Creation-Date: 2026-09-26 17:32+0100\n"
 "PO-Revision-Date: 2026-09-26 10:26+0000\n"
 "Last-Translator: Oleksandr Kovalenko <alx.kovalenko@gmail.com>\n"
 "Language-Team: Ukrainian <translation@linux.org.ua>\n"
@@ -307,14 +307,14 @@ msgid "Memory debug results for aMule exit:"
 msgstr "Наслідки зневадження пам'яті для виходу aMule:"
 
 #: src/amule.cpp
-#, c-format
-msgid "Binding aMule's peer-to-peer traffic to interface: %s (HTTP updates use the default route)"
-msgstr "Прив'язка однорангового трафіку aMule до інтерфейсу: %s (HTTP-оновлення використовують маршрут за замовчуванням)"
+#, fuzzy, c-format
+msgid "Binding aMule's peer-to-peer and HTTP traffic to interface: %s"
+msgstr "Прив'язка всього мережевого трафіку до інтерфейсу: %s"
 
 #: src/amule.cpp
 #, c-format
-msgid "Binding all network traffic to interface: %s"
-msgstr "Прив'язка всього мережевого трафіку до інтерфейсу: %s"
+msgid "Binding aMule's peer-to-peer traffic to interface: %s (HTTP updates use the default route)"
+msgstr "Прив'язка однорангового трафіку aMule до інтерфейсу: %s (HTTP-оновлення використовують маршрут за замовчуванням)"
 
 #: src/amule.cpp
 #, c-format
@@ -326,7 +326,7 @@ msgstr "ЗАСТЕРЕЖЕННЯ: налаштований мережевий і
 msgid "WARNING: binding to network interface '%s' requires elevated privileges and was NOT applied - traffic may leave via the default route. Grant the capability (e.g. 'sudo setcap cap_net_raw+ep' on the aMule binary) or run with sufficient privileges."
 msgstr "ЗАСТЕРЕЖЕННЯ: прив'язка до мережевого інтерфейсу '%s' потребує підвищених прав і НЕ була застосована - трафік може виходити через маршрут за замовчуванням. Надайте можливість (наприклад, 'sudo setcap cap_net_raw+ep' для виконуваного файлу aMule) або запустіть із достатніми правами."
 
-#: src/amule.cpp
+#: src/amule.cpp src/LibSocketAsio.cpp
 #, c-format
 msgid "WARNING: could not bind to network interface '%s' - traffic may leave via the default route."
 msgstr "ЗАСТЕРЕЖЕННЯ: не вдалося прив'язатися до мережевого інтерфейсу '%s' - трафік може виходити через маршрут за замовчуванням."
@@ -3557,6 +3557,11 @@ msgid "External Connection: Handshake failed."
 msgstr "Зовнішнє з'єднання: узгодження не вдалося."
 
 #: src/LibSocketAsio.cpp
+#, fuzzy, c-format
+msgid "WARNING: network interface '%s' is gone - traffic is no longer bound to it and may leave via the default route."
+msgstr "ЗАСТЕРЕЖЕННЯ: не вдалося прив'язатися до мережевого інтерфейсу '%s' - трафік може виходити через маршрут за замовчуванням."
+
+#: src/LibSocketAsio.cpp
 #, c-format
 msgid "Error creating UDP socket %s %d : %s"
 msgstr ""
@@ -4611,7 +4616,8 @@ msgid "Bind to network interface (empty for any):"
 msgstr "Прив'язати до мережевого інтерфейсу (порожньо для будь-якого):"
 
 #: src/muuli_wdr.cpp
-msgid "Advanced users only: pin all of aMule's traffic to one network interface, chosen from the list or typed in by name (e.g. tun0, eth0, en0) or index. Unlike binding to an IP, this stops traffic leaking out via the default route - useful with a VPN. Requires no elevated privileges."
+#, fuzzy
+msgid "Advanced users only: pin aMule's peer-to-peer traffic, and its HTTP updates where the platform allows, to one network interface, chosen from the list or typed in by name (e.g. tun0, eth0, en0) or index. Unlike binding to an IP, this stops traffic leaking out via the default route - useful with a VPN. On Linux before kernel 5.7 it needs the CAP_NET_RAW capability."
 msgstr "Лише для досвідчених користувачів: прив'язати весь трафік aMule до одного мережевого інтерфейсу, вибраного з переліку або введеного вручну за назвою (наприклад, tun0, eth0, en0) чи індексом. На відміну від прив'язки до IP-адреси, це запобігає витоку трафіку через маршрут за замовчуванням - корисно з VPN. Не потребує підвищених прав."
 
 #: src/muuli_wdr.cpp

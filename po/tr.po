@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-26 12:53+0100\n"
+"POT-Creation-Date: 2026-09-26 17:32+0100\n"
 "PO-Revision-Date: 2026-09-26 09:33+0000\n"
 "Last-Translator: \n"
 "Language-Team: Turkish <li@li.org>\n"
@@ -312,14 +312,14 @@ msgid "Memory debug results for aMule exit:"
 msgstr "aMule çıkışı için hafıza hata raporlama sonuçları:"
 
 #: src/amule.cpp
-#, c-format
-msgid "Binding aMule's peer-to-peer traffic to interface: %s (HTTP updates use the default route)"
-msgstr "aMule eşten eşe trafiği şu arayüze bağlanıyor: %s (HTTP güncellemeleri varsayılan yolu kullanır)"
+#, fuzzy, c-format
+msgid "Binding aMule's peer-to-peer and HTTP traffic to interface: %s"
+msgstr "Tüm ağ trafiği şu arayüze bağlanıyor: %s"
 
 #: src/amule.cpp
 #, c-format
-msgid "Binding all network traffic to interface: %s"
-msgstr "Tüm ağ trafiği şu arayüze bağlanıyor: %s"
+msgid "Binding aMule's peer-to-peer traffic to interface: %s (HTTP updates use the default route)"
+msgstr "aMule eşten eşe trafiği şu arayüze bağlanıyor: %s (HTTP güncellemeleri varsayılan yolu kullanır)"
 
 #: src/amule.cpp
 #, c-format
@@ -331,7 +331,7 @@ msgstr "İKAZ: yapılandırılmış ağ arayüzü '%s' bulunamadı - trafik ona 
 msgid "WARNING: binding to network interface '%s' requires elevated privileges and was NOT applied - traffic may leave via the default route. Grant the capability (e.g. 'sudo setcap cap_net_raw+ep' on the aMule binary) or run with sufficient privileges."
 msgstr "İKAZ: '%s' ağ arayüzüne bağlamak yüksek izinler gerektirmektedir ve UYGULANMAMIŞTIR - trafik varsayılan yol ile dışarı çıkabilir. Gerekli yeteneği tanıyın (mesela aMule ikili dosyası üzerinde 'sudo setcap cap_net_raw+ep' komutunu kullanarak) veya yeterli imtiyazlarla çalıştırın."
 
-#: src/amule.cpp
+#: src/amule.cpp src/LibSocketAsio.cpp
 #, c-format
 msgid "WARNING: could not bind to network interface '%s' - traffic may leave via the default route."
 msgstr "İKAZ: '%s' ağ arayüzüne bağlama yapılamadı - trafik varsayılan yoldan dışarı çıkabilir."
@@ -3518,6 +3518,11 @@ msgid "External Connection: Handshake failed."
 msgstr "Dış Bağlantı: Tanılama engellendi."
 
 #: src/LibSocketAsio.cpp
+#, fuzzy, c-format
+msgid "WARNING: network interface '%s' is gone - traffic is no longer bound to it and may leave via the default route."
+msgstr "İKAZ: '%s' ağ arayüzüne bağlama yapılamadı - trafik varsayılan yoldan dışarı çıkabilir."
+
+#: src/LibSocketAsio.cpp
 #, c-format
 msgid "Error creating UDP socket %s %d : %s"
 msgstr "UDP soketinin oluşturulmasında hata %s%d:%s"
@@ -4561,7 +4566,8 @@ msgid "Bind to network interface (empty for any):"
 msgstr "Ağ arayüzüne bağla (herhangi biri için boş bırakın):"
 
 #: src/muuli_wdr.cpp
-msgid "Advanced users only: pin all of aMule's traffic to one network interface, chosen from the list or typed in by name (e.g. tun0, eth0, en0) or index. Unlike binding to an IP, this stops traffic leaking out via the default route - useful with a VPN. Requires no elevated privileges."
+#, fuzzy
+msgid "Advanced users only: pin aMule's peer-to-peer traffic, and its HTTP updates where the platform allows, to one network interface, chosen from the list or typed in by name (e.g. tun0, eth0, en0) or index. Unlike binding to an IP, this stops traffic leaking out via the default route - useful with a VPN. On Linux before kernel 5.7 it needs the CAP_NET_RAW capability."
 msgstr "Sadece ileri seviye kullanıcılar için: tüm aMule trafiğini listeden seçilmiş veya ismi (mesela tun0, eth0, en0) ya da endeksi yazılmış tek bir ağ arayüzüne sabitle. Bir IP adresine sabitlemenin aksine bu, trafiğin varsayılan yoldan sızmasını engeller - VPN'ler ile faydalıdır. Yüksek izinlere ihtiyaç duymaz."
 
 #: src/muuli_wdr.cpp

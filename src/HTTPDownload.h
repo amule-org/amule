@@ -41,6 +41,10 @@ class wxWebRequestEvent;
 // behave consistently and honour bind-to-interface (amule-org/amule#173).
 wxWebRequest CreateAmuleWebRequest(wxEvtHandler *handler, const wxString &url);
 
+// Whether HTTP requests follow the bind-to-interface choice: only where libcurl serves them, which
+// excludes Windows (WinHTTP), and macOS or a build without libcurl headers when curl is missing.
+bool CanBindHttpToInterface();
+
 enum HTTPDownloadResult
 {
 	HTTP_Success = 0,

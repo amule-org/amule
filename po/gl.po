@@ -24,7 +24,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-26 12:53+0100\n"
+"POT-Creation-Date: 2026-09-26 17:32+0100\n"
 "PO-Revision-Date: 2026-09-26 09:24+0000\n"
 "Last-Translator: Pablo <parodper@gmail.com>\n"
 "Language-Team: http://forum.amule.org/index.php?topic=13883\n"
@@ -321,14 +321,14 @@ msgid "Memory debug results for aMule exit:"
 msgstr "Resultados da depuración da memoria ao sair de aMule:"
 
 #: src/amule.cpp
-#, c-format
-msgid "Binding aMule's peer-to-peer traffic to interface: %s (HTTP updates use the default route)"
-msgstr "Vinculando o tráfico entre iguais de aMule á interface: %s (as actualizacións HTTP usan a ruta predeterminada)"
+#, fuzzy, c-format
+msgid "Binding aMule's peer-to-peer and HTTP traffic to interface: %s"
+msgstr "Vinculando todo o tráfico de rede á interface: %s"
 
 #: src/amule.cpp
 #, c-format
-msgid "Binding all network traffic to interface: %s"
-msgstr "Vinculando todo o tráfico de rede á interface: %s"
+msgid "Binding aMule's peer-to-peer traffic to interface: %s (HTTP updates use the default route)"
+msgstr "Vinculando o tráfico entre iguais de aMule á interface: %s (as actualizacións HTTP usan a ruta predeterminada)"
 
 #: src/amule.cpp
 #, c-format
@@ -340,7 +340,7 @@ msgstr "AVISO: non se atopou a interface de rede configurada '%s' - o tráfico N
 msgid "WARNING: binding to network interface '%s' requires elevated privileges and was NOT applied - traffic may leave via the default route. Grant the capability (e.g. 'sudo setcap cap_net_raw+ep' on the aMule binary) or run with sufficient privileges."
 msgstr "AVISO: vincular á interface de rede '%s' require privilexios elevados e NON se aplicou - o tráfico pode saír pola ruta predeterminada. Conceda a capacidade (por exemplo, 'sudo setcap cap_net_raw+ep' no binario de aMule) ou execute con privilexios suficientes."
 
-#: src/amule.cpp
+#: src/amule.cpp src/LibSocketAsio.cpp
 #, c-format
 msgid "WARNING: could not bind to network interface '%s' - traffic may leave via the default route."
 msgstr "AVISO: non se puido vincular á interface de rede '%s' - o tráfico pode saír pola ruta predeterminada."
@@ -3547,6 +3547,11 @@ msgid "External Connection: Handshake failed."
 msgstr "Conexión externa: Fallou o saúdo."
 
 #: src/LibSocketAsio.cpp
+#, fuzzy, c-format
+msgid "WARNING: network interface '%s' is gone - traffic is no longer bound to it and may leave via the default route."
+msgstr "AVISO: non se puido vincular á interface de rede '%s' - o tráfico pode saír pola ruta predeterminada."
+
+#: src/LibSocketAsio.cpp
 #, c-format
 msgid "Error creating UDP socket %s %d : %s"
 msgstr ""
@@ -4596,7 +4601,8 @@ msgid "Bind to network interface (empty for any):"
 msgstr "Vincular á interface de rede (baleiro para calquera):"
 
 #: src/muuli_wdr.cpp
-msgid "Advanced users only: pin all of aMule's traffic to one network interface, chosen from the list or typed in by name (e.g. tun0, eth0, en0) or index. Unlike binding to an IP, this stops traffic leaking out via the default route - useful with a VPN. Requires no elevated privileges."
+#, fuzzy
+msgid "Advanced users only: pin aMule's peer-to-peer traffic, and its HTTP updates where the platform allows, to one network interface, chosen from the list or typed in by name (e.g. tun0, eth0, en0) or index. Unlike binding to an IP, this stops traffic leaking out via the default route - useful with a VPN. On Linux before kernel 5.7 it needs the CAP_NET_RAW capability."
 msgstr "Só para usuarios avanzados: fixa todo o tráfico de aMule a unha interface de rede, escollida da lista ou escrita polo nome (por exemplo, tun0, eth0, en0) ou índice. A diferenza de vincular a un IP, isto impide que o tráfico escape pola ruta predeterminada - útil cunha VPN. Non require privilexios elevados."
 
 #: src/muuli_wdr.cpp

@@ -673,15 +673,16 @@ bool CamuleApp::OnInit()
 	case BindIface_Empty:
 		break; // no interface configured -- nothing to report
 	case BindIface_OK:
-#ifdef __WINDOWS__
-		// On Windows only the ed2k/Kad sockets are bound; aMule's HTTP uses the WinHTTP
-		// backend, which has no interface-bind API -- so say so rather than overclaim.
-		AddLogLineN(CFormat(_("Binding aMule's peer-to-peer traffic to interface: %s "
-				      "(HTTP updates use the default route)")) %
-			    bindInterface);
-#else
-		AddLogLineN(CFormat(_("Binding all network traffic to interface: %s")) % bindInterface);
-#endif
+		// HTTP follows only where libcurl serves it, so say which traffic is bound.
+		if (CanBindHttpToInterface()) {
+			AddLogLineN(
+				CFormat(_("Binding aMule's peer-to-peer and HTTP traffic to interface: %s")) %
+				bindInterface);
+		} else {
+			AddLogLineN(CFormat(_("Binding aMule's peer-to-peer traffic to interface: %s "
+					      "(HTTP updates use the default route)")) %
+				    bindInterface);
+		}
 		break;
 	case BindIface_NotFound:
 		AddLogLineC(CFormat(_("WARNING: configured network interface '%s' was not found - "

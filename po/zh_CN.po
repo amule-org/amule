@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-26 12:53+0100\n"
+"POT-Creation-Date: 2026-09-26 17:32+0100\n"
 "PO-Revision-Date: 2026-09-26 09:34+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
@@ -316,14 +316,14 @@ msgid "Memory debug results for aMule exit:"
 msgstr "对 aMule 退出的内存 Debug 结果："
 
 #: src/amule.cpp
-#, c-format
-msgid "Binding aMule's peer-to-peer traffic to interface: %s (HTTP updates use the default route)"
-msgstr "将 amule 的 p2p 流量绑定到接口：%s（HTTP 流量使用默认路由）"
+#, fuzzy, c-format
+msgid "Binding aMule's peer-to-peer and HTTP traffic to interface: %s"
+msgstr "将所有网络流量绑定到接口：%s"
 
 #: src/amule.cpp
 #, c-format
-msgid "Binding all network traffic to interface: %s"
-msgstr "将所有网络流量绑定到接口：%s"
+msgid "Binding aMule's peer-to-peer traffic to interface: %s (HTTP updates use the default route)"
+msgstr "将 amule 的 p2p 流量绑定到接口：%s（HTTP 流量使用默认路由）"
 
 #: src/amule.cpp
 #, c-format
@@ -335,7 +335,7 @@ msgstr "警告：未找到配置的网络接口'%s' - 流量未绑定到该接�
 msgid "WARNING: binding to network interface '%s' requires elevated privileges and was NOT applied - traffic may leave via the default route. Grant the capability (e.g. 'sudo setcap cap_net_raw+ep' on the aMule binary) or run with sufficient privileges."
 msgstr "警告：绑定到网络接口“%s”需要提升权限，但未成功 - 流量可能通过默认路由离开。请授予相应权限（例如，在 aMule 二进制文件上运行“sudo setcap cap_net_raw+ep”），或以足够的权限运行命令。"
 
-#: src/amule.cpp
+#: src/amule.cpp src/LibSocketAsio.cpp
 #, c-format
 msgid "WARNING: could not bind to network interface '%s' - traffic may leave via the default route."
 msgstr "警告：无法绑定到网络接口“%s” − 流量可能经默认路由离开。"
@@ -3518,6 +3518,11 @@ msgid "External Connection: Handshake failed."
 msgstr "远程连接：握手失败。"
 
 #: src/LibSocketAsio.cpp
+#, fuzzy, c-format
+msgid "WARNING: network interface '%s' is gone - traffic is no longer bound to it and may leave via the default route."
+msgstr "警告：无法绑定到网络接口“%s” − 流量可能经默认路由离开。"
+
+#: src/LibSocketAsio.cpp
 #, c-format
 msgid "Error creating UDP socket %s %d : %s"
 msgstr "创建 UDP 套接字 %s %d 出错：%s"
@@ -4561,7 +4566,8 @@ msgid "Bind to network interface (empty for any):"
 msgstr "绑定网络接口（留空绑定全部）："
 
 #: src/muuli_wdr.cpp
-msgid "Advanced users only: pin all of aMule's traffic to one network interface, chosen from the list or typed in by name (e.g. tun0, eth0, en0) or index. Unlike binding to an IP, this stops traffic leaking out via the default route - useful with a VPN. Requires no elevated privileges."
+#, fuzzy
+msgid "Advanced users only: pin aMule's peer-to-peer traffic, and its HTTP updates where the platform allows, to one network interface, chosen from the list or typed in by name (e.g. tun0, eth0, en0) or index. Unlike binding to an IP, this stops traffic leaking out via the default route - useful with a VPN. On Linux before kernel 5.7 it needs the CAP_NET_RAW capability."
 msgstr "仅限高级用户：将 aMule 的所有流量绑定到一个网络接口，可以从列表中选择，也可以按名称（例如 tun0、eth0、en0）输入或索引。与绑定到 IP 地址不同，这可以防止流量通过默认路由泄漏—— 在 VPN 环境下有用。无需管理员权限。"
 
 #: src/muuli_wdr.cpp
