@@ -30,7 +30,8 @@
 // Cross-platform "start aMule when the user logs in" toggle. The per-OS store of record is:
 //
 //   Windows : HKCU\Software\Microsoft\Windows\CurrentVersion\Run\aMule
-//   Linux   : $XDG_CONFIG_HOME/autostart/amule.desktop (per XDG spec)
+//   Linux   : $XDG_CONFIG_HOME/autostart/amule.desktop (per XDG spec); under Flatpak the
+//             host's autostart/<app id>.desktop, written by the Background portal
 //   macOS   : ~/Library/LaunchAgents/org.amule.amule.plist
 //
 // All three are per-user -- no elevation required. Toggling reads and writes the OS directly, never
@@ -70,6 +71,10 @@ public:
 	// What the entry registers for this binary: its executable, its .app for the macOS GUIs, or
 	// the path an AppImage was started as. Empty when nothing on disk would start it.
 	static wxString GetTarget();
+
+	// Under Flatpak, asks the Background portal for permission to keep running with no window,
+	// which the portal otherwise kills on some desktops. No-op elsewhere.
+	static void RequestFlatpakBackground();
 };
 
 #endif // AUTOSTARTMANAGER_H

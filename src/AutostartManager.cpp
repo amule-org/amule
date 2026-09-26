@@ -35,12 +35,16 @@
 #include <cwchar> // Needed for wcslen
 #include <vector> // Needed for std::vector buffer in BackendReadTargetPath
 #else
-#include <climits>      // Needed for PATH_MAX
-#include <stdlib.h>     // Needed for realpath
-#include <wx/utils.h>   // Needed for wxGetEnv / wxGetUserHome
-#include <wx/file.h>    // Needed for wxFile
-#include <wx/filefn.h>  // Needed for wxRemoveFile
-#include <wx/tokenzr.h> // Needed for wxStringTokenizer
+#include <climits>        // Needed for PATH_MAX
+#include <stdlib.h>       // Needed for realpath
+#include <wx/utils.h>     // Needed for wxGetEnv / wxGetUserHome
+#include <wx/file.h>      // Needed for wxFile
+#include <wx/filefn.h>    // Needed for wxRemoveFile
+#include <wx/tokenzr.h>   // Needed for wxStringTokenizer
+#include "XdgConfigDir.h" // Needed for XdgConfigDir
+#ifdef HAVE_GIO
+#include <gio/gio.h> // GDBus, for the Flatpak background portal
+#endif
 #endif
 
 // Per-backend low-level helpers (return raw OS state, no policy).
@@ -194,6 +198,12 @@ bool AutostartManager::Disable()
 
 void AutostartManager::SelfHealOnStartup()
 {
+#if !defined(__WXMSW__) && !defined(__WXMAC__) && !defined(__WXOSX__)
+	if (wxGetEnv(wxT("FLATPAK_ID"), nullptr)) {
+		// The portal's entry names a program inside the app, never a path: nothing drifts.
+		return;
+	}
+#endif
 	const wxString registered = BackendReadTargetPath();
 	if (registered.empty()) {
 		// No entry -- user chose not to autostart, or never enabled it.
@@ -465,19 +475,83 @@ bool BackendRemove()
 // "Startup Applications" GUI looks, so users can see and toggle the entry without a terminal --
 // systemd user units do not show up there. https://specifications.freedesktop.org/autostart-
 // spec/latest/
+//
+// A Flatpak cannot write the host's autostart directory, so the Background portal writes the entry
+// for it, named after the app id, and the app reads it back from the host's config dir.
+
+static bool InFlatpak()
+{
+	return wxGetEnv(wxT("FLATPAK_ID"), nullptr);
+}
 
 static wxString XdgAutostartDir()
 {
-	wxString xdg;
-	if (wxGetEnv(wxT("XDG_CONFIG_HOME"), &xdg) && !xdg.empty()) {
-		return xdg + wxT("/autostart");
-	}
-	return wxGetUserHome() + wxT("/.config/autostart");
+	return XdgConfigDir() + wxT("/autostart");
 }
 
 static wxString DesktopFilePath()
 {
+	wxString appId;
+	if (wxGetEnv(wxT("FLATPAK_ID"), &appId) && !appId.empty()) {
+		return XdgAutostartDir() + wxT("/") + appId + wxT(".desktop");
+	}
 	return XdgAutostartDir() + wxT("/amule.desktop");
+}
+
+#ifdef HAVE_GIO
+// Asks the Background portal for permission to run with no window, and sets the app's autostart
+// entry to start `program` -- or removes it when `program` is empty: every request sets it.
+static bool RequestPortalBackground(const wxString &program)
+{
+	GError *error = nullptr;
+	GDBusConnection *conn = g_bus_get_sync(G_BUS_TYPE_SESSION, nullptr, &error);
+	if (conn == nullptr) {
+		g_clear_error(&error);
+		return false;
+	}
+
+	GVariantBuilder options;
+	g_variant_builder_init(&options, G_VARIANT_TYPE_VARDICT);
+	g_variant_builder_add(&options,
+		"{sv}",
+		"reason",
+		g_variant_new_string("aMule keeps running in the background to continue your transfers."));
+	g_variant_builder_add(&options, "{sv}", "autostart", g_variant_new_boolean(!program.empty()));
+	const wxScopedCharBuffer utf8 = program.utf8_str();
+	if (!program.empty()) {
+		const char *const commandline[] = { utf8.data(), nullptr };
+		g_variant_builder_add(&options, "{sv}", "commandline", g_variant_new_strv(commandline, -1));
+	}
+
+	// Returns once the request exists; a permission prompt, if any, follows on its own.
+	GVariant *reply = g_dbus_connection_call_sync(conn,
+		"org.freedesktop.portal.Desktop",
+		"/org/freedesktop/portal/desktop",
+		"org.freedesktop.portal.Background",
+		"RequestBackground",
+		g_variant_new("(sa{sv})", "", &options),
+		nullptr,
+		G_DBUS_CALL_FLAGS_NONE,
+		5000,
+		nullptr,
+		&error);
+	g_object_unref(conn);
+	if (reply == nullptr) {
+		g_clear_error(&error);
+		return false;
+	}
+	g_variant_unref(reply);
+	return true;
+}
+#endif
+
+// The portal writes or removes the entry after it has replied.
+template <typename Done> static bool WaitForPortal(Done done)
+{
+	for (int i = 0; i < 50 && !done(); ++i) {
+		wxMilliSleep(100);
+	}
+	return done();
 }
 
 static wxString ReadDesktopFile()
@@ -540,6 +614,13 @@ wxString BackendReadTargetPath()
 		if (value.empty()) {
 			return wxEmptyString;
 		}
+		// The portal's entry reads `flatpak run --command=<program> <app id>`.
+		const int command = value.Find(wxT("--command="));
+		if (command != wxNOT_FOUND) {
+			wxString program = value.Mid(command + 10).BeforeFirst(wxT(' '));
+			program.Replace(wxT("'"), wxEmptyString);
+			return program;
+		}
 		if (value[0] == wxT('"')) {
 			size_t closing = value.find(wxT('"'), 1);
 			if (closing != wxString::npos) {
@@ -557,6 +638,17 @@ wxString BackendReadTargetPath()
 
 bool BackendWrite(const wxString &executable, bool switchedOff)
 {
+	if (InFlatpak()) {
+#ifdef HAVE_GIO
+		// By program name: the portal starts it inside the app.
+		const wxString program = wxFileName(executable).GetName();
+		return RequestPortalBackground(program) &&
+		       WaitForPortal([&] { return BackendReadTargetPath() == program; });
+#else
+		return false;
+#endif
+	}
+
 	wxString dir = XdgAutostartDir();
 	if (!wxFileName::DirExists(dir)) {
 		// Mkdir -p: the XDG dir may not exist yet on a fresh install or on minimal
@@ -605,9 +697,27 @@ bool BackendRemove()
 	if (!wxFileName::FileExists(path)) {
 		return true; // already absent → success
 	}
+	if (InFlatpak()) {
+#ifdef HAVE_GIO
+		return RequestPortalBackground(wxEmptyString) &&
+		       WaitForPortal([&] { return !wxFileName::FileExists(path); });
+#else
+		return false;
+#endif
+	}
 	return wxRemoveFile(path);
 }
 
 #endif
 
 } // namespace
+
+void AutostartManager::RequestFlatpakBackground()
+{
+#if defined(HAVE_GIO) && !defined(__WXMSW__) && !defined(__WXMAC__) && !defined(__WXOSX__)
+	// With an entry, the permission came with it, and a request would rewrite the entry.
+	if (InFlatpak() && BackendReadTargetPath().empty()) {
+		RequestPortalBackground(wxEmptyString);
+	}
+#endif
+}

@@ -427,9 +427,9 @@ list (FIND wxWidgets_DEFINITIONS "__WXGTK__" _amule_wxgtk_idx)
 if (_amule_wxgtk_idx GREATER -1 AND NOT APPLE)
 	find_package (PkgConfig QUIET)
 	if (PkgConfig_FOUND)
-		# gio-2.0 (ships with glib) provides GDBus, used by the monolithic /
-		# amulegui GUI to ask xdg-desktop-portal for background permission
-		# under Flatpak (see RequestFlatpakBackgroundPermission in amuleDlg.cpp).
+		# gio-2.0 (ships with glib) provides GDBus, used to ask
+		# xdg-desktop-portal for background permission and autostart under
+		# Flatpak (see AutostartManager.cpp).
 		pkg_check_modules (GLIB QUIET glib-2.0 gio-2.0)
 	endif()
 

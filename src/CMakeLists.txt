@@ -275,6 +275,8 @@ if (BUILD_DAEMON)
 		# glib include path too.
 		target_include_directories (amuled PRIVATE ${GLIB_INCLUDE_DIRS})
 		target_link_libraries (amuled PRIVATE ${GLIB_LIBRARIES})
+		# GDBus for the Flatpak Background portal (AutostartManager).
+		target_compile_definitions (amuled PRIVATE HAVE_GIO)
 	endif()
 
 	if (HAVE_BFD)
@@ -390,6 +392,8 @@ if (BUILD_MONOLITHIC)
 		# AppIndicator backend isn't compiled in.
 		target_include_directories (amule PRIVATE ${GLIB_INCLUDE_DIRS})
 		target_link_libraries (amule PRIVATE ${GLIB_LIBRARIES})
+		# GDBus for the Flatpak Background portal (AutostartManager).
+		target_compile_definitions (amule PRIVATE HAVE_GIO)
 	endif()
 
 	if (WITH_LIBAYATANA_APPINDICATOR)
@@ -625,6 +629,8 @@ if (BUILD_REMOTEGUI)
 		# need glib's include path.
 		target_include_directories (amulegui PRIVATE ${GLIB_INCLUDE_DIRS})
 		target_link_libraries (amulegui PRIVATE ${GLIB_LIBRARIES})
+		# GDBus for the Flatpak Background portal (AutostartManager).
+		target_compile_definitions (amulegui PRIVATE HAVE_GIO)
 	endif()
 
 	if (WITH_LIBAYATANA_APPINDICATOR)

@@ -42,12 +42,13 @@
 #include <shlobj.h> // Needed for SHChangeNotify
 #include <cwchar>   // Needed for wcslen
 #else
-#include <climits>      // Needed for PATH_MAX
-#include <stdlib.h>     // Needed for realpath
-#include <wx/file.h>    // Needed for wxFile
-#include <wx/filefn.h>  // Needed for wxRemoveFile
-#include <wx/tokenzr.h> // Needed for wxStringTokenizer
-#include <wx/utils.h>   // Needed for wxGetEnv / wxGetUserHome
+#include <climits>        // Needed for PATH_MAX
+#include <stdlib.h>       // Needed for realpath
+#include <wx/file.h>      // Needed for wxFile
+#include <wx/filefn.h>    // Needed for wxRemoveFile
+#include <wx/tokenzr.h>   // Needed for wxStringTokenizer
+#include "XdgConfigDir.h" // Needed for XdgConfigDir
+#include <wx/utils.h>     // Needed for wxGetEnv / wxGetUserHome
 #endif
 
 // Forward declarations for the macOS backend entry points implemented in
@@ -636,13 +637,10 @@ static wxString OwnDesktopId()
 	return wxT("org.amule.aMule.desktop");
 }
 
+// Under Flatpak, the host's: the sandbox's own config dir is one the desktop never reads.
 static wxString MimeAppsPath()
 {
-	wxString xdg;
-	if (wxGetEnv(wxT("XDG_CONFIG_HOME"), &xdg) && !xdg.empty()) {
-		return xdg + wxT("/mimeapps.list");
-	}
-	return wxGetUserHome() + wxT("/.config/mimeapps.list");
+	return XdgConfigDir() + wxT("/mimeapps.list");
 }
 
 // The mimeapps.list key. Schemes get the x-scheme-handler/ pseudo-type; the collection is a real

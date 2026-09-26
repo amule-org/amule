@@ -119,3 +119,32 @@ TEST(AutostartManager, SelfHealKeepsItSwitchedOff)
 	ASSERT_TRUE(entry.Contains(wxT("X-GNOME-Autostart-enabled=false")));
 	ASSERT_TRUE(!AutostartManager::IsEnabled());
 }
+
+TEST(AutostartManager, ReadsThePortalEntryUnderFlatpak)
+{
+	UseScratchConfigHome();
+	// The sandbox's own config dir, which the host never reads, must not be the one used.
+	wxSetEnv(wxT("XDG_CONFIG_HOME"), g_configHome + wxT("/sandbox"));
+	wxSetEnv(wxT("HOST_XDG_CONFIG_HOME"), g_configHome);
+	wxSetEnv(wxT("FLATPAK_ID"), wxT("org.amule.test"));
+	wxFileName::Mkdir(g_configHome + wxT("/autostart"), 0700, wxPATH_MKDIR_FULL);
+	const wxString entry = g_configHome + wxT("/autostart/org.amule.test.desktop");
+	const wxString program = wxFileName(AutostartManager::GetTarget()).GetName();
+
+	wxFile f;
+	f.Create(entry, true);
+	f.Write(wxT("[Desktop Entry]\nType=Application\nExec=flatpak run --command=") + program +
+		wxT(" org.amule.test\nX-Flatpak=org.amule.test\n"));
+	f.Close();
+	const bool ours = AutostartManager::IsEnabled();
+
+	f.Create(entry, true);
+	f.Write(wxT("[Desktop Entry]\nType=Application\nExec=flatpak run --command=amuled org.amule.test\n"));
+	f.Close();
+	const bool daemons = AutostartManager::IsEnabled();
+
+	wxUnsetEnv(wxT("FLATPAK_ID"));
+	wxUnsetEnv(wxT("HOST_XDG_CONFIG_HOME"));
+	ASSERT_TRUE(ours);
+	ASSERT_TRUE(!daemons);
+}
