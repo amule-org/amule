@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-26 12:53+0100\n"
+"POT-Creation-Date: 2026-09-26 17:32+0100\n"
 "PO-Revision-Date: 2026-09-26 09:23+0000\n"
 "Last-Translator: Tapio Rantala <tapio.rantala@iki.fi>\n"
 "Language-Team: aMule Team <https://github.com/amule-org/amule>\n"
@@ -307,14 +307,14 @@ msgid "Memory debug results for aMule exit:"
 msgstr "Muistin virheiden etsinnän tulokset aMulen sulkeutuessa:"
 
 #: src/amule.cpp
-#, c-format
-msgid "Binding aMule's peer-to-peer traffic to interface: %s (HTTP updates use the default route)"
-msgstr "Sidotaan aMulen vertaisverkkoliikenne verkkoliitäntään: %s (HTTP-päivitykset käyttävät oletusreittiä)"
+#, fuzzy, c-format
+msgid "Binding aMule's peer-to-peer and HTTP traffic to interface: %s"
+msgstr "Sidotaan kaikki verkkoliikenne verkkoliitäntään: %s"
 
 #: src/amule.cpp
 #, c-format
-msgid "Binding all network traffic to interface: %s"
-msgstr "Sidotaan kaikki verkkoliikenne verkkoliitäntään: %s"
+msgid "Binding aMule's peer-to-peer traffic to interface: %s (HTTP updates use the default route)"
+msgstr "Sidotaan aMulen vertaisverkkoliikenne verkkoliitäntään: %s (HTTP-päivitykset käyttävät oletusreittiä)"
 
 #: src/amule.cpp
 #, c-format
@@ -326,7 +326,7 @@ msgstr "VAROITUS: määritettyä verkkoliitäntää '%s' ei löytynyt - liikenne
 msgid "WARNING: binding to network interface '%s' requires elevated privileges and was NOT applied - traffic may leave via the default route. Grant the capability (e.g. 'sudo setcap cap_net_raw+ep' on the aMule binary) or run with sufficient privileges."
 msgstr "VAROITUS: sitominen verkkoliitäntään '%s' vaatii korotetut oikeudet, eikä sitä sovellettu - liikenne saattaa kulkea oletusreitin kautta. Myönnä tarvittava oikeus (esim. 'sudo setcap cap_net_raw+ep' aMule-binäärille) tai suorita riittävillä oikeuksilla."
 
-#: src/amule.cpp
+#: src/amule.cpp src/LibSocketAsio.cpp
 #, c-format
 msgid "WARNING: could not bind to network interface '%s' - traffic may leave via the default route."
 msgstr "VAROITUS: verkkoliitäntään '%s' ei voitu sitoa - liikenne saattaa kulkea oletusreitin kautta."
@@ -3534,6 +3534,11 @@ msgid "External Connection: Handshake failed."
 msgstr "Etäyhteys: Kättely epäonnistui"
 
 #: src/LibSocketAsio.cpp
+#, fuzzy, c-format
+msgid "WARNING: network interface '%s' is gone - traffic is no longer bound to it and may leave via the default route."
+msgstr "VAROITUS: verkkoliitäntään '%s' ei voitu sitoa - liikenne saattaa kulkea oletusreitin kautta."
+
+#: src/LibSocketAsio.cpp
 #, c-format
 msgid "Error creating UDP socket %s %d : %s"
 msgstr ""
@@ -4583,7 +4588,8 @@ msgid "Bind to network interface (empty for any):"
 msgstr "Sido verkkoliitäntään (tyhjä = mikä tahansa):"
 
 #: src/muuli_wdr.cpp
-msgid "Advanced users only: pin all of aMule's traffic to one network interface, chosen from the list or typed in by name (e.g. tun0, eth0, en0) or index. Unlike binding to an IP, this stops traffic leaking out via the default route - useful with a VPN. Requires no elevated privileges."
+#, fuzzy
+msgid "Advanced users only: pin aMule's peer-to-peer traffic, and its HTTP updates where the platform allows, to one network interface, chosen from the list or typed in by name (e.g. tun0, eth0, en0) or index. Unlike binding to an IP, this stops traffic leaking out via the default route - useful with a VPN. On Linux before kernel 5.7 it needs the CAP_NET_RAW capability."
 msgstr "Vain kokeneille käyttäjille: kiinnitä kaikki aMulen liikenne yhteen verkkoliitäntään, joka valitaan luettelosta tai kirjoitetaan nimellä (esim. tun0, eth0, en0) tai indeksillä. Toisin kuin IP-osoitteeseen sitominen, tämä estää liikenteen vuotamisen oletusreitin kautta - hyödyllinen VPN:n kanssa. Ei vaadi korotettuja oikeuksia."
 
 #: src/muuli_wdr.cpp

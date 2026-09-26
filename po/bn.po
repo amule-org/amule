@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-26 12:53+0100\n"
+"POT-Creation-Date: 2026-09-26 17:32+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
@@ -288,12 +288,12 @@ msgstr ""
 
 #: src/amule.cpp
 #, c-format
-msgid "Binding aMule's peer-to-peer traffic to interface: %s (HTTP updates use the default route)"
+msgid "Binding aMule's peer-to-peer and HTTP traffic to interface: %s"
 msgstr ""
 
 #: src/amule.cpp
 #, c-format
-msgid "Binding all network traffic to interface: %s"
+msgid "Binding aMule's peer-to-peer traffic to interface: %s (HTTP updates use the default route)"
 msgstr ""
 
 #: src/amule.cpp
@@ -306,7 +306,7 @@ msgstr ""
 msgid "WARNING: binding to network interface '%s' requires elevated privileges and was NOT applied - traffic may leave via the default route. Grant the capability (e.g. 'sudo setcap cap_net_raw+ep' on the aMule binary) or run with sufficient privileges."
 msgstr ""
 
-#: src/amule.cpp
+#: src/amule.cpp src/LibSocketAsio.cpp
 #, c-format
 msgid "WARNING: could not bind to network interface '%s' - traffic may leave via the default route."
 msgstr ""
@@ -3422,6 +3422,11 @@ msgstr ""
 
 #: src/LibSocketAsio.cpp
 #, c-format
+msgid "WARNING: network interface '%s' is gone - traffic is no longer bound to it and may leave via the default route."
+msgstr ""
+
+#: src/LibSocketAsio.cpp
+#, c-format
 msgid "Error creating UDP socket %s %d : %s"
 msgstr ""
 
@@ -4462,7 +4467,7 @@ msgid "Bind to network interface (empty for any):"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Advanced users only: pin all of aMule's traffic to one network interface, chosen from the list or typed in by name (e.g. tun0, eth0, en0) or index. Unlike binding to an IP, this stops traffic leaking out via the default route - useful with a VPN. Requires no elevated privileges."
+msgid "Advanced users only: pin aMule's peer-to-peer traffic, and its HTTP updates where the platform allows, to one network interface, chosen from the list or typed in by name (e.g. tun0, eth0, en0) or index. Unlike binding to an IP, this stops traffic leaking out via the default route - useful with a VPN. On Linux before kernel 5.7 it needs the CAP_NET_RAW capability."
 msgstr ""
 
 #: src/muuli_wdr.cpp

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-26 12:53+0100\n"
+"POT-Creation-Date: 2026-09-26 17:32+0100\n"
 "PO-Revision-Date: 2026-09-26 09:25+0000\n"
 "Last-Translator: Dévai Tamás <gonosztopi@amule.org>\n"
 "Language-Team: Hungarian <hu@li.org>\n"
@@ -304,14 +304,14 @@ msgid "Memory debug results for aMule exit:"
 msgstr "Memória debug eredmények az aMule bezárásáról:"
 
 #: src/amule.cpp
-#, c-format
-msgid "Binding aMule's peer-to-peer traffic to interface: %s (HTTP updates use the default route)"
-msgstr "Az aMule peer-to-peer forgalmának kötése ehhez az interfészhez: %s (a HTTP frissítések az alapértelmezett útvonalat használják)"
+#, fuzzy, c-format
+msgid "Binding aMule's peer-to-peer and HTTP traffic to interface: %s"
+msgstr "Az összes hálózati forgalom kötése ehhez az interfészhez: %s"
 
 #: src/amule.cpp
 #, c-format
-msgid "Binding all network traffic to interface: %s"
-msgstr "Az összes hálózati forgalom kötése ehhez az interfészhez: %s"
+msgid "Binding aMule's peer-to-peer traffic to interface: %s (HTTP updates use the default route)"
+msgstr "Az aMule peer-to-peer forgalmának kötése ehhez az interfészhez: %s (a HTTP frissítések az alapértelmezett útvonalat használják)"
 
 #: src/amule.cpp
 #, c-format
@@ -323,7 +323,7 @@ msgstr "FIGYELMEZTETÉS: a beállított '%s' hálózati interfész nem találhat
 msgid "WARNING: binding to network interface '%s' requires elevated privileges and was NOT applied - traffic may leave via the default route. Grant the capability (e.g. 'sudo setcap cap_net_raw+ep' on the aMule binary) or run with sufficient privileges."
 msgstr "FIGYELMEZTETÉS: a(z) '%s' hálózati interfészhez való kötéshez emelt jogosultság szükséges, ezért NEM lett alkalmazva - a forgalom az alapértelmezett útvonalon keresztül távozhat. Add meg a szükséges jogosultságot (pl. 'sudo setcap cap_net_raw+ep' az aMule futtatható fájlon), vagy futtasd megfelelő jogosultsággal."
 
-#: src/amule.cpp
+#: src/amule.cpp src/LibSocketAsio.cpp
 #, c-format
 msgid "WARNING: could not bind to network interface '%s' - traffic may leave via the default route."
 msgstr "FIGYELMEZTETÉS: nem sikerült kötni a(z) '%s' hálózati interfészhez - a forgalom az alapértelmezett útvonalon keresztül távozhat."
@@ -3513,6 +3513,11 @@ msgid "External Connection: Handshake failed."
 msgstr "Külső kapcsolat: Kézfogás sikertelen."
 
 #: src/LibSocketAsio.cpp
+#, fuzzy, c-format
+msgid "WARNING: network interface '%s' is gone - traffic is no longer bound to it and may leave via the default route."
+msgstr "FIGYELMEZTETÉS: nem sikerült kötni a(z) '%s' hálózati interfészhez - a forgalom az alapértelmezett útvonalon keresztül távozhat."
+
+#: src/LibSocketAsio.cpp
 #, c-format
 msgid "Error creating UDP socket %s %d : %s"
 msgstr ""
@@ -4558,7 +4563,8 @@ msgid "Bind to network interface (empty for any):"
 msgstr "Kötés hálózati interfészhez (üresen bármelyik):"
 
 #: src/muuli_wdr.cpp
-msgid "Advanced users only: pin all of aMule's traffic to one network interface, chosen from the list or typed in by name (e.g. tun0, eth0, en0) or index. Unlike binding to an IP, this stops traffic leaking out via the default route - useful with a VPN. Requires no elevated privileges."
+#, fuzzy
+msgid "Advanced users only: pin aMule's peer-to-peer traffic, and its HTTP updates where the platform allows, to one network interface, chosen from the list or typed in by name (e.g. tun0, eth0, en0) or index. Unlike binding to an IP, this stops traffic leaking out via the default route - useful with a VPN. On Linux before kernel 5.7 it needs the CAP_NET_RAW capability."
 msgstr "Csak haladó felhasználóknak: az aMule teljes forgalmának rögzítése egyetlen hálózati interfészhez, amelyet a listából választhatsz ki, vagy név (pl. tun0, eth0, en0) vagy index szerint adhatsz meg. Az IP-hez való kötéssel ellentétben ez megakadályozza, hogy a forgalom az alapértelmezett útvonalon keresztül szivárogjon ki - hasznos VPN használatakor. Nem igényel emelt jogosultságot."
 
 #: src/muuli_wdr.cpp

@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-26 12:53+0100\n"
+"POT-Creation-Date: 2026-09-26 17:32+0100\n"
 "PO-Revision-Date: 2026-09-26 09:23+0000\n"
 "Last-Translator: Piarres Beobide <pi@beobide.net>\n"
 "Language-Team: Euskara <librezale@librezale.org>\n"
@@ -307,14 +307,14 @@ msgid "Memory debug results for aMule exit:"
 msgstr "aMule ixtearen memoria arazte irteera:"
 
 #: src/amule.cpp
-#, c-format
-msgid "Binding aMule's peer-to-peer traffic to interface: %s (HTTP updates use the default route)"
-msgstr "aMule-ren pare-parekako trafikoa interfazera lotzen: %s (HTTP eguneraketek bide lehenetsia erabiltzen dute)"
+#, fuzzy, c-format
+msgid "Binding aMule's peer-to-peer and HTTP traffic to interface: %s"
+msgstr "Sareko trafiko guztia interfazera lotzen: %s"
 
 #: src/amule.cpp
 #, c-format
-msgid "Binding all network traffic to interface: %s"
-msgstr "Sareko trafiko guztia interfazera lotzen: %s"
+msgid "Binding aMule's peer-to-peer traffic to interface: %s (HTTP updates use the default route)"
+msgstr "aMule-ren pare-parekako trafikoa interfazera lotzen: %s (HTTP eguneraketek bide lehenetsia erabiltzen dute)"
 
 #: src/amule.cpp
 #, c-format
@@ -326,7 +326,7 @@ msgstr "KONTUZ: konfiguratutako '%s' sareko interfazea ez da aurkitu - trafikoa 
 msgid "WARNING: binding to network interface '%s' requires elevated privileges and was NOT applied - traffic may leave via the default route. Grant the capability (e.g. 'sudo setcap cap_net_raw+ep' on the aMule binary) or run with sufficient privileges."
 msgstr "KONTUZ: '%s' sareko interfazera lotzeak pribilegio altuagoak behar ditu eta EZ da aplikatu - trafikoa bide lehenetsitik atera daiteke. Eman gaitasuna (adib. 'sudo setcap cap_net_raw+ep' aMule bitarrean) edo exekutatu behar adina pribilegiorekin."
 
-#: src/amule.cpp
+#: src/amule.cpp src/LibSocketAsio.cpp
 #, c-format
 msgid "WARNING: could not bind to network interface '%s' - traffic may leave via the default route."
 msgstr "KONTUZ: ezin izan da '%s' sareko interfazera lotu - trafikoa bide lehenetsitik atera daiteke."
@@ -3533,6 +3533,11 @@ msgid "External Connection: Handshake failed."
 msgstr "Kanpo Konexioa: Esku-emateak huts egin du."
 
 #: src/LibSocketAsio.cpp
+#, fuzzy, c-format
+msgid "WARNING: network interface '%s' is gone - traffic is no longer bound to it and may leave via the default route."
+msgstr "KONTUZ: ezin izan da '%s' sareko interfazera lotu - trafikoa bide lehenetsitik atera daiteke."
+
+#: src/LibSocketAsio.cpp
 #, c-format
 msgid "Error creating UDP socket %s %d : %s"
 msgstr ""
@@ -4582,7 +4587,8 @@ msgid "Bind to network interface (empty for any):"
 msgstr "Lotu sareko interfazera (hutsik edozeinetarako):"
 
 #: src/muuli_wdr.cpp
-msgid "Advanced users only: pin all of aMule's traffic to one network interface, chosen from the list or typed in by name (e.g. tun0, eth0, en0) or index. Unlike binding to an IP, this stops traffic leaking out via the default route - useful with a VPN. Requires no elevated privileges."
+#, fuzzy
+msgid "Advanced users only: pin aMule's peer-to-peer traffic, and its HTTP updates where the platform allows, to one network interface, chosen from the list or typed in by name (e.g. tun0, eth0, en0) or index. Unlike binding to an IP, this stops traffic leaking out via the default route - useful with a VPN. On Linux before kernel 5.7 it needs the CAP_NET_RAW capability."
 msgstr "Erabiltzaile aurreratuentzat soilik: finkatu aMule-ren trafiko guztia sareko interfaze bakar batera, zerrendatik hautatuta edo izenez (adib. tun0, eth0, en0) edo indizez idatzita. IP batera lotzea ez bezala, honek trafikoa bide lehenetsitik ateratzea eragozten du - erabilgarria VPN batekin. Ez du pribilegio altuagorik behar."
 
 #: src/muuli_wdr.cpp

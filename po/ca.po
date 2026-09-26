@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-26 12:53+0100\n"
+"POT-Creation-Date: 2026-09-26 17:32+0100\n"
 "PO-Revision-Date: 2026-09-26 09:19+0000\n"
 "Last-Translator: minterior <minterior@gmail.com>\n"
 "Language-Team: Català\n"
@@ -317,14 +317,14 @@ msgid "Memory debug results for aMule exit:"
 msgstr "Resultat de la depuració de la memòria a la sortida de l'aMule:"
 
 #: src/amule.cpp
-#, c-format
-msgid "Binding aMule's peer-to-peer traffic to interface: %s (HTTP updates use the default route)"
-msgstr "S'està vinculant el trànsit d'igual a igual de l'aMule a la interfície: %s (les actualitzacions HTTP fan servir la ruta predeterminada)"
+#, fuzzy, c-format
+msgid "Binding aMule's peer-to-peer and HTTP traffic to interface: %s"
+msgstr "S'està vinculant tot el trànsit de xarxa a la interfície: %s"
 
 #: src/amule.cpp
 #, c-format
-msgid "Binding all network traffic to interface: %s"
-msgstr "S'està vinculant tot el trànsit de xarxa a la interfície: %s"
+msgid "Binding aMule's peer-to-peer traffic to interface: %s (HTTP updates use the default route)"
+msgstr "S'està vinculant el trànsit d'igual a igual de l'aMule a la interfície: %s (les actualitzacions HTTP fan servir la ruta predeterminada)"
 
 #: src/amule.cpp
 #, c-format
@@ -336,7 +336,7 @@ msgstr "AVÍS: no s'ha trobat la interfície de xarxa configurada «%s»; el tr�
 msgid "WARNING: binding to network interface '%s' requires elevated privileges and was NOT applied - traffic may leave via the default route. Grant the capability (e.g. 'sudo setcap cap_net_raw+ep' on the aMule binary) or run with sufficient privileges."
 msgstr "AVÍS: vincular-se a la interfície de xarxa «%s» requereix privilegis elevats i NO s'ha aplicat; el trànsit pot sortir per la ruta predeterminada. Concediu la capacitat (per exemple, «sudo setcap cap_net_raw+ep» sobre el binari de l'aMule) o executeu-lo amb privilegis suficients."
 
-#: src/amule.cpp
+#: src/amule.cpp src/LibSocketAsio.cpp
 #, c-format
 msgid "WARNING: could not bind to network interface '%s' - traffic may leave via the default route."
 msgstr "AVÍS: no s'ha pogut vincular a la interfície de xarxa «%s»; el trànsit pot sortir per la ruta predeterminada."
@@ -3519,6 +3519,11 @@ msgid "External Connection: Handshake failed."
 msgstr "Connexió externa: Conformitat de connexió denegada."
 
 #: src/LibSocketAsio.cpp
+#, fuzzy, c-format
+msgid "WARNING: network interface '%s' is gone - traffic is no longer bound to it and may leave via the default route."
+msgstr "AVÍS: no s'ha pogut vincular a la interfície de xarxa «%s»; el trànsit pot sortir per la ruta predeterminada."
+
+#: src/LibSocketAsio.cpp
 #, c-format
 msgid "Error creating UDP socket %s %d : %s"
 msgstr "Error en crear el sòcol UDP %s %d : %s"
@@ -4562,7 +4567,8 @@ msgid "Bind to network interface (empty for any):"
 msgstr "Vincula a la interfície de xarxa (buit per a qualsevol):"
 
 #: src/muuli_wdr.cpp
-msgid "Advanced users only: pin all of aMule's traffic to one network interface, chosen from the list or typed in by name (e.g. tun0, eth0, en0) or index. Unlike binding to an IP, this stops traffic leaking out via the default route - useful with a VPN. Requires no elevated privileges."
+#, fuzzy
+msgid "Advanced users only: pin aMule's peer-to-peer traffic, and its HTTP updates where the platform allows, to one network interface, chosen from the list or typed in by name (e.g. tun0, eth0, en0) or index. Unlike binding to an IP, this stops traffic leaking out via the default route - useful with a VPN. On Linux before kernel 5.7 it needs the CAP_NET_RAW capability."
 msgstr "Només per a usuaris avançats: fixa tot el trànsit de l'aMule a una sola interfície de xarxa, triada de la llista o escrita pel seu nom (per exemple, tun0, eth0, en0) o índex. A diferència de vincular-se a una IP, això evita que el trànsit s'escapi per la ruta predeterminada; útil amb una VPN. No requereix privilegis elevats."
 
 #: src/muuli_wdr.cpp

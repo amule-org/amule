@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-26 12:53+0100\n"
+"POT-Creation-Date: 2026-09-26 17:32+0100\n"
 "PO-Revision-Date: 2026-09-26 09:20+0000\n"
 "Last-Translator: David Watzke <david@watzke.cz>\n"
 "Language-Team: cs <cs@li.org>\n"
@@ -314,14 +314,14 @@ msgid "Memory debug results for aMule exit:"
 msgstr "Výsledky ladění paměti při ukončení aMule:"
 
 #: src/amule.cpp
-#, c-format
-msgid "Binding aMule's peer-to-peer traffic to interface: %s (HTTP updates use the default route)"
-msgstr "Provoz peer-to-peer aMule je vázán na rozhraní: %s (aktualizace HTTP používají výchozí trasu)"
+#, fuzzy, c-format
+msgid "Binding aMule's peer-to-peer and HTTP traffic to interface: %s"
+msgstr "Veškerý síťový provoz je vázán na rozhraní: %s"
 
 #: src/amule.cpp
 #, c-format
-msgid "Binding all network traffic to interface: %s"
-msgstr "Veškerý síťový provoz je vázán na rozhraní: %s"
+msgid "Binding aMule's peer-to-peer traffic to interface: %s (HTTP updates use the default route)"
+msgstr "Provoz peer-to-peer aMule je vázán na rozhraní: %s (aktualizace HTTP používají výchozí trasu)"
 
 #: src/amule.cpp
 #, c-format
@@ -333,7 +333,7 @@ msgstr "VAROVÁNÍ: nakonfigurované síťové rozhraní '%s' nebylo nalezeno - 
 msgid "WARNING: binding to network interface '%s' requires elevated privileges and was NOT applied - traffic may leave via the default route. Grant the capability (e.g. 'sudo setcap cap_net_raw+ep' on the aMule binary) or run with sufficient privileges."
 msgstr "VAROVÁNÍ: vázání na síťové rozhraní '%s' vyžaduje zvýšená oprávnění a nebylo použito - provoz může odcházet přes výchozí trasu. Udělte danou schopnost (např. 'sudo setcap cap_net_raw+ep' na binárním souboru aMule) nebo spusťte program s dostatečnými oprávněními."
 
-#: src/amule.cpp
+#: src/amule.cpp src/LibSocketAsio.cpp
 #, c-format
 msgid "WARNING: could not bind to network interface '%s' - traffic may leave via the default route."
 msgstr "VAROVÁNÍ: nepodařilo se navázat na síťové rozhraní '%s' - provoz může odcházet přes výchozí trasu."
@@ -3533,6 +3533,11 @@ msgid "External Connection: Handshake failed."
 msgstr "Externí připojení: Handshake selhal."
 
 #: src/LibSocketAsio.cpp
+#, fuzzy, c-format
+msgid "WARNING: network interface '%s' is gone - traffic is no longer bound to it and may leave via the default route."
+msgstr "VAROVÁNÍ: nepodařilo se navázat na síťové rozhraní '%s' - provoz může odcházet přes výchozí trasu."
+
+#: src/LibSocketAsio.cpp
 #, c-format
 msgid "Error creating UDP socket %s %d : %s"
 msgstr "Chyba vytváření UDP socketu %s %d : %s"
@@ -4580,7 +4585,8 @@ msgid "Bind to network interface (empty for any):"
 msgstr "Vázat na síťové rozhraní (prázdné pro libovolné):"
 
 #: src/muuli_wdr.cpp
-msgid "Advanced users only: pin all of aMule's traffic to one network interface, chosen from the list or typed in by name (e.g. tun0, eth0, en0) or index. Unlike binding to an IP, this stops traffic leaking out via the default route - useful with a VPN. Requires no elevated privileges."
+#, fuzzy
+msgid "Advanced users only: pin aMule's peer-to-peer traffic, and its HTTP updates where the platform allows, to one network interface, chosen from the list or typed in by name (e.g. tun0, eth0, en0) or index. Unlike binding to an IP, this stops traffic leaking out via the default route - useful with a VPN. On Linux before kernel 5.7 it needs the CAP_NET_RAW capability."
 msgstr "Pouze pro pokročilé uživatele: připoutá veškerý provoz aMule k jednomu síťovému rozhraní, vybranému ze seznamu nebo zadanému názvem (např. tun0, eth0, en0) či indexem. Na rozdíl od vázání na IP adresu toto zabraňuje úniku provozu přes výchozí trasu - užitečné při použití VPN. Nevyžaduje zvýšená oprávnění."
 
 #: src/muuli_wdr.cpp
