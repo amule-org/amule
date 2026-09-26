@@ -63,8 +63,7 @@ bool BackendRemove();
 wxString AutostartManager::GetCanonicalExecutablePath()
 {
 	// wxStandardPaths::GetExecutablePath() wraps the OS native call; on POSIX we then resolve
-	// intermediate symlinks via realpath(), so AppImage / .app bundle moves are detected
-	// correctly.
+	// intermediate symlinks via realpath(), so a moved install or .app bundle is detected.
 	wxString raw = wxStandardPaths::Get().GetExecutablePath();
 
 #ifndef __WXMSW__
@@ -83,44 +82,134 @@ wxString AutostartManager::GetCanonicalExecutablePath()
 	return raw;
 }
 
+// The aMule program a registered target starts, by the rule AppRun applies to an AppImage name:
+// amuled and amulegui by name, anything else the monolithic amule. Covers .exe, .app and .AppImage
+// names alike, so each OS store can tell whose entry it holds.
+static wxString ProgramOf(const wxString &target)
+{
+	wxString name = wxFileName(target).GetFullName().Lower();
+	for (const char *suffix : { ".exe", ".app", ".appimage" }) {
+		name.EndsWith(suffix, &name);
+	}
+	for (const char *suffix : { "-x64", "-arm64", "-x86_64", "-aarch64" }) {
+		name.EndsWith(suffix, &name);
+	}
+	name.EndsWith("-linux", &name);
+	if (name == "amuled" || name == "amulegui") {
+		return name;
+	}
+	return "amule";
+}
+
+static bool SameTarget(const wxString &a, const wxString &b)
+{
+#ifdef __WXMSW__
+	// Registry values can round-trip with a different case.
+	return a.IsSameAs(b, false);
+#else
+	return a == b;
+#endif
+}
+
+wxString AutostartManager::GetTarget()
+{
+	// Resolved once: Enable() can run long after startup, when the working directory an AppImage's
+	// relative ARGV0 was given against may have changed.
+	static const wxString target = [] {
+		const wxString exe = GetCanonicalExecutablePath();
+#if defined(__WXMAC__) || defined(__WXOSX__)
+#ifndef AMULE_DAEMON
+		// The GUIs start through their .app, which keeps Gatekeeper quiet at login. amuled lives
+		// inside aMule.app too, but opening the bundle would start the GUI instead.
+		const int idx = exe.Find(".app/");
+		if (idx != wxNOT_FOUND) {
+			return exe.Mid(0, idx + 4);
+		}
+#endif
+#elif !defined(__WXMSW__)
+		// Under an AppImage the executable sits in a mount that goes away on exit. Register what
+		// the AppImage was started as: AppRun picks the binary from that name, so a symlink named
+		// amuled stays amuled.
+		wxString appImage;
+		if (wxGetEnv("APPIMAGE", &appImage) && !appImage.empty()) {
+			wxString argv0;
+			if (wxGetEnv("ARGV0", &argv0) && !argv0.empty()) {
+				wxFileName invoked(argv0);
+				if (!argv0.Contains("/")) {
+					wxPathList path;
+					path.AddEnvList("PATH");
+					invoked.Assign(path.FindAbsoluteValidPath(argv0));
+				}
+				invoked.MakeAbsolute();
+				if (invoked.FileExists() &&
+					ProgramOf(invoked.GetFullPath()) == ProgramOf(exe)) {
+					return invoked.GetFullPath();
+				}
+			}
+			if (ProgramOf(appImage) == ProgramOf(exe)) {
+				return appImage;
+			}
+			// Nothing on disk starts this program; registering the mount would break at the next
+			// login, and the AppImage itself would start another program.
+			return wxString();
+		}
+#endif
+		return exe;
+	}();
+	return target;
+}
+
 bool AutostartManager::IsEnabled()
 {
-	return !BackendReadTargetPath().empty();
+	const wxString registered = BackendReadTargetPath();
+	return !registered.empty() && ProgramOf(registered) == ProgramOf(GetTarget());
 }
 
 bool AutostartManager::Enable()
 {
-	wxString exe = GetCanonicalExecutablePath();
-	if (exe.empty()) {
-		wxLogDebug(wxT("AutostartManager::Enable: no executable path resolved, refusing to write a "
-			       "broken entry"));
+	const wxString target = GetTarget();
+	if (target.empty()) {
+		wxLogDebug(wxT("AutostartManager::Enable: no startable path for this program, refusing to "
+			       "write a broken entry"));
 		return false;
 	}
-	return BackendWrite(exe);
+	return BackendWrite(target);
 }
 
 bool AutostartManager::Disable()
 {
+	const wxString registered = BackendReadTargetPath();
+	if (registered.empty() || ProgramOf(registered) != ProgramOf(GetTarget())) {
+		// Nothing registered for this program. The one entry per user may belong to another
+		// aMule program, and turning this one off must not remove that.
+		return true;
+	}
 	return BackendRemove();
 }
 
 void AutostartManager::SelfHealOnStartup()
 {
-	wxString registered = BackendReadTargetPath();
+	const wxString registered = BackendReadTargetPath();
 	if (registered.empty()) {
 		// No entry -- user chose not to autostart, or never enabled it.
 		// Don't second-guess.
 		return;
 	}
 
-	wxString canonical = GetCanonicalExecutablePath();
-	if (canonical.empty()) {
-		// Couldn't resolve the running binary's path; best to leave
+	const wxString target = GetTarget();
+	if (target.empty()) {
+		// Couldn't resolve a startable path; best to leave
 		// the existing entry alone rather than blow it away.
 		return;
 	}
 
-	if (registered == canonical) {
+	if (ProgramOf(registered) != ProgramOf(target)) {
+		// Another aMule program's entry: amule, amuled and amulegui share the one per-user slot,
+		// and running one of them must not take over what the user set up for another.
+		return;
+	}
+
+	if (SameTarget(registered, target)) {
 		// Already pointing at us, nothing to do.
 		return;
 	}
@@ -129,8 +218,8 @@ void AutostartManager::SelfHealOnStartup()
 	// did not rewrite the entry), so rewrite it to the current canonical path.
 	wxLogDebug(wxT("AutostartManager::SelfHealOnStartup: rewriting autostart entry from '%s' to '%s'"),
 		registered.c_str(),
-		canonical.c_str());
-	BackendWrite(canonical);
+		target.c_str());
+	BackendWrite(target);
 }
 
 // --------------------------------------------------------------------
@@ -228,9 +317,9 @@ bool BackendRemove()
 
 #elif defined(__WXMAC__) || defined(__WXOSX__)
 
-// macOS: per-user LaunchAgent. The registered command is `/usr/bin/open -a <aMule.app>` rather than
-// the bare Mach-O, which sidesteps Gatekeeper / quarantine warnings when launchd activates us at
-// login.
+// macOS: per-user LaunchAgent. The GUIs register `/usr/bin/open -a <aMule.app>` rather than the bare
+// Mach-O, which sidesteps Gatekeeper / quarantine warnings when launchd activates us at login. amuled
+// registers its own binary: opening the bundle it ships in would start the GUI.
 static const wxString PLIST_LABEL = wxT("org.amule.amule");
 
 static wxString PlistPath()
@@ -253,38 +342,27 @@ wxString BackendReadTargetPath()
 	f.ReadAll(&content, wxConvUTF8);
 	f.Close();
 
-	// The ProgramArguments array written below is /usr/bin/open, -a, then the .app path, so the
-	// third <string> is the registered target. Plist XML is simple enough that regex extraction
-	// beats a full parser dependency.
-	wxRegEx re(wxT("<string>([^<]+)</string>"), wxRE_ADVANCED);
-	if (!re.IsValid()) {
+	// The target is the last ProgramArguments string: the .app after `/usr/bin/open -a`, or the
+	// daemon binary on its own. Plist XML is simple enough that regex extraction beats a full
+	// parser dependency.
+	wxRegEx re(wxT("<key>ProgramArguments</key>\\s*<array>(.*?)</array>"), wxRE_ADVANCED);
+	if (!re.IsValid() || !re.Matches(content)) {
 		return wxEmptyString;
 	}
-	wxString cursor = content;
-	for (int i = 0; i < 3; ++i) {
-		if (!re.Matches(cursor)) {
-			return wxEmptyString;
-		}
-		if (i == 2) {
-			return re.GetMatch(cursor, 1);
-		}
+	wxString args = re.GetMatch(content, 1);
+	wxRegEx str(wxT("<string>([^<]+)</string>"), wxRE_ADVANCED);
+	wxString last;
+	while (str.IsValid() && str.Matches(args)) {
 		size_t start = 0, len = 0;
-		re.GetMatch(&start, &len, 0);
-		cursor = cursor.Mid(start + len);
+		str.GetMatch(&start, &len, 0);
+		last = str.GetMatch(args, 1);
+		args = args.Mid(start + len);
 	}
-	return wxEmptyString;
+	return last;
 }
 
-bool BackendWrite(const wxString &canonicalExe)
+bool BackendWrite(const wxString &target)
 {
-	// Convert the canonical exe path to its containing .app bundle:
-	// `/Applications/aMule.app/Contents/MacOS/amule` -> `/Applications/aMule.app`.
-	wxString appBundle = canonicalExe;
-	int idx = appBundle.Find(wxT(".app/"));
-	if (idx != wxNOT_FOUND) {
-		appBundle = appBundle.Mid(0, idx + 4); // keep ".app"
-	}
-
 	wxString dir = wxGetUserHome() + wxT("/Library/LaunchAgents");
 	if (!wxFileName::DirExists(dir)) {
 		if (!wxFileName::Mkdir(dir, 0755, wxPATH_MKDIR_FULL)) {
@@ -302,9 +380,11 @@ bool BackendWrite(const wxString &canonicalExe)
 	xml << wxT("    <string>") << PLIST_LABEL << wxT("</string>\n");
 	xml << wxT("    <key>ProgramArguments</key>\n");
 	xml << wxT("    <array>\n");
-	xml << wxT("        <string>/usr/bin/open</string>\n");
-	xml << wxT("        <string>-a</string>\n");
-	xml << wxT("        <string>") << appBundle << wxT("</string>\n");
+	if (target.EndsWith(".app")) {
+		xml << wxT("        <string>/usr/bin/open</string>\n");
+		xml << wxT("        <string>-a</string>\n");
+	}
+	xml << wxT("        <string>") << target << wxT("</string>\n");
 	xml << wxT("    </array>\n");
 	xml << wxT("    <key>RunAtLoad</key>\n");
 	xml << wxT("    <true/>\n");
