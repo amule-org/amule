@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-26 11:42+0100\n"
+"POT-Creation-Date: 2026-09-26 12:29+0100\n"
 "PO-Revision-Date: 2026-09-26 09:25+0000\n"
 "Last-Translator: Dévai Tamás <gonosztopi@amule.org>\n"
 "Language-Team: Hungarian <hu@li.org>\n"
@@ -8422,11 +8422,10 @@ msgstr "Fájl letöltése."
 
 #: src/TextClient.cpp
 msgid ""
-"The number of a file from the last search has to be given.\n"
-"Example: 'download 12' will start to download the file with the number 12 of the previous search.\n"
+"Give the number of a file as listed by 'results', optionally followed by a search id.\n"
+"Without an id, the number refers to the last 'results' output, or to the most recently started search if nothing was listed yet.\n"
+"Example: 'download 12' downloads file 12 of the last results; 'download 12 3' downloads file 12 of search 3.\n"
 msgstr ""
-"Az utolsó keresésből a fájl sorszámát kell megadni.\n"
-"Pl: 'download 12' az előző keresésből a 12-es sorszámú fájlt fogja letölteni.\n"
 
 #: src/TextClient.cpp
 msgid "Pause download."
@@ -9369,6 +9368,13 @@ msgstr "Úgy tűnik, az aMule fut. Zárd be, majd futtasd újra az eltávolító
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Felhasználói adatok eltávolítása innen: $APPDATA\\aMule..."
+
+#~ msgid ""
+#~ "The number of a file from the last search has to be given.\n"
+#~ "Example: 'download 12' will start to download the file with the number 12 of the previous search.\n"
+#~ msgstr ""
+#~ "Az utolsó keresésből a fájl sorszámát kell megadni.\n"
+#~ "Pl: 'download 12' az előző keresésből a 12-es sorszámú fájlt fogja letölteni.\n"
 
 #, fuzzy
 #~ msgid "Ratio"

@@ -15,7 +15,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-26 11:42+0100\n"
+"POT-Creation-Date: 2026-09-26 12:29+0100\n"
 "PO-Revision-Date: 2026-09-26 09:29+0000\n"
 "Last-Translator: Marcelo Jimenez <mroberto@users.sourceforge.com>\n"
 "Language-Team: Português (Brasileiro) <pt@li.org>\n"
@@ -8431,11 +8431,10 @@ msgstr "Iniciar download de um arquivo"
 
 #: src/TextClient.cpp
 msgid ""
-"The number of a file from the last search has to be given.\n"
-"Example: 'download 12' will start to download the file with the number 12 of the previous search.\n"
+"Give the number of a file as listed by 'results', optionally followed by a search id.\n"
+"Without an id, the number refers to the last 'results' output, or to the most recently started search if nothing was listed yet.\n"
+"Example: 'download 12' downloads file 12 of the last results; 'download 12 3' downloads file 12 of search 3.\n"
 msgstr ""
-"O número de um arquivo de uma última busca poderá ser obtido.\n"
-"Exemplo: 'download 12' começará a baixar o arquivo com o número 12 da busca anterior.\n"
 
 #: src/TextClient.cpp
 msgid "Pause download."
@@ -9384,6 +9383,13 @@ msgstr "O aMule parece estar rodando. Por favor, feche-o e rode o desinstalador 
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Removendo os dados do usuário em $APPDATA\\aMule..."
+
+#~ msgid ""
+#~ "The number of a file from the last search has to be given.\n"
+#~ "Example: 'download 12' will start to download the file with the number 12 of the previous search.\n"
+#~ msgstr ""
+#~ "O número de um arquivo de uma última busca poderá ser obtido.\n"
+#~ "Exemplo: 'download 12' começará a baixar o arquivo com o número 12 da busca anterior.\n"
 
 #~ msgid "Wildcard patterns separated by '|', e.g. .DS_Store|Thumbs.db|*.tmp. Files whose name matches are not shared. Matching is case-insensitive."
 #~ msgstr "Caracteres curinga separados por '|', e.g. .DS_Store|Thumbs.db|*.tmp. Arquivos cujos nomes corresponderem não serão compartilhados. A correspondência é sensível à letra maiúscula/minúscula."

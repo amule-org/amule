@@ -7,7 +7,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: es\n"
-"POT-Creation-Date: 2026-09-25 16:39+0100\n"
+"POT-Creation-Date: 2026-09-26 12:38+0100\n"
 "PO-Revision-Date: 2026-09-26 09:34+0000\n"
 "Last-Translator: Mad-Soft <mad.soft@gmail.com>\n"
 "Language-Team: Spanish <es_ES@li.org>\n"
@@ -529,8 +529,8 @@ msgstr "Comenzar a descargar un archivo."
 
 #. type: Plain text
 #: amulecmd.1.in
-msgid "The I<E<lt>numberE<gt>> of a file from the last search has to be given.  Example: 'download 12' will start to download the file with the number 12 of the previous search."
-msgstr "Debe proporcionarse el I<E<lt>numberE<gt>> de un fichero de la última búsqueda.  Ejemplo: 'download 12' empezará a descargar el archivo con el número 12 de la búsqueda previa."
+msgid "Give the I<E<lt>numberE<gt>> of a file as listed by B<results>, optionally followed by a search I<E<lt>idE<gt>> (as printed by B<search>). Without an id, the number refers to the last B<results> output, or to the most recently started search if nothing was listed yet.  Example: 'download 12' downloads file 12 of the last results; 'download 12 3' downloads file 12 of search 3."
+msgstr ""
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -1433,6 +1433,9 @@ msgstr "B<wxcas> es un programa para mostrar el contenido de la firma online en 
 #: ../../src/utils/wxCas/docs/wxcas.1.in
 msgid "Based on Pedro de Oliveira's B<cas>(1).  B<wxcas> was written by ThePolish E<lt>thepolish@vipmail.ruE<gt>"
 msgstr "Basado en B<cas>(1) de Pedro de Oliveira.  B<wxcas> fue escrito por ThePolish E<lt>thepolish@vipmail.ruE<gt>"
+
+#~ msgid "The I<E<lt>numberE<gt>> of a file from the last search has to be given.  Example: 'download 12' will start to download the file with the number 12 of the previous search."
+#~ msgstr "Debe proporcionarse el I<E<lt>numberE<gt>> de un fichero de la última búsqueda.  Ejemplo: 'download 12' empezará a descargar el archivo con el número 12 de la búsqueda previa."
 
 #~ msgid "[B<-t> I<E<lt>numE<gt>>]"
 #~ msgstr "[B<-t> I<E<lt>numE<gt>>]"

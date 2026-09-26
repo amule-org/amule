@@ -12,7 +12,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-26 11:42+0100\n"
+"POT-Creation-Date: 2026-09-26 12:29+0100\n"
 "PO-Revision-Date: 2026-09-26 09:28+0000\n"
 "Last-Translator: Marcel Pol <marcel@timelord.nl>\n"
 "Language-Team: Dutch <nl@li.org>\n"
@@ -8429,11 +8429,10 @@ msgstr "Begin met downloaden van een bestand"
 
 #: src/TextClient.cpp
 msgid ""
-"The number of a file from the last search has to be given.\n"
-"Example: 'download 12' will start to download the file with the number 12 of the previous search.\n"
+"Give the number of a file as listed by 'results', optionally followed by a search id.\n"
+"Without an id, the number refers to the last 'results' output, or to the most recently started search if nothing was listed yet.\n"
+"Example: 'download 12' downloads file 12 of the last results; 'download 12 3' downloads file 12 of search 3.\n"
 msgstr ""
-"Het nummer van een bestand uit de laatste zoekopdracht moet gegeven worden.\n"
-"Voorbeeld: 'download 12' begint het bestand met nummer 12 uit de vorige zoekopdracht te downloaden.\n"
 
 #: src/TextClient.cpp
 msgid "Pause download."
@@ -9385,6 +9384,13 @@ msgstr "aMule lijkt te worden uitgevoerd. Sluit het en voer het verwijderprogram
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Gebruikersgegevens op $APPDATA\\aMule worden verwijderd..."
+
+#~ msgid ""
+#~ "The number of a file from the last search has to be given.\n"
+#~ "Example: 'download 12' will start to download the file with the number 12 of the previous search.\n"
+#~ msgstr ""
+#~ "Het nummer van een bestand uit de laatste zoekopdracht moet gegeven worden.\n"
+#~ "Voorbeeld: 'download 12' begint het bestand met nummer 12 uit de vorige zoekopdracht te downloaden.\n"
 
 #~ msgid "Wildcard patterns separated by '|', e.g. .DS_Store|Thumbs.db|*.tmp. Files whose name matches are not shared. Matching is case-insensitive."
 #~ msgstr "Jokertekenpatronen gescheiden door '|', bijv. .DS_Store|Thumbs.db|*.tmp. Bestanden waarvan de naam overeenkomt, worden niet gedeeld. Overeenkomst is niet hoofdlettergevoelig."

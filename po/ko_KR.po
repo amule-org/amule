@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-26 11:42+0100\n"
+"POT-Creation-Date: 2026-09-26 12:29+0100\n"
 "PO-Revision-Date: 2026-09-26 09:27+0000\n"
 "Last-Translator: Hyunju Kang <rexington@gmail.com>\n"
 "Language-Team: Korean <hoenny@daum.net>\n"
@@ -8547,11 +8547,10 @@ msgstr "파일의 내려받기를 시작"
 
 #: src/TextClient.cpp
 msgid ""
-"The number of a file from the last search has to be given.\n"
-"Example: 'download 12' will start to download the file with the number 12 of the previous search.\n"
+"Give the number of a file as listed by 'results', optionally followed by a search id.\n"
+"Without an id, the number refers to the last 'results' output, or to the most recently started search if nothing was listed yet.\n"
+"Example: 'download 12' downloads file 12 of the last results; 'download 12 3' downloads file 12 of search 3.\n"
 msgstr ""
-"마지막 검색으로부터 파일의 번호가 부여됩니다.\n"
-"예: 'download 12' 는 이전 검색에서 12번 번호를 가진 파일의 내려받기를 시작합니다.\n"
 
 #: src/TextClient.cpp
 msgid "Pause download."
@@ -9491,6 +9490,13 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#~ msgid ""
+#~ "The number of a file from the last search has to be given.\n"
+#~ "Example: 'download 12' will start to download the file with the number 12 of the previous search.\n"
+#~ msgstr ""
+#~ "마지막 검색으로부터 파일의 번호가 부여됩니다.\n"
+#~ "예: 'download 12' 는 이전 검색에서 12번 번호를 가진 파일의 내려받기를 시작합니다.\n"
 
 #, fuzzy
 #~ msgid "Ratio"

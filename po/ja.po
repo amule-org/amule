@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-26 11:42+0100\n"
+"POT-Creation-Date: 2026-09-26 12:29+0100\n"
 "PO-Revision-Date: 2026-09-26 09:26+0000\n"
 "Last-Translator: \n"
 "Language-Team: Japanese\n"
@@ -8476,11 +8476,10 @@ msgstr "ファイルのダウンロードを開始します"
 
 #: src/TextClient.cpp
 msgid ""
-"The number of a file from the last search has to be given.\n"
-"Example: 'download 12' will start to download the file with the number 12 of the previous search.\n"
+"Give the number of a file as listed by 'results', optionally followed by a search id.\n"
+"Without an id, the number refers to the last 'results' output, or to the most recently started search if nothing was listed yet.\n"
+"Example: 'download 12' downloads file 12 of the last results; 'download 12 3' downloads file 12 of search 3.\n"
 msgstr ""
-"以前の検索からファイル番号を選んで指定しなければなりません。\n"
-"例： 'download 12'は以前の検索結果で12として指定されたファイルのダウンロードを開始します。\n"
 
 #: src/TextClient.cpp
 msgid "Pause download."
@@ -9420,6 +9419,13 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#~ msgid ""
+#~ "The number of a file from the last search has to be given.\n"
+#~ "Example: 'download 12' will start to download the file with the number 12 of the previous search.\n"
+#~ msgstr ""
+#~ "以前の検索からファイル番号を選んで指定しなければなりません。\n"
+#~ "例： 'download 12'は以前の検索結果で12として指定されたファイルのダウンロードを開始します。\n"
 
 #, fuzzy
 #~ msgid "Ratio"

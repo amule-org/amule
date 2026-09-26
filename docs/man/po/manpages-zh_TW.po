@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule Manual zh_TW\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-25 16:39+0100\n"
+"POT-Creation-Date: 2026-09-26 12:38+0100\n"
 "PO-Revision-Date: 2026-09-26 09:35+0000\n"
 "Last-Translator: Wayne Su <mstarmstar@gmail.com>\n"
 "Language-Team: \n"
@@ -536,8 +536,8 @@ msgstr "開始下載檔案。"
 
 #. type: Plain text
 #: amulecmd.1.in
-msgid "The I<E<lt>numberE<gt>> of a file from the last search has to be given.  Example: 'download 12' will start to download the file with the number 12 of the previous search."
-msgstr "I<E<lt>編號E<gt>> 指上次搜尋檔案時的結果。例如：「download 12」會下載上次搜尋時編號 12 的檔案。"
+msgid "Give the I<E<lt>numberE<gt>> of a file as listed by B<results>, optionally followed by a search I<E<lt>idE<gt>> (as printed by B<search>). Without an id, the number refers to the last B<results> output, or to the most recently started search if nothing was listed yet.  Example: 'download 12' downloads file 12 of the last results; 'download 12 3' downloads file 12 of search 3."
+msgstr ""
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -1451,6 +1451,9 @@ msgstr "B<wxcas> 是可以在桌面以更佳的 wx 視窗顯示你的 aMule 線�
 #: ../../src/utils/wxCas/docs/wxcas.1.in
 msgid "Based on Pedro de Oliveira's B<cas>(1).  B<wxcas> was written by ThePolish E<lt>thepolish@vipmail.ruE<gt>"
 msgstr "改寫自 Pedro de Oliveira 的 B<cas>(1)， B<wxcas>的作者：ThePolish E<lt>thepolish@vipmail.ruE<gt>"
+
+#~ msgid "The I<E<lt>numberE<gt>> of a file from the last search has to be given.  Example: 'download 12' will start to download the file with the number 12 of the previous search."
+#~ msgstr "I<E<lt>編號E<gt>> 指上次搜尋檔案時的結果。例如：「download 12」會下載上次搜尋時編號 12 的檔案。"
 
 #~ msgid "[B<-t> I<E<lt>numE<gt>>]"
 #~ msgstr "[B<-t> I<E<lt>號碼E<gt>>]"

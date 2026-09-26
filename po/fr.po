@@ -15,7 +15,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-26 11:42+0100\n"
+"POT-Creation-Date: 2026-09-26 12:29+0100\n"
 "PO-Revision-Date: 2026-09-26 09:24+0000\n"
 "Last-Translator: Dylan Aïssi <bob.dybian@gmail.com>\n"
 "Language-Team: Français\n"
@@ -8437,11 +8437,10 @@ msgstr "Démarrer le téléchargement d'un fichier"
 
 #: src/TextClient.cpp
 msgid ""
-"The number of a file from the last search has to be given.\n"
-"Example: 'download 12' will start to download the file with the number 12 of the previous search.\n"
+"Give the number of a file as listed by 'results', optionally followed by a search id.\n"
+"Without an id, the number refers to the last 'results' output, or to the most recently started search if nothing was listed yet.\n"
+"Example: 'download 12' downloads file 12 of the last results; 'download 12 3' downloads file 12 of search 3.\n"
 msgstr ""
-"Le rang du fichier de la dernière recherche doit être donné.\n"
-"Exemple : 'download 12' va télécharger le douzième fichier de la précédente recherche.\n"
 
 #: src/TextClient.cpp
 msgid "Pause download."
@@ -9390,6 +9389,13 @@ msgstr "aMule semble être en cours d'exécution. Veuillez le fermer et relancer
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Suppression des données d'utilisateur sur $APPDATA\\aMule…"
+
+#~ msgid ""
+#~ "The number of a file from the last search has to be given.\n"
+#~ "Example: 'download 12' will start to download the file with the number 12 of the previous search.\n"
+#~ msgstr ""
+#~ "Le rang du fichier de la dernière recherche doit être donné.\n"
+#~ "Exemple : 'download 12' va télécharger le douzième fichier de la précédente recherche.\n"
 
 #~ msgid "Wildcard patterns separated by '|', e.g. .DS_Store|Thumbs.db|*.tmp. Files whose name matches are not shared. Matching is case-insensitive."
 #~ msgstr "Motifs de caractères génériques séparés par '|', par exemple .DS_Store|Thumbs.db|*.tmp. Les fichiers dont le nom correspond ne seront pas partagés. La correspondance est insensible à la casse."

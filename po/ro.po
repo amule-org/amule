@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-26 11:42+0100\n"
+"POT-Creation-Date: 2026-09-26 12:29+0100\n"
 "PO-Revision-Date: 2026-09-26 09:30+0000\n"
 "Last-Translator: Angelescu Constantin <titus0818@yahoo.com>\n"
 "Language-Team: English <kde-i18n-doc@kde.org>\n"
@@ -8530,11 +8530,10 @@ msgstr "Pornește descărcarea unui fișier"
 
 #: src/TextClient.cpp
 msgid ""
-"The number of a file from the last search has to be given.\n"
-"Example: 'download 12' will start to download the file with the number 12 of the previous search.\n"
+"Give the number of a file as listed by 'results', optionally followed by a search id.\n"
+"Without an id, the number refers to the last 'results' output, or to the most recently started search if nothing was listed yet.\n"
+"Example: 'download 12' downloads file 12 of the last results; 'download 12 3' downloads file 12 of search 3.\n"
 msgstr ""
-"Trebuie dat numărul unui fișier de la ultima căutare.\n"
-"Exemplu: 'descarcă 12' va porni descărcarea fișierului cu numărului 12 a căutării anterioare.\n"
 
 #: src/TextClient.cpp
 msgid "Pause download."
@@ -9477,6 +9476,13 @@ msgstr "Se pare că aMule rulează. Închideți-l și rulați din nou dezinstala
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Se elimină datele utilizatorului de la $APPDATA\\aMule..."
+
+#~ msgid ""
+#~ "The number of a file from the last search has to be given.\n"
+#~ "Example: 'download 12' will start to download the file with the number 12 of the previous search.\n"
+#~ msgstr ""
+#~ "Trebuie dat numărul unui fișier de la ultima căutare.\n"
+#~ "Exemplu: 'descarcă 12' va porni descărcarea fișierului cu numărului 12 a căutării anterioare.\n"
 
 #, fuzzy
 #~ msgid "Ratio"

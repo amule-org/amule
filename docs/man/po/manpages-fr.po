@@ -9,7 +9,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
-"POT-Creation-Date: 2026-09-25 16:39+0100\n"
+"POT-Creation-Date: 2026-09-26 12:38+0100\n"
 "PO-Revision-Date: 2026-09-26 09:35+0000\n"
 "Last-Translator: Dylan Aïssi <bob.dybian@gmail.com>\n"
 "Language-Team: Français\n"
@@ -530,8 +530,8 @@ msgstr "Commencer à télécharger un fichier."
 
 #. type: Plain text
 #: amulecmd.1.in
-msgid "The I<E<lt>numberE<gt>> of a file from the last search has to be given.  Example: 'download 12' will start to download the file with the number 12 of the previous search."
-msgstr "Le I<E<lt>numéroE<gt>> d'un fichier à partir de la dernière recherche doit être donné.  Exemple : 'download 12' va commencer à télécharger le fichier avec le numéro 12 de la recherche précédente."
+msgid "Give the I<E<lt>numberE<gt>> of a file as listed by B<results>, optionally followed by a search I<E<lt>idE<gt>> (as printed by B<search>). Without an id, the number refers to the last B<results> output, or to the most recently started search if nothing was listed yet.  Example: 'download 12' downloads file 12 of the last results; 'download 12 3' downloads file 12 of search 3."
+msgstr ""
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -1434,6 +1434,9 @@ msgstr "B<wxcas> est un programme permettant d'afficher le contenu de votre fich
 #: ../../src/utils/wxCas/docs/wxcas.1.in
 msgid "Based on Pedro de Oliveira's B<cas>(1).  B<wxcas> was written by ThePolish E<lt>thepolish@vipmail.ruE<gt>"
 msgstr "Basé sur B<cas>(1) de Pedro de Oliveira. B<wxcas> a été écrit par ThePolish E<lt>thepolish@vipmail.ruE<gt>"
+
+#~ msgid "The I<E<lt>numberE<gt>> of a file from the last search has to be given.  Example: 'download 12' will start to download the file with the number 12 of the previous search."
+#~ msgstr "Le I<E<lt>numéroE<gt>> d'un fichier à partir de la dernière recherche doit être donné.  Exemple : 'download 12' va commencer à télécharger le fichier avec le numéro 12 de la recherche précédente."
 
 #~ msgid "[B<-t> I<E<lt>numE<gt>>]"
 #~ msgstr "[B<-t> I<E<lt>numE<gt>>]"

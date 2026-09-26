@@ -15,7 +15,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-26 11:42+0100\n"
+"POT-Creation-Date: 2026-09-26 12:29+0100\n"
 "PO-Revision-Date: 2026-09-26 09:22+0000\n"
 "Last-Translator: Diego Heras <ngosang@hotmail.es>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/amule/amule-application/es/>\n"
@@ -8438,11 +8438,10 @@ msgstr "Empezar a descargar un archivo"
 
 #: src/TextClient.cpp
 msgid ""
-"The number of a file from the last search has to be given.\n"
-"Example: 'download 12' will start to download the file with the number 12 of the previous search.\n"
+"Give the number of a file as listed by 'results', optionally followed by a search id.\n"
+"Without an id, the number refers to the last 'results' output, or to the most recently started search if nothing was listed yet.\n"
+"Example: 'download 12' downloads file 12 of the last results; 'download 12 3' downloads file 12 of search 3.\n"
 msgstr ""
-"Se tiene que dar el número de un archivo de la última búsqueda.\n"
-"Ejemplo: 'download 12' inicia la descarga del archivo con el número 12 de la búsqueda anterior.\n"
 
 #: src/TextClient.cpp
 msgid "Pause download."
@@ -9391,6 +9390,13 @@ msgstr "aMule parece estar en ejecución. Por favor, ciérrelo y vuelva a ejecut
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Eliminando los datos de usuario en $APPDATA\\aMule..."
+
+#~ msgid ""
+#~ "The number of a file from the last search has to be given.\n"
+#~ "Example: 'download 12' will start to download the file with the number 12 of the previous search.\n"
+#~ msgstr ""
+#~ "Se tiene que dar el número de un archivo de la última búsqueda.\n"
+#~ "Ejemplo: 'download 12' inicia la descarga del archivo con el número 12 de la búsqueda anterior.\n"
 
 #~ msgid "Wildcard patterns separated by '|', e.g. .DS_Store|Thumbs.db|*.tmp. Files whose name matches are not shared. Matching is case-insensitive."
 #~ msgstr "Patrones comodines separados por '|', p.ej., .DS_Store|Thumbs.db|*.tmp. Los archivos cuyo nombre coincida no serán compartidos. No distingue mayúsculas/minúsculas."

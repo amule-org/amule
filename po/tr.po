@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-26 11:42+0100\n"
+"POT-Creation-Date: 2026-09-26 12:29+0100\n"
 "PO-Revision-Date: 2026-09-26 09:33+0000\n"
 "Last-Translator: \n"
 "Language-Team: Turkish <li@li.org>\n"
@@ -8430,11 +8430,10 @@ msgstr "Dosyayı indirmeye başla."
 
 #: src/TextClient.cpp
 msgid ""
-"The number of a file from the last search has to be given.\n"
-"Example: 'download 12' will start to download the file with the number 12 of the previous search.\n"
+"Give the number of a file as listed by 'results', optionally followed by a search id.\n"
+"Without an id, the number refers to the last 'results' output, or to the most recently started search if nothing was listed yet.\n"
+"Example: 'download 12' downloads file 12 of the last results; 'download 12 3' downloads file 12 of search 3.\n"
 msgstr ""
-"Son arama sonucunda elde edilen dosya numarası verilmelidir.\n"
-"Örnek: '12 İndir' bir önceki aramadaki 12 numaralı dosyayı indirmeye başlayacaktır.\n"
 
 #: src/TextClient.cpp
 msgid "Pause download."
@@ -9383,6 +9382,13 @@ msgstr "aMule çalışmakta gibi görünüyor. Lütfen onu kapatıp kurulum prog
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Kullanıcı verileri $APPDATA\\aMule konumunda kaldırılıyor…"
+
+#~ msgid ""
+#~ "The number of a file from the last search has to be given.\n"
+#~ "Example: 'download 12' will start to download the file with the number 12 of the previous search.\n"
+#~ msgstr ""
+#~ "Son arama sonucunda elde edilen dosya numarası verilmelidir.\n"
+#~ "Örnek: '12 İndir' bir önceki aramadaki 12 numaralı dosyayı indirmeye başlayacaktır.\n"
 
 #~ msgid "Wildcard patterns separated by '|', e.g. .DS_Store|Thumbs.db|*.tmp. Files whose name matches are not shared. Matching is case-insensitive."
 #~ msgstr "'|' ile ayrılmış joker karakterli örüntüler (mesela .DS_Store|Thumbs.db|*.tmp). İsmi eşleşen dosyalar paylaşılmaz. Eşleştirme sırasında büyük/küçük harf ayrımı yapılmaz."

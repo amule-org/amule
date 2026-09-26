@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-26 11:42+0100\n"
+"POT-Creation-Date: 2026-09-26 12:29+0100\n"
 "PO-Revision-Date: 2026-09-26 09:19+0000\n"
 "Last-Translator: astur <malditoastur@gmail.com>\n"
 "Language-Team: Language ast <malditoastur@gmail.com>\n"
@@ -8462,11 +8462,10 @@ msgstr "Entamar descargando un ficheru"
 
 #: src/TextClient.cpp
 msgid ""
-"The number of a file from the last search has to be given.\n"
-"Example: 'download 12' will start to download the file with the number 12 of the previous search.\n"
+"Give the number of a file as listed by 'results', optionally followed by a search id.\n"
+"Without an id, the number refers to the last 'results' output, or to the most recently started search if nothing was listed yet.\n"
+"Example: 'download 12' downloads file 12 of the last results; 'download 12 3' downloads file 12 of search 3.\n"
 msgstr ""
-"El númberu d'un ficheru de la cabera gueta tien de dase.\n"
-"Exemplu: 'download 12' aniciará la descarga del ficheru col númberu 12 de la gueta anterior.\n"
 
 #: src/TextClient.cpp
 msgid "Pause download."
@@ -9409,6 +9408,13 @@ msgstr "Paez qu'aMule ta n'execución. Zárralu y vuelvi a executar el desinstal
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Desaniciando datos d'usuariu en $APPDATA\\aMule..."
+
+#~ msgid ""
+#~ "The number of a file from the last search has to be given.\n"
+#~ "Example: 'download 12' will start to download the file with the number 12 of the previous search.\n"
+#~ msgstr ""
+#~ "El númberu d'un ficheru de la cabera gueta tien de dase.\n"
+#~ "Exemplu: 'download 12' aniciará la descarga del ficheru col númberu 12 de la gueta anterior.\n"
 
 #, fuzzy
 #~ msgid "Ratio"

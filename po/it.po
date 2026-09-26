@@ -19,7 +19,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule 2.3.3\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-26 11:42+0100\n"
+"POT-Creation-Date: 2026-09-26 12:29+0100\n"
 "PO-Revision-Date: 2026-09-26 09:26+0000\n"
 "Last-Translator: got3nks <got3nks@users.noreply.github.com>\n"
 "Language-Team: SebastianoPistore.info@protonmail.ch\n"
@@ -8444,11 +8444,10 @@ msgstr "Scarica un file"
 
 #: src/TextClient.cpp
 msgid ""
-"The number of a file from the last search has to be given.\n"
-"Example: 'download 12' will start to download the file with the number 12 of the previous search.\n"
+"Give the number of a file as listed by 'results', optionally followed by a search id.\n"
+"Without an id, the number refers to the last 'results' output, or to the most recently started search if nothing was listed yet.\n"
+"Example: 'download 12' downloads file 12 of the last results; 'download 12 3' downloads file 12 of search 3.\n"
 msgstr ""
-"Bisogna fornire il numero del file relativo all'ultima ricerca.\n"
-"Esempio: 'download 12' aggiungerà alla coda dei download il file col numero 12 trovato dall'ultima ricerca.\n"
 
 #: src/TextClient.cpp
 msgid "Pause download."
@@ -9397,6 +9396,13 @@ msgstr "Sembra che aMule sia in esecuzione. Chiudilo e riavvia il programma di d
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Rimozione dei dati utente in $APPDATA\\aMule..."
+
+#~ msgid ""
+#~ "The number of a file from the last search has to be given.\n"
+#~ "Example: 'download 12' will start to download the file with the number 12 of the previous search.\n"
+#~ msgstr ""
+#~ "Bisogna fornire il numero del file relativo all'ultima ricerca.\n"
+#~ "Esempio: 'download 12' aggiungerà alla coda dei download il file col numero 12 trovato dall'ultima ricerca.\n"
 
 #~ msgid "Wildcard patterns separated by '|', e.g. .DS_Store|Thumbs.db|*.tmp. Files whose name matches are not shared. Matching is case-insensitive."
 #~ msgstr "Modelli con caratteri jolly separati da '|', ad es. .DS_Store|Thumbs.db|*.tmp. I file il cui nome corrisponde non vengono condivisi. La corrispondenza non distingue tra maiuscole e minuscole."

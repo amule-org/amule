@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-26 11:42+0100\n"
+"POT-Creation-Date: 2026-09-26 12:29+0100\n"
 "PO-Revision-Date: 2026-09-26 09:21+0000\n"
 "Last-Translator: Werner Mahr <werner@vollstreckernet.de>\n"
 "Language-Team: German <>\n"
@@ -8503,11 +8503,10 @@ msgstr "Beginne, eine Datei herunterzuladen."
 
 #: src/TextClient.cpp
 msgid ""
-"The number of a file from the last search has to be given.\n"
-"Example: 'download 12' will start to download the file with the number 12 of the previous search.\n"
+"Give the number of a file as listed by 'results', optionally followed by a search id.\n"
+"Without an id, the number refers to the last 'results' output, or to the most recently started search if nothing was listed yet.\n"
+"Example: 'download 12' downloads file 12 of the last results; 'download 12 3' downloads file 12 of search 3.\n"
 msgstr ""
-"Die Nummer einer Datei aus der letzten Suche muss angegeben sein.\n"
-"Beispiel: 'download 12' beginnt das Herunterladen der Datei Nr. 12 der letzten Suche.\n"
 
 #: src/TextClient.cpp
 msgid "Pause download."
@@ -9458,6 +9457,13 @@ msgstr "aMule scheint zu laufen. Bitte schließen und das Entfernprogram erneut 
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Entferne Benutzerdaten von $APPDATA\\aMule..."
+
+#~ msgid ""
+#~ "The number of a file from the last search has to be given.\n"
+#~ "Example: 'download 12' will start to download the file with the number 12 of the previous search.\n"
+#~ msgstr ""
+#~ "Die Nummer einer Datei aus der letzten Suche muss angegeben sein.\n"
+#~ "Beispiel: 'download 12' beginnt das Herunterladen der Datei Nr. 12 der letzten Suche.\n"
 
 #, fuzzy
 #~ msgid "Ratio"

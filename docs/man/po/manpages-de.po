@@ -4,7 +4,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: manpages-de\n"
-"POT-Creation-Date: 2026-09-25 16:39+0100\n"
+"POT-Creation-Date: 2026-09-26 12:38+0100\n"
 "PO-Revision-Date: 2026-09-26 09:34+0000\n"
 "Last-Translator: Balla Marcell <marcell.balla@gmx.at>\n"
 "Language-Team: German <kde-i18n-de@kde.org>\n"
@@ -597,11 +597,10 @@ msgstr "Trennt die Verbindung zu allen Netzwerken mit denen du verbunden bist, o
 msgid "Start downloading a file."
 msgstr "Startet den Download einer Datei."
 
-# type: Plain text
 #. type: Plain text
 #: amulecmd.1.in
-msgid "The I<E<lt>numberE<gt>> of a file from the last search has to be given.  Example: 'download 12' will start to download the file with the number 12 of the previous search."
-msgstr "Die I<E<lt>NummerE<gt>> einer Datei aus der letzten Suche muss angegeben werden.  Beispiel: 'download 12' startet den Download der Datei, die in der letzten Suche die Nummer 12 hatte."
+msgid "Give the I<E<lt>numberE<gt>> of a file as listed by B<results>, optionally followed by a search I<E<lt>idE<gt>> (as printed by B<search>). Without an id, the number refers to the last B<results> output, or to the most recently started search if nothing was listed yet.  Example: 'download 12' downloads file 12 of the last results; 'download 12 3' downloads file 12 of search 3."
+msgstr ""
 
 # type: Plain text
 #. type: Plain text
@@ -1633,6 +1632,10 @@ msgstr "B<wxcas> ist ein Programm zum Anzeigen des Inhaltes deiner Online Signat
 #: ../../src/utils/wxCas/docs/wxcas.1.in
 msgid "Based on Pedro de Oliveira's B<cas>(1).  B<wxcas> was written by ThePolish E<lt>thepolish@vipmail.ruE<gt>"
 msgstr "Basierend auf Pedro de Oliveira's B<cas>(1).  B<wxcas> wurde geschrieben von ThePolish E<lt>thepolish@vipmail.ruE<gt>"
+
+# type: Plain text
+#~ msgid "The I<E<lt>numberE<gt>> of a file from the last search has to be given.  Example: 'download 12' will start to download the file with the number 12 of the previous search."
+#~ msgstr "Die I<E<lt>NummerE<gt>> einer Datei aus der letzten Suche muss angegeben werden.  Beispiel: 'download 12' startet den Download der Datei, die in der letzten Suche die Nummer 12 hatte."
 
 # type: TP
 #~ msgid "[B<-t> I<E<lt>numE<gt>>]"

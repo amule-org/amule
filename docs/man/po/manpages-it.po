@@ -7,7 +7,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: aMule SVN\n"
-"POT-Creation-Date: 2026-09-25 16:39+0100\n"
+"POT-Creation-Date: 2026-09-26 12:38+0100\n"
 "PO-Revision-Date: 2026-09-26 09:35+0000\n"
 "Last-Translator: Sebastiano Pistore <SebastianoPistore.info@protonmail.ch>\n"
 "Language-Team: none\n"
@@ -604,11 +604,10 @@ msgstr "Disconnette da tutte le reti attualmente connesse, o disconnette solo da
 msgid "Start downloading a file."
 msgstr "Inizia il download di un file."
 
-# type: Plain text
 #. type: Plain text
 #: amulecmd.1.in
-msgid "The I<E<lt>numberE<gt>> of a file from the last search has to be given.  Example: 'download 12' will start to download the file with the number 12 of the previous search."
-msgstr "Deve essere fornito il I<E<lt>numeroE<gt>> di un file dall'ultima ricerca.Esempio: 'download 12' inizierà il download del file numero 12 della ricerca precedente."
+msgid "Give the I<E<lt>numberE<gt>> of a file as listed by B<results>, optionally followed by a search I<E<lt>idE<gt>> (as printed by B<search>). Without an id, the number refers to the last B<results> output, or to the most recently started search if nothing was listed yet.  Example: 'download 12' downloads file 12 of the last results; 'download 12 3' downloads file 12 of search 3."
+msgstr ""
 
 # type: Plain text
 #. type: Plain text
@@ -1672,6 +1671,10 @@ msgstr "B<wxcas> è un programma per visualizzare i contenuti del file di firma 
 #: ../../src/utils/wxCas/docs/wxcas.1.in
 msgid "Based on Pedro de Oliveira's B<cas>(1).  B<wxcas> was written by ThePolish E<lt>thepolish@vipmail.ruE<gt>"
 msgstr "Basato su B<cas>(1) di Pedro de Oliveira.  B<wxcas> è stato scritto da ThePolish E<lt>thepolish@vipmail.ruE<gt>"
+
+# type: Plain text
+#~ msgid "The I<E<lt>numberE<gt>> of a file from the last search has to be given.  Example: 'download 12' will start to download the file with the number 12 of the previous search."
+#~ msgstr "Deve essere fornito il I<E<lt>numeroE<gt>> di un file dall'ultima ricerca.Esempio: 'download 12' inizierà il download del file numero 12 della ricerca precedente."
 
 # type: Plain text
 #~ msgid "[B<-t> I<E<lt>numE<gt>>]"
