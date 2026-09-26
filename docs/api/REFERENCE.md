@@ -1082,7 +1082,7 @@ The swap moves the client between two files' source lists, so an SSE subscriber 
 
 **Auth:** `ADMIN`
 
-Adds one or more ed2k links to the transfer queue.
+Adds one or more ed2k or magnet links to the transfer queue. amuled converts a magnet to an ed2k link; it needs the ed2k hash (`xt=urn:ed2k:`), the size (`xl`) and ideally the name (`dn`).
 
 **Body:**
 
@@ -1111,7 +1111,7 @@ curl -s -X POST -H "Authorization: Bearer $TOKEN" \
 }
 ```
 
-**Errors:** `400 bad_request` (malformed body, non-string link, link not starting with `ed2k://`), `503 ec_unavailable`.
+**Errors:** `400 bad_request` (malformed body, non-string link, link starting with neither `ed2k://` nor `magnet:`), `503 ec_unavailable`.
 
 #### `PATCH /api/v1/downloads`
 

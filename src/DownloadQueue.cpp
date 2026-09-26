@@ -1448,7 +1448,7 @@ bool CDownloadQueue::AddLink(const wxString &link, uint8 category)
 		}
 	}
 
-	if (uri.compare(0, 7, "ed2k://") == 0) {
+	if (uri.Left(7).IsSameAs("ed2k://", false)) {
 		return AddED2KLink(uri, category);
 	} else {
 		AddLogLineC(CFormat(_("Unknown protocol of link: %s")) % link);

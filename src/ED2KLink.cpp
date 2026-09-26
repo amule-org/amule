@@ -165,8 +165,9 @@ CED2KFileLink::CED2KFileLink(const wxString &link)
 	wxStringTokenizer tokens(link, "|", wxTOKEN_RET_EMPTY_ALL);
 
 	// Must at least be ed2k://|file|NAME|SIZE|HASH|/
-	if (tokens.CountTokens() < 5 || tokens.GetNextToken() != "ed2k://" ||
-		tokens.GetNextToken() != "file") {
+	// Scheme and type in any letter case, as ParseLink() matches them.
+	if (tokens.CountTokens() < 5 || !tokens.GetNextToken().IsSameAs("ed2k://", false) ||
+		!tokens.GetNextToken().IsSameAs("file", false)) {
 		throw wxString("Not a valid file link");
 	}
 

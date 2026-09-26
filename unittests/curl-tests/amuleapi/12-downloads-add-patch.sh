@@ -366,6 +366,39 @@ _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	"$API/downloads/$TEST_HASH"
 _assert_status 200 "PATCH (restore pre-mutation state) → 200"
 
+# --- 8. Magnet and upper-case links, then removed again. ----------
+# amuled converts a magnet itself; the API only checks the scheme, in any case.
+_add_and_remove() {
+	local link=$1 hash=$2 label=$3 seen=0
+	_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+		-H "Content-Type: application/json" \
+		-d "{\"links\":[\"$link\"]}" "$API/downloads"
+	_assert_status 202 "POST /downloads ($label) → 202"
+	_assert_json_eq '.results[0].ok' true "POST /downloads ($label) results[0].ok==true"
+	for _ in $(seq 1 25); do
+		_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/downloads?status=all"
+		if printf '%s' "$CURL_BODY" \
+		   | jq -e --arg h "$hash" '.downloads[] | select(.hash == $h)' >/dev/null 2>&1; then
+			seen=1
+			break
+		fi
+		sleep 0.2
+	done
+	if [ "$seen" = "1" ]; then
+		_pass "$label surfaced in /downloads"
+	else
+		_fail "$label never surfaced in /downloads"
+	fi
+	_curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" "$API/downloads/$hash"
+	_assert_status 204 "DELETE /downloads/{$label} → 204"
+}
+MAGNET_HASH="3f1c2a9d8e7b6a5f4e3d2c1b0a998877"
+_add_and_remove "magnet:?xt=urn:ed2k:$MAGNET_HASH&xl=1048576&dn=amuleapi-regtest-magnet.bin" \
+	"$MAGNET_HASH" "magnet"
+UPPER_HASH="3f1c2a9d8e7b6a5f4e3d2c1b0a998866"
+_add_and_remove "ED2K://|file|amuleapi-regtest-upper.bin|1048576|$UPPER_HASH|/" \
+	"$UPPER_HASH" "upper-case ED2K://"
+
 # --- Summary. -----------------------------------------------------
 echo
 if [ "$FAIL_COUNT" -eq 0 ]; then

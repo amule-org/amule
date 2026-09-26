@@ -4706,7 +4706,7 @@ CHttpServer::Response CApiDispatcher::HandleDownloadAdd(const CHttpServer::Reque
 	if (auto r = RequireSnapshot(m_state))
 		return *r;
 
-	// Body shape: {"links": ["ed2k://|file|...|/", ...], "category_index": 0}.
+	// Body shape: {"links": ["ed2k://|file|...|/" or "magnet:?...", ...], "category_index": 0}.
 	picojson::value root;
 	std::string parse_err;
 	if (!ParseJsonObjectBody(req.body, root, parse_err)) {
@@ -4731,11 +4731,13 @@ CHttpServer::Response CApiDispatcher::HandleDownloadAdd(const CHttpServer::Reque
 			if (it_array == obj.end()) {
 				return ErrorResponse(400,
 					"bad_request",
-					"required field missing: `links` (array of ed2k:// strings)");
+					"required field missing: `links` (array of ed2k:// or magnet: "
+					"links)");
 			}
 			if (!it_array->second.is<picojson::array>()) {
-				return ErrorResponse(
-					400, "bad_request", "`links` must be an array of ed2k://strings");
+				return ErrorResponse(400,
+					"bad_request",
+					"`links` must be an array of ed2k:// or magnet: links");
 			}
 			const auto &arr = it_array->second.get<picojson::array>();
 			if (arr.empty()) {
@@ -4752,10 +4754,15 @@ CHttpServer::Response CApiDispatcher::HandleDownloadAdd(const CHttpServer::Reque
 				links.push_back(v.get<std::string>());
 			}
 		}
+		// Schemes are case-insensitive. amuled converts a magnet itself, as for amulecmd add.
+		const auto hasScheme = [](const std::string &link, const char *scheme) {
+			const size_t n = std::strlen(scheme);
+			return link.size() >= n && strncasecmp(link.c_str(), scheme, n) == 0;
+		};
 		for (const auto &link : links) {
-			if (link.size() < 7 || link.compare(0, 7, "ed2k://") != 0) {
+			if (!hasScheme(link, "ed2k://") && !hasScheme(link, "magnet:")) {
 				return ErrorResponse(
-					400, "bad_request", "every link must start with ed2k://");
+					400, "bad_request", "every link must start with ed2k:// or magnet:");
 			}
 		}
 	}

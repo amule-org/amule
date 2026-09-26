@@ -129,7 +129,9 @@ function Toolbar({ route, onLogout }) {
     if (!value) return;
 
     const links = [];
-    const regex = /(ed2k:\/\/\|file\|.+?\|\/|magnet:\?.+?(?=\s*(?:ed2k:\/\/|magnet:|$)))/gi;
+    // File, server and server-list links, a file link's "|sources,...|/" suffix
+    // included, and magnets.
+    const regex = /(ed2k:\/\/\|(?:file|server|serverlist)\|.+?\|\/(?:\|sources,[^|\s]*\|\/)?|magnet:\?.+?(?=\s*(?:ed2k:\/\/|magnet:|$)))/gi;
     let match;
     while ((match = regex.exec(value)) !== null) {
       links.push(match[1].trim());

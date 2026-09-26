@@ -578,7 +578,7 @@ int CamulecmdApp::ProcessCommand(int CmdId)
 		break;
 
 	case CMD_ID_ADDLINK:
-		if (args.StartsWith("ed2k://")) {
+		if (args.Left(7).IsSameAs("ed2k://", false)) {
 			// aMule doesn't like AICH links without |/| in front of h=
 			if (args.Find("|h=") > -1 && args.Find("|/|h=") == -1) {
 				args.Replace("|h=", "|/|h=");
