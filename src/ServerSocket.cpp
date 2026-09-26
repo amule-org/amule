@@ -98,9 +98,8 @@ void CServerSocket::OnConnect(int nErrorCode)
 
 	// Only what the server itself answered counts against it, because CS_SERVERDEAD raises its
 	// failed count and a server past the "remove dead servers" threshold is deleted for good. A
-	// refused connection, or a SYN accepted in silence, is evidence about that server.
+	// refused connection is evidence about that server.
 	case boost::system::errc::connection_refused:
-	case boost::system::errc::timed_out:
 		m_bIsDeleting = true;
 		SetConnectionState(CS_SERVERDEAD);
 		serverconnect->DestroySocket(this);
@@ -117,6 +116,10 @@ void CServerSocket::OnConnect(int nErrorCode)
 	// really stopped routing is still counted by the UDP status pings, which have their own
 	// AddFailedCount().
 	//
+	// timed_out is silence, which a dead link gives too. aMule's own CONSERVTIMEOUT counts
+	// nothing, and whether the OS gives up first depends on the platform (about 21 s on Windows,
+	// 75 s on macOS, 127 s on Linux), so counting it emptied the list on Windows alone.
+	//
 	// The rest are unambiguous local socket faults and were never about the server.
 	//
 	// Deliberately not CS_FATALERROR: that calls StopConnectionTry() and waits
@@ -128,6 +131,7 @@ void CServerSocket::OnConnect(int nErrorCode)
 	case boost::system::errc::bad_address:
 	case boost::system::errc::host_unreachable:
 	case boost::system::errc::invalid_argument:
+	case boost::system::errc::timed_out:
 		m_bIsDeleting = true;
 		SetConnectionState(CS_ERROR);
 		serverconnect->DestroySocket(this);

@@ -901,7 +901,12 @@ private:
 		if (!wrapper) {
 			AddDebugLogLineF(logAsio, CFormat("HandleConnect: wrapper gone %s") % m_IP);
 		} else {
-			CoreNotify_LibSocketConnect(wrapper, err.value());
+			// The handlers compare against boost::system::errc, which Windows does not report
+			// directly: its WSAECONNREFUSED is 10061, not ECONNREFUSED.
+			const boost::system::error_condition condition = err.default_error_condition();
+			CoreNotify_LibSocketConnect(wrapper,
+				condition.category() == boost::system::generic_category() ? condition.value()
+											  : err.value());
 			if (m_OK) {
 				// After connect also send a OUTPUT event to show data is available
 				CoreNotify_LibSocketSend(wrapper, 0);
