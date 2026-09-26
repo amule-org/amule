@@ -14,7 +14,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-09-23 12:47+0100\n"
-"PO-Revision-Date: 2026-09-25 11:29+0000\n"
+"PO-Revision-Date: 2026-09-26 09:34+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
 "Language: zh_CN\n"
@@ -2016,7 +2016,7 @@ msgstr "下载 (%i)"
 #: src/DownloadListCtrl.cpp src/TransferWnd.cpp
 #, c-format
 msgid "Total queue size: %s"
-msgstr "总下载大小： %s"
+msgstr "队列总大小：%s"
 
 #: src/DownloadQueue.cpp
 #, c-format
@@ -3139,7 +3139,7 @@ msgstr "节点（%u）"
 
 #: src/KadDlg.cpp
 msgid "Invalid ip to bootstrap"
-msgstr "无效 IP"
+msgstr "无效的引导 ip"
 
 #: src/KadDlg.cpp
 msgid "Invalid port to bootstrap"
@@ -3171,7 +3171,7 @@ msgstr "Kad：搜索关键词太短"
 
 #: src/kademlia/kademlia/SearchManager.cpp
 msgid "Kademlia: Search keyword is already on search list: "
-msgstr "Kademila：搜索关键词已经在搜索列表中： "
+msgstr "Kademlia：搜索关键词已经在搜索列表中： "
 
 #: src/kademlia/routing/RoutingZone.cpp
 msgid "Failed to read nodes.dat file - too old. This version (0) is not supported anymore."
@@ -3265,7 +3265,7 @@ msgstr "在已知文件列表载入条目失败，文件可能损坏"
 
 #: src/KnownFileList.cpp
 msgid "Invalid entry in known file list, file may be corrupt: "
-msgstr "已知文件列表包含非法条目，文件可能损坏："
+msgstr "已知文件列表包含无效条目，文件可能损坏： "
 
 #: src/LanguageList.cpp
 msgid "System default"
@@ -3471,7 +3471,7 @@ msgstr "密码无效，不是一个 MD5 哈希值！"
 #: src/libs/ec/cpp/RemoteConnect.cpp
 #, c-format
 msgid "Could not resolve %s to an IPv4 address."
-msgstr "无法解析 %s 到 IPv4 地址。"
+msgstr "无法将 %s 解析为 IPv4 地址。"
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "Connection failure"
@@ -3511,7 +3511,7 @@ msgstr "成功！已经建立连接。"
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "External Connection: Access denied because: "
-msgstr "远程连接：访问被拒绝，原因："
+msgstr "远程连接：访问被拒绝，原因： "
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "External Connection: Handshake failed."
@@ -5242,7 +5242,7 @@ msgstr "节点 (0)"
 
 #: src/muuli_wdr.cpp
 msgid "Enter the url to a nodes.dat file here and press the button to the left to update the list of known nodes."
-msgstr "输入 nodes.dat 文件的地址并按左边的按钮以更新已知节点列表"
+msgstr "在此输入 nodes.dat 文件的地址并按左边的按钮以更新已知节点列表。"
 
 #: src/muuli_wdr.cpp
 msgid "Nodes stats"
@@ -5250,7 +5250,7 @@ msgstr "节点状态"
 
 #: src/muuli_wdr.cpp
 msgid "Bootstrap from node: IP"
-msgstr "从 node: IP 启动"
+msgstr "从节点引导：IP"
 
 #: src/muuli_wdr.cpp
 msgid "Enter the IP of the node here, using the x.x.x.x format."
@@ -5274,7 +5274,7 @@ msgstr "支持模糊协议"
 
 #: src/muuli_wdr.cpp
 msgid "This option enabled Protocol Obfuscation, and makes aMule accept obfuscated connections from other clients."
-msgstr "此选项启用了模糊协议，可让aMule接受其他用户用迷糊协议的连接"
+msgstr "此选项启用了协议混淆，可让aMule接受来自其他客户端的混淆连接。"
 
 #: src/muuli_wdr.cpp
 msgid "Use obfuscation for outgoing connections"
@@ -5318,7 +5318,7 @@ msgstr "过滤用户"
 
 #: src/muuli_wdr.cpp
 msgid "Enable filtering of the client IPs defined in the file ~/.aMule/ipfilter.dat."
-msgstr "过滤在文件~/.aMule/ipfilter.dat中定义的用户IP"
+msgstr "启用过滤文件 ~/.aMule/ipfilter.dat 中定义的客户端 IP。"
 
 #: src/muuli_wdr.cpp
 msgid "Filter servers"
@@ -5326,7 +5326,7 @@ msgstr "过滤服务器"
 
 #: src/muuli_wdr.cpp
 msgid "Enable filtering of the server IPs defined in the file ~/.aMule/ipfilter.dat."
-msgstr "过滤在文件~/.aMule/ipfilter.dat中定义的服务器IP"
+msgstr "启用过滤文件 ~/.aMule/ipfilter.dat 中定义的服务器 IP。"
 
 #: src/muuli_wdr.cpp
 msgid "Reload List"
@@ -6310,7 +6310,7 @@ msgstr "- 更改了外部连接接口。\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- Protocol obfuscation support changed.\n"
-msgstr "- 模糊协议支持已更改。\n"
+msgstr "- 混淆协议支持已更改。\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- Proxy settings changed (needed for HTTP transfers).\n"
@@ -6900,17 +6900,17 @@ msgstr "连接已断开 %s（%s：%i）"
 #: src/ServerConnect.cpp
 #, c-format
 msgid "%s (%s:%i) appears to be dead."
-msgstr "%s（%s：%i）可能已当机"
+msgstr "%s（%s:%i）可能已当机。"
 
 #: src/ServerConnect.cpp
 #, c-format
 msgid "%s (%s:%i) appears to be full."
-msgstr "%s（%s：%i）可能已没有空位"
+msgstr "%s（%s:%i）可能已没有空位。"
 
 #: src/ServerConnect.cpp
 #, c-format
 msgid "Connecting to %s (%s:%i) failed."
-msgstr "连接失败 %s（%s：%i）"
+msgstr "连接 %s（%s:%i）失败。"
 
 #: src/ServerConnect.cpp
 msgid "ERROR: Socket invalid at timeout check"
@@ -6919,7 +6919,7 @@ msgstr "错误：连接超时，端口无效"
 #: src/ServerConnect.cpp
 #, c-format
 msgid "Connection attempt to %s (%s:%i) timed out."
-msgstr "连接超时 %s（%s：%i）"
+msgstr "连接 %s（%s:%i）的尝试超时。"
 
 #: src/ServerConnect.cpp
 msgid "Received late result of DNS lookup, discarding."
@@ -6952,8 +6952,8 @@ msgstr "Server.met 文件损坏，发现错误的版本标记：0x%x，大小 %i
 #, c-format
 msgid "%i server in server.met found"
 msgid_plural "%i servers in server.met found"
-msgstr[0] "server.met 中找到%i个服务器"
-msgstr[1] "server.met 中找到%i个服务器"
+msgstr[0] "server.met 中找到 %i 个服务器"
+msgstr[1] "server.met 中找到 %i 个服务器"
 
 #: src/ServerList.cpp
 #, c-format
@@ -6983,12 +6983,12 @@ msgstr "没有添加服务器：[%s:%d] IP 地址无效或被过滤。"
 #: src/ServerList.cpp
 #, c-format
 msgid "Server not added: Server with matching IP:Port [%s:%d] found in list."
-msgstr "没有添加服务器： 服务器列表中已有[%s：%d]"
+msgstr "没有添加服务器： 服务器列表中已有[%s:%d]"
 
 #: src/ServerList.cpp
 #, c-format
 msgid "Server added: Server at [%s:%d] using the name '%s'."
-msgstr "成功添加服务器：[%s:%d] 服务器名为 '%s'"
+msgstr "成功添加服务器：[%s:%d] 服务器名为 '%s'。"
 
 #: src/ServerList.cpp
 msgid "You are connected to the server you are trying to delete. please disconnect first."
@@ -7019,7 +7019,7 @@ msgstr "从%s下载服务器列表完成"
 
 #: src/ServerList.cpp
 msgid "No server list address entry in 'addresses.dat' found. Please paste a valid server list address into this file in order to auto-update your server list"
-msgstr "addresses.dat文件内没有服务器列表地址，请粘贴一个有效服务器列表地址到该文件以自动更新服务器列表."
+msgstr "addresses.dat文件内没有服务器列表地址，请粘贴一个有效服务器列表地址到该文件以自动更新服务器列表。"
 
 #: src/ServerList.cpp
 #, c-format
@@ -8279,7 +8279,7 @@ msgid ""
 "Valid filtering levels are in the range 0-255, and it's default (initial)\n"
 "value is 127.\n"
 msgstr ""
-"正确的 IP 过滤级别是在0-255之间，\n"
+"有效的 IP 过滤级别是在0-255之间，\n"
 "默认（初始）值是127。\n"
 
 #: src/TextClient.cpp

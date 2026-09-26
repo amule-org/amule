@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2026-06-10 16:45+0200\n"
-"PO-Revision-Date: 2026-09-25 11:31+0000\n"
+"PO-Revision-Date: 2026-09-26 09:36+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
 "Language: cs\n"
@@ -405,7 +405,7 @@ msgstr "Nevypisovat nic na standardní výstup."
 #. type: Plain text
 #: amulecmd.1.in:50 amuleweb.1.in:67
 msgid "Be verbose - show also debug messages."
-msgstr "Vypisovat podrobnosti - včetně zpráv ladění."
+msgstr "Zapnout podrobný výstup včetně ladicích zpráv."
 
 #. type: TP
 #: amulecmd.1.in:50 amuleweb.1.in:67
@@ -594,7 +594,7 @@ msgstr ""
 #. type: Plain text
 #: amulecmd.1.in:151
 msgid "Reload shared files list."
-msgstr "Opětovně načte seznam sdílených souborů."
+msgstr "Znovu načíst seznam sdílených souborů."
 
 #. type: Plain text
 #: amulecmd.1.in:153
@@ -704,7 +704,7 @@ msgstr "Zobrazit frontu stahování."
 #. type: Plain text
 #: amulecmd.1.in:212
 msgid "Show log."
-msgstr "Zobrazit log."
+msgstr "Zobrazit protokol."
 
 #. type: Plain text
 #: amulecmd.1.in:214
@@ -1071,7 +1071,7 @@ msgstr ""
 #. type: Plain text
 #: amuleweb.1.in:114
 msgid "Disable PHP interpreter (deprecated)"
-msgstr "Zakázat PHP interpreter (zastaralé)"
+msgstr "Zakázat interpret PHP (zastaralé)"
 
 #. type: Plain text
 #: amuleweb.1.in:117
@@ -1139,7 +1139,7 @@ msgstr ""
 #: ed2k.1.in:1
 #, no-wrap
 msgid "ED2K"
-msgstr "ED2K"
+msgstr "eD2k"
 
 #. type: TH
 #: ed2k.1.in:1

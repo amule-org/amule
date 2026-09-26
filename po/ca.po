@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-09-23 12:47+0100\n"
-"PO-Revision-Date: 2026-09-25 11:14+0000\n"
+"PO-Revision-Date: 2026-09-26 09:19+0000\n"
 "Last-Translator: minterior <minterior@gmail.com>\n"
 "Language-Team: Català\n"
 "Language: ca\n"
@@ -41,7 +41,9 @@ msgstr "Versió:"
 msgid ""
 "'All-Platform' p2p client based on eMule \n"
 "\n"
-msgstr "Client P2P 'Multiplataforma' basat en eMule \n"
+msgstr ""
+"Client P2P 'Multiplataforma' basat en eMule \n"
+"\n"
 
 #: src/AboutDialog.cpp
 msgid ""
@@ -364,24 +366,21 @@ msgid "WARNING"
 msgstr "AVÍS"
 
 #: src/amule.cpp
-#, fuzzy
 msgid "Loading known files"
-msgstr "S'estan carregant els fitxers temporals"
+msgstr "S'estan carregant els fitxers coneguts"
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Loading known files (%u of %u)"
-msgstr "S'estan carregant els fitxers temporals (%u de %u)"
+msgstr "S'estan carregant els fitxers coneguts (%u de %u)"
 
 #: src/amule.cpp
-#, fuzzy
 msgid "Loading credits"
-msgstr "S'estan carregant els fitxers compartits"
+msgstr "S'estan carregant els crèdits"
 
 #: src/amule.cpp
-#, fuzzy
 msgid "Loading IP filter"
-msgstr "S'estan carregant els fitxers temporals"
+msgstr "S'està carregant el filtre IP"
 
 #: src/amule.cpp
 msgid "Initializing network"
@@ -451,7 +450,7 @@ msgstr "No s'ha pogut escriure el testimoni EC d'amuleapi a %s; amuleapi recorre
 #: src/amule.cpp
 #, c-format
 msgid "amuleapi running on pid %d"
-msgstr "amuleapi executant-se al pid %d"
+msgstr "amuleapi s'està executant amb pid %d"
 
 #: src/amule.cpp
 msgid "You requested to run amuleapi on startup, but the amuleapi binary cannot be run. Please install the package containing aMule's REST API server, or build aMule from source with -DBUILD_AMULEAPI=YES and install it."
@@ -497,7 +496,7 @@ msgstr "No s'ha pogut crear el fitxer de la signatura en línia de l'aMule"
 
 #: src/amule.cpp
 msgid "The selected locale seems not to be installed on your box. (Note: I'll try to set it anyway)"
-msgstr "L'idioma seleccionat no està instal·lat al PC. (Nota: s'intentarà establir igualment)"
+msgstr "Sembla que la configuració regional seleccionada no està instal·lada al vostre dispositiu. (Nota: intentaré configurar-la de totes maneres)"
 
 #: src/amule.cpp
 #, c-format
@@ -1240,9 +1239,9 @@ msgid "Failed to create incoming dir for category. Please specify a valid path!"
 msgstr "No s'ha pogut crear el carpeta d'entrada per a la categoria. Si us plau, especifiqueu un directori vàlid!"
 
 #: src/ChatSelector.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Chat-Session Started: %s - %s %s"
-msgstr "S'ha iniciat una sessió de xat: %s (%s:%u) - %s %s"
+msgstr "S'ha iniciat una sessió de xat: %s - %s %s"
 
 #: src/ChatSelector.cpp
 msgid "*** Connected to Client ***"
@@ -1250,7 +1249,7 @@ msgstr "*** Connectat amb el client ***"
 
 #: src/ChatSelector.cpp
 msgid "*** Chat unavailable: peer identity or route is not available ***"
-msgstr ""
+msgstr "*** Xat no disponible: la identitat o la ruta del client no estan disponibles ***"
 
 #: src/ChatSelector.cpp
 msgid "*** Connecting to Client ***"
@@ -1310,12 +1309,11 @@ msgstr "Envia un missatge"
 
 #: src/ClientContextActions.cpp
 msgid "Chat is unavailable until the peer supplies a valid identity."
-msgstr ""
+msgstr "El xat no està disponible fins que el client no proporcioni una identitat vàlida."
 
 #: src/ClientContextActions.cpp
-#, fuzzy
 msgid "Chat unavailable"
-msgstr "No disponible"
+msgstr "Xat no disponible"
 
 #: src/ClientContextActions.cpp
 msgid "Send message to user"
@@ -1807,7 +1805,7 @@ msgstr "En progrés"
 
 #: src/DataToText.cpp
 msgid "ERROR: Out of disk space"
-msgstr "ERROR: Sense espai al disc"
+msgstr "ERROR: sense espai al disc"
 
 #: src/DataToText.cpp
 msgid "ERROR: Partmet not found"
@@ -2361,7 +2359,7 @@ msgstr "Destinatari de xat desconegut"
 
 #: src/ExternalConn.cpp
 msgid "Chat unavailable: peer identity or route is not available"
-msgstr ""
+msgstr "Xat no disponible: la identitat o la ruta del client no estan disponibles"
 
 #: src/ExternalConn.cpp
 msgid "Kad is disabled in preferences."
@@ -4792,27 +4790,24 @@ msgid "Follow symbolic links in shared folders"
 msgstr "Segueix els enllaços simbòlics de les carpetes compartides"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Exclude files and folders matching:"
-msgstr "Exclou els fitxers que coincideixin amb:"
+msgstr "Exclou els fitxers i les carpetes que coincideixin amb:"
 
 #: src/muuli_wdr.cpp
 msgid "Files and folders whose name matches are not shared. A matching folder inside a share that includes its subfolders is skipped with everything in it; a folder you share yourself is always shared. Matching is case-insensitive. As wildcards: patterns separated by '|', e.g. .DS_Store|Thumbs.db|*.tmp, where '*' matches any run of characters and '?' a single one. Tick the box below to write one regular expression instead."
-msgstr ""
+msgstr "Els fitxers i les carpetes el nom dels quals coincideixi no es comparteixen. Una carpeta coincident dins d'una compartició que inclou les subcarpetes s'omet amb tot el que conté; una carpeta que compartiu vós mateix sempre es comparteix. La coincidència no distingeix entre majúscules i minúscules. Com a comodins: patrons separats per «|», per exemple .DS_Store|Thumbs.db|*.tmp, on «*» coincideix amb qualsevol seqüència de caràcters i «?» amb un de sol. Marqueu la casella de sota per escriure-hi una sola expressió regular."
 
 #: src/muuli_wdr.cpp
 msgid "Patterns are regular expressions"
 msgstr "Els patrons són expressions regulars"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "When set, the whole field is one regular expression: '|' is alternation, and '*' and '?' take their regular-expression meaning rather than the wildcard one. When unset, it is a list of '|'-separated wildcards."
-msgstr "Quan està activat, tot el camp és una sola expressió regular («|» és alternança). Quan està desactivat, és una llista de comodins separats per «|»."
+msgstr "Quan està activat, tot el camp és una sola expressió regular: «|» és alternança, i «*» i «?» tenen el seu significat d'expressió regular en lloc del de comodí. Quan està desactivat, és una llista de comodins separats per «|»."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Show how many of the files and folders in your shared folders the current pattern would exclude, counted over the last scan."
-msgstr "Mostra quants fitxers compartits excloria el patró actual."
+msgstr "Mostra quants fitxers i carpetes de les vostres carpetes compartides excloiria el patró actual, comptats a partir de l'última exploració."
 
 #: src/muuli_wdr.cpp
 msgid "When the connected core's files live on a different machine, map a path prefix it reports to where that filesystem is reachable from here (a network share, say) so \"Open\" and \"Show in folder\" work."
@@ -5012,7 +5007,7 @@ msgstr "Orientació vertical de la barra d'eines"
 
 #: src/muuli_wdr.cpp
 msgid "Live column sorting (auto-reorder rows as their values change)"
-msgstr "Ordenació de columnes en directe (reordena les files a mesura que canvien els valors)"
+msgstr "Ordenació de columnes en directe (reordena les files automàticament quan canvien els valors)"
 
 #: src/muuli_wdr.cpp
 msgid "Download Queue Files"
@@ -5096,11 +5091,11 @@ msgstr "Hi ha una contrasenya definida."
 
 #: src/muuli_wdr.cpp
 msgid "Enable guest access"
-msgstr "Activa l'accés de convidat"
+msgstr "Habilita l'accés de convidat"
 
 #: src/muuli_wdr.cpp
 msgid "Guest sessions may read status and listings but cannot change anything. Turning this off clears the stored guest password."
-msgstr "Les sessions de convidat poden llegir l'estat i els llistats però no poden canviar res. Desactivar-ho esborra la contrasenya de convidat desada."
+msgstr "Les sessions de convidat poden llegir l'estat i els llistats, però no poden canviar res. En desactivar-ho s'esborra la contrasenya de convidat desada."
 
 #: src/muuli_wdr.cpp
 msgid "Guest password"
@@ -5746,7 +5741,7 @@ msgstr "dies"
 #: src/OtherFunctions.cpp
 #, c-format
 msgid "%u kbps"
-msgstr ""
+msgstr "%u kbps"
 
 #. TRANSLATORS:
 #. Punctuation for a "label: value" pair. %s is the already-translated
@@ -6272,7 +6267,7 @@ msgstr "L'expressió regular no és vàlida"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Guest access needs a password. Type one in the guest password field, or untick Enable guest access."
-msgstr "L'accés de convidat necessita una contrasenya. Escriviu-ne una al camp de contrasenya de convidat, o desmarqueu Activa l'accés de convidat."
+msgstr "L'accés de convidat necessita una contrasenya. Escriviu-ne una al camp de contrasenya de convidat, o desmarqueu Habilita l'accés de convidat."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
@@ -6464,28 +6459,28 @@ msgid "Choose a folder for %s"
 msgstr "Carpeta per a %s"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Would exclude %u or more of the files in your shared folders"
-msgstr "Excloiria %u de %u fitxer compartit"
+msgstr "Excloiria %u o més dels fitxers de les vostres carpetes compartides"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Would exclude %u of %u file in your shared folders"
 msgid_plural "Would exclude %u of %u files in your shared folders"
-msgstr[0] "Excloiria %u de %u fitxer compartit"
-msgstr[1] "Excloiria %u de %u fitxers compartits"
+msgstr[0] "Excloiria %u de %u fitxer de les vostres carpetes compartides"
+msgstr[1] "Excloiria %u de %u fitxers de les vostres carpetes compartides"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Would also exclude %u or more folders, with everything in them"
-msgstr "Excloiria %u de %u fitxer compartit"
+msgstr "També excloiria %u o més carpetes, amb tot el que contenen"
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "Would also exclude %u folder, with everything in it"
 msgid_plural "Would also exclude %u folders, with everything in them"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "També excloiria %u carpeta, amb tot el que conté"
+msgstr[1] "També excloiria %u carpetes, amb tot el que contenen"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Browse for videoplayer"
@@ -8678,7 +8673,7 @@ msgstr "Heu preguntat per els resums de les parts (Només per a fitxers > 9.5MB)
 #: src/utils/aLinkCreator/src/alcc.cpp
 #, c-format
 msgid "%s ---> Non existent file !\n"
-msgstr "%s ---> Fitxer inexistent !\n"
+msgstr "%s ---> El fitxer no existeix!\n"
 
 #: src/utils/aLinkCreator/src/alc.cpp
 msgid "aLinkCreator, the aMule eD2k link creator"
@@ -9120,7 +9115,7 @@ msgstr "Introduïu el directori on es generarà la imatge d'estadístiques"
 
 #: src/utils/wxCas/src/wxcasprefs.cpp
 msgid "Upload periodically your stat image to FTP server"
-msgstr "Puja periòdicament la imatge d'estat a un servidor FTP"
+msgstr "Puja periòdicament la imatge d'estadístiques al servidor FTP"
 
 #: src/utils/wxCas/src/wxcasprefs.cpp
 msgid "FTP Url"

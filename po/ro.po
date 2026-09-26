@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-09-23 12:47+0100\n"
-"PO-Revision-Date: 2026-09-25 11:25+0000\n"
+"PO-Revision-Date: 2026-09-26 09:30+0000\n"
 "Last-Translator: Angelescu Constantin <titus0818@yahoo.com>\n"
 "Language-Team: English <kde-i18n-doc@kde.org>\n"
 "Language: ro\n"
@@ -27,7 +27,7 @@ msgstr "Arată aMule"
 
 #: src/AboutDialog.cpp
 msgid "aMule remote control "
-msgstr "control distant aMule"
+msgstr "control de la distanță aMule "
 
 #: src/AboutDialog.cpp
 msgid "Snapshot:"
@@ -104,7 +104,7 @@ msgstr "Indisponibil"
 
 #: src/AboutDialog.cpp
 msgid "Could not check for updates. Please try again later."
-msgstr ""
+msgstr "Nu s-au putut verifica actualizările. Încercați din nou mai târziu."
 
 #: src/AddFriend.cpp
 msgid "Add a Friend"
@@ -195,7 +195,7 @@ msgstr ""
 
 #: src/amuleAppCommon.cpp
 msgid "Failed to open ED2KLinks file."
-msgstr "A eșuat deschiderea fișierului legătură eD2k."
+msgstr "Deschiderea fișierului ED2KLinks a eșuat."
 
 #: src/amuleAppCommon.cpp
 msgid "WARNING: You can't add yourself as a source for an eD2k link while having a lowid."
@@ -227,7 +227,7 @@ msgstr "dialogul aMule distrus"
 #: src/amuleAppCommon.cpp
 #, c-format
 msgid "Restricted permissions on %s to owner-only."
-msgstr ""
+msgstr "S-a restricționat fișierul %s pentru a putea fi accesat doar de proprietar."
 
 #: src/amuleAppCommon.cpp
 #, fuzzy, c-format
@@ -292,11 +292,11 @@ msgstr "Se omoară instanța amuleweb cu pid '%d' ... "
 
 #: src/amule.cpp
 msgid "aMule OnExit: Terminating core."
-msgstr "aMule la ieșire: Se închide nucleul."
+msgstr "aMule OnExit: Se închide nucleul."
 
 #: src/amule.cpp
 msgid "aMule shutdown completed."
-msgstr "aMule închidere terminată."
+msgstr "Închiderea aMule completată."
 
 #: src/amule.cpp
 msgid "Memory debug results for aMule exit:"
@@ -345,7 +345,7 @@ msgstr ""
 
 #: src/amule.cpp
 msgid "Password set and external connections enabled."
-msgstr "Configurarea parolei și conexiunile externe sunt activate."
+msgstr "Parola a fost setată și conexiunile externe sunt activate."
 
 #: src/amule.cpp src/KadDlg.cpp src/PrefsUnifiedDlg.cpp src/SharedFilesCtrl.cpp
 msgid "WARNING"
@@ -423,7 +423,7 @@ msgstr ""
 #: src/amule.cpp
 #, c-format
 msgid "web server running on pid %d"
-msgstr "server web rulând pe pid %d"
+msgstr "serverul web rulează pe pid %d"
 
 #: src/amule.cpp
 #, fuzzy
@@ -503,11 +503,11 @@ msgstr "Această versiune este o versiune de testare, actualizată zilnic și\n"
 
 #: src/amule.cpp
 msgid "we give no warranty it won't break anything, burn your house,\n"
-msgstr "nu vă dăm nici un fel de garanție dacă nu se va strica nimic, ardeți-vă casa,\n"
+msgstr "nu vă oferim nicio garanție că nu va strica nimic, că nu vă va da foc casei,\n"
 
 #: src/amule.cpp
 msgid "or kill your dog. But it *should* be safe to use anyway.\n"
-msgstr "sau omorâți-vă câinele. Dar * ar trebui să fie * sigur de utilizat oricum.\n"
+msgstr "sau că nu vă va omorî câinele. Dar *ar trebui* să fie sigur de utilizat oricum.\n"
 
 #: src/amule.cpp
 msgid "More information, support and new releases can found at our homepage,\n"
@@ -526,7 +526,7 @@ msgid ""
 "The folder for Online Signature files you specified is INVALID!\n"
 " OnlineSignature will be DISABLED until you fix it on preferences."
 msgstr ""
-"Dosarul specificat pentru Semnătura Online NU ESTE VALID!\n"
+"Dosarul specificat pentru fișierele Semnătură Online NU ESTE VALID!\n"
 "Semnătura Online va fi DEZACTIVATĂ până va fi reparată problema în preferințe."
 
 #: src/amule.cpp
@@ -1320,13 +1320,12 @@ msgid "Message to send:"
 msgstr "Mesaj de trimis:"
 
 #: src/ClientContextActions.cpp
-#, fuzzy
 msgid ""
 "You are not allowed to set more than one friend slot.\n"
 " Only one slot was assigned."
 msgstr ""
-"Nu vă este permis să configurați mai mult de un slot prieten.\n"
-"A fost alocat numai un singur slot."
+"Nu aveți voie să setați mai mult de un slot pentru prieteni.\n"
+" A fost alocat un singur slot."
 
 #: src/ClientContextActions.cpp src/FriendListCtrl.cpp
 msgid "Multiple selection"
@@ -2192,7 +2191,7 @@ msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "Authentication failed: this aMule requires an encrypted External Connection, and the client did not negotiate one."
-msgstr ""
+msgstr "Autentificare eșuată: acest aMule necesită o conexiune externă criptată, iar clientul nu a negociat una."
 
 #: src/ExternalConn.cpp
 msgid "Authentication failed: the client could not confirm the encrypted session."
@@ -2626,7 +2625,7 @@ msgstr "Tipărește versiunea programului."
 
 #: src/ExternalConnector.cpp
 msgid "Do not encrypt the External Connect session. Encryption is on by default whenever the remote aMule supports it; turning it off leaves everything after the login readable and modifiable by anyone on the path."
-msgstr ""
+msgstr "Nu criptați sesiunea External Connect. Criptarea este activată în mod implicit oricând aMule-ul de la distanță o suportă; dezactivarea acesteia lasă totul după autentificare accesibil și modificabil de oricine de pe traseu."
 
 #: src/ExternalConnector.cpp
 msgid "Force ZLIB compression regardless of dialed-IP locality (useful when the server is reachable over a VPN tunnel that resolves to a LAN IP)."
@@ -2689,66 +2688,67 @@ msgstr "EROARE: A eșuat deschiderea fișierului parțial '%s'"
 
 #: src/FirstRunWizard.cpp
 msgid "Mobile / 4G-5G (20 / 5 Mbit)"
-msgstr ""
+msgstr "Mobil / 4G-5G (20 / 5 Mbit)"
 
 #: src/FirstRunWizard.cpp
 msgid "ADSL (24 / 1 Mbit)"
-msgstr ""
+msgstr "ADSL (24 / 1 Mbit)"
 
 #: src/FirstRunWizard.cpp
 msgid "VDSL (50 / 10 Mbit)"
-msgstr ""
+msgstr "VDSL (50 / 10 Mbit)"
 
 #: src/FirstRunWizard.cpp
 msgid "Cable (200 / 20 Mbit)"
-msgstr ""
+msgstr "Cablu (200 / 20 Mbit)"
 
 #: src/FirstRunWizard.cpp
 msgid "Fibre 300 (300 / 100 Mbit)"
-msgstr ""
+msgstr "Fibră 300 (300 / 100 Mbit)"
 
 #: src/FirstRunWizard.cpp
 msgid "Fibre Gigabit (1000 / 1000 Mbit)"
-msgstr ""
+msgstr "Fibră Gigabit (1000 / 1000 Mbit)"
 
 #: src/FirstRunWizard.cpp
 msgid "aMule first-run setup"
-msgstr ""
+msgstr "Configurare inițială aMule"
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Welcome to aMule!"
-msgstr "Bine ați venit!"
+msgstr "Bun venit în aMule!"
 
 #: src/FirstRunWizard.cpp
 msgid ""
 "This short setup will get you connected. You can change\n"
 "any of these settings later in Preferences."
 msgstr ""
+"Această configurare scurtă vă va conecta. Puteți modifica\n"
+"oricare dintre aceste setări ulterior în Preferințe."
 
 #: src/FirstRunWizard.cpp
 msgid "Choose a nickname other peers will see:"
-msgstr ""
+msgstr "Alegeți o poreclă pe care ceilalți parteneri o vor vedea:"
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Connection & bandwidth"
-msgstr "Se conectează la persoane"
+msgstr "Conexiune și lățime de bandă"
 
 #: src/FirstRunWizard.cpp
 msgid ""
 "Pick the option that best matches your Internet connection,\n"
 "or set the upload and download limits directly below."
 msgstr ""
+"Alegeți opțiunea care se potrivește cel mai bine conexiunii dvs. la Internet,\n"
+"sau setați direct mai jos limitele de încărcare și descărcare."
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Connection speed:"
-msgstr "Stare conexiune:"
+msgstr "Viteza conexiunii:"
 
 #: src/FirstRunWizard.cpp
 msgid "Other / set manually"
-msgstr ""
+msgstr "Altul / setare manuală"
 
 #: src/FirstRunWizard.cpp
 msgid "Upload limit (KiB/s, 0 = unlimited):"
@@ -2759,13 +2759,12 @@ msgid "Download limit (KiB/s, 0 = unlimited):"
 msgstr ""
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Networks & ports"
-msgstr "Rețele"
+msgstr "Rețele și porturi"
 
 #: src/FirstRunWizard.cpp
 msgid "aMule can use two networks. We recommend keeping both enabled."
-msgstr ""
+msgstr "aMule poate folosi două rețele. Vă recomandăm să le lăsați pe amândouă activate."
 
 #: src/FirstRunWizard.cpp src/TextClient.cpp
 msgid "eD2k"
@@ -2793,22 +2792,25 @@ msgid ""
 "peers can reach you (a \"HighID\"). Turn off if your router\n"
 "doesn't support UPnP or you forward ports manually."
 msgstr ""
+"Permite aMule să ceară routerului să redirecționeze porturile de mai sus, ca\n"
+"ceilalți parteneri să vă poată contacta (un „HighID”). Dezactivați dacă routerul\n"
+"dumneavoastră nu suportă UPnP sau redirecționați porturile manual."
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Bootstrap files"
-msgstr "Bootstrap"
+msgstr "Fișiere bootstrap"
 
 #: src/FirstRunWizard.cpp
 msgid ""
 "To get started, aMule needs to know about some peers.\n"
 "Select which lists to download now:"
 msgstr ""
+"Pentru a începe, aMule trebuie să cunoască câțiva parteneri.\n"
+"Selectați ce liste doriți să descărcați acum:"
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Your peer lists are already in place - nothing to download."
-msgstr "Deja încercați să descărcați fișierul %s"
+msgstr "Listele dumneavoastră de parteneri sunt deja prezente - nu este nimic de descărcat."
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Auto-update server list at startup"
@@ -2816,45 +2818,49 @@ msgstr "Actualizează automat lista serverelor la pornire"
 
 #: src/FirstRunWizard.cpp
 msgid "Integrations (optional)"
-msgstr ""
+msgstr "Integrări (opțional)"
 
 #: src/FirstRunWizard.cpp
 msgid ""
 "Choose how aMule integrates with your system. You can\n"
 "change any of these later in Preferences."
 msgstr ""
+"Alegeți cum se integrează aMule cu sistemul dumneavoastră. Puteți\n"
+"modifica oricare dintre acestea mai târziu în Preferințe."
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Start aMule automatically when I log in"
-msgstr ""
+msgstr "Pornește aMule automat la autentificare"
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 #: packaging/windows/installer_strings.c
 msgid "Register aMule for ed2k:// links"
-msgstr ""
+msgstr "Înregistrează aMule pentru linkuri ed2k://"
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 #: packaging/windows/installer_strings.c
 msgid "Register aMule for magnet: links"
-msgstr ""
+msgstr "Înregistrează aMule pentru linkuri magnet:"
 
 #: src/FirstRunWizard.cpp
 msgid "Only eD2k-compatible magnets. Leave off if you use a BitTorrent client."
-msgstr ""
+msgstr "Doar magnet-uri compatibile eD2k. Lăsați dezactivat dacă folosiți un client BitTorrent."
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Open .emulecollection files with aMule"
-msgstr ""
+msgstr "Deschideți fișierele .emulecollection cu aMule"
 
 #: src/FirstRunWizard.cpp
 msgid "Folders (optional)"
-msgstr ""
+msgstr "Dosare (opțional)"
 
 #: src/FirstRunWizard.cpp
 msgid ""
 "The defaults are fine for most people. Change them if you\n"
 "want downloads on a different (e.g. larger) disk."
 msgstr ""
+"Valorile implicite sunt potrivite pentru majoritatea utilizatorilor. Modificați-le dacă\n"
+"doriți ca descărcările să fie pe un alt disc (de exemplu, mai mare)."
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Destination folder for downloads"
@@ -2867,7 +2873,7 @@ msgstr "Navigare"
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "(All files in this folder are shared with other peers)"
-msgstr ""
+msgstr "(Toate fișierele din acest dosar sunt partajate cu alți parteneri)"
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Folder for temporary download files"
@@ -2879,14 +2885,16 @@ msgid ""
 "Based on this, aMule will allow up to %i sources per file\n"
 "and %i client connections."
 msgstr ""
+"Pe baza acestui lucru, aMule va permite până la %i surse per fișier\n"
+"și %i conexiuni de clienți."
 
 #: src/FirstRunWizard.cpp
 msgid "Show this setup wizard again the next time you start aMule?"
-msgstr ""
+msgstr "Doriți să afișați din nou acest asistent de configurare data viitoare când porniți aMule?"
 
 #: src/FirstRunWizard.cpp
 msgid "Setup not finished"
-msgstr ""
+msgstr "Configurare nefinalizată"
 
 #: src/FriendList.cpp
 msgid "Failed to open friend list file 'emfriends.met' for reading!"
@@ -3002,44 +3010,44 @@ msgid "The URL to download can't be empty"
 msgstr "Adresa URL de descărcat nu poate fi goală"
 
 #: src/HTTPDownload.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Failed to create HTTP request for %s"
-msgstr "A eșuat preluarea fișierelor partajate de la utilizatorul '%s'"
+msgstr "Crearea cererii HTTP pentru %s a eșuat"
 
 #: src/HTTPDownload.cpp
 #, c-format
 msgid "HTTP download: empty response body for %s"
-msgstr ""
+msgstr "Descărcare HTTP: corp de răspuns gol pentru %s"
 
 #: src/HTTPDownload.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Could not move downloaded file to %s"
-msgstr "Dosar pentru fișiere descărcate temporar"
+msgstr "Nu s-a putut muta fișierul descărcat la %s"
 
 #: src/HTTPDownload.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Downloaded %s (%llu bytes)"
-msgstr "Descărcat %d octeți"
+msgstr "S-a descărcat %s (%llu octeți)"
 
 #: src/HTTPDownload.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "The URL %s returned: %i"
-msgstr "Adresa URL %s a returnat: %i - Eroare (%i)!"
+msgstr "URL-ul %s a returnat: %i"
 
 #: src/HTTPDownload.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "HTTP download failed for %s: %s"
-msgstr "Descărcare HTTP anulată"
+msgstr "Descărcarea HTTP a eșuat pentru %s: %s"
 
 #: src/HTTPDownload.cpp
 #, c-format
 msgid "HTTP 401 Unauthorized for %s"
-msgstr ""
+msgstr "HTTP 401 Neautorizat pentru %s"
 
 #: src/IP2Country.cpp
 #, c-format
 msgid "Migrated existing GeoLite2-Country.mmdb to %s"
-msgstr ""
+msgstr "S-a migrat GeoLite2-Country.mmdb existent la %s"
 
 #: src/IP2Country.cpp
 #, c-format
@@ -3048,25 +3056,25 @@ msgstr ""
 
 #: src/IP2Country.cpp
 msgid "IP2Country: MaxMind selected as the GeoIP source but no License Key configured. Open Preferences -> IP2Country, paste your free MaxMind License Key and click 'Update now'."
-msgstr ""
+msgstr "IP2Country: MaxMind selectat ca sursă GeoIP, dar nu este configurată nicio cheie de licență. Deschideți Preferințe -> IP2Country, lipiți cheia de licență MaxMind gratuită și faceți clic pe 'Actualizează acum'."
 
 #: src/IP2Country.cpp
 msgid "IP2Country: Custom URL selected as the GeoIP source but no URL configured. Open Preferences -> IP2Country and supply a URL that points to an .mmdb (or .gz / .tar.gz containing one)."
-msgstr ""
+msgstr "IP2Country: URL personalizat selectat ca sursă GeoIP, dar nu este configurat niciun URL. Deschideți Preferințe -> IP2Country și furnizați un URL care indică un .mmdb (sau un .gz / .tar.gz care conține unul)."
 
 #: src/IP2Country.cpp
 msgid "IP2Country: failed to resolve a GeoIP download URL."
-msgstr ""
+msgstr "IP2Country: nu s-a putut rezolva un URL de descărcare GeoIP."
 
 #: src/IP2Country.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Download new %s from %s"
-msgstr "Se descarcă un nou fișier GeoIP.dat de la %s"
+msgstr "Se descarcă noul %s de la %s"
 
 #: src/IP2Country.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Download of %s file failed, aborting update."
-msgstr "Descărcarea fișierului GeoIP.dat a eșuat, se abandonează actualizarea."
+msgstr "Descărcarea fișierului %s a eșuat, se anulează actualizarea."
 
 #: src/IP2Country.cpp src/IPFilter.cpp
 #, c-format
@@ -3084,13 +3092,13 @@ msgid "Successfully updated %s"
 msgstr "Actualizat cu succes %s"
 
 #: src/IP2Country.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Error updating %s"
-msgstr "Eroare la actualizarea GeoIP.dat"
+msgstr "Eroare la actualizarea %s"
 
 #: src/IP2Country.cpp
 msgid "DB-IP download failed for the current month - retrying with the previous month's URL."
-msgstr ""
+msgstr "Descărcarea DB-IP pentru luna curentă a eșuat - se reîncearcă cu URL-ul lunii precedente."
 
 #: src/IP2Country.cpp src/IPFilter.cpp src/ServerList.cpp
 #, c-format
@@ -3222,34 +3230,33 @@ msgstr[1] "S-au scris %d contacte Kad"
 msgstr[2] "S-au scris %d de contacte Kad"
 
 #: src/KnownFile.cpp
-#, fuzzy
 msgid "Kad user"
-msgstr "Rețea Kad"
+msgstr "Utilizator Kad"
 
 #: src/KnownFile.cpp
 #, c-format
 msgid "Kad note search for '%s' not started: Kad is not connected"
-msgstr ""
+msgstr "Căutarea notelor Kad pentru '%s' nu a fost pornită: Kad nu este conectat"
 
 #: src/KnownFile.cpp
 #, c-format
 msgid "Kad note search for '%s' not started: a note lookup is already running for this file"
-msgstr ""
+msgstr "Căutarea notelor Kad pentru '%s' nu a fost pornită: o căutare de note rulează deja pentru acest fișier"
 
 #: src/KnownFile.cpp
 #, c-format
 msgid "Kad note search for '%s' not started: file is not in the shared list, download queue or search results"
-msgstr ""
+msgstr "Căutarea notelor Kad pentru '%s' nu a fost pornită: fișierul nu se află în lista partajată, coada de descărcări sau rezultatele căutării"
 
 #: src/KnownFile.cpp
 #, c-format
 msgid "Kad note search for '%s' not started: another Kad search (e.g. a source search) is already using this file's hash - try again shortly"
-msgstr ""
+msgstr "Căutarea notelor Kad pentru '%s' nu a fost pornită: o altă căutare Kad (de ex. o căutare de surse) folosește deja hash-ul acestui fișier - încercați din nou în scurt timp"
 
 #: src/KnownFile.cpp
 #, c-format
 msgid "Kad note search for '%s' not started: PrepareLookup failed"
-msgstr ""
+msgstr "Căutarea notelor Kad pentru '%s' nu a fost pornită: PrepareLookup a eșuat"
 
 #: src/KnownFile.cpp src/PartFileConvertDlg.cpp
 msgid "File name"
@@ -3344,9 +3351,8 @@ msgid "English (U.K.)"
 msgstr "Englez (U.K.)"
 
 #: src/LanguageList.cpp
-#, fuzzy
 msgid "English (U.S.)"
-msgstr "Englez (U.K.)"
+msgstr "Engleză (S.U.A.)"
 
 #: src/LanguageList.cpp
 msgid "Estonian"
@@ -3394,7 +3400,7 @@ msgstr "Koreană"
 
 #: src/LanguageList.cpp
 msgid "Latvian"
-msgstr ""
+msgstr "Letonă"
 
 #: src/LanguageList.cpp
 msgid "Lithuanian"
@@ -3681,24 +3687,20 @@ msgid "Hide aMule"
 msgstr "Ascunde aMule"
 
 #: src/MuleTrayIcon.cpp
-#, fuzzy
 msgid "eD2k: "
-msgstr "eD2k"
+msgstr "eD2k: "
 
 #: src/MuleTrayIcon.cpp
-#, fuzzy
 msgid "Connected (LowID)"
-msgstr "Conectat"
+msgstr "Conectat (LowID)"
 
 #: src/MuleTrayIcon.cpp
-#, fuzzy
 msgid "Connected (HighID)"
-msgstr "Conectat"
+msgstr "Conectat (HighID)"
 
 #: src/MuleTrayIcon.cpp
-#, fuzzy
 msgid "Kad: "
-msgstr " Kad: "
+msgstr "Kad: "
 
 #: src/MuleTrayIcon.cpp
 #, fuzzy
@@ -3863,7 +3865,7 @@ msgstr "Total ÎN: %s"
 #: src/MuleUDPSocket.cpp
 #, c-format
 msgid "Created %s at port %u"
-msgstr ""
+msgstr "A fost creat %s pe portul %u"
 
 #: src/MuleUDPSocket.cpp
 #, c-format
@@ -4040,9 +4042,8 @@ msgid "Start"
 msgstr "Începe"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Extend"
-msgstr "Extensie"
+msgstr "Extinde"
 
 #: src/muuli_wdr.cpp
 msgid "Ask already-responded Kad peers to widen the search. Each click queries the next-closest peer for more contacts (KADEMLIA_FIND_VALUE_MORE), surfacing additional file matches that the search's initial alpha frontier missed."
@@ -4061,9 +4062,8 @@ msgid "Download in category"
 msgstr "Descarcă în categoria"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Clear Search Results"
-msgstr "Rezultat căutare"
+msgstr "Șterge rezultatele căutării"
 
 #: src/muuli_wdr.cpp
 msgid "Reset Fields"
@@ -4203,16 +4203,15 @@ msgstr "Informație Kad"
 
 #: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Length"
-msgstr ""
+msgstr "Durată"
 
 #: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
-#, fuzzy
 msgid "Bitrate"
-msgstr "Nu este apreciat"
+msgstr "Rată de biți"
 
 #: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Codec"
-msgstr ""
+msgstr "Codec"
 
 #: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Artist"
@@ -4480,7 +4479,7 @@ msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Opening a collection queues every eD2k link it contains. On Windows this adds aMule to the \"Open with\" list and takes the default only when no other program has claimed the file type."
-msgstr ""
+msgstr "Deschiderea unei colecții pune în coadă fiecare link eD2k pe care îl conține. Pe Windows, aceasta adaugă aMule la lista „Deschide cu” și devine aplicația implicită doar dacă niciun alt program nu a revendicat acest tip de fișier."
 
 #: src/muuli_wdr.cpp
 msgid "Start minimized"
@@ -4520,20 +4519,19 @@ msgstr "Activând aceasta va face ca aMule să se minimizeze pe bara de sistem, 
 
 #: src/muuli_wdr.cpp
 msgid "Show notifications when finished downloading"
-msgstr ""
+msgstr "Afișează notificări la finalizarea descărcării"
 
 #: src/muuli_wdr.cpp
 msgid "Enabling this will make aMule to show notifications when finished downloading."
-msgstr ""
+msgstr "Activarea acestei opțiuni va face ca aMule să afișeze notificări la finalizarea descărcării."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Remember search history"
-msgstr "Amintește aceste configurări"
+msgstr "Reține istoricul căutărilor"
 
 #: src/muuli_wdr.cpp
 msgid "Keeps a dropdown list of your past search terms in the Search tab's Name field. This remembers the queries you typed, not the results they returned."
-msgstr ""
+msgstr "Păstrează o listă derulantă cu termenii dumneavoastră de căutare anteriori în câmpul Nume din fila Căutare. Aceasta reține interogările pe care le-ați introdus, nu rezultatele returnate de acestea."
 
 #: src/muuli_wdr.cpp
 msgid "Tooltip delay time: "
@@ -4608,13 +4606,12 @@ msgid "Advanced users only: If you have multiple network interfaces, enter the a
 msgstr "Numai pentru utilizatorii avansați: Dacă aveți mai multe interfețe de rețea, introduceți adresa interfeței la care aMule ar trebui să fie legat."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Bind to network interface (empty for any):"
-msgstr "Leagă adresa locală la IP (gol pentru oricare):"
+msgstr "Legare la interfața de rețea (gol pentru oricare):"
 
 #: src/muuli_wdr.cpp
 msgid "Advanced users only: pin all of aMule's traffic to one network interface, chosen from the list or typed in by name (e.g. tun0, eth0, en0) or index. Unlike binding to an IP, this stops traffic leaking out via the default route - useful with a VPN. Requires no elevated privileges."
-msgstr ""
+msgstr "Doar pentru utilizatori avansați: fixează tot traficul aMule la o singură interfață de rețea, aleasă din listă sau introdusă după nume (de ex. tun0, eth0, en0) ori index. Spre deosebire de legarea la o adresă IP, acest lucru împiedică scurgerea traficului prin ruta implicită - util cu un VPN. Nu necesită privilegii ridicate."
 
 #: src/muuli_wdr.cpp
 msgid "Max sources per downloading file:"
@@ -4642,7 +4639,7 @@ msgstr "Elimină serverele moarte după"
 
 #: src/muuli_wdr.cpp
 msgid "Static servers are never removed, even when unreachable."
-msgstr ""
+msgstr "Serverele statice nu sunt niciodată eliminate, chiar dacă sunt inaccesibile."
 
 #: src/muuli_wdr.cpp
 msgid "retries"
@@ -4694,7 +4691,7 @@ msgstr "Încearcă să descarci întâi prima și ultima bucată"
 
 #: src/muuli_wdr.cpp
 msgid "Endgame mode: rotate to faster sources for the final blocks"
-msgstr ""
+msgstr "Mod endgame: rotește către surse mai rapide pentru blocurile finale"
 
 #: src/muuli_wdr.cpp
 msgid "Start next paused file when a file completes"
@@ -4718,11 +4715,11 @@ msgstr "Pentru noile fișiere se prealocă spațiu pe disc pentru întreg fișie
 
 #: src/muuli_wdr.cpp
 msgid "Create new files as sparse files"
-msgstr ""
+msgstr "Creează fișiere noi ca fișiere sparse"
 
 #: src/muuli_wdr.cpp
 msgid "Sparse part files only occupy disk space for the parts already downloaded, so free space is used up gradually as the file fills in. Turn this off to use an ordinary file instead - useful where sparse files are unsupported or slow, or where backup/de-duplication tools handle them badly. Applies only when the core runs on Windows; on Linux and macOS part files are sparse anyway and this setting has no effect."
-msgstr ""
+msgstr "Fișierele part sparse ocupă spațiu pe disc doar pentru părțile deja descărcate, astfel încât spațiul liber este consumat treptat pe măsură ce fișierul se completează. Dezactivați această opțiune pentru a folosi în schimb un fișier obișnuit - utilă acolo unde fișierele sparse nu sunt suportate sau sunt lente, sau unde instrumentele de backup/de-duplicare le gestionează prost. Se aplică doar atunci când nucleul rulează pe Windows; pe Linux și macOS fișierele part sunt oricum sparse, iar această setare nu are efect."
 
 #: src/muuli_wdr.cpp
 msgid "Stop downloads when free disk space reaches "
@@ -4762,41 +4759,43 @@ msgstr "I.C.H. avansat acordă încredere fiecărui index (nu este recomandat)"
 
 #: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
 msgid "Media metadata extraction"
-msgstr ""
+msgstr "Extragere metadate media"
 
 #: src/muuli_wdr.cpp
 msgid "Extract length / bitrate / codec from shared audio and video files"
-msgstr ""
+msgstr "Extrage durata / rata de biți / codecul din fișierele audio și video partajate"
 
 #: src/muuli_wdr.cpp
 msgid "When enabled, aMule runs ffprobe on each shared media file to fill in the Length / Bitrate / Codec columns other clients see when they find the file in a search. Requires ffmpeg (the ffprobe binary) to be installed."
-msgstr ""
+msgstr "Când este activat, aMule rulează ffprobe pe fiecare fișier media partajat pentru a completa coloanele Durată / Rată de biți / Codec pe care alți clienți le văd atunci când găsesc fișierul într-o căutare. Necesită instalarea ffmpeg (binarul ffprobe)."
 
 #: src/muuli_wdr.cpp
 msgid "Path to ffprobe:"
-msgstr ""
+msgstr "Cale către ffprobe:"
 
 #: src/muuli_wdr.cpp
 msgid "Full path to the ffprobe binary. Leave empty to have aMule auto-detect it on startup."
-msgstr ""
+msgstr "Calea completă către binarul ffprobe. Lăsați gol pentru ca aMule să îl detecteze automat la pornire."
 
 #: src/muuli_wdr.cpp
 msgid "Detect"
-msgstr ""
+msgstr "Detectează"
 
 #: src/muuli_wdr.cpp
 msgid "Search the standard install locations for an ffprobe binary and fill the path field."
-msgstr ""
+msgstr "Caută un binar ffprobe în locațiile standard de instalare și completează câmpul de cale."
 
 #: src/muuli_wdr.cpp
 msgid ""
 "Completed downloads are stored here. All files in this folder are automatically shared with other peers.\n"
 "If this folder also holds files you don't want to share, point it at an aMule-only sub-folder."
 msgstr ""
+"Descărcările finalizate sunt stocate aici. Toate fișierele din acest dosar sunt partajate automat cu alți parteneri.\n"
+"Dacă acest dosar conține și fișiere pe care nu doriți să le partajați, îndreptați-l către un subdosar exclusiv pentru aMule."
 
 #: src/muuli_wdr.cpp
 msgid "Pick the folder where completed downloads will be stored. All files in that folder will be shared with other peers."
-msgstr ""
+msgstr "Alegeți dosarul în care vor fi stocate descărcările finalizate. Toate fișierele din acel dosar vor fi partajate cu alți parteneri."
 
 #: src/muuli_wdr.cpp
 msgid "Shared folders"
@@ -4804,19 +4803,19 @@ msgstr "Dosare partajate"
 
 #: src/muuli_wdr.cpp
 msgid "(Folders shared by the core. Enter a path to add one.)"
-msgstr ""
+msgstr "(Dosare partajate de nucleu. Introduceți o cale pentru a adăuga unul.)"
 
 #: src/muuli_wdr.cpp
 msgid "Absolute path of a folder on the core's machine, e.g. /home/user/shared"
-msgstr ""
+msgstr "Calea absolută a unui dosar de pe mașina nucleului, de ex. /home/user/shared"
 
 #: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
 msgid "Recursive"
-msgstr ""
+msgstr "Recursiv"
 
 #: src/muuli_wdr.cpp
 msgid "Share every sub-folder underneath this one, including ones created later."
-msgstr ""
+msgstr "Partajează fiecare subdosar de sub acesta, inclusiv cele create ulterior."
 
 #: src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Remove"
@@ -4832,11 +4831,11 @@ msgstr "Partajează fișierele ascunse"
 
 #: src/muuli_wdr.cpp
 msgid "Automatically rescan shared folders for changes"
-msgstr ""
+msgstr "Rescanează automat dosarele partajate pentru modificări"
 
 #: src/muuli_wdr.cpp
 msgid "Follow symbolic links in shared folders"
-msgstr ""
+msgstr "Urmărește legăturile simbolice din dosarele partajate"
 
 #: src/muuli_wdr.cpp
 msgid "Exclude files and folders matching:"
@@ -4848,7 +4847,7 @@ msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Patterns are regular expressions"
-msgstr ""
+msgstr "Modelele sunt expresii regulate"
 
 #: src/muuli_wdr.cpp
 msgid "When set, the whole field is one regular expression: '|' is alternation, and '*' and '?' take their regular-expression meaning rather than the wildcard one. When unset, it is a list of '|'-separated wildcards."
@@ -4909,9 +4908,8 @@ msgid "Upload graph scale:"
 msgstr "Scală grafic încărcare:"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Colors: "
-msgstr "Colori:"
+msgstr "Culori: "
 
 #: src/muuli_wdr.cpp
 msgid "Background"
@@ -4950,9 +4948,8 @@ msgid "Active connections"
 msgstr "Conexiuni active"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Systray Icon Speed Bar"
-msgstr "Miniatură rapidă pe bara de sistem"
+msgstr "Bara de viteză a miniaturii din bara de sistem"
 
 #: src/muuli_wdr.cpp
 msgid "Kad-nodes current"
@@ -4988,17 +4985,15 @@ msgstr "Maxim conexiuni noi /5 secunde"
 
 #: src/muuli_wdr.cpp
 msgid "Concurrent Kad source lookups"
-msgstr ""
+msgstr "Căutări simultane de surse Kad"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Kad source re-search interval (minutes)"
-msgstr "Rată interval actualizare FTP în minute"
+msgstr "Interval de re-căutare a surselor Kad (minute)"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Source re-ask interval (minutes)"
-msgstr "Rată interval actualizare FTP în minute"
+msgstr "Interval de re-solicitare a surselor (minute)"
 
 #: src/muuli_wdr.cpp
 msgid "File Buffer Size: 240000 bytes"
@@ -5006,11 +5001,11 @@ msgstr "Dimensiune fișier tampon: 240000 octeți"
 
 #: src/muuli_wdr.cpp
 msgid "Use MMAP: memory-mapped file access (lower memory use)"
-msgstr ""
+msgstr "Utilizează MMAP: acces la fișiere mapate în memorie (utilizare redusă a memoriei)"
 
 #: src/muuli_wdr.cpp
 msgid "Maps part files into memory instead of buffering them on the heap, lowering the process memory footprint. May reduce download speed on some disks; best for memory-constrained or upload-heavy hosts."
-msgstr ""
+msgstr "Mapează fișierele parțiale în memorie în loc să le stocheze temporar pe heap, reducând amprenta de memorie a procesului. Poate reduce viteza de descărcare pe unele discuri; cel mai potrivit pentru gazde cu memorie limitată sau cu încărcare intensă."
 
 #: src/muuli_wdr.cpp
 msgid "Upload Queue Size: 5000 clients"
@@ -5062,7 +5057,7 @@ msgstr "Orientare verticală a barei de unelte"
 
 #: src/muuli_wdr.cpp
 msgid "Live column sorting (auto-reorder rows as their values change)"
-msgstr ""
+msgstr "Sortare live a coloanelor (reordonare automată a rândurilor pe măsură ce valorile se modifică)"
 
 #: src/muuli_wdr.cpp
 msgid "Download Queue Files"
@@ -5117,59 +5112,52 @@ msgid "Require encrypted connections (rejects clients that cannot encrypt)"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "aMule API server parameters"
-msgstr "Parametrii server web"
+msgstr "Parametrii serverului API aMule"
 
 #: src/muuli_wdr.cpp
 msgid "Run amuleapi (REST API) on startup"
-msgstr ""
+msgstr "Rulează amuleapi (REST API) la pornire"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "HTTP port:"
-msgstr "port TCP:"
+msgstr "Port HTTP:"
 
 #: src/muuli_wdr.cpp
 msgid "The interface amuleapi's HTTP server listens on. 127.0.0.1 (default) accepts only local connections; use 0.0.0.0 or a specific IP to expose it to other hosts (set an admin password below)."
-msgstr ""
+msgstr "Interfața pe care ascultă serverul HTTP amuleapi. 127.0.0.1 (implicit) acceptă doar conexiuni locale; utilizați 0.0.0.0 sau o adresă IP specifică pentru a-l expune altor gazde (setați o parolă de administrator mai jos)."
 
 #: src/muuli_wdr.cpp
 msgid "Type a password to set or change it. Stored passwords cannot be shown, so leaving this empty keeps the current one."
-msgstr ""
+msgstr "Introduceți o parolă pentru a o seta sau modifica. Parolele stocate nu pot fi afișate, așa că lăsând acest câmp gol se păstrează parola curentă."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Admin password"
-msgstr "Se verifică parola\n"
+msgstr "Parolă de administrator"
 
 #: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "A password is set."
-msgstr "Se verifică parola\n"
+msgstr "O parolă este setată."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Enable guest access"
-msgstr "Interzice accesul oaspeților"
+msgstr "Activați accesul oaspeților"
 
 #: src/muuli_wdr.cpp
 msgid "Guest sessions may read status and listings but cannot change anything. Turning this off clears the stored guest password."
-msgstr ""
+msgstr "Sesiunile de oaspete pot citi starea și listele, dar nu pot modifica nimic. Dezactivarea acestei opțiuni șterge parola de oaspete stocată."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Guest password"
-msgstr "Parola de oaspete pentru serverul web"
+msgstr "Parolă de oaspete"
 
 #: src/muuli_wdr.cpp
 msgid "Web server parameters"
 msgstr "Parametrii server web"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Run webserver on startup (deprecated)"
-msgstr "Rulează la pornire serverul web"
+msgstr "Rulează serverul web la pornire (învechit)"
 
 #: src/muuli_wdr.cpp
 msgid "Web template"
@@ -5204,13 +5192,12 @@ msgid "Enable Gzip compression"
 msgstr "Activează compresia Gzip"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Reset page to defaults"
-msgstr "Valoare implicită a sistemului"
+msgstr "Resetează pagina la valorile implicite"
 
 #: src/muuli_wdr.cpp
 msgid "Reset the settings on the current page to their default values."
-msgstr ""
+msgstr "Resetează setările din pagina curentă la valorile implicite."
 
 #: src/muuli_wdr.cpp src/ServerWnd.cpp
 msgid "OK"
@@ -5428,16 +5415,15 @@ msgstr "Manipulare paranoică a IP-urilor care nu se potrivesc"
 
 #: src/muuli_wdr.cpp
 msgid "Rejects a packet when its source IP differs from the IP the client claims (an anti-spoofing check). Disable only if it causes connection problems."
-msgstr ""
+msgstr "Respinge un pachet atunci când IP-ul sursă diferă de IP-ul revendicat de client (o verificare anti-falsificare). Dezactivați doar dacă provoacă probleme de conexiune."
 
 #: src/muuli_wdr.cpp
 msgid "Use system-wide ipfilter.dat if available"
 msgstr "Utilizați în tot sistemul ipfilter.dat dacă este disponibil"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "If there's no local ipfilter.dat found, allow usage of a system-wide ipfilter file."
-msgstr "Dacă nu s-a găsit local ipfilter.dat, permite utilizarea unui fișier ipfilter din sistem."
+msgstr "Dacă nu se găsește niciun ipfilter.dat local, permite utilizarea unui fișier ipfilter la nivel de sistem."
 
 #: src/muuli_wdr.cpp
 msgid "Enable Online-Signature"
@@ -5469,33 +5455,31 @@ msgstr "Arată steagul țării pentru clienți"
 
 #: src/muuli_wdr.cpp
 msgid "Render the country flag column in the transfers, queue and search views. Requires a valid MMDB GeoIP database (see below)."
-msgstr ""
+msgstr "Afișează coloana cu steagul țării în vizualizările de transferuri, coadă și căutare. Necesită o bază de date GeoIP MMDB validă (vezi mai jos)."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Database"
-msgstr "Rată date :"
+msgstr "Bază de date"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Source:"
-msgstr "Surse"
+msgstr "Sursă:"
 
 #: src/muuli_wdr.cpp
 msgid "DB-IP (free, no account)"
-msgstr ""
+msgstr "DB-IP (gratuit, fără cont)"
 
 #: src/muuli_wdr.cpp
 msgid "MaxMind GeoLite2 (free, account required)"
-msgstr ""
+msgstr "MaxMind GeoLite2 (gratuit, necesită cont)"
 
 #: src/muuli_wdr.cpp
 msgid "Custom URL"
-msgstr ""
+msgstr "URL personalizat"
 
 #: src/muuli_wdr.cpp
 msgid "Choose which provider supplies the GeoIP MMDB database. DB-IP is the default - no account required. MaxMind requires a free account + license key. Use Custom URL to point at any other MMDB host (e.g. a local mirror)."
-msgstr ""
+msgstr "Alegeți ce furnizor livrează baza de date GeoIP MMDB. DB-IP este implicit - nu necesită cont. MaxMind necesită un cont gratuit + o cheie de licență. Utilizați URL personalizat pentru a indica orice altă gazdă MMDB (de ex. o oglindă locală)."
 
 #: src/muuli_wdr.cpp
 msgid ""
@@ -5504,10 +5488,14 @@ msgid ""
 "IP-to-Country data by DB-IP.com - https://db-ip.com\n"
 "License: Creative Commons BY 4.0 - https://creativecommons.org/licenses/by/4.0/"
 msgstr ""
+"Nu este necesară nicio configurare.\n"
+"\n"
+"Date IP-către-Țară furnizate de DB-IP.com - https://db-ip.com\n"
+"Licență: Creative Commons BY 4.0 - https://creativecommons.org/licenses/by/4.0/"
 
 #: src/muuli_wdr.cpp
 msgid "License key:"
-msgstr ""
+msgstr "Cheie de licență:"
 
 #: src/muuli_wdr.cpp
 msgid ""
@@ -5518,11 +5506,16 @@ msgid ""
 "License: MaxMind GeoLite2 EULA - https://www.maxmind.com/en/geolite2/eula\n"
 "Requires attribution and account registration; refresh at least every 30 days."
 msgstr ""
+"Creați-vă un cont MaxMind gratuit, apoi generați o cheie de licență:\n"
+"https://www.maxmind.com/en/geolite2/signup\n"
+"\n"
+"Acest produs include date GeoLite2 create de MaxMind - https://www.maxmind.com\n"
+"Licență: MaxMind GeoLite2 EULA - https://www.maxmind.com/en/geolite2/eula\n"
+"Necesită atribuire și înregistrarea unui cont; reînnoiți cel puțin la fiecare 30 de zile."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Download URL:"
-msgstr "Descărcare:"
+msgstr "URL de descărcare:"
 
 #: src/muuli_wdr.cpp
 msgid ""
@@ -5530,19 +5523,21 @@ msgid ""
 "URL may include credentials (https://user:pass@host/...).\n"
 "License and attribution terms are set by the upstream URL - you are responsible."
 msgstr ""
+"Trebuie să indice un fișier .mmdb sau un .gz / .tar.gz care conține unul.\n"
+"URL-ul poate include credențiale (https://user:pass@host/...).\n"
+"Termenii de licență și atribuire sunt stabiliți de URL-ul sursă - dvs. sunteți responsabil."
 
 #: src/muuli_wdr.cpp
 msgid "Download the GeoIP database from the selected source."
-msgstr ""
+msgstr "Descarcă baza de date GeoIP din sursa selectată."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Auto-update on startup"
-msgstr "Actualizare automată filtru ip la pornire"
+msgstr "Actualizare automată la pornire"
 
 #: src/muuli_wdr.cpp
 msgid "Re-download the GeoIP database from the selected source every time aMule starts."
-msgstr ""
+msgstr "Redescarcă baza de date GeoIP din sursa selectată de fiecare dată când pornește aMule."
 
 #: src/muuli_wdr.cpp
 msgid "Filter incoming messages (except current chat):"
@@ -5642,9 +5637,8 @@ msgid "Encrypt the connection (recommended)"
 msgstr "Conexiune externă închisă."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Force ZLIB compression"
-msgstr "Utilizează compresia gzip"
+msgstr "Forțează compresia ZLIB"
 
 #: src/muuli_wdr.cpp
 msgid "Enable Verbose Debug-Logging."
@@ -6062,7 +6056,7 @@ msgstr "Eșuare IO în timpul salvării fișierului parțial:"
 #: src/PartFile.cpp
 #, c-format
 msgid "Wrote 0/unknown bytes to '%s' -- preserving existing .part.met."
-msgstr ""
+msgstr "S-au scris 0/necunoscut octeți în '%s' -- se păstrează fișierul .part.met existent."
 
 #: src/PartFile.cpp
 #, c-format
@@ -6116,11 +6110,13 @@ msgid "Finished downloading: %s"
 msgstr "S-a finalizat descărcarea: %s"
 
 #: src/PartFile.cpp
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "Finished downloading:\n"
 "%s"
-msgstr "S-a finalizat descărcarea: %s"
+msgstr ""
+"Descărcare finalizată:\n"
+"%s"
 
 #: src/PartFile.cpp
 #, c-format
@@ -6140,7 +6136,7 @@ msgstr "EROARE: Nu se poate indexa partea descărcătă - indexare incompletă (
 #: src/PartFile.cpp
 #, c-format
 msgid "Part %u of '%s' marked complete but partfile is shorter than expected (have %llu bytes, need %llu); reopening gap for re-download."
-msgstr ""
+msgstr "Partea %u din '%s' este marcată completă, dar fișierul parțial este mai scurt decât se aștepta (are %llu octeți, sunt necesari %llu); se redeschide golul pentru re-descărcare."
 
 #: src/PartFile.cpp
 #, c-format
@@ -6240,7 +6236,7 @@ msgstr "Interfaţă"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "IP2Country"
-msgstr ""
+msgstr "IP2Country"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Proxy"
@@ -6282,11 +6278,11 @@ msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Tray icon support requires libayatana-appindicator3 at compile time."
-msgstr ""
+msgstr "Suportul pentru miniatura din bara de sistem necesită libayatana-appindicator3 la compilare."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Not available on Wayland: the protocol does not report when a window is minimized, so this option cannot intercept the system minimize button. Workaround: launch aMule with `GDK_BACKEND=x11` to use XWayland instead."
-msgstr ""
+msgstr "Nu este disponibil pe Wayland: protocolul nu raportează când o fereastră este minimizată, astfel încât această opțiune nu poate intercepta butonul de minimizare al sistemului. Soluție: lansați aMule cu `GDK_BACKEND=x11` pentru a utiliza XWayland în schimb."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
@@ -6323,22 +6319,20 @@ msgid "Failed to transfer data from Widget to Cfg with the ID %d and key %s"
 msgstr "A eșuat transferul datelor de la widget la Cfg cu ID %d și cheia %s"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "No password set."
-msgstr "Se verifică parola\n"
+msgstr "Nicio parolă setată."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "The shared-file exclusion pattern is not a valid regular expression. The filter has been left disabled."
-msgstr ""
+msgstr "Modelul de excludere a fișierelor partajate nu este o expresie regulată validă. Filtrul a fost lăsat dezactivat."
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Invalid regular expression"
-msgstr "Versiune protocol nevalidă."
+msgstr "Expresie regulată nevalidă"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Guest access needs a password. Type one in the guest password field, or untick Enable guest access."
-msgstr ""
+msgstr "Accesul oaspeților necesită o parolă. Introduceți una în câmpul parolei de oaspete sau debifați Activați accesul oaspeților."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
@@ -6365,9 +6359,8 @@ msgid "- UDP port changed.\n"
 msgstr "- Portul UDP s-a schimbat.\n"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "- Network interface binding changed.\n"
-msgstr "- Interfața conexiunii externe s-a schimbat.\n"
+msgstr "- Legarea interfeței de rețea a fost modificată.\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- External connect port changed.\n"
@@ -6390,9 +6383,8 @@ msgid "- Proxy settings changed (needed for HTTP transfers).\n"
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "- amuleapi settings changed.\n"
-msgstr "- Limba s-a schimbat.\n"
+msgstr "- Setările amuleapi au fost modificate.\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
@@ -6405,7 +6397,7 @@ msgstr ""
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "The amuleapi password could not be saved: %s"
-msgstr ""
+msgstr "Parola amuleapi nu a putut fi salvată: %s"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- Language changed.\n"
@@ -6447,65 +6439,62 @@ msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Could not register aMule for autostart at login. The autostart store may be read-only."
-msgstr ""
+msgstr "Nu s-a putut înregistra aMule pentru pornire automată la autentificare. Depozitul de pornire automată ar putea fi doar pentru citire."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Could not remove the autostart-at-login entry."
-msgstr ""
+msgstr "Nu s-a putut elimina intrarea de pornire automată la autentificare."
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Autostart"
-msgstr "Reîmprospătarea automată pornită"
+msgstr "Pornire automată"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Register file type"
-msgstr ""
+msgstr "Înregistrați tipul de fișier"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Register URL handler"
-msgstr ""
+msgstr "Înregistrează handlerul de URL"
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "aMule only handles eD2k-compatible magnets. If you replace the current magnet handler (%s), BitTorrent magnet links will stop working - aMule cannot download BitTorrent content. Continue?"
-msgstr ""
+msgstr "aMule gestionează doar magnet-uri compatibile eD2k. Dacă înlocuiți handlerul curent pentru magnet (%s), linkurile magnet BitTorrent vor înceta să funcționeze - aMule nu poate descărca conținut BitTorrent. Continuați?"
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "Another application currently opens .emulecollection files (%s). Replace it with aMule?"
-msgstr ""
+msgstr "În prezent, o altă aplicație deschide fișierele .emulecollection (%s). Doriți să o înlocuiți cu aMule?"
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "Another application is currently the default handler for these links (%s). Replace it with aMule?"
-msgstr ""
+msgstr "O altă aplicație este în prezent handlerul implicit pentru aceste linkuri (%s). O înlocuiți cu aMule?"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Could not register aMule for .emulecollection files. The registration store may be read-only."
-msgstr ""
+msgstr "Nu s-a putut înregistra aMule pentru fișierele .emulecollection. Este posibil ca depozitul de înregistrare să fie doar pentru citire."
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Could not remove the file type registration."
-msgstr "Dosar pentru fișiere descărcate temporar"
+msgstr "Nu s-a putut elimina înregistrarea tipului de fișier."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Could not register aMule as the URL handler. The registration store may be read-only."
-msgstr ""
+msgstr "Nu s-a putut înregistra aMule ca handler de URL. Depozitul de înregistrare ar putea fi doar pentru citire."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Could not remove the URL handler registration."
-msgstr ""
+msgstr "Nu s-a putut elimina înregistrarea handlerului de URL."
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "The web server and aMule API require external connections to be enabled."
-msgstr "Configurarea parolei și conexiunile externe sunt activate."
+msgstr "Serverul web și API-ul aMule necesită activarea conexiunilor externe."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "The aMule web server is deprecated. Consider running the aMule API instead."
-msgstr ""
+msgstr "Serverul web aMule este învechit. Luați în considerare rularea API-ului aMule în schimb."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
@@ -6569,9 +6558,8 @@ msgid "Select browser"
 msgstr "Selectare navigator"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Select ffprobe binary"
-msgstr "Selectare navigator"
+msgstr "Selectați binarul ffprobe"
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
@@ -6580,16 +6568,15 @@ msgstr "Executabil%s"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "ffprobe not found on PATH or in the standard install locations. Install ffmpeg (which ships ffprobe) or use Browse to pick a binary manually."
-msgstr ""
+msgstr "ffprobe nu a fost găsit în PATH sau în locațiile standard de instalare. Instalați ffmpeg (care include ffprobe) sau utilizați Navigare pentru a alege manual un binar."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Reset the settings on this page to their default values?"
-msgstr ""
+msgstr "Resetați setările din această pagină la valorile implicite?"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Reset to defaults"
-msgstr "Valoare implicită a sistemului"
+msgstr "Resetează la valorile implicite"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Edit server list"
@@ -6605,38 +6592,37 @@ msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "IP2Country update failed"
-msgstr ""
+msgstr "Actualizarea IP2Country a eșuat"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Data by MaxMind GeoLite2"
-msgstr ""
+msgstr "Date furnizate de MaxMind GeoLite2"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Custom source"
-msgstr "Surse complete"
+msgstr "Sursă personalizată"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Data by DB-IP.com"
-msgstr ""
+msgstr "Date furnizate de DB-IP.com"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Status: Loaded%s"
-msgstr "Stare:"
+msgstr "Stare: Încărcat%s"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Status: Loaded%s - %s"
-msgstr "Stare:"
+msgstr "Stare: Încărcat%s - %s"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Status: Failed to load - click 'Update now' to refresh."
-msgstr ""
+msgstr "Stare: Încărcarea a eșuat - faceți clic pe 'Actualizează acum' pentru a reîmprospăta."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Status: Not found - click 'Update now' to download."
-msgstr ""
+msgstr "Stare: Nu a fost găsit - faceți clic pe 'Actualizează acum' pentru a descărca."
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
@@ -6721,40 +6707,38 @@ msgid ""
 "The following folders look like system or sensitive locations:\n"
 "\n"
 msgstr ""
+"Următoarele dosare par a fi locații de sistem sau sensibile:\n"
+"\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Sharing them recursively will publish every file underneath on the eD2k/Kad networks. Do you really want to do this?"
-msgstr ""
+msgstr "Partajarea lor recursivă va publica fiecare fișier din interior pe rețelele eD2k/Kad. Chiar doriți să faceți acest lucru?"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Confirm shared folders"
-msgstr "Dosare partajate"
+msgstr "Confirmați dosarele partajate"
 
 #: src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp
 #: src/SharedFilesReloadProgress.cpp
-#, fuzzy
 msgid "Reloading shared files..."
-msgstr "Reîncărcați fișierele partajate"
+msgstr "Se reîncarcă fișierele partajate..."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Scanning for subdirectories..."
-msgstr ""
+msgstr "Se caută subdirectoare..."
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Updating shared folders"
-msgstr "Dosare partajate"
+msgstr "Se actualizează dosarele partajate"
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "Scanned %u directories..."
-msgstr ""
+msgstr "S-au scanat %u directoare..."
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Shared folder"
-msgstr "Dosare partajate"
+msgstr "Dosar partajat"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Both the remote and local prefix must be filled in."
@@ -6784,12 +6768,11 @@ msgstr "Atenționare căutare"
 
 #: src/SearchDlg.cpp
 msgid "It's impossible to search when both eD2k and Kademlia are disabled."
-msgstr ""
+msgstr "Este imposibil de căutat atunci când atât eD2k, cât și Kademlia sunt dezactivate."
 
 #: src/SearchDlg.cpp src/SearchListCtrl.cpp
-#, fuzzy
 msgid "Search error"
-msgstr "Căutări"
+msgstr "Eroare de căutare"
 
 #: src/SearchDlg.cpp
 msgid ""
@@ -6838,9 +6821,8 @@ msgid "eD2k search can't be done if eD2k is not connected"
 msgstr "Nu se poate face o căutare eD2k dacă eD2k nu este conectat"
 
 #: src/SearchList.cpp
-#, fuzzy
 msgid "No keyword for Kad search - aborting"
-msgstr "Cuvinte cheie de căutat: %s"
+msgstr "Niciun cuvânt cheie pentru căutarea Kad - se anulează"
 
 #: src/SearchList.cpp
 msgid "Unexpected error while attempting Kad search: "
@@ -6852,11 +6834,11 @@ msgstr ""
 
 #: src/SearchList.cpp
 msgid "Kad search: requested wider results from one more peer."
-msgstr ""
+msgstr "Căutare Kad: s-au solicitat rezultate mai extinse de la încă un partener."
 
 #: src/SearchList.cpp
 msgid "Kad search: no peer left to reask for more results (cap reached or no responses yet)."
-msgstr ""
+msgstr "Căutare Kad: niciun partener rămas pentru a solicita din nou mai multe rezultate (limita a fost atinsă sau încă nu există răspunsuri)."
 
 #: src/SearchList.cpp
 #, fuzzy, c-format
@@ -6889,9 +6871,8 @@ msgid "Copy eD2k links to clipboard"
 msgstr "Copiază link-urile eD2k în memoria temporară"
 
 #: src/SearchListCtrl.cpp
-#, fuzzy
 msgid "You are not currently connected to a server supporting the Related Files search function"
-msgstr "Sunteți conectat la serverul pe care încercați să-l ștergeți, deconectați-vă întâi."
+msgstr "Nu sunteți conectat momentan la un server care acceptă funcția de căutare a fișierelor asociate"
 
 #: src/SearchListCtrl.cpp
 msgid "Canceled"
@@ -6927,7 +6908,7 @@ msgstr ""
 
 #: src/SearchProgressReport.cpp src/TextClient.cpp
 msgid "Search expired or unknown ID. Start a new search.\n"
-msgstr ""
+msgstr "Căutarea a expirat sau ID necunoscut. Porniți o căutare nouă.\n"
 
 #: src/SearchProgressReport.cpp
 #, c-format
@@ -6943,9 +6924,8 @@ msgid "No search to report on.\n"
 msgstr ""
 
 #: src/ServerConnect.cpp
-#, fuzzy
 msgid "Failed to connect to all obfuscated static servers listed. Making another pass without obfuscation."
-msgstr "A eșuat conectarea la toate serverele disimulate listate. Se execută un alt pas fără disimulare."
+msgstr "Conectarea la toate serverele statice disimulate listate a eșuat. Se face o nouă încercare fără disimulare."
 
 #: src/ServerConnect.cpp
 msgid "Failed to connect to all obfuscated servers listed. Making another pass without obfuscation."
@@ -7182,11 +7162,11 @@ msgstr "Fișiere partajate"
 
 #: src/ServerListCtrl.cpp
 msgid "TCP Flags"
-msgstr ""
+msgstr "Fanioane TCP"
 
 #: src/ServerListCtrl.cpp
 msgid "UDP Flags"
-msgstr ""
+msgstr "Fanioane UDP"
 
 #: src/ServerListCtrl.cpp
 msgid "You are connected to a server you are trying to delete. Please disconnect first. The server was NOT deleted."
@@ -7276,7 +7256,7 @@ msgstr "ATENȚIE: %s (%s) - %s"
 #: src/ServerSocket.cpp
 #, c-format
 msgid "Server %s (%s) rejected our login (no client ID assigned). Disconnecting."
-msgstr ""
+msgstr "Serverul %s (%s) a respins autentificarea noastră (niciun ID de client alocat). Se deconectează."
 
 #: src/ServerSocket.cpp
 #, c-format
@@ -7350,9 +7330,8 @@ msgid "Could not solve dns for server %s: Unable to connect!"
 msgstr "Nu se poate rezolva dns pentru serverul %s: Nu se poate conecta!"
 
 #: src/ServerWnd.cpp
-#, fuzzy
 msgid "aMuleGUI Log"
-msgstr "Jurnal aMule"
+msgstr "Jurnal aMuleGUI"
 
 #: src/ServerWnd.cpp
 msgid "Server not added: No IP or hostname specified."
@@ -7371,14 +7350,12 @@ msgid "ID"
 msgstr "ID"
 
 #: src/ServerWnd.cpp
-#, fuzzy
 msgid "Connection Type:"
-msgstr "Stare conexiune:"
+msgstr "Tip conexiune:"
 
 #: src/ServerWnd.cpp
-#, fuzzy
 msgid "Connected since:"
-msgstr "Conectat"
+msgstr "Conectat din:"
 
 #: src/ServerWnd.cpp
 msgid "Kademlia Status:"
@@ -7393,9 +7370,8 @@ msgid "Running"
 msgstr "Rulează"
 
 #: src/ServerWnd.cpp
-#, fuzzy
 msgid "Kademlia client ID:"
-msgstr "Stare Kademlia:"
+msgstr "ID client Kademlia:"
 
 #: src/ServerWnd.cpp
 msgid "Status:"
@@ -7510,9 +7486,9 @@ msgstr[2] "S-au găsit %i de fișiere partajate cunoscute"
 #, c-format
 msgid "Excluded %i file from sharing by filter"
 msgid_plural "Excluded %i files from sharing by filter"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "A exclus %i fișier de la partajare prin filtru"
+msgstr[1] "A exclus %i fișiere de la partajare prin filtru"
+msgstr[2] "A exclus %i de fișiere de la partajare prin filtru"
 
 #: src/SharedFileList.cpp
 #, c-format
@@ -7626,7 +7602,7 @@ msgstr "Rdenumire"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Verify Local Data"
-msgstr ""
+msgstr "Verifică datele locale"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Re-extract &media metadata"
@@ -7671,7 +7647,7 @@ msgstr ""
 #: src/SharedFilesCtrl.cpp
 #, c-format
 msgid "Verify Local Data on PartFile is currently not supported: %s"
-msgstr ""
+msgstr "Verificarea datelor locale pe fișierul parțial nu este momentan acceptată: %s"
 
 #: src/SharedFilesCtrl.cpp
 #, c-format
@@ -7780,9 +7756,9 @@ msgid "Shared Files (%i)"
 msgstr "Fișiere partajate (%i)"
 
 #: src/SharedFilesReloadProgress.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Reloading shared files: %u files scanned"
-msgstr "Reîncarcă lista fișierelor partajate."
+msgstr "Se reîncarcă fișierele partajate: %u fișiere scanate"
 
 #: src/SourceListCtrl.cpp
 #, fuzzy
@@ -8082,24 +8058,22 @@ msgstr "Nu este un index valid (lungimea trebuie să fie exact 32 caractere)\n"
 #. TRANSLATORS:
 #. 'help search' is a command to the program, do not translate it.
 #: src/TextClient.cpp
-#, fuzzy
 msgid ""
 "Invalid search filter syntax.\n"
 "Type 'help search' to get more help.\n"
 msgstr ""
-"Nu s-a definit nici un tip de căutare.\n"
-"Tastați 'ajutor căutare' pentru a obține mai mult ajutor.\n"
+"Sintaxă nevalidă a filtrului de căutare.\n"
+"Tastați 'help search' pentru mai mult ajutor.\n"
 
 #. TRANSLATORS:
 #. 'help search' is a command to the program, do not translate it.
 #: src/TextClient.cpp
-#, fuzzy
 msgid ""
 "No search keyword provided.\n"
 "Type 'help search' to get more help.\n"
 msgstr ""
-"Nu s-a definit nici un tip de căutare.\n"
-"Tastați 'ajutor căutare' pentru a obține mai mult ajutor.\n"
+"Niciun cuvânt cheie de căutare furnizat.\n"
+"Tastați 'help search' pentru mai mult ajutor.\n"
 
 #. TRANSLATORS:
 #. 'help search' is a command to the program, do not translate it.
@@ -8160,12 +8134,12 @@ msgstr ""
 #: src/TextClient.cpp
 #, c-format
 msgid "Endgame source rotation is %s.\n"
-msgstr ""
+msgstr "Rotația surselor endgame este %s.\n"
 
 #: src/TextClient.cpp
 #, c-format
 msgid "Search started (id %u).\n"
-msgstr ""
+msgstr "Căutare pornită (id %u).\n"
 
 #: src/TextClient.cpp
 #, c-format
@@ -8433,14 +8407,12 @@ msgid "Set download bandwidth limit."
 msgstr "Configurare limită lățime de bandă descărcare."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Enable or disable endgame source rotation."
-msgstr "Activează/dezactivează autentificarea cu nume utilizator/parolă"
+msgstr "Activează sau dezactivează rotația surselor endgame."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "The given value must be 1/ON (enable) or 0/OFF (disable).\n"
-msgstr "Valoarea dată trebuie să fie în kiloocteți/secundă.\n"
+msgstr "Valoarea dată trebuie să fie 1/ON (activare) sau 0/OFF (dezactivare).\n"
 
 #: src/TextClient.cpp
 msgid "Get and display a preference value."
@@ -8472,7 +8444,7 @@ msgstr "Obține limitele lățimii de bandă."
 
 #: src/TextClient.cpp
 msgid "Get endgame source rotation state."
-msgstr ""
+msgstr "Obține starea rotației surselor endgame."
 
 #: src/TextClient.cpp
 msgid "Execute a search."
@@ -8496,6 +8468,21 @@ msgid ""
 "Example: 'search global linux iso --type Iso --min-size 100M' returns\n"
 "results for \"linux iso\" of file-type Iso at least 100 MiB.\n"
 msgstr ""
+"Trebuie specificat un tip de căutare, indicând tipul:\n"
+"    GLOBAL\n"
+"    LOCAL\n"
+"    KAD\n"
+"Exemplu: 'search kad file' va executa o căutare kad pentru \"file\".\n"
+"\n"
+"Filtre opționale pot fi adăugate înainte, după sau intercalate cu\n"
+"cuvântul/cuvintele cheie de căutare:\n"
+"    --type <Audio|Video|Image|Doc|Pro|Arc|Iso>\n"
+"    --extension <ext>      (alias: --ext)\n"
+"    --avail <N>            numărul minim de surse\n"
+"    --min-size <N[KMG]>    dimensiunea minimă a fișierului; K=1024, M=K*1024, G=M*1024\n"
+"    --max-size <N[KMG]>    dimensiunea maximă a fișierului; aceleași sufixe\n"
+"Exemplu: 'search global linux iso --type Iso --min-size 100M' returnează\n"
+"rezultate pentru \"linux iso\" de tipul Iso de cel puțin 100 MiB.\n"
 
 #: src/TextClient.cpp
 msgid "Execute a global search."
@@ -8510,15 +8497,16 @@ msgid "Execute a kad search"
 msgstr "Execută o căutare kad"
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Show the results of a search."
-msgstr "Arată rezultatul ultimei căutări."
+msgstr "Afișează rezultatele unei căutări."
 
 #: src/TextClient.cpp
 msgid ""
 "Return the results of a search.\n"
 "Optionally takes a search id (from 'search ...'); with no id, returns the results of the most recently started search.\n"
 msgstr ""
+"Returnează rezultatele unei căutări.\n"
+"Acceptă opțional un id de căutare (din 'search ...'); fără id, returnează rezultatele celei mai recent pornite căutări.\n"
 
 #: src/TextClient.cpp
 msgid "Show the progress of a search."
@@ -8529,6 +8517,8 @@ msgid ""
 "Show the progress of a search.\n"
 "Optionally takes a search id; with no id, shows the progress of the most recently started search.\n"
 msgstr ""
+"Afișează progresul unei căutări.\n"
+"Acceptă opțional un id de căutare; fără id, afișează progresul celei mai recent pornite căutări.\n"
 
 #: src/TextClient.cpp
 msgid "Start downloading a file"
@@ -8651,12 +8641,12 @@ msgstr "Se convertește vechile indexări AICH în '%s' la 64b în '%s'."
 #: src/ThreadTasks.cpp
 #, c-format
 msgid "Verify Local Data (%s): Result OK for %s"
-msgstr ""
+msgstr "Verifică datele locale (%s): Rezultat OK pentru %s"
 
 #: src/ThreadTasks.cpp
 #, c-format
 msgid "Verify Local Data (%s): ERRORS FOUND! %s Failed blocks: MD4: %s. %s %s"
-msgstr ""
+msgstr "Verifică datele locale (%s): AU FOST GĂSITE ERORI! %s Blocuri eșuate: MD4: %s. %s %s"
 
 #: src/ThreadTasks.cpp
 #, c-format
@@ -9226,9 +9216,8 @@ msgid "Enter here the directory where you want to generate the statistic image"
 msgstr "Introduceți aici directorul unde doriți să se genereze imaginea statistică"
 
 #: src/utils/wxCas/src/wxcasprefs.cpp
-#, fuzzy
 msgid "Upload periodically your stat image to FTP server"
-msgstr "Încărcați periodic imaginea statistică pe un server FTP"
+msgstr "Încarcă periodic imaginea de statistici pe serverul FTP"
 
 #: src/utils/wxCas/src/wxcasprefs.cpp
 msgid "FTP Url"
@@ -9373,7 +9362,7 @@ msgstr "Se procesează cererea [original]: "
 
 #: src/webserver/src/WebServer.cpp
 msgid "Refusing to read `pass` from URL query string\n"
-msgstr ""
+msgstr "Se refuză citirea `pass` din șirul de interogare al URL-ului\n"
 
 #: src/webserver/src/WebServer.cpp
 msgid "No password specified, login will not be allowed."
@@ -9409,52 +9398,51 @@ msgstr "Se procesează cererea [redirecționat]: "
 
 #: packaging/windows/installer_strings.c
 msgid "aMule (required)"
-msgstr ""
+msgstr "aMule (necesar)"
 
 #: packaging/windows/installer_strings.c
 msgid "Desktop shortcut"
-msgstr ""
+msgstr "Comandă rapidă pe desktop"
 
 #: packaging/windows/installer_strings.c
 msgid "Start aMule when I log in"
-msgstr ""
+msgstr "Pornește aMule la autentificare"
 
 #: packaging/windows/installer_strings.c
 msgid "Associate .emulecollection files"
-msgstr ""
+msgstr "Asociați fișierele .emulecollection"
 
 #: packaging/windows/installer_strings.c
 msgid "Uninstall"
-msgstr ""
+msgstr "Dezinstalare"
 
 #: packaging/windows/installer_strings.c
 msgid "Remove user data (config, ED2K servers, Kad nodes, partfiles)"
-msgstr ""
+msgstr "Elimină datele utilizatorului (configurare, servere ED2K, noduri Kad, fișiere parțiale)"
 
 #: packaging/windows/installer_strings.c
-#, fuzzy
 msgid "aMule application files (required)."
-msgstr "Conectare eșuată"
+msgstr "Fișierele aplicației aMule (necesare)."
 
 #: packaging/windows/installer_strings.c
 msgid "Place an aMule shortcut on the desktop."
-msgstr ""
+msgstr "Plasează o comandă rapidă aMule pe desktop."
 
 #: packaging/windows/installer_strings.c
 msgid "Launch aMule automatically when the current user logs in (per-user setting)."
-msgstr ""
+msgstr "Lansează aMule automat la autentificarea utilizatorului curent (setare per utilizator)."
 
 #: packaging/windows/installer_strings.c
 msgid "Adds aMule to the \"Open with\" list for .emulecollection files, and makes it the default if no other program has claimed them. Opening a collection queues every eD2k link it contains."
-msgstr ""
+msgstr "Adaugă aMule la lista „Deschide cu” pentru fișierele .emulecollection și îl face aplicația implicită dacă niciun alt program nu le-a revendicat. Deschiderea unei colecții pune în coadă fiecare link eD2k pe care îl conține."
 
 #: packaging/windows/installer_strings.c
 msgid "Remove aMule application files, Start Menu / desktop shortcuts, autostart Run-key entry, URL scheme registrations, and Add/Remove Programs entry (required)."
-msgstr ""
+msgstr "Elimină fișierele aplicației aMule, comenzile rapide din meniul Start / desktop, intrarea din cheia Run pentru pornire automată, înregistrările schemelor de URL și intrarea din Adăugare/Eliminare programe (necesar)."
 
 #: packaging/windows/installer_strings.c
 msgid "Permanently delete %APPDATA%\\aMule for the current user (aMule.conf, ED2K server list, Kad nodes, partfiles, IP filters, friends list). Leave unchecked to keep your settings."
-msgstr ""
+msgstr "Șterge permanent %APPDATA%\\aMule pentru utilizatorul curent (aMule.conf, lista de servere ED2K, noduri Kad, fișiere parțiale, filtre IP, listă de prieteni). Lăsați nebifat pentru a păstra setările."
 
 #: packaging/windows/installer_strings.c
 msgid ""
@@ -9470,7 +9458,7 @@ msgstr ""
 
 #: packaging/windows/installer_strings.c
 msgid "Removing previous aMule installation at $0..."
-msgstr ""
+msgstr "Se elimină instalarea anterioară aMule de la $0..."
 
 #: packaging/windows/installer_strings.c
 msgid ""
@@ -9480,11 +9468,11 @@ msgstr ""
 
 #: packaging/windows/installer_strings.c
 msgid "aMule appears to be running. Please close it and re-run the uninstaller."
-msgstr ""
+msgstr "Se pare că aMule rulează. Închideți-l și rulați din nou dezinstalatorul."
 
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
-msgstr ""
+msgstr "Se elimină datele utilizatorului de la $APPDATA\\aMule..."
 
 #, fuzzy
 #~ msgid "Ratio"

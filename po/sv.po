@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-09-23 12:47+0100\n"
-"PO-Revision-Date: 2026-09-25 11:27+0000\n"
+"PO-Revision-Date: 2026-09-26 09:32+0000\n"
 "Last-Translator: raffe <raffe@localhost.se>\n"
 "Language-Team: Swedish <tp-sv@listor.tp-sv.se>\n"
 "Language: sv\n"
@@ -290,14 +290,14 @@ msgid "Failed"
 msgstr "Misslyckades"
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Terminating amuleapi instance with pid '%d' ... "
-msgstr "Avslutar  amuleweb-instansen med pid '%d' ... "
+msgstr "Avslutar amuleapi-instans med pid '%d' ... "
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Killing amuleapi instance with pid '%d' ... "
-msgstr "Dödar amuleweb-instansen med pid '%d' ... "
+msgstr "Dödar amuleapi-instans med pid '%d' ... "
 
 #: src/amule.cpp
 msgid "aMule OnExit: Terminating core."
@@ -1323,13 +1323,12 @@ msgid "Message to send:"
 msgstr "Meddelande att skicka:"
 
 #: src/ClientContextActions.cpp
-#, fuzzy
 msgid ""
 "You are not allowed to set more than one friend slot.\n"
 " Only one slot was assigned."
 msgstr ""
-"Du kan endast ha ett vän-spår.\n"
-" Endast ett spår tilldelades. "
+"Du får inte ange mer än ett vän-spår.\n"
+" Endast ett spår tilldelades."
 
 #: src/ClientContextActions.cpp src/FriendListCtrl.cpp
 msgid "Multiple selection"
@@ -4559,7 +4558,7 @@ msgstr "Endast avancerade användare: Om du har flera nätverksgränssnitt, ange
 
 #: src/muuli_wdr.cpp
 msgid "Bind to network interface (empty for any):"
-msgstr "Bind till nätverksgränssnitt (tomt för valfritt):"
+msgstr "Bind till nätverksgränssnitt (tomt för alla):"
 
 #: src/muuli_wdr.cpp
 msgid "Advanced users only: pin all of aMule's traffic to one network interface, chosen from the list or typed in by name (e.g. tun0, eth0, en0) or index. Unlike binding to an IP, this stops traffic leaking out via the default route - useful with a VPN. Requires no elevated privileges."
@@ -5405,7 +5404,7 @@ msgstr "Visa landsflagger för klienter"
 
 #: src/muuli_wdr.cpp
 msgid "Render the country flag column in the transfers, queue and search views. Requires a valid MMDB GeoIP database (see below)."
-msgstr "Visa landsflaggekolumnen i vyerna för överföringar, kö och sökning. Kräver en giltig MMDB GeoIP-databas (se nedan)."
+msgstr "Visa landsflaggkolumnen i vyerna för överföringar, kö och sökning. Kräver en giltig MMDB GeoIP-databas (se nedan)."
 
 #: src/muuli_wdr.cpp
 msgid "Database"
@@ -6800,9 +6799,8 @@ msgid "Copy eD2k links to clipboard"
 msgstr "Kopiera eD2k länkar till Urklipp"
 
 #: src/SearchListCtrl.cpp
-#, fuzzy
 msgid "You are not currently connected to a server supporting the Related Files search function"
-msgstr "Du är ansluten till den server som du försöker ta bort. Vänligen koppla ifrån först."
+msgstr "Du är för närvarande inte ansluten till en server som stöder funktionen för att söka relaterade filer"
 
 #: src/SearchListCtrl.cpp
 msgid "Canceled"
@@ -8549,7 +8547,7 @@ msgstr "Verifiera lokala data (%s): resultatet är OK för %s"
 #: src/ThreadTasks.cpp
 #, c-format
 msgid "Verify Local Data (%s): ERRORS FOUND! %s Failed blocks: MD4: %s. %s %s"
-msgstr "Verifiera lokala data (%s): FEL HITTADES! %s misslyckade block: MD4: %s. %s %s"
+msgstr "Verifiera lokala data (%s): FEL HITTADES! %s Misslyckade block: MD4: %s. %s %s"
 
 #: src/ThreadTasks.cpp
 #, c-format
@@ -9381,7 +9379,7 @@ msgstr "aMule verkar köras. Stäng programmet och kör avinstallationsprogramme
 
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
-msgstr ""
+msgstr "Tar bort användardata vid $APPDATA\\aMule..."
 
 #~ msgid "Wildcard patterns separated by '|', e.g. .DS_Store|Thumbs.db|*.tmp. Files whose name matches are not shared. Matching is case-insensitive."
 #~ msgstr "Jokerteckenmönster avgränsade med ”|”, till exempel .DS_Store|Thumbs.db|*.tmp. Filer vars namn matchar delas inte. Matchning skiljer inte mellan stora och små bokstäver."

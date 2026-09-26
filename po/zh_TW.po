@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-09-23 12:47+0100\n"
-"PO-Revision-Date: 2026-09-25 11:29+0000\n"
+"PO-Revision-Date: 2026-09-26 09:34+0000\n"
 "Last-Translator: Wayne Su <mstarmstar@gmail.com>\n"
 "Language-Team: \n"
 "Language: zh_TW\n"
@@ -47,12 +47,11 @@ msgstr ""
 "\n"
 
 #: src/AboutDialog.cpp
-#, fuzzy
 msgid ""
 "Copyright (c) 2003-2026 aMule Team \n"
 "\n"
 msgstr ""
-"Copyright (c) 2003-2019 aMule 團隊\n"
+"版權所有 (c) 2003-2026 aMule 團隊 \n"
 "\n"
 
 #: src/AboutDialog.cpp
@@ -69,47 +68,44 @@ msgstr " Copyright (c) 2002-2011 Petar Maymounkov ( petar@maymounkov.org )\n"
 
 #: src/AboutDialog.cpp
 msgid "Website:"
-msgstr ""
+msgstr "網站："
 
 #: src/AboutDialog.cpp
 msgid "Forum:"
-msgstr ""
+msgstr "論壇："
 
 #: src/AboutDialog.cpp
 msgid "Documentation:"
-msgstr ""
+msgstr "文件："
 
 #: src/AboutDialog.cpp
 msgid "Issues:"
-msgstr ""
+msgstr "問題回報："
 
 #: src/AboutDialog.cpp
-#, fuzzy
 msgid "Click to check for a newer version."
-msgstr "啓動時檢查新版本"
+msgstr "按一下以檢查是否有新版本。"
 
 #: src/AboutDialog.cpp
 msgid "Check for updates"
-msgstr ""
+msgstr "檢查更新"
 
 #: src/AboutDialog.cpp
-#, fuzzy
 msgid "Checking for updates..."
-msgstr "Kad 連線中..."
+msgstr "正在檢查更新..."
 
 #: src/AboutDialog.cpp
-#, fuzzy
 msgid "You are running the latest version."
-msgstr "您使用的是過期的 aMule 版本！"
+msgstr "您目前執行的是最新版本。"
 
 #: src/AboutDialog.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "A new version (%s) is available:"
-msgstr "不可用"
+msgstr "有新版本（%s）可用："
 
 #: src/AboutDialog.cpp
 msgid "Could not check for updates. Please try again later."
-msgstr ""
+msgstr "無法檢查更新。請稍後再試。"
 
 #: src/AddFriend.cpp
 msgid "Add a Friend"
@@ -135,47 +131,50 @@ msgid ""
 "\n"
 "Install desktop integration now?"
 msgstr ""
+"aMule 可以在您的家目錄中安裝桌面啟動器、圖示與殼層指令捷徑，讓它像一般安裝的應用程式一樣出現在您的應用程式選單中。\n"
+"\n"
+"這是可還原的操作 - 這些檔案位於 ~/.local/share/applications、~/.local/share/icons 及 ~/.local/bin，可隨時移除。\n"
+"\n"
+"要現在安裝桌面整合嗎？"
 
 #: src/AppImageIntegration.cpp
-#, fuzzy
 msgid "Add aMule to your application menu?"
-msgstr "在程式名稱後"
+msgstr "要將 aMule 加入應用程式選單嗎？"
 
 #: src/AppImageIntegration.cpp
 msgid "Install"
-msgstr ""
+msgstr "安裝"
 
 #: src/AppImageIntegration.cpp
 msgid "Not now"
-msgstr ""
+msgstr "現在不要"
 
 #: src/AppImageIntegration.cpp src/amuleDlg.cpp
 msgid "Don't ask again"
-msgstr ""
+msgstr "不再詢問"
 
 #: src/AppImageIntegration.cpp
 msgid "Cannot install desktop integration: the APPDIR environment variable is not set. This usually means the AppImage was launched in a non-standard way."
-msgstr ""
+msgstr "無法安裝桌面整合：未設定 APPDIR 環境變數。這通常表示 AppImage 是以非標準方式啟動的。"
 
 #: src/AppImageIntegration.cpp
-#, fuzzy
 msgid "aMule integration failed"
-msgstr "無法連線 "
+msgstr "aMule 整合失敗"
 
 #: src/AppImageIntegration.cpp
 #, c-format
 msgid "Cannot install desktop integration: failed to create %s. Check that your home directory is writable."
-msgstr ""
+msgstr "無法安裝桌面整合：無法建立 %s。請確認您的家目錄可寫入。"
 
 #: src/AppImageIntegration.cpp
 #, c-format
 msgid "Cannot install desktop integration: failed to write %s. Check that your home directory is writable."
-msgstr ""
+msgstr "無法安裝桌面整合：無法寫入 %s。請確認您的家目錄可寫入。"
 
 #: src/AppImageIntegration.cpp
 #, c-format
 msgid "AppImage integration: aMule added to your application menu (%d shell shortcuts under ~/.local/bin)."
-msgstr ""
+msgstr "AppImage 整合：aMule 已加入您的應用程式選單（在 ~/.local/bin 下有 %d 個殼層捷徑）。"
 
 #: src/AppImageIntegration.cpp
 msgid ""
@@ -185,18 +184,23 @@ msgid ""
 "\n"
 "Restart aMule now?"
 msgstr ""
+"aMule 已加入您的應用程式選單。您現在可以從應用程式清單啟動它，啟動器將執行同一個 AppImage。\n"
+"\n"
+"在某些桌面環境中，aMule 可能需要重新啟動，Dock／工作列圖示才能與新的啟動器項目綁定。現代的 Wayland 合成器（GNOME、KDE）會即時套用，但如果圖示仍顯示為通用圖示，重新啟動是安全的替代方案。\n"
+"\n"
+"要立即重新啟動 aMule 嗎？"
 
 #: src/AppImageIntegration.cpp
 msgid "aMule installed"
-msgstr ""
+msgstr "aMule 已安裝"
 
 #: src/AppImageIntegration.cpp
 msgid "Restart now"
-msgstr ""
+msgstr "立即重新啟動"
 
 #: src/AppImageIntegration.cpp
 msgid "Later"
-msgstr ""
+msgstr "稍後"
 
 #: src/amuleAppCommon.cpp
 msgid "Failed to open ED2KLinks file."
@@ -284,14 +288,14 @@ msgid "Failed"
 msgstr "失敗"
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Terminating amuleapi instance with pid '%d' ... "
-msgstr "正在終止 pid %d 的 amuleweb 執行緒... "
+msgstr "正在終止 pid 為「%d」的 amuleapi 執行個體... "
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Killing amuleapi instance with pid '%d' ... "
-msgstr "正在強行終止 pid %d 的 amuleweb 執行緒... "
+msgstr "正在強制終止 pid 為「%d」的 amuleapi 執行個體... "
 
 #: src/amule.cpp
 msgid "aMule OnExit: Terminating core."
@@ -308,27 +312,27 @@ msgstr "離開 aMule 時記憶體除錯結果："
 #: src/amule.cpp
 #, c-format
 msgid "Binding aMule's peer-to-peer traffic to interface: %s (HTTP updates use the default route)"
-msgstr ""
+msgstr "將 aMule 的點對點流量繫結至介面：%s（HTTP 更新則使用預設路由）"
 
 #: src/amule.cpp
 #, c-format
 msgid "Binding all network traffic to interface: %s"
-msgstr ""
+msgstr "將所有網路流量繫結至介面：%s"
 
 #: src/amule.cpp
 #, c-format
 msgid "WARNING: configured network interface '%s' was not found - traffic is NOT bound to it and may leave via the default route. Check the interface name in Preferences."
-msgstr ""
+msgstr "警告：找不到設定的網路介面「%s」 - 流量並未繫結至該介面，可能會透過預設路由傳送。請在偏好設定中檢查介面名稱。"
 
 #: src/amule.cpp
 #, c-format
 msgid "WARNING: binding to network interface '%s' requires elevated privileges and was NOT applied - traffic may leave via the default route. Grant the capability (e.g. 'sudo setcap cap_net_raw+ep' on the aMule binary) or run with sufficient privileges."
-msgstr ""
+msgstr "警告：繫結至網路介面「%s」需要提升權限，因此未套用 - 流量可能會透過預設路由傳送。請授予該能力（例如在 aMule 執行檔上執行 'sudo setcap cap_net_raw+ep'）或以足夠的權限執行。"
 
 #: src/amule.cpp
 #, c-format
 msgid "WARNING: could not bind to network interface '%s' - traffic may leave via the default route."
-msgstr ""
+msgstr "警告：無法繫結至網路介面「%s」 - 流量可能會透過預設路由傳送。"
 
 #: src/amule.cpp
 msgid "Your locale has been changed to System Default due to a configuration change. Sorry."
@@ -404,24 +408,24 @@ msgid "Starting up"
 msgstr "開始"
 
 #: src/amule.cpp
-#, fuzzy
 msgid "Network bootstrap"
-msgstr "網路"
+msgstr "網路啟動"
 
 #: src/amule.cpp
 msgid ""
 "aMule has detected missing network bootstrap files.\n"
 "Select which ones to download:"
 msgstr ""
+"aMule 偵測到缺少網路啟動檔案。\n"
+"請選擇要下載的項目："
 
 #: src/amule.cpp src/FirstRunWizard.cpp
-#, fuzzy
 msgid "eD2k server list (server.met)"
-msgstr "在 server.met 中找到 %i 個伺服器"
+msgstr "eD2k 伺服器清單（server.met）"
 
 #: src/amule.cpp src/FirstRunWizard.cpp
 msgid "Kad bootstrap nodes (nodes.dat)"
-msgstr ""
+msgstr "Kad 啟動節點（nodes.dat）"
 
 #: src/amule.cpp
 #, c-format
@@ -429,9 +433,8 @@ msgid "web server running on pid %d"
 msgstr "執行中的網站伺服器 pid：%d"
 
 #: src/amule.cpp
-#, fuzzy
 msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
-msgstr "您要求啟動時執行網站伺服器，但系統無法執行 amuleweb。請安裝含有 aMule 網站伺服器的套件，或於編譯 aMule 程式碼時加入 --enable-webserver 選項"
+msgstr "您要求在啟動時執行網站伺服器，但無法執行 amuleweb 執行檔。請安裝包含 aMule 網站伺服器的套件，或從原始碼以 -DBUILD_WEBSERVER=YES 建置 aMule 並安裝。"
 
 #: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
 #: src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
@@ -444,14 +447,13 @@ msgid "Could not write the amuleapi EC token to %s; amuleapi will fall back to i
 msgstr ""
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "amuleapi running on pid %d"
-msgstr "執行中的網站伺服器 pid：%d"
+msgstr "amuleapi 正在 pid %d 上執行"
 
 #: src/amule.cpp
-#, fuzzy
 msgid "You requested to run amuleapi on startup, but the amuleapi binary cannot be run. Please install the package containing aMule's REST API server, or build aMule from source with -DBUILD_AMULEAPI=YES and install it."
-msgstr "您要求啟動時執行網站伺服器，但系統無法執行 amuleweb。請安裝含有 aMule 網站伺服器的套件，或於編譯 aMule 程式碼時加入 --enable-webserver 選項"
+msgstr "您要求在啟動時執行 amuleapi，但無法執行 amuleapi 執行檔。請安裝包含 aMule REST API 伺服器的套件，或從原始碼以 -DBUILD_AMULEAPI=YES 建置 aMule 並安裝。"
 
 #: src/amule.cpp
 #, c-format
@@ -675,9 +677,8 @@ msgid "ERROR: aMule daemon cannot be used when external connections are disabled
 msgstr "錯誤：當停用外部連線時，aMule 背景服務程式無法使用。要啓用外部連線，請使用標準的 aMule，或使用 --ec-config 選項啓動 amuled，或在檔案 ~/aMule/amule.conf 中將「AcceptExternalConnections」設定值改為 1"
 
 #: src/amuled.cpp
-#, fuzzy
 msgid "ERROR: A valid password is required to use external connections, and aMule daemon cannot be used without external connections. To run aMule daemon, you must set the \"ECPassword\" field in the file ~/.aMule/amule.conf with an appropriate value. Execute amuled with the flag --ec-config to set the password. More information can be found at https://amule-org.github.io/docs"
-msgstr "錯誤：需要有效的密碼以使用外部連線，且 aMule 背景服務程式要有外部連線才可使用。要執行 aMule 背景服務程式，您必須在檔案 ~/aMule/amule.conf 中將 「ECPassword」 設定值改為適當的數字。使用 --ec-config 參數啓動 amuled 以設定密碼。請到 https://amule-org.github.io/docs 取得更多資訊"
+msgstr "錯誤：使用外部連線需要有效的密碼，而 aMule 背景服務程式若沒有外部連線便無法使用。若要執行 aMule 背景服務程式，您必須在檔案 ~/.aMule/amule.conf 中將「ECPassword」欄位設定為適當的值。執行 amuled 並加上 --ec-config 參數即可設定密碼。更多資訊請參閱 https://amule-org.github.io/docs"
 
 #: src/amuled.cpp
 msgid "amuled: OnInit - starting timer"
@@ -749,7 +750,7 @@ msgstr "偏好設定"
 
 #: src/amuleDlg.cpp
 msgid "Navigate"
-msgstr ""
+msgstr "瀏覽"
 
 #: src/amuleDlg.cpp
 #, fuzzy, c-format
@@ -757,19 +758,23 @@ msgid "Free space: %s"
 msgstr "伺服器訊息：%s"
 
 #: src/amuleDlg.cpp
-#, fuzzy
 msgid "New version available"
-msgstr "不可用"
+msgstr "有新版本可用"
 
 #: src/amuleDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "A new version of aMule (%s) is available.\n"
 "\n"
 "You are running %s.\n"
 "\n"
 "Would you like to open the download page?"
-msgstr "最新版本可從這裏下載：https://github.com/amule-org/amule/releases/latest"
+msgstr ""
+"有新版本的 aMule（%s）可用。\n"
+"\n"
+"您目前執行的是 %s。\n"
+"\n"
+"是否要開啟下載頁面？"
 
 #: src/amuleDlg.cpp
 msgid "aMule dialog destroyed"
@@ -836,9 +841,9 @@ msgid "aMuleGUI"
 msgstr "aMule 記錄"
 
 #: src/amuleDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Up: %.1f%s (%.1f) | Down: %.1f%s (%.1f)"
-msgstr "上傳：%.1f (%.1f) | 下載：%.1f (%.1f)"
+msgstr "上傳：%.1f%s (%.1f) | 下載：%.1f%s (%.1f)"
 
 #: src/amuleDlg.cpp src/MuleTrayIcon.cpp
 msgid " MiB/s"
@@ -849,9 +854,9 @@ msgid " KiB/s"
 msgstr ""
 
 #: src/amuleDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Up: %.1f%s | Down: %.1f%s"
-msgstr "上傳：%.1f | 下載：%.1f"
+msgstr "上傳：%.1f%s | 下載：%.1f%s"
 
 #: src/amuleDlg.cpp
 #, c-format
@@ -972,19 +977,18 @@ msgid "Connection lost"
 msgstr "失去連線"
 
 #: src/amule-remote-gui.cpp
-#, fuzzy
 msgid "Abort and exit"
-msgstr "離開前先確認"
+msgstr "中止並結束"
 
 #: src/amule-remote-gui.cpp
 #, c-format
 msgid "Reconnecting... (attempt %d)"
-msgstr ""
+msgstr "正在重新連線……（第 %d 次嘗試）"
 
 #: src/amule-remote-gui.cpp
 #, c-format
 msgid "Next attempt in %d s..."
-msgstr ""
+msgstr "下次嘗試將於 %d 秒後進行……"
 
 #: src/amule-remote-gui.cpp
 #, c-format
@@ -994,6 +998,10 @@ msgid ""
 "\n"
 "The interface is paused until the connection is restored."
 msgstr ""
+"與 %s 的連線已中斷。\n"
+"%s\n"
+"\n"
+"介面將暫停，直到連線恢復為止。"
 
 #: src/amule-remote-gui.cpp
 msgid "Fatal Error: Failed to create Poll Timer"
@@ -1009,7 +1017,7 @@ msgstr "正在連線..."
 
 #: src/amule-remote-gui.cpp
 msgid "Connection failed. Please check the host, port, and password."
-msgstr ""
+msgstr "連線失敗。請檢查主機、連接埠與密碼。"
 
 #: src/amule-remote-gui.cpp
 msgid "Remote GUI EC event handler"
@@ -1025,9 +1033,8 @@ msgid "Going down"
 msgstr "關閉中"
 
 #: src/amule-remote-gui.cpp
-#, fuzzy
 msgid "Reconnect attempt timed out; retrying."
-msgstr "連線到 %s (%s:%i) 時逾時。"
+msgstr "重新連線嘗試逾時；正在重試。"
 
 #: src/amule-remote-gui.cpp
 #, c-format
@@ -1035,32 +1042,33 @@ msgid ""
 "Connection timed out. Unable to reach %s:%d within the allotted time.\n"
 "Please check the host, port and that aMule is running with External Connections enabled."
 msgstr ""
+"連線逾時。無法在指定時間內連接到 %s:%d。\n"
+"請檢查主機、連接埠，並確認 aMule 正在執行且已啟用外部連線。"
 
 #: src/amule-remote-gui.cpp
 msgid "Connection to the remote core was lost. Trying to reconnect..."
-msgstr ""
+msgstr "與遠端核心的連線已中斷。正在嘗試重新連線……"
 
 #: src/amule-remote-gui.cpp src/ClientDetailDialog.cpp
 msgid "Disabled"
 msgstr "已停用"
 
 #: src/amule-remote-gui.cpp
-#, fuzzy
 msgid "Reconnected to the remote core."
-msgstr "連線到網路。"
+msgstr "已重新連線至遠端核心。"
 
 #: src/amule-remote-gui.cpp
 msgid "The remote core was restarted; reloading."
 msgstr ""
 
 #: src/amule-remote-gui.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Reconnect attempt %d: connecting to %s:%d"
-msgstr "無法連線到 %s:%d\n"
+msgstr "第 %d 次重新連線嘗試：正在連線至 %s:%d"
 
 #: src/amule-remote-gui.cpp
 msgid "Reconnect could not start; retrying shortly."
-msgstr ""
+msgstr "無法開始重新連線；稍後將重試。"
 
 #: src/amule-remote-gui.cpp
 msgid "Ready"
@@ -1071,19 +1079,17 @@ msgid "All"
 msgstr "全部"
 
 #: src/amule-remote-gui.cpp
-#, fuzzy
 msgid "not readable"
-msgstr "N/A"
+msgstr "無法讀取"
 
 #: src/amule-remote-gui.cpp
-#, fuzzy
 msgid "not found"
-msgstr "找不到檔案。"
+msgstr "找不到"
 
 #: src/amule-remote-gui.cpp
 #, c-format
 msgid "The core rejected these shared folders:%s"
-msgstr ""
+msgstr "核心拒絕了下列分享資料夾：%s"
 
 #: src/amule-remote-gui.cpp src/ExternalConn.cpp
 msgid "Invalid link or already on list."
@@ -1619,16 +1625,15 @@ msgstr "註解"
 
 #: src/CommentDialogLst.cpp
 msgid "Could not start a Kad search"
-msgstr ""
+msgstr "無法開始 Kad 搜尋"
 
 #: src/CommentDialogLst.cpp src/SearchList.cpp
 msgid "Kad search can't be done if Kad is not running"
 msgstr "Kad 網路尚未連線，無法使用 Kad 搜尋"
 
 #: src/CommentDialogLst.cpp
-#, fuzzy
 msgid "Searching Kad for comments..."
-msgstr "搜尋 LowID 連線好友"
+msgstr "正在 Kad 中搜尋註解……"
 
 #: src/CommentDialogLst.cpp src/muuli_wdr.cpp
 msgid "No comments"
@@ -2014,9 +2019,9 @@ msgid "Downloads (%i)"
 msgstr "下載 (%i)"
 
 #: src/DownloadListCtrl.cpp src/TransferWnd.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Total queue size: %s"
-msgstr "總下載：%s"
+msgstr "佇列總大小：%s"
 
 #: src/DownloadQueue.cpp
 #, c-format
@@ -2074,9 +2079,9 @@ msgid "You are already trying to download the file '%s'"
 msgstr "您已經在下載檔案 %s 了"
 
 #: src/DownloadQueue.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "You already have the file '%s' (requested as '%s')"
-msgstr "您已經有檔案 %s"
+msgstr "您已經擁有檔案「%s」（請求名稱為「%s」）"
 
 #: src/DownloadQueue.cpp
 #, c-format
@@ -2097,7 +2102,7 @@ msgstr "有不明協定的連結：%s"
 #, c-format
 msgid "Could not add %u link (see log for details)."
 msgid_plural "Could not add %u links (see log for details)."
-msgstr[0] ""
+msgstr[0] "無法新增 %u 個連結（詳情請參閱記錄檔）。"
 
 #: src/DownloadQueue.cpp
 #, c-format
@@ -2240,18 +2245,16 @@ msgid "No address known for that friend yet."
 msgstr ""
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "Friend not found."
-msgstr "找不到檔案。"
+msgstr "找不到好友。"
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "Client not found."
-msgstr "找不到檔案。"
+msgstr "找不到客戶端。"
 
 #: src/ExternalConn.cpp
 msgid "EC_TAG_FRIEND_SHARED requires EC_TAG_FRIEND or EC_TAG_CLIENT."
-msgstr ""
+msgstr "EC_TAG_FRIEND_SHARED 需要 EC_TAG_FRIEND 或 EC_TAG_CLIENT。"
 
 #: src/ExternalConn.cpp
 msgid "WebSearch from remote interface makes no sense."
@@ -2287,17 +2290,17 @@ msgid "ExternalConn: adding link '%s'."
 msgstr "外部連線：正在加入連結 %s 。"
 
 #: src/ExternalConn.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "%d of %d links failed (invalid or already on list)."
-msgstr "無效連結或已在清單中。"
+msgstr "%d / %d 個連結失敗（無效或已在清單中）。"
 
 #: src/ExternalConn.cpp
 msgid "Version check throttled; try again shortly."
-msgstr ""
+msgstr "版本檢查已受限速；請稍後再試。"
 
 #: src/ExternalConn.cpp
 msgid "Version check is not available on this daemon."
-msgstr ""
+msgstr "此背景服務程式不支援版本檢查。"
 
 #: src/ExternalConn.cpp
 msgid "File not found."
@@ -2318,7 +2321,7 @@ msgstr ""
 #: src/ExternalConn.cpp
 #, c-format
 msgid "Could not save the amuleapi password: %s"
-msgstr ""
+msgstr "無法儲存 amuleapi 密碼：%s"
 
 #: src/ExternalConn.cpp
 #, fuzzy
@@ -2612,15 +2615,15 @@ msgstr ""
 
 #: src/ExternalConnector.cpp
 msgid "Force ZLIB compression regardless of dialed-IP locality (useful when the server is reachable over a VPN tunnel that resolves to a LAN IP)."
-msgstr ""
+msgstr "強制使用 ZLIB 壓縮，不論所連線的 IP 是否位於區域網路（適用於伺服器透過解析為區域網路 IP 的 VPN 通道連線時）。"
 
 #: src/ExternalConnector.cpp
 msgid "Append a copy of all console output to this log file (default: <config-dir>/amuleapi.log)."
-msgstr ""
+msgstr "將所有主控台輸出的副本附加至此記錄檔（預設：<config-dir>/amuleapi.log）。"
 
 #: src/ExternalConnector.cpp
 msgid "Do not write a log file; print to the console only."
-msgstr ""
+msgstr "不寫入記錄檔；僅輸出至主控台。"
 
 #: src/FileDetailDialog.cpp
 msgid "File Details"
@@ -2671,66 +2674,67 @@ msgstr "錯誤：無法開啟暫存檔 %s"
 
 #: src/FirstRunWizard.cpp
 msgid "Mobile / 4G-5G (20 / 5 Mbit)"
-msgstr ""
+msgstr "行動網路 / 4G-5G（20 / 5 Mbit）"
 
 #: src/FirstRunWizard.cpp
 msgid "ADSL (24 / 1 Mbit)"
-msgstr ""
+msgstr "ADSL（24 / 1 Mbit）"
 
 #: src/FirstRunWizard.cpp
 msgid "VDSL (50 / 10 Mbit)"
-msgstr ""
+msgstr "VDSL（50 / 10 Mbit）"
 
 #: src/FirstRunWizard.cpp
 msgid "Cable (200 / 20 Mbit)"
-msgstr ""
+msgstr "有線寬頻（200 / 20 Mbit）"
 
 #: src/FirstRunWizard.cpp
 msgid "Fibre 300 (300 / 100 Mbit)"
-msgstr ""
+msgstr "光纖 300（300 / 100 Mbit）"
 
 #: src/FirstRunWizard.cpp
 msgid "Fibre Gigabit (1000 / 1000 Mbit)"
-msgstr ""
+msgstr "光纖 Gigabit（1000 / 1000 Mbit）"
 
 #: src/FirstRunWizard.cpp
 msgid "aMule first-run setup"
-msgstr ""
+msgstr "aMule 首次執行設定"
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Welcome to aMule!"
-msgstr "歡迎！"
+msgstr "歡迎使用 aMule！"
 
 #: src/FirstRunWizard.cpp
 msgid ""
 "This short setup will get you connected. You can change\n"
 "any of these settings later in Preferences."
 msgstr ""
+"這個簡短的設定精靈能讓您連上網路。您稍後可以在偏好設定中\n"
+"變更這些設定。"
 
 #: src/FirstRunWizard.cpp
 msgid "Choose a nickname other peers will see:"
-msgstr ""
+msgstr "選擇其他使用者將看到的暱稱："
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Connection & bandwidth"
-msgstr "正在與好友連線"
+msgstr "連線與頻寬"
 
 #: src/FirstRunWizard.cpp
 msgid ""
 "Pick the option that best matches your Internet connection,\n"
 "or set the upload and download limits directly below."
 msgstr ""
+"選擇最符合您網際網路連線的選項，\n"
+"或直接在下方設定上傳與下載限制。"
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Connection speed:"
-msgstr "連線狀態："
+msgstr "連線速度："
 
 #: src/FirstRunWizard.cpp
 msgid "Other / set manually"
-msgstr ""
+msgstr "其他／手動設定"
 
 #: src/FirstRunWizard.cpp
 msgid "Upload limit (KiB/s, 0 = unlimited):"
@@ -2741,13 +2745,12 @@ msgid "Download limit (KiB/s, 0 = unlimited):"
 msgstr ""
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Networks & ports"
-msgstr "網路"
+msgstr "網路與連接埠"
 
 #: src/FirstRunWizard.cpp
 msgid "aMule can use two networks. We recommend keeping both enabled."
-msgstr ""
+msgstr "aMule 可以使用兩種網路。建議兩者皆保持啟用。"
 
 #: src/FirstRunWizard.cpp src/TextClient.cpp
 msgid "eD2k"
@@ -2775,22 +2778,25 @@ msgid ""
 "peers can reach you (a \"HighID\"). Turn off if your router\n"
 "doesn't support UPnP or you forward ports manually."
 msgstr ""
+"讓 aMule 要求您的路由器轉發上述連接埠，讓其他\n"
+"使用者能夠連上您（取得「HighID」）。如果您的路由器\n"
+"不支援 UPnP，或您已手動轉發連接埠，請關閉此選項。"
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Bootstrap files"
-msgstr "啓動"
+msgstr "啟動檔案"
 
 #: src/FirstRunWizard.cpp
 msgid ""
 "To get started, aMule needs to know about some peers.\n"
 "Select which lists to download now:"
 msgstr ""
+"為了開始使用，aMule 需要知道一些使用者的資訊。\n"
+"請選擇現在要下載的清單："
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Your peer lists are already in place - nothing to download."
-msgstr "您已經在下載檔案 %s 了"
+msgstr "您的使用者清單已經存在，無需下載。"
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Auto-update server list at startup"
@@ -2798,45 +2804,49 @@ msgstr "啟動時自動更新伺服器清單"
 
 #: src/FirstRunWizard.cpp
 msgid "Integrations (optional)"
-msgstr ""
+msgstr "整合（選用）"
 
 #: src/FirstRunWizard.cpp
 msgid ""
 "Choose how aMule integrates with your system. You can\n"
 "change any of these later in Preferences."
 msgstr ""
+"選擇 aMule 如何與您的系統整合。您稍後可以\n"
+"在偏好設定中變更這些設定。"
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Start aMule automatically when I log in"
-msgstr ""
+msgstr "登入時自動啟動 aMule"
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 #: packaging/windows/installer_strings.c
 msgid "Register aMule for ed2k:// links"
-msgstr ""
+msgstr "將 aMule 註冊為 ed2k:// 連結的處理程式"
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 #: packaging/windows/installer_strings.c
 msgid "Register aMule for magnet: links"
-msgstr ""
+msgstr "將 aMule 註冊為 magnet: 連結的處理程式"
 
 #: src/FirstRunWizard.cpp
 msgid "Only eD2k-compatible magnets. Leave off if you use a BitTorrent client."
-msgstr ""
+msgstr "僅限 eD2k 相容的磁力連結。若您使用 BitTorrent 客戶端，請保持關閉。"
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Open .emulecollection files with aMule"
-msgstr ""
+msgstr "使用 aMule 開啟 .emulecollection 檔案"
 
 #: src/FirstRunWizard.cpp
 msgid "Folders (optional)"
-msgstr ""
+msgstr "資料夾（選用）"
 
 #: src/FirstRunWizard.cpp
 msgid ""
 "The defaults are fine for most people. Change them if you\n"
 "want downloads on a different (e.g. larger) disk."
 msgstr ""
+"預設值對大多數人來說已經足夠。若您希望\n"
+"將下載內容存放在不同（例如容量較大）的磁碟，請變更設定。"
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Destination folder for downloads"
@@ -2849,7 +2859,7 @@ msgstr "瀏覽"
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "(All files in this folder are shared with other peers)"
-msgstr ""
+msgstr "（此資料夾中的所有檔案都會與其他節點分享）"
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Folder for temporary download files"
@@ -2861,14 +2871,16 @@ msgid ""
 "Based on this, aMule will allow up to %i sources per file\n"
 "and %i client connections."
 msgstr ""
+"根據此設定，aMule 將允許每個檔案最多 %i 個來源\n"
+"以及 %i 個客戶端連線。"
 
 #: src/FirstRunWizard.cpp
 msgid "Show this setup wizard again the next time you start aMule?"
-msgstr ""
+msgstr "下次啟動 aMule 時再次顯示此設定精靈？"
 
 #: src/FirstRunWizard.cpp
 msgid "Setup not finished"
-msgstr ""
+msgstr "設定尚未完成"
 
 #: src/FriendList.cpp
 msgid "Failed to open friend list file 'emfriends.met' for reading!"
@@ -2984,44 +2996,44 @@ msgid "The URL to download can't be empty"
 msgstr "要下載的網址不可空白"
 
 #: src/HTTPDownload.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Failed to create HTTP request for %s"
-msgstr "無法從使用者 %s 取得分享檔案清單"
+msgstr "無法為 %s 建立 HTTP 請求"
 
 #: src/HTTPDownload.cpp
 #, c-format
 msgid "HTTP download: empty response body for %s"
-msgstr ""
+msgstr "HTTP 下載：%s 的回應內容為空"
 
 #: src/HTTPDownload.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Could not move downloaded file to %s"
-msgstr "暫存資料夾"
+msgstr "無法將下載的檔案移動至 %s"
 
 #: src/HTTPDownload.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Downloaded %s (%llu bytes)"
-msgstr "已下載 %d B"
+msgstr "已下載 %s（%llu 位元組）"
 
 #: src/HTTPDownload.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "The URL %s returned: %i"
-msgstr "網址 %s 傳回：%i - 錯誤 (%i)！"
+msgstr "網址 %s 傳回：%i"
 
 #: src/HTTPDownload.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "HTTP download failed for %s: %s"
-msgstr "已取消 HTTP 下載"
+msgstr "%s 的 HTTP 下載失敗：%s"
 
 #: src/HTTPDownload.cpp
 #, c-format
 msgid "HTTP 401 Unauthorized for %s"
-msgstr ""
+msgstr "%s 傳回 HTTP 401 未授權"
 
 #: src/IP2Country.cpp
 #, c-format
 msgid "Migrated existing GeoLite2-Country.mmdb to %s"
-msgstr ""
+msgstr "已將現有的 GeoLite2-Country.mmdb 移轉至 %s"
 
 #: src/IP2Country.cpp
 #, c-format
@@ -3030,25 +3042,25 @@ msgstr ""
 
 #: src/IP2Country.cpp
 msgid "IP2Country: MaxMind selected as the GeoIP source but no License Key configured. Open Preferences -> IP2Country, paste your free MaxMind License Key and click 'Update now'."
-msgstr ""
+msgstr "IP2Country：已選擇 MaxMind 作為 GeoIP 來源，但尚未設定授權金鑰。請開啟「偏好設定」->「IP2Country」，貼上您的免費 MaxMind 授權金鑰並按一下「立即更新」。"
 
 #: src/IP2Country.cpp
 msgid "IP2Country: Custom URL selected as the GeoIP source but no URL configured. Open Preferences -> IP2Country and supply a URL that points to an .mmdb (or .gz / .tar.gz containing one)."
-msgstr ""
+msgstr "IP2Country：已選擇自訂網址作為 GeoIP 來源，但尚未設定網址。請開啟「偏好設定」->「IP2Country」，並提供指向 .mmdb（或包含該檔案的 .gz／.tar.gz）的網址。"
 
 #: src/IP2Country.cpp
 msgid "IP2Country: failed to resolve a GeoIP download URL."
-msgstr ""
+msgstr "IP2Country：無法解析 GeoIP 下載網址。"
 
 #: src/IP2Country.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Download new %s from %s"
-msgstr "從 %s 下載新的 GeoIP.dat"
+msgstr "從 %s 下載新的 %s"
 
 #: src/IP2Country.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Download of %s file failed, aborting update."
-msgstr "無法下載 GeoIP.dat，停止更新。"
+msgstr "下載 %s 檔案失敗，更新已中止。"
 
 #: src/IP2Country.cpp src/IPFilter.cpp
 #, c-format
@@ -3066,13 +3078,13 @@ msgid "Successfully updated %s"
 msgstr "成功更新 %s"
 
 #: src/IP2Country.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Error updating %s"
-msgstr "GeoIP.dat 更新錯誤"
+msgstr "更新 %s 時發生錯誤"
 
 #: src/IP2Country.cpp
 msgid "DB-IP download failed for the current month - retrying with the previous month's URL."
-msgstr ""
+msgstr "本月的 DB-IP 下載失敗 - 正在改用上個月的網址重試。"
 
 #: src/IP2Country.cpp src/IPFilter.cpp src/ServerList.cpp
 #, c-format
@@ -3194,34 +3206,33 @@ msgid_plural "Wrote %d Kad contacts"
 msgstr[0] "已寫入 %d 個 Kad 聯絡人"
 
 #: src/KnownFile.cpp
-#, fuzzy
 msgid "Kad user"
-msgstr "kad 網路"
+msgstr "Kad 使用者"
 
 #: src/KnownFile.cpp
 #, c-format
 msgid "Kad note search for '%s' not started: Kad is not connected"
-msgstr ""
+msgstr "未開始針對「%s」的 Kad 註解搜尋：Kad 尚未連線"
 
 #: src/KnownFile.cpp
 #, c-format
 msgid "Kad note search for '%s' not started: a note lookup is already running for this file"
-msgstr ""
+msgstr "未開始針對「%s」的 Kad 註解搜尋：此檔案已有正在執行的註解查詢"
 
 #: src/KnownFile.cpp
 #, c-format
 msgid "Kad note search for '%s' not started: file is not in the shared list, download queue or search results"
-msgstr ""
+msgstr "未開始針對「%s」的 Kad 註解搜尋：檔案不在分享清單、下載佇列或搜尋結果中"
 
 #: src/KnownFile.cpp
 #, c-format
 msgid "Kad note search for '%s' not started: another Kad search (e.g. a source search) is already using this file's hash - try again shortly"
-msgstr ""
+msgstr "未開始針對「%s」的 Kad 註解搜尋：另一個 Kad 搜尋（例如來源搜尋）已在使用此檔案的雜湊值 - 請稍後再試"
 
 #: src/KnownFile.cpp
 #, c-format
 msgid "Kad note search for '%s' not started: PrepareLookup failed"
-msgstr ""
+msgstr "未開始針對「%s」的 Kad 註解搜尋：PrepareLookup 失敗"
 
 #: src/KnownFile.cpp src/PartFileConvertDlg.cpp
 msgid "File name"
@@ -3316,9 +3327,8 @@ msgid "English (U.K.)"
 msgstr "英語 (英國)"
 
 #: src/LanguageList.cpp
-#, fuzzy
 msgid "English (U.S.)"
-msgstr "英語 (英國)"
+msgstr "英語 (美國)"
 
 #: src/LanguageList.cpp
 msgid "Estonian"
@@ -3366,7 +3376,7 @@ msgstr "韓語"
 
 #: src/LanguageList.cpp
 msgid "Latvian"
-msgstr ""
+msgstr "拉脫維亞語"
 
 #: src/LanguageList.cpp
 msgid "Lithuanian"
@@ -3464,16 +3474,15 @@ msgstr "無效的密碼，不是 MD5 hash 值！"
 #: src/libs/ec/cpp/RemoteConnect.cpp
 #, c-format
 msgid "Could not resolve %s to an IPv4 address."
-msgstr ""
+msgstr "無法將 %s 解析為 IPv4 位址。"
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "Connection failure"
 msgstr "無法連線"
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
-#, fuzzy
 msgid "External Connection lost - exiting."
-msgstr "已關閉外部連線。"
+msgstr "外部連線已中斷 - 正在結束程式。"
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "EC connection failed. Empty reply."
@@ -3518,9 +3527,9 @@ msgid "Error creating UDP socket %s %d : %s"
 msgstr ""
 
 #: src/LibSocketAsio.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Asio thread %d started"
-msgstr "已開始 HTTP 下載執行緒"
+msgstr "Asio 執行緒 %d 已啟動"
 
 #: src/ListenSocket.cpp
 msgid "ListenSocket: Ok."
@@ -3645,34 +3654,28 @@ msgid "Hide aMule"
 msgstr "隱藏 aMule"
 
 #: src/MuleTrayIcon.cpp
-#, fuzzy
 msgid "eD2k: "
-msgstr "eD2k"
+msgstr "eD2k： "
 
 #: src/MuleTrayIcon.cpp
-#, fuzzy
 msgid "Connected (LowID)"
-msgstr "已連線"
+msgstr "已連線（LowID）"
 
 #: src/MuleTrayIcon.cpp
-#, fuzzy
 msgid "Connected (HighID)"
-msgstr "已連線"
+msgstr "已連線（HighID）"
 
 #: src/MuleTrayIcon.cpp
-#, fuzzy
 msgid "Kad: "
-msgstr " Kad："
+msgstr "Kad： "
 
 #: src/MuleTrayIcon.cpp
-#, fuzzy
 msgid "Connected (firewalled)"
-msgstr "已連線到 Kad 網路 (防火牆內)"
+msgstr "已連線（受防火牆限制）"
 
 #: src/MuleTrayIcon.cpp
-#, fuzzy
 msgid "Server: "
-msgstr "伺服器 IP："
+msgstr "伺服器： "
 
 #: src/MuleTrayIcon.cpp
 #, fuzzy
@@ -3757,14 +3760,14 @@ msgid "DL: %u"
 msgstr "下載：%u"
 
 #: src/MuleTrayIcon.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Download speed: %.1f%s"
-msgstr "下載速度：%.1f"
+msgstr "下載速度：%.1f%s"
 
 #: src/MuleTrayIcon.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Upload speed: %.1f%s"
-msgstr "上傳速度：%.1f"
+msgstr "上傳速度：%.1f%s"
 
 #: src/MuleTrayIcon.cpp
 #, c-format
@@ -3835,14 +3838,12 @@ msgid "WARNING! %s: Packet to %s discarded due to error (%s) while sending."
 msgstr ""
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Paste eD2k or magnet links here"
-msgstr "加入 eD2k 或 magnet 連結到主程式。"
+msgstr "在此貼上 eD2k 或 magnet 連結"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Add links"
-msgstr "加入好友"
+msgstr "新增連結"
 
 #: src/muuli_wdr.cpp
 msgid "Click here to add the eD2k link in the text control to your download queue."
@@ -3995,22 +3996,20 @@ msgid "Hide Known Files"
 msgstr "隱藏已知檔案"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Reset Filters"
-msgstr "清空欄位"
+msgstr "重設篩選條件"
 
 #: src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Start"
 msgstr "開始"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Extend"
-msgstr "副檔名"
+msgstr "延伸"
 
 #: src/muuli_wdr.cpp
 msgid "Ask already-responded Kad peers to widen the search. Each click queries the next-closest peer for more contacts (KADEMLIA_FIND_VALUE_MORE), surfacing additional file matches that the search's initial alpha frontier missed."
-msgstr ""
+msgstr "要求已回應的 Kad 節點擴大搜尋範圍。每次點擊都會向次接近的節點查詢更多聯絡人（KADEMLIA_FIND_VALUE_MORE），找出搜尋初始 alpha 前緣所遺漏的其他檔案結果。"
 
 #: src/muuli_wdr.cpp
 msgid "Stop"
@@ -4126,9 +4125,8 @@ msgid "Packages saved by I.C.H."
 msgstr "由 I.C.H. 救回的封包"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Sharing"
-msgstr "分享： "
+msgstr "分享"
 
 #: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
 msgid "Requests"
@@ -4151,32 +4149,28 @@ msgid "Complete Sources"
 msgstr "完整來源"
 
 #: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
-#, fuzzy
 msgid "Shared since"
-msgstr "檔案分享"
+msgstr "分享起始時間"
 
 #: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
-#, fuzzy
 msgid "Last upload"
-msgstr "，上傳："
+msgstr "最後上傳時間"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Media Info"
-msgstr "Kad 資訊"
+msgstr "媒體資訊"
 
 #: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Length"
-msgstr ""
+msgstr "長度"
 
 #: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
-#, fuzzy
 msgid "Bitrate"
-msgstr "未評價"
+msgstr "位元率"
 
 #: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Codec"
-msgstr ""
+msgstr "編解碼器"
 
 #: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Artist"
@@ -4255,9 +4249,8 @@ msgid "Choose the file rating or advice users if the file is invalid ..."
 msgstr "選擇檔案評價或者提醒其它使用者該檔案是無效的..."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Get from Kad"
-msgstr "已中斷 Kad 網路連線"
+msgstr "從 Kad 取得"
 
 #: src/muuli_wdr.cpp
 msgid "Refresh"
@@ -4421,30 +4414,28 @@ msgid "This specifies the language used on controls."
 msgstr "選擇界面語言。"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Periodically check for a new version"
-msgstr "啓動時檢查新版本"
+msgstr "定期檢查新版本"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Enabling this will make aMule check for a new version at startup and once a day while running"
-msgstr "啟用後使 aMule 在啓動時檢查新版本"
+msgstr "啟用此選項將使 aMule 在啟動時以及執行期間每天檢查一次新版本"
 
 #: src/muuli_wdr.cpp
 msgid "Registers a per-user autostart entry with the OS so aMule launches at login. If you move the aMule binary, launch aMule once manually afterwards to refresh the entry."
-msgstr ""
+msgstr "向作業系統註冊每位使用者的自動啟動項目，讓 aMule 在登入時啟動。若您移動了 aMule 執行檔，之後請手動啟動一次 aMule 以更新該項目。"
 
 #: src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Makes aMule the default handler for ed2k:// links so clicking one in your browser or file manager opens it here."
-msgstr ""
+msgstr "將 aMule 設為 ed2k:// 連結的預設處理程式，讓您在瀏覽器或檔案管理員中點選連結時開啟 aMule。"
 
 #: src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "aMule only handles eD2k-compatible magnets (containing xt=urn:ed2k:). BitTorrent magnets are NOT supported and clicking them will silently fail. If you use a BitTorrent client (Transmission, qBittorrent, etc.), leave this off."
-msgstr ""
+msgstr "aMule 僅能處理與 eD2k 相容的 magnet 連結（包含 xt=urn:ed2k:）。不支援 BitTorrent magnet 連結，點選後會靜默失敗。若您使用 BitTorrent 客戶端（Transmission、qBittorrent 等），請勿啟用此選項。"
 
 #: src/muuli_wdr.cpp
 msgid "Opening a collection queues every eD2k link it contains. On Windows this adds aMule to the \"Open with\" list and takes the default only when no other program has claimed the file type."
-msgstr ""
+msgstr "開啟收藏檔會將其中包含的所有 eD2k 連結加入佇列。在 Windows 上，這會將 aMule 加入「開啟方式」清單，並僅在沒有其他程式已佔用此檔案類型時，才會將其設為預設程式。"
 
 #: src/muuli_wdr.cpp
 msgid "Start minimized"
@@ -4484,20 +4475,19 @@ msgstr "開啓此選項將使 aMule 最小化到系統狀態列，而不是工�
 
 #: src/muuli_wdr.cpp
 msgid "Show notifications when finished downloading"
-msgstr ""
+msgstr "下載完成時顯示通知"
 
 #: src/muuli_wdr.cpp
 msgid "Enabling this will make aMule to show notifications when finished downloading."
-msgstr ""
+msgstr "啟用此選項將使 aMule 在下載完成時顯示通知。"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Remember search history"
-msgstr "記住這些設定"
+msgstr "記住搜尋紀錄"
 
 #: src/muuli_wdr.cpp
 msgid "Keeps a dropdown list of your past search terms in the Search tab's Name field. This remembers the queries you typed, not the results they returned."
-msgstr ""
+msgstr "在搜尋分頁的名稱欄位中，保留一份您過去搜尋字詞的下拉清單。這只會記住您輸入的查詢內容，而非其傳回的結果。"
 
 #: src/muuli_wdr.cpp
 msgid "Tooltip delay time: "
@@ -4572,13 +4562,12 @@ msgid "Advanced users only: If you have multiple network interfaces, enter the a
 msgstr "進階使用者用：如果您有多網路介面，請輸入要給 aMule 使用的的網路位址。"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Bind to network interface (empty for any):"
-msgstr "選定本機使用 IP (留白或輸入)："
+msgstr "繫結至網路介面（留空表示不限）："
 
 #: src/muuli_wdr.cpp
 msgid "Advanced users only: pin all of aMule's traffic to one network interface, chosen from the list or typed in by name (e.g. tun0, eth0, en0) or index. Unlike binding to an IP, this stops traffic leaking out via the default route - useful with a VPN. Requires no elevated privileges."
-msgstr ""
+msgstr "僅限進階使用者：將 aMule 的所有流量固定至單一網路介面，可從清單選擇，或以名稱（例如 tun0、eth0、en0）或索引輸入。與繫結至 IP 不同，這可防止流量透過預設路由外洩 - 適用於 VPN 情境。不需要提升權限。"
 
 #: src/muuli_wdr.cpp
 msgid "Max sources per downloading file:"
@@ -4606,7 +4595,7 @@ msgstr "移除無法連線伺服器：如果"
 
 #: src/muuli_wdr.cpp
 msgid "Static servers are never removed, even when unreachable."
-msgstr ""
+msgstr "靜態伺服器即使無法連線也絕不會被移除。"
 
 #: src/muuli_wdr.cpp
 msgid "retries"
@@ -4658,7 +4647,7 @@ msgstr "嘗試先下載檔案的第一段和最後一段"
 
 #: src/muuli_wdr.cpp
 msgid "Endgame mode: rotate to faster sources for the final blocks"
-msgstr ""
+msgstr "終局模式：為最後幾個區塊改用較快的來源"
 
 #: src/muuli_wdr.cpp
 msgid "Start next paused file when a file completes"
@@ -4682,11 +4671,11 @@ msgstr "新檔案預先分配所需的完整磁碟空間，這樣可以減少檔
 
 #: src/muuli_wdr.cpp
 msgid "Create new files as sparse files"
-msgstr ""
+msgstr "將新檔案建立為稀疏檔案"
 
 #: src/muuli_wdr.cpp
 msgid "Sparse part files only occupy disk space for the parts already downloaded, so free space is used up gradually as the file fills in. Turn this off to use an ordinary file instead - useful where sparse files are unsupported or slow, or where backup/de-duplication tools handle them badly. Applies only when the core runs on Windows; on Linux and macOS part files are sparse anyway and this setting has no effect."
-msgstr ""
+msgstr "稀疏暫存檔只會佔用已下載部分的磁碟空間，因此可用空間會隨著檔案逐漸填滿而減少。關閉此選項則改用一般檔案－適用於不支援稀疏檔案、速度較慢，或備份／重複資料刪除工具處理不佳的情況。此設定僅適用於核心程式在 Windows 上執行時；在 Linux 與 macOS 上，暫存檔本來就是稀疏的，此設定不會產生任何作用。"
 
 #: src/muuli_wdr.cpp
 msgid "Stop downloads when free disk space reaches "
@@ -4726,41 +4715,43 @@ msgstr "進階 I.C.H. 信任所有 hash 值 (不建議)"
 
 #: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
 msgid "Media metadata extraction"
-msgstr ""
+msgstr "媒體中繼資料擷取"
 
 #: src/muuli_wdr.cpp
 msgid "Extract length / bitrate / codec from shared audio and video files"
-msgstr ""
+msgstr "從共享的音訊與視訊檔案擷取長度／位元率／編解碼器資訊"
 
 #: src/muuli_wdr.cpp
 msgid "When enabled, aMule runs ffprobe on each shared media file to fill in the Length / Bitrate / Codec columns other clients see when they find the file in a search. Requires ffmpeg (the ffprobe binary) to be installed."
-msgstr ""
+msgstr "啟用後，aMule 會對每個共享媒體檔案執行 ffprobe，以填入其他客戶端在搜尋結果中看到的「長度／位元率／編解碼器」欄位。需要安裝 ffmpeg（其中的 ffprobe 執行檔）。"
 
 #: src/muuli_wdr.cpp
 msgid "Path to ffprobe:"
-msgstr ""
+msgstr "ffprobe 路徑："
 
 #: src/muuli_wdr.cpp
 msgid "Full path to the ffprobe binary. Leave empty to have aMule auto-detect it on startup."
-msgstr ""
+msgstr "ffprobe 執行檔的完整路徑。留空則 aMule 會在啟動時自動偵測。"
 
 #: src/muuli_wdr.cpp
 msgid "Detect"
-msgstr ""
+msgstr "偵測"
 
 #: src/muuli_wdr.cpp
 msgid "Search the standard install locations for an ffprobe binary and fill the path field."
-msgstr ""
+msgstr "在標準安裝位置中搜尋 ffprobe 執行檔，並填入路徑欄位。"
 
 #: src/muuli_wdr.cpp
 msgid ""
 "Completed downloads are stored here. All files in this folder are automatically shared with other peers.\n"
 "If this folder also holds files you don't want to share, point it at an aMule-only sub-folder."
 msgstr ""
+"已完成的下載會儲存於此。此資料夾中的所有檔案都會自動與其他節點分享。\n"
+"若此資料夾中也存放您不想分享的檔案，請將其指向一個僅供 aMule 使用的子資料夾。"
 
 #: src/muuli_wdr.cpp
 msgid "Pick the folder where completed downloads will be stored. All files in that folder will be shared with other peers."
-msgstr ""
+msgstr "選擇用於儲存已完成下載的資料夾。該資料夾中的所有檔案都會與其他節點分享。"
 
 #: src/muuli_wdr.cpp
 msgid "Shared folders"
@@ -4768,19 +4759,19 @@ msgstr "分享資料夾"
 
 #: src/muuli_wdr.cpp
 msgid "(Folders shared by the core. Enter a path to add one.)"
-msgstr ""
+msgstr "（由核心分享的資料夾。輸入路徑以新增一個。）"
 
 #: src/muuli_wdr.cpp
 msgid "Absolute path of a folder on the core's machine, e.g. /home/user/shared"
-msgstr ""
+msgstr "核心所在主機上資料夾的絕對路徑，例如 /home/user/shared"
 
 #: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
 msgid "Recursive"
-msgstr ""
+msgstr "遞迴"
 
 #: src/muuli_wdr.cpp
 msgid "Share every sub-folder underneath this one, including ones created later."
-msgstr ""
+msgstr "分享此資料夾底下的每個子資料夾，包括之後建立的子資料夾。"
 
 #: src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Remove"
@@ -4796,11 +4787,11 @@ msgstr "分享隱藏檔"
 
 #: src/muuli_wdr.cpp
 msgid "Automatically rescan shared folders for changes"
-msgstr ""
+msgstr "自動重新掃描分享資料夾的變更"
 
 #: src/muuli_wdr.cpp
 msgid "Follow symbolic links in shared folders"
-msgstr ""
+msgstr "在分享資料夾中跟隨符號連結"
 
 #: src/muuli_wdr.cpp
 msgid "Exclude files and folders matching:"
@@ -4812,7 +4803,7 @@ msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Patterns are regular expressions"
-msgstr ""
+msgstr "樣式為正規表示式"
 
 #: src/muuli_wdr.cpp
 msgid "When set, the whole field is one regular expression: '|' is alternation, and '*' and '?' take their regular-expression meaning rather than the wildcard one. When unset, it is a list of '|'-separated wildcards."
@@ -4914,9 +4905,8 @@ msgid "Active connections"
 msgstr "目前連線數"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Systray Icon Speed Bar"
-msgstr "狀態列圖示顯示速度"
+msgstr "系統匣圖示速度列"
 
 #: src/muuli_wdr.cpp
 msgid "Kad-nodes current"
@@ -4952,17 +4942,15 @@ msgstr "5 秒內最大新連線數"
 
 #: src/muuli_wdr.cpp
 msgid "Concurrent Kad source lookups"
-msgstr ""
+msgstr "同時進行的 Kad 來源查詢數"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Kad source re-search interval (minutes)"
-msgstr "FTP 上傳間隔 (分鐘)"
+msgstr "Kad 來源重新搜尋間隔（分鐘）"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Source re-ask interval (minutes)"
-msgstr "FTP 上傳間隔 (分鐘)"
+msgstr "來源重新詢問間隔（分鐘）"
 
 #: src/muuli_wdr.cpp
 msgid "File Buffer Size: 240000 bytes"
@@ -4970,11 +4958,11 @@ msgstr "檔案緩衝區：240.000 KB"
 
 #: src/muuli_wdr.cpp
 msgid "Use MMAP: memory-mapped file access (lower memory use)"
-msgstr ""
+msgstr "使用 MMAP：記憶體映射檔案存取（降低記憶體使用量）"
 
 #: src/muuli_wdr.cpp
 msgid "Maps part files into memory instead of buffering them on the heap, lowering the process memory footprint. May reduce download speed on some disks; best for memory-constrained or upload-heavy hosts."
-msgstr ""
+msgstr "將暫存檔映射至記憶體，而非在堆積中緩衝，以降低處理程序的記憶體用量。在某些磁碟上可能會降低下載速度；最適合記憶體有限或以上傳為主的主機。"
 
 #: src/muuli_wdr.cpp
 msgid "Upload Queue Size: 5000 clients"
@@ -5026,7 +5014,7 @@ msgstr "垂直顯示工具列"
 
 #: src/muuli_wdr.cpp
 msgid "Live column sorting (auto-reorder rows as their values change)"
-msgstr ""
+msgstr "即時欄位排序（當數值變動時自動重新排列列）"
 
 #: src/muuli_wdr.cpp
 msgid "Download Queue Files"
@@ -5081,59 +5069,52 @@ msgid "Require encrypted connections (rejects clients that cannot encrypt)"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "aMule API server parameters"
-msgstr "網站伺服器參數"
+msgstr "aMule API 伺服器參數"
 
 #: src/muuli_wdr.cpp
 msgid "Run amuleapi (REST API) on startup"
-msgstr ""
+msgstr "啟動時執行 amuleapi（REST API）"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "HTTP port:"
-msgstr "TCP 埠："
+msgstr "HTTP 連接埠："
 
 #: src/muuli_wdr.cpp
 msgid "The interface amuleapi's HTTP server listens on. 127.0.0.1 (default) accepts only local connections; use 0.0.0.0 or a specific IP to expose it to other hosts (set an admin password below)."
-msgstr ""
+msgstr "amuleapi 的 HTTP 伺服器所監聽的介面。127.0.0.1（預設）僅接受本機連線；使用 0.0.0.0 或特定 IP 可將其開放給其他主機（請於下方設定管理員密碼）。"
 
 #: src/muuli_wdr.cpp
 msgid "Type a password to set or change it. Stored passwords cannot be shown, so leaving this empty keeps the current one."
-msgstr ""
+msgstr "輸入密碼以設定或變更它。已儲存的密碼無法顯示，因此留空將保留目前的密碼。"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Admin password"
-msgstr "正在檢查密碼\n"
+msgstr "管理員密碼"
 
 #: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "A password is set."
-msgstr "正在檢查密碼\n"
+msgstr "已設定密碼。"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Enable guest access"
-msgstr "拒絕訪客連線"
+msgstr "啟用訪客存取"
 
 #: src/muuli_wdr.cpp
 msgid "Guest sessions may read status and listings but cannot change anything. Turning this off clears the stored guest password."
-msgstr ""
+msgstr "訪客工作階段可以讀取狀態與清單，但無法變更任何內容。關閉此選項將清除已儲存的訪客密碼。"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Guest password"
-msgstr "網站伺服器的 訪客密碼"
+msgstr "訪客密碼"
 
 #: src/muuli_wdr.cpp
 msgid "Web server parameters"
 msgstr "網站伺服器參數"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Run webserver on startup (deprecated)"
-msgstr "啟動時執行網站伺服器"
+msgstr "啟動時執行網站伺服器（已淘汰）"
 
 #: src/muuli_wdr.cpp
 msgid "Web template"
@@ -5168,13 +5149,12 @@ msgid "Enable Gzip compression"
 msgstr "啟用 Gzip 壓縮"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Reset page to defaults"
-msgstr "系統預設"
+msgstr "將此頁面重設為預設值"
 
 #: src/muuli_wdr.cpp
 msgid "Reset the settings on the current page to their default values."
-msgstr ""
+msgstr "將目前頁面的設定重設為預設值。"
 
 #: src/muuli_wdr.cpp src/ServerWnd.cpp
 msgid "OK"
@@ -5277,14 +5257,12 @@ msgid "Nodes stats"
 msgstr "節點狀態"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Bootstrap from node: IP"
-msgstr "從已知客戶端啓動"
+msgstr "從節點啟動：IP"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Enter the IP of the node here, using the x.x.x.x format."
-msgstr "輸入新伺服器的 IP (格式：x.x.x.x)。"
+msgstr "請在此輸入節點的 IP，格式為 x.x.x.x。"
 
 #: src/muuli_wdr.cpp
 msgid "Use Secure User Identification"
@@ -5392,7 +5370,7 @@ msgstr "處理不匹配的 IP"
 
 #: src/muuli_wdr.cpp
 msgid "Rejects a packet when its source IP differs from the IP the client claims (an anti-spoofing check). Disable only if it causes connection problems."
-msgstr ""
+msgstr "當封包的來源 IP 與客戶端所宣稱的 IP 不同時拒絕該封包（防偽裝檢查）。僅在造成連線問題時才停用此選項。"
 
 #: src/muuli_wdr.cpp
 msgid "Use system-wide ipfilter.dat if available"
@@ -5433,33 +5411,31 @@ msgstr "顯示客戶端的國旗"
 
 #: src/muuli_wdr.cpp
 msgid "Render the country flag column in the transfers, queue and search views. Requires a valid MMDB GeoIP database (see below)."
-msgstr ""
+msgstr "在傳輸、佇列與搜尋檢視中顯示國家旗幟欄位。需要有效的 MMDB GeoIP 資料庫（見下方）。"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Database"
-msgstr "速度："
+msgstr "資料庫"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Source:"
-msgstr "來源"
+msgstr "來源："
 
 #: src/muuli_wdr.cpp
 msgid "DB-IP (free, no account)"
-msgstr ""
+msgstr "DB-IP（免費，無需帳號）"
 
 #: src/muuli_wdr.cpp
 msgid "MaxMind GeoLite2 (free, account required)"
-msgstr ""
+msgstr "MaxMind GeoLite2（免費，需要帳號）"
 
 #: src/muuli_wdr.cpp
 msgid "Custom URL"
-msgstr ""
+msgstr "自訂網址"
 
 #: src/muuli_wdr.cpp
 msgid "Choose which provider supplies the GeoIP MMDB database. DB-IP is the default - no account required. MaxMind requires a free account + license key. Use Custom URL to point at any other MMDB host (e.g. a local mirror)."
-msgstr ""
+msgstr "選擇提供 GeoIP MMDB 資料庫的來源。DB-IP 為預設值 - 無需帳號。MaxMind 需要免費帳號＋授權金鑰。使用自訂網址可指向任何其他 MMDB 主機（例如本機鏡像）。"
 
 #: src/muuli_wdr.cpp
 msgid ""
@@ -5468,10 +5444,14 @@ msgid ""
 "IP-to-Country data by DB-IP.com - https://db-ip.com\n"
 "License: Creative Commons BY 4.0 - https://creativecommons.org/licenses/by/4.0/"
 msgstr ""
+"無需設定。\n"
+"\n"
+"IP 對應國家資料由 DB-IP.com 提供 - https://db-ip.com\n"
+"授權條款：Creative Commons BY 4.0 - https://creativecommons.org/licenses/by/4.0/"
 
 #: src/muuli_wdr.cpp
 msgid "License key:"
-msgstr ""
+msgstr "授權金鑰："
 
 #: src/muuli_wdr.cpp
 msgid ""
@@ -5482,11 +5462,16 @@ msgid ""
 "License: MaxMind GeoLite2 EULA - https://www.maxmind.com/en/geolite2/eula\n"
 "Requires attribution and account registration; refresh at least every 30 days."
 msgstr ""
+"註冊免費的 MaxMind 帳號，然後產生授權金鑰：\n"
+"https://www.maxmind.com/en/geolite2/signup\n"
+"\n"
+"本產品包含由 MaxMind 建立的 GeoLite2 資料 - https://www.maxmind.com\n"
+"授權條款：MaxMind GeoLite2 EULA - https://www.maxmind.com/en/geolite2/eula\n"
+"需要註明出處並註冊帳號；至少每 30 天更新一次。"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Download URL:"
-msgstr "下載："
+msgstr "下載網址："
 
 #: src/muuli_wdr.cpp
 msgid ""
@@ -5494,19 +5479,21 @@ msgid ""
 "URL may include credentials (https://user:pass@host/...).\n"
 "License and attribution terms are set by the upstream URL - you are responsible."
 msgstr ""
+"必須指向 .mmdb 檔案，或包含該檔案的 .gz／.tar.gz。\n"
+"網址可包含認證資訊（https://user:pass@host/...）。\n"
+"授權與出處條款由上游網址決定 - 您需自行負責。"
 
 #: src/muuli_wdr.cpp
 msgid "Download the GeoIP database from the selected source."
-msgstr ""
+msgstr "從所選來源下載 GeoIP 資料庫。"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Auto-update on startup"
-msgstr "啓動後自動更新 IP 過濾清單"
+msgstr "啟動時自動更新"
 
 #: src/muuli_wdr.cpp
 msgid "Re-download the GeoIP database from the selected source every time aMule starts."
-msgstr ""
+msgstr "每次 aMule 啟動時，重新從所選來源下載 GeoIP 資料庫。"
 
 #: src/muuli_wdr.cpp
 msgid "Filter incoming messages (except current chat):"
@@ -5606,18 +5593,16 @@ msgid "Encrypt the connection (recommended)"
 msgstr "已關閉外部連線。"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Force ZLIB compression"
-msgstr "使用 gzip 壓縮"
+msgstr "強制使用 ZLIB 壓縮"
 
 #: src/muuli_wdr.cpp
 msgid "Enable Verbose Debug-Logging."
 msgstr "啓用記錄詳細除錯訊息。"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Only to Logfile"
-msgstr "開啟檔案(&O)"
+msgstr "僅寫入記錄檔"
 
 #: src/muuli_wdr.cpp
 msgid "Message Categories:"
@@ -5688,19 +5673,19 @@ msgid "Close this chat-session."
 msgstr "結束本次交談。"
 
 #: src/muuli_wdr.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Cancel %s"
-msgstr "取消"
+msgstr "取消 %s"
 
 #: src/muuli_wdr.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Disconnect %s"
-msgstr "中斷連線"
+msgstr "中斷連線 %s"
 
 #: src/muuli_wdr.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Connect %s"
-msgstr "連線"
+msgstr "連線 %s"
 
 #: src/OScopeCtrl.cpp
 #, c-format
@@ -6023,7 +6008,7 @@ msgstr "儲存暫存檔時發生 IO 錯誤："
 #: src/PartFile.cpp
 #, c-format
 msgid "Wrote 0/unknown bytes to '%s' -- preserving existing .part.met."
-msgstr ""
+msgstr "已寫入 0/未知 位元組至「%s」——保留現有的 .part.met。"
 
 #: src/PartFile.cpp
 #, c-format
@@ -6037,9 +6022,9 @@ msgid_plural "Saved %i source seeds for partfile: %s (%s)"
 msgstr[0] "已儲存 %i 個來源種子給暫存檔 %s (%s)"
 
 #: src/PartFile.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Can't read seeds file for Partfile %s (%s)"
-msgstr "已儲存 %i 個來源種子給暫存檔 %s (%s)"
+msgstr "無法讀取暫存檔 %s 的種子檔案 (%s)"
 
 #: src/PartFile.cpp
 #, c-format
@@ -6073,11 +6058,13 @@ msgid "Finished downloading: %s"
 msgstr "下載完成：%s"
 
 #: src/PartFile.cpp
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "Finished downloading:\n"
 "%s"
-msgstr "下載完成：%s"
+msgstr ""
+"下載完成：\n"
+"%s"
 
 #: src/PartFile.cpp
 #, c-format
@@ -6097,7 +6084,7 @@ msgstr "錯誤：無法計算已下載部分的 hash 值 - %s 的 hash 值組不
 #: src/PartFile.cpp
 #, c-format
 msgid "Part %u of '%s' marked complete but partfile is shorter than expected (have %llu bytes, need %llu); reopening gap for re-download."
-msgstr ""
+msgstr "第 %u 部分（「%s」）已標記為完成，但暫存檔短於預期（實際為 %llu 位元組，需要 %llu 位元組）；重新開啟該區段以便重新下載。"
 
 #: src/PartFile.cpp
 #, c-format
@@ -6197,7 +6184,7 @@ msgstr "介面"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "IP2Country"
-msgstr ""
+msgstr "IP2Country"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Proxy"
@@ -6239,11 +6226,11 @@ msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Tray icon support requires libayatana-appindicator3 at compile time."
-msgstr ""
+msgstr "系統匣圖示支援需要在編譯時安裝 libayatana-appindicator3。"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Not available on Wayland: the protocol does not report when a window is minimized, so this option cannot intercept the system minimize button. Workaround: launch aMule with `GDK_BACKEND=x11` to use XWayland instead."
-msgstr ""
+msgstr "在 Wayland 上不可用：該協定不會回報視窗何時被最小化，因此此選項無法攔截系統的最小化按鈕。替代方案：以 `GDK_BACKEND=x11` 啟動 aMule，改用 XWayland。"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
@@ -6280,22 +6267,20 @@ msgid "Failed to transfer data from Widget to Cfg with the ID %d and key %s"
 msgstr "無法以 ID %d、key %s 從 Cfg 傳輸資料到 Widget"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "No password set."
-msgstr "正在檢查密碼\n"
+msgstr "尚未設定密碼。"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "The shared-file exclusion pattern is not a valid regular expression. The filter has been left disabled."
-msgstr ""
+msgstr "共享檔案排除樣式不是有效的正規表示式。過濾器已保持停用狀態。"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Invalid regular expression"
-msgstr "協定版本無效。"
+msgstr "無效的正規表示式"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Guest access needs a password. Type one in the guest password field, or untick Enable guest access."
-msgstr ""
+msgstr "訪客存取需要密碼。請在訪客密碼欄位中輸入密碼，或取消勾選啟用訪客存取。"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
@@ -6322,9 +6307,8 @@ msgid "- UDP port changed.\n"
 msgstr "- UDP 埠已變更。\n"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "- Network interface binding changed.\n"
-msgstr "- 已變更外部連線介面設定。\n"
+msgstr "- 網路介面繫結已變更。\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- External connect port changed.\n"
@@ -6339,18 +6323,16 @@ msgid "- External connect interface changed.\n"
 msgstr "- 已變更外部連線介面設定。\n"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "- Protocol obfuscation support changed.\n"
-msgstr "模糊協定"
+msgstr "- 模糊協定支援已變更。\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- Proxy settings changed (needed for HTTP transfers).\n"
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "- amuleapi settings changed.\n"
-msgstr "- 語言已變更。\n"
+msgstr "- amuleapi 設定已變更。\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
@@ -6363,7 +6345,7 @@ msgstr ""
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "The amuleapi password could not be saved: %s"
-msgstr ""
+msgstr "amuleapi 密碼無法儲存：%s"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- Language changed.\n"
@@ -6405,65 +6387,62 @@ msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Could not register aMule for autostart at login. The autostart store may be read-only."
-msgstr ""
+msgstr "無法將 aMule 註冊為登入時自動啟動。自動啟動儲存區可能為唯讀。"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Could not remove the autostart-at-login entry."
-msgstr ""
+msgstr "無法移除登入時自動啟動項目。"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Autostart"
-msgstr "已開始自動更新顯示"
+msgstr "自動啟動"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Register file type"
-msgstr ""
+msgstr "註冊檔案類型"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Register URL handler"
-msgstr ""
+msgstr "註冊網址處理程式"
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "aMule only handles eD2k-compatible magnets. If you replace the current magnet handler (%s), BitTorrent magnet links will stop working - aMule cannot download BitTorrent content. Continue?"
-msgstr ""
+msgstr "aMule 僅能處理與 eD2k 相容的 magnet 連結。若您取代目前的 magnet 處理程式（%s），BitTorrent magnet 連結將無法使用 - aMule 無法下載 BitTorrent 內容。要繼續嗎？"
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "Another application currently opens .emulecollection files (%s). Replace it with aMule?"
-msgstr ""
+msgstr "目前有另一個應用程式（%s）會開啟 .emulecollection 檔案。要以 aMule 取代它嗎？"
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "Another application is currently the default handler for these links (%s). Replace it with aMule?"
-msgstr ""
+msgstr "目前有其他應用程式是這些連結的預設處理程式（%s）。要以 aMule 取代它嗎？"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Could not register aMule for .emulecollection files. The registration store may be read-only."
-msgstr ""
+msgstr "無法為 .emulecollection 檔案註冊 aMule。登錄儲存區可能是唯讀的。"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Could not remove the file type registration."
-msgstr "暫存資料夾"
+msgstr "無法移除檔案類型註冊。"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Could not register aMule as the URL handler. The registration store may be read-only."
-msgstr ""
+msgstr "無法將 aMule 註冊為網址處理程式。註冊儲存區可能為唯讀。"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Could not remove the URL handler registration."
-msgstr ""
+msgstr "無法移除網址處理程式的註冊。"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "The web server and aMule API require external connections to be enabled."
-msgstr "密碼已設定，外部連線已啟用。"
+msgstr "網站伺服器與 aMule API 需要啟用外部連線。"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "The aMule web server is deprecated. Consider running the aMule API instead."
-msgstr ""
+msgstr "aMule 網站伺服器已淘汰。建議改為執行 aMule API。"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
@@ -6523,9 +6502,8 @@ msgid "Select browser"
 msgstr "設定瀏覽器"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Select ffprobe binary"
-msgstr "設定瀏覽器"
+msgstr "選擇 ffprobe 執行檔"
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
@@ -6534,16 +6512,15 @@ msgstr "可執行%s"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "ffprobe not found on PATH or in the standard install locations. Install ffmpeg (which ships ffprobe) or use Browse to pick a binary manually."
-msgstr ""
+msgstr "在 PATH 或標準安裝位置中找不到 ffprobe。請安裝 ffmpeg（內含 ffprobe），或使用「瀏覽」手動選擇執行檔。"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Reset the settings on this page to their default values?"
-msgstr ""
+msgstr "要將此頁面的設定重設為預設值嗎？"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Reset to defaults"
-msgstr "系統預設"
+msgstr "重設為預設值"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Edit server list"
@@ -6559,38 +6536,37 @@ msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "IP2Country update failed"
-msgstr ""
+msgstr "IP2Country 更新失敗"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Data by MaxMind GeoLite2"
-msgstr ""
+msgstr "資料由 MaxMind GeoLite2 提供"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Custom source"
-msgstr "完整來源"
+msgstr "自訂來源"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Data by DB-IP.com"
-msgstr ""
+msgstr "資料由 DB-IP.com 提供"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Status: Loaded%s"
-msgstr "狀態："
+msgstr "狀態：已載入%s"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Status: Loaded%s - %s"
-msgstr "狀態："
+msgstr "狀態：已載入%s - %s"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Status: Failed to load - click 'Update now' to refresh."
-msgstr ""
+msgstr "狀態：載入失敗 - 請按一下「立即更新」以重新整理。"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Status: Not found - click 'Update now' to download."
-msgstr ""
+msgstr "狀態：找不到檔案 - 請按一下「立即更新」以下載。"
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
@@ -6667,38 +6643,36 @@ msgid ""
 "The following folders look like system or sensitive locations:\n"
 "\n"
 msgstr ""
+"下列資料夾看起來像是系統或敏感位置：\n"
+"\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Sharing them recursively will publish every file underneath on the eD2k/Kad networks. Do you really want to do this?"
-msgstr ""
+msgstr "遞迴分享這些資料夾會將其底下的每個檔案發布到 eD2k/Kad 網路上。您真的要這麼做嗎？"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Confirm shared folders"
-msgstr "分享資料夾"
+msgstr "確認分享資料夾"
 
 #: src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp
 #: src/SharedFilesReloadProgress.cpp
-#, fuzzy
 msgid "Reloading shared files..."
-msgstr "重新載入分享的檔案"
+msgstr "正在重新載入分享的檔案……"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Scanning for subdirectories..."
-msgstr ""
+msgstr "正在掃描子目錄……"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Updating shared folders"
-msgstr "分享資料夾"
+msgstr "正在更新分享資料夾"
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "Scanned %u directories..."
-msgstr ""
+msgstr "已掃描 %u 個目錄……"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Shared folder"
 msgstr "分享資料夾"
 
@@ -6730,12 +6704,11 @@ msgstr "搜尋警告"
 
 #: src/SearchDlg.cpp
 msgid "It's impossible to search when both eD2k and Kademlia are disabled."
-msgstr ""
+msgstr "當 eD2k 與 Kademlia 皆已停用時，無法進行搜尋。"
 
 #: src/SearchDlg.cpp src/SearchListCtrl.cpp
-#, fuzzy
 msgid "Search error"
-msgstr "搜尋"
+msgstr "搜尋錯誤"
 
 #: src/SearchDlg.cpp
 msgid ""
@@ -6784,9 +6757,8 @@ msgid "eD2k search can't be done if eD2k is not connected"
 msgstr "eD2k 網路尚未連線，無法使用 eD2k 搜尋"
 
 #: src/SearchList.cpp
-#, fuzzy
 msgid "No keyword for Kad search - aborting"
-msgstr "搜尋的關鍵字：%s "
+msgstr "Kad 搜尋沒有關鍵字 - 已中止"
 
 #: src/SearchList.cpp
 msgid "Unexpected error while attempting Kad search: "
@@ -6798,11 +6770,11 @@ msgstr ""
 
 #: src/SearchList.cpp
 msgid "Kad search: requested wider results from one more peer."
-msgstr ""
+msgstr "Kad 搜尋：已向另一個節點要求更廣泛的結果。"
 
 #: src/SearchList.cpp
 msgid "Kad search: no peer left to reask for more results (cap reached or no responses yet)."
-msgstr ""
+msgstr "Kad 搜尋：已無節點可再次詢問更多結果（已達上限或尚無回應）。"
 
 #: src/SearchList.cpp
 #, fuzzy, c-format
@@ -6835,9 +6807,8 @@ msgid "Copy eD2k links to clipboard"
 msgstr "複製 eD2k 連結到剪貼簿"
 
 #: src/SearchListCtrl.cpp
-#, fuzzy
 msgid "You are not currently connected to a server supporting the Related Files search function"
-msgstr "現在正連線到要刪除的伺服器。請先中斷連線。"
+msgstr "您目前未連線至支援「相關檔案」搜尋功能的伺服器"
 
 #: src/SearchListCtrl.cpp
 msgid "Canceled"
@@ -6873,7 +6844,7 @@ msgstr ""
 
 #: src/SearchProgressReport.cpp src/TextClient.cpp
 msgid "Search expired or unknown ID. Start a new search.\n"
-msgstr ""
+msgstr "搜尋已過期或 ID 不明。請開始新的搜尋。\n"
 
 #: src/SearchProgressReport.cpp
 #, c-format
@@ -6889,9 +6860,8 @@ msgid "No search to report on.\n"
 msgstr ""
 
 #: src/ServerConnect.cpp
-#, fuzzy
 msgid "Failed to connect to all obfuscated static servers listed. Making another pass without obfuscation."
-msgstr "無法與清單中的模糊伺服器連線，嘗試不使用模糊協定。"
+msgstr "無法連線至清單中所有使用模糊協定的靜態伺服器。將再嘗試一次，不使用模糊協定。"
 
 #: src/ServerConnect.cpp
 msgid "Failed to connect to all obfuscated servers listed. Making another pass without obfuscation."
@@ -7122,11 +7092,11 @@ msgstr "分享檔案"
 
 #: src/ServerListCtrl.cpp
 msgid "TCP Flags"
-msgstr ""
+msgstr "TCP 旗標"
 
 #: src/ServerListCtrl.cpp
 msgid "UDP Flags"
-msgstr ""
+msgstr "UDP 旗標"
 
 #: src/ServerListCtrl.cpp
 msgid "You are connected to a server you are trying to delete. Please disconnect first. The server was NOT deleted."
@@ -7216,7 +7186,7 @@ msgstr "警告：%s (%s) - %s"
 #: src/ServerSocket.cpp
 #, c-format
 msgid "Server %s (%s) rejected our login (no client ID assigned). Disconnecting."
-msgstr ""
+msgstr "伺服器 %s (%s) 拒絕了我們的登入（未分配客戶端 ID）。正在中斷連線。"
 
 #: src/ServerSocket.cpp
 #, c-format
@@ -7288,9 +7258,8 @@ msgid "Could not solve dns for server %s: Unable to connect!"
 msgstr "無法解析伺服器 %s 的 DNS 資訊：無法連線！"
 
 #: src/ServerWnd.cpp
-#, fuzzy
 msgid "aMuleGUI Log"
-msgstr "aMule 記錄"
+msgstr "aMuleGUI 記錄"
 
 #: src/ServerWnd.cpp
 msgid "Server not added: No IP or hostname specified."
@@ -7309,14 +7278,12 @@ msgid "ID"
 msgstr "ID"
 
 #: src/ServerWnd.cpp
-#, fuzzy
 msgid "Connection Type:"
-msgstr "連線狀態："
+msgstr "連線類型："
 
 #: src/ServerWnd.cpp
-#, fuzzy
 msgid "Connected since:"
-msgstr "已連線"
+msgstr "連線起始時間："
 
 #: src/ServerWnd.cpp
 msgid "Kademlia Status:"
@@ -7331,9 +7298,8 @@ msgid "Running"
 msgstr "執行中"
 
 #: src/ServerWnd.cpp
-#, fuzzy
 msgid "Kademlia client ID:"
-msgstr "Kad 狀態："
+msgstr "Kademlia 客戶端 ID："
 
 #: src/ServerWnd.cpp
 msgid "Status:"
@@ -7444,7 +7410,7 @@ msgstr[0] "找到 %i 個已知的分享檔案"
 #, c-format
 msgid "Excluded %i file from sharing by filter"
 msgid_plural "Excluded %i files from sharing by filter"
-msgstr[0] ""
+msgstr[0] "已依過濾條件排除 %i 個共享檔案"
 
 #: src/SharedFileList.cpp
 #, c-format
@@ -7550,7 +7516,7 @@ msgstr "重新命名"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Verify Local Data"
-msgstr ""
+msgstr "驗證本機資料"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Re-extract &media metadata"
@@ -7585,9 +7551,8 @@ msgid "Copy eD2k link to clipboard (&AICH info)"
 msgstr "複製 eD2k 連結到剪貼簿 (AICH 資訊) (&A)"
 
 #: src/SharedFilesCtrl.cpp
-#, fuzzy
 msgid "Copy eD2k link to clipboard (&AICH info + Source)"
-msgstr "複製 eD2k 連結到剪貼簿 (AICH 資訊) (&A)"
+msgstr "複製 eD2k 連結到剪貼簿（&AICH 資訊 + 來源）"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Export selected files to an emulecollection"
@@ -7596,7 +7561,7 @@ msgstr ""
 #: src/SharedFilesCtrl.cpp
 #, c-format
 msgid "Verify Local Data on PartFile is currently not supported: %s"
-msgstr ""
+msgstr "目前不支援對暫存檔執行「驗證本機資料」：%s"
 
 #: src/SharedFilesCtrl.cpp
 #, c-format
@@ -7691,9 +7656,9 @@ msgid "Shared Files (%i)"
 msgstr "分享檔案 (%i)"
 
 #: src/SharedFilesReloadProgress.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Reloading shared files: %u files scanned"
-msgstr "重新載入分享檔案清單。"
+msgstr "正在重新載入分享檔案：已掃描 %u 個檔案"
 
 #: src/SourceListCtrl.cpp
 #, fuzzy
@@ -7993,34 +7958,37 @@ msgstr "不是有效的 hash 值 (必須爲 32 碼)\n"
 #. TRANSLATORS:
 #. 'help search' is a command to the program, do not translate it.
 #: src/TextClient.cpp
-#, fuzzy
 msgid ""
 "Invalid search filter syntax.\n"
 "Type 'help search' to get more help.\n"
-msgstr "輸入「 %s 」顯示更多協助資訊。\n"
+msgstr ""
+"無效的搜尋篩選語法。\n"
+"輸入「help search」以取得更多說明。\n"
 
 #. TRANSLATORS:
 #. 'help search' is a command to the program, do not translate it.
 #: src/TextClient.cpp
-#, fuzzy
 msgid ""
 "No search keyword provided.\n"
 "Type 'help search' to get more help.\n"
-msgstr "輸入「 %s 」顯示更多協助資訊。\n"
+msgstr ""
+"未提供搜尋關鍵字。\n"
+"輸入「help search」以取得更多說明。\n"
 
 #. TRANSLATORS:
 #. 'help search' is a command to the program, do not translate it.
 #: src/TextClient.cpp
-#, fuzzy
 msgid ""
 "No search type defined.\n"
 "Type 'help search' to get more help.\n"
-msgstr "輸入「 %s 」顯示更多協助資訊。\n"
+msgstr ""
+"未定義搜尋類型。\n"
+"輸入「help search」以取得更多說明。\n"
 
 #: src/TextClient.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Download File: %lu %s\n"
-msgstr "下載大小：%i "
+msgstr "下載檔案：%lu %s\n"
 
 #: src/TextClient.cpp src/webserver/src/WebServer.cpp
 msgid "Request failed with an unknown error."
@@ -8066,12 +8034,12 @@ msgstr ""
 #: src/TextClient.cpp
 #, c-format
 msgid "Endgame source rotation is %s.\n"
-msgstr ""
+msgstr "終局來源輪替目前為 %s。\n"
 
 #: src/TextClient.cpp
 #, c-format
 msgid "Search started (id %u).\n"
-msgstr ""
+msgstr "搜尋已開始（id %u）。\n"
 
 #: src/TextClient.cpp
 #, c-format
@@ -8330,23 +8298,20 @@ msgid "Set upload bandwidth limit."
 msgstr "設定上傳頻寬限制。"
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "The given value must be in kilobytes/sec.\n"
-msgstr "給此指令的的值，單位是 KB/s 。\n"
+msgstr "指定的值必須以 KB/秒 為單位。\n"
 
 #: src/TextClient.cpp
 msgid "Set download bandwidth limit."
 msgstr "設定下載頻寬限制。"
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Enable or disable endgame source rotation."
-msgstr "啓用/停用 使用者名稱/密碼登入驗證"
+msgstr "啟用或停用終局來源輪替。"
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "The given value must be 1/ON (enable) or 0/OFF (disable).\n"
-msgstr "給此指令的的值，單位是 KB/s 。\n"
+msgstr "指定的值必須為 1/ON（啟用）或 0/OFF（停用）。\n"
 
 #: src/TextClient.cpp
 msgid "Get and display a preference value."
@@ -8378,7 +8343,7 @@ msgstr "取得頻寬限制。"
 
 #: src/TextClient.cpp
 msgid "Get endgame source rotation state."
-msgstr ""
+msgstr "取得終局來源輪替狀態。"
 
 #: src/TextClient.cpp
 msgid "Execute a search."
@@ -8402,6 +8367,21 @@ msgid ""
 "Example: 'search global linux iso --type Iso --min-size 100M' returns\n"
 "results for \"linux iso\" of file-type Iso at least 100 MiB.\n"
 msgstr ""
+"必須透過指定類型來設定搜尋類型：\n"
+"    GLOBAL\n"
+"    LOCAL\n"
+"    KAD\n"
+"範例：「search kad file」將對 \"file\" 執行 kad 搜尋。\n"
+"\n"
+"可在搜尋關鍵字之前、之後或之間\n"
+"加入選用的篩選條件：\n"
+"    --type <Audio|Video|Image|Doc|Pro|Arc|Iso>\n"
+"    --extension <ext>      （別名：--ext）\n"
+"    --avail <N>            最少來源數量\n"
+"    --min-size <N[KMG]>    最小檔案大小；K=1024，M=K*1024，G=M*1024\n"
+"    --max-size <N[KMG]>    最大檔案大小；後綴相同\n"
+"範例：「search global linux iso --type Iso --min-size 100M」會傳回\n"
+"檔案類型為 Iso、大小至少 100 MiB 的 \"linux iso\" 搜尋結果。\n"
 
 #: src/TextClient.cpp
 msgid "Execute a global search."
@@ -8416,15 +8396,16 @@ msgid "Execute a kad search"
 msgstr "執行 Kad 搜尋"
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Show the results of a search."
-msgstr "顯示上一次的搜尋結果。"
+msgstr "顯示搜尋結果。"
 
 #: src/TextClient.cpp
 msgid ""
 "Return the results of a search.\n"
 "Optionally takes a search id (from 'search ...'); with no id, returns the results of the most recently started search.\n"
 msgstr ""
+"傳回搜尋結果。\n"
+"可選擇提供搜尋 id（來自「search ...」）；若未提供 id，則傳回最近一次搜尋的結果。\n"
 
 #: src/TextClient.cpp
 msgid "Show the progress of a search."
@@ -8435,6 +8416,8 @@ msgid ""
 "Show the progress of a search.\n"
 "Optionally takes a search id; with no id, shows the progress of the most recently started search.\n"
 msgstr ""
+"顯示搜尋進度。\n"
+"可選擇提供搜尋 id；若未提供 id，則顯示最近一次搜尋的進度。\n"
 
 #: src/TextClient.cpp
 msgid "Start downloading a file"
@@ -8509,9 +8492,8 @@ msgid "Show servers list."
 msgstr "顯示伺服器清單。"
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Show shared files list."
-msgstr "重新載入分享檔案清單。"
+msgstr "顯示分享檔案清單。"
 
 #: src/TextClient.cpp
 msgid "Reset log."
@@ -8558,12 +8540,12 @@ msgstr "將 %s 的舊 AICH hash 值組轉換為 %s 的 64b 格式。"
 #: src/ThreadTasks.cpp
 #, c-format
 msgid "Verify Local Data (%s): Result OK for %s"
-msgstr ""
+msgstr "驗證本機資料 (%s)：%s 結果正常"
 
 #: src/ThreadTasks.cpp
 #, c-format
 msgid "Verify Local Data (%s): ERRORS FOUND! %s Failed blocks: MD4: %s. %s %s"
-msgstr ""
+msgstr "驗證本機資料 (%s)：發現錯誤！%s 失敗區塊：MD4：%s。%s %s"
 
 #: src/ThreadTasks.cpp
 #, c-format
@@ -8862,7 +8844,7 @@ msgstr "無法開啟 %s"
 
 #: src/utils/aLinkCreator/src/ed2khash.cpp
 msgid "Out of memory while calculating ed2k hash!"
-msgstr ""
+msgstr "計算 ed2k 雜湊值時記憶體不足！"
 
 #: src/utils/wxCas/src/linuxmon.cpp
 #, c-format
@@ -9280,7 +9262,7 @@ msgstr "正在處理要求 [原始]："
 
 #: src/webserver/src/WebServer.cpp
 msgid "Refusing to read `pass` from URL query string\n"
-msgstr ""
+msgstr "拒絕從 URL 查詢字串讀取 `pass`\n"
 
 #: src/webserver/src/WebServer.cpp
 msgid "No password specified, login will not be allowed."
@@ -9316,52 +9298,51 @@ msgstr "正在處理 [已重定向] 的要求："
 
 #: packaging/windows/installer_strings.c
 msgid "aMule (required)"
-msgstr ""
+msgstr "aMule（必要）"
 
 #: packaging/windows/installer_strings.c
 msgid "Desktop shortcut"
-msgstr ""
+msgstr "桌面捷徑"
 
 #: packaging/windows/installer_strings.c
 msgid "Start aMule when I log in"
-msgstr ""
+msgstr "登入時啟動 aMule"
 
 #: packaging/windows/installer_strings.c
 msgid "Associate .emulecollection files"
-msgstr ""
+msgstr "關聯 .emulecollection 檔案"
 
 #: packaging/windows/installer_strings.c
 msgid "Uninstall"
-msgstr ""
+msgstr "解除安裝"
 
 #: packaging/windows/installer_strings.c
 msgid "Remove user data (config, ED2K servers, Kad nodes, partfiles)"
-msgstr ""
+msgstr "移除使用者資料（設定、ED2K 伺服器、Kad 節點、暫存檔）"
 
 #: packaging/windows/installer_strings.c
-#, fuzzy
 msgid "aMule application files (required)."
-msgstr "無法連線 "
+msgstr "aMule 應用程式檔案（必要）。"
 
 #: packaging/windows/installer_strings.c
 msgid "Place an aMule shortcut on the desktop."
-msgstr ""
+msgstr "在桌面上放置 aMule 捷徑。"
 
 #: packaging/windows/installer_strings.c
 msgid "Launch aMule automatically when the current user logs in (per-user setting)."
-msgstr ""
+msgstr "在目前使用者登入時自動啟動 aMule（每位使用者的設定）。"
 
 #: packaging/windows/installer_strings.c
 msgid "Adds aMule to the \"Open with\" list for .emulecollection files, and makes it the default if no other program has claimed them. Opening a collection queues every eD2k link it contains."
-msgstr ""
+msgstr "將 aMule 加入 .emulecollection 檔案的「開啟方式」清單，並在沒有其他程式已佔用時將其設為預設程式。開啟收藏檔會將其中包含的所有 eD2k 連結加入佇列。"
 
 #: packaging/windows/installer_strings.c
 msgid "Remove aMule application files, Start Menu / desktop shortcuts, autostart Run-key entry, URL scheme registrations, and Add/Remove Programs entry (required)."
-msgstr ""
+msgstr "移除 aMule 應用程式檔案、開始功能表／桌面捷徑、自動啟動 Run 機碼項目、URL scheme 註冊，以及「新增/移除程式」項目（必要）。"
 
 #: packaging/windows/installer_strings.c
 msgid "Permanently delete %APPDATA%\\aMule for the current user (aMule.conf, ED2K server list, Kad nodes, partfiles, IP filters, friends list). Leave unchecked to keep your settings."
-msgstr ""
+msgstr "永久刪除目前使用者的 %APPDATA%\\aMule（aMule.conf、ED2K 伺服器清單、Kad 節點、暫存檔、IP 過濾清單、好友清單）。取消勾選以保留您的設定。"
 
 #: packaging/windows/installer_strings.c
 msgid ""
@@ -9377,7 +9358,7 @@ msgstr ""
 
 #: packaging/windows/installer_strings.c
 msgid "Removing previous aMule installation at $0..."
-msgstr ""
+msgstr "正在移除位於 $0 的先前 aMule 安裝……"
 
 #: packaging/windows/installer_strings.c
 msgid ""
@@ -9387,11 +9368,11 @@ msgstr ""
 
 #: packaging/windows/installer_strings.c
 msgid "aMule appears to be running. Please close it and re-run the uninstaller."
-msgstr ""
+msgstr "aMule 似乎正在執行中。請將其關閉後重新執行解除安裝程式。"
 
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
-msgstr ""
+msgstr "正在移除位於 $APPDATA\\aMule 的使用者資料……"
 
 #, fuzzy
 #~ msgid "Ratio"

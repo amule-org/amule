@@ -11,7 +11,7 @@ msgstr ""
 "Project-Id-Version: aMule Manual zh_TW\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-09-25 16:39+0100\n"
-"PO-Revision-Date: 2026-09-25 11:30+0000\n"
+"PO-Revision-Date: 2026-09-26 09:35+0000\n"
 "Last-Translator: Wayne Su <mstarmstar@gmail.com>\n"
 "Language-Team: \n"
 "Language: zh_TW\n"
@@ -745,10 +745,8 @@ msgstr "顯示伺服器清單。"
 
 #. type: Plain text
 #: amulecmd.1.in
-#, fuzzy
-#| msgid "Reload shared files list."
 msgid "Show shared files list."
-msgstr "重新載入分享檔案清單。"
+msgstr "顯示分享檔案清單。"
 
 #. type: Plain text
 #: amulecmd.1.in

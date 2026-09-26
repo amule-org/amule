@@ -14,7 +14,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-09-23 12:47+0100\n"
-"PO-Revision-Date: 2026-09-25 11:16+0000\n"
+"PO-Revision-Date: 2026-09-26 09:21+0000\n"
 "Last-Translator: Werner Mahr <werner@vollstreckernet.de>\n"
 "Language-Team: German <>\n"
 "Language: de\n"
@@ -67,7 +67,7 @@ msgstr " Copyright (c) 2002-2011 Petar Maymounkov ( petar@maymounkov.org )\n"
 
 #: src/AboutDialog.cpp
 msgid "Website:"
-msgstr ""
+msgstr "Webseite:"
 
 #: src/AboutDialog.cpp
 msgid "Forum:"
@@ -290,9 +290,9 @@ msgid "Failed"
 msgstr "Fehlgeschlagen"
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Terminating amuleapi instance with pid '%d' ... "
-msgstr "Beende amuleweb-Instanz mit pid '%d' ... "
+msgstr "Beende amuleapi-Instanz mit pid '%d' ... "
 
 #: src/amule.cpp
 #, fuzzy, c-format
@@ -596,7 +596,7 @@ msgstr "Diese Version von aMule ist %i.%i.%i und die aktuelle Version ist %li.%l
 
 #: src/amule.cpp
 msgid "The latest version can always be found at https://github.com/amule-org/amule/releases/latest"
-msgstr "Die neueste Version kann man immer auf https://github.com/amule-org/amule/releases/latest finden."
+msgstr "Die neueste Version kann man immer auf https://github.com/amule-org/amule/releases/latest finden"
 
 #: src/amule.cpp
 #, c-format
@@ -3034,7 +3034,7 @@ msgstr "HTTP 401 Nicht autorisiert für %s"
 #: src/IP2Country.cpp
 #, c-format
 msgid "Migrated existing GeoLite2-Country.mmdb to %s"
-msgstr ""
+msgstr "Existierendes GeoLite2-Country.mmdb nach %s migriert"
 
 #: src/IP2Country.cpp
 #, c-format
@@ -5508,6 +5508,9 @@ msgid ""
 "URL may include credentials (https://user:pass@host/...).\n"
 "License and attribution terms are set by the upstream URL - you are responsible."
 msgstr ""
+"Muss auf eine .mmdb-Datei oder auf ein .gz-/.tar.gz-Archiv mit einer solchen Datei verweisen.\n"
+"Die URL kann Zugangsdaten enthalten (https://benutzer:passwort@host/...).\n"
+"Lizenz- und Namensnennungsbedingungen werden von der jeweiligen Quelle festgelegt; deren Einhaltung liegt in Ihrer Verantwortung."
 
 #: src/muuli_wdr.cpp
 msgid "Download the GeoIP database from the selected source."

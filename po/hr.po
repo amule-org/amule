@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-09-23 12:47+0100\n"
-"PO-Revision-Date: 2026-09-25 11:20+0000\n"
+"PO-Revision-Date: 2026-09-26 09:25+0000\n"
 "Last-Translator: Sebastiano Pistore <sebastiano.pistore.info@aol.com>\n"
 "Language-Team: https://github.com/amule-org/amule <forum@aMule.org>\n"
 "Language: hr\n"
@@ -1135,20 +1135,20 @@ msgid "Requested: %s\n"
 msgstr "Zahtijevan:"
 
 #: src/BaseClient.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Filestats for this session: Accepted %d of %d request, %s transferred\n"
 msgid_plural "Filestats for this session: Accepted %d of %d requests, %s transferred\n"
-msgstr[0] "Fajl statistike za ovu misiju: Prihvaceno %d od %d zahtjeva, %s preneseno\n"
-msgstr[1] "Fajl statistike za ovu misiju: Prihvaceno %d od %d zahtjeva, %s preneseno\n"
-msgstr[2] ""
+msgstr[0] "Statistika datoteka za ovu sesiju: Prihvaćeno %d od %d zahtjeva, %s preneseno\n"
+msgstr[1] "Statistika datoteka za ovu sesiju: Prihvaćeno %d od %d zahtjeva, %s preneseno\n"
+msgstr[2] "Statistika datoteka za ovu sesiju: Prihvaćeno %d od %d zahtjeva, %s preneseno\n"
 
 #: src/BaseClient.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Filestats for all sessions: Accepted %d of %d request, %s transferred\n"
 msgid_plural "Filestats for all sessions: Accepted %d of %d requests, %s transferred\n"
-msgstr[0] "Fajl statistike za ovu misiju: Prihvaceno %d od %d zahtjeva, %s preneseno\n"
-msgstr[1] "Fajl statistike za ovu misiju: Prihvaceno %d od %d zahtjeva, %s preneseno\n"
-msgstr[2] ""
+msgstr[0] "Statistika datoteka za sve sesije: Prihvaćeno %d od %d zahtjeva, %s preneseno\n"
+msgstr[1] "Statistika datoteka za sve sesije: Prihvaćeno %d od %d zahtjeva, %s preneseno\n"
+msgstr[2] "Statistika datoteka za sve sesije: Prihvaćeno %d od %d zahtjeva, %s preneseno\n"
 
 #: src/BaseClient.cpp
 msgid "Requested unknown file"
@@ -1386,7 +1386,7 @@ msgstr "LowID"
 #: src/ClientDetailDialog.cpp src/ServerWnd.cpp
 #: src/utils/wxCas/src/onlinesig.cpp
 msgid "HighID"
-msgstr ""
+msgstr "HighID"
 
 #: src/ClientDetailDialog.cpp
 msgid "Enabled"
@@ -2652,11 +2652,11 @@ msgstr ""
 
 #: src/FirstRunWizard.cpp
 msgid "ADSL (24 / 1 Mbit)"
-msgstr ""
+msgstr "ADSL (24 / 1 Mbit)"
 
 #: src/FirstRunWizard.cpp
 msgid "VDSL (50 / 10 Mbit)"
-msgstr ""
+msgstr "VDSL (50 / 10 Mbit)"
 
 #: src/FirstRunWizard.cpp
 msgid "Cable (200 / 20 Mbit)"
@@ -3114,7 +3114,7 @@ msgstr ""
 
 #: src/KadDlg.cpp
 msgid "Invalid ip to bootstrap"
-msgstr ""
+msgstr "Nevažeća IP adresa za bootstrap"
 
 #: src/KadDlg.cpp
 msgid "Invalid port to bootstrap"
@@ -3302,9 +3302,8 @@ msgid "English (U.K.)"
 msgstr "Engleski (U.K.)"
 
 #: src/LanguageList.cpp
-#, fuzzy
 msgid "English (U.S.)"
-msgstr "Engleski (U.K.)"
+msgstr "Engleski (SAD)"
 
 #: src/LanguageList.cpp
 msgid "Estonian"
@@ -5212,7 +5211,7 @@ msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Enter the url to a server.met file here and press the button to the left to update the list of known servers."
-msgstr ""
+msgstr "Ovdje unesite URL datoteke server.met i pritisnite gumb lijevo za ažuriranje popisa poznatih poslužitelja."
 
 #: src/muuli_wdr.cpp
 msgid "Add server manually: Name"
@@ -5264,7 +5263,7 @@ msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Enter the url to a nodes.dat file here and press the button to the left to update the list of known nodes."
-msgstr ""
+msgstr "Ovdje unesite URL datoteke nodes.dat i pritisnite gumb lijevo za ažuriranje popisa poznatih čvorova."
 
 #: src/muuli_wdr.cpp
 msgid "Nodes stats"
@@ -5936,7 +5935,7 @@ msgstr ""
 #: src/PartFileConvertDlg.cpp
 #, c-format
 msgid "%s (Disk: %s)"
-msgstr ""
+msgstr "%s (Disk: %s)"
 
 #: src/PartFileConvertDlg.cpp
 msgid "Please choose a folder to search for temporary downloads! (subfolders will be included)"
@@ -6200,7 +6199,7 @@ msgstr "Sučelje"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "IP2Country"
-msgstr ""
+msgstr "IP2Country"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Proxy"
@@ -7073,7 +7072,7 @@ msgstr ""
 
 #: src/ServerList.cpp
 msgid "No valid server.met auto-download url on addresses.dat"
-msgstr ""
+msgstr "Nema valjanog URL-a za automatsko preuzimanje server.met datoteke u addresses.dat"
 
 #: src/ServerList.cpp
 #, c-format
@@ -7289,7 +7288,7 @@ msgstr ""
 #: src/ServerSocket.cpp
 #, c-format
 msgid "Could not solve dns for server %s: Unable to connect!"
-msgstr ""
+msgstr "Nije moguće razriješiti DNS za poslužitelj %s: povezivanje nije moguće!"
 
 #: src/ServerWnd.cpp
 #, fuzzy
@@ -8430,6 +8429,8 @@ msgid ""
 "Return the results of a search.\n"
 "Optionally takes a search id (from 'search ...'); with no id, returns the results of the most recently started search.\n"
 msgstr ""
+"Vrati rezultate pretraživanja.\n"
+"Opcionalno prima ID pretraživanja (iz 'search ...'); bez ID-a, vraća rezultate posljednje pokrenutog pretraživanja.\n"
 
 #: src/TextClient.cpp
 #, fuzzy
@@ -8441,6 +8442,8 @@ msgid ""
 "Show the progress of a search.\n"
 "Optionally takes a search id; with no id, shows the progress of the most recently started search.\n"
 msgstr ""
+"Prikaži napredak pretraživanja.\n"
+"Opcionalno prima ID pretraživanja; bez ID-a, prikazuje napredak posljednje pokrenutog pretraživanja.\n"
 
 #: src/TextClient.cpp
 msgid "Start downloading a file"
