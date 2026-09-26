@@ -1479,6 +1479,29 @@ target_link_libraries (CompleteSourcesThrottleTest
 	mulecommon
 )
 
+# known.met encoding of a Verify Local Data result (FT_VERIFY_CORRUPT*). The codec
+# lives in a header of its own: CKnownFile reaches theApp and cannot be linked
+# into a test.
+add_executable (VerifyLocalDataResultTest
+	VerifyLocalDataResultTest.cpp
+)
+
+add_test (NAME VerifyLocalDataResultTest
+	COMMAND VerifyLocalDataResultTest
+)
+
+target_include_directories (VerifyLocalDataResultTest
+	PRIVATE ${CMAKE_BINARY_DIR}
+	PRIVATE ${CMAKE_SOURCE_DIR}/src
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/libs
+)
+
+target_link_libraries (VerifyLocalDataResultTest
+	muleunit
+	mulecommon
+)
+
 # The browse ("View Files") state machine. Five separate defects have been the
 # same machine going wrong in a place only a peer of the right kind could reach
 # -- a flat browse that completes without ever being marked finished, a peer we

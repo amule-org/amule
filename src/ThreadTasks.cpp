@@ -36,6 +36,7 @@
 #include <common/Format.h>    // Needed for CFormat
 #include "amule.h"            // Needed for theApp
 #include "KnownFileList.h"    // Needed for theApp->knownfiles
+#include "SharedFileList.h"   // Needed for theApp->sharedfiles
 #include "Preferences.h"      // Needed for thePrefs
 #include "ScopedPtr.h"        // Needed for CScopedPtr and CScopedArray
 #include "PlatformSpecific.h" // Needed for CanFSHandleSpecialChars
@@ -526,10 +527,27 @@ bool CAICHSyncTask::ConvertToKnown2ToKnown264()
 ////////////////////////////////////////////////////////////
 // CVerifyLocalDataTask
 
-CVerifyLocalDataTask::CVerifyLocalDataTask(const CMD4Hash &md4)
-: CThreadTask("VerifyLocalData", md4.Encode(), ETP_High) /*ETP_High as this is requested by the user*/
-, m_fileID(md4)
+CVerifyLocalDataTask::CVerifyLocalDataTask(const CKnownFile *file)
+: CThreadTask("VerifyLocalData",
+	  file->GetFileHash().Encode(),
+	  ETP_High) /*ETP_High as this is requested by the user*/
+, m_fileID(file->GetFileHash())
+, m_owner(file)
+, m_fullPath(file->GetFilePath().JoinPaths(file->GetFileName()))
+, m_fileSize(file->GetFileSize())
+, m_fileDate((uint32)file->GetLastChangeDatetime())
+, m_aichRootHash(file->GetAICHHashset()->GetMasterHash())
+, m_aichStatus(file->GetAICHHashset()->GetStatus())
 {
+	m_md4Hashes.reserve(file->GetHashCount());
+	for (size_t i = 0; i < file->GetHashCount(); ++i) {
+		m_md4Hashes.push_back(file->GetPartHash(i));
+	}
+}
+
+bool CVerifyLocalDataTask::OwnerStillShared() const
+{
+	return theApp->sharedfiles && theApp->sharedfiles->GetFileByID(m_fileID) == m_owner;
 }
 
 void CVerifyLocalDataTask::PrintReport(const CPath &fullPath, const bool checkedAICH)
@@ -580,37 +598,16 @@ void CVerifyLocalDataTask::Entry()
 
 	CFileAutoClose file;
 	uint64 fileLength = 0;
-	uint64 fileSize = 0;
-	std::vector<CMD4Hash> storedMD4Hashes;
-	CAICHHash aichRootHash;
-	EAICHStatus aichStatus;
-	CPath fullPath;
-	CKnownFile *knownFile;
-	{
-		knownFile = theApp->knownfiles->FindKnownFileByID(m_fileID);
-		if (knownFile == nullptr) {
-			AddLogLineN(CFormat(_("Verify Local Data: file %s was removed before it could be "
-					      "checked.")) %
-				    GetDesc());
-			return;
-		}
+	const uint64 fileSize = m_fileSize;
+	const std::vector<CMD4Hash> &storedMD4Hashes = m_md4Hashes;
+	const CPath &fullPath = m_fullPath;
 
-		if (knownFile->IsPartFile()) {
-			AddLogLineN(CFormat(_("Verify Local Data: %s is still downloading, so it was not "
-					      "checked.")) %
-				    knownFile->GetFileName());
-			return;
-		}
-		CPath filepath = knownFile->GetFilePath();
-		CPath filename = knownFile->GetFileName();
-		fullPath = filepath.JoinPaths(filename);
-		storedMD4Hashes.reserve(knownFile->GetHashCount());
-		for (size_t i = 0; i < knownFile->GetHashCount(); ++i)
-			storedMD4Hashes.push_back(knownFile->GetPartHash(i));
-		aichRootHash = knownFile->GetAICHHashset()->GetMasterHash();
-		aichStatus = knownFile->GetAICHHashset()->GetStatus();
-		fileSize = knownFile->GetFileSize();
-	} // no more knownFile after this point
+	if (!OwnerStillShared()) {
+		AddLogLineN(CFormat(_("Verify Local Data: file %s was removed before it could be "
+				      "checked.")) %
+			    fullPath);
+		return;
+	}
 
 	const wxString notRead = _("Verify Local Data: could not read %s, so it was not checked.");
 	if (!file.Open(fullPath, CFile::read)) {
@@ -649,7 +646,7 @@ void CVerifyLocalDataTask::Entry()
 	// LoadHashSet()/FreeHashSet() on the same working set.
 	CKnownFile storedFile;
 	storedFile.SetFileSize(fileSize);
-	storedFile.GetAICHHashset()->SetMasterHash(aichRootHash, aichStatus);
+	storedFile.GetAICHHashset()->SetMasterHash(m_aichRootHash, m_aichStatus);
 	bool isAICHloaded = storedFile.GetAICHHashset()->LoadHashSet();
 
 	if (!isAICHloaded) {
@@ -664,8 +661,8 @@ void CVerifyLocalDataTask::Entry()
 			const uint64 partLength = storedFile.GetPartSize(part);
 
 			// check if the file is still there, and we are pointing to the same object
-			if (knownFile == theApp->knownfiles->FindKnownFileByID(m_fileID))
-				knownFile->SetHashingProgress(part + 1);
+			if (OwnerStillShared())
+				m_owner->SetHashingProgress(part + 1);
 			else {
 				AddLogLineC(
 					CFormat(_("Verify Local Data: %s was removed or changed during the "
@@ -725,16 +722,23 @@ void CVerifyLocalDataTask::Entry()
 				m_corruptedMD4.push_back(part);
 		}
 
-		if (!TestDestroy()) // don't print an unfinished report
+		if (!TestDestroy()) { // don't print or record an unfinished report
 			PrintReport(fullPath, isAICHloaded);
+			CVerifyLocalDataResult result;
+			result.date = (uint32)time(nullptr);
+			result.corruptedMD4 = m_corruptedMD4;
+			result.corruptedAICH = m_corruptedAICH;
+			CVerifyLocalDataEvent evt(m_fileID, m_fullPath, m_fileDate, m_fileSize, result);
+			wxQueueEvent(wxTheApp, evt.Clone());
+		}
 
 	} catch (const CSafeIOException &e) {
 		AddLogLineC(CFormat(_("Verify Local Data: could not read %s, so the check did not finish: "
 				      "%s")) %
 			    fullPath % e.what());
 	}
-	if (knownFile == theApp->knownfiles->FindKnownFileByID(m_fileID))
-		knownFile->SetHashingProgress(0);
+	if (OwnerStillShared())
+		m_owner->SetHashingProgress(0);
 }
 
 ////////////////////////////////////////////////////////////
@@ -956,6 +960,7 @@ void CAllocateFileTask::OnExit()
 wxDEFINE_EVENT(MULE_EVT_HASHING, wxEvent);
 wxDEFINE_EVENT(MULE_EVT_AICH_HASHING, wxEvent);
 wxDEFINE_EVENT(MULE_EVT_MEDIA_PROBE, wxEvent);
+wxDEFINE_EVENT(MULE_EVT_VERIFY_LOCAL_DATA, wxEvent);
 wxDEFINE_EVENT(MULE_EVT_HASHING_DRAINED, wxThreadEvent);
 
 CMediaProbeEvent::CMediaProbeEvent(
@@ -980,6 +985,26 @@ wxEvent *CMediaProbeEvent::Clone() const
 {
 	return new CMediaProbeEvent(m_hash, m_info, m_succeeded, m_markUnprobeable);
 }
+
+CVerifyLocalDataEvent::CVerifyLocalDataEvent(const CMD4Hash &hash,
+	const CPath &fullPath,
+	uint32 fileDate,
+	uint64 fileSize,
+	const CVerifyLocalDataResult &result)
+: wxEvent(-1, MULE_EVT_VERIFY_LOCAL_DATA)
+, m_hash(hash)
+, m_fullPath(fullPath)
+, m_fileDate(fileDate)
+, m_fileSize(fileSize)
+, m_result(result)
+{
+}
+
+wxEvent *CVerifyLocalDataEvent::Clone() const
+{
+	return new CVerifyLocalDataEvent(m_hash, m_fullPath, m_fileDate, m_fileSize, m_result);
+}
+
 CHashingEvent::CHashingEvent(wxEventType type, CKnownFile *result, const CKnownFile *owner)
 : wxEvent(-1, type)
 , m_owner(owner)

@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-26 12:53+0100\n"
+"POT-Creation-Date: 2026-09-26 14:37+0200\n"
 "PO-Revision-Date: 2026-09-26 09:22+0000\n"
 "Last-Translator: \n"
 "Language-Team: Estonian <kde-i18n-doc@kde.org>\n"
@@ -280,6 +280,7 @@ msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "Mõrvan amuleweb tegelase, protsessi id '%d' ... "
 
 #: src/amule.cpp src/ClientRef.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr "Nurjunud"
 
@@ -537,6 +538,11 @@ msgstr "Teatatud serveri nimi"
 #: src/amule.cpp
 #, c-format
 msgid "Media metadata: probed file is no longer known, result discarded (%s)"
+msgstr ""
+
+#: src/amule.cpp
+#, c-format
+msgid "Verify Local Data: another file named '%s' in your shared folders has the same content as '%s' and may be an intact copy of it."
 msgstr ""
 
 #: src/amule.cpp
@@ -3221,6 +3227,11 @@ msgstr "Kad kasutaja"
 
 #: src/KnownFile.cpp
 #, c-format
+msgid "Verify Local Data: %s is still downloading, so it was not checked."
+msgstr ""
+
+#: src/KnownFile.cpp
+#, c-format
 msgid "Kad note search for '%s' not started: Kad is not connected"
 msgstr "Kad märkme otsing '%s' jaoks ei alanud: Kad ei ole ühendatud"
 
@@ -5169,7 +5180,7 @@ msgstr "Lähtesta leht vaikeväärtustele"
 msgid "Reset the settings on the current page to their default values."
 msgstr "Lähtesta praeguse lehe seaded vaikeväärtustele."
 
-#: src/muuli_wdr.cpp src/ServerWnd.cpp
+#: src/muuli_wdr.cpp src/ServerWnd.cpp src/SharedFilesCtrl.cpp
 msgid "OK"
 msgstr "Sobib"
 
@@ -7534,6 +7545,10 @@ msgstr "Saadavus"
 msgid "Directory Path"
 msgstr "Kataloogi asukoht"
 
+#: src/SharedFilesCtrl.cpp
+msgid "Verify Local Data"
+msgstr "Kontrolli kohalikke andmeid"
+
 #: src/SharedFilesCtrl.cpp src/Statistics.cpp
 msgid "Shared Files"
 msgstr "Jagatud failid"
@@ -7549,10 +7564,6 @@ msgstr "Muuda Kommentaari/Hinnangut"
 #: src/SharedFilesCtrl.cpp
 msgid "Rename"
 msgstr "Nimeta ümber"
-
-#: src/SharedFilesCtrl.cpp
-msgid "Verify Local Data"
-msgstr "Kontrolli kohalikke andmeid"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Re-extract &media metadata"
@@ -8588,11 +8599,6 @@ msgstr "Kohalike andmete kontroll (%s): LEITI VIGU! %s Nurjunud plokid: MD4: %s.
 #: src/ThreadTasks.cpp
 #, c-format
 msgid "Verify Local Data: file %s was removed before it could be checked."
-msgstr ""
-
-#: src/ThreadTasks.cpp
-#, c-format
-msgid "Verify Local Data: %s is still downloading, so it was not checked."
 msgstr ""
 
 #: src/ThreadTasks.cpp

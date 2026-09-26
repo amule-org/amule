@@ -42,8 +42,9 @@
 #include "RLE.h" // Needed for RLE_Data, PartFileEncoderData
 #endif
 
-#include "Constants.h" // Needed for PS_*, PR_*
-#include "ClientRef.h" // Needed for CClientRef
+#include "Constants.h"             // Needed for PS_*, PR_*
+#include "ClientRef.h"             // Needed for CClientRef
+#include "VerifyLocalDataResult.h" // Needed for CVerifyLocalDataResult
 
 class CFileDataIO;
 class CPacket;
@@ -325,6 +326,12 @@ public:
 	time_t GetDateShared() const { return m_dateShared; }
 	void SetDateShared(time_t t) { m_dateShared = t; }
 
+	// Last "Verify Local Data" outcome, persisted in known.met. Set on the main thread only, from
+	// CamuleApp::OnVerifyLocalDataFinished -- CVerifyLocalDataTask never writes it directly.
+	const CVerifyLocalDataResult &GetVerifyResult() const { return m_verifyResult; }
+	void SetVerifyResult(const CVerifyLocalDataResult &result) { m_verifyResult = result; }
+	void ClearVerifyResult() { m_verifyResult = CVerifyLocalDataResult(); }
+
 	bool LoadHashsetFromFile(const CFileDataIO *file, bool checkhash);
 	void AddUploadingClient(CUpDownClient *client);
 	void RemoveUploadingClient(CUpDownClient *client);
@@ -416,6 +423,8 @@ public:
 	// when the file is completed or first shared. 0 = unknown.
 	time_t m_lastUploadDatetime;
 	time_t m_dateShared;
+
+	CVerifyLocalDataResult m_verifyResult;
 
 	// "Last time aMule saw this exact (name, date, size) match a real file." Refreshed by
 	// CKnownFileList::FindKnownFile and the "already on the list" branch in Append, persisted

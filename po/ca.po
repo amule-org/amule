@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-26 12:53+0100\n"
+"POT-Creation-Date: 2026-09-26 14:37+0200\n"
 "PO-Revision-Date: 2026-09-26 09:19+0000\n"
 "Last-Translator: minterior <minterior@gmail.com>\n"
 "Language-Team: Català\n"
@@ -291,6 +291,7 @@ msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "Aturant el procés amuleweb amb pid '%d' ... "
 
 #: src/amule.cpp src/ClientRef.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr "Fallades"
 
@@ -543,6 +544,11 @@ msgstr "Nom del servidor notificat"
 #, c-format
 msgid "Media metadata: probed file is no longer known, result discarded (%s)"
 msgstr "Metadades multimèdia: el fitxer analitzat ja no es coneix; s'ha descartat el resultat (%s)"
+
+#: src/amule.cpp
+#, c-format
+msgid "Verify Local Data: another file named '%s' in your shared folders has the same content as '%s' and may be an intact copy of it."
+msgstr ""
 
 #: src/amule.cpp
 #, c-format
@@ -3209,6 +3215,11 @@ msgstr "Usuari de Kad"
 
 #: src/KnownFile.cpp
 #, c-format
+msgid "Verify Local Data: %s is still downloading, so it was not checked."
+msgstr ""
+
+#: src/KnownFile.cpp
+#, c-format
 msgid "Kad note search for '%s' not started: Kad is not connected"
 msgstr "La cerca de notes de Kad per a «%s» no s'ha iniciat: Kad no està connectat"
 
@@ -5149,7 +5160,7 @@ msgstr "Restableix la pàgina als valors predeterminats"
 msgid "Reset the settings on the current page to their default values."
 msgstr "Restableix els paràmetres de la pàgina actual als valors predeterminats."
 
-#: src/muuli_wdr.cpp src/ServerWnd.cpp
+#: src/muuli_wdr.cpp src/ServerWnd.cpp src/SharedFilesCtrl.cpp
 msgid "OK"
 msgstr "OK"
 
@@ -7495,6 +7506,10 @@ msgstr "Disponibilitat de fonts"
 msgid "Directory Path"
 msgstr "Ubicació"
 
+#: src/SharedFilesCtrl.cpp
+msgid "Verify Local Data"
+msgstr "Verifica les dades locals"
+
 #: src/SharedFilesCtrl.cpp src/Statistics.cpp
 msgid "Shared Files"
 msgstr "Compartits"
@@ -7510,10 +7525,6 @@ msgstr "Edita comentari / valoració"
 #: src/SharedFilesCtrl.cpp
 msgid "Rename"
 msgstr "Reanomena"
-
-#: src/SharedFilesCtrl.cpp
-msgid "Verify Local Data"
-msgstr "Verifica les dades locals"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Re-extract &media metadata"
@@ -8552,11 +8563,6 @@ msgstr "Verificació de dades locals (%s): S'HAN TROBAT ERRORS! %s Blocs fallits
 #: src/ThreadTasks.cpp
 #, c-format
 msgid "Verify Local Data: file %s was removed before it could be checked."
-msgstr ""
-
-#: src/ThreadTasks.cpp
-#, c-format
-msgid "Verify Local Data: %s is still downloading, so it was not checked."
 msgstr ""
 
 #: src/ThreadTasks.cpp

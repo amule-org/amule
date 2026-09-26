@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-26 12:53+0100\n"
+"POT-Creation-Date: 2026-09-26 14:37+0200\n"
 "PO-Revision-Date: 2026-09-26 09:23+0000\n"
 "Last-Translator: Piarres Beobide <pi@beobide.net>\n"
 "Language-Team: Euskara <librezale@librezale.org>\n"
@@ -281,6 +281,7 @@ msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "'%d' pid-a duen amuleweb instantzia hiltzen ... "
 
 #: src/amule.cpp src/ClientRef.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr "Huts egin du"
 
@@ -538,6 +539,11 @@ msgstr "Zerbitzari ostalari-izena notifikatua"
 #: src/amule.cpp
 #, c-format
 msgid "Media metadata: probed file is no longer known, result discarded (%s)"
+msgstr ""
+
+#: src/amule.cpp
+#, c-format
+msgid "Verify Local Data: another file named '%s' in your shared folders has the same content as '%s' and may be an intact copy of it."
 msgstr ""
 
 #: src/amule.cpp
@@ -3222,6 +3228,11 @@ msgstr "Kad erabiltzailea"
 
 #: src/KnownFile.cpp
 #, c-format
+msgid "Verify Local Data: %s is still downloading, so it was not checked."
+msgstr ""
+
+#: src/KnownFile.cpp
+#, c-format
 msgid "Kad note search for '%s' not started: Kad is not connected"
 msgstr "'%s'(r)en Kad ohar-bilaketa ez da hasi: Kad ez dago konektatuta"
 
@@ -5172,7 +5183,7 @@ msgstr "Berrezarri orria balio lehenetsietara"
 msgid "Reset the settings on the current page to their default values."
 msgstr "Berrezarri uneko orriko ezarpenak beren balio lehenetsietara."
 
-#: src/muuli_wdr.cpp src/ServerWnd.cpp
+#: src/muuli_wdr.cpp src/ServerWnd.cpp src/SharedFilesCtrl.cpp
 msgid "OK"
 msgstr "Ados"
 
@@ -7539,6 +7550,10 @@ msgstr "Eskuragarritasuna"
 msgid "Directory Path"
 msgstr "Karpeta bidea"
 
+#: src/SharedFilesCtrl.cpp
+msgid "Verify Local Data"
+msgstr "Egiaztatu datu lokalak"
+
 #: src/SharedFilesCtrl.cpp src/Statistics.cpp
 msgid "Shared Files"
 msgstr "Partekatutako fitxategiak"
@@ -7554,10 +7569,6 @@ msgstr "Iruzkina/Kalifikazioa editatu"
 #: src/SharedFilesCtrl.cpp
 msgid "Rename"
 msgstr "Izena aldatu"
-
-#: src/SharedFilesCtrl.cpp
-msgid "Verify Local Data"
-msgstr "Egiaztatu datu lokalak"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Re-extract &media metadata"
@@ -8598,11 +8609,6 @@ msgstr "Datu lokalen egiaztapena (%s): ERROREAK AURKITU DIRA! %s Huts egindako b
 #: src/ThreadTasks.cpp
 #, c-format
 msgid "Verify Local Data: file %s was removed before it could be checked."
-msgstr ""
-
-#: src/ThreadTasks.cpp
-#, c-format
-msgid "Verify Local Data: %s is still downloading, so it was not checked."
 msgstr ""
 
 #: src/ThreadTasks.cpp

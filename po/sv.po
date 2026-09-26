@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-26 12:53+0100\n"
+"POT-Creation-Date: 2026-09-26 14:37+0200\n"
 "PO-Revision-Date: 2026-09-26 09:32+0000\n"
 "Last-Translator: raffe <raffe@localhost.se>\n"
 "Language-Team: Swedish <tp-sv@listor.tp-sv.se>\n"
@@ -286,6 +286,7 @@ msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "Dödar amuleweb-instansen med pid '%d' ... "
 
 #: src/amule.cpp src/ClientRef.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr "Misslyckades"
 
@@ -541,6 +542,11 @@ msgstr "Serverns hostname underrättad"
 #, c-format
 msgid "Media metadata: probed file is no longer known, result discarded (%s)"
 msgstr "Mediemetadata: den undersökta filen är inte längre känd, resultatet kasseras (%s)"
+
+#: src/amule.cpp
+#, c-format
+msgid "Verify Local Data: another file named '%s' in your shared folders has the same content as '%s' and may be an intact copy of it."
+msgstr ""
 
 #: src/amule.cpp
 #, c-format
@@ -3208,6 +3214,11 @@ msgstr "Kad-användare"
 
 #: src/KnownFile.cpp
 #, c-format
+msgid "Verify Local Data: %s is still downloading, so it was not checked."
+msgstr ""
+
+#: src/KnownFile.cpp
+#, c-format
 msgid "Kad note search for '%s' not started: Kad is not connected"
 msgstr "Kad-anteckningssökning efter ”%s” startades inte: Kad är inte anslutet"
 
@@ -5150,7 +5161,7 @@ msgstr "Återställ sidan till standardvärden"
 msgid "Reset the settings on the current page to their default values."
 msgstr "Återställ inställningarna på den aktuella sidan till standardvärdena."
 
-#: src/muuli_wdr.cpp src/ServerWnd.cpp
+#: src/muuli_wdr.cpp src/ServerWnd.cpp src/SharedFilesCtrl.cpp
 msgid "OK"
 msgstr "OK"
 
@@ -7498,6 +7509,10 @@ msgstr "Källtillgänglighet"
 msgid "Directory Path"
 msgstr "Mappsökväg"
 
+#: src/SharedFilesCtrl.cpp
+msgid "Verify Local Data"
+msgstr "Verifiera lokala data"
+
 #: src/SharedFilesCtrl.cpp src/Statistics.cpp
 msgid "Shared Files"
 msgstr "Utdelade filer"
@@ -7513,10 +7528,6 @@ msgstr "Redigera Kommentar/Betyg"
 #: src/SharedFilesCtrl.cpp
 msgid "Rename"
 msgstr "Byt namn"
-
-#: src/SharedFilesCtrl.cpp
-msgid "Verify Local Data"
-msgstr "Verifiera lokala data"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Re-extract &media metadata"
@@ -8555,11 +8566,6 @@ msgstr "Verifiera lokala data (%s): FEL HITTADES! %s Misslyckade block: MD4: %s.
 #: src/ThreadTasks.cpp
 #, c-format
 msgid "Verify Local Data: file %s was removed before it could be checked."
-msgstr ""
-
-#: src/ThreadTasks.cpp
-#, c-format
-msgid "Verify Local Data: %s is still downloading, so it was not checked."
 msgstr ""
 
 #: src/ThreadTasks.cpp
