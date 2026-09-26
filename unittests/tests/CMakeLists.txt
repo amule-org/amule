@@ -29,6 +29,28 @@ target_include_directories (ClientCreditsTest PRIVATE
 )
 target_link_libraries (ClientCreditsTest muleunit mulecommon)
 
+# The clients.met metadata trailer, on a CMemFile.
+add_executable (ClientMetaTrailerTest
+	ClientMetaTrailerTest.cpp
+	${CMAKE_SOURCE_DIR}/src/ClientMetaTrailer.cpp
+	${CMAKE_SOURCE_DIR}/src/SafeFile.cpp
+	${CMAKE_SOURCE_DIR}/src/CFile.cpp
+	${CMAKE_SOURCE_DIR}/src/MemFile.cpp
+	${CMAKE_SOURCE_DIR}/src/kademlia/utils/UInt128.cpp
+	${CMAKE_SOURCE_DIR}/src/Tag.cpp
+	${CMAKE_SOURCE_DIR}/src/LoggerConsole.cpp
+	${CMAKE_SOURCE_DIR}/src/libs/common/Path.cpp
+	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
+	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
+)
+add_test (NAME ClientMetaTrailerTest COMMAND ClientMetaTrailerTest)
+target_include_directories (ClientMetaTrailerTest PRIVATE
+	${CMAKE_BINARY_DIR}
+	${CMAKE_SOURCE_DIR}/src
+	${CMAKE_SOURCE_DIR}/src/include
+)
+target_link_libraries (ClientMetaTrailerTest muleunit mulecommon)
+
 # Tracked endpoint history is independent of live clients and the application clock.
 add_executable (TrackedClientRecordTest TrackedClientRecordTest.cpp)
 add_test (NAME TrackedClientRecordTest COMMAND TrackedClientRecordTest)

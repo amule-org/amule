@@ -79,8 +79,7 @@ public:
 
 protected:
 	void LoadList();
-	//! Optional metadata block after the credit records -- see the comment on
-	//! kMetaMagic for why it lives there rather than in the records.
+	//! Optional metadata block after the credit records, see ClientMetaTrailer.
 	void LoadMetaTrailer(CFile &file);
 	void SaveMetaTrailer(CFile &file);
 	void InitalizeCrypting();
