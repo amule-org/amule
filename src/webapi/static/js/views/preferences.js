@@ -35,6 +35,7 @@ import { clearPrefs, GRAPH_RANGES, loadGraphInterval, saveGraphInterval } from "
 // `action.body` names the JSON field the typed value is sent as, and the row
 // grows a trailing icon button; a `button` field is the same action with no
 // value to send, rendered as a standalone button and never part of the PATCH.
+// A tab or group `hideWhen(values)` omits it entirely when it returns true.
 const PROXY_TYPES = [
   { value: "socks5", labelKey: "prefs_opt_proxy_socks5" },
   { value: "socks4", labelKey: "prefs_opt_proxy_socks4" },
@@ -247,9 +248,22 @@ const TABS = [
       { key: "comment_keywords", type: "text", sub: true, gatedBy: "filter_comments" },
     ] },
   ] },
-  // The two subsystems are nested categories in the payload
-  // (remote_controls.webserver / .amuleapi), so each group names its own cat.
+  // The subsystems are nested categories in the payload
+  // (remote_controls.external_connections / .amuleapi / .webserver), so each
+  // field names its own cat.
   { id: "remote_controls", labelKey: "prefs_remote_controls", cat: "remote_controls", groups: [
+    // The EC listener: read-only, applied by the core only on restart. An older
+    // daemon reports it all as null, so hide it rather than show it as "off".
+    { legendKey: "prefs_group_external_connections",
+      hideWhen: (v) => v["remote_controls.external_connections.port"] == null, fields: [
+      { key: "enabled", type: "bool", readonly: true, cat: "remote_controls.external_connections" },
+      { key: "bind_address", type: "text", readonly: true, sub: true, cat: "remote_controls.external_connections" },
+      { key: "bind_interface", type: "text", readonly: true, sub: true, cat: "remote_controls.external_connections" },
+      { key: "port", type: "int", readonly: true, sub: true, cat: "remote_controls.external_connections" },
+      { key: "upnp_enabled", type: "bool", readonly: true, sub: true, cat: "remote_controls.external_connections" },
+      { key: "password_set", type: "bool", readonly: true, sub: true, cat: "remote_controls.external_connections" },
+      { key: "encryption_required", type: "bool", readonly: true, sub: true, cat: "remote_controls.external_connections" },
+    ] },
     { legendKey: "prefs_group_amuleapi", after: "amuleapi_credentials", fields: [
       { key: "enabled", type: "bool", cat: "remote_controls.amuleapi" },
       { key: "port", type: "int", min: 0, max: 65535, sub: true, cat: "remote_controls.amuleapi", gatedBy: "enabled" },
@@ -677,7 +691,7 @@ export default function Preferences({ isGuest }) {
         <div class="prefs-groups">
           ${tab.webui ? html`<${WebUiSettings} lang=${webuiLang} theme=${webuiTheme} range=${webuiRange}
                                                onLang=${setWebuiLang} onTheme=${setWebuiTheme} onRange=${setWebuiRange} />`
-            : tab.groups.map((grp) => html`
+            : tab.groups.filter((g) => !g.hideWhen || !g.hideWhen(values)).map((grp) => html`
             <fieldset>
               <legend>${t(grp.legendKey)}</legend>
               <div class="form-grid">${grp.fields.map((f) => buildField(catOf(tab, f), f))}</div>
