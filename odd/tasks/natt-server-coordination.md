@@ -16,14 +16,16 @@ This bounded scope supersedes the earlier retry-policy and live-login plan.
 - TCP request 0x60: target ID u32 LE, requester UDP port u16 LE.
 - TCP info 0x61: IPv4 octets in wire order, TCP u16 LE, UDP u16 LE,
   user hash (16 bytes), role byte.
-- TCP failure 0x62: target ID u32 LE, reason byte.
+- TCP failure 0x62: target ID u32 LE, reason byte. The reference assigns reasons 1–4
+  to target-not-connected, target-is-HighID, bad-request, and target-without-UDP;
+  unknown values remain preserved and non-success.
 - UDP server keepalive 0x9F: own user hash (16 bytes).
 - UDP peer 0xB3: recognition only; unrelated to TCP OP_ESERVER_BUDDY_REQUEST.
 
 Builders return payloads only, not opcode/protocol/length framing. Parsers require
-exact payload lengths. Roles and failure reasons remain opaque bytes: the supplied
-contract does not assign their meanings. Parsing does not authorize any action.
-IPv4 is represented as four octets, avoiding host-endian integer conversions.
+exact payload lengths. Roles remain opaque to this slice; the reference uses 0 for
+initiate and 1 for wait. Parsing does not authorize any action. IPv4 is represented
+as four octets, avoiding host-endian integer conversions.
 
 ## Deferred work / TODO
 - Do not add CT_EMULE_UDPPORTS to server login yet. ServerConnect.cpp currently
