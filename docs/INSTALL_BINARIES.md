@@ -35,7 +35,7 @@ For building from source, see [INSTALL.md](INSTALL.md).
 ### AppImage (recommended)
 
 A single self-contained binary that runs on any modern distro
-(glibc ≥ 2.31). Both `x64` and `arm64` builds are published.
+(glibc ≥ 2.35). Both `x64` and `arm64` builds are published.
 
 1. Download `aMule-<version>-Linux-<arch>.AppImage` from the
    [Releases page][rel].
@@ -46,9 +46,11 @@ A single self-contained binary that runs on any modern distro
    ./aMule-*-Linux-*.AppImage
    ```
 
-On first launch aMule offers to install a `.desktop` entry into
-your application menu (opt-in, reversible — declined runs and the
-"Don't ask again" choice are remembered).
+On first launch aMule offers to integrate with your desktop: menu
+entries for aMule and aMuleGUI, icons, the `.emulecollection` file
+type, and command symlinks in `~/.local/bin`. It is opt-in and
+reversible, and a declined offer and the "Don't ask again" choice are
+remembered.
 
 **Pitfall — FUSE missing:** if the AppImage exits immediately with
 `AppImages require FUSE to run`, install it:
@@ -71,7 +73,7 @@ are published.
    flatpak run org.amule.aMule
    ```
 
-The Flatpak runs against the GNOME Platform 47 runtime, but the
+The Flatpak runs against the GNOME Platform 50 runtime, but the
 manifest grants `--filesystem=home` so aMule has full access to
 your home directory and stores state in `~/.aMule/` — the same
 path as a native install. Existing config, shared files, and
@@ -181,9 +183,9 @@ and dependencies. Pick whichever fits your workflow.
 
 1. Download `aMule-<version>-Windows-Setup-<arch>.exe` from the
    [Releases page][rel].
-2. Run it. The wizard offers per-user (no admin) or all-users
-   (admin elevation) install, an option to create desktop /
-   Start-menu shortcuts, and registers an uninstaller in
+2. Run it. It installs for all users under `C:\Program Files\aMule\`
+   (so it asks for admin rights), creates Start-menu shortcuts and an
+   optional desktop shortcut, and registers an uninstaller in
    *Settings → Apps*.
 3. Launch aMule from the Start menu or desktop shortcut.
 
@@ -252,9 +254,8 @@ binaries differently.
 
 ### Windows NSIS installer
 
-The installer drops every binary into `<InstallDir>\bin\`. Default
-install dir is `C:\Program Files\aMule\` for all-users or
-`%LOCALAPPDATA%\Programs\aMule\` for per-user. Open PowerShell or
+The installer drops every binary into `<InstallDir>\bin\`. The default
+install dir is `C:\Program Files\aMule\`. Open PowerShell or
 Command Prompt and invoke by full path:
 
 ```
@@ -282,7 +283,8 @@ PowerShell or Command Prompt in that folder and run them directly:
 ### macOS .dmg
 
 `aMule.app/Contents/MacOS/` holds the GUI plus `amuled`,
-`amulecmd`, `amuleweb`, and `ed2k`; invoke them by full path:
+`amulecmd`, `amuleweb`, `amuleapi`, `ed2k` and the `cas`, `wxcas`,
+`alc` and `alcc` utilities; invoke them by full path:
 
 ```sh
 /Applications/aMule.app/Contents/MacOS/amuled --full-daemon
@@ -303,6 +305,7 @@ already on `$PATH`:
 sudo ln -s /Applications/aMule.app/Contents/MacOS/amuled       /usr/local/bin/amuled
 sudo ln -s /Applications/aMule.app/Contents/MacOS/amulecmd     /usr/local/bin/amulecmd
 sudo ln -s /Applications/aMule.app/Contents/MacOS/amuleweb     /usr/local/bin/amuleweb
+sudo ln -s /Applications/aMule.app/Contents/MacOS/amuleapi     /usr/local/bin/amuleapi
 sudo ln -s /Applications/aMuleGUI.app/Contents/MacOS/aMuleGUI  /usr/local/bin/amulegui
 ```
 
@@ -336,6 +339,7 @@ flatpak run --command=amuled    org.amule.aMule --full-daemon
 flatpak run --command=amulecmd  org.amule.aMule -h 127.0.0.1 -p 4712 -P <password>
 flatpak run --command=amulegui  org.amule.aMule
 flatpak run --command=amuleweb  org.amule.aMule --admin-pass=<password>
+flatpak run --command=amuleapi  org.amule.aMule
 ```
 
 The Flatpak grants `--filesystem=home`, so `~/.aMule/` is shared

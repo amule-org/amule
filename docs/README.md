@@ -20,7 +20,7 @@ under `~/.aMule/`:
 | `amulegui`  | A remote GUI that talks to a running `amuled` over the [EC protocol](EC_Protocol.md). | Drive a remote `amuled` from your desktop. |
 | `amuleweb`  | A small HTTP server that exposes a running `amuled` to a browser. | Drive a remote `amuled` from a phone or another machine without installing anything. |
 | `amulecmd`  | An interactive CLI that talks to a running `amuled`. | Scripts, headless administration, troubleshooting. |
-| `ed2k`      | A tiny helper that hands `ed2k://` URLs to a running aMule. | Click an `ed2k://` link in a browser and have aMule pick it up. |
+| `ed2k`      | A tiny helper that hands `ed2k://` and magnet links to a running aMule. | Queue links from a script or a terminal. Browsers hand clicked links to `amule` / `amulegui` themselves. |
 
 Pick `amule` if you're not sure which to use — it's the all-in-one.
 

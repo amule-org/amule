@@ -87,6 +87,6 @@ the Flathub side; the in-tree copy still needs a manual bump.
 
 ## Refreshing the runtime
 
-GNOME Platform runtime bumps (currently pinned to `49`) need to be
+GNOME Platform runtime bumps (currently pinned to `50`) need to be
 coordinated with the internal template — both files reference the
 same runtime version. Bump both at once and rebuild end-to-end.

@@ -15,8 +15,9 @@
 #    pinned).
 #
 # To refresh after a new aMule release tag:
-#   1. Resolve the tag's commit SHA:
-#        gh api repos/amule-org/amule/git/refs/tags/<tag> --jq '.object.sha'
+#   1. Resolve the commit the tag points at (for an annotated tag the ref
+#      API returns the tag object instead, which flatpak-builder rejects):
+#        git rev-parse <tag>^{commit}
 #   2. Update the amule source block's `tag:` and `commit:`.
 #   3. PR to github.com/flathub/org.amule.aMule (once that repo exists).
 
@@ -191,8 +192,8 @@ modules:
       - -DENABLE_GTKDOC=OFF
     sources:
       - type: archive
-        url: https://github.com/AyatanaIndicators/libayatana-appindicator/archive/refs/tags/0.5.94.tar.gz
-        sha256: 884a6bc77994c0b58c961613ca4c4b974dc91aa0f804e70e92f38a542d0d0f90
+        url: https://github.com/AyatanaIndicators/libayatana-appindicator/archive/refs/tags/0.6.0.tar.gz
+        sha256: 23be92ad8eb9625ce93b23b14f82f3cf88a4970c31d48581945ddfbac0441d06
 
   - name: libmaxminddb
     buildsystem: autotools
@@ -256,13 +257,13 @@ modules:
     sources:
       - type: git
         url: https://github.com/amule-org/amule.git
-        # Pinned to the 3.0.1 release. `commit` is the peeled commit the
-        # annotated 3.0.1 tag resolves to (git rev-parse 3.0.1^{commit});
+        # Pinned to the 3.1.0 release. `commit` is the peeled commit the
+        # annotated 3.1.0 tag resolves to (git rev-parse 3.1.0^{commit});
         # flatpak-builder requires the tag and commit point at the same
         # commit. The x-checker-data block below drives auto-update PRs
         # against future aMule release tags.
-        tag: 3.0.1
-        commit: 02db0d7faecfc377694ff6242bc23346185990ed
+        tag: 3.1.0
+        commit: 909d304d993ee07df6c6f6acf501a6d791d53666
         disable-shallow-clone: true
         x-checker-data:
           type: git

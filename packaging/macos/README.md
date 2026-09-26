@@ -29,8 +29,8 @@ deployment target and arch list, then drives cmake + dylibbundler + hdiutil.
    `.dylib` deps into `Contents/libs/`, and rewrites the Mach-O load
    commands to `@executable_path/../libs/<name>.dylib`. The result
    runs on a clean macOS box without Homebrew installed.
-3. The headless CLI binaries (`amuled`, `amulecmd`, `amuleweb`, `ed2k`)
-   are copied into `aMule.app/Contents/MacOS/` next to the GUI binary,
+3. The headless CLI binaries (`amuled`, `amulecmd`, `amuleweb`, `amuleapi`,
+   `ed2k`) and the `cas`, `wxcas`, `alc` and `alcc` utilities are copied into `aMule.app/Contents/MacOS/` next to the GUI binary,
    with their dylib deps bundled the same way. Power users can run
    `aMule.app/Contents/MacOS/amuled --version` from a terminal.
 4. `hdiutil create … -format UDZO` produces a compressed read-only

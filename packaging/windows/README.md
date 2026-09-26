@@ -14,7 +14,7 @@ who prefer that flow.
 Runs INSIDE MSYS2 on a Windows machine. Two environments:
 
 - **CLANGARM64** — Windows 11 ARM64 (default).
-- **MINGW64** — Windows 10/11 x86_64.
+- **CLANG64** — Windows 10/11 x86_64.
 
 ```sh
 # from repo root, on Windows in the right MSYS2 shell
@@ -45,8 +45,8 @@ packaging/windows/build.sh
 ## Building for x86_64 instead of arm64
 
 ```sh
-# inside MSYS2 MINGW64 shell, OR with the override:
-WINDOWS_MSYSTEM=MINGW64 packaging/windows/build.sh
+# inside MSYS2 CLANG64 shell, OR with the override:
+WINDOWS_MSYSTEM=CLANG64 packaging/windows/build.sh
 ```
 
 The script verifies that the shell's `MSYSTEM` matches `versions.env`
@@ -193,7 +193,7 @@ the portable .zip and the installer .exe when both exist in `dist/`.
 ## Updating tool / dep pins
 
 `packaging/windows/versions.env` carries:
-- `WINDOWS_MSYSTEM` — default toolchain selection (CLANGARM64 or MINGW64)
+- `WINDOWS_MSYSTEM` — default toolchain selection (CLANGARM64 or CLANG64)
 - Signing variable name documentation
 
 wxWidgets, cryptopp, libupnp etc. come from MSYS2's currently-installed

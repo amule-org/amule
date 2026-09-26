@@ -32,7 +32,7 @@ build instructions and design notes:
 | Platform | Recipe doc                                                            | Output format         |
 | -------- | --------------------------------------------------------------------- | --------------------- |
 | Linux    | [`linux/appimage/README.md`](linux/appimage/README.md)                | `.AppImage` (single file, glibc ≥ 2.35) |
-| Linux    | [`linux/flatpak/README.md`](linux/flatpak/README.md)                  | `.flatpak` (sandboxed, GNOME 49 runtime) |
+| Linux    | [`linux/flatpak/README.md`](linux/flatpak/README.md)                  | `.flatpak` (sandboxed, GNOME 50 runtime) |
 | Linux    | [`linux/static/README.md`](linux/static/README.md)                    | `.tar.gz` (static musl daemon: amuled + amulecmd + amuleapi) |
 | macOS    | [`macos/README.md`](macos/README.md)                                  | `.dmg` (Universal2, arm64 + x86_64) |
 | Windows  | [`windows/README.md`](windows/README.md)                              | `.zip` (portable, MSYS2 runtime bundled) |

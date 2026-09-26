@@ -20,7 +20,7 @@
 # `0.0.0-fork-test` — the tag and the draft Release land on the fork,
 # not upstream.
 #
-# Before the draft is created, the release job asserts that all ten
+# Before the draft is created, the release job asserts that all twelve
 # expected platform assets are present, so a half-built matrix can never
 # silently produce a draft that's missing a platform.
 #

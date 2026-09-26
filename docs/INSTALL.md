@@ -132,7 +132,7 @@ Common `-D` options (`YES` / `NO` unless noted otherwise):
 | `BUILD_AMULECMD`         | NO      | `amulecmd` — CLI client for the daemon                                   |
 | `BUILD_WEBSERVER`        | NO      | `amuleweb` — HTTP interface for the daemon                               |
 | `BUILD_AMULEAPI`         | NO      | `amuleapi` — REST API + SSE daemon ([docs/QUICKSTART-AMULEAPI.md](QUICKSTART-AMULEAPI.md)) |
-| `BUILD_ED2K`             | NO      | `ed2k` — handle `ed2k://` links                                          |
+| `BUILD_ED2K`             | YES     | `ed2k` — queue `ed2k://` and magnet links from the command line          |
 | `BUILD_CAS`              | NO      | `cas` — C statistics tool                                                |
 | `BUILD_WXCAS`            | NO      | `wxCas` — GUI statistics tool                                            |
 | `BUILD_ALC`              | NO      | aMuleLinkCreator GUI                                                     |
