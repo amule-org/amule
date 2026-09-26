@@ -1567,7 +1567,7 @@ wxSizer *PreferencesConnectionTab( wxWindow *parent, bool call_fit, bool set_siz
     // such as a VPN tunnel, can still be typed in.
     wxComboBox *item27b = new wxComboBox( parent, IDC_INTERFACE, "", wxDefaultPosition, wxSize(120,-1), 0, NULL, wxCB_DROPDOWN );
 #endif
-    item27b->SetToolTip( _("Advanced users only: pin all of aMule's traffic to one network interface, chosen from the list or typed in by name (e.g. tun0, eth0, en0) or index. Unlike binding to an IP, this stops traffic leaking out via the default route - useful with a VPN. Requires no elevated privileges.") );
+    item27b->SetToolTip( _("Advanced users only: pin aMule's peer-to-peer traffic, and its HTTP updates where the platform allows, to one network interface, chosen from the list or typed in by name (e.g. tun0, eth0, en0) or index. Unlike binding to an IP, this stops traffic leaking out via the default route - useful with a VPN. On Linux before kernel 5.7 it needs the CAP_NET_RAW capability.") );
     item25->Add( item27b, wxSizerFlags().Expand() );
     item0->Add( item25, wxSizerFlags().Expand().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 0) );
     wxFlexGridSizer *item28 = new wxFlexGridSizer( 2, 0, 0 );
