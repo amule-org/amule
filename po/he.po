@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-09-26 17:32+0100\n"
-"PO-Revision-Date: 2026-09-26 09:25+0000\n"
+"PO-Revision-Date: 2026-09-26 19:22+0000\n"
 "Last-Translator: Peace Kramer <kpeace1@gmail.com>\n"
 "Language-Team: Hebrew\n"
 "Language: he\n"
@@ -22,9 +22,8 @@ msgstr ""
 "X-Poedit-SourceCharset: UTF-8\n"
 
 #: src/AboutDialog.cpp
-#, fuzzy
 msgid "About aMule"
-msgstr "אודות wxCas"
+msgstr "אודות aMule"
 
 #: src/AboutDialog.cpp
 msgid "aMule remote control "
@@ -39,19 +38,20 @@ msgid ""
 "'All-Platform' p2p client based on eMule \n"
 "\n"
 msgstr ""
+"לקוח P2P 'רב-פלטפורמות' המבוסס על eMule \n"
+"\n"
 
 #: src/AboutDialog.cpp
-#, fuzzy
 msgid ""
 "Copyright (c) 2003-2026 aMule Team \n"
 "\n"
 msgstr ""
-"זכוייות יוצרים (C) 2003-2019 צוות אימיול \n"
+"כל הזכויות שמורות (c) 2003-2026 צוות aMule \n"
 "\n"
 
 #: src/AboutDialog.cpp
 msgid "Part of aMule is based on \n"
-msgstr ""
+msgstr "חלק מ-aMule מבוסס על \n"
 
 #: src/AboutDialog.cpp
 msgid "Kademlia: Peer-to-peer routing based on the XOR metric.\n"
@@ -59,49 +59,48 @@ msgstr "קאדימליה: תקשורת עמית לעמית מנותבת המבו
 
 #: src/AboutDialog.cpp
 msgid " Copyright (c) 2002-2011 Petar Maymounkov ( petar@maymounkov.org )\n"
-msgstr ""
+msgstr " כל הזכויות שמורות (c) 2002-2011 Petar Maymounkov ( petar@maymounkov.org )\n"
 
 #: src/AboutDialog.cpp
 msgid "Website:"
-msgstr ""
+msgstr "אתר אינטרנט:"
 
 #: src/AboutDialog.cpp
 msgid "Forum:"
-msgstr ""
+msgstr "פורום:"
 
 #: src/AboutDialog.cpp
 msgid "Documentation:"
-msgstr ""
+msgstr "תיעוד:"
 
 #: src/AboutDialog.cpp
 msgid "Issues:"
-msgstr ""
+msgstr "בעיות:"
 
 #: src/AboutDialog.cpp
 msgid "Click to check for a newer version."
-msgstr ""
+msgstr "לחץ כדי לבדוק אם קיימת גרסה חדשה יותר."
 
 #: src/AboutDialog.cpp
 msgid "Check for updates"
-msgstr ""
+msgstr "בדוק עדכונים"
 
 #: src/AboutDialog.cpp
-#, fuzzy
 msgid "Checking for updates..."
-msgstr "מתחבר לקאד..."
+msgstr "בודק עדכונים..."
 
 #: src/AboutDialog.cpp
 msgid "You are running the latest version."
-msgstr ""
+msgstr "אתה מריץ את הגרסה העדכנית ביותר."
 
 #: src/AboutDialog.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "A new version (%s) is available:"
-msgstr "לא זמין"
+msgstr "גרסה חדשה (%s) זמינה:"
 
 #: src/AboutDialog.cpp
 msgid "Could not check for updates. Please try again later."
-msgstr ""
+msgstr "לא ניתן היה לבדוק עדכונים. אנא נסה שוב מאוחר יותר."
 
 #: src/AddFriend.cpp
 msgid "Add a Friend"
@@ -127,46 +126,50 @@ msgid ""
 "\n"
 "Install desktop integration now?"
 msgstr ""
+"aMule יכול להתקין משגרי שולחן עבודה, סמלים וקיצורי פקודות מעטפת בתיקיית הבית שלך כך שהוא יופיע בתפריט היישומים שלך כמו יישום מותקן רגיל.\n"
+"\n"
+"ניתן לבטל פעולה זו - הקבצים ממוקמים תחת ~/.local/share/applications, ~/.local/share/icons, ו-~/.local/bin, וניתן להסירם בכל עת.\n"
+"\n"
+"להתקין שילוב שולחן עבודה כעת?"
 
 #: src/AppImageIntegration.cpp
 msgid "Add aMule to your application menu?"
-msgstr ""
+msgstr "להוסיף את aMule לתפריט היישומים שלך?"
 
 #: src/AppImageIntegration.cpp
 msgid "Install"
-msgstr ""
+msgstr "התקן"
 
 #: src/AppImageIntegration.cpp
 msgid "Not now"
-msgstr ""
+msgstr "לא כעת"
 
 #: src/AppImageIntegration.cpp src/amuleDlg.cpp
 msgid "Don't ask again"
-msgstr ""
+msgstr "אל תשאל שוב"
 
 #: src/AppImageIntegration.cpp
 msgid "Cannot install desktop integration: the APPDIR environment variable is not set. This usually means the AppImage was launched in a non-standard way."
-msgstr ""
+msgstr "לא ניתן להתקין אינטגרציה עם שולחן העבודה: משתנה הסביבה APPDIR אינו מוגדר. בדרך כלל זה אומר ש-AppImage הופעל בצורה לא סטנדרטית."
 
 #: src/AppImageIntegration.cpp
-#, fuzzy
 msgid "aMule integration failed"
-msgstr "התחברות נכשלה "
+msgstr "אינטגרציית aMule נכשלה"
 
 #: src/AppImageIntegration.cpp
 #, c-format
 msgid "Cannot install desktop integration: failed to create %s. Check that your home directory is writable."
-msgstr ""
+msgstr "לא ניתן להתקין אינטגרציה עם שולחן העבודה: יצירת %s נכשלה. בדוק שתיקיית הבית שלך ניתנת לכתיבה."
 
 #: src/AppImageIntegration.cpp
 #, c-format
 msgid "Cannot install desktop integration: failed to write %s. Check that your home directory is writable."
-msgstr ""
+msgstr "לא ניתן להתקין אינטגרציה עם שולחן העבודה: כתיבת %s נכשלה. בדוק שתיקיית הבית שלך ניתנת לכתיבה."
 
 #: src/AppImageIntegration.cpp
 #, c-format
 msgid "AppImage integration: aMule added to your application menu (%d shell shortcuts under ~/.local/bin)."
-msgstr ""
+msgstr "שילוב AppImage: aMule נוסף לתפריט היישומים שלך (%d קיצורי מעטפת תחת ~/.local/bin)."
 
 #: src/AppImageIntegration.cpp
 msgid ""
@@ -176,27 +179,31 @@ msgid ""
 "\n"
 "Restart aMule now?"
 msgstr ""
+"aMule נוסף לתפריט היישומים שלך. כעת תוכל להפעיל אותו מרשימת היישומים שלך, והמפעיל יריץ את אותו AppImage.\n"
+"\n"
+"בחלק משולחנות העבודה, ייתכן ש-aMule יצטרך להיפתח מחדש כדי שסמל ה-Dock / שורת המשימות ייקשר לרשומת המפעיל החדשה. מרכיבי Wayland מודרניים (GNOME, KDE) קולטים זאת באופן מיידי, אך הפעלה מחדש היא הפתרון הבטוח אם הסמל נשאר גנרי.\n"
+"\n"
+"להפעיל מחדש את aMule כעת?"
 
 #: src/AppImageIntegration.cpp
 msgid "aMule installed"
-msgstr ""
+msgstr "aMule הותקן"
 
 #: src/AppImageIntegration.cpp
 msgid "Restart now"
-msgstr ""
+msgstr "הפעל מחדש כעת"
 
 #: src/AppImageIntegration.cpp
 msgid "Later"
-msgstr ""
+msgstr "מאוחר יותר"
 
 #: src/amuleAppCommon.cpp
-#, fuzzy
 msgid "Failed to open ED2KLinks file."
-msgstr "פתיחת הקובץ %s·(%s נכשלה"
+msgstr "פתיחת קובץ ED2KLinks נכשלה."
 
 #: src/amuleAppCommon.cpp
 msgid "WARNING: You can't add yourself as a source for an eD2k link while having a lowid."
-msgstr ""
+msgstr "אזהרה: אינך יכול להוסיף את עצמך כמקור עבור קישור eD2k כאשר יש לך lowid."
 
 #: src/amuleAppCommon.cpp
 #, c-format
@@ -250,7 +257,7 @@ msgstr[1] ""
 #: src/amuleAppCommon.cpp src/DownloadQueue.cpp
 #, c-format
 msgid "Cannot convert magnet link to eD2k: %s"
-msgstr ""
+msgstr "לא ניתן להמיר קישור מגנט ל-eD2k: %s"
 
 #: src/amuleAppCommon.cpp
 #, c-format
@@ -259,17 +266,17 @@ msgstr ""
 
 #: src/amule.cpp
 msgid "Now, exiting main app..."
-msgstr ""
+msgstr "כעת, יוצא מהיישום הראשי..."
 
 #: src/amule.cpp
 #, c-format
 msgid "Terminating amuleweb instance with pid '%d' ... "
-msgstr ""
+msgstr "מסיים מופע amuleweb עם pid '%d' ... "
 
 #: src/amule.cpp
 #, c-format
 msgid "Killing amuleweb instance with pid '%d' ... "
-msgstr ""
+msgstr "הורג מופע amuleweb עם pid '%d' ... "
 
 #: src/amule.cpp src/ClientRef.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
 msgid "Failed"
@@ -278,25 +285,24 @@ msgstr "נכשל"
 #: src/amule.cpp
 #, c-format
 msgid "Terminating amuleapi instance with pid '%d' ... "
-msgstr ""
+msgstr "מסיים מופע amuleapi עם pid '%d' ... "
 
 #: src/amule.cpp
 #, c-format
 msgid "Killing amuleapi instance with pid '%d' ... "
-msgstr ""
+msgstr "הורג מופע amuleapi עם pid '%d' ... "
 
 #: src/amule.cpp
 msgid "aMule OnExit: Terminating core."
-msgstr ""
+msgstr "aMule OnExit: מסיים את הליבה."
 
 #: src/amule.cpp
-#, fuzzy
 msgid "aMule shutdown completed."
-msgstr "הורדה הסתיימה"
+msgstr "כיבוי aMule הושלם."
 
 #: src/amule.cpp
 msgid "Memory debug results for aMule exit:"
-msgstr ""
+msgstr "תוצאות ניפוי זיכרון ליציאת aMule:"
 
 #: src/amule.cpp
 #, c-format
@@ -306,42 +312,42 @@ msgstr ""
 #: src/amule.cpp
 #, c-format
 msgid "Binding aMule's peer-to-peer traffic to interface: %s (HTTP updates use the default route)"
-msgstr ""
+msgstr "מקשר את תעבורת ה-peer-to-peer של aMule לממשק: %s (עדכוני HTTP משתמשים בנתיב ברירת המחדל)"
 
 #: src/amule.cpp
 #, c-format
 msgid "WARNING: configured network interface '%s' was not found - traffic is NOT bound to it and may leave via the default route. Check the interface name in Preferences."
-msgstr ""
+msgstr "אזהרה: ממשק הרשת המוגדר '%s' לא נמצא - התעבורה לא קושרה אליו ועשויה לצאת דרך נתיב ברירת המחדל. בדוק את שם הממשק בהעדפות."
 
 #: src/amule.cpp
 #, c-format
 msgid "WARNING: binding to network interface '%s' requires elevated privileges and was NOT applied - traffic may leave via the default route. Grant the capability (e.g. 'sudo setcap cap_net_raw+ep' on the aMule binary) or run with sufficient privileges."
-msgstr ""
+msgstr "אזהרה: קישור לממשק הרשת '%s' דורש הרשאות מוגברות ולא הוחל - התעבורה עשויה לצאת דרך נתיב ברירת המחדל. הענק את היכולת (למשל 'sudo setcap cap_net_raw+ep' על קובץ ההפעלה של aMule) או הרץ עם הרשאות מספיקות."
 
 #: src/amule.cpp src/LibSocketAsio.cpp
 #, c-format
 msgid "WARNING: could not bind to network interface '%s' - traffic may leave via the default route."
-msgstr ""
+msgstr "אזהרה: לא ניתן היה להיקשר לממשק הרשת '%s' - התעבורה עשויה לצאת דרך נתיב ברירת המחדל."
 
 #: src/amule.cpp
 msgid "Your locale has been changed to System Default due to a configuration change. Sorry."
-msgstr ""
+msgstr "האזור שלך שונה לברירת המחדל של המערכת עקב שינוי בתצורה. סליחה."
 
 #: src/amule.cpp src/CatDialog.cpp src/ServerList.cpp src/ServerListCtrl.cpp
 msgid "Info"
 msgstr "מידע"
 
 #: src/amule.cpp
-#, fuzzy
 msgid ""
 "\n"
 "EC configuration"
-msgstr "אישרור יצאיה"
+msgstr ""
+"\n"
+"תצורת EC"
 
 #: src/amule.cpp
-#, fuzzy
 msgid "Password set and external connections enabled."
-msgstr "גישה חיצונית חדשה התקבלה"
+msgstr "הסיסמא הוגדרה וחיבורים חיצוניים הופעלו."
 
 #: src/amule.cpp src/KadDlg.cpp src/PrefsUnifiedDlg.cpp src/SharedFilesCtrl.cpp
 msgid "WARNING"
@@ -397,37 +403,38 @@ msgid "Starting up"
 msgstr "התחל"
 
 #: src/amule.cpp
-#, fuzzy
 msgid "Network bootstrap"
-msgstr "רשתות"
+msgstr "אתחול רשת"
 
 #: src/amule.cpp
 msgid ""
 "aMule has detected missing network bootstrap files.\n"
 "Select which ones to download:"
 msgstr ""
+"aMule זיהה קבצי אתחול רשת חסרים.\n"
+"בחר אילו להוריד:"
 
 #: src/amule.cpp src/FirstRunWizard.cpp
 msgid "eD2k server list (server.met)"
-msgstr ""
+msgstr "רשימת שרתי eD2k (server.met)"
 
 #: src/amule.cpp src/FirstRunWizard.cpp
 msgid "Kad bootstrap nodes (nodes.dat)"
-msgstr ""
+msgstr "צמתי אתחול (bootstrap) של Kad (nodes.dat)"
 
 #: src/amule.cpp
 #, c-format
 msgid "web server running on pid %d"
-msgstr ""
+msgstr "שרת האינטרנט פועל עם pid %d"
 
 #: src/amule.cpp
 msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
-msgstr ""
+msgstr "ביקשת להריץ את שרת האינטרנט בעת ההפעלה, אך לא ניתן להריץ את הקובץ הבינארי amuleweb. אנא התקן את החבילה המכילה את שרת האינטרנט של aMule, או בנה את aMule מהמקור עם -DBUILD_WEBSERVER=YES והתקן אותו."
 
 #: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
 #: src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
 msgid "ERROR"
-msgstr ""
+msgstr "שגיאה"
 
 #: src/amule.cpp
 #, c-format
@@ -435,13 +442,13 @@ msgid "Could not write the amuleapi EC token to %s; amuleapi will fall back to i
 msgstr ""
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "amuleapi running on pid %d"
-msgstr "אימיול פועל"
+msgstr "amuleapi פועל תחת pid %d"
 
 #: src/amule.cpp
 msgid "You requested to run amuleapi on startup, but the amuleapi binary cannot be run. Please install the package containing aMule's REST API server, or build aMule from source with -DBUILD_AMULEAPI=YES and install it."
-msgstr ""
+msgstr "ביקשת להריץ את amuleapi בעת ההפעלה, אך לא ניתן להריץ את הקובץ הבינארי של amuleapi. אנא התקן את החבילה המכילה את שרת ה-REST API של aMule, או בנה את aMule מהמקור עם -DBUILD_AMULEAPI=YES והתקן אותו."
 
 #: src/amule.cpp
 #, c-format
@@ -451,12 +458,12 @@ msgstr ""
 #: src/amule.cpp
 #, c-format
 msgid "Could not bind ports to the specified address: %s"
-msgstr ""
+msgstr "לא ניתן לקשור מבואות לכתובת שצוינה: %s"
 
 #: src/amule.cpp
 #, c-format
 msgid "Port %u is not available. You will be LOWID\n"
-msgstr ""
+msgstr "המבואה %u אינה זמינה. תהיה LOWID\n"
 
 #: src/amule.cpp
 #, c-format
@@ -467,43 +474,48 @@ msgid ""
 "\n"
 "Check your network to make sure the port is open for output and input."
 msgstr ""
+"המבואה %u אינה זמינה!\n"
+"\n"
+"משמעות הדבר היא שתהיה LOWID.\n"
+"\n"
+"בדוק את הרשת שלך כדי לוודא שהמבואה פתוחה לפלט ולקלט."
 
 #: src/amule.cpp
 msgid "Failed to create OnlineSig File"
-msgstr ""
+msgstr "יצירת קובץ OnlineSig נכשלה"
 
 #: src/amule.cpp
 msgid "Failed to create aMule OnlineSig File"
-msgstr ""
+msgstr "יצירת קובץ OnlineSig של aMule נכשלה"
 
 #: src/amule.cpp
 msgid "The selected locale seems not to be installed on your box. (Note: I'll try to set it anyway)"
-msgstr ""
+msgstr "נראה שהאזור שנבחר אינו מותקן במכשיר שלך. (הערה: אנסה להגדיר אותו בכל זאת)"
 
 #: src/amule.cpp
 #, c-format
 msgid "This is the first time you run aMule %s"
-msgstr ""
+msgstr "זוהי הפעם הראשונה שבה אתה מריץ את aMule %s"
 
 #: src/amule.cpp
 msgid "This version is a testing version, updated daily, and\n"
-msgstr ""
+msgstr "גרסה זו היא גרסת בדיקה, המתעדכנת מדי יום,\n"
 
 #: src/amule.cpp
 msgid "we give no warranty it won't break anything, burn your house,\n"
-msgstr ""
+msgstr "ואיננו נותנים אחריות שהיא לא תשבור שום דבר, תשרוף את ביתך,\n"
 
 #: src/amule.cpp
 msgid "or kill your dog. But it *should* be safe to use anyway.\n"
-msgstr ""
+msgstr "או תהרוג את הכלב שלך. אך היא *אמורה* להיות בטוחה לשימוש בכל זאת.\n"
 
 #: src/amule.cpp
 msgid "More information, support and new releases can found at our homepage,\n"
-msgstr ""
+msgstr "מידע נוסף, תמיכה וגרסאות חדשות ניתן למצוא באתר הבית שלנו,\n"
 
 #: src/amule.cpp
 msgid "at https://amule-org.github.io, or in our IRC channel #aMule at irc.libera.chat.\n"
-msgstr ""
+msgstr "בכתובת https://amule-org.github.io, או בערוץ ה-IRC שלנו #aMule בכתובת irc.libera.chat.\n"
 
 #: src/amule.cpp
 msgid "Feel free to report any bugs to https://github.com/amule-org/amule/issues"
@@ -514,6 +526,8 @@ msgid ""
 "The folder for Online Signature files you specified is INVALID!\n"
 " OnlineSignature will be DISABLED until you fix it on preferences."
 msgstr ""
+"התיקייה שציינת עבור קבצי חתימה מקוונת (Online Signature) אינה תקינה!\n"
+" חתימה מקוונת תהיה מנוטרלת עד שתתקן זאת בהעדפות."
 
 #: src/amule.cpp
 #, fuzzy
@@ -528,7 +542,7 @@ msgstr ""
 #: src/amule.cpp
 #, c-format
 msgid "Disk space preallocation for file '%s' failed: %s"
-msgstr ""
+msgstr "הקצאת מראש של שטח דיסק עבור הקובץ '%s' נכשלה: %s"
 
 #: src/amule.cpp
 msgid "ERROR: can't open logfile"
@@ -536,7 +550,7 @@ msgstr "שגיאה: לא יכול לפתוח קובץ יומן."
 
 #: src/amule.cpp
 msgid "WARNING: logfile is empty. Something is wrong."
-msgstr ""
+msgstr "אזהרה: קובץ היומן ריק. משהו אינו תקין."
 
 #: src/amule.cpp
 msgid "Log has been reset"
@@ -545,64 +559,64 @@ msgstr "היומן אופס."
 #: src/amule.cpp
 #, c-format
 msgid "ServerMessage: %s"
-msgstr ""
+msgstr "הודעת שרת: %s"
 
 #: src/amule.cpp src/IP2Country.cpp src/IPFilter.cpp src/ServerList.cpp
 #, c-format
 msgid "Skipped download of %s, because requested file is not newer."
-msgstr ""
+msgstr "הורדת %s דולגה, מכיוון שהקובץ המבוקש אינו חדש יותר."
 
 #: src/amule.cpp
 msgid "Failed to download the nodes list."
-msgstr ""
+msgstr "הורדת רשימת הצמתים נכשלה."
 
 #: src/amule.cpp
 msgid "Failed to open the downloaded version check file"
-msgstr ""
+msgstr "פתיחת קובץ בדיקת הגרסה שהורד נכשלה"
 
 #: src/amule.cpp
 msgid "Corrupted version check file"
-msgstr ""
+msgstr "קובץ בדיקת הגרסה פגום"
 
 #: src/amule.cpp
 msgid "You are using an outdated version of aMule!"
-msgstr ""
+msgstr "אתה משתמש בגרסה מיושנת של aMule!"
 
 #: src/amule.cpp
 #, c-format
 msgid "Your aMule version is %i.%i.%i and the latest version is %li.%li.%li"
-msgstr ""
+msgstr "גרסת aMule שלך היא %i.%i.%i והגרסה העדכנית ביותר היא %li.%li.%li"
 
 #: src/amule.cpp
 msgid "The latest version can always be found at https://github.com/amule-org/amule/releases/latest"
-msgstr ""
+msgstr "ניתן תמיד למצוא את הגרסה העדכנית ביותר בכתובת https://github.com/amule-org/amule/releases/latest"
 
 #: src/amule.cpp
 #, c-format
 msgid "WARNING: Your aMuled version is outdated: %i.%i.%i < %li.%li.%li"
-msgstr ""
+msgstr "אזהרה: גרסת aMuled שלך מיושנת: %i.%i.%i < %li.%li.%li"
 
 #: src/amule.cpp
 msgid "Your copy of aMule is up to date."
-msgstr ""
+msgstr "עותק aMule שלך מעודכן."
 
 #: src/amule.cpp
 msgid "Failed to download the version check file"
-msgstr ""
+msgstr "הורדת קובץ בדיקת הגרסה נכשלה"
 
 #: src/amule.cpp src/amule-remote-gui.cpp
 #, c-format
 msgid "Users: %s | Files: %s"
-msgstr ""
+msgstr "משתמשים: %s | קבצים: %s"
 
 #: src/amule.cpp src/amule-remote-gui.cpp
 #, c-format
 msgid "Users: E: %s K: %s | Files: E: %s K: %s"
-msgstr ""
+msgstr "משתמשים: E: %s K: %s | קבצים: E: %s K: %s"
 
 #: src/amule.cpp src/amule-remote-gui.cpp
 msgid "No networks selected"
-msgstr ""
+msgstr "לא נבחרו רשתות"
 
 #: src/amule.cpp src/TextClient.cpp
 msgid "with LowID"
@@ -615,16 +629,16 @@ msgstr "עם מ\"ז גבוהה (HighID)"
 #: src/amule.cpp
 #, c-format
 msgid "Connected to %s %s"
-msgstr ""
+msgstr "מחובר אל %s %s"
 
 #: src/amule.cpp
 #, c-format
 msgid "Connecting to %s"
-msgstr ""
+msgstr "מתחבר אל %s"
 
 #: src/amule.cpp
 msgid "Disconnected from eD2k"
-msgstr ""
+msgstr "מנותק מ-eD2k"
 
 #: src/amule.cpp
 msgid "Kad started."
@@ -656,19 +670,19 @@ msgstr "קאד מבוטל בהעדפות, לא מתחבר."
 
 #: src/amuled.cpp
 msgid "ERROR: aMule daemon cannot be used when external connections are disabled. To enable External Connections, use either a normal aMule, start amuled with the option --ec-config or set the key \"AcceptExternalConnections\" to 1 in the file ~/.aMule/amule.conf"
-msgstr ""
+msgstr "שגיאה: לא ניתן להשתמש בדימון aMule כאשר חיבורים חיצוניים מנוטרלים. כדי להפעיל חיבורים חיצוניים, השתמש ב-aMule רגיל, הפעל את amuled עם האפשרות --ec-config או הגדר את המפתח \"AcceptExternalConnections\" ל-1 בקובץ ~/.aMule/amule.conf"
 
 #: src/amuled.cpp
 msgid "ERROR: A valid password is required to use external connections, and aMule daemon cannot be used without external connections. To run aMule daemon, you must set the \"ECPassword\" field in the file ~/.aMule/amule.conf with an appropriate value. Execute amuled with the flag --ec-config to set the password. More information can be found at https://amule-org.github.io/docs"
-msgstr ""
+msgstr "שגיאה: נדרשת סיסמא תקינה כדי להשתמש בחיבורים חיצוניים, ולא ניתן להשתמש בדימון aMule ללא חיבורים חיצוניים. כדי להריץ את דימון aMule, עליך להגדיר את השדה \"ECPassword\" בקובץ ~/.aMule/amule.conf עם ערך מתאים. הרץ את amuled עם הדגל --ec-config כדי להגדיר את הסיסמא. ניתן למצוא מידע נוסף בכתובת https://amule-org.github.io/docs"
 
 #: src/amuled.cpp
 msgid "amuled: OnInit - starting timer"
-msgstr ""
+msgstr "amuled: OnInit - מפעיל טיימר"
 
 #: src/amuled.cpp
 msgid "Cannot Create Pid File"
-msgstr ""
+msgstr "לא ניתן ליצור קובץ Pid"
 
 #: src/amuled.cpp
 #, c-format
@@ -691,7 +705,7 @@ msgstr "בקר ב https://github.com/amule-org/amule/releases/latest כדי לב
 
 #: src/amuleDlg.cpp
 msgid "FATAL ERROR: Failed to create Timer"
-msgstr ""
+msgstr "שגיאה קריטית: יצירת הטיימר נכשלה"
 
 #: src/amuleDlg.cpp
 msgid "Error! Unable to load Preferences"
@@ -712,7 +726,7 @@ msgstr "הורדות"
 
 #: src/amuleDlg.cpp src/muuli_wdr.cpp
 msgid "Shared files"
-msgstr ""
+msgstr "קבצים משותפים"
 
 #: src/amuleDlg.cpp src/ClientContextActions.cpp src/Statistics.cpp
 msgid "Clients"
@@ -732,7 +746,7 @@ msgstr "העדפות"
 
 #: src/amuleDlg.cpp
 msgid "Navigate"
-msgstr ""
+msgstr "נווט"
 
 #: src/amuleDlg.cpp
 #, c-format
@@ -740,9 +754,8 @@ msgid "Free space: %s"
 msgstr ""
 
 #: src/amuleDlg.cpp
-#, fuzzy
 msgid "New version available"
-msgstr "לא זמין"
+msgstr "גרסה חדשה זמינה"
 
 #: src/amuleDlg.cpp
 #, c-format
@@ -753,10 +766,15 @@ msgid ""
 "\n"
 "Would you like to open the download page?"
 msgstr ""
+"גרסה חדשה של aMule (%s) זמינה.\n"
+"\n"
+"אתה מריץ כרגע %s.\n"
+"\n"
+"האם ברצונך לפתוח את דף ההורדה?"
 
 #: src/amuleDlg.cpp
 msgid "aMule dialog destroyed"
-msgstr ""
+msgstr "תיבת הדו-שיח של aMule נהרסה"
 
 #: src/amuleDlg.cpp src/DataToText.cpp src/IPFilter.cpp src/ServerWnd.cpp
 msgid "Connecting"
@@ -764,11 +782,11 @@ msgstr "מתחבר"
 
 #: src/amuleDlg.cpp
 msgid "eD2k: Connecting"
-msgstr ""
+msgstr "eD2k: מתחבר"
 
 #: src/amuleDlg.cpp
 msgid "eD2k: Disconnected"
-msgstr ""
+msgstr "eD2k: מנותק"
 
 #: src/amuleDlg.cpp
 msgid "Kad: Firewalled"
@@ -819,9 +837,9 @@ msgid "aMuleGUI"
 msgstr "אֵימיול "
 
 #: src/amuleDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Up: %.1f%s (%.1f) | Down: %.1f%s (%.1f)"
-msgstr "מעלה: %.1f(%.1f) | מוריד: %.1f(%.1f)"
+msgstr "העלאה: %.1f%s (%.1f) | הורדה: %.1f%s (%.1f)"
 
 #: src/amuleDlg.cpp src/MuleTrayIcon.cpp
 msgid " MiB/s"
@@ -832,9 +850,9 @@ msgid " KiB/s"
 msgstr ""
 
 #: src/amuleDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Up: %.1f%s | Down: %.1f%s"
-msgstr "מעלה: %.1f | מוריד: %.1f"
+msgstr "העלאה: %.1f%s | הורדה: %.1f%s"
 
 #: src/amuleDlg.cpp
 #, c-format
@@ -847,9 +865,9 @@ msgid "aMule (%s | Disconnected)"
 msgstr "אימיול (%s | מנותק)"
 
 #: src/amuleDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Do you really want to exit %s?"
-msgstr "האם אתה באמת רוצה לצאת מאימיול?"
+msgstr "האם אתה בטוח שברצונך לצאת מ-%s?"
 
 #: src/amuleDlg.cpp
 msgid "Exit confirmation"
@@ -857,11 +875,11 @@ msgstr "אישרור יצאיה"
 
 #: src/amuleDlg.cpp
 msgid "Launch Command: "
-msgstr ""
+msgstr "פקודת הפעלה: "
 
 #: src/amuleDlg.cpp src/muuli_wdr.cpp src/Preferences.cpp
 msgid "- default -"
-msgstr ""
+msgstr "- ברירת מחדל -"
 
 #: src/amuleDlg.cpp
 #, c-format
@@ -871,7 +889,7 @@ msgstr "ספריית הסקינים '%s' לא קיימת"
 #: src/amuleDlg.cpp
 #, c-format
 msgid "WARNING: Unable to open skin file '%s' for read"
-msgstr ""
+msgstr "אזהרה: לא ניתן לפתוח את קובץ העיצוב (skin) '%s' לקריאה"
 
 #: src/amuleDlg.cpp
 msgid "Networks Window"
@@ -882,9 +900,8 @@ msgid "Searches Window"
 msgstr "חלון החיפושים"
 
 #: src/amuleDlg.cpp
-#, fuzzy
 msgid "Downloads Window"
-msgstr "מוריד מהרשת"
+msgstr "חלון הורדות"
 
 #: src/amuleDlg.cpp
 msgid "Shared Files Window"
@@ -925,28 +942,27 @@ msgstr "אודות/עזרה"
 
 #: src/amuleDlg.cpp
 msgid "eD2k network"
-msgstr ""
+msgstr "רשת eD2k"
 
 #: src/amuleDlg.cpp
 msgid "Kad network"
-msgstr ""
+msgstr "רשת Kad"
 
 #: src/amuleDlg.cpp
 msgid "No network"
-msgstr ""
+msgstr "אין רשת"
 
 #: src/amule-gui.cpp
 msgid "aMule remote control"
-msgstr ""
+msgstr "שלט רחוק של aMule"
 
 #: src/amule-gui.cpp src/utils/wxCas/src/wxcasframe.cpp
 msgid "aMule"
 msgstr "אֵימיול"
 
 #: src/amule-gui.cpp
-#, fuzzy
 msgid "Fatal Error: Failed to create Core Timer"
-msgstr "שגיאה סופנית: יצירת קוצב-זמן נכשלה"
+msgstr "שגיאה קריטית: יצירת טיימר הליבה נכשלה"
 
 #: src/amule-remote-gui.cpp
 msgid "Connect to remote amule"
@@ -958,17 +974,17 @@ msgstr "החיבור אבד."
 
 #: src/amule-remote-gui.cpp
 msgid "Abort and exit"
-msgstr ""
+msgstr "בטל וצא"
 
 #: src/amule-remote-gui.cpp
 #, c-format
 msgid "Reconnecting... (attempt %d)"
-msgstr ""
+msgstr "מתחבר מחדש... (ניסיון %d)"
 
 #: src/amule-remote-gui.cpp
 #, c-format
 msgid "Next attempt in %d s..."
-msgstr ""
+msgstr "הניסיון הבא בעוד %d שניות..."
 
 #: src/amule-remote-gui.cpp
 #, c-format
@@ -978,43 +994,43 @@ msgid ""
 "\n"
 "The interface is paused until the connection is restored."
 msgstr ""
+"החיבור אל %s אבד.\n"
+"%s\n"
+"\n"
+"הממשק מושהה עד לשחזור החיבור."
 
 #: src/amule-remote-gui.cpp
-#, fuzzy
 msgid "Fatal Error: Failed to create Poll Timer"
-msgstr "שגיאה סופנית: יצירת קוצב-זמן נכשלה"
+msgstr "שגיאה קריטית: יצירת טיימר התשאול נכשלה"
 
 #: src/amule-remote-gui.cpp
-#, fuzzy
 msgid "Going to event loop..."
-msgstr "מנסה לשחזר את המידע של הקובץ"
+msgstr "עובר ללולאת האירועים..."
 
 #: src/amule-remote-gui.cpp
-#, fuzzy
 msgid "Connecting..."
-msgstr "מתחבר"
+msgstr "מתחבר..."
 
 #: src/amule-remote-gui.cpp
 msgid "Connection failed. Please check the host, port, and password."
-msgstr ""
+msgstr "החיבור נכשל. אנא בדוק את המארח, המבואה והסיסמא."
 
 #: src/amule-remote-gui.cpp
 msgid "Remote GUI EC event handler"
-msgstr ""
+msgstr "מטפל אירועי EC של ממשק המשתמש מרחוק"
 
 #: src/amule-remote-gui.cpp src/ExternalConnector.cpp
 #, c-format
 msgid "Connection Failed. Unable to connect to %s:%d\n"
-msgstr ""
+msgstr "החיבור נכשל. לא ניתן להתחבר אל %s:%d\n"
 
 #: src/amule-remote-gui.cpp
 msgid "Going down"
-msgstr ""
+msgstr "בתהליך כיבוי"
 
 #: src/amule-remote-gui.cpp
-#, fuzzy
 msgid "Reconnect attempt timed out; retrying."
-msgstr "פג הזמן עבור ניסיון ההתחברות ל %s·(%s:%i)"
+msgstr "פג הזמן לניסיון החיבור מחדש; מנסה שוב."
 
 #: src/amule-remote-gui.cpp
 #, c-format
@@ -1022,19 +1038,20 @@ msgid ""
 "Connection timed out. Unable to reach %s:%d within the allotted time.\n"
 "Please check the host, port and that aMule is running with External Connections enabled."
 msgstr ""
+"תם הזמן הקצוב לחיבור. לא ניתן להגיע אל %s:%d בפרק הזמן שהוקצב.\n"
+"אנא בדוק את המארח, המבואה וש-aMule פועל עם חיבורים חיצוניים מופעלים."
 
 #: src/amule-remote-gui.cpp
 msgid "Connection to the remote core was lost. Trying to reconnect..."
-msgstr ""
+msgstr "החיבור לליבה המרוחקת אבד. מנסה להתחבר מחדש..."
 
 #: src/amule-remote-gui.cpp src/ClientDetailDialog.cpp
 msgid "Disabled"
-msgstr ""
+msgstr "מנוטרל"
 
 #: src/amule-remote-gui.cpp
-#, fuzzy
 msgid "Reconnected to the remote core."
-msgstr "התחבר לרשת."
+msgstr "החיבור לליבה המרוחקת חודש."
 
 #: src/amule-remote-gui.cpp
 msgid "The remote core was restarted; reloading."
@@ -1043,34 +1060,32 @@ msgstr ""
 #: src/amule-remote-gui.cpp
 #, c-format
 msgid "Reconnect attempt %d: connecting to %s:%d"
-msgstr ""
+msgstr "ניסיון חיבור מחדש %d: מתחבר אל %s:%d"
 
 #: src/amule-remote-gui.cpp
 msgid "Reconnect could not start; retrying shortly."
-msgstr ""
+msgstr "לא ניתן היה להתחיל חיבור מחדש; ינסה שוב בקרוב."
 
 #: src/amule-remote-gui.cpp
 msgid "Ready"
-msgstr ""
+msgstr "מוכן"
 
 #: src/amule-remote-gui.cpp src/TransferWnd.cpp
 msgid "All"
 msgstr "הכול"
 
 #: src/amule-remote-gui.cpp
-#, fuzzy
 msgid "not readable"
-msgstr "לא זמין"
+msgstr "לא ניתן לקריאה"
 
 #: src/amule-remote-gui.cpp
-#, fuzzy
 msgid "not found"
-msgstr "קובץ לא נמצא."
+msgstr "לא נמצא"
 
 #: src/amule-remote-gui.cpp
 #, c-format
 msgid "The core rejected these shared folders:%s"
-msgstr ""
+msgstr "הליבה דחתה את התיקיות המשותפות הבאות:%s"
 
 #: src/amule-remote-gui.cpp src/ExternalConn.cpp
 msgid "Invalid link or already on list."
@@ -1088,7 +1103,7 @@ msgstr "אתה כבר מנסה להוריד את הקובץ %s"
 #: src/amule-remote-gui.cpp
 #, c-format
 msgid "Can't create directory '%s' for category '%s', keeping directory '%s'."
-msgstr ""
+msgstr "לא ניתן ליצור את התיקייה '%s' עבור הקטיגוריה '%s', התיקייה '%s' נשמרת."
 
 #: src/amule-remote-gui.cpp
 #, c-format
@@ -1105,7 +1120,7 @@ msgstr "לא ידוע"
 
 #: src/BaseClient.cpp
 msgid "Searching buddy for lowid connection"
-msgstr ""
+msgstr "מחפש חבר (buddy) לחיבור lowid"
 
 #: src/BaseClient.cpp
 #, c-format
@@ -1139,15 +1154,15 @@ msgstr "בוּקַש: %s\n"
 #, c-format
 msgid "Filestats for this session: Accepted %d of %d request, %s transferred\n"
 msgid_plural "Filestats for this session: Accepted %d of %d requests, %s transferred\n"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "סטטיסטיקת קבצים עבור ההרצה הנוכחית: התקבלה %d מתוך %d בקשה, %s הועברו\n"
+msgstr[1] "סטטיסטיקת קבצים עבור ההרצה הנוכחית: התקבלו %d מתוך %d בקשות, %s הועברו\n"
 
 #: src/BaseClient.cpp
 #, c-format
 msgid "Filestats for all sessions: Accepted %d of %d request, %s transferred\n"
 msgid_plural "Filestats for all sessions: Accepted %d of %d requests, %s transferred\n"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "סטטיסטיקת קבצים עבור כל ההרצות: התקבלה %d מתוך %d בקשה, %s הועברו\n"
+msgstr[1] "סטטיסטיקת קבצים עבור כל ההרצות: התקבלו %d מתוך %d בקשות, %s הועברו\n"
 
 #: src/BaseClient.cpp
 msgid "Requested unknown file"
@@ -1164,9 +1179,9 @@ msgid "New message from '%s' (IP:%s)"
 msgstr "הודעה חדשה מ '%s'·(IP:%s)"
 
 #: src/BaseClient.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "User %s (%u) requested sharedfiles-list for not existing directory '%s' -> Ignored"
-msgstr "המשתמש %s (%u) ביקש את רשימת הקבצים המשותפים שלך בתקייה %s -> נדחה"
+msgstr "המשתמש %s (%u) ביקש רשימת קבצים משותפים עבור תיקייה שאינה קיימת '%s' -> התעלמות"
 
 #: src/BrowseManager.cpp
 #, c-format
@@ -1174,28 +1189,27 @@ msgid "Failed to retrieve shared files from user '%s'"
 msgstr "הניסיון לקבל את רשימת הקבצים המשותפים מהמשתמש '%s' כשלה."
 
 #: src/CanceledFileList.cpp src/KnownFileList.cpp src/SearchList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "WARNING: %s cannot be opened."
-msgstr "אזהרה: לא ניתן לפתוח את הקובץ known.met."
+msgstr "אזהרה: לא ניתן לפתוח את %s."
 
 #: src/CanceledFileList.cpp
-#, fuzzy
 msgid "WARNING: Canceled file list corrupted, contains invalid header."
-msgstr "אזהרה: רשימת הקבצים-המכורים פגומה, מכילה כותר פגום."
+msgstr "אזהרה: רשימת הקבצים המבוטלים פגומה, מכילה כותרת לא תקינה."
 
 #: src/CanceledFileList.cpp src/KnownFileList.cpp src/SearchList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "IO error while reading %s file: %s"
-msgstr "שגיאת קריאה/כתיבה תוך כדי הקובץ known.met: %s"
+msgstr "שגיאת קלט/פלט בעת קריאת הקובץ %s: %s"
 
 #: src/CanceledFileList.cpp src/KnownFileList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Error while saving %s file: %s"
-msgstr "שגיאה במהלך שמירת הקובץ known.met: %s"
+msgstr "שגיאה בעת שמירת הקובץ %s: %s"
 
 #: src/CaptchaDialog.cpp
 msgid "Enter Captcha"
-msgstr ""
+msgstr "הזן קוד אימות (Captcha)"
 
 #: src/CatDialog.cpp src/DownloadListCtrl.cpp src/SearchListCtrl.cpp
 #: src/TransferWnd.cpp
@@ -1204,23 +1218,23 @@ msgstr "קטיגוריה"
 
 #: src/CatDialog.cpp
 msgid "New Category"
-msgstr ""
+msgstr "קטיגוריה חדשה"
 
 #: src/CatDialog.cpp
 msgid "Choose a folder for incoming files"
-msgstr ""
+msgstr "בחר תיקייה לקבצים נכנסים"
 
 #: src/CatDialog.cpp
 msgid "You must specify a name for the category!"
-msgstr ""
+msgstr "עליך לציין שם עבור הקטיגוריה!"
 
 #: src/CatDialog.cpp
 msgid "You must specify a path for the category!"
-msgstr ""
+msgstr "עליך לציין נתיב עבור הקטיגוריה!"
 
 #: src/CatDialog.cpp
 msgid "Failed to create incoming dir for category. Please specify a valid path!"
-msgstr ""
+msgstr "יצירת תיקיית הקבצים הנכנסים עבור הקטיגוריה נכשלה. אנא ציין נתיב תקין!"
 
 #: src/ChatSelector.cpp
 #, c-format
@@ -1229,7 +1243,7 @@ msgstr ""
 
 #: src/ChatSelector.cpp
 msgid "*** Connected to Client ***"
-msgstr ""
+msgstr "*** מחובר ללקוח ***"
 
 #: src/ChatSelector.cpp
 msgid "*** Chat unavailable: peer identity or route is not available ***"
@@ -1237,35 +1251,35 @@ msgstr ""
 
 #: src/ChatSelector.cpp
 msgid "*** Connecting to Client ***"
-msgstr ""
+msgstr "*** מתחבר ללקוח ***"
 
 #: src/ChatSelector.cpp
 msgid "*** Failed to Connect to client / Connection lost ***"
-msgstr ""
+msgstr "*** החיבור ללקוח נכשל / החיבור אבד ***"
 
 #: src/ChatSelector.cpp
 msgid "*** You have passed the captcha check and the user has received your message. ***"
-msgstr ""
+msgstr "*** עברת את בדיקת ה-captcha וההודעה שלך התקבלה אצל המשתמש. ***"
 
 #: src/ChatSelector.cpp
 msgid "*** Your response to the captcha was wrong and your message has been ignored. You can request a new captcha by sending a new message. ***"
-msgstr ""
+msgstr "*** התשובה שלך ל-captcha הייתה שגויה והתעלמו מההודעה שלך. באפשרותך לבקש captcha חדש על ידי שליחת הודעה חדשה. ***"
 
 #: src/ChatWnd.cpp
 msgid "Chat"
-msgstr ""
+msgstr "צ'אט"
 
 #: src/ChatWnd.cpp src/MuleNotebook.cpp
 msgid "Close tab"
-msgstr ""
+msgstr "סגור לשונית"
 
 #: src/ChatWnd.cpp src/MuleNotebook.cpp
 msgid "Close all tabs"
-msgstr ""
+msgstr "סגור את כל הלשוניות"
 
 #: src/ChatWnd.cpp src/MuleNotebook.cpp
 msgid "Close other tabs"
-msgstr ""
+msgstr "סגור לשוניות אחרות"
 
 #: src/ChatWnd.cpp src/ClientContextActions.cpp
 msgid "Add to Friends"
@@ -1309,13 +1323,12 @@ msgid "Message to send:"
 msgstr "הודה שתשלח:"
 
 #: src/ClientContextActions.cpp
-#, fuzzy
 msgid ""
 "You are not allowed to set more than one friend slot.\n"
 " Only one slot was assigned."
 msgstr ""
-"אתה לא רשאי להגידר יותר ממשצת \"חבר\" אחת.\n"
-"רק משבצת אחת הוגדרה."
+"אינך רשאי להגדיר יותר ממשבצת חבר אחת.\n"
+" הוקצתה משבצת אחת בלבד."
 
 #: src/ClientContextActions.cpp src/FriendListCtrl.cpp
 msgid "Multiple selection"
@@ -1357,23 +1370,23 @@ msgstr ""
 #, c-format
 msgid "Creditfile loaded, %u client is known"
 msgid_plural "Creditfile loaded, %u clients are known"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "קובץ הקרדיט נטען, %u לקוח מוכר"
+msgstr[1] "קובץ הקרדיט נטען, %u לקוחות מוכרים"
 
 #: src/ClientCreditsList.cpp
 #, c-format
 msgid " - Credits expired for %u client!"
 msgid_plural " - Credits expired for %u clients!"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] " - הקרדיט פג עבור %u לקוח!"
+msgstr[1] " - הקרדיט פג עבור %u לקוחות!"
 
 #: src/ClientCreditsList.cpp
 msgid "No 'cryptkey.dat' file found, creating."
-msgstr ""
+msgstr "לא נמצא קובץ 'cryptkey.dat', יוצר אחד."
 
 #: src/ClientDetailDialog.cpp
 msgid "Client Details"
-msgstr ""
+msgstr "פרטי לקוח"
 
 #: src/ClientDetailDialog.cpp src/ServerWnd.cpp
 #: src/utils/wxCas/src/onlinesig.cpp
@@ -1387,15 +1400,15 @@ msgstr "מ\"ז גבוה (HighID)"
 
 #: src/ClientDetailDialog.cpp
 msgid "Enabled"
-msgstr ""
+msgstr "מופעל"
 
 #: src/ClientDetailDialog.cpp
 msgid "Supported"
-msgstr ""
+msgstr "נתמך"
 
 #: src/ClientDetailDialog.cpp src/ClientRef.cpp
 msgid "Not supported"
-msgstr ""
+msgstr "לא נתמך"
 
 #: src/ClientDetailDialog.cpp src/MuleTrayIcon.cpp src/ServerWnd.cpp
 #: src/TextClient.cpp
@@ -1427,7 +1440,7 @@ msgstr "כתובת IP"
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Origin"
-msgstr ""
+msgstr "מקור"
 
 #: src/ClientHistoryListCtrl.cpp
 msgid "First seen"
@@ -1445,9 +1458,8 @@ msgstr "גירסא"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
 #: src/SharedFilePeersListCtrl.cpp
-#, fuzzy
 msgid "Upload Speed"
-msgstr "מהירות-העלאה"
+msgstr "מהירות העלאה"
 
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
 #: src/SharedFilePeersListCtrl.cpp
@@ -1476,7 +1488,7 @@ msgstr "חתימה מקוונת"
 
 #: src/ClientRef.cpp
 msgid "Not complete"
-msgstr ""
+msgstr "לא שלם"
 
 #: src/ClientRef.cpp
 msgid "Bad Guy"
@@ -1484,7 +1496,7 @@ msgstr ""
 
 #: src/ClientRef.cpp
 msgid "Verified - OK"
-msgstr ""
+msgstr "מאומת - תקין"
 
 #: src/ClientRef.cpp src/muuli_wdr.cpp
 msgid "N/A"
@@ -1492,7 +1504,7 @@ msgstr "ל\"ת"
 
 #: src/ClientRef.cpp
 msgid "Not Available"
-msgstr ""
+msgstr "לא זמין"
 
 #: src/ClientRowListCtrl.cpp
 #, c-format
@@ -1508,12 +1520,12 @@ msgstr "קבצים"
 #: src/ClientsListCtrl.cpp src/KnownFile.cpp src/SharedFilePeersListCtrl.cpp
 #: src/SourceListCtrl.cpp
 msgid "Uploaded"
-msgstr ""
+msgstr "הועלה"
 
 #: src/ClientsListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Downloaded"
-msgstr ""
+msgstr "הורד"
 
 #: src/ClientsWnd.cpp
 #, fuzzy
@@ -1555,19 +1567,19 @@ msgid "User %s (%u) requested your shareddirectories-list -> Denied"
 msgstr "המשתמש %s (%u) ביקש את רשימת התקיות המשותפים שלך -> נדחה"
 
 #: src/ClientTCPSocket.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "User %s (%u) requested your sharedfiles-list for directory '%s' -> accepted"
-msgstr "המשתמש %s (%u) ביקש את רשימת הקבצים המשותפים שלך בתקיה %s -> אושר"
+msgstr "המשתמש %s (%u) ביקש את רשימת הקבצים המשותפים שלך עבור התיקייה '%s' -> התקבל"
 
 #: src/ClientTCPSocket.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "User %s (%u) requested your sharedfiles-list for directory '%s' -> denied"
-msgstr "המשתמש %s (%u) ביקש את רשימת הקבצים המשותפים שלך בתקייה %s -> נדחה"
+msgstr "המשתמש %s (%u) ביקש את רשימת הקבצים המשותפים שלך עבור התיקייה '%s' -> נדחה"
 
 #: src/ClientTCPSocket.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "User %s (%u) shares directory '%s'"
-msgstr "משתמש %s·(%u) משתף את התקייה %s"
+msgstr "המשתמש %s (%u) משתף את התיקייה '%s'"
 
 #: src/ClientTCPSocket.cpp
 #, c-format
@@ -1575,9 +1587,9 @@ msgid "User %s (%u) sent unrequested shared dirs."
 msgstr "משתמש %s·(%u) שלח רשימת תקיות משותף בלי שהתבקש."
 
 #: src/ClientTCPSocket.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "User %s (%u) sent sharedfiles-list for directory '%s'"
-msgstr "משתמש %s (%u) שלח רשימה של קבצים משותפים עבור הספריה %s"
+msgstr "המשתמש %s (%u) שלח רשימת קבצים משותפים עבור התיקייה '%s'"
 
 #: src/ClientTCPSocket.cpp
 #, c-format
@@ -1617,7 +1629,7 @@ msgstr "הערה"
 
 #: src/CommentDialogLst.cpp
 msgid "Could not start a Kad search"
-msgstr ""
+msgstr "לא ניתן היה להתחיל חיפוש Kad"
 
 #: src/CommentDialogLst.cpp src/SearchList.cpp
 msgid "Kad search can't be done if Kad is not running"
@@ -1625,28 +1637,28 @@ msgstr "לא יכול להתבצע חיפוש באמצעות קאד אם קאד 
 
 #: src/CommentDialogLst.cpp
 msgid "Searching Kad for comments..."
-msgstr ""
+msgstr "מחפש הערות ב-Kad..."
 
 #: src/CommentDialogLst.cpp src/muuli_wdr.cpp
 msgid "No comments"
 msgstr "אין הערות"
 
 #: src/CommentDialogLst.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "%u comment"
 msgid_plural "%u comments"
 msgstr[0] "%u הערה"
-msgstr[1] "%u הערה"
+msgstr[1] "%u הערות"
 
 #: src/CorruptionBlackBox.cpp
 #, c-format
 msgid "Banned client %s for sending %s corrupt data of %s total for the file '%s'"
-msgstr ""
+msgstr "הלקוח %s נחסם על שליחת %s נתונים פגומים מתוך %s סה\"כ עבור הקובץ '%s'"
 
 #: src/CountryFlags.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Failed to load country data for '%s'."
-msgstr "CIP2Country::CIP2Country(): לא הצליח לטעון מידע עבור המדינה מ "
+msgstr "טעינת נתוני המדינה עבור '%s' נכשלה."
 
 #: src/DataToText.cpp
 msgid "Auto [Lo]"
@@ -1788,7 +1800,7 @@ msgstr "מזריעי מקורות"
 
 #: src/DataToText.cpp
 msgid "Search Result"
-msgstr ""
+msgstr "תוצאת חיפוש"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp
 #: src/TransferWnd.cpp
@@ -1800,21 +1812,20 @@ msgid "In progress"
 msgstr "בתהליך"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "ERROR: Out of disk space"
-msgstr "נגמר המקום"
+msgstr "שגיאה: אין מקום פנוי בדיסק"
 
 #: src/DataToText.cpp
 msgid "ERROR: Partmet not found"
-msgstr ""
+msgstr "שגיאה: קובץ Partmet לא נמצא"
 
 #: src/DataToText.cpp
 msgid "ERROR: IO error!"
-msgstr ""
+msgstr "שגיאה: שגיאת קלט/פלט!"
 
 #: src/DataToText.cpp
 msgid "ERROR: Failed!"
-msgstr ""
+msgstr "שגיאה: נכשל!"
 
 #: src/DataToText.cpp src/SearchListCtrl.cpp
 msgid "Queued"
@@ -1842,7 +1853,7 @@ msgstr ""
 
 #: src/DownloadListCtrl.cpp
 msgid "Part"
-msgstr ""
+msgstr "חלק"
 
 #: src/DownloadListCtrl.cpp src/PartFileConvertDlg.cpp src/SearchListCtrl.cpp
 #: src/SharedFilesCtrl.cpp
@@ -1952,16 +1963,16 @@ msgstr "העתק מגנט URI ללוח"
 
 #: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Copy eD2k &link to clipboard"
-msgstr ""
+msgstr "העתק &קישור eD2k ללוח"
 
 #: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Copy feedback to clipboard"
 msgstr "העתק משוב ללוח"
 
 #: src/DownloadListCtrl.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Get %s for this file"
-msgstr "הוסף כתובות URL אופתינליות לקובץ זה"
+msgstr "שלוף %s עבור קובץ זה"
 
 #: src/DownloadListCtrl.cpp
 msgid "unassign"
@@ -1989,6 +2000,8 @@ msgid ""
 "Feedback from: %s (%s)\n"
 "\n"
 msgstr ""
+"משוב מאת: %s (%s)\n"
+"\n"
 
 #: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Enter new name for this file:"
@@ -2017,48 +2030,48 @@ msgstr "סכום כולל: %s"
 #: src/DownloadQueue.cpp
 #, c-format
 msgid "Saving PartFile %u of %u"
-msgstr ""
+msgstr "שומר קובץ-חלקים %u מתוך %u"
 
 #: src/DownloadQueue.cpp
 msgid "All PartFiles Saved."
-msgstr ""
+msgstr "כל קבצי-החלקים נשמרו."
 
 #: src/DownloadQueue.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Loading temp files from %s."
-msgstr "קורא את הספרייה הזמנית"
+msgstr "טוען קבצים זמניים מתוך %s."
 
 #: src/DownloadQueue.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Loading PartFile %u of %u"
-msgstr "טוען מידע מקובץ הורדות ישן (%u·מ·%u)"
+msgstr "טוען קובץ-חלקים %u מתוך %u"
 
 #: src/DownloadQueue.cpp
 msgid "ERROR: Failed to load backup file. Search https://github.com/amule-org/amule/discussions for .part.met recovery solutions."
-msgstr ""
+msgstr "שגיאה: טעינת קובץ הגיבוי נכשלה. חפש בכתובת https://github.com/amule-org/amule/discussions פתרונות לשחזור קבצי .part.met."
 
 #: src/DownloadQueue.cpp
 msgid "All PartFiles Loaded."
-msgstr ""
+msgstr "כל קבצי-החלקים נטענו."
 
 #: src/DownloadQueue.cpp
 msgid "No part files found"
 msgstr "לא נמצא קובץ-חלקים."
 
 #: src/DownloadQueue.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Found %u part file"
 msgid_plural "Found %u part files"
 msgstr[0] "נמצא %u קובץ-חלקים"
-msgstr[1] "נמצא %u קובץ-חלקים"
+msgstr[1] "נמצאו %u קבצי-חלקים"
 
 #: src/DownloadQueue.cpp
 msgid "Filesystem for Temp directory cannot handle large files."
-msgstr ""
+msgstr "מערכת הקבצים עבור תיקיית הקבצים הזמניים אינה תומכת בקבצים גדולים."
 
 #: src/DownloadQueue.cpp
 msgid "Filesystem for Incoming directory cannot handle large files."
-msgstr ""
+msgstr "מערכת הקבצים עבור תיקיית הקבצים הנכנסים אינה תומכת בקבצים גדולים."
 
 #: src/DownloadQueue.cpp
 #, c-format
@@ -2071,9 +2084,9 @@ msgid "You are already trying to download the file '%s'"
 msgstr "אתה כבר מנסה להוריד את הקובץ '%s'"
 
 #: src/DownloadQueue.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "You already have the file '%s' (requested as '%s')"
-msgstr "כבר יש לך את הקובץ '%s'"
+msgstr "כבר יש לך את הקובץ '%s' (התבקש בתור '%s')"
 
 #: src/DownloadQueue.cpp
 #, c-format
@@ -2094,18 +2107,17 @@ msgstr "פרוטקול לא ידוע עבור קישור: %s"
 #, c-format
 msgid "Could not add %u link (see log for details)."
 msgid_plural "Could not add %u links (see log for details)."
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "לא ניתן היה להוסיף %u קישור (לפרטים ראה יומן)."
+msgstr[1] "לא ניתן היה להוסיף %u קישורים (לפרטים ראה יומן)."
 
 #: src/DownloadQueue.cpp
 #, c-format
 msgid "Invalid eD2k link! ERROR: %s"
-msgstr ""
+msgstr "קישור eD2k לא תקין! שגיאה: %s"
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "Client sent packet after authentication failed."
-msgstr "זיהוי נכשל"
+msgstr "הלקוח שלח חבילה לאחר שהאימות נכשל."
 
 #: src/ExternalConn.cpp
 msgid "External connection closed."
@@ -2125,7 +2137,7 @@ msgstr "גישה חיצונית חדשה התקבלה"
 
 #: src/ExternalConn.cpp
 msgid "ERROR: couldn't accept a new external connection"
-msgstr ""
+msgstr "שגיאה: לא ניתן היה לקבל חיבור חיצוני חדש"
 
 #: src/ExternalConn.cpp
 msgid "External connection refused due to empty password in preferences!"
@@ -2145,9 +2157,8 @@ msgid "Incorrect EC version ID, there might be binary incompatibility. Use core 
 msgstr "גירסת EC לא נכונה, יתכן ויש אי התאמה בינארית. השתמש בליבה ובלקוח חיצוני מאותו תצלום (גירסה)."
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "You cannot connect to a release version from an arbitrary development snapshot! *sigh* possible crash prevented"
-msgstr "אתה לא להתחבר לגרסה ששוחררה מSVN (כלי לניהול גרסאות תוכנה) ! *נאנח* ייתכן והתרסקות של התוכנה נמנעה"
+msgstr "אינך יכול להתחבר לגרסת release מתמונת פיתוח (development snapshot) שרירותית! *אנחה* קריסה אפשרית נמנעה"
 
 #: src/ExternalConn.cpp
 msgid "Invalid protocol version."
@@ -2164,7 +2175,7 @@ msgstr "התחברות אוטומטית לשרת ינוסה שוב תוך %d ש�
 
 #: src/ExternalConn.cpp
 msgid "Authentication failed: invalid hash specified as EC password."
-msgstr ""
+msgstr "האימות נכשל: צוין גיבוב לא תקין כסיסמת EC."
 
 #: src/ExternalConn.cpp
 msgid "Authentication failed: the client offered an encrypted External Connection but sent no usable key."
@@ -2179,19 +2190,16 @@ msgid "Authentication failed: the client could not confirm the encrypted session
 msgstr ""
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "Authentication failed: wrong password."
-msgstr "זיהוי נכשל"
+msgstr "האימות נכשל: סיסמא שגויה."
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "Authentication failed: missing password."
-msgstr "זיהוי נכשל"
+msgstr "האימות נכשל: סיסמא חסרה."
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "Invalid request, please authenticate first."
-msgstr "בקשה לא תקפה, כדאי שקודם תאמת."
+msgstr "בקשה לא תקינה, אנא בצע אימות תחילה."
 
 #: src/ExternalConn.cpp
 msgid "Access granted."
@@ -2200,12 +2208,12 @@ msgstr "גישה אושרה."
 #: src/ExternalConn.cpp
 #, c-format
 msgid "Sent error message \"%s\" to client."
-msgstr ""
+msgstr "נשלחה הודעת שגיאה \"%s\" ללקוח."
 
 #: src/ExternalConn.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Unauthorized access attempt from %s. Connection closed."
-msgstr "ניסיון גישה שאינו מורשה. החיבור נסגר."
+msgstr "ניסיון גישה לא מורשה מ-%s. החיבור נסגר."
 
 #: src/ExternalConn.cpp
 #, c-format
@@ -2236,25 +2244,23 @@ msgstr "צריך להגדיר שרת כדי להסירו"
 
 #: src/ExternalConn.cpp
 msgid "eD2k is disabled in preferences."
-msgstr ""
+msgstr "eD2k מנוטרל בהעדפות."
 
 #: src/ExternalConn.cpp
 msgid "No address known for that friend yet."
 msgstr ""
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "Friend not found."
-msgstr "קובץ לא נמצא."
+msgstr "החבר לא נמצא."
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "Client not found."
-msgstr "קובץ לא נמצא."
+msgstr "הלקוח לא נמצא."
 
 #: src/ExternalConn.cpp
 msgid "EC_TAG_FRIEND_SHARED requires EC_TAG_FRIEND or EC_TAG_CLIENT."
-msgstr ""
+msgstr "EC_TAG_FRIEND_SHARED דורש EC_TAG_FRIEND או EC_TAG_CLIENT."
 
 #: src/ExternalConn.cpp
 msgid "WebSearch from remote interface makes no sense."
@@ -2278,7 +2284,7 @@ msgstr "הלקוח שלך אינו מוגדר עבור הרמה הזאת של פ
 
 #: src/ExternalConn.cpp
 msgid "External Connection: shutdown requested"
-msgstr ""
+msgstr "חיבור חיצוני: התבקש כיבוי"
 
 #: src/ExternalConn.cpp
 msgid "Already shutting down."
@@ -2290,17 +2296,17 @@ msgid "ExternalConn: adding link '%s'."
 msgstr "חיבור-חיצוני: מוסיף קישור '%s'."
 
 #: src/ExternalConn.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "%d of %d links failed (invalid or already on list)."
-msgstr "קישור לא תקף או שכבר נמצא ברשימה."
+msgstr "%d מתוך %d קישורים נכשלו (לא תקינים או כבר ברשימה)."
 
 #: src/ExternalConn.cpp
 msgid "Version check throttled; try again shortly."
-msgstr ""
+msgstr "בדיקת הגרסה הוגבלה; נסה שוב בקרוב."
 
 #: src/ExternalConn.cpp
 msgid "Version check is not available on this daemon."
-msgstr ""
+msgstr "בדיקת גרסה אינה זמינה בדימון זה."
 
 #: src/ExternalConn.cpp
 msgid "File not found."
@@ -2321,7 +2327,7 @@ msgstr ""
 #: src/ExternalConn.cpp
 #, c-format
 msgid "Could not save the amuleapi password: %s"
-msgstr ""
+msgstr "לא ניתן היה לשמור את סיסמת amuleapi: %s"
 
 #: src/ExternalConn.cpp
 #, fuzzy
@@ -2374,11 +2380,11 @@ msgstr "קאד מנוטרל בתוך ההעדפות."
 
 #: src/ExternalConn.cpp
 msgid "Already connected to eD2k."
-msgstr ""
+msgstr "כבר מחובר ל-eD2k."
 
 #: src/ExternalConn.cpp
 msgid "Connecting to eD2k..."
-msgstr ""
+msgstr "מתחבר ל-eD2k..."
 
 #: src/ExternalConn.cpp
 msgid "Already connected to Kad."
@@ -2394,7 +2400,7 @@ msgstr "כל הרשתות מנוטרלות."
 
 #: src/ExternalConn.cpp
 msgid "Disconnected from eD2k."
-msgstr ""
+msgstr "מנותק מ-eD2k."
 
 #: src/ExternalConn.cpp
 msgid "Disconnected from Kad."
@@ -2403,7 +2409,7 @@ msgstr "מתנתק מקאד."
 #: src/ExternalConn.cpp
 #, c-format
 msgid "External Connection: invalid opcode received: %#x"
-msgstr ""
+msgstr "חיבור חיצוני: התקבל קוד פעולה (opcode) לא תקין: %#x"
 
 #: src/ExternalConn.cpp
 msgid "Invalid opcode (wrong protocol version?)"
@@ -2412,40 +2418,48 @@ msgstr "קוד-פעולה לא תקף (גרסת פרוטקול שגויה?)"
 #: src/ExternalConnector.cpp
 #, c-format
 msgid "Unknown extension '%s' for the '%s' command.\n"
-msgstr ""
+msgstr "הרחבה לא ידועה '%s' עבור הפקודה '%s'.\n"
 
 #: src/ExternalConnector.cpp
 #, c-format
 msgid "Unknown command '%s'.\n"
-msgstr ""
+msgstr "פקודה לא ידועה '%s'.\n"
 
 #: src/ExternalConnector.cpp
 msgid ""
 "\n"
 "This command cannot have an argument.\n"
 msgstr ""
+"\n"
+"לפקודה זו אסור להיות ארגומנט.\n"
 
 #: src/ExternalConnector.cpp
 msgid ""
 "\n"
 "This command must have an argument.\n"
 msgstr ""
+"\n"
+"לפקודה זו חייב להיות ארגומנט.\n"
 
 #: src/ExternalConnector.cpp
 msgid ""
 "\n"
 "This command is incomplete, you must use one of the extensions below.\n"
 msgstr ""
+"\n"
+"פקודה זו אינה שלמה, עליך להשתמש באחת ההרחבות שלהלן.\n"
 
 #: src/ExternalConnector.cpp
 msgid ""
 "\n"
 "Available extensions:\n"
 msgstr ""
+"\n"
+"הרחבות זמינות:\n"
 
 #: src/ExternalConnector.cpp
 msgid "Available commands:\n"
-msgstr ""
+msgstr "פקודות זמינות:\n"
 
 #: src/ExternalConnector.cpp
 #, c-format
@@ -2454,14 +2468,17 @@ msgid ""
 "All commands are case insensitive.\n"
 "Type '%s <command>' to get detailed info on <command>.\n"
 msgstr ""
+"\n"
+"כל הפקודות אינן תלויות רישיות.\n"
+"הקלד '%s <command>' כדי לקבל מידע מפורט על <command>.\n"
 
 #: src/ExternalConnector.cpp
 msgid "Exits from the application."
-msgstr ""
+msgstr "יוצא מהיישום."
 
 #: src/ExternalConnector.cpp
 msgid "Show help."
-msgstr ""
+msgstr "הראה עזרה."
 
 #. TRANSLATORS:
 #. Do not translate the word 'help', it is a command to the program!
@@ -2470,6 +2487,8 @@ msgid ""
 "To get help on a command, type 'help <command>'.\n"
 "To get the full command list type 'help'.\n"
 msgstr ""
+"כדי לקבל עזרה על פקודה, הקלד 'help <command>'.\n"
+"כדי לקבל את רשימת הפקודות המלאה הקלד 'help'.\n"
 
 #: src/ExternalConnector.cpp
 #, c-format
@@ -2478,51 +2497,56 @@ msgid ""
 "Use '%s' for command list\n"
 "\n"
 msgstr ""
+"\n"
+"השתמש ב-'%s' לרשימת הפקודות\n"
+"\n"
 
 #: src/ExternalConnector.cpp
 msgid "Syntax error!"
-msgstr ""
+msgstr "שגיאת תחביר!"
 
 #: src/ExternalConnector.cpp
 msgid "Error processing command - should never happen! Report bug, please\n"
-msgstr ""
+msgstr "שגיאה בעיבוד הפקודה - זה לא אמור לקרות לעולם! אנא דווח על באג\n"
 
 #: src/ExternalConnector.cpp
 msgid "This command should not have any parameters."
-msgstr ""
+msgstr "לפקודה זו אסור להיות כל פרמטרים."
 
 #: src/ExternalConnector.cpp
 msgid "This command must have a parameter."
-msgstr ""
+msgstr "לפקודה זו חייב להיות פרמטר."
 
 #: src/ExternalConnector.cpp
 msgid "Invalid argument."
-msgstr ""
+msgstr "ארגומנט לא תקין."
 
 #: src/ExternalConnector.cpp
 msgid "This is an incomplete command."
-msgstr ""
+msgstr "זוהי פקודה לא שלמה."
 
 #: src/ExternalConnector.cpp
 #, c-format
 msgid "Type '%s' to get more help.\n"
-msgstr ""
+msgstr "הקלד '%s' לקבלת עזרה נוספת.\n"
 
 #: src/ExternalConnector.cpp
 #, c-format
 msgid "This is %s %s %s\n"
-msgstr ""
+msgstr "זהו %s %s %s\n"
 
 #: src/ExternalConnector.cpp
 #, c-format
 msgid "This is %s %s\n"
-msgstr ""
+msgstr "זהו %s %s\n"
 
 #: src/ExternalConnector.cpp
 msgid ""
 "\n"
 "Creating client...\n"
 msgstr ""
+"\n"
+"יוצר לקוח...\n"
 
 #: src/ExternalConnector.cpp
 #, c-format
@@ -2530,6 +2554,8 @@ msgid ""
 "\n"
 "Ok, exiting %s...\n"
 msgstr ""
+"\n"
+"בסדר, יוצא מ-%s...\n"
 
 #: src/ExternalConnector.cpp
 msgid ""
@@ -2539,50 +2565,55 @@ msgid ""
 "\n"
 "Exiting...\n"
 msgstr ""
+"לא ניתן להתחבר עם סיסמא ריקה.\n"
+"עליך לציין סיסמא בקובץ התצורה\n"
+"או בשורת הפקודה, או להזין אחת כשתתבקש.\n"
+"\n"
+"יוצא...\n"
 
 #: src/ExternalConnector.cpp
 msgid "Show this help text."
-msgstr ""
+msgstr "הראה טקסט עזרה זה."
 
 #: src/ExternalConnector.cpp
 msgid "Host where aMule is running. (default: 127.0.0.1)"
-msgstr ""
+msgstr "המארח שבו aMule פועל. (ברירת מחדל: 127.0.0.1)"
 
 #: src/ExternalConnector.cpp
 msgid "aMule's port for External Connection. (default: 4712)"
-msgstr ""
+msgstr "המבואה של aMule עבור חיבור חיצוני. (ברירת מחדל: 4712)"
 
 #: src/ExternalConnector.cpp
 msgid "External Connection password."
-msgstr ""
+msgstr "סיסמת חיבור חיצוני."
 
 #: src/ExternalConnector.cpp
 msgid "Read configuration from file."
-msgstr ""
+msgstr "קרא תצורה מקובץ."
 
 #: src/ExternalConnector.cpp
 msgid "Do not print any output to stdout."
-msgstr ""
+msgstr "אל תדפיס פלט כלשהו ל-stdout."
 
 #: src/ExternalConnector.cpp
 msgid "Be verbose - show also debug messages."
-msgstr ""
+msgstr "היה מפורט - הראה גם הודעות ניפוי באגים."
 
 #: src/ExternalConnector.cpp
 msgid "Sets program locale (language)."
-msgstr ""
+msgstr "מגדיר את אזור התוכנית (שפה)."
 
 #: src/ExternalConnector.cpp
 msgid "Write command line options to config file."
-msgstr ""
+msgstr "כתוב אפשרויות שורת פקודה לקובץ התצורה."
 
 #: src/ExternalConnector.cpp
 msgid "Creates config file based on aMule's config file."
-msgstr ""
+msgstr "יוצר קובץ תצורה המבוסס על קובץ התצורה של aMule."
 
 #: src/ExternalConnector.cpp
 msgid "Print program version."
-msgstr ""
+msgstr "הדפס את גרסת התוכנית."
 
 #: src/ExternalConnector.cpp
 msgid "Do not encrypt the External Connect session. Encryption is on by default whenever the remote aMule supports it; turning it off leaves everything after the login readable and modifiable by anyone on the path."
@@ -2590,24 +2621,24 @@ msgstr ""
 
 #: src/ExternalConnector.cpp
 msgid "Force ZLIB compression regardless of dialed-IP locality (useful when the server is reachable over a VPN tunnel that resolves to a LAN IP)."
-msgstr ""
+msgstr "כפה דחיסת ZLIB ללא תלות במיקום כתובת ה-IP המחויגת (שימושי כאשר ניתן להגיע לשרת דרך מנהרת VPN שמתורגמת לכתובת IP ברשת מקומית)."
 
 #: src/ExternalConnector.cpp
 msgid "Append a copy of all console output to this log file (default: <config-dir>/amuleapi.log)."
-msgstr ""
+msgstr "צרף עותק של כל פלט המסוף לקובץ יומן זה (ברירת מחדל: <config-dir>/amuleapi.log)."
 
 #: src/ExternalConnector.cpp
 msgid "Do not write a log file; print to the console only."
-msgstr ""
+msgstr "אל תכתוב קובץ יומן; הדפס למסוף בלבד."
 
 #: src/FileDetailDialog.cpp
 msgid "File Details"
 msgstr "פרטי הקובץ"
 
 #: src/FileDetailDialog.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "%.1f%% done"
-msgstr "%.2f%% הושלם"
+msgstr "%.1f%% הושלם"
 
 #: src/FileDetailDialog.cpp src/utils/wxCas/src/wxcasframe.cpp
 #, c-format
@@ -2649,66 +2680,67 @@ msgstr "שגיאה: יצירת קובץ-החלקים נכשלה)"
 
 #: src/FirstRunWizard.cpp
 msgid "Mobile / 4G-5G (20 / 5 Mbit)"
-msgstr ""
+msgstr "סלולרי / 4G-5G (20 / 5 Mbit)"
 
 #: src/FirstRunWizard.cpp
 msgid "ADSL (24 / 1 Mbit)"
-msgstr ""
+msgstr "ADSL (24 / 1 Mbit)"
 
 #: src/FirstRunWizard.cpp
 msgid "VDSL (50 / 10 Mbit)"
-msgstr ""
+msgstr "VDSL (50 / 10 Mbit)"
 
 #: src/FirstRunWizard.cpp
 msgid "Cable (200 / 20 Mbit)"
-msgstr ""
+msgstr "כבלים (200 / 20 Mbit)"
 
 #: src/FirstRunWizard.cpp
 msgid "Fibre 300 (300 / 100 Mbit)"
-msgstr ""
+msgstr "סיבים 300 (300 / 100 Mbit)"
 
 #: src/FirstRunWizard.cpp
 msgid "Fibre Gigabit (1000 / 1000 Mbit)"
-msgstr ""
+msgstr "סיבים גיגהביט (1000 / 1000 Mbit)"
 
 #: src/FirstRunWizard.cpp
 msgid "aMule first-run setup"
-msgstr ""
+msgstr "הגדרה ראשונית של aMule"
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Welcome to aMule!"
-msgstr "ברוכים הבאים!"
+msgstr "ברוכים הבאים ל-aMule!"
 
 #: src/FirstRunWizard.cpp
 msgid ""
 "This short setup will get you connected. You can change\n"
 "any of these settings later in Preferences."
 msgstr ""
+"הגדרה קצרה זו תחבר אותך לרשת. תוכל לשנות\n"
+"כל אחת מההגדרות הללו מאוחר יותר בהעדפות."
 
 #: src/FirstRunWizard.cpp
 msgid "Choose a nickname other peers will see:"
-msgstr ""
+msgstr "בחר כינוי שעמיתים אחרים יראו:"
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Connection & bandwidth"
-msgstr "מחובר לחבר"
+msgstr "חיבור ורוחב פס"
 
 #: src/FirstRunWizard.cpp
 msgid ""
 "Pick the option that best matches your Internet connection,\n"
 "or set the upload and download limits directly below."
 msgstr ""
+"בחר את האפשרות המתאימה ביותר לחיבור האינטרנט שלך,\n"
+"או הגדר את מגבלות ההעלאה וההורדה ישירות למטה."
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Connection speed:"
-msgstr "מצב חיבור:"
+msgstr "מהירות החיבור:"
 
 #: src/FirstRunWizard.cpp
 msgid "Other / set manually"
-msgstr ""
+msgstr "אחר / הגדר ידנית"
 
 #: src/FirstRunWizard.cpp
 msgid "Upload limit (KiB/s, 0 = unlimited):"
@@ -2719,33 +2751,32 @@ msgid "Download limit (KiB/s, 0 = unlimited):"
 msgstr ""
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Networks & ports"
-msgstr "רשתות"
+msgstr "רשתות ומבואות"
 
 #: src/FirstRunWizard.cpp
 msgid "aMule can use two networks. We recommend keeping both enabled."
-msgstr ""
+msgstr "aMule יכול להשתמש בשתי רשתות. אנו ממליצים להשאיר את שתיהן פעילות."
 
 #: src/FirstRunWizard.cpp src/TextClient.cpp
 msgid "eD2k"
-msgstr ""
+msgstr "eD2k"
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Kademlia"
-msgstr ""
+msgstr "Kademlia"
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Standard TCP Port "
-msgstr ""
+msgstr "מבואת TCP סטנדרטית "
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Extended UDP port (Kad / global search) "
-msgstr ""
+msgstr "מבואת UDP מורחבת (Kad / חיפוש גלובלי) "
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Enable UPnP for router port forwarding"
-msgstr ""
+msgstr "הפעל UPnP להעברת מבואות בנתב"
 
 #: src/FirstRunWizard.cpp
 msgid ""
@@ -2753,72 +2784,79 @@ msgid ""
 "peers can reach you (a \"HighID\"). Turn off if your router\n"
 "doesn't support UPnP or you forward ports manually."
 msgstr ""
+"מאפשר ל-aMule לבקש מהנתב שלך להעביר את המבואות שלמעלה כך שעמיתים\n"
+"אחרים יוכלו להגיע אליך (\"HighID\"). כבה אם הנתב שלך\n"
+"אינו תומך ב-UPnP או שאתה מעביר מבואות באופן ידני."
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Bootstrap files"
-msgstr "קבצים זמניים"
+msgstr "קובצי Bootstrap"
 
 #: src/FirstRunWizard.cpp
 msgid ""
 "To get started, aMule needs to know about some peers.\n"
 "Select which lists to download now:"
 msgstr ""
+"כדי להתחיל, aMule צריך לדעת על כמה עמיתים.\n"
+"בחר אילו רשימות להוריד כעת:"
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Your peer lists are already in place - nothing to download."
-msgstr "אתה כבר מנסה להוריד את הקובץ %s"
+msgstr "רשימות העמיתים שלך כבר קיימות - אין מה להוריד."
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Auto-update server list at startup"
-msgstr ""
+msgstr "עדכן אוטומטית את רשימת השרתים בהפעלה"
 
 #: src/FirstRunWizard.cpp
 msgid "Integrations (optional)"
-msgstr ""
+msgstr "שילובים (אופציונלי)"
 
 #: src/FirstRunWizard.cpp
 msgid ""
 "Choose how aMule integrates with your system. You can\n"
 "change any of these later in Preferences."
 msgstr ""
+"בחר כיצד aMule משתלב עם המערכת שלך. תוכל\n"
+"לשנות כל אחת מהאפשרויות הללו מאוחר יותר בהעדפות."
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Start aMule automatically when I log in"
-msgstr ""
+msgstr "הפעל את aMule אוטומטית בעת הכניסה למערכת"
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 #: packaging/windows/installer_strings.c
 msgid "Register aMule for ed2k:// links"
-msgstr ""
+msgstr "רשום את aMule עבור קישורי ed2k://"
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 #: packaging/windows/installer_strings.c
 msgid "Register aMule for magnet: links"
-msgstr ""
+msgstr "רשום את aMule עבור קישורי magnet:"
 
 #: src/FirstRunWizard.cpp
 msgid "Only eD2k-compatible magnets. Leave off if you use a BitTorrent client."
-msgstr ""
+msgstr "רק מגנטים תואמי eD2k. השאר כבוי אם אתה משתמש בלקוח BitTorrent."
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Open .emulecollection files with aMule"
-msgstr ""
+msgstr "פתח קובצי .emulecollection עם aMule"
 
 #: src/FirstRunWizard.cpp
 msgid "Folders (optional)"
-msgstr ""
+msgstr "תיקיות (אופציונלי)"
 
 #: src/FirstRunWizard.cpp
 msgid ""
 "The defaults are fine for most people. Change them if you\n"
 "want downloads on a different (e.g. larger) disk."
 msgstr ""
+"ברירות המחדל מתאימות לרוב האנשים. שנה אותן אם\n"
+"ברצונך שההורדות יהיו בכונן אחר (למשל גדול יותר)."
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Destination folder for downloads"
-msgstr ""
+msgstr "תיקיית יעד להורדות"
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 #: src/utils/aLinkCreator/src/alcframe.cpp src/utils/wxCas/src/wxcasprefs.cpp
@@ -2827,11 +2865,11 @@ msgstr "דפדף"
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "(All files in this folder are shared with other peers)"
-msgstr ""
+msgstr "(כל הקבצים בתיקייה זו משותפים עם עמיתים אחרים)"
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Folder for temporary download files"
-msgstr ""
+msgstr "תיקייה לקבצי הורדה זמניים"
 
 #: src/FirstRunWizard.cpp
 #, c-format
@@ -2839,22 +2877,24 @@ msgid ""
 "Based on this, aMule will allow up to %i sources per file\n"
 "and %i client connections."
 msgstr ""
+"בהתבסס על כך, aMule יאפשר עד %i מקורות לקובץ\n"
+"ו-%i חיבורי לקוחות."
 
 #: src/FirstRunWizard.cpp
 msgid "Show this setup wizard again the next time you start aMule?"
-msgstr ""
+msgstr "להציג אשף הגדרה זה שוב בפעם הבאה שתפעיל את aMule?"
 
 #: src/FirstRunWizard.cpp
 msgid "Setup not finished"
-msgstr ""
+msgstr "ההגדרה לא הושלמה"
 
 #: src/FriendList.cpp
 msgid "Failed to open friend list file 'emfriends.met' for reading!"
-msgstr ""
+msgstr "פתיחת קובץ רשימת החברים 'emfriends.met' לקריאה נכשלה!"
 
 #: src/FriendList.cpp
 msgid "Failed to open friend list file 'emfriends.met' for writing!"
-msgstr ""
+msgstr "פתיחת קובץ רשימת החברים 'emfriends.met' לכתיבה נכשלה!"
 
 #: src/FriendList.cpp
 #, c-format
@@ -2863,7 +2903,7 @@ msgstr ""
 
 #: src/FriendList.cpp
 msgid "CRITICAL - no client on StartChatSession"
-msgstr ""
+msgstr "קריטי - אין לקוח ב-StartChatSession"
 
 #: src/FriendListCtrl.cpp src/muuli_wdr.cpp
 msgid "Friends"
@@ -2911,33 +2951,30 @@ msgid "Colour legend"
 msgstr ""
 
 #: src/GenericClientListCtrl.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "On Queue: %u (%i)"
-msgstr "QR:·%u·(%i)"
+msgstr "בתור: %u (%i)"
 
 #: src/GenericClientListCtrl.cpp
 msgid "Asked for another file"
 msgstr "התקבלה בקשה עבור קובץ אחר"
 
 #: src/GenericClientListCtrl.cpp
-#, fuzzy
 msgid "Waiting for upload slot"
-msgstr "העלאות בהמתנה: %s"
+msgstr "ממתין למשבצת העלאה"
 
 #: src/GenericClientListCtrl.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "On Queue: %u"
-msgstr "על התור"
+msgstr "בתור: %u"
 
 #: src/GenericClientListCtrl.cpp src/muuli_wdr.cpp
-#, fuzzy
 msgid "Uploading"
-msgstr "ההעלאות"
+msgstr "מעלה"
 
 #: src/GenericClientListCtrl.cpp
-#, fuzzy
 msgid "None"
-msgstr "לא"
+msgstr "ללא"
 
 #: src/GenericClientListCtrl.cpp src/ServerListCtrl.cpp
 msgid "No"
@@ -2958,51 +2995,51 @@ msgstr "מוריד מהרשת..."
 
 #: src/HTTPDownload.cpp
 msgid "HTTP download cancelled"
-msgstr ""
+msgstr "הורדת HTTP בוטלה"
 
 #: src/HTTPDownload.cpp
 msgid "The URL to download can't be empty"
-msgstr ""
+msgstr "כתובת ה-URL להורדה לא יכולה להיות ריקה"
 
 #: src/HTTPDownload.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Failed to create HTTP request for %s"
-msgstr "הניסיון לקבל את רשימת הקבצים המשותפים מהמשתמש '%s' כשלה."
+msgstr "יצירת בקשת HTTP עבור %s נכשלה"
 
 #: src/HTTPDownload.cpp
 #, c-format
 msgid "HTTP download: empty response body for %s"
-msgstr ""
+msgstr "הורדת HTTP: גוף תגובה ריק עבור %s"
 
 #: src/HTTPDownload.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Could not move downloaded file to %s"
-msgstr "אתה כבר מנסה להוריד את הקובץ %s"
+msgstr "לא ניתן היה להעביר את הקובץ שהורד אל %s"
 
 #: src/HTTPDownload.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Downloaded %s (%llu bytes)"
-msgstr "מוריד %s"
+msgstr "הורד %s (%llu בתים)"
 
 #: src/HTTPDownload.cpp
 #, c-format
 msgid "The URL %s returned: %i"
-msgstr ""
+msgstr "כתובת ה-URL %s החזירה: %i"
 
 #: src/HTTPDownload.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "HTTP download failed for %s: %s"
-msgstr "הורדות (%i)"
+msgstr "הורדת HTTP נכשלה עבור %s: %s"
 
 #: src/HTTPDownload.cpp
 #, c-format
 msgid "HTTP 401 Unauthorized for %s"
-msgstr ""
+msgstr "HTTP 401 לא מורשה עבור %s"
 
 #: src/IP2Country.cpp
 #, c-format
 msgid "Migrated existing GeoLite2-Country.mmdb to %s"
-msgstr ""
+msgstr "הועבר קובץ GeoLite2-Country.mmdb הקיים אל %s"
 
 #: src/IP2Country.cpp
 #, c-format
@@ -3011,59 +3048,58 @@ msgstr ""
 
 #: src/IP2Country.cpp
 msgid "IP2Country: MaxMind selected as the GeoIP source but no License Key configured. Open Preferences -> IP2Country, paste your free MaxMind License Key and click 'Update now'."
-msgstr ""
+msgstr "IP2Country: MaxMind נבחר כמקור ה-GeoIP אך לא הוגדר מפתח רישיון. פתח את ההעדפות -> IP2Country, הדבק את מפתח הרישיון החינמי שלך מ-MaxMind ולחץ על 'עדכן עכשיו'."
 
 #: src/IP2Country.cpp
 msgid "IP2Country: Custom URL selected as the GeoIP source but no URL configured. Open Preferences -> IP2Country and supply a URL that points to an .mmdb (or .gz / .tar.gz containing one)."
-msgstr ""
+msgstr "IP2Country: כתובת URL מותאמת אישית נבחרה כמקור ה-GeoIP אך לא הוגדרה כתובת URL. פתח את ההעדפות -> IP2Country וספק כתובת URL המצביעה על קובץ .mmdb (או .gz / .tar.gz המכיל אחד)."
 
 #: src/IP2Country.cpp
 msgid "IP2Country: failed to resolve a GeoIP download URL."
-msgstr ""
+msgstr "IP2Country: נכשל פענוח כתובת URL להורדת GeoIP."
 
 #: src/IP2Country.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Download new %s from %s"
-msgstr "פתיחת הקובץ %s·(%s נכשלה"
+msgstr "הורד %s חדש מתוך %s"
 
 #: src/IP2Country.cpp
 #, c-format
 msgid "Download of %s file failed, aborting update."
-msgstr ""
+msgstr "הורדת הקובץ %s נכשלה, מבטל את העדכון."
 
 #: src/IP2Country.cpp src/IPFilter.cpp
 #, c-format
 msgid "Failed to remove %s file, aborting update."
-msgstr ""
+msgstr "הסרת הקובץ %s נכשלה, מבטל את העדכון."
 
 #: src/IP2Country.cpp
 #, c-format
 msgid "Failed to rename %s file, aborting update."
-msgstr ""
+msgstr "שינוי שם הקובץ %s נכשל, מבטל את העדכון."
 
 #: src/IP2Country.cpp src/IPFilter.cpp
 #, c-format
 msgid "Successfully updated %s"
-msgstr ""
+msgstr "%s עודכן בהצלחה"
 
 #: src/IP2Country.cpp
 #, c-format
 msgid "Error updating %s"
-msgstr ""
+msgstr "שגיאה בעדכון %s"
 
 #: src/IP2Country.cpp
 msgid "DB-IP download failed for the current month - retrying with the previous month's URL."
-msgstr ""
+msgstr "הורדת DB-IP נכשלה עבור החודש הנוכחי - מנסה שוב עם כתובת ה-URL של החודש הקודם."
 
 #: src/IP2Country.cpp src/IPFilter.cpp src/ServerList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Failed to download %s from %s"
-msgstr "פתיחת הקובץ %s·(%s נכשלה"
+msgstr "הורדת %s מתוך %s נכשלה"
 
 #: src/IPFilter.cpp
-#, fuzzy
 msgid "Loading IP filters 'ipfilter.dat' and 'ipfilter_static.dat'."
-msgstr "טוען את מסנני ה IP 'ipfilter.dat' ואת 'ipfilter_static.dat'."
+msgstr "טוען מסנני IP 'ipfilter.dat' ו-'ipfilter_static.dat'."
 
 #: src/IPFilter.cpp
 #, c-format
@@ -3076,27 +3112,27 @@ msgid "Failed to load ipfilter.dat file '%s', could not open file."
 msgstr "טעינת קובץ מסננים עם סיומת '.dat' '%s', נכשלה. לא ניתן לפתוח את הקובץ."
 
 #: src/IPFilter.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Loaded %u IP-range from '%s'."
 msgid_plural "Loaded %u IP-ranges from '%s'."
-msgstr[0] "טוען %u טווח - IP מ '%s'."
-msgstr[1] "טוען %u טווח - IP מ '%s'."
+msgstr[0] "נטען %u טווח IP מתוך '%s'."
+msgstr[1] "נטענו %u טווחי IP מתוך '%s'."
 
 #: src/IPFilter.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "%u malformed line was discarded."
 msgid_plural "%u malformed lines were discarded."
-msgstr[0] "נזרקה השורה המעוותת %u"
-msgstr[1] "נזרקה השורה המעוותת %u"
+msgstr[0] "%u שורה פגומה נפסלה."
+msgstr[1] "%u שורות פגומות נפסלו."
 
 #: src/IPFilter.cpp
 #, c-format
 msgid "Failed to rename new %s file, aborting update."
-msgstr ""
+msgstr "שינוי שם הקובץ החדש %s נכשל, מבטל את העדכון."
 
 #: src/IPFilter.cpp
 msgid "IP filter is ready"
-msgstr ""
+msgstr "מסנן ה-IP מוכן"
 
 #: src/KadDlg.cpp src/muuli_wdr.cpp src/StatisticsDlg.cpp
 msgid "Current"
@@ -3149,66 +3185,65 @@ msgstr "קאדימליה: מילת חיפוש קצרה מדי"
 
 #: src/kademlia/kademlia/SearchManager.cpp
 msgid "Kademlia: Search keyword is already on search list: "
-msgstr ""
+msgstr "Kademlia: מילת החיפוש כבר ברשימת החיפוש: "
 
 #: src/kademlia/routing/RoutingZone.cpp
 msgid "Failed to read nodes.dat file - too old. This version (0) is not supported anymore."
-msgstr ""
+msgstr "קריאת קובץ nodes.dat נכשלה - ישן מדי. גרסה זו (0) אינה נתמכת עוד."
 
 #: src/kademlia/routing/RoutingZone.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Read %u Kad contact"
 msgid_plural "Read %u Kad contacts"
-msgstr[0] "קרא %u יוצרי קשר ל קאד"
-msgstr[1] "קרא %u יוצרי קשר ל קאד"
+msgstr[0] "נקרא %u איש קשר של Kad"
+msgstr[1] "נקראו %u אנשי קשר של Kad"
 
 #: src/kademlia/routing/RoutingZone.cpp
 msgid "No contacts found, please bootstrap, or download a nodes.dat file."
-msgstr ""
+msgstr "לא נמצאו אנשי קשר, אנא בצע אתחול (bootstrap), או הורד קובץ nodes.dat."
 
 #: src/kademlia/routing/RoutingZone.cpp
 #, c-format
 msgid "Only %d Kad contact available, nodes.dat not written"
 msgid_plural "Only %d Kad contacts available, nodes.dat not written"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "רק %d איש קשר של Kad זמין, nodes.dat לא נכתב"
+msgstr[1] "רק %d אנשי קשר של Kad זמינים, nodes.dat לא נכתב"
 
 #: src/kademlia/routing/RoutingZone.cpp
 #, c-format
 msgid "Wrote %d Kad contact"
 msgid_plural "Wrote %d Kad contacts"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "נכתב %d איש קשר של Kad"
+msgstr[1] "נכתבו %d אנשי קשר של Kad"
 
 #: src/KnownFile.cpp
-#, fuzzy
 msgid "Kad user"
-msgstr "קאד התחיל."
+msgstr "משתמש Kad"
 
 #: src/KnownFile.cpp
 #, c-format
 msgid "Kad note search for '%s' not started: Kad is not connected"
-msgstr ""
+msgstr "חיפוש הערות Kad עבור '%s' לא התחיל: Kad אינו מחובר"
 
 #: src/KnownFile.cpp
 #, c-format
 msgid "Kad note search for '%s' not started: a note lookup is already running for this file"
-msgstr ""
+msgstr "חיפוש הערות Kad עבור '%s' לא התחיל: חיפוש הערות כבר פועל עבור קובץ זה"
 
 #: src/KnownFile.cpp
 #, c-format
 msgid "Kad note search for '%s' not started: file is not in the shared list, download queue or search results"
-msgstr ""
+msgstr "חיפוש הערות Kad עבור '%s' לא התחיל: הקובץ אינו ברשימת השיתוף, בתור ההורדות או בתוצאות החיפוש"
 
 #: src/KnownFile.cpp
 #, c-format
 msgid "Kad note search for '%s' not started: another Kad search (e.g. a source search) is already using this file's hash - try again shortly"
-msgstr ""
+msgstr "חיפוש הערות Kad עבור '%s' לא התחיל: חיפוש Kad אחר (למשל חיפוש מקורות) כבר משתמש בגיבוב (hash) של קובץ זה - נסה שוב בקרוב"
 
 #: src/KnownFile.cpp
 #, c-format
 msgid "Kad note search for '%s' not started: PrepareLookup failed"
-msgstr ""
+msgstr "חיפוש הערות Kad עבור '%s' לא התחיל: PrepareLookup נכשל"
 
 #: src/KnownFile.cpp src/PartFileConvertDlg.cpp
 msgid "File name"
@@ -3216,35 +3251,35 @@ msgstr "שם הקובץ"
 
 #: src/KnownFile.cpp
 msgid "File size"
-msgstr ""
+msgstr "גודל קובץ"
 
 #: src/KnownFile.cpp
 msgid "Share ratio"
-msgstr ""
+msgstr "יחס שיתוף"
 
 #: src/KnownFile.cpp src/muuli_wdr.cpp
 msgid "Requested"
-msgstr ""
+msgstr "התבקש"
 
 #: src/KnownFile.cpp
 msgid "Accepted"
-msgstr ""
+msgstr "התקבל"
 
 #: src/KnownFile.cpp
 msgid "Complete sources"
-msgstr ""
+msgstr "מקורות שלמים"
 
 #: src/KnownFileList.cpp
 msgid "WARNING: Known file list corrupted, contains invalid header."
-msgstr ""
+msgstr "אזהרה: רשימת הקבצים הידועים פגומה, מכילה כותרת לא תקינה."
 
 #: src/KnownFileList.cpp
 msgid "Failed to load entry in known file list, file may be corrupt"
-msgstr ""
+msgstr "טעינת רשומה ברשימת הקבצים הידועים נכשלה, ייתכן שהקובץ פגום"
 
 #: src/KnownFileList.cpp
 msgid "Invalid entry in known file list, file may be corrupt: "
-msgstr ""
+msgstr "רשומה לא תקינה ברשימת הקבצים הידועים, ייתכן שהקובץ פגום: "
 
 #: src/LanguageList.cpp
 msgid "System default"
@@ -3259,9 +3294,8 @@ msgid "Arabic"
 msgstr "ערבית"
 
 #: src/LanguageList.cpp
-#, fuzzy
 msgid "Asturian"
-msgstr "אסטונית"
+msgstr "אסטורית"
 
 #: src/LanguageList.cpp
 msgid "Basque"
@@ -3304,9 +3338,8 @@ msgid "English (U.K.)"
 msgstr "אנגלית (בריטית)"
 
 #: src/LanguageList.cpp
-#, fuzzy
 msgid "English (U.S.)"
-msgstr "אנגלית (בריטית)"
+msgstr "אנגלית (ארה״ב)"
 
 #: src/LanguageList.cpp
 msgid "Estonian"
@@ -3334,7 +3367,7 @@ msgstr "יוונית"
 
 #: src/LanguageList.cpp
 msgid "Hebrew"
-msgstr ""
+msgstr "עברית"
 
 #: src/LanguageList.cpp
 msgid "Hungarian"
@@ -3354,7 +3387,7 @@ msgstr "קוראינית"
 
 #: src/LanguageList.cpp
 msgid "Latvian"
-msgstr ""
+msgstr "לטבית"
 
 #: src/LanguageList.cpp
 msgid "Lithuanian"
@@ -3377,9 +3410,8 @@ msgid "Portuguese (Brazilian)"
 msgstr "פורטגזית (ברזילאית)"
 
 #: src/LanguageList.cpp
-#, fuzzy
 msgid "Romanian"
-msgstr "אלבני"
+msgstr "רומנית"
 
 #: src/LanguageList.cpp
 msgid "Russian"
@@ -3403,17 +3435,17 @@ msgstr "טורקית"
 
 #: src/LanguageList.cpp
 msgid "Ukrainian"
-msgstr ""
+msgstr "אוקראינית"
 
 #: src/libs/common/Format.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Unknown error %d"
-msgstr "גירסה לא ידועה"
+msgstr "שגיאה לא ידועה %d"
 
 #: src/libs/common/Format.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Unable to get error description for error %d"
-msgstr "אזהרה: לא ניתן לפתוח את קובץ הסקין '%s' לקריאה"
+msgstr "לא ניתן לקבל תיאור שגיאה עבור שגיאה %d"
 
 #: src/libs/ec/cpp/ECSpecialTags.cpp src/PartFile.cpp
 msgid "Hashing"
@@ -3460,13 +3492,12 @@ msgid "Connection failure"
 msgstr "החיבור נכשל"
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
-#, fuzzy
 msgid "External Connection lost - exiting."
-msgstr "חיבור חיצוני נסגר."
+msgstr "חיבור חיצוני אבד - יוצא."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "EC connection failed. Empty reply."
-msgstr ""
+msgstr "חיבור EC נכשל. תגובה ריקה."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "Could not set up connection encryption. Connection closed."
@@ -3477,9 +3508,8 @@ msgid "The core did not negotiate an encrypted connection. It may be an older aM
 msgstr ""
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
-#, fuzzy
 msgid "External Connection: Bad reply, handshake failed. Connection closed."
-msgstr "ExternalConn: (התחברות חיצונית) תשובה לא טובה מהשרת. החיבור נסגר. ."
+msgstr "חיבור חיצוני: תגובה שגויה, לחיצת היד (handshake) נכשלה. החיבור נסגר."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 #, fuzzy
@@ -3496,12 +3526,11 @@ msgstr "הצלחה!נפתח חיבור ."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "External Connection: Access denied because: "
-msgstr ""
+msgstr "חיבור חיצוני: הגישה נדחתה מהסיבה: "
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
-#, fuzzy
 msgid "External Connection: Handshake failed."
-msgstr "חיבור חיצוני נסגר."
+msgstr "חיבור חיצוני: לחיצת היד נכשלה."
 
 #: src/LibSocketAsio.cpp
 #, c-format
@@ -3514,25 +3543,25 @@ msgid "Error creating UDP socket %s %d : %s"
 msgstr ""
 
 #: src/LibSocketAsio.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Asio thread %d started"
-msgstr "רענון אוטמטי התחיל"
+msgstr "תהליכון Asio %d הופעל"
 
 #: src/ListenSocket.cpp
 msgid "ListenSocket: Ok."
-msgstr ""
+msgstr "ListenSocket: תקין."
 
 #: src/ListenSocket.cpp
 msgid "ERROR: Could not listen to TCP port."
-msgstr ""
+msgstr "שגיאה: לא ניתן להאזין למבואת TCP."
 
 #: src/Logger.cpp
 msgid "ERROR: "
-msgstr ""
+msgstr "שגיאה: "
 
 #: src/Logger.cpp
 msgid "WARNING: "
-msgstr ""
+msgstr "אזהרה: "
 
 #: src/MediaProbe.cpp
 msgid "Media metadata: no ffprobe binary found. Install ffmpeg, or set the ffprobe path in preferences; length, bitrate and codec will not be extracted."
@@ -3634,49 +3663,43 @@ msgstr ""
 
 #: src/MuleTrayIcon.cpp
 msgid "Unlimited"
-msgstr ""
+msgstr "ללא הגבלה"
 
 #: src/MuleTrayIcon.cpp
 msgid "Show aMule"
-msgstr ""
+msgstr "הראה את aMule"
 
 #: src/MuleTrayIcon.cpp
 msgid "Hide aMule"
-msgstr ""
+msgstr "הסתר את aMule"
 
 #: src/MuleTrayIcon.cpp
 msgid "eD2k: "
-msgstr ""
+msgstr "eD2k: "
 
 #: src/MuleTrayIcon.cpp
-#, fuzzy
 msgid "Connected (LowID)"
-msgstr "מחובר"
+msgstr "מחובר (LowID)"
 
 #: src/MuleTrayIcon.cpp
-#, fuzzy
 msgid "Connected (HighID)"
-msgstr "מחובר"
+msgstr "מחובר (HighID)"
 
 #: src/MuleTrayIcon.cpp
-#, fuzzy
 msgid "Kad: "
-msgstr " קאד: "
+msgstr "Kad: "
 
 #: src/MuleTrayIcon.cpp
-#, fuzzy
 msgid "Connected (firewalled)"
-msgstr "קאד מחובר (מאחורי חומת אש)"
+msgstr "מחובר (מאחורי חומת אש)"
 
 #: src/MuleTrayIcon.cpp
-#, fuzzy
 msgid "Server: "
-msgstr "שרת"
+msgstr "שרת: "
 
 #: src/MuleTrayIcon.cpp
-#, fuzzy
 msgid "Server IP: "
-msgstr "כתובת IP של השרת:"
+msgstr "כתובת IP של השרת: "
 
 #: src/MuleTrayIcon.cpp src/TextClient.cpp
 msgid "Not connected"
@@ -3685,37 +3708,37 @@ msgstr "לא מחובר"
 #: src/MuleTrayIcon.cpp
 #, c-format
 msgid "IP: %s"
-msgstr ""
+msgstr "IP: %s"
 
 #: src/MuleTrayIcon.cpp
 #, c-format
 msgid "TCP port: %d"
-msgstr ""
+msgstr "מבואת TCP: %d"
 
 #: src/MuleTrayIcon.cpp
 msgid "TCP port: Not ready"
-msgstr ""
+msgstr "מבואת TCP: לא מוכנה"
 
 #: src/MuleTrayIcon.cpp
 #, c-format
 msgid "UDP port: %d"
-msgstr ""
+msgstr "מבואת UDP: %d"
 
 #: src/MuleTrayIcon.cpp
 msgid "UDP port: Not ready"
-msgstr ""
+msgstr "מבואת UDP: לא מוכנה"
 
 #: src/MuleTrayIcon.cpp
 msgid "Client Information"
-msgstr ""
+msgstr "מידע על הלקוח"
 
 #: src/MuleTrayIcon.cpp
 msgid "Upload limit"
-msgstr ""
+msgstr "מגבלת העלאה"
 
 #: src/MuleTrayIcon.cpp
 msgid "Download limit"
-msgstr ""
+msgstr "מגבלת הורדה"
 
 #: src/MuleTrayIcon.cpp
 msgid "Disconnect"
@@ -3731,60 +3754,60 @@ msgstr "יציאה"
 
 #: src/MuleTrayIcon.cpp
 msgid "aMule Tray Menu"
-msgstr ""
+msgstr "תפריט מגש המערכת של aMule"
 
 #: src/MuleTrayIcon.cpp
 msgid "Speed limits:"
-msgstr ""
+msgstr "מגבלות מהירות:"
 
 #: src/MuleTrayIcon.cpp
 msgid "UL: None"
-msgstr ""
+msgstr "העלאה: ללא"
 
 #: src/MuleTrayIcon.cpp
 #, c-format
 msgid "UL: %u"
-msgstr ""
+msgstr "העלאה: %u"
 
 #: src/MuleTrayIcon.cpp
 msgid "DL: None"
-msgstr ""
+msgstr "הורדה: ללא"
 
 #: src/MuleTrayIcon.cpp
 #, c-format
 msgid "DL: %u"
-msgstr ""
+msgstr "הורדה: %u"
 
 #: src/MuleTrayIcon.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Download speed: %.1f%s"
-msgstr "מהירות הורדה"
+msgstr "מהירות הורדה: %.1f%s"
 
 #: src/MuleTrayIcon.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Upload speed: %.1f%s"
-msgstr "מהירות-העלאה"
+msgstr "מהירות העלאה: %.1f%s"
 
 #: src/MuleTrayIcon.cpp
 #, c-format
 msgid "Nickname: %s"
-msgstr ""
+msgstr "כינוי: %s"
 
 #: src/MuleTrayIcon.cpp
 msgid "No Nickname Selected!"
-msgstr ""
+msgstr "לא נבחר כינוי!"
 
 #: src/MuleTrayIcon.cpp
 msgid "ClientID: "
-msgstr ""
+msgstr "מזהה לקוח: "
 
 #: src/MuleTrayIcon.cpp
 msgid "ServerName: "
-msgstr ""
+msgstr "שם שרת: "
 
 #: src/MuleTrayIcon.cpp
 msgid "ServerIP: "
-msgstr ""
+msgstr "IP שרת: "
 
 #: src/MuleTrayIcon.cpp src/ServerWnd.cpp src/utils/wxCas/src/onlinesig.cpp
 msgid "Not Connected"
@@ -3792,11 +3815,11 @@ msgstr "מנותק"
 
 #: src/MuleTrayIcon.cpp
 msgid "Online Signature: Enabled"
-msgstr ""
+msgstr "חתימה מקוונת: מופעלת"
 
 #: src/MuleTrayIcon.cpp
 msgid "Online Signature: Disabled"
-msgstr ""
+msgstr "חתימה מקוונת: מנוטרלת"
 
 #: src/MuleTrayIcon.cpp src/Statistics.cpp
 #, c-format
@@ -3806,22 +3829,22 @@ msgstr "זמן פעולה: %s"
 #: src/MuleTrayIcon.cpp
 #, c-format
 msgid "Shared files: %d"
-msgstr ""
+msgstr "קבצים משותפים: %d"
 
 #: src/MuleTrayIcon.cpp
 #, c-format
 msgid "Queued clients: %d"
-msgstr ""
+msgstr "לקוחות בתור: %d"
 
 #: src/MuleTrayIcon.cpp
 #, c-format
 msgid "Total DL: %s"
-msgstr ""
+msgstr "סה\"כ הורדה: %s"
 
 #: src/MuleTrayIcon.cpp
 #, c-format
 msgid "Total UL: %s"
-msgstr ""
+msgstr "סה\"כ העלאה: %s"
 
 #: src/MuleUDPSocket.cpp
 #, c-format
@@ -3834,18 +3857,16 @@ msgid "WARNING! %s: Packet to %s discarded due to error (%s) while sending."
 msgstr ""
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Paste eD2k or magnet links here"
-msgstr "מוסיף קישור ed2k או מגנט לליבה."
+msgstr "הדבק כאן קישורי eD2k או מגנט"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Add links"
-msgstr "הוסף לחברים"
+msgstr "הוסף קישורים"
 
 #: src/muuli_wdr.cpp
 msgid "Click here to add the eD2k link in the text control to your download queue."
-msgstr ""
+msgstr "לחץ כאן כדי להוסיף את קישור ה-eD2k בשדה הטקסט לתור ההורדות שלך."
 
 #: src/muuli_wdr.cpp
 #, fuzzy
@@ -4009,7 +4030,7 @@ msgstr "סיומת"
 
 #: src/muuli_wdr.cpp
 msgid "Ask already-responded Kad peers to widen the search. Each click queries the next-closest peer for more contacts (KADEMLIA_FIND_VALUE_MORE), surfacing additional file matches that the search's initial alpha frontier missed."
-msgstr ""
+msgstr "בקש מעמיתי Kad שכבר הגיבו להרחיב את החיפוש. כל לחיצה שולחת שאילתה לעמית הקרוב הבא לאיתור אנשי קשר נוספים (KADEMLIA_FIND_VALUE_MORE), ומעלה התאמות קבצים נוספות שחזית האלפא הראשונית של החיפוש פספסה."
 
 #: src/muuli_wdr.cpp
 msgid "Stop"
@@ -4045,9 +4066,8 @@ msgid "Filter:"
 msgstr "מסנן:"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "File sources:"
-msgstr "מקורות שנמצאו :"
+msgstr "מקורות קובץ:"
 
 #: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
 msgid "General"
@@ -4126,9 +4146,8 @@ msgid "Packages saved by I.C.H."
 msgstr "חבילות שנשמרו ע\"י I.C.H.·"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Sharing"
-msgstr "משתף: "
+msgstr "שיתוף"
 
 #: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
 msgid "Requests"
@@ -4151,31 +4170,28 @@ msgid "Complete Sources"
 msgstr "מקורות שלמים"
 
 #: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
-#, fuzzy
 msgid "Shared since"
-msgstr "קבצים משותפים"
+msgstr "משותף מאז"
 
 #: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
-#, fuzzy
 msgid "Last upload"
-msgstr ", הועלה: "
+msgstr "העלאה אחרונה"
 
 #: src/muuli_wdr.cpp
 msgid "Media Info"
-msgstr ""
+msgstr "מידע על המדיה"
 
 #: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Length"
-msgstr ""
+msgstr "אורך"
 
 #: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
-#, fuzzy
 msgid "Bitrate"
-msgstr "לא מדורג"
+msgstr "קצב סיביות"
 
 #: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Codec"
-msgstr ""
+msgstr "קודק"
 
 #: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Artist"
@@ -4218,6 +4234,8 @@ msgid ""
 "For a film you can say its length, its story, language ...\n"
 "and if it's a fake, you can tell that to other users of aMule."
 msgstr ""
+"לגבי סרט תוכל לציין את אורכו, את עלילתו, את השפה שלו...\n"
+"ואם מדובר בזיוף, תוכל לדווח על כך למשתמשים אחרים של aMule."
 
 #: src/muuli_wdr.cpp
 msgid "File Quality"
@@ -4252,9 +4270,8 @@ msgid "Choose the file rating or advice users if the file is invalid ..."
 msgstr "תבחר את דרוג הקובץ או תתריע למשתמשים אם הקובץ אינו תקף ..."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Get from Kad"
-msgstr "מנותק מקאד."
+msgstr "שלוף מ-Kad"
 
 #: src/muuli_wdr.cpp
 msgid "Refresh"
@@ -4397,179 +4414,179 @@ msgstr "נכנס לתור"
 
 #: src/muuli_wdr.cpp
 msgid "Nick"
-msgstr ""
+msgstr "כינוי"
 
 #: src/muuli_wdr.cpp
 msgid "https://amule-org.github.io - the multi-platform Mule"
-msgstr ""
+msgstr "https://amule-org.github.io - ה-Mule הרב-פלטפורמי"
 
 #: src/muuli_wdr.cpp
 msgid "This is the name that other users will see when connecting to you."
-msgstr ""
+msgstr "זהו השם שמשתמשים אחרים יראו כאשר הם מתחברים אליך."
 
 #: src/muuli_wdr.cpp
 msgid "Language: "
-msgstr ""
+msgstr "שפה: "
 
 #: src/muuli_wdr.cpp
 msgid "The delay before showing tool-tips."
-msgstr ""
+msgstr "ההשהיה לפני הצגת חלוניות עזרה."
 
 #: src/muuli_wdr.cpp
 msgid "This specifies the language used on controls."
-msgstr ""
+msgstr "זה קובע את השפה המשמשת בפקדים."
 
 #: src/muuli_wdr.cpp
 msgid "Periodically check for a new version"
-msgstr ""
+msgstr "בדוק מעת לעת אם קיימת גרסה חדשה"
 
 #: src/muuli_wdr.cpp
 msgid "Enabling this will make aMule check for a new version at startup and once a day while running"
-msgstr ""
+msgstr "הפעלת אפשרות זו תגרום ל-aMule לבדוק אם קיימת גרסה חדשה בעת ההפעלה ופעם ביום בזמן הפעולה"
 
 #: src/muuli_wdr.cpp
 msgid "Registers a per-user autostart entry with the OS so aMule launches at login. If you move the aMule binary, launch aMule once manually afterwards to refresh the entry."
-msgstr ""
+msgstr "רושם ערך הפעלה אוטומטית לכל משתמש במערכת ההפעלה כדי ש-aMule יופעל בעת הכניסה. אם תעביר את קובץ ההפעלה של aMule למיקום אחר, הפעל את aMule פעם אחת ידנית לאחר מכן כדי לרענן את הערך."
 
 #: src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Makes aMule the default handler for ed2k:// links so clicking one in your browser or file manager opens it here."
-msgstr ""
+msgstr "הופך את aMule למטפל ברירת המחדל בקישורי ed2k://, כך שלחיצה על קישור כזה בדפדפן או במנהל הקבצים תפתח אותו כאן."
 
 #: src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "aMule only handles eD2k-compatible magnets (containing xt=urn:ed2k:). BitTorrent magnets are NOT supported and clicking them will silently fail. If you use a BitTorrent client (Transmission, qBittorrent, etc.), leave this off."
-msgstr ""
+msgstr "aMule מטפל רק במגנטים תואמי eD2k (המכילים xt=urn:ed2k:). מגנטים של BitTorrent אינם נתמכים ולחיצה עליהם תיכשל בשקט. אם אתה משתמש בלקוח BitTorrent (Transmission, qBittorrent וכדומה), השאר אפשרות זו כבויה."
 
 #: src/muuli_wdr.cpp
 msgid "Opening a collection queues every eD2k link it contains. On Windows this adds aMule to the \"Open with\" list and takes the default only when no other program has claimed the file type."
-msgstr ""
+msgstr "פתיחת אוסף מוסיפה לתור כל קישור eD2k שהוא מכיל. ב-Windows פעולה זו מוסיפה את aMule לרשימת \"פתח באמצעות\" והופכת אותו לברירת המחדל רק כאשר אף תוכנית אחרת לא תבעה את סוג הקובץ."
 
 #: src/muuli_wdr.cpp
 msgid "Start minimized"
-msgstr ""
+msgstr "הפעל ממוזער"
 
 #: src/muuli_wdr.cpp
 msgid "Enabling this makes aMule minimize itself upon start."
-msgstr ""
+msgstr "הפעלת אפשרות זו גורמת ל-aMule למזער את עצמו עם ההפעלה."
 
 #: src/muuli_wdr.cpp
 msgid "Prompt on exit"
-msgstr ""
+msgstr "שאל ביציאה"
 
 #: src/muuli_wdr.cpp
 msgid "Makes aMule prompt before exiting."
-msgstr ""
+msgstr "גורם ל-aMule לשאול לפני היציאה."
 
 #: src/muuli_wdr.cpp
 msgid "Enable Tray Icon"
-msgstr ""
+msgstr "הפעל סמל מגש"
 
 #: src/muuli_wdr.cpp
 msgid "This Enables/Disables the system tray (or taskbar) icon."
-msgstr ""
+msgstr "זה מפעיל/מנטרל את סמל מגש המערכת (או שורת המשימות)."
 
 #: src/muuli_wdr.cpp
 msgid "Hide application window when close button is pressed"
-msgstr ""
+msgstr "הסתר את חלון היישום בעת לחיצה על כפתור הסגירה"
 
 #: src/muuli_wdr.cpp
 msgid "Minimize to Tray Icon"
-msgstr ""
+msgstr "מזער לסמל המגש"
 
 #: src/muuli_wdr.cpp
 msgid "Enabling this will make aMule minimize to the System Tray, rather than the taskbar."
-msgstr ""
+msgstr "הפעלת אפשרות זו תגרום ל-aMule להתמזער לסמל מגש המערכת, במקום לשורת המשימות."
 
 #: src/muuli_wdr.cpp
 msgid "Show notifications when finished downloading"
-msgstr ""
+msgstr "הראה התראות בסיום ההורדה"
 
 #: src/muuli_wdr.cpp
 msgid "Enabling this will make aMule to show notifications when finished downloading."
-msgstr ""
+msgstr "הפעלת אפשרות זו תגרום ל-aMule להציג התראות בסיום ההורדה."
 
 #: src/muuli_wdr.cpp
 msgid "Remember search history"
-msgstr ""
+msgstr "זכור היסטוריית חיפוש"
 
 #: src/muuli_wdr.cpp
 msgid "Keeps a dropdown list of your past search terms in the Search tab's Name field. This remembers the queries you typed, not the results they returned."
-msgstr ""
+msgstr "שומר רשימה נפתחת של מונחי החיפוש הקודמים שלך בשדה השם בכרטיסיית החיפוש. פעולה זו זוכרת את השאילתות שהקלדת, לא את התוצאות שהן החזירו."
 
 #: src/muuli_wdr.cpp
 msgid "Tooltip delay time: "
-msgstr ""
+msgstr "זמן השהיית חלונית עזרה: "
 
 #: src/muuli_wdr.cpp
 msgid "seconds"
-msgstr ""
+msgstr "שניות"
 
 #: src/muuli_wdr.cpp
 msgid "Browser Selection"
-msgstr ""
+msgstr "בחירת דפדפן"
 
 #: src/muuli_wdr.cpp
 msgid "Enter your browser name here. Leave this field empty to use the system default browser."
-msgstr ""
+msgstr "הזן כאן את שם הדפדפן שלך. השאר שדה זה ריק כדי להשתמש בדפדפן ברירת המחדל של המערכת."
 
 #: src/muuli_wdr.cpp
 msgid "Open in new tab if possible"
-msgstr ""
+msgstr "פתח בכרטיסייה חדשה אם אפשר"
 
 #: src/muuli_wdr.cpp
 msgid "Open the web page in a new tab instead of in a new window when possible"
-msgstr ""
+msgstr "פתח את דף האינטרנט בכרטיסייה חדשה במקום בחלון חדש כאשר אפשר"
 
 #: src/muuli_wdr.cpp
 msgid "Video Player"
-msgstr ""
+msgstr "נגן וידאו"
 
 #: src/muuli_wdr.cpp
 msgid "Bandwidth limits"
-msgstr ""
+msgstr "מגבלות רוחב פס"
 
 #: src/muuli_wdr.cpp
 msgid "Upload"
-msgstr ""
+msgstr "העלאה"
 
 #: src/muuli_wdr.cpp
 msgid "Slot Allocation"
-msgstr ""
+msgstr "הקצאת משבצות"
 
 #: src/muuli_wdr.cpp
 msgid "Ports"
-msgstr ""
+msgstr "מבואות"
 
 #: src/muuli_wdr.cpp
 msgid "This is the standard eD2k port and cannot be disabled."
-msgstr ""
+msgstr "זוהי מבואת ה-eD2k הסטנדרטית ולא ניתן לנטרלה."
 
 #: src/muuli_wdr.cpp
 msgid "UDP port for server requests (TCP+3):"
-msgstr ""
+msgstr "מבואת UDP לבקשות שרת (TCP+3):"
 
 #: src/muuli_wdr.cpp
 msgid "4665"
-msgstr ""
+msgstr "4665"
 
 #: src/muuli_wdr.cpp
 msgid "This UDP port is used for extended eD2k requests and Kad network"
-msgstr ""
+msgstr "מבואת UDP זו משמשת לבקשות eD2k מורחבות ולרשת Kad"
 
 #: src/muuli_wdr.cpp
 msgid "UPnP TCP Port (Optional):"
-msgstr ""
+msgstr "מבואת TCP של UPnP (אופציונלי):"
 
 #: src/muuli_wdr.cpp
 msgid "Bind local address to IP (empty for any):"
-msgstr ""
+msgstr "קשר כתובת מקומית ל-IP (ריק לכל כתובת):"
 
 #: src/muuli_wdr.cpp
 msgid "Advanced users only: If you have multiple network interfaces, enter the address of the interface to which aMule should be bound."
-msgstr ""
+msgstr "למשתמשים מתקדמים בלבד: אם יש לך מספר ממשקי רשת, הזן את הכתובת של הממשק שאליו aMule צריך להיות מקושר."
 
 #: src/muuli_wdr.cpp
 msgid "Bind to network interface (empty for any):"
-msgstr ""
+msgstr "היקשר לממשק רשת (ריק עבור כל ממשק):"
 
 #: src/muuli_wdr.cpp
 msgid "Advanced users only: pin aMule's peer-to-peer traffic, and its HTTP updates where the platform allows, to one network interface, chosen from the list or typed in by name (e.g. tun0, eth0, en0) or index. Unlike binding to an IP, this stops traffic leaking out via the default route - useful with a VPN. On Linux before kernel 5.7 it needs the CAP_NET_RAW capability."
@@ -4577,11 +4594,11 @@ msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Max sources per downloading file:"
-msgstr ""
+msgstr "מקסימום מקורות לקובץ מורד:"
 
 #: src/muuli_wdr.cpp
 msgid "Max simultaneous connections:"
-msgstr ""
+msgstr "מקסימום חיבורים בו-זמניים:"
 
 #: src/muuli_wdr.cpp src/ServerWnd.cpp
 msgid "ED2K"
@@ -4589,115 +4606,115 @@ msgstr "ED2K"
 
 #: src/muuli_wdr.cpp
 msgid "Autoconnect on startup"
-msgstr ""
+msgstr "התחבר אוטומטית בהפעלה"
 
 #: src/muuli_wdr.cpp
 msgid "Reconnect on loss"
-msgstr ""
+msgstr "התחבר מחדש בעת ניתוק"
 
 #: src/muuli_wdr.cpp
 msgid "Remove dead server after"
-msgstr ""
+msgstr "הסר שרת מת לאחר"
 
 #: src/muuli_wdr.cpp
 msgid "Static servers are never removed, even when unreachable."
-msgstr ""
+msgstr "שרתים קבועים לעולם אינם מוסרים, גם כאשר אינם ניתנים להשגה."
 
 #: src/muuli_wdr.cpp
 msgid "retries"
-msgstr ""
+msgstr "ניסיונות"
 
 #: src/muuli_wdr.cpp
 msgid "List"
-msgstr ""
+msgstr "רשימה"
 
 #: src/muuli_wdr.cpp
 msgid "Update server list when connecting to a server"
-msgstr ""
+msgstr "עדכן את רשימת השרתים בעת התחברות לשרת"
 
 #: src/muuli_wdr.cpp
 msgid "Update server list when a client connects"
-msgstr ""
+msgstr "עדכן את רשימת השרתים בעת התחברות לקוח"
 
 #: src/muuli_wdr.cpp
 msgid "Use priority system"
-msgstr ""
+msgstr "השתמש במערכת עדיפויות"
 
 #: src/muuli_wdr.cpp
 msgid "Use smart LowID check on connect"
-msgstr ""
+msgstr "השתמש בבדיקת LowID חכמה בעת התחברות"
 
 #: src/muuli_wdr.cpp
 msgid "Safe connect"
-msgstr ""
+msgstr "התחברות בטוחה"
 
 #: src/muuli_wdr.cpp
 msgid "Autoconnect to servers in static list only"
-msgstr ""
+msgstr "התחבר אוטומטית רק לשרתים ברשימה הקבועה"
 
 #: src/muuli_wdr.cpp
 msgid "Set manually added servers to High Priority"
-msgstr ""
+msgstr "הגדר שרתים שנוספו ידנית לעדיפות גבוהה"
 
 #: src/muuli_wdr.cpp
 msgid "Add files to download in pause mode"
-msgstr ""
+msgstr "הוסף קבצים להורדה במצב מושהה"
 
 #: src/muuli_wdr.cpp
 msgid "Add files to download with auto priority"
-msgstr ""
+msgstr "הוסף קבצים להורדה עם עדיפות אוטומטית"
 
 #: src/muuli_wdr.cpp
 msgid "Try to download first and last chunks first"
-msgstr ""
+msgstr "נסה להוריד תחילה את החלקים הראשון והאחרון"
 
 #: src/muuli_wdr.cpp
 msgid "Endgame mode: rotate to faster sources for the final blocks"
-msgstr ""
+msgstr "מצב סיום (Endgame): עבור למקורות מהירים יותר עבור הבלוקים האחרונים"
 
 #: src/muuli_wdr.cpp
 msgid "Start next paused file when a file completes"
-msgstr ""
+msgstr "התחל את הקובץ המושהה הבא כאשר קובץ מסתיים"
 
 #: src/muuli_wdr.cpp
 msgid "From the same category"
-msgstr ""
+msgstr "מאותה קטיגוריה"
 
 #: src/muuli_wdr.cpp
 msgid "In alphabetic order"
-msgstr ""
+msgstr "בסדר אלפביתי"
 
 #: src/muuli_wdr.cpp
 msgid "Preallocate disk space for new files"
-msgstr ""
+msgstr "הקצה מראש שטח דיסק לקבצים חדשים"
 
 #: src/muuli_wdr.cpp
 msgid "For new files preallocates disk space for the whole file, thus reduces fragmentation"
-msgstr ""
+msgstr "עבור קבצים חדשים מקצה מראש שטח דיסק עבור הקובץ כולו, ובכך מפחית פיצול"
 
 #: src/muuli_wdr.cpp
 msgid "Create new files as sparse files"
-msgstr ""
+msgstr "צור קבצים חדשים כקבצים דלילים"
 
 #: src/muuli_wdr.cpp
 msgid "Sparse part files only occupy disk space for the parts already downloaded, so free space is used up gradually as the file fills in. Turn this off to use an ordinary file instead - useful where sparse files are unsupported or slow, or where backup/de-duplication tools handle them badly. Applies only when the core runs on Windows; on Linux and macOS part files are sparse anyway and this setting has no effect."
-msgstr ""
+msgstr "קבצי-חלקים דלילים תופסים שטח דיסק רק עבור החלקים שכבר הורדו, כך ששטח פנוי מתמלא בהדרגה עם השלמת הקובץ. כבה אפשרות זו כדי להשתמש בקובץ רגיל במקום - שימושי במקומות שבהם קבצים דלילים אינם נתמכים או איטיים, או שבהם כלי גיבוי/דה-דופליקציה מתמודדים איתם בצורה גרועה. חל רק כאשר הליבה פועלת על Windows; ב-Linux וב-macOS קבצי-חלקים הם דלילים בכל מקרה, ולהגדרה זו אין השפעה."
 
 #: src/muuli_wdr.cpp
 msgid "Stop downloads when free disk space reaches "
-msgstr ""
+msgstr "עצור הורדות כאשר שטח הדיסק הפנוי מגיע ל- "
 
 #: src/muuli_wdr.cpp
 msgid "Select this if you want aMule to check your disk space"
-msgstr ""
+msgstr "בחר באפשרות זו אם ברצונך ש-aMule יבדוק את שטח הדיסק שלך"
 
 #: src/muuli_wdr.cpp
 msgid "Enter here the min disk space desired."
-msgstr ""
+msgstr "הזן כאן את שטח הדיסק המינימלי הרצוי."
 
 #: src/muuli_wdr.cpp
 msgid "Save 10 sources on rare files (< 20 sources)"
-msgstr ""
+msgstr "שמור 10 מקורות בקבצים נדירים (< 20 מקורות)"
 
 #: src/muuli_wdr.cpp src/Statistics.cpp
 msgid "Uploads"
@@ -4705,77 +4722,79 @@ msgstr "ההעלאות"
 
 #: src/muuli_wdr.cpp
 msgid "Add new shared files with auto priority"
-msgstr ""
+msgstr "הוסף קבצים משותפים חדשים עם עדיפות אוטומטית"
 
 #: src/muuli_wdr.cpp
 msgid "Intelligent Corruption Handling (I.C.H.)"
-msgstr ""
+msgstr "טיפול חכם בנתונים פגומים (I.C.H.)"
 
 #: src/muuli_wdr.cpp
 msgid "Enable"
-msgstr ""
+msgstr "הפעל"
 
 #: src/muuli_wdr.cpp
 msgid "Advanced I.C.H. trusts every hash (not recommended)"
-msgstr ""
+msgstr "I.C.H. מתקדם סומך על כל גיבוב (לא מומלץ)"
 
 #: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
 msgid "Media metadata extraction"
-msgstr ""
+msgstr "חילוץ מטא-נתוני מדיה"
 
 #: src/muuli_wdr.cpp
 msgid "Extract length / bitrate / codec from shared audio and video files"
-msgstr ""
+msgstr "חלץ אורך / קצב סיביות / קודק מקבצי אודיו ווידאו משותפים"
 
 #: src/muuli_wdr.cpp
 msgid "When enabled, aMule runs ffprobe on each shared media file to fill in the Length / Bitrate / Codec columns other clients see when they find the file in a search. Requires ffmpeg (the ffprobe binary) to be installed."
-msgstr ""
+msgstr "כאשר האפשרות מופעלת, aMule מריץ ffprobe על כל קובץ מדיה משותף כדי למלא את עמודות האורך / קצב הסיביות / הקודק שלקוחות אחרים רואים כשהם מוצאים את הקובץ בחיפוש. דורש התקנה של ffmpeg (קובץ ההפעלה ffprobe)."
 
 #: src/muuli_wdr.cpp
 msgid "Path to ffprobe:"
-msgstr ""
+msgstr "נתיב ל-ffprobe:"
 
 #: src/muuli_wdr.cpp
 msgid "Full path to the ffprobe binary. Leave empty to have aMule auto-detect it on startup."
-msgstr ""
+msgstr "הנתיב המלא לקובץ ההפעלה ffprobe. השאר ריק כדי ש-aMule יזהה אותו אוטומטית בהפעלה."
 
 #: src/muuli_wdr.cpp
 msgid "Detect"
-msgstr ""
+msgstr "זהה"
 
 #: src/muuli_wdr.cpp
 msgid "Search the standard install locations for an ffprobe binary and fill the path field."
-msgstr ""
+msgstr "חפש את מיקומי ההתקנה הסטנדרטיים עבור קובץ הפעלה של ffprobe ומלא את שדה הנתיב."
 
 #: src/muuli_wdr.cpp
 msgid ""
 "Completed downloads are stored here. All files in this folder are automatically shared with other peers.\n"
 "If this folder also holds files you don't want to share, point it at an aMule-only sub-folder."
 msgstr ""
+"הורדות שהושלמו נשמרות כאן. כל הקבצים בתיקייה זו משותפים אוטומטית עם עמיתים אחרים.\n"
+"אם תיקייה זו מכילה גם קבצים שאינך רוצה לשתף, הפנה אותה לתת-תיקייה ייעודית ל-aMule בלבד."
 
 #: src/muuli_wdr.cpp
 msgid "Pick the folder where completed downloads will be stored. All files in that folder will be shared with other peers."
-msgstr ""
+msgstr "בחר את התיקייה שבה יישמרו ההורדות שהושלמו. כל הקבצים באותה תיקייה ישותפו עם עמיתים אחרים."
 
 #: src/muuli_wdr.cpp
 msgid "Shared folders"
-msgstr ""
+msgstr "תיקיות משותפות"
 
 #: src/muuli_wdr.cpp
 msgid "(Folders shared by the core. Enter a path to add one.)"
-msgstr ""
+msgstr "(תיקיות המשותפות על ידי הליבה. הזן נתיב כדי להוסיף אחת.)"
 
 #: src/muuli_wdr.cpp
 msgid "Absolute path of a folder on the core's machine, e.g. /home/user/shared"
-msgstr ""
+msgstr "נתיב מוחלט לתיקייה במחשב של הליבה, למשל /home/user/shared"
 
 #: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
 msgid "Recursive"
-msgstr ""
+msgstr "רקורסיבי"
 
 #: src/muuli_wdr.cpp
 msgid "Share every sub-folder underneath this one, including ones created later."
-msgstr ""
+msgstr "שתף כל תיקיית משנה מתחת לתיקייה זו, כולל כאלה שייווצרו בעתיד."
 
 #: src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Remove"
@@ -4783,19 +4802,19 @@ msgstr "הסר"
 
 #: src/muuli_wdr.cpp
 msgid "(Right click on folder icon for recursive share)"
-msgstr ""
+msgstr "(לחיצה ימנית על סמל התיקייה לשיתוף רקורסיבי)"
 
 #: src/muuli_wdr.cpp
 msgid "Share hidden files"
-msgstr ""
+msgstr "שתף קבצים מוסתרים"
 
 #: src/muuli_wdr.cpp
 msgid "Automatically rescan shared folders for changes"
-msgstr ""
+msgstr "סרוק מחדש אוטומטית את התיקיות המשותפות לזיהוי שינויים"
 
 #: src/muuli_wdr.cpp
 msgid "Follow symbolic links in shared folders"
-msgstr ""
+msgstr "עקוב אחר קישורים סימבוליים בתיקיות משותפות"
 
 #: src/muuli_wdr.cpp
 msgid "Exclude files and folders matching:"
@@ -4807,7 +4826,7 @@ msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Patterns are regular expressions"
-msgstr ""
+msgstr "התבניות הן ביטויים רגולריים"
 
 #: src/muuli_wdr.cpp
 msgid "When set, the whole field is one regular expression: '|' is alternation, and '*' and '?' take their regular-expression meaning rather than the wildcard one. When unset, it is a list of '|'-separated wildcards."
@@ -4845,225 +4864,223 @@ msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Graphs"
-msgstr ""
+msgstr "גרפים"
 
 #: src/muuli_wdr.cpp
 msgid "Update delay : 5 secs"
-msgstr ""
+msgstr "השהיית עדכון: 5 שניות"
 
 #: src/muuli_wdr.cpp
 msgid "Time for average graph: 100 mins"
-msgstr ""
+msgstr "זמן לגרף ממוצע: 100 דקות"
 
 #: src/muuli_wdr.cpp
 msgid "Connections Graph Scale: 100 "
-msgstr ""
+msgstr "קנה מידה של גרף חיבורים: 100 "
 
 #: src/muuli_wdr.cpp
 msgid "Download graph scale:"
-msgstr ""
+msgstr "קנה מידה של גרף הורדות:"
 
 #: src/muuli_wdr.cpp
 msgid "Upload graph scale:"
-msgstr ""
+msgstr "קנה מידה של גרף העלאות:"
 
 #: src/muuli_wdr.cpp
 msgid "Colors: "
-msgstr ""
+msgstr "צבעים: "
 
 #: src/muuli_wdr.cpp
 msgid "Background"
-msgstr ""
+msgstr "רקע"
 
 #: src/muuli_wdr.cpp
 msgid "Grid"
-msgstr ""
+msgstr "רשת"
 
 #: src/muuli_wdr.cpp
 msgid "Download current"
-msgstr ""
+msgstr "הורדה נוכחית"
 
 #: src/muuli_wdr.cpp
 msgid "Download running average"
-msgstr ""
+msgstr "ממוצע נע של הורדה"
 
 #: src/muuli_wdr.cpp
 msgid "Download session average"
-msgstr ""
+msgstr "ממוצע הורדה (הרצה נוכחית)"
 
 #: src/muuli_wdr.cpp
 msgid "Upload current"
-msgstr ""
+msgstr "העלאה נוכחית"
 
 #: src/muuli_wdr.cpp
 msgid "Upload running average"
-msgstr ""
+msgstr "ממוצע נע של העלאה"
 
 #: src/muuli_wdr.cpp
 msgid "Upload session average"
-msgstr ""
+msgstr "ממוצע העלאה (הרצה נוכחית)"
 
 #: src/muuli_wdr.cpp src/StatisticsDlg.cpp
 msgid "Active connections"
-msgstr ""
+msgstr "חיבורים פעילים"
 
 #: src/muuli_wdr.cpp
 msgid "Systray Icon Speed Bar"
-msgstr ""
+msgstr "סרגל מהירות בסמל מגש המערכת"
 
 #: src/muuli_wdr.cpp
 msgid "Kad-nodes current"
-msgstr ""
+msgstr "צמתי Kad נוכחיים"
 
 #: src/muuli_wdr.cpp
 msgid "Kad-nodes running"
-msgstr ""
+msgstr "צמתי Kad ממוצע נע"
 
 #: src/muuli_wdr.cpp
 msgid "Kad-nodes session"
-msgstr ""
+msgstr "צמתי Kad (הרצה נוכחית)"
 
 #: src/muuli_wdr.cpp
 msgid "Select"
-msgstr ""
+msgstr "בחר"
 
 #: src/muuli_wdr.cpp
 msgid "Tree"
-msgstr ""
+msgstr "עץ"
 
 #: src/muuli_wdr.cpp
 msgid "Number of Client Versions shown (0=unlimited)"
-msgstr ""
+msgstr "מספר גרסאות לקוח מוצגות (0=ללא הגבלה)"
 
 #: src/muuli_wdr.cpp
 msgid "!!! WARNING !!!"
-msgstr ""
+msgstr "!!! אזהרה !!!"
 
 #: src/muuli_wdr.cpp
 msgid "Max new connections / 5 secs"
-msgstr ""
+msgstr "מקסימום חיבורים חדשים / 5 שניות"
 
 #: src/muuli_wdr.cpp
 msgid "Concurrent Kad source lookups"
-msgstr ""
+msgstr "חיפושי מקורות Kad מקבילים"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Kad source re-search interval (minutes)"
-msgstr "קצב עדכון התקופתי של ה FTP בדקות"
+msgstr "מרווח חיפוש חוזר של מקורות Kad (דקות)"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Source re-ask interval (minutes)"
-msgstr "קצב עדכון התקופתי של ה FTP בדקות"
+msgstr "מרווח בקשה חוזרת של מקורות (דקות)"
 
 #: src/muuli_wdr.cpp
 msgid "File Buffer Size: 240000 bytes"
-msgstr ""
+msgstr "גודל מאגר קובץ: 240000 בתים"
 
 #: src/muuli_wdr.cpp
 msgid "Use MMAP: memory-mapped file access (lower memory use)"
-msgstr ""
+msgstr "השתמש ב-MMAP: גישה לקבצים ממופים לזיכרון (שימוש נמוך יותר בזיכרון)"
 
 #: src/muuli_wdr.cpp
 msgid "Maps part files into memory instead of buffering them on the heap, lowering the process memory footprint. May reduce download speed on some disks; best for memory-constrained or upload-heavy hosts."
-msgstr ""
+msgstr "ממפה קבצי-חלקים לזיכרון במקום לאגור אותם בערימה (heap), ומקטין את טביעת הרגל של הזיכרון של התהליך. עלול להאט את מהירות ההורדה בכוננים מסוימים; מתאים במיוחד למארחים עם זיכרון מוגבל או עומס העלאה גבוה."
 
 #: src/muuli_wdr.cpp
 msgid "Upload Queue Size: 5000 clients"
-msgstr ""
+msgstr "גודל תור העלאה: 5000 לקוחות"
 
 #: src/muuli_wdr.cpp
 msgid "Server connection refresh interval: Disable"
-msgstr ""
+msgstr "מרווח רענון חיבור שרת: מנוטרל"
 
 #: src/muuli_wdr.cpp
 msgid "Disable computer's timed standby mode"
-msgstr ""
+msgstr "נטרל מצב המתנה מתוזמן של המחשב"
 
 #: src/muuli_wdr.cpp
 msgid "Skin to use: "
-msgstr ""
+msgstr "ערכת נושא לשימוש: "
 
 #: src/muuli_wdr.cpp
 msgid "Show \"Fast eD2k Links Handler\" in every window."
-msgstr ""
+msgstr "הראה \"מטפל קישורי eD2k מהיר\" בכל חלון."
 
 #: src/muuli_wdr.cpp
 msgid "Show extended info on categories tabs"
-msgstr ""
+msgstr "הראה מידע מורחב בכרטיסיות הקטיגוריות"
 
 #: src/muuli_wdr.cpp
 msgid "Show application version on title"
-msgstr ""
+msgstr "הראה את גרסת היישום בכותרת"
 
 #: src/muuli_wdr.cpp
 msgid "Show transfer rates on title"
-msgstr ""
+msgstr "הראה את קצבי ההעברה בכותרת"
 
 #: src/muuli_wdr.cpp
 msgid "Before application name"
-msgstr ""
+msgstr "לפני שם היישום"
 
 #: src/muuli_wdr.cpp
 msgid "After application name"
-msgstr ""
+msgstr "אחרי שם היישום"
 
 #: src/muuli_wdr.cpp
 msgid "Show overhead bandwidth"
-msgstr ""
+msgstr "הראה רוחב פס תקורה"
 
 #: src/muuli_wdr.cpp
 msgid "Vertical toolbar orientation"
-msgstr ""
+msgstr "כיוון אנכי לסרגל הכלים"
 
 #: src/muuli_wdr.cpp
 msgid "Live column sorting (auto-reorder rows as their values change)"
-msgstr ""
+msgstr "מיון עמודות בזמן אמת (סידור מחדש אוטומטי של השורות עם שינוי הערכים)"
 
 #: src/muuli_wdr.cpp
 msgid "Download Queue Files"
-msgstr ""
+msgstr "קבצים בתור הורדה"
 
 #: src/muuli_wdr.cpp
 msgid "Show progress percentage"
-msgstr ""
+msgstr "הראה אחוז התקדמות"
 
 #: src/muuli_wdr.cpp
 msgid "Show progress bar"
-msgstr ""
+msgstr "הראה סרגל התקדמות"
 
 #: src/muuli_wdr.cpp
 msgid "Flat"
-msgstr ""
+msgstr "שטוח"
 
 #: src/muuli_wdr.cpp
 msgid "Round"
-msgstr ""
+msgstr "עגול"
 
 #: src/muuli_wdr.cpp
 msgid "External Connection Parameters"
-msgstr ""
+msgstr "פרמטרים לחיבור חיצוני"
 
 #: src/muuli_wdr.cpp
 msgid "Accept external connections"
-msgstr ""
+msgstr "קבל חיבורים חיצוניים"
 
 #: src/muuli_wdr.cpp
 msgid "IP of the listening interface:"
-msgstr ""
+msgstr "IP של ממשק ההאזנה:"
 
 #: src/muuli_wdr.cpp
 msgid "Enter here a valid ip in the a.b.c.d format for the listening EC interface. An empty field or 0.0.0.0 will mean any interface."
-msgstr ""
+msgstr "הזן כאן כתובת IP תקינה בפורמט a.b.c.d עבור ממשק ההאזנה של EC. שדה ריק או 0.0.0.0 יתפרשו ככל ממשק."
 
 #: src/muuli_wdr.cpp
 msgid "TCP port:"
-msgstr ""
+msgstr "מבואת TCP:"
 
 #: src/muuli_wdr.cpp
 msgid "Enable UPnP port forwarding on the EC port"
-msgstr ""
+msgstr "הפעל העברת מבואות UPnP על מבואת ה-EC"
 
 #: src/muuli_wdr.cpp src/utils/wxCas/src/wxcasprefs.cpp
 msgid "Password"
@@ -5075,97 +5092,91 @@ msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "aMule API server parameters"
-msgstr ""
+msgstr "פרמטרים של שרת ה-API של aMule"
 
 #: src/muuli_wdr.cpp
 msgid "Run amuleapi (REST API) on startup"
-msgstr ""
+msgstr "הרץ את amuleapi (REST API) בעת ההפעלה"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "HTTP port:"
-msgstr "מבואת UPnP"
+msgstr "מבואת HTTP:"
 
 #: src/muuli_wdr.cpp
 msgid "The interface amuleapi's HTTP server listens on. 127.0.0.1 (default) accepts only local connections; use 0.0.0.0 or a specific IP to expose it to other hosts (set an admin password below)."
-msgstr ""
+msgstr "הממשק שעליו מאזין שרת ה-HTTP של amuleapi. 127.0.0.1 (ברירת מחדל) מקבל רק חיבורים מקומיים; השתמש ב-0.0.0.0 או בכתובת IP מסוימת כדי לחשוף אותו למארחים אחרים (הגדר סיסמת מנהל למטה)."
 
 #: src/muuli_wdr.cpp
 msgid "Type a password to set or change it. Stored passwords cannot be shown, so leaving this empty keeps the current one."
-msgstr ""
+msgstr "הקלד סיסמא כדי להגדיר או לשנות אותה. לא ניתן להציג סיסמאות שמורות, כך שהשארת שדה זה ריק תשמור על הסיסמא הנוכחית."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Admin password"
-msgstr "בודק סיסמא\n"
+msgstr "סיסמת מנהל"
 
 #: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "A password is set."
-msgstr "בודק סיסמא\n"
+msgstr "סיסמא מוגדרת."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Enable guest access"
-msgstr "מנע גישה מאורחים"
+msgstr "אפשר גישת אורח"
 
 #: src/muuli_wdr.cpp
 msgid "Guest sessions may read status and listings but cannot change anything. Turning this off clears the stored guest password."
-msgstr ""
+msgstr "הפעלות אורח יכולות לקרוא סטטוס ורשימות אך אינן יכולות לשנות דבר. כיבוי אפשרות זו מוחק את סיסמת האורח השמורה."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Guest password"
-msgstr "בודק סיסמא\n"
+msgstr "סיסמת אורח"
 
 #: src/muuli_wdr.cpp
 msgid "Web server parameters"
-msgstr ""
+msgstr "פרמטרים של שרת האינטרנט"
 
 #: src/muuli_wdr.cpp
 msgid "Run webserver on startup (deprecated)"
-msgstr ""
+msgstr "הרץ שרת אינטרנט בעת ההפעלה (מיושן)"
 
 #: src/muuli_wdr.cpp
 msgid "Web template"
-msgstr ""
+msgstr "תבנית אינטרנט"
 
 #: src/muuli_wdr.cpp
 msgid "Full rights password"
-msgstr ""
+msgstr "סיסמת הרשאות מלאות"
 
 #: src/muuli_wdr.cpp
 msgid "Enable Low rights User"
-msgstr ""
+msgstr "הפעל משתמש עם הרשאות מוגבלות"
 
 #: src/muuli_wdr.cpp
 msgid "Low rights password"
-msgstr ""
+msgstr "סיסמת הרשאות מוגבלות"
 
 #: src/muuli_wdr.cpp
 msgid "Enable UPnP port forwarding of the web server port"
-msgstr ""
+msgstr "הפעל העברת מבואות UPnP עבור מבואת שרת האינטרנט"
 
 #: src/muuli_wdr.cpp
 msgid "Web server UPnP TCP port (Optional)"
-msgstr ""
+msgstr "מבואת TCP של UPnP לשרת האינטרנט (אופציונלי)"
 
 #: src/muuli_wdr.cpp
 msgid "Page Refresh Time (in secs)"
-msgstr ""
+msgstr "זמן רענון דף (בשניות)"
 
 #: src/muuli_wdr.cpp
 msgid "Enable Gzip compression"
-msgstr ""
+msgstr "הפעל דחיסת Gzip"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Reset page to defaults"
-msgstr "ברירת מחדל של המערכת"
+msgstr "אפס דף לברירות המחדל"
 
 #: src/muuli_wdr.cpp
 msgid "Reset the settings on the current page to their default values."
-msgstr ""
+msgstr "אפס את ההגדרות בדף הנוכחי לערכי ברירת המחדל שלהן."
 
 #: src/muuli_wdr.cpp src/ServerWnd.cpp
 msgid "OK"
@@ -5173,11 +5184,11 @@ msgstr "בסדר"
 
 #: src/muuli_wdr.cpp
 msgid "Click here to apply any changes made to the preferences."
-msgstr ""
+msgstr "לחץ כאן כדי להחיל את השינויים שבוצעו בהעדפות."
 
 #: src/muuli_wdr.cpp
 msgid "Reset any changes made to the preferences."
-msgstr ""
+msgstr "אפס את כל השינויים שבוצעו בהעדפות."
 
 #: src/muuli_wdr.cpp
 #, fuzzy
@@ -5189,9 +5200,8 @@ msgid "Change priority for new assigned files"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Don't change"
-msgstr "- מבואת UDP שונתה \n"
+msgstr "אל תשנה"
 
 #: src/muuli_wdr.cpp
 msgid "Select color for this Category (currently selected)"
@@ -5199,27 +5209,27 @@ msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Click this button to reset the log."
-msgstr ""
+msgstr "לחץ על כפתור זה כדי לאפס את היומן."
 
 #: src/muuli_wdr.cpp
 msgid "Click on this button to update the servers list from URL ..."
-msgstr ""
+msgstr "לחץ על כפתור זה כדי לעדכן את רשימת השרתים מכתובת URL..."
 
 #: src/muuli_wdr.cpp
 msgid "Server list"
-msgstr ""
+msgstr "רשימת שרתים"
 
 #: src/muuli_wdr.cpp
 msgid "Enter the url to a server.met file here and press the button to the left to update the list of known servers."
-msgstr ""
+msgstr "הזן כאן את כתובת ה-URL לקובץ server.met ולחץ על הכפתור משמאל כדי לעדכן את רשימת השרתים הידועים."
 
 #: src/muuli_wdr.cpp
 msgid "Add server manually: Name"
-msgstr ""
+msgstr "הוסף שרת ידנית: שם"
 
 #: src/muuli_wdr.cpp
 msgid "Enter the name of the new server here"
-msgstr ""
+msgstr "הזן כאן את שם השרת החדש"
 
 #: src/muuli_wdr.cpp src/ServerWnd.cpp
 msgid "IP:Port"
@@ -5227,47 +5237,47 @@ msgstr "אי.פי.:מבואה"
 
 #: src/muuli_wdr.cpp
 msgid "Enter the IP of the server here, using the x.x.x.x format."
-msgstr ""
+msgstr "הזן כאן את כתובת ה-IP של השרת, בפורמט x.x.x.x."
 
 #: src/muuli_wdr.cpp
 msgid "Enter the port of the server here."
-msgstr ""
+msgstr "הזן כאן את המבואה של השרת."
 
 #: src/muuli_wdr.cpp
 msgid "Add manually a server (fill fields to the left before) ..."
-msgstr ""
+msgstr "הוסף שרת ידנית (מלא תחילה את השדות משמאל)..."
 
 #: src/muuli_wdr.cpp
 msgid "aMule Log"
-msgstr ""
+msgstr "יומן aMule"
 
 #: src/muuli_wdr.cpp
 msgid "Server Info"
-msgstr ""
+msgstr "מידע שרת"
 
 #: src/muuli_wdr.cpp
 msgid "ED2K Info"
-msgstr ""
+msgstr "מידע ED2K"
 
 #: src/muuli_wdr.cpp
 msgid "Kad Info"
-msgstr ""
+msgstr "מידע Kad"
 
 #: src/muuli_wdr.cpp
 msgid "Click on this button to update the nodes list from URL ..."
-msgstr ""
+msgstr "לחץ על כפתור זה כדי לעדכן את רשימת הצמתים מכתובת URL..."
 
 #: src/muuli_wdr.cpp
 msgid "Nodes (0)"
-msgstr ""
+msgstr "צמתים (0)"
 
 #: src/muuli_wdr.cpp
 msgid "Enter the url to a nodes.dat file here and press the button to the left to update the list of known nodes."
-msgstr ""
+msgstr "הזן כאן את כתובת ה-URL לקובץ nodes.dat ולחץ על הכפתור משמאל כדי לעדכן את רשימת הצמתים הידועים."
 
 #: src/muuli_wdr.cpp
 msgid "Nodes stats"
-msgstr ""
+msgstr "סטטיסטיקת צמתים"
 
 #: src/muuli_wdr.cpp
 #, fuzzy
@@ -5280,177 +5290,175 @@ msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Use Secure User Identification"
-msgstr ""
+msgstr "השתמש בזיהוי משתמש מאובטח"
 
 #: src/muuli_wdr.cpp
 msgid "It is recommended to enable this option. You will not receive credits if SUI is not enabled."
-msgstr ""
+msgstr "מומלץ להפעיל אפשרות זו. לא תקבל קרדיטים אם SUI אינו מופעל."
 
 #: src/muuli_wdr.cpp
 msgid "Protocol Obfuscation"
-msgstr ""
+msgstr "ערפול פרוטוקול"
 
 #: src/muuli_wdr.cpp
 msgid "Support Protocol Obfuscation"
-msgstr ""
+msgstr "תמיכה בערפול פרוטוקול"
 
 #: src/muuli_wdr.cpp
 msgid "This option enabled Protocol Obfuscation, and makes aMule accept obfuscated connections from other clients."
-msgstr ""
+msgstr "אפשרות זו מפעילה ערפול פרוטוקול, וגורמת ל-aMule לקבל חיבורים מעורפלים מלקוחות אחרים."
 
 #: src/muuli_wdr.cpp
 msgid "Use obfuscation for outgoing connections"
-msgstr ""
+msgstr "השתמש בערפול לחיבורים יוצאים"
 
 #: src/muuli_wdr.cpp
 msgid "This option makes aMule use Protocol Obfuscation when connecting other clients/servers."
-msgstr ""
+msgstr "אפשרות זו גורמת ל-aMule להשתמש בערפול פרוטוקול בעת התחברות ללקוחות/שרתים אחרים."
 
 #: src/muuli_wdr.cpp
 msgid "Accept only obfuscated connections"
-msgstr ""
+msgstr "קבל רק חיבורים מעורפלים"
 
 #: src/muuli_wdr.cpp
 msgid "This option makes aMule only accept obfuscated connections. You will have less sources, but all your traffic will be obfuscated"
-msgstr ""
+msgstr "אפשרות זו גורמת ל-aMule לקבל רק חיבורים מעורפלים. יהיו לך פחות מקורות, אך כל התעבורה שלך תהיה מעורפלת"
 
 #: src/muuli_wdr.cpp
 msgid "Everybody"
-msgstr ""
+msgstr "כולם"
 
 #: src/muuli_wdr.cpp
 msgid "No one"
-msgstr ""
+msgstr "אף אחד"
 
 #: src/muuli_wdr.cpp
 msgid "Who can see my shared files:"
-msgstr ""
+msgstr "מי יכול לראות את הקבצים המשותפים שלי:"
 
 #: src/muuli_wdr.cpp
 msgid "Select who can request to view a list of your shared files."
-msgstr ""
+msgstr "בחר מי יכול לבקש לצפות ברשימת הקבצים המשותפים שלך."
 
 #: src/muuli_wdr.cpp
 msgid "IP-Filtering"
-msgstr ""
+msgstr "סינון IP"
 
 #: src/muuli_wdr.cpp
 msgid "Filter clients"
-msgstr ""
+msgstr "סנן לקוחות"
 
 #: src/muuli_wdr.cpp
 msgid "Enable filtering of the client IPs defined in the file ~/.aMule/ipfilter.dat."
-msgstr ""
+msgstr "הפעל סינון של כתובות IP של לקוחות המוגדרות בקובץ ~/.aMule/ipfilter.dat."
 
 #: src/muuli_wdr.cpp
 msgid "Filter servers"
-msgstr ""
+msgstr "סנן שרתים"
 
 #: src/muuli_wdr.cpp
 msgid "Enable filtering of the server IPs defined in the file ~/.aMule/ipfilter.dat."
-msgstr ""
+msgstr "הפעל סינון של כתובות IP של שרתים המוגדרות בקובץ ~/.aMule/ipfilter.dat."
 
 #: src/muuli_wdr.cpp
 msgid "Reload List"
-msgstr ""
+msgstr "טען מחדש את הרשימה"
 
 #: src/muuli_wdr.cpp
 msgid "Reload the list of IPs to filter from the file ~/.aMule/ipfilter.dat"
-msgstr ""
+msgstr "טען מחדש את רשימת כתובות ה-IP לסינון מהקובץ ~/.aMule/ipfilter.dat"
 
 #: src/muuli_wdr.cpp
 msgid "URL:"
-msgstr ""
+msgstr "URL:"
 
 #: src/muuli_wdr.cpp
 msgid "Update now"
-msgstr ""
+msgstr "עדכן עכשיו"
 
 #: src/muuli_wdr.cpp
 msgid "Auto-update ipfilter at startup"
-msgstr ""
+msgstr "עדכן אוטומטית את ipfilter בהפעלה"
 
 #: src/muuli_wdr.cpp
 msgid "Filtering Level:"
-msgstr ""
+msgstr "רמת סינון:"
 
 #: src/muuli_wdr.cpp
 msgid "Always filter LAN IPs"
-msgstr ""
+msgstr "סנן תמיד כתובות IP של רשת מקומית"
 
 #: src/muuli_wdr.cpp
 msgid "Paranoid handling of non-matching IPs"
-msgstr ""
+msgstr "טיפול פרנואידי בכתובות IP שאינן תואמות"
 
 #: src/muuli_wdr.cpp
 msgid "Rejects a packet when its source IP differs from the IP the client claims (an anti-spoofing check). Disable only if it causes connection problems."
-msgstr ""
+msgstr "דוחה חבילה כאשר כתובת ה-IP של המקור שלה שונה מכתובת ה-IP שהלקוח טוען לה (בדיקת אנטי-זיוף). נטרל רק אם הדבר גורם לבעיות חיבור."
 
 #: src/muuli_wdr.cpp
 msgid "Use system-wide ipfilter.dat if available"
-msgstr ""
+msgstr "השתמש בקובץ ipfilter.dat כלל-מערכתי אם זמין"
 
 #: src/muuli_wdr.cpp
 msgid "If there's no local ipfilter.dat found, allow usage of a system-wide ipfilter file."
-msgstr ""
+msgstr "אם לא נמצא קובץ ipfilter.dat מקומי, אפשר שימוש בקובץ ipfilter כלל-מערכתי."
 
 #: src/muuli_wdr.cpp
 msgid "Enable Online-Signature"
-msgstr ""
+msgstr "הפעל חתימה מקוונת"
 
 #: src/muuli_wdr.cpp
 msgid "Enables the writing of the OS file, which can be used by external apps to create signatures and the like."
-msgstr ""
+msgstr "מפעיל את כתיבת קובץ החתימה המקוונת, שבו יכולים להשתמש יישומים חיצוניים ליצירת חתימות וכדומה."
 
 #: src/muuli_wdr.cpp
 msgid "Update Frequency (Secs):"
-msgstr ""
+msgstr "תדירות עדכון (שניות):"
 
 #: src/muuli_wdr.cpp
 msgid "Change the frequency (in seconds) of Online Signature updates."
-msgstr ""
+msgstr "שנה את תדירות (בשניות) עדכוני החתימה המקוונת."
 
 #: src/muuli_wdr.cpp
 msgid "Save online signature file in: "
-msgstr ""
+msgstr "שמור את קובץ החתימה המקוונת ב: "
 
 #: src/muuli_wdr.cpp
 msgid "Click here to select the directory containing the the Online Signature files."
-msgstr ""
+msgstr "לחץ כאן כדי לבחור את התיקייה המכילה את קובצי החתימה המקוונת."
 
 #: src/muuli_wdr.cpp
 msgid "Show country flags for clients"
-msgstr ""
+msgstr "הראה דגלי מדינות עבור לקוחות"
 
 #: src/muuli_wdr.cpp
 msgid "Render the country flag column in the transfers, queue and search views. Requires a valid MMDB GeoIP database (see below)."
-msgstr ""
+msgstr "הצג את עמודת דגל המדינה בתצוגות ההעברות, התור והחיפוש. דורש מסד נתוני GeoIP תקין בפורמט MMDB (ראה למטה)."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Database"
-msgstr "קצב מידע :"
+msgstr "מסד נתונים"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Source:"
-msgstr "מקורות"
+msgstr "מקור:"
 
 #: src/muuli_wdr.cpp
 msgid "DB-IP (free, no account)"
-msgstr ""
+msgstr "DB-IP (חינם, ללא חשבון)"
 
 #: src/muuli_wdr.cpp
 msgid "MaxMind GeoLite2 (free, account required)"
-msgstr ""
+msgstr "MaxMind GeoLite2 (חינם, נדרש חשבון)"
 
 #: src/muuli_wdr.cpp
 msgid "Custom URL"
-msgstr ""
+msgstr "כתובת URL מותאמת אישית"
 
 #: src/muuli_wdr.cpp
 msgid "Choose which provider supplies the GeoIP MMDB database. DB-IP is the default - no account required. MaxMind requires a free account + license key. Use Custom URL to point at any other MMDB host (e.g. a local mirror)."
-msgstr ""
+msgstr "בחר איזה ספק מספק את מסד נתוני GeoIP בפורמט MMDB. DB-IP הוא ברירת המחדל - אינו דורש חשבון. MaxMind דורש חשבון חינמי + מפתח רישיון. השתמש בכתובת URL מותאמת אישית כדי להצביע על כל מארח MMDB אחר (למשל שיקוף מקומי)."
 
 #: src/muuli_wdr.cpp
 msgid ""
@@ -5459,10 +5467,14 @@ msgid ""
 "IP-to-Country data by DB-IP.com - https://db-ip.com\n"
 "License: Creative Commons BY 4.0 - https://creativecommons.org/licenses/by/4.0/"
 msgstr ""
+"אין צורך בהגדרה.\n"
+"\n"
+"נתוני IP-למדינה מאת DB-IP.com - https://db-ip.com\n"
+"רישיון: Creative Commons BY 4.0 - https://creativecommons.org/licenses/by/4.0/"
 
 #: src/muuli_wdr.cpp
 msgid "License key:"
-msgstr ""
+msgstr "מפתח רישיון:"
 
 #: src/muuli_wdr.cpp
 msgid ""
@@ -5473,11 +5485,16 @@ msgid ""
 "License: MaxMind GeoLite2 EULA - https://www.maxmind.com/en/geolite2/eula\n"
 "Requires attribution and account registration; refresh at least every 30 days."
 msgstr ""
+"הירשם לחשבון MaxMind חינמי, ולאחר מכן צור מפתח רישיון:\n"
+"https://www.maxmind.com/en/geolite2/signup\n"
+"\n"
+"מוצר זה כולל נתוני GeoLite2 שנוצרו על ידי MaxMind - https://www.maxmind.com\n"
+"רישיון: MaxMind GeoLite2 EULA - https://www.maxmind.com/en/geolite2/eula\n"
+"דורש ייחוס והרשמת חשבון; רענן לפחות כל 30 יום."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Download URL:"
-msgstr "מוריד: "
+msgstr "כתובת URL להורדה:"
 
 #: src/muuli_wdr.cpp
 msgid ""
@@ -5485,62 +5502,65 @@ msgid ""
 "URL may include credentials (https://user:pass@host/...).\n"
 "License and attribution terms are set by the upstream URL - you are responsible."
 msgstr ""
+"חייבת להצביע על קובץ ‎.mmdb או על ‎.gz / ‎.tar.gz המכיל אחד כזה.\n"
+"כתובת ה-URL עשויה לכלול פרטי גישה (https://user:pass@host/...).\n"
+"תנאי הרישיון והייחוס נקבעים על ידי כתובת ה-URL המקורית - האחריות עליך."
 
 #: src/muuli_wdr.cpp
 msgid "Download the GeoIP database from the selected source."
-msgstr ""
+msgstr "הורד את מסד נתוני GeoIP מהמקור שנבחר."
 
 #: src/muuli_wdr.cpp
 msgid "Auto-update on startup"
-msgstr ""
+msgstr "עדכון אוטומטי בהפעלה"
 
 #: src/muuli_wdr.cpp
 msgid "Re-download the GeoIP database from the selected source every time aMule starts."
-msgstr ""
+msgstr "הורד מחדש את מסד נתוני GeoIP מהמקור שנבחר בכל הפעלה של aMule."
 
 #: src/muuli_wdr.cpp
 msgid "Filter incoming messages (except current chat):"
-msgstr ""
+msgstr "סנן הודעות נכנסות (למעט הצ'אט הנוכחי):"
 
 #: src/muuli_wdr.cpp
 msgid "Filter all messages"
-msgstr ""
+msgstr "סנן את כל ההודעות"
 
 #: src/muuli_wdr.cpp
 msgid "Filter messages from people not on your friend list"
-msgstr ""
+msgstr "סנן הודעות מאנשים שאינם ברשימת החברים שלך"
 
 #: src/muuli_wdr.cpp
 msgid "Filter messages from unknown clients"
-msgstr ""
+msgstr "סנן הודעות מלקוחות לא ידועים"
 
 #: src/muuli_wdr.cpp
 msgid "Filter messages containing (use ',' as separator):"
-msgstr ""
+msgstr "סנן הודעות המכילות (השתמש ב-',' כמפריד):"
 
 #: src/muuli_wdr.cpp
 msgid "add here the words amule should filter and block messages including it"
-msgstr ""
+msgstr "הוסף כאן מילים ש-amule צריך לסנן ולחסום הודעות המכילות אותן"
 
 #: src/muuli_wdr.cpp
 msgid "Show received messages in the log"
-msgstr ""
+msgstr "הראה הודעות שהתקבלו ביומן"
 
 #: src/muuli_wdr.cpp
 msgid "Comments"
-msgstr ""
+msgstr "הערות"
 
 #: src/muuli_wdr.cpp
 msgid "Filter comments containing (use ',' as separator):"
-msgstr ""
+msgstr "סנן הערות המכילות (השתמש ב-',' כמפריד):"
 
 #: src/muuli_wdr.cpp
 msgid "Enable Proxy"
-msgstr ""
+msgstr "הפעל פרוקסי"
 
 #: src/muuli_wdr.cpp
 msgid "Enable/disable proxy support"
-msgstr ""
+msgstr "הפעל/נטרל תמיכה בפרוקסי"
 
 #: src/muuli_wdr.cpp
 #, fuzzy
@@ -5554,7 +5574,7 @@ msgstr "פרוקסי"
 
 #: src/muuli_wdr.cpp
 msgid "The proxy host name"
-msgstr ""
+msgstr "שם המארח של הפרוקסי"
 
 #: src/muuli_wdr.cpp
 #, fuzzy
@@ -5563,35 +5583,35 @@ msgstr "פרוקסי"
 
 #: src/muuli_wdr.cpp
 msgid "The proxy port"
-msgstr ""
+msgstr "המבואה של הפרוקסי"
 
 #: src/muuli_wdr.cpp
 msgid "Enable authentication"
-msgstr ""
+msgstr "הפעל אימות"
 
 #: src/muuli_wdr.cpp
 msgid "Enable/disable username/password authentication"
-msgstr ""
+msgstr "הפעל/נטרל אימות באמצעות שם משתמש/סיסמא"
 
 #: src/muuli_wdr.cpp
 msgid "The username to use to connect to the proxy"
-msgstr ""
+msgstr "שם המשתמש לשימוש בעת התחברות לפרוקסי"
 
 #: src/muuli_wdr.cpp
 msgid "The password to use to connect to the proxy"
-msgstr ""
+msgstr "הסיסמא לשימוש בעת התחברות לפרוקסי"
 
 #: src/muuli_wdr.cpp
 msgid "Connect to:"
-msgstr ""
+msgstr "התחבר אל:"
 
 #: src/muuli_wdr.cpp
 msgid "Login to remote amule"
-msgstr ""
+msgstr "התחבר ל-amule מרוחק"
 
 #: src/muuli_wdr.cpp
 msgid "Remember those settings"
-msgstr ""
+msgstr "זכור הגדרות אלה"
 
 #: src/muuli_wdr.cpp
 #, fuzzy
@@ -5599,22 +5619,20 @@ msgid "Encrypt the connection (recommended)"
 msgstr "חיבור חיצוני נסגר."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Force ZLIB compression"
-msgstr "השמתש בדחיסת gzip"
+msgstr "כפה דחיסת ZLIB"
 
 #: src/muuli_wdr.cpp
 msgid "Enable Verbose Debug-Logging."
-msgstr ""
+msgstr "הפעל רישום ניפוי שגיאות מפורט."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Only to Logfile"
-msgstr "&תפתח את הקובץ"
+msgstr "רק לקובץ יומן"
 
 #: src/muuli_wdr.cpp
 msgid "Message Categories:"
-msgstr ""
+msgstr "קטיגוריות הודעות:"
 
 #: src/muuli_wdr.cpp src/PartFileConvertDlg.cpp
 msgid "Waiting..."
@@ -5622,52 +5640,47 @@ msgstr "ממתין..."
 
 #: src/muuli_wdr.cpp
 msgid "Add imports"
-msgstr ""
+msgstr "הוסף ייבואים"
 
 #: src/muuli_wdr.cpp
 msgid "Retry selected"
-msgstr ""
+msgstr "נסה שוב את הנבחרים"
 
 #: src/muuli_wdr.cpp
 msgid "Remove selected"
-msgstr ""
+msgstr "הסר את הנבחרים"
 
 #: src/muuli_wdr.cpp
 msgid "Event Types"
-msgstr ""
+msgstr "סוגי אירועים"
 
 #: src/muuli_wdr.cpp
 msgid "Statistics and queued clients for selected file(s) : Session / All time"
-msgstr ""
+msgstr "סטטיסטיקה ולקוחות בתור עבור הקובץ/ים הנבחרים: הרצה נוכחית / כל הזמנים"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Active Uploads"
-msgstr "העלאות פעילים :"
+msgstr "העלאות פעילות"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Show Clients for"
-msgstr "לקוחות"
+msgstr "הראה לקוחות עבור"
 
 #: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
-#, fuzzy
 msgid "All files"
-msgstr "קבצים משותפים"
+msgstr "כל הקבצים"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Selected files"
-msgstr "בחר מסנן תצוגה"
+msgstr "קבצים נבחרים"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Active uploads only"
-msgstr "העלאות פעילים"
+msgstr "העלאות פעילות בלבד"
 
 #: src/muuli_wdr.cpp
 msgid "Reload:"
-msgstr ""
+msgstr "טען מחדש:"
 
 #: src/muuli_wdr.cpp
 msgid "Reload your shared files"
@@ -5706,11 +5719,10 @@ msgid "Disabled [%s]"
 msgstr "נוטרל [%s]"
 
 #: src/OtherFunctions.cpp
-#, fuzzy
 msgid "byte"
 msgid_plural "bytes"
 msgstr[0] "בית"
-msgstr[1] "בית"
+msgstr[1] "בתים"
 
 #: src/OtherFunctions.cpp
 msgid "TiB"
@@ -5733,11 +5745,10 @@ msgid "T"
 msgstr "טרה"
 
 #: src/OtherFunctions.cpp
-#, fuzzy
 msgid "byte/sec"
 msgid_plural "bytes/sec"
-msgstr[0] "בייט/שניה"
-msgstr[1] "בייט/שניה"
+msgstr[0] "בית/שנייה"
+msgstr[1] "בתים/שנייה"
 
 #: src/OtherFunctions.cpp
 msgid "MiB/s"
@@ -5807,7 +5818,7 @@ msgstr "טקסט"
 #: src/OtherFunctions.cpp
 #, c-format
 msgid "Using config dir: %s"
-msgstr ""
+msgstr "משתמש בתיקיית תצורה: %s"
 
 #: src/PartBarLegendUI.cpp
 msgid "This source does not have the part"
@@ -5880,7 +5891,7 @@ msgstr ""
 
 #: src/PartFileConvert.cpp
 msgid "Waiting for partfile convert thread to die..."
-msgstr ""
+msgstr "ממתין לסיום ה-thread להמרת קבצי-החלקים..."
 
 #: src/PartFileConvert.cpp
 #, c-format
@@ -5939,18 +5950,16 @@ msgid "Please choose a folder to search for temporary downloads! (subfolders wil
 msgstr "נא לבחור תקייה לחפש קבצים זמניים שהורדו! (תתי תיקיות יכללו בחיפוש)"
 
 #: src/PartFileConvertDlg.cpp
-#, fuzzy
 msgid "Do you want the source files of successfully imported downloads be deleted?"
-msgstr "האם אתה רוצה שקבצי המקורות של הורדות מוצלחות שיובאו, ימחקו?"
+msgstr "האם ברצונך שקובצי המקור של הורדות שיובאו בהצלחה יימחקו?"
 
 #: src/PartFileConvertDlg.cpp
 msgid "Remove sources?"
 msgstr "הסר מקור?"
 
 #: src/PartFile.cpp
-#, fuzzy
 msgid "ERROR: Failed to create partfile"
-msgstr "שגיאה: יצירת קובץ-החלקים נכשלה)"
+msgstr "שגיאה: יצירת קובץ-החלקים נכשלה"
 
 #: src/PartFile.cpp
 #, c-format
@@ -5960,27 +5969,27 @@ msgstr "מנסה לטעון גיבוי של קובץ ה met מ %s"
 #: src/PartFile.cpp
 #, c-format
 msgid "ERROR: Failed to open part.met file: %s ==> %s"
-msgstr ""
+msgstr "שגיאה: פתיחת קובץ part.met נכשלה: %s ==> %s"
 
 #: src/PartFile.cpp
 #, c-format
 msgid "ERROR: part.met file is 0 size: %s ==> %s"
-msgstr ""
+msgstr "שגיאה: קובץ part.met בגודל 0: %s ==> %s"
 
 #: src/PartFile.cpp
 #, c-format
 msgid "ERROR: Invalid part.met file version: %s ==> %s"
-msgstr ""
+msgstr "שגיאה: גרסת קובץ part.met לא תקינה: %s ==> %s"
 
 #: src/PartFile.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Error: %s (%s) is corrupt (bad tags: %s), unable to load file."
-msgstr "שגיאה: %s (%s) פגום (מספר-תווית שגוי) לא יכול לטעון קובץ."
+msgstr "שגיאה: %s (%s) פגום (תגיות שגויות: %s), לא ניתן לטעון את הקובץ."
 
 #: src/PartFile.cpp
 #, c-format
 msgid "ERROR: %s (%s) is corrupt (wrong tagcount), unable to load file."
-msgstr ""
+msgstr "שגיאה: %s (%s) פגום (מספר תגיות שגוי), לא ניתן לטעון את הקובץ."
 
 #: src/PartFile.cpp
 msgid "Trying to recover file info..."
@@ -6006,7 +6015,7 @@ msgstr "פתיחת הקובץ %s·(%s נכשלה"
 #: src/PartFile.cpp
 #, c-format
 msgid "WARNING: %s might be corrupted (%i)"
-msgstr ""
+msgstr "אזהרה: ייתכן ש-%s פגום (%i)"
 
 #: src/PartFile.cpp
 #, c-format
@@ -6014,14 +6023,13 @@ msgid "ERROR while saving partfile: %s (%s ==> %s)"
 msgstr "שגיאה במהלך השמירה של קובץ-החלקים %s (%s·==>·%s)"
 
 #: src/PartFile.cpp
-#, fuzzy
 msgid "IO failure while saving partfile: "
-msgstr "שגיאה במהלך השמירה של קובץ-החלקים %s (%s·==>·%s)"
+msgstr "כשל קלט/פלט בעת שמירת קובץ-החלקים: "
 
 #: src/PartFile.cpp
 #, c-format
 msgid "Wrote 0/unknown bytes to '%s' -- preserving existing .part.met."
-msgstr ""
+msgstr "נכתבו 0/לא ידוע בתים אל '%s' -- שומר על קובץ .part.met הקיים."
 
 #: src/PartFile.cpp
 #, c-format
@@ -6029,16 +6037,16 @@ msgid "Failed to save part.met.seeds file for %s"
 msgstr "שמירת part.met.seeds נכשלה עבור הקובץ %s"
 
 #: src/PartFile.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Saved %i source seed for partfile: %s (%s)"
 msgid_plural "Saved %i source seeds for partfile: %s (%s)"
-msgstr[0] "נשמרו %i מקורות הזרעה עהור קובץ-החלקים: %s (%s)"
-msgstr[1] "נשמרו %i מקורות הזרעה עהור קובץ-החלקים: %s (%s)"
+msgstr[0] "נשמר %i מקור הזרעה עבור קובץ-החלקים: %s (%s)"
+msgstr[1] "נשמרו %i מקורות הזרעה עבור קובץ-החלקים: %s (%s)"
 
 #: src/PartFile.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Can't read seeds file for Partfile %s (%s)"
-msgstr "נשמרו %i מקורות הזרעה עהור קובץ-החלקים: %s (%s)"
+msgstr "לא ניתן לקרוא את קובץ ההזרעה של קובץ-החלקים %s (%s)"
 
 #: src/PartFile.cpp
 #, c-format
@@ -6049,8 +6057,8 @@ msgstr "שגיאה בקריאת קובץ ההזרעה של קובץ החלקים
 #, c-format
 msgid "Found corrupted part (%d) in %d part file %s - FileResultHash |%s| FileHash |%s|"
 msgid_plural "Found corrupted part (%d) in %d parts file %s - FileResultHash |%s| FileHash |%s|"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "נמצא חלק פגום (%d) בקובץ בן %d חלק %s - FileResultHash |%s| FileHash |%s|"
+msgstr[1] "נמצא חלק פגום (%d) בקובץ בן %d חלקים %s - FileResultHash |%s| FileHash |%s|"
 
 #: src/PartFile.cpp
 #, c-format
@@ -6065,7 +6073,7 @@ msgstr "הסתיים הגיבוב מחדש של %s"
 #: src/PartFile.cpp
 #, c-format
 msgid "Unexpected error while completing %s. File paused"
-msgstr ""
+msgstr "שגיאה לא צפויה בעת השלמת %s. הקובץ הושהה"
 
 #: src/PartFile.cpp
 #, c-format
@@ -6073,11 +6081,13 @@ msgid "Finished downloading: %s"
 msgstr "הסתיימה ההורדה של: %s"
 
 #: src/PartFile.cpp
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "Finished downloading:\n"
 "%s"
-msgstr "הסתיימה ההורדה של: %s"
+msgstr ""
+"סיום הורדה:\n"
+"%s"
 
 #: src/PartFile.cpp
 #, c-format
@@ -6087,22 +6097,22 @@ msgstr "מוחק את הקובץ: %s"
 #: src/PartFile.cpp
 #, c-format
 msgid "WARNING: Unable to hash downloaded part - hashset incomplete for '%s'"
-msgstr ""
+msgstr "אזהרה: לא ניתן לגבב את החלק שהורד - קבוצת הגיבוב לא שלמה עבור '%s'"
 
 #: src/PartFile.cpp
 #, c-format
 msgid "ERROR: Unable to hash downloaded part - hashset incomplete (%s). This should never happen"
-msgstr ""
+msgstr "שגיאה: לא ניתן לגבב את החלק שהורד - קבוצת הגיבוב לא שלמה (%s). זה לא אמור לקרות לעולם"
 
 #: src/PartFile.cpp
 #, c-format
 msgid "Part %u of '%s' marked complete but partfile is shorter than expected (have %llu bytes, need %llu); reopening gap for re-download."
-msgstr ""
+msgstr "החלק %u של '%s' סומן כהושלם אך קובץ-החלקים קצר מהצפוי (יש %llu בתים, נדרשים %llu); פותח מחדש את הפער להורדה חוזרת."
 
 #: src/PartFile.cpp
 #, c-format
 msgid "EOF while hashing downloaded part %u with length %u (max %u) of partfile '%s' with length %u: %s"
-msgstr ""
+msgstr "EOF בעת גיבוב החלק שהורד %u באורך %u (מקסימום %u) של קובץ-החלקים '%s' באורך %u: %s"
 
 #: src/PartFile.cpp
 #, c-format
@@ -6121,16 +6131,16 @@ msgstr "ICH: תוקן החלק הפגום %i עבור %s -< בתים שנמשר�
 
 #: src/PartFile.cpp
 msgid "Allocating"
-msgstr ""
+msgstr "מקצה"
 
 #: src/PartFile.cpp
 msgid "Insufficient disk space"
-msgstr ""
+msgstr "שטח דיסק לא מספיק"
 
 #: src/PartFile.cpp
 #, c-format
 msgid "ERROR: Failed to open partfile '%s'"
-msgstr ""
+msgstr "שגיאה: פתיחת קובץ-החלקים '%s' נכשלה"
 
 #: src/PeerCapabilities.h
 #, fuzzy
@@ -6155,7 +6165,7 @@ msgstr ""
 
 #: src/Preferences.cpp
 msgid "no options available"
-msgstr ""
+msgstr "אין אפשרויות זמינות"
 
 #: src/Preferences.cpp
 msgid "Invalid path mapping found, skipping"
@@ -6163,7 +6173,7 @@ msgstr ""
 
 #: src/Preferences.cpp
 msgid "Invalid category found, skipping"
-msgstr ""
+msgstr "נמצאה קטיגוריה לא תקינה, מדלג"
 
 #: src/Preferences.cpp
 msgid "TCP port can't be higher than 65532 due to server UDP socket being TCP+3"
@@ -6192,11 +6202,11 @@ msgstr "אבטחה"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Interface"
-msgstr ""
+msgstr "ממשק"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "IP2Country"
-msgstr ""
+msgstr "IP2Country"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Proxy"
@@ -6204,7 +6214,7 @@ msgstr "פרוקסי"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Filters"
-msgstr ""
+msgstr "מסננים"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Remote Controls"
@@ -6216,7 +6226,7 @@ msgstr "חתימה מקוונת"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Advanced"
-msgstr ""
+msgstr "מתקדם"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Events"
@@ -6232,14 +6242,17 @@ msgid ""
 "    %PARTFILE - full path to the file\n"
 "    %PARTNAME - file name only"
 msgstr ""
+"המשתנים הבאים יוחלפו:\n"
+"    %PARTFILE - הנתיב המלא לקובץ\n"
+"    %PARTNAME - שם הקובץ בלבד"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Tray icon support requires libayatana-appindicator3 at compile time."
-msgstr ""
+msgstr "תמיכה בסמל מגש המערכת דורשת את libayatana-appindicator3 בזמן הידור."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Not available on Wayland: the protocol does not report when a window is minimized, so this option cannot intercept the system minimize button. Workaround: launch aMule with `GDK_BACKEND=x11` to use XWayland instead."
-msgstr ""
+msgstr "לא זמין ב-Wayland: הפרוטוקול אינו מדווח מתי חלון ממוזער, ולכן אפשרות זו אינה יכולה ליירט את כפתור המזעור של המערכת. פתרון עוקף: הפעל את aMule עם `GDK_BACKEND=x11` כדי להשתמש ב-XWayland במקום זאת."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
@@ -6250,43 +6263,47 @@ msgid ""
 "aMule will run fine without adjusting any of\n"
 "these settings."
 msgstr ""
+"אל תשנה הגדרות אלה אלא אם כן אתה יודע\n"
+"מה אתה עושה, אחרת אתה עלול בקלות\n"
+"להחמיר את המצב עבור עצמך.\n"
+"\n"
+"aMule יפעל כשורה גם ללא כל שינוי\n"
+"בהגדרות אלה."
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "Failed to connect Cfg to widget with the ID %d and key %s"
-msgstr ""
+msgstr "נכשל חיבור ה-Cfg לווידג'ט עם המזהה %d והמפתח %s"
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "Failed to transfer data from Cfg to Widget with the ID %d and key %s"
-msgstr ""
+msgstr "נכשלה העברת נתונים מ-Cfg לווידג'ט עם המזהה %d והמפתח %s"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "The type of proxy you are connecting to"
-msgstr ""
+msgstr "סוג הפרוקסי שאליו אתה מתחבר"
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "Failed to transfer data from Widget to Cfg with the ID %d and key %s"
-msgstr ""
+msgstr "נכשלה העברת נתונים מווידג'ט ל-Cfg עם המזהה %d והמפתח %s"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "No password set."
-msgstr "בודק סיסמא\n"
+msgstr "לא הוגדרה סיסמא."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "The shared-file exclusion pattern is not a valid regular expression. The filter has been left disabled."
-msgstr ""
+msgstr "תבנית ההחרגה של קבצים משותפים אינה ביטוי רגולרי תקין. המסנן נותר מנוטרל."
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Invalid regular expression"
-msgstr "גרסת פרוטוקל לא תקפה."
+msgstr "ביטוי רגולרי לא תקין"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Guest access needs a password. Type one in the guest password field, or untick Enable guest access."
-msgstr ""
+msgstr "גישת אורח מצריכה סיסמא. הקלד סיסמא בשדה סיסמת האורח, או בטל את הסימון של אפשר גישת אורח."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
@@ -6313,49 +6330,45 @@ msgid "- UDP port changed.\n"
 msgstr "- מבואת UDP שונתה \n"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "- Network interface binding changed.\n"
-msgstr "חיבור חיצוני נסגר."
+msgstr "- קישור ממשק הרשת השתנה.\n"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "- External connect port changed.\n"
-msgstr "חיבור חיצוני נסגר."
+msgstr "- מבואת החיבור החיצוני השתנתה.\n"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "- External connect acceptance changed.\n"
-msgstr "גישה חיצונית חדשה התקבלה"
+msgstr "- קבלת חיבור חיצוני השתנתה.\n"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "- External connect interface changed.\n"
-msgstr "חיבור חיצוני נסגר."
+msgstr "- ממשק החיבור החיצוני השתנה.\n"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "- Protocol obfuscation support changed.\n"
-msgstr "חיבור חיצוני נסגר."
+msgstr "- תמיכה בערפול פרוטוקול השתנתה.\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- Proxy settings changed (needed for HTTP transfers).\n"
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "- amuleapi settings changed.\n"
-msgstr "- השפה שונתה.\n"
+msgstr "- הגדרות amuleapi השתנו.\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
 "Your Auto-update server list is empty.\n"
 "'Auto-update server list at startup' will be disabled."
 msgstr ""
+"רשימת השרתים לעדכון אוטומטי שלך ריקה.\n"
+"'עדכון רשימת שרתים אוטומטי בעת ההפעלה' ינוטרל."
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "The amuleapi password could not be saved: %s"
-msgstr ""
+msgstr "לא ניתן היה לשמור את סיסמת amuleapi: %s"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- Language changed.\n"
@@ -6366,15 +6379,16 @@ msgid "- Temp folder changed.\n"
 msgstr "- הפסרייה הזמנית שונתה.\n"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "- ED2K network enabled.\n"
-msgstr "כל הרשתות מנוטרלות."
+msgstr "- רשת ED2K הופעלה.\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
 "Both eD2k and Kad network are disabled.\n"
 "You won't be able to connect until you enable at least one of them."
 msgstr ""
+"גם רשת eD2k וגם רשת Kad מנוטרלות.\n"
+"לא תוכל להתחבר עד שתפעיל לפחות אחת מהן."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
@@ -6396,69 +6410,66 @@ msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Could not register aMule for autostart at login. The autostart store may be read-only."
-msgstr ""
+msgstr "לא ניתן לרשום את aMule להפעלה אוטומטית בהתחברות. מאגר ההפעלה האוטומטית עשוי להיות לקריאה בלבד."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Could not remove the autostart-at-login entry."
-msgstr ""
+msgstr "לא ניתן להסיר את רשומת ההפעלה האוטומטית בהתחברות."
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Autostart"
-msgstr "רענון אוטמטי התחיל"
+msgstr "הפעלה אוטומטית"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Register file type"
-msgstr ""
+msgstr "רשום סוג קובץ"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Register URL handler"
-msgstr ""
+msgstr "רשום מטפל URL"
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "aMule only handles eD2k-compatible magnets. If you replace the current magnet handler (%s), BitTorrent magnet links will stop working - aMule cannot download BitTorrent content. Continue?"
-msgstr ""
+msgstr "aMule מטפל רק במגנטים תואמי eD2k. אם תחליף את מטפל המגנט הנוכחי (%s), קישורי מגנט של BitTorrent יפסיקו לעבוד - aMule אינו יכול להוריד תוכן BitTorrent. להמשיך?"
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "Another application currently opens .emulecollection files (%s). Replace it with aMule?"
-msgstr ""
+msgstr "תוכנית אחרת פותחת כרגע קובצי .emulecollection (%s). להחליף אותה ב-aMule?"
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "Another application is currently the default handler for these links (%s). Replace it with aMule?"
-msgstr ""
+msgstr "יישום אחר משמש כרגע כמטפל ברירת המחדל עבור קישורים אלה (%s). להחליף אותו ב-aMule?"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Could not register aMule for .emulecollection files. The registration store may be read-only."
-msgstr ""
+msgstr "לא ניתן היה לרשום את aMule עבור קובצי .emulecollection. ייתכן ששטח הרישום הוא לקריאה בלבד."
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Could not remove the file type registration."
-msgstr "אתה כבר מנסה להוריד את הקובץ %s"
+msgstr "לא ניתן היה להסיר את רישום סוג הקובץ."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Could not register aMule as the URL handler. The registration store may be read-only."
-msgstr ""
+msgstr "לא ניתן היה לרשום את aMule כמטפל ה-URL. מאגר הרישום עשוי להיות לקריאה בלבד."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Could not remove the URL handler registration."
-msgstr ""
+msgstr "לא ניתן היה להסיר את רישום מטפל ה-URL."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "macOS does not let an application stop being the default handler. To stop aMule opening these, make another application the default."
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "The web server and aMule API require external connections to be enabled."
-msgstr "גישה חיצונית חדשה התקבלה"
+msgstr "שרת האינטרנט וה-API של aMule דורשים הפעלה של חיבורים חיצוניים."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "The aMule web server is deprecated. Consider running the aMule API instead."
-msgstr ""
+msgstr "שרת האינטרנט של aMule מיושן. שקול להריץ במקומו את ה-API של aMule."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
@@ -6520,9 +6531,8 @@ msgid "Select browser"
 msgstr "בחר דפדפן"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Select ffprobe binary"
-msgstr "בחר דפדפן"
+msgstr "בחר קובץ הפעלה של ffprobe"
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
@@ -6531,20 +6541,19 @@ msgstr "קובץ הרצה %s"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "ffprobe not found on PATH or in the standard install locations. Install ffmpeg (which ships ffprobe) or use Browse to pick a binary manually."
-msgstr ""
+msgstr "ffprobe לא נמצא ב-PATH או במיקומי ההתקנה הסטנדרטיים. התקן את ffmpeg (הכולל את ffprobe) או השתמש ב'דפדף' כדי לבחור קובץ הפעלה באופן ידני."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Reset the settings on this page to their default values?"
-msgstr ""
+msgstr "לאפס את ההגדרות בדף זה לערכי ברירת המחדל שלהן?"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Reset to defaults"
-msgstr "ברירת מחדל של המערכת"
+msgstr "אפס לברירות מחדל"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Edit server list"
-msgstr ""
+msgstr "ערוך רשימת שרתים"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
@@ -6556,52 +6565,51 @@ msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "IP2Country update failed"
-msgstr ""
+msgstr "עדכון IP2Country נכשל"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Data by MaxMind GeoLite2"
-msgstr ""
+msgstr "נתונים מאת MaxMind GeoLite2"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Custom source"
-msgstr "מקורות שלמים"
+msgstr "מקור מותאם אישית"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Data by DB-IP.com"
-msgstr ""
+msgstr "נתונים מאת DB-IP.com"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Status: Loaded%s"
-msgstr "סטאטוס:"
+msgstr "מצב: נטען%s"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Status: Loaded%s - %s"
-msgstr "סטאטוס:"
+msgstr "מצב: נטען%s - %s"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Status: Failed to load - click 'Update now' to refresh."
-msgstr ""
+msgstr "מצב: הטעינה נכשלה - לחץ על 'עדכן עכשיו' לרענון."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Status: Not found - click 'Update now' to download."
-msgstr ""
+msgstr "מצב: לא נמצא - לחץ על 'עדכן עכשיו' להורדה."
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Update delay: %d second"
 msgid_plural "Update delay: %d seconds"
-msgstr[0] "השהיית עדון: %d שניות"
-msgstr[1] "השהיית עדון: %d שניות"
+msgstr[0] "השהיית עדכון: %d שנייה"
+msgstr[1] "השהיית עדכון: %d שניות"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Time for average graph: %d minute"
 msgid_plural "Time for average graph: %d minutes"
-msgstr[0] "זמן עבור גרף הממוצע: %d דקות"
-msgstr[1] "זמן עבור גרף הממוצע: %d דקות"
+msgstr[0] "זמן לגרף ממוצע: %d דקה"
+msgstr[1] "זמן לגרף ממוצע: %d דקות"
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
@@ -6609,39 +6617,38 @@ msgid "Connections Graph Scale: %d"
 msgstr "סקאלאת גרף החיבורים: %d"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "File Buffer Size: %d byte"
 msgid_plural "File Buffer Size: %d bytes"
-msgstr[0] "גודל זיכרון זמני לקובץ: %d בתים"
+msgstr[0] "גודל זיכרון זמני לקובץ: %d בית"
 msgstr[1] "גודל זיכרון זמני לקובץ: %d בתים"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Upload Queue Size: %d client"
 msgid_plural "Upload Queue Size: %d clients"
-msgstr[0] "גודל תור ההאלעות: %d לקוחות"
-msgstr[1] "גודל תור ההאלעות: %d לקוחות"
+msgstr[0] "גודל תור ההעלאה: %d לקוח"
+msgstr[1] "גודל תור ההעלאה: %d לקוחות"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Server connection refresh interval: %d minute"
 msgid_plural "Server connection refresh interval: %d minutes"
-msgstr[0] "רענון חיבור לשרת כל: %d דקות"
-msgstr[1] "רענון חיבור לשרת כל: %d דקות"
+msgstr[0] "מרווח רענון חיבור השרת: %d דקה"
+msgstr[1] "מרווח רענון חיבור השרת: %d דקות"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Server connection refresh interval: Disabled"
 msgstr "רענון חיבור לשרת: מנוטרל"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "disabled"
-msgstr "נוטרל [%s]"
+msgstr "מנוטרל"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Execute command on '%s' event"
-msgstr "בצע פקודה בעת ארוע '%s'"
+msgstr "הרץ פקודה באירוע '%s'"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Enable command execution on core"
@@ -6668,40 +6675,38 @@ msgid ""
 "The following folders look like system or sensitive locations:\n"
 "\n"
 msgstr ""
+"התיקיות הבאות נראות כמו מיקומי מערכת או מיקומים רגישים:\n"
+"\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Sharing them recursively will publish every file underneath on the eD2k/Kad networks. Do you really want to do this?"
-msgstr ""
+msgstr "שיתוף שלהן באופן רקורסיבי יפרסם כל קובץ שמתחתיהן ברשתות eD2k/Kad. האם אתה בטוח שברצונך לעשות זאת?"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Confirm shared folders"
-msgstr "טען מחדש את הקבצים המשותפים שלך"
+msgstr "אשר תיקיות משותפות"
 
 #: src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp
 #: src/SharedFilesReloadProgress.cpp
-#, fuzzy
 msgid "Reloading shared files..."
-msgstr "טען מחדש את הקבצים המשותפים שלך"
+msgstr "טוען מחדש קבצים משותפים..."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Scanning for subdirectories..."
-msgstr ""
+msgstr "סורק תיקיות משנה..."
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Updating shared folders"
-msgstr "קורא את הספרייה הזמנית"
+msgstr "מעדכן תיקיות משותפות"
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "Scanned %u directories..."
-msgstr ""
+msgstr "נסרקו %u תיקיות..."
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Shared folder"
-msgstr "קבצים משותפים"
+msgstr "תיקייה משותפת"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Both the remote and local prefix must be filled in."
@@ -6726,16 +6731,15 @@ msgstr ""
 
 #: src/SearchDlg.cpp
 msgid "Search warning"
-msgstr ""
+msgstr "אזהרת חיפוש"
 
 #: src/SearchDlg.cpp
 msgid "It's impossible to search when both eD2k and Kademlia are disabled."
-msgstr ""
+msgstr "לא ניתן לחפש כאשר גם eD2k וגם Kademlia מנוטרלים."
 
 #: src/SearchDlg.cpp src/SearchListCtrl.cpp
-#, fuzzy
 msgid "Search error"
-msgstr "חיפושים"
+msgstr "שגיאת חיפוש"
 
 #: src/SearchDlg.cpp
 msgid ""
@@ -6753,7 +6757,7 @@ msgstr "בתהליך"
 
 #: src/SearchDlg.cpp
 msgid "Min size must be smaller than max size. Max size ignored."
-msgstr ""
+msgstr "הגודל המינימלי חייב להיות קטן מהגודל המרבי. הגודל המרבי לא נלקח בחשבון."
 
 #: src/SearchDlg.cpp src/SearchListCtrl.cpp
 msgid "Main"
@@ -6780,11 +6784,11 @@ msgstr ""
 
 #: src/SearchList.cpp
 msgid "eD2k search can't be done if eD2k is not connected"
-msgstr ""
+msgstr "לא ניתן לבצע חיפוש eD2k כאשר eD2k אינו מחובר"
 
 #: src/SearchList.cpp
 msgid "No keyword for Kad search - aborting"
-msgstr ""
+msgstr "אין מילת מפתח לחיפוש Kad - מבטל"
 
 #: src/SearchList.cpp
 msgid "Unexpected error while attempting Kad search: "
@@ -6796,11 +6800,11 @@ msgstr ""
 
 #: src/SearchList.cpp
 msgid "Kad search: requested wider results from one more peer."
-msgstr ""
+msgstr "חיפוש Kad: התבקשו תוצאות רחבות יותר מעמית נוסף אחד."
 
 #: src/SearchList.cpp
 msgid "Kad search: no peer left to reask for more results (cap reached or no responses yet)."
-msgstr ""
+msgstr "חיפוש Kad: לא נותרו עמיתים לבקש מהם תוצאות נוספות (הגבלה הושגה או שאין עדיין תגובות)."
 
 #: src/SearchList.cpp
 #, c-format
@@ -6821,28 +6825,27 @@ msgstr ""
 
 #: src/SearchListCtrl.cpp
 msgid "Search related files (eD2k, local server)"
-msgstr ""
+msgstr "חפש קבצים קשורים (eD2k, שרת מקומי)"
 
 #: src/SearchListCtrl.cpp src/ServerListCtrl.cpp
 msgid "Copy eD2k link to clipboard"
-msgstr ""
+msgstr "העתק קישור eD2k ללוח"
 
 #: src/SearchListCtrl.cpp src/ServerListCtrl.cpp
 msgid "Copy eD2k links to clipboard"
-msgstr ""
+msgstr "העתק קישורי eD2k ללוח"
 
 #: src/SearchListCtrl.cpp
 msgid "You are not currently connected to a server supporting the Related Files search function"
-msgstr ""
+msgstr "אינך מחובר כרגע לשרת התומך בפונקציית החיפוש 'קבצים קשורים'"
 
 #: src/SearchListCtrl.cpp
-#, fuzzy
 msgid "Canceled"
-msgstr "ביטול"
+msgstr "בוטל"
 
 #: src/SearchListCtrl.cpp
 msgid "New"
-msgstr ""
+msgstr "חדש"
 
 #: src/SearchProgressReport.cpp
 #, fuzzy
@@ -6870,25 +6873,24 @@ msgstr ""
 
 #: src/SearchProgressReport.cpp src/TextClient.cpp
 msgid "Search expired or unknown ID. Start a new search.\n"
-msgstr ""
+msgstr "החיפוש פג תוקף או שהמזהה אינו ידוע. התחל חיפוש חדש.\n"
 
 #: src/SearchProgressReport.cpp
 #, c-format
 msgid "Search progress: %u %% \n"
-msgstr ""
+msgstr "התקדמות חיפוש: %u %% \n"
 
 #: src/SearchProgressReport.cpp
 msgid "Search progress not available"
-msgstr ""
+msgstr "התקדמות החיפוש אינה זמינה"
 
 #: src/SearchProgressReport.cpp
 msgid "No search to report on.\n"
 msgstr ""
 
 #: src/ServerConnect.cpp
-#, fuzzy
 msgid "Failed to connect to all obfuscated static servers listed. Making another pass without obfuscation."
-msgstr "החיבור לשרתים המבלבלים שברשימה כשל, מבצע מעבר נוסף ללא השרתים המבלבלים"
+msgstr "ההתחברות לכל השרתים הקבועים ברשימה עם ערפול נכשלה. מבצע ניסיון נוסף ללא ערפול."
 
 #: src/ServerConnect.cpp
 msgid "Failed to connect to all obfuscated servers listed. Making another pass without obfuscation."
@@ -6905,19 +6907,19 @@ msgid "Failed to connect to all servers listed."
 msgstr "ההתחברות לכל השרתים הרשומים כשלה, מבצע מעבר נוסף."
 
 #: src/ServerConnect.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Automatic connection to server will retry in %d second"
 msgid_plural "Automatic connection to server will retry in %d seconds"
-msgstr[0] "התחברות אוטומטית לשרת ינוסה שוב תוך %d שניות"
-msgstr[1] "התחברות אוטומטית לשרת ינוסה שוב תוך %d שניות"
+msgstr[0] "חיבור אוטומטי לשרת ינוסה שוב בעוד %d שנייה"
+msgstr[1] "חיבור אוטומטי לשרת ינוסה שוב בעוד %d שניות"
 
 #: src/ServerConnect.cpp
 msgid "eD2k network disabled on preferences, not connecting."
-msgstr ""
+msgstr "רשת eD2k מנוטרלת בהעדפות, לא מתחבר."
 
 #: src/ServerConnect.cpp
 msgid "No valid servers to which to connect found in server list"
-msgstr ""
+msgstr "לא נמצאו שרתים תקינים להתחברות ברשימת השרתים"
 
 #: src/ServerConnect.cpp
 #, c-format
@@ -6955,7 +6957,7 @@ msgstr "ההתחברות ל %s·(%s:%i) כשלה"
 
 #: src/ServerConnect.cpp
 msgid "ERROR: Socket invalid at timeout check"
-msgstr ""
+msgstr "שגיאה: השקע אינו תקין בבדיקת תפוגת הזמן"
 
 #: src/ServerConnect.cpp
 #, c-format
@@ -6964,77 +6966,76 @@ msgstr "פג הזמן עבור ניסיון ההתחברות ל %s·(%s:%i)"
 
 #: src/ServerConnect.cpp
 msgid "Received late result of DNS lookup, discarding."
-msgstr ""
+msgstr "התקבלה תוצאה מאוחרת של חיפוש DNS, מבטל אותה."
 
 #: src/ServerList.cpp
 #, c-format
 msgid "Loading server.met file: %s"
-msgstr ""
+msgstr "טוען קובץ server.met: %s"
 
 #: src/ServerList.cpp
 msgid "Server.met file not found!"
-msgstr ""
+msgstr "קובץ server.met לא נמצא!"
 
 #: src/ServerList.cpp
 #, c-format
 msgid "Failed to load server.met file '%s', unknown format encountered."
-msgstr ""
+msgstr "נכשלה טעינת קובץ server.met '%s', התגלה פורמט לא ידוע."
 
 #: src/ServerList.cpp
 msgid "Failed to open server.met!"
-msgstr ""
+msgstr "נכשלה פתיחת server.met!"
 
 #: src/ServerList.cpp
 #, c-format
 msgid "Server.met file corrupt, found invalid versiontag: 0x%x, size %i"
-msgstr ""
+msgstr "קובץ Server.met פגום, נמצא תג גרסה לא תקין: 0x%x, גודל %i"
 
 #: src/ServerList.cpp
 #, c-format
 msgid "%i server in server.met found"
 msgid_plural "%i servers in server.met found"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "%i שרת נמצא בקובץ server.met"
+msgstr[1] "%i שרתים נמצאו בקובץ server.met"
 
 #: src/ServerList.cpp
 #, c-format
 msgid "%d server added"
 msgid_plural "%d servers added"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "%d שרת נוסף"
+msgstr[1] "%d שרתים נוספו"
 
 #: src/ServerList.cpp
 msgid "Error: the file 'server.met' is corrupted: "
-msgstr ""
+msgstr "שגיאה: הקובץ 'server.met' פגום: "
 
 #: src/ServerList.cpp
-#, fuzzy
 msgid "IO error while reading 'server.met': "
-msgstr "שגיאת קריאה/כתיבה תוך כדי הקובץ known.met: %s"
+msgstr "שגיאת קלט/פלט בקריאת 'server.met': "
 
 #: src/ServerList.cpp
 #, c-format
 msgid "Server not added: [%s:%d] does not specify a valid port."
-msgstr ""
+msgstr "השרת לא נוסף: [%s:%d] אינו מציין מבואה תקינה."
 
 #: src/ServerList.cpp
 #, c-format
 msgid "Server not added: The IP of [%s:%d] is filtered or invalid."
-msgstr ""
+msgstr "השרת לא נוסף: כתובת ה-IP של [%s:%d] מסוננת או לא תקינה."
 
 #: src/ServerList.cpp
 #, c-format
 msgid "Server not added: Server with matching IP:Port [%s:%d] found in list."
-msgstr ""
+msgstr "השרת לא נוסף: נמצא ברשימה שרת עם IP:מבואה תואם [%s:%d]."
 
 #: src/ServerList.cpp
 #, c-format
 msgid "Server added: Server at [%s:%d] using the name '%s'."
-msgstr ""
+msgstr "שרת נוסף: שרת בכתובת [%s:%d] בשם '%s'."
 
 #: src/ServerList.cpp
 msgid "You are connected to the server you are trying to delete. please disconnect first."
-msgstr ""
+msgstr "אתה מחובר לשרת שאתה מנסה למחוק. אנא התנתק תחילה."
 
 #: src/ServerList.cpp
 #, c-format
@@ -7043,7 +7044,7 @@ msgstr "נכשל בפתיחת '%s'"
 
 #: src/ServerList.cpp
 msgid "Failed to save server.met!"
-msgstr ""
+msgstr "נכשלה שמירת server.met!"
 
 #: src/ServerList.cpp
 #, fuzzy, c-format
@@ -7052,39 +7053,39 @@ msgstr "שגיאת קריאה/כתיבה תוך כדי הקובץ known.met: %s"
 
 #: src/ServerList.cpp
 msgid "Invalid URL"
-msgstr ""
+msgstr "כתובת URL לא תקינה"
 
 #: src/ServerList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Finished downloading the server list from %s"
-msgstr "הסתיימה ההורדה של: %s"
+msgstr "הורדת רשימת השרתים מ-%s הסתיימה"
 
 #: src/ServerList.cpp
 msgid "No server list address entry in 'addresses.dat' found. Please paste a valid server list address into this file in order to auto-update your server list"
-msgstr ""
+msgstr "לא נמצאה רשומת כתובת לרשימת שרתים בקובץ 'addresses.dat'. אנא הדבק כתובת תקינה של רשימת שרתים בקובץ זה כדי לאפשר עדכון אוטומטי של רשימת השרתים שלך"
 
 #: src/ServerList.cpp
 #, c-format
 msgid "Start downloading server list from %s"
-msgstr ""
+msgstr "מתחיל להוריד רשימת שרתים מ-%s"
 
 #: src/ServerList.cpp
 #, c-format
 msgid "WARNING: invalid URL specified for auto-updating of servers: %s"
-msgstr ""
+msgstr "אזהרה: צוינה כתובת URL לא תקינה לעדכון אוטומטי של שרתים: %s"
 
 #: src/ServerList.cpp
 msgid "No valid server.met auto-download url on addresses.dat"
-msgstr ""
+msgstr "אין כתובת URL תקינה להורדה אוטומטית של server.met בקובץ addresses.dat"
 
 #: src/ServerList.cpp
 #, c-format
 msgid "Failed to download the server list from %s"
-msgstr ""
+msgstr "נכשלה הורדת רשימת השרתים מ-%s"
 
 #: src/ServerList.cpp
 msgid "Local server is filtered by the IPFilters, reconnecting to a different server!"
-msgstr ""
+msgstr "השרת המקומי מסונן על ידי מסנני ה-IP, מתחבר מחדש לשרת אחר!"
 
 #: src/ServerListCtrl.cpp
 msgid "Server Name"
@@ -7123,11 +7124,11 @@ msgstr "קבצים משותפים"
 
 #: src/ServerListCtrl.cpp
 msgid "TCP Flags"
-msgstr ""
+msgstr "דגלי TCP"
 
 #: src/ServerListCtrl.cpp
 msgid "UDP Flags"
-msgstr ""
+msgstr "דגלי UDP"
 
 #: src/ServerListCtrl.cpp
 msgid "You are connected to a server you are trying to delete. Please disconnect first. The server was NOT deleted."
@@ -7207,17 +7208,17 @@ msgstr "האם אתה בטוח שאתה מעוניין למחוק את כל הש
 #: src/ServerSocket.cpp
 #, c-format
 msgid "ERROR: %s (%s) - %s"
-msgstr ""
+msgstr "שגיאה: %s (%s) - %s"
 
 #: src/ServerSocket.cpp
 #, c-format
 msgid "WARNING: %s (%s) - %s"
-msgstr ""
+msgstr "אזהרה: %s (%s) - %s"
 
 #: src/ServerSocket.cpp
 #, c-format
 msgid "Server %s (%s) rejected our login (no client ID assigned). Disconnecting."
-msgstr ""
+msgstr "השרת %s (%s) דחה את ההתחברות שלנו (לא הוקצה מזהה לקוח). מתנתק."
 
 #: src/ServerSocket.cpp
 #, c-format
@@ -7241,11 +7242,11 @@ msgid "Unknown server info received! - too short"
 msgstr "התקבל מידע על שרת, שהמידע לא ידוע! - קצר מדי"
 
 #: src/ServerSocket.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Received %d new server"
 msgid_plural "Received %d new servers"
 msgstr[0] "התקבל %d שרת חדש"
-msgstr[1] "התקבל %d שרת חדש"
+msgstr[1] "התקבלו %d שרתים חדשים"
 
 #: src/ServerSocket.cpp
 msgid "Saving of server-list completed."
@@ -7290,9 +7291,8 @@ msgid "Could not solve dns for server %s: Unable to connect!"
 msgstr "לא יכול לפענח כתובת השרת של %s באמצעות DNS: לא יכול להתחבר!"
 
 #: src/ServerWnd.cpp
-#, fuzzy
 msgid "aMuleGUI Log"
-msgstr "אֵימיול "
+msgstr "יומן aMuleGUI"
 
 #: src/ServerWnd.cpp
 msgid "Server not added: No IP or hostname specified."
@@ -7304,39 +7304,35 @@ msgstr "שרת לא התווסף: צוינה מבואה לא תקפה."
 
 #: src/ServerWnd.cpp
 msgid "eD2k Status:"
-msgstr ""
+msgstr "מצב eD2k:"
 
 #: src/ServerWnd.cpp
 msgid "ID"
 msgstr "מ\"ז"
 
 #: src/ServerWnd.cpp
-#, fuzzy
 msgid "Connection Type:"
-msgstr "מצב חיבור:"
+msgstr "סוג חיבור:"
 
 #: src/ServerWnd.cpp
-#, fuzzy
 msgid "Connected since:"
-msgstr "מחובר"
+msgstr "מחובר מאז:"
 
 #: src/ServerWnd.cpp
 msgid "Kademlia Status:"
 msgstr "סטטוס קאדימליה:"
 
 #: src/ServerWnd.cpp
-#, fuzzy
 msgid "Running in LAN mode"
-msgstr "פועל על %s"
+msgstr "פועל במצב רשת מקומית"
 
 #: src/ServerWnd.cpp
 msgid "Running"
 msgstr "פועל"
 
 #: src/ServerWnd.cpp
-#, fuzzy
 msgid "Kademlia client ID:"
-msgstr "סטטוס קאדימליה:"
+msgstr "מזהה לקוח Kademlia:"
 
 #: src/ServerWnd.cpp
 msgid "Status:"
@@ -7349,17 +7345,16 @@ msgstr "מצב חיבור:"
 #: src/ServerWnd.cpp
 #, c-format
 msgid "Firewalled - open TCP port %d in your router or firewall"
-msgstr ""
+msgstr "מאחורי חומת אש - פתח את מבואת TCP %d בנתב או בחומת האש שלך"
 
 #: src/ServerWnd.cpp
-#, fuzzy
 msgid "UDP Connection State:"
-msgstr "מצב חיבור:"
+msgstr "מצב חיבור UDP:"
 
 #: src/ServerWnd.cpp
 #, c-format
 msgid "Firewalled - open UDP port %d in your router or firewall"
-msgstr ""
+msgstr "מאחורי חומת אש - פתח את מבואת UDP %d בנתב או בחומת האש שלך"
 
 #: src/ServerWnd.cpp
 msgid "Firewalled state: "
@@ -7367,47 +7362,44 @@ msgstr "מצב חומת אש: "
 
 #: src/ServerWnd.cpp
 msgid "No buddy required - TCP port open"
-msgstr ""
+msgstr "לא נדרש חבר - מבואת TCP פתוחה"
 
 #: src/ServerWnd.cpp
 msgid "No buddy required - UDP port open"
-msgstr ""
+msgstr "לא נדרש חבר - מבואת UDP פתוחה"
 
 #: src/ServerWnd.cpp
 msgid "No buddy"
 msgstr "אין חבר"
 
 #: src/ServerWnd.cpp
-#, fuzzy
 msgid "Connecting to buddy"
-msgstr "מחובר לחבר"
+msgstr "מתחבר לחבר"
 
 #: src/ServerWnd.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Connected to buddy at %s"
-msgstr "מחובר לחבר"
+msgstr "מחובר לחבר בכתובת %s"
 
 #: src/ServerWnd.cpp
 msgid "IP address:"
 msgstr "כתובת IP:"
 
 #: src/ServerWnd.cpp
-#, fuzzy
 msgid "Indexed sources:"
-msgstr "מקורות שנמצאו :"
+msgstr "מקורות באינדקס:"
 
 #: src/ServerWnd.cpp
 msgid "Indexed keywords:"
-msgstr ""
+msgstr "מילות מפתח באינדקס:"
 
 #: src/ServerWnd.cpp
-#, fuzzy
 msgid "Indexed notes:"
-msgstr "קובץ האינדקס לא נמצא"
+msgstr "הערות באינדקס:"
 
 #: src/ServerWnd.cpp
 msgid "Indexed load:"
-msgstr ""
+msgstr "עומס אינדקס:"
 
 #: src/ServerWnd.cpp
 msgid "Average Users:"
@@ -7440,31 +7432,31 @@ msgstr ""
 #: src/SharedFileList.cpp
 #, c-format
 msgid "Adding file %s to shares"
-msgstr ""
+msgstr "מוסיף את הקובץ %s לשיתופים"
 
 #: src/SharedFileList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Found %i known shared file"
 msgid_plural "Found %i known shared files"
 msgstr[0] "נמצא %i קובץ משותף מוכר"
-msgstr[1] "נמצא %i קובץ משותף מוכר"
+msgstr[1] "נמצאו %i קבצים משותפים מוכרים"
 
 #: src/SharedFileList.cpp
 #, c-format
 msgid "Excluded %i file from sharing by filter"
 msgid_plural "Excluded %i files from sharing by filter"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "%i קובץ הוחרג משיתוף על ידי המסנן"
+msgstr[1] "%i קבצים הוחרגו משיתוף על ידי המסנן"
 
 #: src/SharedFileList.cpp
 #, c-format
 msgid "ERROR: Attempted to share %s"
-msgstr ""
+msgstr "שגיאה: ניסיון לשתף את %s"
 
 #: src/SharedFileList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Shared directory not found, skipping: %s"
-msgstr "לא נמצא השרת: %s"
+msgstr "תיקייה משותפת לא נמצאה, מדלג: %s"
 
 #: src/SharedFileList.cpp
 #, fuzzy, c-format
@@ -7523,24 +7515,20 @@ msgid "Parts on Peer"
 msgstr ""
 
 #: src/SharedFilePeersListCtrl.cpp
-#, fuzzy
 msgid "Upload Status"
-msgstr "ההעלאות"
+msgstr "מצב העלאה"
 
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-#, fuzzy
 msgid "Download Status"
-msgstr "הורדות"
+msgstr "מצב הורדה"
 
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-#, fuzzy
 msgid "Local File Name"
-msgstr "שם קובץ"
+msgstr "שם קובץ מקומי"
 
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-#, fuzzy
 msgid "Shares File List"
-msgstr "קבצים משותפים"
+msgstr "רשימת קבצים משותפים"
 
 #: src/SharedFilesCtrl.cpp
 #, fuzzy
@@ -7569,7 +7557,7 @@ msgstr "שנה שם"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Verify Local Data"
-msgstr ""
+msgstr "אמת נתונים מקומיים"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Re-extract &media metadata"
@@ -7585,28 +7573,27 @@ msgstr "העתק מגנט &URI ללוח"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Copy eD2k link to clipboard (&Source)"
-msgstr ""
+msgstr "העתק קישור eD2k ללוח (&מקור)"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Copy eD2k link to clipboard (Source) (&With Crypt options)"
-msgstr ""
+msgstr "העתק קישור eD2k ללוח (מקור) (&עם אפשרויות הצפנה)"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Copy eD2k link to clipboard (&Hostname)"
-msgstr ""
+msgstr "העתק קישור eD2k ללוח (&שם מארח)"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Copy eD2k link to clipboard (Hostname) (With &Crypt options)"
-msgstr ""
+msgstr "העתק קישור eD2k ללוח (שם מארח) (עם אפשרויות &הצפנה)"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Copy eD2k link to clipboard (&AICH info)"
-msgstr ""
+msgstr "העתק קישור eD2k ללוח (&מידע AICH)"
 
 #: src/SharedFilesCtrl.cpp
-#, fuzzy
 msgid "Copy eD2k link to clipboard (&AICH info + Source)"
-msgstr "העתק קישור ED2k ללוח (מידע &AICH)"
+msgstr "העתק קישור eD2k ללוח (&מידע AICH + מקור)"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Export selected files to an emulecollection"
@@ -7615,7 +7602,7 @@ msgstr ""
 #: src/SharedFilesCtrl.cpp
 #, c-format
 msgid "Verify Local Data on PartFile is currently not supported: %s"
-msgstr ""
+msgstr "אימות נתונים מקומיים על קובץ-חלקים אינו נתמך כרגע: %s"
 
 #: src/SharedFilesCtrl.cpp
 #, c-format
@@ -7717,9 +7704,9 @@ msgid "Shared Files (%i)"
 msgstr "קבצים משותפים (%i)"
 
 #: src/SharedFilesReloadProgress.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Reloading shared files: %u files scanned"
-msgstr "טוען מחדש את רשימת הקבצים המשותפים."
+msgstr "טוען מחדש קבצים משותפים: %u קבצים נסרקו"
 
 #: src/SourceListCtrl.cpp
 #, fuzzy
@@ -7727,9 +7714,8 @@ msgid "Part Status"
 msgstr "מצב"
 
 #: src/SourceListCtrl.cpp
-#, fuzzy
 msgid "Remote File Name"
-msgstr "שם קובץ"
+msgstr "שם קובץ מרוחק"
 
 #: src/SourceListCtrl.cpp
 msgid "A4AF"
@@ -7768,7 +7754,7 @@ msgstr "תקורת קאד (חבילות): %s"
 #: src/Statistics.cpp
 #, c-format
 msgid "Crypt overhead (UDP): %s"
-msgstr ""
+msgstr "תקורת הצפנה (UDP): %s"
 
 #: src/Statistics.cpp
 #, c-format
@@ -7818,22 +7804,22 @@ msgstr "יחס העלאה:הורדה בהתחברות נוכחית (סכום כ�
 #: src/Statistics.cpp
 #, c-format
 msgid "Average download rate (Session): %s"
-msgstr ""
+msgstr "קצב הורדה ממוצע (הרצה נוכחית): %s"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Average upload rate (Session): %s"
-msgstr ""
+msgstr "קצב העלאה ממוצע (הרצה נוכחית): %s"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Max download rate (Session): %s"
-msgstr ""
+msgstr "קצב הורדה מקסימלי (הרצה נוכחית): %s"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Max upload rate (Session): %s"
-msgstr ""
+msgstr "קצב העלאה מקסימלי (הרצה נוכחית): %s"
 
 #: src/Statistics.cpp
 #, c-format
@@ -7871,19 +7857,19 @@ msgid "Peak Connections (estimate): %i"
 msgstr "שיא החיבורים (משוער): %i"
 
 #: src/Statistics.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Unknown: %s"
-msgstr "גודל לא ידוע"
+msgstr "לא ידוע: %s"
 
 #: src/Statistics.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Filtered: %s"
-msgstr "מסוננים"
+msgstr "מסונן: %s"
 
 #: src/Statistics.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Banned: %s"
-msgstr "חסום"
+msgstr "חסום: %s"
 
 #: src/Statistics.cpp
 #, c-format
@@ -7953,7 +7939,7 @@ msgstr "מספר קבצים משותפים: %s"
 #: src/Statistics.cpp
 #, c-format
 msgid "Average file size: %s"
-msgstr ""
+msgstr "גודל קובץ ממוצע: %s"
 
 #: src/Statistics.cpp
 msgid "Operating System"
@@ -7977,9 +7963,9 @@ msgid "Never"
 msgstr "אף פעם"
 
 #: src/TerminationProcess.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Command '%s' with pid '%d' has finished with status code '%d'."
-msgstr "פקודת '%s עם pid '%d' סיים עם קוד סטטוס '%d'."
+msgstr "הפקודה '%s' עם pid '%d' הסתיימה עם קוד מצב '%d'."
 
 #: src/TextClient.cpp
 msgid "Execute <str> and exit."
@@ -8024,6 +8010,8 @@ msgid ""
 "Invalid search filter syntax.\n"
 "Type 'help search' to get more help.\n"
 msgstr ""
+"תחביר מסנן חיפוש לא תקין.\n"
+"הקלד 'help search' לקבלת עזרה נוספת.\n"
 
 #. TRANSLATORS:
 #. 'help search' is a command to the program, do not translate it.
@@ -8032,6 +8020,8 @@ msgid ""
 "No search keyword provided.\n"
 "Type 'help search' to get more help.\n"
 msgstr ""
+"לא סופקה מילת מפתח לחיפוש.\n"
+"הקלד 'help search' לקבלת עזרה נוספת.\n"
 
 #. TRANSLATORS:
 #. 'help search' is a command to the program, do not translate it.
@@ -8040,11 +8030,13 @@ msgid ""
 "No search type defined.\n"
 "Type 'help search' to get more help.\n"
 msgstr ""
+"לא הוגדר סוג חיפוש.\n"
+"הקלד 'help search' לקבלת עזרה נוספת.\n"
 
 #: src/TextClient.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Download File: %lu %s\n"
-msgstr "הורדות (%i)"
+msgstr "הורד קובץ: %lu %s\n"
 
 #: src/TextClient.cpp src/webserver/src/WebServer.cpp
 msgid "Request failed with an unknown error."
@@ -8090,12 +8082,12 @@ msgstr ""
 #: src/TextClient.cpp
 #, c-format
 msgid "Endgame source rotation is %s.\n"
-msgstr ""
+msgstr "סבב מקורות מצב הסיום הוא %s.\n"
 
 #: src/TextClient.cpp
 #, c-format
 msgid "Search started (id %u).\n"
-msgstr ""
+msgstr "החיפוש החל (מזהה %u).\n"
 
 #: src/TextClient.cpp
 #, c-format
@@ -8192,7 +8184,7 @@ msgstr ""
 
 #: src/TextClient.cpp
 msgid "Shut down aMule."
-msgstr ""
+msgstr "כבה את aMule."
 
 #: src/TextClient.cpp
 msgid ""
@@ -8200,35 +8192,33 @@ msgid ""
 "This will also shut down the text client, since it is unusable without a\n"
 "running core.\n"
 msgstr ""
+"כבה את הליבה המרוחקת הפועלת (amule/amuled).\n"
+"פעולה זו תכבה גם את לקוח הטקסט, מכיוון שהוא אינו שמיש ללא\n"
+"ליבה פועלת.\n"
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Reload the given object."
-msgstr "טוען מחדש את האובייקט הנתון."
+msgstr "טען מחדש את האובייקט הנתון."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Reload shared files list."
-msgstr "טוען מחדש את רשימת הקבצים המשותפים."
+msgstr "טען מחדש את רשימת הקבצים המשותפים."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Reload IP filtering table."
-msgstr "טוען מחדש את טבלת סינון ה IP מהקובץ."
+msgstr "טען מחדש את טבלת סינון ה-IP."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Reload current IP filtering table."
-msgstr "בחר את אמת סינון הIP."
+msgstr "טען מחדש את טבלת סינון ה-IP הנוכחית."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Update IP filtering table from URL."
-msgstr "טוען מחדש את טבלת סינון ה IP מהקובץ."
+msgstr "עדכן את טבלת סינון ה-IP מכתובת URL."
 
 #: src/TextClient.cpp
 msgid "If URL is omitted the URL from the preferences is used."
-msgstr ""
+msgstr "אם כתובת ה-URL הושמטה, תשמש כתובת ה-URL מההעדפות."
 
 #: src/TextClient.cpp
 msgid "Connect to the network."
@@ -8248,7 +8238,7 @@ msgstr ""
 
 #: src/TextClient.cpp
 msgid "Connect to eD2k only."
-msgstr ""
+msgstr "התחבר ל-eD2k בלבד."
 
 #: src/TextClient.cpp
 msgid "Connect to Kad only."
@@ -8264,16 +8254,15 @@ msgstr "פעולה זו תנתק את כל הרשתות המחוברות.\n"
 
 #: src/TextClient.cpp
 msgid "Disconnect from eD2k only."
-msgstr ""
+msgstr "התנתק מ-eD2k בלבד."
 
 #: src/TextClient.cpp
 msgid "Disconnect from Kad only."
 msgstr "התנתק רק מ קאד."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Add an eD2k or magnet link to core."
-msgstr "מוסיף קישור ed2k או מגנט לליבה."
+msgstr "הוסף קישור eD2k או מגנט לליבה."
 
 #: src/TextClient.cpp
 msgid ""
@@ -8285,15 +8274,21 @@ msgid ""
 "\n"
 "The magnet link must contain the eD2k hash and file length.\n"
 msgstr ""
+"קישור ה-eD2k שיתווסף יכול להיות:\n"
+"*) קישור לקובץ (ed2k://|file|...), הוא יתווסף לתור ההורדות,\n"
+"*) קישור לשרת (ed2k://|server|...), הוא יתווסף לרשימת השרתים,\n"
+"*) או קישור לרשימת שרתים, ובמקרה זה כל השרתים ברשימה יתווספו\n"
+"   לרשימת השרתים.\n"
+"\n"
+"קישור המגנט חייב לכלול את גיבוב ה-eD2k ואת אורך הקובץ.\n"
 
 #: src/TextClient.cpp
 msgid "Set a preference value."
 msgstr "הגדר ערך מועדף."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Set IP filtering preferences."
-msgstr "הגדר העדפת מסנן IP."
+msgstr "הגדר את העדפות סינון ה-IP."
 
 #: src/TextClient.cpp
 msgid "Turn IP filtering on for both clients and servers."
@@ -8352,9 +8347,8 @@ msgid "Set upload bandwidth limit."
 msgstr "קבע מגבלת רוחב פס בהעלאה."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "The given value must be in kilobytes/sec.\n"
-msgstr "הערך שמועבר לפקודות אלו חייב להיות ביחידות של ק\"ב/ש.\n"
+msgstr "הערך הנתון חייב להיות בקילובייט לשנייה.\n"
 
 #: src/TextClient.cpp
 msgid "Set download bandwidth limit."
@@ -8362,41 +8356,35 @@ msgstr "קבע מגבלת רוחב פס בהורדה."
 
 #: src/TextClient.cpp
 msgid "Enable or disable endgame source rotation."
-msgstr ""
+msgstr "הפעל או נטרל את סבב המקורות של מצב הסיום."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "The given value must be 1/ON (enable) or 0/OFF (disable).\n"
-msgstr "הערך שמועבר לפקודות אלו חייב להיות ביחידות של ק\"ב/ש.\n"
+msgstr "הערך שסופק חייב להיות 1/ON (הפעלה) או 0/OFF (נטרול).\n"
 
 #: src/TextClient.cpp
 msgid "Get and display a preference value."
 msgstr "שלוף ותציג ערך של העדפה."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Get IP filtering preferences."
-msgstr "שלוף העדפה עבור סינון IP."
+msgstr "שלוף את העדפות סינון ה-IP."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Get IP filtering state for both clients and servers."
-msgstr "שלוף העדפה עבור סינון IP עבור השרתים והלקוחות."
+msgstr "שלוף את מצב סינון ה-IP עבור לקוחות ושרתים כאחד."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Get IP filtering state for clients only."
-msgstr "שלוף העדפה עבור סינון IP רק עבור הלקוחות."
+msgstr "שלוף את מצב סינון ה-IP עבור לקוחות בלבד."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Get IP filtering state for servers only."
-msgstr "שלוף העדפה עבור סינון IP רק עבור השרתים."
+msgstr "שלוף את מצב סינון ה-IP עבור שרתים בלבד."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Get IP filtering level."
-msgstr "בחר את אמת סינון הIP."
+msgstr "שלוף את רמת סינון ה-IP."
 
 #: src/TextClient.cpp
 msgid "Get bandwidth limits."
@@ -8404,12 +8392,11 @@ msgstr "שלוף הגבלת רוחב הפס."
 
 #: src/TextClient.cpp
 msgid "Get endgame source rotation state."
-msgstr ""
+msgstr "שלוף את מצב סבב המקורות בסיום ההורדה."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Execute a search."
-msgstr "הרץ חיפוש בקאדימליה"
+msgstr "בצע חיפוש."
 
 #: src/TextClient.cpp
 msgid ""
@@ -8429,43 +8416,57 @@ msgid ""
 "Example: 'search global linux iso --type Iso --min-size 100M' returns\n"
 "results for \"linux iso\" of file-type Iso at least 100 MiB.\n"
 msgstr ""
+"יש לציין סוג חיפוש על ידי מתן הסוג:\n"
+"    GLOBAL\n"
+"    LOCAL\n"
+"    KAD\n"
+"דוגמה: 'search kad file' יבצע חיפוש ב-Kad עבור \"file\".\n"
+"\n"
+"ניתן להוסיף מסננים אופציונליים לפני, אחרי, או בשילוב עם\n"
+"מילות המפתח לחיפוש:\n"
+"    --type <Audio|Video|Image|Doc|Pro|Arc|Iso>\n"
+"    --extension <ext>      (כינוי: --ext)\n"
+"    --avail <N>            מספר מינימלי של מקורות\n"
+"    --min-size <N[KMG]>    גודל הקובץ המינימלי; K=1024, M=K*1024, G=M*1024\n"
+"    --max-size <N[KMG]>    גודל הקובץ המקסימלי; אותן סיומות\n"
+"דוגמה: 'search global linux iso --type Iso --min-size 100M' מחזיר\n"
+"תוצאות עבור \"linux iso\" מסוג הקובץ Iso בגודל 100 MiB לפחות.\n"
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Execute a global search."
-msgstr "הרץ חיפוש גלובלי."
+msgstr "בצע חיפוש גלובלי."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Execute a local search"
-msgstr "הרץ חיפוש מקומי"
+msgstr "בצע חיפוש מקומי"
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Execute a kad search"
-msgstr "הרץ חיפוש בקאדימליה"
+msgstr "בצע חיפוש ב-Kad"
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Show the results of a search."
-msgstr "הראה את התוצאות של החיפוש האחרון."
+msgstr "הראה את תוצאות החיפוש."
 
 #: src/TextClient.cpp
 msgid ""
 "Return the results of a search.\n"
 "Optionally takes a search id (from 'search ...'); with no id, returns the results of the most recently started search.\n"
 msgstr ""
+"החזר את תוצאות החיפוש.\n"
+"ניתן לספק באופן אופציונלי מזהה חיפוש (מתוך 'search ...'); ללא מזהה, יוחזרו תוצאות החיפוש שהחל לאחרונה.\n"
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Show the progress of a search."
-msgstr "מראה את התקדמות החיפוש."
+msgstr "הראה את התקדמות החיפוש."
 
 #: src/TextClient.cpp
 msgid ""
 "Show the progress of a search.\n"
 "Optionally takes a search id; with no id, shows the progress of the most recently started search.\n"
 msgstr ""
+"הראה את התקדמות החיפוש.\n"
+"ניתן לספק באופן אופציונלי מזהה חיפוש; ללא מזהה, תוצג ההתקדמות של החיפוש שהחל לאחרונה.\n"
 
 #: src/TextClient.cpp
 msgid "Start downloading a file"
@@ -8519,9 +8520,8 @@ msgid "Show queues/lists."
 msgstr "הראה תורים/רשימות."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Show upload/download queue, server list or shared files list.\n"
-msgstr "הראה תורים של הרודות/העלאות, רשימת שרתים או רשימת קבצים משותפים.\n"
+msgstr "הראה תור העלאה/הורדה, רשימת שרתים או רשימת קבצים משותפים.\n"
 
 #: src/TextClient.cpp
 msgid "Show upload queue."
@@ -8540,9 +8540,8 @@ msgid "Show servers list."
 msgstr "הראה את רשימת השרתים."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Show shared files list."
-msgstr "טוען מחדש את רשימת הקבצים המשותפים."
+msgstr "הראה את רשימת הקבצים המשותפים."
 
 #: src/TextClient.cpp
 msgid "Reset log."
@@ -8551,7 +8550,7 @@ msgstr "אפס את הימון."
 #: src/TextClient.cpp
 #, c-format
 msgid "Deprecated command, use '%s' instead."
-msgstr ""
+msgstr "פקודה מיושנת, השתמש ב-'%s' במקום."
 
 #: src/TextClient.cpp
 #, c-format
@@ -8589,12 +8588,12 @@ msgstr "ממיר את קבוצת הגיבובים בפורמט AICH עבור '%s
 #: src/ThreadTasks.cpp
 #, c-format
 msgid "Verify Local Data (%s): Result OK for %s"
-msgstr ""
+msgstr "אימות נתונים מקומיים (%s): תוצאה תקינה עבור %s"
 
 #: src/ThreadTasks.cpp
 #, c-format
 msgid "Verify Local Data (%s): ERRORS FOUND! %s Failed blocks: MD4: %s. %s %s"
-msgstr ""
+msgstr "אימות נתונים מקומיים (%s): נמצאו שגיאות! %s בלוקים שנכשלו: MD4: %s. %s %s"
 
 #: src/ThreadTasks.cpp
 #, c-format
@@ -8656,12 +8655,11 @@ msgstr "זקוק לאישור."
 
 #: src/TransferWnd.cpp
 msgid "Only 99 categories are supported."
-msgstr ""
+msgstr "נתמכות רק 99 קטיגוריות."
 
 #: src/TransferWnd.cpp
-#, fuzzy
 msgid "Too many categories!"
-msgstr "יותר מדי חיבורים"
+msgstr "יותר מדי קטיגוריות!"
 
 #: src/TransferWnd.cpp
 msgid "All others"
@@ -8722,7 +8720,7 @@ msgstr "שם הקובץ ללא הנתיב."
 
 #: src/UserEvents.h
 msgid "The eD2k hash of the file."
-msgstr ""
+msgstr "גיבוב ה-eD2k של הקובץ."
 
 #: src/UserEvents.h
 msgid "The size of the file in bytes."
@@ -8762,13 +8760,13 @@ msgid "You have asked for part hashes (Only used for files > 9.5 MB)"
 msgstr "ביקשת גיבובים עבור חלקים (בשימוש רק עבור קבצים > 9.5 מ\"ב"
 
 #: src/utils/aLinkCreator/src/alcc.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "%s ---> Non existent file !\n"
-msgstr "קובץ %s אינו קיים!\n"
+msgstr "%s ---> קובץ לא קיים !\n"
 
 #: src/utils/aLinkCreator/src/alc.cpp
 msgid "aLinkCreator, the aMule eD2k link creator"
-msgstr ""
+msgstr "aLinkCreator, יוצר קישורי eD2k של aMule"
 
 #: src/utils/aLinkCreator/src/alcframe.cpp src/utils/wxCas/src/wxcasframe.cpp
 msgid "Welcome!"
@@ -8788,11 +8786,11 @@ msgstr "הוסף כתובות URL אופתינליות לקובץ זה"
 
 #: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Enter here the file you want to compute the eD2k link"
-msgstr ""
+msgstr "הזן כאן את הקובץ שעבורו ברצונך לחשב את קישור ה-eD2k"
 
 #: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Enter here the URL you want to add to the eD2k link: Add / at the end to let aLinkCreator append the current file name"
-msgstr ""
+msgstr "הזן כאן את כתובת ה-URL שברצונך להוסיף לקישור ה-eD2k: הוסף / בסוף כדי לאפשר ל-aLinkCreator לצרף את שם הקובץ הנוכחי"
 
 #: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Create link with part-hashes"
@@ -8808,11 +8806,11 @@ msgstr "קובץ גיבובי MD4"
 
 #: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "eD2k File Hash"
-msgstr ""
+msgstr "גיבוב קובץ eD2k"
 
 #: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "eD2k link"
-msgstr ""
+msgstr "קישור eD2k"
 
 #: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Save"
@@ -8824,23 +8822,23 @@ msgstr "העתק ללוח"
 
 #: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Open"
-msgstr ""
+msgstr "פתח"
 
 #: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Open a file to compute its eD2k link"
-msgstr ""
+msgstr "פתח קובץ כדי לחשב את קישור ה-eD2k שלו"
 
 #: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Copy computed eD2k link to clipboard"
-msgstr ""
+msgstr "העתק את קישור ה-eD2k המחושב ללוח"
 
 #: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Save as"
-msgstr ""
+msgstr "שמור בשם"
 
 #: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Save computed eD2k link to file"
-msgstr ""
+msgstr "שמור את קישור ה-eD2k המחושב לקובץ"
 
 #: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "About aLinkCreator"
@@ -8848,11 +8846,11 @@ msgstr "אודות aLinkCreator"
 
 #: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Select the file you want to compute the eD2k link"
-msgstr ""
+msgstr "בחר את הקובץ שעבורו ברצונך לחשב את קישור ה-eD2k"
 
 #: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Can't open the clipboard"
-msgstr ""
+msgstr "לא ניתן לפתוח את הלוח"
 
 #: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Nothing to copy for now !"
@@ -8860,7 +8858,7 @@ msgstr "אין שום דבר להעתיק נכון לעכשיו !"
 
 #: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Select the file to your computed eD2k link"
-msgstr ""
+msgstr "בחר את הקובץ עבור קישור ה-eD2k המחושב שלך"
 
 #: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Unable to open "
@@ -8885,6 +8883,14 @@ msgid ""
 "\n"
 "Distributed under GPL"
 msgstr ""
+"aLinkCreator, יוצר קישורי eD2k של aMule\n"
+"\n"
+"(c) 2004 ThePolish <thepolish@vipmail.ru>\n"
+"\n"
+"תמונות (Pixmaps) מ-http://www.everaldo.com ומ-http://www.icomania.com\n"
+"ומ-http://jimmac.musichall.cz/ikony.php3\n"
+"\n"
+"מופץ תחת רישיון GPL"
 
 #: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Hashing..."
@@ -8892,15 +8898,15 @@ msgstr "מגבב..."
 
 #: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "aLinkCreator is working for you"
-msgstr ""
+msgstr "aLinkCreator עובד בשבילך"
 
 #: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Computing MD4 Hash..."
-msgstr ""
+msgstr "מחשב גיבוב MD4..."
 
 #: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Computing eD2k Hashes..."
-msgstr ""
+msgstr "מחשב גיבובי eD2k..."
 
 #: src/utils/aLinkCreator/src/alcframe.cpp src/utils/aLinkCreator/src/md4.cpp
 msgid "Cancelled !"
@@ -8926,7 +8932,7 @@ msgstr "לא מצליח לפתוח את %s"
 
 #: src/utils/aLinkCreator/src/ed2khash.cpp
 msgid "Out of memory while calculating ed2k hash!"
-msgstr ""
+msgstr "אזל הזיכרון בעת חישוב גיבוב ed2k!"
 
 #: src/utils/wxCas/src/linuxmon.cpp
 #, c-format
@@ -9196,9 +9202,8 @@ msgid "Enter here the directory where you want to generate the statistic image"
 msgstr "הכנס כאן את התקיה שבה אתה רוצה ליצור את תמונת הסטטוס"
 
 #: src/utils/wxCas/src/wxcasprefs.cpp
-#, fuzzy
 msgid "Upload periodically your stat image to FTP server"
-msgstr "העלה בתקופתיות את תמונת הסטטוס לשרת FTP"
+msgstr "העלה מעת לעת את תמונת הסטטיסטיקה שלך לשרת FTP"
 
 #: src/utils/wxCas/src/wxcasprefs.cpp
 msgid "FTP Url"
@@ -9250,11 +9255,11 @@ msgstr "טוען תבנית<מחרוזת>"
 
 #: src/webserver/src/WebInterface.cpp
 msgid "Web server HTTP port"
-msgstr ""
+msgstr "מבואת HTTP של שרת האינטרנט"
 
 #: src/webserver/src/WebInterface.cpp
 msgid "Use UPnP port forwarding on web server port"
-msgstr ""
+msgstr "השתמש בהעברת מבואות UPnP עבור מבואת שרת האינטרנט"
 
 #: src/webserver/src/WebInterface.cpp
 msgid "UPnP port"
@@ -9266,11 +9271,11 @@ msgstr "השמתש בדחיסת gzip"
 
 #: src/webserver/src/WebInterface.cpp
 msgid "Full access password for web server"
-msgstr ""
+msgstr "סיסמת גישה מלאה לשרת האינטרנט"
 
 #: src/webserver/src/WebInterface.cpp
 msgid "Guest password for web server"
-msgstr ""
+msgstr "סיסמת אורח לשרת האינטרנט"
 
 #: src/webserver/src/WebInterface.cpp
 msgid "Allow guest access"
@@ -9282,7 +9287,7 @@ msgstr "מנע גישה מאורחים"
 
 #: src/webserver/src/WebInterface.cpp
 msgid "Load/save web server settings from/to remote aMule"
-msgstr ""
+msgstr "טען/שמור הגדרות שרת אינטרנט מ/אל aMule מרוחק"
 
 #: src/webserver/src/WebInterface.cpp
 msgid "aMule config file path. DO NOT USE DIRECTLY!"
@@ -9302,11 +9307,11 @@ msgstr "שרת אימיול רשתי"
 
 #: src/webserver/src/WebServer.cpp
 msgid "web client connection accepted\n"
-msgstr ""
+msgstr "חיבור לקוח אינטרנט התקבל\n"
 
 #: src/webserver/src/WebServer.cpp
 msgid "ERROR: cannot accept web client connection\n"
-msgstr ""
+msgstr "שגיאה: לא ניתן לקבל חיבור לקוח אינטרנט\n"
 
 #: src/webserver/src/WebServer.cpp
 #, c-format
@@ -9343,11 +9348,11 @@ msgstr "מעבד בקשה [מקורי]: "
 
 #: src/webserver/src/WebServer.cpp
 msgid "Refusing to read `pass` from URL query string\n"
-msgstr ""
+msgstr "מסרב לקרוא `pass` ממחרוזת השאילתה של ה-URL\n"
 
 #: src/webserver/src/WebServer.cpp
 msgid "No password specified, login will not be allowed."
-msgstr ""
+msgstr "לא צוינה סיסמא, ההתחברות לא תתאפשר."
 
 #: src/webserver/src/WebServer.cpp
 msgid "Checking password\n"
@@ -9379,52 +9384,51 @@ msgstr "מעבד בקשה [הופנתה מחדש]: "
 
 #: packaging/windows/installer_strings.c
 msgid "aMule (required)"
-msgstr ""
+msgstr "aMule (חובה)"
 
 #: packaging/windows/installer_strings.c
 msgid "Desktop shortcut"
-msgstr ""
+msgstr "קיצור דרך בשולחן העבודה"
 
 #: packaging/windows/installer_strings.c
 msgid "Start aMule when I log in"
-msgstr ""
+msgstr "הפעל את aMule כשאני מתחבר"
 
 #: packaging/windows/installer_strings.c
 msgid "Associate .emulecollection files"
-msgstr ""
+msgstr "שייך קובצי .emulecollection"
 
 #: packaging/windows/installer_strings.c
 msgid "Uninstall"
-msgstr ""
+msgstr "הסר התקנה"
 
 #: packaging/windows/installer_strings.c
 msgid "Remove user data (config, ED2K servers, Kad nodes, partfiles)"
-msgstr ""
+msgstr "הסר נתוני משתמש (תצורה, שרתי ED2K, צמתי Kad, קבצי-חלקים)"
 
 #: packaging/windows/installer_strings.c
-#, fuzzy
 msgid "aMule application files (required)."
-msgstr "התחברות נכשלה "
+msgstr "קבצי היישום של aMule (חובה)."
 
 #: packaging/windows/installer_strings.c
 msgid "Place an aMule shortcut on the desktop."
-msgstr ""
+msgstr "הצב קיצור דרך של aMule בשולחן העבודה."
 
 #: packaging/windows/installer_strings.c
 msgid "Launch aMule automatically when the current user logs in (per-user setting)."
-msgstr ""
+msgstr "הפעל את aMule אוטומטית כשהמשתמש הנוכחי מתחבר (הגדרה לפי משתמש)."
 
 #: packaging/windows/installer_strings.c
 msgid "Adds aMule to the \"Open with\" list for .emulecollection files, and makes it the default if no other program has claimed them. Opening a collection queues every eD2k link it contains."
-msgstr ""
+msgstr "מוסיף את aMule לרשימת \"פתח באמצעות\" עבור קובצי .emulecollection, והופך אותו לברירת המחדל אם אף תוכנית אחרת לא תבעה אותם. פתיחת אוסף מוסיפה לתור כל קישור eD2k שהוא מכיל."
 
 #: packaging/windows/installer_strings.c
 msgid "Remove aMule application files, Start Menu / desktop shortcuts, autostart Run-key entry, URL scheme registrations, and Add/Remove Programs entry (required)."
-msgstr ""
+msgstr "הסר את קובצי היישום של aMule, קיצורי דרך בתפריט התחלה / שולחן העבודה, רשומת מפתח ההפעלה האוטומטית, רישומי סכימת URL, ורשומת הוספה/הסרה של תוכניות (נדרש)."
 
 #: packaging/windows/installer_strings.c
 msgid "Permanently delete %APPDATA%\\aMule for the current user (aMule.conf, ED2K server list, Kad nodes, partfiles, IP filters, friends list). Leave unchecked to keep your settings."
-msgstr ""
+msgstr "מחק לצמיתות את %APPDATA%\\aMule עבור המשתמש הנוכחי (aMule.conf, רשימת שרתי ED2K, צמתי Kad, קבצי-חלקים, מסנני IP, רשימת חברים). השאר לא מסומן כדי לשמור על ההגדרות שלך."
 
 #: packaging/windows/installer_strings.c
 msgid ""
@@ -9440,7 +9444,7 @@ msgstr ""
 
 #: packaging/windows/installer_strings.c
 msgid "Removing previous aMule installation at $0..."
-msgstr ""
+msgstr "מסיר את התקנת aMule הקודמת ב-$0..."
 
 #: packaging/windows/installer_strings.c
 msgid ""
@@ -9450,11 +9454,11 @@ msgstr ""
 
 #: packaging/windows/installer_strings.c
 msgid "aMule appears to be running. Please close it and re-run the uninstaller."
-msgstr ""
+msgstr "נראה כי aMule פועל. אנא סגור אותו והרץ מחדש את תוכנית ההסרה."
 
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
-msgstr ""
+msgstr "מסיר נתוני משתמש ב-$APPDATA\\aMule..."
 
 #~ msgid ""
 #~ "The number of a file from the last search has to be given.\n"

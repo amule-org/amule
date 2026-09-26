@@ -11,7 +11,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-09-26 17:32+0100\n"
-"PO-Revision-Date: 2026-09-26 09:28+0000\n"
+"PO-Revision-Date: 2026-09-26 19:27+0000\n"
 "Last-Translator: Hallvor Brunstad <Hallvor_1976@yahoo.com>\n"
 "Language-Team: <i18n-nn@lister.ping.uio.no>\n"
 "Language: nn\n"
@@ -22,9 +22,8 @@ msgstr ""
 "X-Generator: Poedit 2.3\n"
 
 #: src/AboutDialog.cpp
-#, fuzzy
 msgid "About aMule"
-msgstr "Syne aMule"
+msgstr "Om aMule"
 
 #: src/AboutDialog.cpp
 msgid "aMule remote control "
@@ -39,19 +38,20 @@ msgid ""
 "'All-Platform' p2p client based on eMule \n"
 "\n"
 msgstr ""
+"«All-Platform» p2p-klient basert på eMule \n"
+"\n"
 
 #: src/AboutDialog.cpp
-#, fuzzy
 msgid ""
 "Copyright (c) 2003-2026 aMule Team \n"
 "\n"
 msgstr ""
-"Opphavsrett (c) 2003-2019 aMule Team \n"
+"Opphavsrett (c) 2003-2026 aMule Team \n"
 "\n"
 
 #: src/AboutDialog.cpp
 msgid "Part of aMule is based on \n"
-msgstr ""
+msgstr "Delar av aMule er baserte på \n"
 
 #: src/AboutDialog.cpp
 msgid "Kademlia: Peer-to-peer routing based on the XOR metric.\n"
@@ -59,51 +59,48 @@ msgstr "Kademlia: P2P brukarruting bygd på XOR metric.\n"
 
 #: src/AboutDialog.cpp
 msgid " Copyright (c) 2002-2011 Petar Maymounkov ( petar@maymounkov.org )\n"
-msgstr ""
+msgstr " Opphavsrett (c) 2002-2011 Petar Maymounkov ( petar@maymounkov.org )\n"
 
 #: src/AboutDialog.cpp
 msgid "Website:"
-msgstr ""
+msgstr "Nettstad:"
 
 #: src/AboutDialog.cpp
 msgid "Forum:"
-msgstr ""
+msgstr "Forum:"
 
 #: src/AboutDialog.cpp
 msgid "Documentation:"
-msgstr ""
+msgstr "Dokumentasjon:"
 
 #: src/AboutDialog.cpp
 msgid "Issues:"
-msgstr ""
+msgstr "Feilrapportar:"
 
 #: src/AboutDialog.cpp
-#, fuzzy
 msgid "Click to check for a newer version."
-msgstr "Sjå etter ny utgåve ved oppstart"
+msgstr "Klikk for å sjå etter ei nyare utgåve."
 
 #: src/AboutDialog.cpp
 msgid "Check for updates"
-msgstr ""
+msgstr "Sjå etter oppdateringar"
 
 #: src/AboutDialog.cpp
-#, fuzzy
 msgid "Checking for updates..."
-msgstr "Koplar til Kad..."
+msgstr "Ser etter oppdateringar..."
 
 #: src/AboutDialog.cpp
-#, fuzzy
 msgid "You are running the latest version."
-msgstr "Du nyttar ei utdatert utgåve av aMule!"
+msgstr "Du køyrer den nyaste utgåva."
 
 #: src/AboutDialog.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "A new version (%s) is available:"
-msgstr "Ikkje tilgjengeleg"
+msgstr "Ei ny utgåve (%s) er tilgjengeleg:"
 
 #: src/AboutDialog.cpp
 msgid "Could not check for updates. Please try again later."
-msgstr ""
+msgstr "Kunne ikkje sjå etter oppdateringar. Prøv igjen seinare."
 
 #: src/AddFriend.cpp
 msgid "Add a Friend"
@@ -129,46 +126,50 @@ msgid ""
 "\n"
 "Install desktop integration now?"
 msgstr ""
+"aMule kan installere skrivebordsoppstartarar, ikon og kommandolinje-snarvegar i heimekatalogen din, slik at programmet dukkar opp i programmenyen som ein vanleg installert app.\n"
+"\n"
+"Dette kan reverserast - filene ligg under ~/.local/share/applications, ~/.local/share/icons og ~/.local/bin, og kan fjernast når som helst.\n"
+"\n"
+"Installere skrivebordsintegrasjon no?"
 
 #: src/AppImageIntegration.cpp
 msgid "Add aMule to your application menu?"
-msgstr ""
+msgstr "Vil du leggje aMule til programmenyen din?"
 
 #: src/AppImageIntegration.cpp
 msgid "Install"
-msgstr ""
+msgstr "Installer"
 
 #: src/AppImageIntegration.cpp
 msgid "Not now"
-msgstr ""
+msgstr "Ikkje no"
 
 #: src/AppImageIntegration.cpp src/amuleDlg.cpp
 msgid "Don't ask again"
-msgstr ""
+msgstr "Ikkje spør igjen"
 
 #: src/AppImageIntegration.cpp
 msgid "Cannot install desktop integration: the APPDIR environment variable is not set. This usually means the AppImage was launched in a non-standard way."
-msgstr ""
+msgstr "Kan ikkje installere skrivebordsintegrasjon: miljøvariabelen APPDIR er ikkje sett. Dette betyr vanlegvis at AppImage-en vart starta på ein ikkje-standard måte."
 
 #: src/AppImageIntegration.cpp
-#, fuzzy
 msgid "aMule integration failed"
-msgstr "Oppkopling mislukka "
+msgstr "aMule-integrasjon mislukkast"
 
 #: src/AppImageIntegration.cpp
 #, c-format
 msgid "Cannot install desktop integration: failed to create %s. Check that your home directory is writable."
-msgstr ""
+msgstr "Kan ikkje installere skrivebordsintegrasjon: greidde ikkje å opprette %s. Sjekk at heimekatalogen din er skrivbar."
 
 #: src/AppImageIntegration.cpp
 #, c-format
 msgid "Cannot install desktop integration: failed to write %s. Check that your home directory is writable."
-msgstr ""
+msgstr "Kan ikkje installere skrivebordsintegrasjon: greidde ikkje å skrive til %s. Sjekk at heimekatalogen din er skrivbar."
 
 #: src/AppImageIntegration.cpp
 #, c-format
 msgid "AppImage integration: aMule added to your application menu (%d shell shortcuts under ~/.local/bin)."
-msgstr ""
+msgstr "AppImage-integrasjon: aMule lagt til i programmenyen din (%d kommandolinje-snarvegar under ~/.local/bin)."
 
 #: src/AppImageIntegration.cpp
 msgid ""
@@ -178,23 +179,27 @@ msgid ""
 "\n"
 "Restart aMule now?"
 msgstr ""
+"aMule er lagt til i programmenyen din. Du kan no starte det frå applikasjonslista di, og startaren vil køyre denne same AppImage-en.\n"
+"\n"
+"På enkelte skrivebord kan aMule trenge ein omstart for at dock-/oppgåvelinje-ikonet skal bindast til den nye startaroppføringa. Moderne Wayland-kompositørar (GNOME, KDE) fangar opp dette direkte, men ein omstart er det trygge alternativet dersom ikonet held fram med å vere generisk.\n"
+"\n"
+"Vil du starte aMule på nytt no?"
 
 #: src/AppImageIntegration.cpp
 msgid "aMule installed"
-msgstr ""
+msgstr "aMule installert"
 
 #: src/AppImageIntegration.cpp
 msgid "Restart now"
-msgstr ""
+msgstr "Start på nytt no"
 
 #: src/AppImageIntegration.cpp
 msgid "Later"
-msgstr ""
+msgstr "Seinare"
 
 #: src/amuleAppCommon.cpp
-#, fuzzy
 msgid "Failed to open ED2KLinks file."
-msgstr "Greidde ikkje å opne %s·(%s)"
+msgstr "Greidde ikkje å opne ED2KLinks-fila."
 
 #: src/amuleAppCommon.cpp
 msgid "WARNING: You can't add yourself as a source for an eD2k link while having a lowid."
@@ -260,21 +265,18 @@ msgid "Invalid eD2k link \"%s\" - ERROR: %s"
 msgstr "Ugangbar eD2k lenkje! FEIL: %s"
 
 #: src/amule.cpp
-#, fuzzy
 msgid "Now, exiting main app..."
-msgstr ""
-"\n"
-"Ok,·avsluttar·%s...\n"
+msgstr "Avsluttar hovudprogrammet no..."
 
 #: src/amule.cpp
 #, c-format
 msgid "Terminating amuleweb instance with pid '%d' ... "
-msgstr ""
+msgstr "Avsluttar amuleweb-instans med pid «%d» ... "
 
 #: src/amule.cpp
 #, c-format
 msgid "Killing amuleweb instance with pid '%d' ... "
-msgstr ""
+msgstr "Drep amuleweb-instans med pid «%d» ... "
 
 #: src/amule.cpp src/ClientRef.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
 msgid "Failed"
@@ -283,25 +285,24 @@ msgstr "Mislukka"
 #: src/amule.cpp
 #, c-format
 msgid "Terminating amuleapi instance with pid '%d' ... "
-msgstr ""
+msgstr "Avsluttar amuleapi-instans med pid «%d» ... "
 
 #: src/amule.cpp
 #, c-format
 msgid "Killing amuleapi instance with pid '%d' ... "
-msgstr ""
+msgstr "Drep amuleapi-instans med pid «%d» ... "
 
 #: src/amule.cpp
 msgid "aMule OnExit: Terminating core."
-msgstr ""
+msgstr "aMule OnExit: Avsluttar kjernen."
 
 #: src/amule.cpp
-#, fuzzy
 msgid "aMule shutdown completed."
-msgstr "Nedlasting fullført"
+msgstr "aMule er avslutta."
 
 #: src/amule.cpp
 msgid "Memory debug results for aMule exit:"
-msgstr ""
+msgstr "Minnefeilsøkingsresultat for aMule-avslutting:"
 
 #: src/amule.cpp
 #, c-format
@@ -311,22 +312,22 @@ msgstr ""
 #: src/amule.cpp
 #, c-format
 msgid "Binding aMule's peer-to-peer traffic to interface: %s (HTTP updates use the default route)"
-msgstr ""
+msgstr "Bind aMule sin peer-to-peer-trafikk til grensesnittet: %s (HTTP-oppdateringar brukar standardruta)"
 
 #: src/amule.cpp
 #, c-format
 msgid "WARNING: configured network interface '%s' was not found - traffic is NOT bound to it and may leave via the default route. Check the interface name in Preferences."
-msgstr ""
+msgstr "ÅTVARING: det konfigurerte nettverksgrensesnittet «%s» vart ikkje funne - trafikken er IKKJE bunden til det og kan gå ut via standardruta. Sjekk grensesnittnamnet i Innstillingar."
 
 #: src/amule.cpp
 #, c-format
 msgid "WARNING: binding to network interface '%s' requires elevated privileges and was NOT applied - traffic may leave via the default route. Grant the capability (e.g. 'sudo setcap cap_net_raw+ep' on the aMule binary) or run with sufficient privileges."
-msgstr ""
+msgstr "ÅTVARING: å binde til nettverksgrensesnittet «%s» krev utvida løyve og vart IKKJE brukt - trafikken kan gå ut via standardruta. Gi løyvet (t.d. «sudo setcap cap_net_raw+ep» på aMule-programfila) eller køyr med tilstrekkelege løyve."
 
 #: src/amule.cpp src/LibSocketAsio.cpp
 #, c-format
 msgid "WARNING: could not bind to network interface '%s' - traffic may leave via the default route."
-msgstr ""
+msgstr "ÅTVARING: kunne ikkje binde til nettverksgrensesnittet «%s» - trafikken kan gå ut via standardruta."
 
 #: src/amule.cpp
 msgid "Your locale has been changed to System Default due to a configuration change. Sorry."
@@ -337,16 +338,16 @@ msgid "Info"
 msgstr "Info"
 
 #: src/amule.cpp
-#, fuzzy
 msgid ""
 "\n"
 "EC configuration"
-msgstr "Stadfesting av avslutting"
+msgstr ""
+"\n"
+"EC-oppsett"
 
 #: src/amule.cpp
-#, fuzzy
 msgid "Password set and external connections enabled."
-msgstr "Ny ekstern kopling akseptert"
+msgstr "Passord sett og eksterne tilkoplingar aktivert."
 
 #: src/amule.cpp src/KadDlg.cpp src/PrefsUnifiedDlg.cpp src/SharedFilesCtrl.cpp
 msgid "WARNING"
@@ -402,24 +403,24 @@ msgid "Starting up"
 msgstr "Start"
 
 #: src/amule.cpp
-#, fuzzy
 msgid "Network bootstrap"
-msgstr "Nettverk"
+msgstr "Nettverksoppstart"
 
 #: src/amule.cpp
 msgid ""
 "aMule has detected missing network bootstrap files.\n"
 "Select which ones to download:"
 msgstr ""
+"aMule har oppdaga manglande nettverks-oppstartsfiler.\n"
+"Vel kva for nokre du vil laste ned:"
 
 #: src/amule.cpp src/FirstRunWizard.cpp
-#, fuzzy
 msgid "eD2k server list (server.met)"
-msgstr "%i tenar funne i server.met"
+msgstr "eD2k-tenarliste (server.met)"
 
 #: src/amule.cpp src/FirstRunWizard.cpp
 msgid "Kad bootstrap nodes (nodes.dat)"
-msgstr ""
+msgstr "Kad-oppstartsnoder (nodes.dat)"
 
 #: src/amule.cpp
 #, c-format
@@ -427,9 +428,8 @@ msgid "web server running on pid %d"
 msgstr "vevtenar køyrer på pid %d"
 
 #: src/amule.cpp
-#, fuzzy
 msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
-msgstr "Du freista å køyre vevtenar ved oppstart, men binærfila amuleweb kan ikkje køyrast. Installer pakken som inneheld vevtenaren til aMule, eller kompiler aMule med --enable-webserver og køyr make install"
+msgstr "Du har bedt om at vevtenaren skal køyre ved oppstart, men den binære fila amuleweb kan ikkje køyrast. Installer pakken som inneheld aMule-vevtenaren, eller bygg aMule frå kjeldekode med -DBUILD_WEBSERVER=YES og installer det."
 
 #: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
 #: src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
@@ -442,14 +442,13 @@ msgid "Could not write the amuleapi EC token to %s; amuleapi will fall back to i
 msgstr ""
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "amuleapi running on pid %d"
-msgstr "vevtenar køyrer på pid %d"
+msgstr "amuleapi køyrer med pid %d"
 
 #: src/amule.cpp
-#, fuzzy
 msgid "You requested to run amuleapi on startup, but the amuleapi binary cannot be run. Please install the package containing aMule's REST API server, or build aMule from source with -DBUILD_AMULEAPI=YES and install it."
-msgstr "Du freista å køyre vevtenar ved oppstart, men binærfila amuleweb kan ikkje køyrast. Installer pakken som inneheld vevtenaren til aMule, eller kompiler aMule med --enable-webserver og køyr make install"
+msgstr "Du har bede om å køyre amuleapi ved oppstart, men amuleapi-programfila kan ikkje køyrast. Installer pakken som inneheld aMule sin REST API-tenar, eller bygg aMule frå kjeldekode med -DBUILD_AMULEAPI=YES og installer han."
 
 #: src/amule.cpp
 #, c-format
@@ -531,9 +530,8 @@ msgstr ""
 " Nettsignaturar vert DEAKTIVERT fram til du ordnar det i innstillingar."
 
 #: src/amule.cpp
-#, fuzzy
 msgid "Server hostname notified"
-msgstr "Tenarnamn:"
+msgstr "Vertsnamnet til tenaren er varsla"
 
 #: src/amule.cpp
 #, c-format
@@ -565,7 +563,7 @@ msgstr "Tenarmelding: %s"
 #: src/amule.cpp src/IP2Country.cpp src/IPFilter.cpp src/ServerList.cpp
 #, c-format
 msgid "Skipped download of %s, because requested file is not newer."
-msgstr ""
+msgstr "Hoppa over nedlasting av %s, fordi den førespurde fila ikkje er nyare."
 
 #: src/amule.cpp
 msgid "Failed to download the nodes list."
@@ -670,21 +668,20 @@ msgid "Kad network disabled on preferences, not connecting."
 msgstr "Kad-nettverket er deaktivert i innstillingar. Koplar ikkje til."
 
 #: src/amuled.cpp
-#, fuzzy
 msgid "ERROR: aMule daemon cannot be used when external connections are disabled. To enable External Connections, use either a normal aMule, start amuled with the option --ec-config or set the key \"AcceptExternalConnections\" to 1 in the file ~/.aMule/amule.conf"
-msgstr "FEIL: aMule daemon kan ikkje nyttast dersom eksterne koplingar er deaktiverte. For å aktivere eksterne koplingar må du anten nytte vanleg aMule, starte amuled med valet --ec-config eller set lykelen \"AcceptExternalConnections\" til 1 i fila ~/.aMule/amule.conf"
+msgstr "FEIL: aMule-tenesta (daemon) kan ikkje brukast når eksterne tilkoplingar er deaktiverte. For å aktivere eksterne tilkoplingar, bruk anten ein vanleg aMule, start amuled med valet --ec-config, eller set nøkkelen \"AcceptExternalConnections\" til 1 i fila ~/.aMule/amule.conf"
 
 #: src/amuled.cpp
 msgid "ERROR: A valid password is required to use external connections, and aMule daemon cannot be used without external connections. To run aMule daemon, you must set the \"ECPassword\" field in the file ~/.aMule/amule.conf with an appropriate value. Execute amuled with the flag --ec-config to set the password. More information can be found at https://amule-org.github.io/docs"
-msgstr ""
+msgstr "FEIL: Eit gyldig passord er nødvendig for å bruke eksterne tilkoplingar, og aMule-tenesta (daemon) kan ikkje brukast utan eksterne tilkoplingar. For å køyre aMule-tenesta må du setje feltet \"ECPassword\" i fila ~/.aMule/amule.conf til ein passande verdi. Køyr amuled med flagget --ec-config for å setje passordet. Meir informasjon finn du på https://amule-org.github.io/docs"
 
 #: src/amuled.cpp
 msgid "amuled: OnInit - starting timer"
-msgstr ""
+msgstr "amuled: OnInit - startar tidtakar"
 
 #: src/amuled.cpp
 msgid "Cannot Create Pid File"
-msgstr ""
+msgstr "Kan ikkje opprette Pid-fil"
 
 #: src/amuled.cpp
 #, c-format
@@ -748,7 +745,7 @@ msgstr "Innstillingar"
 
 #: src/amuleDlg.cpp
 msgid "Navigate"
-msgstr ""
+msgstr "Naviger"
 
 #: src/amuleDlg.cpp
 #, fuzzy, c-format
@@ -756,23 +753,27 @@ msgid "Free space: %s"
 msgstr "Tenarmelding: %s"
 
 #: src/amuleDlg.cpp
-#, fuzzy
 msgid "New version available"
-msgstr "Ikkje tilgjengeleg"
+msgstr "Ny utgåve tilgjengeleg"
 
 #: src/amuleDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "A new version of aMule (%s) is available.\n"
 "\n"
 "You are running %s.\n"
 "\n"
 "Would you like to open the download page?"
-msgstr "Den siste utgåva finst alltid på https://github.com/amule-org/amule/releases/latest"
+msgstr ""
+"Ei ny utgåve av aMule (%s) er tilgjengeleg.\n"
+"\n"
+"Du køyrer %s.\n"
+"\n"
+"Vil du opne nedlastingssida?"
 
 #: src/amuleDlg.cpp
 msgid "aMule dialog destroyed"
-msgstr ""
+msgstr "aMule-dialogen vart øydelagd"
 
 #: src/amuleDlg.cpp src/DataToText.cpp src/IPFilter.cpp src/ServerWnd.cpp
 msgid "Connecting"
@@ -835,9 +836,9 @@ msgid "aMuleGUI"
 msgstr "aMulelogg"
 
 #: src/amuleDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Up: %.1f%s (%.1f) | Down: %.1f%s (%.1f)"
-msgstr "Opp:·%.1f(%.1f)·|·Ned:·%.1f(%.1f)"
+msgstr "Opp: %.1f%s (%.1f) | Ned: %.1f%s (%.1f)"
 
 #: src/amuleDlg.cpp src/MuleTrayIcon.cpp
 msgid " MiB/s"
@@ -848,9 +849,9 @@ msgid " KiB/s"
 msgstr ""
 
 #: src/amuleDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Up: %.1f%s | Down: %.1f%s"
-msgstr "Opp:·%.1f·|·Ned:·%.1f"
+msgstr "Opp: %.1f%s | Ned: %.1f%s"
 
 #: src/amuleDlg.cpp
 #, c-format
@@ -863,9 +864,9 @@ msgid "aMule (%s | Disconnected)"
 msgstr "aMule·(%s·|·Fråkopla)"
 
 #: src/amuleDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Do you really want to exit %s?"
-msgstr "Vil du verkeleg avslutte aMule?"
+msgstr "Vil du verkeleg avslutte %s?"
 
 #: src/amuleDlg.cpp
 msgid "Exit confirmation"
@@ -873,11 +874,11 @@ msgstr "Stadfesting av avslutting"
 
 #: src/amuleDlg.cpp
 msgid "Launch Command: "
-msgstr ""
+msgstr "Startkommando: "
 
 #: src/amuleDlg.cpp src/muuli_wdr.cpp src/Preferences.cpp
 msgid "- default -"
-msgstr ""
+msgstr "- standard -"
 
 #: src/amuleDlg.cpp
 #, c-format
@@ -898,9 +899,8 @@ msgid "Searches Window"
 msgstr "Søkjevindauge"
 
 #: src/amuleDlg.cpp
-#, fuzzy
 msgid "Downloads Window"
-msgstr "Lastar ned"
+msgstr "Nedlastingsvindauge"
 
 #: src/amuleDlg.cpp
 msgid "Shared Files Window"
@@ -953,16 +953,15 @@ msgstr "Ikkje noko nettverk"
 
 #: src/amule-gui.cpp
 msgid "aMule remote control"
-msgstr ""
+msgstr "aMule fjernkontroll"
 
 #: src/amule-gui.cpp src/utils/wxCas/src/wxcasframe.cpp
 msgid "aMule"
 msgstr "aMule"
 
 #: src/amule-gui.cpp
-#, fuzzy
 msgid "Fatal Error: Failed to create Core Timer"
-msgstr "FATAL FEIL: Greidde ikkje å lage tidtakar"
+msgstr "Alvorleg feil: Greidde ikkje å opprette kjernetidtakar"
 
 #: src/amule-remote-gui.cpp
 msgid "Connect to remote amule"
@@ -973,19 +972,18 @@ msgid "Connection lost"
 msgstr "Kopling mista"
 
 #: src/amule-remote-gui.cpp
-#, fuzzy
 msgid "Abort and exit"
-msgstr "Stadfest avslutting"
+msgstr "Avbryt og avslutt"
 
 #: src/amule-remote-gui.cpp
 #, c-format
 msgid "Reconnecting... (attempt %d)"
-msgstr ""
+msgstr "Koplar til på nytt... (freisting %d)"
 
 #: src/amule-remote-gui.cpp
 #, c-format
 msgid "Next attempt in %d s..."
-msgstr ""
+msgstr "Neste freisting om %d s..."
 
 #: src/amule-remote-gui.cpp
 #, c-format
@@ -995,43 +993,43 @@ msgid ""
 "\n"
 "The interface is paused until the connection is restored."
 msgstr ""
+"Tilkoplinga til %s tapt.\n"
+"%s\n"
+"\n"
+"Grensesnittet er sett på pause til tilkoplinga er gjenoppretta."
 
 #: src/amule-remote-gui.cpp
-#, fuzzy
 msgid "Fatal Error: Failed to create Poll Timer"
-msgstr "FATAL FEIL: Greidde ikkje å lage tidtakar"
+msgstr "Alvorleg feil: Greidde ikkje å opprette Poll-tidtakar"
 
 #: src/amule-remote-gui.cpp
-#, fuzzy
 msgid "Going to event loop..."
-msgstr "Freistar å hente fram att filinformasjon..."
+msgstr "Går til hendingsløkke..."
 
 #: src/amule-remote-gui.cpp
-#, fuzzy
 msgid "Connecting..."
-msgstr "Koplar til"
+msgstr "Koplar til..."
 
 #: src/amule-remote-gui.cpp
 msgid "Connection failed. Please check the host, port, and password."
-msgstr ""
+msgstr "Tilkopling mislukkast. Kontroller vert, port og passord."
 
 #: src/amule-remote-gui.cpp
 msgid "Remote GUI EC event handler"
-msgstr ""
+msgstr "EC-hendingshandsamar for fjern-GUI"
 
 #: src/amule-remote-gui.cpp src/ExternalConnector.cpp
 #, c-format
 msgid "Connection Failed. Unable to connect to %s:%d\n"
-msgstr ""
+msgstr "Tilkopling mislukkast. Greidde ikkje å kople til %s:%d\n"
 
 #: src/amule-remote-gui.cpp
 msgid "Going down"
-msgstr ""
+msgstr "Går ned"
 
 #: src/amule-remote-gui.cpp
-#, fuzzy
 msgid "Reconnect attempt timed out; retrying."
-msgstr "Tilkoplingsfreisting til %s·(%s:%i)·gjekk over tida."
+msgstr "Tidsavbrot ved ny tilkoplingsfreisting; prøver igjen."
 
 #: src/amule-remote-gui.cpp
 #, c-format
@@ -1039,19 +1037,20 @@ msgid ""
 "Connection timed out. Unable to reach %s:%d within the allotted time.\n"
 "Please check the host, port and that aMule is running with External Connections enabled."
 msgstr ""
+"Tilkoplinga fekk tidsavbrot. Greidde ikkje å nå %s:%d innan tildelt tid.\n"
+"Kontroller vert, port, og at aMule køyrer med eksterne tilkoplingar aktivert."
 
 #: src/amule-remote-gui.cpp
 msgid "Connection to the remote core was lost. Trying to reconnect..."
-msgstr ""
+msgstr "Tilkoplinga til den eksterne kjernen vart tapt. Prøver å kople til på nytt..."
 
 #: src/amule-remote-gui.cpp src/ClientDetailDialog.cpp
 msgid "Disabled"
 msgstr "Deaktivert"
 
 #: src/amule-remote-gui.cpp
-#, fuzzy
 msgid "Reconnected to the remote core."
-msgstr "Kople til nettverket."
+msgstr "Kopla til den eksterne kjernen på nytt."
 
 #: src/amule-remote-gui.cpp
 msgid "The remote core was restarted; reloading."
@@ -1060,34 +1059,32 @@ msgstr ""
 #: src/amule-remote-gui.cpp
 #, c-format
 msgid "Reconnect attempt %d: connecting to %s:%d"
-msgstr ""
+msgstr "Freisting %d på ny tilkopling: koplar til %s:%d"
 
 #: src/amule-remote-gui.cpp
 msgid "Reconnect could not start; retrying shortly."
-msgstr ""
+msgstr "Kunne ikkje starte ny tilkopling; prøver igjen om litt."
 
 #: src/amule-remote-gui.cpp
 msgid "Ready"
-msgstr ""
+msgstr "Klar"
 
 #: src/amule-remote-gui.cpp src/TransferWnd.cpp
 msgid "All"
 msgstr "Alle"
 
 #: src/amule-remote-gui.cpp
-#, fuzzy
 msgid "not readable"
-msgstr "Ikkje tilgjengeleg"
+msgstr "ikkje lesbar"
 
 #: src/amule-remote-gui.cpp
-#, fuzzy
 msgid "not found"
-msgstr "Fil ikkje funne."
+msgstr "ikkje funne"
 
 #: src/amule-remote-gui.cpp
 #, c-format
 msgid "The core rejected these shared folders:%s"
-msgstr ""
+msgstr "Kjernen avviste desse delte katalogane:%s"
 
 #: src/amule-remote-gui.cpp src/ExternalConn.cpp
 msgid "Invalid link or already on list."
@@ -1105,7 +1102,7 @@ msgstr "Du freistar allereie nedlasting av fila %s"
 #: src/amule-remote-gui.cpp
 #, c-format
 msgid "Can't create directory '%s' for category '%s', keeping directory '%s'."
-msgstr ""
+msgstr "Kan ikkje opprette katalogen «%s» for kategorien «%s», held fram med katalogen «%s»."
 
 #: src/amule-remote-gui.cpp
 #, c-format
@@ -1122,7 +1119,7 @@ msgstr "Ukjend"
 
 #: src/BaseClient.cpp
 msgid "Searching buddy for lowid connection"
-msgstr ""
+msgstr "Søkjer etter kamerat for lowid-tilkopling"
 
 #: src/BaseClient.cpp
 #, c-format
@@ -1181,9 +1178,9 @@ msgid "New message from '%s' (IP:%s)"
 msgstr "Ny melding frå '%s'·(IP:%s)"
 
 #: src/BaseClient.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "User %s (%u) requested sharedfiles-list for not existing directory '%s' -> Ignored"
-msgstr "Brukar·%s (%u)·etterspurte·lista·over·delte·filer·for·katalogen·%s ->·nekta"
+msgstr "Brukar %s (%u) etterspurde lista over delte filer for katalogen «%s», som ikkje finst -> ignorert"
 
 #: src/BrowseManager.cpp
 #, c-format
@@ -1191,28 +1188,27 @@ msgid "Failed to retrieve shared files from user '%s'"
 msgstr "Greidde ikkje å hente delte filer frå brukar '%s'"
 
 #: src/CanceledFileList.cpp src/KnownFileList.cpp src/SearchList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "WARNING: %s cannot be opened."
-msgstr "ÅTVARING: known.met let seg ikkje opne."
+msgstr "ÅTVARING: %s kan ikkje opnast."
 
 #: src/CanceledFileList.cpp
-#, fuzzy
 msgid "WARNING: Canceled file list corrupted, contains invalid header."
-msgstr "ÅTVARING: Kjendfillista er korrupt; inneheld ugangbar overskrift."
+msgstr "ÅTVARING: Lista over kansellerte filer er korrupt, inneheld ugyldig overskrift."
 
 #: src/CanceledFileList.cpp src/KnownFileList.cpp src/SearchList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "IO error while reading %s file: %s"
-msgstr "IO feil underlesing av known.met fila: %s"
+msgstr "IO-feil ved lesing av %s-fila: %s"
 
 #: src/CanceledFileList.cpp src/KnownFileList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Error while saving %s file: %s"
-msgstr "Feil under lagring av known.met fila: %s"
+msgstr "Feil ved lagring av %s-fila: %s"
 
 #: src/CaptchaDialog.cpp
 msgid "Enter Captcha"
-msgstr ""
+msgstr "Skriv inn captcha"
 
 #: src/CatDialog.cpp src/DownloadListCtrl.cpp src/SearchListCtrl.cpp
 #: src/TransferWnd.cpp
@@ -1262,15 +1258,15 @@ msgstr "*** Greidde ikkje å kople til klient / Kopling mista ***"
 
 #: src/ChatSelector.cpp
 msgid "*** You have passed the captcha check and the user has received your message. ***"
-msgstr ""
+msgstr "*** Du har bestått captcha-kontrollen, og brukaren har motteke meldinga di. ***"
 
 #: src/ChatSelector.cpp
 msgid "*** Your response to the captcha was wrong and your message has been ignored. You can request a new captcha by sending a new message. ***"
-msgstr ""
+msgstr "*** Svaret ditt på captchaen var feil, og meldinga di er ignorert. Du kan be om ein ny captcha ved å sende ei ny melding. ***"
 
 #: src/ChatWnd.cpp
 msgid "Chat"
-msgstr ""
+msgstr "Prat"
 
 #: src/ChatWnd.cpp src/MuleNotebook.cpp
 msgid "Close tab"
@@ -1326,13 +1322,12 @@ msgid "Message to send:"
 msgstr "Melding å sende:"
 
 #: src/ClientContextActions.cpp
-#, fuzzy
 msgid ""
 "You are not allowed to set more than one friend slot.\n"
 " Only one slot was assigned."
 msgstr ""
-"Det er ikkje tillate å opprette meir enn ei venekopling.\n"
-" Berre ei venekopling vart oppretta."
+"Du har ikkje lov til å setje meir enn éin veneplass.\n"
+" Berre éin plass vart tildelt."
 
 #: src/ClientContextActions.cpp src/FriendListCtrl.cpp
 msgid "Multiple selection"
@@ -1444,7 +1439,7 @@ msgstr "IP-adresse"
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Origin"
-msgstr ""
+msgstr "Opphav"
 
 #: src/ClientHistoryListCtrl.cpp
 msgid "First seen"
@@ -1572,19 +1567,19 @@ msgid "User %s (%u) requested your shareddirectories-list -> Denied"
 msgstr "Brukar·%s (%u)·etterspurte·lista·di·over·delte·katalogar·->·Nekta"
 
 #: src/ClientTCPSocket.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "User %s (%u) requested your sharedfiles-list for directory '%s' -> accepted"
-msgstr "Brukar %s·(%u) etterspurte lista over delte filer for katalogen %s·-> godteke"
+msgstr "Brukar %s (%u) etterspurde lista di over delte filer for katalogen «%s» -> godteke"
 
 #: src/ClientTCPSocket.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "User %s (%u) requested your sharedfiles-list for directory '%s' -> denied"
-msgstr "Brukar·%s (%u)·etterspurte·lista·over·delte·filer·for·katalogen·%s ->·nekta"
+msgstr "Brukar %s (%u) etterspurde lista di over delte filer for katalogen «%s» -> avvist"
 
 #: src/ClientTCPSocket.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "User %s (%u) shares directory '%s'"
-msgstr "Brukar %s·(%u) deler katalogen %s"
+msgstr "Brukar %s (%u) deler katalogen «%s»"
 
 #: src/ClientTCPSocket.cpp
 #, c-format
@@ -1592,9 +1587,9 @@ msgid "User %s (%u) sent unrequested shared dirs."
 msgstr "Brukar %s·(%u) sende ikkje etterspurte delte kataloger."
 
 #: src/ClientTCPSocket.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "User %s (%u) sent sharedfiles-list for directory '%s'"
-msgstr "Brukar %s·(%u) sende liste over delte filer for katalogen %s"
+msgstr "Brukar %s (%u) sende lista over delte filer for katalogen «%s»"
 
 #: src/ClientTCPSocket.cpp
 #, c-format
@@ -1634,7 +1629,7 @@ msgstr "Kommentar"
 
 #: src/CommentDialogLst.cpp
 msgid "Could not start a Kad search"
-msgstr ""
+msgstr "Kunne ikkje starte eit Kad-søk"
 
 #: src/CommentDialogLst.cpp src/SearchList.cpp
 msgid "Kad search can't be done if Kad is not running"
@@ -1642,7 +1637,7 @@ msgstr "Du kan ikkje søkje på Kad dersom Kad ikkje køyrer"
 
 #: src/CommentDialogLst.cpp
 msgid "Searching Kad for comments..."
-msgstr ""
+msgstr "Søkjer i Kad etter kommentarar..."
 
 #: src/CommentDialogLst.cpp src/muuli_wdr.cpp
 msgid "No comments"
@@ -1658,12 +1653,12 @@ msgstr[1] "%u kommentarar"
 #: src/CorruptionBlackBox.cpp
 #, c-format
 msgid "Banned client %s for sending %s corrupt data of %s total for the file '%s'"
-msgstr ""
+msgstr "Utestengde klienten %s for å sende %s korrupte data av totalt %s for fila «%s»"
 
 #: src/CountryFlags.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Failed to load country data for '%s'."
-msgstr "Greidde ikkje å laste ned tenarlista frå %s"
+msgstr "Greidde ikkje å laste landdata for «%s»."
 
 #: src/DataToText.cpp
 msgid "Auto [Lo]"
@@ -1805,7 +1800,7 @@ msgstr "Kjeldefrø"
 
 #: src/DataToText.cpp
 msgid "Search Result"
-msgstr ""
+msgstr "Søkjeresultat"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp
 #: src/TransferWnd.cpp
@@ -1817,9 +1812,8 @@ msgid "In progress"
 msgstr "I framdrift"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "ERROR: Out of disk space"
-msgstr "FEIL: Tom for diskplass"
+msgstr "FEIL: Ikkje nok diskplass"
 
 #: src/DataToText.cpp
 msgid "ERROR: Partmet not found"
@@ -1859,7 +1853,7 @@ msgstr ""
 
 #: src/DownloadListCtrl.cpp
 msgid "Part"
-msgstr ""
+msgstr "Del"
 
 #: src/DownloadListCtrl.cpp src/PartFileConvertDlg.cpp src/SearchListCtrl.cpp
 #: src/SharedFilesCtrl.cpp
@@ -1976,9 +1970,9 @@ msgid "Copy feedback to clipboard"
 msgstr "Kopiér tilbakemelding til utklippstavla"
 
 #: src/DownloadListCtrl.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Get %s for this file"
-msgstr "Legg til valfrie URL`ar for denne fila"
+msgstr "Hent %s for denne fila"
 
 #: src/DownloadListCtrl.cpp
 msgid "unassign"
@@ -2036,21 +2030,21 @@ msgstr "Totalt NL: %s"
 #: src/DownloadQueue.cpp
 #, c-format
 msgid "Saving PartFile %u of %u"
-msgstr ""
+msgstr "Lagrar delfil %u av %u"
 
 #: src/DownloadQueue.cpp
 msgid "All PartFiles Saved."
-msgstr ""
+msgstr "Alle delfiler lagra."
 
 #: src/DownloadQueue.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Loading temp files from %s."
-msgstr "Lastar server.met fila: %s"
+msgstr "Lastar mellombelse filer frå %s."
 
 #: src/DownloadQueue.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Loading PartFile %u of %u"
-msgstr "Lastar data frå gamal nedlastingsfil (%u·av·%u)"
+msgstr "Lastar delfil %u av %u"
 
 #: src/DownloadQueue.cpp
 msgid "ERROR: Failed to load backup file. Search https://github.com/amule-org/amule/discussions for .part.met recovery solutions."
@@ -2058,7 +2052,7 @@ msgstr "FEIL: Greidde ikkje å laste tryggleikskopifila. Søk https://github.com
 
 #: src/DownloadQueue.cpp
 msgid "All PartFiles Loaded."
-msgstr ""
+msgstr "Alle delfiler lasta."
 
 #: src/DownloadQueue.cpp
 msgid "No part files found"
@@ -2090,9 +2084,9 @@ msgid "You are already trying to download the file '%s'"
 msgstr "Du freistar allereie nedlasting av fila '%s'"
 
 #: src/DownloadQueue.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "You already have the file '%s' (requested as '%s')"
-msgstr "Du har allereie fila: '%s'"
+msgstr "Du har alt fila «%s» (spurt om som «%s»)"
 
 #: src/DownloadQueue.cpp
 #, c-format
@@ -2113,8 +2107,8 @@ msgstr "Ukjend lenkjeprotokoll for: %s"
 #, c-format
 msgid "Could not add %u link (see log for details)."
 msgid_plural "Could not add %u links (see log for details)."
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Greidde ikkje å leggje til %u lenkje (sjå loggen for detaljar)."
+msgstr[1] "Greidde ikkje å leggje til %u lenkjer (sjå loggen for detaljar)."
 
 #: src/DownloadQueue.cpp
 #, c-format
@@ -2122,9 +2116,8 @@ msgid "Invalid eD2k link! ERROR: %s"
 msgstr "Ugangbar eD2k lenkje! FEIL: %s"
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "Client sent packet after authentication failed."
-msgstr "Godkjenning mislukka."
+msgstr "Klienten sende ein pakke etter at godkjenninga mislukkast."
 
 #: src/ExternalConn.cpp
 msgid "External connection closed."
@@ -2164,9 +2157,8 @@ msgid "Incorrect EC version ID, there might be binary incompatibility. Use core 
 msgstr "Ikkje rett EC utgåve ID: det kan vere binær inkompatibilitet. Bruk core og remote frå same snapshot."
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "You cannot connect to a release version from an arbitrary development snapshot! *sigh* possible crash prevented"
-msgstr "Du kan ikkje kople til ei utgivingsutgåve frå ei vilkårleg SVN utgåve! *sukk* mogleg krasj unngått"
+msgstr "Du kan ikkje kople til ei utgjevingsutgåve frå eit vilkårleg utviklingssnapshot! *sukk* mogleg krasj førebygd"
 
 #: src/ExternalConn.cpp
 msgid "Invalid protocol version."
@@ -2183,7 +2175,7 @@ msgstr "Automatisk tenaroppkopling freistar på nytt om %d sekund"
 
 #: src/ExternalConn.cpp
 msgid "Authentication failed: invalid hash specified as EC password."
-msgstr ""
+msgstr "Godkjenning mislukkast: ugyldig hash oppgjeven som EC-passord."
 
 #: src/ExternalConn.cpp
 msgid "Authentication failed: the client offered an encrypted External Connection but sent no usable key."
@@ -2198,14 +2190,12 @@ msgid "Authentication failed: the client could not confirm the encrypted session
 msgstr ""
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "Authentication failed: wrong password."
-msgstr "Godkjenning mislukka."
+msgstr "Godkjenning mislukkast: feil passord."
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "Authentication failed: missing password."
-msgstr "Godkjenning mislukka."
+msgstr "Godkjenning mislukkast: manglande passord."
 
 #: src/ExternalConn.cpp
 #, fuzzy
@@ -2217,14 +2207,14 @@ msgid "Access granted."
 msgstr "Tilgang innvilga."
 
 #: src/ExternalConn.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Sent error message \"%s\" to client."
-msgstr "Filtrér meldingar frå ukjende klientar"
+msgstr "Sende feilmelding «%s» til klienten."
 
 #: src/ExternalConn.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Unauthorized access attempt from %s. Connection closed."
-msgstr "Uaotorisert freisting på tilgang. Kopling lukka."
+msgstr "Uautorisert tilgangsfreisting frå %s. Tilkoplinga er lukka."
 
 #: src/ExternalConn.cpp
 #, c-format
@@ -2262,18 +2252,16 @@ msgid "No address known for that friend yet."
 msgstr ""
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "Friend not found."
-msgstr "Fil ikkje funne."
+msgstr "Fann ikkje venen."
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "Client not found."
-msgstr "Fil ikkje funne."
+msgstr "Fann ikkje klienten."
 
 #: src/ExternalConn.cpp
 msgid "EC_TAG_FRIEND_SHARED requires EC_TAG_FRIEND or EC_TAG_CLIENT."
-msgstr ""
+msgstr "EC_TAG_FRIEND_SHARED krev EC_TAG_FRIEND eller EC_TAG_CLIENT."
 
 #: src/ExternalConn.cpp
 msgid "WebSearch from remote interface makes no sense."
@@ -2309,17 +2297,17 @@ msgid "ExternalConn: adding link '%s'."
 msgstr "Eksternkopling: legg til lenkje '%s'."
 
 #: src/ExternalConn.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "%d of %d links failed (invalid or already on list)."
-msgstr "Ikkje gangbar lenkje eller lenka allereie på lista."
+msgstr "%d av %d lenkjer mislukkast (ugyldige eller allereie på lista)."
 
 #: src/ExternalConn.cpp
 msgid "Version check throttled; try again shortly."
-msgstr ""
+msgstr "Utgåvesjekk avgrensa; prøv igjen om litt."
 
 #: src/ExternalConn.cpp
 msgid "Version check is not available on this daemon."
-msgstr ""
+msgstr "Utgåvesjekk er ikkje tilgjengeleg på denne daemonen."
 
 #: src/ExternalConn.cpp
 msgid "File not found."
@@ -2340,7 +2328,7 @@ msgstr ""
 #: src/ExternalConn.cpp
 #, c-format
 msgid "Could not save the amuleapi password: %s"
-msgstr ""
+msgstr "Kunne ikkje lagre amuleapi-passordet: %s"
 
 #: src/ExternalConn.cpp
 #, fuzzy
@@ -2634,24 +2622,24 @@ msgstr ""
 
 #: src/ExternalConnector.cpp
 msgid "Force ZLIB compression regardless of dialed-IP locality (useful when the server is reachable over a VPN tunnel that resolves to a LAN IP)."
-msgstr ""
+msgstr "Tving ZLIB-komprimering uansett IP-lokalitet (nyttig når tenaren er tilgjengeleg via ein VPN-tunnel som løyser til ein LAN-IP)."
 
 #: src/ExternalConnector.cpp
 msgid "Append a copy of all console output to this log file (default: <config-dir>/amuleapi.log)."
-msgstr ""
+msgstr "Legg til ein kopi av all konsollutdata i denne loggfila (standard: <config-dir>/amuleapi.log)."
 
 #: src/ExternalConnector.cpp
 msgid "Do not write a log file; print to the console only."
-msgstr ""
+msgstr "Ikkje skriv til loggfil; skriv berre til konsollen."
 
 #: src/FileDetailDialog.cpp
 msgid "File Details"
 msgstr "Fildetaljar"
 
 #: src/FileDetailDialog.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "%.1f%% done"
-msgstr "%.2f%%·ferdig"
+msgstr "%.1f%% ferdig"
 
 #: src/FileDetailDialog.cpp src/utils/wxCas/src/wxcasframe.cpp
 #, c-format
@@ -2693,66 +2681,67 @@ msgstr "Feil: Greidde ikkje opne delfila '%s'"
 
 #: src/FirstRunWizard.cpp
 msgid "Mobile / 4G-5G (20 / 5 Mbit)"
-msgstr ""
+msgstr "Mobil / 4G-5G (20 / 5 Mbit)"
 
 #: src/FirstRunWizard.cpp
 msgid "ADSL (24 / 1 Mbit)"
-msgstr ""
+msgstr "ADSL (24 / 1 Mbit)"
 
 #: src/FirstRunWizard.cpp
 msgid "VDSL (50 / 10 Mbit)"
-msgstr ""
+msgstr "VDSL (50 / 10 Mbit)"
 
 #: src/FirstRunWizard.cpp
 msgid "Cable (200 / 20 Mbit)"
-msgstr ""
+msgstr "Kabel (200 / 20 Mbit)"
 
 #: src/FirstRunWizard.cpp
 msgid "Fibre 300 (300 / 100 Mbit)"
-msgstr ""
+msgstr "Fiber 300 (300 / 100 Mbit)"
 
 #: src/FirstRunWizard.cpp
 msgid "Fibre Gigabit (1000 / 1000 Mbit)"
-msgstr ""
+msgstr "Fiber Gigabit (1000 / 1000 Mbit)"
 
 #: src/FirstRunWizard.cpp
 msgid "aMule first-run setup"
-msgstr ""
+msgstr "Førstegongsoppsett for aMule"
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Welcome to aMule!"
-msgstr "Velkomen!"
+msgstr "Velkomen til aMule!"
 
 #: src/FirstRunWizard.cpp
 msgid ""
 "This short setup will get you connected. You can change\n"
 "any of these settings later in Preferences."
 msgstr ""
+"Dette korte oppsettet vil kople deg til. Du kan endre\n"
+"nokon av desse innstillingane seinare i Innstillingar."
 
 #: src/FirstRunWizard.cpp
 msgid "Choose a nickname other peers will see:"
-msgstr ""
+msgstr "Vel eit kallenamn andre vil sjå:"
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Connection & bandwidth"
-msgstr "Tilkopla kamerat"
+msgstr "Tilkopling og bandbreidd"
 
 #: src/FirstRunWizard.cpp
 msgid ""
 "Pick the option that best matches your Internet connection,\n"
 "or set the upload and download limits directly below."
 msgstr ""
+"Vel alternativet som passar best med internettilkoplinga di,\n"
+"eller set opp- og nedlastingsgrensene direkte nedanfor."
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Connection speed:"
-msgstr "Tilkoplingsstatus:"
+msgstr "Tilkoplingsfart:"
 
 #: src/FirstRunWizard.cpp
 msgid "Other / set manually"
-msgstr ""
+msgstr "Anna / set manuelt"
 
 #: src/FirstRunWizard.cpp
 msgid "Upload limit (KiB/s, 0 = unlimited):"
@@ -2763,13 +2752,12 @@ msgid "Download limit (KiB/s, 0 = unlimited):"
 msgstr ""
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Networks & ports"
-msgstr "Nettverk"
+msgstr "Nettverk og portar"
 
 #: src/FirstRunWizard.cpp
 msgid "aMule can use two networks. We recommend keeping both enabled."
-msgstr ""
+msgstr "aMule kan bruke to nettverk. Vi tilrår å halde begge slått på."
 
 #: src/FirstRunWizard.cpp src/TextClient.cpp
 msgid "eD2k"
@@ -2781,15 +2769,15 @@ msgstr "Kademlia"
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Standard TCP Port "
-msgstr ""
+msgstr "Standard TCP-port "
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Extended UDP port (Kad / global search) "
-msgstr ""
+msgstr "Utvida UDP-port (Kad / globalt søk) "
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Enable UPnP for router port forwarding"
-msgstr ""
+msgstr "Aktiver UPnP for portvidaresending på ruteren"
 
 #: src/FirstRunWizard.cpp
 msgid ""
@@ -2797,22 +2785,25 @@ msgid ""
 "peers can reach you (a \"HighID\"). Turn off if your router\n"
 "doesn't support UPnP or you forward ports manually."
 msgstr ""
+"Lèt aMule be ruteren din om å vidaresende portane ovanfor, slik at andre\n"
+"brukarar kan nå deg (ein «HighID»). Slå av viss ruteren din\n"
+"ikkje støttar UPnP, eller du vidaresender portar manuelt."
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Bootstrap files"
-msgstr "Eigenoppstart"
+msgstr "Bootstrap-filer"
 
 #: src/FirstRunWizard.cpp
 msgid ""
 "To get started, aMule needs to know about some peers.\n"
 "Select which lists to download now:"
 msgstr ""
+"For å kome i gang treng aMule å kjenne til nokre brukarar.\n"
+"Vel kva lister som skal lastast ned no:"
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Your peer lists are already in place - nothing to download."
-msgstr "Du freistar allereie nedlasting av fila %s"
+msgstr "Brukarlistene dine er alt på plass - ingenting å laste ned."
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Auto-update server list at startup"
@@ -2820,49 +2811,53 @@ msgstr "Automatisk oppdatering av tenarlista ved oppstart"
 
 #: src/FirstRunWizard.cpp
 msgid "Integrations (optional)"
-msgstr ""
+msgstr "Integrasjonar (valfritt)"
 
 #: src/FirstRunWizard.cpp
 msgid ""
 "Choose how aMule integrates with your system. You can\n"
 "change any of these later in Preferences."
 msgstr ""
+"Vel korleis aMule vert integrert med systemet ditt. Du kan\n"
+"endre noko av dette seinare i Innstillingar."
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Start aMule automatically when I log in"
-msgstr ""
+msgstr "Start aMule automatisk når eg loggar inn"
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 #: packaging/windows/installer_strings.c
 msgid "Register aMule for ed2k:// links"
-msgstr ""
+msgstr "Registrer aMule for ed2k://-lenkjer"
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 #: packaging/windows/installer_strings.c
 msgid "Register aMule for magnet: links"
-msgstr ""
+msgstr "Registrer aMule for magnet:-lenkjer"
 
 #: src/FirstRunWizard.cpp
 msgid "Only eD2k-compatible magnets. Leave off if you use a BitTorrent client."
-msgstr ""
+msgstr "Berre eD2k-kompatible magnet-lenkjer. La stå av viss du brukar ein BitTorrent-klient."
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Open .emulecollection files with aMule"
-msgstr ""
+msgstr "Opne .emulecollection-filer med aMule"
 
 #: src/FirstRunWizard.cpp
 msgid "Folders (optional)"
-msgstr ""
+msgstr "Katalogar (valfritt)"
 
 #: src/FirstRunWizard.cpp
 msgid ""
 "The defaults are fine for most people. Change them if you\n"
 "want downloads on a different (e.g. larger) disk."
 msgstr ""
+"Standardverdiane passar for dei fleste. Endre dei viss du\n"
+"vil ha nedlastingar på ein annan (t.d. større) disk."
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Destination folder for downloads"
-msgstr ""
+msgstr "Målkatalog for nedlastingar"
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 #: src/utils/aLinkCreator/src/alcframe.cpp src/utils/wxCas/src/wxcasprefs.cpp
@@ -2871,11 +2866,11 @@ msgstr "Bla"
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "(All files in this folder are shared with other peers)"
-msgstr ""
+msgstr "(Alle filer i denne katalogen vert delte med andre brukarar)"
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Folder for temporary download files"
-msgstr ""
+msgstr "Katalog for mellombelse nedlastingsfiler"
 
 #: src/FirstRunWizard.cpp
 #, c-format
@@ -2883,14 +2878,16 @@ msgid ""
 "Based on this, aMule will allow up to %i sources per file\n"
 "and %i client connections."
 msgstr ""
+"Basert på dette vil aMule tillate opptil %i kjelder per fil\n"
+"og %i klienttilkoplingar."
 
 #: src/FirstRunWizard.cpp
 msgid "Show this setup wizard again the next time you start aMule?"
-msgstr ""
+msgstr "Syne denne oppsettvegvisaren igjen neste gong du startar aMule?"
 
 #: src/FirstRunWizard.cpp
 msgid "Setup not finished"
-msgstr ""
+msgstr "Oppsett ikkje fullført"
 
 #: src/FriendList.cpp
 msgid "Failed to open friend list file 'emfriends.met' for reading!"
@@ -2907,7 +2904,7 @@ msgstr ""
 
 #: src/FriendList.cpp
 msgid "CRITICAL - no client on StartChatSession"
-msgstr ""
+msgstr "KRITISK - ingen klient på StartChatSession"
 
 #: src/FriendListCtrl.cpp src/muuli_wdr.cpp
 msgid "Friends"
@@ -2955,28 +2952,26 @@ msgid "Colour legend"
 msgstr ""
 
 #: src/GenericClientListCtrl.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "On Queue: %u (%i)"
-msgstr "QR:·%u·(%i)"
+msgstr "I kø: %u (%i)"
 
 #: src/GenericClientListCtrl.cpp
 msgid "Asked for another file"
 msgstr "Spurt etter anna fil (A4AF)"
 
 #: src/GenericClientListCtrl.cpp
-#, fuzzy
 msgid "Waiting for upload slot"
-msgstr "Ventande opplastingar: %s"
+msgstr "Ventar på opplastingsplass"
 
 #: src/GenericClientListCtrl.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "On Queue: %u"
-msgstr "I kø"
+msgstr "I kø: %u"
 
 #: src/GenericClientListCtrl.cpp src/muuli_wdr.cpp
-#, fuzzy
 msgid "Uploading"
-msgstr "Opplasting"
+msgstr "Lastar opp"
 
 #: src/GenericClientListCtrl.cpp
 #, fuzzy
@@ -3002,51 +2997,51 @@ msgstr "Lastar ned..."
 
 #: src/HTTPDownload.cpp
 msgid "HTTP download cancelled"
-msgstr ""
+msgstr "HTTP-nedlasting avbroten"
 
 #: src/HTTPDownload.cpp
 msgid "The URL to download can't be empty"
-msgstr ""
+msgstr "URL-en som skal lastast ned kan ikkje vere tom"
 
 #: src/HTTPDownload.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Failed to create HTTP request for %s"
-msgstr "Greidde ikkje å hente delte filer frå brukar '%s'"
+msgstr "Greidde ikkje å opprette HTTP-førespurnad for %s"
 
 #: src/HTTPDownload.cpp
 #, c-format
 msgid "HTTP download: empty response body for %s"
-msgstr ""
+msgstr "HTTP-nedlasting: tom svarkropp for %s"
 
 #: src/HTTPDownload.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Could not move downloaded file to %s"
-msgstr "Du freistar allereie nedlasting av fila %s"
+msgstr "Greidde ikkje å flytte den nedlasta fila til %s"
 
 #: src/HTTPDownload.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Downloaded %s (%llu bytes)"
-msgstr "Lasta ned"
+msgstr "Lasta ned %s (%llu byte)"
 
 #: src/HTTPDownload.cpp
 #, c-format
 msgid "The URL %s returned: %i"
-msgstr ""
+msgstr "URL-en %s returnerte: %i"
 
 #: src/HTTPDownload.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "HTTP download failed for %s: %s"
-msgstr "Nedlastingar (%i)"
+msgstr "HTTP-nedlasting mislukkast for %s: %s"
 
 #: src/HTTPDownload.cpp
 #, c-format
 msgid "HTTP 401 Unauthorized for %s"
-msgstr ""
+msgstr "HTTP 401 Uautorisert for %s"
 
 #: src/IP2Country.cpp
 #, c-format
 msgid "Migrated existing GeoLite2-Country.mmdb to %s"
-msgstr ""
+msgstr "Migrerte eksisterande GeoLite2-Country.mmdb til %s"
 
 #: src/IP2Country.cpp
 #, c-format
@@ -3055,59 +3050,58 @@ msgstr ""
 
 #: src/IP2Country.cpp
 msgid "IP2Country: MaxMind selected as the GeoIP source but no License Key configured. Open Preferences -> IP2Country, paste your free MaxMind License Key and click 'Update now'."
-msgstr ""
+msgstr "IP2Country: MaxMind er vald som GeoIP-kjelde, men ingen lisensnøkkel er konfigurert. Opne Innstillingar -> IP2Country, lim inn den gratis MaxMind-lisensnøkkelen din og klikk «Oppdatér no»."
 
 #: src/IP2Country.cpp
 msgid "IP2Country: Custom URL selected as the GeoIP source but no URL configured. Open Preferences -> IP2Country and supply a URL that points to an .mmdb (or .gz / .tar.gz containing one)."
-msgstr ""
+msgstr "IP2Country: Tilpassa URL er vald som GeoIP-kjelde, men ingen URL er konfigurert. Opne Innstillingar -> IP2Country og oppgi ein URL som peikar på ei .mmdb-fil (eller ei .gz-/.tar.gz-fil som inneheld ei)."
 
 #: src/IP2Country.cpp
 msgid "IP2Country: failed to resolve a GeoIP download URL."
-msgstr ""
+msgstr "IP2Country: greidde ikkje å finne ein nedlastings-URL for GeoIP."
 
 #: src/IP2Country.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Download new %s from %s"
-msgstr "Greidde ikkje å laste ned tenarlista frå %s"
+msgstr "Last ned ny %s frå %s"
 
 #: src/IP2Country.cpp
 #, c-format
 msgid "Download of %s file failed, aborting update."
-msgstr ""
+msgstr "Nedlasting av %s-fila mislukkast, avbryt oppdatering."
 
 #: src/IP2Country.cpp src/IPFilter.cpp
 #, c-format
 msgid "Failed to remove %s file, aborting update."
-msgstr ""
+msgstr "Greidde ikkje å fjerne %s-fila, avbryt oppdatering."
 
 #: src/IP2Country.cpp
 #, c-format
 msgid "Failed to rename %s file, aborting update."
-msgstr ""
+msgstr "Greidde ikkje å endre namn på %s-fila, avbryt oppdatering."
 
 #: src/IP2Country.cpp src/IPFilter.cpp
 #, c-format
 msgid "Successfully updated %s"
-msgstr ""
+msgstr "Oppdaterte %s"
 
 #: src/IP2Country.cpp
 #, c-format
 msgid "Error updating %s"
-msgstr ""
+msgstr "Feil ved oppdatering av %s"
 
 #: src/IP2Country.cpp
 msgid "DB-IP download failed for the current month - retrying with the previous month's URL."
-msgstr ""
+msgstr "DB-IP-nedlasting mislukkast for gjeldande månad - prøver på nytt med URL-en for førre månad."
 
 #: src/IP2Country.cpp src/IPFilter.cpp src/ServerList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Failed to download %s from %s"
-msgstr "Greidde ikkje å laste ned tenarlista frå %s"
+msgstr "Greidde ikkje å laste ned %s frå %s"
 
 #: src/IPFilter.cpp
-#, fuzzy
 msgid "Loading IP filters 'ipfilter.dat' and 'ipfilter_static.dat'."
-msgstr "Lastar ipfiltra 'ipfilter.dat'·og·'ipfilter_static.dat'."
+msgstr "Lastar IP-filter «ipfilter.dat» og «ipfilter_static.dat»."
 
 #: src/IPFilter.cpp
 #, c-format
@@ -3136,11 +3130,11 @@ msgstr[1] "%u vanskapte linjer vart forkasta."
 #: src/IPFilter.cpp
 #, c-format
 msgid "Failed to rename new %s file, aborting update."
-msgstr ""
+msgstr "Greidde ikkje å endre namn på den nye %s-fila, avbryt oppdatering."
 
 #: src/IPFilter.cpp
 msgid "IP filter is ready"
-msgstr ""
+msgstr "IP-filteret er klart"
 
 #: src/KadDlg.cpp src/muuli_wdr.cpp src/StatisticsDlg.cpp
 msgid "Current"
@@ -3193,11 +3187,11 @@ msgstr "Kademlia: for kort søkjeord"
 
 #: src/kademlia/kademlia/SearchManager.cpp
 msgid "Kademlia: Search keyword is already on search list: "
-msgstr ""
+msgstr "Kademlia: Søkjeordet er allereie på søkjelista: "
 
 #: src/kademlia/routing/RoutingZone.cpp
 msgid "Failed to read nodes.dat file - too old. This version (0) is not supported anymore."
-msgstr ""
+msgstr "Greidde ikkje å lese nodes.dat-fila - for gamal. Denne utgåva (0) er ikkje støtta lenger."
 
 #: src/kademlia/routing/RoutingZone.cpp
 #, c-format
@@ -3208,14 +3202,14 @@ msgstr[1] "Las %u kadkontaktar"
 
 #: src/kademlia/routing/RoutingZone.cpp
 msgid "No contacts found, please bootstrap, or download a nodes.dat file."
-msgstr ""
+msgstr "Fann ingen kontaktar, ver venleg og gjer ein eigenoppstart, eller last ned ei nodes.dat-fil."
 
 #: src/kademlia/routing/RoutingZone.cpp
 #, c-format
 msgid "Only %d Kad contact available, nodes.dat not written"
 msgid_plural "Only %d Kad contacts available, nodes.dat not written"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Berre %d Kad-kontakt tilgjengeleg, nodes.dat vart ikkje skriven"
+msgstr[1] "Berre %d Kad-kontaktar tilgjengelege, nodes.dat vart ikkje skriven"
 
 #: src/kademlia/routing/RoutingZone.cpp
 #, c-format
@@ -3225,34 +3219,33 @@ msgstr[0] "Skreiv %d kadkontakt"
 msgstr[1] "Skreiv %d kadkontaktar"
 
 #: src/KnownFile.cpp
-#, fuzzy
 msgid "Kad user"
-msgstr "Kad nettverk"
+msgstr "Kad-brukar"
 
 #: src/KnownFile.cpp
 #, c-format
 msgid "Kad note search for '%s' not started: Kad is not connected"
-msgstr ""
+msgstr "Kad-notatsøk for «%s» ikkje starta: Kad er ikkje tilkopla"
 
 #: src/KnownFile.cpp
 #, c-format
 msgid "Kad note search for '%s' not started: a note lookup is already running for this file"
-msgstr ""
+msgstr "Kad-notatsøk for «%s» ikkje starta: eit notatoppslag køyrer alt for denne fila"
 
 #: src/KnownFile.cpp
 #, c-format
 msgid "Kad note search for '%s' not started: file is not in the shared list, download queue or search results"
-msgstr ""
+msgstr "Kad-notatsøk for «%s» ikkje starta: fila er ikkje i lista over delte filer, nedlastingskøen eller søkjeresultata"
 
 #: src/KnownFile.cpp
 #, c-format
 msgid "Kad note search for '%s' not started: another Kad search (e.g. a source search) is already using this file's hash - try again shortly"
-msgstr ""
+msgstr "Kad-notatsøk for «%s» ikkje starta: eit anna Kad-søk (t.d. eit kjeldesøk) brukar alt hashen til denne fila - prøv igjen om litt"
 
 #: src/KnownFile.cpp
 #, c-format
 msgid "Kad note search for '%s' not started: PrepareLookup failed"
-msgstr ""
+msgstr "Kad-notatsøk for «%s» ikkje starta: PrepareLookup feila"
 
 #: src/KnownFile.cpp src/PartFileConvertDlg.cpp
 msgid "File name"
@@ -3280,15 +3273,15 @@ msgstr "Komplette kjelder"
 
 #: src/KnownFileList.cpp
 msgid "WARNING: Known file list corrupted, contains invalid header."
-msgstr ""
+msgstr "ÅTVARING: Lista over kjende filer er korrupt, inneheld ugyldig overskrift."
 
 #: src/KnownFileList.cpp
 msgid "Failed to load entry in known file list, file may be corrupt"
-msgstr ""
+msgstr "Greidde ikkje å laste ei oppføring i lista over kjende filer, fila kan vere korrupt"
 
 #: src/KnownFileList.cpp
 msgid "Invalid entry in known file list, file may be corrupt: "
-msgstr ""
+msgstr "Ugyldig oppføring i lista over kjende filer, fila kan vere korrupt: "
 
 #: src/LanguageList.cpp
 msgid "System default"
@@ -3303,9 +3296,8 @@ msgid "Arabic"
 msgstr "Arabisk"
 
 #: src/LanguageList.cpp
-#, fuzzy
 msgid "Asturian"
-msgstr "Estisk"
+msgstr "Asturisk"
 
 #: src/LanguageList.cpp
 msgid "Basque"
@@ -3348,9 +3340,8 @@ msgid "English (U.K.)"
 msgstr "Engelsk (U.K.)"
 
 #: src/LanguageList.cpp
-#, fuzzy
 msgid "English (U.S.)"
-msgstr "Engelsk (U.K.)"
+msgstr "Engelsk (USA)"
 
 #: src/LanguageList.cpp
 msgid "Estonian"
@@ -3398,7 +3389,7 @@ msgstr "Koreansk"
 
 #: src/LanguageList.cpp
 msgid "Latvian"
-msgstr ""
+msgstr "Latvisk"
 
 #: src/LanguageList.cpp
 msgid "Lithuanian"
@@ -3421,9 +3412,8 @@ msgid "Portuguese (Brazilian)"
 msgstr "Portugisisk (Brasil)"
 
 #: src/LanguageList.cpp
-#, fuzzy
 msgid "Romanian"
-msgstr "Albansk"
+msgstr "Rumensk"
 
 #: src/LanguageList.cpp
 msgid "Russian"
@@ -3447,17 +3437,17 @@ msgstr "Tyrkisk"
 
 #: src/LanguageList.cpp
 msgid "Ukrainian"
-msgstr ""
+msgstr "Ukrainsk"
 
 #: src/libs/common/Format.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Unknown error %d"
-msgstr "Ukjend utgåve"
+msgstr "Ukjend feil %d"
 
 #: src/libs/common/Format.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Unable to get error description for error %d"
-msgstr "ÅTVARING: Greidde ikkje å opne hudfila '%s' for lesing"
+msgstr "Greidde ikkje å hente feilskildring for feil %d"
 
 #: src/libs/ec/cpp/ECSpecialTags.cpp src/PartFile.cpp
 msgid "Hashing"
@@ -3504,9 +3494,8 @@ msgid "Connection failure"
 msgstr "Oppkoplingsfeil"
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
-#, fuzzy
 msgid "External Connection lost - exiting."
-msgstr "Ekstern kopling lukka."
+msgstr "Ekstern tilkopling tapt - avsluttar."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "EC connection failed. Empty reply."
@@ -3521,9 +3510,8 @@ msgid "The core did not negotiate an encrypted connection. It may be an older aM
 msgstr ""
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
-#, fuzzy
 msgid "External Connection: Bad reply, handshake failed. Connection closed."
-msgstr "Ekstern kopling: Dårleg svar frå tenar. Kopling stengd."
+msgstr "Ekstern tilkopling: Dårleg svar, handtrykk mislukkast. Tilkoplinga er lukka."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 #, fuzzy
@@ -3543,9 +3531,8 @@ msgid "External Connection: Access denied because: "
 msgstr "Ekstern kopling: Tilgang nekta fordi:"
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
-#, fuzzy
 msgid "External Connection: Handshake failed."
-msgstr "Ekstern kopling: Tilgang nekta"
+msgstr "Ekstern tilkopling: Handtrykk mislukkast."
 
 #: src/LibSocketAsio.cpp
 #, c-format
@@ -3558,13 +3545,13 @@ msgid "Error creating UDP socket %s %d : %s"
 msgstr ""
 
 #: src/LibSocketAsio.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Asio thread %d started"
-msgstr "Autooppfrisking starta"
+msgstr "Asio-tråd %d starta"
 
 #: src/ListenSocket.cpp
 msgid "ListenSocket: Ok."
-msgstr ""
+msgstr "ListenSocket: OK."
 
 #: src/ListenSocket.cpp
 msgid "ERROR: Could not listen to TCP port."
@@ -3689,39 +3676,32 @@ msgid "Hide aMule"
 msgstr "Gøyme aMule"
 
 #: src/MuleTrayIcon.cpp
-#, fuzzy
 msgid "eD2k: "
-msgstr "eD2k"
+msgstr "eD2k: "
 
 #: src/MuleTrayIcon.cpp
-#, fuzzy
 msgid "Connected (LowID)"
-msgstr "Tilkopla"
+msgstr "Tilkopla (LowID)"
 
 #: src/MuleTrayIcon.cpp
-#, fuzzy
 msgid "Connected (HighID)"
-msgstr "Tilkopla"
+msgstr "Tilkopla (HighID)"
 
 #: src/MuleTrayIcon.cpp
-#, fuzzy
 msgid "Kad: "
-msgstr " Kad: "
+msgstr "Kad: "
 
 #: src/MuleTrayIcon.cpp
-#, fuzzy
 msgid "Connected (firewalled)"
-msgstr "Tilkopla Kad (brannmura)"
+msgstr "Tilkopla (brannmura)"
 
 #: src/MuleTrayIcon.cpp
-#, fuzzy
 msgid "Server: "
-msgstr "TenarIP: "
+msgstr "Tenar: "
 
 #: src/MuleTrayIcon.cpp
-#, fuzzy
 msgid "Server IP: "
-msgstr "Tenar IP:"
+msgstr "Tenar-IP: "
 
 #: src/MuleTrayIcon.cpp src/TextClient.cpp
 msgid "Not connected"
@@ -3801,14 +3781,14 @@ msgid "DL: %u"
 msgstr "NL: %u"
 
 #: src/MuleTrayIcon.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Download speed: %.1f%s"
-msgstr "Nedlastingsfart: %.1f"
+msgstr "Nedlastingsfart: %.1f%s"
 
 #: src/MuleTrayIcon.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Upload speed: %.1f%s"
-msgstr "Opplastingsfart: %.1f"
+msgstr "Opplastingsfart: %.1f%s"
 
 #: src/MuleTrayIcon.cpp
 #, c-format
@@ -3879,14 +3859,12 @@ msgid "WARNING! %s: Packet to %s discarded due to error (%s) while sending."
 msgstr ""
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Paste eD2k or magnet links here"
-msgstr "Legg til ei eD2k eller magnetlenkje  til kjernen"
+msgstr "Lim inn eD2k- eller magnet-lenkjer her"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Add links"
-msgstr "Legg til kameratar"
+msgstr "Legg til lenkjer"
 
 #: src/muuli_wdr.cpp
 msgid "Click here to add the eD2k link in the text control to your download queue."
@@ -4054,7 +4032,7 @@ msgstr "Filetternamn"
 
 #: src/muuli_wdr.cpp
 msgid "Ask already-responded Kad peers to widen the search. Each click queries the next-closest peer for more contacts (KADEMLIA_FIND_VALUE_MORE), surfacing additional file matches that the search's initial alpha frontier missed."
-msgstr ""
+msgstr "Be Kad-nodar som allereie har svart om å utvide søket. Kvart klikk spør den neste næraste noden om fleire kontaktar (KADEMLIA_FIND_VALUE_MORE), og hentar fram fleire filtreff som den opphavlege alfa-frontlinja i søket gjekk glipp av."
 
 #: src/muuli_wdr.cpp
 msgid "Stop"
@@ -4090,9 +4068,8 @@ msgid "Filter:"
 msgstr "Filter:"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "File sources:"
-msgstr "Komplette kjelder"
+msgstr "Filkjelder:"
 
 #: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
 msgid "General"
@@ -4171,9 +4148,8 @@ msgid "Packages saved by I.C.H."
 msgstr "Pakkar lagra av I.C.H."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Sharing"
-msgstr "Deler: "
+msgstr "Deling"
 
 #: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
 msgid "Requests"
@@ -4196,32 +4172,28 @@ msgid "Complete Sources"
 msgstr "Komplette kjelder"
 
 #: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
-#, fuzzy
 msgid "Shared since"
-msgstr "Delte filer"
+msgstr "Delt sidan"
 
 #: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
-#, fuzzy
 msgid "Last upload"
-msgstr " Opplasting: "
+msgstr "Siste opplasting"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Media Info"
-msgstr "Kad-info"
+msgstr "Medieinfo"
 
 #: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Length"
-msgstr ""
+msgstr "Lengd"
 
 #: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
-#, fuzzy
 msgid "Bitrate"
-msgstr "Ikkje gitt verdi"
+msgstr "Bitrate"
 
 #: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Codec"
-msgstr ""
+msgstr "Kodek"
 
 #: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Artist"
@@ -4264,6 +4236,8 @@ msgid ""
 "For a film you can say its length, its story, language ...\n"
 "and if it's a fake, you can tell that to other users of aMule."
 msgstr ""
+"For ein film kan du seie lengda, historia, språket …\n"
+"og om han er falsk, kan du fortelje det til andre aMule-brukarar."
 
 #: src/muuli_wdr.cpp
 msgid "File Quality"
@@ -4298,9 +4272,8 @@ msgid "Choose the file rating or advice users if the file is invalid ..."
 msgstr "Vél filverdi eller gje melding til andre brukarar dersom fila er falsk ..."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Get from Kad"
-msgstr "Fråkopla Kad"
+msgstr "Hent frå Kad"
 
 #: src/muuli_wdr.cpp
 msgid "Refresh"
@@ -4446,7 +4419,7 @@ msgstr "Kallenamn"
 
 #: src/muuli_wdr.cpp
 msgid "https://amule-org.github.io - the multi-platform Mule"
-msgstr ""
+msgstr "https://amule-org.github.io - multiplattform-mulen"
 
 #: src/muuli_wdr.cpp
 msgid "This is the name that other users will see when connecting to you."
@@ -4454,7 +4427,7 @@ msgstr "Dette er namnet andre brukarar vil sjå når dei koplar til  maskina di.
 
 #: src/muuli_wdr.cpp
 msgid "Language: "
-msgstr ""
+msgstr "Språk: "
 
 #: src/muuli_wdr.cpp
 msgid "The delay before showing tool-tips."
@@ -4465,30 +4438,28 @@ msgid "This specifies the language used on controls."
 msgstr "Dette vel språket som vert nytta på kontrollane."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Periodically check for a new version"
-msgstr "Sjå etter ny utgåve ved oppstart"
+msgstr "Sjå etter ny utgåve med jamne mellomrom"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Enabling this will make aMule check for a new version at startup and once a day while running"
-msgstr "Aktivering av denne vil få aMule til å sjå etter ei ny utgåve ved oppstart."
+msgstr "Å slå dette på vil få aMule til å sjå etter ny utgåve ved oppstart og ein gong om dagen medan det køyrer"
 
 #: src/muuli_wdr.cpp
 msgid "Registers a per-user autostart entry with the OS so aMule launches at login. If you move the aMule binary, launch aMule once manually afterwards to refresh the entry."
-msgstr ""
+msgstr "Registrerer ei autostart-oppføring per brukar hos operativsystemet, slik at aMule startar ved innlogging. Viss du flyttar aMule-programfila, må du starte aMule ein gong manuelt etterpå for å oppdatere oppføringa."
 
 #: src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Makes aMule the default handler for ed2k:// links so clicking one in your browser or file manager opens it here."
-msgstr ""
+msgstr "Gjer aMule til standardprogram for ed2k://-lenkjer, slik at klikk på ei slik lenkje i nettlesaren eller filhandsamaren opnar ho her."
 
 #: src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "aMule only handles eD2k-compatible magnets (containing xt=urn:ed2k:). BitTorrent magnets are NOT supported and clicking them will silently fail. If you use a BitTorrent client (Transmission, qBittorrent, etc.), leave this off."
-msgstr ""
+msgstr "aMule handterer berre eD2k-kompatible magnet-lenkjer (som inneheld xt=urn:ed2k:). BitTorrent-magnetar er IKKJE støtta, og klikk på dei vil feile stille. Viss du brukar ein BitTorrent-klient (Transmission, qBittorrent, osv.), la denne stå av."
 
 #: src/muuli_wdr.cpp
 msgid "Opening a collection queues every eD2k link it contains. On Windows this adds aMule to the \"Open with\" list and takes the default only when no other program has claimed the file type."
-msgstr ""
+msgstr "Å opne ei samling køar alle eD2k-lenkjer ho inneheld. På Windows legg dette aMule til i «Opne med»-lista, og gjer aMule til standard berre viss ingen andre program har kravd filtypen."
 
 #: src/muuli_wdr.cpp
 msgid "Start minimized"
@@ -4504,7 +4475,7 @@ msgstr "Stadfest avslutting"
 
 #: src/muuli_wdr.cpp
 msgid "Makes aMule prompt before exiting."
-msgstr ""
+msgstr "Får aMule til å spørje før avslutning."
 
 #: src/muuli_wdr.cpp
 msgid "Enable Tray Icon"
@@ -4516,7 +4487,7 @@ msgstr "Dette aktiverer/deaktiverer ikonet i systemtrauet (eller oppgåvelinja).
 
 #: src/muuli_wdr.cpp
 msgid "Hide application window when close button is pressed"
-msgstr ""
+msgstr "Gøyme programvindauget når lukkeknappen vert trykt"
 
 #: src/muuli_wdr.cpp
 msgid "Minimize to Tray Icon"
@@ -4528,28 +4499,27 @@ msgstr "Akrivering av denne vil få aMule til å minimere seg til systemtrauet o
 
 #: src/muuli_wdr.cpp
 msgid "Show notifications when finished downloading"
-msgstr ""
+msgstr "Syne varsel når nedlasting er ferdig"
 
 #: src/muuli_wdr.cpp
 msgid "Enabling this will make aMule to show notifications when finished downloading."
-msgstr ""
+msgstr "Å aktivere dette vil få aMule til å syne varsel når ei nedlasting er ferdig."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Remember search history"
-msgstr "Hugs desse innstillingane"
+msgstr "Hugs søkjehistorikk"
 
 #: src/muuli_wdr.cpp
 msgid "Keeps a dropdown list of your past search terms in the Search tab's Name field. This remembers the queries you typed, not the results they returned."
-msgstr ""
+msgstr "Held ei nedtrekksliste over tidlegare søkjeord i namnefeltet på Søk-fana. Dette hugsar søka du skreiv inn, ikkje resultata dei gav."
 
 #: src/muuli_wdr.cpp
 msgid "Tooltip delay time: "
-msgstr ""
+msgstr "Forseinking for verktøytips: "
 
 #: src/muuli_wdr.cpp
 msgid "seconds"
-msgstr ""
+msgstr "sekund"
 
 #: src/muuli_wdr.cpp
 msgid "Browser Selection"
@@ -4557,7 +4527,7 @@ msgstr "Nettlesarval"
 
 #: src/muuli_wdr.cpp
 msgid "Enter your browser name here. Leave this field empty to use the system default browser."
-msgstr ""
+msgstr "Skriv inn namnet på nettlesaren din her. La feltet stå tomt for å bruke systemets standard nettlesar."
 
 #: src/muuli_wdr.cpp
 msgid "Open in new tab if possible"
@@ -4573,7 +4543,7 @@ msgstr "Videospelar"
 
 #: src/muuli_wdr.cpp
 msgid "Bandwidth limits"
-msgstr ""
+msgstr "Bandbreiddegrenser"
 
 #: src/muuli_wdr.cpp
 msgid "Upload"
@@ -4585,7 +4555,7 @@ msgstr "Opningsdistribusjon"
 
 #: src/muuli_wdr.cpp
 msgid "Ports"
-msgstr ""
+msgstr "Portar"
 
 #: src/muuli_wdr.cpp
 msgid "This is the standard eD2k port and cannot be disabled."
@@ -4593,31 +4563,31 @@ msgstr "Dette er standardporten for eD2k og kan ikkje deaktiverast"
 
 #: src/muuli_wdr.cpp
 msgid "UDP port for server requests (TCP+3):"
-msgstr ""
+msgstr "UDP-port for tenarførespurnadar (TCP+3):"
 
 #: src/muuli_wdr.cpp
 msgid "4665"
-msgstr ""
+msgstr "4665"
 
 #: src/muuli_wdr.cpp
 msgid "This UDP port is used for extended eD2k requests and Kad network"
-msgstr ""
+msgstr "Denne UDP-porten vert brukt for utvida eD2k-førespurnadar og Kad-nettverket"
 
 #: src/muuli_wdr.cpp
 msgid "UPnP TCP Port (Optional):"
-msgstr ""
+msgstr "UPnP TCP-port (valfritt):"
 
 #: src/muuli_wdr.cpp
 msgid "Bind local address to IP (empty for any):"
-msgstr ""
+msgstr "Bind lokal adresse til IP (tom for alle):"
 
 #: src/muuli_wdr.cpp
 msgid "Advanced users only: If you have multiple network interfaces, enter the address of the interface to which aMule should be bound."
-msgstr ""
+msgstr "Berre for avanserte brukarar: Viss du har fleire nettverksgrensesnitt, skriv inn adressa til grensesnittet aMule skal bindast til."
 
 #: src/muuli_wdr.cpp
 msgid "Bind to network interface (empty for any):"
-msgstr ""
+msgstr "Bind til nettverksgrensesnitt (tomt for alle):"
 
 #: src/muuli_wdr.cpp
 msgid "Advanced users only: pin aMule's peer-to-peer traffic, and its HTTP updates where the platform allows, to one network interface, chosen from the list or typed in by name (e.g. tun0, eth0, en0) or index. Unlike binding to an IP, this stops traffic leaking out via the default route - useful with a VPN. On Linux before kernel 5.7 it needs the CAP_NET_RAW capability."
@@ -4625,11 +4595,11 @@ msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Max sources per downloading file:"
-msgstr ""
+msgstr "Maks kjelder per fil under nedlasting:"
 
 #: src/muuli_wdr.cpp
 msgid "Max simultaneous connections:"
-msgstr ""
+msgstr "Maks samtidige tilkoplingar:"
 
 #: src/muuli_wdr.cpp src/ServerWnd.cpp
 msgid "ED2K"
@@ -4649,7 +4619,7 @@ msgstr "Ta bort daude tenarar etter"
 
 #: src/muuli_wdr.cpp
 msgid "Static servers are never removed, even when unreachable."
-msgstr ""
+msgstr "Statiske tenarar vert aldri fjerna, sjølv om dei er utilgjengelege."
 
 #: src/muuli_wdr.cpp
 msgid "retries"
@@ -4701,11 +4671,11 @@ msgstr "Prøv å laste ned første og siste del først"
 
 #: src/muuli_wdr.cpp
 msgid "Endgame mode: rotate to faster sources for the final blocks"
-msgstr ""
+msgstr "Sluttspel-modus: byt til raskare kjelder for dei siste blokkene"
 
 #: src/muuli_wdr.cpp
 msgid "Start next paused file when a file completes"
-msgstr ""
+msgstr "Start neste pausa fil når ei fil er ferdig"
 
 #: src/muuli_wdr.cpp
 msgid "From the same category"
@@ -4713,7 +4683,7 @@ msgstr "Frå same kategori"
 
 #: src/muuli_wdr.cpp
 msgid "In alphabetic order"
-msgstr ""
+msgstr "I alfabetisk rekkjefølgje"
 
 #: src/muuli_wdr.cpp
 msgid "Preallocate disk space for new files"
@@ -4725,15 +4695,15 @@ msgstr "Hentar diskplass for heile nye filer, og reduserer fragmentering"
 
 #: src/muuli_wdr.cpp
 msgid "Create new files as sparse files"
-msgstr ""
+msgstr "Opprett nye filer som glisne filer"
 
 #: src/muuli_wdr.cpp
 msgid "Sparse part files only occupy disk space for the parts already downloaded, so free space is used up gradually as the file fills in. Turn this off to use an ordinary file instead - useful where sparse files are unsupported or slow, or where backup/de-duplication tools handle them badly. Applies only when the core runs on Windows; on Linux and macOS part files are sparse anyway and this setting has no effect."
-msgstr ""
+msgstr "Glisne delfiler brukar berre diskplass for delane som alt er lasta ned, så ledig plass vert brukt opp gradvis etter kvart som fila vert fylt ut. Slå dette av for å bruke ei vanleg fil i staden - nyttig der glisne filer ikkje er støtta eller er trege, eller der tryggingskopierings-/dedupliseringsverktøy handterer dei dårleg. Gjeld berre når kjernen køyrer på Windows; på Linux og macOS er delfiler glisne uansett, og denne innstillinga har ingen verknad."
 
 #: src/muuli_wdr.cpp
 msgid "Stop downloads when free disk space reaches "
-msgstr ""
+msgstr "Stopp nedlastingar når ledig diskplass når "
 
 #: src/muuli_wdr.cpp
 msgid "Select this if you want aMule to check your disk space"
@@ -4757,73 +4727,75 @@ msgstr "Legg til nye delte filer med autoprioritet"
 
 #: src/muuli_wdr.cpp
 msgid "Intelligent Corruption Handling (I.C.H.)"
-msgstr ""
+msgstr "Intelligent korrupsjonshandsaming (I.C.H.)"
 
 #: src/muuli_wdr.cpp
 msgid "Enable"
-msgstr ""
+msgstr "Aktiver"
 
 #: src/muuli_wdr.cpp
 msgid "Advanced I.C.H. trusts every hash (not recommended)"
-msgstr ""
+msgstr "Avansert I.C.H. stolar på alle hash-verdiar (ikkje tilrådd)"
 
 #: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
 msgid "Media metadata extraction"
-msgstr ""
+msgstr "Uttrekking av mediemetadata"
 
 #: src/muuli_wdr.cpp
 msgid "Extract length / bitrate / codec from shared audio and video files"
-msgstr ""
+msgstr "Trekk ut lengd / bitrate / kodek frå delte lyd- og videofiler"
 
 #: src/muuli_wdr.cpp
 msgid "When enabled, aMule runs ffprobe on each shared media file to fill in the Length / Bitrate / Codec columns other clients see when they find the file in a search. Requires ffmpeg (the ffprobe binary) to be installed."
-msgstr ""
+msgstr "Når dette er slått på, køyrer aMule ffprobe på kvar delte mediefil for å fylle ut kolonnane Lengd / Bitrate / Kodek som andre klientar ser når dei finn fila i eit søk. Krev at ffmpeg (ffprobe-programfila) er installert."
 
 #: src/muuli_wdr.cpp
 msgid "Path to ffprobe:"
-msgstr ""
+msgstr "Sti til ffprobe:"
 
 #: src/muuli_wdr.cpp
 msgid "Full path to the ffprobe binary. Leave empty to have aMule auto-detect it on startup."
-msgstr ""
+msgstr "Full sti til ffprobe-programfila. La stå tomt for at aMule skal oppdage ho automatisk ved oppstart."
 
 #: src/muuli_wdr.cpp
 msgid "Detect"
-msgstr ""
+msgstr "Oppdag"
 
 #: src/muuli_wdr.cpp
 msgid "Search the standard install locations for an ffprobe binary and fill the path field."
-msgstr ""
+msgstr "Søk i standard installasjonsplasseringar etter ei ffprobe-programfil og fyll ut stifeltet."
 
 #: src/muuli_wdr.cpp
 msgid ""
 "Completed downloads are stored here. All files in this folder are automatically shared with other peers.\n"
 "If this folder also holds files you don't want to share, point it at an aMule-only sub-folder."
 msgstr ""
+"Fullførte nedlastingar vert lagra her. Alle filer i denne katalogen vert automatisk delte med andre brukarar.\n"
+"Viss denne katalogen også inneheld filer du ikkje vil dele, peik han til ein underkatalog som berre aMule brukar."
 
 #: src/muuli_wdr.cpp
 msgid "Pick the folder where completed downloads will be stored. All files in that folder will be shared with other peers."
-msgstr ""
+msgstr "Vel katalogen der fullførte nedlastingar skal lagrast. Alle filer i den katalogen vil verte delte med andre brukarar."
 
 #: src/muuli_wdr.cpp
 msgid "Shared folders"
-msgstr ""
+msgstr "Delte katalogar"
 
 #: src/muuli_wdr.cpp
 msgid "(Folders shared by the core. Enter a path to add one.)"
-msgstr ""
+msgstr "(Katalogar delte av kjernen. Skriv inn ein sti for å leggje til ein.)"
 
 #: src/muuli_wdr.cpp
 msgid "Absolute path of a folder on the core's machine, e.g. /home/user/shared"
-msgstr ""
+msgstr "Absolutt sti til ein katalog på maskinen til kjernen, t.d. /home/user/shared"
 
 #: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
 msgid "Recursive"
-msgstr ""
+msgstr "Rekursiv"
 
 #: src/muuli_wdr.cpp
 msgid "Share every sub-folder underneath this one, including ones created later."
-msgstr ""
+msgstr "Del alle underkatalogar under denne, inkludert dei som vert oppretta seinare."
 
 #: src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Remove"
@@ -4839,11 +4811,11 @@ msgstr "Dele gøymde filer"
 
 #: src/muuli_wdr.cpp
 msgid "Automatically rescan shared folders for changes"
-msgstr ""
+msgstr "Skann delte katalogar automatisk for endringar på nytt"
 
 #: src/muuli_wdr.cpp
 msgid "Follow symbolic links in shared folders"
-msgstr ""
+msgstr "Følg symbolske lenkjer i delte katalogar"
 
 #: src/muuli_wdr.cpp
 msgid "Exclude files and folders matching:"
@@ -4855,7 +4827,7 @@ msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Patterns are regular expressions"
-msgstr ""
+msgstr "Mønstera er regulære uttrykk"
 
 #: src/muuli_wdr.cpp
 msgid "When set, the whole field is one regular expression: '|' is alternation, and '*' and '?' take their regular-expression meaning rather than the wildcard one. When unset, it is a list of '|'-separated wildcards."
@@ -4909,15 +4881,15 @@ msgstr "Koplingsgrafskala: 100 "
 
 #: src/muuli_wdr.cpp
 msgid "Download graph scale:"
-msgstr ""
+msgstr "Skala for nedlastingsgraf:"
 
 #: src/muuli_wdr.cpp
 msgid "Upload graph scale:"
-msgstr ""
+msgstr "Skala for opplastingsgraf:"
 
 #: src/muuli_wdr.cpp
 msgid "Colors: "
-msgstr ""
+msgstr "Fargar: "
 
 #: src/muuli_wdr.cpp
 msgid "Background"
@@ -4956,9 +4928,8 @@ msgid "Active connections"
 msgstr "Aktive koplingar"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Systray Icon Speed Bar"
-msgstr "Fartslinje i ikontrauet"
+msgstr "Fartslinje for trauikon"
 
 #: src/muuli_wdr.cpp
 msgid "Kad-nodes current"
@@ -4978,7 +4949,7 @@ msgstr "Velje"
 
 #: src/muuli_wdr.cpp
 msgid "Tree"
-msgstr ""
+msgstr "Tre"
 
 #: src/muuli_wdr.cpp
 msgid "Number of Client Versions shown (0=unlimited)"
@@ -4994,17 +4965,15 @@ msgstr "Maks nye koplingar / 5 sek"
 
 #: src/muuli_wdr.cpp
 msgid "Concurrent Kad source lookups"
-msgstr ""
+msgstr "Samtidige Kad-kjeldeoppslag"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Kad source re-search interval (minutes)"
-msgstr "FTP oppdateringsintervall i minutt"
+msgstr "Intervall for nytt Kad-kjeldesøk (minutt)"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Source re-ask interval (minutes)"
-msgstr "FTP oppdateringsintervall i minutt"
+msgstr "Intervall for ny kjeldeførespurnad (minutt)"
 
 #: src/muuli_wdr.cpp
 msgid "File Buffer Size: 240000 bytes"
@@ -5012,11 +4981,11 @@ msgstr "Filbufferstorleik: 240000·bytes"
 
 #: src/muuli_wdr.cpp
 msgid "Use MMAP: memory-mapped file access (lower memory use)"
-msgstr ""
+msgstr "Bruk MMAP: minnemappa filtilgang (lågare minnebruk)"
 
 #: src/muuli_wdr.cpp
 msgid "Maps part files into memory instead of buffering them on the heap, lowering the process memory footprint. May reduce download speed on some disks; best for memory-constrained or upload-heavy hosts."
-msgstr ""
+msgstr "Mappar delfiler til minnet i staden for å mellomlagre dei på haugen, noko som senkar minnebruken til prosessen. Kan redusere nedlastingsfarten på nokre diskar; best for vertar med avgrensa minne eller mykje opplasting."
 
 #: src/muuli_wdr.cpp
 msgid "Upload Queue Size: 5000 clients"
@@ -5028,24 +4997,23 @@ msgstr "Oppfriskingsintervall for tenarkopling: Deaktiver"
 
 #: src/muuli_wdr.cpp
 msgid "Disable computer's timed standby mode"
-msgstr ""
+msgstr "Deaktiver tidsstyrt kvilemodus på datamaskinen"
 
 #: src/muuli_wdr.cpp
 msgid "Skin to use: "
-msgstr ""
+msgstr "Utsjånad å bruke: "
 
 #: src/muuli_wdr.cpp
 msgid "Show \"Fast eD2k Links Handler\" in every window."
-msgstr ""
+msgstr "Syne «Rask eD2k-lenkjehandsamar» i alle vindauge."
 
 #: src/muuli_wdr.cpp
 msgid "Show extended info on categories tabs"
 msgstr "Syne utvida informasjon i kategorifaneblad"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Show application version on title"
-msgstr "Syne overføringsfart i tittellinja"
+msgstr "Syne programutgåve i tittelen"
 
 #: src/muuli_wdr.cpp
 msgid "Show transfer rates on title"
@@ -5053,15 +5021,15 @@ msgstr "Syne overføringsfart i tittellinja"
 
 #: src/muuli_wdr.cpp
 msgid "Before application name"
-msgstr ""
+msgstr "Før programnamnet"
 
 #: src/muuli_wdr.cpp
 msgid "After application name"
-msgstr ""
+msgstr "Etter programnamnet"
 
 #: src/muuli_wdr.cpp
 msgid "Show overhead bandwidth"
-msgstr ""
+msgstr "Syne overhead-bandbreidde"
 
 #: src/muuli_wdr.cpp
 msgid "Vertical toolbar orientation"
@@ -5069,19 +5037,19 @@ msgstr "Vertikal verktylinjeorientering"
 
 #: src/muuli_wdr.cpp
 msgid "Live column sorting (auto-reorder rows as their values change)"
-msgstr ""
+msgstr "Levande kolonnesortering (radene vert omordna automatisk når verdiane endrar seg)"
 
 #: src/muuli_wdr.cpp
 msgid "Download Queue Files"
-msgstr ""
+msgstr "Filer i nedlastingskø"
 
 #: src/muuli_wdr.cpp
 msgid "Show progress percentage"
-msgstr ""
+msgstr "Syne framdrift i prosent"
 
 #: src/muuli_wdr.cpp
 msgid "Show progress bar"
-msgstr ""
+msgstr "Syne framdriftslinje"
 
 #: src/muuli_wdr.cpp
 msgid "Flat"
@@ -5101,7 +5069,7 @@ msgstr "Akseptér eksterne koplingar"
 
 #: src/muuli_wdr.cpp
 msgid "IP of the listening interface:"
-msgstr ""
+msgstr "IP for lyttegrensesnittet:"
 
 #: src/muuli_wdr.cpp
 msgid "Enter here a valid ip in the a.b.c.d format for the listening EC interface. An empty field or 0.0.0.0 will mean any interface."
@@ -5109,7 +5077,7 @@ msgstr "Skriv in ei gyldig IP i a.b.c.d format for det lyttande EC-grensesnittet
 
 #: src/muuli_wdr.cpp
 msgid "TCP port:"
-msgstr ""
+msgstr "TCP-port:"
 
 #: src/muuli_wdr.cpp
 msgid "Enable UPnP port forwarding on the EC port"
@@ -5124,50 +5092,44 @@ msgid "Require encrypted connections (rejects clients that cannot encrypt)"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "aMule API server parameters"
-msgstr "Vevtenarparameter"
+msgstr "Parametrar for aMule API-tenar"
 
 #: src/muuli_wdr.cpp
 msgid "Run amuleapi (REST API) on startup"
-msgstr ""
+msgstr "Køyr amuleapi (REST API) ved oppstart"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "HTTP port:"
-msgstr "TCP port: %d"
+msgstr "HTTP-port:"
 
 #: src/muuli_wdr.cpp
 msgid "The interface amuleapi's HTTP server listens on. 127.0.0.1 (default) accepts only local connections; use 0.0.0.0 or a specific IP to expose it to other hosts (set an admin password below)."
-msgstr ""
+msgstr "Grensesnittet amuleapi sin HTTP-tenar lyttar på. 127.0.0.1 (standard) tek berre imot lokale tilkoplingar; bruk 0.0.0.0 eller ein bestemt IP for å gjere han tilgjengeleg for andre vertar (set eit admin-passord nedanfor)."
 
 #: src/muuli_wdr.cpp
 msgid "Type a password to set or change it. Stored passwords cannot be shown, so leaving this empty keeps the current one."
-msgstr ""
+msgstr "Skriv inn eit passord for å setje eller endre det. Lagra passord kan ikkje synast, så å la dette stå tomt held det gjeldande passordet."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Admin password"
-msgstr "Sjekkar passord\n"
+msgstr "Admin-passord"
 
 #: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "A password is set."
-msgstr "Sjekkar passord\n"
+msgstr "Eit passord er sett."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Enable guest access"
-msgstr "Nekt gjestetilgang"
+msgstr "Slå på gjestetilgang"
 
 #: src/muuli_wdr.cpp
 msgid "Guest sessions may read status and listings but cannot change anything. Turning this off clears the stored guest password."
-msgstr ""
+msgstr "Gjesteøkter kan lese status og lister, men kan ikkje endre noko. Å slå dette av tømer det lagra gjestepassordet."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Guest password"
-msgstr "Gjestepassord for vevtenar"
+msgstr "Gjestepassord"
 
 #: src/muuli_wdr.cpp
 msgid "Web server parameters"
@@ -5175,7 +5137,7 @@ msgstr "Vevtenarparameter"
 
 #: src/muuli_wdr.cpp
 msgid "Run webserver on startup (deprecated)"
-msgstr ""
+msgstr "Køyr vevtenar ved oppstart (forelda)"
 
 #: src/muuli_wdr.cpp
 msgid "Web template"
@@ -5195,11 +5157,11 @@ msgstr "Passord for låge rettar"
 
 #: src/muuli_wdr.cpp
 msgid "Enable UPnP port forwarding of the web server port"
-msgstr ""
+msgstr "Aktiver UPnP-portvidaresending for vevtenarporten"
 
 #: src/muuli_wdr.cpp
 msgid "Web server UPnP TCP port (Optional)"
-msgstr ""
+msgstr "UPnP TCP-port for vevtenar (valfritt)"
 
 #: src/muuli_wdr.cpp
 msgid "Page Refresh Time (in secs)"
@@ -5210,13 +5172,12 @@ msgid "Enable Gzip compression"
 msgstr "Aktivér Gzipkompresjon"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Reset page to defaults"
-msgstr "Standardinnstillingar"
+msgstr "Tilbakestill sida til standardverdiar"
 
 #: src/muuli_wdr.cpp
 msgid "Reset the settings on the current page to their default values."
-msgstr ""
+msgstr "Tilbakestill innstillingane på gjeldande side til standardverdiane."
 
 #: src/muuli_wdr.cpp src/ServerWnd.cpp
 msgid "OK"
@@ -5377,7 +5338,7 @@ msgstr "Ingen"
 
 #: src/muuli_wdr.cpp
 msgid "Who can see my shared files:"
-msgstr ""
+msgstr "Kven kan sjå dei delte filene mine:"
 
 #: src/muuli_wdr.cpp
 msgid "Select who can request to view a list of your shared files."
@@ -5437,16 +5398,15 @@ msgstr "Paranoid handsaming av ujamne IP`ar"
 
 #: src/muuli_wdr.cpp
 msgid "Rejects a packet when its source IP differs from the IP the client claims (an anti-spoofing check). Disable only if it causes connection problems."
-msgstr ""
+msgstr "Avviser ein pakke når kjelde-IP-en skil seg frå IP-en klienten hevdar (ein anti-spoofing-sjekk). Slå av berre viss det gir tilkoplingsproblem."
 
 #: src/muuli_wdr.cpp
 msgid "Use system-wide ipfilter.dat if available"
 msgstr "Bruk systemomspennande ipfilter.dat dersom tilgjengeleg"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "If there's no local ipfilter.dat found, allow usage of a system-wide ipfilter file."
-msgstr "Tillat bruk av ipfilter for heile systemet dersom inga lokal ipfilter-dat vert funnen"
+msgstr "Viss det ikkje finst ei lokal ipfilter.dat, tillat bruk av ei systemomfattande ipfilter-fil."
 
 #: src/muuli_wdr.cpp
 msgid "Enable Online-Signature"
@@ -5466,7 +5426,7 @@ msgstr "Endre frekvensen (i sekund) for oppdatering av nettsignaturar."
 
 #: src/muuli_wdr.cpp
 msgid "Save online signature file in: "
-msgstr ""
+msgstr "Lagre nettsignaturfil i: "
 
 #: src/muuli_wdr.cpp
 msgid "Click here to select the directory containing the the Online Signature files."
@@ -5474,37 +5434,35 @@ msgstr "Klikk her for å velje katalogen med nettsignaturfilene."
 
 #: src/muuli_wdr.cpp
 msgid "Show country flags for clients"
-msgstr ""
+msgstr "Syne landflagg for klientar"
 
 #: src/muuli_wdr.cpp
 msgid "Render the country flag column in the transfers, queue and search views. Requires a valid MMDB GeoIP database (see below)."
-msgstr ""
+msgstr "Syne landflagg-kolonnen i overførings-, kø- og søkjevisningane. Krev ein gyldig MMDB GeoIP-database (sjå nedanfor)."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Database"
-msgstr "Datasnøggleik :"
+msgstr "Database"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Source:"
-msgstr "Kjelder"
+msgstr "Kjelde:"
 
 #: src/muuli_wdr.cpp
 msgid "DB-IP (free, no account)"
-msgstr ""
+msgstr "DB-IP (gratis, ingen konto)"
 
 #: src/muuli_wdr.cpp
 msgid "MaxMind GeoLite2 (free, account required)"
-msgstr ""
+msgstr "MaxMind GeoLite2 (gratis, konto påkravd)"
 
 #: src/muuli_wdr.cpp
 msgid "Custom URL"
-msgstr ""
+msgstr "Tilpassa URL"
 
 #: src/muuli_wdr.cpp
 msgid "Choose which provider supplies the GeoIP MMDB database. DB-IP is the default - no account required. MaxMind requires a free account + license key. Use Custom URL to point at any other MMDB host (e.g. a local mirror)."
-msgstr ""
+msgstr "Vel kva leverandør som gir GeoIP MMDB-databasen. DB-IP er standard - ingen konto påkravd. MaxMind krev ein gratis konto + lisensnøkkel. Bruk tilpassa URL for å peike på ein annan MMDB-vert (t.d. eit lokalt speil)."
 
 #: src/muuli_wdr.cpp
 msgid ""
@@ -5513,10 +5471,14 @@ msgid ""
 "IP-to-Country data by DB-IP.com - https://db-ip.com\n"
 "License: Creative Commons BY 4.0 - https://creativecommons.org/licenses/by/4.0/"
 msgstr ""
+"Ingen konfigurasjon påkravd.\n"
+"\n"
+"IP-til-land-data frå DB-IP.com - https://db-ip.com\n"
+"Lisens: Creative Commons BY 4.0 - https://creativecommons.org/licenses/by/4.0/"
 
 #: src/muuli_wdr.cpp
 msgid "License key:"
-msgstr ""
+msgstr "Lisensnøkkel:"
 
 #: src/muuli_wdr.cpp
 msgid ""
@@ -5527,11 +5489,16 @@ msgid ""
 "License: MaxMind GeoLite2 EULA - https://www.maxmind.com/en/geolite2/eula\n"
 "Requires attribution and account registration; refresh at least every 30 days."
 msgstr ""
+"Registrer ein gratis MaxMind-konto, og lag deretter ein lisensnøkkel:\n"
+"https://www.maxmind.com/en/geolite2/signup\n"
+"\n"
+"Dette produktet inneheld GeoLite2-data laga av MaxMind - https://www.maxmind.com\n"
+"Lisens: MaxMind GeoLite2 EULA - https://www.maxmind.com/en/geolite2/eula\n"
+"Krev kjeldemerking og kontoregistrering; oppdater minst kvar 30. dag."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Download URL:"
-msgstr "Nedlasting: "
+msgstr "Nedlastings-URL:"
 
 #: src/muuli_wdr.cpp
 msgid ""
@@ -5539,19 +5506,21 @@ msgid ""
 "URL may include credentials (https://user:pass@host/...).\n"
 "License and attribution terms are set by the upstream URL - you are responsible."
 msgstr ""
+"Må peike på ei .mmdb-fil eller ei .gz-/.tar.gz-fil som inneheld ei.\n"
+"URL-en kan innehalde påloggingsinformasjon (https://user:pass@host/...).\n"
+"Lisens- og kjeldemerkingsvilkår vert sett av kjelde-URL-en - du er sjølv ansvarleg."
 
 #: src/muuli_wdr.cpp
 msgid "Download the GeoIP database from the selected source."
-msgstr ""
+msgstr "Last ned GeoIP-databasen frå den valde kjelda."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Auto-update on startup"
-msgstr "Automatisk oppdatér ipfilter ved oppstart"
+msgstr "Automatisk oppdatering ved oppstart"
 
 #: src/muuli_wdr.cpp
 msgid "Re-download the GeoIP database from the selected source every time aMule starts."
-msgstr ""
+msgstr "Last ned GeoIP-databasen frå den valde kjelda på nytt kvar gong aMule startar."
 
 #: src/muuli_wdr.cpp
 msgid "Filter incoming messages (except current chat):"
@@ -5579,7 +5548,7 @@ msgstr "legg til ord aMule skal filtrére og blokkere"
 
 #: src/muuli_wdr.cpp
 msgid "Show received messages in the log"
-msgstr ""
+msgstr "Syne mottekne meldingar i loggen"
 
 #: src/muuli_wdr.cpp
 msgid "Comments"
@@ -5651,18 +5620,16 @@ msgid "Encrypt the connection (recommended)"
 msgstr "Ekstern kopling lukka."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Force ZLIB compression"
-msgstr "Nytt gzipkomprimering"
+msgstr "Tving ZLIB-komprimering"
 
 #: src/muuli_wdr.cpp
 msgid "Enable Verbose Debug-Logging."
 msgstr "Aktivér utførleg avfeilingslogg."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Only to Logfile"
-msgstr "&Opne fila"
+msgstr "Berre til loggfil"
 
 #: src/muuli_wdr.cpp
 msgid "Message Categories:"
@@ -5686,41 +5653,35 @@ msgstr "Fjern valde"
 
 #: src/muuli_wdr.cpp
 msgid "Event Types"
-msgstr ""
+msgstr "Hendingstypar"
 
 #: src/muuli_wdr.cpp
 msgid "Statistics and queued clients for selected file(s) : Session / All time"
-msgstr ""
+msgstr "Statistikk og klientar i kø for valde fil(er): Økt / All tid"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Active Uploads"
-msgstr "Aktive opplastingar :"
-
-#: src/muuli_wdr.cpp
-#, fuzzy
-msgid "Show Clients for"
-msgstr "Syne klientar"
-
-#: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
-#, fuzzy
-msgid "All files"
-msgstr "Gøyme delte filer"
-
-#: src/muuli_wdr.cpp
-#, fuzzy
-msgid "Selected files"
-msgstr "Vel synsfilter"
-
-#: src/muuli_wdr.cpp
-#, fuzzy
-msgid "Active uploads only"
 msgstr "Aktive opplastingar"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
+msgid "Show Clients for"
+msgstr "Syne klientar for"
+
+#: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
+msgid "All files"
+msgstr "Alle filer"
+
+#: src/muuli_wdr.cpp
+msgid "Selected files"
+msgstr "Valde filer"
+
+#: src/muuli_wdr.cpp
+msgid "Active uploads only"
+msgstr "Berre aktive opplastingar"
+
+#: src/muuli_wdr.cpp
 msgid "Reload:"
-msgstr "Last om att lista"
+msgstr "Last om att:"
 
 #: src/muuli_wdr.cpp
 msgid "Reload your shared files"
@@ -5858,7 +5819,7 @@ msgstr "Tekst"
 #: src/OtherFunctions.cpp
 #, c-format
 msgid "Using config dir: %s"
-msgstr ""
+msgstr "Brukar konfigkatalog: %s"
 
 #: src/PartBarLegendUI.cpp
 #, fuzzy
@@ -5937,7 +5898,7 @@ msgstr ""
 
 #: src/PartFileConvert.cpp
 msgid "Waiting for partfile convert thread to die..."
-msgstr ""
+msgstr "Ventar på at delfil-konverteringstråden skal avsluttast..."
 
 #: src/PartFileConvert.cpp
 #, c-format
@@ -5996,18 +5957,16 @@ msgid "Please choose a folder to search for temporary downloads! (subfolders wil
 msgstr "Vér god å velje ei katalog til å søkje på mellombelse nedlastingar! (underkatalogar vil verte inkluderte)"
 
 #: src/PartFileConvertDlg.cpp
-#, fuzzy
 msgid "Do you want the source files of successfully imported downloads be deleted?"
-msgstr "Vil du slette kjeldefilene til vellukka importerte nedlastingar?"
+msgstr "Vil du at kjeldefilene til vellukka importerte nedlastingar skal slettast?"
 
 #: src/PartFileConvertDlg.cpp
 msgid "Remove sources?"
 msgstr "Ta bort kjelder?"
 
 #: src/PartFile.cpp
-#, fuzzy
 msgid "ERROR: Failed to create partfile"
-msgstr "FEIL: Greidde ikkje å lage delfil"
+msgstr "FEIL: Greidde ikkje å opprette delfil"
 
 #: src/PartFile.cpp
 #, c-format
@@ -6027,12 +5986,12 @@ msgstr "FEIL: part.met fila har ein storleik på 0: %s ==> %s"
 #: src/PartFile.cpp
 #, c-format
 msgid "ERROR: Invalid part.met file version: %s ==> %s"
-msgstr ""
+msgstr "FEIL: Ugyldig utgåve på part.met-fil: %s ==> %s"
 
 #: src/PartFile.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Error: %s (%s) is corrupt (bad tags: %s), unable to load file."
-msgstr "FEIL: %s (%s) er korrupt (feil merkelappstal), greidde ikkje å laste fila."
+msgstr "Feil: %s (%s) er korrupt (feil merkelappar: %s), greidde ikkje å laste fila."
 
 #: src/PartFile.cpp
 #, c-format
@@ -6071,14 +6030,13 @@ msgid "ERROR while saving partfile: %s (%s ==> %s)"
 msgstr "FEIL under lagring av delfila: %s·(%s·==>·%s)"
 
 #: src/PartFile.cpp
-#, fuzzy
 msgid "IO failure while saving partfile: "
-msgstr "FEIL under lagring av delfila: %s·(%s·==>·%s)"
+msgstr "IO-feil ved lagring av delfil: "
 
 #: src/PartFile.cpp
 #, c-format
 msgid "Wrote 0/unknown bytes to '%s' -- preserving existing .part.met."
-msgstr ""
+msgstr "Skreiv 0/ukjend tal byte til «%s» -- tek vare på eksisterande .part.met."
 
 #: src/PartFile.cpp
 #, c-format
@@ -6093,9 +6051,9 @@ msgstr[0] "Lagra %i kjeldefrø for delfila: %s (%s)"
 msgstr[1] "Lagra %i kjeldefrø for delfila: %s (%s)"
 
 #: src/PartFile.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Can't read seeds file for Partfile %s (%s)"
-msgstr "Lagra %i kjeldefrø for delfila: %s (%s)"
+msgstr "Kan ikkje lese seeds-fil for delfila %s (%s)"
 
 #: src/PartFile.cpp
 #, c-format
@@ -6130,11 +6088,13 @@ msgid "Finished downloading: %s"
 msgstr "Ferdig med å laste ned: %s"
 
 #: src/PartFile.cpp
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "Finished downloading:\n"
 "%s"
-msgstr "Ferdig med å laste ned: %s"
+msgstr ""
+"Ferdig med å laste ned:\n"
+"%s"
 
 #: src/PartFile.cpp
 #, c-format
@@ -6154,12 +6114,12 @@ msgstr "FEIL: Greier ikkje å hashe nedlasta del - hashsett ikkje komplett (%s).
 #: src/PartFile.cpp
 #, c-format
 msgid "Part %u of '%s' marked complete but partfile is shorter than expected (have %llu bytes, need %llu); reopening gap for re-download."
-msgstr ""
+msgstr "Del %u av «%s» er markert som fullført, men delfila er kortare enn forventa (har %llu byte, treng %llu); opnar hòlet på nytt for ny nedlasting."
 
 #: src/PartFile.cpp
 #, c-format
 msgid "EOF while hashing downloaded part %u with length %u (max %u) of partfile '%s' with length %u: %s"
-msgstr ""
+msgstr "EOF ved hashing av nedlasta del %u med lengd %u (maks %u) av delfila «%s» med lengd %u: %s"
 
 #: src/PartFile.cpp
 #, c-format
@@ -6212,7 +6172,7 @@ msgstr ""
 
 #: src/Preferences.cpp
 msgid "no options available"
-msgstr ""
+msgstr "ingen val tilgjengelege"
 
 #: src/Preferences.cpp
 msgid "Invalid path mapping found, skipping"
@@ -6220,7 +6180,7 @@ msgstr ""
 
 #: src/Preferences.cpp
 msgid "Invalid category found, skipping"
-msgstr ""
+msgstr "Fann ugyldig kategori, hoppar over"
 
 #: src/Preferences.cpp
 msgid "TCP port can't be higher than 65532 due to server UDP socket being TCP+3"
@@ -6249,11 +6209,11 @@ msgstr "Tryggleik"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Interface"
-msgstr ""
+msgstr "Grensesnitt"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "IP2Country"
-msgstr ""
+msgstr "IP2Country"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Proxy"
@@ -6261,7 +6221,7 @@ msgstr "Proxy"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Filters"
-msgstr ""
+msgstr "Filter"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Remote Controls"
@@ -6273,7 +6233,7 @@ msgstr "Nettsignatur"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Advanced"
-msgstr ""
+msgstr "Avansert"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Events"
@@ -6289,14 +6249,17 @@ msgid ""
 "    %PARTFILE - full path to the file\n"
 "    %PARTNAME - file name only"
 msgstr ""
+"Følgjande variablar vert bytte ut:\n"
+"    %PARTFILE - full sti til fila\n"
+"    %PARTNAME - berre filnamnet"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Tray icon support requires libayatana-appindicator3 at compile time."
-msgstr ""
+msgstr "Støtte for trauikon krev libayatana-appindicator3 ved kompilering."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Not available on Wayland: the protocol does not report when a window is minimized, so this option cannot intercept the system minimize button. Workaround: launch aMule with `GDK_BACKEND=x11` to use XWayland instead."
-msgstr ""
+msgstr "Ikkje tilgjengeleg på Wayland: protokollen rapporterer ikkje når eit vindauge vert minimert, så dette valet kan ikkje fange opp systemets minimer-knapp. Løysing: start aMule med `GDK_BACKEND=x11` for å bruke XWayland i staden."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
@@ -6317,12 +6280,12 @@ msgstr ""
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "Failed to connect Cfg to widget with the ID %d and key %s"
-msgstr ""
+msgstr "Greidde ikkje å kople Cfg til widgeten med ID %d og nøkkel %s"
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "Failed to transfer data from Cfg to Widget with the ID %d and key %s"
-msgstr ""
+msgstr "Greidde ikkje å overføre data frå Cfg til Widget med ID %d og nøkkel %s"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "The type of proxy you are connecting to"
@@ -6331,25 +6294,23 @@ msgstr "Typen vikar du koplar til"
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "Failed to transfer data from Widget to Cfg with the ID %d and key %s"
-msgstr ""
+msgstr "Greidde ikkje å overføre data frå Widget til Cfg med ID %d og nøkkel %s"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "No password set."
-msgstr "Sjekkar passord\n"
+msgstr "Ingen passord sett."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "The shared-file exclusion pattern is not a valid regular expression. The filter has been left disabled."
-msgstr ""
+msgstr "Ekskluderingsmønsteret for delte filer er ikkje eit gyldig regulært uttrykk. Filteret er lete stå av."
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Invalid regular expression"
-msgstr "Ugyldig protokullutgåve."
+msgstr "Ugyldig regulært uttrykk"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Guest access needs a password. Type one in the guest password field, or untick Enable guest access."
-msgstr ""
+msgstr "Gjestetilgang krev eit passord. Skriv inn eitt i gjestepassordfeltet, eller fjern haken ved Slå på gjestetilgang."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
@@ -6376,49 +6337,45 @@ msgid "- UDP port changed.\n"
 msgstr "-·UDP-porten endra.\n"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "- Network interface binding changed.\n"
-msgstr "Ekstern kopling lukka."
+msgstr "- Binding til nettverksgrensesnitt endra.\n"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "- External connect port changed.\n"
-msgstr "Ekstern kopling lukka."
+msgstr "- Ekstern tilkoplingsport endra.\n"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "- External connect acceptance changed.\n"
-msgstr "Ny ekstern kopling akseptert"
+msgstr "- Godkjenning av eksterne tilkoplingar endra.\n"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "- External connect interface changed.\n"
-msgstr "Ekstern kopling lukka."
+msgstr "- Grensesnitt for ekstern tilkopling endra.\n"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "- Protocol obfuscation support changed.\n"
-msgstr "Protokolltåkeleggjing"
+msgstr "- Støtte for protokolltåkeleggjing endra.\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- Proxy settings changed (needed for HTTP transfers).\n"
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "- amuleapi settings changed.\n"
-msgstr "- Språk endra.\n"
+msgstr "- amuleapi-innstillingar endra.\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
 "Your Auto-update server list is empty.\n"
 "'Auto-update server list at startup' will be disabled."
 msgstr ""
+"Lista di for auto-oppdatering av tenarar er tom.\n"
+"«Auto-oppdater tenarliste ved oppstart» vert deaktivert."
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "The amuleapi password could not be saved: %s"
-msgstr ""
+msgstr "amuleapi-passordet kunne ikkje lagrast: %s"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- Language changed.\n"
@@ -6429,9 +6386,8 @@ msgid "- Temp folder changed.\n"
 msgstr "- Mellombels mappe endra.\n"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "- ED2K network enabled.\n"
-msgstr "Alle nettverk er deaktiverte."
+msgstr "- ED2K-nettverk aktivert.\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
@@ -6461,69 +6417,66 @@ msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Could not register aMule for autostart at login. The autostart store may be read-only."
-msgstr ""
+msgstr "Greidde ikkje å registrere aMule for autostart ved innlogging. Autostart-lageret kan vere skriveverna."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Could not remove the autostart-at-login entry."
-msgstr ""
+msgstr "Greidde ikkje å fjerne autostart-ved-innlogging-oppføringa."
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Autostart"
-msgstr "Autooppfrisking starta"
+msgstr "Autostart"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Register file type"
-msgstr ""
+msgstr "Registrer filtype"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Register URL handler"
-msgstr ""
+msgstr "Registrer URL-handsamar"
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "aMule only handles eD2k-compatible magnets. If you replace the current magnet handler (%s), BitTorrent magnet links will stop working - aMule cannot download BitTorrent content. Continue?"
-msgstr ""
+msgstr "aMule handterer berre eD2k-kompatible magnet-lenkjer. Viss du byter ut den gjeldande magnet-handsamaren (%s), vil BitTorrent-magnetlenkjer slutte å fungere - aMule kan ikkje laste ned BitTorrent-innhald. Vil du halde fram?"
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "Another application currently opens .emulecollection files (%s). Replace it with aMule?"
-msgstr ""
+msgstr "Eit anna program opnar for tida .emulecollection-filer (%s). Vil du byte det ut med aMule?"
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "Another application is currently the default handler for these links (%s). Replace it with aMule?"
-msgstr ""
+msgstr "Eit anna program er for tida standardhandsamar for desse lenkjene (%s). Vil du byte det ut med aMule?"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Could not register aMule for .emulecollection files. The registration store may be read-only."
-msgstr ""
+msgstr "Kunne ikkje registrere aMule for .emulecollection-filer. Registreringslagringa kan vere skrivebeskytta."
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Could not remove the file type registration."
-msgstr "Du freistar allereie nedlasting av fila %s"
+msgstr "Kunne ikkje fjerne registreringa av filtypen."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Could not register aMule as the URL handler. The registration store may be read-only."
-msgstr ""
+msgstr "Kunne ikkje registrere aMule som URL-handsamar. Registreringslagringa kan vere skriveverna."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Could not remove the URL handler registration."
-msgstr ""
+msgstr "Kunne ikkje fjerne registreringa av URL-handsamaren."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "macOS does not let an application stop being the default handler. To stop aMule opening these, make another application the default."
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "The web server and aMule API require external connections to be enabled."
-msgstr "Ny ekstern kopling akseptert"
+msgstr "Vevtenaren og aMule API krev at eksterne tilkoplingar er slått på."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "The aMule web server is deprecated. Consider running the aMule API instead."
-msgstr ""
+msgstr "aMule-vevtenaren er forelda. Vurder å køyre aMule API i staden."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
@@ -6585,9 +6538,8 @@ msgid "Select browser"
 msgstr "Vél nettlesar"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Select ffprobe binary"
-msgstr "Vél nettlesar"
+msgstr "Vel ffprobe-programfil"
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
@@ -6596,16 +6548,15 @@ msgstr "Køyrbar%s"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "ffprobe not found on PATH or in the standard install locations. Install ffmpeg (which ships ffprobe) or use Browse to pick a binary manually."
-msgstr ""
+msgstr "ffprobe vart ikkje funne i PATH eller i dei standard installasjonsplasseringane. Installer ffmpeg (som inneheld ffprobe) eller bruk Bla for å velje ei programfil manuelt."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Reset the settings on this page to their default values?"
-msgstr ""
+msgstr "Vil du tilbakestille innstillingane på denne sida til standardverdiane?"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Reset to defaults"
-msgstr "Standardinnstillingar"
+msgstr "Tilbakestill til standardverdiar"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Edit server list"
@@ -6621,38 +6572,37 @@ msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "IP2Country update failed"
-msgstr ""
+msgstr "IP2Country-oppdatering mislukkast"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Data by MaxMind GeoLite2"
-msgstr ""
+msgstr "Data frå MaxMind GeoLite2"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Custom source"
-msgstr "Komplette kjelder"
+msgstr "Tilpassa kjelde"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Data by DB-IP.com"
-msgstr ""
+msgstr "Data frå DB-IP.com"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Status: Loaded%s"
-msgstr "Status:"
+msgstr "Status: Lasta%s"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Status: Loaded%s - %s"
-msgstr "Status:"
+msgstr "Status: Lasta%s - %s"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Status: Failed to load - click 'Update now' to refresh."
-msgstr ""
+msgstr "Status: Greidde ikkje å laste - klikk «Oppdatér no» for å oppdatere."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Status: Not found - click 'Update now' to download."
-msgstr ""
+msgstr "Status: Ikkje funne - klikk «Oppdatér no» for å laste ned."
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
@@ -6699,14 +6649,13 @@ msgid "Server connection refresh interval: Disabled"
 msgstr "Oppfriskingsintervall for tenarkopling: Deaktivert"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "disabled"
-msgstr "deaktivere"
+msgstr "deaktivert"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Execute command on '%s' event"
-msgstr "Køyr kommando på `%s' hending"
+msgstr "Køyr kommando ved hendinga «%s»"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Enable command execution on core"
@@ -6733,40 +6682,38 @@ msgid ""
 "The following folders look like system or sensitive locations:\n"
 "\n"
 msgstr ""
+"Følgjande katalogar ser ut til å vere system- eller sensitive plasseringar:\n"
+"\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Sharing them recursively will publish every file underneath on the eD2k/Kad networks. Do you really want to do this?"
-msgstr ""
+msgstr "Å dele dei rekursivt vil publisere alle filer under dei på eD2k/Kad-nettverka. Vil du verkeleg gjere dette?"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Confirm shared folders"
-msgstr "Lastar inn att delte filer"
+msgstr "Stadfest delte katalogar"
 
 #: src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp
 #: src/SharedFilesReloadProgress.cpp
-#, fuzzy
 msgid "Reloading shared files..."
-msgstr "Lastar inn att delte filer"
+msgstr "Lastar delte filer på nytt..."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Scanning for subdirectories..."
-msgstr ""
+msgstr "Søkjer etter underkatalogar..."
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Updating shared folders"
-msgstr "Les mellombels mappe"
+msgstr "Oppdaterer delte katalogar"
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "Scanned %u directories..."
-msgstr ""
+msgstr "Skanna %u katalogar..."
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Shared folder"
-msgstr "Delte filer"
+msgstr "Delt katalog"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Both the remote and local prefix must be filled in."
@@ -6796,12 +6743,11 @@ msgstr "Søkeåtvaring"
 
 #: src/SearchDlg.cpp
 msgid "It's impossible to search when both eD2k and Kademlia are disabled."
-msgstr ""
+msgstr "Det er umogleg å søkje når både eD2k og Kademlia er deaktiverte."
 
 #: src/SearchDlg.cpp src/SearchListCtrl.cpp
-#, fuzzy
 msgid "Search error"
-msgstr "Søk"
+msgstr "Søkjefeil"
 
 #: src/SearchDlg.cpp
 msgid ""
@@ -6850,7 +6796,7 @@ msgstr "eD2k søk kan ikkje gjennomførast dersom eD2k ikkje er tilkopla"
 
 #: src/SearchList.cpp
 msgid "No keyword for Kad search - aborting"
-msgstr ""
+msgstr "Ingen søkjeord for Kad-søk - avbryt"
 
 #: src/SearchList.cpp
 msgid "Unexpected error while attempting Kad search: "
@@ -6862,11 +6808,11 @@ msgstr ""
 
 #: src/SearchList.cpp
 msgid "Kad search: requested wider results from one more peer."
-msgstr ""
+msgstr "Kad-søk: bad om breiare resultat frå éin node til."
 
 #: src/SearchList.cpp
 msgid "Kad search: no peer left to reask for more results (cap reached or no responses yet)."
-msgstr ""
+msgstr "Kad-søk: ingen fleire nodar å spørje for fleire resultat (grensa nådd, eller ingen svar enno)."
 
 #: src/SearchList.cpp
 #, c-format
@@ -6899,18 +6845,16 @@ msgid "Copy eD2k links to clipboard"
 msgstr "Kopier eD2k lenkjer til skrivebordet"
 
 #: src/SearchListCtrl.cpp
-#, fuzzy
 msgid "You are not currently connected to a server supporting the Related Files search function"
-msgstr "Du er tilkopla tenaren du freistar å slette. Vér god å kople frå først."
+msgstr "Du er for tida ikkje kopla til ein tenar som støttar funksjonen for søk etter relaterte filer"
 
 #: src/SearchListCtrl.cpp
-#, fuzzy
 msgid "Canceled"
-msgstr "Avbryt"
+msgstr "Kansellert"
 
 #: src/SearchListCtrl.cpp
 msgid "New"
-msgstr ""
+msgstr "Ny"
 
 #: src/SearchProgressReport.cpp
 #, fuzzy
@@ -6938,25 +6882,24 @@ msgstr ""
 
 #: src/SearchProgressReport.cpp src/TextClient.cpp
 msgid "Search expired or unknown ID. Start a new search.\n"
-msgstr ""
+msgstr "Søket er utgått eller ID-en er ukjend. Start eit nytt søk.\n"
 
 #: src/SearchProgressReport.cpp
 #, c-format
 msgid "Search progress: %u %% \n"
-msgstr ""
+msgstr "Søkjeframdrift: %u %% \n"
 
 #: src/SearchProgressReport.cpp
 msgid "Search progress not available"
-msgstr ""
+msgstr "Søkjeframdrift ikkje tilgjengeleg"
 
 #: src/SearchProgressReport.cpp
 msgid "No search to report on.\n"
 msgstr ""
 
 #: src/ServerConnect.cpp
-#, fuzzy
 msgid "Failed to connect to all obfuscated static servers listed. Making another pass without obfuscation."
-msgstr "Greidde ikkje å kople til alle tåkelagde tenarar i lista. Freistar ein gong til utan tåkelegging."
+msgstr "Greidde ikkje å kople til alle dei oppførte tåkelagde statiske tenarane. Prøver på nytt utan tåkelegging."
 
 #: src/ServerConnect.cpp
 msgid "Failed to connect to all obfuscated servers listed. Making another pass without obfuscation."
@@ -7032,7 +6975,7 @@ msgstr "Tilkoplingsfreisting til %s·(%s:%i)·gjekk over tida."
 
 #: src/ServerConnect.cpp
 msgid "Received late result of DNS lookup, discarding."
-msgstr ""
+msgstr "Mottok forseinka resultat frå DNS-oppslag, forkastar."
 
 #: src/ServerList.cpp
 #, c-format
@@ -7073,12 +7016,11 @@ msgstr[1] "%d tenarar lagde til"
 
 #: src/ServerList.cpp
 msgid "Error: the file 'server.met' is corrupted: "
-msgstr ""
+msgstr "Feil: fila «server.met» er korrupt: "
 
 #: src/ServerList.cpp
-#, fuzzy
 msgid "IO error while reading 'server.met': "
-msgstr "IO feil underlesing av known.met fila: %s"
+msgstr "IO-feil ved lesing av «server.met»: "
 
 #: src/ServerList.cpp
 #, c-format
@@ -7123,9 +7065,9 @@ msgid "Invalid URL"
 msgstr "Ugangbar URL"
 
 #: src/ServerList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Finished downloading the server list from %s"
-msgstr "Tenarlista ferdig nedlasta frå %s"
+msgstr "Ferdig med å laste ned tenarlista frå %s"
 
 #: src/ServerList.cpp
 msgid "No server list address entry in 'addresses.dat' found. Please paste a valid server list address into this file in order to auto-update your server list"
@@ -7191,11 +7133,11 @@ msgstr "Delte filer"
 
 #: src/ServerListCtrl.cpp
 msgid "TCP Flags"
-msgstr ""
+msgstr "TCP-flagg"
 
 #: src/ServerListCtrl.cpp
 msgid "UDP Flags"
-msgstr ""
+msgstr "UDP-flagg"
 
 #: src/ServerListCtrl.cpp
 msgid "You are connected to a server you are trying to delete. Please disconnect first. The server was NOT deleted."
@@ -7285,7 +7227,7 @@ msgstr "ÅTVARING: %s (%s) - %s"
 #: src/ServerSocket.cpp
 #, c-format
 msgid "Server %s (%s) rejected our login (no client ID assigned). Disconnecting."
-msgstr ""
+msgstr "Tenaren %s (%s) avviste innlogginga vår (ingen klient-ID tildelt). Koplar frå."
 
 #: src/ServerSocket.cpp
 #, c-format
@@ -7358,9 +7300,8 @@ msgid "Could not solve dns for server %s: Unable to connect!"
 msgstr "Greidde ikkje å løyse dns for tenar %s: Greier ikkje å kople til!"
 
 #: src/ServerWnd.cpp
-#, fuzzy
 msgid "aMuleGUI Log"
-msgstr "aMulelogg"
+msgstr "aMuleGUI-logg"
 
 #: src/ServerWnd.cpp
 msgid "Server not added: No IP or hostname specified."
@@ -7379,32 +7320,28 @@ msgid "ID"
 msgstr "ID"
 
 #: src/ServerWnd.cpp
-#, fuzzy
 msgid "Connection Type:"
-msgstr "Tilkoplingsstatus:"
+msgstr "Tilkoplingstype:"
 
 #: src/ServerWnd.cpp
-#, fuzzy
 msgid "Connected since:"
-msgstr "Tilkopla"
+msgstr "Tilkopla sidan:"
 
 #: src/ServerWnd.cpp
 msgid "Kademlia Status:"
 msgstr "Kademlia status:"
 
 #: src/ServerWnd.cpp
-#, fuzzy
 msgid "Running in LAN mode"
-msgstr "Køyrer på %s"
+msgstr "Køyrer i LAN-modus"
 
 #: src/ServerWnd.cpp
 msgid "Running"
 msgstr "Køyrer"
 
 #: src/ServerWnd.cpp
-#, fuzzy
 msgid "Kademlia client ID:"
-msgstr "Kademlia status"
+msgstr "Kademlia-klient-ID:"
 
 #: src/ServerWnd.cpp
 msgid "Status:"
@@ -7417,17 +7354,16 @@ msgstr "Tilkoplingsstatus:"
 #: src/ServerWnd.cpp
 #, c-format
 msgid "Firewalled - open TCP port %d in your router or firewall"
-msgstr ""
+msgstr "Brannmura - opne TCP-port %d i ruteren eller brannmuren din"
 
 #: src/ServerWnd.cpp
-#, fuzzy
 msgid "UDP Connection State:"
-msgstr "Tilkoplingsstatus:"
+msgstr "UDP-tilkoplingsstatus:"
 
 #: src/ServerWnd.cpp
 #, c-format
 msgid "Firewalled - open UDP port %d in your router or firewall"
-msgstr ""
+msgstr "Brannmura - opne UDP-port %d i ruteren eller brannmuren din"
 
 #: src/ServerWnd.cpp
 msgid "Firewalled state: "
@@ -7435,47 +7371,44 @@ msgstr "Brannmura status: "
 
 #: src/ServerWnd.cpp
 msgid "No buddy required - TCP port open"
-msgstr ""
+msgstr "Ingen kamerat nødvendig - TCP-port open"
 
 #: src/ServerWnd.cpp
 msgid "No buddy required - UDP port open"
-msgstr ""
+msgstr "Ingen kamerat nødvendig - UDP-port open"
 
 #: src/ServerWnd.cpp
 msgid "No buddy"
 msgstr "Ingen kamerat"
 
 #: src/ServerWnd.cpp
-#, fuzzy
 msgid "Connecting to buddy"
-msgstr "Tilkopla kamerat"
+msgstr "Koplar til kamerat"
 
 #: src/ServerWnd.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Connected to buddy at %s"
-msgstr "Tilkopla kamerat"
+msgstr "Tilkopla kamerat på %s"
 
 #: src/ServerWnd.cpp
 msgid "IP address:"
 msgstr "IP-adresse:"
 
 #: src/ServerWnd.cpp
-#, fuzzy
 msgid "Indexed sources:"
-msgstr "Funne kjelder :"
+msgstr "Indekserte kjelder:"
 
 #: src/ServerWnd.cpp
 msgid "Indexed keywords:"
-msgstr ""
+msgstr "Indekserte søkjeord:"
 
 #: src/ServerWnd.cpp
-#, fuzzy
 msgid "Indexed notes:"
-msgstr "Registerfil ikkje funne: "
+msgstr "Indekserte notat:"
 
 #: src/ServerWnd.cpp
 msgid "Indexed load:"
-msgstr ""
+msgstr "Indeksert belasting:"
 
 #: src/ServerWnd.cpp
 msgid "Average Users:"
@@ -7508,7 +7441,7 @@ msgstr ""
 #: src/SharedFileList.cpp
 #, c-format
 msgid "Adding file %s to shares"
-msgstr ""
+msgstr "Legg til fila %s i delte filer"
 
 #: src/SharedFileList.cpp
 #, c-format
@@ -7521,8 +7454,8 @@ msgstr[1] "Fann %i kjende delte filer"
 #, c-format
 msgid "Excluded %i file from sharing by filter"
 msgid_plural "Excluded %i files from sharing by filter"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "%i fil vart utelaten frå deling av filteret"
+msgstr[1] "%i filer vart utelatne frå deling av filteret"
 
 #: src/SharedFileList.cpp
 #, c-format
@@ -7530,9 +7463,9 @@ msgid "ERROR: Attempted to share %s"
 msgstr "FEIL: Freista å dele %s"
 
 #: src/SharedFileList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Shared directory not found, skipping: %s"
-msgstr "tenar ikkje funnen: %s"
+msgstr "Fann ikkje delt katalog, hoppar over: %s"
 
 #: src/SharedFileList.cpp
 #, fuzzy, c-format
@@ -7600,14 +7533,12 @@ msgid "Download Status"
 msgstr "Nedlastingsstatus"
 
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-#, fuzzy
 msgid "Local File Name"
-msgstr "Filnamn"
+msgstr "Lokalt filnamn"
 
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-#, fuzzy
 msgid "Shares File List"
-msgstr "Delte filer"
+msgstr "Liste over delte filer"
 
 #: src/SharedFilesCtrl.cpp
 #, fuzzy
@@ -7636,7 +7567,7 @@ msgstr "Endre namn"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Verify Local Data"
-msgstr ""
+msgstr "Verifiser lokale data"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Re-extract &media metadata"
@@ -7671,9 +7602,8 @@ msgid "Copy eD2k link to clipboard (&AICH info)"
 msgstr "Kopier eD2k lenkje til utklippstavla (&AICH info)"
 
 #: src/SharedFilesCtrl.cpp
-#, fuzzy
 msgid "Copy eD2k link to clipboard (&AICH info + Source)"
-msgstr "Kopier eD2k lenkje til utklippstavla (&AICH info)"
+msgstr "Kopier eD2k-lenkje til utklippstavla (&AICH-info + kjelde)"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Export selected files to an emulecollection"
@@ -7682,7 +7612,7 @@ msgstr ""
 #: src/SharedFilesCtrl.cpp
 #, c-format
 msgid "Verify Local Data on PartFile is currently not supported: %s"
-msgstr ""
+msgstr "Verifisering av lokale data på delfil er for tida ikkje støtta: %s"
 
 #: src/SharedFilesCtrl.cpp
 #, c-format
@@ -7784,9 +7714,9 @@ msgid "Shared Files (%i)"
 msgstr "Delte filer (%i)"
 
 #: src/SharedFilesReloadProgress.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Reloading shared files: %u files scanned"
-msgstr "Lastar inn att lista over delte filer."
+msgstr "Lastar inn att delte filer: %u filer skanna"
 
 #: src/SourceListCtrl.cpp
 #, fuzzy
@@ -7794,9 +7724,8 @@ msgid "Part Status"
 msgstr "Status"
 
 #: src/SourceListCtrl.cpp
-#, fuzzy
 msgid "Remote File Name"
-msgstr "Filnamn"
+msgstr "Eksternt filnamn"
 
 #: src/SourceListCtrl.cpp
 msgid "A4AF"
@@ -7938,19 +7867,19 @@ msgid "Peak Connections (estimate): %i"
 msgstr "Topp koplingar (berekna): %i"
 
 #: src/Statistics.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Unknown: %s"
-msgstr "Ukjend storleik"
+msgstr "Ukjend: %s"
 
 #: src/Statistics.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Filtered: %s"
-msgstr "Filtrert"
+msgstr "Filtrert: %s"
 
 #: src/Statistics.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Banned: %s"
-msgstr "Nekta"
+msgstr "Utestengd: %s"
 
 #: src/Statistics.cpp
 #, c-format
@@ -8044,9 +7973,9 @@ msgid "Never"
 msgstr "Aldri"
 
 #: src/TerminationProcess.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Command '%s' with pid '%d' has finished with status code '%d'."
-msgstr "Kommandoen·`%s'·med·pid·`%d'·er ferdig med statuskode·`%d'."
+msgstr "Kommandoen «%s» med pid «%d» er ferdig med statuskode «%d»."
 
 #: src/TextClient.cpp
 msgid "Execute <str> and exit."
@@ -8087,34 +8016,37 @@ msgstr "Ikkje gangbar hash (lengde må vere nøyaktig 32 teikn)\n"
 #. TRANSLATORS:
 #. 'help search' is a command to the program, do not translate it.
 #: src/TextClient.cpp
-#, fuzzy
 msgid ""
 "Invalid search filter syntax.\n"
 "Type 'help search' to get more help.\n"
-msgstr "Skriv '%s'·for å få meir hjelp.\n"
+msgstr ""
+"Ugyldig syntaks for søkjefilter.\n"
+"Skriv «help search» for meir hjelp.\n"
 
 #. TRANSLATORS:
 #. 'help search' is a command to the program, do not translate it.
 #: src/TextClient.cpp
-#, fuzzy
 msgid ""
 "No search keyword provided.\n"
 "Type 'help search' to get more help.\n"
-msgstr "Skriv '%s'·for å få meir hjelp.\n"
+msgstr ""
+"Ingen søkjeord oppgitt.\n"
+"Skriv «help search» for meir hjelp.\n"
 
 #. TRANSLATORS:
 #. 'help search' is a command to the program, do not translate it.
 #: src/TextClient.cpp
-#, fuzzy
 msgid ""
 "No search type defined.\n"
 "Type 'help search' to get more help.\n"
-msgstr "Skriv '%s'·for å få meir hjelp.\n"
+msgstr ""
+"Ingen søkjetype definert.\n"
+"Skriv «help search» for meir hjelp.\n"
 
 #: src/TextClient.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Download File: %lu %s\n"
-msgstr "Nedlastingar (%i)"
+msgstr "Last ned fil: %lu %s\n"
 
 #: src/TextClient.cpp src/webserver/src/WebServer.cpp
 msgid "Request failed with an unknown error."
@@ -8160,12 +8092,12 @@ msgstr ""
 #: src/TextClient.cpp
 #, c-format
 msgid "Endgame source rotation is %s.\n"
-msgstr ""
+msgstr "Sluttspel-kjelderotasjon er %s.\n"
 
 #: src/TextClient.cpp
 #, c-format
 msgid "Search started (id %u).\n"
-msgstr ""
+msgstr "Søk starta (id %u).\n"
 
 #: src/TextClient.cpp
 #, c-format
@@ -8274,33 +8206,28 @@ msgstr ""
 "Dette vil óg avslutte tekstklienten, ettersom den er ubrukeleg utan ei kjerne som køyrer-\n"
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Reload the given object."
-msgstr "Lastar inn att valt objekt."
+msgstr "Last inn det gitte objektet på nytt."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Reload shared files list."
-msgstr "Lastar inn att lista over delte filer."
+msgstr "Last inn lista over delte filer på nytt."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Reload IP filtering table."
-msgstr "Lastar om att ipfiltertabell frå fil."
+msgstr "Last inn IP-filtreringstabell på nytt."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Reload current IP filtering table."
-msgstr "Vel Ipfilternivå"
+msgstr "Last inn gjeldande IP-filtreringstabell på nytt."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Update IP filtering table from URL."
-msgstr "Lastar om att ipfiltertabell frå fil."
+msgstr "Oppdater IP-filtreringstabell frå URL."
 
 #: src/TextClient.cpp
 msgid "If URL is omitted the URL from the preferences is used."
-msgstr ""
+msgstr "Viss URL vert utelaten, vert URL-en frå innstillingane brukt."
 
 #: src/TextClient.cpp
 msgid "Connect to the network."
@@ -8343,9 +8270,8 @@ msgid "Disconnect from Kad only."
 msgstr "Berre kople frå Kad."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Add an eD2k or magnet link to core."
-msgstr "Legg til ei eD2k eller magnetlenkje  til kjernen"
+msgstr "Legg til ei eD2k- eller magnetlenkje til kjernen."
 
 #: src/TextClient.cpp
 msgid ""
@@ -8370,9 +8296,8 @@ msgid "Set a preference value."
 msgstr "Set ein brukarvalverdi."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Set IP filtering preferences."
-msgstr "Set brukarval for ipfilter."
+msgstr "Set IP-filtreringsinnstillingar."
 
 #: src/TextClient.cpp
 msgid "Turn IP filtering on for both clients and servers."
@@ -8431,52 +8356,44 @@ msgid "Set upload bandwidth limit."
 msgstr "Set bandbreiddegrense for opplastingar."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "The given value must be in kilobytes/sec.\n"
-msgstr "Verdien i desse kommandoane må vere i kilobytes/sek.\n"
+msgstr "Den gitte verdien må vere i kilobyte/sek.\n"
 
 #: src/TextClient.cpp
 msgid "Set download bandwidth limit."
 msgstr "Set bandbreiddegrense for nedlastingar."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Enable or disable endgame source rotation."
-msgstr "Aktivér/deaktivér godkjenning av brukarnamn/passord"
+msgstr "Slå på eller av sluttspel-kjelderotasjon."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "The given value must be 1/ON (enable) or 0/OFF (disable).\n"
-msgstr "Verdien i desse kommandoane må vere i kilobytes/sek.\n"
+msgstr "Den gitte verdien må vere 1/ON (slå på) eller 0/OFF (slå av).\n"
 
 #: src/TextClient.cpp
 msgid "Get and display a preference value."
 msgstr "Hent og syne ein preferanseverdi."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Get IP filtering preferences."
-msgstr "Hent ipfilterinnstillingar"
+msgstr "Hent IP-filtreringsinnstillingar."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Get IP filtering state for both clients and servers."
-msgstr "Hent ipfilterstatus for både klientar og tenarar."
+msgstr "Hent IP-filtreringsstatus for både klientar og tenarar."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Get IP filtering state for clients only."
-msgstr "Hent ipfilterstatus for klientar."
+msgstr "Hent IP-filtreringsstatus berre for klientar."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Get IP filtering state for servers only."
-msgstr "Hent ipfilterstatus for tenarar."
+msgstr "Hent IP-filtreringsstatus berre for tenarar."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Get IP filtering level."
-msgstr "Vel Ipfilternivå"
+msgstr "Hent IP-filtreringsnivå."
 
 #: src/TextClient.cpp
 msgid "Get bandwidth limits."
@@ -8484,12 +8401,11 @@ msgstr "Hent bandbreiddegrense."
 
 #: src/TextClient.cpp
 msgid "Get endgame source rotation state."
-msgstr ""
+msgstr "Hent status for sluttspel-kjelderotasjon."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Execute a search."
-msgstr "Startar eit kadsøk"
+msgstr "Utfør eit søk."
 
 #: src/TextClient.cpp
 msgid ""
@@ -8509,32 +8425,45 @@ msgid ""
 "Example: 'search global linux iso --type Iso --min-size 100M' returns\n"
 "results for \"linux iso\" of file-type Iso at least 100 MiB.\n"
 msgstr ""
+"Ein søkjetype må oppgivast ved å gje typen:\n"
+"    GLOBAL\n"
+"    LOCAL\n"
+"    KAD\n"
+"Eksempel: «search kad file» vil utføre eit kad-søk etter «file».\n"
+"\n"
+"Valfrie filter kan leggjast til før, etter, eller mellom\n"
+"søkjeorda:\n"
+"    --type <Audio|Video|Image|Doc|Pro|Arc|Iso>\n"
+"    --extension <ext>      (alias: --ext)\n"
+"    --avail <N>            minimum tal på kjelder\n"
+"    --min-size <N[KMG]>    minste filstorleik; K=1024, M=K*1024, G=M*1024\n"
+"    --max-size <N[KMG]>    største filstorleik; same suffiks\n"
+"Eksempel: «search global linux iso --type Iso --min-size 100M» gir\n"
+"resultat for «linux iso» av filtypen Iso på minst 100 MiB.\n"
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Execute a global search."
-msgstr "Startar eit globalt søk"
+msgstr "Utfør eit globalt søk."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Execute a local search"
-msgstr "Startar eit lokalt søk"
+msgstr "Utfør eit lokalt søk"
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Execute a kad search"
-msgstr "Startar eit kadsøk"
+msgstr "Utfør eit kad-søk"
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Show the results of a search."
-msgstr "Syne resultata av siste søk."
+msgstr "Syne resultata av eit søk."
 
 #: src/TextClient.cpp
 msgid ""
 "Return the results of a search.\n"
 "Optionally takes a search id (from 'search ...'); with no id, returns the results of the most recently started search.\n"
 msgstr ""
+"Returner resultata av eit søk.\n"
+"Kan valfritt ta ein søkje-id (frå «search ...»); utan id vert resultata av det sist starta søket returnert.\n"
 
 #: src/TextClient.cpp
 #, fuzzy
@@ -8546,6 +8475,8 @@ msgid ""
 "Show the progress of a search.\n"
 "Optionally takes a search id; with no id, shows the progress of the most recently started search.\n"
 msgstr ""
+"Syne framdrifta til eit søk.\n"
+"Kan valfritt ta ein søkje-id; utan id vert framdrifta til det sist starta søket synt.\n"
 
 #: src/TextClient.cpp
 msgid "Start downloading a file"
@@ -8620,9 +8551,8 @@ msgid "Show servers list."
 msgstr "Syne tenarlister."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Show shared files list."
-msgstr "Lastar inn att lista over delte filer."
+msgstr "Syne lista over delte filer."
 
 #: src/TextClient.cpp
 msgid "Reset log."
@@ -8669,12 +8599,12 @@ msgstr "Konverterer gamle AICH hashsett i '%s'·til·64b·i·'%s'."
 #: src/ThreadTasks.cpp
 #, c-format
 msgid "Verify Local Data (%s): Result OK for %s"
-msgstr ""
+msgstr "Verifiser lokale data (%s): Resultat OK for %s"
 
 #: src/ThreadTasks.cpp
 #, c-format
 msgid "Verify Local Data (%s): ERRORS FOUND! %s Failed blocks: MD4: %s. %s %s"
-msgstr ""
+msgstr "Verifiser lokale data (%s): FEIL FUNNE! %s Mislukka blokker: MD4: %s. %s %s"
 
 #: src/ThreadTasks.cpp
 #, c-format
@@ -8736,12 +8666,11 @@ msgstr "Stadfesting naudsynt"
 
 #: src/TransferWnd.cpp
 msgid "Only 99 categories are supported."
-msgstr ""
+msgstr "Berre 99 kategoriar er støtta."
 
 #: src/TransferWnd.cpp
-#, fuzzy
 msgid "Too many categories!"
-msgstr "For mange koplingar"
+msgstr "For mange kategoriar!"
 
 #: src/TransferWnd.cpp
 msgid "All others"
@@ -8842,9 +8771,9 @@ msgid "You have asked for part hashes (Only used for files > 9.5 MB)"
 msgstr "Du har spurt etter delhashar (Berre brukt på filer > 9,5 MB)"
 
 #: src/utils/aLinkCreator/src/alcc.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "%s ---> Non existent file !\n"
-msgstr "%s·--->·Fila finst ikkje·!\n"
+msgstr "%s ---> Fila finst ikkje!\n"
 
 #: src/utils/aLinkCreator/src/alc.cpp
 msgid "aLinkCreator, the aMule eD2k link creator"
@@ -8904,7 +8833,7 @@ msgstr "Kopiér til utklippstavle"
 
 #: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Open"
-msgstr ""
+msgstr "Opne"
 
 #: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Open a file to compute its eD2k link"
@@ -8916,7 +8845,7 @@ msgstr "Kopier utrekna eD2k lenkje til skrivebordet"
 
 #: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Save as"
-msgstr ""
+msgstr "Lagre som"
 
 #: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Save computed eD2k link to file"
@@ -8932,7 +8861,7 @@ msgstr "Vel fila du vil rekne ut eD2k lenkje til"
 
 #: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Can't open the clipboard"
-msgstr ""
+msgstr "Kan ikkje opne utklippstavla"
 
 #: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Nothing to copy for now !"
@@ -8980,15 +8909,15 @@ msgstr "Hashar..."
 
 #: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "aLinkCreator is working for you"
-msgstr ""
+msgstr "aLinkCreator arbeider for deg"
 
 #: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Computing MD4 Hash..."
-msgstr ""
+msgstr "Reknar ut MD4-hash..."
 
 #: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Computing eD2k Hashes..."
-msgstr ""
+msgstr "Reknar ut eD2k-hashar..."
 
 #: src/utils/aLinkCreator/src/alcframe.cpp src/utils/aLinkCreator/src/md4.cpp
 msgid "Cancelled !"
@@ -9014,7 +8943,7 @@ msgstr "Ikkje i stand til å opne %s"
 
 #: src/utils/aLinkCreator/src/ed2khash.cpp
 msgid "Out of memory while calculating ed2k hash!"
-msgstr ""
+msgstr "Ikkje nok minne ved utrekning av ed2k-hash!"
 
 #: src/utils/wxCas/src/linuxmon.cpp
 #, c-format
@@ -9285,9 +9214,8 @@ msgid "Enter here the directory where you want to generate the statistic image"
 msgstr "Skriv inn katalogen du vil lage statistikkbiletet i"
 
 #: src/utils/wxCas/src/wxcasprefs.cpp
-#, fuzzy
 msgid "Upload periodically your stat image to FTP server"
-msgstr "Last regelbunde opp statistikkbilete til ein FTP tenar"
+msgstr "Last opp statistikkbiletet ditt til FTP-tenar med jamne mellomrom"
 
 #: src/utils/wxCas/src/wxcasprefs.cpp
 msgid "FTP Url"
@@ -9395,7 +9323,7 @@ msgstr "vevklientoppkopling godkjend\n"
 
 #: src/webserver/src/WebServer.cpp
 msgid "ERROR: cannot accept web client connection\n"
-msgstr ""
+msgstr "FEIL: kan ikkje ta imot tilkopling frå nettlesarklient\n"
 
 #: src/webserver/src/WebServer.cpp
 #, c-format
@@ -9432,11 +9360,11 @@ msgstr "Handsamar etterspurnad [original]: "
 
 #: src/webserver/src/WebServer.cpp
 msgid "Refusing to read `pass` from URL query string\n"
-msgstr ""
+msgstr "Nektar å lese «pass» frå URL-spørjestreng\n"
 
 #: src/webserver/src/WebServer.cpp
 msgid "No password specified, login will not be allowed."
-msgstr ""
+msgstr "Ingen passord oppgitt, innlogging vert ikkje tillate."
 
 #: src/webserver/src/WebServer.cpp
 msgid "Checking password\n"
@@ -9468,52 +9396,51 @@ msgstr "Handsamar etterspurnad [omdirigert]: "
 
 #: packaging/windows/installer_strings.c
 msgid "aMule (required)"
-msgstr ""
+msgstr "aMule (påkravd)"
 
 #: packaging/windows/installer_strings.c
 msgid "Desktop shortcut"
-msgstr ""
+msgstr "Snarveg på skrivebordet"
 
 #: packaging/windows/installer_strings.c
 msgid "Start aMule when I log in"
-msgstr ""
+msgstr "Start aMule når eg loggar inn"
 
 #: packaging/windows/installer_strings.c
 msgid "Associate .emulecollection files"
-msgstr ""
+msgstr "Assosier .emulecollection-filer"
 
 #: packaging/windows/installer_strings.c
 msgid "Uninstall"
-msgstr ""
+msgstr "Avinstaller"
 
 #: packaging/windows/installer_strings.c
 msgid "Remove user data (config, ED2K servers, Kad nodes, partfiles)"
-msgstr ""
+msgstr "Fjern brukardata (oppsett, ED2K-tenarar, Kad-nodar, delfiler)"
 
 #: packaging/windows/installer_strings.c
-#, fuzzy
 msgid "aMule application files (required)."
-msgstr "Oppkopling mislukka "
+msgstr "aMule-programfiler (påkravd)."
 
 #: packaging/windows/installer_strings.c
 msgid "Place an aMule shortcut on the desktop."
-msgstr ""
+msgstr "Legg ein aMule-snarveg på skrivebordet."
 
 #: packaging/windows/installer_strings.c
 msgid "Launch aMule automatically when the current user logs in (per-user setting)."
-msgstr ""
+msgstr "Start aMule automatisk når gjeldande brukar loggar inn (brukarspesifikk innstilling)."
 
 #: packaging/windows/installer_strings.c
 msgid "Adds aMule to the \"Open with\" list for .emulecollection files, and makes it the default if no other program has claimed them. Opening a collection queues every eD2k link it contains."
-msgstr ""
+msgstr "Legg aMule til i «Opne med»-lista for .emulecollection-filer, og gjer aMule til standard viss ingen andre program har kravd dei. Å opne ei samling køar alle eD2k-lenkjer ho inneheld."
 
 #: packaging/windows/installer_strings.c
 msgid "Remove aMule application files, Start Menu / desktop shortcuts, autostart Run-key entry, URL scheme registrations, and Add/Remove Programs entry (required)."
-msgstr ""
+msgstr "Fjern aMule-programfiler, snarvegar i startmeny/skrivebord, autostart-oppføring i Kjør-nøkkelen, URL-skjemaregistreringar og oppføring i Legg til/fjern program (påkravd)."
 
 #: packaging/windows/installer_strings.c
 msgid "Permanently delete %APPDATA%\\aMule for the current user (aMule.conf, ED2K server list, Kad nodes, partfiles, IP filters, friends list). Leave unchecked to keep your settings."
-msgstr ""
+msgstr "Slett %APPDATA%\\aMule for gjeldande brukar for godt (aMule.conf, ED2K-tenarliste, Kad-nodar, delfiler, IP-filter, veneliste). La stå uavkryssa for å behalde innstillingane dine."
 
 #: packaging/windows/installer_strings.c
 msgid ""
@@ -9529,7 +9456,7 @@ msgstr ""
 
 #: packaging/windows/installer_strings.c
 msgid "Removing previous aMule installation at $0..."
-msgstr ""
+msgstr "Fjernar førre aMule-installasjon på $0..."
 
 #: packaging/windows/installer_strings.c
 msgid ""
@@ -9539,11 +9466,11 @@ msgstr ""
 
 #: packaging/windows/installer_strings.c
 msgid "aMule appears to be running. Please close it and re-run the uninstaller."
-msgstr ""
+msgstr "aMule ser ut til å køyre. Lat att aMule og køyr avinstallasjonsprogrammet på nytt."
 
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
-msgstr ""
+msgstr "Fjernar brukardata på $APPDATA\\aMule..."
 
 #~ msgid ""
 #~ "The number of a file from the last search has to be given.\n"
