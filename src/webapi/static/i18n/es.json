@@ -313,7 +313,7 @@
   "comments_disabled_hint": "Podrás añadir un comentario y una valoración cuando se haya descargado al menos una parte.",
   "comments_count_one": "{n} comentario",
   "comments_count_other": "{n} comentarios",
-  "comments_none": "Todavía no hay comentarios de fuentes.",
+  "comments_none": "Todavía no hay comentarios.",
   "comments_col_username": "Usuario",
   "comments_col_rating": "Valoración",
   "comments_col_filename": "Nombre de archivo",

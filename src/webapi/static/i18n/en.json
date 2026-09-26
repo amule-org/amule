@@ -313,7 +313,7 @@
   "comments_disabled_hint": "You can add a comment and rating once at least one part has finished downloading.",
   "comments_count_one": "{n} comment",
   "comments_count_other": "{n} comments",
-  "comments_none": "No comments from sources yet.",
+  "comments_none": "No comments yet.",
   "comments_col_username": "Username",
   "comments_col_rating": "Rating",
   "comments_col_filename": "File name",

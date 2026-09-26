@@ -25,7 +25,8 @@ import { clearPrefs, GRAPH_RANGES, loadGraphInterval, saveGraphInterval } from "
 
 // Field types: text (default), int, bool, select, password, textarea.
 // Flags: readonly (shown disabled, never sent), hidden (capability flag loaded
-// only to gate others), gatedBy (disabled + skipped when values[cap] === false),
+// only to gate others), gatedBy (disabled when values[k] === false; skipped on
+// save only when k is a hidden capability flag),
 // password (write-only, only sent when non-empty), scale (int shown/edited
 // in value/scale units, e.g.
 // ms stored but minutes shown), cat (override the tab's API category),
@@ -291,6 +292,10 @@ const TABS = [
 
 const catOf = (tab, f) => f.cat || tab.cat;
 const asArr = (x) => (x == null ? [] : Array.isArray(x) ? x : [x]);
+// The hidden capability flags. A field gated on one the daemon lacks is never
+// sent; one gated on an ordinary parent still is, as the desktop dialog saves it.
+const CAPS = new Set(TABS.flatMap((tab) => tab.groups.flatMap((g) =>
+  g.fields.filter((f) => f.hidden).map((f) => catOf(tab, f) + "." + f.key))));
 // A category may be a dotted path into a nested payload object (e.g.
 // "remote_controls.webserver"); walk/create it on read and write.
 const catGet = (obj, cat) => cat.split(".").reduce((o, k) => (o == null ? o : o[k]), obj);
@@ -606,7 +611,8 @@ export default function Preferences({ isGuest }) {
       for (const grp of tab.groups) {
         for (const f of grp.fields) {
           const cat = catOf(tab, f);
-          if (f.type === "button" || f.hidden || f.readonly || isGated(cat, f)) continue;
+          if (f.type === "button" || f.hidden || f.readonly) continue;
+          if (asArr(f.gatedBy).some((k) => CAPS.has(cat + "." + k) && values[cat + "." + k] === false)) continue;
           const val = values[cat + "." + f.key];
           let out;
           if (f.type === "password") {
@@ -615,6 +621,9 @@ export default function Preferences({ isGuest }) {
           } else if (f.type === "textarea") {
             out = String(val || "").split("\n").map((s) => s.trim()).filter(Boolean);
           } else if (f.type === "select") {
+            // proxy_type reads "" when the daemon has no type set. Skip it
+            // while disabled; while enabled, send it so the 400 says why.
+            if ((val == null || val === "") && isGated(cat, f)) continue;
             out = val == null ? "" : val;
           } else if (f.type === "bool") {
             out = !!val;
