@@ -1,8 +1,31 @@
+//
+// This file is part of the aMule Project.
+//
+// Copyright (c) 2003-2026 aMule Team ( https://amule-org.github.io )
+//
+// Any parts of this program contributed by third-party developers are copyrighted
+// by their respective authors.
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
+//
 // Experimental server-coordinated NAT-T payload codecs. No socket integration.
 #ifndef AMULE_NAT_SERVER_HOLE_PUNCH_H
 #define AMULE_NAT_SERVER_HOLE_PUNCH_H
 
 #ifdef ENABLE_NATT_SERVER_COORDINATION
+#include "ArchSpecific.h"
 #include "include/protocol/Protocols.h"
 
 #include <algorithm>
@@ -55,17 +78,15 @@ namespace Detail
 {
 inline void WriteLE(std::uint8_t *out, std::uint32_t value, std::size_t count)
 {
-	for (std::size_t i = 0; i < count; ++i) {
-		out[i] = static_cast<std::uint8_t>(value >> (8 * i));
+	if (count == 2) {
+		PokeUInt16(out, static_cast<uint16>(value));
+	} else {
+		PokeUInt32(out, static_cast<uint32>(value));
 	}
 }
 inline std::uint32_t ReadLE(const std::uint8_t *data, std::size_t count)
 {
-	std::uint32_t value = 0;
-	for (std::size_t i = 0; i < count; ++i) {
-		value |= static_cast<std::uint32_t>(data[i]) << (8 * i);
-	}
-	return value;
+	return count == 2 ? PeekUInt16(data) : PeekUInt32(data);
 }
 } // namespace Detail
 
@@ -79,7 +100,7 @@ inline std::array<std::uint8_t, 6> BuildRequest(const Request &request)
 }
 inline std::optional<Request> ParseRequest(const std::uint8_t *data, std::size_t size)
 {
-	if (!data || size != 6) {
+	if (!data || size < 6) {
 		return std::nullopt;
 	}
 	return Request{ Detail::ReadLE(data, 4), static_cast<std::uint16_t>(Detail::ReadLE(data + 4, 2)) };
@@ -96,7 +117,7 @@ inline std::array<std::uint8_t, 25> BuildInfo(const Info &info)
 }
 inline std::optional<Info> ParseInfo(const std::uint8_t *data, std::size_t size)
 {
-	if (!data || size != 25) {
+	if (!data || size < 25) {
 		return std::nullopt;
 	}
 	Info info{};
@@ -116,18 +137,20 @@ inline std::array<std::uint8_t, 5> BuildFailure(const Failure &failure)
 }
 inline std::optional<Failure> ParseFailure(const std::uint8_t *data, std::size_t size)
 {
-	if (!data || size != 5) {
+	if (!data || size < 5) {
 		return std::nullopt;
 	}
 	return Failure{ Detail::ReadLE(data, 4), data[4] };
 }
+// Keepalive framing: protocol byte 0xE3, NAT-T payload opcode 0x9F, sent via
+// the client's UDP socket to the server TCP port plus 4.
 inline Hash BuildKeepalive(const Hash &ownUserHash)
 {
 	return ownUserHash;
 }
 inline std::optional<Hash> ParseKeepalive(const std::uint8_t *data, std::size_t size)
 {
-	if (!data || size != 16) {
+	if (!data || size < 16) {
 		return std::nullopt;
 	}
 	Hash hash{};

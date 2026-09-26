@@ -284,6 +284,7 @@ option (ENABLE_UTP "enable experimental uTP: datagram framing, inbound streams a
 # IPv6 TCP admission is intentionally separate from listener activation and the
 # remaining IPv6 identity work. Keep it off until those consumers are migrated.
 option (ENABLE_IPV6 "enable experimental native IPv6 TCP admission (IPv6 identity migration remains incomplete)" OFF)
+option (ENABLE_NATT_SERVER_COORDINATION "enable experimental server-coordinated NAT-T wire codecs" OFF)
 
 # Master switch for the in-app "check for a new aMule version" feature: the
 # startup notification, the "Check for new version at startup" preference, and
@@ -343,8 +344,6 @@ option (ENABLE_KAD_NODE_PROTECTION "enable the local Kad node-protection heurist
 # the latter would sweep in ENABLE_UPNP, ENABLE_NLS and the rest, which are
 # ordinary build options rather than unfinished features.
 # Wire codecs only; no login advertisement, dispatch, or network traffic.
-option (ENABLE_NATT_SERVER_COORDINATION "enable experimental server-coordinated NAT-T wire codecs" OFF)
-
 set (AMULE_EXPERIMENTAL_OPTIONS
 	ENABLE_NATT_SERVER_COORDINATION
 	ENABLE_IPV6

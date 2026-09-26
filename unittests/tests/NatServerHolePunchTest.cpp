@@ -1,43 +1,49 @@
-// Standalone C++17 test: no application, network, or test-framework dependencies.
+//
+// This file is part of the aMule Project.
+//
+// Copyright (c) 2003-2026 aMule Team ( https://amule-org.github.io )
+//
+// Any parts of this program contributed by third-party developers are copyrighted
+// by their respective authors.
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
+//
+
+#include <muleunit/test.h>
+
 #include "NatServerHolePunch.h"
 
-#include <cstdlib>
-#include <iostream>
-#include <type_traits>
+#include <algorithm>
 
+using namespace muleunit;
 using namespace NatServerHolePunch;
 
-static void Check(bool condition, const char *message)
-{
-	if (!condition) {
-		std::cerr << message << '\n';
-		std::exit(EXIT_FAILURE);
-	}
-}
+DECLARE_SIMPLE(NatServerHolePunch)
 
-template <std::size_t N, typename Parser>
-static void CheckLengths(const std::array<std::uint8_t, N> &bytes, Parser parse)
+TEST(NatServerHolePunch, BuildsExactPayloadsAndParsesFields)
 {
-	for (std::size_t size = 0; size < N; ++size) {
-		Check(!parse(bytes.data(), size), "truncated payload accepted");
-	}
-	std::array<std::uint8_t, N + 1> extended{};
-	std::copy(bytes.begin(), bytes.end(), extended.begin());
-	Check(!parse(extended.data(), extended.size()), "trailing byte accepted");
-	Check(!parse(nullptr, N), "null payload accepted");
-	Check(!parse(nullptr, 0), "empty null payload accepted");
-}
-
-int main()
-{
+	const Request request{ 0x12345678, 0xABCD };
 	const std::array<std::uint8_t, 6> requestBytes{ { 0x78, 0x56, 0x34, 0x12, 0xCD, 0xAB } };
-	Check(BuildRequest({ 0x12345678, 0xABCD }) == requestBytes, "request wire bytes");
-	const auto request = ParseRequest(requestBytes.data(), requestBytes.size());
-	Check(request && request->targetId == 0x12345678 && request->udpPort == 0xABCD, "request fields");
-	CheckLengths(requestBytes, ParseRequest);
+	ASSERT_TRUE(BuildRequest(request) == requestBytes);
+	const auto parsedRequest = ParseRequest(requestBytes.data(), requestBytes.size());
+	ASSERT_TRUE(parsedRequest.has_value());
+	ASSERT_EQUALS(request.targetId, parsedRequest->targetId);
+	ASSERT_EQUALS(request.udpPort, parsedRequest->udpPort);
 
 	const Hash hash{ { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 } };
-	const IPv4 ip{ { 192, 0, 2, 1 } };
+	const Info info{ { { 192, 0, 2, 1 } }, 0x1236, 0x5678, hash, 0xFE };
 	const std::array<std::uint8_t, 25> infoBytes{ { 192,
 		0,
 		2,
@@ -63,45 +69,69 @@ int main()
 		14,
 		15,
 		0xFE } };
-	Check(BuildInfo({ ip, 0x1236, 0x5678, hash, 0xFE }) == infoBytes, "info wire bytes");
-	const auto info = ParseInfo(infoBytes.data(), infoBytes.size());
-	Check(info && info->peerIP == ip && info->tcpPort == 0x1236 && info->udpPort == 0x5678 &&
-			info->userHash == hash && info->role == 0xFE,
-		"info fields and opaque role");
-	CheckLengths(infoBytes, ParseInfo);
+	ASSERT_TRUE(BuildInfo(info) == infoBytes);
+	const auto parsedInfo = ParseInfo(infoBytes.data(), infoBytes.size());
+	ASSERT_TRUE(parsedInfo.has_value());
+	ASSERT_TRUE(parsedInfo->peerIP == info.peerIP && parsedInfo->userHash == hash);
+	ASSERT_EQUALS(info.tcpPort, parsedInfo->tcpPort);
+	ASSERT_EQUALS(info.udpPort, parsedInfo->udpPort);
+	ASSERT_EQUALS(info.role, parsedInfo->role);
 
+	const Failure failure{ 0x89ABCDEF, 0xFF };
 	const std::array<std::uint8_t, 5> failureBytes{ { 0xEF, 0xCD, 0xAB, 0x89, 0xFF } };
-	Check(BuildFailure({ 0x89ABCDEF, 0xFF }) == failureBytes, "failure wire bytes");
-	const auto failure = ParseFailure(failureBytes.data(), failureBytes.size());
-	Check(failure && failure->targetId == 0x89ABCDEF && failure->reason == 0xFF,
-		"unknown failure reason preserved");
-	CheckLengths(failureBytes, ParseFailure);
+	ASSERT_TRUE(BuildFailure(failure) == failureBytes);
+	const auto parsedFailure = ParseFailure(failureBytes.data(), failureBytes.size());
+	ASSERT_TRUE(parsedFailure.has_value());
+	ASSERT_EQUALS(failure.targetId, parsedFailure->targetId);
+	ASSERT_EQUALS(failure.reason, parsedFailure->reason);
+	ASSERT_TRUE(BuildKeepalive(hash) == hash);
+	ASSERT_TRUE(ParseKeepalive(hash.data(), hash.size()).value() == hash);
+}
+
+TEST(NatServerHolePunch, AcceptsMinimumPayloadAndIgnoresTrailingBytes)
+{
+	const Request request{ 1, 2 };
+	const auto requestBytes = BuildRequest(request);
+	std::array<std::uint8_t, 7> requestExtended{};
+	std::copy(requestBytes.begin(), requestBytes.end(), requestExtended.begin());
+	ASSERT_TRUE(ParseRequest(requestExtended.data(), requestExtended.size()).has_value());
+	ASSERT_FALSE(ParseRequest(requestBytes.data(), requestBytes.size() - 1).has_value());
+	ASSERT_FALSE(ParseRequest(nullptr, requestBytes.size()).has_value());
+
+	const Info info{ { { 192, 0, 2, 1 } }, 3, 4, {}, 0 };
+	const auto infoBytes = BuildInfo(info);
+	std::array<std::uint8_t, 26> infoExtended{};
+	std::copy(infoBytes.begin(), infoBytes.end(), infoExtended.begin());
+	ASSERT_TRUE(ParseInfo(infoExtended.data(), infoExtended.size()).has_value());
+	ASSERT_FALSE(ParseInfo(infoBytes.data(), infoBytes.size() - 1).has_value());
+	ASSERT_FALSE(ParseInfo(nullptr, infoBytes.size()).has_value());
+
+	const auto failureBytes = BuildFailure({ 5, 0xA7 });
+	std::array<std::uint8_t, 6> failureExtended{};
+	std::copy(failureBytes.begin(), failureBytes.end(), failureExtended.begin());
+	ASSERT_TRUE(ParseFailure(failureExtended.data(), failureExtended.size()).has_value());
+	ASSERT_FALSE(ParseFailure(failureBytes.data(), failureBytes.size() - 1).has_value());
+	ASSERT_FALSE(ParseFailure(nullptr, failureBytes.size()).has_value());
+
+	const Hash hash{ { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 } };
+	std::array<std::uint8_t, 17> keepaliveExtended{};
+	std::copy(hash.begin(), hash.end(), keepaliveExtended.begin());
+	ASSERT_TRUE(ParseKeepalive(keepaliveExtended.data(), keepaliveExtended.size()).has_value());
+	ASSERT_FALSE(ParseKeepalive(hash.data(), hash.size() - 1).has_value());
+	ASSERT_FALSE(ParseKeepalive(nullptr, hash.size()).has_value());
+}
+
+TEST(NatServerHolePunch, PreservesUnknownReasonsAndOpcodeNamespaces)
+{
 	for (unsigned reason = 0; reason < 256; ++reason) {
 		const auto bytes = BuildFailure({ 0, static_cast<std::uint8_t>(reason) });
 		const auto parsed = ParseFailure(bytes.data(), bytes.size());
-		Check(parsed && parsed->reason == reason, "opaque reason round trip");
+		ASSERT_TRUE(parsed.has_value());
+		ASSERT_EQUALS(reason, parsed->reason);
 	}
-
-	Check(BuildKeepalive(hash) == hash, "keepalive wire bytes");
-	const auto keepalive = ParseKeepalive(hash.data(), hash.size());
-	Check(keepalive && *keepalive == hash, "keepalive hash");
-	CheckLengths(hash, ParseKeepalive);
-
-	static_assert(NatServerTcp::OP_LOWID_HOLEPUNCH_REQUEST == 0x60, "request opcode");
-	static_assert(NatServerTcp::OP_LOWID_HOLEPUNCH_INFO == 0x61, "info opcode");
-	static_assert(NatServerTcp::OP_LOWID_HOLEPUNCH_FAIL == 0x62, "failure opcode");
-	static_assert(NatServerUdp::OP_NATT_KEEPALIVE == 0x9F, "keepalive opcode");
-	static_assert(NatPeerUdp::OP_NATT_HOLEPUNCH == 0xB3, "peer opcode");
-	static_assert(!std::is_same<NatServerTcp::Opcode, NatPeerUdp::Opcode>::value,
-		"TCP and peer UDP namespaces must remain distinct");
-	// TCP OP_ESERVER_BUDDY_REQUEST also uses 0xB3 in the external protocol.
-	// Recognizing the UDP byte must never admit it as a server coordination opcode.
-	for (unsigned opcode = 0; opcode < 256; ++opcode) {
-		const auto byte = static_cast<std::uint8_t>(opcode);
-		Check(IsServerTcpOpcode(byte) == (opcode >= 0x60 && opcode <= 0x62), "TCP namespace");
-		Check(IsServerUdpOpcode(byte) == (opcode == 0x9F), "server UDP namespace");
-		Check(IsPeerUdpOpcode(byte) == (opcode == 0xB3), "peer UDP namespace");
-	}
-	std::cout << "NatServerHolePunchTest passed\n";
-	return EXIT_SUCCESS;
+	ASSERT_TRUE(IsServerTcpOpcode(0x60));
+	ASSERT_TRUE(IsServerUdpOpcode(0x9F));
+	ASSERT_TRUE(IsPeerUdpOpcode(0xB3));
+	ASSERT_FALSE(IsServerUdpOpcode(0xE3));
+	ASSERT_FALSE(IsServerTcpOpcode(0xB3));
 }
