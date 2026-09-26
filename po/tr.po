@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-26 12:53+0100\n"
+"POT-Creation-Date: 2026-09-26 14:37+0200\n"
 "PO-Revision-Date: 2026-09-26 09:33+0000\n"
 "Last-Translator: \n"
 "Language-Team: Turkish <li@li.org>\n"
@@ -286,6 +286,7 @@ msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "pid `%d' ile ilişkili amuleweb oturumu öldürülüyor… "
 
 #: src/amule.cpp src/ClientRef.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr "Başarısız"
 
@@ -541,6 +542,11 @@ msgstr "Sunucu makine adı uyarıldı"
 #, c-format
 msgid "Media metadata: probed file is no longer known, result discarded (%s)"
 msgstr "Ortam üst verileri: incelenen dosya artık bilinmiyor, sonuç görmezden gelindi (%s)"
+
+#: src/amule.cpp
+#, c-format
+msgid "Verify Local Data: another file named '%s' in your shared folders has the same content as '%s' and may be an intact copy of it."
+msgstr ""
 
 #: src/amule.cpp
 #, c-format
@@ -3208,6 +3214,11 @@ msgstr "Kad kullanıcısı"
 
 #: src/KnownFile.cpp
 #, c-format
+msgid "Verify Local Data: %s is still downloading, so it was not checked."
+msgstr ""
+
+#: src/KnownFile.cpp
+#, c-format
 msgid "Kad note search for '%s' not started: Kad is not connected"
 msgstr "'%s' için Kad not araması başlatılmadı: Kad bağlı değil"
 
@@ -5151,7 +5162,7 @@ msgstr "Sayfayı varsayılan değerlere sıfırla"
 msgid "Reset the settings on the current page to their default values."
 msgstr "Güncel sayfadaki ayarları varsayılan değerlerine sıfırla."
 
-#: src/muuli_wdr.cpp src/ServerWnd.cpp
+#: src/muuli_wdr.cpp src/ServerWnd.cpp src/SharedFilesCtrl.cpp
 msgid "OK"
 msgstr "Tamam"
 
@@ -7497,6 +7508,10 @@ msgstr "Kaynak Mevcudiyeti"
 msgid "Directory Path"
 msgstr "Dizin Konumu"
 
+#: src/SharedFilesCtrl.cpp
+msgid "Verify Local Data"
+msgstr "Yerel Verileri Kontrol Et"
+
 #: src/SharedFilesCtrl.cpp src/Statistics.cpp
 msgid "Shared Files"
 msgstr "Paylaşılan Dosyalar"
@@ -7512,10 +7527,6 @@ msgstr "Yorum/Puanlama Düzenle"
 #: src/SharedFilesCtrl.cpp
 msgid "Rename"
 msgstr "Yeniden Adlandır"
-
-#: src/SharedFilesCtrl.cpp
-msgid "Verify Local Data"
-msgstr "Yerel Verileri Kontrol Et"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Re-extract &media metadata"
@@ -8554,11 +8565,6 @@ msgstr "Yerel Veri Kontrolü (%s): HATA TESPİT EDİLDİ! %s başarısız blok: 
 #: src/ThreadTasks.cpp
 #, c-format
 msgid "Verify Local Data: file %s was removed before it could be checked."
-msgstr ""
-
-#: src/ThreadTasks.cpp
-#, c-format
-msgid "Verify Local Data: %s is still downloading, so it was not checked."
 msgstr ""
 
 #: src/ThreadTasks.cpp

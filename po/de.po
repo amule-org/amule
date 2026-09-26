@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-26 12:53+0100\n"
+"POT-Creation-Date: 2026-09-26 14:37+0200\n"
 "PO-Revision-Date: 2026-09-26 09:21+0000\n"
 "Last-Translator: Werner Mahr <werner@vollstreckernet.de>\n"
 "Language-Team: German <>\n"
@@ -286,6 +286,7 @@ msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "Erzwinge Beenden der amuleweb-Instanz mit pid '%d' ... "
 
 #: src/amule.cpp src/ClientRef.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr "Fehlgeschlagen"
 
@@ -544,6 +545,11 @@ msgstr "Server Hostname benachrichtigt"
 #: src/amule.cpp
 #, c-format
 msgid "Media metadata: probed file is no longer known, result discarded (%s)"
+msgstr ""
+
+#: src/amule.cpp
+#, c-format
+msgid "Verify Local Data: another file named '%s' in your shared folders has the same content as '%s' and may be an intact copy of it."
 msgstr ""
 
 #: src/amule.cpp
@@ -3218,6 +3224,11 @@ msgstr "Kad-Netzwerk"
 
 #: src/KnownFile.cpp
 #, c-format
+msgid "Verify Local Data: %s is still downloading, so it was not checked."
+msgstr ""
+
+#: src/KnownFile.cpp
+#, c-format
 msgid "Kad note search for '%s' not started: Kad is not connected"
 msgstr ""
 
@@ -5191,7 +5202,7 @@ msgstr "Systemvorgabe"
 msgid "Reset the settings on the current page to their default values."
 msgstr ""
 
-#: src/muuli_wdr.cpp src/ServerWnd.cpp
+#: src/muuli_wdr.cpp src/ServerWnd.cpp src/SharedFilesCtrl.cpp
 msgid "OK"
 msgstr "OK"
 
@@ -7569,6 +7580,10 @@ msgstr "Verfügbarkeit"
 msgid "Directory Path"
 msgstr "Verzeichnispfad"
 
+#: src/SharedFilesCtrl.cpp
+msgid "Verify Local Data"
+msgstr ""
+
 #: src/SharedFilesCtrl.cpp src/Statistics.cpp
 msgid "Shared Files"
 msgstr "Freigaben"
@@ -7584,10 +7599,6 @@ msgstr "Kommentar/Bewertung ändern"
 #: src/SharedFilesCtrl.cpp
 msgid "Rename"
 msgstr "Umbenennen"
-
-#: src/SharedFilesCtrl.cpp
-msgid "Verify Local Data"
-msgstr ""
 
 #: src/SharedFilesCtrl.cpp
 msgid "Re-extract &media metadata"
@@ -8627,11 +8638,6 @@ msgstr ""
 #: src/ThreadTasks.cpp
 #, c-format
 msgid "Verify Local Data: file %s was removed before it could be checked."
-msgstr ""
-
-#: src/ThreadTasks.cpp
-#, c-format
-msgid "Verify Local Data: %s is still downloading, so it was not checked."
 msgstr ""
 
 #: src/ThreadTasks.cpp

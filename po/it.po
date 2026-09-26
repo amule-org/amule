@@ -19,7 +19,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule 2.3.3\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-26 12:53+0100\n"
+"POT-Creation-Date: 2026-09-26 14:37+0200\n"
 "PO-Revision-Date: 2026-09-26 09:26+0000\n"
 "Last-Translator: got3nks <got3nks@users.noreply.github.com>\n"
 "Language-Team: SebastianoPistore.info@protonmail.ch\n"
@@ -296,6 +296,7 @@ msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "Sto terminando forzatamente l'istanza di amuleweb con pid `%d' ... "
 
 #: src/amule.cpp src/ClientRef.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr "Fallito"
 
@@ -555,6 +556,11 @@ msgstr "Nome host del server notificato"
 #, c-format
 msgid "Media metadata: probed file is no longer known, result discarded (%s)"
 msgstr "Metadati multimediali: il file analizzato non è più noto, risultato scartato (%s)"
+
+#: src/amule.cpp
+#, c-format
+msgid "Verify Local Data: another file named '%s' in your shared folders has the same content as '%s' and may be an intact copy of it."
+msgstr ""
 
 #: src/amule.cpp
 #, c-format
@@ -3222,6 +3228,11 @@ msgstr "Utente Kad"
 
 #: src/KnownFile.cpp
 #, c-format
+msgid "Verify Local Data: %s is still downloading, so it was not checked."
+msgstr ""
+
+#: src/KnownFile.cpp
+#, c-format
 msgid "Kad note search for '%s' not started: Kad is not connected"
 msgstr "Ricerca note Kad per '%s' non avviata: Kad non è connesso"
 
@@ -5165,7 +5176,7 @@ msgstr "Ripristina i valori predefiniti della pagina"
 msgid "Reset the settings on the current page to their default values."
 msgstr "Ripristina le impostazioni della pagina corrente ai loro valori predefiniti."
 
-#: src/muuli_wdr.cpp src/ServerWnd.cpp
+#: src/muuli_wdr.cpp src/ServerWnd.cpp src/SharedFilesCtrl.cpp
 msgid "OK"
 msgstr "OK"
 
@@ -7511,6 +7522,10 @@ msgstr "Disponibilità fonti"
 msgid "Directory Path"
 msgstr "Percorso directory"
 
+#: src/SharedFilesCtrl.cpp
+msgid "Verify Local Data"
+msgstr "Verifica Dati Locali"
+
 #: src/SharedFilesCtrl.cpp src/Statistics.cpp
 msgid "Shared Files"
 msgstr "File condivisi"
@@ -7526,10 +7541,6 @@ msgstr "Modifica commento/giudizio"
 #: src/SharedFilesCtrl.cpp
 msgid "Rename"
 msgstr "Rinomina"
-
-#: src/SharedFilesCtrl.cpp
-msgid "Verify Local Data"
-msgstr "Verifica Dati Locali"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Re-extract &media metadata"
@@ -8568,11 +8579,6 @@ msgstr "Verifica Dati Locali (%s): ERRORI RILEVATI! %s Blocchi con errori: MD4: 
 #: src/ThreadTasks.cpp
 #, c-format
 msgid "Verify Local Data: file %s was removed before it could be checked."
-msgstr ""
-
-#: src/ThreadTasks.cpp
-#, c-format
-msgid "Verify Local Data: %s is still downloading, so it was not checked."
 msgstr ""
 
 #: src/ThreadTasks.cpp

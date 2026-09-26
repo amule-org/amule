@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-26 12:53+0100\n"
+"POT-Creation-Date: 2026-09-26 14:37+0200\n"
 "PO-Revision-Date: 2026-09-26 09:23+0000\n"
 "Last-Translator: Tapio Rantala <tapio.rantala@iki.fi>\n"
 "Language-Team: aMule Team <https://github.com/amule-org/amule>\n"
@@ -281,6 +281,7 @@ msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "Tuhotaan amulewebin instanssi prosessinumerolla '%d' ... "
 
 #: src/amule.cpp src/ClientRef.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr "Epäonnistunut"
 
@@ -538,6 +539,11 @@ msgstr "Palvelimen verkkonimi ilmoitettu"
 #: src/amule.cpp
 #, c-format
 msgid "Media metadata: probed file is no longer known, result discarded (%s)"
+msgstr ""
+
+#: src/amule.cpp
+#, c-format
+msgid "Verify Local Data: another file named '%s' in your shared folders has the same content as '%s' and may be an intact copy of it."
 msgstr ""
 
 #: src/amule.cpp
@@ -3223,6 +3229,11 @@ msgstr "Kad-käyttäjä"
 
 #: src/KnownFile.cpp
 #, c-format
+msgid "Verify Local Data: %s is still downloading, so it was not checked."
+msgstr ""
+
+#: src/KnownFile.cpp
+#, c-format
 msgid "Kad note search for '%s' not started: Kad is not connected"
 msgstr "Kad-huomautushaku kohteelle '%s' ei käynnistynyt: Kad ei ole yhteydessä"
 
@@ -5174,7 +5185,7 @@ msgstr "Palauta sivu oletusarvoihin"
 msgid "Reset the settings on the current page to their default values."
 msgstr "Palauta nykyisen sivun asetukset oletusarvoihinsa."
 
-#: src/muuli_wdr.cpp src/ServerWnd.cpp
+#: src/muuli_wdr.cpp src/ServerWnd.cpp src/SharedFilesCtrl.cpp
 msgid "OK"
 msgstr "OK"
 
@@ -7541,6 +7552,10 @@ msgstr "Saatavuus"
 msgid "Directory Path"
 msgstr "Kansiopolku"
 
+#: src/SharedFilesCtrl.cpp
+msgid "Verify Local Data"
+msgstr "Tarkista paikalliset tiedot"
+
 #: src/SharedFilesCtrl.cpp src/Statistics.cpp
 msgid "Shared Files"
 msgstr "Jaetut tiedostot"
@@ -7556,10 +7571,6 @@ msgstr "Muuta kommenttia/luokitusta"
 #: src/SharedFilesCtrl.cpp
 msgid "Rename"
 msgstr "Uudelleennimeä"
-
-#: src/SharedFilesCtrl.cpp
-msgid "Verify Local Data"
-msgstr "Tarkista paikalliset tiedot"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Re-extract &media metadata"
@@ -8600,11 +8611,6 @@ msgstr "Tarkista paikalliset tiedot (%s): VIRHEITÄ LÖYTYI! %s Epäonnistuneet 
 #: src/ThreadTasks.cpp
 #, c-format
 msgid "Verify Local Data: file %s was removed before it could be checked."
-msgstr ""
-
-#: src/ThreadTasks.cpp
-#, c-format
-msgid "Verify Local Data: %s is still downloading, so it was not checked."
 msgstr ""
 
 #: src/ThreadTasks.cpp

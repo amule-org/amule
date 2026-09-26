@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-26 12:53+0100\n"
+"POT-Creation-Date: 2026-09-26 14:37+0200\n"
 "PO-Revision-Date: 2026-09-26 09:34+0000\n"
 "Last-Translator: Wayne Su <mstarmstar@gmail.com>\n"
 "Language-Team: \n"
@@ -284,6 +284,7 @@ msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "正在強行終止 pid %d 的 amuleweb 執行緒... "
 
 #: src/amule.cpp src/ClientRef.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr "失敗"
 
@@ -541,6 +542,11 @@ msgstr "已通伺服器主機名稱"
 #: src/amule.cpp
 #, c-format
 msgid "Media metadata: probed file is no longer known, result discarded (%s)"
+msgstr ""
+
+#: src/amule.cpp
+#, c-format
+msgid "Verify Local Data: another file named '%s' in your shared folders has the same content as '%s' and may be an intact copy of it."
 msgstr ""
 
 #: src/amule.cpp
@@ -3211,6 +3217,11 @@ msgstr "Kad 使用者"
 
 #: src/KnownFile.cpp
 #, c-format
+msgid "Verify Local Data: %s is still downloading, so it was not checked."
+msgstr ""
+
+#: src/KnownFile.cpp
+#, c-format
 msgid "Kad note search for '%s' not started: Kad is not connected"
 msgstr "未開始針對「%s」的 Kad 註解搜尋：Kad 尚未連線"
 
@@ -5156,7 +5167,7 @@ msgstr "將此頁面重設為預設值"
 msgid "Reset the settings on the current page to their default values."
 msgstr "將目前頁面的設定重設為預設值。"
 
-#: src/muuli_wdr.cpp src/ServerWnd.cpp
+#: src/muuli_wdr.cpp src/ServerWnd.cpp src/SharedFilesCtrl.cpp
 msgid "OK"
 msgstr "OK"
 
@@ -7502,6 +7513,10 @@ msgstr "最小來源數"
 msgid "Directory Path"
 msgstr "所在目錄"
 
+#: src/SharedFilesCtrl.cpp
+msgid "Verify Local Data"
+msgstr "驗證本機資料"
+
 #: src/SharedFilesCtrl.cpp src/Statistics.cpp
 msgid "Shared Files"
 msgstr "分享檔案"
@@ -7517,10 +7532,6 @@ msgstr "編輯註解/評價"
 #: src/SharedFilesCtrl.cpp
 msgid "Rename"
 msgstr "重新命名"
-
-#: src/SharedFilesCtrl.cpp
-msgid "Verify Local Data"
-msgstr "驗證本機資料"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Re-extract &media metadata"
@@ -8553,11 +8564,6 @@ msgstr "驗證本機資料 (%s)：發現錯誤！%s 失敗區塊：MD4：%s。%s
 #: src/ThreadTasks.cpp
 #, c-format
 msgid "Verify Local Data: file %s was removed before it could be checked."
-msgstr ""
-
-#: src/ThreadTasks.cpp
-#, c-format
-msgid "Verify Local Data: %s is still downloading, so it was not checked."
 msgstr ""
 
 #: src/ThreadTasks.cpp

@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-26 12:53+0100\n"
+"POT-Creation-Date: 2026-09-26 14:37+0200\n"
 "PO-Revision-Date: 2026-09-26 09:20+0000\n"
 "Last-Translator: David Watzke <david@watzke.cz>\n"
 "Language-Team: cs <cs@li.org>\n"
@@ -288,6 +288,7 @@ msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "Vynucuje se ukončení instance amuleweb s PID '%d' ... "
 
 #: src/amule.cpp src/ClientRef.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr "Nezdařilo se"
 
@@ -540,6 +541,11 @@ msgstr "Název hostitele serveru oznámen"
 #, c-format
 msgid "Media metadata: probed file is no longer known, result discarded (%s)"
 msgstr "Mediální metadata: sondovaný soubor již není znám, výsledek byl zahozen (%s)"
+
+#: src/amule.cpp
+#, c-format
+msgid "Verify Local Data: another file named '%s' in your shared folders has the same content as '%s' and may be an intact copy of it."
+msgstr ""
 
 #: src/amule.cpp
 #, c-format
@@ -3223,6 +3229,11 @@ msgstr "Uživatel Kad"
 
 #: src/KnownFile.cpp
 #, c-format
+msgid "Verify Local Data: %s is still downloading, so it was not checked."
+msgstr ""
+
+#: src/KnownFile.cpp
+#, c-format
 msgid "Kad note search for '%s' not started: Kad is not connected"
 msgstr "Hledání poznámek Kad pro '%s' nebylo zahájeno: Kad není připojen"
 
@@ -5167,7 +5178,7 @@ msgstr "Obnovit výchozí nastavení stránky"
 msgid "Reset the settings on the current page to their default values."
 msgstr "Obnovit nastavení aktuální stránky na výchozí hodnoty."
 
-#: src/muuli_wdr.cpp src/ServerWnd.cpp
+#: src/muuli_wdr.cpp src/ServerWnd.cpp src/SharedFilesCtrl.cpp
 msgid "OK"
 msgstr "OK"
 
@@ -7535,6 +7546,10 @@ msgstr "Dostupnost zdroje"
 msgid "Directory Path"
 msgstr "Cesta k adresáři"
 
+#: src/SharedFilesCtrl.cpp
+msgid "Verify Local Data"
+msgstr "Ověřit místní data"
+
 #: src/SharedFilesCtrl.cpp src/Statistics.cpp
 msgid "Shared Files"
 msgstr "Sdílené soubory"
@@ -7550,10 +7565,6 @@ msgstr "Upravit komentář nebo hodnocení"
 #: src/SharedFilesCtrl.cpp
 msgid "Rename"
 msgstr "Přejmenovat"
-
-#: src/SharedFilesCtrl.cpp
-msgid "Verify Local Data"
-msgstr "Ověřit místní data"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Re-extract &media metadata"
@@ -8598,11 +8609,6 @@ msgstr "Ověření místních dat (%s): NALEZENY CHYBY! %s Chybné bloky: MD4: %
 #: src/ThreadTasks.cpp
 #, c-format
 msgid "Verify Local Data: file %s was removed before it could be checked."
-msgstr ""
-
-#: src/ThreadTasks.cpp
-#, c-format
-msgid "Verify Local Data: %s is still downloading, so it was not checked."
 msgstr ""
 
 #: src/ThreadTasks.cpp

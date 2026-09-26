@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-26 12:53+0100\n"
+"POT-Creation-Date: 2026-09-26 14:37+0200\n"
 "PO-Revision-Date: 2026-09-26 09:34+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
@@ -290,6 +290,7 @@ msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "正在终止 pid 为“%d”的 amuleweb 实例 ... "
 
 #: src/amule.cpp src/ClientRef.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr "失败"
 
@@ -542,6 +543,11 @@ msgstr "获取服务器名称"
 #, c-format
 msgid "Media metadata: probed file is no longer known, result discarded (%s)"
 msgstr "媒体元数据：探测的文件不再已知，结果被丢弃（%s）"
+
+#: src/amule.cpp
+#, c-format
+msgid "Verify Local Data: another file named '%s' in your shared folders has the same content as '%s' and may be an intact copy of it."
+msgstr ""
 
 #: src/amule.cpp
 #, c-format
@@ -3208,6 +3214,11 @@ msgstr "Kad 用户"
 
 #: src/KnownFile.cpp
 #, c-format
+msgid "Verify Local Data: %s is still downloading, so it was not checked."
+msgstr ""
+
+#: src/KnownFile.cpp
+#, c-format
 msgid "Kad note search for '%s' not started: Kad is not connected"
 msgstr "“%s” 的 Kad 笔记搜索未启动：Kad 未连接"
 
@@ -5148,7 +5159,7 @@ msgstr "重置页面为默认"
 msgid "Reset the settings on the current page to their default values."
 msgstr "重置当前页面设置为默认值。"
 
-#: src/muuli_wdr.cpp src/ServerWnd.cpp
+#: src/muuli_wdr.cpp src/ServerWnd.cpp src/SharedFilesCtrl.cpp
 msgid "OK"
 msgstr "确定"
 
@@ -7494,6 +7505,10 @@ msgstr "来源可用性"
 msgid "Directory Path"
 msgstr "所在目录"
 
+#: src/SharedFilesCtrl.cpp
+msgid "Verify Local Data"
+msgstr "验证本地数据"
+
 #: src/SharedFilesCtrl.cpp src/Statistics.cpp
 msgid "Shared Files"
 msgstr "共享文件"
@@ -7509,10 +7524,6 @@ msgstr "编辑评论/评价"
 #: src/SharedFilesCtrl.cpp
 msgid "Rename"
 msgstr "重命名"
-
-#: src/SharedFilesCtrl.cpp
-msgid "Verify Local Data"
-msgstr "验证本地数据"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Re-extract &media metadata"
@@ -8548,11 +8559,6 @@ msgstr "验证本地数据（%s）：发现错误！%s 个失败的文件块：M
 #: src/ThreadTasks.cpp
 #, c-format
 msgid "Verify Local Data: file %s was removed before it could be checked."
-msgstr ""
-
-#: src/ThreadTasks.cpp
-#, c-format
-msgid "Verify Local Data: %s is still downloading, so it was not checked."
 msgstr ""
 
 #: src/ThreadTasks.cpp
