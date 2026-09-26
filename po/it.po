@@ -19,7 +19,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule 2.3.3\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-23 12:47+0100\n"
+"POT-Creation-Date: 2026-09-26 11:42+0100\n"
 "PO-Revision-Date: 2026-09-26 09:26+0000\n"
 "Last-Translator: got3nks <got3nks@users.noreply.github.com>\n"
 "Language-Team: SebastianoPistore.info@protonmail.ch\n"
@@ -6438,6 +6438,10 @@ msgstr "Impossibile registrare aMule come gestore URL. Il registro delle associa
 #: src/PrefsUnifiedDlg.cpp
 msgid "Could not remove the URL handler registration."
 msgstr "Impossibile rimuovere la registrazione del gestore URL."
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "macOS does not let an application stop being the default handler. To stop aMule opening these, make another application the default."
+msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "The web server and aMule API require external connections to be enabled."

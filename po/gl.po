@@ -24,7 +24,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-23 12:47+0100\n"
+"POT-Creation-Date: 2026-09-26 11:42+0100\n"
 "PO-Revision-Date: 2026-09-26 09:24+0000\n"
 "Last-Translator: Pablo <parodper@gmail.com>\n"
 "Language-Team: http://forum.amule.org/index.php?topic=13883\n"
@@ -6469,6 +6469,10 @@ msgstr "Non se puido rexistrar aMule como o manexador de URL. O almacén de rexi
 #: src/PrefsUnifiedDlg.cpp
 msgid "Could not remove the URL handler registration."
 msgstr "Non se puido eliminar o rexistro do manexador de URL."
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "macOS does not let an application stop being the default handler. To stop aMule opening these, make another application the default."
+msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "The web server and aMule API require external connections to be enabled."

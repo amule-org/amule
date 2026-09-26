@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-23 12:47+0100\n"
+"POT-Creation-Date: 2026-09-26 11:42+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -6283,6 +6283,10 @@ msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Could not remove the URL handler registration."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "macOS does not let an application stop being the default handler. To stop aMule opening these, make another application the default."
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp

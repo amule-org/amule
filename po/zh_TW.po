@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-23 12:47+0100\n"
+"POT-Creation-Date: 2026-09-26 11:42+0100\n"
 "PO-Revision-Date: 2026-09-26 09:34+0000\n"
 "Last-Translator: Wayne Su <mstarmstar@gmail.com>\n"
 "Language-Team: \n"
@@ -6435,6 +6435,10 @@ msgstr "無法將 aMule 註冊為網址處理程式。註冊儲存區可能為�
 #: src/PrefsUnifiedDlg.cpp
 msgid "Could not remove the URL handler registration."
 msgstr "無法移除網址處理程式的註冊。"
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "macOS does not let an application stop being the default handler. To stop aMule opening these, make another application the default."
+msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "The web server and aMule API require external connections to be enabled."
