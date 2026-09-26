@@ -11,7 +11,7 @@ following packages:
 | zlib      | 1.2.3           |                                   |
 | wxWidgets | 3.2.0           | 3.2 branch or newer               |
 | Crypto++  | 8.1             | classic or cryptopp-modern        |
-| Boost     | 1.47            | headers only; only `asio` is used |
+| Boost     | 1.70            | headers only; only `asio` is used |
 
 The Crypto++ row accepts either the classic
 [weidai11/cryptopp](https://github.com/weidai11/cryptopp) library (minimum
@@ -138,12 +138,32 @@ Common `-D` options (`YES` / `NO` unless noted otherwise):
 | `BUILD_ALC`              | NO      | aMuleLinkCreator GUI                                                     |
 | `BUILD_ALCC`             | NO      | aMuleLinkCreator console                                                 |
 | `BUILD_FILEVIEW`         | NO      | console file viewer (experimental)                                       |
+| `BUILD_EVERYTHING`       | NO      | every program above (`cas` only on Unix)                                 |
+| `BUILD_TESTING`          | NO      | unit tests, run with `ctest` ([unittests/README](../unittests/README))    |
 | `ENABLE_NLS`             | YES     | native-language support (gettext)                                        |
 | `ENABLE_UPNP`            | YES     | UPnP port forwarding                                                     |
 | `ENABLE_IP2COUNTRY`      | YES     | libmaxminddb country flags ([docs/IP2Country.md](IP2Country.md))         |
+| `ENABLE_MMAP`            | YES     | compile the mmap file-I/O path where the platform has it. Its use is a runtime preference, off by default. Set `NO` to leave the code out, for example in sanitizer builds |
+| `ENABLE_BFD`             | YES     | resolve backtrace symbols in-process with libbfd. With `NO`, crash backtraces use `backtrace_symbols()` and an external `addr2line` |
+| `TRANSLATED_MANPAGES`    | YES     | render and install translated manpages with `po4a` at build time. Needs `ENABLE_NLS`; skipped with a notice when `po4a` is not found |
 | `ENABLE_CCACHE`          | AUTO    | use ccache as compiler launcher when found (`AUTO`/`ON`/`OFF`); set `OFF` for distro builds that manage ccache themselves, `ON` to hard-fail if ccache is missing |
 | `ENABLE_VERSION_CHECK`   | ON      | compile in the in-app new-version check (startup notification, the "Check for new version at startup" preference, and the About dialog's "Check for updates" button). Packagers shipping aMule via an OS package manager want `OFF`, so nothing contacts GitHub and the distro's package manager owns updates |
 | `USE_SYSTEM_PICOJSON`    | OFF     | use a system-installed `picojson.h` instead of the bundled copy           |
+| `DOWNLOAD_AND_BUILD_DEPS` | OFF    | download and build missing dependencies. Needs Git                       |
+
+### Experimental options
+
+These switches are `OFF` by default. Each one compiles in unfinished
+work; with the switch off, that code is left out of the build.
+
+| Option                            | Effect |
+| --------------------------------- | ------ |
+| `ENABLE_UTP`                      | IPv4 uTP in `amule` and `amuled`: datagram framing, inbound streams, and dialing a peer that advertises uTP. Needs CMake 3.12 |
+| `ENABLE_IPV6`                     | native IPv6 TCP admission. The IPv6 identity work is not complete |
+| `ENABLE_NATT_SERVER_COORDINATION` | the server-coordinated NAT-T wire codecs. No login advertisement or network traffic yet |
+| `ENABLE_KAD_PROTOCOL_10`          | advertise Kademlia protocol `0x0a`, with the AICH hashes on keyword storage that `0x09` added |
+| `ENABLE_KAD_NODE_PROTECTION`      | local Kad node-protection heuristics: adaptive request timeouts and Kad identity checks. No wire-protocol change |
+| `ENABLE_ALL_EXPERIMENTAL`         | all of the switches above |
 
 For the full list:
 
@@ -153,18 +173,20 @@ cmake -LAH -B build | less
 
 ## Refreshing translated manpages (maintainers / translators)
 
-The translated `*.LANG.1` manpages under `docs/man/` are committed
-artifacts, regenerated from `docs/man/po/manpages-LANG.po` against the
-English masters via `po4a`. `po4a` is not a build dependency — the
-refresh target only exists when `po4a` is found at configure time:
+The translated manpages are not tracked in git. The build renders them
+from the English masters (`docs/man/*.1.in` and
+`src/utils/*/docs/*.1.in`) and `docs/man/po/manpages-LANG.po`, with
+`po4a` (see `TRANSLATED_MANPAGES` above).
+
+After you edit an English master, regenerate the manpage catalogs from
+the top of the source tree, and commit the result:
 
 ```sh
-cmake --build build --target po4a-update
+./scripts/update-manpages-po.sh
 ```
 
-This rewrites `docs/man/po/manpages.pot`, syncs each
-`manpages-LANG.po`, and regenerates the translated `*.LANG.1` files in
-place. Commit the resulting changes.
+This rewrites `docs/man/po/manpages.pot` and merges it into every
+`docs/man/po/manpages-LANG.po`.
 
 ## Links
 

@@ -96,6 +96,6 @@ of vendored files and how to verify them against upstream are recorded in
 > THE SOFTWARE.
 
 The snapshot carries no local patches. It is built only with
-`-DENABLE_UTP=YES`, which is OFF by default, and no aMule target links it yet —
-so a default build neither compiles nor ships it, and this notice applies only
-to binaries built with that switch on.
+`-DENABLE_UTP=YES`, which is OFF by default. With that switch on, `amule` and
+`amuled` link it. A default build neither compiles nor ships it, so this notice
+applies only to binaries built with the switch on.

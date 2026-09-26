@@ -1,8 +1,7 @@
 # Makes the vendored libutp available as Utp::Utp.
 #
-# Included only when ENABLE_UTP is on. Nothing in aMule links the target yet:
-# this exists so the uTP transport work can be reviewed against a dependency
-# that is already in the tree and already builds.
+# Included only when ENABLE_UTP is on. amule and amuled link it for the
+# experimental uTP transport.
 #
 # ENABLE_UTP gates whether the target exists at all, so a default build has no
 # libutp in its graph and nothing to skip. The library is therefore built as
