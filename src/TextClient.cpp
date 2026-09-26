@@ -1426,6 +1426,8 @@ int CamulecmdApp::OnRun()
 	// the multi-search protocol: several searches can be kept on the daemon at once and
 	// referenced by ID (no-arg commands act on the most recent).
 	m_canMultiSearch = true;
+	// Without it an id-less `progress` would list every search, not the one `results` shows.
+	m_canSearchProgressUnion = false;
 	ConnectAndRun("aMulecmd", VERSION);
 	return 0;
 }

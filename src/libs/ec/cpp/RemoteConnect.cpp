@@ -64,6 +64,7 @@ CECLoginPacket::CECLoginPacket(const wxString &client,
 	bool canNotify,
 	bool preferNoZlib,
 	bool canMultiSearch,
+	bool canSearchProgressUnion,
 	bool canChat,
 	bool canChatSessions,
 	bool canChatPeerHash,
@@ -121,10 +122,8 @@ CECLoginPacket::CECLoginPacket(const wxString &client,
 	if (canMultiSearch)
 		AddTag(CECEmptyTag(EC_TAG_CAN_MULTI_SEARCH));
 	// Client polls every open search with ONE id-less EC_OP_SEARCH_PROGRESS. Only
-	// advertised alongside multi-search: for a single-search client an id-less
-	// request keeps its legacy "the current search" meaning, which amulecmd's
-	// argument-less `search progress` relies on.
-	if (canMultiSearch)
+	// advertised alongside multi-search: the union addresses its children by search ID.
+	if (canMultiSearch && canSearchProgressUnion)
 		AddTag(CECEmptyTag(EC_TAG_CAN_SEARCH_PROGRESS_UNION));
 	// Client wants incoming peer chat messages relayed over EC (amulegui shows them
 	// read-only). Only advertised by clients with a chat window.
@@ -194,6 +193,7 @@ m_req_fifo_thr(20)
 , m_serverClientHistory(false)
 , m_serverPartialSearch(false)
 , m_canMultiSearch(false)
+, m_canSearchProgressUnion(true)
 , m_serverMultiSearch(false)
 , m_canChat(false)
 , m_serverChat(false)
@@ -310,6 +310,7 @@ bool CRemoteConnect::ConnectToCore(
 			m_canNotify,
 			m_preferNoZlib,
 			m_canMultiSearch,
+			m_canSearchProgressUnion,
 			m_canChat,
 			m_canChatSessions,
 			m_canChatPeerHash,
@@ -371,6 +372,7 @@ void CRemoteConnect::OnConnect()
 			m_canNotify,
 			m_preferNoZlib,
 			m_canMultiSearch,
+			m_canSearchProgressUnion,
 			m_canChat,
 			m_canChatSessions,
 			m_canChatPeerHash,

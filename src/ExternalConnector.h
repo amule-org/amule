@@ -269,6 +269,9 @@ protected:
 	// that reads EC_TAG_SEARCH_ID back and handles per-ID results (amulecmd) sets it true.
 	// amuleweb stays single-search.
 	bool m_canMultiSearch;
+	// With multi-search, read an id-less EC_OP_SEARCH_PROGRESS as every search rather than
+	// the current one. amulecmd turns it off.
+	bool m_canSearchProgressUnion;
 	// Advertise EC_TAG_CAN_CHAT_SESSIONS so the daemon echoes it and this connector may use the
 	// chat session ops. Off by default; a connector that never reads chat leaves the daemon
 	// free of the work.

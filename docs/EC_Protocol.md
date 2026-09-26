@@ -334,6 +334,12 @@ branch of its request dispatcher, which asserts before it can answer
 `EC_OP_FAILED`. Asking an older server takes it down rather than
 receiving a polite refusal.
 
+With `EC_TAG_CAN_MULTI_SEARCH`, a search request that names no
+`EC_TAG_SEARCH_ID` (results, progress without the union, stop, more)
+addresses the last search this connection started. A connection that has
+not started one gets the most recent search any client started. A peer
+browse is never that default.
+
 `EC_TAG_CAN_SEARCH_PROGRESS_UNION` changes the reply shape of
 `EC_OP_SEARCH_PROGRESS`, so it is advertised only alongside
 `EC_TAG_CAN_MULTI_SEARCH` — a single-search client has one search and no

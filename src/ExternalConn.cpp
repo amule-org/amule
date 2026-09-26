@@ -525,6 +525,11 @@ private:
 	// m_multiSearchActive -- a single-search client's id-less request keeps meaning "the
 	// current search".
 	bool m_searchProgressUnionActive;
+	// The last search this connection started, which an id-less search request means.
+	// Until it starts one, the most recent search any client started stands in: one-shot
+	// amulecmd runs `search` and `results` on separate connections.
+	uint32 m_currentSearchId;
+	uint32 DefaultSearchId() const;
 	// Set when the client advertised EC_TAG_CAN_CHAT: it speaks the chat session ops
 	// (EC_OP_GET_CHAT_SESSIONS and friends). A client that omits the tag never sees the
 	// capability echoed and must never send those opcodes -- an unknown opcode asserts
@@ -604,6 +609,7 @@ CECServerSocket::CECServerSocket(ECNotifier *notifier)
 , m_partialSearchActive(false)
 , m_multiSearchActive(false)
 , m_searchProgressUnionActive(false)
+, m_currentSearchId(0)
 , m_chatActive(false)
 , m_chatPeerHashActive(false)
 {
@@ -1115,9 +1121,9 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 				if (request->GetTagByName(EC_TAG_CAN_SEARCH_PROGRESS_UNION)) {
 					// Client reads an id-less EC_OP_SEARCH_PROGRESS as "every open
 					// search", each reported as a child tag, so it polls once
-					// instead of once per search. Only honoured with multi-search:
-					// for a single-search client an id-less request still means
-					// "the current search", which amulecmd expects.
+					// instead of once per search. Only honoured with multi-search.
+					// amulecmd leaves it out, so its id-less request still means
+					// the current search.
 					m_searchProgressUnionActive = true;
 				}
 				if (request->GetTagByName(EC_TAG_CAN_CHAT_SESSIONS)) {
@@ -2353,9 +2359,8 @@ static_assert(static_cast<int>(BrowseSearch) == EC_SEARCH_BROWSE,
 
 static uint32 AllocateBrowseSearchId();
 // Undo an AllocateBrowseSearchId() whose browse never started. Drops the results and
-// the registry's own bookkeeping together: RemoveResults() alone leaves the dead id
-// as Current(), so id-less result polls target a freed bucket, and it keeps one of
-// the ring slots until it evicts a live search.
+// the registry's own bookkeeping together: RemoveResults() alone keeps one of the ring
+// slots until it evicts a live search.
 static void ReleaseBrowseSearchId(uint32 id);
 
 // Reply to a browse request. Multi-search clients get the allocated search ID (and
@@ -2563,12 +2568,18 @@ constexpr std::size_t kMaxEcSearches = 20;
 class CEcSearchRegistry
 {
 public:
-	// Register a just-started search as most-recently-used and current,
-	// evicting the least-recently-used if over capacity.
+	// Register a just-started search as most-recently-used and current.
 	void Register(uint32 id)
 	{
-		Touch(id);
+		Admit(id);
 		m_current = id;
+	}
+
+	// Track a search for eviction without making it current: a peer browse is not a
+	// search anyone would address without its id.
+	void Admit(uint32 id)
+	{
+		Touch(id);
 		while (m_lru.size() > kMaxEcSearches) {
 			uint32 victim = m_lru.back();
 			m_lru.pop_back();
@@ -2601,7 +2612,8 @@ public:
 		}
 	}
 
-	// Most-recently-started search (0 = none); the no-arg default target.
+	// Most-recently-started search (0 = none); the id-less default for a connection that
+	// has not started one.
 	uint32 Current() const { return m_current; }
 
 	// All active search IDs (MRU order). Used by the INC_UPDATE union poll
@@ -2633,8 +2645,13 @@ static void ReleaseBrowseSearchId(uint32 id)
 static uint32 AllocateBrowseSearchId()
 {
 	uint32 id = theApp->searchlist->AllocateEd2kId();
-	s_ecSearches.Register(id);
+	s_ecSearches.Admit(id);
 	return id;
+}
+
+uint32 CECServerSocket::DefaultSearchId() const
+{
+	return m_currentSearchId ? m_currentSearchId : s_ecSearches.Current();
 }
 
 static CECPacket *Get_EC_Response_Search_Results(const CECPacket *request,
@@ -3045,17 +3062,17 @@ static CECPacket *Get_EC_Response_Search_Results_Download(const CECPacket *reque
 	return response;
 }
 
-static CECPacket *Get_EC_Response_Search_Stop(const CECPacket *request, bool multiSearch)
+static CECPacket *Get_EC_Response_Search_Stop(const CECPacket *request, bool multiSearch, uint32 defaultSid)
 {
 	CECPacket *reply = new CECPacket(EC_OP_MISC_DATA);
 	if (multiSearch) {
-		// Per-ID stop. No ID means the most-recently-started search. Gate on the core's own
+		// Per-ID stop. No ID means defaultSid. Gate on the core's own
 		// knowledge (CSearchList::IsKnownSearchId), not s_ecSearches: a monolithic-started
 		// search is known to the core but was never Register()'d into that EC-only
 		// registry, so gating on the registry alone silently no-ops both Stop and Close
 		// for it.
 		const CECTag *idTag = request->GetTagByName(EC_TAG_SEARCH_ID);
-		uint32 sid = idTag ? static_cast<uint32>(idTag->GetInt()) : s_ecSearches.Current();
+		uint32 sid = idTag ? static_cast<uint32>(idTag->GetInt()) : defaultSid;
 		if (sid != 0 && theApp->searchlist->IsKnownSearchId(sid)) {
 			if (request->GetTagByName(EC_TAG_SEARCH_CLOSE)) {
 				// Tab close: stop activity, free results, drop from the ring. Free the
@@ -3078,19 +3095,19 @@ static CECPacket *Get_EC_Response_Search_Stop(const CECPacket *request, bool mul
 	return reply;
 }
 
-static CECPacket *Get_EC_Response_Search_Request_More(const CECPacket *request, bool multiSearch)
+static CECPacket *Get_EC_Response_Search_Request_More(
+	const CECPacket *request, bool multiSearch, uint32 defaultSid)
 {
 	// "More" button (Kad-only): re-ask already-queried peers for a wider result
 	// frontier for one search. RequestMoreResults logs what actually happened,
 	// and that line is forwarded back over EC; the reply carries the other half,
 	// whether a LATER press could still widen the search.
 	CECPacket *reply = new CECPacket(EC_OP_MISC_DATA);
-	// Per-ID. No ID means the most-recently-started search. Gate on the core's own
+	// Per-ID. No ID means defaultSid. Gate on the core's own
 	// knowledge, not s_ecSearches -- see Get_EC_Response_Search_Stop: a
 	// monolithic-started Kad search's "More results" would otherwise do nothing.
 	const CECTag *idTag = request->GetTagByName(EC_TAG_SEARCH_ID);
-	uint32 sid =
-		idTag ? static_cast<uint32>(idTag->GetInt()) : (multiSearch ? s_ecSearches.Current() : 0);
+	uint32 sid = idTag ? static_cast<uint32>(idTag->GetInt()) : (multiSearch ? defaultSid : 0);
 	bool reaskable = false;
 	if (sid != 0 && (!multiSearch || theApp->searchlist->IsKnownSearchId(sid))) {
 		reaskable = theApp->searchlist->RequestMoreResults(sid);
@@ -3109,7 +3126,7 @@ static CECPacket *Get_EC_Response_Search_Request_More(const CECPacket *request, 
 	return reply;
 }
 
-static CECPacket *Get_EC_Response_Search(const CECPacket *request, bool multiSearch)
+static CECPacket *Get_EC_Response_Search(const CECPacket *request, bool multiSearch, uint32 &o_startedId)
 {
 	wxString response;
 
@@ -3175,6 +3192,7 @@ static CECPacket *Get_EC_Response_Search(const CECPacket *request, bool multiSea
 				// search) as most-recently-used + current, evicting the
 				// least-recently-used search if over the ring's cap.
 				s_ecSearches.Register(search_id);
+				o_startedId = search_id;
 			}
 		}
 	}
@@ -3810,15 +3828,16 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 	}
 	// Search
 	case EC_OP_SEARCH_START:
-		response = Get_EC_Response_Search(request, m_multiSearchActive);
+		response = Get_EC_Response_Search(request, m_multiSearchActive, m_currentSearchId);
 		break;
 
 	case EC_OP_SEARCH_STOP:
-		response = Get_EC_Response_Search_Stop(request, m_multiSearchActive);
+		response = Get_EC_Response_Search_Stop(request, m_multiSearchActive, DefaultSearchId());
 		break;
 
 	case EC_OP_SEARCH_REQUEST_MORE:
-		response = Get_EC_Response_Search_Request_More(request, m_multiSearchActive);
+		response =
+			Get_EC_Response_Search_Request_More(request, m_multiSearchActive, DefaultSearchId());
 		break;
 
 	case EC_OP_SEARCH_LIST:
@@ -3837,13 +3856,13 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 				m_obj_tagmap, m_partialSearchActive, m_lastSentSearchResultIds);
 			break;
 		}
-		// Otherwise address a specific search by EC_TAG_SEARCH_ID (no ID means the
-		// most-recently-started search) -- amulecmd / amuleapi use FULL. Legacy (non-multi)
+		// Otherwise address a specific search by EC_TAG_SEARCH_ID (no ID means
+		// DefaultSearchId()) -- amulecmd / amuleapi use FULL. Legacy (non-multi)
 		// clients keep the single 0xffffffff sentinel.
 		wxUIntPtr sid = 0xffffffff;
 		if (m_multiSearchActive) {
 			const CECTag *idTag = request->GetTagByName(EC_TAG_SEARCH_ID);
-			uint32 want = idTag ? static_cast<uint32>(idTag->GetInt()) : s_ecSearches.Current();
+			uint32 want = idTag ? static_cast<uint32>(idTag->GetInt()) : DefaultSearchId();
 			// Gate on the core's own knowledge (CSearchList::IsKnownSearchId), not
 			// s_ecSearches: that registry only ever holds EC-initiated searches, so gating on
 			// it reports a monolithic-started search as expired even while it is still
@@ -3887,7 +3906,7 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 		wxUIntPtr sid = 0xffffffff;
 		if (m_multiSearchActive) {
 			const CECTag *idTag = request->GetTagByName(EC_TAG_SEARCH_ID);
-			uint32 want = idTag ? static_cast<uint32>(idTag->GetInt()) : s_ecSearches.Current();
+			uint32 want = idTag ? static_cast<uint32>(idTag->GetInt()) : DefaultSearchId();
 			// See the matching comment in the EC_OP_SEARCH_RESULTS case above: gate on the
 			// core's own knowledge, not the EC-only registry, so a monolithic-started
 			// search's progress isn't reported as expired.

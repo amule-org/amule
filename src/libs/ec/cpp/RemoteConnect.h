@@ -63,6 +63,7 @@ public:
 		bool canNotify = false,
 		bool preferNoZlib = false,
 		bool canMultiSearch = false,
+		bool canSearchProgressUnion = false,
 		bool canChat = false,
 		bool canChatSessions = false,
 		bool canChatPeerHash = false,
@@ -214,6 +215,9 @@ private:
 	// SetCanMultiSearch() only once the client addresses searches by
 	// `EC_TAG_SEARCH_ID`.
 	bool m_canMultiSearch;
+	// Client reads the union form of EC_OP_SEARCH_PROGRESS. On by default with multi-
+	// search; amulecmd turns it off so an id-less `progress` means the current search.
+	bool m_canSearchProgressUnion;
 	// Server echoed `EC_TAG_CAN_MULTI_SEARCH`: it runs several EC searches at once,
 	// addressed by ID. Old daemons don't echo it and the client stays single-search.
 	bool m_serverMultiSearch;
@@ -290,6 +294,7 @@ public:
 	// Opt into the multi-search protocol. Call BEFORE ConnectToCore(), and only from
 	// a client that reads `EC_TAG_SEARCH_ID` and addresses searches by it.
 	void SetCanMultiSearch(bool can) noexcept { m_canMultiSearch = can; }
+	void SetCanSearchProgressUnion(bool can) noexcept { m_canSearchProgressUnion = can; }
 
 	// Opt into chat relay. Call BEFORE ConnectToCore(). Only a client with a
 	// chat window (amulegui) should set this; others never poll for messages.
