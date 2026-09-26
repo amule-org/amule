@@ -261,7 +261,10 @@ wxWizardPageSimple *CFirstRunWizard::BuildConnectionPage()
 	wxWizardPageSimple *page = new wxWizardPageSimple(this);
 	wxBoxSizer *sizer = new wxBoxSizer(wxVERTICAL);
 
-	sizer->Add(new wxStaticText(page, wxID_ANY, _("Connection & bandwidth")), 0, wxBOTTOM, 8);
+	sizer->Add(new wxStaticText(page, wxID_ANY, wxControl::EscapeMnemonics(_("Connection & bandwidth"))),
+		0,
+		wxBOTTOM,
+		8);
 	sizer->Add(new wxStaticText(page,
 			   wxID_ANY,
 			   _("Pick the option that best matches your Internet connection,\n"
@@ -316,7 +319,10 @@ wxWizardPageSimple *CFirstRunWizard::BuildNetworkPage()
 	wxWizardPageSimple *page = new wxWizardPageSimple(this);
 	wxBoxSizer *sizer = new wxBoxSizer(wxVERTICAL);
 
-	sizer->Add(new wxStaticText(page, wxID_ANY, _("Networks & ports")), 0, wxBOTTOM, 8);
+	sizer->Add(new wxStaticText(page, wxID_ANY, wxControl::EscapeMnemonics(_("Networks & ports"))),
+		0,
+		wxBOTTOM,
+		8);
 	sizer->Add(
 		new wxStaticText(
 			page, wxID_ANY, _("aMule can use two networks. We recommend keeping both enabled.")),
