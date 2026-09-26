@@ -114,3 +114,34 @@ TEST(MagnetURI, AichUrnOrderBeforeEd2kUrnStillWorks)
 	ASSERT_TRUE(ed2k.Contains(wxString("h=") + AICH + "|/"));
 	ASSERT_TRUE(ed2k.Contains(wxString("|") + ED2K_HASH + "|h="));
 }
+
+TEST(MagnetURI, SchemeAndUrnNamesIgnoreCase)
+{
+	// Schemes and URN namespace names are case-insensitive (RFC 3986, RFC 8141).
+	wxString magnet =
+		wxString("MAGNET:?xt=URN:ED2K:") + ED2K_HASH + "&dn=example.iso&xl=42&xt=Urn:Aich:" + AICH;
+
+	ASSERT_TRUE(CMagnetURI::IsMagnet(magnet));
+	CMagnetED2KConverter conv(magnet);
+	ASSERT_TRUE(conv.CanConvertToED2K());
+	wxString ed2k = conv.GetED2KLink();
+	ASSERT_TRUE(ed2k.Contains(wxString("|") + ED2K_HASH + "|h=" + AICH + "|/"));
+}
+
+TEST(MagnetURI, LowerCaseAichIsAccepted)
+{
+	// Base32 is case-insensitive; the ed2k link carries it upper-cased.
+	wxString magnet = wxString("magnet:?xt=urn:ed2k:") + ED2K_HASH +
+			  "&dn=example.iso&xl=42&xt=urn:aich:" + wxString(AICH).Lower();
+
+	wxString ed2k = CMagnetED2KConverter(magnet).GetED2KLink();
+	ASSERT_TRUE(ed2k.Contains(wxString("h=") + AICH + "|/"));
+}
+
+TEST(MagnetURI, IsMagnetNeedsTheWholeScheme)
+{
+	ASSERT_TRUE(CMagnetURI::IsMagnet("magnet:?xt=urn:ed2k:0"));
+	ASSERT_TRUE(!CMagnetURI::IsMagnet("magnet"));
+	ASSERT_TRUE(!CMagnetURI::IsMagnet("ed2k://|file|a|1|0|/"));
+	ASSERT_TRUE(!CMagnetURI::IsMagnet(""));
+}

@@ -1440,7 +1440,7 @@ bool CDownloadQueue::AddLink(const wxString &link, uint8 category)
 {
 	wxString uri(link);
 
-	if (link.compare(0, 7, "magnet:") == 0) {
+	if (CMagnetURI::IsMagnet(link)) {
 		uri = CMagnetED2KConverter(link);
 		if (uri.empty()) {
 			AddLogLineC(CFormat(_("Cannot convert magnet link to eD2k: %s")) % link);

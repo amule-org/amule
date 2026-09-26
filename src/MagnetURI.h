@@ -45,6 +45,9 @@ public:
 	CMagnetURI() {}
 	CMagnetURI(const STRING &uri);
 
+	// True when @a uri has the magnet: scheme, in any letter case.
+	static bool IsMagnet(const STRING &uri);
+
 	void AddField(const STRING &name, const STRING &value)
 	{
 		m_fields.push_back(Field_Type(name, value));

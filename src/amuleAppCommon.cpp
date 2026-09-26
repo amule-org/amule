@@ -781,6 +781,12 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 		const bool holderAlive = (holder <= 0) || (kill(holder, 0) == 0) || (errno == EPERM);
 #endif
 		const bool holderRaisable = holderKind != "amuled";
+		if (holderAlive && !holderRaisable && linksActuallyPassed > 0) {
+			// amuled reads ED2KLinks too, so the links are on their way. It has no window to
+			// raise, and "aMule cannot start" would report a failure for a link that worked.
+			AddLogLineNS(LOG_PRELOCALE("Links passed to the running aMule daemon."));
+			return false;
+		}
 		if (!holderAlive || !holderRaisable) {
 			const wxString lockPath = m_singleInstance->Path();
 			wxString msg;
@@ -1010,7 +1016,7 @@ bool CamuleAppCommon::CheckPassedLink(const wxString &in, wxString &out, int cat
 	// below, which every other entry point reaches too.
 	wxString link(in);
 
-	if (link.compare(0, 7, "magnet:") == 0) {
+	if (CMagnetURI::IsMagnet(link)) {
 		link = CMagnetED2KConverter(link);
 		if (link.empty()) {
 			AddLogLineCS(CFormat(_("Cannot convert magnet link to eD2k: %s")) % in);
@@ -1018,11 +1024,22 @@ bool CamuleAppCommon::CheckPassedLink(const wxString &in, wxString &out, int cat
 		}
 	}
 
+	// Each link is one line of ED2KLinks: a line break inside one would forge more lines.
+	if (link.find_first_of("\r\n") != wxString::npos) {
+		AddLogLineCS(
+			CFormat(_("Invalid eD2k link \"%s\" - ERROR: %s")) % link % "line break in link");
+		return false;
+	}
+
 	try {
 		CScopedPtr<CED2KLink> uri(CED2KLink::CreateLinkFromUrl(link));
-		out = uri.get()->GetLink();
-		if (cat && uri.get()->GetKind() == CED2KLink::kFile) {
-			out += CFormat(":%d") % cat;
+		if (uri.get()->GetKind() == CED2KLink::kFile) {
+			// The link as given: GetLink() re-emits only name, size and hash, dropping sources
+			// and the part and AICH hashes. The reader takes a trailing ":<number>" as the
+			// category, so one is always appended.
+			out = link + CFormat(":%d") % cat;
+		} else {
+			out = uri.get()->GetLink();
 		}
 		return true;
 	} catch (const wxString &err) {

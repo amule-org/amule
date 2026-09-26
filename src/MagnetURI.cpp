@@ -39,9 +39,49 @@
 #define _C(ch) wxChar(ch)
 #endif
 
+namespace
+{
+
+unsigned CharCode(char c)
+{
+	return static_cast<unsigned char>(c);
+}
+
+#ifndef USE_STD_STRING
+unsigned CharCode(const wxUniChar &c)
+{
+	return c.GetValue();
+}
+#endif
+
+unsigned AsciiLower(unsigned c)
+{
+	return (c >= 'A' && c <= 'Z') ? c + ('a' - 'A') : c;
+}
+
+// Schemes and URN namespace names are case-insensitive (RFC 3986 section 3.1, RFC 8141).
+// @a lowerPrefix is ASCII lower case.
+bool StartsWithNoCase(const STRING &s, const char *lowerPrefix)
+{
+	for (size_t i = 0; lowerPrefix[i] != '\0'; ++i) {
+		if (i >= s.length() ||
+			AsciiLower(CharCode(s[i])) != static_cast<unsigned char>(lowerPrefix[i])) {
+			return false;
+		}
+	}
+	return true;
+}
+
+} // namespace
+
+bool CMagnetURI::IsMagnet(const STRING &uri)
+{
+	return StartsWithNoCase(uri, "magnet:");
+}
+
 CMagnetURI::CMagnetURI(const STRING &uri)
 {
-	if (uri.compare(0, 7, _T("magnet:")) == 0) {
+	if (IsMagnet(uri)) {
 		size_t start = uri.find(_C('?'));
 		if (start == STRING::npos)
 			start = uri.length();
@@ -101,8 +141,8 @@ bool CMagnetED2KConverter::CanConvertToED2K() const
 			continue;
 		}
 		if (it->first.compare(_T("xt")) == 0) {
-			if ((it->second.compare(0, 9, _T("urn:ed2k:")) == 0) ||
-				(it->second.compare(0, 13, _T("urn:ed2khash:")) == 0)) {
+			if (StartsWithNoCase(it->second, "urn:ed2k:") ||
+				StartsWithNoCase(it->second, "urn:ed2khash:")) {
 				has_urn = true;
 				continue;
 			}
@@ -158,12 +198,20 @@ STRING CMagnetED2KConverter::GetED2KLink() const
 		// carries one (amule-org/amule#331). Both loop over the same xt list, since either
 		// can come in any order relative to the other.
 		for (Value_List::iterator it = urn_list.begin(); it != urn_list.end(); ++it) {
-			if (hash.empty() && it->compare(0, 9, _T("urn:ed2k:")) == 0) {
+			if (hash.empty() && StartsWithNoCase(*it, "urn:ed2k:")) {
 				hash = it->substr(9);
-			} else if (hash.empty() && it->compare(0, 13, _T("urn:ed2khash:")) == 0) {
+			} else if (hash.empty() && StartsWithNoCase(*it, "urn:ed2khash:")) {
 				hash = it->substr(13);
-			} else if (aich.empty() && it->compare(0, 9, _T("urn:aich:")) == 0) {
+			} else if (aich.empty() && StartsWithNoCase(*it, "urn:aich:")) {
 				aich = it->substr(9);
+			}
+		}
+		// Base32 is case-insensitive too (RFC 4648 section 6); the ed2k link parser wants upper.
+		const STRING &readAich = aich;
+		for (size_t i = 0; i < aich.length(); ++i) {
+			const unsigned c = CharCode(readAich[i]);
+			if (c >= 'a' && c <= 'z') {
+				aich[i] = static_cast<char>(c - ('a' - 'A'));
 			}
 		}
 		STRING link = STRING(_T("ed2k://|file|"))

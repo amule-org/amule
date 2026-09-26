@@ -387,7 +387,7 @@ int main(int argc, char *argv[])
 	for (int i = 1; i < argc; i++) {
 		string arg = strip(Unescape(string(argv[i])));
 
-		if (arg.compare(0, 7, "magnet:") == 0) {
+		if (CMagnetURI::IsMagnet(arg)) {
 			string ed2k = CMagnetED2KConverter(arg);
 			if (ed2k.empty()) {
 				std::cerr << "Cannot convert magnet URI to ed2k:\n\t" << arg << '\n';
