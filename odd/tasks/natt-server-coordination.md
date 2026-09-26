@@ -54,3 +54,7 @@ unavailable, so these are not execution evidence. Parent must compile the
 standalone test with `ENABLE_NATT_SERVER_COORDINATION` defined (the CMake test
 target supplies it), run it, and check the OFF configuration separately.
 No commit or push. Unrelated `.gitignore` changes were preserved.
+
+## Local clang-tidy evidence
+
+A local Podman run used Ubuntu 24.04 ARM64 with LLVM/clang-tidy 21, matching the CI analyzer version. The complete CMake build and compile database generation succeeded. The analyzer produced no diagnostics for the new codec header or `NatServerHolePunchTest.cpp`. The whole-tree invocation was not accepted as a clean CI-equivalent result: mounting the worktree at `/src` caused the path filter to include `unittests/`, and the run reported existing diagnostics in unrelated tests and wxWidgets/system paths. These findings are pre-existing/out of scope; no candidate-specific clang-tidy finding was observed. A true CI-equivalent Tier-1/Tier-2 result still belongs to the GitHub Ubuntu workflow.
