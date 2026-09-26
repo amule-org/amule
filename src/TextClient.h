@@ -28,7 +28,7 @@
 
 #include "ExternalConnector.h"
 
-#include <map>
+#include <vector>
 
 class CEC_SearchFile_Tag;
 
@@ -50,7 +50,7 @@ public:
 	CMD4Hash ID() { return nHash; }
 };
 
-typedef std::map<unsigned long int, SearchFile *> CResultMap;
+typedef std::vector<SearchFile> CResultList;
 
 wxString ECv2_Response2String(CECPacket *response);
 
@@ -67,7 +67,8 @@ private:
 	void OnInitCmdLine(wxCmdLineParser &amuleweb_parser);
 	bool OnCmdLineParsed(wxCmdLineParser &parser);
 	void TextShell(const wxString &prompt);
-	void ShowResults(CResultMap results_map);
+	void ShowResults(const CResultList &results);
+	void StoreResults(const CECPacket &reply);
 	bool m_HasCmdOnCmdLine;
 	wxString m_CmdString;
 
@@ -123,7 +124,8 @@ private:
 	virtual int OnRun();
 
 	int m_last_cmd_id;
-	CResultMap m_Results_map;
+	// The last results listed or fetched; `download <n>` indexes into it.
+	CResultList m_results;
 };
 
 #endif // TEXTCLIENT_H

@@ -109,12 +109,15 @@ IPv4 address or a resolvable DNS name) aMule will connect to that server only.
 .SS_untranslated Disconnect [ \fIed2k\fP | \fIkad\fP ]
 Disconnect from all networks you are connected to, or just disconnect from the
 specified network.
-.SS_untranslated Download \fI<number>\fP
+.SS_untranslated Download \fI<number>\fP \fI[<id>]\fP
 Start downloading a file.
 
-The \fI<number>\fR of a file from the last search has to be given.
-Example: 'download 12' will start to download the file with the number 12 of the
-previous search.
+Give the \fI<number>\fR of a file as listed by \fBresults\fR, optionally followed
+by a search \fI<id>\fR (as printed by \fBsearch\fR). Without an id, the number
+refers to the last \fBresults\fR output, or to the most recently started search if
+nothing was listed yet.
+Example: 'download 12' downloads file 12 of the last results; 'download 12 3'
+downloads file 12 of search 3.
 .SS_untranslated Exit
 Disconnect from amule/amuled and quit amulecmd.
 .SS_untranslated Get \fI<what>\fP

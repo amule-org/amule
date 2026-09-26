@@ -40,6 +40,8 @@
 
 #include <wx/tokenzr.h>
 
+#include <memory> // Needed for std::unique_ptr
+
 #include <common/Format.h>          // Needed for CFormat
 #include <common/StringFunctions.h> // Needed for RestoreEncodedPipes
 #include "OtherFunctions.h"
@@ -723,24 +725,46 @@ int CamulecmdApp::ProcessCommand(int CmdId)
 		break;
 	}
 
-	case CMD_ID_DOWNLOAD:
-		if (!args.IsEmpty()) {
-			unsigned long int id = 0;
-			if (args.ToULong(&id) == true && id < m_Results_map.size()) {
-
-				SearchFile *file = m_Results_map[id];
-				Show(CFormat(_("Download File: %lu %s\n")) % id % file->sFileName);
-				request = new CECPacket(EC_OP_DOWNLOAD_SEARCH_RESULT);
-				uint32 category = 0;
-				CECTag hashtag(EC_TAG_PARTFILE, file->nHash);
-				hashtag.AddTag(CECTag(EC_TAG_PARTFILE_CAT, category));
-				request->AddTag(hashtag);
-				request_list.push_back(request);
-			} else {
-				return CMD_ERR_INVALID_ARG;
-			}
+	case CMD_ID_DOWNLOAD: {
+		wxStringTokenizer tokens(args);
+		unsigned long id = 0;
+		unsigned long sid = 0;
+		if (!tokens.GetNextToken().ToULong(&id)) {
+			return CMD_ERR_INVALID_ARG;
 		}
+		const bool hasSearchId = tokens.HasMoreTokens();
+		if (hasSearchId && !tokens.GetNextToken().ToULong(&sid)) {
+			return CMD_ERR_INVALID_ARG;
+		}
+		// Fetch first: a one-shot run has listed nothing, and an id may name a search not listed.
+		if (hasSearchId || m_results.empty()) {
+			CECPacket req(EC_OP_SEARCH_RESULTS, EC_DETAIL_FULL);
+			if (hasSearchId) {
+				req.AddTag(CECTag(EC_TAG_SEARCH_ID, static_cast<uint32>(sid)));
+			}
+			std::unique_ptr<const CECPacket> reply(SendRecvMsg_v2(&req));
+			if (!reply) {
+				return CMD_ERR_PROCESS_CMD;
+			}
+			if (reply->GetTagByName(EC_TAG_SEARCH_EXPIRED)) {
+				Show(_("Search expired or unknown ID. Start a new search.\n"));
+				return CMD_OK;
+			}
+			StoreResults(*reply);
+		}
+		if (id >= m_results.size()) {
+			return CMD_ERR_INVALID_ARG;
+		}
+		const SearchFile &file = m_results[id];
+		Show(CFormat(_("Download File: %lu %s\n")) % id % file.sFileName);
+		request = new CECPacket(EC_OP_DOWNLOAD_SEARCH_RESULT);
+		uint32 category = 0;
+		CECTag hashtag(EC_TAG_PARTFILE, file.nHash);
+		hashtag.AddTag(CECTag(EC_TAG_PARTFILE_CAT, category));
+		request->AddTag(hashtag);
+		request_list.push_back(request);
 		break;
+	}
 
 	default:
 		return CMD_ERR_PROCESS_CMD;
@@ -773,7 +797,7 @@ int CamulecmdApp::ProcessCommand(int CmdId)
 /**
  * Shows the results in the console.
  */
-void CamulecmdApp::ShowResults(CResultMap results_map)
+void CamulecmdApp::ShowResults(const CResultList &results)
 {
 	unsigned int name_max = 80;
 	unsigned int mb_max = 5;
@@ -785,19 +809,23 @@ void CamulecmdApp::ShowResults(CResultMap results_map)
 	printf("---------------------------------------------------------------------------------------------"
 	       "--------------\n");
 
-	for (std::map<unsigned long int, SearchFile *>::iterator iter = results_map.begin();
-		iter != results_map.end();
-		++iter) {
-		unsigned long int id = 0;
-		id = (*iter).first;
-		SearchFile *file = (*iter).second;
+	for (std::size_t id = 0; id < results.size(); ++id) {
+		const SearchFile &file = results[id];
 
-		output.Printf("%lu.      ", id);
-		output = output.SubString(0, nr_max).Append(file->sFileName).Append(' ', name_max);
-		mb.Printf("     %llu", static_cast<unsigned long long>(file->lFileSize / 1024 / 1024));
-		kb.Printf(".%03llu", static_cast<unsigned long long>(file->lFileSize / 1024 % 1024));
+		output.Printf("%lu.      ", static_cast<unsigned long>(id));
+		output = output.SubString(0, nr_max).Append(file.sFileName).Append(' ', name_max);
+		mb.Printf("     %llu", static_cast<unsigned long long>(file.lFileSize / 1024 / 1024));
+		kb.Printf(".%03llu", static_cast<unsigned long long>(file.lFileSize / 1024 % 1024));
 		output = output.SubString(0, nr_max + name_max + mb_max - mb.Length()).Append(mb).Append(kb);
-		printf("%s     %ld\n", (const char *)unicode2char(output), file->lSourceCount);
+		printf("%s     %ld\n", (const char *)unicode2char(output), file.lSourceCount);
+	}
+}
+
+void CamulecmdApp::StoreResults(const CECPacket &reply)
+{
+	m_results.clear();
+	for (const CECTag &tag : reply) {
+		m_results.emplace_back(static_cast<const CEC_SearchFile_Tag *>(&tag));
 	}
 }
 
@@ -1076,15 +1104,9 @@ void CamulecmdApp::Process_Answer_v2(const CECPacket *response)
 			s += _("Search expired or unknown ID. Start a new search.\n");
 			break;
 		}
-		int i = 0;
-		m_Results_map.clear();
+		StoreResults(*response);
 		s += CFormat(_("Number of search results: %i\n")) % response->GetTagCount();
-		for (CECPacket::const_iterator it = response->begin(); it != response->end(); ++it) {
-			const CEC_SearchFile_Tag *tag = static_cast<const CEC_SearchFile_Tag *>(&*it);
-			// printf("Tag FileName: %s \n",(const char*)unicode2char(tag->FileName()));
-			m_Results_map[i++] = new SearchFile(tag);
-		}
-		ShowResults(m_Results_map);
+		ShowResults(m_results);
 		break;
 	}
 	case EC_OP_SEARCH_PROGRESS:
@@ -1353,9 +1375,12 @@ void CamulecmdApp::OnInitCommandSet()
 	m_commands.AddCommand("Download",
 		CMD_ID_DOWNLOAD,
 		wxTRANSLATE("Start downloading a file"),
-		wxTRANSLATE(
-			"The number of a file from the last search has to be given.\nExample: 'download 12' "
-			"will start to download the file with the number 12 of the previous search.\n"),
+		wxTRANSLATE("Give the number of a file as listed by 'results', optionally followed by a "
+			    "search id.\n"
+			    "Without an id, the number refers to the last 'results' output, or to the most "
+			    "recently started search if nothing was listed yet.\n"
+			    "Example: 'download 12' downloads file 12 of the last results; 'download 12 3' "
+			    "downloads file 12 of search 3.\n"),
 		CMD_PARAM_ALWAYS);
 
 	// TODO: These commands below need implementation and/or rewrite!
