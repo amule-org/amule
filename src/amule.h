@@ -179,6 +179,10 @@ public:
 	 */
 	void OpenCollectionFiles(const wxArrayString &fileNames);
 
+	// Exit status of a one-shot --configure-* run: 0 or 1, and -1 when none ran. Static because
+	// amuled's main() reads it after wxEntry() has destroyed the app.
+	static int ConfigureExitCode();
+
 protected:
 	wxString FullMuleVersion;
 	wxString OSDescription;

@@ -178,7 +178,10 @@ int main(int argc, char **argv)
 		AmuledDaemonizeEarly();
 	}
 #endif
-	return wxEntry(argc, argv);
+	const int rc = wxEntry(argc, argv);
+	// wx before 3.2.7 cannot set the status of a --configure-* run, so it is applied here.
+	const int configured = CamuleAppCommon::ConfigureExitCode();
+	return configured >= 0 ? configured : rc;
 }
 
 #ifdef __WINDOWS__

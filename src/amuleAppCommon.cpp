@@ -399,6 +399,23 @@ static void ExplainHandlerDisableFailure()
 #endif
 }
 
+static int s_configureExitCode = -1;
+
+int CamuleAppCommon::ConfigureExitCode()
+{
+	return s_configureExitCode;
+}
+
+// The --configure-* options end the run through a failed OnInit(), whose exit status wx fixes at
+// 255 unless told otherwise. wx before 3.2.7 cannot be told; amuled's main() covers it there.
+static void SetConfigureResult(bool ok)
+{
+	s_configureExitCode = ok ? 0 : 1;
+#if wxCHECK_VERSION(3, 2, 7) && wxABI_VERSION >= 30207
+	wxTheApp->SetErrorExitCode(s_configureExitCode);
+#endif
+}
+
 // Reads the value of a one-shot on|off switch, also taking yes|no, true|false and 1|0. Expects it
 // lowercased. False for anything else, with `enable` untouched.
 static bool ParseOnOff(const wxString &value, bool &enable)
@@ -434,20 +451,23 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 	// callers.
 	cmdline.AddOption("",
 		"configure-autostart",
-		"Enable or disable starting this binary on user login (on|off), then exit.");
+		"Enable or disable starting this binary on user login (on|off), then exit with status 0, "
+		"or 1 on failure.");
 	// One-shot ed2k:// + magnet: URL-scheme handler toggle, called by the Windows installer's
 	// Components page and by the Preferences UI / first-run wizard. Lives in
 	// ProtocolHandlerManager for the same reason.
 	cmdline.AddOption("",
 		"configure-protocols",
-		"Register/unregister aMule as the default handler for URL schemes, then exit. "
+		"Register/unregister aMule as the default handler for URL schemes, then exit with status "
+		"0, or 1 on failure. "
 		"Values: on|off (both schemes) or ed2k:on|ed2k:off|magnet:on|magnet:off "
 		"(per-scheme). The Windows installer invokes the per-scheme form.");
 	// Same one-shot shape as the two above; also how a portable or self-built copy
 	// registers itself without an installer.
 	cmdline.AddOption("",
 		"configure-file-assoc",
-		"Register/unregister aMule as the handler for .emulecollection files, then exit. "
+		"Register/unregister aMule as the handler for .emulecollection files, then exit with "
+		"status 0, or 1 on failure. "
 		"Values: on|off.");
 #ifdef AMULE_DAEMON
 	cmdline.AddSwitch("f", "full-daemon", "Fork to background.");
@@ -527,8 +547,9 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 			printf(ok ? "autostart disabled\n" : "autostart disable FAILED\n");
 		}
 		// Exit either way: this flag is a one-shot toggle, not a "run aMule WITH autostart
-		// enabled" combo. Returning false propagates to OnInit, so wxApp terminates cleanly
-		// with exit code 0/1 per `ok`; exit() would skip the wx destructors.
+		// enabled" combo. Returning false fails OnInit, so wxApp terminates cleanly; exit()
+		// would skip the wx destructors.
+		SetConfigureResult(ok);
 		return false;
 	}
 
@@ -562,6 +583,7 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 				"configure-protocols expects 'on', 'off', 'ed2k:on', 'ed2k:off', "
 				"'magnet:on' or 'magnet:off' (got '%s')\n",
 				(const char *)unicode2char(protocols_arg));
+			SetConfigureResult(false);
 			return false;
 		}
 		bool ok = true;
@@ -582,28 +604,31 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 			ExplainHandlerDisableFailure();
 		}
 		// Same one-shot exit semantics as --configure-autostart above.
+		SetConfigureResult(ok);
 		return false;
 	}
 
 	wxString fileassoc_arg;
 	if (cmdline.Found("configure-file-assoc", &fileassoc_arg)) {
 		fileassoc_arg.MakeLower();
+		bool ok = false;
 		bool enable = false;
 		if (!ParseOnOff(fileassoc_arg, enable)) {
 			fprintf(stderr,
 				"configure-file-assoc expects 'on' or 'off' (got '%s')\n",
 				(const char *)unicode2char(fileassoc_arg));
 		} else if (enable) {
-			const bool ok = ProtocolHandlerManager::Enable(HandlerTarget::CollectionFile);
+			ok = ProtocolHandlerManager::Enable(HandlerTarget::CollectionFile);
 			printf(ok ? "file association enabled\n" : "file association enable FAILED\n");
 		} else {
-			const bool ok = ProtocolHandlerManager::Disable(HandlerTarget::CollectionFile);
+			ok = ProtocolHandlerManager::Disable(HandlerTarget::CollectionFile);
 			printf(ok ? "file association disabled\n" : "file association disable FAILED\n");
 			if (!ok) {
 				ExplainHandlerDisableFailure();
 			}
 		}
 		// Same one-shot exit semantics as --configure-autostart above.
+		SetConfigureResult(ok);
 		return false;
 	}
 
