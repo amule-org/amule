@@ -648,19 +648,14 @@ void CSocks5StateMachine::process_process_command_reply(bool entry)
 		// Process the server's reply. An IPv6 or unknown bound address fails the negotiation:
 		// the bound address is kept as IPv4.
 		const unsigned int portOffset = Socks5ReplyPortOffset(m_buffer, m_lastRead);
-		m_ok = m_ok && portOffset && m_buffer[0] == SOCKS5_VERSION &&
-		       m_buffer[1] == SOCKS5_REPLY_SUCCEED;
+		m_ok = m_ok &&
+		       Socks5CommandReplyOk(m_buffer, m_lastRead, m_proxyCommand == PROXY_CMD_UDP_ASSOCIATE);
 		if (m_ok) {
 			if (m_buffer[3] == SOCKS5_ATYP_IPV4_ADDRESS) {
-				m_ok = m_proxyBoundAddressIPV4.Hostname(PeekUInt32(m_buffer + 4));
-			} else if (m_proxyCommand == PROXY_CMD_UDP_ASSOCIATE) {
-				// Datagrams are sent to and accepted from this address, and resolving a
-				// name the server chose would block the event loop on its resolver.
-				m_ok = false;
+				// Not Hostname(uint32), which refuses 0.0.0.0.
+				m_proxyBoundAddressIPV4.Hostname(Uint32toStringIP(PeekUInt32(m_buffer + 4)));
 			}
 			// Otherwise the bound address is informational, so only its port is read.
-		}
-		if (m_ok) {
 			m_proxyBoundAddress = &m_proxyBoundAddressIPV4;
 			m_packetLength = portOffset + 2;
 			m_proxyBoundAddress->Service(ENDIAN_NTOHS(RawPeekUInt16(m_buffer + portOffset)));
@@ -1188,18 +1183,16 @@ uint32 CDatagramSocketProxy::RecvFrom(CNetworkAddress &addr, uint16 &port, void 
 			read = CLibUDPSocket::RecvFrom(
 				relay, relayPort, bufUDP, nBytes + PROXY_UDP_MAXIMUM_OVERHEAD);
 			// Anything else reaching this port could forge the SOCKS header and its source.
-			const amuleIPV4Address &bound = m_proxyTCPSocket.GetProxyBoundAddress();
-			const CNetworkAddress expected = Socks5ExpectedRelay(
-				CNetworkAddress::FromIPv4NetworkOrder(StringIPtoUint32(bound.IPAddress())),
-				CNetworkAddress::FromIPv4NetworkOrder(
-					StringIPtoUint32(m_proxyTCPSocket.GetProxyAddress().IPAddress())));
-			if (IsFromSocks5Relay(relay, relayPort, expected, bound.Service())) {
+			const amuleIPV4Address relayAddress = RelayAddress();
+			const CNetworkAddress expected = CNetworkAddress::FromIPv4NetworkOrder(
+				StringIPtoUint32(relayAddress.IPAddress()));
+			if (IsFromSocks5Relay(relay, relayPort, expected, relayAddress.Service())) {
 				read = ParseSocks5UDPDatagram(bufUDP, read, addr, port, buf, nBytes);
 			} else {
 				AddDebugLogLineN(logProxy,
 					CFormat("Dropped a datagram from %s:%u; the SOCKS5 relay is %s:%u") %
 						relay.ToString() % relayPort % expected.ToString() %
-						bound.Service());
+						relayAddress.Service());
 				addr = CNetworkAddress::Absent();
 				port = 0;
 				read = 0;
@@ -1219,6 +1212,18 @@ uint32 CDatagramSocketProxy::RecvFrom(CNetworkAddress &addr, uint16 &port, void 
 	}
 
 	return read;
+}
+
+amuleIPV4Address CDatagramSocketProxy::RelayAddress() const
+{
+	const amuleIPV4Address &bound = m_proxyTCPSocket.GetProxyBoundAddress();
+	const CNetworkAddress relay = Socks5ExpectedRelay(
+		CNetworkAddress::FromIPv4NetworkOrder(StringIPtoUint32(bound.IPAddress())),
+		CNetworkAddress::FromIPv4NetworkOrder(
+			StringIPtoUint32(m_proxyTCPSocket.GetProxyAddress().IPAddress())));
+	amuleIPV4Address address(bound);
+	address.Hostname(wxString(relay.ToString()));
+	return address;
 }
 
 uint32 CDatagramSocketProxy::SendTo(const amuleIPV4Address &addr, const void *buf, uint32 nBytes)
@@ -1247,7 +1252,7 @@ uint32 CDatagramSocketProxy::SendTo(const amuleIPV4Address &addr, const void *bu
 			RawPokeUInt16(bufUDP + 8, ENDIAN_HTONS(addr.Service()));
 			memcpy(bufUDP + PROXY_UDP_OVERHEAD_IPV4, buf, nBytes);
 			nBytes += PROXY_UDP_OVERHEAD_IPV4;
-			sent = CLibUDPSocket::SendTo(m_proxyTCPSocket.GetProxyBoundAddress(), bufUDP, nBytes);
+			sent = CLibUDPSocket::SendTo(RelayAddress(), bufUDP, nBytes);
 
 			/* Only delete buffer if it was dynamically created */
 			if (bufUDP != m_proxyTCPSocket.GetBuffer()) {

@@ -486,6 +486,16 @@ inline unsigned int Socks5ReplyPortOffset(const char *reply, uint32 available)
 	return portOffset && available >= portOffset + 2 ? portOffset : 0;
 }
 
+/** Whether a SOCKS5 command reply grants the request. BND.ADDR may be 0.0.0.0: RFC 1928 allows it,
+ * and OpenSSH's `ssh -D` always sends it. A UDP ASSOCIATE needs an IPv4 one, since datagrams go to
+ * it, and resolving a name the server chose would block the event loop.
+ */
+inline bool Socks5CommandReplyOk(const char *reply, uint32 available, bool udpAssociate)
+{
+	return Socks5ReplyPortOffset(reply, available) && reply[0] == SOCKS5_VERSION &&
+	       reply[1] == SOCKS5_REPLY_SUCCEED && (!udpAssociate || reply[3] == SOCKS5_ATYP_IPV4_ADDRESS);
+}
+
 /** Where relayed datagrams come from. RFC 1928 leaves BND.ADDR unspecified to mean "the address
  * you reached the proxy at", so pinning the port alone would accept any host.
  */
@@ -523,6 +533,10 @@ public:
 	virtual uint32 SendTo(const amuleIPV4Address &addr, const void *buf, uint32 nBytes);
 
 private:
+	// Where datagrams are relayed through: the UDP ASSOCIATE reply's bound address, or the proxy's
+	// own when that was unspecified.
+	amuleIPV4Address RelayAddress() const;
+
 	bool m_udpSocketOk;
 	CProxySocket m_proxyTCPSocket;
 	enum UDPOperation m_lastUDPOperation;
