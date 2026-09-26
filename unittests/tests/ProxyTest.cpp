@@ -158,6 +158,11 @@ unsigned int PortOffset(const std::vector<unsigned char> &reply)
 {
 	return Socks5ReplyPortOffset(reinterpret_cast<const char *>(reply.data()), reply.size());
 }
+
+bool ReplyOk(const std::vector<unsigned char> &reply, bool udpAssociate)
+{
+	return Socks5CommandReplyOk(reinterpret_cast<const char *>(reply.data()), reply.size(), udpAssociate);
+}
 } // namespace
 
 TEST(Proxy, CommandReplyPortOffsetFollowsTheAddressType)
@@ -181,6 +186,27 @@ TEST(Proxy, CommandReplyPortOffsetFollowsTheAddressType)
 	auto unknown = v4;
 	unknown[3] = 2;
 	ASSERT_EQUALS(0u, PortOffset(unknown));
+}
+
+TEST(Proxy, AnUnspecifiedBoundAddressIsAGrantedReply)
+{
+	// What OpenSSH's `ssh -D` sends for every command: success, BND.ADDR 0.0.0.0.
+	const std::vector<unsigned char> unspecified = { 5, 0, 0, 1, 0, 0, 0, 0, 0x12, 0x80 };
+	ASSERT_TRUE(ReplyOk(unspecified, false));
+	ASSERT_TRUE(ReplyOk(unspecified, true));
+
+	// A name is only good enough where the bound address is informational.
+	const std::vector<unsigned char> domain = { 5, 0, 0, 3, 3, 'a', '.', 'b', 0x12, 0x80 };
+	ASSERT_TRUE(ReplyOk(domain, false));
+	ASSERT_FALSE(ReplyOk(domain, true));
+
+	auto refused = unspecified;
+	refused[1] = 5;
+	ASSERT_FALSE(ReplyOk(refused, false));
+	auto socks4 = unspecified;
+	socks4[0] = 4;
+	ASSERT_FALSE(ReplyOk(socks4, false));
+	ASSERT_FALSE(ReplyOk(std::vector<unsigned char>(unspecified.begin(), unspecified.end() - 1), false));
 }
 
 TEST(Proxy, AnUnspecifiedBoundAddressFallsBackToTheProxyItself)
