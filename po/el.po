@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-09-26 17:32+0100\n"
-"PO-Revision-Date: 2026-09-26 09:21+0000\n"
+"PO-Revision-Date: 2026-09-26 19:12+0000\n"
 "Last-Translator: Dimitris <dgalanak@yahoo.com>\n"
 "Language-Team: Greek\n"
 "Language: el\n"
@@ -21,9 +21,8 @@ msgstr ""
 "X-Generator: Poedit 2.3\n"
 
 #: src/AboutDialog.cpp
-#, fuzzy
 msgid "About aMule"
-msgstr "Εμφάνιση aMule"
+msgstr "Σχετικά με το aMule"
 
 #: src/AboutDialog.cpp
 msgid "aMule remote control "
@@ -72,39 +71,36 @@ msgstr "Συζητήσεις:"
 
 #: src/AboutDialog.cpp
 msgid "Documentation:"
-msgstr ""
+msgstr "Τεκμηρίωση:"
 
 #: src/AboutDialog.cpp
 msgid "Issues:"
-msgstr ""
+msgstr "Ζητήματα:"
 
 #: src/AboutDialog.cpp
-#, fuzzy
 msgid "Click to check for a newer version."
-msgstr "Έλεγχος για νέα έκδοση κατά την εκκίνηση"
+msgstr "Κάντε κλικ για έλεγχο νεότερης έκδοσης."
 
 #: src/AboutDialog.cpp
 msgid "Check for updates"
-msgstr ""
+msgstr "Έλεγχος για ενημερώσεις"
 
 #: src/AboutDialog.cpp
-#, fuzzy
 msgid "Checking for updates..."
-msgstr "Διαδικασία σύνδεσης στο Kad..."
+msgstr "Έλεγχος για ενημερώσεις..."
 
 #: src/AboutDialog.cpp
-#, fuzzy
 msgid "You are running the latest version."
-msgstr "Χρησιμοποιείται μία ξεπερασμένη έκδοση του aMule!"
+msgstr "Εκτελείτε την πιο πρόσφατη έκδοση."
 
 #: src/AboutDialog.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "A new version (%s) is available:"
-msgstr "Δεν είναι διαθέσιμο"
+msgstr "Μια νέα έκδοση (%s) είναι διαθέσιμη:"
 
 #: src/AboutDialog.cpp
 msgid "Could not check for updates. Please try again later."
-msgstr ""
+msgstr "Δεν ήταν δυνατός ο έλεγχος για ενημερώσεις. Δοκιμάστε ξανά αργότερα."
 
 #: src/AddFriend.cpp
 msgid "Add a Friend"
@@ -130,47 +126,50 @@ msgid ""
 "\n"
 "Install desktop integration now?"
 msgstr ""
+"Το aMule μπορεί να εγκαταστήσει εκκινητές επιφάνειας εργασίας, εικόνες και συντομεύσεις εντολών κελύφους στον προσωπικό σας κατάλογο, ώστε να εμφανίζεται στο μενού εφαρμογών σας όπως μια κανονικά εγκατεστημένη εφαρμογή.\n"
+"\n"
+"Αυτό είναι αναστρέψιμο - τα αρχεία βρίσκονται στα ~/.local/share/applications, ~/.local/share/icons και ~/.local/bin, και μπορούν να αφαιρεθούν οποιαδήποτε στιγμή.\n"
+"\n"
+"Να εγκατασταθεί τώρα η ενσωμάτωση στην επιφάνεια εργασίας;"
 
 #: src/AppImageIntegration.cpp
-#, fuzzy
 msgid "Add aMule to your application menu?"
-msgstr "Μετά το όνομα της εφαρμογής"
+msgstr "Προσθήκη του aMule στο μενού εφαρμογών σας;"
 
 #: src/AppImageIntegration.cpp
 msgid "Install"
-msgstr ""
+msgstr "Εγκατάσταση"
 
 #: src/AppImageIntegration.cpp
 msgid "Not now"
-msgstr ""
+msgstr "Όχι τώρα"
 
 #: src/AppImageIntegration.cpp src/amuleDlg.cpp
 msgid "Don't ask again"
-msgstr ""
+msgstr "Να μην ερωτηθώ ξανά"
 
 #: src/AppImageIntegration.cpp
 msgid "Cannot install desktop integration: the APPDIR environment variable is not set. This usually means the AppImage was launched in a non-standard way."
-msgstr ""
+msgstr "Δεν είναι δυνατή η εγκατάσταση ενσωμάτωσης επιφάνειας εργασίας: η μεταβλητή περιβάλλοντος APPDIR δεν έχει οριστεί. Αυτό συνήθως σημαίνει ότι το AppImage εκκινήθηκε με μη τυπικό τρόπο."
 
 #: src/AppImageIntegration.cpp
-#, fuzzy
 msgid "aMule integration failed"
-msgstr "Αποτυχία σύνδεσης"
+msgstr "Η ενσωμάτωση του aMule απέτυχε"
 
 #: src/AppImageIntegration.cpp
 #, c-format
 msgid "Cannot install desktop integration: failed to create %s. Check that your home directory is writable."
-msgstr ""
+msgstr "Δεν είναι δυνατή η εγκατάσταση ενσωμάτωσης επιφάνειας εργασίας: αποτυχία δημιουργίας %s. Ελέγξτε ότι ο προσωπικός σας κατάλογος επιτρέπει εγγραφή."
 
 #: src/AppImageIntegration.cpp
 #, c-format
 msgid "Cannot install desktop integration: failed to write %s. Check that your home directory is writable."
-msgstr ""
+msgstr "Δεν είναι δυνατή η εγκατάσταση ενσωμάτωσης επιφάνειας εργασίας: αποτυχία εγγραφής %s. Ελέγξτε ότι ο προσωπικός σας κατάλογος επιτρέπει εγγραφή."
 
 #: src/AppImageIntegration.cpp
 #, c-format
 msgid "AppImage integration: aMule added to your application menu (%d shell shortcuts under ~/.local/bin)."
-msgstr ""
+msgstr "Ενσωμάτωση AppImage: Το aMule προστέθηκε στο μενού εφαρμογών σας (%d συντομεύσεις κελύφους στο ~/.local/bin)."
 
 #: src/AppImageIntegration.cpp
 msgid ""
@@ -180,23 +179,27 @@ msgid ""
 "\n"
 "Restart aMule now?"
 msgstr ""
+"Το aMule προστέθηκε στο μενού εφαρμογών σας. Μπορείτε τώρα να το εκκινήσετε από τη λίστα εφαρμογών σας, και ο εκκινητής θα εκτελέσει αυτό το ίδιο AppImage.\n"
+"\n"
+"Σε ορισμένες επιφάνειες εργασίας, το aMule ενδέχεται να χρειαστεί επανεκκίνηση για να συνδεθεί η εικόνα του dock / taskbar με τη νέα καταχώρηση εκκίνησης. Οι σύγχρονοι συνθέτες Wayland (GNOME, KDE) το αναγνωρίζουν άμεσα, αλλά η επανεκκίνηση είναι η ασφαλής εναλλακτική αν η εικόνα παραμείνει γενική.\n"
+"\n"
+"Επανεκκίνηση του aMule τώρα;"
 
 #: src/AppImageIntegration.cpp
 msgid "aMule installed"
-msgstr ""
+msgstr "Το aMule εγκαταστάθηκε"
 
 #: src/AppImageIntegration.cpp
 msgid "Restart now"
-msgstr ""
+msgstr "Επανεκκίνηση τώρα"
 
 #: src/AppImageIntegration.cpp
 msgid "Later"
-msgstr ""
+msgstr "Αργότερα"
 
 #: src/amuleAppCommon.cpp
-#, fuzzy
 msgid "Failed to open ED2KLinks file."
-msgstr "Αποτυχία ανοίγματος %s (%s)"
+msgstr "Αποτυχία ανοίγματος του αρχείου ED2KLinks."
 
 #: src/amuleAppCommon.cpp
 msgid "WARNING: You can't add yourself as a source for an eD2k link while having a lowid."
@@ -262,21 +265,18 @@ msgid "Invalid eD2k link \"%s\" - ERROR: %s"
 msgstr "Άκυρος σύνδεσμος eD2k! ΣΦΑΛΜΑ: %s"
 
 #: src/amule.cpp
-#, fuzzy
 msgid "Now, exiting main app..."
-msgstr ""
-"\n"
-"Όλα μια χαρά, έξοδος %s...\n"
+msgstr "Τώρα, γίνεται έξοδος από την κύρια εφαρμογή..."
 
 #: src/amule.cpp
 #, c-format
 msgid "Terminating amuleweb instance with pid '%d' ... "
-msgstr ""
+msgstr "Τερματισμός στιγμιότυπου amuleweb με pid '%d' ... "
 
 #: src/amule.cpp
 #, c-format
 msgid "Killing amuleweb instance with pid '%d' ... "
-msgstr ""
+msgstr "Βίαιος τερματισμός στιγμιότυπου amuleweb με pid '%d' ... "
 
 #: src/amule.cpp src/ClientRef.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
 msgid "Failed"
@@ -285,25 +285,24 @@ msgstr "Απέτυχε"
 #: src/amule.cpp
 #, c-format
 msgid "Terminating amuleapi instance with pid '%d' ... "
-msgstr ""
+msgstr "Τερματισμός στιγμιότυπου amuleapi με pid '%d' ... "
 
 #: src/amule.cpp
 #, c-format
 msgid "Killing amuleapi instance with pid '%d' ... "
-msgstr ""
+msgstr "Βίαιος τερματισμός στιγμιότυπου amuleapi με pid '%d' ... "
 
 #: src/amule.cpp
 msgid "aMule OnExit: Terminating core."
-msgstr ""
+msgstr "aMule OnExit: Τερματισμός πυρήνα."
 
 #: src/amule.cpp
-#, fuzzy
 msgid "aMule shutdown completed."
-msgstr "Το κατέβασμα ολοκληρώθηκε"
+msgstr "Ο τερματισμός του aMule ολοκληρώθηκε."
 
 #: src/amule.cpp
 msgid "Memory debug results for aMule exit:"
-msgstr ""
+msgstr "Αποτελέσματα εντοπισμού σφαλμάτων μνήμης για την έξοδο του aMule:"
 
 #: src/amule.cpp
 #, c-format
@@ -313,22 +312,22 @@ msgstr ""
 #: src/amule.cpp
 #, c-format
 msgid "Binding aMule's peer-to-peer traffic to interface: %s (HTTP updates use the default route)"
-msgstr ""
+msgstr "Σύνδεση της κίνησης peer-to-peer του aMule στη διεπαφή: %s (οι ενημερώσεις HTTP χρησιμοποιούν την προεπιλεγμένη διαδρομή)"
 
 #: src/amule.cpp
 #, c-format
 msgid "WARNING: configured network interface '%s' was not found - traffic is NOT bound to it and may leave via the default route. Check the interface name in Preferences."
-msgstr ""
+msgstr "ΠΡΟΕΙΔΟΠΟΙΗΣΗ: η διαμορφωμένη διεπαφή δικτύου '%s' δεν βρέθηκε - η κίνηση ΔΕΝ συνδέεται σε αυτήν και ενδέχεται να εξέρχεται μέσω της προεπιλεγμένης διαδρομής. Ελέγξτε το όνομα διεπαφής στις Προτιμήσεις."
 
 #: src/amule.cpp
 #, c-format
 msgid "WARNING: binding to network interface '%s' requires elevated privileges and was NOT applied - traffic may leave via the default route. Grant the capability (e.g. 'sudo setcap cap_net_raw+ep' on the aMule binary) or run with sufficient privileges."
-msgstr ""
+msgstr "ΠΡΟΕΙΔΟΠΟΙΗΣΗ: η σύνδεση στη διεπαφή δικτύου '%s' απαιτεί αυξημένα δικαιώματα και ΔΕΝ εφαρμόστηκε - η κίνηση ενδέχεται να εξέρχεται μέσω της προεπιλεγμένης διαδρομής. Παραχωρήστε τη δυνατότητα (π.χ. 'sudo setcap cap_net_raw+ep' στο εκτελέσιμο του aMule) ή εκτελέστε με επαρκή δικαιώματα."
 
 #: src/amule.cpp src/LibSocketAsio.cpp
 #, c-format
 msgid "WARNING: could not bind to network interface '%s' - traffic may leave via the default route."
-msgstr ""
+msgstr "ΠΡΟΕΙΔΟΠΟΙΗΣΗ: δεν ήταν δυνατή η σύνδεση στη διεπαφή δικτύου '%s' - η κίνηση ενδέχεται να εξέρχεται μέσω της προεπιλεγμένης διαδρομής."
 
 #: src/amule.cpp
 msgid "Your locale has been changed to System Default due to a configuration change. Sorry."
@@ -339,16 +338,16 @@ msgid "Info"
 msgstr "Πληροφορίες"
 
 #: src/amule.cpp
-#, fuzzy
 msgid ""
 "\n"
 "EC configuration"
-msgstr "Έξοδος επιβεβαίωσης"
+msgstr ""
+"\n"
+"Ρύθμιση EC"
 
 #: src/amule.cpp
-#, fuzzy
 msgid "Password set and external connections enabled."
-msgstr "Νέα εξωτερική σύνδεση έγινε δεκτή"
+msgstr "Ο κωδικός ορίστηκε και οι εξωτερικές συνδέσεις ενεργοποιήθηκαν."
 
 #: src/amule.cpp src/KadDlg.cpp src/PrefsUnifiedDlg.cpp src/SharedFilesCtrl.cpp
 msgid "WARNING"
@@ -404,24 +403,24 @@ msgid "Starting up"
 msgstr "Εκκίνηση"
 
 #: src/amule.cpp
-#, fuzzy
 msgid "Network bootstrap"
-msgstr "Δίκτυα"
+msgstr "Εκκίνηση δικτύου"
 
 #: src/amule.cpp
 msgid ""
 "aMule has detected missing network bootstrap files.\n"
 "Select which ones to download:"
 msgstr ""
+"Το aMule εντόπισε ελλείποντα αρχεία εκκίνησης δικτύου.\n"
+"Επιλέξτε ποια θέλετε να κατεβάσετε:"
 
 #: src/amule.cpp src/FirstRunWizard.cpp
-#, fuzzy
 msgid "eD2k server list (server.met)"
-msgstr "βρέθηκε %i διακομιστής στο server.met"
+msgstr "Λίστα διακομιστών eD2k (server.met)"
 
 #: src/amule.cpp src/FirstRunWizard.cpp
 msgid "Kad bootstrap nodes (nodes.dat)"
-msgstr ""
+msgstr "Κόμβοι εκκίνησης Kad (nodes.dat)"
 
 #: src/amule.cpp
 #, c-format
@@ -429,9 +428,8 @@ msgid "web server running on pid %d"
 msgstr "διακομιστής ιστού τρέχει με αριθμό διεργασίας %d"
 
 #: src/amule.cpp
-#, fuzzy
 msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
-msgstr "Ζητήσατε να τρέχετε τον διακομιστή ιστού κατά την εκκίνηση, αλλά το εκτελέσιμο αρχείο amuleweb δεν βρέθηκε. Παρακαλώ εγκαταστήστε το πακέτο που περιέχει τον διακομιστή ιστού του aMule, ή μεταφράστε το aMule χρησιμοποιώντας την παράμετρο --enable-webserver"
+msgstr "Ζητήσατε να εκτελείται ο διακομιστής ιστού κατά την εκκίνηση, αλλά δεν είναι δυνατή η εκτέλεση του δυαδικού αρχείου amuleweb. Παρακαλώ εγκαταστήστε το πακέτο που περιέχει τον διακομιστή ιστού του aMule, ή δημιουργήστε το aMule από τον πηγαίο κώδικα με -DBUILD_WEBSERVER=YES και εγκαταστήστε το."
 
 #: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
 #: src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
@@ -444,14 +442,13 @@ msgid "Could not write the amuleapi EC token to %s; amuleapi will fall back to i
 msgstr ""
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "amuleapi running on pid %d"
-msgstr "διακομιστής ιστού τρέχει με αριθμό διεργασίας %d"
+msgstr "Το amuleapi εκτελείται με pid %d"
 
 #: src/amule.cpp
-#, fuzzy
 msgid "You requested to run amuleapi on startup, but the amuleapi binary cannot be run. Please install the package containing aMule's REST API server, or build aMule from source with -DBUILD_AMULEAPI=YES and install it."
-msgstr "Ζητήσατε να τρέχετε τον διακομιστή ιστού κατά την εκκίνηση, αλλά το εκτελέσιμο αρχείο amuleweb δεν βρέθηκε. Παρακαλώ εγκαταστήστε το πακέτο που περιέχει τον διακομιστή ιστού του aMule, ή μεταφράστε το aMule χρησιμοποιώντας την παράμετρο --enable-webserver"
+msgstr "Ζητήσατε την εκτέλεση του amuleapi κατά την εκκίνηση, αλλά το εκτελέσιμο amuleapi δεν μπορεί να εκτελεστεί. Εγκαταστήστε το πακέτο που περιέχει τον διακομιστή REST API του aMule, ή δημιουργήστε το aMule από τον πηγαίο κώδικα με -DBUILD_AMULEAPI=YES και εγκαταστήστε το."
 
 #: src/amule.cpp
 #, c-format
@@ -533,9 +530,8 @@ msgstr ""
 "Οι ηλεκτρονικές υπογραφές θα ΑΠΕΝΕΡΓΟΠΟΙΗΘΟΥΝ μέχρι να το φτιάξετε στις προτιμήσεις."
 
 #: src/amule.cpp
-#, fuzzy
 msgid "Server hostname notified"
-msgstr "Όνομα διακομιστή:"
+msgstr "Το όνομα κεντρικού υπολογιστή του διακομιστή ειδοποιήθηκε"
 
 #: src/amule.cpp
 #, c-format
@@ -567,7 +563,7 @@ msgstr "Μήνυμα Διακομιστή: %s"
 #: src/amule.cpp src/IP2Country.cpp src/IPFilter.cpp src/ServerList.cpp
 #, c-format
 msgid "Skipped download of %s, because requested file is not newer."
-msgstr ""
+msgstr "Παραλείφθηκε το κατέβασμα του %s, επειδή το ζητούμενο αρχείο δεν είναι νεότερο."
 
 #: src/amule.cpp
 msgid "Failed to download the nodes list."
@@ -672,21 +668,20 @@ msgid "Kad network disabled on preferences, not connecting."
 msgstr "Το δίκτυο Kad είναι απενεργοποιημένο από τις προτιμήσεις. Δεν έγινε σύνδεση."
 
 #: src/amuled.cpp
-#, fuzzy
 msgid "ERROR: aMule daemon cannot be used when external connections are disabled. To enable External Connections, use either a normal aMule, start amuled with the option --ec-config or set the key \"AcceptExternalConnections\" to 1 in the file ~/.aMule/amule.conf"
-msgstr "ΣΦΑΛΜΑ: ο δαίμονας του aMule δεν μπορεί να χρησιμοποιηθεί όταν οι εξωτερικές συνδέσεις είναι απενεργοποιημένες. Για να ενεργοποιήσετε τις εξωτερικές συνδέσεις, χρησιμοποιήστε είτε ένα κανονικό aMule, ξεκινήστε το amuled με την παράμετρο --ec-config ή θέστε το κλειδί \"AcceptExternalConnections\" στην τιμή 1 στο αρχείο ~/.aMule/amule.conf"
+msgstr "ΣΦΑΛΜΑ: Η υπηρεσία (daemon) του aMule δεν μπορεί να χρησιμοποιηθεί όταν οι εξωτερικές συνδέσεις είναι απενεργοποιημένες. Για να ενεργοποιήσετε τις Εξωτερικές Συνδέσεις, χρησιμοποιήστε είτε ένα κανονικό aMule, ξεκινήστε το amuled με την επιλογή --ec-config ή ορίστε το κλειδί \"AcceptExternalConnections\" σε 1 στο αρχείο ~/.aMule/amule.conf"
 
 #: src/amuled.cpp
 msgid "ERROR: A valid password is required to use external connections, and aMule daemon cannot be used without external connections. To run aMule daemon, you must set the \"ECPassword\" field in the file ~/.aMule/amule.conf with an appropriate value. Execute amuled with the flag --ec-config to set the password. More information can be found at https://amule-org.github.io/docs"
-msgstr ""
+msgstr "ΣΦΑΛΜΑ: Απαιτείται έγκυρος κωδικός για τη χρήση εξωτερικών συνδέσεων, και η υπηρεσία (daemon) του aMule δεν μπορεί να χρησιμοποιηθεί χωρίς εξωτερικές συνδέσεις. Για να εκτελέσετε την υπηρεσία aMule, πρέπει να ορίσετε το πεδίο \"ECPassword\" στο αρχείο ~/.aMule/amule.conf με κατάλληλη τιμή. Εκτελέστε το amuled με τη σημαία --ec-config για να ορίσετε τον κωδικό. Περισσότερες πληροφορίες θα βρείτε στο https://amule-org.github.io/docs"
 
 #: src/amuled.cpp
 msgid "amuled: OnInit - starting timer"
-msgstr ""
+msgstr "amuled: OnInit - εκκίνηση χρονομέτρου"
 
 #: src/amuled.cpp
 msgid "Cannot Create Pid File"
-msgstr ""
+msgstr "Δεν είναι δυνατή η δημιουργία αρχείου Pid"
 
 #: src/amuled.cpp
 #, c-format
@@ -750,7 +745,7 @@ msgstr "Προτιμήσεις"
 
 #: src/amuleDlg.cpp
 msgid "Navigate"
-msgstr ""
+msgstr "Πλοήγηση"
 
 #: src/amuleDlg.cpp
 #, fuzzy, c-format
@@ -758,23 +753,27 @@ msgid "Free space: %s"
 msgstr "Μήνυμα Διακομιστή: %s"
 
 #: src/amuleDlg.cpp
-#, fuzzy
 msgid "New version available"
-msgstr "Δεν είναι διαθέσιμο"
+msgstr "Διαθέσιμη νέα έκδοση"
 
 #: src/amuleDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "A new version of aMule (%s) is available.\n"
 "\n"
 "You are running %s.\n"
 "\n"
 "Would you like to open the download page?"
-msgstr "Η τελευταία έκδοση μπορεί να βρεθεί στο https://github.com/amule-org/amule/releases/latest"
+msgstr ""
+"Μια νέα έκδοση του aMule (%s) είναι διαθέσιμη.\n"
+"\n"
+"Εκτελείτε την %s.\n"
+"\n"
+"Θέλετε να ανοίξετε τη σελίδα κατεβάσματος;"
 
 #: src/amuleDlg.cpp
 msgid "aMule dialog destroyed"
-msgstr ""
+msgstr "Ο διάλογος του aMule καταστράφηκε"
 
 #: src/amuleDlg.cpp src/DataToText.cpp src/IPFilter.cpp src/ServerWnd.cpp
 msgid "Connecting"
@@ -837,9 +836,9 @@ msgid "aMuleGUI"
 msgstr "Αρχείο καταγραφής aMule"
 
 #: src/amuleDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Up: %.1f%s (%.1f) | Down: %.1f%s (%.1f)"
-msgstr "Πάνω: %.1f(%.1f) | Κάτω: %.1f(%.1f)"
+msgstr "Πάνω: %.1f%s (%.1f) | Κάτω: %.1f%s (%.1f)"
 
 #: src/amuleDlg.cpp src/MuleTrayIcon.cpp
 msgid " MiB/s"
@@ -850,9 +849,9 @@ msgid " KiB/s"
 msgstr ""
 
 #: src/amuleDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Up: %.1f%s | Down: %.1f%s"
-msgstr "Πάνω: %.1f | Κάτω: %.1f"
+msgstr "Πάνω: %.1f%s | Κάτω: %.1f%s"
 
 #: src/amuleDlg.cpp
 #, c-format
@@ -865,9 +864,9 @@ msgid "aMule (%s | Disconnected)"
 msgstr "aMule (%s | Αποσυνδεδεμένο)"
 
 #: src/amuleDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Do you really want to exit %s?"
-msgstr "Σίγουρα θέλετε να κλείσετε το aMule;"
+msgstr "Θέλετε πραγματικά να κλείσετε το %s;"
 
 #: src/amuleDlg.cpp
 msgid "Exit confirmation"
@@ -875,7 +874,7 @@ msgstr "Έξοδος επιβεβαίωσης"
 
 #: src/amuleDlg.cpp
 msgid "Launch Command: "
-msgstr ""
+msgstr "Εντολή εκκίνησης: "
 
 #: src/amuleDlg.cpp src/muuli_wdr.cpp src/Preferences.cpp
 msgid "- default -"
@@ -900,9 +899,8 @@ msgid "Searches Window"
 msgstr "Παράθυρο αναζητήσεων"
 
 #: src/amuleDlg.cpp
-#, fuzzy
 msgid "Downloads Window"
-msgstr "Κατεβαίνει"
+msgstr "Παράθυρο κατεβασμάτων"
 
 #: src/amuleDlg.cpp
 msgid "Shared Files Window"
@@ -962,9 +960,8 @@ msgid "aMule"
 msgstr "aMule"
 
 #: src/amule-gui.cpp
-#, fuzzy
 msgid "Fatal Error: Failed to create Core Timer"
-msgstr "Μοιραίο σφάλμα: Αποτυχία δημιουργίας χρονομέτρου"
+msgstr "Μοιραίο σφάλμα: Αποτυχία δημιουργίας χρονομέτρου πυρήνα"
 
 #: src/amule-remote-gui.cpp
 msgid "Connect to remote amule"
@@ -975,19 +972,18 @@ msgid "Connection lost"
 msgstr "Η σύνδεση χάθηκε"
 
 #: src/amule-remote-gui.cpp
-#, fuzzy
 msgid "Abort and exit"
-msgstr "Επιβεβαίωση κατά την έξοδο"
+msgstr "Ματαίωση και έξοδος"
 
 #: src/amule-remote-gui.cpp
 #, c-format
 msgid "Reconnecting... (attempt %d)"
-msgstr ""
+msgstr "Επανασύνδεση... (προσπάθεια %d)"
 
 #: src/amule-remote-gui.cpp
 #, c-format
 msgid "Next attempt in %d s..."
-msgstr ""
+msgstr "Επόμενη προσπάθεια σε %d δευτερόλεπτα..."
 
 #: src/amule-remote-gui.cpp
 #, c-format
@@ -997,43 +993,43 @@ msgid ""
 "\n"
 "The interface is paused until the connection is restored."
 msgstr ""
+"Η σύνδεση με %s χάθηκε.\n"
+"%s\n"
+"\n"
+"Η διεπαφή είναι σε παύση μέχρι να αποκατασταθεί η σύνδεση."
 
 #: src/amule-remote-gui.cpp
-#, fuzzy
 msgid "Fatal Error: Failed to create Poll Timer"
-msgstr "Μοιραίο σφάλμα: Αποτυχία δημιουργίας χρονομέτρου"
+msgstr "Μοιραίο σφάλμα: Αποτυχία δημιουργίας χρονομέτρου Poll"
 
 #: src/amule-remote-gui.cpp
-#, fuzzy
 msgid "Going to event loop..."
-msgstr "Προσπάθεια ανάκτηση πληροφοριών αρχείου..."
+msgstr "Μετάβαση στον βρόχο συμβάντων..."
 
 #: src/amule-remote-gui.cpp
-#, fuzzy
 msgid "Connecting..."
-msgstr "Συνδέοντας"
+msgstr "Σύνδεση..."
 
 #: src/amule-remote-gui.cpp
 msgid "Connection failed. Please check the host, port, and password."
-msgstr ""
+msgstr "Η σύνδεση απέτυχε. Ελέγξτε τον κεντρικό υπολογιστή, τη θύρα και τον κωδικό."
 
 #: src/amule-remote-gui.cpp
 msgid "Remote GUI EC event handler"
-msgstr ""
+msgstr "Χειριστής συμβάντων EC απομακρυσμένου GUI"
 
 #: src/amule-remote-gui.cpp src/ExternalConnector.cpp
 #, c-format
 msgid "Connection Failed. Unable to connect to %s:%d\n"
-msgstr ""
+msgstr "Η σύνδεση απέτυχε. Δεν είναι δυνατή η σύνδεση στο %s:%d\n"
 
 #: src/amule-remote-gui.cpp
 msgid "Going down"
-msgstr ""
+msgstr "Τερματισμός"
 
 #: src/amule-remote-gui.cpp
-#, fuzzy
 msgid "Reconnect attempt timed out; retrying."
-msgstr "Η απόπειρα σύνδεσης στο %s (%s:%i) ξεπέρασε το χρονικό όριο."
+msgstr "Η προσπάθεια επανασύνδεσης έληξε· γίνεται νέα προσπάθεια."
 
 #: src/amule-remote-gui.cpp
 #, c-format
@@ -1041,19 +1037,20 @@ msgid ""
 "Connection timed out. Unable to reach %s:%d within the allotted time.\n"
 "Please check the host, port and that aMule is running with External Connections enabled."
 msgstr ""
+"Η σύνδεση ξεπέρασε το χρονικό όριο. Δεν είναι δυνατή η προσπέλαση του %s:%d εντός του καθορισμένου χρόνου.\n"
+"Ελέγξτε τον κεντρικό υπολογιστή, τη θύρα και ότι το aMule εκτελείται με ενεργοποιημένες τις Εξωτερικές Συνδέσεις."
 
 #: src/amule-remote-gui.cpp
 msgid "Connection to the remote core was lost. Trying to reconnect..."
-msgstr ""
+msgstr "Η σύνδεση με τον απομακρυσμένο πυρήνα χάθηκε. Γίνεται προσπάθεια επανασύνδεσης..."
 
 #: src/amule-remote-gui.cpp src/ClientDetailDialog.cpp
 msgid "Disabled"
 msgstr "Απενεργοποιημένο"
 
 #: src/amule-remote-gui.cpp
-#, fuzzy
 msgid "Reconnected to the remote core."
-msgstr "Σύνδεση στο δίκτυο."
+msgstr "Επανασύνδεση με τον απομακρυσμένο πυρήνα."
 
 #: src/amule-remote-gui.cpp
 msgid "The remote core was restarted; reloading."
@@ -1062,34 +1059,32 @@ msgstr ""
 #: src/amule-remote-gui.cpp
 #, c-format
 msgid "Reconnect attempt %d: connecting to %s:%d"
-msgstr ""
+msgstr "Προσπάθεια επανασύνδεσης %d: σύνδεση σε %s:%d"
 
 #: src/amule-remote-gui.cpp
 msgid "Reconnect could not start; retrying shortly."
-msgstr ""
+msgstr "Η επανασύνδεση δεν μπόρεσε να ξεκινήσει· νέα προσπάθεια σύντομα."
 
 #: src/amule-remote-gui.cpp
 msgid "Ready"
-msgstr ""
+msgstr "Έτοιμο"
 
 #: src/amule-remote-gui.cpp src/TransferWnd.cpp
 msgid "All"
 msgstr "Όλα"
 
 #: src/amule-remote-gui.cpp
-#, fuzzy
 msgid "not readable"
-msgstr "Δεν υπάρχει"
+msgstr "μη αναγνώσιμο"
 
 #: src/amule-remote-gui.cpp
-#, fuzzy
 msgid "not found"
-msgstr "Το αρχείο δεν βρέθηκε."
+msgstr "δεν βρέθηκε"
 
 #: src/amule-remote-gui.cpp
 #, c-format
 msgid "The core rejected these shared folders:%s"
-msgstr ""
+msgstr "Ο πυρήνας απέρριψε αυτούς τους κοινόχρηστους καταλόγους:%s"
 
 #: src/amule-remote-gui.cpp src/ExternalConn.cpp
 msgid "Invalid link or already on list."
@@ -1107,7 +1102,7 @@ msgstr "Κατάλογος για τα προσωρινά αρχεία"
 #: src/amule-remote-gui.cpp
 #, c-format
 msgid "Can't create directory '%s' for category '%s', keeping directory '%s'."
-msgstr ""
+msgstr "Δεν είναι δυνατή η δημιουργία καταλόγου '%s' για την κατηγορία '%s', διατηρείται ο κατάλογος '%s'."
 
 #: src/amule-remote-gui.cpp
 #, c-format
@@ -1124,7 +1119,7 @@ msgstr "Άγνωστο"
 
 #: src/BaseClient.cpp
 msgid "Searching buddy for lowid connection"
-msgstr ""
+msgstr "Αναζήτηση buddy για σύνδεση lowID"
 
 #: src/BaseClient.cpp
 #, c-format
@@ -1183,9 +1178,9 @@ msgid "New message from '%s' (IP:%s)"
 msgstr "Καινούριο μήνυμα από τον '%s' (IP:%s)"
 
 #: src/BaseClient.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "User %s (%u) requested sharedfiles-list for not existing directory '%s' -> Ignored"
-msgstr "Ο χρήστης %s (%u) ζήτησε λίστα κοινόχρηστων αρχείων του κατάλογου %s -> Απορρίφθηκε"
+msgstr "Ο χρήστης %s (%u) ζήτησε τη λίστα κοινόχρηστων αρχείων για ανύπαρκτο κατάλογο '%s' -> Αγνοήθηκε"
 
 #: src/BrowseManager.cpp
 #, c-format
@@ -1193,28 +1188,27 @@ msgid "Failed to retrieve shared files from user '%s'"
 msgstr "Αποτυχία λήψης των κοινόχρηστων αρχείων του χρήστη '%s'"
 
 #: src/CanceledFileList.cpp src/KnownFileList.cpp src/SearchList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "WARNING: %s cannot be opened."
-msgstr "ΠΡΟΕΙΔΟΠΟΙΗΣΗ: το αρχείο known.met δεν μπορεί να ανοιχτεί."
+msgstr "ΠΡΟΕΙΔΟΠΟΙΗΣΗ: Δεν είναι δυνατό το άνοιγμα του %s."
 
 #: src/CanceledFileList.cpp
-#, fuzzy
 msgid "WARNING: Canceled file list corrupted, contains invalid header."
-msgstr "ΠΡΟΕΙΔΟΠΟΙΗΣΗ: η λίστα των γνωστών αρχείων είναι φθαρμένη, περιέχει άκυρη επικεφαλίδα."
+msgstr "ΠΡΟΕΙΔΟΠΟΙΗΣΗ: Η λίστα ακυρωμένων αρχείων είναι φθαρμένη, περιέχει μη έγκυρη επικεφαλίδα."
 
 #: src/CanceledFileList.cpp src/KnownFileList.cpp src/SearchList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "IO error while reading %s file: %s"
-msgstr "Σφάλμα εισόδου εξόδου κατά την ανάγνωση του αρχείου known.met: %s"
+msgstr "Σφάλμα εισόδου/εξόδου κατά την ανάγνωση του αρχείου %s: %s"
 
 #: src/CanceledFileList.cpp src/KnownFileList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Error while saving %s file: %s"
-msgstr "Σφάλμα κατά το αποθήκευση του αρχείου known.met: %s"
+msgstr "Σφάλμα κατά την αποθήκευση του αρχείου %s: %s"
 
 #: src/CaptchaDialog.cpp
 msgid "Enter Captcha"
-msgstr ""
+msgstr "Εισαγωγή Captcha"
 
 #: src/CatDialog.cpp src/DownloadListCtrl.cpp src/SearchListCtrl.cpp
 #: src/TransferWnd.cpp
@@ -1264,15 +1258,15 @@ msgstr "*** Αποτυχία σύνδεσης σε πελάτη/η σύνδεσ�
 
 #: src/ChatSelector.cpp
 msgid "*** You have passed the captcha check and the user has received your message. ***"
-msgstr ""
+msgstr "*** Περάσατε τον έλεγχο captcha και ο χρήστης έλαβε το μήνυμά σας. ***"
 
 #: src/ChatSelector.cpp
 msgid "*** Your response to the captcha was wrong and your message has been ignored. You can request a new captcha by sending a new message. ***"
-msgstr ""
+msgstr "*** Η απάντησή σας στο captcha ήταν λανθασμένη και το μήνυμά σας αγνοήθηκε. Μπορείτε να ζητήσετε νέο captcha στέλνοντας νέο μήνυμα. ***"
 
 #: src/ChatWnd.cpp
 msgid "Chat"
-msgstr ""
+msgstr "Συνομιλία"
 
 #: src/ChatWnd.cpp src/MuleNotebook.cpp
 msgid "Close tab"
@@ -1328,13 +1322,12 @@ msgid "Message to send:"
 msgstr "Μήνυμα προς αποστολή:"
 
 #: src/ClientContextActions.cpp
-#, fuzzy
 msgid ""
 "You are not allowed to set more than one friend slot.\n"
 " Only one slot was assigned."
 msgstr ""
-"Δεν επιτρέπεται να θέσεις μόνο πανω από μία φιλική θυρίδα. \n"
-" Γι αυτό μόνο μία ανατέθηκε."
+"Δεν επιτρέπεται να ορίσετε περισσότερες από μία φιλικές θυρίδες.\n"
+" Ανατέθηκε μόνο μία θυρίδα."
 
 #: src/ClientContextActions.cpp src/FriendListCtrl.cpp
 msgid "Multiple selection"
@@ -1446,7 +1439,7 @@ msgstr "Διεύθυνση IP"
 #: src/ClientHistoryListCtrl.cpp src/ClientsListCtrl.cpp
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Origin"
-msgstr ""
+msgstr "Προέλευση"
 
 #: src/ClientHistoryListCtrl.cpp
 msgid "First seen"
@@ -1574,19 +1567,19 @@ msgid "User %s (%u) requested your shareddirectories-list -> Denied"
 msgstr "Ο χρήστης %s (%u) ζήτησε τη λίστα με τους κοινόχρηστους καταλόγους -> Απορρίφθηκε"
 
 #: src/ClientTCPSocket.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "User %s (%u) requested your sharedfiles-list for directory '%s' -> accepted"
-msgstr "Ο χρήστης %s (%u) ζήτησε λίστα κοινόχρηστων αρχεία του κατάλογου %s -> Έγινε δεκτό"
+msgstr "Ο χρήστης %s (%u) ζήτησε τη λίστα κοινόχρηστων αρχείων σας για τον κατάλογο '%s' -> εγκρίθηκε"
 
 #: src/ClientTCPSocket.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "User %s (%u) requested your sharedfiles-list for directory '%s' -> denied"
-msgstr "Ο χρήστης %s (%u) ζήτησε λίστα κοινόχρηστων αρχείων του κατάλογου %s -> Απορρίφθηκε"
+msgstr "Ο χρήστης %s (%u) ζήτησε τη λίστα κοινόχρηστων αρχείων σας για τον κατάλογο '%s' -> απορρίφθηκε"
 
 #: src/ClientTCPSocket.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "User %s (%u) shares directory '%s'"
-msgstr "Ο χρήστης %s (%u) μοιράζεται τον κατάλογο %s"
+msgstr "Ο χρήστης %s (%u) διαμοιράζεται τον κατάλογο '%s'"
 
 #: src/ClientTCPSocket.cpp
 #, c-format
@@ -1594,9 +1587,9 @@ msgid "User %s (%u) sent unrequested shared dirs."
 msgstr "Ο χρήστης %s (%u) έστειλε κοινόχρηστους καταλόγους χωρίς να ζητηθούν."
 
 #: src/ClientTCPSocket.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "User %s (%u) sent sharedfiles-list for directory '%s'"
-msgstr "Ο χρήσης %s (%u) έστειλε λίστα κοινόχρηστων αρχείων για κατάλογο %s"
+msgstr "Ο χρήστης %s (%u) έστειλε τη λίστα κοινόχρηστων αρχείων για τον κατάλογο '%s'"
 
 #: src/ClientTCPSocket.cpp
 #, c-format
@@ -1636,7 +1629,7 @@ msgstr "Σχόλιο"
 
 #: src/CommentDialogLst.cpp
 msgid "Could not start a Kad search"
-msgstr ""
+msgstr "Δεν ήταν δυνατή η έναρξη αναζήτησης Kad"
 
 #: src/CommentDialogLst.cpp src/SearchList.cpp
 msgid "Kad search can't be done if Kad is not running"
@@ -1644,7 +1637,7 @@ msgstr "Δεν μπορεί να γίνει αναζήτηση στο Kad αν �
 
 #: src/CommentDialogLst.cpp
 msgid "Searching Kad for comments..."
-msgstr ""
+msgstr "Αναζήτηση σχολίων στο Kad..."
 
 #: src/CommentDialogLst.cpp src/muuli_wdr.cpp
 msgid "No comments"
@@ -1660,12 +1653,12 @@ msgstr[1] "%u σχόλια"
 #: src/CorruptionBlackBox.cpp
 #, c-format
 msgid "Banned client %s for sending %s corrupt data of %s total for the file '%s'"
-msgstr ""
+msgstr "Ο πελάτης %s αποκλείστηκε επειδή έστειλε %s φθαρμένα δεδομένα από σύνολο %s για το αρχείο '%s'"
 
 #: src/CountryFlags.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Failed to load country data for '%s'."
-msgstr "Αποτυχία κατεβάσματος της λίστας διακομιστών από το %s"
+msgstr "Αποτυχία φόρτωσης δεδομένων χώρας για '%s'."
 
 #: src/DataToText.cpp
 msgid "Auto [Lo]"
@@ -1819,9 +1812,8 @@ msgid "In progress"
 msgstr "Σε εξέλιξη"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "ERROR: Out of disk space"
-msgstr "ΣΦΑΛΜΑ: Δεν υπάρχει χώρος στο δίσκο"
+msgstr "ΣΦΑΛΜΑ: Ανεπαρκής χώρος στο δίσκο"
 
 #: src/DataToText.cpp
 msgid "ERROR: Partmet not found"
@@ -1978,9 +1970,9 @@ msgid "Copy feedback to clipboard"
 msgstr "Αντιγραφή των συμβουλών στην πρόχειρη μνήμη"
 
 #: src/DownloadListCtrl.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Get %s for this file"
-msgstr "Προσθήκη προαιρετικών URL για αυτό το αρχείο"
+msgstr "Λήψη %s για αυτό το αρχείο"
 
 #: src/DownloadListCtrl.cpp
 msgid "unassign"
@@ -2038,21 +2030,21 @@ msgstr "Συνολικό Κατέβασμα: %s"
 #: src/DownloadQueue.cpp
 #, c-format
 msgid "Saving PartFile %u of %u"
-msgstr ""
+msgstr "Αποθήκευση ημιτελούς αρχείου %u από %u"
 
 #: src/DownloadQueue.cpp
 msgid "All PartFiles Saved."
-msgstr ""
+msgstr "Όλα τα ημιτελή αρχεία αποθηκεύτηκαν."
 
 #: src/DownloadQueue.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Loading temp files from %s."
-msgstr "Φόρτωση του αρχείου διακομιστών: %s"
+msgstr "Φόρτωση προσωρινών αρχείων από %s."
 
 #: src/DownloadQueue.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Loading PartFile %u of %u"
-msgstr "Φόρτωση δεδομένων από το παλιό αρχείο κατεβάσματος (%u από %u)"
+msgstr "Φόρτωση ημιτελούς αρχείου %u από %u"
 
 #: src/DownloadQueue.cpp
 msgid "ERROR: Failed to load backup file. Search https://github.com/amule-org/amule/discussions for .part.met recovery solutions."
@@ -2060,7 +2052,7 @@ msgstr "ΣΦΑΛΜΑ: Αποτυχία φορτώματος του αντιγρ�
 
 #: src/DownloadQueue.cpp
 msgid "All PartFiles Loaded."
-msgstr ""
+msgstr "Όλα τα ημιτελή αρχεία φορτώθηκαν."
 
 #: src/DownloadQueue.cpp
 msgid "No part files found"
@@ -2092,9 +2084,9 @@ msgid "You are already trying to download the file '%s'"
 msgstr "Προσπαθείτε ήδη να κατεβάσετε αυτό το αρχείο '%s'"
 
 #: src/DownloadQueue.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "You already have the file '%s' (requested as '%s')"
-msgstr "Το αρχείο '%s' υπάρχει ήδη"
+msgstr "Έχετε ήδη το αρχείο '%s' (ζητήθηκε ως '%s')"
 
 #: src/DownloadQueue.cpp
 #, c-format
@@ -2115,8 +2107,8 @@ msgstr "Άγνωστο πρωτόκολλο του συνδέσμου: %s"
 #, c-format
 msgid "Could not add %u link (see log for details)."
 msgid_plural "Could not add %u links (see log for details)."
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Δεν ήταν δυνατή η προσθήκη %u συνδέσμου (δείτε το αρχείο καταγραφής για λεπτομέρειες)."
+msgstr[1] "Δεν ήταν δυνατή η προσθήκη %u συνδέσμων (δείτε το αρχείο καταγραφής για λεπτομέρειες)."
 
 #: src/DownloadQueue.cpp
 #, c-format
@@ -2124,9 +2116,8 @@ msgid "Invalid eD2k link! ERROR: %s"
 msgstr "Άκυρος σύνδεσμος eD2k! ΣΦΑΛΜΑ: %s"
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "Client sent packet after authentication failed."
-msgstr "Η πιστοποίηση απέτυχε."
+msgstr "Ο πελάτης έστειλε πακέτο μετά από αποτυχημένη πιστοποίηση."
 
 #: src/ExternalConn.cpp
 msgid "External connection closed."
@@ -2166,9 +2157,8 @@ msgid "Incorrect EC version ID, there might be binary incompatibility. Use core 
 msgstr "Λανθασμένη ταυτότητα έκδοσης EC, ίσως υπάρχει δυαδική ασυμβατότητα. Χρησιμοποιήστε πυρήνα και απομακρυσμένο μέρος από το ίδιο στιγμιότυπο."
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "You cannot connect to a release version from an arbitrary development snapshot! *sigh* possible crash prevented"
-msgstr "Δεν μπορείτε να συνδεθείτε σε μια επίσημη έκδοση από μια αναπτυσσόμενη (SVN) έκδοση! *ουφ* αποφευχθεί πιθανό κρέμασμα"
+msgstr "Δεν μπορείτε να συνδεθείτε σε επίσημη έκδοση από τυχαίο στιγμιότυπο ανάπτυξης! *αναστεναγμός* αποτράπηκε πιθανή κατάρρευση"
 
 #: src/ExternalConn.cpp
 msgid "Invalid protocol version."
@@ -2185,7 +2175,7 @@ msgstr "Αυτόματη σύνδεση στον διακομιστή θα επ�
 
 #: src/ExternalConn.cpp
 msgid "Authentication failed: invalid hash specified as EC password."
-msgstr ""
+msgstr "Η πιστοποίηση απέτυχε: καθορίστηκε μη έγκυρος κατακερματισμός ως κωδικός EC."
 
 #: src/ExternalConn.cpp
 msgid "Authentication failed: the client offered an encrypted External Connection but sent no usable key."
@@ -2200,33 +2190,30 @@ msgid "Authentication failed: the client could not confirm the encrypted session
 msgstr ""
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "Authentication failed: wrong password."
-msgstr "Η πιστοποίηση απέτυχε."
+msgstr "Η πιστοποίηση απέτυχε: λανθασμένος κωδικός."
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "Authentication failed: missing password."
-msgstr "Η πιστοποίηση απέτυχε."
+msgstr "Η πιστοποίηση απέτυχε: λείπει ο κωδικός."
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "Invalid request, please authenticate first."
-msgstr "Άκυρη αίτηση, πρέπει πρώτα να πιστοποιηθήτε."
+msgstr "Μη έγκυρο αίτημα, παρακαλώ πιστοποιηθείτε πρώτα."
 
 #: src/ExternalConn.cpp
 msgid "Access granted."
 msgstr "Η πρόσβαση επικυρώθηκε."
 
 #: src/ExternalConn.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Sent error message \"%s\" to client."
-msgstr "Διήθηση μηνυμάτων από άγνωστους πελάτες"
+msgstr "Στάλθηκε μήνυμα σφάλματος \"%s\" στον πελάτη."
 
 #: src/ExternalConn.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Unauthorized access attempt from %s. Connection closed."
-msgstr "Απόπειρα μη εξουσιοδοτημένης πρόσβασης. Η σύνδεση έκλεισε."
+msgstr "Απόπειρα μη εξουσιοδοτημένης πρόσβασης από %s. Η σύνδεση έκλεισε."
 
 #: src/ExternalConn.cpp
 #, c-format
@@ -2264,18 +2251,16 @@ msgid "No address known for that friend yet."
 msgstr ""
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "Friend not found."
-msgstr "Το αρχείο δεν βρέθηκε."
+msgstr "Ο φίλος δεν βρέθηκε."
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "Client not found."
-msgstr "Το αρχείο δεν βρέθηκε."
+msgstr "Ο πελάτης δεν βρέθηκε."
 
 #: src/ExternalConn.cpp
 msgid "EC_TAG_FRIEND_SHARED requires EC_TAG_FRIEND or EC_TAG_CLIENT."
-msgstr ""
+msgstr "Το EC_TAG_FRIEND_SHARED απαιτεί EC_TAG_FRIEND ή EC_TAG_CLIENT."
 
 #: src/ExternalConn.cpp
 msgid "WebSearch from remote interface makes no sense."
@@ -2311,17 +2296,17 @@ msgid "ExternalConn: adding link '%s'."
 msgstr "Εξωτερική Σύνδεση: προστίθεται ο σύνδεσμος '%s'."
 
 #: src/ExternalConn.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "%d of %d links failed (invalid or already on list)."
-msgstr "Άκυρος σύνδεσμο ή ήδη στην λίστα."
+msgstr "%d από %d σύνδεσμοι απέτυχαν (μη έγκυροι ή ήδη στη λίστα)."
 
 #: src/ExternalConn.cpp
 msgid "Version check throttled; try again shortly."
-msgstr ""
+msgstr "Ο έλεγχος έκδοσης περιορίστηκε· δοκιμάστε ξανά σύντομα."
 
 #: src/ExternalConn.cpp
 msgid "Version check is not available on this daemon."
-msgstr ""
+msgstr "Ο έλεγχος έκδοσης δεν είναι διαθέσιμος σε αυτόν τον δαίμονα."
 
 #: src/ExternalConn.cpp
 msgid "File not found."
@@ -2342,7 +2327,7 @@ msgstr ""
 #: src/ExternalConn.cpp
 #, c-format
 msgid "Could not save the amuleapi password: %s"
-msgstr ""
+msgstr "Δεν ήταν δυνατή η αποθήκευση του κωδικού amuleapi: %s"
 
 #: src/ExternalConn.cpp
 #, fuzzy
@@ -2635,24 +2620,24 @@ msgstr ""
 
 #: src/ExternalConnector.cpp
 msgid "Force ZLIB compression regardless of dialed-IP locality (useful when the server is reachable over a VPN tunnel that resolves to a LAN IP)."
-msgstr ""
+msgstr "Εξαναγκασμός συμπίεσης ZLIB ανεξαρτήτως τοπικότητας της καλούμενης IP (χρήσιμο όταν ο διακομιστής είναι προσβάσιμος μέσω σήραγγας VPN που αναλύεται σε τοπική IP)."
 
 #: src/ExternalConnector.cpp
 msgid "Append a copy of all console output to this log file (default: <config-dir>/amuleapi.log)."
-msgstr ""
+msgstr "Προσάρτηση αντιγράφου όλης της εξόδου κονσόλας σε αυτό το αρχείο καταγραφής (προεπιλογή: <config-dir>/amuleapi.log)."
 
 #: src/ExternalConnector.cpp
 msgid "Do not write a log file; print to the console only."
-msgstr ""
+msgstr "Να μη γράφεται αρχείο καταγραφής· εμφάνιση μόνο στην κονσόλα."
 
 #: src/FileDetailDialog.cpp
 msgid "File Details"
 msgstr "Λεπτομέρειες αρχείου"
 
 #: src/FileDetailDialog.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "%.1f%% done"
-msgstr "%.2f%% ολοκληρώθηκαν"
+msgstr "%.1f%% ολοκληρώθηκε"
 
 #: src/FileDetailDialog.cpp src/utils/wxCas/src/wxcasframe.cpp
 #, c-format
@@ -2694,66 +2679,67 @@ msgstr "ΣΦΑΛΜΑ: Αποτυχία ανοίγματος του ημιτελ�
 
 #: src/FirstRunWizard.cpp
 msgid "Mobile / 4G-5G (20 / 5 Mbit)"
-msgstr ""
+msgstr "Κινητό / 4G-5G (20 / 5 Mbit)"
 
 #: src/FirstRunWizard.cpp
 msgid "ADSL (24 / 1 Mbit)"
-msgstr ""
+msgstr "ADSL (24 / 1 Mbit)"
 
 #: src/FirstRunWizard.cpp
 msgid "VDSL (50 / 10 Mbit)"
-msgstr ""
+msgstr "VDSL (50 / 10 Mbit)"
 
 #: src/FirstRunWizard.cpp
 msgid "Cable (200 / 20 Mbit)"
-msgstr ""
+msgstr "Καλωδιακή (200 / 20 Mbit)"
 
 #: src/FirstRunWizard.cpp
 msgid "Fibre 300 (300 / 100 Mbit)"
-msgstr ""
+msgstr "Οπτική ίνα 300 (300 / 100 Mbit)"
 
 #: src/FirstRunWizard.cpp
 msgid "Fibre Gigabit (1000 / 1000 Mbit)"
-msgstr ""
+msgstr "Οπτική ίνα Gigabit (1000 / 1000 Mbit)"
 
 #: src/FirstRunWizard.cpp
 msgid "aMule first-run setup"
-msgstr ""
+msgstr "Αρχική διαμόρφωση aMule"
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Welcome to aMule!"
-msgstr "Καλώς ήρθατε (Καλώς σας βρήκαμε)"
+msgstr "Καλώς ήρθατε στο aMule!"
 
 #: src/FirstRunWizard.cpp
 msgid ""
 "This short setup will get you connected. You can change\n"
 "any of these settings later in Preferences."
 msgstr ""
+"Αυτή η σύντομη διαμόρφωση θα σας συνδέσει. Μπορείτε να αλλάξετε\n"
+"οποιαδήποτε από αυτές τις ρυθμίσεις αργότερα στις Προτιμήσεις."
 
 #: src/FirstRunWizard.cpp
 msgid "Choose a nickname other peers will see:"
-msgstr ""
+msgstr "Επιλέξτε ένα ψευδώνυμο που θα βλέπουν οι άλλοι χρήστες:"
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Connection & bandwidth"
-msgstr "Συνδεδεμένος στον φιλαράκο"
+msgstr "Σύνδεση & εύρος ζώνης"
 
 #: src/FirstRunWizard.cpp
 msgid ""
 "Pick the option that best matches your Internet connection,\n"
 "or set the upload and download limits directly below."
 msgstr ""
+"Διαλέξτε την επιλογή που ταιριάζει καλύτερα στη σύνδεσή σας στο Internet,\n"
+"ή ορίστε απευθείας τα όρια ανεβάσματος και κατεβάσματος παρακάτω."
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Connection speed:"
-msgstr "Κατάσταση σύνδεσης:"
+msgstr "Ταχύτητα σύνδεσης:"
 
 #: src/FirstRunWizard.cpp
 msgid "Other / set manually"
-msgstr ""
+msgstr "Άλλο / χειροκίνητος ορισμός"
 
 #: src/FirstRunWizard.cpp
 msgid "Upload limit (KiB/s, 0 = unlimited):"
@@ -2764,13 +2750,12 @@ msgid "Download limit (KiB/s, 0 = unlimited):"
 msgstr ""
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Networks & ports"
-msgstr "Δίκτυα"
+msgstr "Δίκτυα & θύρες"
 
 #: src/FirstRunWizard.cpp
 msgid "aMule can use two networks. We recommend keeping both enabled."
-msgstr ""
+msgstr "Το aMule μπορεί να χρησιμοποιεί δύο δίκτυα. Συνιστούμε να τα κρατήσετε και τα δύο ενεργοποιημένα."
 
 #: src/FirstRunWizard.cpp src/TextClient.cpp
 msgid "eD2k"
@@ -2798,22 +2783,25 @@ msgid ""
 "peers can reach you (a \"HighID\"). Turn off if your router\n"
 "doesn't support UPnP or you forward ports manually."
 msgstr ""
+"Επιτρέπει στο aMule να ζητά από τον δρομολογητή σας να προωθήσει τις παραπάνω θύρες, ώστε άλλοι\n"
+"χρήστες να μπορούν να σας προσεγγίσουν (ένα \"HighID\"). Απενεργοποιήστε το αν ο δρομολογητής σας\n"
+"δεν υποστηρίζει UPnP ή προωθείτε τις θύρες χειροκίνητα."
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Bootstrap files"
-msgstr "Εκκινητήρας"
+msgstr "Αρχεία εκκίνησης"
 
 #: src/FirstRunWizard.cpp
 msgid ""
 "To get started, aMule needs to know about some peers.\n"
 "Select which lists to download now:"
 msgstr ""
+"Για να ξεκινήσει, το aMule χρειάζεται να γνωρίζει κάποιους χρήστες.\n"
+"Επιλέξτε ποιες λίστες θα κατεβούν τώρα:"
 
 #: src/FirstRunWizard.cpp
-#, fuzzy
 msgid "Your peer lists are already in place - nothing to download."
-msgstr "Ήδη προσπαθείτε να κατεβάσετε το αρχείο %s"
+msgstr "Οι λίστες χρηστών σας υπάρχουν ήδη - δεν χρειάζεται κατέβασμα."
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Auto-update server list at startup"
@@ -2821,45 +2809,49 @@ msgstr "Αυτόματη ενημέρωση λίστας διακομιστών 
 
 #: src/FirstRunWizard.cpp
 msgid "Integrations (optional)"
-msgstr ""
+msgstr "Ενσωματώσεις (προαιρετικό)"
 
 #: src/FirstRunWizard.cpp
 msgid ""
 "Choose how aMule integrates with your system. You can\n"
 "change any of these later in Preferences."
 msgstr ""
+"Επιλέξτε πώς το aMule ενσωματώνεται με το σύστημά σας. Μπορείτε\n"
+"να αλλάξετε οποιοδήποτε από αυτά αργότερα στις Προτιμήσεις."
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Start aMule automatically when I log in"
-msgstr ""
+msgstr "Αυτόματη εκκίνηση του aMule κατά τη σύνδεσή μου"
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 #: packaging/windows/installer_strings.c
 msgid "Register aMule for ed2k:// links"
-msgstr ""
+msgstr "Καταχώριση του aMule για συνδέσμους ed2k://"
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 #: packaging/windows/installer_strings.c
 msgid "Register aMule for magnet: links"
-msgstr ""
+msgstr "Καταχώριση του aMule για συνδέσμους magnet:"
 
 #: src/FirstRunWizard.cpp
 msgid "Only eD2k-compatible magnets. Leave off if you use a BitTorrent client."
-msgstr ""
+msgstr "Μόνο magnet συμβατά με eD2k. Αφήστε το απενεργοποιημένο αν χρησιμοποιείτε πελάτη BitTorrent."
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Open .emulecollection files with aMule"
-msgstr ""
+msgstr "Άνοιγμα αρχείων .emulecollection με το aMule"
 
 #: src/FirstRunWizard.cpp
 msgid "Folders (optional)"
-msgstr ""
+msgstr "Κατάλογοι (προαιρετικό)"
 
 #: src/FirstRunWizard.cpp
 msgid ""
 "The defaults are fine for most people. Change them if you\n"
 "want downloads on a different (e.g. larger) disk."
 msgstr ""
+"Οι προεπιλογές είναι κατάλληλες για τους περισσότερους χρήστες. Αλλάξτε τις αν\n"
+"θέλετε τα κατεβάσματα να γίνονται σε διαφορετικό (π.χ. μεγαλύτερο) δίσκο."
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Destination folder for downloads"
@@ -2872,7 +2864,7 @@ msgstr "Επιλογή"
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "(All files in this folder are shared with other peers)"
-msgstr ""
+msgstr "(Όλα τα αρχεία σε αυτόν τον κατάλογο διαμοιράζονται με άλλους χρήστες)"
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Folder for temporary download files"
@@ -2884,14 +2876,16 @@ msgid ""
 "Based on this, aMule will allow up to %i sources per file\n"
 "and %i client connections."
 msgstr ""
+"Βάσει αυτού, το aMule θα επιτρέπει έως %i πηγές ανά αρχείο\n"
+"και %i συνδέσεις πελατών."
 
 #: src/FirstRunWizard.cpp
 msgid "Show this setup wizard again the next time you start aMule?"
-msgstr ""
+msgstr "Να εμφανιστεί ξανά αυτός ο οδηγός διαμόρφωσης την επόμενη φορά που θα ξεκινήσετε το aMule;"
 
 #: src/FirstRunWizard.cpp
 msgid "Setup not finished"
-msgstr ""
+msgstr "Η διαμόρφωση δεν ολοκληρώθηκε"
 
 #: src/FriendList.cpp
 msgid "Failed to open friend list file 'emfriends.met' for reading!"
@@ -2908,7 +2902,7 @@ msgstr ""
 
 #: src/FriendList.cpp
 msgid "CRITICAL - no client on StartChatSession"
-msgstr ""
+msgstr "ΚΡΙΣΙΜΟ - δεν υπάρχει πελάτης στο StartChatSession"
 
 #: src/FriendListCtrl.cpp src/muuli_wdr.cpp
 msgid "Friends"
@@ -2956,33 +2950,30 @@ msgid "Colour legend"
 msgstr ""
 
 #: src/GenericClientListCtrl.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "On Queue: %u (%i)"
-msgstr "QR: %u (%i)"
+msgstr "Στην ουρά: %u (%i)"
 
 #: src/GenericClientListCtrl.cpp
 msgid "Asked for another file"
 msgstr "Αίτηση ενός άλλου αρχείου"
 
 #: src/GenericClientListCtrl.cpp
-#, fuzzy
 msgid "Waiting for upload slot"
-msgstr "Ανεβάσματα σε αναμονή: %s"
+msgstr "Αναμονή για θυρίδα ανεβάσματος"
 
 #: src/GenericClientListCtrl.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "On Queue: %u"
-msgstr "Εν αναμονή"
+msgstr "Στην ουρά: %u"
 
 #: src/GenericClientListCtrl.cpp src/muuli_wdr.cpp
-#, fuzzy
 msgid "Uploading"
-msgstr "Ανέβασμα"
+msgstr "Γίνεται ανέβασμα"
 
 #: src/GenericClientListCtrl.cpp
-#, fuzzy
 msgid "None"
-msgstr "Κανείς"
+msgstr "Κανένα"
 
 #: src/GenericClientListCtrl.cpp src/ServerListCtrl.cpp
 msgid "No"
@@ -3003,51 +2994,51 @@ msgstr "Μεταφόρτωση..."
 
 #: src/HTTPDownload.cpp
 msgid "HTTP download cancelled"
-msgstr ""
+msgstr "Το κατέβασμα HTTP ακυρώθηκε"
 
 #: src/HTTPDownload.cpp
 msgid "The URL to download can't be empty"
-msgstr ""
+msgstr "Το URL για κατέβασμα δεν μπορεί να είναι κενό"
 
 #: src/HTTPDownload.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Failed to create HTTP request for %s"
-msgstr "Αποτυχία λήψης των κοινόχρηστων αρχείων του χρήστη '%s'"
+msgstr "Αποτυχία δημιουργίας αιτήματος HTTP για %s"
 
 #: src/HTTPDownload.cpp
 #, c-format
 msgid "HTTP download: empty response body for %s"
-msgstr ""
+msgstr "Κατέβασμα HTTP: κενό σώμα απάντησης για %s"
 
 #: src/HTTPDownload.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Could not move downloaded file to %s"
-msgstr "Κατάλογος για τα προσωρινά αρχεία"
+msgstr "Δεν ήταν δυνατή η μετακίνηση του κατεβασμένου αρχείου στο %s"
 
 #: src/HTTPDownload.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Downloaded %s (%llu bytes)"
-msgstr "Έχει κατεβεί"
+msgstr "Κατέβηκε το %s (%llu bytes)"
 
 #: src/HTTPDownload.cpp
 #, c-format
 msgid "The URL %s returned: %i"
-msgstr ""
+msgstr "Το URL %s επέστρεψε: %i"
 
 #: src/HTTPDownload.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "HTTP download failed for %s: %s"
-msgstr "Κατεβασμένα (%i)"
+msgstr "Το κατέβασμα HTTP απέτυχε για %s: %s"
 
 #: src/HTTPDownload.cpp
 #, c-format
 msgid "HTTP 401 Unauthorized for %s"
-msgstr ""
+msgstr "HTTP 401 Μη εξουσιοδοτημένο για %s"
 
 #: src/IP2Country.cpp
 #, c-format
 msgid "Migrated existing GeoLite2-Country.mmdb to %s"
-msgstr ""
+msgstr "Το υπάρχον GeoLite2-Country.mmdb μεταφέρθηκε στο %s"
 
 #: src/IP2Country.cpp
 #, c-format
@@ -3056,59 +3047,58 @@ msgstr ""
 
 #: src/IP2Country.cpp
 msgid "IP2Country: MaxMind selected as the GeoIP source but no License Key configured. Open Preferences -> IP2Country, paste your free MaxMind License Key and click 'Update now'."
-msgstr ""
+msgstr "IP2Country: Επιλέχθηκε το MaxMind ως πηγή GeoIP, αλλά δεν έχει διαμορφωθεί Κλειδί Άδειας Χρήσης. Ανοίξτε Προτιμήσεις -> IP2Country, επικολλήστε το δωρεάν Κλειδί Άδειας Χρήσης MaxMind και κάντε κλικ στο 'Ενημέρωση τώρα'."
 
 #: src/IP2Country.cpp
 msgid "IP2Country: Custom URL selected as the GeoIP source but no URL configured. Open Preferences -> IP2Country and supply a URL that points to an .mmdb (or .gz / .tar.gz containing one)."
-msgstr ""
+msgstr "IP2Country: Επιλέχθηκε το Προσαρμοσμένο URL ως πηγή GeoIP, αλλά δεν έχει διαμορφωθεί URL. Ανοίξτε Προτιμήσεις -> IP2Country και δώστε ένα URL που δείχνει σε αρχείο .mmdb (ή .gz / .tar.gz που το περιέχει)."
 
 #: src/IP2Country.cpp
 msgid "IP2Country: failed to resolve a GeoIP download URL."
-msgstr ""
+msgstr "IP2Country: αποτυχία εύρεσης URL κατεβάσματος GeoIP."
 
 #: src/IP2Country.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Download new %s from %s"
-msgstr "Αποτυχία κατεβάσματος της λίστας διακομιστών από το %s"
+msgstr "Κατέβασμα νέου %s από %s"
 
 #: src/IP2Country.cpp
 #, c-format
 msgid "Download of %s file failed, aborting update."
-msgstr ""
+msgstr "Το κατέβασμα του αρχείου %s απέτυχε, ματαίωση ενημέρωσης."
 
 #: src/IP2Country.cpp src/IPFilter.cpp
 #, c-format
 msgid "Failed to remove %s file, aborting update."
-msgstr ""
+msgstr "Αποτυχία διαγραφής του αρχείου %s, ματαίωση ενημέρωσης."
 
 #: src/IP2Country.cpp
 #, c-format
 msgid "Failed to rename %s file, aborting update."
-msgstr ""
+msgstr "Αποτυχία μετονομασίας του αρχείου %s, ματαίωση ενημέρωσης."
 
 #: src/IP2Country.cpp src/IPFilter.cpp
 #, c-format
 msgid "Successfully updated %s"
-msgstr ""
+msgstr "Το %s ενημερώθηκε με επιτυχία"
 
 #: src/IP2Country.cpp
 #, c-format
 msgid "Error updating %s"
-msgstr ""
+msgstr "Σφάλμα κατά την ενημέρωση του %s"
 
 #: src/IP2Country.cpp
 msgid "DB-IP download failed for the current month - retrying with the previous month's URL."
-msgstr ""
+msgstr "Το κατέβασμα DB-IP απέτυχε για τον τρέχοντα μήνα - επανάληψη με το URL του προηγούμενου μήνα."
 
 #: src/IP2Country.cpp src/IPFilter.cpp src/ServerList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Failed to download %s from %s"
-msgstr "Αποτυχία κατεβάσματος της λίστας διακομιστών από το %s"
+msgstr "Αποτυχία κατεβάσματος του %s από %s"
 
 #: src/IPFilter.cpp
-#, fuzzy
 msgid "Loading IP filters 'ipfilter.dat' and 'ipfilter_static.dat'."
-msgstr "Φόρτωση των φίλτρων IP 'ipfilter.dat' και 'ipfilter_static.dat'."
+msgstr "Φόρτωση φίλτρων IP 'ipfilter.dat' και 'ipfilter_static.dat'."
 
 #: src/IPFilter.cpp
 #, c-format
@@ -3137,11 +3127,11 @@ msgstr[1] "%u παραμορφωμένες γραμμές απορρίφθηκα
 #: src/IPFilter.cpp
 #, c-format
 msgid "Failed to rename new %s file, aborting update."
-msgstr ""
+msgstr "Αποτυχία μετονομασίας του νέου αρχείου %s, ματαίωση ενημέρωσης."
 
 #: src/IPFilter.cpp
 msgid "IP filter is ready"
-msgstr ""
+msgstr "Το φίλτρο IP είναι έτοιμο"
 
 #: src/KadDlg.cpp src/muuli_wdr.cpp src/StatisticsDlg.cpp
 msgid "Current"
@@ -3198,7 +3188,7 @@ msgstr "Kademlia: Ο κωδικός αναζήτησης υπάρχει ήδη �
 
 #: src/kademlia/routing/RoutingZone.cpp
 msgid "Failed to read nodes.dat file - too old. This version (0) is not supported anymore."
-msgstr ""
+msgstr "Αποτυχία ανάγνωσης του αρχείου nodes.dat - πολύ παλιό. Αυτή η έκδοση (0) δεν υποστηρίζεται πλέον."
 
 #: src/kademlia/routing/RoutingZone.cpp
 #, c-format
@@ -3209,7 +3199,7 @@ msgstr[1] "Ανάγνωση %u επαφών Kad"
 
 #: src/kademlia/routing/RoutingZone.cpp
 msgid "No contacts found, please bootstrap, or download a nodes.dat file."
-msgstr ""
+msgstr "Δεν βρέθηκαν επαφές, παρακαλώ κάντε bootstrap, ή κατεβάστε ένα αρχείο nodes.dat."
 
 #: src/kademlia/routing/RoutingZone.cpp
 #, c-format
@@ -3226,34 +3216,33 @@ msgstr[0] "Γράψιμο %d επαφής Kad"
 msgstr[1] "Γράψιμο %d επαφών Kad"
 
 #: src/KnownFile.cpp
-#, fuzzy
 msgid "Kad user"
-msgstr "Δίκτυο Kad"
+msgstr "Χρήστης Kad"
 
 #: src/KnownFile.cpp
 #, c-format
 msgid "Kad note search for '%s' not started: Kad is not connected"
-msgstr ""
+msgstr "Η αναζήτηση σημειώσεων Kad για '%s' δεν ξεκίνησε: το Kad δεν είναι συνδεδεμένο"
 
 #: src/KnownFile.cpp
 #, c-format
 msgid "Kad note search for '%s' not started: a note lookup is already running for this file"
-msgstr ""
+msgstr "Η αναζήτηση σημειώσεων Kad για '%s' δεν ξεκίνησε: εκτελείται ήδη αναζήτηση σημείωσης για αυτό το αρχείο"
 
 #: src/KnownFile.cpp
 #, c-format
 msgid "Kad note search for '%s' not started: file is not in the shared list, download queue or search results"
-msgstr ""
+msgstr "Η αναζήτηση σημειώσεων Kad για '%s' δεν ξεκίνησε: το αρχείο δεν βρίσκεται στη λίστα κοινής χρήσης, την ουρά κατεβάσματος ή τα αποτελέσματα αναζήτησης"
 
 #: src/KnownFile.cpp
 #, c-format
 msgid "Kad note search for '%s' not started: another Kad search (e.g. a source search) is already using this file's hash - try again shortly"
-msgstr ""
+msgstr "Η αναζήτηση σημειώσεων Kad για '%s' δεν ξεκίνησε: μια άλλη αναζήτηση Kad (π.χ. αναζήτηση πηγής) χρησιμοποιεί ήδη τον κατακερματισμό αυτού του αρχείου - δοκιμάστε ξανά σύντομα"
 
 #: src/KnownFile.cpp
 #, c-format
 msgid "Kad note search for '%s' not started: PrepareLookup failed"
-msgstr ""
+msgstr "Η αναζήτηση σημειώσεων Kad για '%s' δεν ξεκίνησε: το PrepareLookup απέτυχε"
 
 #: src/KnownFile.cpp src/PartFileConvertDlg.cpp
 msgid "File name"
@@ -3285,11 +3274,11 @@ msgstr "ΠΡΟΕΙΔΟΠΟΙΗΣΗ: η λίστα των γνωστών αρχε
 
 #: src/KnownFileList.cpp
 msgid "Failed to load entry in known file list, file may be corrupt"
-msgstr ""
+msgstr "Αποτυχία φόρτωσης καταχώρησης στη λίστα γνωστών αρχείων, το αρχείο μπορεί να είναι φθαρμένο"
 
 #: src/KnownFileList.cpp
 msgid "Invalid entry in known file list, file may be corrupt: "
-msgstr ""
+msgstr "Μη έγκυρη καταχώρηση στη λίστα γνωστών αρχείων, το αρχείο μπορεί να είναι φθαρμένο: "
 
 #: src/LanguageList.cpp
 msgid "System default"
@@ -3304,9 +3293,8 @@ msgid "Arabic"
 msgstr "Αραβικά"
 
 #: src/LanguageList.cpp
-#, fuzzy
 msgid "Asturian"
-msgstr "Εσθονικά"
+msgstr "Αστουριανά"
 
 #: src/LanguageList.cpp
 msgid "Basque"
@@ -3349,9 +3337,8 @@ msgid "English (U.K.)"
 msgstr "Αγγλικά (Ην. Βασίλειο)"
 
 #: src/LanguageList.cpp
-#, fuzzy
 msgid "English (U.S.)"
-msgstr "Αγγλικά (Ην. Βασίλειο)"
+msgstr "Αγγλικά (Η.Π.Α.)"
 
 #: src/LanguageList.cpp
 msgid "Estonian"
@@ -3399,7 +3386,7 @@ msgstr "Κορεάτικα"
 
 #: src/LanguageList.cpp
 msgid "Latvian"
-msgstr ""
+msgstr "Λετονικά"
 
 #: src/LanguageList.cpp
 msgid "Lithuanian"
@@ -3422,9 +3409,8 @@ msgid "Portuguese (Brazilian)"
 msgstr "Πορτογαλλικά (Βραζιλίας)"
 
 #: src/LanguageList.cpp
-#, fuzzy
 msgid "Romanian"
-msgstr "Αλβανικά"
+msgstr "Ρουμανικά"
 
 #: src/LanguageList.cpp
 msgid "Russian"
@@ -3448,17 +3434,17 @@ msgstr "Τούρκικα"
 
 #: src/LanguageList.cpp
 msgid "Ukrainian"
-msgstr ""
+msgstr "Ουκρανικά"
 
 #: src/libs/common/Format.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Unknown error %d"
-msgstr "Άγνωστη έκδοση"
+msgstr "Άγνωστο σφάλμα %d"
 
 #: src/libs/common/Format.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Unable to get error description for error %d"
-msgstr "Κατάλογος για τα εισερχόμενα"
+msgstr "Δεν είναι δυνατή η λήψη περιγραφής για το σφάλμα %d"
 
 #: src/libs/ec/cpp/ECSpecialTags.cpp src/PartFile.cpp
 msgid "Hashing"
@@ -3505,9 +3491,8 @@ msgid "Connection failure"
 msgstr "Αποτυχία σύνδεσης"
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
-#, fuzzy
 msgid "External Connection lost - exiting."
-msgstr "Η εξωτερική σύνδεση έκλεισε."
+msgstr "Η εξωτερική σύνδεση χάθηκε - γίνεται έξοδος."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "EC connection failed. Empty reply."
@@ -3522,9 +3507,8 @@ msgid "The core did not negotiate an encrypted connection. It may be an older aM
 msgstr ""
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
-#, fuzzy
 msgid "External Connection: Bad reply, handshake failed. Connection closed."
-msgstr "Εξωτερική Σύνδεση: Κακή ανταπόκριση από τον διακομιστή. Η σύνδεση τερματίστηκε."
+msgstr "Εξωτερική σύνδεση: Εσφαλμένη απάντηση, η χειραψία απέτυχε. Η σύνδεση έκλεισε."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 #, fuzzy
@@ -3544,9 +3528,8 @@ msgid "External Connection: Access denied because: "
 msgstr "Εξωτερική Σύνδεση: Η πρόσβαση απορρίφθηκε επειδή"
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
-#, fuzzy
 msgid "External Connection: Handshake failed."
-msgstr "Εξωτερική σύνδεση: Η πρόσβαση απορρίφθηκε"
+msgstr "Εξωτερική σύνδεση: Η χειραψία απέτυχε."
 
 #: src/LibSocketAsio.cpp
 #, c-format
@@ -3559,13 +3542,13 @@ msgid "Error creating UDP socket %s %d : %s"
 msgstr ""
 
 #: src/LibSocketAsio.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Asio thread %d started"
-msgstr "Η αυτόματη ανανέωση ξεκίνησε"
+msgstr "Το νήμα Asio %d ξεκίνησε"
 
 #: src/ListenSocket.cpp
 msgid "ListenSocket: Ok."
-msgstr ""
+msgstr "ListenSocket: Εντάξει."
 
 #: src/ListenSocket.cpp
 msgid "ERROR: Could not listen to TCP port."
@@ -3690,39 +3673,32 @@ msgid "Hide aMule"
 msgstr "Κρύψιμο aMule"
 
 #: src/MuleTrayIcon.cpp
-#, fuzzy
 msgid "eD2k: "
-msgstr "eD2k"
+msgstr "eD2k: "
 
 #: src/MuleTrayIcon.cpp
-#, fuzzy
 msgid "Connected (LowID)"
-msgstr "Συνδεδεμένο"
+msgstr "Συνδεδεμένο (LowID)"
 
 #: src/MuleTrayIcon.cpp
-#, fuzzy
 msgid "Connected (HighID)"
-msgstr "Συνδεδεμένο"
+msgstr "Συνδεδεμένο (HighID)"
 
 #: src/MuleTrayIcon.cpp
-#, fuzzy
 msgid "Kad: "
-msgstr " Kad: "
+msgstr "Kad: "
 
 #: src/MuleTrayIcon.cpp
-#, fuzzy
 msgid "Connected (firewalled)"
-msgstr "Συνδεδεμένο στο Kad (με προστατευτικό τοίχο)"
+msgstr "Συνδεδεμένο (πίσω από τείχος προστασίας)"
 
 #: src/MuleTrayIcon.cpp
-#, fuzzy
 msgid "Server: "
-msgstr "Διεύθυνση διακομιστή:"
+msgstr "Διακομιστής: "
 
 #: src/MuleTrayIcon.cpp
-#, fuzzy
 msgid "Server IP: "
-msgstr "Διεύθυνση διακομιστή:"
+msgstr "IP διακομιστή: "
 
 #: src/MuleTrayIcon.cpp src/TextClient.cpp
 msgid "Not connected"
@@ -3802,14 +3778,14 @@ msgid "DL: %u"
 msgstr "Όριο Κατεβάσματος: %u"
 
 #: src/MuleTrayIcon.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Download speed: %.1f%s"
-msgstr "Ταχύτητα κατεβάσματος: %.1f"
+msgstr "Ταχύτητα κατεβάσματος: %.1f%s"
 
 #: src/MuleTrayIcon.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Upload speed: %.1f%s"
-msgstr "Ταχύτητα ανεβάσματος: %.1f"
+msgstr "Ταχύτητα ανεβάσματος: %.1f%s"
 
 #: src/MuleTrayIcon.cpp
 #, c-format
@@ -3880,14 +3856,12 @@ msgid "WARNING! %s: Packet to %s discarded due to error (%s) while sending."
 msgstr ""
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Paste eD2k or magnet links here"
-msgstr "Προσθήκη ενός μαγνητικού συνδέσμου ή συνδέσμου eD2k στον πυρήνα."
+msgstr "Επικολλήστε συνδέσμους eD2k ή magnet εδώ"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Add links"
-msgstr "Προσθήκη στους φίλους"
+msgstr "Προσθήκη συνδέσμων"
 
 #: src/muuli_wdr.cpp
 msgid "Click here to add the eD2k link in the text control to your download queue."
@@ -4055,7 +4029,7 @@ msgstr "Κατάληξη"
 
 #: src/muuli_wdr.cpp
 msgid "Ask already-responded Kad peers to widen the search. Each click queries the next-closest peer for more contacts (KADEMLIA_FIND_VALUE_MORE), surfacing additional file matches that the search's initial alpha frontier missed."
-msgstr ""
+msgstr "Ζητήστε από τους Kad peers που έχουν ήδη απαντήσει να διευρύνουν την αναζήτηση. Κάθε κλικ ρωτά τον επόμενο πλησιέστερο peer για περισσότερες επαφές (KADEMLIA_FIND_VALUE_MORE), αναδεικνύοντας επιπλέον αποτελέσματα αρχείων που παρέλειψε το αρχικό μέτωπο alpha της αναζήτησης."
 
 #: src/muuli_wdr.cpp
 msgid "Stop"
@@ -4091,9 +4065,8 @@ msgid "Filter:"
 msgstr "Φίλτρο:"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "File sources:"
-msgstr "Ολοκλήρωση πηγών"
+msgstr "Πηγές αρχείου:"
 
 #: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
 msgid "General"
@@ -4172,9 +4145,8 @@ msgid "Packages saved by I.C.H."
 msgstr "Πακέτα που σώθηκαν από την Ε.Δ.Φ."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Sharing"
-msgstr "Κοινοκτημοσύνη"
+msgstr "Κοινή χρήση"
 
 #: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
 msgid "Requests"
@@ -4197,32 +4169,28 @@ msgid "Complete Sources"
 msgstr "Ολοκληρωμένες πηγές"
 
 #: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
-#, fuzzy
 msgid "Shared since"
-msgstr "Κοινόχρηστα αρχεία"
+msgstr "Σε κοινή χρήση από"
 
 #: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
-#, fuzzy
 msgid "Last upload"
-msgstr ", Ανέβασμα: "
+msgstr "Τελευταίο ανέβασμα"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Media Info"
-msgstr "Πληροφορίες Kad"
+msgstr "Πληροφορίες πολυμέσων"
 
 #: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Length"
-msgstr ""
+msgstr "Διάρκεια"
 
 #: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
-#, fuzzy
 msgid "Bitrate"
-msgstr "Μη αποτιμημένο"
+msgstr "Ρυθμός bit"
 
 #: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Codec"
-msgstr ""
+msgstr "Codec"
 
 #: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Artist"
@@ -4301,9 +4269,8 @@ msgid "Choose the file rating or advice users if the file is invalid ..."
 msgstr "Βαθμολογήστε την αξία του αρχείου ή ενημερώστε τους χρήστες αν το αρχείο είναι έγκυρο ..."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Get from Kad"
-msgstr "Αποσυνδεδεμένο από το Kad"
+msgstr "Λήψη από το Kad"
 
 #: src/muuli_wdr.cpp
 msgid "Refresh"
@@ -4468,30 +4435,28 @@ msgid "This specifies the language used on controls."
 msgstr "Αυτό ορίζει την γλώσσα που χρησιμοποιείται στο γραφικό περιβάλλον."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Periodically check for a new version"
-msgstr "Έλεγχος για νέα έκδοση κατά την εκκίνηση"
+msgstr "Περιοδικός έλεγχος για νέα έκδοση"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Enabling this will make aMule check for a new version at startup and once a day while running"
-msgstr "Αν ενεργοποιηθεί, το aMule θα ελέγχει αν υπάρχει νέα έκδοση κατά την εκκίνηση"
+msgstr "Η ενεργοποίηση αυτού θα κάνει το aMule να ελέγχει για νέα έκδοση κατά την εκκίνηση και μία φορά την ημέρα ενώ εκτελείται"
 
 #: src/muuli_wdr.cpp
 msgid "Registers a per-user autostart entry with the OS so aMule launches at login. If you move the aMule binary, launch aMule once manually afterwards to refresh the entry."
-msgstr ""
+msgstr "Καταχωρεί μια καταχώρηση αυτόματης εκκίνησης ανά χρήστη στο λειτουργικό σύστημα, ώστε το aMule να εκκινείται κατά τη σύνδεση. Αν μετακινήσετε το δυαδικό αρχείο του aMule, εκκινήστε το aMule χειροκίνητα μία φορά μετά για να ανανεωθεί η καταχώρηση."
 
 #: src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Makes aMule the default handler for ed2k:// links so clicking one in your browser or file manager opens it here."
-msgstr ""
+msgstr "Κάνει το aMule τον προεπιλεγμένο χειριστή για συνδέσμους ed2k://, ώστε κάνοντας κλικ σε έναν στον περιηγητή ή τον διαχειριστή αρχείων να ανοίγει εδώ."
 
 #: src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "aMule only handles eD2k-compatible magnets (containing xt=urn:ed2k:). BitTorrent magnets are NOT supported and clicking them will silently fail. If you use a BitTorrent client (Transmission, qBittorrent, etc.), leave this off."
-msgstr ""
+msgstr "Το aMule χειρίζεται μόνο magnet συμβατά με eD2k (που περιέχουν xt=urn:ed2k:). Τα magnet BitTorrent ΔΕΝ υποστηρίζονται και το κλικ σε αυτά θα αποτύχει σιωπηλά. Αν χρησιμοποιείτε πελάτη BitTorrent (Transmission, qBittorrent κ.λπ.), αφήστε το απενεργοποιημένο."
 
 #: src/muuli_wdr.cpp
 msgid "Opening a collection queues every eD2k link it contains. On Windows this adds aMule to the \"Open with\" list and takes the default only when no other program has claimed the file type."
-msgstr ""
+msgstr "Το άνοιγμα μιας συλλογής βάζει στην ουρά κάθε σύνδεσμο eD2k που περιέχει. Στα Windows αυτό προσθέτει το aMule στη λίστα \"Άνοιγμα με\" και γίνεται προεπιλογή μόνο όταν κανένα άλλο πρόγραμμα δεν έχει διεκδικήσει τον τύπο αρχείου."
 
 #: src/muuli_wdr.cpp
 msgid "Start minimized"
@@ -4519,7 +4484,7 @@ msgstr "Αυτό ενεργοποιεί/απενεργοποιεί την εικ
 
 #: src/muuli_wdr.cpp
 msgid "Hide application window when close button is pressed"
-msgstr ""
+msgstr "Απόκρυψη παραθύρου εφαρμογής όταν πατηθεί το κουμπί κλεισίματος"
 
 #: src/muuli_wdr.cpp
 msgid "Minimize to Tray Icon"
@@ -4531,20 +4496,19 @@ msgstr "Αν ενεργοποιηθεί το aMule θα ελαχιστοποιη
 
 #: src/muuli_wdr.cpp
 msgid "Show notifications when finished downloading"
-msgstr ""
+msgstr "Εμφάνιση ειδοποιήσεων όταν ολοκληρώνεται το κατέβασμα"
 
 #: src/muuli_wdr.cpp
 msgid "Enabling this will make aMule to show notifications when finished downloading."
-msgstr ""
+msgstr "Η ενεργοποίηση αυτής της επιλογής θα κάνει το aMule να εμφανίζει ειδοποιήσεις όταν ολοκληρώνεται ένα κατέβασμα."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Remember search history"
-msgstr "Απομνημόνευση αυτών των ρυθμίσεων"
+msgstr "Απομνημόνευση ιστορικού αναζήτησης"
 
 #: src/muuli_wdr.cpp
 msgid "Keeps a dropdown list of your past search terms in the Search tab's Name field. This remembers the queries you typed, not the results they returned."
-msgstr ""
+msgstr "Διατηρεί μια αναπτυσσόμενη λίστα με τους προηγούμενους όρους αναζήτησής σας στο πεδίο Όνομα της καρτέλας Αναζήτηση. Θυμάται τα ερωτήματα που πληκτρολογήσατε, όχι τα αποτελέσματα που επέστρεψαν."
 
 #: src/muuli_wdr.cpp
 msgid "Tooltip delay time: "
@@ -4619,9 +4583,8 @@ msgid "Advanced users only: If you have multiple network interfaces, enter the a
 msgstr "Μόνο για προχωρημένους χρήστες: Αν έχετε πολλαπλά δικτυακά περιβάλλοντα, εισάγετε την διεύθυνση του περιβάλλοντος με το οποίο το aMule πρέπει να συνδεθεί."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Bind to network interface (empty for any):"
-msgstr "Συνέδεσε την τοπική διεύθυνση στην διεύθυνση (κενό για όλες):"
+msgstr "Σύνδεση σε διεπαφή δικτύου (κενό για οποιαδήποτε):"
 
 #: src/muuli_wdr.cpp
 msgid "Advanced users only: pin aMule's peer-to-peer traffic, and its HTTP updates where the platform allows, to one network interface, chosen from the list or typed in by name (e.g. tun0, eth0, en0) or index. Unlike binding to an IP, this stops traffic leaking out via the default route - useful with a VPN. On Linux before kernel 5.7 it needs the CAP_NET_RAW capability."
@@ -4653,7 +4616,7 @@ msgstr "Αφαίρεση του νεκρού διακομιστή ύστερα �
 
 #: src/muuli_wdr.cpp
 msgid "Static servers are never removed, even when unreachable."
-msgstr ""
+msgstr "Οι στατικοί διακομιστές δεν αφαιρούνται ποτέ, ακόμη και όταν είναι απρόσιτοι."
 
 #: src/muuli_wdr.cpp
 msgid "retries"
@@ -4705,7 +4668,7 @@ msgstr "Προσπάθησε να κατεβάσεις πρώτα τα αρχι�
 
 #: src/muuli_wdr.cpp
 msgid "Endgame mode: rotate to faster sources for the final blocks"
-msgstr ""
+msgstr "Λειτουργία endgame: εναλλαγή σε ταχύτερες πηγές για τα τελικά τμήματα"
 
 #: src/muuli_wdr.cpp
 msgid "Start next paused file when a file completes"
@@ -4717,7 +4680,7 @@ msgstr "Από την ίδια κατηγορία"
 
 #: src/muuli_wdr.cpp
 msgid "In alphabetic order"
-msgstr ""
+msgstr "Με αλφαβητική σειρά"
 
 #: src/muuli_wdr.cpp
 msgid "Preallocate disk space for new files"
@@ -4729,11 +4692,11 @@ msgstr "Δεσμεύει χώρο στο δίσκο για καινούρια α
 
 #: src/muuli_wdr.cpp
 msgid "Create new files as sparse files"
-msgstr ""
+msgstr "Δημιουργία νέων αρχείων ως sparse files"
 
 #: src/muuli_wdr.cpp
 msgid "Sparse part files only occupy disk space for the parts already downloaded, so free space is used up gradually as the file fills in. Turn this off to use an ordinary file instead - useful where sparse files are unsupported or slow, or where backup/de-duplication tools handle them badly. Applies only when the core runs on Windows; on Linux and macOS part files are sparse anyway and this setting has no effect."
-msgstr ""
+msgstr "Τα sparse ημιτελή αρχεία καταλαμβάνουν χώρο στον δίσκο μόνο για τα τμήματα που έχουν ήδη κατέβει, οπότε ο ελεύθερος χώρος μειώνεται σταδιακά καθώς συμπληρώνεται το αρχείο. Απενεργοποιήστε το για να χρησιμοποιηθεί κανονικό αρχείο αντ' αυτού - χρήσιμο όπου τα sparse files δεν υποστηρίζονται ή είναι αργά, ή όπου εργαλεία αντιγράφων ασφαλείας/αφαίρεσης διπλοτύπων τα χειρίζονται άσχημα. Ισχύει μόνο όταν ο πυρήνας εκτελείται σε Windows· σε Linux και macOS τα ημιτελή αρχεία είναι ούτως ή άλλως sparse και αυτή η ρύθμιση δεν έχει καμία επίδραση."
 
 #: src/muuli_wdr.cpp
 msgid "Stop downloads when free disk space reaches "
@@ -4773,41 +4736,43 @@ msgstr "Προχωρημένη Ε.Δ.Φ. εμπιστεύεται κάθε κα�
 
 #: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
 msgid "Media metadata extraction"
-msgstr ""
+msgstr "Εξαγωγή μεταδεδομένων πολυμέσων"
 
 #: src/muuli_wdr.cpp
 msgid "Extract length / bitrate / codec from shared audio and video files"
-msgstr ""
+msgstr "Εξαγωγή διάρκειας / ρυθμού bit / codec από κοινόχρηστα αρχεία ήχου και βίντεο"
 
 #: src/muuli_wdr.cpp
 msgid "When enabled, aMule runs ffprobe on each shared media file to fill in the Length / Bitrate / Codec columns other clients see when they find the file in a search. Requires ffmpeg (the ffprobe binary) to be installed."
-msgstr ""
+msgstr "Όταν είναι ενεργοποιημένο, το aMule εκτελεί το ffprobe σε κάθε κοινόχρηστο αρχείο πολυμέσων για να συμπληρώσει τις στήλες Διάρκεια / Ρυθμός bit / Codec που βλέπουν άλλοι πελάτες όταν βρίσκουν το αρχείο σε μια αναζήτηση. Απαιτεί εγκατεστημένο το ffmpeg (το εκτελέσιμο ffprobe)."
 
 #: src/muuli_wdr.cpp
 msgid "Path to ffprobe:"
-msgstr ""
+msgstr "Διαδρομή προς το ffprobe:"
 
 #: src/muuli_wdr.cpp
 msgid "Full path to the ffprobe binary. Leave empty to have aMule auto-detect it on startup."
-msgstr ""
+msgstr "Πλήρης διαδρομή προς το εκτελέσιμο ffprobe. Αφήστε το κενό ώστε το aMule να το εντοπίζει αυτόματα κατά την εκκίνηση."
 
 #: src/muuli_wdr.cpp
 msgid "Detect"
-msgstr ""
+msgstr "Εντοπισμός"
 
 #: src/muuli_wdr.cpp
 msgid "Search the standard install locations for an ffprobe binary and fill the path field."
-msgstr ""
+msgstr "Αναζήτηση στις τυπικές τοποθεσίες εγκατάστασης για ένα εκτελέσιμο ffprobe και συμπλήρωση του πεδίου διαδρομής."
 
 #: src/muuli_wdr.cpp
 msgid ""
 "Completed downloads are stored here. All files in this folder are automatically shared with other peers.\n"
 "If this folder also holds files you don't want to share, point it at an aMule-only sub-folder."
 msgstr ""
+"Τα ολοκληρωμένα κατεβάσματα αποθηκεύονται εδώ. Όλα τα αρχεία σε αυτόν τον κατάλογο διαμοιράζονται αυτόματα με άλλους χρήστες.\n"
+"Αν αυτός ο κατάλογος περιέχει επίσης αρχεία που δεν θέλετε να διαμοιράσετε, ορίστε έναν υποκατάλογο αποκλειστικά για το aMule."
 
 #: src/muuli_wdr.cpp
 msgid "Pick the folder where completed downloads will be stored. All files in that folder will be shared with other peers."
-msgstr ""
+msgstr "Επιλέξτε τον κατάλογο όπου θα αποθηκεύονται τα ολοκληρωμένα κατεβάσματα. Όλα τα αρχεία σε αυτόν τον κατάλογο θα διαμοιράζονται με άλλους χρήστες."
 
 #: src/muuli_wdr.cpp
 msgid "Shared folders"
@@ -4815,19 +4780,19 @@ msgstr "Κοινόχρηστα αρχεία"
 
 #: src/muuli_wdr.cpp
 msgid "(Folders shared by the core. Enter a path to add one.)"
-msgstr ""
+msgstr "(Κατάλογοι σε κοινή χρήση από τον πυρήνα. Εισαγάγετε μια διαδρομή για να προσθέσετε έναν.)"
 
 #: src/muuli_wdr.cpp
 msgid "Absolute path of a folder on the core's machine, e.g. /home/user/shared"
-msgstr ""
+msgstr "Απόλυτη διαδρομή ενός καταλόγου στο μηχάνημα του πυρήνα, π.χ. /home/user/shared"
 
 #: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
 msgid "Recursive"
-msgstr ""
+msgstr "Αναδρομικά"
 
 #: src/muuli_wdr.cpp
 msgid "Share every sub-folder underneath this one, including ones created later."
-msgstr ""
+msgstr "Κοινή χρήση κάθε υποκαταλόγου κάτω από αυτόν, συμπεριλαμβανομένων εκείνων που θα δημιουργηθούν αργότερα."
 
 #: src/muuli_wdr.cpp src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Remove"
@@ -4843,11 +4808,11 @@ msgstr "Κάνε τα κρυφά αρχεία κοινόχρηστα"
 
 #: src/muuli_wdr.cpp
 msgid "Automatically rescan shared folders for changes"
-msgstr ""
+msgstr "Αυτόματη επανασάρωση κοινόχρηστων καταλόγων για αλλαγές"
 
 #: src/muuli_wdr.cpp
 msgid "Follow symbolic links in shared folders"
-msgstr ""
+msgstr "Ακολούθηση συμβολικών συνδέσμων στους κοινόχρηστους καταλόγους"
 
 #: src/muuli_wdr.cpp
 msgid "Exclude files and folders matching:"
@@ -4859,7 +4824,7 @@ msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Patterns are regular expressions"
-msgstr ""
+msgstr "Τα μοτίβα είναι κανονικές εκφράσεις"
 
 #: src/muuli_wdr.cpp
 msgid "When set, the whole field is one regular expression: '|' is alternation, and '*' and '?' take their regular-expression meaning rather than the wildcard one. When unset, it is a list of '|'-separated wildcards."
@@ -4920,9 +4885,8 @@ msgid "Upload graph scale:"
 msgstr "Κλιμακα του γραφήματος εξερχομένων"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Colors: "
-msgstr "Χρώματα:"
+msgstr "Χρώματα: "
 
 #: src/muuli_wdr.cpp
 msgid "Background"
@@ -4961,9 +4925,8 @@ msgid "Active connections"
 msgstr "Ενεργές συνδέσεις"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Systray Icon Speed Bar"
-msgstr "Εικόνα για την μπάρα ταχείας πρόσβασης του Systray"
+msgstr "Γραμμή ταχύτητας εικόνας systray"
 
 #: src/muuli_wdr.cpp
 msgid "Kad-nodes current"
@@ -4999,17 +4962,15 @@ msgstr "Μέγιστος αρ. νέων συνδέσεων /5 δευτερόλε
 
 #: src/muuli_wdr.cpp
 msgid "Concurrent Kad source lookups"
-msgstr ""
+msgstr "Ταυτόχρονες αναζητήσεις πηγών Kad"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Kad source re-search interval (minutes)"
-msgstr "Περίοδος ενημέρωσης του FTP σε λεπτά"
+msgstr "Διάστημα επανάληψης αναζήτησης πηγών Kad (λεπτά)"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Source re-ask interval (minutes)"
-msgstr "Περίοδος ενημέρωσης του FTP σε λεπτά"
+msgstr "Διάστημα επανερώτησης πηγών (λεπτά)"
 
 #: src/muuli_wdr.cpp
 msgid "File Buffer Size: 240000 bytes"
@@ -5017,11 +4978,11 @@ msgstr "Χώρος προσωρινής αποθήκευσης αρχείου: 2
 
 #: src/muuli_wdr.cpp
 msgid "Use MMAP: memory-mapped file access (lower memory use)"
-msgstr ""
+msgstr "Χρήση MMAP: πρόσβαση αρχείων με αντιστοίχιση μνήμης (χαμηλότερη χρήση μνήμης)"
 
 #: src/muuli_wdr.cpp
 msgid "Maps part files into memory instead of buffering them on the heap, lowering the process memory footprint. May reduce download speed on some disks; best for memory-constrained or upload-heavy hosts."
-msgstr ""
+msgstr "Αντιστοιχίζει τα ημιτελή αρχεία στη μνήμη αντί να τα αποθηκεύει προσωρινά στο heap, μειώνοντας το αποτύπωμα μνήμης της διεργασίας. Μπορεί να μειώσει την ταχύτητα κατεβάσματος σε ορισμένους δίσκους· ιδανικό για συστήματα με περιορισμένη μνήμη ή μεγάλο φόρτο ανεβάσματος."
 
 #: src/muuli_wdr.cpp
 msgid "Upload Queue Size: 5000 clients"
@@ -5033,7 +4994,7 @@ msgstr "Διάστημα ανανέωσης της σύνδεσης σε δια�
 
 #: src/muuli_wdr.cpp
 msgid "Disable computer's timed standby mode"
-msgstr ""
+msgstr "Απενεργοποίηση χρονομετρημένης αναστολής λειτουργίας του υπολογιστή"
 
 #: src/muuli_wdr.cpp
 msgid "Skin to use: "
@@ -5048,9 +5009,8 @@ msgid "Show extended info on categories tabs"
 msgstr "Εμφάνιση εκτεταμένων πληροφοριών στην καρτέλα κατηγοριών"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Show application version on title"
-msgstr "Εμφάνιση των ταχυτήτων μεταφοράς στον τίτλο"
+msgstr "Εμφάνιση έκδοσης εφαρμογής στον τίτλο"
 
 #: src/muuli_wdr.cpp
 msgid "Show transfer rates on title"
@@ -5074,7 +5034,7 @@ msgstr "Κατακόρυφος προσανατολισμός της γραμμ�
 
 #: src/muuli_wdr.cpp
 msgid "Live column sorting (auto-reorder rows as their values change)"
-msgstr ""
+msgstr "Ζωντανή ταξινόμηση στηλών (αυτόματη αναδιάταξη γραμμών καθώς αλλάζουν οι τιμές τους)"
 
 #: src/muuli_wdr.cpp
 msgid "Download Queue Files"
@@ -5129,59 +5089,52 @@ msgid "Require encrypted connections (rejects clients that cannot encrypt)"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "aMule API server parameters"
-msgstr "Παράμετροι διακομιστή ιστού"
+msgstr "Παράμετροι διακομιστή aMule API"
 
 #: src/muuli_wdr.cpp
 msgid "Run amuleapi (REST API) on startup"
-msgstr ""
+msgstr "Εκτέλεση amuleapi (REST API) κατά την εκκίνηση"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "HTTP port:"
-msgstr "Θύρα TCP:"
+msgstr "Θύρα HTTP:"
 
 #: src/muuli_wdr.cpp
 msgid "The interface amuleapi's HTTP server listens on. 127.0.0.1 (default) accepts only local connections; use 0.0.0.0 or a specific IP to expose it to other hosts (set an admin password below)."
-msgstr ""
+msgstr "Η διεπαφή στην οποία ακούει ο διακομιστής HTTP του amuleapi. Η 127.0.0.1 (προεπιλογή) δέχεται μόνο τοπικές συνδέσεις· χρησιμοποιήστε 0.0.0.0 ή συγκεκριμένη IP για να την εκθέσετε σε άλλους κεντρικούς υπολογιστές (ορίστε κωδικό διαχειριστή παρακάτω)."
 
 #: src/muuli_wdr.cpp
 msgid "Type a password to set or change it. Stored passwords cannot be shown, so leaving this empty keeps the current one."
-msgstr ""
+msgstr "Πληκτρολογήστε έναν κωδικό για να τον ορίσετε ή να τον αλλάξετε. Οι αποθηκευμένοι κωδικοί δεν μπορούν να εμφανιστούν, οπότε αφήνοντάς το κενό διατηρείται ο τρέχων."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Admin password"
-msgstr "Έλεγχος κωδικού\n"
+msgstr "Κωδικός διαχειριστή"
 
 #: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "A password is set."
-msgstr "Έλεγχος κωδικού\n"
+msgstr "Έχει οριστεί κωδικός."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Enable guest access"
-msgstr "Να απαγορεύεται η πρόσβαση σε επισκέπτες"
+msgstr "Ενεργοποίηση πρόσβασης επισκέπτη"
 
 #: src/muuli_wdr.cpp
 msgid "Guest sessions may read status and listings but cannot change anything. Turning this off clears the stored guest password."
-msgstr ""
+msgstr "Οι συνεδρίες επισκέπτη μπορούν να διαβάζουν την κατάσταση και τις λίστες, αλλά δεν μπορούν να αλλάξουν τίποτα. Η απενεργοποίηση αυτού διαγράφει τον αποθηκευμένο κωδικό επισκέπτη."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Guest password"
-msgstr "Κωδικός επισκέπτη για τον διακομιστή ιστού"
+msgstr "Κωδικός επισκέπτη"
 
 #: src/muuli_wdr.cpp
 msgid "Web server parameters"
 msgstr "Παράμετροι διακομιστή ιστού"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Run webserver on startup (deprecated)"
-msgstr "Έναρξη του εξυπηρετητή ιστού κατά την εκκίνηση"
+msgstr "Εκτέλεση διακομιστή ιστού κατά την εκκίνηση (καταργημένο)"
 
 #: src/muuli_wdr.cpp
 msgid "Web template"
@@ -5216,13 +5169,12 @@ msgid "Enable Gzip compression"
 msgstr "Ενεργοποίηση συμπίεσης Gzip"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Reset page to defaults"
-msgstr "Εργοστασιακές ρυθμίσεις"
+msgstr "Επαναφορά σελίδας στις προεπιλογές"
 
 #: src/muuli_wdr.cpp
 msgid "Reset the settings on the current page to their default values."
-msgstr ""
+msgstr "Επαναφορά των ρυθμίσεων της τρέχουσας σελίδας στις προεπιλεγμένες τιμές τους."
 
 #: src/muuli_wdr.cpp src/ServerWnd.cpp
 msgid "OK"
@@ -5245,9 +5197,8 @@ msgid "Change priority for new assigned files"
 msgstr "Αλλαγή προτεραιότητας για τα νέα προσδιορισμένα αρχεία"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Don't change"
-msgstr "Να μην αλλάξει"
+msgstr "Χωρίς αλλαγή"
 
 #: src/muuli_wdr.cpp
 msgid "Select color for this Category (currently selected)"
@@ -5443,16 +5394,15 @@ msgstr "Παρανοϊκή διαχείριση των αταίριαστων δ
 
 #: src/muuli_wdr.cpp
 msgid "Rejects a packet when its source IP differs from the IP the client claims (an anti-spoofing check). Disable only if it causes connection problems."
-msgstr ""
+msgstr "Απορρίπτει ένα πακέτο όταν η IP προέλευσής του διαφέρει από την IP που ισχυρίζεται ο πελάτης (έλεγχος anti-spoofing). Απενεργοποιήστε το μόνο αν προκαλεί προβλήματα σύνδεσης."
 
 #: src/muuli_wdr.cpp
 msgid "Use system-wide ipfilter.dat if available"
 msgstr "Χρήση του ipfilter.dat όλου του συστήματος αν αυτό υπάρχει"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "If there's no local ipfilter.dat found, allow usage of a system-wide ipfilter file."
-msgstr "Αν δεν βρεθεί τοπικό ipfilter.dat, να γίνει επιτρεπτή η χρήση του αρχείου ipfilter (φίλτρο διευθύνσεων) όλου του συστήματος."
+msgstr "Αν δεν βρεθεί τοπικό αρχείο ipfilter.dat, να επιτρέπεται η χρήση αρχείου ipfilter σε επίπεδο συστήματος."
 
 #: src/muuli_wdr.cpp
 msgid "Enable Online-Signature"
@@ -5480,37 +5430,35 @@ msgstr "Κλικ εδώ για την επιλογή του καταλόγου �
 
 #: src/muuli_wdr.cpp
 msgid "Show country flags for clients"
-msgstr ""
+msgstr "Εμφάνιση σημαιών χωρών για τους πελάτες"
 
 #: src/muuli_wdr.cpp
 msgid "Render the country flag column in the transfers, queue and search views. Requires a valid MMDB GeoIP database (see below)."
-msgstr ""
+msgstr "Εμφάνιση της στήλης σημαίας χώρας στις προβολές μεταφορών, ουράς και αναζήτησης. Απαιτεί έγκυρη βάση δεδομένων MMDB GeoIP (βλ. παρακάτω)."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Database"
-msgstr "Ρυθμός ροής δεδομένων :"
+msgstr "Βάση δεδομένων"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Source:"
-msgstr "Αρ. πηγών"
+msgstr "Πηγή:"
 
 #: src/muuli_wdr.cpp
 msgid "DB-IP (free, no account)"
-msgstr ""
+msgstr "DB-IP (δωρεάν, χωρίς λογαριασμό)"
 
 #: src/muuli_wdr.cpp
 msgid "MaxMind GeoLite2 (free, account required)"
-msgstr ""
+msgstr "MaxMind GeoLite2 (δωρεάν, απαιτείται λογαριασμός)"
 
 #: src/muuli_wdr.cpp
 msgid "Custom URL"
-msgstr ""
+msgstr "Προσαρμοσμένο URL"
 
 #: src/muuli_wdr.cpp
 msgid "Choose which provider supplies the GeoIP MMDB database. DB-IP is the default - no account required. MaxMind requires a free account + license key. Use Custom URL to point at any other MMDB host (e.g. a local mirror)."
-msgstr ""
+msgstr "Επιλέξτε ποιος πάροχος παρέχει τη βάση δεδομένων GeoIP MMDB. Το DB-IP είναι η προεπιλογή - δεν απαιτείται λογαριασμός. Το MaxMind απαιτεί δωρεάν λογαριασμό + κλειδί άδειας χρήσης. Χρησιμοποιήστε το Προσαρμοσμένο URL για να δείξετε σε οποιονδήποτε άλλο κεντρικό υπολογιστή MMDB (π.χ. τοπικό είδωλο)."
 
 #: src/muuli_wdr.cpp
 msgid ""
@@ -5519,10 +5467,14 @@ msgid ""
 "IP-to-Country data by DB-IP.com - https://db-ip.com\n"
 "License: Creative Commons BY 4.0 - https://creativecommons.org/licenses/by/4.0/"
 msgstr ""
+"Δεν απαιτείται διαμόρφωση.\n"
+"\n"
+"Δεδομένα IP-to-Country από το DB-IP.com - https://db-ip.com\n"
+"Άδεια χρήσης: Creative Commons BY 4.0 - https://creativecommons.org/licenses/by/4.0/"
 
 #: src/muuli_wdr.cpp
 msgid "License key:"
-msgstr ""
+msgstr "Κλειδί άδειας χρήσης:"
 
 #: src/muuli_wdr.cpp
 msgid ""
@@ -5533,11 +5485,16 @@ msgid ""
 "License: MaxMind GeoLite2 EULA - https://www.maxmind.com/en/geolite2/eula\n"
 "Requires attribution and account registration; refresh at least every 30 days."
 msgstr ""
+"Εγγραφείτε για δωρεάν λογαριασμό MaxMind και μετά δημιουργήστε ένα Κλειδί Άδειας Χρήσης:\n"
+"https://www.maxmind.com/en/geolite2/signup\n"
+"\n"
+"Αυτό το προϊόν περιλαμβάνει δεδομένα GeoLite2 που δημιουργήθηκαν από την MaxMind - https://www.maxmind.com\n"
+"Άδεια χρήσης: MaxMind GeoLite2 EULA - https://www.maxmind.com/en/geolite2/eula\n"
+"Απαιτεί αναφορά προέλευσης και εγγραφή λογαριασμού· ανανεώστε τουλάχιστον κάθε 30 ημέρες."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Download URL:"
-msgstr "Μεταφόρτωση"
+msgstr "URL κατεβάσματος:"
 
 #: src/muuli_wdr.cpp
 msgid ""
@@ -5545,19 +5502,21 @@ msgid ""
 "URL may include credentials (https://user:pass@host/...).\n"
 "License and attribution terms are set by the upstream URL - you are responsible."
 msgstr ""
+"Πρέπει να δείχνει σε αρχείο .mmdb ή σε .gz / .tar.gz που το περιέχει.\n"
+"Το URL μπορεί να περιλαμβάνει διαπιστευτήρια (https://user:pass@host/...).\n"
+"Οι όροι άδειας χρήσης και αναφοράς προέλευσης καθορίζονται από το URL προέλευσης - είστε υπεύθυνοι εσείς."
 
 #: src/muuli_wdr.cpp
 msgid "Download the GeoIP database from the selected source."
-msgstr ""
+msgstr "Κατέβασμα της βάσης δεδομένων GeoIP από την επιλεγμένη πηγή."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Auto-update on startup"
-msgstr "Αυτόματη ανανέωση του ipfilter κατά την εκκίνηση"
+msgstr "Αυτόματη ενημέρωση κατά την εκκίνηση"
 
 #: src/muuli_wdr.cpp
 msgid "Re-download the GeoIP database from the selected source every time aMule starts."
-msgstr ""
+msgstr "Κατέβασμα ξανά της βάσης δεδομένων GeoIP από την επιλεγμένη πηγή κάθε φορά που ξεκινά το aMule."
 
 #: src/muuli_wdr.cpp
 msgid "Filter incoming messages (except current chat):"
@@ -5657,18 +5616,16 @@ msgid "Encrypt the connection (recommended)"
 msgstr "Η εξωτερική σύνδεση έκλεισε."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Force ZLIB compression"
-msgstr "Χρήση συμπίεσης τύπου gzip"
+msgstr "Εξαναγκασμός συμπίεσης ZLIB"
 
 #: src/muuli_wdr.cpp
 msgid "Enable Verbose Debug-Logging."
 msgstr "Ενεργοποίηση λεπτομερούς καταγραφής για έλεγχο σφαλμάτων"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Only to Logfile"
-msgstr "&Άνοιγμα αρχείου"
+msgstr "Μόνο στο αρχείο καταγραφής"
 
 #: src/muuli_wdr.cpp
 msgid "Message Categories:"
@@ -5696,37 +5653,31 @@ msgstr "Τύποι συμβάντων"
 
 #: src/muuli_wdr.cpp
 msgid "Statistics and queued clients for selected file(s) : Session / All time"
-msgstr ""
+msgstr "Στατιστικά και πελάτες σε ουρά για το/τα επιλεγμένο(α) αρχείο(α): Συνεδρία / Συνολικά"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Active Uploads"
-msgstr "Ενεργά ανεβάσματα :"
-
-#: src/muuli_wdr.cpp
-#, fuzzy
-msgid "Show Clients for"
-msgstr "Δείξε τους πελάτες"
-
-#: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
-#, fuzzy
-msgid "All files"
-msgstr "Κρύψιμο των κοινόχρηστων αρχείων "
-
-#: src/muuli_wdr.cpp
-#, fuzzy
-msgid "Selected files"
-msgstr "Επιλογή φίλτρου εμφάνισης"
-
-#: src/muuli_wdr.cpp
-#, fuzzy
-msgid "Active uploads only"
 msgstr "Ενεργά ανεβάσματα"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
+msgid "Show Clients for"
+msgstr "Εμφάνιση πελατών για"
+
+#: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
+msgid "All files"
+msgstr "Όλα τα αρχεία"
+
+#: src/muuli_wdr.cpp
+msgid "Selected files"
+msgstr "Επιλεγμένα αρχεία"
+
+#: src/muuli_wdr.cpp
+msgid "Active uploads only"
+msgstr "Μόνο ενεργά ανεβάσματα"
+
+#: src/muuli_wdr.cpp
 msgid "Reload:"
-msgstr "Επαναφόρτωση λίστας"
+msgstr "Επαναφόρτωση:"
 
 #: src/muuli_wdr.cpp
 msgid "Reload your shared files"
@@ -5864,7 +5815,7 @@ msgstr "Κείμενο "
 #: src/OtherFunctions.cpp
 #, c-format
 msgid "Using config dir: %s"
-msgstr ""
+msgstr "Χρήση καταλόγου ρυθμίσεων: %s"
 
 #: src/PartBarLegendUI.cpp
 #, fuzzy
@@ -5943,7 +5894,7 @@ msgstr ""
 
 #: src/PartFileConvert.cpp
 msgid "Waiting for partfile convert thread to die..."
-msgstr ""
+msgstr "Αναμονή τερματισμού του νήματος μετατροπής ημιτελών αρχείων..."
 
 #: src/PartFileConvert.cpp
 #, c-format
@@ -6002,9 +5953,8 @@ msgid "Please choose a folder to search for temporary downloads! (subfolders wil
 msgstr "Παρακαλώ διαλέξτε έναν κατάλογο για αναζήτηση προσωρινών κατεβασμάτων! (θα συμπεριληφθούν και οι υποκατάλογοι)"
 
 #: src/PartFileConvertDlg.cpp
-#, fuzzy
 msgid "Do you want the source files of successfully imported downloads be deleted?"
-msgstr "Θέλετε να σβηστούν τα πηγαία αρχεία των επιτυχών εισαγόμενων κατεβασμάτων;"
+msgstr "Θέλετε να διαγραφούν τα αρχικά αρχεία των κατεβασμάτων που εισήχθησαν με επιτυχία;"
 
 #: src/PartFileConvertDlg.cpp
 msgid "Remove sources?"
@@ -6036,9 +5986,9 @@ msgid "ERROR: Invalid part.met file version: %s ==> %s"
 msgstr "ΣΦΑΛΜΑ: άκυρη έκδοση του αρχείου part.met: %s ==> %s"
 
 #: src/PartFile.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Error: %s (%s) is corrupt (bad tags: %s), unable to load file."
-msgstr "Σφάλμα: το %s (%s) είναι φθαρμένο (εσφαλμένη απαρίθμηση ετικέτας), δεν είναι δυνατή η φόρτωση του αρχείου."
+msgstr "Σφάλμα: το %s (%s) είναι φθαρμένο (εσφαλμένες ετικέτες: %s), δεν είναι δυνατή η φόρτωση του αρχείου."
 
 #: src/PartFile.cpp
 #, c-format
@@ -6077,14 +6027,13 @@ msgid "ERROR while saving partfile: %s (%s ==> %s)"
 msgstr "ΣΦΑΛΜΑ κατά το αποθήκευση του ημιτελούς αρχείου: %s (%s ==> %s)"
 
 #: src/PartFile.cpp
-#, fuzzy
 msgid "IO failure while saving partfile: "
-msgstr "ΣΦΑΛΜΑ κατά το αποθήκευση του ημιτελούς αρχείου: %s (%s ==> %s)"
+msgstr "Σφάλμα εισόδου/εξόδου κατά την αποθήκευση του ημιτελούς αρχείου: "
 
 #: src/PartFile.cpp
 #, c-format
 msgid "Wrote 0/unknown bytes to '%s' -- preserving existing .part.met."
-msgstr ""
+msgstr "Γράφτηκαν 0/άγνωστα bytes στο '%s' -- διατηρείται το υπάρχον .part.met."
 
 #: src/PartFile.cpp
 #, c-format
@@ -6099,9 +6048,9 @@ msgstr[0] "Σώθηκε %i σπόρος πηγής για το ημιτελές 
 msgstr[1] "Σώθηκαν %i σπόροι πηγής για το ημιτελές αρχείο: %s (%s) "
 
 #: src/PartFile.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Can't read seeds file for Partfile %s (%s)"
-msgstr "Σώθηκε %i σπόρος πηγής για το ημιτελές αρχείο: %s (%s) "
+msgstr "Δεν είναι δυνατή η ανάγνωση του αρχείου σπόρων του ημιτελούς αρχείου %s (%s)"
 
 #: src/PartFile.cpp
 #, c-format
@@ -6136,11 +6085,13 @@ msgid "Finished downloading: %s"
 msgstr "Ολοκλήρωση του κατεβάσματος: %s"
 
 #: src/PartFile.cpp
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "Finished downloading:\n"
 "%s"
-msgstr "Ολοκλήρωση του κατεβάσματος: %s"
+msgstr ""
+"Το κατέβασμα ολοκληρώθηκε:\n"
+"%s"
 
 #: src/PartFile.cpp
 #, c-format
@@ -6160,12 +6111,12 @@ msgstr "ΣΦΑΛΜΑ: Δεν είναι δυνατός ο κατακερματι
 #: src/PartFile.cpp
 #, c-format
 msgid "Part %u of '%s' marked complete but partfile is shorter than expected (have %llu bytes, need %llu); reopening gap for re-download."
-msgstr ""
+msgstr "Το τμήμα %u του '%s' σημειώθηκε ως ολοκληρωμένο αλλά το ημιτελές αρχείο είναι μικρότερο από το αναμενόμενο (έχει %llu bytes, χρειάζεται %llu)· άνοιγμα ξανά του κενού για εκ νέου κατέβασμα."
 
 #: src/PartFile.cpp
 #, c-format
 msgid "EOF while hashing downloaded part %u with length %u (max %u) of partfile '%s' with length %u: %s"
-msgstr ""
+msgstr "EOF κατά τον κατακερματισμό του κατεβασμένου τμήματος %u με μήκος %u (μέγιστο %u) του ημιτελούς αρχείου '%s' με μήκος %u: %s"
 
 #: src/PartFile.cpp
 #, c-format
@@ -6226,7 +6177,7 @@ msgstr ""
 
 #: src/Preferences.cpp
 msgid "Invalid category found, skipping"
-msgstr ""
+msgstr "Βρέθηκε μη έγκυρη κατηγορία, παράλειψη"
 
 #: src/Preferences.cpp
 msgid "TCP port can't be higher than 65532 due to server UDP socket being TCP+3"
@@ -6259,7 +6210,7 @@ msgstr "Περιβάλλον"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "IP2Country"
-msgstr ""
+msgstr "IP2Country"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Proxy"
@@ -6295,14 +6246,17 @@ msgid ""
 "    %PARTFILE - full path to the file\n"
 "    %PARTNAME - file name only"
 msgstr ""
+"Οι παρακάτω μεταβλητές θα αντικατασταθούν:\n"
+"    %PARTFILE - πλήρης διαδρομή προς το αρχείο\n"
+"    %PARTNAME - μόνο το όνομα αρχείου"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Tray icon support requires libayatana-appindicator3 at compile time."
-msgstr ""
+msgstr "Η υποστήριξη εικόνας tray απαιτεί το libayatana-appindicator3 κατά τη μεταγλώττιση."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Not available on Wayland: the protocol does not report when a window is minimized, so this option cannot intercept the system minimize button. Workaround: launch aMule with `GDK_BACKEND=x11` to use XWayland instead."
-msgstr ""
+msgstr "Δεν είναι διαθέσιμο σε Wayland: το πρωτόκολλο δεν αναφέρει πότε ένα παράθυρο ελαχιστοποιείται, οπότε αυτή η επιλογή δεν μπορεί να παρέμβει στο κουμπί ελαχιστοποίησης του συστήματος. Λύση: εκκινήστε το aMule με `GDK_BACKEND=x11` για να χρησιμοποιήσετε το XWayland."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
@@ -6322,12 +6276,12 @@ msgstr ""
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "Failed to connect Cfg to widget with the ID %d and key %s"
-msgstr ""
+msgstr "Αποτυχία σύνδεσης Cfg με το widget με ID %d και κλειδί %s"
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "Failed to transfer data from Cfg to Widget with the ID %d and key %s"
-msgstr ""
+msgstr "Αποτυχία μεταφοράς δεδομένων από Cfg σε Widget με ID %d και κλειδί %s"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "The type of proxy you are connecting to"
@@ -6336,25 +6290,23 @@ msgstr "Ο τύπος του διακομιστή μεσολάβησης στο�
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "Failed to transfer data from Widget to Cfg with the ID %d and key %s"
-msgstr ""
+msgstr "Αποτυχία μεταφοράς δεδομένων από Widget σε Cfg με ID %d και κλειδί %s"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "No password set."
-msgstr "Έλεγχος κωδικού\n"
+msgstr "Δεν έχει οριστεί κωδικός."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "The shared-file exclusion pattern is not a valid regular expression. The filter has been left disabled."
-msgstr ""
+msgstr "Το μοτίβο εξαίρεσης κοινόχρηστων αρχείων δεν είναι έγκυρη κανονική έκφραση. Το φίλτρο έχει παραμείνει απενεργοποιημένο."
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Invalid regular expression"
-msgstr "Άκυρη έκδοση πρωτοκόλλου."
+msgstr "Μη έγκυρη κανονική έκφραση"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Guest access needs a password. Type one in the guest password field, or untick Enable guest access."
-msgstr ""
+msgstr "Η πρόσβαση επισκέπτη χρειάζεται κωδικό. Πληκτρολογήστε έναν στο πεδίο κωδικού επισκέπτη, ή αποεπιλέξτε το Ενεργοποίηση πρόσβασης επισκέπτη."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
@@ -6381,38 +6333,32 @@ msgid "- UDP port changed.\n"
 msgstr "- Άλλαξε η θύρα UDP.\n"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "- Network interface binding changed.\n"
-msgstr "Η εξωτερική σύνδεση έκλεισε."
+msgstr "- Η σύνδεση διεπαφής δικτύου άλλαξε.\n"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "- External connect port changed.\n"
-msgstr "Η εξωτερική σύνδεση έκλεισε."
+msgstr "- Η θύρα εξωτερικής σύνδεσης άλλαξε.\n"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "- External connect acceptance changed.\n"
-msgstr "Νέα εξωτερική σύνδεση έγινε δεκτή"
+msgstr "- Η αποδοχή εξωτερικής σύνδεσης άλλαξε.\n"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "- External connect interface changed.\n"
-msgstr "Η εξωτερική σύνδεση έκλεισε."
+msgstr "- Η διεπαφή εξωτερικής σύνδεσης άλλαξε.\n"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "- Protocol obfuscation support changed.\n"
-msgstr "Συσκότιση πρωτοκόλλου"
+msgstr "- Η υποστήριξη συσκότισης πρωτοκόλλου άλλαξε.\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- Proxy settings changed (needed for HTTP transfers).\n"
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "- amuleapi settings changed.\n"
-msgstr "- Η γλώσσα άλλαξε.\n"
+msgstr "- Οι ρυθμίσεις amuleapi άλλαξαν.\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
@@ -6425,7 +6371,7 @@ msgstr ""
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "The amuleapi password could not be saved: %s"
-msgstr ""
+msgstr "Ο κωδικός amuleapi δεν ήταν δυνατόν να αποθηκευτεί: %s"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- Language changed.\n"
@@ -6436,9 +6382,8 @@ msgid "- Temp folder changed.\n"
 msgstr "- Ο προσωρινός κατάλογος άλλαξε.\n"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "- ED2K network enabled.\n"
-msgstr "Όλα τα δίκτυα είναι απενεργοποιημένα."
+msgstr "- Το δίκτυο ED2K ενεργοποιήθηκε.\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
@@ -6468,69 +6413,66 @@ msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Could not register aMule for autostart at login. The autostart store may be read-only."
-msgstr ""
+msgstr "Δεν ήταν δυνατή η καταχώρηση του aMule για αυτόματη εκκίνηση κατά τη σύνδεση. Ο χώρος αποθήκευσης αυτόματης εκκίνησης μπορεί να είναι μόνο για ανάγνωση."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Could not remove the autostart-at-login entry."
-msgstr ""
+msgstr "Δεν ήταν δυνατή η αφαίρεση της καταχώρησης αυτόματης εκκίνησης κατά τη σύνδεση."
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Autostart"
-msgstr "Η αυτόματη ανανέωση ξεκίνησε"
+msgstr "Αυτόματη εκκίνηση"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Register file type"
-msgstr ""
+msgstr "Καταχώριση τύπου αρχείου"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Register URL handler"
-msgstr ""
+msgstr "Καταχώριση χειριστή URL"
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "aMule only handles eD2k-compatible magnets. If you replace the current magnet handler (%s), BitTorrent magnet links will stop working - aMule cannot download BitTorrent content. Continue?"
-msgstr ""
+msgstr "Το aMule χειρίζεται μόνο magnet συμβατά με eD2k. Αν αντικαταστήσετε τον τρέχοντα χειριστή magnet (%s), οι σύνδεσμοι magnet BitTorrent θα σταματήσουν να λειτουργούν - το aMule δεν μπορεί να κατεβάσει περιεχόμενο BitTorrent. Συνέχεια;"
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "Another application currently opens .emulecollection files (%s). Replace it with aMule?"
-msgstr ""
+msgstr "Μια άλλη εφαρμογή ανοίγει επί του παρόντος τα αρχεία .emulecollection (%s). Να αντικατασταθεί με το aMule;"
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "Another application is currently the default handler for these links (%s). Replace it with aMule?"
-msgstr ""
+msgstr "Μια άλλη εφαρμογή είναι επί του παρόντος ο προεπιλεγμένος χειριστής για αυτούς τους συνδέσμους (%s). Να αντικατασταθεί με το aMule;"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Could not register aMule for .emulecollection files. The registration store may be read-only."
-msgstr ""
+msgstr "Δεν ήταν δυνατή η καταχώριση του aMule για αρχεία .emulecollection. Ο χώρος καταχώρισης μπορεί να είναι μόνο για ανάγνωση."
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Could not remove the file type registration."
-msgstr "Κατάλογος για τα προσωρινά αρχεία"
+msgstr "Δεν ήταν δυνατή η αφαίρεση της καταχώρισης τύπου αρχείου."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Could not register aMule as the URL handler. The registration store may be read-only."
-msgstr ""
+msgstr "Δεν ήταν δυνατή η καταχώριση του aMule ως χειριστή URL. Ο χώρος καταχώρισης μπορεί να είναι μόνο για ανάγνωση."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Could not remove the URL handler registration."
-msgstr ""
+msgstr "Δεν ήταν δυνατή η αφαίρεση της καταχώρισης χειριστή URL."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "macOS does not let an application stop being the default handler. To stop aMule opening these, make another application the default."
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "The web server and aMule API require external connections to be enabled."
-msgstr "Νέα εξωτερική σύνδεση έγινε δεκτή"
+msgstr "Ο διακομιστής ιστού και το aMule API απαιτούν την ενεργοποίηση των εξωτερικών συνδέσεων."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "The aMule web server is deprecated. Consider running the aMule API instead."
-msgstr ""
+msgstr "Ο διακομιστής ιστού του aMule είναι καταργημένος. Εξετάστε το ενδεχόμενο να εκτελέσετε αντ' αυτού το aMule API."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
@@ -6592,9 +6534,8 @@ msgid "Select browser"
 msgstr "Επιλογή περιηγητή"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Select ffprobe binary"
-msgstr "Επιλογή περιηγητή"
+msgstr "Επιλογή εκτελέσιμου ffprobe"
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
@@ -6603,16 +6544,15 @@ msgstr "Εκτελέσιμο%s"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "ffprobe not found on PATH or in the standard install locations. Install ffmpeg (which ships ffprobe) or use Browse to pick a binary manually."
-msgstr ""
+msgstr "Το ffprobe δεν βρέθηκε στο PATH ούτε στις τυπικές τοποθεσίες εγκατάστασης. Εγκαταστήστε το ffmpeg (το οποίο περιλαμβάνει το ffprobe) ή χρησιμοποιήστε το κουμπί «Επιλογή» για να διαλέξετε χειροκίνητα ένα εκτελέσιμο."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Reset the settings on this page to their default values?"
-msgstr ""
+msgstr "Να γίνει επαναφορά των ρυθμίσεων αυτής της σελίδας στις προεπιλεγμένες τιμές τους;"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Reset to defaults"
-msgstr "Εργοστασιακές ρυθμίσεις"
+msgstr "Επαναφορά στις προεπιλογές"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Edit server list"
@@ -6628,38 +6568,37 @@ msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "IP2Country update failed"
-msgstr ""
+msgstr "Η ενημέρωση IP2Country απέτυχε"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Data by MaxMind GeoLite2"
-msgstr ""
+msgstr "Δεδομένα από MaxMind GeoLite2"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Custom source"
-msgstr "Ολοκλήρωση πηγών"
+msgstr "Προσαρμοσμένη πηγή"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Data by DB-IP.com"
-msgstr ""
+msgstr "Δεδομένα από DB-IP.com"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Status: Loaded%s"
-msgstr "Κατάσταση:"
+msgstr "Κατάσταση: Φορτώθηκε%s"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Status: Loaded%s - %s"
-msgstr "Κατάσταση:"
+msgstr "Κατάσταση: Φορτώθηκε%s - %s"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Status: Failed to load - click 'Update now' to refresh."
-msgstr ""
+msgstr "Κατάσταση: Αποτυχία φόρτωσης - κάντε κλικ στο 'Ανανέωσε τώρα' για ανανέωση."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Status: Not found - click 'Update now' to download."
-msgstr ""
+msgstr "Κατάσταση: Δεν βρέθηκε - κάντε κλικ στο 'Ανανέωσε τώρα' για κατέβασμα."
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
@@ -6706,14 +6645,13 @@ msgid "Server connection refresh interval: Disabled"
 msgstr "Διάστημα ανανέωσης της σύνδεσης σε διακομιστή: Απενεργοποιημένο"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "disabled"
-msgstr "απενεργοποίηση"
+msgstr "απενεργοποιημένο"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Execute command on '%s' event"
-msgstr "Εκτέλεση εντολής κατά το γεγονός `%s'"
+msgstr "Εκτέλεση εντολής στο συμβάν '%s'"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Enable command execution on core"
@@ -6740,40 +6678,38 @@ msgid ""
 "The following folders look like system or sensitive locations:\n"
 "\n"
 msgstr ""
+"Οι παρακάτω κατάλογοι μοιάζουν με συστημικές ή ευαίσθητες τοποθεσίες:\n"
+"\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Sharing them recursively will publish every file underneath on the eD2k/Kad networks. Do you really want to do this?"
-msgstr ""
+msgstr "Ο αναδρομικός διαμοιρασμός τους θα δημοσιεύσει κάθε αρχείο που βρίσκεται εντός τους στα δίκτυα eD2k/Kad. Θέλετε πραγματικά να το κάνετε αυτό;"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Confirm shared folders"
-msgstr "Κοινόχρηστα αρχεία"
+msgstr "Επιβεβαίωση κοινόχρηστων καταλόγων"
 
 #: src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp
 #: src/SharedFilesReloadProgress.cpp
-#, fuzzy
 msgid "Reloading shared files..."
-msgstr "Επαναφόρτωση των κοινόχρηστων αρχείων"
+msgstr "Επαναφόρτωση κοινόχρηστων αρχείων..."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Scanning for subdirectories..."
-msgstr ""
+msgstr "Σάρωση για υποκαταλόγους..."
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Updating shared folders"
-msgstr "Κοινόχρηστα αρχεία"
+msgstr "Ενημέρωση κοινόχρηστων καταλόγων"
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "Scanned %u directories..."
-msgstr ""
+msgstr "Σαρώθηκαν %u κατάλογοι..."
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Shared folder"
-msgstr "Κοινόχρηστα αρχεία"
+msgstr "Κοινόχρηστος κατάλογος"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Both the remote and local prefix must be filled in."
@@ -6803,12 +6739,11 @@ msgstr "Προειδοποίηση ψαξίματος"
 
 #: src/SearchDlg.cpp
 msgid "It's impossible to search when both eD2k and Kademlia are disabled."
-msgstr ""
+msgstr "Δεν είναι δυνατή η αναζήτηση όταν είναι απενεργοποιημένα και τα δύο, eD2k και Kademlia."
 
 #: src/SearchDlg.cpp src/SearchListCtrl.cpp
-#, fuzzy
 msgid "Search error"
-msgstr "Αναζητήσεις"
+msgstr "Σφάλμα αναζήτησης"
 
 #: src/SearchDlg.cpp
 msgid ""
@@ -6857,7 +6792,7 @@ msgstr "Δεν μπορεί να γίνει αναζήτηση στο eD2k αν 
 
 #: src/SearchList.cpp
 msgid "No keyword for Kad search - aborting"
-msgstr ""
+msgstr "Δεν υπάρχει λέξη-κλειδί για αναζήτηση Kad - ματαίωση"
 
 #: src/SearchList.cpp
 msgid "Unexpected error while attempting Kad search: "
@@ -6869,11 +6804,11 @@ msgstr ""
 
 #: src/SearchList.cpp
 msgid "Kad search: requested wider results from one more peer."
-msgstr ""
+msgstr "Αναζήτηση Kad: ζητήθηκαν ευρύτερα αποτελέσματα από έναν ακόμη peer."
 
 #: src/SearchList.cpp
 msgid "Kad search: no peer left to reask for more results (cap reached or no responses yet)."
-msgstr ""
+msgstr "Αναζήτηση Kad: δεν απομένει peer για νέα ερώτηση περισσότερων αποτελεσμάτων (συμπληρώθηκε το όριο ή δεν υπάρχουν ακόμη απαντήσεις)."
 
 #: src/SearchList.cpp
 #, c-format
@@ -6906,18 +6841,16 @@ msgid "Copy eD2k links to clipboard"
 msgstr "Αντιγραφή συνδέσμων eD2k στο πρόχειρο"
 
 #: src/SearchListCtrl.cpp
-#, fuzzy
 msgid "You are not currently connected to a server supporting the Related Files search function"
-msgstr "Είστε συνδεδεμένος στον διακομιστή που προσπαθείτε να σβήσετε. Παρακαλείστε να αποσυνδεθείτε πρώτα"
+msgstr "Δεν είστε επί του παρόντος συνδεδεμένοι σε διακομιστή που υποστηρίζει τη λειτουργία αναζήτησης παρόμοιων αρχείων"
 
 #: src/SearchListCtrl.cpp
-#, fuzzy
 msgid "Canceled"
-msgstr "Ακύρωση"
+msgstr "Ακυρώθηκε"
 
 #: src/SearchListCtrl.cpp
 msgid "New"
-msgstr ""
+msgstr "Νέο"
 
 #: src/SearchProgressReport.cpp
 #, fuzzy
@@ -6945,26 +6878,24 @@ msgstr ""
 
 #: src/SearchProgressReport.cpp src/TextClient.cpp
 msgid "Search expired or unknown ID. Start a new search.\n"
-msgstr ""
+msgstr "Η αναζήτηση έληξε ή το ID είναι άγνωστο. Ξεκινήστε νέα αναζήτηση.\n"
 
 #: src/SearchProgressReport.cpp
 #, c-format
 msgid "Search progress: %u %% \n"
-msgstr ""
+msgstr "Πρόοδος αναζήτησης: %u %% \n"
 
 #: src/SearchProgressReport.cpp
-#, fuzzy
 msgid "Search progress not available"
-msgstr "Εμφάνιση ποσοστού προόδου"
+msgstr "Η πρόοδος αναζήτησης δεν είναι διαθέσιμη"
 
 #: src/SearchProgressReport.cpp
 msgid "No search to report on.\n"
 msgstr ""
 
 #: src/ServerConnect.cpp
-#, fuzzy
 msgid "Failed to connect to all obfuscated static servers listed. Making another pass without obfuscation."
-msgstr "Αποτυχία σύνδεσης σε όλους τους συσκοτισμένους διακομιστές της λίστας. Θα γίνει άλλο ένα πέρασμα χωρίς συσκότιση."
+msgstr "Αποτυχία σύνδεσης σε όλους τους συσκοτισμένους στατικούς διακομιστές της λίστας. Γίνεται νέα προσπάθεια χωρίς συσκότιση."
 
 #: src/ServerConnect.cpp
 msgid "Failed to connect to all obfuscated servers listed. Making another pass without obfuscation."
@@ -7040,7 +6971,7 @@ msgstr "Η απόπειρα σύνδεσης στο %s (%s:%i) ξεπέρασε 
 
 #: src/ServerConnect.cpp
 msgid "Received late result of DNS lookup, discarding."
-msgstr ""
+msgstr "Λήφθηκε καθυστερημένο αποτέλεσμα αναζήτησης DNS, απορρίπτεται."
 
 #: src/ServerList.cpp
 #, c-format
@@ -7081,12 +7012,11 @@ msgstr[1] "Προστέθηκαν %d διακομιστές"
 
 #: src/ServerList.cpp
 msgid "Error: the file 'server.met' is corrupted: "
-msgstr ""
+msgstr "Σφάλμα: το αρχείο 'server.met' είναι φθαρμένο: "
 
 #: src/ServerList.cpp
-#, fuzzy
 msgid "IO error while reading 'server.met': "
-msgstr "Σφάλμα εισόδου εξόδου κατά την ανάγνωση του αρχείου known.met: %s"
+msgstr "Σφάλμα εισόδου/εξόδου κατά την ανάγνωση του 'server.met': "
 
 #: src/ServerList.cpp
 #, c-format
@@ -7199,11 +7129,11 @@ msgstr "Κοινόχρηστα αρχεία"
 
 #: src/ServerListCtrl.cpp
 msgid "TCP Flags"
-msgstr ""
+msgstr "Σημαίες TCP"
 
 #: src/ServerListCtrl.cpp
 msgid "UDP Flags"
-msgstr ""
+msgstr "Σημαίες UDP"
 
 #: src/ServerListCtrl.cpp
 msgid "You are connected to a server you are trying to delete. Please disconnect first. The server was NOT deleted."
@@ -7293,7 +7223,7 @@ msgstr "ΠΡΟΕΙΔΟΠΟΙΗΣΗ: %s (%s) - %s"
 #: src/ServerSocket.cpp
 #, c-format
 msgid "Server %s (%s) rejected our login (no client ID assigned). Disconnecting."
-msgstr ""
+msgstr "Ο διακομιστής %s (%s) απέρριψε τη σύνδεσή μας (δεν ανατέθηκε ID πελάτη). Αποσύνδεση."
 
 #: src/ServerSocket.cpp
 #, c-format
@@ -7366,9 +7296,8 @@ msgid "Could not solve dns for server %s: Unable to connect!"
 msgstr "Δεν μπόρεσε να γίνει επίλυση dns για τον διακομιστή %s: Δεν είναι δυνατή ή σύνδεση!"
 
 #: src/ServerWnd.cpp
-#, fuzzy
 msgid "aMuleGUI Log"
-msgstr "Αρχείο καταγραφής aMule"
+msgstr "Αρχείο καταγραφής aMuleGUI"
 
 #: src/ServerWnd.cpp
 msgid "Server not added: No IP or hostname specified."
@@ -7387,32 +7316,28 @@ msgid "ID"
 msgstr "Ταυτότητα"
 
 #: src/ServerWnd.cpp
-#, fuzzy
 msgid "Connection Type:"
-msgstr "Κατάσταση σύνδεσης:"
+msgstr "Τύπος σύνδεσης:"
 
 #: src/ServerWnd.cpp
-#, fuzzy
 msgid "Connected since:"
-msgstr "Συνδεδεμένο"
+msgstr "Συνδεδεμένος από:"
 
 #: src/ServerWnd.cpp
 msgid "Kademlia Status:"
 msgstr "Κατάσταση Kademlia:"
 
 #: src/ServerWnd.cpp
-#, fuzzy
 msgid "Running in LAN mode"
-msgstr "Τρέχει στο %s"
+msgstr "Εκτελείται σε λειτουργία LAN"
 
 #: src/ServerWnd.cpp
 msgid "Running"
 msgstr "Τρέχει"
 
 #: src/ServerWnd.cpp
-#, fuzzy
 msgid "Kademlia client ID:"
-msgstr "Κατάσταση Kademlia:"
+msgstr "ID πελάτη Kademlia:"
 
 #: src/ServerWnd.cpp
 msgid "Status:"
@@ -7425,17 +7350,16 @@ msgstr "Κατάσταση σύνδεσης:"
 #: src/ServerWnd.cpp
 #, c-format
 msgid "Firewalled - open TCP port %d in your router or firewall"
-msgstr ""
+msgstr "Πίσω από τείχος προστασίας - ανοίξτε τη θύρα TCP %d στο router ή το τείχος προστασίας σας"
 
 #: src/ServerWnd.cpp
-#, fuzzy
 msgid "UDP Connection State:"
-msgstr "Κατάσταση σύνδεσης:"
+msgstr "Κατάσταση σύνδεσης UDP:"
 
 #: src/ServerWnd.cpp
 #, c-format
 msgid "Firewalled - open UDP port %d in your router or firewall"
-msgstr ""
+msgstr "Πίσω από τείχος προστασίας - ανοίξτε τη θύρα UDP %d στο router ή το τείχος προστασίας σας"
 
 #: src/ServerWnd.cpp
 msgid "Firewalled state: "
@@ -7443,47 +7367,44 @@ msgstr "Κατάσταση τοίχου προστασίας:"
 
 #: src/ServerWnd.cpp
 msgid "No buddy required - TCP port open"
-msgstr ""
+msgstr "Δεν απαιτείται φιλαράκος - η θύρα TCP είναι ανοιχτή"
 
 #: src/ServerWnd.cpp
 msgid "No buddy required - UDP port open"
-msgstr ""
+msgstr "Δεν απαιτείται φιλαράκος - η θύρα UDP είναι ανοιχτή"
 
 #: src/ServerWnd.cpp
 msgid "No buddy"
 msgstr "Όχι φιλαράκος"
 
 #: src/ServerWnd.cpp
-#, fuzzy
 msgid "Connecting to buddy"
-msgstr "Συνδεδεμένος στον φιλαράκο"
+msgstr "Σύνδεση με φιλαράκο"
 
 #: src/ServerWnd.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Connected to buddy at %s"
-msgstr "Συνδεδεμένος στον φιλαράκο"
+msgstr "Συνδεδεμένο με φιλαράκο στο %s"
 
 #: src/ServerWnd.cpp
 msgid "IP address:"
 msgstr "Διεύθυνση IP:"
 
 #: src/ServerWnd.cpp
-#, fuzzy
 msgid "Indexed sources:"
-msgstr "Βρέθηκαν πηγές :"
+msgstr "Ευρετηριασμένες πηγές:"
 
 #: src/ServerWnd.cpp
 msgid "Indexed keywords:"
-msgstr ""
+msgstr "Ευρετηριασμένες λέξεις-κλειδιά:"
 
 #: src/ServerWnd.cpp
-#, fuzzy
 msgid "Indexed notes:"
-msgstr "Το αρχείο δεικτών δεν βρέθηκε (ψάχνω ψάχνω και τίποτα δεν βρίσκω)"
+msgstr "Ευρετηριασμένες σημειώσεις:"
 
 #: src/ServerWnd.cpp
 msgid "Indexed load:"
-msgstr ""
+msgstr "Φόρτος ευρετηρίου:"
 
 #: src/ServerWnd.cpp
 msgid "Average Users:"
@@ -7516,7 +7437,7 @@ msgstr ""
 #: src/SharedFileList.cpp
 #, c-format
 msgid "Adding file %s to shares"
-msgstr ""
+msgstr "Προσθήκη αρχείου %s στα κοινόχρηστα"
 
 #: src/SharedFileList.cpp
 #, c-format
@@ -7529,8 +7450,8 @@ msgstr[1] "Βρέθηκαν %i γνωστά κοινόχρηστα αρχεία"
 #, c-format
 msgid "Excluded %i file from sharing by filter"
 msgid_plural "Excluded %i files from sharing by filter"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Εξαιρέθηκε %i αρχείο από την κοινή χρήση λόγω φίλτρου"
+msgstr[1] "Εξαιρέθηκαν %i αρχεία από την κοινή χρήση λόγω φίλτρου"
 
 #: src/SharedFileList.cpp
 #, c-format
@@ -7538,9 +7459,9 @@ msgid "ERROR: Attempted to share %s"
 msgstr "ΣΦΑΛΜΑ: Αποπειράθηκε να μοιραστεί το %s"
 
 #: src/SharedFileList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Shared directory not found, skipping: %s"
-msgstr "Ο διακομιστής δεν βρέθηκε: %s"
+msgstr "Ο κοινόχρηστος κατάλογος δεν βρέθηκε, παράλειψη: %s"
 
 #: src/SharedFileList.cpp
 #, fuzzy, c-format
@@ -7608,14 +7529,12 @@ msgid "Download Status"
 msgstr "Κατάσταση κατεβάσματος"
 
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-#, fuzzy
 msgid "Local File Name"
-msgstr "Όνομα αρχείου"
+msgstr "Τοπικό όνομα αρχείου"
 
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
-#, fuzzy
 msgid "Shares File List"
-msgstr "Κοινόχρηστα αρχεία"
+msgstr "Λίστα κοινόχρηστων αρχείων"
 
 #: src/SharedFilesCtrl.cpp
 #, fuzzy
@@ -7644,7 +7563,7 @@ msgstr "Μετονομασία"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Verify Local Data"
-msgstr ""
+msgstr "Επαλήθευση Τοπικών Δεδομένων"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Re-extract &media metadata"
@@ -7679,9 +7598,8 @@ msgid "Copy eD2k link to clipboard (&AICH info)"
 msgstr "Αντιγραφή του συνδέσμου eD2k στο πρόχειρο) (Πληροφορίες AICH)"
 
 #: src/SharedFilesCtrl.cpp
-#, fuzzy
 msgid "Copy eD2k link to clipboard (&AICH info + Source)"
-msgstr "Αντιγραφή του συνδέσμου eD2k στο πρόχειρο) (Πληροφορίες AICH)"
+msgstr "Αντιγραφή συνδέσμου eD2k στο πρόχειρο (πληροφορίες &AICH + πηγή)"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Export selected files to an emulecollection"
@@ -7690,7 +7608,7 @@ msgstr ""
 #: src/SharedFilesCtrl.cpp
 #, c-format
 msgid "Verify Local Data on PartFile is currently not supported: %s"
-msgstr ""
+msgstr "Η Επαλήθευση Τοπικών Δεδομένων σε ημιτελές αρχείο δεν υποστηρίζεται επί του παρόντος: %s"
 
 #: src/SharedFilesCtrl.cpp
 #, c-format
@@ -7792,9 +7710,9 @@ msgid "Shared Files (%i)"
 msgstr "Κοινόχρηστα αρχεία (%i)"
 
 #: src/SharedFilesReloadProgress.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Reloading shared files: %u files scanned"
-msgstr "Επαναφορτώνει τη λίστα κοινοχρήστων αρχείων."
+msgstr "Επαναφόρτωση κοινόχρηστων αρχείων: σαρώθηκαν %u αρχεία"
 
 #: src/SourceListCtrl.cpp
 #, fuzzy
@@ -7802,9 +7720,8 @@ msgid "Part Status"
 msgstr "Κατάσταση"
 
 #: src/SourceListCtrl.cpp
-#, fuzzy
 msgid "Remote File Name"
-msgstr "Όνομα αρχείου"
+msgstr "Απομακρυσμένο όνομα αρχείου"
 
 #: src/SourceListCtrl.cpp
 msgid "A4AF"
@@ -7946,19 +7863,19 @@ msgid "Peak Connections (estimate): %i"
 msgstr "Κορυφαίες συνδέσεις (εκτίμηση): %i"
 
 #: src/Statistics.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Unknown: %s"
-msgstr "Άγνωστο μέγεθος"
+msgstr "Άγνωστοι: %s"
 
 #: src/Statistics.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Filtered: %s"
-msgstr "Φιλτραρισμένοι"
+msgstr "Φιλτραρισμένοι: %s"
 
 #: src/Statistics.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Banned: %s"
-msgstr "Απαγορευμένοι"
+msgstr "Απαγορευμένοι: %s"
 
 #: src/Statistics.cpp
 #, c-format
@@ -8052,9 +7969,9 @@ msgid "Never"
 msgstr "Ποτέ"
 
 #: src/TerminationProcess.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Command '%s' with pid '%d' has finished with status code '%d'."
-msgstr "Η εντολή `%s' με pid `%d' τελείωση με κωδικό κατάστασης `%d'."
+msgstr "Η εντολή '%s' με pid '%d' ολοκληρώθηκε με κωδικό κατάστασης '%d'."
 
 #: src/TextClient.cpp
 msgid "Execute <str> and exit."
@@ -8095,34 +8012,37 @@ msgstr "Δεν είναι έγκυρος κατακερματισμός (το μ
 #. TRANSLATORS:
 #. 'help search' is a command to the program, do not translate it.
 #: src/TextClient.cpp
-#, fuzzy
 msgid ""
 "Invalid search filter syntax.\n"
 "Type 'help search' to get more help.\n"
-msgstr "Για περισσότερη βοήθεια, γράψτε '%s'.\n"
+msgstr ""
+"Μη έγκυρη σύνταξη φίλτρου αναζήτησης.\n"
+"Πληκτρολογήστε 'help search' για περισσότερη βοήθεια.\n"
 
 #. TRANSLATORS:
 #. 'help search' is a command to the program, do not translate it.
 #: src/TextClient.cpp
-#, fuzzy
 msgid ""
 "No search keyword provided.\n"
 "Type 'help search' to get more help.\n"
-msgstr "Για περισσότερη βοήθεια, γράψτε '%s'.\n"
+msgstr ""
+"Δεν δόθηκε λέξη-κλειδί αναζήτησης.\n"
+"Πληκτρολογήστε 'help search' για περισσότερη βοήθεια.\n"
 
 #. TRANSLATORS:
 #. 'help search' is a command to the program, do not translate it.
 #: src/TextClient.cpp
-#, fuzzy
 msgid ""
 "No search type defined.\n"
 "Type 'help search' to get more help.\n"
-msgstr "Για περισσότερη βοήθεια, γράψτε '%s'.\n"
+msgstr ""
+"Δεν ορίστηκε τύπος αναζήτησης.\n"
+"Πληκτρολογήστε 'help search' για περισσότερη βοήθεια.\n"
 
 #: src/TextClient.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Download File: %lu %s\n"
-msgstr "Κατεβασμένα (%i)"
+msgstr "Κατέβασμα αρχείου: %lu %s\n"
 
 #: src/TextClient.cpp src/webserver/src/WebServer.cpp
 msgid "Request failed with an unknown error."
@@ -8168,12 +8088,12 @@ msgstr ""
 #: src/TextClient.cpp
 #, c-format
 msgid "Endgame source rotation is %s.\n"
-msgstr ""
+msgstr "Η εναλλαγή πηγών endgame είναι %s.\n"
 
 #: src/TextClient.cpp
 #, c-format
 msgid "Search started (id %u).\n"
-msgstr ""
+msgstr "Η αναζήτηση ξεκίνησε (id %u).\n"
 
 #: src/TextClient.cpp
 #, c-format
@@ -8283,33 +8203,28 @@ msgstr ""
 "τρέχοντα πυρήνα.\n"
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Reload the given object."
-msgstr "Επαναφορτώνει το δεδομένο αντικείμενο"
+msgstr "Επαναφόρτωση του δεδομένου αντικειμένου."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Reload shared files list."
-msgstr "Επαναφορτώνει τη λίστα κοινοχρήστων αρχείων."
+msgstr "Επαναφόρτωση λίστας κοινόχρηστων αρχείων."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Reload IP filtering table."
-msgstr "Επαναφορτώνει τον πίνακα φίλτρων IP από αρχείο"
+msgstr "Επαναφόρτωση πίνακα φιλτραρίσματος IP."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Reload current IP filtering table."
-msgstr "Επιλογή επιπέδου φιλτραρίσματος IP."
+msgstr "Επαναφόρτωση τρέχοντος πίνακα φιλτραρίσματος IP."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Update IP filtering table from URL."
-msgstr "Επαναφορτώνει τον πίνακα φίλτρων IP από αρχείο"
+msgstr "Ενημέρωση πίνακα φιλτραρίσματος IP από URL."
 
 #: src/TextClient.cpp
 msgid "If URL is omitted the URL from the preferences is used."
-msgstr ""
+msgstr "Αν παραλειφθεί το URL, χρησιμοποιείται το URL από τις προτιμήσεις."
 
 #: src/TextClient.cpp
 msgid "Connect to the network."
@@ -8380,9 +8295,8 @@ msgid "Set a preference value."
 msgstr "Θέτει την τιμή μίας προτίμησης."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Set IP filtering preferences."
-msgstr "Θέτει τις προτιμήσεις του φίλτρου IP."
+msgstr "Ορισμός προτιμήσεων φίλτρου IP."
 
 #: src/TextClient.cpp
 msgid "Turn IP filtering on for both clients and servers."
@@ -8441,23 +8355,20 @@ msgid "Set upload bandwidth limit."
 msgstr "Θέσε το όριο εύρους ζώνης για ανέβασμα."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "The given value must be in kilobytes/sec.\n"
-msgstr "Η τιμή που δίνεται σε αυτές τις εντολές πρέπει να είναι σε kilobytes/δευτερόλεπτο.\n"
+msgstr "Η δεδομένη τιμή πρέπει να είναι σε kilobytes/δευτ.\n"
 
 #: src/TextClient.cpp
 msgid "Set download bandwidth limit."
 msgstr "Θέσε το όριο εύρους ζώνης για κατέβασμα."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Enable or disable endgame source rotation."
-msgstr "Ενεργοποίηση/Απενεργοποίηση πιστοποίησης ονόματος χρήστη/κωδικού"
+msgstr "Ενεργοποίηση ή απενεργοποίηση της εναλλαγής πηγών endgame."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "The given value must be 1/ON (enable) or 0/OFF (disable).\n"
-msgstr "Η τιμή που δίνεται σε αυτές τις εντολές πρέπει να είναι σε kilobytes/δευτερόλεπτο.\n"
+msgstr "Η δοσμένη τιμή πρέπει να είναι 1/ON (ενεργοποίηση) ή 0/OFF (απενεργοποίηση).\n"
 
 #: src/TextClient.cpp
 msgid "Get and display a preference value."
@@ -8484,9 +8395,8 @@ msgid "Get IP filtering state for servers only."
 msgstr "Λήψη κατάστασης φίλτρου IP μόνο για διακομιστές."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Get IP filtering level."
-msgstr "Επιλογή επιπέδου φιλτραρίσματος IP."
+msgstr "Λήψη επιπέδου φιλτραρίσματος IP."
 
 #: src/TextClient.cpp
 msgid "Get bandwidth limits."
@@ -8494,12 +8404,11 @@ msgstr "Λήψη τον ορίων εύρους ζώνης."
 
 #: src/TextClient.cpp
 msgid "Get endgame source rotation state."
-msgstr ""
+msgstr "Λήψη κατάστασης εναλλαγής πηγών endgame."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Execute a search."
-msgstr "Εκτελεί αναζήτηση στο Kad"
+msgstr "Εκτέλεση αναζήτησης."
 
 #: src/TextClient.cpp
 msgid ""
@@ -8519,43 +8428,57 @@ msgid ""
 "Example: 'search global linux iso --type Iso --min-size 100M' returns\n"
 "results for \"linux iso\" of file-type Iso at least 100 MiB.\n"
 msgstr ""
+"Πρέπει να καθοριστεί ένας τύπος αναζήτησης δίνοντας τον τύπο:\n"
+"    GLOBAL\n"
+"    LOCAL\n"
+"    KAD\n"
+"Παράδειγμα: 'search kad file' θα εκτελέσει αναζήτηση kad για \"file\".\n"
+"\n"
+"Προαιρετικά φίλτρα μπορούν να προστεθούν πριν, μετά, ή ανάμεσα στις\n"
+"λέξεις-κλειδιά αναζήτησης:\n"
+"    --type <Audio|Video|Image|Doc|Pro|Arc|Iso>\n"
+"    --extension <ext>      (ψευδώνυμο: --ext)\n"
+"    --avail <N>            ελάχιστος αριθμός πηγών\n"
+"    --min-size <N[KMG]>    μικρότερο μέγεθος αρχείου· K=1024, M=K*1024, G=M*1024\n"
+"    --max-size <N[KMG]>    μεγαλύτερο μέγεθος αρχείου· ίδια επιθήματα\n"
+"Παράδειγμα: 'search global linux iso --type Iso --min-size 100M' επιστρέφει\n"
+"αποτελέσματα για \"linux iso\" τύπου αρχείου Iso τουλάχιστον 100 MiB.\n"
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Execute a global search."
-msgstr "Εκτελεί συνολική αναζήτηση."
+msgstr "Εκτέλεση καθολικής αναζήτησης."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Execute a local search"
-msgstr "Εκτελεί τοπική αναζήτηση"
+msgstr "Εκτέλεση τοπικής αναζήτησης"
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Execute a kad search"
-msgstr "Εκτελεί αναζήτηση στο Kad"
+msgstr "Εκτέλεση αναζήτησης kad"
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Show the results of a search."
-msgstr "Δείχνει τα αποτελέσματα της τελευταίας αναζήτησης."
+msgstr "Εμφάνιση των αποτελεσμάτων μιας αναζήτησης."
 
 #: src/TextClient.cpp
 msgid ""
 "Return the results of a search.\n"
 "Optionally takes a search id (from 'search ...'); with no id, returns the results of the most recently started search.\n"
 msgstr ""
+"Επιστροφή των αποτελεσμάτων μιας αναζήτησης.\n"
+"Προαιρετικά δέχεται ένα id αναζήτησης (από την 'search ...')· χωρίς id, επιστρέφει τα αποτελέσματα της πιο πρόσφατα ξεκινημένης αναζήτησης.\n"
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Show the progress of a search."
-msgstr "Δείχνει την πρόοδο της αναζήτησης."
+msgstr "Εμφάνιση προόδου αναζήτησης."
 
 #: src/TextClient.cpp
 msgid ""
 "Show the progress of a search.\n"
 "Optionally takes a search id; with no id, shows the progress of the most recently started search.\n"
 msgstr ""
+"Εμφάνιση της προόδου μιας αναζήτησης.\n"
+"Προαιρετικά δέχεται ένα id αναζήτησης· χωρίς id, εμφανίζει την πρόοδο της πιο πρόσφατα ξεκινημένης αναζήτησης.\n"
 
 #: src/TextClient.cpp
 msgid "Start downloading a file"
@@ -8609,9 +8532,8 @@ msgid "Show queues/lists."
 msgstr "Δείξε τις ουρές/λίστες."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Show upload/download queue, server list or shared files list.\n"
-msgstr "Δείχνει την ουρά ανεβάσματος/κατεβάσματος, τη λίστα διακομιστών ή κοινόχρηστων αρχείων.\n"
+msgstr "Εμφάνιση ουράς ανεβάσματος/κατεβάσματος, λίστας διακομιστών ή λίστας κοινόχρηστων αρχείων.\n"
 
 #: src/TextClient.cpp
 msgid "Show upload queue."
@@ -8630,9 +8552,8 @@ msgid "Show servers list."
 msgstr "Δείξε τη λίστα των διακομιστών."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Show shared files list."
-msgstr "Επαναφορτώνει τη λίστα κοινοχρήστων αρχείων."
+msgstr "Εμφάνιση λίστας κοινόχρηστων αρχείων."
 
 #: src/TextClient.cpp
 msgid "Reset log."
@@ -8679,12 +8600,12 @@ msgstr "Μετατροπή των παλιών συνόλων κατακερμα
 #: src/ThreadTasks.cpp
 #, c-format
 msgid "Verify Local Data (%s): Result OK for %s"
-msgstr ""
+msgstr "Επαλήθευση Τοπικών Δεδομένων (%s): Αποτέλεσμα OK για %s"
 
 #: src/ThreadTasks.cpp
 #, c-format
 msgid "Verify Local Data (%s): ERRORS FOUND! %s Failed blocks: MD4: %s. %s %s"
-msgstr ""
+msgstr "Επαλήθευση Τοπικών Δεδομένων (%s): ΒΡΕΘΗΚΑΝ ΣΦΑΛΜΑΤΑ! %s Αποτυχημένα blocks: MD4: %s. %s %s"
 
 #: src/ThreadTasks.cpp
 #, c-format
@@ -8746,12 +8667,11 @@ msgstr "Χρειάζεται επιβεβαίωση"
 
 #: src/TransferWnd.cpp
 msgid "Only 99 categories are supported."
-msgstr ""
+msgstr "Υποστηρίζονται μόνο 99 κατηγορίες."
 
 #: src/TransferWnd.cpp
-#, fuzzy
 msgid "Too many categories!"
-msgstr "Υπερβολικά πολλές συνδέσεις"
+msgstr "Πάρα πολλές κατηγορίες!"
 
 #: src/TransferWnd.cpp
 msgid "All others"
@@ -8914,7 +8834,7 @@ msgstr "Αντιγραφή στο πρόχειρο"
 
 #: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Open"
-msgstr ""
+msgstr "Άνοιγμα"
 
 #: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Open a file to compute its eD2k link"
@@ -8926,7 +8846,7 @@ msgstr "Αντιγραφή υπολογισμένου συνδέσμου eD2k σ
 
 #: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Save as"
-msgstr ""
+msgstr "Αποθήκευση ως"
 
 #: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Save computed eD2k link to file"
@@ -8942,7 +8862,7 @@ msgstr "Επιλέξτε το αρχείο για το οποίο θέλετε �
 
 #: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Can't open the clipboard"
-msgstr ""
+msgstr "Δεν είναι δυνατό το άνοιγμα του προχείρου"
 
 #: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Nothing to copy for now !"
@@ -8990,15 +8910,15 @@ msgstr "Κατακερματίζεται..."
 
 #: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "aLinkCreator is working for you"
-msgstr ""
+msgstr "Το aLinkCreator εργάζεται για εσάς"
 
 #: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Computing MD4 Hash..."
-msgstr ""
+msgstr "Υπολογισμός κατακερματισμού MD4..."
 
 #: src/utils/aLinkCreator/src/alcframe.cpp
 msgid "Computing eD2k Hashes..."
-msgstr ""
+msgstr "Υπολογισμός κατακερματισμών eD2k..."
 
 #: src/utils/aLinkCreator/src/alcframe.cpp src/utils/aLinkCreator/src/md4.cpp
 msgid "Cancelled !"
@@ -9024,7 +8944,7 @@ msgstr "Αποτυχία ανοίγματος του %s"
 
 #: src/utils/aLinkCreator/src/ed2khash.cpp
 msgid "Out of memory while calculating ed2k hash!"
-msgstr ""
+msgstr "Ανεπαρκής μνήμη κατά τον υπολογισμό του κατακερματισμού ed2k!"
 
 #: src/utils/wxCas/src/linuxmon.cpp
 #, c-format
@@ -9295,9 +9215,8 @@ msgid "Enter here the directory where you want to generate the statistic image"
 msgstr "Γράψτε εδώ τον κατάλογο όπου θέλετε να παραχθεί η στατιστική απεικόνιση"
 
 #: src/utils/wxCas/src/wxcasprefs.cpp
-#, fuzzy
 msgid "Upload periodically your stat image to FTP server"
-msgstr "Περιοδικό ανέβασμα του ειδώλου στατιστικών στον διακομιστή FTP"
+msgstr "Περιοδικό ανέβασμα της εικόνας στατιστικών σας σε διακομιστή FTP"
 
 #: src/utils/wxCas/src/wxcasprefs.cpp
 msgid "FTP Url"
@@ -9442,11 +9361,11 @@ msgstr "H αίτηση διεκπεραιώνεται [αρχικό]:"
 
 #: src/webserver/src/WebServer.cpp
 msgid "Refusing to read `pass` from URL query string\n"
-msgstr ""
+msgstr "Άρνηση ανάγνωσης του `pass` από τη συμβολοσειρά ερωτήματος URL\n"
 
 #: src/webserver/src/WebServer.cpp
 msgid "No password specified, login will not be allowed."
-msgstr ""
+msgstr "Δεν καθορίστηκε κωδικός, η σύνδεση δεν θα επιτραπεί."
 
 #: src/webserver/src/WebServer.cpp
 msgid "Checking password\n"
@@ -9478,52 +9397,51 @@ msgstr "Επεξεργασία αιτήματος [ανακατεύθυνση]"
 
 #: packaging/windows/installer_strings.c
 msgid "aMule (required)"
-msgstr ""
+msgstr "aMule (απαιτείται)"
 
 #: packaging/windows/installer_strings.c
 msgid "Desktop shortcut"
-msgstr ""
+msgstr "Συντόμευση επιφάνειας εργασίας"
 
 #: packaging/windows/installer_strings.c
 msgid "Start aMule when I log in"
-msgstr ""
+msgstr "Εκκίνηση του aMule κατά τη σύνδεσή μου"
 
 #: packaging/windows/installer_strings.c
 msgid "Associate .emulecollection files"
-msgstr ""
+msgstr "Συσχέτιση αρχείων .emulecollection"
 
 #: packaging/windows/installer_strings.c
 msgid "Uninstall"
-msgstr ""
+msgstr "Απεγκατάσταση"
 
 #: packaging/windows/installer_strings.c
 msgid "Remove user data (config, ED2K servers, Kad nodes, partfiles)"
-msgstr ""
+msgstr "Αφαίρεση δεδομένων χρήστη (ρυθμίσεις, διακομιστές ED2K, κόμβοι Kad, ημιτελή αρχεία)"
 
 #: packaging/windows/installer_strings.c
-#, fuzzy
 msgid "aMule application files (required)."
-msgstr "Αποτυχία σύνδεσης"
+msgstr "Αρχεία εφαρμογής aMule (απαιτείται)."
 
 #: packaging/windows/installer_strings.c
 msgid "Place an aMule shortcut on the desktop."
-msgstr ""
+msgstr "Τοποθέτηση συντόμευσης aMule στην επιφάνεια εργασίας."
 
 #: packaging/windows/installer_strings.c
 msgid "Launch aMule automatically when the current user logs in (per-user setting)."
-msgstr ""
+msgstr "Αυτόματη εκκίνηση του aMule όταν συνδέεται ο τρέχων χρήστης (ρύθμιση ανά χρήστη)."
 
 #: packaging/windows/installer_strings.c
 msgid "Adds aMule to the \"Open with\" list for .emulecollection files, and makes it the default if no other program has claimed them. Opening a collection queues every eD2k link it contains."
-msgstr ""
+msgstr "Προσθέτει το aMule στη λίστα \"Άνοιγμα με\" για αρχεία .emulecollection, και το κάνει προεπιλογή αν κανένα άλλο πρόγραμμα δεν τα έχει διεκδικήσει. Το άνοιγμα μιας συλλογής βάζει στην ουρά κάθε σύνδεσμο eD2k που περιέχει."
 
 #: packaging/windows/installer_strings.c
 msgid "Remove aMule application files, Start Menu / desktop shortcuts, autostart Run-key entry, URL scheme registrations, and Add/Remove Programs entry (required)."
-msgstr ""
+msgstr "Αφαίρεση αρχείων εφαρμογής aMule, συντομεύσεων Μενού Έναρξης / επιφάνειας εργασίας, καταχώρισης αυτόματης εκκίνησης Run-key, καταχωρίσεων σχήματος URL και καταχώρισης στην Προσθαφαίρεση Προγραμμάτων (απαιτείται)."
 
 #: packaging/windows/installer_strings.c
 msgid "Permanently delete %APPDATA%\\aMule for the current user (aMule.conf, ED2K server list, Kad nodes, partfiles, IP filters, friends list). Leave unchecked to keep your settings."
-msgstr ""
+msgstr "Οριστική διαγραφή του %APPDATA%\\aMule για τον τρέχοντα χρήστη (aMule.conf, λίστα διακομιστών ED2K, κόμβοι Kad, ημιτελή αρχεία, φίλτρα IP, λίστα φίλων). Αφήστε το χωρίς επιλογή για να διατηρήσετε τις ρυθμίσεις σας."
 
 #: packaging/windows/installer_strings.c
 msgid ""
@@ -9539,7 +9457,7 @@ msgstr ""
 
 #: packaging/windows/installer_strings.c
 msgid "Removing previous aMule installation at $0..."
-msgstr ""
+msgstr "Αφαίρεση προηγούμενης εγκατάστασης του aMule στο $0..."
 
 #: packaging/windows/installer_strings.c
 msgid ""
@@ -9549,11 +9467,11 @@ msgstr ""
 
 #: packaging/windows/installer_strings.c
 msgid "aMule appears to be running. Please close it and re-run the uninstaller."
-msgstr ""
+msgstr "Το aMule φαίνεται να εκτελείται. Κλείστε το και εκτελέστε ξανά το πρόγραμμα απεγκατάστασης."
 
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
-msgstr ""
+msgstr "Αφαίρεση δεδομένων χρήστη στο $APPDATA\\aMule..."
 
 #~ msgid ""
 #~ "The number of a file from the last search has to be given.\n"

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2026-06-10 16:45+0200\n"
-"PO-Revision-Date: 2026-09-26 09:36+0000\n"
+"PO-Revision-Date: 2026-09-26 19:35+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
 "Language: lv\n"
@@ -405,7 +405,7 @@ msgstr "Neizvadīt nekādus datus konsoles/termināļa ekrānā."
 #. type: Plain text
 #: amulecmd.1.in:50 amuleweb.1.in:67
 msgid "Be verbose - show also debug messages."
-msgstr ""
+msgstr "Detalizēts režīms - rādīt arī atkļūdošanas ziņojumus."
 
 #. type: TP
 #: amulecmd.1.in:50 amuleweb.1.in:67
@@ -1071,7 +1071,7 @@ msgstr ""
 #. type: Plain text
 #: amuleweb.1.in:114
 msgid "Disable PHP interpreter (deprecated)"
-msgstr ""
+msgstr "Atspējot PHP interpretatoru (novecojis)"
 
 #. type: Plain text
 #: amuleweb.1.in:117

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: manpages-ru\n"
 "POT-Creation-Date: 2026-09-26 12:38+0100\n"
-"PO-Revision-Date: 2026-09-26 09:35+0000\n"
+"PO-Revision-Date: 2026-09-26 19:34+0000\n"
 "Last-Translator: Sebastiano Pistore <SebastianoPistore.info@protonmail.ch>\n"
 "Language-Team: Russian <LL@li.org>\n"
 "Language: ru\n"
@@ -138,10 +138,8 @@ msgstr "Включает или отключает aMule как обработч
 
 #. type: Plain text
 #: amule.1.in amuled.1.in amulegui.1.in
-#, fuzzy
-#| msgid "Enable or disable starting aMule on user login, then exit.  The OS-specific store is selected automatically: Windows registry Run key, macOS LaunchAgent, Linux XDG I<.desktop> autostart entry."
 msgid "Enable or disable aMule as the current user's handler for I<.emulecollection> files, then exit.  The OS-specific store is selected automatically: Windows registry, macOS LaunchServices, Linux XDG I<mimeapps.list>."
-msgstr "Включить или отключить запуск aMule при входе пользователя в систему, затем завершить работу. Хранилище, зависящее от ОС, выбирается автоматически: ключ реестра Windows Run, macOS LaunchAgent, запись автозапуска XDG I<.desktop> в Linux."
+msgstr "Включает или отключает aMule как обработчик файлов I<.emulecollection> для текущего пользователя, затем завершает работу. Хранилище выбирается автоматически в зависимости от ОС: реестр Windows, macOS LaunchServices, Linux XDG I<mimeapps.list>."
 
 #. type: TP
 #: amule.1.in amuled.1.in

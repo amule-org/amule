@@ -8,14 +8,14 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-09-26 17:32+0100\n"
-"PO-Revision-Date: 2020-03-04 14:43+0100\n"
+"PO-Revision-Date: 2026-09-26 19:17+0000\n"
 "Last-Translator: Dévai Tamás <devait@vnet.hu>\n"
 "Language-Team: aMule Team <https://github.com/amule-org/amule>\n"
 "Language: en_GB\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
 "X-Generator: Poedit 2.3\n"
 
 #: src/AboutDialog.cpp
@@ -101,15 +101,15 @@ msgstr ""
 
 #: src/AddFriend.cpp
 msgid "You have to enter a valid IP and port!"
-msgstr ""
+msgstr "You have to enter a valid IP and port!"
 
 #: src/AddFriend.cpp
 msgid "Information"
-msgstr ""
+msgstr "Information"
 
 #: src/AddFriend.cpp
 msgid "The specified userhash is not valid!"
-msgstr ""
+msgstr "The specified userhash is not valid!"
 
 #: src/AppImageIntegration.cpp
 msgid ""
@@ -122,37 +122,37 @@ msgstr ""
 
 #: src/AppImageIntegration.cpp
 msgid "Add aMule to your application menu?"
-msgstr ""
+msgstr "Add aMule to your application menu?"
 
 #: src/AppImageIntegration.cpp
 msgid "Install"
-msgstr ""
+msgstr "Install"
 
 #: src/AppImageIntegration.cpp
 msgid "Not now"
-msgstr ""
+msgstr "Not now"
 
 #: src/AppImageIntegration.cpp src/amuleDlg.cpp
 msgid "Don't ask again"
-msgstr ""
+msgstr "Don't ask again"
 
 #: src/AppImageIntegration.cpp
 msgid "Cannot install desktop integration: the APPDIR environment variable is not set. This usually means the AppImage was launched in a non-standard way."
-msgstr ""
+msgstr "Cannot install desktop integration: the APPDIR environment variable is not set. This usually means the AppImage was launched in a non-standard way."
 
 #: src/AppImageIntegration.cpp
 msgid "aMule integration failed"
-msgstr ""
+msgstr "aMule integration failed"
 
 #: src/AppImageIntegration.cpp
 #, c-format
 msgid "Cannot install desktop integration: failed to create %s. Check that your home directory is writable."
-msgstr ""
+msgstr "Cannot install desktop integration: failed to create %s. Check that your home directory is writable."
 
 #: src/AppImageIntegration.cpp
 #, c-format
 msgid "Cannot install desktop integration: failed to write %s. Check that your home directory is writable."
-msgstr ""
+msgstr "Cannot install desktop integration: failed to write %s. Check that your home directory is writable."
 
 #: src/AppImageIntegration.cpp
 #, c-format
@@ -167,26 +167,31 @@ msgid ""
 "\n"
 "Restart aMule now?"
 msgstr ""
+"aMule has been added to your application menu. You can now launch it from your applications list, and the launcher will run this same AppImage.\n"
+"\n"
+"On some desktops, aMule may need to restart for the dock / taskbar icon to bind to the new launcher entry. Modern Wayland compositors (GNOME, KDE) pick this up live, but a restart is the safe fallback if the icon stays generic.\n"
+"\n"
+"Restart aMule now?"
 
 #: src/AppImageIntegration.cpp
 msgid "aMule installed"
-msgstr ""
+msgstr "aMule installed"
 
 #: src/AppImageIntegration.cpp
 msgid "Restart now"
-msgstr ""
+msgstr "Restart now"
 
 #: src/AppImageIntegration.cpp
 msgid "Later"
-msgstr ""
+msgstr "Later"
 
 #: src/amuleAppCommon.cpp
 msgid "Failed to open ED2KLinks file."
-msgstr ""
+msgstr "Failed to open ED2KLinks file."
 
 #: src/amuleAppCommon.cpp
 msgid "WARNING: You can't add yourself as a source for an eD2k link while having a lowid."
-msgstr ""
+msgstr "WARNING: You can't add yourself as a source for an eD2k link while having a lowid."
 
 #: src/amuleAppCommon.cpp
 #, c-format
@@ -249,7 +254,7 @@ msgstr ""
 
 #: src/amule.cpp
 msgid "Now, exiting main app..."
-msgstr ""
+msgstr "Now, exiting main app..."
 
 #: src/amule.cpp
 #, c-format
@@ -263,7 +268,7 @@ msgstr ""
 
 #: src/amule.cpp src/ClientRef.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
 msgid "Failed"
-msgstr ""
+msgstr "Failed"
 
 #: src/amule.cpp
 #, c-format
@@ -277,15 +282,15 @@ msgstr ""
 
 #: src/amule.cpp
 msgid "aMule OnExit: Terminating core."
-msgstr ""
+msgstr "aMule OnExit: Terminating core."
 
 #: src/amule.cpp
 msgid "aMule shutdown completed."
-msgstr ""
+msgstr "aMule shutdown completed."
 
 #: src/amule.cpp
 msgid "Memory debug results for aMule exit:"
-msgstr ""
+msgstr "Memory debug results for aMule exit:"
 
 #: src/amule.cpp
 #, c-format
@@ -314,25 +319,27 @@ msgstr ""
 
 #: src/amule.cpp
 msgid "Your locale has been changed to System Default due to a configuration change. Sorry."
-msgstr ""
+msgstr "Your locale has been changed to System Default due to a configuration change. Sorry."
 
 #: src/amule.cpp src/CatDialog.cpp src/ServerList.cpp src/ServerListCtrl.cpp
 msgid "Info"
-msgstr ""
+msgstr "Info"
 
 #: src/amule.cpp
 msgid ""
 "\n"
 "EC configuration"
 msgstr ""
+"\n"
+"EC configuration"
 
 #: src/amule.cpp
 msgid "Password set and external connections enabled."
-msgstr ""
+msgstr "Password set and external connections enabled."
 
 #: src/amule.cpp src/KadDlg.cpp src/PrefsUnifiedDlg.cpp src/SharedFilesCtrl.cpp
 msgid "WARNING"
-msgstr ""
+msgstr "WARNING"
 
 #: src/amule.cpp
 msgid "Loading known files"
@@ -379,35 +386,37 @@ msgstr ""
 
 #: src/amule.cpp
 msgid "Network bootstrap"
-msgstr ""
+msgstr "Network bootstrap"
 
 #: src/amule.cpp
 msgid ""
 "aMule has detected missing network bootstrap files.\n"
 "Select which ones to download:"
 msgstr ""
+"aMule has detected missing network bootstrap files.\n"
+"Select which ones to download:"
 
 #: src/amule.cpp src/FirstRunWizard.cpp
 msgid "eD2k server list (server.met)"
-msgstr ""
+msgstr "eD2k server list (server.met)"
 
 #: src/amule.cpp src/FirstRunWizard.cpp
 msgid "Kad bootstrap nodes (nodes.dat)"
-msgstr ""
+msgstr "Kad bootstrap nodes (nodes.dat)"
 
 #: src/amule.cpp
 #, c-format
 msgid "web server running on pid %d"
-msgstr ""
+msgstr "web server running on pid %d"
 
 #: src/amule.cpp
 msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
-msgstr ""
+msgstr "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
 
 #: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
 #: src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
 msgid "ERROR"
-msgstr ""
+msgstr "ERROR"
 
 #: src/amule.cpp
 #, c-format
@@ -431,12 +440,12 @@ msgstr ""
 #: src/amule.cpp
 #, c-format
 msgid "Could not bind ports to the specified address: %s"
-msgstr ""
+msgstr "Could not bind ports to the specified address: %s"
 
 #: src/amule.cpp
 #, c-format
 msgid "Port %u is not available. You will be LOWID\n"
-msgstr ""
+msgstr "Port %u is not available. You will be LOWID\n"
 
 #: src/amule.cpp
 #, c-format
