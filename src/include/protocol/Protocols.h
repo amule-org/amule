@@ -76,4 +76,32 @@ enum ReservedProt2FrameTypes
 	OP_NATT_FRAME_KEY = 0xFF
 };
 
+#ifdef ENABLE_NATT_SERVER_COORDINATION
+// These opcodes belong to different transport namespaces, not Protocols or
+// ReservedProt2FrameTypes. In particular UDP 0xB3 is NOT a TCP buddy request.
+namespace NatServerTcp
+{
+enum Opcode
+{
+	OP_LOWID_HOLEPUNCH_REQUEST = 0x60,
+	OP_LOWID_HOLEPUNCH_INFO = 0x61,
+	OP_LOWID_HOLEPUNCH_FAIL = 0x62
+};
+}
+namespace NatServerUdp
+{
+enum Opcode
+{
+	OP_NATT_KEEPALIVE = 0x9F
+};
+}
+namespace NatPeerUdp
+{
+enum Opcode
+{
+	OP_NATT_HOLEPUNCH = 0xB3
+};
+}
+#endif
+
 #endif // ED2KPROTOCOLS_H

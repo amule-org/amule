@@ -1,3 +1,10 @@
+# Pure experimental wire codecs, exercised even when application support is OFF.
+add_executable (NatServerHolePunchTest NatServerHolePunchTest.cpp)
+target_include_directories (NatServerHolePunchTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_compile_features (NatServerHolePunchTest PRIVATE cxx_std_17)
+target_compile_definitions (NatServerHolePunchTest PRIVATE ENABLE_NATT_SERVER_COORDINATION)
+add_test (NAME NatServerHolePunchTest COMMAND NatServerHolePunchTest)
+
 # The checked-in lexer and native IPv6 rule store, without the application.
 add_executable (IPFilterIPv6Test
 	IPFilterIPv6Test.cpp

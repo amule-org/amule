@@ -342,7 +342,11 @@ option (ENABLE_KAD_NODE_PROTECTION "enable the local Kad node-protection heurist
 # Deliberately a list rather than a naming convention or a grep over ENABLE_*:
 # the latter would sweep in ENABLE_UPNP, ENABLE_NLS and the rest, which are
 # ordinary build options rather than unfinished features.
+# Wire codecs only; no login advertisement, dispatch, or network traffic.
+option (ENABLE_NATT_SERVER_COORDINATION "enable experimental server-coordinated NAT-T wire codecs" OFF)
+
 set (AMULE_EXPERIMENTAL_OPTIONS
+	ENABLE_NATT_SERVER_COORDINATION
 	ENABLE_IPV6
 	ENABLE_KAD_PROTOCOL_10
 	ENABLE_KAD_NODE_PROTECTION
