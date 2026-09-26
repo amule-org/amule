@@ -1787,3 +1787,19 @@ target_include_directories (SearchRequestTest PRIVATE
 	${CMAKE_SOURCE_DIR}/src/include
 )
 target_link_libraries (SearchRequestTest muleunit mulecommon)
+
+# Linux only: the Windows and macOS autostart backends write the user's own registry and
+# LaunchAgents; the XDG one follows $XDG_CONFIG_HOME into a scratch directory.
+if (UNIX AND NOT APPLE)
+	add_executable (AutostartManagerTest
+		AutostartManagerTest.cpp
+		${CMAKE_SOURCE_DIR}/src/AutostartManager.cpp
+	)
+	add_test (NAME AutostartManagerTest COMMAND AutostartManagerTest)
+	target_include_directories (AutostartManagerTest PRIVATE
+		${CMAKE_BINARY_DIR}
+		${CMAKE_SOURCE_DIR}/src
+		${CMAKE_SOURCE_DIR}/src/include
+	)
+	target_link_libraries (AutostartManagerTest muleunit mulecommon)
+endif()

@@ -51,9 +51,13 @@ namespace
 // cannot be parsed. Does not validate the path against the filesystem.
 wxString BackendReadTargetPath();
 
-// Writes/overwrites the autostart entry to point at `executable`.
-// Returns true on success.
-bool BackendWrite(const wxString &executable);
+// Writes/overwrites the autostart entry to point at `executable`, leaving it switched off in the
+// OS's own startup settings when `switchedOff`. Returns true on success.
+bool BackendWrite(const wxString &executable, bool switchedOff);
+
+// True when the entry exists but the user turned it off from the OS (Task Manager's Startup tab,
+// the desktop's startup settings) rather than through aMule.
+bool BackendIsSwitchedOff();
 
 // Removes the autostart entry. Idempotent -- returns true if the
 // entry didn't exist either.
@@ -162,7 +166,8 @@ wxString AutostartManager::GetTarget()
 bool AutostartManager::IsEnabled()
 {
 	const wxString registered = BackendReadTargetPath();
-	return !registered.empty() && ProgramOf(registered) == ProgramOf(GetTarget());
+	return !registered.empty() && ProgramOf(registered) == ProgramOf(GetTarget()) &&
+	       !BackendIsSwitchedOff();
 }
 
 bool AutostartManager::Enable()
@@ -173,7 +178,7 @@ bool AutostartManager::Enable()
 			       "write a broken entry"));
 		return false;
 	}
-	return BackendWrite(target);
+	return BackendWrite(target, false);
 }
 
 bool AutostartManager::Disable()
@@ -219,7 +224,7 @@ void AutostartManager::SelfHealOnStartup()
 	wxLogDebug(wxT("AutostartManager::SelfHealOnStartup: rewriting autostart entry from '%s' to '%s'"),
 		registered.c_str(),
 		target.c_str());
-	BackendWrite(target);
+	BackendWrite(target, BackendIsSwitchedOff());
 }
 
 // --------------------------------------------------------------------
@@ -236,6 +241,37 @@ namespace
 // tab reads.
 static const wchar_t *RUN_KEY = L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
 static const wchar_t *RUN_VALUE_NAME = L"aMule";
+// Task Manager's Startup tab records its enabled/disabled switch here, per Run value name, and
+// leaves the Run value itself alone.
+static const wchar_t *STARTUP_APPROVED_KEY =
+	L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApproved\\Run";
+
+static void ClearStartupApproved()
+{
+	HKEY hKey;
+	if (RegOpenKeyExW(HKEY_CURRENT_USER, STARTUP_APPROVED_KEY, 0, KEY_SET_VALUE, &hKey) ==
+		ERROR_SUCCESS) {
+		RegDeleteValueW(hKey, RUN_VALUE_NAME);
+		RegCloseKey(hKey);
+	}
+}
+
+bool BackendIsSwitchedOff()
+{
+	HKEY hKey;
+	if (RegOpenKeyExW(HKEY_CURRENT_USER, STARTUP_APPROVED_KEY, 0, KEY_QUERY_VALUE, &hKey) !=
+		ERROR_SUCCESS) {
+		return false;
+	}
+	BYTE data[12] = {};
+	DWORD cb = sizeof(data);
+	DWORD type = 0;
+	const LSTATUS rc = RegQueryValueExW(hKey, RUN_VALUE_NAME, NULL, &type, data, &cb);
+	RegCloseKey(hKey);
+	// Undocumented but stable: the first byte is even (2, 6) when enabled and odd (3, 7) when
+	// disabled.
+	return rc == ERROR_SUCCESS && type == REG_BINARY && cb > 0 && (data[0] & 1) != 0;
+}
 
 wxString BackendReadTargetPath()
 {
@@ -282,8 +318,11 @@ wxString BackendReadTargetPath()
 	return raw;
 }
 
-bool BackendWrite(const wxString &executable)
+bool BackendWrite(const wxString &executable, bool switchedOff)
 {
+	if (!switchedOff) {
+		ClearStartupApproved();
+	}
 	HKEY hKey;
 	if (RegCreateKeyExW(HKEY_CURRENT_USER, RUN_KEY, 0, NULL, 0, KEY_SET_VALUE, NULL, &hKey, NULL) !=
 		ERROR_SUCCESS) {
@@ -311,6 +350,7 @@ bool BackendRemove()
 	}
 	LSTATUS rc = RegDeleteValueW(hKey, RUN_VALUE_NAME);
 	RegCloseKey(hKey);
+	ClearStartupApproved();
 	// ERROR_FILE_NOT_FOUND = value already absent, also success.
 	return rc == ERROR_SUCCESS || rc == ERROR_FILE_NOT_FOUND;
 }
@@ -361,7 +401,13 @@ wxString BackendReadTargetPath()
 	return last;
 }
 
-bool BackendWrite(const wxString &target)
+// Login Items keeps its switch in a store with no public API to read it.
+bool BackendIsSwitchedOff()
+{
+	return false;
+}
+
+bool BackendWrite(const wxString &target, bool /*switchedOff*/)
 {
 	wxString dir = wxGetUserHome() + wxT("/Library/LaunchAgents");
 	if (!wxFileName::DirExists(dir)) {
@@ -434,7 +480,7 @@ static wxString DesktopFilePath()
 	return XdgAutostartDir() + wxT("/amule.desktop");
 }
 
-wxString BackendReadTargetPath()
+static wxString ReadDesktopFile()
 {
 	wxString path = DesktopFilePath();
 	if (!wxFileName::FileExists(path)) {
@@ -448,6 +494,38 @@ wxString BackendReadTargetPath()
 	wxString content;
 	f.ReadAll(&content, wxConvUTF8);
 	f.Close();
+	return content;
+}
+
+// The two lines a desktop switches an entry off with, rather than deleting the file: KDE sets
+// Hidden, GNOME the other key, and each reads Hidden=true differently. Defaults when absent.
+static void ReadSwitchLines(wxString &enabledLine, wxString &hiddenLine)
+{
+	enabledLine = wxT("X-GNOME-Autostart-enabled=true");
+	hiddenLine = wxT("Hidden=false");
+	wxStringTokenizer lines(ReadDesktopFile(), wxT("\n"));
+	while (lines.HasMoreTokens()) {
+		const wxString line = lines.GetNextToken().Trim(false).Trim(true);
+		if (line.Lower().StartsWith(wxT("x-gnome-autostart-enabled="))) {
+			enabledLine = line;
+		} else if (line.Lower().StartsWith(wxT("hidden="))) {
+			hiddenLine = line;
+		}
+	}
+}
+
+bool BackendIsSwitchedOff()
+{
+	wxString enabledLine;
+	wxString hiddenLine;
+	ReadSwitchLines(enabledLine, hiddenLine);
+	return enabledLine.IsSameAs(wxT("X-GNOME-Autostart-enabled=false"), false) ||
+	       hiddenLine.IsSameAs(wxT("Hidden=true"), false);
+}
+
+wxString BackendReadTargetPath()
+{
+	const wxString content = ReadDesktopFile();
 
 	// Parse the Exec= line. .desktop syntax allows field-code expansion (%U, %f) after the
 	// executable; the path is always the first whitespace-delimited token, and may be double-
@@ -477,7 +555,7 @@ wxString BackendReadTargetPath()
 	return wxEmptyString;
 }
 
-bool BackendWrite(const wxString &executable)
+bool BackendWrite(const wxString &executable, bool switchedOff)
 {
 	wxString dir = XdgAutostartDir();
 	if (!wxFileName::DirExists(dir)) {
@@ -492,9 +570,16 @@ bool BackendWrite(const wxString &executable)
 	// survive the .desktop Exec= parser's tokenisation.
 	wxString quotedExec = wxT("\"") + executable + wxT("\"");
 
+	// A switched-off entry keeps the lines the desktop set.
+	wxString enabledLine = wxT("X-GNOME-Autostart-enabled=true");
+	wxString hiddenLine = wxT("Hidden=false");
+	if (switchedOff) {
+		ReadSwitchLines(enabledLine, hiddenLine);
+	}
+
 	// Standard XDG Autostart fields. X-GNOME-Autostart-enabled is widely recognised even
 	// outside GNOME and makes the entry toggleable from the DE settings GUI without us
-	// rewriting the file.
+	// rewriting the file; a rewrite keeps whatever the user set there.
 	wxString content;
 	content << wxT("[Desktop Entry]\n");
 	content << wxT("Type=Application\n");
@@ -502,8 +587,8 @@ bool BackendWrite(const wxString &executable)
 	content << wxT("Comment=Start aMule when the user logs in\n");
 	content << wxT("Exec=") << quotedExec << wxT("\n");
 	content << wxT("Terminal=false\n");
-	content << wxT("X-GNOME-Autostart-enabled=true\n");
-	content << wxT("Hidden=false\n");
+	content << enabledLine << wxT("\n");
+	content << hiddenLine << wxT("\n");
 
 	wxFile f;
 	if (!f.Create(DesktopFilePath(), true /* overwrite */, 0644)) {

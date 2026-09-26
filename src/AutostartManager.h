@@ -42,12 +42,13 @@
 class AutostartManager
 {
 public:
-	// True if the per-user entry starts this binary. Does not validate the registered path --
-	// use SelfHealOnStartup() for that.
+	// True if the per-user entry starts this binary and the user has not switched it off in the
+	// OS's startup settings. Does not validate the registered path -- use SelfHealOnStartup()
+	// for that.
 	static bool IsEnabled();
 
-	// Writes/overwrites the autostart entry to start this binary, at GetTarget().
-	// Idempotent; returns true on success.
+	// Writes/overwrites the autostart entry to start this binary, at GetTarget(), switched on in
+	// the OS's startup settings too. Idempotent; returns true on success.
 	static bool Enable();
 
 	// Removes the entry if it starts this binary. Idempotent; returns true on success.
@@ -55,7 +56,8 @@ public:
 
 	// Called once from CamuleApp::OnInit. If the entry starts this binary from another path,
 	// rewrites it to GetTarget() so the next login launches the right one. Handles a moved
-	// AppImage, .app or install dir without making the user re-toggle the checkbox.
+	// AppImage, .app or install dir without making the user re-toggle the checkbox, and keeps an
+	// entry the user switched off in the OS switched off.
 	//
 	// Does nothing if no entry exists -- disabling autostart is always a deliberate user
 	// choice.
