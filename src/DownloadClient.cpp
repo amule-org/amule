@@ -645,7 +645,10 @@ void CUpDownClient::SendBlockRequests()
 		}
 
 		if (slower_client == this && nearCompletion) {
-			// requeue instead of self-banishing at endgame
+			// Requeue instead of parking at DS_NONEEDEDPARTS, which is reasked only after twice
+			// the reask time: with the last few sources all parked the download froze at 99.9%.
+			// Not gated on the Endgame preference, which covers only the takeover above -- this
+			// neither cancels a source nor requests a block twice.
 			slower_client->SetDownloadState(DS_ONQUEUE);
 		} else {
 			slower_client->SetDownloadState(DS_NONEEDEDPARTS);
@@ -686,8 +689,10 @@ void CUpDownClient::SendBlockRequests()
 					"here) to " +
 						GetFullIP());
 				if (nearCompletion) {
-					// requeue instead of self-banishing at endgame
+					// Both requeue, as above: the slower source was cancelled for blocks
+					// this one cannot take, and still holds needed ones.
 					SetDownloadState(DS_ONQUEUE);
+					slower_client->SetDownloadState(DS_ONQUEUE);
 				} else {
 					SetDownloadState(DS_NONEEDEDPARTS);
 				}
