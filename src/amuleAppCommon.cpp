@@ -390,6 +390,15 @@ wxString CamuleAppCommon::CreateED2kLink(
 	return strURL;
 }
 
+// A handler macOS will not let go of. Printed after a failed --configure-protocols or
+// --configure-file-assoc off.
+static void ExplainHandlerDisableFailure()
+{
+#ifdef __WXMAC__
+	fprintf(stderr, "macOS cannot unregister a default handler: make another application the default.\n");
+#endif
+}
+
 // Reads the value of a one-shot on|off switch, also taking yes|no, true|false and 1|0. Expects it
 // lowercased. False for anything else, with `enable` untouched.
 static bool ParseOnOff(const wxString &value, bool &enable)
@@ -569,6 +578,9 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 			   : (wantEnable ? "protocols enable FAILED" : "protocols disable FAILED"),
 			doEd2k ? "ed2k" : "",
 			doMagnet ? (doEd2k ? ", magnet" : "magnet") : "");
+		if (!ok && !wantEnable) {
+			ExplainHandlerDisableFailure();
+		}
 		// Same one-shot exit semantics as --configure-autostart above.
 		return false;
 	}
@@ -587,6 +599,9 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 		} else {
 			const bool ok = ProtocolHandlerManager::Disable(HandlerTarget::CollectionFile);
 			printf(ok ? "file association disabled\n" : "file association disable FAILED\n");
+			if (!ok) {
+				ExplainHandlerDisableFailure();
+			}
 		}
 		// Same one-shot exit semantics as --configure-autostart above.
 		return false;
@@ -894,7 +909,7 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 	// when no entry exists: disabling autostart is a deliberate choice.
 	AutostartManager::SelfHealOnStartup();
 
-	// Same for the URL-scheme handler registration: rewrite a drifted path where
+	// Same for the link and collection handlers: rewrite a drifted path where
 	// we are the current handler, no-op where we are not.
 	ProtocolHandlerManager::SelfHealOnStartup();
 

@@ -293,10 +293,9 @@ if (BUILD_DAEMON)
 		# ProtocolHandlerManager_mac.mm calls
 		# LSCopyDefaultHandlerForURLScheme /
 		# LSSetDefaultHandlerForURLScheme from ApplicationServices.
-		# amuled on macOS runs from the terminal (no .app bundle), so
-		# LSSetDefault… will always fail there — but the CLI
-		# --configure-protocols path still routes through this file,
-		# so we need the framework linked to satisfy the loader.
+		# amuled links them too: its --configure-protocols goes through
+		# the same file, and from inside aMule.app it registers that
+		# bundle. Only an amuled outside any bundle has nothing to register.
 		target_link_libraries (amuled
 			PRIVATE "-framework ApplicationServices"
 			PRIVATE "-framework Foundation"

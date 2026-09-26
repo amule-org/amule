@@ -221,6 +221,21 @@ void ProtocolHandler_QueueSchemeLink(const wxString &url)
 	ProtocolHandler_QueueLinks(links);
 }
 
+// What a click on a link or collection should start. The GUI: Linux and macOS register the
+// monolithic app for amuled too, and on Windows amuled.exe would start a second daemon instead.
+static wxString HandlerExecutable()
+{
+	const wxString exe = ProtocolHandlerManager::GetCanonicalExecutablePath();
+#if defined(__WXMSW__) && defined(AMULE_DAEMON)
+	wxFileName gui(exe);
+	gui.SetName("amule");
+	if (gui.FileExists()) {
+		return gui.GetFullPath();
+	}
+#endif
+	return exe;
+}
+
 bool ProtocolHandlerManager::IsEnabled(HandlerTarget scheme)
 {
 	wxString raw = BackendReadHandler(scheme);
@@ -232,7 +247,7 @@ bool ProtocolHandlerManager::IsEnabled(HandlerTarget scheme)
 
 bool ProtocolHandlerManager::Enable(HandlerTarget scheme)
 {
-	wxString exe = GetCanonicalExecutablePath();
+	wxString exe = HandlerExecutable();
 	if (exe.empty()) {
 		wxLogDebug(wxT("ProtocolHandlerManager::Enable: no executable path resolved, refusing to "
 			       "write a broken handler entry"));
@@ -257,12 +272,14 @@ wxString ProtocolHandlerManager::GetCurrentHandler(HandlerTarget scheme)
 
 void ProtocolHandlerManager::SelfHealOnStartup()
 {
-	wxString canonical = GetCanonicalExecutablePath();
+	wxString canonical = HandlerExecutable();
 	if (canonical.empty()) {
 		return;
 	}
 
-	const HandlerTarget schemes[] = { HandlerTarget::Ed2kScheme, HandlerTarget::MagnetScheme };
+	const HandlerTarget schemes[] = {
+		HandlerTarget::Ed2kScheme, HandlerTarget::MagnetScheme, HandlerTarget::CollectionFile
+	};
 	for (HandlerTarget scheme : schemes) {
 		wxString raw = BackendReadHandler(scheme);
 		if (raw.empty()) {
@@ -538,18 +555,19 @@ bool BackendIsUs(const wxString &raw)
 	if (raw.empty()) {
 		return false;
 	}
-	// "us" == the currently-running binary, keyed by basename so path drift still counts as our
-	// own registration (SelfHealOnStartup rewrites the full path). Per-binary comparison is
-	// what makes the amule/amulegui differentiation work: in a remote-GUI setup amulegui's
-	// checkbox correctly reads "unchecked" while amule.exe is the current handler, and vice
-	// versa.
-	wxString ownExe = ProtocolHandlerManager::GetCanonicalExecutablePath();
-	if (ownExe.empty()) {
-		return false;
+	// "us" == the currently-running binary or the one it registers, keyed by basename so path
+	// drift still counts as our own registration (SelfHealOnStartup rewrites the full path).
+	// Per-binary comparison is what makes the amule/amulegui differentiation work: in a
+	// remote-GUI setup amulegui's checkbox correctly reads "unchecked" while amule.exe is the
+	// current handler, and vice versa.
+	const wxString rawName = wxFileName(raw).GetFullName();
+	for (const wxString &exe :
+		{ ProtocolHandlerManager::GetCanonicalExecutablePath(), HandlerExecutable() }) {
+		if (!exe.empty() && rawName.IsSameAs(wxFileName(exe).GetFullName(), false)) {
+			return true;
+		}
 	}
-	wxFileName rawFn(raw);
-	wxFileName ownFn(ownExe);
-	return rawFn.GetFullName().IsSameAs(ownFn.GetFullName(), false);
+	return false;
 }
 
 #elif defined(__WXMAC__) || defined(__WXOSX__)
@@ -571,17 +589,12 @@ bool BackendWrite(HandlerTarget scheme, const wxString &canonicalExe)
 
 bool BackendRemove(HandlerTarget scheme)
 {
-	// LaunchServices has no "remove default" call -- the model is that some app is always the
-	// default. On Disable the best we can do is check that we are currently the default and no-
-	// op; the user has to pick another app from the OS's "Open With" prompt to actually stop us
-	// receiving clicks. Silently reassigning to a third-party app would be worse than leaving
-	// us bound.
-	//
-	// Returns true so the prefs toggle reads as "disable succeeded": the checkbox flipping off
-	// is the visible signal that we have stepped back. On Sequoia+ this is unavoidable anyway
-	// -- Apple blocked programmatic clearing of scheme handlers to prevent malicious
-	// deregistration.
-	return true;
+	// LaunchServices has no "remove default" call -- some app is always the default, and from
+	// Sequoia on Apple blocks clearing a scheme handler at all. Silently reassigning to a third-
+	// party app would be worse than staying bound, so only another app taking over ends it.
+	// Report that as a failure while we are still the default: claiming success left the prefs
+	// checkbox off until the next read showed it on again.
+	return !BackendIsUs(::MacReadHandler(scheme));
 }
 
 bool BackendIdentityMatches(const wxString &raw, const wxString & /*canonicalExe*/)

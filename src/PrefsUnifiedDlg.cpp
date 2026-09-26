@@ -1614,6 +1614,12 @@ void PrefsUnifiedDlg::HandleProtocolToggle(HandlerTarget scheme, int checkboxId,
 					     "store may be read-only.")
 					 : _("Could not remove the URL handler registration.");
 		}
+#ifdef __WXMAC__
+		if (!wanted) {
+			failure = _("macOS does not let an application stop being the default handler. To "
+				    "stop aMule opening these, make another application the default.");
+		}
+#endif
 		wxMessageBox(failure, dialogTitle, wxOK | wxICON_WARNING, this);
 	}
 }
