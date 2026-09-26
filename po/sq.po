@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-26 12:29+0100\n"
+"POT-Creation-Date: 2026-09-26 12:53+0100\n"
 "PO-Revision-Date: 2026-09-26 09:31+0000\n"
 "Last-Translator: Fation <dj_barthezz@linuxmail.org lushnja_corps@hotmail.Language-Team:\n"
 "Language: sq\n"
@@ -8649,6 +8649,46 @@ msgstr ""
 #: src/ThreadTasks.cpp
 #, c-format
 msgid "Verify Local Data (%s): ERRORS FOUND! %s Failed blocks: MD4: %s. %s %s"
+msgstr ""
+
+#: src/ThreadTasks.cpp
+#, c-format
+msgid "Verify Local Data: file %s was removed before it could be checked."
+msgstr ""
+
+#: src/ThreadTasks.cpp
+#, c-format
+msgid "Verify Local Data: %s is still downloading, so it was not checked."
+msgstr ""
+
+#: src/ThreadTasks.cpp
+#, c-format
+msgid "Verify Local Data: could not read %s, so it was not checked."
+msgstr ""
+
+#: src/ThreadTasks.cpp
+#, c-format
+msgid "Verify Local Data: ERRORS FOUND! %s Size on disk: %u bytes, expected: %u bytes."
+msgstr ""
+
+#: src/ThreadTasks.cpp
+#, c-format
+msgid "Verify Local Data: %s is larger than aMule supports, so it was not checked."
+msgstr ""
+
+#: src/ThreadTasks.cpp
+#, c-format
+msgid "Verify Local Data: %s is empty, so there is nothing to check."
+msgstr ""
+
+#: src/ThreadTasks.cpp
+#, c-format
+msgid "Verify Local Data: %s was removed or changed during the check, which did not finish."
+msgstr ""
+
+#: src/ThreadTasks.cpp
+#, c-format
+msgid "Verify Local Data: could not read %s, so the check did not finish: %s"
 msgstr ""
 
 #: src/ThreadTasks.cpp
