@@ -86,61 +86,73 @@ How to use:
 
   3) Building the test
     Assuming that the testcase described above has been placed in
-    tests/StackTest.cpp, the follow entry needs to be added to the
-    Makefile.am file in tests/:
+    tests/StackTest.cpp, add a target for it to tests/CMakeLists.txt:
 
-      StackTest_SOURCES = StackTest.cpp
-      StackTest_CXXFLAGS = $(CXXFLAGS)
-      StackTest_LDADD = $(LDADD)
+      add_executable (StackTest StackTest.cpp)
+      add_test (NAME StackTest COMMAND StackTest)
+      target_include_directories (StackTest PRIVATE
+      	${CMAKE_BINARY_DIR}
+      	${CMAKE_SOURCE_DIR}/src
+      	${CMAKE_SOURCE_DIR}/src/include
+      )
+      target_link_libraries (StackTest muleunit mulecommon)
 
-    And the TESTS variable must be updated to contain an entry for
-    the stack testcase: "StackTest"
+    Link mulecommon even when the test seems not to need it: some
+    linkers (GNU ld, MinGW) need it to resolve muleunit. Add the source
+    files of the code under test to add_executable when they are not
+    part of a library.
 
-    At the moment, in order for the makefile to be updated with the
-    next test-case you need to execute the following from the
-    amule-dev/ dir:
+    The tests are built only when BUILD_TESTING is on:
 
-      $ automake unittests/tests/Makefile
-      $ ./configure <your options>
-
-    This only need to be done when the Makefile.am file has been
-    changed, not when test test-cases themselves are changed.
+      $ cmake -B build -DBUILD_TESTING=YES <your options>
+      $ cmake --build build
 
 
   4) Running the test
-    Simply executing the make target check will execute all unittests
-    registered in the Makefile ("-s" is used for silent operation):
+    Run ctest from the build directory:
 
-      $ make -s check
+      $ cd build
+      $ ctest --output-on-failure
 
-      Making check in tests
-      Test case "StackTest" SUCCEEDED with 0 failure(s) and 1 success(es):
-        Test "AStackTest" SUCCEEDED!
+    To run one test-case, name it with -R, or run its binary, which
+    prints the result of each test:
 
-      PASS: StackTest
+      $ ctest -R StackTest
+      $ ./unittests/tests/StackTest
 
-      ==================
-      All 1 tests passed
-      ==================
+      Running test-collection "StackTest" with 1 test-cases:
+      	Test "AStackTest"
 
+    Should a test fail, the binary prints where, and exits with a
+    non-zero status:
 
-	Should a test fail, the output will be like the following:
+      	Test "Foo"
+      		Failure running:
+      		 StackTest.cpp:11 -- Test failed.
 
-      $ make -s check
-
-      Making check in tests
-      Test case "StackTest" FAILED with 1 failure(s) and 0 success(es):
-        Test "Foo" FAILED :
-          Failure: "Test failed." line 11 in StackTest.cpp
-
-
-      FAIL: StackTest
-      ================================
-      1 of 1 tests failed
-      Please report to admin@amule.org
-      ================================
 
   5) More
     More information about available test-macros can be found in the
     muleunit/test.h header-file.
 
+
+  6) The curl suites
+    curl-tests/ holds shell tests for the HTTP interfaces. They are not
+    part of ctest, because they need a running daemon.
+
+    curl-tests/amuleapi/run-all.sh tests amuleapi. It needs an amuled
+    with External Connections on, and it starts a fresh amuleapi for
+    each script. By default it connects to EC on 127.0.0.1:4712 with
+    the password "amule" (set EC_HOST, EC_PORT and EC_PASSWORD to
+    change this), and uses the newest build*/src/webapi/amuleapi:
+
+      $ cd unittests/curl-tests/amuleapi
+      $ ./run-all.sh                          # every script
+      $ ./run-all.sh 12-downloads-add-patch.sh  # some scripts only
+
+    Some scripts need a live ed2k or Kad connection. The CI job in
+    .github/workflows/ccpp.yml shows how to start an isolated amuled,
+    and which scripts it skips and why.
+
+    curl-tests/amuleweb-smoke/phase0.sh checks the landing pages of a
+    running amuleweb. See the header of the script for its settings.

@@ -1,4 +1,4 @@
-find_package(Boost CONFIG REQUIRED)
+find_package(Boost ${MIN_BOOST_VERSION} CONFIG REQUIRED)
 
 include (CheckIncludeFiles)
 

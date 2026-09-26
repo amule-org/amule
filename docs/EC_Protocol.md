@@ -7,7 +7,9 @@
 EC is under heavy construction; the protocol itself is considered stable
 and you can rely on it, but opcodes, tagnames, tag content formats, and
 values are still changing. If you decide to implement an application
-using aMule EC, include `ECcodes.h` for the values, check this document
+using aMule EC, take the values from
+[`ECCodes.abstract`](../src/libs/ec/abstracts/ECCodes.abstract) (the
+build generates `ECCodes.h` from it), check this document
 often, or read the source itself ([`src/ExternalConn.cpp`](../src/ExternalConn.cpp)
 is a good start).
 
@@ -20,46 +22,62 @@ layer**, and a high-level **application layer**.
 
 ### Section 1.1 — Transmission layer
 
-The transmission layer is completely independent of the application
-layer and holds only transport-related information.
+The transmission layer holds only transport information. Every packet
+starts with an 8-byte header. Both fields are `uint32` in network byte
+order (MSB first):
 
-It consists of a single `uint32`, referenced below as **flags**, which
-describes flags for the current send/receive operation. This is the
-only value in the whole protocol that is transmitted **LSB first**, with
-zero bytes omitted (an empty transmission flags value is sent as
-`0x20`, not `0x20 0x00 0x00 0x00`).
+```c
+[uint32]  FLAGS
+[uint32]  LENGTH
+          <application-layer data, LENGTH bytes>
+```
+
+* **FLAGS** tell how this packet is encoded. Each packet has its own
+  flags, so two packets on one connection can differ.
+* **LENGTH** is the number of bytes after the header, as sent: after
+  compression and encryption, if either applies.
 
 #### Bit description
 
 | Bit(s)            | Name                       | Meaning |
 | ----------------- | -------------------------- | ------- |
-| `0`               | Compression (`EC_FLAG_ZLIB`) | When set, zlib compression is applied to the application layer's data. |
-| `1`               | Compressed numbers (`EC_FLAG_UTF8_NUMBERS`) | When set (presumably on small packets that aren't worth zlib-compressing), all numbers used in the protocol are encoded as a wide char converted to UTF-8 to avoid sending zero bytes. |
-| `2`               | Has ID                     | When set, a `uint32` follows the flags — the packet ID. The response must echo the same ID. The only requirement is that IDs be unique within one session (or at least don't repeat for a reasonably long time). |
-| `3`               | Encrypted (`EC_FLAG_ENCRYPTED`) | When set, the application-layer data is sealed with the negotiated AEAD: the body is ciphertext followed by a 16-byte authentication tag, and the transmission-layer length covers both. See Section 1.3. Both sides must have negotiated a cipher during authentication for the bit to appear. This bit was formerly reserved, so a peer predating the feature rejects such a packet outright rather than misparsing ciphertext as tags. |
-| `4`               | Large tag count (`EC_FLAG_LARGE_TAG_COUNT`) | When set, indicates the sender uses the sentinel-extended `TAGCOUNT` encoding (see Section 1.2). Both sides must have advertised `EC_TAG_CAN_LARGE_TAG_COUNT` in their auth packet for the bit to appear in any subsequent flags. Without it, the historical 16-bit `TAGCOUNT` is used, capping any tag at 0xFFFE children for safe interoperation with old peers. |
-| `5`               | Always 1                   | Distinguishes from older (pre-rc8) clients. |
-| `6`               | Always 0                   | Distinguishes from older (pre-rc8) clients. |
-| `7`, `15`, `23`   | Extension                  | Indicates that the next byte of flags is present. |
-| `8`–`14`, `16`–`22`, `24`–`32` | Reserved      | Set to 0. |
+| `0`               | `EC_FLAG_ZLIB`             | The application-layer data is zlib-compressed. |
+| `1`               | `EC_FLAG_UTF8_NUMBERS`     | The numbers of the packet and tag structure are compressed. See [Compressed numbers](#compressed-numbers). |
+| `2`               | Unused                     | Once meant for a packet ID, which aMule never implemented. A receiver ignores the bit and reads no ID, so do not set it. |
+| `3`               | `EC_FLAG_ENCRYPTED`        | The data is sealed with the negotiated AEAD: ciphertext, then a 16-byte authentication tag. LENGTH covers both. The bit appears only after both sides negotiated a cipher. See [Section 1.3](#section-13--transport-encryption). |
+| `4`               | `EC_FLAG_LARGE_TAG_COUNT`  | The sender uses the sentinel-extended `TAGCOUNT` (see [Section 1.2](#section-12--application-layer)). The bit appears only after both sides advertised `EC_TAG_CAN_LARGE_TAG_COUNT` during authentication. Without it, a tag has at most 0xFFFE children. |
+| `5`               | Always 1                   | |
+| `6`               | Always 0                   | |
+| `7`, `15`, `23`   | Unused                     | Set to 0. |
+| `8`–`14`, `16`–`22`, `24`–`31` | Reserved      | Set to 0. |
 
-#### Example
+With no options set, the flags are `0x00000020`.
 
-```
-0x30 0x23 <appdata>
-```
+A receiver drops the connection when bit 5 is not 1, bit 6 is not 0, or
+a reserved bit is set. Peers older than transport encryption reject
+bit 3 the same way, because it was reserved then. That is deliberate: a
+peer that cannot decrypt fails closed instead of reading ciphertext as
+tags.
 
-Client uses no extensions on this packet, and indicates that it can
-accept zlib compression and compressed numbers.
+A sender sets `EC_FLAG_ZLIB`, `EC_FLAG_UTF8_NUMBERS` or
+`EC_FLAG_LARGE_TAG_COUNT` only when the peer advertised the matching
+`EC_TAG_CAN_*` tag during authentication (see
+[Section 3](#section-3--clarifying-things)). A client that advertises
+none of them gets `0x20` on every packet. aMule uses zlib for large
+packets and compressed numbers for the others. It does not set both on
+one packet.
 
-#### Notes
+#### Compressed numbers
 
-* In the *accepts* value, the predefined flags (bits `5` and `6`) must
-  be set to their predefined values — this can act as a sort of sanity
-  check.
-* Bits marked **Reserved** must always be set to 0.
-* Bit `3` was reserved before transport encryption existed, and older peers
-  reject any packet that sets it. That is deliberate: the failure is closed.
+With `EC_FLAG_UTF8_NUMBERS`, each number of the packet and tag structure
+(`OPCODE`, `TAGCOUNT`, `TAGNAME`, `TAGTYPE` and `TAGLEN`, see
+[Section 1.2](#section-12--application-layer)) is encoded the way UTF-8
+encodes a character code: 1 byte for values below 0x80, 2 bytes below
+0x800, and so on. For example, the tag name `0x0200` becomes `c8 80`.
+
+Tag data does not change: a `uint32` tag still holds 4 bytes, MSB
+first. `TAGLEN` also keeps its uncompressed value; see
+[Section 1.2](#section-12--application-layer).
 
 
 ### Section 1.2 — Application layer
@@ -67,7 +85,8 @@ accept zlib compression and compressed numbers.
 Data transmission is done in **packets**. A packet is a special tag —
 no data of its own, no tag-length field, but always with a `tagCount`
 field. All numbers in the application layer are transmitted in **network
-byte order** (MSB first).
+byte order** (MSB first), unless compressed numbers apply (see
+[Section 1.1](#compressed-numbers)).
 
 A packet contains:
 
@@ -106,18 +125,28 @@ A tag contains:
 
 * `ec_tagname_t` is `uint16`, `ec_tagtype_t` is `uint8`, `ec_taglen_t`
   is `uint32` (current values; subject to change).
-* **TAGNAME** identifies the tag content — see `ECcodes.h`.
-* **TAGTYPE** identifies the data type of this tag — see `ECPacket.h`.
-* **TAGLEN** is the total tag length, *including* sub-tag lengths but
-  *excluding* the size of the `TAGNAME`, `TAGTYPE`, and `TAGLEN` fields
-  themselves. The lowest bit of `TAGNAME` is **not** part of the name
-  itself (see below) — clear it before comparing.
+* **TAGNAME** is the tag code shifted left by one bit. The lowest bit
+  tells whether the tag has sub-tags (see below). Shift `TAGNAME` right
+  by one bit to get the code, as listed in
+  [`ECCodes.abstract`](../src/libs/ec/abstracts/ECCodes.abstract).
+* **TAGTYPE** identifies the data type of this tag. See
+  [Section 2](#section-2--data-types) and
+  [`ECTagTypes.abstract`](../src/libs/ec/abstracts/ECTagTypes.abstract).
+* **TAGLEN** is the length of the tag's own data, plus the full size of
+  each sub-tag: 7 bytes of header (`TAGNAME`, `TAGTYPE`, `TAGLEN`), 2
+  more for its `TAGCOUNT` if it has sub-tags (6 if it uses the extended
+  count), and its own `TAGLEN`. It excludes this tag's own header and
+  `TAGCOUNT`.
+
+`TAGLEN` counts the uncompressed sizes. With compressed numbers the
+header fields of a sub-tag are shorter on the wire, but `TAGLEN` still
+counts 7 or 9 bytes for them. So do not use `TAGLEN` to skip bytes in
+the stream. Read the sub-tags, then read the tag's own data: its length
+is `TAGLEN` minus the sizes of all sub-tags.
 
 Tags may contain sub-tags. A `TAGCOUNT` field is present only when the
-tag has sub-tags; presence is indicated by the **lowest bit of
-`TAGNAME`** being set. When a tag contains sub-tags, the sub-tags are
-sent before the tag's own data. Tag-data length can be calculated by
-subtracting all sub-tags' total length from `TAGLEN`.
+lowest bit of `TAGNAME` is set. The sub-tags come before the tag's own
+data.
 
 When `EC_FLAG_LARGE_TAG_COUNT` is in effect, the sub-tag `TAGCOUNT`
 field uses the same sentinel-extended encoding as the packet-level
@@ -226,10 +255,30 @@ that negotiated no cipher is refused at authentication time.
 
 ## Section 2 — Data types
 
+### Tag types
+
+| `TAGTYPE` | Name                  | Data |
+| --------- | --------------------- | ---- |
+| `1`       | `EC_TAGTYPE_CUSTOM`   | Raw bytes; the tag decides what they mean. An empty tag, such as a capability, has this type and length 0. |
+| `2`       | `EC_TAGTYPE_UINT8`    | 1-byte integer. |
+| `3`       | `EC_TAGTYPE_UINT16`   | 2-byte integer. |
+| `4`       | `EC_TAGTYPE_UINT32`   | 4-byte integer. |
+| `5`       | `EC_TAGTYPE_UINT64`   | 8-byte integer. |
+| `6`       | `EC_TAGTYPE_STRING`   | String, see below. |
+| `7`       | `EC_TAGTYPE_DOUBLE`   | Floating-point number, see below. |
+| `8`       | `EC_TAGTYPE_IPV4`     | 4 bytes of IPv4 address in network order, then a 2-byte port. |
+| `9`       | `EC_TAGTYPE_HASH16`   | 16-byte hash, such as an MD4 file hash. |
+| `10`      | `EC_TAGTYPE_UINT128`  | 16-byte integer, such as a Kad ID. |
+
 ### Integer types
 
 Integer types (`uint8`, `uint16`, `uint32`, …) are always transmitted
 in network byte order (MSB first).
+
+aMule sends an integer tag with the smallest type that holds its value.
+So the same tag can arrive as `EC_TAGTYPE_UINT8` in one packet and as
+`EC_TAGTYPE_UINT32` in the next. A reader must accept any integer type
+for an integer tag.
 
 ### Strings
 
@@ -269,40 +318,44 @@ Have you seen an XML file? Then think of an EC packet as binary XML.
 Otherwise, think of it as a tree: exactly one root, possibly many
 branches and leaves. We'll use the tree analogy below.
 
-About the flags (which are part of the transmission layer): when
-developing an EC application, this is the last thing you want to care
-about, and that's fine. Just keep sending `0x20` as flags, and aMule
-will never want to use any of the extensions described in
-[Section 1.1](#section-11--transmission-layer). You only have to
-*tolerate* the *accepts* value aMule sends in its first reply.
+About the flags (which are part of the transmission layer): you can
+ignore them at first. Send `0x20` and advertise no capabilities, and
+aMule sends `0x20` back on every packet. Add capabilities later, when
+you need them.
 
-The example packets below are real-life EC packets, transcribed to
-textual form.
+The example packets below are real. They were captured between a
+minimal client and `amuled` 3.1.0, with transport encryption off, and
+transcribed to text. All numbers are hexadecimal, with the `0x` prefix
+left out.
 
 ### Example 1 — Authentication
 
-This is the very first packet you send, otherwise aMule may drop the
-connection.
+A login has two round trips: `EC_OP_AUTH_REQ` gets `EC_OP_AUTH_SALT`,
+then `EC_OP_AUTH_PASSWD` gets `EC_OP_AUTH_OK`. The first packet you send
+must be `EC_OP_AUTH_REQ`. The server answers any other packet with
+`EC_OP_AUTH_FAIL`. Each failure also carries an `EC_TAG_STRING` that
+tells why.
+
+#### Step 1: `EC_OP_AUTH_REQ`
 
 ```
-EC_OP_AUTH_REQ (0x02)
-    +-- EC_TAG_CLIENT_NAME            (0x06) (optional)
-    +-- EC_TAG_PASSWD_HASH            (0x04)
-    +-- EC_TAG_PROTOCOL_VERSION       (0x0c)
-    +-- EC_TAG_CLIENT_VERSION         (0x08) (optional)
-    +-- EC_TAG_VERSION_ID             (0x0e) (required for CVS versions, must
-                                              not be present for releases)
-    +-- EC_TAG_CAN_ZLIB               (0x0c) (optional, advertises capability)
-    +-- EC_TAG_CAN_UTF8_NUMBERS       (0x0d) (optional, advertises capability)
-    +-- EC_TAG_CAN_NOTIFY             (0x0e) (optional, advertises capability)
-    +-- EC_TAG_CAN_LARGE_TAG_COUNT    (0x11) (optional, advertises capability)
-    +-- EC_TAG_CAN_PARTIAL_UPDATE     (0x12) (optional, advertises capability)
-    +-- EC_TAG_CAN_MULTI_SEARCH       (0x15) (optional, advertises capability)
-    +-- EC_TAG_CAN_CHAT               (0x16) (optional, advertises capability)
-    +-- EC_TAG_CAN_SHAREDDIRS_CONFIG  (0x17) (optional, advertises capability)
-    +-- EC_TAG_CAN_SEARCH_LIST        (0x1a) (optional, advertises capability)
-    +-- EC_TAG_CAN_CHAT_SESSIONS      (0x27) (optional, advertises capability)
+EC_OP_AUTH_REQ (02)
+    +-- EC_TAG_CLIENT_NAME            (0100) optional
+    +-- EC_TAG_CLIENT_VERSION         (0101) optional
+    +-- EC_TAG_PROTOCOL_VERSION       (0002) required
+    +-- EC_TAG_VERSION_ID             (0003) see below
+    +-- EC_TAG_CAN_*                         optional, one per capability
+    +-- EC_TAG_CAN_AEAD, EC_TAG_AEAD_*       optional, see Section 1.3
 ```
+
+`EC_TAG_PROTOCOL_VERSION` must be equal to the server's
+`EC_CURRENT_PROTOCOL_VERSION`, currently `0x0204`. If not, the server
+refuses the login.
+
+`EC_TAG_VERSION_ID` is a 16-byte hash that binds a development snapshot
+to the same snapshot on the other side. Only a snapshot built with a
+version ID requires it. A release refuses any client that sends it, so
+leave it out.
 
 Each `EC_TAG_CAN_*` is an empty tag advertising support for one
 extension. They fall into two groups, and the group decides how the
@@ -385,133 +438,217 @@ use. Bumping `EC_CURRENT_PROTOCOL_VERSION` is *not* the mechanism for
 this: that constant gates the handshake as a whole, so raising it
 severs every mixed-version pairing instead of degrading one feature.
 
-What gets transmitted (all numbers hexadecimal, the `0x` prefix omitted
-for readability):
+What the client of this example sends:
 
 ```
-20                                FLAGS — using ECv2
+00 00 00 20                       FLAGS
+00 00 00 27                       LENGTH: 39 bytes follow
 02                                EC_OP_AUTH_REQ
-  00 05                           Number of children (tags)
-    00 06                         EC_TAG_CLIENT_NAME
-      0?                          EC_TAGTYPE_STRING
-      00 00 00 09                 Length 9
-      61 4d 75 6c 65 63 6d 64 00  "aMulecmd" + trailing zero
-    00 08                         EC_TAG_CLIENT_VERSION
-      0?                          EC_TAGTYPE_STRING
-      00 00 00 04                 Length 4
-      43 56 53 00                 "CVS"
-    00 0c                         EC_TAG_PROTOCOL_VERSION
-      0?                          EC_TAGTYPE_UINT??
-      00 00 00 02/4/8             Length 2/4/8 (16/32/64-bit value follows)
-      00? 00? 01 f2               0x0200 (current protocol version for CVS)
-    00 04                         EC_TAG_PASSWD_HASH
-      0?                          EC_TAGTYPE_HASH
-      00 00 00 10                 Length 16
-      5d 41 40 2a bc 4b 2a 76     16 bytes md5sum of EC password
-      b9 71 9d 91 10 17 c5 92
-    00 0e                         EC_TAG_VERSION_ID
-      0?                          EC_TAGTYPE_CUSTOM
-      00 00 00 21                 Length 33
-      62 66 39 64 64 32 36 35     33 bytes of unique CVS version ID
-      32 36 34 35 31 36 63 39     (CVS only — size, content, anything
-      34 35 38 36 38 66 61 39     can change without notice; for releases
-      30 38 66 62 37 64 39 38     this tag MUST NOT be present)
-      00
+  00 03                           TAGCOUNT: 3
+    02 00                         EC_TAG_CLIENT_NAME (0100 << 1)
+      06                          EC_TAGTYPE_STRING
+      00 00 00 09                 TAGLEN: 9
+      4d 79 43 6c 69 65 6e 74 00  "MyClient" + trailing zero
+    02 02                         EC_TAG_CLIENT_VERSION (0101 << 1)
+      06                          EC_TAGTYPE_STRING
+      00 00 00 04                 TAGLEN: 4
+      31 2e 30 00                 "1.0" + trailing zero
+    00 04                         EC_TAG_PROTOCOL_VERSION (0002 << 1)
+      03                          EC_TAGTYPE_UINT16
+      00 00 00 02                 TAGLEN: 2
+      02 04                       0204
 ```
 
-The reply, hopefully:
+#### Step 2: `EC_OP_AUTH_SALT`
+
+The server answers with a random 64-bit salt, new for each connection:
 
 ```
-30                                FLAGS — server sends an "accepts" flag
-23                                the "accepts" flag itself; just take
-                                  care that your program tolerates it
+00 00 00 20                       FLAGS
+00 00 00 12                       LENGTH: 18
+4f                                EC_OP_AUTH_SALT
+  00 01                           TAGCOUNT: 1
+    00 16                         EC_TAG_PASSWD_SALT (000b << 1)
+      05                          EC_TAGTYPE_UINT64
+      00 00 00 08                 TAGLEN: 8
+      85 e4 ba 44 61 96 51 56     the salt
+```
+
+#### Step 3: `EC_OP_AUTH_PASSWD`
+
+The client proves that it knows the password without sending it:
+
+```
+hash = md5(md5_hex(password) + md5_hex(sprintf("%lX", salt)))
+```
+
+`md5_hex` is the digest in lowercase hexadecimal. `%lX` writes the salt
+in uppercase hexadecimal, with no leading zeros. The server keeps
+`md5_hex(password)` as `ECPassword` in `amule.conf`. With the password
+`amule`:
+
+```
+md5_hex("amule")            = ef7628c92bff39c0b3532d36a617cf09
+md5_hex("85E4BA4461965156") = f3fd39a2accf5daba095bbab076af24d
+md5("ef7628c92bff39c0b3532d36a617cf09f3fd39a2accf5daba095bbab076af24d")
+                            = 9dd41c0b85c8b7cd0a0b1a8ecf9f5d29
+```
+
+```
+00 00 00 20                       FLAGS
+00 00 00 1a                       LENGTH: 26
+50                                EC_OP_AUTH_PASSWD
+  00 01                           TAGCOUNT: 1
+    00 02                         EC_TAG_PASSWD_HASH (0001 << 1)
+      09                          EC_TAGTYPE_HASH16
+      00 00 00 10                 TAGLEN: 16
+      9d d4 1c 0b 85 c8 b7 cd     the hash
+      0a 0b 1a 8e cf 9f 5d 29
+```
+
+With encryption, this packet also carries `EC_TAG_AEAD_CLIENT_CONFIRM`
+(see Section 1.3).
+
+#### Step 4: `EC_OP_AUTH_OK`
+
+```
+00 00 00 20                       FLAGS
+00 00 00 72                       LENGTH: 114
 04                                EC_OP_AUTH_OK
-  00 01                           Number of children
-    00 76                         EC_TAG_SERVER_VERSION
-      0?                          EC_TAGTYPE_STRING
-      00 00 00 04                 Length 4
-      43 56 53 00                 "CVS"
+  00 06                           TAGCOUNT: 6
+    0a 16                         EC_TAG_SERVER_VERSION (050b << 1)
+      06                          EC_TAGTYPE_STRING
+      00 00 00 1d                 TAGLEN: 29
+      47 49 54 20 72 65 76 2e     "GIT rev. 3.1.0-89-g091eac4fe"
+      20 33 2e 31 2e 30 2d 38       + trailing zero
+      39 2d 67 30 39 31 65 61
+      63 34 66 65 00
+    00 48                         EC_TAG_AEAD_SERVER_CONFIRM (0024 << 1)
+      01                          EC_TAGTYPE_CUSTOM
+      00 00 00 20                 TAGLEN: 32
+      08 23 7b b6 8a 4d 68 9e     32 bytes, see Section 1.3
+      [...]
+    00 4a                         EC_TAG_SESSION_ID (0025 << 1)
+      05                          EC_TAGTYPE_UINT64
+      00 00 00 08                 TAGLEN: 8
+      5f 44 b2 22 d7 59 9d 58     changes when the daemon restarts
+    00 4c                         EC_TAG_CAN_CLIENT_HISTORY (0026 << 1)
+      01                          EC_TAGTYPE_CUSTOM
+      00 00 00 00                 TAGLEN: 0, an empty tag
+    00 2e                         EC_TAG_CAN_SHAREDDIRS_CONFIG (0017 << 1)
+      01 00 00 00 00              empty
+    00 34                         EC_TAG_CAN_SEARCH_LIST (001a << 1)
+      01 00 00 00 00              empty
 ```
 
-This shows the minimum a server must reply with. A current daemon also
-appends one empty tag per feature capability it accepted, so the child
-count is higher and `EC_TAG_SERVER_VERSION` is followed by the echoed
-`EC_TAG_CAN_*` tags. Parse the children rather than assuming a count.
+The version string comes from a development build. A release sends its
+version number.
+
+Only `EC_TAG_SERVER_VERSION` is always present. The other tags depend
+on the server version and on what the client advertised. This server
+echoes the three capabilities above to every client, and adds the
+capabilities it accepted from the client's list. A client without
+encryption can ignore `EC_TAG_AEAD_SERVER_CONFIRM`. Parse the children:
+do not assume a count or an order.
+
+A wrong password gets `EC_OP_AUTH_FAIL`. After repeated failures from
+one address, the server refuses logins from it for a time, even with
+the right password.
 
 ### Example 2 — Simple stats request
 
 ```
-EC_OP_STAT_REQ
-    +-- EC_TAG_DETAIL_LEVEL (with EC_DETAIL_CMD value)
+EC_OP_STAT_REQ (0a)
+    +-- EC_TAG_DETAIL_LEVEL (0004), value EC_DETAIL_CMD (00)
 ```
 
 ```
-20                                FLAGS
+00 00 00 20                       FLAGS
+00 00 00 0b                       LENGTH: 11
 0a                                EC_OP_STAT_REQ
-  00 01                           TagCount: 1
-    00 10                         EC_TAG_DETAIL_LEVEL
-      0?                          EC_TAGTYPE_UINT8
-      00 00 00 01                 Length 1
-      00                          0 = EC_DETAIL_CMD
+  00 01                           TAGCOUNT: 1
+    00 08                         EC_TAG_DETAIL_LEVEL (0004 << 1)
+      02                          EC_TAGTYPE_UINT8
+      00 00 00 01                 TAGLEN: 1
+      00                          EC_DETAIL_CMD
 ```
 
-The reply (assuming core is connected to a server):
+The reply, from a daemon that is not connected to any network:
 
 ```
-EC_OP_STATS
-    +-- EC_TAG_STATS_UL_SPEED
-    +-- EC_TAG_STATS_DL_SPEED
-    +-- EC_TAG_STATS_UL_SPEED_LIMIT
-    +-- EC_TAG_STATS_DL_SPEED_LIMIT
-    +-- EC_TAG_STATS_CURR_UL_COUNT
-    +-- EC_TAG_STATS_TOTAL_SRC_COUNT
-    +-- EC_TAG_STATS_CURR_DL_COUNT
-    +-- EC_TAG_STATS_TOTAL_DL_COUNT
-    +-- EC_TAG_STATS_UL_QUEUE_LEN
-    +-- EC_TAG_STATS_BANNED_COUNT
-    +-- EC_TAG_CONNSTATE
-        +-- EC_TAG_SERVER
-            +-- EC_TAG_SERVER_NAME
+EC_OP_STATS (0c)
+    +-- EC_TAG_STATS_UL_SPEED          (0200)
+    +-- EC_TAG_STATS_DL_SPEED          (0201)
+    +-- EC_TAG_STATS_UL_SPEED_LIMIT    (0202)
+    +-- EC_TAG_STATS_DL_SPEED_LIMIT    (0203)
+    +-- EC_TAG_STATS_UL_QUEUE_LEN      (0208)
+    +-- EC_TAG_STATS_TOTAL_SRC_COUNT   (0206)
+    +-- EC_TAG_STATS_ED2K_USERS        (0209)
+    +-- EC_TAG_STATS_KAD_USERS         (020a)
+    +-- EC_TAG_STATS_ED2K_FILES        (020b)
+    +-- EC_TAG_STATS_KAD_FILES         (020c)
+    +-- EC_TAG_STATS_KAD_NODES         (021b)
+    +-- EC_TAG_CONNSTATE               (0005)
+        +-- EC_TAG_CLIENT_ID           (000a)
 ```
 
-The interesting part of the reply packet:
+A connected daemon sends more: Kad statistics, and the server,
+`EC_TAG_ED2K_ID` and more inside `EC_TAG_CONNSTATE`.
 
 ```
-20                                FLAGS
+00 00 00 20                       FLAGS
+00 00 00 6d                       LENGTH: 109
 0c                                EC_OP_STATS
-  00 0b                           Number of first-level tags: 11
-    00 14 [...]                   EC_TAG_STATS_UL_SPEED
-    00 16 [...]                   EC_TAG_STATS_DL_SPEED
-    00 18 [...]                   EC_TAG_STATS_UL_SPEED_LIMIT
-    00 1a [...]                   EC_TAG_STATS_DL_SPEED_LIMIT
-    00 1c [...]                   EC_TAG_STATS_CURR_UL_COUNT
-    00 22 [...]                   EC_TAG_STATS_TOTAL_SRC_COUNT
-    00 1e [...]                   EC_TAG_STATS_CURR_DL_COUNT
-    00 20 [...]                   EC_TAG_STATS_TOTAL_DL_COUNT
-    00 26 [...]                   EC_TAG_STATS_UL_QUEUE_LEN
-    00 24 [...]                   EC_TAG_STATS_BANNED_COUNT
-    00 13                         EC_TAG_CONNSTATE — odd tagname means
-                                  the tag has children. The true tagname
-                                  is <found>-1: EC_TAG_CONNSTATE = 0x0012,
-                                  and 0x0013 - 1 = 0x0012, so this is it.
-                                  Odd-tagname tags also carry a tagcount
-                                  field.
-      0?                          EC_TAGTYPE_UINT32
-      00 00 00 26                 TagLen: 38 (own content + children with headers)
-      00 01                       TagCount: 1
-        00 61                     EC_TAG_SERVER (has children)
-          0?                      EC_TAGTYPE_IPV4
-          00 00 00 1a             TagLen: 27 (own content 6 + child content 14 + child header 7)
-          00 01                   TagCount: 1
-            00 62                 EC_TAG_SERVER_NAME
-              0?                  EC_TAGTYPE_STRING
-              00 00 00 0e         TagLen: 14
-              52 61 7a 6f 72 62 61 63  Content: "Razorback 2.0"
-              6b 20 32 2e 30 00
-          c3 f5 f4 f3 12 35       EC_TAG_SERVER content: Server IP:Port
-                                  (195.245.244.243:4661)
-      90 cc 83 52                 EC_TAG_CONNSTATE content: current UserID
+  00 0c                           TAGCOUNT: 12
+    04 00 02 00 00 00 01 00       EC_TAG_STATS_UL_SPEED (0200 << 1),
+                                  EC_TAGTYPE_UINT8, TAGLEN 1, value 0
+    04 02 02 00 00 00 01 00       EC_TAG_STATS_DL_SPEED, the same
+    [...]                         9 more tags of the same shape
+    00 0b                         EC_TAG_CONNSTATE (0005 << 1 | 1):
+                                  the lowest bit is set, so the tag
+                                  has sub-tags and a TAGCOUNT
+      02                          EC_TAGTYPE_UINT8
+      00 00 00 09                 TAGLEN: 9 = sub-tag header 7
+                                  + sub-tag data 1 + own data 1
+      00 01                       TAGCOUNT: 1, not counted in TAGLEN
+        00 14                     EC_TAG_CLIENT_ID (000a << 1)
+          02                      EC_TAGTYPE_UINT8
+          00 00 00 01             TAGLEN: 1
+          00                      0: no ID yet
+      08                          EC_TAG_CONNSTATE's own data, after
+                                  its sub-tags
 ```
+
+Every value here is 0, so every integer goes as `EC_TAGTYPE_UINT8`. On a
+busy daemon, the same tags arrive as wider types (see
+[Section 2](#integer-types)).
+
+The value of `EC_TAG_CONNSTATE` is a set of bits: `01` eD2k connected,
+`02` eD2k connecting, `04` Kad connected, `08` Kad firewalled, `10` Kad
+running. `EC_OP_GET_CONNSTATE` returns the same tag in an
+`EC_OP_MISC_DATA` packet.
+
+### Example 3 - Compressed numbers
+
+`amulecmd` advertises `EC_TAG_CAN_UTF8_NUMBERS` and
+`EC_TAG_CAN_LARGE_TAG_COUNT`. After it logs in, the same request looks
+like this:
+
+```
+00 00 00 32                       FLAGS: 20 + EC_FLAG_LARGE_TAG_COUNT (10)
+                                  + EC_FLAG_UTF8_NUMBERS (02)
+00 00 00 06                       LENGTH: 6. The header is not compressed.
+0a                                EC_OP_STAT_REQ
+  01                              TAGCOUNT: 1
+    08                            EC_TAG_DETAIL_LEVEL (0004 << 1)
+      02                          EC_TAGTYPE_UINT8
+      01                          TAGLEN: 1
+      00                          EC_DETAIL_CMD. Tag data is not compressed.
+```
+
+In the reply, `EC_TAG_CONNSTATE` is `0b 02 09 01 14 02 01 00 08`. The
+sub-tag takes 4 bytes on the wire, but `TAGLEN` is still 9: it counts
+the sub-tag header as 7 bytes.
 
 Hopefully these examples clarified opcodes, tags, and nested tags.
 

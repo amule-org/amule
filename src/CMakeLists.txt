@@ -768,6 +768,7 @@ if (NEED_LIB_MULEAPPCOMMON)
 		${UPNP_SOURCES}
 		CFile.cpp
 		ClientCredits.cpp
+		ClientMetaTrailer.cpp
 		DataToText.cpp
 		ED2KLink.cpp
 		Friend.cpp
