@@ -43,6 +43,7 @@ Unicode true
 !include "MUI2.nsh"
 !include "FileFunc.nsh"
 !include "LogicLib.nsh"
+!include "Sections.nsh"
 !include "x64.nsh"
 
 Name "aMule"
@@ -81,6 +82,10 @@ VIAddVersionKey  "ProductVersion"  "${VERSION}"
 !insertmacro MUI_PAGE_DIRECTORY
 
 Var StartMenuFolder
+; An amuled or amulegui autostart entry that an upgrade's uninstall removes. No
+; section recreates it, so SecCore puts it back when the directory is unchanged.
+Var KeptAutostart
+Var PriorInstallDir
 !define MUI_STARTMENUPAGE_REGISTRY_ROOT        "HKLM"
 !define MUI_STARTMENUPAGE_REGISTRY_KEY         "Software\aMule"
 !define MUI_STARTMENUPAGE_REGISTRY_VALUENAME   "StartMenuFolder"
@@ -300,6 +305,10 @@ Section "aMule (required)" SecCore
 
   Call CheckPriorInstall
   Call CheckRunningInstance
+  ${If} $KeptAutostart != ""
+  ${AndIf} $PriorInstallDir == $INSTDIR
+    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "aMule" $KeptAutostart
+  ${EndIf}
 
   SetOutPath "$INSTDIR"
   ; Recursively stage the entire portable tree. /r preserves the
@@ -575,6 +584,56 @@ Function .onInit
   SectionSetText ${SecProtoEd2k}   "$(MYSTR_SEC_PROTO_ED2K)"
   SectionSetText ${SecProtoMagnet} "$(MYSTR_SEC_PROTO_MAGNET)"
   SectionSetText ${SecAssocCollection} "$(MYSTR_SEC_ASSOC_COLLECTION)"
+
+  Call SelectIntegrationsInUse
+FunctionEnd
+
+; Selects `section` when the HKCU command at `key` runs a program from the prior
+; install ($0), and clears it otherwise.
+!macro SelectIfOurs key section
+  ReadRegStr $1 HKCU "${key}" ""
+  Push $1
+  Push "$0\bin\"
+  Call StrContains
+  Pop $2
+  ${If} $2 != ""
+    !insertmacro SelectSection ${section}
+  ${Else}
+    !insertmacro UnselectSection ${section}
+  ${EndIf}
+!macroend
+
+; An upgrade uninstalls the prior version first, which removes the autostart
+; entry and the handlers pointing into its directory, and the sections would
+; then apply their fixed defaults. Start each from what is registered now.
+Function SelectIntegrationsInUse
+  ReadRegStr $0 HKLM "Software\aMule" "InstallLocation"
+  ${If} $0 == ""
+    Return
+  ${EndIf}
+  StrCpy $PriorInstallDir $0
+
+  ReadRegStr $1 HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "aMule"
+  Push $1
+  Push "$0\bin\"
+  Call StrContains
+  Pop $2
+  ${If} $2 != ""
+    Push $1
+    Push "\amule.exe"
+    Call StrContains
+    Pop $2
+    ${If} $2 != ""
+      !insertmacro SelectSection ${SecAutostart}
+    ${Else}
+      ; amuled's or amulegui's.
+      StrCpy $KeptAutostart $1
+    ${EndIf}
+  ${EndIf}
+
+  !insertmacro SelectIfOurs "Software\Classes\ed2k\shell\open\command" ${SecProtoEd2k}
+  !insertmacro SelectIfOurs "Software\Classes\magnet\shell\open\command" ${SecProtoMagnet}
+  !insertmacro SelectIfOurs "Software\Classes\aMule.emulecollection\shell\open\command" ${SecAssocCollection}
 FunctionEnd
 
 Function un.onInit
@@ -586,9 +645,11 @@ Function un.onInit
 FunctionEnd
 
 ; Tiny substring helper — returns the match position on the stack or
-; empty string when needle isn't present. Used by the autostart-cleanup
-; guard to confirm the HKCU Run value still points inside $INSTDIR.
-Function un.StrContains
+; empty string when needle isn't present. Case-insensitive, like StrCmp.
+; The uninstaller's copy confirms an HKCU value still points inside
+; $INSTDIR; the installer's finds what the prior install registered.
+!macro StrContainsFunc prefix
+Function ${prefix}StrContains
   Exch $R1 ; needle
   Exch
   Exch $R2 ; haystack
@@ -615,3 +676,6 @@ Function un.StrContains
     Pop $R2
     Exch $R1
 FunctionEnd
+!macroend
+!insertmacro StrContainsFunc ""
+!insertmacro StrContainsFunc "un."
