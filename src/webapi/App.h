@@ -170,6 +170,9 @@ private:
 	wxString m_cliBindAddress;
 	long m_cliHttpPort = 0;
 	wxString m_cliConfigDirOverride;
+	// --log-file / --no-log-file: where OnInit tees stdout/stderr.
+	wxString m_logFile;
+	bool m_noLogFile = false;
 	wxString m_cliSetAdminPass;
 	wxString m_cliSetGuestPass;
 	bool m_cliHasBindAddress = false;

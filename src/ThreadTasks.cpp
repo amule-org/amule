@@ -589,14 +589,16 @@ void CVerifyLocalDataTask::Entry()
 	{
 		knownFile = theApp->knownfiles->FindKnownFileByID(m_fileID);
 		if (knownFile == nullptr) {
-			AddDebugLogLineC(logVerifyLocalData,
-				CFormat("Warning, file was removed before verifying it: %s") % GetDesc());
+			AddLogLineN(CFormat(_("Verify Local Data: file %s was removed before it could be "
+					      "checked.")) %
+				    GetDesc());
 			return;
 		}
 
 		if (knownFile->IsPartFile()) {
-			AddDebugLogLineC(logVerifyLocalData,
-				CFormat("Warning, file is a part file, skipping %s") % GetDesc());
+			AddLogLineN(CFormat(_("Verify Local Data: %s is still downloading, so it was not "
+					      "checked.")) %
+				    knownFile->GetFileName());
 			return;
 		}
 		CPath filepath = knownFile->GetFilePath();
@@ -610,35 +612,35 @@ void CVerifyLocalDataTask::Entry()
 		fileSize = knownFile->GetFileSize();
 	} // no more knownFile after this point
 
+	const wxString notRead = _("Verify Local Data: could not read %s, so it was not checked.");
 	if (!file.Open(fullPath, CFile::read)) {
-		AddDebugLogLineC(
-			logVerifyLocalData, CFormat("Warning, failed to open file, skipping: %s") % fullPath);
+		AddLogLineC(CFormat(notRead) % fullPath);
 		return;
 	}
 
 	try {
 		fileLength = file.GetLength();
 	} catch (const CIOFailureException &) {
-		AddDebugLogLineC(logVerifyLocalData,
-			CFormat("Warning, failed to retrieve file-length, skipping: %s") % fullPath);
+		AddLogLineC(CFormat(notRead) % fullPath);
 		return;
 	}
 
+	// A size that differs from the hashed one is a failed check, not a reason to skip it.
 	if (fileLength != fileSize) {
-		AddDebugLogLineC(logVerifyLocalData,
-			CFormat("Warning, size mismatch between stored value and underlying file, skipping: "
-				"%s") %
-				fullPath);
+		AddLogLineC(
+			CFormat(_("Verify Local Data: ERRORS FOUND! %s Size on disk: %u bytes, expected: %u "
+				  "bytes.")) %
+			fullPath % fileLength % fileSize);
 		return;
 	} else if (fileLength > MAX_FILE_SIZE) {
-		AddDebugLogLineC(logVerifyLocalData,
-			CFormat("Warning, file is larger than supported size, skipping: %s") % fullPath);
+		AddLogLineC(CFormat(_("Verify Local Data: %s is larger than aMule supports, so it was not "
+				      "checked.")) %
+			    fullPath);
 		return;
 	} else if (fileLength == 0) {
 		// Zero-size partfiles should be hashed, but not zero-sized shared-files.
-		AddDebugLogLineC(
-			logVerifyLocalData, CFormat("Warning, 0-size file, skipping: %s") % fullPath);
-
+		AddLogLineN(CFormat(_("Verify Local Data: %s is empty, so there is nothing to check.")) %
+			    fullPath);
 		return;
 	}
 
@@ -665,10 +667,10 @@ void CVerifyLocalDataTask::Entry()
 			if (knownFile == theApp->knownfiles->FindKnownFileByID(m_fileID))
 				knownFile->SetHashingProgress(part + 1);
 			else {
-				AddDebugLogLineC(logVerifyLocalData,
-					CFormat("File removed or modified during hash check: File: %s ID: "
-						"%s") %
-						fullPath % m_fileID.Encode());
+				AddLogLineC(
+					CFormat(_("Verify Local Data: %s was removed or changed during the "
+						  "check, which did not finish.")) %
+					fullPath);
 				return;
 			}
 
@@ -727,7 +729,9 @@ void CVerifyLocalDataTask::Entry()
 			PrintReport(fullPath, isAICHloaded);
 
 	} catch (const CSafeIOException &e) {
-		AddDebugLogLineC(logVerifyLocalData, "IO exception while hashing file: " + e.what());
+		AddLogLineC(CFormat(_("Verify Local Data: could not read %s, so the check did not finish: "
+				      "%s")) %
+			    fullPath % e.what());
 	}
 	if (knownFile == theApp->knownfiles->FindKnownFileByID(m_fileID))
 		knownFile->SetHashingProgress(0);

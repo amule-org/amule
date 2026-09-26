@@ -10,8 +10,7 @@
 # is accepted (202), never completed (200) — the verdict is only ever emitted
 # as an amule log line ("Verify Local Data (...): Result OK" / "ERRORS
 # FOUND!"), which a client reads back through /logs/amule or the SSE log
-# channel. There is therefore nothing to assert about the outcome here; the
-# contract under test is the accept path and its guards.
+# channel. Section 6 reads it back there, on a file of its own.
 #
 # Partfiles are rejected with 409 partfile_unsupported: the hashing task
 # bails out on IsPartFile(), so accepting one would promise a report that
@@ -196,6 +195,58 @@ if [ -n "$PART_HASH" ]; then
 		"partfile → error.code=partfile_unsupported"
 else
 	echo "    info: no shared partfile present; skipping the 409 guard check"
+fi
+
+# --- 6. Outcome in the amule log. --------------------------------------
+# Uses a file of its own, because it changes it on disk. A size that no longer
+# matches is a failed check, reported as ERRORS FOUND rather than skipped.
+_log_count() {
+	curl -s --max-time 10 -H "Authorization: Bearer $ADMIN_TOKEN" "$API/logs/amule?tail=500" \
+		| jq --arg re "$1" '[.lines[] | select(test($re))] | length'
+}
+
+# _verify_logs <hash> <regex> <label>: verify, then wait for one more matching line.
+_verify_logs() {
+	local hash=$1 re=$2 label=$3 before now
+	before=$(_log_count "$re")
+	curl -s -o /dev/null -X POST -H "Authorization: Bearer $ADMIN_TOKEN" "$API/shared/$hash/verify"
+	for _ in $(seq 1 30); do
+		now=$(_log_count "$re")
+		[ "${now:-0}" -gt "${before:-0}" ] && break
+		sleep 1
+	done
+	if [ "${now:-0}" -gt "${before:-0}" ]; then
+		_pass "$label"
+	else
+		_fail "$label" "no new log line matching: $re"
+	fi
+}
+
+if [ -n "$AMULE_SHARED_DIR" ]; then
+	VNAME=amuleapi-regtest-verify-size.dat
+	VFILE="$AMULE_SHARED_DIR/$VNAME"
+	head -c 1048576 /dev/urandom > "$VFILE" || _die "cannot write $VFILE"
+	curl -s -o /dev/null -X POST -H "Authorization: Bearer $ADMIN_TOKEN" "$API/shared_reload"
+	VHASH=""
+	for _ in $(seq 1 30); do
+		sleep 1
+		VHASH=$(curl -s --max-time 10 -H "Authorization: Bearer $ADMIN_TOKEN" "$API/shared" \
+			| jq -r --arg n "$VNAME" '.shared[] | select(.name == $n) | .hash')
+		[ -n "$VHASH" ] && break
+	done
+	if [ -n "$VHASH" ]; then
+		_verify_logs "$VHASH" "Verify Local Data \\(.*\\): Result OK for .*$VNAME" \
+			"intact file → 'Result OK' log line"
+		printf 'x' >> "$VFILE"
+		_verify_logs "$VHASH" "Verify Local Data: ERRORS FOUND! .*$VNAME Size on disk" \
+			"file grown on disk → 'ERRORS FOUND! ... Size on disk' log line"
+	else
+		_fail "verify outcome fixture" "$VNAME never appeared in /shared after reload"
+	fi
+	rm -f "$VFILE"
+	curl -s -o /dev/null -X POST -H "Authorization: Bearer $ADMIN_TOKEN" "$API/shared_reload"
+else
+	echo "    info: AMULE_SHARED_DIR unset; skipping the outcome checks"
 fi
 
 # --- Summary. -----------------------------------------------------

@@ -1847,6 +1847,8 @@ Returns `202 Accepted`, with no body. amuled queues the hashing task and answers
 
 - `Verify Local Data (MD4 & AICH): Result OK for <path>`
 - `Verify Local Data (MD4 & AICH): ERRORS FOUND! <path> Failed blocks: MD4: 3,7 AICH: 5: (0,2)`
+- `Verify Local Data: ERRORS FOUND! <path> Size on disk: <n> bytes, expected: <n> bytes.` The file changed size since it was hashed, so no blocks were compared.
+- A file that could not be checked still gets one `Verify Local Data:` line saying why: it could not be read, it is empty, it changed or was removed during the check, or it is larger than aMule supports.
 
 Like all daemon log output these lines are gettext-translated at the daemon's locale and carry no correlation id tying them to a specific request, so treat them as human-readable output rather than a machine-parseable contract.
 

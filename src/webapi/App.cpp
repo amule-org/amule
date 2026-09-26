@@ -183,6 +183,7 @@ void CamuleapiApp::OnInitCmdLine(wxCmdLineParser &parser)
 		wxCMD_LINE_VAL_STRING,
 		wxCMD_LINE_PARAM_OPTIONAL);
 	parser.AddSwitch("", "foreground", _("Stay in the foreground; default."), wxCMD_LINE_PARAM_OPTIONAL);
+	AddLogFileOptions(parser);
 	// No --daemon: operators wanting fork-into-background wrap amuleapi in
 	// systemd/launchd/`nohup` like any other long-running CLI.
 }
@@ -198,6 +199,8 @@ bool CamuleapiApp::OnCmdLineParsed(wxCmdLineParser &parser)
 		m_cliHasHttpPort = true;
 	}
 	parser.Found("config-dir", &m_cliConfigDirOverride);
+	parser.Found("log-file", &m_logFile);
+	m_noLogFile = parser.Found("no-log-file");
 	if (parser.Found("set-admin-pass", &m_cliSetAdminPass)) {
 		m_cliHasSetAdminPass = true;
 	}

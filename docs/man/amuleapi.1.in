@@ -64,6 +64,11 @@ whenever the remote aMule supports it. Turning it off lets anyone watching
 the connection read and alter everything after the login. Same as
 \fBEncryption=0\fR in \fIamuleapi.conf\fR.
 .TP
+.B_untranslated [ \-\-force\-zlib ]\fR
+Always compress the link to \fBamuled\fR(1). By default amuleapi skips
+compression when amuled's address is on the local network. Use this when
+that address is a VPN tunnel over a slow Internet link.
+.TP
 \fB[ \-\-set\-admin\-pass\fR=\fI<plain>\fR \fB]\fR
 Set the admin password to \fI<plain>\fR, storing it salted and
 stretched in \fIamuleapi\-passwords\fR (mode 0600), then exit. Does

@@ -232,6 +232,8 @@ public:
 
 	// Command line processing
 	void OnInitCmdLine(wxCmdLineParser &amuleweb_parser, const char *appname);
+	// --log-file / --no-log-file, for amuleapi only.
+	static void AddLogFileOptions(wxCmdLineParser &parser);
 	bool OnCmdLineParsed(wxCmdLineParser &parser);
 
 #if wxUSE_ON_FATAL_EXCEPTION
@@ -278,10 +280,6 @@ protected:
 	bool m_canChat;
 	bool m_KeepQuiet;
 	bool m_Verbose;
-	// --log-file / --no-log-file. Parsed for every connector; only amuleapi
-	// acts on them (installs a stdout/stderr tee into the file).
-	wxString m_logFile;
-	bool m_noLogFile;
 	bool m_interactive;
 	CCommandTree m_commands;
 	const char *m_appname;

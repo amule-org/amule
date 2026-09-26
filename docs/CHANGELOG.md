@@ -9,7 +9,7 @@ The history of every aMule release. Versions are listed newest first.
 
 The largest release since the 3.0.0 rebirth: 893 merged PRs on top of 3.0.1. The headline is a new way to drive aMule - `amuleapi`, a REST + Server-Sent-Events daemon shipping a complete new Web UI that covers the same ground as the desktop GUI. Around it landed transfer-performance work that lifts real-world throughput, authenticated encryption for External Connect, a top-to-bottom modernization of the GUI list controls, media metadata that now travels end to end, searches that survive a restart, a dedicated Clients page, and a sweep of memory and CPU work across the daemon, the remote GUI and the API.
 
-Upgrading is a drop-in. No config migration, and nothing an older build cannot read back: the new per-peer metadata rides in an appended `clients.met` trailer that every existing reader ignores (#902), and EC encryption is negotiated per session and off by default, so older amulegui / amulecmd clients keep connecting untouched (#714).
+Upgrading is a drop-in. No config migration, and nothing an older build cannot read back: the new per-peer metadata rides in an appended `clients.met` trailer that every existing reader ignores (#902), and EC encryption is negotiated per session and not required by default, so older amulegui / amulecmd clients keep connecting untouched (#714).
 
 ### Highlights
 
