@@ -1761,10 +1761,10 @@ bool CClientTCPSocket::ProcessExtPacket(const uint8_t *buffer, uint32 size, uint
 		AddDebugLogLineN(
 			logRemoteClient, "Remote Client: OP_AICHREQUEST from " + m_client->GetFullIP());
 		theStats::AddDownOverheadOther(size);
-		// Each OP_AICHREQUEST triggers an O(N) walk of known2.met via ProcessAICHRequest ->
-		// CreatePartRecoveryData -> LoadHashSet. Unlimited, a hostile peer can hammer this
-		// with 16-byte packets and burn the seeder's disk and CPU, so treat repeats like
-		// the file-request paths.
+		// Each OP_AICHREQUEST reads a hash set from known2.met (an indexed seek, see
+		// CAICHHashSet::LoadHashSet) and builds recovery data. Unlimited, a hostile peer
+		// can hammer this with 16-byte packets and burn the seeder's disk and CPU, so treat
+		// repeats like the file-request paths.
 		m_client->CheckForAggressive();
 		if (m_client->IsBanned()) {
 			break;

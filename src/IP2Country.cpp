@@ -102,6 +102,12 @@ void CIP2Country::Enable(bool showProgress)
 
 void CIP2Country::Update(bool manualUpdate, bool showProgress)
 {
+	if (m_downloading) {
+		// Two downloads would write the same .download file. Let the running one
+		// report a manual request's failure.
+		m_ManualUpdate = m_ManualUpdate || manualUpdate;
+		return;
+	}
 	m_TriedPreviousMonth = false;
 	m_ManualUpdate = manualUpdate;
 	m_showProgress = showProgress;
@@ -135,7 +141,6 @@ void CIP2Country::StartDownload(int monthOffset)
 		m_ManualUpdate = false;
 		m_downloading = false;
 		m_lastResult = msg;
-		thePrefs::SetGeoIPEnabled(false);
 		return;
 	}
 	AddLogLineN(CFormat(_("Download new %s from %s")) % m_DataBaseName % url);
@@ -254,10 +259,8 @@ void CIP2Country::DownloadFinished(uint32 result)
 		if (manual) {
 			NotifyUpdateFailed(msg);
 		}
-		// if it failed and there is no database, turn it off
-		if (!wxFileExists(m_DataBasePath)) {
-			thePrefs::SetGeoIPEnabled(false);
-		}
+		// The preference stays on: IsEnabled() is already false with no database, and
+		// the next start or 'Update now' tries again.
 	}
 }
 
