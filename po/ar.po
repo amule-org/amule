@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-26 17:32+0100\n"
+"POT-Creation-Date: 2026-09-28 22:29+0200\n"
 "PO-Revision-Date: 2026-09-28 18:49+0000\n"
 "Last-Translator: saleh alhathal <hathalsal@hotmail.com>\n"
 "Language-Team: \n"
@@ -287,6 +287,7 @@ msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "جارٍ إيقاف نسخة amuleweb ذات المعرّف '%d' قسرًا ... "
 
 #: src/amule.cpp src/ClientRef.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr "فشل"
 
@@ -539,6 +540,11 @@ msgstr "تم إشعار اسم مضيف الخادم"
 #, c-format
 msgid "Media metadata: probed file is no longer known, result discarded (%s)"
 msgstr "معلومات الوسائط: الملف المفحوص لم يعد معروفًا، تم تجاهل النتيجة (%s)"
+
+#: src/amule.cpp
+#, c-format
+msgid "Verify Local Data: another file named '%s' in your shared folders has the same content as '%s' and may be an intact copy of it."
+msgstr ""
 
 #: src/amule.cpp
 #, c-format
@@ -3216,6 +3222,11 @@ msgstr "مستخدم Kad"
 
 #: src/KnownFile.cpp
 #, c-format
+msgid "Verify Local Data: %s is still downloading, so it was not checked."
+msgstr ""
+
+#: src/KnownFile.cpp
+#, c-format
 msgid "Kad note search for '%s' not started: Kad is not connected"
 msgstr "لم يبدأ بحث ملاحظات Kad عن '%s': Kad غير متصل"
 
@@ -5181,7 +5192,7 @@ msgstr "إعادة تعيين الصفحة إلى الإعدادات الافت�
 msgid "Reset the settings on the current page to their default values."
 msgstr "إعادة تعيين إعدادات الصفحة الحالية إلى قيمها الافتراضية."
 
-#: src/muuli_wdr.cpp src/ServerWnd.cpp
+#: src/muuli_wdr.cpp src/ServerWnd.cpp src/SharedFilesCtrl.cpp
 msgid "OK"
 msgstr "موافق"
 
@@ -7531,6 +7542,10 @@ msgstr "غير متوفر"
 msgid "Directory Path"
 msgstr "مسار المجلد"
 
+#: src/SharedFilesCtrl.cpp
+msgid "Verify Local Data"
+msgstr "التحقق من البيانات المحلية"
+
 #: src/SharedFilesCtrl.cpp src/Statistics.cpp
 msgid "Shared Files"
 msgstr "ملفات مشاركة"
@@ -7546,10 +7561,6 @@ msgstr "تعديل التعليق/التقييم"
 #: src/SharedFilesCtrl.cpp
 msgid "Rename"
 msgstr "اعد تسمية"
-
-#: src/SharedFilesCtrl.cpp
-msgid "Verify Local Data"
-msgstr "التحقق من البيانات المحلية"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Re-extract &media metadata"
@@ -8589,11 +8600,6 @@ msgstr "التحقق من البيانات المحلية (%s): تم العثو�
 #: src/ThreadTasks.cpp
 #, c-format
 msgid "Verify Local Data: file %s was removed before it could be checked."
-msgstr ""
-
-#: src/ThreadTasks.cpp
-#, c-format
-msgid "Verify Local Data: %s is still downloading, so it was not checked."
 msgstr ""
 
 #: src/ThreadTasks.cpp

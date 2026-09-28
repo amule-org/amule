@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-26 17:32+0100\n"
+"POT-Creation-Date: 2026-09-28 22:29+0200\n"
 "PO-Revision-Date: 2026-09-28 18:59+0000\n"
 "Last-Translator: \n"
 "Language-Team: Japanese\n"
@@ -277,6 +277,7 @@ msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "pid '%d' の amuleweb インスタンスを強制終了しています… "
 
 #: src/amule.cpp src/ClientRef.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr "失敗しました"
 
@@ -534,6 +535,11 @@ msgstr "サーバホスト名が通知されました"
 #: src/amule.cpp
 #, c-format
 msgid "Media metadata: probed file is no longer known, result discarded (%s)"
+msgstr ""
+
+#: src/amule.cpp
+#, c-format
+msgid "Verify Local Data: another file named '%s' in your shared folders has the same content as '%s' and may be an intact copy of it."
 msgstr ""
 
 #: src/amule.cpp
@@ -3200,6 +3206,11 @@ msgstr "Kadユーザ"
 
 #: src/KnownFile.cpp
 #, c-format
+msgid "Verify Local Data: %s is still downloading, so it was not checked."
+msgstr ""
+
+#: src/KnownFile.cpp
+#, c-format
 msgid "Kad note search for '%s' not started: Kad is not connected"
 msgstr "「%s」のKadノート検索は開始されませんでした：Kadが接続されていません"
 
@@ -5151,7 +5162,7 @@ msgstr "ページをデフォルト値にリセット"
 msgid "Reset the settings on the current page to their default values."
 msgstr "現在のページの設定をデフォルト値にリセットします。"
 
-#: src/muuli_wdr.cpp src/ServerWnd.cpp
+#: src/muuli_wdr.cpp src/ServerWnd.cpp src/SharedFilesCtrl.cpp
 msgid "OK"
 msgstr "OK"
 
@@ -7496,6 +7507,10 @@ msgstr "入手可能範囲"
 msgid "Directory Path"
 msgstr "ディレクトリパス"
 
+#: src/SharedFilesCtrl.cpp
+msgid "Verify Local Data"
+msgstr "ローカルデータを検証"
+
 #: src/SharedFilesCtrl.cpp src/Statistics.cpp
 msgid "Shared Files"
 msgstr "共有ファイル"
@@ -7511,10 +7526,6 @@ msgstr "コメントおよび評価を編集する"
 #: src/SharedFilesCtrl.cpp
 msgid "Rename"
 msgstr "改名する"
-
-#: src/SharedFilesCtrl.cpp
-msgid "Verify Local Data"
-msgstr "ローカルデータを検証"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Re-extract &media metadata"
@@ -8548,11 +8559,6 @@ msgstr "ローカルデータの検証（%s）：エラーが見つかりまし�
 #: src/ThreadTasks.cpp
 #, c-format
 msgid "Verify Local Data: file %s was removed before it could be checked."
-msgstr ""
-
-#: src/ThreadTasks.cpp
-#, c-format
-msgid "Verify Local Data: %s is still downloading, so it was not checked."
 msgstr ""
 
 #: src/ThreadTasks.cpp

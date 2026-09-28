@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-26 17:32+0100\n"
+"POT-Creation-Date: 2026-09-28 22:29+0200\n"
 "PO-Revision-Date: 2026-09-28 19:00+0000\n"
 "Last-Translator: Hyunju Kang <rexington@gmail.com>\n"
 "Language-Team: Korean <hoenny@daum.net>\n"
@@ -280,6 +280,7 @@ msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "pid '%d'인 amuleweb 인스턴스를 강제 종료하는 중... "
 
 #: src/amule.cpp src/ClientRef.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr "실패"
 
@@ -537,6 +538,11 @@ msgstr "서버 호스트 이름이 통지되었습니다"
 #: src/amule.cpp
 #, c-format
 msgid "Media metadata: probed file is no longer known, result discarded (%s)"
+msgstr ""
+
+#: src/amule.cpp
+#, c-format
+msgid "Verify Local Data: another file named '%s' in your shared folders has the same content as '%s' and may be an intact copy of it."
 msgstr ""
 
 #: src/amule.cpp
@@ -3222,6 +3228,11 @@ msgstr "Kad 사용자"
 
 #: src/KnownFile.cpp
 #, c-format
+msgid "Verify Local Data: %s is still downloading, so it was not checked."
+msgstr ""
+
+#: src/KnownFile.cpp
+#, c-format
 msgid "Kad note search for '%s' not started: Kad is not connected"
 msgstr "'%s'에 대한 Kad 노트 검색을 시작하지 않았습니다: Kad가 연결되어 있지 않습니다"
 
@@ -5176,7 +5187,7 @@ msgstr "페이지를 기본값으로 초기화"
 msgid "Reset the settings on the current page to their default values."
 msgstr "현재 페이지의 설정을 기본값으로 초기화합니다."
 
-#: src/muuli_wdr.cpp src/ServerWnd.cpp
+#: src/muuli_wdr.cpp src/ServerWnd.cpp src/SharedFilesCtrl.cpp
 msgid "OK"
 msgstr "확인"
 
@@ -7539,6 +7550,10 @@ msgstr "유효성"
 msgid "Directory Path"
 msgstr "폴더 경로"
 
+#: src/SharedFilesCtrl.cpp
+msgid "Verify Local Data"
+msgstr "로컬 데이터 확인"
+
 #: src/SharedFilesCtrl.cpp src/Statistics.cpp
 msgid "Shared Files"
 msgstr "공유 파일"
@@ -7554,10 +7569,6 @@ msgstr "의견/등급 편집"
 #: src/SharedFilesCtrl.cpp
 msgid "Rename"
 msgstr "이름변경"
-
-#: src/SharedFilesCtrl.cpp
-msgid "Verify Local Data"
-msgstr "로컬 데이터 확인"
 
 #: src/SharedFilesCtrl.cpp
 msgid "Re-extract &media metadata"
@@ -8596,11 +8607,6 @@ msgstr "로컬 데이터 확인 (%s): 오류 발견! %s 실패한 블록: MD4: %
 #: src/ThreadTasks.cpp
 #, c-format
 msgid "Verify Local Data: file %s was removed before it could be checked."
-msgstr ""
-
-#: src/ThreadTasks.cpp
-#, c-format
-msgid "Verify Local Data: %s is still downloading, so it was not checked."
 msgstr ""
 
 #: src/ThreadTasks.cpp
