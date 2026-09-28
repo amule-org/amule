@@ -392,7 +392,7 @@ jobs:
       - name: Install Homebrew deps
         run: |
           BREW=${{ matrix.brew_prefix }}/bin/brew
-          MAINDEPS="cmake wxwidgets cryptopp libupnp gd gettext boost dylibbundler libmaxminddb ccache"
+          MAINDEPS="cmake wxwidgets cryptopp libupnp gd gettext boost dylibbundler libmaxminddb"
           if [ "${{ matrix.arch }}" = "x86_64" ]; then
               SRCBUILD="${{ steps.intelkegs.outputs.kegs }}"
               # Several of these build against a Homebrew python, whose bin names
@@ -440,6 +440,9 @@ jobs:
           # this step failed with a bare exit 1 and the breakage only
           # surfaced two steps later as "ccache: command not found".
           ${{ matrix.archcmd }} $BREW install $MAINDEPS
+          # Native on both legs: ccache 4.14.1 has no Intel bottle and builds with gcc, which has
+          # none either. It only launches the compiler, so an arm64 ccache serves the x86_64 build.
+          /opt/homebrew/bin/brew install ccache
           if [ "${{ matrix.arch }}" = "x86_64" ]; then
               # An upgrade leaves the old version beside the new one in Cellar;
               # drop it so the saved cache does not grow with every bump.
