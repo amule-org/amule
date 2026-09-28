@@ -293,10 +293,14 @@ void CDirectoryTreeCtrl::MarkChildren(wxTreeItemId hChild, bool mark, bool recur
 		SetHasSharedSubdirectory(hChild, mark);
 	}
 	while (hChild2.IsOk()) {
-		if (IsExpanded(hChild) || ItemHasChildren(hChild2)) {
-			MarkChildren(hChild2, mark, true);
-		} else {
-			CheckChanged(hChild2, mark, true);
+		// The "." placeholder AddChildItem gives a collapsed folder carries no CItemData, so
+		// it has no path to share: skip it.
+		if (GetItemData(hChild2)) {
+			if (IsExpanded(hChild) || ItemHasChildren(hChild2)) {
+				MarkChildren(hChild2, mark, true);
+			} else {
+				CheckChanged(hChild2, mark, true);
+			}
 		}
 
 		hChild2 = GetNextSibling(hChild2);
