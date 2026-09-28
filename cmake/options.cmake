@@ -42,7 +42,13 @@ option (BUILD_WEBSERVER "compile aMule WebServer")
 option (BUILD_AMULEAPI "compile aMule REST API daemon")
 option (BUILD_WXCAS "compile aMule GUI Statistics")
 option (BUILD_TESTING "Build unit tests" OFF)
+option (ENABLE_QUIC "compile QUIC transport support" OFF)
 option (USE_SYSTEM_PICOJSON "Use system-installed picojson instead of bundled copy" OFF)
+
+if (ENABLE_QUIC AND NOT (BUILD_MONOLITHIC OR BUILD_DAEMON))
+	message (STATUS "ENABLE_QUIC requested without a core executable; forcing ENABLE_QUIC=OFF")
+	set (ENABLE_QUIC OFF CACHE BOOL "compile QUIC transport support" FORCE)
+endif()
 
 if (PREFIX)
 	set (CMAKE_INSTALL_PREFIX "${PREFIX}")
@@ -352,6 +358,7 @@ set (AMULE_EXPERIMENTAL_OPTIONS
 	ENABLE_KAD_PROTOCOL_10
 	ENABLE_KAD_NODE_PROTECTION
 	ENABLE_UTP
+	ENABLE_QUIC
 )
 
 option (ENABLE_ALL_EXPERIMENTAL "turn on every switch in AMULE_EXPERIMENTAL_OPTIONS at once" OFF)

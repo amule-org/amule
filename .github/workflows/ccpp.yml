@@ -52,6 +52,7 @@ env:
     libcrypto++-dev \
     libgd-dev \
     libglib2.0-dev \
+    libgnutls28-dev \
     libmaxminddb-dev \
     libreadline-dev \
     libupnp-dev \
@@ -231,6 +232,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y ${{ env.cmake_ubuntu_deps }}
+      - uses: ./.github/actions/ngtcp2
       - name: create build system
         run: |
           cmake \
@@ -272,6 +274,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y ${{ env.cmake_ubuntu_deps }}
+      - uses: ./.github/actions/ngtcp2
       - name: fetch CMake ${{ env.CMAKE_MIN }}
         run: |
           curl -sSfL -o cmake.tar.gz "https://github.com/Kitware/CMake/releases/download/v${CMAKE_MIN}/cmake-${CMAKE_MIN}-Linux-x86_64.tar.gz"

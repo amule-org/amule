@@ -33,6 +33,9 @@
 #include "UtpContext.h"
 #include "UtpStreamAcceptor.h"
 #endif
+#ifdef AMULE_QUIC_TRANSPORT
+#include "QuicContext.h"
+#endif
 
 class CClientUDPSocket : public CMuleUDPSocket
 #ifdef AMULE_UTP_TRANSPORT
@@ -62,6 +65,9 @@ private:
 		const uint8_t *userHash) override;
 	CUtpContext m_utp;
 	CUtpStreamAcceptor m_utpAcceptor;
+#endif
+#ifdef AMULE_QUIC_TRANSPORT
+	CQuicContext m_quic;
 #endif
 	void OnPacketReceived(
 		const CNetworkAddress &address, uint16 port, uint8_t *buffer, size_t length) override;

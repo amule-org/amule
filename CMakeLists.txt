@@ -110,6 +110,10 @@ if (ENABLE_UTP)
 	include (cmake/libutp.cmake)
 endif()
 
+if (ENABLE_QUIC)
+	include (cmake/ngtcp2.cmake)
+endif()
+
 if (NEED_GLIB_CHECK)
 	include (cmake/glib21.cmake)
 endif()

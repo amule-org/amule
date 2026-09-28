@@ -57,6 +57,9 @@ if (BUILD_MONOLITHIC OR BUILD_DAEMON)
 	if (ENABLE_UTP)
 		list (APPEND CORE_SOURCES UtpLibraryAdapter.cpp UtpStreamAcceptor.cpp)
 	endif()
+	if (ENABLE_QUIC)
+		list (APPEND CORE_SOURCES QuicContext.cpp QuicLibraryAdapter.cpp QuicNgtcp2Adapter.cpp QuicSocketTransport.cpp)
+	endif()
 
 	# Only compiled in when the switch is on. Every call site is behind the
 	# same guard, so with the switch off these two would be dead weight in

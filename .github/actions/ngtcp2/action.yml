@@ -1,0 +1,31 @@
+# Builds the pinned ngtcp2 with its GnuTLS crypto backend and installs it into
+# /usr/local, for jobs that configure with ENABLE_QUIC (ENABLE_ALL_EXPERIMENTAL).
+#
+# Ubuntu 24.04 only packages ngtcp2 0.12.x, and cmake/ngtcp2.cmake needs the
+# 1.x API. Needs libgnutls28-dev installed and a CMake >= 3.20 on PATH (the
+# runner's), so run it before any step that swaps in an older CMake.
+name: Build ngtcp2
+description: Build and install the ngtcp2 version pinned in packaging/linux/versions.env.
+
+runs:
+  using: composite
+  steps:
+    - name: build ngtcp2 from source
+      shell: bash
+      run: |
+        set -euo pipefail
+        . packaging/linux/versions.env
+        curl -fsSL -o "$RUNNER_TEMP/ngtcp2.tar.xz" "$NGTCP2_TARBALL_URL"
+        echo "$NGTCP2_SHA256  $RUNNER_TEMP/ngtcp2.tar.xz" | sha256sum -c -
+        mkdir -p "$RUNNER_TEMP/ngtcp2"
+        tar -xf "$RUNNER_TEMP/ngtcp2.tar.xz" -C "$RUNNER_TEMP/ngtcp2" --strip-components=1
+        # ENABLE_OPENSSL defaults to ON upstream and fails configure without OpenSSL headers.
+        cmake -S "$RUNNER_TEMP/ngtcp2" -B "$RUNNER_TEMP/ngtcp2/build" \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DENABLE_GNUTLS=ON \
+          -DENABLE_OPENSSL=OFF \
+          -DBUILD_TESTING=OFF \
+          -DCMAKE_INSTALL_PREFIX=/usr/local
+        cmake --build "$RUNNER_TEMP/ngtcp2/build" -j"$(nproc)"
+        sudo cmake --install "$RUNNER_TEMP/ngtcp2/build"
+        sudo ldconfig

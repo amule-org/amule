@@ -1,9 +1,12 @@
 # Third-party components
 
 aMule binary distributions (AppImage, Flatpak, .deb, macOS bundle, Windows
-installer) include code from third parties under their own permissive
-licenses. This file reproduces the copyright notice and license terms for
-each, as required by their respective binary-distribution clauses. aMule's
+installer) include code from third parties under their own licenses. Permissive
+components (MIT, BSD) require copyright-notice reproduction. LGPL components
+require shipping the licence text and publishing the exact sources of the
+bundled versions, whether the build links them statically or dynamically.
+This file reproduces the copyright notice and license terms for each, as
+required by their respective binary-distribution clauses. aMule's
 own code is under GPLv2-or-later — see [LICENSE.md](../LICENSE.md).
 
 ## picojson
@@ -99,3 +102,68 @@ The snapshot carries no local patches. It is built only with
 `-DENABLE_UTP=YES`, which is OFF by default. With that switch on, `amule` and
 `amuled` link it. A default build neither compiles nor ships it, so this notice
 applies only to binaries built with the switch on.
+
+## ngtcp2
+
+QUIC transport library, linked from the system when aMule is built with
+`-DENABLE_QUIC=YES`. License: MIT.
+
+Upstream: <https://github.com/ngtcp2/ngtcp2>.
+
+> The MIT License
+>
+> Copyright (c) 2016 ngtcp2 contributors
+>
+> Permission is hereby granted, free of charge, to any person obtaining
+> a copy of this software and associated documentation files (the
+> "Software"), to deal in the Software without restriction, including
+> without limitation the rights to use, copy, modify, merge, publish,
+> distribute, sublicense, and/or sell copies of the Software, and to
+> permit persons to whom the Software is furnished to do so, subject to
+> the following conditions:
+>
+> The above copyright notice and this permission notice shall be
+> included in all copies or substantial portions of the Software.
+>
+> THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+> EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+> MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+> NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+> LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+> OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+> WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+ngtcp2 is not vendored; it is located at build time through pkg-config. A
+default build (`-DENABLE_QUIC` is OFF) neither compiles nor ships it, so this
+notice applies only to binaries built with `-DENABLE_QUIC=YES`.
+
+## GnuTLS, Nettle, GMP (QUIC builds only)
+
+When `-DENABLE_QUIC=YES`, aMule links `ngtcp2_crypto_gnutls`, which pulls
+in GnuTLS and its dependencies Nettle and GMP.
+
+| Library | Licence options |
+|---------|----------------|
+| GnuTLS  | LGPL-2.1-or-later (§3 also permits use under GPL) |
+| Nettle  | LGPL-3.0-or-later or GPL-2.0-or-later (dual) |
+| GMP     | LGPL-3.0-or-later or GPL-2.0-or-later (dual) |
+
+Upstream: <https://www.gnutls.org/>, <https://www.lysator.liu.se/~nisse/nettle/>,
+<https://gmplib.org/>.
+
+aMule is GPL-2.0-or-later. Under LGPL-2.1 §3, GnuTLS may be used under
+the GPL. Nettle and GMP offer a GPL-2.0-or-later option. A packaged build
+that enables QUIC may therefore link these libraries statically under the
+GPL, provided it:
+
+1. Ships the licence texts for GnuTLS, Nettle, and GMP.
+2. Publishes the exact source tarballs of the bundled versions (whether
+   the build is static or dynamic, and whether the libraries are modified
+   or not).
+
+For comparison, eMuleAI's `Licenses/THIRD-PARTY-NOTICES.txt` lists ngtcp2
+under MIT, GnuTLS under LGPL-2.1-or-later, and Nettle and GMP with their
+GPL-2.0-or-later option.
+
+A default build (`-DENABLE_QUIC` is OFF) does not link any of these
+libraries, and this section does not apply to it.

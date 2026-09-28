@@ -80,6 +80,7 @@ env:
     libcrypto++-dev \
     libgd-dev \
     libglib2.0-dev \
+    libgnutls28-dev \
     libmaxminddb-dev \
     libreadline-dev \
     libupnp-dev \
@@ -138,6 +139,7 @@ jobs:
           sudo apt-get install -y ${{ env.cmake_ubuntu_deps }} jq
           wget -qO- https://apt.llvm.org/llvm.sh | sudo bash -s -- ${LLVM_VERSION}
           sudo apt-get install -y clang-tidy-${LLVM_VERSION}
+      - uses: ./.github/actions/ngtcp2
       # Fetch the pinned ctcache wrapper. If the download fails, the next step
       # falls back to the bare analyzer binary, so ctcache availability never
       # becomes a gate dependency.
@@ -241,6 +243,7 @@ jobs:
           sudo apt-get install -y ${{ env.cmake_ubuntu_deps }}
           wget -qO- https://apt.llvm.org/llvm.sh | sudo bash -s -- ${LLVM_VERSION}
           sudo apt-get install -y clang-tidy-${LLVM_VERSION}
+      - uses: ./.github/actions/ngtcp2
       - name: determine diff base
         id: base
         run: |

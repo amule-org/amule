@@ -335,6 +335,22 @@ void CClientUDPSocket::ProcessReservedProt2Frame(
 	}
 
 	case OP_NATT_FRAME_QUIC:
+#ifdef AMULE_QUIC_TRANSPORT
+		if (m_quic.ProcessDatagram(classified.payload,
+			    classified.payloadLength,
+			    CNetworkAddress::FromIPv4NetworkOrderOrAbsent(ip),
+			    port,
+			    ::GetTickCount64())) {
+			return;
+		}
+		if (m_unservedFrameLog.ShouldLog(::GetTickCount64())) {
+			AddDebugLogLineN(logClientUDP,
+				CFormat("Ignoring QUIC NAT-T frame from %s:%u: QUIC context declined "
+					"datagram (%u further occurrences suppressed)") %
+					Uint32toStringIP(ip) % port %
+					m_unservedFrameLog.TakeSuppressedCount());
+		}
+#else
 		if (m_unservedFrameLog.ShouldLog(::GetTickCount64())) {
 			AddDebugLogLineN(logClientUDP,
 				CFormat("Ignoring QUIC NAT-T frame from %s:%u: no QUIC transport in this "
@@ -342,6 +358,7 @@ void CClientUDPSocket::ProcessReservedProt2Frame(
 					Uint32toStringIP(ip) % port %
 					m_unservedFrameLog.TakeSuppressedCount());
 		}
+#endif
 		break;
 
 	case OP_NATT_FRAME_CAPS:

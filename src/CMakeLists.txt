@@ -251,6 +251,10 @@ if (BUILD_DAEMON)
 		target_link_libraries (amuled PRIVATE Utp::Utp)
 		target_compile_definitions (amuled PRIVATE AMULE_UTP_TRANSPORT)
 	endif()
+	if (ENABLE_QUIC)
+		target_link_libraries (amuled PRIVATE Quic::Ngtcp2)
+		target_compile_definitions (amuled PRIVATE AMULE_QUIC_TRANSPORT)
+	endif()
 
 	target_compile_definitions (amuled
 		PRIVATE AMULE_DAEMON
@@ -368,6 +372,10 @@ if (BUILD_MONOLITHIC)
 	if (ENABLE_UTP)
 		target_link_libraries (amule PRIVATE Utp::Utp)
 		target_compile_definitions (amule PRIVATE AMULE_UTP_TRANSPORT)
+	endif()
+	if (ENABLE_QUIC)
+		target_link_libraries (amule PRIVATE Quic::Ngtcp2)
+		target_compile_definitions (amule PRIVATE AMULE_QUIC_TRANSPORT)
 	endif()
 
 	target_link_libraries (amule

@@ -1,3 +1,11 @@
+add_test (NAME QuicCMakeConfigTest
+	COMMAND ${CMAKE_COMMAND}
+		-DAMULE_SOURCE_DIR=${CMAKE_SOURCE_DIR}
+		-DTEST_BINARY_DIR=${CMAKE_BINARY_DIR}/quic-cmake-contract
+		-P ${CMAKE_CURRENT_SOURCE_DIR}/QuicCMakeConfigTest.cmake
+)
+set_tests_properties (QuicCMakeConfigTest PROPERTIES TIMEOUT 120)
+
 # The checked-in lexer and native IPv6 rule store, without the application.
 add_executable (IPFilterIPv6Test
 	IPFilterIPv6Test.cpp
@@ -71,6 +79,12 @@ target_include_directories (SecIdentTest
 )
 target_link_libraries (SecIdentTest muleunit mulecommon)
 
+# Pure QUIC NAT-T wire identity and peer proof helpers.
+add_executable (QuicNattProtocolTest QuicNattProtocolTest.cpp)
+add_test (NAME QuicNattProtocolTest COMMAND QuicNattProtocolTest)
+target_include_directories (QuicNattProtocolTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries (QuicNattProtocolTest muleunit mulecommon)
+
 # Direct outbound eligibility, without the application or libutp.
 add_executable (UtpDialPolicyTest UtpDialPolicyTest.cpp)
 target_include_directories (UtpDialPolicyTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
@@ -140,6 +154,63 @@ target_include_directories (UtpStreamTest
 target_link_libraries (UtpStreamTest
 	muleunit
 )
+
+if (ENABLE_QUIC)
+	add_executable (QuicContextTest
+		QuicContextTest.cpp
+		${CMAKE_SOURCE_DIR}/src/QuicContext.cpp
+		${CMAKE_SOURCE_DIR}/src/NetworkAddress.cpp
+		${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
+		${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
+	)
+	add_test (NAME QuicContextTest COMMAND QuicContextTest)
+	target_include_directories (QuicContextTest PRIVATE
+		${CMAKE_BINARY_DIR}
+		${CMAKE_SOURCE_DIR}/src
+		${CMAKE_SOURCE_DIR}/src/include
+		${Boost_INCLUDE_DIR}
+	)
+	target_link_libraries (QuicContextTest muleunit ${Boost_LIBRARIES})
+
+	add_executable (QuicNgtcp2AdapterTest
+		QuicNgtcp2AdapterTest.cpp
+		${CMAKE_SOURCE_DIR}/src/QuicNgtcp2Adapter.cpp
+		${CMAKE_SOURCE_DIR}/src/QuicContext.cpp
+		${CMAKE_SOURCE_DIR}/src/QuicLibraryAdapter.cpp
+		${CMAKE_SOURCE_DIR}/src/NetworkAddress.cpp
+		${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
+		${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
+	)
+	add_test (NAME QuicNgtcp2AdapterTest COMMAND QuicNgtcp2AdapterTest)
+	target_include_directories (QuicNgtcp2AdapterTest PRIVATE
+		${CMAKE_BINARY_DIR}
+		${CMAKE_SOURCE_DIR}/src
+		${CMAKE_SOURCE_DIR}/src/include
+		${Boost_INCLUDE_DIR}
+	)
+	target_link_libraries (QuicNgtcp2AdapterTest muleunit Quic::Ngtcp2 ${Boost_LIBRARIES})
+
+	add_executable (QuicLibraryAdapterTest
+		QuicLibraryAdapterTest.cpp
+		${CMAKE_SOURCE_DIR}/src/QuicLibraryAdapter.cpp
+		${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
+		${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
+	)
+	add_test (NAME QuicLibraryAdapterTest COMMAND QuicLibraryAdapterTest)
+	target_include_directories (QuicLibraryAdapterTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
+	target_link_libraries (QuicLibraryAdapterTest muleunit Quic::Ngtcp2)
+endif()
+
+add_executable (QuicSocketTransportTest
+	QuicSocketTransportTest.cpp
+	${CMAKE_SOURCE_DIR}/src/QuicSocketTransport.cpp
+	${CMAKE_SOURCE_DIR}/src/NetworkAddress.cpp
+	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
+	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
+)
+add_test (NAME QuicSocketTransportTest COMMAND QuicSocketTransportTest)
+target_include_directories (QuicSocketTransportTest PRIVATE ${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include)
+target_link_libraries (QuicSocketTransportTest muleunit mulecommon ${Boost_LIBRARIES})
 
 # One libutp socket behind IStreamTransport: the partial write whose refused
 # tail must stay queued, and the close that must happen exactly once. The
