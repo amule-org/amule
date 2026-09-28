@@ -256,6 +256,38 @@ jobs:
           ctest ${{ env.ctest_flags }} --timeout 10 -E '${{ env.ctest_kdf_tests }}' &&
           ctest ${{ env.ctest_flags }} --timeout 60 -R '${{ env.ctest_kdf_tests }}'
 
+  # Configures with the oldest CMake that CMakeLists.txt declares, so the floor stays
+  # true. Configure only: the build itself does not depend on the CMake version.
+  # Every option is on, so each CMake file is read. -B and -S arrived in 3.13, hence
+  # the cd.
+  cmake_minimum_version:
+    name: CMake minimum version (configure only)
+    runs-on: ubuntu-24.04
+    env:
+      CMAKE_MIN: 3.12.4
+      CMAKE_MIN_SHA256: 486edd6710b5250946b4b199406ccbf8f567ef0e23cfe38f7938b8c78a2ffa5f
+    steps:
+      - uses: actions/checkout@v7
+      - name: install deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ${{ env.cmake_ubuntu_deps }}
+      - name: fetch CMake ${{ env.CMAKE_MIN }}
+        run: |
+          curl -sSfL -o cmake.tar.gz "https://github.com/Kitware/CMake/releases/download/v${CMAKE_MIN}/cmake-${CMAKE_MIN}-Linux-x86_64.tar.gz"
+          echo "${CMAKE_MIN_SHA256}  cmake.tar.gz" | sha256sum -c -
+          mkdir "$RUNNER_TEMP/cmake-min"
+          tar -xzf cmake.tar.gz -C "$RUNNER_TEMP/cmake-min" --strip-components=1
+          rm cmake.tar.gz
+      - name: configure
+        run: |
+          mkdir build && cd build
+          "$RUNNER_TEMP/cmake-min/bin/cmake" .. \
+            -DBUILD_EVERYTHING=YES \
+            -DBUILD_TESTING=YES \
+            -DENABLE_ALL_EXPERIMENTAL=YES \
+            ${{ env.cmake_ubuntu_config_flags }}
+
   # The amuleapi curl-smoke matrix, which nothing else in CI runs. Every other
   # job here compiles the REST surface; none of them exercises it. This one
   # drives the whole chain in one piece -- amuled, EC, amuleapi, HTTP -- which

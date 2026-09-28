@@ -7,7 +7,7 @@ following packages:
 
 | Package   | Minimum version | Notes                             |
 | --------- | --------------- | --------------------------------- |
-| CMake     | 3.10            | 3.12 with `-DENABLE_UTP=YES`      |
+| CMake     | 3.12            |                                   |
 | zlib      | 1.2.3           |                                   |
 | wxWidgets | 3.2.0           | 3.2 branch or newer               |
 | Crypto++  | 8.1             | classic or cryptopp-modern        |
@@ -149,7 +149,7 @@ Common `-D` options (`YES` / `NO` unless noted otherwise):
 | `ENABLE_CCACHE`          | AUTO    | use ccache as compiler launcher when found (`AUTO`/`ON`/`OFF`); set `OFF` for distro builds that manage ccache themselves, `ON` to hard-fail if ccache is missing |
 | `ENABLE_VERSION_CHECK`   | ON      | compile in the in-app new-version check (startup notification, the "Check for new version at startup" preference, and the About dialog's "Check for updates" button). Packagers shipping aMule via an OS package manager want `OFF`, so nothing contacts GitHub and the distro's package manager owns updates |
 | `USE_SYSTEM_PICOJSON`    | OFF     | use a system-installed `picojson.h` instead of the bundled copy           |
-| `DOWNLOAD_AND_BUILD_DEPS` | OFF    | download and build missing dependencies. Needs Git                       |
+| `DOWNLOAD_AND_BUILD_DEPS` | OFF    | download and build missing dependencies. Needs Git and CMake 3.14       |
 
 ### Experimental options
 
@@ -158,7 +158,7 @@ work; with the switch off, that code is left out of the build.
 
 | Option                            | Effect |
 | --------------------------------- | ------ |
-| `ENABLE_UTP`                      | IPv4 uTP in `amule` and `amuled`: datagram framing, inbound streams, and dialing a peer that advertises uTP. Needs CMake 3.12 |
+| `ENABLE_UTP`                      | IPv4 uTP in `amule` and `amuled`: datagram framing, inbound streams, and dialing a peer that advertises uTP |
 | `ENABLE_IPV6`                     | native IPv6 TCP admission. The IPv6 identity work is not complete |
 | `ENABLE_NATT_SERVER_COORDINATION` | the server-coordinated NAT-T wire codecs. No login advertisement or network traffic yet |
 | `ENABLE_KAD_PROTOCOL_10`          | advertise Kademlia protocol `0x0a`, with the AICH hashes on keyword storage that `0x09` added |

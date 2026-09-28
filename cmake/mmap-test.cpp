@@ -68,11 +68,15 @@
 #endif /* no HAVE_GETPAGESIZE */
 
 int
-main ()
+main (int argc, char **argv)
 {
 	char *data, *data2, *data3;
 	int i, pagesize;
 	int fd, fd2;
+
+	/* The scratch files go in the directory named by argv[1], the build tree. */
+	if (argc > 1 && chdir (argv[1]) != 0)
+		return 15;
 
 	pagesize = getpagesize ();
 

@@ -80,7 +80,8 @@ if (NEED_LIB_MULEAPPCORE)
 							${CMAKE_BINARY_DIR}
 							${amule_SOURCE_DIR}/cmake/mmap-test.cpp
 							RUN_OUTPUT_VARIABLE PS_OUTPUT
-							WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+							# Not WORKING_DIRECTORY, which needs CMake 3.20.
+							ARGS ${CMAKE_BINARY_DIR}
 						)
 					endif()
 

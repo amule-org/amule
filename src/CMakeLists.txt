@@ -48,7 +48,8 @@ add_compile_options (
 # any regression. The warning is on by default under Clang, so only the
 # promotion to error is needed here.
 add_compile_options (
-	$<$<CXX_COMPILER_ID:Clang,AppleClang>:-Werror=inconsistent-missing-override>
+	# $<OR:...> because a list of IDs in one $<CXX_COMPILER_ID:...> needs CMake 3.15.
+	$<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>>:-Werror=inconsistent-missing-override>
 )
 
 # Embed every PNG under src/icons/ (plus each icon's optional

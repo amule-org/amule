@@ -69,6 +69,8 @@ target_include_directories (amuleapi
 # what muleappgui does in src/CMakeLists.txt.
 if (Python3_FOUND)
 	add_dependencies (amuleapi generate_icon_data)
+	# Before CMake 3.20 (CMP0118), GENERATED set in src/ does not reach this directory.
+	set_source_files_properties (${AMULE_ICON_DATA_C} PROPERTIES GENERATED TRUE)
 endif()
 
 target_link_libraries (amuleapi

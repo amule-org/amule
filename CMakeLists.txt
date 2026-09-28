@@ -1,4 +1,6 @@
-cmake_minimum_required (VERSION 3.10...3.31)
+# 3.12 is tested in CI (the "CMake minimum version" job in ccpp.yml): raising
+# this needs that job updated, and lowering it needs the code to allow it.
+cmake_minimum_required (VERSION 3.12...3.31)
 project (amule)
 
 set (MIN_BOOST_VERSION 1.70)

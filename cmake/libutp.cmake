@@ -10,11 +10,6 @@
 # coverage. Adding EXCLUDE_FROM_ALL here would be a second lock on a door the
 # option has already locked, and its only effect would be to leave the snapshot
 # compiled by no job.
-#
-# The vendored CMakeLists.txt is upstream's and requires CMake 3.12, above this
-# project's 3.10 minimum. That is why the include is conditional rather than
-# unconditional with an internal guard: a default build never enters it, so the
-# floor only rises for builds that ask for uTP.
 
 set (AMULE_LIBUTP_DIR "${CMAKE_SOURCE_DIR}/src/extern/libutp")
 
@@ -22,19 +17,6 @@ if (NOT EXISTS "${AMULE_LIBUTP_DIR}/CMakeLists.txt")
 	message (FATAL_ERROR
 		"ENABLE_UTP is on but the vendored libutp is missing from "
 		"${AMULE_LIBUTP_DIR}. See src/extern/libutp/AMULE_PROVENANCE.md.")
-endif()
-
-if (CMAKE_VERSION VERSION_LESS 3.12)
-	# Not "build without ENABLE_UTP": ENABLE_ALL_EXPERIMENTAL turns it on and
-	# wins over an individual switch, so -DENABLE_UTP=NO cannot be honoured as
-	# an opt-out (see the loop in cmake/options.cmake). Naming the switch that
-	# can actually be turned off is the difference between advice and a dead
-	# end, and 3.10 is this project's declared minimum.
-	message (FATAL_ERROR
-		"ENABLE_UTP requires CMake 3.12 or newer (the vendored libutp asks for "
-		"it); this is CMake ${CMAKE_VERSION}. Upgrade CMake, or build without "
-		"uTP: turn ENABLE_UTP off, and if ENABLE_ALL_EXPERIMENTAL is on turn "
-		"that off too and name the other experimental switches individually.")
 endif()
 
 # Upstream's own switches, pinned before the subdirectory sees them. option()

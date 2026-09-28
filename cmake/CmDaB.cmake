@@ -34,6 +34,14 @@ Find_Package (Git)
 cmake_dependent_option (DOWNLOAD_AND_BUILD_DEPS "Get all missing stuff" OFF ${Git_FOUND} OFF)
 
 if (DOWNLOAD_AND_BUILD_DEPS)
+	if (CMAKE_VERSION VERSION_LESS 3.14)
+		# FetchContent_MakeAvailable arrived in 3.14, above the project's 3.12 minimum.
+		message (FATAL_ERROR
+			"DOWNLOAD_AND_BUILD_DEPS requires CMake 3.14 or newer; this is CMake "
+			"${CMAKE_VERSION}. Upgrade CMake, or install the dependencies and build "
+			"without it.")
+	endif()
+
 	include (FetchContent)
 
 	FetchContent_Declare (

@@ -278,7 +278,7 @@ endif()
 
 # Experimental IPv4 uTP in amule/amuled only: datagram framing, inbound stream
 # acceptance, and dialing a peer that advertised the capability. No capability
-# advertisement of our own. Requires CMake 3.12; see cmake/libutp.cmake.
+# advertisement of our own.
 option (ENABLE_UTP "enable experimental uTP: datagram framing, inbound streams and outbound dialing" OFF)
 
 # IPv6 TCP admission is intentionally separate from listener activation and the
