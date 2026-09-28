@@ -56,6 +56,9 @@
 #include <wx/filename.h> // Needed for wxFileName (CA bundle lookup)
 #endif
 
+#include "AutostartManager.h" // Needed for GetCanonicalExecutablePath
+#include "HelperBinaryPath.h" // Needed for ResolveHelperBinary
+
 #if defined(__WXGTK__) && !defined(__APPLE__)
 #include <glib.h> // g_set_prgname() -- wl_app_id / WM_CLASS binding
 #endif
@@ -1298,10 +1301,8 @@ bool CamuleApp::OnInit()
 	// Run webserver?
 	if (thePrefs::GetWSIsEnabled()) {
 		wxString aMuleConfigFile = thePrefs::GetConfigDir() + m_configFile;
-		// Not a const&: the __WXMAC__ block below reassigns this. clang-tidy runs on Linux
-		// where that block is #ifdef'd out, so it cannot see the write.
-		// NOLINTNEXTLINE(performance-unnecessary-copy-initialization)
-		wxString amulewebPath = thePrefs::GetWSPath();
+		wxString amulewebPath = ResolveHelperBinary(
+			thePrefs::GetWSPath(), AutostartManager::GetCanonicalExecutablePath());
 
 #if defined(__WXMAC__) && !defined(AMULE_DAEMON)
 		// For the Mac GUI application, look for amuleweb in the bundle
@@ -1359,10 +1360,8 @@ bool CamuleApp::OnInit()
 
 	// Run amuleapi?
 	if (thePrefs::GetAmuleApiIsEnabled()) {
-		// Not a const&: the __WXMAC__ block below reassigns this. clang-tidy runs on Linux
-		// where that block is #ifdef'd out, so it cannot see the write.
-		// NOLINTNEXTLINE(performance-unnecessary-copy-initialization)
-		wxString amuleapiPath = thePrefs::GetAmuleApiPath();
+		wxString amuleapiPath = ResolveHelperBinary(
+			thePrefs::GetAmuleApiPath(), AutostartManager::GetCanonicalExecutablePath());
 
 #if defined(__WXMAC__) && !defined(AMULE_DAEMON)
 		// For the Mac GUI application, look for amuleapi in the bundle

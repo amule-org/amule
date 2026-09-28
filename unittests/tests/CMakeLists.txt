@@ -1810,6 +1810,16 @@ target_include_directories (SearchRequestTest PRIVATE
 )
 target_link_libraries (SearchRequestTest muleunit mulecommon)
 
+# Where amule/amuled look for amuleweb and amuleapi before falling back to PATH.
+add_executable (HelperBinaryPathTest HelperBinaryPathTest.cpp)
+add_test (NAME HelperBinaryPathTest COMMAND HelperBinaryPathTest)
+target_include_directories (HelperBinaryPathTest PRIVATE
+	${CMAKE_BINARY_DIR}
+	${CMAKE_SOURCE_DIR}/src
+	${CMAKE_SOURCE_DIR}/src/include
+)
+target_link_libraries (HelperBinaryPathTest muleunit mulecommon wxWidgets::BASE)
+
 # Linux only: the Windows and macOS autostart backends write the user's own registry and
 # LaunchAgents; the XDG one follows $XDG_CONFIG_HOME into a scratch directory.
 if (UNIX AND NOT APPLE)
