@@ -153,7 +153,8 @@ jobs:
           # --no-update: render translations but leave po/manpages.pot
           # and po/manpages-*.po unchanged, so the tarred-up source tree
           # matches git HEAD byte-for-byte (modulo the new rendered .lang.1.in).
-          (cd docs/man && po4a --no-update --force "$TMP")
+          # --keep 70: the same threshold as the build (docs/man/CMakeLists.txt).
+          (cd docs/man && po4a --no-update --force --keep 70 "$TMP")
           rm "$TMP"
           # Sanity-check that po4a actually produced the renders.
           count=$(find docs/man src/utils \

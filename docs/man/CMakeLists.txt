@@ -127,9 +127,13 @@ if (TRANSLATED_MANPAGES)
 		# manpages-*.po. Keeping these source-tree files unmodified is
 		# what scripts/update-manpages-po.sh is for; a plain `cmake
 		# --build` should never dirty the working tree.
+		#
+		# --keep: po4a skips a page translated below this, and every page is an output above, so a
+		# skipped page fails the build. Its default of 80 leaves no room for strings awaiting
+		# translation. On the command line because po4a 0.57 ignores it in po4a.config.
 		add_custom_command (
 			OUTPUT ${PO4A_RAW_OUTPUTS}
-			COMMAND ${PO4A_EXECUTABLE} --no-update "${CMAKE_CURRENT_BINARY_DIR}/po4a.config"
+			COMMAND ${PO4A_EXECUTABLE} --no-update --keep 70 "${CMAKE_CURRENT_BINARY_DIR}/po4a.config"
 			DEPENDS
 				${PO4A_PO_INPUTS}
 				"${CMAKE_CURRENT_BINARY_DIR}/po4a.config"
