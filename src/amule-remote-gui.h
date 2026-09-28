@@ -26,6 +26,7 @@
 #define AMULE_REMOTE_GUI_H
 
 #include <functional>             // std::function for the CSharedFilesRem
+#include <memory>                 // std::unique_ptr for CPreferencesRem
 #include <vector>                 // std::vector for CChatMsgHandlerRem's tracked sessions
 				  // Reload(yieldCb) shim -- matches the daemon-side
 				  // signature added in PrefsUnifiedDlg's commit path.
@@ -103,8 +104,11 @@ class CPreferencesRem : public CPreferences, public CECPacketHandlerBase
 	CRemoteConnect *m_conn;
 	uint32 m_exchange_send_selected_prefs;
 	uint32 m_exchange_recv_selected_prefs;
+	//! The core's preferences as last received or sent, the base SendChangesToRemote diffs against.
+	std::unique_ptr<CECPacket> m_remoteState;
 
 	virtual void HandlePacket(const CECPacket *packet);
+	void RememberRemoteState();
 
 public:
 	CPreferencesRem(CRemoteConnect *);
@@ -127,7 +131,14 @@ public:
 	bool RequestRemoveCat(size_t cat);
 
 	bool LoadRemote();
-	void SendToRemote();
+
+	// Other EC clients change the core's preferences too, so never send the whole local copy:
+	// refresh it before it is shown, and send only what the user changed.
+	void RefreshFromRemote(std::function<void()> then = nullptr);
+	void ApplyRefresh(const CECPacket *packet);
+	void SendChangesToRemote();
+	//! Sends one preferences category holding only the given tags.
+	void SendPartialToRemote(const CECTag &category);
 
 	// Shared-directory roots. Unlike the rest of the preferences these are a variable-length
 	// list whose apply rewrites files and triggers a rescan, so they ride their own ops

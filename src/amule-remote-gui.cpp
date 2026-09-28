@@ -58,6 +58,7 @@
 #include "ClientsWnd.h"       // Needed for CClientsWnd
 #include "DataToText.h"       // Needed for GetSoftName()
 #include "DownloadListCtrl.h" // Needed for CDownloadListCtrl
+#include "ECPrefsDiff.h"      // Needed for MakePrefsDiffPacket
 #include "Friend.h"
 #include "GetTickCount.h" // Needed for GetTickCount64
 #include "GuiEvents.h"
@@ -910,6 +911,8 @@ void CamuleRemoteGuiApp::FinishReconnect(int result)
 		// The daemon may have been upgraded while we were away, so re-read
 		// the version rather than leaving the pre-drop one on screen.
 		UpdateCoreVersionIndicator();
+		// Other clients may have changed the preferences meanwhile.
+		glob_prefs->RefreshFromRemote();
 
 		// Everything we hold is keyed by ECID, and an ECID only means something within
 		// one daemon process: CECID hands them out from a counter that restarts with the
@@ -1491,6 +1494,7 @@ CPreferencesRem::CPreferencesRem(CRemoteConnect *conn)
 void CPreferencesRem::HandlePacket(const CECPacket *packet)
 {
 	static_cast<const CEC_Prefs_Packet *>(packet)->Apply();
+	RememberRemoteState();
 
 	const CECTag *cat_tags = packet->GetTagByName(EC_TAG_PREFS_CATEGORIES);
 	if (cat_tags) {
@@ -1535,10 +1539,66 @@ bool CPreferencesRem::LoadRemote()
 	return true;
 }
 
-void CPreferencesRem::SendToRemote()
+void CPreferencesRem::RememberRemoteState()
 {
-	CEC_Prefs_Packet pref_packet(m_exchange_send_selected_prefs, EC_DETAIL_UPDATE, EC_DETAIL_FULL);
-	m_conn->SendPacket(&pref_packet);
+	m_remoteState = std::make_unique<CEC_Prefs_Packet>(
+		m_exchange_send_selected_prefs, EC_DETAIL_UPDATE, EC_DETAIL_FULL);
+}
+
+// Unlike HandlePacket, which also loads the categories and continues the connect sequence.
+class CPrefsRefreshHandler : public CECPacketHandlerBase
+{
+	std::function<void()> m_then;
+
+public:
+	explicit CPrefsRefreshHandler(std::function<void()> then)
+	: m_then(std::move(then))
+	{
+	}
+
+	void HandlePacket(const CECPacket *packet) override
+	{
+		theApp->glob_prefs->ApplyRefresh(packet);
+		if (m_then) {
+			wxTheApp->CallAfter(m_then);
+		}
+		delete this;
+	}
+};
+
+void CPreferencesRem::RefreshFromRemote(std::function<void()> then)
+{
+	CECPacket req(EC_OP_GET_PREFERENCES, EC_DETAIL_UPDATE);
+	req.AddTag(CECTag(EC_TAG_SELECT_PREFS, m_exchange_send_selected_prefs));
+	m_conn->SendRequest(new CPrefsRefreshHandler(std::move(then)), &req);
+}
+
+void CPreferencesRem::ApplyRefresh(const CECPacket *packet)
+{
+	if (packet->GetOpCode() == EC_OP_SET_PREFERENCES) {
+		static_cast<const CEC_Prefs_Packet *>(packet)->Apply();
+		RememberRemoteState();
+	}
+}
+
+void CPreferencesRem::SendChangesToRemote()
+{
+	auto current = std::make_unique<CEC_Prefs_Packet>(
+		m_exchange_send_selected_prefs, EC_DETAIL_UPDATE, EC_DETAIL_FULL);
+	if (m_remoteState) {
+		const std::unique_ptr<CECPacket> changes = MakePrefsDiffPacket(*m_remoteState, *current);
+		if (changes->GetTagCount() > 0) {
+			m_conn->SendPacket(changes.get());
+		}
+	}
+	m_remoteState = std::move(current);
+}
+
+void CPreferencesRem::SendPartialToRemote(const CECTag &category)
+{
+	CECPacket req(EC_OP_SET_PREFERENCES, EC_DETAIL_FULL);
+	req.AddTag(CECTag(category));
+	m_conn->SendPacket(&req);
 }
 
 // Reply handler for the shared-directory ops. Deliberately separate from

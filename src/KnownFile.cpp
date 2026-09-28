@@ -405,7 +405,10 @@ void CAbstractFile::GetRatingAndComments(FileRatingList &list) const
 void CAbstractFile::GetShownRatingAndComments(FileRatingList &list) const
 {
 	GetRatingAndComments(list);
+	// amulegui receives the list already filtered by the core, with the core's current settings.
+#ifndef CLIENT_GUI
 	list.remove_if([](const SFileRating &entry) { return thePrefs::IsCommentFiltered(entry.Comment); });
+#endif
 }
 
 /* Known File */

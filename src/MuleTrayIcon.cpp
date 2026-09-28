@@ -120,7 +120,9 @@ void CMuleTrayIcon::DoSetUploadLimit(long kBytesPerSec)
 	// applied as 59464, with nothing logged either side.
 	thePrefs::SetMaxUpload(kBytesPerSec < 0 ? UNLIMITED : (uint32)kBytesPerSec);
 #ifdef CLIENT_GUI
-	theApp->glob_prefs->SendToRemote();
+	CECEmptyTag connection(EC_TAG_PREFS_CONNECTIONS);
+	connection.AddTag(CECTag(EC_TAG_CONN_MAX_UL, thePrefs::GetMaxUpload()));
+	theApp->glob_prefs->SendPartialToRemote(connection);
 #endif
 }
 
@@ -129,7 +131,9 @@ void CMuleTrayIcon::DoSetDownloadLimit(long kBytesPerSec)
 	// See the note in DoSetUploadLimit.
 	thePrefs::SetMaxDownload(kBytesPerSec < 0 ? UNLIMITED : (uint32)kBytesPerSec);
 #ifdef CLIENT_GUI
-	theApp->glob_prefs->SendToRemote();
+	CECEmptyTag connection(EC_TAG_PREFS_CONNECTIONS);
+	connection.AddTag(CECTag(EC_TAG_CONN_MAX_DL, thePrefs::GetMaxDownload()));
+	theApp->glob_prefs->SendPartialToRemote(connection);
 #endif
 }
 

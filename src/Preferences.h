@@ -832,8 +832,8 @@ public:
 	static const wxString &GetGeoIPStatusLoadedSource() { return s_GeoIPStatusLoadedSource; }
 	static void SetGeoIPStatusLoadedSource(const wxString &v) { s_GeoIPStatusLoadedSource = v; }
 
-	// Transient "Update now" trigger: amulegui's prefs panel sets it before SendToRemote() so the
-	// outgoing packet carries an UPDATE_NOW tag, asking the daemon to refresh its GeoIP DB.
+	// Transient "Update now" trigger: amulegui's prefs panel sets it before SendChangesToRemote()
+	// so the outgoing packet carries an UPDATE_NOW tag, asking the daemon to refresh its GeoIP DB.
 	// Cleared after the send, and never set by the daemon, whose own outbound serialization
 	// therefore never emits the tag.
 	static bool IsGeoIPUpdateRequested() { return s_GeoIPUpdateRequested; }

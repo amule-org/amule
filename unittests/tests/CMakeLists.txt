@@ -310,6 +310,34 @@ target_link_libraries (ClientVersionStringTest
 	mulecommon
 )
 
+# amulegui's preferences commit: only the fields the user changed reach the core, so values
+# another EC client set are not written back (#1659). EC tag types only, no app.
+add_executable (ECPrefsDiffTest
+	ECPrefsDiffTest.cpp
+	${CMAKE_SOURCE_DIR}/src/ECPrefsDiff.cpp
+	# See the note on CValueMapTest below.
+	${CMAKE_SOURCE_DIR}/src/LoggerConsole.cpp
+)
+
+add_test (NAME ECPrefsDiffTest
+	COMMAND ECPrefsDiffTest
+)
+
+target_include_directories (ECPrefsDiffTest
+	PRIVATE ${CMAKE_BINARY_DIR}
+	PRIVATE ${CMAKE_SOURCE_DIR}/src
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/libs
+	PRIVATE ${CMAKE_BINARY_DIR}/src/libs
+	PRIVATE ${CMAKE_BINARY_DIR}/src/libs/ec/cpp
+)
+
+target_link_libraries (ECPrefsDiffTest
+	muleunit
+	ec
+	mulecommon
+)
+
 add_executable (ECIdDiffTest
 	ECIdDiffTest.cpp
 	# See the note on CValueMapTest below: libec.a references DoECLogLine /

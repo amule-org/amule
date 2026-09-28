@@ -168,6 +168,7 @@ public:
 	void OnCoreVersionClicked(wxMouseEvent &event);
 	void ShowConnectionState();
 	void ShowTransferRate();
+	void ShowPreferences();
 
 	bool StatisticsWindowActive() { return (m_activewnd == static_cast<wxWindow *>(m_statisticswnd)); }
 

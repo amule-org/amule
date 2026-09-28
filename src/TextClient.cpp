@@ -40,6 +40,7 @@
 
 #include <wx/tokenzr.h>
 
+#include <limits> // Needed for std::numeric_limits
 #include <memory> // Needed for std::unique_ptr
 
 #include <common/Format.h>          // Needed for CFormat
@@ -599,10 +600,10 @@ int CamulecmdApp::ProcessCommand(int CmdId)
 		tmp_int += EC_TAG_CONN_MAX_DL;
 		{
 			unsigned long int limit;
-			if (args.ToULong(&limit)) {
+			if (args.ToULong(&limit) && limit <= std::numeric_limits<uint32>::max()) {
 				request = new CECPacket(EC_OP_SET_PREFERENCES);
 				CECEmptyTag prefs(EC_TAG_PREFS_CONNECTIONS);
-				prefs.AddTag(CECTag(tmp_int, (uint16)limit));
+				prefs.AddTag(CECTag(tmp_int, static_cast<uint32>(limit)));
 				request->AddTag(prefs);
 				request_list.push_back(request);
 			} else {

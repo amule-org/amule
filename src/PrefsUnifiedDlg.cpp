@@ -1029,8 +1029,8 @@ bool PrefsUnifiedDlg::TransferFromWindow()
 	// Parity with monolithic's auto-download-on-OK: if the GeoIP source or the active
 	// source's credential changed since the panel opened, ask the daemon to re-download
 	// from the new source by piggy-backing a one-shot UPDATE_NOW on the prefs packet.
-	// Commit the credential fields to the statics first -- SendToRemote serialises from
-	// there, not from the live widgets.
+	// Commit the credential fields to the statics first -- SendChangesToRemote serialises
+	// from there, not from the live widgets.
 	thePrefs::SetGeoIPMaxMindLicense(CastChild(IDC_GEOIP_MAXMIND_LIC, wxTextCtrl)->GetValue());
 	thePrefs::SetGeoIPCustomUrl(CastChild(IDC_GEOIP_CUSTOM_URL, wxTextCtrl)->GetValue());
 	const bool geoipSourceChanged = static_cast<int>(thePrefs::GetGeoIPSource()) != m_GeoIPSourceAtOpen;
@@ -1048,8 +1048,8 @@ bool PrefsUnifiedDlg::TransferFromWindow()
 	thePrefs::SetGeoIPUpdateRequested(
 		thePrefs::IsGeoIPEnabled() && (geoipSourceChanged || geoipCredChanged));
 #endif
-	// Send preferences to core.
-	theApp->glob_prefs->SendToRemote();
+	// Send the user's changes to the core.
+	theApp->glob_prefs->SendChangesToRemote();
 #ifdef GEOIP_GUI
 	thePrefs::SetGeoIPUpdateRequested(false);
 #endif
@@ -2143,14 +2143,14 @@ void PrefsUnifiedDlg::OnGeoIPUpdateNow(wxCommandEvent &WXUNUSED(event))
 	thePrefs::SetGeoIPCustomUrl(CastChild(IDC_GEOIP_CUSTOM_URL, wxTextCtrl)->GetValue());
 
 #ifdef CLIENT_GUI
-	// amulegui has no local resolver; the daemon owns the GeoIP DB (#440). Ask it to
-	// refresh by sending the current prefs with a one-shot UPDATE_NOW trigger piggy-backed
-	// on the normal prefs packet. SendToRemote serializes from the statics we just wrote,
-	// so the license / custom URL the user typed reach the daemon before it resolves the
-	// download URL.
-	thePrefs::SetGeoIPUpdateRequested(true);
-	theApp->glob_prefs->SendToRemote();
-	thePrefs::SetGeoIPUpdateRequested(false);
+	// amulegui has no local resolver; the daemon owns the GeoIP DB (#440). Send the license /
+	// custom URL the user typed with a one-shot UPDATE_NOW, and nothing else: the rest of the
+	// page is committed on OK.
+	CECEmptyTag ip2country(EC_TAG_PREFS_IP2COUNTRY);
+	ip2country.AddTag(CECTag(EC_TAG_IP2COUNTRY_MAXMIND_LICENSE, thePrefs::GetGeoIPMaxMindLicense()));
+	ip2country.AddTag(CECTag(EC_TAG_IP2COUNTRY_CUSTOM_URL, thePrefs::GetGeoIPCustomUrl()));
+	ip2country.AddTag(CECTag(EC_TAG_IP2COUNTRY_UPDATE_NOW, true));
+	theApp->glob_prefs->SendPartialToRemote(ip2country);
 #else
 	// Monolithic amule: kick off the download locally. DownloadFinished swaps the new file
 	// in and re-opens the database asynchronously; the status line refreshes next time the

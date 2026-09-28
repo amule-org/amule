@@ -580,6 +580,7 @@ if (BUILD_REMOTEGUI)
 		${GUI_SOURCES}
 		kademlia/utils/UInt128.cpp
 		amule-remote-gui.cpp
+		ECPrefsDiff.cpp
 	)
 
 	if (WIN32)

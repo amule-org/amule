@@ -825,6 +825,21 @@ void CamuleDlg::OnAboutButton(wxCommandEvent &WXUNUSED(ev))
 
 void CamuleDlg::OnPrefButton(wxCommandEvent &WXUNUSED(ev))
 {
+#ifdef CLIENT_GUI
+	// Our copy of the core's preferences dates from the last refresh; another EC client may
+	// have changed them since. Looked up again on arrival: a dropped link destroys this window.
+	theApp->glob_prefs->RefreshFromRemote([]() {
+		if (theApp->amuledlg) {
+			theApp->amuledlg->ShowPreferences();
+		}
+	});
+#else
+	ShowPreferences();
+#endif
+}
+
+void CamuleDlg::ShowPreferences()
+{
 	if (m_is_safe_state) {
 		if (m_prefsDialog == NULL) {
 			m_prefsDialog = new PrefsUnifiedDlg(this);

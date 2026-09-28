@@ -874,8 +874,10 @@ void CEC_Prefs_Packet::Apply() const
 			thePrefs::RecompileShareExcludeFilter();
 		}
 
+#ifndef CLIENT_GUI
 		// Apply the new auto-rescan state immediately on amuled so a remote toggle from
-		// amulegui does not need a daemon restart to take effect.
+		// amulegui does not need a daemon restart to take effect. Core only: on amulegui this
+		// packet is the core's own state, and a reload request would rescan every share again.
 		if (theApp->sharedfiles) {
 			theApp->sharedfiles->EnableDirectoryWatcher(thePrefs::AutoRescanSharedDirs());
 			// Same for a changed exclusion filter: re-walk so newly excluded files
@@ -885,6 +887,7 @@ void CEC_Prefs_Packet::Apply() const
 				theApp->sharedfiles->RequestReload();
 			}
 		}
+#endif
 	}
 
 	// EC_TAG_PREFS_STATISTICS arrives but is unhandled. The existence check is kept
