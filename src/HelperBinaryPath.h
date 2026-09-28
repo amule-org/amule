@@ -49,4 +49,28 @@ inline wxString ResolveHelperBinary(const wxString &configured, const wxString &
 	});
 }
 
+// The command that starts amuleapi for this core. `ecIp` and `ecPort`, the EC listener's bound
+// endpoint, tell it where to connect: amuleapi.conf's defaults need not match the core's EC settings.
+// A wildcard bind is reached over loopback. Without them, amuleapi.conf decides.
+inline wxString AmuleApiCommand(const wxString &path,
+	const wxString &configDir,
+	const wxString &bind,
+	unsigned httpPort,
+	const wxString &ecIp,
+	unsigned ecPort)
+{
+#ifdef __WINDOWS__
+	const wxString q = "\"";
+#else
+	const wxString q = "'";
+#endif
+	wxString cmd = q + path + q + " " + q + "--config-dir=" + configDir + q + " " + q + "--bind=" + bind +
+		       q + wxString::Format(" --http-port=%u", httpPort);
+	if (!ecIp.IsEmpty() && ecPort != 0) {
+		const wxString host = (ecIp == "0.0.0.0") ? wxString("127.0.0.1") : ecIp;
+		cmd += " " + q + "--host=" + host + q + wxString::Format(" --port=%u", ecPort);
+	}
+	return cmd;
+}
+
 #endif // HELPERBINARYPATH_H

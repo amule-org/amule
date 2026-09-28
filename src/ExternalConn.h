@@ -132,8 +132,14 @@ public:
 	// setup people adopt for safety.
 	CRateLimiter &AuthRateLimiter() { return m_authRateLimiter; }
 
+	// The address and port the listener is bound to, as the core-started amuleapi must reach
+	// it. False when external connections are off or the bind failed.
+	bool GetListenEndpoint(wxString &ip, uint16 &port) const;
+
 private:
 	CRateLimiter m_authRateLimiter;
+	wxString m_listenIp;
+	uint16 m_listenPort = 0;
 };
 
 class ECUpdateMsgSource

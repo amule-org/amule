@@ -1406,13 +1406,20 @@ bool CamuleApp::OnInit()
 		// No --amule-config-file here, unlike amuleweb above: amuleapi takes the ephemeral
 		// token written just now instead of reading the hashed EC password out of amule.conf.
 		// It finds the token through the config dir passed below, which is also where its
-		// admin and guest credentials live. The HTTP bind address and port are passed
-		// explicitly; a non-loopback bind requires an admin password or amuleapi refuses to
-		// start.
-		wxString cmd = QUOTE + amuleapiPath +
-			       QUOTE " " QUOTE "--config-dir=" + thePrefs::GetConfigDir() +
-			       QUOTE " " QUOTE "--bind=" + thePrefs::GetAmuleApiBindAddress() + QUOTE +
-			       wxString::Format(wxT(" --http-port=%u"), thePrefs::GetAmuleApiPort());
+		// admin and guest credentials live. The HTTP bind address and port, and where to reach
+		// our EC listener, are passed explicitly; a non-loopback bind requires an admin password
+		// or amuleapi refuses to start.
+		wxString ecIp;
+		uint16 ecPort = 0;
+		if (ECServerHandler) {
+			ECServerHandler->GetListenEndpoint(ecIp, ecPort);
+		}
+		const wxString cmd = AmuleApiCommand(amuleapiPath,
+			thePrefs::GetConfigDir(),
+			thePrefs::GetAmuleApiBindAddress(),
+			thePrefs::GetAmuleApiPort(),
+			ecIp,
+			ecPort);
 		CTerminationProcessAmuleApi *p = new CTerminationProcessAmuleApi(cmd, &amuleapi_pid);
 		amuleapi_pid = static_cast<int>(wxExecute(cmd, wxEXEC_ASYNC, p));
 		bool amuleapi_ok = amuleapi_pid > 0;

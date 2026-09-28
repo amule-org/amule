@@ -920,6 +920,8 @@ ExternalConn::ExternalConn(amuleIPV4Address addr, wxString *msg)
 		int port = addr.Service();
 		wxString ip = addr.IPAddress();
 		if (m_ECServer->IsOk()) {
+			m_listenIp = ip;
+			m_listenPort = static_cast<uint16>(port);
 			msgLocal = CFormat("*** TCP socket (ECServer) listening on %s:%d") % ip % port;
 			*msg += msgLocal + "\n";
 			AddLogLineN(msgLocal);
@@ -933,6 +935,16 @@ ExternalConn::ExternalConn(amuleIPV4Address addr, wxString *msg)
 		AddLogLineN(_("External connections disabled in config file"));
 	}
 	m_ec_notifier = new ECNotifier();
+}
+
+bool ExternalConn::GetListenEndpoint(wxString &ip, uint16 &port) const
+{
+	if (m_listenIp.IsEmpty()) {
+		return false;
+	}
+	ip = m_listenIp;
+	port = m_listenPort;
+	return true;
 }
 
 ExternalConn::~ExternalConn()

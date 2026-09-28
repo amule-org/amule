@@ -74,3 +74,34 @@ TEST(HelperBinaryPath, UnknownSelfOrEmptyNameChangesNothing)
 		ResolveHelperBinary("amuleweb", "", Holding({ SiblingOf("amuleweb") })));
 	ASSERT_EQUALS(wxString(""), ResolveHelperBinary("", kSelf, Holding({ SiblingOf("") })));
 }
+
+namespace
+{
+#ifdef __WINDOWS__
+const wxString q = "\"";
+#else
+const wxString q = "'";
+#endif
+const wxString kBase = q + "amuleapi" + q + " " + q + "--config-dir=/c/" + q + " " + q + "--bind=0.0.0.0" +
+		       q + " --http-port=4711";
+} // namespace
+
+TEST(HelperBinaryPath, AmuleApiCommandWithoutEcEndpointKeepsItsConfig)
+{
+	ASSERT_EQUALS(kBase, AmuleApiCommand("amuleapi", "/c/", "0.0.0.0", 4711, "", 0));
+	// A port without an address is no endpoint either.
+	ASSERT_EQUALS(kBase, AmuleApiCommand("amuleapi", "/c/", "0.0.0.0", 4711, "", 4952));
+	ASSERT_EQUALS(kBase, AmuleApiCommand("amuleapi", "/c/", "0.0.0.0", 4711, "10.0.0.2", 0));
+}
+
+TEST(HelperBinaryPath, AmuleApiCommandPassesTheBoundEcEndpoint)
+{
+	ASSERT_EQUALS(kBase + " " + q + "--host=10.0.0.2" + q + " --port=4952",
+		AmuleApiCommand("amuleapi", "/c/", "0.0.0.0", 4711, "10.0.0.2", 4952));
+}
+
+TEST(HelperBinaryPath, AmuleApiCommandReachesAWildcardBindOverLoopback)
+{
+	ASSERT_EQUALS(kBase + " " + q + "--host=127.0.0.1" + q + " --port=4712",
+		AmuleApiCommand("amuleapi", "/c/", "0.0.0.0", 4711, "0.0.0.0", 4712));
+}
