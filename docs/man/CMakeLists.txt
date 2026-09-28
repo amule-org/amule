@@ -50,7 +50,7 @@ cmake_dependent_option (TRANSLATED_MANPAGES
 	"Render and install translated manpages via po4a (requires po4a at build time)"
 	ON ENABLE_NLS OFF)
 
-set (AMULE_MANPAGE_LANGUAGES de es fr hu it pt_BR ro ru tr zh_TW)
+set (AMULE_MANPAGE_LANGUAGES ca de es fr hu it nl pt_BR ro ru tr zh_TW)
 
 if (TRANSLATED_MANPAGES)
 	find_program (PO4A_EXECUTABLE po4a)

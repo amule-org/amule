@@ -1,4 +1,4 @@
-[po4a_langs] de es fr hu it pt_BR ro ru tr zh_TW
+[po4a_langs] ca de es fr hu it nl pt_BR ro ru tr zh_TW
 [po4a_paths] @CMAKE_CURRENT_SOURCE_DIR@/po/manpages.pot $lang:@CMAKE_CURRENT_SOURCE_DIR@/po/manpages-$lang.po
 # The translation threshold (--keep) is passed on the po4a command line, not here: po4a before
 # 0.58 reads only opt:"..." tokens on this line and silently ignores bare options.
