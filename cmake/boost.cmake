@@ -29,6 +29,12 @@ else()
 	else()
 		set (CMAKE_REQUIRED_FLAGS "-DBOOST_ERROR_CODE_HEADER_ONLY")
 	endif()
+	# Asio uses pthreads, which glibc before 2.34 keeps out of libc: without them the
+	# probe fails to link and reads as missing headers. Boost_LIBRARIES below copies
+	# this list, so the targets that use Asio link threads explicitly too.
+	set (THREADS_PREFER_PTHREAD_FLAG TRUE)
+	find_package (Threads REQUIRED)
+	set (CMAKE_REQUIRED_LIBRARIES Threads::Threads)
 	check_include_files ("boost/system/error_code.hpp;boost/asio.hpp" ASIO_SOCKETS LANGUAGE CXX)
 endif (MINGW)
 
