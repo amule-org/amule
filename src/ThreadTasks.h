@@ -138,12 +138,8 @@ private:
 
 /**
  * Calculates MD4 and AICH hashes for a known file, to check file integrity against the hashes
- * stored in the .met files.
- *
- * Everything the check needs is copied from the file on the main thread at construction, so the
- * task checks exactly the copy the user asked for -- not whichever record a hash lookup returns,
- * which for content held at several paths can be another copy -- and never reads CKnownFile
- * state from the worker.
+ * stored in the .met files. The file is copied on the main thread at construction, so the task
+ * checks the copy the user selected, not another one found by hash.
  */
 class CVerifyLocalDataTask : public CThreadTask
 {
@@ -160,11 +156,9 @@ protected:
 
 private:
 	void PrintReport(const CPath &fullPath, const bool checkedAICH);
-	// Whether m_owner is still the file shared under m_fileID. m_owner is only compared, and
-	// dereferenced only after this says it is still alive.
+	// m_owner is only dereferenced after this confirms it is still shared.
 	bool OwnerStillShared() const;
 
-	// The file as it was when the check was requested.
 	const CKnownFile *m_owner;
 	CPath m_fullPath;
 	uint64 m_fileSize;
@@ -304,9 +298,8 @@ private:
 };
 
 /**
- * Carries a completed CVerifyLocalDataTask's result to the main thread, which records it on the
- * CKnownFile (persisted in known.met as FT_VERIFY_*). Only sent when the check ran to the end:
- * a file that could not be read, or a cancelled task, says nothing about the data.
+ * Carries a CVerifyLocalDataTask result to the main thread. Sent only for a check that ran to
+ * the end.
  */
 class CVerifyLocalDataEvent : public wxEvent
 {

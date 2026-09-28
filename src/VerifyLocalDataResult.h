@@ -37,12 +37,8 @@
 #include <vector>
 
 /**
- * Outcome of the last completed "Verify Local Data" check on a complete file, persisted in
- * known.met (FT_VERIFY_*, see FileTags.h). date == 0 means never verified; a date with both lists
- * empty means the file verified clean then.
- *
- * Kept apart from CKnownFile, with its known.met string encoding, so the codec can be unit tested:
- * CKnownFile reaches theApp and cannot be linked into a test.
+ * Last Verify Local Data result (FT_VERIFY_* in known.met). date == 0: never verified. Kept apart
+ * from CKnownFile so the encoding can be unit tested.
  */
 struct CVerifyLocalDataResult
 {
@@ -88,11 +84,7 @@ struct CVerifyLocalDataResult
 		return str;
 	}
 
-	/**
-	 * Replaces both lists with the ones parsed from their known.met strings. Validated like
-	 * FT_CORRUPTEDPARTS in a .part.met: a part or block outside a file of fileSize bytes, a
-	 * repeat, or a malformed entry is dropped rather than trusted.
-	 */
+	// Replaces both lists. Out-of-range, repeated or malformed entries are dropped.
 	void DecodeCorrupted(const wxString &md4, const wxString &aich, uint64 fileSize)
 	{
 		corruptedMD4.clear();

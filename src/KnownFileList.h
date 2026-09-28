@@ -71,25 +71,17 @@ public:
 	// we just saw wins the hash.
 	bool PromoteToCanonical(CKnownFile *file);
 
-	// Another file with the same content, as far as its record tells. fullPath is set only for a
-	// record that carries a directory, which known.met does not store: it has one only while or
-	// since it was shared or hashed this session.
 	struct OtherCopy
 	{
 		CPath fileName;
-		CPath fullPath;
+		CPath fullPath; // empty unless the record got a directory this session
 		time_t date;
 		uint64 size;
-		// The share scan matched this record against a file on disk this session (a pinned
-		// duplicate), wherever that file was: a fullPath may be older than that match.
-		bool seenByScan;
+		bool seenByScan; // a pinned duplicate: the share scan matched it on disk
 	};
-	// The records for `hash` other than `except` that stand for a file seen in a shared folder
-	// this session: those with a directory, and the duplicates the share scan pinned by matching
-	// them against a file on disk -- including the copies it declined to share, since only one
-	// path per hash is shared. Records with neither are left out: the duplicate list also keeps
-	// past names and dates of the same file, which are no copy at all. What was seen may have
-	// changed since; a caller can re-check the ones with a fullPath.
+	// The other records of `hash` seen in a shared folder this session. Records with neither a
+	// directory nor a pin are left out: the duplicate list also keeps past names and dates of the
+	// same file.
 	std::vector<OtherCopy> FindOtherCopies(const CMD4Hash &hash, const CKnownFile *except) const;
 
 	// Returns true iff `file` is still one of this list's records, canonical or duplicate. It

@@ -700,7 +700,7 @@ wxString CSharedFilesCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) co
 		if (!result.date) {
 			return wxEmptyString;
 		}
-		return CFormat(wxT("%s (%s)")) % (result.IsCorrupt() ? _("Failed") : _("OK")) %
+		return CFormat("%s (%s)") % (result.IsCorrupt() ? _("Failed") : _("OK")) %
 		       FormatLocalDateTime(wxDateTime((time_t)result.date));
 	}
 #endif

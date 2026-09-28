@@ -2496,13 +2496,9 @@ void CamuleApp::OnMediaProbeFinished(CMediaProbeEvent &evt)
 
 void CamuleApp::OnVerifyLocalDataFinished(CVerifyLocalDataEvent &evt)
 {
-	// The result is about one file on disk, so it is recorded only on the record that still IS
-	// the copy that was read: same path, date and size. Unlike media tags, it must not spread to
-	// other records of the same hash -- content held at several paths can be intact at one and
-	// damaged at another. The task checked the shared file, but the known-file map may hold a
-	// different record for the hash, so both are looked at; if the file was renamed, touched or
-	// unshared meanwhile, neither matches and the result is dropped. An OK result replaces an
-	// earlier failure, so a repaired file does not stay marked.
+	// Recorded only on the record that is still the file that was read. Unlike media tags it is
+	// not copied to other records of the hash: the same content can be intact at one path and
+	// damaged at another.
 	const CMD4Hash &hash = evt.GetHash();
 	auto isCheckedCopy = [&evt, &hash](const CKnownFile *f) {
 		return f && !f->IsPartFile() && f->GetFileHash() == hash &&
@@ -2525,13 +2521,7 @@ void CamuleApp::OnVerifyLocalDataFinished(CVerifyLocalDataEvent &evt)
 	Notify_SharedFilesUpdateItem(checked);
 	m_knownMetDirtiedMs = theStats::GetUptimeMillis();
 
-	// Point the user at other files with the same content in the shared folders: one of them
-	// may be an intact copy of the corrupt data. Only the name is given -- known.met stores no
-	// directory, and keeping one per copy would cost memory for a rare case. A copy is reported
-	// if the share scan matched it this session (a pinned duplicate, which is what a copy the
-	// scan refused to share always is), or if its record still holds a directory from this
-	// session -- set when it was shared or hashed -- and the file there is unchanged. The copy
-	// itself is not verified, hence "may".
+	// Name other copies in the shared folders. Names only: known.met stores no directory.
 	if (evt.GetResult().IsCorrupt()) {
 		std::set<wxString> reported;
 		for (const CKnownFileList::OtherCopy &copy : knownfiles->FindOtherCopies(hash, checked)) {
@@ -2547,7 +2537,7 @@ void CamuleApp::OnVerifyLocalDataFinished(CVerifyLocalDataEvent &evt)
 			if (!reported.insert(copy.fileName.GetRaw()).second) {
 				continue;
 			}
-			AddLogLineC(
+			AddLogLineN(
 				CFormat(_("Verify Local Data: another file named '%s' in your shared "
 					  "folders has the same content as '%s' and may be an intact copy "
 					  "of it.")) %

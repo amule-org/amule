@@ -604,9 +604,8 @@ bool CKnownFileList::Append(CKnownFile *Record, bool afterHashing)
 					}
 					Record->SetLastChangeDatetime(newDate);
 					Record->SetFileName(newName);
-					// A Verify Local Data result is about the data as it was checked.
-					// Record was just hashed in full to this same MD4, which proves
-					// that data is intact now, so a copied "corrupt" verdict is stale.
+					// Record was just hashed in full to this same MD4, so a copied
+					// Verify Local Data failure is stale.
 					Record->ClearVerifyResult();
 				}
 				// The file is a duplicated hash. Add THE OLD ONE to the duplicates
