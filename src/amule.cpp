@@ -2517,6 +2517,8 @@ void CamuleApp::OnVerifyLocalDataFinished(CVerifyLocalDataEvent &evt)
 		}
 	}
 	checked->SetVerifyResult(evt.GetResult());
+	// Or the EC update skips the file as unchanged, and amulegui never sees the result.
+	checked->MarkECChanged();
 	// Redraw the row: the task's last progress update has already gone out before this.
 	Notify_SharedFilesUpdateItem(checked);
 	m_knownMetDirtiedMs = theStats::GetUptimeMillis();

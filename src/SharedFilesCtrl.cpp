@@ -174,9 +174,7 @@ CSharedFilesCtrl::CSharedFilesCtrl(wxWindow *parent, int id, const wxPoint &pos,
 	AddTextColumn(_("Artist"), COLUMN_SHARED_MEDIA_ARTIST, "a", 120, wxALIGN_LEFT, colFlags);
 	AddTextColumn(_("Album"), COLUMN_SHARED_MEDIA_ALBUM, "m", 120, wxALIGN_LEFT, colFlags);
 	AddTextColumn(_("Title"), COLUMN_SHARED_MEDIA_TITLE, "i", 140, wxALIGN_LEFT, colFlags);
-#ifndef CLIENT_GUI
 	AddTextColumn(_("Verify Local Data"), COLUMN_SHARED_VERIFY, "V", 170, wxALIGN_LEFT, colFlags);
-#endif
 
 	AppendSpacerColumn(COLUMN_SHARED_SPACER);
 
@@ -721,7 +719,6 @@ wxString CSharedFilesCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) co
 	case COLUMN_SHARED_MEDIA_TITLE:
 		return file->GetStrTagValue(FT_MEDIA_TITLE);
 
-#ifndef CLIENT_GUI
 	// Empty until the file has been verified.
 	case COLUMN_SHARED_VERIFY: {
 		const CVerifyLocalDataResult &result = file->GetVerifyResult();
@@ -731,7 +728,6 @@ wxString CSharedFilesCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) co
 		return CFormat("%s (%s)") % (result.IsCorrupt() ? _("Failed") : _("OK")) %
 		       FormatLocalDateTime(wxDateTime((time_t)result.date));
 	}
-#endif
 
 	default:
 		return wxEmptyString;
@@ -1384,7 +1380,6 @@ int CSharedFilesCtrl::CompareItemData(
 		return CompareMediaStr(
 			file1->GetStrTagValue(FT_MEDIA_TITLE), file2->GetStrTagValue(FT_MEDIA_TITLE), mod);
 
-#ifndef CLIENT_GUI
 	// Failed, then OK, then never verified; by date within each. Ascending puts the files that
 	// need attention first.
 	case COLUMN_SHARED_VERIFY: {
@@ -1398,7 +1393,6 @@ int CSharedFilesCtrl::CompareItemData(
 		}
 		return mod * CmpAny(r1.date, r2.date);
 	}
-#endif
 
 	default:
 		return 0;

@@ -35,6 +35,7 @@
 #include <tags/FileTags.h> // Needed for FT_MEDIA_* metadata tag names
 
 #include <set>
+#include <wx/textctrl.h> // Needed for wxTextCtrl
 
 #define ID_MY_TIMER 1652
 
@@ -270,12 +271,47 @@ void CFileDetailDialog::UpdateData(bool resetFilename)
 		}
 	}
 
+	// Verify Local Data: the result as the shared files column shows it, empty if never checked,
+	// and the corrupt parts and AICH blocks in the notation of the log report.
+	const CVerifyLocalDataResult &verify = m_file->GetVerifyResult();
+	wxString verifyStatus;
+	if (verify.date) {
+		verifyStatus = CFormat("%s (%s)") % (verify.IsCorrupt() ? _("Failed") : _("OK")) %
+			       FormatLocalDateTime(wxDateTime((time_t)verify.date));
+	}
+	CastChild(IDC_FD_VERIFY_STATUS, wxControl)->SetLabel(verifyStatus);
+	wxString verifyDetails;
+	if (!verify.corruptedMD4.empty()) {
+		verifyDetails = "MD4: " + verify.EncodeCorruptedMD4();
+	}
+	if (!verify.corruptedAICH.empty()) {
+		wxString aich;
+		for (const auto &corruptPart : verify.corruptedAICH) {
+			wxString blocks;
+			for (uint8 block : corruptPart.second) {
+				blocks += CFormat("%s%u") % (blocks.IsEmpty() ? "" : ",") % (unsigned)block;
+			}
+			aich += CFormat("%s%u: (%s)") % (aich.IsEmpty() ? "" : ", ") % corruptPart.first %
+				blocks;
+		}
+		verifyDetails += (verifyDetails.IsEmpty() ? "AICH: " : "\nAICH: ") + aich;
+	}
+	wxTextCtrl *verifyDetailsCtrl = CastChild(IDC_FD_VERIFY_DETAILS, wxTextCtrl);
+	// Only on a change: the 5 s refresh would otherwise scroll the box back to the top.
+	if (verifyDetailsCtrl->GetValue() != verifyDetails) {
+		verifyDetailsCtrl->ChangeValue(verifyDetails);
+	}
+
 	// Section visibility, driven by the file's own state rather than by which list opened the
 	// dialog: download rows only for an in-progress partfile, sharing rows for any file that
 	// actually shares data.
 	bool showDownload = (part != nullptr);
 	bool showSharing = (part == nullptr) || (part->GetCompletedSize() > 0);
 	bool relayout = false;
+	if (verifyDetailsCtrl->IsShown() != !verifyDetails.IsEmpty()) {
+		verifyDetailsCtrl->Show(!verifyDetails.IsEmpty());
+		relayout = true;
+	}
 	wxWindow *dlPanel = FindWindow(IDC_FD_DOWNLOAD_PANEL);
 	if (dlPanel && dlPanel->IsShown() != showDownload) {
 		dlPanel->Show(showDownload);

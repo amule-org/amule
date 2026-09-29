@@ -2412,6 +2412,18 @@ void CKnownFilesRem::ProcessItemUpdate(const CEC_SharedFile_Tag *tag, CKnownFile
 		file->SetLastUpload(lastUpload);
 	}
 
+	// An incremental update carries only the verify tags that changed; keep the others.
+	CVerifyLocalDataResult verify = file->GetVerifyResult();
+	wxString corruptMD4 = verify.EncodeCorruptedMD4();
+	wxString corruptAICH = verify.EncodeCorruptedAICH();
+	const bool verifyDate = tag->GetVerifyDate(verify.date);
+	const bool verifyMD4 = tag->GetVerifyCorruptMD4(corruptMD4);
+	const bool verifyAICH = tag->GetVerifyCorruptAICH(corruptAICH);
+	if (verifyDate || verifyMD4 || verifyAICH) {
+		verify.DecodeCorrupted(corruptMD4, corruptAICH, file->GetFileSize());
+		file->SetVerifyResult(verify);
+	}
+
 	tag->GetComment(file->m_strComment);
 	tag->GetRating(file->m_iRating);
 

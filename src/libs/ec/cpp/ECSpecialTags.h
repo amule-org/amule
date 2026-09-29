@@ -416,6 +416,20 @@ public:
 		return AssignIfExist(EC_TAG_KNOWNFILE_LAST_UPLOAD, target);
 	}
 
+	// Last Verify Local Data result, in the FT_VERIFY_* encoding.
+	bool GetVerifyDate(uint32 &target) const
+	{
+		return AssignIfExist(EC_TAG_KNOWNFILE_VERIFY_DATE, target);
+	}
+	bool GetVerifyCorruptMD4(wxString &target) const
+	{
+		return AssignIfExist(EC_TAG_KNOWNFILE_VERIFY_CORRUPT_MD4, target);
+	}
+	bool GetVerifyCorruptAICH(wxString &target) const
+	{
+		return AssignIfExist(EC_TAG_KNOWNFILE_VERIFY_CORRUPT_AICH, target);
+	}
+
 	bool GetComment(wxString &target) const { return AssignIfExist(EC_TAG_KNOWNFILE_COMMENT, target); }
 	bool GetRating(uint8 &target) const { return AssignIfExist(EC_TAG_KNOWNFILE_RATING, target); }
 

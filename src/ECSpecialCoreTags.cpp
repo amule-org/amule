@@ -340,6 +340,15 @@ CEC_SharedFile_Tag::CEC_SharedFile_Tag(
 #endif
 	AddTag(EC_TAG_KNOWNFILE_LAST_UPLOAD, (uint32)file->GetLastUpload(), valuemap);
 
+	// Last Verify Local Data result, in the FT_VERIFY_* encoding. Before the UPDATE early-return:
+	// a check can finish at any time. Omitted for files never verified, most of the library.
+	const CVerifyLocalDataResult &verify = file->GetVerifyResult();
+	if (verify.date) {
+		AddTag(EC_TAG_KNOWNFILE_VERIFY_DATE, verify.date, valuemap);
+		AddTag(EC_TAG_KNOWNFILE_VERIFY_CORRUPT_MD4, verify.EncodeCorruptedMD4(), valuemap);
+		AddTag(EC_TAG_KNOWNFILE_VERIFY_CORRUPT_AICH, verify.EncodeCorruptedAICH(), valuemap);
+	}
+
 	// Community ratings/comments, comment filter applied, plus the on-demand Kad-notes running
 	// flag, shared by downloads and shared files. Emitted before the UPDATE early-return so the
 	// flag's start -> finish and notes streaming in are visible on every poll; the valuemap

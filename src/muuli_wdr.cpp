@@ -784,6 +784,17 @@ wxSizer *fileDetails( wxWindow *parent, bool call_fit, bool set_sizer )
     mediaBoxSizer->Add( mediaGrid, wxSizerFlags().Expand().CenterVertical() );
     item0->Add( mediaBoxSizer, wxSizerFlags().Expand().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 5) );
 
+    // Verify Local Data: the last result as the shared files column shows it, and after a failed
+    // check the corrupt parts and AICH blocks in a scrolling box, however long the list.
+    wxStaticBox *verifyBox = new wxStaticBox( parent, -1, _("Verify Local Data") );
+    wxStaticBoxSizer *verifyBoxSizer = new wxStaticBoxSizer( verifyBox, wxVERTICAL );
+    AddFileDetailRow( verifyBox, verifyBoxSizer, _("Status"), IDC_FD_VERIFY_STATUS, true );
+    wxTextCtrl *verifyDetails = new wxTextCtrl( verifyBox, IDC_FD_VERIFY_DETAILS, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE | wxTE_READONLY );
+    verifyDetails->SetMinSize( wxSize( -1, verifyDetails->GetCharHeight() * 5 ) );
+    verifyDetails->Hide();
+    verifyBoxSizer->Add( verifyDetails, wxSizerFlags().Expand().Border(wxTOP, 5) );
+    item0->Add( verifyBoxSizer, wxSizerFlags().Expand().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 5) );
+
     wxStaticBox *item66 = new wxStaticBox( parent, -1, _("File Names") );
     wxStaticBoxSizer *item65 = new wxStaticBoxSizer( item66, wxVERTICAL );
 
