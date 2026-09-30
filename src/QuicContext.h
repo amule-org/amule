@@ -97,6 +97,8 @@ private:
 	static bool ClassifyInitial(const uint8_t *, size_t, std::string &);
 	ConnectionMap::iterator FindSoleEndpointConnection(const CNetworkAddress &, uint16_t);
 	ConnectionMap::iterator FindInitialConnection(const CNetworkAddress &, uint16_t, const std::string &);
+	ConnectionMap::iterator FindNonInitialConnection(
+		const CNetworkAddress &, uint16_t, const uint8_t *, size_t);
 	bool AdmitNewConnection(const CNetworkAddress &, uint64_t nowMs);
 	void EraseClosedConnections();
 

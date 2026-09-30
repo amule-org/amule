@@ -80,6 +80,29 @@ CQuicContext::ConnectionMap::iterator CQuicContext::FindInitialConnection(
 	return m_connections.end();
 }
 
+CQuicContext::ConnectionMap::iterator CQuicContext::FindNonInitialConnection(
+	const CNetworkAddress &address, uint16_t port, const uint8_t *payload, size_t length)
+{
+	// A short header's destination CID has no self-describing length (RFC 9000 section
+	// 17.3.1): only the receiver that chose it knows how many bytes it is. So CID routing is
+	// only possible for a connection whose own issued CID this context can actually see.
+	for (auto entry = m_connections.lower_bound(SConnectionKey{ address, port, std::string() });
+		entry != m_connections.end() && entry->first.address == address && entry->first.port == port;
+		++entry) {
+		const std::string issuedCid = entry->second->GetIssuedConnectionId();
+		if (issuedCid.empty() || length < 1 + issuedCid.size()) {
+			continue;
+		}
+		const std::string candidate(reinterpret_cast<const char *>(payload + 1), issuedCid.size());
+		if (entry->second->OwnsConnectionId(candidate)) {
+			return entry;
+		}
+	}
+	// No connection at this endpoint discloses a usable CID: fall back to the endpoint, which
+	// is only unambiguous when exactly one connection is there.
+	return FindSoleEndpointConnection(address, port);
+}
+
 void CQuicContext::EraseClosedConnections()
 {
 	for (auto entry = m_connections.begin(); entry != m_connections.end();) {
@@ -119,7 +142,7 @@ bool CQuicContext::ProcessDatagram(
 	std::string cid;
 	const bool initial = ClassifyInitial(payload, length, cid);
 	auto existing = initial ? FindInitialConnection(address, port, cid)
-				: FindSoleEndpointConnection(address, port);
+				: FindNonInitialConnection(address, port, payload, length);
 	if (existing != m_connections.end()) {
 		const bool accepted = existing->second->ProcessDatagram(payload, length);
 		if (!accepted || existing->second->IsClosed()) {

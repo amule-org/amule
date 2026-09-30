@@ -74,6 +74,10 @@ struct FakeConnection : IQuicConnection
 	{
 		return std::find(issuedCids.begin(), issuedCids.end(), cid) != issuedCids.end();
 	}
+	std::string GetIssuedConnectionId() const override
+	{
+		return issuedCids.empty() ? std::string() : issuedCids.front();
+	}
 
 	void Close() override
 	{
@@ -195,6 +199,32 @@ TEST(QuicContext, AmbiguousNonInitialFromSharedEndpointIsRefused)
 	ASSERT_EQUALS(2u, factory.calls);
 	ASSERT_EQUALS(1u, factory.created[0]->calls);
 	ASSERT_EQUALS(1u, factory.created[1]->calls);
+}
+
+TEST(QuicContext, NonInitialRoutesByCidWhenConnectionsExposeOne)
+{
+	FakeFactory factory;
+	auto first = std::make_unique<FakeConnection>();
+	first->issuedCids = { std::string("\x01", 1) };
+	factory.next = std::move(first);
+	CQuicContext context(&factory);
+	auto firstInitial = Initial(0x51);
+	ASSERT_TRUE(context.ProcessDatagram(firstInitial.data(), firstInitial.size(), kPeer, 4662, 0));
+
+	auto second = std::make_unique<FakeConnection>();
+	second->issuedCids = { std::string("\x02", 1) };
+	factory.next = std::move(second);
+	auto secondInitial = Initial(0x52);
+	ASSERT_TRUE(context.ProcessDatagram(
+		secondInitial.data(), secondInitial.size(), kPeer, 4662, NatRendezvous::kRequestThrottleMs));
+
+	// Short header: flags, then the DCID this context must match against each connection's
+	// own issued CID -- not "the sole connection at this endpoint", since there are two.
+	std::vector<uint8_t> packet = { 0x40, 0x02, 0x99 };
+	ASSERT_TRUE(context.ProcessDatagram(packet.data(), packet.size(), kPeer, 4662, 0));
+	ASSERT_EQUALS(2u, factory.calls);
+	ASSERT_EQUALS(1u, factory.created[0]->calls);
+	ASSERT_EQUALS(2u, factory.created[1]->calls);
 }
 
 TEST(QuicContext, ConnectionFailureRemovesOwnership)
