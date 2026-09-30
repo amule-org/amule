@@ -538,6 +538,10 @@ void CUpDownClient::SetDownloadState(uint8 byNewState)
 
 void CUpDownClient::ProcessHashSet(const uint8_t *packet, uint32 size)
 {
+	// md4cmp reads 16 bytes; the dispatcher does not check the size.
+	if (size < 16) {
+		throw wxString("Invalid OP_HASHSETANSWER packet size");
+	}
 	if ((!m_reqfile) || md4cmp(packet, m_reqfile->GetFileHash().GetHash())) {
 		throw wxString("Wrong fileid sent (ProcessHashSet)");
 	}
