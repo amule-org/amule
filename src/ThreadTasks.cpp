@@ -550,47 +550,20 @@ bool CVerifyLocalDataTask::OwnerStillShared() const
 	return theApp->sharedfiles && theApp->sharedfiles->GetFileByID(m_fileID) == m_owner;
 }
 
-void CVerifyLocalDataTask::PrintReport(const CPath &fullPath, const bool checkedAICH)
+void CVerifyLocalDataTask::PrintReport(
+	const CPath &fullPath, const bool checkedAICH, const CVerifyLocalDataResult &result)
 {
 
 	std::string scope = checkedAICH ? "MD4 & AICH" : "MD4";
 
-	if (m_corruptedMD4.empty() && m_corruptedAICH.empty()) {
+	if (!result.IsCorrupt()) {
 		AddLogLineN(CFormat(_("Verify Local Data (%s): Result OK for %s")) % scope % fullPath);
 		return;
 	}
 
-	std::string res_md4;
-	res_md4.reserve(10 + m_corruptedMD4.size() * 3);
-	for (size_t i = 0; i < m_corruptedMD4.size(); ++i) {
-		res_md4 += std::to_string(static_cast<int>(m_corruptedMD4[i]));
-		if (i < m_corruptedMD4.size() - 1) {
-			res_md4 += ",";
-		}
-	}
-
-	std::string res_aich;
-	res_aich.reserve(10 + m_corruptedAICH.size() * 5);
-	if (checkedAICH) {
-		for (size_t i = 0; i < m_corruptedAICH.size(); ++i) {
-			res_aich += std::to_string(static_cast<int>(m_corruptedAICH[i].first)) + ": (";
-
-			for (size_t j = 0; j < m_corruptedAICH[i].second.size(); ++j) {
-				res_aich += std::to_string(static_cast<int>(m_corruptedAICH[i].second[j]));
-				if (j < m_corruptedAICH[i].second.size() - 1) {
-					res_aich += ",";
-				}
-			}
-			res_aich += ")";
-			if (i < m_corruptedAICH.size() - 1) {
-				res_aich += ", ";
-			}
-		}
-	}
-
 	AddLogLineC(CFormat(_("Verify Local Data (%s): ERRORS FOUND! %s Failed blocks: MD4: %s. %s %s")) %
-		    scope % fullPath % res_md4 % (checkedAICH ? "AICH: " : "") %
-		    (checkedAICH ? res_aich : ""));
+		    scope % fullPath % result.EncodeCorruptedMD4() % (checkedAICH ? "AICH: " : "") %
+		    (checkedAICH ? result.FormatCorruptedAICH() : wxString()));
 }
 
 void CVerifyLocalDataTask::Entry()
@@ -723,11 +696,11 @@ void CVerifyLocalDataTask::Entry()
 		}
 
 		if (!TestDestroy()) { // don't print or record an unfinished report
-			PrintReport(fullPath, isAICHloaded);
 			CVerifyLocalDataResult result;
 			result.date = (uint32)time(nullptr);
 			result.corruptedMD4 = m_corruptedMD4;
 			result.corruptedAICH = m_corruptedAICH;
+			PrintReport(fullPath, isAICHloaded, result);
 			CVerifyLocalDataEvent evt(m_fileID, m_fullPath, m_fileDate, m_fileSize, result);
 			wxQueueEvent(wxTheApp, evt.Clone());
 		}

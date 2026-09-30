@@ -727,8 +727,8 @@ bool CKnownFile::WriteToFile(CFileDataIO *file)
 	}
 
 	// Verify Local Data: the date after any completed check, the lists only on damage.
-	const wxString verifyCorruptMD4 = m_verifyResult.EncodeCorruptedMD4();
-	const wxString verifyCorruptAICH = m_verifyResult.EncodeCorruptedAICH();
+	const wxString &verifyCorruptMD4 = m_verifyResult.encodedMD4;
+	const wxString &verifyCorruptAICH = m_verifyResult.encodedAICH;
 	if (m_verifyResult.date) {
 		++tagcount;
 		if (!verifyCorruptMD4.IsEmpty()) {

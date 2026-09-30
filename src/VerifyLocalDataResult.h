@@ -49,6 +49,11 @@ struct CVerifyLocalDataResult
 	uint32 date = 0;
 	PartList corruptedMD4;
 	BlockList corruptedAICH;
+	// The two lists encoded, cached: EC sends them on every update of a verified file. Kept by
+	// DecodeCorrupted() and CKnownFile::SetVerifyResult(); call CacheEncoding() after changing
+	// the lists directly.
+	wxString encodedMD4;
+	wxString encodedAICH;
 
 	bool IsCorrupt() const { return !corruptedMD4.empty() || !corruptedAICH.empty(); }
 
@@ -82,6 +87,41 @@ struct CVerifyLocalDataResult
 			}
 		}
 		return str;
+	}
+
+	void CacheEncoding()
+	{
+		encodedMD4 = EncodeCorruptedMD4();
+		encodedAICH = EncodeCorruptedAICH();
+	}
+
+	// The notation of the log report: "p: (b,b), p: (b)".
+	wxString FormatCorruptedAICH() const
+	{
+		wxString str;
+		for (const auto &part : corruptedAICH) {
+			wxString blocks;
+			for (uint8 block : part.second) {
+				blocks += CFormat("%s%u") % (blocks.IsEmpty() ? "" : ",") % (unsigned)block;
+			}
+			str += CFormat("%s%u: (%s)") % (str.IsEmpty() ? "" : ", ") % part.first % blocks;
+		}
+		return str;
+	}
+
+	// Merges an EC update, which carries only the tags that changed (nullptr: not in it).
+	// Returns whether it carried any.
+	bool ApplyUpdate(const uint32 *newDate, const wxString *md4, const wxString *aich, uint64 fileSize)
+	{
+		if (!newDate && !md4 && !aich) {
+			return false;
+		}
+		if (newDate) {
+			date = *newDate;
+		}
+		DecodeCorrupted(
+			md4 ? *md4 : EncodeCorruptedMD4(), aich ? *aich : EncodeCorruptedAICH(), fileSize);
+		return true;
 	}
 
 	// Replaces both lists. Out-of-range, repeated or malformed entries are dropped.
@@ -127,6 +167,7 @@ struct CVerifyLocalDataResult
 				corruptedAICH.emplace_back(part, blocks);
 			}
 		}
+		CacheEncoding();
 	}
 };
 

@@ -34,6 +34,7 @@
 #include "DataToText.h"    // Needed for PriorityToStr
 #include <tags/FileTags.h> // Needed for FT_MEDIA_* metadata tag names
 
+#include <algorithm> // Needed for std::max
 #include <set>
 #include <wx/textctrl.h> // Needed for wxTextCtrl
 
@@ -282,19 +283,11 @@ void CFileDetailDialog::UpdateData(bool resetFilename)
 	CastChild(IDC_FD_VERIFY_STATUS, wxControl)->SetLabel(verifyStatus);
 	wxString verifyDetails;
 	if (!verify.corruptedMD4.empty()) {
-		verifyDetails = "MD4: " + verify.EncodeCorruptedMD4();
+		verifyDetails = "MD4: " + verify.encodedMD4;
 	}
 	if (!verify.corruptedAICH.empty()) {
-		wxString aich;
-		for (const auto &corruptPart : verify.corruptedAICH) {
-			wxString blocks;
-			for (uint8 block : corruptPart.second) {
-				blocks += CFormat("%s%u") % (blocks.IsEmpty() ? "" : ",") % (unsigned)block;
-			}
-			aich += CFormat("%s%u: (%s)") % (aich.IsEmpty() ? "" : ", ") % corruptPart.first %
-				blocks;
-		}
-		verifyDetails += (verifyDetails.IsEmpty() ? "AICH: " : "\nAICH: ") + aich;
+		verifyDetails +=
+			(verifyDetails.IsEmpty() ? "AICH: " : "\nAICH: ") + verify.FormatCorruptedAICH();
 	}
 	wxTextCtrl *verifyDetailsCtrl = CastChild(IDC_FD_VERIFY_DETAILS, wxTextCtrl);
 	// Only on a change: the 5 s refresh would otherwise scroll the box back to the top.
@@ -308,9 +301,10 @@ void CFileDetailDialog::UpdateData(bool resetFilename)
 	bool showDownload = (part != nullptr);
 	bool showSharing = (part == nullptr) || (part->GetCompletedSize() > 0);
 	bool relayout = false;
+	bool verifyRelayout = false;
 	if (verifyDetailsCtrl->IsShown() != !verifyDetails.IsEmpty()) {
 		verifyDetailsCtrl->Show(!verifyDetails.IsEmpty());
-		relayout = true;
+		verifyRelayout = true;
 	}
 	wxWindow *dlPanel = FindWindow(IDC_FD_DOWNLOAD_PANEL);
 	if (dlPanel && dlPanel->IsShown() != showDownload) {
@@ -325,6 +319,15 @@ void CFileDetailDialog::UpdateData(bool resetFilename)
 	if (relayout && GetSizer()) {
 		GetSizer()->Layout();
 		Fit();
+	} else if (verifyRelayout && GetSizer()) {
+		// Not Fit(): that snaps a dialog the user resized back to its default size. Grow only
+		// if the box no longer fits.
+		const wxSize needed = GetSizer()->ComputeFittingWindowSize(this);
+		const wxSize size = GetSize();
+		if (size.x < needed.x || size.y < needed.y) {
+			SetSize(wxSize(std::max(size.x, needed.x), std::max(size.y, needed.y)));
+		}
+		GetSizer()->Layout();
 	}
 
 	setEnableForApplyButton();

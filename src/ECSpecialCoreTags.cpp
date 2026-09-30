@@ -341,12 +341,13 @@ CEC_SharedFile_Tag::CEC_SharedFile_Tag(
 	AddTag(EC_TAG_KNOWNFILE_LAST_UPLOAD, (uint32)file->GetLastUpload(), valuemap);
 
 	// Last Verify Local Data result, in the FT_VERIFY_* encoding. Before the UPDATE early-return:
-	// a check can finish at any time. Omitted for files never verified, most of the library.
+	// a check can finish at any time. Omitted for files never verified, most of the library,
+	// unless this client was sent a result before: it then needs the reset to date 0.
 	const CVerifyLocalDataResult &verify = file->GetVerifyResult();
-	if (verify.date) {
+	if (verify.date || (valuemap && valuemap->HasSentInt(EC_TAG_KNOWNFILE_VERIFY_DATE))) {
 		AddTag(EC_TAG_KNOWNFILE_VERIFY_DATE, verify.date, valuemap);
-		AddTag(EC_TAG_KNOWNFILE_VERIFY_CORRUPT_MD4, verify.EncodeCorruptedMD4(), valuemap);
-		AddTag(EC_TAG_KNOWNFILE_VERIFY_CORRUPT_AICH, verify.EncodeCorruptedAICH(), valuemap);
+		AddTag(EC_TAG_KNOWNFILE_VERIFY_CORRUPT_MD4, verify.encodedMD4, valuemap);
+		AddTag(EC_TAG_KNOWNFILE_VERIFY_CORRUPT_AICH, verify.encodedAICH, valuemap);
 	}
 
 	// Community ratings/comments, comment filter applied, plus the on-demand Kad-notes running

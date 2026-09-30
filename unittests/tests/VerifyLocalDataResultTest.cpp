@@ -105,3 +105,88 @@ TEST(VerifyLocalDataResult, DecodeReplacesPreviousLists)
 	out.DecodeCorrupted("", "", kFileSize);
 	ASSERT_FALSE(out.IsCorrupt());
 }
+
+// EC sends the cached strings, so decoding (known.met load, amulegui) must refresh them.
+TEST(VerifyLocalDataResult, DecodeCachesTheEncoding)
+{
+	CVerifyLocalDataResult out;
+	out.DecodeCorrupted("2,1", "1:3.0", kFileSize);
+	ASSERT_EQUALS(wxString("2,1"), out.encodedMD4);
+	ASSERT_EQUALS(wxString("1:3.0"), out.encodedAICH);
+	out.DecodeCorrupted("", "", kFileSize);
+	ASSERT_TRUE(out.encodedMD4.IsEmpty());
+	ASSERT_TRUE(out.encodedAICH.IsEmpty());
+}
+
+TEST(VerifyLocalDataResult, FormatsAICHLikeTheLogReport)
+{
+	CVerifyLocalDataResult result;
+	ASSERT_TRUE(result.FormatCorruptedAICH().IsEmpty());
+	result.corruptedAICH = { { 3, { 0, 5 } }, { 17, { 12 } } };
+	ASSERT_EQUALS(wxString("3: (0,5), 17: (12)"), result.FormatCorruptedAICH());
+}
+
+namespace
+{
+CVerifyLocalDataResult CorruptResult()
+{
+	CVerifyLocalDataResult result;
+	result.DecodeCorrupted("1,3", "1:0.7", kFileSize);
+	result.date = 1000;
+	return result;
+}
+} // namespace
+
+// amulegui's merge of an incremental EC update: only the tags that changed arrive.
+TEST(VerifyLocalDataResult, UpdateWithoutVerifyTagsChangesNothing)
+{
+	CVerifyLocalDataResult result = CorruptResult();
+	ASSERT_FALSE(result.ApplyUpdate(nullptr, nullptr, nullptr, kFileSize));
+	ASSERT_EQUALS(1000u, result.date);
+	ASSERT_EQUALS(wxString("1,3"), result.encodedMD4);
+}
+
+// A new check that found the same damage changes only the date.
+TEST(VerifyLocalDataResult, DateOnlyUpdateKeepsTheLists)
+{
+	CVerifyLocalDataResult result = CorruptResult();
+	const uint32 date = 2000;
+	ASSERT_TRUE(result.ApplyUpdate(&date, nullptr, nullptr, kFileSize));
+	ASSERT_EQUALS(2000u, result.date);
+	ASSERT_TRUE((CVerifyLocalDataResult::PartList{ 1, 3 }) == result.corruptedMD4);
+	CVerifyLocalDataResult::BlockList expected = { { 1, { 0, 7 } } };
+	ASSERT_TRUE(expected == result.corruptedAICH);
+}
+
+// One list changing, even to empty, leaves the other as it was.
+TEST(VerifyLocalDataResult, SingleListUpdateKeepsTheOther)
+{
+	CVerifyLocalDataResult result = CorruptResult();
+	const wxString noParts;
+	ASSERT_TRUE(result.ApplyUpdate(nullptr, &noParts, nullptr, kFileSize));
+	ASSERT_TRUE(result.corruptedMD4.empty());
+	ASSERT_EQUALS(wxString("1:0.7"), result.encodedAICH);
+	ASSERT_EQUALS(1000u, result.date);
+}
+
+// A repaired file: new date, both lists emptied.
+TEST(VerifyLocalDataResult, FullUpdateReplacesTheResult)
+{
+	CVerifyLocalDataResult result = CorruptResult();
+	const uint32 date = 3000;
+	const wxString empty;
+	ASSERT_TRUE(result.ApplyUpdate(&date, &empty, &empty, kFileSize));
+	ASSERT_EQUALS(3000u, result.date);
+	ASSERT_FALSE(result.IsCorrupt());
+}
+
+// The core's reset to "never verified" (date 0) reaches amulegui like any other update.
+TEST(VerifyLocalDataResult, ResetToNeverVerified)
+{
+	CVerifyLocalDataResult result = CorruptResult();
+	const uint32 date = 0;
+	const wxString empty;
+	ASSERT_TRUE(result.ApplyUpdate(&date, &empty, &empty, kFileSize));
+	ASSERT_EQUALS(0u, result.date);
+	ASSERT_FALSE(result.IsCorrupt());
+}

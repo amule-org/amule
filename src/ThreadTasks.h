@@ -155,7 +155,7 @@ protected:
 	CMD4Hash m_fileID;
 
 private:
-	void PrintReport(const CPath &fullPath, const bool checkedAICH);
+	void PrintReport(const CPath &fullPath, const bool checkedAICH, const CVerifyLocalDataResult &result);
 	// m_owner is only dereferenced after this confirms it is still shared.
 	bool OwnerStillShared() const;
 
