@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-30 19:39+0800\n"
+"POT-Creation-Date: 2026-09-30 22:38+0200\n"
 "PO-Revision-Date: 2026-09-30 14:50+0000\n"
 "Last-Translator: Jure Repinc <jlp@holodeck1.com>\n"
 "Language-Team: Slovenian\n"
@@ -338,8 +338,8 @@ msgstr "Končanje izvoda amuleweb s PID »%d« ... "
 msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "Ubijanje izvoda amuleweb s PID »%d« ... "
 
-#: src/amule.cpp src/ClientRef.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
-#: src/SharedFilesCtrl.cpp
+#: src/amule.cpp src/ClientRef.cpp src/FileDetailDialog.cpp src/SearchDlg.cpp
+#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr "Neuspeh"
 
@@ -1968,7 +1968,8 @@ msgstr "Viri"
 msgid "Priority"
 msgstr "Prednost"
 
-#: src/DownloadListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
+#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/PartFile.cpp
+#: src/SearchListCtrl.cpp
 msgid "Status"
 msgstr "Stanje"
 
@@ -2738,6 +2739,11 @@ msgstr "%.1f %% zaključeno"
 #, c-format
 msgid "%.2f KiB/s"
 msgstr ""
+
+#: src/FileDetailDialog.cpp src/muuli_wdr.cpp src/ServerWnd.cpp
+#: src/SharedFilesCtrl.cpp
+msgid "OK"
+msgstr "V redu"
 
 #: src/FileLaunch.cpp
 msgid "File preview"
@@ -4322,6 +4328,10 @@ msgstr ""
 msgid "Title"
 msgstr "Naslov"
 
+#: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
+msgid "Verify Local Data"
+msgstr "Preveri lokalne podatke"
+
 #: src/muuli_wdr.cpp
 msgid "File Names"
 msgstr "Imena datoteke"
@@ -5325,10 +5335,6 @@ msgstr "Ponastavi stran na privzete vrednosti"
 #: src/muuli_wdr.cpp
 msgid "Reset the settings on the current page to their default values."
 msgstr "Ponastavi nastavitve na trenutni strani na njihove privzete vrednosti."
-
-#: src/muuli_wdr.cpp src/ServerWnd.cpp src/SharedFilesCtrl.cpp
-msgid "OK"
-msgstr "V redu"
 
 #: src/muuli_wdr.cpp
 msgid "Click here to apply any changes made to the preferences."
@@ -7739,10 +7745,6 @@ msgstr "Razpoložljivost"
 #: src/SharedFilesCtrl.cpp
 msgid "Directory Path"
 msgstr "Pot mape"
-
-#: src/SharedFilesCtrl.cpp
-msgid "Verify Local Data"
-msgstr "Preveri lokalne podatke"
 
 #: src/SharedFilesCtrl.cpp src/Statistics.cpp
 msgid "Shared Files"

@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-30 19:39+0800\n"
+"POT-Creation-Date: 2026-09-30 22:38+0200\n"
 "PO-Revision-Date: 2026-09-30 14:52+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
@@ -349,8 +349,8 @@ msgstr "正在终止 pid 为“%d”的 amuleweb 实例 ... "
 msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "正在终止 pid 为“%d”的 amuleweb 实例 ... "
 
-#: src/amule.cpp src/ClientRef.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
-#: src/SharedFilesCtrl.cpp
+#: src/amule.cpp src/ClientRef.cpp src/FileDetailDialog.cpp src/SearchDlg.cpp
+#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr "失败"
 
@@ -1940,7 +1940,8 @@ msgstr "源"
 msgid "Priority"
 msgstr "优先级"
 
-#: src/DownloadListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
+#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/PartFile.cpp
+#: src/SearchListCtrl.cpp
 msgid "Status"
 msgstr "状态"
 
@@ -2701,6 +2702,11 @@ msgstr "%.1f%% 已完成"
 #, c-format
 msgid "%.2f KiB/s"
 msgstr "%.2f KiB/s"
+
+#: src/FileDetailDialog.cpp src/muuli_wdr.cpp src/ServerWnd.cpp
+#: src/SharedFilesCtrl.cpp
+msgid "OK"
+msgstr "确定"
 
 #: src/FileLaunch.cpp
 msgid "File preview"
@@ -4261,6 +4267,10 @@ msgstr "专辑"
 msgid "Title"
 msgstr "标题"
 
+#: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
+msgid "Verify Local Data"
+msgstr "验证本地数据"
+
 #: src/muuli_wdr.cpp
 msgid "File Names"
 msgstr "文件名"
@@ -5259,10 +5269,6 @@ msgstr "重置页面为默认"
 #: src/muuli_wdr.cpp
 msgid "Reset the settings on the current page to their default values."
 msgstr "重置当前页面设置为默认值。"
-
-#: src/muuli_wdr.cpp src/ServerWnd.cpp src/SharedFilesCtrl.cpp
-msgid "OK"
-msgstr "确定"
 
 #: src/muuli_wdr.cpp
 msgid "Click here to apply any changes made to the preferences."
@@ -7605,10 +7611,6 @@ msgstr "来源可用性"
 #: src/SharedFilesCtrl.cpp
 msgid "Directory Path"
 msgstr "所在目录"
-
-#: src/SharedFilesCtrl.cpp
-msgid "Verify Local Data"
-msgstr "验证本地数据"
 
 #: src/SharedFilesCtrl.cpp src/Statistics.cpp
 msgid "Shared Files"

@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-30 19:39+0800\n"
+"POT-Creation-Date: 2026-09-30 22:38+0200\n"
 "PO-Revision-Date: 2026-09-30 14:51+0000\n"
 "Last-Translator: \n"
 "Language-Team: Turkish <li@li.org>\n"
@@ -341,8 +341,8 @@ msgstr "Amuleweb oturumu pid `%d' ile sonlandırılıyor… "
 msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "pid `%d' ile ilişkili amuleweb oturumu öldürülüyor… "
 
-#: src/amule.cpp src/ClientRef.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
-#: src/SharedFilesCtrl.cpp
+#: src/amule.cpp src/ClientRef.cpp src/FileDetailDialog.cpp src/SearchDlg.cpp
+#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr "Başarısız"
 
@@ -1936,7 +1936,8 @@ msgstr "Kaynaklar"
 msgid "Priority"
 msgstr "Öncelik"
 
-#: src/DownloadListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
+#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/PartFile.cpp
+#: src/SearchListCtrl.cpp
 msgid "Status"
 msgstr "Durum"
 
@@ -2697,6 +2698,11 @@ msgstr "%.1f%% tamamlandı"
 #, c-format
 msgid "%.2f KiB/s"
 msgstr "%.2f KiB/s"
+
+#: src/FileDetailDialog.cpp src/muuli_wdr.cpp src/ServerWnd.cpp
+#: src/SharedFilesCtrl.cpp
+msgid "OK"
+msgstr "Tamam"
 
 #: src/FileLaunch.cpp
 msgid "File preview"
@@ -4257,6 +4263,10 @@ msgstr "Albüm"
 msgid "Title"
 msgstr "Başlık"
 
+#: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
+msgid "Verify Local Data"
+msgstr "Yerel Verileri Kontrol Et"
+
 #: src/muuli_wdr.cpp
 msgid "File Names"
 msgstr "Dosya Adları"
@@ -5259,10 +5269,6 @@ msgstr "Sayfayı varsayılan değerlere sıfırla"
 #: src/muuli_wdr.cpp
 msgid "Reset the settings on the current page to their default values."
 msgstr "Güncel sayfadaki ayarları varsayılan değerlerine sıfırla."
-
-#: src/muuli_wdr.cpp src/ServerWnd.cpp src/SharedFilesCtrl.cpp
-msgid "OK"
-msgstr "Tamam"
 
 #: src/muuli_wdr.cpp
 msgid "Click here to apply any changes made to the preferences."
@@ -7605,10 +7611,6 @@ msgstr "Kaynak Mevcudiyeti"
 #: src/SharedFilesCtrl.cpp
 msgid "Directory Path"
 msgstr "Dizin Konumu"
-
-#: src/SharedFilesCtrl.cpp
-msgid "Verify Local Data"
-msgstr "Yerel Verileri Kontrol Et"
 
 #: src/SharedFilesCtrl.cpp src/Statistics.cpp
 msgid "Shared Files"

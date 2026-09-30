@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-30 19:39+0800\n"
+"POT-Creation-Date: 2026-09-30 22:38+0200\n"
 "PO-Revision-Date: 2026-09-30 14:53+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
@@ -330,8 +330,8 @@ msgstr "pid '%d' সহ amuleweb ইনস্ট্যান্স বন্ধ 
 msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "pid '%d' সহ amuleweb ইনস্ট্যান্স কিল করা হচ্ছে ... "
 
-#: src/amule.cpp src/ClientRef.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
-#: src/SharedFilesCtrl.cpp
+#: src/amule.cpp src/ClientRef.cpp src/FileDetailDialog.cpp src/SearchDlg.cpp
+#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr "ব্যর্থ"
 
@@ -1921,7 +1921,8 @@ msgstr "সোর্স"
 msgid "Priority"
 msgstr "অগ্রাধিকার"
 
-#: src/DownloadListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
+#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/PartFile.cpp
+#: src/SearchListCtrl.cpp
 msgid "Status"
 msgstr "অবস্থা"
 
@@ -2682,6 +2683,11 @@ msgstr "%.1f%% সম্পন্ন"
 #, c-format
 msgid "%.2f KiB/s"
 msgstr ""
+
+#: src/FileDetailDialog.cpp src/muuli_wdr.cpp src/ServerWnd.cpp
+#: src/SharedFilesCtrl.cpp
+msgid "OK"
+msgstr "ঠিক আছে"
 
 #: src/FileLaunch.cpp
 msgid "File preview"
@@ -4242,6 +4248,10 @@ msgstr ""
 msgid "Title"
 msgstr ""
 
+#: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
+msgid "Verify Local Data"
+msgstr "স্থানীয় ডেটা যাচাই করুন"
+
 #: src/muuli_wdr.cpp
 msgid "File Names"
 msgstr "ফাইলের নাম"
@@ -5240,10 +5250,6 @@ msgstr "পেজ ডিফল্টে রিসেট করুন"
 #: src/muuli_wdr.cpp
 msgid "Reset the settings on the current page to their default values."
 msgstr "বর্তমান পেজের সেটিংস তাদের ডিফল্ট মানে রিসেট করুন।"
-
-#: src/muuli_wdr.cpp src/ServerWnd.cpp src/SharedFilesCtrl.cpp
-msgid "OK"
-msgstr "ঠিক আছে"
 
 #: src/muuli_wdr.cpp
 msgid "Click here to apply any changes made to the preferences."
@@ -7581,10 +7587,6 @@ msgstr ""
 #: src/SharedFilesCtrl.cpp
 msgid "Directory Path"
 msgstr "ডিরেক্টরি পথ"
-
-#: src/SharedFilesCtrl.cpp
-msgid "Verify Local Data"
-msgstr "স্থানীয় ডেটা যাচাই করুন"
 
 #: src/SharedFilesCtrl.cpp src/Statistics.cpp
 msgid "Shared Files"

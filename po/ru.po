@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-30 19:39+0800\n"
+"POT-Creation-Date: 2026-09-30 22:38+0200\n"
 "PO-Revision-Date: 2026-09-30 14:50+0000\n"
 "Last-Translator: Radist Morse <radist.morse@gmail.com>\n"
 "Language-Team: Russian <kde-russian@lists.kde.ru>\n"
@@ -364,8 +364,8 @@ msgstr "Завершение экземпляра amuleweb с pid «%d»… "
 msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "Убивается экземпляр amuleweb с pid «%d»… "
 
-#: src/amule.cpp src/ClientRef.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
-#: src/SharedFilesCtrl.cpp
+#: src/amule.cpp src/ClientRef.cpp src/FileDetailDialog.cpp src/SearchDlg.cpp
+#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr "Сбой"
 
@@ -1973,7 +1973,8 @@ msgstr "Источники"
 msgid "Priority"
 msgstr "Приоритет"
 
-#: src/DownloadListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
+#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/PartFile.cpp
+#: src/SearchListCtrl.cpp
 msgid "Status"
 msgstr "Состояние"
 
@@ -2736,6 +2737,11 @@ msgstr "%.1f%% выполнено"
 #, c-format
 msgid "%.2f KiB/s"
 msgstr "%.2f КиБ/с"
+
+#: src/FileDetailDialog.cpp src/muuli_wdr.cpp src/ServerWnd.cpp
+#: src/SharedFilesCtrl.cpp
+msgid "OK"
+msgstr "ОК"
 
 #: src/FileLaunch.cpp
 msgid "File preview"
@@ -4310,6 +4316,10 @@ msgstr "Альбом"
 msgid "Title"
 msgstr "Заголовок"
 
+#: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
+msgid "Verify Local Data"
+msgstr "Проверить локальные данные"
+
 #: src/muuli_wdr.cpp
 msgid "File Names"
 msgstr "Имя файла"
@@ -5314,10 +5324,6 @@ msgstr "Сбросить настройки страницы"
 #: src/muuli_wdr.cpp
 msgid "Reset the settings on the current page to their default values."
 msgstr "Сбросить настройки на текущей странице к значениям по умолчанию."
-
-#: src/muuli_wdr.cpp src/ServerWnd.cpp src/SharedFilesCtrl.cpp
-msgid "OK"
-msgstr "ОК"
 
 #: src/muuli_wdr.cpp
 msgid "Click here to apply any changes made to the preferences."
@@ -7692,10 +7698,6 @@ msgstr "Доступность у источников"
 #: src/SharedFilesCtrl.cpp
 msgid "Directory Path"
 msgstr "Каталог"
-
-#: src/SharedFilesCtrl.cpp
-msgid "Verify Local Data"
-msgstr "Проверить локальные данные"
 
 # подпись в главном окне. длинная просто не влезет.
 #: src/SharedFilesCtrl.cpp src/Statistics.cpp

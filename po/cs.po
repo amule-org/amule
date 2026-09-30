@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-30 19:39+0800\n"
+"POT-Creation-Date: 2026-09-30 22:38+0200\n"
 "PO-Revision-Date: 2026-09-30 14:43+0000\n"
 "Last-Translator: David Watzke <david@watzke.cz>\n"
 "Language-Team: cs <cs@li.org>\n"
@@ -343,8 +343,8 @@ msgstr "Ukončování instance amuleweb s PID '%d' ... "
 msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "Vynucuje se ukončení instance amuleweb s PID '%d' ... "
 
-#: src/amule.cpp src/ClientRef.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
-#: src/SharedFilesCtrl.cpp
+#: src/amule.cpp src/ClientRef.cpp src/FileDetailDialog.cpp src/SearchDlg.cpp
+#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr "Nezdařilo se"
 
@@ -1944,7 +1944,8 @@ msgstr "Zdroje"
 msgid "Priority"
 msgstr "Priorita"
 
-#: src/DownloadListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
+#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/PartFile.cpp
+#: src/SearchListCtrl.cpp
 msgid "Status"
 msgstr "Stav"
 
@@ -2707,6 +2708,11 @@ msgstr "%.1f%% dokončeno"
 #, c-format
 msgid "%.2f KiB/s"
 msgstr "%.2f KiB/s"
+
+#: src/FileDetailDialog.cpp src/muuli_wdr.cpp src/ServerWnd.cpp
+#: src/SharedFilesCtrl.cpp
+msgid "OK"
+msgstr "OK"
 
 #: src/FileLaunch.cpp
 msgid "File preview"
@@ -4276,6 +4282,10 @@ msgstr "Album"
 msgid "Title"
 msgstr "Titulek"
 
+#: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
+msgid "Verify Local Data"
+msgstr "Ověřit místní data"
+
 #: src/muuli_wdr.cpp
 msgid "File Names"
 msgstr "Názvy souborů"
@@ -5275,10 +5285,6 @@ msgstr "Obnovit výchozí nastavení stránky"
 #: src/muuli_wdr.cpp
 msgid "Reset the settings on the current page to their default values."
 msgstr "Obnovit nastavení aktuální stránky na výchozí hodnoty."
-
-#: src/muuli_wdr.cpp src/ServerWnd.cpp src/SharedFilesCtrl.cpp
-msgid "OK"
-msgstr "OK"
 
 #: src/muuli_wdr.cpp
 msgid "Click here to apply any changes made to the preferences."
@@ -7643,10 +7649,6 @@ msgstr "Dostupnost zdroje"
 #: src/SharedFilesCtrl.cpp
 msgid "Directory Path"
 msgstr "Cesta k adresáři"
-
-#: src/SharedFilesCtrl.cpp
-msgid "Verify Local Data"
-msgstr "Ověřit místní data"
 
 #: src/SharedFilesCtrl.cpp src/Statistics.cpp
 msgid "Shared Files"

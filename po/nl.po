@@ -12,7 +12,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-30 19:39+0800\n"
+"POT-Creation-Date: 2026-09-30 22:38+0200\n"
 "PO-Revision-Date: 2026-09-30 14:48+0000\n"
 "Last-Translator: Marcel Pol <marcel@timelord.nl>\n"
 "Language-Team: Dutch <nl@li.org>\n"
@@ -359,8 +359,8 @@ msgstr "Amuleweb-instantie met pid '%d' wordt afgesloten ... "
 msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "Amuleweb-instantie met pid '%d' wordt geforceerd beëindigd... "
 
-#: src/amule.cpp src/ClientRef.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
-#: src/SharedFilesCtrl.cpp
+#: src/amule.cpp src/ClientRef.cpp src/FileDetailDialog.cpp src/SearchDlg.cpp
+#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr "Mislukt"
 
@@ -1950,7 +1950,8 @@ msgstr "Bronnen"
 msgid "Priority"
 msgstr "Prioriteit"
 
-#: src/DownloadListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
+#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/PartFile.cpp
+#: src/SearchListCtrl.cpp
 msgid "Status"
 msgstr "Status"
 
@@ -2711,6 +2712,11 @@ msgstr "%.1f%% voltooid"
 #, c-format
 msgid "%.2f KiB/s"
 msgstr "%.2f KiB/s"
+
+#: src/FileDetailDialog.cpp src/muuli_wdr.cpp src/ServerWnd.cpp
+#: src/SharedFilesCtrl.cpp
+msgid "OK"
+msgstr "OK"
 
 #: src/FileLaunch.cpp
 msgid "File preview"
@@ -4272,6 +4278,10 @@ msgstr "Album"
 msgid "Title"
 msgstr "Titel"
 
+#: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
+msgid "Verify Local Data"
+msgstr "Lokale gegevens verifiëren"
+
 #: src/muuli_wdr.cpp
 msgid "File Names"
 msgstr "Bestandsnamen"
@@ -5270,10 +5280,6 @@ msgstr "Pagina terugzetten naar standaardwaarden"
 #: src/muuli_wdr.cpp
 msgid "Reset the settings on the current page to their default values."
 msgstr "Zet de instellingen op de huidige pagina terug naar hun standaardwaarden."
-
-#: src/muuli_wdr.cpp src/ServerWnd.cpp src/SharedFilesCtrl.cpp
-msgid "OK"
-msgstr "OK"
 
 #: src/muuli_wdr.cpp
 msgid "Click here to apply any changes made to the preferences."
@@ -7616,10 +7622,6 @@ msgstr "Bronbeschikbaarheid"
 #: src/SharedFilesCtrl.cpp
 msgid "Directory Path"
 msgstr "Pad naar map"
-
-#: src/SharedFilesCtrl.cpp
-msgid "Verify Local Data"
-msgstr "Lokale gegevens verifiëren"
 
 #: src/SharedFilesCtrl.cpp src/Statistics.cpp
 msgid "Shared Files"

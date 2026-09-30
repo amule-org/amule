@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-30 19:39+0800\n"
+"POT-Creation-Date: 2026-09-30 22:38+0200\n"
 "PO-Revision-Date: 2026-09-30 14:42+0000\n"
 "Last-Translator: astur <malditoastur@gmail.com>\n"
 "Language-Team: Language ast <malditoastur@gmail.com>\n"
@@ -335,8 +335,8 @@ msgstr "Finando la instancia d'amuleweb col pid '%d' ... "
 msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "Matando la instancia d'amuleweb col pid '%d' ... "
 
-#: src/amule.cpp src/ClientRef.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
-#: src/SharedFilesCtrl.cpp
+#: src/amule.cpp src/ClientRef.cpp src/FileDetailDialog.cpp src/SearchDlg.cpp
+#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr "Falló"
 
@@ -1945,7 +1945,8 @@ msgstr "Fontes"
 msgid "Priority"
 msgstr "Prioridá"
 
-#: src/DownloadListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
+#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/PartFile.cpp
+#: src/SearchListCtrl.cpp
 msgid "Status"
 msgstr "Estáu"
 
@@ -2711,6 +2712,11 @@ msgstr "%.1f%% fecho"
 #, c-format
 msgid "%.2f KiB/s"
 msgstr ""
+
+#: src/FileDetailDialog.cpp src/muuli_wdr.cpp src/ServerWnd.cpp
+#: src/SharedFilesCtrl.cpp
+msgid "OK"
+msgstr "Aceutar"
 
 #: src/FileLaunch.cpp
 msgid "File preview"
@@ -4278,6 +4284,10 @@ msgstr ""
 msgid "Title"
 msgstr "Títulu"
 
+#: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
+msgid "Verify Local Data"
+msgstr "Verificar Datos Llocales"
+
 #: src/muuli_wdr.cpp
 msgid "File Names"
 msgstr "Nomes de ficheru"
@@ -5282,10 +5292,6 @@ msgstr "Restablecer la páxina a los valores por defeutu"
 #: src/muuli_wdr.cpp
 msgid "Reset the settings on the current page to their default values."
 msgstr "Restablez les configuraciones de la páxina actual a los sos valores por defeutu."
-
-#: src/muuli_wdr.cpp src/ServerWnd.cpp src/SharedFilesCtrl.cpp
-msgid "OK"
-msgstr "Aceutar"
 
 #: src/muuli_wdr.cpp
 msgid "Click here to apply any changes made to the preferences."
@@ -7650,10 +7656,6 @@ msgstr "Disponibilidá"
 #: src/SharedFilesCtrl.cpp
 msgid "Directory Path"
 msgstr "Direutoriu"
-
-#: src/SharedFilesCtrl.cpp
-msgid "Verify Local Data"
-msgstr "Verificar Datos Llocales"
 
 #: src/SharedFilesCtrl.cpp src/Statistics.cpp
 msgid "Shared Files"

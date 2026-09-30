@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-30 19:39+0800\n"
+"POT-Creation-Date: 2026-09-30 22:38+0200\n"
 "PO-Revision-Date: 2026-09-30 14:42+0000\n"
 "Last-Translator: saleh alhathal <hathalsal@hotmail.com>\n"
 "Language-Team: \n"
@@ -342,8 +342,8 @@ msgstr "جارٍ إنهاء نسخة amuleweb ذات المعرّف '%d' ... "
 msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "جارٍ إيقاف نسخة amuleweb ذات المعرّف '%d' قسرًا ... "
 
-#: src/amule.cpp src/ClientRef.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
-#: src/SharedFilesCtrl.cpp
+#: src/amule.cpp src/ClientRef.cpp src/FileDetailDialog.cpp src/SearchDlg.cpp
+#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr "فشل"
 
@@ -1943,7 +1943,8 @@ msgstr "مصدر"
 msgid "Priority"
 msgstr "أولوية"
 
-#: src/DownloadListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
+#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/PartFile.cpp
+#: src/SearchListCtrl.cpp
 msgid "Status"
 msgstr "حالة"
 
@@ -2705,6 +2706,11 @@ msgstr "%.1f%% مكتمل"
 #, c-format
 msgid "%.2f KiB/s"
 msgstr ""
+
+#: src/FileDetailDialog.cpp src/muuli_wdr.cpp src/ServerWnd.cpp
+#: src/SharedFilesCtrl.cpp
+msgid "OK"
+msgstr "موافق"
 
 #: src/FileLaunch.cpp
 msgid "File preview"
@@ -4270,6 +4276,10 @@ msgstr ""
 msgid "Title"
 msgstr "عنوان"
 
+#: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
+msgid "Verify Local Data"
+msgstr "التحقق من البيانات المحلية"
+
 #: src/muuli_wdr.cpp
 msgid "File Names"
 msgstr "أسماء الملفات"
@@ -5283,10 +5293,6 @@ msgstr "إعادة تعيين الصفحة إلى الإعدادات الافت�
 #: src/muuli_wdr.cpp
 msgid "Reset the settings on the current page to their default values."
 msgstr "إعادة تعيين إعدادات الصفحة الحالية إلى قيمها الافتراضية."
-
-#: src/muuli_wdr.cpp src/ServerWnd.cpp src/SharedFilesCtrl.cpp
-msgid "OK"
-msgstr "موافق"
 
 #: src/muuli_wdr.cpp
 msgid "Click here to apply any changes made to the preferences."
@@ -7633,10 +7639,6 @@ msgstr "غير متوفر"
 #: src/SharedFilesCtrl.cpp
 msgid "Directory Path"
 msgstr "مسار المجلد"
-
-#: src/SharedFilesCtrl.cpp
-msgid "Verify Local Data"
-msgstr "التحقق من البيانات المحلية"
 
 #: src/SharedFilesCtrl.cpp src/Statistics.cpp
 msgid "Shared Files"

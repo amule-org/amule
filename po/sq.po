@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-30 19:39+0800\n"
+"POT-Creation-Date: 2026-09-30 22:38+0200\n"
 "PO-Revision-Date: 2026-09-30 14:50+0000\n"
 "Last-Translator: Fation <dj_barthezz@linuxmail.org lushnja_corps@hotmail.Language-Team:\n"
 "Language: sq\n"
@@ -333,8 +333,8 @@ msgstr "Po ndërpritet instanca e amuleweb me pid '%d' ... "
 msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "Po vritet instanca e amuleweb me pid '%d' ... "
 
-#: src/amule.cpp src/ClientRef.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
-#: src/SharedFilesCtrl.cpp
+#: src/amule.cpp src/ClientRef.cpp src/FileDetailDialog.cpp src/SearchDlg.cpp
+#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr "E Deshtuar"
 
@@ -1942,7 +1942,8 @@ msgstr "Burime"
 msgid "Priority"
 msgstr "Perparesia"
 
-#: src/DownloadListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
+#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/PartFile.cpp
+#: src/SearchListCtrl.cpp
 msgid "Status"
 msgstr "Gjendja"
 
@@ -2707,6 +2708,11 @@ msgstr "%.1f%% përfunduar"
 #, c-format
 msgid "%.2f KiB/s"
 msgstr ""
+
+#: src/FileDetailDialog.cpp src/muuli_wdr.cpp src/ServerWnd.cpp
+#: src/SharedFilesCtrl.cpp
+msgid "OK"
+msgstr "Ne rregull"
 
 #: src/FileLaunch.cpp
 msgid "File preview"
@@ -4273,6 +4279,10 @@ msgstr ""
 msgid "Title"
 msgstr "Titulli"
 
+#: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
+msgid "Verify Local Data"
+msgstr "Verifiko të dhënat lokale"
+
 #: src/muuli_wdr.cpp
 msgid "File Names"
 msgstr "Emrat e Faileve"
@@ -5276,10 +5286,6 @@ msgstr "Rikthe faqen te parazgjedhjet"
 #: src/muuli_wdr.cpp
 msgid "Reset the settings on the current page to their default values."
 msgstr "Rikthe cilësimet e faqes aktuale te vlerat e tyre të parazgjedhura."
-
-#: src/muuli_wdr.cpp src/ServerWnd.cpp src/SharedFilesCtrl.cpp
-msgid "OK"
-msgstr "Ne rregull"
 
 #: src/muuli_wdr.cpp
 msgid "Click here to apply any changes made to the preferences."
@@ -7644,10 +7650,6 @@ msgstr "Te disponueshem"
 #: src/SharedFilesCtrl.cpp
 msgid "Directory Path"
 msgstr "Direktoria Path"
-
-#: src/SharedFilesCtrl.cpp
-msgid "Verify Local Data"
-msgstr "Verifiko të dhënat lokale"
 
 #: src/SharedFilesCtrl.cpp src/Statistics.cpp
 msgid "Shared Files"

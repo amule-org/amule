@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-30 19:39+0800\n"
+"POT-Creation-Date: 2026-09-30 22:38+0200\n"
 "PO-Revision-Date: 2026-09-30 14:51+0000\n"
 "Last-Translator: Oleksandr Kovalenko <alx.kovalenko@gmail.com>\n"
 "Language-Team: Ukrainian <translation@linux.org.ua>\n"
@@ -336,8 +336,8 @@ msgstr "Зупиняю екземпляр amuleweb з pid '%d' ... "
 msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "Вбиваю екземпляр amuleweb з pid '%d' ... "
 
-#: src/amule.cpp src/ClientRef.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
-#: src/SharedFilesCtrl.cpp
+#: src/amule.cpp src/ClientRef.cpp src/FileDetailDialog.cpp src/SearchDlg.cpp
+#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr "Невдалі"
 
@@ -1961,7 +1961,8 @@ msgstr "Джерела"
 msgid "Priority"
 msgstr "Перевага"
 
-#: src/DownloadListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
+#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/PartFile.cpp
+#: src/SearchListCtrl.cpp
 msgid "Status"
 msgstr "Стан"
 
@@ -2728,6 +2729,11 @@ msgstr "%.1f%% виконано"
 #, c-format
 msgid "%.2f KiB/s"
 msgstr ""
+
+#: src/FileDetailDialog.cpp src/muuli_wdr.cpp src/ServerWnd.cpp
+#: src/SharedFilesCtrl.cpp
+msgid "OK"
+msgstr "Гаразд"
 
 #: src/FileLaunch.cpp
 msgid "File preview"
@@ -4305,6 +4311,10 @@ msgstr ""
 msgid "Title"
 msgstr "Назва"
 
+#: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
+msgid "Verify Local Data"
+msgstr "Перевірити локальні дані"
+
 #: src/muuli_wdr.cpp
 msgid "File Names"
 msgstr "Назви файлів"
@@ -5309,10 +5319,6 @@ msgstr "Скинути сторінку до значень за замовчу�
 #: src/muuli_wdr.cpp
 msgid "Reset the settings on the current page to their default values."
 msgstr "Скинути налаштування поточної сторінки до значень за замовчуванням."
-
-#: src/muuli_wdr.cpp src/ServerWnd.cpp src/SharedFilesCtrl.cpp
-msgid "OK"
-msgstr "Гаразд"
 
 #: src/muuli_wdr.cpp
 msgid "Click here to apply any changes made to the preferences."
@@ -7702,10 +7708,6 @@ msgstr "Доступність"
 #: src/SharedFilesCtrl.cpp
 msgid "Directory Path"
 msgstr "Шлях до теки"
-
-#: src/SharedFilesCtrl.cpp
-msgid "Verify Local Data"
-msgstr "Перевірити локальні дані"
 
 #: src/SharedFilesCtrl.cpp src/Statistics.cpp
 msgid "Shared Files"

@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-30 19:39+0800\n"
+"POT-Creation-Date: 2026-09-30 22:38+0200\n"
 "PO-Revision-Date: 2026-09-30 14:47+0000\n"
 "Last-Translator: Dovydas Sankauskas <laisve@gmail.com>\n"
 "Language-Team: Lithuanian <komp_lt@konf.lt>\n"
@@ -335,8 +335,8 @@ msgstr "Stabdomas amuleweb procesas su pid „%d“ ... "
 msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "Priverstinai stabdomas amuleweb procesas su pid „%d“ ... "
 
-#: src/amule.cpp src/ClientRef.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
-#: src/SharedFilesCtrl.cpp
+#: src/amule.cpp src/ClientRef.cpp src/FileDetailDialog.cpp src/SearchDlg.cpp
+#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr "Nepavyko"
 
@@ -1957,7 +1957,8 @@ msgstr "Šaltiniai"
 msgid "Priority"
 msgstr "Prioritetas"
 
-#: src/DownloadListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
+#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/PartFile.cpp
+#: src/SearchListCtrl.cpp
 msgid "Status"
 msgstr "Būsena"
 
@@ -2725,6 +2726,11 @@ msgstr "Atlikta %.1f%%"
 #, c-format
 msgid "%.2f KiB/s"
 msgstr ""
+
+#: src/FileDetailDialog.cpp src/muuli_wdr.cpp src/ServerWnd.cpp
+#: src/SharedFilesCtrl.cpp
+msgid "OK"
+msgstr "Gerai"
 
 #: src/FileLaunch.cpp
 msgid "File preview"
@@ -4300,6 +4306,10 @@ msgstr ""
 msgid "Title"
 msgstr "Pavadinimas"
 
+#: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
+msgid "Verify Local Data"
+msgstr "Tikrinti vietinius duomenis"
+
 #: src/muuli_wdr.cpp
 msgid "File Names"
 msgstr "Failo pavadinimai"
@@ -5302,10 +5312,6 @@ msgstr "Atkurti puslapio numatytąsias reikšmes"
 #: src/muuli_wdr.cpp
 msgid "Reset the settings on the current page to their default values."
 msgstr "Atkurti dabartinio puslapio parinktis į numatytąsias reikšmes."
-
-#: src/muuli_wdr.cpp src/ServerWnd.cpp src/SharedFilesCtrl.cpp
-msgid "OK"
-msgstr "Gerai"
 
 #: src/muuli_wdr.cpp
 msgid "Click here to apply any changes made to the preferences."
@@ -7695,10 +7701,6 @@ msgstr "Skaičius"
 #: src/SharedFilesCtrl.cpp
 msgid "Directory Path"
 msgstr "Kelias"
-
-#: src/SharedFilesCtrl.cpp
-msgid "Verify Local Data"
-msgstr "Tikrinti vietinius duomenis"
 
 #: src/SharedFilesCtrl.cpp src/Statistics.cpp
 msgid "Shared Files"

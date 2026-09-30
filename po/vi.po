@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-30 19:39+0800\n"
+"POT-Creation-Date: 2026-09-30 22:38+0200\n"
 "PO-Revision-Date: 2026-09-30 14:54+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
@@ -329,8 +329,8 @@ msgstr "Đang chấm dứt tiến trình amuleweb với pid '%d' ... "
 msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "Đang buộc dừng tiến trình amuleweb với pid '%d' ... "
 
-#: src/amule.cpp src/ClientRef.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
-#: src/SharedFilesCtrl.cpp
+#: src/amule.cpp src/ClientRef.cpp src/FileDetailDialog.cpp src/SearchDlg.cpp
+#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr "Thất bại"
 
@@ -1910,7 +1910,8 @@ msgstr "Nguồn"
 msgid "Priority"
 msgstr "Ưu tiên"
 
-#: src/DownloadListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
+#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/PartFile.cpp
+#: src/SearchListCtrl.cpp
 msgid "Status"
 msgstr "Trạng thái"
 
@@ -2669,6 +2670,11 @@ msgstr "%.1f%% hoàn tất"
 #, c-format
 msgid "%.2f KiB/s"
 msgstr ""
+
+#: src/FileDetailDialog.cpp src/muuli_wdr.cpp src/ServerWnd.cpp
+#: src/SharedFilesCtrl.cpp
+msgid "OK"
+msgstr "OK"
 
 #: src/FileLaunch.cpp
 msgid "File preview"
@@ -4220,6 +4226,10 @@ msgstr ""
 msgid "Title"
 msgstr ""
 
+#: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
+msgid "Verify Local Data"
+msgstr "Xác minh dữ liệu cục bộ"
+
 #: src/muuli_wdr.cpp
 msgid "File Names"
 msgstr "Tên tệp"
@@ -5218,10 +5228,6 @@ msgstr "Đặt lại trang về mặc định"
 #: src/muuli_wdr.cpp
 msgid "Reset the settings on the current page to their default values."
 msgstr "Đặt lại các cài đặt trên trang hiện tại về giá trị mặc định."
-
-#: src/muuli_wdr.cpp src/ServerWnd.cpp src/SharedFilesCtrl.cpp
-msgid "OK"
-msgstr "OK"
 
 #: src/muuli_wdr.cpp
 msgid "Click here to apply any changes made to the preferences."
@@ -7537,10 +7543,6 @@ msgstr ""
 #: src/SharedFilesCtrl.cpp
 msgid "Directory Path"
 msgstr "Đường dẫn thư mục"
-
-#: src/SharedFilesCtrl.cpp
-msgid "Verify Local Data"
-msgstr "Xác minh dữ liệu cục bộ"
 
 #: src/SharedFilesCtrl.cpp src/Statistics.cpp
 msgid "Shared Files"

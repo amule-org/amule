@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-30 19:39+0800\n"
+"POT-Creation-Date: 2026-09-30 22:38+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -316,8 +316,8 @@ msgstr ""
 msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr ""
 
-#: src/amule.cpp src/ClientRef.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
-#: src/SharedFilesCtrl.cpp
+#: src/amule.cpp src/ClientRef.cpp src/FileDetailDialog.cpp src/SearchDlg.cpp
+#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr ""
 
@@ -1883,7 +1883,8 @@ msgstr ""
 msgid "Priority"
 msgstr ""
 
-#: src/DownloadListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
+#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/PartFile.cpp
+#: src/SearchListCtrl.cpp
 msgid "Status"
 msgstr ""
 
@@ -2615,6 +2616,11 @@ msgstr ""
 #: src/FileDetailDialog.cpp src/utils/wxCas/src/wxcasframe.cpp
 #, c-format
 msgid "%.2f KiB/s"
+msgstr ""
+
+#: src/FileDetailDialog.cpp src/muuli_wdr.cpp src/ServerWnd.cpp
+#: src/SharedFilesCtrl.cpp
+msgid "OK"
 msgstr ""
 
 #: src/FileLaunch.cpp
@@ -4159,6 +4165,10 @@ msgstr ""
 msgid "Title"
 msgstr ""
 
+#: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
+msgid "Verify Local Data"
+msgstr ""
+
 #: src/muuli_wdr.cpp
 msgid "File Names"
 msgstr ""
@@ -5151,10 +5161,6 @@ msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Reset the settings on the current page to their default values."
-msgstr ""
-
-#: src/muuli_wdr.cpp src/ServerWnd.cpp src/SharedFilesCtrl.cpp
-msgid "OK"
 msgstr ""
 
 #: src/muuli_wdr.cpp
@@ -7448,10 +7454,6 @@ msgstr ""
 
 #: src/SharedFilesCtrl.cpp
 msgid "Directory Path"
-msgstr ""
-
-#: src/SharedFilesCtrl.cpp
-msgid "Verify Local Data"
 msgstr ""
 
 #: src/SharedFilesCtrl.cpp src/Statistics.cpp

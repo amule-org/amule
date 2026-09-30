@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-30 19:39+0800\n"
+"POT-Creation-Date: 2026-09-30 22:38+0200\n"
 "PO-Revision-Date: 2026-09-30 14:52+0000\n"
 "Last-Translator: Wayne Su <mstarmstar@gmail.com>\n"
 "Language-Team: \n"
@@ -339,8 +339,8 @@ msgstr "正在終止 pid %d 的 amuleweb 執行緒... "
 msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "正在強行終止 pid %d 的 amuleweb 執行緒... "
 
-#: src/amule.cpp src/ClientRef.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
-#: src/SharedFilesCtrl.cpp
+#: src/amule.cpp src/ClientRef.cpp src/FileDetailDialog.cpp src/SearchDlg.cpp
+#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr "失敗"
 
@@ -1941,7 +1941,8 @@ msgstr "來源"
 msgid "Priority"
 msgstr "優先等級"
 
-#: src/DownloadListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
+#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/PartFile.cpp
+#: src/SearchListCtrl.cpp
 msgid "Status"
 msgstr "狀態"
 
@@ -2705,6 +2706,11 @@ msgstr "完成 %.1f%%"
 #, c-format
 msgid "%.2f KiB/s"
 msgstr ""
+
+#: src/FileDetailDialog.cpp src/muuli_wdr.cpp src/ServerWnd.cpp
+#: src/SharedFilesCtrl.cpp
+msgid "OK"
+msgstr "OK"
 
 #: src/FileLaunch.cpp
 msgid "File preview"
@@ -4261,6 +4267,10 @@ msgstr ""
 msgid "Title"
 msgstr "標題"
 
+#: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
+msgid "Verify Local Data"
+msgstr "驗證本機資料"
+
 #: src/muuli_wdr.cpp
 msgid "File Names"
 msgstr "檔案名稱"
@@ -5264,10 +5274,6 @@ msgstr "將此頁面重設為預設值"
 #: src/muuli_wdr.cpp
 msgid "Reset the settings on the current page to their default values."
 msgstr "將目前頁面的設定重設為預設值。"
-
-#: src/muuli_wdr.cpp src/ServerWnd.cpp src/SharedFilesCtrl.cpp
-msgid "OK"
-msgstr "OK"
 
 #: src/muuli_wdr.cpp
 msgid "Click here to apply any changes made to the preferences."
@@ -7610,10 +7616,6 @@ msgstr "最小來源數"
 #: src/SharedFilesCtrl.cpp
 msgid "Directory Path"
 msgstr "所在目錄"
-
-#: src/SharedFilesCtrl.cpp
-msgid "Verify Local Data"
-msgstr "驗證本機資料"
 
 #: src/SharedFilesCtrl.cpp src/Statistics.cpp
 msgid "Shared Files"

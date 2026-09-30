@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-30 19:39+0800\n"
+"POT-Creation-Date: 2026-09-30 22:38+0200\n"
 "PO-Revision-Date: 2026-09-30 14:53+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
@@ -332,8 +332,8 @@ msgstr "Pārtrauc amuleweb procesu ar pid '%d' … "
 msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "Iznīcina amuleweb procesu ar pid '%d' … "
 
-#: src/amule.cpp src/ClientRef.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
-#: src/SharedFilesCtrl.cpp
+#: src/amule.cpp src/ClientRef.cpp src/FileDetailDialog.cpp src/SearchDlg.cpp
+#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr "Neizdevās"
 
@@ -1941,7 +1941,8 @@ msgstr "Avoti"
 msgid "Priority"
 msgstr "Prioritāte"
 
-#: src/DownloadListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
+#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/PartFile.cpp
+#: src/SearchListCtrl.cpp
 msgid "Status"
 msgstr "Statuss"
 
@@ -2704,6 +2705,11 @@ msgstr "%.1f%% pabeigts"
 #, c-format
 msgid "%.2f KiB/s"
 msgstr "%.2f KiB/s"
+
+#: src/FileDetailDialog.cpp src/muuli_wdr.cpp src/ServerWnd.cpp
+#: src/SharedFilesCtrl.cpp
+msgid "OK"
+msgstr "Labi"
 
 #: src/FileLaunch.cpp
 msgid "File preview"
@@ -4281,6 +4287,10 @@ msgstr "Albums"
 msgid "Title"
 msgstr "Nosaukums"
 
+#: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
+msgid "Verify Local Data"
+msgstr "Pārbaudīt vietējos datus"
+
 #: src/muuli_wdr.cpp
 msgid "File Names"
 msgstr "Datņu nosaukumi"
@@ -5283,10 +5293,6 @@ msgstr "Atiestatīt lapu uz noklusējuma vērtībām"
 #: src/muuli_wdr.cpp
 msgid "Reset the settings on the current page to their default values."
 msgstr "Atiestata pašreizējās lapas iestatījumus uz to noklusējuma vērtībām."
-
-#: src/muuli_wdr.cpp src/ServerWnd.cpp src/SharedFilesCtrl.cpp
-msgid "OK"
-msgstr "Labi"
 
 #: src/muuli_wdr.cpp
 msgid "Click here to apply any changes made to the preferences."
@@ -7646,10 +7652,6 @@ msgstr "Pieejamība"
 #: src/SharedFilesCtrl.cpp
 msgid "Directory Path"
 msgstr "Mapes ceļš"
-
-#: src/SharedFilesCtrl.cpp
-msgid "Verify Local Data"
-msgstr "Pārbaudīt vietējos datus"
 
 #: src/SharedFilesCtrl.cpp src/Statistics.cpp
 msgid "Shared Files"

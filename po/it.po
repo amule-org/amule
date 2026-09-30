@@ -19,7 +19,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule 2.3.3\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-30 19:39+0800\n"
+"POT-Creation-Date: 2026-09-30 22:38+0200\n"
 "PO-Revision-Date: 2026-09-30 14:46+0000\n"
 "Last-Translator: got3nks <got3nks@users.noreply.github.com>\n"
 "Language-Team: SebastianoPistore.info@protonmail.ch\n"
@@ -351,8 +351,8 @@ msgstr "Sto terminando l'istanza di amuleweb con pid `%d' ... "
 msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "Sto terminando forzatamente l'istanza di amuleweb con pid `%d' ... "
 
-#: src/amule.cpp src/ClientRef.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
-#: src/SharedFilesCtrl.cpp
+#: src/amule.cpp src/ClientRef.cpp src/FileDetailDialog.cpp src/SearchDlg.cpp
+#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr "Fallito"
 
@@ -1950,7 +1950,8 @@ msgstr "Fonti"
 msgid "Priority"
 msgstr "Priorità"
 
-#: src/DownloadListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
+#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/PartFile.cpp
+#: src/SearchListCtrl.cpp
 msgid "Status"
 msgstr "Stato"
 
@@ -2711,6 +2712,11 @@ msgstr "%.1f%% completato"
 #, c-format
 msgid "%.2f KiB/s"
 msgstr "%.2f KiB/s"
+
+#: src/FileDetailDialog.cpp src/muuli_wdr.cpp src/ServerWnd.cpp
+#: src/SharedFilesCtrl.cpp
+msgid "OK"
+msgstr "OK"
 
 #: src/FileLaunch.cpp
 msgid "File preview"
@@ -4271,6 +4277,10 @@ msgstr "Album"
 msgid "Title"
 msgstr "Titolo"
 
+#: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
+msgid "Verify Local Data"
+msgstr "Verifica Dati Locali"
+
 #: src/muuli_wdr.cpp
 msgid "File Names"
 msgstr "Nomi file"
@@ -5273,10 +5283,6 @@ msgstr "Ripristina i valori predefiniti della pagina"
 #: src/muuli_wdr.cpp
 msgid "Reset the settings on the current page to their default values."
 msgstr "Ripristina le impostazioni della pagina corrente ai loro valori predefiniti."
-
-#: src/muuli_wdr.cpp src/ServerWnd.cpp src/SharedFilesCtrl.cpp
-msgid "OK"
-msgstr "OK"
 
 #: src/muuli_wdr.cpp
 msgid "Click here to apply any changes made to the preferences."
@@ -7619,10 +7625,6 @@ msgstr "Disponibilità fonti"
 #: src/SharedFilesCtrl.cpp
 msgid "Directory Path"
 msgstr "Percorso directory"
-
-#: src/SharedFilesCtrl.cpp
-msgid "Verify Local Data"
-msgstr "Verifica Dati Locali"
 
 #: src/SharedFilesCtrl.cpp src/Statistics.cpp
 msgid "Shared Files"

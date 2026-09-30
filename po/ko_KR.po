@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-30 19:39+0800\n"
+"POT-Creation-Date: 2026-09-30 22:38+0200\n"
 "PO-Revision-Date: 2026-09-30 14:47+0000\n"
 "Last-Translator: Hyunju Kang <rexington@gmail.com>\n"
 "Language-Team: Korean <hoenny@daum.net>\n"
@@ -335,8 +335,8 @@ msgstr "pid '%d'인 amuleweb 인스턴스를 종료하는 중... "
 msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "pid '%d'인 amuleweb 인스턴스를 강제 종료하는 중... "
 
-#: src/amule.cpp src/ClientRef.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
-#: src/SharedFilesCtrl.cpp
+#: src/amule.cpp src/ClientRef.cpp src/FileDetailDialog.cpp src/SearchDlg.cpp
+#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr "실패"
 
@@ -1944,7 +1944,8 @@ msgstr "자료"
 msgid "Priority"
 msgstr "우선권"
 
-#: src/DownloadListCtrl.cpp src/PartFile.cpp src/SearchListCtrl.cpp
+#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/PartFile.cpp
+#: src/SearchListCtrl.cpp
 msgid "Status"
 msgstr "상태"
 
@@ -2710,6 +2711,11 @@ msgstr "%.1f%% 완료"
 #, c-format
 msgid "%.2f KiB/s"
 msgstr ""
+
+#: src/FileDetailDialog.cpp src/muuli_wdr.cpp src/ServerWnd.cpp
+#: src/SharedFilesCtrl.cpp
+msgid "OK"
+msgstr "확인"
 
 #: src/FileLaunch.cpp
 msgid "File preview"
@@ -4275,6 +4281,10 @@ msgstr ""
 msgid "Title"
 msgstr "제목"
 
+#: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
+msgid "Verify Local Data"
+msgstr "로컬 데이터 확인"
+
 #: src/muuli_wdr.cpp
 msgid "File Names"
 msgstr "파일 이름"
@@ -5278,10 +5288,6 @@ msgstr "페이지를 기본값으로 초기화"
 #: src/muuli_wdr.cpp
 msgid "Reset the settings on the current page to their default values."
 msgstr "현재 페이지의 설정을 기본값으로 초기화합니다."
-
-#: src/muuli_wdr.cpp src/ServerWnd.cpp src/SharedFilesCtrl.cpp
-msgid "OK"
-msgstr "확인"
 
 #: src/muuli_wdr.cpp
 msgid "Click here to apply any changes made to the preferences."
@@ -7641,10 +7647,6 @@ msgstr "유효성"
 #: src/SharedFilesCtrl.cpp
 msgid "Directory Path"
 msgstr "폴더 경로"
-
-#: src/SharedFilesCtrl.cpp
-msgid "Verify Local Data"
-msgstr "로컬 데이터 확인"
 
 #: src/SharedFilesCtrl.cpp src/Statistics.cpp
 msgid "Shared Files"
