@@ -199,6 +199,16 @@ if (ENABLE_QUIC)
 	add_test (NAME QuicLibraryAdapterTest COMMAND QuicLibraryAdapterTest)
 	target_include_directories (QuicLibraryAdapterTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
 	target_link_libraries (QuicLibraryAdapterTest muleunit Quic::Ngtcp2)
+
+	add_executable (QuicGnuTlsSessionTest
+		QuicGnuTlsSessionTest.cpp
+		${CMAKE_SOURCE_DIR}/src/QuicGnuTlsSession.cpp
+		${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
+		${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
+	)
+	add_test (NAME QuicGnuTlsSessionTest COMMAND QuicGnuTlsSessionTest)
+	target_include_directories (QuicGnuTlsSessionTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
+	target_link_libraries (QuicGnuTlsSessionTest muleunit Quic::Ngtcp2)
 endif()
 
 add_executable (QuicSocketTransportTest

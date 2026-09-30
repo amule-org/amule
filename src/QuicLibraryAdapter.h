@@ -73,6 +73,16 @@ public:
 	virtual gnutls_session_t NativeGnuTlsSession() const = 0;
 };
 
+struct gnutls_certificate_credentials_st;
+typedef gnutls_certificate_credentials_st *gnutls_certificate_credentials_t;
+
+class IQuicGnuTlsCredentials : public IQuicTlsCredentials
+{
+public:
+	~IQuicGnuTlsCredentials() override = default;
+	virtual gnutls_certificate_credentials_t NativeGnuTlsCredentials() const = 0;
+};
+
 class IQuicLibrary
 {
 public:
