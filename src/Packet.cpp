@@ -293,7 +293,15 @@ bool CPacket::UnPackPacket(uint32 uMaxDecompressedSize)
 
 	uint8_t *unpack = new uint8_t[nNewSize];
 	uLongf unpackedsize = nNewSize;
-	uint16 result = uncompress(unpack, &unpackedsize, pBuffer, size);
+	int result = uncompress(unpack, &unpackedsize, pBuffer, size);
+	if (result == Z_BUF_ERROR && nNewSize < uMaxDecompressedSize) {
+		// Packed better than the 10x estimate: retry at the caller's limit.
+		delete[] unpack;
+		nNewSize = uMaxDecompressedSize;
+		unpack = new uint8_t[nNewSize];
+		unpackedsize = nNewSize;
+		result = uncompress(unpack, &unpackedsize, pBuffer, size);
+	}
 
 	if (result == Z_OK) {
 		wxASSERT(completebuffer == NULL);
