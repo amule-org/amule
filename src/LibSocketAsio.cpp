@@ -1460,6 +1460,7 @@ public:
 		const wxString &bindInterface = wxEmptyString)
 	: ip::tcp::acceptor(s_io_service)
 	, m_libSocketServer(libSocketServer)
+	, m_acceptStopped(false)
 	, m_strand(s_io_service)
 	, m_address(adr)
 	, m_bindInterfaceOverride(bindInterfaceOverride)
@@ -1509,7 +1510,12 @@ public:
 	// already listening for new connections.
 	bool IsOk() const { return m_ok; }
 
-	void Close() { close(); }
+	void Close()
+	{
+		m_acceptStopped.store(true, std::memory_order_release);
+		error_code ignored;
+		close(ignored);
+	}
 
 	bool AcceptWith(CLibSocket &socket)
 	{
@@ -1557,6 +1563,9 @@ public:
 private:
 	void StartAccept()
 	{
+		if (m_acceptStopped.load(std::memory_order_acquire)) {
+			return;
+		}
 		m_currentSocket = std::make_shared<CAsioSocketImpl>(nullptr);
 		auto self = shared_from_this();
 		async_accept(m_currentSocket->GetAsioSocket(),
@@ -1565,6 +1574,12 @@ private:
 
 	void HandleAccept(const error_code &error)
 	{
+		if (m_acceptStopped.load(std::memory_order_acquire) ||
+			error == boost::asio::error::operation_aborted ||
+			error == boost::asio::error::bad_descriptor) {
+			m_acceptStopped.store(true, std::memory_order_release);
+			return;
+		}
 		if (error) {
 			AddDebugLogLineC(logAsio, CFormat("Error in HandleAccept: %s") % error.message());
 		} else {
@@ -1590,6 +1605,9 @@ private:
 
 	// The wrapper object. Atomic for the same reason as CAsioSocketImpl::m_libSocket.
 	std::atomic<CLibSocketServer *> m_libSocketServer;
+	// Closing/rebinding cancels the pending accept; its completion must not retry on a closed
+	// acceptor (which would spin on bad_descriptor and flood the GUI log).
+	std::atomic<bool> m_acceptStopped;
 	// Startup ok
 	bool m_ok;
 	// The last socket that connected to us
@@ -1629,6 +1647,7 @@ CLibSocketServer::~CLibSocketServer()
 {
 	if (m_aServer) {
 		m_aServer->OnWrapperGone();
+		m_aServer->Close();
 	}
 	// shared_ptr drops automatically; impl stays alive via callback self refs
 	// until the last in-flight async_accept completion drains.
