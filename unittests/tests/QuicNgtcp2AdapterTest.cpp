@@ -23,7 +23,10 @@
 
 #include <muleunit/test.h>
 #include <QuicNgtcp2Adapter.h>
+#include <QuicSocketTransport.h>
 #include <NetworkAddress.h>
+
+#include <ngtcp2/ngtcp2.h>
 
 #include <memory>
 #include <string>
@@ -107,6 +110,10 @@ struct Engine : IQuicNgtcp2Engine
 	std::string GetIssuedConnectionId(Handle handle) const override
 	{
 		return handle != nullptr ? issuedCid : std::string();
+	}
+	uint64_t GetAdvertisedReadWindow(Handle handle) const override
+	{
+		return handle != nullptr ? 1u : 0u;
 	}
 	void Destroy(Handle handle) override
 	{
@@ -372,6 +379,21 @@ TEST(QuicNgtcp2Adapter, ProductionEngineOwnsNoConnectionIdAfterClose)
 	const std::string issuedCid = connection->GetIssuedConnectionId();
 	connection->Close();
 	ASSERT_TRUE(!connection->OwnsConnectionId(issuedCid));
+}
+
+TEST(QuicNgtcp2Adapter, ProductionEngineAdvertisesTheSocketTransportReadWindow)
+{
+	CQuicInitialMetadata metadata;
+	metadata.version = NGTCP2_PROTO_VER_V1;
+	metadata.destinationCid = kDcid;
+	metadata.sourceCid = std::string("\x99", 1);
+	auto engine = CreateProductionQuicNgtcp2Engine();
+	CQuicTlsPolicy policy{};
+	auto handle = engine->CreateServer(policy, kPeer, 2, metadata);
+	ASSERT_TRUE(handle != nullptr);
+	ASSERT_EQUALS(static_cast<uint64_t>(CQuicSocketTransport::kReadWindow),
+		engine->GetAdvertisedReadWindow(handle));
+	engine->Destroy(handle);
 }
 
 TEST(QuicNgtcp2Adapter, ProductionEngineIssuesDistinctScidsPerConnection)

@@ -22,6 +22,7 @@
 //
 
 #include "QuicNgtcp2Adapter.h"
+#include "QuicSocketTransport.h"
 
 #include <ngtcp2/ngtcp2.h>
 
@@ -275,6 +276,12 @@ public:
 		ngtcp2_transport_params_default(&params);
 		params.original_dcid = originalDcid;
 		params.original_dcid_present = 1;
+		// Only the remote-initiated windows matter: eD2k always replies on the peer's own
+		// stream, never opens one of its own (see QuicSocketTransport.h). ExtendReadWindow()
+		// reopens these as the application drains its read buffer, once a real stream exists.
+		params.initial_max_stream_data_bidi_remote = CQuicSocketTransport::kReadWindow;
+		params.initial_max_stream_data_uni = CQuicSocketTransport::kReadWindow;
+		params.initial_max_data = CQuicSocketTransport::kReadWindow;
 
 		ngtcp2_conn *conn = nullptr;
 		if (ngtcp2_conn_server_new(
@@ -316,6 +323,15 @@ public:
 	{
 		auto it = m_connections.find(handle);
 		return it == m_connections.end() ? std::string() : it->second.issuedCid;
+	}
+
+	uint64_t GetAdvertisedReadWindow(Handle handle) const override
+	{
+		auto it = m_connections.find(handle);
+		if (it == m_connections.end()) {
+			return 0;
+		}
+		return ngtcp2_conn_get_local_transport_params(it->second.conn)->initial_max_data;
 	}
 
 	void Destroy(Handle handle) override

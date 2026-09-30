@@ -59,6 +59,9 @@ public:
 	virtual bool OwnsConnectionId(Handle, const std::string &) const = 0;
 	//! The connection ID this handle issued at creation. Empty if none.
 	virtual std::string GetIssuedConnectionId(Handle) const = 0;
+	//! The connection-level flow-control window this handle advertised to the peer at
+	//! creation (ngtcp2_transport_params::initial_max_data). 0 if no connection.
+	virtual uint64_t GetAdvertisedReadWindow(Handle) const = 0;
 	virtual void Destroy(Handle) = 0;
 };
 
