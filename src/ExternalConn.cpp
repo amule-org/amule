@@ -3970,6 +3970,10 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 			request->GetTagByNameSafe(EC_TAG_SELECT_PREFS)->GetInt(), request->GetDetailLevel());
 		break;
 	case EC_OP_SET_PREFERENCES: {
+		const uint16 oldTcpPort = thePrefs::GetPort();
+		const uint16 oldUdpPort = thePrefs::GetUDPPort();
+		const wxString oldBindAddress = thePrefs::GetAddress();
+		const wxString oldBindInterface = thePrefs::GetNetworkInterface();
 		static_cast<const CEC_Prefs_Packet *>(request)->Apply();
 		// Apply() left any amuleapi password the client sent sitting in the preferences as
 		// a pending request; this is what turns it into a stored, stretched record in
@@ -3980,6 +3984,19 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 			AddLogLineC(CFormat(_("Could not save the amuleapi password: %s")) % credentialError);
 		}
 		theApp->glob_prefs->Save();
+		// Remote preference clients (amulegui, amuleweb, and the text client) apply
+		// connection settings through this EC operation. Match the local Preferences
+		// behaviour: port-only changes replace live P2P sockets, while a simultaneous
+		// bind-address/interface change keeps its existing restart requirement.
+		const bool portsChanged = oldTcpPort != thePrefs::GetPort() ||
+			oldUdpPort != thePrefs::GetUDPPort();
+		if (portsChanged && oldBindAddress == thePrefs::GetAddress() &&
+			oldBindInterface == thePrefs::GetNetworkInterface() && theApp->IsRunning()) {
+			wxString networkMessage;
+			if (!theApp->ReinitializeNetwork(&networkMessage)) {
+				AddLogLineC(networkMessage);
+			}
+		}
 		if (thePrefs::IsFilteringClients()) {
 			theApp->clientlist->FilterQueues();
 		}
