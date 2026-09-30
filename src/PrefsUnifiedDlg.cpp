@@ -1158,21 +1158,16 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 
 	bool restart_needed = false;
 	wxString restart_needed_msg = _("aMule must be restarted to enable these changes:\n\n");
+#ifndef CLIENT_GUI
+	const bool tcpPortChanged = CfgChanged(IDC_PORT);
+	const bool udpPortChanged = CfgChanged(IDC_UDPPORT);
+#endif
+	const bool bindInterfaceChanged = CfgChanged(IDC_INTERFACE);
 
 	// do sanity checking, special processing, and user notifications here
 	thePrefs::CheckUlDlRatio();
 
-	if (CfgChanged(IDC_PORT)) {
-		restart_needed = true;
-		restart_needed_msg += _("- TCP port changed.\n");
-	}
-
-	if (CfgChanged(IDC_UDPPORT)) {
-		restart_needed = true;
-		restart_needed_msg += _("- UDP port changed.\n");
-	}
-
-	if (CfgChanged(IDC_INTERFACE)) {
+	if (bindInterfaceChanged) {
 		restart_needed = true;
 		restart_needed_msg += _("- Network interface binding changed.\n");
 	}
@@ -1256,6 +1251,18 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 
 	// save the preferences on ok
 	theApp->glob_prefs->Save();
+
+	// Listening ports are live settings: re-create their sockets as part of applying
+	// Preferences. A simultaneous interface change still needs a full restart because the
+	// current network reinitialisation path does not safely change the bound interface.
+#ifndef CLIENT_GUI
+	if ((tcpPortChanged || udpPortChanged) && !bindInterfaceChanged && theApp->IsRunning()) {
+		wxString networkMessage;
+		if (!theApp->ReinitializeNetwork(&networkMessage)) {
+			AddLogLineC(networkMessage);
+		}
+	}
+#endif
 
 	// Store any amuleapi password the user just typed. Deliberately after Save(), which is
 	// what writes amule.conf locally and what ships the request to the daemon over EC.

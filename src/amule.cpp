@@ -1448,12 +1448,32 @@ bool CamuleApp::OnInit()
 bool CamuleApp::ReinitializeNetwork(wxString *msg)
 {
 	bool ok = true;
-	static bool firstTime = true;
-
-	if (!firstTime) {
-		// TODO: Destroy previously created sockets
+	const bool resumeServerConnection = serverconnect &&
+		(serverconnect->IsConnected() || serverconnect->IsConnecting());
+	if (IsRunning()) {
+		AddLogLineC(_("Rebinding P2P listening sockets; existing peer connections will close."));
 	}
-	firstTime = false;
+
+	// This path is used at startup and when the user applies new listening ports.
+	// Tear down the objects that own the P2P listening sockets before constructing
+	// replacements. The listen socket closes accepted peer connections, and removing
+	// CServerConnect closes its server connection; both are expected consequences of
+	// changing the local network endpoints.
+#ifdef ENABLE_UPNP
+	if (m_upnp) {
+		if (thePrefs::GetUPnPEnabled()) {
+			m_upnp->DeletePortMappings(m_upnpMappings);
+		}
+		delete m_upnp;
+		m_upnp = NULL;
+	}
+#endif
+	delete serverconnect;
+	serverconnect = NULL;
+	delete listensocket;
+	listensocket = NULL;
+	delete clientudp;
+	clientudp = NULL;
 
 	// Some sanity checks first
 	if (thePrefs::ECPort() == thePrefs::GetPort()) {
@@ -1583,6 +1603,13 @@ bool CamuleApp::ReinitializeNetwork(wxString *msg)
 	// where a changed bind address or a first-run wizard can leave us on a different
 	// interface entirely.
 	RefreshLocalPublicIPv6Addresses();
+
+	// Recreating CServerConnect drops its previous server connection. Resume the
+	// configured automatic connection behaviour when a rebind happens at runtime.
+	if (IsRunning() && thePrefs::GetNetworkED2K() &&
+		(resumeServerConnection || thePrefs::DoAutoConnect())) {
+		serverconnect->ConnectToAnyServer();
+	}
 
 	return ok;
 }
