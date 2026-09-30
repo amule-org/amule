@@ -1162,6 +1162,7 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 	const bool tcpPortChanged = CfgChanged(IDC_PORT);
 	const bool udpPortChanged = CfgChanged(IDC_UDPPORT);
 #endif
+	const bool bindAddressChanged = CfgChanged(IDC_ADDRESS);
 	const bool bindInterfaceChanged = CfgChanged(IDC_INTERFACE);
 
 	// do sanity checking, special processing, and user notifications here
@@ -1171,6 +1172,23 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 		restart_needed = true;
 		restart_needed_msg += _("- Network interface binding changed.\n");
 	}
+	if (bindAddressChanged) {
+		restart_needed = true;
+		restart_needed_msg += _("- Local address binding changed.\n");
+	}
+
+#ifdef CLIENT_GUI
+	// An older daemon may not support live P2P port rebinding. Keep the notice in
+	// the remote GUI because it cannot determine the connected daemon's capability.
+	if (CfgChanged(IDC_PORT)) {
+		restart_needed = true;
+		restart_needed_msg += _("- TCP port changed.\n");
+	}
+	if (CfgChanged(IDC_UDPPORT)) {
+		restart_needed = true;
+		restart_needed_msg += _("- UDP port changed.\n");
+	}
+#endif
 
 	if (CfgChanged(IDC_EXT_CONN_TCP_PORT)) {
 		restart_needed = true;
@@ -1256,9 +1274,10 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 	// Preferences. A simultaneous interface change still needs a full restart because the
 	// current network reinitialisation path does not safely change the bound interface.
 #ifndef CLIENT_GUI
-	if ((tcpPortChanged || udpPortChanged) && !bindInterfaceChanged && theApp->IsRunning()) {
+	if ((tcpPortChanged || udpPortChanged) && !bindAddressChanged && !bindInterfaceChanged &&
+		theApp->IsRunning()) {
 		wxString networkMessage;
-		if (!theApp->ReinitializeNetwork(&networkMessage)) {
+		if (!theApp->RebindP2PSockets(tcpPortChanged, udpPortChanged, &networkMessage)) {
 			AddLogLineC(networkMessage);
 		}
 	}

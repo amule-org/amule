@@ -1489,7 +1489,8 @@ public:
 			set_option(ip::tcp::acceptor::reuse_address(true));
 			bind(m_address.GetEndpoint());
 			listen();
-			StartAccept();
+			auto self = shared_from_this();
+			post(m_strand, [self]() { self->StartAccept(); });
 			m_ok = true;
 			AddDebugLogLineN(logAsio,
 				CFormat("CAsioSocketServerImpl bind to %s %d") % m_address.IPAddress() %
@@ -1512,9 +1513,14 @@ public:
 
 	void Close()
 	{
-		m_acceptStopped.store(true, std::memory_order_release);
-		error_code ignored;
-		close(ignored);
+		if (m_acceptStopped.exchange(true, std::memory_order_acq_rel)) {
+			return;
+		}
+		auto self = shared_from_this();
+		post(m_strand, [self]() {
+			error_code ignored;
+			self->close(ignored);
+		});
 	}
 
 	bool AcceptWith(CLibSocket &socket)
@@ -1541,7 +1547,8 @@ public:
 			// nothing there
 			m_socketAvailable = false;
 			// start getting another one
-			StartAccept();
+			auto self = shared_from_this();
+			post(m_strand, [self]() { self->StartAccept(); });
 			AddDebugLogLineF(logAsio, "AcceptWith: ok, getting another socket in background");
 		} else {
 			// we got another socket right away
@@ -1651,6 +1658,23 @@ CLibSocketServer::~CLibSocketServer()
 	}
 	// shared_ptr drops automatically; impl stays alive via callback self refs
 	// until the last in-flight async_accept completion drains.
+}
+
+bool CLibSocketServer::Rebind(const amuleIPV4Address &adr)
+{
+	auto replacement = std::make_shared<CAsioSocketServerImpl>(adr, this);
+	replacement->Init();
+	if (!replacement->IsOk()) {
+		return false;
+	}
+
+	std::shared_ptr<CAsioSocketServerImpl> previous = std::move(m_aServer);
+	m_aServer = std::move(replacement);
+	if (previous) {
+		previous->OnWrapperGone();
+		previous->Close();
+	}
+	return true;
 }
 
 // Accepts an incoming connection request, and creates a new CLibSocket object which represents the

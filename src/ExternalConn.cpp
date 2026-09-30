@@ -3985,15 +3985,16 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 		}
 		theApp->glob_prefs->Save();
 		// Remote preference clients (amulegui, amuleweb, and the text client) apply
-		// connection settings through this EC operation. Match the local Preferences
-		// behaviour: port-only changes replace live P2P sockets, while a simultaneous
-		// bind-address/interface change keeps its existing restart requirement.
+		// connection settings through this EC operation. Rebind only the changed P2P
+		// endpoints; keep the EC listener and its active clients untouched.
 		const bool portsChanged = oldTcpPort != thePrefs::GetPort() ||
 			oldUdpPort != thePrefs::GetUDPPort();
 		if (portsChanged && oldBindAddress == thePrefs::GetAddress() &&
 			oldBindInterface == thePrefs::GetNetworkInterface() && theApp->IsRunning()) {
 			wxString networkMessage;
-			if (!theApp->ReinitializeNetwork(&networkMessage)) {
+			if (!theApp->RebindP2PSockets(oldTcpPort != thePrefs::GetPort(),
+				oldUdpPort != thePrefs::GetUDPPort(),
+				&networkMessage)) {
 				AddLogLineC(networkMessage);
 			}
 		}
