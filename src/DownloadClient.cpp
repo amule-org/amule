@@ -1125,27 +1125,39 @@ int CUpDownClient::unzip(Pending_Block_Struct *block,
 		(*lenUnzipped) = (zS->total_out - block->totalUnzipped);
 		block->totalUnzipped = zS->total_out;
 	} else if ((err == Z_OK) && (zS->avail_out == 0) && (zS->avail_in != 0)) {
+		// Output array was not big enough. Grow it, but never past what is left of the
+		// requested block: a 2 MB packet can inflate to gigabytes. The extra byte lets zlib
+		// reach the stream trailer; the caller rejects any output past the block.
+		const uint64 blockSize = block->block->EndOffset - block->block->StartOffset + 1;
+		const uint64 room =
+			(blockSize > block->totalUnzipped ? blockSize - block->totalUnzipped : 0) + 1;
+		if ((*lenUnzipped) >= room) {
+			AddDebugLogLineN(logZLib,
+				CFormat("Compressed packet inflates past its requested block in file '%s'") %
+					(m_reqfile ? m_reqfile->GetFileName() : CPath("?")));
+			err = Z_BUF_ERROR;
+		} else {
+			uint32 newLength = (*lenUnzipped) * 2;
+			if (newLength == 0) {
+				newLength = lenZipped * 2;
+			}
+			if (newLength == 0 || newLength > room) {
+				newLength = static_cast<uint32>(room);
+			}
+			// Copy any data that was successfully unzipped to new array
+			uint8_t *temp = new uint8_t[newLength];
+			wxASSERT(zS->total_out - block->totalUnzipped <= newLength);
+			memcpy(temp, (*unzipped), (zS->total_out - block->totalUnzipped));
+			delete[] (*unzipped);
+			(*unzipped) = temp;
+			(*lenUnzipped) = newLength;
 
-		// Output array was not big enough,
-		// call recursively until there is enough space
+			// Position stream output to correct place in new array
+			zS->next_out = (*unzipped) + (zS->total_out - block->totalUnzipped);
+			zS->avail_out = (*lenUnzipped) - (zS->total_out - block->totalUnzipped);
 
-		uint32 newLength = (*lenUnzipped) *= 2;
-		if (newLength == 0) {
-			newLength = lenZipped * 2;
+			err = unzip(block, zS->next_in, zS->avail_in, unzipped, lenUnzipped, iRecursion + 1);
 		}
-		// Copy any data that was successfully unzipped to new array
-		uint8_t *temp = new uint8_t[newLength];
-		wxASSERT(zS->total_out - block->totalUnzipped <= newLength);
-		memcpy(temp, (*unzipped), (zS->total_out - block->totalUnzipped));
-		delete[] (*unzipped);
-		(*unzipped) = temp;
-		(*lenUnzipped) = newLength;
-
-		// Position stream output to correct place in new array
-		zS->next_out = (*unzipped) + (zS->total_out - block->totalUnzipped);
-		zS->avail_out = (*lenUnzipped) - (zS->total_out - block->totalUnzipped);
-
-		err = unzip(block, zS->next_in, zS->avail_in, unzipped, lenUnzipped, iRecursion + 1);
 	} else if ((err == Z_OK) && (zS->avail_in == 0)) {
 		// All available input has been processed, everything ok. Set the size to the amount
 		// unzipped in this call, including all recursive calls.
