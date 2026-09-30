@@ -57,6 +57,8 @@ public:
 	virtual bool Flush(Handle, IQuicDatagramSink &, const CNetworkAddress &, uint16_t) = 0;
 	//! Backed by ngtcp2_conn_get_scid(): the source connection IDs issued and not retired.
 	virtual bool OwnsConnectionId(Handle, const std::string &) const = 0;
+	//! The connection ID this handle issued at creation. Empty if none.
+	virtual std::string GetIssuedConnectionId(Handle) const = 0;
 	virtual void Destroy(Handle) = 0;
 };
 

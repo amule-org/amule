@@ -104,6 +104,10 @@ struct Engine : IQuicNgtcp2Engine
 	{
 		return handle != nullptr && cid == issuedCid;
 	}
+	std::string GetIssuedConnectionId(Handle handle) const override
+	{
+		return handle != nullptr ? issuedCid : std::string();
+	}
 	void Destroy(Handle handle) override
 	{
 		if (handle != nullptr) {
@@ -325,7 +329,7 @@ TEST(QuicNgtcp2Adapter, FlushFailureCloses)
 	ASSERT_TRUE(sink->sent.empty());
 }
 
-TEST(QuicNgtcp2Adapter, ProductionEngineFailsClosed)
+TEST(QuicNgtcp2Adapter, ProductionEngineCreatesConnection)
 {
 	Session s;
 	Credentials c;
@@ -334,7 +338,67 @@ TEST(QuicNgtcp2Adapter, ProductionEngineFailsClosed)
 	auto engine = CreateProductionQuicNgtcp2Engine();
 	auto p = Initial();
 	CQuicNgtcp2Factory factory(Policy(s, c, v), sink, engine);
-	ASSERT_TRUE(!factory.CreateInbound(p.data(), p.size(), kPeer, 2, kDcid));
+	auto connection = factory.CreateInbound(p.data(), p.size(), kPeer, 2, kDcid);
+	ASSERT_TRUE(connection != nullptr);
+}
+
+TEST(QuicNgtcp2Adapter, ProductionEngineOwnsIssuedScid)
+{
+	Session s;
+	Credentials c;
+	Verifier v;
+	auto sink = std::make_shared<Sink>();
+	auto engine = CreateProductionQuicNgtcp2Engine();
+	auto p = Initial();
+	CQuicNgtcp2Factory factory(Policy(s, c, v), sink, engine);
+	auto connection = factory.CreateInbound(p.data(), p.size(), kPeer, 2, kDcid);
+	ASSERT_TRUE(connection != nullptr);
+	const std::string issuedCid = connection->GetIssuedConnectionId();
+	ASSERT_TRUE(!issuedCid.empty());
+	ASSERT_TRUE(connection->OwnsConnectionId(issuedCid));
+}
+
+TEST(QuicNgtcp2Adapter, ProductionEngineOwnsNoConnectionIdAfterClose)
+{
+	Session s;
+	Credentials c;
+	Verifier v;
+	auto sink = std::make_shared<Sink>();
+	auto engine = CreateProductionQuicNgtcp2Engine();
+	auto p = Initial();
+	CQuicNgtcp2Factory factory(Policy(s, c, v), sink, engine);
+	auto connection = factory.CreateInbound(p.data(), p.size(), kPeer, 2, kDcid);
+	ASSERT_TRUE(connection != nullptr);
+	const std::string issuedCid = connection->GetIssuedConnectionId();
+	connection->Close();
+	ASSERT_TRUE(!connection->OwnsConnectionId(issuedCid));
+}
+
+TEST(QuicNgtcp2Adapter, ProductionEngineIssuesDistinctScidsPerConnection)
+{
+	Session s;
+	Credentials c;
+	Verifier v;
+	auto sink = std::make_shared<Sink>();
+	auto engine = CreateProductionQuicNgtcp2Engine();
+	CQuicNgtcp2Factory factory(Policy(s, c, v), sink, engine);
+
+	auto p1 = Initial(kDcid, "\x01");
+	auto connection1 = factory.CreateInbound(p1.data(), p1.size(), kPeer, 2, kDcid);
+	ASSERT_TRUE(connection1 != nullptr);
+
+	const std::string kOtherDcid = "CCCCCCCC";
+	auto p2 = Initial(kOtherDcid, "\x02");
+	auto connection2 = factory.CreateInbound(p2.data(), p2.size(), kPeer, 2, kOtherDcid);
+	ASSERT_TRUE(connection2 != nullptr);
+
+	const std::string cid1 = connection1->GetIssuedConnectionId();
+	const std::string cid2 = connection2->GetIssuedConnectionId();
+	ASSERT_TRUE(!cid1.empty());
+	ASSERT_TRUE(!cid2.empty());
+	ASSERT_TRUE(cid1 != cid2);
+	ASSERT_TRUE(!connection1->OwnsConnectionId(cid2));
+	ASSERT_TRUE(!connection2->OwnsConnectionId(cid1));
 }
 
 TEST(QuicNgtcp2Adapter, IssuedConnectionIdsComeFromEngineUntilClosed)
