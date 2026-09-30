@@ -209,3 +209,23 @@ TEST(FileFunctions, UnpackArchiveFailsOnTruncatedTar)
 	const UnpackResult result = UnpackArchive(CPath(file.path), mmdbFiles);
 	ASSERT_EQUALS(static_cast<int>(EFT_Error), static_cast<int>(result.second));
 }
+
+TEST(FileFunctions, UnpackArchiveRefusesDeepNesting)
+{
+	// A .tar.gz wrapped in two more gzip layers: four archives, one past the limit. Stands in
+	// for a gzip that unpacks to itself, which would otherwise loop until the stack runs out.
+	CTempFile file;
+	{
+		wxFileOutputStream out(file.path);
+		wxZlibOutputStream outer(out, -1, wxZLIB_GZIP);
+		wxZlibOutputStream middle(outer, -1, wxZLIB_GZIP);
+		wxZlibOutputStream inner(middle, -1, wxZLIB_GZIP);
+		WriteMaxMindTar(inner);
+		inner.Close();
+		middle.Close();
+		outer.Close();
+	}
+
+	const UnpackResult result = UnpackArchive(CPath(file.path), mmdbFiles);
+	ASSERT_EQUALS(static_cast<int>(EFT_Error), static_cast<int>(result.second));
+}

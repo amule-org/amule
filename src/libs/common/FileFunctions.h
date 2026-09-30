@@ -96,7 +96,8 @@ typedef std::pair<bool, EFileType> UnpackResult;
  *
  * A file that is not an archive is left unchanged and its type returned. A GZip archive is unpacked
  * and replaced by the new file. In a Zip or Tar archive the first file whose name, without its
- * folder, matches any in @a files (case-insensitively) is unpacked over the archive.
+ * folder, matches any in @a files (case-insensitively) is unpacked over the archive. A member
+ * larger than 256 MiB, or nesting deeper than three archives, fails the unpack.
  */
 UnpackResult UnpackArchive(const CPath &file, const char *files[]);
 

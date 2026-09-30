@@ -171,6 +171,12 @@ static EFileType GuessFiletype(const wxString &file)
 	return EFT_Text;
 }
 
+// Update archives come from a URL a server-list link can name. The real files (ipfilter.dat,
+// server.met, GeoIP databases) stay far below this cap, and nesting deeper than .tar.gz is
+// refused, so a small archive cannot fill the disk or unpack to itself forever.
+static const size_t MAX_UNPACKED_SIZE = 256 * 1024 * 1024;
+static const int MAX_UNPACK_DEPTH = 3;
+
 /**
  * True if the member's name, without its folder, matches any pattern in @a files.
  */
@@ -205,6 +211,7 @@ static bool UnpackZipFile(const wxString &file, const char *files[])
 			continue;
 		}
 		char buffer[10240];
+		size_t written = 0;
 		while (!zip.Eof()) {
 			zip.Read(buffer, sizeof(buffer));
 			if (zip.LastRead() == 0) {
@@ -218,6 +225,10 @@ static bool UnpackZipFile(const wxString &file, const char *files[])
 				// this download as failed; the next fetch picks up
 				// the clean copy.
 				break;
+			}
+			written += zip.LastRead();
+			if (written > MAX_UNPACKED_SIZE) {
+				return false;
 			}
 			target.Write(buffer, zip.LastRead());
 		}
@@ -251,10 +262,10 @@ static bool UnpackTarFile(const wxString &file, const char *files[])
 		char buffer[10240];
 		size_t written = 0;
 		while (tar.Read(buffer, sizeof(buffer)).LastRead() > 0) {
-			if (!target.Write(buffer, tar.LastRead())) {
+			written += tar.LastRead();
+			if (written > MAX_UNPACKED_SIZE || !target.Write(buffer, tar.LastRead())) {
 				return false;
 			}
-			written += tar.LastRead();
 		}
 		// A truncated download ends the member early: keep nothing rather than half a file.
 		return written > 0 && written == static_cast<size_t>(entry->GetSize()) && target.Commit();
@@ -269,6 +280,7 @@ static bool UnpackGZipFile(const wxString &file)
 	wxTempFile target(file);
 
 	bool write = false;
+	size_t written = 0;
 
 #ifdef __WXMAC__
 	// AddDebugLogLineN( logFileIO, "Reading gzip stream" );
@@ -281,6 +293,11 @@ static bool UnpackGZipFile(const wxString &file)
 		while (int bytesRead = gzread(inputFile, buffer, sizeof(buffer))) {
 			if (bytesRead > 0) {
 				// AddDebugLogLineN(logFileIO, CFormat("Read %u bytes") % bytesRead);
+				written += bytesRead;
+				if (written > MAX_UNPACKED_SIZE) {
+					write = false;
+					break;
+				}
 				target.Write(buffer, bytesRead);
 			} else if (bytesRead < 0) {
 				wxString errString;
@@ -318,6 +335,10 @@ static bool UnpackGZipFile(const wxString &file)
 
 			// AddDebugLogLineN(logFileIO, CFormat("Read %u bytes") % inputStream.LastRead());
 			if (inputStream.LastRead()) {
+				written += inputStream.LastRead();
+				if (written > MAX_UNPACKED_SIZE) {
+					break;
+				}
 				target.Write(buffer, inputStream.LastRead());
 			} else {
 				break;
@@ -326,7 +347,7 @@ static bool UnpackGZipFile(const wxString &file)
 
 		// AddDebugLogLineN( logFileIO, "End reading gzip stream" );
 
-		write = inputStream.IsOk() || inputStream.Eof();
+		write = written <= MAX_UNPACKED_SIZE && (inputStream.IsOk() || inputStream.Eof());
 	}
 #endif
 
@@ -338,17 +359,20 @@ static bool UnpackGZipFile(const wxString &file)
 	return write;
 }
 
-UnpackResult UnpackArchive(const CPath &path, const char *files[])
+static UnpackResult UnpackArchiveAt(const CPath &path, const char *files[], int depth)
 {
 	const wxString file = path.GetRaw();
 
 	// Attempt to discover the filetype and uncompress
 	EFileType type = GuessFiletype(file);
+	if ((type == EFT_Zip || type == EFT_GZip || type == EFT_Tar) && depth >= MAX_UNPACK_DEPTH) {
+		return UnpackResult(false, EFT_Error);
+	}
 	switch (type) {
 	case EFT_Zip:
 		if (UnpackZipFile(file, files)) {
 			// Unpack nested archives if needed.
-			return UnpackResult(true, UnpackArchive(path, files).second);
+			return UnpackResult(true, UnpackArchiveAt(path, files, depth + 1).second);
 		} else {
 			return UnpackResult(false, EFT_Error);
 		}
@@ -356,7 +380,7 @@ UnpackResult UnpackArchive(const CPath &path, const char *files[])
 	case EFT_GZip:
 		if (UnpackGZipFile(file)) {
 			// Unpack nested archives if needed.
-			return UnpackResult(true, UnpackArchive(path, files).second);
+			return UnpackResult(true, UnpackArchiveAt(path, files, depth + 1).second);
 		} else {
 			return UnpackResult(false, EFT_Error);
 		}
@@ -364,7 +388,7 @@ UnpackResult UnpackArchive(const CPath &path, const char *files[])
 	case EFT_Tar:
 		if (UnpackTarFile(file, files)) {
 			// Unpack nested archives if needed.
-			return UnpackResult(true, UnpackArchive(path, files).second);
+			return UnpackResult(true, UnpackArchiveAt(path, files, depth + 1).second);
 		} else {
 			return UnpackResult(false, EFT_Error);
 		}
@@ -372,6 +396,11 @@ UnpackResult UnpackArchive(const CPath &path, const char *files[])
 	default:
 		return UnpackResult(false, type);
 	}
+}
+
+UnpackResult UnpackArchive(const CPath &path, const char *files[])
+{
+	return UnpackArchiveAt(path, files, 0);
 }
 bool RestrictToOwner(const CPath &file)
 {
