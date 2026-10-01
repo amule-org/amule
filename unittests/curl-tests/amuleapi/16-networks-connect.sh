@@ -178,12 +178,10 @@ _assert_status 202 "POST /kad/bootstrap (dotted-quad) → 202"
 _assert_json_eq '. | has("ok")' false 'kad/bootstrap response has no constant ok field'
 _assert_json_eq '.port' 4672   'kad/bootstrap response echoes port'
 
-# The uint32 form is refused. It was accepted alongside the quad and the two
-# disagreed about byte order: ParseIpv4Dotted() packs a.b.c.d least-significant
-# byte first, while the integer was taken verbatim, so 2130706433 (0x7F000001,
-# what a client computing an IPv4 integer the conventional way writes for
-# 127.0.0.1) bootstrapped 1.0.0.127. Every IP on this surface is a quad now, in
-# both directions, so the question does not arise.
+# The uint32 form is refused: every IP on this surface is a dotted quad, in both
+# directions, so a client never has to know which byte order EC carries. The
+# echo above cannot show where the probe went: it is read back with the same
+# packing the request was parsed with.
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d '{"ip":2130706433,"port":4672}' \
