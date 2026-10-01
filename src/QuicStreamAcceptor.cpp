@@ -54,13 +54,13 @@ bool CQuicStreamAcceptor::AcceptStream(
 		return false;
 	}
 	if (theApp->ipfilter->IsFiltered(address)) {
-		AddDebugLogLineN(
-			logClient, CFormat("Denied QUIC stream from %s:%u (Filtered IP)") % address.ToWxString() % port);
+		AddDebugLogLineN(logClient,
+			CFormat("Denied QUIC stream from %s:%u (Filtered IP)") % address.ToWxString() % port);
 		return false;
 	}
 	if (theApp->clientlist->IsBannedClient(address)) {
-		AddDebugLogLineN(
-			logClient, CFormat("Denied QUIC stream from %s:%u (Banned IP)") % address.ToWxString() % port);
+		AddDebugLogLineN(logClient,
+			CFormat("Denied QUIC stream from %s:%u (Banned IP)") % address.ToWxString() % port);
 		return false;
 	}
 
@@ -74,8 +74,7 @@ bool CQuicStreamAcceptor::AcceptStream(
 		socket->Safe_Delete();
 		return false;
 	}
-	AddDebugLogLineN(
-		logClient, CFormat("Accepted QUIC stream from %s:%u") % address.ToWxString() % port);
+	AddDebugLogLineN(logClient, CFormat("Accepted QUIC stream from %s:%u") % address.ToWxString() % port);
 	return true;
 }
 

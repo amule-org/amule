@@ -76,8 +76,12 @@ void InitZeroPath(ngtcp2_path_storage &path)
 {
 	sockaddr_in addr = {};
 	addr.sin_family = AF_INET;
-	ngtcp2_path_storage_init(&path, reinterpret_cast<ngtcp2_sockaddr *>(&addr), sizeof(addr),
-		reinterpret_cast<ngtcp2_sockaddr *>(&addr), sizeof(addr), nullptr);
+	ngtcp2_path_storage_init(&path,
+		reinterpret_cast<ngtcp2_sockaddr *>(&addr),
+		sizeof(addr),
+		reinterpret_cast<ngtcp2_sockaddr *>(&addr),
+		sizeof(addr),
+		nullptr);
 }
 
 bool AssignCid(ngtcp2_cid &cid, const std::string &value)
@@ -173,10 +177,7 @@ public:
 		return !m_closed && m_engine->OwnsConnectionId(m_handle, cid);
 	}
 
-	std::string GetIssuedConnectionId() const override
-	{
-		return m_closed ? std::string() : m_issuedCid;
-	}
+	std::string GetIssuedConnectionId() const override { return m_closed ? std::string() : m_issuedCid; }
 
 	std::vector<uint8_t> DrainStreamData() override
 	{
@@ -209,7 +210,8 @@ public:
 		if (m_closed) {
 			return -1;
 		}
-		return m_engine->WriteStreamData(m_handle, data, length, *m_sink, m_address, m_port, m_lastNowMs);
+		return m_engine->WriteStreamData(
+			m_handle, data, length, *m_sink, m_address, m_port, m_lastNowMs);
 	}
 
 	void CloseStream(IQuicStreamOperations::Handle) override
@@ -223,7 +225,10 @@ public:
 		}
 	}
 
-	void ExtendReadWindow(IQuicStreamOperations::Handle, size_t bytes) override { ExtendStreamReadWindow(bytes); }
+	void ExtendReadWindow(IQuicStreamOperations::Handle, size_t bytes) override
+	{
+		ExtendStreamReadWindow(bytes);
+	}
 
 	void Close() override
 	{
@@ -244,7 +249,8 @@ private:
 			return;
 		}
 		m_streamOffered = true;
-		auto owned = std::make_unique<CQuicSocketTransport>(*this, m_handle, m_address, m_port, nullptr, true);
+		auto owned = std::make_unique<CQuicSocketTransport>(
+			*this, m_handle, m_address, m_port, nullptr, true);
 		CQuicSocketTransport *raw = owned.get();
 		std::unique_ptr<IStreamTransport> transport(std::move(owned));
 		if (!m_acceptor->AcceptStream(transport, m_address, m_port)) {
@@ -348,7 +354,8 @@ public:
 		auto tlsSession = std::make_unique<CQuicGnuTlsSession>();
 		const auto *alpn = reinterpret_cast<const uint8_t *>(QuicNatt::QUIC_NATT_ALPN);
 		const size_t alpnLength = sizeof(QuicNatt::QUIC_NATT_ALPN) - 1;
-		if (!tlsSession->ConfigureTls13Alpn(*policy.credentials, policy.verifier, alpn, alpnLength, true)) {
+		if (!tlsSession->ConfigureTls13Alpn(
+			    *policy.credentials, policy.verifier, alpn, alpnLength, true)) {
 			return nullptr;
 		}
 		if (ngtcp2_crypto_gnutls_configure_server_session(tlsSession->NativeGnuTlsSession()) != 0) {
@@ -414,8 +421,16 @@ public:
 		params.initial_max_streams_bidi = 1;
 
 		ngtcp2_conn *conn = nullptr;
-		if (ngtcp2_conn_server_new(
-			    &conn, &dcid, &scid, &path.path, metadata.version, &callbacks, &settings, &params, nullptr, this) != 0 ||
+		if (ngtcp2_conn_server_new(&conn,
+			    &dcid,
+			    &scid,
+			    &path.path,
+			    metadata.version,
+			    &callbacks,
+			    &settings,
+			    &params,
+			    nullptr,
+			    this) != 0 ||
 			conn == nullptr) {
 			return nullptr;
 		}
@@ -431,8 +446,8 @@ public:
 		auto inserted = m_connections.emplace(handle, std::move(info));
 		// gnutls_session_set_ptr() needs the ref's final, stable address: the map node, not the
 		// local `info` this function already moved from.
-		gnutls_session_set_ptr(
-			inserted.first->second.tlsSession->NativeGnuTlsSession(), &inserted.first->second.connRef);
+		gnutls_session_set_ptr(inserted.first->second.tlsSession->NativeGnuTlsSession(),
+			&inserted.first->second.connRef);
 		return handle;
 	}
 
@@ -449,7 +464,11 @@ public:
 		// never observes a path change and never attempts connection migration. The actual
 		// peer address this connection talks to is CQuicNgtcp2Connection's own m_address/m_port,
 		// used when flushing output -- not anything ngtcp2 derives from this path.
-		return ngtcp2_conn_read_pkt(it->second.conn, &path.path, nullptr, data, length,
+		return ngtcp2_conn_read_pkt(it->second.conn,
+			       &path.path,
+			       nullptr,
+			       data,
+			       length,
 			       NanosecondsFromMs(nowMs)) == 0;
 	}
 
@@ -502,7 +521,8 @@ public:
 		std::vector<ngtcp2_cid> scids(count);
 		ngtcp2_conn_get_scid(it->second.conn, scids.data());
 		for (const ngtcp2_cid &scid : scids) {
-			if (cid.size() == scid.datalen && std::memcmp(cid.data(), scid.data, scid.datalen) == 0) {
+			if (cid.size() == scid.datalen &&
+				std::memcmp(cid.data(), scid.data, scid.datalen) == 0) {
 				return true;
 			}
 		}
@@ -581,8 +601,17 @@ public:
 		// ngtcp2_conn_writev_stream() both accepts stream data and may produce a packet in the
 		// same call: there is no separate "queue it for later" step to split this into, unlike
 		// CUtpSocketTransport's push model over libutp's own internal timer.
-		const ngtcp2_ssize written = ngtcp2_conn_writev_stream(it->second.conn, &path.path, &pi, buf,
-			sizeof(buf), &dataLen, NGTCP2_WRITE_STREAM_FLAG_NONE, it->second.streamId, &vec, 1, ts);
+		const ngtcp2_ssize written = ngtcp2_conn_writev_stream(it->second.conn,
+			&path.path,
+			&pi,
+			buf,
+			sizeof(buf),
+			&dataLen,
+			NGTCP2_WRITE_STREAM_FLAG_NONE,
+			it->second.streamId,
+			&vec,
+			1,
+			ts);
 		if (written < 0) {
 			return -1;
 		}
@@ -652,8 +681,17 @@ private:
 			// (handshake CRYPTO frames, ACKs, retransmissions, probes). Application data goes
 			// out through WriteStreamData() instead, which can itself produce a packet in the
 			// same call.
-			const ngtcp2_ssize written = ngtcp2_conn_writev_stream(connection.conn, &path.path, &pi,
-				buf, sizeof(buf), nullptr, NGTCP2_WRITE_STREAM_FLAG_NONE, -1, nullptr, 0, ts);
+			const ngtcp2_ssize written = ngtcp2_conn_writev_stream(connection.conn,
+				&path.path,
+				&pi,
+				buf,
+				sizeof(buf),
+				nullptr,
+				NGTCP2_WRITE_STREAM_FLAG_NONE,
+				-1,
+				nullptr,
+				0,
+				ts);
 			if (written < 0) {
 				return false;
 			}

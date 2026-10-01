@@ -59,7 +59,8 @@ public:
 		const CQuicTlsPolicy &, const CNetworkAddress &, uint16_t, const CQuicInitialMetadata &) = 0;
 	//! @p nowMs is the same monotonic millisecond tick CQuicContext::ProcessDatagram() received.
 	virtual bool Read(Handle, const uint8_t *, size_t, uint64_t nowMs) = 0;
-	virtual bool Flush(Handle, IQuicDatagramSink &, const CNetworkAddress &, uint16_t, uint64_t nowMs) = 0;
+	virtual bool Flush(
+		Handle, IQuicDatagramSink &, const CNetworkAddress &, uint16_t, uint64_t nowMs) = 0;
 	//! Backed by ngtcp2_conn_get_scid(): the source connection IDs issued and not retired.
 	virtual bool OwnsConnectionId(Handle, const std::string &) const = 0;
 	//! The connection ID this handle issued at creation. Empty if none.

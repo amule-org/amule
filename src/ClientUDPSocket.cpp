@@ -89,7 +89,8 @@ public:
 		uint32_t ip = 0;
 		// Maximum IPv4 UDP payload, less the aMule envelope -- the same bound
 		// QueueUtpDatagram() enforces for the same reason.
-		if (!address.ToIPv4NetworkOrder(ip) || length > 65507 - 2 || (length != 0 && payload == nullptr)) {
+		if (!address.ToIPv4NetworkOrder(ip) || length > 65507 - 2 ||
+			(length != 0 && payload == nullptr)) {
 			return false;
 		}
 		auto packet = std::make_unique<CPacket>(
@@ -118,11 +119,10 @@ CClientUDPSocket::CClientUDPSocket(const amuleIPV4Address &address, const CProxy
 , m_quicPlaceholderVerifier(std::make_unique<CQuicUnusedVerifier>())
 , m_quicSink(std::make_shared<CQuicUdpSink>(*this))
 , m_quicEngine(CreateProductionQuicNgtcp2Engine())
-, m_quicFactory(std::make_unique<CQuicNgtcp2Factory>(
-	  CQuicTlsPolicy{ m_quicPlaceholderSession.get(),
-		  m_quicCredentials.get(),
-		  m_quicPlaceholderVerifier.get(),
-		  m_quicPlaceholderSession.get() },
+, m_quicFactory(std::make_unique<CQuicNgtcp2Factory>(CQuicTlsPolicy{ m_quicPlaceholderSession.get(),
+							     m_quicCredentials.get(),
+							     m_quicPlaceholderVerifier.get(),
+							     m_quicPlaceholderSession.get() },
 	  m_quicSink,
 	  m_quicEngine))
 , m_quic(m_quicFactory.get())

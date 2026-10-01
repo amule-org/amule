@@ -95,8 +95,12 @@ void InitZeroPath(ngtcp2_path_storage &path)
 {
 	sockaddr_in addr = {};
 	addr.sin_family = AF_INET;
-	ngtcp2_path_storage_init(&path, reinterpret_cast<ngtcp2_sockaddr *>(&addr), sizeof(addr),
-		reinterpret_cast<ngtcp2_sockaddr *>(&addr), sizeof(addr), nullptr);
+	ngtcp2_path_storage_init(&path,
+		reinterpret_cast<ngtcp2_sockaddr *>(&addr),
+		sizeof(addr),
+		reinterpret_cast<ngtcp2_sockaddr *>(&addr),
+		sizeof(addr),
+		nullptr);
 }
 
 struct ForeignVerifier : IQuicTlsVerifier
@@ -166,7 +170,8 @@ public:
 		const auto *alpnBytes = reinterpret_cast<const unsigned char *>(QuicNatt::QUIC_NATT_ALPN);
 		const gnutls_datum_t alpn{ const_cast<unsigned char *>(alpnBytes),
 			static_cast<unsigned>(sizeof(QuicNatt::QUIC_NATT_ALPN) - 1) };
-		if (gnutls_alpn_set_protocols(m_session, &alpn, 1, GNUTLS_ALPN_MANDATORY) != GNUTLS_E_SUCCESS) {
+		if (gnutls_alpn_set_protocols(m_session, &alpn, 1, GNUTLS_ALPN_MANDATORY) !=
+			GNUTLS_E_SUCCESS) {
 			return false;
 		}
 		if (ngtcp2_crypto_gnutls_configure_client_session(m_session) != 0) {
@@ -204,8 +209,14 @@ public:
 		};
 		// Lets this test prove the server's real WriteStream()/WriteStreamData() path by reading
 		// back what the server actually sent, not just that the client accepted the datagram.
-		callbacks.recv_stream_data = [](ngtcp2_conn *, uint32_t, int64_t, uint64_t,
-					      const uint8_t *data, size_t datalen, void *userData, void *) -> int {
+		callbacks.recv_stream_data = [](ngtcp2_conn *,
+						     uint32_t,
+						     int64_t,
+						     uint64_t,
+						     const uint8_t *data,
+						     size_t datalen,
+						     void *userData,
+						     void *) -> int {
 			auto &received = static_cast<CTestQuicClient *>(userData)->m_received;
 			received.insert(received.end(), data, data + datalen);
 			return 0;
@@ -223,8 +234,16 @@ public:
 		params.initial_max_stream_data_bidi_local = CQuicSocketTransport::kReadWindow;
 		params.initial_max_data = CQuicSocketTransport::kReadWindow;
 
-		if (ngtcp2_conn_client_new(&m_conn, &dcid, &scid, &path.path, NGTCP2_PROTO_VER_V1, &callbacks,
-			    &settings, &params, nullptr, this) != 0 ||
+		if (ngtcp2_conn_client_new(&m_conn,
+			    &dcid,
+			    &scid,
+			    &path.path,
+			    NGTCP2_PROTO_VER_V1,
+			    &callbacks,
+			    &settings,
+			    &params,
+			    nullptr,
+			    this) != 0 ||
 			m_conn == nullptr) {
 			return false;
 		}
@@ -295,8 +314,17 @@ public:
 			InitZeroPath(path);
 			ngtcp2_pkt_info pi = {};
 			ngtcp2_ssize dataLen = 0;
-			const ngtcp2_ssize written = ngtcp2_conn_writev_stream(m_conn, &path.path, &pi, buf,
-				sizeof(buf), &dataLen, 0, m_streamId, dataSent ? nullptr : &vec, dataSent ? 0 : 1, ts);
+			const ngtcp2_ssize written = ngtcp2_conn_writev_stream(m_conn,
+				&path.path,
+				&pi,
+				buf,
+				sizeof(buf),
+				&dataLen,
+				0,
+				m_streamId,
+				dataSent ? nullptr : &vec,
+				dataSent ? 0 : 1,
+				ts);
 			if (written <= 0) {
 				break;
 			}
@@ -342,7 +370,8 @@ bool DriveHandshake(CTestQuicClient &client,
 				if (dcid.empty()) {
 					return false;
 				}
-				connection = factory.CreateInbound(datagram.data(), datagram.size(), kPeer, 4672, dcid);
+				connection = factory.CreateInbound(
+					datagram.data(), datagram.size(), kPeer, 4672, dcid);
 				if (!connection) {
 					return false;
 				}
@@ -371,7 +400,8 @@ struct AcceptingAcceptor : IQuicStreamAcceptor
 	CNetworkAddress lastAddress;
 	uint16_t lastPort = 0;
 
-	bool AcceptStream(std::unique_ptr<IStreamTransport> &transport, const CNetworkAddress &address,
+	bool AcceptStream(std::unique_ptr<IStreamTransport> &transport,
+		const CNetworkAddress &address,
 		uint16_t port) override
 	{
 		accepted = std::move(transport);

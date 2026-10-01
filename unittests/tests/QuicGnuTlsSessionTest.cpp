@@ -124,10 +124,9 @@ HandshakeResult RunHandshakeAgainstServer(CQuicGnuTlsSession &server, const std:
 	}
 	gnutls_priority_set_direct(client.session, "NORMAL:-VERS-ALL:+VERS-TLS1.3", nullptr);
 	gnutls_credentials_set(client.session, GNUTLS_CRD_CERTIFICATE, client.credentials);
-	const gnutls_datum_t alpn{
-		const_cast<unsigned char *>(reinterpret_cast<const unsigned char *>(clientAlpn.data())),
-		static_cast<unsigned>(clientAlpn.size())
-	};
+	const gnutls_datum_t alpn{ const_cast<unsigned char *>(
+					   reinterpret_cast<const unsigned char *>(clientAlpn.data())),
+		static_cast<unsigned>(clientAlpn.size()) };
 	gnutls_alpn_set_protocols(client.session, &alpn, 1, 0);
 	gnutls_transport_set_int(client.session, fds[0]);
 	gnutls_transport_set_int(server.NativeGnuTlsSession(), fds[1]);
@@ -168,7 +167,8 @@ HandshakeResult RunHandshakeAgainstServer(CQuicGnuTlsSession &server, const std:
 		result.protocol = gnutls_protocol_get_version(client.session);
 		gnutls_datum_t selected{};
 		if (gnutls_alpn_get_selected_protocol(client.session, &selected) == GNUTLS_E_SUCCESS) {
-			result.negotiatedAlpn.assign(reinterpret_cast<const char *>(selected.data), selected.size);
+			result.negotiatedAlpn.assign(
+				reinterpret_cast<const char *>(selected.data), selected.size);
 		}
 	}
 	return result;

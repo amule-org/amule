@@ -45,8 +45,9 @@ public:
 	 * the transport in the caller's hands rather than destroying it as a side effect of a
 	 * by-value parameter going out of scope.
 	 */
-	virtual bool AcceptStream(
-		std::unique_ptr<IStreamTransport> &transport, const CNetworkAddress &address, uint16_t port) = 0;
+	virtual bool AcceptStream(std::unique_ptr<IStreamTransport> &transport,
+		const CNetworkAddress &address,
+		uint16_t port) = 0;
 };
 
 //! Gathers the same facts CUtpStreamAcceptor gathers, from the same application state, and acts
@@ -54,8 +55,9 @@ public:
 class CQuicStreamAcceptor : public IQuicStreamAcceptor
 {
 public:
-	bool AcceptStream(
-		std::unique_ptr<IStreamTransport> &transport, const CNetworkAddress &address, uint16_t port) override;
+	bool AcceptStream(std::unique_ptr<IStreamTransport> &transport,
+		const CNetworkAddress &address,
+		uint16_t port) override;
 };
 
 #endif // QUICSTREAMACCEPTOR_H

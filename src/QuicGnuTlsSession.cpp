@@ -70,17 +70,19 @@ gnutls_certificate_credentials_t GenerateEphemeralCredentials()
 
 	uint8_t serial[kSerialBytes];
 	const time_t now = time(nullptr);
-	const bool built = gnutls_x509_crt_set_version(certificate, 3) == GNUTLS_E_SUCCESS &&
+	const bool built =
+		gnutls_x509_crt_set_version(certificate, 3) == GNUTLS_E_SUCCESS &&
 		gnutls_x509_crt_set_key(certificate, key) == GNUTLS_E_SUCCESS &&
 		gnutls_rnd(GNUTLS_RND_NONCE, serial, sizeof(serial)) == GNUTLS_E_SUCCESS &&
 		gnutls_x509_crt_set_serial(certificate, serial, sizeof(serial)) == GNUTLS_E_SUCCESS &&
 		// Backdated by a day to tolerate clock skew with a peer that checked activation time,
 		// even though neither side actually validates this certificate (see the class comment).
 		gnutls_x509_crt_set_activation_time(certificate, now - kSecondsPerDay) == GNUTLS_E_SUCCESS &&
-		gnutls_x509_crt_set_expiration_time(
-			certificate, now + kValidityDays * kSecondsPerDay) == GNUTLS_E_SUCCESS &&
+		gnutls_x509_crt_set_expiration_time(certificate, now + kValidityDays * kSecondsPerDay) ==
+			GNUTLS_E_SUCCESS &&
 		gnutls_x509_crt_set_dn(certificate, "CN=amule", nullptr) == GNUTLS_E_SUCCESS &&
-		gnutls_x509_crt_sign2(certificate, certificate, key, GNUTLS_DIG_SHA256, 0) == GNUTLS_E_SUCCESS;
+		gnutls_x509_crt_sign2(certificate, certificate, key, GNUTLS_DIG_SHA256, 0) ==
+			GNUTLS_E_SUCCESS;
 	if (!built) {
 		gnutls_x509_crt_deinit(certificate);
 		gnutls_x509_privkey_deinit(key);
@@ -153,15 +155,14 @@ bool CQuicGnuTlsSession::ConfigureTls13Alpn(const IQuicTlsCredentials &credentia
 		GNUTLS_E_SUCCESS) {
 		return false;
 	}
-	if (gnutls_credentials_set(
-		    m_session, GNUTLS_CRD_CERTIFICATE, gnutlsCredentials->NativeGnuTlsCredentials()) !=
-		GNUTLS_E_SUCCESS) {
+	if (gnutls_credentials_set(m_session,
+		    GNUTLS_CRD_CERTIFICATE,
+		    gnutlsCredentials->NativeGnuTlsCredentials()) != GNUTLS_E_SUCCESS) {
 		return false;
 	}
-	const gnutls_datum_t protocol{
-		const_cast<unsigned char *>(reinterpret_cast<const unsigned char *>(alpn)),
-		static_cast<unsigned>(alpnLength)
-	};
+	const gnutls_datum_t protocol{ const_cast<unsigned char *>(
+					       reinterpret_cast<const unsigned char *>(alpn)),
+		static_cast<unsigned>(alpnLength) };
 	const unsigned flags = mandatory ? GNUTLS_ALPN_MANDATORY : 0;
 	if (gnutls_alpn_set_protocols(m_session, &protocol, 1, flags) != GNUTLS_E_SUCCESS) {
 		return false;

@@ -142,10 +142,7 @@ struct Engine : IQuicNgtcp2Engine
 		++ticks;
 		return tickResult;
 	}
-	uint64_t GetAdvertisedReadWindow(Handle handle) const override
-	{
-		return handle != nullptr ? 1u : 0u;
-	}
+	uint64_t GetAdvertisedReadWindow(Handle handle) const override { return handle != nullptr ? 1u : 0u; }
 	bool hasOpenStream = false;
 	bool HasOpenStream(Handle handle) const override { return handle != nullptr && hasOpenStream; }
 	CQuicSocketTransport *attachedTransport = nullptr;
