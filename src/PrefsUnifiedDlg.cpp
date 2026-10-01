@@ -503,9 +503,14 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 			m_aMuleTweaksWidget = Widget;
 			wxStaticText *txt = CastChild(IDC_AMULE_TWEAKS_WARNING, wxStaticText);
 			// Do not wrap this line, Windows _() can't handle wrapped strings
-			txt->SetLabel(_("Do not change these setting unless you know\nwhat you are doing, "
-					"otherwise you can easily\nmake things worse for yourself.\n\naMule "
-					"will run fine without adjusting any of\nthese settings."));
+			wxString warning =
+				_("Do not change these setting unless you know\nwhat you are doing, "
+				  "otherwise you can easily\nmake things worse for yourself.\n\naMule "
+				  "will run fine without adjusting any of\nthese settings.");
+			// wxOSX measures a centred label with an empty line about 20000 px wide, which
+			// widened the whole dialog; a space keeps the gap without the bug.
+			warning.Replace("\n\n", "\n \n");
+			txt->SetLabel(warning);
 #if defined CLIENT_GUI || !PLATFORMSPECIFIC_CAN_PREVENT_SLEEP_MODE
 			CastChild(IDC_PREVENT_SLEEP, wxCheckBox)->Enable(false);
 			thePrefs::SetPreventSleepWhileDownloading(false);
