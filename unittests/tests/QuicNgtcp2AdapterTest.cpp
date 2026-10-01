@@ -22,6 +22,7 @@
 //
 
 #include <muleunit/test.h>
+#include <QuicGnuTlsSession.h>
 #include <QuicNgtcp2Adapter.h>
 #include <QuicSocketTransport.h>
 #include <NetworkAddress.h>
@@ -144,6 +145,14 @@ std::vector<uint8_t> Initial(const std::string &dcid = kDcid,
 	return p;
 }
 CQuicTlsPolicy Policy(Session &s, Credentials &c, Verifier &v)
+{
+	return { &s, &c, &v, &s };
+}
+
+// CProductionNgtcp2Engine::CreateServer() builds its own real GnuTLS session per connection
+// from policy.credentials, so the production-engine tests need real credentials there -- the
+// mock Session/Verifier remain fine, since only their non-null-ness is ever checked.
+CQuicTlsPolicy ProductionPolicy(Session &s, CQuicEphemeralCredentials &c, Verifier &v)
 {
 	return { &s, &c, &v, &s };
 }
@@ -339,12 +348,12 @@ TEST(QuicNgtcp2Adapter, FlushFailureCloses)
 TEST(QuicNgtcp2Adapter, ProductionEngineCreatesConnection)
 {
 	Session s;
-	Credentials c;
+	CQuicEphemeralCredentials c;
 	Verifier v;
 	auto sink = std::make_shared<Sink>();
 	auto engine = CreateProductionQuicNgtcp2Engine();
 	auto p = Initial();
-	CQuicNgtcp2Factory factory(Policy(s, c, v), sink, engine);
+	CQuicNgtcp2Factory factory(ProductionPolicy(s, c, v), sink, engine);
 	auto connection = factory.CreateInbound(p.data(), p.size(), kPeer, 2, kDcid);
 	ASSERT_TRUE(connection != nullptr);
 }
@@ -352,12 +361,12 @@ TEST(QuicNgtcp2Adapter, ProductionEngineCreatesConnection)
 TEST(QuicNgtcp2Adapter, ProductionEngineOwnsIssuedScid)
 {
 	Session s;
-	Credentials c;
+	CQuicEphemeralCredentials c;
 	Verifier v;
 	auto sink = std::make_shared<Sink>();
 	auto engine = CreateProductionQuicNgtcp2Engine();
 	auto p = Initial();
-	CQuicNgtcp2Factory factory(Policy(s, c, v), sink, engine);
+	CQuicNgtcp2Factory factory(ProductionPolicy(s, c, v), sink, engine);
 	auto connection = factory.CreateInbound(p.data(), p.size(), kPeer, 2, kDcid);
 	ASSERT_TRUE(connection != nullptr);
 	const std::string issuedCid = connection->GetIssuedConnectionId();
@@ -368,17 +377,42 @@ TEST(QuicNgtcp2Adapter, ProductionEngineOwnsIssuedScid)
 TEST(QuicNgtcp2Adapter, ProductionEngineOwnsNoConnectionIdAfterClose)
 {
 	Session s;
-	Credentials c;
+	CQuicEphemeralCredentials c;
+	Verifier v;
+	auto sink = std::make_shared<Sink>();
+	auto engine = CreateProductionQuicNgtcp2Engine();
+	auto p = Initial();
+	CQuicNgtcp2Factory factory(ProductionPolicy(s, c, v), sink, engine);
+	auto connection = factory.CreateInbound(p.data(), p.size(), kPeer, 2, kDcid);
+	ASSERT_TRUE(connection != nullptr);
+	const std::string issuedCid = connection->GetIssuedConnectionId();
+	connection->Close();
+	ASSERT_TRUE(!connection->OwnsConnectionId(issuedCid));
+}
+
+TEST(QuicNgtcp2Adapter, ProductionEngineFailsClosedWithoutCredentials)
+{
+	CQuicInitialMetadata metadata;
+	metadata.version = NGTCP2_PROTO_VER_V1;
+	metadata.destinationCid = kDcid;
+	metadata.sourceCid = std::string("\x99", 1);
+	auto engine = CreateProductionQuicNgtcp2Engine();
+	CQuicTlsPolicy policy{};
+	auto handle = engine->CreateServer(policy, kPeer, 2, metadata);
+	ASSERT_TRUE(handle == nullptr);
+}
+
+TEST(QuicNgtcp2Adapter, ProductionEngineFailsClosedWithNonGnuTlsCredentials)
+{
+	Session s;
+	Credentials c; // not GnuTLS-backed
 	Verifier v;
 	auto sink = std::make_shared<Sink>();
 	auto engine = CreateProductionQuicNgtcp2Engine();
 	auto p = Initial();
 	CQuicNgtcp2Factory factory(Policy(s, c, v), sink, engine);
 	auto connection = factory.CreateInbound(p.data(), p.size(), kPeer, 2, kDcid);
-	ASSERT_TRUE(connection != nullptr);
-	const std::string issuedCid = connection->GetIssuedConnectionId();
-	connection->Close();
-	ASSERT_TRUE(!connection->OwnsConnectionId(issuedCid));
+	ASSERT_TRUE(connection == nullptr);
 }
 
 TEST(QuicNgtcp2Adapter, ProductionEngineAdvertisesTheSocketTransportReadWindow)
@@ -388,7 +422,9 @@ TEST(QuicNgtcp2Adapter, ProductionEngineAdvertisesTheSocketTransportReadWindow)
 	metadata.destinationCid = kDcid;
 	metadata.sourceCid = std::string("\x99", 1);
 	auto engine = CreateProductionQuicNgtcp2Engine();
+	CQuicEphemeralCredentials credentials;
 	CQuicTlsPolicy policy{};
+	policy.credentials = &credentials;
 	auto handle = engine->CreateServer(policy, kPeer, 2, metadata);
 	ASSERT_TRUE(handle != nullptr);
 	ASSERT_EQUALS(static_cast<uint64_t>(CQuicSocketTransport::kReadWindow),
@@ -399,11 +435,11 @@ TEST(QuicNgtcp2Adapter, ProductionEngineAdvertisesTheSocketTransportReadWindow)
 TEST(QuicNgtcp2Adapter, ProductionEngineIssuesDistinctScidsPerConnection)
 {
 	Session s;
-	Credentials c;
+	CQuicEphemeralCredentials c;
 	Verifier v;
 	auto sink = std::make_shared<Sink>();
 	auto engine = CreateProductionQuicNgtcp2Engine();
-	CQuicNgtcp2Factory factory(Policy(s, c, v), sink, engine);
+	CQuicNgtcp2Factory factory(ProductionPolicy(s, c, v), sink, engine);
 
 	auto p1 = Initial(kDcid, "\x01");
 	auto connection1 = factory.CreateInbound(p1.data(), p1.size(), kPeer, 2, kDcid);

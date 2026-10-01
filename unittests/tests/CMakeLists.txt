@@ -176,6 +176,7 @@ if (ENABLE_QUIC)
 		QuicNgtcp2AdapterTest.cpp
 		${CMAKE_SOURCE_DIR}/src/QuicNgtcp2Adapter.cpp
 		${CMAKE_SOURCE_DIR}/src/QuicContext.cpp
+		${CMAKE_SOURCE_DIR}/src/QuicGnuTlsSession.cpp
 		${CMAKE_SOURCE_DIR}/src/QuicLibraryAdapter.cpp
 		${CMAKE_SOURCE_DIR}/src/NetworkAddress.cpp
 		${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp

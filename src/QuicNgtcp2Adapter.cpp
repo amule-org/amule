@@ -21,13 +21,18 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
 //
 
+#include "QuicGnuTlsSession.h"
+#include "QuicNattProtocol.h"
 #include "QuicNgtcp2Adapter.h"
 #include "QuicSocketTransport.h"
 
 #include <ngtcp2/ngtcp2.h>
+#include <ngtcp2/ngtcp2_crypto.h>
+#include <ngtcp2/ngtcp2_crypto_gnutls.h>
 
 #include <cstring>
 #include <map>
+#include <memory>
 #include <random>
 #include <utility>
 #include <vector>
@@ -62,43 +67,6 @@ bool AssignCid(ngtcp2_cid &cid, const std::string &value)
 	return true;
 }
 
-int FailClosedRecvClientInitial(ngtcp2_conn *, const ngtcp2_cid *, void *)
-{
-	return NGTCP2_ERR_CALLBACK_FAILURE;
-}
-
-int FailClosedRecvCryptoData(
-	ngtcp2_conn *, ngtcp2_encryption_level, uint64_t, const uint8_t *, size_t, void *)
-{
-	return NGTCP2_ERR_CALLBACK_FAILURE;
-}
-
-int FailClosedEncrypt(uint8_t *,
-	const ngtcp2_crypto_aead *,
-	const ngtcp2_crypto_aead_ctx *,
-	const uint8_t *,
-	size_t,
-	const uint8_t *,
-	size_t,
-	const uint8_t *,
-	size_t)
-{
-	return NGTCP2_ERR_CALLBACK_FAILURE;
-}
-
-int FailClosedDecrypt(uint8_t *,
-	const ngtcp2_crypto_aead *,
-	const ngtcp2_crypto_aead_ctx *,
-	const uint8_t *,
-	size_t,
-	const uint8_t *,
-	size_t,
-	const uint8_t *,
-	size_t)
-{
-	return NGTCP2_ERR_CALLBACK_FAILURE;
-}
-
 void Ngtcp2Random(uint8_t *dest, size_t destlen, const ngtcp2_rand_ctx *)
 {
 	std::random_device random;
@@ -118,36 +86,6 @@ int Ngtcp2NewConnectionId(ngtcp2_conn *, ngtcp2_cid *cid, uint8_t *token, size_t
 	return 0;
 }
 
-int FailClosedUpdateKey(ngtcp2_conn *,
-	uint8_t *,
-	uint8_t *,
-	ngtcp2_crypto_aead_ctx *,
-	uint8_t *,
-	ngtcp2_crypto_aead_ctx *,
-	uint8_t *,
-	const uint8_t *,
-	const uint8_t *,
-	size_t,
-	void *)
-{
-	return NGTCP2_ERR_CALLBACK_FAILURE;
-}
-
-int FailClosedHpMask(uint8_t *, const ngtcp2_crypto_cipher *, const ngtcp2_crypto_cipher_ctx *, const uint8_t *)
-{
-	return NGTCP2_ERR_CALLBACK_FAILURE;
-}
-
-// No key material is ever installed in this fail-closed slice, so these have nothing to free.
-void NoopDeleteCryptoAeadCtx(ngtcp2_conn *, ngtcp2_crypto_aead_ctx *, void *) {}
-void NoopDeleteCryptoCipherCtx(ngtcp2_conn *, ngtcp2_crypto_cipher_ctx *, void *) {}
-
-int Ngtcp2GetPathChallengeData(ngtcp2_conn *, uint8_t *data, void *)
-{
-	Ngtcp2Random(data, NGTCP2_PATH_CHALLENGE_DATALEN, nullptr);
-	return 0;
-}
-
 // Every connection needs a distinct server-issued SCID: a fixed value would collide across
 // concurrent peers and break the OwnsConnectionId() uniqueness this engine promises.
 std::string RandomServerCid()
@@ -155,6 +93,15 @@ std::string RandomServerCid()
 	uint8_t bytes[8];
 	Ngtcp2Random(bytes, sizeof(bytes), nullptr);
 	return std::string(reinterpret_cast<const char *>(bytes), sizeof(bytes));
+}
+
+// Bridges ngtcp2_crypto_conn_ref back to the ngtcp2_conn that owns it: user_data is simply that
+// conn, set once right after ngtcp2_conn_server_new() succeeds. GnuTLS's handshake/secret
+// functions (installed by ngtcp2_crypto_gnutls_configure_server_session()) use this to reach the
+// connection they are driving, given only the gnutls_session_t.
+ngtcp2_conn *GetConnFromRef(ngtcp2_crypto_conn_ref *ref)
+{
+	return static_cast<ngtcp2_conn *>(ref->user_data);
 }
 
 class CQuicNgtcp2Connection final : public IQuicConnection
@@ -233,11 +180,28 @@ public:
 		}
 	}
 
-	Handle CreateServer(const CQuicTlsPolicy &,
+	Handle CreateServer(const CQuicTlsPolicy &policy,
 		const CNetworkAddress &,
 		uint16_t,
 		const CQuicInitialMetadata &metadata) override
 	{
+		// Each connection gets its own GnuTLS session: a gnutls_session_t holds one handshake's
+		// worth of state and cannot be shared across connections. policy.credentials -- a
+		// certificate and key -- is the only part of the policy actually read here, and is safe
+		// to share across every connection this engine ever creates.
+		if (policy.credentials == nullptr) {
+			return nullptr;
+		}
+		auto tlsSession = std::make_unique<CQuicGnuTlsSession>();
+		const auto *alpn = reinterpret_cast<const uint8_t *>(QuicNatt::QUIC_NATT_ALPN);
+		const size_t alpnLength = sizeof(QuicNatt::QUIC_NATT_ALPN) - 1;
+		if (!tlsSession->ConfigureTls13Alpn(*policy.credentials, policy.verifier, alpn, alpnLength, true)) {
+			return nullptr;
+		}
+		if (ngtcp2_crypto_gnutls_configure_server_session(tlsSession->NativeGnuTlsSession()) != 0) {
+			return nullptr;
+		}
+
 		ngtcp2_cid dcid = {};
 		if (!AssignCid(dcid, metadata.sourceCid)) {
 			return nullptr;
@@ -256,18 +220,21 @@ public:
 		ngtcp2_path_storage path;
 		ngtcp2_path_storage_zero(&path);
 
+		// ngtcp2's own GnuTLS crypto helpers replace the fail-closed stand-ins this engine used
+		// before a real TLS session existed: they drive the actual TLS 1.3 handshake, key
+		// installation and AEAD operations through the session configured above.
 		ngtcp2_callbacks callbacks = {};
-		callbacks.recv_client_initial = FailClosedRecvClientInitial;
-		callbacks.recv_crypto_data = FailClosedRecvCryptoData;
-		callbacks.encrypt = FailClosedEncrypt;
-		callbacks.decrypt = FailClosedDecrypt;
-		callbacks.hp_mask = FailClosedHpMask;
+		callbacks.recv_client_initial = ngtcp2_crypto_recv_client_initial_cb;
+		callbacks.recv_crypto_data = ngtcp2_crypto_recv_crypto_data_cb;
+		callbacks.encrypt = ngtcp2_crypto_encrypt_cb;
+		callbacks.decrypt = ngtcp2_crypto_decrypt_cb;
+		callbacks.hp_mask = ngtcp2_crypto_hp_mask_cb;
 		callbacks.rand = Ngtcp2Random;
 		callbacks.get_new_connection_id = Ngtcp2NewConnectionId;
-		callbacks.update_key = FailClosedUpdateKey;
-		callbacks.delete_crypto_aead_ctx = NoopDeleteCryptoAeadCtx;
-		callbacks.delete_crypto_cipher_ctx = NoopDeleteCryptoCipherCtx;
-		callbacks.get_path_challenge_data = Ngtcp2GetPathChallengeData;
+		callbacks.update_key = ngtcp2_crypto_update_key_cb;
+		callbacks.delete_crypto_aead_ctx = ngtcp2_crypto_delete_crypto_aead_ctx_cb;
+		callbacks.delete_crypto_cipher_ctx = ngtcp2_crypto_delete_crypto_cipher_ctx_cb;
+		callbacks.get_path_challenge_data = ngtcp2_crypto_get_path_challenge_data_cb;
 
 		ngtcp2_settings settings = {};
 		ngtcp2_settings_default(&settings);
@@ -289,12 +256,20 @@ public:
 			conn == nullptr) {
 			return nullptr;
 		}
+		ngtcp2_conn_set_tls_native_handle(conn, tlsSession->NativeGnuTlsSession());
 
 		Handle handle = conn;
 		ConnectionInfo info;
 		info.conn = conn;
 		info.issuedCid.assign(reinterpret_cast<const char *>(scid.data), scid.datalen);
-		m_connections[handle] = info;
+		info.tlsSession = std::move(tlsSession);
+		info.connRef.get_conn = GetConnFromRef;
+		info.connRef.user_data = conn;
+		auto inserted = m_connections.emplace(handle, std::move(info));
+		// gnutls_session_set_ptr() needs the ref's final, stable address: the map node, not the
+		// local `info` this function already moved from.
+		gnutls_session_set_ptr(
+			inserted.first->second.tlsSession->NativeGnuTlsSession(), &inserted.first->second.connRef);
 		return handle;
 	}
 
@@ -348,6 +323,8 @@ private:
 	{
 		ngtcp2_conn *conn = nullptr;
 		std::string issuedCid;
+		std::unique_ptr<CQuicGnuTlsSession> tlsSession;
+		ngtcp2_crypto_conn_ref connRef{};
 	};
 
 	std::map<Handle, ConnectionInfo> m_connections;
