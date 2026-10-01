@@ -35,6 +35,7 @@
 #include <QuicNattProtocol.h>
 #include <QuicNgtcp2Adapter.h>
 #include <QuicSocketTransport.h>
+#include <QuicStreamAcceptor.h>
 
 #include <gnutls/crypto.h>
 #include <gnutls/gnutls.h>
@@ -322,6 +323,63 @@ private:
 	int64_t m_streamId = -1;
 	std::vector<uint8_t> m_received;
 };
+
+// Shared by every test here: drives Initial exchange through handshake confirmation against the
+// real production engine. Bounded by kMaxRounds so a genuine protocol regression fails fast and
+// deterministically instead of hanging.
+bool DriveHandshake(CTestQuicClient &client,
+	CQuicNgtcp2Factory &factory,
+	CollectingSink &sink,
+	std::unique_ptr<IQuicConnection> &connection,
+	uint64_t &nowMs)
+{
+	bool confirmed = false;
+	constexpr int kMaxRounds = 20;
+	for (int round = 0; round < kMaxRounds && !confirmed; ++round, nowMs += 10) {
+		for (const auto &datagram : client.Pump(nowMs)) {
+			if (!connection) {
+				const std::string dcid = ExtractInitialDcid(datagram);
+				if (dcid.empty()) {
+					return false;
+				}
+				connection = factory.CreateInbound(datagram.data(), datagram.size(), kPeer, 4672, dcid);
+				if (!connection) {
+					return false;
+				}
+			}
+			if (!connection->ProcessDatagram(datagram.data(), datagram.size(), nowMs)) {
+				return false;
+			}
+		}
+		for (const auto &datagram : sink.sent) {
+			if (!client.Receive(datagram, nowMs)) {
+				return false;
+			}
+		}
+		sink.sent.clear();
+		confirmed = client.HandshakeConfirmed();
+	}
+	return confirmed;
+}
+
+//! Admits every offered stream and keeps the transport, the same shape CQuicStreamAcceptor
+//! gives a caller on success -- without theApp, which the real acceptor's admission policy
+//! needs and no unit test here constructs.
+struct AcceptingAcceptor : IQuicStreamAcceptor
+{
+	std::unique_ptr<IStreamTransport> accepted;
+	CNetworkAddress lastAddress;
+	uint16_t lastPort = 0;
+
+	bool AcceptStream(std::unique_ptr<IStreamTransport> &transport, const CNetworkAddress &address,
+		uint16_t port) override
+	{
+		accepted = std::move(transport);
+		lastAddress = address;
+		lastPort = port;
+		return true;
+	}
+};
 } // namespace
 
 TEST(QuicNgtcp2Handshake, ARealClientAndTheRealServerEngineCompleteTheHandshake)
@@ -344,29 +402,8 @@ TEST(QuicNgtcp2Handshake, ARealClientAndTheRealServerEngineCompleteTheHandshake)
 	// only one connection here, so the routing CQuicContext would otherwise do is unnecessary --
 	// every datagram after the first just goes straight to it.
 	std::unique_ptr<IQuicConnection> connection;
-	bool confirmed = false;
 	uint64_t nowMs = 0;
-	// One handshake takes a handful of round trips; this bounds a genuine protocol failure to a
-	// fast, deterministic test failure instead of a hang.
-	constexpr int kMaxRounds = 20;
-	for (int round = 0; round < kMaxRounds && !confirmed; ++round, nowMs += 10) {
-		for (const auto &datagram : client.Pump(nowMs)) {
-			if (!connection) {
-				const std::string dcid = ExtractInitialDcid(datagram);
-				ASSERT_TRUE(!dcid.empty());
-				connection = factory.CreateInbound(datagram.data(), datagram.size(), kPeer, 4672, dcid);
-				ASSERT_TRUE(connection != nullptr);
-			}
-			ASSERT_TRUE(connection->ProcessDatagram(datagram.data(), datagram.size(), nowMs));
-		}
-		for (const auto &datagram : sink->sent) {
-			ASSERT_TRUE(client.Receive(datagram, nowMs));
-		}
-		sink->sent.clear();
-		confirmed = client.HandshakeConfirmed();
-	}
-
-	ASSERT_TRUE(confirmed);
+	ASSERT_TRUE(DriveHandshake(client, factory, *sink, connection, nowMs));
 	ASSERT_TRUE(connection != nullptr);
 
 	// Proves the stream path end to end, not just the handshake: real payload, sent on the
@@ -397,6 +434,73 @@ TEST(QuicNgtcp2Handshake, ARealClientAndTheRealServerEngineCompleteTheHandshake)
 	const std::vector<uint8_t> reply{ 'o', 'k' };
 	const std::ptrdiff_t written = streamOps->WriteStream(nullptr, reply.data(), reply.size());
 	ASSERT_EQUALS(static_cast<std::ptrdiff_t>(reply.size()), written);
+	ASSERT_TRUE(!sink->sent.empty());
+
+	for (const auto &datagram : sink->sent) {
+		ASSERT_TRUE(client.Receive(datagram, nowMs));
+	}
+	sink->sent.clear();
+
+	ASSERT_TRUE(client.Received() == reply);
+}
+
+TEST(QuicNgtcp2Handshake, AcceptedStreamHandsOffToARealTransportThatReadsAndWritesThroughIt)
+{
+	// Proves the hand-off CQuicNgtcp2Connection::OfferStreamIfJustOpened() performs once the
+	// peer's stream opens: a real CQuicSocketTransport constructed, offered to the acceptor, and
+	// -- once accepted -- every further stream byte delivered to it (AttachTransport()) instead
+	// of DrainStreamData()'s buffer, with writes on the transport reaching the real client the
+	// same way the direct-engine test above proved WriteStream() does.
+	CQuicEphemeralCredentials credentials;
+	ForeignSession session;
+	ForeignVerifier verifier;
+	CQuicTlsPolicy policy{ &session, &credentials, &verifier, &session };
+
+	auto sink = std::make_shared<CollectingSink>();
+	auto engine = CreateProductionQuicNgtcp2Engine();
+	CQuicNgtcp2Factory factory(policy, sink, engine);
+	AcceptingAcceptor acceptor;
+	factory.SetAcceptor(&acceptor);
+
+	CTestQuicClient client;
+	ASSERT_TRUE(client.Init());
+
+	std::unique_ptr<IQuicConnection> connection;
+	uint64_t nowMs = 0;
+	ASSERT_TRUE(DriveHandshake(client, factory, *sink, connection, nowMs));
+	ASSERT_TRUE(connection != nullptr);
+	// No stream has opened yet at this point -- only the handshake has completed -- so the
+	// hand-off cannot have happened before the client sends anything.
+	ASSERT_TRUE(acceptor.accepted == nullptr);
+
+	const std::vector<uint8_t> payload{ 'h', 'i' };
+	for (const auto &datagram : client.SendOnStream(payload, nowMs)) {
+		ASSERT_TRUE(connection->ProcessDatagram(datagram.data(), datagram.size(), nowMs));
+	}
+	for (const auto &datagram : sink->sent) {
+		ASSERT_TRUE(client.Receive(datagram, nowMs));
+	}
+	sink->sent.clear();
+
+	ASSERT_TRUE(acceptor.accepted != nullptr);
+	ASSERT_TRUE(acceptor.lastAddress == kPeer);
+	ASSERT_EQUALS(4672u, acceptor.lastPort);
+	ASSERT_TRUE(acceptor.accepted->IsConnected());
+
+	uint8_t buf[64] = {};
+	const uint32_t readBytes = acceptor.accepted->Read(buf, sizeof(buf));
+	ASSERT_EQUALS(static_cast<uint32_t>(payload.size()), readBytes);
+	ASSERT_TRUE(std::vector<uint8_t>(buf, buf + readBytes) == payload);
+
+	// DrainStreamData() must now be empty: the bytes above went straight to the transport
+	// (AttachTransport()'s whole point), never into the connection's own buffer.
+	ASSERT_TRUE(connection->DrainStreamData().empty());
+
+	const std::vector<uint8_t> reply{ 'o', 'k' };
+	const uint32_t writtenBytes =
+		acceptor.accepted->Write(reply.data(), static_cast<uint32_t>(reply.size()));
+	ASSERT_EQUALS(static_cast<uint32_t>(reply.size()), writtenBytes);
+	acceptor.accepted->Flush();
 	ASSERT_TRUE(!sink->sent.empty());
 
 	for (const auto &datagram : sink->sent) {
