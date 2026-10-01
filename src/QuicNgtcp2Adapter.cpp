@@ -30,6 +30,8 @@
 #include <ngtcp2/ngtcp2_crypto.h>
 #include <ngtcp2/ngtcp2_crypto_gnutls.h>
 
+#include <netinet/in.h>
+
 #include <cstring>
 #include <map>
 #include <memory>
@@ -55,6 +57,26 @@ bool ParseInitialMetadata(const uint8_t *data, size_t length, CQuicInitialMetada
 	metadata.destinationCid.assign(reinterpret_cast<const char *>(header.dcid.data), header.dcid.datalen);
 	metadata.sourceCid.assign(reinterpret_cast<const char *>(header.scid.data), header.scid.datalen);
 	return true;
+}
+
+constexpr size_t kMaxUdpPayload = 1452;
+constexpr int kMaxFlushPacketsPerCall = 16;
+
+ngtcp2_tstamp NanosecondsFromMs(uint64_t nowMs)
+{
+	return nowMs * UINT64_C(1000000);
+}
+
+// ngtcp2_path_storage_zero() leaves sa_family unset, which crashes ngtcp2's own sockaddr_eq()
+// the moment it compares two paths -- confirmed under ASan/UBSan, not assumed; ngtcp2's own test
+// suite never actually uses a zeroed family either, despite naming its equivalent "null_path".
+// A real, if address-less, AF_INET endpoint is what a "no real path" has to mean here.
+void InitZeroPath(ngtcp2_path_storage &path)
+{
+	sockaddr_in addr = {};
+	addr.sin_family = AF_INET;
+	ngtcp2_path_storage_init(&path, reinterpret_cast<ngtcp2_sockaddr *>(&addr), sizeof(addr),
+		reinterpret_cast<ngtcp2_sockaddr *>(&addr), sizeof(addr), nullptr);
 }
 
 bool AssignCid(ngtcp2_cid &cid, const std::string &value)
@@ -124,15 +146,15 @@ public:
 
 	~CQuicNgtcp2Connection() override { Close(); }
 
-	bool ProcessDatagram(const uint8_t *data, size_t length) override
+	bool ProcessDatagram(const uint8_t *data, size_t length, uint64_t nowMs) override
 	{
 		if (m_closed || data == nullptr || length == 0)
 			return false;
-		if (!m_engine->Read(m_handle, data, length)) {
+		if (!m_engine->Read(m_handle, data, length, nowMs)) {
 			Close();
 			return false;
 		}
-		if (!m_engine->Flush(m_handle, *m_sink, m_address, m_port)) {
+		if (!m_engine->Flush(m_handle, *m_sink, m_address, m_port, nowMs)) {
 			Close();
 			return false;
 		}
@@ -218,7 +240,7 @@ public:
 		}
 
 		ngtcp2_path_storage path;
-		ngtcp2_path_storage_zero(&path);
+		InitZeroPath(path);
 
 		// ngtcp2's own GnuTLS crypto helpers replace the fail-closed stand-ins this engine used
 		// before a real TLS session existed: they drive the actual TLS 1.3 handshake, key
@@ -238,9 +260,13 @@ public:
 
 		ngtcp2_settings settings = {};
 		ngtcp2_settings_default(&settings);
+		// Flush() writes into a kMaxUdpPayload-sized stack buffer; keep ngtcp2 from ever trying
+		// to hand it back a larger packet, which PMTUD could otherwise grow towards over time.
+		settings.max_tx_udp_payload_size = kMaxUdpPayload;
 
 		ngtcp2_transport_params params = {};
 		ngtcp2_transport_params_default(&params);
+		params.max_udp_payload_size = kMaxUdpPayload;
 		params.original_dcid = originalDcid;
 		params.original_dcid_present = 1;
 		// Only the remote-initiated windows matter: eD2k always replies on the peer's own
@@ -273,8 +299,60 @@ public:
 		return handle;
 	}
 
-	bool Read(Handle, const uint8_t *, size_t) override { return false; }
-	bool Flush(Handle, IQuicDatagramSink &, const CNetworkAddress &, uint16_t) override { return false; }
+	bool Read(Handle handle, const uint8_t *data, size_t length, uint64_t nowMs) override
+	{
+		auto it = m_connections.find(handle);
+		if (it == m_connections.end()) {
+			return false;
+		}
+		ngtcp2_path_storage path;
+		InitZeroPath(path);
+		// RFC 9000 never requires this engine to know the peer's real address to process a
+		// packet correctly: both endpoints of the path are left zero on every call, so ngtcp2
+		// never observes a path change and never attempts connection migration. The actual
+		// peer address this connection talks to is CQuicNgtcp2Connection's own m_address/m_port,
+		// used when flushing output -- not anything ngtcp2 derives from this path.
+		return ngtcp2_conn_read_pkt(it->second.conn, &path.path, nullptr, data, length,
+			       NanosecondsFromMs(nowMs)) == 0;
+	}
+
+	bool Flush(Handle handle,
+		IQuicDatagramSink &sink,
+		const CNetworkAddress &address,
+		uint16_t port,
+		uint64_t nowMs) override
+	{
+		auto it = m_connections.find(handle);
+		if (it == m_connections.end()) {
+			return false;
+		}
+		const ngtcp2_tstamp ts = NanosecondsFromMs(nowMs);
+		// A bounded number of packets per flush, not an unbounded drain-until-0 loop: a
+		// connection that always has more to send (e.g. a peer that never acknowledges) must
+		// not be able to make one flush call monopolize this thread indefinitely.
+		for (int round = 0; round < kMaxFlushPacketsPerCall; ++round) {
+			uint8_t buf[kMaxUdpPayload];
+			ngtcp2_path_storage path;
+			InitZeroPath(path);
+			ngtcp2_pkt_info pi = {};
+			// stream_id -1, no data: this call only flushes what ngtcp2 itself needs to send
+			// (handshake CRYPTO frames, ACKs). No stream exists yet for this engine to write
+			// application data to -- that is the transport-wiring slice this one does not
+			// attempt.
+			const ngtcp2_ssize written = ngtcp2_conn_writev_stream(it->second.conn, &path.path, &pi,
+				buf, sizeof(buf), nullptr, NGTCP2_WRITE_STREAM_FLAG_NONE, -1, nullptr, 0, ts);
+			if (written < 0) {
+				return false;
+			}
+			if (written == 0) {
+				return true;
+			}
+			if (!sink.SendDatagram(buf, static_cast<size_t>(written), address, port)) {
+				return false;
+			}
+		}
+		return true;
+	}
 
 	bool OwnsConnectionId(Handle handle, const std::string &cid) const override
 	{

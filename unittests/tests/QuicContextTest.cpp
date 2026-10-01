@@ -61,7 +61,7 @@ struct FakeConnection : IQuicConnection
 	bool *closeObserved = nullptr;
 	unsigned calls = 0;
 
-	bool ProcessDatagram(const uint8_t *, size_t) override
+	bool ProcessDatagram(const uint8_t *, size_t, uint64_t) override
 	{
 		++calls;
 		return accepted;

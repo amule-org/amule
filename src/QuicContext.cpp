@@ -144,7 +144,7 @@ bool CQuicContext::ProcessDatagram(
 	auto existing = initial ? FindInitialConnection(address, port, cid)
 				: FindNonInitialConnection(address, port, payload, length);
 	if (existing != m_connections.end()) {
-		const bool accepted = existing->second->ProcessDatagram(payload, length);
+		const bool accepted = existing->second->ProcessDatagram(payload, length, nowMs);
 		if (!accepted || existing->second->IsClosed()) {
 			existing->second->Close();
 			m_connections.erase(existing);
@@ -159,7 +159,7 @@ bool CQuicContext::ProcessDatagram(
 	if (!connection) {
 		return false;
 	}
-	const bool accepted = connection->ProcessDatagram(payload, length);
+	const bool accepted = connection->ProcessDatagram(payload, length, nowMs);
 	if (!accepted || connection->IsClosed()) {
 		connection->Close();
 		return accepted;

@@ -38,7 +38,9 @@ class IQuicConnection
 {
 public:
 	virtual ~IQuicConnection() = default;
-	virtual bool ProcessDatagram(const uint8_t *, size_t) = 0;
+	//! @p nowMs is a monotonic millisecond tick, the same one CQuicContext::ProcessDatagram()
+	//! received -- the only clock reading taken for this datagram.
+	virtual bool ProcessDatagram(const uint8_t *, size_t, uint64_t nowMs) = 0;
 	virtual bool IsClosed() const = 0;
 	virtual void Close() = 0;
 	//! True for a connection ID this server issued and has not retired. After the server's

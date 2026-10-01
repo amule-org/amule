@@ -84,7 +84,7 @@ struct Engine : IQuicNgtcp2Engine
 		++created;
 		return create ? &token : nullptr;
 	}
-	bool Read(Handle handle, const uint8_t *, size_t) override
+	bool Read(Handle handle, const uint8_t *, size_t, uint64_t) override
 	{
 		if (handle == nullptr) {
 			return false;
@@ -92,8 +92,11 @@ struct Engine : IQuicNgtcp2Engine
 		++reads;
 		return read;
 	}
-	bool
-	Flush(Handle handle, IQuicDatagramSink &sink, const CNetworkAddress &address, uint16_t port) override
+	bool Flush(Handle handle,
+		IQuicDatagramSink &sink,
+		const CNetworkAddress &address,
+		uint16_t port,
+		uint64_t) override
 	{
 		if (handle == nullptr) {
 			return false;
@@ -296,7 +299,7 @@ TEST(QuicNgtcp2Adapter, OwnsEngineAndFlushesOutput)
 	{
 		auto connection = factory.CreateInbound(p.data(), p.size(), kPeer, 2, kDcid);
 		ASSERT_TRUE(connection != nullptr);
-		ASSERT_TRUE(connection->ProcessDatagram(p.data(), p.size()));
+		ASSERT_TRUE(connection->ProcessDatagram(p.data(), p.size(), 0));
 		ASSERT_EQUALS(1u, engine->reads);
 		ASSERT_EQUALS(1u, sink->sent.size());
 		ASSERT_EQUALS(9u, sink->sent[0]);
@@ -305,7 +308,7 @@ TEST(QuicNgtcp2Adapter, OwnsEngineAndFlushesOutput)
 		connection->Close();
 		connection->Close();
 		ASSERT_EQUALS(1u, engine->destroyed);
-		ASSERT_TRUE(!connection->ProcessDatagram(p.data(), p.size()));
+		ASSERT_TRUE(!connection->ProcessDatagram(p.data(), p.size(), 0));
 	}
 	ASSERT_EQUALS(1u, engine->destroyed);
 }
@@ -321,10 +324,10 @@ TEST(QuicNgtcp2Adapter, ReadFailureCloses)
 	auto p = Initial();
 	CQuicNgtcp2Factory factory(Policy(s, c, v), sink, engine);
 	auto connection = factory.CreateInbound(p.data(), p.size(), kPeer, 2, kDcid);
-	ASSERT_TRUE(!connection->ProcessDatagram(p.data(), p.size()));
+	ASSERT_TRUE(!connection->ProcessDatagram(p.data(), p.size(), 0));
 	ASSERT_TRUE(connection->IsClosed());
 	ASSERT_EQUALS(1u, engine->destroyed);
-	ASSERT_TRUE(!connection->ProcessDatagram(p.data(), p.size()));
+	ASSERT_TRUE(!connection->ProcessDatagram(p.data(), p.size(), 0));
 	ASSERT_EQUALS(1u, engine->destroyed);
 }
 
@@ -339,7 +342,7 @@ TEST(QuicNgtcp2Adapter, FlushFailureCloses)
 	auto p = Initial();
 	CQuicNgtcp2Factory factory(Policy(s, c, v), sink, engine);
 	auto connection = factory.CreateInbound(p.data(), p.size(), kPeer, 2, kDcid);
-	ASSERT_TRUE(!connection->ProcessDatagram(p.data(), p.size()));
+	ASSERT_TRUE(!connection->ProcessDatagram(p.data(), p.size(), 0));
 	ASSERT_TRUE(connection->IsClosed());
 	ASSERT_EQUALS(1u, engine->destroyed);
 	ASSERT_TRUE(sink->sent.empty());
@@ -430,6 +433,25 @@ TEST(QuicNgtcp2Adapter, ProductionEngineAdvertisesTheSocketTransportReadWindow)
 	ASSERT_EQUALS(static_cast<uint64_t>(CQuicSocketTransport::kReadWindow),
 		engine->GetAdvertisedReadWindow(handle));
 	engine->Destroy(handle);
+}
+
+TEST(QuicNgtcp2Adapter, ProductionEngineReadRejectsAnUnencryptedInitial)
+{
+	Session s;
+	CQuicEphemeralCredentials c;
+	Verifier v;
+	auto sink = std::make_shared<Sink>();
+	auto engine = CreateProductionQuicNgtcp2Engine();
+	auto p = Initial();
+	CQuicNgtcp2Factory factory(ProductionPolicy(s, c, v), sink, engine);
+	auto connection = factory.CreateInbound(p.data(), p.size(), kPeer, 2, kDcid);
+	ASSERT_TRUE(connection != nullptr);
+	// Initial() is structurally valid enough for ngtcp2_accept()'s admission check, but carries
+	// no real CRYPTO frame or AEAD protection -- a genuine handshake needs an actual TLS 1.3
+	// ClientHello, which this codebase has no client implementation to produce. The real engine
+	// must reject it through ngtcp2_conn_read_pkt() rather than crash; this is what ASan
+	// verifies, not just the boolean result.
+	ASSERT_TRUE(!connection->ProcessDatagram(p.data(), p.size(), 0));
 }
 
 TEST(QuicNgtcp2Adapter, ProductionEngineIssuesDistinctScidsPerConnection)
