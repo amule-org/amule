@@ -23,7 +23,8 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-#include "muuli_wdr.h"          // Needed for ID_CLOSEWNDFD,...,IDC_APPLY
+#include "muuli_wdr.h" // Needed for ID_CLOSEWNDFD,...,IDC_APPLY
+#include "DialogLayout.h"
 #include "FileDetailDialog.h"   // Interface declarations
 #include "FileDetailListCtrl.h" // Needed for CFileDetailListCtrl
 #include "CommentDialogLst.h"   // Needed for CCommentDialogLst
@@ -34,7 +35,6 @@
 #include "DataToText.h"    // Needed for PriorityToStr
 #include <tags/FileTags.h> // Needed for FT_MEDIA_* metadata tag names
 
-#include <algorithm> // Needed for std::max
 #include <set>
 #include <wx/textctrl.h> // Needed for wxTextCtrl
 
@@ -79,10 +79,10 @@ CFileDetailDialog::CFileDetailDialog(wxWindow *parent, std::vector<CKnownFile *>
 {
 	m_timer.SetOwner(this, ID_MY_TIMER);
 	m_timer.Start(5000);
-	wxSizer *content = fileDetails(this, true);
+	wxSizer *content = fileDetails(this, false);
 	m_file = m_files[m_index];
 	UpdateData(true);
-	content->SetSizeHints(this);
+	FitScrollableDialog(this, CastChild(IDC_FILE_DETAILS_CONTENT, wxScrolledWindow));
 	content->Show(this, true);
 	OpenInstances().insert(this);
 }
@@ -243,18 +243,16 @@ void CFileDetailDialog::UpdateData(bool resetFilename)
 	CastChild(IDC_FD_SHARE_LASTUP, wxControl)->SetLabel(bufferS);
 
 	// Media Info (issue #418): filled from FT_MEDIA_* when the file has probed metadata, labels
-	// left at their "N/A" default otherwise. Identical in the monolithic and remote builds, the
-	// remote proxy storing the same tags.
+	// reset to "N/A" for absent tags, including when navigating between files. Identical in the
+	// monolithic and remote builds, the remote proxy storing the same tags.
 	//
 	// Per field, NOT gated on GetMetaDataVer(): that answers "has this been probed", and a
 	// probed file can still have no duration. Filling every label on the aggregate would show
 	// Length 0:00 and Bitrate 0 kbps where the truthful answer is N/A.
-	if (uint32 len = m_file->GetIntTagValue(FT_MEDIA_LENGTH)) {
-		CastChild(IDC_FD_MEDIA_LENGTH, wxControl)->SetLabel(CastSecondsToHM(len));
-	}
-	if (uint32 br = m_file->GetIntTagValue(FT_MEDIA_BITRATE)) {
-		CastChild(IDC_FD_MEDIA_BITRATE, wxControl)->SetLabel(CastItoBitrate(br));
-	}
+	const uint32 len = m_file->GetIntTagValue(FT_MEDIA_LENGTH);
+	CastChild(IDC_FD_MEDIA_LENGTH, wxControl)->SetLabel(len ? CastSecondsToHM(len) : _("N/A"));
+	const uint32 br = m_file->GetIntTagValue(FT_MEDIA_BITRATE);
+	CastChild(IDC_FD_MEDIA_BITRATE, wxControl)->SetLabel(br ? CastItoBitrate(br) : _("N/A"));
 	const struct
 	{
 		uint8 ftId;
@@ -266,10 +264,10 @@ void CFileDetailDialog::UpdateData(bool resetFilename)
 		{ FT_MEDIA_TITLE, IDC_FD_MEDIA_TITLE, false } };
 	for (const auto &entry : kMediaLabels) {
 		const wxString &value = m_file->GetStrTagValue(entry.ftId);
-		if (!value.IsEmpty()) {
-			CastChild(entry.ctrlId, wxControl)
-				->SetLabel(entry.formatAsCodec ? FormatMediaCodec(value) : value);
-		}
+		CastChild(entry.ctrlId, wxControl)
+			->SetLabel(value.IsEmpty()       ? _("N/A")
+				   : entry.formatAsCodec ? FormatMediaCodec(value)
+							 : value);
 	}
 
 	// Verify Local Data: the result as the shared files column shows it, empty if never checked,
@@ -300,35 +298,20 @@ void CFileDetailDialog::UpdateData(bool resetFilename)
 	// actually shares data.
 	bool showDownload = (part != nullptr);
 	bool showSharing = (part == nullptr) || (part->GetCompletedSize() > 0);
-	bool relayout = false;
-	bool verifyRelayout = false;
-	if (verifyDetailsCtrl->IsShown() != !verifyDetails.IsEmpty()) {
-		verifyDetailsCtrl->Show(!verifyDetails.IsEmpty());
-		verifyRelayout = true;
-	}
+	// Like the panels below: UpdateDialogContentLayout() takes up the size change.
+	verifyDetailsCtrl->Show(!verifyDetails.IsEmpty());
 	wxWindow *dlPanel = FindWindow(IDC_FD_DOWNLOAD_PANEL);
 	if (dlPanel && dlPanel->IsShown() != showDownload) {
 		dlPanel->Show(showDownload);
-		relayout = true;
 	}
 	wxWindow *shPanel = FindWindow(IDC_FD_SHARING_PANEL);
 	if (shPanel && shPanel->IsShown() != showSharing) {
 		shPanel->Show(showSharing);
-		relayout = true;
 	}
-	if (relayout && GetSizer()) {
-		GetSizer()->Layout();
-		Fit();
-	} else if (verifyRelayout && GetSizer()) {
-		// Not Fit(): that snaps a dialog the user resized back to its default size. Grow only
-		// if the box no longer fits.
-		const wxSize needed = GetSizer()->ComputeFittingWindowSize(this);
-		const wxSize size = GetSize();
-		if (size.x < needed.x || size.y < needed.y) {
-			SetSize(wxSize(std::max(size.x, needed.x), std::max(size.y, needed.y)));
-		}
-		GetSizer()->Layout();
-	}
+	// Labels and section visibility change when navigating files or on a timer.
+	// Update the virtual content size without resizing the user's dialog.
+	wxScrolledWindow *content = CastChild(IDC_FILE_DETAILS_CONTENT, wxScrolledWindow);
+	UpdateDialogContentLayout(content, m_contentBestSizes);
 
 	setEnableForApplyButton();
 	// "Show all comments" opens the ratings/comments dialog, which works for a shared file as
@@ -338,7 +321,6 @@ void CFileDetailDialog::UpdateData(bool resetFilename)
 	m_file->GetShownRatingAndComments(list);
 	CastChild(IDC_CMTBT, wxControl)->Enable(!list.empty() || theApp->IsConnectedKad());
 	FillSourcenameList();
-	Layout();
 }
 
 // CFileDetailDialog message handlers
@@ -476,16 +458,8 @@ void CFileDetailDialog::OnBnClickedApply(wxCommandEvent &WXUNUSED(evt))
 
 	if (fileName.IsOk() && (fileName != m_file->GetFileName())) {
 		if (theApp->sharedfiles->RenameFile(m_file, fileName)) {
-			FindWindow(IDC_FNAME)->SetLabel(
-				MakeStringEscaped(m_file->GetFileName().GetPrintable()));
-			CPath metPath = m_file->IsPartFile()
-						? static_cast<CPartFile *>(m_file)->GetFullName()
-						: m_file->GetFilePath().JoinPaths(m_file->GetFileName());
-			FindWindow(IDC_METFILE)->SetLabel(metPath.GetPrintable());
-
-			resetValueForFilenameTextEdit();
-
-			Layout();
+			// Refresh labels and their scroll range through the same path as file navigation.
+			UpdateData(true);
 		}
 	}
 }

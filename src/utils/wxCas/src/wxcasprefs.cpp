@@ -31,21 +31,31 @@
 #include <wx/dirdlg.h>
 
 #include "wxcasprefs.h"
+#include "../../../DialogLayout.h"
 #include "wxcascte.h"
 #include "wxcasframe.h"
 
 WxCasPrefs::WxCasPrefs(wxWindow *parent)
-: wxDialog(parent, -1, wxString(_("Preferences")))
+: wxDialog(parent,
+	  -1,
+	  wxString(_("Preferences")),
+	  wxDefaultPosition,
+	  wxDefaultSize,
+	  wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER)
 {
+	wxScrolledWindow *content = new wxScrolledWindow(this, wxID_ANY);
+	ConfigureDialogScrolling(content);
+	content->SetMinSize(FromDIP(wxSize(240, 200)));
+
 	wxConfigBase *prefs = wxConfigBase::Get();
 
 	m_mainVBox = new wxBoxSizer(wxVERTICAL);
 
-	m_osPathSBox = new wxStaticBox(this, -1, _("Directory containing amulesig.dat file"));
+	m_osPathSBox = new wxStaticBox(content, -1, _("Directory containing amulesig.dat file"));
 	m_osPathSBoxSizer = new wxStaticBoxSizer(m_osPathSBox, wxHORIZONTAL);
 
-	m_osPathTextCtrl = new wxTextCtrl(this, -1, "");
-	m_osPathBrowseButton = new wxButton(this, ID_OSPATH_BROWSE_BUTTON, wxString(_("Browse")));
+	m_osPathTextCtrl = new wxTextCtrl(content, -1, "");
+	m_osPathBrowseButton = new wxButton(content, ID_OSPATH_BROWSE_BUTTON, wxString(_("Browse")));
 
 	wxString str;
 
@@ -63,14 +73,14 @@ WxCasPrefs::WxCasPrefs(wxWindow *parent)
 
 	m_mainVBox->Add(m_osPathSBoxSizer, wxSizerFlags().Expand().Center().Border(wxALL, 10));
 
-	m_refreshSBox = new wxStaticBox(this, -1, "");
+	m_refreshSBox = new wxStaticBox(content, -1, "");
 	m_refreshSBoxSizer = new wxStaticBoxSizer(m_refreshSBox, wxHORIZONTAL);
 
-	m_refreshSpinButton = new wxSpinCtrl(this, -1);
+	m_refreshSpinButton = new wxSpinCtrl(content, -1);
 	m_refreshSpinButton->SetRange(WxCasCte::MIN_REFRESH_RATE, WxCasCte::MAX_REFRESH_RATE);
 	m_refreshSpinButton->SetValue(
 		prefs->Read(WxCasCte::REFRESH_RATE_KEY, WxCasCte::DEFAULT_REFRESH_RATE));
-	m_refreshStaticText = new wxStaticText(this,
+	m_refreshStaticText = new wxStaticText(content,
 		-1,
 		_("Refresh rate interval in seconds"),
 		wxDefaultPosition,
@@ -81,11 +91,11 @@ WxCasPrefs::WxCasPrefs(wxWindow *parent)
 
 	m_mainVBox->Add(m_refreshSBoxSizer, wxSizerFlags().Expand().Center().Border(wxALL, 10));
 
-	m_autoStatImgSBox = new wxStaticBox(this, -1, "");
+	m_autoStatImgSBox = new wxStaticBox(content, -1, "");
 	m_autoStatImgSBoxSizer = new wxStaticBoxSizer(m_autoStatImgSBox, wxVERTICAL);
 
-	m_autoStatImgCheck =
-		new wxCheckBox(this, ID_AUTOSTATIMG_CHECK, _("Generate a stat image at every refresh event"));
+	m_autoStatImgCheck = new wxCheckBox(
+		content, ID_AUTOSTATIMG_CHECK, _("Generate a stat image at every refresh event"));
 	m_autoStatImgSBoxSizer->Add(
 		m_autoStatImgCheck, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 5));
 
@@ -93,7 +103,7 @@ WxCasPrefs::WxCasPrefs(wxWindow *parent)
 
 	wxString strs[] = { "PNG", "JPG", "BMP" };
 
-	m_autoStatImgCombo = new wxComboBox(this,
+	m_autoStatImgCombo = new wxComboBox(content,
 		ID_AUTOSTATIMG_COMBO,
 		prefs->Read(WxCasCte::AUTOSTATIMG_TYPE_KEY, WxCasCte::DEFAULT_AUTOSTATIMG_TYPE),
 		wxDefaultPosition,
@@ -102,13 +112,13 @@ WxCasPrefs::WxCasPrefs(wxWindow *parent)
 		strs,
 		wxCB_DROPDOWN | wxCB_READONLY);
 
-	m_autoStatImgTextCtrl = new wxTextCtrl(this, -1, "");
+	m_autoStatImgTextCtrl = new wxTextCtrl(content, -1, "");
 	m_autoStatImgTextCtrl->SetValue(
 		prefs->Read(WxCasCte::AUTOSTATIMG_DIR_KEY, WxCasCte::DEFAULT_AUTOSTATIMG_PATH));
 	m_autoStatImgTextCtrl->SetToolTip(
 		_("Enter here the directory where you want to generate the statistic image"));
 
-	m_autoStatImgButton = new wxButton(this, ID_AUTOSTATIMG_BROWSE_BUTTON, wxString(_("Browse")));
+	m_autoStatImgButton = new wxButton(content, ID_AUTOSTATIMG_BROWSE_BUTTON, wxString(_("Browse")));
 
 	m_autoStatImgHBoxSizer->Add(m_autoStatImgCombo, wxSizerFlags().Center().Border(wxALL, 5));
 	m_autoStatImgHBoxSizer->Add(m_autoStatImgTextCtrl, wxSizerFlags(1).Center().Border(wxALL, 5));
@@ -119,47 +129,48 @@ WxCasPrefs::WxCasPrefs(wxWindow *parent)
 
 	m_mainVBox->Add(m_autoStatImgSBoxSizer, wxSizerFlags().Expand().Center().Border(wxALL, 5));
 
-	m_ftpUpdateSBox = new wxStaticBox(this, -1, "");
+	m_ftpUpdateSBox = new wxStaticBox(content, -1, "");
 	m_ftpUpdateSBoxSizer = new wxStaticBoxSizer(m_ftpUpdateSBox, wxVERTICAL);
 
 	m_ftpUpdateCheck = new wxCheckBox(
-		this, ID_FTP_UPDATE_CHECK, _("Upload periodically your stat image to FTP server"));
+		content, ID_FTP_UPDATE_CHECK, _("Upload periodically your stat image to FTP server"));
 	m_ftpUpdateSBoxSizer->Add(
 		m_ftpUpdateCheck, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 5));
 
 	m_ftpUpdateGridSizer = new wxGridSizer(2);
 
-	m_ftpUrlStaticText = new wxStaticText(this, -1, _("FTP Url"));
+	m_ftpUrlStaticText = new wxStaticText(content, -1, _("FTP Url"));
 	m_ftpUpdateGridSizer->Add(m_ftpUrlStaticText, wxSizerFlags(1).Bottom().Border(wxALL, 5));
 
-	m_ftpPathStaticText = new wxStaticText(this, -1, _("FTP Path"));
+	m_ftpPathStaticText = new wxStaticText(content, -1, _("FTP Path"));
 	m_ftpUpdateGridSizer->Add(m_ftpPathStaticText, wxSizerFlags(1).Bottom().Border(wxALL, 5));
-	m_ftpUrlTextCtrl = new wxTextCtrl(this, -1, "");
+	m_ftpUrlTextCtrl = new wxTextCtrl(content, -1, "");
 	m_ftpUrlTextCtrl->SetValue(prefs->Read(WxCasCte::FTP_URL_KEY, WxCasCte::DEFAULT_FTP_URL));
 	m_ftpUrlTextCtrl->SetToolTip(_("Enter here the URL of your FTP server"));
 
 	m_ftpUpdateGridSizer->Add(m_ftpUrlTextCtrl, wxSizerFlags(1).Expand().Border(wxALL, 5));
 
-	m_ftpPathTextCtrl = new wxTextCtrl(this, -1, "");
+	m_ftpPathTextCtrl = new wxTextCtrl(content, -1, "");
 	m_ftpPathTextCtrl->SetValue(prefs->Read(WxCasCte::FTP_PATH_KEY, WxCasCte::DEFAULT_FTP_PATH));
 	m_ftpPathTextCtrl->SetToolTip(
 		_("Enter here the directory where putting your stat image on FTP server"));
 
 	m_ftpUpdateGridSizer->Add(m_ftpPathTextCtrl, wxSizerFlags(1).Expand().Border(wxALL, 5));
 
-	m_ftpUserStaticText = new wxStaticText(this, -1, _("User"));
+	m_ftpUserStaticText = new wxStaticText(content, -1, _("User"));
 	m_ftpUpdateGridSizer->Add(m_ftpUserStaticText, wxSizerFlags(1).Bottom().Border(wxALL, 5));
 
-	m_ftpPasswdStaticText = new wxStaticText(this, -1, _("Password"));
+	m_ftpPasswdStaticText = new wxStaticText(content, -1, _("Password"));
 	m_ftpUpdateGridSizer->Add(m_ftpPasswdStaticText, wxSizerFlags(1).Bottom().Border(wxALL, 5));
 
-	m_ftpUserTextCtrl = new wxTextCtrl(this, -1, "");
+	m_ftpUserTextCtrl = new wxTextCtrl(content, -1, "");
 	m_ftpUserTextCtrl->SetValue(prefs->Read(WxCasCte::FTP_USER_KEY, WxCasCte::DEFAULT_FTP_USER));
 	m_ftpUserTextCtrl->SetToolTip(_("Enter here the User name to log into your FTP server"));
 
 	m_ftpUpdateGridSizer->Add(m_ftpUserTextCtrl, wxSizerFlags(1).Expand().Border(wxALL, 5));
 
-	m_ftpPasswdTextCtrl = new wxTextCtrl(this, -1, "", wxDefaultPosition, wxDefaultSize, wxTE_PASSWORD);
+	m_ftpPasswdTextCtrl =
+		new wxTextCtrl(content, -1, "", wxDefaultPosition, wxDefaultSize, wxTE_PASSWORD);
 	m_ftpPasswdTextCtrl->SetValue(prefs->Read(WxCasCte::FTP_PASSWD_KEY, WxCasCte::DEFAULT_FTP_PASSWD));
 	m_ftpPasswdTextCtrl->SetToolTip(_("Enter here the User password to log into your FTP server"));
 
@@ -169,11 +180,11 @@ WxCasPrefs::WxCasPrefs(wxWindow *parent)
 		m_ftpUpdateGridSizer, wxSizerFlags(1).Expand().CenterVertical().Border(wxALL, 5));
 
 	m_ftpRateHBoxSizer = new wxBoxSizer(wxHORIZONTAL);
-	m_ftpUpdateSpinButton = new wxSpinCtrl(this, -1);
+	m_ftpUpdateSpinButton = new wxSpinCtrl(content, -1);
 	m_ftpUpdateSpinButton->SetRange(WxCasCte::MIN_FTP_RATE, WxCasCte::MAX_FTP_RATE);
 	m_ftpUpdateSpinButton->SetValue(
 		prefs->Read(WxCasCte::FTP_UPDATE_RATE_KEY, WxCasCte::DEFAULT_FTP_UPDATE_RATE));
-	m_ftpUpdateStaticText = new wxStaticText(this,
+	m_ftpUpdateStaticText = new wxStaticText(content,
 		-1,
 		_("FTP update rate interval in minutes"),
 		wxDefaultPosition,
@@ -204,8 +215,12 @@ WxCasPrefs::WxCasPrefs(wxWindow *parent)
 		EnableFtpUpdateCtrls(FALSE);
 	}
 
+	content->SetSizer(m_mainVBox);
+	wxBoxSizer *top = new wxBoxSizer(wxVERTICAL);
+	top->Add(content, wxSizerFlags(1).Expand());
+
 	m_staticLine = new wxStaticLine(this, -1);
-	m_mainVBox->Add(m_staticLine, wxSizerFlags().Expand().Center().Border(wxALL, 0));
+	top->Add(m_staticLine, wxSizerFlags().Expand().Center().Border(wxALL, 0));
 
 	m_buttonHBox = new wxBoxSizer(wxHORIZONTAL);
 	m_validateButton = new wxButton(this, ID_VALIDATE_BUTTON, wxString(_("Validate")));
@@ -214,10 +229,11 @@ WxCasPrefs::WxCasPrefs(wxWindow *parent)
 	m_buttonHBox->Add(m_validateButton, wxSizerFlags().Center().Border(wxALL, 5));
 	m_buttonHBox->Add(m_cancelButton, wxSizerFlags().Center().Border(wxALL, 5));
 
-	m_mainVBox->Add(m_buttonHBox, wxSizerFlags().Center().Border(wxALL, 10));
+	top->Add(m_buttonHBox, wxSizerFlags().Center().Border(wxALL, 10));
 
 	SetAutoLayout(TRUE);
-	SetSizerAndFit(m_mainVBox);
+	SetSizer(top);
+	FitScrollableDialog(this, content);
 
 	m_validateButton->SetFocus();
 	m_validateButton->SetDefault();

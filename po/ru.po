@@ -14,8 +14,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-30 22:38+0200\n"
-"PO-Revision-Date: 2026-09-30 14:50+0000\n"
+"POT-Creation-Date: 2026-09-30 19:39+0800\n"
+"PO-Revision-Date: 2026-10-01 13:21+0000\n"
 "Last-Translator: Radist Morse <radist.morse@gmail.com>\n"
 "Language-Team: Russian <kde-russian@lists.kde.ru>\n"
 "Language: ru\n"
@@ -1587,7 +1587,7 @@ msgstr "Нарушитель"
 msgid "Verified - OK"
 msgstr "Проверено — хорошо"
 
-#: src/ClientRef.cpp src/muuli_wdr.cpp
+#: src/ClientRef.cpp src/FileDetailDialog.cpp src/muuli_wdr.cpp
 msgid "N/A"
 msgstr "Н/Д"
 
@@ -4727,13 +4727,12 @@ msgid "Reconnect on loss"
 msgstr "Переподключать при обрыве связи"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Kad protocol version"
-msgstr "Недопустимая версия протокола."
+msgstr "Версия протокола Kad"
 
 #: src/muuli_wdr.cpp
 msgid "Advertise Kad protocol 0x0a (AICH keyword storage)"
-msgstr ""
+msgstr "Объявлять 0x0a протокола Kad (хранение ключевых слов AICH)"
 
 #: src/muuli_wdr.cpp
 msgid ""
@@ -4745,10 +4744,17 @@ msgid ""
 "\n"
 "Hashes learned from Kad search results remain untrusted until download sources corroborate them. Reported publisher counts alone never authorize AICH recovery."
 msgstr ""
+"Если включено, aMule объявляет версию протокола Kad 0x0a и обрабатывает хеши AICH в результатах публикации и поиска по ключевым словам.\n"
+"\n"
+"ПРЕДУПРЕЖДЕНИЕ: включение этой опции может привести к тому, что старые клиенты Kad (до 0.49b), не умеющие разбирать теги результатов AICH, начнут отбрасывать результаты поиска. Большинство современных клиентов поддерживают эту возможность, но если вы заметили пропажу результатов поиска, попробуйте отключить эту опцию.\n"
+"\n"
+"Отключение этой опции приведёт к удалению сохранённых данных индекса ключевых слов AICH при следующем сохранении; для повторного включения потребуется заново собрать эти данные.\n"
+"\n"
+"Хеши, полученные из результатов поиска Kad, остаются недоверенными до тех пор, пока их не подтвердят источники загрузки. Одни лишь заявленные счётчики публикаций никогда не дают права на восстановление AICH."
 
 #: src/muuli_wdr.cpp
 msgid "Reject AICH publish tags from legacy Kad peers (< 0x09)"
-msgstr ""
+msgstr "Отклонять теги публикации AICH от устаревших пиров Kad (< 0x09)"
 
 #: src/muuli_wdr.cpp
 msgid ""
@@ -4756,6 +4762,9 @@ msgid ""
 "\n"
 "WARNING: This may reject legitimate publishers whose routing-table version is stale, reducing AICH hash coverage. Nodes with unknown version are still accepted. Hashes learned from Kad search results require download-source corroboration regardless of this setting."
 msgstr ""
+"Если включено, теги публикации ключевых слов AICH от узлов, объявляющих версию Kad ниже 0x09, отклоняются, поскольку эти версии не поддерживают хранение ключевых слов AICH. Заявленная версия не является доказательством надёжности публикатора.\n"
+"\n"
+"ПРЕДУПРЕЖДЕНИЕ: это может привести к отклонению добросовестных публикаторов, у которых версия в таблице маршрутизации устарела, что снизит охват хешей AICH. Узлы с неизвестной версией по-прежнему принимаются. Хеши, полученные из результатов поиска Kad, требуют подтверждения от источников загрузки независимо от этой настройки."
 
 #: src/muuli_wdr.cpp
 msgid "Remove dead server after"

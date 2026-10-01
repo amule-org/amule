@@ -62,8 +62,20 @@ This script:
 1. Runs `xgettext` over the files listed in `po/POTFILES.in` to
    regenerate `po/amule.pot`.
 2. Fills in the copyright year in the `.pot` header.
-3. Runs `msgmerge --update` on every `po/*.po` file so each language
-   file gets the new and changed strings merged in.
+3. Preserves `POT-Creation-Date` when template content is unchanged. Source
+   references, entry ordering, extraction time, and the copyright year do not
+   count as content changes; messages, contexts, plurals, translator comments,
+   and format flags do. References and the copyright year are still updated.
+4. Runs `msgmerge` on every `po/*.po` file so each language file gets the new
+   and changed strings merged in.
+
+The creation date records the last meaningful template change. Regenerating
+an unchanged template therefore avoids timestamp-only diffs across all language
+catalogs. Real overlapping catalog edits can still cause merge conflicts.
+
+If extraction finds no translatable strings, the script reports an error and
+leaves the existing template and language catalogs unchanged. Check the source
+files and `po/POTFILES.in` before retrying.
 
 `update-po.sh` must be run from the repository root (same requirement
 as `scripts/compile.sh`).

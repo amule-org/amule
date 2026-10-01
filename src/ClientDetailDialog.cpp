@@ -24,13 +24,14 @@
 //
 
 #include "ClientDetailDialog.h" // Interface declarations
-#include "PartFile.h"           // Needed for CPartFile
-#include "UploadQueue.h"        // Needed for CUploadQueue
-#include "ServerList.h"         // Needed for CServerList
-#include "amule.h"              // Needed for theApp
-#include "Server.h"             // Needed for CServer
-#include "muuli_wdr.h"          // Needed for ID_CLOSEWND
-#include "Preferences.h"        // Needed for thePrefs
+#include "DialogLayout.h"
+#include "PartFile.h"    // Needed for CPartFile
+#include "UploadQueue.h" // Needed for CUploadQueue
+#include "ServerList.h"  // Needed for CServerList
+#include "amule.h"       // Needed for theApp
+#include "Server.h"      // Needed for CServer
+#include "muuli_wdr.h"   // Needed for ID_CLOSEWND
+#include "Preferences.h" // Needed for thePrefs
 
 // CClientDetailDialog dialog
 
@@ -79,25 +80,35 @@ ClientDetailInfo ClientDetailInfoFromClient(const CClientRef &client)
 // Both constructors run the same setup; only where m_info came from differs.
 void CClientDetailDialog::Build()
 {
-	wxSizer *content = clientDetails(this, true);
+	wxSizer *content = clientDetails(this, false);
 	// The Close button uses ID_CLOSEWND rather than wxID_CANCEL, so wxDialog does not auto-bind
 	// Escape to it; name it as the escape target so Escape dismisses the dialog the way Close
 	// does.
 	SetEscapeId(ID_CLOSEWND);
 	OnInitDialog();
-	content->SetSizeHints(this);
+	FitScrollableDialog(this, CastChild(IDC_CLIENT_DETAILS_CONTENT, wxScrolledWindow));
 	content->Show(this, true);
 }
 
 CClientDetailDialog::CClientDetailDialog(wxWindow *parent, const CClientRef &client)
-: wxDialog(parent, 9997, _("Client Details"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE)
+: wxDialog(parent,
+	  9997,
+	  _("Client Details"),
+	  wxDefaultPosition,
+	  wxDefaultSize,
+	  wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER)
 {
 	m_info = ClientDetailInfoFromClient(client);
 	Build();
 }
 
 CClientDetailDialog::CClientDetailDialog(wxWindow *parent, const ClientDetailInfo &info)
-: wxDialog(parent, 9997, _("Client Details"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE)
+: wxDialog(parent,
+	  9997,
+	  _("Client Details"),
+	  wxDefaultPosition,
+	  wxDefaultSize,
+	  wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER)
 {
 	m_info = info;
 	Build();

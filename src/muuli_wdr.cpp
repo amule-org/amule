@@ -38,6 +38,7 @@
 #include "muuli_wdr.h"
 
 #include "amuleDlg.h" // Needed for CLIENT_SKIN_SIZE (clientImages' artIds static_assert)
+#include "DialogLayout.h" // Scrollable details dialogs
 #include "OtherFunctions.h" // Needed for LabelWithColon
 
 #include <wx/artprov.h> // Needed for the "amule:" art ids (status bar + transfer window icons)
@@ -595,11 +596,15 @@ void AddFileDetailRow(
 
 wxSizer *fileDetails( wxWindow *parent, bool call_fit, bool set_sizer )
 {
+    wxScrolledWindow *content = new wxScrolledWindow( parent, IDC_FILE_DETAILS_CONTENT );
+    ConfigureDialogScrolling( content );
+    content->SetMinSize( parent->FromDIP(wxSize(240, 200)) );
     wxFlexGridSizer *item0 = new wxFlexGridSizer( 1, 0, 0 );
     item0->AddGrowableCol( 0 );
-    item0->AddGrowableRow( 3 );
+    // Give extra height to File Names, keeping the Media Info fields together.
+    item0->AddGrowableRow( 4 );
 
-    wxStaticBox *item2 = new wxStaticBox( parent, -1, _("General") );
+    wxStaticBox *item2 = new wxStaticBox( content, -1, _("General") );
     wxStaticBoxSizer *item1 = new wxStaticBoxSizer( item2, wxVERTICAL );
 
     wxBoxSizer *item3 = new wxBoxSizer( wxHORIZONTAL );
@@ -646,7 +651,7 @@ wxSizer *fileDetails( wxWindow *parent, bool call_fit, bool set_sizer )
     // Download-only sections, wrapped in a panel the dialog hides for a shared file that is not, or
     // no longer, downloading. Controls are parented to the panel so Show(false) collapses the whole
     // group.
-    wxPanel *dlPanel = new wxPanel( parent, IDC_FD_DOWNLOAD_PANEL );
+    wxPanel *dlPanel = new wxPanel( content, IDC_FD_DOWNLOAD_PANEL );
     wxBoxSizer *dlPanelSizer = new wxBoxSizer( wxVERTICAL );
 
     wxStaticBox *item23 = new wxStaticBox( dlPanel, -1, _("Transfer") );
@@ -703,7 +708,7 @@ wxSizer *fileDetails( wxWindow *parent, bool call_fit, bool set_sizer )
     // Sharing box, wrapped in a panel the dialog hides for a file with no sharing role. Upload
     // counters, live upload activity and the share timestamps; populated in both the monolithic and
     // remote builds.
-    wxPanel *shPanel = new wxPanel( parent, IDC_FD_SHARING_PANEL );
+    wxPanel *shPanel = new wxPanel( content, IDC_FD_SHARING_PANEL );
     wxBoxSizer *shPanelSizer = new wxBoxSizer( wxVERTICAL );
     wxStaticBox *shBox = new wxStaticBox( shPanel, -1, _("Sharing") );
     wxStaticBoxSizer *shBoxSizer = new wxStaticBoxSizer( shBox, wxVERTICAL );
@@ -733,7 +738,7 @@ wxSizer *fileDetails( wxWindow *parent, bool call_fit, bool set_sizer )
     // six labels show "N/A" otherwise. Layout and styling mirror the "Intelligent Corruption
     // Handling" box above: "label :" static text plus a HOTLIGHT-coloured value, two fields per row
     // in a 2-column growable grid.
-    wxStaticBox *mediaBox = new wxStaticBox( parent, -1, _("Media Info") );
+    wxStaticBox *mediaBox = new wxStaticBox( content, -1, _("Media Info") );
     wxStaticBoxSizer *mediaBoxSizer = new wxStaticBoxSizer( mediaBox, wxVERTICAL );
     wxFlexGridSizer *mediaGrid = new wxFlexGridSizer( 2, 0, 0 );
     mediaGrid->AddGrowableCol( 0 );
@@ -786,7 +791,7 @@ wxSizer *fileDetails( wxWindow *parent, bool call_fit, bool set_sizer )
 
     // Verify Local Data: the last result as the shared files column shows it, and after a failed
     // check the corrupt parts and AICH blocks in a scrolling box, however long the list.
-    wxStaticBox *verifyBox = new wxStaticBox( parent, -1, _("Verify Local Data") );
+    wxStaticBox *verifyBox = new wxStaticBox( content, -1, _("Verify Local Data") );
     wxStaticBoxSizer *verifyBoxSizer = new wxStaticBoxSizer( verifyBox, wxVERTICAL );
     AddFileDetailRow( verifyBox, verifyBoxSizer, _("Status"), IDC_FD_VERIFY_STATUS, true );
     wxTextCtrl *verifyDetails = new wxTextCtrl( verifyBox, IDC_FD_VERIFY_DETAILS, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE | wxTE_READONLY );
@@ -795,7 +800,7 @@ wxSizer *fileDetails( wxWindow *parent, bool call_fit, bool set_sizer )
     verifyBoxSizer->Add( verifyDetails, wxSizerFlags().Expand().Border(wxTOP, 5) );
     item0->Add( verifyBoxSizer, wxSizerFlags().Expand().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 5) );
 
-    wxStaticBox *item66 = new wxStaticBox( parent, -1, _("File Names") );
+    wxStaticBox *item66 = new wxStaticBox( content, -1, _("File Names") );
     wxStaticBoxSizer *item65 = new wxStaticBoxSizer( item66, wxVERTICAL );
 
     CFileDetailListCtrl *item67 = new CFileDetailListCtrl( item66, IDC_LISTCTRLFILENAMES, wxDefaultPosition, wxSize(-1,130), 0 );
@@ -835,15 +840,19 @@ wxSizer *fileDetails( wxWindow *parent, bool call_fit, bool set_sizer )
     wxButton *item78 = new wxButton( parent, ID_CLOSEWNDFD, _("Cancel"), wxDefaultPosition, wxDefaultSize, 0 );
     item78->SetDefault();
     item73->Add( item78, wxSizerFlags().CenterVertical().Right().Border(wxALL, 5) );
-    item0->Add( item73, wxSizerFlags().Expand().CenterVertical() );
+
+    content->SetSizer( item0 );
+    wxBoxSizer *top = new wxBoxSizer( wxVERTICAL );
+    top->Add( content, wxSizerFlags(1).Expand() );
+    top->Add( item73, wxSizerFlags().Expand() );
     if (set_sizer)
     {
-        parent->SetSizer( item0 );
+        parent->SetSizer( top );
         if (call_fit)
-            item0->SetSizeHints( parent );
+            FitScrollableDialog( parent, content );
     }
-    
-    return item0;
+
+    return top;
 }
 
 wxSizer *commentDlg( wxWindow *parent, bool call_fit, bool set_sizer )
@@ -1164,9 +1173,12 @@ item29->SetName("otherScope");
 
 wxSizer *clientDetails( wxWindow *parent, bool call_fit, bool set_sizer )
 {
+    wxScrolledWindow *content = new wxScrolledWindow( parent, IDC_CLIENT_DETAILS_CONTENT );
+    ConfigureDialogScrolling( content );
+    content->SetMinSize( parent->FromDIP(wxSize(240, 200)) );
     wxBoxSizer *item0 = new wxBoxSizer( wxVERTICAL );
 
-    wxStaticBox *item2 = new wxStaticBox( parent, -1, _("General") );
+    wxStaticBox *item2 = new wxStaticBox( content, -1, _("General") );
     wxStaticBoxSizer *item1 = new wxStaticBoxSizer( item2, wxVERTICAL );
 
     wxBoxSizer *item3 = new wxBoxSizer( wxHORIZONTAL );
@@ -1249,7 +1261,7 @@ wxSizer *clientDetails( wxWindow *parent, bool call_fit, bool set_sizer )
     item10->Add( item26b, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 5) );
     item1->Add( item10, wxSizerFlags().Expand().CenterVertical() );
     item0->Add( item1, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 5) );
-    wxStaticBox *item28 = new wxStaticBox( parent, -1, _("Transfers to client") );
+    wxStaticBox *item28 = new wxStaticBox( content, -1, _("Transfers to client") );
     wxStaticBoxSizer *item27 = new wxStaticBoxSizer( item28, wxVERTICAL );
 
     wxBoxSizer *item29 = new wxBoxSizer( wxHORIZONTAL );
@@ -1302,7 +1314,7 @@ wxSizer *clientDetails( wxWindow *parent, bool call_fit, bool set_sizer )
     item32->Add( item44, wxSizerFlags().Expand().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 5) );
     item27->Add( item32, wxSizerFlags().Expand().CenterVertical() );
     item0->Add( item27, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 5) );
-    wxStaticBox *item46 = new wxStaticBox( parent, -1, _("Scores") );
+    wxStaticBox *item46 = new wxStaticBox( content, -1, _("Scores") );
     wxStaticBoxSizer *item45 = new wxStaticBoxSizer( item46, wxVERTICAL );
 
     wxFlexGridSizer *item47 = new wxFlexGridSizer( 5, 0, 0 );
@@ -1337,15 +1349,22 @@ wxSizer *clientDetails( wxWindow *parent, bool call_fit, bool set_sizer )
     item0->Add( item45, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 5) );
     wxButton *item56 = new wxButton( parent, ID_CLOSEWND, _("Close"), wxDefaultPosition, wxDefaultSize, 0 );
     item56->SetDefault();
-    item0->Add( item56, wxSizerFlags().Center().Border(wxALL, 5) );
+    wxBoxSizer *buttons = new wxBoxSizer( wxHORIZONTAL );
+    buttons->AddStretchSpacer();
+    buttons->Add( item56, wxSizerFlags().Center().Border(wxALL, 5) );
+    buttons->AddStretchSpacer();
+    content->SetSizer( item0 );
+    wxBoxSizer *top = new wxBoxSizer( wxVERTICAL );
+    top->Add( content, wxSizerFlags(1).Expand() );
+    top->Add( buttons, wxSizerFlags().Expand() );
     if (set_sizer)
     {
-        parent->SetSizer( item0 );
+        parent->SetSizer( top );
         if (call_fit)
-            item0->SetSizeHints( parent );
+            FitScrollableDialog( parent, content );
     }
-    
-    return item0;
+
+    return top;
 }
 
 wxSizer *PreferencesGeneralTab( wxWindow *parent, bool call_fit, bool set_sizer )

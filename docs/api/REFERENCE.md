@@ -250,7 +250,9 @@ The exceptions are the endpoints whose whole purpose is to do something again: `
 
 **Every IP address on this surface, in either direction, is a dotted-quad string.** `"203.0.113.5"`, never `3405803781`, and never a byte-order the caller has to know about. That covers request bodies, query parameters and response fields alike.
 
-The conversion to and from the host-order integers EC carries happens inside amuleapi. `POST /kad/bootstrap` accepts the address only as a dotted quad; a bare integer is rejected (see the endpoint's errors), so there is no byte-order ambiguity about which address reaches the daemon.
+The conversion to and from the integers EC carries happens inside amuleapi, in whichever byte order the daemon expects for that field. `POST /kad/bootstrap` accepts the address only as a dotted quad; a bare integer is rejected (see the endpoint's errors), so there is no byte-order ambiguity about which address reaches the daemon.
+
+An address must be exactly four decimal octets, each `0..255` and at most three digits. Anything else is a `400`: whitespace, a fifth octet, or a trailing `:port` where a bare address is expected.
 
 ### Query parameter validation
 
@@ -2521,9 +2523,9 @@ curl -s -X POST -H "Authorization: Bearer $TOKEN" \
 
 **Response:** `202 Accepted` → `{ "ip": "1.2.3.4", "port": 4672 }`. The Kad probe itself is fire-and-forget UDP; the `202` confirms amuled accepted the request, not that the contact was reachable.
 
-The echo is the documented exception to the no-body rule for actions: it reports **which address the daemon parsed**, which the caller cannot read back anywhere else. `ip` comes back as a dotted quad -- the spelling the request used and the one every other IP on this surface uses, not the host-order integer EC carries internally (a value no other field on this surface produces, and one a client could not post back without converting).
+The echo is the documented exception to the no-body rule for actions. It is the address as amuleapi parsed it, in canonical form (`"010.0.0.1"` comes back as `"10.0.0.1"`); it does not confirm where the probe went. `ip` comes back as a dotted quad -- the spelling the request used and the one every other IP on this surface uses, not the host-order integer EC carries internally (a value no other field on this surface produces, and one a client could not post back without converting).
 
-**Errors:** `400 bad_request` (missing `ip`, or an `ip` that is not a string — a numeric one included, missing/non-integer `port`, port outside `1..65535`, malformed dotted-quad), `400 amuled_rejected`, `503 ec_unavailable`.
+**Errors:** `400 bad_request` (missing `ip`, or an `ip` that is not a string (a numeric one included), missing/non-integer `port`, port outside `1..65535`, malformed dotted-quad, including anything after the fourth octet such as `"1.2.3.4:4672"`), `400 amuled_rejected`, `503 ec_unavailable`.
 
 #### `POST /api/v1/kad/update`
 

@@ -15,8 +15,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-30 22:38+0200\n"
-"PO-Revision-Date: 2026-09-30 14:49+0000\n"
+"POT-Creation-Date: 2026-09-30 19:39+0800\n"
+"PO-Revision-Date: 2026-10-01 13:20+0000\n"
 "Last-Translator: Marcelo Jimenez <mroberto@users.sourceforge.com>\n"
 "Language-Team: Português (Brasileiro) <pt@li.org>\n"
 "Language: pt_BR\n"
@@ -212,11 +212,16 @@ msgid ""
 "\n"
 "The file is deleted and no longer shared. This cannot be undone."
 msgstr ""
+"Você tem certeza que quer apagar '%s' do disco?\n"
+"\n"
+"Arquivo: %s\n"
+"\n"
+"O arquivo será apagado e não mais compartilhado. Isto não poderá ser desfeito."
 
 #: src/GuiEvents.cpp
 #, c-format
 msgid "... and %i more"
-msgstr ""
+msgstr "... e %i mais"
 
 #: src/GuiEvents.cpp
 #, c-format
@@ -226,26 +231,29 @@ msgid ""
 "%s\n"
 "The files are deleted and no longer shared. This cannot be undone."
 msgstr ""
+"Você tem certeza que quer apagar os %i arquivos selecionados do disco?\n"
+"\n"
+"%s\n"
+"Os arquivos serão apagados e não mais compartilhados. Isto não poderá ser desfeito."
 
 #: src/GuiEvents.cpp
-#, fuzzy
 msgid "Delete from disk"
-msgstr "Pegar da rede Kad"
+msgstr "Apagar do disco"
 
 #: src/GuiEvents.cpp
 #, c-format
 msgid "Skipped deleting '%s': the selected file has changed."
-msgstr ""
+msgstr "Pulei o apagamento de '%s': o arquivo selecionado foi alterado."
 
 #: src/GuiEvents.cpp
 #, c-format
 msgid "Deleted '%s' from disk."
-msgstr ""
+msgstr "'%s' foi apagado do disco."
 
 #: src/GuiEvents.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Could not delete '%s' from disk."
-msgstr "Não foi possível excluir a categoria: %s"
+msgstr "Não foi possível apagar '%s' do disco."
 
 #: src/GuiEvents.cpp
 #, c-format
@@ -258,6 +266,13 @@ msgid ""
 "Yes: stop sharing and remove the list entries. A later share scan may share the files again.\n"
 "No: keep the files shared and listed."
 msgstr ""
+"Não foi possivel apagar estes arquivos do disco:\n"
+"\n"
+"%s\n"
+"Removo-os dos compartilhamentos e da lista de transferências completas de qualquer modo?\n"
+"\n"
+"Sim: para de compartilhar e remove as entradas na lista. Uma busca de compartilhamento posterior pode compartilhar os arquivos novamente.\n"
+"Não: mantém os arquivos compartilhados e listados."
 
 #: src/amuleAppCommon.cpp
 msgid "Failed to open ED2KLinks file."
@@ -607,7 +622,7 @@ msgstr "Metadados de mídia: arquivo provado não é mais conhecido, o resultado
 #: src/amule.cpp
 #, c-format
 msgid "Verify Local Data: another file named '%s' in your shared folders has the same content as '%s' and may be an intact copy of it."
-msgstr ""
+msgstr "Verifica dados locais: outro arquivo chamado '%s' em suas pastas de arquivos compartilhados tem o mesmo conteúdo que '%s' e pode se um a cópia intacta deste."
 
 #: src/amule.cpp
 #, c-format
@@ -1558,7 +1573,7 @@ msgstr "Cara Mau"
 msgid "Verified - OK"
 msgstr "Verificado - OK"
 
-#: src/ClientRef.cpp src/muuli_wdr.cpp
+#: src/ClientRef.cpp src/FileDetailDialog.cpp src/muuli_wdr.cpp
 msgid "N/A"
 msgstr "N/A"
 
@@ -1984,9 +1999,8 @@ msgid "C&lear completed"
 msgstr "Limpar Down&loads concluídos"
 
 #: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
-#, fuzzy
 msgid "Delete file from &disk"
-msgstr "Apagando arquivo: %s"
+msgstr "Apagar o arquivo do &disco"
 
 #: src/DownloadListCtrl.cpp
 msgid "Swap every A4AF to this file now"
@@ -4676,13 +4690,12 @@ msgid "Reconnect on loss"
 msgstr "Reconectar ao ser desconectado"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Kad protocol version"
-msgstr "Versão do protocolo inválida."
+msgstr "Versão do protocolo Kad"
 
 #: src/muuli_wdr.cpp
 msgid "Advertise Kad protocol 0x0a (AICH keyword storage)"
-msgstr ""
+msgstr "Propaga o código de protocolo Kad 0x0a (AICH keyword storage)"
 
 #: src/muuli_wdr.cpp
 msgid ""
@@ -4694,10 +4707,17 @@ msgid ""
 "\n"
 "Hashes learned from Kad search results remain untrusted until download sources corroborate them. Reported publisher counts alone never authorize AICH recovery."
 msgstr ""
+"Quando habilitado, o aMule vai anunciar a o código de protocolo 0x0a e processar hashes AICH nos resultados de palavra chave/busca.\n"
+"\n"
+"AVISO: Habilitar isto pode causar a perda de resultados de busca por cliente Kad mais antigos (pre-0.49b) que não podem fazer parse das tags de resultado de AICH. A maioria dos clientes atuais a suporta, mas se você experimentar a falta de resultados de busca, tente desabilitar esta opção.\n"
+"\n"
+"Desabilitar esta opção descarta os dados guardados de índice/palavra-chave de AICH no próximo salvamento; re-habilitá-lo requer a coleta destes dados novamente.\n"
+"\n"
+"Hashes aprendidos dos resultados de buacas Kad permanecem não-confiáveis até que as fontes de download os corroborem. As contagens reportadas dos publicadores sozinhas nunca autorizam a recuperação por AICH."
 
 #: src/muuli_wdr.cpp
 msgid "Reject AICH publish tags from legacy Kad peers (< 0x09)"
-msgstr ""
+msgstr "Rejeita a publicação de tags AICH vindas de pares Kad legados (< 0x09)"
 
 #: src/muuli_wdr.cpp
 msgid ""
@@ -4705,6 +4725,9 @@ msgid ""
 "\n"
 "WARNING: This may reject legitimate publishers whose routing-table version is stale, reducing AICH hash coverage. Nodes with unknown version are still accepted. Hashes learned from Kad search results require download-source corroboration regardless of this setting."
 msgstr ""
+"Quando habilitado, tags AICH de palavra chave publicadas de nós anunciando uma versão de Kad abaixo de 0x09 são rejeitadas porque estas versões não suportam o armazenamento de palavras chave por AICH. Versões anunciadas não são prova que um publicador seja confiável.\n"
+"\n"
+"AVISO: Isto pode rejeitar publicadores legítimos cujas versões de tabela de roteamento sejam antigas, reduzindo a cobertura do hash AICH. Nós com versão desconhecida ainda são aceitos. Hashes aprendidos de resultados de busca Kad requerem corroboração de fontes de download independente desta configuração."
 
 #: src/muuli_wdr.cpp
 msgid "Remove dead server after"

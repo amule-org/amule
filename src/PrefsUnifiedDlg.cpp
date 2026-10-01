@@ -24,6 +24,7 @@
 //
 
 #include "PrefsUnifiedDlg.h"
+#include "DialogLayout.h"
 
 #include <common/Constants.h>
 #include <common/Macros.h> // Needed for itemsof()
@@ -39,6 +40,7 @@
 #include <wx/listctrl.h> // shared-folders editor (remote GUI)
 #include <set>           // set-compare of shared roots (session refresh)
 #include <wx/progdlg.h>
+#include <wx/scrolwin.h>               // independently scrollable preference pages
 #include "SharedFilesReloadProgress.h" // ReloadSharedFilesWithProgress
 
 #include <memory> // std::unique_ptr (progress dialog lifetime)
@@ -86,14 +88,25 @@
 #include "UserEvents.h"
 #include "PlatformSpecific.h" // Needed for PLATFORMSPECIFIC_CAN_PREVENT_SLEEP_MODE
 
-#ifdef CLIENT_GUI
 namespace
 {
+// Controls can live inside nested panels/static boxes. Refresh their owning page.
+void RefreshPreferencesPage(wxWindow *window)
+{
+	for (; window; window = window->GetParent()) {
+		if (auto *page = wxDynamicCast(window, wxScrolledWindow)) {
+			page->FitInside();
+			return;
+		}
+	}
+}
+
+#ifdef CLIENT_GUI
 // The open Preferences dialog, or NULL. Lets a GET_SHARED_DIRS reply repaint
 // the editor without holding a pointer that could outlive the dialog.
 PrefsUnifiedDlg *s_openPrefsDlg = nullptr;
-} // namespace
 #endif
+} // namespace
 
 wxBEGIN_EVENT_TABLE(PrefsUnifiedDlg, wxDialog)
 // Events
@@ -326,7 +339,7 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 	wxDataViewColumn *iconTextCol = m_PrefsIcons->AppendIconTextColumn(
 		"", wxDATAVIEW_CELL_INERT, wxCOL_WIDTH_DEFAULT, wxALIGN_LEFT, 0);
 
-	// Temp variables for finding the smallest height and width needed
+	// Preferred content size, independent of the scrollable viewport minimum.
 	int width = 0;
 	int height = 0;
 
@@ -390,14 +403,18 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 	Bind(wxEVT_SHOW, &PrefsUnifiedDlg::OnShowMeasureSidebar, this);
 #endif
 
-	// Now add the pages and calculate the minimum size
+	const wxSize minimumPageSize = FromDIP(wxSize(240, 200));
+
+	// Build each page with its own scroll position and virtual content size.
 	m_pageWidgets.assign(itemsof(pages), nullptr);
 	wxPanel *DefaultWidget = NULL;
 	for (unsigned int i = 0; i < itemsof(pages); ++i) {
 		// Create a container widget and the contents of the page
-		wxPanel *Widget = new wxPanel(this, -1);
+		wxScrolledWindow *Widget = new wxScrolledWindow(this, wxID_ANY);
+		ConfigureDialogScrolling(Widget);
+		Widget->SetMinSize(minimumPageSize);
 		m_pageWidgets[i] = Widget;
-		pages[i].m_function(Widget, true, true);
+		pages[i].m_function(Widget, false, true);
 		if (i == 0) {
 			DefaultWidget = Widget;
 		}
@@ -406,7 +423,7 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 		prefs_sizer->Add(Widget, wxSizerFlags().Expand().Expand());
 
 		if (pages[i].m_function == PreferencesGeneralTab) {
-// This must be done now or pages won't Fit();
+// Adjust visibility before measuring the page contents.
 #if defined(CLIENT_GUI)
 			// Remote GUI: this checkbox toggles the *daemon's* version-check preference, so
 			// its visibility follows the connected daemon's capability, NOT amulegui's own
@@ -503,9 +520,14 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 			m_aMuleTweaksWidget = Widget;
 			wxStaticText *txt = CastChild(IDC_AMULE_TWEAKS_WARNING, wxStaticText);
 			// Do not wrap this line, Windows _() can't handle wrapped strings
-			txt->SetLabel(_("Do not change these setting unless you know\nwhat you are doing, "
-					"otherwise you can easily\nmake things worse for yourself.\n\naMule "
-					"will run fine without adjusting any of\nthese settings."));
+			wxString warning =
+				_("Do not change these setting unless you know\nwhat you are doing, "
+				  "otherwise you can easily\nmake things worse for yourself.\n\naMule "
+				  "will run fine without adjusting any of\nthese settings.");
+			// wxOSX measures a centred label with an empty line about 20000 px wide, which
+			// widened the whole dialog; a space keeps the gap without the bug.
+			warning.Replace("\n\n", "\n \n");
+			txt->SetLabel(warning);
 #if defined CLIENT_GUI || !PLATFORMSPECIFIC_CAN_PREVENT_SLEEP_MODE
 			CastChild(IDC_PREVENT_SLEEP, wxCheckBox)->Enable(false);
 			thePrefs::SetPreventSleepWhileDownloading(false);
@@ -522,19 +544,12 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 		}
 #endif
 
-		// Align and resize the page
-		Fit();
-		Layout();
-
-		// Find the greatest sizes
-		wxSize size = prefs_sizer->GetSize();
-		if (size.GetWidth() > width) {
-			width = size.GetWidth();
-		}
-
-		if (size.GetHeight() > height) {
-			height = size.GetHeight();
-		}
+		// Preserve the controls' natural size as the scrollable content size without
+		// imposing it on the dialog's minimum size.
+		Widget->FitInside();
+		const wxSize size = Widget->GetSizer()->GetMinSize();
+		width = std::max(width, size.GetWidth());
+		height = std::max(height, size.GetHeight());
 
 		// Hide it for now
 		prefs_sizer->Detach(Widget);
@@ -575,9 +590,6 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 
 	// Select the first item
 	m_PrefsIcons->SelectRow(0);
-
-	// We now have the needed minimum height and width
-	prefs_sizer->SetMinSize(width, height);
 
 #ifdef CLIENT_GUI
 	// amulegui: drop the IP2Country page from the menu when the connected core has no
@@ -646,11 +658,12 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 				     it->first % it->second->GetKey());
 		}
 	}
-	Fit();
-
-	// It must not be resized to something smaller than what it currently is
-	wxSize size = GetClientSize();
-	SetSizeHints(size.GetWidth(), size.GetHeight());
+	// Allow the viewport to shrink independently of the largest page. Start
+	// with enough room for the content when possible, but leave space for the
+	// desktop panels and window decorations on the parent's display.
+	FitDialogToDisplay(this,
+		wxSize(width + m_PrefsIcons->GetMinSize().GetWidth() + FromDIP(4),
+			height + GetSizer()->GetMinSize().GetHeight() - minimumPageSize.GetHeight()));
 
 	// Position the dialog.
 	Center();
@@ -978,6 +991,10 @@ bool PrefsUnifiedDlg::TransferToWindow()
 	m_verticalToolbar = thePrefs::VerticalToolbar();
 	m_toolbarOrientationChanged = false;
 
+	for (wxPanel *page : m_pageWidgets) {
+		RefreshPreferencesPage(page);
+	}
+
 	return true;
 }
 
@@ -1083,6 +1100,7 @@ void PrefsUnifiedDlg::UpdateMessageFilterControls()
 void PrefsUnifiedDlg::SetCredentialStateLabel(int id, bool isSet)
 {
 	CastChild(id, wxStaticText)->SetLabel(isSet ? _("A password is set.") : _("No password set."));
+	RefreshPreferencesPage(FindWindow(id));
 }
 
 void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
@@ -1957,7 +1975,7 @@ void PrefsUnifiedDlg::OnButtonExcludePreview(wxCommandEvent &WXUNUSED(event))
 		info->SetLabel(label);
 	}
 	// The label size just changed; re-lay-out its row so it is not clipped.
-	info->GetParent()->Layout();
+	RefreshPreferencesPage(info->GetParent());
 }
 #endif
 
@@ -2188,13 +2206,9 @@ void PrefsUnifiedDlg::UpdateGeoIPSourcePanel()
 	containerSizer->Show(maxmind, src == thePrefs::GeoIPSourceMaxMind);
 	containerSizer->Show(custom, src == thePrefs::GeoIPSourceCustom);
 
-	// Re-layout the prefs page so the height delta from the now-hidden panel propagates
-	// upward through the wxStaticBoxSizer chain. Each sub-panel is a real wxPanel (leaf
-	// from the layout engine's view), so the cascade-loop risk that motivated dropping
-	// Layout() earlier does not apply here.
-	if (m_CurrentPanel) {
-		m_CurrentPanel->Layout();
-	}
+	// Refresh the owning page even when another page is selected, so the newly
+	// shown panel is reachable and hidden panels leave no stale scroll range.
+	RefreshPreferencesPage(dbip);
 }
 
 void PrefsUnifiedDlg::OnGeoIPMasterToggle(wxCommandEvent &event)
@@ -2275,6 +2289,7 @@ void PrefsUnifiedDlg::UpdateGeoIPStatus()
 			line += last;
 		}
 		st->SetLabel(line);
+		RefreshPreferencesPage(st);
 		return;
 	}
 
@@ -2326,6 +2341,7 @@ void PrefsUnifiedDlg::UpdateGeoIPStatus()
 		st->SetLabel(_("Status: Not found - click 'Update now' to download."));
 	}
 #endif // !CLIENT_GUI
+	RefreshPreferencesPage(st);
 }
 #endif // GEOIP_GUI
 
@@ -2409,6 +2425,7 @@ void PrefsUnifiedDlg::OnPrefsPageChange(wxDataViewEvent &event)
 	m_CurrentPanel->Show(true);
 
 	Layout();
+	RefreshPreferencesPage(m_CurrentPanel);
 
 	event.Skip();
 }
@@ -2496,7 +2513,7 @@ void PrefsUnifiedDlg::OnScrollBarChange(wxScrollEvent &event)
 
 	if (widget) {
 		widget->SetLabel(label);
-		widget->GetParent()->Layout();
+		RefreshPreferencesPage(widget->GetParent());
 	}
 }
 
@@ -2529,6 +2546,7 @@ void PrefsUnifiedDlg::OnTCPClientPortChange(wxSpinEvent &WXUNUSED(event))
 		->SetLabel(m_ServerTabVisible
 				   ? (wxString() << (CastChild(IDC_PORT, wxSpinCtrl)->GetValue() + 3))
 				   : wxString(_("disabled")));
+	RefreshPreferencesPage(FindWindow(ID_TEXT_CLIENT_UDP_PORT));
 }
 
 void PrefsUnifiedDlg::OnUserEventSelected(wxListEvent &event)
@@ -2540,7 +2558,7 @@ void PrefsUnifiedDlg::OnUserEventSelected(wxListEvent &event)
 	IDC_PREFS_EVENTS_PAGE->Show(
 		(event.GetData() - USEREVENTS_FIRST_ID) / USEREVENTS_IDS_PER_EVENT + 1, true);
 
-	IDC_PREFS_EVENTS_PAGE->Layout();
+	RefreshPreferencesPage(IDC_PREFS_EVENTS_PAGE->GetContainingWindow());
 
 	event.Skip();
 }
@@ -2620,8 +2638,8 @@ void PrefsUnifiedDlg::CreateEventPanels(const int idx, const wxString &vars, wxW
 
 	IDC_PREFS_EVENTS_PAGE->Add(item7, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 5));
 
-	IDC_PREFS_EVENTS_PAGE->Layout();
 	IDC_PREFS_EVENTS_PAGE->Hide(idx + 1);
+	RefreshPreferencesPage(parent);
 }
 
 namespace
@@ -3186,7 +3204,7 @@ void PrefsUnifiedDlg::WrapPathMappingHint()
 	hint->SetLabel(m_pathMappingHintText);
 	hint->Wrap(width);
 	// The paragraph's height has changed, so the rest of the page moves.
-	page->Layout();
+	RefreshPreferencesPage(page);
 }
 
 void PrefsUnifiedDlg::HarvestPathMappingList()

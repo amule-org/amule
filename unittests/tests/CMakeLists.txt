@@ -1575,6 +1575,27 @@ target_link_libraries (RefresherTest
 # but guarded it on the scalar alone, leaving Hi stale (#1065), so the
 # predicate now lives in a header of its own: CKnownFile reaches theApp and
 # cannot be linked into a test.
+# amuleapi's dotted-quad parsing and the Kad byte order EC_TAG_BOOTSTRAP_IP needs.
+add_executable (Ipv4AddressTest
+	Ipv4AddressTest.cpp
+)
+
+add_test (NAME Ipv4AddressTest
+	COMMAND Ipv4AddressTest
+)
+
+target_include_directories (Ipv4AddressTest
+	PRIVATE ${CMAKE_BINARY_DIR}
+	PRIVATE ${CMAKE_SOURCE_DIR}/src
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/webapi
+)
+
+target_link_libraries (Ipv4AddressTest
+	muleunit
+	mulecommon
+)
+
 add_executable (JsonDepthScanTest
 	JsonDepthScanTest.cpp
 )
@@ -1974,6 +1995,19 @@ if (UNIX AND NOT APPLE)
 		${CMAKE_SOURCE_DIR}/src/include
 	)
 	target_link_libraries (AutostartManagerTest muleunit mulecommon)
+endif()
+
+# Exercise native scrolling/sizer behavior without starting the aMule application.
+# MuleUnit defines wxUSE_GUI=0, so this test owns a minimal wxApp instead.
+if (TARGET wxWidgets::CORE)
+	add_executable (DialogLayoutTest DialogLayoutTest.cpp)
+	if (WIN32)
+		target_sources (DialogLayoutTest PRIVATE DialogLayoutTest.rc)
+	endif()
+	target_include_directories (DialogLayoutTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
+	target_link_libraries (DialogLayoutTest PRIVATE wxWidgets::CORE)
+	add_test (NAME DialogLayoutTest COMMAND DialogLayoutTest)
+	set_tests_properties (DialogLayoutTest PROPERTIES SKIP_RETURN_CODE 77)
 endif()
 
 # Exercise production consensus with explicit, fail-fast application stubs.

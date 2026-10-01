@@ -13,8 +13,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-30 22:38+0200\n"
-"PO-Revision-Date: 2026-09-30 14:52+0000\n"
+"POT-Creation-Date: 2026-09-30 19:39+0800\n"
+"PO-Revision-Date: 2026-10-01 13:22+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
 "Language: zh_CN\n"
@@ -218,7 +218,7 @@ msgstr ""
 #: src/GuiEvents.cpp
 #, c-format
 msgid "... and %i more"
-msgstr ""
+msgstr "以及另外 %i 个"
 
 #: src/GuiEvents.cpp
 #, c-format
@@ -228,6 +228,10 @@ msgid ""
 "%s\n"
 "The files are deleted and no longer shared. This cannot be undone."
 msgstr ""
+"确定要从磁盘删除 %i 个文件吗？ \n"
+"\n"
+"%s\n"
+"文件将被删除，不再共享。无法撤销此操作。"
 
 #: src/GuiEvents.cpp
 msgid "Delete from disk"
@@ -236,7 +240,7 @@ msgstr "从磁盘中删除"
 #: src/GuiEvents.cpp
 #, c-format
 msgid "Skipped deleting '%s': the selected file has changed."
-msgstr ""
+msgstr "跳过了删除 “%s”：所选文件已改变。"
 
 #: src/GuiEvents.cpp
 #, c-format
@@ -259,6 +263,13 @@ msgid ""
 "Yes: stop sharing and remove the list entries. A later share scan may share the files again.\n"
 "No: keep the files shared and listed."
 msgstr ""
+"无法从磁盘删除这些文件：\n"
+"\n"
+"%s\n"
+"仍要从分享和已完成的传输列表中删除它们？\n"
+"\n"
+"是：停止共享并删除列表条目。之后的共享扫描可能再次分享这些文件。\n"
+"否：保留已共享和列出的文件。"
 
 #: src/amuleAppCommon.cpp
 msgid "Failed to open ED2KLinks file."
@@ -1558,7 +1569,7 @@ msgstr "坏蛋"
 msgid "Verified - OK"
 msgstr "验证 - 通过"
 
-#: src/ClientRef.cpp src/muuli_wdr.cpp
+#: src/ClientRef.cpp src/FileDetailDialog.cpp src/muuli_wdr.cpp
 msgid "N/A"
 msgstr "N/A"
 
@@ -1984,9 +1995,8 @@ msgid "C&lear completed"
 msgstr "清除已完成的文件 (&l)"
 
 #: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
-#, fuzzy
 msgid "Delete file from &disk"
-msgstr "正在删除文件: %s"
+msgstr "从磁盘删除文件(&D)"
 
 #: src/DownloadListCtrl.cpp
 msgid "Swap every A4AF to this file now"
@@ -4676,13 +4686,12 @@ msgid "Reconnect on loss"
 msgstr "断线后自动重连"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Kad protocol version"
-msgstr "非法协议版本。"
+msgstr "Kad 协议版本"
 
 #: src/muuli_wdr.cpp
 msgid "Advertise Kad protocol 0x0a (AICH keyword storage)"
-msgstr ""
+msgstr "通告 Kad 协议 0x0a（AICH 关键词存储）"
 
 #: src/muuli_wdr.cpp
 msgid ""
@@ -4694,10 +4703,17 @@ msgid ""
 "\n"
 "Hashes learned from Kad search results remain untrusted until download sources corroborate them. Reported publisher counts alone never authorize AICH recovery."
 msgstr ""
+"启用后，aMule 通告 Kad 协议版本 0x0a 并处理关键词发布/搜素结果中的 AICH 哈希值。\n"
+"\n"
+"警告：启用此选项可能导致无法解析 AICH 结果标签的较老的 Kad 客户端 (0.49b 之前) 丢弃搜索结果。多数当前客户端支持它，但如果遇到搜素结果缺失问题，尝试禁用该选项。\n"
+"\n"
+"禁用此选项在下次保存时丢弃存储的 AICH 关键词索引数据。重新启用它需要再次收集此数据。\n"
+"\n"
+"从 Kad 搜索结果学到的哈希值在下载来源确证它们前不受信任。仅有报告的发布者计数永远不授权 AICH 恢复。"
 
 #: src/muuli_wdr.cpp
 msgid "Reject AICH publish tags from legacy Kad peers (< 0x09)"
-msgstr ""
+msgstr "拒绝来自旧 Kad 对等方（< 0x09）的 AICH 发布标签"
 
 #: src/muuli_wdr.cpp
 msgid ""
@@ -4705,6 +4721,9 @@ msgid ""
 "\n"
 "WARNING: This may reject legitimate publishers whose routing-table version is stale, reducing AICH hash coverage. Nodes with unknown version are still accepted. Hashes learned from Kad search results require download-source corroboration regardless of this setting."
 msgstr ""
+"启用后将拒绝来自通告的 Kad 版本低于 0x09 的节点的 AICH 发布标签 ，因为这些版本不支持 AICH 关键词存储。通告的版本不是发布者值得信赖的证明。\n"
+"\n"
+"警告：这可能会拒绝路由表版本陈旧的真实发布者，降低 AICH 哈希覆盖。版本未知的节点仍被接受。不论该设置是否启用，从 Kad 搜索结果学到的哈希值都要求下载来源确证。"
 
 #: src/muuli_wdr.cpp
 msgid "Remove dead server after"

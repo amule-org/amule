@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-30 22:38+0200\n"
-"PO-Revision-Date: 2026-09-30 14:53+0000\n"
+"POT-Creation-Date: 2026-09-30 19:39+0800\n"
+"PO-Revision-Date: 2026-10-01 13:23+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
 "Language: bn\n"
@@ -1539,7 +1539,7 @@ msgstr "খারাপ ব্যবহারকারী"
 msgid "Verified - OK"
 msgstr "যাচাইকৃত - ঠিক আছে"
 
-#: src/ClientRef.cpp src/muuli_wdr.cpp
+#: src/ClientRef.cpp src/FileDetailDialog.cpp src/muuli_wdr.cpp
 msgid "N/A"
 msgstr "প্রযোজ্য নয়"
 

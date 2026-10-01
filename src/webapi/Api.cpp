@@ -44,6 +44,7 @@
 #include "StaticFs.h"      // IsDir, ResolveWithinRoot
 #include "SharedContent.h" // /shared/{hash}/content: path resolution, Range, disposition
 #include "PartIndex.h"     // UsablePartIndex / UsableLastDownloadingPart, unit-tested standalone
+#include "Ipv4Address.h"   // ParseIpv4Dotted / ToKadIpOrder, unit-tested standalone
 #include <cmath>
 #include <cstring>
 #include <map>
@@ -5346,18 +5347,6 @@ CHttpServer::Response CApiDispatcher::HandleDownloadsClearCompleted(const CHttpS
 namespace
 {
 
-// Dotted-quad IPv4 to host-order uint32, the encoding EC_TAG_*_IP uses.
-bool ParseIpv4Dotted(const std::string &text, std::uint32_t &out_he)
-{
-	unsigned a = 0, b = 0, c = 0, d = 0;
-	if (std::sscanf(text.c_str(), "%u.%u.%u.%u", &a, &b, &c, &d) != 4)
-		return false;
-	if (a > 255 || b > 255 || c > 255 || d > 255)
-		return false;
-	out_he = (a) | (b << 8) | (c << 16) | (d << 24);
-	return true;
-}
-
 void WriteServerObject(CJsonWriter &w, const webapi::ServerSnapshot &s)
 {
 	w.BeginObject();
@@ -5646,11 +5635,8 @@ bool ParseChatPeerKey(const std::string &peer, std::string &out_key, std::uint64
 	if (colon == std::string::npos || colon == 0 || colon + 1 >= peer.size())
 		return false;
 
-	unsigned a = 0, b = 0, c = 0, d = 0;
-	char extra = 0;
-	if (std::sscanf(peer.substr(0, colon).c_str(), "%3u.%3u.%3u.%3u%c", &a, &b, &c, &d, &extra) != 4)
-		return false;
-	if (a > 255 || b > 255 || c > 255 || d > 255)
+	std::uint32_t ip = 0;
+	if (!webapi::ParseIpv4Dotted(peer.substr(0, colon), ip))
 		return false;
 
 	const std::string port_str = peer.substr(colon + 1);
@@ -5660,10 +5646,6 @@ bool ParseChatPeerKey(const std::string &peer, std::string &out_key, std::uint64
 	if (port == 0 || port > 65535)
 		return false;
 
-	// LSB-first, matching IPv4ToDotted and EC_TAG_CLIENT_USER_IP.
-	const std::uint32_t ip = static_cast<std::uint32_t>(a) | (static_cast<std::uint32_t>(b) << 8) |
-				 (static_cast<std::uint32_t>(c) << 16) |
-				 (static_cast<std::uint32_t>(d) << 24);
 	const std::uint64_t route = (static_cast<std::uint64_t>(ip) << 16) | static_cast<std::uint64_t>(port);
 	out_key = webapi::ChatPeerKeyFromGuiId(route);
 	if (out_route)
@@ -6249,8 +6231,8 @@ CHttpServer::Response CApiDispatcher::HandleFriendAdd(const CHttpServer::Request
 			}
 			ip_str = it->second.get<std::string>();
 		}
-		std::uint32_t ip_he = 0;
-		if (!ParseIpv4Dotted(ip_str, ip_he) || ip_he == 0) {
+		std::uint32_t ip = 0;
+		if (!webapi::ParseIpv4Dotted(ip_str, ip) || ip == 0) {
 			return ErrorResponse(
 				400, "bad_request", "`ip` must be a non-zero dotted IPv4 address");
 		}
@@ -6298,7 +6280,7 @@ CHttpServer::Response CApiDispatcher::HandleFriendAdd(const CHttpServer::Request
 			name = ip_str;
 		}
 		addtag.AddTag(CECTag(EC_TAG_FRIEND_HASH, hash));
-		addtag.AddTag(CECTag(EC_TAG_FRIEND_IP, ip_he));
+		addtag.AddTag(CECTag(EC_TAG_FRIEND_IP, ip));
 		addtag.AddTag(CECTag(EC_TAG_FRIEND_PORT, port));
 		addtag.AddTag(CECTag(EC_TAG_FRIEND_NAME, wxString::FromUTF8(name.c_str())));
 	}
@@ -6623,7 +6605,7 @@ CHttpServer::Response CApiDispatcher::HandleServerUpdateFromUrl(const CHttpServe
 // know -- a 400 and a 404 respectively.
 struct IpPortSelector
 {
-	std::uint32_t ip_he; // host order, as ServerSnapshot::ip holds it
+	std::uint32_t ip; // the ParseIpv4Dotted() order, as ServerSnapshot::ip holds it
 	std::uint16_t port;
 };
 
@@ -6652,8 +6634,8 @@ boost::optional<IpPortSelector> ParseIpPortSelector(const std::string &ip_port)
 	// rejected by the caller instead, so the two get error messages that describe what
 	// actually happened.
 	IpPortSelector sel;
-	sel.ip_he = 0;
-	if (!ParseIpv4Dotted(ip_str, sel.ip_he))
+	sel.ip = 0;
+	if (!webapi::ParseIpv4Dotted(ip_str, sel.ip))
 		return boost::none;
 
 	sel.port = static_cast<std::uint16_t>(port);
@@ -6676,13 +6658,13 @@ std::unique_ptr<CHttpServer::Response> ResolveServerEcid(
 	// below: a ServerSnapshot whose EC_TAG_SERVER_IP the daemon did not ship keeps
 	// `ip == 0`, so a 0.0.0.0 selector would resolve to whichever such row happened to
 	// share the port -- acting on a server the caller never named.
-	if (sel->ip_he == 0) {
+	if (sel->ip == 0) {
 		return std::make_unique<CHttpServer::Response>(
 			ErrorResponse(400, "bad_request", "0.0.0.0 is not a server address"));
 	}
 
 	for (const auto &s : state.Servers()) {
-		if (s.port == sel->port && s.ip == sel->ip_he) {
+		if (s.port == sel->port && s.ip == sel->ip) {
 			ecid = s.ecid;
 			return nullptr;
 		}
@@ -8604,12 +8586,8 @@ CHttpServer::Response CApiDispatcher::HandleKadBootstrap(const CHttpServer::Requ
 	}
 	const auto &obj = root.get<picojson::object>();
 
-	// Body: {"ip": "1.2.3.4", "port": <uint16>}. A dotted quad, and only that. The
-	// integer form is gone: ParseIpv4Dotted() packs a.b.c.d least-significant byte
-	// first, while the integer branch took the JSON value verbatim, so 2130706433
-	// (0x7F000001, the conventional big-endian spelling of 127.0.0.1) bootstrapped
-	// 1.0.0.127.
-	std::uint32_t ip_he = 0;
+	// Body: {"ip": "1.2.3.4", "port": <uint16>}. A dotted quad, and only that.
+	std::uint32_t ip = 0;
 	{
 		const auto it = obj.find("ip");
 		if (it == obj.end()) {
@@ -8621,7 +8599,7 @@ CHttpServer::Response CApiDispatcher::HandleKadBootstrap(const CHttpServer::Requ
 				"`ip` must be a dotted-quad IPv4 address string, e.g. "
 				"\"127.0.0.1\"");
 		}
-		if (!ParseIpv4Dotted(it->second.get<std::string>(), ip_he)) {
+		if (!webapi::ParseIpv4Dotted(it->second.get<std::string>(), ip)) {
 			return ErrorResponse(400, "bad_request", "`ip` must be a dotted-quad IPv4 address");
 		}
 	}
@@ -8640,8 +8618,9 @@ CHttpServer::Response CApiDispatcher::HandleKadBootstrap(const CHttpServer::Requ
 		port = static_cast<std::uint16_t>(v);
 	}
 
+	// Unconverted, the bootstrap request went to d.c.b.a.
 	std::unique_ptr<CECPacket> ec_req(new CECPacket(EC_OP_KAD_BOOTSTRAP_FROM_IP));
-	ec_req->AddTag(CECTag(EC_TAG_BOOTSTRAP_IP, ip_he));
+	ec_req->AddTag(CECTag(EC_TAG_BOOTSTRAP_IP, webapi::ToKadIpOrder(ip)));
 	ec_req->AddTag(CECTag(EC_TAG_BOOTSTRAP_PORT, port));
 
 	const CECPacket *ec_resp = m_app.SendRecvSerialized(ec_req.get());
@@ -8662,11 +8641,10 @@ CHttpServer::Response CApiDispatcher::HandleKadBootstrap(const CHttpServer::Requ
 	r.content_type = "application/json";
 	CJsonWriter w;
 	w.BeginObject();
-	// `ip`/`port` stay as the documented exception to the no-body rule for actions: the
-	// echo reports which address the daemon actually parsed, which the caller cannot
-	// recover anywhere else.
+	// `ip`/`port` stay as the documented exception to the no-body rule for actions. The echo
+	// is amuleapi's own parse in canonical form, not a report of where the probe went.
 	w.Key("ip");
-	w.ValueString(Uint32toStringIP(ip_he));
+	w.ValueString(Uint32toStringIP(ip));
 	w.Key("port");
 	w.ValueInt(static_cast<int64_t>(port));
 	w.EndObject();

@@ -58,6 +58,8 @@ env:
     libupnp-dev \
     libwxgtk3.2-dev \
     pkg-config \
+    xvfb \
+    xauth \
     wx3.2-headers
 
   cmake_macos_deps: |-
@@ -173,8 +175,8 @@ jobs:
         run: ccache --show-stats
       - name: run tests
         run: |
-          ctest ${{ env.ctest_flags }} --timeout 10 -E '${{ env.ctest_kdf_tests }}' &&
-          ctest ${{ env.ctest_flags }} --timeout 60 -R '${{ env.ctest_kdf_tests }}'
+          xvfb-run -a ctest ${{ env.ctest_flags }} --timeout 10 -E '${{ env.ctest_kdf_tests }}' &&
+          xvfb-run -a ctest ${{ env.ctest_flags }} --timeout 60 -R '${{ env.ctest_kdf_tests }}'
       # amuleapi_curl_smoke drives these two against a live daemon rather than
       # compiling its own copy. Release only: the smoke times SSE windows, and
       # a Debug daemon makes those flaky.
@@ -255,8 +257,8 @@ jobs:
         run: ccache --show-stats
       - name: run tests
         run: |
-          ctest ${{ env.ctest_flags }} --timeout 10 -E '${{ env.ctest_kdf_tests }}' &&
-          ctest ${{ env.ctest_flags }} --timeout 60 -R '${{ env.ctest_kdf_tests }}'
+          xvfb-run -a ctest ${{ env.ctest_flags }} --timeout 10 -E '${{ env.ctest_kdf_tests }}' &&
+          xvfb-run -a ctest ${{ env.ctest_flags }} --timeout 60 -R '${{ env.ctest_kdf_tests }}'
 
   # Configures with the oldest CMake that CMakeLists.txt declares, so the floor stays
   # true. Configure only: the build itself does not depend on the CMake version.
