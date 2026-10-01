@@ -51,6 +51,12 @@ public:
 	void TickUtp();
 	IUtpContext *GetUtpContext() { return &m_utp; }
 #endif
+#ifdef AMULE_QUIC_TRANSPORT
+	//! Services every live QUIC connection's RFC 9002 timers, independently of any inbound
+	//! datagram. Without this a connection that stops receiving ACKs would never retransmit
+	//! and never time out.
+	void TickQuic();
+#endif
 
 protected:
 	void OnReceive(int errorCode) override;

@@ -185,6 +185,13 @@ public:
 		}
 	}
 
+	void Tick(uint64_t nowMs) override
+	{
+		if (!m_closed && !m_engine->Tick(m_handle, *m_sink, m_address, m_port, nowMs)) {
+			Close();
+		}
+	}
+
 	void Close() override
 	{
 		if (m_closed)
@@ -383,32 +390,32 @@ public:
 		if (it == m_connections.end()) {
 			return false;
 		}
-		const ngtcp2_tstamp ts = NanosecondsFromMs(nowMs);
-		// A bounded number of packets per flush, not an unbounded drain-until-0 loop: a
-		// connection that always has more to send (e.g. a peer that never acknowledges) must
-		// not be able to make one flush call monopolize this thread indefinitely.
-		for (int round = 0; round < kMaxFlushPacketsPerCall; ++round) {
-			uint8_t buf[kMaxUdpPayload];
-			ngtcp2_path_storage path;
-			InitZeroPath(path);
-			ngtcp2_pkt_info pi = {};
-			// stream_id -1, no data: this call only flushes what ngtcp2 itself needs to send
-			// (handshake CRYPTO frames, ACKs). No stream exists yet for this engine to write
-			// application data to -- that is the transport-wiring slice this one does not
-			// attempt.
-			const ngtcp2_ssize written = ngtcp2_conn_writev_stream(it->second.conn, &path.path, &pi,
-				buf, sizeof(buf), nullptr, NGTCP2_WRITE_STREAM_FLAG_NONE, -1, nullptr, 0, ts);
-			if (written < 0) {
-				return false;
-			}
-			if (written == 0) {
-				return true;
-			}
-			if (!sink.SendDatagram(buf, static_cast<size_t>(written), address, port)) {
-				return false;
-			}
+		return FlushConnection(it->second, sink, address, port, NanosecondsFromMs(nowMs));
+	}
+
+	bool Tick(Handle handle,
+		IQuicDatagramSink &sink,
+		const CNetworkAddress &address,
+		uint16_t port,
+		uint64_t nowMs) override
+	{
+		auto it = m_connections.find(handle);
+		if (it == m_connections.end()) {
+			return false;
 		}
-		return true;
+		const ngtcp2_tstamp ts = NanosecondsFromMs(nowMs);
+		// "Nothing due yet" is the overwhelmingly common case on every tick: UINT64_MAX means no
+		// timer is armed at all, and an unexpired one is simply not this tick's problem.
+		if (ngtcp2_conn_get_expiry(it->second.conn) > ts) {
+			return true;
+		}
+		// Fatal here means the timer handling itself concluded the connection is over (RFC 9000
+		// section 10.1: the idle timeout elapsed) -- not that a send failed, which FlushConnection()
+		// below still reports on its own.
+		if (ngtcp2_conn_handle_expiry(it->second.conn, ts) != 0) {
+			return false;
+		}
+		return FlushConnection(it->second, sink, address, port, ts);
 	}
 
 	bool OwnsConnectionId(Handle handle, const std::string &cid) const override
@@ -484,6 +491,42 @@ private:
 		int64_t streamId = -1;
 		std::vector<uint8_t> receivedData;
 	};
+
+	// Shared by Flush() (an inbound datagram may need an immediate reply) and Tick() (a timer
+	// firing with nothing freshly received still needs to retransmit or probe): both end in
+	// exactly the same bounded send loop.
+	bool FlushConnection(ConnectionInfo &connection,
+		IQuicDatagramSink &sink,
+		const CNetworkAddress &address,
+		uint16_t port,
+		ngtcp2_tstamp ts)
+	{
+		// A bounded number of packets per flush, not an unbounded drain-until-0 loop: a
+		// connection that always has more to send (e.g. a peer that never acknowledges) must
+		// not be able to make one flush call monopolize this thread indefinitely.
+		for (int round = 0; round < kMaxFlushPacketsPerCall; ++round) {
+			uint8_t buf[kMaxUdpPayload];
+			ngtcp2_path_storage path;
+			InitZeroPath(path);
+			ngtcp2_pkt_info pi = {};
+			// stream_id -1, no data: this call only flushes what ngtcp2 itself needs to send
+			// (handshake CRYPTO frames, ACKs, retransmissions, probes). No path writes
+			// application data to a stream yet -- that is the transport-wiring slice this one
+			// does not attempt.
+			const ngtcp2_ssize written = ngtcp2_conn_writev_stream(connection.conn, &path.path, &pi,
+				buf, sizeof(buf), nullptr, NGTCP2_WRITE_STREAM_FLAG_NONE, -1, nullptr, 0, ts);
+			if (written < 0) {
+				return false;
+			}
+			if (written == 0) {
+				return true;
+			}
+			if (!sink.SendDatagram(buf, static_cast<size_t>(written), address, port)) {
+				return false;
+			}
+		}
+		return true;
+	}
 
 	std::map<Handle, ConnectionInfo> m_connections;
 };

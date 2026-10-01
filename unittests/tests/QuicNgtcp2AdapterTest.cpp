@@ -132,6 +132,16 @@ struct Engine : IQuicNgtcp2Engine
 			extendedReadWindowBytes += static_cast<unsigned>(bytes);
 		}
 	}
+	bool tickResult = true;
+	unsigned ticks = 0;
+	bool Tick(Handle handle, IQuicDatagramSink &, const CNetworkAddress &, uint16_t, uint64_t) override
+	{
+		if (handle == nullptr) {
+			return false;
+		}
+		++ticks;
+		return tickResult;
+	}
 	uint64_t GetAdvertisedReadWindow(Handle handle) const override
 	{
 		return handle != nullptr ? 1u : 0u;
@@ -408,6 +418,26 @@ TEST(QuicNgtcp2Adapter, ProductionEngineOwnsNoConnectionIdAfterClose)
 	const std::string issuedCid = connection->GetIssuedConnectionId();
 	connection->Close();
 	ASSERT_TRUE(!connection->OwnsConnectionId(issuedCid));
+}
+
+TEST(QuicNgtcp2Adapter, ProductionEngineTickServicesRealExpiryTimersWithoutCrashing)
+{
+	Session s;
+	CQuicEphemeralCredentials c;
+	Verifier v;
+	auto sink = std::make_shared<Sink>();
+	auto engine = CreateProductionQuicNgtcp2Engine();
+	auto p = Initial();
+	CQuicNgtcp2Factory factory(ProductionPolicy(s, c, v), sink, engine);
+	auto connection = factory.CreateInbound(p.data(), p.size(), kPeer, 2, kDcid);
+	ASSERT_TRUE(connection != nullptr);
+
+	// Nothing is due immediately after creation; ngtcp2's own PTO/loss-detection timer should
+	// still be armed well before an incomplete handshake would ever be abandoned.
+	connection->Tick(0);
+	ASSERT_TRUE(!connection->IsClosed());
+	connection->Tick(60000);
+	ASSERT_TRUE(!connection->IsClosed());
 }
 
 TEST(QuicNgtcp2Adapter, ProductionEngineFailsClosedWithoutCredentials)

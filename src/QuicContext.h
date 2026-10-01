@@ -56,6 +56,12 @@ public:
 	//! Reopens @p bytes of flow control as the application drains what DrainStreamData()
 	//! returned. A no-op by default.
 	virtual void ExtendStreamReadWindow(size_t) {}
+	//! Services this connection's timers (RFC 9002 loss detection/retransmission, idle
+	//! timeout): must run periodically and independently of inbound datagrams, or a connection
+	//! that stops receiving ACKs never retransmits and never times out. A no-op by default; a
+	//! real implementation closes the connection itself if the timer handling is fatal (e.g.
+	//! the idle timeout has elapsed).
+	virtual void Tick(uint64_t nowMs) { (void)nowMs; }
 };
 
 class IQuicConnectionFactory
@@ -88,6 +94,10 @@ public:
 		const CNetworkAddress &address,
 		uint16_t port,
 		uint64_t nowMs);
+	//! Services every live connection's timers. Must be called periodically regardless of
+	//! whether any datagram has arrived -- this is what lets a connection recover from loss
+	//! instead of hanging forever once nothing more is received from the peer.
+	void Tick(uint64_t nowMs);
 	size_t ConnectionCount() const { return m_connections.size(); }
 
 private:

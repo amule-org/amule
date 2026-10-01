@@ -167,3 +167,11 @@ bool CQuicContext::ProcessDatagram(
 	m_connections.emplace(SConnectionKey{ address, port, cid }, std::move(connection));
 	return true;
 }
+
+void CQuicContext::Tick(uint64_t nowMs)
+{
+	for (auto &entry : m_connections) {
+		entry.second->Tick(nowMs);
+	}
+	EraseClosedConnections();
+}

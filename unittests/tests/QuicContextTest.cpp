@@ -79,6 +79,16 @@ struct FakeConnection : IQuicConnection
 		return issuedCids.empty() ? std::string() : issuedCids.front();
 	}
 
+	unsigned ticks = 0;
+	bool closeOnTick = false;
+	void Tick(uint64_t) override
+	{
+		++ticks;
+		if (closeOnTick) {
+			closed = true;
+		}
+	}
+
 	void Close() override
 	{
 		closeCalled = true;
@@ -241,6 +251,27 @@ TEST(QuicContext, ConnectionFailureRemovesOwnership)
 	ASSERT_TRUE(context.ProcessDatagram(
 		initial.data(), initial.size(), kPeer, 4662, NatRendezvous::kRequestThrottleMs));
 	ASSERT_EQUALS(2u, factory.calls);
+}
+
+TEST(QuicContext, TickServicesEveryLiveConnectionAndErasesClosedOnes)
+{
+	FakeFactory factory;
+	factory.next = std::make_unique<FakeConnection>();
+	CQuicContext context(&factory);
+	auto first = Initial(0x70);
+	ASSERT_TRUE(context.ProcessDatagram(first.data(), first.size(), kPeer, 4662, 0));
+
+	factory.next = std::make_unique<FakeConnection>();
+	auto second = Initial(0x71);
+	ASSERT_TRUE(context.ProcessDatagram(
+		second.data(), second.size(), kPeer, 4662, NatRendezvous::kRequestThrottleMs));
+
+	factory.created[1]->closeOnTick = true;
+	context.Tick(123);
+
+	ASSERT_EQUALS(1u, factory.created[0]->ticks);
+	ASSERT_EQUALS(1u, factory.created[1]->ticks);
+	ASSERT_EQUALS(1u, context.ConnectionCount());
 }
 
 TEST(QuicContext, DestructionClosesOwnedConnections)

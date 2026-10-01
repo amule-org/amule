@@ -127,6 +127,14 @@ void CClientUDPSocket::SendUtpDatagram(const uint8_t *payload,
 }
 #endif
 
+#ifdef AMULE_QUIC_TRANSPORT
+void CClientUDPSocket::TickQuic()
+{
+	wxASSERT(wxIsMainThread());
+	m_quic.Tick(::GetTickCount64());
+}
+#endif
+
 void CClientUDPSocket::OnReceive(int errorCode)
 {
 	CMuleUDPSocket::OnReceive(errorCode);

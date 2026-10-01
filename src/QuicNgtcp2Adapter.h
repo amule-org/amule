@@ -72,6 +72,11 @@ public:
 	//! drains what DrainStreamData() returned (ngtcp2_conn_extend_max_stream_offset() +
 	//! ngtcp2_conn_extend_max_offset()). A no-op if no stream has opened yet.
 	virtual void ExtendStreamReadWindow(Handle, size_t bytes) = 0;
+	//! Services this connection's RFC 9002 loss-detection/retransmission and idle timers, and
+	//! sends anything that produces (ngtcp2_conn_get_expiry()/handle_expiry()). False only if
+	//! the timer handling was fatal (e.g. the idle timeout elapsed): the caller must then close
+	//! the connection rather than keep ticking it.
+	virtual bool Tick(Handle, IQuicDatagramSink &, const CNetworkAddress &, uint16_t, uint64_t nowMs) = 0;
 	virtual void Destroy(Handle) = 0;
 };
 
