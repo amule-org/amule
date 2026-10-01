@@ -34,6 +34,7 @@
 #include <QuicGnuTlsSession.h>
 #include <QuicNattProtocol.h>
 #include <QuicNgtcp2Adapter.h>
+#include <QuicSocketTransport.h>
 
 #include <gnutls/crypto.h>
 #include <gnutls/gnutls.h>
@@ -200,11 +201,26 @@ public:
 			static_cast<CTestQuicClient *>(userData)->m_handshakeConfirmed = true;
 			return 0;
 		};
+		// Lets this test prove the server's real WriteStream()/WriteStreamData() path by reading
+		// back what the server actually sent, not just that the client accepted the datagram.
+		callbacks.recv_stream_data = [](ngtcp2_conn *, uint32_t, int64_t, uint64_t,
+					      const uint8_t *data, size_t datalen, void *userData, void *) -> int {
+			auto &received = static_cast<CTestQuicClient *>(userData)->m_received;
+			received.insert(received.end(), data, data + datalen);
+			return 0;
+		};
 
 		ngtcp2_settings settings = {};
 		ngtcp2_settings_default(&settings);
 		ngtcp2_transport_params params = {};
 		ngtcp2_transport_params_default(&params);
+		// ngtcp2_transport_params_default() leaves every flow-control window at 0, meaning this
+		// client would advertise zero willingness to receive anything back on the one stream it
+		// opens -- fine for proving the handshake alone, but WriteStreamData() on the real server
+		// correctly refuses to send a single byte against that. Match CProductionNgtcp2Engine's
+		// own server-side windows (QuicNgtcp2Adapter.cpp) so the reply path has somewhere to land.
+		params.initial_max_stream_data_bidi_local = CQuicSocketTransport::kReadWindow;
+		params.initial_max_data = CQuicSocketTransport::kReadWindow;
 
 		if (ngtcp2_conn_client_new(&m_conn, &dcid, &scid, &path.path, NGTCP2_PROTO_VER_V1, &callbacks,
 			    &settings, &params, nullptr, this) != 0 ||
@@ -292,6 +308,7 @@ public:
 	}
 
 	bool HandshakeConfirmed() const { return m_handshakeConfirmed; }
+	const std::vector<uint8_t> &Received() const { return m_received; }
 
 private:
 	static constexpr size_t kMaxUdpPayload = 1452;
@@ -303,6 +320,7 @@ private:
 	ngtcp2_crypto_conn_ref m_connRef{};
 	bool m_handshakeConfirmed = false;
 	int64_t m_streamId = -1;
+	std::vector<uint8_t> m_received;
 };
 } // namespace
 
@@ -369,4 +387,22 @@ TEST(QuicNgtcp2Handshake, ARealClientAndTheRealServerEngineCompleteTheHandshake)
 	// extend_max_offset() without crashing once a real stream exists -- the actual point of
 	// calling it, as opposed to the no-op default every IQuicConnection has before one does.
 	connection->ExtendStreamReadWindow(received.size());
+
+	// Proves the reply path too: CQuicNgtcp2Connection implements IQuicStreamOperations
+	// directly (QuicNgtcp2Adapter.cpp), the same object as the IQuicConnection above. A real
+	// CClientTCPSocket-attached CQuicSocketTransport would reach WriteStream() through that
+	// interface; this test reaches it the same way, without needing a transport at all.
+	auto *streamOps = dynamic_cast<IQuicStreamOperations *>(connection.get());
+	ASSERT_TRUE(streamOps != nullptr);
+	const std::vector<uint8_t> reply{ 'o', 'k' };
+	const std::ptrdiff_t written = streamOps->WriteStream(nullptr, reply.data(), reply.size());
+	ASSERT_EQUALS(static_cast<std::ptrdiff_t>(reply.size()), written);
+	ASSERT_TRUE(!sink->sent.empty());
+
+	for (const auto &datagram : sink->sent) {
+		ASSERT_TRUE(client.Receive(datagram, nowMs));
+	}
+	sink->sent.clear();
+
+	ASSERT_TRUE(client.Received() == reply);
 }
