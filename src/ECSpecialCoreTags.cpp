@@ -346,8 +346,8 @@ CEC_SharedFile_Tag::CEC_SharedFile_Tag(
 	const CVerifyLocalDataResult &verify = file->GetVerifyResult();
 	if (verify.date || (valuemap && valuemap->HasSentInt(EC_TAG_KNOWNFILE_VERIFY_DATE))) {
 		AddTag(EC_TAG_KNOWNFILE_VERIFY_DATE, verify.date, valuemap);
-		AddTag(EC_TAG_KNOWNFILE_VERIFY_CORRUPT_MD4, verify.encodedMD4, valuemap);
-		AddTag(EC_TAG_KNOWNFILE_VERIFY_CORRUPT_AICH, verify.encodedAICH, valuemap);
+		AddTag(EC_TAG_KNOWNFILE_VERIFY_CORRUPT_MD4, verify.EncodedMD4(), valuemap);
+		AddTag(EC_TAG_KNOWNFILE_VERIFY_CORRUPT_AICH, verify.EncodedAICH(), valuemap);
 	}
 
 	// Community ratings/comments, comment filter applied, plus the on-demand Kad-notes running

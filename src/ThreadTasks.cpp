@@ -562,7 +562,7 @@ void CVerifyLocalDataTask::PrintReport(
 	}
 
 	AddLogLineC(CFormat(_("Verify Local Data (%s): ERRORS FOUND! %s Failed blocks: MD4: %s. %s %s")) %
-		    scope % fullPath % result.EncodeCorruptedMD4() % (checkedAICH ? "AICH: " : "") %
+		    scope % fullPath % result.EncodedMD4() % (checkedAICH ? "AICH: " : "") %
 		    (checkedAICH ? result.FormatCorruptedAICH() : wxString()));
 }
 
@@ -698,8 +698,7 @@ void CVerifyLocalDataTask::Entry()
 		if (!TestDestroy()) { // don't print or record an unfinished report
 			CVerifyLocalDataResult result;
 			result.date = (uint32)time(nullptr);
-			result.corruptedMD4 = m_corruptedMD4;
-			result.corruptedAICH = m_corruptedAICH;
+			result.SetCorrupted(m_corruptedMD4, m_corruptedAICH);
 			PrintReport(fullPath, isAICHloaded, result);
 			CVerifyLocalDataEvent evt(m_fileID, m_fullPath, m_fileDate, m_fileSize, result);
 			wxQueueEvent(wxTheApp, evt.Clone());

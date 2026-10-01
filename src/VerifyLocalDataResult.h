@@ -40,66 +40,36 @@
  * Last Verify Local Data result (FT_VERIFY_* in known.met). date == 0: never verified. Kept apart
  * from CKnownFile so the encoding can be unit tested.
  */
-struct CVerifyLocalDataResult
+class CVerifyLocalDataResult
 {
+public:
 	typedef std::vector<uint16> PartList;
 	// Per corrupt part: its number and the corrupt AICH blocks (EMBLOCKSIZE) within it.
 	typedef std::vector<std::pair<uint16, std::vector<uint8>>> BlockList;
 
 	uint32 date = 0;
-	PartList corruptedMD4;
-	BlockList corruptedAICH;
-	// The two lists encoded, cached: EC sends them on every update of a verified file. Kept by
-	// DecodeCorrupted() and CKnownFile::SetVerifyResult(); call CacheEncoding() after changing
-	// the lists directly.
-	wxString encodedMD4;
-	wxString encodedAICH;
 
-	bool IsCorrupt() const { return !corruptedMD4.empty() || !corruptedAICH.empty(); }
+	const PartList &CorruptedMD4() const { return m_corruptedMD4; }
+	const BlockList &CorruptedAICH() const { return m_corruptedAICH; }
+	bool IsCorrupt() const { return !m_corruptedMD4.empty() || !m_corruptedAICH.empty(); }
 
 	// FT_VERIFY_CORRUPTMD4: "p,p,p", the FT_CORRUPTEDPARTS format. Empty when no part is corrupt.
-	wxString EncodeCorruptedMD4() const
-	{
-		wxString str;
-		for (uint16 part : corruptedMD4) {
-			if (!str.IsEmpty()) {
-				str += ",";
-			}
-			str += CFormat("%u") % part;
-		}
-		return str;
-	}
-
+	const wxString &EncodedMD4() const { return m_encodedMD4; }
 	// FT_VERIFY_CORRUPTAICH: "p:b.b;p:b". Empty when no block is corrupt.
-	wxString EncodeCorruptedAICH() const
-	{
-		wxString str;
-		for (const auto &part : corruptedAICH) {
-			if (!str.IsEmpty()) {
-				str += ";";
-			}
-			str += CFormat("%u:") % part.first;
-			for (size_t i = 0; i < part.second.size(); ++i) {
-				if (i) {
-					str += ".";
-				}
-				str += CFormat("%u") % part.second[i];
-			}
-		}
-		return str;
-	}
+	const wxString &EncodedAICH() const { return m_encodedAICH; }
 
-	void CacheEncoding()
+	void SetCorrupted(const PartList &md4, const BlockList &aich)
 	{
-		encodedMD4 = EncodeCorruptedMD4();
-		encodedAICH = EncodeCorruptedAICH();
+		m_corruptedMD4 = md4;
+		m_corruptedAICH = aich;
+		Encode();
 	}
 
 	// The notation of the log report: "p: (b,b), p: (b)".
 	wxString FormatCorruptedAICH() const
 	{
 		wxString str;
-		for (const auto &part : corruptedAICH) {
+		for (const auto &part : m_corruptedAICH) {
 			wxString blocks;
 			for (uint8 block : part.second) {
 				blocks += CFormat("%s%u") % (blocks.IsEmpty() ? "" : ",") % (unsigned)block;
@@ -119,25 +89,27 @@ struct CVerifyLocalDataResult
 		if (newDate) {
 			date = *newDate;
 		}
-		DecodeCorrupted(
-			md4 ? *md4 : EncodeCorruptedMD4(), aich ? *aich : EncodeCorruptedAICH(), fileSize);
+		// Copies: DecodeCorrupted() rewrites the members these would otherwise alias.
+		const wxString keptMD4 = m_encodedMD4;
+		const wxString keptAICH = m_encodedAICH;
+		DecodeCorrupted(md4 ? *md4 : keptMD4, aich ? *aich : keptAICH, fileSize);
 		return true;
 	}
 
 	// Replaces both lists. Out-of-range, repeated or malformed entries are dropped.
 	void DecodeCorrupted(const wxString &md4, const wxString &aich, uint64 fileSize)
 	{
-		corruptedMD4.clear();
-		corruptedAICH.clear();
+		m_corruptedMD4.clear();
+		m_corruptedAICH.clear();
 		const uint64 partCount = (fileSize + PARTSIZE - 1) / PARTSIZE;
 
 		wxStringTokenizer parts(md4, ",");
 		while (parts.HasMoreTokens()) {
 			unsigned long part;
 			if (parts.GetNextToken().ToULong(&part) && part < partCount &&
-				std::find(corruptedMD4.begin(), corruptedMD4.end(), part) ==
-					corruptedMD4.end()) {
-				corruptedMD4.push_back(part);
+				std::find(m_corruptedMD4.begin(), m_corruptedMD4.end(), part) ==
+					m_corruptedMD4.end()) {
+				m_corruptedMD4.push_back(part);
 			}
 		}
 
@@ -147,8 +119,8 @@ struct CVerifyLocalDataResult
 			unsigned long part;
 			if (token.Find(':') == wxNOT_FOUND || !token.BeforeFirst(':').ToULong(&part) ||
 				part >= partCount ||
-				std::any_of(corruptedAICH.begin(),
-					corruptedAICH.end(),
+				std::any_of(m_corruptedAICH.begin(),
+					m_corruptedAICH.end(),
 					[part](const BlockList::value_type &e) { return e.first == part; })) {
 				continue;
 			}
@@ -164,11 +136,43 @@ struct CVerifyLocalDataResult
 				}
 			}
 			if (!blocks.empty()) {
-				corruptedAICH.emplace_back(part, blocks);
+				m_corruptedAICH.emplace_back(part, blocks);
 			}
 		}
-		CacheEncoding();
+		Encode();
 	}
+
+private:
+	// Encoded once per change, not per use: EC sends the strings on every update of a
+	// verified file. Private with the lists, so nothing can change one without the other.
+	void Encode()
+	{
+		m_encodedMD4.clear();
+		for (uint16 part : m_corruptedMD4) {
+			if (!m_encodedMD4.IsEmpty()) {
+				m_encodedMD4 += ",";
+			}
+			m_encodedMD4 += CFormat("%u") % part;
+		}
+		m_encodedAICH.clear();
+		for (const auto &part : m_corruptedAICH) {
+			if (!m_encodedAICH.IsEmpty()) {
+				m_encodedAICH += ";";
+			}
+			m_encodedAICH += CFormat("%u:") % part.first;
+			for (size_t i = 0; i < part.second.size(); ++i) {
+				if (i) {
+					m_encodedAICH += ".";
+				}
+				m_encodedAICH += CFormat("%u") % part.second[i];
+			}
+		}
+	}
+
+	PartList m_corruptedMD4;
+	BlockList m_corruptedAICH;
+	wxString m_encodedMD4;
+	wxString m_encodedAICH;
 };
 
 #endif // VERIFYLOCALDATARESULT_H

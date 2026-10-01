@@ -282,10 +282,10 @@ void CFileDetailDialog::UpdateData(bool resetFilename)
 	}
 	CastChild(IDC_FD_VERIFY_STATUS, wxControl)->SetLabel(verifyStatus);
 	wxString verifyDetails;
-	if (!verify.corruptedMD4.empty()) {
-		verifyDetails = "MD4: " + verify.encodedMD4;
+	if (!verify.CorruptedMD4().empty()) {
+		verifyDetails = "MD4: " + verify.EncodedMD4();
 	}
-	if (!verify.corruptedAICH.empty()) {
+	if (!verify.CorruptedAICH().empty()) {
 		verifyDetails +=
 			(verifyDetails.IsEmpty() ? "AICH: " : "\nAICH: ") + verify.FormatCorruptedAICH();
 	}

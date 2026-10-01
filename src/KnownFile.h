@@ -329,11 +329,7 @@ public:
 	// Last "Verify Local Data" outcome, persisted in known.met. Set on the main thread only, from
 	// CamuleApp::OnVerifyLocalDataFinished -- CVerifyLocalDataTask never writes it directly.
 	const CVerifyLocalDataResult &GetVerifyResult() const { return m_verifyResult; }
-	void SetVerifyResult(const CVerifyLocalDataResult &result)
-	{
-		m_verifyResult = result;
-		m_verifyResult.CacheEncoding();
-	}
+	void SetVerifyResult(const CVerifyLocalDataResult &result) { m_verifyResult = result; }
 	void ClearVerifyResult() { m_verifyResult = CVerifyLocalDataResult(); }
 
 	bool LoadHashsetFromFile(const CFileDataIO *file, bool checkhash);
