@@ -201,6 +201,25 @@ if (ENABLE_QUIC)
 	target_include_directories (QuicLibraryAdapterTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
 	target_link_libraries (QuicLibraryAdapterTest muleunit Quic::Ngtcp2)
 
+	add_executable (QuicNgtcp2HandshakeTest
+		QuicNgtcp2HandshakeTest.cpp
+		${CMAKE_SOURCE_DIR}/src/QuicNgtcp2Adapter.cpp
+		${CMAKE_SOURCE_DIR}/src/QuicContext.cpp
+		${CMAKE_SOURCE_DIR}/src/QuicGnuTlsSession.cpp
+		${CMAKE_SOURCE_DIR}/src/QuicLibraryAdapter.cpp
+		${CMAKE_SOURCE_DIR}/src/NetworkAddress.cpp
+		${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
+		${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
+	)
+	add_test (NAME QuicNgtcp2HandshakeTest COMMAND QuicNgtcp2HandshakeTest)
+	target_include_directories (QuicNgtcp2HandshakeTest PRIVATE
+		${CMAKE_BINARY_DIR}
+		${CMAKE_SOURCE_DIR}/src
+		${CMAKE_SOURCE_DIR}/src/include
+		${Boost_INCLUDE_DIR}
+	)
+	target_link_libraries (QuicNgtcp2HandshakeTest muleunit Quic::Ngtcp2 ${Boost_LIBRARIES})
+
 	add_executable (QuicGnuTlsSessionTest
 		QuicGnuTlsSessionTest.cpp
 		${CMAKE_SOURCE_DIR}/src/QuicGnuTlsSession.cpp
