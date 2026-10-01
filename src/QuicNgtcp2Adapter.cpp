@@ -25,6 +25,7 @@
 #include "QuicNattProtocol.h"
 #include "QuicNgtcp2Adapter.h"
 #include "QuicSocketTransport.h"
+#include "QuicStreamAcceptor.h"
 
 #include <ngtcp2/ngtcp2.h>
 #include <ngtcp2/ngtcp2_crypto.h>
@@ -126,7 +127,7 @@ ngtcp2_conn *GetConnFromRef(ngtcp2_crypto_conn_ref *ref)
 	return static_cast<ngtcp2_conn *>(ref->user_data);
 }
 
-class CQuicNgtcp2Connection final : public IQuicConnection
+class CQuicNgtcp2Connection final : public IQuicConnection, public IQuicStreamOperations
 {
 public:
 	CQuicNgtcp2Connection(std::shared_ptr<IQuicNgtcp2Engine> engine,
@@ -134,13 +135,15 @@ public:
 		IQuicNgtcp2Engine::Handle handle,
 		const CNetworkAddress &address,
 		uint16_t port,
-		const std::string &issuedCid)
+		const std::string &issuedCid,
+		IQuicStreamAcceptor *acceptor)
 	: m_engine(std::move(engine))
 	, m_sink(std::move(sink))
 	, m_handle(handle)
 	, m_address(address)
 	, m_port(port)
 	, m_issuedCid(issuedCid)
+	, m_acceptor(acceptor)
 	{
 	}
 
@@ -150,6 +153,7 @@ public:
 	{
 		if (m_closed || data == nullptr || length == 0)
 			return false;
+		m_lastNowMs = nowMs;
 		if (!m_engine->Read(m_handle, data, length, nowMs)) {
 			Close();
 			return false;
@@ -158,6 +162,7 @@ public:
 			Close();
 			return false;
 		}
+		OfferStreamIfJustOpened();
 		return true;
 	}
 
@@ -187,10 +192,38 @@ public:
 
 	void Tick(uint64_t nowMs) override
 	{
-		if (!m_closed && !m_engine->Tick(m_handle, *m_sink, m_address, m_port, nowMs)) {
+		if (m_closed) {
+			return;
+		}
+		m_lastNowMs = nowMs;
+		if (!m_engine->Tick(m_handle, *m_sink, m_address, m_port, nowMs)) {
 			Close();
 		}
 	}
+
+	// IQuicStreamOperations: CQuicSocketTransport's handle is this connection's own
+	// IQuicNgtcp2Engine::Handle, but it is never read back here -- this connection already
+	// knows which engine handle and stream it is.
+	std::ptrdiff_t WriteStream(IQuicStreamOperations::Handle, const uint8_t *data, size_t length) override
+	{
+		if (m_closed) {
+			return -1;
+		}
+		return m_engine->WriteStreamData(m_handle, data, length, *m_sink, m_address, m_port, m_lastNowMs);
+	}
+
+	void CloseStream(IQuicStreamOperations::Handle) override
+	{
+		if (!m_closed) {
+			// The transport is the one closing itself here -- detach before shutting the stream
+			// down, so a byte that arrives in the gap is buffered (DrainStreamData()) rather than
+			// delivered to a transport that just asked to stop hearing from this connection.
+			m_engine->AttachTransport(m_handle, nullptr);
+			m_engine->ShutdownStream(m_handle);
+		}
+	}
+
+	void ExtendReadWindow(IQuicStreamOperations::Handle, size_t bytes) override { ExtendStreamReadWindow(bytes); }
 
 	void Close() override
 	{
@@ -202,12 +235,45 @@ public:
 	}
 
 private:
+	// The point a connection has something worth handing to the rest of aMule: the peer has
+	// opened its one stream (QuicSocketTransport.h). Checked after every successful
+	// ProcessDatagram(), since that is the only place a stream can newly open.
+	void OfferStreamIfJustOpened()
+	{
+		if (m_streamOffered || m_acceptor == nullptr || !m_engine->HasOpenStream(m_handle)) {
+			return;
+		}
+		m_streamOffered = true;
+		auto owned = std::make_unique<CQuicSocketTransport>(*this, m_handle, m_address, m_port, nullptr, true);
+		CQuicSocketTransport *raw = owned.get();
+		std::unique_ptr<IStreamTransport> transport(std::move(owned));
+		if (!m_acceptor->AcceptStream(transport, m_address, m_port)) {
+			// Refused: the transport the acceptor declined is still ours to destroy, exactly as
+			// CUtpLibraryAdapter does for a refused uTP stream.
+			return;
+		}
+		// Deliver whatever arrived before the transport existed, then everything from here on
+		// goes straight to it (see AttachTransport()'s contract).
+		const std::vector<uint8_t> buffered = m_engine->DrainStreamData(m_handle);
+		if (!buffered.empty()) {
+			raw->OnPayload(buffered.data(), buffered.size());
+		}
+		m_engine->AttachTransport(m_handle, raw);
+		// The handshake that had to complete before a stream could even open already proved
+		// connectivity; this is the equivalent of CUtpSocketTransport::MarkConnected() for a
+		// transport libutp's own state machine would otherwise have marked itself.
+		raw->MarkConnected();
+	}
+
 	std::shared_ptr<IQuicNgtcp2Engine> m_engine;
 	std::shared_ptr<IQuicDatagramSink> m_sink;
 	IQuicNgtcp2Engine::Handle m_handle;
 	const CNetworkAddress m_address;
 	uint16_t m_port;
 	std::string m_issuedCid;
+	IQuicStreamAcceptor *m_acceptor;
+	uint64_t m_lastNowMs = 0;
+	bool m_streamOffered = false;
 	bool m_closed = false;
 };
 
@@ -256,7 +322,14 @@ public:
 		if (it->second.streamId != streamId) {
 			return 0;
 		}
-		it->second.receivedData.insert(it->second.receivedData.end(), data, data + datalen);
+		// Once a transport is attached (AttachTransport()), bytes go straight to it: buffering
+		// them in receivedData too would silently duplicate everything DrainStreamData() already
+		// handed to whoever attached the transport in the first place.
+		if (it->second.transport != nullptr) {
+			it->second.transport->OnPayload(data, datalen);
+		} else {
+			it->second.receivedData.insert(it->second.receivedData.end(), data, data + datalen);
+		}
 		return 0;
 	}
 
@@ -472,10 +545,72 @@ public:
 		ngtcp2_conn_extend_max_offset(it->second.conn, bytes);
 	}
 
+	bool HasOpenStream(Handle handle) const override
+	{
+		auto it = m_connections.find(handle);
+		return it != m_connections.end() && it->second.streamId >= 0;
+	}
+
+	void AttachTransport(Handle handle, CQuicSocketTransport *transport) override
+	{
+		auto it = m_connections.find(handle);
+		if (it != m_connections.end()) {
+			it->second.transport = transport;
+		}
+	}
+
+	std::ptrdiff_t WriteStreamData(Handle handle,
+		const uint8_t *data,
+		size_t length,
+		IQuicDatagramSink &sink,
+		const CNetworkAddress &address,
+		uint16_t port,
+		uint64_t nowMs) override
+	{
+		auto it = m_connections.find(handle);
+		if (it == m_connections.end() || it->second.streamId < 0) {
+			return -1;
+		}
+		const ngtcp2_tstamp ts = NanosecondsFromMs(nowMs);
+		uint8_t buf[kMaxUdpPayload];
+		ngtcp2_path_storage path;
+		InitZeroPath(path);
+		ngtcp2_pkt_info pi = {};
+		const ngtcp2_vec vec{ const_cast<uint8_t *>(data), length };
+		ngtcp2_ssize dataLen = 0;
+		// ngtcp2_conn_writev_stream() both accepts stream data and may produce a packet in the
+		// same call: there is no separate "queue it for later" step to split this into, unlike
+		// CUtpSocketTransport's push model over libutp's own internal timer.
+		const ngtcp2_ssize written = ngtcp2_conn_writev_stream(it->second.conn, &path.path, &pi, buf,
+			sizeof(buf), &dataLen, NGTCP2_WRITE_STREAM_FLAG_NONE, it->second.streamId, &vec, 1, ts);
+		if (written < 0) {
+			return -1;
+		}
+		if (written > 0 && !sink.SendDatagram(buf, static_cast<size_t>(written), address, port)) {
+			return -1;
+		}
+		return dataLen < 0 ? 0 : static_cast<std::ptrdiff_t>(dataLen);
+	}
+
+	void ShutdownStream(Handle handle) override
+	{
+		auto it = m_connections.find(handle);
+		if (it != m_connections.end() && it->second.streamId >= 0) {
+			ngtcp2_conn_shutdown_stream(it->second.conn, 0, it->second.streamId, 0);
+		}
+	}
+
 	void Destroy(Handle handle) override
 	{
 		auto it = m_connections.find(handle);
 		if (it != m_connections.end()) {
+			// A transport can still be attached if the connection ends on its own (e.g. a
+			// protocol error, or the peer closing) rather than through the transport's own
+			// Close(): tell it the stream it was built on is gone before the handle it holds
+			// becomes dangling.
+			if (it->second.transport != nullptr) {
+				it->second.transport->OnEnded();
+			}
 			ngtcp2_conn_del(it->second.conn);
 			m_connections.erase(it);
 		}
@@ -490,6 +625,10 @@ private:
 		ngtcp2_crypto_conn_ref connRef{};
 		int64_t streamId = -1;
 		std::vector<uint8_t> receivedData;
+		//! Non-owning: set by AttachTransport() once the caller has handed the stream off. The
+		//! caller is responsible for keeping it alive and for calling AttachTransport(handle,
+		//! nullptr) before the transport is destroyed.
+		CQuicSocketTransport *transport = nullptr;
 	};
 
 	// Shared by Flush() (an inbound datagram may need an immediate reply) and Tick() (a timer
@@ -510,9 +649,9 @@ private:
 			InitZeroPath(path);
 			ngtcp2_pkt_info pi = {};
 			// stream_id -1, no data: this call only flushes what ngtcp2 itself needs to send
-			// (handshake CRYPTO frames, ACKs, retransmissions, probes). No path writes
-			// application data to a stream yet -- that is the transport-wiring slice this one
-			// does not attempt.
+			// (handshake CRYPTO frames, ACKs, retransmissions, probes). Application data goes
+			// out through WriteStreamData() instead, which can itself produce a packet in the
+			// same call.
 			const ngtcp2_ssize written = ngtcp2_conn_writev_stream(connection.conn, &path.path, &pi,
 				buf, sizeof(buf), nullptr, NGTCP2_WRITE_STREAM_FLAG_NONE, -1, nullptr, 0, ts);
 			if (written < 0) {
@@ -541,6 +680,11 @@ CQuicNgtcp2Factory::CQuicNgtcp2Factory(const CQuicTlsPolicy &policy,
 {
 }
 
+void CQuicNgtcp2Factory::SetAcceptor(IQuicStreamAcceptor *acceptor)
+{
+	m_acceptor = acceptor;
+}
+
 std::unique_ptr<IQuicConnection> CQuicNgtcp2Factory::CreateInbound(const uint8_t *data,
 	size_t length,
 	const CNetworkAddress &address,
@@ -559,7 +703,8 @@ std::unique_ptr<IQuicConnection> CQuicNgtcp2Factory::CreateInbound(const uint8_t
 	if (handle == nullptr)
 		return nullptr;
 	std::string issuedCid = m_engine->GetIssuedConnectionId(handle);
-	return std::make_unique<CQuicNgtcp2Connection>(m_engine, m_sink, handle, address, port, issuedCid);
+	return std::make_unique<CQuicNgtcp2Connection>(
+		m_engine, m_sink, handle, address, port, issuedCid, m_acceptor);
 }
 
 std::shared_ptr<IQuicNgtcp2Engine> CreateProductionQuicNgtcp2Engine()

@@ -33,6 +33,9 @@
 #include <string>
 #include <vector>
 
+class CQuicSocketTransport;
+class IQuicStreamAcceptor;
+
 struct CQuicInitialMetadata
 {
 	uint32_t version;
@@ -77,6 +80,29 @@ public:
 	//! the timer handling was fatal (e.g. the idle timeout elapsed): the caller must then close
 	//! the connection rather than keep ticking it.
 	virtual bool Tick(Handle, IQuicDatagramSink &, const CNetworkAddress &, uint16_t, uint64_t nowMs) = 0;
+	//! True once the peer has opened its one stream (QuicSocketTransport.h). The point at which
+	//! a connection has something worth handing to the rest of aMule.
+	virtual bool HasOpenStream(Handle) const = 0;
+	//! From this call on, new stream bytes go straight to @p transport (still non-owning: the
+	//! caller keeps it alive) instead of being buffered for DrainStreamData(). Whatever
+	//! DrainStreamData() had not yet returned is not retroactively delivered -- the caller must
+	//! drain once more immediately before attaching, or accept that race as the hand-off boundary.
+	virtual void AttachTransport(Handle, CQuicSocketTransport *transport) = 0;
+	//! Writes @p data on the peer's stream and, if that produces a packet, sends it through
+	//! @p sink immediately -- there is no separate buffering step, since ngtcp2_conn_writev_stream()
+	//! both accepts stream data and may produce output in the same call. Returns the number of
+	//! bytes of @p data actually accepted (matching IQuicStreamOperations::WriteStream()'s
+	//! contract), or a negative value on a fatal connection error.
+	virtual std::ptrdiff_t WriteStreamData(Handle,
+		const uint8_t *data,
+		size_t length,
+		IQuicDatagramSink &sink,
+		const CNetworkAddress &address,
+		uint16_t port,
+		uint64_t nowMs) = 0;
+	//! Abruptly closes the peer's stream (ngtcp2_conn_shutdown_stream()). Does not close the
+	//! connection itself: a stream ending is not a QUIC-level connection event.
+	virtual void ShutdownStream(Handle) = 0;
 	virtual void Destroy(Handle) = 0;
 };
 
@@ -86,6 +112,10 @@ public:
 	CQuicNgtcp2Factory(const CQuicTlsPolicy &,
 		std::shared_ptr<IQuicDatagramSink>,
 		std::shared_ptr<IQuicNgtcp2Engine>);
+	//! Held, not owned: the caller (CClientUDPSocket) keeps the acceptor alive for at least as
+	//! long as this factory. Null refuses every stream's hand-off, which is the state before an
+	//! acceptor exists -- the connection itself is still admitted and still works.
+	void SetAcceptor(IQuicStreamAcceptor *acceptor);
 	std::unique_ptr<IQuicConnection> CreateInbound(
 		const uint8_t *, size_t, const CNetworkAddress &, uint16_t, const std::string &) override;
 
@@ -93,10 +123,12 @@ private:
 	CQuicTlsPolicy m_policy;
 	std::shared_ptr<IQuicDatagramSink> m_sink;
 	std::shared_ptr<IQuicNgtcp2Engine> m_engine;
+	IQuicStreamAcceptor *m_acceptor = nullptr;
 };
 
-// The production dependency is intentionally unavailable until the ngtcp2/TLS
-// event-loop bridge is wired. It always fails closed; tests inject an engine.
+//! The real ngtcp2/GnuTLS-backed engine every production connection uses. Tests inject their own
+//! fake IQuicNgtcp2Engine instead; this one is never fail-closed by design past CreateServer()'s
+//! own precondition checks (credentials present and GnuTLS-backed).
 std::shared_ptr<IQuicNgtcp2Engine> CreateProductionQuicNgtcp2Engine();
 
 #endif

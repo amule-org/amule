@@ -29,6 +29,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <array>
+#include <memory>
 #include <vector>
 
 struct gnutls_session_int;
@@ -123,5 +124,15 @@ private:
 	bool m_authenticationReported = false;
 	std::vector<uint8_t> m_proof;
 };
+
+// Declared here, gnutls-free, so a caller never needs gnutls headers; implemented in
+// QuicGnuTlsSession.cpp, the one translation unit that does (mirrors
+// CreateProductionQuicNgtcp2Engine() in QuicNgtcp2Adapter.h).
+//! The real server certificate and key, shared across every connection this process creates.
+std::shared_ptr<IQuicTlsCredentials> CreateProductionQuicCredentials();
+//! Satisfies CQuicNgtcp2Factory::CreateInbound()'s policy.session/policy.ngtcp2Session
+//! precondition, a check from a design CProductionNgtcp2Engine no longer uses (it only reads
+//! policy.credentials). This object's TLS session is never configured and never touched.
+std::unique_ptr<IQuicNgtcp2TlsSession> CreateUnusedQuicSessionPlaceholder();
 
 #endif

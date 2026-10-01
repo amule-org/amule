@@ -44,7 +44,8 @@ public:
 	enum class AdmissionTransport
 	{
 		TCP,
-		UTP
+		UTP,
+		QUIC
 	};
 
 	CClientTCPSocket(CUpDownClient *in_client = NULL, const CProxyData *ProxyData = NULL);

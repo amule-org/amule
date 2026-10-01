@@ -29,12 +29,16 @@
 #include "MuleUDPSocket.h"
 #include "ReservedProtocolFrames.h" // Needed for CFrameLogThrottle
 
+#include <memory>
+
 #ifdef AMULE_UTP_TRANSPORT
 #include "UtpContext.h"
 #include "UtpStreamAcceptor.h"
 #endif
 #ifdef AMULE_QUIC_TRANSPORT
 #include "QuicContext.h"
+#include "QuicNgtcp2Adapter.h"
+#include "QuicStreamAcceptor.h"
 #endif
 
 class CClientUDPSocket : public CMuleUDPSocket
@@ -73,7 +77,21 @@ private:
 	CUtpStreamAcceptor m_utpAcceptor;
 #endif
 #ifdef AMULE_QUIC_TRANSPORT
+	// Declaration order is construction order: each of these is built from the ones before it,
+	// so none may move above whichever it depends on.
+	std::shared_ptr<IQuicTlsCredentials> m_quicCredentials; // the real, shared server certificate
+	//! Satisfies CQuicNgtcp2Factory::CreateInbound()'s policy.session/policy.ngtcp2Session
+	//! precondition -- a check from a design CProductionNgtcp2Engine no longer uses, since it
+	//! only reads policy.credentials. Never configured, never touched otherwise.
+	std::unique_ptr<IQuicNgtcp2TlsSession> m_quicPlaceholderSession;
+	//! Same reason as m_quicPlaceholderSession, for policy.verifier: no peer certificate is
+	//! requested (QuicGnuTlsSession.h), so nothing ever calls into this.
+	std::unique_ptr<IQuicTlsVerifier> m_quicPlaceholderVerifier;
+	std::shared_ptr<IQuicDatagramSink> m_quicSink;
+	std::shared_ptr<IQuicNgtcp2Engine> m_quicEngine;
+	std::unique_ptr<CQuicNgtcp2Factory> m_quicFactory;
 	CQuicContext m_quic;
+	CQuicStreamAcceptor m_quicAcceptor;
 #endif
 	void OnPacketReceived(
 		const CNetworkAddress &address, uint16 port, uint8_t *buffer, size_t length) override;

@@ -169,3 +169,13 @@ bool CQuicGnuTlsSession::ConfigureTls13Alpn(const IQuicTlsCredentials &credentia
 	// No client certificate is requested: see the class comment on peer identity.
 	return true;
 }
+
+std::shared_ptr<IQuicTlsCredentials> CreateProductionQuicCredentials()
+{
+	return std::make_shared<CQuicEphemeralCredentials>();
+}
+
+std::unique_ptr<IQuicNgtcp2TlsSession> CreateUnusedQuicSessionPlaceholder()
+{
+	return std::make_unique<CQuicGnuTlsSession>();
+}

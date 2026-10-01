@@ -178,6 +178,7 @@ if (ENABLE_QUIC)
 		${CMAKE_SOURCE_DIR}/src/QuicContext.cpp
 		${CMAKE_SOURCE_DIR}/src/QuicGnuTlsSession.cpp
 		${CMAKE_SOURCE_DIR}/src/QuicLibraryAdapter.cpp
+		${CMAKE_SOURCE_DIR}/src/QuicSocketTransport.cpp
 		${CMAKE_SOURCE_DIR}/src/NetworkAddress.cpp
 		${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
 		${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
@@ -207,6 +208,7 @@ if (ENABLE_QUIC)
 		${CMAKE_SOURCE_DIR}/src/QuicContext.cpp
 		${CMAKE_SOURCE_DIR}/src/QuicGnuTlsSession.cpp
 		${CMAKE_SOURCE_DIR}/src/QuicLibraryAdapter.cpp
+		${CMAKE_SOURCE_DIR}/src/QuicSocketTransport.cpp
 		${CMAKE_SOURCE_DIR}/src/NetworkAddress.cpp
 		${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
 		${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c

@@ -146,6 +146,32 @@ struct Engine : IQuicNgtcp2Engine
 	{
 		return handle != nullptr ? 1u : 0u;
 	}
+	bool hasOpenStream = false;
+	bool HasOpenStream(Handle handle) const override { return handle != nullptr && hasOpenStream; }
+	CQuicSocketTransport *attachedTransport = nullptr;
+	void AttachTransport(Handle handle, CQuicSocketTransport *transport) override
+	{
+		if (handle != nullptr) {
+			attachedTransport = transport;
+		}
+	}
+	std::ptrdiff_t WriteStreamData(Handle handle,
+		const uint8_t *,
+		size_t length,
+		IQuicDatagramSink &,
+		const CNetworkAddress &,
+		uint16_t,
+		uint64_t) override
+	{
+		return handle != nullptr ? static_cast<std::ptrdiff_t>(length) : -1;
+	}
+	unsigned shutdownStreamCalls = 0;
+	void ShutdownStream(Handle handle) override
+	{
+		if (handle != nullptr) {
+			++shutdownStreamCalls;
+		}
+	}
 	void Destroy(Handle handle) override
 	{
 		if (handle != nullptr) {

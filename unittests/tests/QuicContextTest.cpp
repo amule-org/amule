@@ -80,10 +80,17 @@ struct FakeConnection : IQuicConnection
 	}
 
 	unsigned ticks = 0;
+	//! Same reason as closeObserved: a tick that closes this connection makes it fair game for
+	//! CQuicContext::Tick()'s own EraseClosedConnections() before the caller gets to look, so
+	//! the count has to be readable through something that outlives this object.
+	unsigned *ticksObserved = nullptr;
 	bool closeOnTick = false;
 	void Tick(uint64_t) override
 	{
 		++ticks;
+		if (ticksObserved != nullptr) {
+			*ticksObserved = ticks;
+		}
 		if (closeOnTick) {
 			closed = true;
 		}
@@ -266,11 +273,16 @@ TEST(QuicContext, TickServicesEveryLiveConnectionAndErasesClosedOnes)
 	ASSERT_TRUE(context.ProcessDatagram(
 		second.data(), second.size(), kPeer, 4662, NatRendezvous::kRequestThrottleMs));
 
+	// factory.created[1] does not survive this Tick(): closeOnTick makes it IsClosed(), and
+	// CQuicContext::Tick() erases (destroys) closed connections in the same call. Read its tick
+	// count through ticksObserved, which outlives it, not through the now-dangling pointer.
+	unsigned secondTicks = 0;
 	factory.created[1]->closeOnTick = true;
+	factory.created[1]->ticksObserved = &secondTicks;
 	context.Tick(123);
 
 	ASSERT_EQUALS(1u, factory.created[0]->ticks);
-	ASSERT_EQUALS(1u, factory.created[1]->ticks);
+	ASSERT_EQUALS(1u, secondTicks);
 	ASSERT_EQUALS(1u, context.ConnectionCount());
 }
 

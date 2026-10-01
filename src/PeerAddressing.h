@@ -397,6 +397,14 @@ inline bool CanAdmitUtpPeer(const CNetworkAddress &address) noexcept
 	return HasEd2kWireForm(address);
 }
 
+/** The current QUIC NAT-T ingress narrows every peer to IPv4 before this point is ever reached
+ * (CClientUDPSocket::OnPacketReceived()), so this is the same rule as uTP's for the same reason:
+ * the wire framing has no IPv6 form yet. */
+inline bool CanAdmitQuicPeer(const CNetworkAddress &address) noexcept
+{
+	return HasEd2kWireForm(address);
+}
+
 /** Production callback throttle seam; the exact three-minute boundary remains allowed. */
 inline bool IsCallbackRequestThrottled(
 	const CNetworkAddress &address, const CNetworkAddress &previous, std::uint64_t elapsed) noexcept

@@ -139,6 +139,11 @@ bool CClientTCPSocket::InitNetworkData(AdmissionTransport transport)
 			"Denied uTP connection from " + GetPeer() + " (uTP requires an IPv4 address)");
 		return false;
 	}
+	if (transport == AdmissionTransport::QUIC && !PeerAddressing::CanAdmitQuicPeer(m_remoteAddress)) {
+		AddDebugLogLineN(logClient,
+			"Denied QUIC connection from " + GetPeer() + " (QUIC requires an IPv4 address)");
+		return false;
+	}
 #ifndef ENABLE_IPV6
 	if (transport == AdmissionTransport::TCP && m_remoteAddress.IsIPv6()) {
 		AddDebugLogLineN(
