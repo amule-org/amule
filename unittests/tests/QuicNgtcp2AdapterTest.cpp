@@ -115,6 +115,23 @@ struct Engine : IQuicNgtcp2Engine
 	{
 		return handle != nullptr ? issuedCid : std::string();
 	}
+	std::vector<uint8_t> streamData;
+	std::vector<uint8_t> DrainStreamData(Handle handle) override
+	{
+		if (handle == nullptr) {
+			return {};
+		}
+		std::vector<uint8_t> data;
+		data.swap(streamData);
+		return data;
+	}
+	unsigned extendedReadWindowBytes = 0;
+	void ExtendStreamReadWindow(Handle handle, size_t bytes) override
+	{
+		if (handle != nullptr) {
+			extendedReadWindowBytes += static_cast<unsigned>(bytes);
+		}
+	}
 	uint64_t GetAdvertisedReadWindow(Handle handle) const override
 	{
 		return handle != nullptr ? 1u : 0u;

@@ -173,6 +173,18 @@ public:
 		return m_closed ? std::string() : m_issuedCid;
 	}
 
+	std::vector<uint8_t> DrainStreamData() override
+	{
+		return m_closed ? std::vector<uint8_t>() : m_engine->DrainStreamData(m_handle);
+	}
+
+	void ExtendStreamReadWindow(size_t bytes) override
+	{
+		if (!m_closed) {
+			m_engine->ExtendStreamReadWindow(m_handle, bytes);
+		}
+	}
+
 	void Close() override
 	{
 		if (m_closed)
@@ -200,6 +212,45 @@ public:
 		for (auto &connection : m_connections) {
 			ngtcp2_conn_del(connection.second.conn);
 		}
+	}
+
+	// There is exactly one application stream per connection by design: eD2k always replies on
+	// the peer's own stream and never opens one of its own (QuicSocketTransport.h). The first
+	// stream id seen, from either callback, is the only one this engine ever tracks; recv_stream
+	// data for a later, different stream id is silently ignored rather than accepted into a
+	// second stream's place, since nothing above this layer could tell the two apart anyway.
+	static int OnStreamOpen(ngtcp2_conn *conn, int64_t streamId, void *userData)
+	{
+		auto *engine = static_cast<CProductionNgtcp2Engine *>(userData);
+		auto it = engine->m_connections.find(conn);
+		if (it != engine->m_connections.end() && it->second.streamId < 0) {
+			it->second.streamId = streamId;
+		}
+		return 0;
+	}
+
+	static int OnRecvStreamData(ngtcp2_conn *conn,
+		uint32_t,
+		int64_t streamId,
+		uint64_t,
+		const uint8_t *data,
+		size_t datalen,
+		void *userData,
+		void *)
+	{
+		auto *engine = static_cast<CProductionNgtcp2Engine *>(userData);
+		auto it = engine->m_connections.find(conn);
+		if (it == engine->m_connections.end()) {
+			return 0;
+		}
+		if (it->second.streamId < 0) {
+			it->second.streamId = streamId;
+		}
+		if (it->second.streamId != streamId) {
+			return 0;
+		}
+		it->second.receivedData.insert(it->second.receivedData.end(), data, data + datalen);
+		return 0;
 	}
 
 	Handle CreateServer(const CQuicTlsPolicy &policy,
@@ -257,6 +308,8 @@ public:
 		callbacks.delete_crypto_aead_ctx = ngtcp2_crypto_delete_crypto_aead_ctx_cb;
 		callbacks.delete_crypto_cipher_ctx = ngtcp2_crypto_delete_crypto_cipher_ctx_cb;
 		callbacks.get_path_challenge_data = ngtcp2_crypto_get_path_challenge_data_cb;
+		callbacks.stream_open = OnStreamOpen;
+		callbacks.recv_stream_data = OnRecvStreamData;
 
 		ngtcp2_settings settings = {};
 		ngtcp2_settings_default(&settings);
@@ -275,10 +328,14 @@ public:
 		params.initial_max_stream_data_bidi_remote = CQuicSocketTransport::kReadWindow;
 		params.initial_max_stream_data_uni = CQuicSocketTransport::kReadWindow;
 		params.initial_max_data = CQuicSocketTransport::kReadWindow;
+		// ngtcp2_transport_params_default() leaves this at 0, meaning "the peer may open no
+		// bidirectional stream at all". Exactly one is the design (QuicSocketTransport.h): the
+		// peer's own stream, never a second.
+		params.initial_max_streams_bidi = 1;
 
 		ngtcp2_conn *conn = nullptr;
 		if (ngtcp2_conn_server_new(
-			    &conn, &dcid, &scid, &path.path, metadata.version, &callbacks, &settings, &params, nullptr, nullptr) != 0 ||
+			    &conn, &dcid, &scid, &path.path, metadata.version, &callbacks, &settings, &params, nullptr, this) != 0 ||
 			conn == nullptr) {
 			return nullptr;
 		}
@@ -387,6 +444,27 @@ public:
 		return ngtcp2_conn_get_local_transport_params(it->second.conn)->initial_max_data;
 	}
 
+	std::vector<uint8_t> DrainStreamData(Handle handle) override
+	{
+		auto it = m_connections.find(handle);
+		if (it == m_connections.end()) {
+			return {};
+		}
+		std::vector<uint8_t> data;
+		data.swap(it->second.receivedData);
+		return data;
+	}
+
+	void ExtendStreamReadWindow(Handle handle, size_t bytes) override
+	{
+		auto it = m_connections.find(handle);
+		if (it == m_connections.end() || it->second.streamId < 0) {
+			return;
+		}
+		ngtcp2_conn_extend_max_stream_offset(it->second.conn, it->second.streamId, bytes);
+		ngtcp2_conn_extend_max_offset(it->second.conn, bytes);
+	}
+
 	void Destroy(Handle handle) override
 	{
 		auto it = m_connections.find(handle);
@@ -403,6 +481,8 @@ private:
 		std::string issuedCid;
 		std::unique_ptr<CQuicGnuTlsSession> tlsSession;
 		ngtcp2_crypto_conn_ref connRef{};
+		int64_t streamId = -1;
+		std::vector<uint8_t> receivedData;
 	};
 
 	std::map<Handle, ConnectionInfo> m_connections;

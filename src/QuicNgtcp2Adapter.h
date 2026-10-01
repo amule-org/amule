@@ -31,6 +31,7 @@
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <vector>
 
 struct CQuicInitialMetadata
 {
@@ -63,6 +64,14 @@ public:
 	//! The connection-level flow-control window this handle advertised to the peer at
 	//! creation (ngtcp2_transport_params::initial_max_data). 0 if no connection.
 	virtual uint64_t GetAdvertisedReadWindow(Handle) const = 0;
+	//! Bytes received so far on the peer's first opened stream, and clears them. There is
+	//! exactly one stream per connection by design (see QuicSocketTransport.h): eD2k always
+	//! replies on the peer's own stream and never opens one of its own.
+	virtual std::vector<uint8_t> DrainStreamData(Handle) = 0;
+	//! Reopens @p bytes of stream- and connection-level flow control, as the application
+	//! drains what DrainStreamData() returned (ngtcp2_conn_extend_max_stream_offset() +
+	//! ngtcp2_conn_extend_max_offset()). A no-op if no stream has opened yet.
+	virtual void ExtendStreamReadWindow(Handle, size_t bytes) = 0;
 	virtual void Destroy(Handle) = 0;
 };
 

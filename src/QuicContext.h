@@ -33,6 +33,7 @@
 #include <memory>
 #include <string>
 #include <tuple>
+#include <vector>
 
 class IQuicConnection
 {
@@ -49,6 +50,12 @@ public:
 	//! The server-issued source connection ID, if the implementation exposes one. Empty by
 	//! default: only meaningful for connections whose engine actually issues one.
 	virtual std::string GetIssuedConnectionId() const { return std::string(); }
+	//! Bytes received so far on the peer's stream, and clears them. Empty if no stream has
+	//! opened yet, or this implementation has none (the default).
+	virtual std::vector<uint8_t> DrainStreamData() { return {}; }
+	//! Reopens @p bytes of flow control as the application drains what DrainStreamData()
+	//! returned. A no-op by default.
+	virtual void ExtendStreamReadWindow(size_t) {}
 };
 
 class IQuicConnectionFactory

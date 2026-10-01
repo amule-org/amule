@@ -118,6 +118,15 @@ struct ForeignSession : IQuicNgtcp2TlsSession
 	}
 };
 
+std::string ExtractInitialDcid(const std::vector<uint8_t> &datagram)
+{
+	ngtcp2_pkt_hd header;
+	if (ngtcp2_accept(&header, datagram.data(), datagram.size()) != 0) {
+		return {};
+	}
+	return std::string(reinterpret_cast<const char *>(header.dcid.data), header.dcid.datalen);
+}
+
 struct CollectingSink : IQuicDatagramSink
 {
 	std::vector<std::vector<uint8_t>> sent;
@@ -251,6 +260,37 @@ public:
 			       m_conn, &path.path, nullptr, datagram.data(), datagram.size(), ts) == 0;
 	}
 
+	//! Opens this client's one bidirectional stream on first use, then sends @p payload on it,
+	//! as separate outgoing datagrams. eD2k only ever replies on the peer's stream
+	//! (QuicSocketTransport.h), so the server side never opens one of its own.
+	std::vector<std::vector<uint8_t>> SendOnStream(const std::vector<uint8_t> &payload, uint64_t nowMs)
+	{
+		if (m_streamId < 0 && ngtcp2_conn_open_bidi_stream(m_conn, &m_streamId, nullptr) != 0) {
+			return {};
+		}
+		std::vector<std::vector<uint8_t>> out;
+		const ngtcp2_tstamp ts = nowMs * UINT64_C(1000000);
+		const ngtcp2_vec vec{ const_cast<uint8_t *>(payload.data()), payload.size() };
+		bool dataSent = payload.empty();
+		for (int round = 0; round < kMaxPacketsPerPump; ++round) {
+			uint8_t buf[kMaxUdpPayload];
+			ngtcp2_path_storage path;
+			InitZeroPath(path);
+			ngtcp2_pkt_info pi = {};
+			ngtcp2_ssize dataLen = 0;
+			const ngtcp2_ssize written = ngtcp2_conn_writev_stream(m_conn, &path.path, &pi, buf,
+				sizeof(buf), &dataLen, 0, m_streamId, dataSent ? nullptr : &vec, dataSent ? 0 : 1, ts);
+			if (written <= 0) {
+				break;
+			}
+			if (dataLen > 0) {
+				dataSent = true;
+			}
+			out.emplace_back(buf, buf + written);
+		}
+		return out;
+	}
+
 	bool HandshakeConfirmed() const { return m_handshakeConfirmed; }
 
 private:
@@ -262,6 +302,7 @@ private:
 	ngtcp2_conn *m_conn = nullptr;
 	ngtcp2_crypto_conn_ref m_connRef{};
 	bool m_handshakeConfirmed = false;
+	int64_t m_streamId = -1;
 };
 } // namespace
 
@@ -276,11 +317,15 @@ TEST(QuicNgtcp2Handshake, ARealClientAndTheRealServerEngineCompleteTheHandshake)
 	auto sink = std::make_shared<CollectingSink>();
 	auto engine = CreateProductionQuicNgtcp2Engine();
 	CQuicNgtcp2Factory factory(policy, sink, engine);
-	CQuicContext context(&factory);
 
 	CTestQuicClient client;
 	ASSERT_TRUE(client.Init());
 
+	// Not CQuicContext: it owns connections privately and exposes no way to reach one again,
+	// which this test needs to drain the stream data it is about to prove arrives. There is
+	// only one connection here, so the routing CQuicContext would otherwise do is unnecessary --
+	// every datagram after the first just goes straight to it.
+	std::unique_ptr<IQuicConnection> connection;
 	bool confirmed = false;
 	uint64_t nowMs = 0;
 	// One handshake takes a handful of round trips; this bounds a genuine protocol failure to a
@@ -288,8 +333,13 @@ TEST(QuicNgtcp2Handshake, ARealClientAndTheRealServerEngineCompleteTheHandshake)
 	constexpr int kMaxRounds = 20;
 	for (int round = 0; round < kMaxRounds && !confirmed; ++round, nowMs += 10) {
 		for (const auto &datagram : client.Pump(nowMs)) {
-			ASSERT_TRUE(context.ProcessDatagram(
-				datagram.data(), datagram.size(), kPeer, 4672, nowMs));
+			if (!connection) {
+				const std::string dcid = ExtractInitialDcid(datagram);
+				ASSERT_TRUE(!dcid.empty());
+				connection = factory.CreateInbound(datagram.data(), datagram.size(), kPeer, 4672, dcid);
+				ASSERT_TRUE(connection != nullptr);
+			}
+			ASSERT_TRUE(connection->ProcessDatagram(datagram.data(), datagram.size(), nowMs));
 		}
 		for (const auto &datagram : sink->sent) {
 			ASSERT_TRUE(client.Receive(datagram, nowMs));
@@ -299,5 +349,24 @@ TEST(QuicNgtcp2Handshake, ARealClientAndTheRealServerEngineCompleteTheHandshake)
 	}
 
 	ASSERT_TRUE(confirmed);
-	ASSERT_EQUALS(1u, context.ConnectionCount());
+	ASSERT_TRUE(connection != nullptr);
+
+	// Proves the stream path end to end, not just the handshake: real payload, sent on the
+	// client's real stream, delivered through the real engine's recv_stream_data callback.
+	const std::vector<uint8_t> payload{ 'h', 'i' };
+	for (const auto &datagram : client.SendOnStream(payload, nowMs)) {
+		ASSERT_TRUE(connection->ProcessDatagram(datagram.data(), datagram.size(), nowMs));
+	}
+	for (const auto &datagram : sink->sent) {
+		ASSERT_TRUE(client.Receive(datagram, nowMs));
+	}
+	sink->sent.clear();
+
+	const std::vector<uint8_t> received = connection->DrainStreamData();
+	ASSERT_TRUE(received == payload);
+
+	// Proves ExtendStreamReadWindow() reaches ngtcp2_conn_extend_max_stream_offset()/
+	// extend_max_offset() without crashing once a real stream exists -- the actual point of
+	// calling it, as opposed to the no-op default every IQuicConnection has before one does.
+	connection->ExtendStreamReadWindow(received.size());
 }
