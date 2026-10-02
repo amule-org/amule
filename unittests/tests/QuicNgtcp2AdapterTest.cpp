@@ -170,6 +170,14 @@ struct Engine : IQuicNgtcp2Engine
 			++shutdownStreamCalls;
 		}
 	}
+	unsigned closeStreamGracefullyCalls = 0;
+	void CloseStreamGracefully(
+		Handle handle, IQuicDatagramSink &, const CNetworkAddress &, uint16_t, uint64_t) override
+	{
+		if (handle != nullptr) {
+			++closeStreamGracefullyCalls;
+		}
+	}
 	bool streamEnded = false;
 	bool IsStreamEnded(Handle handle) const override { return handle != nullptr && streamEnded; }
 	unsigned endConnectionCalls = 0;

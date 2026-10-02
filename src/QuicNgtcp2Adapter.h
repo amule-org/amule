@@ -109,9 +109,20 @@ public:
 		uint16_t port,
 		uint64_t nowMs) = 0;
 	//! Abruptly closes the peer's stream (ngtcp2_conn_shutdown_stream()). This resets the stream
-	//! -- IsStreamEnded() is what notices the stream is gone either way (reset or a clean close)
-	//! and is how the owning connection actually decides to end itself over it.
+	//! and discards anything still unacknowledged -- reserved for genuine errors (ConnectionInfo
+	//! itself was already fatal somehow); CloseStreamGracefully() below is the one a clean,
+	//! voluntary close should use instead. IsStreamEnded() is what notices the stream is gone
+	//! either way (reset or a clean close) and is how the owning connection actually decides to
+	//! end itself over it.
 	virtual void ShutdownStream(Handle) = 0;
+	//! Sends an empty STREAM frame with FIN set, ending the write side of this connection's one
+	//! stream without discarding anything: unlike ShutdownStream(), whatever is already in
+	//! ConnectionInfo::unackedSendChunks keeps being retransmitted normally until acknowledged,
+	//! exactly as if the application had simply stopped writing. This is what a voluntary,
+	//! clean close (CQuicSocketTransport::Close()) should ask for -- the whole reason a
+	//! connection's one stream ending is distinct from an application error in the first place.
+	virtual void CloseStreamGracefully(
+		Handle, IQuicDatagramSink &, const CNetworkAddress &, uint16_t, uint64_t nowMs) = 0;
 	//! True once this connection's one stream has ended -- cleanly (ngtcp2's stream_close) or by
 	//! reset (stream_reset), from either side. With exactly one stream per connection by design
 	//! (QuicSocketTransport.h), there is nothing left to use the connection for past this point.

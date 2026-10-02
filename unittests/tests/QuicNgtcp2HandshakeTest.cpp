@@ -790,3 +790,46 @@ TEST(QuicNgtcp2Handshake, FlowControlBlockDoesNotLoseTheStreamAndRecoversOnceUnb
 	}
 	ASSERT_TRUE(progressed);
 }
+
+// got3nks' review on #1710 (finding #6, Medium): Close() used to ask the engine to reset the
+// stream outright (ngtcp2_conn_shutdown_stream()), discarding whatever was still queued in the
+// transport's own buffer and never handed to WriteStream() at all -- a clean eD2k close could
+// silently drop its last packet. Proves Close() gives that data one last chance to go out first.
+TEST(QuicNgtcp2Handshake, CloseFlushesQueuedDataBeforeEndingTheStreamCleanly)
+{
+	CQuicEphemeralCredentials credentials;
+	ForeignSession session;
+	ForeignVerifier verifier;
+	CQuicTlsPolicy policy{ &session, &credentials, &verifier, &session };
+
+	auto sink = std::make_shared<CollectingSink>();
+	auto engine = CreateProductionQuicNgtcp2Engine();
+	CQuicNgtcp2Factory factory(policy, sink, engine, kTestServerIdentity);
+	AcceptingAcceptor acceptor;
+	factory.SetAcceptor(&acceptor);
+
+	CTestQuicClient client;
+	ASSERT_TRUE(client.Init());
+
+	std::unique_ptr<IQuicConnection> connection;
+	uint64_t nowMs = 0;
+	ASSERT_TRUE(DriveHandshake(client, factory, *sink, connection, nowMs));
+	ASSERT_TRUE(ExchangeEaqn1Proof(client, connection, *sink, nowMs));
+	ASSERT_TRUE(acceptor.accepted != nullptr);
+
+	// Write(), then Close() immediately -- no Flush() in between, the exact gap that used to
+	// lose this data: Close() itself must be the one giving it a chance to go out.
+	const std::vector<uint8_t> payload{ 'd', 'o', 'n', 'e' };
+	const uint32_t writtenBytes =
+		acceptor.accepted->Write(payload.data(), static_cast<uint32_t>(payload.size()));
+	ASSERT_EQUALS(static_cast<uint32_t>(payload.size()), writtenBytes);
+	acceptor.accepted->Close();
+	ASSERT_TRUE(!sink->sent.empty());
+
+	for (const auto &datagram : sink->sent) {
+		ASSERT_TRUE(client.Receive(datagram, nowMs));
+	}
+	sink->sent.clear();
+
+	ASSERT_TRUE(client.Received() == payload);
+}

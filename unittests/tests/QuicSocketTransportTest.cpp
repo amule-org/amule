@@ -59,6 +59,8 @@ struct Ops : IQuicStreamOperations
 		++closes;
 		closedDuringWrite = inWrite;
 	}
+	int aborts = 0;
+	void AbortStream(Handle) override { ++aborts; }
 	size_t extended = 0;
 	void ExtendReadWindow(Handle, size_t bytes) override { extended += bytes; }
 };
@@ -284,6 +286,9 @@ TEST(QuicTransportFailures, FatalWriteEndsStream)
 	ASSERT_TRUE(!t.IsOk());
 	ASSERT_EQUALS(7, t.LastError());
 	ASSERT_EQUALS(1, e.lost);
-	ASSERT_EQUALS(1, o.closes);
+	// A genuine write failure aborts (resets) the stream, not a graceful close -- the two are
+	// now distinct calls (got3nks' review on #1710, finding #6).
+	ASSERT_EQUALS(0, o.closes);
+	ASSERT_EQUALS(1, o.aborts);
 	ASSERT_EQUALS(1, o.writes);
 }

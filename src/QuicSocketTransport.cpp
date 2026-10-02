@@ -167,6 +167,7 @@ void CQuicSocketTransport::Flush()
 	IStreamTransportEvents *again = nullptr;
 	IStreamTransportEvents *lost = nullptr;
 	IQuicStreamOperations::Handle failedHandle = nullptr;
+	IQuicStreamOperations::Handle closedDuringFlush = nullptr;
 	{
 		std::lock_guard<std::mutex> l(m_mutex);
 		m_flushInProgress = false;
@@ -181,8 +182,10 @@ void CQuicSocketTransport::Flush()
 			m_handle = nullptr;
 			ClearWriteLocked();
 		} else if (m_closed) {
-			// Whoever closed during the write (Close() or OnEnded()) owns the notification.
-			failedHandle = m_handle;
+			// Whoever closed during the write (Close() or OnEnded()) owns the event notification;
+			// this call still owes the engine a graceful close, same as Close() itself would have
+			// made if the write had not still been in flight when it ran.
+			closedDuringFlush = m_handle;
 			m_handle = nullptr;
 			ClearWriteLocked();
 		} else {
@@ -210,7 +213,9 @@ void CQuicSocketTransport::Flush()
 		}
 	}
 	if (failedHandle)
-		m_operations.CloseStream(failedHandle);
+		m_operations.AbortStream(failedHandle);
+	if (closedDuringFlush)
+		m_operations.CloseStream(closedDuringFlush);
 	if (writable)
 		writable->OnStreamWritable();
 	if (again)
@@ -221,6 +226,19 @@ void CQuicSocketTransport::Flush()
 
 void CQuicSocketTransport::Close()
 {
+	bool flushBeforeClosing;
+	{
+		std::lock_guard<std::mutex> l(m_mutex);
+		flushBeforeClosing = !m_closed && !m_flushInProgress && m_writeQueued > 0;
+	}
+	if (flushBeforeClosing) {
+		// Best-effort, not a loop that drains an arbitrarily large queue: Close() still has to
+		// return. One last chance for whatever is already queued to go out is what keeps a clean
+		// eD2k close from silently dropping its last packet -- CQuicNgtcp2Connection::
+		// CloseStream() below only protects what ngtcp2 has already accepted
+		// (ConnectionInfo::unackedSendChunks), not what never left this queue in the first place.
+		Flush();
+	}
 	IQuicStreamOperations::Handle handle = nullptr;
 	{
 		std::lock_guard<std::mutex> l(m_mutex);

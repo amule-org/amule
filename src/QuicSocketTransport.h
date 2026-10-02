@@ -37,7 +37,13 @@ public:
 	using Handle = void *;
 	virtual ~IQuicStreamOperations() = default;
 	virtual std::ptrdiff_t WriteStream(Handle, const uint8_t *, size_t) = 0;
+	//! A voluntary, clean close (CQuicSocketTransport::Close()): whatever the engine has already
+	//! accepted and is still waiting to have acknowledged is not discarded over this.
 	virtual void CloseStream(Handle) = 0;
+	//! A write that failed outright (Flush()'s result < 0, a genuine fatal error -- as opposed
+	//! to flow-control/congestion, which WriteStream() itself reports as 0 bytes, not an error):
+	//! unlike CloseStream(), nothing about this stream can be trusted enough to try preserving.
+	virtual void AbortStream(Handle) = 0;
 	//! The application consumed @a bytes; reopen that much stream and connection flow-control
 	//! credit (ngtcp2_conn_extend_max_stream_offset + ngtcp2_conn_extend_max_offset).
 	virtual void ExtendReadWindow(Handle, size_t bytes) = 0;

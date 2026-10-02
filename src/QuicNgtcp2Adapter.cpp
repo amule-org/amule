@@ -238,6 +238,21 @@ public:
 			// down, so a byte that arrives in the gap is buffered (DrainStreamData()) rather than
 			// delivered to a transport that just asked to stop hearing from this connection.
 			m_engine->AttachTransport(m_handle, nullptr);
+			// Graceful, not ShutdownStream()'s reset: a transport-initiated close is always a
+			// voluntary one (CQuicSocketTransport::Close(), itself already having had its own
+			// chance to flush anything queued) -- there is nothing here that justifies discarding
+			// whatever the engine has already accepted and is still waiting to confirm.
+			m_engine->CloseStreamGracefully(m_handle, *m_sink, m_address, m_port, m_lastNowMs);
+		}
+	}
+
+	void AbortStream(IQuicStreamOperations::Handle) override
+	{
+		if (!m_closed) {
+			// Unlike CloseStream(): a write that failed outright means nothing about this stream
+			// can be trusted enough to try preserving, so this resets it instead of asking for a
+			// graceful FIN.
+			m_engine->AttachTransport(m_handle, nullptr);
 			m_engine->ShutdownStream(m_handle);
 		}
 	}
@@ -839,6 +854,39 @@ public:
 		auto it = m_connections.find(handle);
 		if (it != m_connections.end() && it->second.streamId >= 0) {
 			ngtcp2_conn_shutdown_stream(it->second.conn, 0, it->second.streamId, 0);
+		}
+	}
+
+	void CloseStreamGracefully(Handle handle,
+		IQuicDatagramSink &sink,
+		const CNetworkAddress &address,
+		uint16_t port,
+		uint64_t nowMs) override
+	{
+		auto it = m_connections.find(handle);
+		if (it == m_connections.end() || it->second.streamId < 0) {
+			return;
+		}
+		uint8_t buf[kMaxUdpPayload];
+		ngtcp2_path_storage path;
+		InitZeroPath(path);
+		ngtcp2_pkt_info pi = {};
+		ngtcp2_ssize dataLen = 0;
+		// No vec at all, not an empty one: an empty ngtcp2_vec would still count as "stream data
+		// was offered", which is not what a close with nothing left to send should claim.
+		const ngtcp2_ssize written = ngtcp2_conn_writev_stream(it->second.conn,
+			&path.path,
+			&pi,
+			buf,
+			sizeof(buf),
+			&dataLen,
+			NGTCP2_WRITE_STREAM_FLAG_FIN,
+			it->second.streamId,
+			nullptr,
+			0,
+			NanosecondsFromMs(nowMs));
+		if (written > 0) {
+			sink.SendDatagram(buf, static_cast<size_t>(written), address, port);
 		}
 	}
 
