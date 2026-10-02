@@ -245,6 +245,37 @@ TEST(QuicContext, NonInitialRoutesByCidWhenConnectionsExposeOne)
 	ASSERT_EQUALS(2u, factory.created[1]->calls);
 }
 
+// got3nks' review on #1710 (finding #8, Low): a non-Initial packet is not necessarily a short
+// header -- a Handshake packet is a long header too, with its CID at a different offset and an
+// explicit length byte (RFC 9000 section 17.2), unlike a short header's. Reading it at the short
+// header's offset 1 would read into the version field instead and never match, falling back to
+// endpoint routing, which this test's two connections at one endpoint make ambiguous.
+TEST(QuicContext, NonInitialLongHeaderRoutesByCidWhenConnectionsExposeOne)
+{
+	FakeFactory factory;
+	auto first = std::make_unique<FakeConnection>();
+	first->issuedCids = { std::string("\x01", 1) };
+	factory.next = std::move(first);
+	CQuicContext context(&factory);
+	auto firstInitial = Initial(0x53);
+	ASSERT_TRUE(context.ProcessDatagram(firstInitial.data(), firstInitial.size(), kPeer, 4662, 0));
+
+	auto second = std::make_unique<FakeConnection>();
+	second->issuedCids = { std::string("\x02", 1) };
+	factory.next = std::move(second);
+	auto secondInitial = Initial(0x54);
+	ASSERT_TRUE(context.ProcessDatagram(
+		secondInitial.data(), secondInitial.size(), kPeer, 4662, NatRendezvous::kRequestThrottleMs));
+
+	// Long header: flags (bit 0x80 set), a 4-byte version, a DCID length byte, then the DCID
+	// itself -- the offset this fix actually reads from.
+	std::vector<uint8_t> packet = { 0xE0, 0x00, 0x00, 0x00, 0x01, 0x01, 0x02 };
+	ASSERT_TRUE(context.ProcessDatagram(packet.data(), packet.size(), kPeer, 4662, 0));
+	ASSERT_EQUALS(2u, factory.calls);
+	ASSERT_EQUALS(1u, factory.created[0]->calls);
+	ASSERT_EQUALS(2u, factory.created[1]->calls);
+}
+
 TEST(QuicContext, ConnectionFailureRemovesOwnership)
 {
 	FakeFactory factory;
