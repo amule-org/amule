@@ -3196,7 +3196,6 @@ void CamuleApp::ShowConnectionState(bool forceUpdate)
 				AddLogLineC(CFormat(_("Connected to %s %s")) % connected_server % id);
 				m_ed2kConnectedSince = wxDateTime::Now();
 			} else {
-				// cppcheck-suppress duplicateBranch
 				if (theApp->serverconnect->IsConnecting()) {
 					// No current server while connecting; name the one being tried, if
 					// there is only one.
