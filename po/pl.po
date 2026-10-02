@@ -12,7 +12,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-10-02 13:03+0200\n"
+"POT-Creation-Date: 2026-10-02 15:14+0200\n"
 "PO-Revision-Date: 2026-10-02 00:49+0000\n"
 "Last-Translator: Michał Trzebiatowski <hippie_1968@hotmail.com>\n"
 "Language-Team: translationproject.org/team/pl.html <translation-team-pl@lists.sourceforge.net>\n"
@@ -7080,12 +7080,12 @@ msgstr "Połączony z %s (%s:%i)"
 
 #: src/ServerConnect.cpp
 #, fuzzy, c-format
-msgid "Obfuscated connection established on: %s"
+msgid "Obfuscated connection established on: %s (%s:%i)"
 msgstr "Nawiązano połączenie z: %s"
 
 #: src/ServerConnect.cpp
-#, c-format
-msgid "Connection established on: %s"
+#, fuzzy, c-format
+msgid "Connection established on: %s (%s:%i)"
 msgstr "Nawiązano połączenie z: %s"
 
 #: src/ServerConnect.cpp

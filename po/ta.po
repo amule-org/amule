@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-10-02 13:03+0200\n"
+"POT-Creation-Date: 2026-10-02 15:14+0200\n"
 "PO-Revision-Date: 2026-10-02 00:53+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
@@ -6850,12 +6850,12 @@ msgstr ""
 
 #: src/ServerConnect.cpp
 #, c-format
-msgid "Obfuscated connection established on: %s"
+msgid "Obfuscated connection established on: %s (%s:%i)"
 msgstr ""
 
 #: src/ServerConnect.cpp
 #, c-format
-msgid "Connection established on: %s"
+msgid "Connection established on: %s (%s:%i)"
 msgstr ""
 
 #: src/ServerConnect.cpp
