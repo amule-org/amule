@@ -540,3 +540,75 @@ TEST(QuicNgtcp2Handshake, AcceptedStreamHandsOffToARealTransportThatReadsAndWrit
 
 	ASSERT_TRUE(client.Received() == reply);
 }
+
+TEST(QuicNgtcp2Handshake, LostFirstAttemptIsRetransmittedWithoutCorruptingTheReply)
+{
+	// ngtcp2_conn_writev_stream() documents that the bytes covered by its *pdatalen must stay
+	// intact until acked_stream_data_offset() confirms them: a lost packet makes ngtcp2 read the
+	// same bytes again to retransmit. This drops the server's first reply datagram on the floor
+	// instead of delivering it -- the one case CollectingSink's always-delivered loopback never
+	// exercises elsewhere in this file -- and proves the retransmission still carries the right
+	// bytes (and, under ASan, that nothing reads freed memory to produce it).
+	CQuicEphemeralCredentials credentials;
+	ForeignSession session;
+	ForeignVerifier verifier;
+	CQuicTlsPolicy policy{ &session, &credentials, &verifier, &session };
+
+	auto sink = std::make_shared<CollectingSink>();
+	auto engine = CreateProductionQuicNgtcp2Engine();
+	CQuicNgtcp2Factory factory(policy, sink, engine);
+	AcceptingAcceptor acceptor;
+	factory.SetAcceptor(&acceptor);
+
+	CTestQuicClient client;
+	ASSERT_TRUE(client.Init());
+
+	std::unique_ptr<IQuicConnection> connection;
+	uint64_t nowMs = 0;
+	ASSERT_TRUE(DriveHandshake(client, factory, *sink, connection, nowMs));
+	ASSERT_TRUE(connection != nullptr);
+
+	// Through the real transport, not a direct IQuicStreamOperations call: CQuicSocketTransport's
+	// Write()+Flush() is what frees its own copy of the data the instant WriteStream() returns
+	// (QuicSocketTransport.cpp's Flush(), pop_front() right after the call) -- a direct call with
+	// a test-local std::vector would keep that buffer alive for the rest of this function
+	// regardless of what the engine does, proving nothing about the engine's own retention.
+	const std::vector<uint8_t> payload{ 'h', 'i' };
+	for (const auto &datagram : client.SendOnStream(payload, nowMs)) {
+		ASSERT_TRUE(connection->ProcessDatagram(datagram.data(), datagram.size(), nowMs));
+	}
+	for (const auto &datagram : sink->sent) {
+		ASSERT_TRUE(client.Receive(datagram, nowMs));
+	}
+	sink->sent.clear();
+	ASSERT_TRUE(acceptor.accepted != nullptr);
+
+	const std::vector<uint8_t> reply2{ 'o', 'k' };
+	const uint32_t writtenBytes =
+		acceptor.accepted->Write(reply2.data(), static_cast<uint32_t>(reply2.size()));
+	ASSERT_EQUALS(static_cast<uint32_t>(reply2.size()), writtenBytes);
+	acceptor.accepted->Flush();
+	ASSERT_TRUE(!sink->sent.empty());
+
+	// Dropped, not delivered: this is the packet loss. The transport's own copy is already gone
+	// (Flush() just freed it); the only copy left anywhere is whatever WriteStreamData() retained
+	// internally.
+	sink->sent.clear();
+
+	// Ticks until ngtcp2's own loss-detection timer retransmits, or fails loudly instead of
+	// hanging if a real protocol regression means it never does.
+	bool retransmitted = false;
+	for (int i = 0; i < 200 && !retransmitted; ++i) {
+		nowMs += 25;
+		connection->Tick(nowMs);
+		retransmitted = !sink->sent.empty();
+	}
+	ASSERT_TRUE(retransmitted);
+
+	for (const auto &datagram : sink->sent) {
+		ASSERT_TRUE(client.Receive(datagram, nowMs));
+	}
+	sink->sent.clear();
+
+	ASSERT_TRUE(client.Received() == reply2);
+}

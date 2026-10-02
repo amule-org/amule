@@ -33,7 +33,9 @@
 
 #include <netinet/in.h>
 
+#include <algorithm>
 #include <cstring>
+#include <deque>
 #include <map>
 #include <memory>
 #include <random>
@@ -336,6 +338,41 @@ public:
 		} else {
 			it->second.receivedData.insert(it->second.receivedData.end(), data, data + datalen);
 		}
+
+		return 0;
+	}
+
+	//! See ConnectionInfo::unackedSendChunks: this is what makes it safe for WriteStreamData()'s
+	//! caller to free its own copy the instant that call returns -- it erases our copy instead,
+	//! once (and only once) ngtcp2 will never need to read it again.
+	static int OnAckedStreamData(
+		ngtcp2_conn *conn, int64_t streamId, uint64_t, uint64_t datalen, void *userData, void *)
+	{
+		auto *engine = static_cast<CProductionNgtcp2Engine *>(userData);
+		auto it = engine->m_connections.find(conn);
+		if (it == engine->m_connections.end() || it->second.streamId != streamId) {
+			return 0;
+		}
+		ConnectionInfo &info = it->second;
+		// Sequential, non-overlapping, gap-free per the ngtcp2 contract, but not necessarily
+		// aligned to our own chunk boundaries (one acked_stream_data_offset() call can cover
+		// several chunks, or only part of one): walk the front, consuming as we go, and only ever
+		// pop_front() a chunk once it is acknowledged in full. A chunk still owes bytes ngtcp2
+		// might read again for retransmission right up until that point, so its buffer must never
+		// move or shrink before then.
+		size_t remaining = datalen;
+		while (remaining > 0 && !info.unackedSendChunks.empty()) {
+			const size_t frontSize = info.unackedSendChunks.front().size();
+			const size_t available = frontSize - info.frontChunkAcked;
+			const size_t consumed = std::min(remaining, available);
+			info.frontChunkAcked += consumed;
+			remaining -= consumed;
+			info.unackedSendBytes -= consumed;
+			if (info.frontChunkAcked == frontSize) {
+				info.unackedSendChunks.pop_front();
+				info.frontChunkAcked = 0;
+			}
+		}
 		return 0;
 	}
 
@@ -397,6 +434,7 @@ public:
 		callbacks.get_path_challenge_data = ngtcp2_crypto_get_path_challenge_data_cb;
 		callbacks.stream_open = OnStreamOpen;
 		callbacks.recv_stream_data = OnRecvStreamData;
+		callbacks.acked_stream_data_offset = OnAckedStreamData;
 
 		ngtcp2_settings settings = {};
 		ngtcp2_settings_default(&settings);
@@ -591,12 +629,28 @@ public:
 		if (it == m_connections.end() || it->second.streamId < 0) {
 			return -1;
 		}
+		ConnectionInfo &info = it->second;
+		// A peer that stops ACKing is already a dead connection from this engine's point of view,
+		// so refusing to grow past the same window CQuicSocketTransport imposes on the application
+		// side (kReadWindow, also 256KiB) is a bound, not a behaviour change for any peer actually
+		// speaking QUIC.
+		if (info.unackedSendBytes + length > CQuicSocketTransport::kReadWindow) {
+			return -1;
+		}
+		// Our own copy, created before ngtcp2 ever sees it: the ngtcp2_vec below must point at
+		// memory we control for as long as ngtcp2 might still need it (ConnectionInfo::
+		// unackedSendChunks's comment has the full contract), not the caller's -- which
+		// CQuicSocketTransport::Flush() frees the instant this call returns.
+		info.unackedSendChunks.emplace_back(data, data + length);
+		uint8_t *ours = info.unackedSendChunks.back().data();
+		info.unackedSendBytes += length;
+
 		const ngtcp2_tstamp ts = NanosecondsFromMs(nowMs);
 		uint8_t buf[kMaxUdpPayload];
 		ngtcp2_path_storage path;
 		InitZeroPath(path);
 		ngtcp2_pkt_info pi = {};
-		const ngtcp2_vec vec{ const_cast<uint8_t *>(data), length };
+		const ngtcp2_vec vec{ ours, length };
 		ngtcp2_ssize dataLen = 0;
 		// ngtcp2_conn_writev_stream() both accepts stream data and may produce a packet in the
 		// same call: there is no separate "queue it for later" step to split this into, unlike
@@ -613,7 +667,25 @@ public:
 			1,
 			ts);
 		if (written < 0) {
+			// Nothing was sent, so nothing of this chunk is actually pending retransmission.
+			info.unackedSendBytes -= length;
+			info.unackedSendChunks.pop_back();
 			return -1;
+		}
+		// ngtcp2 can take less than the full chunk (e.g. congestion-limited): shrink our copy down
+		// to exactly what it consumed, or drop it if it took nothing. Shrinking a vector never
+		// moves its buffer, so this cannot invalidate a pointer ngtcp2 is still holding onto the
+		// portion it did accept. The untaken tail is never ngtcp2's concern: the caller
+		// (CQuicSocketTransport::Flush(), via its own front-offset tracking) still has it and will
+		// offer it again on the next Flush().
+		const size_t accepted = dataLen > 0 ? static_cast<size_t>(dataLen) : 0;
+		if (accepted < length) {
+			info.unackedSendBytes -= (length - accepted);
+			if (accepted == 0) {
+				info.unackedSendChunks.pop_back();
+			} else {
+				info.unackedSendChunks.back().resize(accepted);
+			}
 		}
 		if (written > 0 && !sink.SendDatagram(buf, static_cast<size_t>(written), address, port)) {
 			return -1;
@@ -658,6 +730,19 @@ private:
 		//! caller is responsible for keeping it alive and for calling AttachTransport(handle,
 		//! nullptr) before the transport is destroyed.
 		CQuicSocketTransport *transport = nullptr;
+		//! ngtcp2_conn_writev_stream() requires the bytes covered by its returned *pdatalen to stay
+		//! intact until acked_stream_data_offset() confirms them or the stream closes: it keeps the
+		//! raw pointer from the ngtcp2_vec it was given and reads from it again to retransmit, it
+		//! does not copy. WriteStreamData()'s caller (CQuicSocketTransport::Flush()) frees its own
+		//! copy the moment that call returns, so the ngtcp2_vec must point here instead -- one
+		//! std::vector per accepted WriteStreamData() call, so a chunk's address never moves while
+		//! unacknowledged (unlike erasing from the front of one shared buffer, which would). Each
+		//! is resized down, never up, to whatever ngtcp2 actually consumed, and only ever erased
+		//! whole, from the front, once OnAckedStreamData() confirms it in full.
+		std::deque<std::vector<uint8_t>> unackedSendChunks;
+		size_t unackedSendBytes = 0; //!< Sum of unackedSendChunks sizes; the size cap reads this.
+		size_t frontChunkAcked = 0; //!< Bytes of unackedSendChunks.front() acked_stream_data_offset()
+					    //!< already confirmed.
 	};
 
 	// Shared by Flush() (an inbound datagram may need an immediate reply) and Tick() (a timer
