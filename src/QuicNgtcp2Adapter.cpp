@@ -818,6 +818,7 @@ public:
 			&vec,
 			1,
 			ts);
+		std::ptrdiff_t result;
 		if (written < 0) {
 			// Nothing was sent, so nothing of this chunk is actually pending retransmission.
 			info.unackedSendBytes -= length;
@@ -826,27 +827,32 @@ public:
 			// not the connection -- the peer extending the window (or NotifyWritable() noticing
 			// congestion eased) is what unblocks it, not tearing anything down. Every other
 			// negative return here is a genuine, fatal error.
-			return written == NGTCP2_ERR_STREAM_DATA_BLOCKED ? 0 : -1;
-		}
-		// ngtcp2 can take less than the full chunk (e.g. congestion-limited): shrink our copy down
-		// to exactly what it consumed, or drop it if it took nothing. Shrinking a vector never
-		// moves its buffer, so this cannot invalidate a pointer ngtcp2 is still holding onto the
-		// portion it did accept. The untaken tail is never ngtcp2's concern: the caller
-		// (CQuicSocketTransport::Flush(), via its own front-offset tracking) still has it and will
-		// offer it again on the next Flush().
-		const size_t accepted = dataLen > 0 ? static_cast<size_t>(dataLen) : 0;
-		if (accepted < length) {
-			info.unackedSendBytes -= (length - accepted);
-			if (accepted == 0) {
-				info.unackedSendChunks.pop_back();
-			} else {
-				info.unackedSendChunks.back().resize(accepted);
+			result = written == NGTCP2_ERR_STREAM_DATA_BLOCKED ? 0 : -1;
+		} else {
+			// ngtcp2 can take less than the full chunk (e.g. congestion-limited): shrink our copy
+			// down to exactly what it consumed, or drop it if it took nothing. Shrinking a vector
+			// never moves its buffer, so this cannot invalidate a pointer ngtcp2 is still holding
+			// onto the portion it did accept. The untaken tail is never ngtcp2's concern: the
+			// caller (CQuicSocketTransport::Flush(), via its own front-offset tracking) still has
+			// it and will offer it again on the next Flush().
+			const size_t accepted = dataLen > 0 ? static_cast<size_t>(dataLen) : 0;
+			if (accepted < length) {
+				info.unackedSendBytes -= (length - accepted);
+				if (accepted == 0) {
+					info.unackedSendChunks.pop_back();
+				} else {
+					info.unackedSendChunks.back().resize(accepted);
+				}
 			}
+			result = (written > 0 &&
+					 !sink.SendDatagram(buf, static_cast<size_t>(written), address, port))
+					 ? -1
+					 : (dataLen < 0 ? 0 : static_cast<std::ptrdiff_t>(dataLen));
 		}
-		if (written > 0 && !sink.SendDatagram(buf, static_cast<size_t>(written), address, port)) {
-			return -1;
-		}
-		return dataLen < 0 ? 0 : static_cast<std::ptrdiff_t>(dataLen);
+		// Required after any invocation of writev_stream, including this one, which just happened
+		// unconditionally above -- it sets when ngtcp2 paces the next packet.
+		ngtcp2_conn_update_pkt_tx_time(it->second.conn, ts);
+		return result;
 	}
 
 	void ShutdownStream(Handle handle) override
@@ -888,6 +894,8 @@ public:
 		if (written > 0) {
 			sink.SendDatagram(buf, static_cast<size_t>(written), address, port);
 		}
+		// Required after any invocation of writev_stream, including a FIN-only one like this.
+		ngtcp2_conn_update_pkt_tx_time(it->second.conn, NanosecondsFromMs(nowMs));
 	}
 
 	bool IsStreamEnded(Handle handle) const override
@@ -989,6 +997,7 @@ private:
 		// A bounded number of packets per flush, not an unbounded drain-until-0 loop: a
 		// connection that always has more to send (e.g. a peer that never acknowledges) must
 		// not be able to make one flush call monopolize this thread indefinitely.
+		bool ok = true;
 		for (int round = 0; round < kMaxFlushPacketsPerCall; ++round) {
 			uint8_t buf[kMaxUdpPayload];
 			ngtcp2_path_storage path;
@@ -1010,16 +1019,22 @@ private:
 				0,
 				ts);
 			if (written < 0) {
-				return false;
+				ok = false;
+				break;
 			}
 			if (written == 0) {
-				return true;
+				break;
 			}
 			if (!sink.SendDatagram(buf, static_cast<size_t>(written), address, port)) {
-				return false;
+				ok = false;
+				break;
 			}
 		}
-		return true;
+		// Required after any invocation of writev_stream (one burst of them, here, since this
+		// loop can call it several times): it sets when ngtcp2 paces the next packet. The loop
+		// above always makes at least one such call before reaching here, so this is unconditional.
+		ngtcp2_conn_update_pkt_tx_time(connection.conn, ts);
+		return ok;
 	}
 
 	std::map<Handle, ConnectionInfo> m_connections;
