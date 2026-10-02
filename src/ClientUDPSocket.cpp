@@ -25,6 +25,9 @@
 
 #include "ClientUDPSocket.h" // Interface declarations
 
+#include <algorithm>
+#include <array>
+
 #include <protocol/Protocols.h>
 #include <protocol/ed2k/Client2Client/TCP.h> // Sometimes we reply with TCP packets.
 #include <protocol/ed2k/Client2Client/UDP.h>
@@ -69,6 +72,15 @@ namespace
 class CQuicUnusedVerifier final : public IQuicTlsVerifier
 {
 };
+
+//! What CQuicNgtcp2Factory asserts as "who we are" in the EAQN1 proof exchange
+//! (QuicNattProtocol.h) every inbound QUIC stream goes through before being handed off.
+std::array<uint8_t, 16> QuicLocalIdentityFromUserHash()
+{
+	std::array<uint8_t, 16> identity{};
+	std::copy_n(thePrefs::GetUserHash().GetHash(), identity.size(), identity.begin());
+	return identity;
+}
 
 //! Sends a QUIC datagram the same way SendUtpDatagram() sends a uTP one: wrapped as an
 //! OP_NATT_FRAME_QUIC reserved-protocol frame, unobfuscated. There is no established peer
@@ -124,7 +136,8 @@ CClientUDPSocket::CClientUDPSocket(const amuleIPV4Address &address, const CProxy
 							     m_quicPlaceholderVerifier.get(),
 							     m_quicPlaceholderSession.get() },
 	  m_quicSink,
-	  m_quicEngine))
+	  m_quicEngine,
+	  QuicLocalIdentityFromUserHash()))
 , m_quic(m_quicFactory.get())
 #endif
 {

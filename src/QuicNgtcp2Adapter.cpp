@@ -142,7 +142,8 @@ public:
 		const CNetworkAddress &address,
 		uint16_t port,
 		const std::string &issuedCid,
-		IQuicStreamAcceptor *acceptor)
+		IQuicStreamAcceptor *acceptor,
+		const std::array<uint8_t, 16> &localIdentity)
 	: m_engine(std::move(engine))
 	, m_sink(std::move(sink))
 	, m_handle(handle)
@@ -150,6 +151,7 @@ public:
 	, m_port(port)
 	, m_issuedCid(issuedCid)
 	, m_acceptor(acceptor)
+	, m_localIdentity(localIdentity)
 	{
 	}
 
@@ -250,6 +252,9 @@ private:
 		if (m_streamOffered || m_acceptor == nullptr || !m_engine->HasOpenStream(m_handle)) {
 			return;
 		}
+		if (!m_proofExchanged && !TryExchangeEaqn1Proof()) {
+			return;
+		}
 		m_streamOffered = true;
 		auto owned = std::make_unique<CQuicSocketTransport>(
 			*this, m_handle, m_address, m_port, nullptr, true);
@@ -260,8 +265,13 @@ private:
 			// CUtpLibraryAdapter does for a refused uTP stream.
 			return;
 		}
-		// Deliver whatever arrived before the transport existed, then everything from here on
+		// Deliver whatever arrived after the proof (held back from the stream buffer while this
+		// connection was still waiting on TryExchangeEaqn1Proof()), then everything from here on
 		// goes straight to it (see AttachTransport()'s contract).
+		if (!m_proofBuffer.empty()) {
+			raw->OnPayload(m_proofBuffer.data(), m_proofBuffer.size());
+			m_proofBuffer.clear();
+		}
 		const std::vector<uint8_t> buffered = m_engine->DrainStreamData(m_handle);
 		if (!buffered.empty()) {
 			raw->OnPayload(buffered.data(), buffered.size());
@@ -273,6 +283,53 @@ private:
 		raw->MarkConnected();
 	}
 
+	//! eMuleAI sends EAQN1 + its hash + the target hash it is calling (QuicNattProtocol.h,
+	//! NgTcp2GnuTlsBridge.cpp:711-828) as the first bytes on the stream it opens, and expects
+	//! ours back before it treats the socket as connected. Without this, a real eMuleAI peer's
+	//! proof would reach CClientTCPSocket as ordinary eD2k data, and no proof of ours would ever
+	//! be sent -- the peer never completes its own side of the hand-off.
+	//!
+	//! Returns true once both sides of the exchange are done and the connection is ready to be
+	//! handed to the acceptor; false to keep waiting for more of the peer's proof. A proof that
+	//! fails validation, or ours failing to go out in one piece, closes the connection outright:
+	//! fail closed, the same as every other RFC 9000 admission check this engine already applies.
+	bool TryExchangeEaqn1Proof()
+	{
+		const std::vector<uint8_t> drained = m_engine->DrainStreamData(m_handle);
+		m_proofBuffer.insert(m_proofBuffer.end(), drained.begin(), drained.end());
+		if (m_proofBuffer.size() < QuicNatt::EAQN1_PROOF_SIZE) {
+			return false;
+		}
+		// nullptr: this connection is always the inbound (server) side, and there is no prior
+		// rendezvous context here that already told us who ought to be calling -- any peer whose
+		// target hash matches ours (or is still zero, a first contact) is admitted.
+		if (!QuicNatt::ValidateEaqn1Proof(
+			    m_proofBuffer.data(), m_proofBuffer.size(), m_localIdentity, nullptr)) {
+			Close();
+			return false;
+		}
+		std::array<uint8_t, 16> peerHash{};
+		std::copy(m_proofBuffer.begin() + 5, m_proofBuffer.begin() + 21, peerHash.begin());
+		const auto ourProof = QuicNatt::BuildEaqn1Proof(m_localIdentity, &peerHash);
+		if (m_engine->WriteStreamData(m_handle,
+			    ourProof.data(),
+			    ourProof.size(),
+			    *m_sink,
+			    m_address,
+			    m_port,
+			    m_lastNowMs) != static_cast<std::ptrdiff_t>(ourProof.size())) {
+			// Did not fit in one go (flow control/congestion, vanishingly unlikely for 37 bytes
+			// right after a handshake): no partial-proof retry machinery exists, and sending half
+			// a proof the peer could misread as application data is worse than refusing outright.
+			Close();
+			return false;
+		}
+		m_proofBuffer.erase(
+			m_proofBuffer.begin(), m_proofBuffer.begin() + QuicNatt::EAQN1_PROOF_SIZE);
+		m_proofExchanged = true;
+		return true;
+	}
+
 	std::shared_ptr<IQuicNgtcp2Engine> m_engine;
 	std::shared_ptr<IQuicDatagramSink> m_sink;
 	IQuicNgtcp2Engine::Handle m_handle;
@@ -280,6 +337,12 @@ private:
 	uint16_t m_port;
 	std::string m_issuedCid;
 	IQuicStreamAcceptor *m_acceptor;
+	const std::array<uint8_t, 16> m_localIdentity;
+	//! Accumulated until it reaches EAQN1_PROOF_SIZE: a peer's proof can in principle arrive
+	//! split across more than one recv_stream_data() delivery, and nothing shorter than the
+	//! full proof is safe to validate.
+	std::vector<uint8_t> m_proofBuffer;
+	bool m_proofExchanged = false;
 	uint64_t m_lastNowMs = 0;
 	bool m_streamOffered = false;
 	bool m_closed = false;
@@ -796,9 +859,11 @@ private:
 
 CQuicNgtcp2Factory::CQuicNgtcp2Factory(const CQuicTlsPolicy &policy,
 	std::shared_ptr<IQuicDatagramSink> sink,
-	std::shared_ptr<IQuicNgtcp2Engine> engine)
+	std::shared_ptr<IQuicNgtcp2Engine> engine,
+	const std::array<uint8_t, 16> &localIdentity)
 : m_policy(policy)
 , m_sink(std::move(sink))
+, m_localIdentity(localIdentity)
 , m_engine(std::move(engine))
 {
 }
@@ -827,7 +892,7 @@ std::unique_ptr<IQuicConnection> CQuicNgtcp2Factory::CreateInbound(const uint8_t
 		return nullptr;
 	std::string issuedCid = m_engine->GetIssuedConnectionId(handle);
 	return std::make_unique<CQuicNgtcp2Connection>(
-		m_engine, m_sink, handle, address, port, issuedCid, m_acceptor);
+		m_engine, m_sink, handle, address, port, issuedCid, m_acceptor, m_localIdentity);
 }
 
 std::shared_ptr<IQuicNgtcp2Engine> CreateProductionQuicNgtcp2Engine()

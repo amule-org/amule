@@ -27,6 +27,7 @@
 #include "QuicContext.h"
 #include "QuicLibraryAdapter.h"
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -110,9 +111,15 @@ public:
 class CQuicNgtcp2Factory final : public IQuicConnectionFactory
 {
 public:
+	//! localIdentity is the local eD2k client's 16-byte userhash: what this side's half of the
+	//! EAQN1 proof exchange (QuicNattProtocol.h) asserts as "who we are" to every peer this
+	//! factory admits. Taken by value rather than reaching for thePrefs::GetUserHash() inside
+	//! the connection itself, so this engine stays testable without theApp -- the same reason
+	//! credentials and the sink arrive as constructor arguments instead.
 	CQuicNgtcp2Factory(const CQuicTlsPolicy &,
 		std::shared_ptr<IQuicDatagramSink>,
-		std::shared_ptr<IQuicNgtcp2Engine>);
+		std::shared_ptr<IQuicNgtcp2Engine>,
+		const std::array<uint8_t, 16> &localIdentity);
 	//! Held, not owned: the caller (CClientUDPSocket) keeps the acceptor alive for at least as
 	//! long as this factory. Null refuses every stream's hand-off, which is the state before an
 	//! acceptor exists -- the connection itself is still admitted and still works.
@@ -123,6 +130,7 @@ public:
 private:
 	CQuicTlsPolicy m_policy;
 	std::shared_ptr<IQuicDatagramSink> m_sink;
+	std::array<uint8_t, 16> m_localIdentity;
 	std::shared_ptr<IQuicNgtcp2Engine> m_engine;
 	IQuicStreamAcceptor *m_acceptor = nullptr;
 };

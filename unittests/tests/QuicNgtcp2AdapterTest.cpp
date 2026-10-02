@@ -178,6 +178,7 @@ struct Engine : IQuicNgtcp2Engine
 };
 const std::string kDcid = "BBBBBBBB";
 const CNetworkAddress kPeer = CNetworkAddress::FromString("192.0.2.1");
+const std::array<uint8_t, 16> kTestIdentity{ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
 
 std::vector<uint8_t> Initial(const std::string &dcid = kDcid,
 	const std::string &scid = "\x99",
@@ -223,33 +224,33 @@ TEST(QuicNgtcp2Adapter, MissingDependenciesFailClosed)
 
 	CQuicTlsPolicy noSession = policy;
 	noSession.session = nullptr;
-	ASSERT_TRUE(!CQuicNgtcp2Factory(noSession, sink, engine)
+	ASSERT_TRUE(!CQuicNgtcp2Factory(noSession, sink, engine, kTestIdentity)
 			     .CreateInbound(p.data(), p.size(), kPeer, 2, kDcid));
 
 	CQuicTlsPolicy noCredentials = policy;
 	noCredentials.credentials = nullptr;
-	ASSERT_TRUE(!CQuicNgtcp2Factory(noCredentials, sink, engine)
+	ASSERT_TRUE(!CQuicNgtcp2Factory(noCredentials, sink, engine, kTestIdentity)
 			     .CreateInbound(p.data(), p.size(), kPeer, 2, kDcid));
 
 	CQuicTlsPolicy noVerifier = policy;
 	noVerifier.verifier = nullptr;
-	ASSERT_TRUE(!CQuicNgtcp2Factory(noVerifier, sink, engine)
+	ASSERT_TRUE(!CQuicNgtcp2Factory(noVerifier, sink, engine, kTestIdentity)
 			     .CreateInbound(p.data(), p.size(), kPeer, 2, kDcid));
 
 	CQuicTlsPolicy noNativeSession = policy;
 	noNativeSession.ngtcp2Session = nullptr;
-	ASSERT_TRUE(!CQuicNgtcp2Factory(noNativeSession, sink, engine)
+	ASSERT_TRUE(!CQuicNgtcp2Factory(noNativeSession, sink, engine, kTestIdentity)
 			     .CreateInbound(p.data(), p.size(), kPeer, 2, kDcid));
 
 	s.native = nullptr;
-	ASSERT_TRUE(
-		!CQuicNgtcp2Factory(policy, sink, engine).CreateInbound(p.data(), p.size(), kPeer, 2, kDcid));
+	ASSERT_TRUE(!CQuicNgtcp2Factory(policy, sink, engine, kTestIdentity)
+			     .CreateInbound(p.data(), p.size(), kPeer, 2, kDcid));
 	ASSERT_EQUALS(0u, engine->created);
 	s.native = reinterpret_cast<gnutls_session_t>(&s.token);
 
-	ASSERT_TRUE(!CQuicNgtcp2Factory(policy, nullptr, engine)
+	ASSERT_TRUE(!CQuicNgtcp2Factory(policy, nullptr, engine, kTestIdentity)
 			     .CreateInbound(p.data(), p.size(), kPeer, 2, kDcid));
-	ASSERT_TRUE(!CQuicNgtcp2Factory(policy, sink, nullptr)
+	ASSERT_TRUE(!CQuicNgtcp2Factory(policy, sink, nullptr, kTestIdentity)
 			     .CreateInbound(p.data(), p.size(), kPeer, 2, kDcid));
 	ASSERT_EQUALS(0u, engine->created);
 }
@@ -262,7 +263,7 @@ TEST(QuicNgtcp2Adapter, InitialMetadataIsCaptured)
 	auto sink = std::make_shared<Sink>();
 	auto engine = std::make_shared<Engine>();
 	auto p = Initial();
-	auto connection = CQuicNgtcp2Factory(Policy(s, c, v), sink, engine)
+	auto connection = CQuicNgtcp2Factory(Policy(s, c, v), sink, engine, kTestIdentity)
 				  .CreateInbound(p.data(), p.size(), kPeer, 2, kDcid);
 	ASSERT_TRUE(connection != nullptr);
 	ASSERT_EQUALS(1u, engine->lastMetadata.version);
@@ -277,7 +278,7 @@ TEST(QuicNgtcp2Adapter, InitialAcceptanceFollowsRfc9000)
 	Verifier v;
 	auto sink = std::make_shared<Sink>();
 	auto engine = std::make_shared<Engine>();
-	CQuicNgtcp2Factory factory(Policy(s, c, v), sink, engine);
+	CQuicNgtcp2Factory factory(Policy(s, c, v), sink, engine, kTestIdentity);
 	auto accepts = [&](const std::vector<uint8_t> &p, const std::string &dcid) {
 		return factory.CreateInbound(p.data(), p.size(), kPeer, 2, dcid) != nullptr;
 	};
@@ -321,7 +322,7 @@ TEST(QuicNgtcp2Adapter, MalformedInitialAndEngineCreationFailureFailClosed)
 	auto sink = std::make_shared<Sink>();
 	auto engine = std::make_shared<Engine>();
 	auto p = Initial();
-	CQuicNgtcp2Factory factory(Policy(s, c, v), sink, engine);
+	CQuicNgtcp2Factory factory(Policy(s, c, v), sink, engine, kTestIdentity);
 
 	p[4] = 2;
 	ASSERT_TRUE(!factory.CreateInbound(p.data(), p.size(), kPeer, 2, kDcid));
@@ -345,7 +346,7 @@ TEST(QuicNgtcp2Adapter, OwnsEngineAndFlushesOutput)
 	auto sink = std::make_shared<Sink>();
 	auto engine = std::make_shared<Engine>();
 	auto p = Initial();
-	CQuicNgtcp2Factory factory(Policy(s, c, v), sink, engine);
+	CQuicNgtcp2Factory factory(Policy(s, c, v), sink, engine, kTestIdentity);
 	{
 		auto connection = factory.CreateInbound(p.data(), p.size(), kPeer, 2, kDcid);
 		ASSERT_TRUE(connection != nullptr);
@@ -372,7 +373,7 @@ TEST(QuicNgtcp2Adapter, ReadFailureCloses)
 	auto engine = std::make_shared<Engine>();
 	engine->read = false;
 	auto p = Initial();
-	CQuicNgtcp2Factory factory(Policy(s, c, v), sink, engine);
+	CQuicNgtcp2Factory factory(Policy(s, c, v), sink, engine, kTestIdentity);
 	auto connection = factory.CreateInbound(p.data(), p.size(), kPeer, 2, kDcid);
 	ASSERT_TRUE(!connection->ProcessDatagram(p.data(), p.size(), 0));
 	ASSERT_TRUE(connection->IsClosed());
@@ -390,7 +391,7 @@ TEST(QuicNgtcp2Adapter, FlushFailureCloses)
 	auto engine = std::make_shared<Engine>();
 	engine->flush = false;
 	auto p = Initial();
-	CQuicNgtcp2Factory factory(Policy(s, c, v), sink, engine);
+	CQuicNgtcp2Factory factory(Policy(s, c, v), sink, engine, kTestIdentity);
 	auto connection = factory.CreateInbound(p.data(), p.size(), kPeer, 2, kDcid);
 	ASSERT_TRUE(!connection->ProcessDatagram(p.data(), p.size(), 0));
 	ASSERT_TRUE(connection->IsClosed());
@@ -406,7 +407,7 @@ TEST(QuicNgtcp2Adapter, ProductionEngineCreatesConnection)
 	auto sink = std::make_shared<Sink>();
 	auto engine = CreateProductionQuicNgtcp2Engine();
 	auto p = Initial();
-	CQuicNgtcp2Factory factory(ProductionPolicy(s, c, v), sink, engine);
+	CQuicNgtcp2Factory factory(ProductionPolicy(s, c, v), sink, engine, kTestIdentity);
 	auto connection = factory.CreateInbound(p.data(), p.size(), kPeer, 2, kDcid);
 	ASSERT_TRUE(connection != nullptr);
 }
@@ -419,7 +420,7 @@ TEST(QuicNgtcp2Adapter, ProductionEngineOwnsIssuedScid)
 	auto sink = std::make_shared<Sink>();
 	auto engine = CreateProductionQuicNgtcp2Engine();
 	auto p = Initial();
-	CQuicNgtcp2Factory factory(ProductionPolicy(s, c, v), sink, engine);
+	CQuicNgtcp2Factory factory(ProductionPolicy(s, c, v), sink, engine, kTestIdentity);
 	auto connection = factory.CreateInbound(p.data(), p.size(), kPeer, 2, kDcid);
 	ASSERT_TRUE(connection != nullptr);
 	const std::string issuedCid = connection->GetIssuedConnectionId();
@@ -435,7 +436,7 @@ TEST(QuicNgtcp2Adapter, ProductionEngineOwnsNoConnectionIdAfterClose)
 	auto sink = std::make_shared<Sink>();
 	auto engine = CreateProductionQuicNgtcp2Engine();
 	auto p = Initial();
-	CQuicNgtcp2Factory factory(ProductionPolicy(s, c, v), sink, engine);
+	CQuicNgtcp2Factory factory(ProductionPolicy(s, c, v), sink, engine, kTestIdentity);
 	auto connection = factory.CreateInbound(p.data(), p.size(), kPeer, 2, kDcid);
 	ASSERT_TRUE(connection != nullptr);
 	const std::string issuedCid = connection->GetIssuedConnectionId();
@@ -451,7 +452,7 @@ TEST(QuicNgtcp2Adapter, ProductionEngineTickServicesRealExpiryTimersWithoutCrash
 	auto sink = std::make_shared<Sink>();
 	auto engine = CreateProductionQuicNgtcp2Engine();
 	auto p = Initial();
-	CQuicNgtcp2Factory factory(ProductionPolicy(s, c, v), sink, engine);
+	CQuicNgtcp2Factory factory(ProductionPolicy(s, c, v), sink, engine, kTestIdentity);
 	auto connection = factory.CreateInbound(p.data(), p.size(), kPeer, 2, kDcid);
 	ASSERT_TRUE(connection != nullptr);
 
@@ -483,7 +484,7 @@ TEST(QuicNgtcp2Adapter, ProductionEngineFailsClosedWithNonGnuTlsCredentials)
 	auto sink = std::make_shared<Sink>();
 	auto engine = CreateProductionQuicNgtcp2Engine();
 	auto p = Initial();
-	CQuicNgtcp2Factory factory(Policy(s, c, v), sink, engine);
+	CQuicNgtcp2Factory factory(Policy(s, c, v), sink, engine, kTestIdentity);
 	auto connection = factory.CreateInbound(p.data(), p.size(), kPeer, 2, kDcid);
 	ASSERT_TRUE(connection == nullptr);
 }
@@ -513,7 +514,7 @@ TEST(QuicNgtcp2Adapter, ProductionEngineReadRejectsAnUnencryptedInitial)
 	auto sink = std::make_shared<Sink>();
 	auto engine = CreateProductionQuicNgtcp2Engine();
 	auto p = Initial();
-	CQuicNgtcp2Factory factory(ProductionPolicy(s, c, v), sink, engine);
+	CQuicNgtcp2Factory factory(ProductionPolicy(s, c, v), sink, engine, kTestIdentity);
 	auto connection = factory.CreateInbound(p.data(), p.size(), kPeer, 2, kDcid);
 	ASSERT_TRUE(connection != nullptr);
 	// Initial() is structurally valid enough for ngtcp2_accept()'s admission check, but carries
@@ -531,7 +532,7 @@ TEST(QuicNgtcp2Adapter, ProductionEngineIssuesDistinctScidsPerConnection)
 	Verifier v;
 	auto sink = std::make_shared<Sink>();
 	auto engine = CreateProductionQuicNgtcp2Engine();
-	CQuicNgtcp2Factory factory(ProductionPolicy(s, c, v), sink, engine);
+	CQuicNgtcp2Factory factory(ProductionPolicy(s, c, v), sink, engine, kTestIdentity);
 
 	auto p1 = Initial(kDcid, "\x01");
 	auto connection1 = factory.CreateInbound(p1.data(), p1.size(), kPeer, 2, kDcid);
@@ -560,7 +561,7 @@ TEST(QuicNgtcp2Adapter, IssuedConnectionIdsComeFromEngineUntilClosed)
 	auto engine = std::make_shared<Engine>();
 	engine->issuedCid = "SSSSSSSS";
 	auto p = Initial();
-	CQuicNgtcp2Factory factory(Policy(s, c, v), sink, engine);
+	CQuicNgtcp2Factory factory(Policy(s, c, v), sink, engine, kTestIdentity);
 	auto connection = factory.CreateInbound(p.data(), p.size(), kPeer, 2, kDcid);
 	ASSERT_TRUE(connection != nullptr);
 	ASSERT_TRUE(connection->OwnsConnectionId("SSSSSSSS"));

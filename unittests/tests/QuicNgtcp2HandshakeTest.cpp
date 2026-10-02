@@ -45,6 +45,7 @@
 
 #include <netinet/in.h>
 
+#include <array>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -56,6 +57,13 @@ DECLARE_SIMPLE(QuicNgtcp2Handshake)
 namespace
 {
 const CNetworkAddress kPeer = CNetworkAddress::FromString("192.0.2.1");
+//! Arbitrary: the server never checks the sender's half of the proof against anything it
+//! already expected (QuicNgtcp2Adapter.cpp's TryExchangeEaqn1Proof() passes a null
+//! expectedPeerHash -- there is no prior rendezvous context for an inbound connection).
+const std::array<uint8_t, 16> kTestClientIdentity{
+	101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116
+};
+const std::array<uint8_t, 16> kTestServerIdentity{ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
 
 void EnsureGnuTlsInitialized()
 {
@@ -338,6 +346,7 @@ public:
 
 	bool HandshakeConfirmed() const { return m_handshakeConfirmed; }
 	const std::vector<uint8_t> &Received() const { return m_received; }
+	void ClearReceived() { m_received.clear(); }
 
 private:
 	static constexpr size_t kMaxUdpPayload = 1452;
@@ -391,6 +400,41 @@ bool DriveHandshake(CTestQuicClient &client,
 	return confirmed;
 }
 
+//! eMuleAI's EAQN1 hand-off (QuicNattProtocol.h, NgTcp2GnuTlsBridge.cpp:711-828): the client's
+//! proof must be the first bytes on the stream, before any application data, and the server's
+//! own proof must come back before either side treats the stream as ready. Every real-engine
+//! test needs this immediately after DriveHandshake() and before sending anything else -- a
+//! stream that opens without it never gets past CQuicNgtcp2Connection::TryExchangeEaqn1Proof().
+bool ExchangeEaqn1Proof(CTestQuicClient &client,
+	std::unique_ptr<IQuicConnection> &connection,
+	CollectingSink &sink,
+	uint64_t &nowMs)
+{
+	// Target left zero (nullptr): this is the client's first contact, so it does not yet know
+	// which server identity it is confirming -- ValidateEaqn1Proof() accepts that explicitly.
+	const auto clientProof = QuicNatt::BuildEaqn1Proof(kTestClientIdentity, nullptr);
+	for (const auto &datagram :
+		client.SendOnStream(std::vector<uint8_t>(clientProof.begin(), clientProof.end()), nowMs)) {
+		if (!connection->ProcessDatagram(datagram.data(), datagram.size(), nowMs)) {
+			return false;
+		}
+	}
+	for (const auto &datagram : sink.sent) {
+		if (!client.Receive(datagram, nowMs)) {
+			return false;
+		}
+	}
+	sink.sent.clear();
+	if (client.Received().size() < QuicNatt::EAQN1_PROOF_SIZE) {
+		return false;
+	}
+	// The server's own proof, already validated by construction (CProductionNgtcp2Engine really
+	// sent it, or TryExchangeEaqn1Proof() would have closed the connection instead) -- cleared so
+	// the tests that follow compare Received() against application data alone.
+	client.ClearReceived();
+	return true;
+}
+
 //! Admits every offered stream and keeps the transport, the same shape CQuicStreamAcceptor
 //! gives a caller on success -- without theApp, which the real acceptor's admission policy
 //! needs and no unit test here constructs.
@@ -422,7 +466,7 @@ TEST(QuicNgtcp2Handshake, ARealClientAndTheRealServerEngineCompleteTheHandshake)
 
 	auto sink = std::make_shared<CollectingSink>();
 	auto engine = CreateProductionQuicNgtcp2Engine();
-	CQuicNgtcp2Factory factory(policy, sink, engine);
+	CQuicNgtcp2Factory factory(policy, sink, engine, kTestServerIdentity);
 
 	CTestQuicClient client;
 	ASSERT_TRUE(client.Init());
@@ -488,7 +532,7 @@ TEST(QuicNgtcp2Handshake, AcceptedStreamHandsOffToARealTransportThatReadsAndWrit
 
 	auto sink = std::make_shared<CollectingSink>();
 	auto engine = CreateProductionQuicNgtcp2Engine();
-	CQuicNgtcp2Factory factory(policy, sink, engine);
+	CQuicNgtcp2Factory factory(policy, sink, engine, kTestServerIdentity);
 	AcceptingAcceptor acceptor;
 	factory.SetAcceptor(&acceptor);
 
@@ -503,6 +547,16 @@ TEST(QuicNgtcp2Handshake, AcceptedStreamHandsOffToARealTransportThatReadsAndWrit
 	// hand-off cannot have happened before the client sends anything.
 	ASSERT_TRUE(acceptor.accepted == nullptr);
 
+	// The exchange itself completes the hand-off: CQuicNgtcp2Connection::OfferStreamIfJustOpened()
+	// offers the transport to the acceptor in the same call that TryExchangeEaqn1Proof() succeeds
+	// in, since the proof is already everything the connection needed to consider this peer worth
+	// handing off.
+	ASSERT_TRUE(ExchangeEaqn1Proof(client, connection, *sink, nowMs));
+	ASSERT_TRUE(acceptor.accepted != nullptr);
+	ASSERT_TRUE(acceptor.lastAddress == kPeer);
+	ASSERT_EQUALS(4672u, acceptor.lastPort);
+	ASSERT_TRUE(acceptor.accepted->IsConnected());
+
 	const std::vector<uint8_t> payload{ 'h', 'i' };
 	for (const auto &datagram : client.SendOnStream(payload, nowMs)) {
 		ASSERT_TRUE(connection->ProcessDatagram(datagram.data(), datagram.size(), nowMs));
@@ -511,11 +565,6 @@ TEST(QuicNgtcp2Handshake, AcceptedStreamHandsOffToARealTransportThatReadsAndWrit
 		ASSERT_TRUE(client.Receive(datagram, nowMs));
 	}
 	sink->sent.clear();
-
-	ASSERT_TRUE(acceptor.accepted != nullptr);
-	ASSERT_TRUE(acceptor.lastAddress == kPeer);
-	ASSERT_EQUALS(4672u, acceptor.lastPort);
-	ASSERT_TRUE(acceptor.accepted->IsConnected());
 
 	uint8_t buf[64] = {};
 	const uint32_t readBytes = acceptor.accepted->Read(buf, sizeof(buf));
@@ -556,7 +605,7 @@ TEST(QuicNgtcp2Handshake, LostFirstAttemptIsRetransmittedWithoutCorruptingTheRep
 
 	auto sink = std::make_shared<CollectingSink>();
 	auto engine = CreateProductionQuicNgtcp2Engine();
-	CQuicNgtcp2Factory factory(policy, sink, engine);
+	CQuicNgtcp2Factory factory(policy, sink, engine, kTestServerIdentity);
 	AcceptingAcceptor acceptor;
 	factory.SetAcceptor(&acceptor);
 
@@ -567,6 +616,8 @@ TEST(QuicNgtcp2Handshake, LostFirstAttemptIsRetransmittedWithoutCorruptingTheRep
 	uint64_t nowMs = 0;
 	ASSERT_TRUE(DriveHandshake(client, factory, *sink, connection, nowMs));
 	ASSERT_TRUE(connection != nullptr);
+	ASSERT_TRUE(ExchangeEaqn1Proof(client, connection, *sink, nowMs));
+	ASSERT_TRUE(acceptor.accepted != nullptr);
 
 	// Through the real transport, not a direct IQuicStreamOperations call: CQuicSocketTransport's
 	// Write()+Flush() is what frees its own copy of the data the instant WriteStream() returns
@@ -581,7 +632,6 @@ TEST(QuicNgtcp2Handshake, LostFirstAttemptIsRetransmittedWithoutCorruptingTheRep
 		ASSERT_TRUE(client.Receive(datagram, nowMs));
 	}
 	sink->sent.clear();
-	ASSERT_TRUE(acceptor.accepted != nullptr);
 
 	const std::vector<uint8_t> reply2{ 'o', 'k' };
 	const uint32_t writtenBytes =
@@ -595,20 +645,19 @@ TEST(QuicNgtcp2Handshake, LostFirstAttemptIsRetransmittedWithoutCorruptingTheRep
 	// internally.
 	sink->sent.clear();
 
-	// Ticks until ngtcp2's own loss-detection timer retransmits, or fails loudly instead of
-	// hanging if a real protocol regression means it never does.
-	bool retransmitted = false;
-	for (int i = 0; i < 200 && !retransmitted; ++i) {
+	// Ticks until ngtcp2's own loss-detection timer retransmits, delivering every datagram that
+	// produces as it goes: the first one after a loss is not necessarily the retransmission
+	// itself (a PTO probe can go out first, carrying no STREAM frame at all) -- only once the
+	// client has actually seen reply2's bytes does this stop. Fails loudly instead of hanging if
+	// a real protocol regression means that never happens.
+	for (int i = 0; i < 200 && client.Received() != reply2; ++i) {
 		nowMs += 25;
 		connection->Tick(nowMs);
-		retransmitted = !sink->sent.empty();
+		for (const auto &datagram : sink->sent) {
+			ASSERT_TRUE(client.Receive(datagram, nowMs));
+		}
+		sink->sent.clear();
 	}
-	ASSERT_TRUE(retransmitted);
-
-	for (const auto &datagram : sink->sent) {
-		ASSERT_TRUE(client.Receive(datagram, nowMs));
-	}
-	sink->sent.clear();
 
 	ASSERT_TRUE(client.Received() == reply2);
 }
