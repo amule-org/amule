@@ -529,8 +529,7 @@ public:
 		auto tlsSession = std::make_unique<CQuicGnuTlsSession>();
 		const auto *alpn = reinterpret_cast<const uint8_t *>(QuicNatt::QUIC_NATT_ALPN);
 		const size_t alpnLength = sizeof(QuicNatt::QUIC_NATT_ALPN) - 1;
-		if (!tlsSession->ConfigureTls13Alpn(
-			    *policy.credentials, policy.verifier, alpn, alpnLength, true)) {
+		if (!tlsSession->ConfigureTls13Alpn(*policy.credentials, nullptr, alpn, alpnLength, true)) {
 			return nullptr;
 		}
 		if (ngtcp2_crypto_gnutls_configure_server_session(tlsSession->NativeGnuTlsSession()) != 0) {
@@ -785,24 +784,30 @@ public:
 		// A peer that stops ACKing is already a dead connection from this engine's point of view,
 		// so refusing to grow past the same window CQuicSocketTransport imposes on the application
 		// side (kReadWindow, also 256KiB) is a bound, not a behaviour change for any peer actually
-		// speaking QUIC.
-		if (info.unackedSendBytes + length > CQuicSocketTransport::kReadWindow) {
-			return -1;
+		// speaking QUIC. Offer only what still fits, the same way ngtcp2 itself accepting less than
+		// offered is already handled below -- @p length is the caller's whole queued chunk (up to
+		// CQuicSocketTransport::kWriteBound, also 256KiB), not what ngtcp2 is actually about to
+		// accept (one packet's worth), so treating the full length as what must fit would abort the
+		// stream over a single byte still outstanding, not an actual lack of room.
+		if (info.unackedSendBytes >= CQuicSocketTransport::kReadWindow) {
+			return 0;
 		}
+		const size_t offeredLength =
+			std::min(length, CQuicSocketTransport::kReadWindow - info.unackedSendBytes);
 		// Our own copy, created before ngtcp2 ever sees it: the ngtcp2_vec below must point at
 		// memory we control for as long as ngtcp2 might still need it (ConnectionInfo::
 		// unackedSendChunks's comment has the full contract), not the caller's -- which
 		// CQuicSocketTransport::Flush() frees the instant this call returns.
-		info.unackedSendChunks.emplace_back(data, data + length);
+		info.unackedSendChunks.emplace_back(data, data + offeredLength);
 		uint8_t *ours = info.unackedSendChunks.back().data();
-		info.unackedSendBytes += length;
+		info.unackedSendBytes += offeredLength;
 
 		const ngtcp2_tstamp ts = NanosecondsFromMs(nowMs);
 		uint8_t buf[kMaxUdpPayload];
 		ngtcp2_path_storage path;
 		InitZeroPath(path);
 		ngtcp2_pkt_info pi = {};
-		const ngtcp2_vec vec{ ours, length };
+		const ngtcp2_vec vec{ ours, offeredLength };
 		ngtcp2_ssize dataLen = 0;
 		// ngtcp2_conn_writev_stream() both accepts stream data and may produce a packet in the
 		// same call: there is no separate "queue it for later" step to split this into, unlike
@@ -821,7 +826,7 @@ public:
 		std::ptrdiff_t result;
 		if (written < 0) {
 			// Nothing was sent, so nothing of this chunk is actually pending retransmission.
-			info.unackedSendBytes -= length;
+			info.unackedSendBytes -= offeredLength;
 			info.unackedSendChunks.pop_back();
 			// STREAM_DATA_BLOCKED is documented as non-fatal: the stream is flow-control blocked,
 			// not the connection -- the peer extending the window (or NotifyWritable() noticing
@@ -836,8 +841,8 @@ public:
 			// caller (CQuicSocketTransport::Flush(), via its own front-offset tracking) still has
 			// it and will offer it again on the next Flush().
 			const size_t accepted = dataLen > 0 ? static_cast<size_t>(dataLen) : 0;
-			if (accepted < length) {
-				info.unackedSendBytes -= (length - accepted);
+			if (accepted < offeredLength) {
+				info.unackedSendBytes -= (offeredLength - accepted);
 				if (accepted == 0) {
 					info.unackedSendChunks.pop_back();
 				} else {
@@ -873,29 +878,12 @@ public:
 		if (it == m_connections.end() || it->second.streamId < 0) {
 			return;
 		}
-		uint8_t buf[kMaxUdpPayload];
-		ngtcp2_path_storage path;
-		InitZeroPath(path);
-		ngtcp2_pkt_info pi = {};
-		ngtcp2_ssize dataLen = 0;
-		// No vec at all, not an empty one: an empty ngtcp2_vec would still count as "stream data
-		// was offered", which is not what a close with nothing left to send should claim.
-		const ngtcp2_ssize written = ngtcp2_conn_writev_stream(it->second.conn,
-			&path.path,
-			&pi,
-			buf,
-			sizeof(buf),
-			&dataLen,
-			NGTCP2_WRITE_STREAM_FLAG_FIN,
-			it->second.streamId,
-			nullptr,
-			0,
-			NanosecondsFromMs(nowMs));
-		if (written > 0) {
-			sink.SendDatagram(buf, static_cast<size_t>(written), address, port);
+		if (!TryWriteGracefulFin(it->second, sink, address, port, NanosecondsFromMs(nowMs))) {
+			// Pacing/congestion kept this from fitting into a packet right now: ngtcp2 does not
+			// record the FIN until it actually serializes, so retry on the next real
+			// FlushConnection() call instead of giving up here.
+			it->second.pendingGracefulFin = true;
 		}
-		// Required after any invocation of writev_stream, including a FIN-only one like this.
-		ngtcp2_conn_update_pkt_tx_time(it->second.conn, NanosecondsFromMs(nowMs));
 	}
 
 	bool IsStreamEnded(Handle handle) const override
@@ -983,7 +971,49 @@ private:
 		//! Set by OnRecvStreamData()'s FIN flag, OnStreamClose(), or OnStreamReset() -- whichever
 		//! notices first that the one stream this connection will ever have is done.
 		bool streamEnded = false;
+		//! CloseStreamGracefully() asked for a FIN that writev_stream() could not fit into a
+		//! packet right then (pacing/congestion: ngtcp2 does not record the FIN internally unless
+		//! the frame actually got serialized, so a blocked attempt is not retried on its own).
+		//! FlushConnection() clears this once a real FlushConnection() call -- with a later,
+		//! genuinely advanced ts -- gets it out.
+		bool pendingGracefulFin = false;
 	};
+
+	//! Returns true once the FIN frame was actually serialized -- not just that some packet
+	//! went out, since ngtcp2_conn_writev_stream() documents that other frames (e.g. an ACK)
+	//! can fill the packet instead, leaving *pdatalen at -1 and the FIN unsent despite
+	//! `written > 0`. A FIN-only call with no data serializes as *pdatalen == 0 on success.
+	bool TryWriteGracefulFin(ConnectionInfo &connection,
+		IQuicDatagramSink &sink,
+		const CNetworkAddress &address,
+		uint16_t port,
+		ngtcp2_tstamp ts)
+	{
+		uint8_t buf[kMaxUdpPayload];
+		ngtcp2_path_storage path;
+		InitZeroPath(path);
+		ngtcp2_pkt_info pi = {};
+		ngtcp2_ssize dataLen = 0;
+		// No vec at all, not an empty one: an empty ngtcp2_vec would still count as "stream data
+		// was offered", which is not what a close with nothing left to send should claim.
+		const ngtcp2_ssize written = ngtcp2_conn_writev_stream(connection.conn,
+			&path.path,
+			&pi,
+			buf,
+			sizeof(buf),
+			&dataLen,
+			NGTCP2_WRITE_STREAM_FLAG_FIN,
+			connection.streamId,
+			nullptr,
+			0,
+			ts);
+		if (written > 0) {
+			sink.SendDatagram(buf, static_cast<size_t>(written), address, port);
+		}
+		// Required after any invocation of writev_stream, including a FIN-only one like this.
+		ngtcp2_conn_update_pkt_tx_time(connection.conn, ts);
+		return written > 0 && dataLen == 0;
+	}
 
 	// Shared by Flush() (an inbound datagram may need an immediate reply) and Tick() (a timer
 	// firing with nothing freshly received still needs to retransmit or probe): both end in
@@ -994,6 +1024,14 @@ private:
 		uint16_t port,
 		ngtcp2_tstamp ts)
 	{
+		if (connection.pendingGracefulFin) {
+			if (TryWriteGracefulFin(connection, sink, address, port, ts)) {
+				connection.pendingGracefulFin = false;
+			}
+			// Whether or not it fit this time, the loop below still services this connection's
+			// own retransmission/ACK traffic the same as any other call -- a pending FIN is not a
+			// reason to skip that.
+		}
 		// A bounded number of packets per flush, not an unbounded drain-until-0 loop: a
 		// connection that always has more to send (e.g. a peer that never acknowledges) must
 		// not be able to make one flush call monopolize this thread indefinitely.
@@ -1065,11 +1103,9 @@ std::unique_ptr<IQuicConnection> CQuicNgtcp2Factory::CreateInbound(const uint8_t
 	uint64_t nowMs)
 {
 	CQuicInitialMetadata metadata;
-	if (m_policy.session == nullptr || m_policy.credentials == nullptr || m_policy.verifier == nullptr ||
-		m_policy.ngtcp2Session == nullptr ||
-		m_policy.ngtcp2Session->NativeGnuTlsSession() == nullptr || m_sink == nullptr ||
-		m_engine == nullptr || cid.empty() || cid.size() > 20 ||
-		!ParseInitialMetadata(data, length, metadata) || metadata.destinationCid != cid) {
+	if (m_policy.credentials == nullptr || m_sink == nullptr || m_engine == nullptr || cid.empty() ||
+		cid.size() > 20 || !ParseInitialMetadata(data, length, metadata) ||
+		metadata.destinationCid != cid) {
 		return nullptr;
 	}
 	IQuicNgtcp2Engine::Handle handle = m_engine->CreateServer(m_policy, address, port, metadata, nowMs);

@@ -44,6 +44,10 @@ CQuicSocketTransport::~CQuicSocketTransport()
 {
 	SetEvents(nullptr);
 	Close();
+	// Close() itself may have only started an asynchronous drain (m_draining) rather than
+	// finished it -- this object is about to stop existing, so nothing else will ever call
+	// OnWritable() on it again to keep that going. A no-op if Close() already finished.
+	FinishDrainingForDestruction();
 }
 
 bool CQuicSocketTransport::IsConnected() const
@@ -155,7 +159,10 @@ void CQuicSocketTransport::Flush()
 	{
 		std::lock_guard<std::mutex> l(m_mutex);
 		m_flushPending = false;
-		if (m_flushInProgress || m_closed || m_writeQueued == 0)
+		// m_draining is the one case Flush() still runs despite m_closed: Close() left something
+		// queued that congestion/pacing would not let out yet, and OnWritable() keeps calling
+		// this from later real ticks until it does.
+		if (m_flushInProgress || (m_closed && !m_draining) || m_writeQueued == 0)
 			return;
 		m_flushInProgress = true;
 		handle = m_handle;
@@ -167,7 +174,7 @@ void CQuicSocketTransport::Flush()
 	IStreamTransportEvents *again = nullptr;
 	IStreamTransportEvents *lost = nullptr;
 	IQuicStreamOperations::Handle failedHandle = nullptr;
-	IQuicStreamOperations::Handle closedDuringFlush = nullptr;
+	IQuicStreamOperations::Handle finishedHandle = nullptr;
 	{
 		std::lock_guard<std::mutex> l(m_mutex);
 		m_flushInProgress = false;
@@ -178,17 +185,17 @@ void CQuicSocketTransport::Flush()
 				m_error = static_cast<int>(-result);
 				lost = m_events;
 			}
+			m_draining = false;
 			failedHandle = m_handle;
 			m_handle = nullptr;
 			ClearWriteLocked();
-		} else if (m_closed) {
-			// Whoever closed during the write (Close() or OnEnded()) owns the event notification;
-			// this call still owes the engine a graceful close, same as Close() itself would have
-			// made if the write had not still been in flight when it ran.
-			closedDuringFlush = m_handle;
-			m_handle = nullptr;
-			ClearWriteLocked();
 		} else {
+			// Advancing the queue first, then deciding what the close (if any) does with the
+			// handle, applies the same whether this flush was already draining a closed
+			// transport or Close() only arrived while this call was still in flight -- the two
+			// used to be different branches here, which is what let the latter skip queue
+			// accounting entirely and hand back the handle regardless of what this very write
+			// just got out.
 			const size_t n = std::min<size_t>(static_cast<size_t>(result), frontLength);
 			m_writeFrontOffset += n;
 			m_writeQueued -= n;
@@ -196,26 +203,33 @@ void CQuicSocketTransport::Flush()
 				m_writeChunks.pop_front();
 				m_writeFrontOffset = 0;
 			}
-			const bool wasBlocked = m_blocksWrite;
-			m_blocksWrite = result == 0 || m_writeQueued >= kWriteBound;
-			if (wasBlocked && !m_blocksWrite)
-				writable = m_events;
-			else if (n && m_writeQueued == 0)
-				writable = m_events;
-			// Only when something actually went out: a zero-byte result means flow control or
-			// congestion is blocking every byte right now, and asking to be flushed again
-			// immediately would just repeat that same zero-byte result in a tight loop until
-			// something external changes. OnWritable() is what resumes a blocked flush once the
-			// engine notices that something did (IQuicNgtcp2Engine::NotifyWritable()).
-			if (n > 0) {
-				RequestFlushLocked(again);
+			if (m_closed) {
+				finishedHandle = TryFinishClosingLocked();
+			} else {
+				const bool wasBlocked = m_blocksWrite;
+				m_blocksWrite = result == 0 || m_writeQueued >= kWriteBound;
+				if (wasBlocked && !m_blocksWrite)
+					writable = m_events;
+				else if (n && m_writeQueued == 0)
+					writable = m_events;
+				// Only when something actually went out: a zero-byte result means flow
+				// control or congestion is blocking every byte right now, and asking to be
+				// flushed again immediately would just repeat that same zero-byte result in a
+				// tight loop until something external changes. OnWritable() is what resumes a
+				// blocked flush once the engine notices that something did
+				// (IQuicNgtcp2Engine::NotifyWritable()), which is also what drives further
+				// draining rounds once m_closed is set -- so this request is deliberately not
+				// made in that case.
+				if (n > 0) {
+					RequestFlushLocked(again);
+				}
 			}
 		}
 	}
 	if (failedHandle)
 		m_operations.AbortStream(failedHandle);
-	if (closedDuringFlush)
-		m_operations.CloseStream(closedDuringFlush);
+	if (finishedHandle)
+		m_operations.CloseStream(finishedHandle);
 	if (writable)
 		writable->OnStreamWritable();
 	if (again)
@@ -226,18 +240,43 @@ void CQuicSocketTransport::Flush()
 
 void CQuicSocketTransport::Close()
 {
-	bool flushBeforeClosing;
+	bool canFlushHere;
 	{
 		std::lock_guard<std::mutex> l(m_mutex);
-		flushBeforeClosing = !m_closed && !m_flushInProgress && m_writeQueued > 0;
+		canFlushHere = !m_closed && !m_flushInProgress;
 	}
-	if (flushBeforeClosing) {
-		// Best-effort, not a loop that drains an arbitrarily large queue: Close() still has to
-		// return. One last chance for whatever is already queued to go out is what keeps a clean
-		// eD2k close from silently dropping its last packet -- CQuicNgtcp2Connection::
-		// CloseStream() below only protects what ngtcp2 has already accepted
-		// (ConnectionInfo::unackedSendChunks), not what never left this queue in the first place.
-		Flush();
+	if (canFlushHere) {
+		// Bounded, not an unbounded drain: Close() still has to return even against a peer that
+		// stops acknowledging midway. One Flush() call hands ngtcp2 at most one packet's worth
+		// (kMaxUdpPayload) regardless of how much is queued (up to kWriteBound, 256KiB), so a
+		// single call was silently dropping everything past the first packet -- the gap that let
+		// a clean eD2k close lose its tail. kMaxCloseFlushRounds covers kWriteBound at the
+		// smallest packet Flush() ever sends, with margin; CQuicNgtcp2Connection::CloseStream()
+		// below only protects what ngtcp2 has already accepted (ConnectionInfo::
+		// unackedSendChunks), never what never left this queue in the first place.
+		constexpr int kMaxCloseFlushRounds = 256;
+		for (int round = 0; round < kMaxCloseFlushRounds; ++round) {
+			size_t queuedBefore;
+			{
+				std::lock_guard<std::mutex> l(m_mutex);
+				queuedBefore = m_closed ? 0 : m_writeQueued;
+			}
+			if (queuedBefore == 0) {
+				break;
+			}
+			Flush();
+			size_t queuedAfter;
+			{
+				std::lock_guard<std::mutex> l(m_mutex);
+				queuedAfter = m_closed ? 0 : m_writeQueued;
+			}
+			// Stop retrying once something else already closed this transport (Flush()'s own
+			// fatal-error path), or once a round makes no progress at all (flow-control/
+			// congestion blocked right now) -- further identical calls would not help.
+			if (queuedAfter >= queuedBefore) {
+				break;
+			}
+		}
 	}
 	IQuicStreamOperations::Handle handle = nullptr;
 	{
@@ -246,15 +285,55 @@ void CQuicSocketTransport::Close()
 			return;
 		m_closed = true;
 		m_connected = false;
+		// If a flush is still in flight, its own completion path (Flush(), above) is the one that
+		// calls TryFinishClosingLocked() once it has the chance to advance the queue with
+		// whatever this very write gets out -- doing it here too would race that decision.
 		if (!m_flushInProgress) {
-			handle = m_handle;
-			m_handle = nullptr;
+			handle = TryFinishClosingLocked();
 		}
 	}
 	if (handle)
 		m_operations.CloseStream(handle);
 	// Deliberately does not call OnStreamLost: a local Close() is not a peer
 	// loss. Match CUtpSocketTransport::Close() which has the same invariant.
+}
+
+IQuicStreamOperations::Handle CQuicSocketTransport::TryFinishClosingLocked()
+{
+	// m_handle can already be null here if OnEnded() ran first (the connection itself ended
+	// independently of this close): nothing is left to drain towards in that case, regardless
+	// of m_writeQueued, since there is no connection left to keep calling OnWritable().
+	if (m_writeQueued > 0 && m_handle != nullptr) {
+		// Congestion/pacing would not let the bounded loop in Close() (or this very Flush()
+		// call) get everything out: keep the handle attached so OnWritable() -- driven by real
+		// ticks on the still-live connection -- keeps calling Flush() until the queue empties on
+		// its own, or ~CQuicSocketTransport() decides to cut it short instead.
+		m_draining = true;
+		return nullptr;
+	}
+	m_draining = false;
+	IQuicStreamOperations::Handle handle = m_handle;
+	m_handle = nullptr;
+	return handle;
+}
+
+void CQuicSocketTransport::FinishDrainingForDestruction()
+{
+	// Only ~CQuicSocketTransport() calls this, and only this object's own destruction can cut
+	// a still-draining close short: nothing else will ever call OnWritable() on it again once
+	// it is gone, so whatever is still queued at this point stays queued forever otherwise.
+	IQuicStreamOperations::Handle handle = nullptr;
+	{
+		std::lock_guard<std::mutex> l(m_mutex);
+		if (!m_draining || m_flushInProgress)
+			return;
+		m_draining = false;
+		handle = m_handle;
+		m_handle = nullptr;
+		ClearWriteLocked();
+	}
+	if (handle)
+		m_operations.CloseStream(handle);
 }
 
 void CQuicSocketTransport::MarkConnected()
@@ -295,13 +374,24 @@ void CQuicSocketTransport::OnEnded(int error)
 	IStreamTransportEvents *event = nullptr;
 	{
 		std::lock_guard<std::mutex> l(m_mutex);
-		if (m_closed)
-			return;
-		m_closed = true;
-		m_connected = false;
-		m_error = error;
+		const bool firstNotice = !m_closed;
+		if (firstNotice) {
+			m_closed = true;
+			m_connected = false;
+			m_error = error;
+			event = m_events;
+		}
+		// The connection this handle names is gone either way, even if m_closed was already true
+		// from a local Close() still draining: that handle is the one this very call is warning
+		// is about to become dangling, so draining further is no longer possible regardless of
+		// which happened first. Without this, FinishDrainingForDestruction() would later call
+		// back into a connection that no longer exists. Not ClearWriteLocked() here, though: this
+		// can run reentrantly from inside WriteStream() (a test proves it), while Flush() still
+		// holds raw pointers into m_writeChunks.front() for that very call -- freeing it out from
+		// under that read would itself be a use-after-free. Flush()'s own completion path cleans
+		// up once that call returns, same as any other fatal result.
+		m_draining = false;
 		m_handle = nullptr;
-		event = m_events;
 	}
 	if (event)
 		event->OnStreamLost();

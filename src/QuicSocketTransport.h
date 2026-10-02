@@ -92,6 +92,17 @@ public:
 private:
 	void RequestFlushLocked(IStreamTransportEvents *&);
 	void ClearWriteLocked();
+	//! Called with m_mutex held, only once m_closed is set and no flush is in flight: decides
+	//! whether the close can finish now (nothing left queued) or must keep draining
+	//! asynchronously (m_draining), returning the handle to hand to CloseStream() -- outside the
+	//! lock -- only in the former case. Shared by Close() and Flush()'s own completion path,
+	//! since a Close() arriving while a flush was already in progress must be decided the same
+	//! way once that flush returns.
+	IQuicStreamOperations::Handle TryFinishClosingLocked();
+	//! Only ~CQuicSocketTransport() calls this: forces a still-draining close to finish right
+	//! now, discarding whatever is left queued, since nothing will call OnWritable() on this
+	//! object again once it is gone.
+	void FinishDrainingForDestruction();
 	IQuicStreamOperations &m_operations;
 	mutable std::mutex m_mutex;
 	IQuicStreamOperations::Handle m_handle;
@@ -110,6 +121,11 @@ private:
 	bool m_closed = false;
 	bool m_flushPending = false;
 	bool m_flushInProgress = false;
+	//! Close() was called but something was still queued that congestion/pacing would not let
+	//! the bounded flush loop get out: the handle stays attached and Flush() keeps running
+	//! (despite m_closed) as OnWritable() keeps calling it from later real ticks, until the
+	//! queue empties on its own or ~CQuicSocketTransport() cuts it short.
+	bool m_draining = false;
 	bool m_blocksWrite = false;
 	int m_error = 0;
 };

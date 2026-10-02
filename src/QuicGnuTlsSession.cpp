@@ -175,8 +175,3 @@ std::shared_ptr<IQuicTlsCredentials> CreateProductionQuicCredentials()
 {
 	return std::make_shared<CQuicEphemeralCredentials>();
 }
-
-std::unique_ptr<IQuicNgtcp2TlsSession> CreateUnusedQuicSessionPlaceholder()
-{
-	return std::make_unique<CQuicGnuTlsSession>();
-}

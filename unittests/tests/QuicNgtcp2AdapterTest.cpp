@@ -224,17 +224,16 @@ std::vector<uint8_t> Initial(const std::string &dcid = kDcid,
 	p.resize(p.size() + remainder);
 	return p;
 }
-CQuicTlsPolicy Policy(Session &s, Credentials &c, Verifier &v)
+CQuicTlsPolicy Policy(Session &, Credentials &c, Verifier &)
 {
-	return { &s, &c, &v, &s };
+	return { &c };
 }
 
 // CProductionNgtcp2Engine::CreateServer() builds its own real GnuTLS session per connection
-// from policy.credentials, so the production-engine tests need real credentials there -- the
-// mock Session/Verifier remain fine, since only their non-null-ness is ever checked.
-CQuicTlsPolicy ProductionPolicy(Session &s, CQuicEphemeralCredentials &c, Verifier &v)
+// from policy.credentials, so the production-engine tests need real credentials there.
+CQuicTlsPolicy ProductionPolicy(Session &, CQuicEphemeralCredentials &c, Verifier &)
 {
-	return { &s, &c, &v, &s };
+	return { &c };
 }
 } // namespace
 
@@ -248,31 +247,11 @@ TEST(QuicNgtcp2Adapter, MissingDependenciesFailClosed)
 	auto p = Initial();
 	CQuicTlsPolicy policy = Policy(s, c, v);
 
-	CQuicTlsPolicy noSession = policy;
-	noSession.session = nullptr;
-	ASSERT_TRUE(!CQuicNgtcp2Factory(noSession, sink, engine, kTestIdentity)
-			     .CreateInbound(p.data(), p.size(), kPeer, 2, kDcid, 0));
-
 	CQuicTlsPolicy noCredentials = policy;
 	noCredentials.credentials = nullptr;
 	ASSERT_TRUE(!CQuicNgtcp2Factory(noCredentials, sink, engine, kTestIdentity)
 			     .CreateInbound(p.data(), p.size(), kPeer, 2, kDcid, 0));
-
-	CQuicTlsPolicy noVerifier = policy;
-	noVerifier.verifier = nullptr;
-	ASSERT_TRUE(!CQuicNgtcp2Factory(noVerifier, sink, engine, kTestIdentity)
-			     .CreateInbound(p.data(), p.size(), kPeer, 2, kDcid, 0));
-
-	CQuicTlsPolicy noNativeSession = policy;
-	noNativeSession.ngtcp2Session = nullptr;
-	ASSERT_TRUE(!CQuicNgtcp2Factory(noNativeSession, sink, engine, kTestIdentity)
-			     .CreateInbound(p.data(), p.size(), kPeer, 2, kDcid, 0));
-
-	s.native = nullptr;
-	ASSERT_TRUE(!CQuicNgtcp2Factory(policy, sink, engine, kTestIdentity)
-			     .CreateInbound(p.data(), p.size(), kPeer, 2, kDcid, 0));
 	ASSERT_EQUALS(0u, engine->created);
-	s.native = reinterpret_cast<gnutls_session_t>(&s.token);
 
 	ASSERT_TRUE(!CQuicNgtcp2Factory(policy, nullptr, engine, kTestIdentity)
 			     .CreateInbound(p.data(), p.size(), kPeer, 2, kDcid, 0));

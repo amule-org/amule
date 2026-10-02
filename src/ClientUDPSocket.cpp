@@ -57,7 +57,8 @@
 #include "UtpStreamAcceptor.h"
 #endif
 #ifdef AMULE_QUIC_TRANSPORT
-#include "QuicLibraryAdapter.h"
+#include "QuicTls.h"
+#include "QuicNgtcp2Adapter.h"
 #endif
 
 //
@@ -67,12 +68,6 @@
 #ifdef AMULE_QUIC_TRANSPORT
 namespace
 {
-//! policy.verifier only needs to be non-null (see m_quicPlaceholderVerifier's comment); it has
-//! no behaviour to implement.
-class CQuicUnusedVerifier final : public IQuicTlsVerifier
-{
-};
-
 //! What CQuicNgtcp2Factory asserts as "who we are" in the EAQN1 proof exchange
 //! (QuicNattProtocol.h) every inbound QUIC stream goes through before being handed off.
 std::array<uint8_t, 16> QuicLocalIdentityFromUserHash()
@@ -127,14 +122,9 @@ CClientUDPSocket::CClientUDPSocket(const amuleIPV4Address &address, const CProxy
 #endif
 #ifdef AMULE_QUIC_TRANSPORT
 , m_quicCredentials(CreateProductionQuicCredentials())
-, m_quicPlaceholderSession(CreateUnusedQuicSessionPlaceholder())
-, m_quicPlaceholderVerifier(std::make_unique<CQuicUnusedVerifier>())
 , m_quicSink(std::make_shared<CQuicUdpSink>(*this))
 , m_quicEngine(CreateProductionQuicNgtcp2Engine())
-, m_quicFactory(std::make_unique<CQuicNgtcp2Factory>(CQuicTlsPolicy{ m_quicPlaceholderSession.get(),
-							     m_quicCredentials.get(),
-							     m_quicPlaceholderVerifier.get(),
-							     m_quicPlaceholderSession.get() },
+, m_quicFactory(std::make_unique<CQuicNgtcp2Factory>(CQuicTlsPolicy{ m_quicCredentials.get() },
 	  m_quicSink,
 	  m_quicEngine,
 	  QuicLocalIdentityFromUserHash()))

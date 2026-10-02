@@ -24,7 +24,7 @@
 #ifndef QUICGNUTLSSESSION_H
 #define QUICGNUTLSSESSION_H
 
-#include "QuicLibraryAdapter.h"
+#include "QuicTls.h"
 
 #include <gnutls/gnutls.h>
 

@@ -474,7 +474,7 @@ TEST(QuicNgtcp2Handshake, ARealClientAndTheRealServerEngineCompleteTheHandshake)
 	ASSERT_TRUE(credentials.NativeGnuTlsCredentials() != nullptr);
 	ForeignSession session;
 	ForeignVerifier verifier;
-	CQuicTlsPolicy policy{ &session, &credentials, &verifier, &session };
+	CQuicTlsPolicy policy{ &credentials };
 
 	auto sink = std::make_shared<CollectingSink>();
 	auto engine = CreateProductionQuicNgtcp2Engine();
@@ -540,7 +540,7 @@ TEST(QuicNgtcp2Handshake, AcceptedStreamHandsOffToARealTransportThatReadsAndWrit
 	CQuicEphemeralCredentials credentials;
 	ForeignSession session;
 	ForeignVerifier verifier;
-	CQuicTlsPolicy policy{ &session, &credentials, &verifier, &session };
+	CQuicTlsPolicy policy{ &credentials };
 
 	auto sink = std::make_shared<CollectingSink>();
 	auto engine = CreateProductionQuicNgtcp2Engine();
@@ -613,7 +613,7 @@ TEST(QuicNgtcp2Handshake, LostFirstAttemptIsRetransmittedWithoutCorruptingTheRep
 	CQuicEphemeralCredentials credentials;
 	ForeignSession session;
 	ForeignVerifier verifier;
-	CQuicTlsPolicy policy{ &session, &credentials, &verifier, &session };
+	CQuicTlsPolicy policy{ &credentials };
 
 	auto sink = std::make_shared<CollectingSink>();
 	auto engine = CreateProductionQuicNgtcp2Engine();
@@ -683,7 +683,7 @@ TEST(QuicNgtcp2Handshake, TheStreamEndingClosesTheWholeConnection)
 	CQuicEphemeralCredentials credentials;
 	ForeignSession session;
 	ForeignVerifier verifier;
-	CQuicTlsPolicy policy{ &session, &credentials, &verifier, &session };
+	CQuicTlsPolicy policy{ &credentials };
 
 	auto sink = std::make_shared<CollectingSink>();
 	auto engine = CreateProductionQuicNgtcp2Engine();
@@ -722,7 +722,7 @@ TEST(QuicNgtcp2Handshake, FlowControlBlockDoesNotLoseTheStreamAndRecoversOnceUnb
 	CQuicEphemeralCredentials credentials;
 	ForeignSession session;
 	ForeignVerifier verifier;
-	CQuicTlsPolicy policy{ &session, &credentials, &verifier, &session };
+	CQuicTlsPolicy policy{ &credentials };
 
 	auto sink = std::make_shared<CollectingSink>();
 	auto engine = CreateProductionQuicNgtcp2Engine();
@@ -800,7 +800,7 @@ TEST(QuicNgtcp2Handshake, CloseFlushesQueuedDataBeforeEndingTheStreamCleanly)
 	CQuicEphemeralCredentials credentials;
 	ForeignSession session;
 	ForeignVerifier verifier;
-	CQuicTlsPolicy policy{ &session, &credentials, &verifier, &session };
+	CQuicTlsPolicy policy{ &credentials };
 
 	auto sink = std::make_shared<CollectingSink>();
 	auto engine = CreateProductionQuicNgtcp2Engine();
@@ -831,5 +831,113 @@ TEST(QuicNgtcp2Handshake, CloseFlushesQueuedDataBeforeEndingTheStreamCleanly)
 	}
 	sink->sent.clear();
 
+	ASSERT_TRUE(client.Received() == payload);
+}
+
+// Post-merge review audit (independent of got3nks' 9 findings, same PR #1710): the
+// unackedSendBytes + length > kReadWindow check in WriteStreamData() compared the caller's
+// whole offered chunk against the remaining budget, not what ngtcp2 could actually accept (one
+// packet's worth) -- a single prior write still unacknowledged could abort the stream over a
+// second write ngtcp2 would have happily split across many packets instead. Proves a large
+// write survives when something small is already unacknowledged, rather than ending the stream.
+TEST(QuicNgtcp2Handshake, LargeWriteWithUnackedDataPendingIsOfferedPartiallyInsteadOfAbortingTheStream)
+{
+	CQuicEphemeralCredentials credentials;
+	ForeignSession session;
+	ForeignVerifier verifier;
+	CQuicTlsPolicy policy{ &credentials };
+
+	auto sink = std::make_shared<CollectingSink>();
+	auto engine = CreateProductionQuicNgtcp2Engine();
+	CQuicNgtcp2Factory factory(policy, sink, engine, kTestServerIdentity);
+	AcceptingAcceptor acceptor;
+	factory.SetAcceptor(&acceptor);
+
+	CTestQuicClient client;
+	ASSERT_TRUE(client.Init());
+
+	std::unique_ptr<IQuicConnection> connection;
+	uint64_t nowMs = 0;
+	ASSERT_TRUE(DriveHandshake(client, factory, *sink, connection, nowMs));
+	ASSERT_TRUE(ExchangeEaqn1Proof(client, connection, *sink, nowMs));
+	ASSERT_TRUE(acceptor.accepted != nullptr);
+
+	// A small first write, never acknowledged, leaves unackedSendBytes non-zero -- the
+	// precondition the bug needed.
+	const std::vector<uint8_t> first(100, 'a');
+	ASSERT_EQUALS(static_cast<uint32_t>(first.size()),
+		acceptor.accepted->Write(first.data(), static_cast<uint32_t>(first.size())));
+	acceptor.accepted->Flush();
+	ASSERT_TRUE(!sink->sent.empty());
+	sink->sent.clear(); // Dropped: never delivered to the client, so it stays unacknowledged.
+
+	// The largest single write the transport itself ever allows (CQuicSocketTransport::
+	// kReadWindow is also its kWriteBound). With unackedSendBytes already non-zero, the old
+	// check would abort here even though ngtcp2 only needed to accept one packet's worth of it.
+	std::vector<uint8_t> big(CQuicSocketTransport::kReadWindow, 'b');
+	ASSERT_EQUALS(static_cast<uint32_t>(big.size()),
+		acceptor.accepted->Write(big.data(), static_cast<uint32_t>(big.size())));
+	acceptor.accepted->Flush();
+
+	ASSERT_TRUE(acceptor.accepted->IsConnected());
+	ASSERT_TRUE(acceptor.accepted->IsOk());
+	ASSERT_TRUE(!sink->sent.empty());
+}
+
+// Same audit as above: CQuicSocketTransport::Close() called WriteStream() through Flush() at
+// most once, handing ngtcp2 a single packet's worth regardless of how much was queued (up to
+// kWriteBound, 256KiB) -- CloseFlushesQueuedDataBeforeEndingTheStreamCleanly above never caught
+// this because its payload fit in one packet. Proves a payload spanning many packets still
+// arrives in full from one Write() immediately followed by Close(), with no Flush() between.
+TEST(QuicNgtcp2Handshake, CloseDrainsAQueueSpanningManyPacketsBeforeEndingTheStreamCleanly)
+{
+	CQuicEphemeralCredentials credentials;
+	ForeignSession session;
+	ForeignVerifier verifier;
+	CQuicTlsPolicy policy{ &credentials };
+
+	auto sink = std::make_shared<CollectingSink>();
+	auto engine = CreateProductionQuicNgtcp2Engine();
+	CQuicNgtcp2Factory factory(policy, sink, engine, kTestServerIdentity);
+	AcceptingAcceptor acceptor;
+	factory.SetAcceptor(&acceptor);
+
+	CTestQuicClient client;
+	ASSERT_TRUE(client.Init());
+
+	std::unique_ptr<IQuicConnection> connection;
+	uint64_t nowMs = 0;
+	ASSERT_TRUE(DriveHandshake(client, factory, *sink, connection, nowMs));
+	ASSERT_TRUE(ExchangeEaqn1Proof(client, connection, *sink, nowMs));
+	ASSERT_TRUE(acceptor.accepted != nullptr);
+
+	std::vector<uint8_t> payload(50 * 1024);
+	for (size_t i = 0; i < payload.size(); ++i) {
+		payload[i] = static_cast<uint8_t>(i);
+	}
+	ASSERT_EQUALS(static_cast<uint32_t>(payload.size()),
+		acceptor.accepted->Write(payload.data(), static_cast<uint32_t>(payload.size())));
+	acceptor.accepted->Close();
+	ASSERT_TRUE(!sink->sent.empty());
+
+	// kMaxUdpPayload-sized packets exceed ngtcp2's initial congestion window well before this
+	// payload is fully out: what Close() could not get through its own bounded loop keeps
+	// draining asynchronously afterward (CQuicSocketTransport::m_draining), driven by
+	// NotifyWritable() once real ACKs -- delivered back to the server below -- free up room.
+	// Round-trips, not a one-shot delivery, are what exercise that path.
+	constexpr int kMaxDrainRounds = 50;
+	for (int round = 0; round < kMaxDrainRounds && client.Received().size() < payload.size();
+		++round, nowMs += 20) {
+		for (const auto &datagram : sink->sent) {
+			ASSERT_TRUE(client.Receive(datagram, nowMs));
+		}
+		sink->sent.clear();
+		for (const auto &datagram : client.Pump(nowMs)) {
+			ASSERT_TRUE(connection->ProcessDatagram(datagram.data(), datagram.size(), nowMs));
+		}
+		connection->Tick(nowMs);
+	}
+
+	ASSERT_EQUALS(payload.size(), client.Received().size());
 	ASSERT_TRUE(client.Received() == payload);
 }

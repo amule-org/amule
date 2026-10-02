@@ -25,7 +25,7 @@
 #define QUICNGTCP2ADAPTER_H
 
 #include "QuicContext.h"
-#include "QuicLibraryAdapter.h"
+#include "QuicTls.h"
 
 #include <array>
 #include <cstddef>
@@ -36,6 +36,11 @@
 
 class CQuicSocketTransport;
 class IQuicStreamAcceptor;
+
+struct CQuicTlsPolicy
+{
+	const IQuicTlsCredentials *credentials = nullptr;
+};
 
 struct CQuicInitialMetadata
 {
