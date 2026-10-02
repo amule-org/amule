@@ -10,6 +10,7 @@ on:
       - 'unittests/**'
       - 'po/**'
       - 'config.h.cm'
+      - 'scripts/check-unique-ids.py'
       - '.github/workflows/ccpp.yml'
   pull_request:
     branches: [ "**" ]
@@ -20,6 +21,7 @@ on:
       - 'unittests/**'
       - 'po/**'
       - 'config.h.cm'
+      - 'scripts/check-unique-ids.py'
       - '.github/workflows/ccpp.yml'
 
 permissions:
@@ -131,6 +133,17 @@ env:
   ctest_kdf_tests: '^(CredentialsTest|AmuleApiConfigTest)$'
 
 jobs:
+  # Window IDs in muuli_wdr.h and each EC enum in the .abstract files must not repeat a value. Two
+  # branches can add the same number in different places and merge with no conflict; a window ID
+  # clash then crashes at runtime, and an EC one fails only Debug builds.
+  unique_ids:
+    name: Unique window IDs and EC codes
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - name: check
+        run: python3 scripts/check-unique-ids.py
+
   build_cmake_ubuntu:
     name: Build CMake Ubuntu (${{ matrix.build_type }})
     runs-on: ubuntu-24.04

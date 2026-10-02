@@ -159,8 +159,8 @@ wxSizer *messagePage(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TR
 #define IDC_FD_SHARE_SINCE 10472
 #define IDC_FD_SHARE_LASTUP 10473
 // File-details dialog: the Verify Local Data section.
-#define IDC_FD_VERIFY_STATUS 10512
-#define IDC_FD_VERIFY_DETAILS 10513
+#define IDC_FD_VERIFY_STATUS 10514
+#define IDC_FD_VERIFY_DETAILS 10515
 #define IDC_LISTCTRLFILENAMES 10051
 #define IDC_TAKEOVER 10052
 #define IDC_CMTBT 10053
