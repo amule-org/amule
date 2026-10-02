@@ -234,8 +234,11 @@ void CServerConnect::ConnectionEstablished(CServerSocket *sender)
 	}
 
 	if (sender->GetConnectionState() == CS_WAITFORLOGIN) {
-		AddLogLineN(CFormat(_("Connected to %s (%s:%i)")) % sender->cur_server->GetListName() %
-			    sender->cur_server->GetFullIP() % sender->cur_server->GetPort());
+		AddLogLineN(CFormat(_("Connected to %s (%s:%i), sending login request")) %
+			    sender->cur_server->GetListName() % sender->cur_server->GetFullIP() %
+			    (sender->IsServerCryptEnabledConnection()
+					    ? sender->cur_server->GetObfuscationPortTCP()
+					    : sender->cur_server->GetPort()));
 
 		// A new server connection is the moment our outward-facing address is most likely
 		// to have just changed -- a reconnect after a link came back up lands here. Peers
@@ -308,7 +311,14 @@ void CServerConnect::ConnectionEstablished(CServerSocket *sender)
 		theStats::AddReconnect();
 		theStats::GetServerConnectTimer()->ResetTimer();
 		connected = true;
-		AddLogLineC(CFormat(_("Connection established on: %s")) % sender->cur_server->GetListName());
+		const bool obfuscated = sender->IsObfusicating();
+		wxString established = CFormat(obfuscated ? _("Obfuscated connection established on: %s")
+							  : _("Connection established on: %s")) %
+				       sender->cur_server->GetListName();
+		established += CFormat(" (%s:%i)") % sender->cur_server->GetFullIP() %
+			       (obfuscated ? sender->cur_server->GetObfuscationPortTCP()
+					   : sender->cur_server->GetPort());
+		AddLogLineC(established);
 		connectedsocket = sender;
 
 		StopConnectionTry();
@@ -564,6 +574,14 @@ CServerConnect::~CServerConnect()
 	DestroySocket(connectedsocket);
 	connectedsocket = NULL;
 	delete serverudpsocket;
+}
+
+CServer *CServerConnect::GetConnectingServer() const
+{
+	if (connecting && connectionattemps.size() == 1) {
+		return connectionattemps.begin()->second->cur_server;
+	}
+	return nullptr;
 }
 
 CServer *CServerConnect::GetCurrentServer()

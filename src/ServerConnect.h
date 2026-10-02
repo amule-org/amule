@@ -84,6 +84,9 @@ public:
 	bool IsConnected() { return connected; }
 	uint32 GetClientID() { return clientid; }
 	CServer *GetCurrentServer();
+	// The server being connected to while exactly one attempt is running, else nullptr: a
+	// multi-server connect tries several at once.
+	CServer *GetConnectingServer() const;
 	uint32 clientid;
 	bool IsLowID() { return ::IsLowID(clientid); }
 	void SetClientID(uint32 newid);
