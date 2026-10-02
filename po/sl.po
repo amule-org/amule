@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-30 19:39+0800\n"
+"POT-Creation-Date: 2026-10-02 13:03+0200\n"
 "PO-Revision-Date: 2026-10-02 00:50+0000\n"
 "Last-Translator: Jure Repinc <jlp@holodeck1.com>\n"
 "Language-Team: Slovenian\n"
@@ -701,6 +701,10 @@ msgstr "Povezano na %s %s"
 msgid "Connecting to %s"
 msgstr "Povezovanje z %s"
 
+#: src/amule.cpp src/amule-remote-gui.cpp
+msgid "Connecting..."
+msgstr "Povezovanje …"
+
 #: src/amule.cpp
 msgid "Disconnected from eD2k"
 msgstr "Povezava z eD2k prekinjena"
@@ -1071,10 +1075,6 @@ msgstr "Usodna napaka: ni bilo mogoče ustvariti časomerilnika za povpraševanj
 #: src/amule-remote-gui.cpp
 msgid "Going to event loop..."
 msgstr "Prehod v dogodkovno zanko …"
-
-#: src/amule-remote-gui.cpp
-msgid "Connecting..."
-msgstr "Povezovanje …"
 
 #: src/amule-remote-gui.cpp
 msgid "Connection failed. Please check the host, port, and password."
@@ -7110,9 +7110,14 @@ msgid "No valid servers to which to connect found in server list"
 msgstr "Na seznamu ni bilo moč najti nobenega veljavnega strežnika za povezavo"
 
 #: src/ServerConnect.cpp
-#, c-format
-msgid "Connected to %s (%s:%i)"
+#, fuzzy, c-format
+msgid "Connected to %s (%s:%i), sending login request"
 msgstr "Povezano na %s (%s:%i)"
+
+#: src/ServerConnect.cpp
+#, fuzzy, c-format
+msgid "Obfuscated connection established on: %s"
+msgstr "Povezava vzpostavljena z: %s"
 
 #: src/ServerConnect.cpp
 #, c-format

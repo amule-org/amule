@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-30 19:39+0800\n"
+"POT-Creation-Date: 2026-10-02 13:03+0200\n"
 "PO-Revision-Date: 2026-10-02 00:53+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
@@ -692,6 +692,10 @@ msgstr "Pieslēgts %s %s"
 msgid "Connecting to %s"
 msgstr "Pieslēdzas %s"
 
+#: src/amule.cpp src/amule-remote-gui.cpp
+msgid "Connecting..."
+msgstr "Pieslēdzas…"
+
 #: src/amule.cpp
 msgid "Disconnected from eD2k"
 msgstr "Atslēgts no eD2k"
@@ -1060,10 +1064,6 @@ msgstr "Kritiska kļūda: neizdevās izveidot aptaujas taimeri"
 #: src/amule-remote-gui.cpp
 msgid "Going to event loop..."
 msgstr "Pāreja uz notikumu ciklu..."
-
-#: src/amule-remote-gui.cpp
-msgid "Connecting..."
-msgstr "Pieslēdzas…"
 
 #: src/amule-remote-gui.cpp
 msgid "Connection failed. Please check the host, port, and password."
@@ -7029,9 +7029,14 @@ msgid "No valid servers to which to connect found in server list"
 msgstr "Serveru sarakstā nav atrasts neviens derīgs serveris, ar kuru izveidot savienojumu"
 
 #: src/ServerConnect.cpp
-#, c-format
-msgid "Connected to %s (%s:%i)"
+#, fuzzy, c-format
+msgid "Connected to %s (%s:%i), sending login request"
 msgstr "Pieslēgts %s (%s:%i)"
+
+#: src/ServerConnect.cpp
+#, fuzzy, c-format
+msgid "Obfuscated connection established on: %s"
+msgstr "Savienojums izveidots: %s"
 
 #: src/ServerConnect.cpp
 #, c-format

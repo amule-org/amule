@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-30 19:39+0800\n"
+"POT-Creation-Date: 2026-10-02 13:03+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -662,6 +662,10 @@ msgstr ""
 msgid "Connecting to %s"
 msgstr ""
 
+#: src/amule.cpp src/amule-remote-gui.cpp
+msgid "Connecting..."
+msgstr ""
+
 #: src/amule.cpp
 msgid "Disconnected from eD2k"
 msgstr ""
@@ -1019,10 +1023,6 @@ msgstr ""
 
 #: src/amule-remote-gui.cpp
 msgid "Going to event loop..."
-msgstr ""
-
-#: src/amule-remote-gui.cpp
-msgid "Connecting..."
 msgstr ""
 
 #: src/amule-remote-gui.cpp
@@ -6846,7 +6846,12 @@ msgstr ""
 
 #: src/ServerConnect.cpp
 #, c-format
-msgid "Connected to %s (%s:%i)"
+msgid "Connected to %s (%s:%i), sending login request"
+msgstr ""
+
+#: src/ServerConnect.cpp
+#, c-format
+msgid "Obfuscated connection established on: %s"
 msgstr ""
 
 #: src/ServerConnect.cpp

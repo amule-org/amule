@@ -17,7 +17,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-30 19:39+0800\n"
+"POT-Creation-Date: 2026-10-02 13:03+0200\n"
 "PO-Revision-Date: 2026-10-02 00:49+0000\n"
 "Last-Translator: Luís Picciochi Oliveira <Pitxyoki@Gmail.com>\n"
 "Language-Team: Portuguese <traduz@debianpt.org>\n"
@@ -705,6 +705,10 @@ msgstr "Ligado a %s %s"
 msgid "Connecting to %s"
 msgstr "A ligar a %s"
 
+#: src/amule.cpp src/amule-remote-gui.cpp
+msgid "Connecting..."
+msgstr "A Ligar..."
+
 #: src/amule.cpp
 msgid "Disconnected from eD2k"
 msgstr "Desligado da eD2k"
@@ -1075,10 +1079,6 @@ msgstr "Erro Fatal: Falha ao criar o 'Poll Timer'"
 #: src/amule-remote-gui.cpp
 msgid "Going to event loop..."
 msgstr "A ir para o ciclo de eventos..."
-
-#: src/amule-remote-gui.cpp
-msgid "Connecting..."
-msgstr "A Ligar..."
 
 #: src/amule-remote-gui.cpp
 msgid "Connection failed. Please check the host, port, and password."
@@ -7046,9 +7046,14 @@ msgid "No valid servers to which to connect found in server list"
 msgstr "Não há servidores válidos para ligar na lista de servidores"
 
 #: src/ServerConnect.cpp
-#, c-format
-msgid "Connected to %s (%s:%i)"
+#, fuzzy, c-format
+msgid "Connected to %s (%s:%i), sending login request"
 msgstr "Ligado a %s (%s:%i)"
+
+#: src/ServerConnect.cpp
+#, fuzzy, c-format
+msgid "Obfuscated connection established on: %s"
+msgstr "Ligação estabelecida a: %s"
 
 #: src/ServerConnect.cpp
 #, c-format

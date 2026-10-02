@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-30 19:39+0800\n"
+"POT-Creation-Date: 2026-10-02 13:03+0200\n"
 "PO-Revision-Date: 2026-10-02 00:47+0000\n"
 "Last-Translator: Peace Kramer <kpeace1@gmail.com>\n"
 "Language-Team: Hebrew\n"
@@ -698,6 +698,10 @@ msgstr "מחובר אל %s %s"
 msgid "Connecting to %s"
 msgstr "מתחבר אל %s"
 
+#: src/amule.cpp src/amule-remote-gui.cpp
+msgid "Connecting..."
+msgstr "מתחבר..."
+
 #: src/amule.cpp
 msgid "Disconnected from eD2k"
 msgstr "מנותק מ-eD2k"
@@ -1068,10 +1072,6 @@ msgstr "שגיאה קריטית: יצירת טיימר התשאול נכשלה"
 #: src/amule-remote-gui.cpp
 msgid "Going to event loop..."
 msgstr "עובר ללולאת האירועים..."
-
-#: src/amule-remote-gui.cpp
-msgid "Connecting..."
-msgstr "מתחבר..."
 
 #: src/amule-remote-gui.cpp
 msgid "Connection failed. Please check the host, port, and password."
@@ -7031,9 +7031,14 @@ msgid "No valid servers to which to connect found in server list"
 msgstr "לא נמצאו שרתים תקינים להתחברות ברשימת השרתים"
 
 #: src/ServerConnect.cpp
-#, c-format
-msgid "Connected to %s (%s:%i)"
+#, fuzzy, c-format
+msgid "Connected to %s (%s:%i), sending login request"
 msgstr "מחובר ל %s·(%s:%i)"
+
+#: src/ServerConnect.cpp
+#, fuzzy, c-format
+msgid "Obfuscated connection established on: %s"
+msgstr "חיבור הוקם ל: %s"
 
 #: src/ServerConnect.cpp
 #, c-format

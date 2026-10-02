@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-30 19:39+0800\n"
+"POT-Creation-Date: 2026-10-02 13:03+0200\n"
 "PO-Revision-Date: 2026-10-02 00:52+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
@@ -687,6 +687,10 @@ msgstr "%s %s-এ সংযুক্ত"
 msgid "Connecting to %s"
 msgstr "%s-এ সংযোগ করা হচ্ছে"
 
+#: src/amule.cpp src/amule-remote-gui.cpp
+msgid "Connecting..."
+msgstr "সংযোগ করা হচ্ছে…"
+
 #: src/amule.cpp
 msgid "Disconnected from eD2k"
 msgstr "eD2k থেকে সংযোগ বিচ্ছিন্ন"
@@ -1054,10 +1058,6 @@ msgstr "মারাত্মক ত্রুটি: পোল টাইমা�
 #: src/amule-remote-gui.cpp
 msgid "Going to event loop..."
 msgstr "ইভেন্ট লুপে যাওয়া হচ্ছে…"
-
-#: src/amule-remote-gui.cpp
-msgid "Connecting..."
-msgstr "সংযোগ করা হচ্ছে…"
 
 #: src/amule-remote-gui.cpp
 msgid "Connection failed. Please check the host, port, and password."
@@ -6977,9 +6977,14 @@ msgid "No valid servers to which to connect found in server list"
 msgstr "সার্ভার তালিকায় সংযোগের জন্য কোনো বৈধ সার্ভার পাওয়া যায়নি"
 
 #: src/ServerConnect.cpp
-#, c-format
-msgid "Connected to %s (%s:%i)"
+#, fuzzy, c-format
+msgid "Connected to %s (%s:%i), sending login request"
 msgstr "%s (%s:%i) এর সাথে সংযুক্ত"
+
+#: src/ServerConnect.cpp
+#, fuzzy, c-format
+msgid "Obfuscated connection established on: %s"
+msgstr "সংযোগ স্থাপিত হয়েছে: %s"
 
 #: src/ServerConnect.cpp
 #, c-format

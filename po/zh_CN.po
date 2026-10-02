@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-30 19:39+0800\n"
+"POT-Creation-Date: 2026-10-02 13:03+0200\n"
 "PO-Revision-Date: 2026-10-02 00:51+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
@@ -717,6 +717,10 @@ msgstr "已连接到 %s %s"
 msgid "Connecting to %s"
 msgstr "正在连接到 %s"
 
+#: src/amule.cpp src/amule-remote-gui.cpp
+msgid "Connecting..."
+msgstr "正在连接..."
+
 #: src/amule.cpp
 msgid "Disconnected from eD2k"
 msgstr "已从 eD2k 断开"
@@ -1084,10 +1088,6 @@ msgstr "严重错误：无法建立轮询计时器"
 #: src/amule-remote-gui.cpp
 msgid "Going to event loop..."
 msgstr "准备事件循环..."
-
-#: src/amule-remote-gui.cpp
-msgid "Connecting..."
-msgstr "正在连接..."
 
 #: src/amule-remote-gui.cpp
 msgid "Connection failed. Please check the host, port, and password."
@@ -7020,9 +7020,14 @@ msgid "No valid servers to which to connect found in server list"
 msgstr "服务器列表中没有可以连接的服务器"
 
 #: src/ServerConnect.cpp
-#, c-format
-msgid "Connected to %s (%s:%i)"
+#, fuzzy, c-format
+msgid "Connected to %s (%s:%i), sending login request"
 msgstr "已连接至 %s (%s:%i)"
+
+#: src/ServerConnect.cpp
+#, fuzzy, c-format
+msgid "Obfuscated connection established on: %s"
+msgstr "已成功连接到：%s"
 
 #: src/ServerConnect.cpp
 #, c-format

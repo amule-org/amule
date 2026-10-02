@@ -15,7 +15,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-30 19:39+0800\n"
+"POT-Creation-Date: 2026-10-02 13:03+0200\n"
 "PO-Revision-Date: 2026-10-02 00:45+0000\n"
 "Last-Translator: Diego Heras <ngosang@hotmail.es>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/amule/amule-application/es/>\n"
@@ -706,6 +706,10 @@ msgstr "Conectado a %s %s"
 msgid "Connecting to %s"
 msgstr "Conectando a %s"
 
+#: src/amule.cpp src/amule-remote-gui.cpp
+msgid "Connecting..."
+msgstr "Conectando..."
+
 #: src/amule.cpp
 msgid "Disconnected from eD2k"
 msgstr "Desconectado de eD2k"
@@ -1073,10 +1077,6 @@ msgstr "Error fatal: no se ha podido crear el temporizador de sondeo"
 #: src/amule-remote-gui.cpp
 msgid "Going to event loop..."
 msgstr "Entrando en el bucle de eventos..."
-
-#: src/amule-remote-gui.cpp
-msgid "Connecting..."
-msgstr "Conectando..."
 
 #: src/amule-remote-gui.cpp
 msgid "Connection failed. Please check the host, port, and password."
@@ -7005,9 +7005,14 @@ msgid "No valid servers to which to connect found in server list"
 msgstr "No se han encontrado servidores válidos a los que conectar en la lista de servidores"
 
 #: src/ServerConnect.cpp
-#, c-format
-msgid "Connected to %s (%s:%i)"
+#, fuzzy, c-format
+msgid "Connected to %s (%s:%i), sending login request"
 msgstr "Conectado a %s (%s:%i)"
+
+#: src/ServerConnect.cpp
+#, fuzzy, c-format
+msgid "Obfuscated connection established on: %s"
+msgstr "Conexión establecida en: %s"
 
 #: src/ServerConnect.cpp
 #, c-format

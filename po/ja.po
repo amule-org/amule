@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-30 19:39+0800\n"
+"POT-Creation-Date: 2026-10-02 13:03+0200\n"
 "PO-Revision-Date: 2026-10-02 00:48+0000\n"
 "Last-Translator: \n"
 "Language-Team: Japanese\n"
@@ -695,6 +695,10 @@ msgstr "接続しています：%s %s"
 msgid "Connecting to %s"
 msgstr "%sに接続中です"
 
+#: src/amule.cpp src/amule-remote-gui.cpp
+msgid "Connecting..."
+msgstr "接続中…"
+
 #: src/amule.cpp
 msgid "Disconnected from eD2k"
 msgstr "eD2kから切断されました"
@@ -1065,10 +1069,6 @@ msgstr "致命的なエラー：ポーリングタイマーの作成に失敗し
 #: src/amule-remote-gui.cpp
 msgid "Going to event loop..."
 msgstr "イベントループに入っています…"
-
-#: src/amule-remote-gui.cpp
-msgid "Connecting..."
-msgstr "接続中…"
 
 #: src/amule-remote-gui.cpp
 msgid "Connection failed. Please check the host, port, and password."
@@ -6998,9 +6998,14 @@ msgid "No valid servers to which to connect found in server list"
 msgstr "サーバリスト内に接続可能な有効なサーバが見つかりません"
 
 #: src/ServerConnect.cpp
-#, c-format
-msgid "Connected to %s (%s:%i)"
+#, fuzzy, c-format
+msgid "Connected to %s (%s:%i), sending login request"
 msgstr "%s（%s：%i）に接続しています"
+
+#: src/ServerConnect.cpp
+#, fuzzy, c-format
+msgid "Obfuscated connection established on: %s"
+msgstr " %s に接続を確立しました"
 
 #: src/ServerConnect.cpp
 #, c-format

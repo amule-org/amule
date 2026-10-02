@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-30 19:39+0800\n"
+"POT-Creation-Date: 2026-10-02 13:03+0200\n"
 "PO-Revision-Date: 2026-10-02 00:51+0000\n"
 "Last-Translator: \n"
 "Language-Team: Turkish <li@li.org>\n"
@@ -701,6 +701,10 @@ msgstr "Bağlandı: %s %s"
 msgid "Connecting to %s"
 msgstr "Bağlanıyor: %s"
 
+#: src/amule.cpp src/amule-remote-gui.cpp
+msgid "Connecting..."
+msgstr "Bağlanıyor…"
+
 #: src/amule.cpp
 msgid "Disconnected from eD2k"
 msgstr "eD2k Bağlantısı kesildi"
@@ -1068,10 +1072,6 @@ msgstr "Önemli Hata: Havuz Zamanlayıcı oluşturulamadı"
 #: src/amule-remote-gui.cpp
 msgid "Going to event loop..."
 msgstr "Olay döngüsüne gidiliyor…"
-
-#: src/amule-remote-gui.cpp
-msgid "Connecting..."
-msgstr "Bağlanıyor…"
 
 #: src/amule-remote-gui.cpp
 msgid "Connection failed. Please check the host, port, and password."
@@ -7001,9 +7001,14 @@ msgid "No valid servers to which to connect found in server list"
 msgstr "Sunucu listesinde bağlanılabilecek geçerli bir sunucu yok"
 
 #: src/ServerConnect.cpp
-#, c-format
-msgid "Connected to %s (%s:%i)"
+#, fuzzy, c-format
+msgid "Connected to %s (%s:%i), sending login request"
 msgstr "%s (%s:%i) unsuruna bağlanıldı"
+
+#: src/ServerConnect.cpp
+#, fuzzy, c-format
+msgid "Obfuscated connection established on: %s"
+msgstr "%s sunucusuna bağlanıldı"
 
 #: src/ServerConnect.cpp
 #, c-format

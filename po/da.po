@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-30 19:39+0800\n"
+"POT-Creation-Date: 2026-10-02 13:03+0200\n"
 "PO-Revision-Date: 2026-10-02 00:44+0000\n"
 "Last-Translator: Alex Thomsen Leth <alexl@stofanet.dk>\n"
 "Language-Team: aMule Team <https://github.com/amule-org/amule>\n"
@@ -698,6 +698,10 @@ msgstr "Forbundet til %s %s"
 msgid "Connecting to %s"
 msgstr "Forbundet til %s"
 
+#: src/amule.cpp src/amule-remote-gui.cpp
+msgid "Connecting..."
+msgstr "Forbinder..."
+
 #: src/amule.cpp
 msgid "Disconnected from eD2k"
 msgstr "Afbrudt fra eD2k"
@@ -1068,10 +1072,6 @@ msgstr "Fatal fejl: Kunne ikke oprette poll-timer"
 #: src/amule-remote-gui.cpp
 msgid "Going to event loop..."
 msgstr "Går ind i hændelsesløkke..."
-
-#: src/amule-remote-gui.cpp
-msgid "Connecting..."
-msgstr "Forbinder..."
 
 #: src/amule-remote-gui.cpp
 msgid "Connection failed. Please check the host, port, and password."
@@ -7031,9 +7031,14 @@ msgid "No valid servers to which to connect found in server list"
 msgstr "Ingen gyldige servere at oprette forbindelse til fundet i serverlisten"
 
 #: src/ServerConnect.cpp
-#, c-format
-msgid "Connected to %s (%s:%i)"
+#, fuzzy, c-format
+msgid "Connected to %s (%s:%i), sending login request"
 msgstr "Forbundet til %s (%s:%i)"
+
+#: src/ServerConnect.cpp
+#, fuzzy, c-format
+msgid "Obfuscated connection established on: %s"
+msgstr "Forbindelse oprettet til: %s"
 
 #: src/ServerConnect.cpp
 #, c-format

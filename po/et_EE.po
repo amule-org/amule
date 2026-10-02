@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-30 19:39+0800\n"
+"POT-Creation-Date: 2026-10-02 13:03+0200\n"
 "PO-Revision-Date: 2026-10-02 00:46+0000\n"
 "Last-Translator: \n"
 "Language-Team: Estonian <kde-i18n-doc@kde.org>\n"
@@ -698,6 +698,10 @@ msgstr "Ühendatud %s %s"
 msgid "Connecting to %s"
 msgstr "Ühendun %s"
 
+#: src/amule.cpp src/amule-remote-gui.cpp
+msgid "Connecting..."
+msgstr "Ühendun..."
+
 #: src/amule.cpp
 msgid "Disconnected from eD2k"
 msgstr "eD2k ühendus katkestatud."
@@ -1068,10 +1072,6 @@ msgstr "Fataalne VIGA: Ei suutnud luua Poll stopperit."
 #: src/amule-remote-gui.cpp
 msgid "Going to event loop..."
 msgstr "Lähen tegevuse tsüklisse..."
-
-#: src/amule-remote-gui.cpp
-msgid "Connecting..."
-msgstr "Ühendun..."
 
 #: src/amule-remote-gui.cpp
 msgid "Connection failed. Please check the host, port, and password."
@@ -7033,9 +7033,14 @@ msgid "No valid servers to which to connect found in server list"
 msgstr "Serverite loetelus pole ühendumiseks sobivat kehtivat serverit"
 
 #: src/ServerConnect.cpp
-#, c-format
-msgid "Connected to %s (%s:%i)"
+#, fuzzy, c-format
+msgid "Connected to %s (%s:%i), sending login request"
 msgstr "Ühendus %s (%s:%i)"
+
+#: src/ServerConnect.cpp
+#, fuzzy, c-format
+msgid "Obfuscated connection established on: %s"
+msgstr "Ühendus loodud: %s"
 
 #: src/ServerConnect.cpp
 #, c-format

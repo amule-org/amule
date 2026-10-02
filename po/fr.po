@@ -15,7 +15,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-30 19:39+0800\n"
+"POT-Creation-Date: 2026-10-02 13:03+0200\n"
 "PO-Revision-Date: 2026-10-02 00:46+0000\n"
 "Last-Translator: Dylan Aïssi <bob.dybian@gmail.com>\n"
 "Language-Team: Français\n"
@@ -708,6 +708,10 @@ msgstr "Connecté à %s %s"
 msgid "Connecting to %s"
 msgstr "Connexion à %s"
 
+#: src/amule.cpp src/amule-remote-gui.cpp
+msgid "Connecting..."
+msgstr "Connexion…"
+
 #: src/amule.cpp
 msgid "Disconnected from eD2k"
 msgstr "Déconnecté de eD2k"
@@ -1075,10 +1079,6 @@ msgstr "Erreur Fatale : Échec de la création du minuteur d'interrogation"
 #: src/amule-remote-gui.cpp
 msgid "Going to event loop..."
 msgstr "Départ vers la boucle d'événement…"
-
-#: src/amule-remote-gui.cpp
-msgid "Connecting..."
-msgstr "Connexion…"
 
 #: src/amule-remote-gui.cpp
 msgid "Connection failed. Please check the host, port, and password."
@@ -7008,9 +7008,14 @@ msgid "No valid servers to which to connect found in server list"
 msgstr "Aucun serveur valide auquel se connecter n'a été trouvé dans la liste des serveurs"
 
 #: src/ServerConnect.cpp
-#, c-format
-msgid "Connected to %s (%s:%i)"
+#, fuzzy, c-format
+msgid "Connected to %s (%s:%i), sending login request"
 msgstr "Connecté à %s (%s : %i)"
+
+#: src/ServerConnect.cpp
+#, fuzzy, c-format
+msgid "Obfuscated connection established on: %s"
+msgstr "Connexion établie sur : %s"
 
 #: src/ServerConnect.cpp
 #, c-format

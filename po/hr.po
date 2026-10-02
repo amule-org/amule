@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-09-30 19:39+0800\n"
+"POT-Creation-Date: 2026-10-02 13:03+0200\n"
 "PO-Revision-Date: 2026-10-02 00:47+0000\n"
 "Last-Translator: Sebastiano Pistore <sebastiano.pistore.info@aol.com>\n"
 "Language-Team: https://github.com/amule-org/amule <forum@aMule.org>\n"
@@ -681,6 +681,11 @@ msgstr ""
 msgid "Connecting to %s"
 msgstr ""
 
+#: src/amule.cpp src/amule-remote-gui.cpp
+#, fuzzy
+msgid "Connecting..."
+msgstr "Spajanje"
+
 #: src/amule.cpp
 msgid "Disconnected from eD2k"
 msgstr ""
@@ -1049,11 +1054,6 @@ msgstr "Fatalna greska: Neuspjesno stvaranje tajmera"
 #: src/amule-remote-gui.cpp
 msgid "Going to event loop..."
 msgstr ""
-
-#: src/amule-remote-gui.cpp
-#, fuzzy
-msgid "Connecting..."
-msgstr "Spajanje"
 
 #: src/amule-remote-gui.cpp
 msgid "Connection failed. Please check the host, port, and password."
@@ -7030,9 +7030,14 @@ msgid "No valid servers to which to connect found in server list"
 msgstr ""
 
 #: src/ServerConnect.cpp
-#, c-format
-msgid "Connected to %s (%s:%i)"
+#, fuzzy, c-format
+msgid "Connected to %s (%s:%i), sending login request"
 msgstr "Spojen sa %s (%s:%i)"
+
+#: src/ServerConnect.cpp
+#, fuzzy, c-format
+msgid "Obfuscated connection established on: %s"
+msgstr "Uspostavljena veza sa: %s"
 
 #: src/ServerConnect.cpp
 #, c-format
