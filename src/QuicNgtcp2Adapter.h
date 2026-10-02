@@ -108,9 +108,20 @@ public:
 		const CNetworkAddress &address,
 		uint16_t port,
 		uint64_t nowMs) = 0;
-	//! Abruptly closes the peer's stream (ngtcp2_conn_shutdown_stream()). Does not close the
-	//! connection itself: a stream ending is not a QUIC-level connection event.
+	//! Abruptly closes the peer's stream (ngtcp2_conn_shutdown_stream()). This resets the stream
+	//! -- IsStreamEnded() is what notices the stream is gone either way (reset or a clean close)
+	//! and is how the owning connection actually decides to end itself over it.
 	virtual void ShutdownStream(Handle) = 0;
+	//! True once this connection's one stream has ended -- cleanly (ngtcp2's stream_close) or by
+	//! reset (stream_reset), from either side. With exactly one stream per connection by design
+	//! (QuicSocketTransport.h), there is nothing left to use the connection for past this point.
+	virtual bool IsStreamEnded(Handle) const = 0;
+	//! Sends CONNECTION_CLOSE and destroys the connection, in one call: ngtcp2 forbids calling
+	//! ngtcp2_conn_write_connection_close() from inside a callback, so this cannot be folded into
+	//! the stream_close/stream_reset callbacks IsStreamEnded() reads -- the caller makes this call
+	//! once Read()/Flush()/Tick() has already returned.
+	virtual void EndConnection(
+		Handle, IQuicDatagramSink &, const CNetworkAddress &, uint16_t, uint64_t nowMs) = 0;
 	virtual void Destroy(Handle) = 0;
 };
 

@@ -306,8 +306,11 @@ public:
 
 	//! Opens this client's one bidirectional stream on first use, then sends @p payload on it,
 	//! as separate outgoing datagrams. eD2k only ever replies on the peer's stream
-	//! (QuicSocketTransport.h), so the server side never opens one of its own.
-	std::vector<std::vector<uint8_t>> SendOnStream(const std::vector<uint8_t> &payload, uint64_t nowMs)
+	//! (QuicSocketTransport.h), so the server side never opens one of its own. @p fin marks this
+	//! as the last data this client will ever send on the stream (NGTCP2_STREAM_DATA_FLAG_FIN on
+	//! the server's receiving end).
+	std::vector<std::vector<uint8_t>> SendOnStream(
+		const std::vector<uint8_t> &payload, uint64_t nowMs, bool fin = false)
 	{
 		if (m_streamId < 0 && ngtcp2_conn_open_bidi_stream(m_conn, &m_streamId, nullptr) != 0) {
 			return {};
@@ -315,6 +318,7 @@ public:
 		std::vector<std::vector<uint8_t>> out;
 		const ngtcp2_tstamp ts = nowMs * UINT64_C(1000000);
 		const ngtcp2_vec vec{ const_cast<uint8_t *>(payload.data()), payload.size() };
+		const uint32_t flags = fin ? NGTCP2_WRITE_STREAM_FLAG_FIN : NGTCP2_WRITE_STREAM_FLAG_NONE;
 		bool dataSent = payload.empty();
 		for (int round = 0; round < kMaxPacketsPerPump; ++round) {
 			uint8_t buf[kMaxUdpPayload];
@@ -328,7 +332,7 @@ public:
 				buf,
 				sizeof(buf),
 				&dataLen,
-				0,
+				flags,
 				m_streamId,
 				dataSent ? nullptr : &vec,
 				dataSent ? 0 : 1,
@@ -660,4 +664,41 @@ TEST(QuicNgtcp2Handshake, LostFirstAttemptIsRetransmittedWithoutCorruptingTheRep
 	}
 
 	ASSERT_TRUE(client.Received() == reply2);
+}
+
+// got3nks' review on #1710 (finding #4, High): with exactly one stream per connection by design,
+// nothing previously noticed when that stream ended -- the connection just sat there, occupying
+// one of CQuicContext::kMaxConnectionsPerScope's slots, until the idle timeout eventually caught
+// up with it. Proves the real engine's FIN handling actually ends the connection promptly.
+TEST(QuicNgtcp2Handshake, TheStreamEndingClosesTheWholeConnection)
+{
+	CQuicEphemeralCredentials credentials;
+	ForeignSession session;
+	ForeignVerifier verifier;
+	CQuicTlsPolicy policy{ &session, &credentials, &verifier, &session };
+
+	auto sink = std::make_shared<CollectingSink>();
+	auto engine = CreateProductionQuicNgtcp2Engine();
+	CQuicNgtcp2Factory factory(policy, sink, engine, kTestServerIdentity);
+	AcceptingAcceptor acceptor;
+	factory.SetAcceptor(&acceptor);
+
+	CTestQuicClient client;
+	ASSERT_TRUE(client.Init());
+
+	std::unique_ptr<IQuicConnection> connection;
+	uint64_t nowMs = 0;
+	ASSERT_TRUE(DriveHandshake(client, factory, *sink, connection, nowMs));
+	ASSERT_TRUE(ExchangeEaqn1Proof(client, connection, *sink, nowMs));
+	ASSERT_TRUE(acceptor.accepted != nullptr);
+	ASSERT_TRUE(!connection->IsClosed());
+
+	// fin=true: the client declares it will never send anything else on this stream, the same
+	// as eD2k closing its half of a TCP connection would.
+	const std::vector<uint8_t> payload{ 'b', 'y', 'e' };
+	for (const auto &datagram : client.SendOnStream(payload, nowMs, /*fin=*/true)) {
+		connection->ProcessDatagram(datagram.data(), datagram.size(), nowMs);
+	}
+
+	ASSERT_TRUE(connection->IsClosed());
 }

@@ -175,6 +175,7 @@ public:
 			return false;
 		}
 		OfferStreamIfJustOpened();
+		EndConnectionIfStreamEnded(nowMs);
 		return true;
 	}
 
@@ -207,7 +208,9 @@ public:
 		m_lastNowMs = nowMs;
 		if (!m_engine->Tick(m_handle, *m_sink, m_address, m_port, nowMs)) {
 			Close();
+			return;
 		}
+		EndConnectionIfStreamEnded(nowMs);
 	}
 
 	// IQuicStreamOperations: CQuicSocketTransport's handle is this connection's own
@@ -334,6 +337,21 @@ private:
 		return true;
 	}
 
+	//! With exactly one stream per connection by design (QuicSocketTransport.h), that stream
+	//! ending -- cleanly (stream_close) or by reset (stream_reset), from either side -- leaves
+	//! nothing left to use this connection for. Without this, a connection whose stream ended
+	//! stays alive doing nothing until CQuicContext::kIdleTimeoutMs finally reclaims it: every
+	//! finished eD2k session would hold one of CQuicContext::kMaxConnectionsPerScope's slots for
+	//! up to a minute after it had nothing left to do.
+	void EndConnectionIfStreamEnded(uint64_t nowMs)
+	{
+		if (!m_closed && m_engine->IsStreamEnded(m_handle)) {
+			m_engine->EndConnection(m_handle, *m_sink, m_address, m_port, nowMs);
+			m_closed = true;
+			m_handle = nullptr;
+		}
+	}
+
 	std::shared_ptr<IQuicNgtcp2Engine> m_engine;
 	std::shared_ptr<IQuicDatagramSink> m_sink;
 	IQuicNgtcp2Engine::Handle m_handle;
@@ -378,7 +396,7 @@ public:
 	}
 
 	static int OnRecvStreamData(ngtcp2_conn *conn,
-		uint32_t,
+		uint32_t flags,
 		int64_t streamId,
 		uint64_t,
 		const uint8_t *data,
@@ -405,7 +423,38 @@ public:
 		} else {
 			it->second.receivedData.insert(it->second.receivedData.end(), data, data + datalen);
 		}
+		// The peer will send no more on this stream -- IsStreamEnded() picks this up the same way
+		// it does stream_close/stream_reset below, from the earliest signal rather than waiting on
+		// confirmation that both sides are fully done.
+		if (flags & NGTCP2_STREAM_DATA_FLAG_FIN) {
+			it->second.streamEnded = true;
+		}
 
+		return 0;
+	}
+
+	// stream_close is not called if the connection itself closes first -- irrelevant here, since
+	// that only happens once this same streamEnded flag has already made EndConnection() do
+	// exactly that.
+	static int OnStreamClose(
+		ngtcp2_conn *conn, uint32_t, int64_t streamId, uint64_t, void *userData, void *)
+	{
+		auto *engine = static_cast<CProductionNgtcp2Engine *>(userData);
+		auto it = engine->m_connections.find(conn);
+		if (it != engine->m_connections.end() && it->second.streamId == streamId) {
+			it->second.streamEnded = true;
+		}
+		return 0;
+	}
+
+	static int OnStreamReset(
+		ngtcp2_conn *conn, int64_t streamId, uint64_t, uint64_t, void *userData, void *)
+	{
+		auto *engine = static_cast<CProductionNgtcp2Engine *>(userData);
+		auto it = engine->m_connections.find(conn);
+		if (it != engine->m_connections.end() && it->second.streamId == streamId) {
+			it->second.streamEnded = true;
+		}
 		return 0;
 	}
 
@@ -503,6 +552,8 @@ public:
 		callbacks.stream_open = OnStreamOpen;
 		callbacks.recv_stream_data = OnRecvStreamData;
 		callbacks.acked_stream_data_offset = OnAckedStreamData;
+		callbacks.stream_close = OnStreamClose;
+		callbacks.stream_reset = OnStreamReset;
 
 		ngtcp2_settings settings = {};
 		ngtcp2_settings_default(&settings);
@@ -781,6 +832,38 @@ public:
 		}
 	}
 
+	bool IsStreamEnded(Handle handle) const override
+	{
+		auto it = m_connections.find(handle);
+		return it != m_connections.end() && it->second.streamEnded;
+	}
+
+	void EndConnection(Handle handle,
+		IQuicDatagramSink &sink,
+		const CNetworkAddress &address,
+		uint16_t port,
+		uint64_t nowMs) override
+	{
+		auto it = m_connections.find(handle);
+		if (it == m_connections.end()) {
+			return;
+		}
+		uint8_t buf[kMaxUdpPayload];
+		ngtcp2_path_storage path;
+		InitZeroPath(path);
+		ngtcp2_pkt_info pi = {};
+		ngtcp2_ccerr ccerr;
+		ngtcp2_ccerr_default(&ccerr);
+		// A best-effort courtesy, not a requirement for correctness on this side: Destroy() below
+		// reclaims the slot either way, whether or not the peer ever sees this.
+		const ngtcp2_ssize written = ngtcp2_conn_write_connection_close(
+			it->second.conn, &path.path, &pi, buf, sizeof(buf), &ccerr, NanosecondsFromMs(nowMs));
+		if (written > 0) {
+			sink.SendDatagram(buf, static_cast<size_t>(written), address, port);
+		}
+		Destroy(handle);
+	}
+
 	void Destroy(Handle handle) override
 	{
 		auto it = m_connections.find(handle);
@@ -823,6 +906,9 @@ private:
 		size_t unackedSendBytes = 0; //!< Sum of unackedSendChunks sizes; the size cap reads this.
 		size_t frontChunkAcked = 0; //!< Bytes of unackedSendChunks.front() acked_stream_data_offset()
 					    //!< already confirmed.
+		//! Set by OnRecvStreamData()'s FIN flag, OnStreamClose(), or OnStreamReset() -- whichever
+		//! notices first that the one stream this connection will ever have is done.
+		bool streamEnded = false;
 	};
 
 	// Shared by Flush() (an inbound datagram may need an immediate reply) and Tick() (a timer
