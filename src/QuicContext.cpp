@@ -155,7 +155,7 @@ bool CQuicContext::ProcessDatagram(
 		return false;
 	}
 	std::unique_ptr<IQuicConnection> connection =
-		m_factory->CreateInbound(payload, length, address, port, cid);
+		m_factory->CreateInbound(payload, length, address, port, cid, nowMs);
 	if (!connection) {
 		return false;
 	}

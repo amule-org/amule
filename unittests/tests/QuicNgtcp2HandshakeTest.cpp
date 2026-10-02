@@ -380,7 +380,7 @@ bool DriveHandshake(CTestQuicClient &client,
 					return false;
 				}
 				connection = factory.CreateInbound(
-					datagram.data(), datagram.size(), kPeer, 4672, dcid);
+					datagram.data(), datagram.size(), kPeer, 4672, dcid, nowMs);
 				if (!connection) {
 					return false;
 				}

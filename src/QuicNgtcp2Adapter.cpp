@@ -64,6 +64,10 @@ bool ParseInitialMetadata(const uint8_t *data, size_t length, CQuicInitialMetada
 
 constexpr size_t kMaxUdpPayload = 1452;
 constexpr int kMaxFlushPacketsPerCall = 16;
+// got3nks' review on #1710 (finding #3, High): without these, handle_expiry() never ends a
+// connection on its own, and spoofed Initials could fill every admission slot permanently.
+constexpr uint64_t kHandshakeTimeoutMs = 10000; // 10s: generous even over a slow real path.
+constexpr uint64_t kIdleTimeoutMs = 60000;      // 60s of silence after that is a dead peer.
 
 ngtcp2_tstamp NanosecondsFromMs(uint64_t nowMs)
 {
@@ -442,7 +446,8 @@ public:
 	Handle CreateServer(const CQuicTlsPolicy &policy,
 		const CNetworkAddress &,
 		uint16_t,
-		const CQuicInitialMetadata &metadata) override
+		const CQuicInitialMetadata &metadata,
+		uint64_t nowMs) override
 	{
 		// Each connection gets its own GnuTLS session: a gnutls_session_t holds one handshake's
 		// worth of state and cannot be shared across connections. policy.credentials -- a
@@ -504,10 +509,22 @@ public:
 		// Flush() writes into a kMaxUdpPayload-sized stack buffer; keep ngtcp2 from ever trying
 		// to hand it back a larger packet, which PMTUD could otherwise grow towards over time.
 		settings.max_tx_udp_payload_size = kMaxUdpPayload;
+		// ngtcp2_settings_default() leaves this at UINT64_MAX (no timeout): the deadline is
+		// initial_ts + handshake_timeout, so initial_ts must be this connection's own creation
+		// time, not whatever ngtcp2_settings_default() left there (0) -- relative to that, a
+		// 10s deadline would already be in the past for any connection created after this
+		// process's first few seconds of life, failing its very next Tick().
+		settings.initial_ts = NanosecondsFromMs(nowMs);
+		settings.handshake_timeout = NanosecondsFromMs(kHandshakeTimeoutMs);
 
 		ngtcp2_transport_params params = {};
 		ngtcp2_transport_params_default(&params);
 		params.max_udp_payload_size = kMaxUdpPayload;
+		// ngtcp2_transport_params_default() leaves this at 0 (disabled): handle_expiry() would
+		// then never end a quiescent connection on its own. Spoofed Initials cost nothing to
+		// send; without this, 8 per scope (CQuicContext::kMaxConnectionsPerScope) times every
+		// scope needed to fill 256 total slots never frees up again.
+		params.max_idle_timeout = NanosecondsFromMs(kIdleTimeoutMs);
 		params.original_dcid = originalDcid;
 		params.original_dcid_present = 1;
 		// Only the remote-initiated windows matter: eD2k always replies on the peer's own
@@ -877,7 +894,8 @@ std::unique_ptr<IQuicConnection> CQuicNgtcp2Factory::CreateInbound(const uint8_t
 	size_t length,
 	const CNetworkAddress &address,
 	uint16_t port,
-	const std::string &cid)
+	const std::string &cid,
+	uint64_t nowMs)
 {
 	CQuicInitialMetadata metadata;
 	if (m_policy.session == nullptr || m_policy.credentials == nullptr || m_policy.verifier == nullptr ||
@@ -887,7 +905,7 @@ std::unique_ptr<IQuicConnection> CQuicNgtcp2Factory::CreateInbound(const uint8_t
 		!ParseInitialMetadata(data, length, metadata) || metadata.destinationCid != cid) {
 		return nullptr;
 	}
-	IQuicNgtcp2Engine::Handle handle = m_engine->CreateServer(m_policy, address, port, metadata);
+	IQuicNgtcp2Engine::Handle handle = m_engine->CreateServer(m_policy, address, port, metadata, nowMs);
 	if (handle == nullptr)
 		return nullptr;
 	std::string issuedCid = m_engine->GetIssuedConnectionId(handle);

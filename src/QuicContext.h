@@ -68,8 +68,16 @@ class IQuicConnectionFactory
 {
 public:
 	virtual ~IQuicConnectionFactory() = default;
-	virtual std::unique_ptr<IQuicConnection> CreateInbound(
-		const uint8_t *, size_t, const CNetworkAddress &, uint16_t, const std::string &) = 0;
+	//! nowMs lets an implementation stamp the new connection's own clock (e.g. the deadline a
+	//! handshake timeout is measured from) with the same monotonic time ProcessDatagram() is
+	//! already using, rather than an implicit zero that would only coincide with "now" for a
+	//! connection created in the first instant of the process's life.
+	virtual std::unique_ptr<IQuicConnection> CreateInbound(const uint8_t *,
+		size_t,
+		const CNetworkAddress &,
+		uint16_t,
+		const std::string &,
+		uint64_t nowMs) = 0;
 };
 
 class CQuicContext final

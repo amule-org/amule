@@ -120,7 +120,8 @@ struct FakeFactory : IQuicConnectionFactory
 		size_t,
 		const CNetworkAddress &address,
 		uint16_t port,
-		const std::string &cid) override
+		const std::string &cid,
+		uint64_t) override
 	{
 		++calls;
 		lastAddress = address;

@@ -56,8 +56,14 @@ class IQuicNgtcp2Engine
 public:
 	using Handle = void *;
 	virtual ~IQuicNgtcp2Engine() = default;
-	virtual Handle CreateServer(
-		const CQuicTlsPolicy &, const CNetworkAddress &, uint16_t, const CQuicInitialMetadata &) = 0;
+	//! @p nowMs stamps ngtcp2_settings::initial_ts, the base the handshake timeout deadline is
+	//! measured from -- without it the deadline would be relative to time zero, already passed
+	//! for any connection created after this process's first few seconds of life.
+	virtual Handle CreateServer(const CQuicTlsPolicy &,
+		const CNetworkAddress &,
+		uint16_t,
+		const CQuicInitialMetadata &,
+		uint64_t nowMs) = 0;
 	//! @p nowMs is the same monotonic millisecond tick CQuicContext::ProcessDatagram() received.
 	virtual bool Read(Handle, const uint8_t *, size_t, uint64_t nowMs) = 0;
 	virtual bool Flush(
@@ -124,8 +130,12 @@ public:
 	//! long as this factory. Null refuses every stream's hand-off, which is the state before an
 	//! acceptor exists -- the connection itself is still admitted and still works.
 	void SetAcceptor(IQuicStreamAcceptor *acceptor);
-	std::unique_ptr<IQuicConnection> CreateInbound(
-		const uint8_t *, size_t, const CNetworkAddress &, uint16_t, const std::string &) override;
+	std::unique_ptr<IQuicConnection> CreateInbound(const uint8_t *,
+		size_t,
+		const CNetworkAddress &,
+		uint16_t,
+		const std::string &,
+		uint64_t nowMs) override;
 
 private:
 	CQuicTlsPolicy m_policy;
