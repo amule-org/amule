@@ -180,6 +180,13 @@ struct Engine : IQuicNgtcp2Engine
 			++endConnectionCalls;
 		}
 	}
+	unsigned notifyWritableCalls = 0;
+	void NotifyWritable(Handle handle) override
+	{
+		if (handle != nullptr) {
+			++notifyWritableCalls;
+		}
+	}
 	void Destroy(Handle handle) override
 	{
 		if (handle != nullptr) {

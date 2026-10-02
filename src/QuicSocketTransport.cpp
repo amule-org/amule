@@ -199,7 +199,14 @@ void CQuicSocketTransport::Flush()
 				writable = m_events;
 			else if (n && m_writeQueued == 0)
 				writable = m_events;
-			RequestFlushLocked(again);
+			// Only when something actually went out: a zero-byte result means flow control or
+			// congestion is blocking every byte right now, and asking to be flushed again
+			// immediately would just repeat that same zero-byte result in a tight loop until
+			// something external changes. OnWritable() is what resumes a blocked flush once the
+			// engine notices that something did (IQuicNgtcp2Engine::NotifyWritable()).
+			if (n > 0) {
+				RequestFlushLocked(again);
+			}
 		}
 	}
 	if (failedHandle)

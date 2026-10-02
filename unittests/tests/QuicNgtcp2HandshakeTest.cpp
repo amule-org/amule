@@ -157,7 +157,7 @@ struct CollectingSink : IQuicDatagramSink
 class CTestQuicClient
 {
 public:
-	bool Init()
+	bool Init(size_t streamWindow = CQuicSocketTransport::kReadWindow)
 	{
 		EnsureGnuTlsInitialized();
 		if (gnutls_certificate_allocate_credentials(&m_credentials) != GNUTLS_E_SUCCESS) {
@@ -239,7 +239,7 @@ public:
 		// opens -- fine for proving the handshake alone, but WriteStreamData() on the real server
 		// correctly refuses to send a single byte against that. Match CProductionNgtcp2Engine's
 		// own server-side windows (QuicNgtcp2Adapter.cpp) so the reply path has somewhere to land.
-		params.initial_max_stream_data_bidi_local = CQuicSocketTransport::kReadWindow;
+		params.initial_max_stream_data_bidi_local = streamWindow;
 		params.initial_max_data = CQuicSocketTransport::kReadWindow;
 
 		if (ngtcp2_conn_client_new(&m_conn,
@@ -351,6 +351,14 @@ public:
 	bool HandshakeConfirmed() const { return m_handshakeConfirmed; }
 	const std::vector<uint8_t> &Received() const { return m_received; }
 	void ClearReceived() { m_received.clear(); }
+	//! The real-world equivalent of an application finishing a Read() and reopening that much
+	//! credit -- CQuicSocketTransport::ExtendReadWindow()'s counterpart on this side, needed to
+	//! recover from a stream this client itself blocked by advertising a small window.
+	void ExtendReadWindow(size_t bytes)
+	{
+		ngtcp2_conn_extend_max_stream_offset(m_conn, m_streamId, bytes);
+		ngtcp2_conn_extend_max_offset(m_conn, bytes);
+	}
 
 private:
 	static constexpr size_t kMaxUdpPayload = 1452;
@@ -701,4 +709,84 @@ TEST(QuicNgtcp2Handshake, TheStreamEndingClosesTheWholeConnection)
 	}
 
 	ASSERT_TRUE(connection->IsClosed());
+}
+
+// got3nks' review on #1710 (finding #5, High): NGTCP2_ERR_STREAM_DATA_BLOCKED is documented as
+// non-fatal (the stream is flow-control blocked, not the connection), but previously mapped to
+// -1 like any other error, tearing the stream down over something a peer extending its window a
+// moment later would otherwise have resolved on its own. This also proves CQuicSocketTransport's
+// write path does not busy-loop while blocked, and that IQuicNgtcp2Engine::NotifyWritable() is
+// what resumes it once the peer's extended window makes room again.
+TEST(QuicNgtcp2Handshake, FlowControlBlockDoesNotLoseTheStreamAndRecoversOnceUnblocked)
+{
+	CQuicEphemeralCredentials credentials;
+	ForeignSession session;
+	ForeignVerifier verifier;
+	CQuicTlsPolicy policy{ &session, &credentials, &verifier, &session };
+
+	auto sink = std::make_shared<CollectingSink>();
+	auto engine = CreateProductionQuicNgtcp2Engine();
+	CQuicNgtcp2Factory factory(policy, sink, engine, kTestServerIdentity);
+	AcceptingAcceptor acceptor;
+	factory.SetAcceptor(&acceptor);
+
+	// A small window, deliberately: real peers do not have to advertise
+	// CQuicSocketTransport::kReadWindow, and this is what makes the block happen "after a few
+	// bytes" instead of needing to push 256KiB of data to prove the same thing.
+	constexpr size_t kSmallWindow = 100;
+	CTestQuicClient client;
+	ASSERT_TRUE(client.Init(kSmallWindow));
+
+	std::unique_ptr<IQuicConnection> connection;
+	uint64_t nowMs = 0;
+	ASSERT_TRUE(DriveHandshake(client, factory, *sink, connection, nowMs));
+	ASSERT_TRUE(ExchangeEaqn1Proof(client, connection, *sink, nowMs));
+	ASSERT_TRUE(acceptor.accepted != nullptr);
+
+	// kSmallWindow minus the 37-byte EAQN1 proof the server already sent on this same stream
+	// (ExchangeEaqn1Proof) leaves 63 bytes of window before the client has read any of this.
+	const std::vector<uint8_t> payload(200, 'A');
+	const uint32_t writtenBytes =
+		acceptor.accepted->Write(payload.data(), static_cast<uint32_t>(payload.size()));
+	ASSERT_EQUALS(static_cast<uint32_t>(payload.size()), writtenBytes);
+	acceptor.accepted->Flush();
+	ASSERT_TRUE(!sink->sent.empty());
+	for (const auto &datagram : sink->sent) {
+		ASSERT_TRUE(client.Receive(datagram, nowMs));
+	}
+	sink->sent.clear();
+	// Only part of it fit in the window: proves the first Flush() call did make some progress,
+	// the premise the rest of this test depends on.
+	ASSERT_TRUE(client.Received().size() < payload.size());
+	ASSERT_TRUE(!client.Received().empty());
+	const size_t firstChunkSize = client.Received().size();
+
+	// Now fully blocked: nothing left of the window to write into. Flush()'s own fix (only
+	// re-request a flush when something actually went out) means nothing happens automatically
+	// from here -- a real event loop would wait for OnWritable(), which only NotifyWritable()
+	// (via a later Tick()/ProcessDatagram()) ever calls.
+	acceptor.accepted->Flush();
+	ASSERT_TRUE(sink->sent.empty());
+	// The stream (and the transport built on it) must still be alive: STREAM_DATA_BLOCKED is not
+	// a reason to lose it.
+	ASSERT_TRUE(!connection->IsClosed());
+	ASSERT_TRUE(acceptor.accepted->IsOk());
+
+	// The real-world unblock: the peer reads what it has, extends its window, and that reaches
+	// the server as an ordinary datagram (MAX_STREAM_DATA/MAX_DATA frames, carried on whatever
+	// Pump() next produces -- no stream data of its own needed).
+	client.ExtendReadWindow(firstChunkSize);
+	bool progressed = false;
+	for (int i = 0; i < 50 && !progressed; ++i) {
+		nowMs += 10;
+		for (const auto &datagram : client.Pump(nowMs)) {
+			ASSERT_TRUE(connection->ProcessDatagram(datagram.data(), datagram.size(), nowMs));
+		}
+		for (const auto &datagram : sink->sent) {
+			ASSERT_TRUE(client.Receive(datagram, nowMs));
+		}
+		sink->sent.clear();
+		progressed = client.Received().size() > firstChunkSize;
+	}
+	ASSERT_TRUE(progressed);
 }

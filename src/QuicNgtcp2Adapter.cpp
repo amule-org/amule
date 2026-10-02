@@ -176,6 +176,9 @@ public:
 		}
 		OfferStreamIfJustOpened();
 		EndConnectionIfStreamEnded(nowMs);
+		if (!m_closed) {
+			m_engine->NotifyWritable(m_handle);
+		}
 		return true;
 	}
 
@@ -211,6 +214,9 @@ public:
 			return;
 		}
 		EndConnectionIfStreamEnded(nowMs);
+		if (!m_closed) {
+			m_engine->NotifyWritable(m_handle);
+		}
 	}
 
 	// IQuicStreamOperations: CQuicSocketTransport's handle is this connection's own
@@ -801,7 +807,11 @@ public:
 			// Nothing was sent, so nothing of this chunk is actually pending retransmission.
 			info.unackedSendBytes -= length;
 			info.unackedSendChunks.pop_back();
-			return -1;
+			// STREAM_DATA_BLOCKED is documented as non-fatal: the stream is flow-control blocked,
+			// not the connection -- the peer extending the window (or NotifyWritable() noticing
+			// congestion eased) is what unblocks it, not tearing anything down. Every other
+			// negative return here is a genuine, fatal error.
+			return written == NGTCP2_ERR_STREAM_DATA_BLOCKED ? 0 : -1;
 		}
 		// ngtcp2 can take less than the full chunk (e.g. congestion-limited): shrink our copy down
 		// to exactly what it consumed, or drop it if it took nothing. Shrinking a vector never
@@ -862,6 +872,14 @@ public:
 			sink.SendDatagram(buf, static_cast<size_t>(written), address, port);
 		}
 		Destroy(handle);
+	}
+
+	void NotifyWritable(Handle handle) override
+	{
+		auto it = m_connections.find(handle);
+		if (it != m_connections.end() && it->second.transport != nullptr) {
+			it->second.transport->OnWritable();
+		}
 	}
 
 	void Destroy(Handle handle) override
