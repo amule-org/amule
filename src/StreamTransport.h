@@ -84,16 +84,20 @@ public:
 	//! Bytes accepted from @a buffer. 0 with BlocksWrite() means "not yet", not "never".
 	virtual uint32_t Write(const void *buffer, uint32_t length) = 0;
 
-	//! Ends the stream. Calling it twice must be harmless.
-	virtual void Close() = 0;
+	//! Ends the stream. Calling it twice must be harmless. @p nowMs is this transport's own
+	//! clock (CQuicSocketTransport ties it to ngtcp2 pacing/RTT math; CUtpSocketTransport
+	//! ignores it, since libutp keeps its own time via a separate utp_check_timeouts() call).
+	virtual void Close(uint64_t nowMs) = 0;
 
 	/**
 	 * Offers whatever Write() queued to the underlying transport.
 	 *
 	 * Write() may run on another thread and only queues, so the owning thread
 	 * has to hand the bytes over. A transport with nothing to defer is empty.
+	 *
+	 * @p nowMs: see Close().
 	 */
-	virtual void Flush() = 0;
+	virtual void Flush(uint64_t nowMs) = 0;
 
 	virtual bool BlocksRead() const = 0;
 	virtual bool BlocksWrite() const = 0;

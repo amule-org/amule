@@ -150,7 +150,7 @@ TEST(UtpSocketTransport, WriteQueuesWithoutTouchingTheLibrary)
 	ASSERT_EQUALS(64u, transport.Write(payload.data(), 64));
 	ASSERT_EQUALS(0u, (unsigned)ops.offered.size());
 
-	transport.Flush();
+	transport.Flush(0);
 	ASSERT_EQUALS(64u, (unsigned)ops.accepted.size());
 	for (size_t i = 0; i < payload.size(); ++i) {
 		ASSERT_EQUALS((int)payload[i], (int)ops.accepted[i]);
@@ -165,11 +165,11 @@ TEST(UtpSocketTransport, RefusedBytesAreOfferedAgainOnTheNextFlush)
 	const std::vector<uint8_t> payload = Pattern(25, 3);
 	ASSERT_EQUALS(25u, transport.Write(payload.data(), 25));
 
-	transport.Flush();
+	transport.Flush(0);
 	ASSERT_EQUALS(10u, (unsigned)ops.accepted.size());
 
 	ops.acceptLimit = 1024;
-	transport.Flush();
+	transport.Flush(0);
 	ASSERT_EQUALS(25u, (unsigned)ops.accepted.size());
 	// Every byte exactly once, in order: the refused tail was kept, not resent
 	// from the start and not dropped.
@@ -187,12 +187,12 @@ TEST(UtpSocketTransport, AWriteRefusedEntirelyLosesNothing)
 	const std::vector<uint8_t> payload = Pattern(8, 9);
 	transport.Write(payload.data(), 8);
 
-	transport.Flush();
-	transport.Flush();
+	transport.Flush(0);
+	transport.Flush(0);
 	ASSERT_EQUALS(0u, (unsigned)ops.accepted.size());
 
 	ops.acceptLimit = 8;
-	transport.Flush();
+	transport.Flush(0);
 	ASSERT_EQUALS(8u, (unsigned)ops.accepted.size());
 	for (size_t i = 0; i < payload.size(); ++i) {
 		ASSERT_EQUALS((int)payload[i], (int)ops.accepted[i]);
@@ -203,7 +203,7 @@ TEST(UtpSocketTransport, FlushWithNothingQueuedMakesNoCall)
 {
 	FakeOperations ops;
 	CUtpSocketTransport transport = MakeTransport(ops);
-	transport.Flush();
+	transport.Flush(0);
 	ASSERT_TRUE(ops.lastWriteSocket == nullptr);
 }
 
@@ -259,9 +259,9 @@ TEST(UtpSocketTransport, CloseHappensExactlyOnce)
 	FakeOperations ops;
 	{
 		CUtpSocketTransport transport = MakeTransport(ops);
-		transport.Close();
+		transport.Close(0);
 		ASSERT_EQUALS(1, ops.closeCalls);
-		transport.Close();
+		transport.Close(0);
 		ASSERT_EQUALS(1, ops.closeCalls);
 	}
 	// The destructor must not close again.
@@ -280,10 +280,10 @@ TEST(UtpSocketTransport, AClosedHandleIsNeverUsedAgain)
 	transport.OnPayload(payload.data(), payload.size());
 	transport.Write(payload.data(), 4);
 
-	transport.Close();
+	transport.Close(0);
 	ASSERT_EQUALS(1, ops.closeCalls);
 
-	transport.Flush();
+	transport.Flush(0);
 	ASSERT_EQUALS(0u, (unsigned)ops.offered.size());
 
 	uint8_t out[4] = { 0 };
@@ -302,7 +302,7 @@ TEST(UtpSocketTransport, DestroyingNeverClosesTheDeadHandle)
 		transport.OnEnded(EUtpTransportFailure::Destroying);
 		ASSERT_EQUALS(1, events.lost);
 		ASSERT_EQUALS(0, ops.closeCalls);
-		transport.Close();
+		transport.Close(0);
 		ASSERT_EQUALS(0, ops.closeCalls);
 	}
 	ASSERT_EQUALS(0, ops.closeCalls);
@@ -317,7 +317,7 @@ TEST(UtpSocketTransport, NothingReachesTheLibraryAfterTheStreamEnds)
 	transport.Write(payload.data(), 4);
 	transport.OnEnded(EUtpTransportFailure::Reset);
 
-	transport.Flush();
+	transport.Flush(0);
 	ASSERT_EQUALS(0u, (unsigned)ops.offered.size());
 	ASSERT_FALSE(transport.IsOk());
 	ASSERT_FALSE(transport.IsConnected());
@@ -388,7 +388,7 @@ TEST(UtpSocketTransport, QueueingAsksForAFlushOncePerIdlePeriod)
 	transport.Write(payload.data(), 8);
 	ASSERT_EQUALS(1, events.flushRequests);
 
-	transport.Flush();
+	transport.Flush(0);
 	transport.Write(payload.data(), 8);
 	ASSERT_EQUALS(2, events.flushRequests);
 }
@@ -403,7 +403,7 @@ TEST(UtpSocketTransport, ConnectingRequestsWhatTheHandshakeRefused)
 	CUtpSocketTransport transport = MakeTransport(ops, &events);
 	const std::vector<uint8_t> payload = Pattern(12, 4);
 	transport.Write(payload.data(), 12);
-	transport.Flush();
+	transport.Flush(0);
 	ASSERT_EQUALS(0u, (unsigned)ops.accepted.size());
 
 	ops.acceptLimit = 64;
@@ -414,7 +414,7 @@ TEST(UtpSocketTransport, ConnectingRequestsWhatTheHandshakeRefused)
 	ASSERT_EQUALS((unsigned)offeredBefore, (unsigned)ops.offered.size());
 	ASSERT_EQUALS(before + 1, events.flushRequests);
 
-	transport.Flush();
+	transport.Flush(0);
 	ASSERT_EQUALS(12u, (unsigned)ops.accepted.size());
 	for (size_t i = 0; i < payload.size(); ++i) {
 		ASSERT_EQUALS((int)payload[i], (int)ops.accepted[i]);
@@ -453,7 +453,7 @@ TEST(UtpSocketTransport, AnOfferIsBoundedRatherThanTheWholeBacklog)
 	const std::vector<uint8_t> payload = Pattern(CUtpStream::kDefaultWriteBound, 2);
 	transport.Write(payload.data(), static_cast<uint32_t>(payload.size()));
 
-	transport.Flush();
+	transport.Flush(0);
 	ASSERT_TRUE(ops.offered.size() > 0u);
 	ASSERT_TRUE(ops.offered.size() <= 64u * 1024u);
 }
@@ -486,11 +486,11 @@ TEST(UtpSocketTransport, WritingWhileFlushingDoesNotCorruptTheQueue)
 		}
 	});
 	for (int i = 0; i < 500; ++i) {
-		transport.Flush();
+		transport.Flush(0);
 	}
 	writer.join();
 	while (transport.PendingWriteBytes() != 0) {
-		transport.Flush();
+		transport.Flush(0);
 	}
 
 	// Every byte that was accepted came out in the pattern's order, so nothing
@@ -508,11 +508,11 @@ TEST(UtpSocketTransport, BoundedFlushSchedulesTheTailAndUnblocksWriter)
 	auto transport = MakeTransport(ops, &events);
 	const auto payload = Pattern(CUtpStream::kDefaultWriteBound);
 	transport.Write(payload.data(), static_cast<uint32_t>(payload.size()));
-	transport.Flush();
+	transport.Flush(0);
 	ASSERT_EQUALS(2, events.flushRequests);
 	ASSERT_EQUALS(1, events.writable);
 	while (transport.PendingWriteBytes() != 0) {
-		transport.Flush();
+		transport.Flush(0);
 	}
 	ASSERT_TRUE(payload == ops.accepted);
 	ASSERT_EQUALS(4, events.flushRequests);
@@ -526,7 +526,7 @@ TEST(UtpSocketTransport, DirectFlushNotifiesWhenTheQueueUnblocks)
 	auto transport = MakeTransport(ops, &events);
 	const auto payload = Pattern(CUtpStream::kDefaultWriteBound);
 	transport.Write(payload.data(), static_cast<uint32_t>(payload.size()));
-	transport.Flush();
+	transport.Flush(0);
 	ASSERT_FALSE(transport.BlocksWrite());
 	ASSERT_EQUALS(1, events.writable);
 }
@@ -543,7 +543,7 @@ TEST(UtpSocketTransport, LocalCloseEndsTheStreamBeforeCallingTheLibrary)
 		ASSERT_EQUALS(0u, transport.Write(&byte, 1));
 		transport.OnEnded(EUtpTransportFailure::Destroying);
 	};
-	transport.Close();
+	transport.Close(0);
 	ASSERT_EQUALS(0, transport.LastError());
 	ASSERT_EQUALS(1, ops.closeCalls);
 }
@@ -568,11 +568,11 @@ TEST(UtpSocketTransport, NegativeAcceptancePreservesTheQueue)
 	const auto payload = Pattern(12);
 	transport.Write(payload.data(), static_cast<uint32_t>(payload.size()));
 	ops.refuseWithError = true;
-	transport.Flush();
+	transport.Flush(0);
 	ASSERT_EQUALS(12u, (unsigned)transport.PendingWriteBytes());
 	ASSERT_EQUALS(1, events.flushRequests);
 	ops.refuseWithError = false;
-	transport.Flush();
+	transport.Flush(0);
 	ASSERT_TRUE(payload == ops.accepted);
 }
 
@@ -584,7 +584,7 @@ TEST(UtpSocketTransport, ZeroAcceptanceDoesNotScheduleAnotherFlush)
 	const auto payload = Pattern(12);
 	transport.Write(payload.data(), static_cast<uint32_t>(payload.size()));
 	ops.acceptLimit = 0;
-	transport.Flush();
+	transport.Flush(0);
 	ASSERT_EQUALS(1, events.flushRequests);
 	ASSERT_EQUALS(12u, (unsigned)transport.PendingWriteBytes());
 	ops.acceptLimit = 12;
@@ -601,7 +601,7 @@ TEST(UtpSocketTransport, PartialAcceptanceWaitsForWritableWithoutScheduling)
 	const auto payload = Pattern(12);
 	transport.Write(payload.data(), static_cast<uint32_t>(payload.size()));
 	ops.acceptLimit = 5;
-	transport.Flush();
+	transport.Flush(0);
 	ASSERT_EQUALS(1, events.flushRequests);
 	ASSERT_EQUALS(7u, (unsigned)transport.PendingWriteBytes());
 	ops.acceptLimit = 12;
@@ -622,14 +622,14 @@ TEST(UtpSocketTransport, ReentrantFlushNeverOffersTheSameBytesTwice)
 	ops.onWrite = [&]() {
 		if (!reentered) {
 			reentered = true;
-			transport.Flush();
+			transport.Flush(0);
 		}
 	};
-	transport.Flush();
+	transport.Flush(0);
 	ASSERT_TRUE(reentered);
 	ASSERT_EQUALS(64u * 1024u, (unsigned)ops.accepted.size());
 	ASSERT_EQUALS(2, events.flushRequests);
-	transport.Flush();
+	transport.Flush(0);
 	ASSERT_TRUE(payload == ops.accepted);
 	ASSERT_TRUE(payload == ops.offered);
 }
@@ -667,10 +667,10 @@ TEST(UtpSocketTransport, AReentrantFlushRequestIsHonouredNotDropped)
 	ops.onWrite = [&]() {
 		if (!reentered) {
 			reentered = true;
-			transport.Flush();
+			transport.Flush(0);
 		}
 	};
-	transport.Flush();
+	transport.Flush(0);
 	ASSERT_TRUE(reentered);
 	// Partial acceptance alone would schedule nothing; the swallowed
 	// reentrant request is what must still be answered.
@@ -682,7 +682,7 @@ TEST(UtpSocketTransport, ALocalCloseIsNotReportedAsThePeersEof)
 	FakeOperations ops;
 	CUtpSocketTransport transport = MakeTransport(ops);
 	transport.MarkConnected();
-	transport.Close();
+	transport.Close(0);
 	ASSERT_TRUE(transport.Failure() == EUtpTransportFailure::Closed);
 	ASSERT_EQUALS(0, transport.LastError());
 	ASSERT_FALSE(transport.IsOk());
@@ -701,7 +701,7 @@ TEST(UtpSocketTransport, IncomingPayloadReleasesAReplyQueuedAtAccept)
 	transport.MarkConnected();
 	const std::vector<uint8_t> reply = Pattern(16, 7);
 	transport.Write(reply.data(), static_cast<uint32_t>(reply.size()));
-	transport.Flush();
+	transport.Flush(0);
 	ASSERT_EQUALS(0u, (unsigned)ops.accepted.size());
 	const int before = events.flushRequests;
 
@@ -710,7 +710,7 @@ TEST(UtpSocketTransport, IncomingPayloadReleasesAReplyQueuedAtAccept)
 	ASSERT_EQUALS(before + 1, events.flushRequests);
 
 	ops.acceptLimit = 64;
-	transport.Flush();
+	transport.Flush(0);
 	ASSERT_TRUE(reply == ops.accepted);
 }
 
@@ -733,7 +733,7 @@ TEST(UtpSocketTransport, AThrowingWritableSinkDoesNotWedgeTheFlushPath)
 
 	bool threw = false;
 	try {
-		transport.Flush();
+		transport.Flush(0);
 	} catch (const std::runtime_error &) {
 		threw = true;
 	}
@@ -741,7 +741,7 @@ TEST(UtpSocketTransport, AThrowingWritableSinkDoesNotWedgeTheFlushPath)
 
 	// Still usable: the queue drains and queueing still asks for a flush.
 	const int before = events.flushRequests;
-	transport.Flush();
+	transport.Flush(0);
 	const std::vector<uint8_t> more = Pattern(8, 2);
 	transport.Write(more.data(), static_cast<uint32_t>(more.size()));
 	ASSERT_TRUE(events.flushRequests > before);
@@ -761,8 +761,8 @@ TEST(UtpSocketTransport, AFullyAcceptedFlushStillConsumesTheReentryRecord)
 	transport.Write(payload.data(), static_cast<uint32_t>(payload.size()));
 
 	// A sink that flushes synchronously, the way a same-thread owner would.
-	events.onFlushRequested = [&]() { transport.Flush(); };
-	transport.Flush();
+	events.onFlushRequested = [&]() { transport.Flush(0); };
+	transport.Flush(0);
 
 	ASSERT_EQUALS(0u, (unsigned)transport.PendingWriteBytes());
 	ASSERT_TRUE(payload == ops.accepted);
@@ -782,7 +782,7 @@ TEST(UtpSocketTransport, AReentryDuringTheOfferStillLeavesTheQueueFlushable)
 	CUtpSocketTransport transport = MakeTransport(ops, &events);
 
 	// A synchronous sink, the way a same-thread owner would be wired.
-	events.onFlushRequested = [&]() { transport.Flush(); };
+	events.onFlushRequested = [&]() { transport.Flush(0); };
 
 	const std::vector<uint8_t> payload = Pattern(64, 9);
 	transport.Write(payload.data(), static_cast<uint32_t>(payload.size()));
@@ -798,7 +798,7 @@ TEST(UtpSocketTransport, AReentryDuringTheOfferStillLeavesTheQueueFlushable)
 		}
 	};
 
-	transport.Flush();
+	transport.Flush(0);
 	ASSERT_TRUE(delivered);
 
 	// The queue must still be drainable. Without the fix nothing requests a flush again, so

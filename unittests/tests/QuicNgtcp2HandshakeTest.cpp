@@ -518,7 +518,7 @@ TEST(QuicNgtcp2Handshake, ARealClientAndTheRealServerEngineCompleteTheHandshake)
 	auto *streamOps = dynamic_cast<IQuicStreamOperations *>(connection.get());
 	ASSERT_TRUE(streamOps != nullptr);
 	const std::vector<uint8_t> reply{ 'o', 'k' };
-	const std::ptrdiff_t written = streamOps->WriteStream(nullptr, reply.data(), reply.size());
+	const std::ptrdiff_t written = streamOps->WriteStream(nullptr, reply.data(), reply.size(), nowMs);
 	ASSERT_EQUALS(static_cast<std::ptrdiff_t>(reply.size()), written);
 	ASSERT_TRUE(!sink->sent.empty());
 
@@ -591,7 +591,7 @@ TEST(QuicNgtcp2Handshake, AcceptedStreamHandsOffToARealTransportThatReadsAndWrit
 	const uint32_t writtenBytes =
 		acceptor.accepted->Write(reply.data(), static_cast<uint32_t>(reply.size()));
 	ASSERT_EQUALS(static_cast<uint32_t>(reply.size()), writtenBytes);
-	acceptor.accepted->Flush();
+	acceptor.accepted->Flush(nowMs);
 	ASSERT_TRUE(!sink->sent.empty());
 
 	for (const auto &datagram : sink->sent) {
@@ -649,7 +649,7 @@ TEST(QuicNgtcp2Handshake, LostFirstAttemptIsRetransmittedWithoutCorruptingTheRep
 	const uint32_t writtenBytes =
 		acceptor.accepted->Write(reply2.data(), static_cast<uint32_t>(reply2.size()));
 	ASSERT_EQUALS(static_cast<uint32_t>(reply2.size()), writtenBytes);
-	acceptor.accepted->Flush();
+	acceptor.accepted->Flush(nowMs);
 	ASSERT_TRUE(!sink->sent.empty());
 
 	// Dropped, not delivered: this is the packet loss. The transport's own copy is already gone
@@ -749,7 +749,7 @@ TEST(QuicNgtcp2Handshake, FlowControlBlockDoesNotLoseTheStreamAndRecoversOnceUnb
 	const uint32_t writtenBytes =
 		acceptor.accepted->Write(payload.data(), static_cast<uint32_t>(payload.size()));
 	ASSERT_EQUALS(static_cast<uint32_t>(payload.size()), writtenBytes);
-	acceptor.accepted->Flush();
+	acceptor.accepted->Flush(nowMs);
 	ASSERT_TRUE(!sink->sent.empty());
 	for (const auto &datagram : sink->sent) {
 		ASSERT_TRUE(client.Receive(datagram, nowMs));
@@ -765,7 +765,7 @@ TEST(QuicNgtcp2Handshake, FlowControlBlockDoesNotLoseTheStreamAndRecoversOnceUnb
 	// re-request a flush when something actually went out) means nothing happens automatically
 	// from here -- a real event loop would wait for OnWritable(), which only NotifyWritable()
 	// (via a later Tick()/ProcessDatagram()) ever calls.
-	acceptor.accepted->Flush();
+	acceptor.accepted->Flush(nowMs);
 	ASSERT_TRUE(sink->sent.empty());
 	// The stream (and the transport built on it) must still be alive: STREAM_DATA_BLOCKED is not
 	// a reason to lose it.
@@ -823,7 +823,7 @@ TEST(QuicNgtcp2Handshake, CloseFlushesQueuedDataBeforeEndingTheStreamCleanly)
 	const uint32_t writtenBytes =
 		acceptor.accepted->Write(payload.data(), static_cast<uint32_t>(payload.size()));
 	ASSERT_EQUALS(static_cast<uint32_t>(payload.size()), writtenBytes);
-	acceptor.accepted->Close();
+	acceptor.accepted->Close(nowMs);
 	ASSERT_TRUE(!sink->sent.empty());
 
 	for (const auto &datagram : sink->sent) {
@@ -867,7 +867,7 @@ TEST(QuicNgtcp2Handshake, LargeWriteWithUnackedDataPendingIsOfferedPartiallyInst
 	const std::vector<uint8_t> first(100, 'a');
 	ASSERT_EQUALS(static_cast<uint32_t>(first.size()),
 		acceptor.accepted->Write(first.data(), static_cast<uint32_t>(first.size())));
-	acceptor.accepted->Flush();
+	acceptor.accepted->Flush(nowMs);
 	ASSERT_TRUE(!sink->sent.empty());
 	sink->sent.clear(); // Dropped: never delivered to the client, so it stays unacknowledged.
 
@@ -877,7 +877,7 @@ TEST(QuicNgtcp2Handshake, LargeWriteWithUnackedDataPendingIsOfferedPartiallyInst
 	std::vector<uint8_t> big(CQuicSocketTransport::kReadWindow, 'b');
 	ASSERT_EQUALS(static_cast<uint32_t>(big.size()),
 		acceptor.accepted->Write(big.data(), static_cast<uint32_t>(big.size())));
-	acceptor.accepted->Flush();
+	acceptor.accepted->Flush(nowMs);
 
 	ASSERT_TRUE(acceptor.accepted->IsConnected());
 	ASSERT_TRUE(acceptor.accepted->IsOk());
@@ -917,7 +917,7 @@ TEST(QuicNgtcp2Handshake, CloseDrainsAQueueSpanningManyPacketsBeforeEndingTheStr
 	}
 	ASSERT_EQUALS(static_cast<uint32_t>(payload.size()),
 		acceptor.accepted->Write(payload.data(), static_cast<uint32_t>(payload.size())));
-	acceptor.accepted->Close();
+	acceptor.accepted->Close(nowMs);
 	ASSERT_TRUE(!sink->sent.empty());
 
 	// kMaxUdpPayload-sized packets exceed ngtcp2's initial congestion window well before this

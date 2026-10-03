@@ -460,7 +460,7 @@ TEST(UtpLibraryAdapter, DestroyingTheContextEndsTheStreamsItOwned)
 	ASSERT_FALSE(loop.server->HasRegisteredPeer(kPeerIp, kPeerPort));
 	// The order a real teardown produces; both must be harmless.
 	loop.server->Destroy();
-	acceptor.accepted->Close();
+	acceptor.accepted->Close(0);
 	Teardown(loop);
 }
 
@@ -483,7 +483,7 @@ TEST(UtpLibraryAdapter, AClosingStreamKeepsItsEndpointUntilTheSocketDies)
 	ASSERT_TRUE(acceptor.accepted != nullptr);
 	ASSERT_TRUE(loop.server->HasRegisteredPeer(kPeerIp, kPeerPort));
 
-	acceptor.accepted->Close();
+	acceptor.accepted->Close(0);
 	ASSERT_TRUE(loop.server->HasRegisteredPeer(kPeerIp, kPeerPort));
 	// The peer's answer to the FIN still reaches libutp rather than the gate.
 	Pump(loop);

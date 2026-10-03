@@ -36,10 +36,14 @@ class IQuicStreamOperations
 public:
 	using Handle = void *;
 	virtual ~IQuicStreamOperations() = default;
-	virtual std::ptrdiff_t WriteStream(Handle, const uint8_t *, size_t) = 0;
+	//! @p nowMs is the caller's own clock (CQuicSocketTransport::Flush()'s), not a cached value
+	//! from the last datagram/tick this connection happened to see -- ngtcp2_conn_writev_stream()
+	//! uses it for pacing and RTT math, so it must be the actual time of this call.
+	virtual std::ptrdiff_t WriteStream(Handle, const uint8_t *, size_t, uint64_t nowMs) = 0;
 	//! A voluntary, clean close (CQuicSocketTransport::Close()): whatever the engine has already
-	//! accepted and is still waiting to have acknowledged is not discarded over this.
-	virtual void CloseStream(Handle) = 0;
+	//! accepted and is still waiting to have acknowledged is not discarded over this. @p nowMs:
+	//! see WriteStream().
+	virtual void CloseStream(Handle, uint64_t nowMs) = 0;
 	//! A write that failed outright (Flush()'s result < 0, a genuine fatal error -- as opposed
 	//! to flow-control/congestion, which WriteStream() itself reports as 0 bytes, not an error):
 	//! unlike CloseStream(), nothing about this stream can be trusted enough to try preserving.
@@ -68,8 +72,8 @@ public:
 	bool IsOk() const override;
 	uint32_t Read(void *, uint32_t) override;
 	uint32_t Write(const void *, uint32_t) override;
-	void Close() override;
-	void Flush() override;
+	void Close(uint64_t nowMs) override;
+	void Flush(uint64_t nowMs) override;
 	bool BlocksRead() const override;
 	bool BlocksWrite() const override;
 	int LastError() const override;
@@ -77,7 +81,9 @@ public:
 	uint16_t GetPeerPort() const override { return m_port; }
 	void MarkConnected();
 	size_t OnPayload(const uint8_t *, size_t);
-	void OnWritable();
+	//! @p nowMs is IQuicNgtcp2Engine::NotifyWritable()'s own caller's clock (the real tick/
+	//! datagram that unblocked this), forwarded straight into Flush().
+	void OnWritable(uint64_t nowMs);
 	void OnEnded(int error = 0);
 	size_t PendingWriteBytes() const;
 
@@ -102,7 +108,7 @@ private:
 	//! Only ~CQuicSocketTransport() calls this: forces a still-draining close to finish right
 	//! now, discarding whatever is left queued, since nothing will call OnWritable() on this
 	//! object again once it is gone.
-	void FinishDrainingForDestruction();
+	void FinishDrainingForDestruction(uint64_t nowMs);
 	IQuicStreamOperations &m_operations;
 	mutable std::mutex m_mutex;
 	IQuicStreamOperations::Handle m_handle;

@@ -177,7 +177,7 @@ public:
 		OfferStreamIfJustOpened();
 		EndConnectionIfStreamEnded(nowMs);
 		if (!m_closed) {
-			m_engine->NotifyWritable(m_handle);
+			m_engine->NotifyWritable(m_handle, nowMs);
 		}
 		return true;
 	}
@@ -215,23 +215,27 @@ public:
 		}
 		EndConnectionIfStreamEnded(nowMs);
 		if (!m_closed) {
-			m_engine->NotifyWritable(m_handle);
+			m_engine->NotifyWritable(m_handle, nowMs);
 		}
 	}
 
 	// IQuicStreamOperations: CQuicSocketTransport's handle is this connection's own
 	// IQuicNgtcp2Engine::Handle, but it is never read back here -- this connection already
-	// knows which engine handle and stream it is.
-	std::ptrdiff_t WriteStream(IQuicStreamOperations::Handle, const uint8_t *data, size_t length) override
+	// knows which engine handle and stream it is. @p nowMs is the caller's own clock
+	// (CQuicSocketTransport::Flush()'s), not m_lastNowMs: this can run long after the last
+	// datagram/tick this connection actually saw (the application writing on its own schedule),
+	// and ngtcp2_conn_writev_stream()'s pacing/RTT math needs the real time of this call.
+	std::ptrdiff_t WriteStream(
+		IQuicStreamOperations::Handle, const uint8_t *data, size_t length, uint64_t nowMs) override
 	{
 		if (m_closed) {
 			return -1;
 		}
-		return m_engine->WriteStreamData(
-			m_handle, data, length, *m_sink, m_address, m_port, m_lastNowMs);
+		return m_engine->WriteStreamData(m_handle, data, length, *m_sink, m_address, m_port, nowMs);
 	}
 
-	void CloseStream(IQuicStreamOperations::Handle) override
+	//! @p nowMs: see WriteStream().
+	void CloseStream(IQuicStreamOperations::Handle, uint64_t nowMs) override
 	{
 		if (!m_closed) {
 			// The transport is the one closing itself here -- detach before shutting the stream
@@ -242,7 +246,7 @@ public:
 			// voluntary one (CQuicSocketTransport::Close(), itself already having had its own
 			// chance to flush anything queued) -- there is nothing here that justifies discarding
 			// whatever the engine has already accepted and is still waiting to confirm.
-			m_engine->CloseStreamGracefully(m_handle, *m_sink, m_address, m_port, m_lastNowMs);
+			m_engine->CloseStreamGracefully(m_handle, *m_sink, m_address, m_port, nowMs);
 		}
 	}
 
@@ -918,11 +922,11 @@ public:
 		Destroy(handle);
 	}
 
-	void NotifyWritable(Handle handle) override
+	void NotifyWritable(Handle handle, uint64_t nowMs) override
 	{
 		auto it = m_connections.find(handle);
 		if (it != m_connections.end() && it->second.transport != nullptr) {
-			it->second.transport->OnWritable();
+			it->second.transport->OnWritable(nowMs);
 		}
 	}
 

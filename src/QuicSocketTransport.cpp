@@ -22,6 +22,7 @@
 //
 
 #include "QuicSocketTransport.h"
+#include "GetTickCount.h" // GetTickCount64(), for ~CQuicSocketTransport()'s own Close() call
 #include <algorithm>
 #include <cstring>
 
@@ -43,11 +44,16 @@ CQuicSocketTransport::CQuicSocketTransport(IQuicStreamOperations &operations,
 CQuicSocketTransport::~CQuicSocketTransport()
 {
 	SetEvents(nullptr);
-	Close();
+	// The real clock, not a cached value: this close is not driven by any datagram/tick the
+	// owning connection just saw, and ngtcp2 tolerates a wall-clock jump forward far better than
+	// it tolerates one backward. A pacing/RTT miscalculation on this one final best-effort
+	// attempt has no observable consequence -- the object is gone either way once this returns.
+	const uint64_t nowMs = ::GetTickCount64();
+	Close(nowMs);
 	// Close() itself may have only started an asynchronous drain (m_draining) rather than
 	// finished it -- this object is about to stop existing, so nothing else will ever call
 	// OnWritable() on it again to keep that going. A no-op if Close() already finished.
-	FinishDrainingForDestruction();
+	FinishDrainingForDestruction(nowMs);
 }
 
 bool CQuicSocketTransport::IsConnected() const
@@ -151,7 +157,7 @@ void CQuicSocketTransport::ClearWriteLocked()
 	m_writeQueued = 0;
 }
 
-void CQuicSocketTransport::Flush()
+void CQuicSocketTransport::Flush(uint64_t nowMs)
 {
 	IQuicStreamOperations::Handle handle;
 	const uint8_t *front;
@@ -169,7 +175,7 @@ void CQuicSocketTransport::Flush()
 		front = m_writeChunks.front().data() + m_writeFrontOffset;
 		frontLength = m_writeChunks.front().size() - m_writeFrontOffset;
 	}
-	const std::ptrdiff_t result = m_operations.WriteStream(handle, front, frontLength);
+	const std::ptrdiff_t result = m_operations.WriteStream(handle, front, frontLength, nowMs);
 	IStreamTransportEvents *writable = nullptr;
 	IStreamTransportEvents *again = nullptr;
 	IStreamTransportEvents *lost = nullptr;
@@ -229,7 +235,7 @@ void CQuicSocketTransport::Flush()
 	if (failedHandle)
 		m_operations.AbortStream(failedHandle);
 	if (finishedHandle)
-		m_operations.CloseStream(finishedHandle);
+		m_operations.CloseStream(finishedHandle, nowMs);
 	if (writable)
 		writable->OnStreamWritable();
 	if (again)
@@ -238,7 +244,7 @@ void CQuicSocketTransport::Flush()
 		lost->OnStreamLost();
 }
 
-void CQuicSocketTransport::Close()
+void CQuicSocketTransport::Close(uint64_t nowMs)
 {
 	bool canFlushHere;
 	{
@@ -264,7 +270,7 @@ void CQuicSocketTransport::Close()
 			if (queuedBefore == 0) {
 				break;
 			}
-			Flush();
+			Flush(nowMs);
 			size_t queuedAfter;
 			{
 				std::lock_guard<std::mutex> l(m_mutex);
@@ -293,7 +299,7 @@ void CQuicSocketTransport::Close()
 		}
 	}
 	if (handle)
-		m_operations.CloseStream(handle);
+		m_operations.CloseStream(handle, nowMs);
 	// Deliberately does not call OnStreamLost: a local Close() is not a peer
 	// loss. Match CUtpSocketTransport::Close() which has the same invariant.
 }
@@ -317,7 +323,7 @@ IQuicStreamOperations::Handle CQuicSocketTransport::TryFinishClosingLocked()
 	return handle;
 }
 
-void CQuicSocketTransport::FinishDrainingForDestruction()
+void CQuicSocketTransport::FinishDrainingForDestruction(uint64_t nowMs)
 {
 	// Only ~CQuicSocketTransport() calls this, and only this object's own destruction can cut
 	// a still-draining close short: nothing else will ever call OnWritable() on it again once
@@ -333,7 +339,7 @@ void CQuicSocketTransport::FinishDrainingForDestruction()
 		ClearWriteLocked();
 	}
 	if (handle)
-		m_operations.CloseStream(handle);
+		m_operations.CloseStream(handle, nowMs);
 }
 
 void CQuicSocketTransport::MarkConnected()
@@ -365,9 +371,9 @@ size_t CQuicSocketTransport::OnPayload(const uint8_t *data, size_t length)
 		event->OnStreamReadable();
 	return length;
 }
-void CQuicSocketTransport::OnWritable()
+void CQuicSocketTransport::OnWritable(uint64_t nowMs)
 {
-	Flush();
+	Flush(nowMs);
 }
 void CQuicSocketTransport::OnEnded(int error)
 {

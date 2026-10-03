@@ -142,7 +142,7 @@ public:
 	//! extending flow control, or congestion easing, are both things only noticed by processing
 	//! a datagram or a tick, never by the write attempt that was blocked in the first place.
 	//! Cheap to call unconditionally: a transport with nothing queued just returns immediately.
-	virtual void NotifyWritable(Handle) = 0;
+	virtual void NotifyWritable(Handle, uint64_t nowMs) = 0;
 	virtual void Destroy(Handle) = 0;
 };
 

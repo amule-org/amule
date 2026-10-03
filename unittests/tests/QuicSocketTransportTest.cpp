@@ -43,7 +43,7 @@ struct Ops : IQuicStreamOperations
 	bool inWrite = false;
 	bool closedDuringWrite = false;
 	std::vector<uint8_t> sent;
-	std::ptrdiff_t WriteStream(Handle, const uint8_t *p, size_t n) override
+	std::ptrdiff_t WriteStream(Handle, const uint8_t *p, size_t n, uint64_t) override
 	{
 		++writes;
 		inWrite = true;
@@ -54,7 +54,7 @@ struct Ops : IQuicStreamOperations
 		sent.insert(sent.end(), p, p + k);
 		return result < 0 ? result : static_cast<std::ptrdiff_t>(k);
 	}
-	void CloseStream(Handle) override
+	void CloseStream(Handle, uint64_t) override
 	{
 		++closes;
 		closedDuringWrite = inWrite;
@@ -111,7 +111,7 @@ TEST(QuicTransportLifecycle, LifecycleAndIdempotentLoss)
 	ASSERT_TRUE(!t.IsOk());
 	ASSERT_EQUALS(7, t.LastError());
 	ASSERT_EQUALS(1, e.lost);
-	t.Close();
+	t.Close(0);
 	ASSERT_EQUALS(0, o.closes);
 }
 TEST(QuicTransportWrites, QueuesAndFlushes)
@@ -123,7 +123,7 @@ TEST(QuicTransportWrites, QueuesAndFlushes)
 	ASSERT_EQUALS(3u, t.Write(p, 3));
 	ASSERT_EQUALS(0, o.writes);
 	ASSERT_EQUALS(1, e.flush);
-	t.Flush();
+	t.Flush(0);
 	ASSERT_EQUALS(1, o.writes);
 	ASSERT_EQUALS(3u, o.sent.size());
 	ASSERT_EQUALS(1, e.writable);
@@ -136,11 +136,11 @@ TEST(QuicTransportBackpressure, RetainsTail)
 	CQuicSocketTransport t(o, H(), CNetworkAddress::FromString("192.0.2.1"), 1, &e, false);
 	const uint8_t p[] = { 1, 2, 3 };
 	t.Write(p, 3);
-	t.Flush();
+	t.Flush(0);
 	ASSERT_EQUALS(2u, t.PendingWriteBytes());
 	ASSERT_TRUE(!t.BlocksWrite());
 	o.result = 3;
-	t.Flush();
+	t.Flush(0);
 	ASSERT_EQUALS(0u, t.PendingWriteBytes());
 }
 TEST(QuicTransportReads, ReadBufferAndFailure)
@@ -154,9 +154,9 @@ TEST(QuicTransportReads, ReadBufferAndFailure)
 	ASSERT_EQUALS(2u, t.Read(out, 2));
 	ASSERT_EQUALS(4, (int)out[0]);
 	ASSERT_TRUE(t.BlocksRead());
-	t.Close();
+	t.Close(0);
 	ASSERT_EQUALS(1, o.closes);
-	t.Close();
+	t.Close(0);
 	ASSERT_EQUALS(1, o.closes);
 }
 TEST(QuicTransportReads, NeverDropsAcknowledgedPayload)
@@ -210,8 +210,8 @@ TEST(QuicTransportCallbacks, DoesNotNotifyAfterReentrantLocalClose)
 	CQuicSocketTransport t(o, H(), CNetworkAddress::FromString("192.0.2.1"), 1, &e, false);
 	const uint8_t p[] = { 1 };
 	t.Write(p, 1);
-	o.onWrite = [&] { t.Close(); };
-	t.Flush();
+	o.onWrite = [&] { t.Close(0); };
+	t.Flush(0);
 	ASSERT_EQUALS(0, e.writable);
 	ASSERT_EQUALS(0, e.lost);
 	ASSERT_EQUALS(1, o.closes);
@@ -225,7 +225,7 @@ TEST(QuicTransportCallbacks, NotifiesLossOnceWhenEndedDuringFlush)
 	const uint8_t p[] = { 1 };
 	t.Write(p, 1);
 	o.onWrite = [&] { t.OnEnded(3); };
-	t.Flush();
+	t.Flush(0);
 	ASSERT_EQUALS(0, e.writable);
 	ASSERT_EQUALS(1, e.lost);
 	ASSERT_EQUALS(3, t.LastError());
@@ -248,9 +248,9 @@ TEST(QuicTransportWrites, WritesDuringFlushKeepOrder)
 		t.Write(second, 1);
 		t.Write(third, 2);
 	};
-	t.Flush();
+	t.Flush(0);
 	ASSERT_EQUALS(3u, t.PendingWriteBytes());
-	t.Flush();
+	t.Flush(0);
 	ASSERT_EQUALS(0u, t.PendingWriteBytes());
 	ASSERT_EQUALS(2, o.writes);
 	const std::vector<uint8_t> expected = { 1, 2, 3, 4, 5 };
@@ -265,10 +265,10 @@ TEST(QuicTransportBackpressure, PartialWriteResumesMidChunk)
 	const uint8_t first[] = { 1, 2, 3 };
 	const uint8_t second[] = { 4 };
 	t.Write(first, 3);
-	t.Flush();
+	t.Flush(0);
 	t.Write(second, 1);
 	o.result = 999;
-	t.Flush();
+	t.Flush(0);
 	ASSERT_EQUALS(0u, t.PendingWriteBytes());
 	const std::vector<uint8_t> expected = { 1, 2, 3, 4 };
 	ASSERT_TRUE(o.sent == expected);
@@ -281,8 +281,8 @@ TEST(QuicTransportFailures, FatalWriteEndsStream)
 	CQuicSocketTransport t(o, H(), CNetworkAddress::FromString("192.0.2.1"), 1, &e, false);
 	const uint8_t p[] = { 1 };
 	t.Write(p, 1);
-	t.Flush();
-	t.Flush();
+	t.Flush(0);
+	t.Flush(0);
 	ASSERT_TRUE(!t.IsOk());
 	ASSERT_EQUALS(7, t.LastError());
 	ASSERT_EQUALS(1, e.lost);
