@@ -2516,7 +2516,20 @@ void CamuleApp::OnVerifyLocalDataFinished(CVerifyLocalDataEvent &evt)
 			return;
 		}
 	}
+	const CVerifyLocalDataResult previous = checked->GetVerifyResult();
 	checked->SetVerifyResult(evt.GetResult());
+	const CVerifyLocalDataResult &result = evt.GetResult();
+	const bool damageChanged = result.EncodedMD4() != previous.EncodedMD4() ||
+				   result.EncodedAICH() != previous.EncodedAICH();
+	// Blocks already queued for current downloaders may come from parts now known corrupt;
+	// ending the sessions drops them, and the peers re-ask for the new part status.
+	if (damageChanged && result.IsCorrupt()) {
+		checked->EndUploadSessions();
+	}
+	// The server offer marks the file complete or not (CreateOfferedFilePacket).
+	if (sharedfiles && result.IsCorrupt() != previous.IsCorrupt()) {
+		sharedfiles->RepublishFile(checked);
+	}
 	// Or the EC update skips the file as unchanged, and amulegui never sees the result.
 	checked->MarkECChanged();
 	// Redraw the row: the task's last progress update has already gone out before this.

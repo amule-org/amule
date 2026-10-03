@@ -327,6 +327,21 @@ void CUpDownClient::AddReqBlock(Requested_Block_Struct *reqblock, bool bSignalIO
 		return;
 	}
 
+	// A block in a part a check found corrupt. Peers are told we lack those parts, so this is a
+	// stale part status or a misbehaving client: end the session, as for a completed one, rather
+	// than leave it waiting for data; asking again brings the current status.
+	if (!srcfile->IsPartFile() &&
+		srcfile->GetVerifyResult().IsRangeCorrupt(reqblock->StartOffset, reqblock->EndOffset - 1)) {
+		AddDebugLogLineN(logRemoteClient,
+			CFormat("AddReqBlock: Requested block is in a corrupt part (%llu - %llu), ending the "
+				"upload session") %
+				reqblock->StartOffset % (reqblock->EndOffset - 1));
+		delete reqblock;
+		theApp->uploadqueue->RemoveFromUploadQueue(this);
+		SendOutOfPartReqsAndAddToWaitingQueue();
+		return;
+	}
+
 	if (!theApp->uploadqueue->IsDownloading(this)) {
 		AddDebugLogLineN(logRemoteClient, "AddReqBlock: Client not in upload list");
 		delete reqblock;
