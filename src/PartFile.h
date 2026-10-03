@@ -155,7 +155,9 @@ public:
 
 	bool GetNextRequestedBlock(
 		CUpDownClient *sender, std::vector<Requested_Block_Struct *> &toadd, uint16 &count);
-	void WritePartStatus(CMemFile *file);
+#ifndef CLIENT_GUI
+	void WritePartStatus(CMemFile *file) override;
+#endif
 	void WriteCompleteSourcesCount(CMemFile *file);
 	static bool CanAddSource(uint32 userid,
 		uint16 port,

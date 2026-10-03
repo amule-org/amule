@@ -53,6 +53,32 @@ public:
 	const BlockList &CorruptedAICH() const { return m_corruptedAICH; }
 	bool IsCorrupt() const { return !m_corruptedMD4.empty() || !m_corruptedAICH.empty(); }
 
+	// The one rule for which parts are withheld from peers. The advertised part status and the
+	// refusal of block requests both use it: a part advertised and then refused would end every
+	// upload session empty, which some clients (eMuleAI) punish as an upload faker.
+	bool IsPartCorrupt(uint16 part) const
+	{
+		return std::find(m_corruptedMD4.begin(), m_corruptedMD4.end(), part) !=
+			       m_corruptedMD4.end() ||
+		       std::any_of(m_corruptedAICH.begin(),
+			       m_corruptedAICH.end(),
+			       [part](const BlockList::value_type &e) { return e.first == part; });
+	}
+
+	// Whether the inclusive byte range [start, end] touches a corrupt part.
+	bool IsRangeCorrupt(uint64 start, uint64 end) const
+	{
+		if (!IsCorrupt()) {
+			return false;
+		}
+		for (uint64 part = start / PARTSIZE; part <= end / PARTSIZE; ++part) {
+			if (IsPartCorrupt((uint16)part)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	// FT_VERIFY_CORRUPTMD4: "p,p,p", the FT_CORRUPTEDPARTS format. Empty when no part is corrupt.
 	const wxString &EncodedMD4() const { return m_encodedMD4; }
 	// FT_VERIFY_CORRUPTAICH: "p:b.b;p:b". Empty when no block is corrupt.

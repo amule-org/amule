@@ -188,3 +188,34 @@ TEST(VerifyLocalDataResult, ResetToNeverVerified)
 	ASSERT_EQUALS(0u, result.date);
 	ASSERT_FALSE(result.IsCorrupt());
 }
+
+// The rule for withheld parts: listed by MD4, or holding corrupt AICH blocks.
+TEST(VerifyLocalDataResult, PartIsCorruptByEitherList)
+{
+	CVerifyLocalDataResult result;
+	ASSERT_FALSE(result.IsPartCorrupt(0));
+	result.SetCorrupted({ 1 }, { { 3, { 0 } } });
+	ASSERT_FALSE(result.IsPartCorrupt(0));
+	ASSERT_TRUE(result.IsPartCorrupt(1));
+	ASSERT_FALSE(result.IsPartCorrupt(2));
+	ASSERT_TRUE(result.IsPartCorrupt(3));
+}
+
+// The refusal of block requests uses the same rule as the advertised part status: a range is
+// refused exactly when it touches a part that IsPartCorrupt() withholds.
+TEST(VerifyLocalDataResult, RangeIsCorruptWhenItTouchesACorruptPart)
+{
+	CVerifyLocalDataResult result;
+	ASSERT_FALSE(result.IsRangeCorrupt(0, kFileSize - 1));
+	result.SetCorrupted({ 1 }, {});
+	ASSERT_FALSE(result.IsRangeCorrupt(0, PARTSIZE - 1));
+	ASSERT_TRUE(result.IsRangeCorrupt(PARTSIZE, PARTSIZE + EMBLOCKSIZE - 1));
+	ASSERT_TRUE(result.IsRangeCorrupt(PARTSIZE - 10, PARTSIZE + 10));
+	ASSERT_TRUE(result.IsRangeCorrupt(2 * PARTSIZE - 1, 2 * PARTSIZE - 1));
+	ASSERT_FALSE(result.IsRangeCorrupt(2 * PARTSIZE, kFileSize - 1));
+	for (uint64 offset = 0; offset < kFileSize; offset += EMBLOCKSIZE) {
+		const uint64 end = std::min<uint64>(offset + EMBLOCKSIZE, kFileSize) - 1;
+		ASSERT_EQUALS(result.IsPartCorrupt(offset / PARTSIZE) || result.IsPartCorrupt(end / PARTSIZE),
+			result.IsRangeCorrupt(offset, end));
+	}
+}

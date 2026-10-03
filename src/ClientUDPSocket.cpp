@@ -561,11 +561,7 @@ void CClientUDPSocket::ProcessPacket(uint8_t *packet, int16 size, int8 opcode, u
 
 				CMemFile data_out(128);
 				if (sender->GetUDPVersion() > 3) {
-					if (reqfile->IsPartFile()) {
-						static_cast<CPartFile *>(reqfile)->WritePartStatus(&data_out);
-					} else {
-						data_out.WriteUInt16(0);
-					}
+					reqfile->WritePartStatus(&data_out);
 				}
 
 				data_out.WriteUInt16(sender->GetUploadQueueWaitingPosition());
