@@ -1720,11 +1720,6 @@ msgstr[1] "%u kommentaar(i)"
 msgid "Banned client %s for sending %s corrupt data of %s total for the file '%s'"
 msgstr "Klient %s bänniti %s riknenud info saatmise eest (kokku %s faili '%s' kohta)"
 
-#: src/CountryFlags.cpp
-#, c-format
-msgid "Failed to load country data for '%s'."
-msgstr "'%s' riigiinfo laadimine ebaõnnestus."
-
 #: src/DataToText.cpp
 msgid "Auto [Lo]"
 msgstr "Auto [Madal]"
@@ -9653,6 +9648,10 @@ msgstr "Näib, et aMule töötab. Palun sulge see ja käivita eemaldaja uuesti."
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Kasutajaandmete eemaldamine asukohast $APPDATA\\aMule..."
+
+#, c-format
+#~ msgid "Failed to load country data for '%s'."
+#~ msgstr "'%s' riigiinfo laadimine ebaõnnestus."
 
 #~ msgid "Local"
 #~ msgstr "Kohalik"

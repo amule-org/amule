@@ -6,6 +6,7 @@ install (FILES
 	INSTALL.md
 	IP2Country.md
 	README.md
+	THIRDPARTY.md
 	amulesig.md
 	DESTINATION "${CMAKE_INSTALL_DOCDIR}"
 )

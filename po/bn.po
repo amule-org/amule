@@ -1697,11 +1697,6 @@ msgstr[1] "%uটি মন্তব্য"
 msgid "Banned client %s for sending %s corrupt data of %s total for the file '%s'"
 msgstr "ক্লায়েন্ট %s নিষিদ্ধ করা হয়েছে, কারণ এটি %s ক্ষতিগ্রস্ত ডেটা পাঠিয়েছে (মোট %s), ফাইল: '%s'"
 
-#: src/CountryFlags.cpp
-#, c-format
-msgid "Failed to load country data for '%s'."
-msgstr "'%s' এর জন্য দেশের তথ্য লোড করতে ব্যর্থ হয়েছে।"
-
 #: src/DataToText.cpp
 msgid "Auto [Lo]"
 msgstr "স্বয়ংক্রিয় [নিম্ন]"
@@ -9595,6 +9590,10 @@ msgstr "aMule চলছে বলে মনে হচ্ছে। অনুগ�
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "$APPDATA\\aMule-এ ব্যবহারকারীর ডেটা অপসারণ করা হচ্ছে…"
+
+#, c-format
+#~ msgid "Failed to load country data for '%s'."
+#~ msgstr "'%s' এর জন্য দেশের তথ্য লোড করতে ব্যর্থ হয়েছে।"
 
 #~ msgid "Local"
 #~ msgstr "স্থানীয়"

@@ -1721,11 +1721,6 @@ msgstr[1] "%u comentarios"
 msgid "Banned client %s for sending %s corrupt data of %s total for the file '%s'"
 msgstr "Veceru %s baneáu por unviar %s datos toyíos de %s en total pal ficheru '%s'"
 
-#: src/CountryFlags.cpp
-#, c-format
-msgid "Failed to load country data for '%s'."
-msgstr "Falló la carga de datos de país pa '%s'."
-
 #: src/DataToText.cpp
 msgid "Auto [Lo]"
 msgstr "Auto [Ba]"
@@ -9650,6 +9645,10 @@ msgstr "Paez qu'aMule ta n'execución. Zárralu y vuelvi a executar el desinstal
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Desaniciando datos d'usuariu en $APPDATA\\aMule..."
+
+#, c-format
+#~ msgid "Failed to load country data for '%s'."
+#~ msgstr "Falló la carga de datos de país pa '%s'."
 
 #~ msgid "Local"
 #~ msgstr "Llocal"

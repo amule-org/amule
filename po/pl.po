@@ -1733,11 +1733,6 @@ msgstr[2] "%u komentarzy"
 msgid "Banned client %s for sending %s corrupt data of %s total for the file '%s'"
 msgstr "Zbanowany klient %s za wysyłanie %s uszkodzonych danych z %s dla pliku '%s'"
 
-#: src/CountryFlags.cpp
-#, c-format
-msgid "Failed to load country data for '%s'."
-msgstr "Nie można połączyć się z serwerem pobrania HTTPNie powiodło się pobranie GeoIP.dat z %s"
-
 #: src/DataToText.cpp
 msgid "Auto [Lo]"
 msgstr "Auto [Ni]"
@@ -9717,6 +9712,10 @@ msgstr "aMule wydaje się być uruchomiony. Zamknij go i uruchom ponownie dezins
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Usuwanie danych użytkownika w $APPDATA\\aMule..."
+
+#, c-format
+#~ msgid "Failed to load country data for '%s'."
+#~ msgstr "Nie można połączyć się z serwerem pobrania HTTPNie powiodło się pobranie GeoIP.dat z %s"
 
 #~ msgid "Local"
 #~ msgstr "Lokalne"

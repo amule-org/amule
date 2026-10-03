@@ -1733,11 +1733,6 @@ msgstr[2] "%u komentarų"
 msgid "Banned client %s for sending %s corrupt data of %s total for the file '%s'"
 msgstr "Klientas %s užblokuotas, nes atsiuntė %s sugadintų duomenų (iš viso %s) failui „%s“"
 
-#: src/CountryFlags.cpp
-#, c-format
-msgid "Failed to load country data for '%s'."
-msgstr "Nepavyko įkelti šalies duomenų „%s“."
-
 #: src/DataToText.cpp
 msgid "Auto [Lo]"
 msgstr "Automatiškai (žemas)"
@@ -9716,6 +9711,10 @@ msgstr "Panašu, kad aMule veikia. Uždarykite ją ir vėl paleiskite šalinimo 
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Šalinami naudotojo duomenys iš $APPDATA\\aMule..."
+
+#, c-format
+#~ msgid "Failed to load country data for '%s'."
+#~ msgstr "Nepavyko įkelti šalies duomenų „%s“."
 
 #~ msgid "Local"
 #~ msgstr "Vietinis"

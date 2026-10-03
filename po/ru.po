@@ -1748,11 +1748,6 @@ msgstr[2] "%u комментариев"
 msgid "Banned client %s for sending %s corrupt data of %s total for the file '%s'"
 msgstr "Клиент %s забанен за отсыл %s поврежденных данных из %s всего для файла '%s'"
 
-#: src/CountryFlags.cpp
-#, c-format
-msgid "Failed to load country data for '%s'."
-msgstr "Не удалось подгрузить данные страны для «%s»."
-
 #: src/DataToText.cpp
 msgid "Auto [Lo]"
 msgstr "Авто [низкий]"
@@ -9737,6 +9732,10 @@ msgstr "Похоже, что aMule запущен. Закройте его и п
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Удаление пользовательских данных в $APPDATA\\aMule…"
+
+#, c-format
+#~ msgid "Failed to load country data for '%s'."
+#~ msgstr "Не удалось подгрузить данные страны для «%s»."
 
 #~ msgid "Local"
 #~ msgstr "Локальный"

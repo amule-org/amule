@@ -15,3 +15,9 @@
 # LF. A Windows checkout with core.autocrlf=true otherwise rewrites them to
 # CRLF on commit (this happened to 12 po/ infra files in #225 / c844cb9).
 po/** text=auto eol=lf
+
+# Keep the review focused on code and the reproducible artwork pipeline.
+src/icons/icon_data.c linguist-generated=true
+src/icons/menu_*.svg linguist-generated=true
+src/icons/flags/*.svg linguist-generated=true
+src/icons/vendor/** linguist-vendored=true

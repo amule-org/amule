@@ -26,9 +26,9 @@
 #ifndef SERVERLISTCTRL_H
 #define SERVERLISTCTRL_H
 
-#include "MuleVirtualDataViewCtrl.h" // Needed for CMuleVirtualDataViewCtrl
-
 #include <map>
+
+#include "MuleVirtualDataViewCtrl.h" // Needed for CMuleVirtualDataViewCtrl
 
 #define COLUMN_SERVER_NAME 0
 #define COLUMN_SERVER_ADDR 1
@@ -154,19 +154,17 @@ private:
 	/// Delete key removes the selected servers; see CMuleDataViewCtrl::OnListKey.
 	bool OnListKey(wxKeyEvent &event) override;
 
-	/// @a code's flag, decoded on first use. An unknown code yields an invalid icon, which
-	/// draws as no icon at all.
+	/// Render at this window's current DPI; unknown codes use the shared placeholder.
 	const wxIcon &FlagIcon(const wxString &code) const;
 
 	//! Used to keep track of the last high-lighted item.
 	const CServer *m_connected;
 
-	/**
-	 * ISO code -> flag icon, filled in lazily. Mutable because the flags are decoded from
-	 * GetItemIcon(), which the control calls to paint a row and is therefore const. Loading all
-	 * ~250 up front instead would decode a PNG for every country nobody is connected to.
-	 */
+	// Avoid recreating native icon handles on every paint, but invalidate the raster
+	// cache when this window moves to a monitor with a different display scale.
 	mutable std::map<wxString, wxIcon> m_flagIcons;
+	mutable wxSize m_flagIconSize;
+	mutable double m_flagIconScale = 0;
 
 	wxDECLARE_EVENT_TABLE();
 };

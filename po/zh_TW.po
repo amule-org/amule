@@ -1716,11 +1716,6 @@ msgstr[0] "%u 個註解"
 msgid "Banned client %s for sending %s corrupt data of %s total for the file '%s'"
 msgstr "已封鎖客戶端 %s：因傳送 %s (總計 %s ) 損壞資料 (檔案 %s )"
 
-#: src/CountryFlags.cpp
-#, c-format
-msgid "Failed to load country data for '%s'."
-msgstr "無法自 %s 下載國家資料。"
-
 #: src/DataToText.cpp
 msgid "Auto [Lo]"
 msgstr "自動 [低]"
@@ -9619,6 +9614,10 @@ msgstr "aMule 似乎正在執行中。請將其關閉後重新執行解除安裝
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "正在移除位於 $APPDATA\\aMule 的使用者資料……"
+
+#, c-format
+#~ msgid "Failed to load country data for '%s'."
+#~ msgstr "無法自 %s 下載國家資料。"
 
 #~ msgid "Local"
 #~ msgstr "本地"

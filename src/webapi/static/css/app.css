@@ -516,7 +516,7 @@ table.data.virtual td.name .name-select { width: 100%; max-width: 100%; }
 .row-actions select { max-width: 130px; }
 .color-swatch { display: inline-block; width: 14px; height: 14px; border-radius: 3px; border: 1px solid var(--border); vertical-align: middle; }
 .country-cell { white-space: nowrap; }
-.flag { display: inline-block; width: 16px; height: 11px; vertical-align: middle; margin-right: 5px; }
+.flag { display: inline-block; width: 16px; height: 12px; vertical-align: middle; margin-right: 5px; }
 
 /* --- search --- */
 .search-grid {

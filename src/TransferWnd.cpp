@@ -25,6 +25,8 @@
 
 #include "TransferWnd.h" // Interface declarations
 
+#include "MenuIcons.h"
+
 #include <common/MenuIDs.h>
 
 #include <wx/artprov.h> // Needed for the "amule:" art ids
@@ -412,10 +414,10 @@ void CTransferWnd::OnNMRclickDLtab(wxMouseEvent &evt)
 
 		m_menu->AppendSeparator();
 
-		m_menu->Append(MP_CANCEL, _("Cancel"));
-		m_menu->Append(MP_STOP, _("&Stop"));
-		m_menu->Append(MP_PAUSE, _("&Pause"));
-		m_menu->Append(MP_RESUME, _("&Resume"));
+		AppendMenuIcon(m_menu, MP_CANCEL, _("Cancel"), MenuIcon::Cancel);
+		AppendMenuIcon(m_menu, MP_STOP, _("&Stop"), MenuIcon::Stop);
+		AppendMenuIcon(m_menu, MP_PAUSE, _("&Pause"), MenuIcon::Pause);
+		AppendMenuIcon(m_menu, MP_RESUME, _("&Resume"), MenuIcon::Resume);
 
 		PopupMenu(m_menu, evt.GetPosition());
 

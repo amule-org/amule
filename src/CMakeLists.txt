@@ -434,8 +434,8 @@ if (BUILD_MONOLITHIC)
 		)
 
 		set (AMULE_ICNS "${CMAKE_SOURCE_DIR}/platforms/MacOSX/amule.icns")
-		target_sources (amule PRIVATE ${AMULE_ICNS})
-		set_source_files_properties (${AMULE_ICNS} PROPERTIES
+		target_sources (amule PRIVATE ${AMULE_ICNS} "${CMAKE_SOURCE_DIR}/docs/THIRDPARTY.md")
+		set_source_files_properties (${AMULE_ICNS} "${CMAKE_SOURCE_DIR}/docs/THIRDPARTY.md" PROPERTIES
 			MACOSX_PACKAGE_LOCATION "Resources"
 		)
 
@@ -673,8 +673,8 @@ if (BUILD_REMOTEGUI)
 		)
 
 		set (AMULEGUI_ICNS "${CMAKE_SOURCE_DIR}/platforms/MacOSX/amule.icns")
-		target_sources (amulegui PRIVATE ${AMULEGUI_ICNS})
-		set_source_files_properties (${AMULEGUI_ICNS} PROPERTIES
+		target_sources (amulegui PRIVATE ${AMULEGUI_ICNS} "${CMAKE_SOURCE_DIR}/docs/THIRDPARTY.md")
+		set_source_files_properties (${AMULEGUI_ICNS} "${CMAKE_SOURCE_DIR}/docs/THIRDPARTY.md" PROPERTIES
 			MACOSX_PACKAGE_LOCATION "Resources"
 		)
 

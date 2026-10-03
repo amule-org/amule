@@ -5,7 +5,7 @@
 # The peer / server `country_code` on /clients and /servers is only half
 # the story; this route is where a frontend gets the matching artwork.
 # The bytes come from the icon table compiled into the binary (the same
-# famfamfam set the desktop GUI draws), so the assertions here are about
+# flag artwork the desktop GUI draws), so the assertions here are about
 # the route's shape rather than any file on disk:
 #
 #   * a known code returns a PNG with the right Content-Type,
@@ -100,8 +100,7 @@ case "$CT" in
 	*) _fail "/flags/de.png Content-Type" "expected image/png, got: ${CT:-<none>}" ;;
 esac
 
-# The famfamfam flags are 16x11 8-bit colormap PNGs, a few hundred bytes
-# each. Check the 8-byte PNG signature so a future refactor that returns
+# The flag PNG fallbacks are compact raster images. Check the 8-byte PNG signature so a future refactor that returns
 # the wrong table entry (or an empty body) fails loudly here.
 SIG=$(od -An -tx1 -N8 "$CURL_BODY_FILE" | tr -d ' \n')
 if [ "$SIG" = "89504e470d0a1a0a" ]; then
@@ -224,6 +223,39 @@ done
 # a future auth gate on the route can't slip through unnoticed.
 _curl -H "Authorization: Bearer not-a-real-token" "$HOST/flags/fr.png"
 _assert_status 200 "GET /flags/fr.png with a bogus bearer is still served"
+
+# --- 10. SVG flags preserve the same HTTP contract. ---------------
+_curl "$HOST/flags/us.svg"
+_assert_status 200 "GET /flags/us.svg"
+case "$(_header content-type)" in
+	image/svg+xml*) _pass "SVG Content-Type" ;;
+	*) _fail "SVG Content-Type" ;;
+esac
+if head -c 200 "$CURL_BODY_FILE" | grep -q '<svg'; then
+	_pass "SVG body contains the vector artwork"
+else
+	_fail "SVG body missing"
+fi
+SVG_ETAG=$(_header etag)
+if [ -n "$SVG_ETAG" ]; then
+	_curl -H "If-None-Match: $SVG_ETAG" "$HOST/flags/us.svg"
+	_assert_status 304 "SVG matching ETag → 304"
+else
+	_fail "SVG ETag missing"
+fi
+_curl -I "$HOST/flags/us.svg"
+_assert_status 200 "HEAD /flags/us.svg"
+if [ "$CURL_SIZE" = "0" ]; then _pass "SVG HEAD carries no body"; else _fail "SVG HEAD body"; fi
+for target in unknown an zz DE d1; do
+	_curl "$HOST/flags/$target.svg"
+	_assert_status 404 "absent or malformed SVG ($target)"
+done
+_curl "$HOST/flags/an.png"
+_assert_status 200 "legacy PNG fallback remains available"
+_curl "$HOST/flags/us.SVG"
+_assert_status 404 "uppercase SVG extension refused"
+_curl -X POST "$HOST/flags/us.svg"
+_assert_status 405 "POST SVG refused"
 
 # --- Summary. -----------------------------------------------------
 echo

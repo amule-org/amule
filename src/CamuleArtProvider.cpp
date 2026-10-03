@@ -8,6 +8,7 @@
 #include <wx/bmpbndl.h> // Needed for wxBitmapBundle::FromSVG / FromBitmaps
 #include <wx/image.h>
 #include <wx/mstream.h>
+#include <wx/settings.h>
 
 const wxString CamuleArtProvider::PREFIX = "amule:";
 
@@ -25,7 +26,15 @@ const struct AMuleIconEntry *FindIcon(const wxArtID &id)
 bool LoadPng(const struct AMuleIconEntry *entry, wxImage &image)
 {
 	wxMemoryInputStream stream(entry->png_data, entry->png_len);
-	return image.LoadFile(stream, wxBITMAP_TYPE_PNG);
+	if (!image.LoadFile(stream, wxBITMAP_TYPE_PNG)) {
+		return false;
+	}
+	if (wxString::FromUTF8(entry->name).StartsWith("menu_")) {
+		const wxColour colour = wxSystemSettings::GetColour(wxSYS_COLOUR_MENUTEXT);
+		// Monochrome PNG fallbacks retain their alpha, including antialiased edges.
+		image.SetRGB(wxRect(image.GetSize()), colour.Red(), colour.Green(), colour.Blue());
+	}
+	return true;
 }
 
 // The icon's SVG twin as a bundle, or an invalid bundle when there is none or it does not parse.
@@ -40,6 +49,14 @@ wxBitmapBundle SvgBundle(const struct AMuleIconEntry *entry, const wxSize &size)
 			sizeDef = probe.GetSize();
 		}
 		if (sizeDef != wxDefaultSize) {
+			if (wxString::FromUTF8(entry->name).StartsWith("menu_")) {
+				wxString svg = wxString::FromUTF8(
+					reinterpret_cast<const char *>(entry->svg_data), entry->svg_len);
+				svg.Replace("#212529",
+					wxSystemSettings::GetColour(wxSYS_COLOUR_MENUTEXT)
+						.GetAsString(wxC2S_HTML_SYNTAX));
+				return wxBitmapBundle::FromSVG(svg.utf8_str(), sizeDef);
+			}
 			return wxBitmapBundle::FromSVG(entry->svg_data, entry->svg_len, sizeDef);
 		}
 	}

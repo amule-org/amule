@@ -1658,11 +1658,6 @@ msgstr[1] ""
 msgid "Banned client %s for sending %s corrupt data of %s total for the file '%s'"
 msgstr ""
 
-#: src/CountryFlags.cpp
-#, c-format
-msgid "Failed to load country data for '%s'."
-msgstr ""
-
 #: src/DataToText.cpp
 msgid "Auto [Lo]"
 msgstr ""

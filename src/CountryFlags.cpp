@@ -18,69 +18,34 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-// Country flags are libmaxminddb-free: they map an ISO code to an embedded PNG via the art
-// provider, so this is compiled unconditionally into every GUI -- amulegui, which gets codes over
-// EC, and monolithic amule. Only the resolver producing the codes is gated on ENABLE_IP2COUNTRY.
+// Country-code resolution stays in the core; this cache is shared by both GUIs.
 #include "CountryFlags.h"
-#include "Logger.h"          // For AddLogLine*
-#include <common/Format.h>   // For CFormat()
-#include "icons/icon_data.h" // For amule_get_all_icons()
+#include "icons/icon_data.h"
 
-#include <wx/artprov.h> // For wxArtProvider::GetBitmap
-#include <wx/intl.h>
-
-#include <cstring> // For strncmp
+#include <wx/artprov.h>
 
 CCountryFlags::CCountryFlags() = default;
 
-void CCountryFlags::LoadFlags()
+wxBitmap CCountryFlags::GetFlag(const wxString &code, const wxSize &logicalSize, double contentScale)
 {
-	// Walk the embedded icon table and pick out anything named "flag_<code>". The table is
-	// built by src/icons/embed_icons.py from src/icons/flags/<code>.png at compile time;
-	// CamuleArtProvider, registered in CamuleGuiApp::OnInit, hands back a decoded wxBitmap for
-	// each.
-	int icon_count = 0;
-	const struct AMuleIconEntry *icons = amule_get_all_icons(&icon_count);
-	const char flag_prefix[] = "flag_";
-	const size_t flag_prefix_len = sizeof(flag_prefix) - 1;
-
-	for (int i = 0; i < icon_count; ++i) {
-		const char *name = icons[i].name;
-		if (strncmp(name, flag_prefix, flag_prefix_len) != 0) {
-			continue;
-		}
-		const wxString code = wxString(name + flag_prefix_len, wxConvISO8859_1);
-		const wxString art_id = wxString::Format("amule:%s", name);
-		const wxImage flag = wxArtProvider::GetBitmap(art_id).ConvertToImage();
-
-		if (!flag.IsOk()) {
-			// Reuse the existing catalog string (avoid a new msgid).
-			AddLogLineC(CFormat(_("Failed to load country data for '%s'.")) % code);
-			continue;
-		}
-		if (code == "unknown") {
-			m_unknown = flag;
-		}
-		m_flags[code] = flag;
+	wxString key = code;
+	auto it = m_flags.find(key);
+	if (it == m_flags.end() && !amule_find_icon(("flag_" + key).utf8_str())) {
+		key = "unknown";
+		it = m_flags.find(key);
 	}
-
-	AddDebugLogLineN(logGeneral,
-		CFormat("Loaded %d flag bitmaps.") %
-			m_flags.size()); // there's never just one - no plural needed
-}
-
-const wxImage &CCountryFlags::GetFlag(const wxString &code)
-{
-	if (!m_loaded) {
-		// First call happens during list drawing, well after the app's
-		// OnInit pushed CamuleArtProvider -- so the flag art resolves now.
-		LoadFlags();
-		m_loaded = true;
+	if (it == m_flags.end()) {
+		const auto bundle =
+			wxArtProvider::GetBitmapBundle("amule:flag_" + key, wxART_OTHER, wxSize(16, 12));
+		it = m_flags.emplace(key, bundle).first;
 	}
-	std::map<wxString, wxImage>::const_iterator it = m_flags.find(code);
-	if (it != m_flags.end()) {
-		return it->second;
+	if (!it->second.IsOk()) {
+		return wxNullBitmap;
 	}
-	// Empty or unrecognised code -> the "??" placeholder flag.
-	return m_unknown;
+	const wxSize pixels(wxRound(logicalSize.x * contentScale), wxRound(logicalSize.y * contentScale));
+	wxBitmap bitmap = it->second.GetBitmap(pixels);
+	if (bitmap.IsOk()) {
+		bitmap.SetScaleFactor(contentScale);
+	}
+	return bitmap;
 }

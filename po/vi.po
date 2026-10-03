@@ -1686,11 +1686,6 @@ msgstr[0] "%u bình luận"
 msgid "Banned client %s for sending %s corrupt data of %s total for the file '%s'"
 msgstr "Đã cấm client %s vì gửi %s dữ liệu bị hỏng trong tổng số %s cho tệp '%s'"
 
-#: src/CountryFlags.cpp
-#, c-format
-msgid "Failed to load country data for '%s'."
-msgstr "Không thể tải dữ liệu quốc gia cho '%s'."
-
 #: src/DataToText.cpp
 msgid "Auto [Lo]"
 msgstr "Tự động [Thấp]"
@@ -9544,6 +9539,10 @@ msgstr "aMule dường như đang chạy. Vui lòng đóng nó và chạy lại 
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Đang xóa dữ liệu người dùng tại $APPDATA\\aMule..."
+
+#, c-format
+#~ msgid "Failed to load country data for '%s'."
+#~ msgstr "Không thể tải dữ liệu quốc gia cho '%s'."
 
 #~ msgid "Local"
 #~ msgstr "Cục bộ"

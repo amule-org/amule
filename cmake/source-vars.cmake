@@ -83,6 +83,7 @@ if (BUILD_MONOLITHIC OR BUILD_REMOTEGUI)
 		# (Python3 missing → use the file as committed). See
 		# src/CMakeLists.txt for the resolution.
 		CamuleArtProvider.cpp
+		MenuIcons.cpp
 		${AMULE_ICON_DATA_C}
 		AddFriend.cpp
 		amule-gui.cpp

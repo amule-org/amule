@@ -23,21 +23,8 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-//
-// Country flags are from FAMFAMFAM (http://www.famfamfam.com)
-//
-// Flag icons - http://www.famfamfam.com
-//
-// These icons are public domain, and as such are free for any use (attribution appreciated but not required).
-//
-// Note that these flags are named using the ISO3166-1 alpha-2 country codes where appropriate.
-// A list of codes can be found at http://en.wikipedia.org/wiki/ISO_3166-1_alpha-2
-//
-// If you find these icons useful, please donate via paypal to mjames@gmail.com
-// (or click the donate button available at http://www.famfamfam.com/lab/icons/silk)
-//
-// Contact: mjames@gmail.com
-//
+// Country-flag artwork, source revisions and licenses: icons/ARTWORK.md.
+// The GeoIP database has its own license, independent of the flag images.
 
 #ifndef IP2COUNTRY_H
 #define IP2COUNTRY_H

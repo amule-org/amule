@@ -1601,7 +1601,7 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 	// image an <img src> points at, carrying no per-installation data.
 	if (path.compare(0, 7, "/flags/") == 0) {
 		if (req.method != "GET" && req.method != "HEAD") {
-			return MethodNotAllowed("GET, HEAD", "only GET / HEAD on /flags/{code}.png");
+			return MethodNotAllowed("GET, HEAD", "only GET / HEAD on /flags/{code}.{png,svg}");
 		}
 		return ServeCountryFlag(req, path);
 	}
@@ -1727,9 +1727,10 @@ CHttpServer::Response CApiDispatcher::ServeStaticFile(
 CHttpServer::Response CApiDispatcher::ServeCountryFlag(
 	const CHttpServer::Request &, const std::string &url_path)
 {
-	// Exact shape only: "/flags/" + name + ".png".
+	// Exact shape only: "/flags/" + name + ".png" or ".svg".
 	static const std::string kPrefix = "/flags/";
-	static const std::string kSuffix = ".png";
+	const bool svg = url_path.size() >= 4 && url_path.compare(url_path.size() - 4, 4, ".svg") == 0;
+	const std::string kSuffix = svg ? ".svg" : ".png";
 	if (url_path.size() <= kPrefix.size() + kSuffix.size() ||
 		url_path.compare(0, kPrefix.size(), kPrefix) != 0 ||
 		url_path.compare(url_path.size() - kSuffix.size(), kSuffix.size(), kSuffix) != 0) {
@@ -1751,19 +1752,24 @@ CHttpServer::Response CApiDispatcher::ServeCountryFlag(
 		return ErrorResponse(404, "not_found", "no such flag");
 	}
 
-	// The famfamfam set covers 248 of the ~300 assignable alpha-2 codes and GeoIP
-	// can resolve one it has no artwork for, so a well-formed miss is a 404.
+	// A future GeoIP database can return a code absent from the bundled artwork.
+	// A well-formed miss is a 404.
 	const struct AMuleIconEntry *icon = amule_find_icon(("flag_" + code).c_str());
-	if (!icon || icon->png_data == nullptr || icon->png_len == 0) {
+	if (!icon) {
+		return ErrorResponse(404, "not_found", "no such flag");
+	}
+	const auto *data = svg ? icon->svg_data : icon->png_data;
+	const auto length = svg ? icon->svg_len : icon->png_len;
+	if (!data || !length) {
 		return ErrorResponse(404, "not_found", "no such flag");
 	}
 
 	CHttpServer::Response r;
 	r.status = 200;
-	r.content_type = "image/png";
+	r.content_type = svg ? "image/svg+xml" : "image/png";
 	// Dispatch() applies the ETag and 304 swap to every 200 GET/HEAD, and the
 	// transport writes a HEAD as headers only, so this handler just produces bytes.
-	r.body.assign(reinterpret_cast<const char *>(icon->png_data), icon->png_len);
+	r.body.assign(reinterpret_cast<const char *>(data), length);
 	// The artwork is compiled in and can only change with a new build, while a peer
 	// list is a page full of <img> tags pointing here. A day of freshness turns those
 	// into cache hits, while bounding how long an upgraded daemon serves stale art.

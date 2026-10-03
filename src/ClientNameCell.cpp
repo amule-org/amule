@@ -192,10 +192,14 @@ void DrawClientNameCell(const ClientNameCell &cell, const wxRect &rect, wxDC *dc
 
 #ifdef GEOIP_GUI
 	if (!cell.countryCode.IsEmpty()) {
-		const wxImage &flag = theApp->GetCountryFlags()->GetFlag(cell.countryCode);
-		const int flagY = point.y + (rect.GetHeight() - flag.GetHeight()) / 2 + 1 /* floor() */;
-		dc->DrawBitmap(flag, point.x, flagY, true);
-		point.x += flag.GetWidth() + 2 /* Padding */;
+		const wxBitmap flag = theApp->GetCountryFlags()->GetFlag(
+			cell.countryCode, dc->FromDIP(wxSize(16, 12)), dc->GetContentScaleFactor());
+		if (flag.IsOk()) {
+			const wxSize flagSize = flag.GetLogicalSize();
+			const int flagY = point.y + (rect.GetHeight() - flagSize.y) / 2 + 1 /* floor() */;
+			dc->DrawBitmap(flag, point.x, flagY, true);
+			point.x += flagSize.x + dc->FromDIP(2);
+		}
 	}
 #endif // GEOIP_GUI
 

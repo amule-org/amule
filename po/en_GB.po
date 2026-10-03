@@ -1694,11 +1694,6 @@ msgstr[1] "%u comments"
 msgid "Banned client %s for sending %s corrupt data of %s total for the file '%s'"
 msgstr "Banned client %s for sending %s corrupt data of %s total for the file '%s'"
 
-#: src/CountryFlags.cpp
-#, c-format
-msgid "Failed to load country data for '%s'."
-msgstr "Failed to load country data for '%s'."
-
 #: src/DataToText.cpp
 msgid "Auto [Lo]"
 msgstr "Auto [Lo]"
@@ -9592,6 +9587,10 @@ msgstr "aMule appears to be running. Please close it and re-run the uninstaller.
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Removing user data at $APPDATA\\aMule..."
+
+#, c-format
+#~ msgid "Failed to load country data for '%s'."
+#~ msgstr "Failed to load country data for '%s'."
 
 #~ msgid "Local"
 #~ msgstr "Local"

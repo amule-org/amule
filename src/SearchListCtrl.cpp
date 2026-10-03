@@ -25,6 +25,8 @@
 
 #include "SearchListCtrl.h" // Interface declarations
 
+#include "MenuIcons.h"
+
 #include <algorithm> // Needed for std::find, std::min, std::sort
 #include <vector>    // Needed for std::vector
 #include <wx/bmpcbox.h>
@@ -822,7 +824,7 @@ void CSearchListCtrl::OnRightClick(wxDataViewEvent &event)
 		// No title: wxMenu's title parameter renders inconsistently or not at all
 		// as a context-popup header across platforms (issue #767).
 		wxMenu menu;
-		menu.Append(MP_RESUME, _("Download"));
+		AppendMenuIcon(&menu, MP_RESUME, _("Download"), MenuIcon::Download);
 
 		wxMenu *cats = new wxMenu(_("Category"));
 		cats->Append(MP_ASSIGNCAT, _("Main"));
@@ -841,14 +843,16 @@ void CSearchListCtrl::OnRightClick(wxDataViewEvent &event)
 		}
 
 		menu.Append(MP_SEARCHRELATED, _("Search related files (eD2k, local server)"));
-		menu.Append(MP_GETCOMMENTS, _("Show all comments"));
+		AppendMenuIcon(&menu, MP_GETCOMMENTS, _("Show all comments"), MenuIcon::Comments);
 		menu.AppendSeparator();
 		// Singular or plural to match what it will copy, as the server list does.
 		// OnPopupGetUrl has always walked the whole selection and joined the links with
 		// newlines -- only the menu stopped it being handed more than one.
 		const bool single = (GetSelectedItemCount() == 1);
-		menu.Append(MP_GETED2KLINK,
-			single ? _("Copy eD2k link to clipboard") : _("Copy eD2k links to clipboard"));
+		AppendMenuIcon(&menu,
+			MP_GETED2KLINK,
+			single ? _("Copy eD2k link to clipboard") : _("Copy eD2k links to clipboard"),
+			MenuIcon::Link);
 
 		// Comments stays single-only: it opens a modal dialog for one result.
 		menu.Enable(MP_GETCOMMENTS, single);

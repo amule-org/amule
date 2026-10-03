@@ -25,6 +25,8 @@
 
 #include "SharedFilesCtrl.h" // Interface declarations
 
+#include "MenuIcons.h"
+
 #include <wx/file.h>    // Needed for wxFile
 #include <wx/filedlg.h> // Needed for wxFileDialog
 
@@ -242,17 +244,17 @@ void CSharedFilesCtrl::OnItemRightClicked(wxDataViewEvent &event)
 		m_menu->Append(0, _("Priority"), prioMenu);
 		m_menu->AppendSeparator();
 
-		m_menu->Append(MP_VIEW, _("&Open the file"));
-		m_menu->Append(MP_SHOWINFOLDER, _("Show in file manager"));
+		AppendMenuIcon(m_menu, MP_VIEW, _("&Open the file"), MenuIcon::Open);
+		AppendMenuIcon(m_menu, MP_SHOWINFOLDER, _("Show in file manager"), MenuIcon::Folder);
 		m_menu->AppendSeparator();
-		m_menu->Append(MP_METINFO, _("Show file &details"));
+		AppendMenuIcon(m_menu, MP_METINFO, _("Show file &details"), MenuIcon::Info);
 		m_menu->AppendSeparator();
 
 		CKnownFile *file = reinterpret_cast<CKnownFile *>(m_menuItem);
 		if (file->GetFileComment().IsEmpty() && !file->GetFileRating()) {
-			m_menu->Append(MP_CMT, _("Add Comment/Rating"));
+			AppendMenuIcon(m_menu, MP_CMT, _("Add Comment/Rating"), MenuIcon::Comments);
 		} else {
-			m_menu->Append(MP_CMT, _("Edit Comment/Rating"));
+			AppendMenuIcon(m_menu, MP_CMT, _("Edit Comment/Rating"), MenuIcon::Comments);
 		}
 
 		m_menu->AppendSeparator();
@@ -272,16 +274,32 @@ void CSharedFilesCtrl::OnItemRightClicked(wxDataViewEvent &event)
 			m_menu->Append(MP_ADDCOLLECTION, _("Add files in collection to transfer list"));
 			m_menu->AppendSeparator();
 		}
-		m_menu->Append(MP_GETMAGNETLINK, _("Copy magnet &URI to clipboard"));
-		m_menu->Append(MP_GETED2KLINK, _("Copy eD2k &link to clipboard"));
-		m_menu->Append(MP_GETSOURCEED2KLINK, _("Copy eD2k link to clipboard (&Source)"));
-		m_menu->Append(MP_GETCRYPTSOURCEDED2KLINK,
-			_("Copy eD2k link to clipboard (Source) (&With Crypt options)"));
-		m_menu->Append(MP_GETHOSTNAMESOURCEED2KLINK, _("Copy eD2k link to clipboard (&Hostname)"));
-		m_menu->Append(MP_GETHOSTNAMECRYPTSOURCEED2KLINK,
-			_("Copy eD2k link to clipboard (Hostname) (With &Crypt options)"));
-		m_menu->Append(MP_GETAICHED2KLINK, _("Copy eD2k link to clipboard (&AICH info)"));
-		m_menu->Append(MP_GETAICHED2KLINKSRC, _("Copy eD2k link to clipboard (&AICH info + Source)"));
+		AppendMenuIcon(m_menu, MP_GETMAGNETLINK, _("Copy magnet &URI to clipboard"), MenuIcon::Link);
+		AppendMenuIcon(m_menu, MP_GETED2KLINK, _("Copy eD2k &link to clipboard"), MenuIcon::Link);
+		AppendMenuIcon(m_menu,
+			MP_GETSOURCEED2KLINK,
+			_("Copy eD2k link to clipboard (&Source)"),
+			MenuIcon::Link);
+		AppendMenuIcon(m_menu,
+			MP_GETCRYPTSOURCEDED2KLINK,
+			_("Copy eD2k link to clipboard (Source) (&With Crypt options)"),
+			MenuIcon::Link);
+		AppendMenuIcon(m_menu,
+			MP_GETHOSTNAMESOURCEED2KLINK,
+			_("Copy eD2k link to clipboard (&Hostname)"),
+			MenuIcon::Link);
+		AppendMenuIcon(m_menu,
+			MP_GETHOSTNAMECRYPTSOURCEED2KLINK,
+			_("Copy eD2k link to clipboard (Hostname) (With &Crypt options)"),
+			MenuIcon::Link);
+		AppendMenuIcon(m_menu,
+			MP_GETAICHED2KLINK,
+			_("Copy eD2k link to clipboard (&AICH info)"),
+			MenuIcon::Link);
+		AppendMenuIcon(m_menu,
+			MP_GETAICHED2KLINKSRC,
+			_("Copy eD2k link to clipboard (&AICH info + Source)"),
+			MenuIcon::Link);
 		m_menu->Append(MP_WS, _("Copy feedback to clipboard"));
 		m_menu->AppendSeparator();
 

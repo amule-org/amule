@@ -1712,11 +1712,6 @@ msgstr[1] "%u adet yorum"
 msgid "Banned client %s for sending %s corrupt data of %s total for the file '%s'"
 msgstr "%s istemcisi %s kadar veriyi %s toplamda '%s' dosyasında gönderdiği için yasaklandı."
 
-#: src/CountryFlags.cpp
-#, c-format
-msgid "Failed to load country data for '%s'."
-msgstr "'%s' için ülke verisi yüklenemedi."
-
 #: src/DataToText.cpp
 msgid "Auto [Lo]"
 msgstr "Oto (Düş)"
@@ -9625,6 +9620,10 @@ msgstr "aMule çalışmakta gibi görünüyor. Lütfen onu kapatıp kurulum prog
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Kullanıcı verileri $APPDATA\\aMule konumunda kaldırılıyor…"
+
+#, c-format
+#~ msgid "Failed to load country data for '%s'."
+#~ msgstr "'%s' için ülke verisi yüklenemedi."
 
 #~ msgid "Local"
 #~ msgstr "Sunucu"

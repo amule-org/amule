@@ -25,6 +25,8 @@
 
 #include "DownloadListCtrl.h" // Interface declarations
 
+#include "MenuIcons.h"
+
 #include <common/Format.h> // Needed for CFormat
 #include <common/MenuIDs.h>
 
@@ -459,11 +461,11 @@ void CDownloadListCtrl::OnItemRightClicked(wxDataViewEvent &event)
 	priomenu->AppendCheckItem(MP_PRIOAUTO, _("Auto"));
 
 	m_menu->Append(MP_MENU_PRIO, _("Priority"), priomenu);
-	m_menu->Append(MP_CANCEL, _("Cancel"));
-	m_menu->Append(MP_STOP, _("&Stop"));
-	m_menu->Append(MP_PAUSE, _("&Pause"));
-	m_menu->Append(MP_RESUME, _("&Resume"));
-	m_menu->Append(MP_CLEARCOMPLETED, _("C&lear completed"));
+	AppendMenuIcon(m_menu, MP_CANCEL, _("Cancel"), MenuIcon::Cancel);
+	AppendMenuIcon(m_menu, MP_STOP, _("&Stop"), MenuIcon::Stop);
+	AppendMenuIcon(m_menu, MP_PAUSE, _("&Pause"), MenuIcon::Pause);
+	AppendMenuIcon(m_menu, MP_RESUME, _("&Resume"), MenuIcon::Resume);
+	AppendMenuIcon(m_menu, MP_CLEARCOMPLETED, _("C&lear completed"), MenuIcon::ClearCompleted);
 #ifndef CLIENT_GUI
 	// Monolithic only: EC has no delete-from-disk opcode yet.
 	m_menu->Append(MP_DELETEFROMDISK, _("Delete file from &disk"));
@@ -477,13 +479,13 @@ void CDownloadListCtrl::OnItemRightClicked(wxDataViewEvent &event)
 	m_menu->Append(MP_MENU_EXTD, _("Extended Options"), extendedmenu);
 	m_menu->AppendSeparator();
 
-	m_menu->Append(MP_VIEW, _("Preview"));
-	m_menu->Append(MP_SHOWINFOLDER, _("Show in file manager"));
-	m_menu->Append(MP_METINFO, _("Show file &details"));
-	m_menu->Append(MP_VIEWFILECOMMENTS, _("Show all comments"));
+	AppendMenuIcon(m_menu, MP_VIEW, _("Preview"), MenuIcon::Preview);
+	AppendMenuIcon(m_menu, MP_SHOWINFOLDER, _("Show in file manager"), MenuIcon::Folder);
+	AppendMenuIcon(m_menu, MP_METINFO, _("Show file &details"), MenuIcon::Info);
+	AppendMenuIcon(m_menu, MP_VIEWFILECOMMENTS, _("Show all comments"), MenuIcon::Comments);
 	m_menu->AppendSeparator();
-	m_menu->Append(MP_GETMAGNETLINK, _("Copy magnet URI to clipboard"));
-	m_menu->Append(MP_GETED2KLINK, _("Copy eD2k &link to clipboard"));
+	AppendMenuIcon(m_menu, MP_GETMAGNETLINK, _("Copy magnet URI to clipboard"), MenuIcon::Link);
+	AppendMenuIcon(m_menu, MP_GETED2KLINK, _("Copy eD2k &link to clipboard"), MenuIcon::Link);
 	m_menu->Append(MP_WS, _("Copy feedback to clipboard"));
 	m_menu->AppendSeparator();
 

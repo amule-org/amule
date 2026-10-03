@@ -25,6 +25,8 @@
 
 #include "ServerListCtrl.h" // Interface declarations
 
+#include "MenuIcons.h"
+
 #include <algorithm> // Needed for std::max
 #include <vector>    // Needed for std::vector
 
@@ -48,9 +50,7 @@
 
 #include <wx/dcclient.h> // Needed for wxClientDC
 
-// One fixed size for everything in the control's small image list. Set by the 16x16 header sort
-// arrows; the bundled country flags are 16x11 and get padded onto a transparent cell of this size
-// (see FlagImage).
+// Logical size of the header sort arrows. Country flags are rendered separately.
 static const int LIST_IMAGE_SIZE = 16;
 
 wxBEGIN_EVENT_TABLE(CServerListCtrl, CMuleVirtualDataViewCtrl)
@@ -399,21 +399,22 @@ wxString CServerListCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) con
 #ifdef GEOIP_GUI
 const wxIcon &CServerListCtrl::FlagIcon(const wxString &code) const
 {
-	static const wxIcon nullIcon;
-
-	const auto it = m_flagIcons.find(code);
-	if (it != m_flagIcons.end()) {
-		return it->second;
+	const wxSize size = FromDIP(wxSize(16, 12));
+	const double scale = GetContentScaleFactor();
+	if (size != m_flagIconSize || scale != m_flagIconScale) {
+		m_flagIcons.clear();
+		m_flagIconSize = size;
+		m_flagIconScale = scale;
 	}
-
-	const wxImage &flag = theApp->GetCountryFlags()->GetFlag(code);
-	if (!flag.IsOk()) {
-		// Cached as an invalid icon so an unknown code isn't looked up again.
-		return m_flagIcons.emplace(code, wxIcon()).first->second;
+	const auto found = m_flagIcons.find(code);
+	if (found != m_flagIcons.end()) {
+		return found->second;
 	}
-
+	const wxBitmap flag = theApp->GetCountryFlags()->GetFlag(code, size, scale);
 	wxIcon icon;
-	icon.CopyFromBitmap(wxBitmap(flag));
+	if (flag.IsOk()) {
+		icon.CopyFromBitmap(flag);
+	}
 	return m_flagIcons.emplace(code, icon).first->second;
 }
 #endif // GEOIP_GUI
@@ -635,9 +636,9 @@ void CServerListCtrl::OnItemRightClicked(wxDataViewEvent &event)
 	serverMenu->AppendSeparator();
 
 	if (static_cast<int>(GetSelectedItemsCount()) == 1) {
-		serverMenu->Append(MP_GETED2KLINK, _("Copy eD2k link to clipboard"));
+		AppendMenuIcon(serverMenu, MP_GETED2KLINK, _("Copy eD2k link to clipboard"), MenuIcon::Link);
 	} else {
-		serverMenu->Append(MP_GETED2KLINK, _("Copy eD2k links to clipboard"));
+		AppendMenuIcon(serverMenu, MP_GETED2KLINK, _("Copy eD2k links to clipboard"), MenuIcon::Link);
 	}
 
 	serverMenu->Enable(MP_REMOVEFROMSTATIC, enable_static_off);

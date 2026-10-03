@@ -103,6 +103,73 @@ The snapshot carries no local patches. It is built only with
 `amuled` link it. A default build neither compiles nor ships it, so this notice
 applies only to binaries built with the switch on.
 
+## Desktop menu icons — Bootstrap Icons
+
+Selected SVGs from Bootstrap Icons 1.13.1, commit `ce0e49dd063243118a115f17ad1fe1fe7576d552`.
+Source: https://github.com/twbs/icons. Normalized to paths for NanoSVG, coloured at runtime
+using the system menu text colour, with generated PNG fallbacks. Original artwork,
+source checksums and regeneration instructions are in `src/icons/vendor/` and
+`src/icons/ARTWORK.md`.
+
+```text
+The MIT License (MIT)
+
+Copyright (c) 2019-2024 The Bootstrap Authors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+```
+
+## Country flags — flag-icons
+
+SVGs from flag-icons 7.5.0, commit `7aa5b2bdddd570ece62c812c0cb588ccdc099e2e`.
+Source: https://github.com/lipis/flag-icons, `flags/4x3`. Normalized to paths
+(including resolved clipping and use elements) for NanoSVG and rasterized to
+16×12 PNG fallbacks. Original SVGs are retained in `src/icons/vendor/flag-icons/`.
+
+```text
+The MIT License (MIT)
+
+Copyright (c) 2013 Panayiotis Lipiridis
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+of the Software, and to permit persons to whom the Software is furnished to do
+so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+The retained legacy `an.png` and `unknown.png` flags are FamFamFam artwork by
+Mark James (http://www.famfamfam.com/lab/icons/flags/), distributed as public
+domain; attribution appreciated but not required, per the original notice.
+
 ## ngtcp2
 
 QUIC transport library, linked from the system when aMule is built with

@@ -1743,11 +1743,6 @@ msgstr[3] "%u komentarji"
 msgid "Banned client %s for sending %s corrupt data of %s total for the file '%s'"
 msgstr "Izločil odjemalca %s, ker je poslal %s pokvarjenih podatkov od skupno %s za datoteko »%s«"
 
-#: src/CountryFlags.cpp
-#, c-format
-msgid "Failed to load country data for '%s'."
-msgstr "Nalaganje državnih podatkov za »%s« ni uspelo."
-
 #: src/DataToText.cpp
 msgid "Auto [Lo]"
 msgstr "Samod. [Ni]"
@@ -9765,6 +9760,10 @@ msgstr "Videti je, da se aMule izvaja. Zaprite ga in znova zaženite odstranitve
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Odstranjevanje uporabniških podatkov na $APPDATA\\aMule..."
+
+#, c-format
+#~ msgid "Failed to load country data for '%s'."
+#~ msgstr "Nalaganje državnih podatkov za »%s« ni uspelo."
 
 #~ msgid "Local"
 #~ msgstr "Krajevno"

@@ -1726,11 +1726,6 @@ msgstr[2] "%u de comentarii"
 msgid "Banned client %s for sending %s corrupt data of %s total for the file '%s'"
 msgstr "Client interzis %s pentru trimiterea %s date corupte a %s total pentru fișierul '%s'"
 
-#: src/CountryFlags.cpp
-#, c-format
-msgid "Failed to load country data for '%s'."
-msgstr "A eșuat încărcarea datei țării pentru '%s'."
-
 #: src/DataToText.cpp
 msgid "Auto [Lo]"
 msgstr "Automat [Sc]"
@@ -9719,6 +9714,10 @@ msgstr "Se pare că aMule rulează. Închideți-l și rulați din nou dezinstala
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Se elimină datele utilizatorului de la $APPDATA\\aMule..."
+
+#, c-format
+#~ msgid "Failed to load country data for '%s'."
+#~ msgstr "A eșuat încărcarea datei țării pentru '%s'."
 
 #~ msgid "Local"
 #~ msgstr "Local"

@@ -1720,11 +1720,6 @@ msgstr[1] "%u kommentarer"
 msgid "Banned client %s for sending %s corrupt data of %s total for the file '%s'"
 msgstr "Banlyste klient %s for at sende %s beskadiget data ud af %s i alt for filen '%s'"
 
-#: src/CountryFlags.cpp
-#, c-format
-msgid "Failed to load country data for '%s'."
-msgstr "Kunne ikke indlæse landedata for '%s'."
-
 #: src/DataToText.cpp
 msgid "Auto [Lo]"
 msgstr "Auto [La]"
@@ -9653,6 +9648,10 @@ msgstr "aMule ser ud til at køre. Luk den venligst, og kør afinstallationsprog
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Fjerner brugerdata på $APPDATA\\aMule..."
+
+#, c-format
+#~ msgid "Failed to load country data for '%s'."
+#~ msgstr "Kunne ikke indlæse landedata for '%s'."
 
 #~ msgid "Local"
 #~ msgstr "Lokal"

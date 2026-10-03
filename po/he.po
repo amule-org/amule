@@ -1721,11 +1721,6 @@ msgstr[1] "%u הערות"
 msgid "Banned client %s for sending %s corrupt data of %s total for the file '%s'"
 msgstr "הלקוח %s נחסם על שליחת %s נתונים פגומים מתוך %s סה\"כ עבור הקובץ '%s'"
 
-#: src/CountryFlags.cpp
-#, c-format
-msgid "Failed to load country data for '%s'."
-msgstr "טעינת נתוני המדינה עבור '%s' נכשלה."
-
 #: src/DataToText.cpp
 msgid "Auto [Lo]"
 msgstr "אוטומטי [נמוך]"
@@ -9656,6 +9651,10 @@ msgstr "נראה כי aMule פועל. אנא סגור אותו והרץ מחדש
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "מסיר נתוני משתמש ב-$APPDATA\\aMule..."
+
+#, c-format
+#~ msgid "Failed to load country data for '%s'."
+#~ msgstr "טעינת נתוני המדינה עבור '%s' נכשלה."
 
 #~ msgid "Local"
 #~ msgstr "מקומי"

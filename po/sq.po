@@ -1718,11 +1718,6 @@ msgstr[1] "%u komente"
 msgid "Banned client %s for sending %s corrupt data of %s total for the file '%s'"
 msgstr "Klienti %s u ndalua për dërgimin e %s të dhënash të dëmtuara nga %s gjithsej për skedarin '%s'"
 
-#: src/CountryFlags.cpp
-#, c-format
-msgid "Failed to load country data for '%s'."
-msgstr "Ngarkimi i të dhënave të vendit për '%s' dështoi."
-
 #: src/DataToText.cpp
 msgid "Auto [Lo]"
 msgstr "Automatike [Ulet]"
@@ -9658,6 +9653,10 @@ msgstr "aMule duket se është duke funksionuar. Ju lutemi mbylleni dhe rinisni 
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Po hiqen të dhënat e përdoruesit te $APPDATA\\aMule..."
+
+#, c-format
+#~ msgid "Failed to load country data for '%s'."
+#~ msgstr "Ngarkimi i të dhënave të vendit për '%s' dështoi."
 
 #~ msgid "Local"
 #~ msgstr "Lokale"

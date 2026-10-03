@@ -1713,11 +1713,6 @@ msgstr[1] "%u comentaris"
 msgid "Banned client %s for sending %s corrupt data of %s total for the file '%s'"
 msgstr "S'ha expulsat el client %s per haver enviat %s dades corruptes d'un total de %s del fitxer '%s'"
 
-#: src/CountryFlags.cpp
-#, c-format
-msgid "Failed to load country data for '%s'."
-msgstr "No s'han pogut carregar les dades de país per a '%s'."
-
 #: src/DataToText.cpp
 msgid "Auto [Lo]"
 msgstr "Auto [Ba]"
@@ -9625,6 +9620,10 @@ msgstr "Sembla que l'aMule s'està executant. Tanqueu-lo i torneu a executar el 
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "S'estan eliminant les dades d'usuari a $APPDATA\\aMule..."
+
+#, c-format
+#~ msgid "Failed to load country data for '%s'."
+#~ msgstr "No s'han pogut carregar les dades de país per a '%s'."
 
 #~ msgid "Local"
 #~ msgstr "Local"

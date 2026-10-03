@@ -1720,11 +1720,6 @@ msgstr[2] "%u komentářů"
 msgid "Banned client %s for sending %s corrupt data of %s total for the file '%s'"
 msgstr "Klient %s zablokován za odeslání %s poškozených dat z celkových %s pro soubor '%s'"
 
-#: src/CountryFlags.cpp
-#, c-format
-msgid "Failed to load country data for '%s'."
-msgstr "Nepodařilo se načíst údaje pro zemi '%s'."
-
 #: src/DataToText.cpp
 msgid "Auto [Lo]"
 msgstr "Auto [Ní]"
@@ -9669,6 +9664,10 @@ msgstr "Zdá se, že aMule je spuštěn. Zavřete jej prosím a spusťte odinsta
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Odstraňuji uživatelská data z $APPDATA\\aMule..."
+
+#, c-format
+#~ msgid "Failed to load country data for '%s'."
+#~ msgstr "Nepodařilo se načíst údaje pro zemi '%s'."
 
 #~ msgid "Local"
 #~ msgstr "Místní"

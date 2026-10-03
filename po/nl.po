@@ -1726,11 +1726,6 @@ msgstr[1] "%u commentaren"
 msgid "Banned client %s for sending %s corrupt data of %s total for the file '%s'"
 msgstr "Client %s geband voor het sturen van %s beschadigde gegeven van in totaal %s voor het bestand '%s'"
 
-#: src/CountryFlags.cpp
-#, c-format
-msgid "Failed to load country data for '%s'."
-msgstr "Kon landgegevens niet laden voor '%s'."
-
 #: src/DataToText.cpp
 msgid "Auto [Lo]"
 msgstr "Auto [La]"
@@ -9652,6 +9647,10 @@ msgstr "aMule lijkt te worden uitgevoerd. Sluit het en voer het verwijderprogram
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Gebruikersgegevens op $APPDATA\\aMule worden verwijderd..."
+
+#, c-format
+#~ msgid "Failed to load country data for '%s'."
+#~ msgstr "Kon landgegevens niet laden voor '%s'."
 
 #~ msgid "Local"
 #~ msgstr "Lokaal"

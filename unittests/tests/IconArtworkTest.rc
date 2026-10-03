@@ -1,0 +1,6 @@
+// Use the same Common Controls v6 and PerMonitorV2 settings as the GUI.
+1 24 "amule.manifest"
+
+// Keep wx's standard resources without embedding a second manifest.
+#define wxUSE_RC_MANIFEST 0
+#include <wx/msw/wx.rc>

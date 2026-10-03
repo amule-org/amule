@@ -1708,11 +1708,6 @@ msgstr[0] "%u個のコメントがあります"
 msgid "Banned client %s for sending %s corrupt data of %s total for the file '%s'"
 msgstr "クライアント %s を接続禁止にしました（送信した破損データ：%s／合計：%s／ファイル：'%s'）"
 
-#: src/CountryFlags.cpp
-#, c-format
-msgid "Failed to load country data for '%s'."
-msgstr "'%s' の国データのロードに失敗しました。"
-
 #: src/DataToText.cpp
 msgid "Auto [Lo]"
 msgstr "オート [Lo]"
@@ -9607,6 +9602,10 @@ msgstr "aMule が実行中のようです。終了してからアンインスト
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "$APPDATA\\aMule のユーザデータを削除しています…"
+
+#, c-format
+#~ msgid "Failed to load country data for '%s'."
+#~ msgstr "'%s' の国データのロードに失敗しました。"
 
 #~ msgid "Local"
 #~ msgstr "ローカル"

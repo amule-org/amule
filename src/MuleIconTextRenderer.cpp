@@ -52,11 +52,13 @@ bool CMuleIconTextRenderer::Render(wxRect cell, wxDC *dc, int state)
 
 	const wxIcon &icon = m_value.GetIcon();
 	if (icon.IsOk()) {
+		const wxBitmap bitmap(icon);
+		const wxSize size = bitmap.GetLogicalSize();
 		// Centred vertically: the icon is a fixed size while the row height
 		// follows the font, so the two rarely match.
-		const int y = cell.y + std::max(0, (cell.height - icon.GetHeight()) / 2);
-		dc->DrawIcon(icon, cell.x, y);
-		xoffset = icon.GetWidth() + kIconTextGap;
+		const int y = cell.y + std::max(0, (cell.height - size.y) / 2);
+		dc->DrawBitmap(bitmap, cell.x, y, true);
+		xoffset = size.x + kIconTextGap;
 	}
 
 	// A row with no icon passes xoffset 0 and starts at the cell edge -- the
@@ -74,8 +76,9 @@ wxSize CMuleIconTextRenderer::GetSize() const
 
 	const wxIcon &icon = m_value.GetIcon();
 	if (icon.IsOk()) {
-		size.x += icon.GetWidth() + kIconTextGap;
-		size.y = std::max(size.y, icon.GetHeight());
+		const wxSize iconSize = wxBitmap(icon).GetLogicalSize();
+		size.x += iconSize.x + kIconTextGap;
+		size.y = std::max(size.y, iconSize.y);
 	}
 	return size;
 }

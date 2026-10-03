@@ -1721,11 +1721,6 @@ msgstr[1] "%u iruzkin"
 msgid "Banned client %s for sending %s corrupt data of %s total for the file '%s'"
 msgstr "Baztertutako %s bezeroa %s datu hondatu bidaltzeagatik '%s' fitxategiaren osotasunaren %s"
 
-#: src/CountryFlags.cpp
-#, c-format
-msgid "Failed to load country data for '%s'."
-msgstr "Huts '%s'-ren estatu datuak kargatzean."
-
 #: src/DataToText.cpp
 msgid "Auto [Lo]"
 msgstr "Auto [Bax]"
@@ -9663,6 +9658,10 @@ msgstr "Badirudi aMule exekutatzen ari dela. Mesedez, itxi eta exekutatu berriro
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Erabiltzailearen datuak kentzen $APPDATA\\aMule(e)n..."
+
+#, c-format
+#~ msgid "Failed to load country data for '%s'."
+#~ msgstr "Huts '%s'-ren estatu datuak kargatzean."
 
 #~ msgid "Local"
 #~ msgstr "Lokala"

@@ -1717,11 +1717,6 @@ msgstr[2] "%u komentāri"
 msgid "Banned client %s for sending %s corrupt data of %s total for the file '%s'"
 msgstr "Klients %s bloķēts, jo nosūtīja %s bojātus datus no kopējiem %s datnei '%s'"
 
-#: src/CountryFlags.cpp
-#, c-format
-msgid "Failed to load country data for '%s'."
-msgstr "Neizdevās ielādēt valsts datus '%s'."
-
 #: src/DataToText.cpp
 msgid "Auto [Lo]"
 msgstr "Auto [Zema]"
@@ -9674,6 +9669,10 @@ msgstr "Izskatās, ka aMule darbojas. Lūdzu, aizveriet to un vēlreiz palaidiet
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Dzēš lietotāja datus, kas atrodas $APPDATA\\aMule mapē…"
+
+#, c-format
+#~ msgid "Failed to load country data for '%s'."
+#~ msgstr "Neizdevās ielādēt valsts datus '%s'."
 
 #~ msgid "Local"
 #~ msgstr "Lokāls"

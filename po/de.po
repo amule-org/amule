@@ -1724,11 +1724,6 @@ msgstr[1] "%u Kommentare"
 msgid "Banned client %s for sending %s corrupt data of %s total for the file '%s'"
 msgstr "Client %s wurde gebannt, weil er %s korrupte Daten für %s gesamt für die Datei '%s' gesendet hat."
 
-#: src/CountryFlags.cpp
-#, c-format
-msgid "Failed to load country data for '%s'."
-msgstr "Herunterladen der Länderdaten für '%s' fehlgeschlagen."
-
 #: src/DataToText.cpp
 msgid "Auto [Lo]"
 msgstr "Auto [Ni]"
@@ -9698,6 +9693,10 @@ msgstr "aMule scheint zu laufen. Bitte schließen und das Entfernprogram erneut 
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Entferne Benutzerdaten von $APPDATA\\aMule..."
+
+#, c-format
+#~ msgid "Failed to load country data for '%s'."
+#~ msgstr "Herunterladen der Länderdaten für '%s' fehlgeschlagen."
 
 #~ msgid "Local"
 #~ msgstr "Lokal"

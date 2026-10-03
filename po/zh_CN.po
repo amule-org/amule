@@ -1727,11 +1727,6 @@ msgstr[1] "%u 条评论"
 msgid "Banned client %s for sending %s corrupt data of %s total for the file '%s'"
 msgstr "封禁了客户端 %s，发送了 %s 受损的数据，共发送 %s （文件 “%s”）"
 
-#: src/CountryFlags.cpp
-#, c-format
-msgid "Failed to load country data for '%s'."
-msgstr "加载 \"%s\" 的地区数据失败。"
-
 #: src/DataToText.cpp
 msgid "Auto [Lo]"
 msgstr "自动 [低]"
@@ -9644,6 +9639,10 @@ msgstr "aMule 似乎正在运行。请将其关闭并重新运行卸载程序。
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "正在删除 $APPDATA\\aMule 中的用户数据..."
+
+#, c-format
+#~ msgid "Failed to load country data for '%s'."
+#~ msgstr "加载 \"%s\" 的地区数据失败。"
 
 #~ msgid "Local"
 #~ msgstr "本地"

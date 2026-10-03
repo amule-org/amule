@@ -1713,11 +1713,6 @@ msgstr[2] ""
 msgid "Banned client %s for sending %s corrupt data of %s total for the file '%s'"
 msgstr ""
 
-#: src/CountryFlags.cpp
-#, fuzzy, c-format
-msgid "Failed to load country data for '%s'."
-msgstr "Neuspjesno citanje kreditnog fajla"
-
 #: src/DataToText.cpp
 msgid "Auto [Lo]"
 msgstr "Auto [Ni]"
@@ -9620,6 +9615,10 @@ msgstr ""
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr ""
+
+#, fuzzy, c-format
+#~ msgid "Failed to load country data for '%s'."
+#~ msgstr "Neuspjesno citanje kreditnog fajla"
 
 #, fuzzy
 #~ msgid "Ratio"

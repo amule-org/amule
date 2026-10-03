@@ -19,8 +19,7 @@
 //
 
 //
-// Country flags are from FAMFAMFAM (http://www.famfamfam.com) -- public domain,
-// named with the ISO 3166-1 alpha-2 country codes.
+// Artwork provenance and licenses: icons/ARTWORK.md.
 //
 
 #ifndef COUNTRYFLAGS_H
@@ -28,7 +27,7 @@
 
 #include <map>
 
-#include <wx/image.h>
+#include <wx/bmpbndl.h>
 #include <wx/string.h>
 
 // GUI-only country flag cache: maps an ISO 3166-1 alpha-2 code (lowercase) to its flag bitmap.
@@ -42,19 +41,14 @@ public:
 
 	// Flag image for an ISO code (lowercase). Returns the "unknown" (??)
 	// flag when the code is empty or has no bundled image.
-	const wxImage &GetFlag(const wxString &code);
+	// logicalSize is in drawing coordinates; contentScale is the backing-store scale.
+	// Callers use FromDIP(wxSize(16, 12)) and their window/DC's GetContentScaleFactor().
+	wxBitmap GetFlag(const wxString &code, const wxSize &logicalSize, double contentScale);
 
 private:
-	// Lazily populate m_flags on the first GetFlag(). Deferred rather than done in the ctor
-	// because CamuleGuiBase constructs this before the app's OnInit has pushed
-	// CamuleArtProvider -- loading in the ctor would find no art and every flag would come back
-	// blank, the peers list showing the bare code. By first draw, OnInit has run and the
-	// provider is live.
-	void LoadFlags();
-
-	bool m_loaded = false;
-	std::map<wxString, wxImage> m_flags;
-	wxImage m_unknown;
+	// Load only flags actually displayed, after the art provider has been registered.
+	// Retain vector bundles rather than one raster size, so moving between monitors works.
+	std::map<wxString, wxBitmapBundle> m_flags;
 };
 
 #endif // COUNTRYFLAGS_H

@@ -1721,11 +1721,6 @@ msgstr[1] "%u σχόλια"
 msgid "Banned client %s for sending %s corrupt data of %s total for the file '%s'"
 msgstr "Ο πελάτης %s αποκλείστηκε επειδή έστειλε %s φθαρμένα δεδομένα από σύνολο %s για το αρχείο '%s'"
 
-#: src/CountryFlags.cpp
-#, c-format
-msgid "Failed to load country data for '%s'."
-msgstr "Αποτυχία φόρτωσης δεδομένων χώρας για '%s'."
-
 #: src/DataToText.cpp
 msgid "Auto [Lo]"
 msgstr "Αυτόματη [Χαμηλή]"
@@ -9669,6 +9664,10 @@ msgstr "Το aMule φαίνεται να εκτελείται. Κλείστε τ
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Αφαίρεση δεδομένων χρήστη στο $APPDATA\\aMule..."
+
+#, c-format
+#~ msgid "Failed to load country data for '%s'."
+#~ msgstr "Αποτυχία φόρτωσης δεδομένων χώρας για '%s'."
 
 #~ msgid "Local"
 #~ msgstr "Τοπικό"

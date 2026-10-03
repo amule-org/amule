@@ -1722,11 +1722,6 @@ msgstr[1] "%u kommenttia"
 msgid "Banned client %s for sending %s corrupt data of %s total for the file '%s'"
 msgstr "Estettiin asiakas %s, lähetti turmeltunutta dataa %s yhteismäärästä %s tiedostolle '%s'"
 
-#: src/CountryFlags.cpp
-#, c-format
-msgid "Failed to load country data for '%s'."
-msgstr "Valtiotietojen lataus osoitteesta '%s' epäonnistui."
-
 #: src/DataToText.cpp
 msgid "Auto [Lo]"
 msgstr "Auto [Ma]"
@@ -9665,6 +9660,10 @@ msgstr "aMule vaikuttaa olevan käynnissä. Sulje se ja suorita asennuksen poist
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "Poistetaan käyttäjätietoja kohteesta $APPDATA\\aMule..."
+
+#, c-format
+#~ msgid "Failed to load country data for '%s'."
+#~ msgstr "Valtiotietojen lataus osoitteesta '%s' epäonnistui."
 
 #~ msgid "Local"
 #~ msgstr "Paikallinen"

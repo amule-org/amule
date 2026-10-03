@@ -3165,7 +3165,12 @@ The country-flag image for a `country_code`. `/clients`, `/servers` and their SS
 
 Note the path is deliberately **outside** `/api/v1/` — it is an image an `<img src>` points at, not a JSON resource, and it is versioned by the daemon build rather than by the API contract.
 
-`{code}` must be exactly two **lowercase** ASCII letters, or the literal `unknown` for the "??" placeholder the desktop GUI falls back to when a code is empty or unrecognised. The bytes are the 16×11 famfamfam PNGs compiled into the daemon binary — the same artwork the desktop draws — so the route behaves identically whether or not `[Server]/StaticRoot` is set, and never touches the file system.
+SVG artwork is also available at `GET /flags/{code}.svg` (`image/svg+xml`), with
+identical country-code validation, GET/HEAD and cache behavior. The WebUI prefers
+SVG and falls back to PNG. Raster-only legacy flags (`an`, `unknown`) have no SVG
+and return 404 for that extension; the existing PNG endpoint remains available.
+
+`{code}` must be exactly two **lowercase** ASCII letters, or the literal `unknown` for the "??" placeholder the desktop GUI falls back to when a code is empty or unrecognised. The bytes are the flag-icons PNG fallbacks (16×12, with legacy `an` and `unknown` artwork) compiled into the daemon binary — the same artwork the desktop draws — so the route behaves identically whether or not `[Server]/StaticRoot` is set, and never touches the file system.
 
 ```sh
 curl -s http://$HOST/flags/de.png -o de.png
@@ -3178,7 +3183,7 @@ Responses carry an `ETag` and honour `If-None-Match` with `304 Not Modified` lik
 
 The response is never `Content-Encoding: gzip` — a PNG is already entropy-coded, so the server skips compression for it.
 
-**Errors:** `404 not_found` for anything that is neither two lowercase letters nor `unknown` (uppercase, wrong length, digits, another extension), and for a well-formed code the famfamfam set has no artwork for — it covers 248 of the assignable alpha-2 codes, so a resolvable country can legitimately have no flag. Render the code as text, or fall back to `unknown.png`, in that case. `400 bad_request` for paths carrying traversal tokens, per [Path validation](#path-validation).
+**Errors:** `404 not_found` for anything that is neither two lowercase letters nor `unknown` (uppercase, wrong length, digits, another extension), and for a well-formed code the bundled set has no artwork for — a newer GeoIP database can legitimately return a code absent from the artwork. Render the code as text, or fall back to `unknown.png`, in that case. `400 bad_request` for paths carrying traversal tokens, per [Path validation](#path-validation).
 
 Clients whose country could not be resolved — GeoIP disabled, unsupported by the build, or a private/unmatched address — come back with `country_code: null`. There is no per-country image to request in that case; draw nothing, or `unknown.png` for parity with the desktop list.
 

@@ -1720,11 +1720,6 @@ msgstr[1] "%u개의 의견"
 msgid "Banned client %s for sending %s corrupt data of %s total for the file '%s'"
 msgstr "클라이언트 %s을(를) 차단했습니다: %s의 손상된 데이터(총 %s 중, 파일 '%s')를 전송했습니다"
 
-#: src/CountryFlags.cpp
-#, c-format
-msgid "Failed to load country data for '%s'."
-msgstr "'%s'에 대한 국가 데이터를 불러오지 못했습니다."
-
 #: src/DataToText.cpp
 msgid "Auto [Lo]"
 msgstr "자동[낮음]"
@@ -9657,6 +9652,10 @@ msgstr "aMule이 실행 중인 것 같습니다. 종료한 다음 제거 프로�
 #: packaging/windows/installer_strings.c
 msgid "Removing user data at $APPDATA\\aMule..."
 msgstr "$APPDATA\\aMule의 사용자 데이터를 제거하는 중..."
+
+#, c-format
+#~ msgid "Failed to load country data for '%s'."
+#~ msgstr "'%s'에 대한 국가 데이터를 불러오지 못했습니다."
 
 #~ msgid "Local"
 #~ msgstr "지역"
