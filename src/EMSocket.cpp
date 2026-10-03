@@ -326,16 +326,19 @@ void CEMSocket::WakeIfPaused()
 /**
  * Queues the packet up to be sent; another thread does the sending.
  *
- * A non-control packet may be refused when the socket decides its queue is full and @a forceAdd is
- * false; the caller then has to try again later.
+ * Disconnected sockets reject the packet. TrySendPacket reports that outcome;
+ * SendPacket preserves the fire-and-forget interface used by existing callers.
  *
  * @param packet the packet to add to the queue.
- * @param delpacket true transfers responsibility for deleting the packet once sent.
+ * @param delpacket true transfers ownership, including on rejection.
  * @param controlpacket the packet is a control packet.
- * @param forceAdd add the packet even if the queue is full, so the call cannot refuse.
- * @return true if the packet was added to the queue.
  */
 void CEMSocket::SendPacket(CPacket *packet, bool delpacket, bool controlpacket, uint32 actualPayloadSize)
+{
+	TrySendPacket(packet, delpacket, controlpacket, actualPayloadSize);
+}
+
+bool CEMSocket::TrySendPacket(CPacket *packet, bool delpacket, bool controlpacket, uint32 actualPayloadSize)
 {
 	std::lock_guard<std::mutex> lock(m_sendLocker);
 
@@ -343,6 +346,7 @@ void CEMSocket::SendPacket(CPacket *packet, bool delpacket, bool controlpacket, 
 		if (delpacket) {
 			delete packet;
 		}
+		return false;
 	} else {
 		if (!delpacket) {
 			packet = new CPacket(*packet);
@@ -366,6 +370,7 @@ void CEMSocket::SendPacket(CPacket *packet, bool delpacket, bool controlpacket, 
 			}
 		}
 	}
+	return true;
 }
 
 uint64 CEMSocket::GetSentBytesCompleteFileSinceLastCallAndReset()

@@ -42,7 +42,8 @@ class CTag
 {
 public:
 	CTag(const CTag &rTag);
-	CTag(const CFileDataIO &data, bool bOptUTF8);
+	// Most callers normalize narrow integers; strict extension contracts can opt out.
+	CTag(const CFileDataIO &data, bool bOptUTF8, bool normalizeIntTypes = true);
 	virtual ~CTag();
 	CTag &operator=(const CTag &);
 

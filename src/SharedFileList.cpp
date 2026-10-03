@@ -1483,6 +1483,10 @@ static bool SortFunc(const CKnownFile *fileA, const CKnownFile *fileB)
 
 void CSharedFileList::SendListToServer()
 {
+	CServer *server = theApp->serverconnect->GetCurrentServer();
+	if (!server || !theApp->IsConnectedED2K()) {
+		return;
+	}
 	std::vector<CKnownFile *> SortedList;
 
 	{
@@ -1497,7 +1501,8 @@ void CSharedFileList::SendListToServer()
 
 		CKnownFileMap::iterator it = m_Files_map.begin();
 		for (; it != m_Files_map.end(); ++it) {
-			if (!it->second->GetPublishedED2K()) {
+			if (!it->second->GetPublishedED2K() &&
+				(!it->second->IsLargeFile() || server->SupportsLargeFilesTCP())) {
 				SortedList.push_back(it->second);
 			}
 		}
@@ -1506,11 +1511,6 @@ void CSharedFileList::SendListToServer()
 	std::sort(SortedList.begin(), SortedList.end(), SortFunc);
 
 	// Limits for the server.
-
-	CServer *server = theApp->serverconnect->GetCurrentServer();
-	if (!server) {
-		return;
-	}
 
 	uint32 limit = server->GetSoftFiles();
 	if (limit == 0 || limit > 200) {
@@ -1534,6 +1534,8 @@ void CSharedFileList::SendListToServer()
 	// and a legacy non-LF server sees a short read against the count.
 	files.WriteUInt32(0);
 
+	std::vector<CKnownFile *> offered;
+	offered.reserve(limit);
 	uint32 count = 0;
 	// Add to packet
 	std::vector<CKnownFile *>::iterator sorted_it = SortedList.begin();
@@ -1541,13 +1543,12 @@ void CSharedFileList::SendListToServer()
 		CKnownFile *file = *sorted_it;
 		if (!file->IsLargeFile() || server->SupportsLargeFilesTCP()) {
 			file->CreateOfferedFilePacket(&files, server, NULL);
+			offered.push_back(file);
 			++count;
 		}
-		file->SetPublishedED2K(true);
 	}
 
-	// Nothing to publish to this server -- e.g. every unpublished file in our prefix is >4GB
-	// and the server does not advertise SRV_TCPFLG_LARGEFILES. Sending an OP_OFFERFILES with
+	// Nothing eligible to publish to this server. Sending an OP_OFFERFILES with
 	// count=0 would just be ~28 bytes of TCP overhead per republish tick.
 	if (count == 0) {
 		return;
@@ -1568,7 +1569,13 @@ void CSharedFileList::SendListToServer()
 	}
 
 	theStats::AddUpOverheadServer(packet->GetPacketSize());
-	theApp->serverconnect->SendPacket(packet, true);
+	// Published means offered to the connection, not acknowledged as indexed.
+	// Only mark records when ServerConnect accepts the packet for this connection.
+	if (theApp->serverconnect->SendPacket(packet, true)) {
+		for (CKnownFile *file : offered) {
+			file->SetPublishedED2K(true);
+		}
+	}
 }
 
 void CSharedFileList::Process()

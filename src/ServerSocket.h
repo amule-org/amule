@@ -30,6 +30,7 @@
 
 #include "EMSocket.h" // Needed for CEMSocket
 #include "ServerConnect.h"
+#include "OfferFilesPolicy.h"
 
 // CServerSocket
 
@@ -61,11 +62,19 @@ public:
 		bool delpacket = true,
 		bool controlpacket = true,
 		uint32 actualPayloadSize = 0) override;
+	bool TrySendPacket(CPacket *packet,
+		bool delpacket = true,
+		bool controlpacket = true,
+		uint32 actualPayloadSize = 0);
 	bool IsSolving() const { return m_IsSolving; };
 	void OnHostnameResolved(uint32 ip);
 	CServer *GetServerConnected() const { return serverconnect->GetCurrentServer(); }
 
 	uint32 GetServerIP() const;
+	const COfferFilesAdvertisement *GetOfferFilesAdvertisement() const
+	{
+		return m_offerFilesPolicy.Get();
+	}
 	// The port ConnectToServer() dialed: the obfuscation port, or GetConnPort(), which can be an
 	// aux port rather than the advertised one.
 	uint16 GetConnectPort() const { return m_connectPort; }
@@ -86,6 +95,7 @@ private:
 	uint64 m_dwLastTransmission;
 
 	bool m_IsSolving;
+	COfferFilesConnectionPolicy m_offerFilesPolicy;
 	uint16 m_connectPort = 0;
 };
 

@@ -53,6 +53,12 @@ public:
 		bool delpacket = true,
 		bool controlpacket = true,
 		uint32 actualPayloadSize = 0);
+	// Reports queue acceptance under the same lock as disconnect handling.
+	// With delpacket=true, ownership transfers even when the packet is rejected.
+	bool TrySendPacket(CPacket *packet,
+		bool delpacket = true,
+		bool controlpacket = true,
+		uint32 actualPayloadSize = 0);
 	// The extra term is guarded so the TCP path keeps answering exactly as it
 	// did: byConnected is this class's own state machine, and only a stream the
 	// asio socket does not own can disagree with it.

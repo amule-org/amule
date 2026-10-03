@@ -2084,3 +2084,18 @@ target_include_directories (AICHSearchResultTest PRIVATE
 )
 target_link_libraries (AICHSearchResultTest muleunit mulecommon wxWidgets::BASE CRYPTOPP::CRYPTOPP)
 add_test (NAME AICHSearchResultTest COMMAND AICHSearchResultTest)
+
+add_executable (OfferFilesPolicyTest
+	OfferFilesPolicyTest.cpp
+	${CMAKE_SOURCE_DIR}/src/OfferFilesPolicy.cpp
+	${CMAKE_SOURCE_DIR}/src/SafeFile.cpp
+	${CMAKE_SOURCE_DIR}/src/MemFile.cpp
+	${CMAKE_SOURCE_DIR}/src/Tag.cpp
+	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
+	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
+)
+target_include_directories (OfferFilesPolicyTest PRIVATE
+	${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include
+)
+target_link_libraries (OfferFilesPolicyTest muleunit mulecommon)
+add_test (NAME OfferFilesPolicyTest COMMAND OfferFilesPolicyTest)
