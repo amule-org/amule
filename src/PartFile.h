@@ -156,7 +156,9 @@ public:
 	bool GetNextRequestedBlock(
 		CUpDownClient *sender, std::vector<Requested_Block_Struct *> &toadd, uint16 &count);
 #ifndef CLIENT_GUI
-	void WritePartStatus(CMemFile *file) override;
+	// Not 'override': no other override in this class is marked, and Clang builds error out on
+	// the mix (-Werror=inconsistent-missing-override).
+	virtual void WritePartStatus(CMemFile *file);
 #endif
 	void WriteCompleteSourcesCount(CMemFile *file);
 	static bool CanAddSource(uint32 userid,
