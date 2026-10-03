@@ -328,8 +328,7 @@ void CUpDownClient::AddReqBlock(Requested_Block_Struct *reqblock, bool bSignalIO
 	}
 
 	// A block in a part a check found corrupt. Peers are told we lack those parts, so this is a
-	// stale part status or a misbehaving client: end the session, as for a completed one, rather
-	// than leave it waiting for data; asking again brings the current status.
+	// stale part status or a misbehaving client: end the session and send the current status.
 	if (!srcfile->IsPartFile() &&
 		srcfile->GetVerifyResult().IsRangeCorrupt(reqblock->StartOffset, reqblock->EndOffset - 1)) {
 		AddDebugLogLineN(logRemoteClient,
@@ -337,8 +336,9 @@ void CUpDownClient::AddReqBlock(Requested_Block_Struct *reqblock, bool bSignalIO
 				"upload session") %
 				reqblock->StartOffset % (reqblock->EndOffset - 1));
 		delete reqblock;
-		theApp->uploadqueue->RemoveFromUploadQueue(this);
-		SendOutOfPartReqsAndAddToWaitingQueue();
+		if (theApp->uploadqueue->RemoveFromUploadQueue(this)) {
+			EndUploadSessionWithStatus(srcfile);
+		}
 		return;
 	}
 
@@ -521,6 +521,22 @@ void CUpDownClient::SendOutOfPartReqsAndAddToWaitingQueue()
 	SendPacket(pPacket, true, true);
 
 	theApp->uploadqueue->AddClientToQueue(this);
+}
+
+void CUpDownClient::EndUploadSessionWithStatus(CKnownFile *file)
+{
+	// A downloader still connected to us is accepted again without asking for the file status,
+	// and would keep requesting parts we no longer advertise. Peers process an unsolicited
+	// OP_FILESTATUS like an answer; it goes first so it arrives before any new accept.
+	CMemFile data(16 + 16);
+	data.WriteHash(file->GetFileHash());
+	file->WritePartStatus(&data);
+	CPacket *packet = new CPacket(data, OP_EDONKEYPROT, OP_FILESTATUS);
+	theStats::AddUpOverheadFileRequest(packet->GetPacketSize());
+	AddDebugLogLineN(logLocalClient, "Local Client: OP_FILESTATUS to " + GetFullIP());
+	SendPacket(packet, true, true);
+
+	SendOutOfPartReqsAndAddToWaitingQueue();
 }
 
 /**

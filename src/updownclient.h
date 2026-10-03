@@ -387,6 +387,7 @@ public:
 	const CKnownFile *GetUploadFile() const { return m_uploadingfile; }
 
 	void SendOutOfPartReqsAndAddToWaitingQueue();
+	void EndUploadSessionWithStatus(CKnownFile *file);
 	void ProcessExtendedInfo(const CMemFile *data, CKnownFile *tempreqfile);
 	void ProcessFileInfo(const CMemFile *data, const CPartFile *file);
 	void ProcessFileStatus(bool bUdpPacket, const CMemFile *data, const CPartFile *file);

@@ -457,7 +457,7 @@ void CKnownFile::EndUploadSessions()
 	}
 	for (CUpDownClient *client : uploading) {
 		if (theApp->uploadqueue->RemoveFromUploadQueue(client)) {
-			client->SendOutOfPartReqsAndAddToWaitingQueue();
+			client->EndUploadSessionWithStatus(this);
 		}
 	}
 }
