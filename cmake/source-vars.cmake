@@ -31,6 +31,7 @@ if (BUILD_MONOLITHIC OR BUILD_DAEMON)
 		FirstRunWizard.cpp
 		FriendList.cpp
 		IPFilter.cpp
+		KadAICHVotes.cpp
 		KnownFileList.cpp
 		ListenSocket.cpp
 		MuleUDPSocket.cpp

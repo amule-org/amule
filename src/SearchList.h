@@ -529,6 +529,9 @@ private:
 	//! does not mark a different still-running search as finished. Pruned in RemoveResults.
 	std::set<uint32_t> m_finishedKadSearches;
 
+	// Shared by all result rows, transient and released with the search.
+	std::map<uint32_t, CKadAICHVotes::Key> m_kadAICHKeys;
+
 	//! Per-search start time (multi-search), so each search's cosmetic Kad progress ramp is
 	//! computed from its own age rather than the single m_searchStart of the
 	//! most-recently-started search. Pruned in RemoveResults.

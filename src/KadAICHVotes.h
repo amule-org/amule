@@ -25,32 +25,55 @@
 #ifndef KADAICHVOTES_H
 #define KADAICHVOTES_H
 
+#include <array>
 #include <map>
 #include "SHAHashSet.h"
 
-// Transient search-result evidence, never persisted as trusted metadata.
+// Transient, reputation-free evidence. The kMaxWitnesses (64) slots represent
+// consensus /20s. All rows of a search must use the same secret key before
+// admitting evidence.
+// Retain the lowest (HMAC-SHA256(key, subnet), subnet) ranks, including conflict
+// tombstones. Priorities never depend on roots, reply counts, or reputation.
+// A discarded rank can never qualify later as the cutoff only decreases. Thus
+// top-K(top-K(A) union top-K(B)) equals top-K(A union B), including tombstones.
+// This bounds memory without losing conflict information for a final retained
+// subnet. Equal keys are required for merges; copies preserve the key.
+// Get() is consumed once at download construction, before any vote is counted.
+// No key/evidence is persisted, and neither changes locally verified hashes.
+// Sampling prevents arrival preference; it cannot defeat unlimited /20 Sybils.
 class CKadAICHVotes
 {
 public:
-	void Add(uint32_t responder, const CAICHHash &root)
+	using Key = std::array<uint8_t, 32>;
+	// Bounded number of retained consensus /20 witnesses. Admit, Get and the
+	// bound tests all read this single source so the contract cannot drift.
+	static constexpr size_t kMaxWitnesses = 64;
+	static Key GenerateKey();
+	// Empty/restored models use the default; network rows supply a generated key.
+	explicit CKadAICHVotes(const Key &key = Key{})
+	: m_key(key)
 	{
-		// Retain the first root per responder and bound memory per result.
-		if (responder != 0 && m_votes.size() < 64) {
-			m_votes.emplace(responder, root);
-		}
 	}
 
-	void Merge(const CKadAICHVotes &other)
-	{
-		for (const auto &vote : other.m_votes) {
-			Add(vote.first, vote.second);
-		}
-	}
+	void Add(uint32_t responder, const CAICHHash &root);
+	void Merge(const CKadAICHVotes &other);
 
-	const std::map<uint32_t, CAICHHash> &Get() const { return m_votes; }
+	// Contradictory subnets retain a slot but contribute no correctness vote.
+	std::map<uint32_t, CAICHHash> Get() const;
+	size_t GetSlotCount() const { return m_entries.size(); }
 
 private:
-	std::map<uint32_t, CAICHHash> m_votes;
+	struct Entry
+	{
+		Key rank;
+		CAICHHash root;
+		bool conflicting;
+	};
+	Key Rank(uint32_t subnet) const;
+	void Admit(uint32_t subnet, const Entry &entry);
+
+	Key m_key;
+	std::map<uint32_t, Entry> m_entries;
 };
 
 #endif

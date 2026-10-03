@@ -450,9 +450,12 @@ bool CAICHHashTree::SetHash(CFileDataIO *fileInput, uint32 wHashIdent, sint8 nLe
 
 /////////////////////////////////////////////////////////////////////////////////////////
 /// CAICHUntrustedHash
-bool CAICHUntrustedHash::AddSigningIP(uint32 dwIP)
+bool CAICHUntrustedHash::AddSigningIP(uint32 dwIP, bool testOnly)
 {
-	dwIP &= 0x00F0FFFF; // we use only the 20 most significant bytes for unique IPs
+	dwIP = SigningSubnet(dwIP);
+	if (testOnly) {
+		return m_adwIpsSigning.count(dwIP) == 0;
+	}
 	return m_adwIpsSigning.insert(dwIP).second;
 }
 
@@ -982,6 +985,13 @@ void CAICHHashSet::UntrustedHashReceived(const CAICHHash &Hash, uint32 dwFromIP)
 		break;
 	default:
 		return;
+	}
+	// One /20 may sign only one root for this file. Probe without inserting:
+	// conflicting roots must not inflate the consensus denominator.
+	for (auto &entry : m_aUntrustedHashs) {
+		if (entry.m_Hash != Hash && !entry.AddSigningIP(dwFromIP, true)) {
+			return;
+		}
 	}
 	bool bFound = false;
 	bool bAdded = false;

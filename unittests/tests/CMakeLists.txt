@@ -2056,6 +2056,7 @@ endif()
 add_executable (AICHSearchResultTest
 	AICHSearchResultTest.cpp
 	AICHSearchResultStubs.cpp
+	${CMAKE_SOURCE_DIR}/src/KadAICHVotes.cpp
 	${CMAKE_SOURCE_DIR}/src/AbstractFile.cpp
 	${CMAKE_SOURCE_DIR}/src/SearchFile.cpp
 	${CMAKE_SOURCE_DIR}/src/MemFile.cpp
@@ -2082,5 +2083,13 @@ target_include_directories (AICHSearchResultTest PRIVATE
 	${CMAKE_SOURCE_DIR}/src/libs ${CMAKE_BINARY_DIR}/src/libs
 	${CMAKE_BINARY_DIR}/src/libs/ec/cpp
 )
+if (ENABLE_UPNP)
+	# AICHSearchResultStubs.cpp defines CamuleApp::~CamuleApp(), whose
+	# m_upnpMappings member (std::vector<CUPnPPortMapping>) needs the complete
+	# UPnPBase.h, which in turn includes <upnp.h> from libupnp. The test links
+	# mulecommon (not muleappcommon), so it does not inherit that include path.
+	target_include_directories (AICHSearchResultTest PRIVATE
+		$<TARGET_PROPERTY:UPNP::Shared,INTERFACE_INCLUDE_DIRECTORIES>)
+endif()
 target_link_libraries (AICHSearchResultTest muleunit mulecommon wxWidgets::BASE CRYPTOPP::CRYPTOPP)
 add_test (NAME AICHSearchResultTest COMMAND AICHSearchResultTest)

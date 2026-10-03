@@ -72,6 +72,7 @@ public:
 	 * @param directory If from a client's shared files, the directory this file is in.
 	 * @param kademlia Whether this came from a kad search.
 	 * @param kadAICHResponderIP Actual responder in peer IP byte order; zero if unknown.
+	 * @param kadAICHKey Shared secret for this search; required for Kad evidence.
 	 */
 	CSearchFile(const CMemFile &data,
 		bool optUTF8,
@@ -80,7 +81,8 @@ public:
 		uint16_t serverPort = 0,
 		const wxString &directory = "",
 		bool kademlia = false,
-		uint32_t kadAICHResponderIP = 0);
+		uint32_t kadAICHResponderIP = 0,
+		const CKadAICHVotes::Key *kadAICHKey = nullptr);
 
 	/** Frees all children owned by this file. */
 	virtual ~CSearchFile();
@@ -224,7 +226,7 @@ public:
 
 	void SetKadPublishInfo(uint32_t val) noexcept { m_kadPublishInfo = val; }
 	uint32_t GetKadPublishInfo() const noexcept { return m_kadPublishInfo; }
-	const std::map<uint32_t, CAICHHash> &GetKadAICHVotes() const noexcept { return m_kadAICHVotes.Get(); }
+	std::map<uint32_t, CAICHHash> GetKadAICHVotes() const { return m_kadAICHVotes.Get(); }
 
 	const wxString &GetDirectory() const noexcept { return m_directory; }
 

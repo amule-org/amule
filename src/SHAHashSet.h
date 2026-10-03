@@ -221,7 +221,9 @@ public:
 		m_Hash = k1.m_Hash;
 		return *this;
 	}
-	bool AddSigningIP(uint32 dwIP);
+	// Addresses are in peer byte order, as opposed to Kad wire order.
+	static constexpr uint32 SigningSubnet(uint32 ip) { return ip & 0x00F0FFFF; }
+	bool AddSigningIP(uint32 dwIP, bool testOnly = false);
 
 	CAICHHash m_Hash;
 	std::set<uint32> m_adwIpsSigning;

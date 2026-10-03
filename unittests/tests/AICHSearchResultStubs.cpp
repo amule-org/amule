@@ -32,6 +32,10 @@
 #include <DownloadQueue.h>
 #include <PartFile.h>
 #include <updownclient.h>
+#include <SearchList.h>
+#ifdef ENABLE_UPNP
+#include "UPnPBase.h" // Needed for CUPnPPortMapping (CamuleApp::m_upnpMappings)
+#endif
 
 using namespace muleunit;
 
@@ -132,7 +136,136 @@ void Search_Update_Sources(CSearchFile *) {}
 void HandleNotification(const CMuleNotiferBase &) {}
 } // namespace MuleNotify
 
-#include <SearchList.h>
+// Define the real classes' virtual anchors so the compiler emits their genuine
+// vtables and hierarchy RTTI. UBSan's vptr instrumentation references this even
+// in application branches that ownerless consensus never enters. Every stub
+// remains fail-fast; no fake typeinfo symbols or sanitizer exclusions are used.
+namespace
+{
+[[noreturn]] void UnexpectedApplicationCall(const char *method) noexcept
+{
+	std::fprintf(stderr, "AICH fixture unexpectedly called %s\n", method);
+	std::abort();
+}
+} // namespace
+
+CamuleApp::~CamuleApp()
+{
+	UnexpectedApplicationCall("CamuleApp::~CamuleApp");
+}
+CDownloadQueue::~CDownloadQueue()
+{
+	UnexpectedApplicationCall("CDownloadQueue::~CDownloadQueue");
+}
+CKnownFile::~CKnownFile()
+{
+	UnexpectedApplicationCall("CKnownFile::~CKnownFile");
+}
+CPartFile::~CPartFile()
+{
+	UnexpectedApplicationCall("CPartFile::~CPartFile");
+}
+
+bool CamuleApp::OnInit()
+{
+	UnexpectedApplicationCall("CamuleApp::OnInit");
+}
+int CamuleApp::OnExit()
+{
+	UnexpectedApplicationCall("CamuleApp::OnExit");
+}
+#if wxUSE_ON_FATAL_EXCEPTION
+void CamuleApp::OnFatalException()
+{
+	UnexpectedApplicationCall("CamuleApp::OnFatalException");
+}
+#endif
+void CamuleApp::OnUnhandledException()
+{
+	UnexpectedApplicationCall("CamuleApp::OnUnhandledException");
+}
+void CamuleApp::OnAssertFailure(const wxChar *, int, const wxChar *, const wxChar *, const wxChar *)
+{
+	UnexpectedApplicationCall("CamuleApp::OnAssertFailure");
+}
+void CamuleApp::EnableIP2Country(bool, bool)
+{
+	UnexpectedApplicationCall("CamuleApp::EnableIP2Country");
+}
+int CamuleApp::InitGui(bool, wxString &)
+{
+	UnexpectedApplicationCall("CamuleApp::InitGui");
+}
+void CDownloadQueue::ObserverAdded(ObserverType *)
+{
+	UnexpectedApplicationCall("CDownloadQueue::ObserverAdded");
+}
+
+void CKnownFile::LoadComment() const
+{
+	UnexpectedApplicationCall("CKnownFile::LoadComment");
+}
+void CKnownFile::SetFileSize(uint64)
+{
+	UnexpectedApplicationCall("CKnownFile::SetFileSize");
+}
+void CKnownFile::SetFileName(const CPath &)
+{
+	UnexpectedApplicationCall("CKnownFile::SetFileName");
+}
+bool CKnownFile::LoadFromFile(const CFileDataIO *)
+{
+	UnexpectedApplicationCall("CKnownFile::LoadFromFile");
+}
+CPacket *CKnownFile::CreateSrcInfoPacket(const CUpDownClient *, uint8, uint16)
+{
+	UnexpectedApplicationCall("CKnownFile::CreateSrcInfoPacket");
+}
+void CKnownFile::UpdatePartsInfo()
+{
+	UnexpectedApplicationCall("CKnownFile::UpdatePartsInfo");
+}
+wxString CKnownFile::GetFeedback() const
+{
+	UnexpectedApplicationCall("CKnownFile::GetFeedback");
+}
+void CKnownFile::SetHashingProgress(uint16) const
+{
+	UnexpectedApplicationCall("CKnownFile::SetHashingProgress");
+}
+
+void CPartFile::SetFileName(const CPath &)
+{
+	UnexpectedApplicationCall("CPartFile::SetFileName");
+}
+uint8 CPartFile::GetStatus(bool) const
+{
+	UnexpectedApplicationCall("CPartFile::GetStatus");
+}
+void CPartFile::UpdatePartsInfo()
+{
+	UnexpectedApplicationCall("CPartFile::UpdatePartsInfo");
+}
+wxString CPartFile::GetFeedback() const
+{
+	UnexpectedApplicationCall("CPartFile::GetFeedback");
+}
+CPacket *CPartFile::CreateSrcInfoPacket(const CUpDownClient *, uint8, uint16)
+{
+	UnexpectedApplicationCall("CPartFile::CreateSrcInfoPacket");
+}
+void CPartFile::SetHashingProgress(uint16) const
+{
+	UnexpectedApplicationCall("CPartFile::SetHashingProgress");
+}
+void CPartFile::UpdateFileRatingCommentAvail()
+{
+	UnexpectedApplicationCall("CPartFile::UpdateFileRatingCommentAvail");
+}
+void CPartFile::GetRatingAndComments(FileRatingList &) const
+{
+	UnexpectedApplicationCall("CPartFile::GetRatingAndComments");
+}
 
 SearchType CSearchList::GetSearchLifecycleKindById(wxUIntPtr) const
 {
