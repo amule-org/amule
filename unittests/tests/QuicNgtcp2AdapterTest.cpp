@@ -23,8 +23,10 @@
 
 #include <muleunit/test.h>
 #include <QuicGnuTlsSession.h>
+#include <QuicNattProtocol.h>
 #include <QuicNgtcp2Adapter.h>
 #include <QuicSocketTransport.h>
+#include <QuicStreamAcceptor.h>
 #include <NetworkAddress.h>
 
 #include <ngtcp2/ngtcp2.h>
@@ -153,6 +155,12 @@ struct Engine : IQuicNgtcp2Engine
 			attachedTransport = transport;
 		}
 	}
+	//! Lets a test simulate pacing/congestion/flow control deferring a write (WriteStreamData()'s
+	//! own 0-byte, not negative, contract -- STREAM_DATA_BLOCKED, pacing, and a flow-control
+	//! window are all reported identically): each of the first blockedWriteCount calls accepts
+	//! nothing, after which writes succeed in full.
+	unsigned blockedWriteCount = 0;
+	unsigned writeStreamDataCalls = 0;
 	std::ptrdiff_t WriteStreamData(Handle handle,
 		const uint8_t *,
 		size_t length,
@@ -161,7 +169,15 @@ struct Engine : IQuicNgtcp2Engine
 		uint16_t,
 		uint64_t) override
 	{
-		return handle != nullptr ? static_cast<std::ptrdiff_t>(length) : -1;
+		if (handle == nullptr) {
+			return -1;
+		}
+		++writeStreamDataCalls;
+		if (blockedWriteCount > 0) {
+			--blockedWriteCount;
+			return 0;
+		}
+		return static_cast<std::ptrdiff_t>(length);
 	}
 	unsigned shutdownStreamCalls = 0;
 	void ShutdownStream(Handle handle) override
@@ -205,6 +221,23 @@ struct Engine : IQuicNgtcp2Engine
 const std::string kDcid = "BBBBBBBB";
 const CNetworkAddress kPeer = CNetworkAddress::FromString("192.0.2.1");
 const std::array<uint8_t, 16> kTestIdentity{ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
+const std::array<uint8_t, 16> kTestPeerIdentity{
+	101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116
+};
+
+//! Admits every offered stream, mirroring QuicNgtcp2HandshakeTest.cpp's AcceptingAcceptor:
+//! TryExchangeEaqn1Proof()'s retry logic is what this file's own tests need to observe, not
+//! admission policy.
+struct StubAcceptor : IQuicStreamAcceptor
+{
+	std::unique_ptr<IStreamTransport> accepted;
+	bool AcceptStream(
+		std::unique_ptr<IStreamTransport> &transport, const CNetworkAddress &, uint16_t) override
+	{
+		accepted = std::move(transport);
+		return true;
+	}
+};
 
 std::vector<uint8_t> Initial(const std::string &dcid = kDcid,
 	const std::string &scid = "\x99",
@@ -596,4 +629,55 @@ TEST(QuicNgtcp2Adapter, IssuedConnectionIdsComeFromEngineUntilClosed)
 	ASSERT_TRUE(!connection->OwnsConnectionId(kDcid));
 	connection->Close();
 	ASSERT_TRUE(!connection->OwnsConnectionId("SSSSSSSS"));
+}
+
+// A deferred (0-byte) write of our EAQN1 proof, e.g. gated by ngtcp2 pacing at a realistic RTT,
+// must be retried rather than close the connection, and the hand-off completes once it goes out.
+TEST(QuicNgtcp2Adapter, ZeroByteProofWriteIsRetriedNotClosed)
+{
+	Session s;
+	Credentials c;
+	Verifier v;
+	auto sink = std::make_shared<Sink>();
+	auto engine = std::make_shared<Engine>();
+	auto p = Initial();
+	CQuicNgtcp2Factory factory(Policy(s, c, v), sink, engine, kTestIdentity);
+	StubAcceptor acceptor;
+	factory.SetAcceptor(&acceptor);
+
+	auto connection = factory.CreateInbound(p.data(), p.size(), kPeer, 2, kDcid, 0);
+	ASSERT_TRUE(connection != nullptr);
+
+	// nullptr target: this connection has no prior rendezvous context, same as every real
+	// inbound connection (QuicNgtcp2Adapter.cpp's TryExchangeEaqn1Proof() comment).
+	const auto peerProof = QuicNatt::BuildEaqn1Proof(kTestPeerIdentity, nullptr);
+	engine->streamData.assign(peerProof.begin(), peerProof.end());
+	engine->hasOpenStream = true;
+	// The first two attempts to write our own proof are deferred (pacing/congestion/flow
+	// control -- indistinguishable by this contract); the third succeeds.
+	engine->blockedWriteCount = 2;
+
+	ASSERT_TRUE(connection->ProcessDatagram(p.data(), p.size(), 0));
+	ASSERT_TRUE(!connection->IsClosed());
+	ASSERT_TRUE(acceptor.accepted == nullptr);
+	ASSERT_EQUALS(1u, engine->writeStreamDataCalls);
+
+	connection->Tick(1);
+	ASSERT_TRUE(!connection->IsClosed());
+	ASSERT_TRUE(acceptor.accepted == nullptr);
+	ASSERT_EQUALS(2u, engine->writeStreamDataCalls);
+
+	// Third attempt: blockedWriteCount has run out, the write finally goes through in full, and
+	// the stream -- already validated on the peer's side two ticks ago -- is offered right away.
+	connection->Tick(2);
+	ASSERT_TRUE(!connection->IsClosed());
+	ASSERT_TRUE(acceptor.accepted != nullptr);
+	ASSERT_EQUALS(3u, engine->writeStreamDataCalls);
+
+	// QuicSocketTransport.h's own documented contract: the caller must detach the transport
+	// (AttachTransport(handle, nullptr)) before destroying it, not after the connection whose
+	// handle it holds is already gone -- CQuicSocketTransport::Close() reaches back into
+	// m_operations (this connection) to send a graceful FIN, which would otherwise run on a
+	// dangling reference once connection's own destructor has already run.
+	acceptor.accepted.reset();
 }

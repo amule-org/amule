@@ -216,6 +216,11 @@ public:
 			Close();
 			return;
 		}
+		// A pending proof write deferred by pacing/congestion (TryExchangeEaqn1Proof()) has no
+		// transport yet for IQuicNgtcp2Engine::NotifyWritable() to reach -- this tick, the same
+		// moment that congestion easing or a loss-detection retransmit would otherwise be
+		// noticed, is this connection's own equivalent retry point.
+		OfferStreamIfJustOpened();
 		EndConnectionIfStreamEnded(nowMs);
 		if (!m_closed) {
 			m_engine->NotifyWritable(m_handle);
@@ -325,42 +330,63 @@ private:
 	//! be sent -- the peer never completes its own side of the hand-off.
 	//!
 	//! Returns true once both sides of the exchange are done and the connection is ready to be
-	//! handed to the acceptor; false to keep waiting for more of the peer's proof. A proof that
-	//! fails validation, or ours failing to go out in one piece, closes the connection outright:
-	//! fail closed, the same as every other RFC 9000 admission check this engine already applies.
+	//! handed to the acceptor; false to keep waiting, either for more of the peer's proof or for
+	//! ours (m_ourProof) to finish going out. eMuleAI coalesces its Finished and its proof into one
+	//! datagram, so our reply is written at the same ts as the handshake-completion flush and
+	//! ngtcp2 pacing can defer it (0 bytes accepted). That is "not yet", never a failure: the write
+	//! is retried from ProcessDatagram()/Tick(). Only a failed validation or a fatal write error
+	//! closes the connection.
 	bool TryExchangeEaqn1Proof()
 	{
-		const std::vector<uint8_t> drained = m_engine->DrainStreamData(m_handle);
-		m_proofBuffer.insert(m_proofBuffer.end(), drained.begin(), drained.end());
-		if (m_proofBuffer.size() < QuicNatt::EAQN1_PROOF_SIZE) {
-			return false;
+		if (!m_peerProofValidated) {
+			const std::vector<uint8_t> drained = m_engine->DrainStreamData(m_handle);
+			m_proofBuffer.insert(m_proofBuffer.end(), drained.begin(), drained.end());
+			if (m_proofBuffer.size() < QuicNatt::EAQN1_PROOF_SIZE) {
+				return false;
+			}
+			// nullptr: this connection is always the inbound (server) side, and there is no
+			// prior rendezvous context here that already told us who ought to be calling -- any
+			// peer whose target hash matches ours (or is still zero, a first contact) is
+			// admitted.
+			if (!QuicNatt::ValidateEaqn1Proof(
+				    m_proofBuffer.data(), m_proofBuffer.size(), m_localIdentity, nullptr)) {
+				Close();
+				return false;
+			}
+			std::array<uint8_t, 16> peerHash{};
+			std::copy(m_proofBuffer.begin() + 5, m_proofBuffer.begin() + 21, peerHash.begin());
+			const auto proof = QuicNatt::BuildEaqn1Proof(m_localIdentity, &peerHash);
+			m_ourProof.assign(proof.begin(), proof.end());
+			m_proofBuffer.erase(
+				m_proofBuffer.begin(), m_proofBuffer.begin() + QuicNatt::EAQN1_PROOF_SIZE);
+			m_peerProofValidated = true;
 		}
-		// nullptr: this connection is always the inbound (server) side, and there is no prior
-		// rendezvous context here that already told us who ought to be calling -- any peer whose
-		// target hash matches ours (or is still zero, a first contact) is admitted.
-		if (!QuicNatt::ValidateEaqn1Proof(
-			    m_proofBuffer.data(), m_proofBuffer.size(), m_localIdentity, nullptr)) {
-			Close();
-			return false;
+		if (!m_ourProof.empty()) {
+			// The same send path as ordinary stream data: this is the one and only write ever
+			// queued ahead of the stream being offered (OfferStreamIfJustOpened() only offers
+			// it once this returns true), so there is nothing else this could race ahead of or
+			// fall behind on the wire.
+			const std::ptrdiff_t written = m_engine->WriteStreamData(m_handle,
+				m_ourProof.data(),
+				m_ourProof.size(),
+				*m_sink,
+				m_address,
+				m_port,
+				m_lastNowMs);
+			if (written < 0) {
+				// A genuine fatal connection error (not flow-control/congestion/pacing, which
+				// WriteStreamData() already reports as 0 -- see above): fail closed, same as
+				// every other RFC 9000 admission check this engine already applies.
+				Close();
+				return false;
+			}
+			if (written > 0) {
+				m_ourProof.erase(m_ourProof.begin(), m_ourProof.begin() + written);
+			}
+			if (!m_ourProof.empty()) {
+				return false;
+			}
 		}
-		std::array<uint8_t, 16> peerHash{};
-		std::copy(m_proofBuffer.begin() + 5, m_proofBuffer.begin() + 21, peerHash.begin());
-		const auto ourProof = QuicNatt::BuildEaqn1Proof(m_localIdentity, &peerHash);
-		if (m_engine->WriteStreamData(m_handle,
-			    ourProof.data(),
-			    ourProof.size(),
-			    *m_sink,
-			    m_address,
-			    m_port,
-			    m_lastNowMs) != static_cast<std::ptrdiff_t>(ourProof.size())) {
-			// Did not fit in one go (flow control/congestion, vanishingly unlikely for 37 bytes
-			// right after a handshake): no partial-proof retry machinery exists, and sending half
-			// a proof the peer could misread as application data is worse than refusing outright.
-			Close();
-			return false;
-		}
-		m_proofBuffer.erase(
-			m_proofBuffer.begin(), m_proofBuffer.begin() + QuicNatt::EAQN1_PROOF_SIZE);
 		m_proofExchanged = true;
 		return true;
 	}
@@ -393,6 +419,11 @@ private:
 	//! split across more than one recv_stream_data() delivery, and nothing shorter than the
 	//! full proof is safe to validate.
 	std::vector<uint8_t> m_proofBuffer;
+	bool m_peerProofValidated = false;
+	//! The remainder of our own proof still waiting to go out, trimmed from the front as
+	//! WriteStreamData() accepts bytes of it -- empty both before the peer's proof validates and
+	//! once ours has fully gone out (m_proofExchanged distinguishes the two).
+	std::vector<uint8_t> m_ourProof;
 	bool m_proofExchanged = false;
 	uint64_t m_lastNowMs = 0;
 	bool m_streamOffered = false;
