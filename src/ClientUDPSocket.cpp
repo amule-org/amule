@@ -25,6 +25,9 @@
 
 #include "ClientUDPSocket.h" // Interface declarations
 
+#include <algorithm>
+#include <array>
+
 #include <protocol/Protocols.h>
 #include <protocol/ed2k/Client2Client/TCP.h> // Sometimes we reply with TCP packets.
 #include <protocol/ed2k/Client2Client/UDP.h>
@@ -53,15 +56,79 @@
 #include "UtpLibraryAdapter.h"
 #include "UtpStreamAcceptor.h"
 #endif
+#ifdef AMULE_QUIC_TRANSPORT
+#include "QuicTls.h"
+#include "QuicNgtcp2Adapter.h"
+#endif
 
 //
 // CClientUDPSocket -- Extended eMule UDP socket
 //
 
+#ifdef AMULE_QUIC_TRANSPORT
+namespace
+{
+//! What CQuicNgtcp2Factory asserts as "who we are" in the EAQN1 proof exchange
+//! (QuicNattProtocol.h) every inbound QUIC stream goes through before being handed off.
+std::array<uint8_t, 16> QuicLocalIdentityFromUserHash()
+{
+	std::array<uint8_t, 16> identity{};
+	std::copy_n(thePrefs::GetUserHash().GetHash(), identity.size(), identity.begin());
+	return identity;
+}
+
+//! Sends a QUIC datagram the same way SendUtpDatagram() sends a uTP one: wrapped as an
+//! OP_NATT_FRAME_QUIC reserved-protocol frame, unobfuscated. There is no established peer
+//! identity/hash to obfuscate with for a connection this socket did not dial -- every QUIC
+//! connection here is inbound -- and the datagram's own TLS 1.3 protection does not depend on
+//! aMule's separate ed2k UDP obfuscation layer either way.
+class CQuicUdpSink final : public IQuicDatagramSink
+{
+public:
+	explicit CQuicUdpSink(CClientUDPSocket &socket)
+	: m_socket(socket)
+	{
+	}
+
+	bool SendDatagram(
+		const uint8_t *payload, size_t length, const CNetworkAddress &address, uint16_t port) override
+	{
+		uint32_t ip = 0;
+		// Maximum IPv4 UDP payload, less the aMule envelope -- the same bound
+		// QueueUtpDatagram() enforces for the same reason.
+		if (!address.ToIPv4NetworkOrder(ip) || length > 65507 - 2 ||
+			(length != 0 && payload == nullptr)) {
+			return false;
+		}
+		auto packet = std::make_unique<CPacket>(
+			OP_NATT_FRAME_QUIC, static_cast<uint32_t>(length), OP_UDPRESERVEDPROT2);
+		if (length != 0) {
+			packet->CopyToDataBuffer(0, payload, static_cast<unsigned int>(length));
+		}
+		m_socket.SendPacket(packet.release(), ip, port, false, nullptr, false, 0);
+		return true;
+	}
+
+private:
+	CClientUDPSocket &m_socket;
+};
+} // namespace
+#endif
+
 CClientUDPSocket::CClientUDPSocket(const amuleIPV4Address &address, const CProxyData *ProxyData)
 : CMuleUDPSocket("Client UDP-Socket", ID_CLIENTUDPSOCKET_EVENT, address, ProxyData)
 #ifdef AMULE_UTP_TRANSPORT
 , m_utp(CreateUtpLibrary(), *this)
+#endif
+#ifdef AMULE_QUIC_TRANSPORT
+, m_quicCredentials(CreateProductionQuicCredentials())
+, m_quicSink(std::make_shared<CQuicUdpSink>(*this))
+, m_quicEngine(CreateProductionQuicNgtcp2Engine())
+, m_quicFactory(std::make_unique<CQuicNgtcp2Factory>(CQuicTlsPolicy{ m_quicCredentials.get() },
+	  m_quicSink,
+	  m_quicEngine,
+	  QuicLocalIdentityFromUserHash()))
+, m_quic(m_quicFactory.get())
 #endif
 {
 	if (!thePrefs::IsUDPDisabled()) {
@@ -71,6 +138,9 @@ CClientUDPSocket::CClientUDPSocket(const amuleIPV4Address &address, const CProxy
 	// Arm the service before the first outbound dial, not only after ingress.
 	m_utp.Configure();
 	m_utp.SetAcceptor(&m_utpAcceptor);
+#endif
+#ifdef AMULE_QUIC_TRANSPORT
+	m_quicFactory->SetAcceptor(&m_quicAcceptor);
 #endif
 }
 
@@ -124,6 +194,14 @@ void CClientUDPSocket::SendUtpDatagram(const uint8_t *payload,
 	const std::uint64_t overhead = length + kUtpEnvelopeBytes + (encrypt ? kUtpCryptHeaderBytes : 0);
 	theStats::AddUpOverheadOther(overhead);
 	QueueUtpDatagram<CPacket>(*this, payload, length, ip, port, encrypt, userHash);
+}
+#endif
+
+#ifdef AMULE_QUIC_TRANSPORT
+void CClientUDPSocket::TickQuic()
+{
+	wxASSERT(wxIsMainThread());
+	m_quic.Tick(::GetTickCount64());
 }
 #endif
 

@@ -80,6 +80,58 @@ CQuicContext::ConnectionMap::iterator CQuicContext::FindInitialConnection(
 	return m_connections.end();
 }
 
+CQuicContext::ConnectionMap::iterator CQuicContext::FindNonInitialConnection(
+	const CNetworkAddress &address, uint16_t port, const uint8_t *payload, size_t length)
+{
+	if (length < 1) {
+		return FindSoleEndpointConnection(address, port);
+	}
+	// "Non-Initial" is not only a short header (1-RTT, the common case once the handshake is
+	// done): a Handshake packet is a long header too, and a long header's CID lives at a
+	// different offset, with an explicit length byte (RFC 9000 section 17.2) -- unlike a short
+	// header's, which has no self-describing length at all (section 17.3.1): only the receiver
+	// that chose it knows how many bytes it is. Reading a long header at the short header's
+	// offset would read into the version field instead, never matching anything.
+	const bool longHeader = (payload[0] & 0x80) != 0;
+	size_t cidOffset = 1;
+	size_t longHeaderCidLength = 0;
+	if (longHeader) {
+		if (length < 6) {
+			return FindSoleEndpointConnection(address, port);
+		}
+		longHeaderCidLength = payload[5];
+		cidOffset = 6;
+		if (length < cidOffset + longHeaderCidLength) {
+			return FindSoleEndpointConnection(address, port);
+		}
+	}
+	// CID routing is only possible for a connection whose own issued CID this context can
+	// actually see.
+	for (auto entry = m_connections.lower_bound(SConnectionKey{ address, port, std::string() });
+		entry != m_connections.end() && entry->first.address == address && entry->first.port == port;
+		++entry) {
+		const std::string issuedCid = entry->second->GetIssuedConnectionId();
+		if (issuedCid.empty()) {
+			continue;
+		}
+		if (longHeader) {
+			if (longHeaderCidLength != issuedCid.size()) {
+				continue;
+			}
+		} else if (length < cidOffset + issuedCid.size()) {
+			continue;
+		}
+		const std::string candidate(
+			reinterpret_cast<const char *>(payload + cidOffset), issuedCid.size());
+		if (entry->second->OwnsConnectionId(candidate)) {
+			return entry;
+		}
+	}
+	// No connection at this endpoint discloses a usable CID: fall back to the endpoint, which
+	// is only unambiguous when exactly one connection is there.
+	return FindSoleEndpointConnection(address, port);
+}
+
 void CQuicContext::EraseClosedConnections()
 {
 	for (auto entry = m_connections.begin(); entry != m_connections.end();) {
@@ -119,9 +171,9 @@ bool CQuicContext::ProcessDatagram(
 	std::string cid;
 	const bool initial = ClassifyInitial(payload, length, cid);
 	auto existing = initial ? FindInitialConnection(address, port, cid)
-				: FindSoleEndpointConnection(address, port);
+				: FindNonInitialConnection(address, port, payload, length);
 	if (existing != m_connections.end()) {
-		const bool accepted = existing->second->ProcessDatagram(payload, length);
+		const bool accepted = existing->second->ProcessDatagram(payload, length, nowMs);
 		if (!accepted || existing->second->IsClosed()) {
 			existing->second->Close();
 			m_connections.erase(existing);
@@ -132,15 +184,23 @@ bool CQuicContext::ProcessDatagram(
 		return false;
 	}
 	std::unique_ptr<IQuicConnection> connection =
-		m_factory->CreateInbound(payload, length, address, port, cid);
+		m_factory->CreateInbound(payload, length, address, port, cid, nowMs);
 	if (!connection) {
 		return false;
 	}
-	const bool accepted = connection->ProcessDatagram(payload, length);
+	const bool accepted = connection->ProcessDatagram(payload, length, nowMs);
 	if (!accepted || connection->IsClosed()) {
 		connection->Close();
 		return accepted;
 	}
 	m_connections.emplace(SConnectionKey{ address, port, cid }, std::move(connection));
 	return true;
+}
+
+void CQuicContext::Tick(uint64_t nowMs)
+{
+	for (auto &entry : m_connections) {
+		entry.second->Tick(nowMs);
+	}
+	EraseClosedConnections();
 }

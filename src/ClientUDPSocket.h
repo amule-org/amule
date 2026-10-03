@@ -29,12 +29,16 @@
 #include "MuleUDPSocket.h"
 #include "ReservedProtocolFrames.h" // Needed for CFrameLogThrottle
 
+#include <memory>
+
 #ifdef AMULE_UTP_TRANSPORT
 #include "UtpContext.h"
 #include "UtpStreamAcceptor.h"
 #endif
 #ifdef AMULE_QUIC_TRANSPORT
 #include "QuicContext.h"
+#include "QuicNgtcp2Adapter.h"
+#include "QuicStreamAcceptor.h"
 #endif
 
 class CClientUDPSocket : public CMuleUDPSocket
@@ -50,6 +54,12 @@ public:
 	void Close() override;
 	void TickUtp();
 	IUtpContext *GetUtpContext() { return &m_utp; }
+#endif
+#ifdef AMULE_QUIC_TRANSPORT
+	//! Services every live QUIC connection's RFC 9002 timers, independently of any inbound
+	//! datagram. Without this a connection that stops receiving ACKs would never retransmit
+	//! and never time out.
+	void TickQuic();
 #endif
 
 protected:
@@ -67,7 +77,14 @@ private:
 	CUtpStreamAcceptor m_utpAcceptor;
 #endif
 #ifdef AMULE_QUIC_TRANSPORT
+	// Declaration order is construction order: each of these is built from the ones before it,
+	// so none may move above whichever it depends on.
+	std::shared_ptr<IQuicTlsCredentials> m_quicCredentials; // the real, shared server certificate
+	std::shared_ptr<IQuicDatagramSink> m_quicSink;
+	std::shared_ptr<IQuicNgtcp2Engine> m_quicEngine;
+	std::unique_ptr<CQuicNgtcp2Factory> m_quicFactory;
 	CQuicContext m_quic;
+	CQuicStreamAcceptor m_quicAcceptor;
 #endif
 	void OnPacketReceived(
 		const CNetworkAddress &address, uint16 port, uint8_t *buffer, size_t length) override;

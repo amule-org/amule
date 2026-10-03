@@ -2004,6 +2004,9 @@ void CamuleApp::OnCoreTimer(CTimerEvent &WXUNUSED(evt))
 	// be reached with a null pointer.
 	clientudp->TickUtp();
 #endif
+#ifdef AMULE_QUIC_TRANSPORT
+	clientudp->TickQuic();
+#endif
 
 	uploadqueue->Process();
 	downloadqueue->Process();

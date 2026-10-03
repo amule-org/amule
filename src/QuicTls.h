@@ -21,27 +21,18 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
 //
 
-#ifndef QUICLIBRARYADAPTER_H
-#define QUICLIBRARYADAPTER_H
-
-#include "QuicNattProtocol.h"
+#ifndef QUICTLS_H
+#define QUICTLS_H
 
 #include <cstddef>
 #include <cstdint>
-#include <array>
-#include <vector>
+#include <memory>
 
 struct gnutls_session_int;
 typedef gnutls_session_int *gnutls_session_t;
 
-class IQuicLibraryCallbacks
-{
-public:
-	virtual ~IQuicLibraryCallbacks() = default;
-	virtual void OnQuicConnected() = 0;
-	virtual void OnQuicPayload(const uint8_t *, size_t) = 0;
-	virtual void OnQuicAuthenticationFailure() = 0;
-};
+struct gnutls_certificate_credentials_st;
+typedef gnutls_certificate_credentials_st *gnutls_certificate_credentials_t;
 
 class IQuicTlsCredentials
 {
@@ -73,45 +64,14 @@ public:
 	virtual gnutls_session_t NativeGnuTlsSession() const = 0;
 };
 
-class IQuicLibrary
+class IQuicGnuTlsCredentials : public IQuicTlsCredentials
 {
 public:
-	virtual ~IQuicLibrary() = default;
-	virtual bool Configure() = 0;
-	virtual bool OnHandshakeComplete(const uint8_t *, size_t) = 0;
-	virtual bool OnStreamData(const uint8_t *, size_t) = 0;
+	~IQuicGnuTlsCredentials() override = default;
+	virtual gnutls_certificate_credentials_t NativeGnuTlsCredentials() const = 0;
 };
 
-struct CQuicTlsPolicy
-{
-	IQuicTlsSession *session = nullptr;
-	const IQuicTlsCredentials *credentials = nullptr;
-	const IQuicTlsVerifier *verifier = nullptr;
-	IQuicNgtcp2TlsSession *ngtcp2Session = nullptr;
-};
-
-class CQuicLibraryAdapter final : public IQuicLibrary
-{
-public:
-	CQuicLibraryAdapter(const CQuicTlsPolicy &,
-		const std::array<uint8_t, 16> &,
-		const std::array<uint8_t, 16> *,
-		IQuicLibraryCallbacks *);
-	bool Configure() override;
-	bool OnHandshakeComplete(const uint8_t *, size_t) override;
-	bool OnStreamData(const uint8_t *, size_t) override;
-	bool IsReady() const { return m_ready; }
-
-private:
-	CQuicTlsPolicy m_policy;
-	const std::array<uint8_t, 16> m_localIdentity;
-	const std::array<uint8_t, 16> *m_expectedPeerIdentity;
-	IQuicLibraryCallbacks *m_callbacks;
-	bool m_configured = false;
-	bool m_ready = false;
-	bool m_handshake = false;
-	bool m_authenticationReported = false;
-	std::vector<uint8_t> m_proof;
-};
+//! The real server certificate and key, shared across every connection this process creates.
+std::shared_ptr<IQuicTlsCredentials> CreateProductionQuicCredentials();
 
 #endif

@@ -1056,6 +1056,11 @@ IF (NEED_LIB_MULESOCKET)
 		# is the placement that reaches amuled, amule, amulegui and the
 		# preferences dialog with a single copy.
 		NetworkInterfaces.cpp
+		# LibSocketAsio.cpp stamps transport Close()/Flush() with ::GetTickCount64(),
+		# so the EC-only tools (amulecmd, amuleweb, amuleapi), which link mulesocket
+		# but not COMMON_SOURCES, need the definition here. Same single-copy
+		# placement argument as NetworkInterfaces.cpp above.
+		GetTickCount.cpp
 	)
 
 	target_compile_definitions (mulesocket

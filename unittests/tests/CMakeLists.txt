@@ -176,8 +176,10 @@ if (ENABLE_QUIC)
 		QuicNgtcp2AdapterTest.cpp
 		${CMAKE_SOURCE_DIR}/src/QuicNgtcp2Adapter.cpp
 		${CMAKE_SOURCE_DIR}/src/QuicContext.cpp
-		${CMAKE_SOURCE_DIR}/src/QuicLibraryAdapter.cpp
+		${CMAKE_SOURCE_DIR}/src/QuicGnuTlsSession.cpp
+		${CMAKE_SOURCE_DIR}/src/QuicSocketTransport.cpp
 		${CMAKE_SOURCE_DIR}/src/NetworkAddress.cpp
+		${CMAKE_SOURCE_DIR}/src/GetTickCount.cpp
 		${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
 		${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 	)
@@ -190,21 +192,42 @@ if (ENABLE_QUIC)
 	)
 	target_link_libraries (QuicNgtcp2AdapterTest muleunit Quic::Ngtcp2 ${Boost_LIBRARIES})
 
-	add_executable (QuicLibraryAdapterTest
-		QuicLibraryAdapterTest.cpp
-		${CMAKE_SOURCE_DIR}/src/QuicLibraryAdapter.cpp
+	add_executable (QuicNgtcp2HandshakeTest
+		QuicNgtcp2HandshakeTest.cpp
+		${CMAKE_SOURCE_DIR}/src/QuicNgtcp2Adapter.cpp
+		${CMAKE_SOURCE_DIR}/src/QuicContext.cpp
+		${CMAKE_SOURCE_DIR}/src/QuicGnuTlsSession.cpp
+		${CMAKE_SOURCE_DIR}/src/QuicSocketTransport.cpp
+		${CMAKE_SOURCE_DIR}/src/NetworkAddress.cpp
+		${CMAKE_SOURCE_DIR}/src/GetTickCount.cpp
 		${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
 		${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 	)
-	add_test (NAME QuicLibraryAdapterTest COMMAND QuicLibraryAdapterTest)
-	target_include_directories (QuicLibraryAdapterTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
-	target_link_libraries (QuicLibraryAdapterTest muleunit Quic::Ngtcp2)
+	add_test (NAME QuicNgtcp2HandshakeTest COMMAND QuicNgtcp2HandshakeTest)
+	target_include_directories (QuicNgtcp2HandshakeTest PRIVATE
+		${CMAKE_BINARY_DIR}
+		${CMAKE_SOURCE_DIR}/src
+		${CMAKE_SOURCE_DIR}/src/include
+		${Boost_INCLUDE_DIR}
+	)
+	target_link_libraries (QuicNgtcp2HandshakeTest muleunit Quic::Ngtcp2 ${Boost_LIBRARIES})
+
+	add_executable (QuicGnuTlsSessionTest
+		QuicGnuTlsSessionTest.cpp
+		${CMAKE_SOURCE_DIR}/src/QuicGnuTlsSession.cpp
+		${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
+		${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
+	)
+	add_test (NAME QuicGnuTlsSessionTest COMMAND QuicGnuTlsSessionTest)
+	target_include_directories (QuicGnuTlsSessionTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
+	target_link_libraries (QuicGnuTlsSessionTest muleunit Quic::Ngtcp2)
 endif()
 
 add_executable (QuicSocketTransportTest
 	QuicSocketTransportTest.cpp
 	${CMAKE_SOURCE_DIR}/src/QuicSocketTransport.cpp
 	${CMAKE_SOURCE_DIR}/src/NetworkAddress.cpp
+	${CMAKE_SOURCE_DIR}/src/GetTickCount.cpp
 	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
 	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 )
@@ -246,6 +269,8 @@ add_executable (LibSocketTransportTest
 	# DetectNetworkInterfaces(), and this target does not link mulesocket.
 	${CMAKE_SOURCE_DIR}/src/NetworkInterfaces.cpp
 	${CMAKE_SOURCE_DIR}/src/NetworkAddress.cpp
+	# LibSocketAsio.cpp's Close()/FlushTransport() now call ::GetTickCount64() directly.
+	${CMAKE_SOURCE_DIR}/src/GetTickCount.cpp
 	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
 	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 )
@@ -910,6 +935,8 @@ add_executable (NetworkFunctionsTest
 	# LibSocketAsio.cpp reports an attached transport's peer, which is a
 	# CNetworkAddress, so its out-of-line members have to be here too.
 	${CMAKE_SOURCE_DIR}/src/NetworkAddress.cpp
+	# LibSocketAsio.cpp stamps transport Close()/Flush() with ::GetTickCount64().
+	${CMAKE_SOURCE_DIR}/src/GetTickCount.cpp
 	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
 	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 )

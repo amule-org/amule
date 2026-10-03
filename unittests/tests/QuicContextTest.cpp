@@ -61,7 +61,7 @@ struct FakeConnection : IQuicConnection
 	bool *closeObserved = nullptr;
 	unsigned calls = 0;
 
-	bool ProcessDatagram(const uint8_t *, size_t) override
+	bool ProcessDatagram(const uint8_t *, size_t, uint64_t) override
 	{
 		++calls;
 		return accepted;
@@ -73,6 +73,27 @@ struct FakeConnection : IQuicConnection
 	bool OwnsConnectionId(const std::string &cid) const override
 	{
 		return std::find(issuedCids.begin(), issuedCids.end(), cid) != issuedCids.end();
+	}
+	std::string GetIssuedConnectionId() const override
+	{
+		return issuedCids.empty() ? std::string() : issuedCids.front();
+	}
+
+	unsigned ticks = 0;
+	//! Same reason as closeObserved: a tick that closes this connection makes it fair game for
+	//! CQuicContext::Tick()'s own EraseClosedConnections() before the caller gets to look, so
+	//! the count has to be readable through something that outlives this object.
+	unsigned *ticksObserved = nullptr;
+	bool closeOnTick = false;
+	void Tick(uint64_t) override
+	{
+		++ticks;
+		if (ticksObserved != nullptr) {
+			*ticksObserved = ticks;
+		}
+		if (closeOnTick) {
+			closed = true;
+		}
 	}
 
 	void Close() override
@@ -99,7 +120,8 @@ struct FakeFactory : IQuicConnectionFactory
 		size_t,
 		const CNetworkAddress &address,
 		uint16_t port,
-		const std::string &cid) override
+		const std::string &cid,
+		uint64_t) override
 	{
 		++calls;
 		lastAddress = address;
@@ -197,6 +219,63 @@ TEST(QuicContext, AmbiguousNonInitialFromSharedEndpointIsRefused)
 	ASSERT_EQUALS(1u, factory.created[1]->calls);
 }
 
+TEST(QuicContext, NonInitialRoutesByCidWhenConnectionsExposeOne)
+{
+	FakeFactory factory;
+	auto first = std::make_unique<FakeConnection>();
+	first->issuedCids = { std::string("\x01", 1) };
+	factory.next = std::move(first);
+	CQuicContext context(&factory);
+	auto firstInitial = Initial(0x51);
+	ASSERT_TRUE(context.ProcessDatagram(firstInitial.data(), firstInitial.size(), kPeer, 4662, 0));
+
+	auto second = std::make_unique<FakeConnection>();
+	second->issuedCids = { std::string("\x02", 1) };
+	factory.next = std::move(second);
+	auto secondInitial = Initial(0x52);
+	ASSERT_TRUE(context.ProcessDatagram(
+		secondInitial.data(), secondInitial.size(), kPeer, 4662, NatRendezvous::kRequestThrottleMs));
+
+	// Short header: flags, then the DCID this context must match against each connection's
+	// own issued CID -- not "the sole connection at this endpoint", since there are two.
+	std::vector<uint8_t> packet = { 0x40, 0x02, 0x99 };
+	ASSERT_TRUE(context.ProcessDatagram(packet.data(), packet.size(), kPeer, 4662, 0));
+	ASSERT_EQUALS(2u, factory.calls);
+	ASSERT_EQUALS(1u, factory.created[0]->calls);
+	ASSERT_EQUALS(2u, factory.created[1]->calls);
+}
+
+// got3nks' review on #1710 (finding #8, Low): a non-Initial packet is not necessarily a short
+// header -- a Handshake packet is a long header too, with its CID at a different offset and an
+// explicit length byte (RFC 9000 section 17.2), unlike a short header's. Reading it at the short
+// header's offset 1 would read into the version field instead and never match, falling back to
+// endpoint routing, which this test's two connections at one endpoint make ambiguous.
+TEST(QuicContext, NonInitialLongHeaderRoutesByCidWhenConnectionsExposeOne)
+{
+	FakeFactory factory;
+	auto first = std::make_unique<FakeConnection>();
+	first->issuedCids = { std::string("\x01", 1) };
+	factory.next = std::move(first);
+	CQuicContext context(&factory);
+	auto firstInitial = Initial(0x53);
+	ASSERT_TRUE(context.ProcessDatagram(firstInitial.data(), firstInitial.size(), kPeer, 4662, 0));
+
+	auto second = std::make_unique<FakeConnection>();
+	second->issuedCids = { std::string("\x02", 1) };
+	factory.next = std::move(second);
+	auto secondInitial = Initial(0x54);
+	ASSERT_TRUE(context.ProcessDatagram(
+		secondInitial.data(), secondInitial.size(), kPeer, 4662, NatRendezvous::kRequestThrottleMs));
+
+	// Long header: flags (bit 0x80 set), a 4-byte version, a DCID length byte, then the DCID
+	// itself -- the offset this fix actually reads from.
+	std::vector<uint8_t> packet = { 0xE0, 0x00, 0x00, 0x00, 0x01, 0x01, 0x02 };
+	ASSERT_TRUE(context.ProcessDatagram(packet.data(), packet.size(), kPeer, 4662, 0));
+	ASSERT_EQUALS(2u, factory.calls);
+	ASSERT_EQUALS(1u, factory.created[0]->calls);
+	ASSERT_EQUALS(2u, factory.created[1]->calls);
+}
+
 TEST(QuicContext, ConnectionFailureRemovesOwnership)
 {
 	FakeFactory factory;
@@ -211,6 +290,32 @@ TEST(QuicContext, ConnectionFailureRemovesOwnership)
 	ASSERT_TRUE(context.ProcessDatagram(
 		initial.data(), initial.size(), kPeer, 4662, NatRendezvous::kRequestThrottleMs));
 	ASSERT_EQUALS(2u, factory.calls);
+}
+
+TEST(QuicContext, TickServicesEveryLiveConnectionAndErasesClosedOnes)
+{
+	FakeFactory factory;
+	factory.next = std::make_unique<FakeConnection>();
+	CQuicContext context(&factory);
+	auto first = Initial(0x70);
+	ASSERT_TRUE(context.ProcessDatagram(first.data(), first.size(), kPeer, 4662, 0));
+
+	factory.next = std::make_unique<FakeConnection>();
+	auto second = Initial(0x71);
+	ASSERT_TRUE(context.ProcessDatagram(
+		second.data(), second.size(), kPeer, 4662, NatRendezvous::kRequestThrottleMs));
+
+	// factory.created[1] does not survive this Tick(): closeOnTick makes it IsClosed(), and
+	// CQuicContext::Tick() erases (destroys) closed connections in the same call. Read its tick
+	// count through ticksObserved, which outlives it, not through the now-dangling pointer.
+	unsigned secondTicks = 0;
+	factory.created[1]->closeOnTick = true;
+	factory.created[1]->ticksObserved = &secondTicks;
+	context.Tick(123);
+
+	ASSERT_EQUALS(1u, factory.created[0]->ticks);
+	ASSERT_EQUALS(1u, secondTicks);
+	ASSERT_EQUALS(1u, context.ConnectionCount());
 }
 
 TEST(QuicContext, DestructionClosesOwnedConnections)
