@@ -831,8 +831,11 @@ public:
 		if (info.unackedSendBytes >= CQuicSocketTransport::kReadWindow) {
 			return 0;
 		}
-		const size_t offeredLength =
-			std::min(length, CQuicSocketTransport::kReadWindow - info.unackedSendBytes);
+		// One STREAM frame never carries more than a packet, so copying more only inflates the
+		// retained capacity of unackedSendChunks.
+		const size_t offeredLength = std::min({ length,
+			CQuicSocketTransport::kReadWindow - info.unackedSendBytes,
+			kMaxUdpPayload });
 		// Our own copy, created before ngtcp2 ever sees it: the ngtcp2_vec below must point at
 		// memory we control for as long as ngtcp2 might still need it (ConnectionInfo::
 		// unackedSendChunks's comment has the full contract), not the caller's -- which
