@@ -28,6 +28,7 @@
 #include <cstdint>
 #include <cstddef>
 #include <deque>
+#include <functional>
 #include <mutex>
 #include <vector>
 
@@ -36,9 +37,10 @@ class IQuicStreamOperations
 public:
 	using Handle = void *;
 	virtual ~IQuicStreamOperations() = default;
-	//! @p nowMs is the caller's own clock (CQuicSocketTransport::Flush()'s), not a cached value
-	//! from the last datagram/tick this connection happened to see -- ngtcp2_conn_writev_stream()
-	//! uses it for pacing and RTT math, so it must be the actual time of this call.
+	//! @p nowMs is CQuicSocketTransport's own injected clock, read fresh in Flush(), not a cached
+	//! value from the last datagram/tick this connection happened to see --
+	//! ngtcp2_conn_writev_stream() uses it for pacing and RTT math, so it must be the actual time
+	//! of this call.
 	virtual std::ptrdiff_t WriteStream(Handle, const uint8_t *, size_t, uint64_t nowMs) = 0;
 	//! A voluntary, clean close (CQuicSocketTransport::Close()): whatever the engine has already
 	//! accepted and is still waiting to have acknowledged is not discarded over this. @p nowMs:
@@ -56,12 +58,16 @@ public:
 class CQuicSocketTransport final : public IStreamTransport
 {
 public:
+	//! @p clock is this transport's own notion of "now", passed down to
+	//! IQuicStreamOperations::WriteStream()/CloseStream() for ngtcp2 pacing/RTT math -- defaults
+	//! to the real clock; tests substitute a fake so behaviour does not depend on wall time.
 	CQuicSocketTransport(IQuicStreamOperations &,
 		IQuicStreamOperations::Handle,
 		const CNetworkAddress &,
 		uint16_t,
 		IStreamTransportEvents *,
-		bool);
+		bool,
+		std::function<uint64_t()> clock = nullptr);
 	~CQuicSocketTransport() override;
 	CQuicSocketTransport(const CQuicSocketTransport &) = delete;
 	CQuicSocketTransport &operator=(const CQuicSocketTransport &) = delete;
@@ -72,8 +78,8 @@ public:
 	bool IsOk() const override;
 	uint32_t Read(void *, uint32_t) override;
 	uint32_t Write(const void *, uint32_t) override;
-	void Close(uint64_t nowMs) override;
-	void Flush(uint64_t nowMs) override;
+	void Close() override;
+	void Flush() override;
 	bool BlocksRead() const override;
 	bool BlocksWrite() const override;
 	int LastError() const override;
@@ -81,9 +87,7 @@ public:
 	uint16_t GetPeerPort() const override { return m_port; }
 	void MarkConnected();
 	size_t OnPayload(const uint8_t *, size_t);
-	//! @p nowMs is IQuicNgtcp2Engine::NotifyWritable()'s own caller's clock (the real tick/
-	//! datagram that unblocked this), forwarded straight into Flush().
-	void OnWritable(uint64_t nowMs);
+	void OnWritable();
 	void OnEnded(int error = 0);
 	size_t PendingWriteBytes() const;
 
@@ -108,7 +112,8 @@ private:
 	//! Only ~CQuicSocketTransport() calls this: forces a still-draining close to finish right
 	//! now, discarding whatever is left queued, since nothing will call OnWritable() on this
 	//! object again once it is gone.
-	void FinishDrainingForDestruction(uint64_t nowMs);
+	void FinishDrainingForDestruction();
+	const std::function<uint64_t()> m_clock;
 	IQuicStreamOperations &m_operations;
 	mutable std::mutex m_mutex;
 	IQuicStreamOperations::Handle m_handle;

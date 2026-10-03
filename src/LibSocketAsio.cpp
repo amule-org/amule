@@ -65,7 +65,6 @@
 #include "NetworkAddressAsio.h"
 #include "StreamTransport.h" // IStreamTransport, for the attached-stream branches
 #include "GuiEvents.h"       // CoreNotify_LibSocket*, the transport event bridge
-#include "GetTickCount.h"    // GetTickCount64(), the transport's own clock
 #include <wx/thread.h>       // wxMutex
 #include <wx/intl.h>         // _()
 #include <common/Format.h>   // Needed for CFormat
@@ -1300,7 +1299,7 @@ void CLibSocket::Destroy()
 	// First: closing can produce callbacks, which must not land on a
 	// half-destroyed wrapper.
 	if (m_transport) {
-		m_transport->Close(::GetTickCount64());
+		m_transport->Close();
 	}
 	m_aSocket->Destroy();
 }
@@ -1337,7 +1336,7 @@ uint32 CLibSocket::Write(const void *buffer, uint32 nbytes)
 void CLibSocket::Close()
 {
 	if (m_transport) {
-		m_transport->Close(::GetTickCount64());
+		m_transport->Close();
 		return;
 	}
 	m_aSocket->Close();
@@ -1432,7 +1431,7 @@ void CLibSocket::OnFlushRequested()
 void CLibSocket::FlushTransport()
 {
 	if (m_transport) {
-		m_transport->Flush(::GetTickCount64());
+		m_transport->Flush();
 	}
 }
 

@@ -189,7 +189,7 @@ struct Engine : IQuicNgtcp2Engine
 		}
 	}
 	unsigned notifyWritableCalls = 0;
-	void NotifyWritable(Handle handle, uint64_t) override
+	void NotifyWritable(Handle handle) override
 	{
 		if (handle != nullptr) {
 			++notifyWritableCalls;

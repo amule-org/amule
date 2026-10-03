@@ -151,6 +151,7 @@ if (BUILD_MONOLITHIC OR BUILD_DAEMON OR BUILD_REMOTEGUI)
 		ClientRef.cpp
 		ClientVersionString.cpp
 		ECSpecialMuleTags.cpp
+		GetTickCount.cpp
 		GuiEvents.cpp
 		HTTPDownload.cpp
 		InstanceLock.cpp

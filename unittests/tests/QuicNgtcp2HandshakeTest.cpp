@@ -542,9 +542,13 @@ TEST(QuicNgtcp2Handshake, AcceptedStreamHandsOffToARealTransportThatReadsAndWrit
 	ForeignVerifier verifier;
 	CQuicTlsPolicy policy{ &credentials };
 
+	// Shared with the transport this factory hands off: its Flush()/Close() must read the same
+	// synthetic clock as the ProcessDatagram()/Tick() calls below, not the real one
+	// (QuicSocketTransport.h's own clock injection).
+	uint64_t nowMs = 0;
 	auto sink = std::make_shared<CollectingSink>();
 	auto engine = CreateProductionQuicNgtcp2Engine();
-	CQuicNgtcp2Factory factory(policy, sink, engine, kTestServerIdentity);
+	CQuicNgtcp2Factory factory(policy, sink, engine, kTestServerIdentity, [&nowMs] { return nowMs; });
 	AcceptingAcceptor acceptor;
 	factory.SetAcceptor(&acceptor);
 
@@ -552,7 +556,6 @@ TEST(QuicNgtcp2Handshake, AcceptedStreamHandsOffToARealTransportThatReadsAndWrit
 	ASSERT_TRUE(client.Init());
 
 	std::unique_ptr<IQuicConnection> connection;
-	uint64_t nowMs = 0;
 	ASSERT_TRUE(DriveHandshake(client, factory, *sink, connection, nowMs));
 	ASSERT_TRUE(connection != nullptr);
 	// No stream has opened yet at this point -- only the handshake has completed -- so the
@@ -591,7 +594,7 @@ TEST(QuicNgtcp2Handshake, AcceptedStreamHandsOffToARealTransportThatReadsAndWrit
 	const uint32_t writtenBytes =
 		acceptor.accepted->Write(reply.data(), static_cast<uint32_t>(reply.size()));
 	ASSERT_EQUALS(static_cast<uint32_t>(reply.size()), writtenBytes);
-	acceptor.accepted->Flush(nowMs);
+	acceptor.accepted->Flush();
 	ASSERT_TRUE(!sink->sent.empty());
 
 	for (const auto &datagram : sink->sent) {
@@ -615,9 +618,10 @@ TEST(QuicNgtcp2Handshake, LostFirstAttemptIsRetransmittedWithoutCorruptingTheRep
 	ForeignVerifier verifier;
 	CQuicTlsPolicy policy{ &credentials };
 
+	uint64_t nowMs = 0; // see the clock comment in the previous test
 	auto sink = std::make_shared<CollectingSink>();
 	auto engine = CreateProductionQuicNgtcp2Engine();
-	CQuicNgtcp2Factory factory(policy, sink, engine, kTestServerIdentity);
+	CQuicNgtcp2Factory factory(policy, sink, engine, kTestServerIdentity, [&nowMs] { return nowMs; });
 	AcceptingAcceptor acceptor;
 	factory.SetAcceptor(&acceptor);
 
@@ -625,7 +629,6 @@ TEST(QuicNgtcp2Handshake, LostFirstAttemptIsRetransmittedWithoutCorruptingTheRep
 	ASSERT_TRUE(client.Init());
 
 	std::unique_ptr<IQuicConnection> connection;
-	uint64_t nowMs = 0;
 	ASSERT_TRUE(DriveHandshake(client, factory, *sink, connection, nowMs));
 	ASSERT_TRUE(connection != nullptr);
 	ASSERT_TRUE(ExchangeEaqn1Proof(client, connection, *sink, nowMs));
@@ -649,7 +652,7 @@ TEST(QuicNgtcp2Handshake, LostFirstAttemptIsRetransmittedWithoutCorruptingTheRep
 	const uint32_t writtenBytes =
 		acceptor.accepted->Write(reply2.data(), static_cast<uint32_t>(reply2.size()));
 	ASSERT_EQUALS(static_cast<uint32_t>(reply2.size()), writtenBytes);
-	acceptor.accepted->Flush(nowMs);
+	acceptor.accepted->Flush();
 	ASSERT_TRUE(!sink->sent.empty());
 
 	// Dropped, not delivered: this is the packet loss. The transport's own copy is already gone
@@ -724,9 +727,10 @@ TEST(QuicNgtcp2Handshake, FlowControlBlockDoesNotLoseTheStreamAndRecoversOnceUnb
 	ForeignVerifier verifier;
 	CQuicTlsPolicy policy{ &credentials };
 
+	uint64_t nowMs = 0; // see the clock comment in AcceptedStreamHandsOffToARealTransport...
 	auto sink = std::make_shared<CollectingSink>();
 	auto engine = CreateProductionQuicNgtcp2Engine();
-	CQuicNgtcp2Factory factory(policy, sink, engine, kTestServerIdentity);
+	CQuicNgtcp2Factory factory(policy, sink, engine, kTestServerIdentity, [&nowMs] { return nowMs; });
 	AcceptingAcceptor acceptor;
 	factory.SetAcceptor(&acceptor);
 
@@ -738,7 +742,6 @@ TEST(QuicNgtcp2Handshake, FlowControlBlockDoesNotLoseTheStreamAndRecoversOnceUnb
 	ASSERT_TRUE(client.Init(kSmallWindow));
 
 	std::unique_ptr<IQuicConnection> connection;
-	uint64_t nowMs = 0;
 	ASSERT_TRUE(DriveHandshake(client, factory, *sink, connection, nowMs));
 	ASSERT_TRUE(ExchangeEaqn1Proof(client, connection, *sink, nowMs));
 	ASSERT_TRUE(acceptor.accepted != nullptr);
@@ -749,7 +752,7 @@ TEST(QuicNgtcp2Handshake, FlowControlBlockDoesNotLoseTheStreamAndRecoversOnceUnb
 	const uint32_t writtenBytes =
 		acceptor.accepted->Write(payload.data(), static_cast<uint32_t>(payload.size()));
 	ASSERT_EQUALS(static_cast<uint32_t>(payload.size()), writtenBytes);
-	acceptor.accepted->Flush(nowMs);
+	acceptor.accepted->Flush();
 	ASSERT_TRUE(!sink->sent.empty());
 	for (const auto &datagram : sink->sent) {
 		ASSERT_TRUE(client.Receive(datagram, nowMs));
@@ -765,7 +768,7 @@ TEST(QuicNgtcp2Handshake, FlowControlBlockDoesNotLoseTheStreamAndRecoversOnceUnb
 	// re-request a flush when something actually went out) means nothing happens automatically
 	// from here -- a real event loop would wait for OnWritable(), which only NotifyWritable()
 	// (via a later Tick()/ProcessDatagram()) ever calls.
-	acceptor.accepted->Flush(nowMs);
+	acceptor.accepted->Flush();
 	ASSERT_TRUE(sink->sent.empty());
 	// The stream (and the transport built on it) must still be alive: STREAM_DATA_BLOCKED is not
 	// a reason to lose it.
@@ -802,9 +805,10 @@ TEST(QuicNgtcp2Handshake, CloseFlushesQueuedDataBeforeEndingTheStreamCleanly)
 	ForeignVerifier verifier;
 	CQuicTlsPolicy policy{ &credentials };
 
+	uint64_t nowMs = 0; // see the clock comment in AcceptedStreamHandsOffToARealTransport...
 	auto sink = std::make_shared<CollectingSink>();
 	auto engine = CreateProductionQuicNgtcp2Engine();
-	CQuicNgtcp2Factory factory(policy, sink, engine, kTestServerIdentity);
+	CQuicNgtcp2Factory factory(policy, sink, engine, kTestServerIdentity, [&nowMs] { return nowMs; });
 	AcceptingAcceptor acceptor;
 	factory.SetAcceptor(&acceptor);
 
@@ -812,7 +816,6 @@ TEST(QuicNgtcp2Handshake, CloseFlushesQueuedDataBeforeEndingTheStreamCleanly)
 	ASSERT_TRUE(client.Init());
 
 	std::unique_ptr<IQuicConnection> connection;
-	uint64_t nowMs = 0;
 	ASSERT_TRUE(DriveHandshake(client, factory, *sink, connection, nowMs));
 	ASSERT_TRUE(ExchangeEaqn1Proof(client, connection, *sink, nowMs));
 	ASSERT_TRUE(acceptor.accepted != nullptr);
@@ -823,7 +826,7 @@ TEST(QuicNgtcp2Handshake, CloseFlushesQueuedDataBeforeEndingTheStreamCleanly)
 	const uint32_t writtenBytes =
 		acceptor.accepted->Write(payload.data(), static_cast<uint32_t>(payload.size()));
 	ASSERT_EQUALS(static_cast<uint32_t>(payload.size()), writtenBytes);
-	acceptor.accepted->Close(nowMs);
+	acceptor.accepted->Close();
 	ASSERT_TRUE(!sink->sent.empty());
 
 	for (const auto &datagram : sink->sent) {
@@ -847,9 +850,10 @@ TEST(QuicNgtcp2Handshake, LargeWriteWithUnackedDataPendingIsOfferedPartiallyInst
 	ForeignVerifier verifier;
 	CQuicTlsPolicy policy{ &credentials };
 
+	uint64_t nowMs = 0; // see the clock comment in AcceptedStreamHandsOffToARealTransport...
 	auto sink = std::make_shared<CollectingSink>();
 	auto engine = CreateProductionQuicNgtcp2Engine();
-	CQuicNgtcp2Factory factory(policy, sink, engine, kTestServerIdentity);
+	CQuicNgtcp2Factory factory(policy, sink, engine, kTestServerIdentity, [&nowMs] { return nowMs; });
 	AcceptingAcceptor acceptor;
 	factory.SetAcceptor(&acceptor);
 
@@ -857,7 +861,6 @@ TEST(QuicNgtcp2Handshake, LargeWriteWithUnackedDataPendingIsOfferedPartiallyInst
 	ASSERT_TRUE(client.Init());
 
 	std::unique_ptr<IQuicConnection> connection;
-	uint64_t nowMs = 0;
 	ASSERT_TRUE(DriveHandshake(client, factory, *sink, connection, nowMs));
 	ASSERT_TRUE(ExchangeEaqn1Proof(client, connection, *sink, nowMs));
 	ASSERT_TRUE(acceptor.accepted != nullptr);
@@ -867,7 +870,7 @@ TEST(QuicNgtcp2Handshake, LargeWriteWithUnackedDataPendingIsOfferedPartiallyInst
 	const std::vector<uint8_t> first(100, 'a');
 	ASSERT_EQUALS(static_cast<uint32_t>(first.size()),
 		acceptor.accepted->Write(first.data(), static_cast<uint32_t>(first.size())));
-	acceptor.accepted->Flush(nowMs);
+	acceptor.accepted->Flush();
 	ASSERT_TRUE(!sink->sent.empty());
 	sink->sent.clear(); // Dropped: never delivered to the client, so it stays unacknowledged.
 
@@ -877,7 +880,7 @@ TEST(QuicNgtcp2Handshake, LargeWriteWithUnackedDataPendingIsOfferedPartiallyInst
 	std::vector<uint8_t> big(CQuicSocketTransport::kReadWindow, 'b');
 	ASSERT_EQUALS(static_cast<uint32_t>(big.size()),
 		acceptor.accepted->Write(big.data(), static_cast<uint32_t>(big.size())));
-	acceptor.accepted->Flush(nowMs);
+	acceptor.accepted->Flush();
 
 	ASSERT_TRUE(acceptor.accepted->IsConnected());
 	ASSERT_TRUE(acceptor.accepted->IsOk());
@@ -896,9 +899,10 @@ TEST(QuicNgtcp2Handshake, CloseDrainsAQueueSpanningManyPacketsBeforeEndingTheStr
 	ForeignVerifier verifier;
 	CQuicTlsPolicy policy{ &credentials };
 
+	uint64_t nowMs = 0; // see the clock comment in AcceptedStreamHandsOffToARealTransport...
 	auto sink = std::make_shared<CollectingSink>();
 	auto engine = CreateProductionQuicNgtcp2Engine();
-	CQuicNgtcp2Factory factory(policy, sink, engine, kTestServerIdentity);
+	CQuicNgtcp2Factory factory(policy, sink, engine, kTestServerIdentity, [&nowMs] { return nowMs; });
 	AcceptingAcceptor acceptor;
 	factory.SetAcceptor(&acceptor);
 
@@ -906,7 +910,6 @@ TEST(QuicNgtcp2Handshake, CloseDrainsAQueueSpanningManyPacketsBeforeEndingTheStr
 	ASSERT_TRUE(client.Init());
 
 	std::unique_ptr<IQuicConnection> connection;
-	uint64_t nowMs = 0;
 	ASSERT_TRUE(DriveHandshake(client, factory, *sink, connection, nowMs));
 	ASSERT_TRUE(ExchangeEaqn1Proof(client, connection, *sink, nowMs));
 	ASSERT_TRUE(acceptor.accepted != nullptr);
@@ -917,7 +920,7 @@ TEST(QuicNgtcp2Handshake, CloseDrainsAQueueSpanningManyPacketsBeforeEndingTheStr
 	}
 	ASSERT_EQUALS(static_cast<uint32_t>(payload.size()),
 		acceptor.accepted->Write(payload.data(), static_cast<uint32_t>(payload.size())));
-	acceptor.accepted->Close(nowMs);
+	acceptor.accepted->Close();
 	ASSERT_TRUE(!sink->sent.empty());
 
 	// kMaxUdpPayload-sized packets exceed ngtcp2's initial congestion window well before this

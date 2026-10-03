@@ -112,7 +112,7 @@ public:
 			std::lock_guard<std::mutex> lock(m_mutex);
 			m_events = nullptr;
 		}
-		Close(0); // Ignored: see Close()'s own nowMs comment.
+		Close();
 	}
 
 	CUtpSocketTransport(const CUtpSocketTransport &) = delete;
@@ -238,9 +238,7 @@ public:
 	 * mechanism here rather than a separate flag that would have to be
 	 * consulted in each of them.
 	 */
-	//! nowMs unused: libutp keeps its own time, serviced by a separate utp_check_timeouts()
-	//! call (see IStreamTransport::Close()).
-	void Close(uint64_t /*nowMs*/) override
+	void Close() override
 	{
 		IUtpSocketOperations::Handle socket = nullptr;
 		{
@@ -270,8 +268,7 @@ public:
 	 * the accepted count is what may be dropped from the queue -- never the
 	 * whole of it.
 	 */
-	//! nowMs unused: see Close().
-	void Flush(uint64_t /*nowMs*/) override
+	void Flush() override
 	{
 		IUtpSocketOperations::Handle socket = nullptr;
 		std::vector<uint8_t> pending;
@@ -396,7 +393,7 @@ public:
 		NotifyEvents(&IStreamTransportEvents::OnStreamReadable);
 	}
 
-	void OnWritable() { Flush(0); } // Ignored: see Flush()'s own nowMs comment.
+	void OnWritable() { Flush(); }
 
 	void OnEnded(EUtpTransportFailure failure)
 	{

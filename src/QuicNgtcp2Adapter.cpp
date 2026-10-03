@@ -37,6 +37,7 @@
 #include <cstring>
 #include <deque>
 #include <map>
+#include <functional>
 #include <memory>
 #include <random>
 #include <utility>
@@ -147,7 +148,8 @@ public:
 		uint16_t port,
 		const std::string &issuedCid,
 		IQuicStreamAcceptor *acceptor,
-		const std::array<uint8_t, 16> &localIdentity)
+		const std::array<uint8_t, 16> &localIdentity,
+		std::function<uint64_t()> transportClock)
 	: m_engine(std::move(engine))
 	, m_sink(std::move(sink))
 	, m_handle(handle)
@@ -156,6 +158,7 @@ public:
 	, m_issuedCid(issuedCid)
 	, m_acceptor(acceptor)
 	, m_localIdentity(localIdentity)
+	, m_transportClock(std::move(transportClock))
 	{
 	}
 
@@ -177,7 +180,7 @@ public:
 		OfferStreamIfJustOpened();
 		EndConnectionIfStreamEnded(nowMs);
 		if (!m_closed) {
-			m_engine->NotifyWritable(m_handle, nowMs);
+			m_engine->NotifyWritable(m_handle);
 		}
 		return true;
 	}
@@ -215,16 +218,16 @@ public:
 		}
 		EndConnectionIfStreamEnded(nowMs);
 		if (!m_closed) {
-			m_engine->NotifyWritable(m_handle, nowMs);
+			m_engine->NotifyWritable(m_handle);
 		}
 	}
 
 	// IQuicStreamOperations: CQuicSocketTransport's handle is this connection's own
 	// IQuicNgtcp2Engine::Handle, but it is never read back here -- this connection already
-	// knows which engine handle and stream it is. @p nowMs is the caller's own clock
-	// (CQuicSocketTransport::Flush()'s), not m_lastNowMs: this can run long after the last
-	// datagram/tick this connection actually saw (the application writing on its own schedule),
-	// and ngtcp2_conn_writev_stream()'s pacing/RTT math needs the real time of this call.
+	// knows which engine handle and stream it is. @p nowMs is CQuicSocketTransport's own injected
+	// clock, read fresh in Flush(), not m_lastNowMs: this can run long after the last datagram/
+	// tick this connection actually saw (the application writing on its own schedule), and
+	// ngtcp2_conn_writev_stream()'s pacing/RTT math needs the real time of this call.
 	std::ptrdiff_t WriteStream(
 		IQuicStreamOperations::Handle, const uint8_t *data, size_t length, uint64_t nowMs) override
 	{
@@ -289,7 +292,7 @@ private:
 		}
 		m_streamOffered = true;
 		auto owned = std::make_unique<CQuicSocketTransport>(
-			*this, m_handle, m_address, m_port, nullptr, true);
+			*this, m_handle, m_address, m_port, nullptr, true, m_transportClock);
 		CQuicSocketTransport *raw = owned.get();
 		std::unique_ptr<IStreamTransport> transport(std::move(owned));
 		if (!m_acceptor->AcceptStream(transport, m_address, m_port)) {
@@ -385,6 +388,7 @@ private:
 	std::string m_issuedCid;
 	IQuicStreamAcceptor *m_acceptor;
 	const std::array<uint8_t, 16> m_localIdentity;
+	std::function<uint64_t()> m_transportClock;
 	//! Accumulated until it reaches EAQN1_PROOF_SIZE: a peer's proof can in principle arrive
 	//! split across more than one recv_stream_data() delivery, and nothing shorter than the
 	//! full proof is safe to validate.
@@ -922,11 +926,11 @@ public:
 		Destroy(handle);
 	}
 
-	void NotifyWritable(Handle handle, uint64_t nowMs) override
+	void NotifyWritable(Handle handle) override
 	{
 		auto it = m_connections.find(handle);
 		if (it != m_connections.end() && it->second.transport != nullptr) {
-			it->second.transport->OnWritable(nowMs);
+			it->second.transport->OnWritable();
 		}
 	}
 
@@ -1086,11 +1090,13 @@ private:
 CQuicNgtcp2Factory::CQuicNgtcp2Factory(const CQuicTlsPolicy &policy,
 	std::shared_ptr<IQuicDatagramSink> sink,
 	std::shared_ptr<IQuicNgtcp2Engine> engine,
-	const std::array<uint8_t, 16> &localIdentity)
+	const std::array<uint8_t, 16> &localIdentity,
+	std::function<uint64_t()> transportClock)
 : m_policy(policy)
 , m_sink(std::move(sink))
 , m_localIdentity(localIdentity)
 , m_engine(std::move(engine))
+, m_transportClock(std::move(transportClock))
 {
 }
 
@@ -1116,8 +1122,15 @@ std::unique_ptr<IQuicConnection> CQuicNgtcp2Factory::CreateInbound(const uint8_t
 	if (handle == nullptr)
 		return nullptr;
 	std::string issuedCid = m_engine->GetIssuedConnectionId(handle);
-	return std::make_unique<CQuicNgtcp2Connection>(
-		m_engine, m_sink, handle, address, port, issuedCid, m_acceptor, m_localIdentity);
+	return std::make_unique<CQuicNgtcp2Connection>(m_engine,
+		m_sink,
+		handle,
+		address,
+		port,
+		issuedCid,
+		m_acceptor,
+		m_localIdentity,
+		m_transportClock);
 }
 
 std::shared_ptr<IQuicNgtcp2Engine> CreateProductionQuicNgtcp2Engine()

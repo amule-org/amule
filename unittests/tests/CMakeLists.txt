@@ -269,8 +269,6 @@ add_executable (LibSocketTransportTest
 	# DetectNetworkInterfaces(), and this target does not link mulesocket.
 	${CMAKE_SOURCE_DIR}/src/NetworkInterfaces.cpp
 	${CMAKE_SOURCE_DIR}/src/NetworkAddress.cpp
-	# LibSocketAsio.cpp's Close()/FlushTransport() now call ::GetTickCount64() directly.
-	${CMAKE_SOURCE_DIR}/src/GetTickCount.cpp
 	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
 	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 )
@@ -917,8 +915,6 @@ add_executable (NetworkFunctionsTest
 	# LibSocketAsio.cpp reports an attached transport's peer, which is a
 	# CNetworkAddress, so its out-of-line members have to be here too.
 	${CMAKE_SOURCE_DIR}/src/NetworkAddress.cpp
-	# LibSocketAsio.cpp stamps transport Close()/Flush() with ::GetTickCount64().
-	${CMAKE_SOURCE_DIR}/src/GetTickCount.cpp
 	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
 	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 )

@@ -91,8 +91,8 @@ public:
 		return length;
 	}
 
-	void Close(uint64_t) override { ++closeCalls; }
-	void Flush(uint64_t) override { ++flushCalls; }
+	void Close() override { ++closeCalls; }
+	void Flush() override { ++flushCalls; }
 
 	bool ok = true;
 	std::vector<uint8_t> written;

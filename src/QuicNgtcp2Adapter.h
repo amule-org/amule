@@ -30,6 +30,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <string>
 #include <vector>
@@ -142,7 +143,7 @@ public:
 	//! extending flow control, or congestion easing, are both things only noticed by processing
 	//! a datagram or a tick, never by the write attempt that was blocked in the first place.
 	//! Cheap to call unconditionally: a transport with nothing queued just returns immediately.
-	virtual void NotifyWritable(Handle, uint64_t nowMs) = 0;
+	virtual void NotifyWritable(Handle) = 0;
 	virtual void Destroy(Handle) = 0;
 };
 
@@ -154,10 +155,16 @@ public:
 	//! factory admits. Taken by value rather than reaching for thePrefs::GetUserHash() inside
 	//! the connection itself, so this engine stays testable without theApp -- the same reason
 	//! credentials and the sink arrive as constructor arguments instead.
+	//! @p transportClock is forwarded to every CQuicSocketTransport this factory's connections
+	//! accept a stream onto (QuicSocketTransport.h's own clock injection) -- default (nullptr)
+	//! leaves each transport on its own default, the real clock. Tests substitute a fake so a
+	//! transport's Flush()/Close() stay on the same synthetic timeline as the engine calls
+	//! driving the test.
 	CQuicNgtcp2Factory(const CQuicTlsPolicy &,
 		std::shared_ptr<IQuicDatagramSink>,
 		std::shared_ptr<IQuicNgtcp2Engine>,
-		const std::array<uint8_t, 16> &localIdentity);
+		const std::array<uint8_t, 16> &localIdentity,
+		std::function<uint64_t()> transportClock = nullptr);
 	//! Held, not owned: the caller (CClientUDPSocket) keeps the acceptor alive for at least as
 	//! long as this factory. Null refuses every stream's hand-off, which is the state before an
 	//! acceptor exists -- the connection itself is still admitted and still works.
@@ -174,6 +181,7 @@ private:
 	std::shared_ptr<IQuicDatagramSink> m_sink;
 	std::array<uint8_t, 16> m_localIdentity;
 	std::shared_ptr<IQuicNgtcp2Engine> m_engine;
+	std::function<uint64_t()> m_transportClock;
 	IQuicStreamAcceptor *m_acceptor = nullptr;
 };
 
