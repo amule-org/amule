@@ -339,8 +339,11 @@ void CQuicSocketTransport::FinishDrainingForDestruction()
 		m_handle = nullptr;
 		ClearWriteLocked();
 	}
+	// ClearWriteLocked() just discarded bytes the peer never acknowledged: reset the stream
+	// rather than CloseStream()'s graceful FIN, which would tell the peer this eD2k exchange
+	// ended cleanly instead of being cut short (got3nks' review on #1710, finding D).
 	if (handle)
-		m_operations.CloseStream(handle, m_clock());
+		m_operations.AbortStream(handle);
 }
 
 void CQuicSocketTransport::MarkConnected()

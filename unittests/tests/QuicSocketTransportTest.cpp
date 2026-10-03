@@ -292,3 +292,24 @@ TEST(QuicTransportFailures, FatalWriteEndsStream)
 	ASSERT_EQUALS(1, o.aborts);
 	ASSERT_EQUALS(1, o.writes);
 }
+TEST(QuicTransportLifecycle, DestructionAbortsStreamWithDiscardedBytes)
+{
+	Ops o;
+	o.result = 0; // flow control: WriteStream() never accepts a byte
+	Events e;
+	{
+		CQuicSocketTransport t(o, H(), CNetworkAddress::FromString("192.0.2.1"), 1, &e, false);
+		const uint8_t p[] = { 1, 2, 3 };
+		t.Write(p, 3);
+		t.Close();
+		// Close() could not flush anything out, so it left the stream draining rather than
+		// finishing it -- this is what destruction is about to cut short.
+		ASSERT_EQUALS(3u, t.PendingWriteBytes());
+		ASSERT_EQUALS(0, o.closes);
+	}
+	// Destruction discarded 3 still-unacknowledged bytes: the stream must be reset, not ended
+	// with CloseStream()'s graceful FIN, which would tell the peer this eD2k exchange completed
+	// cleanly instead of being cut short (got3nks' review on #1710, finding D).
+	ASSERT_EQUALS(0, o.closes);
+	ASSERT_EQUALS(1, o.aborts);
+}

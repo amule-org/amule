@@ -111,7 +111,10 @@ private:
 	IQuicStreamOperations::Handle TryFinishClosingLocked();
 	//! Only ~CQuicSocketTransport() calls this: forces a still-draining close to finish right
 	//! now, discarding whatever is left queued, since nothing will call OnWritable() on this
-	//! object again once it is gone.
+	//! object again once it is gone. Whatever is discarded here was never acknowledged by the
+	//! peer, so the stream is reset (AbortStream()), not closed gracefully -- a clean FIN would
+	//! tell the peer this was a complete, truncated-nothing eD2k exchange (got3nks' review on
+	//! #1710, finding D).
 	void FinishDrainingForDestruction();
 	const std::function<uint64_t()> m_clock;
 	IQuicStreamOperations &m_operations;
