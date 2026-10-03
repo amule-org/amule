@@ -215,6 +215,9 @@ public:
 	virtual void OnAccept() {}
 
 	bool IsOk() const;
+	// Replace only the listening acceptor. Existing accepted CLibSocket instances remain
+	// independent and continue their connections.
+	bool Rebind(const amuleIPV4Address &adr);
 
 	void Close();
 
