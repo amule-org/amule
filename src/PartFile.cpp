@@ -1548,22 +1548,12 @@ void CPartFile::UpdateCompletedInfos()
 
 void CPartFile::WritePartStatus(CMemFile *file)
 {
-	uint16 parts = GetED2KPartCount();
-	file->WriteUInt16(parts);
-	uint16 done = 0;
-	while (done != parts) {
-		uint8 towrite = 0;
-		for (uint32 i = 0; i != 8; ++i) {
-			if (IsComplete(done)) {
-				towrite |= (1 << i);
-			}
-			++done;
-			if (done == parts) {
-				break;
-			}
-		}
-		file->WriteUInt8(towrite);
+	// Completed this session but still a CPartFile until restart: a complete file, then.
+	if (!IsPartFile()) {
+		CKnownFile::WritePartStatus(file);
+		return;
 	}
+	WritePartBitmap(file, GetED2KPartCount(), [this](uint16 part) { return IsComplete(part); });
 }
 
 void CPartFile::WriteCompleteSourcesCount(CMemFile *file)

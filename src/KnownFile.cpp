@@ -45,6 +45,7 @@
 #endif
 
 #include "MemFile.h"       // Needed for CMemFile
+#include "UploadQueue.h"   // Needed for CUploadQueue (EndUploadSessions)
 #include "Packet.h"        // Needed for CPacket
 #include "Preferences.h"   // Needed for CPreferences
 #include "KnownFileList.h" // Needed for CKnownFileList
@@ -417,6 +418,48 @@ uint32 CKnownFile::GetUploadDatarate() const
 		total += ref.GetUploadDatarate();
 	}
 	return total;
+}
+
+void CKnownFile::WritePartBitmap(CMemFile *file, uint16 parts, const std::function<bool(uint16)> &hasPart)
+{
+	file->WriteUInt16(parts);
+	uint16 done = 0;
+	while (done != parts) {
+		uint8 towrite = 0;
+		for (uint32 i = 0; i != 8 && done != parts; ++i, ++done) {
+			if (hasPart(done)) {
+				towrite |= (1 << i);
+			}
+		}
+		file->WriteUInt8(towrite);
+	}
+}
+
+void CKnownFile::WritePartStatus(CMemFile *file)
+{
+	if (!m_verifyResult.IsCorrupt()) {
+		file->WriteUInt16(0);
+		return;
+	}
+	WritePartBitmap(file, GetED2KPartCount(), [this](uint16 part) {
+		return !m_verifyResult.IsPartCorrupt(part);
+	});
+}
+
+void CKnownFile::EndUploadSessions()
+{
+	// Collected first: ending a session changes m_ClientUploadList.
+	std::vector<CUpDownClient *> uploading;
+	for (const CClientRef &ref : m_ClientUploadList) {
+		if (ref.GetUploadState() == US_UPLOADING) {
+			uploading.push_back(ref.GetClient());
+		}
+	}
+	for (CUpDownClient *client : uploading) {
+		if (theApp->uploadqueue->RemoveFromUploadQueue(client)) {
+			client->SendOutOfPartReqsAndAddToWaitingQueue();
+		}
+	}
 }
 
 uint16 CKnownFile::GetTransferringClientCount() const
@@ -1161,7 +1204,9 @@ void CKnownFile::CreateOfferedFilePacket(CMemFile *files, CServer *pServer, CUpD
 #define FILE_INCOMPLETE_PORT 0xfcfc
 			// complete   file: ip 251.251.251 (0xfbfbfbfb) port 0xfbfb
 			// incomplete file: op 252.252.252 (0xfcfcfcfc) port 0xfcfc
-			if (GetStatus() == PS_COMPLETE) {
+			// A file with parts a check found corrupt is offered as incomplete: peers are told
+			// we lack those parts (WritePartStatus), so the server should not count us complete.
+			if (GetStatus() == PS_COMPLETE && !m_verifyResult.IsCorrupt()) {
 				nClientID = FILE_COMPLETE_ID;
 				nClientPort = FILE_COMPLETE_PORT;
 			} else {
