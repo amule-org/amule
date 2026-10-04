@@ -921,7 +921,7 @@
   "prefs_field_files_create_sparse_files": "Create new files as sparse files (allocate disk blocks on demand)",
   "prefs_field_files_stop_on_low_disk_space": "Stop downloads on low free disk space",
   "prefs_field_files_min_free_space_mebibytes": "Minimum free disk space (MiB)",
-  "prefs_field_files_save_sources_for_rare_files": "Save 10 sources on rare files (< 20 sources)",
+  "prefs_field_files_save_sources_for_rare_files": "Save up to 10 HighID sources of rare files (20 or fewer sources) for 2 hours",
   "prefs_field_files_new_shared_files_auto_priority_enabled": "Add new shared files with auto priority",
   "prefs_field_files_media_metadata_enabled": "Extract length / bitrate / codec from shared audio and video files",
   "prefs_field_files_ffprobe_path": "Path to ffprobe (empty = auto-detect)",

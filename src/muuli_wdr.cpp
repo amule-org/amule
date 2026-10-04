@@ -1785,7 +1785,7 @@ wxSizer *PreferencesFilesTab( wxWindow *parent, bool call_fit, bool set_sizer )
     wxStaticText *item17 = new wxStaticText( item6, -1, _("MiB"), wxDefaultPosition, wxDefaultSize, 0 );
     item14->Add( item17, wxSizerFlags().Center().Border(wxLEFT, 5) );
     item5->Add( item14, wxSizerFlags().Expand().CenterVertical() );
-    wxCheckBox *item18 = new wxCheckBox( item6, IDC_SRCSEEDS, _("Save 10 sources on rare files (< 20 sources)"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxCheckBox *item18 = new wxCheckBox( item6, IDC_SRCSEEDS, _("Save up to 10 HighID sources of rare files (20 or fewer sources) for 2 hours"), wxDefaultPosition, wxDefaultSize, 0 );
     item18->SetValue( TRUE );
     item5->Add( item18, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 0) );
     item0->Add( item5, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 0) );

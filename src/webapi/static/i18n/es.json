@@ -921,7 +921,7 @@
   "prefs_field_files_create_sparse_files": "Crear los archivos nuevos como dispersos (reservar bloques en disco bajo demanda)",
   "prefs_field_files_stop_on_low_disk_space": "Parar descargas con poco espacio libre",
   "prefs_field_files_min_free_space_mebibytes": "Espacio libre mínimo en disco (MiB)",
-  "prefs_field_files_save_sources_for_rare_files": "Guardar 10 fuentes en archivos raros (< 20 fuentes)",
+  "prefs_field_files_save_sources_for_rare_files": "Guardar hasta 10 fuentes HighID de archivos raros (20 fuentes o menos) durante 2 horas",
   "prefs_field_files_new_shared_files_auto_priority_enabled": "Añadir los nuevos archivos compartidos con prioridad automática",
   "prefs_field_files_media_metadata_enabled": "Extraer duración / bitrate / códec de archivos multimedia",
   "prefs_field_files_ffprobe_path": "Ruta a ffprobe (vacío = detección automática)",
