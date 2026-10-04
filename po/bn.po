@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule GIT\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-10-03 11:27+0100\n"
+"POT-Creation-Date: 2026-10-04 23:02+0200\n"
 "PO-Revision-Date: 2026-10-03 12:58+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
@@ -4789,7 +4789,8 @@ msgid "Enter here the min disk space desired."
 msgstr "এখানে কাঙ্ক্ষিত সর্বনিম্ন ডিস্ক স্পেস লিখুন।"
 
 #: src/muuli_wdr.cpp
-msgid "Save 10 sources on rare files (< 20 sources)"
+#, fuzzy
+msgid "Save up to 10 HighID sources of rare files (20 or fewer sources) for 2 hours"
 msgstr "বিরল ফাইলে (< 20 সোর্স) 10টি সোর্স সংরক্ষণ করুন"
 
 #: src/muuli_wdr.cpp src/Statistics.cpp
