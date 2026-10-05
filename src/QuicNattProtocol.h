@@ -34,6 +34,52 @@ namespace QuicNatt
 
 static constexpr char QUIC_NATT_ALPN[] = "ed2k-ai-natt-quic-v1";
 static constexpr size_t EAQN1_PROOF_SIZE = 37;
+static constexpr size_t EAQC_FRAME_SIZE = 54;
+
+struct EaqcFrame
+{
+	uint8_t options = 0;
+	std::array<uint8_t, 16> senderUserHash{};
+	std::array<uint8_t, 16> expectedPeerHash{};
+	std::array<uint8_t, 16> fileHash{};
+};
+
+inline std::array<uint8_t, EAQC_FRAME_SIZE> EncodeEaqcFrame(uint8_t options,
+	const std::array<uint8_t, 16> &senderUserHash,
+	const std::array<uint8_t, 16> &expectedPeerHash,
+	const std::array<uint8_t, 16> &fileHash)
+{
+	std::array<uint8_t, EAQC_FRAME_SIZE> frame{};
+	frame[0] = 0x45;
+	frame[1] = 0x41;
+	frame[2] = 0x51;
+	frame[3] = 0x43;
+	frame[4] = 1;
+	frame[5] = options;
+	std::copy(senderUserHash.begin(), senderUserHash.end(), frame.begin() + 6);
+	std::copy(expectedPeerHash.begin(), expectedPeerHash.end(), frame.begin() + 22);
+	std::copy(fileHash.begin(), fileHash.end(), frame.begin() + 38);
+	return frame;
+}
+
+inline bool DecodeEaqcFrame(
+	const uint8_t *data, size_t length, const std::array<uint8_t, 16> &ourUserHash, EaqcFrame &frame)
+{
+	if (data == nullptr || length != EAQC_FRAME_SIZE || data[0] != 0x45 || data[1] != 0x41 ||
+		data[2] != 0x51 || data[3] != 0x43 || data[4] != 1) {
+		return false;
+	}
+	const uint8_t *expected = data + 22;
+	const bool wildcard = std::all_of(expected, expected + 16, [](uint8_t byte) { return byte == 0; });
+	if (!wildcard && !std::equal(expected, expected + 16, ourUserHash.begin())) {
+		return false;
+	}
+	frame.options = data[5];
+	std::copy(data + 6, data + 22, frame.senderUserHash.begin());
+	std::copy(expected, expected + 16, frame.expectedPeerHash.begin());
+	std::copy(data + 38, data + 54, frame.fileHash.begin());
+	return true;
+}
 
 inline bool IsQuicNattAlpn(const uint8_t *value, size_t length)
 {

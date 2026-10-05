@@ -28,6 +28,7 @@
 #include <algorithm>
 #include <array>
 #include <cstring>
+#include <vector>
 
 using namespace muleunit;
 using namespace QuicNatt;
@@ -45,6 +46,143 @@ std::array<uint8_t, 16> Hash(uint8_t first)
 	return hash;
 }
 } // namespace
+
+TEST(QuicNattProtocol, EaqcCodecMatchesWireFixture)
+{
+	const std::array<uint8_t, 16> sender{ { 0x10,
+		0x11,
+		0x12,
+		0x13,
+		0x14,
+		0x15,
+		0x16,
+		0x17,
+		0x18,
+		0x19,
+		0x1A,
+		0x1B,
+		0x1C,
+		0x1D,
+		0x1E,
+		0x1F } };
+	const std::array<uint8_t, 16> expected{ { 0x20,
+		0x21,
+		0x22,
+		0x23,
+		0x24,
+		0x25,
+		0x26,
+		0x27,
+		0x28,
+		0x29,
+		0x2A,
+		0x2B,
+		0x2C,
+		0x2D,
+		0x2E,
+		0x2F } };
+	const std::array<uint8_t, 16> file{ { 0x30,
+		0x31,
+		0x32,
+		0x33,
+		0x34,
+		0x35,
+		0x36,
+		0x37,
+		0x38,
+		0x39,
+		0x3A,
+		0x3B,
+		0x3C,
+		0x3D,
+		0x3E,
+		0x3F } };
+	const std::array<uint8_t, EAQC_FRAME_SIZE> fixture{ { 0x45,
+		0x41,
+		0x51,
+		0x43,
+		0x01,
+		0x40,
+		0x10,
+		0x11,
+		0x12,
+		0x13,
+		0x14,
+		0x15,
+		0x16,
+		0x17,
+		0x18,
+		0x19,
+		0x1A,
+		0x1B,
+		0x1C,
+		0x1D,
+		0x1E,
+		0x1F,
+		0x20,
+		0x21,
+		0x22,
+		0x23,
+		0x24,
+		0x25,
+		0x26,
+		0x27,
+		0x28,
+		0x29,
+		0x2A,
+		0x2B,
+		0x2C,
+		0x2D,
+		0x2E,
+		0x2F,
+		0x30,
+		0x31,
+		0x32,
+		0x33,
+		0x34,
+		0x35,
+		0x36,
+		0x37,
+		0x38,
+		0x39,
+		0x3A,
+		0x3B,
+		0x3C,
+		0x3D,
+		0x3E,
+		0x3F } };
+	const auto encoded = EncodeEaqcFrame(0x40, sender, expected, file);
+	ASSERT_TRUE(encoded == fixture);
+	EaqcFrame decoded{};
+	ASSERT_TRUE(DecodeEaqcFrame(fixture.data(), fixture.size(), expected, decoded));
+	ASSERT_EQUALS(0x40, decoded.options);
+	ASSERT_TRUE(decoded.senderUserHash == sender);
+	ASSERT_TRUE(decoded.expectedPeerHash == expected);
+	ASSERT_TRUE(decoded.fileHash == file);
+}
+
+TEST(QuicNattProtocol, EaqcCodecValidatesLengthAndIdentity)
+{
+	const auto local = Hash(1);
+	const auto sender = Hash(33);
+	const auto file = Hash(65);
+	const auto wildcard = std::array<uint8_t, 16>{};
+	const auto frame = EncodeEaqcFrame(0x40, sender, wildcard, file);
+	EaqcFrame decoded{};
+	ASSERT_TRUE(DecodeEaqcFrame(frame.data(), frame.size(), local, decoded));
+	ASSERT_FALSE(DecodeEaqcFrame(frame.data(), frame.size() - 1, local, decoded));
+	std::vector<uint8_t> longFrame(frame.begin(), frame.end());
+	longFrame.push_back(0);
+	ASSERT_FALSE(DecodeEaqcFrame(longFrame.data(), longFrame.size(), local, decoded));
+	auto bad = frame;
+	bad[0] = 0;
+	ASSERT_FALSE(DecodeEaqcFrame(bad.data(), bad.size(), local, decoded));
+	bad = frame;
+	bad[4] = 2;
+	ASSERT_FALSE(DecodeEaqcFrame(bad.data(), bad.size(), local, decoded));
+	const auto mismatch = EncodeEaqcFrame(0, sender, Hash(90), file);
+	ASSERT_FALSE(DecodeEaqcFrame(mismatch.data(), mismatch.size(), local, decoded));
+}
 
 TEST(QuicNattProtocol, AlpnRequiresExactBytesAndLength)
 {
