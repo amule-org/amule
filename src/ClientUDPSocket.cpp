@@ -59,6 +59,8 @@
 #ifdef AMULE_QUIC_TRANSPORT
 #include "QuicTls.h"
 #include "QuicNgtcp2Adapter.h"
+#include "QuicNattProtocol.h"
+#include "NatRendezvousPolicy.h"
 #endif
 
 //
@@ -357,11 +359,8 @@ void CClientUDPSocket::ProcessReservedProt2Frame(
 		break;
 	}
 
-	// The registered types. Each is dropped in its own case rather than in a shared
-	// fallthrough, so the change that ships a transport replaces its own case and nothing else
-	// -- which is what the uTP case below now is. The other four belong to transports this
-	// build does not have, so a peer's attempt at one is a recognised frame aMule cannot serve
-	// rather than malformed traffic.
+	// Keep each registered type's handling in its own case: transports and capability
+	// negotiation are independently compile-gated, and unsupported types remain inert.
 	switch (classified.type) {
 	case OP_NATT_FRAME_UTP: {
 #ifdef AMULE_UTP_TRANSPORT
@@ -440,16 +439,33 @@ void CClientUDPSocket::ProcessReservedProt2Frame(
 		break;
 
 	case OP_NATT_FRAME_CAPS:
-	case OP_NATT_FRAME_CAPS_ACK:
-		// Answering the capability negotiation would claim a transport
-		// aMule does not have. Silence is the correct answer here.
-		if (m_unservedFrameLog.ShouldLog(::GetTickCount64())) {
-			AddDebugLogLineN(logClientUDP,
-				CFormat("Ignoring NAT-T capability frame 0x%02X from %s:%u: nothing to "
-					"negotiate (%u further occurrences suppressed)") %
-					classified.type % Uint32toStringIP(ip) % port %
-					m_unservedFrameLog.TakeSuppressedCount());
+#ifdef AMULE_QUIC_TRANSPORT
+	{
+		QuicNatt::EaqcFrame request{};
+		const auto localHash = QuicLocalIdentityFromUserHash();
+		if (!QuicNatt::DecodeEaqcFrame(
+			    classified.payload, classified.payloadLength, localHash, request)) {
+			break;
 		}
+		const auto address = CNetworkAddress::FromIPv4NetworkOrderOrAbsent(ip);
+		const auto now = ::GetTickCount64();
+		if (!m_capsAckLimiter.Admit(address, now)) {
+			break;
+		}
+		const auto ack = QuicNatt::BuildEaqcCapsAck(
+			request, localHash, (Kademlia::CPrefs::GetMyConnectOptions(false, true) & 0x08) != 0);
+		auto response = std::make_unique<CPacket>(
+			OP_NATT_FRAME_CAPS_ACK, static_cast<uint32>(ack.size()), OP_UDPRESERVEDPROT2);
+		response->CopyToDataBuffer(0, ack.data(), static_cast<unsigned int>(ack.size()));
+		SendPacket(response.release(), ip, port, false, nullptr, false, 0);
+	}
+#else
+		// Builds without QUIC keep capability negotiation silent.
+#endif
+	break;
+
+	case OP_NATT_FRAME_CAPS_ACK:
+		// ACKs are intentionally dropped and never answered.
 		break;
 
 	case OP_NATT_FRAME_KEY:

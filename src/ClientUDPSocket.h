@@ -38,6 +38,7 @@
 #ifdef AMULE_QUIC_TRANSPORT
 #include "QuicContext.h"
 #include "QuicNgtcp2Adapter.h"
+#include "NatRendezvousPolicy.h"
 #include "QuicStreamAcceptor.h"
 #endif
 
@@ -85,6 +86,7 @@ private:
 	std::unique_ptr<CQuicNgtcp2Factory> m_quicFactory;
 	CQuicContext m_quic;
 	CQuicStreamAcceptor m_quicAcceptor;
+	NatRendezvous::CRequesterLimiter m_capsAckLimiter;
 #endif
 	void OnPacketReceived(
 		const CNetworkAddress &address, uint16 port, uint8_t *buffer, size_t length) override;
