@@ -86,3 +86,46 @@ endpoint, aMule to have a LowID, and eMuleAI itself to be firewalled. eMuleAI
 must also lack a usable Kad buddy for this peer so it selects direct NAT
 traversal instead of rendezvous. No live eMuleAI 1.6 validation has been
 performed for this task.
+
+## Manual interoperability runbook
+
+This is a manual runbook, not a fully scripted recipe. The lab setup for
+resolving or seeding the peer and suppressing its usable Kad buddy remains
+unresolved and must be confirmed on the actual eMuleAI installation.
+
+1. **Build the aMule target.** Run `packaging/linux/build.sh dev-quic`, then
+   confirm that the target under test uses the resulting QUIC-enabled core.
+   The build command demonstrates that the image/build path was exercised; it
+   is not interoperation evidence by itself.
+2. **Confirm the eMuleAI side.** Its documented defaults are
+   `EnableNatTraversal=1` and `NatTraversalProtocolMode=0` (prefer QUIC).
+   `LogNatTraversalEvents=1` enables NAT-T event logging when available. Do
+   not treat changing those settings as an aMule-repository procedure. Record
+   both peers' actual UDP endpoints, and ensure eMuleAI knows the aMule
+   endpoint.
+3. **Check the topology before starting.** Confirm all of the following:
+   - aMule is LowID;
+   - eMuleAI is locally firewalled;
+   - the eMuleAI peer has no usable Kad buddy for this peer, so it selects
+     direct traversal;
+   - the peer/source identity and aMule UDP endpoint are known and reachable
+     to the extent required by the test installation.
+
+   There is no verified command or API here for manually seeding the peer or
+   forcing the no-buddy condition. Do not substitute random port forwarding;
+   resolve those lab-specific conditions on the real installation first.
+4. **Capture the exchange and result.** On eMuleAI, look for the exact event
+   sequence `[NAT-T][CAPS] Sent CAPS`, `[NAT-T][CAPS] Sent ACK`, and
+   `[NAT-T][CAPS] Direct caps confirmed quic=... utp=...`. On aMule, capture
+   evidence that it emitted a 54-byte `OP_NATT_FRAME_CAPS_ACK`, then accepted
+   the QUIC frame and completed TLS/EAQN1. Record timestamps, endpoint
+   addresses, packet lengths, and the connection/test result. No live run has
+   yet produced this evidence.
+
+### Blockers and pass criteria
+
+A CAPS_ACK only negotiates capability; it does not create a NAT pinhole,
+perform rendezvous or hole punching, or make a connection. This branch has no
+outbound aMule role. Do not claim PASS unless a real packet trace and the
+corresponding connection/test logs show the CAPS exchange followed by the
+QUIC/TLS/EAQN1 result.
