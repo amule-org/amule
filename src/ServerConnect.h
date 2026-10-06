@@ -65,6 +65,7 @@ public:
 	void ConnectToServer(CServer *toconnect, bool multiconnect = false, bool bNoCrypt = false);
 	void StopConnectionTry();
 	void CheckForTimeout();
+	bool RebindServerUDPSocket(const amuleIPV4Address &address);
 
 	// safe socket closure and destruction
 	void DestroySocket(CServerSocket *pSck);

@@ -1457,13 +1457,16 @@ public:
 	CAsioSocketServerImpl(const amuleIPV4Address &adr,
 		CLibSocketServer *libSocketServer,
 		bool bindInterfaceOverride = false,
-		const wxString &bindInterface = wxEmptyString)
+		const wxString &bindInterface = wxEmptyString,
+		bool exclusiveBind = false)
 	: ip::tcp::acceptor(s_io_service)
 	, m_libSocketServer(libSocketServer)
+	, m_acceptStopped(false)
 	, m_strand(s_io_service)
 	, m_address(adr)
 	, m_bindInterfaceOverride(bindInterfaceOverride)
 	, m_bindInterface(bindInterface)
+	, m_exclusiveBind(exclusiveBind)
 	{
 		m_ok = false;
 		m_socketAvailable = false;
@@ -1485,10 +1488,17 @@ public:
 			SetBoundInterface(native_handle(),
 				m_bindInterfaceOverride ? m_bindInterface : s_bindToInterface,
 				false);
+			// A replacement listener must fail if another process already owns the
+			// requested port. On Windows SO_REUSEADDR can otherwise allow both binds.
+#ifdef __WXMSW__
+			set_option(ip::tcp::acceptor::reuse_address(!m_exclusiveBind));
+#else
 			set_option(ip::tcp::acceptor::reuse_address(true));
+#endif
 			bind(m_address.GetEndpoint());
 			listen();
-			StartAccept();
+			auto self = shared_from_this();
+			post(m_strand, [self]() { self->StartAccept(); });
 			m_ok = true;
 			AddDebugLogLineN(logAsio,
 				CFormat("CAsioSocketServerImpl bind to %s %d") % m_address.IPAddress() %
@@ -1509,7 +1519,17 @@ public:
 	// already listening for new connections.
 	bool IsOk() const { return m_ok; }
 
-	void Close() { close(); }
+	void Close()
+	{
+		if (m_acceptStopped.exchange(true, std::memory_order_acq_rel)) {
+			return;
+		}
+		auto self = shared_from_this();
+		post(m_strand, [self]() {
+			error_code ignored;
+			self->close(ignored);
+		});
+	}
 
 	bool AcceptWith(CLibSocket &socket)
 	{
@@ -1535,7 +1555,8 @@ public:
 			// nothing there
 			m_socketAvailable = false;
 			// start getting another one
-			StartAccept();
+			auto self = shared_from_this();
+			post(m_strand, [self]() { self->StartAccept(); });
 			AddDebugLogLineF(logAsio, "AcceptWith: ok, getting another socket in background");
 		} else {
 			// we got another socket right away
@@ -1557,6 +1578,9 @@ public:
 private:
 	void StartAccept()
 	{
+		if (m_acceptStopped.load(std::memory_order_acquire)) {
+			return;
+		}
 		m_currentSocket = std::make_shared<CAsioSocketImpl>(nullptr);
 		auto self = shared_from_this();
 		async_accept(m_currentSocket->GetAsioSocket(),
@@ -1565,6 +1589,12 @@ private:
 
 	void HandleAccept(const error_code &error)
 	{
+		if (m_acceptStopped.load(std::memory_order_acquire) ||
+			error == boost::asio::error::operation_aborted ||
+			error == boost::asio::error::bad_descriptor) {
+			m_acceptStopped.store(true, std::memory_order_release);
+			return;
+		}
 		if (error) {
 			AddDebugLogLineC(logAsio, CFormat("Error in HandleAccept: %s") % error.message());
 		} else {
@@ -1590,6 +1620,9 @@ private:
 
 	// The wrapper object. Atomic for the same reason as CAsioSocketImpl::m_libSocket.
 	std::atomic<CLibSocketServer *> m_libSocketServer;
+	// Closing/rebinding cancels the pending accept; its completion must not retry on a closed
+	// acceptor (which would spin on bad_descriptor and flood the GUI log).
+	std::atomic<bool> m_acceptStopped;
 	// Startup ok
 	bool m_ok;
 	// The last socket that connected to us
@@ -1605,6 +1638,7 @@ private:
 	// s_bindToInterface. Lets the EC listener bind to a different interface than ed2k/Kad.
 	bool m_bindInterfaceOverride;
 	wxString m_bindInterface;
+	bool m_exclusiveBind;
 };
 
 CLibSocketServer::CLibSocketServer(const amuleIPV4Address &adr, int /* flags */)
@@ -1629,9 +1663,27 @@ CLibSocketServer::~CLibSocketServer()
 {
 	if (m_aServer) {
 		m_aServer->OnWrapperGone();
+		m_aServer->Close();
 	}
 	// shared_ptr drops automatically; impl stays alive via callback self refs
 	// until the last in-flight async_accept completion drains.
+}
+
+bool CLibSocketServer::Rebind(const amuleIPV4Address &adr)
+{
+	auto replacement = std::make_shared<CAsioSocketServerImpl>(adr, this, false, wxEmptyString, true);
+	replacement->Init();
+	if (!replacement->IsOk()) {
+		return false;
+	}
+
+	std::shared_ptr<CAsioSocketServerImpl> previous = std::move(m_aServer);
+	m_aServer = std::move(replacement);
+	if (previous) {
+		previous->OnWrapperGone();
+		previous->Close();
+	}
+	return true;
 }
 
 // Accepts an incoming connection request, and creates a new CLibSocket object which represents the

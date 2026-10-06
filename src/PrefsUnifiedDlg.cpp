@@ -1106,6 +1106,10 @@ void PrefsUnifiedDlg::SetCredentialStateLabel(int id, bool isSet)
 
 void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 {
+#ifndef CLIENT_GUI
+	const uint16 previousTcpPort = thePrefs::GetPort();
+	const uint16 previousUdpPort = thePrefs::GetUDPPort();
+#endif
 	TransferFromWindow();
 
 	// Before the share commit below, whose reload must already use the new filter.
@@ -1177,24 +1181,37 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 
 	bool restart_needed = false;
 	wxString restart_needed_msg = _("aMule must be restarted to enable these changes:\n\n");
+#ifndef CLIENT_GUI
+	const bool tcpPortChanged = CfgChanged(IDC_PORT);
+	const bool udpPortChanged = CfgChanged(IDC_UDPPORT);
+#endif
+	const bool bindAddressChanged = CfgChanged(IDC_ADDRESS);
+	const bool bindInterfaceChanged = CfgChanged(IDC_INTERFACE);
 
 	// do sanity checking, special processing, and user notifications here
 	thePrefs::CheckUlDlRatio();
 
+	if (bindInterfaceChanged) {
+		restart_needed = true;
+		restart_needed_msg += _("- Network interface binding changed.\n");
+	}
+	if (bindAddressChanged) {
+		restart_needed = true;
+		restart_needed_msg += _("- Local address binding changed.\n");
+	}
+
+#ifdef CLIENT_GUI
+	// An older daemon may not support live P2P port rebinding. Keep the notice in
+	// the remote GUI because it cannot determine the connected daemon's capability.
 	if (CfgChanged(IDC_PORT)) {
 		restart_needed = true;
 		restart_needed_msg += _("- TCP port changed.\n");
 	}
-
 	if (CfgChanged(IDC_UDPPORT)) {
 		restart_needed = true;
 		restart_needed_msg += _("- UDP port changed.\n");
 	}
-
-	if (CfgChanged(IDC_INTERFACE)) {
-		restart_needed = true;
-		restart_needed_msg += _("- Network interface binding changed.\n");
-	}
+#endif
 
 	if (CfgChanged(IDC_EXT_CONN_TCP_PORT)) {
 		restart_needed = true;
@@ -1275,6 +1292,24 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 
 	// save the preferences on ok
 	theApp->glob_prefs->Save();
+
+	// Listening ports are live settings: re-create their sockets as part of applying
+	// Preferences. A simultaneous interface change still needs a full restart because the
+	// current network reinitialisation path does not safely change the bound interface.
+#ifndef CLIENT_GUI
+	if ((tcpPortChanged || udpPortChanged) && !bindAddressChanged && !bindInterfaceChanged &&
+		theApp->IsRunning()) {
+		wxString networkMessage;
+		if (!theApp->RebindP2PSockets(
+			    tcpPortChanged, udpPortChanged, previousTcpPort, &networkMessage)) {
+			thePrefs::SetPort(previousTcpPort);
+			thePrefs::SetUDPPort(previousUdpPort);
+			theApp->glob_prefs->Save();
+			AddLogLineC(networkMessage);
+			wxMessageBox(networkMessage, _("ERROR"), wxOK | wxICON_ERROR, this);
+		}
+	}
+#endif
 
 	// Store any amuleapi password the user just typed. Deliberately after Save(), which is
 	// what writes amule.conf locally and what ships the request to the daemon over EC.

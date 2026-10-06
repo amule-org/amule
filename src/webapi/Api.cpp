@@ -8294,6 +8294,10 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(const CHttpServer::
 	std::string ec_err_msg;
 	if (IsEcFailedResponse(ec_resp, ec_err_msg)) {
 		delete ec_resp;
+		// amuled may have applied other preferences in this request before
+		// rolling back a failed live port rebind. Refresh so an immediate GET
+		// reports the actual mixed result rather than the pre-request snapshot.
+		(void)RefresherTick(m_app, m_state);
 		return ErrorResponse(400, "amuled_rejected", ec_err_msg.c_str());
 	}
 	delete ec_resp;

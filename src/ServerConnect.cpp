@@ -579,6 +579,11 @@ CServer *CServerConnect::GetConnectingServer() const
 	return nullptr;
 }
 
+bool CServerConnect::RebindServerUDPSocket(const amuleIPV4Address &address)
+{
+	return !serverudpsocket || serverudpsocket->Rebind(address);
+}
+
 CServer *CServerConnect::GetCurrentServer()
 {
 	if (IsConnected() && connectedsocket) {

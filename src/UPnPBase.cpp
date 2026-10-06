@@ -834,6 +834,7 @@ bool CUPnPControlPoint::AddPortMappings(std::vector<CUPnPPortMapping> &upnpPortM
 	}
 
 	int n = upnpPortMapping.size();
+	unsigned int expectedEntries = 0;
 	bool ok = false;
 
 	std::istringstream PortMappingNumberOfEntries(
@@ -843,6 +844,7 @@ bool CUPnPControlPoint::AddPortMappings(std::vector<CUPnPPortMapping> &upnpPortM
 
 	for (int i = 0; i < n; ++i) {
 		if (upnpPortMapping[i].getEnabled() == "1") {
+			++expectedEntries;
 			m_ActivePortMappingsMap[upnpPortMapping[i].getKey()] = upnpPortMapping[i];
 
 			PrivateAddPortMapping(upnpPortMapping[i]);
@@ -887,7 +889,7 @@ bool CUPnPControlPoint::AddPortMappings(std::vector<CUPnPPortMapping> &upnpPortM
 	PortMappingNumberOfEntries.str(m_WanService->GetStateVariable("PortMappingNumberOfEntries"));
 	unsigned long newNumberOfEntries;
 	PortMappingNumberOfEntries >> newNumberOfEntries;
-	ok = newNumberOfEntries - oldNumberOfEntries == 4;
+	ok = newNumberOfEntries - oldNumberOfEntries == expectedEntries;
 
 	return ok;
 }
@@ -947,6 +949,7 @@ bool CUPnPControlPoint::DeletePortMappings(std::vector<CUPnPPortMapping> &upnpPo
 	}
 
 	int n = upnpPortMapping.size();
+	unsigned int expectedEntries = 0;
 	bool ok = false;
 
 	std::istringstream PortMappingNumberOfEntries(
@@ -956,6 +959,7 @@ bool CUPnPControlPoint::DeletePortMappings(std::vector<CUPnPPortMapping> &upnpPo
 
 	for (int i = 0; i < n; ++i) {
 		if (upnpPortMapping[i].getEnabled() == "1") {
+			++expectedEntries;
 			PortMappingMap::iterator it =
 				m_ActivePortMappingsMap.find(upnpPortMapping[i].getKey());
 			if (it != m_ActivePortMappingsMap.end()) {
@@ -981,7 +985,7 @@ bool CUPnPControlPoint::DeletePortMappings(std::vector<CUPnPPortMapping> &upnpPo
 	PortMappingNumberOfEntries.str(m_WanService->GetStateVariable("PortMappingNumberOfEntries"));
 	unsigned long newNumberOfEntries;
 	PortMappingNumberOfEntries >> newNumberOfEntries;
-	ok = oldNumberOfEntries - newNumberOfEntries == 4;
+	ok = oldNumberOfEntries - newNumberOfEntries == expectedEntries;
 
 	return ok;
 }

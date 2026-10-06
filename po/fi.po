@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-10-06 18:32+0200\n"
+"POT-Creation-Date: 2026-10-06 19:09+0200\n"
 "PO-Revision-Date: 2026-10-06 17:01+0000\n"
 "Last-Translator: Tapio Rantala <tapio.rantala@iki.fi>\n"
 "Language-Team: aMule Team <https://github.com/amule-org/amule>\n"
@@ -538,6 +538,57 @@ msgstr ""
 "Tämä tarkoittaa että sinulle annetaan LowID.\n"
 "\n"
 "Tarkista yhteytesi varmistaaksesi että portti on avoinna sekä ulos että sisään."
+
+#: src/amule.cpp
+msgid "The P2P TCP port conflicts with the External Connections port. No sockets were changed.\n"
+msgstr ""
+
+#: src/amule.cpp
+msgid "The P2P TCP port is too high for its associated server UDP port. No sockets were changed.\n"
+msgstr ""
+
+#: src/amule.cpp
+msgid "The client UDP port conflicts with the server UDP port (TCP+3). No sockets were changed.\n"
+msgstr ""
+
+#: src/amule.cpp
+#, c-format
+msgid "Could not rebind the server UDP port %u; no sockets were changed.\n"
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy, c-format
+msgid "Could not rebind the P2P TCP port %u. %s"
+msgstr "VIRHE: Ei voida kuunnella TCP-porttia."
+
+#: src/amule.cpp
+msgid "The previous listener and server UDP socket remain active.\n"
+msgstr ""
+
+#: src/amule.cpp
+msgid "The server UDP socket could not be restored; restart aMule.\n"
+msgstr ""
+
+#: src/amule.cpp
+msgid "The previous P2P listeners remain active.\n"
+msgstr ""
+
+#: src/amule.cpp
+msgid "The previous client UDP socket remains active.\n"
+msgstr ""
+
+#: src/amule.cpp
+msgid "Some previous P2P sockets could not be restored; restart aMule.\n"
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy, c-format
+msgid "Could not rebind the client UDP port %u. %s"
+msgstr "Kansio latauksen väliaikaisille tiedostoille"
+
+#: src/amule.cpp
+msgid "P2P listening sockets rebound; established peer connections were kept."
+msgstr ""
 
 #: src/amule.cpp
 msgid "Failed to create OnlineSig File"
@@ -1136,6 +1187,10 @@ msgstr "Valmis"
 #: src/amule-remote-gui.cpp src/TransferWnd.cpp
 msgid "All"
 msgstr "Kaikki"
+
+#: src/amule-remote-gui.cpp
+msgid "The daemon could not apply the connection port changes."
+msgstr ""
 
 #: src/amule-remote-gui.cpp
 msgid "not readable"
@@ -6443,16 +6498,21 @@ msgstr ""
 "\n"
 
 #: src/PrefsUnifiedDlg.cpp
+msgid "- Network interface binding changed.\n"
+msgstr "- Verkkoliitännän sitominen muuttui.\n"
+
+#: src/PrefsUnifiedDlg.cpp
+#, fuzzy
+msgid "- Local address binding changed.\n"
+msgstr "- Verkkoliitännän sitominen muuttui.\n"
+
+#: src/PrefsUnifiedDlg.cpp
 msgid "- TCP port changed.\n"
 msgstr "- TCP-portti muuttui.\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- UDP port changed.\n"
 msgstr "- UDP-portti muuttui.\n"
-
-#: src/PrefsUnifiedDlg.cpp
-msgid "- Network interface binding changed.\n"
-msgstr "- Verkkoliitännän sitominen muuttui.\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- External connect port changed.\n"

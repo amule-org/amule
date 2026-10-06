@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-10-06 18:32+0200\n"
+"POT-Creation-Date: 2026-10-06 19:09+0200\n"
 "PO-Revision-Date: 2026-10-06 17:03+0000\n"
 "Last-Translator: Hyunju Kang <rexington@gmail.com>\n"
 "Language-Team: Korean <hoenny@daum.net>\n"
@@ -537,6 +537,57 @@ msgstr ""
 "이것은 낮은아이디를 가질것이라는걸 의미합니다.\n"
 "\n"
 "나가고 들어오는것에 대해 포트가 열려있는지 통신망을 체크하세요. "
+
+#: src/amule.cpp
+msgid "The P2P TCP port conflicts with the External Connections port. No sockets were changed.\n"
+msgstr ""
+
+#: src/amule.cpp
+msgid "The P2P TCP port is too high for its associated server UDP port. No sockets were changed.\n"
+msgstr ""
+
+#: src/amule.cpp
+msgid "The client UDP port conflicts with the server UDP port (TCP+3). No sockets were changed.\n"
+msgstr ""
+
+#: src/amule.cpp
+#, c-format
+msgid "Could not rebind the server UDP port %u; no sockets were changed.\n"
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy, c-format
+msgid "Could not rebind the P2P TCP port %u. %s"
+msgstr "오류: TCP 포트를 리슨할 수 없습니다."
+
+#: src/amule.cpp
+msgid "The previous listener and server UDP socket remain active.\n"
+msgstr ""
+
+#: src/amule.cpp
+msgid "The server UDP socket could not be restored; restart aMule.\n"
+msgstr ""
+
+#: src/amule.cpp
+msgid "The previous P2P listeners remain active.\n"
+msgstr ""
+
+#: src/amule.cpp
+msgid "The previous client UDP socket remains active.\n"
+msgstr ""
+
+#: src/amule.cpp
+msgid "Some previous P2P sockets could not be restored; restart aMule.\n"
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy, c-format
+msgid "Could not rebind the client UDP port %u. %s"
+msgstr "이미 %s 파일을 내려받으려고 하고있음"
+
+#: src/amule.cpp
+msgid "P2P listening sockets rebound; established peer connections were kept."
+msgstr ""
 
 #: src/amule.cpp
 msgid "Failed to create OnlineSig File"
@@ -1135,6 +1186,10 @@ msgstr "준비됨"
 #: src/amule-remote-gui.cpp src/TransferWnd.cpp
 msgid "All"
 msgstr "전부"
+
+#: src/amule-remote-gui.cpp
+msgid "The daemon could not apply the connection port changes."
+msgstr ""
 
 #: src/amule-remote-gui.cpp
 msgid "not readable"
@@ -6436,16 +6491,21 @@ msgstr ""
 "\n"
 
 #: src/PrefsUnifiedDlg.cpp
+msgid "- Network interface binding changed.\n"
+msgstr "- 네트워크 인터페이스 바인딩이 변경되었습니다.\n"
+
+#: src/PrefsUnifiedDlg.cpp
+#, fuzzy
+msgid "- Local address binding changed.\n"
+msgstr "- 네트워크 인터페이스 바인딩이 변경되었습니다.\n"
+
+#: src/PrefsUnifiedDlg.cpp
 msgid "- TCP port changed.\n"
 msgstr "- TCP 포트가 변경되었습니다.\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- UDP port changed.\n"
 msgstr "- UDP 포트가 변경되었습니다.\n"
-
-#: src/PrefsUnifiedDlg.cpp
-msgid "- Network interface binding changed.\n"
-msgstr "- 네트워크 인터페이스 바인딩이 변경되었습니다.\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- External connect port changed.\n"

@@ -2441,7 +2441,7 @@ amuleapi's own `admin` and `guest` passwords are **not** settable here; `remote_
 
 Downloading a database **now** is [`POST /geoip/update`](#post-apiv1geoipupdate), not a field here: it is an action, not a setting. Sending `geoip.update_now` in this body is a `400` naming that endpoint.
 
-> **Note:** these are the daemon's live settings — the same ones the desktop GUI edits. Some are self-affecting: changing `remote_controls.amuleapi.port` / `.bind_address`, or `directories.incoming_path` / `temp_path`, alters the very daemon you are talking to. A port/bind change only takes effect on the next amuled restart, so it will not drop your current connection mid-request.
+> **Note:** these are the daemon's live settings — the same ones the desktop GUI edits. Some are self-affecting: changing `remote_controls.amuleapi.port` / `.bind_address`, or `directories.incoming_path` / `temp_path`, alters the daemon you are talking to. When `connection.bind_address` and `connection.bind_interface` are unchanged, changes to `connection.tcp_port` and `connection.udp_port` are applied immediately: amuled rebinds the affected P2P listening sockets, while existing peer TCP connections remain open. Changing a bind address/interface still follows its existing restart path. If a required socket cannot be rebound, the request returns `400 amuled_rejected` and the old TCP/UDP port preferences are restored. A PATCH is not otherwise atomic: any other fields in that same request remain applied.
 
 **Response:** `200 OK` — full preferences object (post-mutation), so a read-modify-write client can confirm what landed without a follow-up GET.
 

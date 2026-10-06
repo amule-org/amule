@@ -28,15 +28,15 @@
 #include CRYPTO_HEADER(hmac.h)
 #include "WarningsPop.h"
 #include "Logger.h"
+#include "RandomFunctions.h" // Needed for GetRandomBlock
 #include <algorithm>
 #include <tuple>
 #include <utility>
 
 CKadAICHVotes::Key CKadAICHVotes::GenerateKey()
 {
-	CryptoPP::AutoSeededRandomPool random;
 	Key key;
-	random.GenerateBlock(key.data(), key.size());
+	GetRandomBlock(key.data(), key.size());
 	return key;
 }
 
@@ -85,7 +85,10 @@ void CKadAICHVotes::Add(uint32_t responder, const CAICHHash &root)
 {
 	if (responder != 0) {
 		const uint32_t subnet = CAICHUntrustedHash::SigningSubnet(responder);
-		Admit(subnet, Entry{ Rank(subnet), root, false });
+		// A repeat /20 keeps its rank, so only a new one pays for the HMAC.
+		const auto existing = m_entries.find(subnet);
+		const Key rank = existing != m_entries.end() ? existing->second.rank : Rank(subnet);
+		Admit(subnet, Entry{ rank, root, false });
 	}
 }
 

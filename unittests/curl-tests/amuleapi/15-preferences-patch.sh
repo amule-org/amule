@@ -12,6 +12,8 @@
 # optional; all fields within optional. Only fields present are
 # applied. Returns 200 with the post-mutation /preferences body so
 # consumers can confirm what landed without a follow-up GET.
+# A failed live P2P port rebind returns 400 and restores the previous
+# port values; other fields in the same PATCH remain applied.
 #
 # EC packet shape: `EC_OP_SET_PREFERENCES` at `EC_DETAIL_FULL`. FULL
 # is required so amuled's CEC_Prefs_Packet::Apply() honors boolean
@@ -35,7 +37,16 @@ FAIL_COUNT=0
 TEST_COUNT=0
 
 CURL_BODY_FILE=$(mktemp -t amuleapi_15_preferences_patch_body.XXXXXX)
-trap 'rm -f "$CURL_BODY_FILE"' EXIT
+HELD_PORT_FILE=$(mktemp -t amuleapi_15_preferences_patch_port.XXXXXX)
+PORT_HOLDER_PID=
+_cleanup() {
+	if [ -n "$PORT_HOLDER_PID" ]; then
+		kill "$PORT_HOLDER_PID" 2>/dev/null || true
+		wait "$PORT_HOLDER_PID" 2>/dev/null || true
+	fi
+	rm -f "$CURL_BODY_FILE" "$HELD_PORT_FILE"
+}
+trap _cleanup EXIT
 
 _die()  { echo "FATAL: $*" >&2; exit 2; }
 _pass() { TEST_COUNT=$((TEST_COUNT+1)); echo "  PASS  $1"; }
@@ -179,6 +190,8 @@ _assert_status 400 "PATCH max_upload_kibibytes_per_second as string → 400"
 # ed2k port on the ceiling would outlive the script.
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
 SAVED_TCPPORT=$(printf '%s' "$CURL_BODY" | jq -r '.connection.tcp_port')
+SAVED_UDPPORT=$(printf '%s' "$CURL_BODY" | jq -r '.connection.udp_port')
+SAVED_FILTER_COMMENTS=$(printf '%s' "$CURL_BODY" | jq -r '.message_filter.filter_comments')
 
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
@@ -193,6 +206,88 @@ _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d '{"connection":{"tcp_port":65534}}' "$API/preferences"
 _assert_status 400 "PATCH tcp_port=65534 → 400 (TCP+3 would overflow)"
+
+# A live socket failure rejects the port update but does not undo other fields
+# in the same preferences PATCH. Use a locally held TCP port; the UDP probe
+# also ensures its TCP+3 server port is available so the request reaches the
+# TCP-listener bind step. This test requires a local amuled and skips remote
+# HOST values, where a local process cannot reserve a daemon-side port.
+case "$HOST" in
+	localhost*|127.*|::1*|\[::1\]*)
+		if ! command -v python3 >/dev/null 2>&1; then
+			_die "python3 is required for the live port-rebind failure test."
+		fi
+		python3 - "$HELD_PORT_FILE" "$SAVED_TCPPORT" "$SAVED_UDPPORT" <<'PY' >/dev/null 2>&1 &
+import signal
+import socket
+import sys
+
+port_file, saved_tcp, saved_udp = sys.argv[1], int(sys.argv[2]), int(sys.argv[3])
+for port in range(20000, 65000):
+    if port in (saved_tcp, saved_udp) or port + 3 in (saved_tcp, saved_udp):
+        continue
+    tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        tcp.bind(("0.0.0.0", port))
+        tcp.listen(1)
+    except OSError:
+        tcp.close()
+        continue
+    udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        udp.bind(("0.0.0.0", port + 3))
+    except OSError:
+        tcp.close()
+        udp.close()
+        continue
+    udp.close()
+    with open(port_file, "w", encoding="ascii") as output:
+        output.write(str(port))
+    signal.pause()
+    break
+PY
+		PORT_HOLDER_PID=$!
+		for _attempt in $(seq 1 50); do
+			[ -s "$HELD_PORT_FILE" ] && break
+			sleep 0.1
+		done
+		if [ -s "$HELD_PORT_FILE" ]; then
+			HELD_PORT=$(cat "$HELD_PORT_FILE")
+			FAILED_PATCH_FILTER=$([ "$SAVED_FILTER_COMMENTS" = "true" ] && echo false || echo true)
+			_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+				-H "Content-Type: application/json" \
+				-d "{\"connection\":{\"tcp_port\":$HELD_PORT},\"message_filter\":{\"filter_comments\":$FAILED_PATCH_FILTER}}" \
+				"$API/preferences"
+			_assert_status 400 "PATCH held tcp_port with another field → 400"
+			_assert_json_eq '.error.code' amuled_rejected \
+				'held tcp_port failure is reported as amuled_rejected'
+			_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
+			_assert_json_eq '.connection.tcp_port' "$SAVED_TCPPORT" \
+				'failed live rebind restores the previous TCP port'
+			_assert_json_eq '.connection.udp_port' "$SAVED_UDPPORT" \
+				'failed live rebind leaves the previous client UDP port'
+			_assert_json_eq '.message_filter.filter_comments' "$FAILED_PATCH_FILTER" \
+				'other fields in the rejected PATCH remain applied'
+			# Restore immediately, including the port in case a broken implementation
+			# accepted the occupied port.
+			_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+				-H "Content-Type: application/json" \
+				-d "{\"connection\":{\"tcp_port\":$SAVED_TCPPORT},\"message_filter\":{\"filter_comments\":$SAVED_FILTER_COMMENTS}}" \
+				"$API/preferences"
+			_assert_status 200 "PATCH (restore ports and filter after rebind failure test) → 200"
+		else
+			_fail "reserve a local TCP port for the rebind failure test" \
+				"could not find a free TCP port with an available TCP+3 UDP port"
+		fi
+		kill "$PORT_HOLDER_PID" 2>/dev/null || true
+		wait "$PORT_HOLDER_PID" 2>/dev/null || true
+		PORT_HOLDER_PID=
+		;;
+	*)
+		echo "    info: live port-rebind failure test skipped for non-local HOST=$HOST"
+		;;
+esac
+
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d '{"connection":{"tcp_port":65532}}' "$API/preferences"

@@ -45,8 +45,8 @@ class CKadAICHVotes
 {
 public:
 	using Key = std::array<uint8_t, 32>;
-	// Bounded number of retained consensus /20 witnesses. Admit, Get and the
-	// bound tests all read this single source so the contract cannot drift.
+	// Bounded number of retained consensus /20 witnesses. Admit and the bound
+	// tests read this single source so the contract cannot drift.
 	static constexpr size_t kMaxWitnesses = 64;
 	static Key GenerateKey();
 	// Empty/restored models use the default; network rows supply a generated key.

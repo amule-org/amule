@@ -3979,16 +3979,44 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 			request->GetTagByNameSafe(EC_TAG_SELECT_PREFS)->GetInt(), request->GetDetailLevel());
 		break;
 	case EC_OP_SET_PREFERENCES: {
+		const uint16 oldTcpPort = thePrefs::GetPort();
+		const uint16 oldUdpPort = thePrefs::GetUDPPort();
+		// Keep value snapshots: Apply() mutates both stored preference strings.
+		// NOLINTNEXTLINE(performance-unnecessary-copy-initialization)
+		const wxString oldBindAddress(thePrefs::GetAddress());
+		// NOLINTNEXTLINE(performance-unnecessary-copy-initialization)
+		const wxString oldBindInterface(thePrefs::GetNetworkInterface());
+		bool portRebindFailed = false;
+		wxString networkMessage;
 		static_cast<const CEC_Prefs_Packet *>(request)->Apply();
-		// Apply() left any amuleapi password the client sent sitting in the preferences as
-		// a pending request; this is what turns it into a stored, stretched record in
-		// amuleapi-passwords. Logged rather than returned as an EC error: the rest of the
-		// preferences applied fine.
+		// Apply() left any amuleapi password the client sent sitting in the
+		// preferences as a pending request; this is what turns it into a
+		// stored, stretched record in amuleapi-passwords. Logged rather than
+		// returned as an EC error: the rest of the preferences applied fine.
 		wxString credentialError;
 		if (!AmuleApiCredentials::ApplyPrefs(credentialError)) {
 			AddLogLineC(CFormat(_("Could not save the amuleapi password: %s")) % credentialError);
 		}
 		theApp->glob_prefs->Save();
+		// Remote preference clients (amulegui, amuleweb, and the text
+		// client) apply connection settings through this EC operation.
+		// Rebind only the changed P2P endpoints; keep the EC listener
+		// and its active clients untouched.
+		const bool portsChanged =
+			oldTcpPort != thePrefs::GetPort() || oldUdpPort != thePrefs::GetUDPPort();
+		if (portsChanged && oldBindAddress == thePrefs::GetAddress() &&
+			oldBindInterface == thePrefs::GetNetworkInterface() && theApp->IsRunning()) {
+			if (!theApp->RebindP2PSockets(oldTcpPort != thePrefs::GetPort(),
+				    oldUdpPort != thePrefs::GetUDPPort(),
+				    oldTcpPort,
+				    &networkMessage)) {
+				thePrefs::SetPort(oldTcpPort);
+				thePrefs::SetUDPPort(oldUdpPort);
+				theApp->glob_prefs->Save();
+				AddLogLineC(networkMessage);
+				portRebindFailed = true;
+			}
+		}
 		if (thePrefs::IsFilteringClients()) {
 			theApp->clientlist->FilterQueues();
 		}
@@ -4001,7 +4029,10 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 		if (!thePrefs::GetNetworkKademlia() && theApp->IsConnectedKad()) {
 			theApp->StopKad();
 		}
-		response = new CECPacket(EC_OP_NOOP);
+		response = new CECPacket(portRebindFailed ? EC_OP_FAILED : EC_OP_NOOP);
+		if (portRebindFailed) {
+			response->AddTag(CECTag(EC_TAG_STRING, networkMessage));
+		}
 		break;
 	}
 

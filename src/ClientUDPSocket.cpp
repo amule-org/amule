@@ -144,6 +144,17 @@ CClientUDPSocket::CClientUDPSocket(const amuleIPV4Address &address, const CProxy
 #endif
 }
 
+bool CClientUDPSocket::Rebind(const amuleIPV4Address &address)
+{
+	// UDP can be disabled in preferences while the client socket object remains
+	// alive. Keep its future bind address up to date without opening a socket.
+	if (thePrefs::IsUDPDisabled()) {
+		Close();
+		return SetBindAddressIfClosed(address);
+	}
+	return CMuleUDPSocket::Rebind(address);
+}
+
 #ifdef AMULE_UTP_TRANSPORT
 void CClientUDPSocket::Close()
 {
