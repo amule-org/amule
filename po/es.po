@@ -16,7 +16,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-06 18:32+0200\n"
-"PO-Revision-Date: 2026-10-03 12:44+0000\n"
+"PO-Revision-Date: 2026-10-06 17:00+0000\n"
 "Last-Translator: Diego Heras <ngosang@hotmail.es>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/amule/amule-application/es/>\n"
 "Language: es\n"
@@ -213,11 +213,16 @@ msgid ""
 "\n"
 "The file is deleted and no longer shared. This cannot be undone."
 msgstr ""
+"¿Seguro que quiere borrar '%s' del disco?\n"
+"\n"
+"Archivo: %s\n"
+"\n"
+"El archivo se borra y deja de compartirse. Esto no se puede deshacer."
 
 #: src/GuiEvents.cpp
 #, c-format
 msgid "... and %i more"
-msgstr ""
+msgstr "... y %i más"
 
 #: src/GuiEvents.cpp
 #, c-format
@@ -227,26 +232,29 @@ msgid ""
 "%s\n"
 "The files are deleted and no longer shared. This cannot be undone."
 msgstr ""
+"¿Seguro que quiere borrar del disco los %i archivos seleccionados?\n"
+"\n"
+"%s\n"
+"Los archivos se borran y dejan de compartirse. Esto no se puede deshacer."
 
 #: src/GuiEvents.cpp
-#, fuzzy
 msgid "Delete from disk"
-msgstr "Obtener desde Kad"
+msgstr "Borrar del disco"
 
 #: src/GuiEvents.cpp
 #, c-format
 msgid "Skipped deleting '%s': the selected file has changed."
-msgstr ""
+msgstr "No se borró '%s': el archivo seleccionado ha cambiado."
 
 #: src/GuiEvents.cpp
 #, c-format
 msgid "Deleted '%s' from disk."
-msgstr ""
+msgstr "Se borró '%s' del disco."
 
 #: src/GuiEvents.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Could not delete '%s' from disk."
-msgstr "No se pudo eliminar la categoría: %s"
+msgstr "No se pudo borrar '%s' del disco."
 
 #: src/GuiEvents.cpp
 #, c-format
@@ -259,6 +267,13 @@ msgid ""
 "Yes: stop sharing and remove the list entries. A later share scan may share the files again.\n"
 "No: keep the files shared and listed."
 msgstr ""
+"No se pudieron borrar estos archivos del disco:\n"
+"\n"
+"%s\n"
+"¿Quitarlos de todos modos de los compartidos y de la lista de transferencias completadas?\n"
+"\n"
+"Sí: dejar de compartirlos y quitar las entradas de la lista. Un análisis posterior de los compartidos podría volver a compartirlos.\n"
+"No: mantener los archivos compartidos y en la lista."
 
 #: src/amuleAppCommon.cpp
 msgid "Failed to open ED2KLinks file."
@@ -1187,7 +1202,7 @@ msgstr "Desconocido"
 
 #: src/amule-remote-gui.cpp
 msgid "The connected daemon does not support All searches."
-msgstr ""
+msgstr "El demonio conectado no admite búsquedas en todas las redes."
 
 #: src/BaseClient.cpp
 msgid "Searching buddy for lowid connection"
@@ -1988,9 +2003,8 @@ msgid "C&lear completed"
 msgstr "&Limpiar los completados"
 
 #: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
-#, fuzzy
 msgid "Delete file from &disk"
-msgstr "Borrando archivo: %s"
+msgstr "Borrar archivo del &disco"
 
 #: src/DownloadListCtrl.cpp
 msgid "Swap every A4AF to this file now"
@@ -3992,9 +4006,8 @@ msgid "Type"
 msgstr "Tipo"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Search network"
-msgstr "Error de búsqueda"
+msgstr "Red de búsqueda"
 
 #: src/muuli_wdr.cpp
 msgid "Extended Parameters"
@@ -4681,13 +4694,12 @@ msgid "Reconnect on loss"
 msgstr "Reconectar al perder la conexión"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Kad protocol version"
-msgstr "Versión de protocolo no válida."
+msgstr "Versión del protocolo Kad"
 
 #: src/muuli_wdr.cpp
 msgid "Advertise Kad protocol 0x0a (AICH keyword storage)"
-msgstr ""
+msgstr "Anunciar el protocolo Kad 0x0a (almacenamiento de palabras clave AICH)"
 
 #: src/muuli_wdr.cpp
 msgid ""
@@ -4699,10 +4711,17 @@ msgid ""
 "\n"
 "Hashes learned from Kad search results remain untrusted until download sources corroborate them. Reported publisher counts alone never authorize AICH recovery."
 msgstr ""
+"Si se activa, aMule anuncia la versión 0x0a del protocolo Kad y procesa los hashes AICH en los resultados de publicación y búsqueda de palabras clave.\n"
+"\n"
+"ADVERTENCIA: activarlo puede hacer que los clientes Kad antiguos (anteriores a 0.49b), que no pueden interpretar las etiquetas AICH de los resultados, descarten resultados de búsqueda. La mayoría de los clientes actuales lo admiten, pero si faltan resultados de búsqueda, pruebe a desactivar esta opción.\n"
+"\n"
+"Desactivar esta opción descarta los datos AICH del índice de palabras clave al guardar la próxima vez; al volver a activarla hay que recopilar esos datos de nuevo.\n"
+"\n"
+"Los hashes obtenidos de los resultados de búsqueda Kad no son de confianza hasta que las fuentes de descarga los corroboren. El número de publicadores informado nunca autoriza por sí solo la recuperación AICH."
 
 #: src/muuli_wdr.cpp
 msgid "Reject AICH publish tags from legacy Kad peers (< 0x09)"
-msgstr ""
+msgstr "Rechazar las etiquetas de publicación AICH de nodos Kad antiguos (< 0x09)"
 
 #: src/muuli_wdr.cpp
 msgid ""
@@ -4710,6 +4729,9 @@ msgid ""
 "\n"
 "WARNING: This may reject legitimate publishers whose routing-table version is stale, reducing AICH hash coverage. Nodes with unknown version are still accepted. Hashes learned from Kad search results require download-source corroboration regardless of this setting."
 msgstr ""
+"Si se activa, se rechazan las etiquetas de publicación de palabras clave AICH de nodos que anuncian una versión de Kad inferior a 0x09, porque esas versiones no admiten el almacenamiento de palabras clave AICH. La versión anunciada no prueba que un publicador sea de confianza.\n"
+"\n"
+"ADVERTENCIA: esto puede rechazar publicadores legítimos cuya versión en la tabla de enrutamiento esté desactualizada, lo que reduce la cobertura de hashes AICH. Los nodos con versión desconocida se siguen aceptando. Los hashes obtenidos de los resultados de búsqueda Kad requieren la corroboración de las fuentes de descarga independientemente de este ajuste."
 
 #: src/muuli_wdr.cpp
 msgid "Remove dead server after"
@@ -6876,9 +6898,8 @@ msgid "Invalid entry in stored search list, file may be corrupt"
 msgstr "Entrada inválida en la lista de búsqueda almacenada, el archivo podría estar dañado,"
 
 #: src/SearchList.cpp
-#, fuzzy
 msgid "All search can't be done if neither eD2k nor Kad is available"
-msgstr "No se puede buscar en Kad si no está conectado a Kad"
+msgstr "No se puede buscar en todas las redes si no están disponibles ni eD2k ni Kad"
 
 #: src/SearchList.cpp
 msgid "eD2k search can't be done if eD2k is not connected"
@@ -6886,7 +6907,7 @@ msgstr "No se puede realizar una búsqueda en eD2k si no se está conectado a eD
 
 #: src/SearchList.cpp
 msgid "All search: no usable Kad keyword; continuing with eD2k."
-msgstr ""
+msgstr "Búsqueda en todas las redes: no hay palabra clave válida para Kad; se continúa con eD2k."
 
 #: src/SearchList.cpp
 msgid "No keyword for Kad search - aborting"
@@ -6898,7 +6919,7 @@ msgstr "Error imprevisto al intentar la búsqueda en Kad: "
 
 #: src/SearchList.cpp
 msgid "All search: Kad component could not start: "
-msgstr ""
+msgstr "Búsqueda en todas las redes: no se pudo iniciar la parte de Kad: "
 
 #: src/SearchList.cpp
 msgid "Search timed out: the server did not answer."
@@ -6954,37 +6975,32 @@ msgid "New"
 msgstr "Nuevo"
 
 #: src/SearchModeIcons.h
-#, fuzzy
 msgid "eD2k: Current server"
-msgstr "Lista de servidores eD2k (server.met)"
+msgstr "eD2k: servidor actual"
 
 #: src/SearchModeIcons.h
-#, fuzzy
 msgid "eD2k: All servers"
-msgstr "Eliminar todos los servidores"
+msgstr "eD2k: todos los servidores"
 
 #: src/SearchModeIcons.h
-#, fuzzy
 msgid "All networks"
-msgstr "No hay red"
+msgstr "Todas las redes"
 
 #: src/SearchModeIcons.h
-#, fuzzy
 msgid "Search the connected eD2k server."
-msgstr "Conectado al servidor."
+msgstr "Buscar en el servidor eD2k conectado."
 
 #: src/SearchModeIcons.h
 msgid "Search the connected eD2k server and other servers in the server list."
-msgstr ""
+msgstr "Buscar en el servidor eD2k conectado y en otros servidores de la lista de servidores."
 
 #: src/SearchModeIcons.h
-#, fuzzy
 msgid "Search the Kad network."
-msgstr "Conectar a la red."
+msgstr "Buscar en la red Kad."
 
 #: src/SearchModeIcons.h
 msgid "Search eD2k servers and Kad, using whichever networks are available."
-msgstr ""
+msgstr "Buscar en los servidores eD2k y en Kad, usando las redes que estén disponibles."
 
 #: src/SearchProgressReport.cpp
 msgid "running"
@@ -7028,36 +7044,35 @@ msgstr "No hay búsquedas sobre las que informar.\n"
 #: src/SearchSourceFormat.h
 #, c-format
 msgid "Estimated availability: %u"
-msgstr ""
+msgstr "Disponibilidad estimada: %u"
 
 #: src/SearchSourceFormat.h
-#, fuzzy, c-format
+#, c-format
 msgid "eD2k sources: %u"
-msgstr "Fuentes del archivo:"
+msgstr "Fuentes eD2k: %u"
 
 #: src/SearchSourceFormat.h
-#, fuzzy, c-format
+#, c-format
 msgid "Kad sources: %u"
-msgstr "Fuentes encontradas: %s"
+msgstr "Fuentes Kad: %u"
 
 #: src/SearchSourceFormat.h
 msgid "Network counts may overlap; they are not added together."
-msgstr ""
+msgstr "Los recuentos de cada red pueden solaparse; no se suman."
 
 #: src/SearchSourceFormat.h
-#, fuzzy
 msgid "Network breakdown unavailable."
-msgstr "Nueva versión disponible"
+msgstr "Desglose por red no disponible."
 
 #: src/SearchSourceFormat.h
-#, fuzzy, c-format
+#, c-format
 msgid "Complete sources: %u"
-msgstr "Fuentes completas"
+msgstr "Fuentes completas: %u"
 
 #: src/SearchSourceFormat.h
-#, fuzzy, c-format
+#, c-format
 msgid "Direct client endpoints: %u"
-msgstr "El nuevo ID de cliente es %u"
+msgstr "Direcciones de cliente directas: %u"
 
 #: src/ServerConnect.cpp
 msgid "Failed to connect to all obfuscated static servers listed. Making another pass without obfuscation."
@@ -7091,19 +7106,19 @@ msgid "No valid servers to which to connect found in server list"
 msgstr "No se han encontrado servidores válidos a los que conectar en la lista de servidores"
 
 #: src/ServerConnect.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Connected to %s (%s:%i), sending login request"
-msgstr "Conectado a %s (%s:%i)"
+msgstr "Conectado a %s (%s:%i), enviando solicitud de inicio de sesión"
 
 #: src/ServerConnect.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Obfuscated connection established on: %s (%s:%i)"
-msgstr "Conexión establecida en: %s"
+msgstr "Conexión ofuscada establecida en: %s (%s:%i)"
 
 #: src/ServerConnect.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Connection established on: %s (%s:%i)"
-msgstr "Conexión establecida en: %s"
+msgstr "Conexión establecida en: %s (%s:%i)"
 
 #: src/ServerConnect.cpp
 msgid "Fatal Error while trying to connect. Internet connection might be down"
@@ -8167,7 +8182,7 @@ msgstr "Hash no válido (la longitud debería ser exactamente 32 caracteres)\n"
 
 #: src/TextClient.cpp
 msgid "The connected daemon does not support All searches.\n"
-msgstr ""
+msgstr "El demonio conectado no admite búsquedas en todas las redes.\n"
 
 #. TRANSLATORS:
 #. 'help search' is a command to the program, do not translate it.
@@ -8565,7 +8580,6 @@ msgid "Execute a search."
 msgstr "Ejecutar una búsqueda."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid ""
 "A search type has to be specified by giving the type:\n"
 "    GLOBAL\n"
@@ -8588,6 +8602,7 @@ msgstr ""
 "    GLOBAL\n"
 "    LOCAL\n"
 "    KAD\n"
+"    ALL: todas las redes (requiere soporte del demonio)\n"
 "Ejemplo: 'search kad archivo' buscará en la red kad \"archivo\".\n"
 "\n"
 "Filtros opcionales pueden añadirse antes, después o intercalados con\n"
@@ -8613,9 +8628,8 @@ msgid "Execute a kad search"
 msgstr "Ejecutar una búsqueda kad"
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Execute an eD2k and Kad search"
-msgstr "Ejecutar una búsqueda kad"
+msgstr "Ejecutar una búsqueda eD2k y Kad"
 
 #: src/TextClient.cpp
 msgid "Show the results of a search."
