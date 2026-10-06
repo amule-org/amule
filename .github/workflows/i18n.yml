@@ -135,9 +135,12 @@ jobs:
         with:
           node-version: '20'
 
-      # Checks every locale carries exactly en.json's keys with matching
-      # {placeholders}, and that every preferences field resolves to a real
-      # label. The label keys are derived from the field names, so a renamed
-      # field with no dictionary entry would silently render the raw key.
+      # Checks every locale key exists in en.json with matching
+      # {placeholders} (plural forms may drop {n}; missing keys fall back to
+      # English), that en.json keys suit Weblate's i18next format, that locale
+      # codes are canonical BCP 47 (as Intl needs), and that every preferences
+      # field resolves to a real label. The label keys are derived from the
+      # field names, so a renamed field with no dictionary entry would silently
+      # render the raw key.
       - name: Checking Web UI dictionaries
         run: node src/webapi/tools/check-i18n.mjs

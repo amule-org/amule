@@ -31,13 +31,18 @@ src/webapi/
 ## Translations (frontend)
 
 Every user-facing string goes through `t()` / `tn()` in `static/js/i18n.js`;
-the dictionaries are flat `key -> string` JSON files under `static/i18n/`
-(Weblate's "JSON file" format, `en.json` as the template). The language is
-picked from localStorage (`amule.lang`, set by the toolbar EN/ES button) or
-the browser language, falling back to English per missing key. To add a
-language: copy `en.json`, translate, add its code to `LANGS` in
-`static/js/i18n.js`, and run `node src/webapi/tools/check-i18n.mjs` (verifies all
-locales have exactly the source keys with matching `{placeholders}`).
+the dictionaries are flat `key -> string` JSON files under `static/i18n/`,
+translated on Weblate (component "Application WebUI", format "i18next JSON
+file v4", `en.json` as the source). Plurals are `<key>_one` / `<key>_other`,
+plus `_few` / `_many`… where a language needs them; keys must not contain `.`
+or `[]`. The language is picked from localStorage (`amule.lang`, set in
+Preferences) or the browser language, falling back to English per missing or
+blank key. Languages are normally added on Weblate, which creates
+`static/i18n/<code>.json` named with a canonical BCP 47 code (`pt-BR`, not
+`pt_BR`); then add the code to `LANGS` in `static/js/i18n.js`. Run
+`node src/webapi/tools/check-i18n.mjs` to verify every locale key exists in
+`en.json` with matching `{placeholders}`, and that every code is canonical and
+every `LANGS` entry has its file.
 
 ## Vendored libraries
 
