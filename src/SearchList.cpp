@@ -1112,13 +1112,11 @@ void CSearchList::ProcessSearchAnswer(
 		return;
 	}
 	CMemFile packet(in_packet, size);
-	const auto key = m_kadAICHKeys.find(static_cast<uint32_t>(m_currentSearch));
-	const auto *evidenceKey = key != m_kadAICHKeys.end() ? &key->second : nullptr;
 
 	uint32_t results = packet.ReadUInt32();
 	for (; results > 0; --results) {
-		auto file = std::make_unique<CSearchFile>(
-			packet, optUTF8, m_currentSearch, serverIP, serverPort, "", false, 0, evidenceKey);
+		auto file =
+			std::make_unique<CSearchFile>(packet, optUTF8, m_currentSearch, serverIP, serverPort);
 		AddToList(std::move(file), false);
 	}
 }
@@ -1129,10 +1127,7 @@ void CSearchList::ProcessUDPSearchAnswer(
 	if (!CanFileServerAnswer()) {
 		return;
 	}
-	const auto key = m_kadAICHKeys.find(static_cast<uint32_t>(m_currentSearch));
-	const auto *evidenceKey = key != m_kadAICHKeys.end() ? &key->second : nullptr;
-	auto file = std::make_unique<CSearchFile>(
-		packet, optUTF8, m_currentSearch, serverIP, serverPort, "", false, 0, evidenceKey);
+	auto file = std::make_unique<CSearchFile>(packet, optUTF8, m_currentSearch, serverIP, serverPort);
 	AddToList(std::move(file), false);
 }
 

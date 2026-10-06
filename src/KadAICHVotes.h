@@ -30,14 +30,14 @@
 #include "SHAHashSet.h"
 
 // Transient, reputation-free evidence. The kMaxWitnesses (64) slots represent
-// consensus /20s. All rows of a search must use the same secret key before
-// admitting evidence.
+// consensus /20s. Rows that admit evidence use their search's secret key; a row
+// without evidence takes the key of the first evidence merged into it.
 // Retain the lowest (HMAC-SHA256(key, subnet), subnet) ranks, including conflict
 // tombstones. Priorities never depend on roots, reply counts, or reputation.
 // A discarded rank can never qualify later as the cutoff only decreases. Thus
 // top-K(top-K(A) union top-K(B)) equals top-K(A union B), including tombstones.
 // This bounds memory without losing conflict information for a final retained
-// subnet. Equal keys are required for merges; copies preserve the key.
+// subnet. Merging evidence requires equal keys; copies preserve the key.
 // Get() is consumed once at download construction, before any vote is counted.
 // No key/evidence is persisted, and neither changes locally verified hashes.
 // Sampling prevents arrival preference; it cannot defeat unlimited /20 Sybils.

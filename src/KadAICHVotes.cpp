@@ -91,12 +91,17 @@ void CKadAICHVotes::Add(uint32_t responder, const CAICHHash &root)
 
 void CKadAICHVotes::Merge(const CKadAICHVotes &other)
 {
-	// All rows merged by the current search-result path share one search ID
-	// and its key, so a mismatch is not expected in normal operation. Keep
-	// this defensive check in case that invariant changes: re-ranking a
-	// truncated sample under another key could lose eligible witnesses.
-	// Skip the merge and log it rather than aborting the UDP callback.
-	if (m_key != other.m_key) {
+	if (other.m_entries.empty()) {
+		return;
+	}
+	if (m_entries.empty()) {
+		// No ranks to protect yet, so take the key of the first evidence merged in. An eD2k
+		// row of an All Search can then head a group without holding a key of its own.
+		m_key = other.m_key;
+	} else if (m_key != other.m_key) {
+		// Rows with evidence share their search's key, so this is not expected; re-ranking
+		// a truncated sample under another key could lose eligible witnesses. Skip and log
+		// rather than abort the UDP callback.
 		AddDebugLogLineC(
 			logKadSearch, "Kad AICH evidence belongs to a different search key; skipping merge");
 		return;

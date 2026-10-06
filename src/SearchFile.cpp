@@ -23,6 +23,7 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
+#include <algorithm> // Needed for std::any_of
 #include <memory>
 
 #include "SearchFile.h" // Interface declarations.
@@ -129,6 +130,7 @@ CSearchFile::CSearchFile(const CMemFile &data,
 			m_kadAICHVotes.Add(kadAICHResponderIP, root);
 		}
 	}
+	InitEd2kAICHRoot();
 
 	if (!GetFileName().IsOk()) {
 		throw CInvalidPacket("No filename in search result");
@@ -157,6 +159,7 @@ CSearchFile::CSearchFile(const CSearchFile &other) // NOLINT(bugprone-copy-const
 , m_clientServerPort(other.m_clientServerPort)
 , m_kadPublishInfo(other.m_kadPublishInfo)
 , m_kadAICHVotes(other.m_kadAICHVotes)
+, m_ed2kAICHRoot(other.m_ed2kAICHRoot)
 {
 	// Stage ownership until every copy and allocation succeeds. A throwing
 	// constructor does not run this object's destructor.
@@ -348,6 +351,7 @@ std::unique_ptr<CSearchFile> CSearchFile::LoadFromFile(CFileDataIO *file, bool a
 	result->m_clientServerIP = file->ReadUInt32();
 	result->m_clientServerPort = file->ReadUInt16();
 	result->m_kadPublishInfo = file->ReadUInt32();
+	result->InitEd2kAICHRoot();
 
 	uint16 clientcount = file->ReadUInt16();
 	for (uint16 i = 0; i != clientcount; ++i) {
@@ -376,6 +380,8 @@ std::unique_ptr<CSearchFile> CSearchFile::LoadFromFile(CFileDataIO *file, bool a
 		// apply to restoring an already finalized tree where every child was distinct when
 		// written.
 		child->m_parent = result.get();
+		// AddChild() would have merged this live; a restored group needs the same root.
+		result->m_ed2kAICHRoot.Merge(child->m_ed2kAICHRoot);
 		result->m_children.push_back(child.get());
 		child.release();
 	}
@@ -406,21 +412,49 @@ void CSearchFile::AddClient(const ClientStruct &client)
 	m_clients.push_back(client);
 }
 
-bool CSearchFile::ApplyKadAICHVotes(CAICHHashSet &hashes) const
+void CSearchFile::InitEd2kAICHRoot()
+{
+	if (m_kademlia) {
+		return;
+	}
+	CAICHHash root;
+	if (root.DecodeBase32(GetStrTagValue(FT_AICH_HASH)) == CAICHHash::GetHashSize()) {
+		m_ed2kAICHRoot.state = CEd2kAICHRoot::EState::Set;
+		m_ed2kAICHRoot.root = root;
+		m_ed2kAICHRoot.sourceIP = m_clientServerIP;
+	}
+}
+
+bool CSearchFile::ApplyAICHEvidence(CAICHHashSet &hashes) const
 {
 	const CSearchFile *evidence = GetParent() ? GetParent() : this;
-	// AllSearch groups can start with an eD2k row and later acquire Kad votes.
 	// Snapshot once at download construction; later search updates are not replayed.
 	const auto votes = evidence->GetKadAICHVotes();
-	for (const auto &vote : votes) {
-		hashes.UntrustedHashReceived(vote.second, vote.first);
+	const CEd2kAICHRoot &ed2k = evidence->m_ed2kAICHRoot;
+	const bool hasRoot = ed2k.state == CEd2kAICHRoot::EState::Set;
+	const bool disputed = hasRoot && std::any_of(votes.begin(), votes.end(), [&](const auto &vote) {
+		return vote.second != ed2k.root;
+	});
+	if (disputed && ed2k.sourceIP != 0) {
+		// Kad disagrees, so the eD2k root is one vote among the others: a source that
+		// confirms it then helps it, instead of handing the master to the Kad plurality.
+		hashes.UntrustedHashReceived(ed2k.root, ed2k.sourceIP);
 	}
-	return !votes.empty();
+	for (const auto &vote : votes) {
+		hashes.KadHashReceived(vote.second, vote.first);
+	}
+	if (hasRoot && !disputed) {
+		// Undisputed: trust it at once, as eD2k results always were. Applied after the
+		// agreeing Kad votes, which would otherwise demote it below the consensus bar.
+		hashes.SetMasterHash(ed2k.root, AICH_TRUSTED);
+	}
+	return hasRoot || !votes.empty();
 }
 
 void CSearchFile::MergeResults(const CSearchFile &other)
 {
 	m_kadAICHVotes.Merge(other.m_kadAICHVotes);
+	m_ed2kAICHRoot.Merge(other.m_ed2kAICHRoot);
 	m_sourceContributionsKnown = m_sourceContributionsKnown && other.m_sourceContributionsKnown;
 	m_sourceContributions.Merge(other.m_sourceContributions);
 	m_completeSourceContributions.Merge(other.m_completeSourceContributions);
@@ -502,6 +536,7 @@ void CSearchFile::AddChild(CSearchFile *file)
 	}
 
 	m_kadAICHVotes.Merge(file->m_kadAICHVotes);
+	m_ed2kAICHRoot.Merge(file->m_ed2kAICHRoot);
 	file->m_parent = this;
 
 	for (size_t i = 0; i < m_children.size(); ++i) {

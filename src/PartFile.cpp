@@ -222,7 +222,7 @@ CPartFile::CPartFile(CSearchFile *searchresult)
 	SetFileName(searchresult->GetFileName());
 	SetFileSize(searchresult->GetFileSize());
 
-	if (searchresult->ApplyKadAICHVotes(*m_pAICHHashSet)) {
+	if (searchresult->ApplyAICHEvidence(*m_pAICHHashSet)) {
 		MarkECChanged();
 	}
 
@@ -303,21 +303,9 @@ CPartFile::CPartFile(CSearchFile *searchresult)
 			}
 		}
 
-		if (!searchresult->IsKademlia() && pTag.GetNameID() == FT_AICH_HASH && pTag.IsStr()) {
-			// Preserve the existing server-result trust policy.
-			CAICHHash hash;
-			if (hash.DecodeBase32(pTag.GetStr()) == CAICHHash::GetHashSize()) {
-				m_pAICHHashSet->SearchResultHashReceived(hash, false, 0);
-				MarkECChanged();
-				AddDebugLogLineN(logPartFile,
-					"CPartFile::CPartFile(CSearchFile*): processed AICH candidate "
-					"from the search result");
-				bTagAdded = true;
-			} else {
-				AddDebugLogLineN(logPartFile,
-					"CPartFile::CPartFile(CSearchFile*): undecodable AICH hash on "
-					"the search result, ignored");
-			}
+		if (pTag.GetNameID() == FT_AICH_HASH) {
+			// Applied above as group evidence, so every variant of a result agrees.
+			bTagAdded = true;
 		}
 
 		if (!bTagAdded) {

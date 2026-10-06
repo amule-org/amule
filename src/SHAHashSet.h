@@ -218,6 +218,7 @@ public:
 	CAICHUntrustedHash &operator=(const CAICHUntrustedHash &k1)
 	{
 		m_adwIpsSigning = k1.m_adwIpsSigning;
+		m_kadSigning = k1.m_kadSigning;
 		m_Hash = k1.m_Hash;
 		return *this;
 	}
@@ -227,6 +228,10 @@ public:
 
 	CAICHHash m_Hash;
 	std::set<uint32> m_adwIpsSigning;
+	// The subset of m_adwIpsSigning backed only by a replayed Kad search result. A Kad
+	// responder relays a publisher's claim and is weaker evidence than a download source,
+	// so a source in the same /20 may take such a slot over.
+	std::set<uint32> m_kadSigning;
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -260,6 +265,8 @@ private:
 	EAICHStatus m_eStatus;
 	deque<CAICHUntrustedHash> m_aUntrustedHashs;
 
+	void HashReceived(const CAICHHash &Hash, uint32 dwFromIP, bool fromKad);
+
 public:
 	static CAICHRequestedDataList m_liRequestedData;
 	CAICHHashTree m_pHashTree;
@@ -271,18 +278,15 @@ public:
 	bool ReadRecoveryData(uint64 nPartStartPos, CMemFile *fileDataIn);
 	bool ReCalculateHash(bool bDontReplace = false);
 	bool VerifyHashTree(bool bDeleteBadTrees);
-	void UntrustedHashReceived(const CAICHHash &Hash, uint32 dwFromIP);
-	// A Kad result is one report from its actual responder, never its claimed
-	// publisher count. Zero means provenance is unavailable (e.g. a saved search).
-	void SearchResultHashReceived(const CAICHHash &hash, bool fromKad, uint32 responderIP)
+	// A root reported by a download source, or an eD2k server root that Kad evidence disputes.
+	void UntrustedHashReceived(const CAICHHash &Hash, uint32 dwFromIP)
 	{
-		if (fromKad) {
-			if (responderIP != 0) {
-				UntrustedHashReceived(hash, responderIP);
-			}
-		} else {
-			SetMasterHash(hash, AICH_TRUSTED);
-		}
+		HashReceived(Hash, dwFromIP, false);
+	}
+	// A root replayed from a Kad search result, attributed to its responder's /20.
+	void KadHashReceived(const CAICHHash &hash, uint32 responderSubnet)
+	{
+		HashReceived(hash, responderSubnet, true);
 	}
 	bool IsPartDataAvailable(uint64 nPartStartPos);
 	void SetStatus(EAICHStatus bNewValue) { m_eStatus = bNewValue; }

@@ -31,6 +31,9 @@
 #include <random>
 #include <stdexcept>
 #include <KadAICHVotes.h>
+#include <tags/FileTags.h>
+#include <MemFile.h>
+#include <Tag.h>
 #include <Preferences.h>
 #include <Logger.h>
 #include <kademlia/kademlia/AICHHashList.h>
@@ -50,6 +53,41 @@ static CAICHHash MakeRoot(uint8_t seed)
 	return hash;
 }
 
+class CSearchFileTestFixture
+{
+public:
+	static CSearchFile *Result(const wxString &name,
+		uint32_t responder,
+		const CAICHHash &root,
+		const CKadAICHVotes::Key &key = CKadAICHVotes::Key{},
+		bool kad = true)
+	{
+		auto *result = new CSearchFile;
+		result->SetFileName(CPath(name));
+		result->SetFileSize(1024);
+		result->m_kademlia = kad;
+		result->m_kadAICHVotes = CKadAICHVotes(key);
+		result->m_kadAICHVotes.Add(responder, root);
+		return result;
+	}
+
+	// Rows carry an AICH root as an FT_AICH_HASH string tag, as the network delivers it.
+	static void AddAICHTag(CSearchFile *file, const CAICHHash &root)
+	{
+		file->m_taglist.push_back(CTagString(FT_AICH_HASH, root.GetString()));
+	}
+
+	// An eD2k server answer, initialised as the network constructor does it.
+	static CSearchFile *ServerRow(const wxString &name, const CAICHHash &root, uint32_t serverIP)
+	{
+		CSearchFile *result = Result(name, 0, root, CKadAICHVotes::Key{}, false);
+		result->m_clientServerIP = serverIP;
+		AddAICHTag(result, root);
+		result->InitEd2kAICHRoot();
+		return result;
+	}
+};
+
 TEST(AICHSearchResult, FabricatedCountsContributeOnlyOneVote)
 {
 	theLogger.SetVerbose(true);
@@ -66,10 +104,10 @@ TEST(AICHSearchResult, FabricatedCountsContributeOnlyOneVote)
 		CAICHHashSet hashes(nullptr);
 		// Peer byte order for 1.2.3.4. The Kad call site swaps its address once.
 		const uint32_t responder = 0x04030201;
-		hashes.SearchResultHashReceived(root, true, responder);
+		hashes.KadHashReceived(root, CAICHUntrustedHash::SigningSubnet(responder));
 		ASSERT_EQUALS(AICH_UNTRUSTED, hashes.GetStatus());
 		for (unsigned i = 0; i < 20; ++i) {
-			hashes.SearchResultHashReceived(root, true, responder);
+			hashes.KadHashReceived(root, CAICHUntrustedHash::SigningSubnet(responder));
 			// Another address in the same /20 is also not an independent vote.
 			hashes.UntrustedHashReceived(root, 0x05030201);
 		}
@@ -89,7 +127,7 @@ TEST(AICHSearchResult, ConflictingReportsStillRequireAgreement)
 	CAICHHashSet hashes(nullptr);
 	const CAICHHash candidate = MakeRoot(0xAB);
 	const CAICHHash other = MakeRoot(0xCD);
-	hashes.SearchResultHashReceived(candidate, true, 0x04030201);
+	hashes.KadHashReceived(candidate, CAICHUntrustedHash::SigningSubnet(0x04030201));
 	for (uint32_t i = 2; i <= 11; ++i) {
 		hashes.UntrustedHashReceived(other, 0x04030200 | i);
 	}
@@ -105,15 +143,17 @@ TEST(AICHSearchResult, ConflictingReportsStillRequireAgreement)
 TEST(AICHSearchResult, MissingProvenanceDoesNotVoteAndServerPolicyIsUnchanged)
 {
 	const CAICHHash root = MakeRoot(0xAB);
-	CAICHHashSet kad(nullptr);
-	kad.SearchResultHashReceived(root, true, 0);
-	ASSERT_EQUALS(AICH_EMPTY, kad.GetStatus());
-	ASSERT_FALSE(kad.HasValidMasterHash());
+	CKadAICHVotes::Key key{};
+	key[0] = 1;
+	CKadAICHVotes kad(key);
+	kad.Add(0, root);
+	ASSERT_EQUALS(size_t(0), kad.GetSlotCount());
 
-	CAICHHashSet server(nullptr);
-	server.SearchResultHashReceived(root, false, 0);
-	ASSERT_EQUALS(AICH_TRUSTED, server.GetStatus());
-	ASSERT_TRUE(server.GetMasterHash() == root);
+	std::unique_ptr<CSearchFile> server(CSearchFileTestFixture::ServerRow("x.iso", root, 0x0D0C0B0A));
+	CAICHHashSet hashes(nullptr);
+	ASSERT_TRUE(server->ApplyAICHEvidence(hashes));
+	ASSERT_EQUALS(AICH_TRUSTED, hashes.GetStatus());
+	ASSERT_TRUE(hashes.GetMasterHash() == root);
 }
 
 TEST(AICHSearchResult, VerifiedRootCannotBeReplacedByKad)
@@ -121,7 +161,7 @@ TEST(AICHSearchResult, VerifiedRootCannotBeReplacedByKad)
 	CAICHHashSet hashes(nullptr);
 	const CAICHHash verified = MakeRoot(0xAB);
 	hashes.SetMasterHash(verified, AICH_VERIFIED);
-	hashes.SearchResultHashReceived(MakeRoot(0xCD), true, 0x04030201);
+	hashes.KadHashReceived(MakeRoot(0xCD), CAICHUntrustedHash::SigningSubnet(0x04030201));
 	ASSERT_EQUALS(AICH_VERIFIED, hashes.GetStatus());
 	ASSERT_TRUE(hashes.GetMasterHash() == verified);
 }
@@ -184,24 +224,6 @@ TEST(AICHSearchResult, VotesAreBoundedAndUnknownRespondersExcluded)
 // Build model rows without consulting the live download/known-file queues.
 // Constructors, ownership, copying, AddChild, MergeResults and evidence replay
 // are production code; the fixture only supplies incoming search data.
-class CSearchFileTestFixture
-{
-public:
-	static CSearchFile *Result(const wxString &name,
-		uint32_t responder,
-		const CAICHHash &root,
-		const CKadAICHVotes::Key &key = CKadAICHVotes::Key{},
-		bool kad = true)
-	{
-		auto *result = new CSearchFile;
-		result->SetFileName(CPath(name));
-		result->SetFileSize(1024);
-		result->m_kademlia = kad;
-		result->m_kadAICHVotes = CKadAICHVotes(key);
-		result->m_kadAICHVotes.Add(responder, root);
-		return result;
-	}
-};
 
 TEST(AICHSearchResult, EveryFilenameChildReplaysAllGroupVotes)
 {
@@ -222,13 +244,13 @@ TEST(AICHSearchResult, EveryFilenameChildReplaysAllGroupVotes)
 		const CPath filename = child->GetFileName();
 		CAICHHashSet downloaded(nullptr);
 		// This is the same production handoff called by CPartFile's constructor.
-		ASSERT_TRUE(child->ApplyKadAICHVotes(downloaded));
+		ASSERT_TRUE(child->ApplyAICHEvidence(downloaded));
 		ASSERT_EQUALS(AICH_TRUSTED, downloaded.GetStatus());
 		ASSERT_TRUE(downloaded.GetMasterHash() == root);
 		ASSERT_TRUE(child->GetFileName() == filename);
 	}
 	CAICHHashSet parentDownload(nullptr);
-	ASSERT_TRUE(group->ApplyKadAICHVotes(parentDownload));
+	ASSERT_TRUE(group->ApplyAICHEvidence(parentDownload));
 	ASSERT_EQUALS(AICH_TRUSTED, parentDownload.GetStatus());
 }
 
@@ -244,7 +266,7 @@ TEST(AICHSearchResult, ChildDownloadRetainsOtherVariantsDisagreement)
 	const CSearchFile *majority = group->GetChildren().back();
 	ASSERT_EQUALS(size_t(10), majority->GetKadAICHVotes().size());
 	CAICHHashSet downloaded(nullptr);
-	ASSERT_TRUE(majority->ApplyKadAICHVotes(downloaded));
+	ASSERT_TRUE(majority->ApplyAICHEvidence(downloaded));
 	// Its own ten matching votes would be trusted. Including the other filename's
 	// disagreement keeps ten out of eleven below the existing 92% threshold.
 	ASSERT_EQUALS(AICH_UNTRUSTED, downloaded.GetStatus());
@@ -423,7 +445,7 @@ TEST(AICHSearchResult, SearchUpdatesDoNotChangeTheDownloadedSnapshot)
 		group->AddChild(CSearchFileTestFixture::Result("second", i, MakeRoot(1)));
 	}
 	CAICHHashSet downloaded(nullptr);
-	ASSERT_TRUE(group->GetChildren().back()->ApplyKadAICHVotes(downloaded));
+	ASSERT_TRUE(group->GetChildren().back()->ApplyAICHEvidence(downloaded));
 	ASSERT_EQUALS(AICH_TRUSTED, downloaded.GetStatus());
 	// Every retained subnet now contradicts itself in the search list.
 	for (uint32_t i = 1; i <= 10; ++i) {
@@ -433,7 +455,7 @@ TEST(AICHSearchResult, SearchUpdatesDoNotChangeTheDownloadedSnapshot)
 	ASSERT_EQUALS(AICH_TRUSTED, downloaded.GetStatus());
 	ASSERT_TRUE(downloaded.GetMasterHash() == MakeRoot(1));
 	CAICHHashSet nextDownload(nullptr);
-	ASSERT_FALSE(group->GetChildren().back()->ApplyKadAICHVotes(nextDownload));
+	ASSERT_FALSE(group->GetChildren().back()->ApplyAICHEvidence(nextDownload));
 	ASSERT_EQUALS(AICH_EMPTY, nextDownload.GetStatus());
 }
 
@@ -459,7 +481,7 @@ TEST(AICHSearchResult, BoundedFilenameGroupsReplayTheSameFinalSample)
 	for (const auto *group : { forward.get(), reverse.get() }) {
 		for (const auto *child : group->GetChildren()) {
 			CAICHHashSet downloaded(nullptr);
-			ASSERT_TRUE(child->ApplyKadAICHVotes(downloaded));
+			ASSERT_TRUE(child->ApplyAICHEvidence(downloaded));
 			ASSERT_EQUALS(AICH_TRUSTED, downloaded.GetStatus());
 			ASSERT_TRUE(downloaded.GetMasterHash() == root);
 		}
@@ -626,7 +648,7 @@ TEST(AICHSearchResult, PolymorphicSearchResultDispatchAndLifetime)
 	ASSERT_TRUE(search != nullptr);
 	ASSERT_TRUE(dynamic_cast<CKnownFile *>(file.get()) == nullptr);
 	CAICHHashSet hashes(nullptr);
-	ASSERT_TRUE(search->ApplyKadAICHVotes(hashes));
+	ASSERT_TRUE(search->ApplyAICHEvidence(hashes));
 	ASSERT_EQUALS(AICH_UNTRUSTED, hashes.GetStatus());
 	file.reset(); // Delete the real CSearchFile through CAbstractFile's vtable.
 }
@@ -635,7 +657,9 @@ TEST(AICHSearchResult, ServerFirstAllSearchGroupReplaysKadVotes)
 	const CAICHHash root = MakeRoot(0xAB);
 	CKadAICHVotes::Key key{};
 	key[0] = 42;
-	std::unique_ptr<CSearchFile> group(CSearchFileTestFixture::Result("server", 0, root, key, false));
+	// Server answers carry no sampling key; the group takes the key of its first Kad vote.
+	std::unique_ptr<CSearchFile> group(
+		CSearchFileTestFixture::Result("server", 0, root, CKadAICHVotes::Key{}, false));
 	for (uint32_t i = 1; i <= 10; ++i) {
 		group->AddChild(CSearchFileTestFixture::Result("kad", i, root, key));
 	}
@@ -643,8 +667,160 @@ TEST(AICHSearchResult, ServerFirstAllSearchGroupReplaysKadVotes)
 	ASSERT_EQUALS(size_t(10), group->GetKadAICHVotes().size());
 	for (const CSearchFile *child : group->GetChildren()) {
 		CAICHHashSet downloaded(nullptr);
-		ASSERT_TRUE(child->ApplyKadAICHVotes(downloaded));
+		ASSERT_TRUE(child->ApplyAICHEvidence(downloaded));
 		ASSERT_EQUALS(AICH_TRUSTED, downloaded.GetStatus());
 		ASSERT_TRUE(downloaded.GetMasterHash() == root);
 	}
+}
+
+// A download source outranks a replayed Kad search result in its own /20.
+TEST(AICHSearchResult, SourceInKadSubnetTakesOverTheSlot)
+{
+	const CAICHHash forged = MakeRoot(0x11);
+	const CAICHHash real = MakeRoot(0x22);
+	CAICHHashSet hashes(nullptr);
+	hashes.KadHashReceived(forged, CAICHUntrustedHash::SigningSubnet(0x04030201)); // 1.2.3.4
+	for (uint32_t i = 2; i <= 12; ++i) {
+		hashes.UntrustedHashReceived(real, 0x04030200 | i); // i.2.3.4
+	}
+	ASSERT_EQUALS(AICH_UNTRUSTED, hashes.GetStatus()); // 11 of 12 is under 92%
+	// A source inside the Kad responder's /20 (1.2.3.200) replaces its vote: 12 of 12.
+	hashes.UntrustedHashReceived(real, 0xC8030201);
+	ASSERT_EQUALS(AICH_TRUSTED, hashes.GetStatus());
+	ASSERT_TRUE(hashes.GetMasterHash() == real);
+}
+
+// Only Kad-backed slots move: sources still cannot contradict their own /20, and Kad cannot
+// displace a source.
+TEST(AICHSearchResult, SourceSlotsStayPinned)
+{
+	const CAICHHash first = MakeRoot(0x31);
+	const CAICHHash second = MakeRoot(0x32);
+	CAICHHashSet hashes(nullptr);
+	hashes.UntrustedHashReceived(first, 0x04030201);
+	hashes.UntrustedHashReceived(second, 0xC8030201);
+	hashes.KadHashReceived(second, CAICHUntrustedHash::SigningSubnet(0xC8030201));
+	for (uint32_t i = 2; i <= 10; ++i) {
+		hashes.UntrustedHashReceived(first, 0x04030200 | i);
+	}
+	// Ten /20s for the first root and none for the second. Either rejected report counting
+	// would make it 10 of 11 and leave the file untrusted.
+	ASSERT_EQUALS(AICH_TRUSTED, hashes.GetStatus());
+	ASSERT_TRUE(hashes.GetMasterHash() == first);
+}
+
+// A source confirming a Kad vote makes that slot a source slot, which no longer moves.
+TEST(AICHSearchResult, SourceConfirmationPinsAKadSlot)
+{
+	const CAICHHash root = MakeRoot(0x41);
+	const CAICHHash other = MakeRoot(0x42);
+	CAICHHashSet hashes(nullptr);
+	hashes.KadHashReceived(root, CAICHUntrustedHash::SigningSubnet(0x04030201));
+	hashes.UntrustedHashReceived(root, 0x05030201);  // same /20, now source-backed
+	hashes.UntrustedHashReceived(other, 0xC8030201); // same /20 again: rejected, not moved
+	for (uint32_t i = 2; i <= 10; ++i) {
+		hashes.UntrustedHashReceived(root, 0x04030200 | i);
+	}
+	ASSERT_EQUALS(AICH_TRUSTED, hashes.GetStatus()); // 10 of 10
+	ASSERT_TRUE(hashes.GetMasterHash() == root);
+}
+
+// The eD2k root of a group no longer depends on whether its row or a Kad row came first.
+TEST(AICHSearchResult, Ed2kRootIsIndependentOfArrivalOrder)
+{
+	CKadAICHVotes::Key key{};
+	key[0] = 7;
+	const CAICHHash root = MakeRoot(0x44);
+	const uint32_t server = 0x0D0C0B0A;
+	std::unique_ptr<CSearchFile> kadFirst(CSearchFileTestFixture::Result("x.iso", 0x04030201, root, key));
+	kadFirst->AddChild(CSearchFileTestFixture::ServerRow("x.iso", root, server));
+	std::unique_ptr<CSearchFile> serverFirst(CSearchFileTestFixture::ServerRow("x.iso", root, server));
+	serverFirst->AddChild(CSearchFileTestFixture::Result("x.iso", 0x04030201, root, key));
+	for (const CSearchFile *group : { kadFirst.get(), serverFirst.get() }) {
+		CAICHHashSet hashes(nullptr);
+		ASSERT_TRUE(group->ApplyAICHEvidence(hashes));
+		// Kad agrees with the server, so the root is trusted at once.
+		ASSERT_EQUALS(AICH_TRUSTED, hashes.GetStatus());
+		ASSERT_TRUE(hashes.GetMasterHash() == root);
+	}
+}
+
+// When Kad disagrees, the eD2k root is one vote, and sources confirming it can only help it.
+TEST(AICHSearchResult, DisputedEd2kRootGainsFromConfirmations)
+{
+	CKadAICHVotes::Key key{};
+	key[0] = 8;
+	const CAICHHash kadRoot = MakeRoot(0x55);
+	const CAICHHash serverRoot = MakeRoot(0x66);
+	std::unique_ptr<CSearchFile> group(
+		CSearchFileTestFixture::ServerRow("x.iso", serverRoot, 0x0D0C0B0A));
+	for (uint32_t i = 1; i <= 3; ++i) {
+		group->AddChild(CSearchFileTestFixture::Result("x.iso", 0x04030200 | i, kadRoot, key));
+	}
+	CAICHHashSet hashes(nullptr);
+	ASSERT_TRUE(group->ApplyAICHEvidence(hashes));
+	ASSERT_EQUALS(AICH_UNTRUSTED, hashes.GetStatus()); // three Kad votes against one
+	ASSERT_TRUE(hashes.GetMasterHash() == kadRoot);
+	hashes.UntrustedHashReceived(serverRoot, 0x04030210); // two against three
+	ASSERT_TRUE(hashes.GetMasterHash() == kadRoot);
+	hashes.UntrustedHashReceived(serverRoot, 0x04030211);
+	hashes.UntrustedHashReceived(serverRoot, 0x04030212); // four against three
+	ASSERT_TRUE(hashes.GetMasterHash() == serverRoot);
+}
+
+// Two servers naming different roots leave the group with none, and a third report agreeing
+// with either one does not revive it, whatever the order.
+TEST(AICHSearchResult, ConflictingEd2kRootsAreDroppedInAnyOrder)
+{
+	const CAICHHash first = MakeRoot(0x71);
+	const CAICHHash second = MakeRoot(0x72);
+	for (bool firstArrivesFirst : { true, false }) {
+		std::unique_ptr<CSearchFile> group(CSearchFileTestFixture::ServerRow(
+			"a.iso", firstArrivesFirst ? first : second, 0x0D0C0B0A));
+		group->AddChild(CSearchFileTestFixture::ServerRow(
+			"b.iso", firstArrivesFirst ? second : first, 0x0D0C0B0B));
+		group->AddChild(CSearchFileTestFixture::ServerRow("c.iso", first, 0x0D0C0B0C));
+		CAICHHashSet hashes(nullptr);
+		ASSERT_FALSE(group->ApplyAICHEvidence(hashes));
+		ASSERT_EQUALS(AICH_EMPTY, hashes.GetStatus());
+	}
+}
+
+// One StoredSearches.met record in CSearchFile::WriteToFile()'s layout. WriteToFile() itself
+// needs the live search list, which this harness does not have.
+static void WriteStoredEd2kRow(
+	CMemFile &out, const wxString &name, const CAICHHash *root, uint32_t serverIP, uint16_t children)
+{
+	out.WriteHash(CMD4Hash());
+	out.WriteUInt32(root ? 2 : 1);
+	CTagString(FT_FILENAME, name).WriteTagToFile(&out);
+	if (root) {
+		CTagString(FT_AICH_HASH, root->GetString()).WriteTagToFile(&out);
+	}
+	out.WriteUInt8(0); // not Kad
+	out.WriteString(wxEmptyString, utf8strRaw);
+	out.WriteUInt32(0); // client ID
+	out.WriteUInt16(0); // client port
+	out.WriteUInt32(serverIP);
+	out.WriteUInt16(4661);
+	out.WriteUInt32(0); // Kad publish info
+	out.WriteUInt16(0); // clients
+	out.WriteUInt16(children);
+}
+
+// A restored group keeps the root its live group had, even when only a child carried it.
+TEST(AICHSearchResult, RestoredGroupKeepsItsEd2kRoot)
+{
+	const CAICHHash root = MakeRoot(0x81);
+	CMemFile stored;
+	WriteStoredEd2kRow(stored, "a.iso", nullptr, 0x0D0C0B0A, 1);
+	WriteStoredEd2kRow(stored, "b.iso", &root, 0x0D0C0B0B, 0);
+	stored.Seek(0, wxFromStart);
+	std::unique_ptr<CSearchFile> restored = CSearchFile::LoadFromFile(&stored);
+	ASSERT_TRUE(restored != nullptr);
+	ASSERT_EQUALS(size_t(1), restored->GetChildren().size());
+	CAICHHashSet hashes(nullptr);
+	ASSERT_TRUE(restored->ApplyAICHEvidence(hashes));
+	ASSERT_EQUALS(AICH_TRUSTED, hashes.GetStatus());
+	ASSERT_TRUE(hashes.GetMasterHash() == root);
 }
