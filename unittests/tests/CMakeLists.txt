@@ -1685,6 +1685,35 @@ target_link_libraries (VerifyLocalDataResultTest
 	mulecommon
 )
 
+# The part status written to peers (OP_FILESTATUS, OP_REASKACK). Header-only for the same
+# reason as VerifyLocalDataResultTest above.
+add_executable (PartStatusWriterTest
+	PartStatusWriterTest.cpp
+	${CMAKE_SOURCE_DIR}/src/SafeFile.cpp
+	${CMAKE_SOURCE_DIR}/src/CFile.cpp
+	${CMAKE_SOURCE_DIR}/src/MemFile.cpp
+	${CMAKE_SOURCE_DIR}/src/kademlia/utils/UInt128.cpp
+	${CMAKE_SOURCE_DIR}/src/Tag.cpp
+	${CMAKE_SOURCE_DIR}/src/libs/common/Path.cpp
+	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
+	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
+)
+
+add_test (NAME PartStatusWriterTest
+	COMMAND PartStatusWriterTest
+)
+
+target_include_directories (PartStatusWriterTest
+	PRIVATE ${CMAKE_BINARY_DIR}
+	PRIVATE ${CMAKE_SOURCE_DIR}/src
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/libs
+)
+
+target_link_libraries (PartStatusWriterTest
+	muleunit
+)
+
 # The browse ("View Files") state machine. Five separate defects have been the
 # same machine going wrong in a place only a peer of the right kind could reach
 # -- a flat browse that completes without ever being marked finished, a peer we

@@ -388,6 +388,7 @@ public:
 
 	void SendOutOfPartReqsAndAddToWaitingQueue();
 	void EndUploadSessionWithStatus(CKnownFile *file);
+	bool HasQueuedBlockInCorruptPart(const CKnownFile *file);
 	void ProcessExtendedInfo(const CMemFile *data, CKnownFile *tempreqfile);
 	void ProcessFileInfo(const CMemFile *data, const CPartFile *file);
 	void ProcessFileStatus(bool bUdpPacket, const CMemFile *data, const CPartFile *file);

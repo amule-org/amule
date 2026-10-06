@@ -35,7 +35,6 @@
 #include "kademlia/kademlia/Indexed.h"
 #include <ec/cpp/ECID.h> // Needed for CECID
 #include <atomic>        // Needed for std::atomic (m_ecGen)
-#include <functional>    // Needed for std::function (WritePartBitmap)
 #include <list>          // Needed for FileRatingList
 
 #ifdef CLIENT_GUI
@@ -320,9 +319,9 @@ public:
 	// The part status sent to peers: count 0 means "every part", else a bitmap. A complete file
 	// withholds the parts a check found corrupt; CPartFile sends the parts it has.
 	virtual void WritePartStatus(CMemFile *file);
-	// Ends the upload sessions of this file, dropping the blocks already queued for them; the
-	// peers ask again and get the current part status.
-	void EndUploadSessions();
+	// Ends the upload sessions of this file that have blocks queued in a corrupt part, and sends
+	// those peers the current part status. The others keep their slot.
+	void EndCorruptUploadSessions();
 #endif
 
 	// Timestamp of the last time data was uploaded for this file, and when the file was
@@ -423,11 +422,6 @@ public:
 	static void CreateHashFromHashlist(const ArrayOfCMD4Hash &hashes, CMD4Hash *Output);
 
 	void ClearPriority();
-
-#ifndef CLIENT_GUI
-	// Writes `parts` and the bitmap of the parts hasPart() reports, in the OP_FILESTATUS format.
-	static void WritePartBitmap(CMemFile *file, uint16 parts, const std::function<bool(uint16)> &hasPart);
-#endif
 
 	time_t m_lastDateChanged;
 

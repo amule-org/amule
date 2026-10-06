@@ -2525,9 +2525,9 @@ void CamuleApp::OnVerifyLocalDataFinished(CVerifyLocalDataEvent &evt)
 	const bool damageChanged = result.EncodedMD4() != previous.EncodedMD4() ||
 				   result.EncodedAICH() != previous.EncodedAICH();
 	// Blocks already queued for current downloaders may come from parts now known corrupt;
-	// ending the sessions drops them and sends the peers the new part status.
+	// ending those sessions drops them and sends the peers the new part status.
 	if (damageChanged && result.IsCorrupt()) {
-		checked->EndUploadSessions();
+		checked->EndCorruptUploadSessions();
 	}
 	// The server offer marks the file complete or not (CreateOfferedFilePacket).
 	if (sharedfiles && result.IsCorrupt() != previous.IsCorrupt()) {

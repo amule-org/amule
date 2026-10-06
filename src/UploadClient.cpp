@@ -539,6 +539,20 @@ void CUpDownClient::EndUploadSessionWithStatus(CKnownFile *file)
 	SendOutOfPartReqsAndAddToWaitingQueue();
 }
 
+bool CUpDownClient::HasQueuedBlockInCorruptPart(const CKnownFile *file)
+{
+	// Only blocks not read yet: the disk I/O thread moves a block to m_DoneBlocks_list once its
+	// data is on the way.
+	wxMutexLocker lock(m_blockListLock);
+	for (const Requested_Block_Struct *block : m_BlockRequests_queue) {
+		if (md4cmp(block->FileID, file->GetFileHash().GetHash()) == 0 &&
+			file->GetVerifyResult().IsRangeCorrupt(block->StartOffset, block->EndOffset - 1)) {
+			return true;
+		}
+	}
+	return false;
+}
+
 /**
  * See the description for CEMSocket::TruncateQueues().
  */

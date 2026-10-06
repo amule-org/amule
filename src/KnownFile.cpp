@@ -44,14 +44,15 @@
 #include "updownclient.h" // Needed for CUpDownClient
 #endif
 
-#include "MemFile.h"       // Needed for CMemFile
-#include "UploadQueue.h"   // Needed for CUploadQueue (EndUploadSessions)
-#include "Packet.h"        // Needed for CPacket
-#include "Preferences.h"   // Needed for CPreferences
-#include "KnownFileList.h" // Needed for CKnownFileList
-#include "amule.h"         // Needed for theApp
-#include "PartFile.h"      // Needed for SavePartFile
-#include "ClientList.h"    // Needed for clientlist (buddy support)
+#include "MemFile.h"          // Needed for CMemFile
+#include "PartStatusWriter.h" // Needed for WriteCompleteFilePartStatus
+#include "UploadQueue.h"      // Needed for CUploadQueue (EndCorruptUploadSessions)
+#include "Packet.h"           // Needed for CPacket
+#include "Preferences.h"      // Needed for CPreferences
+#include "KnownFileList.h"    // Needed for CKnownFileList
+#include "amule.h"            // Needed for theApp
+#include "PartFile.h"         // Needed for SavePartFile
+#include "ClientList.h"       // Needed for clientlist (buddy support)
 #include "Logger.h"
 #include "ScopedPtr.h"     // Needed for CScopedArray and CScopedPtr
 #include "GuiEvents.h"     // Needed for Notify_*
@@ -420,42 +421,25 @@ uint32 CKnownFile::GetUploadDatarate() const
 	return total;
 }
 
-void CKnownFile::WritePartBitmap(CMemFile *file, uint16 parts, const std::function<bool(uint16)> &hasPart)
-{
-	file->WriteUInt16(parts);
-	uint16 done = 0;
-	while (done != parts) {
-		uint8 towrite = 0;
-		for (uint32 i = 0; i != 8 && done != parts; ++i, ++done) {
-			if (hasPart(done)) {
-				towrite |= (1 << i);
-			}
-		}
-		file->WriteUInt8(towrite);
-	}
-}
-
 void CKnownFile::WritePartStatus(CMemFile *file)
 {
-	if (!m_verifyResult.IsCorrupt()) {
-		file->WriteUInt16(0);
-		return;
-	}
-	WritePartBitmap(file, GetED2KPartCount(), [this](uint16 part) {
-		return !m_verifyResult.IsPartCorrupt(part);
-	});
+	WriteCompleteFilePartStatus(*file, m_verifyResult, GetED2KPartCount());
 }
 
-void CKnownFile::EndUploadSessions()
+void CKnownFile::EndCorruptUploadSessions()
 {
-	// Collected first: ending a session changes m_ClientUploadList.
-	std::vector<CUpDownClient *> uploading;
+	// Collected first: ending a session changes m_ClientUploadList. A session with nothing queued
+	// in a corrupt part keeps its slot, so a peer early in its session does not get an eMuleAI
+	// "upload faker" strike; it gets the new status at its next reask, or when it requests a
+	// corrupt part (AddReqBlock).
+	std::vector<CUpDownClient *> affected;
 	for (const CClientRef &ref : m_ClientUploadList) {
-		if (ref.GetUploadState() == US_UPLOADING) {
-			uploading.push_back(ref.GetClient());
+		if (ref.GetUploadState() == US_UPLOADING &&
+			ref.GetClient()->HasQueuedBlockInCorruptPart(this)) {
+			affected.push_back(ref.GetClient());
 		}
 	}
-	for (CUpDownClient *client : uploading) {
+	for (CUpDownClient *client : affected) {
 		if (theApp->uploadqueue->RemoveFromUploadQueue(client)) {
 			client->EndUploadSessionWithStatus(this);
 		}
