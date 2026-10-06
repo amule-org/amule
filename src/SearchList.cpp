@@ -29,7 +29,6 @@
 #include "BrowseManager.h"
 
 #include <algorithm> // Needed for std::sort (StoreSearches)
-#include <exception> // Needed for sampling-key generation failure
 #include <utility>   // Needed for std::move (LoadSearches)
 
 #include <protocol/Protocols.h>
@@ -624,18 +623,7 @@ wxString CSearchList::StartNewSearch(uint32 *searchID, SearchType type, CSearchP
 		return error;
 	}
 
-	// Create the secret before stopping an existing search or changing bookkeeping.
-	// Entropy failure must leave the current search intact, never use a fixed key.
-	CKadAICHVotes::Key evidenceKey{};
-	if (startKad) {
-		try {
-			evidenceKey = CKadAICHVotes::GenerateKey();
-		} catch (const std::exception &error) {
-			const wxString what = wxString::FromUTF8(error.what());
-			AddLogLineC(what);
-			return _("Unexpected error while attempting Kad search: ") + what;
-		}
-	}
+	const CKadAICHVotes::Key evidenceKey = startKad ? CKadAICHVotes::GenerateKey() : CKadAICHVotes::Key{};
 
 	// The scalar m_searchType / m_currentSearch are the anchor for the single in-flight ed2k
 	// (local/global) search: its results arrive asynchronously for several seconds and are
@@ -1939,6 +1927,19 @@ void CSearchList::KademliaSearchKeyword(uint32_t searchID,
 	// AllSearch maps the Kad search ID back to the ed2k tab's primary ID so results
 	// from both networks land in the same bucket.
 	const uint32_t effectiveSearchID = GetEffectiveSearchId(searchID);
+	// A late reply for a closed search must not recreate its bucket.
+	if (!m_searchStrings.count(effectiveSearchID)) {
+		return;
+	}
+	// StartNewSearch registers a key for every Kad keyword search. Should one ever be
+	// missing, still show the result, only without AICH evidence.
+	const auto key = m_kadAICHKeys.find(effectiveSearchID);
+	const bool sampled = key != m_kadAICHKeys.end();
+	if (!sampled) {
+		AddDebugLogLineC(logKadSearch,
+			CFormat("Kad search %u has no AICH sampling key; dropping its AICH evidence") %
+				effectiveSearchID);
+	}
 
 	CMemFile temp(250);
 	uint8_t fileid[16];
@@ -1979,10 +1980,6 @@ void CSearchList::KademliaSearchKeyword(uint32_t searchID,
 
 	temp.Seek(0, wxFromStart);
 
-	const auto key = m_kadAICHKeys.find(effectiveSearchID);
-	if (key == m_kadAICHKeys.end()) {
-		return; // Search removed: do not recreate evidence for a late reply.
-	}
 	auto tempFile = std::make_unique<CSearchFile>(temp,
 		(eStrEncode == utf8strRaw),
 		effectiveSearchID,
@@ -1990,8 +1987,8 @@ void CSearchList::KademliaSearchKeyword(uint32_t searchID,
 		0,
 		"",
 		true,
-		kadAICHResponderIP,
-		&key->second);
+		sampled ? kadAICHResponderIP : 0,
+		sampled ? &key->second : nullptr);
 	tempFile->SetKadPublishInfo(kadPublishInfo);
 
 	AddToList(std::move(tempFile));

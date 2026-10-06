@@ -55,6 +55,11 @@ uint64_t GetRandomUint64()
 	return ((uint64_t)GetRandomUint32() << 32) + GetRandomUint32();
 }
 
+void GetRandomBlock(uint8_t *buffer, size_t length)
+{
+	cryptRandomGen.GenerateBlock(buffer, length);
+}
+
 namespace Kademlia
 {
 CUInt128 GetRandomUint128()

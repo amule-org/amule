@@ -486,6 +486,15 @@ TEST(AICHSearchResult, SamplingKeyChangesSelectionAndDuplicatesDoNot)
 	ASSERT_TRUE(first.Get() == snapshot);
 }
 
+// Sampling keys come from the process RNG: each search gets a fresh, non-zero secret.
+TEST(AICHSearchResult, GeneratedKeysAreFreshPerSearch)
+{
+	const CKadAICHVotes::Key first = CKadAICHVotes::GenerateKey();
+	const CKadAICHVotes::Key second = CKadAICHVotes::GenerateKey();
+	ASSERT_FALSE(first == CKadAICHVotes::Key{});
+	ASSERT_FALSE(first == second);
+}
+
 TEST(AICHSearchResult, ConsensusTrustRemainsProvisionalUntilLocalVerification)
 {
 	CAICHHashSet hashes(nullptr);

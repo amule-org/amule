@@ -40,6 +40,7 @@ uint8_t GetRandomUint8();
 uint16_t GetRandomUint16();
 uint32_t GetRandomUint32();
 uint64_t GetRandomUint64();
+void GetRandomBlock(uint8_t *buffer, size_t length);
 namespace Kademlia
 {
 CUInt128 GetRandomUint128();
