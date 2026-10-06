@@ -938,7 +938,7 @@ The `media` object (on both `GET /downloads/{hash}` and `GET /shared/{hash}`) ca
 |---|---|---|
 | `duration_seconds` | int | Duration in seconds. |
 | `bitrate_kilobits_per_second` | int | Bitrate (kbps). |
-| `codec` | string | Codec as the interface shows it (e.g. `"H.264"`). A display label, mapped from the FOURCC the file or the remote server advertised; an unmapped codec is passed through as advertised. The desktop renders the same label. |
+| `codec` | string | Codec as the interface shows it (e.g. `"H.264"`). A display label, mapped from the codec id (ffprobe `codec_name` for probed files, or the FOURCC / audio format id a remote client advertised); an unmapped codec is passed through as advertised. The desktop renders the same label. |
 | `artist` / `album` / `title` | string | Tag metadata; `""` when the file carries none. |
 
 #### `GET /api/v1/downloads/{hash}/comments`

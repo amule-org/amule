@@ -40,7 +40,7 @@ struct MediaInfo
 	// FT_MEDIA_BITRATE -- kilobits per second, uint32 on the wire.
 	uint32 bitrate_kbps = 0;
 	// FT_MEDIA_CODEC -- free-form codec name as ffprobe reports it ("h264", "aac", "vorbis").
-	// Displayed as-is; FormatMediaCodec() maps a few common FOURCCs to friendlier UI labels.
+	// Stored and sent raw; MediaCodecLabel() gives the label the UIs show.
 	wxString codec;
 	// FT_MEDIA_ARTIST / _ALBUM / _TITLE -- container tags, empty when the file carries none.
 	// Read from the format section, falling back to the stream's own tags only for an audio-

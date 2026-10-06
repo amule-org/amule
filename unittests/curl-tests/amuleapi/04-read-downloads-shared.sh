@@ -751,15 +751,16 @@ for path in clients known_clients; do
 	fi
 done
 
-# --- 10. media.codec is the display label, never the bare FOURCC the file or
+# --- 10. media.codec is the display label, never the bare codec id the file or
 # the remote server advertised: the desktop and the Web UI show the same string
 # for one file. Reads only, appended at the end for the same reason as 8.
-RAW_FOURCCS='["h264","x264","avc1","hevc","hvc1","xvid","divx","dx50","div3","div4","fmp4","mp4v","mpg4","mp42","mp43","wmv1","wmv2","wmv3","mjpg","vp90","vp80","av01","mp3","aac","ac3","flac","opus","vorb","wma1","wma2"]'
+# Case-sensitive: some labels ("MP3", "AAC") equal their id once lowered.
+RAW_CODECS='["h264","hevc","av1","vp8","vp9","mpeg4","msmpeg4v3","mpeg1video","mpeg2video","vc1","rv40","mjpeg","mp3","aac","ac3","eac3","dts","flac","opus","vorbis","wmav2","cook","xvid","divx","dx50","div3","x264","avc1","mp43","wmv3","fmp4","mjpg","MPEG_ADTS_AAC","WMAUDIO2","COOK","vorb","wma1","wma2"]'
 _curl -H "Authorization: Bearer $TOKEN" "$API/shared"
 CODECS=$(echo "$CURL_BODY" | jq -r '[.shared[]? | .media?.codec // empty] | length')
 if [ "${CODECS:-0}" != "0" ]; then
-	_assert_json_eq "[.shared[]? | .media?.codec // empty | ascii_downcase | select(IN($RAW_FOURCCS[]))] | length" 0 \
-		"/shared: every media.codec is a label, not a raw FOURCC"
+	_assert_json_eq "[.shared[]? | .media?.codec // empty | select(IN($RAW_CODECS[]))] | length" 0 \
+		"/shared: every media.codec is a label, not a raw codec id"
 else
 	_skip "/shared: no file carries media metadata, cannot check the codec label"
 fi

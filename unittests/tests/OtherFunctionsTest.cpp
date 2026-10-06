@@ -157,22 +157,60 @@ TEST(VersionCompare, ParseErrorNonNumeric)
 
 DECLARE_SIMPLE(MediaCodec)
 
-// ffprobe reports lowercase, the ed2k tag carries uppercase FOURCCs, and both have to land on the
-// same label -- the GUI and the API render this string side by side for the same file.
+// ffprobe and peers differ in case, and both have to land on the same label -- the GUI and the API render
+// this string side by side for the same file.
 TEST(MediaCodec, MapsKnownCodecsWhateverTheCase)
 {
 	ASSERT_EQUALS(wxT("H.264"), FormatMediaCodec(wxT("h264")));
 	ASSERT_EQUALS(wxT("H.264"), FormatMediaCodec(wxT("H264")));
 	ASSERT_EQUALS(wxT("H.264"), FormatMediaCodec(wxT("avc1")));
-	ASSERT_EQUALS(wxT("H.265 / HEVC"), FormatMediaCodec(wxT("hevc")));
-	ASSERT_EQUALS(wxT("Vorbis"), FormatMediaCodec(wxT("vorb")));
-	ASSERT_EQUALS(wxT("Xvid"), FormatMediaCodec(wxT("XviD")));
+	ASSERT_EQUALS(wxT("H.265"), FormatMediaCodec(wxT("hevc")));
+	ASSERT_EQUALS(wxT("Vorbis"), FormatMediaCodec(wxT("VORBIS")));
+}
+
+// Kept from the earlier table in case a peer still sends them.
+TEST(MediaCodec, MapsLegacyIds)
+{
+	ASSERT_EQUALS(wxT("Vorbis"), FormatMediaCodec(wxT("VORB")));
+	ASSERT_EQUALS(wxT("WMA 1"), FormatMediaCodec(wxT("WMA1")));
+	ASSERT_EQUALS(wxT("WMA 2"), FormatMediaCodec(wxT("wma2")));
+}
+
+// One label per format, whether ffprobe or an eMule peer named it, and whoever encoded it.
+TEST(MediaCodec, LabelsTheFormatNotTheEncoder)
+{
+	ASSERT_EQUALS(wxT("H.264"), FormatMediaCodec(wxT("x264")));
+	ASSERT_EQUALS(wxT("MPEG-4"), FormatMediaCodec(wxT("mpeg4")));
+	ASSERT_EQUALS(wxT("MPEG-4"), FormatMediaCodec(wxT("XviD")));
+	ASSERT_EQUALS(wxT("MS MPEG-4 v3"), FormatMediaCodec(wxT("div3")));
+	ASSERT_EQUALS(wxT("MS MPEG-4 v3"), FormatMediaCodec(wxT("msmpeg4v3")));
+	ASSERT_EQUALS(wxT("AAC"), FormatMediaCodec(wxT("MPEG_ADTS_AAC")));
+	ASSERT_EQUALS(wxT("WMA 2"), FormatMediaCodec(wxT("wmav2")));
+	ASSERT_EQUALS(wxT("WMA 2"), FormatMediaCodec(wxT("WMAUDIO2")));
+}
+
+TEST(MediaCodec, CollapsesPcmAndAdpcmVariants)
+{
+	ASSERT_EQUALS(wxT("PCM"), FormatMediaCodec(wxT("pcm_s16le")));
+	ASSERT_EQUALS(wxT("ADPCM"), FormatMediaCodec(wxT("adpcm_ima_wav")));
+	ASSERT_EQUALS(wxT("PCM"), FormatMediaCodec(wxT("pcm")));
+	ASSERT_EQUALS(wxT("PCM"), FormatMediaCodec(wxT("PCM_S16LE")));
+}
+
+// A-law and mu-law are G.711, not linear PCM, even under the pcm_ prefix.
+TEST(MediaCodec, LabelsCompandedPcmAsG711)
+{
+	ASSERT_EQUALS(wxT("G.711"), FormatMediaCodec(wxT("pcm_alaw")));
+	ASSERT_EQUALS(wxT("G.711"), FormatMediaCodec(wxT("pcm_mulaw")));
+	ASSERT_EQUALS(wxT("G.711"), FormatMediaCodec(wxT("ALAW")));
+	ASSERT_EQUALS(wxT("G.711"), FormatMediaCodec(wxT("MULAW")));
 }
 
 // An unmapped codec still has to show something, and an empty one stays empty rather than becoming
 // a label for nothing.
 TEST(MediaCodec, PassesThroughWhatItDoesNotKnow)
 {
-	ASSERT_EQUALS(wxT("theora"), FormatMediaCodec(wxT("theora")));
+	ASSERT_EQUALS(wxT("hap"), FormatMediaCodec(wxT("hap")));
+	ASSERT_EQUALS(wxT("pc"), FormatMediaCodec(wxT("pc")));
 	ASSERT_EQUALS(wxT(""), FormatMediaCodec(wxT("")));
 }

@@ -1338,7 +1338,7 @@ TEST(EventDiff, SharedEventCarriesMediaWhenPresent)
 	}
 	ASSERT_TRUE(!payload.empty());
 	ASSERT_TRUE(payload.find("\"media\":{\"duration_seconds\":5400") != std::string::npos);
-	// The label, not the raw FOURCC: the desktop shows "H.264" for this file and the API agrees.
+	// The label, not the raw codec id: the desktop shows "H.264" for this file and the API agrees.
 	ASSERT_TRUE(payload.find("\"codec\":\"H.264\"") != std::string::npos);
 }
 

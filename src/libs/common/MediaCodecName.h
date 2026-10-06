@@ -28,7 +28,8 @@
 #include <string>
 
 /**
- * Codec FOURCC to the label the interface shows, e.g. "h264" to "H.264".
+ * Codec id (ffprobe codec_name or an eMule FOURCC / audio format define) to the label the
+ * interface shows, e.g. "h264" or "X264" to "H.264".
  *
  * One table for every surface: the desktop reaches it through FormatMediaCodec() (OtherFunctions.h)
  * and amuleapi calls it directly when serialising `media.codec`, so a file reads the same in the
