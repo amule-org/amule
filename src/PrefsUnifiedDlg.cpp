@@ -407,7 +407,7 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 
 	// Build each page with its own scroll position and virtual content size.
 	m_pageWidgets.assign(itemsof(pages), nullptr);
-	wxPanel *DefaultWidget = NULL;
+	wxScrolledWindow *DefaultWidget = nullptr;
 	for (unsigned int i = 0; i < itemsof(pages); ++i) {
 		// Create a container widget and the contents of the page
 		wxScrolledWindow *Widget = new wxScrolledWindow(this, wxID_ANY);
@@ -664,6 +664,7 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 	FitDialogToDisplay(this,
 		wxSize(width + m_PrefsIcons->GetMinSize().GetWidth() + FromDIP(4),
 			height + GetSizer()->GetMinSize().GetHeight() - minimumPageSize.GetHeight()));
+	GrowDialogToContent(this, DefaultWidget, wxSize(width, height));
 
 	// Position the dialog.
 	Center();

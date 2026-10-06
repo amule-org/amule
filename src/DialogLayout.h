@@ -97,23 +97,33 @@ inline void FitDialogToDisplay(wxWindow *dialog, const wxSize &preferredClientSi
 	dialog->SetSize(preferred);
 }
 
+// The scrollbar metrics can understate what a scrollbar really takes (GTK2
+// leaves out its spacing), so make up whatever the content would still lack.
+// contentSize need not be what the window holds now: a paged dialog shows one
+// page while being sized for the largest.
+inline void GrowDialogToContent(wxWindow *dialog, wxScrolledWindow *content, const wxSize &contentSize)
+{
+	// Laying out afterwards would reset the virtual size to the current content.
+	dialog->Layout();
+	content->SetVirtualSize(contentSize);
+	wxSize missing = contentSize - content->GetClientSize();
+	missing.IncTo(wxSize(0, 0));
+	wxSize corrected = dialog->GetSize() + missing;
+	corrected.DecTo(GetDialogSizeLimit(dialog));
+	dialog->SetSize(corrected);
+	content->FitInside();
+}
+
 // The scrollable content has a small explicit minimum; its natural size only
 // influences the initial window size, never how far the user can shrink it.
 inline void FitScrollableDialog(wxWindow *dialog, wxScrolledWindow *content)
 {
 	content->FitInside();
+	const wxSize contentSize = content->GetSizer()->GetMinSize();
 	const int fixedHeight =
 		dialog->GetSizer()->GetMinSize().GetHeight() - content->GetMinSize().GetHeight();
-	FitDialogToDisplay(dialog, content->GetSizer()->GetMinSize() + wxSize(0, fixedHeight));
-
-	// The scrollbar metrics can understate what a scrollbar really takes (GTK2
-	// leaves out its spacing), so make up whatever the content still lacks.
-	dialog->Layout();
-	wxSize missing = content->GetVirtualSize() - content->GetClientSize();
-	missing.IncTo(wxSize(0, 0));
-	wxSize corrected = dialog->GetSize() + missing;
-	corrected.DecTo(GetDialogSizeLimit(dialog));
-	dialog->SetSize(corrected);
+	FitDialogToDisplay(dialog, contentSize + wxSize(0, fixedHeight));
+	GrowDialogToContent(dialog, content, contentSize);
 }
 
 #endif // DIALOG_LAYOUT_H
