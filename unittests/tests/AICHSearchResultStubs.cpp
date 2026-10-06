@@ -233,6 +233,10 @@ void CKnownFile::SetHashingProgress(uint16) const
 {
 	UnexpectedApplicationCall("CKnownFile::SetHashingProgress");
 }
+void CKnownFile::WritePartStatus(CMemFile *)
+{
+	UnexpectedApplicationCall("CKnownFile::WritePartStatus");
+}
 
 void CPartFile::SetFileName(const CPath &)
 {
@@ -265,6 +269,10 @@ void CPartFile::UpdateFileRatingCommentAvail()
 void CPartFile::GetRatingAndComments(FileRatingList &) const
 {
 	UnexpectedApplicationCall("CPartFile::GetRatingAndComments");
+}
+void CPartFile::WritePartStatus(CMemFile *)
+{
+	UnexpectedApplicationCall("CPartFile::WritePartStatus");
 }
 
 SearchType CSearchList::GetSearchLifecycleKindById(wxUIntPtr) const
