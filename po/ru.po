@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-04 23:02+0200\n"
-"PO-Revision-Date: 2026-10-04 14:56+0000\n"
+"PO-Revision-Date: 2026-10-05 14:25+0000\n"
 "Last-Translator: Radist Morse <radist.morse@gmail.com>\n"
 "Language-Team: Russian <kde-russian@lists.kde.ru>\n"
 "Language: ru\n"
@@ -4318,7 +4318,7 @@ msgstr "Заголовок"
 
 #: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
 msgid "Verify Local Data"
-msgstr "Проверить локальные данные"
+msgstr "Проверка локальных данных"
 
 #: src/muuli_wdr.cpp
 msgid "File Names"

@@ -68,6 +68,17 @@ inline bool UpdateDialogContentLayout(wxScrolledWindow *content, std::vector<wxS
 	return false;
 }
 
+// The largest initial window size: a fraction of the work area of the parent's display.
+inline wxSize GetDialogSizeLimit(wxWindow *dialog)
+{
+	int displayIndex = wxDisplay::GetFromWindow(dialog->GetParent() ? dialog->GetParent() : dialog);
+	if (displayIndex == wxNOT_FOUND) {
+		displayIndex = 0;
+	}
+	const wxSize available = wxDisplay(displayIndex).GetClientArea().GetSize();
+	return wxSize(available.GetWidth() * 4 / 5, available.GetHeight() * 4 / 5);
+}
+
 // Keep the minimum dictated by the fixed controls, while bounding the initial
 // window size to the work area of the parent's display.
 inline void FitDialogToDisplay(wxWindow *dialog, const wxSize &preferredClientSize)
@@ -75,12 +86,7 @@ inline void FitDialogToDisplay(wxWindow *dialog, const wxSize &preferredClientSi
 	dialog->GetSizer()->SetSizeHints(dialog);
 	wxSize preferred = dialog->ClientToWindowSize(preferredClientSize);
 	preferred.IncTo(dialog->GetMinSize());
-	int displayIndex = wxDisplay::GetFromWindow(dialog->GetParent() ? dialog->GetParent() : dialog);
-	if (displayIndex == wxNOT_FOUND) {
-		displayIndex = 0;
-	}
-	const wxSize available = wxDisplay(displayIndex).GetClientArea().GetSize();
-	const wxSize limit(available.GetWidth() * 4 / 5, available.GetHeight() * 4 / 5);
+	const wxSize limit = GetDialogSizeLimit(dialog);
 	if (preferred.GetWidth() > limit.GetWidth()) {
 		preferred.y += wxMax(0, wxSystemSettings::GetMetric(wxSYS_HSCROLL_Y, dialog));
 	}
@@ -91,14 +97,33 @@ inline void FitDialogToDisplay(wxWindow *dialog, const wxSize &preferredClientSi
 	dialog->SetSize(preferred);
 }
 
+// The scrollbar metrics can understate what a scrollbar really takes (GTK2
+// leaves out its spacing), so make up whatever the content would still lack.
+// contentSize need not be what the window holds now: a paged dialog shows one
+// page while being sized for the largest.
+inline void GrowDialogToContent(wxWindow *dialog, wxScrolledWindow *content, const wxSize &contentSize)
+{
+	// Laying out afterwards would reset the virtual size to the current content.
+	dialog->Layout();
+	content->SetVirtualSize(contentSize);
+	wxSize missing = contentSize - content->GetClientSize();
+	missing.IncTo(wxSize(0, 0));
+	wxSize corrected = dialog->GetSize() + missing;
+	corrected.DecTo(GetDialogSizeLimit(dialog));
+	dialog->SetSize(corrected);
+	content->FitInside();
+}
+
 // The scrollable content has a small explicit minimum; its natural size only
 // influences the initial window size, never how far the user can shrink it.
 inline void FitScrollableDialog(wxWindow *dialog, wxScrolledWindow *content)
 {
 	content->FitInside();
+	const wxSize contentSize = content->GetSizer()->GetMinSize();
 	const int fixedHeight =
 		dialog->GetSizer()->GetMinSize().GetHeight() - content->GetMinSize().GetHeight();
-	FitDialogToDisplay(dialog, content->GetSizer()->GetMinSize() + wxSize(0, fixedHeight));
+	FitDialogToDisplay(dialog, contentSize + wxSize(0, fixedHeight));
+	GrowDialogToContent(dialog, content, contentSize);
 }
 
 #endif // DIALOG_LAYOUT_H

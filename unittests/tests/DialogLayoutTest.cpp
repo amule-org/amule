@@ -192,6 +192,50 @@ void TestWidthCappedContent()
 		"Horizontal scrollbar unnecessarily forces vertical scrolling");
 }
 
+// Preferences keeps one scrolled page per tab and is sized for the largest of
+// them, which need not be the page shown while the dialog is being fitted.
+void TestPagedContent()
+{
+	wxDialog dialog(nullptr, wxID_ANY, "Paged dialog layout test");
+	wxPanel *sidebar = new wxPanel(&dialog);
+	sidebar->SetMinSize(wxSize(150, 100));
+	const wxSize minimumPageSize(240, 200);
+	wxScrolledWindow *page = new wxScrolledWindow(&dialog);
+	page->SetMinSize(minimumPageSize);
+	ConfigureDialogScrolling(page);
+	wxBoxSizer *fields = new wxBoxSizer(wxVERTICAL);
+	wxPanel *section = new wxPanel(page);
+	section->SetMinSize(wxSize(400, 100));
+	fields->Add(section, wxSizerFlags().Expand());
+	page->SetSizer(fields);
+	wxBoxSizer *row = new wxBoxSizer(wxHORIZONTAL);
+	row->Add(sidebar, wxSizerFlags().Expand());
+	row->Add(page, wxSizerFlags(1).Expand());
+	wxBoxSizer *top = new wxBoxSizer(wxVERTICAL);
+	top->Add(row, wxSizerFlags(1).Expand());
+	top->Add(new wxButton(&dialog, wxID_OK), wxSizerFlags().Right());
+	dialog.SetSizer(top);
+	page->FitInside();
+
+	// The shown page is short; another page is taller than the display allows.
+	const wxSize largest(400, wxDisplay(&dialog).GetClientArea().GetSize().y * 2);
+	FitDialogToDisplay(&dialog,
+		wxSize(largest.x + sidebar->GetMinSize().x,
+			largest.y + top->GetMinSize().y - minimumPageSize.y));
+	GrowDialogToContent(&dialog, page, largest);
+	dialog.Layout();
+	Check(page->GetVirtualSize().y <= page->GetClientSize().y,
+		"Fitting left a stale vertical range on the shown page");
+
+	// Switch to the tall page.
+	section->SetMinSize(largest);
+	page->FitInside();
+	dialog.Layout();
+	Check(page->GetVirtualSize().y > page->GetClientSize().y, "Tall page should scroll vertically");
+	Check(page->GetVirtualSize().x <= page->GetClientSize().x,
+		"Tall page's vertical scrollbar unnecessarily forces horizontal scrolling");
+}
+
 void TestChangingColumnsAndRename()
 {
 	wxDialog dialog(nullptr, wxID_ANY, "Changing columns layout test");
@@ -285,6 +329,7 @@ int main(int argc, char **argv)
 			TestSmallContent();
 			TestHeightCappedContent();
 			TestWidthCappedContent();
+			TestPagedContent();
 			TestChangingColumnsAndRename();
 			TestHorizontalScrollEdge();
 			std::cout << "Dialog layout regression tests passed\n";
