@@ -68,6 +68,17 @@ inline bool UpdateDialogContentLayout(wxScrolledWindow *content, std::vector<wxS
 	return false;
 }
 
+// The largest initial window size: a fraction of the work area of the parent's display.
+inline wxSize GetDialogSizeLimit(wxWindow *dialog)
+{
+	int displayIndex = wxDisplay::GetFromWindow(dialog->GetParent() ? dialog->GetParent() : dialog);
+	if (displayIndex == wxNOT_FOUND) {
+		displayIndex = 0;
+	}
+	const wxSize available = wxDisplay(displayIndex).GetClientArea().GetSize();
+	return wxSize(available.GetWidth() * 4 / 5, available.GetHeight() * 4 / 5);
+}
+
 // Keep the minimum dictated by the fixed controls, while bounding the initial
 // window size to the work area of the parent's display.
 inline void FitDialogToDisplay(wxWindow *dialog, const wxSize &preferredClientSize)
@@ -75,12 +86,7 @@ inline void FitDialogToDisplay(wxWindow *dialog, const wxSize &preferredClientSi
 	dialog->GetSizer()->SetSizeHints(dialog);
 	wxSize preferred = dialog->ClientToWindowSize(preferredClientSize);
 	preferred.IncTo(dialog->GetMinSize());
-	int displayIndex = wxDisplay::GetFromWindow(dialog->GetParent() ? dialog->GetParent() : dialog);
-	if (displayIndex == wxNOT_FOUND) {
-		displayIndex = 0;
-	}
-	const wxSize available = wxDisplay(displayIndex).GetClientArea().GetSize();
-	const wxSize limit(available.GetWidth() * 4 / 5, available.GetHeight() * 4 / 5);
+	const wxSize limit = GetDialogSizeLimit(dialog);
 	if (preferred.GetWidth() > limit.GetWidth()) {
 		preferred.y += wxMax(0, wxSystemSettings::GetMetric(wxSYS_HSCROLL_Y, dialog));
 	}
@@ -99,6 +105,15 @@ inline void FitScrollableDialog(wxWindow *dialog, wxScrolledWindow *content)
 	const int fixedHeight =
 		dialog->GetSizer()->GetMinSize().GetHeight() - content->GetMinSize().GetHeight();
 	FitDialogToDisplay(dialog, content->GetSizer()->GetMinSize() + wxSize(0, fixedHeight));
+
+	// The scrollbar metrics can understate what a scrollbar really takes (GTK2
+	// leaves out its spacing), so make up whatever the content still lacks.
+	dialog->Layout();
+	wxSize missing = content->GetVirtualSize() - content->GetClientSize();
+	missing.IncTo(wxSize(0, 0));
+	wxSize corrected = dialog->GetSize() + missing;
+	corrected.DecTo(GetDialogSizeLimit(dialog));
+	dialog->SetSize(corrected);
 }
 
 #endif // DIALOG_LAYOUT_H
