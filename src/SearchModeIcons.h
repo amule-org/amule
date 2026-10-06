@@ -129,7 +129,7 @@ inline std::unique_ptr<wxImageList> CreateSearchModeImages(const wxWindow *windo
 	for (int index = 0; index < firstModeImage + static_cast<int>(types.size()); ++index) {
 		wxImage image(modeOffset + size.x, size.y);
 		image.InitAlpha();
-		std::memset(image.GetAlpha(), 0, image.GetWidth() * image.GetHeight());
+		std::memset(image.GetAlpha(), 0, static_cast<size_t>(image.GetWidth()) * image.GetHeight());
 		if (closeImage.IsOk()) {
 			image.Paste(closeImage, 0, 0);
 		}
