@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-10-04 23:02+0200\n"
+"POT-Creation-Date: 2026-10-06 18:32+0200\n"
 "PO-Revision-Date: 2026-10-03 12:43+0000\n"
 "Last-Translator: Alex Thomsen Leth <alexl@stofanet.dk>\n"
 "Language-Team: aMule Team <https://github.com/amule-org/amule>\n"
@@ -4836,8 +4836,12 @@ msgstr "Indtast her den ønskede minimale diskplads."
 
 #: src/muuli_wdr.cpp
 #, fuzzy
-msgid "Save up to 10 HighID sources of rare files (20 or fewer sources) for 2 hours"
+msgid "Save up to 10 HighID sources of rare files (20 or fewer sources) on exit"
 msgstr "Gem 10 kilder på sjældne filer (< 20 kilder)"
+
+#: src/muuli_wdr.cpp
+msgid "The saved sources are used again only if aMule restarts within 2 hours. LowID sources are not saved: a LowID only identifies a peer on the server that assigned it."
+msgstr ""
 
 #: src/muuli_wdr.cpp src/Statistics.cpp
 msgid "Uploads"
