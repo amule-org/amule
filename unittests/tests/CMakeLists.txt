@@ -4,7 +4,6 @@ add_test (NAME QuicCMakeConfigTest
 		-DTEST_BINARY_DIR=${CMAKE_BINARY_DIR}/quic-cmake-contract
 		-P ${CMAKE_CURRENT_SOURCE_DIR}/QuicCMakeConfigTest.cmake
 )
-set_tests_properties (QuicCMakeConfigTest PROPERTIES TIMEOUT 120)
 
 # The checked-in lexer and native IPv6 rule store, without the application.
 add_executable (IPFilterIPv6Test
@@ -2071,10 +2070,12 @@ if (UNIX AND NOT APPLE)
 	target_link_libraries (AutostartManagerTest muleunit mulecommon)
 endif()
 
-# EC and eD2k loopback integration: isolated config, no public servers or Kad peers.
-# Opt in for CI/development; daemon timing assumptions must not affect package builds.
-option (ENABLE_ALL_SEARCH_INTEGRATION_TEST "Register daemon loopback AllSearch integration test" OFF)
-if (ENABLE_ALL_SEARCH_INTEGRATION_TEST AND BUILD_DAEMON AND UNIX AND NOT APPLE)
+# Integration tests use isolated configs, no public servers or Kad peers. Time limits live in
+# CI, not in TIMEOUT properties, which would also cap distro builds that run ctest with no limit.
+option (ENABLE_INTEGRATION_TESTS
+	"Register tests that run real aMule programs on loopback. Timing-sensitive, so off for package builds"
+	OFF)
+if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 	find_package (Python3 QUIET COMPONENTS Interpreter)
 	if (Python3_Interpreter_FOUND)
 		add_test (NAME AllSearchIntegrationTest

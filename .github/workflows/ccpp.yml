@@ -107,7 +107,7 @@ env:
     -DBUILD_MONOLITHIC=YES \
     -DBUILD_REMOTEGUI=YES \
     -DBUILD_TESTING=YES \
-    -DENABLE_ALL_SEARCH_INTEGRATION_TEST=YES \
+    -DENABLE_INTEGRATION_TESTS=YES \
     -DBUILD_WEBSERVER=YES \
     -DENABLE_NLS=YES \
     -DENABLE_UPNP=YES
@@ -132,8 +132,9 @@ env:
   # fast unit test gets 10 s. The budget lives here rather than in a TIMEOUT property, which
   # would also cap distro builds that run ctest with no limit.
   ctest_kdf_tests: '^(CredentialsTest|AmuleApiConfigTest)$'
-  # AllSearchIntegrationTest starts and restarts a real daemon. Run it separately
-  # on Ubuntu without a per-test deadline, rather than applying the unit budget.
+  # Integration tests start and restart real processes. Run them separately
+  # on Ubuntu outside the fast unit-test time budget, with 300 s each so a hung daemon
+  # still fails the job. AllSearchIntegrationTest takes about 15 s on the runners.
   ctest_fast_exclude: '^(CredentialsTest|AmuleApiConfigTest|AllSearchIntegrationTest|AllSearchClientCapabilityTest)$'
 
 jobs:
@@ -194,8 +195,8 @@ jobs:
         run: |
           xvfb-run -a ctest ${{ env.ctest_flags }} --timeout 10 -E '${{ env.ctest_fast_exclude }}' &&
           xvfb-run -a ctest ${{ env.ctest_flags }} --timeout 60 -R '${{ env.ctest_kdf_tests }}'
-      - name: run All search integration test
-        run: ctest ${{ env.ctest_flags }} --no-tests=error -R '^AllSearch(Integration|ClientCapability)Test$'
+      - name: run integration tests
+        run: ctest ${{ env.ctest_flags }} --timeout 300 --no-tests=error -R '^AllSearch(Integration|ClientCapability)Test$'
       # amuleapi_curl_smoke drives these two against a live daemon rather than
       # compiling its own copy. Release only: the smoke times SSE windows, and
       # a Debug daemon makes those flaky.
@@ -278,8 +279,8 @@ jobs:
         run: |
           xvfb-run -a ctest ${{ env.ctest_flags }} --timeout 10 -E '${{ env.ctest_fast_exclude }}' &&
           xvfb-run -a ctest ${{ env.ctest_flags }} --timeout 60 -R '${{ env.ctest_kdf_tests }}'
-      - name: run All search integration test
-        run: ctest ${{ env.ctest_flags }} --no-tests=error -R '^AllSearch(Integration|ClientCapability)Test$'
+      - name: run integration tests
+        run: ctest ${{ env.ctest_flags }} --timeout 300 --no-tests=error -R '^AllSearch(Integration|ClientCapability)Test$'
 
   # Configures with the oldest CMake that CMakeLists.txt declares, so the floor stays
   # true. Configure only: the build itself does not depend on the CMake version.
@@ -311,7 +312,7 @@ jobs:
           "$RUNNER_TEMP/cmake-min/bin/cmake" .. \
             -DBUILD_EVERYTHING=YES \
             -DBUILD_TESTING=YES \
-            -DENABLE_ALL_SEARCH_INTEGRATION_TEST=YES \
+            -DENABLE_INTEGRATION_TESTS=YES \
             -DENABLE_ALL_EXPERIMENTAL=YES \
             ${{ env.cmake_ubuntu_config_flags }}
 
