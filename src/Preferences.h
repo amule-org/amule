@@ -764,6 +764,11 @@ public:
 	// this applies regardless of this setting.
 	static bool GetKadStrictAichPublishers() { return s_KadStrictAichPublishers; }
 	static void SetKadStrictAichPublishers(bool val) { s_KadStrictAichPublishers = val; }
+	// Runtime capability (not persisted): does the core know the two options above? Always true
+	// for monolithic amule. amulegui learns it from the core, which before 3.2 neither sends
+	// nor applies them.
+	static bool IsKadProtocol10Supported() { return s_KadProtocol10Supported; }
+	static void SetKadProtocol10Supported(bool val) { s_KadProtocol10Supported = val; }
 
 	// Statistics
 	static unsigned GetMaxClientVersions() { return s_maxClientVersions; }
@@ -1135,6 +1140,7 @@ protected:
 	static bool s_ConnectToED2K;
 	static bool s_KadProtocol10;
 	static bool s_KadStrictAichPublishers;
+	static bool s_KadProtocol10Supported;
 
 	// Statistics
 	static unsigned s_maxClientVersions; // 0 = unlimited

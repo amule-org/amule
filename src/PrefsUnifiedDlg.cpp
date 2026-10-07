@@ -127,6 +127,7 @@ wxBEGIN_EVENT_TABLE(PrefsUnifiedDlg, wxDialog)
 
 	// The rest. Organize it!
 	EVT_CHECKBOX(IDC_UDPENABLE, PrefsUnifiedDlg::OnCheckBoxChange)
+	EVT_CHECKBOX(IDC_KADPROTOCOL10, PrefsUnifiedDlg::OnCheckBoxChange)
 	EVT_CHECKBOX(IDC_CHECKDISKSPACE, PrefsUnifiedDlg::OnCheckBoxChange)
 	EVT_CHECKBOX(IDC_ONLINESIG, PrefsUnifiedDlg::OnCheckBoxChange)
 	EVT_CHECKBOX(IDC_REMOVEDEAD, PrefsUnifiedDlg::OnCheckBoxChange)
@@ -831,6 +832,9 @@ bool PrefsUnifiedDlg::TransferToWindow()
 	FindWindow(IDC_STARTNEXTFILE_SAME)->Enable(thePrefs::StartNextFile());
 	FindWindow(IDC_STARTNEXTFILE_ALPHA)->Enable(thePrefs::StartNextFile());
 	FindWindow(IDC_AMULEAPI_GUEST_PASSWD)->Enable(thePrefs::GetAmuleApiGuestIsEnabled());
+	FindWindow(IDC_KADPROTOCOL10)->Enable(thePrefs::IsKadProtocol10Supported());
+	FindWindow(IDC_KADSTRICTAICHPUBLISHERS)
+		->Enable(thePrefs::IsKadProtocol10Supported() && thePrefs::GetKadProtocol10());
 
 	// amuleapi's stored password is salted and stretched, so unlike the web server's it
 	// cannot be loaded back into the field. The field is a write-only request ("set it to
@@ -1710,6 +1714,11 @@ void PrefsUnifiedDlg::OnCheckBoxChange(wxCommandEvent &event)
 	switch (id) {
 	case IDC_UDPENABLE:
 		FindWindow(IDC_UDPPORT)->Enable(value);
+		break;
+
+	case IDC_KADPROTOCOL10:
+		// The strict filter only applies while repair hashes are shared.
+		FindWindow(IDC_KADSTRICTAICHPUBLISHERS)->Enable(value);
 		break;
 
 	case IDC_UPNP_ENABLED:

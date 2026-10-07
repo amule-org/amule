@@ -2609,6 +2609,42 @@ TEST(Refresher, PreferencesExternalConnectionsDecodeOrStayUnknown)
 	}
 }
 
+// A pre-3.2 core sends the Kad group without the repair-hash options and ignores them when set. The
+// value tag's presence is the capability, which is what the PATCH gate on both options reads.
+TEST(Refresher, PreferencesKadRepairHashOptionsNeedACoreThatSendsThem)
+{
+	{
+		CECPacket resp(EC_OP_SET_PREFERENCES);
+		CECEmptyTag kad(EC_TAG_PREFS_KADEMLIA);
+		kad.AddTag(CECTag(EC_TAG_KADEMLIA_UPDATE_URL, wxString::FromUTF8("http://nodes")));
+		kad.AddTag(CECTag(EC_TAG_KADEMLIA_PROTOCOL10, false));
+		kad.AddTag(CECTag(EC_TAG_KADEMLIA_STRICT_AICH_PUBLISHERS, true));
+		resp.AddTag(kad);
+
+		PreferencesSnapshot p;
+		std::vector<CategorySnapshot> cats;
+		ParsePreferencesFromPacket(&resp, p, cats);
+
+		ASSERT_TRUE(p.kad.protocol10_supported); // present, although its value is false
+		ASSERT_TRUE(!p.kad.protocol10_enabled);
+		ASSERT_TRUE(p.kad.strict_aich_publishers);
+	}
+	{
+		CECPacket resp(EC_OP_SET_PREFERENCES);
+		CECEmptyTag kad(EC_TAG_PREFS_KADEMLIA);
+		kad.AddTag(CECTag(EC_TAG_KADEMLIA_UPDATE_URL, wxString::FromUTF8("http://nodes")));
+		resp.AddTag(kad);
+
+		PreferencesSnapshot p;
+		std::vector<CategorySnapshot> cats;
+		ParsePreferencesFromPacket(&resp, p, cats);
+
+		ASSERT_TRUE(!p.kad.protocol10_supported);
+		ASSERT_TRUE(!p.kad.protocol10_enabled);
+		ASSERT_EQUALS(std::string("http://nodes"), p.kad.update_url);
+	}
+}
+
 // Every 3-state / 4-state wire value maps to its documented enum string, and
 // an out-of-range value is not invented into a valid one (#655).
 TEST(Refresher, PreferencesEnumStringsCoverEveryWireValue)
@@ -2707,9 +2743,9 @@ TEST(Refresher, PrefsSchemaIsWellFormed)
 			++emitted;
 	}
 
-	// The documented payload is 128 fields. A row added or dropped without
+	// The documented payload is 129 fields. A row added or dropped without
 	// updating docs/api/REFERENCE.md should trip this.
-	ASSERT_EQUALS(static_cast<std::size_t>(128), emitted);
+	ASSERT_EQUALS(static_cast<std::size_t>(129), emitted);
 }
 
 // The schema's irregularities are enumerated rather than merely counted: each is deliberate and

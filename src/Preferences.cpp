@@ -252,6 +252,7 @@ bool CPreferences::s_ConnectToKad;
 bool CPreferences::s_ConnectToED2K;
 bool CPreferences::s_KadProtocol10;
 bool CPreferences::s_KadStrictAichPublishers;
+bool CPreferences::s_KadProtocol10Supported = true;
 unsigned CPreferences::s_maxClientVersions;
 bool CPreferences::s_DropSlowSources;
 bool CPreferences::s_IsClientCryptLayerSupported;

@@ -1528,6 +1528,11 @@ bool CPreferencesRem::LoadRemote()
 	// rather than offering settings it cannot honour.
 	thePrefs::SetGeoIPSupported(false);
 #endif
+	// Likewise for the Kad repair-hash options, shown off until the core reports them: a
+	// pre-3.2 core does not, and runs Kad 0x08 without them.
+	thePrefs::SetKadProtocol10Supported(false);
+	thePrefs::SetKadProtocol10(false);
+	thePrefs::SetKadStrictAichPublishers(false);
 	// Override local settings with remote
 	CECPacket req(EC_OP_GET_PREFERENCES, EC_DETAIL_UPDATE);
 

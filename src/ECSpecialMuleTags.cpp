@@ -962,6 +962,10 @@ void CEC_Prefs_Packet::Apply() const
 		}
 		if ((oneTag = thisTab->GetTagByName(EC_TAG_KADEMLIA_PROTOCOL10)) != nullptr) {
 			thePrefs::SetKadProtocol10(oneTag->GetInt() != 0);
+#ifdef CLIENT_GUI
+			// A 3.2+ core always sends it, so its presence is the capability.
+			thePrefs::SetKadProtocol10Supported(true);
+#endif
 		}
 		if ((oneTag = thisTab->GetTagByName(EC_TAG_KADEMLIA_STRICT_AICH_PUBLISHERS)) != nullptr) {
 			thePrefs::SetKadStrictAichPublishers(oneTag->GetInt() != 0);

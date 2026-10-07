@@ -1207,6 +1207,7 @@ struct PreferencesSnapshot
 	struct KadPrefs
 	{
 		std::string update_url;
+		bool protocol10_supported = false;
 		bool protocol10_enabled = false;
 		bool strict_aich_publishers = false;
 	} kad;

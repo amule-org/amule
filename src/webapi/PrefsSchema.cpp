@@ -287,8 +287,11 @@ const PrefField kSchema[] = {
 
 	// [kad] (EC group: KADEMLIA)
 	PREF_STR("kad", "update_url", EC_TAG_KADEMLIA_UPDATE_URL, PrefAccess::ReadWrite, kad.update_url),
-	PREF_BOOL("kad", "protocol10_enabled", EC_TAG_KADEMLIA_PROTOCOL10, PrefEnc::Value, false, PrefAccess::ReadWrite, kad.protocol10_enabled),
-	PREF_BOOL("kad", "strict_aich_publishers", EC_TAG_KADEMLIA_STRICT_AICH_PUBLISHERS, PrefEnc::Value, false, PrefAccess::ReadWrite, kad.strict_aich_publishers),
+	// A 3.2+ core always sends PROTOCOL10 as a value tag, so its presence is the capability: a
+	// pre-3.2 core neither sends nor applies the two options below.
+	PREF_BOOL("kad", "protocol10_supported", EC_TAG_KADEMLIA_PROTOCOL10, PrefEnc::Presence, false, PrefAccess::ReadOnly, kad.protocol10_supported),
+	PREF_BOOL_GATED("kad", "protocol10_enabled", EC_TAG_KADEMLIA_PROTOCOL10, PrefEnc::Value, false, PrefAccess::ReadWrite, kad.protocol10_enabled, "protocol10_supported"),
+	PREF_BOOL_GATED("kad", "strict_aich_publishers", EC_TAG_KADEMLIA_STRICT_AICH_PUBLISHERS, PrefEnc::Value, false, PrefAccess::ReadWrite, kad.strict_aich_publishers, "protocol10_supported"),
 
 	// [geoip] (EC group: IP2COUNTRY)
 	PREF_BOOL("geoip", "auto_update_enabled", EC_TAG_IP2COUNTRY_AUTO_UPDATE, PrefEnc::Value, false, PrefAccess::ReadWrite, geoip.auto_update_enabled),

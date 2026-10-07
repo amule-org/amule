@@ -860,6 +860,26 @@ _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
 _assert_json_eq '.remote_controls.external_connections | tojson' "$EC_BEFORE" \
 	'external_connections unchanged on the next GET'
 
+# --- kad: the repair-hash options are capability-gated. -----------
+# This daemon sends both options, so kad.protocol10_supported is true and they round-trip. A
+# pre-3.2 daemon sends neither; RefresherTest covers that decode, and the gate is the same one
+# 5d exercises for mmap.
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
+_assert_json_eq '.kad.protocol10_supported' true 'kad.protocol10_supported is true on a current daemon'
+_assert_json_eq '(.kad.protocol10_enabled|type)' boolean 'kad.protocol10_enabled is bool'
+SAVED_KAD10=$(printf '%s' "$CURL_BODY" | jq -r '.kad.protocol10_enabled')
+KAD10_TOGGLE=$([ "$SAVED_KAD10" = "true" ] && echo false || echo true)
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
+	-d "{\"kad\":{\"protocol10_enabled\":$KAD10_TOGGLE,\"protocol10_supported\":false}}" \
+	"$API/preferences"
+_assert_status 200 'PATCH kad.protocol10_enabled on a current daemon -> 200'
+_assert_json_eq '.kad.protocol10_enabled' "$KAD10_TOGGLE" 'kad.protocol10_enabled toggled in response'
+_assert_json_eq '.kad.protocol10_supported' true 'kad.protocol10_supported read-only (ignored on PATCH)'
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
+_assert_json_eq '.kad.protocol10_enabled' "$KAD10_TOGGLE" 'kad.protocol10_enabled persisted (no stale GET)'
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
+	-d "{\"kad\":{\"protocol10_enabled\":$SAVED_KAD10}}" "$API/preferences" >/dev/null 2>&1
+
 # --- Summary. -----------------------------------------------------
 echo
 if [ "$FAIL_COUNT" -eq 0 ]; then

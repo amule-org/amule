@@ -8194,7 +8194,7 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(const CHttpServer::
 			if (!ok) {
 				return ErrorResponse(409,
 					"option_not_supported",
-					"this daemon was built without support for that option");
+					"the connected daemon does not support that option");
 			}
 		}
 
