@@ -2,9 +2,12 @@
 
 This document specifies aMule's experimental capability exchange for the
 eMuleAI NAT-T UDP path. aMule is responder-only: it sends no outbound CAPS or
-CAPS_ACK, performs no rendezvous, and never dials QUIC. eMuleAI initiates CAPS
-and dials aMule's inbound QUIC endpoint. The exchange does not change the normal
-eD2k handshake and has not yet been live-tested against eMuleAI 1.6.
+CAPS_ACK, performs no rendezvous, and never dials QUIC. eMuleAI initiates CAPS.
+After the ACK, eMuleAI dials aMule's inbound QUIC endpoint only when it is the
+downloader; as the uploader it opens a passive endpoint and waits for aMule to
+dial, so that direction cannot complete until aMule has a QUIC client role. The
+exchange does not change the normal eD2k handshake and has not yet been
+live-tested against eMuleAI 1.6.
 
 ## Availability and discovery
 
@@ -128,8 +131,8 @@ unresolved and must be confirmed on the actual eMuleAI installation.
 
 A CAPS_ACK only negotiates capability; it does not create a NAT pinhole,
 perform rendezvous or hole punching, or make a connection. This branch has no
-outbound aMule role. File-hash role gating is not implemented; the file hash is
-echoed but is not used to authorize roles. Do not claim PASS unless a real packet
-trace and the
-corresponding connection/test logs show the CAPS exchange followed by the
-QUIC/TLS/EAQN1 result.
+outbound aMule role. File-hash role gating is not implemented: the file hash is
+echoed but not used to choose roles, so an eMuleAI uploader still gets QUIC
+advertised and waits for a dial that never comes. Do not claim PASS unless a
+real packet trace and the corresponding connection/test logs show the CAPS
+exchange followed by the QUIC/TLS/EAQN1 result.

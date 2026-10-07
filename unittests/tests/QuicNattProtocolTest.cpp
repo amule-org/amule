@@ -176,13 +176,10 @@ TEST(QuicNattProtocol, EaqcCapsAckEchoesRequestAndAdvertisesQuic)
 	ASSERT_TRUE(decoded.fileHash == file);
 	const auto noCallback = BuildEaqcCapsAck(request, local, false, false);
 	ASSERT_EQUALS(0x40, noCallback[5]);
-#ifdef AMULE_UTP_TRANSPORT
 	const auto withUtp = BuildEaqcCapsAck(request, local, false, true);
 	ASSERT_EQUALS(0xC0, withUtp[5]);
-#else
-	const auto withoutUtp = BuildEaqcCapsAck(request, local, false, true);
-	ASSERT_EQUALS(0x40, withoutUtp[5]);
-#endif
+	const auto everything = BuildEaqcCapsAck(request, local, true, true);
+	ASSERT_EQUALS(0xC8, everything[5]);
 }
 
 TEST(QuicNattProtocol, EaqcCodecValidatesLengthAndIdentity)

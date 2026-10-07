@@ -67,14 +67,8 @@ inline std::array<uint8_t, EAQC_FRAME_SIZE> BuildEaqcCapsAck(const EaqcFrame &re
 	bool directCallback,
 	bool utpAvailable)
 {
-	uint8_t options = static_cast<uint8_t>(0x40 | (directCallback ? 0x08 : 0x00));
-#ifdef AMULE_UTP_TRANSPORT
-	if (utpAvailable) {
-		options = static_cast<uint8_t>(options | 0x80);
-	}
-#else
-	(void)utpAvailable;
-#endif
+	const auto options =
+		static_cast<uint8_t>(0x40 | (directCallback ? 0x08 : 0x00) | (utpAvailable ? 0x80 : 0x00));
 	return EncodeEaqcFrame(options, ourUserHash, request.senderUserHash, request.fileHash);
 }
 
