@@ -257,7 +257,9 @@ When `ENABLE_NLS=YES` and `po4a` is found on the host, the cmake build
 renders every translated manpage from the English masters + the `.po`
 files into the build dir, substitutes `@MAN_DATE@` and
 `@PACKAGE_VERSION@`, then installs them under
-`<prefix>/share/man/<lang>/man1/`. If po4a is missing the build skips
+`<prefix>/share/man/<lang>/man1/`. po4a skips a page that is less than
+70% translated; that page is not installed, and `man` shows the English
+page instead. If po4a is missing the build skips
 translated manpages and installs only the English ones — pass
 `-DTRANSLATED_MANPAGES=NO` to opt out explicitly.
 

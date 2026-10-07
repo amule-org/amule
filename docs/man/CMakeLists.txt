@@ -36,10 +36,10 @@ endif()
 # git; po4a writes them straight into the build dir based on absolute paths
 # templated into po4a.config (see po4a.config.in).
 #
-# A second build-time pass substitutes @MAN_DATE@ and @PACKAGE_VERSION@ (which
-# po4a passes through verbatim) so the final installed manpages carry the
-# correct .TH header. The double pass is driven by add_custom_command so
-# CMake handles incremental rebuilds via DEPENDS on the .po inputs — po4a's
+# cmake/render_translated_manpages.cmake then substitutes @MAN_DATE@ and
+# @PACKAGE_VERSION@ (which po4a passes through verbatim) so the installed
+# manpages carry the correct .TH header. It runs from add_custom_command, so
+# CMake handles incremental rebuilds via DEPENDS on the .po inputs, and po4a's
 # own mtime-incremental logic is bypassed entirely.
 #
 # Source-tarball consumers that don't want po4a as a build dep can grab the
@@ -101,15 +101,23 @@ if (TRANSLATED_MANPAGES)
 		set (MANPAGE_GATE_cas       BUILD_CAS)
 		set (MANPAGE_GATE_wxcas     BUILD_WXCAS)
 
-		# Build the complete output list so add_custom_command's OUTPUT
-		# enumerates every file po4a will write. Listing them all makes
-		# Ninja / Make track each as a real artifact (each can satisfy a
-		# downstream install() target).
+		# Every page po4a may render, and the installable page derived from each. The script
+		# writes the .1 files at build time; install() only needs them at install time.
 		set (PO4A_RAW_OUTPUTS "")
 		foreach (LANG ${AMULE_MANPAGE_LANGUAGES})
 			foreach (BIN ${MANPAGE_BINARIES})
-				list (APPEND PO4A_RAW_OUTPUTS
-					"${MANPAGE_BUILD_DIR_${BIN}}/${BIN}.${LANG}.1.in")
+				set (_raw   "${MANPAGE_BUILD_DIR_${BIN}}/${BIN}.${LANG}.1.in")
+				set (_final "${MANPAGE_BUILD_DIR_${BIN}}/${BIN}.${LANG}.1")
+				list (APPEND PO4A_RAW_OUTPUTS "${_raw}")
+
+				# OPTIONAL: po4a leaves out a page translated below --keep.
+				if (${MANPAGE_GATE_${BIN}} AND TRANSLATION_${LANG})
+					install (FILES "${_final}"
+						DESTINATION "${CMAKE_INSTALL_MANDIR}/${LANG}/man1"
+						RENAME "${BIN}.1"
+						OPTIONAL
+					)
+				endif()
 			endforeach()
 		endforeach()
 
@@ -128,53 +136,33 @@ if (TRANSLATED_MANPAGES)
 		# what scripts/update-manpages-po.sh is for; a plain `cmake
 		# --build` should never dirty the working tree.
 		#
-		# --keep: po4a skips a page translated below this, and every page is an output above, so a
-		# skipped page fails the build. Its default of 80 leaves no room for strings awaiting
-		# translation. On the command line because po4a 0.57 ignores it in po4a.config.
+		# --keep: po4a skips a page translated below this. Its default of 80 leaves no room for
+		# strings awaiting translation. On the command line because po4a 0.57 ignores it in
+		# po4a.config.
+		#
+		# A stamp is the only OUTPUT, with no BYPRODUCTS: Ninja treats both as outputs, so a page
+		# po4a leaves out would be missing and every later build would rerun po4a.
+		string (REPLACE ";" "|" _pages "${PO4A_RAW_OUTPUTS}")
+		set (PO4A_STAMP "${CMAKE_CURRENT_BINARY_DIR}/translated_manpages.stamp")
 		add_custom_command (
-			OUTPUT ${PO4A_RAW_OUTPUTS}
-			COMMAND ${PO4A_EXECUTABLE} --no-update --keep 70 "${CMAKE_CURRENT_BINARY_DIR}/po4a.config"
+			OUTPUT "${PO4A_STAMP}"
+			COMMAND ${CMAKE_COMMAND}
+				"-DPO4A=${PO4A_EXECUTABLE}"
+				"-DPO4A_CONFIG=${CMAKE_CURRENT_BINARY_DIR}/po4a.config"
+				-DKEEP=70
+				"-DPAGES=${_pages}"
+				"-DSTAMP=${PO4A_STAMP}"
+				"-DMAN_DATE=${MAN_DATE}"
+				"-DPACKAGE_VERSION=${PACKAGE_VERSION}"
+				-P "${CMAKE_SOURCE_DIR}/cmake/render_translated_manpages.cmake"
 			DEPENDS
 				${PO4A_PO_INPUTS}
 				"${CMAKE_CURRENT_BINARY_DIR}/po4a.config"
+				"${CMAKE_SOURCE_DIR}/cmake/render_translated_manpages.cmake"
 			COMMENT "Rendering translated manpages via po4a"
 			VERBATIM
 		)
 
-		# Second pass: substitute @MAN_DATE@ / @PACKAGE_VERSION@ in each
-		# rendered .lang.1.in -> .lang.1, then install the .lang.1 under
-		# the right localized man dir. install() doesn't need its source
-		# to exist at configure time -- it only checks at install time --
-		# so as long as the custom_target runs as part of ALL the file
-		# is materialized before `cmake --install`.
-		set (PO4A_FINAL_OUTPUTS "")
-		foreach (LANG ${AMULE_MANPAGE_LANGUAGES})
-			foreach (BIN ${MANPAGE_BINARIES})
-				set (_raw   "${MANPAGE_BUILD_DIR_${BIN}}/${BIN}.${LANG}.1.in")
-				set (_final "${MANPAGE_BUILD_DIR_${BIN}}/${BIN}.${LANG}.1")
-
-				add_custom_command (
-					OUTPUT "${_final}"
-					COMMAND ${CMAKE_COMMAND}
-						"-DIN=${_raw}"
-						"-DOUT=${_final}"
-						"-DMAN_DATE=${MAN_DATE}"
-						"-DPACKAGE_VERSION=${PACKAGE_VERSION}"
-						-P "${CMAKE_SOURCE_DIR}/cmake/configure_translated_manpage.cmake"
-					DEPENDS "${_raw}"
-					VERBATIM
-				)
-				list (APPEND PO4A_FINAL_OUTPUTS "${_final}")
-
-				if (${MANPAGE_GATE_${BIN}} AND TRANSLATION_${LANG})
-					install (FILES "${_final}"
-						DESTINATION "${CMAKE_INSTALL_MANDIR}/${LANG}/man1"
-						RENAME "${BIN}.1"
-					)
-				endif()
-			endforeach()
-		endforeach()
-
-		add_custom_target (translated_manpages ALL DEPENDS ${PO4A_FINAL_OUTPUTS})
+		add_custom_target (translated_manpages ALL DEPENDS "${PO4A_STAMP}")
 	endif()
 endif()

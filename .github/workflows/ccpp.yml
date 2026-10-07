@@ -60,6 +60,7 @@ env:
     libupnp-dev \
     libwxgtk3.2-dev \
     pkg-config \
+    po4a \
     xvfb \
     xauth \
     wx3.2-headers
