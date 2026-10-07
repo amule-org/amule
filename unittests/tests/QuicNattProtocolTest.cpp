@@ -167,15 +167,22 @@ TEST(QuicNattProtocol, EaqcCapsAckEchoesRequestAndAdvertisesQuic)
 	const auto sender = Hash(33);
 	const auto file = Hash(65);
 	EaqcFrame request{ 0, sender, local, file };
-	const auto ack = BuildEaqcCapsAck(request, local, true);
+	const auto ack = BuildEaqcCapsAck(request, local, true, false);
 	EaqcFrame decoded{};
 	ASSERT_TRUE(DecodeEaqcFrame(ack.data(), ack.size(), sender, decoded));
 	ASSERT_EQUALS(0x48, ack[5]);
 	ASSERT_TRUE(decoded.senderUserHash == local);
 	ASSERT_TRUE(decoded.expectedPeerHash == sender);
 	ASSERT_TRUE(decoded.fileHash == file);
-	const auto noCallback = BuildEaqcCapsAck(request, local, false);
+	const auto noCallback = BuildEaqcCapsAck(request, local, false, false);
 	ASSERT_EQUALS(0x40, noCallback[5]);
+#ifdef AMULE_UTP_TRANSPORT
+	const auto withUtp = BuildEaqcCapsAck(request, local, false, true);
+	ASSERT_EQUALS(0xC0, withUtp[5]);
+#else
+	const auto withoutUtp = BuildEaqcCapsAck(request, local, false, true);
+	ASSERT_EQUALS(0x40, withoutUtp[5]);
+#endif
 }
 
 TEST(QuicNattProtocol, EaqcCodecValidatesLengthAndIdentity)

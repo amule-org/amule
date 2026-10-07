@@ -452,19 +452,39 @@ void CClientUDPSocket::ProcessReservedProt2Frame(
 		if (!m_capsAckLimiter.Admit(address, now)) {
 			break;
 		}
-		const auto ack = QuicNatt::BuildEaqcCapsAck(
-			request, localHash, (Kademlia::CPrefs::GetMyConnectOptions(false, true) & 0x08) != 0);
+		const auto ack = QuicNatt::BuildEaqcCapsAck(request,
+			localHash,
+			(Kademlia::CPrefs::GetMyConnectOptions(false, true) & 0x08) != 0,
+#ifdef AMULE_UTP_TRANSPORT
+			true
+#else
+			false
+#endif
+		);
 		auto response = std::make_unique<CPacket>(
 			OP_NATT_FRAME_CAPS_ACK, static_cast<uint32>(ack.size()), OP_UDPRESERVEDPROT2);
 		response->CopyToDataBuffer(0, ack.data(), static_cast<unsigned int>(ack.size()));
 		SendPacket(response.release(), ip, port, false, nullptr, false, 0);
 	}
 #else
-		// Builds without QUIC keep capability negotiation silent.
+		if (m_unservedFrameLog.ShouldLog(::GetTickCount64())) {
+			AddDebugLogLineN(logClientUDP,
+				CFormat("Ignoring NAT-T CAPS from %s:%u: no QUIC transport in this "
+					"build (%u further occurrences suppressed)") %
+					Uint32toStringIP(ip) % port %
+					m_unservedFrameLog.TakeSuppressedCount());
+		}
 #endif
 	break;
 
 	case OP_NATT_FRAME_CAPS_ACK:
+		if (m_unservedFrameLog.ShouldLog(::GetTickCount64())) {
+			AddDebugLogLineN(logClientUDP,
+				CFormat("Ignoring NAT-T CAPS_ACK from %s:%u: aMule is responder-only "
+					"(%u further occurrences suppressed)") %
+					Uint32toStringIP(ip) % port %
+					m_unservedFrameLog.TakeSuppressedCount());
+		}
 		// ACKs are intentionally dropped and never answered.
 		break;
 

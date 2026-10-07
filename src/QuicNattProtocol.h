@@ -62,13 +62,20 @@ inline std::array<uint8_t, EAQC_FRAME_SIZE> EncodeEaqcFrame(uint8_t options,
 	return frame;
 }
 
-inline std::array<uint8_t, EAQC_FRAME_SIZE> BuildEaqcCapsAck(
-	const EaqcFrame &request, const std::array<uint8_t, 16> &ourUserHash, bool directCallback)
+inline std::array<uint8_t, EAQC_FRAME_SIZE> BuildEaqcCapsAck(const EaqcFrame &request,
+	const std::array<uint8_t, 16> &ourUserHash,
+	bool directCallback,
+	bool utpAvailable)
 {
-	return EncodeEaqcFrame(static_cast<uint8_t>(0x40 | (directCallback ? 0x08 : 0x00)),
-		ourUserHash,
-		request.senderUserHash,
-		request.fileHash);
+	uint8_t options = static_cast<uint8_t>(0x40 | (directCallback ? 0x08 : 0x00));
+#ifdef AMULE_UTP_TRANSPORT
+	if (utpAvailable) {
+		options = static_cast<uint8_t>(options | 0x80);
+	}
+#else
+	(void)utpAvailable;
+#endif
+	return EncodeEaqcFrame(options, ourUserHash, request.senderUserHash, request.fileHash);
 }
 
 inline bool DecodeEaqcFrame(
