@@ -36,9 +36,8 @@ def stop_forked_daemon(pid):
     raise AssertionError('forked daemon did not shut down cleanly')
 
 
-def run(binary, root, setting=None, override=None, expected=None, failure=False,
-        backup_failure=False, full_daemon=False, reset_failure=False):
-    root.mkdir()
+def write_config(root, setting=None):
+    """Write an offline amule.conf with EC on a free port, and return that port."""
     port = free_port()
     config = f'''[eMule]
 Nick=logfile-regression
@@ -65,12 +64,24 @@ ECPort={port}
 ECPassword={hashlib.md5(b'regression').hexdigest()}
 '''
     (root / 'amule.conf').write_text(config)
-    args = [binary, '-c', str(root), '--disable-fatal']
-    if override is not None:
-        args += [f'--log-file={override}']
+    return port
+
+
+def daemon_env(root):
     env = dict(os.environ, HOME=str(root), XDG_CONFIG_HOME=str(root / 'xdg'))
     env.pop('LD_PRELOAD', None)
     env['LC_ALL'] = 'C.UTF-8'
+    return env
+
+
+def run(binary, root, setting=None, override=None, expected=None, failure=False,
+        backup_failure=False, full_daemon=False, reset_failure=False):
+    root.mkdir()
+    port = write_config(root, setting)
+    args = [binary, '-c', str(root), '--disable-fatal']
+    if override is not None:
+        args += [f'--log-file={override}']
+    env = daemon_env(root)
     pidfile = root / 'daemon.pid'
     if full_daemon:
         args += ['--full-daemon', '--pid-file=' + str(pidfile)]
@@ -189,6 +200,43 @@ ECPassword={hashlib.md5(b'regression').hexdigest()}
         assert f'LogFilePath={setting or ""}\n' in saved, saved
 
 
+def run_second_instance(binary, root):
+    """A second amuled -f on a config another daemon holds must say why it stopped."""
+    root.mkdir()
+    port = write_config(root)
+    env = daemon_env(root)
+    with (root / 'first.log').open('w') as out:
+        first = subprocess.Popen([binary, '-c', str(root), '--disable-fatal'],
+                                 stdout=out, stderr=out, env=env)
+        ec = None
+        try:
+            while ec is None:
+                if first.poll() is not None:
+                    raise AssertionError((root / 'first.log').read_text())
+                try:
+                    ec = EC(port)
+                except ConnectionRefusedError:
+                    time.sleep(0.1)
+            second = subprocess.run([binary, '-c', str(root), '--disable-fatal', '--full-daemon'],
+                                    capture_output=True, text=True, env=env)
+            assert second.returncode != 0, second
+            # The launcher relays what the child logged before it stopped, which names the
+            # holder, instead of a generic startup failure.
+            assert 'already running' in second.stderr, second.stderr
+            assert 'run it without -f' not in second.stderr, second.stderr
+        finally:
+            if ec:
+                ec.sock.close()
+            first.terminate()
+            first.wait()
+    # The subreaper adopted the second daemon's child; it exits right after reporting.
+    while True:
+        try:
+            os.waitpid(-1, 0)
+        except ChildProcessError:
+            break
+
+
 def main():
     binary = str(Path(sys.argv[1]).resolve())
     # Adopt daemonized children so cleanup can wait for them instead of leaving zombies.
@@ -231,6 +279,7 @@ def main():
                 override=str(logs / 'daemon-日志.log'), expected=logs / 'daemon-日志.log',
                 full_daemon=True)
             assert not (base / 'fork-override/unused.log').exists()
+            run_second_instance(binary, base / 'fork-second-instance')
         # /proc is unwritable even when the test runner is root.
         if Path('/proc').is_dir():
             run(binary, base / 'unwritable', setting='/proc/amule-logfile-test', failure=True)

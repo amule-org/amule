@@ -235,10 +235,13 @@ int main(int argc, char **argv)
 	}
 #endif
 	const int rc = wxEntry(argc, argv);
-	// OnInit can fail before log selection (for example, command-line parsing).
-	// Report a failure if InitCommon never sent a log-open success or error.
-	CamuleAppCommon::ReportDaemonStartup(
-		false, "ERROR: daemon initialization failed before opening its log file");
+	// Startup stopped before InitCommon reported, for example because another instance holds
+	// the config. Nothing reached a log file, so hand the launcher what was logged: it is what
+	// a foreground run prints, reason included. A no-op once InitCommon has reported.
+	const wxString unwritten = theLogger.GetUnwrittenLog().Strip(wxString::trailing);
+	CamuleAppCommon::ReportDaemonStartup(false,
+		unwritten.IsEmpty() ? "ERROR: amuled stopped during startup; run it without -f to see why"
+				    : (const char *)unwritten.utf8_str());
 	// wx before 3.2.7 cannot set the status of a --configure-* run, so it is applied here.
 	const int configured = CamuleAppCommon::ConfigureExitCode();
 	return configured >= 0 ? configured : rc;

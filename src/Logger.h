@@ -219,6 +219,9 @@ public:
 	/// Name of the logfile.
 	const wxString &GetLogfileName() const { return m_LogfileName; }
 
+	/// What was logged while no logfile was open, still waiting to be written.
+	const wxString &GetUnwrittenLog() const { return m_ApplogBuf; }
+
 	/// Descriptor reserved for the crash path, or -1 before the first open. Survives a
 	/// close-and-reopen of the logfile; see ReserveCrashFd().
 	int CrashFd() const { return m_crashFd; }
