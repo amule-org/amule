@@ -554,8 +554,11 @@ wxString get_backtrace(unsigned n)
 				CFormat("0x%lx ") % static_cast<unsigned long>(addr - s_pie_base);
 		}
 
+		// Its stderr would be ours, which may be a pipe nobody drains: a warning there would
+		// block it, and the report with it.
 		wxString command;
-		command << "addr2line -C -f -s -e /proc/" << getpid() << "/exe " << translatedAddresses;
+		command << "addr2line -C -f -s -e /proc/" << getpid() << "/exe " << translatedAddresses
+			<< "2>/dev/null";
 		// Even elements of the output are function names, odd ones line numbers.
 
 		// popen() rather than wxExecute(): on Linux the GUI wxExecute waits via

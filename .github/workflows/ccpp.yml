@@ -156,6 +156,13 @@ jobs:
       fail-fast: false
       matrix:
         build_type: [Debug, Release]
+        # Release builds without libbfd, as Debian and the Flatpak do, so the addr2line
+        # backtrace path is tested too. Debug keeps libbfd.
+        include:
+          - build_type: Debug
+            bfd: YES
+          - build_type: Release
+            bfd: NO
     steps:
       - uses: actions/checkout@v7
       - name: restore ccache
@@ -177,7 +184,8 @@ jobs:
           cmake \
             -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
             ${{ env.cmake_common_config_flags }} \
-            ${{ env.cmake_ubuntu_config_flags }}
+            ${{ env.cmake_ubuntu_config_flags }} \
+            -DENABLE_BFD=${{ matrix.bfd }}
       - name: zero ccache stats
         run: ccache --zero-stats
       - name: make

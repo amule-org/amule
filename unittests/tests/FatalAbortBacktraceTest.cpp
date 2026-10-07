@@ -47,12 +47,14 @@
 
 #ifdef MULE_HAVE_ABORT_BACKTRACE
 #include <cerrno>
+#include <chrono>
 #include <csignal>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <exception>
 #include <fcntl.h>
+#include <poll.h>
 #include <stdexcept>
 #include <thread>
 #include <string>
@@ -84,6 +86,11 @@ const int kAllocatorAbsorbedIt = 70;
 // Runs `body` in a forked child with its stderr on a pipe, and returns what it wrote plus how it
 // died. The alarm is the deadlock detector: a handler that allocates can block forever inside
 // malloc, and without a bound that would hang the whole suite instead of failing one case.
+//
+// The parent has a backstop of its own. On Debian's hppa builders a child outlived its alarm and
+// the build sat in waitpid() for five hours, and an addr2line the report spawned can hold the
+// pipe open after the child is gone. The handlers re-arm 10 s alarms up to three times, so the
+// backstop only fires once every alarm has had its chance, and it kills the whole process group.
 ChildResult RunInChild(void (*body)(), unsigned timeout_seconds = 10)
 {
 	ChildResult result;
@@ -106,7 +113,9 @@ ChildResult RunInChild(void (*body)(), unsigned timeout_seconds = 10)
 	}
 
 	if (pid == 0) {
-		// Child. Redirect stderr to the pipe, then never return: body() is expected to abort.
+		// Child. Its own process group, so the backstop also reaches whatever it spawns. Redirect
+		// stderr to the pipe, then never return: body() is expected to abort.
+		setpgid(0, 0);
 		close(fds[0]);
 		dup2(fds[1], STDERR_FILENO);
 		close(fds[1]);
@@ -115,26 +124,52 @@ ChildResult RunInChild(void (*body)(), unsigned timeout_seconds = 10)
 		_exit(0); // body() did not abort, which the assertions below will catch
 	}
 
+	// Both sides set the group, so the backstop cannot race the child's own setpgid().
+	setpgid(pid, pid);
 	close(fds[1]);
-	char buffer[4096];
-	ssize_t got;
-	while ((got = read(fds[0], buffer, sizeof(buffer))) != 0) {
+
+	const auto backstop =
+		std::chrono::steady_clock::now() + std::chrono::seconds(timeout_seconds * 4 + 30);
+	bool pipeOpen = true;
+	bool reaped = false;
+	bool killed = false;
+	int status = 0;
+	while (pipeOpen || !reaped) {
+		if (!reaped && waitpid(pid, &status, WNOHANG) == pid) {
+			reaped = true;
+		}
+		if (!killed && std::chrono::steady_clock::now() >= backstop) {
+			kill(-pid, SIGKILL);
+			killed = true;
+		}
+		if (!pipeOpen) {
+			(void)poll(nullptr, 0, 50);
+			continue;
+		}
+		struct pollfd ready;
+		ready.fd = fds[0];
+		ready.events = POLLIN;
+		ready.revents = 0;
+		if (poll(&ready, 1, 50) <= 0) {
+			continue;
+		}
+		char buffer[4096];
+		const ssize_t got = read(fds[0], buffer, sizeof(buffer));
 		if (got > 0) {
 			result.stderr_text.append(buffer, static_cast<size_t>(got));
-		} else if (errno != EINTR) {
-			break;
+		} else if (got == 0 || errno != EINTR) {
+			pipeOpen = false;
 		}
 	}
 	close(fds[0]);
 
-	int status = 0;
-	waitpid(pid, &status, 0);
 	if (WIFSIGNALED(status)) {
 		result.exited_on_signal = true;
 		result.signal_number = WTERMSIG(status);
-		result.timed_out = (result.signal_number == SIGALRM);
+		result.timed_out = killed || result.signal_number == SIGALRM;
 	} else if (WIFEXITED(status)) {
 		result.exit_code = WEXITSTATUS(status);
+		result.timed_out = killed;
 	}
 	return result;
 }
