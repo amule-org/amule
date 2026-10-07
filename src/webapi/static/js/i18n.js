@@ -21,7 +21,7 @@
 const KEY = "amule.lang";
 // Bare codes before their regional variants (pt before pt-BR): read() takes
 // the first same-language match.
-export const LANGS = ["en", "es"];
+export const LANGS = ["en", "es", "it"];
 
 function read() {
   try {

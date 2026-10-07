@@ -120,15 +120,14 @@ msgstr "Legge la configurazione dal I<E<lt>percorsoE<gt>> invece che dalla direc
 # type: TP
 #. type: TP
 #: amule.1.in amuled.1.in amulegui.1.in
-#, fuzzy, no-wrap
-#| msgid "B<[ --amule-config-file>=I<E<lt>pathE<gt>> B<]>"
+#, no-wrap
 msgid "B<[ --log-file>=I<E<lt>fileE<gt>> B<]>"
-msgstr "B<[ --amule-config-file>=I<E<lt>percorsoE<gt>> B<]>"
+msgstr "B<[ --log-file>=I<E<lt>fileE<gt>> B<]>"
 
 #. type: Plain text
 #: amule.1.in amuled.1.in
 msgid "Write logs to the specified filename instead of the default log file.  Overrides the B<LogFilePath> setting under B<[eMule]> in I<amule.conf> for this run only.  Relative paths are resolved against the configuration directory.  The parent directory must already exist and be writable; it is not created automatically.  An empty or absent configuration setting uses I<logfile> in the configuration directory.  On startup, the previous log is backed up to the same path with I<.bak> appended.  If the backup cannot be created, a warning is logged and the current session is appended to the existing log.  Configuration changes take effect after restart."
-msgstr ""
+msgstr "Scrive i log nel file indicato anziché nel file di log predefinito.  Sostituisce l'impostazione B<LogFilePath> nella sezione B<[eMule]> di I<amule.conf> solo per questa esecuzione.  I percorsi relativi vengono risolti rispetto alla directory di configurazione.  La directory padre deve già esistere ed essere scrivibile; non viene creata automaticamente.  Un'impostazione vuota o assente usa I<logfile> nella directory di configurazione.  All'avvio, il log precedente viene salvato come copia di riserva nello stesso percorso con l'aggiunta di I<.bak>.  Se la copia di riserva non può essere creata, viene registrato un avviso e la sessione corrente viene aggiunta in coda al log esistente.  Le modifiche alla configurazione hanno effetto dopo il riavvio."
 
 # type: TP
 #. type: TP
@@ -163,13 +162,12 @@ msgstr "Abilita o disabilita l'avvio di aMule all'accesso dell'utente, poi esce.
 #. type: Plain text
 #: amule.1.in amuled.1.in amulegui.1.in
 msgid "Enable or disable aMule as the current user's default handler for ed2k:// and magnet: links, then exit.  I<E<lt>valueE<gt>> is B<on> or B<off> for both kinds of link, or B<ed2k:on>, B<ed2k:off>, B<magnet:on> or B<magnet:off> for one of them.  The OS-specific store is selected automatically: Windows registry, macOS LaunchServices, Linux XDG I<mimeapps.list>."
-msgstr ""
+msgstr "Abilita o disabilita aMule come gestore predefinito dell'utente corrente per i link ed2k:// e magnet:, poi esce.  I<E<lt>valueE<gt>> è B<on> o B<off> per entrambi i tipi di link, oppure B<ed2k:on>, B<ed2k:off>, B<magnet:on> o B<magnet:off> per uno solo dei due.  L'archivio specifico del sistema operativo viene selezionato automaticamente: registro di Windows, LaunchServices su macOS, I<mimeapps.list> XDG su Linux."
 
 #. type: Plain text
 #: amule.1.in amuled.1.in amulegui.1.in
-#, fuzzy
 msgid "Enable or disable aMule as the current user's handler for I<.emulecollection> files, then exit.  The OS-specific store is selected automatically: Windows registry, macOS LaunchServices, Linux XDG I<mimeapps.list>."
-msgstr "Abilita o disabilita l'avvio di aMule all'accesso dell'utente, poi esce.  L'archivio specifico del sistema operativo viene selezionato automaticamente: chiave Run del registro di Windows, LaunchAgent su macOS, voce di avvio automatico XDG I<.desktop> su Linux."
+msgstr "Abilita o disabilita aMule come gestore dei file I<.emulecollection> dell'utente corrente, poi esce.  L'archivio specifico del sistema operativo viene selezionato automaticamente: registro di Windows, LaunchServices su macOS, I<mimeapps.list> XDG su Linux."
 
 # type: TP
 #. type: TP
@@ -619,7 +617,7 @@ msgstr "Inizia il download di un file."
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Give the I<E<lt>numberE<gt>> of a file as listed by B<results>, optionally followed by a search I<E<lt>idE<gt>> (as printed by B<search>). Without an id, the number refers to the last B<results> output, or to the most recently started search if nothing was listed yet.  Example: 'download 12' downloads file 12 of the last results; 'download 12 3' downloads file 12 of search 3."
-msgstr ""
+msgstr "Indica il I<E<lt>numeroE<gt>> di un file come elencato da B<results>, seguito facoltativamente da un I<E<lt>idE<gt>> di ricerca (come stampato da B<search>). Senza id, il numero si riferisce all'ultimo output di B<results>, oppure alla ricerca avviata più di recente se non è stato ancora elencato nulla.  Esempio: 'download 12' scarica il file 12 degli ultimi risultati; 'download 12 3' scarica il file 12 della ricerca 3."
 
 # type: Plain text
 #. type: Plain text
@@ -760,7 +758,7 @@ msgstr "Tipi di ricerca disponibili:"
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Searches eD2k and Kad together, using the available network if the other cannot start. Requires a daemon advertising All search support; older daemons return a clear error without starting a search. Example: 'search all amule'."
-msgstr ""
+msgstr "Cerca su eD2k e Kad insieme, usando la rete disponibile se l'altra non può avviarsi. Richiede un demone che annunci il supporto alla ricerca su tutte le reti; i demoni più vecchi restituiscono un errore chiaro senza avviare la ricerca. Esempio: 'search all amule'."
 
 # type: Plain text
 #. type: Plain text
@@ -1105,7 +1103,7 @@ msgstr "B<amulegui> è un programma client, e può connettersi tramite EC ad amu
 #. type: Plain text
 #: amulegui.1.in
 msgid "Write logs to the specified filename instead of the default log file.  Overrides the B<LogFilePath> setting under B<[eMule]> in I<remote.conf> for this run only.  Relative paths are resolved against the configuration directory.  The parent directory must already exist and be writable; it is not created automatically.  An empty or absent configuration setting uses I<remotelogfile> in the configuration directory.  On startup, the previous log is backed up to the same path with I<.bak> appended.  If the backup cannot be created, a warning is logged and the current session is appended to the existing log.  Configuration changes take effect after restart."
-msgstr ""
+msgstr "Scrive i log nel file indicato anziché nel file di log predefinito.  Sostituisce l'impostazione B<LogFilePath> nella sezione B<[eMule]> di I<remote.conf> solo per questa esecuzione.  I percorsi relativi vengono risolti rispetto alla directory di configurazione.  La directory padre deve già esistere ed essere scrivibile; non viene creata automaticamente.  Un'impostazione vuota o assente usa I<remotelogfile> nella directory di configurazione.  All'avvio, il log precedente viene salvato come copia di riserva nello stesso percorso con l'aggiunta di I<.bak>.  Se la copia di riserva non può essere creata, viene registrato un avviso e la sessione corrente viene aggiunta in coda al log esistente.  Le modifiche alla configurazione hanno effetto dopo il riavvio."
 
 # type: Plain text
 #. type: Plain text
@@ -1121,47 +1119,45 @@ msgstr "Abilita o disabilita l'avvio di amulegui all'accesso dell'utente, poi es
 # type: Plain text
 #. type: Plain text
 #: amulegui.1.in
-#, fuzzy
 msgid "Sends an eD2k-link, or every link in an eMule collection file, to the connected core."
-msgstr "Aggiunge al core un collegamento eD2k, o ogni collegamento contenuto in un file collezione eMule."
+msgstr "Invia al core connesso un collegamento eD2k, o ogni collegamento contenuto in un file collezione eMule."
 
 # type: Plain text
 #. type: TP
 #: amulegui.1.in
-#, fuzzy, no-wrap
+#, no-wrap
 msgid "I<~/.aMule/remote.conf>"
-msgstr "~/.aMule/remote.conf"
+msgstr "I<~/.aMule/remote.conf>"
 
 #. type: Plain text
 #: amulegui.1.in
 msgid "Settings, including the core to connect to."
-msgstr ""
+msgstr "Impostazioni, compreso il core a cui connettersi."
 
 # type: Plain text
 #. type: TP
 #: amulegui.1.in
-#, fuzzy, no-wrap
+#, no-wrap
 msgid "I<~/.aMule/remotelogfile>"
-msgstr "~/.aMule/remote.conf"
+msgstr "I<~/.aMule/remotelogfile>"
 
 # type: Plain text
 #. type: Plain text
 #: amulegui.1.in
-#, fuzzy
 msgid "The log."
-msgstr "Mostra il log."
+msgstr "Il log."
 
 # type: Plain text
 #. type: TP
 #: amulegui.1.in
-#, fuzzy, no-wrap
+#, no-wrap
 msgid "I<~/.aMule/ED2KLinks>"
-msgstr "~/.aMule/ED2KLinks"
+msgstr "I<~/.aMule/ED2KLinks>"
 
 #. type: Plain text
 #: amulegui.1.in
 msgid "Links passed on the command line, waiting to be sent to the core."
-msgstr ""
+msgstr "Collegamenti passati dalla riga di comando, in attesa di essere inviati al core."
 
 # type: Plain text
 #. type: Plain text

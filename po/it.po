@@ -215,11 +215,16 @@ msgid ""
 "\n"
 "The file is deleted and no longer shared. This cannot be undone."
 msgstr ""
+"Sei certo di voler eliminare '%s' dal disco?\n"
+"\n"
+"File: %s\n"
+"\n"
+"Il file viene eliminato e non è più condiviso. L'operazione non può essere annullata."
 
 #: src/GuiEvents.cpp
 #, c-format
 msgid "... and %i more"
-msgstr ""
+msgstr "... e altri %i"
 
 #: src/GuiEvents.cpp
 #, c-format
@@ -229,26 +234,29 @@ msgid ""
 "%s\n"
 "The files are deleted and no longer shared. This cannot be undone."
 msgstr ""
+"Sei certo di voler eliminare dal disco i %i file selezionati?\n"
+"\n"
+"%s\n"
+"I file vengono eliminati e non sono più condivisi. L'operazione non può essere annullata."
 
 #: src/GuiEvents.cpp
-#, fuzzy
 msgid "Delete from disk"
-msgstr "Ottieni da Kad"
+msgstr "Elimina dal disco"
 
 #: src/GuiEvents.cpp
 #, c-format
 msgid "Skipped deleting '%s': the selected file has changed."
-msgstr ""
+msgstr "Eliminazione di '%s' saltata: il file selezionato è cambiato."
 
 #: src/GuiEvents.cpp
 #, c-format
 msgid "Deleted '%s' from disk."
-msgstr ""
+msgstr "'%s' eliminato dal disco."
 
 #: src/GuiEvents.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Could not delete '%s' from disk."
-msgstr "Impossibile eliminare la categoria: %s"
+msgstr "Impossibile eliminare '%s' dal disco."
 
 #: src/GuiEvents.cpp
 #, c-format
@@ -261,6 +269,13 @@ msgid ""
 "Yes: stop sharing and remove the list entries. A later share scan may share the files again.\n"
 "No: keep the files shared and listed."
 msgstr ""
+"Impossibile eliminare dal disco questi file:\n"
+"\n"
+"%s\n"
+"Rimuoverli comunque dalle condivisioni e dall'elenco dei trasferimenti completati?\n"
+"\n"
+"Sì: smetti di condividerli e rimuovi le voci dall'elenco. Una successiva scansione delle cartelle condivise potrebbe condividerli di nuovo.\n"
+"No: mantieni i file condivisi e in elenco."
 
 #: src/amuleAppCommon.cpp
 msgid "Failed to open ED2KLinks file."
@@ -379,9 +394,9 @@ msgid "Memory debug results for aMule exit:"
 msgstr "Risultati del debug della memoria per la chiusura di aMule:"
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Binding aMule's peer-to-peer and HTTP traffic to interface: %s"
-msgstr "Associazione di tutto il traffico di rete all'interfaccia: %s"
+msgstr "Associazione del traffico peer-to-peer e HTTP di aMule all'interfaccia: %s"
 
 #: src/amule.cpp
 #, c-format
@@ -428,24 +443,21 @@ msgid "WARNING"
 msgstr "ATTENZIONE"
 
 #: src/amule.cpp
-#, fuzzy
 msgid "Loading known files"
-msgstr "Caricamento dei file parziali"
+msgstr "Caricamento dei file conosciuti"
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Loading known files (%u of %u)"
-msgstr "Caricamento dei file parziali (%u di %u)"
+msgstr "Caricamento dei file conosciuti (%u di %u)"
 
 #: src/amule.cpp
-#, fuzzy
 msgid "Loading credits"
-msgstr "Caricamento dei file condivisi"
+msgstr "Caricamento dei crediti"
 
 #: src/amule.cpp
-#, fuzzy
 msgid "Loading IP filter"
-msgstr "Caricamento dei file parziali"
+msgstr "Caricamento del filtro IP"
 
 #: src/amule.cpp
 msgid "Initializing network"
@@ -557,54 +569,54 @@ msgstr ""
 
 #: src/amule.cpp
 msgid "The P2P TCP port conflicts with the External Connections port. No sockets were changed.\n"
-msgstr ""
+msgstr "La porta TCP P2P è in conflitto con la porta delle connessioni esterne. Nessun socket è stato modificato.\n"
 
 #: src/amule.cpp
 msgid "The P2P TCP port is too high for its associated server UDP port. No sockets were changed.\n"
-msgstr ""
+msgstr "La porta TCP P2P è troppo alta per la porta UDP server associata. Nessun socket è stato modificato.\n"
 
 #: src/amule.cpp
 msgid "The client UDP port conflicts with the server UDP port (TCP+3). No sockets were changed.\n"
-msgstr ""
+msgstr "La porta UDP client è in conflitto con la porta UDP server (TCP+3). Nessun socket è stato modificato.\n"
 
 #: src/amule.cpp
 #, c-format
 msgid "Could not rebind the server UDP port %u; no sockets were changed.\n"
-msgstr ""
+msgstr "Impossibile riassociare la porta UDP server %u; nessun socket è stato modificato.\n"
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Could not rebind the P2P TCP port %u. %s"
-msgstr "ERRORE: Impossibile mettersi in ascolto sulla porta TCP."
+msgstr "Impossibile riassociare la porta TCP P2P %u. %s"
 
 #: src/amule.cpp
 msgid "The previous listener and server UDP socket remain active.\n"
-msgstr ""
+msgstr "Il listener precedente e il socket UDP server restano attivi.\n"
 
 #: src/amule.cpp
 msgid "The server UDP socket could not be restored; restart aMule.\n"
-msgstr ""
+msgstr "Impossibile ripristinare il socket UDP server; riavvia aMule.\n"
 
 #: src/amule.cpp
 msgid "The previous P2P listeners remain active.\n"
-msgstr ""
+msgstr "I listener P2P precedenti restano attivi.\n"
 
 #: src/amule.cpp
 msgid "The previous client UDP socket remains active.\n"
-msgstr ""
+msgstr "Il socket UDP client precedente resta attivo.\n"
 
 #: src/amule.cpp
 msgid "Some previous P2P sockets could not be restored; restart aMule.\n"
-msgstr ""
+msgstr "Impossibile ripristinare alcuni socket P2P precedenti; riavvia aMule.\n"
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Could not rebind the client UDP port %u. %s"
-msgstr "Impossibile eliminare la categoria: %s"
+msgstr "Impossibile riassociare la porta UDP client %u. %s"
 
 #: src/amule.cpp
 msgid "P2P listening sockets rebound; established peer connections were kept."
-msgstr ""
+msgstr "Socket di ascolto P2P riassociati; le connessioni già stabilite con i peer sono state mantenute."
 
 #: src/amule.cpp
 msgid "Failed to create OnlineSig File"
@@ -667,7 +679,7 @@ msgstr "Metadati multimediali: il file analizzato non è più noto, risultato sc
 #: src/amule.cpp
 #, c-format
 msgid "Verify Local Data: another file named '%s' in your shared folders has the same content as '%s' and may be an intact copy of it."
-msgstr ""
+msgstr "Verifica Dati Locali: un altro file di nome '%s' nelle tue cartelle condivise ha lo stesso contenuto di '%s' e potrebbe esserne una copia integra."
 
 #: src/amule.cpp
 #, c-format
@@ -1203,7 +1215,7 @@ msgstr "Tutto"
 
 #: src/amule-remote-gui.cpp
 msgid "The daemon could not apply the connection port changes."
-msgstr ""
+msgstr "Il demone non è riuscito ad applicare le modifiche alle porte di connessione."
 
 #: src/amule-remote-gui.cpp
 msgid "not readable"
@@ -1251,7 +1263,7 @@ msgstr "Sconosciuto"
 
 #: src/amule-remote-gui.cpp
 msgid "The connected daemon does not support All searches."
-msgstr ""
+msgstr "Il demone connesso non supporta la ricerca su tutte le reti."
 
 #: src/BaseClient.cpp
 msgid "Searching buddy for lowid connection"
@@ -1372,9 +1384,9 @@ msgid "Failed to create incoming dir for category. Please specify a valid path!"
 msgstr "Impossibile creare una directory per i file in ingresso per questa categoria. Specificare un percorso valido!"
 
 #: src/ChatSelector.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Chat-Session Started: %s - %s %s"
-msgstr "Sessione di chat iniziata: %s (%s:%u) - %s %s"
+msgstr "Sessione di chat iniziata: %s - %s %s"
 
 #: src/ChatSelector.cpp
 msgid "*** Connected to Client ***"
@@ -1382,7 +1394,7 @@ msgstr "*** Connesso al client ***"
 
 #: src/ChatSelector.cpp
 msgid "*** Chat unavailable: peer identity or route is not available ***"
-msgstr ""
+msgstr "*** Chat non disponibile: identità o percorso del peer non disponibili ***"
 
 #: src/ChatSelector.cpp
 msgid "*** Connecting to Client ***"
@@ -1442,12 +1454,11 @@ msgstr "Invia messaggio"
 
 #: src/ClientContextActions.cpp
 msgid "Chat is unavailable until the peer supplies a valid identity."
-msgstr ""
+msgstr "La chat non è disponibile finché il peer non fornisce un'identità valida."
 
 #: src/ClientContextActions.cpp
-#, fuzzy
 msgid "Chat unavailable"
-msgstr "Non disponibile"
+msgstr "Chat non disponibile"
 
 #: src/ClientContextActions.cpp
 msgid "Send message to user"
@@ -2053,9 +2064,8 @@ msgid "C&lear completed"
 msgstr "&Rimuovi file completati"
 
 #: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
-#, fuzzy
 msgid "Delete file from &disk"
-msgstr "Cancellazione file in corso: %s"
+msgstr "Elimina file dal &disco"
 
 #: src/DownloadListCtrl.cpp
 msgid "Swap every A4AF to this file now"
@@ -2499,7 +2509,7 @@ msgstr "Destinatario della chat sconosciuto"
 
 #: src/ExternalConn.cpp
 msgid "Chat unavailable: peer identity or route is not available"
-msgstr ""
+msgstr "Chat non disponibile: identità o percorso del peer non disponibili"
 
 #: src/ExternalConn.cpp
 msgid "Kad is disabled in preferences."
@@ -3355,7 +3365,7 @@ msgstr "Utente Kad"
 #: src/KnownFile.cpp
 #, c-format
 msgid "Verify Local Data: %s is still downloading, so it was not checked."
-msgstr ""
+msgstr "Verifica Dati Locali: %s è ancora in download, quindi non è stato controllato."
 
 #: src/KnownFile.cpp
 #, c-format
@@ -3669,9 +3679,9 @@ msgid "External Connection: Handshake failed."
 msgstr "Connessione esterna: errore di negoziazione."
 
 #: src/LibSocketAsio.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "WARNING: network interface '%s' is gone - traffic is no longer bound to it and may leave via the default route."
-msgstr "ATTENZIONE: impossibile associare all'interfaccia di rete '%s' - il traffico potrebbe uscire tramite la route predefinita."
+msgstr "ATTENZIONE: l'interfaccia di rete '%s' non esiste più - il traffico non è più associato a essa e potrebbe uscire tramite la route predefinita."
 
 #: src/LibSocketAsio.cpp
 #, c-format
@@ -4053,9 +4063,8 @@ msgid "Type"
 msgstr "Tipo"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Search network"
-msgstr "Errore di ricerca"
+msgstr "Rete di ricerca"
 
 #: src/muuli_wdr.cpp
 msgid "Extended Parameters"
@@ -4718,9 +4727,8 @@ msgid "Bind to network interface (empty for any):"
 msgstr "Associa all'interfaccia di rete (vuoto per qualsiasi):"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Advanced users only: pin aMule's peer-to-peer traffic, and its HTTP updates where the platform allows, to one network interface, chosen from the list or typed in by name (e.g. tun0, eth0, en0) or index. Unlike binding to an IP, this stops traffic leaking out via the default route - useful with a VPN. On Linux before kernel 5.7 it needs the CAP_NET_RAW capability."
-msgstr "Solo per utenti esperti: forza tutto il traffico di aMule su un'unica interfaccia di rete, scelta dall'elenco oppure digitata per nome (ad es. tun0, eth0, en0) o indice. A differenza dell'associazione a un IP, questo impedisce al traffico di fuoriuscire tramite la route predefinita - utile con una VPN. Non richiede privilegi elevati."
+msgstr "Solo per utenti esperti: vincola il traffico peer-to-peer di aMule, e i suoi aggiornamenti HTTP dove la piattaforma lo consente, a un'unica interfaccia di rete, scelta dall'elenco oppure digitata per nome (ad es. tun0, eth0, en0) o indice. A differenza dell'associazione a un IP, questo impedisce al traffico di fuoriuscire tramite la route predefinita - utile con una VPN. Su Linux con kernel precedenti alla 5.7 richiede la capability CAP_NET_RAW."
 
 #: src/muuli_wdr.cpp
 msgid "Max sources per downloading file:"
@@ -4744,11 +4752,11 @@ msgstr "Riconnetti dopo perdita connessione"
 
 #: src/muuli_wdr.cpp
 msgid "File repair hashes over Kad"
-msgstr ""
+msgstr "Hash di riparazione dei file su Kad"
 
 #: src/muuli_wdr.cpp
 msgid "Share and use file repair hashes (AICH) over Kad"
-msgstr ""
+msgstr "Condividi e usa gli hash di riparazione dei file (AICH) su Kad"
 
 #: src/muuli_wdr.cpp
 msgid ""
@@ -4760,10 +4768,17 @@ msgid ""
 "\n"
 "Technical detail: enabling this advertises Kad protocol version 0x0a and adds AICH hashes to keyword publish and search results."
 msgstr ""
+"Condivide gli hash di riparazione dei file con gli altri nodi Kad e li ricava dalle ricerche Kad. Questi hash possono aiutare aMule a riparare i dati scaricati danneggiati senza scaricare di nuovo un'intera parte. aMule usa un hash per la riparazione solo quando un numero sufficiente di peer indipendenti segnala lo stesso.\n"
+"\n"
+"I client Kad molto vecchi (precedenti a eMule 0.49b) potrebbero perdere i risultati di ricerca che contengono questi hash. Se noti risultati mancanti, prova a disattivare questa opzione.\n"
+"\n"
+"Disattivando questa opzione, gli hash di riparazione memorizzati nel tuo indice Kad vengono scartati al salvataggio successivo. Riattivandola, aMule ricomincia a raccoglierli.\n"
+"\n"
+"Dettaglio tecnico: l'attivazione annuncia la versione 0x0a del protocollo Kad e aggiunge gli hash AICH alla pubblicazione delle parole chiave e ai risultati di ricerca."
 
 #: src/muuli_wdr.cpp
 msgid "Ignore repair hashes from Kad nodes too old to support them"
-msgstr ""
+msgstr "Ignora gli hash di riparazione dei nodi Kad troppo vecchi per supportarli"
 
 #: src/muuli_wdr.cpp
 msgid ""
@@ -4773,6 +4788,11 @@ msgid ""
 "\n"
 "Technical detail: rejects AICH publish tags from nodes advertising Kad protocol versions below 0x09."
 msgstr ""
+"Si applica solo quando la condivisione e l'uso degli hash di riparazione dei file su Kad sono attivi. Ignora gli hash pubblicati dai nodi che dichiarano una versione di Kad troppo vecchia per supportarli.\n"
+"\n"
+"La versione dichiarata da un nodo può essere obsoleta o inesatta, quindi questa opzione può scartare hash validi e non rende affidabili quelli accettati. I nodi di versione sconosciuta vengono comunque accettati.\n"
+"\n"
+"Dettaglio tecnico: rifiuta i tag di pubblicazione AICH dei nodi che annunciano versioni del protocollo Kad inferiori a 0x09."
 
 #: src/muuli_wdr.cpp
 msgid "Remove dead server after"
@@ -4796,7 +4816,7 @@ msgstr "Aggiorna la lista server quando ti connetti ad un server"
 
 #: src/muuli_wdr.cpp
 msgid "Update server list when a client connects"
-msgstr "Aggiorna la lista server quando ti connetti ad un client"
+msgstr "Aggiorna la lista server quando un client si connette"
 
 #: src/muuli_wdr.cpp
 msgid "Use priority system"
@@ -4875,13 +4895,12 @@ msgid "Enter here the min disk space desired."
 msgstr "Inserire lo spazio disco minimo desiderato."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Save up to 10 HighID sources of rare files (20 or fewer sources) on exit"
-msgstr "Salva 10 fonti per i file rari ( con < 20 fonti)"
+msgstr "All'uscita salva fino a 10 fonti con ID alto dei file rari (20 fonti o meno)"
 
 #: src/muuli_wdr.cpp
 msgid "The saved sources are used again only if aMule restarts within 2 hours. LowID sources are not saved: a LowID only identifies a peer on the server that assigned it."
-msgstr ""
+msgstr "Le fonti salvate vengono riutilizzate solo se aMule si riavvia entro 2 ore. Le fonti con ID basso non vengono salvate: un ID basso identifica un peer solo sul server che lo ha assegnato."
 
 #: src/muuli_wdr.cpp src/Statistics.cpp
 msgid "Uploads"
@@ -4984,27 +5003,24 @@ msgid "Follow symbolic links in shared folders"
 msgstr "Segui i collegamenti simbolici nelle cartelle condivise"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Exclude files and folders matching:"
-msgstr "Escludi i file corrispondenti a:"
+msgstr "Escludi file e cartelle corrispondenti a:"
 
 #: src/muuli_wdr.cpp
 msgid "Files and folders whose name matches are not shared. A matching folder inside a share that includes its subfolders is skipped with everything in it; a folder you share yourself is always shared. Matching is case-insensitive. As wildcards: patterns separated by '|', e.g. .DS_Store|Thumbs.db|*.tmp, where '*' matches any run of characters and '?' a single one. Tick the box below to write one regular expression instead."
-msgstr ""
+msgstr "I file e le cartelle il cui nome corrisponde non vengono condivisi. Una cartella corrispondente all'interno di una condivisione che include le sottocartelle viene saltata con tutto il suo contenuto; una cartella che condividi tu stesso viene sempre condivisa. Il confronto non distingue tra maiuscole e minuscole. Come caratteri jolly: pattern separati da '|', ad es. .DS_Store|Thumbs.db|*.tmp, dove '*' corrisponde a qualsiasi sequenza di caratteri e '?' a un singolo carattere. Spunta la casella qui sotto per scrivere invece un'unica espressione regolare."
 
 #: src/muuli_wdr.cpp
 msgid "Patterns are regular expressions"
 msgstr "I pattern sono espressioni regolari"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "When set, the whole field is one regular expression: '|' is alternation, and '*' and '?' take their regular-expression meaning rather than the wildcard one. When unset, it is a list of '|'-separated wildcards."
-msgstr "Se attivato, l'intero campo è un'unica espressione regolare ('|' indica l'alternanza). Se disattivato, è un elenco di caratteri jolly separati da '|'."
+msgstr "Se attivato, l'intero campo è un'unica espressione regolare: '|' indica l'alternanza, e '*' e '?' assumono il significato delle espressioni regolari anziché quello dei caratteri jolly. Se disattivato, è un elenco di caratteri jolly separati da '|'."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Show how many of the files and folders in your shared folders the current pattern would exclude, counted over the last scan."
-msgstr "Mostra quanti file condivisi verrebbero esclusi dal pattern attuale."
+msgstr "Mostra quanti file e cartelle delle tue cartelle condivise verrebbero esclusi dal pattern attuale, contati sull'ultima scansione."
 
 #: src/muuli_wdr.cpp
 msgid "When the connected core's files live on a different machine, map a path prefix it reports to where that filesystem is reachable from here (a network share, say) so \"Open\" and \"Show in folder\" work."
@@ -5934,7 +5950,7 @@ msgstr "giorni"
 #: src/OtherFunctions.cpp
 #, c-format
 msgid "%u kbps"
-msgstr ""
+msgstr "%u kbps"
 
 #. TRANSLATORS:
 #. Punctuation for a "label: value" pair. %s is the already-translated
@@ -6483,9 +6499,8 @@ msgid "- Network interface binding changed.\n"
 msgstr "- Associazione all'interfaccia di rete modificata.\n"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "- Local address binding changed.\n"
-msgstr "- Associazione all'interfaccia di rete modificata.\n"
+msgstr "- Associazione all'indirizzo locale modificata.\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- TCP port changed.\n"
@@ -6623,7 +6638,7 @@ msgstr "Impossibile rimuovere la registrazione del gestore URL."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "macOS does not let an application stop being the default handler. To stop aMule opening these, make another application the default."
-msgstr ""
+msgstr "macOS non consente a un'applicazione di smettere di essere il gestore predefinito. Per impedire che aMule li apra, imposta un'altra applicazione come predefinita."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "The web server and aMule API require external connections to be enabled."
@@ -6661,28 +6676,28 @@ msgid "Choose a folder for %s"
 msgstr "Scegli una directory per i %s"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Would exclude %u or more of the files in your shared folders"
-msgstr "Escluderebbe %u di %u file condiviso"
+msgstr "Escluderebbe %u o più file delle tue cartelle condivise"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Would exclude %u of %u file in your shared folders"
 msgid_plural "Would exclude %u of %u files in your shared folders"
-msgstr[0] "Escluderebbe %u di %u file condiviso"
-msgstr[1] "Escluderebbe %u di %u file condivisi"
+msgstr[0] "Escluderebbe %u di %u file delle tue cartelle condivise"
+msgstr[1] "Escluderebbe %u di %u file delle tue cartelle condivise"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Would also exclude %u or more folders, with everything in them"
-msgstr "Escluderebbe %u di %u file condiviso"
+msgstr "Escluderebbe anche %u o più cartelle, con tutto il loro contenuto"
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "Would also exclude %u folder, with everything in it"
 msgid_plural "Would also exclude %u folders, with everything in them"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Escluderebbe anche %u cartella, con tutto il suo contenuto"
+msgstr[1] "Escluderebbe anche %u cartelle, con tutto il loro contenuto"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Browse for videoplayer"
@@ -6947,9 +6962,8 @@ msgid "Invalid entry in stored search list, file may be corrupt"
 msgstr "Voce non valida nella lista delle ricerche salvate, il file potrebbe essere corrotto"
 
 #: src/SearchList.cpp
-#, fuzzy
 msgid "All search can't be done if neither eD2k nor Kad is available"
-msgstr "Impossibile effettuare una ricerca sulla rete Kad senza esserci connessi"
+msgstr "La ricerca su tutte le reti non è possibile se né eD2k né Kad sono disponibili"
 
 #: src/SearchList.cpp
 msgid "eD2k search can't be done if eD2k is not connected"
@@ -6957,7 +6971,7 @@ msgstr "La ricerca eD2k non può essere effettuata se la rete eD2k non è connes
 
 #: src/SearchList.cpp
 msgid "All search: no usable Kad keyword; continuing with eD2k."
-msgstr ""
+msgstr "Ricerca su tutte le reti: nessuna parola chiave Kad utilizzabile; si prosegue con eD2k."
 
 #: src/SearchList.cpp
 msgid "No keyword for Kad search - aborting"
@@ -6969,7 +6983,7 @@ msgstr "Errore imprevisto durante la ricerca su Kad: "
 
 #: src/SearchList.cpp
 msgid "All search: Kad component could not start: "
-msgstr ""
+msgstr "Ricerca su tutte le reti: impossibile avviare la parte Kad: "
 
 #: src/SearchList.cpp
 msgid "Search timed out: the server did not answer."
@@ -7026,37 +7040,32 @@ msgstr "Nuovo"
 
 # AI-GENERATED — please review.
 #: src/SearchModeIcons.h
-#, fuzzy
 msgid "eD2k: Current server"
-msgstr "Lista server eD2k (server.met)"
+msgstr "eD2k: server attuale"
 
 #: src/SearchModeIcons.h
-#, fuzzy
 msgid "eD2k: All servers"
-msgstr "Rimuovi tutti i server"
+msgstr "eD2k: tutti i server"
 
 #: src/SearchModeIcons.h
-#, fuzzy
 msgid "All networks"
-msgstr "Nessuna rete"
+msgstr "Tutte le reti"
 
 #: src/SearchModeIcons.h
-#, fuzzy
 msgid "Search the connected eD2k server."
-msgstr "Server attualmente connesso."
+msgstr "Cerca sul server eD2k connesso."
 
 #: src/SearchModeIcons.h
 msgid "Search the connected eD2k server and other servers in the server list."
-msgstr ""
+msgstr "Cerca sul server eD2k connesso e sugli altri server della lista server."
 
 #: src/SearchModeIcons.h
-#, fuzzy
 msgid "Search the Kad network."
-msgstr "Connettiti alla rete."
+msgstr "Cerca sulla rete Kad."
 
 #: src/SearchModeIcons.h
 msgid "Search eD2k servers and Kad, using whichever networks are available."
-msgstr ""
+msgstr "Cerca sui server eD2k e su Kad, usando le reti disponibili."
 
 #: src/SearchProgressReport.cpp
 msgid "running"
@@ -7100,36 +7109,35 @@ msgstr "Nessuna ricerca da riportare.\n"
 #: src/SearchSourceFormat.h
 #, c-format
 msgid "Estimated availability: %u"
-msgstr ""
+msgstr "Disponibilità stimata: %u"
 
 #: src/SearchSourceFormat.h
-#, fuzzy, c-format
+#, c-format
 msgid "eD2k sources: %u"
-msgstr "Fonti del file:"
+msgstr "Fonti eD2k: %u"
 
 #: src/SearchSourceFormat.h
-#, fuzzy, c-format
+#, c-format
 msgid "Kad sources: %u"
-msgstr "Fonti trovate: %s"
+msgstr "Fonti Kad: %u"
 
 #: src/SearchSourceFormat.h
 msgid "Network counts may overlap; they are not added together."
-msgstr ""
+msgstr "I conteggi delle reti possono sovrapporsi; non vengono sommati."
 
 #: src/SearchSourceFormat.h
-#, fuzzy
 msgid "Network breakdown unavailable."
-msgstr "Nuova versione disponibile"
+msgstr "Suddivisione per rete non disponibile."
 
 #: src/SearchSourceFormat.h
-#, fuzzy, c-format
+#, c-format
 msgid "Complete sources: %u"
-msgstr "Fonti complete"
+msgstr "Fonti complete: %u"
 
 #: src/SearchSourceFormat.h
-#, fuzzy, c-format
+#, c-format
 msgid "Direct client endpoints: %u"
-msgstr "Il nuovo clientID è %u"
+msgstr "Endpoint client diretti: %u"
 
 #: src/ServerConnect.cpp
 msgid "Failed to connect to all obfuscated static servers listed. Making another pass without obfuscation."
@@ -7163,19 +7171,19 @@ msgid "No valid servers to which to connect found in server list"
 msgstr "Nella lista dei server non è stato trovato un server valido a cui connettersi"
 
 #: src/ServerConnect.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Connected to %s (%s:%i), sending login request"
-msgstr "Connesso a %s (%s:%i)"
+msgstr "Connesso a %s (%s:%i), invio della richiesta di login"
 
 #: src/ServerConnect.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Obfuscated connection established on: %s (%s:%i)"
-msgstr "Connessione stabilita con: %s"
+msgstr "Connessione offuscata stabilita con: %s (%s:%i)"
 
 #: src/ServerConnect.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Connection established on: %s (%s:%i)"
-msgstr "Connessione stabilita con: %s"
+msgstr "Connessione stabilita con: %s (%s:%i)"
 
 #: src/ServerConnect.cpp
 msgid "Fatal Error while trying to connect. Internet connection might be down"
@@ -8239,7 +8247,7 @@ msgstr "Non è un hash valido (la lunghezza deve essere di 32 caratteri)\n"
 
 #: src/TextClient.cpp
 msgid "The connected daemon does not support All searches.\n"
-msgstr ""
+msgstr "Il demone connesso non supporta la ricerca su tutte le reti.\n"
 
 #. TRANSLATORS:
 #. 'help search' is a command to the program, do not translate it.
@@ -8637,7 +8645,6 @@ msgid "Execute a search."
 msgstr "Effettua una ricerca."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid ""
 "A search type has to be specified by giving the type:\n"
 "    GLOBAL\n"
@@ -8660,6 +8667,7 @@ msgstr ""
 "    GLOBAL\n"
 "    LOCAL\n"
 "    KAD\n"
+"    ALL: tutte le reti (richiede il supporto del demone)\n"
 "Esempio: 'search kad file' eseguirà una ricerca kad per \"file\".\n"
 "\n"
 "Filtri opzionali possono essere aggiunti prima, dopo o intervallati con\n"
@@ -8685,9 +8693,8 @@ msgid "Execute a kad search"
 msgstr "Effettua una ricerca sulla rete Kad"
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Execute an eD2k and Kad search"
-msgstr "Effettua una ricerca sulla rete Kad"
+msgstr "Effettua una ricerca su eD2k e Kad"
 
 #: src/TextClient.cpp
 msgid "Show the results of a search."
@@ -8723,6 +8730,9 @@ msgid ""
 "Without an id, the number refers to the last 'results' output, or to the most recently started search if nothing was listed yet.\n"
 "Example: 'download 12' downloads file 12 of the last results; 'download 12 3' downloads file 12 of search 3.\n"
 msgstr ""
+"Indica il numero di un file come elencato da 'results', seguito facoltativamente da un id di ricerca.\n"
+"Senza id, il numero si riferisce all'ultimo output di 'results', oppure alla ricerca avviata più di recente se non è stato ancora elencato nulla.\n"
+"Esempio: 'download 12' scarica il file 12 degli ultimi risultati; 'download 12 3' scarica il file 12 della ricerca 3.\n"
 
 #: src/TextClient.cpp
 msgid "Pause download."
@@ -8843,37 +8853,37 @@ msgstr "Verifica Dati Locali (%s): ERRORI RILEVATI! %s Blocchi con errori: MD4: 
 #: src/ThreadTasks.cpp
 #, c-format
 msgid "Verify Local Data: file %s was removed before it could be checked."
-msgstr ""
+msgstr "Verifica Dati Locali: il file %s è stato rimosso prima che potesse essere controllato."
 
 #: src/ThreadTasks.cpp
 #, c-format
 msgid "Verify Local Data: could not read %s, so it was not checked."
-msgstr ""
+msgstr "Verifica Dati Locali: impossibile leggere %s, quindi non è stato controllato."
 
 #: src/ThreadTasks.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Verify Local Data: ERRORS FOUND! %s Size on disk: %u bytes, expected: %u bytes."
-msgstr "Verifica Dati Locali (%s): ERRORI RILEVATI! %s Blocchi con errori: MD4: %s. %s %s"
+msgstr "Verifica Dati Locali: ERRORI RILEVATI! %s Dimensione su disco: %u byte, attesi: %u byte."
 
 #: src/ThreadTasks.cpp
 #, c-format
 msgid "Verify Local Data: %s is larger than aMule supports, so it was not checked."
-msgstr ""
+msgstr "Verifica Dati Locali: %s è più grande di quanto aMule supporti, quindi non è stato controllato."
 
 #: src/ThreadTasks.cpp
 #, c-format
 msgid "Verify Local Data: %s is empty, so there is nothing to check."
-msgstr ""
+msgstr "Verifica Dati Locali: %s è vuoto, quindi non c'è nulla da controllare."
 
 #: src/ThreadTasks.cpp
 #, c-format
 msgid "Verify Local Data: %s was removed or changed during the check, which did not finish."
-msgstr ""
+msgstr "Verifica Dati Locali: %s è stato rimosso o modificato durante il controllo, che non è stato completato."
 
 #: src/ThreadTasks.cpp
 #, c-format
 msgid "Verify Local Data: could not read %s, so the check did not finish: %s"
-msgstr ""
+msgstr "Verifica Dati Locali: impossibile leggere %s, quindi il controllo non è stato completato: %s"
 
 #: src/ThreadTasks.cpp
 #, c-format
