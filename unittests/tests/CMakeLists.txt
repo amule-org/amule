@@ -107,6 +107,12 @@ target_include_directories (NatRendezvousPolicyTest PRIVATE
 )
 target_link_libraries (NatRendezvousPolicyTest muleunit ${Boost_LIBRARIES})
 
+# Requester-side NAT rendezvous admission is wx-free and has no socket path.
+add_executable (NatRendezvousInitiatorPolicyTest NatRendezvousInitiatorPolicyTest.cpp)
+add_test (NAME NatRendezvousInitiatorPolicyTest COMMAND NatRendezvousInitiatorPolicyTest)
+target_include_directories (NatRendezvousInitiatorPolicyTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries (NatRendezvousInitiatorPolicyTest muleunit mulecommon)
+
 # Pure experimental wire codecs, exercised even when application support is OFF.
 add_executable (NatServerHolePunchTest NatServerHolePunchTest.cpp)
 target_include_directories (NatServerHolePunchTest PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_BINARY_DIR})
