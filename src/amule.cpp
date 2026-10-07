@@ -3404,7 +3404,10 @@ void CamuleApp::ShowConnectionState(bool forceUpdate)
 				} else {
 					AddLogLineC(_("Connected to Kad (firewalled)"));
 				}
-				m_kadConnectedSince = wxDateTime::Now();
+				// Between ok and firewalled Kad stays connected: keep the time it connected.
+				if (!(old_state & (CONNECTED_KAD_OK | CONNECTED_KAD_FIREWALLED))) {
+					m_kadConnectedSince = wxDateTime::Now();
+				}
 			} else {
 				AddLogLineC(_("Disconnected from Kad"));
 				m_kadConnectedSince = wxDateTime();

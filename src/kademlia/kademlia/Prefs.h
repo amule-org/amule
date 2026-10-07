@@ -39,6 +39,7 @@ there client on the eMule forum..
 #ifndef PREFS_H
 #define PREFS_H
 
+#include "FirewallRecheck.h" // Needed for CFirewallRecheck
 #include "../utils/UInt128.h"
 #include "../../Preferences.h"
 #include <protocol/kad/Constants.h>
@@ -65,13 +66,9 @@ public:
 	uint32_t GetIPAddress() const noexcept { return m_ip; }
 	void SetIPAddress(uint32_t val) noexcept;
 
-	bool GetRecheckIP() const noexcept { return (m_recheckip < KADEMLIAFIREWALLCHECKS); }
-	void SetRecheckIP()
-	{
-		m_recheckip = 0;
-		SetFirewalled();
-	}
-	void IncRecheckIP() noexcept { m_recheckip++; }
+	bool GetRecheckIP() const noexcept { return m_firewallRecheck.AwaitingAnswers(); }
+	void SetRecheckIP();
+	void IncRecheckIP() noexcept { m_firewallRecheck.AddAnswer(time(nullptr)); }
 
 	bool HasHadContact() const noexcept
 	{
@@ -84,8 +81,7 @@ public:
 	}
 	uint32_t GetLastContact() const noexcept { return m_lastContact; }
 
-	bool GetFirewalled() const noexcept;
-	void SetFirewalled();
+	bool GetFirewalled() const noexcept { return m_firewallRecheck.IsFirewalled(time(nullptr)); }
 	void IncFirewalled();
 
 	uint8_t GetTotalFile() const noexcept { return m_totalFile; }
@@ -153,8 +149,7 @@ private:
 	CUInt128 m_clientHash;
 	uint32_t m_ip;
 	uint32_t m_ipLast;
-	uint32_t m_recheckip;
-	uint32_t m_firewalled;
+	CFirewallRecheck m_firewallRecheck;
 	uint32_t m_kademliaUsers;
 	uint32_t m_kademliaFiles;
 	uint8_t m_totalFile;
@@ -165,7 +160,6 @@ private:
 	uint8_t m_totalStoreNotes;
 	bool m_Publish;
 	bool m_findBuddy;
-	bool m_lastFirewallState;
 	bool m_useExternKadPort;
 	uint16_t m_externKadPort;
 	std::vector<uint32_t> m_externPortIPs;

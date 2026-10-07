@@ -74,8 +74,6 @@ void CPrefs::Init(const wxString &filename)
 {
 	m_clientID = GetRandomUint128();
 	m_lastContact = 0;
-	m_recheckip = 0;
-	m_firewalled = 0;
 	m_totalFile = 0;
 	m_totalStoreSrc = 0;
 	m_totalStoreKey = 0;
@@ -90,7 +88,6 @@ void CPrefs::Init(const wxString &filename)
 	m_kademliaUsers = 0;
 	m_kademliaFiles = 0;
 	m_filename = filename;
-	m_lastFirewallState = true;
 	m_externKadPort = 0;
 	m_useExternKadPort = true;
 	m_statsUDPOpenNodes = 0;
@@ -157,33 +154,15 @@ void CPrefs::SetIPAddress(uint32_t val) noexcept
 	}
 }
 
-bool CPrefs::GetFirewalled() const noexcept
+void CPrefs::SetRecheckIP()
 {
-	if (m_firewalled < 2) {
-		// Not enough people have told us we are open, but we may be doing a recheck right
-		// now, which would give a false lowID. So check whether we are still rechecking and
-		// report our last known state.
-		if (GetRecheckIP()) {
-			return m_lastFirewallState;
-		}
-		return true;
-	}
-	// We had enough tell us we are not firewalled..
-	return false;
-}
-
-void CPrefs::SetFirewalled()
-{
-	// Are are checking our firewall state.. Let keep a snapshot of our
-	// current state to prevent false reports during the recheck..
-	m_lastFirewallState = (m_firewalled < 2);
-	m_firewalled = 0;
+	m_firewallRecheck.Start(time(nullptr));
 	theApp->ShowConnectionState();
 }
 
 void CPrefs::IncFirewalled()
 {
-	m_firewalled++;
+	m_firewallRecheck.AddConfirmation();
 	theApp->ShowConnectionState();
 }
 

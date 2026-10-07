@@ -22,6 +22,15 @@ target_include_directories (IPFilterIPv6Test PRIVATE
 )
 target_link_libraries (IPFilterIPv6Test muleunit mulecommon ${Boost_LIBRARIES})
 
+# The Kad firewall state across an hourly recheck, with the clock passed in.
+add_executable (KadFirewallRecheckTest KadFirewallRecheckTest.cpp)
+add_test (NAME KadFirewallRecheckTest COMMAND KadFirewallRecheckTest)
+target_include_directories (KadFirewallRecheckTest PRIVATE
+	${CMAKE_SOURCE_DIR}/src
+	${CMAKE_SOURCE_DIR}/src/include
+)
+target_link_libraries (KadFirewallRecheckTest muleunit mulecommon)
+
 # Credit identity and wait ownership run without the application. The test supplies
 # a deterministic GetTickCount64; do not link the production clock into this target.
 add_executable (ClientCreditsTest
