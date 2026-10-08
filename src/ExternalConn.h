@@ -115,7 +115,8 @@ public:
 	~ExternalConn();
 
 	CExternalConnListener *m_ECServer;
-	ECNotifier *m_ec_notifier;
+	// Stays null when the constructor refuses EC; GuiEvents tests for that.
+	ECNotifier *m_ec_notifier = nullptr;
 
 	void AddSocket(CECServerSocket *s);
 	void RemoveSocket(CECServerSocket *s);
