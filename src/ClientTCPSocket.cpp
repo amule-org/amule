@@ -176,8 +176,7 @@ bool CClientTCPSocket::IsDownloadThrottled() const
 	// throttler so a saturated peer-side budget cannot delay the probe past the server's
 	// verification timer (#778). Same shape as CServerSocket's permanent bypass, gated on IP-
 	// match instead of being unconditional.
-	if (m_remoteAddress.IsIPv4() && m_remoteip != 0 && theApp->serverconnect &&
-		theApp->serverconnect->IsServerIP(m_remoteip)) {
+	if (m_remoteip != 0 && theApp->serverconnect && theApp->serverconnect->IsServerIP(m_remoteip)) {
 		return false;
 	}
 	return true;

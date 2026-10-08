@@ -393,12 +393,14 @@ inline bool CanAdmitTcpPeer(const CNetworkAddress &address) noexcept
 
 /**
  * Whether paranoid HELLO validation should reject the claimed address.
- * Native IPv6 has no legacy 32-bit claim to compare; IPv4 retains the old mismatch rule.
+ * Native IPv6 has no 32-bit address to compare, so it is skipped; IPv4 and an absent address
+ * keep the old rule. Today ProcessHelloPacket() already turns an IPv6 peer's HighID claim into
+ * LowID, so this only matters once that rewrite changes.
  */
 inline bool ParanoidHelloMismatch(
 	const CNetworkAddress &remoteAddress, bool lowId, std::uint32_t claimedIPv4) noexcept
 {
-	return !lowId && remoteAddress.IsIPv4() && remoteAddress.ToIPv4NetworkOrderOrZero() != claimedIPv4;
+	return !lowId && !remoteAddress.IsIPv6() && remoteAddress.ToIPv4NetworkOrderOrZero() != claimedIPv4;
 }
 
 /** The current uTP framing remains IPv4-only until its IPv6 wire format is implemented. */
