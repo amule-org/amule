@@ -15,7 +15,9 @@ die () {
 usage() {
 	echo "Compiles the program"
 	echo
-	echo "Usage: $0 [-d] [-h | -?]"
+	echo "Usage: $0 [-d] [--clean] [-h | -?]"
+	echo "  --clean      Remove the build folder first, for a full rebuild"
+	echo "               (default is an incremental build)"
 	echo "  -d           Enable debug compilation (default is release)"
 	echo "  -h"
 	echo "  --help       Display this help message"
@@ -26,8 +28,10 @@ usage() {
 	echo "               Build against an empty, isolated ccache directory"
 	echo "               and print its size at the end, to measure this"
 	echo "               project's own ccache footprint. Skips running tests."
+	echo "               Implies --clean."
 }
 
+OPT_CLEAN=0
 OPT_DEBUG=Release
 OPT_J=1
 OPT_MEASURE_CACHE=0
@@ -35,7 +39,7 @@ OPT_MEASURE_CACHE=0
 # Setup parse options
 # -o "j:" means short flag 'j' requires an argument
 # --long "jobs:" means long flag 'jobs' requires an argument
-if ! PARAMS=$(getopt -o "dhj:c" -l "debug,jobs:,help,measure-cache" -n "$0" -- "$@"); then
+if ! PARAMS=$(getopt -o "dhj:c" -l "clean,debug,jobs:,help,measure-cache" -n "$0" -- "$@"); then
 	# If getopt fails (invalid flag), exit
 	usage
 	false; die 10
@@ -46,6 +50,10 @@ eval set -- "$PARAMS"
 
 while true; do
 	case "$1" in
+	--clean )
+		OPT_CLEAN=1
+		shift
+		;;
 	-d | --debug )
 		OPT_DEBUG=Debug
 		echo "[DEBUG compilation ENABLED]"
@@ -67,6 +75,7 @@ while true; do
 		;;
 	-c | --measure-cache )
 		OPT_MEASURE_CACHE=1
+		OPT_CLEAN=1
 		shift
 		;;
 	-- )
@@ -81,8 +90,10 @@ while true; do
 done
 
 cmake_configure () {
-	rm -rf build
-	die 21 "Error trying to remove the build folder"
+	if [[ ${OPT_CLEAN} == 1 ]]; then
+		rm -rf build
+		die 21 "Error trying to remove the build folder"
+	fi
 
 	cmake \
 		-B build \
