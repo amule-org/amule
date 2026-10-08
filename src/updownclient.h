@@ -40,6 +40,7 @@
 #include "BitVector.h"        // Needed for BitVector
 #include "ClientRef.h"        // Needed for debug defines
 #include "PeerCapabilities.h" // Needed for CPeerCapabilities
+#include "ProtocolPeerIdentity.h"
 
 #include <map>
 #include <wx/thread.h> // Needed for wxMutex
@@ -212,6 +213,7 @@ public:
 	void SetIP(uint32 val);
 	void SetUserAddress(const CNetworkAddress &address);
 	const CNetworkAddress &GetUserAddress() const { return m_userAddress; }
+	CProtocolPeerIdentity GetProtocolPeerIdentity() const;
 	uint32 GetIP() const { return m_userAddress.ToIPv4NetworkOrderOrZero(); }
 	bool HasLowID() const { return IsLowID(m_nUserIDHybrid); }
 	/**

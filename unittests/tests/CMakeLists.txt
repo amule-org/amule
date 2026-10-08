@@ -30,6 +30,12 @@ target_include_directories (KadFirewallRecheckTest PRIVATE
 )
 target_link_libraries (KadFirewallRecheckTest muleunit mulecommon)
 
+# Tagged protocol identity is pure value semantics and does not require live clients.
+add_executable (ProtocolPeerIdentityTest ProtocolPeerIdentityTest.cpp)
+add_test (NAME ProtocolPeerIdentityTest COMMAND ProtocolPeerIdentityTest)
+target_include_directories (ProtocolPeerIdentityTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries (ProtocolPeerIdentityTest muleunit mulecommon)
+
 # Credit identity and wait ownership run without the application. The test supplies
 # a deterministic GetTickCount64; do not link the production clock into this target.
 add_executable (ClientCreditsTest
