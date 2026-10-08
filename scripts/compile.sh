@@ -15,10 +15,14 @@ die () {
 usage() {
 	echo "Compiles the program"
 	echo
-	echo "Usage: $0 [-d] [--clean] [-h | -?]"
+	echo "Usage: $0 [-d] [-e] [--clean] [-h | -?]"
 	echo "  --clean      Remove the build folder first, for a full rebuild"
 	echo "               (default is an incremental build)"
 	echo "  -d           Enable debug compilation (default is release)"
+	echo "  -e"
+	echo "  --experimental"
+	echo "               Also compile every experimental feature"
+	echo "               (ENABLE_ALL_EXPERIMENTAL)"
 	echo "  -h"
 	echo "  --help       Display this help message"
 	echo "  -j<n>"
@@ -33,13 +37,14 @@ usage() {
 
 OPT_CLEAN=0
 OPT_DEBUG=Release
+OPT_EXPERIMENTAL=NO
 OPT_J=1
 OPT_MEASURE_CACHE=0
 
 # Setup parse options
 # -o "j:" means short flag 'j' requires an argument
 # --long "jobs:" means long flag 'jobs' requires an argument
-if ! PARAMS=$(getopt -o "dhj:c" -l "clean,debug,jobs:,help,measure-cache" -n "$0" -- "$@"); then
+if ! PARAMS=$(getopt -o "dehj:c" -l "clean,debug,experimental,jobs:,help,measure-cache" -n "$0" -- "$@"); then
 	# If getopt fails (invalid flag), exit
 	usage
 	false; die 10
@@ -57,6 +62,11 @@ while true; do
 	-d | --debug )
 		OPT_DEBUG=Debug
 		echo "[DEBUG compilation ENABLED]"
+		shift
+		;;
+	-e | --experimental )
+		OPT_EXPERIMENTAL=YES
+		echo "[EXPERIMENTAL features ENABLED]"
 		shift
 		;;
 	-h | --help )
@@ -113,7 +123,8 @@ cmake_configure () {
 		-DBUILD_WEBSERVER=YES \
 		-DENABLE_NLS=YES \
 		-DENABLE_UPNP=YES \
-		-DENABLE_IP2COUNTRY=YES
+		-DENABLE_IP2COUNTRY=YES \
+		-DENABLE_ALL_EXPERIMENTAL=${OPT_EXPERIMENTAL}
 
 	die 22 "CMake configuration failed"
 }
