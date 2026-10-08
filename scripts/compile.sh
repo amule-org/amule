@@ -15,7 +15,7 @@ die () {
 usage() {
 	echo "Compiles the program"
 	echo
-	echo "Usage: $0 [-d] [-e] [--clean] [-h | -?]"
+	echo "Usage: $0 [-d] [-e] [-s] [--clean] [-h | -?]"
 	echo "  --clean      Remove the build folder first, for a full rebuild"
 	echo "               (default is an incremental build)"
 	echo "  -d           Enable debug compilation (default is release)"
@@ -33,6 +33,10 @@ usage() {
 	echo "               and print its size at the end, to measure this"
 	echo "               project's own ccache footprint. Skips running tests."
 	echo "               Implies --clean."
+	echo "  -s"
+	echo "  --strip      Show the sizes of the stripped executables, as a"
+	echo "               stripped install would produce them. The files in"
+	echo "               the build folder are left untouched."
 }
 
 OPT_CLEAN=0
@@ -40,11 +44,12 @@ OPT_DEBUG=Release
 OPT_EXPERIMENTAL=NO
 OPT_J=1
 OPT_MEASURE_CACHE=0
+OPT_STRIP=0
 
 # Setup parse options
 # -o "j:" means short flag 'j' requires an argument
 # --long "jobs:" means long flag 'jobs' requires an argument
-if ! PARAMS=$(getopt -o "dehj:c" -l "clean,debug,experimental,jobs:,help,measure-cache" -n "$0" -- "$@"); then
+if ! PARAMS=$(getopt -o "dehj:cs" -l "clean,debug,experimental,jobs:,help,measure-cache,strip" -n "$0" -- "$@"); then
 	# If getopt fails (invalid flag), exit
 	usage
 	false; die 10
@@ -86,6 +91,10 @@ while true; do
 	-c | --measure-cache )
 		OPT_MEASURE_CACHE=1
 		OPT_CLEAN=1
+		shift
+		;;
+	-s | --strip )
+		OPT_STRIP=1
 		shift
 		;;
 	-- )
@@ -160,6 +169,26 @@ cmake_test() {
 	die 4 "CMake test failed"
 }
 
+cmake_strip_sizes() {
+	local STRIP_DIR
+	STRIP_DIR=$(mktemp -d "${TMPDIR:-/tmp}/amule-strip.XXXXXX")
+	die 24 "Error creating scratch install directory"
+
+	cmake --install build --strip --prefix "${STRIP_DIR}" > /dev/null
+	local INSTALL_STATUS=$?
+
+	if [[ ${INSTALL_STATUS} == 0 ]]; then
+		echo
+		echo "Sizes of the stripped executables:"
+		ls -lhS "${STRIP_DIR}/bin"
+	fi
+
+	rm -rf "${STRIP_DIR}"
+
+	(exit "${INSTALL_STATUS}")
+	die 5 "CMake stripped install failed"
+}
+
 GIT_ROOT=$(git rev-parse --show-toplevel)
 [[ ${PWD} == "${GIT_ROOT}" ]]
 die 12 \
@@ -183,6 +212,10 @@ if [[ ${OPT_MEASURE_CACHE} == 1 ]]; then
 	du -sh "${CCACHE_DIR}"
 else
 	cmake_test
+fi
+
+if [[ ${OPT_STRIP} == 1 ]]; then
+	cmake_strip_sizes
 fi
 
 exit 0
