@@ -72,6 +72,7 @@ public:
 	void OnClose(int nErrorCode) override;
 	void OnError(int nErrorCode) override;
 
+	//! Legacy IPv4 accessor; use GetRemoteAddress() for the authoritative peer identity.
 	uint32 GetRemoteIP() const { return m_remoteip; }
 	//! Accepted socket peer: mapped IPv4 is canonicalized to plain IPv4 at ingress;
 	//! native IPv6 retains its family and scope. Use IndexKey() for client identity.

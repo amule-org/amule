@@ -125,7 +125,16 @@ TEST(PeerAddressing, FilterMatchingRejectsUnknownAndUnspecifiedHosts)
 	ASSERT_FALSE(MatchesFilterPrefix(host, CNetworkAddress::FromString("0.0.0.0"), 0));
 }
 
-TEST(PeerAddressing, TcpAdmissionAllowsNativeIPv6ButUtpRemainsIpv4Only)
+TEST(PeerAddressing, ParanoidHelloComparesOnlyNativeIPv4)
+{
+	const auto ipv4 = CNetworkAddress::FromString("192.0.2.1");
+	ASSERT_FALSE(ParanoidHelloMismatch(ipv4, true, 0x010200c0u));
+	ASSERT_TRUE(ParanoidHelloMismatch(ipv4, false, 0x020200c0u));
+	ASSERT_FALSE(ParanoidHelloMismatch(ipv4, true, 0x020200c0u));
+	ASSERT_FALSE(ParanoidHelloMismatch(CNetworkAddress::FromString("2001:db8::1"), false, 0));
+}
+
+TEST(PeerAddressing, TcpAdmissionAllowsNativeIPv6ButUtpRemainsIPv4Only)
 {
 	ASSERT_TRUE(CanAdmitTcpPeer(CNetworkAddress::FromString("2001:db8::1")));
 	ASSERT_FALSE(CanAdmitUtpPeer(CNetworkAddress::FromString("2001:db8::1")));

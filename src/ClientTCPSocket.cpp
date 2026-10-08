@@ -176,7 +176,8 @@ bool CClientTCPSocket::IsDownloadThrottled() const
 	// throttler so a saturated peer-side budget cannot delay the probe past the server's
 	// verification timer (#778). Same shape as CServerSocket's permanent bypass, gated on IP-
 	// match instead of being unconditional.
-	if (m_remoteip != 0 && theApp->serverconnect && theApp->serverconnect->IsServerIP(m_remoteip)) {
+	if (m_remoteAddress.IsIPv4() && m_remoteip != 0 && theApp->serverconnect &&
+		theApp->serverconnect->IsServerIP(m_remoteip)) {
 		return false;
 	}
 	return true;
@@ -404,8 +405,10 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 			throw;
 		}
 
-		if (thePrefs::ParanoidFilter() && !IsLowID(m_client->GetUserIDHybrid()) &&
-			(GetRemoteIP() != wxUINT32_SWAP_ALWAYS(m_client->GetUserIDHybrid()))) {
+		if (thePrefs::ParanoidFilter() &&
+			PeerAddressing::ParanoidHelloMismatch(m_remoteAddress,
+				IsLowID(m_client->GetUserIDHybrid()),
+				wxUINT32_SWAP_ALWAYS(m_client->GetUserIDHybrid()))) {
 			wxString reason = "Client claims a different IP from the one we received the hello "
 					  "packet from: ";
 			reason += Uint32toStringIP(wxUINT32_SWAP_ALWAYS(m_client->GetUserIDHybrid())) +

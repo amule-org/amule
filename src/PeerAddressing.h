@@ -391,6 +391,16 @@ inline bool CanAdmitTcpPeer(const CNetworkAddress &address) noexcept
 	return IsSecurityKey(address);
 }
 
+/**
+ * Whether paranoid HELLO validation should reject the claimed address.
+ * Native IPv6 has no legacy 32-bit claim to compare; IPv4 retains the old mismatch rule.
+ */
+inline bool ParanoidHelloMismatch(
+	const CNetworkAddress &remoteAddress, bool lowId, std::uint32_t claimedIPv4) noexcept
+{
+	return !lowId && remoteAddress.IsIPv4() && remoteAddress.ToIPv4NetworkOrderOrZero() != claimedIPv4;
+}
+
 /** The current uTP framing remains IPv4-only until its IPv6 wire format is implemented. */
 inline bool CanAdmitUtpPeer(const CNetworkAddress &address) noexcept
 {
