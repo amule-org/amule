@@ -674,9 +674,9 @@ public:
 	bool CopyTextToClipboard(wxString strText);
 	void ResetTitle();
 
-	/// Asks the platform to follow the desktop's light/dark setting. Must be called from
-	/// OnInit() before the first window is created: wx answers CannotChange once one exists, so
-	/// anywhere later silently does nothing.
+	/// Asks MSW to follow the desktop's light/dark setting; other platforms already do. Must be
+	/// called from OnInit() before the first window is created: wx answers CannotChange once one
+	/// exists, so anywhere later silently does nothing.
 	static void FollowSystemAppearance();
 
 	/// Applies the stored tooltip delay, which wx keeps process-wide.

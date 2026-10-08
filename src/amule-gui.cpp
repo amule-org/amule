@@ -148,11 +148,10 @@ int CamuleGuiBase::ShowAlert(wxString msg, wxString title, int flags)
 
 void CamuleGuiBase::FollowSystemAppearance()
 {
-#if wxCHECK_VERSION(3, 3, 0)
-	// Every other platform follows the desktop's light/dark setting by itself; MSW is the one
-	// that has to be asked, which is why aMule looked native in dark mode on GTK and macOS but
-	// not on Windows. Not gated on __WXMSW__: Appearance::System is the right request
-	// everywhere and a no-op elsewhere.
+#if wxCHECK_VERSION(3, 3, 0) && defined(__WXMSW__)
+	// Only MSW has to be asked; GTK and macOS follow the desktop by themselves. Not a no-op
+	// elsewhere: wxOSX turns System into the appearance current at startup, so a later
+	// light/dark switch would no longer reach aMule.
 	const wxApp::AppearanceResult appearance = wxTheApp->SetAppearance(wxApp::Appearance::System);
 	if (appearance == wxApp::AppearanceResult::Failure) {
 		AddDebugLogLineN(logStandard, "Could not follow the system light/dark appearance");
