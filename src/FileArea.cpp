@@ -269,7 +269,8 @@ void CFileArea::ReadAt(CFileAutoClose &file, uint64 offset, size_t count)
 		m_length = offEnd - offStart;
 		void *p = mmap(NULL, m_length, PROT_READ, MAP_SHARED, file.fd(), offStart);
 		if (p != MAP_FAILED) {
-			m_file = &file;
+			// No m_file: a read mapping needs no fd once made, and the area can outlive file.
+			file.Unlock();
 			m_mmap_buffer = (uint8_t *)p;
 			m_buffer = m_mmap_buffer + (offset - offStart);
 
