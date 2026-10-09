@@ -66,6 +66,20 @@ TEST(CDeadSourceKey, NativeIPv6DoesNotMatchLegacy)
 	ASSERT_FALSE(native.Matches(legacy));
 }
 
+TEST(CDeadSourceKey, OnlyLegacyLowIDUsesFirewalledBlockTime)
+{
+	const auto native = Key(CProtocolPeerIdentity::FromNativeIPv6(IPv6(1)), 0, 4662, 0, 4672);
+	ASSERT_FALSE(native.UsesFirewalledBlockTime());
+
+	const auto high = CProtocolPeerIdentity::FromIPv4HighID(0xC0000201);
+	ASSERT_FALSE(Key(high, 0xC0000201, 4662, 0, 0).UsesFirewalledBlockTime());
+
+	const auto low = CProtocolPeerIdentity::FromServerScopedLowID(
+		42, CNetworkAddress::FromIPv4NetworkOrder(0x0100000a), 4662);
+	ASSERT_TRUE(Key(low, 42, 4662, 0x0a000001, 0).UsesFirewalledBlockTime());
+	ASSERT_TRUE(Key(CProtocolPeerIdentity::Absent(), 0, 4662, 0, 0).UsesFirewalledBlockTime());
+}
+
 TEST(CDeadSourceKey, LegacyPreservesIDAndServerSemantics)
 {
 	const auto high = CProtocolPeerIdentity::FromIPv4HighID(0xC0000201);
