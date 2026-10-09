@@ -160,6 +160,7 @@ void CClientList::AddClient(CUpDownClient *toadd)
 
 		m_ipList.Insert(
 			toadd->GetUserAddress(), CCLIENTREF(toadd, "CClientList::AddClient m_ipList.insert"));
+
 		// We only add the hash if it is valid
 		if (toadd->HasValidHash()) {
 			m_hashList.insert(HashMapPair(toadd->GetUserHash(),
@@ -472,36 +473,27 @@ CUpDownClient *CClientList::FindClientByIP(const CNetworkAddress &address, uint1
 
 CUpDownClient *CClientList::FindClientByProtocolPeerIdentity(const CProtocolPeerIdentity &identity)
 {
-	if (identity.GetKind() == CProtocolPeerIdentity::Kind::NativeIPv6 ||
-		identity.GetKind() == CProtocolPeerIdentity::Kind::IPv4HighID) {
-		auto range = m_ipList.equal_range(PeerAddressing::IndexKey(identity.Address()));
-		if (range.first == range.second)
-			return nullptr;
-		auto it = range.first;
-		++it;
-		return it == range.second ? range.first->second.GetClient() : nullptr;
+	// HighID and LowID clients sit in m_clientList under the hybrid the identity was built from;
+	// a HighID source has no user address until its hello, so m_ipList would miss it.
+	CUpDownClient *match = nullptr;
+	bool ambiguous = false;
+	const auto consider = [&](const CClientRef &entry) {
+		CUpDownClient *client = entry.GetClient();
+		if (client->GetProtocolPeerIdentity() != identity)
+			return;
+		ambiguous = ambiguous || match != nullptr;
+		match = client;
+	};
+	if (const auto hybrid = identity.TryGetUserIDHybrid()) {
+		for (auto range = m_clientList.equal_range(*hybrid); range.first != range.second;
+			++range.first)
+			consider(range.first->second);
+	} else if (identity.GetKind() == CProtocolPeerIdentity::Kind::NativeIPv6) {
+		for (auto range = m_ipList.equal_range(identity.Address()); range.first != range.second;
+			++range.first)
+			consider(range.first->second);
 	}
-
-	if (identity.GetKind() == CProtocolPeerIdentity::Kind::ServerScopedLowID) {
-		const auto userID = identity.TryGetServerScopedLowID();
-		if (!userID)
-			return nullptr;
-		CUpDownClient *match = nullptr;
-		for (auto range = m_clientList.equal_range(*userID); range.first != range.second;
-			++range.first) {
-			CUpDownClient *client = range.first->second.GetClient();
-			if (CNetworkAddress::FromIPv4NetworkOrder(client->GetServerIP()) ==
-					identity.Address() &&
-				client->GetServerPort() == identity.ServerPort()) {
-				if (match != nullptr)
-					return nullptr;
-				match = client;
-			}
-		}
-		return match;
-	}
-
-	return nullptr;
+	return ambiguous ? nullptr : match;
 }
 
 CUpDownClient *CClientList::FindClientByIP(uint32 clientip)

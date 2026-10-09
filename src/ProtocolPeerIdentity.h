@@ -97,6 +97,17 @@ public:
 		return m_kind == Kind::ServerScopedLowID ? std::optional<std::uint32_t>(m_lowID)
 							 : std::nullopt;
 	}
+	//! The CUpDownClient::GetUserIDHybrid() value this identity was built from, which is the key
+	//! of CClientList's ID map: the LowID itself, or a HighID's address in host order.
+	std::optional<std::uint32_t> TryGetUserIDHybrid() const noexcept
+	{
+		if (m_kind == Kind::ServerScopedLowID)
+			return m_lowID;
+		std::uint32_t hostOrder = 0;
+		if (m_kind == Kind::IPv4HighID && m_address.ToIPv4HostOrder(hostOrder))
+			return hostOrder;
+		return std::nullopt;
+	}
 	const CNetworkAddress &Address() const noexcept { return m_address; }
 	std::uint16_t ServerPort() const noexcept { return m_port; }
 	const CNetworkAddress &NativeIPv6() const noexcept { return m_address; }

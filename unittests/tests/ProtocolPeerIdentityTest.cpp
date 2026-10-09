@@ -48,6 +48,27 @@ TEST(CProtocolPeerIdentity, HighIDUsesHostOrderIPv4Semantics)
 	ASSERT_TRUE(expected == fromClient.Address().GetOctets());
 }
 
+TEST(CProtocolPeerIdentity, UserIDHybridRoundTripsTheClientListKey)
+{
+	// CClientList keys its ID map on GetUserIDHybrid(); the lookup must get that value back.
+	const auto high =
+		CProtocolPeerIdentity::FromClientState(0xC0000201, false, CNetworkAddress::Absent(), 0, 0);
+	ASSERT_EQUALS(uint32_t(0xC0000201), *high.TryGetUserIDHybrid());
+
+	const auto low =
+		CProtocolPeerIdentity::FromClientState(42, true, CNetworkAddress::Absent(), 0x0100000A, 4661);
+	ASSERT_TRUE(CProtocolPeerIdentity::Kind::ServerScopedLowID == low.GetKind());
+	ASSERT_EQUALS(uint32_t(42), *low.TryGetUserIDHybrid());
+
+	CNetworkAddress::Octets bytes{};
+	bytes[0] = 0x20;
+	bytes[1] = 1;
+	bytes[15] = 1;
+	const auto native = CProtocolPeerIdentity::FromNativeIPv6(CNetworkAddress::IPv6FromOctets(bytes));
+	ASSERT_FALSE(native.TryGetUserIDHybrid());
+	ASSERT_FALSE(CProtocolPeerIdentity::Absent().TryGetUserIDHybrid());
+}
+
 TEST(CProtocolPeerIdentity, HighLowAndNativeSemantics)
 {
 	const auto high = CProtocolPeerIdentity::FromIPv4HighID(0x01020304);

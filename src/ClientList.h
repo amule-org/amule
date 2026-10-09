@@ -150,10 +150,8 @@ public:
 	CUpDownClient *FindClientByIP(const CNetworkAddress &address);
 
 	/**
-	 * Dispatches by identity kind: NativeIPv6 and IPv4HighID use the canonical address bucket
-	 * and return a client only when exactly one shares it (zero or multiple clients return null);
-	 * ServerScopedLowID additionally requires its server address and port scope. Other kinds return
-	 * null.
+	 * The one listed client whose GetProtocolPeerIdentity() equals @p identity, or null when there is
+	 * none or more than one. HighID and LowID are looked up by hybrid ID, native IPv6 by address.
 	 */
 	CUpDownClient *FindClientByProtocolPeerIdentity(const CProtocolPeerIdentity &identity);
 
