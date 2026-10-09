@@ -91,17 +91,19 @@ inline const wxCharBuffer UTF82char(const char *x)
 	return unicode2char(UTF82unicode(x));
 }
 
+// Read the file-name converter through wxConvFile, never *wxConvFileName: since wx 3.3.4 the
+// pointer starts null and only the accessor behind wxConvFile fills it, which MSW never triggers.
 inline Unicode2CharBuf filename2char(const wxChar *x)
 {
-	return wxConvFileName->cWC2MB(x);
+	return wxConvFile.cWC2MB(x);
 }
 inline Unicode2CharBuf filename2char(const wxString &x)
 {
-	return x.mb_str(*wxConvFileName);
+	return x.mb_str(wxConvFile);
 }
 inline Char2UnicodeBuf char2filename(const char *x)
 {
-	return wxConvFileName->cMB2WC(x);
+	return wxConvFile.cMB2WC(x);
 }
 
 // Replaces "&" with "&&" in 'in' for use with text-labels

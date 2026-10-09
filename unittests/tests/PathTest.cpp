@@ -25,9 +25,9 @@ struct STestStr
 
 const STestStr g_fromFSTests[] = {
 	// From filesystem
-	{ true, wxConvFileName->cMB2WC("\xe1\x62\x63"), "\xe1\x62\x63" },
-	{ true, wxConvFileName->cMB2WC("\xe6\xf8\xe5"), "\xe6\xf8\xe5" },
-	{ true, wxConvFileName->cMB2WC("\xd8\xa7\xd9\x84\xd8\xb9"), "\u0627\u0644\u0639" },
+	{ true, wxConvFile.cMB2WC("\xe1\x62\x63"), "\xe1\x62\x63" },
+	{ true, wxConvFile.cMB2WC("\xe6\xf8\xe5"), "\xe6\xf8\xe5" },
+	{ true, wxConvFile.cMB2WC("\xd8\xa7\xd9\x84\xd8\xb9"), "\u0627\u0644\u0639" },
 
 	// From User
 	{ false, "\u0627\u0644\u0639", "\u0627\u0644\u0639" }
@@ -45,7 +45,7 @@ wxString GetExpectedString(const wxString& src)
 	static UsesEncoding encoding = UE_Unknown;
 
 	if (encoding == UE_Unknown) {
-		wxCharBuffer fn = wxConvFileName->cWC2MB("\u0627\u0644\u0639");
+		wxCharBuffer fn = wxConvFile.cWC2MB("\u0627\u0644\u0639");
 
 		if (fn) {
 			encoding = UE_NonBroken;
@@ -54,10 +54,10 @@ wxString GetExpectedString(const wxString& src)
 		}
 	}
 
-	if ((encoding == UE_Broken) && !wxConvFileName->cWC2MB(src)) {
+	if ((encoding == UE_Broken) && !wxConvFile.cWC2MB(src)) {
 		// See CPath::CPath for rationale ...
 		wxCharBuffer fn = wxConvUTF8.cWC2MB(src);
-		return wxConvFileName->cMB2WC(fn);
+		return wxConvFile.cMB2WC(fn);
 	} else {
 		return src;
 	}

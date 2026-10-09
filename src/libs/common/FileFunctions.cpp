@@ -90,7 +90,7 @@ std::vector<CPath> ListSubdirectories(const CPath &dir)
 	// readdir() already says what each entry is. Only a symlink, or an entry the filesystem
 	// leaves untyped, needs a stat() -- one that follows the link, as wxDir does. Paths and
 	// names go through wxConvFileName both ways, again as wxDir does.
-	const wxCharBuffer base = dir.GetRaw().mb_str(*wxConvFileName);
+	const wxCharBuffer base = dir.GetRaw().mb_str(wxConvFile);
 	DIR *handle = opendir(base.data());
 	if (handle == nullptr) {
 		return subdirs;
@@ -107,7 +107,7 @@ std::vector<CPath> ListSubdirectories(const CPath &dir)
 			isDir = ::stat((prefix + name).c_str(), &st) == 0 && S_ISDIR(st.st_mode);
 		}
 		if (isDir) {
-			const wxString converted(name, *wxConvFileName);
+			const wxString converted(name, wxConvFile);
 			if (!converted.empty()) {
 				subdirs.emplace_back(converted);
 			}
