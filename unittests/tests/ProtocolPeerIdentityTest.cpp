@@ -35,11 +35,24 @@ CNetworkAddress IPv6(unsigned long scope = 0)
 }
 } // namespace
 
+TEST(CProtocolPeerIdentity, HighIDUsesHostOrderIPv4Semantics)
+{
+	const auto expected = CNetworkAddress::Octets{ 192, 0, 2, 1 };
+	const auto high = CProtocolPeerIdentity::FromIPv4HighID(0xC0000201);
+	ASSERT_TRUE(CProtocolPeerIdentity::Kind::IPv4HighID == high.GetKind());
+	ASSERT_TRUE(expected == high.Address().GetOctets());
+
+	const auto fromClient =
+		CProtocolPeerIdentity::FromClientState(0xC0000201, false, CNetworkAddress::Absent(), 0, 0);
+	ASSERT_TRUE(CProtocolPeerIdentity::Kind::IPv4HighID == fromClient.GetKind());
+	ASSERT_TRUE(expected == fromClient.Address().GetOctets());
+}
+
 TEST(CProtocolPeerIdentity, HighLowAndNativeSemantics)
 {
 	const auto high = CProtocolPeerIdentity::FromIPv4HighID(0x01020304);
 	ASSERT_TRUE(CProtocolPeerIdentity::Kind::IPv4HighID == high.GetKind());
-	ASSERT_TRUE(CNetworkAddress::FromIPv4NetworkOrder(0x01020304) == *high.TryGetIPv4HighID());
+	ASSERT_TRUE((CNetworkAddress::Octets{ 1, 2, 3, 4 }) == high.Address().GetOctets());
 	ASSERT_FALSE(CProtocolPeerIdentity::FromIPv4HighID(0).TryGetIPv4HighID());
 	ASSERT_FALSE(CProtocolPeerIdentity::FromIPv4HighID(42).TryGetIPv4HighID());
 	ASSERT_TRUE(

@@ -41,7 +41,7 @@ public:
 	static CProtocolPeerIdentity FromIPv4HighID(std::uint32_t id)
 	{
 		CProtocolPeerIdentity r;
-		const auto address = CNetworkAddress::FromIPv4NetworkOrder(id);
+		const auto address = CNetworkAddress::FromIPv4HostOrder(id);
 		const auto key = PeerAddressing::IndexKey(address);
 		if (!IsLowID(id) && PeerAddressing::IsSecurityKey(key)) {
 			r.m_kind = Kind::IPv4HighID;
