@@ -8,76 +8,111 @@
 // the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 //
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
+//
+
 #include <muleunit/test.h>
 #include "ProtocolPeerIdentity.h"
 using namespace muleunit;
 DECLARE_SIMPLE(CProtocolPeerIdentity)
 
-TEST(CProtocolPeerIdentity, FormsSelectionAndOrdering)
+namespace
 {
-	const auto absent = CProtocolPeerIdentity::Absent();
-	ASSERT_TRUE(CProtocolPeerIdentity::Kind::Absent == absent.GetKind());
-	const auto legacy = CProtocolPeerIdentity::FromLegacyIPv4Id(42);
-	ASSERT_EQUALS(uint32_t(42), *legacy.TryGetLegacyIPv4Id());
-	ASSERT_FALSE(absent.TryGetLegacyIPv4Id());
-	const auto zeroLegacy = CProtocolPeerIdentity::FromLegacyIPv4Id(0);
-	ASSERT_TRUE(CProtocolPeerIdentity::Kind::Absent == zeroLegacy.GetKind());
-	ASSERT_FALSE(zeroLegacy.TryGetLegacyIPv4Id());
-
+CNetworkAddress IPv6(unsigned long scope = 0)
+{
 	CNetworkAddress::Octets bytes{};
 	bytes[0] = 0x20;
 	bytes[1] = 1;
 	bytes[15] = 1;
-	const auto ipv6 = CNetworkAddress::IPv6FromOctets(bytes);
-	const auto native = CProtocolPeerIdentity::FromNativeIPv6(ipv6);
-	ASSERT_TRUE(CProtocolPeerIdentity::Kind::NativeIPv6 == native.GetKind());
-	ASSERT_TRUE(ipv6 == native.NativeIPv6());
-	ASSERT_TRUE(
-		CProtocolPeerIdentity::Kind::Absent ==
-		CProtocolPeerIdentity::FromNativeIPv6(CNetworkAddress::FromIPv4NetworkOrder(1)).GetKind());
-	ASSERT_TRUE(CProtocolPeerIdentity::Kind::Absent ==
-		    CProtocolPeerIdentity::FromNativeIPv6(CNetworkAddress::AnyIPv6()).GetKind());
+	return CNetworkAddress::IPv6FromOctets(bytes, scope);
+}
+} // namespace
 
-	ASSERT_TRUE(absent < legacy);
-	ASSERT_TRUE(CProtocolPeerIdentity::FromLegacyIPv4Id(1) < legacy);
-	ASSERT_TRUE(legacy != native);
-	ASSERT_TRUE(legacy == CProtocolPeerIdentity::FromLegacyIPv4Id(42));
-	ASSERT_TRUE(CProtocolPeerIdentity::Kind::LegacyIPv4Id ==
-		    CProtocolPeerIdentity::FromLegacyIPv4IdOrNativeIPv6(9, ipv6).GetKind());
-	ASSERT_TRUE(CProtocolPeerIdentity::Kind::NativeIPv6 ==
-		    CProtocolPeerIdentity::FromLegacyIPv4IdOrNativeIPv6(0, ipv6).GetKind());
+TEST(CProtocolPeerIdentity, HighLowAndNativeSemantics)
+{
+	const auto high = CProtocolPeerIdentity::FromIPv4HighID(0x01020304);
+	ASSERT_TRUE(CProtocolPeerIdentity::Kind::IPv4HighID == high.GetKind());
+	ASSERT_TRUE(CNetworkAddress::FromIPv4NetworkOrder(0x01020304) == *high.TryGetIPv4HighID());
+	ASSERT_FALSE(CProtocolPeerIdentity::FromIPv4HighID(0).TryGetIPv4HighID());
+	ASSERT_FALSE(CProtocolPeerIdentity::FromIPv4HighID(42).TryGetIPv4HighID());
+	ASSERT_TRUE(
+		CProtocolPeerIdentity::Kind::Absent == CProtocolPeerIdentity::FromIPv4HighID(0).GetKind());
+	ASSERT_TRUE(
+		CProtocolPeerIdentity::Kind::Absent == CProtocolPeerIdentity::FromIPv4HighID(42).GetKind());
+
+	const auto server = CNetworkAddress::FromIPv4NetworkOrder(0x0100000a);
+	const auto low = CProtocolPeerIdentity::FromServerScopedLowID(42, server, 4662);
+	ASSERT_TRUE(CProtocolPeerIdentity::Kind::ServerScopedLowID == low.GetKind());
+	ASSERT_EQUALS(uint32_t(42), *low.TryGetServerScopedLowID());
+	ASSERT_TRUE(CProtocolPeerIdentity::Kind::Absent ==
+		    CProtocolPeerIdentity::FromServerScopedLowID(0, server, 4662).GetKind());
 	ASSERT_TRUE(
 		CProtocolPeerIdentity::Kind::Absent ==
-		CProtocolPeerIdentity::FromLegacyIPv4IdOrNativeIPv6(0, CNetworkAddress::Absent()).GetKind());
+		CProtocolPeerIdentity::FromServerScopedLowID(42, CNetworkAddress::Absent(), 4662).GetKind());
+	ASSERT_TRUE(CProtocolPeerIdentity::Kind::Absent ==
+		    CProtocolPeerIdentity::FromServerScopedLowID(42, server, 0).GetKind());
+	ASSERT_TRUE(low != CProtocolPeerIdentity::FromServerScopedLowID(
+				   42, CNetworkAddress::FromIPv4NetworkOrder(0x0200000a), 4662));
 
 	CNetworkAddress::Octets mappedBytes{};
 	mappedBytes[10] = 0xff;
 	mappedBytes[11] = 0xff;
-	mappedBytes[12] = 192;
-	mappedBytes[13] = 0;
-	mappedBytes[14] = 2;
+	mappedBytes[12] = 10;
 	mappedBytes[15] = 1;
 	const auto mapped = CNetworkAddress::IPv6FromOctets(mappedBytes);
-	const auto mappedIdentity = CProtocolPeerIdentity::FromNativeIPv6(mapped);
-	ASSERT_TRUE(CProtocolPeerIdentity::Kind::Absent == mappedIdentity.GetKind());
-	ASSERT_FALSE(mappedIdentity.TryGetLegacyIPv4Id());
-	const auto mappedLegacyIdentity = CProtocolPeerIdentity::FromLegacyIPv4IdOrNativeIPv6(0, mapped);
-	ASSERT_TRUE(CProtocolPeerIdentity::Kind::Absent == mappedLegacyIdentity.GetKind());
-	ASSERT_FALSE(mappedLegacyIdentity.TryGetLegacyIPv4Id());
+	ASSERT_TRUE(CProtocolPeerIdentity::FromServerScopedLowID(42, mapped, 4662) == low);
 
-	CNetworkAddress::Octets loopbackBytes{};
-	loopbackBytes[15] = 1;
-	const auto loopback = CNetworkAddress::IPv6FromOctets(loopbackBytes);
-	const auto nativeLoopback = CProtocolPeerIdentity::FromNativeIPv6(loopback);
-	ASSERT_TRUE(CProtocolPeerIdentity::Kind::NativeIPv6 == nativeLoopback.GetKind());
-	ASSERT_FALSE(nativeLoopback.TryGetLegacyIPv4Id());
-	ASSERT_TRUE(nativeLoopback != native);
-	ASSERT_TRUE(nativeLoopback < native || native < nativeLoopback);
-	ASSERT_FALSE(nativeLoopback < nativeLoopback);
-	ASSERT_FALSE(native < native);
-	ASSERT_TRUE(nativeLoopback == CProtocolPeerIdentity::FromNativeIPv6(loopback));
-	const auto selected = CProtocolPeerIdentity::FromLegacyIPv4IdOrNativeIPv6(9, ipv6);
-	ASSERT_TRUE(CProtocolPeerIdentity::Kind::LegacyIPv4Id == selected.GetKind());
-	ASSERT_EQUALS(uint32_t(9), *selected.TryGetLegacyIPv4Id());
-	ASSERT_TRUE(selected != native);
+	const auto native = CProtocolPeerIdentity::FromNativeIPv6(IPv6());
+	ASSERT_TRUE(CProtocolPeerIdentity::Kind::NativeIPv6 == native.GetKind());
+	ASSERT_TRUE(CProtocolPeerIdentity::Kind::Absent ==
+		    CProtocolPeerIdentity::FromNativeIPv6(CNetworkAddress::Absent()).GetKind());
+	ASSERT_TRUE(CProtocolPeerIdentity::Kind::Absent ==
+		    CProtocolPeerIdentity::FromNativeIPv6(CNetworkAddress::AnyIPv6()).GetKind());
+	ASSERT_TRUE(CProtocolPeerIdentity::Kind::Absent ==
+		    CProtocolPeerIdentity::FromNativeIPv6(server).GetKind());
+	ASSERT_TRUE(CProtocolPeerIdentity::Kind::Absent ==
+		    CProtocolPeerIdentity::FromNativeIPv6(mapped).GetKind());
+	ASSERT_TRUE(CProtocolPeerIdentity::Kind::NativeIPv6 ==
+		    CProtocolPeerIdentity::FromClientState(42, false, IPv6(), 0x0a000001, 4662).GetKind());
+	ASSERT_TRUE(CProtocolPeerIdentity::Kind::NativeIPv6 ==
+		    CProtocolPeerIdentity::FromClientState(42, true, IPv6(), 0x0a000001, 4662).GetKind());
+	ASSERT_TRUE(
+		CProtocolPeerIdentity::Kind::ServerScopedLowID ==
+		CProtocolPeerIdentity::FromClientState(42, true, CNetworkAddress::Absent(), 0x0a000001, 4662)
+			.GetKind());
+	ASSERT_TRUE(CProtocolPeerIdentity::Kind::Absent ==
+		    CProtocolPeerIdentity::FromClientState(42, true, CNetworkAddress::Absent(), 0, 4662)
+			    .GetKind());
+	ASSERT_TRUE(CProtocolPeerIdentity::Kind::Absent ==
+		    CProtocolPeerIdentity::FromClientState(42, true, CNetworkAddress::Absent(), 0x0a000001, 0)
+			    .GetKind());
+	ASSERT_TRUE(CProtocolPeerIdentity::Kind::IPv4HighID ==
+		    CProtocolPeerIdentity::FromClientState(0x01020304, false, CNetworkAddress::Absent(), 0, 0)
+			    .GetKind());
+	ASSERT_TRUE(native != CProtocolPeerIdentity::FromNativeIPv6(IPv6(7)));
+}
+
+TEST(CProtocolPeerIdentity, OrderingIsStrict)
+{
+	const auto absent = CProtocolPeerIdentity::Absent();
+	const auto one = CProtocolPeerIdentity::FromIPv4HighID(0x01000000);
+	const auto two = CProtocolPeerIdentity::FromIPv4HighID(0x01000001);
+	ASSERT_TRUE(absent < one);
+	ASSERT_TRUE(one < two);
+	ASSERT_FALSE(one < one);
+	ASSERT_TRUE(one == CProtocolPeerIdentity::FromIPv4HighID(0x01000000));
+	ASSERT_TRUE(one != CProtocolPeerIdentity::FromIPv4HighID(0x01000001));
+
+	const auto scoped = CProtocolPeerIdentity::FromNativeIPv6(IPv6(1));
+	const auto differentlyScoped = CProtocolPeerIdentity::FromNativeIPv6(IPv6(2));
+	ASSERT_TRUE(scoped != differentlyScoped);
+	ASSERT_TRUE(scoped < differentlyScoped || differentlyScoped < scoped);
+	ASSERT_FALSE(scoped < differentlyScoped && differentlyScoped < scoped);
 }

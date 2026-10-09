@@ -101,7 +101,8 @@ static wxString empty_name = "[Empty User Name]";
 
 CProtocolPeerIdentity CUpDownClient::GetProtocolPeerIdentity() const
 {
-	return CProtocolPeerIdentity::FromLegacyIPv4IdOrNativeIPv6(m_nUserIDHybrid, m_userAddress);
+	return CProtocolPeerIdentity::FromClientState(
+		m_nUserIDHybrid, HasLowID(), m_userAddress, m_dwServerIP, m_nServerPort);
 }
 
 CUpDownClient::CUpDownClient(CClientTCPSocket *sender)
