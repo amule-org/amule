@@ -272,10 +272,18 @@ void CUploadDiskIOThread::StartCreateNextBlockPackage(CUpDownClient *client)
 						       (currentblock->EndOffset - 1));
 				}
 				bool handleClosed = false;
-				if (!srcPartFile->ReadData(req->area,
-					    currentblock->StartOffset,
-					    (uint32)togo,
-					    &handleClosed)) {
+				bool readOk;
+				{
+					// The main thread takes this lock for every block request the
+					// client sends, so it must not wait out the disk. The block stays
+					// at the queue's front: only this thread pops it, and the lists
+					// are cleared only after the client leaves the upload list, which
+					// uploadLock (held by Entry()) prevents meanwhile.
+					CMutexUnlocker unlockBlockLists(client->m_blockListLock);
+					readOk = srcPartFile->ReadData(
+						req->area, req->uStartOffset, (uint32)togo, &handleClosed);
+				}
+				if (!readOk) {
 					delete req;
 					// A closed handle means PerformFileComplete got there
 					// first: the download finished and the file is on its way
@@ -299,7 +307,16 @@ void CUploadDiskIOThread::StartCreateNextBlockPackage(CUpDownClient *client)
 			} else {
 				CFileAutoClose file;
 				CPath fullname = srcfile->GetFilePath().JoinPaths(srcfile->GetFileName());
-				if (!file.Open(fullname, CFile::read)) {
+				bool opened;
+				{
+					// As for part files above.
+					CMutexUnlocker unlockBlockLists(client->m_blockListLock);
+					opened = file.Open(fullname, CFile::read);
+					if (opened) {
+						req->area.ReadAt(file, req->uStartOffset, (uint32)togo);
+					}
+				}
+				if (!opened) {
 					AddLogLineN(CFormat(_("Failed to open file (%s), removing from list "
 							      "of shared files.")) %
 						    srcfile->GetFileName());
@@ -307,7 +324,6 @@ void CUploadDiskIOThread::StartCreateNextBlockPackage(CUpDownClient *client)
 					delete req;
 					throw wxString("Failed to open requested file");
 				}
-				req->area.ReadAt(file, currentblock->StartOffset, (uint32)togo);
 			}
 			req->area.CheckError();
 
