@@ -31,6 +31,7 @@
 #include "ClientRef.h"
 #include "ChatSessionStore.h"
 #include "CanonicalPeerIndex.h"
+#include "ProtocolPeerIdentityIndex.h"
 #include "TrackedClientRecord.h"
 
 #include <deque>
@@ -147,6 +148,7 @@ public:
 	 */
 	CUpDownClient *FindClientByIP(uint32 clientip);
 	CUpDownClient *FindClientByIP(const CNetworkAddress &address);
+	CUpDownClient *FindClientByProtocolPeerIdentity(const CProtocolPeerIdentity &identity);
 
 	/**
 	 * Finds a client with the specified ECID.
@@ -319,6 +321,7 @@ private:
 	//! Canonical peer addresses; absent peers have no entry.
 	typedef CCanonicalPeerIndex<CClientRef> AddressMap;
 	AddressMap m_ipList;
+	CProtocolPeerIdentityIndex<CClientRef> m_protocolPeerIdentityIndex;
 
 	//! The full lists of clients
 	IDMap m_clientList;
