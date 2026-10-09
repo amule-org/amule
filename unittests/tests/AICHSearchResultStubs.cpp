@@ -85,7 +85,7 @@ wxString CUpDownClient::GetClientFullInfo()
 #include <CanceledFileList.h>
 #include <GuiEvents.h>
 
-uint32 CECID::s_IDCounter = 0;
+std::atomic<uint32> CECID::s_IDCounter{ 0 };
 bool CPreferences::s_filterLanIP = false;
 
 bool IsGoodIP(uint32, bool) noexcept

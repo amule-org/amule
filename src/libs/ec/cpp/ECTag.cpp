@@ -1069,6 +1069,6 @@ void CECTag::DebugPrint(int level, bool print_empty) const
  * \sa CECTag(ec_tagname_t, uint64)
  */
 
-uint32 CECID::s_IDCounter = 0;
+std::atomic<uint32> CECID::s_IDCounter{ 0 };
 
 // File_checked_for_headers
