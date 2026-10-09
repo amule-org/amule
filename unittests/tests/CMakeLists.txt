@@ -1251,6 +1251,29 @@ target_link_libraries (LanguageListTest
 	CRYPTOPP::CRYPTOPP
 )
 
+add_executable (UserHashTest
+	UserHashTest.cpp
+	${CMAKE_SOURCE_DIR}/src/UserHash.cpp
+	${CMAKE_SOURCE_DIR}/src/RandomFunctions.cpp
+	${CMAKE_SOURCE_DIR}/src/kademlia/utils/UInt128.cpp
+)
+
+add_test (NAME UserHashTest
+	COMMAND UserHashTest
+)
+
+target_include_directories (UserHashTest
+	PRIVATE ${CMAKE_BINARY_DIR}
+	PRIVATE ${CMAKE_SOURCE_DIR}/src
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
+)
+
+target_link_libraries (UserHashTest
+	muleunit
+	mulecommon
+	CRYPTOPP::CRYPTOPP
+)
+
 
 # libwebcommon — JWT / JSON writer / route patterns. `webcommon` PUBLIC-links
 # wxWidgets::BASE and CRYPTOPP::CRYPTOPP and exposes its own headers through

@@ -923,6 +923,7 @@ if (NEED_LIB_MULEAPPCORE)
 		TerminationProcessAmuleweb.cpp
 		ThreadScheduler.cpp
 		UPnPBase.cpp
+		UserHash.cpp
 	)
 
 	target_compile_definitions (muleappcore
