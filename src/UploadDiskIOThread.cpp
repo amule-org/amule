@@ -171,18 +171,6 @@ void *CUploadDiskIOThread::Entry()
 	return NULL;
 }
 
-// The caller holds the uploading-list lock.
-static CUpDownClient *FindUploadingClient(uint32 clientId)
-{
-	for (const CClientRef &ref : theApp->uploadqueue->GetUploadingList()) {
-		CUpDownClient *client = ref.GetClient();
-		if (client != nullptr && client->ECID() == clientId) {
-			return client;
-		}
-	}
-	return nullptr;
-}
-
 // eMule ref: CUploadDiskIOThread::StartCreateNextBlockPackage()
 //
 // The main thread takes the uploading-list lock to add or drop an upload slot, and
@@ -203,7 +191,7 @@ void CUploadDiskIOThread::StartCreateNextBlockPackage(uint32 clientId)
 ReadRequest_Struct *CUploadDiskIOThread::PrepareRead(uint32 clientId)
 {
 	wxMutexLocker uploadLock(theApp->uploadqueue->GetUploadingListLock());
-	CUpDownClient *client = FindUploadingClient(clientId);
+	CUpDownClient *client = theApp->uploadqueue->FindUploadingClient(clientId);
 	if (client == nullptr || client->GetSocket() == nullptr || !client->IsConnected()) {
 		return nullptr;
 	}
@@ -295,7 +283,7 @@ ReadRequest_Struct *CUploadDiskIOThread::PrepareRead(uint32 clientId)
 }
 
 // Runs with no locks held, and touches neither the client nor the file object, except the
-// pinned part file's ReadData.
+// pinned part file's ReadData and GetStatus.
 CUploadDiskIOThread::ReadResult CUploadDiskIOThread::ReadBlock(ReadRequest_Struct *req)
 {
 	uint32 togo = (uint32)(req->uEndOffset - req->uStartOffset);
@@ -334,6 +322,9 @@ CUploadDiskIOThread::ReadResult CUploadDiskIOThread::ReadBlock(ReadRequest_Struc
 			}
 		}
 		if (result == READ_OK) {
+			// An mmap read only maps the range: fault it in now, or the disk reads (and any
+			// SIGBUS error) happen while the packets are built under uploadLock.
+			req->area.Prefault();
 			req->area.CheckError();
 		}
 	} catch (const CIOFailureException &error) {
@@ -355,7 +346,7 @@ CUploadDiskIOThread::ReadResult CUploadDiskIOThread::ReadBlock(ReadRequest_Struc
 bool CUploadDiskIOThread::CommitRead(ReadRequest_Struct *req, ReadResult result)
 {
 	wxMutexLocker uploadLock(theApp->uploadqueue->GetUploadingListLock());
-	CUpDownClient *client = FindUploadingClient(req->clientId);
+	CUpDownClient *client = theApp->uploadqueue->FindUploadingClient(req->clientId);
 	if (client == nullptr || result == READ_DEFERRED) {
 		delete req;
 		return false;
@@ -368,24 +359,23 @@ bool CUploadDiskIOThread::CommitRead(ReadRequest_Struct *req, ReadResult result)
 			    srcfile->GetFileName());
 		theApp->sharedfiles->RemoveFile(srcfile);
 	}
-	if (result != READ_OK || srcfile == nullptr) {
-		client->m_bIOError = true;
-		delete req;
-		return false;
-	}
 
 	// The lists are cleared only after the client leaves the upload list, so a client
 	// that has left and come back while the read ran may have a different block in front.
 	// Only this thread pops the queue, so an unchanged front is the block that was read.
-	if (client->m_BlockRequests_queue.empty()) {
-		delete req;
-		return false;
-	}
-	Requested_Block_Struct *currentblock = client->m_BlockRequests_queue.front();
-	if (md4cmp(currentblock->FileID, req->ucMD4FileHash) != 0 ||
+	// Checked before the error below: a stale read must not fail the client's new session.
+	Requested_Block_Struct *currentblock =
+		client->m_BlockRequests_queue.empty() ? nullptr : client->m_BlockRequests_queue.front();
+	if (currentblock == nullptr || md4cmp(currentblock->FileID, req->ucMD4FileHash) != 0 ||
 		md4cmp(currentblock->FileID, client->GetUploadFileID().GetHash()) != 0 ||
 		currentblock->StartOffset != req->uStartOffset ||
 		currentblock->EndOffset != req->uEndOffset) {
+		delete req;
+		return false;
+	}
+
+	if (result != READ_OK || srcfile == nullptr) {
+		client->m_bIOError = true;
 		delete req;
 		return false;
 	}
@@ -437,7 +427,7 @@ void CUploadDiskIOThread::ReadCompletionRoutine(ReadRequest_Struct *req)
 	// concurrent disconnect cannot free the socket; matches eMule's lock scope.
 	{
 		wxMutexLocker uploadLock(theApp->uploadqueue->GetUploadingListLock());
-		CUpDownClient *client = FindUploadingClient(req->clientId);
+		CUpDownClient *client = theApp->uploadqueue->FindUploadingClient(req->clientId);
 
 		if (client == nullptr) {
 			AddDebugLogLineN(logClient,
@@ -477,8 +467,8 @@ void CUploadDiskIOThread::ReadCompletionRoutine(ReadRequest_Struct *req)
 					}
 				}
 
-				// Build packets into a local list, then send them out. The file ID was
-				// set in StartCreateNextBlockPackage when srcfile was resolved.
+				// Build packets into a local list, then send them out. CommitRead set
+				// the file ID.
 				CPacketList packetList;
 				uint32 data_rate = client->GetUploadDatarate();
 				if (bUseCompression) {

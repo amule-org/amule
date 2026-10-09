@@ -72,6 +72,12 @@ public:
 	uint8_t *GetBuffer() const { return m_buffer; };
 
 	/**
+	 * Touches every page of a memory-mapped read, so its disk reads (and any SIGBUS error)
+	 * happen now rather than wherever the buffer is first used. No-op if not mapped.
+	 */
+	void Prefault();
+
+	/**
 	 * Reports a pending error.
 	 */
 	void CheckError();

@@ -348,6 +348,17 @@ bool CUploadQueue::IsDownloading(const CUpDownClient *client) const
 	return false;
 }
 
+CUpDownClient *CUploadQueue::FindUploadingClient(uint32 ecid) const
+{
+	for (const CClientRef &ref : m_uploadinglist) {
+		CUpDownClient *client = ref.GetClient();
+		if (client != nullptr && client->ECID() == ecid) {
+			return client;
+		}
+	}
+	return nullptr;
+}
+
 CUpDownClient *CUploadQueue::GetWaitingClientByIP_UDP(
 	const CNetworkAddress &address, uint16 nUDPPort, bool bIgnorePortOnUniqueIP, bool *pbMultipleIPs)
 {

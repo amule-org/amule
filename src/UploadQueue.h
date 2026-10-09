@@ -55,6 +55,8 @@ public:
 	bool RemoveFromWaitingQueue(CUpDownClient *client);
 	bool IsOnUploadQueue(const CUpDownClient *client) const;
 	bool IsDownloading(const CUpDownClient *client) const;
+	// The caller holds GetUploadingListLock().
+	CUpDownClient *FindUploadingClient(uint32 ecid) const;
 	bool CheckForTimeOver(CUpDownClient *client);
 	void ResortQueue() { SortGetBestClient(); }
 
