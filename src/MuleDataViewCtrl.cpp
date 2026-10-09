@@ -544,6 +544,13 @@ void CMuleDataViewCtrl::OnChar(wxKeyEvent &evt)
 		return;
 	}
 
+	// Control keys are commands, not type-ahead text: the backend turns Return into item
+	// activation and Tab into focus navigation.
+	if (key < WXK_SPACE || key == WXK_DELETE) {
+		evt.Skip();
+		return;
+	}
+
 	const uint64 now = GetTickCount64();
 	if (m_ttsTime + kTypeAheadResetMs < now) {
 		m_ttsText.Clear();
