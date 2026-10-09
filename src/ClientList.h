@@ -31,7 +31,6 @@
 #include "ClientRef.h"
 #include "ChatSessionStore.h"
 #include "CanonicalPeerIndex.h"
-#include "ProtocolPeerIdentityIndex.h"
 #include "TrackedClientRecord.h"
 
 #include <deque>
@@ -40,6 +39,7 @@
 class CUpDownClient;
 class CClientTCPSocket;
 class CMD4Hash;
+class CProtocolPeerIdentity;
 namespace Kademlia
 {
 class CContact;
@@ -148,6 +148,13 @@ public:
 	 */
 	CUpDownClient *FindClientByIP(uint32 clientip);
 	CUpDownClient *FindClientByIP(const CNetworkAddress &address);
+
+	/**
+	 * Dispatches by identity kind: NativeIPv6 and IPv4HighID use the canonical address bucket
+	 * and return a client only when exactly one shares it (zero or multiple clients return null);
+	 * ServerScopedLowID additionally requires its server address and port scope. Other kinds return
+	 * null.
+	 */
 	CUpDownClient *FindClientByProtocolPeerIdentity(const CProtocolPeerIdentity &identity);
 
 	/**
@@ -321,7 +328,6 @@ private:
 	//! Canonical peer addresses; absent peers have no entry.
 	typedef CCanonicalPeerIndex<CClientRef> AddressMap;
 	AddressMap m_ipList;
-	CProtocolPeerIdentityIndex<CClientRef> m_protocolPeerIdentityIndex;
 
 	//! The full lists of clients
 	IDMap m_clientList;

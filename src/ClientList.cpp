@@ -160,9 +160,6 @@ void CClientList::AddClient(CUpDownClient *toadd)
 
 		m_ipList.Insert(
 			toadd->GetUserAddress(), CCLIENTREF(toadd, "CClientList::AddClient m_ipList.insert"));
-		m_protocolPeerIdentityIndex.Add(toadd->GetProtocolPeerIdentity(),
-			CCLIENTREF(toadd, "CClientList::AddClient identity index"));
-
 		// We only add the hash if it is valid
 		if (toadd->HasValidHash()) {
 			m_hashList.insert(HashMapPair(toadd->GetUserHash(),
@@ -185,8 +182,6 @@ void CClientList::RemoveClient(CUpDownClient *client)
 		theApp->browsemanager->Forget(client);
 	}
 
-	m_protocolPeerIdentityIndex.Remove(client->GetProtocolPeerIdentity(),
-		CCLIENTREF(client, "CClientList::RemoveClient identity index"));
 	if (RemoveIDFromList(client)) {
 		RemoveIPFromList(client);
 		RemoveHashFromList(client);
@@ -208,15 +203,10 @@ void CClientList::UpdateClientIP(CUpDownClient *client, const CNetworkAddress &a
 	if (client->GetClientState() != CS_LISTED)
 		return;
 
-	const auto oldIdentity = client->GetProtocolPeerIdentity();
-	m_protocolPeerIdentityIndex.Remove(
-		oldIdentity, CCLIENTREF(client, "CClientList::UpdateClientIP identity index"));
 	m_ipList.Update(client->GetUserAddress(),
 		address,
 		CCLIENTREF(client, "CClientList::UpdateClientIP"),
 		[client](const CClientRef &entry) { return entry.GetClient() == client; });
-	m_protocolPeerIdentityIndex.Add(CProtocolPeerIdentity::FromNativeIPv6(address),
-		CCLIENTREF(client, "CClientList::UpdateClientIP identity index"));
 }
 
 void CClientList::UpdateClientHash(CUpDownClient *client, const CMD4Hash &newHash)
@@ -376,7 +366,6 @@ void CClientList::DeleteAll()
 {
 	m_ipList.clear();
 	m_hashList.clear();
-	m_protocolPeerIdentityIndex.Clear();
 
 	while (!m_clientList.empty()) {
 		IDMap::iterator it = m_clientList.begin();
@@ -483,8 +472,36 @@ CUpDownClient *CClientList::FindClientByIP(const CNetworkAddress &address, uint1
 
 CUpDownClient *CClientList::FindClientByProtocolPeerIdentity(const CProtocolPeerIdentity &identity)
 {
-	auto client = m_protocolPeerIdentityIndex.Find(identity);
-	return client ? client->GetClient() : nullptr;
+	if (identity.GetKind() == CProtocolPeerIdentity::Kind::NativeIPv6 ||
+		identity.GetKind() == CProtocolPeerIdentity::Kind::IPv4HighID) {
+		auto range = m_ipList.equal_range(PeerAddressing::IndexKey(identity.Address()));
+		if (range.first == range.second)
+			return nullptr;
+		auto it = range.first;
+		++it;
+		return it == range.second ? range.first->second.GetClient() : nullptr;
+	}
+
+	if (identity.GetKind() == CProtocolPeerIdentity::Kind::ServerScopedLowID) {
+		const auto userID = identity.TryGetServerScopedLowID();
+		if (!userID)
+			return nullptr;
+		CUpDownClient *match = nullptr;
+		for (auto range = m_clientList.equal_range(*userID); range.first != range.second;
+			++range.first) {
+			CUpDownClient *client = range.first->second.GetClient();
+			if (CNetworkAddress::FromIPv4NetworkOrder(client->GetServerIP()) ==
+					identity.Address() &&
+				client->GetServerPort() == identity.ServerPort()) {
+				if (match != nullptr)
+					return nullptr;
+				match = client;
+			}
+		}
+		return match;
+	}
+
+	return nullptr;
 }
 
 CUpDownClient *CClientList::FindClientByIP(uint32 clientip)
