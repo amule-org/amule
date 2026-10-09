@@ -108,7 +108,7 @@ void CDeadSourceList::AddDeadSource(const CUpDownClient *client)
 	CDeadSource source(key);
 
 	// Set the timeout for the new source
-	source.SetTimeout(key.UsesFirewalledBlockTime() ? BLOCKTIMEFW : BLOCKTIME);
+	source.SetTimeout(client->HasLowID() ? BLOCKTIMEFW : BLOCKTIME);
 
 	// Check if the source is already listed
 	DeadSourcePair range = m_sources.equal_range(key);

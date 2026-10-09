@@ -52,9 +52,6 @@ public:
 		       (!IsLowID(m_hybridID) || m_serverIP == other.m_serverIP);
 	}
 
-	//! Hybrid ID 0 reads as LowID, but a native IPv6 peer is reachable by its address.
-	bool UsesFirewalledBlockTime() const { return !IsNativeIPv6() && IsLowID(m_hybridID); }
-
 	friend bool operator<(const CDeadSourceKey &a, const CDeadSourceKey &b)
 	{
 		if (a.IsNativeIPv6() != b.IsNativeIPv6())
