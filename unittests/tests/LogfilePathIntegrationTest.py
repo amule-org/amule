@@ -54,6 +54,8 @@ Ed2kServersUrl=
 KadNodesUrl=
 TempDir={root}/Temp
 IncomingDir={root}/Incoming
+# The checks match English log lines; LC_ALL alone does not override a translated LANG.
+Language=en_US
 '''
     if setting is not None:
         config += f'LogFilePath={setting}\n'
