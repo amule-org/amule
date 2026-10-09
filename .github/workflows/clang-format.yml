@@ -16,6 +16,10 @@ on:
       - '.clang-format'
       - '.github/workflows/clang-format.yml'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.ref == 'refs/heads/master' && github.sha || '' }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 

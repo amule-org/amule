@@ -24,6 +24,10 @@ on:
       - 'scripts/check-unique-ids.py'
       - '.github/workflows/ccpp.yml'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.ref == 'refs/heads/master' && github.sha || '' }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
   # cache-save-newest lists the repository's caches and deletes the generations
