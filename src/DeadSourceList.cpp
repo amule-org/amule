@@ -37,13 +37,10 @@
 ///////////////////////////////////////////////////////////////////////////////////////
 //// CDeadSource
 
-CDeadSourceList::CDeadSource::CDeadSource(uint32 ID, uint16 Port, uint32 ServerIP, uint16 KadPort)
+CDeadSourceList::CDeadSource::CDeadSource(const CDeadSourceKey &key)
+: m_key(key)
+, m_TimeStamp(0)
 {
-	m_ID = ID;
-	m_Port = Port;
-	m_KadPort = KadPort;
-	m_ServerIP = ServerIP;
-	m_TimeStamp = 0;
 }
 
 void CDeadSourceList::CDeadSource::SetTimeout(uint64 t)
@@ -58,17 +55,7 @@ uint64 CDeadSourceList::CDeadSource::GetTimeout() const
 
 bool CDeadSourceList::CDeadSource::operator==(const CDeadSource &other) const
 {
-	if (m_ID == other.m_ID) {
-		if (m_Port == other.m_Port || m_KadPort == other.m_KadPort) {
-			if (IsLowID(m_ID)) {
-				return m_ServerIP == other.m_ServerIP;
-			} else {
-				return true;
-			}
-		}
-	}
-
-	return false;
+	return m_key.Matches(other.m_key);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -87,12 +74,14 @@ uint32 CDeadSourceList::GetDeadSourcesCount() const
 
 bool CDeadSourceList::IsDeadSource(const CUpDownClient *client)
 {
-	CDeadSource source(client->GetUserIDHybrid(),
+	const CDeadSourceKey key(client->GetProtocolPeerIdentity(),
+		client->GetUserIDHybrid(),
 		client->GetUserPort(),
 		client->GetServerIP(),
 		client->GetKadPort());
+	CDeadSource source(key);
 
-	DeadSourcePair range = m_sources.equal_range(client->GetUserIDHybrid());
+	DeadSourcePair range = m_sources.equal_range(key);
 	for (; range.first != range.second; range.first++) {
 		if (range.first->second == source) {
 			// Check if the entry is still valid
@@ -111,16 +100,18 @@ bool CDeadSourceList::IsDeadSource(const CUpDownClient *client)
 
 void CDeadSourceList::AddDeadSource(const CUpDownClient *client)
 {
-	CDeadSource source(client->GetUserIDHybrid(),
+	const CDeadSourceKey key(client->GetProtocolPeerIdentity(),
+		client->GetUserIDHybrid(),
 		client->GetUserPort(),
 		client->GetServerIP(),
 		client->GetKadPort());
+	CDeadSource source(key);
 
 	// Set the timeout for the new source
 	source.SetTimeout(client->HasLowID() ? BLOCKTIMEFW : BLOCKTIME);
 
 	// Check if the source is already listed
-	DeadSourcePair range = m_sources.equal_range(client->GetUserIDHybrid());
+	DeadSourcePair range = m_sources.equal_range(key);
 	for (; range.first != range.second; range.first++) {
 		if (range.first->second == source) {
 			range.first->second = source;
@@ -128,7 +119,7 @@ void CDeadSourceList::AddDeadSource(const CUpDownClient *client)
 		}
 	}
 
-	m_sources.insert(DeadSourceMap::value_type(client->GetUserIDHybrid(), source));
+	m_sources.insert(DeadSourceMap::value_type(key, source));
 
 	// Check if we should cleanup the list. This is
 	// done to avoid a buildup of stale entries.

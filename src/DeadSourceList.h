@@ -28,6 +28,7 @@
 
 #include <map>
 
+#include "DeadSourceKey.h"
 #include "Types.h"
 
 class CUpDownClient;
@@ -74,15 +75,7 @@ private:
 	class CDeadSource
 	{
 	public:
-		/**
-		 * @param ID The IP/ID of the recorded client. Must be specified.
-		 * @param Port The TCP port of the recorded client.
-		 * @param ServerIP The IP of the connected server. Must be specified for lowid
-		 * sources.
-		 * @param KadPort The Kad port used by the client. Either this or @a Port must be
-		 * specified.
-		 */
-		CDeadSource(uint32 ID, uint16 Port, uint32 ServerIP, uint16 KadPort);
+		explicit CDeadSource(const CDeadSourceKey &key);
 
 		/**
 		 * Equality operator.
@@ -100,19 +93,12 @@ private:
 		uint64 GetTimeout() const;
 
 	private:
-		//! The ID/IP of the client.
-		uint32 m_ID;
-		//! The TCP port of the client
-		uint16 m_Port;
-		//! The Kad port of the client.
-		uint16 m_KadPort;
-		//! The IP of the server the client is connected to.
-		uint32 m_ServerIP;
+		CDeadSourceKey m_key;
 		//! The timestamp of DOOM!
 		uint64 m_TimeStamp;
 	};
 
-	typedef std::multimap<uint32, CDeadSource> DeadSourceMap;
+	typedef std::multimap<CDeadSourceKey, CDeadSource> DeadSourceMap;
 	typedef DeadSourceMap::iterator DeadSourceIterator;
 	typedef std::pair<DeadSourceIterator, DeadSourceIterator> DeadSourcePair;
 	//! List of currently dead sources.
