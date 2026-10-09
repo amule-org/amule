@@ -193,7 +193,7 @@ public:
 	// entry. NotifyPathAdded queues hashing for an unknown file and no-ops if it is already
 	// shared. NotifyPathRemoved detaches the CKnownFile m_pathIndex maps the path to.
 	// NotifyPathModified treats a content change as remove-then-add when mtime/size have
-	// shifted.
+	// shifted, and adds a path that is not shared yet.
 	//
 	// All three are safe to call from the wxFileSystemWatcher event thread (wx's main thread on
 	// every supported backend) and take list_mut internally.

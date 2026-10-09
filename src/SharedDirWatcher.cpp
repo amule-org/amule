@@ -399,11 +399,22 @@ void CSharedDirWatcher::OnFileSystemEvent(wxFileSystemWatcherEvent &event)
 		return;
 	}
 
-	const int changeType = event.GetChangeType();
+	int changeType = event.GetChangeType();
 	const wxFileName &path = event.GetPath();
 
 	AddDebugLogLineN(logKnownFiles,
 		CFormat("Shared-dir watcher: event 0x%x on '%s'") % changeType % path.GetFullPath());
+
+	// A RENAME of a path onto itself is not a rename. wx's inotify backend sends one for a move
+	// into or out of the watched set (an IN_MOVED_TO or IN_MOVED_FROM with no partner), and its
+	// FSEvents backend for a rename that arrives with other flags. As a rename it would unshare a
+	// completed download, which arrives in Incoming from Temp already shared under that path.
+	// Decide by what is on disk instead, as wx's FSEvents backend does for a lone rename.
+	if ((changeType & wxFSW_EVENT_RENAME) && event.GetNewPath().GetFullPath() == path.GetFullPath()) {
+		changeType &= ~wxFSW_EVENT_RENAME;
+		changeType |=
+			wxFileName::Exists(path.GetFullPath()) ? wxFSW_EVENT_CREATE : wxFSW_EVENT_DELETE;
+	}
 
 	// Watcher-backend overflow / drop signal. inotify reports IN_Q_OVERFLOW when its
 	// per-instance queue exhausts (typical cause: a multi-million-file `cp -r` into a watched
@@ -824,16 +835,19 @@ void CSharedDirWatcher::FlushPendingEvents()
 				continue;
 			}
 			m_parent->NotifyPathRemoved(path);
+			// Modified, not added: the rename can land on a shared file, whose old hash
+			// NotifyPathAdded() would keep.
 			if (!ev.renamedTo.IsEmpty() && !IsInExcludedFolder(ev.renamedTo)) {
-				m_parent->NotifyPathAdded(ev.renamedTo);
+				m_parent->NotifyPathModified(ev.renamedTo);
 			}
 			continue;
 		}
 
-		// DELETE dominates: if a file was created AND deleted in the same window we do not want
-		// to add then remove; the remove-effect is the net result. The same path can carry several
-		// flags, because fs-watcher fires DELETE for the rename's source on some backends.
-		if (ev.flags & wxFSW_EVENT_DELETE) {
+		// DELETE wins only if the file is gone. One deleted and created again in the same window,
+		// or replaced by a move (Windows reports that as a DELETE and a CREATE), is still on disk
+		// and is handled as modified below. The same path can carry several flags, because
+		// fs-watcher fires DELETE for the rename's source on some backends.
+		if ((ev.flags & wxFSW_EVENT_DELETE) && !wxFileName::FileExists(path)) {
 			// A vanished shared *dir* is not in the file index, so NotifyPathRemoved would no-op.
 			// Detach its subtree only when it is a shared dir AND genuinely gone from disk -- a
 			// spurious/transient DELETE, or a delete-then-recreate coalesced into this debounce
@@ -849,13 +863,11 @@ void CSharedDirWatcher::FlushPendingEvents()
 			continue;
 		}
 
-		// CREATE means add. MODIFY-only without CREATE means modify, which in NotifyPathModified
-		// is a stat-and-rehash-if-changed path -- cheap when nothing actually moved.
-		if (ev.flags & wxFSW_EVENT_CREATE) {
-			if (!IsInExcludedFolder(path)) {
-				m_parent->NotifyPathAdded(path);
-			}
-		} else if (ev.flags & wxFSW_EVENT_MODIFY) {
+		// The file is on disk: created, modified, or replaced. Not NotifyPathAdded(): a file that
+		// replaced a shared one keeps that path in the index, so it would keep the old hash.
+		// NotifyPathModified() re-hashes on a size or mtime change -- cheap when nothing changed --
+		// and adds a path not shared yet.
+		if (!IsInExcludedFolder(path)) {
 			m_parent->NotifyPathModified(path);
 		}
 	}
