@@ -354,6 +354,7 @@ CPartFile::~CPartFile()
 			wxMilliSleep(10);
 		}
 	}
+	WaitForUploadReads();
 
 	// if it's not opened, it was completed or deleted
 	if (m_hpartfile.IsOpened()) {
@@ -2451,6 +2452,18 @@ void CPartFile::CompleteFileEnded(bool errorOccured, const CPath &newname)
 	theApp->downloadqueue->StartNextFile(this);
 }
 
+void CPartFile::WaitForUploadReads()
+{
+	if (m_pendingUploadReads > 0) {
+		AddDebugLogLineN(logPartFile,
+			CFormat("waiting for %d upload read(s) of '%s'") % (int)m_pendingUploadReads %
+				GetFileName());
+		while (m_pendingUploadReads > 0) {
+			wxMilliSleep(1);
+		}
+	}
+}
+
 void CPartFile::PerformFileComplete()
 {
 	// add this file to the suspended uploads list
@@ -2553,6 +2566,9 @@ void CPartFile::Delete()
 			wxMilliSleep(10);
 		}
 	}
+	// SuspendUpload above dropped this file's uploaders under the uploading-list lock, so no
+	// new upload read can start.
+	WaitForUploadReads();
 
 	// Same reasoning as PerformFileComplete: the upload reader holds
 	// m_hpartfileMutex around its Seek+Read, so the close takes it too.

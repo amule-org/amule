@@ -102,6 +102,7 @@ class CPartFile : public CKnownFile
 {
 	friend class CPartFileWriteThread;
 	friend class CPartFileHashThread;
+	friend class CUploadDiskIOThread;
 
 public:
 	typedef std::list<Requested_Block_Struct *> CReqBlockPtrList;
@@ -407,6 +408,7 @@ private:
 	bool m_bPercentUpdated;
 
 	void PerformFileComplete();
+	void WaitForUploadReads();
 
 	uint64 m_lastRefreshedDLDisplay;
 
@@ -456,6 +458,10 @@ private:
 	// ~CPartFile waits for it to reach 0, so the worker is never reading m_hpartfile while the
 	// destructor closes it.
 	std::atomic<int32> m_pendingHashes{ 0 };
+
+	// Count of CUploadDiskIOThread reads in flight on this file. They run without the
+	// uploading-list lock, so Delete() and ~CPartFile wait for 0 before freeing the object.
+	std::atomic<int32> m_pendingUploadReads{ 0 };
 
 	// Serialises access to m_hpartfile across the main thread, CPartFileWriteThread and
 	// CPartFileHashThread. With ENABLE_MMAP=OFF (the default), CFileAutoClose::ReadAt / WriteAt
