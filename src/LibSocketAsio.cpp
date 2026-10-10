@@ -1494,6 +1494,11 @@ public:
 					std::nullopt);
 			}
 			listen();
+			error_code endpointError;
+			const ip::tcp::endpoint boundEndpoint = local_endpoint(endpointError);
+			if (!endpointError) {
+				m_boundEndpoint = boundEndpoint;
+			}
 			auto self = shared_from_this();
 			post(m_strand, [self]() { self->StartAccept(); });
 			m_ok = true;
@@ -1515,6 +1520,18 @@ public:
 	// For wxSocketServer, Ok will return true if the server could bind to the specified address and is
 	// already listening for new connections.
 	bool IsOk() const { return m_ok; }
+
+	wxString BoundHost() const
+	{
+		if (!m_ok || !m_boundEndpoint) {
+			return wxEmptyString;
+		}
+		const ip::address address = m_boundEndpoint->address();
+		if (address.is_v6()) {
+			return CFormat("[%s]") % address.to_string();
+		}
+		return CFormat("%s") % address.to_string();
+	}
 
 	void Close()
 	{
@@ -1686,6 +1703,9 @@ private:
 	std::atomic<bool> m_acceptStopped;
 	// Startup ok
 	bool m_ok;
+	// Written once in Init() before accepting starts, so main-thread reads do not race the
+	// accept handlers.
+	std::optional<ip::tcp::endpoint> m_boundEndpoint;
 	// The last socket that connected to us
 	std::shared_ptr<CAsioSocketImpl> m_currentSocket;
 	// Is there a socket available?
@@ -1770,6 +1790,11 @@ bool CLibSocketServer::AcceptWith(CLibSocket &socket, bool WXUNUSED_UNLESS_DEBUG
 bool CLibSocketServer::IsOk() const
 {
 	return m_aServer->IsOk();
+}
+
+wxString CLibSocketServer::BoundHost() const
+{
+	return m_aServer->BoundHost();
 }
 
 void CLibSocketServer::Close()

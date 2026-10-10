@@ -1551,7 +1551,11 @@ bool CamuleApp::ReinitializeNetwork(wxString *msg)
 	myaddr[2] = myaddr[1];
 	myaddr[2].Service(thePrefs::GetPort());
 	listensocket = new CListenSocket(myaddr[2], nullptr, ListenerFamilies::FromPolicy);
-	*msg << CFormat("*** TCP socket (TCP) listening on %s:%u\n") % ip %
+	wxString listenHost = listensocket->BoundHost();
+	if (listenHost.IsEmpty()) {
+		listenHost = ip;
+	}
+	*msg << CFormat("*** TCP socket (TCP) listening on %s:%u\n") % listenHost %
 			(unsigned int)(thePrefs::GetPort());
 	const long addressFamiliesSetting = thePrefs::GetAddressFamiliesSetting();
 	const std::optional<AddressFamilyPolicy::Families> settingFamilies =
