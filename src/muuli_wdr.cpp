@@ -38,6 +38,7 @@
 #include "muuli_wdr.h"
 
 #include "amuleDlg.h" // Needed for CLIENT_SKIN_SIZE (clientImages' artIds static_assert)
+#include "KadContactHistogram.h"
 #include "DialogLayout.h" // Scrollable details dialogs
 #include "OtherFunctions.h" // Needed for LabelWithColon
 
@@ -2841,7 +2842,10 @@ item9->SetName("kadScope");
     item10->Add( item17, wxSizerFlags().CenterVertical().Border(wxLEFT, 5) );
     item7->Add( item10, wxSizerFlags().Expand().Border(wxLEFT|wxRIGHT|wxTOP, 5) );
     item2->Add( item7, wxSizerFlags(1).Expand() );
-    item0->Add( item2, wxSizerFlags(1).Expand() );
+    item0->Add( item2, wxSizerFlags(3).Expand() );
+
+    CKadContactHistogram *histogram = new CKadContactHistogram(parent);
+    item0->Add(histogram, wxSizerFlags().Expand().Border(wxALL, parent->FromDIP(5)));
 
     // Bootstrap-from-node row, full width below the graph -- mirrors serverListDlgUp's "Add server
     // manually" row: a single IP field, not eD2k's four-octet split, plus a port field and the

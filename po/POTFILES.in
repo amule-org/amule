@@ -46,6 +46,7 @@ src/geoip/MaxMindDBDatabase.cpp
 src/HTTPDownload.cpp
 src/IP2Country.cpp
 src/IPFilter.cpp
+src/KadContactHistogram.h
 src/KadDlg.cpp
 src/kademlia/kademlia/SearchManager.cpp
 src/kademlia/routing/RoutingZone.cpp

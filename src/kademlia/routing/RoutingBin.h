@@ -91,6 +91,8 @@ public:
 	void SetAllContactsVerified();
 	bool HasOnlyLANNodes() const noexcept;
 
+	static uint32_t GetGlobalSubnetCount() noexcept { return s_globalContactSubnets.size(); }
+
 	static bool CheckGlobalIPLimits(uint32_t ip, uint16_t port);
 
 	bool m_dontDeleteContacts;

@@ -38,6 +38,7 @@ there client on the eMule forum..
 
 #ifndef ROUTINGZONE_H
 #define ROUTINGZONE_H
+#include "../utils/ContactDistribution.h"
 
 #include "Maps.h"
 #include "../utils/UInt128.h"
@@ -96,6 +97,7 @@ public:
 	CContact *GetContact(uint32_t ip, uint16_t port, bool tcpPort) const noexcept;
 	CContact *GetRandomContact(uint32_t maxType, uint32_t minKadVersion) const;
 	uint32_t GetNumContacts() const noexcept;
+	ContactDistribution GetContactDistribution() const;
 	void GetNumContacts(uint32_t &nInOutContacts,
 		uint32_t &nInOutFilteredContacts,
 		uint8_t minVersion) const noexcept;

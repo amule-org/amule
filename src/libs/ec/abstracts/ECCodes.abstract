@@ -305,6 +305,8 @@ EC_TAG_STATS_UL_SPEED                     0x0200
 	EC_TAG_STATS_KAD_NODES                    0x021B
 	EC_TAG_STATS_TEMP_FREE_SPACE              0x021C
 	EC_TAG_STATS_INCOMING_FREE_SPACE          0x021D
+## Versioned fixed-size contact histogram. Missing means unsupported.
+	EC_TAG_STATS_KAD_DISTRIBUTION             0x021E
 
 EC_TAG_PARTFILE                           0x0300
 	EC_TAG_PARTFILE_NAME                      0x0301

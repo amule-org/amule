@@ -791,7 +791,13 @@ class CStatsUpdaterRem : public CECPacketHandlerBase
 	virtual void HandlePacket(const CECPacket *);
 
 public:
-	CStatsUpdaterRem() {}
+	explicit CStatsUpdaterRem(bool distributionRequested = false)
+	: m_distributionRequested(distributionRequested)
+	{
+	}
+
+private:
+	bool m_distributionRequested;
 };
 
 // Server-message log mirror. amuled accumulates ed2k server messages in
@@ -1028,10 +1034,13 @@ class CamuleRemoteGuiApp : public wxApp, public CamuleGuiBase, public CamuleAppC
 	void OnFinishedHTTPDownload(CMuleInternalEvent &event);
 
 	CStatsUpdaterRem m_stats_updater;
+	// Preserve the request's opt-in intent even if visibility changes before its reply.
+	CStatsUpdaterRem m_kadDistributionUpdater{ true };
 	CServerInfoHandlerRem m_serverinfo_handler;
 	CChatMsgHandlerRem m_chatmsg_handler;
 
 public:
+	void RequestKadContactDistribution();
 	void Startup();
 
 	/// The main window came back from the taskbar/tray. If a reconnect has been running

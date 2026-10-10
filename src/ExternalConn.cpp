@@ -1497,6 +1497,12 @@ static CECPacket *Get_EC_Response_StatRequest(const CECPacket *request, CLoggerA
 			response->AddTag(CECTag(EC_TAG_STATS_KAD_NODES, CStatistics::GetKadNodes()));
 		}
 		// Kad stats
+		if (request->GetTagByName(EC_TAG_STATS_KAD_DISTRIBUTION)) {
+			Kademlia::ContactDistribution distribution;
+			CStatistics::GetKadContactDistribution(distribution);
+			const auto wire = distribution.Encode();
+			response->AddTag(CECTag(EC_TAG_STATS_KAD_DISTRIBUTION, wire.size(), wire.data()));
+		}
 		// Index ownership is local: report the adopted snapshot even before bootstrap.
 		if (Kademlia::CKademlia::IsRunning()) {
 			response->AddTag(CECTag(EC_TAG_STATS_KAD_INDEXED_SOURCES,

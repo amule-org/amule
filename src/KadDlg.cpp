@@ -24,6 +24,7 @@
 //
 
 #include "KadDlg.h"
+#include "KadContactHistogram.h"
 #include "muuli_wdr.h"
 #include "OScopeCtrl.h"
 #include "OtherFunctions.h"
@@ -68,6 +69,47 @@ void CKadDlg::Init()
 	SetGraphColors();
 
 	UpdateConnectButton();
+	m_contactHistogram = CastChild("kadContactDistribution", CKadContactHistogram);
+	m_distributionTimer.SetOwner(this);
+	Bind(
+		wxEVT_TIMER,
+		[this](wxTimerEvent &) {
+			if (!IsShownOnScreen()) {
+				return;
+			}
+			UpdateContactDistribution();
+		},
+		m_distributionTimer.GetId());
+	Bind(wxEVT_SHOW, [this](wxShowEvent &event) {
+		event.Skip();
+		if (event.IsShown()) {
+			CallAfter(&CKadDlg::ShowContactDistribution);
+		}
+	});
+	UpdateContactDistribution();
+	m_distributionTimer.Start(1000);
+	Layout();
+}
+
+void CKadDlg::ShowContactDistribution()
+{
+	if (!IsShownOnScreen()) {
+		return;
+	}
+	UpdateContactDistribution();
+#ifdef CLIENT_GUI
+	theApp->RequestKadContactDistribution();
+#endif
+}
+
+void CKadDlg::UpdateContactDistribution()
+{
+	if (!m_contactHistogram) {
+		return;
+	}
+	Kademlia::ContactDistribution distribution;
+	const auto state = CStatistics::GetKadContactDistribution(distribution);
+	m_contactHistogram->SetDistribution(distribution, state);
 }
 
 void CKadDlg::UpdateConnectButton()

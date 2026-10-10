@@ -2232,6 +2232,9 @@ option (ENABLE_INTEGRATION_TESTS
 if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 	find_package (Python3 QUIET COMPONENTS Interpreter)
 	if (Python3_Interpreter_FOUND)
+		add_test (NAME KadDistributionECTest COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/KadDistributionECTest.py $<TARGET_FILE:amuled>)
+		add_test (NAME KadPopulatedDistributionECTest COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/KadDistributionECTest.py $<TARGET_FILE:amuled> --populated)
+		set_tests_properties (KadPopulatedDistributionECTest PROPERTIES SKIP_RETURN_CODE 77)
 		add_test (NAME LogfilePathIntegrationTest
 			COMMAND ${Python3_EXECUTABLE}
 				${CMAKE_CURRENT_SOURCE_DIR}/LogfilePathIntegrationTest.py $<TARGET_FILE:amuled>
@@ -2306,6 +2309,22 @@ target_include_directories (AICHSearchResultTest PRIVATE
 add_application_test_stubs (AICHSearchResultTest)
 target_link_libraries (AICHSearchResultTest muleunit mulecommon wxWidgets::BASE CRYPTOPP::CRYPTOPP)
 add_test (NAME AICHSearchResultTest COMMAND AICHSearchResultTest)
+
+add_executable (ContactDistributionTest ContactDistributionTest.cpp)
+add_test (NAME ContactDistributionTest COMMAND ContactDistributionTest)
+target_include_directories (ContactDistributionTest PRIVATE ${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries (ContactDistributionTest muleunit mulecommon)
+
+if (TARGET wxWidgets::CORE)
+	add_executable (KadHistogramRenderTest KadHistogramRenderTest.cpp)
+	if (WIN32)
+		target_sources (KadHistogramRenderTest PRIVATE DialogLayoutTest.rc)
+	endif()
+	target_include_directories (KadHistogramRenderTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
+	target_link_libraries (KadHistogramRenderTest PRIVATE wxWidgets::CORE)
+	add_test (NAME KadHistogramRenderTest COMMAND KadHistogramRenderTest)
+	set_tests_properties (KadHistogramRenderTest PROPERTIES SKIP_RETURN_CODE 77)
+endif()
 
 find_package (Threads REQUIRED)
 add_executable (BackgroundLoadTest BackgroundLoadTest.cpp)

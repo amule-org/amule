@@ -142,7 +142,7 @@ env:
   # Integration tests start and restart real processes. Run them separately
   # on Ubuntu outside the fast unit-test time budget, with 300 s each so a hung daemon
   # still fails the job. AllSearchIntegrationTest takes about 15 s on the runners.
-  ctest_fast_exclude: '^(CredentialsTest|AmuleApiConfigTest|AllSearchIntegrationTest|AllSearchClientCapabilityTest|LogfilePathIntegrationTest|KadIndexLifecycleECTest|ShareWatcherMoveIntegrationTest)$'
+  ctest_fast_exclude: '^(CredentialsTest|AmuleApiConfigTest|AllSearchIntegrationTest|AllSearchClientCapabilityTest|LogfilePathIntegrationTest|KadIndexLifecycleECTest|ShareWatcherMoveIntegrationTest|KadDistributionECTest|KadPopulatedDistributionECTest)$'
 
 jobs:
   # Window IDs in muuli_wdr.h and each EC enum in the .abstract files must not repeat a value. Two
@@ -211,7 +211,7 @@ jobs:
           xvfb-run -a ctest ${{ env.ctest_flags }} --timeout 10 -E '${{ env.ctest_fast_exclude }}' &&
           xvfb-run -a ctest ${{ env.ctest_flags }} --timeout 60 -R '${{ env.ctest_kdf_tests }}'
       - name: run integration tests
-        run: ctest ${{ env.ctest_flags }} --timeout 300 --no-tests=error -R '^(AllSearch(Integration|ClientCapability)|LogfilePathIntegration|KadIndexLifecycleEC|ShareWatcherMoveIntegration)Test$'
+        run: ctest ${{ env.ctest_flags }} --timeout 300 --no-tests=error -R '^(AllSearch(Integration|ClientCapability)|LogfilePathIntegration|KadIndexLifecycleEC|ShareWatcherMoveIntegration|KadDistributionEC|KadPopulatedDistributionEC)Test$'
       # amuleapi_curl_smoke drives these two against a live daemon rather than
       # compiling its own copy. Release only: the smoke times SSE windows, and
       # a Debug daemon makes those flaky.
@@ -251,17 +251,12 @@ jobs:
   # those would cost far more than it tells us, since these switches change no
   # platform-dependent code.
   build_cmake_ubuntu_experimental:
-    name: Build CMake Ubuntu Experimental (${{ matrix.build_type }}, ngtcp2 ${{ matrix.ngtcp2 }})
+    name: Build CMake Ubuntu Experimental (${{ matrix.build_type }})
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
-        # QUIC has to work on the pinned ngtcp2 and on the latest one.
-        include:
-          - build_type: Debug
-            ngtcp2: pinned
-          - build_type: Release
-            ngtcp2: latest
+        build_type: [Debug, Release]
     steps:
       - uses: actions/checkout@v7
       - name: restore ccache
@@ -275,8 +270,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ${{ env.cmake_ubuntu_deps }}
       - uses: ./.github/actions/ngtcp2
-        with:
-          release: ${{ matrix.ngtcp2 }}
       - name: create build system
         run: |
           cmake \
@@ -302,7 +295,7 @@ jobs:
           xvfb-run -a ctest ${{ env.ctest_flags }} --timeout 10 -E '${{ env.ctest_fast_exclude }}' &&
           xvfb-run -a ctest ${{ env.ctest_flags }} --timeout 60 -R '${{ env.ctest_kdf_tests }}'
       - name: run integration tests
-        run: ctest ${{ env.ctest_flags }} --timeout 300 --no-tests=error -R '^(AllSearch(Integration|ClientCapability)|LogfilePathIntegration|KadIndexLifecycleEC|ShareWatcherMoveIntegration)Test$'
+        run: ctest ${{ env.ctest_flags }} --timeout 300 --no-tests=error -R '^(AllSearch(Integration|ClientCapability)|LogfilePathIntegration|KadIndexLifecycleEC|ShareWatcherMoveIntegration|KadDistributionEC|KadPopulatedDistributionEC)Test$'
 
   # Configures with the oldest CMake that CMakeLists.txt declares, so the floor stays
   # true. Configure only: the build itself does not depend on the CMake version.
@@ -570,17 +563,11 @@ jobs:
         # Windows silently and be found by whoever first turned the switch on
         # there. One leg is enough to compile it, and keeps the cost of a
         # snapshot that does not build on Windows to a single job.
-        #
-        # ENABLE_QUIC rides on the same leg for the same reason: nothing else
-        # builds the QUIC sources and their tests on Windows. ngtcp2 comes from
-        # MSYS2 here, not from the source build pinned for the Linux jobs.
         include:
           - build_type: Debug
-            extra_config_flags: -DENABLE_UTP=YES -DENABLE_QUIC=YES
-            extra_packages: mingw-w64-clang-x86_64-ngtcp2
+            extra_config_flags: -DENABLE_UTP=YES
           - build_type: Release
             extra_config_flags: ""
-            extra_packages: ""
     defaults:
       run:
         shell: msys2 {0}
@@ -597,7 +584,7 @@ jobs:
         with:
           msystem: CLANG64
           update: true
-          install: ${{ env.cmake_mingw_w64_deps }} ${{ matrix.extra_packages }}
+          install: ${{ env.cmake_mingw_w64_deps }}
       # MSYS2 only packages pupnp 1.14.x; build the pinned 22.x from source so
       # Windows gets the UPnP fixes released in 22.0.4 (issue #242). Installed
       # into $MINGW_PREFIX so find_package(UPNP CONFIG) picks it up and the DLL

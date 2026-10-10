@@ -12,7 +12,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
-"POT-Creation-Date: 2026-10-09 12:39+0000\n"
+"POT-Creation-Date: 2026-10-10 10:52-0400\n"
 "PO-Revision-Date: 2026-10-07 16:28+0000\n"
 "Last-Translator: Michał Trzebiatowski <hippie_1968@hotmail.com>\n"
 "Language-Team: translationproject.org/team/pl.html <translation-team-pl@lists.sourceforge.net>\n"
@@ -3310,6 +3310,27 @@ msgstr "Nie można załadować danych kraju dla '%s'."
 #: src/IPFilter.cpp
 msgid "IP filter is ready"
 msgstr "Filtr IP jest gotowy"
+
+#: src/KadContactHistogram.h
+msgid "Contacts grouped by the first twelve bits of their KadID. Blue: all contacts; green: verified addresses. The marker shows your own KadID; clustering near it is expected."
+msgstr ""
+
+#: src/KadContactHistogram.h
+msgid "Loading contact distribution..."
+msgstr ""
+
+#: src/KadContactHistogram.h
+msgid "This core does not send the contact distribution. Update the core to see the chart."
+msgstr ""
+
+#: src/KadContactHistogram.h
+msgid "The core sent contact distribution data that could not be read."
+msgstr ""
+
+#: src/KadContactHistogram.h
+#, c-format
+msgid "Routing-table contacts: %u; verified: %u; distinct /24s: %u"
+msgstr ""
 
 #: src/KadDlg.cpp src/muuli_wdr.cpp src/StatisticsDlg.cpp
 msgid "Current"

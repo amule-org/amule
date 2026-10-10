@@ -415,6 +415,10 @@ CamuleDlg::CamuleDlg(wxWindow *pParent, const wxString &title, wxPoint where, wx
 	wxNotebook *logs_notebook = CastChild(ID_SRVLOG_NOTEBOOK, wxNotebook);
 	wxNotebook *networks_notebook = CastChild(ID_NETNOTEBOOK, wxNotebook);
 
+	networks_notebook->Bind(wxEVT_NOTEBOOK_PAGE_CHANGED, [this](wxBookCtrlEvent &event) {
+		event.Skip();
+		m_kademliawnd->CallAfter(&CKadDlg::ShowContactDistribution);
+	});
 	wxASSERT(networks_notebook->GetPageCount() == 2);
 
 	// Capture the network-conditional log tabs by the control each hosts, not by index --
@@ -504,6 +508,7 @@ void CamuleDlg::SetActiveDialog(DialogType type, wxWindow *dlg)
 	// show its previous figure -- from whenever it was last on screen, which can be a long
 	// time -- until the next tick.
 	UpdateFreeSpaceLabels();
+	m_kademliawnd->ShowContactDistribution();
 }
 
 void CamuleDlg::ShowSearchWindow()
@@ -1665,6 +1670,9 @@ void CamuleDlg::OnShow(wxShowEvent &evt)
 	// minimize-to-tray cycle.
 	if (evt.IsShown()) {
 		m_iconized_logical = false;
+		if (m_kademliawnd) {
+			m_kademliawnd->CallAfter(&CKadDlg::ShowContactDistribution);
+		}
 #ifdef CLIENT_GUI
 		// Restored from the tray (tray click/menu, or an un-hide after HideOnClose), which
 		// never fires wxIconizeEvent -- see OnMinimize for the other half of issue #806.
@@ -1689,6 +1697,9 @@ void CamuleDlg::OnMinimize(wxIconizeEvent &evt)
 	// unreliable on wxGTK during the minimize-button transition, so consumers that need to know
 	// read IsTrayLogicallyIconized() instead.
 	m_iconized_logical = evt.IsIconized();
+	if (!evt.IsIconized() && m_kademliawnd) {
+		m_kademliawnd->CallAfter(&CKadDlg::ShowContactDistribution);
+	}
 
 #ifdef CLIENT_GUI
 	// Coming back from the taskbar/Dock with a reconnect running quietly behind the window:
