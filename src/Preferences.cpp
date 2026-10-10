@@ -98,7 +98,9 @@ uint32 CPreferences::s_maxdownload;
 uint32 CPreferences::s_slotallocation;
 wxString CPreferences::s_Addr;
 wxString CPreferences::s_NetworkInterface;
+#ifdef ENABLE_IPV6
 long CPreferences::s_addressFamiliesSetting;
+#endif
 uint16 CPreferences::s_port;
 uint16 CPreferences::s_udpport;
 bool CPreferences::s_UDPEnable;
@@ -1394,7 +1396,9 @@ void CPreferences::BuildItemList(const wxString &appdir)
 
 	s_MiscList.push_back(MkCfg_Int("/eMule/SmartIdState", s_smartidstate, 0));
 
+#ifdef ENABLE_IPV6
 	s_MiscList.push_back(MkCfg_Int("/eMule/AddressFamilies", s_addressFamiliesSetting, 0));
+#endif
 
 	s_MiscList.push_back(new Cfg_Bool("/eMule/DropSlowSources", s_DropSlowSources, false));
 

@@ -164,18 +164,10 @@ These switches are `OFF` by default and compile in unfinished work.
 | Option                            | Effect |
 | --------------------------------- | ------ |
 | `ENABLE_UTP`                      | IPv4 uTP in `amule` and `amuled`: datagram framing, inbound streams, and dialing a peer that advertises uTP |
-| `ENABLE_IPV6`                     | native IPv6 TCP admission. The IPv6 identity work is not complete |
+| `ENABLE_IPV6`                     | native IPv6 TCP admission, and the `AddressFamilies` setting in `amule.conf` (`1` = dual-stack ed2k TCP listener). The IPv6 identity work is not complete |
 | `ENABLE_NATT_SERVER_COORDINATION` | the server-coordinated NAT-T wire codecs. No login advertisement or network traffic yet |
 | `ENABLE_KAD_NODE_PROTECTION`      | local Kad node-protection heuristics: adaptive request timeouts and Kad identity checks. No wire-protocol change |
 | `ENABLE_ALL_EXPERIMENTAL`         | all of the switches above |
-
-`ENABLE_IPV6` only lets the core admit native IPv6 peers. Listening on
-IPv6 is the runtime setting `AddressFamilies` in the `[eMule]` section of
-`amule.conf`: `0` (the default) is IPv4 only, `1` is IPv4 and IPv6 on one
-dual-stack ed2k TCP listener. It is read at startup; any other value is
-reported and treated as `0`. UDP, Kad and outbound connections stay IPv4.
-Edit the file while aMule is not running, because aMule rewrites it on
-exit.
 
 For the full list:
 
