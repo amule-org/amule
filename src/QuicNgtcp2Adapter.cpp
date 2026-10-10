@@ -31,8 +31,6 @@
 #include <ngtcp2/ngtcp2_crypto.h>
 #include <ngtcp2/ngtcp2_crypto_gnutls.h>
 
-#include <netinet/in.h>
-
 #include <algorithm>
 #include <cstring>
 #include <deque>
@@ -81,8 +79,8 @@ ngtcp2_tstamp NanosecondsFromMs(uint64_t nowMs)
 // A real, if address-less, AF_INET endpoint is what a "no real path" has to mean here.
 void InitZeroPath(ngtcp2_path_storage &path)
 {
-	sockaddr_in addr = {};
-	addr.sin_family = AF_INET;
+	ngtcp2_sockaddr_in addr = {};
+	addr.sin_family = NGTCP2_AF_INET;
 	ngtcp2_path_storage_init(&path,
 		reinterpret_cast<ngtcp2_sockaddr *>(&addr),
 		sizeof(addr),

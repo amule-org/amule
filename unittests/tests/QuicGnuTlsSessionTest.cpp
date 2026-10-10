@@ -27,10 +27,10 @@
 
 #include <gnutls/gnutls.h>
 
-#include <fcntl.h>
-#include <sys/socket.h>
-#include <unistd.h>
-
+#include <algorithm>
+#include <cerrno>
+#include <cstddef>
+#include <deque>
 #include <string>
 
 using namespace muleunit;
@@ -78,10 +78,44 @@ struct ScopedClientSession
 	}
 };
 
-bool SetNonBlocking(int fd)
+// One side of an in-memory, non-blocking byte stream between the two sessions. It stands in for a
+// socketpair, which Windows does not have.
+struct MemoryEndpoint
 {
-	const int flags = fcntl(fd, F_GETFL, 0);
-	return flags >= 0 && fcntl(fd, F_SETFL, flags | O_NONBLOCK) == 0;
+	gnutls_session_t session = nullptr;
+	std::deque<unsigned char> *incoming = nullptr;
+	std::deque<unsigned char> *outgoing = nullptr;
+};
+
+ssize_t MemoryPush(gnutls_transport_ptr_t ptr, const void *data, size_t size)
+{
+	auto *endpoint = static_cast<MemoryEndpoint *>(ptr);
+	const auto *bytes = static_cast<const unsigned char *>(data);
+	endpoint->outgoing->insert(endpoint->outgoing->end(), bytes, bytes + size);
+	return static_cast<ssize_t>(size);
+}
+
+// An empty stream reads as EAGAIN, as a non-blocking socket would: the handshake returns
+// GNUTLS_E_AGAIN and the pump loop gives the other side its turn.
+ssize_t MemoryPull(gnutls_transport_ptr_t ptr, void *data, size_t size)
+{
+	auto *endpoint = static_cast<MemoryEndpoint *>(ptr);
+	if (endpoint->incoming->empty()) {
+		gnutls_transport_set_errno(endpoint->session, EAGAIN);
+		return -1;
+	}
+	const auto count = static_cast<std::ptrdiff_t>(std::min(size, endpoint->incoming->size()));
+	const auto end = endpoint->incoming->begin() + count;
+	std::copy(endpoint->incoming->begin(), end, static_cast<unsigned char *>(data));
+	endpoint->incoming->erase(endpoint->incoming->begin(), end);
+	return static_cast<ssize_t>(count);
+}
+
+void AttachMemoryTransport(MemoryEndpoint &endpoint)
+{
+	gnutls_transport_set_ptr(endpoint.session, &endpoint);
+	gnutls_transport_set_push_function(endpoint.session, MemoryPush);
+	gnutls_transport_set_pull_function(endpoint.session, MemoryPull);
 }
 
 struct HandshakeResult
@@ -91,35 +125,20 @@ struct HandshakeResult
 	std::string negotiatedAlpn;
 };
 
-// Drives a real handshake over a real (local) transport: a non-blocking socketpair, one real
-// GnuTLS client and CQuicGnuTlsSession as the server. Both sides are pumped from this one
-// thread so completion depends only on protocol progress, never on which OS thread the kernel
-// happens to schedule next -- the failure mode a two-thread, blocking-socket version of this
-// test would have instead.
+// Drives a real handshake over an in-memory, non-blocking transport: one real GnuTLS client and
+// CQuicGnuTlsSession as the server. Both sides are pumped from this one thread so completion
+// depends only on protocol progress, never on which OS thread the kernel happens to schedule
+// next -- the failure mode a two-thread, blocking-socket version of this test would have instead.
 HandshakeResult RunHandshakeAgainstServer(CQuicGnuTlsSession &server, const std::string &clientAlpn)
 {
 	HandshakeResult result;
 
-	int fds[2] = { -1, -1 };
-	if (socketpair(AF_UNIX, SOCK_STREAM, 0, fds) != 0) {
-		return result;
-	}
-	if (!SetNonBlocking(fds[0]) || !SetNonBlocking(fds[1])) {
-		close(fds[0]);
-		close(fds[1]);
-		return result;
-	}
-
 	ScopedClientSession client;
 	if (gnutls_certificate_allocate_credentials(&client.credentials) != GNUTLS_E_SUCCESS) {
-		close(fds[0]);
-		close(fds[1]);
 		return result;
 	}
 	gnutls_certificate_set_verify_function(client.credentials, AcceptAnyCertificate);
 	if (gnutls_init(&client.session, GNUTLS_CLIENT | GNUTLS_NONBLOCK) != GNUTLS_E_SUCCESS) {
-		close(fds[0]);
-		close(fds[1]);
 		return result;
 	}
 	gnutls_priority_set_direct(client.session, "NORMAL:-VERS-ALL:+VERS-TLS1.3", nullptr);
@@ -128,8 +147,12 @@ HandshakeResult RunHandshakeAgainstServer(CQuicGnuTlsSession &server, const std:
 					   reinterpret_cast<const unsigned char *>(clientAlpn.data())),
 		static_cast<unsigned>(clientAlpn.size()) };
 	gnutls_alpn_set_protocols(client.session, &alpn, 1, 0);
-	gnutls_transport_set_int(client.session, fds[0]);
-	gnutls_transport_set_int(server.NativeGnuTlsSession(), fds[1]);
+	std::deque<unsigned char> toServer;
+	std::deque<unsigned char> toClient;
+	MemoryEndpoint clientEnd{ client.session, &toClient, &toServer };
+	MemoryEndpoint serverEnd{ server.NativeGnuTlsSession(), &toServer, &toClient };
+	AttachMemoryTransport(clientEnd);
+	AttachMemoryTransport(serverEnd);
 
 	bool clientDone = false;
 	bool clientOk = false;
@@ -158,9 +181,6 @@ HandshakeResult RunHandshakeAgainstServer(CQuicGnuTlsSession &server, const std:
 			}
 		}
 	}
-
-	close(fds[0]);
-	close(fds[1]);
 
 	if (clientOk && serverOk) {
 		result.ok = true;

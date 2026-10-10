@@ -43,8 +43,6 @@
 #include <ngtcp2/ngtcp2_crypto.h>
 #include <ngtcp2/ngtcp2_crypto_gnutls.h>
 
-#include <netinet/in.h>
-
 #include <array>
 #include <memory>
 #include <mutex>
@@ -101,8 +99,8 @@ int Ngtcp2NewConnectionId(ngtcp2_conn *, ngtcp2_cid *cid, uint8_t *token, size_t
 // sa_family, so "no real path" still has to be a real, zero-address AF_INET endpoint.
 void InitZeroPath(ngtcp2_path_storage &path)
 {
-	sockaddr_in addr = {};
-	addr.sin_family = AF_INET;
+	ngtcp2_sockaddr_in addr = {};
+	addr.sin_family = NGTCP2_AF_INET;
 	ngtcp2_path_storage_init(&path,
 		reinterpret_cast<ngtcp2_sockaddr *>(&addr),
 		sizeof(addr),

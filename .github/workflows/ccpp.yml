@@ -570,11 +570,17 @@ jobs:
         # Windows silently and be found by whoever first turned the switch on
         # there. One leg is enough to compile it, and keeps the cost of a
         # snapshot that does not build on Windows to a single job.
+        #
+        # ENABLE_QUIC rides on the same leg for the same reason: nothing else
+        # builds the QUIC sources and their tests on Windows. ngtcp2 comes from
+        # MSYS2 here, not from the source build pinned for the Linux jobs.
         include:
           - build_type: Debug
-            extra_config_flags: -DENABLE_UTP=YES
+            extra_config_flags: -DENABLE_UTP=YES -DENABLE_QUIC=YES
+            extra_packages: mingw-w64-clang-x86_64-ngtcp2
           - build_type: Release
             extra_config_flags: ""
+            extra_packages: ""
     defaults:
       run:
         shell: msys2 {0}
@@ -591,7 +597,7 @@ jobs:
         with:
           msystem: CLANG64
           update: true
-          install: ${{ env.cmake_mingw_w64_deps }}
+          install: ${{ env.cmake_mingw_w64_deps }} ${{ matrix.extra_packages }}
       # MSYS2 only packages pupnp 1.14.x; build the pinned 22.x from source so
       # Windows gets the UPnP fixes released in 22.0.4 (issue #242). Installed
       # into $MINGW_PREFIX so find_package(UPNP CONFIG) picks it up and the DLL
