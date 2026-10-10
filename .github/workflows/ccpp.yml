@@ -94,6 +94,7 @@ env:
     mingw-w64-clang-x86_64-gettext
     mingw-w64-clang-x86_64-libgd
     mingw-w64-clang-x86_64-libmaxminddb
+    mingw-w64-clang-x86_64-ngtcp2
     mingw-w64-clang-x86_64-ninja
     mingw-w64-clang-x86_64-pkgconf
     mingw-w64-clang-x86_64-readline
@@ -573,14 +574,14 @@ jobs:
         #
         # ENABLE_QUIC rides on the same leg for the same reason: nothing else
         # builds the QUIC sources and their tests on Windows. ngtcp2 comes from
-        # MSYS2 here, not from the source build pinned for the Linux jobs.
+        # MSYS2 here, not from the source build pinned for the Linux jobs. Both
+        # legs install it: setup-msys2 caches per package list, and a second list
+        # costs a second ~0.4 GB cache entry against the repo's 10 GB limit.
         include:
           - build_type: Debug
             extra_config_flags: -DENABLE_UTP=YES -DENABLE_QUIC=YES
-            extra_packages: mingw-w64-clang-x86_64-ngtcp2
           - build_type: Release
             extra_config_flags: ""
-            extra_packages: ""
     defaults:
       run:
         shell: msys2 {0}
@@ -597,7 +598,7 @@ jobs:
         with:
           msystem: CLANG64
           update: true
-          install: ${{ env.cmake_mingw_w64_deps }} ${{ matrix.extra_packages }}
+          install: ${{ env.cmake_mingw_w64_deps }}
       # MSYS2 only packages pupnp 1.14.x; build the pinned 22.x from source so
       # Windows gets the UPnP fixes released in 22.0.4 (issue #242). Installed
       # into $MINGW_PREFIX so find_package(UPNP CONFIG) picks it up and the DLL
