@@ -1543,7 +1543,7 @@ bool CamuleApp::ReinitializeNetwork(wxString *msg)
 	// from other clients and client-to-client source exchange. Default is 4662.
 	myaddr[2] = myaddr[1];
 	myaddr[2].Service(thePrefs::GetPort());
-	listensocket = new CListenSocket(myaddr[2]);
+	listensocket = new CListenSocket(myaddr[2], NULL, ListenerFamilies::FromPolicy);
 	*msg << CFormat("*** TCP socket (TCP) listening on %s:%u\n") % ip %
 			(unsigned int)(thePrefs::GetPort());
 	// Notify(true) has already been called to the ListenSocket, so events may

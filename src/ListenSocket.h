@@ -38,7 +38,9 @@ class CClientTCPSocket;
 class CListenSocket : public CSocketServerProxy
 {
 public:
-	CListenSocket(amuleIPV4Address &addr, const CProxyData *ProxyData = NULL);
+	CListenSocket(amuleIPV4Address &addr,
+		const CProxyData *ProxyData = NULL,
+		ListenerFamilies families = ListenerFamilies::FromAddress);
 	~CListenSocket();
 	void OnAccept();
 	void Process();

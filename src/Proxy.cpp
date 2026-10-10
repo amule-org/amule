@@ -1138,8 +1138,9 @@ uint32 CSocketClientProxy::Write(const void *buffer, wxUint32 nbytes)
 
 // CSocketServerProxy
 
-CSocketServerProxy::CSocketServerProxy(amuleIPV4Address &address, muleSocketFlags flags, const CProxyData *)
-: CLibSocketServer(address, flags)
+CSocketServerProxy::CSocketServerProxy(
+	amuleIPV4Address &address, muleSocketFlags flags, const CProxyData *, ListenerFamilies families)
+: CLibSocketServer(address, flags, families)
 {
 	/* Maybe some day when socks6 is out... :) */
 }

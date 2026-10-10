@@ -42,6 +42,7 @@
 #include <algorithm> // Needed for std::min - Boost up to 1.54 fails to compile with MSVC 2013 otherwise
 #include <atomic>
 #include <chrono>
+#include <optional>
 #include <vector>
 
 #ifndef _WIN32
@@ -62,6 +63,7 @@
 #endif
 
 #include "LibSocket.h"
+#include "AddressFamilyPolicyAsio.h" // ListenerBindFor, for a listener that follows the policy
 #include "NetworkAddressAsio.h"
 #include "StreamTransport.h" // IStreamTransport, for the attached-stream branches
 #include "GuiEvents.h"       // CoreNotify_LibSocket*, the transport event bridge
@@ -304,17 +306,19 @@ static int ApplyBindToInterface(NativeSocketHandle native, const wxString &ifnam
 // VPN going down.
 static std::atomic<bool> s_bindFailing{ false };
 
-// Per-socket egress bind (reads the interface pushed in by the core).
-template <typename Handle> static void SetBoundInterface(Handle native, const wxString &ifname, bool isV6)
+// Per-socket egress bind (reads the interface pushed in by the core). Returns false when a
+// configured interface could not be applied; the failure is already reported here.
+template <typename Handle> static bool SetBoundInterface(Handle native, const wxString &ifname, bool isV6)
 {
 	if (ifname.IsEmpty()) {
-		return;
+		return true;
 	}
 	bool notFound = false;
 	int err = ApplyBindToInterface(static_cast<NativeSocketHandle>(native), ifname, isV6, &notFound);
 	if (err == 0) {
 		s_bindFailing = false;
 		AddDebugLogLineF(logAsio, CFormat("Bind-to-interface: bound socket to '%s'") % ifname);
+		return true;
 	} else if (!s_bindFailing.exchange(true)) {
 		AddLogLineC(
 			CFormat(notFound ? _("WARNING: network interface '%s' is gone - traffic is no "
@@ -327,6 +331,7 @@ template <typename Handle> static void SetBoundInterface(Handle native, const wx
 			CFormat("Bind-to-interface: could not bind socket to '%s' (%s)") % ifname %
 				(notFound ? "no such interface" : "error"));
 	}
+	return false;
 }
 
 // Bind an already-open raw socket (e.g. libcurl's HTTP socket) to the
@@ -1458,7 +1463,8 @@ public:
 		CLibSocketServer *libSocketServer,
 		bool bindInterfaceOverride = false,
 		const wxString &bindInterface = wxEmptyString,
-		bool exclusiveBind = false)
+		bool exclusiveBind = false,
+		ListenerFamilies families = ListenerFamilies::FromAddress)
 	: ip::tcp::acceptor(s_io_service)
 	, m_libSocketServer(libSocketServer)
 	, m_acceptStopped(false)
@@ -1467,6 +1473,7 @@ public:
 	, m_bindInterfaceOverride(bindInterfaceOverride)
 	, m_bindInterface(bindInterface)
 	, m_exclusiveBind(exclusiveBind)
+	, m_families(families)
 	{
 		m_ok = false;
 		m_socketAvailable = false;
@@ -1480,22 +1487,12 @@ public:
 	void Init()
 	{
 		try {
-			open(m_address.GetEndpoint().protocol());
-			SetCloexecOnSocket(native_handle());
-			// When an explicit per-server interface is set (EC listener), use it verbatim --
-			// empty means "any", NOT a fall-back to the global P2P pin. Otherwise inherit the
-			// global bind-to-interface setting.
-			SetBoundInterface(native_handle(),
-				m_bindInterfaceOverride ? m_bindInterface : s_bindToInterface,
-				false);
-			// A replacement listener must fail if another process already owns the
-			// requested port. On Windows SO_REUSEADDR can otherwise allow both binds.
-#ifdef __WXMSW__
-			set_option(ip::tcp::acceptor::reuse_address(!m_exclusiveBind));
-#else
-			set_option(ip::tcp::acceptor::reuse_address(true));
-#endif
-			bind(m_address.GetEndpoint());
+			if (!OpenAndBindIPv6FromPolicy()) {
+				OpenAndBind(m_address.GetEndpoint().protocol(),
+					m_address.GetEndpoint(),
+					false,
+					std::nullopt);
+			}
 			listen();
 			auto self = shared_from_this();
 			post(m_strand, [self]() { self->StartAccept(); });
@@ -1576,6 +1573,70 @@ public:
 	bool SocketAvailable() const { return m_socketAvailable; }
 
 private:
+	// Throws system_error and leaves the acceptor open on failure. isV6 selects the
+	// bind-to-interface option and is independent of the protocol for the IPv4 path, which has
+	// always passed false.
+	void OpenAndBind(const ip::tcp &protocol,
+		const ip::tcp::endpoint &endpoint,
+		bool isV6,
+		const std::optional<bool> &v6Only)
+	{
+		open(protocol);
+		SetCloexecOnSocket(native_handle());
+		if (v6Only) {
+			set_option(ip::v6_only(*v6Only));
+		}
+		// When an explicit per-server interface is set (EC listener), use it verbatim --
+		// empty means "any", NOT a fall-back to the global P2P pin. Otherwise inherit the
+		// global bind-to-interface setting.
+		const bool interfaceBound = SetBoundInterface(
+			native_handle(), m_bindInterfaceOverride ? m_bindInterface : s_bindToInterface, isV6);
+		// Only the IPv6 attempt treats this as fatal: it has an IPv4 fallback, while the IPv4
+		// listener has always run with the failure reported and the socket unpinned.
+		if (isV6 && !interfaceBound) {
+			throw system_error(error_code(boost::asio::error::no_such_device));
+		}
+		// A replacement listener must fail if another process already owns the
+		// requested port. On Windows SO_REUSEADDR can otherwise allow both binds.
+#ifdef __WXMSW__
+		set_option(ip::tcp::acceptor::reuse_address(!m_exclusiveBind));
+#else
+		set_option(ip::tcp::acceptor::reuse_address(true));
+#endif
+		bind(endpoint);
+	}
+
+	// Returns false, with the acceptor closed, when the caller must take the IPv4 path on
+	// m_address: the listener does not follow the policy, the policy keeps it on IPv4, or the
+	// IPv6 socket could not be set up.
+	bool OpenAndBindIPv6FromPolicy()
+	{
+		if (m_families != ListenerFamilies::FromPolicy) {
+			return false;
+		}
+		const AddressFamilyPolicy::ListenerBind plan = AddressFamilyPolicy::ListenerBindFor(
+			AddressFamilyPolicy::Configured(), m_address.GetEndpoint().address());
+		if (plan.protocol != ip::tcp::v6()) {
+			return false;
+		}
+		try {
+			OpenAndBind(plan.protocol,
+				ip::tcp::endpoint(plan.address, m_address.GetEndpoint().port()),
+				true,
+				plan.v6Only);
+			return true;
+		} catch (const system_error &err) {
+			error_code ignored;
+			close(ignored);
+			AddDebugLogLineC(logAsio,
+				CFormat("CAsioSocketServerImpl could not open the IPv6 listener on [%s]:%d, "
+					"falling back to IPv4 - %s") %
+					plan.address.to_string() % m_address.Service() %
+					err.code().message());
+			return false;
+		}
+	}
+
 	void StartAccept()
 	{
 		if (m_acceptStopped.load(std::memory_order_acquire)) {
@@ -1639,19 +1700,23 @@ private:
 	bool m_bindInterfaceOverride;
 	wxString m_bindInterface;
 	bool m_exclusiveBind;
+	ListenerFamilies m_families;
 };
 
-CLibSocketServer::CLibSocketServer(const amuleIPV4Address &adr, int /* flags */)
+CLibSocketServer::CLibSocketServer(const amuleIPV4Address &adr, int /* flags */, ListenerFamilies families)
+: m_listenerFamilies(families)
 {
 	// make_shared so the impl can use shared_from_this() inside its async_accept callbacks.
 	// Init() runs the bind/listen/StartAccept sequence after the managing shared_ptr is in
 	// place.
-	m_aServer = std::make_shared<CAsioSocketServerImpl>(adr, this);
+	m_aServer = std::make_shared<CAsioSocketServerImpl>(
+		adr, this, false, wxEmptyString, false, m_listenerFamilies);
 	m_aServer->Init();
 }
 
 CLibSocketServer::CLibSocketServer(
 	const amuleIPV4Address &adr, int /* flags */, const wxString &bindInterface)
+: m_listenerFamilies(ListenerFamilies::FromAddress)
 {
 	// As above, but with an explicit per-server egress interface (empty = any)
 	// that overrides the process-global bind-to-interface pin.
@@ -1671,7 +1736,8 @@ CLibSocketServer::~CLibSocketServer()
 
 bool CLibSocketServer::Rebind(const amuleIPV4Address &adr)
 {
-	auto replacement = std::make_shared<CAsioSocketServerImpl>(adr, this, false, wxEmptyString, true);
+	auto replacement = std::make_shared<CAsioSocketServerImpl>(
+		adr, this, false, wxEmptyString, true, m_listenerFamilies);
 	replacement->Init();
 	if (!replacement->IsOk()) {
 		return false;
