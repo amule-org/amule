@@ -29,6 +29,7 @@
 #include "NetworkAddressAsio.h" // Needed for ToAsioAddress in AsioTargetFor
 
 #include <boost/optional.hpp>
+#include <optional>
 
 #include "WarningsPush_Asio.h"
 #include <boost/asio/ip/tcp.hpp>
@@ -154,6 +155,39 @@ inline boost::asio::ip::address AnyAddress() noexcept
 		return AnyIPv4Address();
 	}
 	return AnyIPv6Address();
+}
+
+/** How a listening socket opens and binds: the protocol, the address, and @c IPV6_V6ONLY. */
+struct ListenerBind
+{
+	boost::asio::ip::tcp protocol;
+	boost::asio::ip::address address;
+	//! Always set for an IPv6 bind: the platform default differs (on for Windows, off for Linux).
+	std::optional<bool> v6Only;
+};
+
+/**
+ * The bind for a listener that has opted into following @a families.
+ *
+ * Only the IPv4 wildcard is widened, so a user-configured concrete address is bound as given. The
+ * caller must fall back to the IPv4 wildcard if the IPv6 socket cannot be opened or bound.
+ */
+inline ListenerBind ListenerBindFor(Families families, const boost::asio::ip::address &requested) noexcept
+{
+	if (requested.is_v6()) {
+		return { boost::asio::ip::tcp::v6(), requested, true };
+	}
+	if (requested.is_unspecified()) {
+		switch (families) {
+		case Families::DualStack:
+			return { boost::asio::ip::tcp::v6(), AnyIPv6Address(), false };
+		case Families::IPv6Only:
+			return { boost::asio::ip::tcp::v6(), AnyIPv6Address(), true };
+		case Families::IPv4Only:
+			break;
+		}
+	}
+	return { boost::asio::ip::tcp::v4(), requested, std::nullopt };
 }
 
 } // namespace AddressFamilyPolicy

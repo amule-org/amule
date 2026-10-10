@@ -41,6 +41,13 @@
 
 #include <AddressFamilyPolicyAsio.h>
 
+#include <optional>
+
+#include "WarningsPush_Asio.h"
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/ip/v6_only.hpp>
+#include "WarningsPop.h"
+
 using namespace muleunit;
 using namespace AddressFamilyPolicy;
 
@@ -263,6 +270,104 @@ TEST(AddressFamilyPolicy, WildcardsAreTheUnspecifiedAddresses)
 {
 	ASSERT_EQUALS(wxString("0.0.0.0"), wxString(AnyIPv4Address().to_string()));
 	ASSERT_EQUALS(wxString("::"), wxString(AnyIPv6Address().to_string()));
+}
+
+TEST(AddressFamilyPolicy, IPv4OnlyListenerBindsTheIPv4Wildcard)
+{
+	const ListenerBind plan = ListenerBindFor(Families::IPv4Only, AnyIPv4Address());
+
+	ASSERT_TRUE(plan.protocol == boost::asio::ip::tcp::v4());
+	ASSERT_TRUE(plan.address == AnyIPv4Address());
+	ASSERT_FALSE(plan.v6Only.has_value());
+}
+
+// One IPv6 socket with IPV6_V6ONLY explicitly cleared accepts both families; leaving the option at
+// the platform default would make the listener's reach depend on the OS rather than the policy.
+TEST(AddressFamilyPolicy, DualStackListenerWidensTheIPv4WildcardToOneDualSocket)
+{
+	const ListenerBind plan = ListenerBindFor(Families::DualStack, AnyIPv4Address());
+
+	ASSERT_TRUE(plan.protocol == boost::asio::ip::tcp::v6());
+	ASSERT_TRUE(plan.address == AnyIPv6Address());
+	ASSERT_TRUE(plan.v6Only.has_value());
+	ASSERT_FALSE(*plan.v6Only);
+}
+
+// Linux defaults IPV6_V6ONLY off, so without setting it an IPv6-only listener would accept IPv4
+// peers as mapped addresses that Permits() refuses under this configuration.
+TEST(AddressFamilyPolicy, IPv6OnlyListenerSetsV6OnlyOnTheIPv6Wildcard)
+{
+	const ListenerBind plan = ListenerBindFor(Families::IPv6Only, AnyIPv4Address());
+
+	ASSERT_TRUE(plan.protocol == boost::asio::ip::tcp::v6());
+	ASSERT_TRUE(plan.address == AnyIPv6Address());
+	ASSERT_TRUE(plan.v6Only.has_value());
+	ASSERT_TRUE(*plan.v6Only);
+}
+
+// A bind interface the user named is a deliberate choice of one address, not a wildcard to widen.
+TEST(AddressFamilyPolicy, ListenerKeepsAConcreteIPv4AddressUnderEveryConfiguration)
+{
+	const boost::asio::ip::address concrete = boost::asio::ip::make_address("192.0.2.10");
+	const Families every[] = { Families::IPv4Only, Families::IPv6Only, Families::DualStack };
+	for (const Families families : every) {
+		const ListenerBind plan = ListenerBindFor(families, concrete);
+		ASSERT_TRUE(plan.protocol == boost::asio::ip::tcp::v4());
+		ASSERT_TRUE(plan.address == concrete);
+		ASSERT_FALSE(plan.v6Only.has_value());
+	}
+}
+
+TEST(AddressFamilyPolicy, ListenerTreatsAnOutOfRangeConfigurationAsIPv4Only)
+{
+	const ListenerBind plan = ListenerBindFor(static_cast<Families>(99), AnyIPv4Address());
+
+	ASSERT_TRUE(plan.protocol == boost::asio::ip::tcp::v4());
+	ASSERT_TRUE(plan.address == AnyIPv4Address());
+	ASSERT_FALSE(plan.v6Only.has_value());
+}
+
+// Pins the plan against a real kernel: an IPv4 client must reach the dual-stack listener. Connect
+// before accept needs no thread, because loopback completes the handshake into the backlog.
+TEST(AddressFamilyPolicy, DualStackListenerAcceptsAnIPv4LoopbackPeer)
+{
+	using boost::asio::ip::tcp;
+
+	const ListenerBind plan = ListenerBindFor(Families::DualStack, AnyIPv4Address());
+	// Checked before the environment early-returns, so a wrong plan cannot pass as "no IPv6".
+	ASSERT_TRUE(plan.protocol == tcp::v6());
+	ASSERT_TRUE(plan.v6Only.has_value());
+
+	boost::asio::io_context io;
+	tcp::acceptor acceptor(io);
+	boost::system::error_code ec;
+	// A host without IPv6, or one that refuses dual-stack sockets, is environment, not behavior.
+	acceptor.open(plan.protocol, ec);
+	if (ec) {
+		return;
+	}
+	acceptor.set_option(boost::asio::ip::v6_only(*plan.v6Only), ec);
+	if (ec) {
+		return;
+	}
+	acceptor.bind(tcp::endpoint(plan.address, 0), ec);
+	if (ec) {
+		return;
+	}
+	acceptor.listen(boost::asio::socket_base::max_listen_connections, ec);
+	ASSERT_FALSE((bool)ec);
+	const unsigned short port = acceptor.local_endpoint().port();
+
+	tcp::socket client(io);
+	client.connect(tcp::endpoint(boost::asio::ip::make_address("127.0.0.1"), port), ec);
+	ASSERT_FALSE((bool)ec);
+
+	tcp::socket peer(io);
+	acceptor.accept(peer, ec);
+	ASSERT_FALSE((bool)ec);
+	const boost::asio::ip::address remote = peer.remote_endpoint(ec).address();
+	ASSERT_FALSE((bool)ec);
+	ASSERT_TRUE(remote.is_v4() || (remote.is_v6() && remote.to_v6().is_v4_mapped()));
 }
 
 // File_checked_for_headers
