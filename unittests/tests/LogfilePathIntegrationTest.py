@@ -16,10 +16,14 @@ import time
 from AllSearchIntegrationTest import C, EC, string
 
 
-def free_port():
-    with socket.socket() as sock:
-        sock.bind(('127.0.0.1', 0))
-        return sock.getsockname()[1]
+def free_tcp_ports():
+    # Keep both sockets bound until their ports have been chosen. Closing the
+    # first before binding the second lets the kernel reuse the same port;
+    # amuled then moves EC to another port and our client reaches eD2k instead.
+    with socket.socket() as ec, socket.socket() as peer:
+        ec.bind(('127.0.0.1', 0))
+        peer.bind(('127.0.0.1', 0))
+        return ec.getsockname()[1], peer.getsockname()[1]
 
 
 def stop_forked_daemon(pid):
@@ -38,11 +42,11 @@ def stop_forked_daemon(pid):
 
 def write_config(root, setting=None):
     """Write an offline amule.conf with EC on a free port, and return that port."""
-    port = free_port()
+    port, peer_port = free_tcp_ports()
     config = f'''[eMule]
 Nick=logfile-regression
 FirstRunWizardDone=1
-Port={free_port()}
+Port={peer_port}
 UDPEnable=0
 Address=127.0.0.1
 ConnectToKad=0
@@ -171,6 +175,12 @@ def run(binary, root, setting=None, override=None, expected=None, failure=False,
                 text = tags[C['EC_TAG_STRING']][0]
                 assert b'logfile-regression-before-reset' not in text, text
                 assert b'Log has been reset' in text, text
+            except BaseException:
+                console.flush()
+                print((root / 'console.log').read_text(), file=sys.stderr)
+                if expected is not None and expected.is_file():
+                    print(expected.read_text(errors='replace'), file=sys.stderr)
+                raise
             finally:
                 if ec:
                     ec.sock.close()
