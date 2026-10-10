@@ -251,12 +251,17 @@ jobs:
   # those would cost far more than it tells us, since these switches change no
   # platform-dependent code.
   build_cmake_ubuntu_experimental:
-    name: Build CMake Ubuntu Experimental (${{ matrix.build_type }})
+    name: Build CMake Ubuntu Experimental (${{ matrix.build_type }}, ngtcp2 ${{ matrix.ngtcp2 }})
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
-        build_type: [Debug, Release]
+        # QUIC has to work on the pinned ngtcp2 and on the latest one.
+        include:
+          - build_type: Debug
+            ngtcp2: pinned
+          - build_type: Release
+            ngtcp2: latest
     steps:
       - uses: actions/checkout@v7
       - name: restore ccache
@@ -270,6 +275,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ${{ env.cmake_ubuntu_deps }}
       - uses: ./.github/actions/ngtcp2
+        with:
+          release: ${{ matrix.ngtcp2 }}
       - name: create build system
         run: |
           cmake \

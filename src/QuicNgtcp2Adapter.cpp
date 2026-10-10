@@ -685,6 +685,8 @@ public:
 		if (it == m_connections.end()) {
 			return false;
 		}
+		const ngtcp2_tstamp ts = NanosecondsFromMs(nowMs);
+		CloseBurstBefore(it->second, ts);
 		ngtcp2_path_storage path;
 		InitZeroPath(path);
 		// RFC 9000 never requires this engine to know the peer's real address to process a
@@ -692,12 +694,7 @@ public:
 		// never observes a path change and never attempts connection migration. The actual
 		// peer address this connection talks to is CQuicNgtcp2Connection's own m_address/m_port,
 		// used when flushing output -- not anything ngtcp2 derives from this path.
-		return ngtcp2_conn_read_pkt(it->second.conn,
-			       &path.path,
-			       nullptr,
-			       data,
-			       length,
-			       NanosecondsFromMs(nowMs)) == 0;
+		return ngtcp2_conn_read_pkt(it->second.conn, &path.path, nullptr, data, length, ts) == 0;
 	}
 
 	bool Flush(Handle handle,
@@ -710,7 +707,9 @@ public:
 		if (it == m_connections.end()) {
 			return false;
 		}
-		return FlushConnection(it->second, sink, address, port, NanosecondsFromMs(nowMs));
+		const ngtcp2_tstamp ts = NanosecondsFromMs(nowMs);
+		CloseBurstBefore(it->second, ts);
+		return FlushConnection(it->second, sink, address, port, ts);
 	}
 
 	bool Tick(Handle handle,
@@ -724,6 +723,8 @@ public:
 			return false;
 		}
 		const ngtcp2_tstamp ts = NanosecondsFromMs(nowMs);
+		// First, so the expiry below includes the pacing deadline of the burst it closes.
+		CloseBurstBefore(it->second, ts);
 		// "Nothing due yet" is the overwhelmingly common case on every tick: UINT64_MAX means no
 		// timer is armed at all, and an unexpired one is simply not this tick's problem.
 		if (ngtcp2_conn_get_expiry(it->second.conn) > ts) {
@@ -820,86 +821,32 @@ public:
 			return -1;
 		}
 		ConnectionInfo &info = it->second;
-		// A peer that stops ACKing is already a dead connection from this engine's point of view,
-		// so refusing to grow past the same window CQuicSocketTransport imposes on the application
-		// side (kReadWindow, also 256KiB) is a bound, not a behaviour change for any peer actually
-		// speaking QUIC. Offer only what still fits, the same way ngtcp2 itself accepting less than
-		// offered is already handled below -- @p length is the caller's whole queued chunk (up to
-		// CQuicSocketTransport::kWriteBound, also 256KiB), not what ngtcp2 is actually about to
-		// accept (one packet's worth), so treating the full length as what must fit would abort the
-		// stream over a single byte still outstanding, not an actual lack of room.
-		if (info.unackedSendBytes >= CQuicSocketTransport::kReadWindow) {
-			return 0;
-		}
-		// One STREAM frame never carries more than a packet, so copying more only inflates the
-		// retained capacity of unackedSendChunks.
-		const size_t offeredLength = std::min({ length,
-			CQuicSocketTransport::kReadWindow - info.unackedSendBytes,
-			kMaxUdpPayload });
-		// Our own copy, created before ngtcp2 ever sees it: the ngtcp2_vec below must point at
-		// memory we control for as long as ngtcp2 might still need it (ConnectionInfo::
-		// unackedSendChunks's comment has the full contract), not the caller's -- which
-		// CQuicSocketTransport::Flush() frees the instant this call returns.
-		info.unackedSendChunks.emplace_back(data, data + offeredLength);
-		uint8_t *ours = info.unackedSendChunks.back().data();
-		info.unackedSendBytes += offeredLength;
-
 		const ngtcp2_tstamp ts = NanosecondsFromMs(nowMs);
-		uint8_t buf[kMaxUdpPayload];
-		ngtcp2_path_storage path;
-		InitZeroPath(path);
-		ngtcp2_pkt_info pi = {};
-		const ngtcp2_vec vec{ ours, offeredLength };
-		ngtcp2_ssize dataLen = 0;
-		// ngtcp2_conn_writev_stream() both accepts stream data and may produce a packet in the
-		// same call: there is no separate "queue it for later" step to split this into, unlike
-		// CUtpSocketTransport's push model over libutp's own internal timer.
-		const ngtcp2_ssize written = ngtcp2_conn_writev_stream(it->second.conn,
-			&path.path,
-			&pi,
-			buf,
-			sizeof(buf),
-			&dataLen,
-			NGTCP2_WRITE_STREAM_FLAG_NONE,
-			it->second.streamId,
-			&vec,
-			1,
-			ts);
-		std::ptrdiff_t result;
-		if (written < 0) {
-			// Nothing was sent, so nothing of this chunk is actually pending retransmission.
-			info.unackedSendBytes -= offeredLength;
-			info.unackedSendChunks.pop_back();
-			// STREAM_DATA_BLOCKED is documented as non-fatal: the stream is flow-control blocked,
-			// not the connection -- the peer extending the window (or NotifyWritable() noticing
-			// congestion eased) is what unblocks it, not tearing anything down. Every other
-			// negative return here is a genuine, fatal error.
-			result = written == NGTCP2_ERR_STREAM_DATA_BLOCKED ? 0 : -1;
-		} else {
-			// ngtcp2 can take less than the full chunk (e.g. congestion-limited): shrink our copy
-			// down to exactly what it consumed, or drop it if it took nothing. Shrinking a vector
-			// never moves its buffer, so this cannot invalidate a pointer ngtcp2 is still holding
-			// onto the portion it did accept. The untaken tail is never ngtcp2's concern: the
-			// caller (CQuicSocketTransport::Flush(), via its own front-offset tracking) still has
-			// it and will offer it again on the next Flush().
-			const size_t accepted = dataLen > 0 ? static_cast<size_t>(dataLen) : 0;
-			if (accepted < offeredLength) {
-				info.unackedSendBytes -= (offeredLength - accepted);
-				if (accepted == 0) {
-					info.unackedSendChunks.pop_back();
-				} else {
-					info.unackedSendChunks.back().resize(accepted);
-				}
+		CloseBurstBefore(info, ts);
+		// Packet after packet in the one burst NoteBurstWrite() keeps open, until ngtcp2 takes
+		// nothing more (pacing, congestion, flow control) or the data runs out. Bounded like
+		// FlushConnection(), so a caller with a large queue cannot hold this thread indefinitely.
+		size_t accepted = 0;
+		for (int round = 0; round < kMaxFlushPacketsPerCall && accepted < length; ++round) {
+			bool packetSent = false;
+			const std::ptrdiff_t n = WriteStreamPacket(info,
+				data + accepted,
+				length - accepted,
+				sink,
+				address,
+				port,
+				ts,
+				packetSent);
+			if (n < 0) {
+				return -1;
 			}
-			result = (written > 0 &&
-					 !sink.SendDatagram(buf, static_cast<size_t>(written), address, port))
-					 ? -1
-					 : (dataLen < 0 ? 0 : static_cast<std::ptrdiff_t>(dataLen));
+			// A packet of ACKs or retransmissions with no room left for new data is progress too.
+			if (n == 0 && !packetSent) {
+				break;
+			}
+			accepted += static_cast<size_t>(n);
 		}
-		// Required after any invocation of writev_stream, including this one, which just happened
-		// unconditionally above -- it sets when ngtcp2 paces the next packet.
-		ngtcp2_conn_update_pkt_tx_time(it->second.conn, ts);
-		return result;
+		return static_cast<std::ptrdiff_t>(accepted);
 	}
 
 	void ShutdownStream(Handle handle) override
@@ -920,7 +867,9 @@ public:
 		if (it == m_connections.end() || it->second.streamId < 0) {
 			return;
 		}
-		if (!TryWriteGracefulFin(it->second, sink, address, port, NanosecondsFromMs(nowMs))) {
+		const ngtcp2_tstamp ts = NanosecondsFromMs(nowMs);
+		CloseBurstBefore(it->second, ts);
+		if (!TryWriteGracefulFin(it->second, sink, address, port, ts)) {
 			// Pacing/congestion kept this from fitting into a packet right now: ngtcp2 does not
 			// record the FIN until it actually serializes, so retry on the next real
 			// FlushConnection() call instead of giving up here.
@@ -950,10 +899,12 @@ public:
 		ngtcp2_pkt_info pi = {};
 		ngtcp2_ccerr ccerr;
 		ngtcp2_ccerr_default(&ccerr);
+		const ngtcp2_tstamp ts = NanosecondsFromMs(nowMs);
+		CloseBurstBefore(it->second, ts);
 		// A best-effort courtesy, not a requirement for correctness on this side: Destroy() below
 		// reclaims the slot either way, whether or not the peer ever sees this.
 		const ngtcp2_ssize written = ngtcp2_conn_write_connection_close(
-			it->second.conn, &path.path, &pi, buf, sizeof(buf), &ccerr, NanosecondsFromMs(nowMs));
+			it->second.conn, &path.path, &pi, buf, sizeof(buf), &ccerr, ts);
 		if (written > 0) {
 			sink.SendDatagram(buf, static_cast<size_t>(written), address, port);
 		}
@@ -1019,7 +970,124 @@ private:
 		//! FlushConnection() clears this once a real FlushConnection() call -- with a later,
 		//! genuinely advanced ts -- gets it out.
 		bool pendingGracefulFin = false;
+		//! The write burst still open: everything written at burstTs since the last
+		//! ngtcp2_conn_update_pkt_tx_time(). See NoteBurstWrite().
+		bool burstOpen = false;
+		ngtcp2_tstamp burstTs = 0;
 	};
+
+	//! Closes the open burst once time has moved on. Must run before any ngtcp2 call at @p ts:
+	//! update_pkt_tx_time() takes the burst's own timestamp, and ngtcp2 requires timestamps that
+	//! never go backwards.
+	static void CloseBurstBefore(ConnectionInfo &connection, ngtcp2_tstamp ts)
+	{
+		if (connection.burstOpen && ts > connection.burstTs) {
+			ngtcp2_conn_update_pkt_tx_time(connection.conn, connection.burstTs);
+			connection.burstOpen = false;
+		}
+	}
+
+	//! Every writev_stream() at one timestamp is one burst, which ngtcp2 paces as a whole once
+	//! CloseBurstBefore() ends it. Ending it after each packet instead means the next packet at
+	//! that timestamp is always paced on ngtcp2 1.13 and later, which leaves this engine one
+	//! packet per datagram or tick. Not capped at the send quantum: this engine runs on a datagram
+	//! or a tick, never at the pacing deadline, so the cap would allow one quantum per event.
+	static void NoteBurstWrite(ConnectionInfo &connection, ngtcp2_tstamp ts)
+	{
+		connection.burstOpen = true;
+		connection.burstTs = ts;
+	}
+
+	//! One packet of WriteStreamData(): the stream bytes ngtcp2 took (0 if none fit), or -1 on a
+	//! fatal error. @p packetSent: whether a packet went out, with or without stream data.
+	std::ptrdiff_t WriteStreamPacket(ConnectionInfo &info,
+		const uint8_t *data,
+		size_t length,
+		IQuicDatagramSink &sink,
+		const CNetworkAddress &address,
+		uint16_t port,
+		ngtcp2_tstamp ts,
+		bool &packetSent)
+	{
+		// A peer that stops ACKing is already a dead connection from this engine's point of view,
+		// so refusing to grow past the same window CQuicSocketTransport imposes on the application
+		// side (kReadWindow, also 256KiB) is a bound, not a behaviour change for any peer actually
+		// speaking QUIC. Offer only what still fits, the same way ngtcp2 itself accepting less than
+		// offered is already handled below -- @p length is the caller's whole queued chunk (up to
+		// CQuicSocketTransport::kWriteBound, also 256KiB), not what ngtcp2 is actually about to
+		// accept (one packet's worth), so treating the full length as what must fit would abort the
+		// stream over a single byte still outstanding, not an actual lack of room.
+		if (info.unackedSendBytes >= CQuicSocketTransport::kReadWindow) {
+			return 0;
+		}
+		// One STREAM frame never carries more than a packet, so copying more only inflates the
+		// retained capacity of unackedSendChunks.
+		const size_t offeredLength = std::min({ length,
+			CQuicSocketTransport::kReadWindow - info.unackedSendBytes,
+			kMaxUdpPayload });
+		// Our own copy, created before ngtcp2 ever sees it: the ngtcp2_vec below must point at
+		// memory we control for as long as ngtcp2 might still need it (ConnectionInfo::
+		// unackedSendChunks's comment has the full contract), not the caller's -- which
+		// CQuicSocketTransport::Flush() frees the instant this call returns.
+		info.unackedSendChunks.emplace_back(data, data + offeredLength);
+		uint8_t *ours = info.unackedSendChunks.back().data();
+		info.unackedSendBytes += offeredLength;
+
+		uint8_t buf[kMaxUdpPayload];
+		ngtcp2_path_storage path;
+		InitZeroPath(path);
+		ngtcp2_pkt_info pi = {};
+		const ngtcp2_vec vec{ ours, offeredLength };
+		ngtcp2_ssize dataLen = 0;
+		// ngtcp2_conn_writev_stream() both accepts stream data and may produce a packet in the
+		// same call: there is no separate "queue it for later" step to split this into, unlike
+		// CUtpSocketTransport's push model over libutp's own internal timer.
+		const ngtcp2_ssize written = ngtcp2_conn_writev_stream(info.conn,
+			&path.path,
+			&pi,
+			buf,
+			sizeof(buf),
+			&dataLen,
+			NGTCP2_WRITE_STREAM_FLAG_NONE,
+			info.streamId,
+			&vec,
+			1,
+			ts);
+		NoteBurstWrite(info, ts);
+		std::ptrdiff_t result;
+		if (written < 0) {
+			// Nothing was sent, so nothing of this chunk is actually pending retransmission.
+			info.unackedSendBytes -= offeredLength;
+			info.unackedSendChunks.pop_back();
+			// STREAM_DATA_BLOCKED is documented as non-fatal: the stream is flow-control blocked,
+			// not the connection -- the peer extending the window (or NotifyWritable() noticing
+			// congestion eased) is what unblocks it, not tearing anything down. Every other
+			// negative return here is a genuine, fatal error.
+			result = written == NGTCP2_ERR_STREAM_DATA_BLOCKED ? 0 : -1;
+		} else {
+			// ngtcp2 can take less than the full chunk (e.g. congestion-limited): shrink our copy
+			// down to exactly what it consumed, or drop it if it took nothing. Shrinking a vector
+			// never moves its buffer, so this cannot invalidate a pointer ngtcp2 is still holding
+			// onto the portion it did accept. The untaken tail is never ngtcp2's concern: the
+			// caller (CQuicSocketTransport::Flush(), via its own front-offset tracking) still has
+			// it and will offer it again on the next Flush().
+			const size_t accepted = dataLen > 0 ? static_cast<size_t>(dataLen) : 0;
+			if (accepted < offeredLength) {
+				info.unackedSendBytes -= (offeredLength - accepted);
+				if (accepted == 0) {
+					info.unackedSendChunks.pop_back();
+				} else {
+					info.unackedSendChunks.back().resize(accepted);
+				}
+			}
+			packetSent = written > 0;
+			result = (written > 0 &&
+					 !sink.SendDatagram(buf, static_cast<size_t>(written), address, port))
+					 ? -1
+					 : (dataLen < 0 ? 0 : static_cast<std::ptrdiff_t>(dataLen));
+		}
+		return result;
+	}
 
 	//! Returns true once the FIN frame was actually serialized -- not just that some packet
 	//! went out, since ngtcp2_conn_writev_stream() documents that other frames (e.g. an ACK)
@@ -1049,11 +1117,10 @@ private:
 			nullptr,
 			0,
 			ts);
+		NoteBurstWrite(connection, ts);
 		if (written > 0) {
 			sink.SendDatagram(buf, static_cast<size_t>(written), address, port);
 		}
-		// Required after any invocation of writev_stream, including a FIN-only one like this.
-		ngtcp2_conn_update_pkt_tx_time(connection.conn, ts);
 		return written > 0 && dataLen == 0;
 	}
 
@@ -1098,6 +1165,7 @@ private:
 				nullptr,
 				0,
 				ts);
+			NoteBurstWrite(connection, ts);
 			if (written < 0) {
 				ok = false;
 				break;
@@ -1110,10 +1178,6 @@ private:
 				break;
 			}
 		}
-		// Required after any invocation of writev_stream (one burst of them, here, since this
-		// loop can call it several times): it sets when ngtcp2 paces the next packet. The loop
-		// above always makes at least one such call before reaching here, so this is unconditional.
-		ngtcp2_conn_update_pkt_tx_time(connection.conn, ts);
 		return ok;
 	}
 
