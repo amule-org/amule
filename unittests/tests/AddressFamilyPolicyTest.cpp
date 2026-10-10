@@ -41,6 +41,7 @@
 
 #include <AddressFamilyPolicyAsio.h>
 
+#include <limits>
 #include <optional>
 
 #include "WarningsPush_Asio.h"
@@ -140,9 +141,9 @@ TEST(AddressFamilyPolicy, AsioTargetIsEmptyForAnythingRefused)
 	}
 }
 
-// Piece 4 will build this from a configuration integer, so a value outside the enum is reachable.
-// Testing inequality against one enumerator made such a value permit both families while the
-// resolver fell back to IPv4-only; every answer now agrees on the same fallback.
+// FamiliesFromSetting() never yields a value outside the enum, but a cast still can. Testing
+// inequality against one enumerator made such a value permit both families while the resolver
+// fell back to IPv4-only; every answer now agrees on the same fallback.
 TEST(AddressFamilyPolicy, AnOutOfRangeConfigurationFallsBackConsistently)
 {
 	ScopedFamilies scope(static_cast<Families>(99));
@@ -152,6 +153,20 @@ TEST(AddressFamilyPolicy, AnOutOfRangeConfigurationFallsBackConsistently)
 	ASSERT_TRUE(ResolverFamilyForLookup() == ResolverFamily::IPv4Only);
 	ASSERT_TRUE(Permits(Addr("192.0.2.1")));
 	ASSERT_FALSE(Permits(Addr("2001:db8::1")));
+}
+
+// The stored values are fixed independently of the enum's order, and IPv6Only is not among them.
+TEST(AddressFamilyPolicy, OnlyTheTwoSupportedSettingsSelectFamilies)
+{
+	ASSERT_TRUE(FamiliesFromSetting(0) == Families::IPv4Only);
+	ASSERT_TRUE(FamiliesFromSetting(1) == Families::DualStack);
+
+	const long unsupported[] = {
+		-1, 2, 99, std::numeric_limits<long>::min(), std::numeric_limits<long>::max()
+	};
+	for (long value : unsupported) {
+		ASSERT_FALSE(FamiliesFromSetting(value).has_value());
+	}
 }
 
 TEST(AddressFamilyPolicy, DefaultIsIPv4Only)

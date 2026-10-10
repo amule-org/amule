@@ -28,6 +28,7 @@
 #include "NetworkAddress.h"
 
 #include <atomic>
+#include <optional>
 
 /**
  * Address-family decisions derived from configuration and target addresses.
@@ -77,10 +78,31 @@ inline void SetConfigured(Families families) noexcept
 	ConfiguredStorage().store(families, std::memory_order_relaxed);
 }
 
+/**
+ * The families selected by the stored address-family setting: 0 for IPv4 only, 1 for dual stack.
+ *
+ * The stored values are fixed here rather than taken from the enum's order, so reordering the enum
+ * cannot change what an existing configuration means. IPv6Only is not selectable: it would refuse
+ * every IPv4 peer, including an ed2k server's HighID callback.
+ *
+ * @return The families, or no value for an unsupported setting.
+ */
+inline std::optional<Families> FamiliesFromSetting(long setting) noexcept
+{
+	switch (setting) {
+	case 0:
+		return Families::IPv4Only;
+	case 1:
+		return Families::DualStack;
+	default:
+		return std::nullopt;
+	}
+}
+
 // Both predicates switch rather than test for inequality, so an out-of-range value falls back the
 // same way ResolverFamilyForLookup() does. Comparing against one enumerator made a value outside
-// the enum permit *both* families while the resolver fell back to IPv4Only, and piece 4 will build
-// this from a configuration integer, which is exactly where such a value comes from.
+// the enum permit *both* families while the resolver fell back to IPv4Only. FamiliesFromSetting()
+// never yields one, but a cast still can.
 inline bool PermitsIPv4() noexcept
 {
 	switch (Configured()) {
