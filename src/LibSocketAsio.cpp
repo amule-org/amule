@@ -524,60 +524,43 @@ public:
 			}
 		}
 
-		if (wait || m_sync) {
-			error_code ec;
-			if (m_connectTimeoutMs > 0) {
-				// Bounded synchronous connect: async_connect raced against a steady_timer,
-				// both driven here on the io_service. A synchronous EC connection may use
-				// the global s_io_service before the CAsioService thread pool is started,
-				// and if the synchronous operation leaves the io_context stopped it must be
-				// restarted before run() is called. Portable through asio with no per-OS
-				// socket-timeout handling: a wrong or unreachable host fails in
-				// m_connectTimeoutMs instead of hanging on the OS TCP connect timeout.
-				ec = boost::asio::error::would_block;
-				m_socket->async_connect(
-					adr.GetEndpoint(), [&ec](const error_code &e) { ec = e; });
-				steady_timer timer(s_io_service);
-				timer.expires_after(std::chrono::milliseconds(m_connectTimeoutMs));
-				bool timedOut = false;
-				timer.async_wait([this, &timedOut](const error_code &e) {
-					// Fires only while the connect is still pending;
-					// closing the socket aborts it so run_one() returns.
-					if (e != boost::asio::error::operation_aborted) {
-						timedOut = true;
-						error_code ignore;
-						m_socket->close(ignore);
-					}
-				});
-				s_io_service.restart();
-				while (ec == boost::asio::error::would_block) {
-					if (s_io_service.run_one() == 0) {
-						break;
-					}
-				}
-				timer.cancel();
-				s_io_service.poll(); // drain the cancelled timer handler
-				if (timedOut) {
-					ec = boost::asio::error::timed_out;
-				}
-			} else {
-				m_socket->connect(adr.GetEndpoint(), ec);
-			}
-			m_OK = !ec;
-			m_connected = m_OK;
-			if (ec) {
-				m_ErrorCode = ec.value();
-			}
-			return m_OK;
-		} else {
-			auto self = shared_from_this();
-			m_socket->async_connect(adr.GetEndpoint(),
-				bind_executor(
-					m_strand, [self](const error_code &ec) { self->HandleConnect(ec); }));
-			// m_OK and return are false because we are not connected yet
+		return RunConnect(adr.GetEndpoint(), wait);
+	}
+
+#ifdef ENABLE_IPV6
+	bool ConnectIPv6(const ip::tcp::endpoint &endpoint, const CNetworkAddress &peer, bool wait)
+	{
+		m_peerAddress = peer;
+		m_IPstring = wxString(m_peerAddress.ToString());
+		m_IP = m_IPstring.c_str();
+		m_IPint = 0;
+		m_port = endpoint.port();
+		m_closed = false;
+		m_OK = false;
+		m_sync = !m_notify; // set this once for the whole lifetime of the socket
+		AddDebugLogLineF(logAsio, CFormat("Connect %s %p") % m_IP % this);
+
+		// Already open means a configured local IPv4 bind, which cannot reach an IPv6 peer.
+		if (m_socket->is_open()) {
 			return false;
 		}
+		error_code ec;
+		m_socket->open(ip::tcp::v6(), ec);
+		if (ec) {
+			m_ErrorCode = ec.value();
+			return false;
+		}
+		// Unlike IPv4, an unpinned IPv6 connect is refused so it cannot leave through another
+		// interface (VPN-leak fix, #173).
+		if (!SetBoundInterface(m_socket->native_handle(), s_bindToInterface, true)) {
+			error_code ignore;
+			m_socket->close(ignore);
+			return false;
+		}
+
+		return RunConnect(endpoint, wait);
 	}
+#endif
 
 	bool IsConnected() const { return m_connected; }
 
@@ -1175,6 +1158,62 @@ private:
 		}
 	}
 
+	bool RunConnect(const ip::tcp::endpoint &endpoint, bool wait)
+	{
+		if (wait || m_sync) {
+			error_code ec;
+			if (m_connectTimeoutMs > 0) {
+				// Bounded synchronous connect: async_connect raced against a steady_timer,
+				// both driven here on the io_service. A synchronous EC connection may use
+				// the global s_io_service before the CAsioService thread pool is started,
+				// and if the synchronous operation leaves the io_context stopped it must be
+				// restarted before run() is called. Portable through asio with no per-OS
+				// socket-timeout handling: a wrong or unreachable host fails in
+				// m_connectTimeoutMs instead of hanging on the OS TCP connect timeout.
+				ec = boost::asio::error::would_block;
+				m_socket->async_connect(endpoint, [&ec](const error_code &e) { ec = e; });
+				steady_timer timer(s_io_service);
+				timer.expires_after(std::chrono::milliseconds(m_connectTimeoutMs));
+				bool timedOut = false;
+				timer.async_wait([this, &timedOut](const error_code &e) {
+					// Fires only while the connect is still pending;
+					// closing the socket aborts it so run_one() returns.
+					if (e != boost::asio::error::operation_aborted) {
+						timedOut = true;
+						error_code ignore;
+						m_socket->close(ignore);
+					}
+				});
+				s_io_service.restart();
+				while (ec == boost::asio::error::would_block) {
+					if (s_io_service.run_one() == 0) {
+						break;
+					}
+				}
+				timer.cancel();
+				s_io_service.poll(); // drain the cancelled timer handler
+				if (timedOut) {
+					ec = boost::asio::error::timed_out;
+				}
+			} else {
+				m_socket->connect(endpoint, ec);
+			}
+			m_OK = !ec;
+			m_connected = m_OK;
+			if (ec) {
+				m_ErrorCode = ec.value();
+			}
+			return m_OK;
+		} else {
+			auto self = shared_from_this();
+			m_socket->async_connect(endpoint,
+				bind_executor(
+					m_strand, [self](const error_code &ec) { self->HandleConnect(ec); }));
+			// m_OK and return are false because we are not connected yet
+			return false;
+		}
+	}
+
 	// Access to even a const & wxString is apparently not thread-safe: locks are set/removed in
 	// wx and reference counts can go astray. So the IP string is stored in a wxString used
 	// nowhere, and a pointer to its string buffer is what gets used everywhere.
@@ -1256,6 +1295,22 @@ bool CLibSocket::Connect(const amuleIPV4Address &adr, bool wait)
 	}
 	return m_aSocket->Connect(adr, wait);
 }
+
+#ifdef ENABLE_IPV6
+bool CLibSocket::ConnectIPv6(const CNetworkAddress &target, uint16 port, bool wait)
+{
+	if (m_transport) {
+		// An accepted stream has a peer; dialling would open a second one.
+		return false;
+	}
+	const boost::optional<AddressFamilyPolicy::SAsioTarget> asioTarget =
+		AddressFamilyPolicy::AsioTargetFor(target);
+	if (!asioTarget || asioTarget->protocol != ip::tcp::v6()) {
+		return false;
+	}
+	return m_aSocket->ConnectIPv6(ip::tcp::endpoint(asioTarget->address, port), target, wait);
+}
+#endif
 
 bool CLibSocket::IsConnected() const
 {

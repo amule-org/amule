@@ -80,6 +80,10 @@ public:
 	// wx Stuff
 	void Notify(bool);
 	bool Connect(const amuleIPV4Address &adr, bool wait);
+#ifdef ENABLE_IPV6
+	// IPv4 and IPv4-mapped targets are refused here; they keep using Connect().
+	bool ConnectIPv6(const CNetworkAddress &target, uint16 port, bool wait);
+#endif
 	// Bound the synchronous connect to `ms` milliseconds (0 = no bound, the default). Only
 	// affects the blocking connect path used by the synchronous EC clients (amulecmd); the
 	// async path is unaffected.
