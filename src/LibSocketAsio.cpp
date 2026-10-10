@@ -524,59 +524,7 @@ public:
 			}
 		}
 
-		if (wait || m_sync) {
-			error_code ec;
-			if (m_connectTimeoutMs > 0) {
-				// Bounded synchronous connect: async_connect raced against a steady_timer,
-				// both driven here on the io_service. A synchronous EC connection may use
-				// the global s_io_service before the CAsioService thread pool is started,
-				// and if the synchronous operation leaves the io_context stopped it must be
-				// restarted before run() is called. Portable through asio with no per-OS
-				// socket-timeout handling: a wrong or unreachable host fails in
-				// m_connectTimeoutMs instead of hanging on the OS TCP connect timeout.
-				ec = boost::asio::error::would_block;
-				m_socket->async_connect(
-					adr.GetEndpoint(), [&ec](const error_code &e) { ec = e; });
-				steady_timer timer(s_io_service);
-				timer.expires_after(std::chrono::milliseconds(m_connectTimeoutMs));
-				bool timedOut = false;
-				timer.async_wait([this, &timedOut](const error_code &e) {
-					// Fires only while the connect is still pending;
-					// closing the socket aborts it so run_one() returns.
-					if (e != boost::asio::error::operation_aborted) {
-						timedOut = true;
-						error_code ignore;
-						m_socket->close(ignore);
-					}
-				});
-				s_io_service.restart();
-				while (ec == boost::asio::error::would_block) {
-					if (s_io_service.run_one() == 0) {
-						break;
-					}
-				}
-				timer.cancel();
-				s_io_service.poll(); // drain the cancelled timer handler
-				if (timedOut) {
-					ec = boost::asio::error::timed_out;
-				}
-			} else {
-				m_socket->connect(adr.GetEndpoint(), ec);
-			}
-			m_OK = !ec;
-			m_connected = m_OK;
-			if (ec) {
-				m_ErrorCode = ec.value();
-			}
-			return m_OK;
-		} else {
-			auto self = shared_from_this();
-			m_socket->async_connect(adr.GetEndpoint(),
-				bind_executor(
-					m_strand, [self](const error_code &ec) { self->HandleConnect(ec); }));
-			// m_OK and return are false because we are not connected yet
-			return false;
-		}
+		return RunConnect(adr.GetEndpoint(), wait);
 	}
 
 	bool IsConnected() const { return m_connected; }
@@ -1172,6 +1120,62 @@ private:
 		CLibSocket *wrapper = m_libSocket.load(std::memory_order_acquire);
 		if (wrapper && !m_destroying.load(std::memory_order_acquire) && !m_closed) {
 			wrapper->OnLost(0);
+		}
+	}
+
+	bool RunConnect(const ip::tcp::endpoint &endpoint, bool wait)
+	{
+		if (wait || m_sync) {
+			error_code ec;
+			if (m_connectTimeoutMs > 0) {
+				// Bounded synchronous connect: async_connect raced against a steady_timer,
+				// both driven here on the io_service. A synchronous EC connection may use
+				// the global s_io_service before the CAsioService thread pool is started,
+				// and if the synchronous operation leaves the io_context stopped it must be
+				// restarted before run() is called. Portable through asio with no per-OS
+				// socket-timeout handling: a wrong or unreachable host fails in
+				// m_connectTimeoutMs instead of hanging on the OS TCP connect timeout.
+				ec = boost::asio::error::would_block;
+				m_socket->async_connect(endpoint, [&ec](const error_code &e) { ec = e; });
+				steady_timer timer(s_io_service);
+				timer.expires_after(std::chrono::milliseconds(m_connectTimeoutMs));
+				bool timedOut = false;
+				timer.async_wait([this, &timedOut](const error_code &e) {
+					// Fires only while the connect is still pending;
+					// closing the socket aborts it so run_one() returns.
+					if (e != boost::asio::error::operation_aborted) {
+						timedOut = true;
+						error_code ignore;
+						m_socket->close(ignore);
+					}
+				});
+				s_io_service.restart();
+				while (ec == boost::asio::error::would_block) {
+					if (s_io_service.run_one() == 0) {
+						break;
+					}
+				}
+				timer.cancel();
+				s_io_service.poll(); // drain the cancelled timer handler
+				if (timedOut) {
+					ec = boost::asio::error::timed_out;
+				}
+			} else {
+				m_socket->connect(endpoint, ec);
+			}
+			m_OK = !ec;
+			m_connected = m_OK;
+			if (ec) {
+				m_ErrorCode = ec.value();
+			}
+			return m_OK;
+		} else {
+			auto self = shared_from_this();
+			m_socket->async_connect(endpoint,
+				bind_executor(
+					m_strand, [self](const error_code &ec) { self->HandleConnect(ec); }));
+			// m_OK and return are false because we are not connected yet
+			return false;
 		}
 	}
 
