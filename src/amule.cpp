@@ -586,6 +586,33 @@ static bool ServerMetHasServers(const wxString &path)
 	}
 }
 
+// Logged directly because the network summary is only logged when ReinitializeNetwork() fails, and
+// this setting has no widget to show its effect.
+static void LogAddressFamilies(const wxString &listenerHost)
+{
+	const long setting = thePrefs::GetAddressFamiliesSetting();
+	const std::optional<AddressFamilyPolicy::Families> families =
+		AddressFamilyPolicy::FamiliesFromSetting(setting);
+	if (!families) {
+		AddLogLineCS(CFormat("Address families: unsupported AddressFamilies value %li in amule.conf, "
+				     "using IPv4 only") %
+			     setting);
+		return;
+	}
+	if (*families != AddressFamilyPolicy::Families::DualStack) {
+		return;
+	}
+	wxString line = "Address families: IPv4 and IPv6";
+	if (!listenerHost.IsEmpty()) {
+		line << CFormat(", ed2k TCP listener on %s:%u") % listenerHost %
+				static_cast<unsigned int>(thePrefs::GetPort());
+	}
+#ifndef ENABLE_IPV6
+	line << " (native IPv6 peers are refused: built without ENABLE_IPV6)";
+#endif
+	AddLogLineNS(line);
+}
+
 // Application initialization
 bool CamuleApp::OnInit()
 {
@@ -934,6 +961,7 @@ bool CamuleApp::OnInit()
 		AddLogLineNS("\n");
 		AddLogLineNS(msg);
 	}
+	LogAddressFamilies(listensocket ? listensocket->BoundHost() : wxString());
 
 	// The GitHub version check and the server.met auto-update used to fire from here,
 	// before the partfile load and shared-file scan below. On busy setups the wxWebSession
@@ -1557,21 +1585,6 @@ bool CamuleApp::ReinitializeNetwork(wxString *msg)
 	}
 	*msg << CFormat("*** TCP socket (TCP) listening on %s:%u\n") % listenHost %
 			(unsigned int)(thePrefs::GetPort());
-	const long addressFamiliesSetting = thePrefs::GetAddressFamiliesSetting();
-	const std::optional<AddressFamilyPolicy::Families> settingFamilies =
-		AddressFamilyPolicy::FamiliesFromSetting(addressFamiliesSetting);
-	if (!settingFamilies) {
-		*msg << CFormat("*** Address families: unsupported AddressFamilies value %li in amule.conf, "
-				"using IPv4 only\n") %
-				addressFamiliesSetting;
-	} else if (*settingFamilies == AddressFamilyPolicy::Families::DualStack) {
-#ifdef ENABLE_IPV6
-		*msg << CFormat("*** Address families: IPv4 and IPv6\n");
-#else
-		*msg << CFormat("*** Address families: IPv4 and IPv6 (native IPv6 peers are refused: built "
-				"without ENABLE_IPV6)\n");
-#endif
-	}
 	// Notify(true) has already been called to the ListenSocket, so events may
 	// be already coming in.
 	if (!listensocket->IsOk()) {
