@@ -207,6 +207,12 @@ EC_OP_REFRESH_MEDIA_METADATA        0x67
 ## Additive: the flip op is unchanged, so an older client is unaffected, and a
 ## core that does not know this one answers EC_OP_FAILED.
 EC_OP_PARTFILE_SET_A4AF_AUTO        0x68
+
+## User-triggered bounded Kad lookup snapshot. Reply contains EC_TAG_KAD_LOOKUP
+## children with typed peer and referral records, formatted in the client's locale.
+## Send only after the server echoes EC_TAG_CAN_KAD_LOOKUPS at login: older
+## cores assert on unknown opcodes.
+EC_OP_GET_KAD_LOOKUPS               0x69
 [/Section]
 
 [Section Content]
@@ -242,6 +248,7 @@ EC_TAG_CAN_SHAREDDIRS_CONFIG              0x0017
 EC_TAG_ED2K_CONNECTED_SINCE               0x0018
 EC_TAG_KAD_CONNECTED_SINCE                0x0019
 EC_TAG_CAN_SEARCH_LIST                    0x001A
+EC_TAG_CAN_KAD_LOOKUPS                    0x002A
 ## Server accepts EC_SEARCH_ALL; older servers silently treat unknown kinds as local.
 EC_TAG_CAN_SEARCH_ALL                     0x0029
 EC_TAG_CAN_AEAD                           0x001B
@@ -766,6 +773,37 @@ EC_TAG_SELECT_PREFS                       0x1000
 		EC_TAG_SHAREDDIR_RECURSIVE                0x2001
 	EC_TAG_SHAREDDIR_REJECTED                 0x2002
 		EC_TAG_SHAREDDIR_ERROR                    0x2003
+
+	EC_TAG_KAD_LOOKUP                         0x2100
+		EC_TAG_KAD_LOOKUP_TARGET                  0x2101
+		EC_TAG_KAD_LOOKUP_TYPE                    0x2102
+		EC_TAG_KAD_LOOKUP_KEYWORD                 0x2103
+		EC_TAG_KAD_LOOKUP_ACTIVE                  0x2104
+		EC_TAG_KAD_LOOKUP_STARTED                 0x2105
+		EC_TAG_KAD_LOOKUP_OVERDUE                 0x2106
+		EC_TAG_KAD_LOOKUP_OMITTED_PEERS           0x2107
+		EC_TAG_KAD_LOOKUP_EVICTED_REFERRALS       0x2108
+		EC_TAG_KAD_LOOKUP_PEER                    0x2110
+			EC_TAG_KAD_LOOKUP_PEER_IP                 0x2111
+			EC_TAG_KAD_LOOKUP_PEER_PORT               0x2112
+			EC_TAG_KAD_LOOKUP_PEER_ID                 0x2113
+			EC_TAG_KAD_LOOKUP_PEER_DISTANCE           0x2114
+			EC_TAG_KAD_LOOKUP_PEER_VERSION            0x2115
+			EC_TAG_KAD_LOOKUP_PEER_REQUESTS           0x2116
+			EC_TAG_KAD_LOOKUP_PEER_REPLIES            0x2117
+			EC_TAG_KAD_LOOKUP_PEER_RTT                0x2118
+			EC_TAG_KAD_LOOKUP_PEER_ITEM_REQUESTS      0x2119
+			EC_TAG_KAD_LOOKUP_PEER_ITEM_REPLIES       0x211A
+			EC_TAG_KAD_LOOKUP_PEER_RESULTS            0x211B
+			EC_TAG_KAD_LOOKUP_PEER_PENDING            0x211C
+		EC_TAG_KAD_LOOKUP_REFERRAL                0x2120
+			EC_TAG_KAD_LOOKUP_REFERRAL_SOURCE_IP       0x2121
+			EC_TAG_KAD_LOOKUP_REFERRAL_SOURCE_PORT     0x2122
+			EC_TAG_KAD_LOOKUP_REFERRAL_PEER_IP         0x2123
+			EC_TAG_KAD_LOOKUP_REFERRAL_PEER_PORT       0x2124
+			EC_TAG_KAD_LOOKUP_REFERRAL_ELAPSED         0x2125
+			EC_TAG_KAD_LOOKUP_REFERRAL_DISTANCE        0x2126
+			EC_TAG_KAD_LOOKUP_REFERRAL_CLOSER          0x2127
 [/Section]
 
 [Section Content]

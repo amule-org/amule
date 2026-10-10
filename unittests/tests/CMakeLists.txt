@@ -2244,6 +2244,15 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 			COMMAND ${Python3_EXECUTABLE}
 				${CMAKE_CURRENT_SOURCE_DIR}/AllSearchIntegrationTest.py $<TARGET_FILE:amuled>
 		)
+		add_test (NAME KadLookupECTest
+			COMMAND ${Python3_EXECUTABLE}
+				${CMAKE_CURRENT_SOURCE_DIR}/KadLookupECTest.py $<TARGET_FILE:amuled>
+		)
+		add_test (NAME KadPopulatedLookupECTest
+			COMMAND ${Python3_EXECUTABLE}
+				${CMAKE_CURRENT_SOURCE_DIR}/KadLookupECTest.py $<TARGET_FILE:amuled> --populated
+		)
+		set_tests_properties (KadPopulatedLookupECTest PROPERTIES SKIP_RETURN_CODE 77)
 		add_test (NAME ShareWatcherMoveIntegrationTest
 			COMMAND ${Python3_EXECUTABLE}
 				${CMAKE_CURRENT_SOURCE_DIR}/ShareWatcherMoveIntegrationTest.py $<TARGET_FILE:amuled>
@@ -2306,6 +2315,42 @@ target_include_directories (AICHSearchResultTest PRIVATE
 add_application_test_stubs (AICHSearchResultTest)
 target_link_libraries (AICHSearchResultTest muleunit mulecommon wxWidgets::BASE CRYPTOPP::CRYPTOPP)
 add_test (NAME AICHSearchResultTest COMMAND AICHSearchResultTest)
+
+add_executable (LookupTraceTest
+	LookupTraceTest.cpp
+)
+add_test (NAME LookupTraceTest COMMAND LookupTraceTest)
+target_include_directories (LookupTraceTest PRIVATE ${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries (LookupTraceTest muleunit mulecommon)
+
+add_executable (LookupDiagnosticsTest
+	LookupDiagnosticsTest.cpp
+	${CMAKE_SOURCE_DIR}/src/kademlia/utils/LookupDiagnostics.cpp
+	${CMAKE_SOURCE_DIR}/src/LoggerConsole.cpp
+)
+add_test (NAME LookupDiagnosticsTest COMMAND LookupDiagnosticsTest)
+target_include_directories (LookupDiagnosticsTest PRIVATE
+	${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include)
+target_link_libraries (LookupDiagnosticsTest muleunit muleappcommon mulecommon)
+
+if (TARGET wxWidgets::CORE)
+	add_executable (KadLookupViewTest
+		KadLookupViewTest.cpp
+		${CMAKE_SOURCE_DIR}/src/kademlia/utils/LookupDiagnosticsEC.cpp
+		# EC Debug logging needs the same standalone logger as the other EC tests.
+		${CMAKE_SOURCE_DIR}/src/LoggerConsole.cpp
+	)
+	if (WIN32)
+		target_sources (KadLookupViewTest PRIVATE DialogLayoutTest.rc)
+	endif()
+	target_compile_definitions (KadLookupViewTest PRIVATE CLIENT_GUI)
+	target_include_directories (KadLookupViewTest PRIVATE
+		${CMAKE_SOURCE_DIR}/src/libs ${CMAKE_BINARY_DIR}
+		${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include)
+	target_link_libraries (KadLookupViewTest PRIVATE ec mulecommon wxWidgets::CORE)
+	add_test (NAME KadLookupViewTest COMMAND KadLookupViewTest)
+	set_tests_properties (KadLookupViewTest PROPERTIES SKIP_RETURN_CODE 77)
+endif()
 
 find_package (Threads REQUIRED)
 add_executable (BackgroundLoadTest BackgroundLoadTest.cpp)

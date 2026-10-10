@@ -1125,6 +1125,7 @@ void CKademliaUDPListener::ProcessSearchResponse(CMemFile &bio, uint32_t fromIP,
 		CSearchManager::ProcessResult(target, answer, tags.get(), fromIP, fromPort);
 		count--;
 	}
+	CSearchManager::ProcessResultReply(target, fromIP, fromPort);
 }
 
 // KADEMLIA_SEARCH_RES

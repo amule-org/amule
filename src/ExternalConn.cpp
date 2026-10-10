@@ -55,6 +55,7 @@
 #include "MuleVersion.h" // Needed for GetShortMuleVersion()
 #include "ClientList.h"
 #include "ChatSessionStore.h"
+#include "kademlia/utils/LookupDiagnosticsEC.h"
 #include "ClientCreditsList.h" // Needed for CClientCreditsList
 #include "ClientCredits.h"     // Needed for CClientCredits, ClientMetaStruct
 #ifdef ENABLE_IP2COUNTRY
@@ -1361,6 +1362,7 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 				// gets no echo must not send the opcode at all -- it would land in
 				// ProcessRequest2's unknown-opcode branch and assert.
 				response->AddTag(CECEmptyTag(EC_TAG_CAN_SEARCH_LIST));
+				response->AddTag(CECEmptyTag(EC_TAG_CAN_KAD_LOOKUPS));
 				response->AddTag(CECEmptyTag(EC_TAG_CAN_SEARCH_ALL));
 			} else {
 				wxString err;
@@ -3918,6 +3920,15 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 			response = Get_EC_Response_Search_Results(
 				request, m_partialUpdateActive, m_lastSentSearchIds, sid);
 		}
+		break;
+	}
+
+	case EC_OP_GET_KAD_LOOKUPS: {
+		response = new CECPacket(EC_OP_GET_KAD_LOOKUPS);
+		std::vector<Kademlia::LookupSnapshot> active;
+		std::deque<Kademlia::LookupSnapshot> recent;
+		Kademlia::CSearchManager::GetLookupSnapshots(active, recent);
+		Kademlia::AddLookupDiagnosticsTags(*response, active, recent, ::GetTickCount64());
 		break;
 	}
 

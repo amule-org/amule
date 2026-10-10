@@ -40,6 +40,7 @@ there client on the eMule forum..
 #define SEARCHMANAGER_H
 
 #include "../utils/UInt128.h"
+#include "../utils/LookupDiagnostics.h"
 #include "../routing/Maps.h"
 #include "../../Tag.h"
 #include <memory>
@@ -64,6 +65,10 @@ class CSearchManager
 	friend class CKademlia;
 
 public:
+	static wxString GetLookupDiagnostics();
+	static void GetLookupSnapshots(
+		std::vector<LookupSnapshot> &active, std::deque<LookupSnapshot> &recent);
+
 	static bool IsSearching(uint32_t searchID) noexcept;
 	static void StopSearch(uint32_t searchID, bool delayDelete);
 	static void StopAllSearches();
@@ -88,6 +93,7 @@ public:
 		TagPtrList *info,
 		uint32_t fromIP,
 		uint16_t fromPort);
+	static void ProcessResultReply(const CUInt128 &target, uint32_t fromIP, uint16_t fromPort);
 	static void ProcessPublishResult(const CUInt128 &target, const uint8_t load, const bool loadResponse);
 
 	static void GetWords(const wxString &str, WordList *words, bool allowDuplicates = false);
@@ -134,6 +140,7 @@ public:
 	static bool IsFWCheckUDPSearch(const CUInt128 &target);
 
 private:
+	static void RememberLookup(const CSearch &search);
 	static void DeleteSearch(SearchMap::iterator it);
 	static void FindNode(const CUInt128 &id, bool complete);
 	static bool FindNodeSpecial(const CUInt128 &id, CKadClientSearcher *requester);
