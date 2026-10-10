@@ -45,11 +45,6 @@ option (BUILD_TESTING "Build unit tests" OFF)
 option (ENABLE_QUIC "compile QUIC transport support" OFF)
 option (USE_SYSTEM_PICOJSON "Use system-installed picojson instead of bundled copy" OFF)
 
-if (ENABLE_QUIC AND NOT (BUILD_MONOLITHIC OR BUILD_DAEMON))
-	message (STATUS "ENABLE_QUIC requested without a core executable; forcing ENABLE_QUIC=OFF")
-	set (ENABLE_QUIC OFF CACHE BOOL "compile QUIC transport support" FORCE)
-endif()
-
 if (PREFIX)
 	set (CMAKE_INSTALL_PREFIX "${PREFIX}")
 endif()
@@ -346,6 +341,19 @@ set (AMULE_EXPERIMENTAL_OPTIONS
 
 option (ENABLE_ALL_EXPERIMENTAL "turn on every switch in AMULE_EXPERIMENTAL_OPTIONS at once" OFF)
 
+# QUIC compiles only into amule and amuled. Checked here rather than next to its
+# option(), because BUILD_EVERYTHING turns BUILD_DAEMON on above.
+set (experimental_options_without_target)
+if (NOT (BUILD_MONOLITHIC OR BUILD_DAEMON))
+	if (ENABLE_QUIC)
+		message (FATAL_ERROR
+			"ENABLE_QUIC=YES needs BUILD_MONOLITHIC=YES or BUILD_DAEMON=YES, "
+			"because QUIC is compiled only into amule and amuled. Turn one of "
+			"them on, or set ENABLE_QUIC=NO.")
+	endif()
+	list (APPEND experimental_options_without_target ENABLE_QUIC)
+endif()
+
 foreach (experimental_option IN LISTS AMULE_EXPERIMENTAL_OPTIONS)
 	# ENABLE_ALL_EXPERIMENTAL wins over an individual switch: option() leaves
 	# an unset switch defined as OFF, so an explicit -DENABLE_X=NO is
@@ -355,7 +363,12 @@ foreach (experimental_option IN LISTS AMULE_EXPERIMENTAL_OPTIONS)
 	#
 	# Nothing here writes the cache, so enabling the set for one configure
 	# does not leave the individual switches ON for later ones.
-	if (${experimental_option} OR ENABLE_ALL_EXPERIMENTAL)
+	if (ENABLE_ALL_EXPERIMENTAL AND experimental_option IN_LIST experimental_options_without_target)
+		# Not requested by name, and turning it on would only add a required
+		# dependency for code no target compiles. An explicit request for the
+		# switch already failed above.
+		message (STATUS "ENABLE_ALL_EXPERIMENTAL: ${experimental_option} stays OFF, no target in this build uses it")
+	elseif (${experimental_option} OR ENABLE_ALL_EXPERIMENTAL)
 		# The variable is set as well as the definition added, because a
 		# switch may gate more than preprocessor state: ENABLE_KAD_NODE_PROTECTION
 		# also selects source files in cmake/source-vars.cmake, and an if()

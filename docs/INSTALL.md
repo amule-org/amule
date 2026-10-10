@@ -167,7 +167,8 @@ These switches are `OFF` by default and compile in unfinished work.
 | `ENABLE_IPV6`                     | native IPv6 TCP admission, and the `AddressFamilies` setting in `amule.conf` (`1` = dual-stack ed2k TCP listener). The IPv6 identity work is not complete |
 | `ENABLE_NATT_SERVER_COORDINATION` | the server-coordinated NAT-T wire codecs. No login advertisement or network traffic yet |
 | `ENABLE_KAD_NODE_PROTECTION`      | local Kad node-protection heuristics: adaptive request timeouts and Kad identity checks. No wire-protocol change |
-| `ENABLE_ALL_EXPERIMENTAL`         | all of the switches above |
+| `ENABLE_QUIC`                     | the QUIC NAT-T transport in `amule` and `amuled` ([docs/NAT_T_Protocol.md](NAT_T_Protocol.md)). Needs ngtcp2 with its GnuTLS crypto library, and `BUILD_MONOLITHIC` or `BUILD_DAEMON`: without either, configure fails |
+| `ENABLE_ALL_EXPERIMENTAL`         | all of the switches above. In a build without `amule` and `amuled`, `ENABLE_QUIC` stays `OFF` |
 
 For the full list:
 
