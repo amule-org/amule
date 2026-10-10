@@ -98,6 +98,7 @@ uint32 CPreferences::s_maxdownload;
 uint32 CPreferences::s_slotallocation;
 wxString CPreferences::s_Addr;
 wxString CPreferences::s_NetworkInterface;
+long CPreferences::s_addressFamiliesSetting;
 uint16 CPreferences::s_port;
 uint16 CPreferences::s_udpport;
 bool CPreferences::s_UDPEnable;
@@ -1392,6 +1393,8 @@ void CPreferences::BuildItemList(const wxString &appdir)
 	s_MiscList.push_back(MkCfg_Int("/eMule/AllcatType", s_allcatFilter, 0));
 
 	s_MiscList.push_back(MkCfg_Int("/eMule/SmartIdState", s_smartidstate, 0));
+
+	s_MiscList.push_back(MkCfg_Int("/eMule/AddressFamilies", s_addressFamiliesSetting, 0));
 
 	s_MiscList.push_back(new Cfg_Bool("/eMule/DropSlowSources", s_DropSlowSources, false));
 

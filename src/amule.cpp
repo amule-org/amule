@@ -72,6 +72,7 @@
 #include "kademlia/kademlia/Kademlia.h"
 #include "kademlia/kademlia/Prefs.h"
 #include "kademlia/kademlia/UDPFirewallTester.h"
+#include "AddressFamilyPolicy.h" // Needed for AddressFamilyPolicy::SetConfigured
 #include "CanceledFileList.h"
 #include "ClientCreditsList.h"    // Needed for CClientCreditsList
 #include "ClientList.h"           // Needed for CClientList
@@ -708,6 +709,12 @@ bool CamuleApp::OnInit()
 			    bindInterface);
 		break;
 	}
+
+	// Read only here: changing it later would let the next listener Rebind() move to another
+	// family without a restart.
+	AddressFamilyPolicy::SetConfigured(
+		AddressFamilyPolicy::FamiliesFromSetting(thePrefs::GetAddressFamiliesSetting())
+			.value_or(AddressFamilyPolicy::Families::IPv4Only));
 
 	// The temp / incoming directories are validated and created further down, after the
 	// first-run wizard has had a chance to point them somewhere else.
@@ -1546,6 +1553,21 @@ bool CamuleApp::ReinitializeNetwork(wxString *msg)
 	listensocket = new CListenSocket(myaddr[2], nullptr, ListenerFamilies::FromPolicy);
 	*msg << CFormat("*** TCP socket (TCP) listening on %s:%u\n") % ip %
 			(unsigned int)(thePrefs::GetPort());
+	const long addressFamiliesSetting = thePrefs::GetAddressFamiliesSetting();
+	const std::optional<AddressFamilyPolicy::Families> settingFamilies =
+		AddressFamilyPolicy::FamiliesFromSetting(addressFamiliesSetting);
+	if (!settingFamilies) {
+		*msg << CFormat("*** Address families: unsupported AddressFamilies value %li in amule.conf, "
+				"using IPv4 only\n") %
+				addressFamiliesSetting;
+	} else if (*settingFamilies == AddressFamilyPolicy::Families::DualStack) {
+#ifdef ENABLE_IPV6
+		*msg << CFormat("*** Address families: IPv4 and IPv6\n");
+#else
+		*msg << CFormat("*** Address families: IPv4 and IPv6 (native IPv6 peers are refused: built "
+				"without ENABLE_IPV6)\n");
+#endif
+	}
 	// Notify(true) has already been called to the ListenSocket, so events may
 	// be already coming in.
 	if (!listensocket->IsOk()) {

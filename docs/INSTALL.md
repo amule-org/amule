@@ -169,6 +169,14 @@ These switches are `OFF` by default and compile in unfinished work.
 | `ENABLE_KAD_NODE_PROTECTION`      | local Kad node-protection heuristics: adaptive request timeouts and Kad identity checks. No wire-protocol change |
 | `ENABLE_ALL_EXPERIMENTAL`         | all of the switches above |
 
+`ENABLE_IPV6` only lets the core admit native IPv6 peers. Listening on
+IPv6 is the runtime setting `AddressFamilies` in the `[eMule]` section of
+`amule.conf`: `0` (the default) is IPv4 only, `1` is IPv4 and IPv6 on one
+dual-stack ed2k TCP listener. It is read at startup; any other value is
+reported and treated as `0`. UDP, Kad and outbound connections stay IPv4.
+Edit the file while aMule is not running, because aMule rewrites it on
+exit.
+
 For the full list:
 
 ```sh

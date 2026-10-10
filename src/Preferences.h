@@ -221,6 +221,9 @@ public:
 	static void SetAddress(const wxString &val) { s_Addr = val; }
 	static const wxString &GetNetworkInterface() { return s_NetworkInterface; }
 	static void SetNetworkInterface(const wxString &val) { s_NetworkInterface = val; }
+	// Raw and unvalidated, so an unsupported value can be reported as written; map it with
+	// AddressFamilyPolicy::FamiliesFromSetting().
+	static long GetAddressFamiliesSetting() { return s_addressFamiliesSetting; }
 	static uint16 GetPort() { return s_port; }
 	static void SetPort(uint16 val);
 	static uint16 GetUDPPort() { return s_udpport; }
@@ -931,6 +934,7 @@ protected:
 	static uint32 s_slotallocation;
 	static wxString s_Addr;
 	static wxString s_NetworkInterface;
+	static long s_addressFamiliesSetting;
 	static uint16 s_port;
 	static uint16 s_udpport;
 	static bool s_UDPEnable;
