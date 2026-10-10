@@ -393,7 +393,7 @@ public:
 	// file sharing
 	virtual CPacket *CreateSrcInfoPacket(
 		const CUpDownClient *forClient, uint8 byRequestedVersion, uint16 nRequestedOptions);
-	void CreateOfferedFilePacket(CMemFile *files, class CServer *pServer, CUpDownClient *pClient);
+	void CreateOfferedFilePacket(CMemFile *files, class CServer *pServer, CUpDownClient *pClient) const;
 
 	virtual void UpdatePartsInfo();
 

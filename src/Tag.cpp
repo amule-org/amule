@@ -82,7 +82,7 @@ CTag::CTag(const CTag &rTag)
 	}
 }
 
-CTag::CTag(const CFileDataIO &data, bool bOptUTF8)
+CTag::CTag(const CFileDataIO &data, bool bOptUTF8, bool normalizeIntTypes)
 {
 	// Zero variables to allow for safe deletion
 	m_uType = m_uName = m_nSize = m_uVal = 0;
@@ -121,12 +121,16 @@ CTag::CTag(const CFileDataIO &data, bool bOptUTF8)
 
 		case TAGTYPE_UINT16:
 			m_uVal = data.ReadUInt16();
-			m_uType = TAGTYPE_UINT32;
+			if (normalizeIntTypes) {
+				m_uType = TAGTYPE_UINT32;
+			}
 			break;
 
 		case TAGTYPE_UINT8:
 			m_uVal = data.ReadUInt8();
-			m_uType = TAGTYPE_UINT32;
+			if (normalizeIntTypes) {
+				m_uType = TAGTYPE_UINT32;
+			}
 			break;
 
 		case TAGTYPE_FLOAT32:

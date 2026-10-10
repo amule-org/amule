@@ -35,6 +35,7 @@ if (BUILD_MONOLITHIC OR BUILD_DAEMON)
 		KnownFileList.cpp
 		ListenSocket.cpp
 		MuleUDPSocket.cpp
+		OfferFilesPolicy.cpp
 		SearchFile.cpp
 		SearchList.cpp
 		ServerConnect.cpp

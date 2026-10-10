@@ -43,12 +43,14 @@
 #include "MediaProbeThread.h" // Needed for CMediaProbeThread (media probe queue)
 #include "OtherFunctions.h"   // Needed for GetED2KFileTypeID / ED2KFT_* (MaybeScheduleMediaProbe)
 #include "ThreadScheduler.h"  // Needed for CThreadScheduler::GetPendingCount (bulk probe logging)
-#include "Preferences.h"      // Needed for thePrefs
-#include "DownloadQueue.h"    // Needed for CDownloadQueue
-#include "amule.h"            // Needed for theApp
-#include "PartFile.h"         // Needed for PartFile
-#include "Server.h"           // Needed for CServer
-#include "Statistics.h"       // Needed for theStats
+#include "ServerSocket.h"
+#include "Preferences.h"   // Needed for thePrefs
+#include "DownloadQueue.h" // Needed for CDownloadQueue
+#include "amule.h"         // Needed for theApp
+#include "PartFile.h"      // Needed for PartFile
+#include "Server.h"        // Needed for CServer
+#include "ServerList.h"    // Needed for live UDP publication limits
+#include "Statistics.h"    // Needed for theStats
 #include "Logger.h"
 #include <common/Format.h>
 #include <common/FileFunctions.h>
@@ -1483,6 +1485,42 @@ static bool SortFunc(const CKnownFile *fileA, const CKnownFile *fileB)
 
 void CSharedFileList::SendListToServer()
 {
+	CServer *server = theApp->serverconnect->GetCurrentServer();
+	if (!server || !theApp->IsConnectedED2K()) {
+		return;
+	}
+	CServerSocket *socket = theApp->serverconnect->GetConnectedSocket();
+	if (!socket) {
+		return;
+	}
+	auto &publication = socket->GetOfferFilesPublication();
+	const auto *policy = socket->GetOfferFilesAdvertisement();
+	if (policy && !publication.Due(GetTickCount64(),
+			      policy->PublicationIntervalMs(
+				      thePrefs::GetExperimentalED2KPublication(), ED2KREPUBLISHTIME))) {
+		return;
+	}
+	// Check the candidate budget before walking/sorting a potentially huge library.
+	// Once exhausted, subsequent core ticks must remain constant-time.
+	uint32 limit = server->GetSoftFiles();
+	if (limit == 0 || limit > 200) {
+		limit = 200;
+	}
+	if (policy) {
+		limit = policy->BatchLimit(
+			publication.Count(), server->GetSoftFiles(), server->GetHardFiles());
+		// UDP status updates change the list entry, while the socket owns a copy.
+		// Either source may tighten the connection snapshot, never enlarge it.
+		if (const CServer *listed = theApp->serverlist->GetServerByAddress(
+			    server->GetAddress(), server->GetPort())) {
+			limit = std::min(limit,
+				policy->BatchLimit(
+					publication.Count(), listed->GetSoftFiles(), listed->GetHardFiles()));
+		}
+		if (!limit) {
+			return;
+		}
+	}
 	std::vector<CKnownFile *> SortedList;
 
 	{
@@ -1497,25 +1535,15 @@ void CSharedFileList::SendListToServer()
 
 		CKnownFileMap::iterator it = m_Files_map.begin();
 		for (; it != m_Files_map.end(); ++it) {
-			if (!it->second->GetPublishedED2K()) {
+			if ((!policy || !publication.Contains(it->second->GetFileHash())) &&
+				!it->second->GetPublishedED2K() &&
+				(!it->second->IsLargeFile() || server->SupportsLargeFilesTCP())) {
 				SortedList.push_back(it->second);
 			}
 		}
 	}
 
 	std::sort(SortedList.begin(), SortedList.end(), SortFunc);
-
-	// Limits for the server.
-
-	CServer *server = theApp->serverconnect->GetCurrentServer();
-	if (!server) {
-		return;
-	}
-
-	uint32 limit = server->GetSoftFiles();
-	if (limit == 0 || limit > 200) {
-		limit = 200;
-	}
 
 	if ((uint32)SortedList.size() < limit) {
 		limit = SortedList.size();
@@ -1534,6 +1562,8 @@ void CSharedFileList::SendListToServer()
 	// and a legacy non-LF server sees a short read against the count.
 	files.WriteUInt32(0);
 
+	std::vector<CKnownFile *> offered;
+	offered.reserve(limit);
 	uint32 count = 0;
 	// Add to packet
 	std::vector<CKnownFile *>::iterator sorted_it = SortedList.begin();
@@ -1541,13 +1571,12 @@ void CSharedFileList::SendListToServer()
 		CKnownFile *file = *sorted_it;
 		if (!file->IsLargeFile() || server->SupportsLargeFilesTCP()) {
 			file->CreateOfferedFilePacket(&files, server, NULL);
+			offered.push_back(file);
 			++count;
 		}
-		file->SetPublishedED2K(true);
 	}
 
-	// Nothing to publish to this server -- e.g. every unpublished file in our prefix is >4GB
-	// and the server does not advertise SRV_TCPFLG_LARGEFILES. Sending an OP_OFFERFILES with
+	// Nothing eligible to publish to this server. Sending an OP_OFFERFILES with
 	// count=0 would just be ~28 bytes of TCP overhead per republish tick.
 	if (count == 0) {
 		return;
@@ -1568,7 +1597,15 @@ void CSharedFileList::SendListToServer()
 	}
 
 	theStats::AddUpOverheadServer(packet->GetPacketSize());
-	theApp->serverconnect->SendPacket(packet, true);
+	// Published means offered to the connection, not acknowledged as indexed.
+	// Only mark records when ServerConnect accepts the packet for this connection.
+	if (theApp->serverconnect->SendPacket(packet, true, socket)) {
+		publication.Sent(GetTickCount64());
+		for (CKnownFile *file : offered) {
+			publication.Record(file->GetFileHash());
+			file->SetPublishedED2K(true);
+		}
+	}
 }
 
 void CSharedFileList::Process()
@@ -1602,7 +1639,26 @@ void CSharedFileList::Process()
 	}
 
 	Publish();
-	if (!m_lastPublishED2KFlag || (::GetTickCount64() - m_lastPublishED2K < ED2KREPUBLISHTIME)) {
+	ProcessED2K();
+}
+
+void CSharedFileList::ProcessED2K(bool acceleratedOnly)
+{
+	CServerSocket *socket = theApp->serverconnect->GetConnectedSocket();
+	const auto *policy = socket ? socket->GetOfferFilesAdvertisement() : nullptr;
+	// The fast core-tick path must not change legacy maintenance scheduling.
+	if (acceleratedOnly && (!policy || !thePrefs::GetExperimentalED2KPublication())) {
+		return;
+	}
+	const uint64 now = ::GetTickCount64();
+	// A fresh negotiated connection may publish immediately. Measure subsequent
+	// intervals from queue acceptance, without catch-up batches after a late tick.
+	const bool due =
+		policy ? socket->GetOfferFilesPublication().Due(now,
+				 policy->PublicationIntervalMs(
+					 thePrefs::GetExperimentalED2KPublication(), ED2KREPUBLISHTIME))
+		       : now - m_lastPublishED2K >= ED2KREPUBLISHTIME;
+	if (!m_lastPublishED2KFlag || !due) {
 		return;
 	}
 	SendListToServer();

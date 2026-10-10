@@ -458,6 +458,9 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 		// Cleaned.
 		case OP_SERVERIDENT: {
 			AddDebugLogLineN(logServer, "Server: OP_SERVERIDENT");
+			const bool firstIdent =
+				connectionstate == CS_CONNECTED && m_offerFilesPolicy.BeginAdvertisement();
+			COfferFilesAdvertisement offerFiles;
 
 			theStats::AddDownOverheadServer(size);
 			if (size < 38) {
@@ -467,10 +470,11 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 			}
 			CServer *update = theApp->serverlist->GetServerByAddress(
 				cur_server->GetAddress(), cur_server->GetPort());
-			if (update) {
+			{
 				CMemFile data(packet, size);
 				CMD4Hash hash = data.ReadHash();
-				if (RawPeekUInt32(hash.GetHash()) == 0x2A2A2A2A) { // No endian problem here
+				if (update && RawPeekUInt32(hash.GetHash()) ==
+						      0x2A2A2A2A) { // No endian problem here
 					const wxString &rstrVersion = update->GetVersion();
 					if (!rstrVersion.IsEmpty()) {
 						update->SetVersion("eFarm " + rstrVersion);
@@ -492,16 +496,53 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 					// and by the .met-file parse path, which is what stops the
 					// "name correct on first display, garbled a few seconds
 					// later" regression (#831).
-					CTag tag(data, true);
-					if (tag.GetNameID() == ST_SERVERNAME) {
+					CTag tag(data, true, false);
+					offerFiles.AddTag(tag);
+					if (update && tag.GetNameID() == ST_SERVERNAME) {
 						update->SetListName(tag.GetStr());
-					} else if (tag.GetNameID() == ST_DESCRIPTION) {
+					} else if (update && tag.GetNameID() == ST_DESCRIPTION) {
 						update->SetDescription(tag.GetStr());
 					} // No more known tags from server
 				}
 
-				theApp->ShowConnectionState();
-				Notify_ServerRefresh(update);
+				if (firstIdent) {
+					m_offerFilesPolicy.Commit(data.GetPosition() == data.GetLength()
+									  ? offerFiles
+									  : COfferFilesAdvertisement());
+				}
+				if (m_offerFilesPolicy.Get()) {
+					// Commit the connection's limits only after the complete
+					// advertisement validates. Cached UDP metadata must not hide the
+					// login snapshot.
+					cur_server->SetSoftFiles(offerFiles.SoftLimit());
+					cur_server->SetHardFiles(offerFiles.HardLimit());
+					if (update) {
+						update->SetSoftFiles(offerFiles.SoftLimit());
+						update->SetHardFiles(offerFiles.HardLimit());
+					}
+					AddDebugLogLineN(logServer,
+						CFormat("OFFERFILES v1: soft=%u hard=%u advertised batch=%u "
+							"interval=%u ms; "
+							"bounded batch=%u interval=%u ms; acceleration "
+							"%s") %
+							offerFiles.SoftLimit() % offerFiles.HardLimit() %
+							offerFiles.AdvertisedBatchLimit() %
+							offerFiles.AdvertisedIntervalMs() %
+							offerFiles.BatchLimit(
+								m_offerFilesPublication.Count()) %
+							offerFiles.IntervalMs() %
+							(thePrefs::GetExperimentalED2KPublication()
+									? "enabled (experimental)"
+									: "disabled"));
+				} else {
+					AddDebugLogLineN(logServer,
+						"OFFERFILES: legacy pacing (absent, invalid, or repeated "
+						"advertisement)");
+				}
+				if (update) {
+					theApp->ShowConnectionState();
+					Notify_ServerRefresh(update);
+				}
 			}
 			break;
 		}
@@ -674,6 +715,9 @@ bool CServerSocket::PacketReceived(CPacket *packet)
 
 	if (packet->GetProtocol() == OP_PACKEDPROT) {
 		if (!packet->UnPackPacket(250000)) {
+			if (packet->GetOpCode() == OP_SERVERIDENT && connectionstate == CS_CONNECTED) {
+				m_offerFilesPolicy.RejectAdvertisement();
+			}
 			AddDebugLogLineN(logZLib,
 				CFormat("Failed to decompress server TCP packet: protocol=0x%02x  "
 					"opcode=0x%02x  size=%u") %
@@ -719,6 +763,10 @@ void CServerSocket::OnClose(int WXUNUSED(nErrorCode))
 
 void CServerSocket::SetConnectionState(sint8 newstate)
 {
+	if (newstate != CS_CONNECTED) {
+		m_offerFilesPolicy.Reset();
+		m_offerFilesPublication.Reset();
+	}
 	connectionstate = newstate;
 	if (newstate < CS_CONNECTING) {
 		serverconnect->ConnectionFailed(this);
@@ -731,8 +779,14 @@ void CServerSocket::SetConnectionState(sint8 newstate)
 
 void CServerSocket::SendPacket(CPacket *packet, bool delpacket, bool controlpacket, uint32 actualPayloadSize)
 {
+	TrySendPacket(packet, delpacket, controlpacket, actualPayloadSize);
+}
+
+bool CServerSocket::TrySendPacket(
+	CPacket *packet, bool delpacket, bool controlpacket, uint32 actualPayloadSize)
+{
 	m_dwLastTransmission = GetTickCount64();
-	CEMSocket::SendPacket(packet, delpacket, controlpacket, actualPayloadSize);
+	return CEMSocket::TrySendPacket(packet, delpacket, controlpacket, actualPayloadSize);
 }
 
 void CServerSocket::OnHostnameResolved(uint32 ip)

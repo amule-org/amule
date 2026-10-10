@@ -72,8 +72,8 @@ def parse_tags(data, offset, count):
 
 
 class EC:
-    def __init__(self, port, host="127.0.0.1", password="regression"):
-        self.sock = socket.create_connection((host, port), timeout=60)
+    def __init__(self, port, host="127.0.0.1", password="regression", timeout=60):
+        self.sock = socket.create_connection((host, port), timeout=timeout)
         op, tags = self.call(C['EC_OP_AUTH_REQ'], [string(C['EC_TAG_CLIENT_NAME'], 'AllSearch regression'), string(C['EC_TAG_CLIENT_VERSION'], '1'),
                                tag(C['EC_TAG_PROTOCOL_VERSION'], struct.pack('!H', C['EC_CURRENT_PROTOCOL_VERSION']), 3), tag(C['EC_TAG_CAN_MULTI_SEARCH']), tag(C['EC_TAG_CAN_SEARCH_LIST']), tag(C['EC_TAG_CAN_PARTIAL_SEARCH'])])
         assert op == C['EC_OP_AUTH_SALT'], (op, tags)

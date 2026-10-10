@@ -254,6 +254,7 @@ bool CPreferences::s_MediaMetadataEnabled;
 wxString CPreferences::s_MediaMetadataFFProbePath;
 bool CPreferences::s_ConnectToKad;
 bool CPreferences::s_ConnectToED2K;
+bool CPreferences::s_ExperimentalED2KPublication = false;
 bool CPreferences::s_KadProtocol10;
 bool CPreferences::s_KadStrictAichPublishers;
 bool CPreferences::s_KadProtocol10Supported = true;
@@ -1381,6 +1382,9 @@ void CPreferences::BuildItemList(const wxString &appdir)
 	s_MiscList.push_back(MkCfg_Int("/Obfuscation/CryptoPaddingLenght", s_byCryptTCPPaddingLength, 254));
 	s_MiscList.push_back(MkCfg_Int("/Obfuscation/CryptoKadUDPKey", s_dwKadUDPKey, GetRandomUint32()));
 #endif
+
+	NewCfgItem(IDC_EXPERIMENTAL_ED2K_PUBLICATION,
+		(new Cfg_Bool("/eMule/ExperimentalED2KPublication", s_ExperimentalED2KPublication, false)));
 
 	/** Power management */
 	NewCfgItem(IDC_PREVENT_SLEEP,

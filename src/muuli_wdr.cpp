@@ -2167,6 +2167,22 @@ wxSizer *PreferencesaMuleTweaksTab( wxWindow *parent, bool call_fit, bool set_si
     item4->Add( item12, wxSizerFlags().CenterVertical().Border(wxTOP, 5) );
     wxSlider *item13 = new wxSlider( item5, IDC_SERVERKEEPALIVE, 0, 0, 30, wxDefaultPosition, wxSize(100,-1), wxSL_HORIZONTAL );
     item4->Add( item13, wxSizerFlags().Expand().CenterVertical() );
+    wxStaticBoxSizer *experimental = new wxStaticBoxSizer(wxVERTICAL, item5, _("Experimental"));
+    wxWindow *experimentalParent = experimental->GetStaticBox();
+    wxCheckBox *fastPublish = new wxCheckBox(experimentalParent, IDC_EXPERIMENTAL_ED2K_PUBLICATION,
+        _("Enable experimental ED2K accelerated file publication"));
+    fastPublish->SetValue(false);
+    experimental->Add(fastPublish, wxSizerFlags().Border(wxALL, 5));
+    wxStaticText *fastPublishWarning = new wxStaticText(experimentalParent, wxID_ANY,
+        _("Testing is discouraged for normal use. Interoperability and server-load testing\n"
+          "are incomplete; this may cause server disconnections. Enable only for\n"
+          "controlled testing with a compatible server. Disabled by default."));
+    experimental->Add(fastPublishWarning, wxSizerFlags().Border(wxLEFT | wxRIGHT | wxBOTTOM, 5));
+#ifdef CLIENT_GUI
+    fastPublish->Enable(false);
+    fastPublish->SetToolTip(_("Configure this experimental option on the daemon host."));
+#endif
+    item4->Add(experimental, wxSizerFlags().Expand().Border(wxTOP, 5));
     wxCheckBox *item14 = new wxCheckBox( item5, IDC_PREVENT_SLEEP, _("Disable computer's timed standby mode"), wxDefaultPosition, wxDefaultSize, 0 );
     item4->Add( item14, wxSizerFlags().CenterVertical().Border(wxTOP|wxBOTTOM, 5) );
     item0->Add( item4, wxSizerFlags().Expand().Border(wxALL, 5) );

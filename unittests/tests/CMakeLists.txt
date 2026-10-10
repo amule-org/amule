@@ -2307,6 +2307,33 @@ add_application_test_stubs (AICHSearchResultTest)
 target_link_libraries (AICHSearchResultTest muleunit mulecommon wxWidgets::BASE CRYPTOPP::CRYPTOPP)
 add_test (NAME AICHSearchResultTest COMMAND AICHSearchResultTest)
 
+add_executable (OfferFilesPolicyTest
+	OfferFilesPolicyTest.cpp
+	${CMAKE_SOURCE_DIR}/src/OfferFilesPolicy.cpp
+	${CMAKE_SOURCE_DIR}/src/SafeFile.cpp
+	${CMAKE_SOURCE_DIR}/src/MemFile.cpp
+	${CMAKE_SOURCE_DIR}/src/Tag.cpp
+	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
+	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
+)
+target_include_directories (OfferFilesPolicyTest PRIVATE
+	${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include
+)
+target_link_libraries (OfferFilesPolicyTest muleunit mulecommon)
+add_test (NAME OfferFilesPolicyTest COMMAND OfferFilesPolicyTest)
+
+# External interoperability is opt-in and uses only a loopback server built from
+# the documented release. Do not download or connect to a public server in CTest.
+set (OFFERFILES_INTEROP_SERVER "" CACHE FILEPATH "ed2k-server v0.9.80 binary for local OFFERFILES interoperability")
+if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND OFFERFILES_INTEROP_SERVER)
+	find_package (Python3 REQUIRED COMPONENTS Interpreter)
+	add_test (NAME OfferFilesInteropTest
+		COMMAND ${Python3_EXECUTABLE}
+			${CMAKE_CURRENT_SOURCE_DIR}/OfferFilesInteropTest.py
+			$<TARGET_FILE:amuled> ${OFFERFILES_INTEROP_SERVER}
+	)
+	set_tests_properties (OfferFilesInteropTest PROPERTIES TIMEOUT 360 LABELS "integration")
+endif()
 find_package (Threads REQUIRED)
 add_executable (BackgroundLoadTest BackgroundLoadTest.cpp)
 add_test (NAME BackgroundLoadTest COMMAND BackgroundLoadTest)

@@ -5199,6 +5199,25 @@ msgid "Server connection refresh interval: Disable"
 msgstr "Oppfriskingsintervall for tenarkopling: Deaktiver"
 
 #: src/muuli_wdr.cpp
+msgid "Experimental"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Enable experimental ED2K accelerated file publication"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid ""
+"Testing is discouraged for normal use. Interoperability and server-load testing\n"
+"are incomplete; this may cause server disconnections. Enable only for\n"
+"controlled testing with a compatible server. Disabled by default."
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Configure this experimental option on the daemon host."
+msgstr ""
+
+#: src/muuli_wdr.cpp
 msgid "Disable computer's timed standby mode"
 msgstr "Deaktiver tidsstyrt kvilemodus på datamaskinen"
 
