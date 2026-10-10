@@ -39,7 +39,7 @@ class CListenSocket : public CSocketServerProxy
 {
 public:
 	CListenSocket(amuleIPV4Address &addr,
-		const CProxyData *ProxyData = NULL,
+		const CProxyData *ProxyData = nullptr,
 		ListenerFamilies families = ListenerFamilies::FromAddress);
 	~CListenSocket();
 	void OnAccept();

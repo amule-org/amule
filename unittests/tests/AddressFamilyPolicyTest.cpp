@@ -318,6 +318,20 @@ TEST(AddressFamilyPolicy, ListenerKeepsAConcreteIPv4AddressUnderEveryConfigurati
 	}
 }
 
+// The same rule for a concrete IPv6 address, with IPV6_V6ONLY set explicitly. Under IPv4Only a v4
+// plan would only send it down the address-family path, which binds the same address anyway.
+TEST(AddressFamilyPolicy, ListenerKeepsAConcreteIPv6AddressUnderEveryConfiguration)
+{
+	const boost::asio::ip::address concrete = boost::asio::ip::make_address("2001:db8::10");
+	const Families every[] = { Families::IPv4Only, Families::IPv6Only, Families::DualStack };
+	for (const Families families : every) {
+		const ListenerBind plan = ListenerBindFor(families, concrete);
+		ASSERT_TRUE(plan.protocol == boost::asio::ip::tcp::v6());
+		ASSERT_TRUE(plan.address == concrete);
+		ASSERT_TRUE(plan.v6Only.has_value() && *plan.v6Only);
+	}
+}
+
 TEST(AddressFamilyPolicy, ListenerTreatsAnOutOfRangeConfigurationAsIPv4Only)
 {
 	const ListenerBind plan = ListenerBindFor(static_cast<Families>(99), AnyIPv4Address());
