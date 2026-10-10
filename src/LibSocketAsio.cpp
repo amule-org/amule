@@ -527,6 +527,41 @@ public:
 		return RunConnect(adr.GetEndpoint(), wait);
 	}
 
+#ifdef ENABLE_IPV6
+	bool ConnectIPv6(const ip::tcp::endpoint &endpoint, const CNetworkAddress &peer, bool wait)
+	{
+		m_peerAddress = peer;
+		m_IPstring = wxString(m_peerAddress.ToString());
+		m_IP = m_IPstring.c_str();
+		m_IPint = 0;
+		m_port = endpoint.port();
+		m_closed = false;
+		m_OK = false;
+		m_sync = !m_notify; // set this once for the whole lifetime of the socket
+		AddDebugLogLineF(logAsio, CFormat("Connect %s %p") % m_IP % this);
+
+		// Already open means a configured local IPv4 bind, which cannot reach an IPv6 peer.
+		if (m_socket->is_open()) {
+			return false;
+		}
+		error_code ec;
+		m_socket->open(ip::tcp::v6(), ec);
+		if (ec) {
+			m_ErrorCode = ec.value();
+			return false;
+		}
+		// Unlike IPv4, an unpinned IPv6 connect is refused so it cannot leave through another
+		// interface (VPN-leak fix, #173).
+		if (!SetBoundInterface(m_socket->native_handle(), s_bindToInterface, true)) {
+			error_code ignore;
+			m_socket->close(ignore);
+			return false;
+		}
+
+		return RunConnect(endpoint, wait);
+	}
+#endif
+
 	bool IsConnected() const { return m_connected; }
 
 	// For wxSocketClient, Ok won't return true unless the client is connected to a server.
@@ -1260,6 +1295,22 @@ bool CLibSocket::Connect(const amuleIPV4Address &adr, bool wait)
 	}
 	return m_aSocket->Connect(adr, wait);
 }
+
+#ifdef ENABLE_IPV6
+bool CLibSocket::ConnectIPv6(const CNetworkAddress &target, uint16 port, bool wait)
+{
+	if (m_transport) {
+		// An accepted stream has a peer; dialling would open a second one.
+		return false;
+	}
+	const boost::optional<AddressFamilyPolicy::SAsioTarget> asioTarget =
+		AddressFamilyPolicy::AsioTargetFor(target);
+	if (!asioTarget || asioTarget->protocol != ip::tcp::v6()) {
+		return false;
+	}
+	return m_aSocket->ConnectIPv6(ip::tcp::endpoint(asioTarget->address, port), target, wait);
+}
+#endif
 
 bool CLibSocket::IsConnected() const
 {

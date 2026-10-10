@@ -1124,6 +1124,19 @@ bool CSocketClientProxy::Connect(amuleIPV4Address &address, bool wait)
 	return ok;
 }
 
+#ifdef ENABLE_IPV6
+bool CSocketClientProxy::ConnectIPv6(const CNetworkAddress &target, uint16 port, bool wait)
+{
+	wxMutexLocker lock(m_socketLocker);
+	// The proxy protocols here carry IPv4 only, so a configured proxy refuses IPv6 instead of
+	// being bypassed.
+	if (GetUseProxy()) {
+		return false;
+	}
+	return CLibSocket::ConnectIPv6(target, port, wait);
+}
+#endif
+
 uint32 CSocketClientProxy::Read(void *buffer, wxUint32 nbytes)
 {
 	wxMutexLocker lock(m_socketLocker);
