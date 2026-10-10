@@ -103,6 +103,12 @@ add_test (NAME ProtocolPeerIdentityTest COMMAND ProtocolPeerIdentityTest)
 target_include_directories (ProtocolPeerIdentityTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries (ProtocolPeerIdentityTest muleunit mulecommon)
 
+# The done-list cap, without live clients.
+add_executable (UploadBlockListsTest UploadBlockListsTest.cpp)
+add_test (NAME UploadBlockListsTest COMMAND UploadBlockListsTest)
+target_include_directories (UploadBlockListsTest PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/libs)
+target_link_libraries (UploadBlockListsTest muleunit mulecommon)
+
 add_executable (DeadSourceKeyTest DeadSourceKeyTest.cpp)
 add_test (NAME DeadSourceKeyTest COMMAND DeadSourceKeyTest)
 target_include_directories (DeadSourceKeyTest PRIVATE ${CMAKE_SOURCE_DIR}/src)

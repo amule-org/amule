@@ -37,7 +37,8 @@
 #include "OtherFunctions.h" // Needed for GetFiletype / ftArchive
 #include "MD4Hash.h"
 #include "UploadBandwidthThrottler.h"
-#include "Statistics.h" // Needed for theStats
+#include "UploadBlockLists.h" // Needed for PushDoneBlock
+#include "Statistics.h"       // Needed for theStats
 
 #include <vector>
 
@@ -402,7 +403,7 @@ bool CUploadDiskIOThread::CommitRead(ReadRequest_Struct *req, ReadResult result)
 	uint64 togo = req->uEndOffset - req->uStartOffset;
 	client->m_addedPayloadQueueSession += static_cast<sint64>(togo);
 	srcfile->statistic.AddTransferred(togo);
-	client->m_DoneBlocks_list.push_front(currentblock);
+	PushDoneBlock(client->m_DoneBlocks_list, currentblock);
 	client->m_BlockRequests_queue.pop_front();
 	return true;
 }
