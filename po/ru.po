@@ -420,7 +420,7 @@ msgstr "ПРЕДУПРЕЖДЕНИЕ: не удалось выполнить п�
 msgid "Your locale has been changed to System Default due to a configuration change. Sorry."
 msgstr "В связи со сменой версии, значение вашей локали было изменено на значение по умолчанию. Извините."
 
-#: src/amule.cpp src/CatDialog.cpp src/ServerList.cpp src/ServerListCtrl.cpp
+#: src/amule.cpp src/CatDialog.cpp src/ServerListCtrl.cpp
 msgid "Info"
 msgstr "Сведения"
 
@@ -2388,6 +2388,10 @@ msgstr "Сервер не добавлен"
 #, c-format
 msgid "server not found: %s"
 msgstr "сервер не найден: %s"
+
+#: src/ExternalConn.cpp
+msgid "You are connected to the server you are trying to delete. please disconnect first."
+msgstr "Вы соединены с сервером, который вы пытаетесь удалить. Отключитесь от него."
 
 #: src/ExternalConn.cpp
 msgid "need to define server to be removed"
@@ -7331,6 +7335,14 @@ msgid "Server.met file corrupt, found invalid versiontag: 0x%x, size %i"
 msgstr "Файл server.met повреждён. Неверная метка версии: 0x%x, размер %i"
 
 #: src/ServerList.cpp
+msgid "Error: the file 'server.met' is corrupted: "
+msgstr "Ошибка: файл «server.met» повреждён: "
+
+#: src/ServerList.cpp
+msgid "IO error while reading 'server.met': "
+msgstr "Ошибка ввода/вывода при чтении файла known.met: "
+
+#: src/ServerList.cpp
 #, c-format
 msgid "%i server in server.met found"
 msgid_plural "%i servers in server.met found"
@@ -7345,14 +7357,6 @@ msgid_plural "%d servers added"
 msgstr[0] "Добавлен %d сервер"
 msgstr[1] "Добавлены %d сервера"
 msgstr[2] "Добавлено %d серверов"
-
-#: src/ServerList.cpp
-msgid "Error: the file 'server.met' is corrupted: "
-msgstr "Ошибка: файл «server.met» повреждён: "
-
-#: src/ServerList.cpp
-msgid "IO error while reading 'server.met': "
-msgstr "Ошибка ввода/вывода при чтении файла known.met: "
 
 #: src/ServerList.cpp
 #, c-format
@@ -7373,10 +7377,6 @@ msgstr "Сервер не был добавлен: сервер с такими 
 #, c-format
 msgid "Server added: Server at [%s:%d] using the name '%s'."
 msgstr "Сервер добавлен: сервер [%s:%d] использует имя «%s»."
-
-#: src/ServerList.cpp
-msgid "You are connected to the server you are trying to delete. please disconnect first."
-msgstr "Вы соединены с сервером, который вы пытаетесь удалить. Отключитесь от него."
 
 #: src/ServerList.cpp
 #, c-format

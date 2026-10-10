@@ -398,7 +398,7 @@ msgstr "AVISO: não foi possível associar à interface de rede '%s' - o tráfeg
 msgid "Your locale has been changed to System Default due to a configuration change. Sorry."
 msgstr "O seu idioma foi alterado para a predefinição do sistema devido a uma mudança de configuração. Desculpe."
 
-#: src/amule.cpp src/CatDialog.cpp src/ServerList.cpp src/ServerListCtrl.cpp
+#: src/amule.cpp src/CatDialog.cpp src/ServerListCtrl.cpp
 msgid "Info"
 msgstr "Informação"
 
@@ -2366,6 +2366,10 @@ msgstr "Servidor não adicionado"
 #, c-format
 msgid "server not found: %s"
 msgstr "servidor não encontrado: %s"
+
+#: src/ExternalConn.cpp
+msgid "You are connected to the server you are trying to delete. please disconnect first."
+msgstr "Está ligado ao servidor que está a tentar remover. Por favor, desligue-se primeiro."
 
 #: src/ExternalConn.cpp
 msgid "need to define server to be removed"
@@ -7299,6 +7303,14 @@ msgid "Server.met file corrupt, found invalid versiontag: 0x%x, size %i"
 msgstr "Ficheiro server.met corrompido, versão inválida encontrada: 0x%x, tamanho %i"
 
 #: src/ServerList.cpp
+msgid "Error: the file 'server.met' is corrupted: "
+msgstr "Erro: o ficheiro 'server.met' está corrompido: "
+
+#: src/ServerList.cpp
+msgid "IO error while reading 'server.met': "
+msgstr "Erro de entrada/saída ao ler o ficheiro 'known.met': "
+
+#: src/ServerList.cpp
 #, c-format
 msgid "%i server in server.met found"
 msgid_plural "%i servers in server.met found"
@@ -7311,14 +7323,6 @@ msgid "%d server added"
 msgid_plural "%d servers added"
 msgstr[0] "%d servidor adicionado"
 msgstr[1] "%d servidores adicionados"
-
-#: src/ServerList.cpp
-msgid "Error: the file 'server.met' is corrupted: "
-msgstr "Erro: o ficheiro 'server.met' está corrompido: "
-
-#: src/ServerList.cpp
-msgid "IO error while reading 'server.met': "
-msgstr "Erro de entrada/saída ao ler o ficheiro 'known.met': "
 
 #: src/ServerList.cpp
 #, c-format
@@ -7339,10 +7343,6 @@ msgstr "Servidor não adicionado: Servidor com IP:Porto correspondente [%s:%d] e
 #, c-format
 msgid "Server added: Server at [%s:%d] using the name '%s'."
 msgstr "Servidor adicionado: Servidor em [%s:%d] a usar o nome '%s'."
-
-#: src/ServerList.cpp
-msgid "You are connected to the server you are trying to delete. please disconnect first."
-msgstr "Está ligado ao servidor que está a tentar remover. Por favor, desligue-se primeiro."
 
 #: src/ServerList.cpp
 #, c-format

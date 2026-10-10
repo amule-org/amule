@@ -474,6 +474,32 @@ target_link_libraries (CTagTest
 	muleunit
 )
 
+# server.met reading, including files older aMule versions wrote with one tag too many declared
+# for a server without a version. Same TU set as CTagTest.
+add_executable (ServerMetTest
+	ServerMetTest.cpp
+	${CMAKE_SOURCE_DIR}/src/ServerMet.cpp
+	${CMAKE_SOURCE_DIR}/src/SafeFile.cpp
+	${CMAKE_SOURCE_DIR}/src/MemFile.cpp
+	${CMAKE_SOURCE_DIR}/src/Tag.cpp
+	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
+	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
+)
+
+add_test (NAME ServerMetTest
+	COMMAND ServerMetTest
+)
+
+target_include_directories (ServerMetTest
+	PRIVATE ${CMAKE_BINARY_DIR}
+	PRIVATE ${CMAKE_SOURCE_DIR}/src
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
+)
+
+target_link_libraries (ServerMetTest
+	muleunit
+)
+
 # CValueMap is the incremental-update filter behind every EC tag that carries a
 # value map. Its failure mode is silence -- a field wrongly judged unchanged
 # just stops updating in the GUI -- so the contract is pinned here rather than

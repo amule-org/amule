@@ -390,7 +390,7 @@ msgstr "ΠΡΟΕΙΔΟΠΟΙΗΣΗ: δεν ήταν δυνατή η σύνδεσ
 msgid "Your locale has been changed to System Default due to a configuration change. Sorry."
 msgstr "Οι τοπικές ρυθμίσεις άλλαξαν στις προεπιλεγμένες του συστήματος λόγο μιας αλλαγής παραμέτρων. Sorry!"
 
-#: src/amule.cpp src/CatDialog.cpp src/ServerList.cpp src/ServerListCtrl.cpp
+#: src/amule.cpp src/CatDialog.cpp src/ServerListCtrl.cpp
 msgid "Info"
 msgstr "Πληροφορίες"
 
@@ -2359,6 +2359,10 @@ msgstr "Ο διακομιστής δεν προστέθηκε"
 #, c-format
 msgid "server not found: %s"
 msgstr "Ο διακομιστής δεν βρέθηκε: %s"
+
+#: src/ExternalConn.cpp
+msgid "You are connected to the server you are trying to delete. please disconnect first."
+msgstr "Είστε συνδεδεμένος στον διακομιστή που προσπαθείτε να σβήσετε. Παρακαλείστε να αποσυνδεθείτε πρώτα"
 
 #: src/ExternalConn.cpp
 msgid "need to define server to be removed"
@@ -7289,6 +7293,14 @@ msgid "Server.met file corrupt, found invalid versiontag: 0x%x, size %i"
 msgstr "Το αρχείο server.met είναι φθαρμένο. βρέθηκε λανθασμένη ετικέτα έκδοσης: 0x%x, μεγεθος %i"
 
 #: src/ServerList.cpp
+msgid "Error: the file 'server.met' is corrupted: "
+msgstr "Σφάλμα: το αρχείο 'server.met' είναι φθαρμένο: "
+
+#: src/ServerList.cpp
+msgid "IO error while reading 'server.met': "
+msgstr "Σφάλμα εισόδου/εξόδου κατά την ανάγνωση του 'server.met': "
+
+#: src/ServerList.cpp
 #, c-format
 msgid "%i server in server.met found"
 msgid_plural "%i servers in server.met found"
@@ -7301,14 +7313,6 @@ msgid "%d server added"
 msgid_plural "%d servers added"
 msgstr[0] "Προστέθηκε %d διακομιστής"
 msgstr[1] "Προστέθηκαν %d διακομιστές"
-
-#: src/ServerList.cpp
-msgid "Error: the file 'server.met' is corrupted: "
-msgstr "Σφάλμα: το αρχείο 'server.met' είναι φθαρμένο: "
-
-#: src/ServerList.cpp
-msgid "IO error while reading 'server.met': "
-msgstr "Σφάλμα εισόδου/εξόδου κατά την ανάγνωση του 'server.met': "
 
 #: src/ServerList.cpp
 #, c-format
@@ -7329,10 +7333,6 @@ msgstr "Ο διακομιστής δεν προστέθηκε: Διακομισ�
 #, c-format
 msgid "Server added: Server at [%s:%d] using the name '%s'."
 msgstr "Ο διακομιστής προστέθηκε: Διακομιστής στην [%s:%d] με όνομα '%s'."
-
-#: src/ServerList.cpp
-msgid "You are connected to the server you are trying to delete. please disconnect first."
-msgstr "Είστε συνδεδεμένος στον διακομιστή που προσπαθείτε να σβήσετε. Παρακαλείστε να αποσυνδεθείτε πρώτα"
 
 #: src/ServerList.cpp
 #, c-format

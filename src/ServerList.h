@@ -40,7 +40,9 @@ public:
 	~CServerList();
 	bool Init();
 	bool AddServer(CServer *in_server, bool fromUser = false);
-	void RemoveServer(CServer *in_server);
+	// A removal fromUser is refused (false) for the server we are connected to, and also drops a
+	// static server from staticservers.dat. False too if in_server is not in the list.
+	bool RemoveServer(CServer *in_server, bool fromUser = false);
 	void RemoveAllServers();
 	void RemoveDeadServers();
 	bool LoadServerMet(const CPath &path);

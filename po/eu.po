@@ -392,7 +392,7 @@ msgstr "KONTUZ: ezin izan da '%s' sareko interfazera lotu - trafikoa bide lehene
 msgid "Your locale has been changed to System Default due to a configuration change. Sorry."
 msgstr "Zure lokalak sistemako lehenetsira aldatu dira konfigurazio aldaketa bat dela eta. Barkatu."
 
-#: src/amule.cpp src/CatDialog.cpp src/ServerList.cpp src/ServerListCtrl.cpp
+#: src/amule.cpp src/CatDialog.cpp src/ServerListCtrl.cpp
 msgid "Info"
 msgstr "Argb"
 
@@ -2359,6 +2359,10 @@ msgstr "Zerbitzaria ez da gehitu"
 #, c-format
 msgid "server not found: %s"
 msgstr "ez da zerbitzaria aurkitu: %s"
+
+#: src/ExternalConn.cpp
+msgid "You are connected to the server you are trying to delete. please disconnect first."
+msgstr "Konektaturik zauden zerbitzaria ezabatu nahi duzu. Mesedez deskonektatu lehenik."
 
 #: src/ExternalConn.cpp
 msgid "need to define server to be removed"
@@ -7291,6 +7295,14 @@ msgid "Server.met file corrupt, found invalid versiontag: 0x%x, size %i"
 msgstr "Server.met fitxategia hondaturik dago, bertsio marka baliogabea aurkitu da: 0x%x, tamaina %i"
 
 #: src/ServerList.cpp
+msgid "Error: the file 'server.met' is corrupted: "
+msgstr "Errorea: 'server.met' fitxategia hondatua dago: "
+
+#: src/ServerList.cpp
+msgid "IO error while reading 'server.met': "
+msgstr "SI errorea 'server.met' fitxategia irakurtzean: "
+
+#: src/ServerList.cpp
 #, c-format
 msgid "%i server in server.met found"
 msgid_plural "%i servers in server.met found"
@@ -7303,14 +7315,6 @@ msgid "%d server added"
 msgid_plural "%d servers added"
 msgstr[0] "zerbitzari %d gehiturik"
 msgstr[1] "%d zerbitzari gehiturik"
-
-#: src/ServerList.cpp
-msgid "Error: the file 'server.met' is corrupted: "
-msgstr "Errorea: 'server.met' fitxategia hondatua dago: "
-
-#: src/ServerList.cpp
-msgid "IO error while reading 'server.met': "
-msgstr "SI errorea 'server.met' fitxategia irakurtzean: "
 
 #: src/ServerList.cpp
 #, c-format
@@ -7331,10 +7335,6 @@ msgstr "Zerbitzaria ez da gehitu: [%s:%d] IP:Ataka dun zerbitzaria aurkitu da ze
 #, c-format
 msgid "Server added: Server at [%s:%d] using the name '%s'."
 msgstr "Zerbitzaria gehiturik: [%s:%d] zerbitzaria '%s' izena erabiltzen."
-
-#: src/ServerList.cpp
-msgid "You are connected to the server you are trying to delete. please disconnect first."
-msgstr "Konektaturik zauden zerbitzaria ezabatu nahi duzu. Mesedez deskonektatu lehenik."
 
 #: src/ServerList.cpp
 #, c-format

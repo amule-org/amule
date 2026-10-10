@@ -2028,11 +2028,11 @@ curl -s -X POST -H "Authorization: Bearer $TOKEN" \
 
 **Auth:** `ADMIN`
 
-Removes the server from amuled's list.
+Removes the server from amuled's list. A permanent server also loses its permanent flag, so it does not come back when amuled restarts.
 
 **Response:** `204 No Content`.
 
-**Errors:** `400 bad_request` (`{ecid}` is not a non-negative integer, or `{address}` is not a dotted quad with a port in 1–65535), `400 amuled_rejected`, `404 not_found` (well-formed but no such server), `503 ec_unavailable`.
+**Errors:** `400 bad_request` (`{ecid}` is not a non-negative integer, or `{address}` is not a dotted quad with a port in 1–65535), `400 amuled_rejected` (amuled is connected to that server; disconnect first), `404 not_found` (well-formed but no such server), `503 ec_unavailable`.
 
 #### `PATCH /api/v1/servers/{ecid}` / `PATCH /api/v1/servers/by-address/{address}`
 

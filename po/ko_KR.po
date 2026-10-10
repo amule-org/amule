@@ -391,7 +391,7 @@ msgstr "경고: 네트워크 인터페이스 '%s'에 바인딩할 수 없습니�
 msgid "Your locale has been changed to System Default due to a configuration change. Sorry."
 msgstr "지역정보(로케일)가 설정 변경으로 인해 시스템 기본값으로 변경되었습니다. 죄송합니다."
 
-#: src/amule.cpp src/CatDialog.cpp src/ServerList.cpp src/ServerListCtrl.cpp
+#: src/amule.cpp src/CatDialog.cpp src/ServerListCtrl.cpp
 msgid "Info"
 msgstr "정보"
 
@@ -2358,6 +2358,10 @@ msgstr "서버가 추가되지 않음"
 #, c-format
 msgid "server not found: %s"
 msgstr "서버가 발견되지 않음: %s"
+
+#: src/ExternalConn.cpp
+msgid "You are connected to the server you are trying to delete. please disconnect first."
+msgstr "삭제하려고하는 서버에 접속되어있습니다. 부디 먼저 연결을 끊으세요."
 
 #: src/ExternalConn.cpp
 msgid "need to define server to be removed"
@@ -7285,6 +7289,14 @@ msgid "Server.met file corrupt, found invalid versiontag: 0x%x, size %i"
 msgstr "Server.met 파일이 손상됨, 유효하지 않는 버젼정보를 발견함: 0x%x, size %i"
 
 #: src/ServerList.cpp
+msgid "Error: the file 'server.met' is corrupted: "
+msgstr "오류: 'server.met' 파일이 손상되었습니다: "
+
+#: src/ServerList.cpp
+msgid "IO error while reading 'server.met': "
+msgstr "'server.met' 파일을 읽는 중 입출력 오류: "
+
+#: src/ServerList.cpp
 #, c-format
 msgid "%i server in server.met found"
 msgid_plural "%i servers in server.met found"
@@ -7297,14 +7309,6 @@ msgid "%d server added"
 msgid_plural "%d servers added"
 msgstr[0] "%d개의 서버가 추가됨"
 msgstr[1] "%d개의 서버가 추가됨"
-
-#: src/ServerList.cpp
-msgid "Error: the file 'server.met' is corrupted: "
-msgstr "오류: 'server.met' 파일이 손상되었습니다: "
-
-#: src/ServerList.cpp
-msgid "IO error while reading 'server.met': "
-msgstr "'server.met' 파일을 읽는 중 입출력 오류: "
 
 #: src/ServerList.cpp
 #, c-format
@@ -7325,10 +7329,6 @@ msgstr "서버 추가되지 않음: IP:포트[%s:%d]와 같은 서버가 목록�
 #, c-format
 msgid "Server added: Server at [%s:%d] using the name '%s'."
 msgstr "서버 추가됨: [%s:%d]서버 '%s'이름을 사용"
-
-#: src/ServerList.cpp
-msgid "You are connected to the server you are trying to delete. please disconnect first."
-msgstr "삭제하려고하는 서버에 접속되어있습니다. 부디 먼저 연결을 끊으세요."
 
 #: src/ServerList.cpp
 #, c-format

@@ -388,7 +388,7 @@ msgstr "BRĪDINĀJUMS: neizdevās veikt piesaisti tīkla saskarnei '%s' - trafik
 msgid "Your locale has been changed to System Default due to a configuration change. Sorry."
 msgstr "Jūsu lokalizācija ir mainīta uz sistēmas noklusējumu konfigurācijas izmaiņu dēļ. Atvainojiet."
 
-#: src/amule.cpp src/CatDialog.cpp src/ServerList.cpp src/ServerListCtrl.cpp
+#: src/amule.cpp src/CatDialog.cpp src/ServerListCtrl.cpp
 msgid "Info"
 msgstr "Informācija"
 
@@ -2357,6 +2357,10 @@ msgstr "Serveris nav pievienots"
 #, c-format
 msgid "server not found: %s"
 msgstr "serveris nav atrasts: %s"
+
+#: src/ExternalConn.cpp
+msgid "You are connected to the server you are trying to delete. please disconnect first."
+msgstr "Jūs esiet pieslēdzies serverim, kuru mēģiniet dzēst. Lūdzu, vispirms atslēdzieties."
 
 #: src/ExternalConn.cpp
 msgid "need to define server to be removed"
@@ -7282,6 +7286,14 @@ msgid "Server.met file corrupt, found invalid versiontag: 0x%x, size %i"
 msgstr "Server.met datne ir bojāta, atrasts nederīgs versijas tags: 0x%x, izmērs %i"
 
 #: src/ServerList.cpp
+msgid "Error: the file 'server.met' is corrupted: "
+msgstr "Kļūda: 'server.met' datne ir bojāta: "
+
+#: src/ServerList.cpp
+msgid "IO error while reading 'server.met': "
+msgstr "IO kļūda, lasot 'server.met': "
+
+#: src/ServerList.cpp
 #, c-format
 msgid "%i server in server.met found"
 msgid_plural "%i servers in server.met found"
@@ -7296,14 +7308,6 @@ msgid_plural "%d servers added"
 msgstr[0] "Pievienoti %d serveri"
 msgstr[1] "Pievienots %d serveris"
 msgstr[2] "Pievienoti %d serveri"
-
-#: src/ServerList.cpp
-msgid "Error: the file 'server.met' is corrupted: "
-msgstr "Kļūda: 'server.met' datne ir bojāta: "
-
-#: src/ServerList.cpp
-msgid "IO error while reading 'server.met': "
-msgstr "IO kļūda, lasot 'server.met': "
 
 #: src/ServerList.cpp
 #, c-format
@@ -7324,10 +7328,6 @@ msgstr "Serveris nav pievienots: sarakstā jau atrasts serveris ar atbilstošu I
 #, c-format
 msgid "Server added: Server at [%s:%d] using the name '%s'."
 msgstr "Serveris pievienots: serveris [%s:%d] ar nosaukumu '%s'."
-
-#: src/ServerList.cpp
-msgid "You are connected to the server you are trying to delete. please disconnect first."
-msgstr "Jūs esiet pieslēdzies serverim, kuru mēģiniet dzēst. Lūdzu, vispirms atslēdzieties."
 
 #: src/ServerList.cpp
 #, c-format

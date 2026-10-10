@@ -2320,9 +2320,14 @@ static CECPacket *Get_EC_Response_Server(const CECPacket *request)
 		response = new CECPacket(EC_OP_NOOP);
 		break;
 	case EC_OP_SERVER_REMOVE:
-		if (srv) {
-			theApp->serverlist->RemoveServer(srv);
+		if (srv && theApp->serverlist->RemoveServer(srv, true)) {
 			response = new CECPacket(EC_OP_NOOP);
+		} else if (srv) {
+			response = new CECPacket(EC_OP_FAILED);
+			response->AddTag(CECTag(EC_TAG_STRING,
+				wxTRANSLATE(
+					"You are connected to the server you are trying to delete. please "
+					"disconnect first.")));
 		} else {
 			response = new CECPacket(EC_OP_FAILED);
 			response->AddTag(

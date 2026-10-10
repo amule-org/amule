@@ -592,6 +592,17 @@ CServer *CServerConnect::GetCurrentServer()
 	return NULL;
 }
 
+bool CServerConnect::IsCurrentServer(const CServer *server)
+{
+	// The connection holds a copy of the list entry, so compare addresses, not pointers.
+	const CServer *current = GetCurrentServer();
+	if (current == nullptr || server->GetPort() != current->GetPort()) {
+		return false;
+	}
+	return server->HasDynIP() ? server->GetDynIP() == current->GetDynIP()
+				  : server->GetIP() == current->GetIP();
+}
+
 void CServerConnect::SetClientID(uint32 newid)
 {
 	clientid = newid;

@@ -399,7 +399,7 @@ msgstr "VAROVÁNÍ: nepodařilo se navázat na síťové rozhraní '%s' - provoz
 msgid "Your locale has been changed to System Default due to a configuration change. Sorry."
 msgstr "Kvůli změně konfigurace bylo jazykové prostředí změněno na výchozí nastavení systému. Je nám líto."
 
-#: src/amule.cpp src/CatDialog.cpp src/ServerList.cpp src/ServerListCtrl.cpp
+#: src/amule.cpp src/CatDialog.cpp src/ServerListCtrl.cpp
 msgid "Info"
 msgstr "Informace"
 
@@ -2360,6 +2360,10 @@ msgstr "Server nebyl přidán"
 #, c-format
 msgid "server not found: %s"
 msgstr "Server nebyl nalezen: %s"
+
+#: src/ExternalConn.cpp
+msgid "You are connected to the server you are trying to delete. please disconnect first."
+msgstr "Jste připojeni k serveru, který se pokoušíte odstranit. Nejprve se odpojte."
 
 #: src/ExternalConn.cpp
 msgid "need to define server to be removed"
@@ -7282,6 +7286,14 @@ msgid "Server.met file corrupt, found invalid versiontag: 0x%x, size %i"
 msgstr "Soubor server.met je poškozený, nalezen neplatný tag verze: 0x%x, velikost %i"
 
 #: src/ServerList.cpp
+msgid "Error: the file 'server.met' is corrupted: "
+msgstr "Chyba: soubor 'server.met' je poškozen: "
+
+#: src/ServerList.cpp
+msgid "IO error while reading 'server.met': "
+msgstr "Chyba I/O při čtení souboru 'server.met': "
+
+#: src/ServerList.cpp
 #, c-format
 msgid "%i server in server.met found"
 msgid_plural "%i servers in server.met found"
@@ -7296,14 +7308,6 @@ msgid_plural "%d servers added"
 msgstr[0] "%d server přidán"
 msgstr[1] "%d servery přidány"
 msgstr[2] "%d serverů přidáno"
-
-#: src/ServerList.cpp
-msgid "Error: the file 'server.met' is corrupted: "
-msgstr "Chyba: soubor 'server.met' je poškozen: "
-
-#: src/ServerList.cpp
-msgid "IO error while reading 'server.met': "
-msgstr "Chyba I/O při čtení souboru 'server.met': "
 
 #: src/ServerList.cpp
 #, c-format
@@ -7324,10 +7328,6 @@ msgstr "Server nebyl přidán: v seznamu již je server se stejnou adresou IP a 
 #, c-format
 msgid "Server added: Server at [%s:%d] using the name '%s'."
 msgstr "Server [%s:%d] byl přidán pod názvem '%s'."
-
-#: src/ServerList.cpp
-msgid "You are connected to the server you are trying to delete. please disconnect first."
-msgstr "Jste připojeni k serveru, který se pokoušíte odstranit. Nejprve se odpojte."
 
 #: src/ServerList.cpp
 #, c-format

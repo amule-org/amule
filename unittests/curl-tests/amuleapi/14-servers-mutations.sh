@@ -38,12 +38,14 @@ TEST_NAME="14-servers-mutations-smoke-tag"
 
 FAIL_COUNT=0
 TEST_COUNT=0
+SKIP_COUNT=0
 
 CURL_BODY_FILE=$(mktemp -t amuleapi_14_servers_mutations_body.XXXXXX)
 trap 'rm -f "$CURL_BODY_FILE"' EXIT
 
 _die()  { echo "FATAL: $*" >&2; exit 2; }
 _pass() { TEST_COUNT=$((TEST_COUNT+1)); echo "  PASS  $1"; }
+_skip() { SKIP_COUNT=$((SKIP_COUNT+1)); echo "  SKIP  $1"; }
 _fail() {
 	TEST_COUNT=$((TEST_COUNT+1)); FAIL_COUNT=$((FAIL_COUNT+1))
 	echo "  FAIL  $1"
@@ -334,6 +336,37 @@ _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 _assert_status 404 "PATCH /servers/{unknown ecid} → 404 (EC no-ops silently, #692)"
 
 # --- 6. DELETE /servers/{ecid} happy path + no-stale invariant. ---
+# Section 5's connect may have reached the test server by now. amuled refuses to delete the
+# server it is connected to, as the desktop GUI does: pin that, then disconnect.
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/status"
+ED2K_STATE=$(printf '%s' "$CURL_BODY" | jq -r '.ed2k.state // empty')
+ED2K_SERVER=$(printf '%s' "$CURL_BODY" | jq -r '.ed2k | "\(.server_ip):\(.server_port)"')
+if [ "$ED2K_STATE" = "connected" ] && [ "$ED2K_SERVER" = "$TEST_ADDRESS" ]; then
+	_curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" "$API/servers/$ECID"
+	_assert_status 400 "DELETE /servers/{ecid} of the connected server → 400"
+	_assert_json_eq '.error.code' amuled_rejected \
+		'deleting the connected server carries error.code=amuled_rejected'
+else
+	_skip "DELETE of the connected server (not connected to $TEST_ADDRESS)"
+fi
+if [ "$ED2K_STATE" = "connecting" ] || [ "$ED2K_SERVER" = "$TEST_ADDRESS" ]; then
+	_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
+		-d '{"network":"ed2k"}' "$API/networks/disconnect"
+	_assert_status 202 "POST /networks/disconnect before DELETE → 202"
+fi
+
+# 5b left the server permanent, so amuled lists it in staticservers.dat, which it reloads on
+# start. DELETE must drop it from there too, or it comes back after a restart. AMULE_CONFIG_DIR
+# is the connected amuled's config dir.
+STATIC_FILE="${AMULE_CONFIG_DIR:-}/staticservers.dat"
+if [ -n "${AMULE_CONFIG_DIR:-}" ]; then
+	if grep -qF "$TEST_ADDRESS," "$STATIC_FILE" 2>/dev/null; then
+		_pass "permanent server is listed in staticservers.dat before DELETE"
+	else
+		_fail "staticservers.dat before DELETE" "$TEST_ADDRESS not listed in $STATIC_FILE"
+	fi
+fi
+
 _curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
 	"$API/servers/$ECID"
 # 204, no body: `ecid` came from the URL and `ok` restated the status code.
@@ -350,6 +383,16 @@ if [ "$STILL_THERE" = "0" ]; then
 else
 	_fail "/servers staleness after DELETE" \
 		"$TEST_NAME still present after DELETE"
+fi
+
+if [ -n "${AMULE_CONFIG_DIR:-}" ]; then
+	if grep -qF "$TEST_ADDRESS," "$STATIC_FILE" 2>/dev/null; then
+		_fail "staticservers.dat after DELETE" "$TEST_ADDRESS still listed in $STATIC_FILE"
+	else
+		_pass "DELETE drops the permanent server from staticservers.dat"
+	fi
+else
+	_skip "staticservers.dat checks (AMULE_CONFIG_DIR unset)"
 fi
 
 # --- 7. DELETE error paths. ----------------------------------------
@@ -400,8 +443,10 @@ _assert_status 400 "PATCH /servers/by-address/not-an-ip:4242 (malformed) → 400
 
 # --- Summary. -----------------------------------------------------
 echo
+SKIP_NOTE=""
+[ "$SKIP_COUNT" -gt 0 ] && SKIP_NOTE=" ($SKIP_COUNT check(s) skipped)"
 if [ "$FAIL_COUNT" -eq 0 ]; then
-	echo "OK: $TEST_COUNT/$TEST_COUNT passed"
+	echo "OK: $TEST_COUNT/$TEST_COUNT passed$SKIP_NOTE"
 	exit 0
 fi
 echo "FAIL: $FAIL_COUNT/$TEST_COUNT failed"

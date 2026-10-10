@@ -390,7 +390,7 @@ msgstr "ÅTVARING: kunne ikkje binde til nettverksgrensesnittet «%s» - trafikk
 msgid "Your locale has been changed to System Default due to a configuration change. Sorry."
 msgstr "Dine lokale innstilingar har vorte endra til opprinnelege systeminnstillingar på grunn av konfigurasjonsending. Beklager."
 
-#: src/amule.cpp src/CatDialog.cpp src/ServerList.cpp src/ServerListCtrl.cpp
+#: src/amule.cpp src/CatDialog.cpp src/ServerListCtrl.cpp
 msgid "Info"
 msgstr "Info"
 
@@ -2360,6 +2360,10 @@ msgstr "Tenar ikkje lagd til"
 #, c-format
 msgid "server not found: %s"
 msgstr "tenar ikkje funnen: %s"
+
+#: src/ExternalConn.cpp
+msgid "You are connected to the server you are trying to delete. please disconnect first."
+msgstr "Du er tilkopla tenaren du freistar å slette. Vér god å kople frå først."
 
 #: src/ExternalConn.cpp
 msgid "need to define server to be removed"
@@ -7293,6 +7297,14 @@ msgid "Server.met file corrupt, found invalid versiontag: 0x%x, size %i"
 msgstr "Server.met fila er korrupt, ugangbar merkelapp på utgåve: 0x%x,·storleik·%i"
 
 #: src/ServerList.cpp
+msgid "Error: the file 'server.met' is corrupted: "
+msgstr "Feil: fila «server.met» er korrupt: "
+
+#: src/ServerList.cpp
+msgid "IO error while reading 'server.met': "
+msgstr "IO-feil ved lesing av «server.met»: "
+
+#: src/ServerList.cpp
 #, c-format
 msgid "%i server in server.met found"
 msgid_plural "%i servers in server.met found"
@@ -7305,14 +7317,6 @@ msgid "%d server added"
 msgid_plural "%d servers added"
 msgstr[0] "%d tenar lagd til"
 msgstr[1] "%d tenarar lagde til"
-
-#: src/ServerList.cpp
-msgid "Error: the file 'server.met' is corrupted: "
-msgstr "Feil: fila «server.met» er korrupt: "
-
-#: src/ServerList.cpp
-msgid "IO error while reading 'server.met': "
-msgstr "IO-feil ved lesing av «server.met»: "
 
 #: src/ServerList.cpp
 #, c-format
@@ -7333,10 +7337,6 @@ msgstr "Tenar ikkje lagd til: Tenar med lik IP:Port [%s:%d] funne i lista."
 #, c-format
 msgid "Server added: Server at [%s:%d] using the name '%s'."
 msgstr "Tenar lagd til: Tenar på [%s:%d] som nyttar namnet '%s'."
-
-#: src/ServerList.cpp
-msgid "You are connected to the server you are trying to delete. please disconnect first."
-msgstr "Du er tilkopla tenaren du freistar å slette. Vér god å kople frå først."
 
 #: src/ServerList.cpp
 #, c-format

@@ -40,8 +40,10 @@
 #include "DownloadQueue.h" // Needed for CDownloadQueue
 #include "ServerConnect.h" // Needed for CServerConnect
 #include "Server.h"        // Needed for CServer and SRV_PR_*
+#include "ServerMet.h"     // Needed for ReadServerMetRecords
 #include "OtherStructs.h"  // Needed for ServerMet_Struct
 #include "CFile.h"         // Needed for CFile
+#include "MemFile.h"       // Needed for CMemFile
 #include "HTTPDownload.h"  // Needed for HTTPThread
 #include "Preferences.h"   // Needed for thePrefs
 #include "amule.h"         // Needed for theApp
@@ -110,9 +112,9 @@ bool CServerList::LoadServerMet(const CPath &path)
 		return false;
 	}
 
+	std::vector<ServerMetRecord> records;
+	bool readAll = false;
 	try {
-		Notify_ServerFreeze();
-
 		uint8_t version = servermet.ReadUInt8();
 
 		if (version != 0xE0 && version != MET_HEADER) {
@@ -120,73 +122,80 @@ bool CServerList::LoadServerMet(const CPath &path)
 				CFormat(_(
 					"Server.met file corrupt, found invalid versiontag: 0x%x, size %i")) %
 				version % sizeof(version));
-			Notify_ServerThaw();
 			return false;
 		}
 
-		uint32 fservercount = servermet.ReadUInt32();
-
-		ServerMet_Struct sbuffer;
-		uint32 iAddCount = 0;
-
-		for (uint32 j = 0; j < fservercount; ++j) {
-			sbuffer.ip = servermet.ReadUInt32();
-			sbuffer.port = servermet.ReadUInt16();
-			sbuffer.tagcount = servermet.ReadUInt32();
-
-			CServer *newserver = new CServer(&sbuffer);
-
-			for (uint32 i = 0; i < sbuffer.tagcount; ++i) {
-				newserver->AddTagFromFile(&servermet);
-			}
-
-			// Server priorities are not in sorted order -- High = 1, Low = 2, Normal =
-			// 0 -- so the check reads less logically than it might.
-			int priority = newserver->GetPreferences();
-			if (priority < SRV_PR_MIN || priority > SRV_PR_MAX) {
-				newserver->SetPreference(SRV_PR_NORMAL);
-			}
-
-			if (newserver->GetListName().IsEmpty()) {
-				newserver->SetListName("Server " + newserver->GetAddress());
-			}
-
-			if (!theApp->AddServer(newserver)) {
-				CServer *update =
-					GetServerByAddress(newserver->GetAddress(), newserver->GetPort());
-				if (update) {
-					update->SetListName(newserver->GetListName());
-					if (!newserver->GetDescription().IsEmpty()) {
-						update->SetDescription(newserver->GetDescription());
-					}
-					Notify_ServerRefresh(update);
-				}
-				delete newserver;
-			} else {
-				++iAddCount;
-			}
+		if (ReadServerMetRecords(servermet, records)) {
+			AddDebugLogLineN(
+				logServer, "server.met has the tag counts older aMule versions wrote");
 		}
-
-		Notify_ServerThaw();
-
-		// cppcheck-suppress duplicateBranch
-		if (!merge) {
-			AddLogLineC(CFormat(wxPLURAL("%i server in server.met found",
-					    "%i servers in server.met found",
-					    fservercount)) %
-				    fservercount);
-		} else {
-			AddLogLineC(CFormat(wxPLURAL("%d server added", "%d servers added", iAddCount)) %
-				    iAddCount);
-		}
+		readAll = true;
 	} catch (const CInvalidPacket &err) {
 		AddLogLineC(_("Error: the file 'server.met' is corrupted: ") + err.what());
-		Notify_ServerThaw();
-		return false;
 	} catch (const CSafeIOException &err) {
 		AddLogLineC(_("IO error while reading 'server.met': ") + err.what());
-		Notify_ServerThaw();
+	}
+
+	// The servers read before an error are still added.
+	Notify_ServerFreeze();
+	uint32 iAddCount = 0;
+	for (const ServerMetRecord &record : records) {
+		ServerMet_Struct sbuffer;
+		sbuffer.ip = record.ip;
+		sbuffer.port = record.port;
+		sbuffer.tagcount = static_cast<uint32>(record.tags.size());
+
+		CServer *newserver = new CServer(&sbuffer);
+
+		for (const CTag &tag : record.tags) {
+			try {
+				newserver->AddTagFromFile(tag);
+			} catch (const CInvalidPacket &err) {
+				// A known tag with a value of the wrong type.
+				AddDebugLogLineN(logServer, "Skipping server.met tag: " + err.what());
+			}
+		}
+
+		// Server priorities are not in sorted order -- High = 1, Low = 2, Normal = 0 -- so the
+		// check reads less logically than it might.
+		const int priority = static_cast<int>(newserver->GetPreferences());
+		if (priority < SRV_PR_MIN || priority > SRV_PR_MAX) {
+			newserver->SetPreference(SRV_PR_NORMAL);
+		}
+
+		if (newserver->GetListName().IsEmpty()) {
+			newserver->SetListName("Server " + newserver->GetAddress());
+		}
+
+		if (!theApp->AddServer(newserver)) {
+			CServer *update = GetServerByAddress(newserver->GetAddress(), newserver->GetPort());
+			if (update) {
+				update->SetListName(newserver->GetListName());
+				if (!newserver->GetDescription().IsEmpty()) {
+					update->SetDescription(newserver->GetDescription());
+				}
+				Notify_ServerRefresh(update);
+			}
+			delete newserver;
+		} else {
+			++iAddCount;
+		}
+	}
+	Notify_ServerThaw();
+
+	if (!readAll) {
 		return false;
+	}
+
+	const uint32 found = static_cast<uint32>(records.size());
+	// cppcheck-suppress duplicateBranch
+	if (!merge) {
+		AddLogLineC(
+			CFormat(wxPLURAL(
+				"%i server in server.met found", "%i servers in server.met found", found)) %
+			found);
+	} else {
+		AddLogLineC(CFormat(wxPLURAL("%d server added", "%d servers added", iAddCount)) % iAddCount);
 	}
 
 	return true;
@@ -356,36 +365,42 @@ void CServerList::ServerStats()
 	}
 }
 
-void CServerList::RemoveServer(CServer *in_server)
+bool CServerList::RemoveServer(CServer *in_server, bool fromUser)
 {
-	if (in_server == theApp->serverconnect->GetCurrentServer()) {
-		theApp->ShowAlert(_("You are connected to the server you are trying to delete. please "
-				    "disconnect first."),
-			_("Info"),
-			wxOK);
-	} else {
-		CInternalList::iterator it = std::find(m_servers.begin(), m_servers.end(), in_server);
-		if (it != m_servers.end()) {
-			if (theApp->downloadqueue->GetUDPServer() == in_server) {
-				theApp->downloadqueue->SetUDPServer(0);
-			}
-
-			NotifyObservers(EventType(EventType::REMOVED, in_server));
-
-			if (m_serverpos == it) {
-				++m_serverpos;
-			}
-			if (m_statserverpos == it) {
-				++m_statserverpos;
-			}
-			m_servers.erase(it);
-			theStats::DeleteServer();
-
-			Notify_ServerRemove(in_server);
-			theApp->ForgetECObject(in_server->ECID());
-			delete in_server;
-		}
+	// Only a removal the user asked for is refused, as the server list in the GUI does.
+	if (fromUser && theApp->serverconnect->IsCurrentServer(in_server)) {
+		return false;
 	}
+
+	CInternalList::iterator it = std::find(m_servers.begin(), m_servers.end(), in_server);
+	if (it == m_servers.end()) {
+		return false;
+	}
+
+	if (theApp->downloadqueue->GetUDPServer() == in_server) {
+		theApp->downloadqueue->SetUDPServer(nullptr);
+	}
+
+	NotifyObservers(EventType(EventType::REMOVED, in_server));
+
+	if (m_serverpos == it) {
+		++m_serverpos;
+	}
+	if (m_statserverpos == it) {
+		++m_statserverpos;
+	}
+	m_servers.erase(it);
+	theStats::DeleteServer();
+
+	// Rewritten without it, or a static server comes back on the next start.
+	if (fromUser && in_server->IsStaticMember()) {
+		SaveStaticServers();
+	}
+
+	Notify_ServerRemove(in_server);
+	theApp->ForgetECObject(in_server->ECID());
+	delete in_server;
+	return true;
 }
 
 void CServerList::RemoveAllServers()
@@ -688,122 +703,75 @@ bool CServerList::SaveServerMet()
 		servermet.WriteUInt8(0xE0);
 		servermet.WriteUInt32(m_servers.size());
 
-		for (CInternalList::const_iterator it = m_servers.begin(); it != m_servers.end(); ++it) {
-			const CServer *const server = *it;
+		for (const CServer *server : m_servers) {
+			// Counted as written: a count kept apart from the writes was one too high for a
+			// server without a version.
+			CMemFile tags;
+			uint32 tagcount = 0;
+			auto write = [&tags, &tagcount](const CTag &tag, EUtf8Str encoding = utf8strNone) {
+				tag.WriteTagToFile(&tags, encoding);
+				++tagcount;
+			};
 
-			uint16 tagcount = 12;
 			if (!server->GetListName().IsEmpty()) {
-				++tagcount;
+				// This is BOM to keep eMule compatibility
+				write(CTagString(ST_SERVERNAME, server->GetListName()), utf8strOptBOM);
+				write(CTagString(ST_SERVERNAME, server->GetListName()));
 			}
+
 			if (!server->GetDynIP().IsEmpty()) {
-				++tagcount;
+				// This is BOM to keep eMule compatibility
+				write(CTagString(ST_DYNIP, server->GetDynIP()), utf8strOptBOM);
+				write(CTagString(ST_DYNIP, server->GetDynIP()));
 			}
+
 			if (!server->GetDescription().IsEmpty()) {
-				++tagcount;
+				// This is BOM to keep eMule compatibility
+				write(CTagString(ST_DESCRIPTION, server->GetDescription()), utf8strOptBOM);
+				write(CTagString(ST_DESCRIPTION, server->GetDescription()));
 			}
+
 			if (server->GetConnPort() != server->GetPort()) {
-				++tagcount;
+				write(CTagString(ST_AUXPORTSLIST, server->GetAuxPortsList()));
 			}
 
-			// For unicoded name, description, and dynip
-			if (!server->GetListName().IsEmpty()) {
-				++tagcount;
-			}
-			if (!server->GetDynIP().IsEmpty()) {
-				++tagcount;
-			}
-			if (!server->GetDescription().IsEmpty()) {
-				++tagcount;
-			}
+			write(CTagInt32(ST_FAIL, server->GetFailedCount()));
+			write(CTagInt32(ST_PREFERENCE, server->GetPreferences()));
+			write(CTagInt32("users", server->GetUsers()));
+			write(CTagInt32("files", server->GetFiles()));
+			write(CTagInt32(ST_PING, server->GetPing()));
+			// CTagInt32 will actually save an uint32 - safe until Y2106
+			write(CTagInt32(ST_LASTPING, (uint32)server->GetLastPingedTime()));
+			write(CTagInt32(ST_MAXUSERS, server->GetMaxUsers()));
+			write(CTagInt32(ST_SOFTFILES, server->GetSoftFiles()));
+			write(CTagInt32(ST_HARDFILES, server->GetHardFiles()));
 			if (!server->GetVersion().IsEmpty()) {
-				++tagcount;
+				write(CTagString(ST_VERSION, server->GetVersion()), utf8strOptBOM);
+				write(CTagString(ST_VERSION, server->GetVersion()));
 			}
+			write(CTagInt32(ST_UDPFLAGS, server->GetUDPFlags()));
+			write(CTagInt32(ST_LOWIDUSERS, server->GetLowIDUsers()));
 
 			if (server->GetServerKeyUDP(true)) {
-				++tagcount;
+				write(CTagInt32(ST_UDPKEY, server->GetServerKeyUDP(true)));
 			}
 
 			if (server->GetServerKeyUDPIP()) {
-				++tagcount;
+				write(CTagInt32(ST_UDPKEYIP, server->GetServerKeyUDPIP()));
 			}
 
 			if (server->GetObfuscationPortTCP()) {
-				++tagcount;
+				write(CTagInt16(ST_TCPPORTOBFUSCATION, server->GetObfuscationPortTCP()));
 			}
 
 			if (server->GetObfuscationPortUDP()) {
-				++tagcount;
+				write(CTagInt16(ST_UDPPORTOBFUSCATION, server->GetObfuscationPortUDP()));
 			}
 
 			servermet.WriteUInt32(server->GetIP());
 			servermet.WriteUInt16(server->GetPort());
 			servermet.WriteUInt32(tagcount);
-
-			if (!server->GetListName().IsEmpty()) {
-				// This is BOM to keep eMule compatibility
-				CTagString(ST_SERVERNAME, server->GetListName())
-					.WriteTagToFile(&servermet, utf8strOptBOM);
-				CTagString(ST_SERVERNAME, server->GetListName()).WriteTagToFile(&servermet);
-			}
-
-			if (!server->GetDynIP().IsEmpty()) {
-				// This is BOM to keep eMule compatibility
-				CTagString(ST_DYNIP, server->GetDynIP())
-					.WriteTagToFile(&servermet, utf8strOptBOM);
-				CTagString(ST_DYNIP, server->GetDynIP()).WriteTagToFile(&servermet);
-			}
-
-			if (!server->GetDescription().IsEmpty()) {
-				// This is BOM to keep eMule compatibility
-				CTagString(ST_DESCRIPTION, server->GetDescription())
-					.WriteTagToFile(&servermet, utf8strOptBOM);
-				CTagString(ST_DESCRIPTION, server->GetDescription())
-					.WriteTagToFile(&servermet);
-			}
-
-			if (server->GetConnPort() != server->GetPort()) {
-				CTagString(ST_AUXPORTSLIST, server->GetAuxPortsList())
-					.WriteTagToFile(&servermet);
-			}
-
-			CTagInt32(ST_FAIL, server->GetFailedCount()).WriteTagToFile(&servermet);
-			CTagInt32(ST_PREFERENCE, server->GetPreferences()).WriteTagToFile(&servermet);
-			CTagInt32("users", server->GetUsers()).WriteTagToFile(&servermet);
-			CTagInt32("files", server->GetFiles()).WriteTagToFile(&servermet);
-			CTagInt32(ST_PING, server->GetPing()).WriteTagToFile(&servermet);
-			// CTagInt32 will actually save an uint32 - safe until Y2106
-			CTagInt32(ST_LASTPING, (uint32)server->GetLastPingedTime())
-				.WriteTagToFile(&servermet);
-			CTagInt32(ST_MAXUSERS, server->GetMaxUsers()).WriteTagToFile(&servermet);
-			CTagInt32(ST_SOFTFILES, server->GetSoftFiles()).WriteTagToFile(&servermet);
-			CTagInt32(ST_HARDFILES, server->GetHardFiles()).WriteTagToFile(&servermet);
-			if (!server->GetVersion().IsEmpty()) {
-				CTagString(ST_VERSION, server->GetVersion())
-					.WriteTagToFile(&servermet, utf8strOptBOM);
-				CTagString(ST_VERSION, server->GetVersion()).WriteTagToFile(&servermet);
-			}
-			CTagInt32(ST_UDPFLAGS, server->GetUDPFlags()).WriteTagToFile(&servermet);
-			CTagInt32(ST_LOWIDUSERS, server->GetLowIDUsers()).WriteTagToFile(&servermet);
-
-			if (server->GetServerKeyUDP(true)) {
-				CTagInt32(ST_UDPKEY, server->GetServerKeyUDP(true))
-					.WriteTagToFile(&servermet);
-			}
-
-			if (server->GetServerKeyUDPIP()) {
-				CTagInt32(ST_UDPKEYIP, server->GetServerKeyUDPIP())
-					.WriteTagToFile(&servermet);
-			}
-
-			if (server->GetObfuscationPortTCP()) {
-				CTagInt16(ST_TCPPORTOBFUSCATION, server->GetObfuscationPortTCP())
-					.WriteTagToFile(&servermet);
-			}
-
-			if (server->GetObfuscationPortUDP()) {
-				CTagInt16(ST_UDPPORTOBFUSCATION, server->GetObfuscationPortUDP())
-					.WriteTagToFile(&servermet);
-			}
+			servermet.Write(tags.GetRawBuffer(), static_cast<size_t>(tags.GetLength()));
 		}
 		// Now server.met.new is ready to be closed and renamed to server.met.
 		// But first rename existing server.met to server.met.bak (replacing old .bak file).
@@ -993,7 +961,7 @@ void CServerList::FilterServers()
 		}
 
 		if (theApp->ipfilter->IsFiltered(server->GetIP(), true)) {
-			if (server == theApp->serverconnect->GetCurrentServer()) {
+			if (theApp->serverconnect->IsCurrentServer(server)) {
 				AddLogLineC(_("Local server is filtered by the IPFilters, reconnecting to a "
 					      "different server!"));
 				theApp->serverconnect->Disconnect();

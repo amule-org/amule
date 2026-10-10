@@ -33,8 +33,6 @@
 #include <protocol/ed2k/Client2Server/TCP.h>
 #include <protocol/ed2k/Client2Server/UDP.h>
 
-class CFileDataIO;
-
 // Server priority
 #define SRV_PR_LOW 2
 #define SRV_PR_NORMAL 0
@@ -84,7 +82,7 @@ public:
 	// the connection port
 	uint16 GetConnPort() const { return port; }
 	void SetPort(uint32 val) { realport = val; }
-	bool AddTagFromFile(CFileDataIO *servermet);
+	void AddTagFromFile(const CTag &tag);
 	void SetListName(const wxString &newname);
 	void SetDescription(const wxString &newdescription);
 	uint32 GetIP() const { return ip; }

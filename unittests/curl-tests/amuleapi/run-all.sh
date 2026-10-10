@@ -197,12 +197,14 @@ run_phase() {
 	# a shared-file fixture (17-shared-priority-patch): it points at a
 	# directory the connected amuled shares (its Incoming, typically),
 	# so the smoke doesn't depend on the operator's library already
-	# holding a shared file. Unset is fine unless a phase needs it.
+	# holding a shared file. AMULE_CONFIG_DIR is that amuled's config dir, for phases that check
+	# what it saved (14-servers-mutations). Unset is fine unless a phase needs it.
 	AMULEAPI_BIN="$BIN" \
 	EC_HOST="$EC_HOST" EC_PORT="$EC_PORT" EC_PASSWORD="$EC_PASSWORD" \
 	AMULEAPI_CONFIG_DIR=/tmp/amuleapi-regtest \
 	AMULEAPI_LOG=/tmp/amuleapi.log \
 	AMULE_SHARED_DIR="${AMULE_SHARED_DIR:-}" \
+	AMULE_CONFIG_DIR="${AMULE_CONFIG_DIR:-}" \
 	bash "$SCRIPT_DIR/$script"
 	local rc=$?
 	echo "$script exit=$rc"

@@ -389,7 +389,7 @@ msgstr "FIGYELMEZTETÉS: nem sikerült kötni a(z) '%s' hálózati interfészhez
 msgid "Your locale has been changed to System Default due to a configuration change. Sorry."
 msgstr "Nyelvi beállításaid egy konfigurációs változás miatt az alapértelmezettre lettek átállítva. Bocs."
 
-#: src/amule.cpp src/CatDialog.cpp src/ServerList.cpp src/ServerListCtrl.cpp
+#: src/amule.cpp src/CatDialog.cpp src/ServerListCtrl.cpp
 msgid "Info"
 msgstr "Infó"
 
@@ -2344,6 +2344,10 @@ msgstr "Kiszolgáló nem lett hozzáadva"
 #, c-format
 msgid "server not found: %s"
 msgstr "kiszolgáló nem található: %s"
+
+#: src/ExternalConn.cpp
+msgid "You are connected to the server you are trying to delete. please disconnect first."
+msgstr "Olyan kiszolgálót próbál törölni, amelyikhez csatlakozva van. Kérém először válassza le."
 
 #: src/ExternalConn.cpp
 msgid "need to define server to be removed"
@@ -7254,6 +7258,14 @@ msgid "Server.met file corrupt, found invalid versiontag: 0x%x, size %i"
 msgstr "A server.met fájl sérült, érvénytelen verzió-tag: 0x%x, mérete %i"
 
 #: src/ServerList.cpp
+msgid "Error: the file 'server.met' is corrupted: "
+msgstr "Hiba: a 'server.met' fájl sérült: "
+
+#: src/ServerList.cpp
+msgid "IO error while reading 'server.met': "
+msgstr "IO hiba a 'server.met' fájl olvasása közben: "
+
+#: src/ServerList.cpp
 #, c-format
 msgid "%i server in server.met found"
 msgid_plural "%i servers in server.met found"
@@ -7264,14 +7276,6 @@ msgstr[0] "%i kiszolgálót találtam a server.met fájlban"
 msgid "%d server added"
 msgid_plural "%d servers added"
 msgstr[0] "%d kiszolgáló hozzáadva"
-
-#: src/ServerList.cpp
-msgid "Error: the file 'server.met' is corrupted: "
-msgstr "Hiba: a 'server.met' fájl sérült: "
-
-#: src/ServerList.cpp
-msgid "IO error while reading 'server.met': "
-msgstr "IO hiba a 'server.met' fájl olvasása közben: "
 
 #: src/ServerList.cpp
 #, c-format
@@ -7292,10 +7296,6 @@ msgstr "Kiszolgáló nem lett hozzáadva: Ezzel az IP:Port-tal [%s:%d] már van 
 #, c-format
 msgid "Server added: Server at [%s:%d] using the name '%s'."
 msgstr "Kiszolgáló hozzáadva: Kiszolgáló [%s:%d] '%s' néven."
-
-#: src/ServerList.cpp
-msgid "You are connected to the server you are trying to delete. please disconnect first."
-msgstr "Olyan kiszolgálót próbál törölni, amelyikhez csatlakozva van. Kérém először válassza le."
 
 #: src/ServerList.cpp
 #, c-format

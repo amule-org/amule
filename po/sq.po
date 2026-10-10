@@ -389,7 +389,7 @@ msgstr "PARALAJMËRIM: nuk u lidh dot me ndërfaqen e rrjetit '%s' - trafiku mun
 msgid "Your locale has been changed to System Default due to a configuration change. Sorry."
 msgstr "Vendndodhja juaj eshte ndryshuar tek System Default i pershtatur per nje nderrim konfigurimi. Me vjen keq."
 
-#: src/amule.cpp src/CatDialog.cpp src/ServerList.cpp src/ServerListCtrl.cpp
+#: src/amule.cpp src/CatDialog.cpp src/ServerListCtrl.cpp
 msgid "Info"
 msgstr "Informacion"
 
@@ -2356,6 +2356,10 @@ msgstr "Serveri nuk u shtua"
 #, c-format
 msgid "server not found: %s"
 msgstr "Serveri nuk u gjend: %s"
+
+#: src/ExternalConn.cpp
+msgid "You are connected to the server you are trying to delete. please disconnect first."
+msgstr "Ju jeni i lidhur tek serveri qe deshironi te fshini. ju lutem ne fillim shkeputuni prej tij."
 
 #: src/ExternalConn.cpp
 msgid "need to define server to be removed"
@@ -7287,6 +7291,14 @@ msgid "Server.met file corrupt, found invalid versiontag: 0x%x, size %i"
 msgstr "Faili i server.met nuk eshte i vlefshem, u gjet nje TAG i versionit i pavlere: 0x%x, madhesia %i"
 
 #: src/ServerList.cpp
+msgid "Error: the file 'server.met' is corrupted: "
+msgstr "Gabim: skedari 'server.met' është i dëmtuar: "
+
+#: src/ServerList.cpp
+msgid "IO error while reading 'server.met': "
+msgstr "Gabim IO gjatë leximit të 'server.met': "
+
+#: src/ServerList.cpp
 #, c-format
 msgid "%i server in server.met found"
 msgid_plural "%i servers in server.met found"
@@ -7299,14 +7311,6 @@ msgid "%d server added"
 msgid_plural "%d servers added"
 msgstr[0] "%d serveri i shtua"
 msgstr[1] "%d serverat u shtuan"
-
-#: src/ServerList.cpp
-msgid "Error: the file 'server.met' is corrupted: "
-msgstr "Gabim: skedari 'server.met' është i dëmtuar: "
-
-#: src/ServerList.cpp
-msgid "IO error while reading 'server.met': "
-msgstr "Gabim IO gjatë leximit të 'server.met': "
 
 #: src/ServerList.cpp
 #, c-format
@@ -7327,10 +7331,6 @@ msgstr "Serveri nuk u shtua: Servera me Ip qe mungon:Porta [%s:%d] u gjet ne lis
 #, c-format
 msgid "Server added: Server at [%s:%d] using the name '%s'."
 msgstr "Serveri u shtua: Server tek é%s.%d* duke perdorur emrin '%s'."
-
-#: src/ServerList.cpp
-msgid "You are connected to the server you are trying to delete. please disconnect first."
-msgstr "Ju jeni i lidhur tek serveri qe deshironi te fshini. ju lutem ne fillim shkeputuni prej tij."
 
 #: src/ServerList.cpp
 #, c-format

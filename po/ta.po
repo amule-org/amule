@@ -371,7 +371,7 @@ msgstr ""
 msgid "Your locale has been changed to System Default due to a configuration change. Sorry."
 msgstr ""
 
-#: src/amule.cpp src/CatDialog.cpp src/ServerList.cpp src/ServerListCtrl.cpp
+#: src/amule.cpp src/CatDialog.cpp src/ServerListCtrl.cpp
 msgid "Info"
 msgstr ""
 
@@ -2292,6 +2292,10 @@ msgstr ""
 #: src/ExternalConn.cpp
 #, c-format
 msgid "server not found: %s"
+msgstr ""
+
+#: src/ExternalConn.cpp
+msgid "You are connected to the server you are trying to delete. please disconnect first."
 msgstr ""
 
 #: src/ExternalConn.cpp
@@ -7088,6 +7092,14 @@ msgid "Server.met file corrupt, found invalid versiontag: 0x%x, size %i"
 msgstr ""
 
 #: src/ServerList.cpp
+msgid "Error: the file 'server.met' is corrupted: "
+msgstr ""
+
+#: src/ServerList.cpp
+msgid "IO error while reading 'server.met': "
+msgstr ""
+
+#: src/ServerList.cpp
 #, c-format
 msgid "%i server in server.met found"
 msgid_plural "%i servers in server.met found"
@@ -7100,14 +7112,6 @@ msgid "%d server added"
 msgid_plural "%d servers added"
 msgstr[0] ""
 msgstr[1] ""
-
-#: src/ServerList.cpp
-msgid "Error: the file 'server.met' is corrupted: "
-msgstr ""
-
-#: src/ServerList.cpp
-msgid "IO error while reading 'server.met': "
-msgstr ""
 
 #: src/ServerList.cpp
 #, c-format
@@ -7128,10 +7132,6 @@ msgstr ""
 #, c-format
 msgid "Server added: Server at [%s:%d] using the name '%s'."
 msgstr "சேவையகம் சேர்க்கப்பட்டது: [%s:%d] இல் உள்ள சேவையகம் '%s' என்ற பெயரைப் பயன்படுத்தி."
-
-#: src/ServerList.cpp
-msgid "You are connected to the server you are trying to delete. please disconnect first."
-msgstr ""
 
 #: src/ServerList.cpp
 #, c-format

@@ -85,6 +85,8 @@ public:
 	bool IsConnected() { return connected; }
 	uint32 GetClientID() { return clientid; }
 	CServer *GetCurrentServer();
+	// Whether server, a server-list entry, is the one we are connected to.
+	bool IsCurrentServer(const CServer *server);
 	// The server being connected to while exactly one attempt is running, else nullptr: a
 	// multi-server connect tries several at once.
 	CServer *GetConnectingServer() const;

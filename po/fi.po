@@ -392,7 +392,7 @@ msgstr "VAROITUS: verkkoliitäntään '%s' ei voitu sitoa - liikenne saattaa kul
 msgid "Your locale has been changed to System Default due to a configuration change. Sorry."
 msgstr "Maa-asetuksesi vaihdettiin järjestelmän oletuksiksi asetusmuutoksen takia. Pahoittelen."
 
-#: src/amule.cpp src/CatDialog.cpp src/ServerList.cpp src/ServerListCtrl.cpp
+#: src/amule.cpp src/CatDialog.cpp src/ServerListCtrl.cpp
 msgid "Info"
 msgstr "Info"
 
@@ -2360,6 +2360,10 @@ msgstr "Palvelinta ei lisätty"
 #, c-format
 msgid "server not found: %s"
 msgstr "palvelinta ei löytynyt: %s"
+
+#: src/ExternalConn.cpp
+msgid "You are connected to the server you are trying to delete. please disconnect first."
+msgstr "Olet yhdistettynä palvelimeen jota yrität poistaa, katkaise yhteys ensin."
 
 #: src/ExternalConn.cpp
 msgid "need to define server to be removed"
@@ -7293,6 +7297,14 @@ msgid "Server.met file corrupt, found invalid versiontag: 0x%x, size %i"
 msgstr "Server.met on turmeltunut, virheellinen versiotunniste: 0x%x, koko %i"
 
 #: src/ServerList.cpp
+msgid "Error: the file 'server.met' is corrupted: "
+msgstr "Virhe: tiedosto 'server.met' on turmeltunut: "
+
+#: src/ServerList.cpp
+msgid "IO error while reading 'server.met': "
+msgstr "IO-virhe luettaessa tiedostoa 'server.met': "
+
+#: src/ServerList.cpp
 #, c-format
 msgid "%i server in server.met found"
 msgid_plural "%i servers in server.met found"
@@ -7305,14 +7317,6 @@ msgid "%d server added"
 msgid_plural "%d servers added"
 msgstr[0] "%d palvelin lisätty"
 msgstr[1] "%d palvelinta lisätty"
-
-#: src/ServerList.cpp
-msgid "Error: the file 'server.met' is corrupted: "
-msgstr "Virhe: tiedosto 'server.met' on turmeltunut: "
-
-#: src/ServerList.cpp
-msgid "IO error while reading 'server.met': "
-msgstr "IO-virhe luettaessa tiedostoa 'server.met': "
 
 #: src/ServerList.cpp
 #, c-format
@@ -7333,10 +7337,6 @@ msgstr "Palvelinta ei lisätty: IP:porttia [%s:%d] vastaava palvelin on jo lista
 #, c-format
 msgid "Server added: Server at [%s:%d] using the name '%s'."
 msgstr "Palvelin lisätty: Palvelin [%s:%d] on nimeltään '%s'."
-
-#: src/ServerList.cpp
-msgid "You are connected to the server you are trying to delete. please disconnect first."
-msgstr "Olet yhdistettynä palvelimeen jota yrität poistaa, katkaise yhteys ensin."
 
 #: src/ServerList.cpp
 #, c-format

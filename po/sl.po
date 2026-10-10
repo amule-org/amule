@@ -394,7 +394,7 @@ msgstr "OPOZORILO: vezava na omrežni vmesnik »%s« ni uspela - promet lahko za
 msgid "Your locale has been changed to System Default due to a configuration change. Sorry."
 msgstr "Vaše področne nastavitve so bile spremenjene na sistemsko privzete zaradi spremembe v nastavitvah. Oprostite."
 
-#: src/amule.cpp src/CatDialog.cpp src/ServerList.cpp src/ServerListCtrl.cpp
+#: src/amule.cpp src/CatDialog.cpp src/ServerListCtrl.cpp
 msgid "Info"
 msgstr "Podatki"
 
@@ -2386,6 +2386,10 @@ msgstr "Strežnik ni bil dodan"
 #, c-format
 msgid "server not found: %s"
 msgstr "strežnika ni mogoče najti: %s"
+
+#: src/ExternalConn.cpp
+msgid "You are connected to the server you are trying to delete. please disconnect first."
+msgstr "Povezani ste na strežnik, ki ga poskušate izbrisati. Prosimo, najprej prekinite povezavo."
 
 #: src/ExternalConn.cpp
 msgid "need to define server to be removed"
@@ -7363,6 +7367,14 @@ msgid "Server.met file corrupt, found invalid versiontag: 0x%x, size %i"
 msgstr "Datoteka server.met je pokvarjena, napačna oznaka različice: 0x%x, velikost %i"
 
 #: src/ServerList.cpp
+msgid "Error: the file 'server.met' is corrupted: "
+msgstr "Napaka: datoteka »server.met« je pokvarjena: "
+
+#: src/ServerList.cpp
+msgid "IO error while reading 'server.met': "
+msgstr "Vhodno/izhodna napaka med branjem »server.met«: "
+
+#: src/ServerList.cpp
 #, c-format
 msgid "%i server in server.met found"
 msgid_plural "%i servers in server.met found"
@@ -7379,14 +7391,6 @@ msgstr[0] "%d strežnikov dodanih"
 msgstr[1] "%d strežnik dodan"
 msgstr[2] "%d strežnika dodana"
 msgstr[3] "%d strežniki dodani"
-
-#: src/ServerList.cpp
-msgid "Error: the file 'server.met' is corrupted: "
-msgstr "Napaka: datoteka »server.met« je pokvarjena: "
-
-#: src/ServerList.cpp
-msgid "IO error while reading 'server.met': "
-msgstr "Vhodno/izhodna napaka med branjem »server.met«: "
 
 #: src/ServerList.cpp
 #, c-format
@@ -7407,10 +7411,6 @@ msgstr "Strežnik ni bil dodan: Strežnik z IP:vrata [%s:%d] že obstaja na sezn
 #, c-format
 msgid "Server added: Server at [%s:%d] using the name '%s'."
 msgstr "Strežnik dodan: Strežnik na [%s:%d], z imenom »%s«."
-
-#: src/ServerList.cpp
-msgid "You are connected to the server you are trying to delete. please disconnect first."
-msgstr "Povezani ste na strežnik, ki ga poskušate izbrisati. Prosimo, najprej prekinite povezavo."
 
 #: src/ServerList.cpp
 #, c-format

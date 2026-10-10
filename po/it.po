@@ -422,7 +422,7 @@ msgstr "ATTENZIONE: impossibile associare all'interfaccia di rete '%s' - il traf
 msgid "Your locale has been changed to System Default due to a configuration change. Sorry."
 msgstr "Le tue impostazioni di localizzazione sono state impostate a quelle predefinite dal sistema in conseguenza del cambio di configurazione. Spiacente."
 
-#: src/amule.cpp src/CatDialog.cpp src/ServerList.cpp src/ServerListCtrl.cpp
+#: src/amule.cpp src/CatDialog.cpp src/ServerListCtrl.cpp
 msgid "Info"
 msgstr "Info"
 
@@ -2374,6 +2374,10 @@ msgstr "Server non aggiunto"
 #, c-format
 msgid "server not found: %s"
 msgstr "server non trovato: %s"
+
+#: src/ExternalConn.cpp
+msgid "You are connected to the server you are trying to delete. please disconnect first."
+msgstr "Sei connesso al server che vuoi eliminare. Disconnettiti prima."
 
 #: src/ExternalConn.cpp
 msgid "need to define server to be removed"
@@ -7277,6 +7281,14 @@ msgid "Server.met file corrupt, found invalid versiontag: 0x%x, size %i"
 msgstr "Server.met corrotto, trovato tag di versione non valido: 0x%x, dimensione %i"
 
 #: src/ServerList.cpp
+msgid "Error: the file 'server.met' is corrupted: "
+msgstr "Errore: il file 'server.met' è corrotto: "
+
+#: src/ServerList.cpp
+msgid "IO error while reading 'server.met': "
+msgstr "Errore I/O durante la lettura del file 'server.met': "
+
+#: src/ServerList.cpp
 #, c-format
 msgid "%i server in server.met found"
 msgid_plural "%i servers in server.met found"
@@ -7289,14 +7301,6 @@ msgid "%d server added"
 msgid_plural "%d servers added"
 msgstr[0] "%d server aggiunto"
 msgstr[1] "%d server aggiunti"
-
-#: src/ServerList.cpp
-msgid "Error: the file 'server.met' is corrupted: "
-msgstr "Errore: il file 'server.met' è corrotto: "
-
-#: src/ServerList.cpp
-msgid "IO error while reading 'server.met': "
-msgstr "Errore I/O durante la lettura del file 'server.met': "
 
 #: src/ServerList.cpp
 #, c-format
@@ -7317,10 +7321,6 @@ msgstr "Server non aggiunto: server con corrispondente IP:Porta [%s:%d] trovato 
 #, c-format
 msgid "Server added: Server at [%s:%d] using the name '%s'."
 msgstr "Server aggiunto: server [%s:%d] con il nome '%s'."
-
-#: src/ServerList.cpp
-msgid "You are connected to the server you are trying to delete. please disconnect first."
-msgstr "Sei connesso al server che vuoi eliminare. Disconnettiti prima."
 
 #: src/ServerList.cpp
 #, c-format

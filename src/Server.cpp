@@ -27,6 +27,7 @@
 
 #include <tags/ServerTags.h>
 
+#include "Logger.h"           // Needed for AddDebugLogLineN
 #include "NetworkFunctions.h" // Needed for StringIPtoUint32
 #include "OtherStructs.h"     // Needed for ServerMet_Struct
 #include "amule.h"
@@ -152,14 +153,9 @@ void CServer::Init()
 	m_nObfuscationPortUDP = 0;
 }
 
-bool CServer::AddTagFromFile(CFileDataIO *servermet)
+void CServer::AddTagFromFile(const CTag &tag)
 {
 	uint64_t val;
-	if (servermet == NULL) {
-		return false;
-	}
-
-	CTag tag(*servermet, true);
 
 	switch (tag.GetNameID()) {
 	case ST_SERVERNAME:
@@ -219,8 +215,6 @@ bool CServer::AddTagFromFile(CFileDataIO *servermet)
 			}
 		} else if (tag.IsInt()) {
 			m_strVersion = CFormat("%u.%u") % (tag.GetInt() >> 16) % (tag.GetInt() & 0xFFFF);
-		} else {
-			wxFAIL;
 		}
 		break;
 
@@ -259,18 +253,15 @@ bool CServer::AddTagFromFile(CFileDataIO *servermet)
 		break;
 
 	default:
-		if (!tag.GetName().IsEmpty()) {
-			if (tag.GetName() == "files") {
-				files = tag.GetInt();
-			} else if (tag.GetName() == "users") {
-				users = tag.GetInt();
-			}
+		if (tag.GetName() == "files") {
+			files = tag.GetInt();
+		} else if (tag.GetName() == "users") {
+			users = tag.GetInt();
 		} else {
-			wxFAIL;
+			// server.met also comes from URLs: skip unknown tags, as eMule does.
+			AddDebugLogLineN(logServer, "Skipping unknown server.met tag: " + tag.GetFullInfo());
 		}
 	}
-
-	return true;
 }
 
 void CServer::SetListName(const wxString &newname)

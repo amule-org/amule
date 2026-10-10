@@ -416,7 +416,7 @@ msgstr "警告：无法绑定到网络接口“%s” − 流量可能经默认�
 msgid "Your locale has been changed to System Default due to a configuration change. Sorry."
 msgstr "对不起，由于配置变动，您的地区设置已经变为系统默认值。"
 
-#: src/amule.cpp src/CatDialog.cpp src/ServerList.cpp src/ServerListCtrl.cpp
+#: src/amule.cpp src/CatDialog.cpp src/ServerListCtrl.cpp
 msgid "Info"
 msgstr "信息"
 
@@ -2364,6 +2364,10 @@ msgstr "服务器没有被添加"
 #, c-format
 msgid "server not found: %s"
 msgstr "找不到服务器：%s"
+
+#: src/ExternalConn.cpp
+msgid "You are connected to the server you are trying to delete. please disconnect first."
+msgstr "您在连接您已决定删除的服务器，请断开连接。"
 
 #: src/ExternalConn.cpp
 msgid "need to define server to be removed"
@@ -7266,6 +7270,14 @@ msgid "Server.met file corrupt, found invalid versiontag: 0x%x, size %i"
 msgstr "Server.met 文件损坏，发现错误的版本标记：0x%x，大小 %i"
 
 #: src/ServerList.cpp
+msgid "Error: the file 'server.met' is corrupted: "
+msgstr "错误: 文件 'server.met' 已经损坏: "
+
+#: src/ServerList.cpp
+msgid "IO error while reading 'server.met': "
+msgstr "读取“server.met”时发生 IO 错误: "
+
+#: src/ServerList.cpp
 #, c-format
 msgid "%i server in server.met found"
 msgid_plural "%i servers in server.met found"
@@ -7278,14 +7290,6 @@ msgid "%d server added"
 msgid_plural "%d servers added"
 msgstr[0] "新增%d个服务器"
 msgstr[1] "新增%d个服务器"
-
-#: src/ServerList.cpp
-msgid "Error: the file 'server.met' is corrupted: "
-msgstr "错误: 文件 'server.met' 已经损坏: "
-
-#: src/ServerList.cpp
-msgid "IO error while reading 'server.met': "
-msgstr "读取“server.met”时发生 IO 错误: "
 
 #: src/ServerList.cpp
 #, c-format
@@ -7306,10 +7310,6 @@ msgstr "没有添加服务器： 服务器列表中已有[%s:%d]"
 #, c-format
 msgid "Server added: Server at [%s:%d] using the name '%s'."
 msgstr "成功添加服务器：[%s:%d] 服务器名为 '%s'。"
-
-#: src/ServerList.cpp
-msgid "You are connected to the server you are trying to delete. please disconnect first."
-msgstr "您在连接您已决定删除的服务器，请断开连接。"
 
 #: src/ServerList.cpp
 #, c-format

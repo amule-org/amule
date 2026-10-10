@@ -395,7 +395,7 @@ msgstr "警告：無法繫結至網路介面「%s」 - 流量可能會透過預�
 msgid "Your locale has been changed to System Default due to a configuration change. Sorry."
 msgstr "對不起，由於版本變更，您的地區設定已經被變更爲系統預設值。"
 
-#: src/amule.cpp src/CatDialog.cpp src/ServerList.cpp src/ServerListCtrl.cpp
+#: src/amule.cpp src/CatDialog.cpp src/ServerListCtrl.cpp
 msgid "Info"
 msgstr "資訊"
 
@@ -2353,6 +2353,10 @@ msgstr "伺服器未被加入"
 #, c-format
 msgid "server not found: %s"
 msgstr "找不到伺服器：%s "
+
+#: src/ExternalConn.cpp
+msgid "You are connected to the server you are trying to delete. please disconnect first."
+msgstr "現在正連線到要刪除的伺服器。請先中斷連線。"
 
 #: src/ExternalConn.cpp
 msgid "need to define server to be removed"
@@ -7264,6 +7268,14 @@ msgid "Server.met file corrupt, found invalid versiontag: 0x%x, size %i"
 msgstr "server.met 檔案損壞，發現無效的版本標記：0x%x, 大小 %i"
 
 #: src/ServerList.cpp
+msgid "Error: the file 'server.met' is corrupted: "
+msgstr "錯誤:  server.met 檔案已經損壞: "
+
+#: src/ServerList.cpp
+msgid "IO error while reading 'server.met': "
+msgstr "讀取 server.met 時發生 IO 錯誤："
+
+#: src/ServerList.cpp
 #, c-format
 msgid "%i server in server.met found"
 msgid_plural "%i servers in server.met found"
@@ -7274,14 +7286,6 @@ msgstr[0] "在 server.met 中找到 %i 個伺服器"
 msgid "%d server added"
 msgid_plural "%d servers added"
 msgstr[0] "已加入 %d 個伺服器"
-
-#: src/ServerList.cpp
-msgid "Error: the file 'server.met' is corrupted: "
-msgstr "錯誤:  server.met 檔案已經損壞: "
-
-#: src/ServerList.cpp
-msgid "IO error while reading 'server.met': "
-msgstr "讀取 server.met 時發生 IO 錯誤："
 
 #: src/ServerList.cpp
 #, c-format
@@ -7302,10 +7306,6 @@ msgstr "未加入伺服器：%s:%d 已在伺服器清單中。"
 #, c-format
 msgid "Server added: Server at [%s:%d] using the name '%s'."
 msgstr "已加入伺服器：[%s:%d]  名稱 %s 。"
-
-#: src/ServerList.cpp
-msgid "You are connected to the server you are trying to delete. please disconnect first."
-msgstr "現在正連線到要刪除的伺服器。請先中斷連線。"
 
 #: src/ServerList.cpp
 #, c-format

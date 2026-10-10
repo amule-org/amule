@@ -385,7 +385,7 @@ msgstr "CẢNH BÁO: không thể liên kết với giao diện mạng '%s' - l�
 msgid "Your locale has been changed to System Default due to a configuration change. Sorry."
 msgstr "Ngôn ngữ của bạn đã được đổi về Mặc định Hệ thống do thay đổi cấu hình. Xin lỗi."
 
-#: src/amule.cpp src/CatDialog.cpp src/ServerList.cpp src/ServerListCtrl.cpp
+#: src/amule.cpp src/CatDialog.cpp src/ServerListCtrl.cpp
 msgid "Info"
 msgstr "Thông tin"
 
@@ -2322,6 +2322,10 @@ msgstr "Chưa thêm máy chủ"
 #, c-format
 msgid "server not found: %s"
 msgstr "không tìm thấy máy chủ: %s"
+
+#: src/ExternalConn.cpp
+msgid "You are connected to the server you are trying to delete. please disconnect first."
+msgstr "Bạn đang được kết nối với máy chủ mà bạn đang cố xóa. Vui lòng ngắt kết nối trước."
 
 #: src/ExternalConn.cpp
 msgid "need to define server to be removed"
@@ -7196,6 +7200,14 @@ msgid "Server.met file corrupt, found invalid versiontag: 0x%x, size %i"
 msgstr "Tệp server.met bị hỏng, tìm thấy versiontag không hợp lệ: 0x%x, kích thước %i"
 
 #: src/ServerList.cpp
+msgid "Error: the file 'server.met' is corrupted: "
+msgstr "Lỗi: tệp 'server.met' bị hỏng: "
+
+#: src/ServerList.cpp
+msgid "IO error while reading 'server.met': "
+msgstr "Lỗi IO khi đọc 'server.met': "
+
+#: src/ServerList.cpp
 #, c-format
 msgid "%i server in server.met found"
 msgid_plural "%i servers in server.met found"
@@ -7206,14 +7218,6 @@ msgstr[0] "Tìm thấy %i máy chủ trong server.met"
 msgid "%d server added"
 msgid_plural "%d servers added"
 msgstr[0] "Đã thêm %d máy chủ"
-
-#: src/ServerList.cpp
-msgid "Error: the file 'server.met' is corrupted: "
-msgstr "Lỗi: tệp 'server.met' bị hỏng: "
-
-#: src/ServerList.cpp
-msgid "IO error while reading 'server.met': "
-msgstr "Lỗi IO khi đọc 'server.met': "
 
 #: src/ServerList.cpp
 #, c-format
@@ -7234,10 +7238,6 @@ msgstr "Không thêm máy chủ: Đã tìm thấy máy chủ có IP:Port trùng 
 #, c-format
 msgid "Server added: Server at [%s:%d] using the name '%s'."
 msgstr "Đã thêm máy chủ: Máy chủ tại [%s:%d] sử dụng tên '%s'."
-
-#: src/ServerList.cpp
-msgid "You are connected to the server you are trying to delete. please disconnect first."
-msgstr "Bạn đang được kết nối với máy chủ mà bạn đang cố xóa. Vui lòng ngắt kết nối trước."
 
 #: src/ServerList.cpp
 #, c-format

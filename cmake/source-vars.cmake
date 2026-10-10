@@ -39,6 +39,7 @@ if (BUILD_MONOLITHIC OR BUILD_DAEMON)
 		SearchList.cpp
 		ServerConnect.cpp
 		ServerList.cpp
+		ServerMet.cpp
 		ServerSocket.cpp
 		ServerUDPSocket.cpp
 		SHAHashSet.cpp

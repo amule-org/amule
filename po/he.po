@@ -390,7 +390,7 @@ msgstr "אזהרה: לא ניתן היה להיקשר לממשק הרשת '%s' -
 msgid "Your locale has been changed to System Default due to a configuration change. Sorry."
 msgstr "האזור שלך שונה לברירת המחדל של המערכת עקב שינוי בתצורה. סליחה."
 
-#: src/amule.cpp src/CatDialog.cpp src/ServerList.cpp src/ServerListCtrl.cpp
+#: src/amule.cpp src/CatDialog.cpp src/ServerListCtrl.cpp
 msgid "Info"
 msgstr "מידע"
 
@@ -2359,6 +2359,10 @@ msgstr "השרת לא התווסף"
 #, c-format
 msgid "server not found: %s"
 msgstr "לא נמצא השרת: %s"
+
+#: src/ExternalConn.cpp
+msgid "You are connected to the server you are trying to delete. please disconnect first."
+msgstr "אתה מחובר לשרת שאתה מנסה למחוק. אנא התנתק תחילה."
 
 #: src/ExternalConn.cpp
 msgid "need to define server to be removed"
@@ -7284,6 +7288,14 @@ msgid "Server.met file corrupt, found invalid versiontag: 0x%x, size %i"
 msgstr "קובץ Server.met פגום, נמצא תג גרסה לא תקין: 0x%x, גודל %i"
 
 #: src/ServerList.cpp
+msgid "Error: the file 'server.met' is corrupted: "
+msgstr "שגיאה: הקובץ 'server.met' פגום: "
+
+#: src/ServerList.cpp
+msgid "IO error while reading 'server.met': "
+msgstr "שגיאת קלט/פלט בקריאת 'server.met': "
+
+#: src/ServerList.cpp
 #, c-format
 msgid "%i server in server.met found"
 msgid_plural "%i servers in server.met found"
@@ -7296,14 +7308,6 @@ msgid "%d server added"
 msgid_plural "%d servers added"
 msgstr[0] "%d שרת נוסף"
 msgstr[1] "%d שרתים נוספו"
-
-#: src/ServerList.cpp
-msgid "Error: the file 'server.met' is corrupted: "
-msgstr "שגיאה: הקובץ 'server.met' פגום: "
-
-#: src/ServerList.cpp
-msgid "IO error while reading 'server.met': "
-msgstr "שגיאת קלט/פלט בקריאת 'server.met': "
 
 #: src/ServerList.cpp
 #, c-format
@@ -7324,10 +7328,6 @@ msgstr "השרת לא נוסף: נמצא ברשימה שרת עם IP:מבואה 
 #, c-format
 msgid "Server added: Server at [%s:%d] using the name '%s'."
 msgstr "שרת נוסף: שרת בכתובת [%s:%d] בשם '%s'."
-
-#: src/ServerList.cpp
-msgid "You are connected to the server you are trying to delete. please disconnect first."
-msgstr "אתה מחובר לשרת שאתה מנסה למחוק. אנא התנתק תחילה."
 
 #: src/ServerList.cpp
 #, c-format

@@ -397,7 +397,7 @@ msgstr "İKAZ: '%s' ağ arayüzüne bağlama yapılamadı - trafik varsayılan y
 msgid "Your locale has been changed to System Default due to a configuration change. Sorry."
 msgstr "Bir yapılandırma değişikliği nedeniyle dil ayarınız 'Sistem Varsayılanı'na çevrildi. Üzgünüm. Vallahi…"
 
-#: src/amule.cpp src/CatDialog.cpp src/ServerList.cpp src/ServerListCtrl.cpp
+#: src/amule.cpp src/CatDialog.cpp src/ServerListCtrl.cpp
 msgid "Info"
 msgstr "Bilgi"
 
@@ -2350,6 +2350,10 @@ msgstr "Sunucu eklenmedi."
 #, c-format
 msgid "server not found: %s"
 msgstr "sunucu bulunamadı: %s"
+
+#: src/ExternalConn.cpp
+msgid "You are connected to the server you are trying to delete. please disconnect first."
+msgstr "Silmeye çalıştığınız sunucuya bağlı durumdasınız. Lütfen, öncelikle bağlantıyı kesiniz."
 
 #: src/ExternalConn.cpp
 msgid "need to define server to be removed"
@@ -7254,6 +7258,14 @@ msgid "Server.met file corrupt, found invalid versiontag: 0x%x, size %i"
 msgstr "Server.met dosyası bozuk, geçersiz sürüm eki bulundu: 0x%x, size %i"
 
 #: src/ServerList.cpp
+msgid "Error: the file 'server.met' is corrupted: "
+msgstr "Hata: 'server.met' dosyası bozuk: "
+
+#: src/ServerList.cpp
+msgid "IO error while reading 'server.met': "
+msgstr "'server.met' dosyası okumada IO hatası: "
+
+#: src/ServerList.cpp
 #, c-format
 msgid "%i server in server.met found"
 msgid_plural "%i servers in server.met found"
@@ -7266,14 +7278,6 @@ msgid "%d server added"
 msgid_plural "%d servers added"
 msgstr[0] "%d adet sunucu eklendi"
 msgstr[1] "%d adet sunucu eklendi"
-
-#: src/ServerList.cpp
-msgid "Error: the file 'server.met' is corrupted: "
-msgstr "Hata: 'server.met' dosyası bozuk: "
-
-#: src/ServerList.cpp
-msgid "IO error while reading 'server.met': "
-msgstr "'server.met' dosyası okumada IO hatası: "
 
 #: src/ServerList.cpp
 #, c-format
@@ -7294,10 +7298,6 @@ msgstr "Sunucu eklenmedi: Listede IP:Portu [%s:%d] eşleşen bir sunucu bulundu.
 #, c-format
 msgid "Server added: Server at [%s:%d] using the name '%s'."
 msgstr "Sunucu eklendi: [%s:%d] adresindeki sunucu '%s' adını kullanıyor."
-
-#: src/ServerList.cpp
-msgid "You are connected to the server you are trying to delete. please disconnect first."
-msgstr "Silmeye çalıştığınız sunucuya bağlı durumdasınız. Lütfen, öncelikle bağlantıyı kesiniz."
 
 #: src/ServerList.cpp
 #, c-format

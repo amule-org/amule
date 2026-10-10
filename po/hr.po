@@ -381,7 +381,7 @@ msgstr ""
 msgid "Your locale has been changed to System Default due to a configuration change. Sorry."
 msgstr ""
 
-#: src/amule.cpp src/CatDialog.cpp src/ServerList.cpp src/ServerListCtrl.cpp
+#: src/amule.cpp src/CatDialog.cpp src/ServerListCtrl.cpp
 msgid "Info"
 msgstr "Info"
 
@@ -2352,6 +2352,10 @@ msgstr ""
 #: src/ExternalConn.cpp
 #, c-format
 msgid "server not found: %s"
+msgstr ""
+
+#: src/ExternalConn.cpp
+msgid "You are connected to the server you are trying to delete. please disconnect first."
 msgstr ""
 
 #: src/ExternalConn.cpp
@@ -7279,6 +7283,16 @@ msgid "Server.met file corrupt, found invalid versiontag: 0x%x, size %i"
 msgstr ""
 
 #: src/ServerList.cpp
+#, fuzzy
+msgid "Error: the file 'server.met' is corrupted: "
+msgstr "Greska: fajl server.met je koruptan"
+
+#: src/ServerList.cpp
+#, fuzzy
+msgid "IO error while reading 'server.met': "
+msgstr "Neocekivana fajl greska prilikom pisanja %s : %s"
+
+#: src/ServerList.cpp
 #, fuzzy, c-format
 msgid "%i server in server.met found"
 msgid_plural "%i servers in server.met found"
@@ -7293,16 +7307,6 @@ msgid_plural "%d servers added"
 msgstr[0] "%d servera dodato"
 msgstr[1] "%d servera dodato"
 msgstr[2] ""
-
-#: src/ServerList.cpp
-#, fuzzy
-msgid "Error: the file 'server.met' is corrupted: "
-msgstr "Greska: fajl server.met je koruptan"
-
-#: src/ServerList.cpp
-#, fuzzy
-msgid "IO error while reading 'server.met': "
-msgstr "Neocekivana fajl greska prilikom pisanja %s : %s"
 
 #: src/ServerList.cpp
 #, c-format
@@ -7322,10 +7326,6 @@ msgstr ""
 #: src/ServerList.cpp
 #, c-format
 msgid "Server added: Server at [%s:%d] using the name '%s'."
-msgstr ""
-
-#: src/ServerList.cpp
-msgid "You are connected to the server you are trying to delete. please disconnect first."
 msgstr ""
 
 #: src/ServerList.cpp
