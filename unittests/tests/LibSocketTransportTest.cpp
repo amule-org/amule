@@ -50,13 +50,21 @@ using namespace muleunit;
 DECLARE_SIMPLE(LibSocketTransport)
 
 // Link seams: CLibSocket's asio side reaches the notification layer and the
-// address helpers, which pull in the application. Nothing here drives an asio
-// callback, so these are never called.
+// address helpers, which pull in the application. Notifications are counted,
+// never delivered: nothing here drives an asio callback.
+namespace
+{
+int s_queuedNotifications = 0;
+} // namespace
+
 namespace MuleNotify
 {
 class CMuleNotiferBase;
 void HandleNotificationAlways(const CMuleNotiferBase &);
-void HandleNotificationAlways(const CMuleNotiferBase &) {}
+void HandleNotificationAlways(const CMuleNotiferBase &)
+{
+	++s_queuedNotifications;
+}
 } // namespace MuleNotify
 
 bool StringIPtoUint32(const wxString &, uint32 &);
@@ -240,6 +248,15 @@ private:
 	AddressFamilyPolicy::Families m_previous;
 };
 
+class CScopedBindInterface
+{
+public:
+	explicit CScopedBindInterface(const wxString &iface) { SetSocketBindInterface(iface); }
+	~CScopedBindInterface() { SetSocketBindInterface(wxEmptyString); }
+	CScopedBindInterface(const CScopedBindInterface &) = delete;
+	CScopedBindInterface &operator=(const CScopedBindInterface &) = delete;
+};
+
 // The backlog tells whether a connect was attempted: a blocking loopback connect has completed
 // the handshake by the time it returns, so a refused attempt leaves nothing to accept.
 class CLoopbackListener
@@ -335,6 +352,7 @@ TEST(LibSocketTransport, ConnectIPv6IsRefusedUnlessThePolicyPermitsIPv6)
 	socket.Notify(false);
 
 	ASSERT_FALSE(socket.ConnectIPv6(LoopbackIPv6(), listener.Port(), false));
+	ASSERT_EQUALS(static_cast<int>(boost::asio::error::address_family_not_supported), socket.LastError());
 	ASSERT_FALSE(listener.AcceptPending().has_value());
 }
 
@@ -351,6 +369,8 @@ TEST(LibSocketTransport, ConnectIPv6LeavesIPv4TargetsToConnect)
 		CLibSocket socket;
 		socket.Notify(false);
 		ASSERT_FALSE(socket.ConnectIPv6(target, listener.Port(), false));
+		ASSERT_EQUALS(static_cast<int>(boost::asio::error::address_family_not_supported),
+			socket.LastError());
 	}
 	ASSERT_FALSE(listener.AcceptPending().has_value());
 }
@@ -387,6 +407,60 @@ TEST(LibSocketTransport, ConnectIPv6IsRefusedOnASocketBoundToALocalIPv4Address)
 	socket.SetLocal(local);
 
 	ASSERT_FALSE(socket.ConnectIPv6(LoopbackIPv6(), listener.Port(), false));
+	ASSERT_EQUALS(static_cast<int>(boost::asio::error::address_family_not_supported), socket.LastError());
+	ASSERT_FALSE(listener.AcceptPending().has_value());
+}
+
+// The pin keeps traffic on the configured interface (VPN-leak fix, #173); an IPv6 connect it
+// cannot pin is refused rather than sent through the default route.
+TEST(LibSocketTransport, ConnectIPv6IsRefusedWhenTheInterfacePinFails)
+{
+	CLoopbackListener listener(AsioLoopbackIPv6());
+	if (!listener.IsOk()) {
+		return;
+	}
+	CScopedFamilies families(AddressFamilyPolicy::Families::DualStack);
+	CScopedBindInterface pin(wxString("amulenoif0"));
+	CLibSocket socket;
+	socket.Notify(false);
+
+	ASSERT_FALSE(socket.ConnectIPv6(LoopbackIPv6(), listener.Port(), false));
+	ASSERT_EQUALS(static_cast<int>(boost::asio::error::no_such_device), socket.LastError());
+	ASSERT_FALSE(listener.AcceptPending().has_value());
+}
+
+// With notifications on, false means "pending": a refusal must still reach OnConnect() as a
+// failed connect, or the caller waits for its connect timeout.
+TEST(LibSocketTransport, ARefusedConnectIPv6IsReportedAsAFailedConnectWhenNotifying)
+{
+	CLoopbackListener listener(AsioLoopbackIPv6());
+	if (!listener.IsOk()) {
+		return;
+	}
+	CScopedFamilies families(AddressFamilyPolicy::Families::IPv4Only);
+	CLibSocket socket;
+	const int queuedBefore = s_queuedNotifications;
+
+	ASSERT_FALSE(socket.ConnectIPv6(LoopbackIPv6(), listener.Port(), false));
+	ASSERT_EQUALS(queuedBefore + 1, s_queuedNotifications);
+	ASSERT_EQUALS(static_cast<int>(boost::asio::error::address_family_not_supported), socket.LastError());
+	ASSERT_FALSE(listener.AcceptPending().has_value());
+}
+
+// An attached transport already carries a live stream; a failed-connect event would tear it down.
+TEST(LibSocketTransport, ARefusalLeavesAnAttachedTransportUnnotified)
+{
+	CLoopbackListener listener(AsioLoopbackIPv6());
+	if (!listener.IsOk()) {
+		return;
+	}
+	CScopedFamilies families(AddressFamilyPolicy::Families::DualStack);
+	CLibSocket socket;
+	Attach(socket);
+	const int queuedBefore = s_queuedNotifications;
+
+	ASSERT_FALSE(socket.ConnectIPv6(LoopbackIPv6(), listener.Port(), false));
+	ASSERT_EQUALS(queuedBefore, s_queuedNotifications);
 	ASSERT_FALSE(listener.AcceptPending().has_value());
 }
 

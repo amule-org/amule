@@ -1131,7 +1131,7 @@ bool CSocketClientProxy::ConnectIPv6(const CNetworkAddress &target, uint16 port,
 	// The proxy protocols here carry IPv4 only, so a configured proxy refuses IPv6 instead of
 	// being bypassed.
 	if (GetUseProxy()) {
-		return false;
+		return RefuseConnectIPv6(target, port);
 	}
 	return CLibSocket::ConnectIPv6(target, port, wait);
 }

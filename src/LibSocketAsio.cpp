@@ -528,37 +528,39 @@ public:
 	}
 
 #ifdef ENABLE_IPV6
-	bool ConnectIPv6(const ip::tcp::endpoint &endpoint, const CNetworkAddress &peer, bool wait)
+	bool ConnectIPv6(const CNetworkAddress &target, uint16 port, bool wait)
 	{
-		m_peerAddress = peer;
-		m_IPstring = wxString(m_peerAddress.ToString());
-		m_IP = m_IPstring.c_str();
-		m_IPint = 0;
-		m_port = endpoint.port();
-		m_closed = false;
-		m_OK = false;
-		m_sync = !m_notify; // set this once for the whole lifetime of the socket
-		AddDebugLogLineF(logAsio, CFormat("Connect %s %p") % m_IP % this);
+		PrepareConnectIPv6(target, port);
 
+		const boost::optional<AddressFamilyPolicy::SAsioTarget> asioTarget =
+			AddressFamilyPolicy::AsioTargetFor(target);
+		if (!asioTarget || asioTarget->protocol != ip::tcp::v6()) {
+			return FailConnect(boost::asio::error::address_family_not_supported);
+		}
 		// Already open means a configured local IPv4 bind, which cannot reach an IPv6 peer.
 		if (m_socket->is_open()) {
-			return false;
+			return FailConnect(boost::asio::error::address_family_not_supported);
 		}
 		error_code ec;
 		m_socket->open(ip::tcp::v6(), ec);
 		if (ec) {
-			m_ErrorCode = ec.value();
-			return false;
+			return FailConnect(ec);
 		}
 		// Unlike IPv4, an unpinned IPv6 connect is refused so it cannot leave through another
 		// interface (VPN-leak fix, #173).
 		if (!SetBoundInterface(m_socket->native_handle(), s_bindToInterface, true)) {
 			error_code ignore;
 			m_socket->close(ignore);
-			return false;
+			return FailConnect(boost::asio::error::no_such_device);
 		}
 
-		return RunConnect(endpoint, wait);
+		return RunConnect(ip::tcp::endpoint(asioTarget->address, port), wait);
+	}
+
+	bool RefuseConnectIPv6(const CNetworkAddress &target, uint16 port)
+	{
+		PrepareConnectIPv6(target, port);
+		return FailConnect(boost::asio::error::address_family_not_supported);
 	}
 #endif
 
@@ -1225,6 +1227,33 @@ private:
 		m_peerAddress = CNetworkAddress::Absent();
 	}
 
+#ifdef ENABLE_IPV6
+	void PrepareConnectIPv6(const CNetworkAddress &target, uint16 port)
+	{
+		m_peerAddress = target;
+		m_IPstring = wxString(m_peerAddress.ToString());
+		m_IP = m_IPstring.c_str();
+		m_IPint = m_peerAddress.ToIPv4NetworkOrderOrZero();
+		m_port = port;
+		m_closed = false;
+		m_OK = false;
+		m_sync = !m_notify; // set this once for the whole lifetime of the socket
+		AddDebugLogLineF(logAsio, CFormat("Connect %s %p") % m_IP % this);
+	}
+
+	// A connect refused before it starts fails the way a failed connect does: at once for a
+	// synchronous caller, through OnConnect() otherwise. HandleConnect() queues that event, so
+	// it still arrives after the caller saw false.
+	bool FailConnect(const error_code &error)
+	{
+		m_ErrorCode = error.value();
+		if (!m_sync) {
+			HandleConnect(error);
+		}
+		return false;
+	}
+#endif
+
 	// Atomic so OnWrapperGone() (called from the wrapper's dtor on any thread) and the
 	// strand-side load in Destroy() can both touch it without an external lock.
 	std::atomic<CLibSocket *> m_libSocket;
@@ -1300,15 +1329,21 @@ bool CLibSocket::Connect(const amuleIPV4Address &adr, bool wait)
 bool CLibSocket::ConnectIPv6(const CNetworkAddress &target, uint16 port, bool wait)
 {
 	if (m_transport) {
-		// An accepted stream has a peer; dialling would open a second one.
+		// An accepted stream has a peer; dialling would open a second one. No failed-connect
+		// event is raised: it would tear down the live stream the transport carries, whose
+		// error LastError() reports.
 		return false;
 	}
-	const boost::optional<AddressFamilyPolicy::SAsioTarget> asioTarget =
-		AddressFamilyPolicy::AsioTargetFor(target);
-	if (!asioTarget || asioTarget->protocol != ip::tcp::v6()) {
+	return m_aSocket->ConnectIPv6(target, port, wait);
+}
+
+bool CLibSocket::RefuseConnectIPv6(const CNetworkAddress &target, uint16 port)
+{
+	if (m_transport) {
+		// Same rule as ConnectIPv6(): no event that would tear down the transport's stream.
 		return false;
 	}
-	return m_aSocket->ConnectIPv6(ip::tcp::endpoint(asioTarget->address, port), target, wait);
+	return m_aSocket->RefuseConnectIPv6(target, port);
 }
 #endif
 

@@ -189,6 +189,13 @@ public:
 	void OnStreamLost() override;
 	void OnFlushRequested() override;
 
+#ifdef ENABLE_IPV6
+
+protected:
+	// For a subclass that refuses an IPv6 connect itself, so the refusal still reaches OnConnect().
+	bool RefuseConnectIPv6(const CNetworkAddress &target, uint16 port);
+#endif
+
 private:
 	// Replace the internal socket. Takes ownership of the passed shared_ptr.
 	void LinkSocketImpl(std::shared_ptr<class CAsioSocketImpl>);
