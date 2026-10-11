@@ -30,6 +30,7 @@
 #include "Types.h"
 #include <memory> // shared_ptr for CAsioUDPSocketImpl ownership
 class amuleIPV4Address;
+class CMuleUDPSocket;
 
 // Socket flags (unused in ASIO implementation, just provide the names)
 enum
@@ -268,7 +269,8 @@ class CLibUDPSocket
 	friend class CAsioUDPSocketImpl;
 
 public:
-	CLibUDPSocket(amuleIPV4Address &address, int flags);
+	// The handler comes in here because the first read is posted before the constructor returns.
+	CLibUDPSocket(amuleIPV4Address &address, int flags, CMuleUDPSocket *handler);
 	virtual ~CLibUDPSocket();
 
 	// wx Stuff
@@ -278,7 +280,6 @@ public:
 	int LastError() const;
 	void Close();
 	void Destroy();
-	void SetClientData(class CMuleUDPSocket *);
 
 	// Not needed here
 	bool Notify(bool) { return true; }

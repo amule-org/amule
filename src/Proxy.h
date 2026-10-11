@@ -523,8 +523,9 @@ class CDatagramSocketProxy : public CLibUDPSocket
 public:
 	/* Constructor */
 	CDatagramSocketProxy(amuleIPV4Address &address,
-		muleSocketFlags flags = MULE_SOCKET_NONE,
-		const CProxyData *proxyData = NULL);
+		muleSocketFlags flags,
+		const CProxyData *proxyData,
+		CMuleUDPSocket *handler);
 
 	/* Destructor */
 	~CDatagramSocketProxy();

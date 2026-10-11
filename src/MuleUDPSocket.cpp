@@ -65,8 +65,7 @@ void CMuleUDPSocket::CreateSocket()
 {
 	wxCHECK_RET(!m_socket, "Socket already opened.");
 
-	m_socket = new CEncryptedDatagramSocket(m_addr, MULE_SOCKET_NOWAIT, m_proxy);
-	m_socket->SetClientData(this);
+	m_socket = new CEncryptedDatagramSocket(m_addr, MULE_SOCKET_NOWAIT, m_proxy, this);
 	m_socket->Notify(true);
 
 	if (!m_socket->IsOk()) {
@@ -106,8 +105,7 @@ bool CMuleUDPSocket::Rebind(const amuleIPV4Address &address)
 	// current socket.
 	amuleIPV4Address bindAddress = address;
 	CEncryptedDatagramSocket *replacement =
-		new CEncryptedDatagramSocket(bindAddress, MULE_SOCKET_NOWAIT, m_proxy);
-	replacement->SetClientData(this);
+		new CEncryptedDatagramSocket(bindAddress, MULE_SOCKET_NOWAIT, m_proxy, this);
 	replacement->Notify(true);
 	if (!replacement->IsOk()) {
 		replacement->Close();

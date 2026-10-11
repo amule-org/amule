@@ -86,9 +86,11 @@
 #define MAGICVALUE_UDP_SERVERCLIENT 0xA5
 #define MAGICVALUE_UDP_CLIENTSERVER 0x6B
 
-CEncryptedDatagramSocket::CEncryptedDatagramSocket(
-	amuleIPV4Address &address, muleSocketFlags flags, const CProxyData *proxyData)
-: CDatagramSocketProxy(address, flags, proxyData)
+CEncryptedDatagramSocket::CEncryptedDatagramSocket(amuleIPV4Address &address,
+	muleSocketFlags flags,
+	const CProxyData *proxyData,
+	CMuleUDPSocket *handler)
+: CDatagramSocketProxy(address, flags, proxyData, handler)
 {
 }
 

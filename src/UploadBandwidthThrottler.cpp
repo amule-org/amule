@@ -232,6 +232,11 @@ void UploadBandwidthThrottler::EndThread()
 			// signal the thread to stop looping and exit.
 			m_doRun = false;
 		}
+		// Cut its WaitTimeout short. Outside m_sendLocker, matching the lock order in Entry().
+		{
+			wxMutexLocker lock(m_newDataMutex);
+			m_newDataCondition.Signal();
+		}
 
 		Wait();
 	}
@@ -292,7 +297,10 @@ void *UploadBandwidthThrottler::Entry()
 			// wxCondition::WaitTimeout in place of eMule's WaitForSingleObject.
 			// Wakes early if the disk I/O thread signals NewUploadDataAvailable().
 			wxMutexLocker lock(m_newDataMutex);
-			m_newDataCondition.WaitTimeout(sleepTime - timeSinceLastLoop);
+			// Checked under the lock, so a stop signal from EndThread() cannot be missed.
+			if (m_doRun) {
+				m_newDataCondition.WaitTimeout(sleepTime - timeSinceLastLoop);
+			}
 		}
 
 		// Check after sleep in case the thread has been signaled to end

@@ -1160,9 +1160,11 @@ CSocketServerProxy::CSocketServerProxy(
 
 // CDatagramSocketProxy
 
-CDatagramSocketProxy::CDatagramSocketProxy(
-	amuleIPV4Address &address, muleSocketFlags flags, const CProxyData *proxyData)
-: CLibUDPSocket(address, flags)
+CDatagramSocketProxy::CDatagramSocketProxy(amuleIPV4Address &address,
+	muleSocketFlags flags,
+	const CProxyData *proxyData,
+	CMuleUDPSocket *handler)
+: CLibUDPSocket(address, flags, handler)
 , m_proxyTCPSocket(MULE_SOCKET_NOWAIT, proxyData, PROXY_CMD_UDP_ASSOCIATE, this)
 {
 	m_udpSocketOk = false;

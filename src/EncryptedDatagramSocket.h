@@ -33,8 +33,9 @@ class CEncryptedDatagramSocket : public CDatagramSocketProxy
 {
 public:
 	CEncryptedDatagramSocket(amuleIPV4Address &address,
-		muleSocketFlags flags = MULE_SOCKET_NONE,
-		const CProxyData *proxyData = NULL);
+		muleSocketFlags flags,
+		const CProxyData *proxyData,
+		CMuleUDPSocket *handler);
 	virtual ~CEncryptedDatagramSocket();
 
 	// TODO: Make protected once the UDP socket is again its own class.
