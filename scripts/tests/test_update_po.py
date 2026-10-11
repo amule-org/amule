@@ -1,4 +1,4 @@
-"""Exercise catalog timestamp handling with real gettext tools."""
+"""Exercise update-po.sh's modes and timestamp handling with real gettext tools."""
 
 import os
 import re
@@ -38,8 +38,8 @@ class UpdatePoTest(unittest.TestCase):
             path.write_text(re.sub(r'^"POT-Creation-Date:.*$', lambda _: OLD_DATE,
                                    text, flags=re.MULTILINE))
 
-    def run_update(self, success=True, env=None):
-        result = subprocess.run(["bash", str(SCRIPT)], cwd=self.root,
+    def run_update(self, success=True, env=None, args=("--all",)):
+        result = subprocess.run(["bash", str(SCRIPT), *args], cwd=self.root,
                                 capture_output=True, text=True, env=env)
         if success:
             self.assertEqual(result.returncode, 0, result.stderr)
@@ -53,6 +53,28 @@ class UpdatePoTest(unittest.TestCase):
     def date(self):
         return next(line for line in self.pot.read_text().splitlines()
                     if line.startswith('"POT-Creation-Date:'))
+
+    def test_default_updates_only_the_template_and_keeps_its_date(self):
+        before = self.po.read_bytes()
+        self.source.write_text(SOURCE + '_("Gamma");\n')
+        self.run_update(args=())
+        self.assertIn('msgid "Gamma"', self.pot.read_text())
+        self.assertEqual(OLD_DATE, self.date())
+        self.assertEqual(before, self.po.read_bytes())
+
+    def test_all_merges_new_strings_into_catalogs(self):
+        self.source.write_text(SOURCE + '_("Gamma");\n')
+        self.run_update(args=())
+        self.run_update()
+        self.assertIn('msgid "Gamma"', self.po.read_text())
+
+    def test_unknown_option_fails_and_preserves_catalogs(self):
+        before = {p: p.read_bytes() for p in (self.pot, self.po)}
+        result = self.run_update(success=False, args=("--pot-only",))
+        self.assertEqual(result.returncode, 10)
+        self.assertIn("Unknown option: --pot-only", result.stderr)
+        for path, data in before.items():
+            self.assertEqual(data, path.read_bytes())
 
     def test_unchanged_regeneration_is_byte_identical(self):
         before = {p: p.read_bytes() for p in (self.pot, self.po)}

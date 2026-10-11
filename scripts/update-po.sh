@@ -13,33 +13,32 @@ die () {
 }
 
 usage() {
-	echo "Regenerates po/amule.pot from source and merges it into all po/*.po files"
+	echo "Regenerates po/amule.pot from source"
 	echo
-	echo "Usage: $0 [-h | --help]"
+	echo "Usage: $0 [-a | --all] [-h | --help]"
+	echo "  -a"
+	echo "  --all        Also merge po/amule.pot into all po/*.po files"
 	echo "  -h"
 	echo "  --help       Display this help message"
 }
 
-if ! PARAMS=$(getopt -o "h" -l "help" -n "$0" -- "$@"); then
-	usage
-	false; die 10
-fi
+# Parsed by hand: the BSD getopt on macOS knows no long options and would
+# silently drop --all.
+MERGE_CATALOGS=false
 
-eval set -- "$PARAMS"
-
-while true; do
-	case "$1" in
+for ARG in "$@"; do
+	case "${ARG}" in
+	-a | --all )
+		MERGE_CATALOGS=true
+		;;
 	-h | --help )
 		usage
-		false; die 0
-		;;
-	-- )
-		shift
-		break
+		exit 0
 		;;
 	* )
 		usage
-		false; die 12 "Error processing command line parameters"
+		echo "Unknown option: ${ARG}" >&2
+		exit 10
 		;;
 	esac
 done
@@ -164,7 +163,9 @@ if [[ -f po/amule.pot ]]; then
 	# prevent regeneration from repairing it.
 	if ! canonical_content po/amule.pot "${POT_WORK}/old" 2>/dev/null; then
 		echo "po/amule.pot is not a valid catalog; regenerating it with a new creation date."
-	elif cmp -s "${POT_WORK}/old.content" "${POT_WORK}/new.content"; then
+	# Without --all the date is kept even when strings change: two pull
+	# requests that each bumped this one header line would always conflict.
+	elif ! ${MERGE_CATALOGS} || cmp -s "${POT_WORK}/old.content" "${POT_WORK}/new.content"; then
 		# Take the date from the unwrapped copy so a wrapped date keeps its full
 		# value. awk keeps the literal \n escaped.
 		awk "${HEADER_AWK}"'
@@ -182,6 +183,13 @@ if [[ -f po/amule.pot ]]; then
 fi
 mv "${NEW_POT}" po/amule.pot
 die 36 "failed to install regenerated template"
+
+# Weblate merges the template into the language catalogs, so a pull request
+# that adds strings commits only po/amule.pot and cannot conflict on them.
+if ! ${MERGE_CATALOGS}; then
+	echo "Done. Commit po/amule.pot; Weblate merges it into the language catalogs."
+	exit 0
+fi
 
 echo "Merging po/amule.pot into each .po file ..."
 # Write via --output-file + mv rather than --update: msgmerge --update

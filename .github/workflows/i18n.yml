@@ -25,7 +25,7 @@ jobs:
       - name: Installing tools
         run: sudo apt-get install gettext
 
-      - name: Check catalog timestamp handling
+      - name: Check update-po.sh
         run: python3 -m unittest discover -s scripts/tests -p 'test_update_po.py'
 
       - name: Check installer translation bridge
@@ -54,39 +54,27 @@ jobs:
       - name: POTFILES.in lists every file marking strings
         run: ./scripts/check-potfiles.sh
 
-      - name: Regenerate pot + merge into po
+      - name: Regenerate pot
         run: ./scripts/update-po.sh
 
+      # Only the template: pull requests do not commit the language catalogs,
+      # which Weblate merges the template into after the merge.
       - name: Verify no real content drift
         run: |
-          # xgettext / msgmerge always rewrite a few volatile header
-          # lines (POT-Creation-Date, PO-Revision-Date, Last-Translator,
-          # Language-Team) and re-flow source-reference comments
-          # (#: file:lineno) on any source-code line shift, even when
-          # no msgid / msgstr actually changed. Run msgcat --no-wrap on
-          # both sides to neutralise any incidental wrapping (project
-          # policy is --no-wrap, but normalising defensively keeps this
-          # check robust to a translator using a tool that re-wraps),
-          # then strip those metadata lines before diffing.
-          drift=0
-          for po in po/amule.pot po/*.po; do
-            diff <(git show HEAD:"$po" | msgcat --no-wrap - \
-                     | grep -vE '^("(POT-Creation-Date|PO-Revision-Date|Last-Translator|Language-Team)|#: )') \
-                 <(msgcat --no-wrap "$po" \
-                     | grep -vE '^("(POT-Creation-Date|PO-Revision-Date|Last-Translator|Language-Team)|#: )') \
-              > /tmp/po-drift.txt || drift=1
-            if [ -s /tmp/po-drift.txt ]; then
-              echo "::error file=$po::content drift detected"
-              echo "----- $po -----"
-              cat /tmp/po-drift.txt
-            fi
-          done
-          if [ "$drift" -ne 0 ]; then
+          if ! ./scripts/check-po-drift.sh po/amule.pot; then
             echo
-            echo "::error::App translation catalogs out of sync with source."
-            echo "Run scripts/update-po.sh locally and commit the result."
+            echo "::error::po/amule.pot out of sync with source."
+            echo "Run scripts/update-po.sh locally and commit po/amule.pot."
             exit 1
           fi
+
+      # Not committed: what Weblate will do after the merge must still work.
+      - name: Merge pot into every po and compile it
+        run: |
+          ./scripts/update-po.sh --all
+          for po in po/*.po; do
+            msgfmt --check -o /dev/null "$po"
+          done
 
   manpages-pot-sync:
     name: Manpage catalogs in sync with English masters
@@ -103,25 +91,7 @@ jobs:
 
       - name: Verify no real content drift
         run: |
-          # Mirror of the pot-sync check above. po4a / msgmerge always
-          # rewrite POT-Creation-Date and the source-reference comments
-          # (#:) even when no msgid actually changed, so strip those
-          # before diffing. msgcat --no-wrap normalises any incidental
-          # wrapping a translator's tool may have introduced.
-          drift=0
-          for po in docs/man/po/manpages.pot docs/man/po/manpages-*.po; do
-            diff <(git show HEAD:"$po" | msgcat --no-wrap - \
-                     | grep -vE '^("(POT-Creation-Date|PO-Revision-Date|Last-Translator|Language-Team)|#: )') \
-                 <(msgcat --no-wrap "$po" \
-                     | grep -vE '^("(POT-Creation-Date|PO-Revision-Date|Last-Translator|Language-Team)|#: )') \
-              > /tmp/po-drift.txt || drift=1
-            if [ -s /tmp/po-drift.txt ]; then
-              echo "::error file=$po::content drift detected"
-              echo "----- $po -----"
-              cat /tmp/po-drift.txt
-            fi
-          done
-          if [ "$drift" -ne 0 ]; then
+          if ! ./scripts/check-po-drift.sh docs/man/po/manpages.pot docs/man/po/manpages-*.po; then
             echo
             echo "::error::Manpage translation catalogs out of sync with English masters."
             echo "Run scripts/update-manpages-po.sh locally and commit the result."

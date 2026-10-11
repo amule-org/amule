@@ -11,7 +11,7 @@ internationalisation. The workflow involves three file types:
 | File | Location | Purpose |
 | ---- | -------- | ------- |
 | `amule.pot` | `po/amule.pot` | Template: all translatable strings extracted from source, with empty translations. Committed to git. |
-| `xx.po` | `po/xx.po` | One file per language. Contains the actual translations. Committed to git. |
+| `xx.po` | `po/xx.po` | One file per language. Contains the actual translations. Committed to git; [Weblate](https://hosted.weblate.org/projects/amule/amule-application/) merges template changes into it. |
 | `xx.gmo` | `build/po/` | Compiled binary catalog, generated at build time. Not committed. |
 
 At runtime the program loads the `.gmo` file (installed as
@@ -48,30 +48,46 @@ sudo dnf install gettext
 brew install gettext
 ```
 
-### Regenerating the template and merging into all .po files
+### Regenerating the template
 
-After adding translatable strings to the C++ source, or to sync the
-`.po` files with the current source, run from the repository root:
+After adding or changing translatable strings in the C++ source, run from
+the repository root:
 
 ```sh
 ./scripts/update-po.sh
 ```
+
+Then commit `po/amule.pot`, but not the language catalogs. Weblate merges
+the template into every `po/*.po` file after the pull request is merged, so
+pull requests that add strings do not conflict on the catalogs. CI fails if
+the committed template does not match the source.
 
 This script:
 
 1. Runs `xgettext` over the files listed in `po/POTFILES.in` to
    regenerate `po/amule.pot`.
 2. Fills in the copyright year in the `.pot` header.
-3. Preserves `POT-Creation-Date` when template content is unchanged. Source
-   references, entry ordering, extraction time, and the copyright year do not
-   count as content changes; messages, contexts, plurals, translator comments,
-   and format flags do. References and the copyright year are still updated.
-4. Runs `msgmerge` on every `po/*.po` file so each language file gets the new
-   and changed strings merged in.
+3. Keeps `POT-Creation-Date` unchanged, even when strings change: two pull
+   requests that each updated this header line would always conflict.
+   References and the copyright year are still updated.
 
-The creation date records the last meaningful template change. Regenerating
-an unchanged template therefore avoids timestamp-only diffs across all language
-catalogs. Real overlapping catalog edits can still cause merge conflicts.
+### Merging the template into the .po files
+
+```sh
+./scripts/update-po.sh --all
+```
+
+does the same, then runs `msgmerge` on every `po/*.po` file so each language
+file gets the new and changed strings merged in, as Weblate does. Use it to
+work on a catalog offline, and commit only that catalog. A release requires
+every catalog to be merged: merge the open Weblate pull request first, or run
+this and commit the result.
+
+With `--all`, `POT-Creation-Date` is updated when the template content
+changed. Source references, entry ordering, extraction time, and the
+copyright year do not count as content changes; messages, contexts, plurals,
+translator comments, and format flags do. Regenerating an unchanged template
+therefore avoids timestamp-only diffs across all language catalogs.
 
 If extraction finds no translatable strings, the script reports an error and
 leaves the existing template and language catalogs unchanged. Check the source
@@ -82,7 +98,7 @@ as `scripts/compile.sh`).
 
 ## Translator workflow
 
-After `update-po.sh` has been run, each `.po` file may contain:
+After the template is merged into it, each `.po` file may contain:
 
 - **Untranslated entries** — `msgstr ""` is empty; the string is new
   and has never been translated.
@@ -164,7 +180,7 @@ Use the standard gettext macros:
 | `wxPLURAL("one item", "%d items", n)` | Plural forms |
 
 After adding new uses of these macros, run `./scripts/update-po.sh` to
-pull the new strings into the `.pot` and all `.po` files.
+pull the new strings into `po/amule.pot`, and commit it.
 
 ### Adding a new source file
 

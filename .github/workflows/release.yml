@@ -89,6 +89,21 @@ jobs:
             exit 1
           fi
           echo "CHANGELOG newest entry matches ${VERSION}."
+      # Gate: pull requests commit only po/amule.pot and Weblate merges it into
+      # the language catalogs later, so those can lag behind the source. A
+      # release ships them merged.
+      - name: Verify translation catalogs match the source
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          set -euo pipefail
+          sudo apt-get install -y gettext
+          ./scripts/update-po.sh --all
+          if ! ./scripts/check-po-drift.sh po/amule.pot po/*.po; then
+            echo
+            echo "::error::Translation catalogs out of sync with source."
+            echo "Merge the open Weblate pull request, or run scripts/update-po.sh --all and commit the result, before releasing."
+            exit 1
+          fi
       - name: Create and push tag if missing
         if: github.event_name == 'workflow_dispatch'
         env:
