@@ -549,33 +549,41 @@ TEST(IndexedLoad, CorruptPartDoesNotDiscardHealthyParts)
 TEST(IndexedLoad, PublishDelaysRecordedWhileLoadingAreKept)
 {
 	TempIndex temp;
-	const uint32_t later = time(nullptr) + 7200;
+	const uint32_t now = time(nullptr);
 	{
 		CFile file(temp.path + "load_index.dat", CFile::write);
 		file.WriteUInt32(1);
-		file.WriteUInt32(time(nullptr));
-		file.WriteUInt32(1);
+		file.WriteUInt32(now);
+		file.WriteUInt32(2);
 		file.WriteUInt128(CUInt128(2u));
-		file.WriteUInt32(time(nullptr) + 3600);
+		file.WriteUInt32(now + 3600);
+		file.WriteUInt128(CUInt128(4u));
+		file.WriteUInt32(now + 3600);
 	}
 	{
 		CIndexed index(temp.path, CUInt128(1u));
-		// Our own publishes end while the worker reads: one new delay, and one that
-		// extends a saved delay.
-		ASSERT_TRUE(index.AddLoad(CUInt128(3u), time(nullptr) + 3600));
-		ASSERT_TRUE(index.AddLoad(CUInt128(2u), later));
+		// Our own publishes end while the worker reads: one new delay, one that extends a
+		// saved delay, and one shorter than the saved delay, which must not cut it.
+		ASSERT_TRUE(index.AddLoad(CUInt128(2u), now + 7200));
+		ASSERT_TRUE(index.AddLoad(CUInt128(3u), now + 3600));
+		ASSERT_TRUE(index.AddLoad(CUInt128(4u), now + 600));
 		ASSERT_FALSE(index.SendStoreRequest(CUInt128(3u)));
 		ASSERT_TRUE(WaitForLoad(index));
-		ASSERT_EQUALS(2u, index.m_totalIndexLoad);
-		ASSERT_FALSE(index.SendStoreRequest(CUInt128(2u)));
-		ASSERT_FALSE(index.SendStoreRequest(CUInt128(3u)));
+		ASSERT_EQUALS(3u, index.m_totalIndexLoad);
+		for (uint32_t key : { 2u, 3u, 4u }) {
+			ASSERT_FALSE(index.SendStoreRequest(CUInt128(key)));
+		}
 	}
 	CFile saved(temp.path + "load_index.dat");
 	ASSERT_EQUALS(1u, saved.ReadUInt32());
 	saved.ReadUInt32();
-	ASSERT_EQUALS(2u, saved.ReadUInt32());
-	ASSERT_TRUE(saved.ReadUInt128() == CUInt128(2u));
-	ASSERT_EQUALS(later, saved.ReadUInt32());
+	ASSERT_EQUALS(3u, saved.ReadUInt32());
+	for (const auto &expected : { std::make_pair(2u, now + 7200),
+		     std::make_pair(3u, now + 3600),
+		     std::make_pair(4u, now + 3600) }) {
+		ASSERT_TRUE(saved.ReadUInt128() == CUInt128(expected.first));
+		ASSERT_EQUALS(expected.second, saved.ReadUInt32());
+	}
 }
 
 TEST(IndexedLoad, PartialLoadMapIsClearedOnError)

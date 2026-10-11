@@ -1134,6 +1134,7 @@ public:
 	uint32 GetKadIndexedKeywords() const { return theStats::GetKadIndexedKeywords(); }
 	uint32 GetKadIndexedNotes() const { return theStats::GetKadIndexedNotes(); }
 	uint32 GetKadIndexedLoad() const { return theStats::GetKadIndexedLoad(); }
+	bool IsKadIndexReady() const { return theStats::IsKadIndexReady(); }
 	const CUInt128 &GetKadID() const { return m_kadID; }
 	// True IP of machine
 	uint32 GetKadIPAddress() const { return theStats::GetKadIPAddress(); }

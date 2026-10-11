@@ -1499,7 +1499,7 @@ static CECPacket *Get_EC_Response_StatRequest(const CECPacket *request, CLoggerA
 		// Kad stats
 		// The counts are local, so they ship before bootstrap, but only once the saved
 		// index is adopted: a 0 before that is not a real count.
-		if (Kademlia::CKademlia::IsRunning() && Kademlia::CKademlia::GetIndexed()->IsReady()) {
+		if (theApp->IsKadIndexReady()) {
 			response->AddTag(CECTag(EC_TAG_STATS_KAD_INDEXED_SOURCES,
 				Kademlia::CKademlia::GetIndexed()->m_totalIndexSource));
 			response->AddTag(CECTag(EC_TAG_STATS_KAD_INDEXED_KEYWORDS,

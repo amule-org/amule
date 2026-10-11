@@ -536,8 +536,8 @@ function Ed2kInfoPanel() {
 // Live counters ride the SSE status event; the detail-only fields (node id,
 // connected-since, your public IP, firewalled UDP, buddy, index counters) are
 // fetched from /kad on mount, whenever the Kad state changes (a connect or
-// disconnect from the top tab arrives that way), and every few seconds, because
-// the index counters change while connected.
+// disconnect from the top tab arrives that way), and every few seconds while
+// connected, because the index counters change then.
 function KadInfoPanel() {
   const status = useStore("status");
   const kadState = status && status.kad && status.kad.state;
@@ -545,13 +545,19 @@ function KadInfoPanel() {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    // Only the newest reply may land: an older one finishing late would restore
+    // the state it was fetched in.
+    let latest = 0;
+    let cancelled = false;
     const load = async () => {
-      try { setDetail(await api.get("kad")); setError(""); }
-      catch (e) { setError(terr(e) || t("networks_kad_error")); }
+      const mine = ++latest;
+      const current = () => !cancelled && mine === latest;
+      try { const kad = await api.get("kad"); if (current()) { setDetail(kad); setError(""); } }
+      catch (e) { if (current()) setError(terr(e) || t("networks_kad_error")); }
     };
     load();
-    const timer = setInterval(load, KAD_POLL_MS);
-    return () => clearInterval(timer);
+    const timer = kadState === "connected" ? setInterval(load, KAD_POLL_MS) : 0;
+    return () => { cancelled = true; clearInterval(timer); };
   }, [kadState]);
 
   const kad = (status && status.kad) || {};

@@ -3239,6 +3239,11 @@ uint32 CamuleApp::GetKadIndexedLoad() const
 	return Kademlia::CKademlia::GetIndexed()->m_totalIndexLoad;
 }
 
+bool CamuleApp::IsKadIndexReady() const
+{
+	return Kademlia::CKademlia::IsRunning() && Kademlia::CKademlia::GetIndexed()->IsReady();
+}
+
 // True IP of machine
 uint32 CamuleApp::GetKadIPAddress() const
 {

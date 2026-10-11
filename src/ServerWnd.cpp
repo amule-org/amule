@@ -351,15 +351,19 @@ void CServerWnd::UpdateKadInfo()
 			InfoInsertRow(KadInfoList, next_row, _("IP address:"));
 			InfoSetValue(KadInfoList, next_row++, Uint32toStringIP(theApp->GetKadIPAddress()));
 
+			// The counts read 0 while the saved index is still loading.
+			const bool indexReady = theApp->IsKadIndexReady();
+			auto indexCount = [indexReady](uint32 count) {
+				return indexReady ? (CFormat("%d") % count).GetString() : wxString("-");
+			};
 			InfoInsertRow(KadInfoList, next_row, _("Indexed sources:"));
-			InfoSetValue(KadInfoList, next_row++, CFormat("%d") % theApp->GetKadIndexedSources());
+			InfoSetValue(KadInfoList, next_row++, indexCount(theApp->GetKadIndexedSources()));
 			InfoInsertRow(KadInfoList, next_row, _("Indexed keywords:"));
-			InfoSetValue(
-				KadInfoList, next_row++, CFormat("%d") % theApp->GetKadIndexedKeywords());
+			InfoSetValue(KadInfoList, next_row++, indexCount(theApp->GetKadIndexedKeywords()));
 			InfoInsertRow(KadInfoList, next_row, _("Indexed notes:"));
-			InfoSetValue(KadInfoList, next_row++, CFormat("%d") % theApp->GetKadIndexedNotes());
+			InfoSetValue(KadInfoList, next_row++, indexCount(theApp->GetKadIndexedNotes()));
 			InfoInsertRow(KadInfoList, next_row, _("Indexed load:"));
-			InfoSetValue(KadInfoList, next_row++, CFormat("%d") % theApp->GetKadIndexedLoad());
+			InfoSetValue(KadInfoList, next_row++, indexCount(theApp->GetKadIndexedLoad()));
 
 			InfoInsertRow(KadInfoList, next_row, _("Average Users:"));
 			InfoSetValue(KadInfoList, next_row, CastItoIShort(theApp->GetKadUsers()));

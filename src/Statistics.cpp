@@ -1296,6 +1296,8 @@ void CStatistics::UpdateStats(const CECPacket *stats)
 		stats->GetTagByNameSafe(EC_TAG_STATS_KAD_INDEXED_KEYWORDS)->GetInt();
 	s_statData[sdKadIndexedNotes] = stats->GetTagByNameSafe(EC_TAG_STATS_KAD_INDEXED_NOTES)->GetInt();
 	s_statData[sdKadIndexedLoad] = stats->GetTagByNameSafe(EC_TAG_STATS_KAD_INDEXED_LOAD)->GetInt();
+	// amuled sends the index counters only once its saved Kad index is loaded.
+	s_statData[sdKadIndexReady] = stats->GetTagByName(EC_TAG_STATS_KAD_INDEXED_LOAD) != nullptr;
 	s_statData[sdKadIPAddress] = stats->GetTagByNameSafe(EC_TAG_STATS_KAD_IP_ADDRESS)->GetInt();
 	s_statData[sdKadNodes] = stats->GetTagByNameSafe(EC_TAG_STATS_KAD_NODES)->GetInt();
 	s_statData[sdBuddyStatus] = stats->GetTagByNameSafe(EC_TAG_STATS_BUDDY_STATUS)->GetInt();

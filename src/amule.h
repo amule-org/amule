@@ -404,6 +404,8 @@ public:
 	uint32 GetKadIndexedKeywords() const;
 	uint32 GetKadIndexedNotes() const;
 	uint32 GetKadIndexedLoad() const;
+	// The counts above are real only once the saved index is loaded.
+	bool IsKadIndexReady() const;
 	// True IP of machine
 	uint32 GetKadIPAddress() const;
 	// Buddy status
