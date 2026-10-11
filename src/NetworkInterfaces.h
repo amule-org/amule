@@ -64,9 +64,9 @@ struct NetworkInterface
 	//! Assigned IPv6 addresses, 16 bytes each, big-endian as they travel on the wire. Addresses
 	//! still running duplicate address detection are excluded: until DAD finishes the address
 	//! may belong to somebody else on the link, which is the case DAD exists to catch.
-	//! Temporary and deprecated addresses are kept; only Linux and macOS report those flags.
-	//! Windows reports neither: it already drops deprecated addresses, and it has no reliable
-	//! temporary flag (IpSuffixOriginRandom also marks randomized stable identifiers).
+	//! Temporary and deprecated addresses are kept; Linux and macOS report both flags. Windows
+	//! already drops deprecated addresses and has no temporary flag: a router-advertised prefix
+	//! with a random suffix is taken as temporary, which a randomized stable address matches too.
 	std::vector<NetworkInterfaceIPv6> ipv6;
 };
 

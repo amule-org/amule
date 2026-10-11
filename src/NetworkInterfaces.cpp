@@ -193,6 +193,13 @@ std::vector<NetworkInterface> DetectNetworkInterfaces()
 					NetworkInterfaceIPv6 address;
 					std::memcpy(
 						address.bytes.data(), &sin6->sin6_addr, address.bytes.size());
+					// Windows has no temporary flag, but its own classification puts
+					// every temporary address on a router-advertised prefix with a
+					// random suffix. A randomized stable address matches too, and then
+					// only ties with the temporary one, as it did before this check.
+					address.temporary =
+						ua->PrefixOrigin == IpPrefixOriginRouterAdvertisement &&
+						ua->SuffixOrigin == IpSuffixOriginRandom;
 					iface.ipv6.push_back(address);
 				}
 			}
