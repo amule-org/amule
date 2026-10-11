@@ -113,6 +113,11 @@ void CIndexed::ProcessIndexLoad()
 					    path % path);
 			}
 		}
+		// Keep the publish delays our own searches recorded while the worker was reading.
+		for (const auto &item : m_Load_map) {
+			loaded->AddLoad(item.first, item.second->time);
+		}
+		ClearPart(IndexPart::Load);
 		m_Keyword_map.swap(loaded->m_Keyword_map);
 		m_Sources_map.swap(loaded->m_Sources_map);
 		m_Load_map.swap(loaded->m_Load_map);
@@ -146,6 +151,18 @@ bool OpenIndex(CFile &file, const wxString &path)
 		throw CIOFailureException("Cannot open persisted Kad index");
 	}
 	return true;
+}
+
+// Takes the address an entry is matched on from its own tags.
+void ReadAddressTag(CEntry &entry, const CTag &tag)
+{
+	if (!tag.GetName().Cmp(TAG_SOURCEIP)) {
+		entry.m_uIP = tag.GetInt();
+	} else if (!tag.GetName().Cmp(TAG_SOURCEPORT)) {
+		entry.m_uTCPport = tag.GetInt();
+	} else if (!tag.GetName().Cmp(TAG_SOURCEUPORT)) {
+		entry.m_uUDPport = tag.GetInt();
+	}
 }
 } // namespace
 
@@ -196,236 +213,159 @@ void CIndexed::ReadFile(const std::atomic<bool> &cancel)
 void CIndexed::ReadLoadFile(const std::atomic<bool> &cancel)
 {
 	CFile load_file;
-	if (OpenIndex(load_file, m_loadfilename)) {
-		uint32_t version = load_file.ReadUInt32();
-		if (version >= 2) {
-			throw std::runtime_error("unsupported persisted Kad index version");
-		}
-		if (version < 2) {
-			/*time_t savetime =*/load_file.ReadUInt32(); //  Savetime is unused now
-
-			uint32_t numLoad = load_file.ReadUInt32();
-			while (numLoad) {
-				if (cancel.load()) {
-					return;
-				}
-				CUInt128 keyID = load_file.ReadUInt128();
-				AddLoad(keyID, load_file.ReadUInt32());
-				numLoad--;
-			}
-		}
-		load_file.Close();
+	if (!OpenIndex(load_file, m_loadfilename)) {
+		return;
 	}
+	if (load_file.ReadUInt32() >= 2) {
+		throw std::runtime_error("unsupported persisted Kad index version");
+	}
+	/*time_t savetime =*/load_file.ReadUInt32(); //  Savetime is unused now
+
+	for (uint32_t numLoad = load_file.ReadUInt32(); numLoad; numLoad--) {
+		if (cancel.load()) {
+			return;
+		}
+		CUInt128 keyID = load_file.ReadUInt128();
+		AddLoad(keyID, load_file.ReadUInt32());
+	}
+	load_file.Close();
 }
+
 void CIndexed::ReadKeywordFile(const std::atomic<bool> &cancel)
 {
 	CFile k_file;
-	if (OpenIndex(k_file, m_kfilename)) {
-		uint32_t version = k_file.ReadUInt32();
-		if (version >= 5) {
-			throw std::runtime_error("unsupported persisted Kad index version");
+	if (!OpenIndex(k_file, m_kfilename)) {
+		return;
+	}
+	// Version 4 added the AICH hash block and the per-publisher hash index that
+	// Kad protocol version 0x09 keyword storage needs; version 3 files still
+	// load, just without any AICH hash.
+	const uint32_t version = k_file.ReadUInt32();
+	if (version >= 5) {
+		throw std::runtime_error("unsupported persisted Kad index version");
+	}
+	time_t savetime = k_file.ReadUInt32();
+	if (savetime <= time(nullptr) || k_file.ReadUInt128() != m_kadID) {
+		return;
+	}
+
+	for (uint32_t numKeys = k_file.ReadUInt32(); numKeys; numKeys--) {
+		if (cancel.load()) {
+			return;
 		}
-		// Version 4 added the AICH hash block and the per-publisher hash index that
-		// Kad protocol version 0x09 keyword storage needs; version 3 files still
-		// load, just without any AICH hash.
-		if (version < 5) {
-			time_t savetime = k_file.ReadUInt32();
-			if (savetime > time(nullptr)) {
-				CUInt128 id = k_file.ReadUInt128();
-				if (m_kadID == id) {
-					uint32_t numKeys = k_file.ReadUInt32();
-					while (numKeys) {
-						if (cancel.load()) {
-							return;
-						}
-						CUInt128 keyID = k_file.ReadUInt128();
-						uint32_t numSource = k_file.ReadUInt32();
-						while (numSource) {
-							if (cancel.load()) {
-								return;
-							}
-							CUInt128 sourceID = k_file.ReadUInt128();
-							uint32_t numName = k_file.ReadUInt32();
-							while (numName) {
-								if (cancel.load()) {
-									return;
-								}
-								auto ownedEntry = std::unique_ptr<CKeyEntry>(
-									CreateKeyEntry());
-								CKeyEntry *toAdd = ownedEntry.get();
-								toAdd->m_uKeyID = keyID;
-								toAdd->m_uSourceID = sourceID;
-								toAdd->m_bSource = false;
-								toAdd->m_tLifeTime = k_file.ReadUInt32();
-								if (version >= 3) {
-									toAdd->ReadPublishTrackingDataFromFile(
-										&k_file,
-										version >= 4,
-										&cancel);
-								}
-								uint32_t tagList = k_file.ReadUInt8();
-								while (tagList) {
-									auto ownedTag = std::unique_ptr<CTag>(
-										k_file.ReadTag());
-									CTag *tag = ownedTag.get();
-									if (tag) {
-										if (!tag->GetName().Cmp(
-											    TAG_FILENAME)) {
-											if (toAdd->GetCommonFileName()
-													.IsEmpty()) {
-												toAdd->SetFileName(
-													tag->GetStr());
-											}
-										} else if (
-											!tag->GetName().Cmp(
-												TAG_FILESIZE)) {
-											if (tag->IsBsob() &&
-												(tag->GetBsobSize() ==
-													8)) {
-												// Older
-												// builds
-												// wrongly
-												// saved
-												// BSOB
-												// uint64s
-												// to
-												// key_index.dat,
-												// so
-												// those
-												// have
-												// to
-												// be
-												// handled
-												// here
-												// too.
-												toAdd->m_uSize = PeekUInt64(
-													tag->GetBsob());
-											} else {
-												toAdd->m_uSize =
-													tag->GetInt();
-											}
-										} else if (
-											!tag->GetName().Cmp(
-												TAG_SOURCEIP)) {
-											toAdd->m_uIP =
-												tag->GetInt();
-											toAdd->AddTag(tag, 0);
-											ownedTag.release();
-										} else if (
-											!tag->GetName().Cmp(
-												TAG_SOURCEPORT)) {
-											toAdd->m_uTCPport =
-												tag->GetInt();
-											toAdd->AddTag(tag, 0);
-											ownedTag.release();
-										} else if (
-											!tag->GetName().Cmp(
-												TAG_SOURCEUPORT)) {
-											toAdd->m_uUDPport =
-												tag->GetInt();
-											toAdd->AddTag(tag, 0);
-											ownedTag.release();
-										} else {
-											toAdd->AddTag(tag, 0);
-											ownedTag.release();
-										}
-									}
-									tagList--;
-								}
-								uint8_t load;
-								if (AddKeyword(
-									    keyID, sourceID, toAdd, load)) {
-									ownedEntry.release();
-								}
-								numName--;
-							}
-							numSource--;
-						}
-						numKeys--;
-					}
+		const CUInt128 keyID = k_file.ReadUInt128();
+		for (uint32_t numSource = k_file.ReadUInt32(); numSource; numSource--) {
+			if (cancel.load()) {
+				return;
+			}
+			const CUInt128 sourceID = k_file.ReadUInt128();
+			for (uint32_t numName = k_file.ReadUInt32(); numName; numName--) {
+				if (cancel.load()) {
+					return;
 				}
+				ReadKeywordEntry(k_file, version, keyID, sourceID, cancel);
 			}
 		}
-		k_file.Close();
+	}
+	k_file.Close();
+}
+
+void CIndexed::ReadKeywordEntry(CFile &file,
+	uint32_t version,
+	const CUInt128 &keyID,
+	const CUInt128 &sourceID,
+	const std::atomic<bool> &cancel)
+{
+	auto entry = std::unique_ptr<CKeyEntry>(CreateKeyEntry());
+	entry->m_uKeyID = keyID;
+	entry->m_uSourceID = sourceID;
+	entry->m_bSource = false;
+	entry->m_tLifeTime = file.ReadUInt32();
+	if (version >= 3) {
+		entry->ReadPublishTrackingDataFromFile(&file, version >= 4, &cancel);
+	}
+	for (uint32_t tagList = file.ReadUInt8(); tagList; tagList--) {
+		auto tag = std::unique_ptr<CTag>(file.ReadTag());
+		if (!tag) {
+			continue;
+		}
+		if (!tag->GetName().Cmp(TAG_FILENAME)) {
+			if (entry->GetCommonFileName().IsEmpty()) {
+				entry->SetFileName(tag->GetStr());
+			}
+		} else if (!tag->GetName().Cmp(TAG_FILESIZE)) {
+			// Older builds wrongly saved BSOB uint64s to key_index.dat, so those have to be
+			// handled here too.
+			if (tag->IsBsob() && (tag->GetBsobSize() == 8)) {
+				entry->m_uSize = PeekUInt64(tag->GetBsob());
+			} else {
+				entry->m_uSize = tag->GetInt();
+			}
+		} else {
+			ReadAddressTag(*entry, *tag);
+			entry->AddTag(tag.get(), 0);
+			tag.release();
+		}
+	}
+	uint8_t load;
+	if (AddKeyword(keyID, sourceID, entry.get(), load)) {
+		entry.release();
 	}
 }
+
 void CIndexed::ReadSourceFile(const std::atomic<bool> &cancel)
 {
 	CFile s_file;
-	if (OpenIndex(s_file, m_sfilename)) {
-		uint32_t version = s_file.ReadUInt32();
-		if (version >= 3) {
-			throw std::runtime_error("unsupported persisted Kad index version");
+	if (!OpenIndex(s_file, m_sfilename)) {
+		return;
+	}
+	if (s_file.ReadUInt32() >= 3) {
+		throw std::runtime_error("unsupported persisted Kad index version");
+	}
+	time_t savetime = s_file.ReadUInt32();
+	if (savetime <= time(nullptr)) {
+		return;
+	}
+
+	for (uint32_t numKeys = s_file.ReadUInt32(); numKeys; numKeys--) {
+		if (cancel.load()) {
+			return;
 		}
-		if (version < 3) {
-			time_t savetime = s_file.ReadUInt32();
-			if (savetime > time(nullptr)) {
-				uint32_t numKeys = s_file.ReadUInt32();
-				while (numKeys) {
-					if (cancel.load()) {
-						return;
-					}
-					CUInt128 keyID = s_file.ReadUInt128();
-					uint32_t numSource = s_file.ReadUInt32();
-					while (numSource) {
-						if (cancel.load()) {
-							return;
-						}
-						CUInt128 sourceID = s_file.ReadUInt128();
-						uint32_t numName = s_file.ReadUInt32();
-						while (numName) {
-							if (cancel.load()) {
-								return;
-							}
-							auto ownedEntry = std::make_unique<CEntry>();
-							CEntry *toAdd = ownedEntry.get();
-							toAdd->m_bSource = true;
-							toAdd->m_tLifeTime = s_file.ReadUInt32();
-							uint32_t tagList = s_file.ReadUInt8();
-							while (tagList) {
-								auto ownedTag = std::unique_ptr<CTag>(
-									s_file.ReadTag());
-								CTag *tag = ownedTag.get();
-								if (tag) {
-									if (!tag->GetName().Cmp(
-										    TAG_SOURCEIP)) {
-										toAdd->m_uIP = tag->GetInt();
-										toAdd->AddTag(tag, 0);
-										ownedTag.release();
-									} else if (!tag->GetName().Cmp(
-											   TAG_SOURCEPORT)) {
-										toAdd->m_uTCPport =
-											tag->GetInt();
-										toAdd->AddTag(tag, 0);
-										ownedTag.release();
-									} else if (!tag->GetName().Cmp(
-											   TAG_SOURCEUPORT)) {
-										toAdd->m_uUDPport =
-											tag->GetInt();
-										toAdd->AddTag(tag, 0);
-										ownedTag.release();
-									} else {
-										toAdd->AddTag(tag, 0);
-										ownedTag.release();
-									}
-								}
-								tagList--;
-							}
-							toAdd->m_uKeyID = keyID;
-							toAdd->m_uSourceID = sourceID;
-							uint8_t load;
-							if (AddSources(keyID, sourceID, toAdd, load)) {
-								ownedEntry.release();
-							}
-							numName--;
-						}
-						numSource--;
-					}
-					numKeys--;
+		const CUInt128 keyID = s_file.ReadUInt128();
+		for (uint32_t numSource = s_file.ReadUInt32(); numSource; numSource--) {
+			if (cancel.load()) {
+				return;
+			}
+			const CUInt128 sourceID = s_file.ReadUInt128();
+			for (uint32_t numName = s_file.ReadUInt32(); numName; numName--) {
+				if (cancel.load()) {
+					return;
 				}
+				ReadSourceEntry(s_file, keyID, sourceID);
 			}
 		}
-		s_file.Close();
+	}
+	s_file.Close();
+}
+
+void CIndexed::ReadSourceEntry(CFile &file, const CUInt128 &keyID, const CUInt128 &sourceID)
+{
+	auto entry = std::make_unique<CEntry>();
+	entry->m_bSource = true;
+	entry->m_tLifeTime = file.ReadUInt32();
+	for (uint32_t tagList = file.ReadUInt8(); tagList; tagList--) {
+		auto tag = std::unique_ptr<CTag>(file.ReadTag());
+		if (tag) {
+			ReadAddressTag(*entry, *tag);
+			entry->AddTag(tag.get(), 0);
+			tag.release();
+		}
+	}
+	entry->m_uKeyID = keyID;
+	entry->m_uSourceID = sourceID;
+	uint8_t load;
+	if (AddSources(keyID, sourceID, entry.get(), load)) {
+		entry.release();
 	}
 }
 
@@ -1006,9 +946,7 @@ bool CIndexed::AddNotes(
 
 bool CIndexed::AddLoad(const CUInt128 &keyID, uint32_t timet)
 {
-	if (!IsReady()) {
-		return false;
-	}
+	// Before adoption this map holds only the delays recorded while loading.
 	Load *load = NULL;
 
 	if ((uint32_t)time(NULL) > timet) {
@@ -1017,7 +955,8 @@ bool CIndexed::AddLoad(const CUInt128 &keyID, uint32_t timet)
 
 	LoadMap::iterator it = m_Load_map.find(keyID);
 	if (it != m_Load_map.end()) {
-		wxFAIL;
+		// A publish that started while loading can end after adoption.
+		it->second->time = std::max(it->second->time, timet);
 		return false;
 	}
 
@@ -1268,10 +1207,6 @@ void CIndexed::SendValidNoteResult(
 
 bool CIndexed::SendStoreRequest(const CUInt128 &keyID)
 {
-	// The load map only throttles outgoing publishing.
-	if (!IsReady()) {
-		return true;
-	}
 	Load *load = NULL;
 	LoadMap::iterator it = m_Load_map.find(keyID);
 	if (it != m_Load_map.end()) {

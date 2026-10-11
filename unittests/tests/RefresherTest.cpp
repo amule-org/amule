@@ -3458,6 +3458,63 @@ TEST(Refresher, KadBuddyStatusIsNoBuddyWhenTagAbsent)
 	ASSERT_EQUALS(std::string("no_buddy"), out.buddy_status);
 }
 
+namespace
+{
+
+void AddIndexedCounters(CECPacket &resp)
+{
+	resp.AddTag(CECTag(EC_TAG_STATS_KAD_INDEXED_SOURCES, static_cast<std::uint32_t>(12)));
+	resp.AddTag(CECTag(EC_TAG_STATS_KAD_INDEXED_KEYWORDS, static_cast<std::uint32_t>(34)));
+	resp.AddTag(CECTag(EC_TAG_STATS_KAD_INDEXED_NOTES, static_cast<std::uint32_t>(5)));
+	resp.AddTag(CECTag(EC_TAG_STATS_KAD_INDEXED_LOAD, static_cast<std::uint32_t>(6)));
+}
+
+} // namespace
+
+TEST(Refresher, KadIndexedCountersNeedConnected)
+{
+	// amuled ships the counters once its saved index is loaded, which can be before Kad
+	// connects. /kad keeps them null until it does.
+	CECPacket resp(EC_OP_STATS);
+	resp.AddTag(MakeConnState(0x10));
+	AddIndexedCounters(resp);
+
+	KadSnapshot out;
+	ParseKadFromPacket(&resp, out);
+
+	ASSERT_EQUALS(std::string("connecting"), out.state);
+	ASSERT_TRUE(!out.has_indexed);
+}
+
+TEST(Refresher, KadIndexedCountersNullWhileIndexLoads)
+{
+	// Connected, but the saved index is not adopted yet: amuled omits the counters.
+	CECPacket resp(EC_OP_STATS);
+	resp.AddTag(MakeConnState(0x04 | 0x10));
+
+	KadSnapshot out;
+	ParseKadFromPacket(&resp, out);
+
+	ASSERT_EQUALS(std::string("connected"), out.state);
+	ASSERT_TRUE(!out.has_indexed);
+}
+
+TEST(Refresher, KadIndexedCountersReportedWhenConnected)
+{
+	CECPacket resp(EC_OP_STATS);
+	resp.AddTag(MakeConnState(0x04 | 0x10));
+	AddIndexedCounters(resp);
+
+	KadSnapshot out;
+	ParseKadFromPacket(&resp, out);
+
+	ASSERT_TRUE(out.has_indexed);
+	ASSERT_EQUALS(12u, out.indexed_sources);
+	ASSERT_EQUALS(34u, out.indexed_keywords);
+	ASSERT_EQUALS(5u, out.indexed_notes);
+	ASSERT_EQUALS(6u, out.indexed_load);
+}
+
 // ParseStatusFromPacket -- our own eD2k identity and the four stats counters /status reports.
 // Everything below decodes from tags amuled already sends in the EC_DETAIL_FULL STAT_REQ response;
 // these tests exercise the decode itself, which is where the two sentinels live: 0xffffffff for

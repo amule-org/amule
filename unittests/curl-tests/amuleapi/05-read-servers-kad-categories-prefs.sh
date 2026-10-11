@@ -196,11 +196,18 @@ for F in network.user_count network.file_count network.node_count \
 	indexed.sources indexed.keywords indexed.notes indexed.load_percent; do
 	_assert_json_eq "(.state == \"connected\") or (.$F == null)" true \
 		"/kad.$F is null while Kad is not connected"
+done
+for F in network.user_count network.file_count network.node_count; do
 	_assert_json_eq "(.state != \"connected\") or ((.$F | type) == \"number\")" true \
 		"/kad.$F is numeric while Kad is connected"
 done
-# indexed.load_percent is a load figure rather than a count, despite sitting beside
-# three counts -- covered by the loop above.
+# The store counters also stay null while a connected daemon still loads its saved
+# index, so they are numeric or null there. indexed.load_percent is a count despite
+# its name -- covered by both loops.
+for F in indexed.sources indexed.keywords indexed.notes indexed.load_percent; do
+	_assert_json_eq "(.state != \"connected\") or ((.$F | type) == \"number\" or .$F == null)" \
+		true "/kad.$F is numeric or null while Kad is connected"
+done
 # Two distinct "unknown" answers: null while Kad is not connected, and a
 # syntactically valid 0.0.0.0 while connected but not yet told our address.
 _assert_json_eq '(.state == "connected") or (.public_ip == null)' \

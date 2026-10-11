@@ -182,7 +182,13 @@ private:
 	void ClearPart(IndexPart part);
 	void ReadLoadFile(const std::atomic<bool> &cancel);
 	void ReadKeywordFile(const std::atomic<bool> &cancel);
+	void ReadKeywordEntry(CFile &file,
+		uint32_t version,
+		const CUInt128 &keyID,
+		const CUInt128 &sourceID,
+		const std::atomic<bool> &cancel);
 	void ReadSourceFile(const std::atomic<bool> &cancel);
+	void ReadSourceEntry(CFile &file, const CUInt128 &keyID, const CUInt128 &sourceID);
 	void SaveIndexFile(const wxString &path, const std::function<void(CFile &)> &write);
 	void Clear();
 	void WriteFile();

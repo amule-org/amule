@@ -466,9 +466,11 @@ TEST(IndexedLoad, LargeKeywordAndSourceIndexesRoundTrip)
 	}
 	for (int cycle = 0; cycle < 2; ++cycle) {
 		CIndexed index(temp.path, CUInt128(1u));
-		// Outgoing keyword publishing continues; incoming publications wait for adoption.
+		// Outgoing keyword publishing continues and records its delays; incoming
+		// publications wait for adoption.
 		ASSERT_TRUE(index.SendStoreRequest(CUInt128(1u)));
-		ASSERT_FALSE(index.AddLoad(CUInt128(count + 1), time(nullptr) + 3600));
+		ASSERT_TRUE(index.AddLoad(CUInt128(count + 1), time(nullptr) + 3600));
+		ASSERT_FALSE(index.SendStoreRequest(CUInt128(count + 1)));
 		uint8_t load = 0;
 		auto entry = std::unique_ptr<CKeyEntry>(index.CreateKeyEntry());
 		ASSERT_FALSE(index.AddKeyword(CUInt128(count + 1), CUInt128(2u), entry.get(), load));
@@ -478,6 +480,9 @@ TEST(IndexedLoad, LargeKeywordAndSourceIndexesRoundTrip)
 		ASSERT_EQUALS(count, index.m_totalIndexKeyword);
 		ASSERT_EQUALS(count, index.m_totalIndexSource);
 		ASSERT_EQUALS(size_t(count), index.GetFileKeyCount());
+		// The second cycle reads the same delay back from disk and merges it.
+		ASSERT_EQUALS(1u, index.m_totalIndexLoad);
+		ASSERT_FALSE(index.SendStoreRequest(CUInt128(count + 1)));
 	}
 }
 
@@ -539,6 +544,38 @@ TEST(IndexedLoad, CorruptPartDoesNotDiscardHealthyParts)
 			ASSERT_EQUALS(bad == "load_index.dat" ? 1u : 2u, reloaded.m_totalIndexLoad);
 		}
 	}
+}
+
+TEST(IndexedLoad, PublishDelaysRecordedWhileLoadingAreKept)
+{
+	TempIndex temp;
+	const uint32_t later = time(nullptr) + 7200;
+	{
+		CFile file(temp.path + "load_index.dat", CFile::write);
+		file.WriteUInt32(1);
+		file.WriteUInt32(time(nullptr));
+		file.WriteUInt32(1);
+		file.WriteUInt128(CUInt128(2u));
+		file.WriteUInt32(time(nullptr) + 3600);
+	}
+	{
+		CIndexed index(temp.path, CUInt128(1u));
+		// Our own publishes end while the worker reads: one new delay, and one that
+		// extends a saved delay.
+		ASSERT_TRUE(index.AddLoad(CUInt128(3u), time(nullptr) + 3600));
+		ASSERT_TRUE(index.AddLoad(CUInt128(2u), later));
+		ASSERT_FALSE(index.SendStoreRequest(CUInt128(3u)));
+		ASSERT_TRUE(WaitForLoad(index));
+		ASSERT_EQUALS(2u, index.m_totalIndexLoad);
+		ASSERT_FALSE(index.SendStoreRequest(CUInt128(2u)));
+		ASSERT_FALSE(index.SendStoreRequest(CUInt128(3u)));
+	}
+	CFile saved(temp.path + "load_index.dat");
+	ASSERT_EQUALS(1u, saved.ReadUInt32());
+	saved.ReadUInt32();
+	ASSERT_EQUALS(2u, saved.ReadUInt32());
+	ASSERT_TRUE(saved.ReadUInt128() == CUInt128(2u));
+	ASSERT_EQUALS(later, saved.ReadUInt32());
 }
 
 TEST(IndexedLoad, PartialLoadMapIsClearedOnError)

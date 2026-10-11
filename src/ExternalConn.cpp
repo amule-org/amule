@@ -1497,8 +1497,9 @@ static CECPacket *Get_EC_Response_StatRequest(const CECPacket *request, CLoggerA
 			response->AddTag(CECTag(EC_TAG_STATS_KAD_NODES, CStatistics::GetKadNodes()));
 		}
 		// Kad stats
-		// Index ownership is local: report the adopted snapshot even before bootstrap.
-		if (Kademlia::CKademlia::IsRunning()) {
+		// The counts are local, so they ship before bootstrap, but only once the saved
+		// index is adopted: a 0 before that is not a real count.
+		if (Kademlia::CKademlia::IsRunning() && Kademlia::CKademlia::GetIndexed()->IsReady()) {
 			response->AddTag(CECTag(EC_TAG_STATS_KAD_INDEXED_SOURCES,
 				Kademlia::CKademlia::GetIndexed()->m_totalIndexSource));
 			response->AddTag(CECTag(EC_TAG_STATS_KAD_INDEXED_KEYWORDS,

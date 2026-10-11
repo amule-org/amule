@@ -1512,27 +1512,26 @@ void ParseKadFromPacket(const CECPacket *resp, KadSnapshot &out)
 		out.has_network = true;
 	}
 
-	// These ship only when Kad is connected (server gates them at
+	// The rest ship only when Kad is connected (server gates them at
 	// ExternalConn.cpp `if (Kademlia::CKademlia::IsConnected())`).
 	if (const CECTag *t = resp->GetTagByName(EC_TAG_STATS_KAD_FIREWALLED_UDP)) {
 		out.firewalled_udp = (t->GetInt() != 0);
 		out.has_firewalled_udp = true;
 	}
-	if (const CECTag *t = resp->GetTagByName(EC_TAG_STATS_KAD_INDEXED_SOURCES)) {
-		out.indexed_sources = static_cast<std::uint32_t>(t->GetInt());
+	// amuled ships the four index counters together once Kad has loaded its saved index,
+	// which can be before it connects; /kad reports them only while connected.
+	out.has_indexed =
+		out.state == "connected" && resp->GetTagByName(EC_TAG_STATS_KAD_INDEXED_LOAD) != nullptr;
+	if (out.has_indexed) {
+		out.indexed_sources = static_cast<std::uint32_t>(
+			resp->GetTagByNameSafe(EC_TAG_STATS_KAD_INDEXED_SOURCES)->GetInt());
+		out.indexed_keywords = static_cast<std::uint32_t>(
+			resp->GetTagByNameSafe(EC_TAG_STATS_KAD_INDEXED_KEYWORDS)->GetInt());
+		out.indexed_notes = static_cast<std::uint32_t>(
+			resp->GetTagByNameSafe(EC_TAG_STATS_KAD_INDEXED_NOTES)->GetInt());
+		out.indexed_load = static_cast<std::uint32_t>(
+			resp->GetTagByNameSafe(EC_TAG_STATS_KAD_INDEXED_LOAD)->GetInt());
 	}
-	if (const CECTag *t = resp->GetTagByName(EC_TAG_STATS_KAD_INDEXED_KEYWORDS)) {
-		out.indexed_keywords = static_cast<std::uint32_t>(t->GetInt());
-	}
-	if (const CECTag *t = resp->GetTagByName(EC_TAG_STATS_KAD_INDEXED_NOTES)) {
-		out.indexed_notes = static_cast<std::uint32_t>(t->GetInt());
-	}
-	if (const CECTag *t = resp->GetTagByName(EC_TAG_STATS_KAD_INDEXED_LOAD)) {
-		out.indexed_load = static_cast<std::uint32_t>(t->GetInt());
-	}
-	// One flag for the group: amuled ships all four together, inside its own
-	// `if (IsConnected())`, so any one arriving means the set did.
-	out.has_indexed = resp->GetTagByName(EC_TAG_STATS_KAD_INDEXED_LOAD) != nullptr;
 	if (const CECTag *t = resp->GetTagByName(EC_TAG_STATS_KAD_IP_ADDRESS)) {
 		out.public_ip = IPv4ToDotted(static_cast<std::uint32_t>(t->GetInt()));
 	}

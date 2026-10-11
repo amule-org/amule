@@ -19,6 +19,7 @@ import { t, terr } from "../i18n.js";
 import { useSplitHeight } from "./split-detail.js";
 
 const SRV_POLL_MS = 5000;
+const KAD_POLL_MS = 5000;
 const AMULE_TAIL = 500; // initial history; live lines then arrive via log_appended
 const GRAPH_WIDTH = 300; // samples per fetch (~chart pixel width; full window is ~1800)
 // series[0] is labelled "Current" for the legend, not the card title it reused
@@ -453,6 +454,9 @@ function ServerInfoPanel() {
 
 // --- bottom tabs: per-network info grids ---------------------------------
 
+// null while a connected daemon still loads its saved index; formatInt would show 0.
+function indexCount(connected, n) { return connected && n != null ? formatInt(n) : "\u2014"; }
+
 function yesno(b) { return html`<span class=${"status-chip " + (b ? "warn" : "ok")}>${b ? t("networks_kad_yes") : t("networks_kad_no")}</span>`; }
 
 // Mirrors amuleGUI's "Firewalled state:" row (CServerWnd::UpdateKadInfo): with a
@@ -530,9 +534,10 @@ function Ed2kInfoPanel() {
 }
 
 // Live counters ride the SSE status event; the detail-only fields (node id,
-// connected-since, your public IP, firewalled UDP, buddy) are fetched from /kad
-// on mount and whenever the Kad state changes — a connect/disconnect from the
-// top tab arrives that way.
+// connected-since, your public IP, firewalled UDP, buddy, index counters) are
+// fetched from /kad on mount, whenever the Kad state changes (a connect or
+// disconnect from the top tab arrives that way), and every few seconds, because
+// the index counters change while connected.
 function KadInfoPanel() {
   const status = useStore("status");
   const kadState = status && status.kad && status.kad.state;
@@ -540,10 +545,13 @@ function KadInfoPanel() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    (async () => {
+    const load = async () => {
       try { setDetail(await api.get("kad")); setError(""); }
       catch (e) { setError(terr(e) || t("networks_kad_error")); }
-    })();
+    };
+    load();
+    const timer = setInterval(load, KAD_POLL_MS);
+    return () => clearInterval(timer);
   }, [kadState]);
 
   const kad = (status && status.kad) || {};
@@ -577,10 +585,10 @@ function KadInfoPanel() {
         statRow("networks_kad_contacts_nodes", connected ? formatInt(net.node_count) : "—"),
       ], "networks_kad_group_network")}
       ${Section([
-        statRow("networks_kad_indexed_sources", connected ? formatInt(idx.sources) : "—"),
-        statRow("networks_kad_indexed_keywords", connected ? formatInt(idx.keywords) : "—"),
-        statRow("networks_kad_indexed_notes", connected ? formatInt(idx.notes) : "—"),
-        statRow("networks_kad_indexed_load", connected ? formatInt(idx.load_percent) : "—"),
+        statRow("networks_kad_indexed_sources", indexCount(connected, idx.sources)),
+        statRow("networks_kad_indexed_keywords", indexCount(connected, idx.keywords)),
+        statRow("networks_kad_indexed_notes", indexCount(connected, idx.notes)),
+        statRow("networks_kad_indexed_load", indexCount(connected, idx.load_percent)),
       ], "networks_kad_group_index")}
     </div>`;
 }
