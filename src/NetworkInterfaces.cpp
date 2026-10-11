@@ -62,6 +62,11 @@ typedef std::array<std::uint8_t, 16> Ipv6Bytes;
 //! reliably reachable from userspace across the libc implementations this project builds against,
 //! and the value is ABI-stable.
 const unsigned int LINUX_IFA_F_TENTATIVE = 0x40;
+//! IFA_F_TEMPORARY, spelled out for the same reason. The bit is shared with IFA_F_SECONDARY;
+//! for IPv6 the kernel uses it to mark an RFC 4941 temporary address.
+const unsigned int LINUX_IFA_F_TEMPORARY = 0x01;
+//! IFA_F_DEPRECATED, spelled out for the same reason.
+const unsigned int LINUX_IFA_F_DEPRECATED = 0x20;
 
 /**
  * Per-address IPv6 flags, as the kernel reports them.
@@ -185,9 +190,10 @@ std::vector<NetworkInterface> DetectNetworkInterfaces()
 						continue;
 					}
 					const sockaddr_in6 *sin6 = reinterpret_cast<const sockaddr_in6 *>(sa);
-					Ipv6Bytes bytes = {};
-					std::memcpy(bytes.data(), &sin6->sin6_addr, bytes.size());
-					iface.ipv6.push_back(bytes);
+					NetworkInterfaceIPv6 address;
+					std::memcpy(
+						address.bytes.data(), &sin6->sin6_addr, address.bytes.size());
+					iface.ipv6.push_back(address);
 				}
 			}
 		}
@@ -222,19 +228,21 @@ std::vector<NetworkInterface> DetectNetworkInterfaces()
 			} else if (p->ifa_addr->sa_family == AF_INET6) {
 				const sockaddr_in6 *sin6 =
 					reinterpret_cast<const sockaddr_in6 *>(p->ifa_addr);
-				Ipv6Bytes bytes = {};
-				std::memcpy(bytes.data(), &sin6->sin6_addr, bytes.size());
+				NetworkInterfaceIPv6 address;
+				std::memcpy(address.bytes.data(), &sin6->sin6_addr, address.bytes.size());
 #ifdef __linux__
-				bool tentative = false;
+				unsigned int addressFlags = 0;
 				for (const auto &entry : inet6Flags) {
-					if (entry.first == bytes) {
-						tentative = (entry.second & LINUX_IFA_F_TENTATIVE) != 0;
+					if (entry.first == address.bytes) {
+						addressFlags = entry.second;
 						break;
 					}
 				}
-				if (tentative) {
+				if ((addressFlags & LINUX_IFA_F_TENTATIVE) != 0) {
 					continue;
 				}
+				address.temporary = (addressFlags & LINUX_IFA_F_TEMPORARY) != 0;
+				address.deprecated = (addressFlags & LINUX_IFA_F_DEPRECATED) != 0;
 #elif defined(SIOCGIFAFLAG_IN6)
 				if (flagSocket >= 0) {
 					struct in6_ifreq request;
@@ -242,14 +250,23 @@ std::vector<NetworkInterface> DetectNetworkInterfaces()
 					std::strncpy(
 						request.ifr_name, p->ifa_name, sizeof(request.ifr_name) - 1);
 					std::memcpy(&request.ifr_addr, sin6, sizeof(request.ifr_addr));
-					if (::ioctl(flagSocket, SIOCGIFAFLAG_IN6, &request) == 0 &&
-						(request.ifr_ifru.ifru_flags6 &
-							(IN6_IFF_TENTATIVE | IN6_IFF_DUPLICATED)) != 0) {
-						continue;
+					if (::ioctl(flagSocket, SIOCGIFAFLAG_IN6, &request) == 0) {
+						const auto addressFlags = request.ifr_ifru.ifru_flags6;
+						if ((addressFlags &
+							    (IN6_IFF_TENTATIVE | IN6_IFF_DUPLICATED)) != 0) {
+							continue;
+						}
+						// Not every BSD defines both; a missing one stays false.
+#ifdef IN6_IFF_TEMPORARY
+						address.temporary = (addressFlags & IN6_IFF_TEMPORARY) != 0;
+#endif
+#ifdef IN6_IFF_DEPRECATED
+						address.deprecated = (addressFlags & IN6_IFF_DEPRECATED) != 0;
+#endif
 					}
 				}
 #endif
-				iface.ipv6.push_back(bytes);
+				iface.ipv6.push_back(address);
 			}
 		}
 #if !defined(__linux__) && defined(SIOCGIFAFLAG_IN6)

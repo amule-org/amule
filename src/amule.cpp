@@ -1788,7 +1788,9 @@ void RefreshLocalPublicIPv6Addresses()
 {
 	std::vector<CPublicIPv6Corroboration::Address> local;
 	for (const NetworkInterface &iface : DetectNetworkInterfaces()) {
-		local.insert(local.end(), iface.ipv6.begin(), iface.ipv6.end());
+		for (const NetworkInterfaceIPv6 &address : iface.ipv6) {
+			local.push_back(address.bytes);
+		}
 	}
 	// Publishing the set is only half of it: the same call re-validates an already adopted
 	// reflection against the addresses we still hold, which is how a prefix renumber gets

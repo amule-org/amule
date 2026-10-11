@@ -32,6 +32,14 @@
 #include <wx/arrstr.h>
 #include <wx/string.h>
 
+//! One IPv6 address assigned to a network interface.
+struct NetworkInterfaceIPv6
+{
+	std::array<std::uint8_t, 16> bytes = {};
+	bool temporary = false;  // RFC 4941 privacy address: rotated by the system
+	bool deprecated = false; // past its preferred lifetime: kept for existing connections only
+};
+
 /**
  * One of this machine's network interfaces, with the addresses assigned to it.
  *
@@ -56,7 +64,10 @@ struct NetworkInterface
 	//! Assigned IPv6 addresses, 16 bytes each, big-endian as they travel on the wire. Addresses
 	//! still running duplicate address detection are excluded: until DAD finishes the address
 	//! may belong to somebody else on the link, which is the case DAD exists to catch.
-	std::vector<std::array<std::uint8_t, 16>> ipv6;
+	//! Temporary and deprecated addresses are kept; only Linux and macOS report those flags.
+	//! Windows reports neither: it already drops deprecated addresses, and it has no reliable
+	//! temporary flag (IpSuffixOriginRandom also marks randomized stable identifiers).
+	std::vector<NetworkInterfaceIPv6> ipv6;
 };
 
 /**
