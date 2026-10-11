@@ -30,6 +30,7 @@
 #include <wx/confbase.h> // Do_not_auto_remove (MacOS 10.3, wx 2.7)
 #include <wx/html/htmlwin.h>
 #include <wx/checkbox.h> // Needed for wxCheckBox (version popup)
+#include <wx/combo.h>    // Needed for wxComboCtrl
 #include <wx/mimetype.h> // Do_not_auto_remove (win32)
 #include <wx/statbmp.h>  // Needed for wxStaticBitmap (version popup)
 #include <wx/stattext.h>
@@ -470,6 +471,22 @@ void CamuleDlg::ShowED2KLinksHandler(bool show)
 	s_dlgcnt->Layout();
 }
 
+namespace
+{
+// A wx-drawn combobox (wxBitmapComboBox on macOS) shows its list in a separate window, which
+// stays on screen when the page or the frame under it is hidden.
+void DismissComboPopups(wxWindow *window)
+{
+	for (wxWindow *child : window->GetChildren()) {
+		auto *combo = wxDynamicCast(child, wxComboCtrl);
+		if (combo && combo->IsPopupShown()) {
+			combo->Dismiss();
+		}
+		DismissComboPopups(child);
+	}
+}
+} // namespace
+
 void CamuleDlg::SetActiveDialog(DialogType type, wxWindow *dlg)
 {
 	m_nActiveDialog = type;
@@ -481,6 +498,7 @@ void CamuleDlg::SetActiveDialog(DialogType type, wxWindow *dlg)
 	}
 
 	if (m_activewnd) {
+		DismissComboPopups(m_activewnd);
 		m_activewnd->Show(false);
 		contentSizer->Detach(m_activewnd);
 	}
@@ -1670,6 +1688,8 @@ void CamuleDlg::OnShow(wxShowEvent &evt)
 		// never fires wxIconizeEvent -- see OnMinimize for the other half of issue #806.
 		theApp->OnMainWindowRestored();
 #endif
+	} else {
+		DismissComboPopups(this);
 	}
 #ifdef WITH_LIBAYATANA_APPINDICATOR
 	// SNI tray menus are static between rebuilds, so the "Show aMule"/"Hide aMule" entry's
@@ -1689,6 +1709,9 @@ void CamuleDlg::OnMinimize(wxIconizeEvent &evt)
 	// unreliable on wxGTK during the minimize-button transition, so consumers that need to know
 	// read IsTrayLogicallyIconized() instead.
 	m_iconized_logical = evt.IsIconized();
+	if (evt.IsIconized()) {
+		DismissComboPopups(this);
+	}
 
 #ifdef CLIENT_GUI
 	// Coming back from the taskbar/Dock with a reconnect running quietly behind the window:
