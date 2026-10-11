@@ -52,6 +52,7 @@ class CFriend;
 class CKnownFile;
 class CMemFile;
 class CAICHHash;
+enum class EContactRoute;
 
 enum EChatCaptchaState
 {
@@ -304,6 +305,12 @@ public:
 	//! Whether a socket whose stream died may be dialled again over TCP: every refusal
 	//! CheckContactPreconditions() makes, asked without acting on the answer.
 	bool IsRedialAllowed() const;
+
+private:
+	//! How this client is reached: Refuse exactly where CheckContactPreconditions() declines it.
+	EContactRoute ContactRoute() const;
+
+public:
 	void ProcessSharedFileList(const uint8_t *pachPacket, uint32 nSize, wxString &pszDirectory);
 	void SendSharedDirectories();
 	void SendSharedFilesOfDirectory(const wxString &strReqDir);

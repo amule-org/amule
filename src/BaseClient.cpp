@@ -80,6 +80,8 @@
 #include "FriendList.h"      // Needed for CFriendList
 #include "Statistics.h"      // Needed for theStats
 #include "ClientUDPSocket.h"
+#include "AddressFamilyPolicy.h" // Needed for AddressFamilyPolicy::Permits
+#include "ContactDialPolicy.h"   // Needed for DecideContactRoute
 #include "Logger.h"
 #include "DataToText.h" // Needed for GetSoftName()
 #include "GuiEvents.h"  // Needed for Notify_
@@ -1578,6 +1580,24 @@ bool CUpDownClient::IsRedialAllowed() const
 	       PeerAddressing::CanOpenConnection(contactAddress, IsConnected());
 }
 
+EContactRoute CUpDownClient::ContactRoute() const
+{
+	SContactFacts facts;
+	facts.contactAddress = ContactAddress();
+	facts.socketConnected = IsConnected();
+#ifdef ENABLE_IPV6
+	facts.ipv6Built = true;
+#endif
+	facts.familyPermitted = AddressFamilyPolicy::Permits(facts.contactAddress);
+	facts.proxyEnabled = thePrefs::GetProxyData()->m_proxyEnable;
+	const EContactRoute route = DecideContactRoute(facts);
+	// Connect() dials GetConnectAddress(), so it must be the address the filter and ban checks saw.
+	if (route == EContactRoute::DialIPv6 && GetConnectAddress() != facts.contactAddress) {
+		return EContactRoute::Refuse;
+	}
+	return route;
+}
+
 // Re-check the standing reasons to refuse this peer, disconnecting it on a hit:
 // incompatible obfuscation settings, a filtered IP, a banned IP. Returns Contacting when
 // the peer is clean -- "carry on" rather than "we sent something" -- and ClientDeleted or
@@ -1637,7 +1657,7 @@ EContactResult CUpDownClient::CheckContactPreconditions()
 		}
 		return EContactResult::Declined;
 	}
-	if (!PeerAddressing::CanOpenConnection(contactAddress, IsConnected())) {
+	if (ContactRoute() == EContactRoute::Refuse) {
 		if (Disconnected("Outbound IPv6 connections unavailable")) {
 			Safe_Delete();
 			return EContactResult::ClientDeleted;
@@ -1664,6 +1684,8 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 		refused != EContactResult::Contacting) {
 		return refused;
 	}
+	// Every callback route carries IPv4 only, so a native IPv6 contact skips them and is dialled.
+	const bool dialIPv6 = ContactRoute() == EContactRoute::DialIPv6;
 
 	if (GetKadState() == KS_QUEUED_FWCHECK) {
 		SetKadState(KS_CONNECTING_FWCHECK);
@@ -1671,7 +1693,7 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 		SetKadState(KS_CONNECTING_FWCHECK_UDP);
 	}
 
-	if (HasLowID()) {
+	if (HasLowID() && !dialIPv6) {
 		if (!theApp->CanDoCallback(GetServerIP(), GetServerPort())) {
 			// We cannot do a callback!
 			if (GetDownloadState() == DS_CONNECTING) {
@@ -1761,7 +1783,7 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 			GetUserHash().GetHash(),
 			false,
 			0);
-	} else if (HasLowID()) { // LOWID
+	} else if (HasLowID() && !dialIPv6) { // LOWID
 		// Set where a packet actually goes out. Several of the paths below reach the end having
 		// sent nothing -- a source we are merely queued at, a peer that is not a download source, a
 		// Kad lookup that fails to start -- and reporting those as Contacting let a browse of them
@@ -1931,6 +1953,16 @@ bool CUpDownClient::Connect()
 		} else {
 			m_socket->SetConnectionEncryption(false, NULL, false);
 		}
+#ifdef ENABLE_IPV6
+		const CNetworkAddress &connectAddress = GetConnectAddress();
+		if (connectAddress.IsIPv6() && !connectAddress.IsIPv4Mapped()) {
+			AddDebugLogLineN(logClient,
+				CFormat("Trying to connect to [%s]:%u") % connectAddress.ToWxString() %
+					static_cast<unsigned int>(GetUserPort()));
+			m_socket->ConnectIPv6(connectAddress, GetUserPort(), false);
+			return true;
+		}
+#endif
 		amuleIPV4Address tmp;
 		tmp.Hostname(GetConnectIP());
 		tmp.Service(GetUserPort());
