@@ -27,7 +27,7 @@
 #include "GetTickCount.h" // Interface
 
 // seconds from app start-up, check GetTickCount.h
-uint32 TheTime = 0;
+std::atomic<uint32> TheTime{ 0 };
 
 #ifdef __WINDOWS__
 

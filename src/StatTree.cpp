@@ -396,15 +396,15 @@ void CStatTreeItemCounterMax::AddECValues(CECTag *tag) const
 wxString CStatTreeItemPackets::GetDisplayString() const
 {
 	return CFormat(wxGetTranslation(m_label)) %
-	       a_brackets_b(CastItoXBytes(m_bytes), CastItoIShort(m_packets));
+	       a_brackets_b(CastItoXBytes(m_bytes.load()), CastItoIShort(m_packets.load()));
 }
 #endif
 
 void CStatTreeItemPackets::AddECValues(CECTag *tag) const
 {
-	CECTag value(EC_TAG_STAT_NODE_VALUE, m_bytes);
+	CECTag value(EC_TAG_STAT_NODE_VALUE, m_bytes.load());
 	value.AddTag(CECTag(EC_TAG_STAT_VALUE_TYPE, (uint8)EC_VALUE_BYTES));
-	CECTag tmp(EC_TAG_STAT_NODE_VALUE, (uint64)m_packets);
+	CECTag tmp(EC_TAG_STAT_NODE_VALUE, (uint64)m_packets.load());
 	tmp.AddTag(CECTag(EC_TAG_STAT_VALUE_TYPE, (uint8)EC_VALUE_ISHORT));
 	value.AddTag(tmp);
 	tag->AddTag(value);

@@ -26,6 +26,8 @@
 #ifndef UPDOWNCLIENT_H
 #define UPDOWNCLIENT_H
 
+#include <atomic>
+
 #include "Constants.h"    // Needed for ESourceFrom
 #include "GetTickCount.h" // Needed for GetTickCount64
 #include "MD4Hash.h"
@@ -734,8 +736,9 @@ private:
 	CFriend *m_Friend;
 
 	uint64 m_nTransferredUp;
-	sint64 m_nCurQueueSessionPayloadUp;
-	sint64 m_addedPayloadQueueSession;
+	// atomic: CUploadDiskIOThread reads both, and adds to m_addedPayloadQueueSession
+	std::atomic<sint64> m_nCurQueueSessionPayloadUp;
+	std::atomic<sint64> m_addedPayloadQueueSession;
 
 	struct TransferredData
 	{
@@ -743,8 +746,8 @@ private:
 		uint64 timestamp;
 	};
 
-	// Upload data rate computation
-	uint32 m_nUpDatarate;
+	// Upload data rate computation. Atomic: CUploadDiskIOThread reads the rate.
+	std::atomic<uint32> m_nUpDatarate;
 	uint32 m_nSumForAvgUpDataRate;
 	std::list<TransferredData> m_AvarageUDR_list;
 

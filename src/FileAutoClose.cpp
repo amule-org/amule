@@ -45,6 +45,7 @@ CFileAutoClose::CFileAutoClose(const CPath &path, CFile::OpenMode mode)
 
 bool CFileAutoClose::Open(const CPath &path, CFile::OpenMode mode)
 {
+	std::lock_guard<std::mutex> lock(m_stateMutex);
 	m_mode = mode;
 	m_autoClosed = false;
 	m_locked = 0;
@@ -55,6 +56,7 @@ bool CFileAutoClose::Open(const CPath &path, CFile::OpenMode mode)
 
 bool CFileAutoClose::Create(const CPath &path, bool overwrite)
 {
+	std::lock_guard<std::mutex> lock(m_stateMutex);
 	m_mode = CFile::write;
 	m_autoClosed = false;
 	m_lastAccess = TheTime;
@@ -63,6 +65,7 @@ bool CFileAutoClose::Create(const CPath &path, bool overwrite)
 
 bool CFileAutoClose::Close()
 {
+	std::lock_guard<std::mutex> lock(m_stateMutex);
 	bool state = m_autoClosed ? true : m_file.Close();
 	m_autoClosed = false;
 	return state;
@@ -70,6 +73,7 @@ bool CFileAutoClose::Close()
 
 uint64 CFileAutoClose::GetLength() const
 {
+	std::lock_guard<std::mutex> lock(m_stateMutex);
 	return m_autoClosed ? m_size : m_file.GetLength();
 }
 
@@ -86,6 +90,7 @@ const CPath &CFileAutoClose::GetFilePath() const
 
 bool CFileAutoClose::IsOpened() const
 {
+	std::lock_guard<std::mutex> lock(m_stateMutex);
 	return m_autoClosed || m_file.IsOpened();
 }
 
@@ -111,19 +116,27 @@ bool CFileAutoClose::Eof()
 
 int CFileAutoClose::fd()
 {
-	Reopen();
+	std::lock_guard<std::mutex> lock(m_stateMutex);
+	ReopenLocked();
 	m_locked++;
 	return m_file.fd();
 }
 
 void CFileAutoClose::Unlock()
 {
+	std::lock_guard<std::mutex> lock(m_stateMutex);
 	if (m_locked) {
 		m_locked--;
 	}
 }
 
 void CFileAutoClose::Reopen()
+{
+	std::lock_guard<std::mutex> lock(m_stateMutex);
+	ReopenLocked();
+}
+
+void CFileAutoClose::ReopenLocked()
 {
 	if (m_autoClosed) {
 		AddDebugLogLineN(logCFile, "Reopen AutoClosed file " + GetFilePath().GetPrintable());
@@ -138,6 +151,7 @@ void CFileAutoClose::Reopen()
 
 bool CFileAutoClose::Release(bool now)
 {
+	std::lock_guard<std::mutex> lock(m_stateMutex);
 	if (!m_autoClosed && (now || TheTime - m_lastAccess >= ReleaseTime) && !m_locked &&
 		m_file.IsOpened()) {
 		m_autoClosed = true;

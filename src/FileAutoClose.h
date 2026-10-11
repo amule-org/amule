@@ -28,6 +28,8 @@
 
 #include "CFile.h" // Needed for CFile
 
+#include <mutex>
+
 /**
  * Wraps CFile so the file handle can be closed and reopened on use, keeping the number of open
  * handles down.
@@ -126,8 +128,15 @@ private:
 	 */
 	void Reopen();
 
+	//! Reopen() for a caller that already holds m_stateMutex.
+	void ReopenLocked();
+
 	//! The wrapped CFile.
 	CFile m_file;
+
+	//! Guards the fields below. CPartFile's worker threads read and write the file while the
+	//! main thread may auto-close it, so a reopen and a close must not interleave.
+	mutable std::mutex m_stateMutex;
 
 	//! The mode used to open it.
 	CFile::OpenMode m_mode;

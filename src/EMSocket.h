@@ -26,6 +26,7 @@
 #ifndef EMSOCKET_H
 #define EMSOCKET_H
 
+#include <atomic>
 #include <mutex>
 
 #include "EncryptedStreamSocket.h" // Needed for CEncryptedStreamSocket
@@ -133,7 +134,8 @@ protected:
 	//! which no send or receive path clears.
 	void QuiesceForRedial();
 
-	uint8 byConnected;
+	// atomic: the throttler and disk I/O threads read it without m_sendLocker
+	std::atomic<uint8> byConnected;
 	uint32 m_uTimeOut;
 
 private:
@@ -176,7 +178,7 @@ private:
 
 	bool m_currentPacket_is_controlpacket;
 
-	std::mutex m_sendLocker;
+	mutable std::mutex m_sendLocker;
 
 	uint64 m_numberOfSentBytesCompleteFile;
 	uint64 m_numberOfSentBytesPartFile;
@@ -191,7 +193,8 @@ private:
 	uint32 m_actualPayloadSize;
 	uint32 m_actualPayloadSizeSent;
 
-	bool m_bBusy;
+	// atomic: IsBusyQuickCheck() reads it on the disk I/O thread without m_sendLocker
+	std::atomic<bool> m_bBusy;
 	bool m_hasSent;
 };
 

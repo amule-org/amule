@@ -38,6 +38,7 @@
 #define VIRTUAL
 #endif
 
+#include <atomic>
 #include <list>        // Needed for std::list
 #include <wx/string.h> // Needed for wxString
 #include <wx/thread.h> // Needed for wxMutex
@@ -530,8 +531,8 @@ public:
 	/** Add a packet of size 'size'. */
 	void operator+=(long size)
 	{
-		++m_packets;
-		m_bytes += size;
+		m_packets.fetch_add(1, std::memory_order_relaxed);
+		m_bytes.fetch_add(size, std::memory_order_relaxed);
 	}
 
 #ifndef AMULE_DAEMON
@@ -541,9 +542,10 @@ public:
 protected:
 	virtual void AddECValues(CECTag *tag) const;
 
-	uint32_t m_packets;
+	// atomic: the main and disk I/O threads both count overhead
+	std::atomic<uint32_t> m_packets;
 
-	uint64_t m_bytes;
+	std::atomic<uint64_t> m_bytes;
 };
 
 /**

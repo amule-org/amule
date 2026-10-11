@@ -30,7 +30,7 @@
 #include "FileAutoClose.h" // Needed for CFileAutoClose
 #include "FileArea.h"      // Needed for CFileArea (PartFileBufferedData)
 #include <array>           // Needed for std::array (m_ecTickState)
-#include <atomic>          // Needed for std::atomic (m_iWrites)
+#include <atomic>          // Needed for std::atomic (m_iWrites, flushed)
 #include <mutex>           // Needed for std::mutex (m_hpartfileMutex)
 
 #include "OtherStructs.h"   // Needed for Requested_Block_Struct
@@ -81,7 +81,9 @@ public:
 	uint64 start;                  // This is the start offset of the data
 	uint64 end;                    // This is the end offset of the data
 	Requested_Block_Struct *block; // This is the requested block that this data relates to
-	uint8 flushed;                 // eMule ref: 0=ready 1=pending 2=error 3=written
+	// eMule ref: 0=ready 1=pending 2=error 3=written. Atomic: the write thread publishes the
+	// result, and the main thread frees the area once it reads PB_WRITTEN.
+	std::atomic<uint8> flushed;
 
 	PartFileBufferedData(CFileAutoClose &file,
 		uint8_t *data,

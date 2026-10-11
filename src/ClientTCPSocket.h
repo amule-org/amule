@@ -30,6 +30,8 @@
 
 #include "EMSocket.h" // Needed for CEMSocket
 
+#include <atomic>
+
 class CProxyData;
 
 // CClientTCPSocket
@@ -114,7 +116,8 @@ private:
 	void ResetTimeOutTimer();
 	void SetClient(CUpDownClient *client);
 
-	uint64 timeout_timer;
+	// atomic: the main and throttler threads both reset it
+	std::atomic<uint64> timeout_timer;
 	uint32 m_remoteip;
 	CNetworkAddress m_remoteAddress; // Dial target, or the peer captured at accepted TCP ingress.
 };

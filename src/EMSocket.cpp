@@ -419,6 +419,8 @@ uint64 CEMSocket::PeekSentPayload()
 
 bool CEMSocket::HasQueues(bool bOnlyStandardPackets) const
 {
+	// Locked: the disk I/O thread calls this while the throttler sends.
+	std::lock_guard<std::mutex> lock(m_sendLocker);
 	return sendbuffer != NULL || !m_standard_queue.empty() ||
 	       (!bOnlyStandardPackets && !m_control_queue.empty());
 }
