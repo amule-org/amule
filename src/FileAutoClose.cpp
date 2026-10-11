@@ -79,7 +79,7 @@ uint64 CFileAutoClose::GetLength() const
 
 bool CFileAutoClose::SetLength(uint64 newLength)
 {
-	Reopen();
+	CInUse inUse(*this);
 	return m_file.SetLength(newLength);
 }
 
@@ -96,28 +96,28 @@ bool CFileAutoClose::IsOpened() const
 
 void CFileAutoClose::ReadAt(void *buffer, uint64 offset, size_t count)
 {
-	Reopen();
+	CInUse inUse(*this);
 	m_file.Seek(offset);
 	m_file.Read(buffer, count);
 }
 
 void CFileAutoClose::WriteAt(const void *buffer, uint64 offset, size_t count)
 {
-	Reopen();
+	CInUse inUse(*this);
 	m_file.Seek(offset);
 	m_file.Write(buffer, count);
 }
 
 bool CFileAutoClose::Eof()
 {
-	Reopen();
+	CInUse inUse(*this);
 	return m_file.Eof();
 }
 
 int CFileAutoClose::fd()
 {
 	std::lock_guard<std::mutex> lock(m_stateMutex);
-	ReopenLocked();
+	Reopen();
 	m_locked++;
 	return m_file.fd();
 }
@@ -130,13 +130,15 @@ void CFileAutoClose::Unlock()
 	}
 }
 
-void CFileAutoClose::Reopen()
+CFileAutoClose::CInUse::CInUse(CFileAutoClose &file)
+: m_owner(file)
 {
-	std::lock_guard<std::mutex> lock(m_stateMutex);
-	ReopenLocked();
+	std::lock_guard<std::mutex> lock(m_owner.m_stateMutex);
+	m_owner.Reopen();
+	m_owner.m_locked++;
 }
 
-void CFileAutoClose::ReopenLocked()
+void CFileAutoClose::Reopen()
 {
 	if (m_autoClosed) {
 		AddDebugLogLineN(logCFile, "Reopen AutoClosed file " + GetFilePath().GetPrintable());

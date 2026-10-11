@@ -892,8 +892,12 @@ private:
 			AddDebugLogLineF(logAsio, CFormat("HandleConnect: wrapper gone %s") % m_IP);
 		} else {
 			if (ok) {
-				// Before the connect event, so its handler sees IsConnected().
+				// Before the connect event, so its handler sees IsConnected(). Close() sets
+				// m_closed before it clears m_connected, so re-checking here cannot miss it.
 				m_connected = true;
+				if (m_closed) {
+					m_connected = false;
+				}
 			}
 			// The handlers compare against boost::system::errc, which Windows does not report
 			// directly: its WSAECONNREFUSED is 10061, not ECONNREFUSED.
@@ -930,7 +934,7 @@ private:
 				AddDebugLogLineF(
 					logAsio, CFormat("HandleSend %d %s") % bytes_transferred % m_IP);
 				m_blocksWrite.store(false, std::memory_order_release);
-				CoreNotify_LibSocketSend(wrapper, err.value());
+				CoreNotify_LibSocketSend(wrapper, 0);
 			}
 		}
 	}
@@ -1023,10 +1027,14 @@ private:
 
 	void SetError() { m_ErrorCode = 2; }
 
+	// Success leaves m_ErrorCode alone: the other direction's handler may have stored an error.
+	// HandleConnect and SetProxyState(false) clear it on purpose.
 	bool SetError(const error_code &err)
 	{
-		m_ErrorCode = err.value();
-		return err.value() != errc::success;
+		if (err) {
+			m_ErrorCode = err.value();
+		}
+		return static_cast<bool>(err);
 	}
 
 	// Synchronous sockets (amulecmd)
@@ -1206,9 +1214,8 @@ private:
 			const bool ok = !ec;
 			m_OK = ok;
 			m_connected = ok;
-			if (ec) {
-				m_ErrorCode = ec.value();
-			}
+			// As in HandleConnect, a successful connect clears a stale error.
+			m_ErrorCode = ec.value();
 			return ok;
 		} else {
 			auto self = shared_from_this();
@@ -2122,8 +2129,6 @@ private:
 			AddDebugLogLineN(logAsio, CFormat("UDP HandleReadError %s") % ec.message());
 		} else if (received == 0) {
 			AddDebugLogLineF(logAsio, "UDP HandleReadError nothing available");
-		} else if (m_muleSocket == NULL) {
-			AddDebugLogLineN(logAsio, "UDP HandleReadError no handler");
 		} else {
 
 			const CNetworkAddress sourceAddress =
@@ -2152,13 +2157,9 @@ private:
 			AddDebugLogLineN(logAsio,
 				CFormat("UDP HandleSendToError tosend: %d sent %d") % recdata->size % sent);
 		}
-		if (m_muleSocket == NULL) {
-			AddDebugLogLineN(logAsio, "UDP HandleSendToError no handler");
-		} else {
-			AddDebugLogLineF(logAsio,
-				CFormat("UDP HandleSendTo %d to %s") % sent % recdata->ipadr.IPAddress());
-			CoreNotify_UDPSocketSend(m_muleSocket);
-		}
+		AddDebugLogLineF(
+			logAsio, CFormat("UDP HandleSendTo %d to %s") % sent % recdata->ipadr.IPAddress());
+		CoreNotify_UDPSocketSend(m_muleSocket);
 		delete recdata;
 	}
 
@@ -2237,6 +2238,7 @@ private:
 
 CLibUDPSocket::CLibUDPSocket(amuleIPV4Address &address, int flags, CMuleUDPSocket *handler)
 {
+	wxASSERT(handler);
 	// make_shared must run to completion (so a shared_ptr exists to manage the object) before
 	// Init() -- Init triggers async_receive_from whose completion handler captures
 	// shared_from_this(), and that requires a managing shared_ptr to already be in place.

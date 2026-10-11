@@ -862,8 +862,9 @@ private:
 	std::list<Requested_Block_Struct *> m_DoneBlocks_list;
 	wxMutex m_blockListLock; // protects m_BlockRequests_queue, m_DoneBlocks_list,
 				 // m_addedPayloadQueueSession
-	bool m_bDisableCompression = false;
-	bool m_bIOError = false;
+	// atomic: the disk I/O thread sets them, the main thread reads and resets them
+	std::atomic<bool> m_bDisableCompression{ false };
+	std::atomic<bool> m_bIOError{ false };
 
 	friend class CUploadDiskIOThread; // disk I/O thread needs direct access to block queues and session
 					  // counters

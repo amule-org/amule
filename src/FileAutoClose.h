@@ -124,12 +124,24 @@ private:
 	//@}
 
 	/**
-	 * Check whether the file was autoclosed, and reopen it if needed.
+	 * Check whether the file was autoclosed, and reopen it if needed. The caller holds
+	 * m_stateMutex.
 	 */
 	void Reopen();
 
-	//! Reopen() for a caller that already holds m_stateMutex.
-	void ReopenLocked();
+	//! Reopens the file for one I/O call and holds off Release() until the call returns or
+	//! throws, as fd() does for a mapping.
+	class CInUse
+	{
+	public:
+		explicit CInUse(CFileAutoClose &file);
+		~CInUse() { m_owner.Unlock(); }
+		CInUse(const CInUse &) = delete;
+		CInUse &operator=(const CInUse &) = delete;
+
+	private:
+		CFileAutoClose &m_owner;
+	};
 
 	//! The wrapped CFile.
 	CFile m_file;
@@ -144,7 +156,7 @@ private:
 	//! Is it temporarily closed?
 	bool m_autoClosed;
 
-	//! Autoclosing is disabled if != 0
+	//! Autoclosing is disabled if != 0: counts fd() mappings and I/O calls in progress.
 	uint16 m_locked;
 
 	//! Size before it was closed.
