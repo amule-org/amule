@@ -174,6 +174,8 @@ void CUpDownClient::Init()
 	m_linkedDebug = false;
 #endif
 	m_bAddNextConnect = false;
+	m_dialingIPv6 = false;
+	m_unansweredIPv6Address = CNetworkAddress::Absent();
 	credits = NULL;
 	m_byChatstate = MS_NONE;
 	m_nKadState = KS_NONE;
@@ -1435,6 +1437,13 @@ bool CUpDownClient::Disconnected(const wxString &DEBUG_ONLY(strReason), bool bFr
 		theApp->uploadqueue->RemoveFromUploadQueue(this);
 	}
 
+	// Nothing verifies that a native IPv6 peer accepts inbound connections: keep its queue place
+	// and let it get its slot through its own next connection, like a LowID.
+	if (m_dialingIPv6 && GetUploadState() == US_CONNECTING) {
+		m_unansweredIPv6Address = GetConnectAddress();
+		theApp->uploadqueue->RequeueUnreachable(this);
+	}
+
 	if (GetDownloadState() == DS_DOWNLOADING) {
 		SetDownloadState(DS_ONQUEUE);
 	} else {
@@ -1507,6 +1516,8 @@ bool CUpDownClient::Disconnected(const wxString &DEBUG_ONLY(strReason), bool bFr
 		m_pendingMessage.Clear();
 		Notify_ChatConnResult(false, GetChatPeer(), "");
 	}
+
+	m_dialingIPv6 = false;
 
 	// Delete socket
 	if (!bFromSocket && m_socket) {
@@ -1598,9 +1609,9 @@ EContactRoute CUpDownClient::ContactRoute() const
 	return route;
 }
 
-bool CUpDownClient::IsDirectIPv6Contact() const
+bool CUpDownClient::IsCallableIPv6Contact() const
 {
-	return ContactRoute() == EContactRoute::DialIPv6;
+	return ContactRoute() == EContactRoute::DialIPv6 && GetConnectAddress() != m_unansweredIPv6Address;
 }
 
 // Re-check the standing reasons to refuse this peer, disconnecting it on a hit:
@@ -1964,6 +1975,7 @@ bool CUpDownClient::Connect()
 			AddDebugLogLineN(logClient,
 				CFormat("Trying to connect to [%s]:%u") % connectAddress.ToWxString() %
 					static_cast<unsigned int>(GetUserPort()));
+			m_dialingIPv6 = true;
 			m_socket->ConnectIPv6(connectAddress, GetUserPort(), false);
 			return true;
 		}
@@ -1973,6 +1985,7 @@ bool CUpDownClient::Connect()
 		tmp.Service(GetUserPort());
 		AddDebugLogLineN(logClient,
 			"Trying to connect to " + Uint32_16toStringIP_Port(GetConnectIP(), GetUserPort()));
+		m_dialingIPv6 = false;
 		m_socket->Connect(tmp, false);
 		// We should send hello packets AFTER connecting!
 		// so I moved it to OnConnect
@@ -2023,6 +2036,7 @@ void CUpDownClient::ConnectionEstablished()
 	// debug thing for myself -- check the connection_reason definition.
 
 	m_hasbeenobfuscatinglately = (m_socket && m_socket->IsConnected() && m_socket->IsObfusicating());
+	m_dialingIPv6 = false;
 
 #ifdef __DEBUG__
 	if (!connection_reason.IsEmpty()) {

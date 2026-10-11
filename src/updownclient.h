@@ -305,9 +305,9 @@ public:
 	//! Whether a socket whose stream died may be dialled again over TCP: every refusal
 	//! CheckContactPreconditions() makes, asked without acting on the answer.
 	bool IsRedialAllowed() const;
-	//! Whether contacting this client dials its native IPv6 address: a LowID by ID, yet
-	//! reachable without a callback.
-	bool IsDirectIPv6Contact() const;
+	//! Whether this client is callable by dialling its native IPv6 address, unless that address
+	//! already failed to answer a callback dial.
+	bool IsCallableIPv6Contact() const;
 
 private:
 	//! How this client is reached: Refuse exactly where CheckContactPreconditions() declines it.
@@ -788,6 +788,8 @@ private:
 
 	CNetworkAddress m_userAddress;
 	CNetworkAddress m_connectAddress;
+	bool m_dialingIPv6;
+	CNetworkAddress m_unansweredIPv6Address;
 	uint32 m_dwServerIP;
 	uint32 m_nUserIDHybrid;
 	uint16_t m_nUserPort;

@@ -52,6 +52,9 @@ public:
 	void Process();
 	void AddClientToQueue(CUpDownClient *client);
 	bool RemoveFromUploadQueue(CUpDownClient *client);
+	// A client whose callback dial failed goes back to the waiting list, keeping its waiting
+	// time, to get its slot through its own next connection like a LowID.
+	void RequeueUnreachable(CUpDownClient *client);
 	bool RemoveFromWaitingQueue(CUpDownClient *client);
 	bool IsOnUploadQueue(const CUpDownClient *client) const;
 	bool IsDownloading(const CUpDownClient *client) const;
