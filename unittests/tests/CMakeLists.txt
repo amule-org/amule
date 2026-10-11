@@ -816,6 +816,30 @@ target_link_libraries (PeerAddressingTest
 	${Boost_LIBRARIES}
 )
 
+# How a client is contacted, decided without the application.
+add_executable (ContactDialPolicyTest
+	ContactDialPolicyTest.cpp
+	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
+	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
+	${CMAKE_SOURCE_DIR}/src/NetworkAddress.cpp
+)
+
+add_test (NAME ContactDialPolicyTest
+	COMMAND ContactDialPolicyTest
+)
+
+target_include_directories (ContactDialPolicyTest
+	PRIVATE ${CMAKE_BINARY_DIR}
+	PRIVATE ${CMAKE_SOURCE_DIR}/src
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
+	PRIVATE ${Boost_INCLUDE_DIR}
+)
+
+target_link_libraries (ContactDialPolicyTest
+	muleunit
+	${Boost_LIBRARIES}
+)
+
 # Canonical address matching for upload-queue UDP lookups, without the application.
 add_executable (UploadQueueAddressPolicyTest
 	UploadQueueAddressPolicyTest.cpp
