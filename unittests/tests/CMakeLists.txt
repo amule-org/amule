@@ -114,6 +114,11 @@ add_test (NAME DeadSourceKeyTest COMMAND DeadSourceKeyTest)
 target_include_directories (DeadSourceKeyTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries (DeadSourceKeyTest muleunit mulecommon)
 
+add_executable (AdvertisedIPv6Test AdvertisedIPv6Test.cpp)
+add_test (NAME AdvertisedIPv6Test COMMAND AdvertisedIPv6Test)
+target_include_directories (AdvertisedIPv6Test PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries (AdvertisedIPv6Test muleunit mulecommon)
+
 # Credit identity and wait ownership run without the application. The test supplies
 # a deterministic GetTickCount64; do not link the production clock into this target.
 add_executable (ClientCreditsTest
