@@ -305,6 +305,9 @@ public:
 	//! Whether a socket whose stream died may be dialled again over TCP: every refusal
 	//! CheckContactPreconditions() makes, asked without acting on the answer.
 	bool IsRedialAllowed() const;
+	//! Whether contacting this client dials its native IPv6 address: a LowID by ID, yet
+	//! reachable without a callback.
+	bool IsDirectIPv6Contact() const;
 
 private:
 	//! How this client is reached: Refuse exactly where CheckContactPreconditions() declines it.

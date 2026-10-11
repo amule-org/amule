@@ -1598,6 +1598,11 @@ EContactRoute CUpDownClient::ContactRoute() const
 	return route;
 }
 
+bool CUpDownClient::IsDirectIPv6Contact() const
+{
+	return ContactRoute() == EContactRoute::DialIPv6;
+}
+
 // Re-check the standing reasons to refuse this peer, disconnecting it on a hit:
 // incompatible obfuscation settings, a filtered IP, a banned IP. Returns Contacting when
 // the peer is clean -- "carry on" rather than "we sent something" -- and ClientDeleted or
