@@ -50,8 +50,6 @@ UploadBandwidthThrottler::UploadBandwidthThrottler()
 	m_SentBytesSinceLastCall = 0;
 	m_SentBytesSinceLastCallOverhead = 0;
 
-	m_doRun = true;
-
 	Create();
 	Run();
 }

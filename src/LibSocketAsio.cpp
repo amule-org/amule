@@ -927,7 +927,7 @@ private:
 				AddDebugLogLineF(
 					logAsio, CFormat("HandleSend %d %s") % bytes_transferred % m_IP);
 				m_blocksWrite.store(false, std::memory_order_release);
-				CoreNotify_LibSocketSend(wrapper, m_ErrorCode);
+				CoreNotify_LibSocketSend(wrapper, m_ErrorCode.load());
 			}
 		}
 	}
@@ -1006,7 +1006,7 @@ private:
 
 		if (!m_eventPending.exchange(true, std::memory_order_acq_rel)) {
 			AddDebugLogLineF(logAsio, CFormat("Post read event %d %s") % from % m_IP);
-			CoreNotify_LibSocketReceive(wrapper, m_ErrorCode);
+			CoreNotify_LibSocketReceive(wrapper, m_ErrorCode.load());
 		}
 	}
 
@@ -1022,8 +1022,9 @@ private:
 
 	bool SetError(const error_code &err)
 	{
+		// Test the local value: a concurrent Write() may reset m_ErrorCode in between.
 		m_ErrorCode = err.value();
-		return m_ErrorCode != errc::success;
+		return err.value() != errc::success;
 	}
 
 	// Synchronous sockets (amulecmd)
@@ -1265,8 +1266,10 @@ private:
 	CNetworkAddress m_peerAddress; // Native accepted TCP peer; absent before UpdateIP.
 	uint16 m_port;                 // remote port
 	bool m_OK;
-	int m_ErrorCode;
-	bool m_blocksRead;
+	// atomic: shared by the ASIO, main and throttler threads
+	std::atomic<int> m_ErrorCode;
+	// atomic: set by Read() on the main thread, cleared by HandleRead() on the ASIO thread
+	std::atomic<bool> m_blocksRead;
 	char *m_readBuffer;
 	uint32 m_readBufferSize;
 	char *m_readBufferPtr;

@@ -28,6 +28,7 @@
 
 #include <wx/thread.h>
 
+#include <atomic>
 #include <deque>
 
 #include "Types.h"
@@ -64,7 +65,8 @@ private:
 
 	void *Entry();
 
-	bool m_doRun;
+	// atomic: Entry() and QueueForSendingControlPacket() read it without m_sendLocker
+	std::atomic<bool> m_doRun{ true };
 
 	wxMutex m_sendLocker;
 	wxMutex m_tempQueueLocker;
