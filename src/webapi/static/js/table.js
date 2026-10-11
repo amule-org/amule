@@ -46,9 +46,14 @@ export function ipNum(ip) {
   return String(ip || "").split(".").reduce((acc, octet) => acc * 256 + (parseInt(octet, 10) || 0), 0);
 }
 
-// Fold a string for filtering: lowercase, then strip accents via NFD
-// decomposition (combining marks removed), so "africa" matches "áfrica".
-const fold = (s) => (s || "").toLowerCase().normalize("NFD").replace(/\p{M}/gu, "");
+// Fold a string for filtering: lowercase, then strip accents, so "africa"
+// matches "África". Only the combining accents block (U+0300-U+036F) is
+// removed and the result recomposed, so other scripts match as before.
+// Plain-ASCII strings, most file names, skip the normalization.
+const fold = (s) => {
+  const l = (s || "").toLowerCase();
+  return /[^\x00-\x7f]/.test(l) ? l.normalize("NFD").replace(/[\u0300-\u036f]/g, "").normalize("NFC") : l;
+};
 
 // Build a predicate for a free-text filter box: case-insensitive,
 // accent-insensitive and order-independent — every whitespace-separated
