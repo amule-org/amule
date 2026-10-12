@@ -59,8 +59,10 @@
 #include "ScopedPtr.h"        // Needed for CScopedPtr
 #include "PlatformSpecific.h" // Needed for CanFSHandleLargeFiles
 
+#ifdef ENABLE_IPV6
 #include "AddressFamilyPolicy.h"    // Needed for AddressFamilyPolicy::Permits
 #include "KadSourceAddressPolicy.h" // Needed for ShouldContactKadSourceOverIPv6
+#endif
 #include "kademlia/kademlia/Kademlia.h"
 
 // Max file IDs per UDP packet: 576 - 30 bytes of header (28 UDP, 2 "E3 9A" edonkey proto) = 546,
@@ -1640,18 +1642,16 @@ void CDownloadQueue::KademliaSearchFile(uint32_t searchID,
 		return;
 	}
 
+#ifdef ENABLE_IPV6
 	SKadSourceFacts facts;
 	facts.sourceType = type;
 	facts.publishedIPv6 = publishedIPv6;
-	facts.publishedIPv6Filtered =
-		publishedIPv6.IsPresent() && theApp->ipfilter->IsFiltered(publishedIPv6);
 	facts.ourHelloID = theApp->GetID();
-#ifdef ENABLE_IPV6
 	facts.ipv6Built = true;
-#endif
 	facts.familyPermitted = AddressFamilyPolicy::Permits(publishedIPv6);
 	facts.proxyEnabled = thePrefs::GetProxyData()->m_proxyEnable;
-	if (ShouldContactKadSourceOverIPv6(facts)) {
+	// IsFiltered() counts every match in the statistics, so it only sees an address we would dial.
+	if (ShouldContactKadSourceOverIPv6(facts) && !theApp->ipfilter->IsFiltered(publishedIPv6)) {
 		// No IPv4 address and no buddy: either would arm an IPv4 callback or a buddy UDP reask
 		// whose answer cannot be matched to an IPv6 source.
 		CUpDownClient *source = new CUpDownClient(tcp, 1, 0, 0, temp, false, true);
@@ -1668,6 +1668,7 @@ void CDownloadQueue::KademliaSearchFile(uint32_t searchID,
 		CheckAndAddSource(temp, source);
 		return;
 	}
+#endif
 
 	CUpDownClient *ctemp = NULL;
 	switch (type) {

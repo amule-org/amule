@@ -1135,7 +1135,14 @@ void CSearch::ProcessResultFile(const CUInt128 &answer, TagPtrList *info)
 				decoded = DecodeIPv6HexTag(text.data(), text.length(), address);
 			}
 			if (decoded && !tag->GetName().Cmp(TAG_IPV6)) {
+#ifdef ENABLE_IPV6
 				publishedIPv6 = CNetworkAddress::FromIPv6Bytes(address);
+#else
+				AddDebugLogLineN(logKadSearch,
+					CFormat("Ignoring IPv6 source tag '%s' in search result: no "
+						"IPv6 transport in this build") %
+						tag->GetName());
+#endif
 			} else if (decoded) {
 				AddDebugLogLineN(logKadSearch,
 					CFormat("Ignoring IPv6 source tag '%s' in search result: serving "

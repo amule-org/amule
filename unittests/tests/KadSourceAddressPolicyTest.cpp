@@ -102,13 +102,6 @@ TEST(KadSourceAddressPolicy, APublishedAddressThatNamesNoRemotePeerIsNotContacte
 	ASSERT_FALSE(ShouldContactKadSourceOverIPv6(absent));
 }
 
-TEST(KadSourceAddressPolicy, AFilteredPublishedAddressIsNotContacted)
-{
-	SKadSourceFacts facts = ContactableOverIPv6();
-	facts.publishedIPv6Filtered = true;
-	ASSERT_FALSE(ShouldContactKadSourceOverIPv6(facts));
-}
-
 TEST(KadSourceAddressPolicy, EachMissingDialPermissionRefusesTheIPv6Contact)
 {
 	SKadSourceFacts notBuilt = ContactableOverIPv6();

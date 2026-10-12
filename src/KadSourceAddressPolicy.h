@@ -35,8 +35,7 @@ struct SKadSourceFacts
 {
 	std::uint8_t sourceType = 0;   // TAG_SOURCETYPE of the result
 	CNetworkAddress publishedIPv6; // The "ip6" tag; Absent when missing or malformed
-	bool publishedIPv6Filtered = false;
-	std::uint32_t ourHelloID = 0; // The ID our OP_HELLO carries
+	std::uint32_t ourHelloID = 0;  // The ID our OP_HELLO carries
 	bool ipv6Built = false;
 	bool familyPermitted = false;
 	bool proxyEnabled = false;
@@ -59,7 +58,7 @@ inline bool ShouldContactKadSourceOverIPv6(const SKadSourceFacts &facts)
 	if (!firewalledOnIPv4 || facts.ourHelloID == 0 || !IsLowID(facts.ourHelloID)) {
 		return false;
 	}
-	if (!PeerAddressing::IsUsableTagIdentity(facts.publishedIPv6) || facts.publishedIPv6Filtered) {
+	if (!PeerAddressing::IsUsableTagIdentity(facts.publishedIPv6)) {
 		return false;
 	}
 	SContactFacts contact;
