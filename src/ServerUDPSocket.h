@@ -46,6 +46,8 @@ private:
 		const CNetworkAddress &address, uint16 port, uint8_t *buffer, size_t length) override;
 	void ProcessPacket(CMemFile &packet, uint8 opcode, uint32 ip, uint16 port);
 	void SendQueue();
+	//! Removes the front item without sending it; the queue owns its packet.
+	void DropQueuedPacket();
 
 	struct ServerUDPPacket
 	{

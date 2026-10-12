@@ -251,6 +251,12 @@ void CMuleUDPSocket::SendPacket(CPacket *packet,
 	*/
 
 	if (!port || !IP) {
+		AddDebugLogLineN(logMuleUDP,
+			(m_name + ": Packet discarded, no destination (")
+				<< Uint32_16toStringIP_Port(IP, port) << "): " << packet->GetPacketSize()
+				<< "b");
+		delete packet;
+
 		return;
 	}
 

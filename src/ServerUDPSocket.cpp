@@ -456,7 +456,7 @@ void CServerUDPSocket::SendQueue()
 						(dns->Run() != wxTHREAD_NO_ERROR)) {
 						// Not much we can do here, just drop the packet.
 						dns->Delete();
-						m_queue.pop_front();
+						DropQueuedPacket();
 						continue;
 					}
 					update->SetDNSError(false);
@@ -471,7 +471,7 @@ void CServerUDPSocket::SendQueue()
 							"Trying to send a UDP packet to a server host that "
 							"failed DNS: " +
 								item.addr);
-						m_queue.pop_front();
+						DropQueuedPacket();
 						continue;
 					} else {
 						// It has been solved or is solving.
@@ -502,7 +502,7 @@ void CServerUDPSocket::SendQueue()
 					"Trying to send a UDP packet to a server host that is not on "
 					"serverlist");
 				// Not much we can do here, just drop the packet.
-				m_queue.pop_front();
+				DropQueuedPacket();
 				continue;
 			}
 		}
@@ -513,14 +513,20 @@ void CServerUDPSocket::SendQueue()
 				logServerUDP, "Sending a UDP packet to a server: " + update->GetAddress());
 			// Don't encrypt, as this is already either encrypted or refused to encrypt.
 			CMuleUDPSocket::SendPacket(packet, item.ip, item.port, false, NULL, false, 0);
+			m_queue.pop_front();
 		} else {
 			AddDebugLogLineN(logServerUDP,
 				"Sending a UDP packet to a server no in serverlist: " +
 					Uint32_16toStringIP_Port(item.ip, item.port));
+			DropQueuedPacket();
 		}
-
-		m_queue.pop_front();
 	}
+}
+
+void CServerUDPSocket::DropQueuedPacket()
+{
+	delete m_queue.front().packet;
+	m_queue.pop_front();
 }
 
 void CServerUDPSocket::OnHostnameResolved(uint32 ip)
@@ -533,8 +539,11 @@ void CServerUDPSocket::OnHostnameResolved(uint32 ip)
 	/* An asynchronous database routine completed. */
 	CServer *update = theApp->serverlist->GetServerByAddress(item.addr, item.port);
 	if (ip == 0) {
-		update->SetDNSError(true);
-		m_queue.pop_front();
+		// The server may have been removed while its name was being resolved.
+		if (update) {
+			update->SetDNSError(true);
+		}
+		DropQueuedPacket();
 	} else {
 		if (update) {
 			update->SetID(ip);
