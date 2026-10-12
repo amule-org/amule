@@ -25,6 +25,9 @@
 #ifndef PUBLICIPV6CORROBORATION_H
 #define PUBLICIPV6CORROBORATION_H
 
+#include "PeerAddressing.h" // Needed for RateLimitScope
+
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -32,8 +35,8 @@
 #include <vector>
 
 /**
- * What a peer claims our own public IPv6 address is, believed only when it is an address we
- * actually hold and several unrelated peers agree on it.
+ * What peers claim our own public IPv6 address is, believed only for an address we actually hold
+ * and only once several unrelated peers agree on its /64.
  *
  * The claim arrives in the CT_MOD_YOUR_IP (0xAD) hello tag. The two reference implementations
  * disagree about it, and the disagreement is the whole reason this class exists:
@@ -47,47 +50,52 @@
  *
  * aMule follows emule-qt. BaseClient.cpp reads only the hash form and routes it here.
  *
- * Two independent gates stand between a peer's word and an adopted address, and they do
+ * Two independent gates stand between a peer's word and a corroborated prefix, and they do
  * different jobs:
  *
  *  - The locally-assigned filter is the security control. Peers are unauthenticated, so
  *    corroboration on its own must never be able to make us advertise a foreign address.
- *    Requiring the claimed value to be one we actually hold bounds the damage to "picks the
- *    wrong one of our own addresses".
- *  - Corroboration is the tie-breaker for that remaining question. A multi-homed host holds
- *    several global addresses and only some are the one the outside world sees; asking several
- *    peers which one they see is how the right one is picked.
+ *    Requiring the claimed value to be one we actually hold bounds the damage to "confirms the
+ *    wrong one of our own prefixes".
+ *  - Corroboration answers whether the outside world sees that prefix at all. Behind IPv6 NAT
+ *    (Docker's default) a host holds a global address nobody can reach; peers then see another
+ *    prefix, and ours never gathers votes.
+ *
+ * Claims are grouped by the /64 of the claimed address: outbound connections leave from a
+ * temporary address (RFC 6724 rule 7) while the stable one is what we would advertise, and both
+ * sit in one delegated /64.
  *
  * The quorum is keyed on the address the packet was observed arriving from, never the sender's
  * self-declared user hash: a hash costs nothing to invent, so a single host could otherwise
  * manufacture as many "distinct" corroborating peers as the threshold demands. A routable source
- * address cannot be invented for free, because a reply has to come back through it.
+ * address cannot be invented for free, because a reply has to come back through it -- but a
+ * subscriber holds a whole /64, so each observer counts once per /64 (PeerAddressing::RateLimitScope).
  *
- * Nothing consumes the result yet. This is recognition only: aMule has no IPv6 stack, so the
- * corroborated address is recorded for the dual-stack change and read by nothing else.
+ * Nothing consumes the result yet: IsPrefixCorroborated() is for the change that advertises our
+ * IPv6 address.
  *
  * Not thread-safe, and does not need to be: hellos and the interface refresh both run on the main
  * thread.
  */
 
-//! How many distinct observed source addresses have to agree on a value before it is believed.
+//! How many distinct observer /64s have to agree on a prefix before it is believed.
 //!
-//! Two would be wrong: two source addresses is one dual-homed host, one host that reconnected from
-//! a new lease, or one attacker holding a second socket -- none of which is a second opinion. Three
-//! is the smallest count that forces a claimant to hold addresses it does not control alone, and is
+//! Two would be wrong: two observers is one dual-homed host, one host that reconnected from a new
+//! lease, or one attacker holding a second socket -- none of which is a second opinion. Three is
+//! the smallest count that forces a claimant to hold addresses it does not control alone, and is
 //! still reachable in an ordinary session.
 //!
-//! It is a floor, not a proof: three addresses under one operator still agree with each other. That
-//! is what the locally-assigned filter is for -- colluding peers can still only steer us between
-//! addresses we hold.
+//! It is a floor, not a proof: three prefixes under one operator still agree with each other. That
+//! is what the locally-assigned filter is for -- colluding peers can still only confirm a prefix
+//! we hold.
 constexpr std::size_t PUBLIC_IPV6_CORROBORATION_THRESHOLD = 3;
 
 /**
- * How many distinct observers are remembered per candidate.
+ * How many distinct observers are remembered per claimed /64.
  *
  * Deliberately above the threshold. Recording only as many votes as the quorum
  * needs leaves no margin: when one observer falls out of the window the count
- * drops below the quorum and the address is no longer corroborated, even though
+ * drops below the quorum and the prefix is no longer corroborated, even though
  * other peers had been agreeing the whole time and were turned away at the cap.
  * The surplus is the redundancy that makes an expiry survivable, and it is what
  * a peer cannot spend, since the bound still holds.
@@ -98,7 +106,7 @@ constexpr std::size_t PUBLIC_IPV6_CORROBORATION_MAX_OBSERVERS = 8;
 //!
 //! Without a window, "three distinct peers agree" means "three peers said so at some point since
 //! the process started", so a laptop that moved networks hours ago still carries the votes that
-//! elected the address it had there, and no amount of fresh disagreement can unseat them.
+//! corroborated the prefix it had there, and no amount of fresh disagreement can unseat them.
 //!
 //! Thirty minutes because hellos from distinct peers arrive sporadically, minutes apart on a quiet
 //! client, so a window of a few minutes would expire the first vote before the third arrived and
@@ -118,16 +126,16 @@ public:
 	 * Publish the addresses currently assigned to a local interface.
 	 *
 	 * This set gates every claim, so it has to be published before any claim can be believed --
-	 * with an empty set nothing is ever adopted, which is the safe direction to fail in.
+	 * with an empty set nothing is ever corroborated, which is the safe direction to fail in.
 	 *
 	 * It must be a refreshed cache rather than a startup snapshot: a prefix renumber or a
 	 * privacy-address rotation would otherwise go unnoticed for as long as the session lasts,
 	 * and we would keep an address we no longer hold. It must equally not be re-scanned per
 	 * claim -- that would put an interface walk on a path any peer can drive.
 	 *
-	 * The second half of the refresh is what makes the cache safe: an already adopted address
-	 * is re-checked here and dropped when it is no longer ours. Without that, a corroborated
-	 * address outlives the prefix it came from.
+	 * The second half of the refresh is what makes the cache safe: a tallied /64 is re-checked
+	 * here and dropped once none of our addresses is in it. Without that, a corroborated prefix
+	 * outlives the renumber.
 	 *
 	 * @param local addresses assigned to a local interface. Anything not global unicast is
 	 * discarded, so callers can pass a whole interface enumeration.
@@ -145,42 +153,42 @@ public:
 			}
 		}
 
-		// A tally for an address we no longer hold is not evidence about the
-		// address we hold now, and keeping it would let the old value stay
-		// elected. Dropping it here is how a renumber gets noticed.
+		// A rotated temporary address leaves its /64 in place, so its votes stay; a
+		// prefix we no longer hold anything in is not evidence about the one we hold now.
 		std::vector<Candidate> kept;
 		for (const auto &candidate : m_candidates) {
-			if (IsLocallyAssigned(candidate.value)) {
+			if (HoldsAddressIn(candidate.prefix)) {
 				kept.push_back(candidate);
 			}
 		}
 		m_candidates.swap(kept);
 
 		Expire(nowMs);
-		Elect();
 	}
 
 	/**
 	 * Record one peer's claim.
 	 *
-	 * @param observedFrom the IPv4 address the hello was actually seen arriving from, host
-	 * order. Zero is ignored: with no observed address there is nothing to key on, and an
-	 * unkeyed claim would let one peer supply the whole quorum by itself.
-	 * @param claimed 16 bytes, big-endian. May be NULL, which is ignored.
+	 * @param observedFrom the address the hello was actually seen arriving from. Only a globally
+	 * routable IPv6 address counts, as one vote for its whole /64.
+	 * @param claimed 16 bytes, big-endian. May be nullptr, which is ignored.
 	 * @param nowMs a millisecond tick count. Passed in rather than read here so the window is
 	 * testable at all.
-	 * @return whether some value is corroborated now. A repeat from an address already counted
-	 * for that value refreshes that vote and changes nothing else.
+	 * @return true exactly when this claim brings the claimed /64 to the threshold; false
+	 * otherwise, including repeats once it is reached. A repeat from an observer already
+	 * counted refreshes that vote and changes nothing else.
 	 */
-	bool AddClaim(std::uint32_t observedFrom, const std::uint8_t *claimed, std::uint64_t nowMs)
+	bool AddClaim(const CNetworkAddress &observedFrom, const std::uint8_t *claimed, std::uint64_t nowMs)
 	{
 		// Aging runs before the claim is judged, so a claim arriving after a long quiet
 		// spell sees an empty tally rather than votes that should already have expired.
 		Expire(nowMs);
-		Elect();
 
-		if (observedFrom == 0 || claimed == nullptr) {
-			return IsCorroborated();
+		// An IPv4 peer cannot see our IPv6 address, and once we advertise one, a peer echoing
+		// our own advertisement back must not count as a witness. Only a peer that reached us
+		// over global IPv6 saw where we arrive from.
+		if (claimed == nullptr || !observedFrom.IsGloballyRoutableIPv6()) {
+			return false;
 		}
 
 		const Address value = ToAddress(claimed);
@@ -190,58 +198,78 @@ public:
 		if (!IsGlobalUnicast(value) || !IsLocallyAssigned(value)) {
 			// No state at all for a rejected value: a rejection that allocated
 			// something would let a peer spend our memory on values it invented.
-			return IsCorroborated();
+			return false;
 		}
 
-		Candidate *candidate = Find(value);
+		const Address prefix = PrefixOf(value);
+		// A host on our own LAN prefix, or a container on the same bridge, sees our address
+		// without telling us how the outside world sees it.
+		if (PrefixOf(observedFrom.GetOctets()) == prefix) {
+			return false;
+		}
+
+		Candidate *candidate = Find(prefix);
 		if (candidate == nullptr) {
 			// emplace_back() rather than push_back(Candidate()), which
 			// clang-tidy flags. It returns a reference from C++17.
 			candidate = &m_candidates.emplace_back();
-			candidate->value = value;
+			candidate->prefix = prefix;
 		}
 
-		Observer *observer = candidate->Find(observedFrom);
+		const std::size_t before = candidate->observers.size();
+		const CNetworkAddress scope = PeerAddressing::RateLimitScope(observedFrom);
+		Observer *observer = candidate->Find(scope);
 		if (observer != nullptr) {
 			// A peer that is still saying it keeps its vote alive. Without this the
 			// window would expire long-lived peers that never stopped agreeing.
 			observer->lastSeenMs = nowMs;
 		} else if (candidate->observers.size() < PUBLIC_IPV6_CORROBORATION_MAX_OBSERVERS) {
 			// Bounded, but above the quorum. Stopping at the threshold would mean
-			// the first observer to age out un-corroborates an address that other
+			// the first observer to age out un-corroborates a prefix that other
 			// live peers still agree on, because their votes were refused at the
 			// cap and there is nothing left to fall back on.
 			Observer fresh;
-			fresh.address = observedFrom;
+			fresh.scope = scope;
 			fresh.lastSeenMs = nowMs;
 			candidate->observers.push_back(fresh);
 		}
-
-		Elect();
-		return IsCorroborated();
+		const std::size_t after = candidate->observers.size();
+		return before < PUBLIC_IPV6_CORROBORATION_THRESHOLD &&
+		       after >= PUBLIC_IPV6_CORROBORATION_THRESHOLD;
 	}
 
-	//! True once some value reached the threshold and still holds it.
-	bool IsCorroborated() const { return m_adopted; }
-
-	//! The corroborated address, or NULL while none is. 16 bytes.
-	const std::uint8_t *CorroboratedAddress() const
+	//! Whether @a address is one of ours and its /64 has a quorum of observers still inside
+	//! the window at @a nowMs.
+	bool IsPrefixCorroborated(const CNetworkAddress &address, std::uint64_t nowMs) const
 	{
-		return m_adopted ? m_adoptedValue.data() : nullptr;
+		if (!address.IsIPv6() || !IsLocallyAssigned(address.GetOctets())) {
+			return false;
+		}
+		const Candidate *candidate = Find(PrefixOf(address.GetOctets()));
+		if (candidate == nullptr) {
+			return false;
+		}
+		// Counted rather than trusted: nothing expires the tally between claims, so a quorum
+		// that went quiet would otherwise still read as current.
+		const auto live = std::count_if(candidate->observers.begin(),
+			candidate->observers.end(),
+			[nowMs](const Observer &observer) { return IsLive(observer, nowMs); });
+		return static_cast<std::size_t>(live) >= PUBLIC_IPV6_CORROBORATION_THRESHOLD;
 	}
 
-	//! How many distinct observed addresses have claimed this value. For tests and diagnostics;
-	//! nothing should gate on it instead of IsCorroborated(), which owns the threshold.
+	//! How many distinct observers are recorded for the /64 of @a claimed. For tests and
+	//! diagnostics; nothing should gate on it instead of IsPrefixCorroborated(), which owns the
+	//! threshold and the window.
 	std::size_t DistinctObserversFor(const std::uint8_t *claimed) const
 	{
 		if (claimed == nullptr) {
 			return 0;
 		}
-		const Candidate *candidate = Find(ToAddress(claimed));
+		const Candidate *candidate = Find(PrefixOf(ToAddress(claimed)));
 		return candidate == nullptr ? 0 : candidate->observers.size();
 	}
 
-	//! How many differing values are being tracked.
+	//! How many /64s are being tracked.
 	std::size_t CandidateCount() const { return m_candidates.size(); }
 
 	//! How many local addresses the filter is currently gating on.
@@ -249,11 +277,7 @@ public:
 
 	//! Forget every claim. The local address set survives: it comes from this machine, not from
 	//! peers, and clearing it would disable the filter until the next refresh.
-	void Reset()
-	{
-		m_candidates.clear();
-		m_adopted = false;
-	}
+	void Reset() { m_candidates.clear(); }
 
 	//! Global unicast, 2000::/3. Everything a peer could otherwise reflect at us -- the
 	//! unspecified address, loopback, link-local, unique-local, multicast, IPv4-mapped -- falls
@@ -262,7 +286,7 @@ public:
 	static bool IsGlobalUnicast(const Address &value) { return (value[0] & 0xE0) == 0x20; }
 
 private:
-	//! The 16 bytes at @a claimed, which is never NULL here.
+	//! The 16 bytes at @a claimed, which is never nullptr here.
 	static Address ToAddress(const std::uint8_t *claimed)
 	{
 		Address value = {};
@@ -270,27 +294,44 @@ private:
 		return value;
 	}
 
+	//! @a value with its interface identifier cleared: the /64 it belongs to.
+	static Address PrefixOf(const Address &value)
+	{
+		Address prefix = value;
+		std::fill(prefix.begin() + 8, prefix.end(), 0);
+		return prefix;
+	}
+
 	struct Observer
 	{
-		std::uint32_t address = 0;
+		CNetworkAddress scope;
 		std::uint64_t lastSeenMs = 0;
 	};
 
 	struct Candidate
 	{
-		Address value = {};
+		Address prefix = {};
 		std::vector<Observer> observers;
 
-		Observer *Find(std::uint32_t address)
+		Observer *Find(const CNetworkAddress &scope)
 		{
 			for (auto &observer : observers) {
-				if (observer.address == address) {
+				if (observer.scope == scope) {
 					return &observer;
 				}
 			}
 			return nullptr;
 		}
 	};
+
+	static bool IsLive(const Observer &observer, std::uint64_t nowMs)
+	{
+		// A tick that appears to move backwards expires the vote rather than keeping
+		// it -- uptime does not go backwards, so this defends against a caller mixing
+		// clocks.
+		return nowMs >= observer.lastSeenMs &&
+		       nowMs - observer.lastSeenMs <= PUBLIC_IPV6_CORROBORATION_WINDOW_MS;
+	}
 
 	bool IsLocallyAssigned(const Address &value) const
 	{
@@ -302,19 +343,25 @@ private:
 		return false;
 	}
 
+	bool HoldsAddressIn(const Address &prefix) const
+	{
+		for (const auto &address : m_local) {
+			if (PrefixOf(address) == prefix) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	//! Drop votes older than the window, and candidates left with none.
 	void Expire(std::uint64_t nowMs)
 	{
 		std::vector<Candidate> kept;
-		for (auto &candidate : m_candidates) {
+		for (const auto &candidate : m_candidates) {
 			Candidate fresh;
-			fresh.value = candidate.value;
+			fresh.prefix = candidate.prefix;
 			for (const auto &observer : candidate.observers) {
-				// A tick that appears to move backwards expires the vote rather
-				// than keeping it -- uptime does not go backwards, so this defends
-				// against a caller mixing clocks.
-				if (nowMs >= observer.lastSeenMs &&
-					nowMs - observer.lastSeenMs <= PUBLIC_IPV6_CORROBORATION_WINDOW_MS) {
+				if (IsLive(observer, nowMs)) {
 					fresh.observers.push_back(observer);
 				}
 			}
@@ -325,44 +372,20 @@ private:
 		m_candidates.swap(kept);
 	}
 
-	/// Re-run the election. An adopted value keeps its seat while it still holds a quorum, so a
-	/// second value reaching the threshold does not flip us back and forth between two
-	/// addresses we equally hold. It loses the seat the moment its quorum lapses -- votes aged
-	/// out, or the address no longer assigned -- and only then may another value take it.
-	void Elect()
-	{
-		if (m_adopted) {
-			const Candidate *candidate = Find(m_adoptedValue);
-			if (candidate != nullptr &&
-				candidate->observers.size() >= PUBLIC_IPV6_CORROBORATION_THRESHOLD) {
-				return;
-			}
-			m_adopted = false;
-		}
-
-		for (const auto &candidate : m_candidates) {
-			if (candidate.observers.size() >= PUBLIC_IPV6_CORROBORATION_THRESHOLD) {
-				m_adoptedValue = candidate.value;
-				m_adopted = true;
-				return;
-			}
-		}
-	}
-
-	Candidate *Find(const Address &value)
+	Candidate *Find(const Address &prefix)
 	{
 		for (auto &candidate : m_candidates) {
-			if (candidate.value == value) {
+			if (candidate.prefix == prefix) {
 				return &candidate;
 			}
 		}
 		return nullptr;
 	}
 
-	const Candidate *Find(const Address &value) const
+	const Candidate *Find(const Address &prefix) const
 	{
 		for (const auto &candidate : m_candidates) {
-			if (candidate.value == value) {
+			if (candidate.prefix == prefix) {
 				return &candidate;
 			}
 		}
@@ -373,20 +396,17 @@ private:
 	//!
 	//! Deliberately no cap on this or on the candidate list. An earlier revision capped the
 	//! tracked values because the input was attacker-chosen; with the filter in front, a
-	//! candidate can only be one of the addresses this machine's own interfaces bound. A cap
-	//! would now cost something real: occupying a slot costs one claim while corroborating a
-	//! value costs three, so refusing entries past a limit would make permanent denial the
-	//! cheaper attack.
+	//! candidate can only be a /64 holding one of the addresses this machine's own interfaces
+	//! bound. A cap would now cost something real: occupying a slot costs one claim while
+	//! corroborating a prefix costs three, so refusing entries past a limit would make permanent
+	//! denial the cheaper attack.
 	std::vector<Address> m_local;
 
 	std::vector<Candidate> m_candidates;
-
-	Address m_adoptedValue = {};
-	bool m_adopted = false;
 };
 
 /// The one tracker the hello path feeds. A function-local static rather than a member of the app
-/// class: nothing consumes the corroborated address yet, and a recognition-only change should not
+/// class: nothing consumes the corroborated prefix yet, and a recognition-only change should not
 /// reach into the app hierarchy to park state no caller reads. It moves to wherever its consumer
 /// lives when one exists.
 inline CPublicIPv6Corroboration &ObservedPublicIPv6()
@@ -403,8 +423,8 @@ inline CPublicIPv6Corroboration &ObservedPublicIPv6()
  * a privacy-address rotation goes unnoticed for as long as the session stays connected.
  *
  * Declared here, beside what it refreshes, but defined in amule.cpp: the interface enumeration
- * pulls in wx and the platform socket headers, and this header stays clear of both so the tracker
- * can be unit-tested on its own.
+ * pulls in the platform socket headers, and this header stays clear of them so the tracker can be
+ * unit-tested on its own.
  */
 void RefreshLocalPublicIPv6Addresses();
 
