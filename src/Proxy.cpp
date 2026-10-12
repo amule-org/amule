@@ -835,14 +835,12 @@ void CSocks4StateMachine::process_process_command_reply(bool entry)
 	if (entry) {
 		m_lastReply = m_buffer[1];
 
-		// Process the server's reply
-		m_ok = m_ok && m_buffer[0] == SOCKS4_REPLY_CODE && m_buffer[1] == SOCKS4_REPLY_GRANTED;
+		m_ok = m_ok && Socks4CommandReplyOk(m_buffer, m_lastRead);
 		if (m_ok) {
-			const unsigned int portOffset = 2;
-			m_ok = m_proxyBoundAddressIPV4.Service(
-				ENDIAN_NTOHS(RawPeekUInt16(m_buffer + portOffset)));
-			const unsigned int addrOffset = 4;
-			m_ok = m_ok && m_proxyBoundAddressIPV4.Hostname(PeekUInt32(m_buffer + addrOffset));
+			// Informational, so neither result decides: Service() refuses port 0, and
+			// Hostname(uint32) refuses 0.0.0.0.
+			m_proxyBoundAddressIPV4.Service(ENDIAN_NTOHS(RawPeekUInt16(m_buffer + 2)));
+			m_proxyBoundAddressIPV4.Hostname(Uint32toStringIP(PeekUInt32(m_buffer + 4)));
 			m_proxyBoundAddress = &m_proxyBoundAddressIPV4;
 		}
 	}

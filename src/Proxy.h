@@ -500,6 +500,15 @@ inline bool Socks5CommandReplyOk(const char *reply, uint32 available, bool udpAs
 	       reply[1] == SOCKS5_REPLY_SUCCEED && (!udpAssociate || reply[3] == SOCKS5_ATYP_IPV4_ADDRESS);
 }
 
+/** Whether a SOCKS4 command reply grants the request. DSTPORT and DSTIP are not checked: the client
+ * ignores them in a CONNECT reply, the only command aMule sends over SOCKS4, and Tor sends both as
+ * zero.
+ */
+inline bool Socks4CommandReplyOk(const char *reply, uint32 available)
+{
+	return available >= 8 && reply[0] == SOCKS4_REPLY_CODE && reply[1] == SOCKS4_REPLY_GRANTED;
+}
+
 /** Where relayed datagrams come from. RFC 1928 leaves BND.ADDR unspecified to mean "the address
  * you reached the proxy at", so pinning the port alone would accept any host.
  */

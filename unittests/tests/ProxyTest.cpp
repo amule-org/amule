@@ -163,6 +163,11 @@ bool ReplyOk(const std::vector<unsigned char> &reply, bool udpAssociate)
 {
 	return Socks5CommandReplyOk(reinterpret_cast<const char *>(reply.data()), reply.size(), udpAssociate);
 }
+
+bool Socks4ReplyOk(const std::vector<unsigned char> &reply)
+{
+	return Socks4CommandReplyOk(reinterpret_cast<const char *>(reply.data()), reply.size());
+}
 } // namespace
 
 TEST(Proxy, CommandReplyPortOffsetFollowsTheAddressType)
@@ -207,6 +212,23 @@ TEST(Proxy, AnUnspecifiedBoundAddressIsAGrantedReply)
 	socks4[0] = 4;
 	ASSERT_FALSE(ReplyOk(socks4, false));
 	ASSERT_FALSE(ReplyOk(std::vector<unsigned char>(unspecified.begin(), unspecified.end() - 1), false));
+}
+
+TEST(Proxy, ASocks4ReplyWithZeroPortAndAddressIsGranted)
+{
+	// What Tor's SocksPort sends to a granted CONNECT: DSTPORT and DSTIP left zero.
+	const std::vector<unsigned char> tor = { 0, 90, 0, 0, 0, 0, 0, 0 };
+	ASSERT_TRUE(Socks4ReplyOk(tor));
+	const std::vector<unsigned char> bound = { 0, 90, 0x12, 0x80, 198, 51, 100, 9 };
+	ASSERT_TRUE(Socks4ReplyOk(bound));
+
+	auto refused = tor;
+	refused[1] = 91;
+	ASSERT_FALSE(Socks4ReplyOk(refused));
+	auto version = tor;
+	version[0] = 4;
+	ASSERT_FALSE(Socks4ReplyOk(version));
+	ASSERT_FALSE(Socks4ReplyOk(std::vector<unsigned char>(tor.begin(), tor.end() - 1)));
 }
 
 TEST(Proxy, AnUnspecifiedBoundAddressFallsBackToTheProxyItself)
