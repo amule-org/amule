@@ -852,6 +852,30 @@ target_link_libraries (ContactDialPolicyTest
 	${Boost_LIBRARIES}
 )
 
+# Which address a Kad source result is contacted on, without the application.
+add_executable (KadSourceAddressPolicyTest
+	KadSourceAddressPolicyTest.cpp
+	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
+	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
+	${CMAKE_SOURCE_DIR}/src/NetworkAddress.cpp
+)
+
+add_test (NAME KadSourceAddressPolicyTest
+	COMMAND KadSourceAddressPolicyTest
+)
+
+target_include_directories (KadSourceAddressPolicyTest
+	PRIVATE ${CMAKE_BINARY_DIR}
+	PRIVATE ${CMAKE_SOURCE_DIR}/src
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
+	PRIVATE ${Boost_INCLUDE_DIR}
+)
+
+target_link_libraries (KadSourceAddressPolicyTest
+	muleunit
+	${Boost_LIBRARIES}
+)
+
 # Canonical address matching for upload-queue UDP lookups, without the application.
 add_executable (UploadQueueAddressPolicyTest
 	UploadQueueAddressPolicyTest.cpp
