@@ -26,6 +26,7 @@
 #define AMULE_LOOKUPTRACE_H
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <deque>
 #include <map>
