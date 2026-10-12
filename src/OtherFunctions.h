@@ -264,6 +264,8 @@ EED2KFileType GetED2KFileTypeID(const CPath &fileName);
 //! Says nothing about whether the file is COMPLETE. An in-progress download is in the shared list
 //! as a partfile with nothing readable on disk, and callers test that separately.
 bool IsMediaProbeCandidate(const CPath &fileName);
+//! False for formats that are already compressed, where zlib saves almost nothing on upload.
+bool IsUploadCompressible(const CPath &fileName);
 wxString GetED2KFileTypeSearchTerm(EED2KFileType iFileID);
 wxString GetFileTypeByName(const CPath &fileName);
 EED2KFileType GetED2KFileTypeSearchID(EED2KFileType iFileID);

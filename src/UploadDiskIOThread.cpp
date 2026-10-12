@@ -34,7 +34,7 @@
 #include "Packet.h"          // Needed for CPacket
 #include "amule.h"           // Needed for theApp
 #include "Logger.h"
-#include "OtherFunctions.h" // Needed for GetFiletype / ftArchive
+#include "OtherFunctions.h" // Needed for IsUploadCompressible
 #include "MD4Hash.h"
 #include "UploadBandwidthThrottler.h"
 #include "UploadBlockLists.h" // Needed for PushDoneBlock
@@ -388,7 +388,7 @@ bool CUploadDiskIOThread::CommitRead(ReadRequest_Struct *req, ReadResult result)
 		pFileStruct = new OpenFile_Struct;
 		md4cpy(pFileStruct->ucMD4FileHash, req->ucMD4FileHash);
 		pFileStruct->nInUse = 0;
-		pFileStruct->bCompress = (GetFiletype(srcfile->GetFileName()) != ftArchive);
+		pFileStruct->bCompress = IsUploadCompressible(srcfile->GetFileName());
 		pFileStruct->uFileSize = (uint64)srcfile->GetFileSize();
 		m_listOpenFiles.push_back(pFileStruct);
 	}

@@ -47,6 +47,7 @@
 
 #include <clocale> // Needed for setlocale
 #include <map>
+#include <set>
 
 #ifdef __WXBASE__
 #include <cerrno>
@@ -1225,6 +1226,54 @@ bool IsMediaProbeCandidate(const CPath &fileName)
 {
 	const EED2KFileType type = GetED2KFileTypeID(fileName);
 	return type == ED2KFT_AUDIO || type == ED2KFT_VIDEO;
+}
+
+bool IsUploadCompressible(const CPath &fileName)
+{
+	const wxString ext = fileName.GetExt().Lower();
+	switch (GetED2KFileTypeID(fileName)) {
+	case ED2KFT_ARCHIVE:
+		// The one archive format that does not compress its contents.
+		return ext == "tar";
+	case ED2KFT_VIDEO:
+		return false;
+	case ED2KFT_AUDIO:
+	case ED2KFT_IMAGE: {
+		// These categories also hold uncompressed formats: wav, aiff, bmp, tiff, psd...
+		static const std::set<wxString> compressed{
+			"aac",
+			"ac3",
+			"ape",
+			"dts",
+			"flac",
+			"m4a",
+			"m4b",
+			"mka",
+			"mp2",
+			"mp3",
+			"mpc",
+			"ogg",
+			"opus",
+			"ra",
+			"wma",
+			"wv",
+			"avif",
+			"gif",
+			"heic",
+			"heif",
+			"jfif",
+			"jp2",
+			"jpeg",
+			"jpg",
+			"jxl",
+			"png",
+			"webp",
+		};
+		return compressed.count(ext) == 0;
+	}
+	default:
+		return true;
+	}
 }
 
 EED2KFileType GetED2KFileTypeID(const CPath &fileName)

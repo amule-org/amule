@@ -1,5 +1,6 @@
 #include <muleunit/test.h>
 #include <OtherFunctions.h>
+#include <common/Path.h>
 
 #include <cstring>
 
@@ -213,4 +214,35 @@ TEST(MediaCodec, PassesThroughWhatItDoesNotKnow)
 	ASSERT_EQUALS(wxT("hap"), FormatMediaCodec(wxT("hap")));
 	ASSERT_EQUALS(wxT("pc"), FormatMediaCodec(wxT("pc")));
 	ASSERT_EQUALS(wxT(""), FormatMediaCodec(wxT("")));
+}
+
+DECLARE_SIMPLE(UploadCompression)
+
+static bool Compressible(const char *name)
+{
+	return IsUploadCompressible(CPath(wxString::FromUTF8(name)));
+}
+
+TEST(UploadCompression, SkipsCompressedFormats)
+{
+	ASSERT_FALSE(Compressible("movie.mkv"));
+	ASSERT_FALSE(Compressible("clip.MP4"));
+	ASSERT_FALSE(Compressible("song.mp3"));
+	ASSERT_FALSE(Compressible("album.flac"));
+	ASSERT_FALSE(Compressible("photo.JPG"));
+	ASSERT_FALSE(Compressible("set.zip"));
+	ASSERT_FALSE(Compressible("backup.tar.gz"));
+}
+
+// Uncompressed formats share the audio, image and archive categories with compressed ones.
+TEST(UploadCompression, KeepsCompressibleFormats)
+{
+	ASSERT_TRUE(Compressible("track.wav"));
+	ASSERT_TRUE(Compressible("scan.bmp"));
+	ASSERT_TRUE(Compressible("layers.psd"));
+	ASSERT_TRUE(Compressible("sources.tar"));
+	ASSERT_TRUE(Compressible("disc.iso"));
+	ASSERT_TRUE(Compressible("notes.txt"));
+	ASSERT_TRUE(Compressible("README"));
+	ASSERT_TRUE(Compressible("data.unknownext"));
 }
