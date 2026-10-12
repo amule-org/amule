@@ -31,7 +31,7 @@
 #include <tags/FileTags.h>
 
 #include "amule.h" // Needed for theApp
-#include "CanceledFileList.h"
+#include "HashListFile.h"
 #include "MemFile.h"     // Needed for CMemFile
 #include "Preferences.h" // Needed for thePrefs
 #include "GuiEvents.h"
@@ -639,8 +639,8 @@ void CSearchFile::UpdateParent()
 void CSearchFile::SetDownloadStatus()
 {
 	bool isPart = theApp->downloadqueue->GetFileByID(m_abyFileHash) != NULL;
-	bool isKnown = theApp->knownfiles->FindKnownFileByID(m_abyFileHash) != NULL;
-	bool isCanceled = theApp->canceledfiles->IsCanceledFile(m_abyFileHash);
+	bool isKnown = theApp->knownfiles->WasKnown(m_abyFileHash);
+	bool isCanceled = theApp->canceledfiles->Contains(m_abyFileHash);
 
 	if (isCanceled && isPart) {
 		m_downloadStatus = QUEUEDCANCELED;

@@ -66,6 +66,7 @@ inline bool CKnownFileList::KnownFileMatches(
 }
 
 CKnownFileList::CKnownFileList(const LoadProgressCb &progressCb)
+: m_history("knownhistory.met")
 {
 	accepted = 0;
 	requested = 0;
@@ -385,6 +386,12 @@ CKnownFile *CKnownFileList::FindKnownFileByID(const CMD4Hash &hash)
 		}
 	}
 	return NULL;
+}
+
+bool CKnownFileList::WasKnown(const CMD4Hash &hash)
+{
+	wxMutexLocker sLock(list_mut);
+	return (!hash.IsEmpty() && m_knownFileMap.count(hash) > 0) || m_history.Contains(hash);
 }
 
 void CKnownFileList::EraseFromSizeMap(KnownFileSizeMap *sizeMap, CKnownFile *record)
@@ -749,7 +756,11 @@ void CKnownFileList::PruneDuplicates(const std::unordered_set<CKnownFile *> &inU
 		Notify_KnownFileBeingDestroyed(dead);
 		delete dead;
 		m_knownFileMap.erase(kit);
+		m_history.Add(*it);
 		++droppedLive;
+	}
+	if (droppedLive) {
+		m_history.Save();
 	}
 
 	// Pass 4: per-hash cap on whatever duplicate survivors remain.

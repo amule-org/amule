@@ -22,37 +22,32 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-#ifndef CANCELEDFILELIST_H
-#define CANCELEDFILELIST_H
+#ifndef HASHLISTFILE_H
+#define HASHLISTFILE_H
 
 #include <set>
 #include "MD4Hash.h"
 
-// Tracks canceled files in canceled.met. Only the file hash is stored.
-class CCanceledFileList
+// A set of file hashes saved in a file of its own in the config dir: canceled.met for canceled
+// downloads, knownhistory.met for files known.met no longer remembers.
+class CHashListFile
 {
 public:
-	// Ctor, calls Init()
-	CCanceledFileList();
-	// Save list
+	// Loads the list from `filename`, if it exists
+	explicit CHashListFile(const wxString &filename);
 	void Save();
-	// Check if hash belongs to a canceled file
-	bool IsCanceledFile(const CMD4Hash &hash) const;
-	// Add a hash to the list (returns true if added, false if already in list)
+	bool Contains(const CMD4Hash &hash) const;
+	// Returns true if added, false if already in the list
 	bool Add(const CMD4Hash &hash);
-	// Remove a hash from the list (returns true if removed, false if not in list)
+	// Returns true if removed, false if not in the list
 	bool Remove(const CMD4Hash &hash);
 
 private:
-	// The list
-	typedef std::set<CMD4Hash> CanceledFileList;
-	CanceledFileList m_canceledFileList;
-	// The filename "canceled.met"
+	std::set<CMD4Hash> m_hashes;
 	wxString m_filename;
 
-	// Load list from file (if it exists)
 	bool Init();
 };
 
-#endif // CANCELEDFILELIST_H
+#endif // HASHLISTFILE_H
 // File_checked_for_headers

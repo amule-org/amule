@@ -22,7 +22,7 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-#include "CanceledFileList.h" // Interface declarations
+#include "HashListFile.h" // Interface declarations
 
 #include <common/DataFileVersion.h>
 #include "Preferences.h"
@@ -30,13 +30,13 @@
 #include "Logger.h"
 #include <common/Format.h>
 
-CCanceledFileList::CCanceledFileList()
-: m_filename("canceled.met")
+CHashListFile::CHashListFile(const wxString &filename)
+: m_filename(filename)
 {
 	Init();
 }
 
-bool CCanceledFileList::Init()
+bool CHashListFile::Init()
 {
 	CFile file;
 
@@ -55,23 +55,23 @@ bool CCanceledFileList::Init()
 	try {
 		uint8 version = file.ReadUInt8();
 		if (version != CANCELEDFILE_VERSION) {
-			AddLogLineC(_("WARNING: Canceled file list corrupted, contains invalid header."));
+			AddLogLineC(CFormat(_("WARNING: %s might be corrupted (%i)")) % m_filename % version);
 			return false;
 		}
 
 		uint32 RecordsNumber = file.ReadUInt32();
 		AddDebugLogLineN(logKnownFiles,
-			CFormat("Reading %i canceled files from file format 0x%02x.") % RecordsNumber %
+			CFormat("Reading %i hashes from %s, format 0x%02x.") % RecordsNumber % m_filename %
 				version);
 		for (uint32 i = 0; i < RecordsNumber; i++) {
 			CMD4Hash hash;
 			file.Read(hash.GetHash(), 16);
-			AddDebugLogLineN(logKnownFiles, CFormat("Canceled file read: %s") % hash.Encode());
+			AddDebugLogLineN(logKnownFiles, CFormat("%s: read %s") % m_filename % hash.Encode());
 			if (!hash.IsEmpty()) {
-				m_canceledFileList.insert(hash);
+				m_hashes.insert(hash);
 			}
 		}
-		AddDebugLogLineN(logKnownFiles, "Finished reading canceled files");
+		AddDebugLogLineN(logKnownFiles, CFormat("Finished reading %s") % m_filename);
 
 		return true;
 	} catch (const CSafeIOException &e) {
@@ -81,7 +81,7 @@ bool CCanceledFileList::Init()
 	return false;
 }
 
-void CCanceledFileList::Save()
+void CHashListFile::Save()
 {
 	CFile file(thePrefs::GetConfigDir() + m_filename, CFile::write);
 	if (!file.IsOpened()) {
@@ -90,11 +90,9 @@ void CCanceledFileList::Save()
 
 	try {
 		file.WriteUInt8(CANCELEDFILE_VERSION);
-		file.WriteUInt32(m_canceledFileList.size());
-
-		CanceledFileList::iterator it = m_canceledFileList.begin();
-		for (; it != m_canceledFileList.end(); ++it) {
-			file.Write(it->GetHash(), 16);
+		file.WriteUInt32(m_hashes.size());
+		for (const CMD4Hash &hash : m_hashes) {
+			file.Write(hash.GetHash(), 16);
 		}
 		// Explicit so a buffered write error is caught here, not in the destructor.
 		file.Close();
@@ -103,19 +101,19 @@ void CCanceledFileList::Save()
 	}
 }
 
-bool CCanceledFileList::IsCanceledFile(const CMD4Hash &hash) const
+bool CHashListFile::Contains(const CMD4Hash &hash) const
 {
-	return !hash.IsEmpty() && m_canceledFileList.find(hash) != m_canceledFileList.end();
+	return !hash.IsEmpty() && m_hashes.find(hash) != m_hashes.end();
 }
 
-bool CCanceledFileList::Add(const CMD4Hash &hash)
+bool CHashListFile::Add(const CMD4Hash &hash)
 {
-	return m_canceledFileList.insert(hash).second;
+	return m_hashes.insert(hash).second;
 }
 
-bool CCanceledFileList::Remove(const CMD4Hash &hash)
+bool CHashListFile::Remove(const CMD4Hash &hash)
 {
-	return m_canceledFileList.erase(hash) > 0;
+	return m_hashes.erase(hash) > 0;
 }
 
 // File_checked_for_headers

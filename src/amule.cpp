@@ -75,7 +75,7 @@
 #ifdef ENABLE_IPV6
 #include "AddressFamilyPolicy.h" // Needed for AddressFamilyPolicy::SetConfigured
 #endif
-#include "CanceledFileList.h"
+#include "HashListFile.h"
 #include "ClientCreditsList.h"    // Needed for CClientCreditsList
 #include "ClientList.h"           // Needed for CClientList
 #include "ClientUDPSocket.h"      // Needed for CClientUDPSocket & CMuleUDPSocket
@@ -933,7 +933,7 @@ bool CamuleApp::OnInit()
 	const wxLongLong knownDoneAt = wxGetUTCTimeMillis();
 	splash->SetProgress(_("Loading credits"), knownBandEnd, true);
 #endif
-	canceledfiles = new CCanceledFileList;
+	canceledfiles = new CHashListFile("canceled.met");
 	serverlist = new CServerList();
 
 	sharedfiles = new CSharedFileList(knownfiles);

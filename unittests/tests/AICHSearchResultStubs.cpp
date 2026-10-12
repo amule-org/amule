@@ -79,7 +79,7 @@ wxString CUpDownClient::GetClientFullInfo()
 // Search model tests do not query live queues, clients, or Kad notes. UI
 // notifications are intentionally ignored by this headless fixture.
 #include <KnownFileList.h>
-#include <CanceledFileList.h>
+#include <HashListFile.h>
 #include <GuiEvents.h>
 
 std::atomic<uint32> CECID::s_IDCounter{ 0 };
@@ -113,13 +113,13 @@ CPartFile *CDownloadQueue::GetFileByID(const CMD4Hash &) const
 	return nullptr;
 }
 
-CKnownFile *CKnownFileList::FindKnownFileByID(const CMD4Hash &)
+bool CKnownFileList::WasKnown(const CMD4Hash &)
 {
 	FAIL_M("Search model test unexpectedly queried known files");
-	return nullptr;
+	return false;
 }
 
-bool CCanceledFileList::IsCanceledFile(const CMD4Hash &) const
+bool CHashListFile::Contains(const CMD4Hash &) const
 {
 	FAIL_M("Search model test unexpectedly queried canceled files");
 	return false;

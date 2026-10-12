@@ -30,6 +30,7 @@
 #include <unordered_set>
 #include <vector>
 
+#include "HashListFile.h"
 #include "SharedFileList.h" // CKnownFileMap
 #include <common/Path.h>    // Needed for CPath
 
@@ -54,6 +55,9 @@ public:
 	void Clear();
 	CKnownFile *FindKnownFile(const CPath &filename, time_t in_date, uint64 in_size);
 	CKnownFile *FindKnownFileByID(const CMD4Hash &hash);
+	// True if `hash` has a record, or had one the TTL prune dropped. Search results use it to
+	// mark files downloaded or shared before, after they left the disk.
+	bool WasKnown(const CMD4Hash &hash);
 
 	// Make `file` the record that hash-keyed lookups resolve to, and return whether that
 	// changed anything.
@@ -170,6 +174,10 @@ private:
 	// Set to true by MarkInitialShareScanComplete() at the end of the
 	// first non-aborted CSharedFileList::Reload of the session.
 	bool m_initialShareScanComplete;
+
+	// Hashes of the records the TTL prune dropped. Without them a file deleted after download
+	// looks new in search results a month later; eMule keeps such records for good.
+	CHashListFile m_history;
 };
 
 #endif // KNOWNFILELIST_H

@@ -44,7 +44,7 @@
 #endif
 
 #include "KnownFileList.h" // Needed for CKnownFileList
-#include "CanceledFileList.h"
+#include "HashListFile.h"
 #include "UploadQueue.h"   // Needed for CFileHash
 #include "IPFilter.h"      // Needed for CIPFilter
 #include "Server.h"        // Needed for CServer
