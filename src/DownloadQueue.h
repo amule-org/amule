@@ -46,6 +46,7 @@ class CED2KFileLink;
 class CED2KServerLink;
 class CED2KServerListLink;
 class CPath;
+class CNetworkAddress;
 
 namespace Kademlia
 {
@@ -210,7 +211,8 @@ public:
 		uint16_t udp,
 		uint32_t buddyip,
 		uint16_t buddyport,
-		uint8_t byCryptOptions);
+		uint8_t byCryptOptions,
+		const CNetworkAddress &publishedIPv6);
 
 	CPartFile *GetFileByKadFileSearchID(uint32 id) const;
 

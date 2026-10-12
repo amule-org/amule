@@ -156,7 +156,7 @@
 // eMuleAI vendor tags in Kad source publish/search results. Multi-character names, deliberately:
 // the single-byte space above is full. Both carry a 128-bit address as exactly 32 hexadecimal
 // characters, most significant byte first -- see DecodeIPv6HexTag() in src/PeerCapabilities.h.
-// aMule reads them but cannot yet route to an IPv6 source, so it records and drops.
+// aMule may dial a firewalled source on its ip6 address; bi6 is unused.
 #define TAG_IPV6 wxT("ip6")             // <string> unfirewalled IPv6
 #define TAG_SERVINGBUDDYIPV6 wxT("bi6") // <string> serving buddy IPv6
 

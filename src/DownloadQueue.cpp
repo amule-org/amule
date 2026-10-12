@@ -59,6 +59,8 @@
 #include "ScopedPtr.h"        // Needed for CScopedPtr
 #include "PlatformSpecific.h" // Needed for CanFSHandleLargeFiles
 
+#include "AddressFamilyPolicy.h"    // Needed for AddressFamilyPolicy::Permits
+#include "KadSourceAddressPolicy.h" // Needed for ShouldContactKadSourceOverIPv6
 #include "kademlia/kademlia/Kademlia.h"
 
 // Max file IDs per UDP packet: 576 - 30 bytes of header (28 UDP, 2 "E3 9A" edonkey proto) = 546,
@@ -1605,7 +1607,8 @@ void CDownloadQueue::KademliaSearchFile(uint32_t searchID,
 	uint16_t udp,
 	uint32_t buddyip,
 	uint16_t buddyport,
-	uint8_t byCryptOptions)
+	uint8_t byCryptOptions,
+	const CNetworkAddress &publishedIPv6)
 {
 	AddDebugLogLineN(logKadSearch, CFormat("Search result sources (type %i)") % type);
 
@@ -1634,6 +1637,35 @@ void CDownloadQueue::KademliaSearchFile(uint32_t searchID,
 	if ((ip == Kademlia::CKademlia::GetIPAddress() || ED2KID == theApp->GetED2KID()) &&
 		tcp == thePrefs::GetPort()) {
 		AddDebugLogLineN(logKadSearch, "Trying to add myself as source, ignore");
+		return;
+	}
+
+	SKadSourceFacts facts;
+	facts.sourceType = type;
+	facts.publishedIPv6 = publishedIPv6;
+	facts.publishedIPv6Filtered =
+		publishedIPv6.IsPresent() && theApp->ipfilter->IsFiltered(publishedIPv6);
+	facts.ourHelloID = theApp->GetID();
+#ifdef ENABLE_IPV6
+	facts.ipv6Built = true;
+#endif
+	facts.familyPermitted = AddressFamilyPolicy::Permits(publishedIPv6);
+	facts.proxyEnabled = thePrefs::GetProxyData()->m_proxyEnable;
+	if (ShouldContactKadSourceOverIPv6(facts)) {
+		// No IPv4 address and no buddy: either would arm an IPv4 callback or a buddy UDP reask
+		// whose answer cannot be matched to an IPv6 source.
+		CUpDownClient *source = new CUpDownClient(tcp, 1, 0, 0, temp, false, true);
+		source->SetSourceFrom(SF_KADEMLIA);
+		source->SetKadPort(udp);
+		uint8_t cID[16];
+		pcontactID->ToByteArray(cID);
+		source->SetUserHash(CMD4Hash(cID));
+		source->SetUserAddress(publishedIPv6);
+		source->SetConnectOptions(byCryptOptions);
+		AddDebugLogLineN(logKadSearch,
+			CFormat("Adding a firewalled source type %d on its IPv6 address [%s]:%u") % type %
+				publishedIPv6.ToWxString() % tcp);
+		CheckAndAddSource(temp, source);
 		return;
 	}
 

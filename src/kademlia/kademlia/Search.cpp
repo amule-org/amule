@@ -1097,6 +1097,7 @@ void CSearch::ProcessResultFile(const CUInt128 &answer, TagPtrList *info)
 	uint16_t buddyport = 0;
 	uint8_t byCryptOptions = 0; // 0 = not supported.
 	CUInt128 buddy;
+	CNetworkAddress publishedIPv6;
 
 	for (TagPtrList::const_iterator it = info->begin(); it != info->end(); ++it) {
 		CTag *tag = *it;
@@ -1124,21 +1125,21 @@ void CSearch::ProcessResultFile(const CUInt128 &answer, TagPtrList *info)
 		} else if (!tag->GetName().Cmp(TAG_ENCRYPTION)) {
 			byCryptOptions = (uint8)tag->GetInt();
 		} else if (!tag->GetName().Cmp(TAG_IPV6) || !tag->GetName().Cmp(TAG_SERVINGBUDDYIPV6)) {
-			// eMuleAI publishes IPv6 sources alongside the IPv4 ones as 32 hex
-			// characters. aMule has no IPv6 stack yet, so the address is validated and
-			// dropped: a malformed tag is worth a log line, and a well-formed one must
-			// not be mistaken for a reachable source. Routing to it is the dual-stack
-			// change.
+			// eMuleAI publishes IPv6 addresses alongside the IPv4 ones as 32 hex
+			// characters. The source's own address may be dialled; its serving buddy's
+			// is not, since buddies are only reached over IPv4 here.
 			uint8_t address[16];
 			bool decoded = false;
 			if (tag->IsStr()) {
 				const wxScopedCharBuffer text = tag->GetStr().utf8_str();
 				decoded = DecodeIPv6HexTag(text.data(), text.length(), address);
 			}
-			if (decoded) {
+			if (decoded && !tag->GetName().Cmp(TAG_IPV6)) {
+				publishedIPv6 = CNetworkAddress::FromIPv6Bytes(address);
+			} else if (decoded) {
 				AddDebugLogLineN(logKadSearch,
-					CFormat("Ignoring IPv6 source tag '%s' in search result: no "
-						"IPv6 transport in this build") %
+					CFormat("Ignoring IPv6 source tag '%s' in search result: serving "
+						"buddies are only reached over IPv4") %
 						tag->GetName());
 			} else {
 				AddDebugLogLineN(logKadSearch,
@@ -1158,8 +1159,17 @@ void CSearch::ProcessResultFile(const CUInt128 &answer, TagPtrList *info)
 		AddDebugLogLineN(logKadSearch,
 			CFormat("Trying to add a source type %i, ip %s") % type % KadIPPortToString(ip, udp));
 		m_answers++;
-		theApp->downloadqueue->KademliaSearchFile(
-			m_searchID, &answer, &buddy, type, ip, tcp, udp, buddyip, buddyport, byCryptOptions);
+		theApp->downloadqueue->KademliaSearchFile(m_searchID,
+			&answer,
+			&buddy,
+			type,
+			ip,
+			tcp,
+			udp,
+			buddyip,
+			buddyport,
+			byCryptOptions,
+			publishedIPv6);
 		break;
 	case 2:
 		// Don't use this type, some clients will process it wrong.
