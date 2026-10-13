@@ -2350,6 +2350,10 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 			COMMAND ${Python3_EXECUTABLE}
 				${CMAKE_CURRENT_SOURCE_DIR}/KnownHistoryIntegrationTest.py $<TARGET_FILE:amuled>
 		)
+		add_test (NAME ServerTrustIntegrationTest
+			COMMAND ${Python3_EXECUTABLE}
+				${CMAKE_CURRENT_SOURCE_DIR}/ServerTrustIntegrationTest.py $<TARGET_FILE:amuled>
+		)
 		add_test (NAME CancelCompletedIntegrationTest
 			COMMAND ${Python3_EXECUTABLE}
 				${CMAKE_CURRENT_SOURCE_DIR}/CancelCompletedIntegrationTest.py $<TARGET_FILE:amuled>
