@@ -721,10 +721,10 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data)
 			//
 			// Even the hash form is not believed on one peer's word. The tracker takes only an
 			// address this machine holds, so peers can never make us adopt a foreign one, and
-			// counts one vote per /64 of a peer that reached us over IPv6 from outside the
-			// claimed /64, keyed on where the packet came from rather than on a self-declared
-			// user hash. Votes for any of our addresses in one /64 add up, within a time window.
-			// Nothing consumes the result yet.
+			// counts one vote per /48 of a peer that reached us over IPv6 from outside the
+			// claimed address's /48, keyed on where the packet came from rather than on a
+			// self-declared user hash. Votes for any of our addresses in one /64 add up, within a
+			// time window. Nothing consumes the result yet.
 			if (temptag.IsHash()) {
 				const std::uint8_t *claimed = temptag.GetHash().GetHash();
 				if (ObservedPublicIPv6().AddClaim(

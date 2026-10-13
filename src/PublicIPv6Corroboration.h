@@ -25,7 +25,7 @@
 #ifndef PUBLICIPV6CORROBORATION_H
 #define PUBLICIPV6CORROBORATION_H
 
-#include "PeerAddressing.h" // Needed for RateLimitScope
+#include "NetworkAddress.h" // Needed for CNetworkAddress
 
 #include <algorithm>
 #include <array>
@@ -68,8 +68,8 @@
  * The quorum is keyed on the address the packet was observed arriving from, never the sender's
  * self-declared user hash: a hash costs nothing to invent, so a single host could otherwise
  * manufacture as many "distinct" corroborating peers as the threshold demands. A routable source
- * address cannot be invented for free, because a reply has to come back through it -- but a
- * subscriber holds a whole /64, so each observer counts once per /64 (PeerAddressing::RateLimitScope).
+ * address cannot be invented for free, because a reply has to come back through it -- but a home
+ * subscriber is usually delegated a /56 or a /48, so each observer counts once per /48.
  *
  * Nothing consumes the result yet: IsPrefixCorroborated() is for the change that advertises our
  * IPv6 address.
@@ -78,7 +78,7 @@
  * thread.
  */
 
-//! How many distinct observer /64s have to agree on a prefix before it is believed.
+//! How many distinct observer /48s have to agree on a prefix before it is believed.
 //!
 //! Two would be wrong: two observers is one dual-homed host, one host that reconnected from a new
 //! lease, or one attacker holding a second socket -- none of which is a second opinion. Three is
@@ -170,7 +170,7 @@ public:
 	 * Record one peer's claim.
 	 *
 	 * @param observedFrom the address the hello was actually seen arriving from. Only a globally
-	 * routable IPv6 address counts, as one vote for its whole /64.
+	 * routable IPv6 address counts, as one vote for its whole /48.
 	 * @param claimed 16 bytes, big-endian. May be nullptr, which is ignored.
 	 * @param nowMs a millisecond tick count. Passed in rather than read here so the window is
 	 * testable at all.
@@ -201,13 +201,15 @@ public:
 			return false;
 		}
 
-		const Address prefix = PrefixOf(value);
-		// A host on our own LAN prefix, or a container on the same bridge, sees our address
-		// without telling us how the outside world sees it.
-		if (PrefixOf(observedFrom.GetOctets()) == prefix) {
+		// A host on our own LAN prefix, a container on the same bridge, or a neighbouring
+		// subnet of our own delegation sees our address without telling us how the outside
+		// world sees it.
+		const CNetworkAddress scope = ObserverScope(observedFrom);
+		if (scope == ObserverScope(CNetworkAddress::IPv6FromOctets(value))) {
 			return false;
 		}
 
+		const Address prefix = PrefixOf(value);
 		Candidate *candidate = Find(prefix);
 		if (candidate == nullptr) {
 			// emplace_back() rather than push_back(Candidate()), which
@@ -217,7 +219,6 @@ public:
 		}
 
 		const std::size_t before = candidate->observers.size();
-		const CNetworkAddress scope = PeerAddressing::RateLimitScope(observedFrom);
 		Observer *observer = candidate->Find(scope);
 		if (observer != nullptr) {
 			// A peer that is still saying it keeps its vote alive. Without this the
@@ -292,6 +293,13 @@ private:
 		Address value = {};
 		std::memcpy(value.data(), claimed, value.size());
 		return value;
+	}
+
+	//! The /48 that @a observer votes for. IsGloballyRoutableIPv6() has already excluded every
+	//! prefix that many unrelated hosts share, so no exemption is needed here.
+	static CNetworkAddress ObserverScope(const CNetworkAddress &observer)
+	{
+		return observer.TruncatedToPrefix(48);
 	}
 
 	//! @a value with its interface identifier cleared: the /64 it belongs to.

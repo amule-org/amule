@@ -90,10 +90,11 @@ CNetworkAddress AsNetworkAddress(const Address &address)
 	return CNetworkAddress::IPv6FromOctets(address);
 }
 
-// A globally routable IPv6 peer: 2a03:2880:<network>::<host>. Each network is a /64 of its own;
-// hosts inside one network are one subscriber rotating its suffix. Not 2001:db8::/32, which is
-// documentation space and not globally routable.
-CNetworkAddress Observer(uint8_t network, uint8_t host = 1)
+// A globally routable IPv6 peer: 2a03:2880:<network>:<subnet>::<host>. Each network is a /48 of
+// its own, one subscriber's delegation; subnets and hosts inside one network are that subscriber
+// switching /64 or rotating its suffix. Not 2001:db8::/32, which is documentation space and not
+// globally routable.
+CNetworkAddress Observer(uint8_t network, uint8_t host = 1, uint8_t subnet = 0)
 {
 	CNetworkAddress::Octets octets = {};
 	octets[0] = 0x2a;
@@ -101,6 +102,7 @@ CNetworkAddress Observer(uint8_t network, uint8_t host = 1)
 	octets[2] = 0x28;
 	octets[3] = 0x80;
 	octets[5] = network;
+	octets[7] = subnet;
 	octets[15] = host;
 	return CNetworkAddress::IPv6FromOctets(octets);
 }
@@ -190,6 +192,42 @@ TEST(PublicIPv6Corroboration, AddressesInsideOneObserverPrefixCountOnce)
 	}
 
 	ASSERT_EQUALS(1u, (unsigned)tracker.DistinctObserversFor(Stable().data()));
+	ASSERT_FALSE(tracker.IsPrefixCorroborated(AsNetworkAddress(Stable()), START_MS));
+}
+
+// Home subscribers are usually delegated a /56 or a /48, so counted per /64 one subscriber could
+// supply the whole quorum from its own subnets.
+TEST(PublicIPv6Corroboration, SubnetsOfOneObserverDelegationCountOnce)
+{
+	CPublicIPv6Corroboration tracker;
+	tracker.SetLocalAddresses(Held(Stable()), START_MS);
+
+	for (unsigned subnet = 1; subnet <= PUBLIC_IPV6_CORROBORATION_THRESHOLD; ++subnet) {
+		ASSERT_FALSE(tracker.AddClaim(Observer(1, 1, (uint8_t)subnet), Stable().data(), START_MS));
+	}
+	ASSERT_EQUALS(1u, (unsigned)tracker.DistinctObserversFor(Stable().data()));
+	ASSERT_FALSE(tracker.IsPrefixCorroborated(AsNetworkAddress(Stable()), START_MS));
+
+	ASSERT_FALSE(tracker.AddClaim(Observer(2), Stable().data(), START_MS));
+	ASSERT_TRUE(tracker.AddClaim(Observer(3), Stable().data(), START_MS));
+	ASSERT_TRUE(tracker.IsPrefixCorroborated(AsNetworkAddress(Stable()), START_MS));
+}
+
+// A peer in another /64 of our own /48 is a neighbouring subnet of our own delegation: it sees us
+// from inside, not from the outside world.
+TEST(PublicIPv6Corroboration, AnObserverInAnotherSubnetOfOurDelegationDoesNotCount)
+{
+	CPublicIPv6Corroboration tracker;
+	tracker.SetLocalAddresses(Held(Stable()), START_MS);
+	const Address neighbour = InPrefix(OTHER_SUBNET, 0x99);
+	ASSERT_TRUE(AsNetworkAddress(neighbour).TruncatedToPrefix(48) ==
+		    AsNetworkAddress(Stable()).TruncatedToPrefix(48));
+
+	tracker.AddClaim(Observer(1), Stable().data(), START_MS);
+	tracker.AddClaim(Observer(2), Stable().data(), START_MS);
+	ASSERT_FALSE(tracker.AddClaim(AsNetworkAddress(neighbour), Stable().data(), START_MS));
+
+	ASSERT_EQUALS(2u, (unsigned)tracker.DistinctObserversFor(Stable().data()));
 	ASSERT_FALSE(tracker.IsPrefixCorroborated(AsNetworkAddress(Stable()), START_MS));
 }
 
