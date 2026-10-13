@@ -214,3 +214,25 @@ TEST(IPFilterIPv6, NulBytesInAntiP2PLinesAreBadLines)
 	ASSERT_EQUALS(std::string("Org"), entries[1].description);
 	ASSERT_EQUALS(0x05060708u, entries[1].start);
 }
+
+// flex ends its buffer with a NUL, so a NUL in the input made it rescan the whole token: a line
+// of NULs took quadratic time. The scanner reads NUL as \x01, which a description shows.
+TEST(IPFilterIPv6, NulIsReadAsAnOrdinaryByte)
+{
+	static const char kText[] = "1.2.3.4-1.2.3.5,0,ab\0cd\n";
+	const auto entries = Scan(std::string(kText, sizeof(kText) - 1));
+	ASSERT_EQUALS(1u, entries.size());
+	ASSERT_EQUALS(std::string("ab\x01"
+				  "cd"),
+		entries[0].description);
+}
+
+// A token longer than one read was rescanned at every refill, so lines are cut at 64 KiB. This
+// one is a valid rule only past the cut, so it shows the cut, and the next line must still load.
+TEST(IPFilterIPv6, OverlongLinesAreCut)
+{
+	const auto entries = Scan(std::string(70000, 'x') + ":1.2.3.4-1.2.3.5\n" + "Org:5.6.7.8-5.6.7.9\n");
+	ASSERT_EQUALS(1u, entries.size());
+	ASSERT_EQUALS(1, yyip_Bad);
+	ASSERT_EQUALS(std::string("Org"), entries[0].description);
+}
