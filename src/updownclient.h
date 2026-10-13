@@ -806,6 +806,7 @@ private:
 	CNetworkAddress m_userAddress;
 	CNetworkAddress m_connectAddress;
 	bool m_dialingIPv6;
+	bool m_preserveIPv4IdentityOnHello;
 	CNetworkAddress m_preparedDialAddress;
 	CNetworkAddress m_dialledIPv6Address;
 	CNetworkAddress m_unansweredIPv6Address;

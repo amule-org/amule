@@ -51,11 +51,16 @@ struct SContactFacts
  */
 inline CNetworkAddress PromotePeerIPv6ForDial(const CNetworkAddress &current,
 	const CNetworkAddress &peerIPv6,
+	const CNetworkAddress &unansweredIPv6,
 	bool dualStackConfigured,
 	const CNetworkAddress &localIPv6,
 	bool proxyEnabled)
 {
-	if (dualStackConfigured && !proxyEnabled && peerIPv6.IsGloballyRoutableIPv6() &&
+	// Only add IPv6 as an alternative to an established IPv4 identity. Existing native IPv6
+	// contacts must keep the exact endpoint they already use, and an unanswered advertisement
+	// falls back to that IPv4 route rather than being retried forever.
+	if (PeerAddressing::HasEd2kWireForm(current) && dualStackConfigured && !proxyEnabled &&
+		peerIPv6 != unansweredIPv6 && peerIPv6.IsGloballyRoutableIPv6() &&
 		localIPv6.IsGloballyRoutableIPv6()) {
 		return peerIPv6;
 	}

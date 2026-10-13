@@ -119,12 +119,37 @@ TEST(ContactDialPolicy, GloballyRoutablePeerIPv6PromotesOnlyForAUsableDualStackL
 	const CNetworkAddress peer = CNetworkAddress::FromString("2001:4860:4860::8888");
 	const CNetworkAddress local = CNetworkAddress::FromString("2606:4700::1111");
 
-	ASSERT_TRUE(PromotePeerIPv6ForDial(ipv4, peer, true, local, false) == peer);
-	ASSERT_TRUE(PromotePeerIPv6ForDial(ipv4, peer, false, local, false) == ipv4);
-	ASSERT_TRUE(PromotePeerIPv6ForDial(ipv4, peer, true, CNetworkAddress::Absent(), false) == ipv4);
-	ASSERT_TRUE(PromotePeerIPv6ForDial(ipv4, peer, true, CNetworkAddress::FromString("fe80::1"), false) ==
-		    ipv4);
-	ASSERT_TRUE(PromotePeerIPv6ForDial(ipv4, peer, true, local, true) == ipv4);
+	ASSERT_TRUE(
+		PromotePeerIPv6ForDial(ipv4, peer, CNetworkAddress::Absent(), true, local, false) == peer);
+	ASSERT_TRUE(
+		PromotePeerIPv6ForDial(ipv4, peer, CNetworkAddress::Absent(), false, local, false) == ipv4);
 	ASSERT_TRUE(PromotePeerIPv6ForDial(
-			    ipv4, CNetworkAddress::FromString("fe80::1"), true, local, false) == ipv4);
+			    ipv4, peer, CNetworkAddress::Absent(), true, CNetworkAddress::Absent(), false) ==
+		    ipv4);
+	ASSERT_TRUE(PromotePeerIPv6ForDial(ipv4,
+			    peer,
+			    CNetworkAddress::Absent(),
+			    true,
+			    CNetworkAddress::FromString("fe80::1"),
+			    false) == ipv4);
+	ASSERT_TRUE(PromotePeerIPv6ForDial(ipv4, peer, CNetworkAddress::Absent(), true, local, true) == ipv4);
+	ASSERT_TRUE(PromotePeerIPv6ForDial(ipv4,
+			    CNetworkAddress::FromString("fe80::1"),
+			    CNetworkAddress::Absent(),
+			    true,
+			    local,
+			    false) == ipv4);
+}
+
+TEST(ContactDialPolicy, PeerIPv6PromotionDoesNotReplaceNativeIPv6OrRetryAFailedAddress)
+{
+	const CNetworkAddress peer = CNetworkAddress::FromString("2001:4860:4860::8888");
+	const CNetworkAddress local = CNetworkAddress::FromString("2606:4700::1111");
+	const CNetworkAddress native = CNetworkAddress::FromString("2001:db8::1");
+
+	ASSERT_TRUE(PromotePeerIPv6ForDial(native, peer, CNetworkAddress::Absent(), true, local, false) ==
+		    native);
+	ASSERT_TRUE(PromotePeerIPv6ForDial(
+			    CNetworkAddress::FromString("192.0.2.1"), peer, peer, true, local, false) ==
+		    CNetworkAddress::FromString("192.0.2.1"));
 }
