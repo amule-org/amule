@@ -100,4 +100,14 @@ inline std::optional<CNetworkAddress> DecideAdvertisedIPv6(const SAdvertisedIPv6
 	return facts.choice;
 }
 
+#ifdef ENABLE_IPV6
+/**
+ * The IPv6 address our hellos carry right now, or none.
+ *
+ * Defined in amule.cpp, beside the interface refresh that feeds it, so this header stays clear of
+ * the app and its sockets and the decision above can be unit-tested on its own.
+ */
+std::optional<CNetworkAddress> AdvertisedIPv6ForPeers();
+#endif
+
 #endif // ADVERTISED_IPV6_H

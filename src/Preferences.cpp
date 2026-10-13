@@ -100,6 +100,7 @@ wxString CPreferences::s_Addr;
 wxString CPreferences::s_NetworkInterface;
 #ifdef ENABLE_IPV6
 long CPreferences::s_addressFamiliesSetting;
+bool CPreferences::s_advertiseIPv6;
 #endif
 uint16 CPreferences::s_port;
 uint16 CPreferences::s_udpport;
@@ -1398,6 +1399,7 @@ void CPreferences::BuildItemList(const wxString &appdir)
 
 #ifdef ENABLE_IPV6
 	s_MiscList.push_back(MkCfg_Int("/eMule/AddressFamilies", s_addressFamiliesSetting, 0));
+	s_MiscList.push_back(new Cfg_Bool("/eMule/AdvertiseIPv6", s_advertiseIPv6, false));
 #endif
 
 	s_MiscList.push_back(new Cfg_Bool("/eMule/DropSlowSources", s_DropSlowSources, false));

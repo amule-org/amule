@@ -74,6 +74,7 @@
 #include "kademlia/kademlia/UDPFirewallTester.h"
 #ifdef ENABLE_IPV6
 #include "AddressFamilyPolicy.h" // Needed for AddressFamilyPolicy::SetConfigured
+#include "AdvertisedIPv6.h"      // Needed for ChooseAdvertisedIPv6
 #endif
 #include "HashListFile.h"
 #include "ClientCreditsList.h"    // Needed for CClientCreditsList
@@ -1784,10 +1785,16 @@ bool CamuleApp::RebindP2PSockets(bool tcpPortChanged, bool udpPortChanged, uint1
 	return true;
 }
 
+#ifdef ENABLE_IPV6
+static std::optional<CNetworkAddress> s_advertisedIPv6Choice;
+static std::optional<CNetworkAddress> s_lastAdvertisedIPv6;
+#endif
+
 void RefreshLocalPublicIPv6Addresses()
 {
+	const std::vector<NetworkInterface> interfaces = DetectNetworkInterfaces();
 	std::vector<CPublicIPv6Corroboration::Address> local;
-	for (const NetworkInterface &iface : DetectNetworkInterfaces()) {
+	for (const NetworkInterface &iface : interfaces) {
 		for (const NetworkInterfaceIPv6 &address : iface.ipv6) {
 			local.push_back(address.bytes);
 		}
@@ -1796,7 +1803,41 @@ void RefreshLocalPublicIPv6Addresses()
 	// reflection against the addresses we still hold, which is how a prefix renumber gets
 	// noticed at all.
 	ObservedPublicIPv6().SetLocalAddresses(local, ::GetTickCount64());
+#ifdef ENABLE_IPV6
+	s_advertisedIPv6Choice = ChooseAdvertisedIPv6(interfaces, thePrefs::GetNetworkInterface());
+#endif
 }
+
+#ifdef ENABLE_IPV6
+std::optional<CNetworkAddress> AdvertisedIPv6ForPeers()
+{
+	SAdvertisedIPv6Facts facts;
+	facts.choice = s_advertisedIPv6Choice;
+	facts.prefixCorroborated =
+		s_advertisedIPv6Choice &&
+		ObservedPublicIPv6().IsPrefixCorroborated(*s_advertisedIPv6Choice, ::GetTickCount64());
+	facts.declaredReachable = thePrefs::GetAdvertiseIPv6();
+	facts.ipv6Built = true;
+	facts.familyPermitted = AddressFamilyPolicy::PermitsIPv6();
+	facts.proxyEnabled = thePrefs::GetProxyData()->m_proxyEnable;
+	// Only the IPv6 wildcard accepts on whatever address we advertise. An empty host means the
+	// listener is down; a concrete IPv6 bind (a configured /eMule/Address) accepts on that one
+	// address only, which need not be the one chosen from the interfaces.
+	facts.listenerAcceptsIPv6 = theApp->listensocket && theApp->listensocket->BoundHost() == "[::]";
+
+	const std::optional<CNetworkAddress> advertised = DecideAdvertisedIPv6(facts);
+	if (advertised != s_lastAdvertisedIPv6) {
+		if (advertised) {
+			AddLogLineN(CFormat("Advertising our IPv6 address %s to peers") %
+				    advertised->ToWxString());
+		} else {
+			AddLogLineN("No longer advertising an IPv6 address to peers");
+		}
+		s_lastAdvertisedIPv6 = advertised;
+	}
+	return advertised;
+}
+#endif
 
 #ifdef ENABLE_UPNP
 void CamuleApp::StartUPnP()

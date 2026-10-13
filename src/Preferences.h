@@ -225,6 +225,8 @@ public:
 	// Raw and unvalidated, so an unsupported value can be reported as written; map it with
 	// AddressFamilyPolicy::FamiliesFromSetting().
 	static long GetAddressFamiliesSetting() { return s_addressFamiliesSetting; }
+	// The user's word that the ed2k TCP port accepts inbound IPv6: nothing can test it from outside.
+	static bool GetAdvertiseIPv6() { return s_advertiseIPv6; }
 #endif
 	static uint16 GetPort() { return s_port; }
 	static void SetPort(uint16 val);
@@ -938,6 +940,7 @@ protected:
 	static wxString s_NetworkInterface;
 #ifdef ENABLE_IPV6
 	static long s_addressFamiliesSetting;
+	static bool s_advertiseIPv6;
 #endif
 	static uint16 s_port;
 	static uint16 s_udpport;

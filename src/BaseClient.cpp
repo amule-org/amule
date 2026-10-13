@@ -81,6 +81,9 @@
 #include "Statistics.h"      // Needed for theStats
 #include "ClientUDPSocket.h"
 #include "AddressFamilyPolicy.h" // Needed for AddressFamilyPolicy::Permits
+#ifdef ENABLE_IPV6
+#include "AdvertisedIPv6.h" // Needed for AdvertisedIPv6ForPeers
+#endif
 #include "ContactDialPolicy.h"   // Needed for DecideContactRoute
 #include "Logger.h"
 #include "DataToText.h" // Needed for GetSoftName()
@@ -1182,6 +1185,12 @@ void CUpDownClient::SendHelloTypePacket(CMemFile *data)
 	if (LocalAdvertisedModMiscOptions() != 0) {
 		tagcount++;
 	}
+#ifdef ENABLE_IPV6
+	const std::optional<CNetworkAddress> advertisedIPv6 = AdvertisedIPv6ForPeers();
+	if (advertisedIPv6) {
+		tagcount++;
+	}
+#endif
 
 #ifdef __GIT__
 	// Kry - This is the tagcount!!! Be sure to update it!!
@@ -1307,6 +1316,16 @@ void CUpDownClient::SendHelloTypePacket(CMemFile *data)
 		CTagVarInt tagModMiscOptions(CT_MOD_MISCOPTIONS, localModMiscOptions, 32);
 		tagModMiscOptions.WriteTagToFile(data);
 	}
+
+#ifdef ENABLE_IPV6
+	if (advertisedIPv6) {
+		std::uint8_t ipv6Bytes[16];
+		advertisedIPv6->ToIPv6Bytes(ipv6Bytes);
+		CTagHash tagIPv6(CT_MOD_IP_V6, CMD4Hash(ipv6Bytes));
+		// Not restrictive: that mode silently drops a hash tag, and the count above would then lie.
+		tagIPv6.WriteTagToFile(data, utf8strNone, false);
+	}
+#endif
 
 #ifdef __GIT__
 	wxString mod_name(MOD_VERSION_LONG);
