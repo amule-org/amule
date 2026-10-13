@@ -867,6 +867,9 @@ uint8 CPartFile::LoadPartFile(
 	}
 
 	if (m_gaplist.IsComplete()) { // is this file complete already?
+		// The return skips the call below, and a completed file is never processed
+		// again, so its stored progress would stay at 0%.
+		UpdateCompletedInfos();
 		CompleteFile(false);
 		return true;
 	}
