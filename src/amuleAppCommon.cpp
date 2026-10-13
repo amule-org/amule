@@ -1134,13 +1134,6 @@ bool CamuleAppCommon::CheckPassedLink(const wxString &in, wxString &out, int cat
 		}
 	}
 
-	// Each link is one line of ED2KLinks: a line break inside one would forge more lines.
-	if (link.find_first_of("\r\n") != wxString::npos) {
-		AddLogLineCS(
-			CFormat(_("Invalid eD2k link \"%s\" - ERROR: %s")) % link % "line break in link");
-		return false;
-	}
-
 	try {
 		CScopedPtr<CED2KLink> uri(CED2KLink::CreateLinkFromUrl(link));
 		if (uri.get()->GetKind() == CED2KLink::kFile) {
@@ -1151,11 +1144,19 @@ bool CamuleAppCommon::CheckPassedLink(const wxString &in, wxString &out, int cat
 		} else {
 			out = uri.get()->GetLink();
 		}
-		return true;
 	} catch (const wxString &err) {
 		AddLogLineCS(CFormat(_("Invalid eD2k link \"%s\" - ERROR: %s")) % link % err);
+		return false;
 	}
-	return false;
+
+	// Each link is one line of ED2KLinks: a line break inside one would forge more lines. Checked
+	// on what is written, since GetLink() returns decoded text.
+	if (out.find_first_of("\r\n") != wxString::npos) {
+		AddLogLineCS(
+			CFormat(_("Invalid eD2k link \"%s\" - ERROR: %s")) % link % "line break in link");
+		return false;
+	}
+	return true;
 }
 
 /**

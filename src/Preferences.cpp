@@ -2142,17 +2142,21 @@ Category_Struct *CPreferences::GetCategory(size_t index)
 	return m_CatList[index];
 }
 
+// The index can come from a link or an EC client before AddDownload() validates it, which files
+// an unknown category under the default one: answer for that.
 const CPath &CPreferences::GetCatPath(uint8 index)
 {
-	wxASSERT(index < m_CatList.size());
-
+	if (index >= m_CatList.size()) {
+		return thePrefs::GetIncomingDir();
+	}
 	return m_CatList[index]->path;
 }
 
 uint32 CPreferences::GetCatColor(size_t index)
 {
-	wxASSERT(index < m_CatList.size());
-
+	if (index >= m_CatList.size()) {
+		return 0;
+	}
 	return m_CatList[index]->color;
 }
 
