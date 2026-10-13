@@ -84,7 +84,7 @@
 #ifdef ENABLE_IPV6
 #include "AdvertisedIPv6.h" // Needed for AdvertisedIPv6ForPeers
 #endif
-#include "ContactDialPolicy.h"   // Needed for DecideContactRoute
+#include "ContactDialPolicy.h" // Needed for DecideContactRoute
 #include "Logger.h"
 #include "DataToText.h" // Needed for GetSoftName()
 #include "GuiEvents.h"  // Needed for Notify_
