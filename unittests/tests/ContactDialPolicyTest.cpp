@@ -48,6 +48,21 @@ SContactFacts DialableIPv6()
 }
 } // namespace
 
+TEST(ContactDialPolicy, SecurityRejectsEitherPromotedTargetOrRetainedIdentity)
+{
+	ASSERT_TRUE(ContactSecurityPermitted(false, false, false, false));
+	ASSERT_FALSE(ContactSecurityPermitted(true, false, false, false));
+	ASSERT_FALSE(ContactSecurityPermitted(false, true, false, false));
+	ASSERT_FALSE(ContactSecurityPermitted(false, false, true, false));
+	ASSERT_FALSE(ContactSecurityPermitted(false, false, false, true));
+}
+
+TEST(ContactDialPolicy, PromotedIPv6SkipsIPv4Utp)
+{
+	ASSERT_TRUE(ShouldTryIPv4Utp(false));
+	ASSERT_FALSE(ShouldTryIPv4Utp(true));
+}
+
 TEST(ContactDialPolicy, ANativeIPv6ContactIsDialledDirectly)
 {
 	ASSERT_TRUE(DecideContactRoute(DialableIPv6()) == EContactRoute::DialIPv6);

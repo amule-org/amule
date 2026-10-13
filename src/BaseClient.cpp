@@ -734,7 +734,7 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data)
 			if (temptag.IsHash()) {
 				const std::uint8_t *claimed = temptag.GetHash().GetHash();
 				if (ObservedPublicIPv6().AddClaim(
-					    GetConnectAddress(), claimed, ::GetTickCount64())) {
+					    m_socket->GetPeerAddress(), claimed, ::GetTickCount64())) {
 					AddDebugLogLineN(logClient,
 						CFormat("Peers reaching us over IPv6 see us in %s/64") %
 							CNetworkAddress::FromIPv6Bytes(claimed)
@@ -779,7 +779,6 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data)
 		if (!m_preserveIPv4IdentityOnHello) {
 			SetUserAddress(m_socket->GetPeerAddress());
 		}
-		m_preserveIPv4IdentityOnHello = false;
 	} else {
 		throw wxString("Huh, socket failure. Avoided crash this time.");
 	}
@@ -1717,9 +1716,14 @@ EContactResult CUpDownClient::CheckContactPreconditions()
 	// Although all received IPs (server sources, source exchange) and all incoming connection
 	// attempts are filtered, outgoing connection attempts have to be filtered here too, because
 	// the ip filter list may have been updated since.
-	if (theApp->ipfilter->IsFiltered(contactAddress)) {
-		AddDebugLogLineN(
-			logIPFilter, "Filtered ip " + contactAddress.ToWxString() + " on TryToConnect");
+	const CNetworkAddress retainedIdentity = GetConnectAddress();
+	const bool retainedIdentityChecked =
+		retainedIdentity.IsPresent() && PeerAddressing::HasEd2kWireForm(retainedIdentity);
+	if (!ContactSecurityPermitted(theApp->ipfilter->IsFiltered(contactAddress),
+		    theApp->clientlist->IsBannedClient(contactAddress),
+		    retainedIdentityChecked && theApp->ipfilter->IsFiltered(retainedIdentity),
+		    retainedIdentityChecked && theApp->clientlist->IsBannedClient(retainedIdentity))) {
+		AddDebugLogLineN(logIPFilter, "Filtered or banned contact address on TryToConnect");
 		if (Disconnected("IPFilter")) {
 			Safe_Delete();
 			return EContactResult::ClientDeleted;
@@ -1727,7 +1731,7 @@ EContactResult CUpDownClient::CheckContactPreconditions()
 		return EContactResult::Declined;
 	}
 
-	// for safety: check again whether that IP is banned
+	// The combined security check above covers both the frozen target and retained identity.
 	if (theApp->clientlist->IsBannedClient(contactAddress)) {
 		AddDebugLogLineN(
 			logClient, "Refused to connect to banned client " + contactAddress.ToWxString());
@@ -1991,6 +1995,7 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 		// what TCP would have obfuscated. The two predicates differ, because
 		// the frame one also demands a known public IP.
 		const bool obfuscationSatisfied = !WantsStreamObfuscation() || ShouldReceiveCryptUDPPackets();
+		const bool promotedIPv6Target = GetDialAddress().IsIPv6() && !GetDialAddress().IsIPv4Mapped();
 		const SUtpDialFacts facts{ m_modCapabilities.SupportsNatTraversal(),
 			canSend,
 			true,
@@ -1999,7 +2004,8 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 			obfuscationSatisfied };
 		// Connect() is a no-op on a live socket. Without the same guard the
 		// uTP path would attach a transport over a connection already in use.
-		if (!m_socket->IsOk() && DecideUtpDial(facts) == EUtpDialDecision::TryUtp) {
+		if (!m_socket->IsOk() && ShouldTryIPv4Utp(promotedIPv6Target) &&
+			DecideUtpDial(facts) == EUtpDialDecision::TryUtp) {
 			std::unique_ptr<IStreamTransport> transport;
 			if (utp->Dial(GetConnectIP(),
 				    utpPort,

@@ -44,6 +44,19 @@ struct SContactFacts
 	bool proxyEnabled = false;
 };
 
+// A promoted dial has two security identities: the frozen target and the retained IPv4 peer.
+// Both must remain acceptable; this keeps promotion from bypassing an existing filter/ban.
+inline bool ContactSecurityPermitted(
+	bool targetFiltered, bool targetBanned, bool retainedIdentityFiltered, bool retainedIdentityBanned)
+{
+	return !targetFiltered && !targetBanned && !retainedIdentityFiltered && !retainedIdentityBanned;
+}
+
+inline bool ShouldTryIPv4Utp(bool promotedIPv6Target)
+{
+	return !promotedIPv6Target;
+}
+
 /**
  * Returns a peer's advertised IPv6 as the TCP target only when this node is explicitly configured
  * for dual stack and has selected a global local IPv6. The local address proves that an IPv6 source
