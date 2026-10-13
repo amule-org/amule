@@ -547,7 +547,12 @@ void CServerUDPSocket::OnHostnameResolved(uint32 ip)
 		}
 		DropQueuedPacket();
 	} else if (!IsGoodServerIP(ip, thePrefs::FilterLanIPs()) || theApp->ipfilter->IsFiltered(ip, true)) {
-		// The checks the TCP connect makes: the name may point anywhere.
+		// The checks the TCP connect makes: the name may point anywhere. Marked as a DNS error so
+		// later packets are dropped until the next lookup; with neither that nor an IP set,
+		// SendQueue() would wait for a lookup that is not running, and stall the queue.
+		if (update) {
+			update->SetDNSError(true);
+		}
 		AddDebugLogLineN(logServerUDP,
 			CFormat("Not sending to %s (%s): filtered") % item.addr % Uint32toStringIP(ip));
 		DropQueuedPacket();
