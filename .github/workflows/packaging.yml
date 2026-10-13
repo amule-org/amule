@@ -359,6 +359,11 @@ jobs:
         if: matrix.arch == 'x86_64' && steps.kegcache.outputs.cache-matched-key != ''
         run: tar -C / -xpf ~/intel-kegs.tar
       - name: Install Homebrew deps
+        id: brewdeps
+        # Stop a from-source Intel build before the 6 h job limit, which ends the job
+        # with no step after it: the two steps below then save what it compiled, as
+        # they do for a cancelled run, and the next run carries on from there.
+        timeout-minutes: 330
         run: |
           BREW=${{ matrix.brew_prefix }}/bin/brew
           if [ "${{ matrix.arch }}" = "x86_64" ]; then
@@ -426,9 +431,21 @@ jobs:
       # Not gated on master like the save below: a pull request run has to fail
       # here if this breaks, rather than on the merge that has no cache left.
       - name: Pack x86_64 source-built kegs
-        if: matrix.arch == 'x86_64'
+        id: kegpack
+        if: >-
+          always() && matrix.arch == 'x86_64' &&
+          contains(fromJSON('["success", "failure", "cancelled"]'), steps.brewdeps.outcome)
         run: |
           BREW="${{ matrix.archcmd }} ${{ matrix.brew_prefix }}/bin/brew"
+          # The formula a timeout cut off can leave a keg with no install receipt.
+          # Drop it: cached, it would come back as a broken keg brew counts as done.
+          shopt -s nullglob
+          for keg in "${{ matrix.brew_prefix }}"/Cellar/*/*/; do
+              if [ ! -f "${keg}INSTALL_RECEIPT.json" ]; then
+                  echo "Dropping incomplete keg ${keg}"
+                  rm -rf "$keg"
+              fi
+          done
           # Only what the build still needs, so a formula that left the graph ages out.
           CLOSURE="$BREW_DEPS $($BREW deps --union --include-build $BREW_DEPS)"
           $BREW info --json=v2 --installed > "$RUNNER_TEMP/installed.json"
@@ -448,7 +465,9 @@ jobs:
       - name: Save x86_64 source-built kegs
         # Master only, as for ccache: retention compares keys across branches,
         # and a branch-scoped entry that ranked newest would cost master its own.
-        if: matrix.arch == 'x86_64' && github.event_name == 'push' && github.ref == 'refs/heads/master'
+        if: >-
+          always() && steps.kegpack.outcome == 'success' &&
+          github.event_name == 'push' && github.ref == 'refs/heads/master'
         uses: ./.github/actions/cache-save-newest
         with:
           path: ~/intel-kegs.tar
