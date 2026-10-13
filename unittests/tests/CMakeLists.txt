@@ -116,6 +116,15 @@ target_include_directories (KadFirewallCheckRequestsTest PRIVATE
 )
 target_link_libraries (KadFirewallCheckRequestsTest muleunit mulecommon)
 
+# Our Kad public IP: a change needs reports from two /24s.
+add_executable (KadPublicIPVoteTest KadPublicIPVoteTest.cpp)
+add_test (NAME KadPublicIPVoteTest COMMAND KadPublicIPVoteTest)
+target_include_directories (KadPublicIPVoteTest PRIVATE
+	${CMAKE_SOURCE_DIR}/src
+	${CMAKE_SOURCE_DIR}/src/include
+)
+target_link_libraries (KadPublicIPVoteTest muleunit mulecommon)
+
 # Production UDP verification queries with a deterministic clock.
 add_executable (KadUDPFirewallIntegrationTest
 	KadUDPFirewallIntegrationTest.cpp

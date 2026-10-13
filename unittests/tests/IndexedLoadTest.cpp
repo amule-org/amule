@@ -687,4 +687,7 @@ TEST(IndexedLoad, NotesStopAtGlobalCap)
 	ASSERT_FALSE(index.AddNotes(CUInt128(9u), CUInt128(1u), refused, load));
 	ASSERT_EQUALS(100u, unsigned(load));
 	delete refused;
+	// A publisher refreshing its own note still gets through.
+	ASSERT_TRUE(index.AddNotes(CUInt128(10u), CUInt128(1u), NoteEntry(1, lifetime), load));
+	ASSERT_EQUALS(uint32_t(KADEMLIAMAXNOTES), index.m_totalIndexNotes);
 }

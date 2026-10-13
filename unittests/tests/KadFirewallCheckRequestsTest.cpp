@@ -40,14 +40,15 @@ TEST(KadFirewallCheckRequests, EachReplyKindOncePerRequest)
 	ASSERT_TRUE(requests.Contains(kPeer, kStart + 5));
 }
 
-TEST(KadFirewallCheckRequests, SecondRequestAllowsSecondReply)
+TEST(KadFirewallCheckRequests, AskingAgainBuysNoSecondReply)
 {
 	CFirewallCheckRequests requests;
 	requests.Add(kPeer, kStart);
 	requests.Add(kPeer, kStart + 10);
 	ASSERT_TRUE(requests.Take(kPeer, kReachable, kStart + 20));
-	ASSERT_TRUE(requests.Take(kPeer, kReachable, kStart + 21));
-	ASSERT_FALSE(requests.Take(kPeer, kReachable, kStart + 22));
+	ASSERT_FALSE(requests.Take(kPeer, kReachable, kStart + 21));
+	ASSERT_TRUE(requests.Take(kPeer, kIP, kStart + 22));
+	ASSERT_FALSE(requests.Take(kPeer, kIP, kStart + 23));
 }
 
 TEST(KadFirewallCheckRequests, RequestsExpire)

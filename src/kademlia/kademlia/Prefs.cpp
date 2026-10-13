@@ -83,8 +83,7 @@ void CPrefs::Init(const wxString &filename)
 	m_totalStoreNotes = 0;
 	m_Publish = false;
 	m_clientHash.SetValueBE(thePrefs::GetUserHash().GetHash());
-	m_ip = 0;
-	m_ipLast = 0;
+	m_publicIP = CPublicIPVote();
 	m_findBuddy = false;
 	m_kademliaUsers = 0;
 	m_kademliaFiles = 0;
@@ -109,7 +108,7 @@ void CPrefs::ReadFile()
 	try {
 		CFile file;
 		if (path.FileExists() && file.Open(path, CFile::read)) {
-			m_ip = file.ReadUInt32();
+			m_publicIP.Load(file.ReadUInt32());
 			file.ReadUInt16();
 			m_clientID = file.ReadUInt128();
 			// get rid of invalid kad IDs which may have been stored by older versions
@@ -127,7 +126,7 @@ void CPrefs::WriteFile()
 	try {
 		CFile file;
 		if (file.Open(m_filename, CFile::write)) {
-			file.WriteUInt32(m_ip);
+			file.WriteUInt32(m_publicIP.Get());
 			file.WriteUInt16(0); // This is no longer used.
 			file.WriteUInt128(m_clientID);
 			file.WriteUInt8(0); // This is to tell older clients there are no tags..
@@ -135,23 +134,6 @@ void CPrefs::WriteFile()
 		}
 	} catch (const CIOFailureException &e) {
 		AddDebugLogLineC(logKadPrefs, "IO failure while saving kad-prefs: " + e.what());
-	}
-}
-
-void CPrefs::SetIPAddress(uint32_t val) noexcept
-{
-	// This is our first check on connect, init our IP..
-	if (!val || !m_ipLast) {
-		m_ip = val;
-		m_ipLast = val;
-	}
-	// If the last check matches this one, reset our current IP; if not, wait for our next
-	// incoming IP. A mismatch means either that we just changed our IP or that a client
-	// responded with a bad one.
-	if (val == m_ipLast) {
-		m_ip = val;
-	} else {
-		m_ipLast = val;
 	}
 }
 

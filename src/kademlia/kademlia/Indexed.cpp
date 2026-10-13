@@ -806,14 +806,16 @@ bool CIndexed::AddSources(
 		entry->GetTagCount() == 0 || entry->m_tLifeTime < time(NULL)) {
 		return false;
 	}
-	if (m_totalIndexSource >= KADEMLIAMAXSOURCES) {
-		load = 100;
-		return false;
-	}
 
 	SrcHash *currSrcHash = NULL;
+	// Full means no new entries; refreshes and per-file recycling still go through.
+	const bool full = m_totalIndexSource >= KADEMLIAMAXSOURCES;
 	SrcHashMap::iterator itSrcHash = m_Sources_map.find(keyID);
 	if (itSrcHash == m_Sources_map.end()) {
+		if (full) {
+			load = 100;
+			return false;
+		}
 		Source *currSource = new Source;
 		currSource->sourceID = sourceID;
 		currSource->entryList.push_front(entry);
@@ -866,6 +868,9 @@ bool CIndexed::AddSources(
 			currSrcHash->m_Source_map.push_front(currSource);
 			load = 100;
 			return true;
+		} else if (full) {
+			load = 100;
+			return false;
 		} else {
 			Source *currSource = new Source;
 			currSource->sourceID = sourceID;
@@ -893,14 +898,16 @@ bool CIndexed::AddNotes(
 	if (entry->m_uIP == 0 || entry->GetTagCount() == 0 || entry->m_tLifeTime < time(nullptr)) {
 		return false;
 	}
-	if (m_totalIndexNotes >= KADEMLIAMAXNOTES) {
-		load = 100;
-		return false;
-	}
 
 	SrcHash *currNoteHash = NULL;
+	// Full means no new entries; refreshes and per-file recycling still go through.
+	const bool full = m_totalIndexNotes >= KADEMLIAMAXNOTES;
 	SrcHashMap::iterator itNoteHash = m_Notes_map.find(keyID);
 	if (itNoteHash == m_Notes_map.end()) {
+		if (full) {
+			load = 100;
+			return false;
+		}
 		Source *currNote = new Source;
 		currNote->sourceID = sourceID;
 		currNote->entryList.push_front(entry);
@@ -953,6 +960,9 @@ bool CIndexed::AddNotes(
 			currNoteHash->m_Source_map.push_front(currNote);
 			load = 100;
 			return true;
+		} else if (full) {
+			load = 100;
+			return false;
 		} else {
 			Source *currNote = new Source;
 			currNote->sourceID = sourceID;

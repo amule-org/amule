@@ -40,6 +40,7 @@ there client on the eMule forum..
 #define PREFS_H
 
 #include "FirewallRecheck.h" // Needed for CFirewallRecheck
+#include "PublicIPVote.h"    // Needed for CPublicIPVote
 #include "../utils/UInt128.h"
 #include "../../Preferences.h"
 #include <protocol/kad/Constants.h>
@@ -63,8 +64,9 @@ public:
 	void SetClientHash(const CUInt128 &id) noexcept { m_clientHash = id; }
 	const CUInt128 &GetClientHash() const noexcept { return m_clientHash; }
 
-	uint32_t GetIPAddress() const noexcept { return m_ip; }
-	void SetIPAddress(uint32_t val) noexcept;
+	uint32_t GetIPAddress() const noexcept { return m_publicIP.Get(); }
+	//! @a reporter is the peer that told us @a val.
+	void SetIPAddress(uint32_t val, uint32_t reporter) noexcept { m_publicIP.Report(val, reporter); }
 
 	bool GetRecheckIP() const noexcept { return m_firewallRecheck.AwaitingAnswers(); }
 	void SetRecheckIP();
@@ -147,8 +149,7 @@ private:
 	time_t m_lastContact;
 	CUInt128 m_clientID;
 	CUInt128 m_clientHash;
-	uint32_t m_ip;
-	uint32_t m_ipLast;
+	CPublicIPVote m_publicIP;
 	CFirewallRecheck m_firewallRecheck;
 	uint32_t m_kademliaUsers;
 	uint32_t m_kademliaFiles;

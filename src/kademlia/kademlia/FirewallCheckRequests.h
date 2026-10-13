@@ -35,8 +35,9 @@ namespace Kademlia
  * The peers we asked to check our firewall, for 180 seconds each. Header-only, with the clock
  * passed in, like CFirewallRecheck.
  *
- * Each peer we asked may give each kind of reply once. Without that, one peer could repeat its
- * answer: two replies settle our public IP, and two confirmations mark us reachable.
+ * Each peer we asked may give each kind of reply once while its request lives. Without that, one
+ * peer could repeat its answer: two replies settle our public IP, and two confirmations mark us
+ * reachable.
  */
 class CFirewallCheckRequests
 {
@@ -49,11 +50,14 @@ public:
 
 	static const uint64_t kLifetimeMs = 180000;
 
+	//! A peer already asked keeps its request: asking it again must not buy it more replies.
 	void Add(uint32_t ip, uint64_t now)
 	{
-		m_requests.push_front(Request{ ip, now });
 		while (!m_requests.empty() && now - m_requests.back().sent > kLifetimeMs) {
 			m_requests.pop_back();
+		}
+		if (!Contains(ip, now)) {
+			m_requests.push_front(Request{ ip, now });
 		}
 	}
 

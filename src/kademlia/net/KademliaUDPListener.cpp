@@ -1362,6 +1362,7 @@ void CKademliaUDPListener::Process2PublishSourceRequest(const uint8_t *packetDat
 		entry->m_bSource = false;
 		entry->m_tLifeTime = (uint32_t)time(NULL) + KADEMLIAREPUBLISHTIMES;
 		bool addUDPPortTag = true;
+		const uint64_t tagsStart = bio.GetPosition();
 		uint32_t tags = bio.ReadUInt8();
 		while (tags > 0) {
 			CTag *tag = bio.ReadTag();
@@ -1411,6 +1412,10 @@ void CKademliaUDPListener::Process2PublishSourceRequest(const uint8_t *packetDat
 		}
 		if (addUDPPortTag) {
 			entry->AddTag(new CTagVarInt(TAG_SOURCEUPORT, entry->m_uUDPport), 0);
+		}
+		// Unknown tags are kept for other clients, so their size is what bounds the entry.
+		if (bio.GetPosition() - tagsStart > KADEMLIAMAXSOURCETAGBYTES) {
+			entry->m_bSource = false;
 		}
 #ifdef __DEBUG__
 		if (!strInfo.IsEmpty()) {
@@ -1546,6 +1551,7 @@ void CKademliaUDPListener::Process2PublishNotesRequest(const uint8_t *packetData
 
 	CUInt128 source = bio.ReadUInt128();
 
+	bool valid = true;
 	Kademlia::CEntry *entry = new Kademlia::CEntry();
 	try {
 		entry->m_uIP = ip;
@@ -1559,7 +1565,9 @@ void CKademliaUDPListener::Process2PublishNotesRequest(const uint8_t *packetData
 			CTag *tag = bio.ReadTag();
 			if (tag) {
 				if (!tag->GetName().Cmp(TAG_FILENAME)) {
-					if (entry->GetCommonFileName().IsEmpty()) {
+					if (tag->GetStr().length() > KADEMLIAMAXNOTENAMELEN) {
+						valid = false;
+					} else if (entry->GetCommonFileName().IsEmpty()) {
 						entry->SetFileName(tag->GetStr());
 					}
 					delete tag;
@@ -1568,9 +1576,18 @@ void CKademliaUDPListener::Process2PublishNotesRequest(const uint8_t *packetData
 						entry->m_uSize = tag->GetInt();
 					}
 					delete tag;
-				} else {
-					// TODO: Filter tags
+				} else if (!tag->GetName().Cmp(TAG_DESCRIPTION)) {
+					if (tag->GetStr().length() > KADEMLIAMAXNOTECOMMENTLEN) {
+						valid = false;
+						delete tag;
+					} else {
+						entry->AddTag(tag, ip);
+					}
+				} else if (!tag->GetName().Cmp(TAG_FILERATING) && tag->IsInt()) {
 					entry->AddTag(tag, ip);
+				} else {
+					// A notes search reads only the name, comment and rating.
+					delete tag;
 				}
 			}
 			tags--;
@@ -1582,7 +1599,7 @@ void CKademliaUDPListener::Process2PublishNotesRequest(const uint8_t *packetData
 	}
 
 	uint8_t load = 0;
-	if (CKademlia::GetIndexed()->AddNotes(target, source, entry, load)) {
+	if (valid && CKademlia::GetIndexed()->AddNotes(target, source, entry, load)) {
 		CMemFile packetdata(17);
 		packetdata.WriteUInt128(target);
 		packetdata.WriteUInt8(load);
@@ -1653,6 +1670,10 @@ void CKademliaUDPListener::ProcessFirewalledResponse(
 	// Verify packet is expected size
 	CHECK_PACKET_EXACT_SIZE(4);
 
+	// The recheck has its answers: a late one would only let its sender have the last word.
+	if (!CKademlia::GetPrefs()->GetRecheckIP()) {
+		return;
+	}
 	if (!theApp->clientlist->TakeKadFirewallReply(wxUINT32_SWAP_ALWAYS(ip),
 		    CFirewallCheckRequests::Reply::PublicIP)) { /* KADEMLIA_FIREWALLED(2)_REQ */
 		throw wxString("Received unrequested firewall response packet in ") +
@@ -1664,7 +1685,7 @@ void CKademliaUDPListener::ProcessFirewalledResponse(
 
 	// Update con state only if something changes.
 	if (CKademlia::GetPrefs()->GetIPAddress() != firewalledIP) {
-		CKademlia::GetPrefs()->SetIPAddress(firewalledIP);
+		CKademlia::GetPrefs()->SetIPAddress(firewalledIP, ip);
 		theApp->ShowConnectionState();
 	}
 	CKademlia::GetPrefs()->IncRecheckIP();
