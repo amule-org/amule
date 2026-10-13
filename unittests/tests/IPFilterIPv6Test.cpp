@@ -198,3 +198,19 @@ TEST(IPFilterIPv6, LaterStaticRulesOverrideAndReplacementDropsOldRules)
 	ASSERT_FALSE(ranges.IsFiltered(Addr("2001:db8::1"), 127));
 	ASSERT_EQUALS(0u, ranges.BanCount(127));
 }
+
+TEST(IPFilterIPv6, NulBytesInAntiP2PLinesAreBadLines)
+{
+	// The AntiP2P action finds the IP with strrchr/strchr, which stop at a NUL.
+	static const char kText[] = "0.0.0.0-0.255.255.255,0,bogon\n"
+				    "\0:1.2.3.4-1.2.3.5\n"
+				    "x:abcdefgh\0:1.2.3.4-1.2.3.5\n"
+				    "a:b\0:1.2.3.4-1.2.3.5\n"
+				    "Org:5.6.7.8-5.6.7.9\n";
+	const auto entries = Scan(std::string(kText, sizeof(kText) - 1));
+	ASSERT_EQUALS(2u, entries.size());
+	ASSERT_EQUALS(3, yyip_Bad);
+	ASSERT_EQUALS(std::string("bogon"), entries[0].description);
+	ASSERT_EQUALS(std::string("Org"), entries[1].description);
+	ASSERT_EQUALS(0x05060708u, entries[1].start);
+}

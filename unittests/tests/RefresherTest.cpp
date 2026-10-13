@@ -2714,6 +2714,7 @@ TEST(Refresher, PrefsSchemaIsWellFormed)
 		// Rows that round-trip a value need a backing member; rows that
 		// never do must not have one.
 		const bool needs_member = f.access == PrefAccess::ReadWrite ||
+					  f.access == PrefAccess::AdminRead ||
 					  f.access == PrefAccess::ReadOnly || f.access == PrefAccess::Bespoke;
 		ASSERT_TRUE(needs_member == (f.member != nullptr));
 
@@ -2756,7 +2757,7 @@ TEST(Refresher, PrefsSchemaIsWellFormed)
 // API states the positive fact and the schema undoes the EC negation on read and write alike.
 TEST(Refresher, PrefsSchemaIrregularitiesStayContained)
 {
-	std::size_t inverted = 0, foreign_group = 0, bespoke = 0;
+	std::size_t inverted = 0, foreign_group = 0, bespoke = 0, admin_read = 0;
 	for (std::size_t i = 0; i < PrefSchemaSize(); ++i) {
 		const PrefField &f = PrefSchema()[i];
 		if (f.invert) {
@@ -2772,10 +2773,18 @@ TEST(Refresher, PrefsSchemaIrregularitiesStayContained)
 			++bespoke;
 			ASSERT_EQUALS(std::string("guest_enabled"), std::string(f.key));
 		}
+		// Hidden from guests: the REST reference lists each one.
+		if (f.access == PrefAccess::AdminRead) {
+			++admin_read;
+			const std::string id = std::string(f.category) + "." + f.key;
+			ASSERT_TRUE(id == "connection.proxy_user" || id == "geoip.custom_update_url" ||
+				    id == "geoip.maxmind_license");
+		}
 	}
 	ASSERT_EQUALS(static_cast<std::size_t>(2), inverted);
 	ASSERT_EQUALS(static_cast<std::size_t>(1), foreign_group);
 	ASSERT_EQUALS(static_cast<std::size_t>(1), bespoke);
+	ASSERT_EQUALS(static_cast<std::size_t>(3), admin_read);
 
 	// One category is gated on a tag proving the daemon has it. That tag must be one of the
 	// category's own value-encoded rows: a presence-encoded one is absent whenever it is false,
