@@ -38,6 +38,7 @@ enum ED2KStandardClientTCP
 	OP_ASKSHAREDFILESANSWER = 0x4B, // <count 4>(<HASH 16><ID 4><PORT 2><1 Tag_set>)[count]
 	OP_HELLOANSWER = 0x4C,          // <HASH 16><ID 4><PORT 2><1 Tag_set><SERVER_IP 4><SERVER_PORT 2>
 	OP_CHANGE_CLIENT_ID = 0x4D,     // <ID_old 4><ID_new 4> // Unused for sending
+	OP_CHANGE_CLIENT_IP = 0xAC,     // <new IPv6 16>
 	OP_MESSAGE = 0x4E,              // <len 2><Message len>
 	OP_SETREQFILEID = 0x4F,         // <HASH 16>
 	OP_FILESTATUS = 0x50,           // <HASH 16><count 2><status(bit array) len:((count+7)/8)>
@@ -101,7 +102,6 @@ enum ED2KExtendedClientTCP
 	OP_MULTIPACKET_EXT = 0xA4,
 	OP_CHATCAPTCHAREQ = 0xA5,
 	OP_CHATCAPTCHARES = 0xA6,
-	OP_CHANGE_CLIENT_IP = 0xAC, // <new IPv6 16>
 };
 
 #endif // ED2KC2CTCP_H

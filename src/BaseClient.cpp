@@ -2937,14 +2937,17 @@ void CUpDownClient::SetIP(uint32 val)
 	SetUserAddress(CNetworkAddress::FromIPv4NetworkOrderOrAbsent(val));
 }
 
+#ifdef ENABLE_IPV6
 void CUpDownClient::UpdateModIPv6(const CNetworkAddress &address)
 {
-	wxASSERT(m_hasModIPv6 && address.IsGloballyRoutableIPv6());
-	if (!m_hasModIPv6 || !address.IsGloballyRoutableIPv6()) {
+	wxASSERT(address.IsGloballyRoutableIPv6());
+	if (!address.IsGloballyRoutableIPv6()) {
 		return;
 	}
 	md4cpy(m_modIPv6, address.GetOctets().data());
+	m_hasModIPv6 = true;
 }
+#endif
 
 bool CUpDownClient::HasPeerIPv4() const
 {
