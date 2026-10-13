@@ -722,7 +722,7 @@ curl -s -X POST "http://$HOST/api/v1/auth/login?include_token=true" \
 
 **Auth:** `GUEST`
 
-Adds the bearer's `jti` to the server-side revocation list (TTL = JWT's `exp`) and emits a clear-cookie. Idempotent: a token that is already revoked still gets `204` so a double-tap on a logout button doesn't surface a confusing "session expired" toast.
+Adds the bearer's `jti` to the server-side revocation list (TTL = JWT's `exp`) and emits a clear-cookie. An [`/events`](EVENTS.md#session-end) stream opened with the token closes too. Idempotent: a token that is already revoked still gets `204` so a double-tap on a logout button doesn't surface a confusing "session expired" toast.
 
 `204 No Content`, no body: the clear-cookie header is the whole result, and an `{"ok": true}` body would only restate the status code.
 

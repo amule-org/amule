@@ -10878,7 +10878,8 @@ void CApiDispatcher::StampCorsForTransport(
 	ApplyCorsHeaders(headers, cors_org, m_config.ServerCfg().allow_cors);
 }
 
-boost::optional<CHttpServer::Response> CApiDispatcher::PreflightEvents(const CHttpServer::Request &req)
+boost::optional<CHttpServer::Response> CApiDispatcher::PreflightEvents(
+	const CHttpServer::Request &req, bool &may_use_reserve)
 {
 	// Same bearer/cookie check the live handler does, but run on the I/O thread
 	// BEFORE a worker is spawned and BEFORE the 32-slot SSE budget is touched, so the
@@ -10894,6 +10895,7 @@ boost::optional<CHttpServer::Response> CApiDispatcher::PreflightEvents(const CHt
 		}
 		return a.rejection;
 	}
+	may_use_reserve = a.verified.role == Role::ADMIN;
 	// A HEAD here asks what a GET would answer with, not for the stream. Answered in the
 	// dispatcher rather than the transport so it picks up the same CORS bundle the
 	// stream carries.
@@ -11145,6 +11147,14 @@ void CApiDispatcher::DispatchEvents(const CHttpServer::Request &req,
 		if (!writer.Alive())
 			break;
 		if (m_app.EventBus().IsShutdown())
+			break;
+
+		// Auth ran once, when the stream opened. Check it again on every wake, so a logout,
+		// revocation, credential change or expiry ends the stream before it delivers more.
+		// Not through Authenticate(): its limiter would reset the IP's failure count each pass.
+		if (!AuthenticateRequest(
+			    req, m_jwt, m_revocations, kSessionCookieName, m_config.CredentialsChangedAt())
+				.ok)
 			break;
 
 		// Live-path gap detection. The reconnect handler above only catches gaps at

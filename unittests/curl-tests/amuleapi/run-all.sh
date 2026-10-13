@@ -290,6 +290,7 @@ PHASES=(
 	43-client-protocol-extensions.sh
 	44-base-path.sh
 	45-all-search.sh
+	46-sse-session-end.sh
 	99-peer-fixture-teardown.sh
 )
 

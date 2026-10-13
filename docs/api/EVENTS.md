@@ -106,6 +106,8 @@ If the daemon restarts between steps 1 and 2, or the ring buffer overflows on a 
 
 `GET /api/v1/events` opens the stream. Auth runs synchronously BEFORE the worker thread is spawned and before the 32-slot streaming budget is touched, so an unauthenticated client can't tie up a slot for the read-timeout window.
 
+Four of the 32 slots are kept for admin streams, so guests can hold at most 28 and cannot lock the admin out of live updates. A stream over the cap gets `503 too_many_streams` with `Retry-After: 10`.
+
 `HEAD` returns the stream's headers and no body. Any other method is `405` with `Allow: GET, HEAD`, like every other route. A trailing slash is stripped first, so `/api/v1/events/` opens the same stream.
 
 ```sh
@@ -143,6 +145,10 @@ Content-Type: application/json
 
 {"error":{"code":"unauthorized","message":"missing bearer token or session cookie"}}
 ```
+
+### Session end
+
+A stream lasts only as long as the session that opened it. Each time the stream wakes, for an event or the 15 s heartbeat, it checks the token again. A logout, a password change, disabling guest access, or token expiry closes the stream, and no event goes out after that. There is no closing event frame: the stream just ends, and the reconnect gets the `401` above. A browser `EventSource` does not retry after a non-200 answer (`readyState` becomes `CLOSED`), so treat that as "sign in again".
 
 ### Response headers
 
