@@ -682,6 +682,7 @@ wxString CSearchList::StartNewSearch(uint32 *searchID, SearchType type, CSearchP
 		// and independent Kad searches must not terminate the previous search.
 		StopInFlightEd2kSearch();
 		m_currentSearch = *(searchID);
+		m_askedServers.clear();
 		m_searchInProgress = theApp->IsConnectedED2K();
 		m_ed2kSearchFinished = !m_searchInProgress;
 
@@ -949,6 +950,7 @@ void CSearchList::OnGlobalSearchTimer(CTimerEvent &WXUNUSED(evt))
 						m_searchPacket->GetPacketSize());
 					theStats::AddUpOverheadServer(extSearchPacket->GetPacketSize());
 					theApp->serverconnect->SendUDPPacket(extSearchPacket, server, true);
+					m_askedServers.insert(server->ECID());
 					AddDebugLogLineN(logServerUDP,
 						"Sending OP_GLOBSEARCHREQ3 to server " +
 							Uint32_16toStringIP_Port(
@@ -964,6 +966,7 @@ void CSearchList::OnGlobalSearchTimer(CTimerEvent &WXUNUSED(evt))
 							m_searchPacket->GetPacketSize());
 						theApp->serverconnect->SendUDPPacket(
 							m_searchPacket.get(), server, false);
+						m_askedServers.insert(server->ECID());
 					} else {
 						AddDebugLogLineN(logServerUDP,
 							"Skipped UDP search on server " +
@@ -982,6 +985,7 @@ void CSearchList::OnGlobalSearchTimer(CTimerEvent &WXUNUSED(evt))
 							m_searchPacket->GetPacketSize());
 						theApp->serverconnect->SendUDPPacket(
 							m_searchPacket.get(), server, false);
+						m_askedServers.insert(server->ECID());
 					} else {
 						AddDebugLogLineN(logServerUDP,
 							"Skipped UDP search on server " +
@@ -1117,6 +1121,17 @@ void CSearchList::ProcessUDPSearchAnswer(
 	}
 	auto file = std::make_unique<CSearchFile>(packet, optUTF8, m_currentSearch, serverIP, serverPort);
 	AddToList(std::move(file), false);
+}
+
+bool CSearchList::WasServerAsked(uint32 serverIP) const
+{
+	for (uint32 ecid : m_askedServers) {
+		const CServer *server = theApp->serverlist->GetServerByECID(ecid);
+		if (server && server->GetIP() == serverIP) {
+			return true;
+		}
+	}
+	return false;
 }
 
 bool CSearchList::AddToList(std::unique_ptr<CSearchFile> owned, bool clientResponse)

@@ -132,7 +132,10 @@ void CServerUDPSocket::ProcessPacket(CMemFile &packet, uint8 opcode, uint32 ip, 
 		// sources, and search results and found sources are processed as 16.40 does.
 		switch (opcode) {
 		case OP_GLOBSEARCHRES: {
-
+			if (!theApp->searchlist->WasServerAsked(ip)) {
+				throw wxString(CFormat("Unrequested OP_GLOBSEARCHRES packet from %s:%d") %
+					       Uint32toStringIP(ip) % port);
+			}
 			do {
 				theApp->searchlist->ProcessUDPSearchAnswer(packet, true, ip, port - 4);
 
@@ -156,6 +159,11 @@ void CServerUDPSocket::ProcessPacket(CMemFile &packet, uint8 opcode, uint32 ip, 
 			break;
 		}
 		case OP_GLOBFOUNDSOURCES: {
+			if (!theApp->serverlist->GetServerByIP(ip)) {
+				throw wxString(
+					CFormat("OP_GLOBFOUNDSOURCES packet from unknown server %s:%d") %
+					Uint32toStringIP(ip) % port);
+			}
 			// process all source packets
 			do {
 				CMD4Hash fileid = packet.ReadHash();
