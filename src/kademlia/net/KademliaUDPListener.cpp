@@ -1362,10 +1362,16 @@ void CKademliaUDPListener::Process2PublishSourceRequest(const uint8_t *packetDat
 		entry->m_bSource = false;
 		entry->m_tLifeTime = (uint32_t)time(NULL) + KADEMLIAREPUBLISHTIMES;
 		bool addUDPPortTag = true;
-		const uint64_t tagsStart = bio.GetPosition();
+		// Tags this client does not understand are kept for the clients that do, within a
+		// per-source and an index-wide byte budget. Past either, the source is stored without
+		// the rest of them.
+		uint32_t extraBytes = 0;
+		bool extraFull = false;
 		uint32_t tags = bio.ReadUInt8();
 		while (tags > 0) {
+			const uint64_t tagStart = bio.GetPosition();
 			CTag *tag = bio.ReadTag();
+			const uint32_t tagBytes = static_cast<uint32_t>(bio.GetPosition() - tagStart);
 			if (tag) {
 				if (!tag->GetName().Cmp(TAG_SOURCETYPE)) {
 					if (entry->m_bSource == false) {
@@ -1403,9 +1409,33 @@ void CKademliaUDPListener::Process2PublishSourceRequest(const uint8_t *packetDat
 						// More than one udp port tag found
 						delete tag;
 					}
-				} else {
-					// TODO: Filter tags
+				} else if (!tag->GetName().Cmp(TAG_SERVERIP) ||
+					   !tag->GetName().Cmp(TAG_SERVERPORT) ||
+					   !tag->GetName().Cmp(TAG_ENCRYPTION)) {
+					if (tag->IsInt()) {
+						entry->AddTag(tag, ip);
+					} else {
+						delete tag;
+					}
+				} else if (!tag->GetName().Cmp(TAG_BUDDYHASH) ||
+					   !tag->GetName().Cmp(TAG_IPV6) ||
+					   !tag->GetName().Cmp(TAG_SERVINGBUDDYIPV6)) {
+					if (tag->IsStr() &&
+						tag->GetStr().length() <= KADEMLIAMAXSOURCESTRLEN) {
+						entry->AddTag(tag, ip);
+					} else {
+						delete tag;
+					}
+				} else if (!extraFull &&
+					   extraBytes + tagBytes <= KADEMLIAMAXSOURCEEXTRABYTES &&
+					   indexed->HasRoomForExtraTags(extraBytes + tagBytes)) {
+					extraBytes += tagBytes;
 					entry->AddTag(tag, ip);
+				} else {
+					// Once one does not fit, none after it is kept: related tags (like
+					// emule-qt's per-chunk HTTP cache tags) stay whole up to that point.
+					extraFull = true;
+					delete tag;
 				}
 			}
 			tags--;
@@ -1413,10 +1443,7 @@ void CKademliaUDPListener::Process2PublishSourceRequest(const uint8_t *packetDat
 		if (addUDPPortTag) {
 			entry->AddTag(new CTagVarInt(TAG_SOURCEUPORT, entry->m_uUDPport), 0);
 		}
-		// Unknown tags are kept for other clients, so their size is what bounds the entry.
-		if (bio.GetPosition() - tagsStart > KADEMLIAMAXSOURCETAGBYTES) {
-			entry->m_bSource = false;
-		}
+		entry->m_extraTagBytes = extraBytes;
 #ifdef __DEBUG__
 		if (!strInfo.IsEmpty()) {
 			AddDebugLogLineN(logClientKadUDP, strInfo);

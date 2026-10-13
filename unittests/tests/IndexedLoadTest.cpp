@@ -691,3 +691,34 @@ TEST(IndexedLoad, NotesStopAtGlobalCap)
 	ASSERT_TRUE(index.AddNotes(CUInt128(10u), CUInt128(1u), NoteEntry(1, lifetime), load));
 	ASSERT_EQUALS(uint32_t(KADEMLIAMAXNOTES), index.m_totalIndexNotes);
 }
+
+static CEntry *SourceEntry(uint32_t ip, time_t lifetime, uint32_t extraTagBytes)
+{
+	CEntry *entry = new CEntry();
+	entry->m_uIP = ip;
+	entry->m_uTCPport = 4662;
+	entry->m_uUDPport = 4672;
+	entry->m_tLifeTime = lifetime;
+	entry->m_extraTagBytes = extraTagBytes;
+	entry->AddTag(new CTagVarInt(TAG_SOURCETYPE, 1), ip);
+	return entry;
+}
+
+TEST(IndexedLoad, ExtraTagBytesAreCountedAndRecounted)
+{
+	TempIndex temp;
+	CIndexed index(temp.path, CUInt128(1u));
+	ASSERT_TRUE(WaitForLoad(index));
+	uint8_t load = 0;
+	const time_t now = time(nullptr);
+	CEntry *stale = SourceEntry(0x01020304, now + 1, 1000);
+	ASSERT_TRUE(index.AddSources(CUInt128(2u), CUInt128(3u), stale, load));
+	ASSERT_TRUE(
+		index.AddSources(CUInt128(4u), CUInt128(5u), SourceEntry(0x01020305, now + 3600, 500), load));
+	ASSERT_EQUALS(1500u, index.GetExtraTagBytes());
+	ASSERT_TRUE(index.HasRoomForExtraTags(KADEMLIAMAXEXTRATAGBYTES - 1500));
+	ASSERT_FALSE(index.HasRoomForExtraTags(KADEMLIAMAXEXTRATAGBYTES - 1499));
+	stale->m_tLifeTime = now - 1;
+	index.Expire(now);
+	ASSERT_EQUALS(500u, index.GetExtraTagBytes());
+}

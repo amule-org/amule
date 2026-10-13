@@ -68,6 +68,7 @@ CEntry *CEntry::Copy() const
 	entry->m_tLifeTime = m_tLifeTime;
 	entry->m_uSize = m_uSize;
 	entry->m_bSource = m_bSource;
+	entry->m_extraTagBytes = m_extraTagBytes;
 	entry->m_uSourceID = m_uSourceID;
 	entry->m_uTCPport = m_uTCPport;
 	entry->m_uUDPport = m_uUDPport;

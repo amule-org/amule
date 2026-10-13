@@ -639,10 +639,12 @@ void CIndexed::Expire(time_t tNow)
 		}
 	}
 
-	CleanSources(m_Sources_map, tNow, s_Total, s_Removed);
+	uint32_t extraBytes = 0;
+	CleanSources(m_Sources_map, tNow, s_Total, s_Removed, extraBytes);
+	m_extraTagBytes = extraBytes;
 	uint32_t n_Removed = 0;
 	uint32_t n_Total = 0;
-	CleanSources(m_Notes_map, tNow, n_Total, n_Removed);
+	CleanSources(m_Notes_map, tNow, n_Total, n_Removed, extraBytes);
 
 	m_totalIndexSource = s_Total - s_Removed;
 	m_totalIndexKeyword = k_Total - k_Removed;
@@ -652,7 +654,8 @@ void CIndexed::Expire(time_t tNow)
 			k_Removed % k_Total % s_Removed % s_Total % n_Removed % n_Total);
 }
 
-void CIndexed::CleanSources(SrcHashMap &map, time_t now, uint32_t &total, uint32_t &removed)
+void CIndexed::CleanSources(
+	SrcHashMap &map, time_t now, uint32_t &total, uint32_t &removed, uint32_t &extraBytes)
 {
 	SrcHashMap::iterator itSrcHash = map.begin();
 	while (itSrcHash != map.end()) {
@@ -673,6 +676,7 @@ void CIndexed::CleanSources(SrcHashMap &map, time_t now, uint32_t &total, uint32
 					itEntry = currSource->entryList.erase(itEntry);
 					delete currName;
 				} else {
+					extraBytes += currName->m_extraTagBytes;
 					++itEntry;
 				}
 			}
@@ -807,6 +811,11 @@ bool CIndexed::AddSources(
 		return false;
 	}
 
+	// Counted for every stored entry, replacements too; Expire() corrects the total.
+	const auto stored = [this, entry] {
+		m_extraTagBytes += entry->m_extraTagBytes;
+		return true;
+	};
 	SrcHash *currSrcHash = NULL;
 	// Full means no new entries; refreshes and per-file recycling still go through.
 	const bool full = m_totalIndexSource >= KADEMLIAMAXSOURCES;
@@ -825,7 +834,7 @@ bool CIndexed::AddSources(
 		m_Sources_map[currSrcHash->keyID] = currSrcHash;
 		m_totalIndexSource++;
 		load = 1;
-		return true;
+		return stored();
 	} else {
 		currSrcHash = itSrcHash->second;
 		size_t size = currSrcHash->m_Source_map.size();
@@ -845,14 +854,14 @@ bool CIndexed::AddSources(
 					delete currName;
 					currSource->entryList.push_front(entry);
 					load = (size * 100) / KADEMLIAMAXSOURCEPERFILE;
-					return true;
+					return stored();
 				}
 			} else {
 				// This should never happen!
 				currSource->entryList.push_front(entry);
 				wxFAIL;
 				load = (size * 100) / KADEMLIAMAXSOURCEPERFILE;
-				return true;
+				return stored();
 			}
 		}
 		if (size > KADEMLIAMAXSOURCEPERFILE) {
@@ -867,7 +876,7 @@ bool CIndexed::AddSources(
 			currSource->entryList.push_front(entry);
 			currSrcHash->m_Source_map.push_front(currSource);
 			load = 100;
-			return true;
+			return stored();
 		} else if (full) {
 			load = 100;
 			return false;
@@ -878,7 +887,7 @@ bool CIndexed::AddSources(
 			currSrcHash->m_Source_map.push_front(currSource);
 			m_totalIndexSource++;
 			load = (size * 100) / KADEMLIAMAXSOURCEPERFILE;
-			return true;
+			return stored();
 		}
 	}
 
