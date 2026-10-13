@@ -192,9 +192,15 @@ public:
 		uint8 buffer = 0;
 		return FindHash(nStartPos, nSize, &buffer);
 	}
+	const CAICHHashTree *FindExistingHash(uint64 nStartPos, uint64 nSize) const
+	{
+		uint8 buffer = 0;
+		return FindExistingHash(nStartPos, nSize, &buffer);
+	}
 
 protected:
 	CAICHHashTree *FindHash(uint64 nStartPos, uint64 nSize, uint8 *nLevel);
+	const CAICHHashTree *FindExistingHash(uint64 nStartPos, uint64 nSize, uint8 *nLevel) const;
 	bool CreatePartRecoveryData(uint64 nStartPos,
 		uint64 nSize,
 		CFileDataIO *fileDataOut,

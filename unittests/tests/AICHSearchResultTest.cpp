@@ -26,6 +26,7 @@
 #include <SHAHashSet.h>
 #include <SearchFile.h>
 #include <memory>
+#include <vector>
 #include <algorithm>
 #include <numeric>
 #include <random>
@@ -37,6 +38,7 @@
 #include <Preferences.h>
 #include <Logger.h>
 #include <kademlia/kademlia/AICHHashList.h>
+#include <protocol/ed2k/Constants.h>
 
 using namespace muleunit;
 using Kademlia::CKadAICHHashList;
@@ -832,4 +834,120 @@ TEST(AICHSearchResult, RestoredGroupKeepsItsEd2kRoot)
 	ASSERT_TRUE(restored->ApplyAICHEvidence(hashes));
 	ASSERT_EQUALS(AICH_TRUSTED, hashes.GetStatus());
 	ASSERT_TRUE(hashes.GetMasterHash() == root);
+}
+
+DECLARE_SIMPLE(AICHHashTree)
+
+namespace
+{
+// Exposes the recovery-data plumbing CAICHHashSet drives, without a file to own it.
+class RecoveryTree : public CAICHHashTree
+{
+public:
+	explicit RecoveryTree(uint64 size)
+	: CAICHHashTree(size, true, size <= PARTSIZE ? EMBLOCKSIZE : PARTSIZE)
+	{
+	}
+	using CAICHHashTree::CreatePartRecoveryData;
+	using CAICHHashTree::SetHash;
+	using CAICHHashTree::WriteHash;
+};
+
+struct RecoveryEntry
+{
+	uint16 ident;
+	CAICHHash hash;
+};
+
+const uint64 kThreeParts = 3 * PARTSIZE;
+
+// A complete tree over three parts, each block hashing its own index.
+void FillTree(RecoveryTree &tree, CAICHHashAlgo *alg)
+{
+	uint64 index = 0;
+	for (uint64 part = 0; part < kThreeParts; part += PARTSIZE) {
+		for (uint64 pos = 0; pos < PARTSIZE; pos += EMBLOCKSIZE, ++index) {
+			alg->Reset();
+			alg->Add(&index, sizeof(index));
+			tree.SetBlockHash(std::min<uint64>(EMBLOCKSIZE, PARTSIZE - pos), part + pos, alg);
+		}
+	}
+	ASSERT_TRUE(tree.ReCalculateHash(alg, false));
+}
+
+// Part 0's recovery data as an honest source sends it: the sibling of every node on the path
+// to the root, then the part's block hashes.
+std::vector<RecoveryEntry> PartZeroRecoveryData(RecoveryTree &tree)
+{
+	CMemFile file;
+	ASSERT_TRUE(tree.CreatePartRecoveryData(0, PARTSIZE, &file, 0, false));
+	file.Seek(0, wxFromStart);
+	std::vector<RecoveryEntry> entries;
+	while (file.GetPosition() < file.GetLength()) {
+		RecoveryEntry entry;
+		entry.ident = file.ReadUInt16();
+		entry.hash = CAICHHash(&file);
+		entries.push_back(entry);
+	}
+	return entries;
+}
+
+// A receiver that trusts only the root, filled and checked as CAICHHashSet::ReadRecoveryData()
+// does: verify the tree, then require every block hash of the part.
+bool Receive(RecoveryTree &tree, const std::vector<RecoveryEntry> &entries, CAICHHashAlgo *alg)
+{
+	for (const RecoveryEntry &entry : entries) {
+		CMemFile file;
+		entry.hash.Write(&file);
+		file.Seek(0, wxFromStart);
+		ASSERT_TRUE(tree.SetHash(&file, entry.ident, -1, false));
+	}
+	if (!tree.VerifyHashTree(alg, true)) {
+		return false;
+	}
+	for (uint64 pos = 0; pos < PARTSIZE; pos += EMBLOCKSIZE) {
+		if (!tree.FindExistingHash(pos, std::min<uint64>(EMBLOCKSIZE, PARTSIZE - pos))) {
+			return false;
+		}
+	}
+	return true;
+}
+
+void TrustRoot(RecoveryTree &tree, const RecoveryTree &source)
+{
+	CMemFile file;
+	source.GetHash().Write(&file);
+	file.Seek(0, wxFromStart);
+	ASSERT_TRUE(tree.SetHash(&file, 1));
+}
+} // namespace
+
+// Block hashes are only verified through the path to the root. A source that leaves out the
+// siblings on that path must not get invented block hashes accepted.
+TEST(AICHHashTree, RecoveryDataMustLinkToTheRoot)
+{
+	std::unique_ptr<CAICHHashAlgo> alg(CAICHHashSet::GetNewHashAlgo());
+	RecoveryTree source(kThreeParts);
+	FillTree(source, alg.get());
+	const std::vector<RecoveryEntry> honest = PartZeroRecoveryData(source);
+	// Part 0 sits two levels below the root, so two siblings come first.
+	ASSERT_EQUALS(2u + PARTSIZE / EMBLOCKSIZE + 1, honest.size());
+
+	RecoveryTree trusted(kThreeParts);
+	TrustRoot(trusted, source);
+	ASSERT_TRUE(Receive(trusted, honest, alg.get()));
+
+	// Invented block hashes without the siblings, padded to the expected count with a repeat.
+	std::vector<RecoveryEntry> forged(honest.begin() + 2, honest.end());
+	for (RecoveryEntry &entry : forged) {
+		entry.hash.GetRawHash()[0] ^= 0xFF;
+	}
+	forged.push_back(forged.front());
+	forged.push_back(forged.front());
+	RecoveryTree attacked(kThreeParts);
+	TrustRoot(attacked, source);
+	ASSERT_FALSE(Receive(attacked, forged, alg.get()));
+	// Verification dropped the unchecked hashes rather than keeping them in the tree.
+	ASSERT_FALSE(attacked.FindHash(0, EMBLOCKSIZE)->GetHashValid());
+	ASSERT_TRUE(Receive(attacked, honest, alg.get()));
 }

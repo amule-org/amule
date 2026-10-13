@@ -148,6 +148,38 @@ CAICHHashTree *CAICHHashTree::FindHash(uint64 nStartPos, uint64 nSize, uint8 *nL
 	}
 }
 
+// As FindHash(), but creates nothing, and only finds a node whose path from here holds hashes.
+const CAICHHashTree *CAICHHashTree::FindExistingHash(uint64 nStartPos, uint64 nSize, uint8 *nLevel) const
+{
+	(*nLevel)++;
+
+	wxCHECK(*nLevel <= 22, nullptr);
+	wxCHECK(nStartPos + nSize <= m_nDataSize, nullptr);
+	wxCHECK(nSize <= m_nDataSize, nullptr);
+
+	if (nStartPos == 0 && nSize == m_nDataSize) {
+		return m_bHashValid ? this : nullptr;
+	}
+	wxCHECK(m_nDataSize > m_nBaseSize, nullptr); // already the last level
+
+	uint64 nBlocks = m_nDataSize / m_nBaseSize + ((m_nDataSize % m_nBaseSize != 0) ? 1 : 0);
+	uint64 nLeft = (((m_bIsLeftBranch) ? nBlocks + 1 : nBlocks) / 2) * m_nBaseSize;
+	uint64 nRight = m_nDataSize - nLeft;
+	if (nStartPos < nLeft) {
+		wxCHECK(nStartPos + nSize <= nLeft, nullptr);
+		if (m_pLeftTree == nullptr || !m_pLeftTree->m_bHashValid) {
+			return nullptr;
+		}
+		return m_pLeftTree->FindExistingHash(nStartPos, nSize, nLevel);
+	}
+	nStartPos -= nLeft;
+	wxCHECK(nStartPos + nSize <= nRight, nullptr);
+	if (m_pRightTree == nullptr || !m_pRightTree->m_bHashValid) {
+		return nullptr;
+	}
+	return m_pRightTree->FindExistingHash(nStartPos, nSize, nLevel);
+}
+
 // Recursive: calculates the missing hash from the existing ones, overwriting existing hashes. Fails
 // if no hash is found for any branch.
 bool CAICHHashTree::ReCalculateHash(CAICHHashAlgo *hashalg, bool bDontReplace)
@@ -243,10 +275,24 @@ bool CAICHHashTree::VerifyHashTree(CAICHHashAlgo *hashalg, bool bDeleteBadTrees)
 		}
 		return m_pLeftTree->VerifyHashTree(hashalg, bDeleteBadTrees) &&
 		       m_pRightTree->VerifyHashTree(hashalg, bDeleteBadTrees);
-	} else {
-		// last hash in branch - nothing below to verify
-		return true;
 	}
+
+	// last hash in branch - nothing below to verify
+
+	// As eMule 0.70b: a branch without a hash may still hold hashes further down, which were never
+	// compared with this one. Drop it, or recovery data that leaves out the siblings on a part's
+	// path would keep its unchecked block hashes.
+	if (bDeleteBadTrees) {
+		if (m_pLeftTree && !m_pLeftTree->m_bHashValid) {
+			delete m_pLeftTree;
+			m_pLeftTree = nullptr;
+		}
+		if (m_pRightTree && !m_pRightTree->m_bHashValid) {
+			delete m_pRightTree;
+			m_pRightTree = nullptr;
+		}
+	}
+	return true;
 }
 
 void CAICHHashTree::SetBlockHash(uint64 nSize, uint64 nStartPos, CAICHHashAlgo *pHashAlg)
@@ -614,7 +660,7 @@ bool CAICHHashSet::ReadRecoveryData(uint64 nPartStartPos, CMemFile *fileDataIn)
 	if (VerifyHashTree(true)) {
 		// some final check if all hashs we wanted are there
 		for (uint32 nPartPos = 0; nPartPos < nPartSize; nPartPos += EMBLOCKSIZE) {
-			CAICHHashTree *phtToCheck = m_pHashTree.FindHash(
+			const CAICHHashTree *phtToCheck = m_pHashTree.FindExistingHash(
 				nPartStartPos + nPartPos, min<uint64>(EMBLOCKSIZE, nPartSize - nPartPos));
 			if (phtToCheck == NULL || !phtToCheck->m_bHashValid) {
 				AddDebugLogLineN(logSHAHashSet,
