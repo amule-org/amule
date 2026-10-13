@@ -585,6 +585,11 @@ bool CAICHHashSet::CreatePartRecoveryData(uint64 nPartStartPos, CFileDataIO *fil
 	return bResult;
 }
 
+wxString CAICHHashSet::OwnerName() const
+{
+	return m_pOwner ? m_pOwner->GetFileName().GetPrintable() : wxString();
+}
+
 bool CAICHHashSet::ReadRecoveryData(uint64 nPartStartPos, CMemFile *fileDataIn)
 {
 	if (/*eMule TODO !m_pOwner->IsPartFile() ||*/ !(
@@ -604,7 +609,8 @@ bool CAICHHashSet::ReadRecoveryData(uint64 nPartStartPos, CMemFile *fileDataIn)
 	// all hash are then taken into the tree, depending on there hashidentifier (except the masterhash)
 
 	uint8 nLevel = 0;
-	uint32 nPartSize = min<uint64>(PARTSIZE, m_pOwner->GetFileSize() - nPartStartPos);
+	// The tree spans the file (CKnownFile::SetFileSize), so no owner is needed here.
+	uint32 nPartSize = min<uint64>(PARTSIZE, m_pHashTree.m_nDataSize - nPartStartPos);
 	m_pHashTree.FindHash(nPartStartPos, nPartSize, &nLevel);
 	uint16 nHashsToRead =
 		(nLevel - 1) + nPartSize / EMBLOCKSIZE + ((nPartSize % EMBLOCKSIZE != 0) ? 1 : 0);
@@ -617,7 +623,7 @@ bool CAICHHashSet::ReadRecoveryData(uint64 nPartStartPos, CMemFile *fileDataIn)
 		AddDebugLogLineN(logSHAHashSet,
 			CFormat("Failed to read RecoveryData for '%s' - Received datasize/amounts of hashs "
 				"was invalid") %
-				m_pOwner->GetFileName());
+				OwnerName());
 		return false;
 	}
 	for (uint32 i = 0; i != nHashsAvailable; i++) {
@@ -627,7 +633,7 @@ bool CAICHHashSet::ReadRecoveryData(uint64 nPartStartPos, CMemFile *fileDataIn)
 			AddDebugLogLineN(logSHAHashSet,
 				CFormat("Failed to read RecoveryData for '%s' - Error when trying to read "
 					"hash into tree") %
-					m_pOwner->GetFileName());
+					OwnerName());
 			VerifyHashTree(true); // remove invalid hashes which we have already written
 			return false;
 		}
@@ -636,13 +642,15 @@ bool CAICHHashSet::ReadRecoveryData(uint64 nPartStartPos, CMemFile *fileDataIn)
 	// read hashs with 32bit identifier
 	if (nHashsAvailable == 0 && fileDataIn->GetLength() - fileDataIn->GetPosition() >= 2) {
 		nHashsAvailable = fileDataIn->ReadUInt16();
+		// No zero count here: there is no further section, and a zero let the loop below
+		// write hashes that the "nothing available" exit then kept unchecked.
 		if (fileDataIn->GetLength() - fileDataIn->GetPosition() < nHashsToRead * (HASHSIZE + 4u) ||
-			(nHashsToRead != nHashsAvailable && nHashsAvailable != 0)) {
+			nHashsToRead != nHashsAvailable) {
 			// this check is redundant, CSafememfile would catch such an error too
 			return false;
 		}
 
-		for (uint32 i = 0; i != nHashsToRead; i++) {
+		for (uint32 i = 0; i != nHashsAvailable; i++) {
 			uint32 wHashIdent = fileDataIn->ReadUInt32();
 			if (wHashIdent == 1 /*never allow masterhash to be overwritten*/
 				|| wHashIdent > 0x400000 ||
@@ -666,7 +674,7 @@ bool CAICHHashSet::ReadRecoveryData(uint64 nPartStartPos, CMemFile *fileDataIn)
 				AddDebugLogLineN(logSHAHashSet,
 					CFormat("Failed to read RecoveryData for '%s' - Error while "
 						"verifying presence of all lowest level hashes") %
-						m_pOwner->GetFileName());
+						OwnerName());
 				return false;
 			}
 		}
@@ -674,7 +682,7 @@ bool CAICHHashSet::ReadRecoveryData(uint64 nPartStartPos, CMemFile *fileDataIn)
 	} else {
 		AddDebugLogLineN(logSHAHashSet,
 			CFormat("Failed to read RecoveryData for '%s' - Verifying received hashtree failed") %
-				m_pOwner->GetFileName());
+				OwnerName());
 		return false;
 	}
 }
@@ -1221,9 +1229,10 @@ bool CAICHHashSet::IsPartDataAvailable(uint64 nPartStartPos)
 		wxFAIL;
 		return false;
 	}
-	uint64 nPartSize = min<uint64>(PARTSIZE, m_pOwner->GetFileSize() - nPartStartPos);
+	uint64 nPartSize = min<uint64>(PARTSIZE, m_pHashTree.m_nDataSize - nPartStartPos);
 	for (uint64 nPartPos = 0; nPartPos < nPartSize; nPartPos += EMBLOCKSIZE) {
-		CAICHHashTree *phtToCheck = m_pHashTree.FindHash(
+		// Only block hashes linked to the trusted root count.
+		const CAICHHashTree *phtToCheck = m_pHashTree.FindExistingHash(
 			nPartStartPos + nPartPos, min<uint64>(EMBLOCKSIZE, nPartSize - nPartPos));
 		if (phtToCheck == NULL || !phtToCheck->m_bHashValid) {
 			return false;

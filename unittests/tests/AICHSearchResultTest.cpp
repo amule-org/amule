@@ -840,7 +840,7 @@ DECLARE_SIMPLE(AICHHashTree)
 
 namespace
 {
-// Exposes the recovery-data plumbing CAICHHashSet drives, without a file to own it.
+// Exposes the recovery-data writer, to build what an honest source sends.
 class RecoveryTree : public CAICHHashTree
 {
 public:
@@ -849,8 +849,6 @@ public:
 	{
 	}
 	using CAICHHashTree::CreatePartRecoveryData;
-	using CAICHHashTree::SetHash;
-	using CAICHHashTree::WriteHash;
 };
 
 struct RecoveryEntry
@@ -892,38 +890,45 @@ std::vector<RecoveryEntry> PartZeroRecoveryData(RecoveryTree &tree)
 	return entries;
 }
 
-// A receiver that trusts only the root, filled and checked as CAICHHashSet::ReadRecoveryData()
-// does: verify the tree, then require every block hash of the part.
-bool Receive(RecoveryTree &tree, const std::vector<RecoveryEntry> &entries, CAICHHashAlgo *alg)
+// The V2 packet with 16-bit identifiers, then an empty 32-bit section.
+void Packet16(CMemFile &packet, const std::vector<RecoveryEntry> &entries)
 {
+	packet.WriteUInt16(static_cast<uint16>(entries.size()));
 	for (const RecoveryEntry &entry : entries) {
-		CMemFile file;
-		entry.hash.Write(&file);
-		file.Seek(0, wxFromStart);
-		ASSERT_TRUE(tree.SetHash(&file, entry.ident, -1, false));
+		packet.WriteUInt16(entry.ident);
+		entry.hash.Write(&packet);
 	}
-	if (!tree.VerifyHashTree(alg, true)) {
-		return false;
-	}
-	for (uint64 pos = 0; pos < PARTSIZE; pos += EMBLOCKSIZE) {
-		if (!tree.FindExistingHash(pos, std::min<uint64>(EMBLOCKSIZE, PARTSIZE - pos))) {
-			return false;
-		}
-	}
-	return true;
+	packet.WriteUInt16(0);
 }
 
-void TrustRoot(RecoveryTree &tree, const RecoveryTree &source)
+// Both counts zero, with the 32-bit entries still following.
+void Packet32ZeroCount(CMemFile &packet, const std::vector<RecoveryEntry> &entries)
 {
-	CMemFile file;
-	source.GetHash().Write(&file);
-	file.Seek(0, wxFromStart);
-	ASSERT_TRUE(tree.SetHash(&file, 1));
+	packet.WriteUInt16(0);
+	packet.WriteUInt16(0);
+	for (const RecoveryEntry &entry : entries) {
+		packet.WriteUInt32(entry.ident);
+		entry.hash.Write(&packet);
+	}
+}
+
+bool Read(CAICHHashSet &set, CMemFile &packet)
+{
+	packet.Seek(0, wxFromStart);
+	return set.ReadRecoveryData(0, &packet);
+}
+
+// A receiver that trusts only the root, as a download with a verified AICH hash does.
+void TrustRoot(CAICHHashSet &set, const RecoveryTree &source)
+{
+	set.SetFileSize(kThreeParts);
+	set.SetMasterHash(source.GetHash(), AICH_VERIFIED);
 }
 } // namespace
 
 // Block hashes are only verified through the path to the root. A source that leaves out the
-// siblings on that path must not get invented block hashes accepted.
+// siblings on that path must not get invented block hashes accepted, or kept in the tree for a
+// later recovery attempt to use.
 TEST(AICHHashTree, RecoveryDataMustLinkToTheRoot)
 {
 	std::unique_ptr<CAICHHashAlgo> alg(CAICHHashSet::GetNewHashAlgo());
@@ -933,9 +938,12 @@ TEST(AICHHashTree, RecoveryDataMustLinkToTheRoot)
 	// Part 0 sits two levels below the root, so two siblings come first.
 	ASSERT_EQUALS(2u + PARTSIZE / EMBLOCKSIZE + 1, honest.size());
 
-	RecoveryTree trusted(kThreeParts);
+	CAICHHashSet trusted(nullptr);
 	TrustRoot(trusted, source);
-	ASSERT_TRUE(Receive(trusted, honest, alg.get()));
+	CMemFile honestPacket;
+	Packet16(honestPacket, honest);
+	ASSERT_TRUE(Read(trusted, honestPacket));
+	ASSERT_TRUE(trusted.IsPartDataAvailable(0));
 
 	// Invented block hashes without the siblings, padded to the expected count with a repeat.
 	std::vector<RecoveryEntry> forged(honest.begin() + 2, honest.end());
@@ -944,10 +952,21 @@ TEST(AICHHashTree, RecoveryDataMustLinkToTheRoot)
 	}
 	forged.push_back(forged.front());
 	forged.push_back(forged.front());
-	RecoveryTree attacked(kThreeParts);
+	CAICHHashSet attacked(nullptr);
 	TrustRoot(attacked, source);
-	ASSERT_FALSE(Receive(attacked, forged, alg.get()));
-	// Verification dropped the unchecked hashes rather than keeping them in the tree.
-	ASSERT_FALSE(attacked.FindHash(0, EMBLOCKSIZE)->GetHashValid());
-	ASSERT_TRUE(Receive(attacked, honest, alg.get()));
+	CMemFile forged16;
+	Packet16(forged16, forged);
+	ASSERT_FALSE(Read(attacked, forged16));
+	ASSERT_FALSE(attacked.m_pHashTree.FindHash(0, EMBLOCKSIZE)->GetHashValid());
+	ASSERT_FALSE(attacked.IsPartDataAvailable(0));
+
+	// A zero count in the 32-bit section used to write its hashes, then keep them unchecked.
+	CMemFile forged32;
+	Packet32ZeroCount(forged32, forged);
+	ASSERT_FALSE(Read(attacked, forged32));
+	ASSERT_FALSE(attacked.m_pHashTree.FindHash(0, EMBLOCKSIZE)->GetHashValid());
+	ASSERT_FALSE(attacked.IsPartDataAvailable(0));
+
+	honestPacket.Seek(0, wxFromStart);
+	ASSERT_TRUE(Read(attacked, honestPacket));
 }

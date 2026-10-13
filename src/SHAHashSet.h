@@ -268,6 +268,8 @@ class CAICHHashSet
 {
 private:
 	CKnownFile *m_pOwner;
+	// The owner's file name for log lines, or empty without an owner.
+	wxString OwnerName() const;
 	EAICHStatus m_eStatus;
 	deque<CAICHUntrustedHash> m_aUntrustedHashs;
 

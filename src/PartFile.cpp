@@ -4060,7 +4060,9 @@ void CPartFile::AICHRecoveryDataAvailable(uint16 nPart)
 		return;
 	}
 
-	CAICHHashTree *pVerifiedHash = m_pAICHHashSet->m_pHashTree.FindHash(nPart * PARTSIZE, length);
+	// Only hashes linked to the trusted root; recovery data that failed may have left others.
+	const CAICHHashTree *pVerifiedHash =
+		m_pAICHHashSet->m_pHashTree.FindExistingHash(nPart * PARTSIZE, length);
 	if (pVerifiedHash == NULL || !pVerifiedHash->GetHashValid()) {
 		AddDebugLogLineC(logAICHRecovery,
 			"Processing AICH Recovery data: Unable to get verified hash from hashset (should "
@@ -4100,7 +4102,7 @@ void CPartFile::AICHRecoveryDataAvailable(uint16 nPart)
 	uint32 nRecovered = 0;
 	for (uint32 pos = 0; pos < length; pos += EMBLOCKSIZE) {
 		const uint32 nBlockSize = min<uint32>(EMBLOCKSIZE, length - pos);
-		CAICHHashTree *pVerifiedBlock = pVerifiedHash->FindHash(pos, nBlockSize);
+		const CAICHHashTree *pVerifiedBlock = pVerifiedHash->FindExistingHash(pos, nBlockSize);
 		CAICHHashTree *pOurBlock = htOurHash.FindHash(pos, nBlockSize);
 		if (pVerifiedBlock == NULL || pOurBlock == NULL || !pVerifiedBlock->GetHashValid() ||
 			!pOurBlock->GetHashValid()) {
