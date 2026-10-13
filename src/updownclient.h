@@ -655,6 +655,8 @@ public:
 	//! Only meaningful while HasModIPv6() is true.
 	const uint8_t *GetModIPv6() const { return m_modIPv6; }
 	bool HasModIPv6() const { return m_hasModIPv6; }
+	//! Replaces a previously advertised peer IPv6 after OP_CHANGE_CLIENT_IP validation.
+	void UpdateModIPv6(const CNetworkAddress &address);
 	//! The peer's serving buddy's IPv6 address from CT_EMULE_SERVINGBUDDYIPV6, big-endian, 16
 	//! bytes. Only meaningful while HasServingBuddyIPv6() is true.
 	const uint8_t *GetServingBuddyIPv6() const { return m_servingBuddyIPv6; }

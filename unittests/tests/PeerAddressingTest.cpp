@@ -793,4 +793,26 @@ TEST(PeerAddressing, TheSameLinkLocalPeerWouldBeTwoIdentities)
 	ASSERT_FALSE(IsUsableTagIdentity(fromTag));
 }
 
+TEST(PeerAddressing, ChangeClientIPv6RequiresPriorHelloAndGlobalAddress)
+{
+	const auto replacement = CNetworkAddress::FromString("2606:4700:4700::1111");
+	const auto replacementBytes = replacement.GetOctets();
+
+	ASSERT_TRUE(DecodeChangeClientIPv6(true, replacementBytes.data(), replacementBytes.size()) ==
+		    replacement);
+	ASSERT_TRUE(
+		DecodeChangeClientIPv6(false, replacementBytes.data(), replacementBytes.size()).IsAbsent());
+	ASSERT_TRUE(DecodeChangeClientIPv6(true, replacementBytes.data(), replacementBytes.size() - 1)
+			    .IsAbsent());
+
+	const auto documentation = CNetworkAddress::FromString("2001:db8::1");
+	const auto documentationBytes = documentation.GetOctets();
+	ASSERT_TRUE(DecodeChangeClientIPv6(true, documentationBytes.data(), documentationBytes.size())
+			    .IsAbsent());
+
+	const auto loopback = CNetworkAddress::FromString("::1");
+	const auto loopbackBytes = loopback.GetOctets();
+	ASSERT_TRUE(DecodeChangeClientIPv6(true, loopbackBytes.data(), loopbackBytes.size()).IsAbsent());
+}
+
 // File_checked_for_headers

@@ -27,6 +27,7 @@
 
 #include "NetworkAddress.h"
 
+#include <cstddef>
 #include <cstdint>
 
 /**
@@ -464,6 +465,24 @@ inline bool IsDirectlyReachable(const CNetworkAddress &address) noexcept
 inline bool IsUsableTagIdentity(const CNetworkAddress &address) noexcept
 {
 	return address.IsGloballyRoutableIPv6();
+}
+
+/**
+ * Decode eMuleAI's OP_CHANGE_CLIENT_IP payload.
+ *
+ * The opcode carries exactly sixteen IPv6 octets and is meaningful only after the peer supplied
+ * CT_MOD_IP_V6 in its hello. Returning absence on every invalid form lets the caller leave the
+ * retained advertised address untouched; it must not turn a malformed update into an IPv4
+ * identity or a new peer record.
+ */
+inline CNetworkAddress DecodeChangeClientIPv6(
+	bool peerAdvertisedIPv6, const std::uint8_t *bytes, std::size_t size) noexcept
+{
+	if (!peerAdvertisedIPv6 || bytes == nullptr || size != CNetworkAddress::OCTET_COUNT) {
+		return CNetworkAddress::Absent();
+	}
+	const CNetworkAddress address = CNetworkAddress::FromIPv6Bytes(bytes);
+	return IsUsableTagIdentity(address) ? address : CNetworkAddress::Absent();
 }
 
 } // namespace PeerAddressing
