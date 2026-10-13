@@ -486,6 +486,35 @@ TEST(IndexedLoad, LargeKeywordAndSourceIndexesRoundTrip)
 	}
 }
 
+TEST(IndexedLoad, KeywordsStopAtGlobalCap)
+{
+	TempIndex temp;
+	CIndexed index(temp.path, CUInt128(1u));
+	ASSERT_TRUE(WaitForLoad(index));
+	auto publish = [&index](uint32_t keyword, uint8_t &load) {
+		auto entry = std::unique_ptr<CKeyEntry>(index.CreateKeyEntry());
+		entry->m_uIP = 0x01020304;
+		entry->m_uSize = 123;
+		entry->m_tLifeTime = time(nullptr) + 3600;
+		entry->SetFileName("fixture.bin");
+		entry->AddTag(new CTagString(TAG_FILETYPE, "Program"), 0);
+		if (!index.AddKeyword(CUInt128(keyword), CUInt128(2u), entry.get(), load)) {
+			return false;
+		}
+		entry.release();
+		return true;
+	};
+	uint8_t load = 0;
+	// Filling the index for real would take hundreds of MB, so the counter stands in for it.
+	index.m_totalIndexKeyword = 60001; // past the old cap
+	ASSERT_TRUE(publish(3, load));
+	index.m_totalIndexKeyword = KADEMLIAMAXENTRIES;
+	ASSERT_TRUE(publish(4, load));
+	ASSERT_FALSE(publish(5, load));
+	ASSERT_EQUALS(100u, unsigned(load));
+	ASSERT_EQUALS(size_t(2), index.GetFileKeyCount());
+}
+
 TEST(IndexedLoad, CorruptPartDoesNotDiscardHealthyParts)
 {
 	for (bool truncated : { false, true }) {
