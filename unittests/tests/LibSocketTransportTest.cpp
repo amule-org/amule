@@ -37,7 +37,9 @@
 #ifdef ENABLE_IPV6
 #include <AddressFamilyPolicy.h>
 
+#include <chrono>
 #include <optional>
+#include <thread>
 
 #include "WarningsPush_Asio.h"
 #include <boost/asio/io_context.hpp>
@@ -257,8 +259,7 @@ public:
 	CScopedBindInterface &operator=(const CScopedBindInterface &) = delete;
 };
 
-// The backlog tells whether a connect was attempted: a blocking loopback connect has completed
-// the handshake by the time it returns, so a refused attempt leaves nothing to accept.
+// The backlog tells whether a connect was attempted: a refused attempt leaves nothing to accept.
 class CLoopbackListener
 {
 public:
@@ -296,6 +297,20 @@ public:
 			return std::nullopt;
 		}
 		return remote.address();
+	}
+
+	// A blocking connect returns once the client has the SYN-ACK; the server may queue the
+	// connection a moment later (seen on macOS), so an immediate accept can find nothing.
+	std::optional<boost::asio::ip::address> AcceptWithin(std::chrono::milliseconds timeout)
+	{
+		const auto deadline = std::chrono::steady_clock::now() + timeout;
+		for (;;) {
+			std::optional<boost::asio::ip::address> remote = AcceptPending();
+			if (remote || std::chrono::steady_clock::now() >= deadline) {
+				return remote;
+			}
+			std::this_thread::sleep_for(std::chrono::milliseconds(5));
+		}
 	}
 
 private:
@@ -336,7 +351,7 @@ TEST(LibSocketTransport, ConnectIPv6ReachesANativeIPv6Peer)
 	ASSERT_TRUE(socket.IsConnected());
 	ASSERT_TRUE(socket.GetPeerAddress() == LoopbackIPv6());
 	ASSERT_EQUALS(0u, socket.GetPeerInt());
-	const std::optional<boost::asio::ip::address> remote = listener.AcceptPending();
+	const std::optional<boost::asio::ip::address> remote = listener.AcceptWithin(std::chrono::seconds(2));
 	ASSERT_TRUE(remote.has_value());
 	ASSERT_TRUE(*remote == AsioLoopbackIPv6());
 }
