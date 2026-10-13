@@ -7784,17 +7784,19 @@ void WritePrefFieldValue(CJsonWriter &w, const webapi::PrefField &f, const webap
 	}
 }
 
-bool PrefFieldIsEmitted(const webapi::PrefField &f)
+bool PrefFieldIsEmitted(const webapi::PrefField &f, bool admin)
 {
-	return f.access != webapi::PrefAccess::WriteOnly && f.access != webapi::PrefAccess::Rejected;
+	return f.access != webapi::PrefAccess::WriteOnly && f.access != webapi::PrefAccess::Rejected &&
+	       (admin || f.access != webapi::PrefAccess::AdminRead);
 }
 
-void WritePrefCategoryFields(CJsonWriter &w, const char *category, const webapi::PreferencesSnapshot &p)
+void WritePrefCategoryFields(
+	CJsonWriter &w, const char *category, const webapi::PreferencesSnapshot &p, bool admin)
 {
 	const bool known = p.unknown_categories.count(category) == 0;
 	for (std::size_t i = 0; i < webapi::PrefSchemaSize(); ++i) {
 		const webapi::PrefField &f = webapi::PrefSchema()[i];
-		if (!PrefFieldIsEmitted(f) || std::strcmp(f.category, category) != 0)
+		if (!PrefFieldIsEmitted(f, admin) || std::strcmp(f.category, category) != 0)
 			continue;
 		w.Key(f.key);
 		if (known)
@@ -7804,7 +7806,7 @@ void WritePrefCategoryFields(CJsonWriter &w, const char *category, const webapi:
 	}
 }
 
-void WritePreferencesBody(CJsonWriter &w, const webapi::PreferencesSnapshot &p)
+void WritePreferencesBody(CJsonWriter &w, const webapi::PreferencesSnapshot &p, bool admin)
 {
 	w.BeginObject();
 
@@ -7819,14 +7821,14 @@ void WritePreferencesBody(CJsonWriter &w, const webapi::PreferencesSnapshot &p)
 
 		w.Key(top.c_str());
 		w.BeginObject();
-		WritePrefCategoryFields(w, top.c_str(), p);
+		WritePrefCategoryFields(w, top.c_str(), p, admin);
 		for (std::size_t s = 0; s < webapi::PrefCategoryCount(); ++s) {
 			const char *sub = webapi::PrefCategories()[s].name;
 			if (std::strncmp(sub, top.c_str(), top.size()) != 0 || sub[top.size()] != '.')
 				continue;
 			w.Key(sub + top.size() + 1);
 			w.BeginObject();
-			WritePrefCategoryFields(w, sub, p);
+			WritePrefCategoryFields(w, sub, p, admin);
 			w.EndObject();
 		}
 		w.EndObject();
@@ -7850,7 +7852,7 @@ CHttpServer::Response CApiDispatcher::HandlePreferences(const CHttpServer::Reque
 	r.status = 200;
 	r.content_type = "application/json";
 	CJsonWriter w;
-	WritePreferencesBody(w, p);
+	WritePreferencesBody(w, p, a.verified.role == Role::ADMIN);
 	FinalizeJsonBody(w, r);
 	return r;
 }
@@ -8321,7 +8323,7 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(const CHttpServer::
 	r.status = 200;
 	r.content_type = "application/json";
 	CJsonWriter w;
-	WritePreferencesBody(w, p);
+	WritePreferencesBody(w, p, /*admin=*/true);
 	FinalizeJsonBody(w, r);
 	return r;
 }
