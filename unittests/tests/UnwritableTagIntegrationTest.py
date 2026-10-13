@@ -99,6 +99,8 @@ Ed2kServersUrl=
 KadNodesUrl=
 AddServerListFromServer=0
 AddServerListFromClient=0
+# The fake server is on loopback, which only an unfiltered LAN setting dials.
+FilterLanIPs=0
 TempDir={root}/Temp
 IncomingDir={root}/Incoming
 # The checks match English log lines; LC_ALL alone does not override a translated LANG.
