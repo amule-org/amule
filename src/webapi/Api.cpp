@@ -5198,8 +5198,9 @@ CHttpServer::Response CApiDispatcher::HandleDownloadDelete(
 	// EC_OP_CLEAR_COMPLETED, which acks the notification rather than deleting the file
 	// from Incoming. Conflating the two under one verb confused operators who expected
 	// DELETE to remove a file from disk, so the completed case goes through
-	// POST /downloads_clear_completed.
-	if (d.download.status == "completed") {
+	// POST /downloads_clear_completed. A "completing" file is being moved to Incoming and
+	// gets the same answer.
+	if (d.download.status == "completed" || d.download.status == "completing") {
 		return ErrorResponse(409,
 			"download_completed",
 			"DELETE only removes active downloads (deletes .part/.met "
@@ -8957,7 +8958,7 @@ CHttpServer::Response CApiDispatcher::HandleDownloadsBulkDelete(const CHttpServe
 		}
 		// Same guard as the single-item DELETE: completed entries are not
 		// removable here (use POST /downloads_clear_completed).
-		if (d.download.status == "completed") {
+		if (d.download.status == "completed" || d.download.status == "completing") {
 			results.push_back(BulkErr(raw,
 				409,
 				"download_completed",

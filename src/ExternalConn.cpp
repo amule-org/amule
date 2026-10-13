@@ -2214,6 +2214,7 @@ static CECPacket *Get_EC_Response_PartFile_Cmd(const CECPacket *request)
 		if (!pfile) {
 			AddLogLineN(CFormat(_("Remote PartFile command failed: FileHash not found: %s")) %
 				    hash.Encode());
+			delete response;
 			response = new CECPacket(EC_OP_FAILED);
 			response->AddTag(CECTag(EC_TAG_STRING,
 				CFormat(wxString(wxTRANSLATE("FileHash not found: %s"))) % hash.Encode()));
@@ -2259,6 +2260,18 @@ static CECPacket *Get_EC_Response_PartFile_Cmd(const CECPacket *request)
 			}
 		} break;
 		case EC_OP_PARTFILE_DELETE:
+			// Finished downloads stay in the queue until cleared, so "cancel all" and a
+			// category cancel reach them too. Skip them and cancel the rest.
+			if (pfile->GetStatus() == PS_COMPLETE || pfile->GetStatus() == PS_COMPLETING) {
+				if (!response) {
+					response = new CECPacket(EC_OP_FAILED);
+					response->AddTag(CECTag(EC_TAG_STRING,
+						CFormat(wxString(wxTRANSLATE(
+							"Cannot cancel a finished download: %s"))) %
+							pfile->GetFileName()));
+				}
+				break;
+			}
 			if (thePrefs::StartNextFile() && (pfile->GetStatus() != PS_PAUSED)) {
 				theApp->downloadqueue->StartNextFile(pfile);
 			}

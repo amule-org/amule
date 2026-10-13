@@ -1139,7 +1139,7 @@ curl -s -X PATCH -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application
 
 **Auth:** `ADMIN`
 
-Bulk cancel + remove of active downloads (deletes each `.part`/`.met` from disk). A completed entry is rejected per-item with `download_completed` — clear those via `POST /downloads_clear_completed`.
+Bulk cancel + remove of active downloads (deletes each `.part`/`.met` from disk). A completed or completing entry is rejected per-item with `download_completed` — clear those via `POST /downloads_clear_completed`.
 
 **Body:** `{ "hashes": ["<md4>", …] }` (non-empty, max 500).
 
@@ -1177,7 +1177,7 @@ curl -s -X PATCH -H "Authorization: Bearer $TOKEN" \
 
 **Auth:** `ADMIN`
 
-Cancels an **active** partfile and deletes its on-disk data. `{hash}` is the 32-char MD4 hex hash (case-insensitive). amuled runs `EC_OP_PARTFILE_DELETE` → `CPartFile::Delete()`, which removes the `.part`, `.part.met`, and `.met.bak` files and adds the hash to its `canceledfiles` list (so re-adding the same ed2k link is silently refused until the operator clears that list out-of-band). Completed entries are out of scope; use [`POST /downloads_clear_completed`](#post-apiv1downloads_clear_completed) instead.
+Cancels an **active** partfile and deletes its on-disk data. `{hash}` is the 32-char MD4 hex hash (case-insensitive). amuled runs `EC_OP_PARTFILE_DELETE` → `CPartFile::Delete()`, which removes the `.part`, `.part.met`, and `.met.bak` files and adds the hash to its `canceledfiles` list (so re-adding the same ed2k link is silently refused until the operator clears that list out-of-band). Completed and completing entries are out of scope and return `409 download_completed`; use [`POST /downloads_clear_completed`](#post-apiv1downloads_clear_completed) once the download has completed. The file in the Incoming directory is never deleted.
 
 ```sh
 curl -s -X DELETE -H "Authorization: Bearer $TOKEN" \
@@ -3332,7 +3332,7 @@ Every error code emitted by `/api/v1/*`, sorted by what triggered it. Two codes 
 | `partfile_unsupported` | 409 | Verify Local Data, or a content download, requested on a file that is still an incomplete partfile. |
 | `not_shared` | 409 | A comment or rating was posted against a file that is not shared. |
 | `not_completed` | 409 | `clear_completed` named a `hash` that is not a completed download. |
-| `download_completed` | 409 | A `DELETE /downloads` matched a completed download; use `clear_completed` for those. |
+| `download_completed` | 409 | A `DELETE /downloads` matched a completed or completing download; use `clear_completed` for those. |
 | `kad_more_exhausted` | 409 | `POST /search/{id}/more` on a Kad search that can no longer be widened — its 4-reask budget is spent, or it has entered the stopping window Kad begins 20 s before a keyword search ends. Terminal for that search; re-run the query for more. |
 | `version_check_unavailable` | 409 | `POST /version/check` cannot run - the daemon has no update-check capability. |
 | `payload_too_large` | 413 | Request body exceeds the 1 MiB limit. The connection closes after the response. |
