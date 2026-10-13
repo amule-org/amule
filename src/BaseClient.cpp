@@ -178,6 +178,8 @@ void CUpDownClient::Init()
 #endif
 	m_bAddNextConnect = false;
 	m_dialingIPv6 = false;
+	m_preparedDialAddress = CNetworkAddress::Absent();
+	m_dialledIPv6Address = CNetworkAddress::Absent();
 	m_unansweredIPv6Address = CNetworkAddress::Absent();
 	credits = NULL;
 	m_byChatstate = MS_NONE;
@@ -1466,7 +1468,7 @@ bool CUpDownClient::Disconnected(const wxString &DEBUG_ONLY(strReason), bool bFr
 	// Nothing verifies that a native IPv6 peer accepts inbound connections: keep its queue place
 	// and let it get its slot through its own next connection, like a LowID.
 	if (m_dialingIPv6 && GetUploadState() == US_CONNECTING) {
-		m_unansweredIPv6Address = GetConnectAddress();
+		m_unansweredIPv6Address = m_dialledIPv6Address;
 		theApp->uploadqueue->RequeueUnreachable(this);
 	}
 
@@ -1544,6 +1546,8 @@ bool CUpDownClient::Disconnected(const wxString &DEBUG_ONLY(strReason), bool bFr
 	}
 
 	m_dialingIPv6 = false;
+	m_preparedDialAddress = CNetworkAddress::Absent();
+	m_dialledIPv6Address = CNetworkAddress::Absent();
 
 	// Delete socket
 	if (!bFromSocket && m_socket) {
@@ -1587,10 +1591,28 @@ bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon)
 	return result != EContactResult::ClientDeleted && result != EContactResult::ConnectNotStarted;
 }
 
+CNetworkAddress CUpDownClient::GetDialAddress() const
+{
+	if (m_preparedDialAddress.IsPresent()) {
+		return m_preparedDialAddress;
+	}
+#ifdef ENABLE_IPV6
+	const CNetworkAddress peerIPv6 =
+		m_hasModIPv6 ? CNetworkAddress::FromIPv6Bytes(m_modIPv6) : CNetworkAddress::Absent();
+	return PromotePeerIPv6ForDial(GetConnectAddress(),
+		peerIPv6,
+		AddressFamilyPolicy::Configured() == AddressFamilyPolicy::Families::DualStack,
+		SelectedLocalIPv6().value_or(CNetworkAddress::Absent()),
+		thePrefs::GetProxyData()->m_proxyEnable);
+#else
+	return GetConnectAddress();
+#endif
+}
+
 CNetworkAddress CUpDownClient::ContactAddress() const
 {
 	return PeerAddressing::ContactCheckAddress(
-		GetUserAddress(), GetConnectAddress(), HasLowID(), wxUINT32_SWAP_ALWAYS(m_nUserIDHybrid));
+		GetUserAddress(), GetDialAddress(), HasLowID(), wxUINT32_SWAP_ALWAYS(m_nUserIDHybrid));
 }
 
 bool CUpDownClient::IsRedialAllowed() const
@@ -1628,8 +1650,8 @@ EContactRoute CUpDownClient::ContactRoute() const
 	facts.familyPermitted = AddressFamilyPolicy::Permits(facts.contactAddress);
 	facts.proxyEnabled = thePrefs::GetProxyData()->m_proxyEnable;
 	const EContactRoute route = DecideContactRoute(facts);
-	// Connect() dials GetConnectAddress(), so it must be the address the filter and ban checks saw.
-	if (route == EContactRoute::DialIPv6 && GetConnectAddress() != facts.contactAddress) {
+	// Connect() dials GetDialAddress(), so it must be the address the filter and ban checks saw.
+	if (route == EContactRoute::DialIPv6 && GetDialAddress() != facts.contactAddress) {
 		return EContactRoute::Refuse;
 	}
 	return route;
@@ -1637,7 +1659,7 @@ EContactRoute CUpDownClient::ContactRoute() const
 
 bool CUpDownClient::IsCallableIPv6Contact() const
 {
-	return ContactRoute() == EContactRoute::DialIPv6 && GetConnectAddress() != m_unansweredIPv6Address;
+	return ContactRoute() == EContactRoute::DialIPv6 && GetDialAddress() != m_unansweredIPv6Address;
 }
 
 // Re-check the standing reasons to refuse this peer, disconnecting it on a hit:
@@ -1726,8 +1748,13 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 		refused != EContactResult::Contacting) {
 		return refused;
 	}
+	// Evaluate the policy once for this attempt so the socket and Connect() use the same target.
+	m_preparedDialAddress = GetDialAddress();
 	// Every callback route carries IPv4 only, so a native IPv6 contact skips them and is dialled.
 	const bool dialIPv6 = ContactRoute() == EContactRoute::DialIPv6;
+	if (!dialIPv6) {
+		m_preparedDialAddress = CNetworkAddress::Absent();
+	}
 
 	if (GetKadState() == KS_QUEUED_FWCHECK) {
 		SetKadState(KS_CONNECTING_FWCHECK);
@@ -1996,12 +2023,14 @@ bool CUpDownClient::Connect()
 			m_socket->SetConnectionEncryption(false, NULL, false);
 		}
 #ifdef ENABLE_IPV6
-		const CNetworkAddress &connectAddress = GetConnectAddress();
+		const CNetworkAddress connectAddress = GetDialAddress();
 		if (connectAddress.IsIPv6() && !connectAddress.IsIPv4Mapped()) {
 			AddDebugLogLineN(logClient,
 				CFormat("Trying to connect to [%s]:%u") % connectAddress.ToWxString() %
 					static_cast<unsigned int>(GetUserPort()));
 			m_dialingIPv6 = true;
+			m_dialledIPv6Address = connectAddress;
+			m_preparedDialAddress = CNetworkAddress::Absent();
 			m_socket->ConnectIPv6(connectAddress, GetUserPort(), false);
 			return true;
 		}
@@ -2012,6 +2041,8 @@ bool CUpDownClient::Connect()
 		AddDebugLogLineN(logClient,
 			"Trying to connect to " + Uint32_16toStringIP_Port(GetConnectIP(), GetUserPort()));
 		m_dialingIPv6 = false;
+		m_preparedDialAddress = CNetworkAddress::Absent();
+		m_dialledIPv6Address = CNetworkAddress::Absent();
 		m_socket->Connect(tmp, false);
 		// We should send hello packets AFTER connecting!
 		// so I moved it to OnConnect
@@ -2063,6 +2094,8 @@ void CUpDownClient::ConnectionEstablished()
 
 	m_hasbeenobfuscatinglately = (m_socket && m_socket->IsConnected() && m_socket->IsObfusicating());
 	m_dialingIPv6 = false;
+	m_preparedDialAddress = CNetworkAddress::Absent();
+	m_dialledIPv6Address = CNetworkAddress::Absent();
 
 #ifdef __DEBUG__
 	if (!connection_reason.IsEmpty()) {

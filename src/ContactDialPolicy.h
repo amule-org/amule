@@ -45,6 +45,24 @@ struct SContactFacts
 };
 
 /**
+ * Returns a peer's advertised IPv6 as the TCP target only when this node is explicitly configured
+ * for dual stack and has selected a global local IPv6. The local address proves that an IPv6 source
+ * route exists; it is not the peer target. Otherwise the existing target stays intact.
+ */
+inline CNetworkAddress PromotePeerIPv6ForDial(const CNetworkAddress &current,
+	const CNetworkAddress &peerIPv6,
+	bool dualStackConfigured,
+	const CNetworkAddress &localIPv6,
+	bool proxyEnabled)
+{
+	if (dualStackConfigured && !proxyEnabled && peerIPv6.IsGloballyRoutableIPv6() &&
+		localIPv6.IsGloballyRoutableIPv6()) {
+		return peerIPv6;
+	}
+	return current;
+}
+
+/**
  * How to reach a client.
  *
  * Legacy is the path an IPv4 or absent contact has always taken: the connected socket, an IPv4

@@ -112,3 +112,19 @@ TEST(ContactDialPolicy, UnspecifiedContactsAreRefused)
 		ASSERT_TRUE(DecideContactRoute(facts) == EContactRoute::Refuse);
 	}
 }
+
+TEST(ContactDialPolicy, GloballyRoutablePeerIPv6PromotesOnlyForAUsableDualStackLocalNode)
+{
+	const CNetworkAddress ipv4 = CNetworkAddress::FromString("192.0.2.1");
+	const CNetworkAddress peer = CNetworkAddress::FromString("2001:4860:4860::8888");
+	const CNetworkAddress local = CNetworkAddress::FromString("2606:4700::1111");
+
+	ASSERT_TRUE(PromotePeerIPv6ForDial(ipv4, peer, true, local, false) == peer);
+	ASSERT_TRUE(PromotePeerIPv6ForDial(ipv4, peer, false, local, false) == ipv4);
+	ASSERT_TRUE(PromotePeerIPv6ForDial(ipv4, peer, true, CNetworkAddress::Absent(), false) == ipv4);
+	ASSERT_TRUE(PromotePeerIPv6ForDial(ipv4, peer, true, CNetworkAddress::FromString("fe80::1"), false) ==
+		    ipv4);
+	ASSERT_TRUE(PromotePeerIPv6ForDial(ipv4, peer, true, local, true) == ipv4);
+	ASSERT_TRUE(PromotePeerIPv6ForDial(
+			    ipv4, CNetworkAddress::FromString("fe80::1"), true, local, false) == ipv4);
+}

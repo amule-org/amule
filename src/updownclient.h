@@ -250,6 +250,8 @@ public:
 	}
 	uint32 GetConnectIP() const { return m_connectAddress.ToIPv4NetworkOrderOrZero(); }
 	const CNetworkAddress &GetConnectAddress() const { return m_connectAddress; }
+	//! The current TCP target, which may promote a validated peer IPv6 without changing its identity.
+	CNetworkAddress GetDialAddress() const;
 	//! Whether the peer has an IPv4 form, from the best address known so far.
 	bool HasPeerIPv4() const;
 	uint32 GetUserIDHybrid() const { return m_nUserIDHybrid; }
@@ -804,6 +806,8 @@ private:
 	CNetworkAddress m_userAddress;
 	CNetworkAddress m_connectAddress;
 	bool m_dialingIPv6;
+	CNetworkAddress m_preparedDialAddress;
+	CNetworkAddress m_dialledIPv6Address;
 	CNetworkAddress m_unansweredIPv6Address;
 	uint32 m_dwServerIP;
 	uint32 m_nUserIDHybrid;

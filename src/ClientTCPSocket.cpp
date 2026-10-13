@@ -82,7 +82,7 @@ CClientTCPSocket::CClientTCPSocket(CUpDownClient *in_client, const CProxyData *P
 #ifdef ENABLE_IPV6
 	// A native IPv6 peer has no IPv4 hybrid ID; OnReceive() filters on the address dialled.
 	if (in_client) {
-		const CNetworkAddress &connectAddress = in_client->GetConnectAddress();
+		const CNetworkAddress connectAddress = in_client->GetDialAddress();
 		if (connectAddress.IsIPv6() && !connectAddress.IsIPv4Mapped()) {
 			m_remoteAddress = connectAddress;
 		}
