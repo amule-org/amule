@@ -2350,9 +2350,15 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 			COMMAND ${Python3_EXECUTABLE}
 				${CMAKE_CURRENT_SOURCE_DIR}/KnownHistoryIntegrationTest.py $<TARGET_FILE:amuled>
 		)
+		# The ed2k helper writes ED2KLinks too; checked when it is built.
+		set (ED2K_HELPER "")
+		if (BUILD_ED2K)
+			set (ED2K_HELPER $<TARGET_FILE:ed2k>)
+		endif ()
 		add_test (NAME ED2KLinkIntegrationTest
 			COMMAND ${Python3_EXECUTABLE}
 				${CMAKE_CURRENT_SOURCE_DIR}/ED2KLinkIntegrationTest.py $<TARGET_FILE:amuled>
+				${ED2K_HELPER}
 		)
 		add_test (NAME CancelCompletedIntegrationTest
 			COMMAND ${Python3_EXECUTABLE}

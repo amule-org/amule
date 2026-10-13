@@ -1124,7 +1124,7 @@ curl -s -X POST -H "Authorization: Bearer $TOKEN" \
 
 Bulk pause/resume, priority, or category change over multiple downloads — the same patch applied to every listed hash.
 
-**Body:** `{ "hashes": ["<md4>", …], … }` — a non-empty `hashes` array (max 500) plus at least one of the single-item PATCH fields: `action` (`"pause"` | `"resume"` | `"stop"`), `priority` (`low` | `normal` | `high` | `auto`), `category_index` (integer 0–255).
+**Body:** `{ "hashes": ["<md4>", …], … }` — a non-empty `hashes` array (max 500) plus at least one of the single-item PATCH fields: `action` (`"pause"` | `"resume"` | `"stop"`), `priority` (`low` | `normal` | `high` | `auto`), `category_index` (integer 0–255; an index past the daemon's category list fails that item with `amuled_rejected`).
 
 ```sh
 curl -s -X PATCH -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
@@ -1157,7 +1157,7 @@ Mutates one or more fields of a single partfile. `{hash}` is the 32-char MD4 hex
 
 - `action` — `"pause"`, `"resume"` or `"stop"`. A command, not a state, which is why it is not spelled `status`: the read-side `status` has eleven values and this accepts three of them, in a different tense. `"pause"` halts transfer but keeps the file's sources; `"stop"` additionally drops all known sources and resets the Kad source search (a stopped file must rediscover sources from scratch on resume); `"resume"` clears either state. A stopped file reports `status: "stopped"` in the download object (see [`GET /downloads`](#get-apiv1downloads)).
 - `priority` — `"low"` / `"normal"` / `"high"` / `"auto"`. Downloads support only these levels and any other value is a `400`; the reason is that the daemon's `.part.met` loader would clamp it back to `normal` on the next restart. (Shared files support the wider `very_low` … `release` set — see [`PATCH /shared/{hash}`](#patch-apiv1sharedhash) and [Priority levels](#priority-levels).)
-- `category_index` — uint8
+- `category_index` — uint8, the index of a category the daemon has (see [`GET /categories`](#get-apiv1categories)). An index past the list is refused with `400 amuled_rejected`, and the download keeps its category.
 - `a4af_auto` — bool. Turns automatic A4AF source-swapping on or off for this file. A named value, not a flip: sending `true` twice leaves it `true`. This is the only way to set the flag, because a toggle cannot survive a retry (see [Idempotency](#idempotency)).
 - `my_comment` + `my_rating` — set the file's comment (string, ≤ 50 chars) and rating (integer `0`–`5`). Must be sent **together**; only settable when the partfile is also shared (≥ 1 complete chunk), else `409 not_shared`. Primarily a shared-file action — see [`PATCH /shared/{hash}`](#patch-apiv1sharedhash).
 - `name` — rename the file (string). Must be non-empty and contain no path separators (`/` or `\`). See the [Takeover flow](#get-apiv1downloadshashfilenames).

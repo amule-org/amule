@@ -2278,9 +2278,21 @@ static CECPacket *Get_EC_Response_PartFile_Cmd(const CECPacket *request)
 			pfile->Delete();
 			break;
 
-		case EC_OP_PARTFILE_SET_CAT:
-			pfile->SetCategory(hashtag.GetFirstTagSafe()->GetInt());
-			break;
+		case EC_OP_PARTFILE_SET_CAT: {
+			// A completing download reads its category's path, so an index past the list
+			// must not be stored.
+			const uint64 cat = hashtag.GetFirstTagSafe()->GetInt();
+			if (cat >= theApp->glob_prefs->GetCatCount()) {
+				if (!response) {
+					response = new CECPacket(EC_OP_FAILED);
+					response->AddTag(CECTag(EC_TAG_STRING,
+						CFormat(wxString(wxTRANSLATE("No such category: %u"))) %
+							cat));
+				}
+				break;
+			}
+			pfile->SetCategory(static_cast<uint8>(cat));
+		} break;
 
 		default:
 			response = new CECPacket(EC_OP_FAILED);

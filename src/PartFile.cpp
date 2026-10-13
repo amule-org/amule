@@ -3875,7 +3875,10 @@ void CPartFile::UpdateFileRatingCommentAvail()
 
 void CPartFile::SetCategory(uint8 cat)
 {
-	wxASSERT(cat < theApp->glob_prefs->GetCatCount());
+	// Callers may pass an index from an EC client; completion reads that category's path.
+	if (cat >= theApp->glob_prefs->GetCatCount()) {
+		return;
+	}
 
 	if (m_category != cat) {
 		MarkMetDirty();

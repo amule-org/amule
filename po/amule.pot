@@ -2289,6 +2289,11 @@ msgid "Cannot cancel a finished download: %s"
 msgstr ""
 
 #: src/ExternalConn.cpp
+#, c-format
+msgid "No such category: %u"
+msgstr ""
+
+#: src/ExternalConn.cpp
 msgid "OOPS! OpCode processing error!"
 msgstr ""
 

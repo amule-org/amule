@@ -237,10 +237,17 @@ static void badLink(const string &type, const string &err, const string &uri)
 }
 
 /**
- * Writes a string to the ED2KLinks file, terminating the program on error.
+ * Writes a string to the ED2KLinks file, terminating the program on error. False, and nothing
+ * written, if the link holds a line break.
  */
-static void writeLink(const string &uri, const string &config_dir)
+static bool writeLink(const string &uri, const string &config_dir)
 {
+	// One link per line: a decoded line break would forge more links.
+	if (uri.find_first_of("\r\n") != string::npos) {
+		std::cerr << "Line break in link, not queued:\n\t" << uri << '\n';
+		return false;
+	}
+
 	// Attempt to lock the ED2KLinks file
 	static CFileLock lock(GetLinksFilePath(config_dir));
 	static std::ofstream file;
@@ -258,6 +265,7 @@ static void writeLink(const string &uri, const string &config_dir)
 	file << uri << '\n';
 
 	std::cout << "Link successfully queued." << '\n';
+	return true;
 }
 
 /**
@@ -408,11 +416,11 @@ int main(int argc, char *argv[])
 
 			if ((type == "file") && checkFileLink(arg)) {
 				arg += category;
-				writeLink(arg, config_path);
+				errors |= !writeLink(arg, config_path);
 			} else if ((type == "server") && checkServerLink(arg)) {
-				writeLink(arg, config_path);
+				errors |= !writeLink(arg, config_path);
 			} else if ((type == "serverlist") && checkServerListLink(arg)) {
-				writeLink(arg, config_path);
+				errors |= !writeLink(arg, config_path);
 			} else {
 				std::cout << "Unknown or invalid link-type:\n\t" << arg << '\n';
 				errors = true;
@@ -468,7 +476,7 @@ int main(int argc, char *argv[])
 						if (listOnly)
 							std::cout << my_collection[e] << '\n';
 						else
-							writeLink(my_collection[e], config_path);
+							errors |= !writeLink(my_collection[e], config_path);
 				} else {
 					std::cerr << "Invalid emulecollection file: " << argv[i] << '\n';
 					errors = true;
