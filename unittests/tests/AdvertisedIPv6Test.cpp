@@ -63,6 +63,19 @@ bool Chooses(const std::vector<NetworkInterface> &interfaces,
 	const std::optional<CNetworkAddress> chosen = ChooseAdvertisedIPv6(interfaces, pinned);
 	return chosen.has_value() && *chosen == CNetworkAddress::IPv6FromOctets(expected);
 }
+
+SAdvertisedIPv6Facts AdvertisableFacts()
+{
+	SAdvertisedIPv6Facts facts;
+	facts.choice = CNetworkAddress::IPv6FromOctets(Global(0x0a));
+	facts.prefixCorroborated = true;
+	facts.declaredReachable = true;
+	facts.ipv6Built = true;
+	facts.familyPermitted = true;
+	facts.proxyEnabled = false;
+	facts.listenerAcceptsIPv6 = true;
+	return facts;
+}
 } // namespace
 
 TEST(AdvertisedIPv6, NothingIsChosenWithoutAPublishableAddress)
@@ -123,4 +136,60 @@ TEST(AdvertisedIPv6, TheLowestAddressWinsATie)
 	const std::vector<NetworkInterface> interfaces = { Interface("eth0", { Address(Global(9)) }),
 		Interface("wlan0", { Address(Global(3)), Address(Global(5)) }) };
 	ASSERT_TRUE(Chooses(interfaces, Global(3)));
+}
+
+TEST(AdvertisedIPv6, TheChoiceIsAdvertisedWhenEveryConditionHolds)
+{
+	const std::optional<CNetworkAddress> advertised = DecideAdvertisedIPv6(AdvertisableFacts());
+	ASSERT_TRUE(advertised.has_value());
+	ASSERT_TRUE(*advertised == CNetworkAddress::IPv6FromOctets(Global(0x0a)));
+}
+
+TEST(AdvertisedIPv6, NothingIsAdvertisedWithoutAChoice)
+{
+	SAdvertisedIPv6Facts facts = AdvertisableFacts();
+	facts.choice = std::nullopt;
+	ASSERT_FALSE(DecideAdvertisedIPv6(facts).has_value());
+}
+
+TEST(AdvertisedIPv6, NothingIsAdvertisedUntilPeersCorroborateThePrefix)
+{
+	SAdvertisedIPv6Facts facts = AdvertisableFacts();
+	facts.prefixCorroborated = false;
+	ASSERT_FALSE(DecideAdvertisedIPv6(facts).has_value());
+}
+
+TEST(AdvertisedIPv6, NothingIsAdvertisedUnlessTheUserDeclaresThePortReachable)
+{
+	SAdvertisedIPv6Facts facts = AdvertisableFacts();
+	facts.declaredReachable = false;
+	ASSERT_FALSE(DecideAdvertisedIPv6(facts).has_value());
+}
+
+TEST(AdvertisedIPv6, NothingIsAdvertisedWithoutIPv6Support)
+{
+	SAdvertisedIPv6Facts facts = AdvertisableFacts();
+	facts.ipv6Built = false;
+	ASSERT_FALSE(DecideAdvertisedIPv6(facts).has_value());
+}
+
+TEST(AdvertisedIPv6, NothingIsAdvertisedWhenTheFamilyIsNotPermitted)
+{
+	SAdvertisedIPv6Facts facts = AdvertisableFacts();
+	facts.familyPermitted = false;
+	ASSERT_FALSE(DecideAdvertisedIPv6(facts).has_value());
+}
+
+TEST(AdvertisedIPv6, NothingIsAdvertisedWithAProxyConfigured)
+{
+	SAdvertisedIPv6Facts facts = AdvertisableFacts();
+	facts.proxyEnabled = true;
+	ASSERT_FALSE(DecideAdvertisedIPv6(facts).has_value());
+}
+
+TEST(AdvertisedIPv6, NothingIsAdvertisedWhenTheListenerRejectsIPv6)
+{
+	SAdvertisedIPv6Facts facts = AdvertisableFacts();
+	facts.listenerAcceptsIPv6 = false;
+	ASSERT_FALSE(DecideAdvertisedIPv6(facts).has_value());
 }

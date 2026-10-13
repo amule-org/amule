@@ -68,4 +68,36 @@ inline std::optional<CNetworkAddress> ChooseAdvertisedIPv6(
 	return CNetworkAddress::IPv6FromOctets(best->bytes);
 }
 
+struct SAdvertisedIPv6Facts
+{
+	std::optional<CNetworkAddress> choice; // ChooseAdvertisedIPv6() at the last interface refresh
+	bool prefixCorroborated = false;       // Peers confirm the choice's /64
+	bool declaredReachable = false;        // The user says the ed2k TCP port accepts inbound IPv6
+	bool ipv6Built = false;
+	bool familyPermitted = false;
+	bool proxyEnabled = false;
+	bool listenerAcceptsIPv6 = false;
+};
+
+/**
+ * The IPv6 address to advertise as ours, or none.
+ *
+ * eMuleAI treats a peer's CT_MOD_IP_V6 as reachable: it dials that address for every later
+ * connection with no IPv4 fallback, skips LowID callbacks, keeps it for the whole session and passes
+ * it on in source exchange. An address a firewall drops would therefore cost connections we have
+ * today, so it is advertised only when the user declares the port reachable, which nothing here can
+ * test from outside, and peers confirm its /64, which they would not behind IPv6 NAT. A proxy
+ * carries IPv4 only and advertising around it would leak our address; without an IPv6 listener there
+ * is nothing to reach.
+ */
+inline std::optional<CNetworkAddress> DecideAdvertisedIPv6(const SAdvertisedIPv6Facts &facts)
+{
+	const bool reachable = facts.prefixCorroborated && facts.declaredReachable;
+	const bool permitted = facts.ipv6Built && facts.familyPermitted && !facts.proxyEnabled;
+	if (!facts.choice || !reachable || !permitted || !facts.listenerAcceptsIPv6) {
+		return std::nullopt;
+	}
+	return facts.choice;
+}
+
 #endif // ADVERTISED_IPV6_H
