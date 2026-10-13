@@ -158,6 +158,8 @@ public:
 		uint64_t fileSize,
 		const CKadUDPKey &senderKey);
 	bool SendStoreRequest(const CUInt128 &keyID);
+	//! Drops the keywords, sources and notes expired at @a now, and recounts them.
+	void Expire(time_t now);
 	uint32_t m_totalIndexSource;
 	uint32_t m_totalIndexKeyword;
 	uint32_t m_totalIndexNotes;
@@ -202,6 +204,7 @@ private:
 	wxString m_loadfilename;
 	void ReadFile(const std::atomic<bool> &cancel);
 	void Clean();
+	static void CleanSources(SrcHashMap &map, time_t now, uint32_t &total, uint32_t &removed);
 };
 
 } // namespace Kademlia

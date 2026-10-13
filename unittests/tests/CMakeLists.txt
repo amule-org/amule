@@ -107,6 +107,15 @@ target_include_directories (KadFirewallRecheckTest PRIVATE
 )
 target_link_libraries (KadFirewallRecheckTest muleunit mulecommon)
 
+# Firewall-check replies: each peer we asked answers each kind once.
+add_executable (KadFirewallCheckRequestsTest KadFirewallCheckRequestsTest.cpp)
+add_test (NAME KadFirewallCheckRequestsTest COMMAND KadFirewallCheckRequestsTest)
+target_include_directories (KadFirewallCheckRequestsTest PRIVATE
+	${CMAKE_SOURCE_DIR}/src
+	${CMAKE_SOURCE_DIR}/src/include
+)
+target_link_libraries (KadFirewallCheckRequestsTest muleunit mulecommon)
+
 # Production UDP verification queries with a deterministic clock.
 add_executable (KadUDPFirewallIntegrationTest
 	KadUDPFirewallIntegrationTest.cpp

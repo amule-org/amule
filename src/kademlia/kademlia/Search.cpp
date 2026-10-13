@@ -1216,7 +1216,10 @@ void CSearch::ProcessResultNotes(const CUInt128 &answer, TagPtrList *info)
 		} else if (!tag->GetName().Cmp(TAG_SOURCEPORT)) {
 			entry->m_uTCPport = tag->GetInt();
 		} else if (!tag->GetName().Cmp(TAG_FILENAME)) {
-			entry->SetFileName(tag->GetStr());
+			// The first name wins, as on the publish path: a second one is a malformed answer.
+			if (entry->GetCommonFileName().IsEmpty()) {
+				entry->SetFileName(tag->GetStr());
+			}
 		} else if (!tag->GetName().Cmp(TAG_DESCRIPTION) || !tag->GetName().Cmp(TAG_FILERATING)) {
 			// Kept whatever it says: the comment filter applies when notes are shown.
 			entry->AddTag(tag, entry->m_uIP);
@@ -1317,11 +1320,11 @@ void CSearch::ProcessResultKeyword(
 			if (tag->IsBsob() && (tag->GetBsobSize() == 8)) {
 				// Kad1.0 uint64 type using a BSOB.
 				size = PeekUInt64(tag->GetBsob());
-			} else {
-				wxASSERT(tag->IsInt());
+				bFileSize = true;
+			} else if (tag->IsInt()) {
 				size = tag->GetInt();
+				bFileSize = true;
 			}
-			bFileSize = true;
 		} else if (tag->GetName() == TAG_FILETYPE) {
 			type = tag->GetStr();
 		} else if (tag->GetName() == TAG_FILEFORMAT) {

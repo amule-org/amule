@@ -587,7 +587,12 @@ void CIndexed::Clean()
 	if (m_lastClean > tNow) {
 		return;
 	}
+	Expire(tNow);
+	m_lastClean = tNow + MIN2S(30);
+}
 
+void CIndexed::Expire(time_t tNow)
+{
 	uint32_t k_Removed = 0;
 	uint32_t s_Removed = 0;
 	uint32_t s_Total = 0;
@@ -634,8 +639,23 @@ void CIndexed::Clean()
 		}
 	}
 
-	SrcHashMap::iterator itSrcHash = m_Sources_map.begin();
-	while (itSrcHash != m_Sources_map.end()) {
+	CleanSources(m_Sources_map, tNow, s_Total, s_Removed);
+	uint32_t n_Removed = 0;
+	uint32_t n_Total = 0;
+	CleanSources(m_Notes_map, tNow, n_Total, n_Removed);
+
+	m_totalIndexSource = s_Total - s_Removed;
+	m_totalIndexKeyword = k_Total - k_Removed;
+	m_totalIndexNotes = n_Total - n_Removed;
+	AddDebugLogLineN(logKadIndex,
+		CFormat("Removed %u keyword out of %u, %u source out of %u and %u note out of %u") %
+			k_Removed % k_Total % s_Removed % s_Total % n_Removed % n_Total);
+}
+
+void CIndexed::CleanSources(SrcHashMap &map, time_t now, uint32_t &total, uint32_t &removed)
+{
+	SrcHashMap::iterator itSrcHash = map.begin();
+	while (itSrcHash != map.end()) {
 		SrcHashMap::iterator curr_itSrcHash = itSrcHash++; // Don't change this to a ++it!
 		SrcHash *currSrcHash = curr_itSrcHash->second;
 
@@ -645,11 +665,11 @@ void CIndexed::Clean()
 
 			CKadEntryPtrList::iterator itEntry = currSource->entryList.begin();
 			while (itEntry != currSource->entryList.end()) {
-				s_Total++;
+				total++;
 
 				Kademlia::CEntry *currName = *itEntry;
-				if (currName->m_tLifeTime < tNow) {
-					s_Removed++;
+				if (currName->m_tLifeTime < now) {
+					removed++;
 					itEntry = currSource->entryList.erase(itEntry);
 					delete currName;
 				} else {
@@ -666,17 +686,10 @@ void CIndexed::Clean()
 		}
 
 		if (currSrcHash->m_Source_map.empty()) {
-			m_Sources_map.erase(curr_itSrcHash);
+			map.erase(curr_itSrcHash);
 			delete currSrcHash;
 		}
 	}
-
-	m_totalIndexSource = s_Total - s_Removed;
-	m_totalIndexKeyword = k_Total - k_Removed;
-	AddDebugLogLineN(logKadIndex,
-		CFormat("Removed %u keyword out of %u and %u source out of %u") % k_Removed % k_Total %
-			s_Removed % s_Total);
-	m_lastClean = tNow + MIN2S(30);
 }
 
 bool CIndexed::AddKeyword(
@@ -793,6 +806,10 @@ bool CIndexed::AddSources(
 		entry->GetTagCount() == 0 || entry->m_tLifeTime < time(NULL)) {
 		return false;
 	}
+	if (m_totalIndexSource >= KADEMLIAMAXSOURCES) {
+		load = 100;
+		return false;
+	}
 
 	SrcHash *currSrcHash = NULL;
 	SrcHashMap::iterator itSrcHash = m_Sources_map.find(keyID);
@@ -873,7 +890,11 @@ bool CIndexed::AddNotes(
 		return false;
 	}
 
-	if (entry->m_uIP == 0 || entry->GetTagCount() == 0) {
+	if (entry->m_uIP == 0 || entry->GetTagCount() == 0 || entry->m_tLifeTime < time(nullptr)) {
+		return false;
+	}
+	if (m_totalIndexNotes >= KADEMLIAMAXNOTES) {
+		load = 100;
 		return false;
 	}
 
@@ -1203,6 +1224,7 @@ void CIndexed::SendValidNoteResult(
 				packetdata, KADEMLIA2_SEARCH_RES, ip, port, senderKey, NULL);
 		}
 	}
+	Clean();
 }
 
 bool CIndexed::SendStoreRequest(const CUInt128 &keyID)

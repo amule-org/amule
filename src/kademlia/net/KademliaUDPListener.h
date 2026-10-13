@@ -135,7 +135,7 @@ private:
 		const CKadUDPKey &senderKey);
 	void ProcessFirewalledResponse(
 		const uint8_t *packetData, uint32_t lenPacket, uint32_t ip, const CKadUDPKey &senderKey);
-	void ProcessFirewalledAckResponse(uint32_t lenPacket);
+	void ProcessFirewalledAckResponse(uint32_t lenPacket, uint32_t ip);
 	void ProcessFindBuddyRequest(const uint8_t *packetData,
 		uint32_t lenPacket,
 		uint32_t ip,

@@ -10,6 +10,7 @@
 #include <thread>
 #include <chrono>
 #include <tags/FileTags.h>
+#include <protocol/kad/Constants.h>
 #ifdef __linux__
 #include <unistd.h>
 #endif
@@ -639,4 +640,51 @@ TEST(IndexedLoad, StopBeforeAdoptionDoesNotQuarantineCorruption)
 	CFile original(temp.path + "key_index.dat");
 	ASSERT_EQUALS(uint64_t(4), original.GetLength());
 	ASSERT_EQUALS(99u, original.ReadUInt32());
+}
+
+static CEntry *NoteEntry(uint32_t ip, time_t lifetime)
+{
+	CEntry *entry = new CEntry();
+	entry->m_uIP = ip;
+	entry->m_uUDPport = 4672;
+	entry->m_tLifeTime = lifetime;
+	entry->AddTag(new CTagString(TAG_DESCRIPTION, "note"), ip);
+	return entry;
+}
+
+TEST(IndexedLoad, NotesExpire)
+{
+	TempIndex temp;
+	CIndexed index(temp.path, CUInt128(1u));
+	ASSERT_TRUE(WaitForLoad(index));
+	uint8_t load = 0;
+	const time_t now = time(nullptr);
+	// AddNotes refuses an entry that has already expired, so this one ages out after insertion.
+	CEntry *stale = NoteEntry(0x01020304, now + 1);
+	ASSERT_TRUE(index.AddNotes(CUInt128(2u), CUInt128(3u), stale, load));
+	stale->m_tLifeTime = now - 1;
+	ASSERT_TRUE(index.AddNotes(CUInt128(4u), CUInt128(5u), NoteEntry(0x01020305, now + 3600), load));
+	ASSERT_EQUALS(2u, index.m_totalIndexNotes);
+	index.Expire(now);
+	ASSERT_EQUALS(1u, index.m_totalIndexNotes);
+	CEntry *expired = NoteEntry(0x01020306, now - 1);
+	ASSERT_FALSE(index.AddNotes(CUInt128(6u), CUInt128(7u), expired, load));
+	delete expired;
+}
+
+TEST(IndexedLoad, NotesStopAtGlobalCap)
+{
+	TempIndex temp;
+	CIndexed index(temp.path, CUInt128(1u));
+	ASSERT_TRUE(WaitForLoad(index));
+	uint8_t load = 0;
+	const time_t lifetime = time(nullptr) + 3600;
+	for (uint32_t i = 0; i < KADEMLIAMAXNOTES; ++i) {
+		ASSERT_TRUE(index.AddNotes(CUInt128(i + 10), CUInt128(1u), NoteEntry(i + 1, lifetime), load));
+	}
+	ASSERT_EQUALS(uint32_t(KADEMLIAMAXNOTES), index.m_totalIndexNotes);
+	CEntry *refused = NoteEntry(0x7f000001, lifetime);
+	ASSERT_FALSE(index.AddNotes(CUInt128(9u), CUInt128(1u), refused, load));
+	ASSERT_EQUALS(100u, unsigned(load));
+	delete refused;
 }

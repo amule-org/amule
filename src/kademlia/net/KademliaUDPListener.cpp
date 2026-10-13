@@ -353,7 +353,7 @@ void CKademliaUDPListener::ProcessPacket(const uint8_t *data,
 		break;
 	case KADEMLIA_FIREWALLED_ACK_RES:
 		DebugRecv(KadFirewalledAck, ip, port);
-		ProcessFirewalledAckResponse(lenPacket);
+		ProcessFirewalledAckResponse(lenPacket, ip);
 		break;
 	case KADEMLIA_FINDBUDDY_REQ:
 		DebugRecv(KadFindBuddyReq, ip, port);
@@ -1553,6 +1553,7 @@ void CKademliaUDPListener::Process2PublishNotesRequest(const uint8_t *packetData
 		entry->m_uKeyID = target;
 		entry->m_uSourceID = source;
 		entry->m_bSource = false;
+		entry->m_tLifeTime = (uint32_t)time(nullptr) + KADEMLIAREPUBLISHTIMEN;
 		uint32_t tags = bio.ReadUInt8();
 		while (tags > 0) {
 			CTag *tag = bio.ReadTag();
@@ -1652,8 +1653,8 @@ void CKademliaUDPListener::ProcessFirewalledResponse(
 	// Verify packet is expected size
 	CHECK_PACKET_EXACT_SIZE(4);
 
-	if (!theApp->clientlist->IsKadFirewallCheckIP(
-		    wxUINT32_SWAP_ALWAYS(ip))) { /* KADEMLIA_FIREWALLED2_REQ + KADEMLIA_FIREWALLED_REQ */
+	if (!theApp->clientlist->TakeKadFirewallReply(wxUINT32_SWAP_ALWAYS(ip),
+		    CFirewallCheckRequests::Reply::PublicIP)) { /* KADEMLIA_FIREWALLED(2)_REQ */
 		throw wxString("Received unrequested firewall response packet in ") +
 			wxString::FromAscii(__FUNCTION__);
 	}
@@ -1671,7 +1672,7 @@ void CKademliaUDPListener::ProcessFirewalledResponse(
 
 // KADEMLIA_FIREWALLED_ACK_RES
 // Used by Kad1.0 and Kad2.0
-void CKademliaUDPListener::ProcessFirewalledAckResponse(uint32_t lenPacket)
+void CKademliaUDPListener::ProcessFirewalledAckResponse(uint32_t lenPacket, uint32_t ip)
 {
 	// Deprecated since KadVersion 7+: the result is now sent over TCP instead of UDP, because
 	// UDP fails if our internal UDP port is unreachable. We want the TCP test result regardless
@@ -1680,6 +1681,11 @@ void CKademliaUDPListener::ProcessFirewalledAckResponse(uint32_t lenPacket)
 	// Verify packet is expected size
 	CHECK_PACKET_EXACT_SIZE(0);
 
+	if (!theApp->clientlist->TakeKadFirewallReply(
+		    wxUINT32_SWAP_ALWAYS(ip), CFirewallCheckRequests::Reply::Reachable)) {
+		throw wxString("Received unrequested firewall ack packet in ") +
+			wxString::FromAscii(__FUNCTION__);
+	}
 	CKademlia::GetPrefs()->IncFirewalled();
 }
 
