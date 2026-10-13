@@ -33,8 +33,9 @@ fi
 # to strip these bundle paths back out when it launches external programs like
 # the preview player (#334).
 export APPDIR="${HERE}"
-export PATH="${HERE}/usr/bin:${PATH}"
-export LD_LIBRARY_PATH="${HERE}/usr/lib:${LD_LIBRARY_PATH:-}"
+# No trailing ':' when a variable is unset or empty: an empty entry means the current directory.
+export PATH="${HERE}/usr/bin${PATH:+:${PATH}}"
+export LD_LIBRARY_PATH="${HERE}/usr/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
 
 # Keep the host's GLib/GTK plugins out of the bundle. Both of these are set
 # after the plugin hooks above deliberately: linuxdeploy-plugin-gtk sets

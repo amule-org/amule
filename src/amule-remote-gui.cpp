@@ -4367,6 +4367,8 @@ void CPartFile::UpdateFileRatingCommentAvail()
 
 	m_hasComment = false;
 	m_iUserRating = 0;
+	// An int8 sum wraps past 25 ratings of 5.
+	int ratingSum = 0;
 	int ratingCount = 0;
 
 	FileRatingList::iterator it = m_FileRatingList.begin();
@@ -4382,12 +4384,12 @@ void CPartFile::UpdateFileRatingCommentAvail()
 			wxASSERT(rating <= 5);
 
 			ratingCount++;
-			m_iUserRating += rating;
+			ratingSum += rating;
 		}
 	}
 
 	if (ratingCount) {
-		m_iUserRating /= ratingCount;
+		m_iUserRating = static_cast<int8>(ratingSum / ratingCount);
 		wxASSERT(m_iUserRating > 0 && m_iUserRating <= 5);
 	}
 

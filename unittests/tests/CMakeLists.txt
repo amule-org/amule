@@ -2354,6 +2354,12 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 			COMMAND ${Python3_EXECUTABLE}
 				${CMAKE_CURRENT_SOURCE_DIR}/CancelCompletedIntegrationTest.py $<TARGET_FILE:amuled>
 		)
+		if (BUILD_AMULECMD)
+			add_test (NAME RemoteConfPermissionsTest
+				COMMAND ${Python3_EXECUTABLE}
+					${CMAKE_CURRENT_SOURCE_DIR}/RemoteConfPermissionsTest.py $<TARGET_FILE:amulecmd>
+			)
+		endif ()
 		if (BUILD_AMULEAPI AND BUILD_AMULECMD)
 			add_test (NAME AllSearchClientCapabilityTest
 				COMMAND ${Python3_EXECUTABLE}

@@ -60,6 +60,8 @@ public:
 		  "",
 		  wxCONFIG_USE_LOCAL_FILE | wxCONFIG_USE_RELATIVE_PATH)
 	{
+		// The file holds EC password hashes, and the stored hash is what authenticates.
+		SetUmask(0077);
 	}
 
 	/**

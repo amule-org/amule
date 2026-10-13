@@ -719,6 +719,10 @@ void CaMuleExternalConnector::SaveConfigFile()
 		m_configFile->Write("/EC/ZLIB", m_ZLIB ? 1l : 0l);
 		m_configFile->Write("/EC/ForceZLIB", m_forceZLIB ? 1l : 0l);
 		m_configFile->Write("/EC/Encryption", m_ECEncryption ? 1l : 0l);
+		// The umask covers a new file; an existing one keeps its mode across the rewrite, and
+		// --create-config-from writes it without loading it first.
+		m_configFile->Flush();
+		RestrictToOwner(CPath(m_configFileName));
 	}
 }
 

@@ -3095,12 +3095,7 @@ bool CUpDownClient::SendChatMessage(const wxString &message)
 		// If we are already connected when we send the first message,
 		// we have to update the chat status.
 		SetChatState(MS_CHATTING);
-		CMemFile data;
-		data.WriteString(message, GetUnicodeSupport());
-		CPacket *packet = new CPacket(data, OP_EDONKEYPROT, OP_MESSAGE);
-		theStats::AddUpOverheadOther(packet->GetPacketSize());
-		AddDebugLogLineN(logLocalClient, "Local Client: OP_MESSAGE to " + GetFullIP());
-		SendPacket(packet, true, true);
+		SendChatPacket(message);
 		return true;
 	} else {
 		m_pendingMessage = message;
@@ -3109,6 +3104,16 @@ bool CUpDownClient::SendChatMessage(const wxString &message)
 		TryToConnect(true);
 		return false;
 	}
+}
+
+void CUpDownClient::SendChatPacket(const wxString &message)
+{
+	CMemFile data;
+	data.WriteString(message, GetUnicodeSupport());
+	CPacket *packet = new CPacket(data, OP_EDONKEYPROT, OP_MESSAGE);
+	theStats::AddUpOverheadOther(packet->GetPacketSize());
+	AddDebugLogLineN(logLocalClient, "Local Client: OP_MESSAGE to " + GetFullIP());
+	SendPacket(packet, true, true);
 }
 
 /* Kad stuff */
@@ -3379,15 +3384,17 @@ void CUpDownClient::ProcessChatMessage(wxString message)
 				} else {
 					// Client does not support captchas but we require them: tell
 					// them it is not going to work out with an answer message (it
-					// will not be shown and does not count as a sent message).
-					if (m_cCaptchasSent < 1) { // don't send this notifier more than once
+					// will not be shown and does not count as a sent message, so it
+					// skips SendChatMessage(): that would lift the captcha and the
+					// filters for their next message).
+					if (m_cCaptchasSent < 1 && IsConnected()) { // send this once
 						m_cCaptchasSent++;
 						// always sent in english
-						SendChatMessage("In order to avoid spam messages, this user "
-								"requires you to solve a captcha before you "
-								"can send a message to him. However your "
-								"client does not supports captchas, so you "
-								"will not be able to chat with this user.");
+						SendChatPacket("In order to avoid spam messages, this user "
+							       "requires you to solve a captcha before you "
+							       "can send a message to him. However your "
+							       "client does not supports captchas, so you "
+							       "will not be able to chat with this user.");
 						AddDebugLogLineN(logClient,
 							CFormat("Received message from client not supporting "
 								"captchas, filtered and sent notifier (%s)") %
