@@ -48,13 +48,34 @@ SContactFacts DialableIPv6()
 }
 } // namespace
 
-TEST(ContactDialPolicy, SecurityRejectsEitherPromotedTargetOrRetainedIdentity)
+TEST(ContactDialPolicy, SecurityChecksFilterAndBanBranchesForBothIdentities)
 {
+	ASSERT_TRUE(ContactFilterPermitted(false, false));
+	ASSERT_FALSE(ContactFilterPermitted(true, false));
+	ASSERT_FALSE(ContactFilterPermitted(false, true));
+	ASSERT_TRUE(ContactBanPermitted(false, false));
+	ASSERT_FALSE(ContactBanPermitted(true, false));
+	ASSERT_FALSE(ContactBanPermitted(false, true));
 	ASSERT_TRUE(ContactSecurityPermitted(false, false, false, false));
 	ASSERT_FALSE(ContactSecurityPermitted(true, false, false, false));
 	ASSERT_FALSE(ContactSecurityPermitted(false, true, false, false));
 	ASSERT_FALSE(ContactSecurityPermitted(false, false, true, false));
 	ASSERT_FALSE(ContactSecurityPermitted(false, false, false, true));
+}
+
+TEST(ContactDialPolicy, FailedPromotedIPv6RequiresRetainedIdentityAndConnectingState)
+{
+	ASSERT_TRUE(IsFailedPromotedIPv6(true, true, true));
+	ASSERT_FALSE(IsFailedPromotedIPv6(false, true, true));
+	ASSERT_FALSE(IsFailedPromotedIPv6(true, false, true));
+	ASSERT_FALSE(IsFailedPromotedIPv6(true, true, false));
+}
+
+TEST(ContactDialPolicy, IPv6HelloPreservesRetainedIPv4Identity)
+{
+	ASSERT_TRUE(ShouldPreserveIPv4IdentityOnHello(true, true));
+	ASSERT_FALSE(ShouldPreserveIPv4IdentityOnHello(false, true));
+	ASSERT_FALSE(ShouldPreserveIPv4IdentityOnHello(true, false));
 }
 
 TEST(ContactDialPolicy, PromotedIPv6SkipsIPv4Utp)

@@ -731,7 +731,7 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data)
 			// claimed address's /48, keyed on where the packet came from rather than on a
 			// self-declared user hash. Votes for any of our addresses in one /64 add up, within a
 			// time window. Nothing consumes the result yet.
-			if (temptag.IsHash()) {
+			if (temptag.IsHash() && m_socket != nullptr) {
 				const std::uint8_t *claimed = temptag.GetHash().GetHash();
 				if (ObservedPublicIPv6().AddClaim(
 					    m_socket->GetPeerAddress(), claimed, ::GetTickCount64())) {
@@ -1470,9 +1470,10 @@ bool CUpDownClient::Disconnected(const wxString &DEBUG_ONLY(strReason), bool bFr
 
 	// An advertised IPv6 supplements a known IPv4 peer rather than replacing it. Remember a
 	// failed promoted target so later attempts use IPv4; native IPv6 peers retain their old path.
-	const bool failedPromotedIPv6 = m_dialingIPv6 && PeerAddressing::HasEd2kWireForm(GetConnectAddress());
-	if (failedPromotedIPv6 &&
-		(GetUploadState() == US_CONNECTING || GetDownloadState() == DS_CONNECTING)) {
+	const bool failedPromotedIPv6 = IsFailedPromotedIPv6(m_dialingIPv6,
+		PeerAddressing::HasEd2kWireForm(GetConnectAddress()),
+		GetUploadState() == US_CONNECTING || GetDownloadState() == DS_CONNECTING);
+	if (failedPromotedIPv6) {
 		m_unansweredIPv6Address = m_dialledIPv6Address;
 	}
 	if (m_dialingIPv6 && GetUploadState() == US_CONNECTING) {
@@ -1719,11 +1720,11 @@ EContactResult CUpDownClient::CheckContactPreconditions()
 	const CNetworkAddress retainedIdentity = GetConnectAddress();
 	const bool retainedIdentityChecked =
 		retainedIdentity.IsPresent() && PeerAddressing::HasEd2kWireForm(retainedIdentity);
-	if (!ContactSecurityPermitted(theApp->ipfilter->IsFiltered(contactAddress),
-		    theApp->clientlist->IsBannedClient(contactAddress),
-		    retainedIdentityChecked && theApp->ipfilter->IsFiltered(retainedIdentity),
-		    retainedIdentityChecked && theApp->clientlist->IsBannedClient(retainedIdentity))) {
-		AddDebugLogLineN(logIPFilter, "Filtered or banned contact address on TryToConnect");
+	const bool targetFiltered = theApp->ipfilter->IsFiltered(contactAddress);
+	const bool retainedFiltered =
+		retainedIdentityChecked && theApp->ipfilter->IsFiltered(retainedIdentity);
+	if (!ContactFilterPermitted(targetFiltered, retainedFiltered)) {
+		AddDebugLogLineN(logIPFilter, "Filtered contact address on TryToConnect");
 		if (Disconnected("IPFilter")) {
 			Safe_Delete();
 			return EContactResult::ClientDeleted;
@@ -1731,8 +1732,10 @@ EContactResult CUpDownClient::CheckContactPreconditions()
 		return EContactResult::Declined;
 	}
 
-	// The combined security check above covers both the frozen target and retained identity.
-	if (theApp->clientlist->IsBannedClient(contactAddress)) {
+	const bool targetBanned = theApp->clientlist->IsBannedClient(contactAddress);
+	const bool retainedBanned =
+		retainedIdentityChecked && theApp->clientlist->IsBannedClient(retainedIdentity);
+	if (!ContactBanPermitted(targetBanned, retainedBanned)) {
 		AddDebugLogLineN(
 			logClient, "Refused to connect to banned client " + contactAddress.ToWxString());
 		if (Disconnected("Banned IP")) {
@@ -2052,7 +2055,8 @@ bool CUpDownClient::Connect()
 				CFormat("Trying to connect to [%s]:%u") % connectAddress.ToWxString() %
 					static_cast<unsigned int>(GetUserPort()));
 			m_dialingIPv6 = true;
-			m_preserveIPv4IdentityOnHello = PeerAddressing::HasEd2kWireForm(GetConnectAddress());
+			m_preserveIPv4IdentityOnHello = ShouldPreserveIPv4IdentityOnHello(
+				true, PeerAddressing::HasEd2kWireForm(GetConnectAddress()));
 			m_dialledIPv6Address = connectAddress;
 			m_preparedDialAddress = CNetworkAddress::Absent();
 			m_socket->ConnectIPv6(connectAddress, GetUserPort(), false);

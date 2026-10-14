@@ -46,10 +46,31 @@ struct SContactFacts
 
 // A promoted dial has two security identities: the frozen target and the retained IPv4 peer.
 // Both must remain acceptable; this keeps promotion from bypassing an existing filter/ban.
+inline bool ContactFilterPermitted(bool targetFiltered, bool retainedIdentityFiltered)
+{
+	return !targetFiltered && !retainedIdentityFiltered;
+}
+
+inline bool ContactBanPermitted(bool targetBanned, bool retainedIdentityBanned)
+{
+	return !targetBanned && !retainedIdentityBanned;
+}
+
 inline bool ContactSecurityPermitted(
 	bool targetFiltered, bool targetBanned, bool retainedIdentityFiltered, bool retainedIdentityBanned)
 {
-	return !targetFiltered && !targetBanned && !retainedIdentityFiltered && !retainedIdentityBanned;
+	return ContactFilterPermitted(targetFiltered, retainedIdentityFiltered) &&
+	       ContactBanPermitted(targetBanned, retainedIdentityBanned);
+}
+
+inline bool IsFailedPromotedIPv6(bool dialingIPv6, bool retainedIPv4Identity, bool stillConnecting)
+{
+	return dialingIPv6 && retainedIPv4Identity && stillConnecting;
+}
+
+inline bool ShouldPreserveIPv4IdentityOnHello(bool dialingIPv6, bool retainedIPv4Identity)
+{
+	return dialingIPv6 && retainedIPv4Identity;
 }
 
 inline bool ShouldTryIPv4Utp(bool promotedIPv6Target)
