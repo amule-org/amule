@@ -1470,9 +1470,9 @@ bool CUpDownClient::Disconnected(const wxString &DEBUG_ONLY(strReason), bool bFr
 
 	// An advertised IPv6 supplements a known IPv4 peer rather than replacing it. Remember a
 	// failed promoted target so later attempts use IPv4; native IPv6 peers retain their old path.
-	const bool failedPromotedIPv6 = IsFailedPromotedIPv6(m_dialingIPv6,
-		PeerAddressing::HasEd2kWireForm(GetConnectAddress()),
-		GetUploadState() == US_CONNECTING || GetDownloadState() == DS_CONNECTING);
+	const bool failedPromotedIPv6 =
+		IsPromotedIPv6Dial(m_dialledIPv6Address, GetConnectAddress()) &&
+		(GetUploadState() == US_CONNECTING || GetDownloadState() == DS_CONNECTING);
 	if (failedPromotedIPv6) {
 		m_unansweredIPv6Address = m_dialledIPv6Address;
 	}
@@ -1717,32 +1717,31 @@ EContactResult CUpDownClient::CheckContactPreconditions()
 	// Although all received IPs (server sources, source exchange) and all incoming connection
 	// attempts are filtered, outgoing connection attempts have to be filtered here too, because
 	// the ip filter list may have been updated since.
-	const CNetworkAddress retainedIdentity = GetConnectAddress();
-	const bool retainedIdentityChecked =
-		retainedIdentity.IsPresent() && PeerAddressing::HasEd2kWireForm(retainedIdentity);
-	const bool targetFiltered = theApp->ipfilter->IsFiltered(contactAddress);
-	const bool retainedFiltered =
-		retainedIdentityChecked && theApp->ipfilter->IsFiltered(retainedIdentity);
-	if (!ContactFilterPermitted(targetFiltered, retainedFiltered)) {
-		AddDebugLogLineN(logIPFilter, "Filtered contact address on TryToConnect");
-		if (Disconnected("IPFilter")) {
-			Safe_Delete();
-			return EContactResult::ClientDeleted;
+	const std::vector<CNetworkAddress> checkedAddresses =
+		ContactSecurityAddresses(contactAddress, GetConnectAddress());
+	for (const CNetworkAddress &address : checkedAddresses) {
+		if (theApp->ipfilter->IsFiltered(address)) {
+			AddDebugLogLineN(
+				logIPFilter, "Filtered ip " + address.ToWxString() + " on TryToConnect");
+			if (Disconnected("IPFilter")) {
+				Safe_Delete();
+				return EContactResult::ClientDeleted;
+			}
+			return EContactResult::Declined;
 		}
-		return EContactResult::Declined;
 	}
 
-	const bool targetBanned = theApp->clientlist->IsBannedClient(contactAddress);
-	const bool retainedBanned =
-		retainedIdentityChecked && theApp->clientlist->IsBannedClient(retainedIdentity);
-	if (!ContactBanPermitted(targetBanned, retainedBanned)) {
-		AddDebugLogLineN(
-			logClient, "Refused to connect to banned client " + contactAddress.ToWxString());
-		if (Disconnected("Banned IP")) {
-			Safe_Delete();
-			return EContactResult::ClientDeleted;
+	// for safety: check again whether that IP is banned
+	for (const CNetworkAddress &address : checkedAddresses) {
+		if (theApp->clientlist->IsBannedClient(address)) {
+			AddDebugLogLineN(
+				logClient, "Refused to connect to banned client " + address.ToWxString());
+			if (Disconnected("Banned IP")) {
+				Safe_Delete();
+				return EContactResult::ClientDeleted;
+			}
+			return EContactResult::Declined;
 		}
-		return EContactResult::Declined;
 	}
 	if (ContactRoute() == EContactRoute::Refuse) {
 		if (Disconnected("Outbound IPv6 connections unavailable")) {
@@ -1998,7 +1997,6 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 		// what TCP would have obfuscated. The two predicates differ, because
 		// the frame one also demands a known public IP.
 		const bool obfuscationSatisfied = !WantsStreamObfuscation() || ShouldReceiveCryptUDPPackets();
-		const bool promotedIPv6Target = GetDialAddress().IsIPv6() && !GetDialAddress().IsIPv4Mapped();
 		const SUtpDialFacts facts{ m_modCapabilities.SupportsNatTraversal(),
 			canSend,
 			true,
@@ -2007,7 +2005,7 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 			obfuscationSatisfied };
 		// Connect() is a no-op on a live socket. Without the same guard the
 		// uTP path would attach a transport over a connection already in use.
-		if (!m_socket->IsOk() && ShouldTryIPv4Utp(promotedIPv6Target) &&
+		if (!m_socket->IsOk() && ShouldTryIPv4Utp(GetDialAddress()) &&
 			DecideUtpDial(facts) == EUtpDialDecision::TryUtp) {
 			std::unique_ptr<IStreamTransport> transport;
 			if (utp->Dial(GetConnectIP(),
@@ -2055,8 +2053,8 @@ bool CUpDownClient::Connect()
 				CFormat("Trying to connect to [%s]:%u") % connectAddress.ToWxString() %
 					static_cast<unsigned int>(GetUserPort()));
 			m_dialingIPv6 = true;
-			m_preserveIPv4IdentityOnHello = ShouldPreserveIPv4IdentityOnHello(
-				true, PeerAddressing::HasEd2kWireForm(GetConnectAddress()));
+			m_preserveIPv4IdentityOnHello =
+				IsPromotedIPv6Dial(connectAddress, GetConnectAddress());
 			m_dialledIPv6Address = connectAddress;
 			m_preparedDialAddress = CNetworkAddress::Absent();
 			m_socket->ConnectIPv6(connectAddress, GetUserPort(), false);

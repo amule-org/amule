@@ -37,6 +37,21 @@ CNetworkAddress NativeIPv6()
 		{ 0x20, 0x01, 0x0d, 0xb8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 });
 }
 
+CNetworkAddress PeerIPv4()
+{
+	return CNetworkAddress::FromString("192.0.2.1");
+}
+
+CNetworkAddress PeerIPv6()
+{
+	return CNetworkAddress::FromString("2001:4860:4860::8888");
+}
+
+CNetworkAddress MappedPeerIPv4()
+{
+	return CNetworkAddress::FromString("::ffff:192.0.2.1");
+}
+
 // Every switch a native IPv6 dial needs is on, so each test turns off exactly one.
 SContactFacts DialableIPv6()
 {
@@ -48,40 +63,46 @@ SContactFacts DialableIPv6()
 }
 } // namespace
 
-TEST(ContactDialPolicy, SecurityChecksFilterAndBanBranchesForBothIdentities)
+// A promoted dial must clear the filter and the ban list on both addresses of the same host.
+TEST(ContactDialPolicy, APromotedDialChecksTheTargetAndTheRetainedIPv4)
 {
-	ASSERT_TRUE(ContactFilterPermitted(false, false));
-	ASSERT_FALSE(ContactFilterPermitted(true, false));
-	ASSERT_FALSE(ContactFilterPermitted(false, true));
-	ASSERT_TRUE(ContactBanPermitted(false, false));
-	ASSERT_FALSE(ContactBanPermitted(true, false));
-	ASSERT_FALSE(ContactBanPermitted(false, true));
-	ASSERT_TRUE(ContactSecurityPermitted(false, false, false, false));
-	ASSERT_FALSE(ContactSecurityPermitted(true, false, false, false));
-	ASSERT_FALSE(ContactSecurityPermitted(false, true, false, false));
-	ASSERT_FALSE(ContactSecurityPermitted(false, false, true, false));
-	ASSERT_FALSE(ContactSecurityPermitted(false, false, false, true));
+	const std::vector<CNetworkAddress> checked = ContactSecurityAddresses(PeerIPv6(), PeerIPv4());
+	ASSERT_EQUALS(2u, (unsigned)checked.size());
+	ASSERT_TRUE(checked[0] == PeerIPv6());
+	ASSERT_TRUE(checked[1] == PeerIPv4());
 }
 
-TEST(ContactDialPolicy, FailedPromotedIPv6RequiresRetainedIdentityAndConnectingState)
+// Every other route checks exactly the one address it checked before promotion existed.
+TEST(ContactDialPolicy, OtherContactsCheckOnlyTheirTarget)
 {
-	ASSERT_TRUE(IsFailedPromotedIPv6(true, true, true));
-	ASSERT_FALSE(IsFailedPromotedIPv6(false, true, true));
-	ASSERT_FALSE(IsFailedPromotedIPv6(true, false, true));
-	ASSERT_FALSE(IsFailedPromotedIPv6(true, true, false));
+	const std::vector<CNetworkAddress> ipv4 = ContactSecurityAddresses(PeerIPv4(), PeerIPv4());
+	ASSERT_EQUALS(1u, (unsigned)ipv4.size());
+	ASSERT_TRUE(ipv4[0] == PeerIPv4());
+
+	const std::vector<CNetworkAddress> native = ContactSecurityAddresses(PeerIPv6(), PeerIPv6());
+	ASSERT_EQUALS(1u, (unsigned)native.size());
+	ASSERT_TRUE(native[0] == PeerIPv6());
+
+	const std::vector<CNetworkAddress> noIdentity =
+		ContactSecurityAddresses(PeerIPv4(), CNetworkAddress::Absent());
+	ASSERT_EQUALS(1u, (unsigned)noIdentity.size());
+	ASSERT_TRUE(noIdentity[0] == PeerIPv4());
 }
 
-TEST(ContactDialPolicy, IPv6HelloPreservesRetainedIPv4Identity)
+TEST(ContactDialPolicy, OnlyAnIPv6DialToAnIPv4PeerIsAPromotion)
 {
-	ASSERT_TRUE(ShouldPreserveIPv4IdentityOnHello(true, true));
-	ASSERT_FALSE(ShouldPreserveIPv4IdentityOnHello(false, true));
-	ASSERT_FALSE(ShouldPreserveIPv4IdentityOnHello(true, false));
+	ASSERT_TRUE(IsPromotedIPv6Dial(PeerIPv6(), PeerIPv4()));
+	ASSERT_FALSE(IsPromotedIPv6Dial(PeerIPv6(), PeerIPv6()));
+	ASSERT_FALSE(IsPromotedIPv6Dial(PeerIPv4(), PeerIPv4()));
+	ASSERT_FALSE(IsPromotedIPv6Dial(MappedPeerIPv4(), PeerIPv4()));
+	ASSERT_FALSE(IsPromotedIPv6Dial(CNetworkAddress::Absent(), PeerIPv4()));
 }
 
-TEST(ContactDialPolicy, PromotedIPv6SkipsIPv4Utp)
+TEST(ContactDialPolicy, AnIPv6DialTargetSkipsIPv4Utp)
 {
-	ASSERT_TRUE(ShouldTryIPv4Utp(false));
-	ASSERT_FALSE(ShouldTryIPv4Utp(true));
+	ASSERT_TRUE(ShouldTryIPv4Utp(PeerIPv4()));
+	ASSERT_TRUE(ShouldTryIPv4Utp(MappedPeerIPv4()));
+	ASSERT_FALSE(ShouldTryIPv4Utp(PeerIPv6()));
 }
 
 TEST(ContactDialPolicy, ANativeIPv6ContactIsDialledDirectly)

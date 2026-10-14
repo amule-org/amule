@@ -28,6 +28,8 @@
 #include "NetworkAddress.h"
 #include "PeerAddressing.h" // Needed for HasEd2kWireForm
 
+#include <vector>
+
 enum class EContactRoute
 {
 	Legacy,
@@ -44,38 +46,32 @@ struct SContactFacts
 	bool proxyEnabled = false;
 };
 
-// A promoted dial has two security identities: the frozen target and the retained IPv4 peer.
-// Both must remain acceptable; this keeps promotion from bypassing an existing filter/ban.
-inline bool ContactFilterPermitted(bool targetFiltered, bool retainedIdentityFiltered)
+/**
+ * The addresses an outbound contact must pass the IP filter and ban list on: the dial target and,
+ * for a promoted IPv6 dial, the peer's retained IPv4 identity, so promotion never bypasses a
+ * filter or ban on either. Both are the same address on every other route.
+ */
+inline std::vector<CNetworkAddress> ContactSecurityAddresses(
+	const CNetworkAddress &target, const CNetworkAddress &connectAddress)
 {
-	return !targetFiltered && !retainedIdentityFiltered;
+	std::vector<CNetworkAddress> addresses{ target };
+	if (PeerAddressing::HasEd2kWireForm(connectAddress) && connectAddress != target) {
+		addresses.push_back(connectAddress);
+	}
+	return addresses;
 }
 
-inline bool ContactBanPermitted(bool targetBanned, bool retainedIdentityBanned)
+/** Whether dialling dialAddress uses a peer's advertised IPv6 in place of its IPv4 identity. */
+inline bool IsPromotedIPv6Dial(const CNetworkAddress &dialAddress, const CNetworkAddress &connectAddress)
 {
-	return !targetBanned && !retainedIdentityBanned;
+	return dialAddress.IsIPv6() && !dialAddress.IsIPv4Mapped() &&
+	       PeerAddressing::HasEd2kWireForm(connectAddress);
 }
 
-inline bool ContactSecurityPermitted(
-	bool targetFiltered, bool targetBanned, bool retainedIdentityFiltered, bool retainedIdentityBanned)
+/** uTP framing is IPv4-only, so an IPv6 dial target goes over TCP. */
+inline bool ShouldTryIPv4Utp(const CNetworkAddress &dialAddress)
 {
-	return ContactFilterPermitted(targetFiltered, retainedIdentityFiltered) &&
-	       ContactBanPermitted(targetBanned, retainedIdentityBanned);
-}
-
-inline bool IsFailedPromotedIPv6(bool dialingIPv6, bool retainedIPv4Identity, bool stillConnecting)
-{
-	return dialingIPv6 && retainedIPv4Identity && stillConnecting;
-}
-
-inline bool ShouldPreserveIPv4IdentityOnHello(bool dialingIPv6, bool retainedIPv4Identity)
-{
-	return dialingIPv6 && retainedIPv4Identity;
-}
-
-inline bool ShouldTryIPv4Utp(bool promotedIPv6Target)
-{
-	return !promotedIPv6Target;
+	return !(dialAddress.IsIPv6() && !dialAddress.IsIPv4Mapped());
 }
 
 /**
