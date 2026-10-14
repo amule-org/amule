@@ -666,18 +666,17 @@ int CSearchListCtrl::CompareByColumn(const wxDataViewItem &item1,
 
 void CSearchListCtrl::GetDisplayOrder(wxDataViewItemArray &ordered) const
 {
-	std::vector<CSearchFile *> files;
-	BuildDisplayOrder(files);
-
 	ordered.Clear();
-	ordered.Alloc(files.size());
-	for (CSearchFile *file : files) {
-		ordered.Add(CSearchListModel::ToItem(file));
-	}
+	AppendDisplayOrder(wxDataViewItem(), ordered);
 }
 
 wxString CSearchListCtrl::GetRowLabel(const wxDataViewItem &item) const
 {
+	if (m_model->IsFolder(item)) {
+		wxVariant name;
+		m_model->GetValue(name, item, CSearchListModel::COL_NAME);
+		return name.GetString();
+	}
 	return CSearchListModel::ToFile(item)->GetFileName().GetPrintable();
 }
 
@@ -866,11 +865,11 @@ void CSearchListCtrl::OnRightClick(wxDataViewEvent &event)
 
 void CSearchListCtrl::OnItemActivated(wxDataViewEvent &event)
 {
-	CSearchFile *file = CSearchListModel::ToFile(event.GetItem());
-	if (!file) {
+	const wxDataViewItem item = event.GetItem();
+	if (!item.IsOk()) {
 		return;
 	}
-	if (file->HasChildren()) {
+	if (m_model->IsFolder(item) || CSearchListModel::ToFile(item)->HasChildren()) {
 		if (IsExpanded(event.GetItem())) {
 			Collapse(event.GetItem());
 		} else {
@@ -1023,47 +1022,31 @@ void CSearchListCtrl::OnRelatedSearch(wxCommandEvent &WXUNUSED(event))
 	}
 }
 
-void CSearchListCtrl::BuildDisplayOrder(std::vector<CSearchFile *> &ordered) const
+void CSearchListCtrl::AppendDisplayOrder(const wxDataViewItem &parent, wxDataViewItemArray &ordered) const
 {
-	// The model yields top-level rows in arrival order, so they go through this list's own
-	// comparator -- the one CSearchListModel::Compare() uses -- to match what is on screen
-	// under the current sort. GetItemByRow()/GetRowByItem() would be the direct route but exist
-	// only in wx's generic implementation.
-	const auto byDisplayOrder = [this](const CSearchFile *f1, const CSearchFile *f2) {
-		return CompareFiles(f1, f2) < 0;
-	};
+	// The model yields rows in arrival order, so they go through its Compare() with the sort
+	// column wx passes it, to match what is on screen. GetItemByRow()/GetRowByItem() would be
+	// the direct route but exist only in wx's generic implementation. A browse puts folders
+	// among the rows, so nothing here may treat a row as a CSearchFile.
+	const wxDataViewColumn *sortColumn = GetSortingColumn();
+	const unsigned column = sortColumn ? sortColumn->GetModelColumn() : 0;
+	const bool ascending = sortColumn ? sortColumn->IsSortOrderAscending() : true;
 
-	wxDataViewItemArray roots;
-	m_model->GetChildren(wxDataViewItem(), roots);
+	wxDataViewItemArray children;
+	m_model->GetChildren(parent, children);
+	std::vector<wxDataViewItem> rows(children.begin(), children.end());
+	std::sort(rows.begin(), rows.end(), [&](const wxDataViewItem &a, const wxDataViewItem &b) {
+		return m_model->Compare(a, b, column, ascending) < 0;
+	});
 
-	std::vector<CSearchFile *> parents;
-	parents.reserve(roots.GetCount());
-	for (size_t i = 0; i < roots.GetCount(); ++i) {
-		parents.push_back(CSearchListModel::ToFile(roots[i]));
-	}
-	std::sort(parents.begin(), parents.end(), byDisplayOrder);
-
-	// An expanded group's children occupy rows of their own, so they belong here too: callers
+	// An expanded row's children occupy rows of their own, so they belong here too: callers
 	// count rows against what is on screen and select ranges of them. Leaving them out made a
 	// page overshoot and skipped every child in the range.
-	ordered.clear();
-	ordered.reserve(parents.size());
-	for (CSearchFile *parent : parents) {
-		ordered.push_back(parent);
-
-		const wxDataViewItem item = CSearchListModel::ToItem(parent);
-		if (!IsExpanded(item)) {
-			continue;
+	for (const wxDataViewItem &row : rows) {
+		ordered.Add(row);
+		if (m_model->IsContainer(row) && IsExpanded(row)) {
+			AppendDisplayOrder(row, ordered);
 		}
-		wxDataViewItemArray kids;
-		m_model->GetChildren(item, kids);
-		std::vector<CSearchFile *> children;
-		children.reserve(kids.GetCount());
-		for (size_t i = 0; i < kids.GetCount(); ++i) {
-			children.push_back(CSearchListModel::ToFile(kids[i]));
-		}
-		std::sort(children.begin(), children.end(), byDisplayOrder);
-		ordered.insert(ordered.end(), children.begin(), children.end());
 	}
 }
 

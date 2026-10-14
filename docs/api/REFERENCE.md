@@ -171,7 +171,7 @@ A role is implicitly assigned at login based on which password matched; the veri
 
 Guest access is on exactly when a guest password is configured — there is no separate switch. Clearing the guest password is how guest access is turned off.
 
-**What `guest` is, and is not.** It is a read-only role for someone you already trust on the network, not a sandbox for a hostile party. A guest reads the whole read surface, and that surface includes things an operator may not think of as public: the daemon's incoming, temp and shared **filesystem paths**; the node's `user_hash`; the configured `proxy_user`; and the raw daemon **log**, which carries peer addresses and file names as they are logged. None of that is a defect - a read-only API that hid the paths it is reading from would be hard to use - but it means guest credentials should be handed out on the same basis as read access to the machine, and a guest password is not a way to expose amuleapi to the open internet safely. If a caller should not see those, do not give them a credential at all.
+**What `guest` is, and is not.** It is a read-only role for someone you already trust on the network, not a sandbox for a hostile party. A guest reads the whole read surface, and that surface includes things an operator may not think of as public: the daemon's incoming, temp and shared **filesystem paths**; the node's `user_hash`; and the raw daemon **log**, which carries peer addresses and file names as they are logged. None of that is a defect - a read-only API that hid the paths it is reading from would be hard to use - but it means guest credentials should be handed out on the same basis as read access to the machine, and a guest password is not a way to expose amuleapi to the open internet safely. If a caller should not see those, do not give them a credential at all. Credentials for other services are the exception: [`GET /preferences`](#get-apiv1preferences) does not return `connection.proxy_user`, `geoip.maxmind_license` or `geoip.custom_update_url` to a guest.
 
 ### Where the passwords live
 
@@ -722,7 +722,7 @@ curl -s -X POST "http://$HOST/api/v1/auth/login?include_token=true" \
 
 **Auth:** `GUEST`
 
-Adds the bearer's `jti` to the server-side revocation list (TTL = JWT's `exp`) and emits a clear-cookie. Idempotent: a token that is already revoked still gets `204` so a double-tap on a logout button doesn't surface a confusing "session expired" toast.
+Adds the bearer's `jti` to the server-side revocation list (TTL = JWT's `exp`) and emits a clear-cookie. An [`/events`](EVENTS.md#session-end) stream opened with the token closes too. Idempotent: a token that is already revoked still gets `204` so a double-tap on a logout button doesn't surface a confusing "session expired" toast.
 
 `204 No Content`, no body: the clear-cookie header is the whole result, and an `{"ok": true}` body would only restate the status code.
 
@@ -2394,9 +2394,11 @@ Returns every preference category amuled carries over EC. The `general` and `con
 
 Booleans are plain JSON `true`/`false` regardless of how amuled encodes them on the wire. **Passwords are never returned** — the webserver admin/guest and amuleapi passwords are write-only (see PATCH). `general.user_hash` is the node's own identity hash, not a password.
 
+**Admin-only fields.** `connection.proxy_user`, `geoip.maxmind_license` and `geoip.custom_update_url` are returned to an admin session only. A guest's response omits the three keys: the license key gives access to the owner's MaxMind account, a custom download URL can carry an access token, and the proxy user name is half of the proxy credentials. Admins read and set them as usual.
+
 `connection.extended_udp_port_enabled` is positive-sense: `true` means the extended UDP port (Kad / global search) is on. `security.shared_files_visibility` is a 3-state enum string, not a bool: `"everybody"` / `"friends"` / `"nobody"`.
 
-`geoip` is the GeoIP (IP-to-country) config category. `supported` is a capability flag: `false` when the connected daemon is built without GeoIP — the config fields are then present but inert. `source` is one of `"dbip"` / `"maxmind"` / `"custom"` (the next-download database selector). `maxmind_license` is returned plainly (it is a config string the daemon already round-trips, not a masked password). `loaded_source`, `db_path`, `db_loaded`, `download_in_progress`, and `last_update_status` are **read-only** live status (the currently loaded DB and any in-flight refresh); they are ignored if sent on PATCH.
+`geoip` is the GeoIP (IP-to-country) config category. `supported` is a capability flag: `false` when the connected daemon is built without GeoIP — the config fields are then present but inert. `source` is one of `"dbip"` / `"maxmind"` / `"custom"` (the next-download database selector). `maxmind_license` is returned plainly to admins (it is a config string the daemon already round-trips, not a masked password) and omitted for guests, like `custom_update_url`. `loaded_source`, `db_path`, `db_loaded`, `download_in_progress`, and `last_update_status` are **read-only** live status (the currently loaded DB and any in-flight refresh); they are ignored if sent on PATCH.
 
 `files.media_metadata_enabled` / `files.ffprobe_path` control media-metadata extraction: when enabled, the daemon probes shared audio/video with `ffprobe` to advertise length, bitrate, codec, artist, album and title. `ffprobe_path` is a **daemon-side** path — an empty string means the daemon auto-detects the binary, trying `ffprobe` on its `PATH` and then a per-platform list of well-known install locations. The detected path is deliberately **not** written back: it describes the daemon's machine rather than a choice you made, so `ffprobe_path` keeps reading as `""` while extraction works, and a daemon that moves to a host with ffmpeg somewhere else re-detects on its own. Set the field explicitly to pin one binary and override detection. When nothing is found the daemon logs one line saying so — visible on [`GET /api/v1/logs/amule`](#get-apiv1logsamule) — and extraction stays inert until ffmpeg is installed or the path is set. `connection.bind_address` (empty = bind to any local IP), `connection.bind_interface` (a daemon-side interface name such as `eth0` / `en0` / `tun0`; empty = any), and `online_signature.directory` are likewise daemon-side paths/addresses. These, together with `files.on_finished_start_next_alphabetically`, `security.reject_spoofed_source_ips`, `security.system_ipfilter_enabled`, and `online_signature.update_frequency_seconds`, are ordinary daemon settings; a `bind_address` change takes effect on the next amuled restart.
 
@@ -3233,6 +3235,8 @@ curl -s -H "Authorization: Bearer $TOKEN" "http://$HOST/api/v1/chats"
       "client_ecid":     4382,
       "friend_ecid":     12,
       "connected":       true,
+      "pending_captcha_id": null,
+      "pending_captcha_image": null,
       "message_count":   14,
       "last_message_id":     91,
       "last_message_at": 1786652714,
@@ -3244,6 +3248,13 @@ curl -s -H "Authorization: Bearer $TOKEN" "http://$HOST/api/v1/chats"
 ```
 
 `name` falls back to the uppercase hash when known, otherwise `"IP: <ip> Port: <port>"`, matching desktop `ChatPeerFallbackName`. The same string appears in the SSE payload. `client_ecid` is `null` when the client is offline and `friend_ecid` is `null` when the client is not a friend — join either against [`GET /clients`](#get-apiv1clients) and [`GET /friends`](#get-apiv1friends). `connected` says whether a connection to the peer is actually up, which is not the same as `client_ecid` being non-null: the daemon holds a client object from the first contact attempt, so a conversation opened against an unreachable address has an ecid and is not online. `null` means the daemon does not report peer connectivity.
+
+`pending_captcha_id` on the chat session is the challenge message id while an
+answer is pending, otherwise `null`. `pending_captcha_image` holds its base64 BMP
+independently of transcript eviction, otherwise `null`. A disconnect or an answer
+from any client clears both fields and emits `chat_session_updated`, even without
+a new history row. Capture the id when composing an answer and send `captcha_id`
+to reject expiry races.
 
 `last_message` is `null` for a conversation that holds none; the key is always present. The full transcript is deliberately **not** on the list: 50 conversations at 200 messages each would be 10 000 objects per read. Use the messages endpoint below.
 
@@ -3274,6 +3285,13 @@ Served from the refresher snapshot — no EC roundtrip per request. Standard [li
 
 **Errors:** `404 not_found` (no such conversation), `400 bad_request` (malformed `{address}` or query), `503 ec_unsupported`, `503 ec_unavailable`.
 
+CAPTCHA entries use the same history cursor and `chat_message` event. A challenge
+adds `type: "captcha_challenge"` and `captcha_image` (a base64-encoded BMP) to the
+message object. A result adds `type: "captcha_result"` and `captcha_status`: `0`
+means accepted, `1` means failed with another attempt allowed, and `2` means no
+attempts remain. Ordinary messages omit these fields. The `text` field remains a
+readable explanation for clients that do not render CAPTCHA images.
+
 #### `POST /api/v1/chats/{address}/messages`
 
 **Auth:** `ADMIN`
@@ -3290,6 +3308,20 @@ curl -s -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/
   "message": { "id": 92, "direction": "out", "text": "hello", "sent_at": null } }
 ```
 
+To answer a challenge, send its text through this endpoint. A client presenting
+a dedicated answer dialog can include `captcha_id`, the challenge message's `id`:
+
+```json
+{ "text": "ABCD", "captcha_id": 92 }
+```
+
+`captcha_id` must be an integer in `1..4294967295`. If that exact challenge is no
+longer pending, the daemon rejects the answer with `409 captcha_expired` without
+sending it or reopening a conversation. An unknown hash-addressed conversation
+still returns `404 not_found`. After a retryable failure, send another ordinary
+message to request a new challenge. Retained challenge images are history, not a
+statement that the peer is still awaiting an answer.
+
 The created message stays in the body because the store-assigned `id` is only readable here. It is the same object shape [`GET /chats/{address}/messages`](#get-apiv1chatsaddressmessages) returns, emitted by the same writer, with one difference: `sent_at` is **`null`**, because `EC_OP_CHAT_SEND` answers with the message id and no timestamp. Read the timestamp back from [`GET /chats`](#get-apiv1chats) (as `last_message`), from the per-conversation messages endpoint, or from the `chat_message` SSE event.
 
 A legacy route key can create the conversation if it does not exist, so this doubles as "start a chat with this address". An unknown hash key cannot be dialed without a route and returns `404`; use the route from a chat row or friend record when starting a new legacy conversation.
@@ -3298,7 +3330,7 @@ The hash is the identity used for capable daemons. When a hash row also has an I
 
 Returns `202 Accepted`, not `200`: the core acknowledges that it queued the message on the client connection, not that the client received it. An unreachable client is not an error — the desktop behaves the same, optimistically showing `*** Connecting to Client ***`.
 
-**Errors:** `400 bad_request`, `404 not_found` (no client at that address to send to), `503 ec_unsupported`, `503 ec_unavailable`.
+**Errors:** `400 bad_request`, `409 captcha_expired`, `404 not_found` (no client at that address to send to), `503 ec_unsupported`, `503 ec_unavailable`.
 
 #### `DELETE /api/v1/chats/{address}`
 
@@ -3320,6 +3352,7 @@ Every error code emitted by `/api/v1/*`, sorted by what triggered it. Two codes 
 |------|--------|---------|
 | `bad_request` | 400 | Body, query, or path-segment validation failed. Body parse depth-cap rejects also surface here. |
 | `amuled_rejected` | 400, 502 | amuled rejected the EC operation and the message carries its reason verbatim (400); or amuled answered but its reply was unusable, e.g. no `search_id` came back from a search or a browse (502). |
+| `captcha_expired` | 409 | The challenge identified by `captcha_id` is no longer pending; its answer was not sent. |
 | `request_timeout` | 408 | The request was not completed within the 10 s read timeout. |
 | `unauthorized` | 401 | Missing token, bad signature, expired, revoked, or `iat` invariants failed. |
 | `invalid_credentials` | 401, 403 | `/auth/login` password didn't match any role (401); or `PATCH /auth/passwords` was given a `current_password` that does not match (403). |

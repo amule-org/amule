@@ -1133,6 +1133,22 @@ msgstr ""
 msgid "Ready"
 msgstr ""
 
+#: src/amule-remote-gui.cpp
+msgid "*** Solve the CAPTCHA and send its text as a message."
+msgstr ""
+
+#: src/amule-remote-gui.cpp
+msgid "*** CAPTCHA passed; your message was delivered."
+msgstr ""
+
+#: src/amule-remote-gui.cpp
+msgid "*** CAPTCHA failed; send another message to try again."
+msgstr ""
+
+#: src/amule-remote-gui.cpp
+msgid "*** CAPTCHA failed; no attempts remain."
+msgstr ""
+
 #: src/amule-remote-gui.cpp src/TransferWnd.cpp
 msgid "All"
 msgstr ""
@@ -2431,6 +2447,10 @@ msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "Empty chat message"
+msgstr ""
+
+#: src/ExternalConn.cpp
+msgid "CAPTCHA challenge is no longer pending"
 msgstr ""
 
 #: src/ExternalConn.cpp

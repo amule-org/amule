@@ -90,6 +90,12 @@ uint32 StringHosttoUint32(const wxString &Host);
  */
 bool IsGoodIP(uint32 IP, bool filterLAN) noexcept;
 
+/**
+ * IsGoodIP() for an eD2k server address. Loopback is allowed with the LAN addresses when LAN
+ * IPs are not filtered: a server on this machine is a valid setup, and IsGoodIP() never allows it.
+ */
+bool IsGoodServerIP(uint32 ip, bool filterLAN) noexcept;
+
 inline bool IsGoodIPPort(uint32 nIP, uint16 nPort) noexcept
 {
 	return IsGoodIP(nIP, true) && nPort != 0;

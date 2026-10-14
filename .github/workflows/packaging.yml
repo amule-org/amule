@@ -352,13 +352,20 @@ jobs:
           path: ~/intel-kegs.tar
           # Keyed by run like ccache, so the newest set is always what restores
           # and retention prunes the rest. Which kegs are stale is not the key's
-          # job: the install step upgrades only what is outdated.
+          # job: the install step upgrades only what is outdated. A cut-off
+          # install saves under -kegtar-partial-; the prefix matches both, and
+          # restore takes whichever was saved last.
           key: ${{ runner.os }}-macos-intel-kegtar-${{ github.run_id }}
           restore-keys: ${{ runner.os }}-macos-intel-kegtar-
       - name: Unpack restored kegs
         if: matrix.arch == 'x86_64' && steps.kegcache.outputs.cache-matched-key != ''
         run: tar -C / -xpf ~/intel-kegs.tar
       - name: Install Homebrew deps
+        id: brewdeps
+        # Stop a from-source Intel build before the 6 h job limit, which ends the job
+        # with no step after it: the two steps below then save what it compiled, as
+        # they do for a cancelled run, and the next run carries on from there.
+        timeout-minutes: 330
         run: |
           BREW=${{ matrix.brew_prefix }}/bin/brew
           if [ "${{ matrix.arch }}" = "x86_64" ]; then
@@ -426,9 +433,21 @@ jobs:
       # Not gated on master like the save below: a pull request run has to fail
       # here if this breaks, rather than on the merge that has no cache left.
       - name: Pack x86_64 source-built kegs
-        if: matrix.arch == 'x86_64'
+        id: kegpack
+        if: >-
+          always() && matrix.arch == 'x86_64' &&
+          contains(fromJSON('["success", "failure", "cancelled"]'), steps.brewdeps.outcome)
         run: |
           BREW="${{ matrix.archcmd }} ${{ matrix.brew_prefix }}/bin/brew"
+          # The formula a timeout cut off can leave a keg with no install receipt.
+          # Drop it: cached, it would come back as a broken keg brew counts as done.
+          shopt -s nullglob
+          for keg in "${{ matrix.brew_prefix }}"/Cellar/*/*/; do
+              if [ ! -f "${keg}INSTALL_RECEIPT.json" ]; then
+                  echo "Dropping incomplete keg ${keg}"
+                  rm -rf "$keg"
+              fi
+          done
           # Only what the build still needs, so a formula that left the graph ages out.
           CLOSURE="$BREW_DEPS $($BREW deps --union --include-build $BREW_DEPS)"
           $BREW info --json=v2 --installed > "$RUNNER_TEMP/installed.json"
@@ -448,11 +467,74 @@ jobs:
       - name: Save x86_64 source-built kegs
         # Master only, as for ccache: retention compares keys across branches,
         # and a branch-scoped entry that ranked newest would cost master its own.
-        if: matrix.arch == 'x86_64' && github.event_name == 'push' && github.ref == 'refs/heads/master'
+        if: >-
+          always() && steps.kegpack.outcome == 'success' && steps.brewdeps.outcome == 'success' &&
+          github.event_name == 'push' && github.ref == 'refs/heads/master'
         uses: ./.github/actions/cache-save-newest
         with:
           path: ~/intel-kegs.tar
           key: ${{ runner.os }}-macos-intel-kegtar-${{ github.run_id }}
+      # Partial sets go to their own family, so a complete set never defers to a
+      # newer partial one in cache-save-newest's newest-run check, and retention
+      # keeps one of each. Once a complete set exists, the partial ones are dead
+      # weight in a store that sits near its 10 GB limit.
+      - name: Drop partial x86_64 kegs
+        if: >-
+          always() && steps.kegpack.outcome == 'success' && steps.brewdeps.outcome == 'success' &&
+          github.event_name == 'push' && github.ref == 'refs/heads/master'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PREFIX: ${{ runner.os }}-macos-intel-kegtar-
+        run: |
+          entries=$(gh api -X GET --paginate "repos/${{ github.repository }}/actions/caches" \
+                        -f per_page=100 -f ref="${{ github.ref }}" -f key="$PREFIX" \
+                        --jq '.actions_caches[] | "\(.id) \(.key)"')
+          if ! grep -qE " ${PREFIX}[0-9]+$" <<<"$entries"; then
+              echo "No complete set is listed yet; keeping the partial ones"
+              exit 0
+          fi
+          grep -F " ${PREFIX}partial-" <<<"$entries" | while read -r id key; do
+              gh api -X DELETE "repos/${{ github.repository }}/actions/caches/$id" >/dev/null \
+                  && echo "deleted $key"
+          done || true
+      # A cut-off install saves its partial set only if no run has saved a set
+      # since this one restored: that set holds at least as much, and a newer
+      # partial one must not take its place.
+      - name: Check for a newer x86_64 keg set
+        id: kegnewer
+        if: >-
+          always() && steps.kegpack.outcome == 'success' && steps.brewdeps.outcome != 'success' &&
+          github.event_name == 'push' && github.ref == 'refs/heads/master'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PREFIX: ${{ runner.os }}-macos-intel-kegtar-
+          RESTORED: ${{ steps.kegcache.outputs.cache-matched-key }}
+        run: |
+          # A listing failure must not cost the save, as in cache-save-newest.
+          sets=$(gh api -X GET --paginate "repos/${{ github.repository }}/actions/caches" \
+                     -f per_page=100 -f ref="${{ github.ref }}" -f key="$PREFIX" \
+                     --jq '.actions_caches[] | "\(.created_at) \(.key)"') || sets=""
+          # Newer than what this run restored, or than the run itself when it
+          # restored nothing or the entry has since been evicted.
+          since=$(awk -v k="$RESTORED" '$2 == k { print $1 }' <<<"$sets")
+          if [ -z "$since" ]; then
+              since=$(gh api "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+                          --jq .run_started_at) || since=""
+          fi
+          newer=$(awk -v s="$since" -v k="$RESTORED" '$2 != k && $1 > s' <<<"$sets" | grep -c . || true)
+          if [ "$newer" -gt 0 ]; then
+              echo "A set was saved after ${RESTORED:-nothing} was restored; not saving this partial one"
+              echo "save=false" >> "$GITHUB_OUTPUT"
+          else
+              echo "save=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Save partial x86_64 kegs
+        if: always() && steps.kegnewer.outputs.save == 'true'
+        uses: ./.github/actions/cache-save-newest
+        with:
+          path: ~/intel-kegs.tar
+          key: ${{ runner.os }}-macos-intel-kegtar-partial-${{ github.run_id }}
       - name: Restore ccache
         if: github.event_name != 'workflow_call'
         uses: actions/cache/restore@v6

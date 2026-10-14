@@ -37,6 +37,7 @@
 #include "Constants.h" // Needed for MS_NONE
 
 // #warning Needed while not ported
+#include "updownclient.h"
 #include "ClientList.h"
 #include <common/Format.h> // Needed for CFormat
 
@@ -265,7 +266,7 @@ void CChatSelector::AppendStoredMessage(
 }
 
 bool CChatSelector::SendMessage(
-	const wxString &message, const wxString &client_name, const CChatTarget &to_id)
+	const wxString &message, const wxString &client_name, const CChatTarget &to_id, uint32 challengeId)
 {
 	// Dont let the user send empty messages
 	// This is also a user-fix for people who mash the enter-key ...
@@ -273,6 +274,15 @@ bool CChatSelector::SendMessage(
 		return false;
 	}
 
+#ifndef CLIENT_GUI
+	if (challengeId) {
+		const auto *client = theApp->clientlist->FindChatClient(to_id);
+		if (!client || client->GetPendingChatCaptchaId() != challengeId ||
+			!theApp->chatsessions->Find(to_id)) {
+			return false;
+		}
+	}
+#endif
 	if (ChatTargetValid(to_id)) {
 		// Checks if there's a page with this client, and selects it or creates it
 		StartSession(to_id, client_name, true);
@@ -299,6 +309,9 @@ bool CChatSelector::SendMessage(
 	CECPacket req(EC_OP_CHAT_SEND);
 	req.AddTag(CECTag(EC_TAG_CHAT, message));
 	AddChatTargetTags(req, ci->m_client_id);
+	if (challengeId) {
+		req.AddTag(CECTag(EC_TAG_CHAT_CAPTCHA_ID, challengeId));
+	}
 	theApp->m_connect->SendPacket(&req);
 #else
 	const auto result = theApp->clientlist->SendChatMessage(ci->m_client_id, message);

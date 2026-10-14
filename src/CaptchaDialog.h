@@ -43,9 +43,11 @@ public:
 	 * @param captchaImage The image to show.
 	 * @param id The captcha's id.
 	 */
-	CCaptchaDialog(wxWindow *parent, const wxImage &captchaImage, CChatTarget id);
+	CCaptchaDialog(wxWindow *parent, const wxImage &captchaImage, CChatTarget id, uint32 challengeId);
 
 	virtual ~CCaptchaDialog();
+	static void CloseForPeer(wxWindow *parent, const CChatTarget &peer, uint32 keepId = 0);
+	static bool Exists(wxWindow *parent, const CChatTarget &peer, uint32 challengeId);
 
 protected:
 	/**
@@ -68,6 +70,7 @@ private:
 	class wxBitmap *m_captchaBitmap;
 	class wxTextCtrl *m_TextCtrl;
 	CChatTarget m_id;
+	uint32 m_challengeId;
 };
 #endif // CAPTCHADIALOG_H
 // File_checked_for_headers

@@ -44,6 +44,7 @@ there client on the eMule forum..
 
 #include "SearchManager.h"
 #include "Entry.h"
+#include <protocol/kad/Constants.h> // Needed for KADEMLIAMAXEXTRATAGBYTES
 #include "../utils/BackgroundLoad.h"
 
 class wxArrayString;
@@ -158,6 +159,14 @@ public:
 		uint64_t fileSize,
 		const CKadUDPKey &senderKey);
 	bool SendStoreRequest(const CUInt128 &keyID);
+	//! Drops the keywords, sources and notes expired at @a now, and recounts them.
+	void Expire(time_t now);
+	//! Whether @a bytes more of unknown source tags fit in KADEMLIAMAXEXTRATAGBYTES.
+	bool HasRoomForExtraTags(uint32_t bytes) const noexcept
+	{
+		return m_extraTagBytes + bytes <= KADEMLIAMAXEXTRATAGBYTES;
+	}
+	uint32_t GetExtraTagBytes() const noexcept { return m_extraTagBytes; }
 	uint32_t m_totalIndexSource;
 	uint32_t m_totalIndexKeyword;
 	uint32_t m_totalIndexNotes;
@@ -202,6 +211,10 @@ private:
 	wxString m_loadfilename;
 	void ReadFile(const std::atomic<bool> &cancel);
 	void Clean();
+	static void CleanSources(
+		SrcHashMap &map, time_t now, uint32_t &total, uint32_t &removed, uint32_t &extraBytes);
+	//! Unknown tag bytes of the stored sources. Grows on insert, recounted by Expire().
+	uint32_t m_extraTagBytes = 0;
 };
 
 } // namespace Kademlia

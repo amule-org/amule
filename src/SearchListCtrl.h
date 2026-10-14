@@ -309,8 +309,9 @@ protected:
 public:
 
 private:
-	//! Top-level rows in the order they are displayed under the current sort.
-	void BuildDisplayOrder(std::vector<CSearchFile *> &ordered) const;
+	//! Appends the rows under @a parent in the order they are displayed under the current
+	//! sort, each followed by its own rows when it is expanded.
+	void AppendDisplayOrder(const wxDataViewItem &parent, wxDataViewItemArray &ordered) const;
 
 	wxDECLARE_EVENT_TABLE();
 };

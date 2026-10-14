@@ -1182,6 +1182,22 @@ msgstr "Kunne ikkje starte ny tilkopling; prøver igjen om litt."
 msgid "Ready"
 msgstr "Klar"
 
+#: src/amule-remote-gui.cpp
+msgid "*** Solve the CAPTCHA and send its text as a message."
+msgstr ""
+
+#: src/amule-remote-gui.cpp
+msgid "*** CAPTCHA passed; your message was delivered."
+msgstr ""
+
+#: src/amule-remote-gui.cpp
+msgid "*** CAPTCHA failed; send another message to try again."
+msgstr ""
+
+#: src/amule-remote-gui.cpp
+msgid "*** CAPTCHA failed; no attempts remain."
+msgstr ""
+
 #: src/amule-remote-gui.cpp src/TransferWnd.cpp
 msgid "All"
 msgstr "Alle"
@@ -2350,6 +2366,11 @@ msgid "FileHash not found: %s"
 msgstr "Filhash ikkje funnen: %s"
 
 #: src/ExternalConn.cpp
+#, fuzzy, c-format
+msgid "Cannot cancel a finished download: %s"
+msgstr "Ferdig med å laste ned: %s"
+
+#: src/ExternalConn.cpp
 msgid "OOPS! OpCode processing error!"
 msgstr "OPS! Handsamingsfeil i OpCode!"
 
@@ -2491,6 +2512,10 @@ msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "Empty chat message"
+msgstr ""
+
+#: src/ExternalConn.cpp
+msgid "CAPTCHA challenge is no longer pending"
 msgstr ""
 
 #: src/ExternalConn.cpp
@@ -3152,6 +3177,11 @@ msgstr "Ja"
 msgid "Failed to open MaxMindDB database '%s': %s"
 msgstr "Greidde ikkje å opne %s·(%s)"
 
+#: src/geoip/MaxMindDBDatabase.cpp
+#, fuzzy, c-format
+msgid "Failed to replace MaxMindDB database '%s': %s"
+msgstr "Greidde ikkje å opne %s·(%s)"
+
 #: src/HTTPDownload.cpp
 msgid "Downloading..."
 msgstr "Lastar ned..."
@@ -3231,25 +3261,15 @@ msgstr "Last ned ny %s frå %s"
 msgid "Download of %s file failed, aborting update."
 msgstr "Nedlasting av %s-fila mislukkast, avbryt oppdatering."
 
-#: src/IP2Country.cpp src/IPFilter.cpp
-#, c-format
-msgid "Failed to remove %s file, aborting update."
-msgstr "Greidde ikkje å fjerne %s-fila, avbryt oppdatering."
-
 #: src/IP2Country.cpp
 #, c-format
-msgid "Failed to rename %s file, aborting update."
-msgstr "Greidde ikkje å endre namn på %s-fila, avbryt oppdatering."
+msgid "Error updating %s"
+msgstr "Feil ved oppdatering av %s"
 
 #: src/IP2Country.cpp src/IPFilter.cpp
 #, c-format
 msgid "Successfully updated %s"
 msgstr "Oppdaterte %s"
-
-#: src/IP2Country.cpp
-#, c-format
-msgid "Error updating %s"
-msgstr "Feil ved oppdatering av %s"
 
 #: src/IP2Country.cpp
 msgid "DB-IP download failed for the current month - retrying with the previous month's URL."
@@ -3287,6 +3307,11 @@ msgid "%u malformed line was discarded."
 msgid_plural "%u malformed lines were discarded."
 msgstr[0] "%u vanskapt linje vart forkasta."
 msgstr[1] "%u vanskapte linjer vart forkasta."
+
+#: src/IPFilter.cpp
+#, c-format
+msgid "Failed to remove %s file, aborting update."
+msgstr "Greidde ikkje å fjerne %s-fila, avbryt oppdatering."
 
 #: src/IPFilter.cpp
 #, c-format
@@ -5880,12 +5905,13 @@ msgid "Download the GeoIP database from the selected source."
 msgstr "Last ned GeoIP-databasen frå den valde kjelda."
 
 #: src/muuli_wdr.cpp
-msgid "Auto-update on startup"
+#, fuzzy
+msgid "Auto-update on startup and weekly"
 msgstr "Automatisk oppdatering ved oppstart"
 
 #: src/muuli_wdr.cpp
-msgid "Re-download the GeoIP database from the selected source every time aMule starts."
-msgstr "Last ned GeoIP-databasen frå den valde kjelda på nytt kvar gong aMule startar."
+msgid "Check for a newer GeoIP database at startup and every week while aMule is running."
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Filter incoming messages (except current chat):"
@@ -9954,6 +9980,13 @@ msgstr ""
 #: src/kademlia/kademlia/Indexed.cpp
 msgid "Kad could not save an index. The previous copy of that file was preserved."
 msgstr ""
+
+#, c-format
+#~ msgid "Failed to rename %s file, aborting update."
+#~ msgstr "Greidde ikkje å endre namn på %s-fila, avbryt oppdatering."
+
+#~ msgid "Re-download the GeoIP database from the selected source every time aMule starts."
+#~ msgstr "Last ned GeoIP-databasen frå den valde kjelda på nytt kvar gong aMule startar."
 
 #~ msgid "WARNING: Canceled file list corrupted, contains invalid header."
 #~ msgstr "ÅTVARING: Lista over kansellerte filer er korrupt, inneheld ugyldig overskrift."

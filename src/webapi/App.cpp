@@ -529,9 +529,9 @@ void CamuleapiApp::TextShell(const wxString & /*prompt*/)
 	// Preflight runs synchronously before the SSE worker thread is spawned: short-circuit
 	// unauth requests with the standard 401 body so they cannot tie up a streaming slot for the
 	// read-timeout window.
-	auto streaming_preflight =
-		[dispatcher](const CHttpServer::Request &req) -> boost::optional<CHttpServer::Response> {
-		return dispatcher->PreflightEvents(req);
+	auto streaming_preflight = [dispatcher](const CHttpServer::Request &req,
+					   bool &may_use_reserve) -> boost::optional<CHttpServer::Response> {
+		return dispatcher->PreflightEvents(req, may_use_reserve);
 	};
 
 	// Start the EC worker before the HTTP server accepts and before the refresher loop below --

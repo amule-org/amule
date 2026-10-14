@@ -176,6 +176,10 @@ namespace
 // path, before the worker thread is created.
 constexpr int kMaxConcurrentStreamingSessions = 32;
 
+// Slots of that cap only a session the preflight marks privileged (an admin) may take, so
+// guests holding every other slot cannot lock the admin out of live updates.
+constexpr int kReservedStreamingSessions = 4;
+
 // Size of the handler worker pool. Non-streaming request handlers run here instead of on
 // the single io_context thread, so a handler that blocks -- a synchronous EC roundtrip
 // stalled up to the EC read timeout -- can never freeze accept or other connections.
@@ -673,8 +677,10 @@ private:
 		// worker thread is spawned. Without it, unauthenticated peers can tie up a streaming
 		// slot for the read-timeout window: 32 unauth TCP holds x 10 s = a 320-session-second
 		// pool stall. Empty preflight (the default) preserves the prior contract.
+		bool may_use_reserve = !m_streaming_preflight;
 		if (m_streaming_preflight) {
-			boost::optional<CHttpServer::Response> rej = m_streaming_preflight(r);
+			boost::optional<CHttpServer::Response> rej =
+				m_streaming_preflight(r, may_use_reserve);
 			if (rej) {
 				WriteResponse(std::move(*rej));
 				return;
@@ -684,8 +690,11 @@ private:
 		// Acquire a session slot before any thread-spawn or long-lived work. fetch_add returns
 		// the OLD value, so the slot is held iff that value was strictly below the cap;
 		// otherwise roll back and refuse.
+		const int cap = may_use_reserve
+					? kMaxConcurrentStreamingSessions
+					: kMaxConcurrentStreamingSessions - kReservedStreamingSessions;
 		const int prior_count = g_streaming_session_count.fetch_add(1, std::memory_order_acq_rel);
-		if (prior_count >= kMaxConcurrentStreamingSessions) {
+		if (prior_count >= cap) {
 			g_streaming_session_count.fetch_sub(1, std::memory_order_acq_rel);
 			WriteCapRefusal();
 			return;

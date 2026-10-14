@@ -1877,7 +1877,7 @@ wxString CSharedFileList::GetPublicSharedDirName(const CPath &dir)
 	// determine and cache the public name for "dir" ...
 	// We need to use the 'raw' filename, so the receiving client can recognize it.
 	wxString strDirectoryTmp = dir.GetRaw();
-	if (strDirectoryTmp.EndsWith(&cPathSeparator)) {
+	if (strDirectoryTmp.EndsWith(wxString(cPathSeparator))) {
 		strDirectoryTmp.RemoveLast();
 	}
 

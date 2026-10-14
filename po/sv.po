@@ -1183,6 +1183,22 @@ msgstr "Kunde inte starta återanslutning; försöker igen snart."
 msgid "Ready"
 msgstr "Färdig"
 
+#: src/amule-remote-gui.cpp
+msgid "*** Solve the CAPTCHA and send its text as a message."
+msgstr ""
+
+#: src/amule-remote-gui.cpp
+msgid "*** CAPTCHA passed; your message was delivered."
+msgstr ""
+
+#: src/amule-remote-gui.cpp
+msgid "*** CAPTCHA failed; send another message to try again."
+msgstr ""
+
+#: src/amule-remote-gui.cpp
+msgid "*** CAPTCHA failed; no attempts remain."
+msgstr ""
+
 #: src/amule-remote-gui.cpp src/TransferWnd.cpp
 msgid "All"
 msgstr "Alla"
@@ -2340,6 +2356,11 @@ msgid "FileHash not found: %s"
 msgstr "FileHash hittades inte: %s"
 
 #: src/ExternalConn.cpp
+#, fuzzy, c-format
+msgid "Cannot cancel a finished download: %s"
+msgstr "Hämtat färdigt: %s"
+
+#: src/ExternalConn.cpp
 msgid "OOPS! OpCode processing error!"
 msgstr "HOPPSAN!  OpCode-bearbetningsfel!"
 
@@ -2478,6 +2499,10 @@ msgstr "Filen är inte berättigad till extrahering av mediemetadata (inte en lj
 #: src/ExternalConn.cpp
 msgid "Empty chat message"
 msgstr "Tomt chattmeddelande"
+
+#: src/ExternalConn.cpp
+msgid "CAPTCHA challenge is no longer pending"
+msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "Unknown chat target"
@@ -3136,6 +3161,11 @@ msgstr "Ja"
 msgid "Failed to open MaxMindDB database '%s': %s"
 msgstr "Kunde inte öppna MaxMindDB-databasen ”%s”: %s"
 
+#: src/geoip/MaxMindDBDatabase.cpp
+#, fuzzy, c-format
+msgid "Failed to replace MaxMindDB database '%s': %s"
+msgstr "Kunde inte öppna MaxMindDB-databasen ”%s”: %s"
+
 #: src/HTTPDownload.cpp
 msgid "Downloading..."
 msgstr "Hämtar..."
@@ -3215,25 +3245,15 @@ msgstr "Hämta ny %s från %s"
 msgid "Download of %s file failed, aborting update."
 msgstr "Hämtningen av filen %s misslyckades; avbryter uppdateringen."
 
-#: src/IP2Country.cpp src/IPFilter.cpp
-#, c-format
-msgid "Failed to remove %s file, aborting update."
-msgstr "Kunde inte ta bort %s filen, avbryter uppdateringen."
-
 #: src/IP2Country.cpp
 #, c-format
-msgid "Failed to rename %s file, aborting update."
-msgstr "Kunde inte byta namn på %s filen, avbryter uppdateringen."
+msgid "Error updating %s"
+msgstr "Fel vid uppdatering av %s"
 
 #: src/IP2Country.cpp src/IPFilter.cpp
 #, c-format
 msgid "Successfully updated %s"
 msgstr "Lyckad uppdatering av %s"
-
-#: src/IP2Country.cpp
-#, c-format
-msgid "Error updating %s"
-msgstr "Fel vid uppdatering av %s"
 
 #: src/IP2Country.cpp
 msgid "DB-IP download failed for the current month - retrying with the previous month's URL."
@@ -3271,6 +3291,11 @@ msgid "%u malformed line was discarded."
 msgid_plural "%u malformed lines were discarded."
 msgstr[0] "%u felaktigt linje kastades."
 msgstr[1] "%u felaktiga linjer kastades."
+
+#: src/IPFilter.cpp
+#, c-format
+msgid "Failed to remove %s file, aborting update."
+msgstr "Kunde inte ta bort %s filen, avbryter uppdateringen."
 
 #: src/IPFilter.cpp
 #, c-format
@@ -5852,12 +5877,13 @@ msgid "Download the GeoIP database from the selected source."
 msgstr "Hämta GeoIP-databasen från den valda källan."
 
 #: src/muuli_wdr.cpp
-msgid "Auto-update on startup"
+#, fuzzy
+msgid "Auto-update on startup and weekly"
 msgstr "Uppdatera automatiskt vid start"
 
 #: src/muuli_wdr.cpp
-msgid "Re-download the GeoIP database from the selected source every time aMule starts."
-msgstr "Hämta GeoIP-databasen på nytt från den valda källan varje gång aMule startar."
+msgid "Check for a newer GeoIP database at startup and every week while aMule is running."
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Filter incoming messages (except current chat):"
@@ -9912,6 +9938,13 @@ msgstr ""
 #: src/kademlia/kademlia/Indexed.cpp
 msgid "Kad could not save an index. The previous copy of that file was preserved."
 msgstr ""
+
+#, c-format
+#~ msgid "Failed to rename %s file, aborting update."
+#~ msgstr "Kunde inte byta namn på %s filen, avbryter uppdateringen."
+
+#~ msgid "Re-download the GeoIP database from the selected source every time aMule starts."
+#~ msgstr "Hämta GeoIP-databasen på nytt från den valda källan varje gång aMule startar."
 
 #~ msgid "WARNING: Canceled file list corrupted, contains invalid header."
 #~ msgstr "VARNING: Avbruten fillista korrupt, har inkorrekt header."

@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-10-11 09:38+0000\n"
+"PO-Revision-Date: 2026-10-13 17:44+0000\n"
 "Last-Translator: minterior <minterior@gmail.com>\n"
 "Language-Team: Català\n"
 "Language: ca\n"
@@ -1200,6 +1200,22 @@ msgstr "No s'ha pogut iniciar la reconnexió; es tornarà a provar d'aquí a poc
 msgid "Ready"
 msgstr "A punt"
 
+#: src/amule-remote-gui.cpp
+msgid "*** Solve the CAPTCHA and send its text as a message."
+msgstr ""
+
+#: src/amule-remote-gui.cpp
+msgid "*** CAPTCHA passed; your message was delivered."
+msgstr ""
+
+#: src/amule-remote-gui.cpp
+msgid "*** CAPTCHA failed; send another message to try again."
+msgstr ""
+
+#: src/amule-remote-gui.cpp
+msgid "*** CAPTCHA failed; no attempts remain."
+msgstr ""
+
 #: src/amule-remote-gui.cpp src/TransferWnd.cpp
 msgid "All"
 msgstr "Tots"
@@ -2355,6 +2371,11 @@ msgid "FileHash not found: %s"
 msgstr "No s'ha trobat el resum del fitxer: %s"
 
 #: src/ExternalConn.cpp
+#, c-format
+msgid "Cannot cancel a finished download: %s"
+msgstr "No es pot cancel·lar una baixada acabada: %s"
+
+#: src/ExternalConn.cpp
 msgid "OOPS! OpCode processing error!"
 msgstr "Error en processar el codi d'opció!"
 
@@ -2493,6 +2514,10 @@ msgstr "El fitxer no és apte per a l'extracció de metadades multimèdia (no é
 #: src/ExternalConn.cpp
 msgid "Empty chat message"
 msgstr "Missatge de xat buit"
+
+#: src/ExternalConn.cpp
+msgid "CAPTCHA challenge is no longer pending"
+msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "Unknown chat target"
@@ -3151,6 +3176,11 @@ msgstr "Sí"
 msgid "Failed to open MaxMindDB database '%s': %s"
 msgstr "No s'ha pogut obrir la base de dades MaxMindDB «%s»: %s"
 
+#: src/geoip/MaxMindDBDatabase.cpp
+#, c-format
+msgid "Failed to replace MaxMindDB database '%s': %s"
+msgstr "No s'ha pogut substituir la base de dades MaxMindDB «%s»: %s"
+
 #: src/HTTPDownload.cpp
 msgid "Downloading..."
 msgstr "S'està baixant..."
@@ -3230,25 +3260,15 @@ msgstr "Baixa un %s nou de %s"
 msgid "Download of %s file failed, aborting update."
 msgstr "Ha fallat la baixada del fitxer %s; s'interromp l'actualització."
 
-#: src/IP2Country.cpp src/IPFilter.cpp
-#, c-format
-msgid "Failed to remove %s file, aborting update."
-msgstr "Fallada a l'esborrar el fitxer %s, actualització interrompuda."
-
 #: src/IP2Country.cpp
 #, c-format
-msgid "Failed to rename %s file, aborting update."
-msgstr "Fallada al canviar de nom el fitxer %s, actualització interrompuda."
+msgid "Error updating %s"
+msgstr "Error en actualitzar %s"
 
 #: src/IP2Country.cpp src/IPFilter.cpp
 #, c-format
 msgid "Successfully updated %s"
 msgstr "Actualització de %s correcta"
-
-#: src/IP2Country.cpp
-#, c-format
-msgid "Error updating %s"
-msgstr "Error en actualitzar %s"
 
 #: src/IP2Country.cpp
 msgid "DB-IP download failed for the current month - retrying with the previous month's URL."
@@ -3289,6 +3309,11 @@ msgstr[1] "S'han descartat %u línies malformades."
 
 #: src/IPFilter.cpp
 #, c-format
+msgid "Failed to remove %s file, aborting update."
+msgstr "Fallada a l'esborrar el fitxer %s, actualització interrompuda."
+
+#: src/IPFilter.cpp
+#, c-format
 msgid "Failed to rename new %s file, aborting update."
 msgstr "Fallada al canviar de nom el nou fitxer %s, actualització interrompuda."
 
@@ -3298,33 +3323,32 @@ msgstr "El filtre d'IP està llest"
 
 #: src/KadContactHistogram.h
 msgid "Contacts grouped by the first twelve bits of their KadID. Blue: all contacts; green: verified addresses. The marker shows your own KadID; clustering near it is expected."
-msgstr ""
+msgstr "Contactes agrupats pels primers dotze bits del seu KadID. Blau: tots els contactes; verd: adreces verificades. El marcador mostra el vostre KadID; és normal que n'hi hagi d'agrupats a prop."
 
 #: src/KadContactHistogram.h
 msgid "Loading contact distribution..."
-msgstr ""
+msgstr "S'està carregant la distribució de contactes..."
 
 #: src/KadContactHistogram.h
 msgid "This core does not send the contact distribution. Update the core to see the chart."
-msgstr ""
+msgstr "Aquest nucli no envia la distribució de contactes. Actualitzeu el nucli per veure el gràfic."
 
 #: src/KadContactHistogram.h
 msgid "The core sent contact distribution data that could not be read."
-msgstr ""
+msgstr "El nucli ha enviat dades de distribució de contactes que no s'han pogut llegir."
 
 #: src/KadContactHistogram.h
 #, c-format
 msgid "Routing-table contacts: %u; verified: %u; distinct /24s: %u"
-msgstr ""
+msgstr "Contactes de la taula d'encaminament: %u; verificats: %u; /24 diferents: %u"
 
 #: src/KadDlg.cpp
 msgid "Requesting Kad lookup diagnostics..."
-msgstr ""
+msgstr "S'està sol·licitant el diagnòstic de cerques de Kad..."
 
 #: src/KadDlg.cpp
-#, fuzzy
 msgid "The connected core does not support Kad lookup diagnostics."
-msgstr "El dimoni connectat no admet la cerca a totes les xarxes."
+msgstr "El nucli connectat no admet el diagnòstic de cerques de Kad."
 
 #: src/KadDlg.cpp src/muuli_wdr.cpp src/StatisticsDlg.cpp
 msgid "Current"
@@ -3373,20 +3397,19 @@ msgstr "Voleu continuar?"
 
 #: src/KadLookupView.h
 msgid "Kad lookup diagnostics"
-msgstr ""
+msgstr "Diagnòstic de cerques de Kad"
 
 #: src/KadLookupView.h
-#, fuzzy
 msgid "The core does not support Kad lookup diagnostics."
-msgstr "El dimoni connectat no admet la cerca a totes les xarxes."
+msgstr "El nucli no admet el diagnòstic de cerques de Kad."
 
 #: src/KadLookupView.h
 msgid "Invalid Kad lookup diagnostics reply."
-msgstr ""
+msgstr "La resposta del diagnòstic de cerques de Kad no és vàlida."
 
 #: src/KadLookupView.h
 msgid "Connection lost. Reconnect and request lookup diagnostics again."
-msgstr ""
+msgstr "S'ha perdut la connexió. Torneu a connectar i sol·liciteu de nou el diagnòstic de cerques."
 
 #: src/kademlia/kademlia/SearchManager.cpp
 msgid "Kademlia: search keyword too short"
@@ -3426,120 +3449,109 @@ msgstr[0] "S'ha escrit %d contecte Kad"
 msgstr[1] "S'han escrit %d contactes Kad"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
-#, fuzzy
 msgid "Node"
-msgstr "Nodes (0)"
+msgstr "Node"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
-#, fuzzy
 msgid "Complete node"
-msgstr "Completat"
+msgstr "Node complet"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
-#, fuzzy
 msgid "File"
-msgstr "Fitxers"
+msgstr "Fitxer"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
 msgid "Keyword"
-msgstr ""
+msgstr "Paraula clau"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
 msgid "Notes"
-msgstr ""
+msgstr "Notes"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
 msgid "Publish file"
-msgstr ""
+msgstr "Publicació de fitxer"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
 msgid "Publish keyword"
-msgstr ""
+msgstr "Publicació de paraula clau"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
 msgid "Publish notes"
-msgstr ""
+msgstr "Publicació de notes"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
-#, fuzzy
 msgid "Find buddy"
-msgstr "Cap amic"
+msgstr "Cerca d'amic"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
-#, fuzzy
 msgid "Find source"
-msgstr "Fonts del fitxer:"
+msgstr "Cerca de fonts"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
-#, fuzzy
 msgid "Special node"
-msgstr "Nou node"
+msgstr "Node especial"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
-#, fuzzy
 msgid "UDP firewall check"
-msgstr "protegit per un tallafocs"
+msgstr "Comprovació del tallafocs UDP"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
 #, c-format
 msgid "type %u"
-msgstr ""
+msgstr "tipus %u"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
 #, c-format
 msgid "Lookup %s (%s, %s): %u peers, %u overdue routing requests, %u omitted peers, %u evicted referrals"
-msgstr ""
+msgstr "Cerca %s (%s, %s): %u parells, %u sol·licituds d'encaminament endarrerides, %u parells omesos, %u remissions descartades"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
 msgid "active lookup"
-msgstr ""
+msgstr "cerca activa"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
-#, fuzzy
 msgid "finished lookup"
-msgstr "acabat"
+msgstr "cerca acabada"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Keyword: %s"
-msgstr "Filtrat: %s"
+msgstr "Paraula clau: %s"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
 #, c-format
 msgid "%s [%s], distance %s, Kad version %u (%s): %u routing requests, %u replies, last RTT %u ms, %u item requests, %u result packets, %u result records"
-msgstr ""
+msgstr "%s [%s], distància %s, versió de Kad %u (%s): %u sol·licituds d'encaminament, %u respostes, últim RTT %u ms, %u sol·licituds d'elements, %u paquets de resultats, %u registres de resultats"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
 msgid "awaiting reply"
-msgstr ""
+msgstr "a l'espera de resposta"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
-#, fuzzy
 msgid "reply received"
-msgstr "No s'ha rebut"
+msgstr "resposta rebuda"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
 #, c-format
 msgid "+%u ms: %s referred %s (distance %s, %s)"
-msgstr ""
+msgstr "+%u ms: %s ha remès a %s (distància %s, %s)"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
 msgid "closer to target"
-msgstr ""
+msgstr "més a prop de l'objectiu"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
-#, fuzzy
 msgid "no closer to target"
-msgstr "Destinatari de xat desconegut"
+msgstr "no més a prop de l'objectiu"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
 msgid "Overdue means a routing request unanswered for at least 3 seconds; late replies may still arrive. Result records are received records, not unique files. Only bounded recent history is retained."
-msgstr ""
+msgstr "«Endarrerida» vol dir una sol·licitud d'encaminament sense resposta durant almenys 3 segons; encara poden arribar respostes tardanes. Els registres de resultats són registres rebuts, no fitxers únics. Només es conserva un historial recent limitat."
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
-#, fuzzy
 msgid "No Kad lookup history available."
-msgstr "No hi ha opcions disponibles"
+msgstr "No hi ha historial de cerques de Kad disponible."
 
 #: src/KnownFile.cpp
 msgid "Kad user"
@@ -5639,7 +5651,7 @@ msgstr "Introduïu la URL d'un fitxer nodes.dat i premeu el botó de l'esquerra 
 
 #: src/muuli_wdr.cpp
 msgid "Lookup diagnostics"
-msgstr ""
+msgstr "Diagnòstic de cerques"
 
 #: src/muuli_wdr.cpp
 msgid "Nodes stats"
@@ -5876,12 +5888,12 @@ msgid "Download the GeoIP database from the selected source."
 msgstr "Baixa la base de dades GeoIP de la font seleccionada."
 
 #: src/muuli_wdr.cpp
-msgid "Auto-update on startup"
-msgstr "Actualitza automàticament a l'inici"
+msgid "Auto-update on startup and weekly"
+msgstr "Actualitza automàticament a l'inici i setmanalment"
 
 #: src/muuli_wdr.cpp
-msgid "Re-download the GeoIP database from the selected source every time aMule starts."
-msgstr "Torna a baixar la base de dades GeoIP de la font seleccionada cada cop que s'inicia l'aMule."
+msgid "Check for a newer GeoIP database at startup and every week while aMule is running."
+msgstr "Comprova si hi ha una base de dades GeoIP més nova a l'inici i cada setmana mentre aMule s'executa."
 
 #: src/muuli_wdr.cpp
 msgid "Filter incoming messages (except current chat):"
@@ -9930,6 +9942,13 @@ msgstr "Kad no ha pogut carregar l'índex desat. S'han conservat els fitxers d'�
 #: src/kademlia/kademlia/Indexed.cpp
 msgid "Kad could not save an index. The previous copy of that file was preserved."
 msgstr "Kad no ha pogut desar un índex. S'ha conservat la còpia anterior d'aquest fitxer."
+
+#, c-format
+#~ msgid "Failed to rename %s file, aborting update."
+#~ msgstr "Fallada al canviar de nom el fitxer %s, actualització interrompuda."
+
+#~ msgid "Re-download the GeoIP database from the selected source every time aMule starts."
+#~ msgstr "Torna a baixar la base de dades GeoIP de la font seleccionada cada cop que s'inicia l'aMule."
 
 #~ msgid "WARNING: Canceled file list corrupted, contains invalid header."
 #~ msgstr "AVÍS: La llista dels fitxers cancel·lats és malmesa, conté una capçalera no vàlida."

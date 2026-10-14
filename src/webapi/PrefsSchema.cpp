@@ -144,7 +144,7 @@ const PrefField kSchema[] = {
 	PREF_STR("connection", "proxy_host", EC_TAG_PROXY_HOST, PrefAccess::ReadWrite, proxy_host),
 	PREF_U16("connection", "proxy_port", EC_TAG_PROXY_PORT, 65535u, PrefAccess::ReadWrite, proxy_port),
 	PREF_ENUM("connection", "proxy_type", EC_TAG_PROXY_TYPE, kProxyTypes, PrefAccess::ReadWrite, proxy_type),
-	PREF_STR("connection", "proxy_user", EC_TAG_PROXY_USER, PrefAccess::ReadWrite, proxy_user),
+	PREF_STR("connection", "proxy_user", EC_TAG_PROXY_USER, PrefAccess::AdminRead, proxy_user),
 	PREF_BOOL("connection", "reconnect_on_connection_loss", EC_TAG_CONN_RECONNECT, PrefEnc::Presence, false, PrefAccess::ReadWrite, reconnect_on_connection_loss),
 	// 65532, not 65535: SetPort() substitutes DEFAULT_TCP_PORT when val + 3 exceeds 65535, the
 	// server UDP socket being TCP+3. A 65534 here was a 200 that left the daemon on 4662.
@@ -295,14 +295,14 @@ const PrefField kSchema[] = {
 
 	// [geoip] (EC group: IP2COUNTRY)
 	PREF_BOOL("geoip", "auto_update_enabled", EC_TAG_IP2COUNTRY_AUTO_UPDATE, PrefEnc::Value, false, PrefAccess::ReadWrite, geoip.auto_update_enabled),
-	PREF_STR("geoip", "custom_update_url", EC_TAG_IP2COUNTRY_CUSTOM_URL, PrefAccess::ReadWrite, geoip.custom_update_url),
+	PREF_STR("geoip", "custom_update_url", EC_TAG_IP2COUNTRY_CUSTOM_URL, PrefAccess::AdminRead, geoip.custom_update_url),
 	PREF_BOOL("geoip", "db_loaded", EC_TAG_IP2COUNTRY_DB_LOADED, PrefEnc::Value, false, PrefAccess::ReadOnly, geoip.db_loaded),
 	PREF_STR("geoip", "db_path", EC_TAG_IP2COUNTRY_DB_PATH, PrefAccess::ReadOnly, geoip.db_path),
 	PREF_BOOL("geoip", "download_in_progress", EC_TAG_IP2COUNTRY_DOWNLOADING, PrefEnc::Value, false, PrefAccess::ReadOnly, geoip.download_in_progress),
 	PREF_BOOL("geoip", "enabled", EC_TAG_IP2COUNTRY_ENABLED, PrefEnc::Value, false, PrefAccess::ReadWrite, geoip.enabled),
 	PREF_STR("geoip", "last_update_status", EC_TAG_IP2COUNTRY_LAST_RESULT, PrefAccess::ReadOnly, geoip.last_update_status),
 	PREF_STR("geoip", "loaded_source", EC_TAG_IP2COUNTRY_LOADED_SOURCE, PrefAccess::ReadOnly, geoip.loaded_source),
-	PREF_STR("geoip", "maxmind_license", EC_TAG_IP2COUNTRY_MAXMIND_LICENSE, PrefAccess::ReadWrite, geoip.maxmind_license),
+	PREF_STR("geoip", "maxmind_license", EC_TAG_IP2COUNTRY_MAXMIND_LICENSE, PrefAccess::AdminRead, geoip.maxmind_license),
 	PREF_ENUM("geoip", "source", EC_TAG_IP2COUNTRY_SOURCE, kIp2CountrySources, PrefAccess::ReadWrite, geoip.source),
 	PREF_BOOL("geoip", "supported", EC_TAG_IP2COUNTRY_SUPPORTED, PrefEnc::Value, false, PrefAccess::ReadOnly, geoip.supported),
 	// `update_now` is POST /geoip/update, an action, not a setting. The row stays Rejected

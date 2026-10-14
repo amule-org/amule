@@ -42,6 +42,11 @@
 
 #include <include/common/EventIDs.h>
 
+#include "ChatCaptcha.h"
+#include "CaptchaDialog.h"
+#include <wx/base64.h>
+#include <wx/mstream.h>
+
 #include "amule.h"                  // Interface declarations.
 #include "ProtocolHandlerManager.h" // Needed for ProtocolHandler_QueueSchemeLink
 #include "CamuleArtProvider.h"      // Needed for wxArtProvider::Push() in OnInit
@@ -454,6 +459,8 @@ void CamuleRemoteGuiApp::OnPollTimer(wxTimerEvent &)
 			if (m_chatmsg_handler.Cursor()) {
 				chat_req.AddTag(CECTag(EC_TAG_CHAT_MSG_ID, m_chatmsg_handler.Cursor()));
 			}
+			for (const auto id : m_chatmsg_handler.PresentedCaptchas())
+				chat_req.AddTag(CECTag(EC_TAG_CHAT_CAPTCHA_ID, id));
 			m_connect->SendRequest(&m_chatmsg_handler, &chat_req);
 		}
 		// Back to the roots
@@ -948,9 +955,13 @@ void CamuleRemoteGuiApp::FinishReconnect(int result)
 		const uint64 sessionId = m_connect ? m_connect->GetServerSessionId() : 0;
 		const bool sameSession = sessionId != 0 && sessionId == m_ecSessionId;
 		m_ecSessionId = sessionId;
+		// A queued answer may have been lost with the EC connection. Allow a
+		// still-pending challenge to be offered again without replaying history.
+		m_chatmsg_handler.ResetCaptchaPresentation();
 
 		if (!sameSession) {
 			AddLogLineNS(_("The remote core was restarted; reloading."));
+			m_chatmsg_handler.ResetForNewSession();
 			if (knownfiles) {
 				knownfiles->ResetForNewDaemonSession();
 			}
@@ -1308,6 +1319,21 @@ void CServerInfoHandlerRem::HandlePacket(const CECPacket *packet)
 	}
 }
 
+void CChatMsgHandlerRem::ResetForNewSession()
+{
+	// Transcript ids and challenge ids belong to one daemon process. Replaying
+	// a new process into old tabs would duplicate rows or pair an old image
+	// with a reused challenge id.
+	if (theApp->amuledlg && theApp->amuledlg->m_chatwnd) {
+		for (const CChatPeer &peer : m_sessions) {
+			theApp->amuledlg->m_chatwnd->EndSessionFromCore(peer);
+		}
+	}
+	m_cursor = 0;
+	m_sessions.clear();
+	m_presentedCaptchas.clear();
+}
+
 void CChatMsgHandlerRem::HandlePacket(const CECPacket *packet)
 {
 	// EC_OP_CHAT_SESSIONS: a top-level EC_TAG_CHAT_MSG_ID carrying the store's current
@@ -1326,6 +1352,7 @@ void CChatMsgHandlerRem::HandlePacket(const CECPacket *packet)
 	// Not a std::set: CChatPeer has no operator<, and the bounded session count (the
 	// core caps it, see CChatSessionStore::MAX_SESSIONS) makes a linear scan cheap enough.
 	std::vector<CChatPeer> present;
+	std::set<uint32> presented;
 	// Provisional peers this poll rekeyed into an identified one: excluded from the
 	// close-diff below, or the tab RekeySession just relabelled would be closed again.
 	std::vector<CChatPeer> rekeyedAway;
@@ -1371,14 +1398,70 @@ void CChatMsgHandlerRem::HandlePacket(const CECPacket *packet)
 		// appearing on its own cannot steal the selection.
 		chatwnd->StartSessionByID(peer, name);
 
+		const CECTag *pendingTag = sessionTag.GetTagByName(EC_TAG_CHAT_CAPTCHA_ID);
+		const uint32 pending = pendingTag ? static_cast<uint32>(pendingTag->GetInt()) : 0;
+		CCaptchaDialog::CloseForPeer(theApp->amuledlg, peer, pending);
+		const CECTag *lastMessage = nullptr;
 		for (const CECTag &msgTag : sessionTag) {
 			if (msgTag.GetTagName() != EC_TAG_CHAT_MESSAGE) {
 				continue;
 			}
+			const CECTag *idTag = msgTag.GetTagByName(EC_TAG_CHAT_MSG_ID);
+			if (pending && idTag && idTag->GetInt() == pending) {
+				lastMessage = &msgTag;
+			}
 			const CECTag *dirTag = msgTag.GetTagByName(EC_TAG_CHAT_DIRECTION);
 			const bool outgoing = dirTag && dirTag->GetInt() != 0;
-			chatwnd->AppendStoredMessage(
-				peer, name, msgTag.GetStringData(), outgoing, /*blink=*/!backfill);
+			wxString text = msgTag.GetStringData();
+			if (const CECTag *kind = msgTag.GetTagByName(EC_TAG_CHAT_MESSAGE_KIND)) {
+				if (kind->GetInt() == 1) {
+					text = _("*** Solve the CAPTCHA and send its text as a message.");
+				} else if (kind->GetInt() == 2) {
+					const CECTag *status =
+						msgTag.GetTagByName(EC_TAG_CHAT_CAPTCHA_STATUS);
+					if (status && status->GetInt() <= 2) {
+						text = status->GetInt() == 0 ? _("*** CAPTCHA passed; your "
+										 "message was delivered.")
+						       : status->GetInt() == 1
+							       ? _("*** CAPTCHA failed; send another message "
+								   "to try again.")
+							       : _("*** CAPTCHA failed; no attempts remain.");
+					}
+				}
+			}
+			chatwnd->AppendStoredMessage(peer, name, text, outgoing, /*blink=*/!backfill);
+		}
+		// Repeated live snapshots must not reopen a dialog the user canceled.
+		// Retain only ids which are still pending, bounding this set by sessions.
+		if (pending && (m_presentedCaptchas.count(pending) ||
+				       CCaptchaDialog::Exists(theApp->amuledlg, peer, pending))) {
+			presented.insert(pending);
+			continue;
+		}
+		const CECTag *image = pending ? sessionTag.GetTagByName(EC_TAG_CHAT_CAPTCHA_IMAGE) : nullptr;
+		// Compatibility with a daemon that only included images in the transcript.
+		if (!image && lastMessage) {
+			const CECTag *kind = lastMessage->GetTagByName(EC_TAG_CHAT_MESSAGE_KIND);
+			if (kind && kind->GetInt() == 1) {
+				image = lastMessage->GetTagByName(EC_TAG_CHAT_CAPTCHA_IMAGE);
+			}
+		}
+		if (image) {
+			const wxString encoded = image->GetStringData();
+			if (encoded.size() < 5500) {
+				const wxMemoryBuffer bmp = wxBase64Decode(encoded);
+				if (IsValidChatCaptcha(static_cast<const unsigned char *>(bmp.GetData()),
+					    bmp.GetDataLen())) {
+					wxMemoryInputStream stream(bmp.GetData(), bmp.GetDataLen());
+					wxImage bitmap(stream, wxBITMAP_TYPE_BMP);
+					if (bitmap.IsOk()) {
+						auto *dialog = new CCaptchaDialog(
+							theApp->amuledlg, bitmap, peer, pending);
+						dialog->Show();
+						presented.insert(pending);
+					}
+				}
+			}
 		}
 	}
 
@@ -1392,10 +1475,12 @@ void CChatMsgHandlerRem::HandlePacket(const CECPacket *packet)
 		const bool wasRekeyed =
 			std::find(rekeyedAway.begin(), rekeyedAway.end(), peer) != rekeyedAway.end();
 		if (!stillPresent && !wasRekeyed) {
+			CCaptchaDialog::CloseForPeer(theApp->amuledlg, peer);
 			chatwnd->EndSessionFromCore(peer);
 		}
 	}
 	m_sessions = present;
+	m_presentedCaptchas = std::move(presented);
 
 	if (const CECTag *cursorTag = packet->GetTagByName(EC_TAG_CHAT_MSG_ID)) {
 		// Advance even when nothing came back, so evicted ids are not asked

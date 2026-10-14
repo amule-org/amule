@@ -353,7 +353,7 @@ void CKademliaUDPListener::ProcessPacket(const uint8_t *data,
 		break;
 	case KADEMLIA_FIREWALLED_ACK_RES:
 		DebugRecv(KadFirewalledAck, ip, port);
-		ProcessFirewalledAckResponse(lenPacket);
+		ProcessFirewalledAckResponse(lenPacket, ip);
 		break;
 	case KADEMLIA_FINDBUDDY_REQ:
 		DebugRecv(KadFindBuddyReq, ip, port);
@@ -1362,9 +1362,16 @@ void CKademliaUDPListener::Process2PublishSourceRequest(const uint8_t *packetDat
 		entry->m_bSource = false;
 		entry->m_tLifeTime = (uint32_t)time(NULL) + KADEMLIAREPUBLISHTIMES;
 		bool addUDPPortTag = true;
+		// Tags this client does not understand are kept for the clients that do, within a
+		// per-source and an index-wide byte budget. Past either, the source is stored without
+		// the rest of them.
+		uint32_t extraBytes = 0;
+		bool extraFull = false;
 		uint32_t tags = bio.ReadUInt8();
 		while (tags > 0) {
+			const uint64_t tagStart = bio.GetPosition();
 			CTag *tag = bio.ReadTag();
+			const uint32_t tagBytes = static_cast<uint32_t>(bio.GetPosition() - tagStart);
 			if (tag) {
 				if (!tag->GetName().Cmp(TAG_SOURCETYPE)) {
 					if (entry->m_bSource == false) {
@@ -1402,9 +1409,33 @@ void CKademliaUDPListener::Process2PublishSourceRequest(const uint8_t *packetDat
 						// More than one udp port tag found
 						delete tag;
 					}
-				} else {
-					// TODO: Filter tags
+				} else if (!tag->GetName().Cmp(TAG_SERVERIP) ||
+					   !tag->GetName().Cmp(TAG_SERVERPORT) ||
+					   !tag->GetName().Cmp(TAG_ENCRYPTION)) {
+					if (tag->IsInt()) {
+						entry->AddTag(tag, ip);
+					} else {
+						delete tag;
+					}
+				} else if (!tag->GetName().Cmp(TAG_BUDDYHASH) ||
+					   !tag->GetName().Cmp(TAG_IPV6) ||
+					   !tag->GetName().Cmp(TAG_SERVINGBUDDYIPV6)) {
+					if (tag->IsStr() &&
+						tag->GetStr().length() <= KADEMLIAMAXSOURCESTRLEN) {
+						entry->AddTag(tag, ip);
+					} else {
+						delete tag;
+					}
+				} else if (!extraFull &&
+					   extraBytes + tagBytes <= KADEMLIAMAXSOURCEEXTRABYTES &&
+					   indexed->HasRoomForExtraTags(extraBytes + tagBytes)) {
+					extraBytes += tagBytes;
 					entry->AddTag(tag, ip);
+				} else {
+					// Once one does not fit, none after it is kept: related tags (like
+					// emule-qt's per-chunk HTTP cache tags) stay whole up to that point.
+					extraFull = true;
+					delete tag;
 				}
 			}
 			tags--;
@@ -1412,6 +1443,7 @@ void CKademliaUDPListener::Process2PublishSourceRequest(const uint8_t *packetDat
 		if (addUDPPortTag) {
 			entry->AddTag(new CTagVarInt(TAG_SOURCEUPORT, entry->m_uUDPport), 0);
 		}
+		entry->m_extraTagBytes = extraBytes;
 #ifdef __DEBUG__
 		if (!strInfo.IsEmpty()) {
 			AddDebugLogLineN(logClientKadUDP, strInfo);
@@ -1546,6 +1578,7 @@ void CKademliaUDPListener::Process2PublishNotesRequest(const uint8_t *packetData
 
 	CUInt128 source = bio.ReadUInt128();
 
+	bool valid = true;
 	Kademlia::CEntry *entry = new Kademlia::CEntry();
 	try {
 		entry->m_uIP = ip;
@@ -1553,12 +1586,15 @@ void CKademliaUDPListener::Process2PublishNotesRequest(const uint8_t *packetData
 		entry->m_uKeyID = target;
 		entry->m_uSourceID = source;
 		entry->m_bSource = false;
+		entry->m_tLifeTime = (uint32_t)time(nullptr) + KADEMLIAREPUBLISHTIMEN;
 		uint32_t tags = bio.ReadUInt8();
 		while (tags > 0) {
 			CTag *tag = bio.ReadTag();
 			if (tag) {
 				if (!tag->GetName().Cmp(TAG_FILENAME)) {
-					if (entry->GetCommonFileName().IsEmpty()) {
+					if (tag->GetStr().length() > KADEMLIAMAXNOTENAMELEN) {
+						valid = false;
+					} else if (entry->GetCommonFileName().IsEmpty()) {
 						entry->SetFileName(tag->GetStr());
 					}
 					delete tag;
@@ -1567,9 +1603,18 @@ void CKademliaUDPListener::Process2PublishNotesRequest(const uint8_t *packetData
 						entry->m_uSize = tag->GetInt();
 					}
 					delete tag;
-				} else {
-					// TODO: Filter tags
+				} else if (!tag->GetName().Cmp(TAG_DESCRIPTION)) {
+					if (tag->GetStr().length() > KADEMLIAMAXNOTECOMMENTLEN) {
+						valid = false;
+						delete tag;
+					} else {
+						entry->AddTag(tag, ip);
+					}
+				} else if (!tag->GetName().Cmp(TAG_FILERATING) && tag->IsInt()) {
 					entry->AddTag(tag, ip);
+				} else {
+					// A notes search reads only the name, comment and rating.
+					delete tag;
 				}
 			}
 			tags--;
@@ -1581,7 +1626,7 @@ void CKademliaUDPListener::Process2PublishNotesRequest(const uint8_t *packetData
 	}
 
 	uint8_t load = 0;
-	if (CKademlia::GetIndexed()->AddNotes(target, source, entry, load)) {
+	if (valid && CKademlia::GetIndexed()->AddNotes(target, source, entry, load)) {
 		CMemFile packetdata(17);
 		packetdata.WriteUInt128(target);
 		packetdata.WriteUInt8(load);
@@ -1652,8 +1697,12 @@ void CKademliaUDPListener::ProcessFirewalledResponse(
 	// Verify packet is expected size
 	CHECK_PACKET_EXACT_SIZE(4);
 
-	if (!theApp->clientlist->IsKadFirewallCheckIP(
-		    wxUINT32_SWAP_ALWAYS(ip))) { /* KADEMLIA_FIREWALLED2_REQ + KADEMLIA_FIREWALLED_REQ */
+	// The recheck has its answers: a late one would only let its sender have the last word.
+	if (!CKademlia::GetPrefs()->GetRecheckIP()) {
+		return;
+	}
+	if (!theApp->clientlist->TakeKadFirewallReply(wxUINT32_SWAP_ALWAYS(ip),
+		    CFirewallCheckRequests::Reply::PublicIP)) { /* KADEMLIA_FIREWALLED(2)_REQ */
 		throw wxString("Received unrequested firewall response packet in ") +
 			wxString::FromAscii(__FUNCTION__);
 	}
@@ -1663,7 +1712,7 @@ void CKademliaUDPListener::ProcessFirewalledResponse(
 
 	// Update con state only if something changes.
 	if (CKademlia::GetPrefs()->GetIPAddress() != firewalledIP) {
-		CKademlia::GetPrefs()->SetIPAddress(firewalledIP);
+		CKademlia::GetPrefs()->SetIPAddress(firewalledIP, ip);
 		theApp->ShowConnectionState();
 	}
 	CKademlia::GetPrefs()->IncRecheckIP();
@@ -1671,7 +1720,7 @@ void CKademliaUDPListener::ProcessFirewalledResponse(
 
 // KADEMLIA_FIREWALLED_ACK_RES
 // Used by Kad1.0 and Kad2.0
-void CKademliaUDPListener::ProcessFirewalledAckResponse(uint32_t lenPacket)
+void CKademliaUDPListener::ProcessFirewalledAckResponse(uint32_t lenPacket, uint32_t ip)
 {
 	// Deprecated since KadVersion 7+: the result is now sent over TCP instead of UDP, because
 	// UDP fails if our internal UDP port is unreachable. We want the TCP test result regardless
@@ -1680,6 +1729,11 @@ void CKademliaUDPListener::ProcessFirewalledAckResponse(uint32_t lenPacket)
 	// Verify packet is expected size
 	CHECK_PACKET_EXACT_SIZE(0);
 
+	if (!theApp->clientlist->TakeKadFirewallReply(
+		    wxUINT32_SWAP_ALWAYS(ip), CFirewallCheckRequests::Reply::Reachable)) {
+		throw wxString("Received unrequested firewall ack packet in ") +
+			wxString::FromAscii(__FUNCTION__);
+	}
 	CKademlia::GetPrefs()->IncFirewalled();
 }
 

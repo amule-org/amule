@@ -1183,6 +1183,22 @@ msgstr "재연결을 시작할 수 없습니다. 잠시 후 다시 시도합니�
 msgid "Ready"
 msgstr "준비됨"
 
+#: src/amule-remote-gui.cpp
+msgid "*** Solve the CAPTCHA and send its text as a message."
+msgstr ""
+
+#: src/amule-remote-gui.cpp
+msgid "*** CAPTCHA passed; your message was delivered."
+msgstr ""
+
+#: src/amule-remote-gui.cpp
+msgid "*** CAPTCHA failed; send another message to try again."
+msgstr ""
+
+#: src/amule-remote-gui.cpp
+msgid "*** CAPTCHA failed; no attempts remain."
+msgstr ""
+
 #: src/amule-remote-gui.cpp src/TransferWnd.cpp
 msgid "All"
 msgstr "전부"
@@ -2348,6 +2364,11 @@ msgid "FileHash not found: %s"
 msgstr "파일해시를 찾을 수 없음: %s"
 
 #: src/ExternalConn.cpp
+#, fuzzy, c-format
+msgid "Cannot cancel a finished download: %s"
+msgstr "내려받기 완료: %s"
+
+#: src/ExternalConn.cpp
 msgid "OOPS! OpCode processing error!"
 msgstr "이런! 명령코드 처리 오류!"
 
@@ -2489,6 +2510,10 @@ msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "Empty chat message"
+msgstr ""
+
+#: src/ExternalConn.cpp
+msgid "CAPTCHA challenge is no longer pending"
 msgstr ""
 
 #: src/ExternalConn.cpp
@@ -3150,6 +3175,11 @@ msgstr "예"
 msgid "Failed to open MaxMindDB database '%s': %s"
 msgstr "%s(%s)을 열지 못했습니다."
 
+#: src/geoip/MaxMindDBDatabase.cpp
+#, fuzzy, c-format
+msgid "Failed to replace MaxMindDB database '%s': %s"
+msgstr "%s(%s)을 열지 못했습니다."
+
 #: src/HTTPDownload.cpp
 msgid "Downloading..."
 msgstr "내려받기중..."
@@ -3229,25 +3259,15 @@ msgstr "새 %s을(를) %s에서 내려받습니다"
 msgid "Download of %s file failed, aborting update."
 msgstr "%s 파일 내려받기가 실패하여 갱신을 중단합니다."
 
-#: src/IP2Country.cpp src/IPFilter.cpp
-#, c-format
-msgid "Failed to remove %s file, aborting update."
-msgstr "%s 파일 삭제에 실패하여 갱신을 중단합니다."
-
 #: src/IP2Country.cpp
 #, c-format
-msgid "Failed to rename %s file, aborting update."
-msgstr "%s 파일 이름 변경에 실패하여 갱신을 중단합니다."
+msgid "Error updating %s"
+msgstr "%s 갱신 중 오류 발생"
 
 #: src/IP2Country.cpp src/IPFilter.cpp
 #, c-format
 msgid "Successfully updated %s"
 msgstr "%s 갱신에 성공했습니다"
-
-#: src/IP2Country.cpp
-#, c-format
-msgid "Error updating %s"
-msgstr "%s 갱신 중 오류 발생"
 
 #: src/IP2Country.cpp
 msgid "DB-IP download failed for the current month - retrying with the previous month's URL."
@@ -3285,6 +3305,11 @@ msgid "%u malformed line was discarded."
 msgid_plural "%u malformed lines were discarded."
 msgstr[0] "%u개의 잘못된 형식의 줄을 무시했습니다."
 msgstr[1] "%u개의 잘못된 형식의 줄을 무시했습니다."
+
+#: src/IPFilter.cpp
+#, c-format
+msgid "Failed to remove %s file, aborting update."
+msgstr "%s 파일 삭제에 실패하여 갱신을 중단합니다."
 
 #: src/IPFilter.cpp
 #, c-format
@@ -5872,12 +5897,13 @@ msgid "Download the GeoIP database from the selected source."
 msgstr "선택한 소스에서 GeoIP 데이터베이스를 내려받습니다."
 
 #: src/muuli_wdr.cpp
-msgid "Auto-update on startup"
+#, fuzzy
+msgid "Auto-update on startup and weekly"
 msgstr "시작 시 자동 갱신"
 
 #: src/muuli_wdr.cpp
-msgid "Re-download the GeoIP database from the selected source every time aMule starts."
-msgstr "aMule을 시작할 때마다 선택한 소스에서 GeoIP 데이터베이스를 다시 내려받습니다."
+msgid "Check for a newer GeoIP database at startup and every week while aMule is running."
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Filter incoming messages (except current chat):"
@@ -9943,6 +9969,13 @@ msgstr ""
 #: src/kademlia/kademlia/Indexed.cpp
 msgid "Kad could not save an index. The previous copy of that file was preserved."
 msgstr ""
+
+#, c-format
+#~ msgid "Failed to rename %s file, aborting update."
+#~ msgstr "%s 파일 이름 변경에 실패하여 갱신을 중단합니다."
+
+#~ msgid "Re-download the GeoIP database from the selected source every time aMule starts."
+#~ msgstr "aMule을 시작할 때마다 선택한 소스에서 GeoIP 데이터베이스를 다시 내려받습니다."
 
 #~ msgid "WARNING: Canceled file list corrupted, contains invalid header."
 #~ msgstr "경고: 취소된 파일 목록이 손상되었으며 잘못된 헤더가 포함되어 있습니다."

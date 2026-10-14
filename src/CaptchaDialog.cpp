@@ -30,11 +30,13 @@ wxBEGIN_EVENT_TABLE(CCaptchaDialog, wxDialog)
 	EVT_BUTTON(wxID_OK, CCaptchaDialog::OnBnClose)
 wxEND_EVENT_TABLE()
 
-CCaptchaDialog::CCaptchaDialog(wxWindow *parent, const wxImage &captchaImage, CChatTarget id)
+CCaptchaDialog::CCaptchaDialog(
+	wxWindow *parent, const wxImage &captchaImage, CChatTarget id, uint32 challengeId)
 : wxDialog(parent, -1, _("Enter Captcha"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE)
 {
 	m_captchaBitmap = new wxBitmap(captchaImage);
 	m_id = id;
+	m_challengeId = challengeId;
 	wxSizer *content = captchaDlg(this);
 	OnInitDialog();
 	content->SetSizeHints(this);
@@ -47,9 +49,32 @@ CCaptchaDialog::~CCaptchaDialog()
 	delete m_captchaBitmap;
 }
 
+void CCaptchaDialog::CloseForPeer(wxWindow *parent, const CChatTarget &peer, uint32 keepId)
+{
+	for (wxWindow *child : parent->GetChildren()) {
+		auto *dialog = dynamic_cast<CCaptchaDialog *>(child);
+		if (dialog && !dialog->IsBeingDeleted() && dialog->m_id == peer &&
+			(!keepId || dialog->m_challengeId != keepId)) {
+			dialog->Destroy();
+		}
+	}
+}
+
+bool CCaptchaDialog::Exists(wxWindow *parent, const CChatTarget &peer, uint32 challengeId)
+{
+	for (wxWindow *child : parent->GetChildren()) {
+		const auto *dialog = dynamic_cast<const CCaptchaDialog *>(child);
+		if (dialog && !dialog->IsBeingDeleted() && dialog->m_id == peer &&
+			dialog->m_challengeId == challengeId) {
+			return true;
+		}
+	}
+	return false;
+}
+
 void CCaptchaDialog::OnBnClose(wxCommandEvent &WXUNUSED(evt))
 {
-	Notify_ChatSendCaptcha(m_TextCtrl->GetLineText(0), m_id);
+	Notify_ChatSendCaptcha(m_TextCtrl->GetLineText(0), m_id, m_challengeId);
 	Destroy();
 }
 

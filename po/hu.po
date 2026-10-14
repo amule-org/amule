@@ -1181,6 +1181,22 @@ msgstr "Az újracsatlakozás nem tudott elindulni; hamarosan újrapróbálkozás
 msgid "Ready"
 msgstr "Készen"
 
+#: src/amule-remote-gui.cpp
+msgid "*** Solve the CAPTCHA and send its text as a message."
+msgstr ""
+
+#: src/amule-remote-gui.cpp
+msgid "*** CAPTCHA passed; your message was delivered."
+msgstr ""
+
+#: src/amule-remote-gui.cpp
+msgid "*** CAPTCHA failed; send another message to try again."
+msgstr ""
+
+#: src/amule-remote-gui.cpp
+msgid "*** CAPTCHA failed; no attempts remain."
+msgstr ""
+
 #: src/amule-remote-gui.cpp src/TransferWnd.cpp
 msgid "All"
 msgstr "Mind"
@@ -2334,6 +2350,11 @@ msgid "FileHash not found: %s"
 msgstr "FileHash nem található: %s"
 
 #: src/ExternalConn.cpp
+#, fuzzy, c-format
+msgid "Cannot cancel a finished download: %s"
+msgstr "Letöltés befejeződött: %s"
+
+#: src/ExternalConn.cpp
 msgid "OOPS! OpCode processing error!"
 msgstr "Hoppá! Opkód feldolgozási hiba!"
 
@@ -2475,6 +2496,10 @@ msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "Empty chat message"
+msgstr ""
+
+#: src/ExternalConn.cpp
+msgid "CAPTCHA challenge is no longer pending"
 msgstr ""
 
 #: src/ExternalConn.cpp
@@ -3135,6 +3160,11 @@ msgstr "Igen"
 msgid "Failed to open MaxMindDB database '%s': %s"
 msgstr "A(z) %s (%s) megnyitása sikertelen"
 
+#: src/geoip/MaxMindDBDatabase.cpp
+#, fuzzy, c-format
+msgid "Failed to replace MaxMindDB database '%s': %s"
+msgstr "A(z) %s (%s) megnyitása sikertelen"
+
 #: src/HTTPDownload.cpp
 msgid "Downloading..."
 msgstr "Letöltés..."
@@ -3214,25 +3244,15 @@ msgstr "Új %s letöltése %s cím alól"
 msgid "Download of %s file failed, aborting update."
 msgstr "%s letöltése sikertelen, frissítés megszakítása."
 
-#: src/IP2Country.cpp src/IPFilter.cpp
-#, c-format
-msgid "Failed to remove %s file, aborting update."
-msgstr "%s fájl törlése sikertelen, frissítés megszakítása."
-
 #: src/IP2Country.cpp
 #, c-format
-msgid "Failed to rename %s file, aborting update."
-msgstr "%s fájl átnevezése sikertelen, frissítés megszakítása."
+msgid "Error updating %s"
+msgstr "Hiba %s frissítésekor"
 
 #: src/IP2Country.cpp src/IPFilter.cpp
 #, c-format
 msgid "Successfully updated %s"
 msgstr "%s frissítése sikerrel járt."
-
-#: src/IP2Country.cpp
-#, c-format
-msgid "Error updating %s"
-msgstr "Hiba %s frissítésekor"
 
 #: src/IP2Country.cpp
 msgid "DB-IP download failed for the current month - retrying with the previous month's URL."
@@ -3268,6 +3288,11 @@ msgstr[0] "%u IP-tartomány '%s'-ból betöltve."
 msgid "%u malformed line was discarded."
 msgid_plural "%u malformed lines were discarded."
 msgstr[0] "%u hibás sor lett eldobva."
+
+#: src/IPFilter.cpp
+#, c-format
+msgid "Failed to remove %s file, aborting update."
+msgstr "%s fájl törlése sikertelen, frissítés megszakítása."
 
 #: src/IPFilter.cpp
 #, c-format
@@ -5851,12 +5876,13 @@ msgid "Download the GeoIP database from the selected source."
 msgstr "GeoIP adatbázis letöltése a kiválasztott forrásból."
 
 #: src/muuli_wdr.cpp
-msgid "Auto-update on startup"
+#, fuzzy
+msgid "Auto-update on startup and weekly"
 msgstr "Automatikus frissítés indításkor"
 
 #: src/muuli_wdr.cpp
-msgid "Re-download the GeoIP database from the selected source every time aMule starts."
-msgstr "GeoIP adatbázis újonnani letöltése a kiválasztott forrásból minden aMule indításkor."
+msgid "Check for a newer GeoIP database at startup and every week while aMule is running."
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Filter incoming messages (except current chat):"
@@ -9897,6 +9923,13 @@ msgstr ""
 #: src/kademlia/kademlia/Indexed.cpp
 msgid "Kad could not save an index. The previous copy of that file was preserved."
 msgstr ""
+
+#, c-format
+#~ msgid "Failed to rename %s file, aborting update."
+#~ msgstr "%s fájl átnevezése sikertelen, frissítés megszakítása."
+
+#~ msgid "Re-download the GeoIP database from the selected source every time aMule starts."
+#~ msgstr "GeoIP adatbázis újonnani letöltése a kiválasztott forrásból minden aMule indításkor."
 
 #~ msgid "WARNING: Canceled file list corrupted, contains invalid header."
 #~ msgstr "FIGYELEM: A megszakított fájlok listája sérült, érvénytelen fejlécet tartalmaz."

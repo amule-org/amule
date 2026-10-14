@@ -195,6 +195,30 @@ TEST(NetworkFunctions, IsGoodIP)
 	}
 }
 
+// A server on this machine is reachable once LAN IPs are not filtered; nothing else changes.
+TEST(NetworkFunctions, IsGoodServerIP)
+{
+	struct
+	{
+		wxString ip;
+		bool unfiltered;
+		bool filtered;
+	} ipList[] = { { "127.0.0.1", true, false },
+		{ "127.255.0.9", true, false },
+		{ "192.168.1.2", true, false },
+		{ "8.8.4.4", true, true },
+		{ "0.0.0.0", false, false },
+		{ "169.254.1.1", false, false },
+		{ "224.0.0.1", false, false } };
+
+	unsigned int ip;
+	for (const auto &entry : ipList) {
+		ASSERT_TRUE(StringIPtoUint32(entry.ip, ip));
+		ASSERT_EQUALS(entry.unfiltered, IsGoodServerIP(ip, false));
+		ASSERT_EQUALS(entry.filtered, IsGoodServerIP(ip, true));
+	}
+}
+
 // amuleIPV4Address is v4-only by contract: the endpoint feeds uint32 IPs and v4 sockets throughout
 // aMule. Name resolution used to hand back whatever the platform resolver ranked first, which on a
 // dual-stack name is routinely an AAAA record (issue #695).

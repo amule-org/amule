@@ -14,7 +14,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-10-11 09:48+0000\n"
+"PO-Revision-Date: 2026-10-13 08:33+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
 "Language: zh_CN\n"
@@ -1199,6 +1199,22 @@ msgstr "重新连接无法开始；即将重试。"
 msgid "Ready"
 msgstr "就绪"
 
+#: src/amule-remote-gui.cpp
+msgid "*** Solve the CAPTCHA and send its text as a message."
+msgstr ""
+
+#: src/amule-remote-gui.cpp
+msgid "*** CAPTCHA passed; your message was delivered."
+msgstr ""
+
+#: src/amule-remote-gui.cpp
+msgid "*** CAPTCHA failed; send another message to try again."
+msgstr ""
+
+#: src/amule-remote-gui.cpp
+msgid "*** CAPTCHA failed; no attempts remain."
+msgstr ""
+
 #: src/amule-remote-gui.cpp src/TransferWnd.cpp
 msgid "All"
 msgstr "全部"
@@ -2354,6 +2370,11 @@ msgid "FileHash not found: %s"
 msgstr "文件校验码不存在：%s"
 
 #: src/ExternalConn.cpp
+#, fuzzy, c-format
+msgid "Cannot cancel a finished download: %s"
+msgstr "完成下载：%s"
+
+#: src/ExternalConn.cpp
 msgid "OOPS! OpCode processing error!"
 msgstr "OpCode 处理错误！"
 
@@ -2492,6 +2513,10 @@ msgstr "文件不满足媒体元数据提取要求（不是音/视频文件，�
 #: src/ExternalConn.cpp
 msgid "Empty chat message"
 msgstr "空的聊天信息"
+
+#: src/ExternalConn.cpp
+msgid "CAPTCHA challenge is no longer pending"
+msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "Unknown chat target"
@@ -3150,6 +3175,11 @@ msgstr "是"
 msgid "Failed to open MaxMindDB database '%s': %s"
 msgstr "打开 MaxMindDB 数据库 '%s' 失败： %s"
 
+#: src/geoip/MaxMindDBDatabase.cpp
+#, fuzzy, c-format
+msgid "Failed to replace MaxMindDB database '%s': %s"
+msgstr "打开 MaxMindDB 数据库 '%s' 失败： %s"
+
 #: src/HTTPDownload.cpp
 msgid "Downloading..."
 msgstr "正在下载..."
@@ -3229,25 +3259,15 @@ msgstr "下载新的 %s，来源 %s"
 msgid "Download of %s file failed, aborting update."
 msgstr "%s 文件下载失败，更新终止。"
 
-#: src/IP2Country.cpp src/IPFilter.cpp
-#, c-format
-msgid "Failed to remove %s file, aborting update."
-msgstr "删除%s文件失败，放弃更新。"
-
 #: src/IP2Country.cpp
 #, c-format
-msgid "Failed to rename %s file, aborting update."
-msgstr "重名命%s文件失败，放弃更新。"
+msgid "Error updating %s"
+msgstr "更新 %s 出错"
 
 #: src/IP2Country.cpp src/IPFilter.cpp
 #, c-format
 msgid "Successfully updated %s"
 msgstr "成功更新 %s"
-
-#: src/IP2Country.cpp
-#, c-format
-msgid "Error updating %s"
-msgstr "更新 %s 出错"
 
 #: src/IP2Country.cpp
 msgid "DB-IP download failed for the current month - retrying with the previous month's URL."
@@ -3288,6 +3308,11 @@ msgstr[1] "丢弃了 %u 行错误数据。"
 
 #: src/IPFilter.cpp
 #, c-format
+msgid "Failed to remove %s file, aborting update."
+msgstr "删除%s文件失败，放弃更新。"
+
+#: src/IPFilter.cpp
+#, c-format
 msgid "Failed to rename new %s file, aborting update."
 msgstr "重名命新的%s文件失败，放弃更新。"
 
@@ -3297,33 +3322,32 @@ msgstr "IP过滤器已准备好"
 
 #: src/KadContactHistogram.h
 msgid "Contacts grouped by the first twelve bits of their KadID. Blue: all contacts; green: verified addresses. The marker shows your own KadID; clustering near it is expected."
-msgstr ""
+msgstr "根据联系人 KadID 前 12 个比特将联系人分组。蓝色：所有联系人；绿色：已验证的地址。记号显示你自己的 KadID；聚集在它附近是预期行为。"
 
 #: src/KadContactHistogram.h
 msgid "Loading contact distribution..."
-msgstr ""
+msgstr "正加载联系人分布…"
 
 #: src/KadContactHistogram.h
 msgid "This core does not send the contact distribution. Update the core to see the chart."
-msgstr ""
+msgstr "这个核心不发送联系人分布。要查看图表请更新核心。"
 
 #: src/KadContactHistogram.h
 msgid "The core sent contact distribution data that could not be read."
-msgstr ""
+msgstr "这个核心发送了无法被读取的联系人分布数据。"
 
 #: src/KadContactHistogram.h
 #, c-format
 msgid "Routing-table contacts: %u; verified: %u; distinct /24s: %u"
-msgstr ""
+msgstr "路由表联系人：%u；已验证：%u；不同联系人/ 24s：%u"
 
 #: src/KadDlg.cpp
 msgid "Requesting Kad lookup diagnostics..."
-msgstr ""
+msgstr "正在请求 Kad 查询诊断…"
 
 #: src/KadDlg.cpp
-#, fuzzy
 msgid "The connected core does not support Kad lookup diagnostics."
-msgstr "已连接的 daemon 不支持 All 搜索类型。"
+msgstr "已连接的核心不支持 Kad 查询诊断。"
 
 #: src/KadDlg.cpp src/muuli_wdr.cpp src/StatisticsDlg.cpp
 msgid "Current"
@@ -3372,20 +3396,19 @@ msgstr "继续？"
 
 #: src/KadLookupView.h
 msgid "Kad lookup diagnostics"
-msgstr ""
+msgstr "Kad 查询诊断"
 
 #: src/KadLookupView.h
-#, fuzzy
 msgid "The core does not support Kad lookup diagnostics."
-msgstr "已连接的 daemon 不支持 All 搜索类型。"
+msgstr "该核心不支持 Kad 查询诊断。"
 
 #: src/KadLookupView.h
 msgid "Invalid Kad lookup diagnostics reply."
-msgstr ""
+msgstr "无效的 Kad 查询诊断回复。"
 
 #: src/KadLookupView.h
 msgid "Connection lost. Reconnect and request lookup diagnostics again."
-msgstr ""
+msgstr "连接丢失。重新连接并再次请求查询诊断。"
 
 #: src/kademlia/kademlia/SearchManager.cpp
 msgid "Kademlia: search keyword too short"
@@ -3425,120 +3448,109 @@ msgstr[0] "已写入 %d 个 Kad 联系人"
 msgstr[1] "已写入%d个Kad联系人"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
-#, fuzzy
 msgid "Node"
-msgstr "节点 (0)"
+msgstr "节点"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
-#, fuzzy
 msgid "Complete node"
-msgstr "已完成"
+msgstr "完整节点"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
-#, fuzzy
 msgid "File"
 msgstr "文件"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
 msgid "Keyword"
-msgstr ""
+msgstr "关键词"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
 msgid "Notes"
-msgstr ""
+msgstr "附注"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
 msgid "Publish file"
-msgstr ""
+msgstr "发布文件"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
 msgid "Publish keyword"
-msgstr ""
+msgstr "发布关键词"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
 msgid "Publish notes"
-msgstr ""
+msgstr "发布附注"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
-#, fuzzy
 msgid "Find buddy"
-msgstr "没有好友"
+msgstr "寻找好友"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
-#, fuzzy
 msgid "Find source"
-msgstr "文件源:"
+msgstr "寻找来源"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
-#, fuzzy
 msgid "Special node"
-msgstr "新节点"
+msgstr "特殊节点"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
-#, fuzzy
 msgid "UDP firewall check"
-msgstr "被防火墙阻挡"
+msgstr "UDP 防火墙检查"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
 #, c-format
 msgid "type %u"
-msgstr ""
+msgstr "类型 %u"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
 #, c-format
 msgid "Lookup %s (%s, %s): %u peers, %u overdue routing requests, %u omitted peers, %u evicted referrals"
-msgstr ""
+msgstr "查询 %s (%s, %s): %u 个对等方, %u 条过期的路由请求, %u 个省略的对等方, %u 个被驱逐的介绍"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
 msgid "active lookup"
-msgstr ""
+msgstr "活跃查询"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
-#, fuzzy
 msgid "finished lookup"
-msgstr "已完成"
+msgstr "已完成查询"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Keyword: %s"
-msgstr "过滤: %s"
+msgstr "关键词： %s"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
 #, c-format
 msgid "%s [%s], distance %s, Kad version %u (%s): %u routing requests, %u replies, last RTT %u ms, %u item requests, %u result packets, %u result records"
-msgstr ""
+msgstr "%s [%s], 距离 %s, Kad 版本 %u (%s): %u 个路由请求, %u 个回复, 上个 RTT %u ms, %u 个项目请求, %u 结果数据包, %u 条结果记录"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
 msgid "awaiting reply"
-msgstr ""
+msgstr "正等待回复"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
-#, fuzzy
 msgid "reply received"
-msgstr "没有收到"
+msgstr "收到了回复"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
 #, c-format
 msgid "+%u ms: %s referred %s (distance %s, %s)"
-msgstr ""
+msgstr "+%u ms: %s referred %s (距离 %s, %s)"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
 msgid "closer to target"
-msgstr ""
+msgstr "离目标较近"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
-#, fuzzy
 msgid "no closer to target"
-msgstr "未知聊天目标"
+msgstr "离目标还远"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
 msgid "Overdue means a routing request unanswered for at least 3 seconds; late replies may still arrive. Result records are received records, not unique files. Only bounded recent history is retained."
-msgstr ""
+msgstr "过期代表至少 3 秒未回应的路由请求；迟来的回复仍可能抵达。结果记录是已收到的记录数，不是唯一的文件。仅保留有界的近期历史。"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
-#, fuzzy
 msgid "No Kad lookup history available."
-msgstr "选项不可用"
+msgstr "无 Kad 查询历史可用。"
 
 #: src/KnownFile.cpp
 msgid "Kad user"
@@ -5638,7 +5650,7 @@ msgstr "在此输入 nodes.dat 文件的地址并按左边的按钮以更新已�
 
 #: src/muuli_wdr.cpp
 msgid "Lookup diagnostics"
-msgstr ""
+msgstr "查询诊断"
 
 #: src/muuli_wdr.cpp
 msgid "Nodes stats"
@@ -5875,12 +5887,13 @@ msgid "Download the GeoIP database from the selected source."
 msgstr "从所选源下载 GeoIP 数据库。"
 
 #: src/muuli_wdr.cpp
-msgid "Auto-update on startup"
+#, fuzzy
+msgid "Auto-update on startup and weekly"
 msgstr "启动后自动更新"
 
 #: src/muuli_wdr.cpp
-msgid "Re-download the GeoIP database from the selected source every time aMule starts."
-msgstr "每次启动 aMule 时，从所选源重新下载 GeoIP 数据库。"
+msgid "Check for a newer GeoIP database at startup and every week while aMule is running."
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Filter incoming messages (except current chat):"
@@ -9926,6 +9939,13 @@ msgstr "Kad 无法加载其已保存的索引。现有的索引文件被保留�
 #: src/kademlia/kademlia/Indexed.cpp
 msgid "Kad could not save an index. The previous copy of that file was preserved."
 msgstr "Kad 无法保存索引。该文件之前的副本被保留。"
+
+#, c-format
+#~ msgid "Failed to rename %s file, aborting update."
+#~ msgstr "重名命%s文件失败，放弃更新。"
+
+#~ msgid "Re-download the GeoIP database from the selected source every time aMule starts."
+#~ msgstr "每次启动 aMule 时，从所选源重新下载 GeoIP 数据库。"
 
 #~ msgid "WARNING: Canceled file list corrupted, contains invalid header."
 #~ msgstr "警告：已取消文件列表损坏，包含有非法头部。"

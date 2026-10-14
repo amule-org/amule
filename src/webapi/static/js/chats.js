@@ -46,6 +46,8 @@ function newConv({ peer, address = peer, hash = "", ip, port, name = "", clientE
     clientEcid, friendEcid, online,
     messages: new Map(),
     lastMsgId: 0,
+    pendingCaptchaId: 0,
+    pendingCaptchaImage: "",
     unread: 0,
     // The daemon only holds a conversation once its first message goes out;
     // false for one opened locally.
@@ -73,6 +75,7 @@ function tabList() {
   return Array.from(convs.values()).map((c) => ({
     peer: c.peer, address: c.address, name: displayName(c),
     clientEcid: c.clientEcid, friendEcid: c.friendEcid,
+    pendingCaptchaId: c.pendingCaptchaId, pendingCaptchaImage: c.pendingCaptchaImage,
     // Online mirrors the desktop: a linked live client (clientEcid set), not the
     // momentary TCP state. Like the desktop's blue name, this lights on a contact
     // attempt too, including to an unroutable address.
@@ -199,6 +202,10 @@ async function adopt() {
       if (cur.peer !== (s.hash || s.address) || cur.address !== s.address) added = true;
       adoptKey(cur, s);
       cur.known = true;
+      if (cur.pendingCaptchaId !== (s.pending_captcha_id || 0) ||
+          cur.pendingCaptchaImage !== (s.pending_captcha_image || "")) added = true;
+      cur.pendingCaptchaId = s.pending_captcha_id || 0;
+      cur.pendingCaptchaImage = s.pending_captcha_image || "";
       const name = betterName(cur, s.name);
       if (name !== cur.name) { cur.name = name; added = true; }
       // null when offline / not a friend; 0 is this module's "none".
@@ -216,6 +223,8 @@ async function adopt() {
       online: (s.client_ecid || 0) !== 0,
     });
     conv.known = true;
+    conv.pendingCaptchaId = s.pending_captcha_id || 0;
+    conv.pendingCaptchaImage = s.pending_captcha_image || "";
     convs.set(conv.peer, conv);
     added = true;
   }
@@ -384,6 +393,7 @@ export const chats = {
     lastResync = store.get("resync");
     offs.push(store.subscribe("chat:message", onMessage));
     offs.push(store.subscribe("chat:closed", onClosed));
+    offs.push(store.subscribe("chat:updated", (p) => { if (p) adopt(); }));
     offs.push(store.subscribe("resync", onResync));
     offs.push(store.subscribe("friends", onFriends));
     // Poll only in events.js's SSE fallback; subscribe() fires with the current
@@ -427,11 +437,18 @@ export const chats = {
 
   // The 202 echo is the one message object with no timestamp, so stamp one
   // locally and render at once; the SSE frame ~1s later replaces it by id.
-  async send(peer, text) {
+  async send(peer, text, captchaId = 0) {
     const conv = convs.get(peer);
     if (!conv || !text) return;
     try {
-      const r = await api.post("chats/" + conv.address + "/messages", { text });
+      const body = captchaId ? { text, captcha_id: captchaId } : { text };
+      const r = await api.post("chats/" + conv.address + "/messages", body);
+      if (captchaId && conv.pendingCaptchaId === captchaId) {
+        conv.pendingCaptchaId = 0;
+        conv.pendingCaptchaImage = "";
+      }
+      // Closing a tab while the request runs must not recreate it on completion.
+      if (convs.get(conv.peer) !== conv) return true;
       adoptKey(conv, r || {});
       peer = conv.peer;
       conv.known = true; // the core creates the conversation on this call
@@ -444,8 +461,14 @@ export const chats = {
         publishTabs();
         publishLog(peer);
       }
+      return true;
     } catch (e) {
-      toast(terr(noteError(e)) || t("messages_error"), "error");
+      noteError(e);
+      await adopt();
+      const message = e?.code === "captcha_expired" && !convs.get(conv.peer)?.pendingCaptchaId
+        ? t("messages_captcha_retry_message") : terr(e) || t("messages_error");
+      toast(message, "error");
+      return false;
     }
   },
 

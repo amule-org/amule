@@ -82,7 +82,7 @@ CClientTCPSocket::CClientTCPSocket(CUpDownClient *in_client, const CProxyData *P
 #ifdef ENABLE_IPV6
 	// A native IPv6 peer has no IPv4 hybrid ID; OnReceive() filters on the address dialled.
 	if (in_client) {
-		const CNetworkAddress &connectAddress = in_client->GetConnectAddress();
+		const CNetworkAddress connectAddress = in_client->GetDialAddress();
 		if (connectAddress.IsIPv6() && !connectAddress.IsIPv4Mapped()) {
 			m_remoteAddress = connectAddress;
 		}
@@ -2035,7 +2035,8 @@ bool CClientTCPSocket::ProcessExtPacket(const uint8_t *buffer, uint32 size, uint
 	case OP_KAD_FWTCPCHECK_ACK: { // Support required for Kadversion >= 7
 		AddDebugLogLineN(logRemoteClient,
 			"Remote Client: OP_KAD_FWTCPCHECK_ACK from " + m_client->GetFullIP());
-		if (theApp->clientlist->IsKadFirewallCheckIP(m_client->GetIP())) {
+		if (theApp->clientlist->TakeKadFirewallReply(
+			    m_client->GetIP(), Kademlia::CFirewallCheckRequests::Reply::Reachable)) {
 			if (Kademlia::CKademlia::IsRunning()) {
 				Kademlia::CKademlia::GetPrefs()->IncFirewalled();
 			}

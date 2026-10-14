@@ -168,7 +168,7 @@ void ChatRemoveFriend(CFriend *Friend);
 void ChatConnResult(bool success, CChatTarget id, wxString message);
 void ChatRekeySession(CChatTarget old_id, CChatTarget new_id);
 void ChatProcessMsg(CChatTarget sender, wxString message);
-void ChatSendCaptcha(wxString captcha, CChatTarget to_id);
+void ChatSendCaptcha(wxString captcha, CChatTarget to_id, uint32 challengeId);
 
 void ShowConnState(long state);
 void ShowUserCount(wxString str);
@@ -572,7 +572,7 @@ typedef void (wxEvtHandler::*MuleNotifyEventFunction)(CMuleGUIEvent &);
 #define Notify_ChatProcessMsg(val0, s) MuleNotify::DoNotify(&MuleNotify::ChatProcessMsg, val0, s)
 // A chat session was closed -- see MuleNotify::Chat_SessionRemoved above.
 #define Notify_Chat_SessionRemoved(id) MuleNotify::DoNotify(&MuleNotify::Chat_SessionRemoved, id)
-#define Notify_ChatSendCaptcha(val0, s) MuleNotify::DoNotify(&MuleNotify::ChatSendCaptcha, val0, s)
+#define Notify_ChatSendCaptcha(val0, s, id) MuleNotify::DoNotify(&MuleNotify::ChatSendCaptcha, val0, s, id)
 
 // misc
 #define Notify_ShowConnState(val) MuleNotify::DoNotify(&MuleNotify::ShowConnState, val)

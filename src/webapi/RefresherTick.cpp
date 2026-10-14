@@ -245,6 +245,10 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 		if (cursor) {
 			req->AddTag(CECTag(EC_TAG_CHAT_MSG_ID, cursor));
 		}
+		for (const auto &session : state.Chats()) {
+			if (session.pending_captcha_id && !session.pending_captcha_image.empty())
+				req->AddTag(CECTag(EC_TAG_CHAT_CAPTCHA_ID, session.pending_captcha_id));
+		}
 		const CECPacket *resp = app.SendRecvSerialized(req.get());
 		if (!resp)
 			return false;

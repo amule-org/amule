@@ -383,6 +383,15 @@ public:
 	void ProcessUDPSearchAnswer(const CMemFile &packet, bool optUTF8, uint32 serverIP, uint16 serverPort);
 
 	/**
+	 * Tells if the current global search sent its request to a server at this IP.
+	 *
+	 * Matches the IP only: a server can answer from a port other than the one we asked.
+	 *
+	 * @param serverIP The IP of the server sending the results.
+	 */
+	bool WasServerAsked(uint32 serverIP) const;
+
+	/**
 	 * Adds a result in the form of a kad search keyword to the specified result list.
 	 *
 	 * @param searchID The search to which this result belongs.
@@ -517,6 +526,9 @@ private:
 
 	//! The current packet used for searches.
 	std::unique_ptr<CPacket> m_searchPacket;
+
+	//! ECIDs of the servers the current global search sent a UDP request to.
+	std::set<uint32> m_askedServers;
 
 	//! Does the current search packet contain 64bit values?
 	bool m_64bitSearchPacket;

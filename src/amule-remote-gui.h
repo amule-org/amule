@@ -28,6 +28,7 @@
 #include "RemoteDownloadEvents.h"
 #include "SearchEd2kSlot.h"
 #include "SearchStartRequests.h"
+#include <set>
 #include <functional>             // std::function for the CSharedFilesRem
 #include <memory>                 // std::unique_ptr for CPreferencesRem
 #include <vector>                 // std::vector for CChatMsgHandlerRem's tracked sessions
@@ -827,13 +828,17 @@ class CChatMsgHandlerRem : public CECPacketHandlerBase
 {
 public:
 	virtual void HandlePacket(const CECPacket *);
+	void ResetForNewSession();
+	void ResetCaptchaPresentation() { m_presentedCaptchas.clear(); }
 
 	//! Resume cursor for the next poll; 0 until the first reply lands.
 	uint32 Cursor() const { return m_cursor; }
+	const std::set<uint32> &PresentedCaptchas() const { return m_presentedCaptchas; }
 
 private:
 	uint32 m_cursor = 0;
 	std::vector<CChatPeer> m_sessions;
+	std::set<uint32> m_presentedCaptchas;
 };
 
 class CStatTreeRem : public CECPacketHandlerBase

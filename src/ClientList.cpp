@@ -1199,29 +1199,17 @@ void CClientList::CleanUpClientList()
 
 void CClientList::AddKadFirewallRequest(uint32 ip)
 {
-	uint64 ticks = ::GetTickCount64();
-	IpAndTicks add = { ip, ticks };
-	m_firewallCheckRequests.push_front(add);
-	while (!m_firewallCheckRequests.empty()) {
-		if (ticks - m_firewallCheckRequests.back().inserted > SEC2MS(180)) {
-			m_firewallCheckRequests.pop_back();
-		} else {
-			break;
-		}
-	}
+	m_firewallCheckRequests.Add(ip, ::GetTickCount64());
 }
 
 bool CClientList::IsKadFirewallCheckIP(uint32 ip) const
 {
-	uint64 ticks = ::GetTickCount64();
-	for (IpAndTicksList::const_iterator it = m_firewallCheckRequests.begin();
-		it != m_firewallCheckRequests.end();
-		++it) {
-		if (it->ip == ip && ticks - it->inserted < SEC2MS(180)) {
-			return true;
-		}
-	}
-	return false;
+	return m_firewallCheckRequests.Contains(ip, ::GetTickCount64());
+}
+
+bool CClientList::TakeKadFirewallReply(uint32 ip, Kademlia::CFirewallCheckRequests::Reply reply)
+{
+	return m_firewallCheckRequests.Take(ip, reply, ::GetTickCount64());
 }
 
 void CClientList::AddDirectCallbackClient(CUpDownClient *toAdd)

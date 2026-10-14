@@ -1852,6 +1852,14 @@ void ApplyChatSessions(const CECPacket *resp,
 		if (const CECTag *friendTag = t->GetTagByName(EC_TAG_FRIEND))
 			session.friend_ecid = static_cast<std::uint32_t>(friendTag->GetInt());
 
+		if (const CECTag *pending = t->GetTagByName(EC_TAG_CHAT_CAPTCHA_ID))
+			session.pending_captcha_id = static_cast<std::uint32_t>(pending->GetInt());
+		if (session.pending_captcha_id) {
+			if (const CECTag *image = t->GetTagByName(EC_TAG_CHAT_CAPTCHA_IMAGE))
+				session.pending_captcha_image =
+					std::string(image->GetStringData().utf8_str());
+		}
+
 		// Carry over the history this tick's reply did not repeat.
 		auto prev = previous.find(session.IdentityKey());
 		// Promote only a provisional route identity, never another hash at this endpoint.
@@ -1864,6 +1872,10 @@ void ApplyChatSessions(const CECPacket *resp,
 		if (prev != previous.end()) {
 			if (prev->second.PeerKey() != session.PeerKey())
 				out_closed.push_back({ prev->second.PeerKey(), prev->second.peer_hash });
+			if (session.pending_captcha_id &&
+				session.pending_captcha_id == prev->second.pending_captcha_id &&
+				session.pending_captcha_image.empty())
+				session.pending_captcha_image = prev->second.pending_captcha_image;
 			session.messages = std::move(prev->second.messages);
 			// A name the daemon stops sending must not blank one we have.
 			if (session.name.empty())
@@ -1892,6 +1904,28 @@ void ApplyChatSessions(const CECPacket *resp,
 				msg.outgoing = dirTag->GetInt() != 0;
 			if (const CECTag *tsTag = m->GetTagByName(EC_TAG_CHAT_TIMESTAMP))
 				msg.timestamp = static_cast<std::uint32_t>(tsTag->GetInt());
+			if (const CECTag *kindTag = m->GetTagByName(EC_TAG_CHAT_MESSAGE_KIND)) {
+				const auto kind = kindTag->GetInt();
+				if (kind == 1) {
+					if (const CECTag *image =
+							m->GetTagByName(EC_TAG_CHAT_CAPTCHA_IMAGE)) {
+						msg.kind = 1;
+						msg.captcha_image =
+							std::string(image->GetStringData().utf8_str());
+					}
+				} else if (kind == 2) {
+					if (const CECTag *status =
+							m->GetTagByName(EC_TAG_CHAT_CAPTCHA_STATUS)) {
+						if (status->GetInt() <= 2) {
+							msg.kind = 2;
+							msg.captcha_status =
+								static_cast<std::uint8_t>(status->GetInt());
+						}
+					}
+				}
+			}
+			if (msg.id == session.pending_captcha_id && msg.kind == 1)
+				session.pending_captcha_image = msg.captcha_image;
 			session.messages.push_back(msg);
 			arrivals.messages.push_back(msg);
 		}
@@ -1904,7 +1938,14 @@ void ApplyChatSessions(const CECPacket *resp,
 				session.messages.end() - static_cast<std::ptrdiff_t>(kMaxPerSession));
 		}
 
-		if (!arrivals.messages.empty())
+		arrivals.pending_captcha_id = session.pending_captcha_id;
+		arrivals.pending_captcha_image = session.pending_captcha_image;
+		arrivals.pending_captcha_changed =
+			prev == previous.end()
+				? session.pending_captcha_id != 0
+				: prev->second.pending_captcha_id != session.pending_captcha_id ||
+					  prev->second.pending_captcha_image != session.pending_captcha_image;
+		if (!arrivals.messages.empty() || arrivals.pending_captcha_changed)
 			out_new_messages.push_back(std::move(arrivals));
 		fresh.push_back(std::move(session));
 	}

@@ -229,6 +229,17 @@ public:
 	wxString Comment() const { return GetTagByNameSafe(EC_TAG_CATEGORY_COMMENT)->GetStringData(); }
 	uint8 Prio() const { return GetTagByNameSafe(EC_TAG_CATEGORY_PRIO)->GetInt(); }
 	uint32 Color() const { return GetTagByNameSafe(EC_TAG_CATEGORY_COLOR)->GetInt(); }
+
+private:
+	// Reports the path kept on a failed update. The request may carry no path tag.
+	void SetPath(const wxString &path)
+	{
+		if (CECTag *tag = GetTagByName(EC_TAG_CATEGORY_PATH)) {
+			tag->SetStringData(path);
+		} else {
+			AddTag(CECTag(EC_TAG_CATEGORY_PATH, path));
+		}
+	}
 };
 
 class CEC_Prefs_Packet : public CECPacket

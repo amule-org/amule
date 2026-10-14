@@ -27,7 +27,8 @@ import { clearPrefs, GRAPH_RANGES, loadGraphInterval, saveGraphInterval } from "
 // Flags: readonly (shown disabled, never sent), hidden (capability flag loaded
 // only to gate others), gatedBy (disabled when values[k] === false; skipped on
 // save only when k is a hidden capability flag),
-// password (write-only, only sent when non-empty), scale (int shown/edited
+// password (write-only, only sent when non-empty), adminOnly (a credential the
+// API does not return to guests, so a guest is not shown the row), scale (int shown/edited
 // in value/scale units, e.g.
 // ms stored but minutes shown), cat (override the tab's API category),
 // action (an endpoint the field POSTs to, see runAction — the endpoint
@@ -206,8 +207,8 @@ const TABS = [
       { key: "enabled", type: "bool", gatedBy: "supported" },
       { key: "supported", type: "bool", hidden: true },
       { key: "source", type: "select", options: GEOIP_SOURCES, sub: true, gatedBy: ["supported", "enabled"] },
-      { key: "custom_update_url", type: "text", sub: 2, gatedBy: ["supported", "enabled"], gatedByEq: { key: "source", value: "custom" } },
-      { key: "maxmind_license", type: "text", sub: 2, gatedBy: ["supported", "enabled"], gatedByEq: { key: "source", value: "maxmind" } },
+      { key: "custom_update_url", type: "text", sub: 2, adminOnly: true, gatedBy: ["supported", "enabled"], gatedByEq: { key: "source", value: "custom" } },
+      { key: "maxmind_license", type: "text", sub: 2, adminOnly: true, gatedBy: ["supported", "enabled"], gatedByEq: { key: "source", value: "maxmind" } },
       { key: "auto_update_enabled", type: "bool", sub: true, gatedBy: ["supported", "enabled"] },
     ] },
     { legendKey: "prefs_group_geoip_status", fields: [
@@ -229,7 +230,7 @@ const TABS = [
       { key: "proxy_host", type: "text", sub: true, gatedBy: "proxy_enabled" },
       { key: "proxy_port", type: "int", min: 0, max: 65535, sub: true, gatedBy: "proxy_enabled" },
       { key: "proxy_auth_enabled", type: "bool", sub: true, gatedBy: "proxy_enabled" },
-      { key: "proxy_user", type: "text", sub: 2, gatedBy: ["proxy_enabled", "proxy_auth_enabled"] },
+      { key: "proxy_user", type: "text", sub: 2, adminOnly: true, gatedBy: ["proxy_enabled", "proxy_auth_enabled"] },
       { key: "proxy_password", type: "password", sub: 2, gatedBy: ["proxy_enabled", "proxy_auth_enabled"] },
     ] },
   ] },
@@ -533,7 +534,7 @@ export default function Preferences({ isGuest }) {
     (f.gatedByEq && values[cat + "." + f.gatedByEq.key] !== f.gatedByEq.value);
 
   const buildField = (cat, f) => {
-    if (f.hidden) return null;
+    if (f.hidden || (f.adminOnly && isGuest)) return null;
     const id = cat + "." + f.key;
     const val = f.derived ? f.derived(values, cat) : values[id];
     const label = t(f.labelKey || labelKeyFor(cat, f.key));
@@ -628,6 +629,8 @@ export default function Preferences({ isGuest }) {
           if (f.type === "button" || f.hidden || f.readonly) continue;
           if (asArr(f.gatedBy).some((k) => CAPS.has(cat + "." + k) && values[cat + "." + k] === false)) continue;
           const val = values[cat + "." + f.key];
+          // Not sent to this session: sending "" would wipe the stored value.
+          if (f.adminOnly && val === undefined) continue;
           let out;
           if (f.type === "password") {
             if (typeof val !== "string" || val === "") continue;

@@ -136,6 +136,11 @@ bool IsGoodIP(uint32 ip, bool filterLAN) noexcept
 	return !(filterLAN && IsLanIP(ip));
 }
 
+bool IsGoodServerIP(uint32 ip, bool filterLAN) noexcept
+{
+	return (!filterLAN && IsLoopbackIP(ip)) || IsGoodIP(ip, filterLAN);
+}
+
 bool IsLanIP(uint32_t ip) noexcept
 {
 	for (unsigned int i = 0; i < itemsof(lan_ranges); ++i) {

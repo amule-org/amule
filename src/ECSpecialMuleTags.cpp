@@ -79,8 +79,7 @@ bool CEC_Category_Tag::Apply()
 	bool ret = theApp->glob_prefs->UpdateCategory(
 		GetInt(), Name(), CPath(Path()), Comment(), Color(), Prio());
 	if (!ret) {
-		GetTagByName(EC_TAG_CATEGORY_PATH)
-			->SetStringData(theApp->glob_prefs->GetCatPath(GetInt()).GetRaw());
+		SetPath(theApp->glob_prefs->GetCatPath(GetInt()).GetRaw());
 	}
 	return ret;
 }
@@ -91,9 +90,7 @@ bool CEC_Category_Tag::Create()
 	bool ret = theApp->glob_prefs->CreateCategory(
 		category, Name(), CPath(Path()), Comment(), Color(), Prio());
 	if (!ret) {
-		GetTagByName(EC_TAG_CATEGORY_PATH)
-			->SetStringData(theApp->glob_prefs->GetCatPath(theApp->glob_prefs->GetCatCount() - 1)
-						.GetRaw());
+		SetPath(theApp->glob_prefs->GetCatPath(theApp->glob_prefs->GetCatCount() - 1).GetRaw());
 	}
 	return ret;
 }

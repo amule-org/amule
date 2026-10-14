@@ -149,9 +149,10 @@ WS		[ \t\r]*
 		/* Comment */
 	}
 
-^.*:{WS}{IP}{WS}-{WS}{IP}{WS}		{
+^[^\n\0]*:{WS}{IP}{WS}-{WS}{IP}{WS}		{
 		/* AntiP2P filter line
 		   <Description> : <IPStart> - <IPEnd>
+		   No NUL in the description: strrchr() and strchr() below would stop at it.
 		*/
 		char * ip1 = strrchr(yytext, ':');
 		*ip1++ = 0;		// remove : and terminate comment

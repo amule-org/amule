@@ -597,6 +597,7 @@ if (BUILD_REMOTEGUI)
 	add_executable (amulegui
 		${COMMON_SOURCES}
 		${GUI_SOURCES}
+		CaptchaDialog.cpp
 		kademlia/utils/UInt128.cpp
 		amule-remote-gui.cpp
 		ECPrefsDiff.cpp

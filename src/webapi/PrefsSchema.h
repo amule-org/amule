@@ -70,6 +70,7 @@ enum class PrefEnc
 enum class PrefAccess
 {
 	ReadWrite, // emitted on GET, applied on PATCH
+	AdminRead, // as ReadWrite, but emitted to admins only (credentials)
 	ReadOnly,  // emitted on GET, silently ignored on PATCH (capabilities, live status)
 	WriteOnly, // never emitted, applied on PATCH (passwords)
 	Rejected,  // never emitted, 400 if sent -- the field belongs to another endpoint
