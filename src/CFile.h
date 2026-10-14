@@ -226,11 +226,13 @@ private:
 	//! `pending != 0` check before either resets pending to 0, and since ::write advances
 	//! the fd offset atomically per call, the same N bytes land at fd_pos AND fd_pos + N.
 	//!
-	//! Hit in production on CPartFile::m_hpartfile: FlushBuffer calls
-	//! GetLength()/SetLength() and GetNeededSpace() calls GetLength(), all from the main
-	//! thread without taking m_hpartfileMutex. Before #562 that was safe, since GetLength
-	//! was just fstat; afterwards it drains the buffer, racing CPartFileWriteThread's
-	//! FlushAt. Manifests as 1-3 corrupt blocks per part, with AICH recovering ~98%.
+	//! Hit in production on CPartFile::m_hpartfile: FlushBuffer called
+	//! GetLength()/SetLength() and GetNeededSpace() called GetLength(), all from the main
+	//! thread without taking m_hpartfileMutex. (Their size checks now read
+	//! CFileAutoClose::GetKnownSize(), which touches neither this lock nor the fd.) Before #562 that was
+	//! safe, since GetLength was just fstat; afterwards it drains the buffer, racing
+	//! CPartFileWriteThread's FlushAt. Manifests as 1-3 corrupt blocks per part, with AICH recovering
+	//! ~98%.
 	//!
 	//! Recursive so Open() -> Close() does not deadlock, and cheap against the ~1 us floor
 	//! of the I/O syscalls it serializes. Mutable because the const-qualified methods need

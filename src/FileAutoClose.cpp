@@ -51,7 +51,9 @@ bool CFileAutoClose::Open(const CPath &path, CFile::OpenMode mode)
 	m_locked = 0;
 	m_size = 0;
 	m_lastAccess = TheTime;
-	return m_file.Open(path, mode);
+	const bool opened = m_file.Open(path, mode);
+	m_knownSize = opened ? m_file.GetLength() : 0;
+	return opened;
 }
 
 bool CFileAutoClose::Create(const CPath &path, bool overwrite)
@@ -60,7 +62,9 @@ bool CFileAutoClose::Create(const CPath &path, bool overwrite)
 	m_mode = CFile::write;
 	m_autoClosed = false;
 	m_lastAccess = TheTime;
-	return m_file.Create(path, overwrite);
+	const bool created = m_file.Create(path, overwrite);
+	m_knownSize = created ? m_file.GetLength() : 0;
+	return created;
 }
 
 bool CFileAutoClose::Close()
@@ -80,7 +84,11 @@ uint64 CFileAutoClose::GetLength() const
 bool CFileAutoClose::SetLength(uint64 newLength)
 {
 	CInUse inUse(*this);
-	return m_file.SetLength(newLength);
+	const bool resized = m_file.SetLength(newLength);
+	if (resized) {
+		m_knownSize = newLength;
+	}
+	return resized;
 }
 
 const CPath &CFileAutoClose::GetFilePath() const
@@ -105,7 +113,11 @@ void CFileAutoClose::WriteAt(const void *buffer, uint64 offset, size_t count)
 {
 	CInUse inUse(*this);
 	m_file.Seek(offset);
-	m_file.Write(buffer, count);
+	m_file.Write(buffer, count); // throws on failure
+	const uint64 end = offset + count;
+	uint64 known = m_knownSize.load(std::memory_order_relaxed);
+	while (end > known && !m_knownSize.compare_exchange_weak(known, end, std::memory_order_relaxed)) {
+	}
 }
 
 bool CFileAutoClose::Eof()

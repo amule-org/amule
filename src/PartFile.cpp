@@ -3518,7 +3518,7 @@ void CPartFile::FlushBuffer(bool fromAICHRecoveryDataAvailable)
 	try {
 		// Partfile should never be too large. IsOpened() guard: StopPausedFile() Release()s
 		// the fd, and StopFile() reaches here via PauseFile -- GetLength() asserts on a closed fd.
-		if (m_hpartfile.IsOpened() && m_hpartfile.GetLength() > GetFileSize()) {
+		if (m_hpartfile.IsOpened() && m_hpartfile.GetKnownSize() > GetFileSize()) {
 			// it's "last chance" correction. the real bugfix has to be applied 'somewhere' else
 			m_hpartfile.SetLength(GetFileSize());
 		}
@@ -3933,7 +3933,7 @@ void CPartFile::RemoveDownloadingSource(CUpDownClient *client)
 uint64 CPartFile::GetNeededSpace()
 {
 	try {
-		uint64 length = m_hpartfile.GetLength();
+		uint64 length = m_hpartfile.GetKnownSize();
 
 		if (length > GetFileSize()) {
 			return 0; // Shouldn't happen, but just in case

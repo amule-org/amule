@@ -1092,6 +1092,27 @@ target_link_libraries (SafeKadTest
 	mulecommon
 )
 
+# CFileAutoClose's known size, used by the main thread's part-file size checks.
+add_executable (FileAutoCloseTest
+	FileAutoCloseTest.cpp
+	${CMAKE_SOURCE_DIR}/src/FileAutoClose.cpp
+	${CMAKE_SOURCE_DIR}/src/SafeFile.cpp
+	${CMAKE_SOURCE_DIR}/src/CFile.cpp
+	${CMAKE_SOURCE_DIR}/src/MemFile.cpp
+	${CMAKE_SOURCE_DIR}/src/kademlia/utils/UInt128.cpp
+	${CMAKE_SOURCE_DIR}/src/Tag.cpp
+	${CMAKE_SOURCE_DIR}/src/libs/common/Path.cpp
+	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
+	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
+)
+add_test (NAME FileAutoCloseTest COMMAND FileAutoCloseTest)
+target_include_directories (FileAutoCloseTest PRIVATE
+	${CMAKE_BINARY_DIR}
+	${CMAKE_SOURCE_DIR}/src
+	${CMAKE_SOURCE_DIR}/src/include
+)
+target_link_libraries (FileAutoCloseTest muleunit)
+
 add_executable (FileDataIOTest
 	FileDataIOTest.cpp
 	${CMAKE_SOURCE_DIR}/src/SafeFile.cpp

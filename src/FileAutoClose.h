@@ -28,6 +28,7 @@
 
 #include "CFile.h" // Needed for CFile
 
+#include <atomic>
 #include <mutex>
 
 /**
@@ -73,6 +74,13 @@ public:
 	 * @see CSafeFileIO::GetLength. Calling this on a closed file is illegal.
 	 */
 	uint64 GetLength() const;
+
+	/**
+	 * The size as of the last open, WriteAt or SetLength through this object. Unlike
+	 * GetLength it touches neither a lock nor the file, so it cannot wait for I/O in progress:
+	 * on Windows even an fstat waits for a read or write pending on the same handle.
+	 */
+	uint64 GetKnownSize() const { return m_knownSize.load(std::memory_order_relaxed); }
 
 	/**
 	 * Resizes the file to the specified length.
@@ -164,6 +172,9 @@ private:
 
 	//! Last access time (s)
 	uint64 m_lastAccess;
+
+	//! See GetKnownSize. Atomic, as the write thread raises it while the main thread reads it.
+	std::atomic<uint64> m_knownSize{ 0 };
 };
 
 #endif // FILEAUTOCLOSE_H
