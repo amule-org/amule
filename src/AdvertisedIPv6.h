@@ -108,6 +108,14 @@ inline std::optional<CNetworkAddress> DecideAdvertisedIPv6(const SAdvertisedIPv6
  * the app and its sockets and the decision above can be unit-tested on its own.
  */
 std::optional<CNetworkAddress> AdvertisedIPv6ForPeers();
+
+/**
+ * The stable globally routable local IPv6 selected from the current interfaces, or none.
+ *
+ * Unlike AdvertisedIPv6ForPeers(), this does not assert inbound reachability or opt the address
+ * into hello advertisement. It is only evidence that an outbound IPv6 source route exists.
+ */
+std::optional<CNetworkAddress> SelectedLocalIPv6();
 #endif
 
 #endif // ADVERTISED_IPV6_H

@@ -785,19 +785,6 @@ void ChatProcessMsg(CChatTarget sender, wxString message)
 #endif
 }
 
-// MuleNotify stores notification arguments by value; a reference would not match the queued
-// callback signature.
-// NOLINTBEGIN(performance-unnecessary-value-param)
-void ChatSendCaptcha(wxString NOT_ON_DAEMON(captcha), CChatTarget NOT_ON_DAEMON(to_id))
-// NOLINTEND(performance-unnecessary-value-param)
-{
-#ifndef AMULE_DAEMON
-	if (theApp->amuledlg->m_chatwnd) {
-		theApp->amuledlg->m_chatwnd->SendMessage(captcha, "", to_id);
-	}
-#endif
-}
-
 void ShowConnState(long)
 {
 #ifndef AMULE_DAEMON
@@ -1122,6 +1109,20 @@ void ConvertReaddAllJobs()
 #endif // #ifndef AMULE_DAEMON
 
 #endif // #ifndef CLIENT_GUI
+
+// MuleNotify stores notification arguments by value; a reference would not match the queued
+// callback signature.
+// NOLINTBEGIN(performance-unnecessary-value-param)
+void ChatSendCaptcha(
+	wxString NOT_ON_DAEMON(captcha), CChatTarget NOT_ON_DAEMON(to_id), uint32 NOT_ON_DAEMON(challengeId))
+// NOLINTEND(performance-unnecessary-value-param)
+{
+#ifndef AMULE_DAEMON
+	if (theApp->amuledlg->m_chatwnd) {
+		theApp->amuledlg->m_chatwnd->SendMessage(captcha, "", to_id, challengeId);
+	}
+#endif
+}
 
 // Broadcast from every CKnownFile destruction site BEFORE the `delete file`. Subscribers MUST only
 // compare the file pointer by value, never dereference it: by the time a subscriber on the main

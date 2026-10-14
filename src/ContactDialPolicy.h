@@ -28,6 +28,8 @@
 #include "NetworkAddress.h"
 #include "PeerAddressing.h" // Needed for HasEd2kWireForm
 
+#include <vector>
+
 enum class EContactRoute
 {
 	Legacy,
@@ -43,6 +45,57 @@ struct SContactFacts
 	bool familyPermitted = false;
 	bool proxyEnabled = false;
 };
+
+/**
+ * The addresses an outbound contact must pass the IP filter and ban list on: the dial target and,
+ * for a promoted IPv6 dial, the peer's retained IPv4 identity, so promotion never bypasses a
+ * filter or ban on either. Both are the same address on every other route.
+ */
+inline std::vector<CNetworkAddress> ContactSecurityAddresses(
+	const CNetworkAddress &target, const CNetworkAddress &connectAddress)
+{
+	std::vector<CNetworkAddress> addresses{ target };
+	if (PeerAddressing::HasEd2kWireForm(connectAddress) && connectAddress != target) {
+		addresses.push_back(connectAddress);
+	}
+	return addresses;
+}
+
+/** Whether dialling dialAddress uses a peer's advertised IPv6 in place of its IPv4 identity. */
+inline bool IsPromotedIPv6Dial(const CNetworkAddress &dialAddress, const CNetworkAddress &connectAddress)
+{
+	return dialAddress.IsIPv6() && !dialAddress.IsIPv4Mapped() &&
+	       PeerAddressing::HasEd2kWireForm(connectAddress);
+}
+
+/** uTP framing is IPv4-only, so an IPv6 dial target goes over TCP. */
+inline bool ShouldTryIPv4Utp(const CNetworkAddress &dialAddress)
+{
+	return !(dialAddress.IsIPv6() && !dialAddress.IsIPv4Mapped());
+}
+
+/**
+ * Returns a peer's advertised IPv6 as the TCP target only when this node is explicitly configured
+ * for dual stack and has selected a global local IPv6. The local address proves that an IPv6 source
+ * route exists; it is not the peer target. Otherwise the existing target stays intact.
+ */
+inline CNetworkAddress PromotePeerIPv6ForDial(const CNetworkAddress &current,
+	const CNetworkAddress &peerIPv6,
+	const CNetworkAddress &unansweredIPv6,
+	bool dualStackConfigured,
+	const CNetworkAddress &localIPv6,
+	bool proxyEnabled)
+{
+	// Only add IPv6 as an alternative to an established IPv4 identity. Existing native IPv6
+	// contacts must keep the exact endpoint they already use, and an unanswered advertisement
+	// falls back to that IPv4 route rather than being retried forever.
+	if (PeerAddressing::HasEd2kWireForm(current) && dualStackConfigured && !proxyEnabled &&
+		peerIPv6 != unansweredIPv6 && peerIPv6.IsGloballyRoutableIPv6() &&
+		localIPv6.IsGloballyRoutableIPv6()) {
+		return peerIPv6;
+	}
+	return current;
+}
 
 /**
  * How to reach a client.

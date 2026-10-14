@@ -535,6 +535,20 @@ EC_TAG_CHAT                               0x0900
 	EC_TAG_CHAT_TIMESTAMP                     0x0906
 	EC_TAG_CHAT_PEER_NAME                     0x0907
 	EC_TAG_CHAT_PEER_HASH                     0x0908
+## Optional children of EC_TAG_CHAT_MESSAGE. Kind: 0 text (default), 1 CAPTCHA
+## challenge, 2 CAPTCHA result. Image is a base64-encoded validated BMP string.
+## Status: 0 accepted, 1 failed/retry allowed, 2 failed/no attempts remain.
+## EC_TAG_CHAT_CAPTCHA_IMAGE is also a session child while its challenge is
+## pending, independent of the requested transcript cursor, unless the bitmap
+## is already included in a message child or acknowledged by the request.
+	EC_TAG_CHAT_MESSAGE_KIND                  0x0909
+	EC_TAG_CHAT_CAPTCHA_IMAGE                 0x090A
+	EC_TAG_CHAT_CAPTCHA_STATUS                0x090B
+## Session child: currently pending challenge message id, or 0. Optional on
+## EC_OP_CHAT_SEND: reject an answer unless this exact challenge is pending.
+## On EC_OP_GET_CHAT_SESSIONS, repeated top-level ids acknowledge cached images.
+## Omit acknowledgments after reconnect to recover live images at any cursor.
+	EC_TAG_CHAT_CAPTCHA_ID                    0x090C
 
 EC_TAG_SELECT_PREFS                       0x1000
 

@@ -53,7 +53,7 @@
   "downloads_status_waiting": "Ожидает",
   "downloads_peer_soft_emule_plus": "eMule Plus",
   "prefs_field_geoip_download_in_progress": "Загружается",
-  "prefs_field_geoip_auto_update_enabled": "Автообновление при запуске",
+  "prefs_field_geoip_auto_update_enabled": "Автообновление при запуске и еженедельно",
   "client_detail_kad_on": "Подключён",
   "downloads_peer_col_actions": "Действия",
   "downloads_peer_state_no_needed_parts": "Нет нужных частей",

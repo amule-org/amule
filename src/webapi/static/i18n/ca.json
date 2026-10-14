@@ -122,7 +122,7 @@
   "networks_server_prio_high": "Alta",
   "prefs_field_geoip_download_in_progress": "S'està baixant",
   "networks_kad_buddy_none": "Cap amic",
-  "prefs_field_geoip_auto_update_enabled": "Actualitza automàticament a l'inici",
+  "prefs_field_geoip_auto_update_enabled": "Actualitza automàticament a l'inici i setmanalment",
   "client_detail_kad_on": "Connectat",
   "stats_error": "Error",
   "downloads_peer_col_actions": "Accions",

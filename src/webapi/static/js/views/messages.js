@@ -8,6 +8,7 @@ import { html, useState, useEffect, useRef, useStore } from "../dom.js";
 import { Placeholder, Tabs, toast, confirmDialog } from "../components.js";
 import { Icon } from "../icons.js";
 import { chats } from "../chats.js";
+import { store } from "../store.js";
 import { searches } from "../searches.js";
 import { t, terr } from "../i18n.js";
 
@@ -172,6 +173,10 @@ function AddFriendModal({ onClose }) {
 
 function ChatPane({ reg, active, isGuest }) {
   const [draft, setDraft] = useState("");
+  const draftCaptcha = useRef(0);
+  const draftVersion = useRef(0);
+  const sending = useRef(false);
+  useEffect(() => { setDraft(""); draftCaptcha.current = 0; draftVersion.current++; }, [active && active.peer]);
 
   const tabItems = reg.tabs.map((x) => ({
     key: x.peer,
@@ -182,12 +187,25 @@ function ChatPane({ reg, active, isGuest }) {
     closeLabel: t("messages_tab_close"),
   }));
 
-  const send = (e) => {
+  const send = async (e) => {
     e.preventDefault();
     const text = draft.trim();
-    if (!text || !active) return; // dropped silently, like the desktop
-    setDraft("");
-    chats.send(active.peer, text);
+    if (!text || !active || sending.current) return; // dropped silently, like the desktop
+    // Keep the id captured when typing began, even if expiry arrives before submit.
+    const peer = active.peer;
+    const version = draftVersion.current;
+    sending.current = true;
+    const sent = await chats.send(peer, text, draftCaptcha.current);
+    sending.current = false;
+    if (version === draftVersion.current) {
+      if (sent) { setDraft(""); draftCaptcha.current = 0; }
+      else {
+        // The failed send refreshes shared state before returning. Keep the
+        // text, but let an explicit retry use the current challenge (or none).
+        const current = (store.get("chats")?.tabs || []).find((x) => x.peer === peer);
+        draftCaptcha.current = current?.pendingCaptchaId || 0;
+      }
+    }
   };
 
   const addToFriends = async () => {
@@ -228,13 +246,18 @@ function ChatPane({ reg, active, isGuest }) {
                   </button>` : null}
               </div>
               <${ChatLog} key=${active.peer} peer=${active.peer}
-                          peerName=${active.name} myNick=${reg.myNick} />`
+                          peerName=${active.name} myNick=${reg.myNick}
+                          pendingId=${active.pendingCaptchaId} pendingImage=${active.pendingCaptchaImage} />`
             : html`<${Placeholder} kind="info">${t("messages_empty")}<//>`}
       </div>
       <form class="chat-compose admin-only" onSubmit=${send}>
         <input class="input" name="message" type="text" maxlength="1024" placeholder=${t("messages_ph")}
                aria-label=${t("messages_ph")} disabled=${!active} value=${draft}
-               onInput=${(e) => setDraft(e.target.value)} />
+               onInput=${(e) => {
+                 if (!draft) draftCaptcha.current = active ? active.pendingCaptchaId : 0;
+                 draftVersion.current++;
+                 setDraft(e.target.value);
+               }} />
         <button class="btn btn-primary" type="submit" title=${t("messages_send_tip")}
                 disabled=${!active}>${t("messages_send")}</button>
         <button class="btn" type="button" title=${t("messages_close_tip")} disabled=${!active}
@@ -256,16 +279,24 @@ function hhmmss(ts) {
 
 // Flat coloured text log like the desktop, "[HH:MM:SS] Nick: text", but with
 // theme tokens instead of its fixed #0000FF (unreadable on a dark background).
-function ChatLog({ peer, peerName, myNick }) {
-  const messages = useStore("chat:" + peer) || [];
+function ChatLog({ peer, peerName, myNick, pendingId, pendingImage }) {
+  const stored = useStore("chat:" + peer) || [];
+  // A pending challenge can outlive the bounded transcript window.
+  const messages = pendingId && pendingImage && !stored.some((m) => m.id === pendingId)
+    ? [...stored, { id: pendingId, direction: "in", type: "captcha_challenge", captcha_image: pendingImage }]
+    : stored;
   const boxRef = useRef(null);
   const stickRef = useRef(true);
+
+  const scrollToBottom = () => {
+    const box = boxRef.current;
+    if (box && stickRef.current) box.scrollTop = box.scrollHeight;
+  };
 
   // Key on the array, not its length: at HISTORY_LIMIT each new message evicts
   // one, so a length-keyed effect would stop scrolling to the bottom.
   useEffect(() => {
-    const box = boxRef.current;
-    if (box && stickRef.current) box.scrollTop = box.scrollHeight;
+    scrollToBottom();
   }, [messages, peer]);
 
   const onScroll = (e) => {
@@ -280,7 +311,14 @@ function ChatLog({ peer, peerName, myNick }) {
           <span class="chat-time">[${hhmmss(m.sent_at)}]</span>
           <span class=${"chat-nick " + m.direction}>
             ${m.direction === "out" ? (myNick || t("messages_me")) : peerName}
-          </span>${": "}<span class="chat-text">${m.text}</span>
+          </span>${": "}<span class="chat-text">${m.type === "captcha_challenge"
+            ? t(m.id === pendingId ? "messages_captcha_challenge" : "messages_captcha_expired")
+            : m.type === "captcha_result"
+              ? t(["messages_captcha_passed", "messages_captcha_retry", "messages_captcha_exhausted"][m.captcha_status])
+              : m.text}</span>
+          ${m.type === "captcha_challenge" && m.captcha_image ? html`
+            <img class="chat-captcha" src=${"data:image/bmp;base64," + m.captcha_image}
+                 alt=${t("messages_captcha_image")} onLoad=${scrollToBottom} />` : null}
         </div>`)}
     </div>`;
 }

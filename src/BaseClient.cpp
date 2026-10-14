@@ -66,6 +66,7 @@
 #include "ClientVersionString.h"
 #include "ClientList.h"       // Needed for CClientList
 #include "ChatSessionStore.h" // Needed for CChatSessionStore
+#include "ChatCaptcha.h"
 #ifndef AMULE_DAEMON
 #include "amuleDlg.h"      // Needed for CamuleDlg
 #include "CaptchaDialog.h" // Needed for CCaptchaDialog
@@ -178,6 +179,9 @@ void CUpDownClient::Init()
 #endif
 	m_bAddNextConnect = false;
 	m_dialingIPv6 = false;
+	m_preserveIPv4IdentityOnHello = false;
+	m_preparedDialAddress = CNetworkAddress::Absent();
+	m_dialledIPv6Address = CNetworkAddress::Absent();
 	m_unansweredIPv6Address = CNetworkAddress::Absent();
 	credits = NULL;
 	m_byChatstate = MS_NONE;
@@ -728,10 +732,10 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data)
 			// claimed address's /48, keyed on where the packet came from rather than on a
 			// self-declared user hash. Votes for any of our addresses in one /64 add up, within a
 			// time window. Nothing consumes the result yet.
-			if (temptag.IsHash()) {
+			if (temptag.IsHash() && m_socket != nullptr) {
 				const std::uint8_t *claimed = temptag.GetHash().GetHash();
 				if (ObservedPublicIPv6().AddClaim(
-					    GetConnectAddress(), claimed, ::GetTickCount64())) {
+					    m_socket->GetPeerAddress(), claimed, ::GetTickCount64())) {
 					AddDebugLogLineN(logClient,
 						CFormat("Peers reaching us over IPv6 see us in %s/64") %
 							CNetworkAddress::FromIPv6Bytes(claimed)
@@ -773,7 +777,9 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data)
 	}
 
 	if (m_socket) {
-		SetUserAddress(m_socket->GetPeerAddress());
+		if (!m_preserveIPv4IdentityOnHello) {
+			SetUserAddress(m_socket->GetPeerAddress());
+		}
 	} else {
 		throw wxString("Huh, socket failure. Avoided crash this time.");
 	}
@@ -1278,12 +1284,7 @@ void CUpDownClient::SendHelloTypePacket(CMemFile *data)
 	const uint32 uRequestsCryptLayer = thePrefs::IsClientCryptLayerRequested() ? 1 : 0;
 	const uint32 uRequiresCryptLayer = thePrefs::IsClientCryptLayerRequired() ? 1 : 0;
 	const uint32 uSupportsSourceEx2 = 1;
-#ifdef AMULE_DAEMON
-	// captcha for daemon/remotegui not supported for now
-	const uint32 uSupportsCaptcha = 0;
-#else
 	const uint32 uSupportsCaptcha = 1;
-#endif
 	// direct callback is only possible if connected to kad, tcp firewalled and verified UDP open (for
 	// example on a full cone NAT)
 	const bool udpFirewalled = Kademlia::CUDPFirewallTester::IsFirewalledUDP(true);
@@ -1463,10 +1464,15 @@ bool CUpDownClient::Disconnected(const wxString &DEBUG_ONLY(strReason), bool bFr
 		theApp->uploadqueue->RemoveFromUploadQueue(this);
 	}
 
-	// Nothing verifies that a native IPv6 peer accepts inbound connections: keep its queue place
-	// and let it get its slot through its own next connection, like a LowID.
+	// An advertised IPv6 supplements a known IPv4 peer rather than replacing it. Remember a
+	// failed promoted target so later attempts use IPv4; native IPv6 peers retain their old path.
+	const bool failedPromotedIPv6 =
+		IsPromotedIPv6Dial(m_dialledIPv6Address, GetConnectAddress()) &&
+		(GetUploadState() == US_CONNECTING || GetDownloadState() == DS_CONNECTING);
+	if (failedPromotedIPv6) {
+		m_unansweredIPv6Address = m_dialledIPv6Address;
+	}
 	if (m_dialingIPv6 && GetUploadState() == US_CONNECTING) {
-		m_unansweredIPv6Address = GetConnectAddress();
 		theApp->uploadqueue->RequeueUnreachable(this);
 	}
 
@@ -1529,12 +1535,25 @@ bool CUpDownClient::Disconnected(const wxString &DEBUG_ONLY(strReason), bool bFr
 
 	switch (m_nDownloadState) {
 	case DS_CONNECTING:
+		if (failedPromotedIPv6) {
+			SetDownloadState(DS_ONQUEUE);
+			bDelete = false;
+			break;
+		}
+		/* fall through */
 	case DS_WAITCALLBACK:
 	case DS_ERROR:
 	case DS_BANNED:
 		theApp->clientlist->AddDeadSource(this);
 		bDelete = true;
 	};
+
+	// A received CAPTCHA belongs to the connection that delivered it. A new
+	// connection must start with a normal message, not a stale solution.
+	if (GetChatCaptchaState() == CA_ACCEPTING || GetChatCaptchaState() == CA_CAPTCHARECV ||
+		GetChatCaptchaState() == CA_SOLUTIONSENT) {
+		m_nChatCaptchaState = CA_NONE;
+	}
 
 	// We keep chat partners in any case
 	if (GetChatState() != MS_NONE) {
@@ -1544,6 +1563,9 @@ bool CUpDownClient::Disconnected(const wxString &DEBUG_ONLY(strReason), bool bFr
 	}
 
 	m_dialingIPv6 = false;
+	m_preserveIPv4IdentityOnHello = false;
+	m_preparedDialAddress = CNetworkAddress::Absent();
+	m_dialledIPv6Address = CNetworkAddress::Absent();
 
 	// Delete socket
 	if (!bFromSocket && m_socket) {
@@ -1587,10 +1609,34 @@ bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon)
 	return result != EContactResult::ClientDeleted && result != EContactResult::ConnectNotStarted;
 }
 
+CNetworkAddress CUpDownClient::GetDialAddress() const
+{
+	if (m_preparedDialAddress.IsPresent()) {
+		return m_preparedDialAddress;
+	}
+#ifdef ENABLE_IPV6
+	const CNetworkAddress peerIPv6 =
+		m_hasModIPv6 ? CNetworkAddress::FromIPv6Bytes(m_modIPv6) : CNetworkAddress::Absent();
+	return PromotePeerIPv6ForDial(GetConnectAddress(),
+		peerIPv6,
+		m_unansweredIPv6Address,
+		AddressFamilyPolicy::Configured() == AddressFamilyPolicy::Families::DualStack,
+		SelectedLocalIPv6().value_or(CNetworkAddress::Absent()),
+		thePrefs::GetProxyData()->m_proxyEnable);
+#else
+	return GetConnectAddress();
+#endif
+}
+
 CNetworkAddress CUpDownClient::ContactAddress() const
 {
+	// A prepared target is the one this attempt will really dial, so filter and ban checks must
+	// see it rather than the IPv4 identity retained for protocol bookkeeping.
+	if (m_preparedDialAddress.IsPresent()) {
+		return m_preparedDialAddress;
+	}
 	return PeerAddressing::ContactCheckAddress(
-		GetUserAddress(), GetConnectAddress(), HasLowID(), wxUINT32_SWAP_ALWAYS(m_nUserIDHybrid));
+		GetUserAddress(), GetDialAddress(), HasLowID(), wxUINT32_SWAP_ALWAYS(m_nUserIDHybrid));
 }
 
 bool CUpDownClient::IsRedialAllowed() const
@@ -1627,17 +1673,12 @@ EContactRoute CUpDownClient::ContactRoute() const
 #endif
 	facts.familyPermitted = AddressFamilyPolicy::Permits(facts.contactAddress);
 	facts.proxyEnabled = thePrefs::GetProxyData()->m_proxyEnable;
-	const EContactRoute route = DecideContactRoute(facts);
-	// Connect() dials GetConnectAddress(), so it must be the address the filter and ban checks saw.
-	if (route == EContactRoute::DialIPv6 && GetConnectAddress() != facts.contactAddress) {
-		return EContactRoute::Refuse;
-	}
-	return route;
+	return DecideContactRoute(facts);
 }
 
 bool CUpDownClient::IsCallableIPv6Contact() const
 {
-	return ContactRoute() == EContactRoute::DialIPv6 && GetConnectAddress() != m_unansweredIPv6Address;
+	return ContactRoute() == EContactRoute::DialIPv6 && GetDialAddress() != m_unansweredIPv6Address;
 }
 
 // Re-check the standing reasons to refuse this peer, disconnecting it on a hit:
@@ -1679,25 +1720,31 @@ EContactResult CUpDownClient::CheckContactPreconditions()
 	// Although all received IPs (server sources, source exchange) and all incoming connection
 	// attempts are filtered, outgoing connection attempts have to be filtered here too, because
 	// the ip filter list may have been updated since.
-	if (theApp->ipfilter->IsFiltered(contactAddress)) {
-		AddDebugLogLineN(
-			logIPFilter, "Filtered ip " + contactAddress.ToWxString() + " on TryToConnect");
-		if (Disconnected("IPFilter")) {
-			Safe_Delete();
-			return EContactResult::ClientDeleted;
+	const std::vector<CNetworkAddress> checkedAddresses =
+		ContactSecurityAddresses(contactAddress, GetConnectAddress());
+	for (const CNetworkAddress &address : checkedAddresses) {
+		if (theApp->ipfilter->IsFiltered(address)) {
+			AddDebugLogLineN(
+				logIPFilter, "Filtered ip " + address.ToWxString() + " on TryToConnect");
+			if (Disconnected("IPFilter")) {
+				Safe_Delete();
+				return EContactResult::ClientDeleted;
+			}
+			return EContactResult::Declined;
 		}
-		return EContactResult::Declined;
 	}
 
 	// for safety: check again whether that IP is banned
-	if (theApp->clientlist->IsBannedClient(contactAddress)) {
-		AddDebugLogLineN(
-			logClient, "Refused to connect to banned client " + contactAddress.ToWxString());
-		if (Disconnected("Banned IP")) {
-			Safe_Delete();
-			return EContactResult::ClientDeleted;
+	for (const CNetworkAddress &address : checkedAddresses) {
+		if (theApp->clientlist->IsBannedClient(address)) {
+			AddDebugLogLineN(
+				logClient, "Refused to connect to banned client " + address.ToWxString());
+			if (Disconnected("Banned IP")) {
+				Safe_Delete();
+				return EContactResult::ClientDeleted;
+			}
+			return EContactResult::Declined;
 		}
-		return EContactResult::Declined;
 	}
 	if (ContactRoute() == EContactRoute::Refuse) {
 		if (Disconnected("Outbound IPv6 connections unavailable")) {
@@ -1722,12 +1769,18 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 		}
 	}
 
+	// Freeze the target before checking it. The security checks, socket constructor and Connect()
+	// must all use this same address, even if a preference changes mid-attempt.
+	m_preparedDialAddress = GetDialAddress();
 	if (const EContactResult refused = CheckContactPreconditions();
 		refused != EContactResult::Contacting) {
 		return refused;
 	}
 	// Every callback route carries IPv4 only, so a native IPv6 contact skips them and is dialled.
 	const bool dialIPv6 = ContactRoute() == EContactRoute::DialIPv6;
+	if (!dialIPv6) {
+		m_preparedDialAddress = CNetworkAddress::Absent();
+	}
 
 	if (GetKadState() == KS_QUEUED_FWCHECK) {
 		SetKadState(KS_CONNECTING_FWCHECK);
@@ -1955,7 +2008,8 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 			obfuscationSatisfied };
 		// Connect() is a no-op on a live socket. Without the same guard the
 		// uTP path would attach a transport over a connection already in use.
-		if (!m_socket->IsOk() && DecideUtpDial(facts) == EUtpDialDecision::TryUtp) {
+		if (!m_socket->IsOk() && ShouldTryIPv4Utp(GetDialAddress()) &&
+			DecideUtpDial(facts) == EUtpDialDecision::TryUtp) {
 			std::unique_ptr<IStreamTransport> transport;
 			if (utp->Dial(GetConnectIP(),
 				    utpPort,
@@ -1996,12 +2050,16 @@ bool CUpDownClient::Connect()
 			m_socket->SetConnectionEncryption(false, NULL, false);
 		}
 #ifdef ENABLE_IPV6
-		const CNetworkAddress &connectAddress = GetConnectAddress();
+		const CNetworkAddress connectAddress = GetDialAddress();
 		if (connectAddress.IsIPv6() && !connectAddress.IsIPv4Mapped()) {
 			AddDebugLogLineN(logClient,
 				CFormat("Trying to connect to [%s]:%u") % connectAddress.ToWxString() %
 					static_cast<unsigned int>(GetUserPort()));
 			m_dialingIPv6 = true;
+			m_preserveIPv4IdentityOnHello =
+				IsPromotedIPv6Dial(connectAddress, GetConnectAddress());
+			m_dialledIPv6Address = connectAddress;
+			m_preparedDialAddress = CNetworkAddress::Absent();
 			m_socket->ConnectIPv6(connectAddress, GetUserPort(), false);
 			return true;
 		}
@@ -2012,6 +2070,9 @@ bool CUpDownClient::Connect()
 		AddDebugLogLineN(logClient,
 			"Trying to connect to " + Uint32_16toStringIP_Port(GetConnectIP(), GetUserPort()));
 		m_dialingIPv6 = false;
+		m_preserveIPv4IdentityOnHello = false;
+		m_preparedDialAddress = CNetworkAddress::Absent();
+		m_dialledIPv6Address = CNetworkAddress::Absent();
 		m_socket->Connect(tmp, false);
 		// We should send hello packets AFTER connecting!
 		// so I moved it to OnConnect
@@ -2063,6 +2124,8 @@ void CUpDownClient::ConnectionEstablished()
 
 	m_hasbeenobfuscatinglately = (m_socket && m_socket->IsConnected() && m_socket->IsObfusicating());
 	m_dialingIPv6 = false;
+	m_preparedDialAddress = CNetworkAddress::Absent();
+	m_dialledIPv6Address = CNetworkAddress::Absent();
 
 #ifdef __DEBUG__
 	if (!connection_reason.IsEmpty()) {
@@ -3070,10 +3133,7 @@ bool CUpDownClient::SendChatMessage(const wxString &message)
 {
 	if (GetChatCaptchaState() == CA_CAPTCHARECV) {
 		m_nChatCaptchaState = CA_SOLUTIONSENT;
-	} else if (GetChatCaptchaState() == CA_SOLUTIONSENT) {
-		wxFAIL; // we responded to a captcha but didn't hear from the client afterwards - hopefully
-			// it's just lag and this message will get through
-	} else {
+	} else if (GetChatCaptchaState() != CA_SOLUTIONSENT) {
 		m_nChatCaptchaState = CA_ACCEPTING;
 	}
 
@@ -3246,84 +3306,59 @@ bool CUpDownClient::ShouldReceiveCryptUDPPackets() const
 		(thePrefs::IsClientCryptLayerRequested() || RequestsCryptLayer()));
 }
 
-#ifdef AMULE_DAEMON
-
-void CUpDownClient::ProcessCaptchaRequest(CMemFile *WXUNUSED(data)) {}
-void CUpDownClient::ProcessCaptchaReqRes(uint8 WXUNUSED(nStatus)) {}
-
-#else
-
 void CUpDownClient::ProcessCaptchaRequest(CMemFile *data)
 {
-	const CChatPeer id = GetChatPeer();
-	// received a captcha request, check if we actually accept it (only after sending a message ourself to
-	// this client)
-	if (GetChatCaptchaState() == CA_ACCEPTING && GetChatState() != MS_NONE &&
-		theApp->amuledlg->m_chatwnd->IsIdValid(id)) {
-		// read tags (for future use)
-		uint8 nTagCount = data->ReadUInt8();
-		if (nTagCount) {
-			AddDebugLogLineN(logClient,
-				CFormat("Received captcha request from client (%s) with (%u) tags") %
-					GetFullIP() % nTagCount);
-			// and ignore them for now
-			for (uint32 i = 0; i < nTagCount; i++) {
-				CTag tag(*data, true);
-			}
-		}
-
-		// sanitize checks - we want a small captcha not a wallpaper
-		uint32 nSize = (uint32)(data->GetLength() - data->GetPosition());
-
-		if (nSize > 128 && nSize < 4096) {
-			uint64 pos = data->GetPosition();
-			wxMemoryInputStream memstr(data->GetRawBuffer() + pos, nSize);
-			wxImage imgCaptcha(memstr, wxBITMAP_TYPE_BMP);
-
-			if (imgCaptcha.IsOk() && imgCaptcha.GetHeight() > 10 && imgCaptcha.GetHeight() < 50 &&
-				imgCaptcha.GetWidth() > 10 && imgCaptcha.GetWidth() < 150) {
-				m_nChatCaptchaState = CA_CAPTCHARECV;
-				CCaptchaDialog *dialog = new CCaptchaDialog(theApp->amuledlg, imgCaptcha, id);
-				dialog->Show();
-
-			} else {
-				AddDebugLogLineN(logClient,
-					CFormat("Received captcha request from client, processing image "
-						"failed or invalid pixel size (%s)") %
-						GetFullIP());
-			}
-		} else {
-			AddDebugLogLineN(logClient,
-				CFormat("Received captcha request from client, size sanitize check failed "
-					"(%u) (%s)") %
-					nSize % GetFullIP());
-		}
-	} else {
-		AddDebugLogLineN(logClient,
-			CFormat("Received captcha request from client, but don't accepting it at this time "
-				"(%s)") %
-				GetFullIP());
+	const CChatPeer peer = GetChatPeer();
+	if (GetChatCaptchaState() != CA_ACCEPTING || GetChatState() == MS_NONE || !theApp->chatsessions ||
+		!theApp->chatsessions->Find(peer)) {
+		AddDebugLogLineN(logClient, "Received unexpected chat CAPTCHA request from " + GetFullIP());
+		return;
 	}
+	// Reserved tags precede the bitmap; CMemFile/CTag reject truncated packets.
+	const uint8 count = data->ReadUInt8();
+	for (uint32 i = 0; i < count; ++i) {
+		CTag tag(*data, true);
+	}
+	const auto size = data->GetLength() - data->GetPosition();
+	const auto *image = data->GetRawBuffer() + data->GetPosition();
+	if (!theApp->chatsessions->AddCaptchaChallenge(peer, image, size)) {
+		AddDebugLogLineN(logClient, "Rejected invalid chat CAPTCHA from " + GetFullIP());
+		return;
+	}
+	m_nChatCaptchaState = CA_CAPTCHARECV;
+	m_chatCaptchaId = theApp->chatsessions->LastMsgId();
+#ifndef AMULE_DAEMON
+	if (theApp->amuledlg->m_chatwnd->IsIdValid(peer)) {
+		wxMemoryInputStream stream(image, size);
+		wxImage bitmap(stream, wxBITMAP_TYPE_BMP);
+		if (bitmap.IsOk()) {
+			auto *dialog = new CCaptchaDialog(theApp->amuledlg, bitmap, peer, m_chatCaptchaId);
+			dialog->Show();
+		}
+	}
+#endif
 }
 
-void CUpDownClient::ProcessCaptchaReqRes(uint8 nStatus)
+void CUpDownClient::ProcessCaptchaReqRes(uint8 status)
 {
-	const CChatPeer id = GetChatPeer();
-	if (GetChatCaptchaState() == CA_SOLUTIONSENT && GetChatState() != MS_NONE &&
-		theApp->amuledlg->m_chatwnd->IsIdValid(id)) {
-		wxASSERT(nStatus < 3);
-		m_nChatCaptchaState = CA_NONE;
-		theApp->amuledlg->m_chatwnd->ShowCaptchaResult(id, nStatus == 0);
-	} else {
-		m_nChatCaptchaState = CA_NONE;
+	const CChatPeer peer = GetChatPeer();
+	const bool expected = GetChatCaptchaState() == CA_SOLUTIONSENT && GetChatState() != MS_NONE;
+	if (!expected || status > 2) {
 		AddDebugLogLineN(logClient,
-			CFormat("Received captcha result from client, but not accepting it at this time "
-				"(%s)") %
+			CFormat("Received unexpected chat CAPTCHA result (%u) from %s") % status %
 				GetFullIP());
+		return;
 	}
+	m_nChatCaptchaState = CA_NONE;
+	if (theApp->chatsessions) {
+		theApp->chatsessions->AddCaptchaResult(peer, status);
+	}
+#ifndef AMULE_DAEMON
+	if (theApp->amuledlg->m_chatwnd->IsIdValid(peer)) {
+		theApp->amuledlg->m_chatwnd->ShowCaptchaResult(peer, status == 0);
+	}
+#endif
 }
-
-#endif // AMULE_DAEMON
 
 // Shared by both builds. The advanced spam filter (captcha + URL heuristic) is GUI-only --
 // CCaptchaGenerator lives in the monolithic target and the spam path touches the chat

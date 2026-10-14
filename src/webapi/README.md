@@ -126,3 +126,31 @@ Then open `http://127.0.0.1:4713/`.
 - Zero runtime downloads; third-party libs are vendored under
   `static/js/vendor/` with their license.
 - Authenticates via the amuleapi session cookie (never stores the JWT).
+
+Chat CAPTCHA challenges and results are included in the ordinary message history
+and `chat_message` events. A challenge has `type: "captcha_challenge"` and
+`captcha_image` containing a base64-encoded BMP. A result has
+`type: "captcha_result"` and `captcha_status`: `0` for success, `1` for failure
+with another attempt allowed, or `2` when attempts are exhausted. Ordinary text
+messages omit these fields. Send the CAPTCHA text through the existing
+`POST /api/v1/chats/{address}/messages` endpoint. After a retryable failure,
+send another message to request a new challenge. Clients that present a dedicated
+answer dialog can include `captcha_id` (the challenge's message `id`) in the POST
+body. The daemon rejects an expired, replaced, or already answered challenge with
+HTTP 409 `captcha_expired`, without sending the answer or reopening a conversation.
+The session list exposes `pending_captcha_id` and `pending_captcha_image` (both
+`null` when no answer is pending). The image survives transcript eviction.
+`chat_session_updated` reports pending-id changes, including disconnect expiry.
+The WebUI captures the id when typing starts and submits it with the answer.
+An unknown hash-addressed conversation still returns the usual HTTP 404. The daemon only accepts
+challenges after an outgoing message in an open conversation, and only accepts
+results while awaiting a solution response. It validates bitmap size, dimensions,
+layout and pixel data before storing the image; retained history is bounded by
+the existing per-session message limit.
+
+An offline peer test covers this flow with isolated daemons and a simulated
+local eD2k peer:
+
+```sh
+python3 unittests/curl-tests/amuleapi/chat-captcha-peer.py --build-dir build
+```

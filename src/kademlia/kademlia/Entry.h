@@ -74,6 +74,7 @@ public:
 		m_uSize = 0;
 		m_tLifeTime = time(NULL);
 		m_bSource = false;
+		m_extraTagBytes = 0;
 	}
 
 	virtual ~CEntry();
@@ -103,6 +104,8 @@ public:
 	uint64_t m_uSize;
 	time_t m_tLifeTime;
 	bool m_bSource;
+	//! Wire size of the tags kept for other clients without being understood here.
+	uint32_t m_extraTagBytes;
 
 protected:
 	void WriteTagListInc(CFileDataIO *data, uint32_t increaseTagNumber = 0);

@@ -60,6 +60,8 @@ public:
 	bool IsHash() const { return m_uType == TAGTYPE_HASH16; }
 	bool IsBlob() const { return m_uType == TAGTYPE_BLOB; }
 	bool IsBsob() const { return m_uType == TAGTYPE_BSOB; }
+	// What WriteTagToFile() writes by default. A .met tag count must count only these.
+	bool CanWriteToFile() const { return IsStr() || IsInt() || IsFloat() || IsBlob(); }
 
 	uint64 GetInt() const;
 

@@ -47,7 +47,8 @@
 #include "Logger.h"
 #include <common/Format.h>
 #include "IPFilter.h"
-#include "GuiEvents.h" // Needed for Notify_*
+#include "NetworkFunctions.h" // Needed for IsGoodIP
+#include "GuiEvents.h"        // Needed for Notify_*
 #include <boost/system/error_code.hpp>
 
 // CServerSocket
@@ -508,6 +509,10 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 		// tecxx 1609 2002 - add server's serverlist to own serverlist
 		case OP_SERVERLIST: {
 			AddDebugLogLineN(logServer, "Server: OP_SERVERLIST");
+			// Only asked for when this is on (CServerConnect), so anything else is unsolicited.
+			if (!thePrefs::AddServersFromServer()) {
+				break;
+			}
 
 			// Stack-allocated wrapper so a CEOFException out of any of the ReadUInt*
 			// calls below -- an empty or truncated payload from a malicious server --
@@ -549,6 +554,14 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 				CMemFile data(packet, size);
 				uint32 dwIP = data.ReadUInt32();
 				uint16 nPort = data.ReadUInt16();
+				// The same rule as for sources: a server must not aim us at loopback or the
+				// LAN.
+				if (!IsGoodIP(dwIP, thePrefs::FilterLanIPs())) {
+					AddDebugLogLineN(logServer,
+						CFormat("Ignored callback request to %s") %
+							Uint32toStringIP(dwIP));
+					break;
+				}
 
 				uint8 byCryptOptions = 0;
 				CMD4Hash achUserHash;
@@ -752,7 +765,9 @@ void CServerSocket::OnHostnameResolved(uint32 ip)
 			serverconnect->NoteHostnameResolved();
 		}
 
-		if (theApp->ipfilter->IsFiltered(ip, true)) {
+		// A hostname skipped the address checks AddServer() makes, and a server can set its own
+		// with [emDynIP: ...], so check what it resolved to.
+		if (!IsGoodServerIP(ip, thePrefs::FilterLanIPs()) || theApp->ipfilter->IsFiltered(ip, true)) {
 			AddLogLineC(CFormat(_("Server IP %s (%s) is filtered.  Not connecting.")) %
 				    Uint32toStringIP(ip) % cur_server->GetAddress());
 			OnConnect(boost::system::errc::invalid_argument);

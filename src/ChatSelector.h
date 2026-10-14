@@ -112,8 +112,10 @@ public:
 	 */
 	void AppendStoredMessage(
 		const CChatTarget &gui_id, const wxString &name, const wxString &text, bool outgoing);
-	bool SendMessage(
-		const wxString &message, const wxString &client_name = "", const CChatTarget &to_id = {});
+	bool SendMessage(const wxString &message,
+		const wxString &client_name = "",
+		const CChatTarget &to_id = {},
+		uint32 challengeId = 0);
 	void ConnectionResult(bool success, const wxString &message, const CChatTarget &id);
 	void RefreshFriend(const CChatTarget &toupdate_id, const wxString &new_name);
 	void ShowCaptchaResult(const CChatTarget &id, bool ok);

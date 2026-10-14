@@ -1166,6 +1166,22 @@ msgstr "Reconnect could not start; retrying shortly."
 msgid "Ready"
 msgstr "Ready"
 
+#: src/amule-remote-gui.cpp
+msgid "*** Solve the CAPTCHA and send its text as a message."
+msgstr ""
+
+#: src/amule-remote-gui.cpp
+msgid "*** CAPTCHA passed; your message was delivered."
+msgstr ""
+
+#: src/amule-remote-gui.cpp
+msgid "*** CAPTCHA failed; send another message to try again."
+msgstr ""
+
+#: src/amule-remote-gui.cpp
+msgid "*** CAPTCHA failed; no attempts remain."
+msgstr ""
+
 #: src/amule-remote-gui.cpp src/TransferWnd.cpp
 msgid "All"
 msgstr "All"
@@ -2322,6 +2338,11 @@ msgid "FileHash not found: %s"
 msgstr "FileHash not found: %s"
 
 #: src/ExternalConn.cpp
+#, fuzzy, c-format
+msgid "Cannot cancel a finished download: %s"
+msgstr "Finished downloading: %s"
+
+#: src/ExternalConn.cpp
 msgid "OOPS! OpCode processing error!"
 msgstr "OOPS! OpCode processing error!"
 
@@ -2459,6 +2480,10 @@ msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "Empty chat message"
+msgstr ""
+
+#: src/ExternalConn.cpp
+msgid "CAPTCHA challenge is no longer pending"
 msgstr ""
 
 #: src/ExternalConn.cpp
@@ -3118,6 +3143,11 @@ msgstr "Yes"
 msgid "Failed to open MaxMindDB database '%s': %s"
 msgstr ""
 
+#: src/geoip/MaxMindDBDatabase.cpp
+#, c-format
+msgid "Failed to replace MaxMindDB database '%s': %s"
+msgstr ""
+
 #: src/HTTPDownload.cpp
 msgid "Downloading..."
 msgstr "Downloading..."
@@ -3197,25 +3227,15 @@ msgstr "Download new %s from %s"
 msgid "Download of %s file failed, aborting update."
 msgstr "Download of %s file failed, aborting update."
 
-#: src/IP2Country.cpp src/IPFilter.cpp
-#, c-format
-msgid "Failed to remove %s file, aborting update."
-msgstr "Failed to remove %s file, aborting update."
-
 #: src/IP2Country.cpp
 #, c-format
-msgid "Failed to rename %s file, aborting update."
-msgstr "Failed to rename %s file, aborting update."
+msgid "Error updating %s"
+msgstr "Error updating %s"
 
 #: src/IP2Country.cpp src/IPFilter.cpp
 #, c-format
 msgid "Successfully updated %s"
 msgstr "Successfully updated %s"
-
-#: src/IP2Country.cpp
-#, c-format
-msgid "Error updating %s"
-msgstr "Error updating %s"
 
 #: src/IP2Country.cpp
 msgid "DB-IP download failed for the current month - retrying with the previous month's URL."
@@ -3253,6 +3273,11 @@ msgid "%u malformed line was discarded."
 msgid_plural "%u malformed lines were discarded."
 msgstr[0] "%u malformed line was discarded."
 msgstr[1] "%u malformed lines were discarded."
+
+#: src/IPFilter.cpp
+#, c-format
+msgid "Failed to remove %s file, aborting update."
+msgstr "Failed to remove %s file, aborting update."
 
 #: src/IPFilter.cpp
 #, c-format
@@ -5828,12 +5853,13 @@ msgid "Download the GeoIP database from the selected source."
 msgstr "Download the GeoIP database from the selected source."
 
 #: src/muuli_wdr.cpp
-msgid "Auto-update on startup"
+#, fuzzy
+msgid "Auto-update on startup and weekly"
 msgstr "Auto-update on startup"
 
 #: src/muuli_wdr.cpp
-msgid "Re-download the GeoIP database from the selected source every time aMule starts."
-msgstr "Re-download the GeoIP database from the selected source every time aMule starts."
+msgid "Check for a newer GeoIP database at startup and every week while aMule is running."
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Filter incoming messages (except current chat):"
@@ -9875,6 +9901,13 @@ msgstr ""
 #: src/kademlia/kademlia/Indexed.cpp
 msgid "Kad could not save an index. The previous copy of that file was preserved."
 msgstr ""
+
+#, c-format
+#~ msgid "Failed to rename %s file, aborting update."
+#~ msgstr "Failed to rename %s file, aborting update."
+
+#~ msgid "Re-download the GeoIP database from the selected source every time aMule starts."
+#~ msgstr "Re-download the GeoIP database from the selected source every time aMule starts."
 
 #~ msgid "WARNING: Canceled file list corrupted, contains invalid header."
 #~ msgstr "WARNING: Cancelled file list corrupted, contains invalid header."

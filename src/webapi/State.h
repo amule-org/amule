@@ -508,6 +508,9 @@ struct ChatMessageSnapshot
 	bool outgoing = false;
 	std::uint32_t timestamp = 0; //!< unix seconds, stamped by the core
 	std::string text;
+	std::uint8_t kind = 0;
+	std::string captcha_image; //!< base64 BMP
+	std::uint8_t captcha_status = 0;
 };
 
 struct ChatSessionSnapshot
@@ -516,12 +519,15 @@ struct ChatSessionSnapshot
 	std::uint64_t gui_id = 0; //!< legacy IPv4 route, 0 when unavailable (including IPv6)
 	std::string ip;           //!< dotted quad; empty when no legacy IPv4 route is supplied
 	std::uint16_t port = 0;
-	bool shared_route = false;     //!< another listed session holds the same route
-	std::string name;              //!< peer display name; "" when the core has none
-	std::uint32_t client_ecid = 0; //!< live peer, 0 when offline
-	bool connected = false;        //!< a socket to that peer is actually up
-	bool has_connected = false;    //!< daemon reported it; false = unknown, not offline
-	std::uint32_t friend_ecid = 0; //!< friend entry, 0 when not a friend
+	bool shared_route = false;            //!< another listed session holds the same route
+	std::string name;                     //!< peer display name; "" when the core has none
+	std::uint32_t client_ecid = 0;        //!< live peer, 0 when offline
+	bool connected = false;               //!< a socket to that peer is actually up
+	bool has_connected = false;           //!< daemon reported it; false = unknown, not offline
+	std::uint32_t friend_ecid = 0;        //!< friend entry, 0 when not a friend
+	std::uint32_t pending_captcha_id = 0; //!< 0 when no answer is pending
+	std::string pending_captcha_image;    //!< retained independently of transcript eviction
+	bool pending_captcha_changed = false; //!< delta for the event publisher
 	std::vector<ChatMessageSnapshot> messages;
 
 	//! Highest id held here, 0 when empty.

@@ -1168,6 +1168,22 @@ msgstr "Không thể bắt đầu kết nối lại; sẽ thử lại ngay sau �
 msgid "Ready"
 msgstr "Sẵn sàng"
 
+#: src/amule-remote-gui.cpp
+msgid "*** Solve the CAPTCHA and send its text as a message."
+msgstr ""
+
+#: src/amule-remote-gui.cpp
+msgid "*** CAPTCHA passed; your message was delivered."
+msgstr ""
+
+#: src/amule-remote-gui.cpp
+msgid "*** CAPTCHA failed; send another message to try again."
+msgstr ""
+
+#: src/amule-remote-gui.cpp
+msgid "*** CAPTCHA failed; no attempts remain."
+msgstr ""
+
 #: src/amule-remote-gui.cpp src/TransferWnd.cpp
 msgid "All"
 msgstr "Tất cả"
@@ -2312,6 +2328,11 @@ msgid "FileHash not found: %s"
 msgstr "Không tìm thấy FileHash: %s"
 
 #: src/ExternalConn.cpp
+#, fuzzy, c-format
+msgid "Cannot cancel a finished download: %s"
+msgstr "Đã tải xuống xong: %s"
+
+#: src/ExternalConn.cpp
 msgid "OOPS! OpCode processing error!"
 msgstr "ÔI! Lỗi xử lý OpCode!"
 
@@ -2449,6 +2470,10 @@ msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "Empty chat message"
+msgstr ""
+
+#: src/ExternalConn.cpp
+msgid "CAPTCHA challenge is no longer pending"
 msgstr ""
 
 #: src/ExternalConn.cpp
@@ -3108,6 +3133,11 @@ msgstr "Có"
 msgid "Failed to open MaxMindDB database '%s': %s"
 msgstr ""
 
+#: src/geoip/MaxMindDBDatabase.cpp
+#, c-format
+msgid "Failed to replace MaxMindDB database '%s': %s"
+msgstr ""
+
 #: src/HTTPDownload.cpp
 msgid "Downloading..."
 msgstr "Đang tải xuống..."
@@ -3187,25 +3217,15 @@ msgstr "Tải xuống %s mới từ %s"
 msgid "Download of %s file failed, aborting update."
 msgstr "Tải xuống tệp %s thất bại, đang hủy cập nhật."
 
-#: src/IP2Country.cpp src/IPFilter.cpp
-#, c-format
-msgid "Failed to remove %s file, aborting update."
-msgstr "Không thể xóa tệp %s, đang hủy cập nhật."
-
 #: src/IP2Country.cpp
 #, c-format
-msgid "Failed to rename %s file, aborting update."
-msgstr "Không thể đổi tên tệp %s, đang hủy cập nhật."
+msgid "Error updating %s"
+msgstr "Lỗi khi cập nhật %s"
 
 #: src/IP2Country.cpp src/IPFilter.cpp
 #, c-format
 msgid "Successfully updated %s"
 msgstr "Đã cập nhật thành công %s"
-
-#: src/IP2Country.cpp
-#, c-format
-msgid "Error updating %s"
-msgstr "Lỗi khi cập nhật %s"
 
 #: src/IP2Country.cpp
 msgid "DB-IP download failed for the current month - retrying with the previous month's URL."
@@ -3241,6 +3261,11 @@ msgstr[0] "Đã tải %u dải IP từ '%s'."
 msgid "%u malformed line was discarded."
 msgid_plural "%u malformed lines were discarded."
 msgstr[0] "%u dòng không hợp lệ đã bị bỏ qua."
+
+#: src/IPFilter.cpp
+#, c-format
+msgid "Failed to remove %s file, aborting update."
+msgstr "Không thể xóa tệp %s, đang hủy cập nhật."
 
 #: src/IPFilter.cpp
 #, c-format
@@ -5809,12 +5834,13 @@ msgid "Download the GeoIP database from the selected source."
 msgstr "Tải xuống cơ sở dữ liệu GeoIP từ nguồn đã chọn."
 
 #: src/muuli_wdr.cpp
-msgid "Auto-update on startup"
+#, fuzzy
+msgid "Auto-update on startup and weekly"
 msgstr "Tự động cập nhật khi khởi động"
 
 #: src/muuli_wdr.cpp
-msgid "Re-download the GeoIP database from the selected source every time aMule starts."
-msgstr "Tải xuống lại cơ sở dữ liệu GeoIP từ nguồn đã chọn mỗi khi aMule khởi động."
+msgid "Check for a newer GeoIP database at startup and every week while aMule is running."
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Filter incoming messages (except current chat):"
@@ -9827,6 +9853,13 @@ msgstr ""
 #: src/kademlia/kademlia/Indexed.cpp
 msgid "Kad could not save an index. The previous copy of that file was preserved."
 msgstr ""
+
+#, c-format
+#~ msgid "Failed to rename %s file, aborting update."
+#~ msgstr "Không thể đổi tên tệp %s, đang hủy cập nhật."
+
+#~ msgid "Re-download the GeoIP database from the selected source every time aMule starts."
+#~ msgstr "Tải xuống lại cơ sở dữ liệu GeoIP từ nguồn đã chọn mỗi khi aMule khởi động."
 
 #~ msgid "WARNING: Canceled file list corrupted, contains invalid header."
 #~ msgstr "CẢNH BÁO: danh sách tệp đã hủy bị hỏng, chứa tiêu đề không hợp lệ."

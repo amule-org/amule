@@ -106,6 +106,12 @@ CED2KServerListLink::CED2KServerListLink(const wxString &link)
 	}
 
 	m_address = UnescapeHTML(re.GetMatch(link, 1));
+	// Decoded, so %0A is a real line break: fetched as a URL and written back by GetLink().
+	for (wxUniChar c : m_address) {
+		if (c < ' ' || c == 0x7f) {
+			throw wxString("Control character in server-list address.");
+		}
+	}
 }
 
 wxString CED2KServerListLink::GetLink() const

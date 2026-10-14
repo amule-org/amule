@@ -82,8 +82,9 @@ public:
 
 	// Synchronous preflight for the SSE path. Runs on the I/O thread BEFORE the worker thread
 	// is spawned and BEFORE the streaming-session budget is touched. boost::none admits; a
-	// 401/403/429 short-circuits without a slot.
-	boost::optional<CHttpServer::Response> PreflightEvents(const CHttpServer::Request &req);
+	// 401/403/429 short-circuits without a slot. Sets `may_use_reserve` for an admin.
+	boost::optional<CHttpServer::Response> PreflightEvents(
+		const CHttpServer::Request &req, bool &may_use_reserve);
 	// CORS for transport-built replies (408 / 413 / 431); see the .cpp.
 	void StampCorsForTransport(
 		std::map<std::string, std::string> &headers, const std::string &origin_header);

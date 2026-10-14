@@ -250,6 +250,8 @@ public:
 	}
 	uint32 GetConnectIP() const { return m_connectAddress.ToIPv4NetworkOrderOrZero(); }
 	const CNetworkAddress &GetConnectAddress() const { return m_connectAddress; }
+	//! The current TCP target, which may promote a validated peer IPv6 without changing its identity.
+	CNetworkAddress GetDialAddress() const;
 	//! Whether the peer has an IPv4 form, from the best address known so far.
 	bool HasPeerIPv4() const;
 	uint32 GetUserIDHybrid() const { return m_nUserIDHybrid; }
@@ -484,8 +486,20 @@ public:
 
 	// chat
 	uint8 GetChatState() { return m_byChatstate; }
-	void SetChatState(uint8 nNewS) { m_byChatstate = nNewS; }
+	void SetChatState(uint8 nNewS)
+	{
+		m_byChatstate = nNewS;
+		if (nNewS == MS_NONE &&
+			(m_nChatCaptchaState == CA_ACCEPTING || m_nChatCaptchaState == CA_CAPTCHARECV ||
+				m_nChatCaptchaState == CA_SOLUTIONSENT)) {
+			m_nChatCaptchaState = CA_NONE;
+		}
+	}
 	EChatCaptchaState GetChatCaptchaState() const { return (EChatCaptchaState)m_nChatCaptchaState; }
+	uint32 GetPendingChatCaptchaId() const
+	{
+		return GetChatCaptchaState() == CA_CAPTCHARECV && IsConnected() ? m_chatCaptchaId : 0;
+	}
 	void ProcessCaptchaRequest(CMemFile *data);
 	void ProcessCaptchaReqRes(uint8 nStatus);
 	void ProcessChatMessage(wxString message);
@@ -807,6 +821,9 @@ private:
 	CNetworkAddress m_userAddress;
 	CNetworkAddress m_connectAddress;
 	bool m_dialingIPv6;
+	bool m_preserveIPv4IdentityOnHello;
+	CNetworkAddress m_preparedDialAddress;
+	CNetworkAddress m_dialledIPv6Address;
 	CNetworkAddress m_unansweredIPv6Address;
 	uint32 m_dwServerIP;
 	uint32 m_nUserIDHybrid;
@@ -925,6 +942,7 @@ private:
 	wxString m_strComment;
 	uint8 m_byChatstate;
 	uint8 m_nChatCaptchaState;
+	uint32 m_chatCaptchaId = 0;
 	uint8 m_cCaptchasSent;
 	int8 m_iRating;
 	uint8 m_cMessagesReceived; // count of chatmessages he sent to me

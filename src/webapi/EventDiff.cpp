@@ -692,9 +692,17 @@ void EnforceSinglePublisher()
 // the snapshot field defaults to 0, and a core that ever omits the tag must not make them diverge.
 std::string ChatMessageJson(const ChatMessageSnapshot &msg)
 {
+	std::string extra;
+	if (msg.kind == 1) {
+		extra = ",\"type\":\"captcha_challenge\",\"captcha_image\":\"" + EscJson(msg.captcha_image) +
+			"\"";
+	} else if (msg.kind == 2) {
+		extra = ",\"type\":\"captcha_result\",\"captcha_status\":" +
+			std::to_string(msg.captcha_status);
+	}
 	return "{\"id\":" + std::to_string(msg.id) + ",\"direction\":\"" + (msg.outgoing ? "out" : "in") +
 	       "\",\"text\":\"" + EscJson(msg.text) + "\",\"sent_at\":" +
-	       (msg.timestamp != 0 ? std::to_string(msg.timestamp) : std::string("null")) + "}";
+	       (msg.timestamp != 0 ? std::to_string(msg.timestamp) : std::string("null")) + extra + "}";
 }
 
 void PublishChatEvents(CEventBus &bus,
@@ -707,6 +715,17 @@ void PublishChatEvents(CEventBus &bus,
 	std::vector<std::pair<std::string, std::string>> batch;
 	for (const ChatSessionSnapshot &session : new_messages) {
 		const std::string peer = session.PeerKey();
+		if (session.pending_captcha_changed)
+			batch.emplace_back("chat_session_updated",
+				"{\"address\":\"" + EscJson(peer) + "\",\"hash\":" +
+					(session.peer_hash.empty()
+							? std::string("null")
+							: "\"" + EscJson(session.peer_hash) + "\"") +
+					",\"pending_captcha_id\":" +
+					(session.pending_captcha_id
+							? std::to_string(session.pending_captcha_id)
+							: std::string("null")) +
+					"}");
 		for (const ChatMessageSnapshot &msg : session.messages) {
 			std::string payload =
 				"{\"address\":\"" + EscJson(peer) + "\",\"hash\":" +

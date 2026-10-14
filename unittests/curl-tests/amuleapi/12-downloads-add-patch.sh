@@ -399,6 +399,27 @@ UPPER_HASH="3f1c2a9d8e7b6a5f4e3d2c1b0a998866"
 _add_and_remove "ED2K://|file|amuleapi-regtest-upper.bin|1048576|$UPPER_HASH|/" \
 	"$UPPER_HASH" "upper-case ED2K://"
 
+# --- category_index must name a category the daemon has. -----------
+# A completing download reads its category's path, so an index past the list is refused rather
+# than stored. The test daemon has only category 0.
+CAT_HASH="3f1c2a9d8e7b6a5f4e3d2c1b0a998855"
+_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
+	-d "{\"links\":[\"ed2k://|file|amuleapi-regtest-cat.bin|1048576|$CAT_HASH|/\"]}" "$API/downloads"
+_assert_status 202 "POST /downloads (category fixture) → 202"
+for _ in $(seq 1 25); do
+	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/downloads/$CAT_HASH"
+	[ "$CURL_STATUS" = "200" ] && break
+	sleep 0.2
+done
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
+	-d '{"category_index":200}' "$API/downloads/$CAT_HASH"
+_assert_status 400 "PATCH category_index past the category list → 400"
+_assert_json_eq '.error.code' amuled_rejected 'unknown category_index .error.code == amuled_rejected'
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/downloads/$CAT_HASH"
+_assert_json_eq '.category_index' 0 'refused category_index left the download in category 0'
+_curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" "$API/downloads/$CAT_HASH"
+_assert_status 204 "DELETE /downloads/{category fixture} → 204"
+
 # --- Summary. -----------------------------------------------------
 echo
 if [ "$FAIL_COUNT" -eq 0 ]; then

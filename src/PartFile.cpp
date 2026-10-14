@@ -39,6 +39,8 @@
 #include <wx/utils.h>
 #include <wx/tokenzr.h> // Needed for wxStringTokenizer
 
+#include <algorithm> // Needed for std::count_if
+
 #ifndef AMULE_DAEMON
 #include <wx/notifmsg.h> // Needed for wxNotificationMessage
 #endif
@@ -730,7 +732,7 @@ uint8 CPartFile::LoadPartFile(
 							wxFAIL;
 						}
 						// End Changes by Slugfiller for better exception handling
-					} else {
+					} else if (newtag.CanWriteToFile()) {
 						m_taglist.push_back(newtag);
 					}
 				}
@@ -970,7 +972,10 @@ bool CPartFile::SavePartFile(bool Initial)
 		}
 // tags
 #define FIXED_TAGS 15
-		uint32 tagcount = m_taglist.size() + FIXED_TAGS + (m_gaplist.size() * 2);
+		const size_t writableTags = std::count_if(m_taglist.begin(),
+			m_taglist.end(),
+			[](const CTag &tag) { return tag.CanWriteToFile(); });
+		uint32 tagcount = static_cast<uint32>(writableTags + FIXED_TAGS + (m_gaplist.size() * 2));
 		if (!m_corrupted_list.empty()) {
 			++tagcount;
 		}
@@ -3877,7 +3882,10 @@ void CPartFile::UpdateFileRatingCommentAvail()
 
 void CPartFile::SetCategory(uint8 cat)
 {
-	wxASSERT(cat < theApp->glob_prefs->GetCatCount());
+	// Callers may pass an index from an EC client; completion reads that category's path.
+	if (cat >= theApp->glob_prefs->GetCatCount()) {
+		return;
+	}
 
 	if (m_category != cat) {
 		MarkMetDirty();

@@ -1169,6 +1169,22 @@ msgstr "পুনঃসংযোগ শুরু করা যায়নি; �
 msgid "Ready"
 msgstr "প্রস্তুত"
 
+#: src/amule-remote-gui.cpp
+msgid "*** Solve the CAPTCHA and send its text as a message."
+msgstr ""
+
+#: src/amule-remote-gui.cpp
+msgid "*** CAPTCHA passed; your message was delivered."
+msgstr ""
+
+#: src/amule-remote-gui.cpp
+msgid "*** CAPTCHA failed; send another message to try again."
+msgstr ""
+
+#: src/amule-remote-gui.cpp
+msgid "*** CAPTCHA failed; no attempts remain."
+msgstr ""
+
 #: src/amule-remote-gui.cpp src/TransferWnd.cpp
 msgid "All"
 msgstr "সব"
@@ -2325,6 +2341,11 @@ msgid "FileHash not found: %s"
 msgstr "FileHash পাওয়া যায়নি: %s"
 
 #: src/ExternalConn.cpp
+#, fuzzy, c-format
+msgid "Cannot cancel a finished download: %s"
+msgstr "ডাউনলোড সম্পন্ন: %s"
+
+#: src/ExternalConn.cpp
 msgid "OOPS! OpCode processing error!"
 msgstr "ওহো! OpCode প্রক্রিয়াকরণ ত্রুটি!"
 
@@ -2462,6 +2483,10 @@ msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "Empty chat message"
+msgstr ""
+
+#: src/ExternalConn.cpp
+msgid "CAPTCHA challenge is no longer pending"
 msgstr ""
 
 #: src/ExternalConn.cpp
@@ -3121,6 +3146,11 @@ msgstr "হ্যাঁ"
 msgid "Failed to open MaxMindDB database '%s': %s"
 msgstr ""
 
+#: src/geoip/MaxMindDBDatabase.cpp
+#, c-format
+msgid "Failed to replace MaxMindDB database '%s': %s"
+msgstr ""
+
 #: src/HTTPDownload.cpp
 msgid "Downloading..."
 msgstr "ডাউনলোড হচ্ছে…"
@@ -3200,25 +3230,15 @@ msgstr "নতুন %s ডাউনলোড করা হচ্ছে, উৎ�
 msgid "Download of %s file failed, aborting update."
 msgstr "%s ফাইলের ডাউনলোড ব্যর্থ হয়েছে, আপডেট বাতিল করা হচ্ছে।"
 
-#: src/IP2Country.cpp src/IPFilter.cpp
-#, c-format
-msgid "Failed to remove %s file, aborting update."
-msgstr "%s ফাইল সরাতে ব্যর্থ হয়েছে, আপডেট বাতিল করা হচ্ছে।"
-
 #: src/IP2Country.cpp
 #, c-format
-msgid "Failed to rename %s file, aborting update."
-msgstr "%s ফাইলের নাম পরিবর্তন করতে ব্যর্থ হয়েছে, আপডেট বাতিল করা হচ্ছে।"
+msgid "Error updating %s"
+msgstr "%s আপডেট করতে ত্রুটি"
 
 #: src/IP2Country.cpp src/IPFilter.cpp
 #, c-format
 msgid "Successfully updated %s"
 msgstr "%s সফলভাবে আপডেট করা হয়েছে"
-
-#: src/IP2Country.cpp
-#, c-format
-msgid "Error updating %s"
-msgstr "%s আপডেট করতে ত্রুটি"
 
 #: src/IP2Country.cpp
 msgid "DB-IP download failed for the current month - retrying with the previous month's URL."
@@ -3256,6 +3276,11 @@ msgid "%u malformed line was discarded."
 msgid_plural "%u malformed lines were discarded."
 msgstr[0] "%uটি ত্রুটিপূর্ণ লাইন বাতিল করা হয়েছে।"
 msgstr[1] "%uটি ত্রুটিপূর্ণ লাইন বাতিল করা হয়েছে।"
+
+#: src/IPFilter.cpp
+#, c-format
+msgid "Failed to remove %s file, aborting update."
+msgstr "%s ফাইল সরাতে ব্যর্থ হয়েছে, আপডেট বাতিল করা হচ্ছে।"
 
 #: src/IPFilter.cpp
 #, c-format
@@ -5831,12 +5856,13 @@ msgid "Download the GeoIP database from the selected source."
 msgstr "নির্বাচিত উৎস থেকে GeoIP ডেটাবেস ডাউনলোড করুন।"
 
 #: src/muuli_wdr.cpp
-msgid "Auto-update on startup"
+#, fuzzy
+msgid "Auto-update on startup and weekly"
 msgstr "স্টার্টআপে স্বয়ংক্রিয় আপডেট"
 
 #: src/muuli_wdr.cpp
-msgid "Re-download the GeoIP database from the selected source every time aMule starts."
-msgstr "প্রতিবার aMule শুরু হওয়ার সময় নির্বাচিত উৎস থেকে GeoIP ডেটাবেস পুনরায় ডাউনলোড করুন।"
+msgid "Check for a newer GeoIP database at startup and every week while aMule is running."
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Filter incoming messages (except current chat):"
@@ -9878,6 +9904,13 @@ msgstr ""
 #: src/kademlia/kademlia/Indexed.cpp
 msgid "Kad could not save an index. The previous copy of that file was preserved."
 msgstr ""
+
+#, c-format
+#~ msgid "Failed to rename %s file, aborting update."
+#~ msgstr "%s ফাইলের নাম পরিবর্তন করতে ব্যর্থ হয়েছে, আপডেট বাতিল করা হচ্ছে।"
+
+#~ msgid "Re-download the GeoIP database from the selected source every time aMule starts."
+#~ msgstr "প্রতিবার aMule শুরু হওয়ার সময় নির্বাচিত উৎস থেকে GeoIP ডেটাবেস পুনরায় ডাউনলোড করুন।"
 
 #~ msgid "WARNING: Canceled file list corrupted, contains invalid header."
 #~ msgstr "সতর্কতা: বাতিল করা ফাইল তালিকা ক্ষতিগ্রস্ত, এতে অবৈধ হেডার আছে।"

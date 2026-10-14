@@ -51,6 +51,35 @@
 
 #define YY_NEVER_INTERACTIVE 1
 
+// flex ends its buffer with a NUL, so every NUL in the input takes it through the refill path,
+// which rescans the whole token: a line of NULs lexed in quadratic time, a 1 MB list for hours.
+// A token longer than one read is rescanned at every refill too. So NUL is read as \x01, and a
+// line is cut at kMaxLineLength bytes up to its newline; real filter lines are a few hundred.
+static const size_t kMaxLineLength = 64 * 1024;
+
+static size_t ReadFilterInput(FILE *file, char *buf, size_t maxSize)
+{
+	// Reset at end of file, so a cut line cannot carry over into the next one read.
+	static size_t lineLength = 0;
+	size_t n = 0;
+	while (n < maxSize) {
+		const int c = getc(file);
+		if (c == EOF) {
+			lineLength = 0;
+			break;
+		}
+		if (c == '\n') {
+			lineLength = 0;
+		} else if (++lineLength > kMaxLineLength) {
+			continue;
+		}
+		buf[n++] = (c == '\0') ? '\x01' : static_cast<char>(c);
+	}
+	return n;
+}
+
+#define YY_INPUT(buf, result, maxSize) (result) = ReadFilterInput(yyin, (buf), (maxSize))
+
 // When we get here the IP has been lexed nicely,
 // so we can blaze through without any checks.
 // The total lexing time is more than twice as fast
@@ -149,9 +178,10 @@ WS		[ \t\r]*
 		/* Comment */
 	}
 
-^.*:{WS}{IP}{WS}-{WS}{IP}{WS}		{
+^[^\n\x01]*:{WS}{IP}{WS}-{WS}{IP}{WS}		{
 		/* AntiP2P filter line
 		   <Description> : <IPStart> - <IPEnd>
+		   No NUL (read as \x01) in the description: a line of binary junk is not a rule.
 		*/
 		char * ip1 = strrchr(yytext, ':');
 		*ip1++ = 0;		// remove : and terminate comment

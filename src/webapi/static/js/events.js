@@ -218,6 +218,9 @@ function openSse() {
   es.addEventListener("chat_message", (ev) => {
     try { store.set("chat:message", JSON.parse(ev.data)); } catch (_) {}
   });
+  es.addEventListener("chat_session_updated", (ev) => {
+    try { store.set("chat:updated", JSON.parse(ev.data)); } catch (_) {}
+  });
   es.addEventListener("chat_session_closed", (ev) => {
     try { store.set("chat:closed", JSON.parse(ev.data)); } catch (_) {}
   });

@@ -398,7 +398,7 @@ bool CTag::WriteTagToFile(CFileDataIO *file, EUtf8Str WXUNUSED(eStrEncode), bool
 
 	// Don't write tags of unknown types, we wouldn't be able to read them in again
 	// and the met file would be corrupted
-	if (!restrictive || (IsStr() || IsInt() || IsFloat() || IsBlob())) {
+	if (!restrictive || CanWriteToFile()) {
 
 		// If this fails, it'll throw.
 		file->WriteTag(*this);

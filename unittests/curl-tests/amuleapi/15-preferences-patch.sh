@@ -880,6 +880,41 @@ _assert_json_eq '.kad.protocol10_enabled' "$KAD10_TOGGLE" 'kad.protocol10_enable
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
 	-d "{\"kad\":{\"protocol10_enabled\":$SAVED_KAD10}}" "$API/preferences" >/dev/null 2>&1
 
+# --- Credential fields are admin-only on GET. ---------------------
+# A guest is read-only, not trusted with the operator's MaxMind key, a URL that may carry a token,
+# or the proxy user name.
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
+SAVED_LICENSE=$(printf '%s' "$CURL_BODY" | jq -c '.geoip.maxmind_license')
+SAVED_CUSTOM_URL=$(printf '%s' "$CURL_BODY" | jq -c '.geoip.custom_update_url')
+SAVED_PXUSER=$(printf '%s' "$CURL_BODY" | jq -c '.connection.proxy_user')
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
+	-d '{"geoip":{"maxmind_license":"LICENSE-KEY-123","custom_update_url":"https://geo.example/db.mmdb?token=T0K3N"},"connection":{"proxy_user":"proxyuser"}}' \
+	"$API/preferences"
+_assert_status 200 'PATCH credential fields -> 200'
+_assert_json_eq '.geoip.maxmind_license' LICENSE-KEY-123 'maxmind_license in the admin PATCH response'
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
+_assert_json_eq '.geoip.maxmind_license' LICENSE-KEY-123 'admin GET returns maxmind_license'
+_assert_json_eq '.geoip.custom_update_url' 'https://geo.example/db.mmdb?token=T0K3N' 'admin GET returns custom_update_url'
+_assert_json_eq '.connection.proxy_user' proxyuser 'admin GET returns proxy_user'
+if [ "$HAVE_GUEST" = "1" ]; then
+	_curl -H "Authorization: Bearer $GUEST_TOKEN" "$API/preferences"
+	_assert_status 200 'guest GET /preferences -> 200'
+	_assert_json_eq '(.geoip|has("maxmind_license"))' false 'guest GET omits geoip.maxmind_license'
+	_assert_json_eq '(.geoip|has("custom_update_url"))' false 'guest GET omits geoip.custom_update_url'
+	_assert_json_eq '(.connection|has("proxy_user"))' false 'guest GET omits connection.proxy_user'
+	_assert_json_eq '(.geoip|has("source"))' true 'guest GET still returns the other geoip fields'
+	if printf '%s' "$CURL_BODY" | grep -qE 'LICENSE-KEY-123|T0K3N|proxyuser'; then
+		_fail 'guest GET /preferences leaks a credential value'
+	else
+		_pass 'guest GET /preferences carries no credential value'
+	fi
+else
+	echo "    info: no guest pass; guest credential checks skipped"
+fi
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
+	-d "{\"geoip\":{\"maxmind_license\":$SAVED_LICENSE,\"custom_update_url\":$SAVED_CUSTOM_URL},\"connection\":{\"proxy_user\":$SAVED_PXUSER}}" \
+	"$API/preferences" >/dev/null 2>&1
+
 # --- Summary. -----------------------------------------------------
 echo
 if [ "$FAIL_COUNT" -eq 0 ]; then

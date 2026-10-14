@@ -46,6 +46,13 @@
 #define KADEMLIAMAXENTRIES 60000          // Total keyword entries.
 #define KADEMLIAMAXSOURCEPERFILE 1000     // Max number of sources per file in index.
 #define KADEMLIAMAXNOTESPERFILE 150       // Max number of notes per entry in index.
+#define KADEMLIAMAXSOURCES 100000         // Total source entries in index (~820 bytes each).
+#define KADEMLIAMAXNOTES 20000            // Total note entries in index (up to ~2.2 KB each).
+#define KADEMLIAMAXSOURCESTRLEN 64        // Characters in a known string tag of a source.
+#define KADEMLIAMAXSOURCEEXTRABYTES 2048  // Unknown tag bytes kept per source, as sent.
+#define KADEMLIAMAXEXTRATAGBYTES 8388608  // Unknown source tag bytes kept index-wide, as sent.
+#define KADEMLIAMAXNOTENAMELEN 255        // Characters in a published note's file name.
+#define KADEMLIAMAXNOTECOMMENTLEN 128     // Characters in a published note's comment, as eMule.
 #define KADEMLIAFIREWALLCHECKS 4          // Firewallcheck Request at a time
 // MOD Note: end
 

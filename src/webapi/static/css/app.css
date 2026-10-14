@@ -925,6 +925,7 @@ table.data.virtual td.name .name-select { width: 100%; max-width: 100%; }
   padding: 4px 2px; overflow-wrap: anywhere;
 }
 .chat-line { white-space: pre-wrap; }
+.chat-captcha { display: block; margin: 6px 0; max-width: 150px; background: white; }
 .chat-time { color: var(--text-dim); margin-right: 4px; }
 .chat-nick { font-weight: 600; }
 .chat-nick.in { color: var(--accent); }   /* peer — the desktop's blue */

@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-10-12 23:17+0000\n"
+"PO-Revision-Date: 2026-10-13 14:07+0000\n"
 "Last-Translator: Radist Morse <radist.morse@gmail.com>\n"
 "Language-Team: Russian <kde-russian@lists.kde.ru>\n"
 "Language: ru\n"
@@ -1207,6 +1207,22 @@ msgstr "Не удалось начать переподключение; пов�
 msgid "Ready"
 msgstr "Готов"
 
+#: src/amule-remote-gui.cpp
+msgid "*** Solve the CAPTCHA and send its text as a message."
+msgstr ""
+
+#: src/amule-remote-gui.cpp
+msgid "*** CAPTCHA passed; your message was delivered."
+msgstr ""
+
+#: src/amule-remote-gui.cpp
+msgid "*** CAPTCHA failed; send another message to try again."
+msgstr ""
+
+#: src/amule-remote-gui.cpp
+msgid "*** CAPTCHA failed; no attempts remain."
+msgstr ""
+
 #: src/amule-remote-gui.cpp src/TransferWnd.cpp
 msgid "All"
 msgstr "Все"
@@ -2378,6 +2394,11 @@ msgid "FileHash not found: %s"
 msgstr "Хеш файла не найден: %s"
 
 #: src/ExternalConn.cpp
+#, c-format
+msgid "Cannot cancel a finished download: %s"
+msgstr "Невозможно отменить завершённую загрузку: %s"
+
+#: src/ExternalConn.cpp
 msgid "OOPS! OpCode processing error!"
 msgstr "Ошибка при выполнении OpCode!"
 
@@ -2517,6 +2538,10 @@ msgstr "Файл не подходит для извлечения метада�
 #: src/ExternalConn.cpp
 msgid "Empty chat message"
 msgstr "Пустое сообщение беседы"
+
+#: src/ExternalConn.cpp
+msgid "CAPTCHA challenge is no longer pending"
+msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "Unknown chat target"
@@ -3175,6 +3200,11 @@ msgstr "Да"
 msgid "Failed to open MaxMindDB database '%s': %s"
 msgstr "Не удалось открыть базу данных MaxMindDB «%s»: %s"
 
+#: src/geoip/MaxMindDBDatabase.cpp
+#, c-format
+msgid "Failed to replace MaxMindDB database '%s': %s"
+msgstr "Не удалось заменить базу данных MaxMindDB «%s»: %s"
+
 #: src/HTTPDownload.cpp
 msgid "Downloading..."
 msgstr "Загружается…"
@@ -3254,25 +3284,15 @@ msgstr "Загрузка нового %s с %s"
 msgid "Download of %s file failed, aborting update."
 msgstr "Не удалось загрузить файл %s, обновление прервано."
 
-#: src/IP2Country.cpp src/IPFilter.cpp
-#, c-format
-msgid "Failed to remove %s file, aborting update."
-msgstr "Не удалось удалить файл %s, обновление прервано."
-
 #: src/IP2Country.cpp
 #, c-format
-msgid "Failed to rename %s file, aborting update."
-msgstr "Не удалось переименовать файл %s, обновление прервано."
+msgid "Error updating %s"
+msgstr "Ошибка обновления %s"
 
 #: src/IP2Country.cpp src/IPFilter.cpp
 #, c-format
 msgid "Successfully updated %s"
 msgstr "%s успешно обновлён"
-
-#: src/IP2Country.cpp
-#, c-format
-msgid "Error updating %s"
-msgstr "Ошибка обновления %s"
 
 #: src/IP2Country.cpp
 msgid "DB-IP download failed for the current month - retrying with the previous month's URL."
@@ -3312,6 +3332,11 @@ msgid_plural "%u malformed lines were discarded."
 msgstr[0] "%u испорченная строка пропущена."
 msgstr[1] "%u испорченных строки пропущено."
 msgstr[2] "%u испорченных строк пропущено."
+
+#: src/IPFilter.cpp
+#, c-format
+msgid "Failed to remove %s file, aborting update."
+msgstr "Не удалось удалить файл %s, обновление прервано."
 
 #: src/IPFilter.cpp
 #, c-format
@@ -5909,12 +5934,12 @@ msgid "Download the GeoIP database from the selected source."
 msgstr "Загрузить базу данных GeoIP из выбранного источника."
 
 #: src/muuli_wdr.cpp
-msgid "Auto-update on startup"
-msgstr "Автообновление при запуске"
+msgid "Auto-update on startup and weekly"
+msgstr "Автообновление при запуске и раз в неделю"
 
 #: src/muuli_wdr.cpp
-msgid "Re-download the GeoIP database from the selected source every time aMule starts."
-msgstr "Повторно загружать базу данных GeoIP из выбранного источника при каждом запуске aMule."
+msgid "Check for a newer GeoIP database at startup and every week while aMule is running."
+msgstr "Проверять наличие новой базы данных GeoIP при запуске и раз в неделю во время работы aMule."
 
 #: src/muuli_wdr.cpp
 msgid "Filter incoming messages (except current chat):"
@@ -10006,6 +10031,13 @@ msgstr "Kad не смогла подгрузить сохранённый инд
 #: src/kademlia/kademlia/Indexed.cpp
 msgid "Kad could not save an index. The previous copy of that file was preserved."
 msgstr "Kad не смогла сохранить индекс. Предыдущая копия этого файла сохранена."
+
+#, c-format
+#~ msgid "Failed to rename %s file, aborting update."
+#~ msgstr "Не удалось переименовать файл %s, обновление прервано."
+
+#~ msgid "Re-download the GeoIP database from the selected source every time aMule starts."
+#~ msgstr "Повторно загружать базу данных GeoIP из выбранного источника при каждом запуске aMule."
 
 #~ msgid "WARNING: Canceled file list corrupted, contains invalid header."
 #~ msgstr "ПРЕДУПРЕЖДЕНИЕ: Список отменённых файлов повреждён, содержит неверный заголовок."

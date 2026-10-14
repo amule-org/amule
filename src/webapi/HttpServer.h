@@ -154,8 +154,9 @@ public:
 	// Optional preflight: runs synchronously on the I/O thread BEFORE the per-session worker
 	// thread is spawned and BEFORE the concurrency budget is claimed. boost::none admits; a
 	// populated Response is written verbatim and the connection closes. This is what stops an
-	// unauthenticated peer tying up a slot for the read-timeout window.
-	using StreamingPreflight = std::function<boost::optional<Response>(const Request &)>;
+	// unauthenticated peer tying up a slot for the read-timeout window. Setting the bool lets
+	// the session take one of the slots held back for privileged clients.
+	using StreamingPreflight = std::function<boost::optional<Response>(const Request &, bool &)>;
 
 	// Stamps the CORS bundle on a response the transport built itself -- the 408 / 413 / 431
 	// replies, written before any request reaches a handler. Without it those are the only

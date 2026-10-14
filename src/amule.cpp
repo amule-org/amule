@@ -1809,6 +1809,11 @@ void RefreshLocalPublicIPv6Addresses()
 }
 
 #ifdef ENABLE_IPV6
+std::optional<CNetworkAddress> SelectedLocalIPv6()
+{
+	return s_advertisedIPv6Choice;
+}
+
 std::optional<CNetworkAddress> AdvertisedIPv6ForPeers()
 {
 	SAdvertisedIPv6Facts facts;

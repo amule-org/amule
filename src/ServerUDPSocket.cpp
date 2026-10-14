@@ -44,6 +44,8 @@
 #include "updownclient.h" // Needed for SF_REMOTE_SERVER
 #include "GuiEvents.h"    // Needed for Notify_*
 #include "Preferences.h"
+#include "IPFilter.h"         // Needed for CIPFilter
+#include "NetworkFunctions.h" // Needed for IsGoodServerIP
 #include "EncryptedDatagramSocket.h"
 #include "RandomFunctions.h"
 #include "ServerConnect.h"
@@ -551,6 +553,16 @@ void CServerUDPSocket::OnHostnameResolved(uint32 ip)
 		if (update) {
 			update->SetDNSError(true);
 		}
+		DropQueuedPacket();
+	} else if (!IsGoodServerIP(ip, thePrefs::FilterLanIPs()) || theApp->ipfilter->IsFiltered(ip, true)) {
+		// The checks the TCP connect makes: the name may point anywhere. Marked as a DNS error so
+		// later packets are dropped until the next lookup; with neither that nor an IP set,
+		// SendQueue() would wait for a lookup that is not running, and stall the queue.
+		if (update) {
+			update->SetDNSError(true);
+		}
+		AddDebugLogLineN(logServerUDP,
+			CFormat("Not sending to %s (%s): filtered") % item.addr % Uint32toStringIP(ip));
 		DropQueuedPacket();
 	} else {
 		if (update) {

@@ -3,6 +3,7 @@
   "common_err_bad_request": "Invalid request: {message}",
   "common_err_unauthorized": "Not authorized.",
   "common_err_forbidden": "Forbidden: {message}",
+  "common_err_captcha_expired": "This CAPTCHA is no longer pending. Use the latest challenge.",
   "common_err_not_found": "Not found: {message}",
   "common_err_method_not_allowed": "Method not allowed.",
   "common_err_rate_limited": "Too many requests. Please try again later.",
@@ -1020,5 +1021,12 @@
   "prefs_field_geoip_db_path": "Database path",
   "prefs_field_geoip_db_loaded": "Database loaded",
   "prefs_field_geoip_download_in_progress": "Downloading",
-  "prefs_field_geoip_last_update_status": "Last result"
+  "prefs_field_geoip_last_update_status": "Last result",
+  "messages_captcha_expired": "This CAPTCHA is no longer pending.",
+  "messages_captcha_retry_message": "This CAPTCHA is no longer pending. Send the text again as a message.",
+  "messages_captcha_challenge": "Solve the CAPTCHA below and send its text using the message field.",
+  "messages_captcha_passed": "CAPTCHA passed. Your message was delivered.",
+  "messages_captcha_retry": "CAPTCHA failed. Send another message to try again.",
+  "messages_captcha_exhausted": "CAPTCHA failed. No attempts remain.",
+  "messages_captcha_image": "Chat CAPTCHA"
 }

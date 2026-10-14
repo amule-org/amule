@@ -2165,3 +2165,48 @@ TEST(EventDiff, AllKadComponentEndEmitsWithoutPercentChange)
 	ASSERT_EQUALS(std::string("search_progress"), events[0].name);
 	ASSERT_TRUE(events[0].data.find("\"kad_active\":false") != std::string::npos);
 }
+
+TEST(EventDiff, ChatCaptchaEventsCarryImagesAndAllResultStatuses)
+{
+	CEventBus bus;
+	ChatSessionSnapshot session;
+	session.gui_id = 7;
+	session.ip = "203.0.113.42";
+	session.port = 4662;
+	ChatMessageSnapshot challenge;
+	challenge.id = 1;
+	challenge.kind = 1;
+	challenge.captcha_image = "Qk0=";
+	session.messages.push_back(challenge);
+	for (std::uint8_t status = 0; status <= 2; ++status) {
+		ChatMessageSnapshot result;
+		result.id = status + 2;
+		result.kind = 2;
+		result.captcha_status = status;
+		session.messages.push_back(result);
+	}
+	PublishChatEvents(bus, { session }, {});
+	const auto events = DrainAll(bus);
+	ASSERT_EQUALS(static_cast<size_t>(4), events.size());
+	ASSERT_TRUE(events[0].data.find("\"type\":\"captcha_challenge\"") != std::string::npos);
+	ASSERT_TRUE(events[0].data.find("\"captcha_image\":\"Qk0=\"") != std::string::npos);
+	for (size_t i = 1; i < events.size(); ++i) {
+		ASSERT_TRUE(events[i].data.find("\"type\":\"captcha_result\"") != std::string::npos);
+		ASSERT_TRUE(events[i].data.find("\"captcha_status\":" + std::to_string(i - 1)) !=
+			    std::string::npos);
+	}
+}
+
+TEST(EventDiff, ChatCaptchaExpiryEmitsSessionUpdateWithoutMessage)
+{
+	CEventBus bus;
+	ChatSessionSnapshot change;
+	change.peer_hash = "0123456789abcdef0123456789abcdef";
+	change.pending_captcha_changed = true;
+	PublishChatEvents(bus, { change }, {});
+	const auto events = DrainAll(bus);
+	ASSERT_EQUALS(static_cast<size_t>(1), events.size());
+	ASSERT_EQUALS(std::string("chat_session_updated"), events[0].name);
+	ASSERT_TRUE(events[0].data.find("\"pending_captcha_id\":null") != std::string::npos);
+	ASSERT_TRUE(events[0].data.find(change.peer_hash) != std::string::npos);
+}

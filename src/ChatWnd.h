@@ -54,8 +54,10 @@ public:
 	void ProcessMessage(const CChatTarget &sender, const wxString &message);
 	void ConnectionResult(bool success, const wxString &message, const CChatTarget &id);
 
-	void SendMessage(
-		const wxString &message, const wxString &client_name = "", const CChatTarget &to_id = {});
+	void SendMessage(const wxString &message,
+		const wxString &client_name = "",
+		const CChatTarget &to_id = {},
+		uint32 challengeId = 0);
 
 	bool IsIdValid(const CChatTarget &id);
 	void ShowCaptchaResult(const CChatTarget &id, bool ok);

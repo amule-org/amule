@@ -29,17 +29,24 @@
 #include <amuleIPV4Address.h>
 #include <StreamTransport.h>
 
+#include <atomic>
+#include <chrono>
 #include <cstring>
 #include <memory>
+#include <mutex>
+#include <thread>
 #include <utility>
 #include <vector>
+
+// Access to the production io_context lets the asynchronous tests drain ready
+// handlers after joining the worker pool, without adding a socket API just for tests.
+// NOLINTNEXTLINE(bugprone-suspicious-include)
+#include "LibSocket.cpp"
 
 #ifdef ENABLE_IPV6
 #include <AddressFamilyPolicy.h>
 
-#include <chrono>
 #include <optional>
-#include <thread>
 
 #include "WarningsPush_Asio.h"
 #include <boost/asio/io_context.hpp>
@@ -52,20 +59,27 @@ using namespace muleunit;
 DECLARE_SIMPLE(LibSocketTransport)
 
 // Link seams: CLibSocket's asio side reaches the notification layer and the
-// address helpers, which pull in the application. Notifications are counted,
-// never delivered: nothing here drives an asio callback.
+// address helpers, which pull in the application. Most tests only count queued
+// notifications; the loopback tests also clone and deliver them on the main thread.
 namespace
 {
-int s_queuedNotifications = 0;
+std::atomic<int> s_queuedNotifications{ 0 };
+std::mutex s_notificationMutex;
+bool s_captureNotifications = false;
+std::vector<std::unique_ptr<MuleNotify::CMuleNotiferBase>> s_notifications;
 } // namespace
 
 namespace MuleNotify
 {
 class CMuleNotiferBase;
 void HandleNotificationAlways(const CMuleNotiferBase &);
-void HandleNotificationAlways(const CMuleNotiferBase &)
+void HandleNotificationAlways(const CMuleNotiferBase &notification)
 {
 	++s_queuedNotifications;
+	std::lock_guard<std::mutex> lock(s_notificationMutex);
+	if (s_captureNotifications) {
+		s_notifications.emplace_back(notification.Clone());
+	}
 }
 } // namespace MuleNotify
 
@@ -77,6 +91,101 @@ bool StringIPtoUint32(const wxString &, uint32 &)
 
 namespace
 {
+class CSendEventSocket : public CLibSocket
+{
+public:
+	void OnSend(int error) override
+	{
+		ASSERT_EQUALS(0, error);
+		++sendEvents;
+	}
+	void OnProxyEvent(int event) override
+	{
+		if (event == MULE_SOCKET_OUTPUT) {
+			++proxyOutputEvents;
+		}
+	}
+	int sendEvents = 0;
+	int proxyOutputEvents = 0;
+};
+
+class CAsyncSendPeer
+{
+public:
+	CAsyncSendPeer()
+	: m_listener(m_io, { boost::asio::ip::address_v4::loopback(), 0 })
+	, m_peer(m_io)
+	{
+		amuleIPV4Address address;
+		address.Hostname(wxString("127.0.0.1"));
+		address.Service(m_listener.local_endpoint().port());
+		// wait=true connects synchronously while retaining the asynchronous write path.
+		ASSERT_TRUE(socket.Connect(address, true));
+		m_listener.accept(m_peer);
+		m_peer.non_blocking(true);
+		{
+			std::lock_guard<std::mutex> lock(s_notificationMutex);
+			s_captureNotifications = true;
+		}
+		StartWorkers();
+	}
+
+	~CAsyncSendPeer()
+	{
+		m_service->Stop();
+		socket.Close();
+		s_io_service.restart();
+		s_io_service.poll();
+		std::lock_guard<std::mutex> lock(s_notificationMutex);
+		s_captureNotifications = false;
+		s_notifications.clear();
+	}
+
+	void StartWorkers() { m_service = std::make_unique<CAsioService>(); }
+
+	void FinishSend(size_t bytes)
+	{
+		const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(10);
+		char buffer[65536];
+		while (bytes) {
+			boost::system::error_code error;
+			const size_t received = m_peer.read_some(
+				boost::asio::buffer(buffer, std::min(bytes, sizeof(buffer))), error);
+			if (error == boost::asio::error::would_block ||
+				error == boost::asio::error::try_again) {
+				ASSERT_TRUE_M(std::chrono::steady_clock::now() < deadline,
+					"Timed out draining the loopback send");
+				std::this_thread::sleep_for(std::chrono::milliseconds(1));
+				continue;
+			}
+			ASSERT_TRUE(!error);
+			ASSERT_TRUE(received > 0);
+			bytes -= received;
+		}
+		// Receiving the bytes alone does not prove HandleSend has run. Join the
+		// workers, then drain ready handlers on this thread before checking events.
+		m_service->Stop();
+		s_io_service.restart();
+		s_io_service.poll();
+		std::vector<std::unique_ptr<MuleNotify::CMuleNotiferBase>> notifications;
+		{
+			std::lock_guard<std::mutex> lock(s_notificationMutex);
+			notifications.swap(s_notifications);
+		}
+		for (const auto &notification : notifications) {
+			notification->Notify();
+		}
+	}
+
+	CSendEventSocket socket;
+
+private:
+	boost::asio::io_context m_io;
+	boost::asio::ip::tcp::acceptor m_listener;
+	boost::asio::ip::tcp::socket m_peer;
+	std::unique_ptr<CAsioService> m_service;
+};
+
 // Answers an asio socket would never give: a fresh CLibSocket is not connected,
 // not ok, and has no peer, so an assertion can only pass through the transport.
 class CFakeTransport : public IStreamTransport
@@ -131,6 +240,62 @@ CFakeTransport *Attach(CLibSocket &socket, CNetworkAddress peer = CNetworkAddres
 	return borrowed;
 }
 } // namespace
+
+TEST(LibSocketTransport, AcceptedAsyncWriteQueuesNoSendEvent)
+{
+	CAsyncSendPeer peer;
+	const char payload[] = "accepted";
+	for (int completion = 0; completion < 2; ++completion) {
+		// The second accepted write also proves the first completion cleared its buffer.
+		ASSERT_EQUALS(sizeof(payload), peer.socket.Write(payload, sizeof(payload)));
+		peer.FinishSend(sizeof(payload));
+		ASSERT_EQUALS(0, peer.socket.sendEvents);
+		ASSERT_FALSE(peer.socket.BlocksWrite());
+		peer.StartWorkers();
+	}
+}
+
+TEST(LibSocketTransport, RefusedAsyncWritesQueueOneRetryEvent)
+{
+	CAsyncSendPeer peer;
+	// Larger than the TCP buffers: the send cannot finish until the peer reads.
+	const std::vector<char> payload(32 * 1024 * 1024, 'x');
+	ASSERT_EQUALS(payload.size(), peer.socket.Write(payload.data(), payload.size()));
+	const char retry = 'y';
+	for (int refusal = 0; refusal < 3; ++refusal) {
+		ASSERT_EQUALS(0u, peer.socket.Write(&retry, 1));
+		ASSERT_TRUE(peer.socket.BlocksWrite());
+	}
+	peer.FinishSend(payload.size());
+	ASSERT_EQUALS(1, peer.socket.sendEvents);
+	ASSERT_FALSE(peer.socket.BlocksWrite());
+	// Consuming the refusal must not leak another event into the next completion.
+	peer.StartWorkers();
+	ASSERT_EQUALS(1u, peer.socket.Write(&retry, 1));
+	peer.FinishSend(1);
+	ASSERT_EQUALS(1, peer.socket.sendEvents);
+}
+
+TEST(LibSocketTransport, ProxyNegotiationQueuesEverySendCompletion)
+{
+	CAsyncSendPeer peer;
+	amuleIPV4Address destination;
+	destination.Hostname(wxString("127.0.0.1"));
+	peer.socket.SetProxyState(true, &destination);
+	const char payload = 'p';
+	for (int completion = 1; completion <= 3; ++completion) {
+		ASSERT_EQUALS(1u, peer.socket.Write(&payload, 1));
+		peer.FinishSend(1);
+		ASSERT_EQUALS(completion, peer.socket.proxyOutputEvents);
+		ASSERT_EQUALS(0, peer.socket.sendEvents);
+		peer.StartWorkers();
+	}
+	peer.socket.SetProxyState(false);
+	ASSERT_EQUALS(1u, peer.socket.Write(&payload, 1));
+	peer.FinishSend(1);
+	ASSERT_EQUALS(3, peer.socket.proxyOutputEvents);
+	ASSERT_EQUALS(0, peer.socket.sendEvents);
+}
 
 // One table because the value is that the list is exhaustive: none of these are
 // virtual, so one left unrouted resolves statically to the asio socket -- which

@@ -863,9 +863,12 @@ void CECServerSocket::WriteDoneAndQueueEmpty()
 	// half-closed EC peer needs to be torn down. With the peer in kernel CLOSE-WAIT,
 	// writes silently succeed against the dead buffer and amuled spins indefinitely.
 	//
-	// Cap the dispatch depth so the chain returns to the event loop every MAX_DEPTH
-	// packets. Pending asio completions get processed in between; on a healthy peer the
-	// loop resumes when OnSend re-enters via the next one.
+	// Bound synchronous notification recursion so the main thread can return to the
+	// wx event loop. Reaching this limit does not schedule a continuation. Normal ASIO
+	// send completions notify OnSend only after a refused write; an accepted write alone
+	// does not guarantee another output event. Without a pending retry event, remaining
+	// updates wait until ECNotifier::NextPacketToSocket() or a client reply calls SendPacket().
+	// Continuous push draining requires an explicit deferred continuation.
 	static const int MAX_DEPTH = 8;
 	if (m_notification_dispatch_depth >= MAX_DEPTH) {
 		return;
@@ -1587,8 +1590,11 @@ uint32 ChatCursorFrom(const CECPacket *request)
 // connection's EC_TAG_CAN_CHAT_PEER_HASH echo: a client that predates the hash tag
 // would misread it, or a duplicate GUI_ID sharing one value, as one session.
 // A non-zero `legacyView` encodes only what a legacy client sees under that GUI_ID.
-CECTag EncodeChatSession(
-	const CChatSessionStore::Session &session, uint32 cursor, bool peerHashCapable, uint64 legacyView = 0)
+CECTag EncodeChatSession(const CChatSessionStore::Session &session,
+	uint32 cursor,
+	bool peerHashCapable,
+	uint64 legacyView = 0,
+	const CECPacket *request = nullptr)
 {
 	const auto inView = [legacyView](const CChatSessionStore::Message &msg) {
 		return !legacyView || msg.legacy_route == legacyView;
@@ -1623,6 +1629,25 @@ CECTag EncodeChatSession(
 		// unroutable address read as online.
 		tag.AddTag(CECTag(EC_TAG_CLIENT_CONNECTED, client->IsConnected()));
 	}
+	const uint32 pendingCaptcha = client ? client->GetPendingChatCaptchaId() : 0;
+	tag.AddTag(CECTag(EC_TAG_CHAT_CAPTCHA_ID, pendingCaptcha));
+	// The cursor filters history only. A live challenge must remain recoverable
+	// after an EC reconnect or after unrelated messages evict its transcript row.
+	bool imageKnown = false;
+	if (request) {
+		for (const CECTag &known : *request) {
+			if (known.GetTagName() == EC_TAG_CHAT_CAPTCHA_ID && known.GetInt() == pendingCaptcha)
+				imageKnown = true;
+		}
+	}
+	const bool imageInHistory = std::any_of(
+		session.messages.begin(), session.messages.end(), [&](const CChatSessionStore::Message &msg) {
+			return msg.id == pendingCaptcha && msg.id > cursor && inView(msg);
+		});
+	if (pendingCaptcha && !imageKnown && !imageInHistory && session.captcha_id == pendingCaptcha &&
+		!session.captcha_image.IsEmpty()) {
+		tag.AddTag(CECTag(EC_TAG_CHAT_CAPTCHA_IMAGE, session.captcha_image));
+	}
 	if (const CFriend *f = theApp->friendlist->FindFriend(session.peer.Hash(), 0, 0)) {
 		tag.AddTag(CECTag(EC_TAG_FRIEND, f->ECID()));
 	}
@@ -1635,6 +1660,14 @@ CECTag EncodeChatSession(
 		msgTag.AddTag(CECTag(EC_TAG_CHAT_MSG_ID, msg.id));
 		msgTag.AddTag(CECTag(EC_TAG_CHAT_DIRECTION, msg.direction));
 		msgTag.AddTag(CECTag(EC_TAG_CHAT_TIMESTAMP, msg.timestamp));
+		if (msg.kind != CChatSessionStore::TEXT) {
+			msgTag.AddTag(CECTag(EC_TAG_CHAT_MESSAGE_KIND, msg.kind));
+			if (msg.kind == CChatSessionStore::CAPTCHA_CHALLENGE) {
+				msgTag.AddTag(CECTag(EC_TAG_CHAT_CAPTCHA_IMAGE, msg.captcha_image));
+			} else if (msg.kind == CChatSessionStore::CAPTCHA_RESULT) {
+				msgTag.AddTag(CECTag(EC_TAG_CHAT_CAPTCHA_STATUS, msg.captcha_status));
+			}
+		}
 		tag.AddTag(msgTag);
 	}
 	return tag;
@@ -2278,9 +2311,21 @@ static CECPacket *Get_EC_Response_PartFile_Cmd(const CECPacket *request)
 			pfile->Delete();
 			break;
 
-		case EC_OP_PARTFILE_SET_CAT:
-			pfile->SetCategory(hashtag.GetFirstTagSafe()->GetInt());
-			break;
+		case EC_OP_PARTFILE_SET_CAT: {
+			// A completing download reads its category's path, so an index past the list
+			// must not be stored.
+			const uint64 cat = hashtag.GetFirstTagSafe()->GetInt();
+			if (cat >= theApp->glob_prefs->GetCatCount()) {
+				if (!response) {
+					response = new CECPacket(EC_OP_FAILED);
+					response->AddTag(CECTag(EC_TAG_STRING,
+						CFormat(wxString(wxTRANSLATE("No such category: %u"))) %
+							cat));
+				}
+				break;
+			}
+			pfile->SetCategory(static_cast<uint8>(cat));
+		} break;
 
 		default:
 			response = new CECPacket(EC_OP_FAILED);
@@ -4293,8 +4338,8 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 			// Keyed by GUI_ID, as 3.1.0 did: one conversation per route, so a peer that
 			// changes route keeps its old conversation and gets a new one.
 			for (const auto &view : theApp->chatsessions->LegacySessions()) {
-				response->AddTag(
-					EncodeChatSession(*view.session, cursor, false, view.gui_id));
+				response->AddTag(EncodeChatSession(
+					*view.session, cursor, false, view.gui_id, request));
 			}
 			break;
 		}
@@ -4311,7 +4356,8 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 			// Sessions with nothing new are still listed, with no message children: that is
 			// how a client that connected late learns the session exists, and how every
 			// client learns a session it is tracking was closed elsewhere.
-			response->AddTag(EncodeChatSession(*session, cursor, m_chatPeerHashActive));
+			response->AddTag(
+				EncodeChatSession(*session, cursor, m_chatPeerHashActive, 0, request));
 		}
 		break;
 	}
@@ -4323,7 +4369,21 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 			response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("Empty chat message")));
 			break;
 		}
-		const CChatPeer peer = ResolveChatSendTarget(request);
+		const CECTag *captcha = request->GetTagByName(EC_TAG_CHAT_CAPTCHA_ID);
+		// An expired dialog must never open a new provisional conversation.
+		const auto *captchaSession = captcha ? ResolveChatSessionTarget(request) : nullptr;
+		const CChatPeer peer = captcha ? (captchaSession ? captchaSession->peer : CChatPeer())
+					       : ResolveChatSendTarget(request);
+		if (captcha) {
+			const auto *client = theApp->clientlist->FindChatClient(peer);
+			if (!captcha->GetInt() || !client ||
+				client->GetPendingChatCaptchaId() != captcha->GetInt() || !captchaSession) {
+				response = new CECPacket(EC_OP_FAILED);
+				response->AddTag(CECTag(EC_TAG_STRING,
+					wxTRANSLATE("CAPTCHA challenge is no longer pending")));
+				break;
+			}
+		}
 		if (peer.IsEmpty()) {
 			response = new CECPacket(EC_OP_FAILED);
 			response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("Unknown chat target")));

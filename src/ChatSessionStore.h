@@ -134,12 +134,22 @@ public:
 		DIR_OUT = 1, //!< sent by us, from any client
 	};
 
+	enum MessageKind : uint8
+	{
+		TEXT = 0,
+		CAPTCHA_CHALLENGE = 1,
+		CAPTCHA_RESULT = 2
+	};
+
 	struct Message
 	{
 		uint32 id = 0; //!< monotonic across the whole store, never reused
 		uint8 direction = DIR_IN;
 		uint32 timestamp = 0; //!< unix seconds, stamped by the core
 		wxString text;
+		uint8 kind = TEXT;
+		wxString captcha_image;   //!< validated BMP, base64 encoded
+		uint8 captcha_status = 0; //!< 0 success, 1 retry, 2 exhausted
 		//! GUI_ID of the IPv4 route this message was exchanged on, or of the conversation a
 		//! legacy client addressed it to. 0 when the route had no IPv4 form.
 		uint64 legacy_route = 0;
@@ -153,6 +163,10 @@ public:
 		uint16 port = 0;
 		uint32 last_activity = 0; //!< unix seconds, drives session eviction
 		std::deque<Message> messages;
+		// One retained challenge, independent of transcript eviction. The live
+		// client's CAPTCHA state determines whether it is still pending.
+		uint32 captcha_id = 0;
+		wxString captcha_image;
 
 		// Legacy EC only: zero means this route cannot be represented as IPv4.
 		uint64 LegacyGuiId() const;
@@ -189,6 +203,11 @@ public:
 		const CNetworkAddress &address = CNetworkAddress(),
 		uint16 port = 0,
 		uint64 legacyRoute = 0);
+
+	// CAPTCHA entries share the transcript cursor and retention limits. Only an
+	// existing conversation may accept a challenge or result.
+	bool AddCaptchaChallenge(const CChatPeer &peer, const unsigned char *data, size_t size);
+	bool AddCaptchaResult(const CChatPeer &peer, uint8 status);
 
 	// Drop one session. Returns false when there was none, so the EC handler
 	// can answer 404-equivalent rather than silently succeeding.

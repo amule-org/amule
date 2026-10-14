@@ -660,10 +660,19 @@ public:
 		}
 
 		if (m_sendBuffer.load(std::memory_order_acquire)) {
-			m_blocksWrite.store(true, std::memory_order_relaxed);
-			AddDebugLogLineF(logAsio,
-				CFormat("Write blocks %d %p %s") % nbytes % m_sendBuffer.load() % m_IP);
-			return 0;
+			// Close the lost-wakeup window with HandleSend: the old send may have
+			// completed between the first buffer check and publishing m_blocksWrite.
+			// If it did, this write is no longer blocked and can be accepted now.
+			// These operations and HandleSend's CAS/exchange need a common seq_cst
+			// order: release/acquire alone allows both sides to miss the other's update.
+			m_blocksWrite.store(true, std::memory_order_seq_cst);
+			if (m_sendBuffer.load(std::memory_order_seq_cst)) {
+				AddDebugLogLineF(logAsio,
+					CFormat("Write blocks %d %p %s") % nbytes % m_sendBuffer.load() %
+						m_IP);
+				return 0;
+			}
+			m_blocksWrite.store(false, std::memory_order_relaxed);
 		}
 		AddDebugLogLineF(logAsio, CFormat("Write %d %s") % nbytes % m_IP);
 		char *newBuf = new char[nbytes];
@@ -920,7 +929,8 @@ private:
 		// Atomically clear m_sendBuffer only if it still points to the buffer we just finished
 		// sending. A racing Write() on the throttler thread may have already swapped in a new
 		// buffer.
-		m_sendBuffer.compare_exchange_strong(sentBuffer, nullptr, std::memory_order_release);
+		m_sendBuffer.compare_exchange_strong(sentBuffer, nullptr, std::memory_order_seq_cst);
+		const bool writeWasBlocked = m_blocksWrite.exchange(false, std::memory_order_seq_cst);
 
 		CLibSocket *wrapper = m_libSocket.load(std::memory_order_acquire);
 		if (!wrapper) {
@@ -933,8 +943,12 @@ private:
 			} else {
 				AddDebugLogLineF(
 					logAsio, CFormat("HandleSend %d %s") % bytes_transferred % m_IP);
-				m_blocksWrite.store(false, std::memory_order_release);
-				CoreNotify_LibSocketSend(wrapper, 0);
+				// Match wxSOCKET_OUTPUT's edge-triggered behaviour: a completion only
+				// makes output newly available when a Write() was refused. Proxy
+				// negotiation remains completion-driven and needs every output event.
+				if (writeWasBlocked || m_proxyState.load(std::memory_order_acquire)) {
+					CoreNotify_LibSocketSend(wrapper, 0);
+				}
 			}
 		}
 	}
@@ -1303,7 +1317,8 @@ private:
 	// atomic: Close() sets it on the main thread, PostLostEvent() reads it on the ASIO thread
 	std::atomic<bool> m_closed;
 	std::atomic<bool> m_destroying; // set once Destroy() has been called
-	bool m_proxyState;
+	// Set by the main thread's proxy state machine and read by ASIO send completions.
+	std::atomic<bool> m_proxyState;
 	bool m_notify;           // set by Notify()
 	bool m_sync;             // copied from !m_notify on Connect()
 	int m_connectTimeoutMs;  // 0 = no bound; honoured on the sync connect path

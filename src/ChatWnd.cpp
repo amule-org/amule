@@ -28,6 +28,7 @@
 #include <wx/app.h>
 
 #include "ChatWnd.h" // Interface declarations
+#include "CaptchaDialog.h"
 
 #include "amule.h"          // Needed for theApp
 #include "amuleDlg.h"       // Needed for CamuleDlg
@@ -282,13 +283,17 @@ void CChatWnd::ProcessMessage(const CChatTarget &sender, const wxString &message
 
 void CChatWnd::ConnectionResult(bool success, const wxString &message, const CChatTarget &id)
 {
+	if (!success) {
+		CCaptchaDialog::CloseForPeer(theApp->amuledlg, id);
+	}
 	chatselector->ConnectionResult(success, message, id);
 }
 
-void CChatWnd::SendMessage(const wxString &message, const wxString &client_name, const CChatTarget &to_id)
+void CChatWnd::SendMessage(
+	const wxString &message, const wxString &client_name, const CChatTarget &to_id, uint32 challengeId)
 {
 
-	if (chatselector->SendMessage(message, client_name, to_id)) {
+	if (chatselector->SendMessage(message, client_name, to_id, challengeId)) {
 		CastChild(IDC_CMESSAGE, wxTextCtrl)->Clear();
 	}
 
@@ -328,6 +333,7 @@ bool CChatWnd::IsIdValid(const CChatTarget &id)
 
 void CChatWnd::ShowCaptchaResult(const CChatTarget &id, bool ok)
 {
+	CCaptchaDialog::CloseForPeer(theApp->amuledlg, id);
 	chatselector->ShowCaptchaResult(id, ok);
 }
 
@@ -361,6 +367,7 @@ void CChatWnd::AppendStoredMessage(
 
 void CChatWnd::EndSessionFromCore(const CChatTarget &gui_id)
 {
+	CCaptchaDialog::CloseForPeer(theApp->amuledlg, gui_id);
 	// The core has already forgotten this session, so the tab must go without originating a
 	// close of its own. The guard keeps OnChatClosing from sending one when this DeletePage
 	// fires the page-closing event.
@@ -383,6 +390,7 @@ void CChatWnd::OnChatClosing(wxBookCtrlEvent &evt)
 		return;
 	}
 	const CChatTarget gui_id = session->m_client_id;
+	CCaptchaDialog::CloseForPeer(theApp->amuledlg, gui_id);
 	CScopedFlag closingGuard(m_inChatClosing);
 #ifdef CLIENT_GUI
 	if (theApp->m_connect && theApp->m_connect->ServerSupportsChatSessions()) {

@@ -190,6 +190,13 @@ void ProtocolHandler_QueueLinks(const wxArrayString &links)
 	}
 	if (ed2kFile.Open()) {
 		for (size_t i = 0; i < links.GetCount(); ++i) {
+			// One link per line: a decoded line break would forge more links. Checked here
+			// rather than by CheckPassedLink(), which logs through the GUI, not yet up on an
+			// amulegui cold launch.
+			if (links[i].find_first_of(wxT("\r\n")) != wxString::npos) {
+				AMULE_URL_LOG(wxT("queue: dropping a link with a line break"));
+				continue;
+			}
 			ed2kFile.AddLine(links[i]);
 		}
 		ed2kFile.AddLine(wxT("RAISE_DIALOG"));
