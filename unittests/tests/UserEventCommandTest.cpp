@@ -27,6 +27,7 @@
 #include "ExternalCommand.h"
 
 #include <wx/ffile.h>
+#include <wx/filefn.h>
 #include <wx/filename.h>
 #include <wx/utils.h>
 
@@ -652,3 +653,37 @@ TEST(UserEventCommand, PlayerFallbackUsesTheSameSafetyChecksAsPlaceholders)
 	ASSERT_TRUE(ExternalCommand::Build("player", {}, nullptr, ExternalCommand::Platform::Posix, &nul)
 			    .IsEmpty());
 }
+
+TEST(UserEventCommand, ReplaceProgramKeepsTheRestAsWritten)
+{
+	const wxString player = "C:\\Program Files\\VLC\\vlc.exe";
+	ASSERT_EQUALS("\"" + player + "\"", ExternalCommand::ReplaceProgram("vlc", player));
+	ASSERT_EQUALS("\"" + player + "\" --fullscreen \"%PARTFILE\"",
+		ExternalCommand::ReplaceProgram("vlc --fullscreen \"%PARTFILE\"", player));
+	// A quoted token ends at the first blank outside the quotes.
+	ASSERT_EQUALS(
+		"  \"" + player + "\"\tx", ExternalCommand::ReplaceProgram("  \"my player\"\tx", player));
+	ASSERT_EQUALS("\"" + player + "\" /c echo done>>C:\\log.txt",
+		ExternalCommand::ReplaceProgram("cmd /c echo done>>C:\\log.txt", player));
+}
+
+#ifdef __WINDOWS__
+TEST(UserEventCommand, BareProgramIsNotTakenFromTheCurrentDirectory)
+{
+	const wxString dir = wxFileName::CreateTempFileName("amule-cwd-");
+	wxRemoveFile(dir);
+	ASSERT_TRUE(wxMkdir(dir));
+	const wxString planted = wxFileName(dir, "amule-cwd-probe.exe").GetFullPath();
+	ASSERT_TRUE(wxCopyFile(wxGetOSDirectory() + "\\System32\\hostname.exe", planted));
+	const wxString previous = wxGetCwd();
+	ASSERT_TRUE(wxSetWorkingDirectory(dir));
+	const wxString command = "amule-cwd-probe";
+	const bool ran = ExternalCommand::RunDetached(command, wxArrayString{ command });
+	const bool ranTemplate = ExternalCommand::RunDetached(command, wxArrayString{ command }, &command);
+	wxSetWorkingDirectory(previous);
+	wxRemoveFile(planted);
+	wxRmdir(dir);
+	ASSERT_FALSE(ran);
+	ASSERT_FALSE(ranTemplate);
+}
+#endif

@@ -1378,15 +1378,23 @@ bool CamuleApp::OnInit()
 #define QUOTE "\'"
 #endif
 
-		wxString cmd = QUOTE + amulewebPath +
-			       QUOTE " " QUOTE "--amule-config-file=" + aMuleConfigFile + QUOTE;
-		CTerminationProcessAmuleweb *p = new CTerminationProcessAmuleweb(cmd, &webserver_pid);
-		webserver_pid = static_cast<int>(wxExecute(cmd, wxEXEC_ASYNC, p));
-		bool webserver_ok = webserver_pid > 0;
-		if (webserver_ok) {
-			AddLogLineC(CFormat(_("web server running on pid %d")) % webserver_pid);
+		bool webserver_ok = false;
+		if (amulewebPath.IsEmpty()) {
+			AddLogLineC(CFormat(_("Not starting %s: it is neither next to aMule nor on PATH.")) %
+				    thePrefs::GetWSPath());
 		} else {
-			delete p;
+			wxString cmd = QUOTE + amulewebPath +
+				       QUOTE " " QUOTE "--amule-config-file=" + aMuleConfigFile + QUOTE;
+			CTerminationProcessAmuleweb *p = new CTerminationProcessAmuleweb(cmd, &webserver_pid);
+			webserver_pid = static_cast<int>(wxExecute(cmd, wxEXEC_ASYNC, p));
+			webserver_ok = webserver_pid > 0;
+			if (webserver_ok) {
+				AddLogLineC(CFormat(_("web server running on pid %d")) % webserver_pid);
+			} else {
+				delete p;
+			}
+		}
+		if (!webserver_ok) {
 			// Defer the modal until after OnInit returns. During OnInit the main window is
 			// not yet visible on Windows, so a modal ShowAlert spawns invisible and blocks
 			// the message loop waiting on input that cannot be given -- aMule then boots
@@ -1431,52 +1439,62 @@ bool CamuleApp::OnInit()
 		}
 #endif
 
-		// Hand the child an ephemeral EC credential instead of letting it read the
-		// password-equivalent value out of amule.conf. Written 0600 into the config dir the
-		// child is about to be pointed at, under the one name both sides derive from
-		// webcommon; the child deletes it the moment it has read it, and OnCoreTimer removes
-		// it regardless once the deadline expires. The path is deliberately NOT on the
-		// command line: argv is world-readable via ps.
-		//
-		// A failure here is not fatal -- amuleapi still has its own configured EC password --
-		// but it is worth saying, because that fallback is the credential we are trying to
-		// stop using.
-		m_ecToken = wxString::FromUTF8(webcommon::GenerateEcToken().c_str());
-		const std::string tokenPath =
-			webcommon::EcTokenFilePath(std::string(thePrefs::GetConfigDir().utf8_str()));
-		if (webcommon::WriteFileAtomic0600(tokenPath, std::string(m_ecToken.utf8_str()) + "\n")) {
-			m_ecTokenFileExpiryMs = theStats::GetUptimeMillis() + EC_TOKEN_FILE_TTL_MS;
+		bool amuleapi_ok = false;
+		if (amuleapiPath.IsEmpty()) {
+			AddLogLineC(CFormat(_("Not starting %s: it is neither next to aMule nor on PATH.")) %
+				    thePrefs::GetAmuleApiPath());
 		} else {
-			AddLogLineC(CFormat(_("Could not write the amuleapi EC token to %s; "
-					      "amuleapi will fall back to its configured password.")) %
-				    wxString::FromUTF8(tokenPath.c_str()));
-			m_ecToken.Clear();
-		}
+			// Hand the child an ephemeral EC credential instead of letting it read the
+			// password-equivalent value out of amule.conf. Written 0600 into the config dir the
+			// child is about to be pointed at, under the one name both sides derive from
+			// webcommon; the child deletes it the moment it has read it, and OnCoreTimer removes
+			// it regardless once the deadline expires. The path is deliberately NOT on the
+			// command line: argv is world-readable via ps.
+			//
+			// A failure here is not fatal -- amuleapi still has its own configured EC password --
+			// but it is worth saying, because that fallback is the credential we are trying to
+			// stop using.
+			m_ecToken = wxString::FromUTF8(webcommon::GenerateEcToken().c_str());
+			const std::string tokenPath =
+				webcommon::EcTokenFilePath(std::string(thePrefs::GetConfigDir().utf8_str()));
+			if (webcommon::WriteFileAtomic0600(
+				    tokenPath, std::string(m_ecToken.utf8_str()) + "\n")) {
+				m_ecTokenFileExpiryMs = theStats::GetUptimeMillis() + EC_TOKEN_FILE_TTL_MS;
+			} else {
+				AddLogLineC(
+					CFormat(_("Could not write the amuleapi EC token to %s; "
+						  "amuleapi will fall back to its configured password.")) %
+					wxString::FromUTF8(tokenPath.c_str()));
+				m_ecToken.Clear();
+			}
 
-		// No --amule-config-file here, unlike amuleweb above: amuleapi takes the ephemeral
-		// token written just now instead of reading the hashed EC password out of amule.conf.
-		// It finds the token through the config dir passed below, which is also where its
-		// admin and guest credentials live. The HTTP bind address and port, and where to reach
-		// our EC listener, are passed explicitly; a non-loopback bind requires an admin password
-		// or amuleapi refuses to start.
-		wxString ecIp;
-		uint16 ecPort = 0;
-		if (ECServerHandler) {
-			ECServerHandler->GetListenEndpoint(ecIp, ecPort);
+			// No --amule-config-file here, unlike amuleweb above: amuleapi takes the ephemeral
+			// token written just now instead of reading the hashed EC password out of amule.conf.
+			// It finds the token through the config dir passed below, which is also where its
+			// admin and guest credentials live. The HTTP bind address and port, and where to
+			// reach our EC listener, are passed explicitly; a non-loopback bind requires an admin
+			// password or amuleapi refuses to start.
+			wxString ecIp;
+			uint16 ecPort = 0;
+			if (ECServerHandler) {
+				ECServerHandler->GetListenEndpoint(ecIp, ecPort);
+			}
+			const wxString cmd = AmuleApiCommand(amuleapiPath,
+				thePrefs::GetConfigDir(),
+				thePrefs::GetAmuleApiBindAddress(),
+				thePrefs::GetAmuleApiPort(),
+				ecIp,
+				ecPort);
+			CTerminationProcessAmuleApi *p = new CTerminationProcessAmuleApi(cmd, &amuleapi_pid);
+			amuleapi_pid = static_cast<int>(wxExecute(cmd, wxEXEC_ASYNC, p));
+			amuleapi_ok = amuleapi_pid > 0;
+			if (amuleapi_ok) {
+				AddLogLineC(CFormat(_("amuleapi running on pid %d")) % amuleapi_pid);
+			} else {
+				delete p;
+			}
 		}
-		const wxString cmd = AmuleApiCommand(amuleapiPath,
-			thePrefs::GetConfigDir(),
-			thePrefs::GetAmuleApiBindAddress(),
-			thePrefs::GetAmuleApiPort(),
-			ecIp,
-			ecPort);
-		CTerminationProcessAmuleApi *p = new CTerminationProcessAmuleApi(cmd, &amuleapi_pid);
-		amuleapi_pid = static_cast<int>(wxExecute(cmd, wxEXEC_ASYNC, p));
-		bool amuleapi_ok = amuleapi_pid > 0;
-		if (amuleapi_ok) {
-			AddLogLineC(CFormat(_("amuleapi running on pid %d")) % amuleapi_pid);
-		} else {
-			delete p;
+		if (!amuleapi_ok) {
 			// See the amuleweb branch above for why this is deferred with
 			// CallAfter rather than shown inline during OnInit.
 			CallAfter([this]() {

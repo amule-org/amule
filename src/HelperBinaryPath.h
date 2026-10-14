@@ -20,33 +20,102 @@
 #include <functional>
 
 #include <wx/filename.h>
+#include <wx/stdpaths.h>
 #include <wx/string.h>
+#include <wx/tokenzr.h>
+#include <wx/utils.h>
+
+inline bool IsExecutableFile(const wxString &path)
+{
+	return wxFileName::IsFileExecutable(path);
+}
+
+inline wxString CurrentSearchPath()
+{
+	wxString path;
+	wxGetEnv("PATH", &path);
+	return path;
+}
+
+// The absolute path of the first `name` in `searchPath`, a PATH value, that `isExecutable` accepts,
+// or empty. Relative entries are skipped: they resolve against the current directory.
+inline wxString FindOnSearchPath(const wxString &name,
+	const wxString &searchPath,
+	const std::function<bool(const wxString &)> &isExecutable)
+{
+	for (const wxString &entry : wxStringTokenize(searchPath, wxPATH_SEP, wxTOKEN_STRTOK)) {
+#ifdef __WINDOWS__
+		wxString dir = entry;
+		dir.Replace("\"", wxEmptyString); // an entry may be quoted
+		dir.Trim(false).Trim(true);
+#else
+		const wxString &dir = entry;
+#endif
+		const wxFileName candidate(dir, name);
+		if (candidate.IsAbsolute() && isExecutable(candidate.GetFullPath())) {
+			return candidate.GetFullPath();
+		}
+	}
+	return wxEmptyString;
+}
+
+// Where a bare `program` lives: next to `selfExePath`, else the first match in `searchPath`. The
+// absolute path, or empty if there is none; a value with a directory is returned as is. Windows adds
+// ".exe" to a name without an extension, as CreateProcess does. Give CreateProcess this, not the bare
+// name: it tries the current directory before PATH, and anyone who can write there can plant a copy.
+inline wxString FindProgram(const wxString &program,
+	const wxString &selfExePath,
+	const wxString &searchPath,
+	const std::function<bool(const wxString &)> &isExecutable)
+{
+	if (program.IsEmpty() || !wxFileName(program).GetPath().IsEmpty()) {
+		return program;
+	}
+	wxFileName name(program);
+#ifdef __WINDOWS__
+	if (!name.HasExt()) {
+		name.SetExt("exe");
+	}
+#endif
+	if (!selfExePath.IsEmpty()) {
+		const wxString sibling =
+			wxFileName(wxFileName(selfExePath).GetPath(), name.GetFullName()).GetFullPath();
+		if (isExecutable(sibling)) {
+			return sibling;
+		}
+	}
+	return FindOnSearchPath(name.GetFullName(), searchPath, isExecutable);
+}
+
+// FindProgram for this process: our own folder, then PATH.
+inline wxString FindProgram(const wxString &program)
+{
+	return FindProgram(
+		program, wxStandardPaths::Get().GetExecutablePath(), CurrentSearchPath(), IsExecutableFile);
+}
 
 // The command that starts a helper binary (amuleweb, amuleapi) configured as `configured`. A value
 // with a directory is used as is. A bare name, the default, is looked for next to `selfExePath`
-// first, so an unpacked static build finds its helpers without PATH; failing that, PATH decides.
+// first, so an unpacked static build finds its helpers without PATH. Failing that, POSIX leaves the
+// name to execvp's PATH search, and Windows looks in `searchPath` itself (see FindProgram). Empty
+// means Windows found nothing.
 inline wxString ResolveHelperBinary(const wxString &configured,
 	const wxString &selfExePath,
+	const wxString &searchPath,
 	const std::function<bool(const wxString &)> &isExecutable)
 {
-	if (configured.IsEmpty() || selfExePath.IsEmpty() || !wxFileName(configured).GetPath().IsEmpty()) {
-		return configured;
-	}
-	wxFileName sibling(wxFileName(selfExePath).GetPath(), configured);
 #ifdef __WINDOWS__
-	if (!sibling.HasExt()) {
-		sibling.SetExt("exe");
-	}
+	return FindProgram(configured, selfExePath, searchPath, isExecutable);
+#else
+	wxUnusedVar(searchPath);
+	const wxString sibling = FindProgram(configured, selfExePath, wxEmptyString, isExecutable);
+	return sibling.IsEmpty() ? configured : sibling;
 #endif
-	const wxString candidate = sibling.GetFullPath();
-	return isExecutable(candidate) ? candidate : configured;
 }
 
 inline wxString ResolveHelperBinary(const wxString &configured, const wxString &selfExePath)
 {
-	return ResolveHelperBinary(configured, selfExePath, [](const wxString &path) {
-		return wxFileName::IsFileExecutable(path);
-	});
+	return ResolveHelperBinary(configured, selfExePath, CurrentSearchPath(), IsExecutableFile);
 }
 
 // The command that starts amuleapi for this core. `ecIp` and `ecPort`, the EC listener's bound

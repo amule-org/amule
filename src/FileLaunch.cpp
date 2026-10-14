@@ -295,8 +295,10 @@ void Reveal(const CKnownFile *file, wxWindow *WXUNUSED(parent))
 #elif defined(__WXMSW__)
 	// Explorer wants the path glued to the switch by a comma, and it exits non-zero even on
 	// success -- so the return code says nothing, and this stays a quoted string rather than an
-	// argument vector.
-	const wxString command = "explorer /select,\"" + path.GetRaw() + "\"";
+	// argument vector. Its full path, because CreateProcess would try a bare name in the current
+	// directory first.
+	const wxString command =
+		"\"" + wxGetOSDirectory() + "\\explorer.exe\" /select,\"" + path.GetRaw() + "\"";
 	CTerminationProcess *process = new CTerminationProcess(command);
 	try {
 		// Explorer's own exit status is meaningless (non-zero even on success),

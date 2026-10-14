@@ -24,6 +24,7 @@
 
 #include "ExternalCommand.h"
 #include "AppImageEnv.h"
+#include "HelperBinaryPath.h"
 #include "TerminationProcess.h"
 
 #include <algorithm>
@@ -420,6 +421,36 @@ wxString BuildWindowsCommandLine(const wxArrayString &args, const wxString *unch
 	return shell;
 }
 
+wxString ReplaceProgram(const wxString &commandLine, const wxString &program)
+{
+	size_t start = 0;
+	while (start < commandLine.length() && (commandLine[start] == ' ' || commandLine[start] == '\t')) {
+		++start;
+	}
+	size_t end = start;
+	for (bool quoted = false; end < commandLine.length(); ++end) {
+		const wxUniChar ch = commandLine[end];
+		if (ch == '"') {
+			quoted = !quoted;
+		} else if (!quoted && (ch == ' ' || ch == '\t')) {
+			break;
+		}
+	}
+	return commandLine.Left(start) + "\"" + program + "\"" + commandLine.Mid(end);
+}
+
+#ifdef __WINDOWS__
+wxString WithAbsoluteProgram(const wxString &commandLine)
+{
+	const wxArrayString args = wxCmdLineParser::ConvertStringToArgs(commandLine, wxCMD_LINE_SPLIT_DOS);
+	const wxString program = args.IsEmpty() ? wxString() : FindProgram(args[0]);
+	if (program.IsEmpty()) {
+		return wxEmptyString;
+	}
+	return program == args[0] ? commandLine : ReplaceProgram(commandLine, program);
+}
+#endif
+
 // Preserve non-ASCII arguments and use host libraries when running inside an AppImage.
 bool RunDetached(const wxString &description, const wxArrayString &args, const wxString *unchangedTemplate)
 {
@@ -444,6 +475,19 @@ bool RunDetached(const wxString &description, const wxArrayString &args, const w
 		argv.push_back(buffers.back().data());
 	}
 	argv.push_back(nullptr);
+#else
+	// CreateProcess would try a bare name in the current directory before PATH.
+	const wxString program = FindProgram(args[0]);
+	if (program.IsEmpty()) {
+		return false;
+	}
+	wxArrayString resolved = args;
+	resolved[0] = program;
+	wxString resolvedTemplate;
+	if (unchangedTemplate != nullptr && program != args[0]) {
+		resolvedTemplate = ReplaceProgram(*unchangedTemplate, program);
+		unchangedTemplate = &resolvedTemplate;
+	}
 #endif
 
 	wxExecuteEnv execEnv;
@@ -452,7 +496,7 @@ bool RunDetached(const wxString &description, const wxArrayString &args, const w
 	long ret = 0;
 	try {
 #ifdef __WINDOWS__
-		ret = wxExecute(BuildWindowsCommandLine(args, unchangedTemplate),
+		ret = wxExecute(BuildWindowsCommandLine(resolved, unchangedTemplate),
 			wxEXEC_ASYNC,
 			process,
 			sanitized ? &execEnv : nullptr);

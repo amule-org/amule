@@ -37,7 +37,8 @@
 
 #include <common/Format.h>
 
-#include "AppImageEnv.h" // Needed for GetSanitizedExecEnv
+#include "AppImageEnv.h"      // Needed for GetSanitizedExecEnv
+#include "HelperBinaryPath.h" // Needed for FindProgram
 #include "Logger.h"
 #include "libs/common/Path.h"
 
@@ -92,6 +93,12 @@ int RunBoundedFFProbe(const wxString &exe,
 	int exitCode = kSpawnFailed;
 
 #ifdef __WXMSW__
+	const wxString program = FindProgram(exe);
+	if (program.IsEmpty()) {
+		wxRemoveFile(tmpPath);
+		return kSpawnFailed;
+	}
+
 	SECURITY_ATTRIBUTES sa;
 	sa.nLength = sizeof(sa);
 	sa.bInheritHandle = TRUE;
@@ -120,7 +127,7 @@ int RunBoundedFFProbe(const wxString &exe,
 	}
 
 	// Quote each token for the single command-line string CreateProcess wants.
-	wxString cmdLine = wxT("\"") + exe + wxT("\"");
+	wxString cmdLine = wxT("\"") + program + wxT("\"");
 	for (const wxString &a : argv) {
 		cmdLine += wxT(" \"") + a + wxT("\"");
 	}
@@ -316,8 +323,7 @@ constexpr unsigned kDetectTimeoutMs = 3000;
 //
 // Goes through RunBoundedFFProbe because that puts a deadline on a binary that never returns and is
 // callable off the main thread; wxExecute is neither (see the include-block note above). Bare
-// `ffprobe` still resolves through PATH: posix_spawnp and CreateProcess with a null application
-// name both search it.
+// `ffprobe` still resolves through PATH: posix_spawnp searches it, and on Windows FindProgram does.
 bool CanRun(const wxString &binary)
 {
 	// Detection is never cancelled part-way; only the timeout bounds it.
@@ -418,27 +424,6 @@ bool IsTrustedLocation(const wxString &file)
 	return true;
 }
 
-// CreateProcess resolves a bare name through the current directory before PATH. Look in our own
-// folder and in PATH instead, as it does, minus that step.
-wxString FindOnPath()
-{
-	wxArrayString dirs;
-	dirs.Add(wxFileName(wxStandardPaths::Get().GetExecutablePath()).GetPath());
-	wxString path;
-	if (wxGetEnv(wxT("PATH"), &path)) {
-		for (wxString dir : wxStringTokenize(path, wxT(";"), wxTOKEN_STRTOK)) {
-			dir.Replace(wxT("\""), wxEmptyString); // an entry may be quoted
-			dirs.Add(dir.Trim(false).Trim(true));
-		}
-	}
-	for (const wxString &dir : dirs) {
-		const wxFileName candidate(dir, wxT("ffprobe.exe"));
-		if (candidate.IsAbsolute() && candidate.FileExists()) {
-			return candidate.GetFullPath();
-		}
-	}
-	return wxEmptyString;
-}
 #else
 bool IsTrustedLocation(const wxString &)
 {
@@ -455,7 +440,7 @@ wxString AutoDetectPath()
 	// processes get a minimal PATH (launchd's lacks /opt/homebrew; Windows GUI apps can miss
 	// choco/scoop).
 #ifdef __WXMSW__
-	const wxString onPath = FindOnPath();
+	const wxString onPath = FindProgram(wxT("ffprobe"));
 	if (!onPath.IsEmpty() && CanRun(onPath)) {
 		return onPath;
 	}

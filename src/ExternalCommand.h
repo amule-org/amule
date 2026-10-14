@@ -72,6 +72,16 @@ wxArrayString Build(const wxString &command,
 // Such fixed Windows commands preserve their original quoting and shell syntax.
 wxString BuildWindowsCommandLine(const wxArrayString &args, const wxString *unchangedTemplate = nullptr);
 
+// `commandLine` with its first token, a Windows command line's program, replaced by `program`,
+// quoted. The rest is kept as written.
+wxString ReplaceProgram(const wxString &commandLine, const wxString &program);
+
+#ifdef __WINDOWS__
+// `commandLine` with a bare program name replaced by its absolute path (see FindProgram), or empty
+// if it is not found.
+wxString WithAbsoluteProgram(const wxString &commandLine);
+#endif
+
 // Spawn asynchronously using the AppImage-safe environment. False means no child
 // was spawned; successful spawning does not establish successful child execution.
 bool RunDetached(

@@ -16,6 +16,7 @@
 
 #include <muleunit/test.h>
 
+#include <initializer_list>
 #include <set>
 #include <utility>
 
@@ -31,13 +32,45 @@ namespace
 const wxString kSelfDir = wxFileName::DirName("/opt/amule").GetPath();
 const wxString kSelf = wxFileName(kSelfDir, "amuled").GetFullPath();
 
+#ifdef __WINDOWS__
+const wxString kRoot = "C:\\";
+#else
+const wxString kRoot = "/";
+#endif
+
+// `name` as CreateProcess would complete it.
+wxString Exe(const wxString &name)
+{
+#ifdef __WINDOWS__
+	return name + ".exe";
+#else
+	return name;
+#endif
+}
+
 wxString SiblingOf(const wxString &name)
 {
-	wxFileName sibling(kSelfDir, name);
-#ifdef __WINDOWS__
-	sibling.SetExt("exe");
-#endif
-	return sibling.GetFullPath();
+	return wxFileName(kSelfDir, Exe(name)).GetFullPath();
+}
+
+wxString InDir(const wxString &dir, const wxString &name)
+{
+	return wxFileName(dir, Exe(name)).GetFullPath();
+}
+
+const wxString kBin = kRoot + "bin";
+const wxString kTools = kRoot + "tools";
+
+wxString SearchPathOf(std::initializer_list<wxString> dirs)
+{
+	wxString path;
+	for (const wxString &dir : dirs) {
+		if (!path.IsEmpty()) {
+			path += wxPATH_SEP;
+		}
+		path += dir;
+	}
+	return path;
 }
 
 // A file system holding exactly `present`.
@@ -51,29 +84,109 @@ std::function<bool(const wxString &)> Holding(std::set<wxString> present)
 TEST(HelperBinaryPath, BareNameFoundNextToSelf)
 {
 	ASSERT_EQUALS(SiblingOf("amuleapi"),
-		ResolveHelperBinary("amuleapi", kSelf, Holding({ SiblingOf("amuleapi") })));
+		ResolveHelperBinary("amuleapi",
+			kSelf,
+			kBin,
+			Holding({ SiblingOf("amuleapi"), InDir(kBin, "amuleapi") })));
 }
 
-TEST(HelperBinaryPath, BareNameMissingNextToSelfIsLeftToPath)
+TEST(HelperBinaryPath, BareNameMissingNextToSelf)
 {
-	ASSERT_EQUALS(wxString("amuleapi"), ResolveHelperBinary("amuleapi", kSelf, Holding({})));
+#ifdef __WINDOWS__
+	// Never the bare name: CreateProcess would try the current directory before PATH.
+	ASSERT_EQUALS(InDir(kBin, "amuleapi"),
+		ResolveHelperBinary("amuleapi", kSelf, kBin, Holding({ InDir(kBin, "amuleapi") })));
+	ASSERT_EQUALS(wxString(""), ResolveHelperBinary("amuleapi", kSelf, kBin, Holding({})));
+#else
+	// execvp searches PATH, and only PATH.
+	ASSERT_EQUALS(wxString("amuleapi"),
+		ResolveHelperBinary("amuleapi", kSelf, kBin, Holding({ InDir(kBin, "amuleapi") })));
+	ASSERT_EQUALS(wxString("amuleapi"), ResolveHelperBinary("amuleapi", kSelf, kBin, Holding({})));
+#endif
 }
 
 TEST(HelperBinaryPath, ConfiguredDirectoryIsKept)
 {
 	// A path the user set wins, even with a copy next to our own binary.
 	const wxString configured = wxFileName("/usr/local/bin", "amuleapi").GetFullPath();
-	ASSERT_EQUALS(configured, ResolveHelperBinary(configured, kSelf, Holding({ SiblingOf("amuleapi") })));
+	ASSERT_EQUALS(
+		configured, ResolveHelperBinary(configured, kSelf, kBin, Holding({ SiblingOf("amuleapi") })));
 	const wxString relative = wxFileName(".", "amuleapi").GetFullPath();
-	ASSERT_EQUALS(relative, ResolveHelperBinary(relative, kSelf, Holding({ SiblingOf("amuleapi") })));
+	ASSERT_EQUALS(
+		relative, ResolveHelperBinary(relative, kSelf, kBin, Holding({ SiblingOf("amuleapi") })));
 }
 
 TEST(HelperBinaryPath, UnknownSelfOrEmptyNameChangesNothing)
 {
+#ifdef __WINDOWS__
+	ASSERT_EQUALS(
+		wxString(""), ResolveHelperBinary("amuleweb", "", "", Holding({ SiblingOf("amuleweb") })));
+#else
 	ASSERT_EQUALS(wxString("amuleweb"),
-		ResolveHelperBinary("amuleweb", "", Holding({ SiblingOf("amuleweb") })));
-	ASSERT_EQUALS(wxString(""), ResolveHelperBinary("", kSelf, Holding({ SiblingOf("") })));
+		ResolveHelperBinary("amuleweb", "", "", Holding({ SiblingOf("amuleweb") })));
+#endif
+	ASSERT_EQUALS(wxString(""), ResolveHelperBinary("", kSelf, kBin, Holding({ SiblingOf("") })));
 }
+
+TEST(HelperBinaryPath, FindProgramSearchesOwnFolderThenPathInOrder)
+{
+	const wxString path = SearchPathOf({ kBin, kTools });
+	ASSERT_EQUALS(SiblingOf("player"),
+		FindProgram("player",
+			kSelf,
+			path,
+			Holding({ SiblingOf("player"), InDir(kBin, "player"), InDir(kTools, "player") })));
+	ASSERT_EQUALS(InDir(kBin, "player"),
+		FindProgram(
+			"player", kSelf, path, Holding({ InDir(kBin, "player"), InDir(kTools, "player") })));
+	ASSERT_EQUALS(InDir(kTools, "player"),
+		FindProgram("player", kSelf, path, Holding({ InDir(kTools, "player") })));
+	ASSERT_EQUALS(InDir(kTools, "player"),
+		FindProgram("player", "", path, Holding({ InDir(kTools, "player") })));
+	ASSERT_EQUALS(wxString(""), FindProgram("player", kSelf, path, Holding({})));
+}
+
+TEST(HelperBinaryPath, FindProgramSkipsRelativePathEntries)
+{
+	// Each would resolve against the current directory.
+	const wxString path = SearchPathOf({ ".", "bin", kBin });
+	ASSERT_EQUALS(InDir(kBin, "player"),
+		FindProgram("player",
+			kSelf,
+			path,
+			Holding({ InDir(".", "player"), InDir("bin", "player"), InDir(kBin, "player") })));
+	ASSERT_EQUALS(wxString(""),
+		FindProgram("player",
+			kSelf,
+			SearchPathOf({ ".", "bin" }),
+			Holding({ InDir(".", "player"), InDir("bin", "player") })));
+}
+
+TEST(HelperBinaryPath, FindProgramKeepsADirectory)
+{
+	const wxString absolute = InDir(kTools, "player");
+	ASSERT_EQUALS(absolute, FindProgram(absolute, kSelf, kBin, Holding({ InDir(kBin, "player") })));
+	const wxString relative = InDir("bin", "player");
+	ASSERT_EQUALS(relative, FindProgram(relative, kSelf, kBin, Holding({ InDir(kBin, "player") })));
+	ASSERT_EQUALS(wxString(""), FindProgram("", kSelf, kBin, Holding({ kBin })));
+}
+
+#ifdef __WINDOWS__
+TEST(HelperBinaryPath, FindProgramCompletesAndUnquotesLikeCreateProcess)
+{
+	// An extension is kept; ".exe" is added only without one.
+	const wxString script = wxFileName(kBin, "notify.cmd").GetFullPath();
+	ASSERT_EQUALS(script, FindProgram("notify.cmd", kSelf, kBin, Holding({ script })));
+	ASSERT_EQUALS(wxString(""), FindProgram("notify", kSelf, kBin, Holding({ script })));
+
+	const wxString spaced = "C:\\Program Files\\Player";
+	ASSERT_EQUALS(InDir(spaced, "player"),
+		FindProgram("player",
+			kSelf,
+			"\" " + spaced + " \";" + kBin,
+			Holding({ InDir(spaced, "player") })));
+}
+#endif
 
 namespace
 {

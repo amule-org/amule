@@ -53,6 +53,7 @@
 #include "AboutDialog.h"      // Needed for CAboutDlg
 #include "amule.h"            // Needed for theApp
 #include "AppImageEnv.h"      // Needed for GetSanitizedExecEnv
+#include "ExternalCommand.h"  // Needed for WithAbsoluteProgram
 #include "ChatWnd.h"          // Needed for CChatWnd
 #include "ClientsWnd.h"       // Needed for CClientsWnd
 #include "SourceListCtrl.h"   // Needed for CSourceListCtrl
@@ -1877,12 +1878,15 @@ void CamuleDlg::LaunchUrl(const wxString &url)
 			cmd += " " + tmp;
 		}
 
+#ifdef __WINDOWS__
+		cmd = ExternalCommand::WithAbsoluteProgram(cmd); // empty if not found
+#endif
 		// Inside an AppImage, launch the browser with a sanitized environment so it loads
 		// system libraries rather than the bundled ones (#334); a no-op copy elsewhere.
 		CTerminationProcess *p = new CTerminationProcess(cmd);
 		wxExecuteEnv execEnv;
 		const bool sanitized = AppImageEnv::GetSanitizedExecEnv(execEnv);
-		if (wxExecute(cmd, wxEXEC_ASYNC, p, sanitized ? &execEnv : nullptr)) {
+		if (!cmd.IsEmpty() && wxExecute(cmd, wxEXEC_ASYNC, p, sanitized ? &execEnv : nullptr)) {
 			AddLogLineN(_("Launch Command: ") + cmd);
 			return;
 		} else {
