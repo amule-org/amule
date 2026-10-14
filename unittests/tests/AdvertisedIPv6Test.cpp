@@ -213,3 +213,30 @@ TEST(AdvertisedIPv6, KadSourcesRepublishOnlyWhenTheirPublishedAddressBecomesWron
 	disabled.declaredReachable = false;
 	ASSERT_TRUE(ShouldRepublishKadSources(published, disabled));
 }
+
+// An ISP prefix change: the new address has no votes yet, but the published one is gone.
+TEST(AdvertisedIPv6, KadSourcesRepublishWhenTheChoiceChangesBeforeItIsCorroborated)
+{
+	const std::optional<CNetworkAddress> published = CNetworkAddress::IPv6FromOctets(Global(0x0a));
+
+	SAdvertisedIPv6Facts rotated = AdvertisableFacts();
+	rotated.choice = CNetworkAddress::IPv6FromOctets(Global(0x0b));
+	rotated.prefixCorroborated = false;
+	ASSERT_TRUE(ShouldRepublishKadSources(published, rotated));
+}
+
+TEST(AdvertisedIPv6, KadSourcesRepublishForTheFirstAdvertisement)
+{
+	ASSERT_TRUE(ShouldRepublishKadSources(std::nullopt, AdvertisableFacts()));
+}
+
+TEST(AdvertisedIPv6, NothingPublishedNeedsNoRepublish)
+{
+	SAdvertisedIPv6Facts lapse = AdvertisableFacts();
+	lapse.prefixCorroborated = false;
+	ASSERT_FALSE(ShouldRepublishKadSources(std::nullopt, lapse));
+
+	SAdvertisedIPv6Facts disabled = AdvertisableFacts();
+	disabled.declaredReachable = false;
+	ASSERT_FALSE(ShouldRepublishKadSources(std::nullopt, disabled));
+}

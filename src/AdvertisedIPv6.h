@@ -119,7 +119,9 @@ inline bool ShouldRepublishKadSources(
 	const bool configurationStopped = !facts.choice || !facts.declaredReachable || !facts.ipv6Built ||
 					  !facts.familyPermitted || facts.proxyEnabled ||
 					  !facts.listenerAcceptsIPv6;
-	return lastPublished.has_value() && configurationStopped;
+	// A new prefix has no votes yet, so it is not advertised, but the published one is no longer
+	// ours.
+	return lastPublished.has_value() && (configurationStopped || facts.choice != lastPublished);
 }
 
 #ifdef ENABLE_IPV6
