@@ -27,6 +27,7 @@
 
 #include "PartFile.h"            // Interface declarations.
 #include "PartFileWriteThread.h" // Needed for PB_READY etc.
+#include "PartMetWriter.h"       // Needed for CPartMetWriter
 #include "PartFileHashThread.h"  // Needed for QueueHashCheck
 #include "config.h"              // Needed for VERSION
 #include <protocol/kad/Constants.h>
@@ -357,6 +358,7 @@ CPartFile::~CPartFile()
 		}
 	}
 	WaitForUploadReads();
+	WaitForMetSave();
 
 	// if it's not opened, it was completed or deleted
 	if (m_hpartfile.IsOpened()) {
@@ -911,7 +913,7 @@ uint8 CPartFile::LoadPartFile(
 	return true;
 }
 
-bool CPartFile::SavePartFile(bool Initial)
+bool CPartFile::SavePartFile(bool now)
 {
 	switch (status) {
 	case PS_WAITING_FOR_HASH:
@@ -919,50 +921,27 @@ bool CPartFile::SavePartFile(bool Initial)
 	case PS_COMPLETE:
 		return false;
 	}
-
-	/* Don't write anything to disk if less than 100 KB of free space is left. */
-	sint64 free = CPath::GetFreeSpaceAt(GetFilePath());
-	if ((free != wxInvalidOffset) && (free < (100 * 1024))) {
+	// Delete removes the files.
+	if (m_deleting) {
+		return false;
+	}
+	// PerformFileComplete closed the handle: the completion task moves the files and removes
+	// the .part.met, so a save now would bring it back.
+	if (status == PS_COMPLETING && !m_inDestructor && !m_hpartfile.IsOpened()) {
 		return false;
 	}
 
-	// Atomic-rename save.
-	//
-	// The old sequence made three full-size content copies per save -- a backup copy, a
-	// write-from-scratch, and a second backup copy -- plus a delete/create dance on the live
-	// .part.met. On a sharer with hundreds of dirty partfiles per timer tick the aggregate
-	// runs the main thread continuously through disk I/O: write() syscalls are microseconds
-	// each, but the loop length itself is the bottleneck.
-	//
-	// New sequence:
-	//   1. Write new content into .part.met.tmp.
-	//   2. rename(.part.met, .part.met.bak) -- O(1), promoting the previous .part.met to
-	//      the long-term backup.
-	//   3. rename(.part.met.tmp, .part.met) -- atomic install; POSIX rename guarantees the
-	//      target is either fully old or fully new content at every observable moment.
-	//
-	// One content write plus two metadata renames, and stronger crash safety because the
-	// live .part.met is never absent or partial.
-	const CPath tmpName = m_fullname.AppendExt(".tmp");
-	const CPath bakName = m_fullname.AppendExt(PARTMET_BAK_EXT);
+	ReapMetSaves();
 
-	CFile file;
-	try {
-		if (!m_PartPath.FileExists()) {
-			throw wxString(".part file not found");
-		}
-
+	// Serialised here, written by WritePartMet: on the writer thread, or inline below.
+	CMemFile file;
+	{
 		uint32 lsc = lastseencomplete;
-
-		file.Open(tmpName, CFile::write);
-		if (!file.IsOpened()) {
-			throw wxString("Failed to open part.met.tmp file");
-		}
 
 		// version
 		file.WriteUInt8(IsLargeFile() ? PARTFILE_VERSION_LARGEFILE : PARTFILE_VERSION);
 
-		file.WriteUInt32(CPath::GetModificationTime(m_PartPath));
+		file.WriteUInt32(0); // the .part's mtime, which WritePartMet fills in
 		// hash
 		file.WriteHash(m_abyFileHash);
 		uint16 parts = m_hashlist.size();
@@ -1091,50 +1070,69 @@ bool CPartFile::SavePartFile(bool Initial)
 
 			++i_pos;
 		}
-	} catch (const wxString &error) {
-		AddLogLineNS(CFormat(_("ERROR while saving partfile: %s (%s ==> %s)")) % error %
-			     m_partmetfilename % GetFileName());
-
-		file.Close();
-		CPath::RemoveFile(tmpName);
-		return false;
-	} catch (const CIOFailureException &e) {
-		AddLogLineCS(_("IO failure while saving partfile: ") + e.what());
-
-		file.Close();
-		CPath::RemoveFile(tmpName);
-		return false;
 	}
 
-	file.Close();
+	CPartMetSaveRequest req;
+	req.content.assign(file.GetRawBuffer(), file.GetRawBuffer() + file.GetLength());
+	req.metPath = m_fullname;
+	req.tmpPath = m_fullname.AppendExt(".tmp");
+	req.bakPath = m_fullname.AppendExt(PARTMET_BAK_EXT);
+	req.partPath = m_PartPath;
+	req.dir = GetFilePath();
 
-	// Sanity-check the tmp before committing it as the new .part.met. If the write somehow
-	// produced a zero-length file -- no exception, but disk full or quota -- the existing
-	// .part.met must stay intact.
-	sint64 tmpLength = tmpName.GetFileSize();
-	if (tmpLength == wxInvalidOffset || tmpLength == 0) {
+	// Inline: the first save, as the .part.met's existence reserves the number CreatePartFile
+	// picked; the destructor's; the import thread's; and any once the writer has stopped.
+	const uint64 gen = m_metChangeGen;
+	CPartMetWriter *writer = theApp->partMetWriter;
+	if (now || m_inDestructor || !wxThread::IsMain() || !writer || !writer->IsRunning()) {
+		m_metSave->Cancel();
+		return HandleMetSaveResult(gen, WritePartMet(req));
+	}
+	writer->Queue(m_metSave, std::move(req), gen);
+	return true;
+}
+
+bool CPartFile::HandleMetSaveResult(uint64 gen, const CPartMetSaveResult &result)
+{
+	switch (result.status) {
+	case CPartMetSaveResult::Saved:
+		if (gen == m_metChangeGen) {
+			ClearMetDirty();
+			ClearStatsDirty();
+			m_lastMetSaveTick = ::GetTickCount64();
+		}
+		return true;
+	case CPartMetSaveResult::LowSpace:
+		break;
+	case CPartMetSaveResult::Failed:
+		AddLogLineNS(CFormat(_("ERROR while saving partfile: %s (%s ==> %s)")) % result.detail %
+			     m_partmetfilename % GetFileName());
+		break;
+	case CPartMetSaveResult::IOFailure:
+		AddLogLineCS(_("IO failure while saving partfile: ") + result.detail);
+		break;
+	case CPartMetSaveResult::ZeroLength:
 		theApp->ShowAlert(
 			CFormat(_("Wrote 0/unknown bytes to '%s' -- preserving existing .part.met.")) %
-				tmpName,
+				m_fullname.AppendExt(".tmp"),
 			_("Message"),
 			wxOK);
-		CPath::RemoveFile(tmpName);
-		return false;
+		break;
 	}
+	return false;
+}
 
-	// Two-rename atomic install: the previous .part.met is promoted to .part.met.bak,
-	// overwriting any older backup, which LoadPartFile reads on the next start if the live
-	// .part.met goes missing; then the freshly-written .part.met.tmp is renamed over the
-	// live name, atomically.
-	if (m_fullname.FileExists()) {
-		CPath::RenameFile(m_fullname, bakName, true /* overwrite */);
+void CPartFile::ReapMetSaves()
+{
+	for (const auto &done : m_metSave->TakeResults()) {
+		HandleMetSaveResult(done.first, done.second);
 	}
-	CPath::RenameFile(tmpName, m_fullname, true /* overwrite */);
+}
 
-	ClearMetDirty();
-	ClearStatsDirty();
-	m_lastMetSaveTick = ::GetTickCount64();
-	return true;
+void CPartFile::WaitForMetSave()
+{
+	m_metSave->Cancel();
+	ReapMetSaves();
 }
 
 void CPartFile::SaveSourceSeeds()
@@ -2476,6 +2474,8 @@ void CPartFile::PerformFileComplete()
 {
 	// add this file to the suspended uploads list
 	theApp->uploadqueue->SuspendUpload(GetFileHash(), false);
+	// Queues the last save, which the completion task waits for: should the completion fail,
+	// the file carries on from it.
 	FlushBuffer();
 
 	// Close the permanent handle under m_hpartfileMutex: CUploadDiskIOThread reads this
@@ -2537,6 +2537,7 @@ void CPartFile::Delete()
 	// same gate ~CPartFile uses, so FlushBuffer cannot enqueue further hash jobs (or
 	// re-share the file) while we tear it down below.
 	m_inDestructor = true;
+	m_deleting = true;
 	// Notify every subscriber that holds a raw CKnownFile* / CPartFile* to this object --
 	// list ctrls, comment dialogs, the file-detail dialog, the AICH static request list, the
 	// write/hash threads, and on amulegui the CUpDownClient::m_uploadingfile / m_reqfile
@@ -2593,6 +2594,8 @@ void CPartFile::Delete()
 	}
 
 	AddDebugLogLineN(logPartFile, "\tClosed");
+
+	WaitForMetSave();
 
 	// cppcheck-suppress duplicateBranch
 	if (!CPath::RemoveFile(m_fullname)) {
@@ -3642,10 +3645,13 @@ void CPartFile::FlushBuffer(bool fromAICHRecoveryDataAvailable)
 	// Transferred) set m_statsDirty only, and are saved at the STATS_HEARTBEAT_MS cadence so
 	// a popular sharer does not rewrite its .met on every served chunk. The heartbeat is
 	// measured from the last successful save, so a regular dirty save resets it. With
-	// neither bit dirty, no save fires at all.
+	// neither bit dirty, no save fires at all, nor while a save of this state is still on its
+	// way to disk.
 	const uint64 STATS_HEARTBEAT_MS = 10 * 60 * 1000;
-	if (IsMetDirty() ||
-		(IsStatsDirty() && (::GetTickCount64() - m_lastMetSaveTick > STATS_HEARTBEAT_MS))) {
+	ReapMetSaves();
+	if ((IsMetDirty() ||
+		    (IsStatsDirty() && (::GetTickCount64() - m_lastMetSaveTick > STATS_HEARTBEAT_MS))) &&
+		!m_metSave->Covers(m_metChangeGen)) {
 		SavePartFile();
 	}
 
@@ -4408,6 +4414,7 @@ void CPartFile::Init()
 
 #ifndef CLIENT_GUI
 	m_CorruptionBlackBox = new CCorruptionBlackBox();
+	m_metSave = std::make_shared<CPartMetSaveSlot>();
 #endif
 }
 

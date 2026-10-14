@@ -34,10 +34,12 @@
 #include <wx/event.h>              // Needed for wxEvent and wxDECLARE_EVENT
 #include "SHAHashSet.h"            // Needed for CAICHHash, EAICHStatus
 #include "VerifyLocalDataResult.h" // Needed for CVerifyLocalDataResult
+#include <memory>                  // Needed for std::shared_ptr
 
 class CKnownFile;
 class CPartFile;
 class CFileAutoClose;
+class CPartMetSaveSlot;
 
 /**
  * Performs MD4 and/or AICH hashing of a file, depending on the type.
@@ -195,6 +197,8 @@ protected:
 	uint8 m_category;
 	//! Owner of the file, used when sending completion-event.
 	const CPartFile *m_owner;
+	//! The owner's .part.met saves, which must be written before the files move.
+	std::shared_ptr<CPartMetSaveSlot> m_metSave;
 	//! Specifies if an error occurred during completion.
 	bool m_error;
 	//! The resulting full path. File may be be renamed.

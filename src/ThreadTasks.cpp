@@ -31,6 +31,7 @@
 
 #include "ThreadTasks.h"      // Interface declarations
 #include "PartFile.h"         // Needed for CPartFile
+#include "PartMetWriter.h"    // Needed for CPartMetSaveSlot
 #include "CFile.h"            // Needed for CFile::CloneFile
 #include "Logger.h"           // Needed for Add(Debug)LogLine{C,N}
 #include <common/Format.h>    // Needed for CFormat
@@ -722,6 +723,7 @@ CCompletionTask::CCompletionTask(const CPartFile *file)
 , m_metPath(file->GetFullName())
 , m_category(file->GetCategory())
 , m_owner(file)
+, m_metSave(file->GetMetSave())
 , m_error(false)
 {
 	wxASSERT(m_filename.IsOk());
@@ -731,6 +733,9 @@ CCompletionTask::CCompletionTask(const CPartFile *file)
 
 void CCompletionTask::Entry()
 {
+	// Otherwise a save still queued could bring the .part.met back after it is removed below.
+	m_metSave->WaitIdle();
+
 	CPath targetPath;
 
 	{

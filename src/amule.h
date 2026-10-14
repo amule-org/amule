@@ -59,6 +59,7 @@ class CPreferences;
 class CDownloadQueue;
 class CUploadQueue;
 class CPartFileWriteThread;
+class CPartMetWriter;
 class CPartFileHashThread;
 class CMediaProbeThread;
 class CFreeSpaceThread;
@@ -436,6 +437,7 @@ public:
 	CUploadQueue *uploadqueue;
 	CPartFileWriteThread *partFileWriteThread;
 	CPartFileHashThread *partFileHashThread;
+	CPartMetWriter *partMetWriter;
 	CMediaProbeThread *mediaProbeThread;
 	CFreeSpaceThread *freeSpaceThread;
 	CServerConnect *serverconnect;

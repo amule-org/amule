@@ -115,6 +115,7 @@
 #include "UploadQueue.h"         // Needed for CUploadQueue
 #include "PartFileWriteThread.h" // Needed for CPartFileWriteThread
 #include "PartFileHashThread.h"  // Needed for CPartFileHashThread
+#include "PartMetWriter.h"       // Needed for CPartMetWriter
 #include "MediaProbeThread.h"    // Needed for CMediaProbeThread
 #include "FreeSpaceThread.h"     // Needed for CFreeSpaceThread
 #include "UploadBandwidthThrottler.h"
@@ -264,6 +265,7 @@ CamuleApp::CamuleApp()
 #endif
 	core_timer = NULL;
 	partFileHashThread = NULL;
+	partMetWriter = nullptr;
 	mediaProbeThread = nullptr;
 	freeSpaceThread = nullptr;
 
@@ -482,6 +484,10 @@ int CamuleApp::OnExit()
 		delete partFileWriteThread;
 		partFileWriteThread = NULL;
 	}
+
+	// Writes the saves still queued; ~CPartFile then saves inline.
+	delete partMetWriter;
+	partMetWriter = nullptr;
 
 	delete downloadqueue;
 	downloadqueue = NULL;
@@ -1022,6 +1028,7 @@ bool CamuleApp::OnInit()
 	// POSIX threads belong to the child and actually drain the PartFileBufferedData queue.
 	partFileWriteThread = new CPartFileWriteThread();
 	partFileHashThread = new CPartFileHashThread();
+	partMetWriter = new CPartMetWriter();
 	// Dedicated worker for ffprobe metadata, isolated from the shared
 	// CThreadScheduler so a slow or hung probe can never stall completions.
 	mediaProbeThread = new CMediaProbeThread();

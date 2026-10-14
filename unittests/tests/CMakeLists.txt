@@ -1139,6 +1139,33 @@ target_link_libraries (FileDataIOTest
 	muleunit
 )
 
+add_executable (PartMetWriterTest
+	PartMetWriterTest.cpp
+	${CMAKE_SOURCE_DIR}/src/PartMetWriter.cpp
+	${CMAKE_SOURCE_DIR}/src/SafeFile.cpp
+	${CMAKE_SOURCE_DIR}/src/CFile.cpp
+	${CMAKE_SOURCE_DIR}/src/MemFile.cpp
+	${CMAKE_SOURCE_DIR}/src/kademlia/utils/UInt128.cpp
+	${CMAKE_SOURCE_DIR}/src/Tag.cpp
+	${CMAKE_SOURCE_DIR}/src/libs/common/Path.cpp
+	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
+	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
+)
+
+add_test (NAME PartMetWriterTest
+	COMMAND PartMetWriterTest
+)
+
+target_include_directories (PartMetWriterTest
+	PRIVATE ${CMAKE_BINARY_DIR}
+	PRIVATE ${CMAKE_SOURCE_DIR}/src
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
+)
+
+target_link_libraries (PartMetWriterTest
+	muleunit
+)
+
 add_executable (CloneFileTest
 	CloneFileTest.cpp
 	${CMAKE_SOURCE_DIR}/src/SafeFile.cpp

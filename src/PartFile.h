@@ -31,6 +31,7 @@
 #include "FileArea.h"      // Needed for CFileArea (PartFileBufferedData)
 #include <array>           // Needed for std::array (m_ecTickState)
 #include <atomic>          // Needed for std::atomic (m_iWrites, flushed)
+#include <memory>          // Needed for std::shared_ptr (m_metSave)
 #include <mutex>           // Needed for std::mutex (m_hpartfileMutex)
 
 #include "OtherStructs.h"   // Needed for Requested_Block_Struct
@@ -132,18 +133,28 @@ public:
 		const CPath &filename,
 		bool from_backup = false,
 		bool getsizeonly = false);
-	bool SavePartFile(bool Initial = false);
+	// Writes the .part.met on CPartMetWriter, or before returning if @a now.
+	bool SavePartFile(bool now = false);
+	const std::shared_ptr<class CPartMetSaveSlot> &GetMetSave() const { return m_metSave; }
 
 	// Mark/clear the in-memory dirty bit for the .part.met file.  See
 	// m_metDirty in the private section for the dirty-flag contract.
-	void MarkMetDirty() { m_metDirty = true; }
+	void MarkMetDirty()
+	{
+		m_metDirty = true;
+		++m_metChangeGen;
+	}
 	void ClearMetDirty() { m_metDirty = false; }
 	bool IsMetDirty() const { return m_metDirty; }
 
 	// Soft-dirty bit for upload-stat counters (AllTimeRequests, AllTimeAccepts,
 	// AllTimeTransferred), flipped by CFileStatistic so a popular sharer does not re-dirty the
 	// partfile on every served chunk. See m_statsDirty.
-	void MarkStatsDirty() { m_statsDirty = true; }
+	void MarkStatsDirty()
+	{
+		m_statsDirty = true;
+		++m_metChangeGen;
+	}
 	void ClearStatsDirty() { m_statsDirty = false; }
 	bool IsStatsDirty() const { return m_statsDirty; }
 	void PartFileHashFinished(CKnownFile *result);
@@ -412,6 +423,14 @@ private:
 	void PerformFileComplete();
 	void WaitForUploadReads();
 
+	// Handles the .part.met saves CPartMetWriter finished: logs failures, and clears the dirty
+	// bits once the file on disk holds the current state. Main thread.
+	void ReapMetSaves();
+	bool HandleMetSaveResult(uint64 gen, const struct CPartMetSaveResult &result);
+	// Drops a queued .part.met save and waits for one being written, so neither lands after
+	// the files are moved or removed.
+	void WaitForMetSave();
+
 	uint64 m_lastRefreshedDLDisplay;
 
 	// Buffered data to be written
@@ -454,6 +473,16 @@ private:
 	// .met. LoadPartFile explicitly ClearMetDirty()s before each successful return, to undo
 	// MarkMetDirty()s produced incidentally by setters during tag parsing.
 	bool m_metDirty = false;
+
+	// Bumped by MarkMetDirty and MarkStatsDirty. A finished save clears the dirty bits only if
+	// it was serialised at the current generation.
+	uint64 m_metChangeGen = 0;
+
+	// This file's queue entry in CPartMetWriter. Shared, so a save in flight outlives the file.
+	std::shared_ptr<class CPartMetSaveSlot> m_metSave;
+
+	// Set by Delete, which removes the files: no save is worth writing then.
+	bool m_deleting = false;
 
 	// Count of HashJobs in flight on CPartFileHashThread for this file. Incremented before
 	// enqueue, decremented by the worker after HashSinglePart and the event post complete.
