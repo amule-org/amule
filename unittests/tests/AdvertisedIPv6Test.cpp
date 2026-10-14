@@ -193,3 +193,23 @@ TEST(AdvertisedIPv6, NothingIsAdvertisedWhenTheListenerRejectsIPv6)
 	facts.listenerAcceptsIPv6 = false;
 	ASSERT_FALSE(DecideAdvertisedIPv6(facts).has_value());
 }
+
+TEST(AdvertisedIPv6, KadSourcesRepublishOnlyWhenTheirPublishedAddressBecomesWrong)
+{
+	const std::optional<CNetworkAddress> published = CNetworkAddress::IPv6FromOctets(Global(0x0a));
+
+	SAdvertisedIPv6Facts lapse = AdvertisableFacts();
+	lapse.prefixCorroborated = false;
+	ASSERT_FALSE(ShouldRepublishKadSources(published, lapse));
+
+	SAdvertisedIPv6Facts restored = AdvertisableFacts();
+	ASSERT_FALSE(ShouldRepublishKadSources(published, restored));
+
+	SAdvertisedIPv6Facts changed = AdvertisableFacts();
+	changed.choice = CNetworkAddress::IPv6FromOctets(Global(0x0b));
+	ASSERT_TRUE(ShouldRepublishKadSources(published, changed));
+
+	SAdvertisedIPv6Facts disabled = AdvertisableFacts();
+	disabled.declaredReachable = false;
+	ASSERT_TRUE(ShouldRepublishKadSources(published, disabled));
+}

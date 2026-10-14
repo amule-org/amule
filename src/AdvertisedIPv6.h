@@ -100,6 +100,28 @@ inline std::optional<CNetworkAddress> DecideAdvertisedIPv6(const SAdvertisedIPv6
 	return facts.choice;
 }
 
+/**
+ * Whether Kad source records need a prompt republish after the IPv6 advertising state changes.
+ *
+ * Corroboration expiry is deliberately not enough: it makes new records omit @c ip6, but does not
+ * make the address in existing records wrong. Republish only when a different address would be
+ * published, or when an address already in Kad becomes invalid because the configuration or local
+ * address changed.
+ */
+inline bool ShouldRepublishKadSources(
+	const std::optional<CNetworkAddress> &lastPublished, const SAdvertisedIPv6Facts &facts)
+{
+	const std::optional<CNetworkAddress> advertised = DecideAdvertisedIPv6(facts);
+	if (advertised) {
+		return advertised != lastPublished;
+	}
+
+	const bool configurationStopped = !facts.choice || !facts.declaredReachable || !facts.ipv6Built ||
+					  !facts.familyPermitted || facts.proxyEnabled ||
+					  !facts.listenerAcceptsIPv6;
+	return lastPublished.has_value() && configurationStopped;
+}
+
 #ifdef ENABLE_IPV6
 /**
  * The IPv6 address our hellos carry right now, or none.
