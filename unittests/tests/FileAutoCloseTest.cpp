@@ -22,6 +22,7 @@
 #include "FileAutoClose.h"
 
 #include <atomic>
+#include <cstring>
 #include <thread>
 #include <vector>
 
@@ -77,6 +78,28 @@ TEST(CFileAutoClose, KnownSizeFollowsWritesAndResizes)
 	ASSERT_EQUALS(3010u, file.GetKnownSize());
 
 	ASSERT_EQUALS(file.GetLength(), file.GetKnownSize());
+	ASSERT_TRUE(file.Close());
+}
+
+TEST(CFileAutoClose, AWriteIsVisibleToAnotherHandleOnceItReturns)
+{
+	CFileAutoClose file(TestFile(), CFile::read_write);
+	const char tail[] = "download-tail";
+	file.WriteAt(tail, 1000, sizeof(tail));
+
+	// The completion hash reads the part file through its own handle.
+	CFile reader(TestFile(), CFile::read);
+	ASSERT_EQUALS(1000u + sizeof(tail), reader.GetLength());
+	char got[sizeof(tail)] = {};
+	reader.Seek(1000);
+	reader.Read(got, sizeof(got));
+	ASSERT_TRUE(std::memcmp(tail, got, sizeof(tail)) == 0);
+
+	// Still unbuffered once auto-closed and reopened by the next write.
+	ASSERT_TRUE(file.Release(true));
+	file.WriteAt(tail, 2000, sizeof(tail));
+	CFile reopened(TestFile(), CFile::read);
+	ASSERT_EQUALS(2000u + sizeof(tail), reopened.GetLength());
 	ASSERT_TRUE(file.Close());
 }
 

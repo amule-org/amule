@@ -151,7 +151,8 @@ private:
 		CFileAutoClose &m_owner;
 	};
 
-	//! The wrapped CFile.
+	//! The wrapped CFile, unbuffered: WriteAt seeks first, which drained the buffer anyway, and
+	//! another handle (the completion hash) must see a write once WriteAt returns.
 	CFile m_file;
 
 	//! Guards the fields below. CPartFile's worker threads read and write the file while the

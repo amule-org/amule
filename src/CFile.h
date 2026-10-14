@@ -153,6 +153,12 @@ public:
 	bool SetLength(uint64 newLength);
 
 	/**
+	 * With @a enabled false, from the next Open on every write goes straight to the kernel, so
+	 * another handle on the file sees it as soon as the write returns. On by default.
+	 */
+	void SetWriteBuffering(bool enabled) { m_bufferWrites = enabled; }
+
+	/**
 	 * @see CSafeFileIO::GetPosition. Calling it on a closed file is illegal.
 	 */
 	virtual uint64 GetPosition() const;
@@ -219,6 +225,9 @@ private:
 	//! Read-only files bypass the buffer, so a stray write() through doWrite still fails
 	//! immediately at the call site, preserving CFileDataIO's error contract.
 	bool m_canBuffer;
+
+	//! See SetWriteBuffering.
+	bool m_bufferWrites = true;
 
 	//! Serializes access to the userspace write buffer and fd state. Without it, paths
 	//! that drain the buffer (Close, Flush, doSeek, doRead, GetPosition, GetLength,

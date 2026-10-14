@@ -36,10 +36,12 @@ CFileAutoClose::CFileAutoClose()
 , m_size(0)
 , m_lastAccess(TheTime)
 {
+	m_file.SetWriteBuffering(false);
 }
 
 CFileAutoClose::CFileAutoClose(const CPath &path, CFile::OpenMode mode)
 {
+	m_file.SetWriteBuffering(false);
 	Open(path, mode);
 }
 

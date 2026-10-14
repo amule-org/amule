@@ -234,10 +234,10 @@ bool CFile::Open(const CPath &fileName, OpenMode mode, int accessMode)
 	m_safeWrite = false;
 	m_filePath = fileName;
 	m_writeBufferPending = 0;
-	// Buffer writes for any mode that can actually write. Read-only stays unbuffered so a
-	// misuse still fails immediately at the doWrite call site, preserving FileDataIOTest's
-	// CFile.Constructor contract.
-	m_canBuffer = (mode != read);
+	// Buffer writes for any mode that can actually write, unless SetWriteBuffering turned it
+	// off. Read-only stays unbuffered so a misuse still fails immediately at the doWrite call
+	// site, preserving FileDataIOTest's CFile.Constructor contract.
+	m_canBuffer = (mode != read) && m_bufferWrites;
 
 #ifdef __linux__
 	int flags = O_BINARY | O_LARGEFILE;
