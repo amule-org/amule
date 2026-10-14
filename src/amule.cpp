@@ -100,6 +100,7 @@
 #include "Preferences.h"                // Needed for CPreferences
 #include "PublicIPv6Corroboration.h"    // Needed for ObservedPublicIPv6
 #include "SearchList.h"                 // Needed for CSearchList
+#include "SharedFileList.h"             // Needed for ClearKadSourcePublishInfo
 #include "Server.h"                     // Needed for GetListName
 #include "ServerList.h"                 // Needed for CServerList
 #include "ServerConnect.h"              // Needed for CServerConnect
@@ -1832,6 +1833,9 @@ std::optional<CNetworkAddress> AdvertisedIPv6ForPeers()
 
 	const std::optional<CNetworkAddress> advertised = DecideAdvertisedIPv6(facts);
 	if (advertised != s_lastAdvertisedIPv6) {
+		if (theApp->sharedfiles) {
+			theApp->sharedfiles->ClearKadSourcePublishInfo();
+		}
 		if (advertised) {
 			AddLogLineN(CFormat("Advertising our IPv6 address %s to peers") %
 				    advertised->ToWxString());

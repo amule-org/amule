@@ -851,6 +851,8 @@ void CSearch::StorePacket()
 				}
 			}
 
+			taglist.push_back(
+				new CTagInt8(TAG_ENCRYPTION, CPrefs::GetMyConnectOptions(true, true)));
 #ifdef ENABLE_IPV6
 			if (const std::optional<CNetworkAddress> ipv6 = AdvertisedIPv6ForPeers()) {
 				uint8_t bytes[16];
@@ -859,8 +861,6 @@ void CSearch::StorePacket()
 				}
 			}
 #endif
-			taglist.push_back(
-				new CTagInt8(TAG_ENCRYPTION, CPrefs::GetMyConnectOptions(true, true)));
 
 			CKademlia::GetUDPListener()->SendPublishSourcePacket(*from, m_target, id, taglist);
 			m_totalRequestAnswers++;

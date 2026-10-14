@@ -254,7 +254,14 @@ TEST(PeerCapabilities, EncodesIPv6HexTagInNetworkByteOrder)
 	const uint8_t address[16] = {
 		0x20, 0x01, 0x0d, 0xb8, 0, 0, 0, 0, 0, 0, 0, 0, 0xde, 0xad, 0xbe, 0xef
 	};
-	ASSERT_EQUALS(wxString("20010DB80000000000000000DEADBEEF"), EncodeIPv6HexTag(address));
+	const wxString encoded = EncodeIPv6HexTag(address);
+	ASSERT_EQUALS(wxString("20010DB80000000000000000DEADBEEF"), encoded);
+
+	uint8_t decoded[16];
+	ASSERT_TRUE(DecodeIPv6HexTag(encoded.utf8_str(), encoded.length(), decoded));
+	for (size_t i = 0; i < 16; ++i) {
+		ASSERT_EQUALS((int)address[i], (int)decoded[i]);
+	}
 }
 
 TEST(PeerCapabilities, RejectsMalformedIPv6HexTag)
