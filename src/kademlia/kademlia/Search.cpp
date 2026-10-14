@@ -61,6 +61,9 @@ there client on the eMule forum..
 #include "../net/KademliaUDPListener.h"
 #include "../utils/KadClientSearcher.h"
 #include "../../amule.h"
+#ifdef ENABLE_IPV6
+#include "../../AdvertisedIPv6.h"
+#endif
 #include "../../SharedFileList.h"
 #include "../../DownloadQueue.h"
 #include "../../PartFile.h"
@@ -848,6 +851,14 @@ void CSearch::StorePacket()
 				}
 			}
 
+#ifdef ENABLE_IPV6
+			if (const std::optional<CNetworkAddress> ipv6 = AdvertisedIPv6ForPeers()) {
+				uint8_t bytes[16];
+				if (ipv6->ToIPv6Bytes(bytes)) {
+					taglist.push_back(new CTagString(TAG_IPV6, EncodeIPv6HexTag(bytes)));
+				}
+			}
+#endif
 			taglist.push_back(
 				new CTagInt8(TAG_ENCRYPTION, CPrefs::GetMyConnectOptions(true, true)));
 

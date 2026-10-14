@@ -236,6 +236,30 @@ constexpr uint32_t LocalAdvertisedModMiscOptions()
 }
 
 /**
+ * Encode the 128-bit address carried by the "ip6" and "bi6" Kad tags.
+ *
+ * The wire form is exactly 32 uppercase hexadecimal characters, most significant byte first.
+ *
+ * @param bytes 16 bytes in network byte order; may be NULL.
+ * @return the encoded tag value, or empty when @a bytes is NULL.
+ */
+inline wxString EncodeIPv6HexTag(const uint8_t *bytes)
+{
+	if (bytes == nullptr) {
+		return wxEmptyString;
+	}
+
+	static constexpr char hex[] = "0123456789ABCDEF";
+	wxString text;
+	text.Alloc(32);
+	for (size_t i = 0; i < 16; ++i) {
+		text.Append(hex[bytes[i] >> 4]);
+		text.Append(hex[bytes[i] & 0x0f]);
+	}
+	return text;
+}
+
+/**
  * Decode the 128-bit address carried by the "ip6" and "bi6" Kad tags.
  *
  * The wire form is exactly 32 hexadecimal characters, most significant byte first, upper or lower
