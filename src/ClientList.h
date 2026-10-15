@@ -227,6 +227,11 @@ public:
 	 */
 	const IDMap &GetClientList();
 
+#ifdef ENABLE_IPV6
+	//! Mark eligible connected peers to receive the current IPv6 on their next outbound write.
+	void MarkIPv6ChangeNotificationPending();
+#endif
+
 	/**
 	 * Adds a source to the list of dead sources.
 	 */

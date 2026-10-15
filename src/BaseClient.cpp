@@ -83,7 +83,8 @@
 #include "ClientUDPSocket.h"
 #include "AddressFamilyPolicy.h" // Needed for AddressFamilyPolicy::Permits
 #ifdef ENABLE_IPV6
-#include "AdvertisedIPv6.h" // Needed for AdvertisedIPv6ForPeers
+#include "AdvertisedIPv6.h"         // Needed for AdvertisedIPv6ForPeers
+#include "IPv6ChangeNotification.h" // Needed for OP_CHANGE_CLIENT_IP policy
 #endif
 #include "ContactDialPolicy.h" // Needed for DecideContactRoute
 #include "Logger.h"
@@ -376,6 +377,9 @@ void CUpDownClient::ClearHelloProperties()
 	m_modCapabilities.Reset();
 	m_hasModIPv6 = false;
 	m_hasServingBuddyIPv6 = false;
+#ifdef ENABLE_IPV6
+	m_pendingIPv6Change = false;
+#endif
 	memset(m_modIPv6, 0, sizeof(m_modIPv6));
 	memset(m_servingBuddyIPv6, 0, sizeof(m_servingBuddyIPv6));
 	m_fRequestsCryptLayer = 0;
@@ -2959,6 +2963,9 @@ bool CUpDownClient::IsConnected() const
 bool CUpDownClient::SendPacket(CPacket *packet, bool delpacket, bool controlpacket)
 {
 	if (m_socket) {
+#ifdef ENABLE_IPV6
+		SendPendingIPv6Change();
+#endif
 		m_socket->SendPacket(packet, delpacket, controlpacket);
 		return true;
 	} else {
@@ -2966,6 +2973,36 @@ bool CUpDownClient::SendPacket(CPacket *packet, bool delpacket, bool controlpack
 		return false;
 	}
 }
+
+#ifdef ENABLE_IPV6
+void CUpDownClient::MarkIPv6ChangeNotificationPending()
+{
+	if (HasModIPv6() && IsConnected()) {
+		m_pendingIPv6Change = true;
+	}
+}
+
+void CUpDownClient::SendPendingIPv6Change()
+{
+	const std::optional<CNetworkAddress> advertised = AdvertisedIPv6ForPeers();
+	if (!ShouldSendPendingIPv6Change(m_pendingIPv6Change, HasModIPv6(), IsConnected(), advertised)) {
+		return;
+	}
+
+	uint8_t payload[16];
+	if (!EncodeIPv6ChangePayload(*advertised, payload)) {
+		return;
+	}
+
+	CMemFile data;
+	data.Write(payload, sizeof(payload));
+	CPacket *change = new CPacket(data, OP_EDONKEYPROT, OP_CHANGE_CLIENT_IP);
+	theStats::AddUpOverheadOther(change->GetPacketSize());
+	AddDebugLogLineN(logLocalClient, "Local Client: OP_CHANGE_CLIENT_IP to " + GetFullIP());
+	m_socket->SendPacket(change, true, true);
+	m_pendingIPv6Change = false;
+}
+#endif
 
 float CUpDownClient::TickDownloadAndMeasure()
 {

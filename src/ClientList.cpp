@@ -844,6 +844,15 @@ const CClientList::IDMap &CClientList::GetClientList()
 	return m_clientList;
 }
 
+#ifdef ENABLE_IPV6
+void CClientList::MarkIPv6ChangeNotificationPending()
+{
+	for (const auto &entry : m_clientList) {
+		entry.second.GetClient()->MarkIPv6ChangeNotificationPending();
+	}
+}
+#endif
+
 void CClientList::AddDeadSource(const CUpDownClient *client)
 {
 	m_deadSources.AddDeadSource(client);

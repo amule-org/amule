@@ -1846,6 +1846,9 @@ std::optional<CNetworkAddress> AdvertisedIPv6ForPeers()
 		} else {
 			AddLogLineN("No longer advertising an IPv6 address to peers");
 		}
+		if (advertised && theApp->clientlist) {
+			theApp->clientlist->MarkIPv6ChangeNotificationPending();
+		}
 		s_lastAdvertisedIPv6 = advertised;
 	}
 	return advertised;
