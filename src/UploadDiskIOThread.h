@@ -33,19 +33,24 @@
 #include <wx/thread.h>
 
 #include "Types.h"
-#include "FileArea.h"    // Needed for CFileArea
-#include <common/Path.h> // Needed for CPath
+#include "FileArea.h"      // Needed for CFileArea
+#include "FileAutoClose.h" // Needed for CFileAutoClose
+#include <common/Path.h>   // Needed for CPath
 
 class CPacket;
 class CPartFile;
 class CUpDownClient;
 
-// Mirrors eMule's OpenOvFile_Struct (UploadDiskIOThread.h:20-28). HANDLE hFile is replaced with
-// aMule's file-open-on-demand model: we cache no file handles, CFileArea opens and closes as
-// needed.
+// Mirrors eMule's OpenOvFile_Struct (UploadDiskIOThread.h:20-28). eMule's HANDLE hFile is a
+// cached CFileAutoClose here, used as a plain CFile: Release() is never called on it, so it
+// never auto-closes. The struct is keyed by content hash, so replaced content means a different
+// hash and a different struct -- a stale handle can never serve wrong bytes. Structs stay in
+// m_listOpenFiles at nInUse == 0 (that is the cache) until LRU eviction or shutdown deletes
+// them; deleting the struct closes the handle.
 struct OpenFile_Struct
 {
 	uint8 ucMD4FileHash[16];
+	CFileAutoClose file; // cached read handle, complete files only; opened lazily in ReadBlock
 	uint32 nInUse;
 	uint64 uFileSize;
 	bool bCompress; // true if this file type should be compressed
@@ -55,7 +60,7 @@ struct OpenFile_Struct
 // OVERLAPPED removed -- reads are synchronous on this thread via CFileArea.
 struct ReadRequest_Struct
 {
-	OpenFile_Struct *pFileStruct = nullptr; // set once the read is committed
+	OpenFile_Struct *pFileStruct = nullptr; // set by PrepareRead
 	// The client's ECID, not its pointer: the read runs without the uploading-list lock, and a
 	// freed client's address can be reused by a new one.
 	uint32 clientId = 0;
@@ -73,7 +78,7 @@ struct ReadRequest_Struct
 //   CEvent               -> wxCondition + wxMutex
 //   WaitForMultipleObjects -> wxCondition::WaitTimeout()
 //   ReadFile(OVERLAPPED) -> CFileArea::ReadAt() (synchronous, on this thread)
-//   HANDLE file handles  -> aMule's CFileAutoClose (open per block)
+//   HANDLE file handles  -> CFileAutoClose cached per file in OpenFile_Struct
 //   CCriticalSection     -> wxMutex + wxMutexLocker
 class CUploadDiskIOThread : public wxThread
 {
@@ -102,7 +107,8 @@ private:
 	static ReadResult ReadBlock(ReadRequest_Struct *req);
 	bool CommitRead(ReadRequest_Struct *req, ReadResult result);
 	void ReadCompletionRoutine(ReadRequest_Struct *req); // eMule ref: line 369
-	bool ReleaseOpenFile(OpenFile_Struct *pFileStruct);  // eMule ref: line 498
+	void DiscardRequest(ReadRequest_Struct *req);        // frees a req never committed
+	bool ReleaseOpenFile(OpenFile_Struct *pFileStruct);  // eMule ref: line 498, decrement-only
 
 	std::atomic<bool> m_bRun{ false }; // eMule ref: m_bRun (line 77)
 	bool m_bSignalThrottler;           // eMule ref: m_bSignalThrottler (line 78)
@@ -115,7 +121,9 @@ private:
 	bool m_bSocketNeedsPending; // set by SocketNeedsMoreData()
 	// m_eventAsyncIOFinished not needed -- reads complete synchronously on this thread
 
-	std::list<OpenFile_Struct *> m_listOpenFiles;     // eMule ref: line 83
+	// LRU handle cache: front is most recently used, idle structs (nInUse == 0) are evicted
+	// from the back once the list exceeds MAX_CACHED_OPEN_FILES. eMule ref: line 83.
+	std::list<OpenFile_Struct *> m_listOpenFiles;
 	std::list<ReadRequest_Struct *> m_listFinishedIO; // eMule ref: line 85
 	// m_listPendingIO not needed -- reads are synchronous, go straight to m_listFinishedIO
 };
