@@ -576,8 +576,7 @@ jobs:
         # ENABLE_QUIC rides on the same leg for the same reason: nothing else
         # builds the QUIC sources and their tests on Windows. ngtcp2 comes from
         # MSYS2 here, not from the source build pinned for the Linux jobs. Both
-        # legs install it: setup-msys2 caches per package list, and a second list
-        # costs a second ~0.4 GB cache entry against the repo's 10 GB limit.
+        # legs install it, so they share one package list.
         include:
           - build_type: Debug
             extra_config_flags: -DENABLE_UTP=YES -DENABLE_QUIC=YES
@@ -594,12 +593,42 @@ jobs:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ runner.os }}-${{ matrix.build_type }}-ccache-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
           restore-keys: ${{ runner.os }}-${{ matrix.build_type }}-ccache-
+      # setup-msys2's own package cache saves on every event, with no way to limit
+      # it to master. It also fails if its install root exists beforehand, so the
+      # cache below is restored after it, and the packages installed here.
       - name: set up MSYS2 mingw-w64
+        id: msys2
         uses: msys2/setup-msys2@v2
         with:
           msystem: CLANG64
           update: true
-          install: ${{ env.cmake_mingw_w64_deps }}
+          cache: false
+      # One entry per MSYS2 environment, shared with the Packaging windows-zip
+      # job. pacman downloads whatever the restored cache lacks.
+      - name: restore MSYS2 package cache
+        uses: actions/cache/restore@v6
+        with:
+          path: ${{ steps.msys2.outputs.msys2-location }}\var\cache\pacman\pkg
+          key: ${{ runner.os }}-${{ runner.arch }}-msys2-CLANG64-pkgs-${{ github.run_id }}
+          restore-keys: ${{ runner.os }}-${{ runner.arch }}-msys2-CLANG64-pkgs-
+      - name: install MSYS2 packages
+        env:
+          PACKAGES: ${{ env.cmake_mingw_w64_deps }}
+        run: pacman --noconfirm -S --needed --overwrite '*' $PACKAGES
+      # Both legs install the same list, so one saves.
+      - name: prune MSYS2 package cache
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master' && matrix.build_type == 'Release'
+        # As setup-msys2 does before its save: drop packages no longer installed and
+        # older versions, so `update: true` does not grow the entry.
+        run: |
+          paccache -r -f -u -k0
+          paccache -r -f -k1
+      - name: save MSYS2 package cache
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master' && matrix.build_type == 'Release'
+        uses: ./.github/actions/cache-save-newest
+        with:
+          path: ${{ steps.msys2.outputs.msys2-location }}\var\cache\pacman\pkg
+          key: ${{ runner.os }}-${{ runner.arch }}-msys2-CLANG64-pkgs-${{ github.run_id }}
       # MSYS2 only packages pupnp 1.14.x; build the pinned 22.x from source so
       # Windows gets the UPnP fixes released in 22.0.4 (issue #242). Installed
       # into $MINGW_PREFIX so find_package(UPNP CONFIG) picks it up and the DLL

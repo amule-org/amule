@@ -724,12 +724,27 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
+      # setup-msys2's own package cache saves on every event, with no way to limit
+      # it to master. It also fails if its install root exists beforehand, so the
+      # cache below is restored after it, and the packages installed here.
       - name: Set up MSYS2
+        id: msys2
         uses: msys2/setup-msys2@v2
         with:
           msystem: ${{ matrix.msystem }}
           update: true
-          install: >-
+          cache: false
+      # One entry per MSYS2 environment; CLANG64 is shared with the C/C++ CI
+      # mingw-w64 job. pacman downloads whatever the restored cache lacks.
+      - name: Restore MSYS2 package cache
+        uses: actions/cache/restore@v6
+        with:
+          path: ${{ steps.msys2.outputs.msys2-location }}\var\cache\pacman\pkg
+          key: ${{ runner.os }}-${{ runner.arch }}-msys2-${{ matrix.msystem }}-pkgs-${{ github.run_id }}
+          restore-keys: ${{ runner.os }}-${{ runner.arch }}-msys2-${{ matrix.msystem }}-pkgs-
+      - name: Install MSYS2 packages
+        env:
+          PACKAGES: >-
             ${{ matrix.pkg_prefix }}-boost
             ${{ matrix.pkg_prefix }}-ccache
             ${{ matrix.pkg_prefix }}-cmake
@@ -746,6 +761,20 @@ jobs:
             ${{ matrix.pkg_prefix }}-zlib
             git
             zip
+        run: pacman --noconfirm -S --needed --overwrite '*' $PACKAGES
+      - name: Prune MSYS2 package cache
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        # As setup-msys2 does before its save: drop packages no longer installed and
+        # older versions, so `update: true` does not grow the entry.
+        run: |
+          paccache -r -f -u -k0
+          paccache -r -f -k1
+      - name: Save MSYS2 package cache
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        uses: ./.github/actions/cache-save-newest
+        with:
+          path: ${{ steps.msys2.outputs.msys2-location }}\var\cache\pacman\pkg
+          key: ${{ runner.os }}-${{ runner.arch }}-msys2-${{ matrix.msystem }}-pkgs-${{ github.run_id }}
       - name: Restore ccache
         if: github.event_name != 'workflow_call'
         uses: actions/cache/restore@v6
@@ -867,6 +896,9 @@ jobs:
           msystem: ${{ matrix.msystem }}
           update: true
           install: git unzip python
+          # Uncached: these few packages download in seconds, and the action's
+          # cache would save on every event.
+          cache: false
       - name: Install NSIS
         # NSIS isn't packaged for every MSYS2 environment (e.g. no
         # clangarm64 build), so install the Windows-native NSIS via

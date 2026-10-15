@@ -14,7 +14,7 @@
 #
 # The cache-save-newest action now deletes a family's older generations as soon
 # as it saves the new one. This workflow is the backstop, for the caches that
-# action does not write (msys2, CodeQL) and for any prune it could not finish.
+# action does not write (CodeQL) and for any prune it could not finish.
 name: Cache retention
 
 on:
@@ -34,9 +34,8 @@ on:
   # not merely fail to match: it stops this workflow compiling for the event,
   # and every completion then produces a startup_failure with no job and no
   # log. Reproduced on a fork, where a probe listing a slash-named workflow
-  # broke completions that a sibling probe handled fine. Its ccache is pruned by
-  # cache-save-newest as it saves it; only its msys2 copies wait for the next
-  # trigger. Keep every entry here slash-free.
+  # broke completions that a sibling probe handled fine. Its caches are pruned
+  # by cache-save-newest as it saves them. Keep every entry here slash-free.
   workflow_run:
     workflows:
       - Packaging
@@ -73,11 +72,10 @@ jobs:
           for line in open("caches.tsv"):
               cid, created, size, ref, key = line.rstrip("\n").split("\t", 4)
               rows.append((int(cid), created, int(size), ref, key))
-          # Only the default branch's entries are kept. Our own saves are master-only,
-          # but setup-msys2 caches on every event with no way to restrict it, so each
-          # PR whose packages differ from master's uploads its own 400 MB copy. Master
-          # can never restore those, and grouped with master's by key, a newer PR copy
-          # used to get master's deleted.
+          # Only the default branch's entries are kept. Every save here is
+          # master-only, so an entry on another ref came from a step that caches on
+          # every event. Master can never restore it, and grouped with master's by
+          # key, a newer copy used to get master's deleted.
           #
           # On the default branch, group by the key with its trailing run id removed.
           # A key that carries no run id forms a single-entry group and is always kept.
@@ -85,10 +83,9 @@ jobs:
           # The run id may be followed by an attempt number, as in CodeQL's
           # `-<run id>-<attempt>`; without that, every run is a family of its own.
           RUN_ID = re.compile(r"-(\d{6,})(?:-(\d{1,3}))?$")
-          # Normalise the run id AND embedded hashes: CodeQL and msys2 key on a
-          # commit sha rather than a run id, so without this each lands in its
-          # own group and survives forever (5 CodeQL TRAP entries alone were
-          # 4.3 GB).
+          # Normalise the run id AND embedded hashes: CodeQL keys on a commit sha
+          # rather than a run id, so without this each lands in its own group and
+          # survives forever (5 CodeQL TRAP entries alone were 4.3 GB).
           def family(key):
               k = RUN_ID.sub("", key)
               return re.sub(r"[0-9a-f]{16,}", "<h>", k)
