@@ -4,7 +4,6 @@
 """Keep display-string defaults separate from serialized filesystem bytes on Linux."""
 import configparser
 from contextlib import contextmanager
-import hashlib
 import os
 from pathlib import Path
 import subprocess
@@ -15,6 +14,7 @@ from AllSearchIntegrationTest import (C, connect_daemon, free_ports, integer,
                                       log_snapshot, new_log_text,
                                       retry_port_collisions, stop_daemon,
                                       string, tag)
+from DaemonConfig import write_amule_conf
 
 
 def to_univ(path):
@@ -33,30 +33,9 @@ def read_config(root):
 def write_config(root, paths):
     root.mkdir()
     ec_port, peer_port = free_ports(2, peer_index=1)
-    config = f'''[eMule]
-Nick=path-defaults-regression
-FirstRunWizardDone=1
-Language=en_US
-Port={peer_port}
-UDPEnable=0
-Address=127.0.0.1
-ConnectToKad=0
-ConnectToED2K=0
-NewVersionCheck=0
-Reconnect=0
-Serverlist=0
-Ed2kServersUrl=
-KadNodesUrl=
-GeoIPEnabled=0
-'''
-    config += ''.join(f'{key}={value}\n' for key, value in paths.items())
-    config += f'''[ExternalConnect]
-AcceptExternalConnections=1
-ECAddress=127.0.0.1
-ECPort={ec_port}
-ECPassword={hashlib.md5(b'regression').hexdigest()}
-'''
-    (root / 'amule.conf').write_text(config, encoding='utf-8')
+    # The test checks amuled's own path defaults, so only the given paths are written.
+    write_amule_conf(root, ec_port, Port=peer_port, UDPEnable=0,
+                     **dict({'TempDir': None, 'IncomingDir': None}, **paths))
     return ec_port, peer_port
 
 

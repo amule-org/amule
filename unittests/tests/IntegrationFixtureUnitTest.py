@@ -206,6 +206,15 @@ class DaemonConfigUnitTest(unittest.TestCase):
                          hashlib.md5(DaemonConfig.EC_PASSWORD.encode()).hexdigest())
         self.assertEqual(config['WebServer']['Enabled'], '0')
 
+    def test_none_leaves_a_key_out(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            DaemonConfig.write_amule_conf(root, 4712, TempDir=None, IncomingDir=None)
+            text = (root / 'amule.conf').read_text(encoding='utf-8')
+        self.assertNotIn('TempDir=', text)
+        self.assertNotIn('IncomingDir=', text)
+        self.assertIn('GeoIPEnabled=0', text)
+
     def test_no_test_writes_its_own_daemon_config(self):
         # A hand-written eMule section misses later offline defaults; use write_amule_conf.
         marker = '[' + 'eMule]'

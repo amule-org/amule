@@ -33,7 +33,8 @@ OFFLINE = {
 def write_amule_conf(root, ec_port, *, ec_password=EC_PASSWORD, sections=None, **emule):
     """Write root/amule.conf: OFFLINE updated with emule, then EC and any extra sections.
 
-    TempDir and IncomingDir default to root/Temp and root/Incoming.
+    TempDir and IncomingDir default to root/Temp and root/Incoming. A key set to None is
+    left out, so amuled applies its own default.
     """
     root = Path(root)
     values = dict(OFFLINE, TempDir=root / 'Temp', IncomingDir=root / 'Incoming')
@@ -48,6 +49,7 @@ def write_amule_conf(root, ec_port, *, ec_password=EC_PASSWORD, sections=None, *
         },
     }
     all_sections.update(sections or {})
-    text = ''.join(f'[{name}]\n' + ''.join(f'{key}={value}\n' for key, value in keys.items())
+    text = ''.join(f'[{name}]\n' + ''.join(f'{key}={value}\n' for key, value in keys.items()
+                                         if value is not None)
                    for name, keys in all_sections.items())
     (root / 'amule.conf').write_text(text, encoding='utf-8')
