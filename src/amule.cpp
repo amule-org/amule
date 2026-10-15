@@ -73,8 +73,9 @@
 #include "kademlia/kademlia/Prefs.h"
 #include "kademlia/kademlia/UDPFirewallTester.h"
 #ifdef ENABLE_IPV6
-#include "AddressFamilyPolicy.h" // Needed for AddressFamilyPolicy::SetConfigured
-#include "AdvertisedIPv6.h"      // Needed for ChooseAdvertisedIPv6
+#include "AddressFamilyPolicy.h"    // Needed for AddressFamilyPolicy::SetConfigured
+#include "AdvertisedIPv6.h"         // Needed for ChooseAdvertisedIPv6
+#include "IPv6ChangeNotification.h" // Needed for ShouldMarkIPv6ChangeNotification
 #endif
 #include "HashListFile.h"
 #include "ClientCreditsList.h"    // Needed for CClientCreditsList
@@ -1789,6 +1790,7 @@ bool CamuleApp::RebindP2PSockets(bool tcpPortChanged, bool udpPortChanged, uint1
 #ifdef ENABLE_IPV6
 static std::optional<CNetworkAddress> s_advertisedIPv6Choice;
 static std::optional<CNetworkAddress> s_lastAdvertisedIPv6;
+static std::optional<CNetworkAddress> s_lastNotifiedIPv6;
 static std::optional<CNetworkAddress> s_lastKadPublishedIPv6;
 #endif
 
@@ -1846,8 +1848,9 @@ std::optional<CNetworkAddress> AdvertisedIPv6ForPeers()
 		} else {
 			AddLogLineN("No longer advertising an IPv6 address to peers");
 		}
-		if (advertised && theApp->clientlist) {
+		if (ShouldMarkIPv6ChangeNotification(s_lastNotifiedIPv6, advertised) && theApp->clientlist) {
 			theApp->clientlist->MarkIPv6ChangeNotificationPending();
+			s_lastNotifiedIPv6 = advertised;
 		}
 		s_lastAdvertisedIPv6 = advertised;
 	}

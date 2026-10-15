@@ -363,6 +363,9 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 			logRemoteClient, "Remote Client: OP_HELLOANSWER from " + m_client->GetFullIP());
 		theStats::AddDownOverheadOther(size);
 		m_client->ProcessHelloAnswer(buffer, size);
+#ifdef ENABLE_IPV6
+		m_client->MarkIPv6ChangeConnectionReady();
+#endif
 #ifdef AMULE_UTP_TRANSPORT
 		// The answer refreshes both the peer's hash and crypt preferences.
 		// Apply them before secure identification queues any reply.
@@ -470,6 +473,12 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 		if (m_client) {
 			m_client->SendHelloAnswer();
 		}
+
+#ifdef ENABLE_IPV6
+		if (m_client) {
+			m_client->MarkIPv6ChangeConnectionReady();
+		}
+#endif
 
 		// Send OS_INFO if the other side supports it. Sending may kill the client,
 		// so it is re-checked.

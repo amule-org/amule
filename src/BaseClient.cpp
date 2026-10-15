@@ -379,6 +379,7 @@ void CUpDownClient::ClearHelloProperties()
 	m_hasServingBuddyIPv6 = false;
 #ifdef ENABLE_IPV6
 	m_pendingIPv6Change = false;
+	m_ipv6ChangeHelloComplete = false;
 #endif
 	memset(m_modIPv6, 0, sizeof(m_modIPv6));
 	memset(m_servingBuddyIPv6, 0, sizeof(m_servingBuddyIPv6));
@@ -1436,6 +1437,11 @@ bool CUpDownClient::Disconnected(const wxString &DEBUG_ONLY(strReason), bool bFr
 				Uint32toStringIP(GetConnectIP()));
 		return false;
 	}
+
+#ifdef ENABLE_IPV6
+	m_pendingIPv6Change = false;
+	m_ipv6ChangeHelloComplete = false;
+#endif
 
 	// was this a direct callback?
 	if (m_dwDirectCallbackTimeout != 0) {
@@ -2977,15 +2983,28 @@ bool CUpDownClient::SendPacket(CPacket *packet, bool delpacket, bool controlpack
 #ifdef ENABLE_IPV6
 void CUpDownClient::MarkIPv6ChangeNotificationPending()
 {
-	if (HasModIPv6() && IsConnected()) {
+	if (HasModIPv6() && IsConnected() && m_ipv6ChangeHelloComplete) {
 		m_pendingIPv6Change = true;
 	}
 }
 
+void CUpDownClient::MarkIPv6ChangeConnectionReady()
+{
+	m_ipv6ChangeHelloComplete = true;
+}
+
 void CUpDownClient::SendPendingIPv6Change()
 {
+	if (!m_pendingIPv6Change) {
+		return;
+	}
+
 	const std::optional<CNetworkAddress> advertised = AdvertisedIPv6ForPeers();
-	if (!ShouldSendPendingIPv6Change(m_pendingIPv6Change, HasModIPv6(), IsConnected(), advertised)) {
+	if (!ShouldSendPendingIPv6Change(m_pendingIPv6Change,
+		    HasModIPv6(),
+		    IsConnected(),
+		    m_ipv6ChangeHelloComplete,
+		    advertised)) {
 		return;
 	}
 

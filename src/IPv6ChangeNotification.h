@@ -32,9 +32,16 @@
 inline bool ShouldSendPendingIPv6Change(bool pending,
 	bool peerAdvertisedIPv6,
 	bool connected,
+	bool helloCompleted,
 	const std::optional<CNetworkAddress> &advertised)
 {
-	return pending && peerAdvertisedIPv6 && connected && advertised.has_value();
+	return pending && peerAdvertisedIPv6 && connected && helloCompleted && advertised.has_value();
+}
+
+inline bool ShouldMarkIPv6ChangeNotification(
+	const std::optional<CNetworkAddress> &lastNotified, const std::optional<CNetworkAddress> &advertised)
+{
+	return advertised.has_value() && advertised != lastNotified;
 }
 
 inline bool EncodeIPv6ChangePayload(const CNetworkAddress &address, uint8_t payload[16])
