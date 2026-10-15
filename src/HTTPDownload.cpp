@@ -340,10 +340,11 @@ CHttpSizeGuard::CHttpSizeGuard()
 	Bind(wxEVT_TIMER, &CHttpSizeGuard::OnTimer, this);
 }
 
-void CHttpSizeGuard::Start(const wxWebRequest &request, wxFileOffset limit)
+void CHttpSizeGuard::Start(const wxWebRequest &request, wxFileOffset limit, std::function<void()> onExceeded)
 {
 	m_request = request;
 	m_limit = limit;
+	m_onExceeded = std::move(onExceeded);
 	m_timer.Start(HTTP_SIZE_CHECK_MS);
 }
 
@@ -362,9 +363,16 @@ void CHttpSizeGuard::OnTimer(wxTimerEvent &WXUNUSED(evt))
 {
 	if (Exceeded()) {
 		m_timer.Stop();
-		// The owner sees State_Cancelled and reports the reason through Exceeded().
 		m_request.Cancel();
+		// WinHTTP may never report State_Cancelled for this, so the owner finishes now.
+		m_onExceeded();
 	}
+}
+
+static void LogDownloadTooLarge(const wxString &url, wxFileOffset limit)
+{
+	AddLogLineC(CFormat(_("HTTP download of %s stopped: it is larger than %u MiB.")) % url %
+		    (unsigned)(limit / (1024 * 1024)));
 }
 
 CHTTPDownloadThread::CHTTPDownloadThread(const wxString &url,
@@ -381,6 +389,7 @@ CHTTPDownloadThread::CHTTPDownloadThread(const wxString &url,
 , m_file_id(file_id)
 , m_companion(NULL)
 , m_finishPosted(false)
+, m_deleteScheduled(false)
 {
 	if (showDialog) {
 #ifndef AMULE_DAEMON
@@ -438,13 +447,11 @@ CHTTPDownloadThread::CHTTPDownloadThread(const wxString &url,
 
 	Bind(wxEVT_WEBREQUEST_STATE, &CHTTPDownloadThread::OnStateEvent, this);
 	m_request.Start();
-	m_sizeGuard.Start(m_request, MAX_HTTP_DOWNLOAD_SIZE);
-}
-
-static void LogDownloadTooLarge(const wxString &url, wxFileOffset limit)
-{
-	AddLogLineC(CFormat(_("HTTP download of %s stopped: it is larger than %u MiB.")) % url %
-		    (unsigned)(limit / (1024 * 1024)));
+	m_sizeGuard.Start(m_request, MAX_HTTP_DOWNLOAD_SIZE, [this] {
+		LogDownloadTooLarge(m_url, MAX_HTTP_DOWNLOAD_SIZE);
+		// Not destroyed yet: wx may still post a terminal state to this handler.
+		Finish(HTTP_Error);
+	});
 }
 
 // Format the given date to a RFC-2616 compliant HTTP date.
@@ -464,6 +471,14 @@ wxString CHTTPDownloadThread::FormatDateHTTP(const wxDateTime &date)
 
 void CHTTPDownloadThread::OnStateEvent(wxWebRequestEvent &evt)
 {
+	if (m_finishPosted) {
+		// Already finished by the size guard; free us once wx is done with the request.
+		if (evt.GetState() != wxWebRequest::State_Active) {
+			ScheduleDelete();
+		}
+		return;
+	}
+
 	switch (evt.GetState()) {
 	case wxWebRequest::State_Active: {
 		// Periodic progress notification during the download.
@@ -496,7 +511,7 @@ void CHTTPDownloadThread::OnStateEvent(wxWebRequestEvent &evt)
 			FinishAndDestroy(HTTP_Skipped);
 		} else if (m_sizeGuard.Exceeded()) {
 			// Finished between two size checks.
-			LogDownloadTooLarge(m_url, m_sizeGuard.GetLimit());
+			LogDownloadTooLarge(m_url, MAX_HTTP_DOWNLOAD_SIZE);
 			FinishAndDestroy(HTTP_Error);
 		} else if (m_response >= 200 && m_response < 300) {
 			// Success. wx wrote the body to its own temp file; move it to the caller-
@@ -539,11 +554,7 @@ void CHTTPDownloadThread::OnStateEvent(wxWebRequestEvent &evt)
 	}
 
 	case wxWebRequest::State_Cancelled: {
-		if (m_sizeGuard.Exceeded()) {
-			LogDownloadTooLarge(m_url, m_sizeGuard.GetLimit());
-		} else {
-			AddDebugLogLineN(logHTTP, CFormat("HTTP download cancelled: %s") % m_url);
-		}
+		AddDebugLogLineN(logHTTP, CFormat("HTTP download cancelled: %s") % m_url);
 		FinishAndDestroy(HTTP_Error);
 		break;
 	}
@@ -563,6 +574,12 @@ void CHTTPDownloadThread::OnStateEvent(wxWebRequestEvent &evt)
 }
 
 void CHTTPDownloadThread::FinishAndDestroy(int result)
+{
+	Finish(result);
+	ScheduleDelete();
+}
+
+void CHTTPDownloadThread::Finish(int result)
 {
 	if (m_finishPosted) {
 		return;
@@ -597,7 +614,14 @@ void CHTTPDownloadThread::FinishAndDestroy(int result)
 	}
 
 	AddDebugLogLineN(logHTTP, "HTTP download ended");
+}
 
+void CHTTPDownloadThread::ScheduleDelete()
+{
+	if (m_deleteScheduled) {
+		return;
+	}
+	m_deleteScheduled = true;
 	// Schedule our own destruction after the current event returns to the main loop. Must not
 	// be `delete this` -- wxWebRequest may still be unwinding state after handing us the
 	// terminal event.

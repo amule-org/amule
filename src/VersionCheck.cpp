@@ -77,11 +77,14 @@ void CVersionCheck::Start(wxEvtHandler *notify, int notifyId)
 	Bind(wxEVT_WEBREQUEST_STATE, &CVersionCheck::OnRequestState, this);
 	m_request.Start();
 	// The release JSON is a few KB and is held in memory.
-	m_sizeGuard.Start(m_request, 1024 * 1024);
+	m_sizeGuard.Start(m_request, 1024 * 1024, [this] { Finish(Failed); });
 }
 
 void CVersionCheck::OnRequestState(wxWebRequestEvent &evt)
 {
+	if (m_status != Checking) {
+		return; // finished by the size guard
+	}
 	switch (evt.GetState()) {
 	case wxWebRequest::State_Completed:
 		Finish(m_sizeGuard.Exceeded() ? Failed : Evaluate(evt.GetResponse().AsString()));

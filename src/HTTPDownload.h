@@ -32,6 +32,7 @@
 #include <wx/event.h>      // Needed for wxEvtHandler
 #include <wx/timer.h>      // Needed for wxTimer
 #include <wx/webrequest.h> // Needed for wxWebRequest
+#include <functional>
 #include <set>
 
 class wxWebRequestEvent;
@@ -53,18 +54,19 @@ class CHttpSizeGuard : public wxEvtHandler
 public:
 	CHttpSizeGuard();
 
-	void Start(const wxWebRequest &request, wxFileOffset limit);
+	// onExceeded runs right after the cancel.
+	void Start(const wxWebRequest &request, wxFileOffset limit, std::function<void()> onExceeded);
 	void Stop();
 
 	// The announced or received size is over the limit.
 	bool Exceeded() const;
-	wxFileOffset GetLimit() const { return m_limit; }
 
 private:
 	void OnTimer(wxTimerEvent &evt);
 
 	wxWebRequest m_request;
 	wxFileOffset m_limit;
+	std::function<void()> m_onExceeded;
 	wxTimer m_timer;
 };
 
@@ -118,6 +120,8 @@ public:
 private:
 	void OnStateEvent(wxWebRequestEvent &evt);
 	void FinishAndDestroy(int result);
+	void Finish(int result); // report the result; the object stays alive
+	void ScheduleDelete();
 
 	static wxString FormatDateHTTP(const wxDateTime &date);
 
@@ -132,6 +136,7 @@ private:
 	HTTP_Download_File m_file_id;
 	wxEvtHandler *m_companion;
 	bool m_finishPosted; //! Guard against double-posting on terminal state
+	bool m_deleteScheduled;
 
 	typedef std::set<CHTTPDownloadThread *> ThreadSet;
 	static ThreadSet s_allThreads;
