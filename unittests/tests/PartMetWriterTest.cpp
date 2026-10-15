@@ -71,6 +71,18 @@ CPartMetSaveRequest Request(uint8 marker)
 	return req;
 }
 
+CPartMetGen Gen(uint64 met, uint64 stats = 0)
+{
+	return { met, stats };
+}
+
+//! The newest pending save's state count, 0 if none.
+uint64 PendingMet(CPartMetSaveSlot &slot)
+{
+	const auto pending = slot.Pending();
+	return pending ? pending->met : 0;
+}
+
 std::vector<uint8> ReadAll(const CPath &path)
 {
 	CFile file(path, CFile::read);
@@ -174,25 +186,24 @@ TEST(CPartMetWriter, ANewerSaveReplacesOneNotStarted)
 	CPartMetWriter writer(Gated(gate));
 	auto slot = std::make_shared<CPartMetSaveSlot>();
 
-	writer.Queue(slot, Request(1), 1);
+	writer.Queue(slot, Request(1), Gen(1));
 	gate.WaitEntered(1);
-	writer.Queue(slot, Request(2), 2);
-	writer.Queue(slot, Request(3), 3);
-	ASSERT_TRUE(slot->Covers(1));  // in flight
-	ASSERT_FALSE(slot->Covers(2)); // replaced
-	ASSERT_TRUE(slot->Covers(3));  // queued
+	ASSERT_EQUALS(1u, PendingMet(*slot)); // in flight
+	writer.Queue(slot, Request(2), Gen(2));
+	writer.Queue(slot, Request(3), Gen(3));
+	ASSERT_EQUALS(3u, PendingMet(*slot)); // queued, replacing 2
 
 	gate.Release(2);
 	writer.EndThread();
 	ASSERT_EQUALS(2u, gate.Written().size());
 	ASSERT_EQUALS(1, gate.Written()[0]);
 	ASSERT_EQUALS(3, gate.Written()[1]);
-	ASSERT_FALSE(slot->Covers(3));
+	ASSERT_FALSE(slot->Pending().has_value());
 
 	const auto results = slot->TakeResults();
 	ASSERT_EQUALS(2u, results.size());
-	ASSERT_EQUALS(1u, results[0].first);
-	ASSERT_EQUALS(3u, results[1].first);
+	ASSERT_EQUALS(1u, results[0].first.met);
+	ASSERT_EQUALS(3u, results[1].first.met);
 	ASSERT_EQUALS(CPartMetSaveResult::Saved, results[1].second.status);
 	ASSERT_TRUE(slot->TakeResults().empty());
 }
@@ -203,9 +214,9 @@ TEST(CPartMetWriter, CancelDropsTheQueuedSaveAndWaitsForTheOneInFlight)
 	CPartMetWriter writer(Gated(gate));
 	auto slot = std::make_shared<CPartMetSaveSlot>();
 
-	writer.Queue(slot, Request(1), 1);
+	writer.Queue(slot, Request(1), Gen(1));
 	gate.WaitEntered(1);
-	writer.Queue(slot, Request(2), 2);
+	writer.Queue(slot, Request(2), Gen(2));
 
 	std::thread release([&gate] {
 		std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -228,9 +239,9 @@ TEST(CPartMetWriter, WaitIdleWaitsForTheQueuedSave)
 	CPartMetWriter writer(Gated(gate));
 	auto slot = std::make_shared<CPartMetSaveSlot>();
 
-	writer.Queue(slot, Request(1), 1);
+	writer.Queue(slot, Request(1), Gen(1));
 	gate.WaitEntered(1);
-	writer.Queue(slot, Request(2), 2);
+	writer.Queue(slot, Request(2), Gen(2));
 	std::thread release([&gate] {
 		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		gate.Release(2);
@@ -250,7 +261,7 @@ TEST(CPartMetWriter, EndThreadWritesEverySlotQueued)
 	std::vector<std::shared_ptr<CPartMetSaveSlot>> slots;
 	for (uint8 i = 0; i < 5; ++i) {
 		slots.push_back(std::make_shared<CPartMetSaveSlot>());
-		writer.Queue(slots.back(), Request(i), i);
+		writer.Queue(slots.back(), Request(i), Gen(i));
 	}
 	gate.Release(5);
 	writer.EndThread();
@@ -267,9 +278,40 @@ TEST(CPartMetWriter, ASlotOutlivesItsOwner)
 	CPartMetWriter writer(Gated(gate));
 	{
 		auto slot = std::make_shared<CPartMetSaveSlot>();
-		writer.Queue(slot, Request(7), 1);
+		writer.Queue(slot, Request(7), Gen(1));
 	}
 	gate.Release();
 	writer.EndThread();
 	ASSERT_EQUALS(1u, gate.Written().size());
+}
+
+DECLARE_SIMPLE(PartMetSaveDue);
+
+TEST(PartMetSaveDue, StatsMovingAfterASaveDoNotKeepTheStateDirty)
+{
+	// A save of state 1 landed with stats at 5, then uploads moved the stats to 9. The save
+	// restarted the heartbeat, so nothing is due until it runs out.
+	ASSERT_FALSE(PartMetSaveDue(Gen(1, 9), Gen(1, 5), std::nullopt, false));
+	ASSERT_TRUE(PartMetSaveDue(Gen(1, 9), Gen(1, 5), std::nullopt, true));
+}
+
+TEST(PartMetSaveDue, AStateChangeIsSavedUnlessASaveCarriesIt)
+{
+	ASSERT_TRUE(PartMetSaveDue(Gen(2), Gen(1), std::nullopt, false));
+	// Carried by the save on its way, even though the stats moved since.
+	ASSERT_FALSE(PartMetSaveDue(Gen(2, 7), Gen(1), Gen(2, 3), false));
+	// A newer change than the one on its way.
+	ASSERT_TRUE(PartMetSaveDue(Gen(3), Gen(1), Gen(2), false));
+}
+
+TEST(PartMetSaveDue, StatsWaitForTheHeartbeatAndForNoSaveOnItsWay)
+{
+	ASSERT_FALSE(PartMetSaveDue(Gen(1, 5), Gen(1, 4), std::nullopt, false));
+	ASSERT_TRUE(PartMetSaveDue(Gen(1, 5), Gen(1, 4), std::nullopt, true));
+	ASSERT_FALSE(PartMetSaveDue(Gen(1, 5), Gen(1, 4), Gen(1, 4), true));
+}
+
+TEST(PartMetSaveDue, NothingIsDueWhenClean)
+{
+	ASSERT_FALSE(PartMetSaveDue(Gen(1, 4), Gen(1, 4), std::nullopt, true));
 }

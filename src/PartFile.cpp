@@ -903,7 +903,7 @@ uint8 CPartFile::LoadPartFile(
 	}
 
 	// In-memory state now matches the just-loaded .part.met. Setters invoked during tag
-	// parsing may have set m_metDirty; drop it so the first FlushBuffer tick after load does
+	// parsing may have marked the met dirty; drop it so the first FlushBuffer tick after load does
 	// not rewrite the .met with byte-identical content. Also seed m_lastMetSaveTick so the
 	// heartbeat measures from now.
 	ClearMetDirty();
@@ -932,6 +932,10 @@ bool CPartFile::SavePartFile(bool now)
 	}
 
 	ReapMetSaves();
+
+	// Taken before serialising, so a change made meanwhile (on the disk I/O thread, say) stays
+	// dirty instead of counting as saved.
+	const CPartMetGen gen = CurrentMetGen();
 
 	// Serialised here, written by WritePartMet: on the writer thread, or inline below.
 	CMemFile file;
@@ -1082,25 +1086,44 @@ bool CPartFile::SavePartFile(bool now)
 
 	// Inline: the first save, as the .part.met's existence reserves the number CreatePartFile
 	// picked; the destructor's; the import thread's; and any once the writer has stopped.
-	const uint64 gen = m_metChangeGen;
 	CPartMetWriter *writer = theApp->partMetWriter;
 	if (now || m_inDestructor || !wxThread::IsMain() || !writer || !writer->IsRunning()) {
-		m_metSave->Cancel();
+		WaitForMetSave();
 		return HandleMetSaveResult(gen, WritePartMet(req));
 	}
 	writer->Queue(m_metSave, std::move(req), gen);
 	return true;
 }
 
-bool CPartFile::HandleMetSaveResult(uint64 gen, const CPartMetSaveResult &result)
+namespace
+{
+void RaiseTo(std::atomic<uint64> &value, uint64 to)
+{
+	uint64 current = value.load();
+	while (to > current && !value.compare_exchange_weak(current, to)) {
+	}
+}
+} // namespace
+
+CPartMetGen CPartFile::CurrentMetGen() const
+{
+	return { m_metGen.load(), m_statsGen.load() };
+}
+
+CPartMetGen CPartFile::SavedMetGen() const
+{
+	return { m_metSavedGen.load(), m_statsSavedGen.load() };
+}
+
+bool CPartFile::HandleMetSaveResult(const CPartMetGen &gen, const CPartMetSaveResult &result)
 {
 	switch (result.status) {
 	case CPartMetSaveResult::Saved:
-		if (gen == m_metChangeGen) {
-			ClearMetDirty();
-			ClearStatsDirty();
-			m_lastMetSaveTick = ::GetTickCount64();
-		}
+		// Clears only what this save carried: a change made after it was serialised stays
+		// dirty. Raised, never lowered, as an older save can be reaped after a newer inline one.
+		RaiseTo(m_metSavedGen, gen.met);
+		RaiseTo(m_statsSavedGen, gen.stats);
+		m_lastMetSaveTick = ::GetTickCount64();
 		return true;
 	case CPartMetSaveResult::LowSpace:
 		break;
@@ -3640,18 +3663,18 @@ void CPartFile::FlushBuffer(bool fromAICHRecoveryDataAvailable)
 	} // close gaplistComplete else-branch (async enqueue)
 
 	// Update the met file, only when something has actually changed since the last save. Two
-	// tiers: hard state (gap list, status, priority, category) sets m_metDirty and is saved
+	// tiers: hard state (gap list, status, priority, category) marks the met dirty and is saved
 	// at the next FlushBuffer tick (~60 s); soft stats (AllTimeRequests / Accepts /
-	// Transferred) set m_statsDirty only, and are saved at the STATS_HEARTBEAT_MS cadence so
-	// a popular sharer does not rewrite its .met on every served chunk. The heartbeat is
-	// measured from the last successful save, so a regular dirty save resets it. With
-	// neither bit dirty, no save fires at all, nor while a save of this state is still on its
-	// way to disk.
+	// Transferred) mark only the stats dirty, and are saved at the STATS_HEARTBEAT_MS cadence
+	// so a popular sharer does not rewrite its .met on every served chunk. The heartbeat is
+	// measured from the last successful save, so a regular dirty save resets it. With nothing
+	// dirty, no save fires at all, nor while a save carrying the change is on its way to disk.
 	const uint64 STATS_HEARTBEAT_MS = 10 * 60 * 1000;
 	ReapMetSaves();
-	if ((IsMetDirty() ||
-		    (IsStatsDirty() && (::GetTickCount64() - m_lastMetSaveTick > STATS_HEARTBEAT_MS))) &&
-		!m_metSave->Covers(m_metChangeGen)) {
+	if (PartMetSaveDue(CurrentMetGen(),
+		    SavedMetGen(),
+		    m_metSave->Pending(),
+		    ::GetTickCount64() - m_lastMetSaveTick > STATS_HEARTBEAT_MS)) {
 		SavePartFile();
 	}
 

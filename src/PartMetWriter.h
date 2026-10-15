@@ -30,6 +30,7 @@
 #include <functional>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <thread>
 #include <vector>
 
@@ -71,12 +72,31 @@ struct CPartMetSaveResult
  */
 CPartMetSaveResult WritePartMet(CPartMetSaveRequest &req);
 
+//! The change counts a save was serialised at. CPartFile counts changes to the .part.met's
+//! state and to its upload statistics apart, so a save clears only what it carried.
+struct CPartMetGen
+{
+	uint64 met = 0;
+	uint64 stats = 0;
+};
+
+/**
+ * Whether a part file should queue a .part.met save, from its change counts now, as of the
+ * last save on disk, and of the newest save on its way, if any. A state change is saved unless
+ * a save carrying it is on its way. Statistics alone wait for the heartbeat and for no save to
+ * be on its way, as every save carries them.
+ */
+bool PartMetSaveDue(const CPartMetGen &current,
+	const CPartMetGen &saved,
+	const std::optional<CPartMetGen> &pending,
+	bool heartbeatDue);
+
 //! One part file's saves, shared between its CPartFile and the writer, so either can go first.
 class CPartMetSaveSlot
 {
 public:
-	//! True if a save of @a gen is queued or being written.
-	bool Covers(uint64 gen);
+	//! The newest save queued or being written, if any.
+	std::optional<CPartMetGen> Pending();
 
 	//! Drops a save not yet started and waits for one being written. Afterwards no save of
 	//! this slot runs until the next Queue. True if it dropped one.
@@ -85,8 +105,8 @@ public:
 	//! Waits until the save queued, if any, is written.
 	void WaitIdle();
 
-	//! The saves finished since the last call, oldest first, with the generation each wrote.
-	std::vector<std::pair<uint64, CPartMetSaveResult>> TakeResults();
+	//! The saves finished since the last call, oldest first, with the counts each wrote.
+	std::vector<std::pair<CPartMetGen, CPartMetSaveResult>> TakeResults();
 
 private:
 	friend class CPartMetWriter;
@@ -101,9 +121,9 @@ private:
 	bool m_hasRequest = false;
 	bool m_inFlight = false;
 	CPartMetSaveRequest m_request;
-	uint64 m_requestGen = 0;
-	uint64 m_inFlightGen = 0;
-	std::deque<std::pair<uint64, CPartMetSaveResult>> m_results;
+	CPartMetGen m_requestGen;
+	CPartMetGen m_inFlightGen;
+	std::deque<std::pair<CPartMetGen, CPartMetSaveResult>> m_results;
 };
 
 /**
@@ -128,8 +148,8 @@ public:
 	void EndThread();
 	bool IsRunning() const { return m_run; }
 
-	//! Queues @a req as the newest save of @a slot, of change generation @a gen.
-	void Queue(const std::shared_ptr<CPartMetSaveSlot> &slot, CPartMetSaveRequest req, uint64 gen);
+	//! Queues @a req as the newest save of @a slot, serialised at the change counts @a gen.
+	void Queue(const std::shared_ptr<CPartMetSaveSlot> &slot, CPartMetSaveRequest req, CPartMetGen gen);
 
 private:
 	void Run();

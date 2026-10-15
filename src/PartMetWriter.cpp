@@ -72,10 +72,27 @@ CPartMetSaveResult WritePartMet(CPartMetSaveRequest &req)
 	return { CPartMetSaveResult::Saved, wxString() };
 }
 
-bool CPartMetSaveSlot::Covers(uint64 gen)
+bool PartMetSaveDue(const CPartMetGen &current,
+	const CPartMetGen &saved,
+	const std::optional<CPartMetGen> &pending,
+	bool heartbeatDue)
+{
+	if (current.met != saved.met) {
+		return !pending || pending->met != current.met;
+	}
+	return current.stats != saved.stats && heartbeatDue && !pending;
+}
+
+std::optional<CPartMetGen> CPartMetSaveSlot::Pending()
 {
 	std::lock_guard<std::mutex> lock(m_mutex);
-	return (m_hasRequest && m_requestGen == gen) || (m_inFlight && m_inFlightGen == gen);
+	if (m_hasRequest) {
+		return m_requestGen;
+	}
+	if (m_inFlight) {
+		return m_inFlightGen;
+	}
+	return std::nullopt;
 }
 
 bool CPartMetSaveSlot::Cancel()
@@ -95,10 +112,10 @@ void CPartMetSaveSlot::WaitIdle()
 	m_idle.wait(lock, [this] { return !m_hasRequest && !m_inFlight; });
 }
 
-std::vector<std::pair<uint64, CPartMetSaveResult>> CPartMetSaveSlot::TakeResults()
+std::vector<std::pair<CPartMetGen, CPartMetSaveResult>> CPartMetSaveSlot::TakeResults()
 {
 	std::lock_guard<std::mutex> lock(m_mutex);
-	std::vector<std::pair<uint64, CPartMetSaveResult>> results(m_results.begin(), m_results.end());
+	std::vector<std::pair<CPartMetGen, CPartMetSaveResult>> results(m_results.begin(), m_results.end());
 	m_results.clear();
 	return results;
 }
@@ -126,7 +143,8 @@ void CPartMetWriter::EndThread()
 	}
 }
 
-void CPartMetWriter::Queue(const std::shared_ptr<CPartMetSaveSlot> &slot, CPartMetSaveRequest req, uint64 gen)
+void CPartMetWriter::Queue(
+	const std::shared_ptr<CPartMetSaveSlot> &slot, CPartMetSaveRequest req, CPartMetGen gen)
 {
 	bool enqueue;
 	{
@@ -162,7 +180,7 @@ void CPartMetWriter::Run()
 		}
 
 		CPartMetSaveRequest req;
-		uint64 gen;
+		CPartMetGen gen;
 		{
 			std::lock_guard<std::mutex> lock(slot->m_mutex);
 			slot->m_queued = false;
