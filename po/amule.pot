@@ -3110,17 +3110,17 @@ msgid "HTTP download cancelled"
 msgstr ""
 
 #: src/HTTPDownload.cpp
+#, c-format
+msgid "HTTP download of %s stopped: it is larger than %u MiB."
+msgstr ""
+
+#: src/HTTPDownload.cpp
 msgid "The URL to download can't be empty"
 msgstr ""
 
 #: src/HTTPDownload.cpp
 #, c-format
 msgid "Failed to create HTTP request for %s"
-msgstr ""
-
-#: src/HTTPDownload.cpp
-#, c-format
-msgid "HTTP download of %s stopped: it is larger than %u MiB."
 msgstr ""
 
 #: src/HTTPDownload.cpp
