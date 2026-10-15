@@ -896,8 +896,8 @@ jobs:
           msystem: ${{ matrix.msystem }}
           update: true
           install: git unzip python
-          # Uncached: these few packages download in seconds, and the action's
-          # cache would save on every event.
+          # Uncached: about 50 MB of packages, and the action's cache would save
+          # on every event.
           cache: false
       - name: Install NSIS
         # NSIS isn't packaged for every MSYS2 environment (e.g. no
