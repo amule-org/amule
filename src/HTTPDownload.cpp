@@ -328,6 +328,45 @@ wxWebRequest CreateAmuleWebRequest(wxEvtHandler *handler, const wxString &url)
 	return request;
 }
 
+// A response body this large is not a list or database aMule fetches; it matches the unpacker's
+// own limit.
+static const wxFileOffset MAX_HTTP_DOWNLOAD_SIZE = 256 * 1024 * 1024;
+static const int HTTP_SIZE_CHECK_MS = 250;
+
+CHttpSizeGuard::CHttpSizeGuard()
+: m_limit(0)
+, m_timer(this)
+{
+	Bind(wxEVT_TIMER, &CHttpSizeGuard::OnTimer, this);
+}
+
+void CHttpSizeGuard::Start(const wxWebRequest &request, wxFileOffset limit)
+{
+	m_request = request;
+	m_limit = limit;
+	m_timer.Start(HTTP_SIZE_CHECK_MS);
+}
+
+void CHttpSizeGuard::Stop()
+{
+	m_timer.Stop();
+}
+
+bool CHttpSizeGuard::Exceeded() const
+{
+	return m_request.IsOk() && m_limit > 0 &&
+	       (m_request.GetBytesReceived() > m_limit || m_request.GetBytesExpectedToReceive() > m_limit);
+}
+
+void CHttpSizeGuard::OnTimer(wxTimerEvent &WXUNUSED(evt))
+{
+	if (Exceeded()) {
+		m_timer.Stop();
+		// The owner sees State_Cancelled and reports the reason through Exceeded().
+		m_request.Cancel();
+	}
+}
+
 CHTTPDownloadThread::CHTTPDownloadThread(const wxString &url,
 	const wxString &filename,
 	const wxString &oldfilename,
@@ -399,6 +438,13 @@ CHTTPDownloadThread::CHTTPDownloadThread(const wxString &url,
 
 	Bind(wxEVT_WEBREQUEST_STATE, &CHTTPDownloadThread::OnStateEvent, this);
 	m_request.Start();
+	m_sizeGuard.Start(m_request, MAX_HTTP_DOWNLOAD_SIZE);
+}
+
+static void LogDownloadTooLarge(const wxString &url, wxFileOffset limit)
+{
+	AddLogLineC(CFormat(_("HTTP download of %s stopped: it is larger than %u MiB.")) % url %
+		    (unsigned)(limit / (1024 * 1024)));
 }
 
 // Format the given date to a RFC-2616 compliant HTTP date.
@@ -448,6 +494,10 @@ void CHTTPDownloadThread::OnStateEvent(wxWebRequestEvent &evt)
 			// Not Modified -- nothing to write.
 			AddDebugLogLineN(logHTTP, "Skipped download because requested file is not newer.");
 			FinishAndDestroy(HTTP_Skipped);
+		} else if (m_sizeGuard.Exceeded()) {
+			// Finished between two size checks.
+			LogDownloadTooLarge(m_url, m_sizeGuard.GetLimit());
+			FinishAndDestroy(HTTP_Error);
 		} else if (m_response >= 200 && m_response < 300) {
 			// Success. wx wrote the body to its own temp file; move it to the caller-
 			// supplied m_tempfile. A plain rename may fail across filesystems, so fall
@@ -489,7 +539,11 @@ void CHTTPDownloadThread::OnStateEvent(wxWebRequestEvent &evt)
 	}
 
 	case wxWebRequest::State_Cancelled: {
-		AddDebugLogLineN(logHTTP, CFormat("HTTP download cancelled: %s") % m_url);
+		if (m_sizeGuard.Exceeded()) {
+			LogDownloadTooLarge(m_url, m_sizeGuard.GetLimit());
+		} else {
+			AddDebugLogLineN(logHTTP, CFormat("HTTP download cancelled: %s") % m_url);
+		}
 		FinishAndDestroy(HTTP_Error);
 		break;
 	}
@@ -515,6 +569,7 @@ void CHTTPDownloadThread::FinishAndDestroy(int result)
 	}
 	m_finishPosted = true;
 	m_result = result;
+	m_sizeGuard.Stop();
 
 	// Clean the caller's temp file on failure so we don't leave stale
 	// half-written content around. Legacy path did the same.

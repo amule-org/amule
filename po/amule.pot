@@ -3120,6 +3120,11 @@ msgstr ""
 
 #: src/HTTPDownload.cpp
 #, c-format
+msgid "HTTP download of %s stopped: it is larger than %u MiB."
+msgstr ""
+
+#: src/HTTPDownload.cpp
+#, c-format
 msgid "HTTP download: empty response body for %s"
 msgstr ""
 

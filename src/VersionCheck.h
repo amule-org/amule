@@ -33,6 +33,8 @@
 #include <wx/string.h>
 #include <wx/webrequest.h>
 
+#include "HTTPDownload.h" // Needed for CHttpSizeGuard
+
 // Posted (as a wxCommandEvent) to the handler passed to CVersionCheck::Start()
 // when a check finishes. GetInt() carries the resulting CVersionCheck::Status.
 wxDECLARE_EVENT(wxEVT_VERSION_CHECK_DONE, wxCommandEvent);
@@ -81,6 +83,7 @@ private:
 	Status Evaluate(const wxString &json);
 
 	wxWebRequest m_request;
+	CHttpSizeGuard m_sizeGuard;
 	wxEvtHandler *m_notify;
 	int m_notifyId;
 	Status m_status;

@@ -30,6 +30,7 @@
 #include "GuiEvents.h"     // Needed for HTTP_Download_File
 #include <wx/datetime.h>   // Needed for wxDateTime
 #include <wx/event.h>      // Needed for wxEvtHandler
+#include <wx/timer.h>      // Needed for wxTimer
 #include <wx/webrequest.h> // Needed for wxWebRequest
 #include <set>
 
@@ -44,6 +45,28 @@ wxWebRequest CreateAmuleWebRequest(wxEvtHandler *handler, const wxString &url);
 // Whether HTTP requests follow the bind-to-interface choice: only where libcurl serves them, which
 // excludes Windows (WinHTTP), and macOS or a build without libcurl headers when curl is missing.
 bool CanBindHttpToInterface();
+
+// Cancels a request once its response body passes a size limit. wx stores a body without bound
+// and only its curl backend could enforce one, so the request is polled.
+class CHttpSizeGuard : public wxEvtHandler
+{
+public:
+	CHttpSizeGuard();
+
+	void Start(const wxWebRequest &request, wxFileOffset limit);
+	void Stop();
+
+	// The announced or received size is over the limit.
+	bool Exceeded() const;
+	wxFileOffset GetLimit() const { return m_limit; }
+
+private:
+	void OnTimer(wxTimerEvent &evt);
+
+	wxWebRequest m_request;
+	wxFileOffset m_limit;
+	wxTimer m_timer;
+};
 
 enum HTTPDownloadResult
 {
@@ -99,6 +122,7 @@ private:
 	static wxString FormatDateHTTP(const wxDateTime &date);
 
 	wxWebRequest m_request;
+	CHttpSizeGuard m_sizeGuard;
 	wxString m_url;
 	wxString m_tempfile;
 	wxDateTime m_lastmodified; //! Date on which the file being updated was last modified.
