@@ -117,8 +117,8 @@ if [ "$COUNT" -gt 0 ]; then
 	# Pick the largest shared file: more parts means the length check
 	# below actually discriminates, and a 1-part file would pass a
 	# broken emitter by accident.
-	FIRST_HASH=$(printf '%s' "$CURL_BODY" | jq -r '.shared | max_by(.size) | .hash')
-	FIRST_SIZE=$(printf '%s' "$CURL_BODY" | jq -r '.shared | max_by(.size) | .size')
+	FIRST_HASH=$(printf '%s' "$CURL_BODY" | jq -r '.shared | max_by(.size_bytes) | .hash')
+	FIRST_SIZE=$(printf '%s' "$CURL_BODY" | jq -r '.shared | max_by(.size_bytes) | .size_bytes')
 
 	# --- 2. Detail endpoint carries `parts`. -----------------------
 	_curl -H "Authorization: Bearer $TOKEN" "$API/shared/$FIRST_HASH"

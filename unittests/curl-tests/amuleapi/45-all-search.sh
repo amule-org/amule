@@ -29,7 +29,7 @@ curl -fsS -N --max-time 20 -D "$TMP/headers" -H "$AUTH" \
 SSE_PID=$!
 # Wait for the subscription before creating the session's search-results slot.
 for _ in $(seq 1 100); do
-	if grep -qi 'content-type: text/event-stream' "$TMP/headers"; then break; fi
+	if grep -qis 'content-type: text/event-stream' "$TMP/headers"; then break; fi
 	kill -0 "$SSE_PID" 2>/dev/null || fail 'SSE connection exited'
 	sleep 0.1
 done

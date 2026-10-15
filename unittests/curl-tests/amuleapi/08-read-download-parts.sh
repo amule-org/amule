@@ -119,7 +119,7 @@ if [ "$COUNT" -gt 0 ]; then
 
 	# Pull the first hash for the detail-endpoint pass below.
 	FIRST_HASH=$(printf '%s' "$CURL_BODY" | jq -r '.downloads[0].hash')
-	FIRST_SIZE=$(printf '%s' "$CURL_BODY" | jq -r '.downloads[0].size')
+	FIRST_SIZE=$(printf '%s' "$CURL_BODY" | jq -r '.downloads[0].size_bytes')
 
 	# --- 2. Detail endpoint carries `progress.parts`. --------------
 	_curl -H "Authorization: Bearer $TOKEN" "$API/downloads/$FIRST_HASH"

@@ -159,7 +159,9 @@ _curl() {
 		-o "$CURL_BODY_FILE" -w '%{http_code}' "$@") \
 		|| _die "curl invocation failed for $*"
 	CURL_STATUS=$resp
-	CURL_BODY=$(cat "$CURL_BODY_FILE")
+	# File bodies hold NUL bytes, which $(...) drops with a warning. Byte
+	# checks cmp the file; CURL_BODY is only read as JSON.
+	CURL_BODY=$(tr -d '\0' < "$CURL_BODY_FILE")
 	CURL_HEAD=$(cat "$CURL_HEAD_FILE")
 }
 
