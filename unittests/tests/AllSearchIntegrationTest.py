@@ -17,6 +17,8 @@ import tempfile
 import threading
 import time
 
+from DaemonConfig import write_amule_conf
+
 
 # Resolve wire constants from the protocol source, so renumbering stays visible.
 def load_codes():
@@ -259,31 +261,8 @@ def run(binary):
     with tempfile.TemporaryDirectory(prefix='amule-all-search-') as root:
         root = Path(root)
         ec_port, peer_port, udp_port = free_ports(3, udp_indices=(2,), peer_index=1)
-        config = f'''[eMule]
-Nick=regression
-Port={peer_port}
-UDPPort={udp_port}
-Address=127.0.0.1
-ConnectToKad=1
-ConnectToED2K=1
-FilterLanIPs=0
-NewVersionCheck=0
-Reconnect=0
-Serverlist=0
-Ed2kServersUrl=
-KadNodesUrl=
-AddServerListFromServer=0
-AddServerListFromClient=0
-TempDir={root}/Temp
-IncomingDir={root}/Incoming
-Language=en_US
-[ExternalConnect]
-AcceptExternalConnections=1
-ECAddress=127.0.0.1
-ECPort={ec_port}
-ECPassword={hashlib.md5(b'regression').hexdigest()}
-'''
-        (root / 'amule.conf').write_text(config)
+        write_amule_conf(root, ec_port, Port=peer_port, UDPPort=udp_port, ConnectToKad=1,
+                         ConnectToED2K=1, FilterLanIPs=0)
         (root / 'nodes.dat').write_bytes(struct.pack('<III', 0, 1, 0))
         env = dict(os.environ, HOME=str(root), XDG_CONFIG_HOME=str(root / 'xdg'),
                    LC_ALL='C.UTF-8')

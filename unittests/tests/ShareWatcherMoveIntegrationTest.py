@@ -7,7 +7,6 @@ inotify reports a move from or to an unwatched dir as a lone IN_MOVED_TO or IN_M
 completed download takes that path from Temp into Incoming, after it is already shared under the
 Incoming path.
 """
-import hashlib
 import os
 from pathlib import Path
 import shutil
@@ -19,6 +18,7 @@ import time
 
 from AllSearchIntegrationTest import (C, connect_daemon, exact, free_ports,
                                       retry_port_collisions, stop_daemon)
+from DaemonConfig import write_amule_conf
 
 
 def tag_list(data, offset, count):
@@ -76,31 +76,8 @@ def run(binary, root):
     (incoming / 'a.bin').write_bytes(os.urandom(300_000))
     (incoming / 'c.bin').write_bytes(os.urandom(150_000))
     port, peer_port = free_ports(2)
-    (root / 'amule.conf').write_text(f'''[eMule]
-Nick=watcher-regression
-FirstRunWizardDone=1
-Port={peer_port}
-UDPEnable=0
-Address=127.0.0.1
-ConnectToKad=0
-ConnectToED2K=0
-NewVersionCheck=0
-GeoIPEnabled=0
-Reconnect=0
-Serverlist=0
-Ed2kServersUrl=
-KadNodesUrl=
-TempDir={root}/Temp
-IncomingDir={incoming}
-AutoRescanSharedDirs=1
-# The checks match English log lines; LC_ALL alone does not override a translated LANG.
-Language=en_US
-[ExternalConnect]
-AcceptExternalConnections=1
-ECAddress=127.0.0.1
-ECPort={port}
-ECPassword={hashlib.md5(b'regression').hexdigest()}
-''')
+    write_amule_conf(root, port, Port=peer_port, UDPEnable=0, IncomingDir=incoming,
+                     AutoRescanSharedDirs=1)
     env = dict(os.environ, HOME=str(root), XDG_CONFIG_HOME=str(root / 'xdg'), LC_ALL='C.UTF-8')
     env.pop('LD_PRELOAD', None)
     with (root / 'console.log').open('w') as console:

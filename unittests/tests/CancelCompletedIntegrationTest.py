@@ -7,7 +7,6 @@ A finished download stays in the download queue until it is cleared, so `amulecm
 and the remote GUI's category Cancel still send EC_OP_PARTFILE_DELETE for it. Its path then
 points into Incoming.
 """
-import hashlib
 import os
 from pathlib import Path
 import struct
@@ -18,6 +17,7 @@ import time
 
 from AllSearchIntegrationTest import (C, connect_daemon, free_ports, log_snapshot,
                                       retry_port_collisions, stop_daemon, tag)
+from DaemonConfig import write_amule_conf
 
 DONE_NAME = 'done.bin'
 DONE_DATA = bytes(range(256)) * 64
@@ -76,30 +76,7 @@ def run(binary, root):
         (root / d).mkdir()
     ports = free_ports(3, udp_indices=(2,), peer_index=1)
     ec_port, peer_port, udp_port = ports
-    (root / 'amule.conf').write_text(f'''[eMule]
-Nick=cancel-completed-regression
-FirstRunWizardDone=1
-Port={peer_port}
-UDPPort={udp_port}
-Address=127.0.0.1
-ConnectToKad=0
-ConnectToED2K=0
-NewVersionCheck=0
-GeoIPEnabled=0
-Reconnect=0
-Serverlist=0
-Ed2kServersUrl=
-KadNodesUrl=
-TempDir={root}/Temp
-IncomingDir={root}/Incoming
-# The checks match English log lines; LC_ALL alone does not override a translated LANG.
-Language=en_US
-[ExternalConnect]
-AcceptExternalConnections=1
-ECAddress=127.0.0.1
-ECPort={ec_port}
-ECPassword={hashlib.md5(b'regression').hexdigest()}
-''')
+    write_amule_conf(root, ec_port, Port=peer_port, UDPPort=udp_port)
     done_hash = md4(DONE_DATA)
     (root / 'Temp/001.part').write_bytes(DONE_DATA)
     (root / 'Temp/001.part.met').write_bytes(part_met(done_hash, DONE_NAME, len(DONE_DATA)))

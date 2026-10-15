@@ -2,7 +2,6 @@
 # Copyright (c) 2026 aMule Team
 # SPDX-License-Identifier: GPL-2.0-or-later
 """Check Kad diagnostics through authenticated EC on an isolated loopback daemon."""
-import hashlib
 import os
 from pathlib import Path
 import struct
@@ -11,6 +10,7 @@ import subprocess
 import sys
 import tempfile
 from AllSearchIntegrationTest import C, connect_daemon, free_ports, retry_port_collisions, tag
+from DaemonConfig import write_amule_conf
 
 
 def local_peer():
@@ -46,30 +46,8 @@ def run(binary, populated=False):
             contact = struct.pack('<4IIHHB2IB', 0xA0000000, 0, 0, 1,
                                   int.from_bytes(socket.inet_aton(ip), 'big'), udp, udp, 8, 0, 0, 1)
             (root / 'nodes.dat').write_bytes(struct.pack('<III', 0, 2, 1) + contact)
-        (root / 'amule.conf').write_text(f"""[eMule]
-Nick=regression
-Language=en_US
-Port={peer_port}
-UDPPort={udp_port}
-Address=127.0.0.1
-ConnectToKad=1
-Autoconnect=0
-ConnectToED2K=0
-FilterLanIPs=0
-NewVersionCheck=0
-GeoIPEnabled=0
-Reconnect=0
-Serverlist=0
-Ed2kServersUrl=
-KadNodesUrl=
-TempDir={root}/Temp
-IncomingDir={root}/Incoming
-[ExternalConnect]
-AcceptExternalConnections=1
-ECAddress=127.0.0.1
-ECPort={port}
-ECPassword={hashlib.md5(b'regression').hexdigest()}
-""")
+        write_amule_conf(root, port, Port=peer_port, UDPPort=udp_port, ConnectToKad=1,
+                         Autoconnect=0, FilterLanIPs=0)
         env = dict(os.environ, XDG_CONFIG_HOME=str(root / 'xdg'))
         with (root / 'stdout.log').open('w') as log:
             proc = subprocess.Popen([binary, '-c', str(root)], stdout=log, stderr=log, env=env)

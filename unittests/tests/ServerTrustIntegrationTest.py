@@ -6,7 +6,6 @@
 It could add server-list entries the user did not ask for, call the client back to loopback,
 and point a hostname entry at a loopback or LAN address.
 """
-import hashlib
 from pathlib import Path
 import socket
 import struct
@@ -17,6 +16,7 @@ import time
 
 from AllSearchIntegrationTest import (C, exact, free_ports, retry_port_collisions, stop_daemon,
                                       string)
+from DaemonConfig import write_amule_conf
 from KnownHistoryIntegrationTest import start
 
 INJECTED = bytes([203, 0, 113, 7])  # not a reserved range, so AddServer() accepts it
@@ -83,33 +83,8 @@ def wait_for(proc, what, check, timeout=60):
 
 def configure(root, ports, filter_lan):
     ec_port, peer_port, udp_port = ports
-    (root / 'amule.conf').write_text(f'''[eMule]
-Nick=server-trust-regression
-FirstRunWizardDone=1
-Port={peer_port}
-UDPPort={udp_port}
-Address=127.0.0.1
-ConnectToKad=0
-ConnectToED2K=1
-NewVersionCheck=0
-GeoIPEnabled=0
-Reconnect=0
-Serverlist=0
-Ed2kServersUrl=
-KadNodesUrl=
-AddServerListFromServer=0
-AddServerListFromClient=0
-FilterLanIPs={int(filter_lan)}
-TempDir={root}/Temp
-IncomingDir={root}/Incoming
-# The checks match English log lines; LC_ALL alone does not override a translated LANG.
-Language=en_US
-[ExternalConnect]
-AcceptExternalConnections=1
-ECAddress=127.0.0.1
-ECPort={ec_port}
-ECPassword={hashlib.md5(b'regression').hexdigest()}
-''')
+    write_amule_conf(root, ec_port, Port=peer_port, UDPPort=udp_port, ConnectToED2K=1,
+                     FilterLanIPs=int(filter_lan))
 
 
 def add_and_connect(ec, port):

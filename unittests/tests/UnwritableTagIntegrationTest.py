@@ -7,7 +7,6 @@ The writer skips HASH16 and BOOL tags, but the tag count still included them. In
 StoredSearches.met the reader then took the next fields for a tag and every stored search was
 lost. A .part.met ends with its tags, so it was only reported corrupt at every start.
 """
-import hashlib
 from pathlib import Path
 import socket
 import struct
@@ -17,6 +16,7 @@ import threading
 
 from AllSearchIntegrationTest import (C, exact, free_ports, retry_port_collisions, stop_daemon,
                                       string, tag)
+from DaemonConfig import write_amule_conf
 from KnownHistoryIntegrationTest import search_statuses, start, wait_for
 
 RESULT_HASH = bytes(range(16))
@@ -83,34 +83,9 @@ def run(binary, root):
         (root / d).mkdir()
     ports = free_ports(3, udp_indices=(2,), peer_index=1)
     ec_port, peer_port, udp_port = ports
-    (root / 'amule.conf').write_text(f'''[eMule]
-Nick=unwritable-tag-regression
-FirstRunWizardDone=1
-Port={peer_port}
-UDPPort={udp_port}
-Address=127.0.0.1
-ConnectToKad=0
-ConnectToED2K=1
-NewVersionCheck=0
-GeoIPEnabled=0
-Reconnect=0
-Serverlist=0
-Ed2kServersUrl=
-KadNodesUrl=
-AddServerListFromServer=0
-AddServerListFromClient=0
-# The fake server is on loopback, which only an unfiltered LAN setting dials.
-FilterLanIPs=0
-TempDir={root}/Temp
-IncomingDir={root}/Incoming
-# The checks match English log lines; LC_ALL alone does not override a translated LANG.
-Language=en_US
-[ExternalConnect]
-AcceptExternalConnections=1
-ECAddress=127.0.0.1
-ECPort={ec_port}
-ECPassword={hashlib.md5(b'regression').hexdigest()}
-''')
+    # The fake server is on loopback, which only an unfiltered LAN setting dials.
+    write_amule_conf(root, ec_port, Port=peer_port, UDPPort=udp_port, ConnectToED2K=1,
+                     FilterLanIPs=0)
     # Empty data file: a non-empty one with a stale date would be rehashed first.
     (root / 'Temp/001.part').write_bytes(b'')
     (root / 'Temp/001.part.met').write_bytes(part_met())

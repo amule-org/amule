@@ -6,7 +6,6 @@ No installed services, real peers, or user configuration are used.
 """
 import argparse
 import base64
-import hashlib
 import json
 from pathlib import Path
 import socket
@@ -22,6 +21,7 @@ import urllib.request
 # Reuse the suite's EC codec, without its daemon-start or English-log helpers.
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tests"))
 from AllSearchIntegrationTest import EC, C, integer
+from DaemonConfig import write_amule_conf
 
 
 def unused_port():
@@ -80,24 +80,9 @@ def run(build, work, daemon_override=None, api_override=None):
     # Set the mode at creation so permissive CI umasks cannot expose them.
     (daemon_dir / "amule.conf").touch(mode=0o600, exist_ok=False)
     (api_dir / "amuleapi.conf").touch(mode=0o600, exist_ok=False)
-    # Keep this loopback-only test independent of GeoIP downloads at startup.
-    (daemon_dir / "amule.conf").write_text(f"""[eMule]
-Nick=CAPTCHA test
-Port={tcp_port}
-UDPDisable=1
-ConnectToKad=0
-ConnectToED2K=0
-FilterLanIPs=0
-IPFilterAutoLoad=0
-GeoIPEnabled=0
-IncomingDir={daemon_dir / 'incoming'}
-TempDir={daemon_dir / 'temp'}
-[ExternalConnect]
-AcceptExternalConnections=1
-ECAddress=127.0.0.1
-ECPort={ec_port}
-ECPassword={hashlib.md5(b'captcha-test').hexdigest()}
-""")
+    write_amule_conf(daemon_dir, ec_port, ec_password='captcha-test', Port=tcp_port,
+                     UDPEnable=0, FilterLanIPs=0, IncomingDir=daemon_dir / 'incoming',
+                     TempDir=daemon_dir / 'temp')
     (api_dir / "amuleapi.conf").write_text(f"""[EC]
 Host=127.0.0.1
 Port={ec_port}

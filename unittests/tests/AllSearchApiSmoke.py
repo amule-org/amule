@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 """Run the curl All-search checks against an isolated, offline core/API pair."""
-import hashlib
 import os
 import re
 from pathlib import Path
@@ -12,6 +11,7 @@ import time
 
 from AllSearchIntegrationTest import (C, PortCollision, connect_daemon, free_ports,
                                       integer, retry_port_collisions, stored_search)
+from DaemonConfig import write_amule_conf
 
 
 def run(daemon_binary, api_binary, checks):
@@ -21,34 +21,8 @@ def run(daemon_binary, api_binary, checks):
         core.mkdir()
         api.mkdir()
         port, http, peer_port, udp_port = free_ports(4, udp_indices=(3,), peer_index=2)
-        (core / 'amule.conf').write_text(f'''[eMule]
-Nick=regression
-Port={peer_port}
-UDPEnable=1
-UDPPort={udp_port}
-Address=127.0.0.1
-Autoconnect=0
-ConnectToKad=1
-ConnectToED2K=0
-NewVersionCheck=0
-Reconnect=0
-Serverlist=0
-Ed2kServersUrl=
-KadNodesUrl=
-AddServerListFromServer=0
-AddServerListFromClient=0
-UPnPEnabled=0
-TempDir={core}/Temp
-IncomingDir={core}/Incoming
-Language=en_US
-[ExternalConnect]
-AcceptExternalConnections=1
-ECAddress=127.0.0.1
-ECPort={port}
-ECPassword={hashlib.md5(b'regression').hexdigest()}
-[WebServer]
-Enabled=0
-''')
+        write_amule_conf(core, port, Port=peer_port, UDPEnable=1, UDPPort=udp_port, Autoconnect=0,
+                         ConnectToKad=1, sections={'WebServer': {'Enabled': 0}})
         (core / 'nodes.dat').write_bytes(struct.pack('<III', 0, 1, 0))
         # A finished All search exercises discovery and progress serialization
         # without public peers; later checks start Kad with no contacts.

@@ -2,7 +2,6 @@
 # Copyright (c) 2026 aMule Team
 # SPDX-License-Identifier: GPL-2.0-or-later
 """Publish Kad sources with other clients' tags to an isolated daemon and read them back."""
-import hashlib
 import os
 import socket
 import struct
@@ -13,6 +12,7 @@ import time
 import zlib
 from pathlib import Path
 from AllSearchIntegrationTest import C, connect_daemon, free_ports, retry_port_collisions
+from DaemonConfig import write_amule_conf
 
 KADEMLIA2_SEARCH_SOURCE_REQ = 0x34
 KADEMLIA2_SEARCH_RES = 0x3B
@@ -115,28 +115,8 @@ def run(binary):
     with tempfile.TemporaryDirectory(prefix='kad-source-tags-') as directory:
         root = Path(directory)
         port, udp_port, peer_port = free_ports(3, udp_indices=(1,), peer_index=2)
-        (root / 'amule.conf').write_text(f"""[eMule]
-Nick=review
-Port={peer_port}
-UDPPort={udp_port}
-Address=127.0.0.1
-ConnectToKad=1
-Autoconnect=0
-ConnectToED2K=0
-NewVersionCheck=0
-Reconnect=0
-Serverlist=0
-Ed2kServersUrl=
-KadNodesUrl=
-TempDir={root}/Temp
-IncomingDir={root}/Incoming
-Language=en_US
-[ExternalConnect]
-AcceptExternalConnections=1
-ECAddress=127.0.0.1
-ECPort={port}
-ECPassword={hashlib.md5(b'regression').hexdigest()}
-""")
+        write_amule_conf(root, port, Port=peer_port, UDPPort=udp_port, ConnectToKad=1,
+                         Autoconnect=0)
         with (root / 'stdout.log').open('w') as log:
             env = dict(os.environ, XDG_CONFIG_HOME=str(root / 'xdg'), LC_ALL='C.UTF-8')
             proc = subprocess.Popen([binary, '-c', str(root)], stdout=log, stderr=log, env=env)

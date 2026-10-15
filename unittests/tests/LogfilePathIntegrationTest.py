@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 """Check logfile selection and EC read/reset with isolated, offline daemon instances."""
 import ctypes
-import hashlib
 import os
 from pathlib import Path
 import signal
@@ -15,6 +14,7 @@ import time
 from AllSearchIntegrationTest import (C, EC, PortCollision, check_daemon_ports,
                                       free_ports, log_snapshot, new_log_text,
                                       retry_port_collisions, string)
+from DaemonConfig import write_amule_conf
 
 
 def stop_forked_daemon(pid):
@@ -34,34 +34,8 @@ def stop_forked_daemon(pid):
 def write_config(root, setting=None):
     """Write an offline amule.conf with EC on a free port, and return that port."""
     port, peer_port = free_ports(2)
-    config = f'''[eMule]
-Nick=logfile-regression
-FirstRunWizardDone=1
-Port={peer_port}
-UDPEnable=0
-Address=127.0.0.1
-ConnectToKad=0
-ConnectToED2K=0
-NewVersionCheck=0
-GeoIPEnabled=0
-Reconnect=0
-Serverlist=0
-Ed2kServersUrl=
-KadNodesUrl=
-TempDir={root}/Temp
-IncomingDir={root}/Incoming
-# The checks match English log lines; LC_ALL alone does not override a translated LANG.
-Language=en_US
-'''
-    if setting is not None:
-        config += f'LogFilePath={setting}\n'
-    config += f'''[ExternalConnect]
-AcceptExternalConnections=1
-ECAddress=127.0.0.1
-ECPort={port}
-ECPassword={hashlib.md5(b'regression').hexdigest()}
-'''
-    (root / 'amule.conf').write_text(config)
+    extra = {} if setting is None else {'LogFilePath': setting}
+    write_amule_conf(root, port, Port=peer_port, UDPEnable=0, **extra)
     return port, peer_port
 
 

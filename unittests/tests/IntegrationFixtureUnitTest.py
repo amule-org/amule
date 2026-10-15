@@ -2,14 +2,17 @@
 # Copyright (c) 2026 aMule Team
 # SPDX-License-Identifier: GPL-2.0-or-later
 """Offline regression checks for integration fixture port selection and diagnostics."""
+import configparser
 from pathlib import Path
 import errno
+import hashlib
 from itertools import cycle
 import tempfile
 import unittest
 from unittest.mock import patch
 
 import AllSearchIntegrationTest
+import DaemonConfig
 import LogfilePathIntegrationTest
 
 
@@ -177,6 +180,40 @@ class IntegrationFixtureUnitTest(unittest.TestCase):
             with patch.object(LogfilePathIntegrationTest.subprocess, 'Popen', FailedDaemon):
                 LogfilePathIntegrationTest.run('unused-daemon', root, failure=True,
                                                expected=root / 'logfile')
+
+
+class DaemonConfigUnitTest(unittest.TestCase):
+    def test_offline_defaults_overrides_and_sections(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            DaemonConfig.write_amule_conf(root, 4712, Port=4662, ConnectToKad=1,
+                                          sections={'WebServer': {'Enabled': 0}})
+            config = configparser.ConfigParser(interpolation=None)
+            config.optionxform = str
+            config.read(root / 'amule.conf', encoding='utf-8')
+        emule = config['eMule']
+        for key, value in DaemonConfig.OFFLINE.items():
+            if key != 'ConnectToKad':
+                self.assertEqual(emule[key], str(value), key)
+        self.assertEqual(emule['GeoIPEnabled'], '0')
+        self.assertEqual(emule['NewVersionCheck'], '0')
+        self.assertEqual(emule['ConnectToKad'], '1')
+        self.assertEqual(emule['Port'], '4662')
+        self.assertEqual(emule['TempDir'], str(root / 'Temp'))
+        self.assertEqual(emule['IncomingDir'], str(root / 'Incoming'))
+        self.assertEqual(config['ExternalConnect']['ECPort'], '4712')
+        self.assertEqual(config['ExternalConnect']['ECPassword'],
+                         hashlib.md5(DaemonConfig.EC_PASSWORD.encode()).hexdigest())
+        self.assertEqual(config['WebServer']['Enabled'], '0')
+
+    def test_no_test_writes_its_own_daemon_config(self):
+        # A hand-written eMule section misses later offline defaults; use write_amule_conf.
+        marker = '[' + 'eMule]'
+        unittests = Path(__file__).resolve().parent.parent
+        writers = [path.relative_to(unittests).as_posix()
+                   for path in sorted(unittests.rglob('*.py'))
+                   if marker in path.read_text(encoding='utf-8', errors='replace')]
+        self.assertEqual(writers, [])
 
 
 if __name__ == '__main__':

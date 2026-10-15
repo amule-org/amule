@@ -21,6 +21,7 @@ import time
 import zlib
 
 from AllSearchIntegrationTest import connect_daemon, exact, free_ports, retry_port_collisions, stop_daemon
+from DaemonConfig import write_amule_conf
 from ShareWatcherMoveIntegrationTest import shared
 
 BLOCK = 184320
@@ -61,34 +62,9 @@ def run(binary, seconds, slots, rate, compress=False, pause_ms=0):
         filename = 'upload.txt' if compress else 'upload.bin'
         (incoming / filename).write_bytes(content)
         ec_port, peer_port = free_ports(2, peer_index=1)
-        (root / 'amule.conf').write_text(f'''[eMule]
-Nick=upload-refill-test
-FirstRunWizardDone=1
-Port={peer_port}
-UDPDisable=1
-ConnectToKad=0
-ConnectToED2K=0
-FilterLanIPs=0
-IPFilterAutoLoad=0
-NewVersionCheck=0
-GeoIPEnabled=0
-Reconnect=0
-Serverlist=0
-Ed2kServersUrl=
-KadNodesUrl=
-Address=127.0.0.1
-MaxUpload={rate}
-SlotAllocation=10
-MaxConnections=200
-IncomingDir={incoming}
-TempDir={root / 'Temp'}
-Language=en_US
-[ExternalConnect]
-AcceptExternalConnections=1
-ECAddress=127.0.0.1
-ECPort={ec_port}
-ECPassword={hashlib.md5(b'regression').hexdigest()}
-''')
+        write_amule_conf(root, ec_port, Port=peer_port, UDPEnable=0, FilterLanIPs=0,
+                         MaxUpload=rate, SlotAllocation=10, MaxConnections=200,
+                         IncomingDir=incoming)
         env = dict(os.environ, HOME=str(root), XDG_CONFIG_HOME=str(root / 'xdg'), LC_ALL='C.UTF-8')
         stop = threading.Event()
         ready = [threading.Event() for _ in range(slots)]

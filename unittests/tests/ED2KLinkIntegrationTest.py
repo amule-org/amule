@@ -8,7 +8,6 @@ links to ED2KLinks one per line, and that one link forged more. A category index
 link or the EC packet and indexed the category list unchecked. The ed2k helper writes ED2KLinks
 too, from its decoded argument.
 """
-import hashlib
 from pathlib import Path
 import subprocess
 import sys
@@ -16,6 +15,7 @@ import tempfile
 
 from AllSearchIntegrationTest import (C, free_ports, retry_port_collisions, stop_daemon, string,
                                       tag)
+from DaemonConfig import write_amule_conf
 from KnownHistoryIntegrationTest import start
 
 BIG = 5000000000  # over 4 GiB, so the Incoming file system is checked first
@@ -31,30 +31,7 @@ def run(binary, root):
         (root / d).mkdir()
     ports = free_ports(3, udp_indices=(2,), peer_index=1)
     ec_port, peer_port, udp_port = ports
-    (root / 'amule.conf').write_text(f'''[eMule]
-Nick=ed2k-link-regression
-FirstRunWizardDone=1
-Port={peer_port}
-UDPPort={udp_port}
-Address=127.0.0.1
-ConnectToKad=0
-ConnectToED2K=1
-NewVersionCheck=0
-GeoIPEnabled=0
-Reconnect=0
-Serverlist=0
-Ed2kServersUrl=
-KadNodesUrl=
-TempDir={root}/Temp
-IncomingDir={root}/Incoming
-# The checks match English log lines; LC_ALL alone does not override a translated LANG.
-Language=en_US
-[ExternalConnect]
-AcceptExternalConnections=1
-ECAddress=127.0.0.1
-ECPort={ec_port}
-ECPassword={hashlib.md5(b'regression').hexdigest()}
-''')
+    write_amule_conf(root, ec_port, Port=peer_port, UDPPort=udp_port, ConnectToED2K=1)
 
     proc, ec = start(binary, root, ports)
     try:

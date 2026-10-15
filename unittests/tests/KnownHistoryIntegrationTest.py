@@ -6,7 +6,6 @@
 The 30-day TTL prune drops known.met records of files no longer on disk. Their hashes go to
 knownhistory.met, so a file downloaded and then deleted does not look new again a month later.
 """
-import hashlib
 import os
 from pathlib import Path
 import re
@@ -20,6 +19,7 @@ import time
 
 from AllSearchIntegrationTest import (C, connect_daemon, exact, free_ports, integer, log_snapshot,
                                       retry_port_collisions, stop_daemon, string)
+from DaemonConfig import write_amule_conf
 from ShareWatcherMoveIntegrationTest import tag_list
 
 FORGOTTEN = bytes(range(16))
@@ -113,34 +113,9 @@ def run(binary, root):
         (root / d).mkdir()
     ports = free_ports(3, udp_indices=(2,), peer_index=1)
     ec_port, peer_port, udp_port = ports
-    (root / 'amule.conf').write_text(f'''[eMule]
-Nick=known-history-regression
-FirstRunWizardDone=1
-Port={peer_port}
-UDPPort={udp_port}
-Address=127.0.0.1
-ConnectToKad=0
-ConnectToED2K=1
-NewVersionCheck=0
-GeoIPEnabled=0
-Reconnect=0
-Serverlist=0
-Ed2kServersUrl=
-KadNodesUrl=
-AddServerListFromServer=0
-AddServerListFromClient=0
-# The fake server is on loopback, which only an unfiltered LAN setting dials.
-FilterLanIPs=0
-TempDir={root}/Temp
-IncomingDir={root}/Incoming
-# The checks match English log lines; LC_ALL alone does not override a translated LANG.
-Language=en_US
-[ExternalConnect]
-AcceptExternalConnections=1
-ECAddress=127.0.0.1
-ECPort={ec_port}
-ECPassword={hashlib.md5(b'regression').hexdigest()}
-''')
+    # The fake server is on loopback, which only an unfiltered LAN setting dials.
+    write_amule_conf(root, ec_port, Port=peer_port, UDPPort=udp_port, ConnectToED2K=1,
+                     FilterLanIPs=0)
     (root / 'known.met').write_bytes(known_met(FORGOTTEN, 'forgotten.bin', 4096))
 
     # The prune only runs after the first share scan, and the shutdown save runs it.

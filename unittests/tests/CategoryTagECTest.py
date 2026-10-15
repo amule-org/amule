@@ -2,13 +2,13 @@
 # Copyright (c) 2026 aMule Team
 # SPDX-License-Identifier: GPL-2.0-or-later
 """Send category create/update requests without a path tag to an isolated daemon."""
-import hashlib
 import os
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
 from AllSearchIntegrationTest import C, connect_daemon, free_ports, retry_port_collisions, tag
+from DaemonConfig import write_amule_conf
 
 
 def run(binary):
@@ -16,28 +16,8 @@ def run(binary):
         root = Path(directory)
         port, udp_port, peer_port = free_ports(3, udp_indices=(1,), peer_index=2)
         incoming = root / 'Incoming'
-        (root / 'amule.conf').write_text(f"""[eMule]
-Nick=review
-Port={peer_port}
-UDPPort={udp_port}
-Address=127.0.0.1
-ConnectToKad=0
-Autoconnect=0
-ConnectToED2K=0
-NewVersionCheck=0
-Reconnect=0
-Serverlist=0
-Ed2kServersUrl=
-KadNodesUrl=
-TempDir={root}/Temp
-IncomingDir={incoming}
-Language=en_US
-[ExternalConnect]
-AcceptExternalConnections=1
-ECAddress=127.0.0.1
-ECPort={port}
-ECPassword={hashlib.md5(b'regression').hexdigest()}
-""")
+        write_amule_conf(root, port, Port=peer_port, UDPPort=udp_port, Autoconnect=0,
+                         IncomingDir=incoming)
         with (root / 'stdout.log').open('w') as log:
             env = dict(os.environ, XDG_CONFIG_HOME=str(root / 'xdg'), LC_ALL='C.UTF-8')
             proc = subprocess.Popen([binary, '-c', str(root)], stdout=log, stderr=log, env=env)
