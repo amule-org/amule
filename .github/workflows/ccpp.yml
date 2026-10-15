@@ -640,5 +640,17 @@ jobs:
         run: ccache --show-stats
       - name: run tests
         run: |
+          # IconArtworkTest's watchdog writes a minidump here if the test hangs.
+          mkdir -p build/hang-dumps
+          export AMULE_ICON_TEST_DUMP_DIR="$(cygpath -w "$PWD/build/hang-dumps")"
           ctest ${{ env.ctest_flags }} --timeout 10 -E '${{ env.ctest_fast_exclude }}' &&
           ctest ${{ env.ctest_flags }} --timeout 60 -R '${{ env.ctest_slow_unit_tests }}'
+      # The test binary is needed to symbolize the dump.
+      - uses: actions/upload-artifact@v7
+        if: failure() && hashFiles('build/hang-dumps/*.dmp') != ''
+        with:
+          name: icon-artwork-hang-${{ matrix.build_type }}
+          path: |
+            build/hang-dumps/
+            build/unittests/tests/IconArtworkTest.exe
+          retention-days: 14

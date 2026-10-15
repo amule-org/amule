@@ -33,12 +33,15 @@ if (BUILD_MONOLITHIC OR BUILD_REMOTEGUI)
 		${CMAKE_SOURCE_DIR}/src/icons/icon_data.c
 	)
 	target_include_directories (IconArtworkTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
-	target_link_libraries (IconArtworkTest PRIVATE wxWidgets::CORE)
+	find_package (Threads REQUIRED)
+	target_link_libraries (IconArtworkTest PRIVATE wxWidgets::CORE Threads::Threads)
 	if (WIN32)
 		# wx core imports Common Controls v6 entry points. Match the GUI's
 		# activation context and DPI awareness before the DLL loader runs.
 		target_sources (IconArtworkTest PRIVATE IconArtworkTest.rc)
 		target_include_directories (IconArtworkTest PRIVATE ${CMAKE_SOURCE_DIR})
+		# MiniDumpWriteDump for the hang watchdog.
+		target_link_libraries (IconArtworkTest PRIVATE dbghelp)
 	endif()
 	if (APPLE)
 		target_sources (IconArtworkTest PRIVATE ${CMAKE_SOURCE_DIR}/src/MenuIcons_mac.mm)
