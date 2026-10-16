@@ -1947,7 +1947,12 @@ void RefreshLocalPublicIPv6Addresses()
 	// noticed at all.
 	ObservedPublicIPv6().SetLocalAddresses(local, ::GetTickCount64());
 #ifdef ENABLE_IPV6
-	s_advertisedIPv6Choice = ChooseAdvertisedIPv6(interfaces, thePrefs::GetNetworkInterface());
+	const std::optional<CNetworkAddress> choice =
+		ChooseAdvertisedIPv6(interfaces, thePrefs::GetNetworkInterface());
+	if (choice != s_advertisedIPv6Choice) {
+		ObservedPublicIPv6().ForgetVerdicts();
+	}
+	s_advertisedIPv6Choice = choice;
 #endif
 }
 
@@ -1961,9 +1966,8 @@ std::optional<CNetworkAddress> AdvertisedIPv6ForPeers()
 {
 	SAdvertisedIPv6Facts facts;
 	facts.choice = s_advertisedIPv6Choice;
-	facts.prefixCorroborated =
-		s_advertisedIPv6Choice &&
-		ObservedPublicIPv6().IsPrefixCorroborated(*s_advertisedIPv6Choice, ::GetTickCount64());
+	facts.contradicted = s_advertisedIPv6Choice &&
+			     ObservedPublicIPv6().IsPrefixVetoed(*s_advertisedIPv6Choice, ::GetTickCount64());
 	facts.declaredReachable = thePrefs::GetAdvertiseIPv6();
 	facts.ipv6Built = true;
 	facts.familyPermitted = AddressFamilyPolicy::PermitsIPv6();
@@ -1984,6 +1988,9 @@ std::optional<CNetworkAddress> AdvertisedIPv6ForPeers()
 		if (advertised) {
 			AddLogLineN(CFormat("Advertising our IPv6 address %s to peers") %
 				    advertised->ToWxString());
+		} else if (facts.contradicted) {
+			AddLogLineN("No longer advertising an IPv6 address to peers: they see us arriving "
+				    "from a prefix this host does not hold");
 		} else {
 			AddLogLineN("No longer advertising an IPv6 address to peers");
 		}

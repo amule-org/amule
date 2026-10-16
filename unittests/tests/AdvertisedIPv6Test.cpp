@@ -24,6 +24,7 @@
 
 #include <muleunit/test.h>
 #include "AdvertisedIPv6.h"
+#include "IPv6ChangeNotification.h"
 
 using namespace muleunit;
 
@@ -68,7 +69,6 @@ SAdvertisedIPv6Facts AdvertisableFacts()
 {
 	SAdvertisedIPv6Facts facts;
 	facts.choice = CNetworkAddress::IPv6FromOctets(Global(0x0a));
-	facts.prefixCorroborated = true;
 	facts.declaredReachable = true;
 	facts.ipv6Built = true;
 	facts.familyPermitted = true;
@@ -152,10 +152,10 @@ TEST(AdvertisedIPv6, NothingIsAdvertisedWithoutAChoice)
 	ASSERT_FALSE(DecideAdvertisedIPv6(facts).has_value());
 }
 
-TEST(AdvertisedIPv6, NothingIsAdvertisedUntilPeersCorroborateThePrefix)
+TEST(AdvertisedIPv6, NothingIsAdvertisedWhenPeersContradictThePrefix)
 {
 	SAdvertisedIPv6Facts facts = AdvertisableFacts();
-	facts.prefixCorroborated = false;
+	facts.contradicted = true;
 	ASSERT_FALSE(DecideAdvertisedIPv6(facts).has_value());
 }
 
@@ -198,10 +198,6 @@ TEST(AdvertisedIPv6, KadSourcesRepublishOnlyWhenTheirPublishedAddressBecomesWron
 {
 	const std::optional<CNetworkAddress> published = CNetworkAddress::IPv6FromOctets(Global(0x0a));
 
-	SAdvertisedIPv6Facts lapse = AdvertisableFacts();
-	lapse.prefixCorroborated = false;
-	ASSERT_FALSE(ShouldRepublishKadSources(published, lapse));
-
 	SAdvertisedIPv6Facts restored = AdvertisableFacts();
 	ASSERT_FALSE(ShouldRepublishKadSources(published, restored));
 
@@ -214,15 +210,27 @@ TEST(AdvertisedIPv6, KadSourcesRepublishOnlyWhenTheirPublishedAddressBecomesWron
 	ASSERT_TRUE(ShouldRepublishKadSources(published, disabled));
 }
 
-// An ISP prefix change: the new address has no votes yet, but the published one is gone.
-TEST(AdvertisedIPv6, KadSourcesRepublishWhenTheChoiceChangesBeforeItIsCorroborated)
+// Peers dial what Kad holds, so an address the outside world cannot reach has to leave it.
+TEST(AdvertisedIPv6, KadSourcesRepublishWhenAVetoWithdrawsTheAddress)
 {
 	const std::optional<CNetworkAddress> published = CNetworkAddress::IPv6FromOctets(Global(0x0a));
 
-	SAdvertisedIPv6Facts rotated = AdvertisableFacts();
-	rotated.choice = CNetworkAddress::IPv6FromOctets(Global(0x0b));
-	rotated.prefixCorroborated = false;
-	ASSERT_TRUE(ShouldRepublishKadSources(published, rotated));
+	SAdvertisedIPv6Facts vetoed = AdvertisableFacts();
+	vetoed.contradicted = true;
+	ASSERT_TRUE(ShouldRepublishKadSources(published, vetoed));
+}
+
+// OP_CHANGE_CLIENT_IP tells peers to dial a new address, so a veto must never send one, and the
+// same address returning after a veto lifts is nothing new to tell peers that already hold it.
+TEST(AdvertisedIPv6, AVetoSendsNoChangeNotification)
+{
+	const std::optional<CNetworkAddress> notified = DecideAdvertisedIPv6(AdvertisableFacts());
+	ASSERT_TRUE(notified.has_value());
+
+	SAdvertisedIPv6Facts vetoed = AdvertisableFacts();
+	vetoed.contradicted = true;
+	ASSERT_FALSE(ShouldMarkIPv6ChangeNotification(notified, DecideAdvertisedIPv6(vetoed)));
+	ASSERT_FALSE(ShouldMarkIPv6ChangeNotification(notified, DecideAdvertisedIPv6(AdvertisableFacts())));
 }
 
 TEST(AdvertisedIPv6, KadSourcesRepublishForTheFirstAdvertisement)
@@ -232,9 +240,9 @@ TEST(AdvertisedIPv6, KadSourcesRepublishForTheFirstAdvertisement)
 
 TEST(AdvertisedIPv6, NothingPublishedNeedsNoRepublish)
 {
-	SAdvertisedIPv6Facts lapse = AdvertisableFacts();
-	lapse.prefixCorroborated = false;
-	ASSERT_FALSE(ShouldRepublishKadSources(std::nullopt, lapse));
+	SAdvertisedIPv6Facts vetoed = AdvertisableFacts();
+	vetoed.contradicted = true;
+	ASSERT_FALSE(ShouldRepublishKadSources(std::nullopt, vetoed));
 
 	SAdvertisedIPv6Facts disabled = AdvertisableFacts();
 	disabled.declaredReachable = false;

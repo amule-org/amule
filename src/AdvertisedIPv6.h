@@ -71,7 +71,7 @@ inline std::optional<CNetworkAddress> ChooseAdvertisedIPv6(
 struct SAdvertisedIPv6Facts
 {
 	std::optional<CNetworkAddress> choice; // ChooseAdvertisedIPv6() at the last interface refresh
-	bool prefixCorroborated = false;       // Peers confirm the choice's /64
+	bool contradicted = false;             // Peers see us arrive from a /64 we do not hold
 	bool declaredReachable = false;        // The user says the ed2k TCP port accepts inbound IPv6
 	bool ipv6Built = false;
 	bool familyPermitted = false;
@@ -86,13 +86,16 @@ struct SAdvertisedIPv6Facts
  * connection with no IPv4 fallback, skips LowID callbacks, keeps it for the whole session and passes
  * it on in source exchange. An address a firewall drops would therefore cost connections we have
  * today, so it is advertised only when the user declares the port reachable, which nothing here can
- * test from outside, and peers confirm its /64, which they would not behind IPv6 NAT. A proxy
- * carries IPv4 only and advertising around it would leak our address; without an IPv6 listener there
- * is nothing to reach.
+ * test from outside. A proxy carries IPv4 only and advertising around it would leak our address;
+ * without an IPv6 listener there is nothing to reach.
+ *
+ * Peer corroboration is a veto, not a precondition. Requiring it first deadlocks: votes arrive only
+ * over IPv6 connections, which peers open only to an address we advertise. Behind IPv6 NAT, the case
+ * it guards against, peers report a /64 we do not hold, and that contradiction withdraws the address.
  */
 inline std::optional<CNetworkAddress> DecideAdvertisedIPv6(const SAdvertisedIPv6Facts &facts)
 {
-	const bool reachable = facts.prefixCorroborated && facts.declaredReachable;
+	const bool reachable = facts.declaredReachable && !facts.contradicted;
 	const bool permitted = facts.ipv6Built && facts.familyPermitted && !facts.proxyEnabled;
 	if (!facts.choice || !reachable || !permitted || !facts.listenerAcceptsIPv6) {
 		return std::nullopt;
@@ -103,25 +106,14 @@ inline std::optional<CNetworkAddress> DecideAdvertisedIPv6(const SAdvertisedIPv6
 /**
  * Whether Kad source records need a prompt republish after the IPv6 advertising state changes.
  *
- * Corroboration expiry is deliberately not enough: it makes new records omit @c ip6, but does not
- * make the address in existing records wrong. Republish only when a different address would be
- * published, or when an address already in Kad becomes invalid because the configuration or local
- * address changed.
+ * Every reason to stop advertising now makes the address in existing records wrong: the
+ * configuration or local address changed, or peers contradict it. So any change to what would be
+ * published, including withdrawing it, republishes.
  */
 inline bool ShouldRepublishKadSources(
 	const std::optional<CNetworkAddress> &lastPublished, const SAdvertisedIPv6Facts &facts)
 {
-	const std::optional<CNetworkAddress> advertised = DecideAdvertisedIPv6(facts);
-	if (advertised) {
-		return advertised != lastPublished;
-	}
-
-	const bool configurationStopped = !facts.choice || !facts.declaredReachable || !facts.ipv6Built ||
-					  !facts.familyPermitted || facts.proxyEnabled ||
-					  !facts.listenerAcceptsIPv6;
-	// A new prefix has no votes yet, so it is not advertised, but the published one is no longer
-	// ours.
-	return lastPublished.has_value() && (configurationStopped || facts.choice != lastPublished);
+	return DecideAdvertisedIPv6(facts) != lastPublished;
 }
 
 #ifdef ENABLE_IPV6

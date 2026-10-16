@@ -731,12 +731,13 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data)
 			// lets a single unverified peer decide what this client believes its own address to
 			// be. emule-qt ignores the integer form, and this follows emule-qt.
 			//
-			// Even the hash form is not believed on one peer's word. The tracker takes only an
-			// address this machine holds, so peers can never make us adopt a foreign one, and
+			// Even the hash form is not believed on one peer's word. The tracker adopts only an
+			// address this machine holds, so peers can never make us advertise a foreign one, and
 			// counts one vote per /48 of a peer that reached us over IPv6 from outside the
 			// claimed address's /48, keyed on where the packet came from rather than on a
 			// self-declared user hash. Votes for any of our addresses in one /64 add up, within a
-			// time window. Nothing consumes the result yet.
+			// time window. Claims for a /64 we do not hold are counted the same way as evidence
+			// that can veto advertising ours.
 			if (temptag.IsHash() && m_socket != nullptr) {
 				const std::uint8_t *claimed = temptag.GetHash().GetHash();
 				if (ObservedPublicIPv6().AddClaim(
