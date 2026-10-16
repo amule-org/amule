@@ -32,7 +32,6 @@
 
 #include <wx/thread.h>
 
-#include "UploadPacketBuilder.h"
 #include "Types.h"
 #include "FileArea.h"    // Needed for CFileArea
 #include <common/Path.h> // Needed for CPath
@@ -85,21 +84,6 @@ public:
 	void EndThread();                 // eMule ref: UploadDiskIOThread.cpp:77
 	void NewBlockRequestsAvailable(); // eMule ref: UploadDiskIOThread.h:55
 	void SocketNeedsMoreData();       // eMule ref: UploadDiskIOThread.h:56
-
-	// eMule ref: UploadDiskIOThread.h:72-73 -- static packet creation helpers
-	// uploadDatarate (bytes/s) scales per-packet chunk size (10 KiB floor, EMBLOCKSIZE ceiling).
-	static void CreateStandardPackets(const uint8_t *buffer,
-		uint64 startOffset,
-		uint64 endOffset,
-		CPacketList &packetList,
-		const uint8_t *fileHash,
-		uint32 uploadDatarate = 0);
-	static void CreatePackedPackets(const uint8_t *buffer,
-		uint64 startOffset,
-		uint64 endOffset,
-		CPacketList &packetList,
-		const uint8_t *fileHash,
-		uint32 uploadDatarate = 0);
 
 private:
 	void *Entry() override; // replaces RunProc/RunInternal

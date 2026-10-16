@@ -44,6 +44,7 @@ namespace UploadPacketBuilder
 using OverheadRecorder = void (*)(uint32);
 
 // Append owning packets, report per-packet overhead, and return the overhead byte total.
+// uploadDatarate (bytes/s) scales per-packet chunk size (10 KiB floor, EMBLOCKSIZE ceiling).
 uint32 Standard(const uint8_t *buffer,
 	uint64 startOffset,
 	uint64 endOffset,

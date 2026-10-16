@@ -39,6 +39,7 @@
 #include "UploadBandwidthThrottler.h"
 #include "UploadBlockLists.h" // Needed for PushDoneBlock
 #include "Statistics.h"       // Needed for theStats
+#include "UploadPacketBuilder.h"
 
 #include <vector>
 
@@ -468,19 +469,21 @@ void CUploadDiskIOThread::ReadCompletionRoutine(ReadRequest_Struct *req)
 				CPacketList packetList;
 				uint32 data_rate = client->GetUploadDatarate();
 				if (bUseCompression) {
-					CreatePackedPackets(req->area.GetBuffer(),
+					UploadPacketBuilder::Packed(req->area.GetBuffer(),
 						req->uStartOffset,
 						req->uEndOffset,
 						packetList,
 						req->pFileStruct->ucMD4FileHash,
-						data_rate);
+						data_rate,
+						&theStats::AddUpOverheadFileRequest);
 				} else {
-					CreateStandardPackets(req->area.GetBuffer(),
+					UploadPacketBuilder::Standard(req->area.GetBuffer(),
 						req->uStartOffset,
 						req->uEndOffset,
 						packetList,
 						req->pFileStruct->ucMD4FileHash,
-						data_rate);
+						data_rate,
+						&theStats::AddUpOverheadFileRequest);
 				}
 
 				for (CPacketList::iterator it = packetList.begin(); it != packetList.end();
@@ -518,35 +521,4 @@ bool CUploadDiskIOThread::ReleaseOpenFile(OpenFile_Struct *pFileStruct)
 	return false;
 }
 
-void CUploadDiskIOThread::CreateStandardPackets(const uint8_t *buffer,
-	uint64 startOffset,
-	uint64 endOffset,
-	CPacketList &packetList,
-	const uint8_t *fileHash,
-	uint32 uploadDatarate)
-{
-	UploadPacketBuilder::Standard(buffer,
-		startOffset,
-		endOffset,
-		packetList,
-		fileHash,
-		uploadDatarate,
-		&theStats::AddUpOverheadFileRequest);
-}
-
-void CUploadDiskIOThread::CreatePackedPackets(const uint8_t *buffer,
-	uint64 startOffset,
-	uint64 endOffset,
-	CPacketList &packetList,
-	const uint8_t *fileHash,
-	uint32 uploadDatarate)
-{
-	UploadPacketBuilder::Packed(buffer,
-		startOffset,
-		endOffset,
-		packetList,
-		fileHash,
-		uploadDatarate,
-		&theStats::AddUpOverheadFileRequest);
-}
 // File_checked_for_headers
