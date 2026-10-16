@@ -374,7 +374,17 @@ private:
 	void CreatePartFile(bool isImporting = false);
 	void Init();
 
+	//! Probes the file's directory: blocks on a busy or hung mount. Off the main thread, or at
+	//! startup and shutdown.
 	bool CheckFreeDiskSpace(uint64 neededSpace = 0);
+	//! The same rule from CFreeSpaceThread's sample; false without a recent one taken since the
+	//! file was paused for space.
+	bool CachedFreeSpaceAllows() const;
+	//! Puts the writes the write thread refused for lack of space back in the buffer. True if
+	//! there were any.
+	bool PutBackRefusedWrites();
+	//! Logs the warning and pauses the file as insufficient.
+	void PauseForSpace();
 
 	bool IsCorruptedPart(uint16 partnumber);
 
@@ -398,6 +408,8 @@ private:
 	bool m_paused;
 	bool m_stopped;
 	bool m_insufficient;
+	//! When the file was last paused for lack of space (GetTickCount64).
+	uint64 m_insufficientSince = 0;
 	uint8 m_iDownPriority;
 	bool m_bAutoDownPriority;
 	uint8 status;

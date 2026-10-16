@@ -1183,6 +1183,28 @@ target_link_libraries (FileDataIOTest
 	muleunit
 )
 
+add_executable (FreeSpaceSamplesTest
+	FreeSpaceSamplesTest.cpp
+	${CMAKE_SOURCE_DIR}/src/FreeSpaceSamples.cpp
+	${CMAKE_SOURCE_DIR}/src/libs/common/Path.cpp
+	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
+	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
+)
+
+add_test (NAME FreeSpaceSamplesTest
+	COMMAND FreeSpaceSamplesTest
+)
+
+target_include_directories (FreeSpaceSamplesTest
+	PRIVATE ${CMAKE_BINARY_DIR}
+	PRIVATE ${CMAKE_SOURCE_DIR}/src
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
+)
+
+target_link_libraries (FreeSpaceSamplesTest
+	muleunit
+)
+
 add_executable (PartMetWriterTest
 	PartMetWriterTest.cpp
 	${CMAKE_SOURCE_DIR}/src/PartMetWriter.cpp

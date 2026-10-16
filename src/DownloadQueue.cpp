@@ -27,6 +27,7 @@
 #include "DiskSpaceResumeBudget.h"
 
 #include <protocol/Protocols.h>
+#include <algorithm> // Needed for std::find
 #include <protocol/kad/Constants.h>
 #include <common/Macros.h>
 #include <common/MenuIDs.h>
@@ -49,7 +50,8 @@
 #include "amule.h"          // Needed for theApp
 #include "AsyncDNS.h"       // Needed for CAsyncDNS
 #include "DownloadBandwidthThrottler.h"
-#include "Statistics.h" // Needed for theStats
+#include "Statistics.h"      // Needed for theStats
+#include "FreeSpaceThread.h" // Needed for CFreeSpaceThread
 #include "Logger.h"
 #include <common/Format.h> // Needed for CFormat
 #include "IPFilter.h"
@@ -170,9 +172,25 @@ void CDownloadQueue::LoadMetFiles(const CPath &path, const LoadProgressCb &progr
 			    GetFileCount());
 
 		DoSortByPriority();
-		CheckDiskspace(path);
+		CheckDiskspace(path, true);
 		Notify_ShowUpdateCatTabTitles();
 	}
+}
+
+std::vector<CPath> CDownloadQueue::GetPartFileDirs() const
+{
+	wxMutexLocker lock(m_mutex);
+	std::vector<CPath> dirs;
+	// Compared as spelled, as CFreeSpaceSamples keys them: CPath's == normalizes, and on
+	// Windows that queries the filesystem.
+	for (const CPartFile *file : m_filelist) {
+		const wxString &raw = file->GetFilePath().GetRaw();
+		if (std::none_of(
+			    dirs.begin(), dirs.end(), [&raw](const CPath &d) { return d.GetRaw() == raw; })) {
+			dirs.push_back(file->GetFilePath());
+		}
+	}
+	return dirs;
 }
 
 uint16 CDownloadQueue::GetFileCount() const
@@ -582,7 +600,7 @@ void CDownloadQueue::Process()
 			DoSortByPriority();
 		}
 
-		CheckDiskspace(thePrefs::GetTempDir());
+		CheckDiskspace(thePrefs::GetTempDir(), false);
 	}
 
 	// Check for new links once per second.
@@ -1277,7 +1295,7 @@ uint16 CDownloadQueue::GetPausedFileCount() const
 	return count;
 }
 
-void CDownloadQueue::CheckDiskspace(const CPath &path)
+void CDownloadQueue::CheckDiskspace(const CPath &path, bool probe)
 {
 	const uint64 curTick = ::GetTickCount64();
 	if (curTick - m_lastDiskCheck < DISKSPACERECHECKTIME) {
@@ -1297,10 +1315,18 @@ void CDownloadQueue::CheckDiskspace(const CPath &path)
 		min = PARTSIZE;
 	}
 
-	uint64 free = CPath::GetFreeSpaceAt(path);
-	if (free == static_cast<uint64>(wxInvalidOffset)) {
+	// Probed at startup, before EC listens. While running, the free-space thread's sample: a
+	// probe here would block the main thread on a busy or hung mount. None (failed, or stuck on
+	// the mount): decide nothing this round.
+	const sint64 sampled =
+		probe ? CPath::GetFreeSpaceAt(path)
+		      : (theApp->freeSpaceThread ? theApp->freeSpaceThread->SampledFreeSpace(path)
+						 : FREE_SPACE_UNKNOWN);
+	if (sampled < 0) {
 		return;
-	} else if (free < min) {
+	}
+	const uint64 free = static_cast<uint64>(sampled);
+	if (free < min) {
 		const wxString partition = path.GetRaw();
 		CUserEvents::ProcessEvent(CUserEvents::OutOfDiskSpace, partition.wx_str());
 	}

@@ -26,6 +26,8 @@
 
 #include <wx/filefn.h> // Needed for wxInvalidOffset
 
+#include <algorithm> // Needed for std::find
+
 #include "GetTickCount.h" // Needed for GetTickCount64()
 #include "Logger.h"       // Needed for AddDebugLogLineN
 #include "Statistics.h"   // Needed for FREE_SPACE_UNKNOWN and the publishers
@@ -42,6 +44,9 @@ const uint64 kSampleIntervalMs = 10000;
 //! How often the worker wakes to check whether a sample is due. Shorter
 //! than the interval so shutdown doesn't wait out a sleeping thread.
 const int kTickMs = 1000;
+
+//! A sample older than this means the probe is stuck on the mount: decisions then wait.
+const uint64 kMaxSampleAgeMs = 3 * kSampleIntervalMs;
 } // namespace
 
 CFreeSpaceThread::CFreeSpaceThread()
@@ -69,11 +74,37 @@ void CFreeSpaceThread::EndThread()
 	Wait();
 }
 
-void CFreeSpaceThread::SetPaths(const CPath &tempDir, const CPath &incomingDir)
+void CFreeSpaceThread::SetPaths(
+	const CPath &tempDir, const CPath &incomingDir, const std::vector<CPath> &partFileDirs)
 {
+	// Compared as spelled, as CFreeSpaceSamples keys them: CPath's == normalizes, and on
+	// Windows that queries the filesystem.
+	const auto same = [](const CPath &a, const CPath &b) { return a.GetRaw() == b.GetRaw(); };
+	std::vector<CPath> others;
+	for (const CPath &dir : partFileDirs) {
+		if (!same(dir, tempDir) && std::none_of(others.begin(), others.end(), [&](const CPath &o) {
+			    return same(o, dir);
+		    })) {
+			others.push_back(dir);
+		}
+	}
 	wxMutexLocker lock(m_mutex);
+	if (!same(tempDir, m_tempDir) ||
+		!std::equal(
+			others.begin(), others.end(), m_partFileDirs.begin(), m_partFileDirs.end(), same)) {
+		m_pathsChanged = true;
+		std::vector<CPath> kept(others);
+		kept.push_back(tempDir);
+		m_samples.Retain(kept);
+	}
 	m_tempDir = tempDir;
 	m_incomingDir = incomingDir;
+	m_partFileDirs = std::move(others);
+}
+
+sint64 CFreeSpaceThread::SampledFreeSpace(const CPath &dir, uint64 notBefore) const
+{
+	return m_samples.Get(dir, GetTickCount64(), kMaxSampleAgeMs, notBefore);
 }
 
 sint64 CFreeSpaceThread::Sample(const CPath &path)
@@ -101,6 +132,8 @@ void *CFreeSpaceThread::Entry()
 	while (m_bRun) {
 		CPath tempDir;
 		CPath incomingDir;
+		std::vector<CPath> partFileDirs;
+		bool pathsChanged;
 		{
 			wxMutexLocker lock(m_mutex);
 			if (m_bRun) {
@@ -111,14 +144,26 @@ void *CFreeSpaceThread::Entry()
 			}
 			tempDir = m_tempDir;
 			incomingDir = m_incomingDir;
+			partFileDirs = m_partFileDirs;
+			pathsChanged = m_pathsChanged;
+			m_pathsChanged = false;
 		}
 
 		// Timed separately so a slow incoming directory cannot hold temp back, and probed
 		// outside the lock so SetPaths() never waits on a filesystem.
 		const uint64 now = GetTickCount64();
-		if (lastTemp == 0 || now - lastTemp >= kSampleIntervalMs) {
+		if (lastTemp == 0 || pathsChanged || now - lastTemp >= kSampleIntervalMs) {
 			lastTemp = now;
-			CStatistics::PublishTempFreeSpace(Sample(tempDir));
+			const sint64 tempFree = Sample(tempDir);
+			CStatistics::PublishTempFreeSpace(tempFree);
+			m_samples.Publish(tempDir, tempFree, now);
+			for (const CPath &dir : partFileDirs) {
+				if (!m_bRun) {
+					break;
+				}
+				const uint64 started = GetTickCount64();
+				m_samples.Publish(dir, Sample(dir), started);
+			}
 		}
 		if (m_bRun && (lastIncoming == 0 || GetTickCount64() - lastIncoming >= kSampleIntervalMs)) {
 			lastIncoming = GetTickCount64();

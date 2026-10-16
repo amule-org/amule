@@ -33,6 +33,7 @@
 #include <atomic> // Needed for std::atomic (m_listGeneration)
 #include <deque>
 #include <functional> // Needed for std::function (LoadProgressCb)
+#include <vector>     // Needed for std::vector (GetPartFileDirs)
 
 class CSharedFileList;
 class CSearchFile;
@@ -146,6 +147,8 @@ public:
 
 	/// Current number of queued files.
 	uint16 GetFileCount() const;
+	//! The directories holding the part files, each once.
+	std::vector<CPath> GetPartFileDirs() const;
 
 	/**
 	 * Changes whenever a file enters or leaves the list(s) this snapshots.
@@ -234,7 +237,8 @@ private:
 	void DoSortByPriority();
 
 	/** Checks that there is enough free spaces for temp-files at that specified path. */
-	void CheckDiskspace(const CPath &path);
+	//! @a probe: query the disk (startup only), else use CFreeSpaceThread's sample.
+	void CheckDiskspace(const CPath &path, bool probe);
 
 	/// Stops performing UDP requests.
 	void DoStopUDPRequests();

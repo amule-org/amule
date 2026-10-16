@@ -69,6 +69,8 @@
 #include "SearchList.h"       // Needed for CSearchFile
 #include "ClientList.h"       // Needed for clientlist
 #include "Statistics.h"       // Needed for theStats
+#include "FreeSpaceSamples.h" // Needed for FreeSpaceAllows
+#include "FreeSpaceThread.h"  // Needed for CFreeSpaceThread
 #include "Logger.h"
 #include <common/Format.h>        // Needed for CFormat
 #include <common/FileFunctions.h> // Needed for GetLastModificationTime
@@ -2858,6 +2860,9 @@ void CPartFile::PauseFile(bool bInsufficient)
 	}
 
 	m_insufficient = bInsufficient;
+	if (bInsufficient) {
+		m_insufficientSince = GetTickCount64();
+	}
 	if (!m_paused) {
 		MarkMetDirty();
 		// EC exports IsStopped() / GetStatus(); see StopFile comment.
@@ -2877,10 +2882,12 @@ void CPartFile::ResumeFile()
 		return;
 	}
 
-	if (m_insufficient && !CheckFreeDiskSpace()) {
+	if (m_insufficient && !CachedFreeSpaceAllows()) {
 		// Still not enough free discspace
 		return;
 	}
+	// Written as soon as it resumes; the write thread checks the space again.
+	PutBackRefusedWrites();
 
 	if (m_paused) {
 		MarkMetDirty();
@@ -2906,29 +2913,38 @@ void CPartFile::ResumeFile()
 
 bool CPartFile::CheckFreeDiskSpace(uint64 neededSpace)
 {
-	uint64 free = CPath::GetFreeSpaceAt(GetFilePath());
-	if (free == static_cast<uint64>(wxInvalidOffset)) {
-		// If GetFreeSpaceAt() fails, then the path probably does not exist.
-		return false;
+	// A failed probe (wxInvalidOffset): the path probably does not exist.
+	return FreeSpaceAllows(CPath::GetFreeSpaceAt(GetFilePath()),
+		neededSpace,
+		thePrefs::IsCheckDiskspaceEnabled(),
+		thePrefs::GetMinFreeDiskSpace());
+}
+
+bool CPartFile::CachedFreeSpaceAllows() const
+{
+	// Only a sample taken since the pause: an older one can predate what filled the disk.
+	const sint64 free = theApp->freeSpaceThread ? theApp->freeSpaceThread->SampledFreeSpace(
+							      GetFilePath(), m_insufficientSince)
+						    : FREE_SPACE_UNKNOWN;
+	return FreeSpaceAllows(free, 0, thePrefs::IsCheckDiskspaceEnabled(), thePrefs::GetMinFreeDiskSpace());
+}
+
+void CPartFile::PauseForSpace()
+{
+	AddLogLineC(CFormat(_("WARNING: Not enough free disk-space! Pausing file: %s")) % GetFileName());
+	PauseFile(true);
+}
+
+bool CPartFile::PutBackRefusedWrites()
+{
+	bool refused = false;
+	for (PartFileBufferedData *item : m_BufferedData_list) {
+		if (item->flushed == PB_NOSPACE) {
+			item->flushed = PB_READY;
+			refused = true;
+		}
 	}
-
-	// The very least acceptable diskspace is a single PART
-	if (free < PARTSIZE) {
-		// Always fail in this case, since we risk losing data if we try to
-		// write on a full partition.
-		return false;
-	}
-
-	// All other checks are only made if the user has enabled them
-	if (thePrefs::IsCheckDiskspaceEnabled()) {
-		neededSpace += thePrefs::GetMinFreeDiskSpace();
-
-		// Sparse files mean a write within the file can still allocate new blocks,
-		// so the only safe rule is to stop writing the moment the limit is exceeded.
-		return free >= neededSpace;
-	}
-
-	return true;
+	return refused;
 }
 
 void CPartFile::SetLastAnsweredTime()
@@ -3444,22 +3460,20 @@ void CPartFile::FlushBuffer(bool fromAICHRecoveryDataAvailable)
 	// No empty-buffer early-return: Phase 3 below still needs to run when m_aChangedPart has
 	// dirty entries left from earlier writes (e.g. paused/idle download). Phase 1+2 are
 	// no-ops on an empty list.
-	if (!m_BufferedData_list.empty()) {
-		// Ensure file is big enough to write data to (the last item will be the furthest from the
-		// start)
-		if (!CheckFreeDiskSpace(m_nTotalBufferData)) {
-			// Not enough free space to write the last item, bail
-			AddLogLineC(CFormat(_("WARNING: Not enough free disk-space! Pausing file: %s")) %
-				    GetFileName());
-
-			PauseFile(true);
-			return;
-		}
+	//
+	// The free-space check: the write thread makes it, probing live, and refuses what does not
+	// fit (PB_NOSPACE). Probing here would block the main thread on a busy or hung mount, as
+	// ntfs-3g does during a trim. Without the write thread (shutdown), check here as before.
+	CPartFileWriteThread *pThread = theApp->partFileWriteThread;
+	const bool threaded = pThread && pThread->IsRunning();
+	const bool refused = PutBackRefusedWrites();
+	if (!m_BufferedData_list.empty() && (threaded ? refused : !CheckFreeDiskSpace(m_nTotalBufferData))) {
+		PauseForSpace();
+		return;
 	}
 
 	// eMule ref: PartFile.cpp:4102-4127 -- Phase 1: queue PB_READY items to the write thread
-	CPartFileWriteThread *pThread = theApp->partFileWriteThread;
-	if (pThread && pThread->IsRunning()) {
+	if (threaded) {
 		for (std::list<PartFileBufferedData *>::iterator it = m_BufferedData_list.begin();
 			it != m_BufferedData_list.end();
 			++it) {
@@ -3467,12 +3481,18 @@ void CPartFile::FlushBuffer(bool fromAICHRecoveryDataAvailable)
 			if (item->flushed == PB_READY) {
 				item->flushed = PB_PENDING;
 				++m_iWrites;
-				pThread->QueueWrite(this, item);
+				pThread->QueueWrite(this,
+					item,
+					GetFilePath(),
+					thePrefs::IsCheckDiskspaceEnabled(),
+					thePrefs::GetMinFreeDiskSpace());
 			}
 		}
 	}
 
 	// eMule ref: PartFile.cpp:4129-4145 -- Phase 2: harvest completed writes
+	bool refusedNow = false;
+	bool failed = false;
 	for (std::list<PartFileBufferedData *>::iterator it = m_BufferedData_list.begin();
 		it != m_BufferedData_list.end();) {
 		PartFileBufferedData *item = *it;
@@ -3515,8 +3535,16 @@ void CPartFile::FlushBuffer(bool fromAICHRecoveryDataAvailable)
 			++it;
 			continue;
 
+		case PB_NOSPACE:
+			// Refused for lack of space since this pass began.
+			item->flushed = PB_READY;
+			refusedNow = true;
+			++it;
+			continue;
+
 		case PB_ERROR:
 			// Write thread reported error -- retry next time
+			failed = true;
 			item->flushed = PB_READY;
 			AddDebugLogLineC(logPartFile, "Write thread reported error, will retry");
 			++it;
@@ -3539,6 +3567,16 @@ void CPartFile::FlushBuffer(bool fromAICHRecoveryDataAvailable)
 			}
 			continue;
 		}
+	}
+
+	// Writes that did not land: WriteToBuffer marked their ranges filled when it queued them,
+	// so Phase 3 would hash parts missing them and the .met save would record them as written.
+	if (refusedNow) {
+		PauseForSpace();
+		return;
+	}
+	if (failed) {
+		return;
 	}
 
 	try {

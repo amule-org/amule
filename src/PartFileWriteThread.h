@@ -29,6 +29,8 @@
 #include <list>
 #include <atomic>
 
+#include <common/Path.h> // Needed for CPath
+
 #include <wx/thread.h>
 
 class CPartFile;
@@ -41,12 +43,19 @@ class PartFileBufferedData;
 #define PB_PENDING 1
 #define PB_ERROR 2
 #define PB_WRITTEN 3
+// Not written: too little free space. The main thread puts it back and pauses the file.
+#define PB_NOSPACE 4
 
 // eMule ref: PartFileWriteThread.h:21-25
 struct ToWrite
 {
 	CPartFile *pFile;
 	PartFileBufferedData *pBuffer;
+	//! For the free-space check, taken on the main thread when queued: the part file's
+	//! directory and the user's limit, if it is on.
+	CPath dir;
+	bool checkSpace;
+	uint64 minFree;
 };
 
 // Port of eMule's CPartFileWriteThread (PartFileWriteThread.h:35-67). Windows primitives
@@ -63,7 +72,11 @@ public:
 	~CPartFileWriteThread();
 
 	void EndThread(); // eMule ref: PartFileWriteThread.cpp:62
-	void QueueWrite(CPartFile *pFile, PartFileBufferedData *pBuffer);
+	void QueueWrite(CPartFile *pFile,
+		PartFileBufferedData *pBuffer,
+		const CPath &dir,
+		bool checkSpace,
+		uint64 minFree);
 	bool IsRunning() const { return m_bRun; }
 
 	// Pointer-value strip of any pending writes whose pFile == `file`. Called by

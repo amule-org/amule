@@ -57,6 +57,7 @@ if (BUILD_MONOLITHIC OR BUILD_DAEMON)
 		PartMetWriter.cpp
 		MediaProbeThread.cpp
 		FreeSpaceThread.cpp
+		FreeSpaceSamples.cpp
 		ThreadTasks.cpp
 	)
 

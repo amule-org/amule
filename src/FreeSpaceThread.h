@@ -28,8 +28,11 @@
 #include <atomic>
 #include <wx/thread.h>
 
-#include "Types.h"       // Needed for uint64 / sint64
-#include <common/Path.h> // Needed for CPath (value members)
+#include "FreeSpaceSamples.h" // Needed for CFreeSpaceSamples
+#include "Types.h"            // Needed for uint64 / sint64
+#include <common/Path.h>      // Needed for CPath (value members)
+
+#include <vector>
 
 /**
  * Dedicated worker sampling the free space on the temp and incoming directories, published through
@@ -70,7 +73,15 @@ public:
 	 * and no worker in the tree touches preferences directly. Cheap enough to call on every
 	 * core tick, which is what keeps the snapshot current.
 	 */
-	void SetPaths(const CPath &tempDir, const CPath &incomingDir);
+	void SetPaths(const CPath &tempDir, const CPath &incomingDir, const std::vector<CPath> &partFileDirs);
+
+	/**
+	 * Free space at @a dir, temp or a part file's directory, from the latest sample: -1 if
+	 * there is none yet, the probe failed, or it has been stuck on the mount for a while. For
+	 * the main thread's decisions, which must not probe a mount themselves. With @a notBefore,
+	 * only a sample whose probe started at or after that tick.
+	 */
+	sint64 SampledFreeSpace(const CPath &dir, uint64 notBefore = 0) const;
 
 	bool IsRunning() const { return m_bRun; }
 
@@ -89,6 +100,13 @@ private:
 	// worker. Both protected by m_mutex.
 	CPath m_tempDir;
 	CPath m_incomingDir;
+	//! Directories holding part files, other than temp: after TempDir changes, the older
+	//! downloads stay where they were until a restart.
+	std::vector<CPath> m_partFileDirs;
+	//! Set when the directories change, so new ones are sampled at once.
+	bool m_pathsChanged = false;
+
+	CFreeSpaceSamples m_samples;
 };
 
 #endif // FREESPACETHREAD_H

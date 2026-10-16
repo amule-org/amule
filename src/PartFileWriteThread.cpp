@@ -25,10 +25,49 @@
 
 #include "PartFileWriteThread.h"
 
+#include "FreeSpaceSamples.h" // Needed for FreeSpaceAllows
+
 #include "PartFile.h" // Needed for CPartFile, PartFileBufferedData
 #include "CFile.h"    // Needed for CIOFailureException
 #include "Logger.h"
 #include <common/Format.h> // Needed for CFormat
+
+#include <map>
+#include <set>
+
+namespace
+{
+// The free-space check FlushBuffer made on the main thread, where a probe on a busy or hung mount
+// blocked it: one live probe per directory per batch, less what the batch writes there. Returns
+// the files that do not fit.
+std::set<const CPartFile *> FilesWithoutSpace(const std::list<ToWrite> &batch)
+{
+	std::map<const CPartFile *, uint64> bytes;
+	for (const ToWrite &w : batch) {
+		bytes[w.pFile] += w.pBuffer->end - w.pBuffer->start + 1;
+	}
+
+	std::map<wxString, sint64> freeByDir;
+	std::set<const CPartFile *> noSpace;
+	for (const ToWrite &w : batch) {
+		auto file = bytes.find(w.pFile);
+		if (file == bytes.end()) {
+			continue; // already decided
+		}
+		auto dir = freeByDir.find(w.dir.GetRaw());
+		if (dir == freeByDir.end()) {
+			dir = freeByDir.emplace(w.dir.GetRaw(), CPath::GetFreeSpaceAt(w.dir)).first;
+		}
+		if (FreeSpaceAllows(dir->second, file->second, w.checkSpace, w.minFree)) {
+			dir->second -= static_cast<sint64>(file->second);
+		} else {
+			noSpace.insert(w.pFile);
+		}
+		bytes.erase(file);
+	}
+	return noSpace;
+}
+} // namespace
 
 // eMule ref: CPartFileWriteThread::CPartFileWriteThread()
 CPartFileWriteThread::CPartFileWriteThread()
@@ -63,10 +102,11 @@ void CPartFileWriteThread::EndThread()
 
 // Called by the main thread to queue a write item.
 // eMule ref: CPartFileWriteThread::WakeUpCall()
-void CPartFileWriteThread::QueueWrite(CPartFile *pFile, PartFileBufferedData *pBuffer)
+void CPartFileWriteThread::QueueWrite(
+	CPartFile *pFile, PartFileBufferedData *pBuffer, const CPath &dir, bool checkSpace, uint64 minFree)
 {
 	wxMutexLocker lock(m_mutex);
-	m_flushList.push_back(ToWrite{ pFile, pBuffer });
+	m_flushList.push_back(ToWrite{ pFile, pBuffer, dir, checkSpace, minFree });
 	m_bWorkPending = true;
 	m_condition.Signal();
 }
@@ -119,6 +159,8 @@ void *CPartFileWriteThread::Entry()
 			keepRunning = m_bRun;
 		}
 
+		const std::set<const CPartFile *> noSpace = FilesWithoutSpace(workList);
+
 		// Process all queued writes synchronously. No m_bRun check in the loop condition: a
 		// batch, once taken, is always written in full so a shutdown never abandons it
 		// half-drained.
@@ -126,6 +168,12 @@ void *CPartFileWriteThread::Entry()
 		for (std::list<ToWrite>::iterator it = workList.begin(); it != workList.end(); ++it) {
 			PartFileBufferedData *pBuffer = it->pBuffer;
 			uint32 lenData = (uint32)(pBuffer->end - pBuffer->start + 1);
+
+			if (noSpace.count(it->pFile) != 0) {
+				--it->pFile->m_iWrites;
+				pBuffer->flushed = PB_NOSPACE;
+				continue;
+			}
 
 			// Synchronous write via CFileArea::FlushAt(), which writes the buffered
 			// data at the given offset.
@@ -159,8 +207,8 @@ void *CPartFileWriteThread::Entry()
 
 			// Mark the buffer written or errored so the main thread can harvest it.
 			// PB_ERROR is handled in FlushBuffer Phase 2, which resets it to PB_READY
-			// for retry -- and if the disk is genuinely full, CheckFreeDiskSpace pauses
-			// the file before the retry loops.
+			// for retry -- and if the disk is genuinely full, the free-space check above
+			// refuses the next batch and the file is paused.
 			pBuffer->flushed = writeOk ? PB_WRITTEN : PB_ERROR;
 		}
 

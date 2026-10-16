@@ -1060,7 +1060,7 @@ bool CamuleApp::OnInit()
 	// paths straight away so the panels have a figure without waiting for the first core
 	// tick.
 	freeSpaceThread = new CFreeSpaceThread();
-	freeSpaceThread->SetPaths(thePrefs::GetTempDir(), thePrefs::GetIncomingDir());
+	freeSpaceThread->SetPaths(thePrefs::GetTempDir(), thePrefs::GetIncomingDir(), {});
 
 	m_AsioService = new CAsioService;
 
@@ -2453,7 +2453,9 @@ void CamuleApp::OnCoreTimer(CTimerEvent &WXUNUSED(evt))
 		// the tree does, and a wxString read concurrently with an assignment is a race
 		// whatever the value.
 		if (freeSpaceThread) {
-			freeSpaceThread->SetPaths(thePrefs::GetTempDir(), thePrefs::GetIncomingDir());
+			freeSpaceThread->SetPaths(thePrefs::GetTempDir(),
+				thePrefs::GetIncomingDir(),
+				downloadqueue->GetPartFileDirs());
 		}
 		clientcredits->Process();
 		clientlist->Process();
