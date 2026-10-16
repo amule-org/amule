@@ -210,3 +210,47 @@ TEST(ContactDialPolicy, PeerIPv6PromotionDoesNotReplaceNativeIPv6OrRetryAFailedA
 			    CNetworkAddress::FromString("192.0.2.1"), peer, peer, true, local, false) ==
 		    CNetworkAddress::FromString("192.0.2.1"));
 }
+
+// A LowID peer is waited on for a callback unless it can be dialled now. The question has to be
+// asked of the target the contact will really dial: for a LowID known by IPv4 that advertised an
+// IPv6, that is the advertised IPv6, which needs no callback.
+TEST(ContactDialPolicy, ALowIDPeerWithAPromotedIPv6IsDialableWithoutCallback)
+{
+	SContactFacts facts = DialableIPv6();
+	facts.contactAddress = PeerIPv6();
+
+	ASSERT_TRUE(IsDialableWithoutCallback(facts, CNetworkAddress::Absent()));
+}
+
+// Once the advertised IPv6 went unanswered the dial target is the IPv4 identity again, and a LowID
+// at an IPv4 address can only be reached by callback.
+TEST(ContactDialPolicy, AnIPv4OrUnansweredTargetNeedsACallback)
+{
+	SContactFacts unanswered = DialableIPv6();
+	unanswered.contactAddress = PeerIPv6();
+	ASSERT_FALSE(IsDialableWithoutCallback(unanswered, PeerIPv6()));
+
+	SContactFacts ipv4 = DialableIPv6();
+	ipv4.contactAddress = PeerIPv4();
+	ASSERT_FALSE(IsDialableWithoutCallback(ipv4, CNetworkAddress::Absent()));
+
+	SContactFacts absent = DialableIPv6();
+	absent.contactAddress = CNetworkAddress::Absent();
+	ASSERT_FALSE(IsDialableWithoutCallback(absent, CNetworkAddress::Absent()));
+}
+
+// Every reason a native IPv6 dial is refused also means waiting for a callback instead.
+TEST(ContactDialPolicy, ARefusedIPv6DialNeedsACallback)
+{
+	SContactFacts proxied = DialableIPv6();
+	proxied.proxyEnabled = true;
+	ASSERT_FALSE(IsDialableWithoutCallback(proxied, CNetworkAddress::Absent()));
+
+	SContactFacts notPermitted = DialableIPv6();
+	notPermitted.familyPermitted = false;
+	ASSERT_FALSE(IsDialableWithoutCallback(notPermitted, CNetworkAddress::Absent()));
+
+	SContactFacts notBuilt = DialableIPv6();
+	notBuilt.ipv6Built = false;
+	ASSERT_FALSE(IsDialableWithoutCallback(notBuilt, CNetworkAddress::Absent()));
+}

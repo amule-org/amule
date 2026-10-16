@@ -134,7 +134,7 @@ void CUploadQueue::SortGetBestClient(CClientRef *bestClient)
 				cur_client->m_bAddNextConnect = true;
 			} else {
 				// We found a high id client (or a currently connected low id client, or a
-				// native IPv6 contact whose address has not failed a callback dial)
+				// client dialled at a native or advertised IPv6 that has not gone unanswered)
 				bestClientFound = true;
 				cur_client->m_bAddNextConnect = false;
 				if (bestClient) {

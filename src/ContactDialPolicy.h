@@ -119,4 +119,16 @@ inline EContactRoute DecideContactRoute(const SContactFacts &facts)
 	return EContactRoute::Refuse;
 }
 
+/**
+ * Whether a peer that would otherwise be waited on for a callback can be dialled now. @a dialFacts
+ * must describe the target the contact will really dial, not the IPv4 identity a greeted LowID is
+ * checked at: for a LowID that advertised an IPv6, that target is the advertised IPv6. A target
+ * that went unanswered is not dialled again, so the peer falls back to the callback.
+ */
+inline bool IsDialableWithoutCallback(const SContactFacts &dialFacts, const CNetworkAddress &unansweredIPv6)
+{
+	return DecideContactRoute(dialFacts) == EContactRoute::DialIPv6 &&
+	       dialFacts.contactAddress != unansweredIPv6;
+}
+
 #endif // CONTACT_DIAL_POLICY_H

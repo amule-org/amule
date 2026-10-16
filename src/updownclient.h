@@ -56,6 +56,7 @@ class CKnownFile;
 class CMemFile;
 class CAICHHash;
 enum class EContactRoute;
+struct SContactFacts;
 
 enum EChatCaptchaState
 {
@@ -310,13 +311,14 @@ public:
 	//! Whether a socket whose stream died may be dialled again over TCP: every refusal
 	//! CheckContactPreconditions() makes, asked without acting on the answer.
 	bool IsRedialAllowed() const;
-	//! Whether this client is callable by dialling its native IPv6 address, unless that address
-	//! already failed to answer a callback dial.
+	//! Whether this client is callable by dialling an IPv6 address -- its native one, or the one it
+	//! advertised -- unless that address already failed to answer a dial.
 	bool IsCallableIPv6Contact() const;
 
 private:
 	//! How this client is reached: Refuse exactly where CheckContactPreconditions() declines it.
 	EContactRoute ContactRoute() const;
+	SContactFacts ContactFactsFor(const CNetworkAddress &address) const;
 
 public:
 	void ProcessSharedFileList(const uint8_t *pachPacket, uint32 nSize, wxString &pszDirectory);

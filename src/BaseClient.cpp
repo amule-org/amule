@@ -1679,22 +1679,29 @@ bool CUpDownClient::IsRedialAllowed() const
 	       PeerAddressing::CanOpenConnection(contactAddress, IsConnected());
 }
 
-EContactRoute CUpDownClient::ContactRoute() const
+SContactFacts CUpDownClient::ContactFactsFor(const CNetworkAddress &address) const
 {
 	SContactFacts facts;
-	facts.contactAddress = ContactAddress();
+	facts.contactAddress = address;
 	facts.socketConnected = IsConnected();
 #ifdef ENABLE_IPV6
 	facts.ipv6Built = true;
 #endif
 	facts.familyPermitted = AddressFamilyPolicy::Permits(facts.contactAddress);
 	facts.proxyEnabled = thePrefs::GetProxyData()->m_proxyEnable;
-	return DecideContactRoute(facts);
+	return facts;
+}
+
+EContactRoute CUpDownClient::ContactRoute() const
+{
+	return DecideContactRoute(ContactFactsFor(ContactAddress()));
 }
 
 bool CUpDownClient::IsCallableIPv6Contact() const
 {
-	return ContactRoute() == EContactRoute::DialIPv6 && GetDialAddress() != m_unansweredIPv6Address;
+	// Asked of the target TryToContact() will freeze and dial. ContactAddress() is the IPv4 identity
+	// for a greeted LowID, which would hide an advertised IPv6 behind a callback that is not needed.
+	return IsDialableWithoutCallback(ContactFactsFor(GetDialAddress()), m_unansweredIPv6Address);
 }
 
 // Re-check the standing reasons to refuse this peer, disconnecting it on a hit:
