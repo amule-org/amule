@@ -612,6 +612,7 @@ TEST(PublicIPv6Corroboration, ResetForgetsClaimsButKeepsOurOwnAddresses)
 	tracker.Reset();
 
 	ASSERT_FALSE(tracker.IsPrefixCorroborated(AsNetworkAddress(Stable()), START_MS));
+	ASSERT_FALSE(tracker.IsPrefixVetoed(AsNetworkAddress(Stable()), START_MS));
 	ASSERT_EQUALS(0u, (unsigned)tracker.CandidateCount());
 	ASSERT_EQUALS(0u, (unsigned)tracker.ContradictionCount());
 	ASSERT_EQUALS(1u, (unsigned)tracker.LocalAddressCount());
@@ -687,62 +688,98 @@ TEST(PublicIPv6Corroboration, ALiveVoteForOurPrefixBlocksTheVeto)
 	ASSERT_TRUE(tracker.IsPrefixVetoed(AsNetworkAddress(Stable()), voteLapsed));
 }
 
-// A veto is current evidence or nothing. It lapses at read time like a vote, so a peer set we no
-// longer meet cannot keep our advertising switched off.
-TEST(PublicIPv6Corroboration, ContradictionsLapseWithTheWindow)
+// Same as the threshold and the window: how long a veto can hold advertising off is policy.
+TEST(PublicIPv6Corroboration, VetoCeilingIsOneDay)
+{
+	ASSERT_EQUALS((uint64_t)(24 * 60 * 60 * 1000), (uint64_t)PUBLIC_IPV6_VETO_CEILING_MS);
+}
+
+// Behind NAT66 nobody reaches our real address, so no vote ever replaces the veto, and once we stop
+// advertising, fresh contradictions only come from the few IPv6 peers we dial. A veto that lapsed
+// with its contradictions would re-advertise the unreachable address every half hour. The ceiling
+// keeps one burst of claims from switching advertising off for good.
+TEST(PublicIPv6Corroboration, AVetoOutlivesItsContradictionsUpToTheCeiling)
 {
 	CPublicIPv6Corroboration tracker;
+	const CNetworkAddress stable = AsNetworkAddress(Stable());
 	tracker.SetLocalAddresses(Held(Stable()), START_MS);
 	ClaimFrom(tracker, PUBLIC_IPV6_CORROBORATION_THRESHOLD, InPrefix(OTHER_SUBNET, 0x01), START_MS);
 
-	const CNetworkAddress stable = AsNetworkAddress(Stable());
-	ASSERT_TRUE(tracker.IsPrefixVetoed(stable, START_MS + PUBLIC_IPV6_CORROBORATION_WINDOW_MS));
-	ASSERT_FALSE(tracker.IsPrefixVetoed(stable, START_MS + PUBLIC_IPV6_CORROBORATION_WINDOW_MS + 1));
+	const uint64_t contradictionsLapsed = START_MS + PUBLIC_IPV6_CORROBORATION_WINDOW_MS + 1;
+	tracker.SetLocalAddresses(Held(Stable()), contradictionsLapsed);
+	ASSERT_EQUALS(0u, (unsigned)tracker.ContradictionCount());
+	ASSERT_TRUE(tracker.IsPrefixVetoed(stable, contradictionsLapsed));
+
+	ASSERT_TRUE(tracker.IsPrefixVetoed(stable, START_MS + PUBLIC_IPV6_VETO_CEILING_MS));
+	ASSERT_FALSE(tracker.IsPrefixVetoed(stable, START_MS + PUBLIC_IPV6_VETO_CEILING_MS + 1));
 }
 
-// "Until it is contradicted": a veto ends the sticky verdict, and the verdict does not come back
-// when the veto lapses. It has to be earned again.
-TEST(PublicIPv6Corroboration, AVetoEndsAStickyVerdict)
+// The ceiling counts from the last time the contradictions were confirmed, so a NAT that keeps being
+// reported keeps the veto in place.
+TEST(PublicIPv6Corroboration, ConfirmingTheContradictionsRenewsTheVeto)
 {
 	CPublicIPv6Corroboration tracker;
+	const Address translated = InPrefix(OTHER_SUBNET, 0x01);
+	tracker.SetLocalAddresses(Held(Stable()), START_MS);
+	ClaimFrom(tracker, PUBLIC_IPV6_CORROBORATION_THRESHOLD, translated, START_MS);
+
+	const uint64_t renewed = START_MS + PUBLIC_IPV6_VETO_CEILING_MS - 1000;
+	ClaimFrom(tracker, PUBLIC_IPV6_CORROBORATION_THRESHOLD, translated, renewed);
+
+	ASSERT_TRUE(tracker.IsPrefixVetoed(
+		AsNetworkAddress(Stable()), START_MS + PUBLIC_IPV6_VETO_CEILING_MS + 1));
+}
+
+// A peer reaching us at an address we hold is direct evidence the veto was wrong. It ends the veto,
+// which does not come back when that vote lapses.
+TEST(PublicIPv6Corroboration, AVoteEndsAFormedVeto)
+{
+	CPublicIPv6Corroboration tracker;
+	const CNetworkAddress stable = AsNetworkAddress(Stable());
+	tracker.SetLocalAddresses(Held(Stable()), START_MS);
+	ClaimFrom(tracker, PUBLIC_IPV6_CORROBORATION_THRESHOLD, InPrefix(OTHER_SUBNET, 0x01), START_MS);
+
+	const uint64_t voted = START_MS + 1000;
+	tracker.AddClaim(Observer(0x40), Stable().data(), voted);
+	ASSERT_FALSE(tracker.IsPrefixVetoed(stable, voted));
+
+	const uint64_t lapsed = voted + PUBLIC_IPV6_CORROBORATION_WINDOW_MS + 1;
+	ASSERT_FALSE(tracker.IsPrefixVetoed(stable, lapsed));
+}
+
+// A /64 peers once reached directly was reachable. Contradictions arriving later, without a
+// renumber, are more likely another egress path (a VPN, a second uplink) or fake claims than new NAT,
+// so a standing verdict blocks the veto, and the veto does not end the verdict.
+TEST(PublicIPv6Corroboration, AStandingVerdictBlocksTheVeto)
+{
+	CPublicIPv6Corroboration tracker;
+	const CNetworkAddress stable = AsNetworkAddress(Stable());
 	tracker.SetLocalAddresses(Held(Stable()), START_MS);
 	ClaimFrom(tracker, PUBLIC_IPV6_CORROBORATION_THRESHOLD, Stable(), START_MS);
 
 	const uint64_t lapsed = START_MS + PUBLIC_IPV6_CORROBORATION_WINDOW_MS + 1;
-	ClaimFrom(tracker, PUBLIC_IPV6_CORROBORATION_THRESHOLD, InPrefix(OTHER_SUBNET, 0x01), lapsed);
-	ASSERT_TRUE(tracker.IsPrefixVetoed(AsNetworkAddress(Stable()), lapsed));
-	ASSERT_FALSE(tracker.IsPrefixCorroborated(AsNetworkAddress(Stable()), lapsed));
+	for (unsigned i = 1; i <= PUBLIC_IPV6_CORROBORATION_THRESHOLD; ++i) {
+		const Address translated = InPrefix(OTHER_SUBNET, 0x01);
+		tracker.AddClaim(Observer((uint8_t)(0x40 + i)), translated.data(), lapsed);
+	}
 
-	const uint64_t vetoLapsed = lapsed + PUBLIC_IPV6_CORROBORATION_WINDOW_MS + 1;
-	ASSERT_FALSE(tracker.IsPrefixVetoed(AsNetworkAddress(Stable()), vetoLapsed));
-	ASSERT_FALSE(tracker.IsPrefixCorroborated(AsNetworkAddress(Stable()), vetoLapsed));
+	ASSERT_FALSE(tracker.IsPrefixVetoed(stable, lapsed));
+	ASSERT_TRUE(tracker.IsPrefixCorroborated(stable, lapsed));
 }
 
-// A live vote shields the verdict from a veto only while it lives. When it lapses under a veto that
-// is still current, the verdict ends at once, and the periodic refresh makes that final.
-TEST(PublicIPv6Corroboration, AVerdictShieldedByALiveVoteEndsWhenTheVoteLapsesUnderAVeto)
+// A new advertised address starts clean: neither the verdict nor the veto was formed about it.
+TEST(PublicIPv6Corroboration, ForgettingVerdictsEndsAVeto)
 {
 	CPublicIPv6Corroboration tracker;
 	const CNetworkAddress stable = AsNetworkAddress(Stable());
 	tracker.SetLocalAddresses(Held(Stable()), START_MS);
-	ClaimFrom(tracker, PUBLIC_IPV6_CORROBORATION_THRESHOLD, Stable(), START_MS);
+	ClaimFrom(tracker, PUBLIC_IPV6_CORROBORATION_THRESHOLD, InPrefix(OTHER_SUBNET, 0x01), START_MS);
 
-	const uint64_t contradicted = START_MS + PUBLIC_IPV6_CORROBORATION_WINDOW_MS / 2;
-	for (unsigned i = 1; i <= PUBLIC_IPV6_CORROBORATION_THRESHOLD; ++i) {
-		const Address translated = InPrefix(OTHER_SUBNET, 0x01);
-		tracker.AddClaim(Observer((uint8_t)(0x40 + i)), translated.data(), contradicted);
-	}
-	ASSERT_FALSE(tracker.IsPrefixVetoed(stable, contradicted));
-	ASSERT_TRUE(tracker.IsPrefixCorroborated(stable, contradicted));
+	const uint64_t contradictionsLapsed = START_MS + PUBLIC_IPV6_CORROBORATION_WINDOW_MS + 1;
+	tracker.SetLocalAddresses(Held(Stable()), contradictionsLapsed);
+	tracker.ForgetVerdicts();
 
-	const uint64_t votesLapsed = START_MS + PUBLIC_IPV6_CORROBORATION_WINDOW_MS + 1;
-	ASSERT_TRUE(tracker.IsPrefixVetoed(stable, votesLapsed));
-	ASSERT_FALSE(tracker.IsPrefixCorroborated(stable, votesLapsed));
-
-	tracker.SetLocalAddresses(Held(Stable()), votesLapsed);
-	const uint64_t vetoLapsed = contradicted + PUBLIC_IPV6_CORROBORATION_WINDOW_MS + 1;
-	ASSERT_FALSE(tracker.IsPrefixVetoed(stable, vetoLapsed));
-	ASSERT_FALSE(tracker.IsPrefixCorroborated(stable, vetoLapsed));
+	ASSERT_FALSE(tracker.IsPrefixVetoed(stable, contradictionsLapsed));
 }
 
 // A contradicting value is chosen by the peer, so its storage must be bounded by something a peer

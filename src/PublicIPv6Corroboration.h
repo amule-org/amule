@@ -32,6 +32,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <optional>
 #include <vector>
 
 /**
@@ -67,7 +68,7 @@
  *
  * A claim in a /64 we do not hold is never adopted, but it is not noise either: behind NAT66 or
  * NPTv6 that is exactly what every peer reports. Enough unrelated observers agreeing on one such
- * prefix, while nobody currently confirms ours, vetoes advertising ours -- see IsPrefixVetoed().
+ * prefix, while nothing confirms ours, vetoes advertising ours -- see IsPrefixVetoed().
  *
  * The quorum is keyed on the address the packet was observed arriving from, never the sender's
  * self-declared user hash: a hash costs nothing to invent, so a single host could otherwise
@@ -123,6 +124,14 @@ constexpr std::uint64_t PUBLIC_IPV6_CORROBORATION_WINDOW_MS = 30ull * 60ull * 10
 //! least recently makes room, so fresh evidence is never refused because stale evidence came first.
 //! Evicting the evidence behind a real veto then takes more distinct /48s than raising a veto does.
 constexpr std::size_t PUBLIC_IPV6_CONTRADICTION_MAX_OBSERVERS = 16;
+
+//! The longest a veto stands after the contradictions that formed it were last confirmed.
+//!
+//! A veto cannot lapse with its contradictions: once we stop advertising, the only peers that can
+//! still contradict us are the rare IPv6 ones we dial, so a veto that expired with the voting window
+//! would re-advertise the unreachable address every half hour. It needs a ceiling all the same, or
+//! one burst of fake claims would switch advertising off for good.
+constexpr std::uint64_t PUBLIC_IPV6_VETO_CEILING_MS = 24ull * 60ull * 60ull * 1000ull;
 
 class CPublicIPv6Corroboration
 {
@@ -180,6 +189,9 @@ public:
 						       return HoldsAddressIn(contradiction.prefix);
 					       }),
 			m_contradictions.end());
+		if (m_veto && HoldsAddressIn(m_veto->prefix)) {
+			m_veto.reset();
+		}
 
 		Expire(nowMs);
 	}
@@ -264,6 +276,8 @@ public:
 		if (after >= PUBLIC_IPV6_CORROBORATION_THRESHOLD) {
 			candidate->verdict = true;
 		}
+		// A peer reaching us at an address we hold is direct evidence against the veto.
+		m_veto.reset();
 		return before < PUBLIC_IPV6_CORROBORATION_THRESHOLD &&
 		       after >= PUBLIC_IPV6_CORROBORATION_THRESHOLD;
 	}
@@ -273,8 +287,8 @@ public:
 	 * inside the window at @a nowMs, or one was once and nothing has ended that verdict since.
 	 *
 	 * The verdict outlives the votes because nodes meet IPv6 peers only now and then, and the
-	 * address did not become less reachable when they left. It ends with a veto, when we stop
-	 * holding the /64, and on ForgetVerdicts().
+	 * address did not become less reachable when they left. It ends when we stop holding the /64
+	 * and on ForgetVerdicts().
 	 */
 	bool IsPrefixCorroborated(const CNetworkAddress &address, std::uint64_t nowMs) const
 	{
@@ -285,21 +299,22 @@ public:
 		if (candidate == nullptr) {
 			return false;
 		}
-		if (LiveVotes(*candidate, nowMs) >= PUBLIC_IPV6_CORROBORATION_THRESHOLD) {
-			return true;
-		}
-		// Checked here as well as on expiry: a vote can lapse under a live veto between two
-		// mutations, and the verdict must not read as standing in that gap.
-		return candidate->verdict && !IsPrefixVetoed(address, nowMs);
+		return candidate->verdict ||
+		       LiveVotes(*candidate, nowMs) >= PUBLIC_IPV6_CORROBORATION_THRESHOLD;
 	}
 
 	/**
-	 * Whether peers contradict @a address: a /64 we do not hold has a quorum of observers inside
-	 * the window at @a nowMs, and nobody inside the window confirms the /64 of @a address.
+	 * Whether peers contradict @a address: a /64 we do not hold reached a quorum of observers,
+	 * and nothing confirms the /64 of @a address.
 	 *
-	 * Both halves are needed. The quorum keeps one peer from switching our advertising off; the
-	 * live-vote condition means a set of peers cannot do it either while another peer is reaching
-	 * us at the address we advertise.
+	 * The quorum keeps one peer from switching our advertising off. A live vote or a standing
+	 * verdict for our /64 blocks the veto: a /64 peers reached directly was reachable, and
+	 * contradictions without a renumber are more likely another egress path (a VPN, a second
+	 * uplink) or fake claims than new NAT.
+	 *
+	 * A formed veto outlives its contradictions, up to PUBLIC_IPV6_VETO_CEILING_MS after they were
+	 * last confirmed. It ends sooner on a vote for an address we hold, when we come to hold the
+	 * contradicting /64, and on ForgetVerdicts().
 	 */
 	bool IsPrefixVetoed(const CNetworkAddress &address, std::uint64_t nowMs) const
 	{
@@ -307,20 +322,21 @@ public:
 			return false;
 		}
 		const Candidate *candidate = Find(PrefixOf(address.GetOctets()));
-		if (candidate != nullptr && LiveVotes(*candidate, nowMs) > 0) {
+		if (candidate != nullptr && (candidate->verdict || LiveVotes(*candidate, nowMs) > 0)) {
 			return false;
 		}
-		return HasContradictingQuorum(nowMs);
+		return ContradictingQuorumPrefix(nowMs).has_value() || IsVetoStanding(nowMs);
 	}
 
-	//! End every recorded verdict, keeping the votes. For when the address we advertise changes:
-	//! a verdict formed for one address must not carry over to the next.
+	//! End every recorded verdict and the veto, keeping the votes. For when the address we advertise
+	//! changes: neither was formed about the new one.
 	void ForgetVerdicts()
 	{
 		for (auto &candidate : m_candidates) {
 			candidate.verdict = false;
 		}
 		ExpireVoteless();
+		m_veto.reset();
 	}
 
 	//! How many distinct observers are recorded for the /64 of @a claimed. For tests and
@@ -350,6 +366,7 @@ public:
 	{
 		m_candidates.clear();
 		m_contradictions.clear();
+		m_veto.reset();
 	}
 
 	//! Global unicast, 2000::/3. Everything a peer could otherwise reflect at us -- the
@@ -413,6 +430,12 @@ private:
 		std::uint64_t lastSeenMs = 0;
 	};
 
+	struct Veto
+	{
+		Address prefix = {};
+		std::uint64_t lastConfirmedMs = 0;
+	};
+
 	static bool IsLive(std::uint64_t lastSeenMs, std::uint64_t nowMs)
 	{
 		// A tick that appears to move backwards expires the vote rather than keeping
@@ -430,7 +453,13 @@ private:
 			[nowMs](const Observer &observer) { return IsLive(observer.lastSeenMs, nowMs); }));
 	}
 
-	bool HasContradictingQuorum(std::uint64_t nowMs) const
+	bool IsVetoStanding(std::uint64_t nowMs) const
+	{
+		return m_veto && nowMs >= m_veto->lastConfirmedMs &&
+		       nowMs - m_veto->lastConfirmedMs <= PUBLIC_IPV6_VETO_CEILING_MS;
+	}
+
+	std::optional<Address> ContradictingQuorumPrefix(std::uint64_t nowMs) const
 	{
 		for (const auto &contradiction : m_contradictions) {
 			const auto agreeing = std::count_if(m_contradictions.begin(),
@@ -440,10 +469,10 @@ private:
 					       IsLive(other.lastSeenMs, nowMs);
 				});
 			if (static_cast<std::size_t>(agreeing) >= PUBLIC_IPV6_CORROBORATION_THRESHOLD) {
-				return true;
+				return contradiction.prefix;
 			}
 		}
-		return false;
+		return std::nullopt;
 	}
 
 	void AddContradiction(const CNetworkAddress &scope, const Address &prefix, std::uint64_t nowMs)
@@ -467,22 +496,8 @@ private:
 		existing->prefix = prefix;
 		existing->lastSeenMs = nowMs;
 
-		EndContradictedVerdicts(nowMs);
-		ExpireVoteless();
-	}
-
-	//! "Until it is contradicted": a verdict standing on no live vote ends under a veto and does
-	//! not return when the veto lapses. A live vote blocks the veto, so its verdict stays -- until
-	//! that vote lapses, which is why this runs on expiry too and not only when a claim arrives.
-	void EndContradictedVerdicts(std::uint64_t nowMs)
-	{
-		if (!HasContradictingQuorum(nowMs)) {
-			return;
-		}
-		for (auto &candidate : m_candidates) {
-			if (LiveVotes(candidate, nowMs) == 0) {
-				candidate.verdict = false;
-			}
+		if (const std::optional<Address> vetoing = ContradictingQuorumPrefix(nowMs)) {
+			m_veto = Veto{ *vetoing, nowMs };
 		}
 	}
 
@@ -526,8 +541,10 @@ private:
 					       }),
 			m_contradictions.end());
 
-		EndContradictedVerdicts(nowMs);
 		ExpireVoteless();
+		if (!IsVetoStanding(nowMs)) {
+			m_veto.reset();
+		}
 	}
 
 	void ExpireVoteless()
@@ -573,6 +590,8 @@ private:
 	std::vector<Candidate> m_candidates;
 
 	std::vector<Contradiction> m_contradictions;
+
+	std::optional<Veto> m_veto;
 };
 
 /// The one tracker the hello path feeds and AdvertisedIPv6ForPeers() reads. A function-local static
