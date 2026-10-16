@@ -100,15 +100,6 @@ TEST(ContactDialPolicy, OtherContactsCheckOnlyTheirTarget)
 	ASSERT_TRUE(noIdentity[0] == PeerIPv4());
 }
 
-TEST(ContactDialPolicy, OnlyAnIPv6DialToAnIPv4PeerIsAPromotion)
-{
-	ASSERT_TRUE(IsPromotedIPv6Dial(PeerIPv6(), PeerIPv4()));
-	ASSERT_FALSE(IsPromotedIPv6Dial(PeerIPv6(), PeerIPv6()));
-	ASSERT_FALSE(IsPromotedIPv6Dial(PeerIPv4(), PeerIPv4()));
-	ASSERT_FALSE(IsPromotedIPv6Dial(MappedPeerIPv4(), PeerIPv4()));
-	ASSERT_FALSE(IsPromotedIPv6Dial(CNetworkAddress::Absent(), PeerIPv4()));
-}
-
 TEST(ContactDialPolicy, AnIPv6DialTargetSkipsIPv4Utp)
 {
 	ASSERT_TRUE(ShouldTryIPv4Utp(PeerIPv4()));

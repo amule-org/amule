@@ -398,8 +398,20 @@ bool CClientList::AttachToAlreadyKnown(
 					(found_client->GetUserAddress() != tocheck->GetUserAddress() ||
 						found_client->GetUserPort() != tocheck->GetUserPort())) {
 					// if found_client is connected and has the IS_IDENTIFIED, it's safe
-					// to say that the other one is a bad guy
-					if (found_client->IsIdentified()) {
+					// to say that the other one is a bad guy -- unless it arrived from
+					// another address of the same host, which a ban by address would
+					// lock out for good. That connection is still refused below; only
+					// the ban is skipped, so a forged hash from that /64 gains nothing
+					const CNetworkAddress advertisedIPv6 =
+						found_client->HasModIPv6()
+							? CNetworkAddress::FromIPv6Bytes(
+								  found_client->GetModIPv6())
+							: CNetworkAddress::Absent();
+					if (found_client->IsIdentified() &&
+						!PeerAddressing::IsSameHostAddress(
+							found_client->GetUserAddress(),
+							tocheck->GetUserAddress(),
+							advertisedIPv6)) {
 						AddDebugLogLineN(logClient,
 							"Client: " + tocheck->GetUserName() + "(" +
 								tocheck->GetFullIP() +

@@ -62,13 +62,6 @@ inline std::vector<CNetworkAddress> ContactSecurityAddresses(
 	return addresses;
 }
 
-/** Whether dialling dialAddress uses a peer's advertised IPv6 in place of its IPv4 identity. */
-inline bool IsPromotedIPv6Dial(const CNetworkAddress &dialAddress, const CNetworkAddress &connectAddress)
-{
-	return dialAddress.IsIPv6() && !dialAddress.IsIPv4Mapped() &&
-	       PeerAddressing::HasEd2kWireForm(connectAddress);
-}
-
 /**
  * Whether dialAddress is an IPv6 target other than the address the peer is known by: its advertised
  * IPv6, dialled in place of its IPv4 identity or of the native address it last connected from. A

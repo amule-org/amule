@@ -502,6 +502,30 @@ inline CNetworkAddress OutboundIPv6Source(
 	return advertised;
 }
 
+/**
+ * Whether @a other, the address a second connection carrying a known user hash came from, belongs to
+ * the host already known at @a known: the IPv6 it advertised, or another address in the /64 of a
+ * native IPv6 identity. Windows dials out from a temporary address that differs from the stable one
+ * the peer advertises and from any earlier temporary one, so a connection overlapping ours can carry
+ * a correct hash from such an address; that is not a forged hash.
+ */
+inline bool IsSameHostAddress(const CNetworkAddress &known,
+	const CNetworkAddress &other,
+	const CNetworkAddress &advertisedIPv6) noexcept
+{
+	if (known.IsAbsent() || other.IsAbsent()) {
+		return false;
+	}
+	if (other == known || (advertisedIPv6.IsPresent() && other == advertisedIPv6)) {
+		return true;
+	}
+	const auto isNativeIPv6 = [](const CNetworkAddress &address) {
+		return address.IsIPv6() && !address.IsIPv4Mapped();
+	};
+	return isNativeIPv6(known) && isNativeIPv6(other) &&
+	       known.TruncatedToPrefix(64) == other.TruncatedToPrefix(64);
+}
+
 } // namespace PeerAddressing
 
 #endif // PEERADDRESSING_H

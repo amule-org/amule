@@ -180,7 +180,7 @@ void CUpDownClient::Init()
 #endif
 	m_bAddNextConnect = false;
 	m_dialingIPv6 = false;
-	m_preserveIPv4IdentityOnHello = false;
+	m_preserveIdentityOnHello = false;
 	m_preparedDialAddress = CNetworkAddress::Absent();
 	m_dialledIPv6Address = CNetworkAddress::Absent();
 	m_unansweredIPv6Address = CNetworkAddress::Absent();
@@ -788,7 +788,7 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data)
 	}
 
 	if (m_socket) {
-		if (!m_preserveIPv4IdentityOnHello) {
+		if (!m_preserveIdentityOnHello) {
 			SetUserAddress(m_socket->GetPeerAddress());
 		}
 	} else {
@@ -1580,7 +1580,7 @@ bool CUpDownClient::Disconnected(const wxString &DEBUG_ONLY(strReason), bool bFr
 	}
 
 	m_dialingIPv6 = false;
-	m_preserveIPv4IdentityOnHello = false;
+	m_preserveIdentityOnHello = false;
 	m_preparedDialAddress = CNetworkAddress::Absent();
 	m_dialledIPv6Address = CNetworkAddress::Absent();
 
@@ -1648,7 +1648,7 @@ CNetworkAddress CUpDownClient::GetDialAddress() const
 CNetworkAddress CUpDownClient::ContactAddress() const
 {
 	// A prepared target is the one this attempt will really dial, so filter and ban checks must
-	// see it rather than the IPv4 identity retained for protocol bookkeeping.
+	// see it rather than the identity retained for protocol bookkeeping.
 	if (m_preparedDialAddress.IsPresent()) {
 		return m_preparedDialAddress;
 	}
@@ -2080,8 +2080,9 @@ bool CUpDownClient::Connect()
 				CFormat("Trying to connect to [%s]:%u") % connectAddress.ToWxString() %
 					static_cast<unsigned int>(GetUserPort()));
 			m_dialingIPv6 = true;
-			m_preserveIPv4IdentityOnHello =
-				IsPromotedIPv6Dial(connectAddress, GetConnectAddress());
+			// A peer reached at its advertised IPv6 keeps the identity it is known by, so that
+			// address stays the fallback if the advertised one later stops answering.
+			m_preserveIdentityOnHello = IsAdvertisedIPv6Dial(connectAddress, GetConnectAddress());
 			m_dialledIPv6Address = connectAddress;
 			m_preparedDialAddress = CNetworkAddress::Absent();
 			m_socket->ConnectIPv6(connectAddress, GetUserPort(), false);
@@ -2094,7 +2095,7 @@ bool CUpDownClient::Connect()
 		AddDebugLogLineN(logClient,
 			"Trying to connect to " + Uint32_16toStringIP_Port(GetConnectIP(), GetUserPort()));
 		m_dialingIPv6 = false;
-		m_preserveIPv4IdentityOnHello = false;
+		m_preserveIdentityOnHello = false;
 		m_preparedDialAddress = CNetworkAddress::Absent();
 		m_dialledIPv6Address = CNetworkAddress::Absent();
 		m_socket->Connect(tmp, false);
