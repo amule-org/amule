@@ -48,14 +48,15 @@ struct SContactFacts
 
 /**
  * The addresses an outbound contact must pass the IP filter and ban list on: the dial target and,
- * for a promoted IPv6 dial, the peer's retained IPv4 identity, so promotion never bypasses a
- * filter or ban on either. Both are the same address on every other route.
+ * when the target is a peer's advertised IPv6, the address the peer is known by, so dialling the
+ * advertised address never bypasses a filter or ban on either. Both are the same address on every
+ * other route.
  */
 inline std::vector<CNetworkAddress> ContactSecurityAddresses(
 	const CNetworkAddress &target, const CNetworkAddress &connectAddress)
 {
 	std::vector<CNetworkAddress> addresses{ target };
-	if (PeerAddressing::HasEd2kWireForm(connectAddress) && connectAddress != target) {
+	if (connectAddress.IsPresent() && connectAddress != target) {
 		addresses.push_back(connectAddress);
 	}
 	return addresses;
@@ -68,6 +69,18 @@ inline bool IsPromotedIPv6Dial(const CNetworkAddress &dialAddress, const CNetwor
 	       PeerAddressing::HasEd2kWireForm(connectAddress);
 }
 
+/**
+ * Whether dialAddress is an IPv6 target other than the address the peer is known by: its advertised
+ * IPv6, dialled in place of its IPv4 identity or of the native address it last connected from. A
+ * failed dial of this kind is remembered as unanswered so the next attempt falls back to that
+ * identity.
+ */
+inline bool IsAdvertisedIPv6Dial(const CNetworkAddress &dialAddress, const CNetworkAddress &connectAddress)
+{
+	return dialAddress.IsIPv6() && !dialAddress.IsIPv4Mapped() && connectAddress.IsPresent() &&
+	       dialAddress != connectAddress;
+}
+
 /** uTP framing is IPv4-only, so an IPv6 dial target goes over TCP. */
 inline bool ShouldTryIPv4Utp(const CNetworkAddress &dialAddress)
 {
@@ -78,6 +91,11 @@ inline bool ShouldTryIPv4Utp(const CNetworkAddress &dialAddress)
  * Returns a peer's advertised IPv6 as the TCP target only when this node is explicitly configured
  * for dual stack and has selected a global local IPv6. The local address proves that an IPv6 source
  * route exists; it is not the peer target. Otherwise the existing target stays intact.
+ *
+ * It replaces an IPv4 identity, and also the native IPv6 a peer last connected from: that is
+ * usually a temporary address, which expires within a day, while the advertised one is the stable
+ * address the peer accepts on. An unanswered advertisement falls back to the existing target rather
+ * than being retried forever.
  */
 inline CNetworkAddress PromotePeerIPv6ForDial(const CNetworkAddress &current,
 	const CNetworkAddress &peerIPv6,
@@ -86,12 +104,10 @@ inline CNetworkAddress PromotePeerIPv6ForDial(const CNetworkAddress &current,
 	const CNetworkAddress &localIPv6,
 	bool proxyEnabled)
 {
-	// Only add IPv6 as an alternative to an established IPv4 identity. Existing native IPv6
-	// contacts must keep the exact endpoint they already use, and an unanswered advertisement
-	// falls back to that IPv4 route rather than being retried forever.
-	if (PeerAddressing::HasEd2kWireForm(current) && dualStackConfigured && !proxyEnabled &&
-		peerIPv6 != unansweredIPv6 && peerIPv6.IsGloballyRoutableIPv6() &&
-		localIPv6.IsGloballyRoutableIPv6()) {
+	const bool knownPeer = PeerAddressing::HasEd2kWireForm(current) ||
+			       (current.IsIPv6() && !current.IsIPv4Mapped() && !current.IsUnspecified());
+	if (knownPeer && dualStackConfigured && !proxyEnabled && peerIPv6 != unansweredIPv6 &&
+		peerIPv6.IsGloballyRoutableIPv6() && localIPv6.IsGloballyRoutableIPv6()) {
 		return peerIPv6;
 	}
 	return current;

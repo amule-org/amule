@@ -1480,12 +1480,12 @@ bool CUpDownClient::Disconnected(const wxString &DEBUG_ONLY(strReason), bool bFr
 		theApp->uploadqueue->RemoveFromUploadQueue(this);
 	}
 
-	// An advertised IPv6 supplements a known IPv4 peer rather than replacing it. Remember a
-	// failed promoted target so later attempts use IPv4; native IPv6 peers retain their old path.
-	const bool failedPromotedIPv6 =
-		IsPromotedIPv6Dial(m_dialledIPv6Address, GetConnectAddress()) &&
+	// An advertised IPv6 supplements the address a peer is known by rather than replacing it.
+	// Remember a failed advertised target so later attempts use that address.
+	const bool failedAdvertisedIPv6 =
+		IsAdvertisedIPv6Dial(m_dialledIPv6Address, GetConnectAddress()) &&
 		(GetUploadState() == US_CONNECTING || GetDownloadState() == DS_CONNECTING);
-	if (failedPromotedIPv6) {
+	if (failedAdvertisedIPv6) {
 		m_unansweredIPv6Address = m_dialledIPv6Address;
 	}
 	if (m_dialingIPv6 && GetUploadState() == US_CONNECTING) {
@@ -1551,7 +1551,7 @@ bool CUpDownClient::Disconnected(const wxString &DEBUG_ONLY(strReason), bool bFr
 
 	switch (m_nDownloadState) {
 	case DS_CONNECTING:
-		if (failedPromotedIPv6) {
+		if (failedAdvertisedIPv6) {
 			SetDownloadState(DS_ONQUEUE);
 			bDelete = false;
 			break;

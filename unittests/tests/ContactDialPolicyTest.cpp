@@ -72,6 +72,17 @@ TEST(ContactDialPolicy, APromotedDialChecksTheTargetAndTheRetainedIPv4)
 	ASSERT_TRUE(checked[1] == PeerIPv4());
 }
 
+// Dialling a native peer at its advertised address must not slip past a filter or ban on the address
+// it is known by.
+TEST(ContactDialPolicy, AnAdvertisedDialToANativePeerChecksBothAddresses)
+{
+	const CNetworkAddress temporary = CNetworkAddress::FromString("2001:4860:4860::9999");
+	const std::vector<CNetworkAddress> checked = ContactSecurityAddresses(PeerIPv6(), temporary);
+	ASSERT_EQUALS(2u, (unsigned)checked.size());
+	ASSERT_TRUE(checked[0] == PeerIPv6());
+	ASSERT_TRUE(checked[1] == temporary);
+}
+
 // Every other route checks exactly the one address it checked before promotion existed.
 TEST(ContactDialPolicy, OtherContactsCheckOnlyTheirTarget)
 {
@@ -198,14 +209,11 @@ TEST(ContactDialPolicy, GloballyRoutablePeerIPv6PromotesOnlyForAUsableDualStackL
 			    false) == ipv4);
 }
 
-TEST(ContactDialPolicy, PeerIPv6PromotionDoesNotReplaceNativeIPv6OrRetryAFailedAddress)
+TEST(ContactDialPolicy, PeerIPv6PromotionDoesNotRetryAFailedAddress)
 {
 	const CNetworkAddress peer = CNetworkAddress::FromString("2001:4860:4860::8888");
 	const CNetworkAddress local = CNetworkAddress::FromString("2606:4700::1111");
-	const CNetworkAddress native = CNetworkAddress::FromString("2001:db8::1");
 
-	ASSERT_TRUE(PromotePeerIPv6ForDial(native, peer, CNetworkAddress::Absent(), true, local, false) ==
-		    native);
 	ASSERT_TRUE(PromotePeerIPv6ForDial(
 			    CNetworkAddress::FromString("192.0.2.1"), peer, peer, true, local, false) ==
 		    CNetworkAddress::FromString("192.0.2.1"));
@@ -253,4 +261,53 @@ TEST(ContactDialPolicy, ARefusedIPv6DialNeedsACallback)
 	SContactFacts notBuilt = DialableIPv6();
 	notBuilt.ipv6Built = false;
 	ASSERT_FALSE(IsDialableWithoutCallback(notBuilt, CNetworkAddress::Absent()));
+}
+
+// A native peer connects from a temporary address (Windows does not bind outbound), which expires
+// within a day; the address it advertises is the stable one it accepts on. Dial that first, and
+// fall back to the address it last connected from once the advertised one went unanswered.
+TEST(ContactDialPolicy, ANativePeerIsDialledAtItsAdvertisedAddressFirst)
+{
+	const CNetworkAddress advertised = CNetworkAddress::FromString("2001:4860:4860::8888");
+	const CNetworkAddress temporary = CNetworkAddress::FromString("2001:4860:4860::9999");
+	const CNetworkAddress local = CNetworkAddress::FromString("2606:4700::1111");
+
+	ASSERT_TRUE(
+		PromotePeerIPv6ForDial(
+			temporary, advertised, CNetworkAddress::Absent(), true, local, false) == advertised);
+	ASSERT_TRUE(
+		PromotePeerIPv6ForDial(temporary, advertised, advertised, true, local, false) == temporary);
+}
+
+// The same gate as a promotion from IPv4: without it, today's path stands.
+TEST(ContactDialPolicy, ANativePeerKeepsItsAddressWhenTheAdvertisedOneIsNotUsable)
+{
+	const CNetworkAddress advertised = CNetworkAddress::FromString("2001:4860:4860::8888");
+	const CNetworkAddress temporary = CNetworkAddress::FromString("2001:4860:4860::9999");
+	const CNetworkAddress local = CNetworkAddress::FromString("2606:4700::1111");
+	const CNetworkAddress none = CNetworkAddress::Absent();
+
+	ASSERT_TRUE(PromotePeerIPv6ForDial(temporary, advertised, none, false, local, false) == temporary);
+	ASSERT_TRUE(PromotePeerIPv6ForDial(temporary, advertised, none, true, none, false) == temporary);
+	ASSERT_TRUE(PromotePeerIPv6ForDial(temporary, advertised, none, true, local, true) == temporary);
+	ASSERT_TRUE(PromotePeerIPv6ForDial(temporary, none, none, true, local, false) == temporary);
+	ASSERT_TRUE(PromotePeerIPv6ForDial(
+			    temporary, CNetworkAddress::FromString("fe80::1"), none, true, local, false) ==
+		    temporary);
+}
+
+// What decides whether a failed dial marks the target unanswered: any IPv6 target other than the
+// identity the peer is known by, so the next attempt falls back to that identity.
+TEST(ContactDialPolicy, AnIPv6DialAwayFromThePeerIdentityIsAnAdvertisedDial)
+{
+	const CNetworkAddress advertised = CNetworkAddress::FromString("2001:4860:4860::8888");
+	const CNetworkAddress temporary = CNetworkAddress::FromString("2001:4860:4860::9999");
+
+	ASSERT_TRUE(IsAdvertisedIPv6Dial(advertised, temporary));
+	ASSERT_TRUE(IsAdvertisedIPv6Dial(advertised, PeerIPv4()));
+	ASSERT_FALSE(IsAdvertisedIPv6Dial(temporary, temporary));
+	ASSERT_FALSE(IsAdvertisedIPv6Dial(PeerIPv4(), PeerIPv4()));
+	ASSERT_FALSE(IsAdvertisedIPv6Dial(MappedPeerIPv4(), PeerIPv4()));
+	ASSERT_FALSE(IsAdvertisedIPv6Dial(CNetworkAddress::Absent(), temporary));
+	ASSERT_FALSE(IsAdvertisedIPv6Dial(advertised, CNetworkAddress::Absent()));
 }
