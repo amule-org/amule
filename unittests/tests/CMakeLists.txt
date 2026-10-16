@@ -781,6 +781,28 @@ target_link_libraries (CValueMapTest
 	mulecommon
 )
 
+# Where a preferences page sits in the sidebar while other pages are hidden: the
+# row is the page's position among the pages shown, not its pages[] index.
+# Header-only, so it needs no wx and no GUI.
+add_executable (PrefsPageRowsTest
+	PrefsPageRowsTest.cpp
+)
+
+add_test (NAME PrefsPageRowsTest
+	COMMAND PrefsPageRowsTest
+)
+
+target_include_directories (PrefsPageRowsTest
+	PRIVATE ${CMAKE_BINARY_DIR}
+	PRIVATE ${CMAKE_SOURCE_DIR}/src
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
+)
+
+target_link_libraries (PrefsPageRowsTest
+	muleunit
+	mulecommon
+)
+
 # The banned-address record. Owns the map CClientList used to keep inline, and
 # reports whether each operation actually changed it -- which is the whole
 # reason it exists, since the caller increments a statistic on that answer.

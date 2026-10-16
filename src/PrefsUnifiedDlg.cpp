@@ -25,6 +25,7 @@
 
 #include "PrefsUnifiedDlg.h"
 #include "DialogLayout.h"
+#include "PrefsPageRows.h"
 
 #include <common/Constants.h>
 #include <common/Macros.h> // Needed for itemsof()
@@ -593,10 +594,13 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 	// amulegui: drop the IP2Country page from the menu when the connected core has no
 	// GeoIP support -- a 3.1+ core built without ENABLE_IP2COUNTRY, or a pre-3.1 core that
 	// does not know the capability at all. Mirrors how monolithic amule omits the page at
-	// compile time. Must run before EnableServerTab, which may delete the earlier server
-	// tab and shift this index; the page widget stays built but becomes unreachable.
+	// compile time. The page widget stays built but becomes unreachable.
 	if (!thePrefs::IsGeoIPSupported() && m_IndexIP2CountryTab >= 0) {
-		m_PrefsIcons->DeleteItem(m_IndexIP2CountryTab);
+		const int row =
+			PrefsPageRows::Find(ShownPages(), static_cast<unsigned>(m_IndexIP2CountryTab));
+		if (row >= 0) {
+			m_PrefsIcons->DeleteItem(row);
+		}
 		m_IndexIP2CountryTab = -1;
 	}
 #endif
@@ -677,13 +681,29 @@ void PrefsUnifiedDlg::EnableServerTab(bool enable)
 		wxVector<wxVariant> values;
 		values.push_back(wxVariant(wxDataViewIconText(
 			wxGetTranslation(pages[m_IndexServerTab].m_title), m_pageIcons[m_IndexServerTab])));
-		m_PrefsIcons->InsertItem(m_IndexServerTab, values, (wxUIntPtr)m_IndexServerTab);
+		m_PrefsIcons->InsertItem(
+			PrefsPageRows::InsertionRow(ShownPages(), static_cast<unsigned>(m_IndexServerTab)),
+			values,
+			(wxUIntPtr)m_IndexServerTab);
 		m_ServerTabVisible = true;
 	} else if (!enable && m_ServerTabVisible) {
 		// turn server widget off
-		m_PrefsIcons->DeleteItem(m_IndexServerTab);
+		const int row = PrefsPageRows::Find(ShownPages(), static_cast<unsigned>(m_IndexServerTab));
+		if (row >= 0) {
+			m_PrefsIcons->DeleteItem(row);
+		}
 		m_ServerTabVisible = false;
 	}
+}
+
+std::vector<unsigned> PrefsUnifiedDlg::ShownPages() const
+{
+	std::vector<unsigned> shown;
+	for (int row = 0; row < m_PrefsIcons->GetItemCount(); ++row) {
+		shown.push_back(
+			static_cast<unsigned>(m_PrefsIcons->GetItemData(m_PrefsIcons->RowToItem(row))));
+	}
+	return shown;
 }
 
 Cfg_Base *PrefsUnifiedDlg::GetCfg(int id)

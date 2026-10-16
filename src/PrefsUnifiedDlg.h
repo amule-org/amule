@@ -217,6 +217,8 @@ private:
 	bool m_sidebarMeasured = false;
 #endif
 	void EnableServerTab(bool enable);
+	//! pages[] index of each sidebar row, in row order.
+	std::vector<unsigned> ShownPages() const;
 #ifdef __WXMAC__
 	void OnShowMeasureSidebar(wxShowEvent &event);
 #endif
