@@ -81,6 +81,17 @@ inline bool IsAdvertisedIPv6Dial(const CNetworkAddress &dialAddress, const CNetw
 	       dialAddress != connectAddress;
 }
 
+/**
+ * Whether a dial that ended should mark its target unanswered: an advertised IPv6 dial that never
+ * completed the hellos, whatever it was for. A chat or a browse finds a dead address as surely as a
+ * transfer.
+ */
+inline bool IsUnansweredAdvertisedDial(
+	bool helloIncomplete, const CNetworkAddress &dialAddress, const CNetworkAddress &connectAddress)
+{
+	return helloIncomplete && IsAdvertisedIPv6Dial(dialAddress, connectAddress);
+}
+
 /** uTP framing is IPv4-only, so an IPv6 dial target goes over TCP. */
 inline bool ShouldTryIPv4Utp(const CNetworkAddress &dialAddress)
 {

@@ -311,3 +311,27 @@ TEST(ContactDialPolicy, AnIPv6DialAwayFromThePeerIdentityIsAnAdvertisedDial)
 	ASSERT_FALSE(IsAdvertisedIPv6Dial(CNetworkAddress::Absent(), temporary));
 	ASSERT_FALSE(IsAdvertisedIPv6Dial(advertised, CNetworkAddress::Absent()));
 }
+
+// Any dial can be the one that finds the advertised address dead: a chat or a browse as much as a
+// transfer. If only transfer dials recorded it, every later chat or browse would go to that address
+// again instead of falling back.
+TEST(ContactDialPolicy, AnAdvertisedDialThatNeverConnectedIsUnansweredWhateverItWasFor)
+{
+	const CNetworkAddress advertised = CNetworkAddress::FromString("2001:4860:4860::8888");
+	const CNetworkAddress temporary = CNetworkAddress::FromString("2001:4860:4860::9999");
+
+	ASSERT_TRUE(IsUnansweredAdvertisedDial(true, advertised, temporary));
+	ASSERT_TRUE(IsUnansweredAdvertisedDial(true, advertised, PeerIPv4()));
+}
+
+// A connection that was established answered, however it ended; and a dial to the identity itself is
+// the fallback, not a candidate for it.
+TEST(ContactDialPolicy, AnEstablishedOrIdentityDialIsNotUnanswered)
+{
+	const CNetworkAddress advertised = CNetworkAddress::FromString("2001:4860:4860::8888");
+	const CNetworkAddress temporary = CNetworkAddress::FromString("2001:4860:4860::9999");
+
+	ASSERT_FALSE(IsUnansweredAdvertisedDial(false, advertised, temporary));
+	ASSERT_FALSE(IsUnansweredAdvertisedDial(true, temporary, temporary));
+	ASSERT_FALSE(IsUnansweredAdvertisedDial(true, CNetworkAddress::Absent(), temporary));
+}

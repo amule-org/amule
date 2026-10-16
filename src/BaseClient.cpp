@@ -1481,10 +1481,11 @@ bool CUpDownClient::Disconnected(const wxString &DEBUG_ONLY(strReason), bool bFr
 	}
 
 	// An advertised IPv6 supplements the address a peer is known by rather than replacing it.
-	// Remember a failed advertised target so later attempts use that address.
+	// Remember a failed advertised target so later attempts use that address. ConnectionEstablished()
+	// clears m_dialingIPv6 once the hellos are through, so it still being set means this dial never
+	// got that far.
 	const bool failedAdvertisedIPv6 =
-		IsAdvertisedIPv6Dial(m_dialledIPv6Address, GetConnectAddress()) &&
-		(GetUploadState() == US_CONNECTING || GetDownloadState() == DS_CONNECTING);
+		IsUnansweredAdvertisedDial(m_dialingIPv6, m_dialledIPv6Address, GetConnectAddress());
 	if (failedAdvertisedIPv6) {
 		m_unansweredIPv6Address = m_dialledIPv6Address;
 	}
