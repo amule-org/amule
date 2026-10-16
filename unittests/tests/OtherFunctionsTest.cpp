@@ -234,6 +234,33 @@ TEST(UploadCompression, SkipsCompressedFormats)
 	ASSERT_FALSE(Compressible("backup.tar.gz"));
 }
 
+// Compressed by design, in categories that also hold uncompressed formats.
+TEST(UploadCompression, SkipsCompressedFormatsInEveryCategory)
+{
+	for (const char *name : { "book.aax",
+		     "voice.amr",
+		     "track.mpa",
+		     "stream.oga",
+		     "clip.weba",
+		     "photo.jpe",
+		     "frame.j2k",
+		     "anim.apng",
+		     "report.docx",
+		     "sheet.ods",
+		     "book.epub",
+		     "help.chm",
+		     "scan.djvu",
+		     "app.apk",
+		     "lib.jar",
+		     "pkg.deb",
+		     "pkg.rpm",
+		     "app.snap",
+		     "disk.dmg",
+		     "install.wim" }) {
+		ASSERT_FALSE(Compressible(name));
+	}
+}
+
 // Uncompressed formats share the audio, image and archive categories with compressed ones.
 TEST(UploadCompression, KeepsCompressibleFormats)
 {
@@ -242,6 +269,9 @@ TEST(UploadCompression, KeepsCompressibleFormats)
 	ASSERT_TRUE(Compressible("layers.psd"));
 	ASSERT_TRUE(Compressible("sources.tar"));
 	ASSERT_TRUE(Compressible("disc.iso"));
+	ASSERT_TRUE(Compressible("paper.pdf"));
+	ASSERT_TRUE(Compressible("setup.msi"));
+	ASSERT_TRUE(Compressible("photo.tiff"));
 	ASSERT_TRUE(Compressible("notes.txt"));
 	ASSERT_TRUE(Compressible("README"));
 	ASSERT_TRUE(Compressible("data.unknownext"));

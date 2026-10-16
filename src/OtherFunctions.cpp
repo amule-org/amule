@@ -1230,47 +1230,108 @@ bool IsMediaProbeCandidate(const CPath &fileName)
 
 bool IsUploadCompressible(const CPath &fileName)
 {
+	// Formats that are compressed by design, in categories that also hold uncompressed ones
+	// (wav, bmp, iso...). Formats whose compression varies per file (tiff, pdf, msi) stay out.
+	static const std::set<wxString> compressed{
+		// Audio
+		"aa",
+		"aac",
+		"aax",
+		"ac3",
+		"amr",
+		"ape",
+		"dts",
+		"flac",
+		"m1a",
+		"m2a",
+		"m4a",
+		"m4b",
+		"mka",
+		"mp1",
+		"mp2",
+		"mp3",
+		"mpa",
+		"mpc",
+		"mpp",
+		"oga",
+		"ogg",
+		"opus",
+		"ra",
+		"weba",
+		"wma",
+		"wv",
+		// Images
+		"apng",
+		"avif",
+		"gif",
+		"heic",
+		"heif",
+		"j2k",
+		"jfif",
+		"jp2",
+		"jpe",
+		"jpeg",
+		"jpg",
+		"jxl",
+		"png",
+		"webp",
+		"wmp",
+		// Zip-based and other compressed documents
+		"chm",
+		"djvu",
+		"docm",
+		"docx",
+		"dotx",
+		"epub",
+		"key",
+		"numbers",
+		"odp",
+		"ods",
+		"odt",
+		"otp",
+		"ots",
+		"ott",
+		"oxps",
+		"pages",
+		"potx",
+		"ppsx",
+		"pptm",
+		"pptx",
+		"stc",
+		"sti",
+		"stw",
+		"sxc",
+		"sxi",
+		"sxw",
+		"xlsm",
+		"xlsx",
+		"xltx",
+		"xps",
+		// Packages
+		"apk",
+		"appx",
+		"deb",
+		"jar",
+		"msix",
+		"rpm",
+		"snap",
+		"xpi",
+		// Disk images
+		"daa",
+		"dmg",
+		"isz",
+		"wim",
+	};
 	const wxString ext = fileName.GetExt().Lower();
+	if (compressed.count(ext) != 0) {
+		return false;
+	}
 	switch (GetED2KFileTypeID(fileName)) {
 	case ED2KFT_ARCHIVE:
 		// The one archive format that does not compress its contents.
 		return ext == "tar";
 	case ED2KFT_VIDEO:
 		return false;
-	case ED2KFT_AUDIO:
-	case ED2KFT_IMAGE: {
-		// These categories also hold uncompressed formats: wav, aiff, bmp, tiff, psd...
-		static const std::set<wxString> compressed{
-			"aac",
-			"ac3",
-			"ape",
-			"dts",
-			"flac",
-			"m4a",
-			"m4b",
-			"mka",
-			"mp2",
-			"mp3",
-			"mpc",
-			"ogg",
-			"opus",
-			"ra",
-			"wma",
-			"wv",
-			"avif",
-			"gif",
-			"heic",
-			"heif",
-			"jfif",
-			"jp2",
-			"jpeg",
-			"jpg",
-			"jxl",
-			"png",
-			"webp",
-		};
-		return compressed.count(ext) == 0;
-	}
 	default:
 		return true;
 	}
