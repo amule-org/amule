@@ -748,6 +748,11 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data)
 								.TruncatedToPrefix(64)
 								.ToWxString());
 				}
+#ifdef ENABLE_IPV6
+				// A claim can form or end a veto. Act on it now: the hello answer that would
+				// otherwise re-evaluate it is not sent when this hello is itself the answer.
+				AdvertisedIPv6ForPeers();
+#endif
 			}
 			break;
 
