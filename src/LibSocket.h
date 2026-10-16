@@ -317,6 +317,13 @@ private:
 // CPreferences. Takes effect for sockets opened after the call.
 void SetSocketBindInterface(const wxString &iface);
 
+#ifdef ENABLE_IPV6
+// Set the IPv6 address we advertise to peers (absent = none), which outbound IPv6 connections then
+// leave from; see PeerAddressing::OutboundIPv6Source(). Pushed in by the core for the same reason as
+// SetSocketBindInterface(). Takes effect for connections started after the call.
+void SetSocketAdvertisedIPv6(const CNetworkAddress &advertised);
+#endif
+
 // Outcome of validating the configured bind interface, so the core can report
 // it once at startup instead of discovering it silently per socket.
 enum BindInterfaceStatus

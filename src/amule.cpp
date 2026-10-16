@@ -1998,6 +1998,7 @@ std::optional<CNetworkAddress> AdvertisedIPv6ForPeers()
 			theApp->clientlist->MarkIPv6ChangeNotificationPending();
 			s_lastNotifiedIPv6 = advertised;
 		}
+		SetSocketAdvertisedIPv6(advertised.value_or(CNetworkAddress::Absent()));
 		s_lastAdvertisedIPv6 = advertised;
 	}
 	return advertised;

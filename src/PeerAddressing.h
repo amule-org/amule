@@ -484,6 +484,24 @@ inline CNetworkAddress DecodeChangeClientIPv6(const std::uint8_t *bytes, std::si
 	return IsUsableTagIdentity(address) ? address : CNetworkAddress::Absent();
 }
 
+/**
+ * The source address for an outbound IPv6 connection to @a target, or absence for the system's
+ * choice.
+ *
+ * The system prefers a temporary address (RFC 6724 rule 7), so while we advertise a stable one a
+ * peer would see our hello claim one address and the socket another, which expires within a day.
+ * Leaving from the advertised address keeps the two the same. With nothing advertised the temporary
+ * address keeps its privacy role, and a peer that is not global is reached in another scope.
+ */
+inline CNetworkAddress OutboundIPv6Source(
+	const CNetworkAddress &advertised, const CNetworkAddress &target) noexcept
+{
+	if (!advertised.IsGloballyRoutableIPv6() || !target.IsGloballyRoutableIPv6()) {
+		return CNetworkAddress::Absent();
+	}
+	return advertised;
+}
+
 } // namespace PeerAddressing
 
 #endif // PEERADDRESSING_H

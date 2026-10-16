@@ -810,4 +810,28 @@ TEST(PeerAddressing, ChangeClientIPv6AcceptsFirstGlobalAnnouncement)
 	ASSERT_TRUE(DecodeChangeClientIPv6(loopbackBytes.data(), loopbackBytes.size()).IsAbsent());
 }
 
+// While we advertise an address, a global peer must see our connections arrive from it rather than
+// from a temporary address it was never told about and that expires within a day.
+TEST(PeerAddressing, OutboundIPv6LeavesFromTheAdvertisedAddressToGlobalPeers)
+{
+	const auto advertised = CNetworkAddress::FromString("2a02:8070:1:2::1");
+	const auto globalPeer = CNetworkAddress::FromString("2606:4700:4700::1111");
+
+	ASSERT_TRUE(OutboundIPv6Source(advertised, globalPeer) == advertised);
+}
+
+// Nothing advertised keeps the system's choice, which is the temporary address that protects
+// privacy. A peer that is not global is reached in another scope, where a global source is wrong.
+TEST(PeerAddressing, OutboundIPv6KeepsTheSystemSourceOtherwise)
+{
+	const auto advertised = CNetworkAddress::FromString("2a02:8070:1:2::1");
+	const auto globalPeer = CNetworkAddress::FromString("2606:4700:4700::1111");
+
+	ASSERT_TRUE(OutboundIPv6Source(CNetworkAddress::Absent(), globalPeer).IsAbsent());
+	ASSERT_TRUE(OutboundIPv6Source(advertised, CNetworkAddress::FromString("fe80::1%3")).IsAbsent());
+	ASSERT_TRUE(OutboundIPv6Source(advertised, CNetworkAddress::FromString("fd00::1")).IsAbsent());
+	ASSERT_TRUE(OutboundIPv6Source(advertised, CNetworkAddress::FromString("::1")).IsAbsent());
+	ASSERT_TRUE(OutboundIPv6Source(CNetworkAddress::FromString("fd00::2"), globalPeer).IsAbsent());
+}
+
 // File_checked_for_headers
