@@ -2508,6 +2508,12 @@ void CamuleApp::OnCoreTimer(CTimerEvent &WXUNUSED(evt))
 	if (msCur - msPrevIfaces >= 5 * 60 * 1000) {
 		msPrevIfaces = msCur;
 		RefreshLocalPublicIPv6Addresses();
+#ifdef ENABLE_IPV6
+		// Evaluating the advertised address is what republishes Kad sources and marks peers
+		// for OP_CHANGE_CLIENT_IP. Left to the next hello, a node with only idle connections
+		// would not act on an address change or a veto until one arrives.
+		AdvertisedIPv6ForPeers();
+#endif
 	}
 
 	if (msCur - msPrevSave >= 60000) {
