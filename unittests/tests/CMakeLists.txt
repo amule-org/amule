@@ -187,6 +187,11 @@ add_test (NAME DeadSourceKeyTest COMMAND DeadSourceKeyTest)
 target_include_directories (DeadSourceKeyTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries (DeadSourceKeyTest muleunit mulecommon)
 
+add_executable (ChatStateTest ChatStateTest.cpp)
+add_test (NAME ChatStateTest COMMAND ChatStateTest)
+target_include_directories (ChatStateTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries (ChatStateTest muleunit mulecommon)
+
 add_executable (AdvertisedIPv6Test AdvertisedIPv6Test.cpp)
 add_test (NAME AdvertisedIPv6Test COMMAND AdvertisedIPv6Test)
 target_include_directories (AdvertisedIPv6Test PRIVATE ${CMAKE_SOURCE_DIR}/src)
