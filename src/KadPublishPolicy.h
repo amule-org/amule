@@ -50,6 +50,13 @@ struct SKadPublishFacts
  * "ip6" tag rides along with every kind. IPv6Only is the case those routes leave out: firewalled on
  * IPv4 with neither callback, yet reachable at the IPv6 address we advertise. It is published as a
  * firewalled source with no buddy tags, which aMule (#1817) and eMuleAI add by its "ip6" tag alone.
+ *
+ * Neither eMuleAI nor emule-qt publishes in the IPv6Only case: eMuleAI's StorePacket() stops when
+ * firewalled with no direct callback and no serving buddy, and emule-qt holds that a published source
+ * nobody can reach is worse than none. Older receivers (eMule 0.70b, aMule up to 3.1) ignore the
+ * "ip6" tag and accept a type 3/5 source without buddy tags, store a zero buddy ID and spend a Kad
+ * buddy lookup on it. We publish anyway because the case needs an ENABLE_IPV6 build and the
+ * AdvertiseIPv6 opt-in, and IPv6-capable eMuleAI, emule-qt and aMule peers can dial the source.
  */
 inline EKadSourcePublish DecideKadSourcePublish(const SKadPublishFacts &facts)
 {
