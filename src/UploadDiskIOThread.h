@@ -51,7 +51,7 @@ struct OpenFile_Struct
 {
 	uint8 ucMD4FileHash[16];
 	CFileAutoClose file; // cached read handle, complete files only; opened lazily in ReadBlock
-	uint32 nInUse;
+	uint32 nInUse;  // number of active reads for this file
 	uint64 uFileSize;
 	bool bCompress; // true if this file type should be compressed
 };

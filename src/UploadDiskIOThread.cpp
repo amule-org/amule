@@ -48,9 +48,7 @@
 #define BIGBUFFER_MINDATARATE (75 * 1024)           // eMule: BIGBUFFER_MINDATARATE
 
 // Max cached complete-file read handles (OpenFile_Struct::file). Past the cap the least
-// recently used idle struct is evicted as a new one is created; if every struct is in use the
-// cap is exceeded temporarily. The fd count stays bounded by this plus the part files' own
-// persistent handles. Fixed constant, no preference plumbing.
+// recently used idle struct is evicted as a new one is created. Fixed constant, no preference plumbing.
 static const size_t MAX_CACHED_OPEN_FILES = 32;
 
 // eMule ref: CUploadDiskIOThread::CUploadDiskIOThread()
@@ -277,16 +275,15 @@ ReadRequest_Struct *CUploadDiskIOThread::PrepareRead(uint32 clientId)
 		}
 
 		// Find or create the file's OpenFile_Struct here, before the read, so its cached
-		// handle exists when ReadBlock needs it. Pure metadata, no I/O under the locks.
+		// handle exists when ReadBlock needs it. Pure metadata.
 		// Applies to part-file requests too: ReadCompletionRoutine needs the hash and
 		// bCompress regardless; only complete files ever open the cached handle.
 		// Placed after every throw/early-return above, so no refcount can leak.
 		OpenFile_Struct *pFileStruct = nullptr;
-		for (std::list<OpenFile_Struct *>::iterator it = m_listOpenFiles.begin();
-			it != m_listOpenFiles.end(); ++it) {
+		for (std::list<OpenFile_Struct *>::iterator it = m_listOpenFiles.begin(); it != m_listOpenFiles.end(); ++it) {
 			if (md4cmp((*it)->ucMD4FileHash, req->ucMD4FileHash) == 0) {
 				pFileStruct = *it;
-				// LRU touch: front is most recently used.
+				// move it to the 1st position, the most recently used
 				m_listOpenFiles.splice(m_listOpenFiles.begin(), m_listOpenFiles, it);
 				break;
 			}
@@ -307,8 +304,7 @@ ReadRequest_Struct *CUploadDiskIOThread::PrepareRead(uint32 clientId)
 		// cap is exceeded temporarily until some read completes.
 		while (m_listOpenFiles.size() > MAX_CACHED_OPEN_FILES) {
 			bool evicted = false;
-			for (std::list<OpenFile_Struct *>::iterator it = m_listOpenFiles.end();
-				it != m_listOpenFiles.begin();) {
+			for (std::list<OpenFile_Struct *>::iterator it = m_listOpenFiles.end(); it != m_listOpenFiles.begin(); ) {
 				--it;
 				if ((*it)->nInUse == 0) {
 					delete *it;
@@ -364,11 +360,8 @@ CUploadDiskIOThread::ReadResult CUploadDiskIOThread::ReadBlock(ReadRequest_Struc
 			}
 		} else {
 			// Complete file: read through the struct's cached handle, opened lazily on
-			// the first block. The handle stays open between blocks, so the kernel's
-			// read-ahead state accumulates across consecutive blocks instead of being
-			// reset by a per-block open/close. Only this thread ever touches these
-			// structs, and nInUse > 0 pins the struct against eviction while a request
-			// holds it, so this needs no locking.
+			// the first block. The handle stays open between blocks, instead of a per-block 
+			// open/close. nInUse > 0 pins the struct against eviction while active reads
 			OpenFile_Struct *openFile = req->pFileStruct;
 			if (!openFile->file.IsOpened() &&
 				!openFile->file.Open(req->path, CFile::read)) {
@@ -554,13 +547,12 @@ void CUploadDiskIOThread::DiscardRequest(ReadRequest_Struct *req)
 
 // eMule ref: CUploadDiskIOThread::ReleaseOvOpenFile()
 //
-// Decrement only: structs are not erased at nInUse == 0 -- the idle structs are the handle
-// cache. They are freed by LRU eviction in PrepareRead or by the shutdown loop in Entry();
-// deleting a struct closes its cached handle.
+// Decrement nInUse only: structs are not erased at nInUse == 0, are kept for the handle cache.
+// They are freed by LRU eviction in PrepareRead, or by the shutdown loop in Entry();
+// Deleting a struct closes its cached handle.
 bool CUploadDiskIOThread::ReleaseOpenFile(OpenFile_Struct *pFileStruct)
 {
-	for (std::list<OpenFile_Struct *>::iterator it = m_listOpenFiles.begin(); it != m_listOpenFiles.end();
-		++it) {
+	for (std::list<OpenFile_Struct *>::iterator it = m_listOpenFiles.begin(); it != m_listOpenFiles.end(); ++it) {
 		if (*it == pFileStruct) {
 			pFileStruct->nInUse--;
 			return true;
