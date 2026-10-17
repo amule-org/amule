@@ -11,6 +11,14 @@ endfunction()
 find_package (Python3 QUIET COMPONENTS Interpreter)
 
 if (Python3_Interpreter_FOUND)
+	# The collector harness compiles and executes with the configured native compiler.
+	if (NOT CMAKE_CROSSCOMPILING AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+		add_test (NAME UploadIOProfileTest
+			COMMAND ${CMAKE_COMMAND} -E env "CXX=${CMAKE_CXX_COMPILER}"
+				${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/experiments/upload-io/test_profile.py
+		)
+		set_tests_properties (UploadIOProfileTest PROPERTIES TIMEOUT 60)
+	endif ()
 	add_test (NAME IntegrationFixtureUnitTest
 		COMMAND ${Python3_EXECUTABLE} -u ${CMAKE_CURRENT_SOURCE_DIR}/IntegrationFixtureUnitTest.py -v
 	)

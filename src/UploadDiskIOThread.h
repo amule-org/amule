@@ -39,6 +39,7 @@
 class CPacket;
 class CPartFile;
 class CUpDownClient;
+class UploadIOProfile;
 
 // Mirrors eMule's OpenOvFile_Struct (UploadDiskIOThread.h:20-28). HANDLE hFile is replaced with
 // aMule's file-open-on-demand model: we cache no file handles, CFileArea opens and closes as
@@ -97,9 +98,9 @@ private:
 	};
 
 	// StartCreateNextBlockPackage runs each block through PrepareRead, ReadBlock, CommitRead.
-	void StartCreateNextBlockPackage(uint32 clientId); // eMule ref: line 185
+	void StartCreateNextBlockPackage(uint32 clientId, UploadIOProfile &profile); // eMule ref: line 185
 	ReadRequest_Struct *PrepareRead(uint32 clientId);
-	static ReadResult ReadBlock(ReadRequest_Struct *req);
+	static ReadResult ReadBlock(ReadRequest_Struct *req, UploadIOProfile &profile);
 	bool CommitRead(ReadRequest_Struct *req, ReadResult result);
 	void ReadCompletionRoutine(ReadRequest_Struct *req); // eMule ref: line 369
 	bool ReleaseOpenFile(OpenFile_Struct *pFileStruct);  // eMule ref: line 498
