@@ -860,6 +860,22 @@ TEST(PeerAddressing, AnAddressOutsideTheHostIsStillAForgedHash)
 		CNetworkAddress::FromString("192.0.2.1"), CNetworkAddress::FromString("192.0.2.2"), none));
 	ASSERT_FALSE(IsSameHostAddress(CNetworkAddress::FromString("192.0.2.1"), known, none));
 	ASSERT_FALSE(IsSameHostAddress(none, known, none));
+	// An advertised IPv6 widens the host to its own /64 only.
+	ASSERT_FALSE(IsSameHostAddress(CNetworkAddress::FromString("192.0.2.1"),
+		CNetworkAddress::FromString("2a07:1:2:4::7e"),
+		CNetworkAddress::FromString("2a07:1:2:3::a441")));
+}
+
+// A peer known by IPv4 and dialled at its advertised IPv6 (#1872) opens an overlapping connection
+// from a Windows temporary address: its identity has no /64, so the advertised one decides.
+TEST(PeerAddressing, ATemporaryAddressBesideTheAdvertisedOneIsTheSameHost)
+{
+	const auto ipv4 = CNetworkAddress::FromString("192.0.2.1");
+	const auto advertised = CNetworkAddress::FromString("2a07:1:2:3::a441");
+	const auto temporary = CNetworkAddress::FromString("2a07:1:2:3:9807:7c6b:846d:bd1");
+
+	ASSERT_TRUE(IsSameHostAddress(ipv4, temporary, advertised));
+	ASSERT_FALSE(IsSameHostAddress(ipv4, temporary, CNetworkAddress::Absent()));
 }
 
 // File_checked_for_headers
