@@ -834,4 +834,48 @@ TEST(PeerAddressing, OutboundIPv6KeepsTheSystemSourceOtherwise)
 	ASSERT_TRUE(OutboundIPv6Source(CNetworkAddress::FromString("fd00::2"), globalPeer).IsAbsent());
 }
 
+// A second connection carrying a known user hash from another address is banned as a forged hash.
+// It must not be when the address belongs to the same host: the one the peer advertised, or another
+// address in its /64, such as a fresh Windows temporary address beside the one it is known by.
+TEST(PeerAddressing, AnotherAddressOfTheSameHostIsNotAForgedHash)
+{
+	const auto known = CNetworkAddress::FromString("2a07:1:2:3::bd1");
+	const auto advertised = CNetworkAddress::FromString("2a07:1:2:3::a441");
+
+	ASSERT_TRUE(IsSameHostAddress(known, known, CNetworkAddress::Absent()));
+	ASSERT_TRUE(IsSameHostAddress(known, advertised, advertised));
+	ASSERT_TRUE(IsSameHostAddress(
+		known, CNetworkAddress::FromString("2a07:1:2:3::7e"), CNetworkAddress::Absent()));
+	ASSERT_TRUE(IsSameHostAddress(CNetworkAddress::FromString("192.0.2.1"), advertised, advertised));
+}
+
+// Anything else is still treated as a forged hash: another /64, or two different IPv4 addresses.
+TEST(PeerAddressing, AnAddressOutsideTheHostIsStillAForgedHash)
+{
+	const auto known = CNetworkAddress::FromString("2a07:1:2:3::bd1");
+	const auto none = CNetworkAddress::Absent();
+
+	ASSERT_FALSE(IsSameHostAddress(known, CNetworkAddress::FromString("2a07:1:2:4::bd1"), none));
+	ASSERT_FALSE(IsSameHostAddress(
+		CNetworkAddress::FromString("192.0.2.1"), CNetworkAddress::FromString("192.0.2.2"), none));
+	ASSERT_FALSE(IsSameHostAddress(CNetworkAddress::FromString("192.0.2.1"), known, none));
+	ASSERT_FALSE(IsSameHostAddress(none, known, none));
+	// An advertised IPv6 widens the host to its own /64 only.
+	ASSERT_FALSE(IsSameHostAddress(CNetworkAddress::FromString("192.0.2.1"),
+		CNetworkAddress::FromString("2a07:1:2:4::7e"),
+		CNetworkAddress::FromString("2a07:1:2:3::a441")));
+}
+
+// A peer known by IPv4 and dialled at its advertised IPv6 (#1872) opens an overlapping connection
+// from a Windows temporary address: its identity has no /64, so the advertised one decides.
+TEST(PeerAddressing, ATemporaryAddressBesideTheAdvertisedOneIsTheSameHost)
+{
+	const auto ipv4 = CNetworkAddress::FromString("192.0.2.1");
+	const auto advertised = CNetworkAddress::FromString("2a07:1:2:3::a441");
+	const auto temporary = CNetworkAddress::FromString("2a07:1:2:3:9807:7c6b:846d:bd1");
+
+	ASSERT_TRUE(IsSameHostAddress(ipv4, temporary, advertised));
+	ASSERT_FALSE(IsSameHostAddress(ipv4, temporary, CNetworkAddress::Absent()));
+}
+
 // File_checked_for_headers
