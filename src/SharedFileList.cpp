@@ -58,6 +58,9 @@
 #include "kademlia/kademlia/Kademlia.h"
 #include "kademlia/kademlia/Search.h"
 #include "ClientList.h"
+#ifdef ENABLE_IPV6
+#include "AdvertisedIPv6.h" // Needed for AdvertisedIPv6ForPeers
+#endif
 
 #include <vector>
 
@@ -1620,11 +1623,17 @@ void CSharedFileList::Publish()
 	unsigned int tNow = time(NULL);
 	bool IsFirewalled = theApp->IsFirewalled();
 
+	bool advertisesIPv6 = false;
+#ifdef ENABLE_IPV6
+	advertisesIPv6 = IsFirewalled && AdvertisedIPv6ForPeers().has_value();
+#endif
+
 	if (Kademlia::CKademlia::IsConnected() &&
-		(!IsFirewalled || (IsFirewalled && theApp->clientlist->GetBuddyStatus() == Connected)) &&
+		(!IsFirewalled || (IsFirewalled && theApp->clientlist->GetBuddyStatus() == Connected) ||
+			advertisesIPv6) &&
 		GetCount() && Kademlia::CKademlia::GetPublish()) {
-		// We are connected to Kad. We are either open or have a buddy. And Kad is ready to start
-		// publishing.
+		// We are connected to Kad. We are either open, have a buddy, or can be reached at the IPv6
+		// address we advertise. And Kad is ready to start publishing.
 
 		if (Kademlia::CKademlia::GetTotalStoreKey() < KADEMLIATOTALSTOREKEY) {
 
