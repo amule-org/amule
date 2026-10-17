@@ -256,7 +256,13 @@ void CServerConnect::ConnectionEstablished(CServerSocket *sender)
 		// Why pass an ID, if we are logging in?
 		data.WriteUInt32(GetClientID());
 		data.WriteUInt16(thePrefs::GetPort());
+#ifdef ENABLE_ED2K_OFFERFILES_V1
+		const bool requestOfferFilesV1 = thePrefs::GetExperimentalED2KPublication();
+		sender->m_offerFilesPolicy.BeginLogin(requestOfferFilesV1, GetTickCount64());
+		data.WriteUInt32(requestOfferFilesV1 ? 5 : 4); // tagcount
+#else
 		data.WriteUInt32(4); // tagcount
+#endif
 
 		// Kry - Server doesn't support VBT tags afaik.
 		// Not to mention we don't know its flags yet
@@ -293,6 +299,12 @@ void CServerConnect::ConnectionEstablished(CServerSocket *sender)
 		CTagInt32 tagMuleVersion(CT_EMULE_VERSION,
 			(SO_AMULE << 24) | make_full_ed2k_version(VERSION_MJR, VERSION_MIN, VERSION_UPDATE));
 		tagMuleVersion.WriteTagToFile(&data);
+
+#ifdef ENABLE_ED2K_OFFERFILES_V1
+		if (requestOfferFilesV1) {
+			CTagInt32("offerfiles_v", 1).WriteTagToFile(&data);
+		}
+#endif
 
 		CPacket *packet = new CPacket(data, OP_EDONKEYPROT, OP_LOGINREQUEST);
 #ifdef DEBUG_CLIENT_PROTOCOL
@@ -346,8 +358,7 @@ bool CServerConnect::SendPacket(CPacket *packet, bool delpacket, CServerSocket *
 {
 	if (!to) {
 		if (connected) {
-			connectedsocket->SendPacket(packet, delpacket, true);
-			return true;
+			return connectedsocket->TrySendPacket(packet, delpacket, true);
 		} else {
 			if (delpacket) {
 				delete packet;
@@ -356,8 +367,7 @@ bool CServerConnect::SendPacket(CPacket *packet, bool delpacket, CServerSocket *
 			return false;
 		}
 	} else {
-		to->SendPacket(packet, delpacket, true);
-		return true;
+		return to->TrySendPacket(packet, delpacket, true);
 	}
 }
 

@@ -104,6 +104,7 @@ public:
 	bool IsServerIP(uint32 ip) const;
 	void TryAnotherConnectionrequest();
 	bool IsSingleConnect() { return singleconnecting; }
+	CServerSocket *GetConnectedSocket() const { return connected ? connectedsocket : nullptr; }
 	void KeepConnectionAlive();
 
 	bool AwaitingTestFromIP(uint32 ip);

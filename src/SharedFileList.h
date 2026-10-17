@@ -138,6 +138,8 @@ public:
 	void ClearED2KPublishInfo();
 	void RepublishFile(CKnownFile *pFile);
 	void Process();
+	// Called on each core tick; negotiated intervals need sub-second scheduling.
+	void ProcessED2K(bool acceleratedOnly = false);
 	void PublishNextTurn() { m_lastPublishED2KFlag = true; }
 	bool RenameFile(CKnownFile *pFile, const CPath &newName);
 	void VerifyLocalData(const CKnownFile *file) const;
@@ -321,7 +323,7 @@ private:
 	//! by Process() rather than announced one line each. See NotifyPathAdded.
 	unsigned m_attachedKnownFiles = 0;
 
-	void SendListToServer();
+	bool SendListToServer();
 	uint64 m_lastPublishED2K;
 	bool m_lastPublishED2KFlag;
 

@@ -290,6 +290,9 @@ option (ENABLE_IPV6 "enable experimental native IPv6 TCP admission (IPv6 identit
 # network traffic yet.
 option (ENABLE_NATT_SERVER_COORDINATION "enable experimental server-coordinated NAT-T wire codecs" OFF)
 
+# Negotiated ED2K publication is opt-in at build time and at runtime.
+option (ENABLE_ED2K_OFFERFILES_V1 "enable experimental negotiated OFFERFILES v1 publication" OFF)
+
 # Master switch for the in-app "check for a new aMule version" feature: the
 # startup notification, the "Check for new version at startup" preference, and
 # the About dialog's "Check for updates" button. When OFF the whole feature
@@ -332,6 +335,7 @@ option (ENABLE_KAD_NODE_PROTECTION "enable the local Kad node-protection heurist
 # the latter would sweep in ENABLE_UPNP, ENABLE_NLS and the rest, which are
 # ordinary build options rather than unfinished features.
 set (AMULE_EXPERIMENTAL_OPTIONS
+	ENABLE_ED2K_OFFERFILES_V1
 	ENABLE_NATT_SERVER_COORDINATION
 	ENABLE_IPV6
 	ENABLE_KAD_NODE_PROTECTION
