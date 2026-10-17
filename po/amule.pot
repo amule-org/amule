@@ -6696,6 +6696,10 @@ msgid "- External connect port changed.\n"
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
+msgid "- Address families changed.\n"
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
 msgid "- External connect acceptance changed.\n"
 msgstr ""
 

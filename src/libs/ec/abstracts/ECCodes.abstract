@@ -598,8 +598,8 @@ EC_TAG_SELECT_PREFS                       0x1000
 		EC_TAG_CONN_UPNP_ENABLED                  0x1318
 		EC_TAG_CONN_UPNP_TCP_PORT                 0x1319
 ## Emitted only by ENABLE_IPV6 cores; see EC_Protocol.md for the absent-tag state.
-		EC_TAG_CONN_ADDRESS_FAMILIES               0x131A
-		EC_TAG_CONN_ADVERTISE_IPV6                 0x131B
+		EC_TAG_CONN_ADDRESS_FAMILIES              0x131A
+		EC_TAG_CONN_ADVERTISE_IPV6                0x131B
 
 	EC_TAG_PREFS_MESSAGEFILTER                0x1400
 		EC_TAG_MSGFILTER_ENABLED                  0x1401

@@ -1035,8 +1035,10 @@ bool PrefsUnifiedDlg::TransferToWindow()
 #ifdef CLIENT_GUI
 	// A daemon that sent no address-families tag is old or lacks ENABLE_IPV6: nothing to edit.
 	if (wxWindow *box = FindWindow(IDC_ADDRESSFAMILIESBOX)) {
-		if (wxSizer *containerSizer = box->GetContainingSizer()) {
-			containerSizer->Show(box, thePrefs::GetAddressFamiliesTagSupported());
+		// A wxStaticBox's containing sizer is its own wxStaticBoxSizer, which ShowItems() hides
+		// together with the box.
+		if (wxSizer *boxSizer = box->GetContainingSizer()) {
+			boxSizer->ShowItems(thePrefs::GetAddressFamiliesTagSupported());
 			RefreshPreferencesPage(box);
 		}
 	}
@@ -1295,6 +1297,12 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 		restart_needed = true;
 		restart_needed_msg += _("- External connect port changed.\n");
 	}
+#ifdef ENABLE_IPV6
+	if (CfgChanged(IDC_ADDRESSFAMILIES)) {
+		restart_needed = true;
+		restart_needed_msg += _("- Address families changed.\n");
+	}
+#endif
 	if (CfgChanged(IDC_EXT_CONN_ACCEPT)) {
 		restart_needed = true;
 		restart_needed_msg += _("- External connect acceptance changed.\n");

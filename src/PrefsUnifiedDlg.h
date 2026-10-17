@@ -324,10 +324,7 @@ public:
 	void UpdateMessageFilterControls();
 
 #ifdef ENABLE_IPV6
-	// Enables the AdvertiseIPv6 checkbox only while dual stack is selected, and under CLIENT_GUI
-	// shows or hides the whole IPv6 box based on whether the connected daemon sent the
-	// EC_TAG_CONN_ADDRESS_FAMILIES capability tag. Called from OnAddressFamiliesChange and
-	// TransferToWindow.
+	// Enables the AdvertiseIPv6 checkbox only while dual stack is selected.
 	void UpdateAddressFamiliesControls();
 #endif
 
