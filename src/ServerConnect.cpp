@@ -48,6 +48,10 @@
 #include "IPFilter.h"                // Needed for theApp->ipfilter->IsReady()
 #include "PublicIPv6Corroboration.h" // Needed for RefreshLocalPublicIPv6Addresses
 #include <common/Format.h>
+#ifdef ENABLE_IPV6
+#include "AdvertisedIPv6.h"  // Needed for AdvertisedIPv6ForPeers
+#include "ServerLoginIPv6.h" // Needed for DecideServerLoginIPv6
+#endif
 
 // #define DEBUG_CLIENT_PROTOCOL
 
@@ -256,7 +260,16 @@ void CServerConnect::ConnectionEstablished(CServerSocket *sender)
 		// Why pass an ID, if we are logging in?
 		data.WriteUInt32(GetClientID());
 		data.WriteUInt16(thePrefs::GetPort());
-		data.WriteUInt32(4); // tagcount
+
+		uint32 tagcount = 4;
+#ifdef ENABLE_IPV6
+		const SServerLoginIPv6Decision ipv6Login = DecideServerLoginIPv6(AdvertisedIPv6ForPeers());
+		if (ipv6Login.advertise) {
+			tagcount++;
+		}
+		sender->SetAdvertisedIPv6InLogin(ipv6Login.advertise);
+#endif
+		data.WriteUInt32(tagcount);
 
 		// Kry - Server doesn't support VBT tags afaik.
 		// Not to mention we don't know its flags yet
@@ -282,9 +295,15 @@ void CServerConnect::ConnectionEstablished(CServerSocket *sender)
 		}
 
 		// FLAGS for server connection
+		uint32 dwIPv6Flags = 0;
+#ifdef ENABLE_IPV6
+		if (ipv6Login.advertise) {
+			dwIPv6Flags |= SRVCAP_IPV6;
+		}
+#endif
 		CTagInt32 tagflags(CT_SERVER_FLAGS,
 			CAPABLE_ZLIB | CAPABLE_AUXPORT | CAPABLE_NEWTAGS | CAPABLE_UNICODE |
-				CAPABLE_LARGEFILES | dwCryptFlags);
+				CAPABLE_LARGEFILES | dwCryptFlags | dwIPv6Flags);
 
 		tagflags.WriteTagToFile(&data);
 
@@ -293,6 +312,16 @@ void CServerConnect::ConnectionEstablished(CServerSocket *sender)
 		CTagInt32 tagMuleVersion(CT_EMULE_VERSION,
 			(SO_AMULE << 24) | make_full_ed2k_version(VERSION_MJR, VERSION_MIN, VERSION_UPDATE));
 		tagMuleVersion.WriteTagToFile(&data);
+
+#ifdef ENABLE_IPV6
+		if (ipv6Login.advertise) {
+			std::uint8_t ipv6Bytes[16];
+			ipv6Login.address.ToIPv6Bytes(ipv6Bytes);
+			CTagHash tagIPv6(CT_MOD_IP_V6, CMD4Hash(ipv6Bytes));
+			// Not restrictive: that mode silently drops a hash tag.
+			tagIPv6.WriteTagToFile(&data, utf8strNone, false);
+		}
+#endif
 
 		CPacket *packet = new CPacket(data, OP_EDONKEYPROT, OP_LOGINREQUEST);
 #ifdef DEBUG_CLIENT_PROTOCOL

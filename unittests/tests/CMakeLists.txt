@@ -1007,6 +1007,13 @@ target_link_libraries (ServerIPv6SourcePolicyTest
 	${Boost_LIBRARIES}
 )
 
+# Whether an eD2k login should carry CT_MOD_IP_V6 and the CT_SERVER_FLAGS 0x1000 bit, without the
+# application.
+add_executable (ServerLoginIPv6Test ServerLoginIPv6Test.cpp)
+add_test (NAME ServerLoginIPv6Test COMMAND ServerLoginIPv6Test)
+target_include_directories (ServerLoginIPv6Test PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries (ServerLoginIPv6Test muleunit mulecommon)
+
 # Canonical address matching for upload-queue UDP lookups, without the application.
 add_executable (UploadQueueAddressPolicyTest
 	UploadQueueAddressPolicyTest.cpp

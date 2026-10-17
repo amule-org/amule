@@ -68,5 +68,7 @@ enum OP_ClientToServerTCP
 #define SRV_TCPFLG_TYPETAGINTEGER 0x00000080
 #define SRV_TCPFLG_LARGEFILES 0x00000100
 #define SRV_TCPFLG_TCPOBFUSCATION 0x00000400
+// Server speaks the IPv6 source extension. Not the same bit as the client's SRVCAP_IPV6 on purpose.
+#define SRV_TCPFLG_IPV6 0x00004000
 
 #endif // ED2KC2STCP_H

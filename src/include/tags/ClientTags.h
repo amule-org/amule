@@ -102,7 +102,10 @@ enum ServerCapabilites
 	SRVCAP_LARGEFILES = 0x0100,
 	SRVCAP_SUPPORTCRYPT = 0x0200,
 	SRVCAP_REQUESTCRYPT = 0x0400,
-	SRVCAP_REQUIRECRYPT = 0x0800
+	SRVCAP_REQUIRECRYPT = 0x0800,
+	// Client parses IPv6 sentinel source records; sent only with CT_MOD_IP_V6. Not the same bit as
+	// the server's SRV_TCPFLG_IPV6 on purpose.
+	SRVCAP_IPV6 = 0x1000
 };
 
 // aMule used to use these names

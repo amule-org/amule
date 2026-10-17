@@ -70,6 +70,12 @@ public:
 	// aux port rather than the advertised one.
 	uint16 GetConnectPort() const { return m_connectPort; }
 
+#ifdef ENABLE_IPV6
+	// Whether our login to this server advertised IPv6; only then can sentinel records arrive.
+	void SetAdvertisedIPv6InLogin(bool val) { m_advertisedIPv6InLogin = val; }
+	bool GetAdvertisedIPv6InLogin() const { return m_advertisedIPv6InLogin; }
+#endif
+
 private:
 	bool ProcessPacket(const uint8_t *packet, uint32 size, int8 opcode);
 	void SetConnectionState(sint8 newstate);
@@ -87,6 +93,9 @@ private:
 
 	bool m_IsSolving;
 	uint16 m_connectPort = 0;
+#ifdef ENABLE_IPV6
+	bool m_advertisedIPv6InLogin = false;
+#endif
 };
 
 #endif // SERVERSOCKET_H
