@@ -528,10 +528,8 @@ bool CAICHSyncTask::ConvertToKnown2ToKnown264()
 ////////////////////////////////////////////////////////////
 // CVerifyLocalDataTask
 
-CVerifyLocalDataTask::CVerifyLocalDataTask(const CKnownFile *file)
-: CThreadTask("VerifyLocalData",
-	  file->GetFileHash().Encode(),
-	  ETP_High) /*ETP_High as this is requested by the user*/
+CVerifyLocalDataTask::CVerifyLocalDataTask(const CKnownFile *file, ETaskPriority priority)
+: CThreadTask("VerifyLocalData", file->GetFileHash().Encode(), priority)
 , m_fileID(file->GetFileHash())
 , m_owner(file)
 , m_fullPath(file->GetFilePath().JoinPaths(file->GetFileName()))
@@ -565,6 +563,19 @@ void CVerifyLocalDataTask::PrintReport(
 	AddLogLineC(CFormat(_("Verify Local Data (%s): ERRORS FOUND! %s Failed blocks: MD4: %s. %s %s")) %
 		    scope % fullPath % result.EncodedMD4() % (checkedAICH ? "AICH: " : "") %
 		    (checkedAICH ? result.FormatCorruptedAICH() : wxString()));
+}
+
+void CVerifyLocalDataTask::PublishResult(bool checkedAICH)
+{
+	if (TestDestroy()) {
+		return;
+	}
+	CVerifyLocalDataResult result;
+	result.date = static_cast<uint32>(time(nullptr));
+	result.SetCorrupted(m_corruptedMD4, m_corruptedAICH);
+	PrintReport(m_fullPath, checkedAICH, result);
+	CVerifyLocalDataEvent evt(m_fileID, m_fullPath, m_fileDate, m_fileSize, result);
+	wxQueueEvent(wxTheApp, evt.Clone());
 }
 
 void CVerifyLocalDataTask::Entry()
@@ -602,6 +613,13 @@ void CVerifyLocalDataTask::Entry()
 			CFormat(_("Verify Local Data: ERRORS FOUND! %s Size on disk: %u bytes, expected: %u "
 				  "bytes.")) %
 			fullPath % fileLength % fileSize);
+		// A changed length invalidates this completed-file identity. Persist the damage so
+		// subsequent requests and sessions withhold it just like a hash mismatch.
+		const uint64 parts = (fileSize + PARTSIZE - 1) / PARTSIZE;
+		for (uint64 part = 0; part < parts; ++part) {
+			m_corruptedMD4.push_back(static_cast<uint16>(part));
+		}
+		PublishResult(false);
 		return;
 	} else if (fileLength > MAX_FILE_SIZE) {
 		AddLogLineC(CFormat(_("Verify Local Data: %s is larger than aMule supports, so it was not "
@@ -615,13 +633,24 @@ void CVerifyLocalDataTask::Entry()
 		return;
 	}
 
+	// Small files use the file hash. Multipart files require one hash per data part;
+	// never compare their first part with the file hash or index a missing hash.
+	const uint64 partCount = (fileSize + PARTSIZE - 1) / PARTSIZE;
+	if (fileSize >= PARTSIZE && storedMD4Hashes.size() < partCount) {
+		AddLogLineN(
+			CFormat(_("Verify Local Data: missing MD4 hashes for %s, so it was not checked.")) %
+			fullPath);
+		return;
+	}
+
 	// Not the knownFile's own AICHHashSet, which is not thread-safe: while we check AICH hashes
 	// here, a peer could send an OP_AICHREQUEST for the same file and call
 	// LoadHashSet()/FreeHashSet() on the same working set.
 	CKnownFile storedFile;
 	storedFile.SetFileSize(fileSize);
 	storedFile.GetAICHHashset()->SetMasterHash(m_aichRootHash, m_aichStatus);
-	bool isAICHloaded = storedFile.GetAICHHashset()->LoadHashSet();
+	const bool isAICHloaded =
+		m_aichStatus == AICH_HASHSETCOMPLETE && storedFile.GetAICHHashset()->LoadHashSet();
 
 	if (!isAICHloaded) {
 		AddDebugLogLineN(logVerifyLocalData,
@@ -696,14 +725,7 @@ void CVerifyLocalDataTask::Entry()
 				m_corruptedMD4.push_back(part);
 		}
 
-		if (!TestDestroy()) { // don't print or record an unfinished report
-			CVerifyLocalDataResult result;
-			result.date = (uint32)time(nullptr);
-			result.SetCorrupted(m_corruptedMD4, m_corruptedAICH);
-			PrintReport(fullPath, isAICHloaded, result);
-			CVerifyLocalDataEvent evt(m_fileID, m_fullPath, m_fileDate, m_fileSize, result);
-			wxQueueEvent(wxTheApp, evt.Clone());
-		}
+		PublishResult(isAICHloaded);
 
 	} catch (const CSafeIOException &e) {
 		AddLogLineC(CFormat(_("Verify Local Data: could not read %s, so the check did not finish: "

@@ -327,6 +327,12 @@ void CUpDownClient::AddReqBlock(Requested_Block_Struct *reqblock, bool bSignalIO
 		return;
 	}
 
+	// Even a request for a previously corrupt part may trigger a due recheck after repair.
+	// Verification is asynchronous and does not gate this upload on its completion.
+	if (theApp->uploadqueue->IsDownloading(this) && !m_bIOError) {
+		srcfile->MaybeScheduleVerification();
+	}
+
 	// A block in a part a check found corrupt. Peers are told we lack those parts, so this is a
 	// stale part status or a misbehaving client: end the session and send the current status.
 	if (!srcfile->IsPartFile() &&

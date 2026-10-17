@@ -74,6 +74,7 @@
 #include "SearchList.h"                      // Needed for searchlist lookup
 #include "NetworkFunctions.h"                // Needed for Uint32toStringIP (Kad note author)
 #include <tags/FileTags.h>                   // Needed for TAG_FILERATING / TAG_DESCRIPTION
+#include "Statistics.h"                      // Needed for theStats::GetUptimeMillis
 #include "ThreadTasks.h"                     // Needed for CThreadScheduler and CVerifyLocalDataTask
 
 #include "KadCallbackPolicy.h" // Needed for CanPublishSource
@@ -423,6 +424,26 @@ uint32 CKnownFile::GetUploadDatarate() const
 		total += ref.GetUploadDatarate();
 	}
 	return total;
+}
+
+void CKnownFile::MaybeScheduleVerification()
+{
+	const int days = thePrefs::GetSharedFileReverifyDays();
+	if (days <= 0 || IsPartFile()) {
+		return;
+	}
+	const uint64 uptime = theStats::GetUptimeMillis();
+	const time_t now = time(nullptr);
+	if (now <= 0 ||
+		!m_autoVerifySchedule.IsDue(days, m_verifyResult.date, static_cast<uint64>(now), uptime)) {
+		return;
+	}
+	// Avoid even constructing a snapshot on every request while another check is pending.
+	// AddTaskIfNoneOfType rechecks under the scheduler lock before taking ownership.
+	if (!CThreadScheduler::HasTaskOfType("VerifyLocalData") &&
+		CThreadScheduler::AddTaskIfNoneOfType(new CVerifyLocalDataTask(this, ETP_Low))) {
+		m_autoVerifySchedule.OnQueued(uptime);
+	}
 }
 
 void CKnownFile::WritePartStatus(CMemFile *file)

@@ -119,6 +119,7 @@ bool CPreferences::s_deadserver;
 CPath CPreferences::s_incomingdir;
 CPath CPreferences::s_tempdir;
 bool CPreferences::s_ICH;
+int CPreferences::s_sharedFileReverifyDays;
 uint8 CPreferences::s_depth3D;
 bool CPreferences::s_scorsystem;
 bool CPreferences::s_hideonclose;
@@ -1108,6 +1109,7 @@ void CPreferences::BuildItemList(const wxString &appdir)
 	NewCfgItem(IDC_INCFILES, (new Cfg_Path("/eMule/IncomingDir", s_incomingdir, incpath, true)));
 
 	NewCfgItem(IDC_ICH, (new Cfg_Bool("/eMule/ICH", s_ICH, true)));
+	s_MiscList.push_back(MkCfg_Int("/eMule/SharedFileReverifyDays", s_sharedFileReverifyDays, 0));
 	NewCfgItem(IDC_AICHTRUST, (new Cfg_Bool("/eMule/AICHTrust", s_AICHTrustEveryHash, false)));
 	NewCfgItem(IDC_CHECKDISKSPACE, (new Cfg_Bool("/eMule/CheckDiskspace", s_checkDiskspace, true)));
 	NewCfgItem(IDC_MINDISKSPACE, (MkCfg_Int("/eMule/MinFreeDiskSpace", s_uMinFreeDiskSpace, 500)));

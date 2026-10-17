@@ -97,6 +97,26 @@ void CThreadScheduler::Terminate()
 
 bool CThreadScheduler::AddTask(CThreadTask *task, bool overwrite)
 {
+	return AddTaskInternal(task, overwrite, false);
+}
+
+bool CThreadScheduler::AddTaskIfNoneOfType(CThreadTask *task)
+{
+	return AddTaskInternal(task, false, true);
+}
+
+bool CThreadScheduler::HasTaskOfType(const wxString &type)
+{
+	wxMutexLocker lock(s_lock);
+	if (!s_scheduler) {
+		return false;
+	}
+	const auto existing = s_scheduler->m_taskDescs.find(type);
+	return existing != s_scheduler->m_taskDescs.end() && !existing->second.empty();
+}
+
+bool CThreadScheduler::AddTaskInternal(CThreadTask *task, bool overwrite, bool uniqueType)
+{
 	wxMutexLocker lock(s_lock);
 
 	// When terminated (on shutdown), all tasks are ignored.
@@ -109,6 +129,13 @@ bool CThreadScheduler::AddTask(CThreadTask *task, bool overwrite)
 		AddDebugLogLineN(logThreads, "Scheduler created.");
 	}
 
+	if (uniqueType) {
+		const auto existing = s_scheduler->m_taskDescs.find(task->GetType());
+		if (existing != s_scheduler->m_taskDescs.end() && !existing->second.empty()) {
+			delete task;
+			return false;
+		}
+	}
 	return s_scheduler->DoAddTask(task, overwrite);
 }
 

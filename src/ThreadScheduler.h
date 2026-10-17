@@ -77,6 +77,14 @@ public:
 	 */
 	static bool AddTask(CThreadTask *task, bool overwrite = false);
 
+	/** Takes ownership, but queues only if no task of this type is queued or running.
+	 * The check and insertion are atomic. Useful for opportunistic background work.
+	 */
+	static bool AddTaskIfNoneOfType(CThreadTask *task);
+
+	/** Fast presence query, including the running task, without walking the task queue. */
+	static bool HasTaskOfType(const wxString &type);
+
 	/**
 	 * The number of tasks still to be completed: those waiting on the queue, plus the one being
 	 * executed.
@@ -93,6 +101,8 @@ public:
 	static size_t GetPendingCount(const wxString &type = wxEmptyString);
 
 private:
+	static bool AddTaskInternal(CThreadTask *task, bool overwrite, bool uniqueType);
+
 	CThreadScheduler();
 	~CThreadScheduler();
 

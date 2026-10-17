@@ -144,7 +144,7 @@ env:
   # Integration tests start and restart real processes. Run them separately
   # on Ubuntu outside the fast unit-test time budget, with 300 s each so a hung daemon
   # still fails the job. AllSearchIntegrationTest takes about 15 s on the runners.
-  ctest_fast_exclude: '^(CredentialsTest|AmuleApiConfigTest|IntegrationFixtureUnitTest|AmuleApiRestartIntegrationTest|AllSearchIntegrationTest|AllSearchClientCapabilityTest|ChatCaptchaIntegrationTest|PathDefaultsIntegrationTest|LogfilePathIntegrationTest|KadIndexLifecycleECTest|ShareWatcherMoveIntegrationTest|UploadRefillIntegrationTest|UploadRefillCompressedIntegrationTest|KnownHistoryIntegrationTest|KadDistributionECTest|KadPopulatedDistributionECTest|KadLookupECTest|KadPopulatedLookupECTest)$'
+  ctest_fast_exclude: '^(CredentialsTest|AmuleApiConfigTest|IntegrationFixtureUnitTest|AmuleApiRestartIntegrationTest|AllSearchIntegrationTest|AllSearchClientCapabilityTest|ChatCaptchaIntegrationTest|PathDefaultsIntegrationTest|LogfilePathIntegrationTest|KadIndexLifecycleECTest|ShareWatcherMoveIntegrationTest|UploadRefillIntegrationTest|UploadRefillCompressedIntegrationTest|SharedFileReverifyIntegrationTest|KnownHistoryIntegrationTest|KadDistributionECTest|KadPopulatedDistributionECTest|KadLookupECTest|KadPopulatedLookupECTest)$'
 
 jobs:
   # Window IDs in muuli_wdr.h and each EC enum in the .abstract files must not repeat a value. Two
@@ -213,7 +213,7 @@ jobs:
           xvfb-run -a ctest ${{ env.ctest_flags }} --timeout 10 -E '${{ env.ctest_fast_exclude }}' &&
           xvfb-run -a ctest ${{ env.ctest_flags }} --timeout 60 -R '${{ env.ctest_slow_unit_tests }}'
       - name: run integration tests
-        run: ctest ${{ env.ctest_flags }} --timeout 300 --no-tests=error -R '^(AmuleApiRestartIntegration|AllSearch(Integration|ClientCapability)|ChatCaptchaIntegration|PathDefaultsIntegration|LogfilePathIntegration|KadIndexLifecycleEC|ShareWatcherMoveIntegration|UploadRefill(Compressed)?Integration|KnownHistoryIntegration|KadDistributionEC|KadPopulatedDistributionEC|Kad(Populated)?LookupEC)Test$'
+        run: ctest ${{ env.ctest_flags }} --timeout 300 --no-tests=error -R '^(AmuleApiRestartIntegration|AllSearch(Integration|ClientCapability)|ChatCaptchaIntegration|PathDefaultsIntegration|LogfilePathIntegration|KadIndexLifecycleEC|ShareWatcherMoveIntegration|UploadRefill(Compressed)?Integration|SharedFileReverifyIntegration|KnownHistoryIntegration|KadDistributionEC|KadPopulatedDistributionEC|Kad(Populated)?LookupEC)Test$'
       # amuleapi_curl_smoke drives these two against a live daemon rather than
       # compiling its own copy. Release only: the smoke times SSE windows, and
       # a Debug daemon makes those flaky.
@@ -304,7 +304,7 @@ jobs:
           xvfb-run -a ctest ${{ env.ctest_flags }} --timeout 10 -E '${{ env.ctest_fast_exclude }}' &&
           xvfb-run -a ctest ${{ env.ctest_flags }} --timeout 60 -R '${{ env.ctest_slow_unit_tests }}'
       - name: run integration tests
-        run: ctest ${{ env.ctest_flags }} --timeout 300 --no-tests=error -R '^(AmuleApiRestartIntegration|AllSearch(Integration|ClientCapability)|ChatCaptchaIntegration|PathDefaultsIntegration|LogfilePathIntegration|KadIndexLifecycleEC|ShareWatcherMoveIntegration|UploadRefill(Compressed)?Integration|KnownHistoryIntegration|KadDistributionEC|KadPopulatedDistributionEC|Kad(Populated)?LookupEC)Test$'
+        run: ctest ${{ env.ctest_flags }} --timeout 300 --no-tests=error -R '^(AmuleApiRestartIntegration|AllSearch(Integration|ClientCapability)|ChatCaptchaIntegration|PathDefaultsIntegration|LogfilePathIntegration|KadIndexLifecycleEC|ShareWatcherMoveIntegration|UploadRefill(Compressed)?Integration|SharedFileReverifyIntegration|KnownHistoryIntegration|KadDistributionEC|KadPopulatedDistributionEC|Kad(Populated)?LookupEC)Test$'
 
   # Configures with the oldest CMake that CMakeLists.txt declares, so the floor stays
   # true. Configure only: the build itself does not depend on the CMake version.

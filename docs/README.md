@@ -155,6 +155,34 @@ sources have it. Switching servers, joining Kad, or simply waiting often
 turns red into blue/black over hours.
 
 
+## Re-verify requested shared files
+
+To re-verify shared files every N days, stop aMule (or `amuled`), set
+`SharedFileReverifyDays=N` in the existing `[eMule]` section of
+`~/.aMule/amule.conf`, then restart. The default is `0` (off); negative values
+also disable checks. This setting currently has no GUI or remote-control toggle.
+It replaces the experimental `VerifyUploads` setting, which is no longer used.
+
+A valid block request for a completed file triggers a background Verify Local
+Data check when its last completed check is at least N days old, or it has never
+been checked. Files nobody requests and incomplete downloads are not checked.
+At most one automatic check is queued or running, at low priority so hashing
+newly shared files takes precedence. Requests arriving while verification is
+busy can trigger their check on a later request.
+
+Uploads continue while a check runs or if it cannot run. The existing verifier
+checks MD4 part hashes and, when available, AICH block hashes. Its result and date
+are saved in `known.met`; parts found corrupt are withheld from peers, including
+after restart. Healthy parts remain available. Original hashes and file contents
+are preserved; verification does not repair files. Already queued network
+packets cannot be recalled.
+
+To avoid repeated disk reads and log messages on every request, an automatic
+attempt is retried no sooner than N days later during the same session, even
+if it could not finish. Restarting permits another attempt when no recent
+completed result exists. Manual Verify Local Data remains available at any time.
+
+
 ## Common file types
 
 | Group     | Extensions |

@@ -42,8 +42,9 @@
 #include "RLE.h" // Needed for RLE_Data, PartFileEncoderData
 #endif
 
-#include "Constants.h"             // Needed for PS_*, PR_*
-#include "ClientRef.h"             // Needed for CClientRef
+#include "Constants.h" // Needed for PS_*, PR_*
+#include "ClientRef.h" // Needed for CClientRef
+#include "SharedFileVerifySchedule.h"
 #include "VerifyLocalDataResult.h" // Needed for CVerifyLocalDataResult
 
 class CFileDataIO;
@@ -316,6 +317,8 @@ public:
 	uint32 GetUploadDatarate() const;          // sum of per-client upload speed (B/s)
 	uint16 GetTransferringClientCount() const; // clients currently US_UPLOADING
 	void VerifyLocalData() const;
+	// Called on the main thread for valid upload requests; never waits for the check.
+	void MaybeScheduleVerification();
 	// The part status sent to peers: count 0 means "every part", else a bitmap. A complete file
 	// withholds the parts a check found corrupt; CPartFile sends the parts it has.
 	virtual void WritePartStatus(CMemFile *file);
@@ -433,6 +436,7 @@ public:
 	time_t m_dateShared;
 
 	CVerifyLocalDataResult m_verifyResult;
+	CSharedFileVerifySchedule m_autoVerifySchedule;
 
 	// "Last time aMule saw this exact (name, date, size) match a real file." Refreshed by
 	// CKnownFileList::FindKnownFile and the "already on the list" branch in Append, persisted
