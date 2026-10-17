@@ -329,6 +329,22 @@ msgid "Now, exiting main app..."
 msgstr "Teraz, zakańczam główną aplikację..."
 
 #: src/amule.cpp
+msgid "Saving window settings..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving client credits..."
+msgstr ""
+"\n"
+"Tworzenie klienta...\n"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Stopping helper applications..."
+msgstr "Wychodzi z programu."
+
+#: src/amule.cpp
 #, c-format
 msgid "Terminating amuleweb instance with pid '%d' ... "
 msgstr "Zakańczam instancję amuleweb z pid `%d' ... "
@@ -358,12 +374,31 @@ msgid "aMule OnExit: Terminating core."
 msgstr "aMule OnExit: Zakończenie jądra."
 
 #: src/amule.cpp
+#, fuzzy
+msgid "Saving search results..."
+msgstr "Wynik wyszukiwania"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving downloads and shared files..."
+msgstr "Przeładowywanie udostępnionych plików..."
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Flushing download buffers..."
+msgstr "Usuwanie pliku: %s"
+
+#: src/amule.cpp
 msgid "aMule shutdown completed."
 msgstr "Zamykanie aMule zakończone."
 
 #: src/amule.cpp
 msgid "Memory debug results for aMule exit:"
 msgstr "Wyniki debugu pamięci dla wyjścia aMule:"
+
+#: src/amule.cpp
+msgid "Finishing shutdown..."
+msgstr ""
 
 #: src/amule.cpp
 #, fuzzy, c-format
@@ -682,6 +717,28 @@ msgstr ""
 #, c-format
 msgid "Disk space preallocation for file '%s' failed: %s"
 msgstr "Wstępna alokacja dysku dla pliku '%s' nie powiodła się: %s"
+
+#: src/amule.cpp
+msgid "Stopping network services..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving source seeds..."
+msgstr "Ziarna źródła"
+
+#: src/amule.cpp
+msgid "Stopping background downloads and workers..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Closing connections..."
+msgstr " łączy się..."
+
+#: src/amule.cpp
+msgid "Saving known files and statistics..."
+msgstr ""
 
 #: src/amule.cpp
 msgid "ERROR: can't open logfile"
@@ -8338,6 +8395,11 @@ msgstr "Zdalna nazwa pliku"
 #: src/SourceListCtrl.cpp
 msgid "A4AF"
 msgstr "A4AF"
+
+#: src/SplashScreen.cpp
+#, fuzzy
+msgid "Closing aMule"
+msgstr "Pokaż aMule"
 
 #: src/Statistics.cpp
 #, c-format

@@ -16,7 +16,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-10-15 19:15+0000\n"
+"PO-Revision-Date: 2026-10-16 23:24+0000\n"
 "Last-Translator: Dylan Aïssi <bob.dybian@gmail.com>\n"
 "Language-Team: Français\n"
 "Language: fr\n"
@@ -353,6 +353,22 @@ msgid "Now, exiting main app..."
 msgstr "Et maintenant on quitte l'application principale…"
 
 #: src/amule.cpp
+msgid "Saving window settings..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving client credits..."
+msgstr ""
+"\n"
+"Création du client en cours…\n"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Stopping helper applications..."
+msgstr "Quitte l'application."
+
+#: src/amule.cpp
 #, c-format
 msgid "Terminating amuleweb instance with pid '%d' ... "
 msgstr "Interruption de l'instance amuleweb avec le pid '%d' … "
@@ -382,12 +398,31 @@ msgid "aMule OnExit: Terminating core."
 msgstr "aMule OnExit : Arrêt du noyau."
 
 #: src/amule.cpp
+#, fuzzy
+msgid "Saving search results..."
+msgstr "Résultat de la recherche"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving downloads and shared files..."
+msgstr "Rechargement des fichiers partagés…"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Flushing download buffers..."
+msgstr "Hachage des fichiers téléchargés : %s"
+
+#: src/amule.cpp
 msgid "aMule shutdown completed."
 msgstr "Fermeture d'aMule terminée."
 
 #: src/amule.cpp
 msgid "Memory debug results for aMule exit:"
 msgstr "Résultats du débogage de la mémoire pour la sortie d'aMule :"
+
+#: src/amule.cpp
+msgid "Finishing shutdown..."
+msgstr ""
 
 #: src/amule.cpp
 #, c-format
@@ -528,7 +563,7 @@ msgstr "Impossible d’écrire le jeton EC d’amuleapi dans %s ; amuleapi uti
 
 #: src/amule.cpp
 msgid "An exception occurred while launching amuleapi."
-msgstr ""
+msgstr "Une exception est survenue lors du lancement d'amuleapi."
 
 #: src/amule.cpp
 #, c-format
@@ -537,21 +572,21 @@ msgstr "amuleapi s'exécutant avec le pid %d"
 
 #: src/amule.cpp
 msgid "Could not launch amuleapi during automatic restart."
-msgstr ""
+msgstr "Échec du lancement d'amuleapi lors du redémarrage automatique."
 
 #: src/amule.cpp
 msgid "You requested to run amuleapi on startup, but the amuleapi binary cannot be run. Please install the package containing aMule's REST API server, or build aMule from source with -DBUILD_AMULEAPI=YES and install it."
 msgstr "Vous avez demandé à exécuter amuleapi au démarrage, mais le binaire amuleapi ne peut être exécuté. Veuillez installer le paquet contenant le serveur API RESTd'aMule, ou compilez aMule depuis le code source avec -DBUILD_AMULEAPI=YES et installez-le."
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Could not remove the amuleapi EC token file: %s"
-msgstr "Impossible d’enregistrer le mot de passe d’amuleapi : %s"
+msgstr "Impossible d'enlever le fichier de jeton de connexion externe d'amuleapi : %s"
 
 #: src/amule.cpp
 #, c-format
 msgid "amuleapi will restart in %u seconds."
-msgstr ""
+msgstr "amuleapi va redémarrer dans %u secondes."
 
 #: src/amule.cpp
 #, c-format
@@ -701,6 +736,28 @@ msgstr "Vérifier les données locales : un autre fichier nommé « %s » dans 
 #, c-format
 msgid "Disk space preallocation for file '%s' failed: %s"
 msgstr "Erreur lors de la réserve d'espace pour le fichier '%s' : %s"
+
+#: src/amule.cpp
+msgid "Stopping network services..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving source seeds..."
+msgstr "Source Seeds"
+
+#: src/amule.cpp
+msgid "Stopping background downloads and workers..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Closing connections..."
+msgstr " se connecte…"
+
+#: src/amule.cpp
+msgid "Saving known files and statistics..."
+msgstr ""
 
 #: src/amule.cpp
 msgid "ERROR: can't open logfile"
@@ -3227,7 +3284,7 @@ msgstr "Téléchargement HTTP annulé"
 #: src/HTTPDownload.cpp
 #, c-format
 msgid "HTTP download of %s stopped: it is larger than %u MiB."
-msgstr ""
+msgstr "Téléchargement HTTP de %s arrêté : il est supérieur à %u MiB."
 
 #: src/HTTPDownload.cpp
 msgid "The URL to download can't be empty"
@@ -3384,11 +3441,11 @@ msgstr "Contacts de la table de routage : %u ; vérifiés : %u ; sous-rés
 
 #: src/KadDlg.cpp
 msgid "Requesting Kad lookup diagnostics..."
-msgstr ""
+msgstr "Demande des diagnostics de recherche Kad…"
 
 #: src/KadDlg.cpp
 msgid "The connected core does not support Kad lookup diagnostics."
-msgstr ""
+msgstr "Le noyau connecté ne prend pas en charge les diagnostics de recherche Kad."
 
 #: src/KadDlg.cpp src/muuli_wdr.cpp src/StatisticsDlg.cpp
 msgid "Current"
@@ -3437,19 +3494,19 @@ msgstr "Continuer ?"
 
 #: src/KadLookupView.h
 msgid "Kad lookup diagnostics"
-msgstr ""
+msgstr "Diagnostics de recherche Kad"
 
 #: src/KadLookupView.h
 msgid "The core does not support Kad lookup diagnostics."
-msgstr ""
+msgstr "Le noyau ne prend pas en charge les diagnostics de recherche Kad."
 
 #: src/KadLookupView.h
 msgid "Invalid Kad lookup diagnostics reply."
-msgstr ""
+msgstr "Réponse de diagnostics de recherche Kad invalide."
 
 #: src/KadLookupView.h
 msgid "Connection lost. Reconnect and request lookup diagnostics again."
-msgstr ""
+msgstr "Connexion perdue. Reconnectez-vous et demandez à nouveau les diagnostics de recherche."
 
 #: src/kademlia/kademlia/SearchManager.cpp
 msgid "Kademlia: search keyword too short"
@@ -3489,120 +3546,109 @@ msgstr[0] "%d contact Kad écrit"
 msgstr[1] "%d contacts Kad écrits"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
-#, fuzzy
 msgid "Node"
-msgstr "Nœuds (0)"
+msgstr "Nœud"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
-#, fuzzy
 msgid "Complete node"
-msgstr "Terminé"
+msgstr "Nœud complet"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
-#, fuzzy
 msgid "File"
-msgstr "Fichiers"
+msgstr "Fichier"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
 msgid "Keyword"
-msgstr ""
+msgstr "Mot-clef"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
 msgid "Notes"
-msgstr ""
+msgstr "Notes"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
 msgid "Publish file"
-msgstr ""
+msgstr "Publier le fichier"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
 msgid "Publish keyword"
-msgstr ""
+msgstr "Publier le mot-clef"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
 msgid "Publish notes"
-msgstr ""
+msgstr "Publier les notes"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
-#, fuzzy
 msgid "Find buddy"
-msgstr "Pas de pote"
+msgstr "Trouver le pote"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
-#, fuzzy
 msgid "Find source"
-msgstr "Sources du fichier :"
+msgstr "Trouver la source"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
-#, fuzzy
 msgid "Special node"
-msgstr "Nouveau nœud"
+msgstr "Nœud spécial"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
-#, fuzzy
 msgid "UDP firewall check"
-msgstr "derrière un pare-feu"
+msgstr "Vérification de pare-feu UDP"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
 #, c-format
 msgid "type %u"
-msgstr ""
+msgstr "type %u"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
 #, c-format
 msgid "Lookup %s (%s, %s): %u peers, %u overdue routing requests, %u omitted peers, %u evicted referrals"
-msgstr ""
+msgstr "Recherche %s (%s, %s) : %u pairs, %u demandes d'acheminement en retard, %u pairs omis, %u références ignorées"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
 msgid "active lookup"
-msgstr ""
+msgstr "recherche active"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
-#, fuzzy
 msgid "finished lookup"
-msgstr "terminé"
+msgstr "recherche terminée"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Keyword: %s"
-msgstr "Filtré : %s"
+msgstr "Mot-clef : %s"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
 #, c-format
 msgid "%s [%s], distance %s, Kad version %u (%s): %u routing requests, %u replies, last RTT %u ms, %u item requests, %u result packets, %u result records"
-msgstr ""
+msgstr "%s [%s], distance %s, version de Kad %u (%s) : %u demandes d'acheminement, %u réponses, dernier RTT %u ms, %u demandes d'élément, %u paquets de résultat, %u éléments de résultat"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
 msgid "awaiting reply"
-msgstr ""
+msgstr "attente de réponse"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
-#, fuzzy
 msgid "reply received"
-msgstr "Non reçu"
+msgstr "réponse reçue"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
 #, c-format
 msgid "+%u ms: %s referred %s (distance %s, %s)"
-msgstr ""
+msgstr "+%u ms : %s a référencé %s (distance %s, %s)"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
 msgid "closer to target"
-msgstr ""
+msgstr "plus près de la cible"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
-#, fuzzy
 msgid "no closer to target"
-msgstr "Destinataire de discussion inconnu"
+msgstr "pas plus près de la cible"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
 msgid "Overdue means a routing request unanswered for at least 3 seconds; late replies may still arrive. Result records are received records, not unique files. Only bounded recent history is retained."
-msgstr ""
+msgstr "En retard signifie une demande sans réponse pendant au moins 3 secondes ; des réponses tardives peuvent encore arriver. Les éléments de réponse sont les éléments reçus, pas des fichiers uniques. Seule une partie délimitée de l'historique récente est conservée."
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
-#, fuzzy
 msgid "No Kad lookup history available."
-msgstr "pas d'option disponible"
+msgstr "Aucune historique de recherche Kad n'est disponible."
 
 #: src/KnownFile.cpp
 msgid "Kad user"
@@ -3611,7 +3657,7 @@ msgstr "Utilisateur Kad"
 #: src/KnownFile.cpp
 #, c-format
 msgid "Verify Local Data: %s is still downloading, so it was not checked."
-msgstr ""
+msgstr "Vérifier les données locales : %s est toujours en cours de téléchargement, donc il n'a pas été vérifié."
 
 #: src/KnownFile.cpp
 #, c-format
@@ -3925,9 +3971,9 @@ msgid "External Connection: Handshake failed."
 msgstr "Connexion externe : Échange raté."
 
 #: src/LibSocketAsio.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "WARNING: network interface '%s' is gone - traffic is no longer bound to it and may leave via the default route."
-msgstr "AVERTISSEMENT : impossible de lier à l'interface réseau '%s' - le trafic peut emprunter le chemin par défaut."
+msgstr "AVERTISSEMENT : l'interface réseau '%s' a disparu – le trafic n'y est plus lié et peut sortir par le chemin par défaut."
 
 #: src/LibSocketAsio.cpp
 #, c-format
@@ -3958,7 +4004,7 @@ msgstr "AVERTISSEMENT : "
 #: src/MediaProbe.cpp
 #, c-format
 msgid "Media metadata: not using %s, because another user owns it or a folder above it."
-msgstr ""
+msgstr "Métadonnées multimédias : %s n'est pas utilisé, car un autre utilisateur le détient lui ou le répertoire au-dessus."
 
 #: src/MediaProbe.cpp
 msgid "Media metadata: no ffprobe binary found. Install ffmpeg, or set the ffprobe path in preferences; length, bitrate and codec will not be extracted."
@@ -4314,9 +4360,8 @@ msgid "Type"
 msgstr "Type"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Search network"
-msgstr "Erreur de recherche"
+msgstr "Rechercher sur le réseau"
 
 #: src/muuli_wdr.cpp
 msgid "Extended Parameters"
@@ -4932,7 +4977,7 @@ msgstr "Lecteur vidéo"
 
 #: src/muuli_wdr.cpp
 msgid "Line capacities"
-msgstr ""
+msgstr "Capacités de la ligne"
 
 #: src/muuli_wdr.cpp
 msgid "Upload"
@@ -4943,14 +4988,12 @@ msgid "Bandwidth limits"
 msgstr "Limites de la bande passante"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Enable download limit"
-msgstr "Limite de téléchargement"
+msgstr "Activer la limite de téléchargement"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Enable upload limit"
-msgstr "Limite d'émission"
+msgstr "Activer la limite d'émission"
 
 #: src/muuli_wdr.cpp
 msgid "Slot Allocation"
@@ -4993,9 +5036,8 @@ msgid "Bind to network interface (empty for any):"
 msgstr "Lier à une interface réseau (vide pour toutes) :"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Advanced users only: pin aMule's peer-to-peer traffic, and its HTTP updates where the platform allows, to one network interface, chosen from the list or typed in by name (e.g. tun0, eth0, en0) or index. Unlike binding to an IP, this stops traffic leaking out via the default route - useful with a VPN. On Linux before kernel 5.7 it needs the CAP_NET_RAW capability."
-msgstr "Utilisateurs avancé uniquement : affecter tout le trafic d'aMule à une interface réseau unique, choisie depuis la liste ou bien par la saisie de son nom (par exemple tun0, eth0, en0) ou son index. Contrairement à la liaison à une adresse IP, cela empêche le trafic de fuiter par la route par défaut - utile avec un VPN. Ne nécessite pas de privilèges élevés."
+msgstr "Utilisateurs avancé uniquement : affecter tout le trafic pair à pair d'aMule et ses mises à jour HTTP lorsque la plateforme le permet à une interface réseau unique, choisie depuis la liste ou bien par la saisie de son nom (par exemple tun0, eth0, en0) ou son index. Contrairement à la liaison à une adresse IP, cela empêche le trafic de fuiter par la route par défaut - utile avec un VPN. Sous GNU/Linux, pour les versions antérieures au noyau 5.7, la capacité CAP_NET_RAW est requise."
 
 #: src/muuli_wdr.cpp
 msgid "Max sources per downloading file:"
@@ -5019,11 +5061,11 @@ msgstr "Reconnecter en cas de déconnexion"
 
 #: src/muuli_wdr.cpp
 msgid "File repair hashes over Kad"
-msgstr ""
+msgstr "Hachages de réparation de fichiers sur Kad"
 
 #: src/muuli_wdr.cpp
 msgid "Share and use file repair hashes (AICH) over Kad"
-msgstr ""
+msgstr "Partager et utiliser les hachages de réparation de fichiers (AICH) sur Kad"
 
 #: src/muuli_wdr.cpp
 msgid ""
@@ -5035,10 +5077,17 @@ msgid ""
 "\n"
 "Technical detail: enabling this advertises Kad protocol version 0x0a and adds AICH hashes to keyword publish and search results."
 msgstr ""
+"Partager les hachages de réparation de fichiers avec d'autres nœuds Kad et en apprendre via les recherches Kad. Ces hachages peuvent aider aMule à réparer les téléchargements endommagés sans avoir à télécharger la partie entière à nouveau\n"
+"\n"
+"Les Kad très anciens (avant eMule 0.49b) peuvent manquer les résultats de recherche contenant ces hachages. Si vous remarquez des résultats manquants, essayez de désactiver cette option.\n"
+"\n"
+"Désactiver cette option entraîne la suppression des hachages de réparation stockés dans votre index Kad lors du prochain enregistrement. La réactiver recommence à les collecter.\n"
+"\n"
+"Détail technique : activer cette option annonce la version de protocole de Kad 0x0a et ajoute les hachages AICH à la publication des mots-clefs et aux résultats de recherche."
 
 #: src/muuli_wdr.cpp
 msgid "Ignore repair hashes from Kad nodes too old to support them"
-msgstr ""
+msgstr "Ignorer les hachages de réparation provenant de nœuds Kad trop anciens pour les prendre en charge"
 
 #: src/muuli_wdr.cpp
 msgid ""
@@ -5048,6 +5097,11 @@ msgid ""
 "\n"
 "Technical detail: rejects AICH publish tags from nodes advertising Kad protocol versions below 0x09."
 msgstr ""
+"Ne s'applique que lorsque le du partage et l'utilisation des hachages de réparation sur Kad sont activés. Ignorer les hachages publiés par les nœuds qui font état d'une version de Kad trop ancienne pour les prendre en charge.\n"
+"\n"
+"La version indiquée d'un nœud peut être dépassée ou inexacte, donc cela peut supprimer les hachages valides et ne rend pas les hachages acceptés fiables. Les nœuds dont la version est inconnue sont néanmoins acceptées.\n"
+"\n"
+"Détail technique : rejette les étiquettes de publication AICH depuis les nœuds annonçant une version  de protocole de Kad inférieures à 0x09."
 
 #: src/muuli_wdr.cpp
 msgid "Remove dead server after"
@@ -5150,13 +5204,12 @@ msgid "Enter here the min disk space desired."
 msgstr "Entrez ici l'espace disque minimum désiré."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Save up to 10 HighID sources of rare files (20 or fewer sources) on exit"
-msgstr "Sauver 10 sources pour les fichiers rares (< 20 sources)"
+msgstr "Sauvegarder jusqu'à 10 sources HighID pour les fichiers rares (20 sources ou moins) lors de la fermeture"
 
 #: src/muuli_wdr.cpp
 msgid "The saved sources are used again only if aMule restarts within 2 hours. LowID sources are not saved: a LowID only identifies a peer on the server that assigned it."
-msgstr ""
+msgstr "Les sources sauvegardées sont utilisées à nouveau seulement si aMule redémarre dans un délai de deux heures. Les sources LowID ne sont pas sauvegardées : un LowID ne fait qu'identifier un pair sur le serveur qui le lui a attribué."
 
 #: src/muuli_wdr.cpp src/Statistics.cpp
 msgid "Uploads"
@@ -5259,27 +5312,24 @@ msgid "Follow symbolic links in shared folders"
 msgstr "Suivre les liens symboliques dans les répertoires partagés"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Exclude files and folders matching:"
-msgstr "Exclure les fichiers correspondant à :"
+msgstr "Exclure les fichiers et les répertoires correspondant à :"
 
 #: src/muuli_wdr.cpp
 msgid "Files and folders whose name matches are not shared. A matching folder inside a share that includes its subfolders is skipped with everything in it; a folder you share yourself is always shared. Matching is case-insensitive. As wildcards: patterns separated by '|', e.g. .DS_Store|Thumbs.db|*.tmp, where '*' matches any run of characters and '?' a single one. Tick the box below to write one regular expression instead."
-msgstr ""
+msgstr "Les fichiers et les répertoires dont le nom correspond ne sont pas partagés. Un répertoire correspondant au sein d'un partage qui comprend ses sous-répertoires est ignoré avec tout ce qu'il contient ; un répertoire que vous avez partagé vous-même est toujours partagé. La correspondance est insensible à la casse. En guise de jokers : les motifs séparés par '|', par exemple .DS_Store|Thumbs.db|*.tmp où '*' correspond à n'importe quelle suite de caractères et '?' à un seul. Cochez la case ci-dessous pour saisir plutôt une expression régulière."
 
 #: src/muuli_wdr.cpp
 msgid "Patterns are regular expressions"
 msgstr "Les motifs sont des expressions régulières"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "When set, the whole field is one regular expression: '|' is alternation, and '*' and '?' take their regular-expression meaning rather than the wildcard one. When unset, it is a list of '|'-separated wildcards."
-msgstr "Lorsque l'option est activée, la totalité du champ est une expression régulière ('|' indique une alternative). Lorsque l'option est désactivée, il s'agit d'une liste de caractères génériques séparés par des '|'."
+msgstr "Lorsque l'option est activée, la totalité du champ est une expression régulière : '|' indique une alternative et '*' ainsi que '?' prennent leur sens d'expression régulière plutôt que d'être des caractères génériques ou jokers. Lorsque l'option est désactivée, il s'agit d'une liste de caractères génériques séparés par des '|'."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Show how many of the files and folders in your shared folders the current pattern would exclude, counted over the last scan."
-msgstr "Afficher combien de fichiers partagés le motif actuel exclurait."
+msgstr "Afficher combien de fichiers et répertoires dans vos répertoires partagés le motif actuel exclurait, compté depuis la dernière analyse."
 
 #: src/muuli_wdr.cpp
 msgid "When the connected core's files live on a different machine, map a path prefix it reports to where that filesystem is reachable from here (a network share, say) so \"Open\" and \"Show in folder\" work."
@@ -5435,23 +5485,23 @@ msgstr "Désactiver la mise en veille programmé de l'ordinateur"
 
 #: src/muuli_wdr.cpp
 msgid "Appearance: "
-msgstr ""
+msgstr "Apparence : "
 
 #: src/muuli_wdr.cpp
 msgid "Follow system"
-msgstr ""
+msgstr "Suivre le système"
 
 #: src/muuli_wdr.cpp
 msgid "Light mode"
-msgstr ""
+msgstr "Mode clair"
 
 #: src/muuli_wdr.cpp
 msgid "Dark mode"
-msgstr ""
+msgstr "Mode sombre"
 
 #: src/muuli_wdr.cpp
 msgid "Appearance changes take effect after restarting aMule."
-msgstr ""
+msgstr "Les modifications d'apparence prennent effet après un redémarrage d'aMule."
 
 #: src/muuli_wdr.cpp
 msgid "Skin to use: "
@@ -5727,7 +5777,7 @@ msgstr "Entrer l'URL d'un fichier nodes.dat ici et presser le bouton à gauche p
 
 #: src/muuli_wdr.cpp
 msgid "Lookup diagnostics"
-msgstr ""
+msgstr "Diagnostics de recherche"
 
 #: src/muuli_wdr.cpp
 msgid "Nodes stats"
@@ -5964,13 +6014,12 @@ msgid "Download the GeoIP database from the selected source."
 msgstr "Télécharger la base de données GeoIP depuis la source sélectionnée."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Auto-update on startup and weekly"
-msgstr "Mise à jour automatique au démarrage"
+msgstr "Mise à jour automatique au démarrage et de manière hebdomadaire"
 
 #: src/muuli_wdr.cpp
 msgid "Check for a newer GeoIP database at startup and every week while aMule is running."
-msgstr ""
+msgstr "Vérifier la présence d'une base de données GeoIP plus récente au démarrage et chaque semaine pendant qu'aMule est en cours d'exécution."
 
 #: src/muuli_wdr.cpp
 msgid "Filter incoming messages (except current chat):"
@@ -6226,7 +6275,7 @@ msgstr "jours"
 #: src/OtherFunctions.cpp
 #, c-format
 msgid "%u kbps"
-msgstr ""
+msgstr "%u kbps"
 
 #. TRANSLATORS:
 #. Punctuation for a "label: value" pair. %s is the already-translated
@@ -6630,12 +6679,12 @@ msgstr "Le port par défaut sera utilisé (%d)"
 
 #: src/BandwidthLimitSlider.h
 msgid "Adjust the enabled limit from 1 KiB/s to line capacity."
-msgstr ""
+msgstr "Ajuster la limite activée de 1 KiB/s jusqu'à la capacité totale de la ligne."
 
 #: src/BandwidthLimitSlider.h
-#, fuzzy, c-format
+#, c-format
 msgid "KiB/s (%.2f MiB/s)"
-msgstr "%.1f Mio/s"
+msgstr "KiB/s (%.2f MiB/s)"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Interface"
@@ -6779,9 +6828,8 @@ msgid "- Network interface binding changed.\n"
 msgstr "- La liaison de Interface réseau modifiée.\n"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "- Local address binding changed.\n"
-msgstr "- La liaison de Interface réseau modifiée.\n"
+msgstr "- La liaison vers l'adresse locale a été modifiée.\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- TCP port changed.\n"
@@ -6919,7 +6967,7 @@ msgstr "Impossible de supprimer l'enregistrement du gestionnaire d'URL."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "macOS does not let an application stop being the default handler. To stop aMule opening these, make another application the default."
-msgstr ""
+msgstr "macOS ne permet pas à une application de cesser d'être le gestionnaire par défaut. Pour qu'aMule arrête de les ouvrir, définissez une autre application par défaut."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "The web server and aMule API require external connections to be enabled."
@@ -6957,28 +7005,28 @@ msgid "Choose a folder for %s"
 msgstr "Choisir un dossier pour %s"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Would exclude %u or more of the files in your shared folders"
-msgstr "Exclurait %u fichier sur %u fichier partagé"
+msgstr "Exclurait %u ou davantage de fichiers dans vos répertoires partagés"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Would exclude %u of %u file in your shared folders"
 msgid_plural "Would exclude %u of %u files in your shared folders"
-msgstr[0] "Exclurait %u fichier sur %u fichier partagé"
-msgstr[1] "Exclurait %u fichiers sur %u fichiers partagés"
+msgstr[0] "Exclurait %u fichier sur %u fichier dans vos répertoires partagés"
+msgstr[1] "Exclurait %u fichiers sur %u fichiers dans vos répertoires partagés"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Would also exclude %u or more folders, with everything in them"
-msgstr "Exclurait %u fichier sur %u fichier partagé"
+msgstr "Exclurait également %u ou davantage de répertoires, avec tout ce qu'ils contiennent"
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "Would also exclude %u folder, with everything in it"
 msgid_plural "Would also exclude %u folders, with everything in them"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Exclurait également %u répertoire, avec tout ce qu'il contient"
+msgstr[1] "Exclurait également %u répertoires, avec tout ce qu'ils contiennent"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Browse for videoplayer"
@@ -7130,6 +7178,9 @@ msgid ""
 "Chat and observed download completions support GUI commands with a remote core.\n"
 "Already completed downloads do not run commands at first sync or reconnect."
 msgstr ""
+"Les commandes du noyau doivent être configurées dans le fichier amule.conf du démon.\n"
+"Les discussions et les téléchargements terminés observés prennent en charge les commandes GUI avec un noyau distant.\n"
+"Les téléchargements déjà terminés n'exécutent pas de commandes lors de la première synchronisation ou lors de la reconnexion."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "The following variables will be replaced:"
@@ -7242,9 +7293,9 @@ msgid "Only saving the first %u of %u results for search \"%s\"."
 msgstr "Seuls les %u résultats sur %u sont enregistrés pour la recherche « %s »."
 
 #: src/SearchList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "IO error while saving %s: %s"
-msgstr "Erreur d'E/S lors de la lecture du fichier %s : %s"
+msgstr "Erreur d'E/S lors de la sauvegarde de %s : %s"
 
 #: src/SearchList.cpp
 msgid "WARNING: Stored search list corrupted, contains invalid header."
@@ -7255,9 +7306,8 @@ msgid "Invalid entry in stored search list, file may be corrupt"
 msgstr "Entrée invalide dans la liste des recherches enregistrée, le fichier est peut-être corrompu"
 
 #: src/SearchList.cpp
-#, fuzzy
 msgid "All search can't be done if neither eD2k nor Kad is available"
-msgstr "Une recherche Kad ne peut pas être faite si Kad n'est pas lancé"
+msgstr "Aucune recherche ne peut être effectuée si ni eD2k ni Kad ne sont disponibles"
 
 #: src/SearchList.cpp
 msgid "eD2k search can't be done if eD2k is not connected"
@@ -7265,7 +7315,7 @@ msgstr "La recherche eD2k ne peut être établie si eD2k n'est pas connecté"
 
 #: src/SearchList.cpp
 msgid "All search: no usable Kad keyword; continuing with eD2k."
-msgstr ""
+msgstr "Recherche totale : aucun mot-clef Kad utilisable ; poursuite avec eD2k."
 
 #: src/SearchList.cpp
 msgid "No keyword for Kad search - aborting"
@@ -7277,7 +7327,7 @@ msgstr "Erreur imprévue lors de la tentative de recherche Kad : "
 
 #: src/SearchList.cpp
 msgid "All search: Kad component could not start: "
-msgstr ""
+msgstr "Recherche totale : le composant Kad n'a pu démarrer : "
 
 #: src/SearchList.cpp
 msgid "Search timed out: the server did not answer."
@@ -7328,37 +7378,32 @@ msgid "New"
 msgstr "Nouveau"
 
 #: src/SearchModeIcons.h
-#, fuzzy
 msgid "eD2k: Current server"
-msgstr "Liste de serveurs eD2k (server.met)"
+msgstr "eD2k : serveur actuel"
 
 #: src/SearchModeIcons.h
-#, fuzzy
 msgid "eD2k: All servers"
-msgstr "Supprimer tous les serveurs"
+msgstr "eD2k : tous les serveurs"
 
 #: src/SearchModeIcons.h
-#, fuzzy
 msgid "All networks"
-msgstr "Pas de réseau"
+msgstr "Tous les réseaux"
 
 #: src/SearchModeIcons.h
-#, fuzzy
 msgid "Search the connected eD2k server."
-msgstr "Serveur connecté."
+msgstr "Rechercher sur le serveur eD2k connecté."
 
 #: src/SearchModeIcons.h
 msgid "Search the connected eD2k server and other servers in the server list."
-msgstr ""
+msgstr "Rechercher sur le serveur eD2k connecté et sur les autres serveurs de la liste des serveurs."
 
 #: src/SearchModeIcons.h
-#, fuzzy
 msgid "Search the Kad network."
-msgstr "Se connecter au réseau."
+msgstr "Rechercher sur le réseau Kad."
 
 #: src/SearchModeIcons.h
 msgid "Search eD2k servers and Kad, using whichever networks are available."
-msgstr ""
+msgstr "Rechercher sur les serveurs eD2k et sur Kad, en utilisant les réseaux disponibles, quels qu'ils soient."
 
 #: src/SearchPacket.cpp
 #, c-format
@@ -7407,36 +7452,35 @@ msgstr "Aucune recherche à signaler.\n"
 #: src/SearchSourceFormat.h
 #, c-format
 msgid "Estimated availability: %u"
-msgstr ""
+msgstr "Disponibilité estimée : %u"
 
 #: src/SearchSourceFormat.h
-#, fuzzy, c-format
+#, c-format
 msgid "eD2k sources: %u"
-msgstr "Sources du fichier :"
+msgstr "Sources eD2k : %u"
 
 #: src/SearchSourceFormat.h
-#, fuzzy, c-format
+#, c-format
 msgid "Kad sources: %u"
-msgstr "Sources Trouvées : %s"
+msgstr "Sources Kad : %u"
 
 #: src/SearchSourceFormat.h
 msgid "Network counts may overlap; they are not added together."
-msgstr ""
+msgstr "Les décomptes par réseau peuvent se chevaucher ; ils ne sont pas additionnés."
 
 #: src/SearchSourceFormat.h
-#, fuzzy
 msgid "Network breakdown unavailable."
-msgstr "Une nouvelle version est disponible"
+msgstr "La répartition par réseau n'est pas disponible."
 
 #: src/SearchSourceFormat.h
-#, fuzzy, c-format
+#, c-format
 msgid "Complete sources: %u"
-msgstr "Sources complètes"
+msgstr "Sources complètes : %u"
 
 #: src/SearchSourceFormat.h
-#, fuzzy, c-format
+#, c-format
 msgid "Direct client endpoints: %u"
-msgstr "Nouvel ID client : %u"
+msgstr "Points de terminaison client directs : %u"
 
 #: src/ServerConnect.cpp
 msgid "Failed to connect to all obfuscated static servers listed. Making another pass without obfuscation."
@@ -7470,19 +7514,19 @@ msgid "No valid servers to which to connect found in server list"
 msgstr "Aucun serveur valide auquel se connecter n'a été trouvé dans la liste des serveurs"
 
 #: src/ServerConnect.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Connected to %s (%s:%i), sending login request"
-msgstr "Connecté à %s (%s : %i)"
+msgstr "Connecté à %s (%s:%i), envoi d'une demande d'ouverture de session"
 
 #: src/ServerConnect.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Obfuscated connection established on: %s (%s:%i)"
-msgstr "Connexion établie sur : %s"
+msgstr "Connexion brouillée établie sur : %s (%s:%i)"
 
 #: src/ServerConnect.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Connection established on: %s (%s:%i)"
-msgstr "Connexion établie sur : %s"
+msgstr "Connexion établie sur : %s (%s:%i)"
 
 #: src/ServerConnect.cpp
 msgid "Fatal Error while trying to connect. Internet connection might be down"
@@ -8258,6 +8302,11 @@ msgstr "Nom du fichier à distance"
 msgid "A4AF"
 msgstr "A4AF"
 
+#: src/SplashScreen.cpp
+#, fuzzy
+msgid "Closing aMule"
+msgstr "Afficher aMule"
+
 #: src/Statistics.cpp
 #, c-format
 msgid "Uploaded Data (Session (Total)): %s"
@@ -8542,7 +8591,7 @@ msgstr "Ce n'est pas un hachage valide (la longueur devrait être exactement 32 
 
 #: src/TextClient.cpp
 msgid "The connected daemon does not support All searches.\n"
-msgstr ""
+msgstr "Le démon connecté ne prend pas en charge les recherches totales.\n"
 
 #. TRANSLATORS:
 #. 'help search' is a command to the program, do not translate it.
@@ -8940,7 +8989,6 @@ msgid "Execute a search."
 msgstr "Effectuer une recherche."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid ""
 "A search type has to be specified by giving the type:\n"
 "    GLOBAL\n"
@@ -8963,6 +9011,7 @@ msgstr ""
 "    GLOBAL\n"
 "    LOCAL\n"
 "    KAD\n"
+"    ALL : tous les réseaux (nécessite la prise en charge par le démon)\n"
 "Exemple : 'search kad fichier' exécutera une recherche kad pour « fichier ».\n"
 "\n"
 "Des filtres optionnels peuvent être ajoutés avant, après, ou parmi les\n"
@@ -8970,8 +9019,8 @@ msgstr ""
 "    --type <Audio|Video|Image|Doc|Pro|Arc|Iso>\n"
 "    --extension <ext>      (alias : --ext)\n"
 "    --avail <N>            nombre minimal de sources\n"
-"    --min-size <N[KMG]>    taille minimal du fichier ; K=1024, M=K*1024, G=M*1024\n"
-"    --max-size <N[KMG]>    taille maximale du fichier ; même suffixes\n"
+"    --min-size <N[KMG]>    taille minimal du fichier ; K=1024, M=K*1024, G=M*1024\n"
+"    --max-size <N[KMG]>    taille maximale du fichier ; même suffixes\n"
 "Exemple : 'search global linux iso --type Iso --min-size 100M' retourne\n"
 "des résultats pour le type de fichier Iso d'au moins 100 Mio pour « linux iso ».\n"
 
@@ -8988,9 +9037,8 @@ msgid "Execute a kad search"
 msgstr "Effectuer une recherche Kad"
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Execute an eD2k and Kad search"
-msgstr "Effectuer une recherche Kad"
+msgstr "Effectuer une recherche eD2k et Kad"
 
 #: src/TextClient.cpp
 msgid "Show the results of a search."
@@ -9026,6 +9074,9 @@ msgid ""
 "Without an id, the number refers to the last 'results' output, or to the most recently started search if nothing was listed yet.\n"
 "Example: 'download 12' downloads file 12 of the last results; 'download 12 3' downloads file 12 of search 3.\n"
 msgstr ""
+"Donnez le nombre d'un fichier comme listé dans les « résultats », suivie de manière optionnelle par une ID de recherche.\n"
+"Sans identifiant, le nombre fait référence à la dernière sortie des « résultats », ou bien à la recherche démarrée le plus récemment si rien n'a été encore listé.\n"
+"Exemple : « download 12 » télécharge le fichier 12 des derniers résultats ; « download 12 3 » télécharge le fichier 12 de la recherche 3.\n"
 
 #: src/TextClient.cpp
 msgid "Pause download."
@@ -9146,37 +9197,37 @@ msgstr "Vérification des données locales (%s) : ERREURS TROUVÉES ! %s Bloc
 #: src/ThreadTasks.cpp
 #, c-format
 msgid "Verify Local Data: file %s was removed before it could be checked."
-msgstr ""
+msgstr "Vérification des données locales : le fichier %s a été enlevé avant d'avoir pu être contrôlé."
 
 #: src/ThreadTasks.cpp
 #, c-format
 msgid "Verify Local Data: could not read %s, so it was not checked."
-msgstr ""
+msgstr "Vérification des données locales : impossible de lire %s, donc il n'a pas été contrôlé."
 
 #: src/ThreadTasks.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Verify Local Data: ERRORS FOUND! %s Size on disk: %u bytes, expected: %u bytes."
-msgstr "Vérification des données locales (%s) : ERREURS TROUVÉES ! %s Blocs défaillants : MD4 : %s. %s%s"
+msgstr "Vérification des données locales : ERREURS TROUVÉES ! %s Taille sur le disque : %u octets, attendu : %u octets."
 
 #: src/ThreadTasks.cpp
 #, c-format
 msgid "Verify Local Data: %s is larger than aMule supports, so it was not checked."
-msgstr ""
+msgstr "Vérification des données locales : %s est supérieur à ce que aMule prend en charge, donc il n'a pas été contrôlé."
 
 #: src/ThreadTasks.cpp
 #, c-format
 msgid "Verify Local Data: %s is empty, so there is nothing to check."
-msgstr ""
+msgstr "Vérification des données locales : %s est vide, donc il n'y a rien à contrôler."
 
 #: src/ThreadTasks.cpp
 #, c-format
 msgid "Verify Local Data: %s was removed or changed during the check, which did not finish."
-msgstr ""
+msgstr "Vérification des données locales : %s a été enlevé ou modifié pendant la vérification qui n'a pu être menée à son terme."
 
 #: src/ThreadTasks.cpp
 #, c-format
 msgid "Verify Local Data: could not read %s, so the check did not finish: %s"
-msgstr ""
+msgstr "Vérification des données locales : impossible de lire %s, donc la vérification n'a pu être terminée : %s"
 
 #: src/ThreadTasks.cpp
 #, c-format
@@ -9247,7 +9298,7 @@ msgstr "Pause des envois du fichier : %s"
 #: src/UserEvents.cpp
 #, c-format
 msgid "Command '%s' was not run on '%s' event: %s"
-msgstr ""
+msgstr "La commande « %s » n'a pas été exécuté lors de l'événement « %s » : %s"
 
 #: src/UserEvents.cpp
 #, c-format
@@ -9259,9 +9310,8 @@ msgid "Download completed"
 msgstr "Téléchargement terminé"
 
 #: src/UserEvents.h
-#, fuzzy
 msgid "The full path to the file (empty in remote GUI mode)."
-msgstr "Le chemin complet vers le fichier."
+msgstr "Le chemin complet vers le fichier (vide dans le mode GUI distant)."
 
 #: src/UserEvents.h
 msgid "The name of the file without path component."
@@ -10023,20 +10073,20 @@ msgstr "Suppression des données d'utilisateur sur $APPDATA\\aMule…"
 #: src/kademlia/kademlia/Indexed.cpp
 #, c-format
 msgid "Kad could not read %s. It was renamed to %s.bad, and a new index will be saved at shutdown."
-msgstr ""
+msgstr "Kad n' a pu lire %s. Il a été renommé en %s.bad et un nouvel index va être sauvegardé lors de la fermeture."
 
 #: src/kademlia/kademlia/Indexed.cpp
 #, c-format
 msgid "Kad could not preserve the unreadable index %s as %s.bad. Its original file will not be overwritten."
-msgstr ""
+msgstr "Kad n'a pu préserver l'index illisible %s en tant que %s.bad. Son fichier original ne sera pas écrasé."
 
 #: src/kademlia/kademlia/Indexed.cpp
 msgid "Kad could not load its saved index. Existing index files were preserved."
-msgstr ""
+msgstr "Kad n'a pu charger son index sauvegardé. Les fichiers d'index existants ont été préservés."
 
 #: src/kademlia/kademlia/Indexed.cpp
 msgid "Kad could not save an index. The previous copy of that file was preserved."
-msgstr ""
+msgstr "Kad n'a pu sauvegarder un index. La copie précédente de ce fichier a été conservé."
 
 #~ msgid "Download graph scale:"
 #~ msgstr "Échelle des graphiques de réception :"

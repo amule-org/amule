@@ -325,6 +325,22 @@ msgid "Now, exiting main app..."
 msgstr "כעת, יוצא מהיישום הראשי..."
 
 #: src/amule.cpp
+msgid "Saving window settings..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving client credits..."
+msgstr ""
+"\n"
+"יוצר לקוח...\n"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Stopping helper applications..."
+msgstr "יוצא מהיישום."
+
+#: src/amule.cpp
 #, c-format
 msgid "Terminating amuleweb instance with pid '%d' ... "
 msgstr "מסיים מופע amuleweb עם pid '%d' ... "
@@ -354,12 +370,31 @@ msgid "aMule OnExit: Terminating core."
 msgstr "aMule OnExit: מסיים את הליבה."
 
 #: src/amule.cpp
+#, fuzzy
+msgid "Saving search results..."
+msgstr "תוצאת חיפוש"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving downloads and shared files..."
+msgstr "טוען מחדש קבצים משותפים..."
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Flushing download buffers..."
+msgstr "מוחק את הקובץ: %s"
+
+#: src/amule.cpp
 msgid "aMule shutdown completed."
 msgstr "כיבוי aMule הושלם."
 
 #: src/amule.cpp
 msgid "Memory debug results for aMule exit:"
 msgstr "תוצאות ניפוי זיכרון ליציאת aMule:"
+
+#: src/amule.cpp
+msgid "Finishing shutdown..."
+msgstr ""
 
 #: src/amule.cpp
 #, c-format
@@ -679,6 +714,28 @@ msgstr ""
 #, c-format
 msgid "Disk space preallocation for file '%s' failed: %s"
 msgstr "הקצאת מראש של שטח דיסק עבור הקובץ '%s' נכשלה: %s"
+
+#: src/amule.cpp
+msgid "Stopping network services..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving source seeds..."
+msgstr "מזריעי מקורות"
+
+#: src/amule.cpp
+msgid "Stopping background downloads and workers..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Closing connections..."
+msgstr " מתחבר..."
+
+#: src/amule.cpp
+msgid "Saving known files and statistics..."
+msgstr ""
 
 #: src/amule.cpp
 msgid "ERROR: can't open logfile"
@@ -8277,6 +8334,11 @@ msgstr "שם קובץ מרוחק"
 #: src/SourceListCtrl.cpp
 msgid "A4AF"
 msgstr "A4AF"
+
+#: src/SplashScreen.cpp
+#, fuzzy
+msgid "Closing aMule"
+msgstr "הראה את aMule"
 
 #: src/Statistics.cpp
 #, c-format

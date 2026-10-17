@@ -348,6 +348,22 @@ msgid "Now, exiting main app..."
 msgstr "جارٍ الآن إنهاء التطبيق الرئيسي..."
 
 #: src/amule.cpp
+msgid "Saving window settings..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving client credits..."
+msgstr ""
+"\n"
+"جارٍ إنشاء العميل...\n"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Stopping helper applications..."
+msgstr "يخرج من التطبيق."
+
+#: src/amule.cpp
 #, c-format
 msgid "Terminating amuleweb instance with pid '%d' ... "
 msgstr "جارٍ إنهاء نسخة amuleweb ذات المعرّف '%d' ... "
@@ -377,12 +393,31 @@ msgid "aMule OnExit: Terminating core."
 msgstr "aMule OnExit: جارٍ إنهاء النواة."
 
 #: src/amule.cpp
+#, fuzzy
+msgid "Saving search results..."
+msgstr "نتيجة البحث"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving downloads and shared files..."
+msgstr "إعادة تحميل الملفات المشتركة..."
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Flushing download buffers..."
+msgstr "سعة نطاق التحميل الحقيقية"
+
+#: src/amule.cpp
 msgid "aMule shutdown completed."
 msgstr "اكتمل إيقاف تشغيل aMule."
 
 #: src/amule.cpp
 msgid "Memory debug results for aMule exit:"
 msgstr "نتائج تصحيح الذاكرة عند خروج aMule:"
+
+#: src/amule.cpp
+msgid "Finishing shutdown..."
+msgstr ""
 
 #: src/amule.cpp
 #, c-format
@@ -695,6 +730,28 @@ msgstr "التحقق من البيانات المحلية: يوجد ملف آخ�
 #, c-format
 msgid "Disk space preallocation for file '%s' failed: %s"
 msgstr "فشل حجز مساحة القرص مسبقًا للملف '%s': %s"
+
+#: src/amule.cpp
+msgid "Stopping network services..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving source seeds..."
+msgstr "بذور المصادر"
+
+#: src/amule.cpp
+msgid "Stopping background downloads and workers..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Closing connections..."
+msgstr " يتصل الآن..."
+
+#: src/amule.cpp
+msgid "Saving known files and statistics..."
+msgstr ""
 
 #: src/amule.cpp
 msgid "ERROR: can't open logfile"
@@ -8280,6 +8337,11 @@ msgstr "اسم الملف البعيد"
 #: src/SourceListCtrl.cpp
 msgid "A4AF"
 msgstr "A4AF"
+
+#: src/SplashScreen.cpp
+#, fuzzy
+msgid "Closing aMule"
+msgstr "إظهار aMule"
 
 #: src/Statistics.cpp
 #, c-format

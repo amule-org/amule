@@ -332,6 +332,22 @@ msgid "Now, exiting main app..."
 msgstr "Nu, avslutar huvudapplikationen..."
 
 #: src/amule.cpp
+msgid "Saving window settings..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving client credits..."
+msgstr ""
+"\n"
+"Skapar klient...\n"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Stopping helper applications..."
+msgstr "Avslutar programmet."
+
+#: src/amule.cpp
 #, c-format
 msgid "Terminating amuleweb instance with pid '%d' ... "
 msgstr "Avslutar amuleweb-instansen med pid '%d' ... "
@@ -361,12 +377,31 @@ msgid "aMule OnExit: Terminating core."
 msgstr "aMule VidAvslut: Avslutar huvudprogrammet."
 
 #: src/amule.cpp
+#, fuzzy
+msgid "Saving search results..."
+msgstr "Sökresultat"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving downloads and shared files..."
+msgstr "Läser in delade filer igen..."
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Flushing download buffers..."
+msgstr "Beräknar hash för hämtad fil: %s"
+
+#: src/amule.cpp
 msgid "aMule shutdown completed."
 msgstr "aMules avslutning slutförd"
 
 #: src/amule.cpp
 msgid "Memory debug results for aMule exit:"
 msgstr "Minnes-debug-resultat för aMules avslut"
+
+#: src/amule.cpp
+msgid "Finishing shutdown..."
+msgstr ""
 
 #: src/amule.cpp
 #, fuzzy, c-format
@@ -682,6 +717,28 @@ msgstr ""
 #, c-format
 msgid "Disk space preallocation for file '%s' failed: %s"
 msgstr "Förallokerad diskutrymme för filen '%s' misslyckades: %s"
+
+#: src/amule.cpp
+msgid "Stopping network services..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving source seeds..."
+msgstr "Käll-frön"
+
+#: src/amule.cpp
+msgid "Stopping background downloads and workers..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Closing connections..."
+msgstr " ansluter..."
+
+#: src/amule.cpp
+msgid "Saving known files and statistics..."
+msgstr ""
 
 #: src/amule.cpp
 msgid "ERROR: can't open logfile"
@@ -8241,6 +8298,11 @@ msgstr "Fjärrfilnamn"
 #: src/SourceListCtrl.cpp
 msgid "A4AF"
 msgstr "A4AF"
+
+#: src/SplashScreen.cpp
+#, fuzzy
+msgid "Closing aMule"
+msgstr "Visa aMule"
 
 #: src/Statistics.cpp
 #, c-format

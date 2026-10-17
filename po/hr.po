@@ -316,6 +316,20 @@ msgid "Now, exiting main app..."
 msgstr ""
 
 #: src/amule.cpp
+msgid "Saving window settings..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving client credits..."
+msgstr "Pronadjeno %i poznatih dijeljenih fajlova"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Stopping helper applications..."
+msgstr "Izlaz iz aplikacije."
+
+#: src/amule.cpp
 #, c-format
 msgid "Terminating amuleweb instance with pid '%d' ... "
 msgstr ""
@@ -345,11 +359,30 @@ msgid "aMule OnExit: Terminating core."
 msgstr ""
 
 #: src/amule.cpp
+#, fuzzy
+msgid "Saving search results..."
+msgstr "Rezultati pretrage"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving downloads and shared files..."
+msgstr "Pronadjeno %i poznatih dijeljenih fajlova"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Flushing download buffers..."
+msgstr "Hashing"
+
+#: src/amule.cpp
 msgid "aMule shutdown completed."
 msgstr ""
 
 #: src/amule.cpp
 msgid "Memory debug results for aMule exit:"
+msgstr ""
+
+#: src/amule.cpp
+msgid "Finishing shutdown..."
 msgstr ""
 
 #: src/amule.cpp
@@ -661,6 +694,27 @@ msgstr ""
 #: src/amule.cpp
 #, c-format
 msgid "Disk space preallocation for file '%s' failed: %s"
+msgstr ""
+
+#: src/amule.cpp
+msgid "Stopping network services..."
+msgstr ""
+
+#: src/amule.cpp
+msgid "Saving source seeds..."
+msgstr ""
+
+#: src/amule.cpp
+msgid "Stopping background downloads and workers..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Closing connections..."
+msgstr "Spajanje"
+
+#: src/amule.cpp
+msgid "Saving known files and statistics..."
 msgstr ""
 
 #: src/amule.cpp
@@ -8297,6 +8351,10 @@ msgstr "Ime fajla"
 #: src/SourceListCtrl.cpp
 msgid "A4AF"
 msgstr "A4AF"
+
+#: src/SplashScreen.cpp
+msgid "Closing aMule"
+msgstr ""
 
 #: src/Statistics.cpp
 #, c-format

@@ -349,6 +349,22 @@ msgid "Now, exiting main app..."
 msgstr "Nyní se ukončuje hlavní aplikace..."
 
 #: src/amule.cpp
+msgid "Saving window settings..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving client credits..."
+msgstr ""
+"\n"
+"Vytváření klienta...\n"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Stopping helper applications..."
+msgstr "Ukončit aplikaci."
+
+#: src/amule.cpp
 #, c-format
 msgid "Terminating amuleweb instance with pid '%d' ... "
 msgstr "Ukončování instance amuleweb s PID '%d' ... "
@@ -378,12 +394,31 @@ msgid "aMule OnExit: Terminating core."
 msgstr "aMule OnExit: Ukončování jádra."
 
 #: src/amule.cpp
+#, fuzzy
+msgid "Saving search results..."
+msgstr "Výsledek hledání"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving downloads and shared files..."
+msgstr "Opětovné načítání sdílených souborů..."
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Flushing download buffers..."
+msgstr "Hashování staženého soubor: %s"
+
+#: src/amule.cpp
 msgid "aMule shutdown completed."
 msgstr "Aplikace aMule byla ukončena."
 
 #: src/amule.cpp
 msgid "Memory debug results for aMule exit:"
 msgstr "Výsledky ladění paměti při ukončení aMule:"
+
+#: src/amule.cpp
+msgid "Finishing shutdown..."
+msgstr ""
 
 #: src/amule.cpp
 #, fuzzy, c-format
@@ -696,6 +731,28 @@ msgstr ""
 #, c-format
 msgid "Disk space preallocation for file '%s' failed: %s"
 msgstr "Předběžné přidělení místa na disku pro soubor '%s' selhalo: %s"
+
+#: src/amule.cpp
+msgid "Stopping network services..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving source seeds..."
+msgstr "Uchované zdroje"
+
+#: src/amule.cpp
+msgid "Stopping background downloads and workers..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Closing connections..."
+msgstr " - stav: připojování..."
+
+#: src/amule.cpp
+msgid "Saving known files and statistics..."
+msgstr ""
 
 #: src/amule.cpp
 msgid "ERROR: can't open logfile"
@@ -8300,6 +8357,11 @@ msgstr "Vzdálený název souboru"
 #: src/SourceListCtrl.cpp
 msgid "A4AF"
 msgstr "A4AF"
+
+#: src/SplashScreen.cpp
+#, fuzzy
+msgid "Closing aMule"
+msgstr "Zobrazit aMule"
 
 #: src/Statistics.cpp
 #, c-format

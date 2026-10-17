@@ -320,6 +320,22 @@ msgid "Now, exiting main app..."
 msgstr "Bây giờ, đang thoát ứng dụng chính..."
 
 #: src/amule.cpp
+msgid "Saving window settings..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving client credits..."
+msgstr ""
+"\n"
+"Đang tạo client...\n"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Stopping helper applications..."
+msgstr "Thoát khỏi ứng dụng."
+
+#: src/amule.cpp
 #, c-format
 msgid "Terminating amuleweb instance with pid '%d' ... "
 msgstr "Đang chấm dứt tiến trình amuleweb với pid '%d' ... "
@@ -349,12 +365,30 @@ msgid "aMule OnExit: Terminating core."
 msgstr "aMule OnExit: Đang chấm dứt core."
 
 #: src/amule.cpp
+#, fuzzy
+msgid "Saving search results..."
+msgstr "Kết quả tìm kiếm"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving downloads and shared files..."
+msgstr "Đang tải lại các tệp chia sẻ..."
+
+#: src/amule.cpp
+msgid "Flushing download buffers..."
+msgstr ""
+
+#: src/amule.cpp
 msgid "aMule shutdown completed."
 msgstr "aMule đã tắt hoàn tất."
 
 #: src/amule.cpp
 msgid "Memory debug results for aMule exit:"
 msgstr "Kết quả gỡ lỗi bộ nhớ khi thoát aMule:"
+
+#: src/amule.cpp
+msgid "Finishing shutdown..."
+msgstr ""
 
 #: src/amule.cpp
 #, c-format
@@ -667,6 +701,28 @@ msgstr ""
 #, c-format
 msgid "Disk space preallocation for file '%s' failed: %s"
 msgstr "Cấp phát trước không gian đĩa cho tệp '%s' thất bại: %s"
+
+#: src/amule.cpp
+msgid "Stopping network services..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving source seeds..."
+msgstr "Nguồn seed"
+
+#: src/amule.cpp
+msgid "Stopping background downloads and workers..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Closing connections..."
+msgstr " đang kết nối..."
+
+#: src/amule.cpp
+msgid "Saving known files and statistics..."
+msgstr ""
 
 #: src/amule.cpp
 msgid "ERROR: can't open logfile"
@@ -8162,6 +8218,11 @@ msgstr "Tên tệp từ xa"
 #: src/SourceListCtrl.cpp
 msgid "A4AF"
 msgstr "A4AF"
+
+#: src/SplashScreen.cpp
+#, fuzzy
+msgid "Closing aMule"
+msgstr "Hiển thị aMule"
 
 #: src/Statistics.cpp
 #, c-format

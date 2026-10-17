@@ -325,6 +325,22 @@ msgid "Now, exiting main app..."
 msgstr "Τώρα, γίνεται έξοδος από την κύρια εφαρμογή..."
 
 #: src/amule.cpp
+msgid "Saving window settings..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving client credits..."
+msgstr ""
+"\n"
+" Δημιουργία πελάτη...\n"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Stopping helper applications..."
+msgstr "Κλείσιμο της εφαρμογής."
+
+#: src/amule.cpp
 #, c-format
 msgid "Terminating amuleweb instance with pid '%d' ... "
 msgstr "Τερματισμός στιγμιότυπου amuleweb με pid '%d' ... "
@@ -354,12 +370,31 @@ msgid "aMule OnExit: Terminating core."
 msgstr "aMule OnExit: Τερματισμός πυρήνα."
 
 #: src/amule.cpp
+#, fuzzy
+msgid "Saving search results..."
+msgstr "Αποτέλεσμα Αναζήτησης"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving downloads and shared files..."
+msgstr "Επαναφόρτωση κοινόχρηστων αρχείων..."
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Flushing download buffers..."
+msgstr "Σβήσιμο αρχείου: %s"
+
+#: src/amule.cpp
 msgid "aMule shutdown completed."
 msgstr "Ο τερματισμός του aMule ολοκληρώθηκε."
 
 #: src/amule.cpp
 msgid "Memory debug results for aMule exit:"
 msgstr "Αποτελέσματα εντοπισμού σφαλμάτων μνήμης για την έξοδο του aMule:"
+
+#: src/amule.cpp
+msgid "Finishing shutdown..."
+msgstr ""
 
 #: src/amule.cpp
 #, c-format
@@ -678,6 +713,28 @@ msgstr ""
 #, c-format
 msgid "Disk space preallocation for file '%s' failed: %s"
 msgstr "Η εκχώρηση χώρου για το αρχείο '%s' απέτυχε: '%s'"
+
+#: src/amule.cpp
+msgid "Stopping network services..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving source seeds..."
+msgstr "Πηγαίος σπόρος"
+
+#: src/amule.cpp
+msgid "Stopping background downloads and workers..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Closing connections..."
+msgstr "συνδέεται.."
+
+#: src/amule.cpp
+msgid "Saving known files and statistics..."
+msgstr ""
 
 #: src/amule.cpp
 msgid "ERROR: can't open logfile"
@@ -8284,6 +8341,11 @@ msgstr "Απομακρυσμένο όνομα αρχείου"
 #: src/SourceListCtrl.cpp
 msgid "A4AF"
 msgstr "A4AF"
+
+#: src/SplashScreen.cpp
+#, fuzzy
+msgid "Closing aMule"
+msgstr "Εμφάνιση aMule"
 
 #: src/Statistics.cpp
 #, c-format

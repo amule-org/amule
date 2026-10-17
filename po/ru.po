@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-10-16 08:33+0000\n"
+"PO-Revision-Date: 2026-10-17 10:20+0000\n"
 "Last-Translator: Radist Morse <radist.morse@gmail.com>\n"
 "Language-Team: Russian <kde-russian@lists.kde.ru>\n"
 "Language: ru\n"
@@ -352,7 +352,19 @@ msgstr "Неверная ссылка eD2k «%s» — ОШИБКА: %s"
 
 #: src/amule.cpp
 msgid "Now, exiting main app..."
-msgstr "Выходим из основного приложения..."
+msgstr "Завершение основного приложения…"
+
+#: src/amule.cpp
+msgid "Saving window settings..."
+msgstr "Сохранение настроек окна…"
+
+#: src/amule.cpp
+msgid "Saving client credits..."
+msgstr "Сохранение кредитов клиентов…"
+
+#: src/amule.cpp
+msgid "Stopping helper applications..."
+msgstr "Остановка вспомогательных приложений…"
 
 #: src/amule.cpp
 #, c-format
@@ -381,15 +393,31 @@ msgstr "Принудительное завершение экземпляра a
 
 #: src/amule.cpp
 msgid "aMule OnExit: Terminating core."
-msgstr "aMule OnExit: Прекращаем работу ядра."
+msgstr "aMule завершается: прекращение работы ядра."
+
+#: src/amule.cpp
+msgid "Saving search results..."
+msgstr "Сохранение результатов поиска…"
+
+#: src/amule.cpp
+msgid "Saving downloads and shared files..."
+msgstr "Сохранение загрузок и общих файлов…"
+
+#: src/amule.cpp
+msgid "Flushing download buffers..."
+msgstr "Сброс буферов загрузки…"
 
 #: src/amule.cpp
 msgid "aMule shutdown completed."
-msgstr "выключение aMule завершено."
+msgstr "Работа aMule завершена."
 
 #: src/amule.cpp
 msgid "Memory debug results for aMule exit:"
 msgstr "Результаты дебага памяти при выходе из aMule:"
+
+#: src/amule.cpp
+msgid "Finishing shutdown..."
+msgstr "Завершение выключения…"
 
 #: src/amule.cpp
 #, c-format
@@ -702,6 +730,26 @@ msgstr "Проверка локальных данных: в ваших общи
 #, c-format
 msgid "Disk space preallocation for file '%s' failed: %s"
 msgstr "Не удалось выделить место на диске для файла «%s»: %s"
+
+#: src/amule.cpp
+msgid "Stopping network services..."
+msgstr "Остановка сетевых служб…"
+
+#: src/amule.cpp
+msgid "Saving source seeds..."
+msgstr "Сохранение источников сидов…"
+
+#: src/amule.cpp
+msgid "Stopping background downloads and workers..."
+msgstr "Остановка фоновых загрузок и обработчиков…"
+
+#: src/amule.cpp
+msgid "Closing connections..."
+msgstr "Закрытие соединений…"
+
+#: src/amule.cpp
+msgid "Saving known files and statistics..."
+msgstr "Сохранение известных файлов и статистики…"
 
 #: src/amule.cpp
 msgid "ERROR: can't open logfile"
@@ -4452,7 +4500,7 @@ msgstr "Остановить"
 
 #: src/muuli_wdr.cpp src/SearchListCtrl.cpp
 msgid "Download"
-msgstr "Загрузить"
+msgstr "Загрузка"
 
 #: src/muuli_wdr.cpp src/SearchListCtrl.cpp
 msgid "Download in category"
@@ -4958,7 +5006,7 @@ msgstr "Проигрыватель видео"
 
 #: src/muuli_wdr.cpp
 msgid "Line capacities"
-msgstr ""
+msgstr "Пропускная способность канала"
 
 #: src/muuli_wdr.cpp
 msgid "Upload"
@@ -4969,14 +5017,12 @@ msgid "Bandwidth limits"
 msgstr "Ограничения скорости передачи"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Enable download limit"
-msgstr "Предел загрузки"
+msgstr "Включить ограничение загрузки"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Enable upload limit"
-msgstr "Предел отдачи"
+msgstr "Включить ограничение отдачи"
 
 #: src/muuli_wdr.cpp
 msgid "Slot Allocation"
@@ -5469,23 +5515,23 @@ msgstr "Отключить таймер перехода компьютера в
 
 #: src/muuli_wdr.cpp
 msgid "Appearance: "
-msgstr ""
+msgstr "Оформление: "
 
 #: src/muuli_wdr.cpp
 msgid "Follow system"
-msgstr ""
+msgstr "Как в системе"
 
 #: src/muuli_wdr.cpp
 msgid "Light mode"
-msgstr ""
+msgstr "Светлая тема"
 
 #: src/muuli_wdr.cpp
 msgid "Dark mode"
-msgstr ""
+msgstr "Тёмная тема"
 
 #: src/muuli_wdr.cpp
 msgid "Appearance changes take effect after restarting aMule."
-msgstr ""
+msgstr "Изменения оформления вступят в силу после перезапуска aMule."
 
 # в LA помнится так и перевели - "шкурка", но по-моему глупо.
 #: src/muuli_wdr.cpp
@@ -6675,12 +6721,12 @@ msgstr "Используется порт по умолчанию (%d)"
 
 #: src/BandwidthLimitSlider.h
 msgid "Adjust the enabled limit from 1 KiB/s to line capacity."
-msgstr ""
+msgstr "Настройте включённое ограничение от 1 КиБ/с до пропускной способности канала."
 
 #: src/BandwidthLimitSlider.h
-#, fuzzy, c-format
+#, c-format
 msgid "KiB/s (%.2f MiB/s)"
-msgstr "%.1f МиБ/с"
+msgstr "КиБ/с (%.2f МиБ/с)"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Interface"
@@ -7924,7 +7970,7 @@ msgstr "Статус Kademlia:"
 
 #: src/ServerWnd.cpp
 msgid "Running in LAN mode"
-msgstr "Работает в режиме LAN"
+msgstr "Работает в режиме локальной сети"
 
 #: src/ServerWnd.cpp
 msgid "Running"
@@ -8329,6 +8375,10 @@ msgstr "Удалённое имя файла"
 #: src/SourceListCtrl.cpp
 msgid "A4AF"
 msgstr "A4AF"
+
+#: src/SplashScreen.cpp
+msgid "Closing aMule"
+msgstr "Закрытие aMule"
 
 #: src/Statistics.cpp
 #, c-format

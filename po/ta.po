@@ -306,6 +306,18 @@ msgid "Now, exiting main app..."
 msgstr ""
 
 #: src/amule.cpp
+msgid "Saving window settings..."
+msgstr ""
+
+#: src/amule.cpp
+msgid "Saving client credits..."
+msgstr ""
+
+#: src/amule.cpp
+msgid "Stopping helper applications..."
+msgstr ""
+
+#: src/amule.cpp
 #, c-format
 msgid "Terminating amuleweb instance with pid '%d' ... "
 msgstr ""
@@ -335,11 +347,27 @@ msgid "aMule OnExit: Terminating core."
 msgstr ""
 
 #: src/amule.cpp
+msgid "Saving search results..."
+msgstr ""
+
+#: src/amule.cpp
+msgid "Saving downloads and shared files..."
+msgstr ""
+
+#: src/amule.cpp
+msgid "Flushing download buffers..."
+msgstr ""
+
+#: src/amule.cpp
 msgid "aMule shutdown completed."
 msgstr ""
 
 #: src/amule.cpp
 msgid "Memory debug results for aMule exit:"
+msgstr ""
+
+#: src/amule.cpp
+msgid "Finishing shutdown..."
 msgstr ""
 
 #: src/amule.cpp
@@ -641,6 +669,26 @@ msgstr ""
 #: src/amule.cpp
 #, c-format
 msgid "Disk space preallocation for file '%s' failed: %s"
+msgstr ""
+
+#: src/amule.cpp
+msgid "Stopping network services..."
+msgstr ""
+
+#: src/amule.cpp
+msgid "Saving source seeds..."
+msgstr ""
+
+#: src/amule.cpp
+msgid "Stopping background downloads and workers..."
+msgstr ""
+
+#: src/amule.cpp
+msgid "Closing connections..."
+msgstr ""
+
+#: src/amule.cpp
+msgid "Saving known files and statistics..."
 msgstr ""
 
 #: src/amule.cpp
@@ -8060,6 +8108,11 @@ msgstr ""
 #: src/SourceListCtrl.cpp
 msgid "A4AF"
 msgstr ""
+
+#: src/SplashScreen.cpp
+#, fuzzy
+msgid "Closing aMule"
+msgstr "அகோவேறுகழுதையை மறை"
 
 #: src/Statistics.cpp
 #, c-format

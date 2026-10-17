@@ -321,6 +321,22 @@ msgid "Now, exiting main app..."
 msgstr "এখন, মূল অ্যাপ থেকে বের হচ্ছে…"
 
 #: src/amule.cpp
+msgid "Saving window settings..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving client credits..."
+msgstr ""
+"\n"
+"ক্লায়েন্ট তৈরি করা হচ্ছে...\n"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Stopping helper applications..."
+msgstr "অ্যাপ্লিকেশন থেকে প্রস্থান করে।"
+
+#: src/amule.cpp
 #, c-format
 msgid "Terminating amuleweb instance with pid '%d' ... "
 msgstr "pid '%d' সহ amuleweb ইনস্ট্যান্স বন্ধ করা হচ্ছে ... "
@@ -350,12 +366,30 @@ msgid "aMule OnExit: Terminating core."
 msgstr "aMule OnExit: কোর বন্ধ করা হচ্ছে।"
 
 #: src/amule.cpp
+#, fuzzy
+msgid "Saving search results..."
+msgstr "অনুসন্ধান ফলাফল"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving downloads and shared files..."
+msgstr "শেয়ার করা ফাইল পুনরায় লোড করা হচ্ছে…"
+
+#: src/amule.cpp
+msgid "Flushing download buffers..."
+msgstr ""
+
+#: src/amule.cpp
 msgid "aMule shutdown completed."
 msgstr "aMule শাটডাউন সম্পন্ন হয়েছে।"
 
 #: src/amule.cpp
 msgid "Memory debug results for aMule exit:"
 msgstr "aMule প্রস্থানের জন্য মেমরি ডিবাগ ফলাফল:"
+
+#: src/amule.cpp
+msgid "Finishing shutdown..."
+msgstr ""
 
 #: src/amule.cpp
 #, c-format
@@ -668,6 +702,28 @@ msgstr ""
 #, c-format
 msgid "Disk space preallocation for file '%s' failed: %s"
 msgstr "ফাইল '%s'-এর জন্য ডিস্ক স্পেস প্রি-অ্যালোকেশন ব্যর্থ হয়েছে: %s"
+
+#: src/amule.cpp
+msgid "Stopping network services..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving source seeds..."
+msgstr "সোর্স সিড"
+
+#: src/amule.cpp
+msgid "Stopping background downloads and workers..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Closing connections..."
+msgstr "সংযোগ করা হচ্ছে…"
+
+#: src/amule.cpp
+msgid "Saving known files and statistics..."
+msgstr ""
 
 #: src/amule.cpp
 msgid "ERROR: can't open logfile"
@@ -8213,6 +8269,11 @@ msgstr "রিমোট ফাইলের নাম"
 #: src/SourceListCtrl.cpp
 msgid "A4AF"
 msgstr "A4AF"
+
+#: src/SplashScreen.cpp
+#, fuzzy
+msgid "Closing aMule"
+msgstr "aMule দেখান"
 
 #: src/Statistics.cpp
 #, c-format

@@ -326,6 +326,22 @@ msgid "Now, exiting main app..."
 msgstr "Сега основното приложение се затваря..."
 
 #: src/amule.cpp
+msgid "Saving window settings..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving client credits..."
+msgstr ""
+"\n"
+"Създаване на клиент...\n"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Stopping helper applications..."
+msgstr "Изход от приложението."
+
+#: src/amule.cpp
 #, c-format
 msgid "Terminating amuleweb instance with pid '%d' ... "
 msgstr "Прекратяване на инстанция на amuleweb с pid „%d“ ... "
@@ -355,12 +371,31 @@ msgid "aMule OnExit: Terminating core."
 msgstr "aMule OnExit: Спиране на ядрото."
 
 #: src/amule.cpp
+#, fuzzy
+msgid "Saving search results..."
+msgstr "Резултат от търсене"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving downloads and shared files..."
+msgstr "Презареждане на споделените файлове..."
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Flushing download buffers..."
+msgstr "Файлове за сваляне (%i)"
+
+#: src/amule.cpp
 msgid "aMule shutdown completed."
 msgstr "Изключването на aMule завърши."
 
 #: src/amule.cpp
 msgid "Memory debug results for aMule exit:"
 msgstr "Резултати от анализа на паметта при изход от aMule:"
+
+#: src/amule.cpp
+msgid "Finishing shutdown..."
+msgstr ""
 
 #: src/amule.cpp
 #, c-format
@@ -679,6 +714,28 @@ msgstr ""
 #, c-format
 msgid "Disk space preallocation for file '%s' failed: %s"
 msgstr "Предварителното заделяне на дисково пространство за файл „%s“ е неуспешно: %s"
+
+#: src/amule.cpp
+msgid "Stopping network services..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving source seeds..."
+msgstr "Сканиране за подпапки..."
+
+#: src/amule.cpp
+msgid "Stopping background downloads and workers..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Closing connections..."
+msgstr " се свързва..."
+
+#: src/amule.cpp
+msgid "Saving known files and statistics..."
+msgstr ""
 
 #: src/amule.cpp
 msgid "ERROR: can't open logfile"
@@ -8280,6 +8337,11 @@ msgstr "Отдалечено име на файла"
 #: src/SourceListCtrl.cpp
 msgid "A4AF"
 msgstr "A4AF"
+
+#: src/SplashScreen.cpp
+#, fuzzy
+msgid "Closing aMule"
+msgstr "Покажи aMule"
 
 #: src/Statistics.cpp
 #, c-format
