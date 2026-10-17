@@ -37,6 +37,7 @@ SKadSourceFacts ContactableOverIPv6()
 	SKadSourceFacts facts;
 	facts.sourceType = 3;
 	facts.publishedIPv6 = CNetworkAddress::FromString("2001:4860:4860::8888");
+	facts.carriesBuddy = true;
 	facts.ourHelloID = 1;
 	facts.ipv6Built = true;
 	facts.familyPermitted = true;
@@ -79,6 +80,45 @@ TEST(KadSourceAddressPolicy, AZeroOrHighIDOfOursIsNotContactedOverIPv6)
 		facts.ourHelloID = ourHelloID;
 		ASSERT_FALSE(ShouldContactKadSourceOverIPv6(facts));
 	}
+}
+
+// A source published without buddy tags has no IPv4 callback path for eMuleAI's IPv6-derived ID to
+// break, so its "ip6" is dialled whatever our own ID is.
+TEST(KadSourceAddressPolicy, ABuddylessSourceIsContactedOverIPv6WithAnyNonzeroIDOfOurs)
+{
+	for (std::uint8_t sourceType : { 3, 5 }) {
+		for (std::uint32_t ourHelloID : { 1u, 16777216u, 0xC0A80001u }) {
+			SKadSourceFacts facts = ContactableOverIPv6();
+			facts.sourceType = sourceType;
+			facts.carriesBuddy = false;
+			facts.ourHelloID = ourHelloID;
+			ASSERT_TRUE(ShouldContactKadSourceOverIPv6(facts));
+		}
+	}
+}
+
+TEST(KadSourceAddressPolicy, ABuddylessSourceStillNeedsAnIDOfOursAndAPermittedDial)
+{
+	SKadSourceFacts zeroID = ContactableOverIPv6();
+	zeroID.carriesBuddy = false;
+	zeroID.ourHelloID = 0;
+	ASSERT_FALSE(ShouldContactKadSourceOverIPv6(zeroID));
+
+	SKadSourceFacts notPermitted = ContactableOverIPv6();
+	notPermitted.carriesBuddy = false;
+	notPermitted.ourHelloID = 0xC0A80001u;
+	notPermitted.familyPermitted = false;
+	ASSERT_FALSE(ShouldContactKadSourceOverIPv6(notPermitted));
+}
+
+// Type 6 takes a direct UDP callback, which an IPv6-derived ID would break at an eMuleAI peer.
+TEST(KadSourceAddressPolicy, ADirectCallbackSourceStillNeedsALowIDOfOurs)
+{
+	SKadSourceFacts facts = ContactableOverIPv6();
+	facts.sourceType = 6;
+	facts.carriesBuddy = false;
+	facts.ourHelloID = 0xC0A80001u;
+	ASSERT_FALSE(ShouldContactKadSourceOverIPv6(facts));
 }
 
 TEST(KadSourceAddressPolicy, APublishedAddressThatNamesNoRemotePeerIsNotContacted)

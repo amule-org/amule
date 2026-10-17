@@ -35,6 +35,7 @@ struct SKadSourceFacts
 {
 	std::uint8_t sourceType = 0;   // TAG_SOURCETYPE of the result
 	CNetworkAddress publishedIPv6; // The "ip6" tag; Absent when missing or malformed
+	bool carriesBuddy = false;     // The result names a serving buddy (TAG_SERVERIP or TAG_SERVERPORT)
 	std::uint32_t ourHelloID = 0;  // The ID our OP_HELLO carries
 	bool ipv6Built = false;
 	bool familyPermitted = false;
@@ -48,14 +49,16 @@ struct SKadSourceFacts
  * takes a direct UDP callback, while types 1 and 4 are HighIDs that keep their IPv4 route. Our HELLO
  * must carry a nonzero LowID: eMuleAI keeps such an ID from a peer arriving over IPv6 but replaces
  * any other with one derived from the IPv6 socket, so a HighID would lose its IPv4 callback path at
- * that peer, and 0 is no identity at all. The address is reported by a third party through Kad, so
- * it must name a peer across hosts and must not point us at local services. The dial itself goes
- * through the same gate as every native IPv6 contact.
+ * that peer, and 0 is no identity at all. A type 3/5 source published without buddy tags has no
+ * IPv4 callback path to lose, so any nonzero ID of ours qualifies there. The address is reported by
+ * a third party through Kad, so it must name a peer across hosts and must not point us at local
+ * services. The dial itself goes through the same gate as every native IPv6 contact.
  */
 inline bool ShouldContactKadSourceOverIPv6(const SKadSourceFacts &facts)
 {
 	const bool firewalledOnIPv4 = facts.sourceType == 3 || facts.sourceType == 5 || facts.sourceType == 6;
-	if (!firewalledOnIPv4 || facts.ourHelloID == 0 || !IsLowID(facts.ourHelloID)) {
+	const bool buddyless = (facts.sourceType == 3 || facts.sourceType == 5) && !facts.carriesBuddy;
+	if (!firewalledOnIPv4 || facts.ourHelloID == 0 || (!buddyless && !IsLowID(facts.ourHelloID))) {
 		return false;
 	}
 	if (!PeerAddressing::IsUsableTagIdentity(facts.publishedIPv6)) {

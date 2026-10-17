@@ -1696,6 +1696,7 @@ void CDownloadQueue::KademliaSearchFile(uint32_t searchID,
 	SKadSourceFacts facts;
 	facts.sourceType = type;
 	facts.publishedIPv6 = publishedIPv6;
+	facts.carriesBuddy = buddyip != 0 || buddyport != 0;
 	facts.ourHelloID = theApp->GetID();
 	facts.ipv6Built = true;
 	facts.familyPermitted = AddressFamilyPolicy::Permits(publishedIPv6);
