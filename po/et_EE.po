@@ -326,6 +326,22 @@ msgid "Now, exiting main app..."
 msgstr "Ok, lahkun põhiprogrammist..."
 
 #: src/amule.cpp
+msgid "Saving window settings..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving client credits..."
+msgstr ""
+"\n"
+"Loon klienti ....\n"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Stopping helper applications..."
+msgstr "Lahkub rakendusest."
+
+#: src/amule.cpp
 #, c-format
 msgid "Terminating amuleweb instance with pid '%d' ... "
 msgstr "Lõpetan amuleweb'i eksemplari, protsessi id '%d' ... "
@@ -355,12 +371,31 @@ msgid "aMule OnExit: Terminating core."
 msgstr "aMule OnExit: Peatan tuuma."
 
 #: src/amule.cpp
+#, fuzzy
+msgid "Saving search results..."
+msgstr "Otsingu tulemus"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving downloads and shared files..."
+msgstr "Jagatud failide uuestilaadimine..."
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Flushing download buffers..."
+msgstr "Kustutan faili: %s"
+
+#: src/amule.cpp
 msgid "aMule shutdown completed."
 msgstr "aMule seiskamine lõpetatud."
 
 #: src/amule.cpp
 msgid "Memory debug results for aMule exit:"
 msgstr "aMule väljumise mälu veajälituse tulemus:"
+
+#: src/amule.cpp
+msgid "Finishing shutdown..."
+msgstr ""
 
 #: src/amule.cpp
 #, fuzzy, c-format
@@ -679,6 +714,28 @@ msgstr ""
 #, c-format
 msgid "Disk space preallocation for file '%s' failed: %s"
 msgstr "Kettaruumi eraldamine faili '%s' jaoks ebaõnnestus: %s"
+
+#: src/amule.cpp
+msgid "Stopping network services..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving source seeds..."
+msgstr "Allikaid"
+
+#: src/amule.cpp
+msgid "Stopping background downloads and workers..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Closing connections..."
+msgstr " ühendub..."
+
+#: src/amule.cpp
+msgid "Saving known files and statistics..."
+msgstr ""
 
 #: src/amule.cpp
 msgid "ERROR: can't open logfile"
@@ -8279,6 +8336,11 @@ msgstr "Kaugfaili nimi"
 #: src/SourceListCtrl.cpp
 msgid "A4AF"
 msgstr "A4AF"
+
+#: src/SplashScreen.cpp
+#, fuzzy
+msgid "Closing aMule"
+msgstr "Näita aMule"
 
 #: src/Statistics.cpp
 #, c-format

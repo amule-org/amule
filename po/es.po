@@ -16,7 +16,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-10-16 08:33+0000\n"
+"PO-Revision-Date: 2026-10-17 10:20+0000\n"
 "Last-Translator: Diego Heras <ngosang@hotmail.es>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/amule/amule-application/es/>\n"
 "Language: es\n"
@@ -355,6 +355,18 @@ msgid "Now, exiting main app..."
 msgstr "Ahora, saliendo de la aplicación principal..."
 
 #: src/amule.cpp
+msgid "Saving window settings..."
+msgstr "Guardando la configuración de la ventana..."
+
+#: src/amule.cpp
+msgid "Saving client credits..."
+msgstr "Guardando los créditos de los clientes..."
+
+#: src/amule.cpp
+msgid "Stopping helper applications..."
+msgstr "Deteniendo las aplicaciones auxiliares..."
+
+#: src/amule.cpp
 #, c-format
 msgid "Terminating amuleweb instance with pid '%d' ... "
 msgstr "Cerrando la instancia de amuleweb con pid '%d'... "
@@ -384,12 +396,28 @@ msgid "aMule OnExit: Terminating core."
 msgstr "aMule OnExit: terminando el núcleo."
 
 #: src/amule.cpp
+msgid "Saving search results..."
+msgstr "Guardando los resultados de búsqueda..."
+
+#: src/amule.cpp
+msgid "Saving downloads and shared files..."
+msgstr "Guardando las descargas y los archivos compartidos..."
+
+#: src/amule.cpp
+msgid "Flushing download buffers..."
+msgstr "Vaciando los búferes de descarga..."
+
+#: src/amule.cpp
 msgid "aMule shutdown completed."
 msgstr "Cierre de aMule completado."
 
 #: src/amule.cpp
 msgid "Memory debug results for aMule exit:"
 msgstr "Resultados de depuración de memoria en la salida de aMule:"
+
+#: src/amule.cpp
+msgid "Finishing shutdown..."
+msgstr "Finalizando el apagado..."
 
 #: src/amule.cpp
 #, c-format
@@ -506,7 +534,7 @@ msgstr "Nodos de bootstrap Kad (nodes.dat)"
 #: src/amule.cpp
 #, c-format
 msgid "Not starting %s: it is neither next to aMule nor on PATH."
-msgstr ""
+msgstr "No se iniciará %s: no se encuentra junto a aMule ni en el PATH."
 
 #: src/amule.cpp
 #, c-format
@@ -702,6 +730,26 @@ msgstr "Verificar datos locales: otro archivo denominado '%s' en sus directorios
 #, c-format
 msgid "Disk space preallocation for file '%s' failed: %s"
 msgstr "La reserva del espacio en disco para el archivo '%s' ha fallado: %s"
+
+#: src/amule.cpp
+msgid "Stopping network services..."
+msgstr "Deteniendo los servicios de red..."
+
+#: src/amule.cpp
+msgid "Saving source seeds..."
+msgstr "Guardando las semillas de fuentes..."
+
+#: src/amule.cpp
+msgid "Stopping background downloads and workers..."
+msgstr "Deteniendo las descargas en segundo plano y los procesos de trabajo..."
+
+#: src/amule.cpp
+msgid "Closing connections..."
+msgstr "Cerrando las conexiones..."
+
+#: src/amule.cpp
+msgid "Saving known files and statistics..."
+msgstr "Guardando los archivos conocidos y las estadísticas..."
 
 #: src/amule.cpp
 msgid "ERROR: can't open logfile"
@@ -2874,7 +2922,7 @@ msgstr "No se ejecutó la orden del reproductor multimedia '%s': %s"
 #: src/FileLaunch.cpp
 #, c-format
 msgid "The configured video player is unavailable inside aMule's Flatpak sandbox: %s. Programs installed on the host are not directly available here. Completed files can still open with the desktop's default application; previewing an unfinished download needs a player the sandbox can run, such as a self-contained player saved in your home folder."
-msgstr ""
+msgstr "El reproductor de video configurado no está disponible dentro del aislamiento Flatpak de aMule: %s. Los programas instalados en el anfitrión no están accesibles directamente aquí. Los archivos completados aún se pueden abrir con la aplicación predeterminada del escritorio; para previsualizar un archivo incompleto se necesita un reproductor que el aislamiento pueda ejecutar, como un reproductor autónomo guardado en su carpeta personal."
 
 #: src/FileLaunch.cpp
 #, c-format
@@ -3232,7 +3280,7 @@ msgstr "Descarga HTTP cancelada"
 #: src/HTTPDownload.cpp
 #, c-format
 msgid "HTTP download of %s stopped: it is larger than %u MiB."
-msgstr ""
+msgstr "Se detuvo la descarga HTTP de %s: es mayor de %u MiB."
 
 #: src/HTTPDownload.cpp
 msgid "The URL to download can't be empty"
@@ -3952,7 +4000,7 @@ msgstr "AVISO: "
 #: src/MediaProbe.cpp
 #, c-format
 msgid "Media metadata: not using %s, because another user owns it or a folder above it."
-msgstr ""
+msgstr "Metadatos multimedia: no se usará %s porque pertenece a otro usuario o a una carpeta superior."
 
 #: src/MediaProbe.cpp
 msgid "Media metadata: no ffprobe binary found. Install ffmpeg, or set the ffprobe path in preferences; length, bitrate and codec will not be extracted."
@@ -4925,7 +4973,7 @@ msgstr "Reproductor de vídeo"
 
 #: src/muuli_wdr.cpp
 msgid "Line capacities"
-msgstr ""
+msgstr "Capacidades de la línea"
 
 #: src/muuli_wdr.cpp
 msgid "Upload"
@@ -4936,14 +4984,12 @@ msgid "Bandwidth limits"
 msgstr "Límites del ancho de banda"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Enable download limit"
-msgstr "Límite de descarga"
+msgstr "Activar el límite de descarga"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Enable upload limit"
-msgstr "Límite de subida"
+msgstr "Activar el límite de subida"
 
 #: src/muuli_wdr.cpp
 msgid "Slot Allocation"
@@ -5047,6 +5093,11 @@ msgid ""
 "\n"
 "Technical detail: rejects AICH publish tags from nodes advertising Kad protocol versions below 0x09."
 msgstr ""
+"Solo se aplica cuando está activada la función de compartir y utilizar hash de reparación de archivos a través de Kad. Se ignoran los hash publicados por nodos que indican que su versión de Kad es demasiado antigua para admitirlos.\n"
+"\n"
+"La versión declarada por un nodo puede estar desactualizada o ser inexacta, por lo que esto puede descartar hashes válidos y no garantiza que los hashes aceptados sean fiables. Los nodos cuya versión se desconoce siguen siendo aceptados.\n"
+"\n"
+"Detalle técnico: rechaza las etiquetas de publicación AICH de los nodos que anuncian versiones del protocolo Kad inferiores a 0x09."
 
 #: src/muuli_wdr.cpp
 msgid "Remove dead server after"
@@ -5149,13 +5200,12 @@ msgid "Enter here the min disk space desired."
 msgstr "Introduzca el espacio mínimo de disco deseado."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Save up to 10 HighID sources of rare files (20 or fewer sources) on exit"
-msgstr "Guardar 10 fuentes para archivos raros (< 20 fuentes)"
+msgstr "Guardar hasta 10 fuentes Id Alta de archivos raros (20 o menos fuentes) al salir"
 
 #: src/muuli_wdr.cpp
 msgid "The saved sources are used again only if aMule restarts within 2 hours. LowID sources are not saved: a LowID only identifies a peer on the server that assigned it."
-msgstr ""
+msgstr "Las fuentes guardadas son usadas otra vez sólo si aMule se reinicia en menos de dos horas. Las fuentes LowID no se guardan: un LowID sólo identifica a un par en el servidor que lo asignó."
 
 #: src/muuli_wdr.cpp src/Statistics.cpp
 msgid "Uploads"
@@ -5431,23 +5481,23 @@ msgstr "Deshabilitar el modo de reposo del ordenador"
 
 #: src/muuli_wdr.cpp
 msgid "Appearance: "
-msgstr ""
+msgstr "Aspecto: "
 
 #: src/muuli_wdr.cpp
 msgid "Follow system"
-msgstr ""
+msgstr "Seguir el sistema"
 
 #: src/muuli_wdr.cpp
 msgid "Light mode"
-msgstr ""
+msgstr "Modo claro"
 
 #: src/muuli_wdr.cpp
 msgid "Dark mode"
-msgstr ""
+msgstr "Modo oscuro"
 
 #: src/muuli_wdr.cpp
 msgid "Appearance changes take effect after restarting aMule."
-msgstr ""
+msgstr "Los cambios de aspecto surtirán efecto tras reiniciar aMule."
 
 #: src/muuli_wdr.cpp
 msgid "Skin to use: "
@@ -5723,7 +5773,7 @@ msgstr "Introduzca la URL del archivo nodes.dat y pulse el botón de la izquierd
 
 #: src/muuli_wdr.cpp
 msgid "Lookup diagnostics"
-msgstr ""
+msgstr "Diagnósticos de búsqueda"
 
 #: src/muuli_wdr.cpp
 msgid "Nodes stats"
@@ -5960,13 +6010,12 @@ msgid "Download the GeoIP database from the selected source."
 msgstr "Descarga la base de datos GeoIP de la fuente seleccionada."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Auto-update on startup and weekly"
-msgstr "Autoactualizar al inicio"
+msgstr "Actualizar automáticamente al inicio y semanalmente"
 
 #: src/muuli_wdr.cpp
 msgid "Check for a newer GeoIP database at startup and every week while aMule is running."
-msgstr ""
+msgstr "Comprobar si hay una base de datos GeoIP más reciente al inicio y cada semana mientras aMule esté en ejecución."
 
 #: src/muuli_wdr.cpp
 msgid "Filter incoming messages (except current chat):"
@@ -6568,7 +6617,7 @@ msgstr "Parte descargada %i corrupta en el archivo: %s"
 #: src/PartFile.cpp
 #, c-format
 msgid "ICH: Recovered corrupted part %i for %s -> Saved bytes: %s"
-msgstr "ICH: recuperada parte corrupta %i de %s -> Bytes salvados: %s"
+msgstr "ICH: Se ha recuperado la parte corrupta %i de %s ->Bytes ahorrados: %s"
 
 #: src/PartFile.cpp
 msgid "Allocating"
@@ -6626,12 +6675,12 @@ msgstr "Puerto por defecto que será usado (%d)"
 
 #: src/BandwidthLimitSlider.h
 msgid "Adjust the enabled limit from 1 KiB/s to line capacity."
-msgstr ""
+msgstr "Ajuste el límite activado desde 1 KiB/s hasta la capacidad de la línea."
 
 #: src/BandwidthLimitSlider.h
-#, fuzzy, c-format
+#, c-format
 msgid "KiB/s (%.2f MiB/s)"
-msgstr "%.1f MiB/s"
+msgstr "KiB/s (%.2f MiB/s)"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Interface"
@@ -6775,9 +6824,8 @@ msgid "- Network interface binding changed.\n"
 msgstr "- La interfaz de red vinculada ha cambiado.\n"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "- Local address binding changed.\n"
-msgstr "- La interfaz de red vinculada ha cambiado.\n"
+msgstr "- Se ha cambiado la asignación de la dirección local.\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- TCP port changed.\n"
@@ -7126,6 +7174,9 @@ msgid ""
 "Chat and observed download completions support GUI commands with a remote core.\n"
 "Already completed downloads do not run commands at first sync or reconnect."
 msgstr ""
+"Las órdenes principales deben configurarse en el archivo amule.conf del demonio.\n"
+"El chat y la notificación de descargas completadas admiten órdenes de la interfaz gráfica con un núcleo remoto.\n"
+"Las descargas ya completadas no ejecutan órdenes durante la primera sincronización ni al reconectar."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "The following variables will be replaced:"
@@ -7238,9 +7289,9 @@ msgid "Only saving the first %u of %u results for search \"%s\"."
 msgstr "Guardando sólo el primer %u de %u resultados de búsqueda \"%s\"."
 
 #: src/SearchList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "IO error while saving %s: %s"
-msgstr "Error de E/S al leer el archivo %s: %s"
+msgstr "Error de E/S al guardar %s: %s"
 
 #: src/SearchList.cpp
 msgid "WARNING: Stored search list corrupted, contains invalid header."
@@ -8247,6 +8298,10 @@ msgstr "Nombre del archivo remoto"
 msgid "A4AF"
 msgstr "A4AF"
 
+#: src/SplashScreen.cpp
+msgid "Closing aMule"
+msgstr "Cerrando aMule"
+
 #: src/Statistics.cpp
 #, c-format
 msgid "Uploaded Data (Session (Total)): %s"
@@ -9238,7 +9293,7 @@ msgstr "Suspendiendo la subida del archivo: %s"
 #: src/UserEvents.cpp
 #, c-format
 msgid "Command '%s' was not run on '%s' event: %s"
-msgstr ""
+msgstr "No se ejecutó la orden '%s' en el evento '%s': %s"
 
 #: src/UserEvents.cpp
 #, c-format
@@ -9250,9 +9305,8 @@ msgid "Download completed"
 msgstr "Descarga completada"
 
 #: src/UserEvents.h
-#, fuzzy
 msgid "The full path to the file (empty in remote GUI mode)."
-msgstr "La ruta completa al archivo."
+msgstr "La ruta completa al archivo (vacío en modo GUI remoto)."
 
 #: src/UserEvents.h
 msgid "The name of the file without path component."
@@ -10014,20 +10068,20 @@ msgstr "Eliminando los datos de usuario en $APPDATA\\aMule..."
 #: src/kademlia/kademlia/Indexed.cpp
 #, c-format
 msgid "Kad could not read %s. It was renamed to %s.bad, and a new index will be saved at shutdown."
-msgstr ""
+msgstr "Kad no pudo leer %s. Fue renombrado a %s.bad, y un índice nuevo será guardado al apagar."
 
 #: src/kademlia/kademlia/Indexed.cpp
 #, c-format
 msgid "Kad could not preserve the unreadable index %s as %s.bad. Its original file will not be overwritten."
-msgstr ""
+msgstr "Kad no pudo preservar el índice ilegible %s como %s.bad. Su archivo original no será sobrescrito."
 
 #: src/kademlia/kademlia/Indexed.cpp
 msgid "Kad could not load its saved index. Existing index files were preserved."
-msgstr ""
+msgstr "Kad no pudo cargar su índice guardado. Los archivos del índice existente fueron preservados."
 
 #: src/kademlia/kademlia/Indexed.cpp
 msgid "Kad could not save an index. The previous copy of that file was preserved."
-msgstr ""
+msgstr "Kad no pudo guardar un índice. La copia previa de ese fichero fue preservado."
 
 #~ msgid "Download graph scale:"
 #~ msgstr "Escala de la gráfica de descarga:"

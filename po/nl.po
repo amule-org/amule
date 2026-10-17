@@ -13,7 +13,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-10-16 13:01+0000\n"
+"PO-Revision-Date: 2026-10-16 23:24+0000\n"
 "Last-Translator: Marcel Pol <marcel@timelord.nl>\n"
 "Language-Team: Dutch <nl@li.org>\n"
 "Language: nl\n"
@@ -350,6 +350,22 @@ msgid "Now, exiting main app..."
 msgstr "Hoofdapp wordt nu afgesloten..."
 
 #: src/amule.cpp
+msgid "Saving window settings..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving client credits..."
+msgstr ""
+"\n"
+"Aanmaken van client...\n"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Stopping helper applications..."
+msgstr "Sluit het programma af."
+
+#: src/amule.cpp
 #, c-format
 msgid "Terminating amuleweb instance with pid '%d' ... "
 msgstr "Amuleweb-instantie met pid '%d' wordt afgesloten ... "
@@ -379,12 +395,31 @@ msgid "aMule OnExit: Terminating core."
 msgstr "aMule OnExit: Kern wordt afgesloten."
 
 #: src/amule.cpp
+#, fuzzy
+msgid "Saving search results..."
+msgstr "Zoekresultaat"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving downloads and shared files..."
+msgstr "Gedeelde bestanden opnieuw laden..."
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Flushing download buffers..."
+msgstr "Gedownload bestand wordt gehashed: %s"
+
+#: src/amule.cpp
 msgid "aMule shutdown completed."
 msgstr "aMule is afgesloten."
 
 #: src/amule.cpp
 msgid "Memory debug results for aMule exit:"
 msgstr "Geheugen-foutopsoringsresultaten voor het afsluiten van aMule:"
+
+#: src/amule.cpp
+msgid "Finishing shutdown..."
+msgstr ""
 
 #: src/amule.cpp
 #, c-format
@@ -697,6 +732,28 @@ msgstr "Lokale gegevens verifiëren: een ander bestand genaamd '%s' in uw gedeel
 #, c-format
 msgid "Disk space preallocation for file '%s' failed: %s"
 msgstr "Toewijzen schijfruimte voor bestand '%s' mislukt: %s"
+
+#: src/amule.cpp
+msgid "Stopping network services..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving source seeds..."
+msgstr "Bron Seeds"
+
+#: src/amule.cpp
+msgid "Stopping background downloads and workers..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Closing connections..."
+msgstr " is aan het verbinden..."
+
+#: src/amule.cpp
+msgid "Saving known files and statistics..."
+msgstr ""
 
 #: src/amule.cpp
 msgid "ERROR: can't open logfile"
@@ -4918,7 +4975,7 @@ msgstr "Videospeler"
 
 #: src/muuli_wdr.cpp
 msgid "Line capacities"
-msgstr ""
+msgstr "Kabelcapaciteit"
 
 #: src/muuli_wdr.cpp
 msgid "Upload"
@@ -4929,14 +4986,12 @@ msgid "Bandwidth limits"
 msgstr "Bandbreedtegrenzen"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Enable download limit"
-msgstr "Downloadgrens"
+msgstr "Schakel downloadlimiet in"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Enable upload limit"
-msgstr "Uploadgrens"
+msgstr "Schakel uploadlimiet in"
 
 #: src/muuli_wdr.cpp
 msgid "Slot Allocation"
@@ -5428,23 +5483,23 @@ msgstr "Schakel standby-modus van computer uit"
 
 #: src/muuli_wdr.cpp
 msgid "Appearance: "
-msgstr ""
+msgstr "Uiterlijk: "
 
 #: src/muuli_wdr.cpp
 msgid "Follow system"
-msgstr ""
+msgstr "Volg systeem"
 
 #: src/muuli_wdr.cpp
 msgid "Light mode"
-msgstr ""
+msgstr "Lichte modus"
 
 #: src/muuli_wdr.cpp
 msgid "Dark mode"
-msgstr ""
+msgstr "Donkere modus"
 
 #: src/muuli_wdr.cpp
 msgid "Appearance changes take effect after restarting aMule."
-msgstr ""
+msgstr "Uiterlijke veranderingen hebbne effect nadat aMule herstart is."
 
 #: src/muuli_wdr.cpp
 msgid "Skin to use: "
@@ -6622,12 +6677,12 @@ msgstr "Standaard poort zal worden gebruikt (%d)"
 
 #: src/BandwidthLimitSlider.h
 msgid "Adjust the enabled limit from 1 KiB/s to line capacity."
-msgstr ""
+msgstr "Pas de ingeschakelde limiet aan van 1 KiB/s tot aan de kabelcapaciteit."
 
 #: src/BandwidthLimitSlider.h
-#, fuzzy, c-format
+#, c-format
 msgid "KiB/s (%.2f MiB/s)"
-msgstr "%.1f MiB/s"
+msgstr "KiB/s (%.2f MiB/s)"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Interface"
@@ -8244,6 +8299,11 @@ msgstr "Externe Bestandsnaam"
 #: src/SourceListCtrl.cpp
 msgid "A4AF"
 msgstr "A4AF"
+
+#: src/SplashScreen.cpp
+#, fuzzy
+msgid "Closing aMule"
+msgstr "Toon aMule"
 
 #: src/Statistics.cpp
 #, c-format

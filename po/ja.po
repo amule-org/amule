@@ -323,6 +323,22 @@ msgid "Now, exiting main app..."
 msgstr "メインアプリケーションを終了しています…"
 
 #: src/amule.cpp
+msgid "Saving window settings..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving client credits..."
+msgstr ""
+"\n"
+"クライアントを生成中です…\n"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Stopping helper applications..."
+msgstr "アプリケーションが終了します。"
+
+#: src/amule.cpp
 #, c-format
 msgid "Terminating amuleweb instance with pid '%d' ... "
 msgstr "pid '%d' の amuleweb インスタンスを終了しています… "
@@ -352,12 +368,31 @@ msgid "aMule OnExit: Terminating core."
 msgstr "aMule OnExit: コアを終了しています。"
 
 #: src/amule.cpp
+#, fuzzy
+msgid "Saving search results..."
+msgstr "検索結果"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving downloads and shared files..."
+msgstr "共有ファイルを再ロード中…"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Flushing download buffers..."
+msgstr "ファイルを削除します：%s"
+
+#: src/amule.cpp
 msgid "aMule shutdown completed."
 msgstr "aMuleのシャットダウンが完了しました。"
 
 #: src/amule.cpp
 msgid "Memory debug results for aMule exit:"
 msgstr "aMule終了時のメモリデバッグ結果："
+
+#: src/amule.cpp
+msgid "Finishing shutdown..."
+msgstr ""
 
 #: src/amule.cpp
 #, c-format
@@ -676,6 +711,28 @@ msgstr ""
 #, c-format
 msgid "Disk space preallocation for file '%s' failed: %s"
 msgstr "ファイル '%s' のディスク領域の事前確保が失敗しました: %s"
+
+#: src/amule.cpp
+msgid "Stopping network services..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving source seeds..."
+msgstr "ソースシード"
+
+#: src/amule.cpp
+msgid "Stopping background downloads and workers..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Closing connections..."
+msgstr " は接続中です…"
+
+#: src/amule.cpp
+msgid "Saving known files and statistics..."
+msgstr ""
 
 #: src/amule.cpp
 msgid "ERROR: can't open logfile"
@@ -8228,6 +8285,11 @@ msgstr "リモートファイル名"
 #: src/SourceListCtrl.cpp
 msgid "A4AF"
 msgstr "A4AF"
+
+#: src/SplashScreen.cpp
+#, fuzzy
+msgid "Closing aMule"
+msgstr "aMuleを表示する"
 
 #: src/Statistics.cpp
 #, c-format

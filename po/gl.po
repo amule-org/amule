@@ -341,6 +341,22 @@ msgid "Now, exiting main app..."
 msgstr "Saíndo da aplicación principal..."
 
 #: src/amule.cpp
+msgid "Saving window settings..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving client credits..."
+msgstr ""
+"\n"
+"Creando cliente...\n"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Stopping helper applications..."
+msgstr "Sae da aplicación."
+
+#: src/amule.cpp
 #, c-format
 msgid "Terminating amuleweb instance with pid '%d' ... "
 msgstr "Rematando o proceso de amuleweb co pid «%d» ... "
@@ -370,12 +386,31 @@ msgid "aMule OnExit: Terminating core."
 msgstr "aMule Ao Sairen(OnExit): Apagando o núcleo."
 
 #: src/amule.cpp
+#, fuzzy
+msgid "Saving search results..."
+msgstr "Resultados da busca"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving downloads and shared files..."
+msgstr "Recargando os ficheiros compartidos..."
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Flushing download buffers..."
+msgstr "Eliminando ficheiro: %s"
+
+#: src/amule.cpp
 msgid "aMule shutdown completed."
 msgstr "Apagado completado."
 
 #: src/amule.cpp
 msgid "Memory debug results for aMule exit:"
 msgstr "Resultados da depuración da memoria ao sair de aMule:"
+
+#: src/amule.cpp
+msgid "Finishing shutdown..."
+msgstr ""
 
 #: src/amule.cpp
 #, fuzzy, c-format
@@ -694,6 +729,28 @@ msgstr ""
 #, c-format
 msgid "Disk space preallocation for file '%s' failed: %s"
 msgstr "Fallou a reserva do espazo no disco duro para o ficheiro «%s»: %s"
+
+#: src/amule.cpp
+msgid "Stopping network services..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving source seeds..."
+msgstr "Sementes da fonte"
+
+#: src/amule.cpp
+msgid "Stopping background downloads and workers..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Closing connections..."
+msgstr " está conectandose..."
+
+#: src/amule.cpp
+msgid "Saving known files and statistics..."
+msgstr ""
 
 #: src/amule.cpp
 msgid "ERROR: can't open logfile"
@@ -8297,6 +8354,11 @@ msgstr "Nome remoto do ficheiro"
 #: src/SourceListCtrl.cpp
 msgid "A4AF"
 msgstr "A4AF"
+
+#: src/SplashScreen.cpp
+#, fuzzy
+msgid "Closing aMule"
+msgstr "Mostrar aMule"
 
 #: src/Statistics.cpp
 #, c-format

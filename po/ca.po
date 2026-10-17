@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-10-15 19:15+0000\n"
+"PO-Revision-Date: 2026-10-16 23:24+0000\n"
 "Last-Translator: minterior <minterior@gmail.com>\n"
 "Language-Team: Català\n"
 "Language: ca\n"
@@ -352,6 +352,22 @@ msgid "Now, exiting main app..."
 msgstr "Sortint del programa..."
 
 #: src/amule.cpp
+msgid "Saving window settings..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving client credits..."
+msgstr ""
+"\n"
+"S'està creant el client...\n"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Stopping helper applications..."
+msgstr "Surt de l'aplicació."
+
+#: src/amule.cpp
 #, c-format
 msgid "Terminating amuleweb instance with pid '%d' ... "
 msgstr "S'està aturant el procés amuleweb amb pid '%d' ... "
@@ -381,12 +397,31 @@ msgid "aMule OnExit: Terminating core."
 msgstr "aMule Sortida: Finalitzant nucli."
 
 #: src/amule.cpp
+#, fuzzy
+msgid "Saving search results..."
+msgstr "Resultat de la cerca"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving downloads and shared files..."
+msgstr "S'estan tornant a carregar els fitxers compartits..."
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Flushing download buffers..."
+msgstr "S'està calculant el hash del fitxer baixat: %s"
+
+#: src/amule.cpp
 msgid "aMule shutdown completed."
 msgstr "Aturada aMule completada."
 
 #: src/amule.cpp
 msgid "Memory debug results for aMule exit:"
 msgstr "Resultat de la depuració de la memòria a la sortida de l'aMule:"
+
+#: src/amule.cpp
+msgid "Finishing shutdown..."
+msgstr ""
 
 #: src/amule.cpp
 #, c-format
@@ -699,6 +734,28 @@ msgstr "Verificació de dades locals: un altre fitxer anomenat «%s» de les vos
 #, c-format
 msgid "Disk space preallocation for file '%s' failed: %s"
 msgstr "La preassignació d'espai per al fitxer '%s' ha fallat: %s"
+
+#: src/amule.cpp
+msgid "Stopping network services..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving source seeds..."
+msgstr "Llavors font"
+
+#: src/amule.cpp
+msgid "Stopping background downloads and workers..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Closing connections..."
+msgstr " està connectant..."
+
+#: src/amule.cpp
+msgid "Saving known files and statistics..."
+msgstr ""
 
 #: src/amule.cpp
 msgid "ERROR: can't open logfile"
@@ -3225,7 +3282,7 @@ msgstr "Descàrrega HTTP cancel·lada"
 #: src/HTTPDownload.cpp
 #, c-format
 msgid "HTTP download of %s stopped: it is larger than %u MiB."
-msgstr ""
+msgstr "S'ha aturat la baixada HTTP de %s: supera els %u MiB."
 
 #: src/HTTPDownload.cpp
 msgid "The URL to download can't be empty"
@@ -4918,7 +4975,7 @@ msgstr "Reproductor de vídeo"
 
 #: src/muuli_wdr.cpp
 msgid "Line capacities"
-msgstr ""
+msgstr "Capacitats de la línia"
 
 #: src/muuli_wdr.cpp
 msgid "Upload"
@@ -4929,14 +4986,12 @@ msgid "Bandwidth limits"
 msgstr "Límits d'ample de banda"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Enable download limit"
-msgstr "Límit de baixada"
+msgstr "Activa el límit de baixada"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Enable upload limit"
-msgstr "Límit de pujada"
+msgstr "Activa el límit de pujada"
 
 #: src/muuli_wdr.cpp
 msgid "Slot Allocation"
@@ -5428,23 +5483,23 @@ msgstr "Inhabilita el mode d'espera programat de l'ordinador"
 
 #: src/muuli_wdr.cpp
 msgid "Appearance: "
-msgstr ""
+msgstr "Aparença: "
 
 #: src/muuli_wdr.cpp
 msgid "Follow system"
-msgstr ""
+msgstr "Segons el sistema"
 
 #: src/muuli_wdr.cpp
 msgid "Light mode"
-msgstr ""
+msgstr "Mode clar"
 
 #: src/muuli_wdr.cpp
 msgid "Dark mode"
-msgstr ""
+msgstr "Mode fosc"
 
 #: src/muuli_wdr.cpp
 msgid "Appearance changes take effect after restarting aMule."
-msgstr ""
+msgstr "Els canvis d'aparença s'apliquen després de reiniciar aMule."
 
 #: src/muuli_wdr.cpp
 msgid "Skin to use: "
@@ -6622,12 +6677,12 @@ msgstr "S'usarà el port per defecte (%d)"
 
 #: src/BandwidthLimitSlider.h
 msgid "Adjust the enabled limit from 1 KiB/s to line capacity."
-msgstr ""
+msgstr "Ajusta el límit activat entre 1 KiB/s i la capacitat de la línia."
 
 #: src/BandwidthLimitSlider.h
-#, fuzzy, c-format
+#, c-format
 msgid "KiB/s (%.2f MiB/s)"
-msgstr "%.1f MiB/s"
+msgstr "KiB/s (%.2f MiB/s)"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Interface"
@@ -8244,6 +8299,11 @@ msgstr "Nom de fitxer remot"
 #: src/SourceListCtrl.cpp
 msgid "A4AF"
 msgstr "A4AF"
+
+#: src/SplashScreen.cpp
+#, fuzzy
+msgid "Closing aMule"
+msgstr "Mostra l'aMule"
 
 #: src/Statistics.cpp
 #, c-format

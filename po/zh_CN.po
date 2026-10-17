@@ -14,7 +14,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-10-16 02:24+0000\n"
+"PO-Revision-Date: 2026-10-17 10:20+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
 "Language: zh_CN\n"
@@ -351,6 +351,18 @@ msgid "Now, exiting main app..."
 msgstr "现在，正在退出主程序..."
 
 #: src/amule.cpp
+msgid "Saving window settings..."
+msgstr "正在保存窗口设置…"
+
+#: src/amule.cpp
+msgid "Saving client credits..."
+msgstr "正在保存客户端积分..."
+
+#: src/amule.cpp
+msgid "Stopping helper applications..."
+msgstr "正在停止助手程序…"
+
+#: src/amule.cpp
 #, c-format
 msgid "Terminating amuleweb instance with pid '%d' ... "
 msgstr "正在终止 pid 为“%d”的 amuleweb 实例 ... "
@@ -380,12 +392,28 @@ msgid "aMule OnExit: Terminating core."
 msgstr "aMule 正在退出：中止内核。"
 
 #: src/amule.cpp
+msgid "Saving search results..."
+msgstr "保存搜索结果…"
+
+#: src/amule.cpp
+msgid "Saving downloads and shared files..."
+msgstr "正在保存下载的和共享的文件..."
+
+#: src/amule.cpp
+msgid "Flushing download buffers..."
+msgstr "正在冲洗下载缓冲…"
+
+#: src/amule.cpp
 msgid "aMule shutdown completed."
 msgstr "aMule 已经关闭。"
 
 #: src/amule.cpp
 msgid "Memory debug results for aMule exit:"
 msgstr "对 aMule 退出的内存 Debug 结果："
+
+#: src/amule.cpp
+msgid "Finishing shutdown..."
+msgstr "正在完成关闭…"
 
 #: src/amule.cpp
 #, c-format
@@ -698,6 +726,26 @@ msgstr "验证本地数据：共享文件夹中另一名为 '%s' 的文件和 '%
 #, c-format
 msgid "Disk space preallocation for file '%s' failed: %s"
 msgstr "为文件 '%s' 预分配磁盘空间失败：%s"
+
+#: src/amule.cpp
+msgid "Stopping network services..."
+msgstr "正在停止网络服务…"
+
+#: src/amule.cpp
+msgid "Saving source seeds..."
+msgstr "正在保存资源种子…"
+
+#: src/amule.cpp
+msgid "Stopping background downloads and workers..."
+msgstr "正在停止后台下载和 workers…"
+
+#: src/amule.cpp
+msgid "Closing connections..."
+msgstr "正在关闭连接..."
+
+#: src/amule.cpp
+msgid "Saving known files and statistics..."
+msgstr "正在保存已知文件和统计数字…"
 
 #: src/amule.cpp
 msgid "ERROR: can't open logfile"
@@ -4429,7 +4477,7 @@ msgstr "重置表单"
 
 #: src/muuli_wdr.cpp
 msgid "Results"
-msgstr "搜索结果"
+msgstr "结果"
 
 #: src/muuli_wdr.cpp
 msgid "Clears completed downloads"
@@ -4917,7 +4965,7 @@ msgstr "视频播放器"
 
 #: src/muuli_wdr.cpp
 msgid "Line capacities"
-msgstr ""
+msgstr "线路容量"
 
 #: src/muuli_wdr.cpp
 msgid "Upload"
@@ -4928,14 +4976,12 @@ msgid "Bandwidth limits"
 msgstr "带宽限制"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Enable download limit"
-msgstr "下载限制"
+msgstr "启用下载限制"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Enable upload limit"
-msgstr "上传限制"
+msgstr "启用上传限制"
 
 #: src/muuli_wdr.cpp
 msgid "Slot Allocation"
@@ -5427,23 +5473,23 @@ msgstr "停用电脑自动进入待命模式功能"
 
 #: src/muuli_wdr.cpp
 msgid "Appearance: "
-msgstr ""
+msgstr "外观： "
 
 #: src/muuli_wdr.cpp
 msgid "Follow system"
-msgstr ""
+msgstr "跟随系统"
 
 #: src/muuli_wdr.cpp
 msgid "Light mode"
-msgstr ""
+msgstr "浅色模式"
 
 #: src/muuli_wdr.cpp
 msgid "Dark mode"
-msgstr ""
+msgstr "深色模式"
 
 #: src/muuli_wdr.cpp
 msgid "Appearance changes take effect after restarting aMule."
-msgstr ""
+msgstr "外观更改在重启 aMule 后生效。"
 
 #: src/muuli_wdr.cpp
 msgid "Skin to use: "
@@ -6621,12 +6667,12 @@ msgstr "缺省端口将被使用（%d）"
 
 #: src/BandwidthLimitSlider.h
 msgid "Adjust the enabled limit from 1 KiB/s to line capacity."
-msgstr ""
+msgstr "将启用的限制从 1 KiB/s 调整成线路容量。"
 
 #: src/BandwidthLimitSlider.h
-#, fuzzy, c-format
+#, c-format
 msgid "KiB/s (%.2f MiB/s)"
-msgstr "%.1f MiB/s"
+msgstr "KiB/s (%.2f MiB/s)"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Interface"
@@ -8243,6 +8289,10 @@ msgstr "远程文件名"
 #: src/SourceListCtrl.cpp
 msgid "A4AF"
 msgstr "A4AF"
+
+#: src/SplashScreen.cpp
+msgid "Closing aMule"
+msgstr "正在关闭 aMule"
 
 #: src/Statistics.cpp
 #, c-format

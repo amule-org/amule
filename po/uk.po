@@ -327,6 +327,22 @@ msgid "Now, exiting main app..."
 msgstr "Тепер, виходимо з головної програми..."
 
 #: src/amule.cpp
+msgid "Saving window settings..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving client credits..."
+msgstr ""
+"\n"
+"Створюється клієнт...\n"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Stopping helper applications..."
+msgstr "Вийти з програми."
+
+#: src/amule.cpp
 #, c-format
 msgid "Terminating amuleweb instance with pid '%d' ... "
 msgstr "Зупиняю екземпляр amuleweb з pid '%d' ... "
@@ -356,12 +372,31 @@ msgid "aMule OnExit: Terminating core."
 msgstr "aMule OnExit: Завершується core."
 
 #: src/amule.cpp
+#, fuzzy
+msgid "Saving search results..."
+msgstr "Здобутки пошуку"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving downloads and shared files..."
+msgstr "Перезавантаження спільних файлів..."
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Flushing download buffers..."
+msgstr "Видаляється файл: %s"
+
+#: src/amule.cpp
 msgid "aMule shutdown completed."
 msgstr "Завершення роботи aMule закінчене."
 
 #: src/amule.cpp
 msgid "Memory debug results for aMule exit:"
 msgstr "Наслідки зневадження пам'яті для виходу aMule:"
+
+#: src/amule.cpp
+msgid "Finishing shutdown..."
+msgstr ""
 
 #: src/amule.cpp
 #, fuzzy, c-format
@@ -680,6 +715,28 @@ msgstr ""
 #, c-format
 msgid "Disk space preallocation for file '%s' failed: %s"
 msgstr "Не вдалося виділити місце на диску для файлу '%s': %s"
+
+#: src/amule.cpp
+msgid "Stopping network services..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving source seeds..."
+msgstr "Поширювачі джерел"
+
+#: src/amule.cpp
+msgid "Stopping background downloads and workers..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Closing connections..."
+msgstr " з'єднується..."
+
+#: src/amule.cpp
+msgid "Saving known files and statistics..."
+msgstr ""
 
 #: src/amule.cpp
 msgid "ERROR: can't open logfile"
@@ -8346,6 +8403,11 @@ msgstr "Віддалена назва файлу"
 #: src/SourceListCtrl.cpp
 msgid "A4AF"
 msgstr "A4AF"
+
+#: src/SplashScreen.cpp
+#, fuzzy
+msgid "Closing aMule"
+msgstr "Показати aMule"
 
 #: src/Statistics.cpp
 #, c-format

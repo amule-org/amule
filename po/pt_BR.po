@@ -16,7 +16,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-10-16 08:33+0000\n"
+"PO-Revision-Date: 2026-10-16 23:24+0000\n"
 "Last-Translator: Marcelo Jimenez <mroberto@users.sourceforge.com>\n"
 "Language-Team: Português (Brasileiro) <pt@li.org>\n"
 "Language: pt_BR\n"
@@ -354,6 +354,22 @@ msgid "Now, exiting main app..."
 msgstr "Saindo do aplicativo principal..."
 
 #: src/amule.cpp
+msgid "Saving window settings..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving client credits..."
+msgstr ""
+"\n"
+"Criando cliente...\n"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Stopping helper applications..."
+msgstr "Sair do programa."
+
+#: src/amule.cpp
 #, c-format
 msgid "Terminating amuleweb instance with pid '%d' ... "
 msgstr "Terminando a instância do amuleweb com o pid '%d'... "
@@ -383,12 +399,31 @@ msgid "aMule OnExit: Terminating core."
 msgstr "aMule OnExit: Finalizando o núcleo."
 
 #: src/amule.cpp
+#, fuzzy
+msgid "Saving search results..."
+msgstr "Resultado da Busca"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving downloads and shared files..."
+msgstr "Recarregando lista de arquivos compartilhados..."
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Flushing download buffers..."
+msgstr "Calculando o hash do arquivo baixado: %s"
+
+#: src/amule.cpp
 msgid "aMule shutdown completed."
 msgstr "Encerramento do aMule completo."
 
 #: src/amule.cpp
 msgid "Memory debug results for aMule exit:"
 msgstr "Resultados da depuração da memória para a saída do aMule:"
+
+#: src/amule.cpp
+msgid "Finishing shutdown..."
+msgstr ""
 
 #: src/amule.cpp
 #, c-format
@@ -702,6 +737,28 @@ msgstr "Verificar Dados Locais: outro arquivo chamado '%s' nas suas pastas compa
 #, c-format
 msgid "Disk space preallocation for file '%s' failed: %s"
 msgstr "Pré-alocação de espaço em disco para arquivo '%s' falhou: %s"
+
+#: src/amule.cpp
+msgid "Stopping network services..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving source seeds..."
+msgstr "Fontes salvas"
+
+#: src/amule.cpp
+msgid "Stopping background downloads and workers..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Closing connections..."
+msgstr " está conectando..."
+
+#: src/amule.cpp
+msgid "Saving known files and statistics..."
+msgstr ""
 
 #: src/amule.cpp
 msgid "ERROR: can't open logfile"
@@ -2781,7 +2838,7 @@ msgstr "Não imprimir nenhuma saída em stdout."
 
 #: src/ExternalConnector.cpp
 msgid "Be verbose - show also debug messages."
-msgstr "Ser detalhado - mostrar também as mensagens de depuração."
+msgstr "Modo detalhado - mostra também as mensagens de depuração."
 
 #: src/ExternalConnector.cpp
 msgid "Sets program locale (language)."
@@ -4921,7 +4978,7 @@ msgstr "Tocador de vídeo"
 
 #: src/muuli_wdr.cpp
 msgid "Line capacities"
-msgstr ""
+msgstr "Capacidades da linha"
 
 #: src/muuli_wdr.cpp
 msgid "Upload"
@@ -4932,14 +4989,12 @@ msgid "Bandwidth limits"
 msgstr "Limites de banda"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Enable download limit"
-msgstr "Limite de download"
+msgstr "Habilitar limite de download"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Enable upload limit"
-msgstr "Limite de envio"
+msgstr "Habilitar limite de upload"
 
 #: src/muuli_wdr.cpp
 msgid "Slot Allocation"
@@ -5431,23 +5486,23 @@ msgstr "Desabilitar o modo de espera programado do computador"
 
 #: src/muuli_wdr.cpp
 msgid "Appearance: "
-msgstr ""
+msgstr "Aparência: "
 
 #: src/muuli_wdr.cpp
 msgid "Follow system"
-msgstr ""
+msgstr "Seguir o sistema"
 
 #: src/muuli_wdr.cpp
 msgid "Light mode"
-msgstr ""
+msgstr "Modo claro"
 
 #: src/muuli_wdr.cpp
 msgid "Dark mode"
-msgstr ""
+msgstr "Modo escuro"
 
 #: src/muuli_wdr.cpp
 msgid "Appearance changes take effect after restarting aMule."
-msgstr ""
+msgstr "Mudanças de aparência só têm efeito após reiniciar o aMule."
 
 #: src/muuli_wdr.cpp
 msgid "Skin to use: "
@@ -6625,12 +6680,12 @@ msgstr "Porta padrão será utilizada (%d)"
 
 #: src/BandwidthLimitSlider.h
 msgid "Adjust the enabled limit from 1 KiB/s to line capacity."
-msgstr ""
+msgstr "Ajuste o limite habilitado de 1 KiB/s até a capacidade da linha."
 
 #: src/BandwidthLimitSlider.h
-#, fuzzy, c-format
+#, c-format
 msgid "KiB/s (%.2f MiB/s)"
-msgstr "%.1f MiB/s"
+msgstr "KiB/s (%.2f MiB/s)"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Interface"
@@ -8248,6 +8303,11 @@ msgstr "Nome do arquivo remoto"
 msgid "A4AF"
 msgstr "A4AF"
 
+#: src/SplashScreen.cpp
+#, fuzzy
+msgid "Closing aMule"
+msgstr "Mostrar aMule"
+
 #: src/Statistics.cpp
 #, c-format
 msgid "Uploaded Data (Session (Total)): %s"
@@ -8895,7 +8955,7 @@ msgstr "O Valor informado deve ser 1/ON (ligado) ou 0/OFF (desligado).\n"
 
 #: src/TextClient.cpp
 msgid "Get and display a preference value."
-msgstr "Obter e mostrar o valor da preferência selecionada."
+msgstr "Obtém e mostra o valor de uma preferência."
 
 #: src/TextClient.cpp
 msgid "Get IP filtering preferences."

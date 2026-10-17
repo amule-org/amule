@@ -357,6 +357,22 @@ msgid "Now, exiting main app..."
 msgstr "Chiusura dell'applicazione..."
 
 #: src/amule.cpp
+msgid "Saving window settings..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving client credits..."
+msgstr ""
+"\n"
+"Creazione del client in corso...\n"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Stopping helper applications..."
+msgstr "Esce dall'applicazione."
+
+#: src/amule.cpp
 #, c-format
 msgid "Terminating amuleweb instance with pid '%d' ... "
 msgstr "Sto terminando l'istanza di amuleweb con pid `%d' ... "
@@ -386,12 +402,31 @@ msgid "aMule OnExit: Terminating core."
 msgstr "aMule in fase di chiusura: Terminazione del core."
 
 #: src/amule.cpp
+#, fuzzy
+msgid "Saving search results..."
+msgstr "Risultato della ricerca"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving downloads and shared files..."
+msgstr "Ricarica file condivisi in corso..."
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Flushing download buffers..."
+msgstr "Hashing del file scaricato in corso: %s"
+
+#: src/amule.cpp
 msgid "aMule shutdown completed."
 msgstr "aMule, arresto completato."
 
 #: src/amule.cpp
 msgid "Memory debug results for aMule exit:"
 msgstr "Risultati del debug della memoria per la chiusura di aMule:"
+
+#: src/amule.cpp
+msgid "Finishing shutdown..."
+msgstr ""
 
 #: src/amule.cpp
 #, c-format
@@ -708,6 +743,28 @@ msgstr "Verifica Dati Locali: un altro file di nome '%s' nelle tue cartelle cond
 #, c-format
 msgid "Disk space preallocation for file '%s' failed: %s"
 msgstr "Preallocazione dello spazio su disco per il file '%s' fallita: %s"
+
+#: src/amule.cpp
+msgid "Stopping network services..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving source seeds..."
+msgstr "Fonti salvate"
+
+#: src/amule.cpp
+msgid "Stopping background downloads and workers..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Closing connections..."
+msgstr " si sta connettendo..."
+
+#: src/amule.cpp
+msgid "Saving known files and statistics..."
+msgstr ""
 
 #: src/amule.cpp
 msgid "ERROR: can't open logfile"
@@ -8254,6 +8311,11 @@ msgstr "Nome file remoto"
 #: src/SourceListCtrl.cpp
 msgid "A4AF"
 msgstr "A4AF"
+
+#: src/SplashScreen.cpp
+#, fuzzy
+msgid "Closing aMule"
+msgstr "Mostra aMule"
 
 #: src/Statistics.cpp
 #, c-format

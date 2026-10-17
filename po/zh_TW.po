@@ -330,6 +330,22 @@ msgid "Now, exiting main app..."
 msgstr "正在離開主程式..."
 
 #: src/amule.cpp
+msgid "Saving window settings..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving client credits..."
+msgstr ""
+"\n"
+"正在建立客戶端...\n"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Stopping helper applications..."
+msgstr "離開程式。"
+
+#: src/amule.cpp
 #, c-format
 msgid "Terminating amuleweb instance with pid '%d' ... "
 msgstr "正在終止 pid %d 的 amuleweb 執行緒... "
@@ -359,12 +375,31 @@ msgid "aMule OnExit: Terminating core."
 msgstr "aMule 離開中：正在終止主程式。"
 
 #: src/amule.cpp
+#, fuzzy
+msgid "Saving search results..."
+msgstr "搜尋結果"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving downloads and shared files..."
+msgstr "正在重新載入分享的檔案……"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Flushing download buffers..."
+msgstr "正刪除檔案：%s "
+
+#: src/amule.cpp
 msgid "aMule shutdown completed."
 msgstr "已關閉 aMule 。"
 
 #: src/amule.cpp
 msgid "Memory debug results for aMule exit:"
 msgstr "離開 aMule 時記憶體除錯結果："
+
+#: src/amule.cpp
+msgid "Finishing shutdown..."
+msgstr ""
 
 #: src/amule.cpp
 #, fuzzy, c-format
@@ -683,6 +718,28 @@ msgstr ""
 #, c-format
 msgid "Disk space preallocation for file '%s' failed: %s"
 msgstr "無法為檔案 %s 預先分配磁碟空間：%s"
+
+#: src/amule.cpp
+msgid "Stopping network services..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving source seeds..."
+msgstr "來源種子"
+
+#: src/amule.cpp
+msgid "Stopping background downloads and workers..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Closing connections..."
+msgstr " 正在連線..."
+
+#: src/amule.cpp
+msgid "Saving known files and statistics..."
+msgstr ""
 
 #: src/amule.cpp
 msgid "ERROR: can't open logfile"
@@ -8240,6 +8297,11 @@ msgstr "遠端檔案名稱"
 #: src/SourceListCtrl.cpp
 msgid "A4AF"
 msgstr "A4AF"
+
+#: src/SplashScreen.cpp
+#, fuzzy
+msgid "Closing aMule"
+msgstr "顯示 aMule"
 
 #: src/Statistics.cpp
 #, c-format

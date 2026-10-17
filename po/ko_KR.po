@@ -326,6 +326,22 @@ msgid "Now, exiting main app..."
 msgstr "이제 메인 응용프로그램을 종료합니다..."
 
 #: src/amule.cpp
+msgid "Saving window settings..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving client credits..."
+msgstr ""
+"\n"
+"클라이언트 생성중...\n"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Stopping helper applications..."
+msgstr "응용프로그램에서 나감."
+
+#: src/amule.cpp
 #, c-format
 msgid "Terminating amuleweb instance with pid '%d' ... "
 msgstr "pid '%d'인 amuleweb 인스턴스를 종료하는 중... "
@@ -355,12 +371,31 @@ msgid "aMule OnExit: Terminating core."
 msgstr "aMule OnExit: 코어를 종료합니다."
 
 #: src/amule.cpp
+#, fuzzy
+msgid "Saving search results..."
+msgstr "검색 결과"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving downloads and shared files..."
+msgstr "공유 파일을 다시 불러오는 중..."
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Flushing download buffers..."
+msgstr "파일 삭제: %s"
+
+#: src/amule.cpp
 msgid "aMule shutdown completed."
 msgstr "aMule 종료가 완료되었습니다."
 
 #: src/amule.cpp
 msgid "Memory debug results for aMule exit:"
 msgstr "aMule 종료 시 메모리 디버그 결과:"
+
+#: src/amule.cpp
+msgid "Finishing shutdown..."
+msgstr ""
 
 #: src/amule.cpp
 #, c-format
@@ -679,6 +714,28 @@ msgstr ""
 #, c-format
 msgid "Disk space preallocation for file '%s' failed: %s"
 msgstr "파일 '%s'에 대한 디스크 공간 사전 할당이 실패했습니다: %s"
+
+#: src/amule.cpp
+msgid "Stopping network services..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving source seeds..."
+msgstr "자료 핵"
+
+#: src/amule.cpp
+msgid "Stopping background downloads and workers..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Closing connections..."
+msgstr " 은 연결중..."
+
+#: src/amule.cpp
+msgid "Saving known files and statistics..."
+msgstr ""
 
 #: src/amule.cpp
 msgid "ERROR: can't open logfile"
@@ -8277,6 +8334,11 @@ msgstr "원격 파일 이름"
 #: src/SourceListCtrl.cpp
 msgid "A4AF"
 msgstr "A4AF"
+
+#: src/SplashScreen.cpp
+#, fuzzy
+msgid "Closing aMule"
+msgstr "어뮬 보이기"
 
 #: src/Statistics.cpp
 #, c-format

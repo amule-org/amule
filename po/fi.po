@@ -327,6 +327,22 @@ msgid "Now, exiting main app..."
 msgstr "Pääohjelmaa suljetaan..."
 
 #: src/amule.cpp
+msgid "Saving window settings..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving client credits..."
+msgstr ""
+"\n"
+"Luon asiakasta...\n"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Stopping helper applications..."
+msgstr "Poistuu sovelluksesta."
+
+#: src/amule.cpp
 #, c-format
 msgid "Terminating amuleweb instance with pid '%d' ... "
 msgstr "Lopetetaan amulewebin instanssi prosessinumerolla '%d' ... "
@@ -356,12 +372,31 @@ msgid "aMule OnExit: Terminating core."
 msgstr "aMulen poistuessa: Lopetetaan ydin."
 
 #: src/amule.cpp
+#, fuzzy
+msgid "Saving search results..."
+msgstr "Haun tulos"
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving downloads and shared files..."
+msgstr "Ladataan jaettuja tiedostoja uudelleen..."
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Flushing download buffers..."
+msgstr "Poistetaan tiedosto: %s"
+
+#: src/amule.cpp
 msgid "aMule shutdown completed."
 msgstr "aMule sammutettu."
 
 #: src/amule.cpp
 msgid "Memory debug results for aMule exit:"
 msgstr "Muistin virheiden etsinnän tulokset aMulen sulkeutuessa:"
+
+#: src/amule.cpp
+msgid "Finishing shutdown..."
+msgstr ""
 
 #: src/amule.cpp
 #, fuzzy, c-format
@@ -680,6 +715,28 @@ msgstr ""
 #, c-format
 msgid "Disk space preallocation for file '%s' failed: %s"
 msgstr "Levytilan esivaraus tiedostolle '%s' epäonnistui: %s"
+
+#: src/amule.cpp
+msgid "Stopping network services..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Saving source seeds..."
+msgstr "Lähteitä"
+
+#: src/amule.cpp
+msgid "Stopping background downloads and workers..."
+msgstr ""
+
+#: src/amule.cpp
+#, fuzzy
+msgid "Closing connections..."
+msgstr " on yhdistämässä..."
+
+#: src/amule.cpp
+msgid "Saving known files and statistics..."
+msgstr ""
 
 #: src/amule.cpp
 msgid "ERROR: can't open logfile"
@@ -8286,6 +8343,11 @@ msgstr "Tiedoston nimi etäpäässä"
 #: src/SourceListCtrl.cpp
 msgid "A4AF"
 msgstr "A4AF"
+
+#: src/SplashScreen.cpp
+#, fuzzy
+msgid "Closing aMule"
+msgstr "Näytä aMule"
 
 #: src/Statistics.cpp
 #, c-format
