@@ -49,10 +49,12 @@ struct SKadSourceFacts
  * takes a direct UDP callback, while types 1 and 4 are HighIDs that keep their IPv4 route. Our HELLO
  * must carry a nonzero LowID: eMuleAI keeps such an ID from a peer arriving over IPv6 but replaces
  * any other with one derived from the IPv6 socket, so a HighID would lose its IPv4 callback path at
- * that peer, and 0 is no identity at all. A type 3/5 source published without buddy tags has no
- * IPv4 callback path to lose, so any nonzero ID of ours qualifies there. The address is reported by
- * a third party through Kad, so it must name a peer across hosts and must not point us at local
- * services. The dial itself goes through the same gate as every native IPv6 contact.
+ * that peer, and 0 is no identity at all. A type 3/5 source published without buddy tags is the
+ * exception: with no buddy, its IPv6 is the only way to reach it, so dialling it with any nonzero
+ * ID of ours is better than not reaching it, even if a HighID of ours then loses its IPv4 callback
+ * path at that peer. The address is reported by a third party through Kad, so it must name a peer
+ * across hosts and must not point us at local services. The dial itself goes through the same gate
+ * as every native IPv6 contact.
  */
 inline bool ShouldContactKadSourceOverIPv6(const SKadSourceFacts &facts)
 {
