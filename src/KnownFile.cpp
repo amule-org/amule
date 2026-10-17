@@ -76,8 +76,8 @@
 #include <tags/FileTags.h>                   // Needed for TAG_FILERATING / TAG_DESCRIPTION
 #include "ThreadTasks.h"                     // Needed for CThreadScheduler and CVerifyLocalDataTask
 
-#include "kademlia/kademlia/UDPFirewallTester.h" // Needed for CUDPFirewallTester (PublishSrc)
-#include "KadCallbackPolicy.h"                   // Needed for NeedsBuddy / CanPublishSource
+#include "KadCallbackPolicy.h" // Needed for CanPublishSource
+#include "SharedFileList.h"    // Needed for CSharedFileList::CurrentKadPublishFacts
 #endif
 
 CFileStatistic::CFileStatistic(CKnownFile *parent)
@@ -1514,9 +1514,12 @@ bool CAbstractFile::RequestKadNoteSearch()
 
 bool CKnownFile::PublishSrc()
 {
-	const bool udpFirewalled = Kademlia::CUDPFirewallTester::IsFirewalledUDP(true);
-	const bool needsBuddy = Kademlia::NeedsBuddy(
-		theApp->IsFirewalled(), udpFirewalled, Kademlia::CUDPFirewallTester::IsVerified());
+	const SKadPublishFacts facts = CSharedFileList::CurrentKadPublishFacts();
+	if (!PublishesToKad(facts)) {
+		return false;
+	}
+	// Only a buddy route is tracked, so gaining or losing a buddy republishes at once.
+	const bool needsBuddy = DecideKadSourcePublish(facts) == EKadSourcePublish::Buddy;
 	uint32 buddyIP = 0;
 	uint16 buddyPort = 0;
 	if (needsBuddy) {

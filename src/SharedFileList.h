@@ -27,6 +27,7 @@
 #define SHAREDFILELIST_H
 
 #include "KadPublishCursor.h"
+#include "KadPublishPolicy.h" // Needed for SKadPublishFacts
 #include "MD4Hash.h"
 #include "SharedFilesReloadLatch.h" // Needed for CSharedFilesReloadLatch
 #include <atomic>                   // Needed for std::atomic (m_listGeneration, reloading)
@@ -178,6 +179,8 @@ public:
 
 	/* Kad Stuff */
 	void Publish();
+	//! The publish gate, PublishSrc() and StorePacket() all decide from these facts.
+	static SKadPublishFacts CurrentKadPublishFacts();
 	void AddKeywords(CKnownFile *pFile);
 	void RemoveKeywords(CKnownFile *pFile);
 	// This is actually unused, but keep it here - will be needed later.

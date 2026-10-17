@@ -68,6 +68,31 @@ TEST(KadPublishPolicy, AnIPv4CallbackRouteIsPreferredOverIPv6Alone)
 	ASSERT_TRUE(DecideKadSourcePublish(buddy) == EKadSourcePublish::Buddy);
 }
 
+// #1926: a direct UDP callback is a route back on its own, with no buddy and no IPv6.
+TEST(KadPublishPolicy, AFirewalledNodeWithOnlyADirectCallbackPublishes)
+{
+	SKadPublishFacts facts = Firewalled();
+	facts.directCallback = true;
+	ASSERT_TRUE(DecideKadSourcePublish(facts) == EKadSourcePublish::DirectCallback);
+	ASSERT_TRUE(PublishesToKad(facts));
+}
+
+TEST(KadPublishPolicy, OnlyANodeWithNoRouteBackStaysOffKad)
+{
+	SKadPublishFacts open;
+	ASSERT_TRUE(PublishesToKad(open));
+
+	SKadPublishFacts buddy = Firewalled();
+	buddy.hasBuddy = true;
+	ASSERT_TRUE(PublishesToKad(buddy));
+
+	SKadPublishFacts ipv6 = Firewalled();
+	ipv6.advertisesIPv6 = true;
+	ASSERT_TRUE(PublishesToKad(ipv6));
+
+	ASSERT_FALSE(PublishesToKad(Firewalled()));
+}
+
 // The case this adds: no IPv4 route back to us, but an IPv6 address we advertise.
 TEST(KadPublishPolicy, AFirewalledNodeWithoutCallbackPublishesOnItsIPv6)
 {

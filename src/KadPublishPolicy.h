@@ -68,4 +68,10 @@ inline EKadSourcePublish DecideKadSourcePublish(const SKadPublishFacts &facts)
 	return EKadSourcePublish::None;
 }
 
+//! Whether Kad publishing runs at all; the same decision StorePacket() takes per source.
+inline bool PublishesToKad(const SKadPublishFacts &facts)
+{
+	return DecideKadSourcePublish(facts) != EKadSourcePublish::None;
+}
+
 #endif // KAD_PUBLISH_POLICY_H

@@ -58,6 +58,8 @@
 #include "kademlia/kademlia/Kademlia.h"
 #include "kademlia/kademlia/Search.h"
 #include "ClientList.h"
+#include "KadCallbackPolicy.h"                   // Needed for DirectCallbackAvailable
+#include "kademlia/kademlia/UDPFirewallTester.h" // Needed for CUDPFirewallTester
 #ifdef ENABLE_IPV6
 #include "AdvertisedIPv6.h" // Needed for AdvertisedIPv6ForPeers
 #endif
@@ -1617,23 +1619,32 @@ void CSharedFileList::Process()
 	m_lastPublishED2K = ::GetTickCount64();
 }
 
+SKadPublishFacts CSharedFileList::CurrentKadPublishFacts()
+{
+	SKadPublishFacts facts;
+	facts.firewalled = theApp->IsFirewalled();
+	if (facts.firewalled) {
+		facts.directCallback = Kademlia::CKademlia::IsRunning() &&
+				       Kademlia::DirectCallbackAvailable(facts.firewalled,
+					       Kademlia::CUDPFirewallTester::IsFirewalledUDP(true),
+					       Kademlia::CUDPFirewallTester::IsVerified());
+		facts.hasBuddy = theApp->clientlist->GetBuddyStatus() == Connected &&
+				 theApp->clientlist->GetBuddy() != nullptr;
+#ifdef ENABLE_IPV6
+		facts.advertisesIPv6 = AdvertisedIPv6ForPeers().has_value();
+#endif
+	}
+	return facts;
+}
+
 void CSharedFileList::Publish()
 {
 	// Variables to save cpu.
 	unsigned int tNow = time(NULL);
-	bool IsFirewalled = theApp->IsFirewalled();
 
-	bool advertisesIPv6 = false;
-#ifdef ENABLE_IPV6
-	advertisesIPv6 = IsFirewalled && AdvertisedIPv6ForPeers().has_value();
-#endif
-
-	if (Kademlia::CKademlia::IsConnected() &&
-		(!IsFirewalled || (IsFirewalled && theApp->clientlist->GetBuddyStatus() == Connected) ||
-			advertisesIPv6) &&
-		GetCount() && Kademlia::CKademlia::GetPublish()) {
-		// We are connected to Kad. We are either open, have a buddy, or can be reached at the IPv6
-		// address we advertise. And Kad is ready to start publishing.
+	if (Kademlia::CKademlia::IsConnected() && PublishesToKad(CurrentKadPublishFacts()) && GetCount() &&
+		Kademlia::CKademlia::GetPublish()) {
+		// We are connected to Kad with a route back to us, and Kad is ready to start publishing.
 
 		if (Kademlia::CKademlia::GetTotalStoreKey() < KADEMLIATOTALSTOREKEY) {
 

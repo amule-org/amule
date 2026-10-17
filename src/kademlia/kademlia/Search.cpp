@@ -38,7 +38,6 @@ Any mod that changes anything within the Kademlia side will not be allowed to ad
 there client on the eMule forum..
 */
 
-#include "../../KadCallbackPolicy.h"
 #include "Search.h"
 #include "../../GetTickCount.h"
 
@@ -786,20 +785,8 @@ void CSearch::StorePacket()
 			// firewalled Kad, 6 firewalled with direct callback (supports >4GB).
 			// 2 cannot be used, as older clients will not work with it.
 
-			SKadPublishFacts publishFacts;
-			publishFacts.firewalled = theApp->IsFirewalled();
-			if (publishFacts.firewalled) {
-				publishFacts.directCallback =
-					Kademlia::CKademlia::IsRunning() &&
-					Kademlia::DirectCallbackAvailable(theApp->IsFirewalled(),
-						Kademlia::CUDPFirewallTester::IsFirewalledUDP(true),
-						Kademlia::CUDPFirewallTester::IsVerified());
-				publishFacts.hasBuddy = theApp->clientlist->GetBuddy() != nullptr;
-#ifdef ENABLE_IPV6
-				publishFacts.advertisesIPv6 = AdvertisedIPv6ForPeers().has_value();
-#endif
-			}
-			const EKadSourcePublish publishAs = DecideKadSourcePublish(publishFacts);
+			const EKadSourcePublish publishAs =
+				DecideKadSourcePublish(CSharedFileList::CurrentKadPublishFacts());
 			if (publishAs == EKadSourcePublish::DirectCallback) {
 				// firewalled, but direct udp callback is possible so no need for
 				// buddies We are not firewalled..
