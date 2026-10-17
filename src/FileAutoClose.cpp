@@ -45,7 +45,7 @@ CFileAutoClose::CFileAutoClose(const CPath &path, CFile::OpenMode mode)
 	Open(path, mode);
 }
 
-bool CFileAutoClose::Open(const CPath &path, CFile::OpenMode mode)
+bool CFileAutoClose::Open(const CPath &path, CFile::OpenMode mode, bool shareDelete)
 {
 	std::lock_guard<std::mutex> lock(m_stateMutex);
 	m_mode = mode;
@@ -53,7 +53,7 @@ bool CFileAutoClose::Open(const CPath &path, CFile::OpenMode mode)
 	m_locked = 0;
 	m_size = 0;
 	m_lastAccess = TheTime;
-	const bool opened = m_file.Open(path, mode);
+	const bool opened = m_file.Open(path, mode, wxS_DEFAULT, shareDelete);
 	m_knownSize = opened ? m_file.GetLength() : 0;
 	return opened;
 }

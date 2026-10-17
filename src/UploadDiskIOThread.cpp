@@ -33,6 +33,7 @@
 #include "ClientTCPSocket.h" // Needed for CClientTCPSocket
 #include "Packet.h"          // Needed for CPacket
 #include "amule.h"           // Needed for theApp
+#include "GetTickCount.h"    // Needed for TheTime
 #include "Logger.h"
 #include "OtherFunctions.h" // Needed for IsUploadCompressible
 #include "MD4Hash.h"
@@ -50,6 +51,10 @@
 // Max cached complete-file read handles (OpenFile_Struct::file). Past the cap the least
 // recently used idle struct is evicted as a new one is created. Fixed constant, no preference plumbing.
 static const size_t MAX_CACHED_OPEN_FILES = 32;
+
+// Close a cached handle after this many idle seconds: an idle handle would block a rename or
+// delete on Windows and an unmount everywhere.
+static const uint32 MAX_IDLE_OPEN_FILE_SECONDS = 60;
 
 // eMule ref: CUploadDiskIOThread::CUploadDiskIOThread()
 CUploadDiskIOThread::CUploadDiskIOThread()
@@ -132,6 +137,14 @@ void *CUploadDiskIOThread::Entry()
 			ReadRequest_Struct *req = m_listFinishedIO.front();
 			m_listFinishedIO.pop_front();
 			ReadCompletionRoutine(req);
+		}
+
+		// An idle handle would block a rename or delete on Windows and an unmount everywhere.
+		for (OpenFile_Struct *openFile : m_listOpenFiles) {
+			if (openFile->nInUse == 0 && openFile->file.IsOpened() &&
+				TheTime - openFile->lastRead >= MAX_IDLE_OPEN_FILE_SECONDS) {
+				openFile->file.Close();
+			}
 		}
 
 		if (m_bSignalThrottler && theApp->uploadBandwidthThrottler != NULL) {
@@ -280,10 +293,12 @@ ReadRequest_Struct *CUploadDiskIOThread::PrepareRead(uint32 clientId)
 		// bCompress regardless; only complete files ever open the cached handle.
 		// Placed after every throw/early-return above, so no refcount can leak.
 		OpenFile_Struct *pFileStruct = nullptr;
-		for (std::list<OpenFile_Struct *>::iterator it = m_listOpenFiles.begin(); it != m_listOpenFiles.end(); ++it) {
+		for (std::list<OpenFile_Struct *>::iterator it = m_listOpenFiles.begin();
+			it != m_listOpenFiles.end();
+			++it) {
 			if (md4cmp((*it)->ucMD4FileHash, req->ucMD4FileHash) == 0) {
 				pFileStruct = *it;
-				// move it to the 1st position, the most recently used
+				// LRU touch: front is most recently used.
 				m_listOpenFiles.splice(m_listOpenFiles.begin(), m_listOpenFiles, it);
 				break;
 			}
@@ -297,6 +312,7 @@ ReadRequest_Struct *CUploadDiskIOThread::PrepareRead(uint32 clientId)
 			m_listOpenFiles.push_front(pFileStruct);
 		}
 		pFileStruct->nInUse++;
+		pFileStruct->lastRead = TheTime;
 		req->pFileStruct = pFileStruct;
 
 		// Enforce the handle-cache cap: evict the least recently used idle struct.
@@ -304,7 +320,8 @@ ReadRequest_Struct *CUploadDiskIOThread::PrepareRead(uint32 clientId)
 		// cap is exceeded temporarily until some read completes.
 		while (m_listOpenFiles.size() > MAX_CACHED_OPEN_FILES) {
 			bool evicted = false;
-			for (std::list<OpenFile_Struct *>::iterator it = m_listOpenFiles.end(); it != m_listOpenFiles.begin(); ) {
+			for (std::list<OpenFile_Struct *>::iterator it = m_listOpenFiles.end();
+				it != m_listOpenFiles.begin();) {
 				--it;
 				if ((*it)->nInUse == 0) {
 					delete *it;
@@ -360,11 +377,12 @@ CUploadDiskIOThread::ReadResult CUploadDiskIOThread::ReadBlock(ReadRequest_Struc
 			}
 		} else {
 			// Complete file: read through the struct's cached handle, opened lazily on
-			// the first block. The handle stays open between blocks, instead of a per-block 
-			// open/close. nInUse > 0 pins the struct against eviction while active reads
+			// the first block. The handle stays open between blocks, instead of a per-block
+			// open/close. nInUse > 0 pins the struct against eviction while a request holds it.
 			OpenFile_Struct *openFile = req->pFileStruct;
+			// shareDelete: a cached handle must not block a rename or delete on Windows.
 			if (!openFile->file.IsOpened() &&
-				!openFile->file.Open(req->path, CFile::read)) {
+				!openFile->file.Open(req->path, CFile::read, true)) {
 				result = READ_OPEN_FAILED;
 			} else {
 				req->area.ReadAt(openFile->file, req->uStartOffset, togo);
@@ -552,8 +570,8 @@ void CUploadDiskIOThread::DiscardRequest(ReadRequest_Struct *req)
 // Deleting a struct closes its cached handle.
 bool CUploadDiskIOThread::ReleaseOpenFile(OpenFile_Struct *pFileStruct)
 {
-	for (std::list<OpenFile_Struct *>::iterator it = m_listOpenFiles.begin(); it != m_listOpenFiles.end(); ++it) {
-		if (*it == pFileStruct) {
+	for (OpenFile_Struct *openFile : m_listOpenFiles) {
+		if (openFile == pFileStruct) {
 			pFileStruct->nInUse--;
 			return true;
 		}

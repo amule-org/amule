@@ -61,6 +61,7 @@
 #define NOKANJI
 #define NOCRYPT
 #define NOMCX
+#include <windows.h> // Needed for CreateFileW (FILE_SHARE_DELETE opens)
 #endif
 #elif (defined(__UNIX__) || defined(__GNUWIN32__))
 #ifdef __GNUWIN32__
@@ -214,14 +215,14 @@ bool CFile::Create(const wxString &path, bool overwrite, int accessMode)
 	return Create(CPath(path), overwrite, accessMode);
 }
 
-bool CFile::Open(const wxString &fileName, OpenMode mode, int accessMode)
+bool CFile::Open(const wxString &fileName, OpenMode mode, int accessMode, bool shareDelete)
 {
 	MULE_VALIDATE_PARAMS(fileName.Length(), "CFile: Cannot open, empty path.");
 
-	return Open(CPath(fileName), mode, accessMode);
+	return Open(CPath(fileName), mode, accessMode, shareDelete);
 }
 
-bool CFile::Open(const CPath &fileName, OpenMode mode, int accessMode)
+bool CFile::Open(const CPath &fileName, OpenMode mode, int accessMode, bool shareDelete)
 {
 	MULE_VALIDATE_PARAMS(fileName.IsOk(), "CFile: Cannot open, empty path.");
 
@@ -279,8 +280,29 @@ bool CFile::Open(const CPath &fileName, OpenMode mode, int accessMode)
 
 	// Windows needs wide character file names
 #ifdef __WINDOWS__
-	m_fd = _wopen(m_filePath.GetRaw().c_str(), flags, accessMode);
+	if (shareDelete && mode == read) {
+		// _wopen shares read and write, but not delete: open by hand so a cached read
+		// handle never blocks a rename or delete.
+		HANDLE hFile = CreateFileW(m_filePath.GetRaw().c_str(),
+			GENERIC_READ,
+			FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+			NULL,
+			OPEN_EXISTING,
+			FILE_ATTRIBUTE_NORMAL,
+			NULL);
+		if (hFile == INVALID_HANDLE_VALUE) {
+			m_fd = fd_invalid;
+		} else {
+			m_fd = _open_osfhandle(reinterpret_cast<intptr_t>(hFile), flags);
+			if (m_fd == fd_invalid) {
+				CloseHandle(hFile);
+			}
+		}
+	} else {
+		m_fd = _wopen(m_filePath.GetRaw().c_str(), flags, accessMode);
+	}
 #else
+	(void)shareDelete; // used only in the Windows branch above
 	Unicode2CharBuf tmpFileName = filename2char(m_filePath.GetRaw());
 	wxASSERT_MSG(tmpFileName, "Conversion failed in CFile::Open");
 	m_fd = open(tmpFileName, flags, accessMode);

@@ -55,9 +55,10 @@ public:
 	bool Release(bool now = false);
 
 	/**
-	 * Opens the file at @a path in @a mode (see CFile). True if it was opened.
+	 * Opens the file at @a path in @a mode (see CFile). @a shareDelete is passed through
+	 * to CFile::Open. True if it was opened.
 	 */
-	bool Open(const CPath &path, CFile::OpenMode mode = CFile::read);
+	bool Open(const CPath &path, CFile::OpenMode mode = CFile::read, bool shareDelete = false);
 
 	/**
 	 * Equivalent to Open with OpenMode 'write'. @a overwrite says whether an existing target

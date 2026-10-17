@@ -50,8 +50,6 @@ packaging/windows/installer_strings_generated.nsh
 .aider*
 .archive/
 .cache/
-.agents/
-agents.md
 
 # Python bytecode, from running the icon embedder by hand
 __pycache__/

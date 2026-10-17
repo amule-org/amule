@@ -41,17 +41,14 @@ class CPacket;
 class CPartFile;
 class CUpDownClient;
 
-// Mirrors eMule's OpenOvFile_Struct (UploadDiskIOThread.h:20-28). eMule's HANDLE hFile is a
-// cached CFileAutoClose here, used as a plain CFile: Release() is never called on it, so it
-// never auto-closes. The struct is keyed by content hash, so replaced content means a different
-// hash and a different struct -- a stale handle can never serve wrong bytes. Structs stay in
-// m_listOpenFiles at nInUse == 0 (that is the cache) until LRU eviction or shutdown deletes
-// them; deleting the struct closes the handle.
+// Mirrors eMule's OpenOvFile_Struct (UploadDiskIOThread.h:20-28). eMule's HANDLE hFile is the
+// read handle `file`, kept open between blocks of a complete file and closed once idle.
 struct OpenFile_Struct
 {
 	uint8 ucMD4FileHash[16];
-	CFileAutoClose file; // cached read handle, complete files only; opened lazily in ReadBlock
-	uint32 nInUse;  // number of active reads for this file
+	CFileAutoClose file; // complete files only; opened lazily in ReadBlock
+	uint32 lastRead;     // TheTime of the last block request
+	uint32 nInUse;       // number of active reads for this file
 	uint64 uFileSize;
 	bool bCompress; // true if this file type should be compressed
 };
