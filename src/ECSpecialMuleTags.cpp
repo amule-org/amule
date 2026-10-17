@@ -701,7 +701,7 @@ void CEC_Prefs_Packet::Apply() const
 		}
 #ifdef ENABLE_IPV6
 		if ((oneTag = thisTab->GetTagByName(EC_TAG_CONN_ADDRESS_FAMILIES)) != nullptr) {
-			thePrefs::SetAddressFamiliesSetting(oneTag->GetInt());
+			thePrefs::SetAddressFamiliesSetting(static_cast<long>(oneTag->GetInt()));
 #ifdef CLIENT_GUI
 			thePrefs::SetAddressFamiliesTagSupported(true);
 #endif

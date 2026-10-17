@@ -638,7 +638,7 @@ public:
 	, m_value(value)
 	, m_default(defaultVal)
 #ifndef AMULE_DAEMON
-	, m_widget(NULL)
+	, m_widget(nullptr)
 	, m_shownIndex(0)
 	, m_valueWasInvalid(false)
 #endif
@@ -650,11 +650,11 @@ public:
 	virtual void SaveToFile(wxConfigBase *cfg) { cfg->Write(GetKey(), m_value); }
 
 #ifndef AMULE_DAEMON
-	virtual bool ConnectToWidget(int id, wxWindow *parent = NULL)
+	virtual bool ConnectToWidget(int id, wxWindow *parent = nullptr)
 	{
-		m_widget = id ? dynamic_cast<wxChoice *>(wxWindow::FindWindowById(id, parent)) : NULL;
+		m_widget = id ? dynamic_cast<wxChoice *>(wxWindow::FindWindowById(id, parent)) : nullptr;
 
-		return id == 0 || m_widget != NULL;
+		return id == 0 || m_widget != nullptr;
 	}
 
 	virtual bool TransferToWindow()
