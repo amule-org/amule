@@ -172,11 +172,14 @@ public:
 		uint16 serverport,
 		uint8 *pdebug_lowiddropped = NULL,
 		bool ed2kID = true);
+	// weAdvertisedIPv6: our login advertised IPv6, so sentinel records may appear. Server UDP
+	// answers never carry one: aMule's server UDP is IPv4 only.
 	void AddSources(CMemFile &sources,
 		uint32 serverip,
 		uint16 serverport,
 		unsigned origin,
-		bool bWithObfuscationAndHash);
+		bool bWithObfuscationAndHash,
+		bool weAdvertisedIPv6 = false);
 #ifdef CLIENT_GUI
 	uint8 GetStatus() const { return status; }
 	uint8 GetStatus(bool /*ignorepause = false*/) const { return status; }

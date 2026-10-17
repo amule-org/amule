@@ -976,6 +976,37 @@ target_link_libraries (KadSourceAddressPolicyTest
 	${Boost_LIBRARIES}
 )
 
+# OP_FOUNDSOURCES / OP_FOUNDSOURCES_OBFU source record parsing, without the application.
+add_executable (ServerSourceRecordsTest ServerSourceRecordsTest.cpp)
+add_test (NAME ServerSourceRecordsTest COMMAND ServerSourceRecordsTest)
+target_include_directories (ServerSourceRecordsTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries (ServerSourceRecordsTest muleunit mulecommon)
+
+# Which address an OP_FOUNDSOURCES / OP_FOUNDSOURCES_OBFU sentinel source is contacted on, without
+# the application.
+add_executable (ServerIPv6SourcePolicyTest
+	ServerIPv6SourcePolicyTest.cpp
+	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
+	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
+	${CMAKE_SOURCE_DIR}/src/NetworkAddress.cpp
+)
+
+add_test (NAME ServerIPv6SourcePolicyTest
+	COMMAND ServerIPv6SourcePolicyTest
+)
+
+target_include_directories (ServerIPv6SourcePolicyTest
+	PRIVATE ${CMAKE_BINARY_DIR}
+	PRIVATE ${CMAKE_SOURCE_DIR}/src
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
+	PRIVATE ${Boost_INCLUDE_DIR}
+)
+
+target_link_libraries (ServerIPv6SourcePolicyTest
+	muleunit
+	${Boost_LIBRARIES}
+)
+
 # Canonical address matching for upload-queue UDP lookups, without the application.
 add_executable (UploadQueueAddressPolicyTest
 	UploadQueueAddressPolicyTest.cpp

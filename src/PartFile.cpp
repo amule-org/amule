@@ -48,10 +48,15 @@
 
 #include "KnownFileList.h" // Needed for CKnownFileList
 #include "HashListFile.h"
-#include "UploadQueue.h"   // Needed for CFileHash
-#include "IPFilter.h"      // Needed for CIPFilter
-#include "Server.h"        // Needed for CServer
-#include "ServerConnect.h" // Needed for CServerConnect
+#include "UploadQueue.h"         // Needed for CFileHash
+#include "IPFilter.h"            // Needed for CIPFilter
+#include "Server.h"              // Needed for CServer
+#include "ServerConnect.h"       // Needed for CServerConnect
+#include "ServerSourceRecords.h" // Needed for ParseServerSourceRecord
+#ifdef ENABLE_IPV6
+#include "AddressFamilyPolicy.h"    // Needed for AddressFamilyPolicy::Permits
+#include "ServerIPv6SourcePolicy.h" // Needed for ShouldContactServerSourceOverIPv6
+#endif
 
 #ifdef CLIENT_GUI
 #include "UpDownClientEC.h" // Needed for CUpDownClient
@@ -1929,13 +1934,16 @@ bool CPartFile::CanAddSource(uint32 userid,
 	return true;
 }
 
-void CPartFile::AddSources(
-	CMemFile &sources, uint32 serverip, uint16 serverport, unsigned origin, bool bWithObfuscationAndHash)
+void CPartFile::AddSources(CMemFile &sources,
+	uint32 serverip,
+	uint16 serverport,
+	unsigned origin,
+	bool bWithObfuscationAndHash,
+	bool weAdvertisedIPv6)
 {
 	uint8 count = sources.ReadUInt8();
 	uint8 debug_lowiddropped = 0;
 	uint8 debug_possiblesources = 0;
-	CMD4Hash achUserHash;
 
 	if (m_stopped) {
 		// since we may received multiple search source UDP results we have to "consume" all data of
@@ -1946,16 +1954,52 @@ void CPartFile::AddSources(
 	}
 
 	for (int i = 0; i != count; ++i) {
-		uint32 userid = sources.ReadUInt32();
-		uint16 port = sources.ReadUInt16();
+		const SServerSourceRecordParse parsed =
+			ParseServerSourceRecord(sources.GetRawBuffer() + sources.GetPosition(),
+				static_cast<std::size_t>(sources.GetAvailable()),
+				bWithObfuscationAndHash,
+				weAdvertisedIPv6);
+		if (!parsed.ok) {
+			throw CEOFException("Truncated source record in OP_FOUNDSOURCES");
+		}
+		sources.Seek(static_cast<sint64>(parsed.bytesConsumed), wxFromCurrent);
 
-		uint8 byCryptOptions = 0;
-		if (bWithObfuscationAndHash) {
-			byCryptOptions = sources.ReadUInt8();
-			if ((byCryptOptions & 0x80) > 0) {
-				achUserHash = sources.ReadHash();
+#ifdef ENABLE_IPV6
+		if (parsed.record.isIPv6) {
+			if (thePrefs::GetMaxSourcePerFile() > GetSourceCount()) {
+				SServerIPv6SourceFacts facts;
+				facts.address = parsed.record.ipv6Address;
+				facts.ipv6Built = true;
+				facts.familyPermitted =
+					AddressFamilyPolicy::Permits(parsed.record.ipv6Address);
+				facts.proxyEnabled = thePrefs::GetProxyData()->m_proxyEnable;
+				if (ShouldContactServerSourceOverIPv6(facts) &&
+					!theApp->ipfilter->IsFiltered(parsed.record.ipv6Address)) {
+					CUpDownClient *newsource = new CUpDownClient(
+						parsed.record.port, 1, 0, 0, this, false, true);
+					newsource->SetSourceFrom((ESourceFrom)origin);
+					newsource->SetUserAddress(parsed.record.ipv6Address);
+					newsource->SetConnectOptions(parsed.record.cryptOptions);
+					if (parsed.record.hasUserHash) {
+						newsource->SetUserHash(parsed.record.userHash);
+					}
+					AddDebugLogLineN(logPartFile,
+						CFormat("Adding an IPv6 source from a server sentinel "
+							"record: [%s]:%u") %
+							parsed.record.ipv6Address.ToWxString() %
+							parsed.record.port);
+					theApp->downloadqueue->CheckAndAddSource(this, newsource);
+				}
 			}
+			continue;
+		}
+#endif
 
+		const uint32 userid = parsed.record.userid;
+		const uint16 port = parsed.record.port;
+		const uint8 byCryptOptions = parsed.record.cryptOptions;
+
+		if (bWithObfuscationAndHash) {
 			if ((thePrefs::IsClientCryptLayerRequested() &&
 				    (byCryptOptions & 0x01 /*supported*/) > 0 &&
 				    (byCryptOptions & 0x80) == 0) ||
@@ -2001,8 +2045,8 @@ void CPartFile::AddSources(
 			newsource->SetSourceFrom((ESourceFrom)origin);
 			newsource->SetConnectOptions(byCryptOptions, true, false);
 
-			if ((byCryptOptions & 0x80) != 0) {
-				newsource->SetUserHash(achUserHash);
+			if (parsed.record.hasUserHash) {
+				newsource->SetUserHash(parsed.record.userHash);
 			}
 
 			theApp->downloadqueue->CheckAndAddSource(this, newsource);
