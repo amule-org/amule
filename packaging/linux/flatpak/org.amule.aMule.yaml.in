@@ -1,7 +1,6 @@
 # Flatpak manifest TEMPLATE for aMule.
 #
-# DO NOT EDIT VERSIONS HERE. Pinned values come from
-# packaging/linux/versions.env, rendered into this file by
+# Pinned values come from packaging/linux/versions.env, rendered into this file by
 # packaging/linux/build.sh via envsubst. Hand-editing this template
 # is fine for structural changes (modules, finish-args, build steps),
 # but version pins belong in versions.env.
@@ -335,6 +334,26 @@ modules:
         url: ${WX_TARBALL_URL}
         sha256: ${WX_SHA256}
 
+  - name: media-zenlib
+    buildsystem: cmake-ninja
+    subdir: Project/CMake
+    config-opts: [-DCMAKE_CXX_STANDARD=17, -DBUILD_SHARED_LIBS=ON, -DCMAKE_INSTALL_LIBDIR=lib, -DCMAKE_POLICY_VERSION_MINIMUM=3.5]
+    sources:
+      - type: archive
+        url: ${ZENLIB_TARBALL_URL}
+        dest-filename: ZenLib-${ZENLIB_VERSION}.tar.gz
+        sha256: ${ZENLIB_SHA256}
+
+  - name: media-mediainfo
+    buildsystem: cmake-ninja
+    subdir: Project/CMake
+    config-opts: [-DCMAKE_CXX_STANDARD=17, -DBUILD_SHARED_LIBS=ON, -DBUILD_ZENLIB=OFF, -DBUILD_ZLIB=OFF, -DCMAKE_DISABLE_FIND_PACKAGE_TinyXML=ON, -DCMAKE_DISABLE_FIND_PACKAGE_CURL=ON, '-DCMAKE_CXX_FLAGS=-DMEDIAINFO_LIBCURL_NO -DMEDIAINFO_LIBMMS_NO']
+    sources:
+      - type: archive
+        url: ${MEDIAINFO_TARBALL_URL}
+        dest-filename: MediaInfoLib-${MEDIAINFO_VERSION}.tar.gz
+        sha256: ${MEDIAINFO_SHA256}
+
   - name: amule
     buildsystem: cmake-ninja
     config-opts:
@@ -367,17 +386,13 @@ modules:
       - -DENABLE_NLS=YES
       - -DENABLE_UPNP=YES
       - -DENABLE_IP2COUNTRY=YES
-    # AMULE_REVISION (in versions.env) controls what gets built:
-    #   - "master" or another branch -> branch: <name> at flatpak-builder time
-    #   - a release tag like "2.3.3" -> branch: <tag-name> works because flatpak's
-    #     git fetcher resolves any ref. For Flathub release builds this can be
-    #     swapped to `tag: ${AMULE_REVISION}` if stricter pinning is preferred.
-    # flatpak-external-data-checker uses x-checker-data to auto-bump when new
-    # release tags are pushed upstream.
+    # Standalone rendering follows AMULE_REVISION from versions.env upstream.
+    # build.sh flatpak overrides these two fields with the local repository URL
+    # and exact HEAD commit, so CI packages the revision being tested.
     sources:
       - type: git
-        url: https://github.com/amule-org/amule.git
-        branch: ${AMULE_REVISION}
+        url: ${AMULE_SOURCE_URL}
+        ${AMULE_SOURCE_REF}
         # Default flatpak-builder fetch is a shallow clone, which strips
         # all tags. Without tags `git describe --tags` (called from
         # cmake/git-rev.cmake at configure time) returns empty, leaving

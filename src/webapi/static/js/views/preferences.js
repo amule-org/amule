@@ -170,7 +170,6 @@ const TABS = [
     ] },
     { legendKey: "prefs_group_media", fields: [
       { key: "media_metadata_enabled", type: "bool" },
-      { key: "ffprobe_path", type: "text", sub: true, gatedBy: "media_metadata_enabled" },
     ] },
   ] },
   { id: "security", labelKey: "prefs_security", cat: "security", groups: [

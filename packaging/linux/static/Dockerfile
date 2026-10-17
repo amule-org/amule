@@ -111,8 +111,10 @@ RUN for l in bfd opcodes ctf sframe zstd z maxminddb intl; do \
 # (static) libcurl webrequest backend.
 COPY . /src
 WORKDIR /src
+RUN packaging/media/build-static.sh /usr/local
 RUN export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/usr/lib/pkgconfig \
  && cmake -S . -B build-static \
+        -DMEDIA_PROBE_STATIC=ON \
         -DCMAKE_BUILD_TYPE=Release \
         -DBUILD_MONOLITHIC=OFF \
         -DBUILD_DAEMON=ON \
@@ -131,13 +133,14 @@ RUN export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/usr/lib/pkgconfig \
         -DCMAKE_CXX_STANDARD_LIBRARIES="$(pkg-config --static --libs libcurl)" \
  && cmake --build build-static -j"$(nproc)" \
  && mkdir -p /out \
- && for b in amuled amulecmd amuleapi; do \
+ && for b in amuled amulecmd amuleapi amule-media-probe; do \
         cp "$(find build-static -type f -name "$b" | head -1)" /out/; \
     done \
- && strip /out/amuled /out/amulecmd /out/amuleapi
+ && strip /out/amuled /out/amulecmd /out/amuleapi /out/amule-media-probe \
+ && cp -r /usr/local/share/licenses/amule-media-probe /out/licenses
 
 # Sanity gate: fail the build unless each binary is a static executable.
-RUN for b in amuled amulecmd amuleapi; do \
+RUN for b in amuled amulecmd amuleapi amule-media-probe; do \
         file "/out/$b"; \
         ldd "/out/$b" 2>&1 | grep -qE "Not a valid dynamic program|not a dynamic executable" \
           || { echo "FAIL: $b is dynamically linked"; ldd "/out/$b"; exit 1; }; \

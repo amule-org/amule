@@ -639,6 +639,9 @@ if (ENABLE_NLS)
 endif()
 
 add_subdirectory (docs)
+if(BUILD_TESTING)
+    enable_testing()
+endif()
 add_subdirectory (src)
 
 if (BUILD_TESTING)
@@ -661,6 +664,8 @@ message (STATUS "
 	Should aMule monolithic application be built?			${BUILD_MONOLITHIC}
 	Should aMule daemon version be built?				${BUILD_DAEMON}
 	Should aMule remote gui be built?				${BUILD_REMOTEGUI}
+
+	Build the bundled MediaInfo metadata helper?			${ENABLE_MEDIA_PROBE}
 
 	**** aMule TextClient ****
 	Should aMule Command Line Client be built?			${BUILD_AMULECMD}

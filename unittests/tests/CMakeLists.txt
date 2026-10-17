@@ -1706,6 +1706,10 @@ add_executable (MediaProbeEnvTest
 	${CMAKE_SOURCE_DIR}/src/AppImageEnv.cpp
 )
 add_test (NAME MediaProbeEnvTest COMMAND MediaProbeEnvTest)
+if(TARGET amule-media-probe)
+    add_dependencies(MediaProbeEnvTest amule-media-probe)
+    target_compile_definitions(MediaProbeEnvTest PRIVATE AMULE_MEDIA_HELPER_TEST="$<TARGET_FILE:amule-media-probe>")
+endif()
 target_include_directories (MediaProbeEnvTest
 	PRIVATE ${CMAKE_BINARY_DIR}
 	PRIVATE ${CMAKE_SOURCE_DIR}/src

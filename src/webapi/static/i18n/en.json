@@ -450,7 +450,7 @@
   "shared_verify_started_selected_one": "Verification started for {n} file. The result appears in the aMule log.",
   "shared_verify_started_selected_other": "Verification started for {n} files. The results appear in the aMule log.",
   "shared_media_refresh": "Re-extract media metadata",
-  "shared_media_refresh_tip": "Re-probe this file with ffprobe and replace its length, bitrate, codec and tags. Reported in the aMule log.",
+  "shared_media_refresh_tip": "Re-probe this file with the bundled media parser and replace its length, bitrate, codec and tags. Reported in the aMule log.",
   "shared_media_refresh_tip_partfile": "Not available while the file is still downloading.",
   "shared_media_refresh_started": "Media metadata re-extraction started. The values update once the probe lands.",
   "shared_media_refresh_all": "Re-extract media",

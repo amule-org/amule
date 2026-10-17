@@ -85,7 +85,7 @@ NAME="${NAME%-aarch64}"
 NAME="${NAME%-Linux}"
 
 case "${NAME}" in
-    amuled|amulegui|amulecmd|amuleweb|amuleapi|ed2k|cas|wxcas|alc|alcc)
+    amule-media-probe|amuled|amulegui|amulecmd|amuleweb|amuleapi|ed2k|cas|wxcas|alc|alcc)
         BIN="${HERE}/usr/bin/${NAME}"
         ;;
     *)

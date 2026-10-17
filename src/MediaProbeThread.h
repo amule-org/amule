@@ -33,13 +33,12 @@
 #include "MD4Hash.h"     // Needed for CMD4Hash
 #include <common/Path.h> // Needed for CPath (value member of MediaProbeJob)
 
-// One queued ffprobe job. Everything is snapshotted by value at enqueue
+// One queued media-helper job. Everything is snapshotted by value at enqueue
 // time so the worker never touches shared CKnownFile / thePrefs state.
 struct MediaProbeJob
 {
-	CMD4Hash hash;        // resolved back to the CKnownFile on the main thread
-	CPath path;           // file to probe
-	wxString ffprobePath; // ffprobe binary
+	CMD4Hash hash; // resolved back to the CKnownFile on the main thread
+	CPath path;    // file to probe
 	// Part of a mass operation (a share scan, a whole-share refresh) rather than a single user-
 	// visible file. Set by the scheduler, NOT inferred from how many jobs happen to be queued:
 	// the worker swaps the entire pending list out on each wake, so a batch size says only when
@@ -49,13 +48,12 @@ struct MediaProbeJob
 	bool bulk = false;
 };
 
-// Dedicated worker for ffprobe media-metadata extraction (#280).
+// Dedicated worker for media-metadata extraction (#280).
 //
-// Why its own thread: media probing shells out to ffprobe via wxExecute, which can block for a long
-// time (or, on a headless daemon, hang) and must never stall the core. CMediaProbeTask used to run
-// on the shared CThreadScheduler alongside CHashingTask / CCompletionTask, so a single hung ffprobe
-// wedged every download completion. On a dedicated, isolated worker a slow or hung probe can only
-// delay other probes. A wall-clock timeout in MediaProbe::Probe bounds each probe so even this
+// Why its own thread: media probing waits for a bounded helper process and must never stall the core.
+// CMediaProbeTask used to run on the shared CThreadScheduler alongside CHashingTask / CCompletionTask, so a
+// single hung probe wedged every download completion. On a dedicated, isolated worker a slow or hung probe
+// can only delay other probes. A wall-clock timeout in MediaProbe::Probe bounds each probe so even this
 // thread cannot wedge.
 //
 // Mirrors CPartFileHashThread: a single joinable worker draining a job queue and posting a
@@ -69,13 +67,13 @@ public:
 	~CMediaProbeThread() = default;
 
 	// Signal the worker to stop and join it. Queued, not-yet-started probes are dropped --
-	// metadata is best-effort. An in-flight probe's ffprobe child is killed promptly (Probe
-	// polls the run flag), so the join returns without waiting on a slow or hung ffprobe.
+	// metadata is best-effort. An in-flight probe's helper child is killed promptly (Probe
+	// polls the run flag), so the join returns without waiting on a slow or hung helper.
 	void EndThread();
 
-	// Enqueue a probe. Thread-safe; returns immediately.
-	void QueueProbe(
-		const CMD4Hash &hash, const CPath &fullPath, const wxString &ffprobePath, bool bulk = false);
+	// Enqueue a probe if the worker started and is still running. Thread-safe;
+	// returns false rather than accepting work that can never be processed.
+	bool QueueProbe(const CMD4Hash &hash, const CPath &fullPath, bool bulk = false);
 
 	bool IsRunning() const { return m_bRun; }
 
@@ -93,7 +91,8 @@ private:
 	void *Entry() override;
 
 	std::atomic<bool> m_bRun{ false };
-	bool m_bWorkPending; // sticky wake flag, protected by m_mutex
+	bool m_started = false; // Set by the constructor; EndThread is called after construction.
+	bool m_bWorkPending;    // sticky wake flag, protected by m_mutex
 
 	wxMutex m_mutex;
 	wxCondition m_condition;

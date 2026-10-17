@@ -32,7 +32,7 @@
 
 namespace
 {
-// Wall-clock ceiling for a single ffprobe run. A local media file probes in tens of milliseconds;
+// Wall-clock ceiling for a single helper run. A local media file probes in tens of milliseconds;
 // anything approaching this is a hung invocation the worker kills rather than blocking on. It also
 // bounds how long a shutdown can wait on an in-flight probe.
 constexpr unsigned kProbeTimeoutMs = 30000;
@@ -42,11 +42,15 @@ CMediaProbeThread::CMediaProbeThread()
 : wxThread(wxTHREAD_JOINABLE)
 , m_condition(m_mutex)
 {
-	m_bRun = false;
 	m_bWorkPending = false;
 	wxMutexLocker lock(m_mutex);
 	if (Create() == wxTHREAD_NO_ERROR) {
-		Run();
+		// Set the flag before the worker can start. Otherwise EndThread() may
+		// clear it before Entry() runs, only for Entry() to set it again.
+		m_bRun = true;
+		m_started = Run() == wxTHREAD_NO_ERROR;
+		if (!m_started)
+			m_bRun = false;
 	}
 }
 
@@ -58,27 +62,28 @@ void CMediaProbeThread::EndThread()
 		m_bWorkPending = true;
 		m_condition.Signal();
 	}
-	Wait();
+	if (m_started)
+		Wait();
 }
 
-void CMediaProbeThread::QueueProbe(
-	const CMD4Hash &hash, const CPath &fullPath, const wxString &ffprobePath, bool bulk)
+bool CMediaProbeThread::QueueProbe(const CMD4Hash &hash, const CPath &fullPath, bool bulk)
 {
 	MediaProbeJob job;
 	job.hash = hash;
 	job.path = fullPath;
-	job.ffprobePath = ffprobePath;
 	job.bulk = bulk;
 
 	wxMutexLocker lock(m_mutex);
+	if (!m_bRun)
+		return false;
 	m_jobList.push_back(job);
 	m_bWorkPending = true;
 	m_condition.Signal();
+	return true;
 }
 
 void *CMediaProbeThread::Entry()
 {
-	m_bRun = true;
 	AddDebugLogLineN(logMediaProbe, wxT("Media probe thread: started"));
 
 	// Accumulated across the drains of one bulk operation; see the summary at
@@ -86,7 +91,7 @@ void *CMediaProbeThread::Entry()
 	unsigned bulkProbed = 0;
 	unsigned bulkFailed = 0;
 	// Failures are named even in bulk, because a count alone cannot be acted on -- but a broken
-	// or mistyped ffprobe fails EVERY media file, so an uncapped rule turns one
+	// or unavailable helper fails EVERY media file, so an uncapped rule turns one
 	// misconfiguration into one line per file. Name the first few of an operation and count the
 	// rest.
 	unsigned bulkNamed = 0;
@@ -127,12 +132,8 @@ void *CMediaProbeThread::Entry()
 			if (!m_bRun) {
 				break;
 			}
-			// An empty path means the user never pinned one, so fall back to what this
-			// machine has. DetectedPath() memoises, so only the first job pays for the
-			// scan; when it finds nothing every job lands here and is dropped without a
-			// word, the one line explaining why having been logged by that first call.
-			const wxString exe =
-				job.ffprobePath.IsEmpty() ? MediaProbe::DetectedPath() : job.ffprobePath;
+			// The helper is installed beside the core; missing-helper logging is cached.
+			const wxString exe = MediaProbe::DetectedPath();
 			if (exe.IsEmpty()) {
 				continue;
 			}
@@ -148,7 +149,7 @@ void *CMediaProbeThread::Entry()
 			MediaInfo info;
 			const MediaProbe::ProbeOutcome outcome = MediaProbe::Probe(
 				exe, job.path, info, kProbeTimeoutMs, m_bRun, jobBulk, mayName);
-			// A file that was gone before ffprobe ran is not an extraction that failed
+			// A file that was gone before the helper ran is not an extraction that failed
 			// -- nothing was extracted from and no verdict was reached -- so it is
 			// counted in neither total. It still names itself above. Counting it as a
 			// failure put a number in the summary that nothing in the log accounted
@@ -188,9 +189,9 @@ void *CMediaProbeThread::Entry()
 				}
 				// Tell the main thread, so a file the probe has actually JUDGED can
 				// be marked unprobeable and stop being re-queued on every reload.
-				// Only a verdict about the file counts: a missing ffprobe, a
+				// Only a verdict about the file counts: a missing helper, a
 				// timeout or a vanished file says nothing about it, and marking on
-				// those would let one mistyped path brand a whole library
+				// those would let one broken installation brand a whole library
 				// permanently.
 				MediaInfo empty;
 				CMediaProbeEvent evt(job.hash,

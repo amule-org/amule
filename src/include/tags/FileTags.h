@@ -76,7 +76,8 @@
 #define FT_MEDIA_LENGTH 0xD3    // <uint32> !!!
 #define FT_MEDIA_BITRATE 0xD4   // <uint32>
 #define FT_MEDIA_CODEC 0xD5     // <string>
-// Set when ffprobe ran on this file and produced nothing usable -- a broken or truncated container,
+// Value 1 is a legacy ffprobe failure and gets one MediaInfo retry. Value 2 is set
+// when MediaInfo ran on this file and produced nothing usable -- a broken or truncated container,
 // an unreadable file, a binary that errored out. Without it such a file is indistinguishable from
 // one never probed, so the "already probed" gate re-queues it on every share reload and every
 // restart, forever, to fail the same way (issue #1116).

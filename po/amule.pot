@@ -3878,47 +3878,17 @@ msgid "WARNING: "
 msgstr ""
 
 #: src/MediaProbe.cpp
-#, c-format
-msgid "Media metadata: not using %s, because another user owns it or a folder above it."
-msgstr ""
-
-#: src/MediaProbe.cpp
-msgid "Media metadata: no ffprobe binary found. Install ffmpeg, or set the ffprobe path in preferences; length, bitrate and codec will not be extracted."
+msgid "Media metadata: bundled amule-media-probe helper is unavailable."
 msgstr ""
 
 #: src/MediaProbe.cpp
 #, c-format
-msgid "Media metadata: %s is gone, nothing to extract"
+msgid "Extracting media metadata: %s"
 msgstr ""
 
 #: src/MediaProbe.cpp
 #, c-format
-msgid "Extracting media metadata with ffprobe: %s"
-msgstr ""
-
-#: src/MediaProbe.cpp
-#, c-format
-msgid "Media metadata: ffprobe timed out or was cancelled for %s"
-msgstr ""
-
-#: src/MediaProbe.cpp
-#, c-format
-msgid "Media metadata: ignoring implausibly large ffprobe output for %s"
-msgstr ""
-
-#: src/MediaProbe.cpp
-#, c-format
-msgid "Media metadata: could not run ffprobe (%s) -- check the media metadata settings"
-msgstr ""
-
-#: src/MediaProbe.cpp
-#, c-format
-msgid "Media metadata: ffprobe failed (code %d) for %s"
-msgstr ""
-
-#: src/MediaProbe.cpp
-#, c-format
-msgid "Media metadata: ffprobe found nothing usable in %s"
+msgid "Media metadata: parser failed for %s"
 msgstr ""
 
 #: src/MediaProbeThread.cpp
@@ -5093,7 +5063,7 @@ msgstr ""
 msgid "Advanced I.C.H. trusts every hash (not recommended)"
 msgstr ""
 
-#: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
+#: src/muuli_wdr.cpp
 msgid "Media metadata extraction"
 msgstr ""
 
@@ -5102,23 +5072,7 @@ msgid "Extract length / bitrate / codec from shared audio and video files"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "When enabled, aMule runs ffprobe on each shared media file to fill in the Length / Bitrate / Codec columns other clients see when they find the file in a search. Requires ffmpeg (the ffprobe binary) to be installed."
-msgstr ""
-
-#: src/muuli_wdr.cpp
-msgid "Path to ffprobe:"
-msgstr ""
-
-#: src/muuli_wdr.cpp
-msgid "Full path to the ffprobe binary. Leave empty to have aMule auto-detect it on startup."
-msgstr ""
-
-#: src/muuli_wdr.cpp
-msgid "Detect"
-msgstr ""
-
-#: src/muuli_wdr.cpp
-msgid "Search the standard install locations for an ffprobe binary and fill the path field."
+msgid "When enabled, aMule uses its bundled MediaInfo parser to extract metadata from shared media files."
 msgstr ""
 
 #: src/muuli_wdr.cpp
@@ -6506,6 +6460,10 @@ msgid "no options available"
 msgstr ""
 
 #: src/Preferences.cpp
+msgid "Media metadata: FFProbePath is obsolete; aMule now uses its bundled MediaInfo parser. Removing the old setting."
+msgstr ""
+
+#: src/Preferences.cpp
 msgid "Invalid path mapping found, skipping"
 msgstr ""
 
@@ -6857,16 +6815,8 @@ msgid "Select browser"
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
-msgid "Select ffprobe binary"
-msgstr ""
-
-#: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "Executable%s"
-msgstr ""
-
-#: src/PrefsUnifiedDlg.cpp
-msgid "ffprobe not found on PATH or in the standard install locations. Install ffmpeg (which ships ffprobe) or use Browse to pick a binary manually."
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp

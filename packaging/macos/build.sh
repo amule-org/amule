@@ -70,9 +70,17 @@ build() {
     local arch_arg=()
     [[ -n "${MACOS_ARCHITECTURES}" ]] && arch_arg+=(-DCMAKE_OSX_ARCHITECTURES="${MACOS_ARCHITECTURES}")
 
+    local media_prefix="${BUILD_DIR}/media-prefix"
+    "${REPO_ROOT}/packaging/media/build-static.sh" "${media_prefix}" "${BUILD_DIR}/media-sources" \
+        ${arch_arg[@]+"${arch_arg[@]}"} \
+        -DCMAKE_OSX_DEPLOYMENT_TARGET="${MACOS_DEPLOYMENT_TARGET}"
+
     echo "==> Configuring cmake (target macOS ${MACOS_DEPLOYMENT_TARGET}${MACOS_ARCHITECTURES:+, archs ${MACOS_ARCHITECTURES}})"
     cmake -B "${BUILD_DIR}" -S "${REPO_ROOT}" \
         -DCMAKE_BUILD_TYPE=Release \
+        -DMEDIAINFO_LIBRARY="${media_prefix}/lib/libmediainfo.a" \
+        -DMEDIA_ZEN_LIBRARY="${media_prefix}/lib/libzen.a" \
+        -DMEDIA_PROBE_STATIC=ON \
         ${arch_arg[@]+"${arch_arg[@]}"} \
         -DCMAKE_OSX_DEPLOYMENT_TARGET="${MACOS_DEPLOYMENT_TARGET}" \
         -DBUILD_MONOLITHIC=YES \
@@ -116,6 +124,7 @@ build() {
     # path list rather than the previous flat src/<bin> assumption.
     echo "==> Copying auxiliary binaries into aMule.app"
     local bin_paths=(
+        src/amule-media-probe
         src/amuled
         src/amulecmd
         src/webserver/src/amuleweb
@@ -141,6 +150,9 @@ build() {
                 -p "@executable_path/../libs/" >/dev/null
         fi
     done
+
+    mkdir -p "${APP_BUNDLE}/Contents/Resources/licenses/amule-media-probe"
+    cp "${REPO_ROOT}/packaging/media/licenses/"* "${APP_BUNDLE}/Contents/Resources/licenses/amule-media-probe/"
 
     echo "==> Producing .dmg"
     make_dmg
