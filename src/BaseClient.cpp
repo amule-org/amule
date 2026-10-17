@@ -860,6 +860,11 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data)
 	// The session count is taken once per client object rather than once per call: an outgoing
 	// connection processes a hello answer as well as a hello, and a count that rose per packet
 	// would measure traffic instead of visits.
+	//
+	// ConnectionEstablished() only refreshes the obfuscation state after the hello has been
+	// processed, so read it from the socket now, or the status recorded would be the previous
+	// connection's (or false, for an outgoing one, which Connect() reset).
+	m_hasbeenobfuscatinglately = m_socket && m_socket->IsConnected() && m_socket->IsObfusicating();
 	if (credits != nullptr) {
 		credits->UpdateMeta(m_Username,
 			GetIP(),
