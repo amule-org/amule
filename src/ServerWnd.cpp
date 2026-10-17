@@ -119,7 +119,12 @@ CServerWnd::CServerWnd(wxWindow *pParent /*=NULL*/, int splitter_pos)
 
 	serverlistctrl = CastChild(ID_SERVERLIST, CServerListCtrl);
 
-	CastChild(ID_SRV_SPLITTER, wxSplitterWindow)->SetSashPosition(splitter_pos, true);
+	wxSplitterWindow *splitter = CastChild(ID_SRV_SPLITTER, wxSplitterWindow);
+	// With a minimum height, the splitter moves the sash up when the window shrinks. Without one,
+	// the log control reaches zero height, and on GTK the cairo error blanks the whole window.
+	wxWindow *logPane = splitter->GetWindow2();
+	logPane->SetMinSize(wxSize(wxDefaultCoord, logPane->GetBestSize().GetHeight()));
+	splitter->SetSashPosition(splitter_pos, true);
 	// Default gravity (0.0) anchors the sash to the top: on a resize the server list keeps its
 	// height and the log pane absorbs the extra space. The other amule splitters use the same
 	// default and avoid the layout-recalc storm during minimize/restore that gravity 0.5
