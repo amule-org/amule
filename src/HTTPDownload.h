@@ -74,7 +74,8 @@ enum HTTPDownloadResult
 {
 	HTTP_Success = 0,
 	HTTP_Error,
-	HTTP_Skipped
+	HTTP_Skipped,
+	HTTP_Cancelled
 };
 
 // Startup HTTP downloader (version check, server.met, nodes.dat, ipfilter, GeoIP). Historically a

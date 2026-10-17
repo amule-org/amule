@@ -7453,7 +7453,16 @@ msgid "IO failure while writing 'server.met': %s"
 msgstr ""
 
 #: src/ServerList.cpp
+msgid "A server list download is already in progress."
+msgstr ""
+
+#: src/ServerList.cpp
 msgid "Invalid URL"
+msgstr ""
+
+#: src/ServerList.cpp
+#, c-format
+msgid "Trying the backup server list from %s"
 msgstr ""
 
 #: src/ServerList.cpp
@@ -7468,15 +7477,6 @@ msgstr ""
 #: src/ServerList.cpp
 #, c-format
 msgid "Start downloading server list from %s"
-msgstr ""
-
-#: src/ServerList.cpp
-#, c-format
-msgid "WARNING: invalid URL specified for auto-updating of servers: %s"
-msgstr ""
-
-#: src/ServerList.cpp
-msgid "No valid server.met auto-download url on addresses.dat"
 msgstr ""
 
 #: src/ServerList.cpp

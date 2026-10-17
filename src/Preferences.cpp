@@ -982,12 +982,6 @@ CPreferences::CPreferences()
 	// Not ReloadSharedFolders(): expanding recursive roots walks their whole trees before
 	// anything is on screen, and the startup scan does it again anyway.
 	LoadSavedSharedFolders();
-
-	// serverlist addresses
-	CTextFile slistfile;
-	if (slistfile.Open(s_configDir + "addresses.dat", CTextFile::read)) {
-		addresses_list = slistfile.ReadLines();
-	}
 #else
 	// GUI-local only (see LoadPathMappings' declaration): loaded here, alongside the core's
 	// equivalent local-config reads above, rather than through LoadRemote()'s EC round-trip

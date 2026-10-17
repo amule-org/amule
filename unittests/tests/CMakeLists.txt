@@ -578,6 +578,12 @@ target_link_libraries (CTagTest
 	muleunit
 )
 
+# Shared ordered server-list sources, including live edits and large lists.
+add_executable (ServerListSourcesTest ServerListSourcesTest.cpp)
+target_include_directories (ServerListSourcesTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries (ServerListSourcesTest muleunit mulecommon)
+add_test (NAME ServerListSourcesTest COMMAND ServerListSourcesTest)
+
 # server.met reading, including files older aMule versions wrote with one tag too many declared
 # for a server without a version. Same TU set as CTagTest.
 add_executable (ServerMetTest
@@ -2527,6 +2533,10 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 					--amuled $<TARGET_FILE:amuled> --amuleapi $<TARGET_FILE:amuleapi>
 			)
 		endif ()
+		add_test (NAME ServerListSourcesIntegrationTest
+			COMMAND ${Python3_EXECUTABLE}
+				${CMAKE_CURRENT_SOURCE_DIR}/ServerListSourcesIntegrationTest.py $<TARGET_FILE:amuled>
+		)
 		add_test (NAME KnownHistoryIntegrationTest
 			COMMAND ${Python3_EXECUTABLE}
 				${CMAKE_CURRENT_SOURCE_DIR}/KnownHistoryIntegrationTest.py $<TARGET_FILE:amuled>
@@ -2535,6 +2545,17 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 			COMMAND ${Python3_EXECUTABLE}
 				${CMAKE_CURRENT_SOURCE_DIR}/PacketReceiveIntegrationTest.py $<TARGET_FILE:amuled>
 		)
+		add_test (NAME ServerListFallbackIntegrationTest
+			COMMAND ${Python3_EXECUTABLE}
+				${CMAKE_CURRENT_SOURCE_DIR}/ServerListFallbackIntegrationTest.py $<TARGET_FILE:amuled>
+		)
+		if (BUILD_AMULEAPI)
+			add_test (NAME ServerListFallbackApiIntegrationTest
+				COMMAND ${Python3_EXECUTABLE}
+					${CMAKE_CURRENT_SOURCE_DIR}/ServerListFallbackIntegrationTest.py
+					$<TARGET_FILE:amuled> $<TARGET_FILE:amuleapi>
+			)
+		endif ()
 		add_test (NAME ServerTrustIntegrationTest
 			COMMAND ${Python3_EXECUTABLE}
 				${CMAKE_CURRENT_SOURCE_DIR}/ServerTrustIntegrationTest.py $<TARGET_FILE:amuled>

@@ -27,6 +27,7 @@
 #define SERVERLIST_H
 
 #include "ObservableQueue.h"
+#include <wx/arrstr.h>
 
 class CServer;
 class CPacket;
@@ -45,7 +46,8 @@ public:
 	bool RemoveServer(CServer *in_server, bool fromUser = false);
 	void RemoveAllServers();
 	void RemoveDeadServers();
-	bool LoadServerMet(const CPath &path);
+	// Local startup files may be salvaged; downloaded lists must parse completely.
+	bool LoadServerMet(const CPath &path, bool allowPartial = true);
 	bool SaveServerMet();
 	void ServerStats();
 	void ResetServerPos() { m_serverpos = m_servers.begin(); }
@@ -97,12 +99,15 @@ public:
 private:
 	virtual void ObserverAdded(ObserverType *);
 	void AutoUpdate();
+	void StartServerMetDownload(const wxString &url, bool showDialog);
+	void StartNextServerMetDownload();
 	CServer *GetNextStatServer();
 
 	wxString m_staticServersConfig;
 	void LoadStaticServers();
 	void SaveStaticServers();
-	uint8 current_url_index;
+	size_t current_url_index = 0;
+	wxArrayString m_autoUpdateURLs;
 
 	typedef std::list<CServer *> CInternalList;
 	CInternalList m_servers;
@@ -110,6 +115,11 @@ private:
 	CInternalList::const_iterator m_statserverpos;
 
 	wxString m_URLUpdate;
+	wxString m_serverMetURL;
+	wxArrayString m_serverMetFallbacks;
+	size_t m_serverMetFallbackIndex = 0;
+	bool m_serverMetDownloading = false;
+	bool m_serverMetShowDialog = false;
 	bool m_initialized;
 };
 

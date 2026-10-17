@@ -409,8 +409,6 @@ public:
 	// round-tripping that file through an older binary still preserves the recursive intent here.
 	PathList shareddir_recursive_list;
 
-	wxArrayString addresses_list;
-
 	// A user-configured remote->local path-prefix substitution, for amuleGUI against a daemon on
 	// another machine whose filesystem is otherwise reachable. remotePrefix is an opaque string
 	// in the daemon's own path syntax -- never a CPath, which has no notion of a second machine's
