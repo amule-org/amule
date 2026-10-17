@@ -49,7 +49,7 @@
 #define BIGBUFFER_MINDATARATE (75 * 1024)           // eMule: BIGBUFFER_MINDATARATE
 
 // Max cached complete-file read handles (OpenFile_Struct::file). Past the cap the least
-// recently used idle struct is evicted as a new one is created. Fixed constant, no preference plumbing.
+// recently used idle struct is evicted as a new one is created.
 static const size_t MAX_CACHED_OPEN_FILES = 32;
 
 // Close a cached handle after this many idle seconds: an idle handle would block a rename or
@@ -288,10 +288,9 @@ ReadRequest_Struct *CUploadDiskIOThread::PrepareRead(uint32 clientId)
 		}
 
 		// Find or create the file's OpenFile_Struct here, before the read, so its cached
-		// handle exists when ReadBlock needs it. Pure metadata.
+		// handle exists when ReadBlock needs it.
 		// Applies to part-file requests too: ReadCompletionRoutine needs the hash and
 		// bCompress regardless; only complete files ever open the cached handle.
-		// Placed after every throw/early-return above, so no refcount can leak.
 		OpenFile_Struct *pFileStruct = nullptr;
 		for (std::list<OpenFile_Struct *>::iterator it = m_listOpenFiles.begin();
 			it != m_listOpenFiles.end();
@@ -310,6 +309,10 @@ ReadRequest_Struct *CUploadDiskIOThread::PrepareRead(uint32 clientId)
 			pFileStruct->bCompress = IsUploadCompressible(srcfile->GetFileName());
 			pFileStruct->uFileSize = (uint64)srcfile->GetFileSize();
 			m_listOpenFiles.push_front(pFileStruct);
+		}
+		// Moved or renamed since the handle was opened.
+		if (pFileStruct->file.IsOpened() && pFileStruct->file.GetFilePath() != req->path) {
+			pFileStruct->file.Close();
 		}
 		pFileStruct->nInUse++;
 		pFileStruct->lastRead = TheTime;
@@ -376,16 +379,24 @@ CUploadDiskIOThread::ReadResult CUploadDiskIOThread::ReadBlock(ReadRequest_Struc
 				}
 			}
 		} else {
-			// Complete file: read through the struct's cached handle, opened lazily on
-			// the first block. The handle stays open between blocks, instead of a per-block
-			// open/close. nInUse > 0 pins the struct against eviction while a request holds it.
-			OpenFile_Struct *openFile = req->pFileStruct;
-			// shareDelete: a cached handle must not block a rename or delete on Windows.
-			if (!openFile->file.IsOpened() &&
-				!openFile->file.Open(req->path, CFile::read, true)) {
-				result = READ_OPEN_FAILED;
-			} else {
-				req->area.ReadAt(openFile->file, req->uStartOffset, togo);
+			// A cached handle can go stale (NFS ESTALE, SMB reconnect): reopen it once.
+			CFileAutoClose &file = req->pFileStruct->file;
+			for (int attempt = 0;; ++attempt) {
+				try {
+					// shareDelete: a cached handle must not block a rename or delete on
+					// Windows.
+					if (!file.IsOpened() && !file.Open(req->path, CFile::read, true)) {
+						result = READ_OPEN_FAILED;
+					} else {
+						req->area.ReadAt(file, req->uStartOffset, togo);
+					}
+					break;
+				} catch (const CIOFailureException &) {
+					file.Close();
+					if (attempt > 0) {
+						throw;
+					}
+				}
 			}
 		}
 		if (result == READ_OK) {
@@ -447,7 +458,7 @@ bool CUploadDiskIOThread::CommitRead(ReadRequest_Struct *req, ReadResult result)
 		return false;
 	}
 
-	// The OpenFile_Struct was already found or created in PrepareRead; eMule does it here.
+	// The OpenFile_Struct was already found or created in PrepareRead.
 
 	// Mirrors eMule's SetUploadFileID call in the main thread path.
 	client->SetUploadFileID(srcfile);
