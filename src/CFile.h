@@ -87,6 +87,9 @@ public:
 	 * @param mode The opening mode.
 	 * @param accessMode The permissions in case a new file is created. Defaults to
 	 * whatever CPreferences::GetFilePermissions gives.
+	 * @param shareDelete Windows only, read mode only: open with FILE_SHARE_DELETE, so the
+	 * file can be renamed or deleted while the handle stays open (an idle cached handle
+	 * would otherwise block both). No effect on other platforms or modes.
 	 * @return True if the file was opened.
 	 *
 	 * The 'write' and 'write_append' modes create the file if it does not exist.
@@ -94,8 +97,12 @@ public:
 	 * renaming to the original name on close -- Close() has to be called by hand, the
 	 * destructor does not rename.
 	 */
-	bool Open(const CPath &path, OpenMode mode = read, int accessMode = wxS_DEFAULT);
-	bool Open(const wxString &path, OpenMode mode = read, int accessMode = wxS_DEFAULT);
+	bool
+	Open(const CPath &path, OpenMode mode = read, int accessMode = wxS_DEFAULT, bool shareDelete = false);
+	bool Open(const wxString &path,
+		OpenMode mode = read,
+		int accessMode = wxS_DEFAULT,
+		bool shareDelete = false);
 
 	/**
 	 * Reopens a file which was opened and closed before, under the filename last
