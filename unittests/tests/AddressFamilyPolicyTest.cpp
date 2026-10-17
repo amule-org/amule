@@ -169,6 +169,42 @@ TEST(AddressFamilyPolicy, OnlyTheTwoSupportedSettingsSelectFamilies)
 	}
 }
 
+// The AddressFamilies choice widget (#1177) only ever offers two options, so an out-of-range
+// stored setting must fall back the same way FamiliesFromSetting() does, never to index 1.
+TEST(AddressFamilyPolicy, ChoiceIndexFromSettingFallsBackToIPv4OnlyForAnythingButOne)
+{
+	ASSERT_EQUALS(0, AddressFamiliesChoiceIndexFromSetting(0));
+	ASSERT_EQUALS(1, AddressFamiliesChoiceIndexFromSetting(1));
+
+	const long unsupported[] = {
+		-1, 2, 99, std::numeric_limits<long>::min(), std::numeric_limits<long>::max()
+	};
+	for (long value : unsupported) {
+		ASSERT_EQUALS(0, AddressFamiliesChoiceIndexFromSetting(value));
+	}
+}
+
+// The round trip: a setting that already maps to a choice index must map back to itself, so the
+// GUI never rewrites the setting merely by displaying it.
+TEST(AddressFamilyPolicy, SettingFromChoiceIndexRoundTripsBothSupportedSettings)
+{
+	for (long setting : { 0L, 1L }) {
+		ASSERT_EQUALS(setting,
+			AddressFamiliesSettingFromChoiceIndex(
+				AddressFamiliesChoiceIndexFromSetting(setting)));
+	}
+}
+
+// Only a real wxChoice selection (0 or 1) ever reaches this; anything else still resolves to a
+// supported setting rather than propagating an invalid index.
+TEST(AddressFamilyPolicy, SettingFromChoiceIndexTreatsAnythingButOneAsIPv4Only)
+{
+	ASSERT_EQUALS(0L, AddressFamiliesSettingFromChoiceIndex(0));
+	ASSERT_EQUALS(1L, AddressFamiliesSettingFromChoiceIndex(1));
+	ASSERT_EQUALS(0L, AddressFamiliesSettingFromChoiceIndex(-1));
+	ASSERT_EQUALS(0L, AddressFamiliesSettingFromChoiceIndex(99));
+}
+
 TEST(AddressFamilyPolicy, DefaultIsIPv4Only)
 {
 	// Captured before any case ran. If this fails, the widening advertises a

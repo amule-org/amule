@@ -60,6 +60,9 @@
 #include "StatisticsDlg.h"
 #include "MuleColour.h"
 #include <vector> // Needed for the language picker's entry list
+#ifdef ENABLE_IPV6
+#include "AddressFamilyPolicy.h" // Needed for FamiliesFromSetting (Cfg_AddressFamilies)
+#endif
 #endif
 
 #ifndef CLIENT_GUI
@@ -101,6 +104,9 @@ wxString CPreferences::s_NetworkInterface;
 #ifdef ENABLE_IPV6
 long CPreferences::s_addressFamiliesSetting;
 bool CPreferences::s_advertiseIPv6;
+#ifdef CLIENT_GUI
+bool CPreferences::s_addressFamiliesTagSupported = false;
+#endif
 #endif
 uint16 CPreferences::s_port;
 uint16 CPreferences::s_udpport;
@@ -617,6 +623,94 @@ public:
 
 	virtual void SaveToFile(wxConfigBase *cfg) { cfg->Write(GetKey(), m_value); }
 };
+
+#ifdef ENABLE_IPV6
+/**
+ * The AddressFamilies choice. SaveAllItems() writes every Cfg, so an out-of-range value from
+ * amule.conf is kept unless the user picks another option; a plain Cfg_Int would overwrite it
+ * with the fallback the widget shows.
+ */
+class Cfg_AddressFamilies : public Cfg_Base
+{
+public:
+	Cfg_AddressFamilies(const wxString &keyname, long &value, long defaultVal)
+	: Cfg_Base(keyname)
+	, m_value(value)
+	, m_default(defaultVal)
+#ifndef AMULE_DAEMON
+	, m_widget(NULL)
+	, m_shownIndex(0)
+	, m_valueWasInvalid(false)
+#endif
+	{
+	}
+
+	virtual void LoadFromFile(wxConfigBase *cfg) { cfg->Read(GetKey(), &m_value, m_default); }
+
+	virtual void SaveToFile(wxConfigBase *cfg) { cfg->Write(GetKey(), m_value); }
+
+#ifndef AMULE_DAEMON
+	virtual bool ConnectToWidget(int id, wxWindow *parent = NULL)
+	{
+		m_widget = id ? dynamic_cast<wxChoice *>(wxWindow::FindWindowById(id, parent)) : NULL;
+
+		return id == 0 || m_widget != NULL;
+	}
+
+	virtual bool TransferToWindow()
+	{
+		if (!m_widget) {
+			return false;
+		}
+
+		m_valueWasInvalid = !AddressFamilyPolicy::FamiliesFromSetting(m_value).has_value();
+		m_shownIndex = AddressFamilyPolicy::AddressFamiliesChoiceIndexFromSetting(m_value);
+		m_widget->SetSelection(m_shownIndex);
+
+		return true;
+	}
+
+	virtual bool TransferFromWindow()
+	{
+		if (!m_widget) {
+			return false;
+		}
+
+		const int selection = m_widget->GetSelection();
+		if (m_valueWasInvalid && selection == m_shownIndex) {
+			SetChanged(false);
+			return true;
+		}
+
+		const long newValue = AddressFamilyPolicy::AddressFamiliesSettingFromChoiceIndex(selection);
+		SetChanged(newValue != m_value);
+		m_value = newValue;
+
+		return true;
+	}
+
+	virtual bool ResetToDefault()
+	{
+		if (!m_widget) {
+			return false;
+		}
+
+		m_widget->SetSelection(AddressFamilyPolicy::AddressFamiliesChoiceIndexFromSetting(m_default));
+
+		return true;
+	}
+#endif
+
+private:
+	long &m_value;
+	long m_default;
+#ifndef AMULE_DAEMON
+	wxChoice *m_widget;
+	int m_shownIndex;
+	bool m_valueWasInvalid;
+#endif
+};
+#endif
 
 /**
  * Wraps any Cfg class so its value lives only in memory for this run. The wrapped
@@ -1406,8 +1500,10 @@ void CPreferences::BuildItemList(const wxString &appdir)
 	s_MiscList.push_back(MkCfg_Int("/eMule/SmartIdState", s_smartidstate, 0));
 
 #ifdef ENABLE_IPV6
-	s_MiscList.push_back(MkCfg_Int("/eMule/AddressFamilies", s_addressFamiliesSetting, 0));
-	s_MiscList.push_back(new Cfg_Bool("/eMule/AdvertiseIPv6", s_advertiseIPv6, false));
+	// AddressFamilies is read only in CamuleApp::OnInit, hence the restart note on its control.
+	NewCfgItem(IDC_ADDRESSFAMILIES,
+		(new Cfg_AddressFamilies("/eMule/AddressFamilies", s_addressFamiliesSetting, 0)));
+	NewCfgItem(IDC_ADVERTISEIPV6, (new Cfg_Bool("/eMule/AdvertiseIPv6", s_advertiseIPv6, false)));
 #endif
 
 	s_MiscList.push_back(new Cfg_Bool("/eMule/DropSlowSources", s_DropSlowSources, false));

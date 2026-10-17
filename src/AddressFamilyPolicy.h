@@ -99,6 +99,18 @@ inline std::optional<Families> FamiliesFromSetting(long setting) noexcept
 	}
 }
 
+//! The AddressFamilies choice index (0 = IPv4 only, 1 = IPv4 and IPv6); unknown settings show 0.
+inline int AddressFamiliesChoiceIndexFromSetting(long setting) noexcept
+{
+	return setting == 1 ? 1 : 0;
+}
+
+//! The inverse of AddressFamiliesChoiceIndexFromSetting(): any index but 1 is IPv4 only.
+inline long AddressFamiliesSettingFromChoiceIndex(int index) noexcept
+{
+	return index == 1 ? 1 : 0;
+}
+
 // Both predicates switch rather than test for inequality, so an out-of-range value falls back the
 // same way ResolverFamilyForLookup() does. Comparing against one enumerator made a value outside
 // the enum permit *both* families while the resolver fell back to IPv4Only. FamiliesFromSetting()

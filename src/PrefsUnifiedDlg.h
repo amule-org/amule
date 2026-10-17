@@ -242,6 +242,9 @@ private:
 	void OnButtonColorChange(wxCommandEvent &event);
 	void OnButtonIPFilterReload(wxCommandEvent &event);
 	void OnButtonIPFilterUpdate(wxCommandEvent &event);
+#ifdef ENABLE_IPV6
+	void OnAddressFamiliesChange(wxCommandEvent &event);
+#endif
 #if defined(ENABLE_IP2COUNTRY) || defined(CLIENT_GUI)
 	void OnGeoIPSourceChange(wxCommandEvent &event);
 	void OnGeoIPUpdateNow(wxCommandEvent &event);
@@ -319,6 +322,14 @@ public:
 	// Enables the message-filter options from the checkboxes above them: the master switch gates
 	// all of them, and "Filter all messages" makes the rest moot.
 	void UpdateMessageFilterControls();
+
+#ifdef ENABLE_IPV6
+	// Enables the AdvertiseIPv6 checkbox only while dual stack is selected, and under CLIENT_GUI
+	// shows or hides the whole IPv6 box based on whether the connected daemon sent the
+	// EC_TAG_CONN_ADDRESS_FAMILIES capability tag. Called from OnAddressFamiliesChange and
+	// TransferToWindow.
+	void UpdateAddressFamiliesControls();
+#endif
 
 	wxDECLARE_EVENT_TABLE();
 

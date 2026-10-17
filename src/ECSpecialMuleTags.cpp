@@ -184,6 +184,20 @@ CEC_Prefs_Packet::CEC_Prefs_Packet(
 		// are deliberately not carried.
 		connPrefs.AddTag(CECTag(EC_TAG_CONN_UPNP_ENABLED, thePrefs::GetUPnPEnabled()));
 		connPrefs.AddTag(CECTag(EC_TAG_CONN_UPNP_TCP_PORT, thePrefs::GetUPnPTCPPort()));
+#ifdef ENABLE_IPV6
+#ifdef CLIENT_GUI
+		// Never sent to a daemon whose prefs reply lacked them.
+		if (thePrefs::GetAddressFamiliesTagSupported()) {
+			connPrefs.AddTag(CECTag(EC_TAG_CONN_ADDRESS_FAMILIES,
+				static_cast<uint32>(thePrefs::GetAddressFamiliesSetting())));
+			connPrefs.AddTag(CECTag(EC_TAG_CONN_ADVERTISE_IPV6, thePrefs::GetAdvertiseIPv6()));
+		}
+#else
+		connPrefs.AddTag(CECTag(EC_TAG_CONN_ADDRESS_FAMILIES,
+			static_cast<uint32>(thePrefs::GetAddressFamiliesSetting())));
+		connPrefs.AddTag(CECTag(EC_TAG_CONN_ADVERTISE_IPV6, thePrefs::GetAdvertiseIPv6()));
+#endif
+#endif
 		AddTag(connPrefs);
 	}
 
@@ -685,6 +699,22 @@ void CEC_Prefs_Packet::Apply() const
 		if ((oneTag = thisTab->GetTagByName(EC_TAG_CONN_UPNP_TCP_PORT)) != nullptr) {
 			thePrefs::SetUPnPTCPPort(static_cast<uint16>(oneTag->GetInt()));
 		}
+#ifdef ENABLE_IPV6
+		if ((oneTag = thisTab->GetTagByName(EC_TAG_CONN_ADDRESS_FAMILIES)) != nullptr) {
+			thePrefs::SetAddressFamiliesSetting(oneTag->GetInt());
+#ifdef CLIENT_GUI
+			thePrefs::SetAddressFamiliesTagSupported(true);
+#endif
+		}
+#ifdef CLIENT_GUI
+		else {
+			thePrefs::SetAddressFamiliesTagSupported(false);
+		}
+#endif
+		if ((oneTag = thisTab->GetTagByName(EC_TAG_CONN_ADVERTISE_IPV6)) != nullptr) {
+			thePrefs::SetAdvertiseIPv6(oneTag->GetInt() != 0);
+		}
+#endif
 	}
 
 	if ((thisTab = GetTagByName(EC_TAG_PREFS_MESSAGEFILTER)) != NULL) {

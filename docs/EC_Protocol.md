@@ -818,6 +818,15 @@ itself only once no route holds messages.
 > `GetInt()` (which handles any integer width); clients sending them
 > should encode them as 32-bit values.
 
+| `EC_TAG_CONN_ADDRESS_FAMILIES`     | `0x131A` | `uint32` | `AddressFamilies` setting: `0` = IPv4 only, `1` = IPv4 and IPv6 |
+| `EC_TAG_CONN_ADVERTISE_IPV6`       | `0x131B` | `bool`   | `AdvertiseIPv6` setting |
+
+> **Note** (#1177): only a core built with `ENABLE_IPV6` emits these two
+> tags. An absent `EC_TAG_CONN_ADDRESS_FAMILIES` therefore means an old
+> daemon or one without `ENABLE_IPV6`, a third state distinct from `0`.
+> amulegui then hides both controls and does not send either tag on
+> `EC_OP_SET_PREFERENCES`.
+
 ### Peer vendor capabilities (`EC_TAG_CLIENT_MOD_CAPABILITIES = 0x0633`)
 
 | Tag                              | Code     | Type     | Description |

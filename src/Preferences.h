@@ -225,8 +225,16 @@ public:
 	// Raw and unvalidated, so an unsupported value can be reported as written; map it with
 	// AddressFamilyPolicy::FamiliesFromSetting().
 	static long GetAddressFamiliesSetting() { return s_addressFamiliesSetting; }
+	static void SetAddressFamiliesSetting(long val) { s_addressFamiliesSetting = val; }
 	// The user's word that the ed2k TCP port accepts inbound IPv6: nothing can test it from outside.
 	static bool GetAdvertiseIPv6() { return s_advertiseIPv6; }
+	static void SetAdvertiseIPv6(bool val) { s_advertiseIPv6 = val; }
+#ifdef CLIENT_GUI
+	// Whether the daemon's last prefs reply carried EC_TAG_CONN_ADDRESS_FAMILIES; absent means an
+	// old daemon or one without ENABLE_IPV6, which is not the same as "IPv4 only".
+	static bool GetAddressFamiliesTagSupported() { return s_addressFamiliesTagSupported; }
+	static void SetAddressFamiliesTagSupported(bool val) { s_addressFamiliesTagSupported = val; }
+#endif
 #endif
 	static uint16 GetPort() { return s_port; }
 	static void SetPort(uint16 val);
@@ -941,6 +949,9 @@ protected:
 #ifdef ENABLE_IPV6
 	static long s_addressFamiliesSetting;
 	static bool s_advertiseIPv6;
+#ifdef CLIENT_GUI
+	static bool s_addressFamiliesTagSupported;
+#endif
 #endif
 	static uint16 s_port;
 	static uint16 s_udpport;

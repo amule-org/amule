@@ -1686,6 +1686,27 @@ wxSizer *PreferencesConnectionTab( wxWindow *parent, bool call_fit, bool set_siz
     kadProtoSizer->Add( strictAichChk, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 5) );
 
     item0->Add( kadProtoSizer, wxSizerFlags().Expand().CenterVertical().Border(wxTOP, 5) );
+
+#ifdef ENABLE_IPV6
+    wxStaticBox *addressFamilyBox = new wxStaticBox( parent, IDC_ADDRESSFAMILIESBOX, _("IPv6") );
+    wxStaticBoxSizer *addressFamilySizer = new wxStaticBoxSizer( addressFamilyBox, wxVERTICAL );
+
+    wxBoxSizer *addressFamilyRow = new wxBoxSizer( wxHORIZONTAL );
+    addressFamilyRow->Add( new wxStaticText( addressFamilyBox, -1, _("Address families:") ), wxSizerFlags().CenterVertical() );
+    wxString addressFamilyChoices[] = { _("IPv4 only"), _("IPv4 and IPv6") };
+    wxChoice *addressFamilyChoice = new wxChoice( addressFamilyBox, IDC_ADDRESSFAMILIES, wxDefaultPosition, wxDefaultSize, 2, addressFamilyChoices, 0 );
+    addressFamilyRow->Add( addressFamilyChoice, wxSizerFlags().CenterVertical().Border(wxLEFT, 5) );
+    addressFamilySizer->Add( addressFamilyRow, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT|wxTOP, 5) );
+
+    wxStaticText *addressFamilyNote = new wxStaticText( addressFamilyBox, -1, _("Takes effect after restarting aMule."), wxDefaultPosition, wxDefaultSize, 0 );
+    addressFamilySizer->Add( addressFamilyNote, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 5) );
+
+    wxCheckBox *advertiseIPv6Chk = new wxCheckBox( addressFamilyBox, IDC_ADVERTISEIPV6, _("Advertise my IPv6 address to other peers"), wxDefaultPosition, wxDefaultSize, 0 );
+    addressFamilySizer->Add( advertiseIPv6Chk, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 5) );
+
+    item0->Add( addressFamilySizer, wxSizerFlags().Expand().CenterVertical().Border(wxTOP, 5) );
+#endif
+
     if (set_sizer)
     {
         parent->SetSizer( item0 );

@@ -629,7 +629,7 @@ static bool ServerMetHasServers(const wxString &path)
 
 #ifdef ENABLE_IPV6
 // Logged directly because the network summary is only logged when ReinitializeNetwork() fails, and
-// this setting has no widget to show its effect.
+// the preferences widget shows the stored setting rather than the families actually in effect.
 static void LogAddressFamilies(const wxString &listenerHost)
 {
 	const long setting = thePrefs::GetAddressFamiliesSetting();
