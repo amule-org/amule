@@ -72,6 +72,9 @@
 #include "RandomFunctions.h"
 #include "kademlia/kademlia/Kademlia.h"
 #include "kademlia/kademlia/UDPFirewallTester.h"
+#ifdef ENABLE_IPV6
+#include "AdvertisedIPv6.h" // Needed for AdvertisedIPv6ForPeers
+#endif
 #include "Statistics.h"
 
 //-------------------- File_Encoder --------------------
@@ -4185,6 +4188,10 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 		if (!thePrefs::GetNetworkKademlia() && theApp->IsConnectedKad()) {
 			theApp->StopKad();
 		}
+#ifdef ENABLE_IPV6
+		// Act on an AdvertiseIPv6 change now, not at the next periodic refresh.
+		AdvertisedIPv6ForPeers();
+#endif
 		response = new CECPacket(portRebindFailed ? EC_OP_FAILED : EC_OP_NOOP);
 		if (portRebindFailed) {
 			response->AddTag(CECTag(EC_TAG_STRING, networkMessage));

@@ -90,6 +90,9 @@
 #include "Statistics.h"
 #include "UserEvents.h"
 #include "PlatformSpecific.h" // Needed for PLATFORMSPECIFIC_CAN_PREVENT_SLEEP_MODE
+#if defined(ENABLE_IPV6) && !defined(CLIENT_GUI)
+#include "AdvertisedIPv6.h" // Needed for AdvertisedIPv6ForPeers
+#endif
 
 namespace
 {
@@ -1387,6 +1390,13 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 
 	// save the preferences on ok
 	theApp->glob_prefs->Save();
+
+#if defined(ENABLE_IPV6) && !defined(CLIENT_GUI)
+	// Act on an AdvertiseIPv6 change now, not at the next periodic refresh.
+	if (CfgChanged(IDC_ADVERTISEIPV6)) {
+		AdvertisedIPv6ForPeers();
+	}
+#endif
 
 	// Listening ports are live settings: re-create their sockets as part of applying
 	// Preferences. A simultaneous interface change still needs a full restart because the
