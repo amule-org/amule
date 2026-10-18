@@ -68,8 +68,10 @@
 #include <memory>
 #include <mutex>
 #include <sstream>
+#include <system_error>
 #include <thread>
 #include <utility>
+#include <vector>
 
 namespace beast = boost::beast;
 namespace http = boost::beast::http;
@@ -1529,9 +1531,25 @@ struct CHttpServer::Impl
 	// shared_ptr so Sessions can keep it alive for an in-flight handler; joined explicitly in
 	// Stop().
 	std::shared_ptr<asio::thread_pool> handler_pool;
+	// The threads attached to handler_pool, which is constructed without any of its own.
+	std::vector<std::thread> handler_threads;
 	std::shared_ptr<Listener> listener;
 	std::thread thread;
 	std::atomic<bool> running{ false };
+
+	void StopHandlerPool()
+	{
+		if (!handler_pool)
+			return;
+		// stop() abandons not-yet-started handler tasks; joining lets any in-flight handler
+		// finish (bounded by the EC read timeout).
+		handler_pool->stop();
+		handler_pool->join();
+		for (std::thread &t : handler_threads) {
+			t.join();
+		}
+		handler_threads.clear();
+	}
 };
 
 CHttpServer::CHttpServer() = default;
@@ -1595,7 +1613,23 @@ bool CHttpServer::Start(const std::string &bind_address,
 			     "access.\n";
 	}
 
-	m_impl->handler_pool = std::make_shared<asio::thread_pool>(kHandlerPoolThreads);
+	// Not asio::thread_pool(kHandlerPoolThreads): when its constructor fails to create a thread
+	// (a container pids limit, RLIMIT_NPROC), the unwind joins the threads it already started,
+	// which never exit, and startup hangs without a word. Attaching our own threads lets that
+	// failure be reported.
+	m_impl->handler_pool = std::make_shared<asio::thread_pool>(0);
+	try {
+		for (int i = 0; i < kHandlerPoolThreads; ++i) {
+			m_impl->handler_threads.emplace_back(
+				[pool = m_impl->handler_pool] { pool->attach(); });
+		}
+	} catch (const std::system_error &e) {
+		m_lastError = std::string("could not create the HTTP worker threads: ") + e.what() +
+			      " (check the process limit: ulimit -u, or the container's pids limit)";
+		m_impl->StopHandlerPool();
+		m_impl.reset();
+		return false;
+	}
 	m_impl->listener = std::make_shared<Listener>(m_impl->ioc,
 		m_impl->handler_pool,
 		endpoint,
@@ -1608,23 +1642,34 @@ bool CHttpServer::Start(const std::string &bind_address,
 	if (!m_impl->listener->Ok()) {
 		m_lastError = "bind to " + bind_address + ":" + std::to_string(port) +
 			      " failed: " + m_impl->listener->Error();
+		m_impl->StopHandlerPool();
 		m_impl.reset();
 		return false;
 	}
 	m_impl->listener->Run();
 
 	m_impl->running.store(true, std::memory_order_release);
-	m_impl->thread = std::thread([this] {
-		try {
-			m_impl->ioc.run();
-		} catch (const std::exception &e) {
-			// io_context exception propagation: the server thread dies quietly. Catch + log to
-			// stderr so an operator running in foreground sees a one-line cause; daemon mode
-			// loses the message.
-			std::cerr << "amuleapi: HTTP I/O loop exited on exception: " << e.what() << '\n';
-		}
-		m_impl->running.store(false, std::memory_order_release);
-	});
+	try {
+		m_impl->thread = std::thread([this] {
+			try {
+				m_impl->ioc.run();
+			} catch (const std::exception &e) {
+				// io_context exception propagation: the server thread dies quietly. Catch +
+				// log to stderr so an operator running in foreground sees a one-line cause;
+				// daemon mode loses the message.
+				std::cerr << "amuleapi: HTTP I/O loop exited on exception: " << e.what()
+					  << '\n';
+			}
+			m_impl->running.store(false, std::memory_order_release);
+		});
+	} catch (const std::system_error &e) {
+		m_lastError = std::string("could not create the HTTP I/O thread: ") + e.what() +
+			      " (check the process limit: ulimit -u, or the container's pids limit)";
+		m_impl->listener->Stop();
+		m_impl->StopHandlerPool();
+		m_impl.reset();
+		return false;
+	}
 	return true;
 }
 
@@ -1637,13 +1682,9 @@ void CHttpServer::Stop()
 	m_impl->ioc.stop();
 	if (m_impl->thread.joinable())
 		m_impl->thread.join();
-	// Drain the handler pool after the io_context thread is gone. stop() abandons
-	// not-yet-started handler tasks; join() lets any in-flight handler finish (bounded by the
-	// EC read timeout). Their response trampolines were posted to the now-stopped io_context
-	// and are discarded when it is destroyed below.
-	if (m_impl->handler_pool) {
-		m_impl->handler_pool->stop();
-		m_impl->handler_pool->join();
-	}
+	// Drain the handler pool after the io_context thread is gone. In-flight handlers' response
+	// trampolines were posted to the now-stopped io_context and are discarded when it is
+	// destroyed below.
+	m_impl->StopHandlerPool();
 	m_impl.reset();
 }
