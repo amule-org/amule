@@ -1975,7 +1975,7 @@ void CPartFile::AddSources(CMemFile &sources,
 		sources.Seek(static_cast<sint64>(parsed.bytesConsumed), wxFromCurrent);
 
 #ifdef ENABLE_IPV6
-		if (parsed.record.isIPv6) {
+		if (loginIPv6 != nullptr && parsed.record.isIPv6) {
 			if (thePrefs::GetMaxSourcePerFile() <= GetSourceCount()) {
 				stopAtSourceCap(i);
 				break;
