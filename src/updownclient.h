@@ -779,6 +779,7 @@ public:
 private:
 	// Sends OP_MESSAGE on the open connection, without SendChatMessage()'s chat bookkeeping.
 	void SendChatPacket(const wxString &message);
+	void RefreshObfuscationState();
 
 	CClientCredits *credits;
 	CFriend *m_Friend;
