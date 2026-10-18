@@ -2016,6 +2016,9 @@ std::optional<CNetworkAddress> AdvertisedIPv6ForPeers()
 		}
 		SetSocketAdvertisedIPv6(advertised.value_or(CNetworkAddress::Absent()));
 		s_lastAdvertisedIPv6 = advertised;
+		if (theApp->serverconnect) {
+			theApp->serverconnect->UpdateAdvertisedIPv6(advertised);
+		}
 	}
 	return advertised;
 }

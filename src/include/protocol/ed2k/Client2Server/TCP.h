@@ -57,7 +57,9 @@ enum OP_ClientToServerTCP
 	OP_FOUNDSOURCES = 0x42, // <HASH 16><count 1>(<ID 4><PORT 2>)[count]
 	OP_USERS_LIST = 0x43,   // <count 4>(<HASH 16><ID 4><PORT 2><1 Tag_set>)[count]
 	OP_FOUNDSOURCES_OBFU =
-		0x44 // <HASH 16><count 1>(<ID 4><PORT 2><obf settings 1>(UserHash16 if obf&0x08))[count]
+		0x44, // <HASH 16><count 1>(<ID 4><PORT 2><obf settings 1>(UserHash16 if obf&0x08))[count]
+	OP_IPV6_UPDATE = 0x63 // <ipv6 address 16>; all zeros withdraws. Same rules as the login tag:
+			      // sent only on a connection that received SRV_TCPFLG_IPV6_UPDATE. No reply.
 };
 
 // Server TCP flags
@@ -70,5 +72,7 @@ enum OP_ClientToServerTCP
 #define SRV_TCPFLG_TCPOBFUSCATION 0x00000400
 // Server speaks the IPv6 source extension. Not the same bit as the client's SRVCAP_IPV6 on purpose.
 #define SRV_TCPFLG_IPV6 0x00004000
+// Server accepts OP_IPV6_UPDATE on this connection. Set together with SRV_TCPFLG_IPV6.
+#define SRV_TCPFLG_IPV6_UPDATE 0x00008000
 
 #endif // ED2KC2STCP_H

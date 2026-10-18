@@ -169,6 +169,8 @@ public:
 	} // mapped to TCPFLAG_TCPOBFU
 #ifdef ENABLE_IPV6
 	bool SupportsIPv6Sources() const { return (GetTCPFlags() & SRV_TCPFLG_IPV6) != 0; }
+	// Whether this connection may receive OP_IPV6_UPDATE: set together with SRV_TCPFLG_IPV6.
+	bool SupportsIPv6Updates() const { return (GetTCPFlags() & SRV_TCPFLG_IPV6_UPDATE) != 0; }
 #endif
 
 	const wxString &GetAuxPortsList() const { return m_auxPorts; }

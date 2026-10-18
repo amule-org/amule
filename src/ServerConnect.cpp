@@ -49,8 +49,9 @@
 #include "PublicIPv6Corroboration.h" // Needed for RefreshLocalPublicIPv6Addresses
 #include <common/Format.h>
 #ifdef ENABLE_IPV6
-#include "AdvertisedIPv6.h"  // Needed for AdvertisedIPv6ForPeers
-#include "ServerLoginIPv6.h" // Needed for DecideServerLoginIPv6
+#include "AdvertisedIPv6.h"   // Needed for AdvertisedIPv6ForPeers
+#include "ServerLoginIPv6.h"  // Needed for DecideServerLoginIPv6
+#include "ServerIPv6Update.h" // Needed for DecideServerIPv6Update
 #endif
 
 // #define DEBUG_CLIENT_PROTOCOL
@@ -631,6 +632,35 @@ bool CServerConnect::IsCurrentServer(const CServer *server)
 	return server->HasDynIP() ? server->GetDynIP() == current->GetDynIP()
 				  : server->GetIP() == current->GetIP();
 }
+
+#ifdef ENABLE_IPV6
+void CServerConnect::UpdateAdvertisedIPv6(const std::optional<CNetworkAddress> &advertised)
+{
+	CServer *server = GetCurrentServer();
+	if (!server || !connectedsocket) {
+		return;
+	}
+
+	const CNetworkAddress &lastSentAddress = connectedsocket->GetLoginIPv6();
+	const std::optional<CNetworkAddress> lastSent =
+		lastSentAddress.IsPresent() ? std::optional<CNetworkAddress>(lastSentAddress) : std::nullopt;
+
+	const SServerIPv6UpdateDecision decision =
+		DecideServerIPv6Update(server->SupportsIPv6Updates(), lastSent, advertised);
+	if (!decision.send) {
+		return;
+	}
+
+	CMemFile data;
+	data.Write(decision.payload, sizeof(decision.payload));
+	CPacket *packet = new CPacket(data, OP_EDONKEYPROT, OP_IPV6_UPDATE);
+	theStats::AddUpOverheadServer(packet->GetPacketSize());
+	AddDebugLogLineN(logServer, "Client: OP_IPV6_UPDATE");
+	SendPacket(packet, true, connectedsocket);
+
+	connectedsocket->SetLoginIPv6(advertised.value_or(CNetworkAddress::Absent()));
+}
+#endif
 
 void CServerConnect::SetClientID(uint32 newid)
 {

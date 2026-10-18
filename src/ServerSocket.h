@@ -74,10 +74,21 @@ public:
 	uint16 GetConnectPort() const { return m_connectPort; }
 
 #ifdef ENABLE_IPV6
-	// The IPv6 our login to this server advertised, Absent if none; only then can sentinel records
-	// arrive.
-	void SetLoginIPv6(const CNetworkAddress &address) { m_loginIPv6 = address; }
+	// The IPv6 this connection last sent, by login or a later OP_IPV6_UPDATE; Absent after a
+	// withdrawal. This is the own-record check address in CPartFile::AddSources().
+	void SetLoginIPv6(const CNetworkAddress &address)
+	{
+		m_loginIPv6 = address;
+		if (address.IsPresent()) {
+			m_ipv6SentinelParsingOn = true;
+		}
+	}
 	const CNetworkAddress &GetLoginIPv6() const { return m_loginIPv6; }
+
+	// Sticky for the rest of this server session once any IPv6 was advertised on it: the server
+	// sends no reply to OP_IPV6_UPDATE, so an OP_FOUNDSOURCES built before a withdrawal can still
+	// arrive after it (0xFFFFFFFF is never a real source id).
+	bool IsIPv6SentinelParsingOn() const { return m_ipv6SentinelParsingOn; }
 #endif
 
 private:
@@ -99,6 +110,7 @@ private:
 	uint16 m_connectPort = 0;
 #ifdef ENABLE_IPV6
 	CNetworkAddress m_loginIPv6;
+	bool m_ipv6SentinelParsingOn = false;
 #endif
 };
 

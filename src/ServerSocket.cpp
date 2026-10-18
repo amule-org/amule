@@ -49,6 +49,9 @@
 #include "IPFilter.h"
 #include "NetworkFunctions.h" // Needed for IsGoodIP
 #include "GuiEvents.h"        // Needed for Notify_*
+#ifdef ENABLE_IPV6
+#include "AdvertisedIPv6.h" // Needed for AdvertisedIPv6ForPeers
+#endif
 #include <boost/system/error_code.hpp>
 
 // CServerSocket
@@ -399,6 +402,17 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 				theApp->OnlineSig(); // Added By Bouc7
 			}
 
+#ifdef ENABLE_IPV6
+			// SetConnectionState(CS_CONNECTED) above is what makes serverconnect's
+			// connectedsocket (and so GetCurrentServer()) point at this connection;
+			// UpdateAdvertisedIPv6() needs it.
+			if (cur_server->SupportsIPv6Updates()) {
+				AddDebugLogLineN(logServer, "OP_IDCHANGE: server accepts OP_IPV6_UPDATE");
+				// The address may have changed between the login and this IDCHANGE.
+				serverconnect->UpdateAdvertisedIPv6(AdvertisedIPv6ForPeers());
+			}
+#endif
+
 			theApp->ShowConnectionState();
 
 			AddLogLineN(CFormat(_("New clientid is %u")) % new_id);
@@ -436,7 +450,7 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 			if (CPartFile *file = theApp->downloadqueue->GetFileByID(fileid)) {
 				const CNetworkAddress *loginIPv6 = nullptr;
 #ifdef ENABLE_IPV6
-				if (GetLoginIPv6().IsPresent()) {
+				if (IsIPv6SentinelParsingOn()) {
 					loginIPv6 = &GetLoginIPv6();
 				}
 #endif

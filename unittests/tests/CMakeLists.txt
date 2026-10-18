@@ -1033,6 +1033,13 @@ add_test (NAME ServerLoginIPv6Test COMMAND ServerLoginIPv6Test)
 target_include_directories (ServerLoginIPv6Test PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries (ServerLoginIPv6Test muleunit mulecommon)
 
+# Whether to send OP_IPV6_UPDATE on a server connection and its 16-byte payload, without the
+# application.
+add_executable (ServerIPv6UpdateTest ServerIPv6UpdateTest.cpp)
+add_test (NAME ServerIPv6UpdateTest COMMAND ServerIPv6UpdateTest)
+target_include_directories (ServerIPv6UpdateTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries (ServerIPv6UpdateTest muleunit mulecommon)
+
 # Canonical address matching for upload-queue UDP lookups, without the application.
 add_executable (UploadQueueAddressPolicyTest
 	UploadQueueAddressPolicyTest.cpp

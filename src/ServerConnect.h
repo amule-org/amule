@@ -32,12 +32,18 @@
 #include "Timer.h"            // Needed for CTimer
 
 #include <map> // Needed for std::map
+#ifdef ENABLE_IPV6
+#include <optional> // Needed for std::optional
+#endif
 
 class CServerList;
 class CServerSocket;
 class CServer;
 class CPacket;
 class CServerUDPSocket;
+#ifdef ENABLE_IPV6
+class CNetworkAddress;
+#endif
 
 #define CS_FATALERROR -5
 #define CS_DISCONNECTED -4
@@ -137,6 +143,12 @@ public:
 	 * @param ip The found IP, or zero on error.
 	 */
 	void OnServerHostnameResolved(void *socket, uint32 ip);
+
+#ifdef ENABLE_IPV6
+	//! Sends OP_IPV6_UPDATE on the current server connection when DecideServerIPv6Update() says
+	//! to, and keeps CServerSocket::GetLoginIPv6() in step with what was actually sent.
+	void UpdateAdvertisedIPv6(const std::optional<CNetworkAddress> &advertised);
+#endif
 
 private:
 	bool connecting;
