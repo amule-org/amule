@@ -38,6 +38,12 @@ const CPath &TestFile()
 	static const CPath path("FileAutoCloseTest.dat");
 	return path;
 }
+
+const CPath &RenamedFile()
+{
+	static const CPath path("FileAutoCloseTest.renamed");
+	return path;
+}
 } // namespace
 
 DECLARE(CFileAutoClose);
@@ -52,6 +58,9 @@ void tearDown()
 {
 	if (TestFile().FileExists()) {
 		CPath::RemoveFile(TestFile());
+	}
+	if (RenamedFile().FileExists()) {
+		CPath::RemoveFile(RenamedFile());
 	}
 }
 END_DECLARE;
@@ -129,5 +138,22 @@ TEST(CFileAutoClose, KnownSizeOnlyGrowsWhileAWriterExtends)
 	ASSERT_TRUE(monotonic);
 	ASSERT_EQUALS(blocks * blockSize, file.GetKnownSize());
 	ASSERT_EQUALS(file.GetLength(), file.GetKnownSize());
+	ASSERT_TRUE(file.Close());
+}
+
+TEST(CFileAutoClose, ASharedDeleteReadHandleLetsTheFileMove)
+{
+	// The upload thread keeps such a handle open between blocks.
+	CFileAutoClose file;
+	ASSERT_TRUE(file.Open(TestFile(), CFile::read, true));
+
+	ASSERT_TRUE(CPath::RenameFile(TestFile(), RenamedFile()));
+	// wxRenameFile falls back to a copy when the rename fails, so check the original is gone.
+	ASSERT_FALSE(TestFile().FileExists());
+	char got[10] = {};
+	file.ReadAt(got, 0, sizeof(got));
+	ASSERT_EQUALS('a', got[0]);
+
+	ASSERT_TRUE(CPath::RemoveFile(RenamedFile()));
 	ASSERT_TRUE(file.Close());
 }
