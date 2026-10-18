@@ -1939,7 +1939,7 @@ void CPartFile::AddSources(CMemFile &sources,
 	uint16 serverport,
 	unsigned origin,
 	bool bWithObfuscationAndHash,
-	bool weAdvertisedIPv6)
+	const CNetworkAddress *loginIPv6)
 {
 	uint8 count = sources.ReadUInt8();
 	uint8 debug_lowiddropped = 0;
@@ -1953,12 +1953,22 @@ void CPartFile::AddSources(CMemFile &sources,
 		return;
 	}
 
+	const auto stopAtSourceCap = [&](int recordIndex) {
+		AddDebugLogLineN(logPartFile, "Consuming a packet because of max sources reached");
+		// Since we may receive multiple search source UDP results we have to "consume" all
+		// data of that packet This '+1' is added because 'i' counts from 0.
+		sources.Seek((count - (recordIndex + 1)) * (4 + 2), wxFromCurrent);
+		if (GetKadFileSearchID()) {
+			Kademlia::CSearchManager::StopSearch(GetKadFileSearchID(), false);
+		}
+	};
+
 	for (int i = 0; i != count; ++i) {
 		const SServerSourceRecordParse parsed =
 			ParseServerSourceRecord(sources.GetRawBuffer() + sources.GetPosition(),
 				static_cast<std::size_t>(sources.GetAvailable()),
 				bWithObfuscationAndHash,
-				weAdvertisedIPv6);
+				loginIPv6 != nullptr);
 		if (!parsed.ok) {
 			throw CEOFException("Truncated source record in OP_FOUNDSOURCES");
 		}
@@ -1966,30 +1976,33 @@ void CPartFile::AddSources(CMemFile &sources,
 
 #ifdef ENABLE_IPV6
 		if (parsed.record.isIPv6) {
-			if (thePrefs::GetMaxSourcePerFile() > GetSourceCount()) {
-				SServerIPv6SourceFacts facts;
-				facts.address = parsed.record.ipv6Address;
-				facts.ipv6Built = true;
-				facts.familyPermitted =
-					AddressFamilyPolicy::Permits(parsed.record.ipv6Address);
-				facts.proxyEnabled = thePrefs::GetProxyData()->m_proxyEnable;
-				if (ShouldContactServerSourceOverIPv6(facts) &&
-					!theApp->ipfilter->IsFiltered(parsed.record.ipv6Address)) {
-					CUpDownClient *newsource = new CUpDownClient(
-						parsed.record.port, 1, 0, 0, this, false, true);
-					newsource->SetSourceFrom((ESourceFrom)origin);
-					newsource->SetUserAddress(parsed.record.ipv6Address);
-					newsource->SetConnectOptions(parsed.record.cryptOptions);
-					if (parsed.record.hasUserHash) {
-						newsource->SetUserHash(parsed.record.userHash);
-					}
-					AddDebugLogLineN(logPartFile,
-						CFormat("Adding an IPv6 source from a server sentinel "
-							"record: [%s]:%u") %
-							parsed.record.ipv6Address.ToWxString() %
-							parsed.record.port);
-					theApp->downloadqueue->CheckAndAddSource(this, newsource);
+			if (thePrefs::GetMaxSourcePerFile() <= GetSourceCount()) {
+				stopAtSourceCap(i);
+				break;
+			}
+			SServerIPv6SourceFacts facts;
+			facts.address = parsed.record.ipv6Address;
+			facts.port = parsed.record.port;
+			facts.ownAddress = *loginIPv6;
+			facts.ownPort = thePrefs::GetPort();
+			facts.ipv6Built = true;
+			facts.familyPermitted = AddressFamilyPolicy::Permits(parsed.record.ipv6Address);
+			facts.proxyEnabled = thePrefs::GetProxyData()->m_proxyEnable;
+			if (ShouldContactServerSourceOverIPv6(facts) &&
+				!theApp->ipfilter->IsFiltered(parsed.record.ipv6Address)) {
+				CUpDownClient *newsource =
+					new CUpDownClient(parsed.record.port, 1, 0, 0, this, false, true);
+				newsource->SetSourceFrom((ESourceFrom)origin);
+				newsource->SetUserAddress(parsed.record.ipv6Address);
+				newsource->SetConnectOptions(parsed.record.cryptOptions, true, false);
+				if (parsed.record.hasUserHash) {
+					newsource->SetUserHash(parsed.record.userHash);
 				}
+				AddDebugLogLineN(logPartFile,
+					CFormat("Adding an IPv6 source from a server sentinel record: "
+						"[%s]:%u") %
+						parsed.record.ipv6Address.ToWxString() % parsed.record.port);
+				theApp->downloadqueue->CheckAndAddSource(this, newsource);
 			}
 			continue;
 		}
@@ -2051,13 +2064,7 @@ void CPartFile::AddSources(CMemFile &sources,
 
 			theApp->downloadqueue->CheckAndAddSource(this, newsource);
 		} else {
-			AddDebugLogLineN(logPartFile, "Consuming a packet because of max sources reached");
-			// Since we may receive multiple search source UDP results we have to "consume" all
-			// data of that packet This '+1' is added because 'i' counts from 0.
-			sources.Seek((count - (i + 1)) * (4 + 2), wxFromCurrent);
-			if (GetKadFileSearchID()) {
-				Kademlia::CSearchManager::StopSearch(GetKadFileSearchID(), false);
-			}
+			stopAtSourceCap(i);
 			break;
 		}
 	}

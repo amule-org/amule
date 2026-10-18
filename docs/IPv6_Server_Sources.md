@@ -30,10 +30,10 @@ or neither:
 The login tag count is adjusted by exactly one (`CT_MOD_IP_V6`); the `0x1000`
 bit is carried inside the already-counted `CT_SERVER_FLAGS` tag. The decision
 is made once, in `DecideServerLoginIPv6()` (`src/ServerLoginIPv6.h`), so the
-tag and the bit cannot drift apart. Whether this login advertised IPv6 is
-remembered per server connection (`CServerSocket::GetAdvertisedIPv6InLogin()`)
-because it is also the condition under which a sentinel source record (below)
-is expected.
+tag and the bit cannot drift apart. The address this login advertised is
+remembered per server connection (`CServerSocket::GetLoginIPv6()`), because
+it is also the condition under which a sentinel source record (below) is
+expected, and it identifies our own record.
 
 ## Server flag: `0x4000`
 
@@ -64,8 +64,7 @@ ordinary (and unusable, since `255.255.255.255` is never a real peer) userid,
 exactly as before this extension existed. Per the upstream reference
 (`ed2k-server`), IPv6 records are published only for sources that are LowID on
 IPv4; aMule's server UDP path is IPv4-only, so it cannot carry this sentinel at
-all (`CPartFile::AddSources()`'s `weAdvertisedIPv6` parameter defaults to
-`false` there).
+all (`CPartFile::AddSources()`'s `loginIPv6` parameter is null there).
 
 The record parser is `ParseServerSourceRecord()`
 (`src/ServerSourceRecords.h`), a pure function over the raw payload bytes that
@@ -80,8 +79,22 @@ IPv6 contact goes through (`PeerAddressing::IsUsableTagIdentity`,
 `DecideContactRoute`, the address-family policy, the proxy check and the IP
 filter -- see `ShouldContactServerSourceOverIPv6()` in
 `src/ServerIPv6SourcePolicy.h`). Unlike a Kad source, it is dialled whatever
-our own client ID is: the sentinel record carries no LowID, so there is no
-server callback path an IPv6 dial could cost us.
+our own client ID is, because the record carries no LowID to call back. A
+sentinel naming our own advertised address and TCP port is skipped: a server
+need not drop the requester's own record, and a plain `OP_FOUNDSOURCES`
+carries no user hash to recognise it by.
+
+## Trade-off for a HighID client
+
+For a requester that advertised IPv6, ed2k-server sends a LowID source that
+has a publishable IPv6 only as a sentinel, never as its LowID. Without this
+extension, a HighID aMule reaches such a source through a server callback;
+with it, only by dialling the IPv6. eMuleAI sends `CT_MOD_IP_V6` whenever it
+holds a public IPv6, whether or not it accepts inbound IPv6, and many home
+routers block inbound IPv6. So `AdvertiseIPv6=1` gains sources while we are
+LowID, and can lose some while we are HighID. A server-side change to send the
+sentinel only to LowID requesters is proposed in
+[andrey23127/ed2k-server#33](https://github.com/andrey23127/ed2k-server/issues/33).
 
 ## Scope
 
@@ -89,3 +102,9 @@ Out of scope: connecting to a server over an IPv6 transport; `OP_SERVERIDENT`
 `ST_IPV6` / `ST_IPV6_STATUS`; acting on the server's `0x4000` bit beyond
 logging it; any change to the UDP ping/search/source path, which stays IPv4
 only.
+
+Limit: the server keeps the address from our login until the next login. If
+our advertised IPv6 changes, or advertising stops (a corroboration veto or
+the opt-out), the server keeps publishing the old address for the rest of the
+session. An in-session update is proposed in
+[andrey23127/ed2k-server#34](https://github.com/andrey23127/ed2k-server/issues/34).

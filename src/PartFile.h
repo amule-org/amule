@@ -42,6 +42,7 @@ class CSearchFile;
 class CMemFile;
 class CFileDataIO;
 class CED2KFileLink;
+class CNetworkAddress;
 struct CPartMetGen;
 
 // #define BUFFER_SIZE_LIMIT	500000 // Max bytes before forcing a flush
@@ -172,14 +173,14 @@ public:
 		uint16 serverport,
 		uint8 *pdebug_lowiddropped = NULL,
 		bool ed2kID = true);
-	// weAdvertisedIPv6: our login advertised IPv6, so sentinel records may appear. Server UDP
-	// answers never carry one: aMule's server UDP is IPv4 only.
+	// loginIPv6: the IPv6 our login advertised, if any; only then may sentinel records appear.
+	// Server UDP answers never carry one: aMule's server UDP is IPv4 only.
 	void AddSources(CMemFile &sources,
 		uint32 serverip,
 		uint16 serverport,
 		unsigned origin,
 		bool bWithObfuscationAndHash,
-		bool weAdvertisedIPv6 = false);
+		const CNetworkAddress *loginIPv6 = nullptr);
 #ifdef CLIENT_GUI
 	uint8 GetStatus() const { return status; }
 	uint8 GetStatus(bool /*ignorepause = false*/) const { return status; }

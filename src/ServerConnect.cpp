@@ -267,7 +267,7 @@ void CServerConnect::ConnectionEstablished(CServerSocket *sender)
 		if (ipv6Login.advertise) {
 			tagcount++;
 		}
-		sender->SetAdvertisedIPv6InLogin(ipv6Login.advertise);
+		sender->SetLoginIPv6(ipv6Login.advertise ? ipv6Login.address : CNetworkAddress::Absent());
 #endif
 		data.WriteUInt32(tagcount);
 

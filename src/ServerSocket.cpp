@@ -434,20 +434,18 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 			CMemFile sources(packet, size);
 			CMD4Hash fileid = sources.ReadHash();
 			if (CPartFile *file = theApp->downloadqueue->GetFileByID(fileid)) {
+				const CNetworkAddress *loginIPv6 = nullptr;
 #ifdef ENABLE_IPV6
+				if (GetLoginIPv6().IsPresent()) {
+					loginIPv6 = &GetLoginIPv6();
+				}
+#endif
 				file->AddSources(sources,
 					cur_server->GetIP(),
 					cur_server->GetPort(),
 					SF_LOCAL_SERVER,
 					(opcode == OP_FOUNDSOURCES_OBFU),
-					GetAdvertisedIPv6InLogin());
-#else
-				file->AddSources(sources,
-					cur_server->GetIP(),
-					cur_server->GetPort(),
-					SF_LOCAL_SERVER,
-					(opcode == OP_FOUNDSOURCES_OBFU));
-#endif
+					loginIPv6);
 			} else {
 				AddDebugLogLineN(
 					logServer, "Sources received for unknown file: " + fileid.Encode());

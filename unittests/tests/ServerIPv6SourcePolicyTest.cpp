@@ -36,6 +36,9 @@ SServerIPv6SourceFacts ContactableOverIPv6()
 {
 	SServerIPv6SourceFacts facts;
 	facts.address = CNetworkAddress::FromString("2001:4860:4860::8888");
+	facts.port = 4662;
+	facts.ownAddress = CNetworkAddress::FromString("2a00:1450:4001:80b::a");
+	facts.ownPort = 4662;
 	facts.ipv6Built = true;
 	facts.familyPermitted = true;
 	return facts;
@@ -66,6 +69,24 @@ TEST(ServerIPv6SourcePolicy, AnAddressThatNamesNoRemotePeerIsNotContacted)
 	SServerIPv6SourceFacts absent = ContactableOverIPv6();
 	absent.address = CNetworkAddress::Absent();
 	ASSERT_FALSE(ShouldContactServerSourceOverIPv6(absent));
+}
+
+// A server need not drop the requester's own record, and a plain OP_FOUNDSOURCES carries no user
+// hash for CheckAndAddSource() to recognise us by.
+TEST(ServerIPv6SourcePolicy, OurOwnAddressAndPortIsNotContacted)
+{
+	SServerIPv6SourceFacts ourselves = ContactableOverIPv6();
+	ourselves.address = ourselves.ownAddress;
+	ASSERT_FALSE(ShouldContactServerSourceOverIPv6(ourselves));
+
+	SServerIPv6SourceFacts otherPort = ContactableOverIPv6();
+	otherPort.address = otherPort.ownAddress;
+	otherPort.port = 4663;
+	ASSERT_TRUE(ShouldContactServerSourceOverIPv6(otherPort));
+
+	SServerIPv6SourceFacts otherAddress = ContactableOverIPv6();
+	ASSERT_TRUE(otherAddress.port == otherAddress.ownPort);
+	ASSERT_TRUE(ShouldContactServerSourceOverIPv6(otherAddress));
 }
 
 TEST(ServerIPv6SourcePolicy, EachMissingDialPermissionRefusesTheContact)
