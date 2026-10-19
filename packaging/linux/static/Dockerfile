@@ -53,6 +53,10 @@ RUN apk add --no-cache \
         libmaxminddb-dev libmaxminddb-static \
         gettext gettext-dev gettext-static
 
+# GitHub release downloads now and then fail with a 5xx; retry them.
+RUN printf 'tries = 4\nwaitretry = 10\nretry_on_http_error = 408,429,500,502,503,504\n' > /etc/wgetrc-retry
+ENV WGETRC=/etc/wgetrc-retry
+
 # --- Crypto++ (static libcryptopp.a) ---
 RUN git clone --depth 1 --branch "CRYPTOPP_${CRYPTOPP_TAG_SUFFIX}" \
         https://github.com/weidai11/cryptopp.git /tmp/cryptopp \

@@ -84,6 +84,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+# GitHub release downloads now and then fail with a 5xx; retry them.
+RUN printf 'tries = 4\nwaitretry = 10\nretry_on_http_error = 408,429,500,502,503,504\n' > /etc/wgetrc-retry
+ENV WGETRC=/etc/wgetrc-retry
+
 # libupnp / pupnp from source: Ubuntu 22.04 only packages the ancient 1.8.x
 # line, so build the pinned 22.x (shared, so linuxdeploy bundles the .so into
 # the AppImage). pupnp 22.x is CMake-only. CMAKE_INSTALL_LIBDIR=lib keeps
