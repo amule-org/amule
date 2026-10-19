@@ -23,23 +23,24 @@ listener, and no proxy) adds a `CT_MOD_IP_V6` (`0xAE`) tag to
 -- the same tag and encoding the hello packet already sends to peers
 (`src/BaseClient.cpp`, `SendHelloTypePacket`). The tag alone tells the server
 that we parse IPv6 source records; `ed2k-server` keys on nothing else. The
-decision is made in `DecideServerLoginIPv6()` (`src/ServerLoginIPv6.h`).
+decision is made in `DecideServerLoginIPv6()` (`src/ServerLoginIPv6.h`). The
+address this login advertised is remembered per server connection
+(`CServerSocket::GetLoginIPv6()`), because it is also the condition under
+which a sentinel source record (below) is expected, and it identifies our own
+record.
 
 No `CT_SERVER_FLAGS` bit is set. `0x1000`, once specified for this, is
 Lugdunum's NAT callback capability: Lugdunum answers a client that sets it
 with an odd LowID, a longer `OP_IDCHANGE` and callback notices, and NeoLoader
 reads it the same way. emule-qt withdrew it from the IPv6 extension for that
-reason. The address this login advertised is
-remembered per server connection (`CServerSocket::GetLoginIPv6()`), because
-it is also the condition under which a sentinel source record (below) is
-expected, and it identifies our own record.
+reason.
 
 ## Server flags: `0x4000` and `0x8000`
 
 A server that speaks this extension sets bit `0x4000` in the TCP flags word of
 its `OP_IDCHANGE` reply (`src/include/protocol/ed2k/Client2Server/TCP.h`,
-`SRV_TCPFLG_IPV6`). aMule recognises and logs it
-(`CServer::SupportsIPv6Sources()`); it is not currently acted on beyond that.
+`SRV_TCPFLG_IPV6`). aMule logs it (`CServer::SupportsIPv6Sources()`), and
+requires it before trusting `0x8000` (below).
 
 A server that also sets bit `0x8000` (`SRV_TCPFLG_IPV6_UPDATE`) additionally
 accepts `OP_IPV6_UPDATE` on this connection -- see the next section. `0x8000`
