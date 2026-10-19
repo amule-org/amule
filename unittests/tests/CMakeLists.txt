@@ -319,7 +319,7 @@ target_link_libraries (NatRendezvousProtocolTest muleunit ${Boost_LIBRARIES})
 
 # Lugdunum NAT callback codecs and the OP_IDCHANGE fields, without the application.
 add_executable (LugdunumNatTraversalTest LugdunumNatTraversalTest.cpp)
-target_include_directories (LugdunumNatTraversalTest PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_BINARY_DIR})
+target_include_directories (LugdunumNatTraversalTest PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include ${CMAKE_BINARY_DIR})
 target_compile_features (LugdunumNatTraversalTest PRIVATE cxx_std_17)
 target_compile_definitions (LugdunumNatTraversalTest PRIVATE ENABLE_NATT_SERVER_COORDINATION)
 target_link_libraries (LugdunumNatTraversalTest muleunit mulecommon)

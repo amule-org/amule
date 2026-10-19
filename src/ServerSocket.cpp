@@ -360,7 +360,8 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 				const uint16 seenTcpPort =
 					idChange.hasYourPort ? static_cast<uint16>(idChange.yourPort) : 0;
 				cur_server->SetSeenTcpPort(seenTcpPort);
-				cur_server->SetLugdunumNatCallbackActive(idChange.hasYourPort);
+				cur_server->SetLugdunumNatCallbackActive(
+					LugdunumNatTraversal::IsNatCallbackActive(idChange));
 				if (idChange.hasYourPort) {
 					AddDebugLogLineN(logServer,
 						CFormat("OP_IDCHANGE: server sees our TCP port as %u") %

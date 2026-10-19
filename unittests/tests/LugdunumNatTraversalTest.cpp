@@ -129,6 +129,59 @@ TEST(LugdunumNatTraversal, ParsesLiveIdChangeVectors)
 	ASSERT_EQUALS((std::uint32_t)57428, c.yourPort);
 }
 
+// Active needs both the 24-byte form and the 0x1000 flag; they arrive in the same packet.
+TEST(LugdunumNatTraversal, CallbackIsActiveOnlyWithTheLongFormAndTheFlag)
+{
+	const std::array<std::uint8_t, 24> mazingaB{ { 0x37,
+		0x6b,
+		0xa1,
+		0x00,
+		0xf9,
+		0x17,
+		0x00,
+		0x00,
+		0x88,
+		0x10,
+		0x00,
+		0x00,
+		0x4f,
+		0x75,
+		0x1c,
+		0x71,
+		0x88,
+		0x10,
+		0x00,
+		0x00,
+		0x85,
+		0xdb,
+		0x00,
+		0x00 } };
+	ASSERT_TRUE(IsNatCallbackActive(ParseIdChangeFields(mazingaB.data(), mazingaB.size())));
+
+	const std::array<std::uint8_t, 16> mazingaA{ { 0xa0,
+		0x69,
+		0xa1,
+		0x00,
+		0xf9,
+		0x17,
+		0x00,
+		0x00,
+		0x88,
+		0x10,
+		0x00,
+		0x00,
+		0x4f,
+		0x75,
+		0x1c,
+		0x71 } };
+	ASSERT_FALSE(IsNatCallbackActive(ParseIdChangeFields(mazingaA.data(), mazingaA.size())));
+
+	std::array<std::uint8_t, 24> longFormWithoutFlag = mazingaB;
+	longFormWithoutFlag[5] = 0x07; // flags 0x17F9 -> 0x07F9
+	ASSERT_FALSE(IsNatCallbackActive(
+		ParseIdChangeFields(longFormWithoutFlag.data(), longFormWithoutFlag.size())));
+}
+
 TEST(LugdunumNatTraversal, HandlesIdChangeBoundarySizesAndLeavesExistingFieldsUnchanged)
 {
 	const std::array<std::uint8_t, 24> full{ { 0x37,

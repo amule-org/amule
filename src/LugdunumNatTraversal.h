@@ -30,7 +30,8 @@
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 
 #include "ArchSpecific.h"
-#include "NetworkFunctions.h" // Needed for IsLowID
+#include "NetworkFunctions.h"                // Needed for IsLowID
+#include <protocol/ed2k/Client2Server/TCP.h> // Needed for SRV_TCPFLG_NATTRAVERSAL
 
 #include <algorithm>
 #include <array>
@@ -87,6 +88,13 @@ inline IdChangeFields ParseIdChangeFields(const std::uint8_t *data, std::size_t 
 		}
 	}
 	return fields;
+}
+
+// The NAT callback counts as active for this session only when both the 24-byte OP_IDCHANGE
+// answering our opt-in and the server's 0x1000 TCP flag are present.
+inline bool IsNatCallbackActive(const IdChangeFields &fields)
+{
+	return fields.hasYourPort && fields.hasTcpFlags && (fields.tcpFlags & SRV_TCPFLG_NATTRAVERSAL) != 0;
 }
 
 struct CallbackRequest

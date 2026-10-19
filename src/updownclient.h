@@ -320,9 +320,9 @@ private:
 	EContactRoute ContactRoute() const;
 	SContactFacts ContactFactsFor(const CNetworkAddress &address) const;
 #ifdef ENABLE_NATT_SERVER_COORDINATION
-	//! Sends OP_NAT_CALLBACKREQUEST for this LowID source if the Lugdunum preconditions hold
-	//! (S6.3); a no-op otherwise. Called once per reask attempt from TryToContact's LowID->LowID
-	//! decline path.
+	//! Sends OP_NAT_CALLBACKREQUEST for this LowID source when the Lugdunum preconditions hold.
+	//! Called from TryToContact's LowID->LowID decline, so at most once per source: a
+	//! DS_LOWTOLOWIP source is not asked again.
 	void TrySendLugdunumNatCallbackRequest() const;
 #endif
 

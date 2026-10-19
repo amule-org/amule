@@ -164,18 +164,23 @@ aMule implements, only under `ENABLE_NATT_SERVER_COORDINATION` (**experimental**
 default; default and `ENABLE_IPV6` builds are unaffected):
 
 - login opt-in: `CT_SERVER_FLAGS` ORs in `SRVCAP_NATTRAVERSAL` (`ServerConnect.cpp`);
-- callback-capable state for the session: `CServer::SupportsLugdunumNatCallback()` is **not**
-  the TCP flag -- it is a separate flag set only when the 24-byte `OP_IDCHANGE` answering our
-  opt-in actually arrived (`CServer::SetLugdunumCallbackCapable()`, driven by
-  `IdChangeFields::hasYourPort`). The TCP flag alone proves nothing (see above);
+- callback-active state for the session: `CServer::IsLugdunumNatCallbackActive()`, set only
+  when one `OP_IDCHANGE` both comes in the 24-byte form and carries the `0x1000` TCP flag
+  (`LugdunumNatTraversal::IsNatCallbackActive()`). `CServer::SupportsLugdunumNatCallback()`
+  still reports the flag alone, which proves nothing by itself (see above);
+- keeping LowID sources from a callback-active server: `CPartFile::AddSources()` passes
+  `keepLowIdSource` to `CanAddSource()`, which otherwise drops every LowID source while we are
+  LowID. As in NeoMule (`CanLow2Low()`), an opted-in server sends only LowID sources it can
+  call back, and source records carry no NatT flag of their own
+  (`LugdunumNatTraversal::ShouldKeepLowIdServerSource()`);
 - sending `OP_NAT_CALLBACKREQUEST` (`0xA6`): when we are LowID, the source we want is a LowID
-  on our current, callback-capable server, and the server-way UDP crypto preconditions hold
+  on our current, callback-active server, and the server-way UDP crypto preconditions hold
   (`thePrefs::IsServerCryptLayerUDPEnabled() && GetServerKeyUDP() != 0 &&
   SupportsObfuscationUDP()`), `BaseClient.cpp` sends one request from the client UDP socket,
   encrypted "the server way" (`CEncryptedDatagramSocket::EncryptSendServer`), to the server's
-  `GetObfuscationPortUDP()`. Hooked at the existing LowID-to-LowID decline in `TryToContact()`,
-  gated on `GetDownloadState() == DS_CONNECTING` so it fires once per reask attempt without a
-  new timer;
+  `GetObfuscationPortUDP()`. It is hooked at the LowID-to-LowID decline in `TryToContact()`, so
+  it is sent at most once per source: a `DS_LOWTOLOWIP` source is not asked again. Requests are
+  not paced across sources; NeoMule does not pace them either (each waits 3 s for a ping first);
 - receiving `0xA7` server-way on the client UDP socket: `ClientUDPSocket.cpp` recognises a
   same-IP, callback-capable datagram as worth a `DecryptReceivedServer` attempt, picking the
   base key the same way `CServerUDPSocket::OnPacketReceived` does -- a pending crypt-ping
@@ -188,9 +193,7 @@ default; default and `ENABLE_IPV6` builds are unaffected):
   confirmed against NeoMule's `opcodes.h` (`<IP 4><UDP port 2><requester ID 4>`), so it is read
   as a 2-byte uint16.
 
-Not implemented: any peer tunnel or punch (the protocol has none), and keeping a LowID source a
-server reports over this callback instead of dropping it as LowID-while-firewalled
-(`CPartFile::CanAddSource`/`AddSources` in `PartFile.cpp`, outside this change's edit surface --
-see NeoMule's `CanLow2Low()`/`PartFile.cpp:3765-3864` for the reference behaviour). The pure
-decision for that gate (`LugdunumNatTraversal::ShouldKeepLowIdServerSource`) exists and is
-tested, but is not wired into `CanAddSource` yet.
+Not implemented: answering a forwarded callback, any hole punch, and any peer tunnel. Until
+then a server may forward our request to a peer that tries to punch to us with no answer, and
+the kept LowID sources cannot be contacted but count toward the per-file source limit. The
+switch must therefore stay off in default and packaged builds.
