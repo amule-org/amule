@@ -144,7 +144,11 @@ server (eMule wiki, "NatT protocol", section "eServer (Lugdunum)"). A client
 opts in with `CT_SERVER_FLAGS` bit `0x1000` (`SRVCAP_NATTRAVERSAL`); the
 server then assigns an odd LowID and appends a "your port" field to
 `OP_IDCHANGE`. The server announces support with TCP flag `0x1000`
-(`SRV_TCPFLG_NATTRAVERSAL`) and UDP flag `0x00010000`.
+(`SRV_TCPFLG_NATTRAVERSAL`). That bit alone is not proof: another server uses
+`0x1000`/`0x2000` unofficially in its flags, so the 24-byte `OP_IDCHANGE`
+answering an opt-in is the stronger signal. The wiki also lists a UDP flag,
+`0x00010000`, but public Lugdunum servers do not set it (they report `0x17FB`),
+and eNode uses that bit for meta search; aMule does not define it.
 
 | Opcode | Value | Direction | Payload |
 | --- | --- | --- | --- |
@@ -156,10 +160,10 @@ server then assigns an odd LowID and appends a "your port" field to
 `<ID 4><flags 4><server TCP port 4><reported IP 4><obfuscation TCP port 4><your port 4>`.
 For a LowID, "your port" is our TCP port as the server sees it, after any NAT.
 
-aMule implements:
+aMule implements, only under `ENABLE_NATT_SERVER_COORDINATION`:
 
-- recognising and logging the server's TCP flag (`CServer::SupportsNatTraversal()`);
-- reading "your port" (`CServer::GetSeenTcpPort()`);
+- recognising and logging the server's TCP flag (`CServer::SupportsLugdunumNatCallback()`);
+- reading "your port" for the current session (`CServer::GetSeenTcpPort()`, 0 when absent);
 - pure codecs for the three opcodes (`src/LugdunumNatTraversal.h`). The wiki gives the
   seen UDP port as `[uint16 4]`; it is read as a 2-byte uint16, not yet confirmed by
   a capture.

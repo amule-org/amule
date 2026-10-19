@@ -47,9 +47,11 @@
 #include "Logger.h"
 #include <common/Format.h>
 #include "IPFilter.h"
-#include "NetworkFunctions.h"     // Needed for IsGoodIP
-#include "GuiEvents.h"            // Needed for Notify_*
+#include "NetworkFunctions.h" // Needed for IsGoodIP
+#include "GuiEvents.h"        // Needed for Notify_*
+#ifdef ENABLE_NATT_SERVER_COORDINATION
 #include "LugdunumNatTraversal.h" // Needed for ParseIdChangeFields
+#endif
 #ifdef ENABLE_IPV6
 #include "AdvertisedIPv6.h" // Needed for AdvertisedIPv6ForPeers
 #endif
@@ -299,10 +301,13 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 						"OP_IDCHANGE: server speaks the IPv6 source extension");
 				}
 #endif
-				if (cur_server->SupportsNatTraversal()) {
+#ifdef ENABLE_NATT_SERVER_COORDINATION
+				if (cur_server->SupportsLugdunumNatCallback()) {
 					AddDebugLogLineN(logServer,
-						"OP_IDCHANGE: server supports Lugdunum NAT traversal");
+						"OP_IDCHANGE: server flags include Lugdunum's NAT callback "
+						"bit");
 				}
+#endif
 				// copy TCP flags into the server in the server list
 				if (pServer) {
 					pServer->SetTCPFlags(cur_server->GetTCPFlags());
@@ -347,17 +352,20 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 				}
 			}
 
-			const LugdunumNatTraversal::IdChangeFields idChange =
-				LugdunumNatTraversal::ParseIdChangeFields(packet, size);
-			if (idChange.hasYourPort && cur_server != nullptr) {
-				const uint16 seenTcpPort = static_cast<uint16>(idChange.yourPort);
+#ifdef ENABLE_NATT_SERVER_COORDINATION
+			if (cur_server != nullptr) {
+				const LugdunumNatTraversal::IdChangeFields idChange =
+					LugdunumNatTraversal::ParseIdChangeFields(packet, size);
+				const uint16 seenTcpPort =
+					idChange.hasYourPort ? static_cast<uint16>(idChange.yourPort) : 0;
 				cur_server->SetSeenTcpPort(seenTcpPort);
-				if (pServer != nullptr) {
-					pServer->SetSeenTcpPort(seenTcpPort);
+				if (idChange.hasYourPort) {
+					AddDebugLogLineN(logServer,
+						CFormat("OP_IDCHANGE: server sees our TCP port as %u") %
+							seenTcpPort);
 				}
-				AddDebugLogLineN(logServer,
-					CFormat("OP_IDCHANGE: server sees our TCP port as %u") % seenTcpPort);
 			}
+#endif
 
 			if (new_id == 0) {
 				uint8 state = thePrefs::GetSmartIdState();

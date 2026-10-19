@@ -170,12 +170,15 @@ public:
 	{
 		return (GetTCPFlags() & SRV_TCPFLG_TCPOBFUSCATION) != 0;
 	} // mapped to TCPFLAG_TCPOBFU
-	// Lugdunum's NAT callback (eserver 17.15+). Recognised only: aMule does not opt in.
-	bool SupportsNatTraversal() const { return (GetTCPFlags() & SRV_TCPFLG_NATTRAVERSAL) != 0; }
-	// OP_IDCHANGE's optional 6th field: on a LowID, the TCP port of this client as seen by the
-	// server (NAT-mapped if behind a NAT device); on a HighID, the client's own listening port.
+#ifdef ENABLE_NATT_SERVER_COORDINATION
+	// Lugdunum's NAT callback (eserver 17.15+). The bit alone is not proof: other servers use 0x1000
+	// unofficially in their flags; the 24-byte OP_IDCHANGE answering an opt-in is the real signal.
+	bool SupportsLugdunumNatCallback() const { return (GetTCPFlags() & SRV_TCPFLG_NATTRAVERSAL) != 0; }
+	// OP_IDCHANGE's optional 6th field, for this session only (0 when absent): on a LowID, our TCP
+	// port as the server sees it, NAT-mapped; on a HighID, our own listening port.
 	uint16 GetSeenTcpPort() const { return m_nSeenTcpPort; }
 	void SetSeenTcpPort(uint16 nPort) { m_nSeenTcpPort = nPort; }
+#endif
 #ifdef ENABLE_IPV6
 	bool SupportsIPv6Sources() const { return (GetTCPFlags() & SRV_TCPFLG_IPV6) != 0; }
 	// Whether this connection may receive OP_IPV6_UPDATE: set together with SRV_TCPFLG_IPV6.
@@ -232,7 +235,9 @@ private:
 	uint32 m_dwIPServerKeyUDP;
 	uint16 m_nObfuscationPortTCP;
 	uint16 m_nObfuscationPortUDP;
-	uint16 m_nSeenTcpPort;
+#ifdef ENABLE_NATT_SERVER_COORDINATION
+	uint16 m_nSeenTcpPort = 0;
+#endif
 
 	time_t m_dwRealLastPingedTime;
 

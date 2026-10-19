@@ -26,6 +26,8 @@
 #ifndef AMULE_LUGDUNUM_NAT_TRAVERSAL_H
 #define AMULE_LUGDUNUM_NAT_TRAVERSAL_H
 
+#ifdef ENABLE_NATT_SERVER_COORDINATION
+
 #include "ArchSpecific.h"
 
 #include <algorithm>
@@ -135,5 +137,7 @@ inline ForwardedCallback ParseForwardedCallback(const std::uint8_t *data, std::s
 }
 
 } // namespace LugdunumNatTraversal
+
+#endif // ENABLE_NATT_SERVER_COORDINATION
 
 #endif // AMULE_LUGDUNUM_NAT_TRAVERSAL_H

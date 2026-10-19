@@ -72,7 +72,7 @@ enum OP_ClientToServerTCP
 #define SRV_TCPFLG_TYPETAGINTEGER 0x00000080
 #define SRV_TCPFLG_LARGEFILES 0x00000100
 #define SRV_TCPFLG_TCPOBFUSCATION 0x00000400
-// Server supports Lugdunum's NAT callback (eserver 17.15+).
+// Lugdunum's NAT callback (eserver 17.15+); other servers use this bit unofficially too.
 #define SRV_TCPFLG_NATTRAVERSAL 0x00001000
 // Server speaks the IPv6 source extension.
 #define SRV_TCPFLG_IPV6 0x00004000
