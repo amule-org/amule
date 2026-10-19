@@ -50,6 +50,7 @@
 #include "Logger.h"
 #include "kademlia/kademlia/Kademlia.h"
 #include "kademlia/utils/KadUDPKey.h"
+#include "KadBuddyIdLayout.h" // Needed for MatchesBuddyIdEitherLayout (#1835)
 #include <zlib.h>
 #include "EncryptedDatagramSocket.h"
 #ifdef AMULE_UTP_TRANSPORT
@@ -529,7 +530,7 @@ void CClientUDPSocket::ProcessPacket(uint8_t *packet, int16 size, int8 opcode, u
 			if (size < 17 || buddy->GetSocket() == NULL) {
 				break;
 			}
-			if (!md4cmp(packet, buddy->GetBuddyID())) {
+			if (Kademlia::MatchesBuddyIdEitherLayout(packet, buddy->GetBuddyID())) {
 				/* The packet starts with a 16-byte key for the buddy. It is currently
 				   unused, so the transformation discards the first 10 bytes below and
 				   overwrites the other 6 with ip/port. */

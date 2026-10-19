@@ -55,6 +55,7 @@
 #include "MemFile.h"                    // Needed for CMemFile
 #include "kademlia/kademlia/Kademlia.h" // Needed for CKademlia::Kademlia
 #include "kademlia/kademlia/Prefs.h"    // Needed for CKademlia::CPrefs
+#include "KadBuddyIdLayout.h"           // Needed for MatchesBuddyIdEitherLayout (#1835)
 #include "DownloadQueue.h"              // Needed for CDownloadQueue
 #include "Server.h"                     // Needed for CServer
 #include "ServerList.h"                 // Needed for CServerList
@@ -1844,8 +1845,15 @@ bool CClientTCPSocket::ProcessExtPacket(const uint8_t *buffer, uint32 size, uint
 		}
 		CMemFile data(buffer, size);
 		CUInt128 check = data.ReadUInt128();
-		check ^= Kademlia::CUInt128(true);
-		if (check != Kademlia::CKademlia::GetPrefs()->GetKadID()) {
+		uint8_t receivedBytes[16];
+		check.ToByteArray(receivedBytes);
+		// Our buddy ID is the inverse of our own Kad ID; the relayed ID may carry either
+		// layout, depending on the requester and the buddy that relayed it (#1835).
+		CUInt128 ownBuddyID(true);
+		ownBuddyID ^= Kademlia::CKademlia::GetPrefs()->GetKadID();
+		uint8_t expectedBytes[16];
+		ownBuddyID.ToByteArray(expectedBytes);
+		if (!Kademlia::MatchesBuddyIdEitherLayout(receivedBytes, expectedBytes)) {
 			break;
 		}
 		CUInt128 fileid = data.ReadUInt128();

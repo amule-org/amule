@@ -122,3 +122,22 @@ TEST(KadBuddyCallback, PreviousDestinationIsRejectedAfterBuddyReplacement)
 		BuildBuddyCallback(staleRequest, CUInt128(replacementID.data()), 0x04030201, staleCallback));
 	ASSERT_EQUALS(uint64_t(0), staleCallback.GetLength());
 }
+
+// An eMule-family requester sends the ID read from an aMule source's TAG_BUDDYHASH in its own
+// layout (#1835). The buddy accepts it and relays the ID it stored, which the source accepts.
+TEST(KadBuddyCallback, DestinationInTheOtherLayoutRelaysTheStoredID)
+{
+	uint8_t otherLayout[16];
+	ConvertBuddyIdLayout(buddyID, otherLayout);
+	CMemFile request;
+	request.WriteUInt128(CUInt128(otherLayout));
+	request.Write(requestBytes + 16, sizeof(requestBytes) - 16);
+	request.Seek(0, wxFromStart);
+
+	CMemFile callback;
+	ASSERT_TRUE(BuildBuddyCallback(request, CUInt128(buddyID), 0x04030201, callback));
+	std::array<uint8_t, 16> relayedID{};
+	callback.Seek(0, wxFromStart);
+	callback.Read(relayedID.data(), relayedID.size());
+	ASSERT_TRUE(std::equal(relayedID.begin(), relayedID.end(), requestBytes));
+}

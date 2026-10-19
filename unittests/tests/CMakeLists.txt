@@ -113,6 +113,12 @@ target_include_directories (KadBuddyCallbackTest PRIVATE
 )
 target_link_libraries (KadBuddyCallbackTest muleunit mulecommon)
 
+# Byte-order conversion between aMule's and eMule's TAG_BUDDYHASH layouts (#1835).
+add_executable (KadBuddyIdLayoutTest KadBuddyIdLayoutTest.cpp)
+add_test (NAME KadBuddyIdLayoutTest COMMAND KadBuddyIdLayoutTest)
+target_include_directories (KadBuddyIdLayoutTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries (KadBuddyIdLayoutTest muleunit mulecommon)
+
 # Buddy keepalives and receive expiry with a deterministic monotonic clock.
 add_executable (KadBuddyLivenessTest KadBuddyLivenessTest.cpp)
 add_test (NAME KadBuddyLivenessTest COMMAND KadBuddyLivenessTest)

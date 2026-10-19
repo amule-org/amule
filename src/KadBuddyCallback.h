@@ -26,22 +26,30 @@
 #define KAD_BUDDY_CALLBACK_H
 
 #include "MemFile.h"
+#include "KadBuddyIdLayout.h"
 #include "kademlia/utils/UInt128.h"
 
 namespace Kademlia
 {
 
 // Validate the destination before building the TCP relay. The UDP request stays untouched.
+// The requester's ID may carry either the aMule or the eMule TAG_BUDDYHASH layout (#1835); on a
+// match in either layout, relay the ID stored from KADEMLIA_FINDBUDDY_REQ, not the received form,
+// so the source's own (layout-aware) check always sees the value it actually accepts.
 inline bool BuildBuddyCallback(
 	CMemFile &request, const CUInt128 &buddyID, uint32_t requesterIP, CMemFile &callback)
 {
 	const CUInt128 destination = request.ReadUInt128();
-	if (destination != buddyID) {
+	uint8_t destinationBytes[16];
+	destination.ToByteArray(destinationBytes);
+	uint8_t buddyIDBytes[16];
+	buddyID.ToByteArray(buddyIDBytes);
+	if (!MatchesBuddyIdEitherLayout(destinationBytes, buddyIDBytes)) {
 		return false;
 	}
 	const CUInt128 file = request.ReadUInt128();
 	const uint16_t tcpPort = request.ReadUInt16();
-	callback.WriteUInt128(destination);
+	callback.WriteUInt128(buddyID);
 	callback.WriteUInt128(file);
 	callback.WriteUInt32(requesterIP);
 	callback.WriteUInt16(tcpPort);

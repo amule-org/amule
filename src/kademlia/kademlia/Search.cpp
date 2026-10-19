@@ -80,6 +80,7 @@ there client on the eMule forum..
 #include "../../NetworkFunctions.h" // Needed for KadIPPortToString
 #endif
 #include "../../GuiEvents.h"
+#include "../../KadBuddyIdLayout.h"
 
 ////////////////////////////////////////
 using namespace Kademlia;
@@ -810,8 +811,12 @@ void CSearch::StorePacket()
 					TAG_SERVERPORT, theApp->clientlist->GetBuddy()->GetUDPPort()));
 				uint8_t hashBytes[16];
 				buddyID.ToByteArray(hashBytes);
+				// eMule, emule-qt and eMuleAI all publish TAG_BUDDYHASH in their own layout
+				// (#1835).
+				uint8_t emuleLayout[16];
+				ConvertBuddyIdLayout(hashBytes, emuleLayout);
 				taglist.push_back(
-					new CTagString(TAG_BUDDYHASH, CMD4Hash(hashBytes).Encode()));
+					new CTagString(TAG_BUDDYHASH, CMD4Hash(emuleLayout).Encode()));
 				taglist.push_back(new CTagVarInt(TAG_SOURCEPORT, thePrefs::GetPort()));
 				if (!CKademlia::GetPrefs()->GetUseExternKadPort()) {
 					taglist.push_back(new CTagInt16(
@@ -1146,7 +1151,11 @@ void CSearch::ProcessResultFile(const CUInt128 &answer, TagPtrList *info)
 				printf("Invalid buddy-hash: '%s'\n", (const char *)tag->GetStr().fn_str());
 #endif
 			}
-			buddy.SetValueBE(hash.GetHash());
+			// eMule, emule-qt and eMuleAI publish TAG_BUDDYHASH in their own layout; convert to
+			// aMule's to get the real buddy ID (#1835).
+			uint8_t canonical[16];
+			ConvertBuddyIdLayout(hash.GetHash(), canonical);
+			buddy.SetValueBE(canonical);
 		} else if (!tag->GetName().Cmp(TAG_ENCRYPTION)) {
 			byCryptOptions = (uint8)tag->GetInt();
 		} else if (!tag->GetName().Cmp(TAG_IPV6) || !tag->GetName().Cmp(TAG_SERVINGBUDDYIPV6)) {

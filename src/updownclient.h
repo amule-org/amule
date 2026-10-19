@@ -989,6 +989,8 @@ private:
 	/* Kad Stuff */
 	uint8_t m_achBuddyID[16];
 	bool m_bBuddyIDValid;
+	// The next KADEMLIA_CALLBACK_REQ sends the buddy ID as a pre-fix aMule published it (#1835).
+	bool m_bBuddyIdLayoutFallbackSent;
 	uint32 m_nBuddyIP;
 	uint16 m_nBuddyPort;
 

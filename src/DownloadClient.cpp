@@ -48,8 +48,9 @@
 #include "SharedFileList.h"
 #include "Statistics.h" // Needed for theStats
 #include "Logger.h"
-#include "GuiEvents.h"   // Needed for Notify_*
-#include "UploadQueue.h" // Needed for CUploadQueue
+#include "GuiEvents.h"        // Needed for Notify_*
+#include "UploadQueue.h"      // Needed for CUploadQueue
+#include "KadBuddyIdLayout.h" // Needed for ConvertBuddyIdLayout
 
 #ifdef __MULE_UNUSED_CODE__
 // This function is left as a reminder.
@@ -1332,7 +1333,10 @@ void CUpDownClient::UDPReaskForDownload()
 
 		CMemFile data(128);
 
-		data.WriteHash(CMD4Hash(GetBuddyID()));
+		// eMule-family buddies read these 16 bytes in their CUInt128 layout (#1835).
+		uint8_t buddyIDOnWire[16];
+		Kademlia::ConvertBuddyIdLayout(GetBuddyID(), buddyIDOnWire);
+		data.WriteHash(CMD4Hash(buddyIDOnWire));
 		data.WriteHash(m_reqfile->GetFileHash());
 
 		if (GetUDPVersion() > 3) {

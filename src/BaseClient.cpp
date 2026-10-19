@@ -98,6 +98,7 @@
 #include "kademlia/kademlia/Search.h"
 #include "kademlia/kademlia/UDPFirewallTester.h"
 #include "kademlia/routing/RoutingZone.h"
+#include "KadBuddyIdLayout.h" // Needed for ConvertBuddyIdLayout (#1835)
 
 // #define __PACKET_DEBUG__
 
@@ -1960,8 +1961,20 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 
 				if (GetDownloadState() == DS_WAITCALLBACK) {
 					if (GetBuddyIP() && GetBuddyPort()) {
+						// A pre-fix aMule source published its buddy hash in aMule's
+						// layout, so every other attempt sends that reading of it.
+						// One form per attempt: eMule's flood protection allows about
+						// one request per minute (#1835).
+						uint8_t buddyIDToSend[16];
+						if (m_bBuddyIdLayoutFallbackSent) {
+							Kademlia::ConvertBuddyIdLayout(
+								GetBuddyID(), buddyIDToSend);
+						} else {
+							md4cpy(buddyIDToSend, GetBuddyID());
+						}
+						m_bBuddyIdLayoutFallbackSent = !m_bBuddyIdLayoutFallbackSent;
 						CMemFile bio(34);
-						bio.WriteUInt128(Kademlia::CUInt128(GetBuddyID()));
+						bio.WriteUInt128(Kademlia::CUInt128(buddyIDToSend));
 						bio.WriteUInt128(Kademlia::CUInt128(
 							m_reqfile->GetFileHash().GetHash()));
 						bio.WriteUInt16(thePrefs::GetPort());
@@ -3261,6 +3274,7 @@ void CUpDownClient::SendChatPacket(const wxString &message)
 
 void CUpDownClient::SetBuddyID(const uint8_t *pucBuddyID)
 {
+	m_bBuddyIdLayoutFallbackSent = false;
 	if (pucBuddyID == NULL) {
 		md4clr(m_achBuddyID);
 		m_bBuddyIDValid = false;
