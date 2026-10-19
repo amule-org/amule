@@ -85,3 +85,16 @@ TEST(KadBuddyIdLayout, RejectsAnIdThatMatchesNeitherLayout)
 	wrong[0] ^= 0xFF;
 	ASSERT_FALSE(MatchesBuddyIdEitherLayout(wrong, amuleLayout));
 }
+
+// Most sources are eMule-family: a form that produced a callback must survive the next request.
+TEST(KadBuddyIdLayout, AnAnsweredRequestKeepsItsForm)
+{
+	ASSERT_FALSE(NextBuddyIdUsesAmuleLayout(false, false));
+	ASSERT_TRUE(NextBuddyIdUsesAmuleLayout(true, false));
+}
+
+TEST(KadBuddyIdLayout, AnUnansweredRequestSwitchesTheForm)
+{
+	ASSERT_TRUE(NextBuddyIdUsesAmuleLayout(false, true));
+	ASSERT_FALSE(NextBuddyIdUsesAmuleLayout(true, true));
+}

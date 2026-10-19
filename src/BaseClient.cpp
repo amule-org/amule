@@ -1961,18 +1961,20 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 
 				if (GetDownloadState() == DS_WAITCALLBACK) {
 					if (GetBuddyIP() && GetBuddyPort()) {
-						// A pre-fix aMule source published its buddy hash in aMule's
-						// layout, so every other attempt sends that reading of it.
-						// One form per attempt: eMule's flood protection allows about
+						// One form per request: eMule's flood protection allows about
 						// one request per minute (#1835).
+						m_bBuddyIdUseAmuleLayout =
+							Kademlia::NextBuddyIdUsesAmuleLayout(
+								m_bBuddyIdUseAmuleLayout,
+								m_bBuddyCallbackUnanswered);
 						uint8_t buddyIDToSend[16];
-						if (m_bBuddyIdLayoutFallbackSent) {
+						if (m_bBuddyIdUseAmuleLayout) {
 							Kademlia::ConvertBuddyIdLayout(
 								GetBuddyID(), buddyIDToSend);
 						} else {
 							md4cpy(buddyIDToSend, GetBuddyID());
 						}
-						m_bBuddyIdLayoutFallbackSent = !m_bBuddyIdLayoutFallbackSent;
+						m_bBuddyCallbackUnanswered = true;
 						CMemFile bio(34);
 						bio.WriteUInt128(Kademlia::CUInt128(buddyIDToSend));
 						bio.WriteUInt128(Kademlia::CUInt128(
@@ -2234,6 +2236,7 @@ void CUpDownClient::ConnectionEstablished()
 	case DS_CONNECTING:
 	case DS_WAITCALLBACK:
 	case DS_WAITCALLBACKKAD:
+		m_bBuddyCallbackUnanswered = false;
 		m_bReaskPending = false;
 		SetDownloadState(DS_CONNECTED);
 		SendFileRequest();
@@ -3274,7 +3277,8 @@ void CUpDownClient::SendChatPacket(const wxString &message)
 
 void CUpDownClient::SetBuddyID(const uint8_t *pucBuddyID)
 {
-	m_bBuddyIdLayoutFallbackSent = false;
+	m_bBuddyIdUseAmuleLayout = false;
+	m_bBuddyCallbackUnanswered = false;
 	if (pucBuddyID == NULL) {
 		md4clr(m_achBuddyID);
 		m_bBuddyIDValid = false;

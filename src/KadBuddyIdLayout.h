@@ -56,6 +56,14 @@ inline bool MatchesBuddyIdEitherLayout(const uint8_t *received, const uint8_t *e
 	return memcmp(received, converted, 16) == 0;
 }
 
+// Which reading of a source's published buddy hash the next KADEMLIA_CALLBACK_REQ uses: true for the
+// aMule layout a pre-fix aMule source published. The form changes only after a request went
+// unanswered, so the one that produced a callback is kept (#1835).
+inline bool NextBuddyIdUsesAmuleLayout(bool usesAmuleLayout, bool previousRequestUnanswered) noexcept
+{
+	return previousRequestUnanswered ? !usesAmuleLayout : usesAmuleLayout;
+}
+
 } // namespace Kademlia
 
 #endif // KAD_BUDDY_ID_LAYOUT_H
