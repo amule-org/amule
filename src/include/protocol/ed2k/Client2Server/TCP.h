@@ -70,9 +70,9 @@ enum OP_ClientToServerTCP
 #define SRV_TCPFLG_TYPETAGINTEGER 0x00000080
 #define SRV_TCPFLG_LARGEFILES 0x00000100
 #define SRV_TCPFLG_TCPOBFUSCATION 0x00000400
-// Server speaks the IPv6 source extension. Not the same bit as the client's SRVCAP_IPV6 on purpose.
+// Server speaks the IPv6 source extension.
 #define SRV_TCPFLG_IPV6 0x00004000
-// Server accepts OP_IPV6_UPDATE on this connection. Set together with SRV_TCPFLG_IPV6.
+// Server accepts OP_IPV6_UPDATE on this connection; trusted only together with SRV_TCPFLG_IPV6.
 #define SRV_TCPFLG_IPV6_UPDATE 0x00008000
 
 #endif // ED2KC2STCP_H

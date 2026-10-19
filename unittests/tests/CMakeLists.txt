@@ -1037,7 +1037,7 @@ target_link_libraries (ServerLoginIPv6Test muleunit mulecommon)
 # application.
 add_executable (ServerIPv6UpdateTest ServerIPv6UpdateTest.cpp)
 add_test (NAME ServerIPv6UpdateTest COMMAND ServerIPv6UpdateTest)
-target_include_directories (ServerIPv6UpdateTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_include_directories (ServerIPv6UpdateTest PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include)
 target_link_libraries (ServerIPv6UpdateTest muleunit mulecommon)
 
 # Canonical address matching for upload-queue UDP lookups, without the application.

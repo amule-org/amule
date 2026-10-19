@@ -32,6 +32,9 @@
 
 #include <protocol/ed2k/Client2Server/TCP.h>
 #include <protocol/ed2k/Client2Server/UDP.h>
+#ifdef ENABLE_IPV6
+#include "ServerIPv6Update.h" // Needed for ServerAcceptsIPv6Updates
+#endif
 
 // Server priority
 #define SRV_PR_LOW 2
@@ -170,7 +173,7 @@ public:
 #ifdef ENABLE_IPV6
 	bool SupportsIPv6Sources() const { return (GetTCPFlags() & SRV_TCPFLG_IPV6) != 0; }
 	// Whether this connection may receive OP_IPV6_UPDATE: set together with SRV_TCPFLG_IPV6.
-	bool SupportsIPv6Updates() const { return (GetTCPFlags() & SRV_TCPFLG_IPV6_UPDATE) != 0; }
+	bool SupportsIPv6Updates() const { return ServerAcceptsIPv6Updates(GetTCPFlags()); }
 #endif
 
 	const wxString &GetAuxPortsList() const { return m_auxPorts; }

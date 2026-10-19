@@ -99,3 +99,14 @@ TEST(ServerIPv6Update, NothingSentAndNothingAdvertisedDoesNotSend)
 	const SServerIPv6UpdateDecision decision = DecideServerIPv6Update(true, std::nullopt, std::nullopt);
 	ASSERT_FALSE(decision.send);
 }
+
+// 0x8000 alone is also read as a NAT rendezvous flag (emule-qt's ipv6-spec), so only a server that
+// speaks the IPv6 extension (0x4000) is taken to accept updates.
+TEST(ServerIPv6Update, OnlyAServerWithBothIPv6FlagsAcceptsUpdates)
+{
+	ASSERT_TRUE(ServerAcceptsIPv6Updates(0x00004000u | 0x00008000u));
+	ASSERT_TRUE(ServerAcceptsIPv6Updates(0x00004000u | 0x00008000u | 0x00000400u));
+	ASSERT_FALSE(ServerAcceptsIPv6Updates(0x00008000u));
+	ASSERT_FALSE(ServerAcceptsIPv6Updates(0x00004000u));
+	ASSERT_FALSE(ServerAcceptsIPv6Updates(0));
+}

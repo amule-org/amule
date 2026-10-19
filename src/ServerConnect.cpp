@@ -296,15 +296,9 @@ void CServerConnect::ConnectionEstablished(CServerSocket *sender)
 		}
 
 		// FLAGS for server connection
-		uint32 dwIPv6Flags = 0;
-#ifdef ENABLE_IPV6
-		if (ipv6Login.advertise) {
-			dwIPv6Flags |= SRVCAP_IPV6;
-		}
-#endif
 		CTagInt32 tagflags(CT_SERVER_FLAGS,
 			CAPABLE_ZLIB | CAPABLE_AUXPORT | CAPABLE_NEWTAGS | CAPABLE_UNICODE |
-				CAPABLE_LARGEFILES | dwCryptFlags | dwIPv6Flags);
+				CAPABLE_LARGEFILES | dwCryptFlags);
 
 		tagflags.WriteTagToFile(&data);
 

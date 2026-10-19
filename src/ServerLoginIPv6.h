@@ -35,8 +35,8 @@ struct SServerLoginIPv6Decision
 	CNetworkAddress address; // Present only when advertise is true.
 };
 
-//! Whether the login carries CT_MOD_IP_V6 and the CT_SERVER_FLAGS 0x1000 bit. The wire contract
-//! requires both or neither: a server that sees the tag sends sentinel source records.
+//! Whether the login carries CT_MOD_IP_V6. A server that sees the tag sends sentinel source
+//! records; no CT_SERVER_FLAGS bit goes with it (see SRVCAP_REQUIRECRYPT in ClientTags.h).
 inline SServerLoginIPv6Decision DecideServerLoginIPv6(const std::optional<CNetworkAddress> &advertisedIPv6)
 {
 	SServerLoginIPv6Decision decision;

@@ -26,10 +26,19 @@
 #define SERVER_IPV6_UPDATE_H
 
 #include "NetworkAddress.h"
+#include <protocol/ed2k/Client2Server/TCP.h> // Needed for SRV_TCPFLG_IPV6*
 
 #include <cstdint>
 #include <cstring>
 #include <optional>
+
+//! 0x8000 alone also reads as a NAT rendezvous flag elsewhere, so it counts only from a server that
+//! speaks the IPv6 extension (0x4000).
+inline bool ServerAcceptsIPv6Updates(std::uint32_t tcpFlags)
+{
+	const std::uint32_t required = SRV_TCPFLG_IPV6 | SRV_TCPFLG_IPV6_UPDATE;
+	return (tcpFlags & required) == required;
+}
 
 struct SServerIPv6UpdateDecision
 {
@@ -39,7 +48,7 @@ struct SServerIPv6UpdateDecision
 
 //! Whether to send OP_IPV6_UPDATE on this server connection, and its 16-byte payload.
 //!
-//! @param serverAcceptsUpdates Whether OP_IDCHANGE set the 0x8000 TCP flag on this connection.
+//! @param serverAcceptsUpdates ServerAcceptsIPv6Updates() for this connection's OP_IDCHANGE flags.
 //! @param lastSent             The address this connection last sent (by login or a prior
 //!                             update); Absent if nothing was sent yet.
 //! @param advertised           The current AdvertisedIPv6ForPeers() result.

@@ -29,7 +29,7 @@ using namespace muleunit;
 
 DECLARE_SIMPLE(ServerLoginIPv6)
 
-TEST(ServerLoginIPv6, BothTheTagAndTheBitAreSentWhenAnAddressIsAdvertised)
+TEST(ServerLoginIPv6, TheTagIsSentWhenAnAddressIsAdvertised)
 {
 	const CNetworkAddress::Octets octets = {
 		0x20, 0x01, 0x48, 0x60, 0x48, 0x60, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x88
@@ -41,7 +41,7 @@ TEST(ServerLoginIPv6, BothTheTagAndTheBitAreSentWhenAnAddressIsAdvertised)
 	ASSERT_TRUE(decision.address == address);
 }
 
-TEST(ServerLoginIPv6, NeitherTheTagNorTheBitAreSentWithoutAnAddress)
+TEST(ServerLoginIPv6, NoTagIsSentWithoutAnAddress)
 {
 	const SServerLoginIPv6Decision decision = DecideServerLoginIPv6(std::nullopt);
 	ASSERT_FALSE(decision.advertise);

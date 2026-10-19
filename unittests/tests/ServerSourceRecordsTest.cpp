@@ -156,7 +156,7 @@ TEST(ServerSourceRecords, ASentinelRecordWithObfuscationFieldsPutsTheAddressByte
 	ASSERT_TRUE(parsed.record.ipv6Address == CNetworkAddress::IPv6FromOctets(octets));
 }
 
-// Without CT_MOD_IP_V6 and the 0x1000 bit in our login, a server honouring the wire contract never
+// Without CT_MOD_IP_V6 in our login, a server honouring the wire contract never
 // sends the sentinel id -- but if it arrived anyway, it must parse exactly as it did before this
 // feature existed: an ordinary (unusable) userid.
 TEST(ServerSourceRecords, ASentinelIsAnOrdinaryUseridWhenWeDidNotAdvertise)
