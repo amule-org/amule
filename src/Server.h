@@ -172,8 +172,12 @@ public:
 	} // mapped to TCPFLAG_TCPOBFU
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 	// Lugdunum's NAT callback (eserver 17.15+). The bit alone is not proof: other servers use 0x1000
-	// unofficially in their flags; the 24-byte OP_IDCHANGE answering an opt-in is the real signal.
+	// unofficially in their flags.
 	bool SupportsLugdunumNatCallback() const { return (GetTCPFlags() & SRV_TCPFLG_NATTRAVERSAL) != 0; }
+	// This session's OP_IDCHANGE came in the 24-byte form that answers our opt-in. Kept apart from
+	// GetSeenTcpPort(), which may legitimately be 0.
+	bool IsLugdunumNatCallbackActive() const { return m_bLugdunumNatCallbackActive; }
+	void SetLugdunumNatCallbackActive(bool active) { m_bLugdunumNatCallbackActive = active; }
 	// OP_IDCHANGE's optional 6th field, for this session only (0 when absent): on a LowID, our TCP
 	// port as the server sees it, NAT-mapped; on a HighID, our own listening port.
 	uint16 GetSeenTcpPort() const { return m_nSeenTcpPort; }
@@ -237,6 +241,7 @@ private:
 	uint16 m_nObfuscationPortUDP;
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 	uint16 m_nSeenTcpPort = 0;
+	bool m_bLugdunumNatCallbackActive = false;
 #endif
 
 	time_t m_dwRealLastPingedTime;

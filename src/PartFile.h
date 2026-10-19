@@ -172,7 +172,8 @@ public:
 		uint32 serverip,
 		uint16 serverport,
 		uint8 *pdebug_lowiddropped = NULL,
-		bool ed2kID = true);
+		bool ed2kID = true,
+		bool keepLowIdSource = false);
 	// loginIPv6: the IPv6 our login advertised, if any; only then may sentinel records appear.
 	// Server UDP answers never carry one: aMule's server UDP is IPv4 only.
 	void AddSources(CMemFile &sources,

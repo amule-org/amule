@@ -101,7 +101,7 @@ void CAbstractFile::GetRatingAndComments(FileRatingList &) const
 	FAIL_M("Search model test unexpectedly queried comments");
 }
 
-bool CPartFile::CanAddSource(uint32, uint16, uint32, uint16, uint8 *, bool)
+bool CPartFile::CanAddSource(uint32, uint16, uint32, uint16, uint8 *, bool, bool)
 {
 	FAIL_M("Search model test unexpectedly added a download source");
 	return false;

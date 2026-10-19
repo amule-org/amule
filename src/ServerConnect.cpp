@@ -295,6 +295,11 @@ void CServerConnect::ConnectionEstablished(CServerSocket *sender)
 			dwCryptFlags |= SRVCAP_REQUIRECRYPT;
 		}
 
+#ifdef ENABLE_NATT_SERVER_COORDINATION
+		// Opt in to Lugdunum's NAT callback (S6.1): experimental, behind the build switch only.
+		dwCryptFlags |= SRVCAP_NATTRAVERSAL;
+#endif
+
 		// FLAGS for server connection
 		CTagInt32 tagflags(CT_SERVER_FLAGS,
 			CAPABLE_ZLIB | CAPABLE_AUXPORT | CAPABLE_NEWTAGS | CAPABLE_UNICODE |

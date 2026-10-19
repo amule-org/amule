@@ -92,6 +92,9 @@
 #include "kademlia/kademlia/Search.h"
 #include "kademlia/kademlia/Entry.h"   // Needed for Kademlia::CEntry (Kad notes)
 #include "kademlia/kademlia/Indexed.h" // Needed for CKadEntryPtrList
+#ifdef ENABLE_NATT_SERVER_COORDINATION
+#include "LugdunumNatTraversal.h" // Needed for ShouldKeepLowIdServerSource
+#endif
 
 SFileRating::SFileRating(const wxString &u, const wxString &f, sint16 r, const wxString &c)
 : UserName(u)
@@ -1875,7 +1878,8 @@ bool CPartFile::CanAddSource(uint32 userid,
 	uint32 serverip,
 	uint16 serverport,
 	uint8 *pdebug_lowiddropped,
-	bool ed2kID)
+	bool ed2kID,
+	bool keepLowIdSource)
 {
 
 	// The incoming ID could have the userid in the Hybrid format..
@@ -1932,7 +1936,7 @@ bool CPartFile::CanAddSource(uint32 userid,
 	}
 
 	// This allows *.*.*.0 clients to not be removed if Ed2kID == false
-	if (IsLowID(hybridID) && theApp->IsFirewalled()) {
+	if (IsLowID(hybridID) && theApp->IsFirewalled() && !keepLowIdSource) {
 		if (pdebug_lowiddropped) {
 			(*pdebug_lowiddropped)++;
 		}
@@ -1952,6 +1956,21 @@ void CPartFile::AddSources(CMemFile &sources,
 	uint8 count = sources.ReadUInt8();
 	uint8 debug_lowiddropped = 0;
 	uint8 debug_possiblesources = 0;
+
+	bool keepLowIdSources = false;
+#ifdef ENABLE_NATT_SERVER_COORDINATION
+	// A Lugdunum server that took our NAT callback opt-in only sends LowID sources it can call back.
+	if (theApp->serverconnect != nullptr && theApp->serverconnect->IsConnected()) {
+		const CServer *current = theApp->serverconnect->GetCurrentServer();
+		LugdunumNatTraversal::LowIdServerSourceFacts facts;
+		facts.originIsLocalServer = origin == SF_LOCAL_SERVER;
+		facts.sourceServerIsOurCurrentServer = current != nullptr && current->GetIP() == serverip &&
+						       current->GetPort() == serverport;
+		facts.weAreLowId = theApp->serverconnect->IsLowID();
+		facts.serverCallbackCapable = current != nullptr && current->IsLugdunumNatCallbackActive();
+		keepLowIdSources = LugdunumNatTraversal::ShouldKeepLowIdServerSource(facts);
+	}
+#endif
 
 	if (m_stopped) {
 		// since we may received multiple search source UDP results we have to "consume" all data of
@@ -2054,7 +2073,13 @@ void CPartFile::AddSources(CMemFile &sources,
 			}
 		}
 
-		if (!CanAddSource(userid, port, serverip, serverport, &debug_lowiddropped)) {
+		if (!CanAddSource(userid,
+			    port,
+			    serverip,
+			    serverport,
+			    &debug_lowiddropped,
+			    true,
+			    keepLowIdSources)) {
 			continue;
 		}
 

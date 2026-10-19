@@ -92,6 +92,13 @@ private:
 	void OnPacketReceived(
 		const CNetworkAddress &address, uint16 port, uint8_t *buffer, size_t length) override;
 	void ProcessPacket(uint8_t *packet, int16 size, int8 opcode, uint32 host, uint16 port);
+#ifdef ENABLE_NATT_SERVER_COORDINATION
+	//! Lugdunum's forwarded NAT callback (0xA7), server-way encrypted on this client socket
+	//! (S6.4). Returns true -- and has already logged -- only once the datagram actually
+	//! decrypted server-way and carried OP_NAT_CALLBACKREQUESTED_UDP; otherwise \p buffer is left
+	//! untouched for the normal client-way path below.
+	bool TryProcessServerWayNatCallback(uint32 ip, uint8_t *buffer, size_t length);
+#endif
 
 	/**
 	 * OP_UDPRESERVEDPROT2: no opcode, a frame type byte instead.

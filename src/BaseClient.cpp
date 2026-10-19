@@ -99,6 +99,10 @@
 #include "kademlia/kademlia/UDPFirewallTester.h"
 #include "kademlia/routing/RoutingZone.h"
 #include "KadBuddyIdLayout.h" // Needed for ConvertBuddyIdLayout (#1835)
+#ifdef ENABLE_NATT_SERVER_COORDINATION
+#include "LugdunumNatTraversal.h"    // Needed for ShouldRequestLugdunumNatCallback
+#include "EncryptedDatagramSocket.h" // Needed for CEncryptedDatagramSocket::EncryptSendServer
+#endif
 
 // #define __PACKET_DEBUG__
 
@@ -1786,6 +1790,57 @@ EContactResult CUpDownClient::CheckContactPreconditions()
 	return EContactResult::Contacting;
 }
 
+#ifdef ENABLE_NATT_SERVER_COORDINATION
+void CUpDownClient::TrySendLugdunumNatCallbackRequest() const
+{
+	if (theApp->serverconnect == nullptr || theApp->clientudp == nullptr) {
+		return;
+	}
+	CServer *server = theApp->serverconnect->GetCurrentServer();
+	if (server == nullptr) {
+		return;
+	}
+	const LugdunumNatTraversal::CallbackRequestFacts facts{ theApp->serverconnect->GetClientID(),
+		GetUserIDHybrid(),
+		theApp->serverconnect->IsLocalServer(GetServerIP(), GetServerPort()),
+		server->IsLugdunumNatCallbackActive(),
+		thePrefs::IsServerCryptLayerUDPEnabled(),
+		server->GetServerKeyUDP(),
+		server->SupportsObfuscationUDP() };
+	if (!LugdunumNatTraversal::ShouldRequestLugdunumNatCallback(facts)) {
+		return;
+	}
+
+	const LugdunumNatTraversal::CallbackRequest request{ GetUserIDHybrid(),
+		theApp->serverconnect->GetClientID() };
+	const std::array<std::uint8_t, 8> payload = LugdunumNatTraversal::BuildCallbackRequest(request);
+	CMemFile data(payload.data(), payload.size());
+	CPacket *packet = new CPacket(data, OP_EDONKEYPROT, OP_NAT_CALLBACKREQUEST);
+
+	// Encrypted the server way, as CServerUDPSocket::SendPacket does, but sent from the client
+	// socket so the server sees the UDP port peers must punch.
+	uint16 uRawPacketSize = static_cast<uint16>(packet->GetPacketSize() + 2);
+	uint8_t *pRawPacket = new uint8_t[uRawPacketSize];
+	memcpy(pRawPacket, packet->GetUDPHeader(), 2);
+	memcpy(pRawPacket + 2, packet->GetDataBuffer(), packet->GetPacketSize());
+	delete packet;
+
+	uRawPacketSize = static_cast<uint16>(CEncryptedDatagramSocket::EncryptSendServer(
+		&pRawPacket, uRawPacketSize, server->GetServerKeyUDP()));
+
+	CMemFile encryptedPacket(pRawPacket + 2, uRawPacketSize - 2);
+	CPacket *encrypted = new CPacket(encryptedPacket, pRawPacket[0], pRawPacket[1]);
+	delete[] pRawPacket;
+
+	AddDebugLogLineN(logClientUDP,
+		CFormat("Client UDP socket: OP_NAT_CALLBACKREQUEST for source %u to %s") % GetUserIDHybrid() %
+			Uint32_16toStringIP_Port(server->GetIP(), server->GetObfuscationPortUDP()));
+	theStats::AddUpOverheadOther(encrypted->GetPacketSize());
+	theApp->clientudp->SendPacket(
+		encrypted, server->GetIP(), server->GetObfuscationPortUDP(), false, NULL, false, 0);
+}
+#endif
+
 EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 {
 	// Kad reviewed
@@ -1822,6 +1877,10 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 		if (!theApp->CanDoCallback(GetServerIP(), GetServerPort())) {
 			// We cannot do a callback!
 			if (GetDownloadState() == DS_CONNECTING) {
+#ifdef ENABLE_NATT_SERVER_COORDINATION
+				// Sent once per source: a DS_LOWTOLOWIP source is not asked again.
+				TrySendLugdunumNatCallbackRequest();
+#endif
 				SetDownloadState(DS_LOWTOLOWIP);
 			} else if (GetDownloadState() == DS_REQHASHSET) {
 				SetDownloadState(DS_ONQUEUE);

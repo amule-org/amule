@@ -240,3 +240,113 @@ TEST(LugdunumNatTraversal, ParsesForwardedCallbackWithAndWithoutObfuscation)
 	ASSERT_TRUE(extraResult.ok);
 	ASSERT_TRUE(extraResult.hasObfuscation);
 }
+
+TEST(LugdunumNatTraversal, RequestsCallbackOnlyWhenEveryPreconditionHolds)
+{
+	CallbackRequestFacts facts;
+	facts.ourId = 100;    // LowID
+	facts.sourceId = 200; // LowID
+	facts.sameServer = true;
+	facts.serverCallbackCapable = true;
+	facts.serverCryptLayerUdpEnabled = true;
+	facts.serverKeyUdp = 42;
+	facts.serverSupportsObfuscationUdp = true;
+	ASSERT_TRUE(ShouldRequestLugdunumNatCallback(facts));
+
+	// Either side being HighID means no callback is needed/possible this way.
+	CallbackRequestFacts highIdSource = facts;
+	highIdSource.sourceId = 20000000;
+	ASSERT_FALSE(ShouldRequestLugdunumNatCallback(highIdSource));
+
+	CallbackRequestFacts highIdUs = facts;
+	highIdUs.ourId = 20000000;
+	ASSERT_FALSE(ShouldRequestLugdunumNatCallback(highIdUs));
+
+	// Different server, or a server that never answered the opt-in: no send.
+	CallbackRequestFacts differentServer = facts;
+	differentServer.sameServer = false;
+	ASSERT_FALSE(ShouldRequestLugdunumNatCallback(differentServer));
+
+	CallbackRequestFacts notCapable = facts;
+	notCapable.serverCallbackCapable = false;
+	ASSERT_FALSE(ShouldRequestLugdunumNatCallback(notCapable));
+
+	// Each server-way crypto precondition is independently required (S5).
+	CallbackRequestFacts noCryptLayer = facts;
+	noCryptLayer.serverCryptLayerUdpEnabled = false;
+	ASSERT_FALSE(ShouldRequestLugdunumNatCallback(noCryptLayer));
+
+	CallbackRequestFacts noServerKey = facts;
+	noServerKey.serverKeyUdp = 0;
+	ASSERT_FALSE(ShouldRequestLugdunumNatCallback(noServerKey));
+
+	CallbackRequestFacts noObfuscation = facts;
+	noObfuscation.serverSupportsObfuscationUdp = false;
+	ASSERT_FALSE(ShouldRequestLugdunumNatCallback(noObfuscation));
+}
+
+TEST(LugdunumNatTraversal, RecognisesServerWayDatagramsOnlyFromACapableCurrentServer)
+{
+	ServerWayDatagramFacts facts;
+	facts.sourceIp = 0x0100007F; // matches
+	facts.serverIp = 0x0100007F;
+	facts.serverCallbackCapable = true;
+	ASSERT_TRUE(IsServerWayDatagramFromOurServer(facts));
+
+	// Source IP alone never authenticates: a capable server's datagram from a different IP is
+	// not even worth a decrypt attempt (S5).
+	ServerWayDatagramFacts differentIp = facts;
+	differentIp.sourceIp = 0x0200007F;
+	ASSERT_FALSE(IsServerWayDatagramFromOurServer(differentIp));
+
+	// A same-IP datagram from a server that never proved itself callback-capable is not routed
+	// here either.
+	ServerWayDatagramFacts notCapable = facts;
+	notCapable.serverCallbackCapable = false;
+	ASSERT_FALSE(IsServerWayDatagramFromOurServer(notCapable));
+}
+
+TEST(LugdunumNatTraversal, SelectsChallengeOverServerKeyOnlyWhenAPingReplyIsPending)
+{
+	// Mirrors CServerUDPSocket::OnPacketReceived (ServerUDPSocket.cpp) and NeoMule's
+	// ClientUDPSocket.cpp: a pending crypt-ping reply's challenge wins.
+	ASSERT_EQUALS((std::uint32_t)777, SelectServerWayKey(true, 777, 42));
+
+	// No reply pending: the established server key is used regardless of a stale challenge.
+	ASSERT_EQUALS((std::uint32_t)42, SelectServerWayKey(false, 777, 42));
+
+	// Reply pending but no real challenge (0): falls back to the server key.
+	ASSERT_EQUALS((std::uint32_t)42, SelectServerWayKey(true, 0, 42));
+}
+
+TEST(LugdunumNatTraversal, KeepsLowIdServerSourcesOnlyFromOurOwnCapableServer)
+{
+	LowIdServerSourceFacts facts;
+	facts.originIsLocalServer = true;
+	facts.sourceServerIsOurCurrentServer = true;
+	facts.weAreLowId = true;
+	facts.serverCallbackCapable = true;
+	ASSERT_TRUE(ShouldKeepLowIdServerSource(facts));
+
+	// A source-exchange or Kad-sourced record is never kept this way, even with identical
+	// server/capability facts: the server only forwards LowID sources it is prepared to call
+	// back, and that promise only covers what it told us directly.
+	LowIdServerSourceFacts notLocalServer = facts;
+	notLocalServer.originIsLocalServer = false;
+	ASSERT_FALSE(ShouldKeepLowIdServerSource(notLocalServer));
+
+	// A remote server's OP_GLOBFOUNDSOURCES reply is not our current server.
+	LowIdServerSourceFacts notOurServer = facts;
+	notOurServer.sourceServerIsOurCurrentServer = false;
+	ASSERT_FALSE(ShouldKeepLowIdServerSource(notOurServer));
+
+	// A HighID client has no reason to special-case a LowID source this way.
+	LowIdServerSourceFacts notLowId = facts;
+	notLowId.weAreLowId = false;
+	ASSERT_FALSE(ShouldKeepLowIdServerSource(notLowId));
+
+	// The server never answered our opt-in: no promise to forward callbacks exists.
+	LowIdServerSourceFacts notCapable = facts;
+	notCapable.serverCallbackCapable = false;
+	ASSERT_FALSE(ShouldKeepLowIdServerSource(notCapable));
+}

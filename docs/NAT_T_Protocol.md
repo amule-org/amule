@@ -160,15 +160,37 @@ and eNode uses that bit for meta search; aMule does not define it.
 `<ID 4><flags 4><server TCP port 4><reported IP 4><obfuscation TCP port 4><your port 4>`.
 For a LowID, "your port" is our TCP port as the server sees it, after any NAT.
 
-aMule implements, only under `ENABLE_NATT_SERVER_COORDINATION`:
+aMule implements, only under `ENABLE_NATT_SERVER_COORDINATION` (**experimental**, off by
+default; default and `ENABLE_IPV6` builds are unaffected):
 
-- recognising and logging the server's TCP flag (`CServer::SupportsLugdunumNatCallback()`);
-- reading "your port" for the current session (`CServer::GetSeenTcpPort()`, 0 when absent);
-- pure codecs for the three opcodes (`src/LugdunumNatTraversal.h`). The wiki gives the
-  seen UDP port as `[uint16 4]`; it is read as a 2-byte uint16, not yet confirmed by
-  a capture.
+- login opt-in: `CT_SERVER_FLAGS` ORs in `SRVCAP_NATTRAVERSAL` (`ServerConnect.cpp`);
+- callback-capable state for the session: `CServer::SupportsLugdunumNatCallback()` is **not**
+  the TCP flag -- it is a separate flag set only when the 24-byte `OP_IDCHANGE` answering our
+  opt-in actually arrived (`CServer::SetLugdunumCallbackCapable()`, driven by
+  `IdChangeFields::hasYourPort`). The TCP flag alone proves nothing (see above);
+- sending `OP_NAT_CALLBACKREQUEST` (`0xA6`): when we are LowID, the source we want is a LowID
+  on our current, callback-capable server, and the server-way UDP crypto preconditions hold
+  (`thePrefs::IsServerCryptLayerUDPEnabled() && GetServerKeyUDP() != 0 &&
+  SupportsObfuscationUDP()`), `BaseClient.cpp` sends one request from the client UDP socket,
+  encrypted "the server way" (`CEncryptedDatagramSocket::EncryptSendServer`), to the server's
+  `GetObfuscationPortUDP()`. Hooked at the existing LowID-to-LowID decline in `TryToContact()`,
+  gated on `GetDownloadState() == DS_CONNECTING` so it fires once per reask attempt without a
+  new timer;
+- receiving `0xA7` server-way on the client UDP socket: `ClientUDPSocket.cpp` recognises a
+  same-IP, callback-capable datagram as worth a `DecryptReceivedServer` attempt, picking the
+  base key the same way `CServerUDPSocket::OnPacketReceived` does -- a pending crypt-ping
+  reply's challenge over the established server key -- and routes on an actual decrypt only
+  (never on IP match alone), then logs and stops: no reply, no punch;
+- receiving `0x37` on the server TCP link (`ServerSocket.cpp`): parsed and logged the same way,
+  sharing one handler (`LugdunumNatTraversal::LogForwardedCallback`,
+  `src/LugdunumNatCallbackLog.h`) with the UDP path;
+- pure codecs and decisions for the above (`src/LugdunumNatTraversal.h`). The port width was
+  confirmed against NeoMule's `opcodes.h` (`<IP 4><UDP port 2><requester ID 4>`), so it is read
+  as a 2-byte uint16.
 
-Not implemented: the login opt-in, sending `0xA6` (which must be obfuscated
-"the server way" and leave from the client UDP socket), routing server UDP that
-arrives on the client UDP socket, handling `0xA7`/`0x37`, the NatT-capable
-LowID sources such a server includes in source answers, and any peer tunnel.
+Not implemented: any peer tunnel or punch (the protocol has none), and keeping a LowID source a
+server reports over this callback instead of dropping it as LowID-while-firewalled
+(`CPartFile::CanAddSource`/`AddSources` in `PartFile.cpp`, outside this change's edit surface --
+see NeoMule's `CanLow2Low()`/`PartFile.cpp:3765-3864` for the reference behaviour). The pure
+decision for that gate (`LugdunumNatTraversal::ShouldKeepLowIdServerSource`) exists and is
+tested, but is not wired into `CanAddSource` yet.

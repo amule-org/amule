@@ -21,14 +21,16 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 // Lugdunum's NAT callback (eMule wiki, "NatT protocol", section "eServer (Lugdunum)"). Wire
-// codecs only: aMule neither sets SRVCAP_NATTRAVERSAL at login nor sends OP_NAT_CALLBACKREQUEST.
-// See docs/NAT_T_Protocol.md.
+// codecs plus the pure request/routing decisions; the opt-in login bit, the 0xA6 send and the
+// 0xA7/0x37 receive live in ServerConnect.cpp, BaseClient.cpp, ClientUDPSocket.cpp and
+// ServerSocket.cpp, all under ENABLE_NATT_SERVER_COORDINATION. See docs/NAT_T_Protocol.md.
 #ifndef AMULE_LUGDUNUM_NAT_TRAVERSAL_H
 #define AMULE_LUGDUNUM_NAT_TRAVERSAL_H
 
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 
 #include "ArchSpecific.h"
+#include "NetworkFunctions.h" // Needed for IsLowID
 
 #include <algorithm>
 #include <array>
@@ -94,13 +96,84 @@ struct CallbackRequest
 };
 
 // OP_NAT_CALLBACKREQUEST (0xA6) payload: Target ID, Requester ID, each a 4-byte little-endian
-// eD2k uint32. Built for tests only -- aMule never sends this opcode yet.
+// eD2k uint32. Sent from BaseClient.cpp under ENABLE_NATT_SERVER_COORDINATION (S6.3).
 inline std::array<std::uint8_t, 8> BuildCallbackRequest(const CallbackRequest &request)
 {
 	std::array<std::uint8_t, 8> bytes{};
 	PokeUInt32(bytes.data(), request.targetId);
 	PokeUInt32(bytes.data() + 4, request.requesterId);
 	return bytes;
+}
+
+struct CallbackRequestFacts
+{
+	std::uint32_t ourId = 0;
+	std::uint32_t sourceId = 0;
+	bool sameServer = false;
+	bool serverCallbackCapable = false;
+	// Mirrors CServerUDPSocket::SendPacket's own gate (ServerUDPSocket.cpp): without all three the
+	// server will not accept an obfuscated UDP datagram at all, so sending one would be wasted.
+	bool serverCryptLayerUdpEnabled = false;
+	std::uint32_t serverKeyUdp = 0;
+	bool serverSupportsObfuscationUdp = false;
+};
+
+// Whether to send OP_NAT_CALLBACKREQUEST for a LowID source: both ends must be LowID on the same,
+// callback-capable server, and the server-way crypto preconditions must hold (S6.3).
+inline bool ShouldRequestLugdunumNatCallback(const CallbackRequestFacts &facts)
+{
+	if (!facts.sameServer || !facts.serverCallbackCapable) {
+		return false;
+	}
+	if (!IsLowID(facts.ourId) || !IsLowID(facts.sourceId)) {
+		return false;
+	}
+	return facts.serverCryptLayerUdpEnabled && facts.serverKeyUdp != 0 &&
+	       facts.serverSupportsObfuscationUdp;
+}
+
+struct ServerWayDatagramFacts
+{
+	std::uint32_t sourceIp = 0;
+	std::uint32_t serverIp = 0;
+	bool serverCallbackCapable = false;
+};
+
+// Whether an inbound client-UDP-socket datagram is worth a DecryptReceivedServer attempt at all:
+// source IP alone never authenticates it (S5), but it does gate whether trying is worthwhile.
+inline bool IsServerWayDatagramFromOurServer(const ServerWayDatagramFacts &facts)
+{
+	return facts.serverCallbackCapable && facts.sourceIp == facts.serverIp;
+}
+
+// Picks the server-way UDP base key exactly as CServerUDPSocket::OnPacketReceived does
+// (ServerUDPSocket.cpp): a pending crypt-ping reply's challenge takes priority over the
+// established server key, because that specific exchange is what the challenge authenticates.
+// Confirmed against NeoMule's ClientUDPSocket.cpp, which makes the same choice on this same
+// opcode.
+inline std::uint32_t SelectServerWayKey(
+	bool cryptPingReplyPending, std::uint32_t challenge, std::uint32_t serverKeyUdp)
+{
+	if (cryptPingReplyPending && challenge != 0) {
+		return challenge;
+	}
+	return serverKeyUdp;
+}
+
+struct LowIdServerSourceFacts
+{
+	bool originIsLocalServer = false;
+	bool sourceServerIsOurCurrentServer = false;
+	bool weAreLowId = false;
+	bool serverCallbackCapable = false;
+};
+
+// Whether a LowID server source survives CanAddSource's LowID-while-firewalled drop. Such a server
+// only sends them to a client whose opt-in it answered (NeoMule's CanLow2Low, made per server).
+inline bool ShouldKeepLowIdServerSource(const LowIdServerSourceFacts &facts)
+{
+	return facts.originIsLocalServer && facts.sourceServerIsOurCurrentServer && facts.weAreLowId &&
+	       facts.serverCallbackCapable;
 }
 
 struct ForwardedCallback

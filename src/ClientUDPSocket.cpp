@@ -63,6 +63,12 @@
 #include "QuicNattProtocol.h"
 #include "NatRendezvousPolicy.h"
 #endif
+#ifdef ENABLE_NATT_SERVER_COORDINATION
+#include "LugdunumNatTraversal.h"   // Needed for IsServerWayDatagramFromOurServer, ParseForwardedCallback
+#include "LugdunumNatCallbackLog.h" // Needed for LogForwardedCallback
+#include "ServerConnect.h"          // Needed for CServerConnect
+#include "Server.h"                 // Needed for CServer, and transitively OP_NAT_CALLBACKREQUESTED_UDP
+#endif
 
 //
 // CClientUDPSocket -- Extended eMule UDP socket
@@ -240,6 +246,12 @@ void CClientUDPSocket::OnPacketReceived(
 		return;
 	}
 
+#ifdef ENABLE_NATT_SERVER_COORDINATION
+	if (TryProcessServerWayNatCallback(ip, buffer, length)) {
+		return;
+	}
+#endif
+
 	uint8_t *decryptedBuffer;
 	uint32_t receiverVerifyKey;
 	uint32_t senderVerifyKey;
@@ -335,6 +347,51 @@ void CClientUDPSocket::OnPacketReceived(
 		}
 	}
 }
+
+#ifdef ENABLE_NATT_SERVER_COORDINATION
+bool CClientUDPSocket::TryProcessServerWayNatCallback(uint32 ip, uint8_t *buffer, size_t length)
+{
+	if (theApp->serverconnect == nullptr) {
+		return false;
+	}
+	CServer *server = theApp->serverconnect->GetCurrentServer();
+	if (server == nullptr) {
+		return false;
+	}
+	const LugdunumNatTraversal::ServerWayDatagramFacts facts{
+		ip, server->GetIP(), server->IsLugdunumNatCallbackActive()
+	};
+	if (!LugdunumNatTraversal::IsServerWayDatagramFromOurServer(facts)) {
+		return false;
+	}
+
+	// A pending crypt-ping reply's challenge comes first, as in CServerUDPSocket::OnPacketReceived.
+	const std::uint32_t key = LugdunumNatTraversal::SelectServerWayKey(
+		server->GetCryptPingReplyPending(), server->GetChallenge(), server->GetServerKeyUDP());
+	uint8_t *decrypted = buffer;
+	const int decryptedLen = CEncryptedDatagramSocket::DecryptReceivedServer(
+		buffer, static_cast<int>(length), &decrypted, key, ip);
+	// Every non-decrypting path returns the input length unchanged; a decrypt strips the header.
+	if (decryptedLen >= static_cast<int>(length) || decrypted == nullptr || decryptedLen < 2) {
+		return false;
+	}
+	// Decrypted in place and authenticated as our server's: never hand it to the client path.
+	if (decrypted[0] != OP_EDONKEYPROT || decrypted[1] != OP_NAT_CALLBACKREQUESTED_UDP) {
+		AddDebugLogLineN(logClientUDP,
+			CFormat("Unexpected server UDP packet 0x%02x/0x%02x on the client socket") %
+				decrypted[0] % decrypted[1]);
+		return true;
+	}
+
+	const LugdunumNatTraversal::ForwardedCallback callback =
+		LugdunumNatTraversal::ParseForwardedCallback(decrypted + 2, decryptedLen - 2);
+	if (callback.ok) {
+		LugdunumNatTraversal::LogForwardedCallback(
+			logClientUDP, "OP_NAT_CALLBACKREQUESTED_UDP", callback);
+	}
+	return true;
+}
+#endif
 
 void CClientUDPSocket::ProcessReservedProt2Frame(
 	const uint8_t *frame, size_t frameLength, uint32 ip, uint16 port)
