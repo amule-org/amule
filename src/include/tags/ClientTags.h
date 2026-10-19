@@ -102,9 +102,10 @@ enum ServerCapabilites
 	SRVCAP_LARGEFILES = 0x0100,
 	SRVCAP_SUPPORTCRYPT = 0x0200,
 	SRVCAP_REQUESTCRYPT = 0x0400,
-	SRVCAP_REQUIRECRYPT = 0x0800
-	// 0x1000 is Lugdunum's NAT callback capability (NeoLoader, emule-qt's SRVCAP_NATTRAVERSAL). Do
-	// not send it to announce IPv6: the CT_MOD_IP_V6 login tag alone does that.
+	SRVCAP_REQUIRECRYPT = 0x0800,
+	// Lugdunum's NAT callback opt-in (#1991): Lugdunum then hands out odd LowIDs and forwards
+	// callbacks. Not sent until aMule can answer OP_NAT_CALLBACKREQUESTED.
+	SRVCAP_NATTRAVERSAL = 0x1000
 };
 
 // aMule used to use these names

@@ -44,7 +44,10 @@ enum OP_ClientToServerUDP
 	OP_SERVER_LIST_RES = 0xA1,  // <count 1> (<ip 4><port 2>)[count]
 	OP_SERVER_DESC_REQ = 0xA2,  // (null)
 	OP_SERVER_DESC_RES = 0xA3,  // <name_len 2><name name_len><desc_len 2 desc_en>
-	OP_SERVER_LIST_REQ2 = 0xA4  // (null)
+	OP_SERVER_LIST_REQ2 = 0xA4, // (null)
+	// Lugdunum NAT callback (see LugdunumNatTraversal.h). Both travel on the client UDP socket.
+	OP_NAT_CALLBACKREQUEST = 0xA6,      // <Target ID 4><Requester ID 4> client->server
+	OP_NAT_CALLBACKREQUESTED_UDP = 0xA7 // <Seen IP 4><Seen UDP Port 2><Requester ID 4>[<obfuscation 17>]
 };
 
 // Server UDP flags
@@ -56,5 +59,7 @@ enum OP_ClientToServerUDP
 #define SRV_UDPFLG_LARGEFILES 0x00000100
 #define SRV_UDPFLG_UDPOBFUSCATION 0x00000200
 #define SRV_UDPFLG_TCPOBFUSCATION 0x00000400
+// Server supports Lugdunum's NAT callback (eserver 17.15+).
+#define SRV_UDPFLG_NATTRAVERSAL 0x00010000
 
 #endif // ED2KC2SUDP_H

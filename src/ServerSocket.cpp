@@ -47,8 +47,9 @@
 #include "Logger.h"
 #include <common/Format.h>
 #include "IPFilter.h"
-#include "NetworkFunctions.h" // Needed for IsGoodIP
-#include "GuiEvents.h"        // Needed for Notify_*
+#include "NetworkFunctions.h"     // Needed for IsGoodIP
+#include "GuiEvents.h"            // Needed for Notify_*
+#include "LugdunumNatTraversal.h" // Needed for ParseIdChangeFields
 #ifdef ENABLE_IPV6
 #include "AdvertisedIPv6.h" // Needed for AdvertisedIPv6ForPeers
 #endif
@@ -298,6 +299,10 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 						"OP_IDCHANGE: server speaks the IPv6 source extension");
 				}
 #endif
+				if (cur_server->SupportsNatTraversal()) {
+					AddDebugLogLineN(logServer,
+						"OP_IDCHANGE: server supports Lugdunum NAT traversal");
+				}
 				// copy TCP flags into the server in the server list
 				if (pServer) {
 					pServer->SetTCPFlags(cur_server->GetTCPFlags());
@@ -340,6 +345,18 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 						pServer->SetObfuscationPortTCP(dwObfuscationTCPPort);
 					}
 				}
+			}
+
+			const LugdunumNatTraversal::IdChangeFields idChange =
+				LugdunumNatTraversal::ParseIdChangeFields(packet, size);
+			if (idChange.hasYourPort && cur_server != nullptr) {
+				const uint16 seenTcpPort = static_cast<uint16>(idChange.yourPort);
+				cur_server->SetSeenTcpPort(seenTcpPort);
+				if (pServer != nullptr) {
+					pServer->SetSeenTcpPort(seenTcpPort);
+				}
+				AddDebugLogLineN(logServer,
+					CFormat("OP_IDCHANGE: server sees our TCP port as %u") % seenTcpPort);
 			}
 
 			if (new_id == 0) {

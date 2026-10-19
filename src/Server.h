@@ -170,6 +170,12 @@ public:
 	{
 		return (GetTCPFlags() & SRV_TCPFLG_TCPOBFUSCATION) != 0;
 	} // mapped to TCPFLAG_TCPOBFU
+	// Lugdunum's NAT callback (eserver 17.15+). Recognised only: aMule does not opt in.
+	bool SupportsNatTraversal() const { return (GetTCPFlags() & SRV_TCPFLG_NATTRAVERSAL) != 0; }
+	// OP_IDCHANGE's optional 6th field: on a LowID, the TCP port of this client as seen by the
+	// server (NAT-mapped if behind a NAT device); on a HighID, the client's own listening port.
+	uint16 GetSeenTcpPort() const { return m_nSeenTcpPort; }
+	void SetSeenTcpPort(uint16 nPort) { m_nSeenTcpPort = nPort; }
 #ifdef ENABLE_IPV6
 	bool SupportsIPv6Sources() const { return (GetTCPFlags() & SRV_TCPFLG_IPV6) != 0; }
 	// Whether this connection may receive OP_IPV6_UPDATE: set together with SRV_TCPFLG_IPV6.
@@ -226,6 +232,7 @@ private:
 	uint32 m_dwIPServerKeyUDP;
 	uint16 m_nObfuscationPortTCP;
 	uint16 m_nObfuscationPortUDP;
+	uint16 m_nSeenTcpPort;
 
 	time_t m_dwRealLastPingedTime;
 

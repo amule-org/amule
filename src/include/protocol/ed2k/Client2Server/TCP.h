@@ -48,7 +48,9 @@ enum OP_ClientToServerTCP
 	OP_SERVERSTATUS = 0x34,      // <USER 4><FILES 4>
 	OP_CALLBACKREQUESTED = 0x35, // <IP 4><PORT 2>
 	OP_CALLBACK_FAIL = 0x36,     // (null notverified)
-	OP_SERVERMESSAGE = 0x38,     // <len 2><Message len>
+	// Lugdunum NAT callback, forwarded over TCP (see LugdunumNatTraversal.h).
+	OP_NAT_CALLBACKREQUESTED = 0x37, // <Seen IP 4><Seen UDP Port 2><Requester ID 4>[<obfuscation 17>]
+	OP_SERVERMESSAGE = 0x38,         // <len 2><Message len>
 	// Deprecated, no longer supported by any server: OP_CHAT_ROOM_REQUEST = 0x39,
 	// OP_CHAT_BROADCAST = 0x3A, OP_CHAT_USER_JOIN = 0x3B, OP_CHAT_USER_LEAVE = 0x3C,
 	// OP_CHAT_USER = 0x3D.
@@ -70,6 +72,8 @@ enum OP_ClientToServerTCP
 #define SRV_TCPFLG_TYPETAGINTEGER 0x00000080
 #define SRV_TCPFLG_LARGEFILES 0x00000100
 #define SRV_TCPFLG_TCPOBFUSCATION 0x00000400
+// Server supports Lugdunum's NAT callback (eserver 17.15+).
+#define SRV_TCPFLG_NATTRAVERSAL 0x00001000
 // Server speaks the IPv6 source extension.
 #define SRV_TCPFLG_IPV6 0x00004000
 // Server accepts OP_IPV6_UPDATE on this connection; trusted only together with SRV_TCPFLG_IPV6.

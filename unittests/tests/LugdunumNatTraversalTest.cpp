@@ -1,0 +1,242 @@
+//
+// This file is part of the aMule Project.
+//
+// Copyright (c) 2003-2026 aMule Team ( https://amule-org.github.io )
+//
+// Any parts of this program contributed by third-party developers are copyrighted
+// by their respective authors.
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
+//
+
+#include <muleunit/test.h>
+
+#include "LugdunumNatTraversal.h"
+
+#include <algorithm>
+
+using namespace muleunit;
+using namespace LugdunumNatTraversal;
+
+DECLARE_SIMPLE(LugdunumNatTraversal)
+
+TEST(LugdunumNatTraversal, ParsesLiveIdChangeVectors)
+{
+	// Mazinga, without 0x1000 (S3): id, flags, aux (server) port only.
+	const std::array<std::uint8_t, 16> mazingaA{ { 0xa0,
+		0x69,
+		0xa1,
+		0x00,
+		0xf9,
+		0x17,
+		0x00,
+		0x00,
+		0x88,
+		0x10,
+		0x00,
+		0x00,
+		0x4f,
+		0x75,
+		0x1c,
+		0x71 } };
+	const auto a = ParseIdChangeFields(mazingaA.data(), mazingaA.size());
+	ASSERT_TRUE(a.ok);
+	ASSERT_EQUALS((std::uint32_t)0x00A169A0, a.id);
+	ASSERT_TRUE(a.hasTcpFlags);
+	ASSERT_EQUALS((std::uint32_t)0x17F9, a.tcpFlags);
+	ASSERT_TRUE(a.hasAuxPort);
+	ASSERT_EQUALS((std::uint32_t)4232, a.auxPort);
+	ASSERT_FALSE(a.hasReportedIp);
+	ASSERT_FALSE(a.hasYourPort);
+
+	// Mazinga, with 0x1000 (S3): adds reported IP, obfuscation port and "your port" 56197.
+	const std::array<std::uint8_t, 24> mazingaB{ { 0x37,
+		0x6b,
+		0xa1,
+		0x00,
+		0xf9,
+		0x17,
+		0x00,
+		0x00,
+		0x88,
+		0x10,
+		0x00,
+		0x00,
+		0x4f,
+		0x75,
+		0x1c,
+		0x71,
+		0x88,
+		0x10,
+		0x00,
+		0x00,
+		0x85,
+		0xdb,
+		0x00,
+		0x00 } };
+	const auto b = ParseIdChangeFields(mazingaB.data(), mazingaB.size());
+	ASSERT_TRUE(b.ok);
+	ASSERT_EQUALS((std::uint32_t)0x00A16B37, b.id);
+	ASSERT_EQUALS((std::uint32_t)0x17F9, b.tcpFlags);
+	ASSERT_EQUALS((std::uint32_t)4232, b.auxPort);
+	ASSERT_TRUE(b.hasReportedIp);
+	ASSERT_EQUALS((std::uint32_t)4232, b.obfuscationPortTcp);
+	ASSERT_TRUE(b.hasYourPort);
+	ASSERT_EQUALS((std::uint32_t)56197, b.yourPort);
+
+	// Sunrise, with 0x1000 (S3): different id/ports, "your port" 57428.
+	const std::array<std::uint8_t, 24> sunriseC{ { 0xe5,
+		0xb1,
+		0xca,
+		0x00,
+		0xf9,
+		0x17,
+		0x00,
+		0x00,
+		0x75,
+		0x12,
+		0x00,
+		0x00,
+		0x4f,
+		0x75,
+		0x1c,
+		0x71,
+		0x75,
+		0x12,
+		0x00,
+		0x00,
+		0x54,
+		0xe0,
+		0x00,
+		0x00 } };
+	const auto c = ParseIdChangeFields(sunriseC.data(), sunriseC.size());
+	ASSERT_TRUE(c.ok);
+	ASSERT_EQUALS((std::uint32_t)0x00CAB1E5, c.id);
+	ASSERT_EQUALS((std::uint32_t)4725, c.auxPort);
+	ASSERT_TRUE(c.hasYourPort);
+	ASSERT_EQUALS((std::uint32_t)57428, c.yourPort);
+}
+
+TEST(LugdunumNatTraversal, HandlesIdChangeBoundarySizesAndLeavesExistingFieldsUnchanged)
+{
+	const std::array<std::uint8_t, 24> full{ { 0x37,
+		0x6b,
+		0xa1,
+		0x00,
+		0xf9,
+		0x17,
+		0x00,
+		0x00,
+		0x88,
+		0x10,
+		0x00,
+		0x00,
+		0x4f,
+		0x75,
+		0x1c,
+		0x71,
+		0x88,
+		0x10,
+		0x00,
+		0x00,
+		0x85,
+		0xdb,
+		0x00,
+		0x00 } };
+
+	// Exactly 20 bytes: reported IP and obfuscation port present, "your port" absent.
+	const auto at20 = ParseIdChangeFields(full.data(), 20);
+	ASSERT_TRUE(at20.ok);
+	ASSERT_TRUE(at20.hasReportedIp);
+	ASSERT_EQUALS((std::uint32_t)4232, at20.obfuscationPortTcp);
+	ASSERT_FALSE(at20.hasYourPort);
+
+	// Truncated below the mandatory ID: not ok.
+	ASSERT_FALSE(ParseIdChangeFields(full.data(), 3).ok);
+	ASSERT_FALSE(ParseIdChangeFields(nullptr, full.size()).ok);
+
+	// Only the ID fits: later optional fields are absent, not garbage-filled.
+	const auto onlyId = ParseIdChangeFields(full.data(), 4);
+	ASSERT_TRUE(onlyId.ok);
+	ASSERT_FALSE(onlyId.hasTcpFlags);
+	ASSERT_FALSE(onlyId.hasAuxPort);
+	ASSERT_FALSE(onlyId.hasReportedIp);
+
+	// 16 bytes (id+flags+aux port only): matches upstream's existing behaviour of not reading a
+	// reported IP unless it is bundled with the obfuscation port (20+ bytes).
+	const auto at16 = ParseIdChangeFields(full.data(), 16);
+	ASSERT_TRUE(at16.hasAuxPort);
+	ASSERT_FALSE(at16.hasReportedIp);
+}
+
+TEST(LugdunumNatTraversal, BuildsCallbackRequestPayload)
+{
+	const CallbackRequest request{ 0x12345678, 0x9ABCDEF0 };
+	const std::array<std::uint8_t, 8> expected{ { 0x78, 0x56, 0x34, 0x12, 0xF0, 0xDE, 0xBC, 0x9A } };
+	ASSERT_TRUE(BuildCallbackRequest(request) == expected);
+
+	// Requester ID 0 is a valid value (LowID requester before the server assigns one), not an
+	// error sentinel.
+	const CallbackRequest zeroRequester{ 1, 0 };
+	const std::array<std::uint8_t, 8> expectedZero{ { 0x01, 0, 0, 0, 0, 0, 0, 0 } };
+	ASSERT_TRUE(BuildCallbackRequest(zeroRequester) == expectedZero);
+}
+
+TEST(LugdunumNatTraversal, ParsesForwardedCallbackWithAndWithoutObfuscation)
+{
+	// 10 bytes: no obfuscation part. Requester ID 0 (may legitimately be unset).
+	const std::array<std::uint8_t, 10> bare{
+		{ 0x01, 0x02, 0x03, 0x04, 0x34, 0x12, 0x00, 0x00, 0x00, 0x00 }
+	};
+	const auto bareResult = ParseForwardedCallback(bare.data(), bare.size());
+	ASSERT_TRUE(bareResult.ok);
+	ASSERT_EQUALS((std::uint32_t)0x04030201, bareResult.seenIp);
+	ASSERT_EQUALS((std::uint16_t)0x1234, bareResult.seenUdpPort);
+	ASSERT_EQUALS((std::uint32_t)0, bareResult.requesterId);
+	ASSERT_FALSE(bareResult.hasObfuscation);
+
+	// 27 bytes: obfuscation settings + 16-byte user hash present.
+	std::array<std::uint8_t, 27> full{};
+	std::copy(bare.begin(), bare.end(), full.begin());
+	full[10] = 0x80;
+	for (std::size_t i = 0; i < 16; ++i) {
+		full[11 + i] = static_cast<std::uint8_t>(i);
+	}
+	const auto fullResult = ParseForwardedCallback(full.data(), full.size());
+	ASSERT_TRUE(fullResult.ok);
+	ASSERT_TRUE(fullResult.hasObfuscation);
+	ASSERT_EQUALS((std::uint8_t)0x80, fullResult.obfuscationSettings);
+	for (std::size_t i = 0; i < 16; ++i) {
+		ASSERT_EQUALS(static_cast<std::uint8_t>(i), fullResult.userHash[i]);
+	}
+
+	// Truncated below the 10-byte minimum: not ok.
+	ASSERT_FALSE(ParseForwardedCallback(bare.data(), 9).ok);
+	ASSERT_FALSE(ParseForwardedCallback(nullptr, bare.size()).ok);
+
+	// Trailing bytes short of the obfuscation part (10..26 bytes) are accepted and ignored.
+	std::array<std::uint8_t, 15> withTrailing{};
+	std::copy(bare.begin(), bare.end(), withTrailing.begin());
+	const auto trailingResult = ParseForwardedCallback(withTrailing.data(), withTrailing.size());
+	ASSERT_TRUE(trailingResult.ok);
+	ASSERT_FALSE(trailingResult.hasObfuscation);
+
+	// Trailing bytes beyond the 27-byte obfuscated form are accepted and ignored too.
+	std::array<std::uint8_t, 30> withExtra{};
+	std::copy(full.begin(), full.end(), withExtra.begin());
+	const auto extraResult = ParseForwardedCallback(withExtra.data(), withExtra.size());
+	ASSERT_TRUE(extraResult.ok);
+	ASSERT_TRUE(extraResult.hasObfuscation);
+}

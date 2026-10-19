@@ -317,6 +317,13 @@ target_include_directories (NatRendezvousProtocolTest PRIVATE
 )
 target_link_libraries (NatRendezvousProtocolTest muleunit ${Boost_LIBRARIES})
 
+# Lugdunum NAT callback codecs and the OP_IDCHANGE fields, without the application.
+add_executable (LugdunumNatTraversalTest LugdunumNatTraversalTest.cpp)
+target_include_directories (LugdunumNatTraversalTest PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_BINARY_DIR})
+target_compile_features (LugdunumNatTraversalTest PRIVATE cxx_std_17)
+target_link_libraries (LugdunumNatTraversalTest muleunit mulecommon)
+add_test (NAME LugdunumNatTraversalTest COMMAND LugdunumNatTraversalTest)
+
 # The buffering between libutp and the eD2k stack: the would-block contract
 # CEMSocket depends on, and the close that must happen exactly once. Header-only
 # and free of libutp, so it is compiled and run in every build rather than only

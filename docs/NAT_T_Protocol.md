@@ -136,3 +136,35 @@ echoed but not used to choose roles, so an eMuleAI uploader still gets QUIC
 advertised and waits for a dial that never comes. Do not claim PASS unless a
 real packet trace and the corresponding connection/test logs show the CAPS
 exchange followed by the QUIC/TLS/EAQN1 result.
+
+## Lugdunum NAT callback (eserver 17.15+)
+
+Lugdunum servers relay a NAT callback between two LowID clients on the same
+server (eMule wiki, "NatT protocol", section "eServer (Lugdunum)"). A client
+opts in with `CT_SERVER_FLAGS` bit `0x1000` (`SRVCAP_NATTRAVERSAL`); the
+server then assigns an odd LowID and appends a "your port" field to
+`OP_IDCHANGE`. The server announces support with TCP flag `0x1000`
+(`SRV_TCPFLG_NATTRAVERSAL`) and UDP flag `0x00010000`.
+
+| Opcode | Value | Direction | Payload |
+| --- | --- | --- | --- |
+| `OP_NAT_CALLBACKREQUEST` | `0xA6` | client UDP socket to server UDP | `<target ID 4><requester ID 4>` |
+| `OP_NAT_CALLBACKREQUESTED_UDP` | `0xA7` | server UDP to client UDP socket | `<seen IP 4><seen UDP port 2><requester ID 4>[<obfuscation settings 1><user hash 16>]` |
+| `OP_NAT_CALLBACKREQUESTED` | `0x37` | server TCP to client | as `0xA7` |
+
+`OP_IDCHANGE` with the extra field is
+`<ID 4><flags 4><server TCP port 4><reported IP 4><obfuscation TCP port 4><your port 4>`.
+For a LowID, "your port" is our TCP port as the server sees it, after any NAT.
+
+aMule implements:
+
+- recognising and logging the server's TCP flag (`CServer::SupportsNatTraversal()`);
+- reading "your port" (`CServer::GetSeenTcpPort()`);
+- pure codecs for the three opcodes (`src/LugdunumNatTraversal.h`). The wiki gives the
+  seen UDP port as `[uint16 4]`; it is read as a 2-byte uint16, not yet confirmed by
+  a capture.
+
+Not implemented: the login opt-in, sending `0xA6` (which must be obfuscated
+"the server way" and leave from the client UDP socket), routing server UDP that
+arrives on the client UDP socket, handling `0xA7`/`0x37`, the NatT-capable
+LowID sources such a server includes in source answers, and any peer tunnel.

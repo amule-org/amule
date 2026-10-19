@@ -99,6 +99,7 @@ CServer::CServer(CServer *pOld)
 	m_dwIPServerKeyUDP = pOld->m_dwIPServerKeyUDP;
 	m_nObfuscationPortTCP = pOld->m_nObfuscationPortTCP;
 	m_nObfuscationPortUDP = pOld->m_nObfuscationPortUDP;
+	m_nSeenTcpPort = pOld->m_nSeenTcpPort;
 }
 
 CServer::~CServer()
@@ -151,6 +152,7 @@ void CServer::Init()
 	m_dwIPServerKeyUDP = 0;
 	m_nObfuscationPortTCP = 0;
 	m_nObfuscationPortUDP = 0;
+	m_nSeenTcpPort = 0;
 }
 
 void CServer::AddTagFromFile(const CTag &tag)
