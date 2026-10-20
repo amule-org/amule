@@ -101,6 +101,7 @@
 #include "KadBuddyIdLayout.h" // Needed for ConvertBuddyIdLayout (#1835)
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 #include "LugdunumNatTraversal.h"    // Needed for ShouldRequestLugdunumNatCallback
+#include "NatServerHolePunch.h"      // Needed for ShouldRequestLowIdHolePunch
 #include "EncryptedDatagramSocket.h" // Needed for CEncryptedDatagramSocket::EncryptSendServer
 #endif
 
@@ -1851,6 +1852,36 @@ void CUpDownClient::TrySendLugdunumNatCallbackRequest() const
 		false,
 		0);
 }
+
+void CUpDownClient::TrySendLowIdHolePunchRequest() const
+{
+	if (theApp->serverconnect == nullptr) {
+		return;
+	}
+	CServer *server = theApp->serverconnect->GetCurrentServer();
+	if (server == nullptr) {
+		return;
+	}
+	const NatServerHolePunch::RequestFacts facts{ theApp->serverconnect->GetClientID(),
+		GetUserIDHybrid(),
+		theApp->serverconnect->IsLocalServer(GetServerIP(), GetServerPort()),
+		server->SupportsLowIdHolePunch(),
+		server->IsLugdunumNatCallbackActive(),
+		thePrefs::IsLowIdHolePunchEnabled() };
+	if (!NatServerHolePunch::ShouldRequestLowIdHolePunch(facts)) {
+		return;
+	}
+
+	const NatServerHolePunch::Request request{ GetUserIDHybrid(), thePrefs::GetEffectiveUDPPort() };
+	const std::array<std::uint8_t, 6> payload = NatServerHolePunch::BuildRequest(request);
+	CMemFile data(payload.data(), payload.size());
+	CPacket *packet = new CPacket(data, OP_EDONKEYPROT, NatServerTcp::OP_LOWID_HOLEPUNCH_REQUEST);
+
+	AddDebugLogLineN(
+		logServer, CFormat("Server: OP_LOWID_HOLEPUNCH_REQUEST for source %u") % GetUserIDHybrid());
+	theStats::AddUpOverheadServer(packet->GetPacketSize());
+	theApp->serverconnect->SendPacket(packet);
+}
 #endif
 
 EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
@@ -1890,8 +1921,11 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 			// We cannot do a callback!
 			if (GetDownloadState() == DS_CONNECTING) {
 #ifdef ENABLE_NATT_SERVER_COORDINATION
-				// Sent once per source: a DS_LOWTOLOWIP source is not asked again.
+				// Sent once per source: a DS_LOWTOLOWIP source is not asked again. A server
+				// is either Lugdunum or ed2k-server; each call no-ops on the
+				// other's server.
 				TrySendLugdunumNatCallbackRequest();
+				TrySendLowIdHolePunchRequest();
 #endif
 				SetDownloadState(DS_LOWTOLOWIP);
 			} else if (GetDownloadState() == DS_REQHASHSET) {

@@ -52,6 +52,8 @@
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 #include "LugdunumNatTraversal.h"   // Needed for ParseIdChangeFields
 #include "LugdunumNatCallbackLog.h" // Needed for LogForwardedCallback
+#include "NatServerHolePunch.h"     // Needed for ParseInfo, ParseFailure
+#include "NatServerHolePunchLog.h"  // Needed for LogInfo, LogFailure
 #endif
 #ifdef ENABLE_IPV6
 #include "AdvertisedIPv6.h" // Needed for AdvertisedIPv6ForPeers
@@ -665,13 +667,34 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 		case OP_NAT_CALLBACKREQUESTED: {
 			AddDebugLogLineN(logServer, "Server: OP_NAT_CALLBACKREQUESTED");
 			theStats::AddDownOverheadServer(size);
-			// Logged only, as the wiki describes (S4/S6.4): no reply, no punch. Shares a handler
+			// Logged only, as the wiki describes: no reply, no punch. Shares a handler
 			// with the UDP 0xA7 path (ClientUDPSocket.cpp), as NeoMule does.
 			const LugdunumNatTraversal::ForwardedCallback callback =
 				LugdunumNatTraversal::ParseForwardedCallback(packet, size);
 			if (callback.ok) {
 				LugdunumNatTraversal::LogForwardedCallback(
 					logServer, "OP_NAT_CALLBACKREQUESTED", callback);
+			}
+			break;
+		}
+		case NatServerTcp::OP_LOWID_HOLEPUNCH_INFO: {
+			AddDebugLogLineN(logServer, "Server: OP_LOWID_HOLEPUNCH_INFO");
+			theStats::AddDownOverheadServer(size);
+			// Logged only: no punch, no tunnel, no reply.
+			const std::optional<NatServerHolePunch::Info> info =
+				NatServerHolePunch::ParseInfo(packet, size);
+			if (info.has_value()) {
+				NatServerHolePunch::LogInfo(logServer, *info);
+			}
+			break;
+		}
+		case NatServerTcp::OP_LOWID_HOLEPUNCH_FAIL: {
+			AddDebugLogLineN(logServer, "Server: OP_LOWID_HOLEPUNCH_FAIL");
+			theStats::AddDownOverheadServer(size);
+			const std::optional<NatServerHolePunch::Failure> failure =
+				NatServerHolePunch::ParseFailure(packet, size);
+			if (failure.has_value()) {
+				NatServerHolePunch::LogFailure(logServer, *failure);
 			}
 			break;
 		}

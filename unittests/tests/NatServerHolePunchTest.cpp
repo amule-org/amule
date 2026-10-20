@@ -147,3 +147,103 @@ TEST(NatServerHolePunch, OnlyAServerWithTheHolePunchFlagAcceptsRequests)
 	ASSERT_FALSE(ServerAcceptsHolePunchRequest(0x0000C5DDu));
 	ASSERT_FALSE(ServerAcceptsHolePunchRequest(0));
 }
+
+TEST(NatServerHolePunch, BuildsTheUdpPortsLoginValueFromBothPorts)
+{
+	ASSERT_EQUALS((std::uint32_t)0x04D20539, BuildUdpPortsLoginValue(0x04D2, 0x0539));
+	ASSERT_EQUALS((std::uint32_t)0, BuildUdpPortsLoginValue(0, 0));
+	// aMule shares one UDP socket for Kad and the client protocol: both arguments are usually
+	// equal in practice, which must not collapse the two fields into one.
+	ASSERT_EQUALS((std::uint32_t)0x12340000, BuildUdpPortsLoginValue(0x1234, 0));
+	ASSERT_EQUALS((std::uint32_t)0x00005678, BuildUdpPortsLoginValue(0, 0x5678));
+}
+
+TEST(NatServerHolePunch, SendsKeepaliveOnlyWhileConnectedToACapableServerWithTheSettingOn)
+{
+	KeepaliveFacts facts;
+	facts.settingEnabled = true;
+	facts.connected = true;
+	facts.serverAnnouncesHolePunch = true;
+	ASSERT_TRUE(ShouldSendKeepalive(facts));
+
+	KeepaliveFacts settingOff = facts;
+	settingOff.settingEnabled = false;
+	ASSERT_FALSE(ShouldSendKeepalive(settingOff));
+
+	KeepaliveFacts notConnected = facts;
+	notConnected.connected = false;
+	ASSERT_FALSE(ShouldSendKeepalive(notConnected));
+
+	KeepaliveFacts notCapable = facts;
+	notCapable.serverAnnouncesHolePunch = false;
+	ASSERT_FALSE(ShouldSendKeepalive(notCapable));
+}
+
+TEST(NatServerHolePunch, RequestsHolePunchOnlyWhenEveryPreconditionHolds)
+{
+	RequestFacts facts;
+	facts.ourId = 100;    // LowID
+	facts.sourceId = 200; // LowID
+	facts.sameServer = true;
+	facts.serverAnnouncesHolePunch = true;
+	facts.serverIsLugdunumActive = false;
+	facts.settingEnabled = true;
+	ASSERT_TRUE(ShouldRequestLowIdHolePunch(facts));
+
+	RequestFacts settingOff = facts;
+	settingOff.settingEnabled = false;
+	ASSERT_FALSE(ShouldRequestLowIdHolePunch(settingOff));
+
+	RequestFacts differentServer = facts;
+	differentServer.sameServer = false;
+	ASSERT_FALSE(ShouldRequestLowIdHolePunch(differentServer));
+
+	RequestFacts notCapable = facts;
+	notCapable.serverAnnouncesHolePunch = false;
+	ASSERT_FALSE(ShouldRequestLowIdHolePunch(notCapable));
+
+	// A server is either Lugdunum or ed2k-server: a Lugdunum-active server is left to
+	// TrySendLugdunumNatCallbackRequest, even if it also happened to carry this flag.
+	RequestFacts lugdunumActive = facts;
+	lugdunumActive.serverIsLugdunumActive = true;
+	ASSERT_FALSE(ShouldRequestLowIdHolePunch(lugdunumActive));
+
+	RequestFacts highIdSource = facts;
+	highIdSource.sourceId = 20000000;
+	ASSERT_FALSE(ShouldRequestLowIdHolePunch(highIdSource));
+
+	RequestFacts highIdUs = facts;
+	highIdUs.ourId = 20000000;
+	ASSERT_FALSE(ShouldRequestLowIdHolePunch(highIdUs));
+}
+
+TEST(NatServerHolePunch, KeepsLowIdServerSourcesOnlyFromOurOwnCapableServer)
+{
+	LowIdServerSourceFacts facts;
+	facts.originIsLocalServer = true;
+	facts.sourceServerIsOurCurrentServer = true;
+	facts.weAreLowId = true;
+	facts.serverAnnouncesHolePunch = true;
+	facts.settingEnabled = true;
+	ASSERT_TRUE(ShouldKeepLowIdServerSource(facts));
+
+	LowIdServerSourceFacts settingOff = facts;
+	settingOff.settingEnabled = false;
+	ASSERT_FALSE(ShouldKeepLowIdServerSource(settingOff));
+
+	LowIdServerSourceFacts notLocalServer = facts;
+	notLocalServer.originIsLocalServer = false;
+	ASSERT_FALSE(ShouldKeepLowIdServerSource(notLocalServer));
+
+	LowIdServerSourceFacts notOurServer = facts;
+	notOurServer.sourceServerIsOurCurrentServer = false;
+	ASSERT_FALSE(ShouldKeepLowIdServerSource(notOurServer));
+
+	LowIdServerSourceFacts notLowId = facts;
+	notLowId.weAreLowId = false;
+	ASSERT_FALSE(ShouldKeepLowIdServerSource(notLowId));
+
+	LowIdServerSourceFacts notCapable = facts;
+	notCapable.serverAnnouncesHolePunch = false;
+	ASSERT_FALSE(ShouldKeepLowIdServerSource(notCapable));
+}

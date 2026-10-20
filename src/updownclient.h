@@ -324,6 +324,10 @@ private:
 	//! Called from TryToContact's LowID->LowID decline, so at most once per source: a
 	//! DS_LOWTOLOWIP source is not asked again.
 	void TrySendLugdunumNatCallbackRequest() const;
+	//! Sends OP_LOWID_HOLEPUNCH_REQUEST (ed2k-server) for this LowID source when its
+	//! preconditions hold. Mutually exclusive with the Lugdunum callback per server.
+	//! Called from TryToContact's LowID->LowID decline, so at most once per source.
+	void TrySendLowIdHolePunchRequest() const;
 #endif
 
 public:

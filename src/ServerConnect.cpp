@@ -53,6 +53,12 @@
 #include "ServerLoginIPv6.h"  // Needed for DecideServerLoginIPv6
 #include "ServerIPv6Update.h" // Needed for DecideServerIPv6Update
 #endif
+#ifdef ENABLE_NATT_SERVER_COORDINATION
+#include "NatServerHolePunch.h" // Needed for BuildUdpPortsLoginValue, ShouldSendKeepalive
+#include "NetworkFunctions.h"   // Needed for Uint32_16toStringIP_Port
+#include "ClientUDPSocket.h"    // Needed for the complete type behind theApp->clientudp
+#include <algorithm>            // Needed for std::copy_n
+#endif
 
 // #define DEBUG_CLIENT_PROTOCOL
 
@@ -270,6 +276,13 @@ void CServerConnect::ConnectionEstablished(CServerSocket *sender)
 		}
 		sender->SetLoginIPv6(ipv6Login.advertise ? ipv6Login.address : CNetworkAddress::Absent());
 #endif
+#ifdef ENABLE_NATT_SERVER_COORDINATION
+		// Opt in to ed2k-server's LowID hole punch: advertises our UDP port so another LowID
+		// client's OP_LOWID_HOLEPUNCH_REQUEST can target us, even if we never send one ourselves.
+		if (thePrefs::IsLowIdHolePunchEnabled()) {
+			tagcount++;
+		}
+#endif
 		data.WriteUInt32(tagcount);
 
 		// Kry - Server doesn't support VBT tags afaik.
@@ -297,7 +310,7 @@ void CServerConnect::ConnectionEstablished(CServerSocket *sender)
 
 		uint32 dwNatTraversalFlags = 0;
 #ifdef ENABLE_NATT_SERVER_COORDINATION
-		// Opt in to Lugdunum's NAT callback (S6.1): behind both the build switch and the runtime
+		// Opt in to Lugdunum's NAT callback: behind both the build switch and the runtime
 		// setting, so ENABLE_ALL_EXPERIMENTAL alone cannot enrol a build on a live server.
 		if (thePrefs::IsLugdunumNatCallbackEnabled()) {
 			dwNatTraversalFlags = SRVCAP_NATTRAVERSAL;
@@ -324,6 +337,16 @@ void CServerConnect::ConnectionEstablished(CServerSocket *sender)
 			CTagHash tagIPv6(CT_MOD_IP_V6, CMD4Hash(ipv6Bytes));
 			// Not restrictive: that mode silently drops a hash tag.
 			tagIPv6.WriteTagToFile(&data, utf8strNone, false);
+		}
+#endif
+#ifdef ENABLE_NATT_SERVER_COORDINATION
+		if (thePrefs::IsLowIdHolePunchEnabled()) {
+			// CT_EMULE_UDPPORTS (0xF9): high 16 bits Kad UDP port, low 16 bits client UDP port.
+			// aMule shares one UDP socket for both.
+			const uint16 udpPort = thePrefs::GetEffectiveUDPPort();
+			CTagInt32 tagUdpPorts(CT_EMULE_UDPPORTS,
+				NatServerHolePunch::BuildUdpPortsLoginValue(udpPort, udpPort));
+			tagUdpPorts.WriteTagToFile(&data);
 		}
 #endif
 
@@ -763,6 +786,39 @@ bool CServerConnect::IsConnectedObfuscated() const
 {
 	return connectedsocket != NULL && connectedsocket->IsObfusicating();
 }
+
+#ifdef ENABLE_NATT_SERVER_COORDINATION
+void CServerConnect::TrySendLowIdHolePunchKeepalive()
+{
+	if (theApp->clientudp == nullptr) {
+		return;
+	}
+	// The TCP flags live on cur_server; the keepalive needs no server-UDP fields.
+	CServer *server = GetCurrentServer();
+	if (server == nullptr) {
+		return;
+	}
+	const NatServerHolePunch::KeepaliveFacts facts{
+		thePrefs::IsLowIdHolePunchEnabled(), IsConnected(), server->SupportsLowIdHolePunch()
+	};
+	if (!NatServerHolePunch::ShouldSendKeepalive(facts)) {
+		return;
+	}
+
+	NatServerHolePunch::Hash ownHash{};
+	std::copy_n(thePrefs::GetUserHash().GetHash(), ownHash.size(), ownHash.begin());
+	const NatServerHolePunch::Hash payload = NatServerHolePunch::BuildKeepalive(ownHash);
+	CMemFile data(payload.data(), payload.size());
+	CPacket *packet = new CPacket(data, OP_EDONKEYPROT, NatServerUdp::OP_NATT_KEEPALIVE);
+
+	const uint16 serverUdpPort = static_cast<uint16>(server->GetPort() + 4);
+	AddDebugLogLineN(logServer,
+		CFormat("Client UDP socket: OP_SERVER_NATT_KEEPALIVE to %s") %
+			Uint32_16toStringIP_Port(server->GetIP(), serverUdpPort));
+	theStats::AddUpOverheadServer(packet->GetPacketSize());
+	theApp->clientudp->SendPacket(packet, server->GetIP(), serverUdpPort, false, nullptr, false, 0);
+}
+#endif
 
 void CServerConnect::OnServerHostnameResolved(void *socket, uint32 ip)
 {

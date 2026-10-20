@@ -94,6 +94,7 @@
 #include "kademlia/kademlia/Indexed.h" // Needed for CKadEntryPtrList
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 #include "LugdunumNatTraversal.h" // Needed for ShouldKeepLowIdServerSource
+#include "NatServerHolePunch.h"   // Needed for ShouldKeepLowIdServerSource
 #endif
 
 SFileRating::SFileRating(const wxString &u, const wxString &f, sint16 r, const wxString &c)
@@ -1959,17 +1960,35 @@ void CPartFile::AddSources(CMemFile &sources,
 
 	bool keepLowIdSources = false;
 #ifdef ENABLE_NATT_SERVER_COORDINATION
-	// A Lugdunum server that took our NAT callback opt-in only sends LowID sources it can call back.
+	// A server is either Lugdunum or ed2k-server: each keeps a LowID source it would
+	// otherwise call back / hole-punch, so the two checks are independent and only one can apply
+	// to a given current server.
 	if (theApp->serverconnect != nullptr && theApp->serverconnect->IsConnected()) {
 		const CServer *current = theApp->serverconnect->GetCurrentServer();
-		LugdunumNatTraversal::LowIdServerSourceFacts facts;
-		facts.originIsLocalServer = origin == SF_LOCAL_SERVER;
-		facts.sourceServerIsOurCurrentServer = current != nullptr && current->GetIP() == serverip &&
-						       current->GetPort() == serverport;
-		facts.weAreLowId = theApp->serverconnect->IsLowID();
-		facts.serverCallbackCapable = current != nullptr && current->IsLugdunumNatCallbackActive();
-		facts.settingEnabled = thePrefs::IsLugdunumNatCallbackEnabled();
-		keepLowIdSources = LugdunumNatTraversal::ShouldKeepLowIdServerSource(facts);
+		const bool originIsLocalServer = origin == SF_LOCAL_SERVER;
+		const bool sourceServerIsOurCurrentServer = current != nullptr &&
+							    current->GetIP() == serverip &&
+							    current->GetPort() == serverport;
+		const bool weAreLowId = theApp->serverconnect->IsLowID();
+
+		LugdunumNatTraversal::LowIdServerSourceFacts lugdunumFacts;
+		lugdunumFacts.originIsLocalServer = originIsLocalServer;
+		lugdunumFacts.sourceServerIsOurCurrentServer = sourceServerIsOurCurrentServer;
+		lugdunumFacts.weAreLowId = weAreLowId;
+		lugdunumFacts.serverCallbackCapable =
+			current != nullptr && current->IsLugdunumNatCallbackActive();
+		lugdunumFacts.settingEnabled = thePrefs::IsLugdunumNatCallbackEnabled();
+
+		NatServerHolePunch::LowIdServerSourceFacts holePunchFacts;
+		holePunchFacts.originIsLocalServer = originIsLocalServer;
+		holePunchFacts.sourceServerIsOurCurrentServer = sourceServerIsOurCurrentServer;
+		holePunchFacts.weAreLowId = weAreLowId;
+		holePunchFacts.serverAnnouncesHolePunch =
+			current != nullptr && current->SupportsLowIdHolePunch();
+		holePunchFacts.settingEnabled = thePrefs::IsLowIdHolePunchEnabled();
+
+		keepLowIdSources = LugdunumNatTraversal::ShouldKeepLowIdServerSource(lugdunumFacts) ||
+				   NatServerHolePunch::ShouldKeepLowIdServerSource(holePunchFacts);
 	}
 #endif
 

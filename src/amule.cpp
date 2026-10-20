@@ -2523,6 +2523,15 @@ void CamuleApp::OnCoreTimer(CTimerEvent &WXUNUSED(evt))
 		listensocket->Process();
 	}
 
+#ifdef ENABLE_NATT_SERVER_COORDINATION
+	// ed2k-server's LowID hole punch keepalive: roughly every 60 s, no new thread.
+	static uint64 msPrevNatKeepalive;
+	if (msCur - msPrevNatKeepalive >= 60 * 1000) {
+		msPrevNatKeepalive = msCur;
+		serverconnect->TrySendLowIdHolePunchKeepalive();
+	}
+#endif
+
 	// Roughly every five minutes. An interface walk is too expensive to do per peer claim
 	// and too rare to leave to startup: between the two, this is what notices a prefix
 	// renumber or a privacy-address rotation on a session that never reconnects to a

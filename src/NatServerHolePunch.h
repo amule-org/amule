@@ -26,6 +26,7 @@
 
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 #include "ArchSpecific.h"
+#include "NetworkFunctions.h" // Needed for IsLowID
 #include "include/protocol/Protocols.h"
 #include "include/protocol/ed2k/Client2Server/TCP.h" // Needed for SRV_TCPFLG_LOWID_HOLEPUNCH
 
@@ -163,6 +164,69 @@ inline std::optional<Hash> ParseKeepalive(const std::uint8_t *data, std::size_t 
 	Hash hash{};
 	std::copy_n(data, 16, hash.begin());
 	return hash;
+}
+
+// CT_EMULE_UDPPORTS (0xF9) login tag value: high 16 bits Kad UDP port, low 16 bits client UDP
+// port. aMule shares one UDP socket for both, so the two arguments are usually equal.
+inline std::uint32_t BuildUdpPortsLoginValue(std::uint16_t kadUdpPort, std::uint16_t clientUdpPort)
+{
+	return (static_cast<std::uint32_t>(kadUdpPort) << 16) | clientUdpPort;
+}
+
+struct KeepaliveFacts
+{
+	bool settingEnabled = false;
+	bool connected = false;
+	bool serverAnnouncesHolePunch = false;
+};
+
+// Whether to send OP_SERVER_NATT_KEEPALIVE now: connected to a server that announced
+// SRV_TCPFLG_LOWID_HOLEPUNCH, with the runtime setting on.
+inline bool ShouldSendKeepalive(const KeepaliveFacts &facts)
+{
+	return facts.settingEnabled && facts.connected && facts.serverAnnouncesHolePunch;
+}
+
+struct RequestFacts
+{
+	std::uint32_t ourId = 0;
+	std::uint32_t sourceId = 0;
+	bool sameServer = false;
+	bool serverAnnouncesHolePunch = false;
+	// A server is either Lugdunum or ed2k-server: one announcing Lugdunum's NAT
+	// callback is handled by TrySendLugdunumNatCallbackRequest instead, never both.
+	bool serverIsLugdunumActive = false;
+	bool settingEnabled = false;
+};
+
+// Whether to send OP_LOWID_HOLEPUNCH_REQUEST for a LowID source: both ends must be LowID on the
+// same, hole-punch-capable, non-Lugdunum server, and the runtime setting must be on.
+inline bool ShouldRequestLowIdHolePunch(const RequestFacts &facts)
+{
+	if (!facts.settingEnabled || !facts.sameServer || facts.serverIsLugdunumActive ||
+		!facts.serverAnnouncesHolePunch) {
+		return false;
+	}
+	return IsLowID(facts.ourId) && IsLowID(facts.sourceId);
+}
+
+struct LowIdServerSourceFacts
+{
+	bool originIsLocalServer = false;
+	bool sourceServerIsOurCurrentServer = false;
+	bool weAreLowId = false;
+	bool serverAnnouncesHolePunch = false;
+	bool settingEnabled = false;
+};
+
+// Whether a LowID server source survives CanAddSource's LowID-while-firewalled drop. ed2k-server
+// sends LowID sources to any LowID requester unconditionally (no opt-in flag needed, confirmed
+// against get_sources.rs), so this only has to confirm the source came from our own current,
+// hole-punch-capable server and that the runtime setting is on.
+inline bool ShouldKeepLowIdServerSource(const LowIdServerSourceFacts &facts)
+{
+	return facts.settingEnabled && facts.originIsLocalServer && facts.sourceServerIsOurCurrentServer &&
+	       facts.weAreLowId && facts.serverAnnouncesHolePunch;
 }
 } // namespace NatServerHolePunch
 #endif // ENABLE_NATT_SERVER_COORDINATION

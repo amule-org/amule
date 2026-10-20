@@ -141,13 +141,50 @@ exchange followed by the QUIC/TLS/EAQN1 result.
 
 ed2k-server coordinates a hole punch between two LowID clients with
 `OP_LOWID_HOLEPUNCH_REQUEST` (`0x60`), `OP_LOWID_HOLEPUNCH_INFO` (`0x61`),
-`OP_LOWID_HOLEPUNCH_FAIL` (`0x62`) and the UDP keepalive `0x9F`
-(`src/NatServerHolePunch.h`). Since 0.9.84 it announces support with
-`OP_IDCHANGE` TCP flag `0x20000` (`SRV_TCPFLG_LOWID_HOLEPUNCH`), and always
-sets it. Under `ENABLE_NATT_SERVER_COORDINATION`, aMule recognises and logs
-that flag (`CServer::SupportsLowIdHolePunch()`); a `0x60` request may only go
-to a server that sets it (`NatServerHolePunch::ServerAcceptsHolePunchRequest()`).
-aMule does not send `0x60`, `0x9F` or the `0xF9` login tag yet.
+`OP_LOWID_HOLEPUNCH_FAIL` (`0x62`) and the UDP keepalive `OP_SERVER_NATT_KEEPALIVE`
+(`0x9F`) (eMule wiki "NatT protocol"; ed2k-server README "Implementing a compatible
+client", 0.9.84 `39b9d85`). Since 0.9.84 it announces support with `OP_IDCHANGE`
+TCP flag `0x20000` (`SRV_TCPFLG_LOWID_HOLEPUNCH`), and always sets it.
+
+aMule implements, only under `ENABLE_NATT_SERVER_COORDINATION` (**experimental**, off by
+default; default and `ENABLE_IPV6` builds are unaffected) and only when the runtime setting
+below is also on:
+
+- runtime opt-in: `thePrefs::IsLowIdHolePunchEnabled()` (`amule.conf` key
+  `/eMule/LowIdHolePunch`, default **off**, no widget, no EC tag). It gates the `0xF9` login
+  tag, the `0x9F` keepalive, sending `0x60` and keeping LowID sources, independently of
+  `LugdunumNatCallback` -- a server is either Lugdunum or ed2k-server, never both
+  (`NatServerHolePunch::ShouldRequestLowIdHolePunch()`'s `serverIsLugdunumActive` gate);
+- login opt-in: `CT_EMULE_UDPPORTS` (`0xF9`), value `(kadUDPPort << 16) | clientUDPPort`
+  (`ServerConnect.cpp`). aMule shares one UDP socket for Kad and the client protocol, so both
+  halves carry `thePrefs::GetEffectiveUDPPort()`. Sent even when we never send `0x60`
+  ourselves: it is what lets another LowID client's `0x60` name us as its target
+  (ed2k-server refuses a target with no known UDP port);
+- capability flag: `CServer::SupportsLowIdHolePunch()` reads `OP_IDCHANGE`'s TCP flags
+  (`NatServerHolePunch::ServerAcceptsHolePunchRequest()`), read directly off `cur_server` --
+  unlike Lugdunum's UDP-only fields, the TCP flags are already live there, so no server-list
+  copy is needed;
+- keepalive `OP_SERVER_NATT_KEEPALIVE` (`0x9F`): every ~60 s while connected to a hole-punch
+  announcing server, `CServerConnect::TrySendLowIdHolePunchKeepalive()` sends our 16-byte user
+  hash from the client UDP socket (`theApp->clientudp`, not the server link) to the server's
+  IP at TCP port + 4, plain (unobfuscated, unencrypted) -- driven from
+  `CamuleApp::OnCoreTimer`, no new thread;
+- sending `0x60`: where a LowID-to-LowID contact is declined in `TryToContact()`, next to
+  `TrySendLugdunumNatCallbackRequest()`, `CUpDownClient::TrySendLowIdHolePunchRequest()` sends
+  `<target_id 4><our_udp_port 2>` over the server TCP link
+  (`NatServerHolePunch::ShouldRequestLowIdHolePunch()`), at most once per source;
+- keeping LowID sources: ed2k-server sends LowID sources to any LowID requester
+  unconditionally (confirmed against its `get_sources.rs`: no opt-in flag gates it, unlike
+  Lugdunum). `CPartFile::AddSources()` therefore keeps one from our current,
+  hole-punch-announcing server with the setting on
+  (`NatServerHolePunch::ShouldKeepLowIdServerSource()`), independently of the Lugdunum check
+  on the same call;
+- receiving `0x61`/`0x62` on the server TCP link (`ServerSocket.cpp`): parsed
+  (`NatServerHolePunch::ParseInfo()`/`ParseFailure()`) and logged only
+  (`src/NatServerHolePunchLog.h`). No reply.
+
+Not implemented: the punch itself and any peer tunnel. The switch must therefore stay off in
+default and packaged builds, and the runtime setting above stays off until that slice lands.
 
 ## Lugdunum NAT callback (eserver 17.15+)
 

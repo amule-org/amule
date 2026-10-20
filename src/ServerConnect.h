@@ -115,6 +115,13 @@ public:
 	bool AwaitingTestFromIP(uint32 ip);
 	bool IsConnectedObfuscated() const;
 
+#ifdef ENABLE_NATT_SERVER_COORDINATION
+	//! Sends OP_SERVER_NATT_KEEPALIVE from the client UDP socket when connected to a server that
+	//! announced SRV_TCPFLG_LOWID_HOLEPUNCH and the runtime setting is on. Called every ~60 s
+	//! from CamuleApp::OnCoreTimer -- no new thread.
+	void TrySendLowIdHolePunchKeepalive();
+#endif
+
 	//! Records that a server's hostname resolved during the current sweep.
 	void NoteHostnameResolved() { m_hostnameResolvedThisSweep = true; }
 

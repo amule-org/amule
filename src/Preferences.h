@@ -831,6 +831,10 @@ public:
 	// OP_NAT_CALLBACKREQUEST send and keeping LowID server sources. amule.conf-only, off by
 	// default -- no widget, no EC tag.
 	static bool IsLugdunumNatCallbackEnabled() { return s_LugdunumNatCallbackEnabled; }
+	// Runtime opt-in for ed2k-server's LowID hole punch: gates the CT_EMULE_UDPPORTS login tag,
+	// the OP_SERVER_NATT_KEEPALIVE send, the OP_LOWID_HOLEPUNCH_REQUEST send and keeping LowID
+	// server sources from such a server. amule.conf-only, off by default -- no widget, no EC tag.
+	static bool IsLowIdHolePunchEnabled() { return s_LowIdHolePunchEnabled; }
 #endif
 
 	static void SetClientCryptLayerSupported(bool v) { s_IsClientCryptLayerSupported = v; }
@@ -1197,6 +1201,7 @@ protected:
 	static uint8 s_byCryptTCPPaddingLength;
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 	static bool s_LugdunumNatCallbackEnabled;
+	static bool s_LowIdHolePunchEnabled;
 #endif
 
 	// GeoIP / IP2Country
