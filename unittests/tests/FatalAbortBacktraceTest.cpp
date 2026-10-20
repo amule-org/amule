@@ -45,6 +45,12 @@
 #define MULE_HAVE_ABORT_BACKTRACE 1
 #endif
 
+// get_backtrace() resolves frames through bfd only on Linux. Elsewhere -- FreeBSD has execinfo.h
+// in base and bfd.h with binutils -- it returns a placeholder, with no frames to check.
+#if defined(MULE_HAVE_ABORT_BACKTRACE) && defined(HAVE_BFD) && defined(__linux__)
+#define MULE_HAVE_BFD_BACKTRACE 1
+#endif
+
 #ifdef MULE_HAVE_ABORT_BACKTRACE
 #include <cerrno>
 #include <chrono>
@@ -58,8 +64,14 @@
 #include <stdexcept>
 #include <thread>
 #include <string>
+#include <sys/stat.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <climits>
+#include <fstream>
+#include <spawn.h>
+
+extern char **environ; // for posix_spawnp()
 #endif
 
 using namespace muleunit;
@@ -445,6 +457,140 @@ bool Contains(const std::string &haystack, const char *needle)
 	return haystack.find(needle) != std::string::npos;
 }
 
+#ifdef MULE_HAVE_BFD_BACKTRACE
+// A binary bfd gets no symbols from: one the running user may execute but not read (an
+// execute-only mode, or a container user the file's owner does not map to), so /proc/self/exe
+// cannot be opened, or a stripped one, which opens but has no symbol table. get_backtrace() is
+// called from the fatal-signal and assert handlers, so it has to degrade to raw frames rather than
+// assert -- the assert re-entered get_backtrace() and turned the crash being reported into a
+// SIGTRAP.
+//
+// The child is such a copy of this binary, exec'd with this variable set. It runs the scenario
+// from static initialisation and exits before the suite starts. So get_backtrace() runs before
+// main(), with neither wx's app nor muleunit set up, and has to keep needing nothing from them.
+const char kNoSymbolsEnv[] = "MULE_TEST_BACKTRACE_NO_SYMBOLS";
+
+std::string s_childCopy;
+
+void OnAssertInNoSymbolsChild(const wxString &, int, const wxString &, const wxString &cond, const wxString &)
+{
+	fprintf(stderr, "ASSERT FIRED: %s\n", static_cast<const char *>(cond.utf8_str()));
+	_exit(99);
+}
+
+// The canonical path this process runs from; readlink() needs no read access to the binary.
+std::string ThisBinaryPath()
+{
+	char self[PATH_MAX];
+	const ssize_t len = readlink("/proc/self/exe", self, sizeof(self) - 1);
+	if (len <= 0) {
+		return std::string();
+	}
+	return std::string(self, static_cast<size_t>(len));
+}
+
+struct NoSymbolsChild
+{
+	NoSymbolsChild()
+	{
+		// The variable holds the copy's path, and only that copy acts on it. Set to anything
+		// for a whole run, it would otherwise end every run of this binary here, with exit 0
+		// and no test run.
+		const char *copy = getenv(kNoSymbolsEnv);
+		if (!copy || ThisBinaryPath() != copy) {
+			return;
+		}
+		wxSetAssertHandler(OnAssertInNoSymbolsChild);
+		// Twice: the second call must neither retry the open nor use the handle the first one
+		// failed to set up.
+		fprintf(stderr, "%s", static_cast<const char *>(get_backtrace(0).utf8_str()));
+		fprintf(stderr, "%s", static_cast<const char *>(get_backtrace(0).utf8_str()));
+		_exit(0);
+	}
+} s_noSymbolsChild;
+
+void ChildExecCopy()
+{
+	setenv(kNoSymbolsEnv, s_childCopy.c_str(), 1);
+	execl(s_childCopy.c_str(), s_childCopy.c_str(), static_cast<char *>(nullptr));
+	_exit(98); // exec failed
+}
+
+// Copies this binary next to itself, rather than to /tmp, which may be mounted noexec. The tag
+// ends up in the copy's name, so the raw frames of a backtrace taken in it can be recognised.
+bool CopyThisBinary(const char *tag)
+{
+	const std::string self = ThisBinaryPath();
+	if (self.empty()) {
+		return false;
+	}
+	s_childCopy = self + tag + std::to_string(getpid());
+	std::ifstream in(self, std::ios::binary);
+	std::ofstream out(s_childCopy, std::ios::binary);
+	out << in.rdbuf();
+	return out.good();
+}
+
+// Removes the copy when the test leaves, also when an assertion throws on the way out.
+struct RemoveTheCopyOnExit
+{
+	~RemoveTheCopyOnExit() { unlink(s_childCopy.c_str()); }
+};
+
+// Strips the copy in place with binutils' strip, run directly rather than through a shell. False
+// when strip is missing or fails.
+bool StripTheCopy()
+{
+	posix_spawn_file_actions_t actions;
+	posix_spawn_file_actions_init(&actions);
+	posix_spawn_file_actions_addopen(&actions, STDERR_FILENO, "/dev/null", O_WRONLY, 0);
+	std::string path = s_childCopy;
+	char strip[] = "strip";
+	char stripAll[] = "--strip-all";
+	char *const argv[] = { strip, stripAll, &path[0], nullptr };
+	pid_t pid = 0;
+	const int rc = posix_spawnp(&pid, "strip", &actions, nullptr, argv, environ);
+	posix_spawn_file_actions_destroy(&actions);
+	if (rc != 0) {
+		return false;
+	}
+	int status = 0;
+	while (waitpid(pid, &status, 0) < 0) {
+		if (errno != EINTR) {
+			return false;
+		}
+	}
+	return WIFEXITED(status) && WEXITSTATUS(status) == 0;
+}
+
+// Whether this binary is position-independent: ELF e_type ET_DYN (3), read in the byte order
+// e_ident[EI_DATA] gives (1 little-endian, 2 big-endian).
+bool ThisBinaryIsPie()
+{
+	std::ifstream self("/proc/self/exe", std::ios::binary);
+	unsigned char header[18] = {};
+	if (!self.read(reinterpret_cast<char *>(header), sizeof(header)) ||
+		memcmp(header, "\177ELF", 4) != 0) {
+		return false;
+	}
+	const unsigned type =
+		header[5] == 2 ? (header[16] << 8 | header[17]) : (header[17] << 8 | header[16]);
+	return type == 3;
+}
+
+// Both calls printed the copy's frames as backtrace_symbols() lines, "path(...) [0x...]", rather
+// than "?? in path[0x...]". For a PIE binary the parentheses must hold the "+0x" offset into it:
+// ASLR makes the runtime address worthless, and the offset is what addr2line resolves later.
+bool HasRawFramesOfTheCopy(const std::string &stderrText)
+{
+	const std::string frame = s_childCopy + "(";
+	if (CountOccurrences(stderrText, frame.c_str()) < 2) {
+		return false;
+	}
+	return !ThisBinaryIsPie() || CountOccurrences(stderrText, (frame + "+0x").c_str()) >= 2;
+}
+#endif // MULE_HAVE_BFD_BACKTRACE
+
 } // namespace
 
 DECLARE_SIMPLE(FatalAbortBacktrace)
@@ -721,6 +867,54 @@ TEST(FatalAbortBacktrace, TheTrapSuppressionDoesNotMuteAnAbort)
 	ASSERT_EQUALS(SIGABRT, r.signal_number);
 	ASSERT_TRUE(Contains(r.stderr_text, "FATAL BACKTRACE FOLLOWS"));
 }
+
+#ifdef MULE_HAVE_BFD_BACKTRACE
+TEST(FatalAbortBacktrace, AnUnreadableBinaryStillGivesRawFrames)
+{
+	// Root reads an execute-only file regardless, so the case cannot be set up there.
+	if (geteuid() == 0) {
+		return;
+	}
+
+	const bool copied = CopyThisBinary(".unreadable.");
+	RemoveTheCopyOnExit removeTheCopy;
+	ASSERT_TRUE(copied);
+	ASSERT_EQUALS(0, chmod(s_childCopy.c_str(), 0111));
+
+	const ChildResult r = RunInChild(ChildExecCopy);
+
+	ASSERT_FALSE(r.timed_out);
+	ASSERT_FALSE(r.exited_on_signal);
+	ASSERT_EQUALS(0, r.exit_code);
+	ASSERT_FALSE(Contains(r.stderr_text, "ASSERT FIRED"));
+	ASSERT_EQUALS(1, CountOccurrences(r.stderr_text, "Error while opening file for backtrace symbols"));
+	ASSERT_TRUE(HasRawFramesOfTheCopy(r.stderr_text));
+}
+
+// Stripped opens fine and reaches the symbol table, which is empty -- a different way to the
+// same missing symbols, and one that prints no error on its way there.
+TEST(FatalAbortBacktrace, AStrippedBinaryStillGivesRawFrames)
+{
+	const bool copied = CopyThisBinary(".stripped.");
+	RemoveTheCopyOnExit removeTheCopy;
+	ASSERT_TRUE(copied);
+	// strip comes with binutils, like the bfd headers, but a build host can have one without
+	// the other. Without it the case cannot be set up.
+	if (!StripTheCopy()) {
+		return;
+	}
+	ASSERT_EQUALS(0, chmod(s_childCopy.c_str(), 0755));
+
+	const ChildResult r = RunInChild(ChildExecCopy);
+
+	ASSERT_FALSE(r.timed_out);
+	ASSERT_FALSE(r.exited_on_signal);
+	ASSERT_EQUALS(0, r.exit_code);
+	ASSERT_FALSE(Contains(r.stderr_text, "ASSERT FIRED"));
+	ASSERT_EQUALS(1, CountOccurrences(r.stderr_text, "No symbols in the executable"));
+	ASSERT_TRUE(HasRawFramesOfTheCopy(r.stderr_text));
+}
+#endif // MULE_HAVE_BFD_BACKTRACE
 
 #else /* !MULE_HAVE_ABORT_BACKTRACE */
 

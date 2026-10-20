@@ -297,6 +297,9 @@ static void init_pie_base()
 static bfd *s_a_bfd;
 static asymbol **s_symbol_list;
 static bool s_have_backtrace_symbols = false;
+// One attempt per process: a binary we cannot read (an execute-only mode, or a container user
+// the owner does not map to) stays unreadable, and each retry would print the error again.
+static bool s_backtrace_info_tried = false;
 static const char *s_file_name;
 static const char *s_function_name;
 static unsigned int s_line_number;
@@ -312,14 +315,14 @@ static int get_backtrace_symbols(bfd *a_bfd, asymbol ***symbol_list_ptr)
 
 	if (vectorsize < 0) {
 		fprintf(stderr,
-			"Error while getting vector size for backtrace symbols : %s",
+			"Error while getting vector size for backtrace symbols : %s\n",
 			bfd_errmsg(bfd_get_error()));
 		return -1;
 	}
 
 	if (vectorsize == 0) {
 		fprintf(stderr,
-			"Error while getting backtrace symbols : No symbols (%s)",
+			"Error while getting backtrace symbols : No symbols (%s)\n",
 			bfd_errmsg(bfd_get_error()));
 		return -1;
 	}
@@ -327,15 +330,22 @@ static int get_backtrace_symbols(bfd *a_bfd, asymbol ***symbol_list_ptr)
 	*symbol_list_ptr = (asymbol **)malloc(vectorsize);
 
 	if (*symbol_list_ptr == NULL) {
-		fprintf(stderr, "Error while getting backtrace symbols : Cannot allocate memory");
+		fprintf(stderr, "Error while getting backtrace symbols : Cannot allocate memory\n");
 		return -1;
 	}
 
 	vectorsize = bfd_canonicalize_symtab(a_bfd, *symbol_list_ptr);
 
 	if (vectorsize < 0) {
-		fprintf(stderr, "Error while getting symbol table : %s", bfd_errmsg(bfd_get_error()));
+		fprintf(stderr, "Error while getting symbol table : %s\n", bfd_errmsg(bfd_get_error()));
 		return -1;
+	}
+
+	// A stripped binary: the bound above still counts the list's terminating NULL, but there is
+	// nothing in the list. Say so, or the report's raw frames come with no reason.
+	if (vectorsize == 0) {
+		fprintf(stderr,
+			"Error while getting backtrace symbols : No symbols in the executable (stripped?)\n");
 	}
 
 	return vectorsize;
@@ -352,14 +362,15 @@ void init_backtrace_info()
 
 	if (s_a_bfd == NULL) {
 		fprintf(stderr,
-			"Error while opening file for backtrace symbols : %s",
+			"Error while opening file for backtrace symbols : %s\n",
 			bfd_errmsg(bfd_get_error()));
 		return;
 	}
 
 	if (!(bfd_check_format_matches(s_a_bfd, bfd_object, NULL))) {
-		fprintf(stderr, "Error while init. backtrace symbols : %s", bfd_errmsg(bfd_get_error()));
+		fprintf(stderr, "Error while init. backtrace symbols : %s\n", bfd_errmsg(bfd_get_error()));
 		bfd_close(s_a_bfd);
+		s_a_bfd = nullptr;
 		return;
 	}
 
@@ -448,6 +459,7 @@ wxString get_backtrace(unsigned n)
 		return "";
 	}
 
+	std::vector<wxString> rawline(num_entries);
 	std::vector<wxString> libname(num_entries);
 	std::vector<wxString> funcname(num_entries);
 	std::vector<wxString> address(num_entries);
@@ -455,6 +467,7 @@ wxString get_backtrace(unsigned n)
 
 	for (int i = 0; i < num_entries; ++i) {
 		wxString wxBtString = wxConvLibc.cMB2WX(bt_strings[i]);
+		rawline[i] = wxBtString;
 		int posLPar = wxBtString.Find('(');
 		int posRPar = wxBtString.Find(')');
 		int posLBra = wxBtString.Find('[');
@@ -504,12 +517,24 @@ wxString get_backtrace(unsigned n)
 	bool hasLineNumberInfo = false;
 
 #ifdef HAVE_BFD
-	if (!s_have_backtrace_symbols) {
+	// Marked tried before the attempt, on purpose: a fault inside bfd while it reads the binary
+	// reaches the crash handler, which calls back in here. That call skips the attempt and still
+	// reports. std::call_once would instead have it wait on the attempt it interrupted, forever.
+	if (!s_backtrace_info_tried) {
+		s_backtrace_info_tried = true;
 		init_backtrace_info();
-		wxASSERT(s_have_backtrace_symbols);
 	}
 
-	for (int i = 0; i < num_entries; ++i) {
+	// No assert when the symbols are missing: this runs from the fatal-signal and assert
+	// handlers, so a failed assert here re-enters get_backtrace(), fails again, and wx traps on
+	// the nested assert -- replacing the crash being reported with a SIGTRAP. The frames fall
+	// back to the lines backtrace_symbols() gave us. Who watches the watchmen? Not an assert, it
+	// turns out.
+	//
+	// Read once: another thread may still be setting the symbols up, and the loop and the
+	// formatting below must agree on whether the loop filled the line info.
+	const bool haveSymbols = s_have_backtrace_symbols;
+	for (int i = 0; haveSymbols && i < num_entries; ++i) {
 		s_file_name = NULL;
 		s_function_name = NULL;
 		s_line_number = 0;
@@ -538,7 +563,7 @@ wxString get_backtrace(unsigned n)
 		}
 	}
 
-	hasLineNumberInfo = true;
+	hasLineNumberInfo = haveSymbols;
 
 #else /* !HAVE_BFD */
 	if (wxThread::IsMain()) {
@@ -587,27 +612,29 @@ wxString get_backtrace(unsigned n)
 	wxString trace;
 	// Remove 'n+1' first entries (+1 because of this function)
 	for (int i = n + 1; i < num_entries; ++i) {
+		wxString btLine;
+		btLine << "[" << i << "] ";
+		// Nothing to resolve against (a stripped or unreadable binary, or no addr2line): the line
+		// as backtrace_symbols() gave it. It keeps the module-relative +0x offset addr2line needs
+		// later; the runtime address alone is useless once ASLR has moved a PIE binary.
+		if (!hasLineNumberInfo) {
+			trace += btLine + rawline[i] + "\n";
+			continue;
+		}
 		/* If we have no function name, use the result from addr2line */
 		if (funcname[i].IsEmpty()) {
-			if (hasLineNumberInfo) {
-				funcname[i] = out[2 * i];
-			} else {
-				funcname[i] = "??";
-			}
+			funcname[i] = out[2 * i];
 		}
-		wxString btLine;
-		btLine << "[" << i << "] " << funcname[i] << " in ";
+		btLine << funcname[i] << " in ";
 		/* If addr2line did not find a line number, use bt_string */
-		if (!hasLineNumberInfo || out[2 * i + 1].Mid(0, 2) == "??") {
+		if (out[2 * i + 1].Mid(0, 2) == "??") {
 			btLine += libname[i] + "[" + address[i] + "]";
-		} else if (hasLineNumberInfo) {
+		} else {
 #if TOO_VERBOSE_BACKTRACE
 			btLine += out[2 * i + 1];
 #else
 			btLine += out[2 * i + 1].AfterLast('/');
 #endif
-		} else {
-			btLine += libname[i];
 		}
 
 		trace += btLine + "\n";
