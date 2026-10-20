@@ -50,15 +50,56 @@
 #include "NetworkFunctions.h" // Needed for IsGoodIP
 #include "GuiEvents.h"        // Needed for Notify_*
 #ifdef ENABLE_NATT_SERVER_COORDINATION
-#include "LugdunumNatTraversal.h"   // Needed for ParseIdChangeFields
-#include "LugdunumNatCallbackLog.h" // Needed for LogForwardedCallback
-#include "NatServerHolePunch.h"     // Needed for ParseInfo, ParseFailure
-#include "NatServerHolePunchLog.h"  // Needed for LogInfo, LogFailure
+#include "LugdunumNatTraversal.h"            // Needed for ParseIdChangeFields
+#include "LugdunumNatCallbackLog.h"          // Needed for LogForwardedCallback
+#include "NatServerHolePunch.h"              // Needed for ParseInfo, ParseFailure
+#include "NatServerHolePunchLog.h"           // Needed for LogInfo, LogFailure
+#include "ClientUDPSocket.h"                 // Needed for DialLowIdHolePunchPeer
+#include <protocol/ed2k/Client2Client/UDP.h> // Needed for OP_HOLEPUNCH
 #endif
 #ifdef ENABLE_IPV6
 #include "AdvertisedIPv6.h" // Needed for AdvertisedIPv6ForPeers
 #endif
 #include <boost/system/error_code.hpp>
+
+#if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
+namespace
+{
+void HandleLowIdHolePunchInfo(
+	CServerConnect *serverconnect, const NatServerHolePunch::Info &info, std::uint64_t now)
+{
+	if (!thePrefs::IsLowIdHolePunchEnabled() || theApp->clientudp == nullptr ||
+		!theApp->clientudp->Ok() || thePrefs::GetEffectiveUDPPort() == 0 || info.udpPort == 0 ||
+		info.tcpPort == 0) {
+		return;
+	}
+	const uint32 peerIP = PeekUInt32(info.peerIP.data());
+	if (!IsGoodIP(peerIP, thePrefs::FilterLanIPs()) || theApp->ipfilter->IsFiltered(peerIP) ||
+		theApp->clientlist->IsBannedClient(CNetworkAddress::FromIPv4NetworkOrderOrAbsent(peerIP))) {
+		AddDebugLogLineN(logServer,
+			CFormat("Ignored OP_LOWID_HOLEPUNCH_INFO endpoint %s") % Uint32toStringIP(peerIP));
+		return;
+	}
+	if (!serverconnect->LowIdHolePunchDuplicates().ShouldProcess(info.userHash, now) ||
+		!serverconnect->LowIdHolePunchActionLimiter().Admit(now)) {
+		return;
+	}
+	const auto pending = serverconnect->LowIdHolePunchTracker().Current(now);
+	const bool shouldDial = NatServerHolePunch::ShouldDialForPendingRequest(pending, info.tcpPort);
+	serverconnect->LowIdHolePunchExpectedEndpoints().Register(info.peerIP, info.tcpPort, now);
+	CPacket *punch = new CPacket(OP_HOLEPUNCH, 0, OP_EMULEPROT);
+	theStats::AddUpOverheadOther(punch->GetPacketSize());
+	theApp->clientudp->SendPacket(punch, peerIP, info.udpPort, false, nullptr, false, 0);
+	AddDebugLogLineN(logServer,
+		CFormat("Client UDP socket: OP_HOLEPUNCH to %s") %
+			Uint32_16toStringIP_Port(peerIP, info.udpPort));
+	if (shouldDial) {
+		serverconnect->LowIdHolePunchTracker().Release(pending->targetId);
+		theApp->clientudp->DialLowIdHolePunchPeer(peerIP, info.tcpPort, info.udpPort);
+	}
+}
+} // namespace
+#endif
 
 // CServerSocket
 
@@ -680,11 +721,16 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 		case NatServerTcp::OP_LOWID_HOLEPUNCH_INFO: {
 			AddDebugLogLineN(logServer, "Server: OP_LOWID_HOLEPUNCH_INFO");
 			theStats::AddDownOverheadServer(size);
-			// Logged only: no punch, no tunnel, no reply.
 			const std::optional<NatServerHolePunch::Info> info =
 				NatServerHolePunch::ParseInfo(packet, size);
 			if (info.has_value()) {
 				NatServerHolePunch::LogInfo(logServer, *info);
+#ifdef AMULE_UTP_TRANSPORT
+				if (cur_server != nullptr && cur_server->SupportsLowIdHolePunch() &&
+					serverconnect->IsConnected()) {
+					HandleLowIdHolePunchInfo(serverconnect, *info, ::GetTickCount64());
+				}
+#endif
 			}
 			break;
 		}
@@ -695,6 +741,7 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 				NatServerHolePunch::ParseFailure(packet, size);
 			if (failure.has_value()) {
 				NatServerHolePunch::LogFailure(logServer, *failure);
+				serverconnect->LowIdHolePunchTracker().Release(failure->targetId);
 			}
 			break;
 		}

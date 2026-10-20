@@ -69,6 +69,11 @@
 #include "ServerConnect.h"          // Needed for CServerConnect
 #include "Server.h"                 // Needed for CServer, and transitively OP_NAT_CALLBACKREQUESTED_UDP
 #include "ServerList.h"             // Needed for theApp->serverlist->GetServerByAddress
+#include "NatServerHolePunch.h"     // Needed for expected punch endpoints
+#include "IPFilter.h"               // Needed for IsFiltered
+#include "NetworkFunctions.h"       // Needed for IsGoodIP
+#include "ClientRef.h"              // Needed for a safe temporary dial client
+#include "ListenSocket.h"           // Needed for TooManySockets
 #endif
 
 //
@@ -585,9 +590,66 @@ void CClientUDPSocket::ProcessReservedProt2Frame(
 	}
 }
 
+#if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
+bool CClientUDPSocket::DialLowIdHolePunchPeer(uint32 ip, uint16 tcpPort, uint16 udpPort)
+{
+	if (tcpPort == 0 || udpPort == 0 || !Ok() || !m_utp.IsAvailable() ||
+		!IsGoodIP(ip, thePrefs::FilterLanIPs()) || theApp->ipfilter->IsFiltered(ip) ||
+		theApp->clientlist->IsBannedClient(CNetworkAddress::FromIPv4NetworkOrderOrAbsent(ip)) ||
+		theApp->listensocket->TooManySockets()) {
+		return false;
+	}
+	// This temporary client is not a download source. OP_HELLO, not server-supplied
+	// INFO fields, decides which existing LowID source the new stream belongs to.
+	CUpDownClient *client = new CUpDownClient(tcpPort, ip, 0, 0, nullptr, true, false);
+	theApp->clientlist->AddClient(client);
+	CClientRef ref{ client CLIENT_DEBUGSTRING("LowID hole punch dial") };
+	client->SetUDPPort(udpPort);
+	const bool started = client->TryServerVouchedLowIdUtpDial();
+	if (!started) {
+		if (CUpDownClient *checked = ref.GetClientChecked()) {
+			checked->Safe_Delete();
+		}
+	}
+	return started;
+}
+
+void CClientUDPSocket::HandleLowIdHolePunch(uint32 host, uint16 port)
+{
+	CServerConnect *connect = theApp->serverconnect;
+	if (connect == nullptr || !connect->IsConnected() || !thePrefs::IsLowIdHolePunchEnabled() ||
+		thePrefs::GetEffectiveUDPPort() == 0) {
+		return;
+	}
+	CServer *server = connect->GetCurrentServer();
+	if (server == nullptr || !server->SupportsLowIdHolePunch() ||
+		!IsGoodIP(host, thePrefs::FilterLanIPs()) || theApp->ipfilter->IsFiltered(host)) {
+		return;
+	}
+	NatServerHolePunch::IPv4 source{};
+	PokeUInt32(source.data(), host);
+	const std::uint64_t now = ::GetTickCount64();
+	const auto tcpPort = connect->LowIdHolePunchExpectedEndpoints().Take(source, now);
+	if (tcpPort.has_value() && connect->LowIdHolePunchActionLimiter().Admit(now)) {
+		AddDebugLogLineN(logClientUDP,
+			CFormat("OP_HOLEPUNCH from %s; dialling its observed UDP port") %
+				Uint32_16toStringIP_Port(host, port));
+		DialLowIdHolePunchPeer(host, *tcpPort, port);
+	}
+}
+#endif
+
 void CClientUDPSocket::ProcessPacket(uint8_t *packet, int16 size, int8 opcode, uint32 host, uint16 port)
 {
 	switch (opcode) {
+#if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
+	case OP_HOLEPUNCH:
+		theStats::AddDownOverheadOther(size);
+		if (size == 0) {
+			HandleLowIdHolePunch(host, port);
+		}
+		break;
+#endif
 	case OP_REASKCALLBACKUDP: {
 		AddDebugLogLineN(logClientUDP, "Client UDP socket; OP_REASKCALLBACKUDP");
 		theStats::AddDownOverheadOther(size);

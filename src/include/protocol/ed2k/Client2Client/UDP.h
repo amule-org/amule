@@ -34,6 +34,11 @@ enum ED2KExtendedClientUDP
 	OP_FILENOTFOUND = 0x92,  // (null)
 	OP_QUEUEFULL = 0x93,     // (null)
 	OP_REASKCALLBACKUDP = 0x94,
+#ifdef ENABLE_NATT_SERVER_COORDINATION
+	// Empty peer UDP punch: the recipient dials uTP to the sender's observed UDP port.
+	// Distinct from the raw UDP protocol byte NatPeerUdp::OP_NATT_HOLEPUNCH (0xB3).
+	OP_HOLEPUNCH = 0xA1, // (null)
+#endif
 	OP_PORTTEST = 0xFE // Connection Test
 };
 

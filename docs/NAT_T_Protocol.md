@@ -146,9 +146,10 @@ ed2k-server coordinates a hole punch between two LowID clients with
 client", 0.9.84 `39b9d85`). Since 0.9.84 it announces support with `OP_IDCHANGE`
 TCP flag `0x20000` (`SRV_TCPFLG_LOWID_HOLEPUNCH`), and always sets it.
 
-aMule implements, only under `ENABLE_NATT_SERVER_COORDINATION` (**experimental**, off by
-default; default and `ENABLE_IPV6` builds are unaffected) and only when the runtime setting
-below is also on:
+aMule implements this only when both `ENABLE_NATT_SERVER_COORDINATION` and `ENABLE_UTP`
+are built (**experimental**, off by default; default and `ENABLE_IPV6` builds are unaffected)
+and the runtime setting below is also on. With NAT-T compiled but uTP absent, aMule sends
+none of `0xF9`, `0x9F` or `0x60` and cannot act on `0x61`:
 
 - runtime opt-in: `thePrefs::IsLowIdHolePunchEnabled()` (`amule.conf` key
   `/eMule/LowIdHolePunch`, default **off**, no widget, no EC tag). It gates the `0xF9` login
@@ -176,20 +177,33 @@ below is also on:
   `TrySendLugdunumNatCallbackRequest()`, `CUpDownClient::TrySendLowIdHolePunchRequest()` sends
   `<target_id 4><our_udp_port 2>` over the server TCP link
   (`NatServerHolePunch::ShouldRequestLowIdHolePunch()`), at most once per source, and only when
-  `thePrefs::GetEffectiveUDPPort()` is nonzero -- ed2k-server has no usable UDP port to publish
-  for a target otherwise;
+  `thePrefs::GetEffectiveUDPPort()` is nonzero. At most one request is outstanding per server;
+  it expires after 30 s or is released after a matching `0x61` TCP-port hint or `0x62` target ID;
+  this limits requests, but does not establish the remote peer's identity;
 - keeping LowID sources: ed2k-server sends LowID sources to any LowID requester
   unconditionally (confirmed against its `get_sources.rs`: no opt-in flag gates it, unlike
   Lugdunum). `CPartFile::AddSources()` therefore keeps one from our current,
   hole-punch-announcing server with the setting on
   (`NatServerHolePunch::ShouldKeepLowIdServerSource()`), independently of the Lugdunum check
   on the same call;
-- receiving `0x61`/`0x62` on the server TCP link (`ServerSocket.cpp`): parsed
-  (`NatServerHolePunch::ParseInfo()`/`ParseFailure()`) and logged only
-  (`src/NatServerHolePunchLog.h`). No reply.
+- receiving `0x61` on the server TCP link (`ServerSocket.cpp`): after validating the advertised
+  IP against LAN, IP-filter and ban policies, register its peer endpoint as expected for 30 s,
+  then send an empty `OP_HOLEPUNCH` (`0xA1`, `OP_EMULEPROT`) from the client UDP socket to it.
+  If the sole pending `0x60` target's TCP port matches the `0x61` TCP port, also start a uTP
+  dial. That port comparison is only a dial hint: a 25-byte `0x61` cannot identify which source
+  it describes. Never write the `0x61` hash or address into a download source. The peer's
+  `OP_HELLO` establishes identity, and the existing client-list matching then attaches it to
+  the LowID source. A 29-byte `0x61` with the optional trailing peer ID from
+  andrey23127/ed2k-server#38 is not required. Repeated `0x61` for the same hash are ignored
+  for 10 s and server-directed actions are limited to 20 per minute;
+- receiving `OP_HOLEPUNCH` from a recently expected IP: accept it only once, then dial uTP
+  to the datagram's **source** UDP port, which may differ from the port in `0x61` after NAT.
+  The ordinary uTP connection and `OP_HELLO` perform the rest; `ShouldKeepFoundUtp()` remains
+  the collision backstop. No TCP fallback is available between two LowID peers;
+- receiving `0x62`: log the failure and release the matching outstanding target ID.
 
-Not implemented: the punch itself and any peer tunnel. The switch must therefore stay off in
-default and packaged builds, and the runtime setting above stays off until that slice lands.
+The runtime setting remains off by default. Lugdunum's server-coordinated callback is still
+log-only and is a separate follow-up.
 
 ## Lugdunum NAT callback (eserver 17.15+)
 

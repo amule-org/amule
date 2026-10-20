@@ -56,6 +56,9 @@ public:
 	void Close() override;
 	void TickUtp();
 	IUtpContext *GetUtpContext() { return &m_utp; }
+#if defined(ENABLE_NATT_SERVER_COORDINATION)
+	bool DialLowIdHolePunchPeer(uint32 ip, uint16 tcpPort, uint16 udpPort);
+#endif
 #endif
 #ifdef AMULE_QUIC_TRANSPORT
 	//! Services every live QUIC connection's RFC 9002 timers, independently of any inbound
@@ -98,6 +101,9 @@ private:
 	//! decrypted server-way and carried OP_NAT_CALLBACKREQUESTED_UDP; otherwise \p buffer is left
 	//! untouched for the normal client-way path below.
 	bool TryProcessServerWayNatCallback(uint32 ip, uint8_t *buffer, size_t length);
+#ifdef AMULE_UTP_TRANSPORT
+	void HandleLowIdHolePunch(uint32 host, uint16 port);
+#endif
 #endif
 
 	/**
