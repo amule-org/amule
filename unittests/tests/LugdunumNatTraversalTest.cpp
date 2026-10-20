@@ -304,7 +304,14 @@ TEST(LugdunumNatTraversal, RequestsCallbackOnlyWhenEveryPreconditionHolds)
 	facts.serverCryptLayerUdpEnabled = true;
 	facts.serverKeyUdp = 42;
 	facts.serverSupportsObfuscationUdp = true;
+	facts.settingEnabled = true;
 	ASSERT_TRUE(ShouldRequestLugdunumNatCallback(facts));
+
+	// The runtime setting (amule.conf's LugdunumNatCallback) defaults to off and overrides every
+	// other precondition.
+	CallbackRequestFacts settingOff = facts;
+	settingOff.settingEnabled = false;
+	ASSERT_FALSE(ShouldRequestLugdunumNatCallback(settingOff));
 
 	// Either side being HighID means no callback is needed/possible this way.
 	CallbackRequestFacts highIdSource = facts;
@@ -379,7 +386,14 @@ TEST(LugdunumNatTraversal, KeepsLowIdServerSourcesOnlyFromOurOwnCapableServer)
 	facts.sourceServerIsOurCurrentServer = true;
 	facts.weAreLowId = true;
 	facts.serverCallbackCapable = true;
+	facts.settingEnabled = true;
 	ASSERT_TRUE(ShouldKeepLowIdServerSource(facts));
+
+	// The runtime setting (amule.conf's LugdunumNatCallback) defaults to off: with it off, a kept
+	// source could never be answered.
+	LowIdServerSourceFacts settingOff = facts;
+	settingOff.settingEnabled = false;
+	ASSERT_FALSE(ShouldKeepLowIdServerSource(settingOff));
 
 	// A source-exchange or Kad-sourced record is never kept this way, even with identical
 	// server/capability facts: the server only forwards LowID sources it is prepared to call

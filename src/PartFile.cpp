@@ -1968,6 +1968,7 @@ void CPartFile::AddSources(CMemFile &sources,
 						       current->GetPort() == serverport;
 		facts.weAreLowId = theApp->serverconnect->IsLowID();
 		facts.serverCallbackCapable = current != nullptr && current->IsLugdunumNatCallbackActive();
+		facts.settingEnabled = thePrefs::IsLugdunumNatCallbackEnabled();
 		keepLowIdSources = LugdunumNatTraversal::ShouldKeepLowIdServerSource(facts);
 	}
 #endif

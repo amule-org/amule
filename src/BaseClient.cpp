@@ -1800,13 +1800,20 @@ void CUpDownClient::TrySendLugdunumNatCallbackRequest() const
 	if (server == nullptr) {
 		return;
 	}
+	// The server UDP fields are updated on the server-list entry, not on cur_server's snapshot.
+	CServer *serverListEntry =
+		theApp->serverlist->GetServerByAddress(server->GetAddress(), server->GetPort());
+	if (serverListEntry == nullptr) {
+		return;
+	}
 	const LugdunumNatTraversal::CallbackRequestFacts facts{ theApp->serverconnect->GetClientID(),
 		GetUserIDHybrid(),
 		theApp->serverconnect->IsLocalServer(GetServerIP(), GetServerPort()),
 		server->IsLugdunumNatCallbackActive(),
 		thePrefs::IsServerCryptLayerUDPEnabled(),
-		server->GetServerKeyUDP(),
-		server->SupportsObfuscationUDP() };
+		serverListEntry->GetServerKeyUDP(),
+		serverListEntry->SupportsObfuscationUDP(),
+		thePrefs::IsLugdunumNatCallbackEnabled() };
 	if (!LugdunumNatTraversal::ShouldRequestLugdunumNatCallback(facts)) {
 		return;
 	}
@@ -1826,7 +1833,7 @@ void CUpDownClient::TrySendLugdunumNatCallbackRequest() const
 	delete packet;
 
 	uRawPacketSize = static_cast<uint16>(CEncryptedDatagramSocket::EncryptSendServer(
-		&pRawPacket, uRawPacketSize, server->GetServerKeyUDP()));
+		&pRawPacket, uRawPacketSize, serverListEntry->GetServerKeyUDP()));
 
 	CMemFile encryptedPacket(pRawPacket + 2, uRawPacketSize - 2);
 	CPacket *encrypted = new CPacket(encryptedPacket, pRawPacket[0], pRawPacket[1]);
@@ -1834,10 +1841,15 @@ void CUpDownClient::TrySendLugdunumNatCallbackRequest() const
 
 	AddDebugLogLineN(logClientUDP,
 		CFormat("Client UDP socket: OP_NAT_CALLBACKREQUEST for source %u to %s") % GetUserIDHybrid() %
-			Uint32_16toStringIP_Port(server->GetIP(), server->GetObfuscationPortUDP()));
+			Uint32_16toStringIP_Port(server->GetIP(), serverListEntry->GetObfuscationPortUDP()));
 	theStats::AddUpOverheadOther(encrypted->GetPacketSize());
-	theApp->clientudp->SendPacket(
-		encrypted, server->GetIP(), server->GetObfuscationPortUDP(), false, nullptr, false, 0);
+	theApp->clientudp->SendPacket(encrypted,
+		server->GetIP(),
+		serverListEntry->GetObfuscationPortUDP(),
+		false,
+		nullptr,
+		false,
+		0);
 }
 #endif
 

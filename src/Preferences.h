@@ -826,6 +826,13 @@ public:
 	static uint32 GetKadUDPKey() { return s_dwKadUDPKey; }
 	static uint8 GetCryptTCPPaddingLength() { return s_byCryptTCPPaddingLength; }
 
+#ifdef ENABLE_NATT_SERVER_COORDINATION
+	// Runtime opt-in for Lugdunum's NAT callback (PR #2002 review): gates the login opt-in, the
+	// OP_NAT_CALLBACKREQUEST send and keeping LowID server sources. amule.conf-only, off by
+	// default -- no widget, no EC tag.
+	static bool IsLugdunumNatCallbackEnabled() { return s_LugdunumNatCallbackEnabled; }
+#endif
+
 	static void SetClientCryptLayerSupported(bool v) { s_IsClientCryptLayerSupported = v; }
 	static void SetClientCryptLayerRequested(bool v) { s_bCryptLayerRequested = v; }
 	static void SetClientCryptLayerRequired(bool v) { s_IsClientCryptLayerRequired = v; }
@@ -1188,6 +1195,9 @@ protected:
 	static bool s_bCryptLayerRequested;
 	static uint32 s_dwKadUDPKey;
 	static uint8 s_byCryptTCPPaddingLength;
+#ifdef ENABLE_NATT_SERVER_COORDINATION
+	static bool s_LugdunumNatCallbackEnabled;
+#endif
 
 	// GeoIP / IP2Country
 	static bool s_GeoIPEnabled;

@@ -1,10 +1,10 @@
-# NAT-T UDP EAQC CAPS/CAPS_ACK
+#NAT - T UDP EAQC CAPS / CAPS_ACK
 
-This document specifies aMule's experimental capability exchange for the
-eMuleAI NAT-T UDP path. aMule is responder-only: it sends no outbound CAPS or
-CAPS_ACK, performs no rendezvous, and never dials QUIC. eMuleAI initiates CAPS.
-After the ACK, eMuleAI dials aMule's inbound QUIC endpoint only when it is the
-downloader; as the uploader it opens a passive endpoint and waits for aMule to
+This document specifies aMule's experimental capability exchange for the eMuleAI NAT -
+		T UDP path.aMule is responder - only : it sends no outbound CAPS or
+	CAPS_ACK,
+	performs no rendezvous, and never dials QUIC.eMuleAI initiates CAPS.After the ACK,
+	eMuleAI dials aMule's inbound QUIC endpoint only when it is the downloader; as the uploader it opens a passive endpoint and waits for aMule to
 dial, so that direction cannot complete until aMule has a QUIC client role. The
 exchange does not change the normal eD2k handshake and has not yet been
 live-tested against eMuleAI 1.6.
@@ -31,23 +31,26 @@ OP_UDPRESERVEDPROT2 (0xB2) | type | EAQC payload (54 bytes)
 
 The type byte is `0x02` for CAPS and `0x03` for CAPS_ACK. The EAQC payload is
 exactly 54 bytes and is unobfuscated. `0xB2` is a reserved UDP protocol byte,
-not an eD2k opcode; the type byte selects the frame. The constants are defined
-in [`src/include/protocol/Protocols.h`](../src/include/protocol/Protocols.h).
+not an eD2k opcode;
+the type byte selects the frame
+		.The constants are defined in[`src / include / protocol / Protocols.h`](../ src / include /
+											protocol /
+											Protocols.h)
+		.
 
-## EAQC payload layout
+	##EAQC payload layout
 
-All offsets below are relative to the first byte after the type byte. Integers
-are little-endian where an integer encoding is shown; hashes are copied as
-16-byte values.
+	All offsets below are relative to the first byte after the type byte.Integers are little
+	- endian where an integer encoding is shown;
+hashes are copied as 16 - byte values.
 
-| Offset | Size | Field | Encoding/value |
-| ---: | ---: | --- | --- |
-| 0 | 4 | Magic | ASCII `EAQC`; little-endian `uint32` `0x43514145` (`45 41 51 43`) |
-| 4 | 1 | Version | `1` |
-| 5 | 1 | Options | Capability bits; see below |
-| 6 | 16 | Sender hash | Sender user hash |
-| 22 | 16 | Expected peer hash | Recipient hash, or all zeroes as a wildcard; otherwise it must match the recipient |
-| 38 | 16 | File hash | File hash; aMule echoes the request value in its ACK |
+	| Offset | Size | Field | Encoding / value | | -- - : | -- - : | -- - | -- - | | 0 | 4 | Magic |
+								       ASCII `EAQC`;
+little - endian `uint32` `0x43514145` (`45 41 51 43`) | | 4 | 1 | Version | `1` | | 5 | 1 | Options
+	| Capability bits;
+see below | | 6 | 16 | Sender hash | Sender user hash | | 22 | 16 | Expected peer hash | Recipient hash,
+	or all zeroes as a wildcard;
+otherwise it must match the recipient | | 38 | 16 | File hash | File hash; aMule echoes the request value in its ACK |
 
 The encoder and decoder for this layout are in
 [`src/QuicNattProtocol.h`](../src/QuicNattProtocol.h).
@@ -71,8 +74,10 @@ For CAPS, the receiver:
 
 1. requires the exact 54-byte payload length;
 2. validates the `EAQC` magic and version `1`;
-3. accepts an all-zero expected peer hash or requires an exact recipient-hash match;
-4. rate-limits an otherwise valid response by the observed source-address scope;
+3. accepts an all - zero expected peer hash or
+		requires an
+	exact recipient - hash match;
+4. rate - limits an otherwise valid response by the observed source - address scope;
 5. sends one 54-byte CAPS_ACK when admitted.
 
 The response limiter uses a three-second window and tracks at most 256 scopes.
@@ -100,17 +105,16 @@ unresolved and must be confirmed on the actual eMuleAI installation.
 
 1. **Build the aMule target.** Run `packaging/linux/build.sh dev-quic`, then
    confirm that the target under test uses the resulting QUIC-enabled core.
-   The build command demonstrates that the image/build path was exercised; it
-   is not interoperation evidence by itself.
-2. **Confirm the eMuleAI side.** Its documented defaults are
-   `EnableNatTraversal=1` and `NatTraversalProtocolMode=0` (prefer QUIC).
-   `LogNatTraversalEvents=1` enables NAT-T event logging when available. Do
-   not treat changing those settings as an aMule-repository procedure. Record
-   both peers' actual UDP endpoints, and ensure eMuleAI knows the aMule
-   endpoint.
-3. **Check the topology before starting.** Confirm all of the following:
-   - aMule is LowID;
-   - eMuleAI is locally firewalled;
+   The build command demonstrates that the image/build path was exercised;
+it is not interoperation evidence by itself.2. **Confirm the eMuleAI side.**Its documented defaults are
+   `EnableNatTraversal = 1` and `NatTraversalProtocolMode = 0` (prefer QUIC).
+   `LogNatTraversalEvents =
+	1` enables NAT - T event logging when available.Do not treat changing those settings as an aMule -
+	repository procedure
+			.Record both
+				peers' actual UDP endpoints, and ensure eMuleAI knows the aMule endpoint.3. *
+		*Check the topology before starting.**Confirm all of the following : -aMule is LowID;
+- eMuleAI is locally firewalled;
    - the eMuleAI peer has no usable Kad buddy for this peer, so it selects
      direct traversal;
    - the peer/source identity and aMule UDP endpoint are known and reachable
@@ -148,47 +152,73 @@ server then assigns an odd LowID and appends a "your port" field to
 `0x1000`/`0x2000` unofficially in its flags, so the 24-byte `OP_IDCHANGE`
 answering an opt-in is the stronger signal. The wiki also lists a UDP flag,
 `0x00010000`, but public Lugdunum servers do not set it (they report `0x17FB`),
-and eNode uses that bit for meta search; aMule does not define it.
+and eNode uses that bit for meta search;
+   aMule does not define it.
 
-| Opcode | Value | Direction | Payload |
-| --- | --- | --- | --- |
-| `OP_NAT_CALLBACKREQUEST` | `0xA6` | client UDP socket to server UDP | `<target ID 4><requester ID 4>` |
-| `OP_NAT_CALLBACKREQUESTED_UDP` | `0xA7` | server UDP to client UDP socket | `<seen IP 4><seen UDP port 2><requester ID 4>[<obfuscation settings 1><user hash 16>]` |
-| `OP_NAT_CALLBACKREQUESTED` | `0x37` | server TCP to client | as `0xA7` |
+	   | Opcode | Value | Direction | Payload | | -- - | -- - | -- - | -- - |
+	   | `OP_NAT_CALLBACKREQUEST` | `0xA6` |
+	   client UDP socket to server UDP | `<target ID 4><requester ID 4>` |
+	   | `OP_NAT_CALLBACKREQUESTED_UDP` | `0xA7` | server UDP to client UDP socket | `<seen IP 4>
+	   <seen UDP port 2><requester ID 4>[<obfuscation settings 1><user hash 16>]` |
+	   | `OP_NAT_CALLBACKREQUESTED` | `0x37` | server TCP to client | as `0xA7` |
 
 `OP_IDCHANGE` with the extra field is
-`<ID 4><flags 4><server TCP port 4><reported IP 4><obfuscation TCP port 4><your port 4>`.
-For a LowID, "your port" is our TCP port as the server sees it, after any NAT.
+`<ID 4><flags 4><server TCP port 4><reported IP 4><obfuscation TCP port 4><your port 4>`.For a LowID,
+	   "your port" is our TCP port as the server sees it,
+	   after any NAT.
 
-aMule implements, only under `ENABLE_NATT_SERVER_COORDINATION` (**experimental**, off by
-default; default and `ENABLE_IPV6` builds are unaffected):
+	   aMule implements,
+	   only under `ENABLE_NATT_SERVER_COORDINATION` (**experimental **, off by default;
+							 default and `ENABLE_IPV6` builds are unaffected) and
+		   only when the runtime setting below is also on :
 
-- login opt-in: `CT_SERVER_FLAGS` ORs in `SRVCAP_NATTRAVERSAL` (`ServerConnect.cpp`);
+	   -runtime opt
+	   -
+	   in : `thePrefs::IsLugdunumNatCallbackEnabled()` (amule.conf key
+  `/ eMule / LugdunumNatCallback`, default **off **, no widget, no EC tag).Gates the login opt - in,
+	   sending `OP_NAT_CALLBACKREQUEST` and keeping LowID sources,
+	   so turning on
+  `ENABLE_NATT_SERVER_COORDINATION` alone(e.g.via `ENABLE_ALL_EXPERIMENTAL` in CI or tester builds) does
+		   not by itself enrol a build on a live server.Receiving
+		   and logging `0xA7`/`0x37` needs no gate : those only arrive after opting
+							     in(PR #2002 review);
+   - login opt - in: `CT_SERVER_FLAGS` ORs in `SRVCAP_NATTRAVERSAL` (`ServerConnect.cpp`);
 - callback-active state for the session: `CServer::IsLugdunumNatCallbackActive()`, set only
   when one `OP_IDCHANGE` both comes in the 24-byte form and carries the `0x1000` TCP flag
   (`LugdunumNatTraversal::IsNatCallbackActive()`). `CServer::SupportsLugdunumNatCallback()`
   still reports the flag alone, which proves nothing by itself (see above);
-- keeping LowID sources from a callback-active server: `CPartFile::AddSources()` passes
-  `keepLowIdSource` to `CanAddSource()`, which otherwise drops every LowID source while we are
-  LowID. As in NeoMule (`CanLow2Low()`), an opted-in server sends only LowID sources it can
-  call back, and source records carry no NatT flag of their own
-  (`LugdunumNatTraversal::ShouldKeepLowIdServerSource()`);
-- sending `OP_NAT_CALLBACKREQUEST` (`0xA6`): when we are LowID, the source we want is a LowID
-  on our current, callback-active server, and the server-way UDP crypto preconditions hold
-  (`thePrefs::IsServerCryptLayerUDPEnabled() && GetServerKeyUDP() != 0 &&
-  SupportsObfuscationUDP()`), `BaseClient.cpp` sends one request from the client UDP socket,
-  encrypted "the server way" (`CEncryptedDatagramSocket::EncryptSendServer`), to the server's
-  `GetObfuscationPortUDP()`. It is hooked at the LowID-to-LowID decline in `TryToContact()`, so
-  it is sent at most once per source: a `DS_LOWTOLOWIP` source is not asked again. Requests are
-  not paced across sources; NeoMule does not pace them either (each waits 3 s for a ping first);
+- keeping LowID sources from a callback -
+	active
+	server: `CPartFile::AddSources()` passes
+  `keepLowIdSource` to `CanAddSource()`,
+		which otherwise drops every LowID source while we are LowID.As in NeoMule(`CanLow2Low()`),
+		an opted - in server sends only LowID sources it can call back,
+		and source records carry no NatT flag of their
+		own(`LugdunumNatTraversal::ShouldKeepLowIdServerSource()`);
+- sending `OP_NAT_CALLBACKREQUEST` (`0xA6`):when we are LowID,
+	the source we want is a LowID on our current, callback - active server,
+	and the server - way UDP crypto preconditions hold(`thePrefs::IsServerCryptLayerUDPEnabled() && GetServerKeyUDP() != 0 && SupportsObfuscationUDP()`), `BaseClient
+																				      .cpp` sends
+																			      one
+																			      request
+																			      from
+																			      the
+																			      client
+																			      UDP
+																			      socket
+	,
+	encrypted "the server way"(`CEncryptedDatagramSocket::EncryptSendServer`), to the server's
+  `GetObfuscationPortUDP()`.It is hooked at the LowID - to - LowID decline in `TryToContact()`,
+	so it is sent at most once
+	per source:a `DS_LOWTOLOWIP` source is not asked again.Requests are not paced across sources; NeoMule does not pace them either (each waits 3 s for a ping first);
 - receiving `0xA7` server-way on the client UDP socket: `ClientUDPSocket.cpp` recognises a
   same-IP, callback-capable datagram as worth a `DecryptReceivedServer` attempt, picking the
   base key the same way `CServerUDPSocket::OnPacketReceived` does -- a pending crypt-ping
   reply's challenge over the established server key -- and routes on an actual decrypt only
   (never on IP match alone), then logs and stops: no reply, no punch;
-- receiving `0x37` on the server TCP link (`ServerSocket.cpp`): parsed and logged the same way,
-  sharing one handler (`LugdunumNatTraversal::LogForwardedCallback`,
-  `src/LugdunumNatCallbackLog.h`) with the UDP path;
+- receiving `0x37` on the server TCP link(`ServerSocket.cpp`):parsed and logged the same way,
+	sharing one handler(`LugdunumNatTraversal::LogForwardedCallback`,
+  `src / LugdunumNatCallbackLog.h`)with the UDP path;
 - pure codecs and decisions for the above (`src/LugdunumNatTraversal.h`). The port width was
   confirmed against NeoMule's `opcodes.h` (`<IP 4><UDP port 2><requester ID 4>`), so it is read
   as a 2-byte uint16.
@@ -196,4 +226,13 @@ default; default and `ENABLE_IPV6` builds are unaffected):
 Not implemented: answering a forwarded callback, any hole punch, and any peer tunnel. Until
 then a server may forward our request to a peer that tries to punch to us with no answer, and
 the kept LowID sources cannot be contacted but count toward the per-file source limit. The
-switch must therefore stay off in default and packaged builds.
+switch must therefore stay off in default and packaged builds, and the runtime setting above
+stays off until that slice lands.
+
+**Live validation** (PR #2002, got3nks): on eMule Sunrise (`17.15 (lugdunum)`), an opted-in
+LowID sharing a file and an opted-in LowID requester on the same server, both behind one public
+IP, completed the opt-in and the server handed the requester a `DS_LOWTOLOWIP` source -- a
+NatT-capable LowID source is only handed to a NatT-capable LowID requester, matching the wiki.
+The requester's `OP_NAT_CALLBACKREQUEST` then reached the sharer: the forwarded callback arrived
+as **`OP_NAT_CALLBACKREQUESTED` (`0x37`) over the TCP link**, not `0xA7` over UDP, confirming
+Lugdunum's NatT relay works end to end up to the unanswered-callback point above.

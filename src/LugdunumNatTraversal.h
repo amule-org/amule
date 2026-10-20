@@ -124,13 +124,17 @@ struct CallbackRequestFacts
 	bool serverCryptLayerUdpEnabled = false;
 	std::uint32_t serverKeyUdp = 0;
 	bool serverSupportsObfuscationUdp = false;
+	// thePrefs::IsLugdunumNatCallbackEnabled() (amule.conf's LugdunumNatCallback, off by default):
+	// a build-time switch is not an opt-in to live traffic on its own (PR #2002 review).
+	bool settingEnabled = false;
 };
 
 // Whether to send OP_NAT_CALLBACKREQUEST for a LowID source: both ends must be LowID on the same,
-// callback-capable server, and the server-way crypto preconditions must hold (S6.3).
+// callback-capable server, the server-way crypto preconditions must hold (S6.3), and the runtime
+// setting must be on.
 inline bool ShouldRequestLugdunumNatCallback(const CallbackRequestFacts &facts)
 {
-	if (!facts.sameServer || !facts.serverCallbackCapable) {
+	if (!facts.settingEnabled || !facts.sameServer || !facts.serverCallbackCapable) {
 		return false;
 	}
 	if (!IsLowID(facts.ourId) || !IsLowID(facts.sourceId)) {
@@ -174,14 +178,18 @@ struct LowIdServerSourceFacts
 	bool sourceServerIsOurCurrentServer = false;
 	bool weAreLowId = false;
 	bool serverCallbackCapable = false;
+	// thePrefs::IsLugdunumNatCallbackEnabled() (amule.conf's LugdunumNatCallback, off by default):
+	// with the setting off, a kept source could never be answered (PR #2002 review).
+	bool settingEnabled = false;
 };
 
 // Whether a LowID server source survives CanAddSource's LowID-while-firewalled drop. Such a server
-// only sends them to a client whose opt-in it answered (NeoMule's CanLow2Low, made per server).
+// only sends them to a client whose opt-in it answered (NeoMule's CanLow2Low, made per server), and
+// only when the runtime setting is on.
 inline bool ShouldKeepLowIdServerSource(const LowIdServerSourceFacts &facts)
 {
-	return facts.originIsLocalServer && facts.sourceServerIsOurCurrentServer && facts.weAreLowId &&
-	       facts.serverCallbackCapable;
+	return facts.settingEnabled && facts.originIsLocalServer && facts.sourceServerIsOurCurrentServer &&
+	       facts.weAreLowId && facts.serverCallbackCapable;
 }
 
 struct ForwardedCallback

@@ -68,6 +68,7 @@
 #include "LugdunumNatCallbackLog.h" // Needed for LogForwardedCallback
 #include "ServerConnect.h"          // Needed for CServerConnect
 #include "Server.h"                 // Needed for CServer, and transitively OP_NAT_CALLBACKREQUESTED_UDP
+#include "ServerList.h"             // Needed for theApp->serverlist->GetServerByAddress
 #endif
 
 //
@@ -358,6 +359,12 @@ bool CClientUDPSocket::TryProcessServerWayNatCallback(uint32 ip, uint8_t *buffer
 	if (server == nullptr) {
 		return false;
 	}
+	// The server UDP fields are updated on the server-list entry, not on cur_server's snapshot.
+	CServer *serverListEntry =
+		theApp->serverlist->GetServerByAddress(server->GetAddress(), server->GetPort());
+	if (serverListEntry == nullptr) {
+		return false;
+	}
 	const LugdunumNatTraversal::ServerWayDatagramFacts facts{
 		ip, server->GetIP(), server->IsLugdunumNatCallbackActive()
 	};
@@ -366,8 +373,10 @@ bool CClientUDPSocket::TryProcessServerWayNatCallback(uint32 ip, uint8_t *buffer
 	}
 
 	// A pending crypt-ping reply's challenge comes first, as in CServerUDPSocket::OnPacketReceived.
-	const std::uint32_t key = LugdunumNatTraversal::SelectServerWayKey(
-		server->GetCryptPingReplyPending(), server->GetChallenge(), server->GetServerKeyUDP());
+	const std::uint32_t key =
+		LugdunumNatTraversal::SelectServerWayKey(serverListEntry->GetCryptPingReplyPending(),
+			serverListEntry->GetChallenge(),
+			serverListEntry->GetServerKeyUDP());
 	uint8_t *decrypted = buffer;
 	const int decryptedLen = CEncryptedDatagramSocket::DecryptReceivedServer(
 		buffer, static_cast<int>(length), &decrypted, key, ip);

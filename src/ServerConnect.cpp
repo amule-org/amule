@@ -295,15 +295,20 @@ void CServerConnect::ConnectionEstablished(CServerSocket *sender)
 			dwCryptFlags |= SRVCAP_REQUIRECRYPT;
 		}
 
+		// Not a crypt flag: its own variable, ORed in separately below (PR #2002 review).
+		uint32 dwNatTraversalFlags = 0;
 #ifdef ENABLE_NATT_SERVER_COORDINATION
-		// Opt in to Lugdunum's NAT callback (S6.1): experimental, behind the build switch only.
-		dwCryptFlags |= SRVCAP_NATTRAVERSAL;
+		// Opt in to Lugdunum's NAT callback (S6.1): behind both the build switch and the runtime
+		// setting, so ENABLE_ALL_EXPERIMENTAL alone cannot enrol a build on a live server.
+		if (thePrefs::IsLugdunumNatCallbackEnabled()) {
+			dwNatTraversalFlags = SRVCAP_NATTRAVERSAL;
+		}
 #endif
 
 		// FLAGS for server connection
 		CTagInt32 tagflags(CT_SERVER_FLAGS,
 			CAPABLE_ZLIB | CAPABLE_AUXPORT | CAPABLE_NEWTAGS | CAPABLE_UNICODE |
-				CAPABLE_LARGEFILES | dwCryptFlags);
+				CAPABLE_LARGEFILES | dwCryptFlags | dwNatTraversalFlags);
 
 		tagflags.WriteTagToFile(&data);
 
