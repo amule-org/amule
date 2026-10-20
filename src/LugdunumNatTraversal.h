@@ -125,7 +125,7 @@ struct CallbackRequestFacts
 	std::uint32_t serverKeyUdp = 0;
 	bool serverSupportsObfuscationUdp = false;
 	// thePrefs::IsLugdunumNatCallbackEnabled() (amule.conf's LugdunumNatCallback, off by default):
-	// a build-time switch is not an opt-in to live traffic on its own (PR #2002 review).
+	// a build-time switch is not an opt-in to live traffic on its own.
 	bool settingEnabled = false;
 };
 
@@ -179,7 +179,7 @@ struct LowIdServerSourceFacts
 	bool weAreLowId = false;
 	bool serverCallbackCapable = false;
 	// thePrefs::IsLugdunumNatCallbackEnabled() (amule.conf's LugdunumNatCallback, off by default):
-	// with the setting off, a kept source could never be answered (PR #2002 review).
+	// with the setting off, a kept source could never be answered.
 	bool settingEnabled = false;
 };
 

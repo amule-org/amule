@@ -1492,7 +1492,7 @@ void CPreferences::BuildItemList(const wxString &appdir)
 #endif
 
 #ifdef ENABLE_NATT_SERVER_COORDINATION
-	// Runtime opt-in for Lugdunum's NAT callback (PR #2002 review): off by default, so turning on
+	// Runtime opt-in for Lugdunum's NAT callback: off by default, so turning on
 	// ENABLE_NATT_SERVER_COORDINATION (e.g. via ENABLE_ALL_EXPERIMENTAL in CI/tester builds) does
 	// not by itself enrol on a live server. No widget: flip it in amule.conf for a live run.
 	s_MiscList.push_back(new Cfg_Bool("/eMule/LugdunumNatCallback", s_LugdunumNatCallbackEnabled, false));

@@ -827,7 +827,7 @@ public:
 	static uint8 GetCryptTCPPaddingLength() { return s_byCryptTCPPaddingLength; }
 
 #ifdef ENABLE_NATT_SERVER_COORDINATION
-	// Runtime opt-in for Lugdunum's NAT callback (PR #2002 review): gates the login opt-in, the
+	// Runtime opt-in for Lugdunum's NAT callback: gates the login opt-in, the
 	// OP_NAT_CALLBACKREQUEST send and keeping LowID server sources. amule.conf-only, off by
 	// default -- no widget, no EC tag.
 	static bool IsLugdunumNatCallbackEnabled() { return s_LugdunumNatCallbackEnabled; }

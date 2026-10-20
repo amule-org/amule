@@ -295,7 +295,6 @@ void CServerConnect::ConnectionEstablished(CServerSocket *sender)
 			dwCryptFlags |= SRVCAP_REQUIRECRYPT;
 		}
 
-		// Not a crypt flag: its own variable, ORed in separately below (PR #2002 review).
 		uint32 dwNatTraversalFlags = 0;
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 		// Opt in to Lugdunum's NAT callback (S6.1): behind both the build switch and the runtime
