@@ -1837,7 +1837,7 @@ void CUpDownClient::TrySendLugdunumNatCallbackRequest() const
 			Uint32_16toStringIP_Port(server->GetIP(), server->GetObfuscationPortUDP()));
 	theStats::AddUpOverheadOther(encrypted->GetPacketSize());
 	theApp->clientudp->SendPacket(
-		encrypted, server->GetIP(), server->GetObfuscationPortUDP(), false, NULL, false, 0);
+		encrypted, server->GetIP(), server->GetObfuscationPortUDP(), false, nullptr, false, 0);
 }
 #endif
 
