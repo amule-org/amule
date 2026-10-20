@@ -164,15 +164,20 @@ below is also on:
   (`NatServerHolePunch::ServerAcceptsHolePunchRequest()`), read directly off `cur_server` --
   unlike Lugdunum's UDP-only fields, the TCP flags are already live there, so no server-list
   copy is needed;
-- keepalive `OP_SERVER_NATT_KEEPALIVE` (`0x9F`): every ~60 s while connected to a hole-punch
-  announcing server, `CServerConnect::TrySendLowIdHolePunchKeepalive()` sends our 16-byte user
-  hash from the client UDP socket (`theApp->clientudp`, not the server link) to the server's
-  IP at TCP port + 4, plain (unobfuscated, unencrypted) -- driven from
-  `CamuleApp::OnCoreTimer`, no new thread;
+- keepalive `OP_SERVER_NATT_KEEPALIVE` (`0x9F`): sent once as soon as the connection reaches
+  `CS_CONNECTED` (`CServerConnect::ConnectionEstablished()`), and then roughly every 60 s from
+  `CamuleApp::OnCoreTimer`, no new thread. `CServerConnect::TrySendLowIdHolePunchKeepalive()`
+  sends our 16-byte user hash from the client UDP socket (`theApp->clientudp`, not the server
+  link) to the server's IP at TCP port + 4, plain (unobfuscated, unencrypted), only while we are
+  LowID and `thePrefs::GetEffectiveUDPPort()` is nonzero (`NatServerHolePunch::ShouldSendKeepalive()`)
+  -- ed2k-server refuses a HighID target (`FAIL_TARGET_IS_HIGHID`), and a disabled UDP port has
+  no socket to send from;
 - sending `0x60`: where a LowID-to-LowID contact is declined in `TryToContact()`, next to
   `TrySendLugdunumNatCallbackRequest()`, `CUpDownClient::TrySendLowIdHolePunchRequest()` sends
   `<target_id 4><our_udp_port 2>` over the server TCP link
-  (`NatServerHolePunch::ShouldRequestLowIdHolePunch()`), at most once per source;
+  (`NatServerHolePunch::ShouldRequestLowIdHolePunch()`), at most once per source, and only when
+  `thePrefs::GetEffectiveUDPPort()` is nonzero -- ed2k-server has no usable UDP port to publish
+  for a target otherwise;
 - keeping LowID sources: ed2k-server sends LowID sources to any LowID requester
   unconditionally (confirmed against its `get_sources.rs`: no opt-in flag gates it, unlike
   Lugdunum). `CPartFile::AddSources()` therefore keeps one from our current,

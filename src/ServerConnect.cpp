@@ -371,6 +371,12 @@ void CServerConnect::ConnectionEstablished(CServerSocket *sender)
 			    sender->cur_server->GetListName() % sender->cur_server->GetFullIP() %
 			    sender->GetConnectPort());
 		connectedsocket = sender;
+#ifdef ENABLE_NATT_SERVER_COORDINATION
+		// Send the first keepalive right away instead of waiting for the 60 s timer in
+		// CamuleApp::OnCoreTimer: without it the server only has the UDP port from the login
+		// tag until that timer first fires, which is wrong behind a NAT that rebinds ports.
+		TrySendLowIdHolePunchKeepalive();
+#endif
 
 		StopConnectionTry();
 
@@ -798,9 +804,11 @@ void CServerConnect::TrySendLowIdHolePunchKeepalive()
 	if (server == nullptr) {
 		return;
 	}
-	const NatServerHolePunch::KeepaliveFacts facts{
-		thePrefs::IsLowIdHolePunchEnabled(), IsConnected(), server->SupportsLowIdHolePunch()
-	};
+	const NatServerHolePunch::KeepaliveFacts facts{ thePrefs::IsLowIdHolePunchEnabled(),
+		IsConnected(),
+		server->SupportsLowIdHolePunch(),
+		::IsLowID(GetClientID()),
+		thePrefs::GetEffectiveUDPPort() };
 	if (!NatServerHolePunch::ShouldSendKeepalive(facts)) {
 		return;
 	}

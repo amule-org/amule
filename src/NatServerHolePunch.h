@@ -178,13 +178,16 @@ struct KeepaliveFacts
 	bool settingEnabled = false;
 	bool connected = false;
 	bool serverAnnouncesHolePunch = false;
+	bool weAreLowId = false;
+	std::uint16_t udpPort = 0;
 };
 
 // Whether to send OP_SERVER_NATT_KEEPALIVE now: connected to a server that announced
-// SRV_TCPFLG_LOWID_HOLEPUNCH, with the runtime setting on.
+// SRV_TCPFLG_LOWID_HOLEPUNCH, with the runtime setting on, while we are LowID with UDP enabled.
 inline bool ShouldSendKeepalive(const KeepaliveFacts &facts)
 {
-	return facts.settingEnabled && facts.connected && facts.serverAnnouncesHolePunch;
+	return facts.settingEnabled && facts.connected && facts.serverAnnouncesHolePunch &&
+	       facts.weAreLowId && facts.udpPort != 0;
 }
 
 struct RequestFacts
@@ -197,14 +200,16 @@ struct RequestFacts
 	// callback is handled by TrySendLugdunumNatCallbackRequest instead, never both.
 	bool serverIsLugdunumActive = false;
 	bool settingEnabled = false;
+	std::uint16_t ourUdpPort = 0;
 };
 
 // Whether to send OP_LOWID_HOLEPUNCH_REQUEST for a LowID source: both ends must be LowID on the
-// same, hole-punch-capable, non-Lugdunum server, and the runtime setting must be on.
+// same, hole-punch-capable, non-Lugdunum server, the runtime setting must be on, and our UDP port
+// must be enabled.
 inline bool ShouldRequestLowIdHolePunch(const RequestFacts &facts)
 {
 	if (!facts.settingEnabled || !facts.sameServer || facts.serverIsLugdunumActive ||
-		!facts.serverAnnouncesHolePunch) {
+		!facts.serverAnnouncesHolePunch || facts.ourUdpPort == 0) {
 		return false;
 	}
 	return IsLowID(facts.ourId) && IsLowID(facts.sourceId);

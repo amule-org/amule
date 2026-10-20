@@ -164,6 +164,8 @@ TEST(NatServerHolePunch, SendsKeepaliveOnlyWhileConnectedToACapableServerWithThe
 	facts.settingEnabled = true;
 	facts.connected = true;
 	facts.serverAnnouncesHolePunch = true;
+	facts.weAreLowId = true;
+	facts.udpPort = 4672;
 	ASSERT_TRUE(ShouldSendKeepalive(facts));
 
 	KeepaliveFacts settingOff = facts;
@@ -177,6 +179,18 @@ TEST(NatServerHolePunch, SendsKeepaliveOnlyWhileConnectedToACapableServerWithThe
 	KeepaliveFacts notCapable = facts;
 	notCapable.serverAnnouncesHolePunch = false;
 	ASSERT_FALSE(ShouldSendKeepalive(notCapable));
+
+	// ed2k-server refuses a HighID target (FAIL_TARGET_IS_HIGHID): a HighID client gains
+	// nothing from sending the keepalive.
+	KeepaliveFacts highId = facts;
+	highId.weAreLowId = false;
+	ASSERT_FALSE(ShouldSendKeepalive(highId));
+
+	// GetEffectiveUDPPort() returns 0 while UDP is disabled: the keepalive would go out from
+	// a disabled socket.
+	KeepaliveFacts udpDisabled = facts;
+	udpDisabled.udpPort = 0;
+	ASSERT_FALSE(ShouldSendKeepalive(udpDisabled));
 }
 
 TEST(NatServerHolePunch, RequestsHolePunchOnlyWhenEveryPreconditionHolds)
@@ -188,7 +202,14 @@ TEST(NatServerHolePunch, RequestsHolePunchOnlyWhenEveryPreconditionHolds)
 	facts.serverAnnouncesHolePunch = true;
 	facts.serverIsLugdunumActive = false;
 	facts.settingEnabled = true;
+	facts.ourUdpPort = 4672;
 	ASSERT_TRUE(ShouldRequestLowIdHolePunch(facts));
+
+	// GetEffectiveUDPPort() returns 0 while UDP is disabled: ed2k-server would refuse a
+	// target with no known UDP port.
+	RequestFacts udpDisabled = facts;
+	udpDisabled.ourUdpPort = 0;
+	ASSERT_FALSE(ShouldRequestLowIdHolePunch(udpDisabled));
 
 	RequestFacts settingOff = facts;
 	settingOff.settingEnabled = false;

@@ -1862,17 +1862,19 @@ void CUpDownClient::TrySendLowIdHolePunchRequest() const
 	if (server == nullptr) {
 		return;
 	}
+	const uint16 ourUdpPort = thePrefs::GetEffectiveUDPPort();
 	const NatServerHolePunch::RequestFacts facts{ theApp->serverconnect->GetClientID(),
 		GetUserIDHybrid(),
 		theApp->serverconnect->IsLocalServer(GetServerIP(), GetServerPort()),
 		server->SupportsLowIdHolePunch(),
 		server->IsLugdunumNatCallbackActive(),
-		thePrefs::IsLowIdHolePunchEnabled() };
+		thePrefs::IsLowIdHolePunchEnabled(),
+		ourUdpPort };
 	if (!NatServerHolePunch::ShouldRequestLowIdHolePunch(facts)) {
 		return;
 	}
 
-	const NatServerHolePunch::Request request{ GetUserIDHybrid(), thePrefs::GetEffectiveUDPPort() };
+	const NatServerHolePunch::Request request{ GetUserIDHybrid(), ourUdpPort };
 	const std::array<std::uint8_t, 6> payload = NatServerHolePunch::BuildRequest(request);
 	CMemFile data(payload.data(), payload.size());
 	CPacket *packet = new CPacket(data, OP_EDONKEYPROT, NatServerTcp::OP_LOWID_HOLEPUNCH_REQUEST);
