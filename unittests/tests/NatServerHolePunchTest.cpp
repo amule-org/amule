@@ -135,3 +135,15 @@ TEST(NatServerHolePunch, PreservesUnknownReasonsAndOpcodeNamespaces)
 	ASSERT_FALSE(IsServerUdpOpcode(0xE3));
 	ASSERT_FALSE(IsServerTcpOpcode(0xB3));
 }
+
+// ed2k-server 0.9.84 announces OP_LOWID_HOLEPUNCH_REQUEST with 0x20000 and always sets it
+// (flags 0x205DD). Lugdunum's 0x1000 and the IPv6 bits must not be read as that support.
+TEST(NatServerHolePunch, OnlyAServerWithTheHolePunchFlagAcceptsRequests)
+{
+	ASSERT_TRUE(ServerAcceptsHolePunchRequest(0x000205DDu));
+	ASSERT_TRUE(ServerAcceptsHolePunchRequest(0x00020000u));
+	ASSERT_FALSE(ServerAcceptsHolePunchRequest(0x000005DDu));
+	ASSERT_FALSE(ServerAcceptsHolePunchRequest(0x000017F9u));
+	ASSERT_FALSE(ServerAcceptsHolePunchRequest(0x0000C5DDu));
+	ASSERT_FALSE(ServerAcceptsHolePunchRequest(0));
+}

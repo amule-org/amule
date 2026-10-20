@@ -27,6 +27,7 @@
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 #include "ArchSpecific.h"
 #include "include/protocol/Protocols.h"
+#include "include/protocol/ed2k/Client2Server/TCP.h" // Needed for SRV_TCPFLG_LOWID_HOLEPUNCH
 
 #include <algorithm>
 #include <array>
@@ -58,6 +59,12 @@ struct Failure
 	std::uint32_t targetId;
 	std::uint8_t reason; // Preserve unknown reasons; never treat one as success.
 };
+
+// Send OP_LOWID_HOLEPUNCH_REQUEST only to a server whose OP_IDCHANGE flags announce it.
+inline bool ServerAcceptsHolePunchRequest(std::uint32_t tcpFlags)
+{
+	return (tcpFlags & SRV_TCPFLG_LOWID_HOLEPUNCH) != 0;
+}
 
 inline bool IsServerTcpOpcode(std::uint8_t opcode)
 {

@@ -308,6 +308,10 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 						"OP_IDCHANGE: server flags include Lugdunum's NAT callback "
 						"bit");
 				}
+				if (cur_server->SupportsLowIdHolePunch()) {
+					AddDebugLogLineN(logServer,
+						"OP_IDCHANGE: server accepts LowID hole punch requests");
+				}
 #endif
 				// copy TCP flags into the server in the server list
 				if (pServer) {

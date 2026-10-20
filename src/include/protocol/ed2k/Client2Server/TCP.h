@@ -78,5 +78,7 @@ enum OP_ClientToServerTCP
 #define SRV_TCPFLG_IPV6 0x00004000
 // Server accepts OP_IPV6_UPDATE on this connection; trusted only together with SRV_TCPFLG_IPV6.
 #define SRV_TCPFLG_IPV6_UPDATE 0x00008000
+// Server accepts OP_LOWID_HOLEPUNCH_REQUEST (ed2k-server 0.9.84+).
+#define SRV_TCPFLG_LOWID_HOLEPUNCH 0x00020000
 
 #endif // ED2KC2STCP_H

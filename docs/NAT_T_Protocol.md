@@ -137,6 +137,18 @@ advertised and waits for a dial that never comes. Do not claim PASS unless a
 real packet trace and the corresponding connection/test logs show the CAPS
 exchange followed by the QUIC/TLS/EAQN1 result.
 
+## ed2k-server LowID hole punch
+
+ed2k-server coordinates a hole punch between two LowID clients with
+`OP_LOWID_HOLEPUNCH_REQUEST` (`0x60`), `OP_LOWID_HOLEPUNCH_INFO` (`0x61`),
+`OP_LOWID_HOLEPUNCH_FAIL` (`0x62`) and the UDP keepalive `0x9F`
+(`src/NatServerHolePunch.h`). Since 0.9.84 it announces support with
+`OP_IDCHANGE` TCP flag `0x20000` (`SRV_TCPFLG_LOWID_HOLEPUNCH`), and always
+sets it. Under `ENABLE_NATT_SERVER_COORDINATION`, aMule recognises and logs
+that flag (`CServer::SupportsLowIdHolePunch()`); a `0x60` request may only go
+to a server that sets it (`NatServerHolePunch::ServerAcceptsHolePunchRequest()`).
+aMule does not send `0x60`, `0x9F` or its login tag yet.
+
 ## Lugdunum NAT callback (eserver 17.15+)
 
 Lugdunum servers relay a NAT callback between two LowID clients on the same
