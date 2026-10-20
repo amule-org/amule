@@ -147,7 +147,7 @@ ed2k-server coordinates a hole punch between two LowID clients with
 sets it. Under `ENABLE_NATT_SERVER_COORDINATION`, aMule recognises and logs
 that flag (`CServer::SupportsLowIdHolePunch()`); a `0x60` request may only go
 to a server that sets it (`NatServerHolePunch::ServerAcceptsHolePunchRequest()`).
-aMule does not send `0x60`, `0x9F` or its login tag yet.
+aMule does not send `0x60`, `0x9F` or the `0xF9` login tag yet.
 
 ## Lugdunum NAT callback (eserver 17.15+)
 
