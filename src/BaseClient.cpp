@@ -1862,14 +1862,23 @@ void CUpDownClient::TrySendLowIdHolePunchRequest() const
 		return;
 	}
 	const uint16 ourUdpPort = thePrefs::GetEffectiveUDPPort();
+#ifdef AMULE_UTP_TRANSPORT
+	const bool lowIdHolePunchUtpAvailable = true;
+#else
+	const bool lowIdHolePunchUtpAvailable = false;
+#endif
 	const NatServerHolePunch::RequestFacts facts{ theApp->serverconnect->GetClientID(),
 		GetUserIDHybrid(),
 		theApp->serverconnect->IsLocalServer(GetServerIP(), GetServerPort()),
 		server->SupportsLowIdHolePunch(),
 		server->IsLugdunumNatCallbackActive(),
 		thePrefs::IsLowIdHolePunchEnabled(),
-		ourUdpPort };
+		ourUdpPort,
+		lowIdHolePunchUtpAvailable };
 	if (!NatServerHolePunch::ShouldRequestLowIdHolePunch(facts)) {
+		return;
+	}
+	if (!theApp->serverconnect->LowIdHolePunchTracker().CanSend(::GetTickCount64())) {
 		return;
 	}
 
@@ -1882,6 +1891,8 @@ void CUpDownClient::TrySendLowIdHolePunchRequest() const
 		logServer, CFormat("Server: OP_LOWID_HOLEPUNCH_REQUEST for source %u") % GetUserIDHybrid());
 	theStats::AddUpOverheadServer(packet->GetPacketSize());
 	theApp->serverconnect->SendPacket(packet);
+	theApp->serverconnect->LowIdHolePunchTracker().OnSent(
+		GetUserIDHybrid(), GetUserPort(), ::GetTickCount64());
 }
 #endif
 
@@ -2187,6 +2198,47 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 	// connect: something is on its way.
 	return EContactResult::Contacting;
 }
+
+#if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
+bool CUpDownClient::TryServerVouchedLowIdUtpDial()
+{
+	if (m_socket != nullptr && m_socket->IsOk()) {
+		return false;
+	}
+	IUtpContext *utp = theApp->clientudp->GetUtpContext();
+	const bool canSend = utp != nullptr && utp->IsAvailable() && theApp->clientudp->Ok();
+	const bool obfuscationSatisfied = !WantsStreamObfuscation() || ShouldReceiveCryptUDPPackets();
+	const SUtpDialFacts facts{ true,
+		canSend,
+		false,
+		thePrefs::GetProxyData()->m_proxyEnable,
+		GetUDPPort() != 0 && IsGoodIP(GetConnectIP(), thePrefs::FilterLanIPs()),
+		obfuscationSatisfied,
+		true };
+	if (!canSend || !IsRedialAllowed() || DecideUtpDial(facts) != EUtpDialDecision::TryUtp) {
+		return false;
+	}
+	std::unique_ptr<IStreamTransport> transport;
+	if (!utp->Dial(GetConnectIP(),
+		    GetUDPPort(),
+		    ShouldReceiveCryptUDPPackets(),
+		    HasValidHash() ? GetUserHash().GetHash() : nullptr,
+		    transport)) {
+		return false;
+	}
+	if (m_socket != nullptr) {
+		m_socket->Safe_Delete();
+	}
+	m_socket = new CClientTCPSocket(this, thePrefs::GetProxyData());
+	m_socket->AttachTransport(std::move(transport));
+	if (WantsStreamObfuscation()) {
+		m_socket->SetConnectionEncryption(true, GetUserHash().GetHash(), false);
+	} else {
+		m_socket->SetConnectionEncryption(false, nullptr, false);
+	}
+	return true;
+}
+#endif
 
 bool CUpDownClient::Connect()
 {

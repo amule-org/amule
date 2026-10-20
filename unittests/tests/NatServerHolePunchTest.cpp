@@ -166,7 +166,12 @@ TEST(NatServerHolePunch, SendsKeepaliveOnlyWhileConnectedToACapableServerWithThe
 	facts.serverAnnouncesHolePunch = true;
 	facts.weAreLowId = true;
 	facts.udpPort = 4672;
+	facts.utpAvailable = true;
 	ASSERT_TRUE(ShouldSendKeepalive(facts));
+
+	KeepaliveFacts withoutUtp = facts;
+	withoutUtp.utpAvailable = false;
+	ASSERT_FALSE(ShouldSendKeepalive(withoutUtp));
 
 	KeepaliveFacts settingOff = facts;
 	settingOff.settingEnabled = false;
@@ -203,7 +208,12 @@ TEST(NatServerHolePunch, RequestsHolePunchOnlyWhenEveryPreconditionHolds)
 	facts.serverIsLugdunumActive = false;
 	facts.settingEnabled = true;
 	facts.ourUdpPort = 4672;
+	facts.utpAvailable = true;
 	ASSERT_TRUE(ShouldRequestLowIdHolePunch(facts));
+
+	RequestFacts withoutUtp = facts;
+	withoutUtp.utpAvailable = false;
+	ASSERT_FALSE(ShouldRequestLowIdHolePunch(withoutUtp));
 
 	// GetEffectiveUDPPort() returns 0 while UDP is disabled: ed2k-server would refuse a
 	// target with no known UDP port.
@@ -236,6 +246,64 @@ TEST(NatServerHolePunch, RequestsHolePunchOnlyWhenEveryPreconditionHolds)
 	RequestFacts highIdUs = facts;
 	highIdUs.ourId = 20000000;
 	ASSERT_FALSE(ShouldRequestLowIdHolePunch(highIdUs));
+}
+
+TEST(NatServerHolePunch, OnlyAdvertisesUdpPortsWhenUtpCanServeThePunch)
+{
+	ASSERT_TRUE(ShouldAdvertiseUdpPorts(true, true));
+	ASSERT_FALSE(ShouldAdvertiseUdpPorts(true, false));
+	ASSERT_FALSE(ShouldAdvertiseUdpPorts(false, true));
+}
+
+TEST(NatServerHolePunch, OneOutstandingRequestIsRateControlNotPeerIdentity)
+{
+	OutstandingRequestTracker requests;
+	ASSERT_TRUE(requests.CanSend(100));
+	requests.OnSent(42, 4662, 100);
+	ASSERT_FALSE(requests.CanSend(100));
+	ASSERT_TRUE(requests.Current(101).has_value());
+	ASSERT_EQUALS((std::uint32_t)42, requests.Current(101)->targetId);
+	ASSERT_TRUE(ShouldDialForPendingRequest(requests.Current(101), 4662));
+	ASSERT_FALSE(ShouldDialForPendingRequest(requests.Current(101), 4663));
+	ASSERT_FALSE(ShouldDialForPendingRequest(requests.Current(101), 0));
+	requests.Release(43);
+	ASSERT_FALSE(requests.CanSend(101));
+	requests.Release(42);
+	ASSERT_TRUE(requests.CanSend(101));
+	requests.OnSent(44, 4670, 200);
+	ASSERT_FALSE(requests.CanSend(200 + kOutstandingRequestTimeoutMs - 1));
+	ASSERT_TRUE(requests.CanSend(200 + kOutstandingRequestTimeoutMs));
+}
+
+TEST(NatServerHolePunch, DuplicateInfoAndActionCapBoundServerDirectedTraffic)
+{
+	DuplicateInfoSuppressor duplicates;
+	const Hash hash{ { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 } };
+	ASSERT_TRUE(duplicates.ShouldProcess(hash, 0));
+	ASSERT_FALSE(duplicates.ShouldProcess(hash, kDuplicateInfoWindowMs - 1));
+	ASSERT_TRUE(duplicates.ShouldProcess(hash, kDuplicateInfoWindowMs));
+	ActionRateLimiter actions;
+	for (std::size_t i = 0; i < kMaxActionsPerWindow; ++i) {
+		ASSERT_TRUE(actions.Admit(0));
+	}
+	ASSERT_FALSE(actions.Admit(kActionWindowMs - 1));
+	ASSERT_TRUE(actions.Admit(kActionWindowMs));
+}
+
+TEST(NatServerHolePunch, ExpectsOnlyRegisteredPunchAddressesWithinTtl)
+{
+	ExpectedEndpointRegistry endpoints;
+	const IPv4 peer{ { 192, 0, 2, 1 } };
+	const IPv4 other{ { 192, 0, 2, 2 } };
+	ASSERT_FALSE(endpoints.Take(peer, 0).has_value());
+	endpoints.Register(peer, 4662, 1);
+	ASSERT_FALSE(endpoints.Take(other, 1).has_value());
+	ASSERT_EQUALS((std::uint16_t)4662, *endpoints.Take(peer, 1));
+	ASSERT_FALSE(endpoints.Take(peer, 1).has_value());
+	endpoints.Register(peer, 4662, 2);
+	ASSERT_FALSE(endpoints.Take(peer, 2 + kExpectedEndpointTtlMs).has_value());
+	endpoints.Register(peer, 0, 3 + kExpectedEndpointTtlMs);
+	ASSERT_FALSE(endpoints.Take(peer, 3 + kExpectedEndpointTtlMs).has_value());
 }
 
 TEST(NatServerHolePunch, KeepsLowIdServerSourcesOnlyFromOurOwnCapableServer)

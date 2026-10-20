@@ -46,12 +46,17 @@ struct SUtpDialFacts
 	// The stream handshake never runs over a transport, so a peer owed
 	// obfuscation may only be dialled when the frames carry it themselves.
 	bool obfuscationSatisfied = false;
+	// ed2k-server vouched for this LowID peer's endpoint via OP_LOWID_HOLEPUNCH_INFO: an
+	// alternative to directHighId, not an addition to it -- either is sufficient grounds to
+	// try uTP.
+	bool serverVouchedLowId = false;
 };
 
 inline EUtpDialDecision DecideUtpDial(const SUtpDialFacts &facts)
 {
-	return facts.peerSupportsUtp && facts.localOutboundService && facts.directHighId &&
-			       !facts.proxyEnabled && facts.routableEndpoint && facts.obfuscationSatisfied
+	return facts.peerSupportsUtp && facts.localOutboundService &&
+			       (facts.directHighId || facts.serverVouchedLowId) && !facts.proxyEnabled &&
+			       facts.routableEndpoint && facts.obfuscationSatisfied
 		       ? EUtpDialDecision::TryUtp
 		       : EUtpDialDecision::PreserveLegacy;
 }

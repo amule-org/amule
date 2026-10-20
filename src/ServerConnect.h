@@ -30,9 +30,12 @@
 
 #include "amuleIPV4Address.h" // Needed for amuleIPV4Address
 #include "Timer.h"            // Needed for CTimer
+#ifdef ENABLE_NATT_SERVER_COORDINATION
+#include "NatServerHolePunch.h" // Needed for the 0x61 policy state
+#endif
 
 #include <map> // Needed for std::map
-#ifdef ENABLE_IPV6
+#if defined(ENABLE_IPV6) || defined(ENABLE_NATT_SERVER_COORDINATION)
 #include <optional> // Needed for std::optional
 #endif
 
@@ -121,6 +124,27 @@ public:
 	//! announced SRV_TCPFLG_LOWID_HOLEPUNCH and the runtime setting is on. Called every ~60 s
 	//! from CamuleApp::OnCoreTimer -- no new thread.
 	void TrySendLowIdHolePunchKeepalive();
+
+	//! Target IDs are scoped to a server session, so a reconnect resets this state.
+	NatServerHolePunch::OutstandingRequestTracker &LowIdHolePunchTracker()
+	{
+		return m_lowIdHolePunchTracker;
+	}
+	NatServerHolePunch::DuplicateInfoSuppressor &LowIdHolePunchDuplicates()
+	{
+		return m_lowIdHolePunchDuplicates;
+	}
+	NatServerHolePunch::ActionRateLimiter &LowIdHolePunchActionLimiter()
+	{
+		return m_lowIdHolePunchActionLimiter;
+	}
+	NatServerHolePunch::ExpectedEndpointRegistry &LowIdHolePunchExpectedEndpoints()
+	{
+		return m_lowIdHolePunchExpectedEndpoints;
+	}
+	//! Clears the outstanding-request slot and the expected-endpoint registry: called on a new
+	//! login, since a previous connection's target IDs mean nothing on a different server.
+	void ResetLowIdHolePunchState();
 #endif
 
 	//! Records that a server's hostname resolved during the current sweep.
@@ -177,6 +201,13 @@ private:
 	CTimer m_idRetryTimer;
 
 	ServerSocketMap connectionattemps;
+
+#ifdef ENABLE_NATT_SERVER_COORDINATION
+	NatServerHolePunch::OutstandingRequestTracker m_lowIdHolePunchTracker;
+	NatServerHolePunch::DuplicateInfoSuppressor m_lowIdHolePunchDuplicates;
+	NatServerHolePunch::ActionRateLimiter m_lowIdHolePunchActionLimiter;
+	NatServerHolePunch::ExpectedEndpointRegistry m_lowIdHolePunchExpectedEndpoints;
+#endif
 };
 
 #endif // SERVERCONNECT_H

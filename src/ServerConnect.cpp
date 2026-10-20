@@ -279,7 +279,13 @@ void CServerConnect::ConnectionEstablished(CServerSocket *sender)
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 		// Opt in to ed2k-server's LowID hole punch: advertises our UDP port so another LowID
 		// client's OP_LOWID_HOLEPUNCH_REQUEST can target us, even if we never send one ourselves.
-		if (thePrefs::IsLowIdHolePunchEnabled()) {
+#ifdef AMULE_UTP_TRANSPORT
+		const bool lowIdHolePunchUtpAvailable = true;
+#else
+		const bool lowIdHolePunchUtpAvailable = false;
+#endif
+		if (NatServerHolePunch::ShouldAdvertiseUdpPorts(
+			    thePrefs::IsLowIdHolePunchEnabled(), lowIdHolePunchUtpAvailable)) {
 			tagcount++;
 		}
 #endif
@@ -340,7 +346,8 @@ void CServerConnect::ConnectionEstablished(CServerSocket *sender)
 		}
 #endif
 #ifdef ENABLE_NATT_SERVER_COORDINATION
-		if (thePrefs::IsLowIdHolePunchEnabled()) {
+		if (NatServerHolePunch::ShouldAdvertiseUdpPorts(
+			    thePrefs::IsLowIdHolePunchEnabled(), lowIdHolePunchUtpAvailable)) {
 			// CT_EMULE_UDPPORTS (0xF9): high 16 bits Kad UDP port, low 16 bits client UDP port.
 			// aMule shares one UDP socket for both.
 			const uint16 udpPort = thePrefs::GetEffectiveUDPPort();
@@ -372,6 +379,8 @@ void CServerConnect::ConnectionEstablished(CServerSocket *sender)
 			    sender->GetConnectPort());
 		connectedsocket = sender;
 #ifdef ENABLE_NATT_SERVER_COORDINATION
+		// Target IDs belong to this server session; a reconnect starts with no pending punch.
+		ResetLowIdHolePunchState();
 		// Send the first keepalive right away instead of waiting for the 60 s timer in
 		// CamuleApp::OnCoreTimer: without it the server only has the UDP port from the login
 		// tag until that timer first fires, which is wrong behind a NAT that rebinds ports.
@@ -800,6 +809,12 @@ bool CServerConnect::IsConnectedObfuscated() const
 }
 
 #ifdef ENABLE_NATT_SERVER_COORDINATION
+void CServerConnect::ResetLowIdHolePunchState()
+{
+	m_lowIdHolePunchTracker = NatServerHolePunch::OutstandingRequestTracker();
+	m_lowIdHolePunchExpectedEndpoints = NatServerHolePunch::ExpectedEndpointRegistry();
+}
+
 void CServerConnect::TrySendLowIdHolePunchKeepalive()
 {
 	if (theApp->clientudp == nullptr) {
@@ -810,11 +825,17 @@ void CServerConnect::TrySendLowIdHolePunchKeepalive()
 	if (server == nullptr) {
 		return;
 	}
+#ifdef AMULE_UTP_TRANSPORT
+	const bool lowIdHolePunchUtpAvailable = true;
+#else
+	const bool lowIdHolePunchUtpAvailable = false;
+#endif
 	const NatServerHolePunch::KeepaliveFacts facts{ thePrefs::IsLowIdHolePunchEnabled(),
 		IsConnected(),
 		server->SupportsLowIdHolePunch(),
 		::IsLowID(GetClientID()),
-		thePrefs::GetEffectiveUDPPort() };
+		thePrefs::GetEffectiveUDPPort(),
+		lowIdHolePunchUtpAvailable };
 	if (!NatServerHolePunch::ShouldSendKeepalive(facts)) {
 		return;
 	}

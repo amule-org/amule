@@ -43,6 +43,17 @@ TEST(UtpDialPolicy, DecisionMatrix)
 	}
 }
 
+TEST(UtpDialPolicy, ServerVouchedLowIdMayDialWithoutPeerHello)
+{
+	SUtpDialFacts facts{ true, true, false, false, true, true, true };
+	ASSERT_TRUE(DecideUtpDial(facts) == EUtpDialDecision::TryUtp);
+	facts.serverVouchedLowId = false;
+	ASSERT_TRUE(DecideUtpDial(facts) == EUtpDialDecision::PreserveLegacy);
+	facts.serverVouchedLowId = true;
+	facts.routableEndpoint = false;
+	ASSERT_TRUE(DecideUtpDial(facts) == EUtpDialDecision::PreserveLegacy);
+}
+
 TEST(UtpDialPolicy, EndpointRoutability)
 {
 	SUtpDialFacts facts{ true, true, true, false, true, true };

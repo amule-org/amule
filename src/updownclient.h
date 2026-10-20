@@ -213,6 +213,11 @@ public:
 	/// (or Connect() declined to start) and must not be touched again.
 	bool TryToConnect(bool bIgnoreMaxCon = false);
 	bool Connect();
+#if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
+	//! Dials uTP for a temporary client at the server-announced endpoint. Do not mutate any
+	//! download source: OP_HELLO establishes identity before the client list attaches it.
+	bool TryServerVouchedLowIdUtpDial();
+#endif
 	void ConnectionEstablished();
 	const wxString &GetUserName() const { return m_Username; }
 	// Only use this when you know the real IP or when your clearing it.
