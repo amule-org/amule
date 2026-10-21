@@ -332,8 +332,29 @@ private:
 	void TrySendLugdunumNatCallbackRequest() const;
 	//! Sends OP_LOWID_HOLEPUNCH_REQUEST (ed2k-server) for this LowID source when its
 	//! preconditions hold. Mutually exclusive with the Lugdunum callback per server.
-	//! Called from TryToContact's LowID->LowID decline, so at most once per source.
-	void TrySendLowIdHolePunchRequest() const;
+	//! Called from TryToContact's LowID->LowID decline. Returns whether the request went out;
+	//! a busy server slot is not a send.
+	bool TrySendLowIdHolePunchRequest();
+	bool m_lowIdHolePunchRequested = false;
+#endif
+#if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
+
+public:
+	//! Asks again for a DS_LOWTOLOWIP source whose request was never sent because the server
+	//! slot was busy.
+	void RetryLowIdHolePunchRequest();
+	//! A temporary client dialled on a server-announced endpoint. It becomes a download
+	//! source only through the client list match of its hello answer.
+	void MarkLowIdHolePunchDial() { m_lowIdHolePunchDial = true; }
+	bool TakeLowIdHolePunchDial()
+	{
+		const bool wasDial = m_lowIdHolePunchDial;
+		m_lowIdHolePunchDial = false;
+		return wasDial;
+	}
+
+private:
+	bool m_lowIdHolePunchDial = false;
 #endif
 
 public:

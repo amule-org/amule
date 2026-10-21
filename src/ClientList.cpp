@@ -268,7 +268,7 @@ void CClientList::RemoveHashFromList(CUpDownClient *client)
 	}
 }
 
-CUpDownClient *CClientList::FindMatchingClient(CUpDownClient *client)
+CUpDownClient *CClientList::FindMatchingClient(CUpDownClient *client, const CUpDownClient *excluded)
 {
 	typedef std::pair<IDMap::const_iterator, IDMap::const_iterator> IDMapIteratorPair;
 	wxCHECK(client, NULL);
@@ -286,6 +286,9 @@ CUpDownClient *CClientList::FindMatchingClient(CUpDownClient *client)
 
 			for (; range.first != range.second; ++range.first) {
 				CUpDownClient *other = range.first->second.GetClient();
+				if (other == excluded) {
+					continue;
+				}
 				wxASSERT(userIP == other->GetUserAddress());
 
 				if (userPort && (userPort == other->GetUserPort())) {
@@ -303,6 +306,9 @@ CUpDownClient *CClientList::FindMatchingClient(CUpDownClient *client)
 
 			for (; range.first != range.second; ++range.first) {
 				CUpDownClient *other = range.first->second.GetClient();
+				if (other == excluded) {
+					continue;
+				}
 				wxASSERT(userID == other->GetUserIDHybrid());
 
 				// For lowid, we also have to check the server
@@ -316,17 +322,20 @@ CUpDownClient *CClientList::FindMatchingClient(CUpDownClient *client)
 	} else if (userPort || userKadPort) {
 		// Check by address first, then by ID. Within each range all TCP-port
 		// matches take precedence over Kad-port matches, as in the IPv4 index.
-		const auto findByPort = [userPort, userKadPort](const auto &range) -> CUpDownClient * {
+		const auto findByPort = [userPort, userKadPort, excluded](
+						const auto &range) -> CUpDownClient * {
 			if (userPort) {
 				for (auto it = range.first; it != range.second; ++it) {
-					if (userPort == it->second.GetUserPort()) {
+					if (it->second.GetClient() != excluded &&
+						userPort == it->second.GetUserPort()) {
 						return it->second.GetClient();
 					}
 				}
 			}
 			if (userKadPort) {
 				for (auto it = range.first; it != range.second; ++it) {
-					if (userKadPort == it->second.GetClient()->GetKadPort()) {
+					if (it->second.GetClient() != excluded &&
+						userKadPort == it->second.GetClient()->GetKadPort()) {
 						return it->second.GetClient();
 					}
 				}
@@ -351,8 +360,10 @@ CUpDownClient *CClientList::FindMatchingClient(CUpDownClient *client)
 		std::pair<HashMap::iterator, HashMap::iterator> range =
 			m_hashList.equal_range(client->GetUserHash());
 
-		if (range.first != range.second) {
-			return range.first->second.GetClient();
+		for (; range.first != range.second; ++range.first) {
+			if (range.first->second.GetClient() != excluded) {
+				return range.first->second.GetClient();
+			}
 		}
 	}
 
@@ -379,11 +390,11 @@ void CClientList::DeleteAll()
 }
 
 bool CClientList::AttachToAlreadyKnown(
-	CUpDownClient **client, CClientTCPSocket *sender, bool *senderDiscarded)
+	CUpDownClient **client, CClientTCPSocket *sender, bool *senderDiscarded, bool matchOthersOnly)
 {
 	CUpDownClient *tocheck = (*client);
 
-	CUpDownClient *found_client = FindMatchingClient(tocheck);
+	CUpDownClient *found_client = FindMatchingClient(tocheck, matchOthersOnly ? tocheck : nullptr);
 
 	if (tocheck == found_client) {
 		// We found the same client instance (client may have sent more than one OP_HELLO). do not

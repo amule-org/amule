@@ -135,8 +135,12 @@ public:
 	 */
 	//! `senderDiscarded`, when given, reports that `sender` was destroyed here and
 	//! `*client` left null: the caller owns that socket and must stop using it.
-	bool AttachToAlreadyKnown(
-		CUpDownClient **client, CClientTCPSocket *sender, bool *senderDiscarded = nullptr);
+	// matchOthersOnly is for a client that is already listed, so its own entries cannot count
+	// as the known client it is looking for.
+	bool AttachToAlreadyKnown(CUpDownClient **client,
+		CClientTCPSocket *sender,
+		bool *senderDiscarded = nullptr,
+		bool matchOthersOnly = false);
 
 	/**
 	 * Finds a client with the specified ip and port.
@@ -302,7 +306,7 @@ private:
 	 * Finds the first client matching the specified one, or NULL. Uses the same checks as
 	 * CUpDownClient::Compare, but without the overhead.
 	 */
-	CUpDownClient *FindMatchingClient(CUpDownClient *client);
+	CUpDownClient *FindMatchingClient(CUpDownClient *client, const CUpDownClient *excluded = nullptr);
 
 	/**
 	 * Check if we already know this IP.

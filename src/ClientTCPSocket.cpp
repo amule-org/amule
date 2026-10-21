@@ -364,6 +364,23 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 			logRemoteClient, "Remote Client: OP_HELLOANSWER from " + m_client->GetFullIP());
 		theStats::AddDownOverheadOther(size);
 		m_client->ProcessHelloAnswer(buffer, size);
+#if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
+		// The answer is what identifies a hole-punch dial: join the LowID source it reached, as
+		// an incoming hello does, so the file request goes out over this stream.
+		if (m_client->TakeLowIdHolePunchDial()) {
+			CUpDownClient *const dialled = m_client;
+			bool senderDiscarded = false;
+			if (theApp->clientlist->AttachToAlreadyKnown(
+				    &m_client, this, &senderDiscarded, true)) {
+				if (senderDiscarded) {
+					return false;
+				}
+				if (m_client != dialled) {
+					m_client->ProcessHelloAnswer(buffer, size);
+				}
+			}
+		}
+#endif
 #ifdef ENABLE_IPV6
 		m_client->MarkIPv6ChangeConnectionReady();
 #endif

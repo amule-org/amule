@@ -95,7 +95,10 @@ void HandleLowIdHolePunchInfo(
 			Uint32_16toStringIP_Port(peerIP, info.udpPort));
 	if (shouldDial) {
 		serverconnect->LowIdHolePunchTracker().Release(pending->targetId);
-		theApp->clientudp->DialLowIdHolePunchPeer(peerIP, info.tcpPort, info.udpPort);
+		if (theApp->clientudp->DialLowIdHolePunchPeer(peerIP, info.tcpPort, info.udpPort)) {
+			serverconnect->LowIdHolePunchExpectedEndpoints().NoteDialled(
+				info.peerIP, info.udpPort);
+		}
 	}
 }
 } // namespace

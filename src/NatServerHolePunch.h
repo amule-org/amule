@@ -389,20 +389,32 @@ public:
 		if (tcpPort == 0) {
 			return;
 		}
-		m_expected.push_back({ peerIP, tcpPort, now });
+		m_expected.push_back({ peerIP, tcpPort, now, std::nullopt });
 	}
-	std::optional<std::uint16_t> Take(const IPv4 &sourceIP, std::uint64_t now)
+	// Records the UDP port of a dial already started for this endpoint, so the punch that
+	// follows from that same port does not start a second one.
+	void NoteDialled(const IPv4 &peerIP, std::uint16_t udpPort)
+	{
+		const auto match = Find(peerIP);
+		if (match != m_expected.end()) {
+			match->dialledUdpPort = udpPort;
+		}
+	}
+	// The TCP port to dial for a punch from sourceIP:sourcePort, or nothing when no endpoint
+	// is expected or a dial to that very port is already in flight.
+	std::optional<std::uint16_t> Take(const IPv4 &sourceIP, std::uint16_t sourcePort, std::uint64_t now)
 	{
 		Evict(now);
-		const auto match = std::find_if(m_expected.begin(),
-			m_expected.end(),
-			[&sourceIP](const Entry &entry) { return entry.peerIP == sourceIP; });
+		const auto match = Find(sourceIP);
 		if (match == m_expected.end()) {
 			return std::nullopt;
 		}
-		const std::uint16_t tcpPort = match->tcpPort;
+		const Entry entry = *match;
 		m_expected.erase(match);
-		return tcpPort;
+		if (entry.dialledUdpPort == sourcePort) {
+			return std::nullopt;
+		}
+		return entry.tcpPort;
 	}
 
 private:
@@ -411,7 +423,14 @@ private:
 		IPv4 peerIP;
 		std::uint16_t tcpPort;
 		std::uint64_t registeredAt;
+		std::optional<std::uint16_t> dialledUdpPort;
 	};
+	std::vector<Entry>::iterator Find(const IPv4 &peerIP)
+	{
+		return std::find_if(m_expected.begin(), m_expected.end(), [&peerIP](const Entry &entry) {
+			return entry.peerIP == peerIP;
+		});
+	}
 	void Evict(std::uint64_t now)
 	{
 		const auto firstLive =

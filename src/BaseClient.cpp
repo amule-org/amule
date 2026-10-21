@@ -1852,14 +1852,14 @@ void CUpDownClient::TrySendLugdunumNatCallbackRequest() const
 		0);
 }
 
-void CUpDownClient::TrySendLowIdHolePunchRequest() const
+bool CUpDownClient::TrySendLowIdHolePunchRequest()
 {
 	if (theApp->serverconnect == nullptr) {
-		return;
+		return false;
 	}
 	CServer *server = theApp->serverconnect->GetCurrentServer();
 	if (server == nullptr) {
-		return;
+		return false;
 	}
 	const uint16 ourUdpPort = thePrefs::GetEffectiveUDPPort();
 #ifdef AMULE_UTP_TRANSPORT
@@ -1876,10 +1876,10 @@ void CUpDownClient::TrySendLowIdHolePunchRequest() const
 		ourUdpPort,
 		lowIdHolePunchUtpAvailable };
 	if (!NatServerHolePunch::ShouldRequestLowIdHolePunch(facts)) {
-		return;
+		return false;
 	}
 	if (!theApp->serverconnect->LowIdHolePunchTracker().CanSend(::GetTickCount64())) {
-		return;
+		return false;
 	}
 
 	const NatServerHolePunch::Request request{ GetUserIDHybrid(), ourUdpPort };
@@ -1893,7 +1893,18 @@ void CUpDownClient::TrySendLowIdHolePunchRequest() const
 	theApp->serverconnect->SendPacket(packet);
 	theApp->serverconnect->LowIdHolePunchTracker().OnSent(
 		GetUserIDHybrid(), GetUserPort(), ::GetTickCount64());
+	m_lowIdHolePunchRequested = true;
+	return true;
 }
+
+#ifdef AMULE_UTP_TRANSPORT
+void CUpDownClient::RetryLowIdHolePunchRequest()
+{
+	if (!m_lowIdHolePunchRequested && GetDownloadState() == DS_LOWTOLOWIP) {
+		TrySendLowIdHolePunchRequest();
+	}
+}
+#endif
 #endif
 
 EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
@@ -2391,6 +2402,13 @@ void CUpDownClient::ConnectionEstablished()
 	}
 
 	switch (GetDownloadState()) {
+#if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
+	case DS_LOWTOLOWIP:
+		if (!thePrefs::IsLowIdHolePunchEnabled()) {
+			break;
+		}
+		[[fallthrough]];
+#endif
 	case DS_CONNECTING:
 	case DS_WAITCALLBACK:
 	case DS_WAITCALLBACKKAD:

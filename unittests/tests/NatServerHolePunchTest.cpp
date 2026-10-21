@@ -295,15 +295,39 @@ TEST(NatServerHolePunch, ExpectsOnlyRegisteredPunchAddressesWithinTtl)
 	ExpectedEndpointRegistry endpoints;
 	const IPv4 peer{ { 192, 0, 2, 1 } };
 	const IPv4 other{ { 192, 0, 2, 2 } };
-	ASSERT_FALSE(endpoints.Take(peer, 0).has_value());
+	ASSERT_FALSE(endpoints.Take(peer, 5000, 0).has_value());
 	endpoints.Register(peer, 4662, 1);
-	ASSERT_FALSE(endpoints.Take(other, 1).has_value());
-	ASSERT_EQUALS((std::uint16_t)4662, *endpoints.Take(peer, 1));
-	ASSERT_FALSE(endpoints.Take(peer, 1).has_value());
+	ASSERT_FALSE(endpoints.Take(other, 5000, 1).has_value());
+	ASSERT_EQUALS((std::uint16_t)4662, *endpoints.Take(peer, 5000, 1));
+	ASSERT_FALSE(endpoints.Take(peer, 5000, 1).has_value());
 	endpoints.Register(peer, 4662, 2);
-	ASSERT_FALSE(endpoints.Take(peer, 2 + kExpectedEndpointTtlMs).has_value());
+	ASSERT_FALSE(endpoints.Take(peer, 5000, 2 + kExpectedEndpointTtlMs).has_value());
 	endpoints.Register(peer, 0, 3 + kExpectedEndpointTtlMs);
-	ASSERT_FALSE(endpoints.Take(peer, 3 + kExpectedEndpointTtlMs).has_value());
+	ASSERT_FALSE(endpoints.Take(peer, 5000, 3 + kExpectedEndpointTtlMs).has_value());
+}
+
+TEST(NatServerHolePunch, ADialInFlightToThePunchSourceIsNotRepeated)
+{
+	ExpectedEndpointRegistry endpoints;
+	const IPv4 peer{ { 192, 0, 2, 1 } };
+	endpoints.Register(peer, 4662, 1);
+	endpoints.NoteDialled(peer, 5000);
+	ASSERT_FALSE(endpoints.Take(peer, 5000, 2).has_value());
+	// The punch consumed the entry: a later one from the same address is unexpected.
+	ASSERT_FALSE(endpoints.Take(peer, 5001, 2).has_value());
+
+	// A punch from another port is a different NAT mapping, so it still earns its own dial.
+	endpoints.Register(peer, 4662, 3);
+	endpoints.NoteDialled(peer, 5000);
+	ASSERT_EQUALS((std::uint16_t)4662, *endpoints.Take(peer, 5001, 4));
+
+	// An endpoint nobody dialled is dialled on its punch, as before.
+	endpoints.Register(peer, 4662, 5);
+	ASSERT_EQUALS((std::uint16_t)4662, *endpoints.Take(peer, 5000, 6));
+
+	// Noting a dial for an address that was never registered changes nothing.
+	endpoints.NoteDialled(peer, 5000);
+	ASSERT_FALSE(endpoints.Take(peer, 5000, 7).has_value());
 }
 
 TEST(NatServerHolePunch, KeepsLowIdServerSourcesOnlyFromOurOwnCapableServer)

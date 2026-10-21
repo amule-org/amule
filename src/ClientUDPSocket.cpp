@@ -605,6 +605,7 @@ bool CClientUDPSocket::DialLowIdHolePunchPeer(uint32 ip, uint16 tcpPort, uint16 
 	theApp->clientlist->AddClient(client);
 	CClientRef ref{ client CLIENT_DEBUGSTRING("LowID hole punch dial") };
 	client->SetUDPPort(udpPort);
+	client->MarkLowIdHolePunchDial();
 	const bool started = client->TryServerVouchedLowIdUtpDial();
 	if (!started) {
 		if (CUpDownClient *checked = ref.GetClientChecked()) {
@@ -629,7 +630,7 @@ void CClientUDPSocket::HandleLowIdHolePunch(uint32 host, uint16 port)
 	NatServerHolePunch::IPv4 source{};
 	PokeUInt32(source.data(), host);
 	const std::uint64_t now = ::GetTickCount64();
-	const auto tcpPort = connect->LowIdHolePunchExpectedEndpoints().Take(source, now);
+	const auto tcpPort = connect->LowIdHolePunchExpectedEndpoints().Take(source, port, now);
 	if (tcpPort.has_value() && connect->LowIdHolePunchActionLimiter().Admit(now)) {
 		AddDebugLogLineN(logClientUDP,
 			CFormat("OP_HOLEPUNCH from %s; dialling its observed UDP port") %

@@ -1696,6 +1696,9 @@ uint32 CPartFile::Process(uint8 m_icounter)
 				break;
 			}
 			case DS_LOWTOLOWIP: {
+#if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
+				cur_src->RetryLowIdHolePunchRequest();
+#endif
 				if (cur_src->HasLowID() && !theApp->CanDoCallback(cur_src->GetServerIP(),
 								   cur_src->GetServerPort())) {
 					// If we are almost maxed on sources, slowly remove these
