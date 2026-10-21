@@ -31,6 +31,10 @@
 
 #include <memory>
 
+#if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
+#include "LugdunumNatTraversal.h"
+#endif
+
 #ifdef AMULE_UTP_TRANSPORT
 #include "UtpContext.h"
 #include "UtpStreamAcceptor.h"
@@ -65,6 +69,9 @@ public:
 #if defined(ENABLE_NATT_SERVER_COORDINATION)
 	bool DialLowIdHolePunchPeer(uint32 ip, uint16 tcpPort, uint16 udpPort);
 	bool DialLugdunumNatCallbackPeer(const LugdunumNatTraversal::ForwardedCallback &callback);
+	bool IsLugdunumNatCallbackCoolingDown(const LugdunumNatTraversal::CallbackFailureKey &key);
+	void RecordLugdunumNatCallbackFailure(const LugdunumNatTraversal::CallbackFailureKey &key);
+	void ClearLugdunumNatCallbackFailure(const LugdunumNatTraversal::CallbackFailureKey &key);
 #endif
 #endif
 #ifdef AMULE_QUIC_TRANSPORT
@@ -87,6 +94,9 @@ private:
 		const uint8_t *userHash) override;
 	CUtpContext m_utp;
 	CUtpStreamAcceptor m_utpAcceptor;
+#ifdef ENABLE_NATT_SERVER_COORDINATION
+	LugdunumNatTraversal::CallbackFailureMemory m_lugdunumCallbackFailures;
+#endif
 #endif
 #ifdef AMULE_QUIC_TRANSPORT
 	// Declaration order is construction order: each of these is built from the ones before it,

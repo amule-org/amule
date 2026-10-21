@@ -716,15 +716,16 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 			// with the UDP 0xA7 path (ClientUDPSocket.cpp), as NeoMule does.
 			const LugdunumNatTraversal::ForwardedCallback callback =
 				LugdunumNatTraversal::ParseForwardedCallback(packet, size);
-			if (callback.ok) {
-				LugdunumNatTraversal::LogForwardedCallback(
-					logServer, "OP_NAT_CALLBACKREQUESTED", callback);
+			LugdunumNatTraversal::DispatchForwardedCallback(
+				callback, [&](const LugdunumNatTraversal::ForwardedCallback &forwarded) {
+					LugdunumNatTraversal::LogForwardedCallback(
+						logServer, "OP_NAT_CALLBACKREQUESTED", forwarded);
 #ifdef AMULE_UTP_TRANSPORT
-				if (theApp->clientudp != nullptr) {
-					theApp->clientudp->DialLugdunumNatCallbackPeer(callback);
-				}
+					if (theApp->clientudp != nullptr) {
+						theApp->clientudp->DialLugdunumNatCallbackPeer(forwarded);
+					}
 #endif
-			}
+				});
 			break;
 		}
 		case NatServerTcp::OP_LOWID_HOLEPUNCH_INFO: {

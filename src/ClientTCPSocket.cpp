@@ -329,9 +329,17 @@ void CClientTCPSocket::Disconnect(const wxString &strReason)
 	if (m_client) {
 #if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
 		uint32 requesterId = 0;
-		if (m_client->TakeLugdunumCallbackRequestOnFailure(requesterId) &&
-			LugdunumNatTraversal::ShouldSendCallbackRequestAfterFailure(requesterId)) {
-			m_client->TrySendLugdunumNatCallbackRequest(requesterId);
+		LugdunumNatTraversal::CallbackFailureKey failureKey{};
+		if (m_client->TakeLugdunumCallbackRequestOnFailure(requesterId, failureKey)) {
+			LugdunumNatTraversal::HandleCallbackDialFailure(failureKey,
+				[this](const LugdunumNatTraversal::CallbackFailureKey &key) {
+					if (theApp->clientudp != nullptr) {
+						theApp->clientudp->RecordLugdunumNatCallbackFailure(key);
+					}
+				},
+				[this](uint32 requester) {
+					m_client->TrySendLugdunumNatCallbackRequest(requester);
+				});
 		}
 #endif
 		if (m_client->Disconnected(strReason, true)) {
@@ -387,7 +395,19 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 		theStats::AddDownOverheadOther(size);
 		m_client->ProcessHelloAnswer(buffer, size);
 #if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
-		m_client->CompleteLugdunumCallbackDial();
+		if (m_client->IsLugdunumCallbackDial()) {
+			const LugdunumNatTraversal::CallbackFailureKey failureKey =
+				m_client->GetLugdunumCallbackFailureKey();
+			LugdunumNatTraversal::ClearCallbackFailureAfterHello(
+				failureKey,
+				m_client->GetUserIDHybrid(),
+				[this](const LugdunumNatTraversal::CallbackFailureKey &key) {
+					if (theApp->clientudp != nullptr) {
+						theApp->clientudp->ClearLugdunumNatCallbackFailure(key);
+					}
+				});
+			m_client->CompleteLugdunumCallbackDial();
+		}
 		// The answer establishes identity for this server-vouched temporary dial: attach it to
 		// an already-known peer, as an incoming hello does, so any pending source request follows
 		// the verified peer onto this stream.
@@ -484,6 +504,21 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 			return false;
 		}
 
+#if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
+		if (m_client->IsLugdunumCallbackDial()) {
+			const LugdunumNatTraversal::CallbackFailureKey failureKey =
+				m_client->GetLugdunumCallbackFailureKey();
+			LugdunumNatTraversal::ClearCallbackFailureAfterHello(
+				failureKey,
+				m_client->GetUserIDHybrid(),
+				[this](const LugdunumNatTraversal::CallbackFailureKey &key) {
+					if (theApp->clientudp != nullptr) {
+						theApp->clientudp->ClearLugdunumNatCallbackFailure(key);
+					}
+				});
+			m_client->CompleteLugdunumCallbackDial();
+		}
+#endif
 		wxASSERT(m_client);
 
 		// If we already know this client the socket is attached to the known one, the new
@@ -501,9 +536,6 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 			theApp->clientlist->AddClient(m_client);
 			m_client->SetCommentDirty();
 		}
-#if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
-		m_client->CompleteLugdunumCallbackDial();
-#endif
 #ifdef AMULE_UTP_TRANSPORT
 		// After the attach above, which may have replaced the client this keys
 		// on. Outbound streams also refresh their parameters on HELLOANSWER.

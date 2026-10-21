@@ -45,6 +45,9 @@
 #include "PeerCapabilities.h" // Needed for CPeerCapabilities
 #include "ProtocolPeerIdentity.h"
 #include "KadBuddyLiveness.h"
+#if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
+#include "LugdunumNatTraversal.h"
+#endif
 
 #include <map>
 #include <wx/thread.h> // Needed for wxMutex
@@ -362,23 +365,29 @@ public:
 		m_lowIdHolePunchDial = false;
 		return wasDial;
 	}
-	void MarkLugdunumCallbackDial(uint32 requesterId)
+	void MarkLugdunumCallbackDial(const LugdunumNatTraversal::CallbackFailureKey &failureKey)
 	{
 		m_lugdunumCallbackDial = true;
-		m_lugdunumCallbackRequesterId = requesterId;
+		m_lugdunumCallbackFailureKey = failureKey;
 	}
 	bool IsLugdunumCallbackDial() const { return m_lugdunumCallbackDial; }
+	const LugdunumNatTraversal::CallbackFailureKey &GetLugdunumCallbackFailureKey() const
+	{
+		return m_lugdunumCallbackFailureKey;
+	}
 	void CompleteLugdunumCallbackDial()
 	{
 		m_lugdunumCallbackDial = false;
-		m_lugdunumCallbackRequesterId = 0;
+		m_lugdunumCallbackFailureKey = {};
 	}
-	bool TakeLugdunumCallbackRequestOnFailure(uint32 &requesterId)
+	bool TakeLugdunumCallbackRequestOnFailure(
+		uint32 &requesterId, LugdunumNatTraversal::CallbackFailureKey &failureKey)
 	{
 		if (!m_lugdunumCallbackDial) {
 			return false;
 		}
-		requesterId = m_lugdunumCallbackRequesterId;
+		failureKey = m_lugdunumCallbackFailureKey;
+		requesterId = failureKey.requesterId;
 		CompleteLugdunumCallbackDial();
 		return true;
 	}
@@ -386,7 +395,7 @@ public:
 private:
 	bool m_lowIdHolePunchDial = false;
 	bool m_lugdunumCallbackDial = false;
-	uint32 m_lugdunumCallbackRequesterId = 0;
+	LugdunumNatTraversal::CallbackFailureKey m_lugdunumCallbackFailureKey{};
 #endif
 
 public:

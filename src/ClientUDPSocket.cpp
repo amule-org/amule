@@ -399,13 +399,14 @@ bool CClientUDPSocket::TryProcessServerWayNatCallback(uint32 ip, uint8_t *buffer
 
 	const LugdunumNatTraversal::ForwardedCallback callback =
 		LugdunumNatTraversal::ParseForwardedCallback(decrypted + 2, decryptedLen - 2);
-	if (callback.ok) {
-		LugdunumNatTraversal::LogForwardedCallback(
-			logClientUDP, "OP_NAT_CALLBACKREQUESTED_UDP", callback);
+	LugdunumNatTraversal::DispatchForwardedCallback(
+		callback, [this](const LugdunumNatTraversal::ForwardedCallback &forwarded) {
+			LugdunumNatTraversal::LogForwardedCallback(
+				logClientUDP, "OP_NAT_CALLBACKREQUESTED_UDP", forwarded);
 #ifdef AMULE_UTP_TRANSPORT
-		DialLugdunumNatCallbackPeer(callback);
+			DialLugdunumNatCallbackPeer(forwarded);
 #endif
-	}
+		});
 	return true;
 }
 #endif
@@ -618,16 +619,36 @@ bool CClientUDPSocket::DialLowIdHolePunchPeer(uint32 ip, uint16 tcpPort, uint16 
 	return started;
 }
 
+bool CClientUDPSocket::IsLugdunumNatCallbackCoolingDown(
+	const LugdunumNatTraversal::CallbackFailureKey &key)
+{
+	return m_lugdunumCallbackFailures.IsCoolingDown(key, ::GetTickCount64());
+}
+
+void CClientUDPSocket::RecordLugdunumNatCallbackFailure(
+	const LugdunumNatTraversal::CallbackFailureKey &key)
+{
+	m_lugdunumCallbackFailures.RecordFailure(key, ::GetTickCount64());
+}
+
+void CClientUDPSocket::ClearLugdunumNatCallbackFailure(
+	const LugdunumNatTraversal::CallbackFailureKey &key)
+{
+	m_lugdunumCallbackFailures.Clear(key);
+}
+
 bool CClientUDPSocket::DialLugdunumNatCallbackPeer(
 	const LugdunumNatTraversal::ForwardedCallback &callback)
 {
 	CServerConnect *connect = theApp->serverconnect;
 	CServer *server = connect != nullptr ? connect->GetCurrentServer() : nullptr;
-	if (server == nullptr || !connect->IsConnected() ||
-		!LugdunumNatTraversal::ShouldDialForwardedCallback(
-			callback, server->IsLugdunumNatCallbackActive(), thePrefs::IsLugdunumNatCallbackEnabled()) ||
-		!Ok() || !m_utp.IsAvailable() ||
-		!IsGoodIP(callback.seenIp, thePrefs::FilterLanIPs()) ||
+	if (server == nullptr || !connect->IsConnected()) {
+		return false;
+	}
+	if (!LugdunumNatTraversal::ShouldDialForwardedCallback(callback,
+			server->IsLugdunumNatCallbackActive(),
+			thePrefs::IsLugdunumNatCallbackEnabled()) ||
+		!Ok() || !m_utp.IsAvailable() || !IsGoodIP(callback.seenIp, thePrefs::FilterLanIPs()) ||
 		theApp->ipfilter->IsFiltered(callback.seenIp) ||
 		theApp->clientlist->IsBannedClient(
 			CNetworkAddress::FromIPv4NetworkOrderOrAbsent(callback.seenIp)) ||
@@ -638,6 +659,13 @@ bool CClientUDPSocket::DialLugdunumNatCallbackPeer(
 	// The forwarded endpoint is a route hint, not an identity; OP_HELLO supplies the peer ID.
 	const LugdunumNatTraversal::CallbackDialTarget target =
 		LugdunumNatTraversal::BuildCallbackDialTarget(callback);
+	const LugdunumNatTraversal::CallbackFailureKey failureKey{
+		server->GetIP(), server->GetPort(), callback.requesterId, target.ip, target.udpPort
+	};
+	if (IsLugdunumNatCallbackCoolingDown(failureKey)) {
+		return false;
+	}
+
 	CUpDownClient *client = new CUpDownClient(
 		0, target.provisionalUserId, server->GetIP(), server->GetPort(), nullptr, true, false);
 	client->SetUserAddress(CNetworkAddress::FromIPv4NetworkOrder(target.ip));
@@ -645,12 +673,16 @@ bool CClientUDPSocket::DialLugdunumNatCallbackPeer(
 	CClientRef ref{ client CLIENT_DEBUGSTRING("Lugdunum callback dial") };
 	client->SetUDPPort(target.udpPort);
 	client->MarkLowIdHolePunchDial();
-	client->MarkLugdunumCallbackDial(callback.requesterId);
+	client->MarkLugdunumCallbackDial(failureKey);
 	const bool started = client->TryServerVouchedLowIdUtpDial();
 	if (!started) {
-		if (LugdunumNatTraversal::ShouldSendCallbackRequestAfterFailure(callback.requesterId)) {
-			client->TrySendLugdunumNatCallbackRequest(callback.requesterId);
-		}
+		LugdunumNatTraversal::HandleCallbackDialFailure(failureKey,
+			[this](const LugdunumNatTraversal::CallbackFailureKey &key) {
+				RecordLugdunumNatCallbackFailure(key);
+			},
+			[client](std::uint32_t requesterId) {
+				client->TrySendLugdunumNatCallbackRequest(requesterId);
+			});
 		if (CUpDownClient *checked = ref.GetClientChecked()) {
 			checked->Safe_Delete();
 		}

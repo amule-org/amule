@@ -37,6 +37,9 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <map>
+#include <tuple>
+#include <utility>
 
 namespace LugdunumNatTraversal
 {
@@ -238,6 +241,86 @@ inline CallbackDialTarget BuildCallbackDialTarget(const ForwardedCallback &callb
 	return { 0, callback.seenIp, callback.seenUdpPort };
 }
 
+template <typename Dialer>
+bool DispatchForwardedCallback(const ForwardedCallback &callback, Dialer &&dialer)
+{
+	if (!callback.ok) {
+		return false;
+	}
+	std::forward<Dialer>(dialer)(callback);
+	return true;
+}
+
+struct CallbackFailureKey
+{
+	std::uint32_t serverIp = 0;
+	std::uint16_t serverPort = 0;
+	std::uint32_t requesterId = 0;
+	std::uint32_t endpointIp = 0;
+	std::uint16_t endpointUdpPort = 0;
+
+	bool operator<(const CallbackFailureKey &other) const
+	{
+		return std::tie(serverIp, serverPort, requesterId, endpointIp, endpointUdpPort) <
+		       std::tie(other.serverIp,
+			other.serverPort,
+			other.requesterId,
+			other.endpointIp,
+			other.endpointUdpPort);
+	}
+};
+
+inline bool ShouldClearCallbackFailureAfterHello(
+	const CallbackFailureKey &key, std::uint32_t actualPeerId)
+{
+	return key.requesterId == 0 || key.requesterId == actualPeerId;
+}
+
+template <typename ClearFailure>
+bool ClearCallbackFailureAfterHello(
+	const CallbackFailureKey &key, std::uint32_t actualPeerId, ClearFailure &&clearFailure)
+{
+	if (!ShouldClearCallbackFailureAfterHello(key, actualPeerId)) {
+		return false;
+	}
+	std::forward<ClearFailure>(clearFailure)(key);
+	return true;
+}
+
+class CallbackFailureMemory
+{
+public:
+	static constexpr std::uint64_t CooldownMs = 10 * 60 * 1000;
+
+	bool IsCoolingDown(const CallbackFailureKey &key, std::uint64_t nowMs)
+	{
+		PruneExpired(nowMs);
+		return m_failures.find(key) != m_failures.end();
+	}
+
+	void RecordFailure(const CallbackFailureKey &key, std::uint64_t nowMs)
+	{
+		PruneExpired(nowMs);
+		m_failures[key] = nowMs;
+	}
+
+	void Clear(const CallbackFailureKey &key) { m_failures.erase(key); }
+
+private:
+	void PruneExpired(std::uint64_t nowMs)
+	{
+		for (auto entry = m_failures.begin(); entry != m_failures.end();) {
+			if (nowMs >= entry->second && nowMs - entry->second >= CooldownMs) {
+				entry = m_failures.erase(entry);
+			} else {
+				++entry;
+			}
+		}
+	}
+
+	std::map<CallbackFailureKey, std::uint64_t> m_failures;
+};
+
 inline bool ShouldDialForwardedCallback(
 	const ForwardedCallback &callback, bool serverCallbackActive, bool settingEnabled)
 {
@@ -249,6 +332,18 @@ inline bool ShouldDialForwardedCallback(
 inline bool ShouldSendCallbackRequestAfterFailure(std::uint32_t requesterId)
 {
 	return requesterId != 0;
+}
+
+template <typename RecordFailure, typename RequestCallback>
+bool HandleCallbackDialFailure(
+	const CallbackFailureKey &key, RecordFailure &&recordFailure, RequestCallback &&requestCallback)
+{
+	std::forward<RecordFailure>(recordFailure)(key);
+	if (!ShouldSendCallbackRequestAfterFailure(key.requesterId)) {
+		return false;
+	}
+	std::forward<RequestCallback>(requestCallback)(key.requesterId);
+	return true;
 }
 
 } // namespace LugdunumNatTraversal
