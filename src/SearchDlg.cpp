@@ -523,17 +523,21 @@ void CSearchDlg::FixSearchTypes()
 			searchchoice->SetToolTip(SearchModeHelp(static_cast<SearchType>(canonical)));
 		}
 	}
+#ifdef __WXOSX__
+	// The generic combo's default button slot is narrower than the native
+	// bezel, which clips its right edge. Spacing would pull the button inside
+	// the frame, so widen the slot instead.
+	searchchoice->SetButtonPosition(searchchoice->FromDIP(24));
+#endif
 	// The control is created empty, so refresh its size after adding the choices.
 	searchchoice->SetMinSize(wxDefaultSize);
 	searchchoice->InvalidateBestSize();
 	wxSize bestSize = searchchoice->GetBestSize();
-#ifdef __WXGTK__
-	// wxGTK measures the text but omits the bitmap cell from the best width.
+	// Every port measures the text but omits the bitmap cell from the best width.
 	const int bitmapWidth = searchchoice->GetBitmapSize().x;
 	if (bitmapWidth > 0) {
 		bestSize.x += bitmapWidth + searchchoice->FromDIP(4);
 	}
-#endif
 	searchchoice->SetMinSize(bestSize);
 	Layout();
 }
