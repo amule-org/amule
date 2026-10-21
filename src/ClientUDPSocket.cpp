@@ -402,6 +402,9 @@ bool CClientUDPSocket::TryProcessServerWayNatCallback(uint32 ip, uint8_t *buffer
 	if (callback.ok) {
 		LugdunumNatTraversal::LogForwardedCallback(
 			logClientUDP, "OP_NAT_CALLBACKREQUESTED_UDP", callback);
+#ifdef AMULE_UTP_TRANSPORT
+		DialLugdunumNatCallbackPeer(callback);
+#endif
 	}
 	return true;
 }
@@ -608,6 +611,44 @@ bool CClientUDPSocket::DialLowIdHolePunchPeer(uint32 ip, uint16 tcpPort, uint16 
 	client->MarkLowIdHolePunchDial();
 	const bool started = client->TryServerVouchedLowIdUtpDial();
 	if (!started) {
+		if (CUpDownClient *checked = ref.GetClientChecked()) {
+			checked->Safe_Delete();
+		}
+	}
+	return started;
+}
+
+bool CClientUDPSocket::DialLugdunumNatCallbackPeer(
+	const LugdunumNatTraversal::ForwardedCallback &callback)
+{
+	CServerConnect *connect = theApp->serverconnect;
+	CServer *server = connect != nullptr ? connect->GetCurrentServer() : nullptr;
+	if (server == nullptr || !connect->IsConnected() ||
+		!LugdunumNatTraversal::ShouldDialForwardedCallback(
+			callback, server->IsLugdunumNatCallbackActive(), thePrefs::IsLugdunumNatCallbackEnabled()) ||
+		!Ok() || !m_utp.IsAvailable() ||
+		!IsGoodIP(callback.seenIp, thePrefs::FilterLanIPs()) ||
+		theApp->ipfilter->IsFiltered(callback.seenIp) ||
+		theApp->clientlist->IsBannedClient(
+			CNetworkAddress::FromIPv4NetworkOrderOrAbsent(callback.seenIp)) ||
+		theApp->listensocket->TooManySockets()) {
+		return false;
+	}
+
+	// The callback's requester ID and hash are not peer identity. The temporary client is
+	// reconciled only after OP_HELLO supplies the actual identity.
+	CUpDownClient *client = new CUpDownClient(
+		0, callback.seenIp, server->GetIP(), server->GetPort(), nullptr, true, false);
+	theApp->clientlist->AddClient(client);
+	CClientRef ref{ client CLIENT_DEBUGSTRING("Lugdunum callback dial") };
+	client->SetUDPPort(callback.seenUdpPort);
+	client->MarkLowIdHolePunchDial();
+	client->MarkLugdunumCallbackDial(callback.requesterId);
+	const bool started = client->TryServerVouchedLowIdUtpDial();
+	if (!started) {
+		if (LugdunumNatTraversal::ShouldSendCallbackRequestAfterFailure(callback.requesterId)) {
+			client->TrySendLugdunumNatCallbackRequest(callback.requesterId);
+		}
 		if (CUpDownClient *checked = ref.GetClientChecked()) {
 			checked->Safe_Delete();
 		}

@@ -719,6 +719,11 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 			if (callback.ok) {
 				LugdunumNatTraversal::LogForwardedCallback(
 					logServer, "OP_NAT_CALLBACKREQUESTED", callback);
+#ifdef AMULE_UTP_TRANSPORT
+				if (theApp->clientudp != nullptr) {
+					theApp->clientudp->DialLugdunumNatCallbackPeer(callback);
+				}
+#endif
 			}
 			break;
 		}

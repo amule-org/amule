@@ -417,3 +417,24 @@ TEST(LugdunumNatTraversal, KeepsLowIdServerSourcesOnlyFromOurOwnCapableServer)
 	notCapable.serverCallbackCapable = false;
 	ASSERT_FALSE(ShouldKeepLowIdServerSource(notCapable));
 }
+
+TEST(LugdunumNatTraversal, ReverseCallbackStillDialsButCannotStartReciprocalRequest)
+{
+	ForwardedCallback callback;
+	callback.ok = true;
+	callback.seenIp = 0x01020304;
+	callback.seenUdpPort = 4662;
+	callback.requesterId = 0;
+
+	ASSERT_TRUE(ShouldDialForwardedCallback(callback, true, true));
+	ASSERT_FALSE(ShouldSendCallbackRequestAfterFailure(callback.requesterId));
+
+	callback.requesterId = 0x12345678;
+	ASSERT_TRUE(ShouldDialForwardedCallback(callback, true, true));
+	ASSERT_TRUE(ShouldSendCallbackRequestAfterFailure(callback.requesterId));
+
+	ASSERT_FALSE(ShouldDialForwardedCallback(callback, false, true));
+	ASSERT_FALSE(ShouldDialForwardedCallback(callback, true, false));
+	callback.seenUdpPort = 0;
+	ASSERT_FALSE(ShouldDialForwardedCallback(callback, true, true));
+}

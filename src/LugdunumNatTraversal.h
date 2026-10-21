@@ -225,6 +225,19 @@ inline ForwardedCallback ParseForwardedCallback(const std::uint8_t *data, std::s
 	return result;
 }
 
+inline bool ShouldDialForwardedCallback(
+	const ForwardedCallback &callback, bool serverCallbackActive, bool settingEnabled)
+{
+	return callback.ok && serverCallbackActive && settingEnabled && callback.seenIp != 0 &&
+	       callback.seenUdpPort != 0;
+}
+
+// A zero requester ID is a reverse callback: act on it, but never request a callback back on failure.
+inline bool ShouldSendCallbackRequestAfterFailure(std::uint32_t requesterId)
+{
+	return requesterId != 0;
+}
+
 } // namespace LugdunumNatTraversal
 
 #endif // ENABLE_NATT_SERVER_COORDINATION

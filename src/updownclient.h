@@ -213,6 +213,10 @@ public:
 	/// (or Connect() declined to start) and must not be touched again.
 	bool TryToConnect(bool bIgnoreMaxCon = false);
 	bool Connect();
+#ifdef ENABLE_NATT_SERVER_COORDINATION
+	//! Sends a reciprocal request for a callback-provided peer ID after its dial fails.
+	void TrySendLugdunumNatCallbackRequest(uint32 targetId) const;
+#endif
 #if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
 	//! Dials uTP for a temporary client at the server-announced endpoint. Do not mutate any
 	//! download source: OP_HELLO establishes identity before the client list attaches it.
@@ -357,9 +361,31 @@ public:
 		m_lowIdHolePunchDial = false;
 		return wasDial;
 	}
+	void MarkLugdunumCallbackDial(uint32 requesterId)
+	{
+		m_lugdunumCallbackDial = true;
+		m_lugdunumCallbackRequesterId = requesterId;
+	}
+	bool IsLugdunumCallbackDial() const { return m_lugdunumCallbackDial; }
+	void CompleteLugdunumCallbackDial()
+	{
+		m_lugdunumCallbackDial = false;
+		m_lugdunumCallbackRequesterId = 0;
+	}
+	bool TakeLugdunumCallbackRequestOnFailure(uint32 &requesterId)
+	{
+		if (!m_lugdunumCallbackDial) {
+			return false;
+		}
+		requesterId = m_lugdunumCallbackRequesterId;
+		CompleteLugdunumCallbackDial();
+		return true;
+	}
 
 private:
 	bool m_lowIdHolePunchDial = false;
+	bool m_lugdunumCallbackDial = false;
+	uint32 m_lugdunumCallbackRequesterId = 0;
 #endif
 
 public:

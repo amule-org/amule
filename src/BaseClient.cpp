@@ -1793,6 +1793,11 @@ EContactResult CUpDownClient::CheckContactPreconditions()
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 void CUpDownClient::TrySendLugdunumNatCallbackRequest() const
 {
+	TrySendLugdunumNatCallbackRequest(GetUserIDHybrid());
+}
+
+void CUpDownClient::TrySendLugdunumNatCallbackRequest(uint32 targetId) const
+{
 	if (theApp->serverconnect == nullptr || theApp->clientudp == nullptr) {
 		return;
 	}
@@ -1807,7 +1812,7 @@ void CUpDownClient::TrySendLugdunumNatCallbackRequest() const
 		return;
 	}
 	const LugdunumNatTraversal::CallbackRequestFacts facts{ theApp->serverconnect->GetClientID(),
-		GetUserIDHybrid(),
+		targetId,
 		theApp->serverconnect->IsLocalServer(GetServerIP(), GetServerPort()),
 		server->IsLugdunumNatCallbackActive(),
 		thePrefs::IsServerCryptLayerUDPEnabled(),
@@ -1818,7 +1823,7 @@ void CUpDownClient::TrySendLugdunumNatCallbackRequest() const
 		return;
 	}
 
-	const LugdunumNatTraversal::CallbackRequest request{ GetUserIDHybrid(),
+	const LugdunumNatTraversal::CallbackRequest request{ targetId,
 		theApp->serverconnect->GetClientID() };
 	const std::array<std::uint8_t, 8> payload = LugdunumNatTraversal::BuildCallbackRequest(request);
 	CMemFile data(payload.data(), payload.size());
@@ -1840,7 +1845,7 @@ void CUpDownClient::TrySendLugdunumNatCallbackRequest() const
 	delete[] pRawPacket;
 
 	AddDebugLogLineN(logClientUDP,
-		CFormat("Client UDP socket: OP_NAT_CALLBACKREQUEST for source %u to %s") % GetUserIDHybrid() %
+		CFormat("Client UDP socket: OP_NAT_CALLBACKREQUEST for source %u to %s") % targetId %
 			Uint32_16toStringIP_Port(server->GetIP(), serverListEntry->GetObfuscationPortUDP()));
 	theStats::AddUpOverheadOther(encrypted->GetPacketSize());
 	theApp->clientudp->SendPacket(encrypted,

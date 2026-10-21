@@ -41,6 +41,12 @@
 #include "NatRendezvousPolicy.h"
 #include "QuicStreamAcceptor.h"
 #endif
+#ifdef ENABLE_NATT_SERVER_COORDINATION
+namespace LugdunumNatTraversal
+{
+struct ForwardedCallback;
+}
+#endif
 
 class CClientUDPSocket : public CMuleUDPSocket
 #ifdef AMULE_UTP_TRANSPORT
@@ -58,6 +64,7 @@ public:
 	IUtpContext *GetUtpContext() { return &m_utp; }
 #if defined(ENABLE_NATT_SERVER_COORDINATION)
 	bool DialLowIdHolePunchPeer(uint32 ip, uint16 tcpPort, uint16 udpPort);
+	bool DialLugdunumNatCallbackPeer(const LugdunumNatTraversal::ForwardedCallback &callback);
 #endif
 #endif
 #ifdef AMULE_QUIC_TRANSPORT

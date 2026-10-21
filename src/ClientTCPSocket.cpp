@@ -29,6 +29,9 @@
 #ifdef AMULE_UTP_TRANSPORT
 #include "UtpSocketTransport.h" // per-stream crypt parameters
 #endif                          // Interface declarations.
+#ifdef ENABLE_NATT_SERVER_COORDINATION
+#include "LugdunumNatTraversal.h" // callback failure policy
+#endif
 
 #include "BrowseManager.h"
 
@@ -264,6 +267,11 @@ bool CClientTCPSocket::TryUtpTcpFallback()
 	if (m_client->HasLowID() || !m_client->IsRedialAllowed()) {
 		return false;
 	}
+#ifdef ENABLE_NATT_SERVER_COORDINATION
+	if (m_client->IsLugdunumCallbackDial()) {
+		return false;
+	}
+#endif
 	// A stream handshake that already started cannot be re-keyed: Connect() would
 	// reach SetConnectionEncryption()'s wxFAIL and leave the keystreams at their
 	// mid-stream position, so the peer would decode the new connection's first
@@ -312,6 +320,13 @@ void CClientTCPSocket::Disconnect(const wxString &strReason)
 {
 	byConnected = ES_DISCONNECTED;
 	if (m_client) {
+#if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
+		uint32 requesterId = 0;
+		if (m_client->TakeLugdunumCallbackRequestOnFailure(requesterId) &&
+			LugdunumNatTraversal::ShouldSendCallbackRequestAfterFailure(requesterId)) {
+			m_client->TrySendLugdunumNatCallbackRequest(requesterId);
+		}
+#endif
 		if (m_client->Disconnected(strReason, true)) {
 			// Safe_Delete() can be reached from Disconnected(), or anything else
 			// that sets m_client to NULL, so check m_client first.
@@ -365,8 +380,10 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 		theStats::AddDownOverheadOther(size);
 		m_client->ProcessHelloAnswer(buffer, size);
 #if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
-		// The answer is what identifies a hole-punch dial: join the LowID source it reached, as
-		// an incoming hello does, so the file request goes out over this stream.
+		m_client->CompleteLugdunumCallbackDial();
+		// The answer establishes identity for this server-vouched temporary dial: attach it to
+		// an already-known peer, as an incoming hello does, so any pending source request follows
+		// the verified peer onto this stream.
 		if (m_client->TakeLowIdHolePunchDial()) {
 			CUpDownClient *const dialled = m_client;
 			bool senderDiscarded = false;
@@ -477,6 +494,9 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 			theApp->clientlist->AddClient(m_client);
 			m_client->SetCommentDirty();
 		}
+#if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
+		m_client->CompleteLugdunumCallbackDial();
+#endif
 #ifdef AMULE_UTP_TRANSPORT
 		// After the attach above, which may have replaced the client this keys
 		// on. Outbound streams also refresh their parameters on HELLOANSWER.
