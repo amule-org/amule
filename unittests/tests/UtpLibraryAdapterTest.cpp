@@ -55,6 +55,10 @@ struct SLoopback
 	std::deque<std::vector<uint8_t>> toServer, toClient;
 	std::vector<uint8_t> clientRead;
 	bool clientConnected = false;
+	bool sawChangedPortDatagram = false;
+	bool sawRemapCandidate = false;
+	uint16_t clientSourcePort = kPeerPort;
+	uint64_t nowMs = 100;
 };
 
 SLoopback *g_loop = nullptr;
@@ -141,9 +145,10 @@ sockaddr_in Address(uint32_t ip, uint16_t port)
 }
 
 //! Hands datagrams across until both directions are idle.
-void Pump(SLoopback &loop, int rounds = 64)
+void Pump(SLoopback &loop, int rounds = 64, uint16_t remapClientPortAfterFirstServerPacket = 0)
 {
 	const sockaddr_in peer = Address(kPeerIp, kPeerPort);
+	bool remapped = false;
 	// Before the loop: the window update is deferred through schedule_ack(),
 	// and with both queues empty the loop never runs.
 	loop.server->IssueDeferredAcks();
@@ -152,7 +157,13 @@ void Pump(SLoopback &loop, int rounds = 64)
 		while (!loop.toServer.empty()) {
 			const std::vector<uint8_t> datagram = loop.toServer.front();
 			loop.toServer.pop_front();
-			loop.server->ProcessDatagram(datagram.data(), datagram.size(), kPeerIp, kPeerPort);
+			if (loop.clientSourcePort != kPeerPort) {
+				loop.sawChangedPortDatagram = true;
+				loop.sawRemapCandidate |=
+					loop.server->HasExpectedPortRemapPeer(kPeerIp, loop.clientSourcePort, loop.nowMs);
+			}
+			loop.server->ProcessDatagram(
+				datagram.data(), datagram.size(), kPeerIp, loop.clientSourcePort, loop.nowMs);
 		}
 		while (!loop.toClient.empty()) {
 			const std::vector<uint8_t> datagram = loop.toClient.front();
@@ -162,6 +173,10 @@ void Pump(SLoopback &loop, int rounds = 64)
 				datagram.size(),
 				reinterpret_cast<const sockaddr *>(&peer),
 				sizeof(peer));
+			if (remapClientPortAfterFirstServerPacket != 0 && !remapped) {
+				loop.clientSourcePort = remapClientPortAfterFirstServerPacket;
+				remapped = true;
+			}
 		}
 		loop.server->IssueDeferredAcks();
 		utp_issue_deferred_acks(loop.client);
@@ -221,6 +236,95 @@ TEST(UtpLibraryAdapter, AnInboundSynReachesAdmissionWithItsPeer)
 	// Registered only on success, which is what lets the peer's later non-SYN
 	// frames through the ingress filter.
 	ASSERT_TRUE(loop.server->HasRegisteredPeer(kPeerIp, kPeerPort));
+	Teardown(loop);
+}
+
+TEST(UtpLibraryAdapter, OutboundHandshakeRemapsOneExpectedPeerToItsObservedPort)
+{
+	SLoopback loop;
+	g_loop = &loop;
+	CServerSink sink;
+	loop.server = CreateUtpLibrary();
+	ASSERT_TRUE(loop.server->Create(sink));
+	StartClientAcceptor(loop);
+
+	std::unique_ptr<IStreamTransport> transport;
+	const SUtpDialOptions options{ true, loop.nowMs };
+	ASSERT_TRUE(loop.server->Dial(kPeerIp, kPeerPort, false, nullptr, options, transport));
+	Pump(loop, 64, kPeerPort + kUtpPortRemapWindow);
+
+	ASSERT_TRUE(transport != nullptr);
+	ASSERT_TRUE(transport->IsConnected());
+	ASSERT_TRUE(loop.sawRemapCandidate);
+	ASSERT_TRUE(loop.server->HasRegisteredPeer(kPeerIp, kPeerPort + kUtpPortRemapWindow));
+	ASSERT_FALSE(loop.server->HasRegisteredPeer(kPeerIp, kPeerPort));
+	ASSERT_EQUALS((int)(kPeerPort + kUtpPortRemapWindow), (int)transport->GetPeerPort());
+	Teardown(loop);
+}
+
+TEST(UtpLibraryAdapter, InboundHandshakeRemapsOnlyBeforeTheConnectionIsEstablished)
+{
+	SLoopback loop;
+	g_loop = &loop;
+	CServerSink sink;
+	CFakeAcceptor acceptor;
+	loop.server = CreateUtpLibrary();
+	ASSERT_TRUE(loop.server->Create(sink));
+	loop.server->SetAcceptor(&acceptor);
+	StartClient(loop);
+
+	Pump(loop);
+
+	ASSERT_TRUE(acceptor.accepted != nullptr);
+	ASSERT_TRUE(loop.clientConnected);
+	uint8_t payload = 0x5A;
+	utp_iovec vector{ &payload, 1 };
+	ASSERT_EQUALS(1, (int)utp_writev(loop.clientSocket, &vector, 1));
+	loop.clientSourcePort = kPeerPort + kUtpPortRemapWindow;
+	Pump(loop);
+
+	ASSERT_TRUE(loop.sawChangedPortDatagram);
+	ASSERT_TRUE(loop.sawRemapCandidate);
+	ASSERT_TRUE(loop.server->HasRegisteredPeer(kPeerIp, kPeerPort + kUtpPortRemapWindow));
+	ASSERT_FALSE(loop.server->HasRegisteredPeer(kPeerIp, kPeerPort));
+	ASSERT_EQUALS((int)(kPeerPort + kUtpPortRemapWindow), (int)acceptor.accepted->GetPeerPort());
+	Teardown(loop);
+}
+
+TEST(UtpLibraryAdapter, EstablishedInboundStreamRemainsBoundToItsRemappedTuple)
+{
+	SLoopback loop;
+	g_loop = &loop;
+	CServerSink sink;
+	CFakeAcceptor acceptor;
+	loop.server = CreateUtpLibrary();
+	ASSERT_TRUE(loop.server->Create(sink));
+	loop.server->SetAcceptor(&acceptor);
+	StartClient(loop);
+	Pump(loop);
+	ASSERT_TRUE(acceptor.accepted != nullptr);
+	ASSERT_TRUE(loop.clientConnected);
+
+	const uint16_t remappedPort = kPeerPort + kUtpPortRemapWindow;
+	uint8_t first = 0x5A;
+	utp_iovec firstVector{ &first, 1 };
+	ASSERT_EQUALS(1, (int)utp_writev(loop.clientSocket, &firstVector, 1));
+	loop.clientSourcePort = remappedPort;
+	Pump(loop);
+	ASSERT_TRUE(loop.server->HasRegisteredPeer(kPeerIp, remappedPort));
+	uint8_t received = 0;
+	ASSERT_EQUALS(1, (int)acceptor.accepted->Read(&received, 1));
+	ASSERT_EQUALS((int)first, (int)received);
+
+	uint8_t second = 0x6B;
+	utp_iovec secondVector{ &second, 1 };
+	ASSERT_EQUALS(1, (int)utp_writev(loop.clientSocket, &secondVector, 1));
+	loop.clientSourcePort = remappedPort + 1;
+	Pump(loop);
+	ASSERT_TRUE(loop.server->HasRegisteredPeer(kPeerIp, remappedPort));
+	ASSERT_FALSE(loop.server->HasRegisteredPeer(kPeerIp, remappedPort + 1));
+	ASSERT_EQUALS((int)remappedPort, (int)acceptor.accepted->GetPeerPort());
+	ASSERT_EQUALS(0, (int)acceptor.accepted->Read(&received, 1));
 	Teardown(loop);
 }
 

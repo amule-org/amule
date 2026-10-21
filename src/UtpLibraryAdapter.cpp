@@ -25,8 +25,10 @@
 #include "UtpLibraryAdapter.h"
 
 #include "UtpSocketTransport.h" // per-socket crypt parameters, resolved from userdata
+#include "UtpDialPolicy.h"
 #include <libutp/utp.h>
 
+#include <algorithm>
 #include <map>
 #include <utility>
 #include <vector>
@@ -100,6 +102,15 @@ public:
 		const uint8_t *userHash,
 		std::unique_ptr<IStreamTransport> &transport) override
 	{
+		return Dial(ip, port, encrypt, userHash, SUtpDialOptions{}, transport);
+	}
+	bool Dial(uint32_t ip,
+		uint16_t port,
+		bool encrypt,
+		const uint8_t *userHash,
+		const SUtpDialOptions &options,
+		std::unique_ptr<IStreamTransport> &transport) override
+	{
 		if (!m_context || transport || ip == 0 || port == 0 || (encrypt && userHash == nullptr)) {
 			return false;
 		}
@@ -126,6 +137,9 @@ public:
 			!pending->IsOk()) {
 			return false;
 		}
+		if (options.allowInitialPortRemap) {
+			AddRemapCandidate(socket, ip, port, options.nowMs);
+		}
 		transport = std::move(pending);
 		return true;
 	}
@@ -133,6 +147,10 @@ public:
 	void SetAcceptor(IUtpStreamAcceptor *acceptor) override { m_acceptor = acceptor; }
 
 	bool HasRegisteredPeer(uint32_t ip, uint16_t port) const override { return m_peers.Has(ip, port); }
+	bool HasExpectedPortRemapPeer(uint32_t ip, uint16_t port, std::uint64_t nowMs) const override
+	{
+		return FindUniqueUtpPortRemapCandidate(m_remapCandidates, ip, port, nowMs).has_value();
+	}
 	void Destroy() override
 	{
 		if (!m_context) {
@@ -152,6 +170,7 @@ public:
 		// Every live socket emitted DESTROYING above; anything left is a socket
 		// libutp never told us about, and its endpoint is dead either way.
 		m_endpoints.clear();
+		m_remapCandidates.clear();
 		m_context = nullptr;
 		m_acceptor = nullptr;
 		if (s_self == this) {
@@ -160,18 +179,42 @@ public:
 	}
 	bool ProcessDatagram(const uint8_t *payload, size_t length, uint32_t ip, uint16_t port) override
 	{
-		sockaddr_in address{};
-		address.sin_family = AF_INET;
-		address.sin_port = htons(port);
-		auto *bytes = reinterpret_cast<uint8_t *>(&address.sin_addr.s_addr);
-		for (unsigned i = 0; i < 4; ++i) {
-			bytes[i] = static_cast<uint8_t>(ip >> (8 * i));
+		return ProcessDatagram(payload, length, ip, port, 0);
+	}
+	bool ProcessDatagram(
+		const uint8_t *payload, size_t length, uint32_t ip, uint16_t port, std::uint64_t nowMs) override
+	{
+		m_nowMs = nowMs;
+		const sockaddr_in address = MakeAddress(ip, port);
+		const auto candidateIndex = FindUniqueUtpPortRemapCandidate(m_remapCandidates, ip, port, nowMs);
+		int remapped = 0;
+		bool claimed = false;
+		if (candidateIndex.has_value()) {
+			const SPendingHandshake candidate = m_remapCandidates[*candidateIndex];
+			const sockaddr_in expected = MakeAddress(candidate.ip, candidate.port);
+			m_remapInProgressSocket = candidate.socket;
+			m_remapObservedIp = ip;
+			m_remapObservedPort = port;
+			claimed = utp_process_udp_with_expected_endpoint(m_context,
+						payload,
+						length,
+						reinterpret_cast<const sockaddr *>(&address),
+						sizeof(address),
+						reinterpret_cast<const sockaddr *>(&expected),
+						sizeof(expected),
+						kUtpPortRemapWindow,
+						&remapped) != 0;
+			m_remapInProgressSocket = nullptr;
+			if (remapped != 0) {
+				UpdatePeerEndpoint(candidate.socket, ip, port);
+			}
+		} else {
+			claimed = utp_process_udp(m_context,
+						payload,
+						length,
+						reinterpret_cast<const sockaddr *>(&address),
+						sizeof(address)) != 0;
 		}
-		const bool claimed = utp_process_udp(m_context,
-					     payload,
-					     length,
-					     reinterpret_cast<const sockaddr *>(&address),
-					     sizeof(address)) != 0;
 		// Not inside UTP_ON_ACCEPT: utp_close() can produce DESTROYING before
 		// it returns, re-entering the callback that is still deciding.
 		// Destruction is the close, exactly once.
@@ -186,6 +229,67 @@ public:
 	void CheckTimeouts() override { utp_check_timeouts(m_context); }
 
 private:
+	struct SPendingHandshake : SUtpRemapCandidate
+	{
+		utp_socket *socket = nullptr;
+	};
+
+	static sockaddr_in MakeAddress(uint32_t ip, uint16_t port)
+	{
+		sockaddr_in address{};
+		address.sin_family = AF_INET;
+		address.sin_port = htons(port);
+		auto *bytes = reinterpret_cast<uint8_t *>(&address.sin_addr.s_addr);
+		for (unsigned i = 0; i < 4; ++i) {
+			bytes[i] = static_cast<uint8_t>(ip >> (8 * i));
+		}
+		return address;
+	}
+
+	void AddRemapCandidate(utp_socket *socket, uint32_t ip, uint16_t port, std::uint64_t registeredAtMs)
+	{
+		RemoveRemapCandidate(socket);
+		SPendingHandshake candidate;
+		candidate.ip = ip;
+		candidate.port = port;
+		candidate.registeredAtMs = registeredAtMs;
+		candidate.handshakePending = true;
+		candidate.remapAllowed = true;
+		candidate.socket = socket;
+		m_remapCandidates.push_back(candidate);
+	}
+
+	void RemoveRemapCandidate(utp_socket *socket)
+	{
+		m_remapCandidates.erase(std::remove_if(m_remapCandidates.begin(),
+							m_remapCandidates.end(),
+								[socket](const SPendingHandshake &candidate) {
+									return candidate.socket == socket;
+								}),
+			m_remapCandidates.end());
+	}
+
+	void UpdatePeerDuringRemapCallback(utp_socket *socket)
+	{
+		if (m_remapInProgressSocket == socket) {
+			UpdatePeerEndpoint(socket, m_remapObservedIp, m_remapObservedPort);
+		}
+	}
+
+	void UpdatePeerEndpoint(utp_socket *socket, uint32_t ip, uint16_t port)
+	{
+		const auto found = m_endpoints.find(socket);
+		if (found == m_endpoints.end() || (found->second.first == ip && found->second.second == port)) {
+			return;
+		}
+		m_peers.Remove(found->second.first, found->second.second);
+		m_peers.Add(ip, port);
+		found->second = { ip, port };
+		if (CUtpSocketTransport *transport = TransportOf(socket)) {
+			transport->UpdatePeerEndpoint(CNetworkAddress::FromIPv4NetworkOrder(ip), port);
+		}
+	}
+
 	static uint64 SendTo(utp_callback_arguments *args)
 	{
 		if (!args->address || args->address->sa_family != AF_INET ||
@@ -276,6 +380,7 @@ private:
 			s_self->m_refusedStreams.push_back(std::move(transport));
 			return 0;
 		}
+		s_self->AddRemapCandidate(args->socket, ip, port, s_self->m_nowMs);
 		return 0;
 	}
 
@@ -285,6 +390,10 @@ private:
 			// Before the transport check: a closed socket has no userdata left,
 			// and this is the only notice that its endpoint is now dead.
 			s_self->Forget(args->socket);
+		}
+		if (args->state == UTP_STATE_CONNECT && s_self != nullptr) {
+			s_self->UpdatePeerDuringRemapCallback(args->socket);
+			s_self->RemoveRemapCandidate(args->socket);
 		}
 		CUtpSocketTransport *transport = TransportOf(args->socket);
 		if (transport == nullptr) {
@@ -322,13 +431,22 @@ private:
 		}
 		switch (args->error_code) {
 		case UTP_ECONNREFUSED:
+			if (s_self != nullptr) {
+				s_self->RemoveRemapCandidate(args->socket);
+			}
 			transport->OnEnded(EUtpTransportFailure::Refused);
 			break;
 		case UTP_ETIMEDOUT:
+			if (s_self != nullptr) {
+				s_self->RemoveRemapCandidate(args->socket);
+			}
 			transport->OnEnded(EUtpTransportFailure::TimedOut);
 			break;
 		case UTP_ECONNRESET:
 		default:
+			if (s_self != nullptr) {
+				s_self->RemoveRemapCandidate(args->socket);
+			}
 			transport->OnEnded(EUtpTransportFailure::Reset);
 			break;
 		}
@@ -337,6 +455,10 @@ private:
 
 	static uint64 OnRead(utp_callback_arguments *args)
 	{
+		if (s_self != nullptr) {
+			s_self->UpdatePeerDuringRemapCallback(args->socket);
+			s_self->RemoveRemapCandidate(args->socket);
+		}
 		CUtpSocketTransport *transport = TransportOf(args->socket);
 		if (transport != nullptr) {
 			transport->OnPayload(args->buf, args->len);
@@ -368,6 +490,7 @@ private:
 
 	void Forget(utp_socket *socket)
 	{
+		RemoveRemapCandidate(socket);
 		const auto found = m_endpoints.find(socket);
 		if (found == m_endpoints.end()) {
 			return;
@@ -382,6 +505,11 @@ private:
 	// Which endpoint each socket holds, so the registry can be kept until the
 	// socket is destroyed rather than until its userdata is cleared.
 	std::map<utp_socket *, std::pair<uint32_t, uint16_t>> m_endpoints;
+	std::vector<SPendingHandshake> m_remapCandidates;
+	std::uint64_t m_nowMs = 0;
+	utp_socket *m_remapInProgressSocket = nullptr;
+	uint32_t m_remapObservedIp = 0;
+	uint16_t m_remapObservedPort = 0;
 	// Sockets refused before a transport existed, closed once libutp has
 	// finished with the datagram.
 	std::vector<utp_socket *> m_refused;

@@ -25,8 +25,10 @@
 #ifndef UTP_DIAL_POLICY_H
 #define UTP_DIAL_POLICY_H
 
+#include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <optional>
 
 // Preserve the TCP/callback/buddy/refusal path unless direct uTP is eligible.
 // This policy does not replace security checks or authorize NAT rendezvous.
@@ -65,6 +67,44 @@ inline EUtpDialDecision DecideUtpDial(const SUtpDialFacts &facts)
 inline bool ShouldKeepFoundUtp(bool foundInbound, const uint8_t *localHash, const uint8_t *peerHash)
 {
 	return foundInbound == (std::memcmp(localHash, peerHash, 16) > 0);
+}
+
+constexpr std::uint64_t kUtpPortRemapExpectedPeerTtlMs = 30'000;
+constexpr std::uint16_t kUtpPortRemapWindow = 512;
+
+struct SUtpRemapCandidate
+{
+	std::uint32_t ip = 0;
+	std::uint16_t port = 0;
+	std::uint64_t registeredAtMs = 0;
+	bool handshakePending = false;
+	bool remapAllowed = false;
+};
+
+//! Return the only eligible peer whose observed source port is within the bounded remap window.
+template <typename Range>
+std::optional<std::size_t> FindUniqueUtpPortRemapCandidate(
+	const Range &candidates, std::uint32_t observedIp, std::uint16_t observedPort, std::uint64_t nowMs)
+{
+	std::optional<std::size_t> match;
+	std::size_t index = 0;
+	for (const auto &candidate : candidates) {
+		const std::uint16_t expectedPort = candidate.port;
+		const std::uint16_t delta = expectedPort > observedPort ? expectedPort - observedPort : observedPort - expectedPort;
+		const bool eligible = candidate.remapAllowed && candidate.handshakePending && candidate.ip == observedIp &&
+				      observedPort != 0 && expectedPort != 0 && expectedPort != observedPort &&
+				      nowMs >= candidate.registeredAtMs &&
+				      nowMs - candidate.registeredAtMs < kUtpPortRemapExpectedPeerTtlMs &&
+				      delta <= kUtpPortRemapWindow;
+		if (eligible) {
+			if (match.has_value()) {
+				return std::nullopt;
+			}
+			match = index;
+		}
+		++index;
+	}
+	return match;
 }
 
 #endif // UTP_DIAL_POLICY_H

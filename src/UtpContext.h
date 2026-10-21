@@ -55,6 +55,12 @@ public:
 
 class IStreamTransport;
 
+struct SUtpDialOptions
+{
+	bool allowInitialPortRemap = false;
+	std::uint64_t nowMs = 0;
+};
+
 class IUtpContext
 {
 public:
@@ -63,6 +69,11 @@ public:
 	virtual bool IsAvailable() const = 0;
 	virtual void Destroy() = 0;
 	virtual bool ProcessDatagram(const uint8_t *payload, size_t length, uint32_t ip, uint16_t port) = 0;
+	virtual bool ProcessDatagram(
+		const uint8_t *payload, size_t length, uint32_t ip, uint16_t port, std::uint64_t nowMs)
+	{
+		return ProcessDatagram(payload, length, ip, port);
+	}
 	virtual void Tick() = 0;
 
 	// Unactivated prerequisite. Success transfers a pending stream into an
@@ -76,9 +87,20 @@ public:
 	{
 		return false;
 	}
+	virtual bool Dial(uint32_t ip,
+		uint16_t port,
+		bool encrypt,
+		const uint8_t *userHash,
+		const SUtpDialOptions &,
+		std::unique_ptr<IStreamTransport> &transport)
+	{
+		return Dial(ip, port, encrypt, userHash, transport);
+	}
 
 	//! True while that endpoint holds at least one accepted or outbound socket.
 	virtual bool HasRegisteredPeer(uint32_t ip, uint16_t port) const = 0;
+	//! True only for one live, remap-enabled handshake peer near the observed source port.
+	virtual bool HasExpectedPortRemapPeer(uint32_t, uint16_t, std::uint64_t) const { return false; }
 };
 
 // Counted, not a set: one endpoint can hold several sockets, and forgetting on
@@ -137,6 +159,11 @@ public:
 	virtual bool Create(IUtpDatagramSink &sink) = 0;
 	virtual void Destroy() = 0;
 	virtual bool ProcessDatagram(const uint8_t *payload, size_t length, uint32_t ip, uint16_t port) = 0;
+	virtual bool ProcessDatagram(
+		const uint8_t *payload, size_t length, uint32_t ip, uint16_t port, std::uint64_t)
+	{
+		return ProcessDatagram(payload, length, ip, port);
+	}
 	virtual void IssueDeferredAcks() = 0;
 	virtual void CheckTimeouts() = 0;
 
@@ -146,12 +173,23 @@ public:
 	{
 		return false;
 	}
+	virtual bool Dial(uint32_t ip,
+		uint16_t port,
+		bool encrypt,
+		const uint8_t *userHash,
+		const SUtpDialOptions &,
+		std::unique_ptr<IStreamTransport> &transport)
+	{
+		return Dial(ip, port, encrypt, userHash, transport);
+	}
 
 	//! Null refuses every inbound SYN, which is the state before an acceptor exists.
 	virtual void SetAcceptor(IUtpStreamAcceptor *acceptor) = 0;
 
 	//! True while that endpoint holds at least one accepted or outbound socket.
 	virtual bool HasRegisteredPeer(uint32_t ip, uint16_t port) const = 0;
+	//! True only for one live, remap-enabled handshake peer near the observed source port.
+	virtual bool HasExpectedPortRemapPeer(uint32_t, uint16_t, std::uint64_t) const { return false; }
 };
 
 // Main-thread only. Tick never recreates state abandoned by socket Close().
@@ -189,10 +227,15 @@ public:
 	}
 	bool ProcessDatagram(const uint8_t *payload, size_t length, uint32_t ip, uint16_t port) override
 	{
+		return ProcessDatagram(payload, length, ip, port, 0);
+	}
+	bool ProcessDatagram(
+		const uint8_t *payload, size_t length, uint32_t ip, uint16_t port, std::uint64_t nowMs) override
+	{
 		if (!Configure()) {
 			return false;
 		}
-		const bool claimed = m_library->ProcessDatagram(payload, length, ip, port);
+		const bool claimed = m_library->ProcessDatagram(payload, length, ip, port, nowMs);
 		m_library->IssueDeferredAcks();
 		return claimed;
 	}
@@ -210,11 +253,20 @@ public:
 		const uint8_t *userHash,
 		std::unique_ptr<IStreamTransport> &transport) override
 	{
+		return Dial(ip, port, encrypt, userHash, SUtpDialOptions{}, transport);
+	}
+	bool Dial(uint32_t ip,
+		uint16_t port,
+		bool encrypt,
+		const uint8_t *userHash,
+		const SUtpDialOptions &options,
+		std::unique_ptr<IStreamTransport> &transport) override
+	{
 		// Never reopen a closed UDP service as a side effect of dialing.
 		if (!m_active || transport || ip == 0 || port == 0 || (encrypt && userHash == nullptr)) {
 			return false;
 		}
-		return m_library->Dial(ip, port, encrypt, userHash, transport);
+		return m_library->Dial(ip, port, encrypt, userHash, options, transport);
 	}
 
 	// Delegated rather than answered here: registration happens where sockets
@@ -222,6 +274,10 @@ public:
 	bool HasRegisteredPeer(uint32_t ip, uint16_t port) const override
 	{
 		return m_library->HasRegisteredPeer(ip, port);
+	}
+	bool HasExpectedPortRemapPeer(uint32_t ip, uint16_t port, std::uint64_t nowMs) const override
+	{
+		return m_library->HasExpectedPortRemapPeer(ip, port, nowMs);
 	}
 
 	//! Held, so it survives the context being destroyed and rebuilt.
@@ -278,6 +334,16 @@ inline bool ProcessUtpFrame(
 {
 	return frame.disposition == RP2_KNOWN_TYPE && frame.type == OP_NATT_FRAME_UTP &&
 	       context.ProcessDatagram(frame.payload, frame.payloadLength, ip, port);
+}
+
+inline bool ProcessUtpFrame(IUtpContext &context,
+	const SReservedProt2Frame &frame,
+	uint32_t ip,
+	uint16_t port,
+	std::uint64_t nowMs)
+{
+	return frame.disposition == RP2_KNOWN_TYPE && frame.type == OP_NATT_FRAME_UTP &&
+	       context.ProcessDatagram(frame.payload, frame.payloadLength, ip, port, nowMs);
 }
 
 // UDP sizing for libutp, accounting for the two-byte aMule envelope.

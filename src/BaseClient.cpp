@@ -2235,10 +2235,12 @@ bool CUpDownClient::TryServerVouchedLowIdUtpDial()
 		return false;
 	}
 	std::unique_ptr<IStreamTransport> transport;
+	const SUtpDialOptions dialOptions{ true, ::GetTickCount64() };
 	if (!utp->Dial(GetConnectIP(),
 		    GetUDPPort(),
 		    ShouldReceiveCryptUDPPackets(),
 		    HasValidHash() ? GetUserHash().GetHash() : nullptr,
+		    dialOptions,
 		    transport)) {
 		return false;
 	}

@@ -460,9 +460,13 @@ void CClientUDPSocket::ProcessReservedProt2Frame(
 		// one kind that may arrive from someone we do not know; everything else has
 		// to come from an endpoint that already holds a socket.
 		const EUtpFrameKind kind = ClassifyUtpFrame(classified.payload, classified.payloadLength);
+		const std::uint64_t nowMs = ::GetTickCount64();
 		const bool fromKnownPeer = m_utp.HasRegisteredPeer(ip, port);
-		if (kind != EUtpFrameKind::Malformed && (kind == EUtpFrameKind::Syn || fromKnownPeer)) {
-			if (ProcessUtpFrame(m_utp, classified, ip, port)) {
+		const bool fromExpectedHandshakePeer = kind == EUtpFrameKind::Existing &&
+			m_utp.HasExpectedPortRemapPeer(ip, port, nowMs);
+		if (kind != EUtpFrameKind::Malformed &&
+			(kind == EUtpFrameKind::Syn || fromKnownPeer || fromExpectedHandshakePeer)) {
+			if (ProcessUtpFrame(m_utp, classified, ip, port, nowMs)) {
 				return;
 			}
 		} else if (kind == EUtpFrameKind::Existing) {

@@ -25,6 +25,9 @@
 #include <muleunit/test.h>
 #include "UtpDialPolicy.h"
 
+#include <optional>
+#include <vector>
+
 using namespace muleunit;
 
 DECLARE_SIMPLE(UtpDialPolicy)
@@ -82,4 +85,33 @@ TEST(UtpDialPolicy, ObfuscationOwedButUnavailableStaysOnTcp)
 	ASSERT_TRUE(DecideUtpDial(facts) == EUtpDialDecision::TryUtp);
 	facts.obfuscationSatisfied = false;
 	ASSERT_TRUE(DecideUtpDial(facts) == EUtpDialDecision::PreserveLegacy);
+}
+
+TEST(UtpDialPolicy, RemapRequiresOneLiveExpectedPeerDuringTheHandshake)
+{
+	constexpr std::uint32_t ip = 0x0100007F;
+	std::vector<SUtpRemapCandidate> candidates{ { ip, 4672, 100, true, true } };
+
+	const auto lowerBoundary = FindUniqueUtpPortRemapCandidate(candidates, ip, 4160, 30'099);
+	ASSERT_TRUE(lowerBoundary.has_value());
+	ASSERT_EQUALS((std::size_t)0, *lowerBoundary);
+	const auto upperBoundary = FindUniqueUtpPortRemapCandidate(candidates, ip, 5184, 30'099);
+	ASSERT_TRUE(upperBoundary.has_value());
+	ASSERT_EQUALS((std::size_t)0, *upperBoundary);
+	ASSERT_FALSE(FindUniqueUtpPortRemapCandidate(candidates, ip, 5185, 30'099).has_value());
+	ASSERT_FALSE(FindUniqueUtpPortRemapCandidate(candidates, ip, 4160, 30'100).has_value());
+	ASSERT_FALSE(FindUniqueUtpPortRemapCandidate(candidates, ip + 1, 4160, 30'099).has_value());
+	ASSERT_FALSE(FindUniqueUtpPortRemapCandidate(candidates, ip, 4672, 30'099).has_value());
+
+	candidates.push_back({ ip, 5000, 100, true, true });
+	ASSERT_FALSE(FindUniqueUtpPortRemapCandidate(candidates, ip, 4800, 30'099).has_value());
+	candidates.pop_back();
+	candidates[0].handshakePending = false;
+	ASSERT_FALSE(FindUniqueUtpPortRemapCandidate(candidates, ip, 4160, 30'099).has_value());
+	candidates[0].handshakePending = true;
+	candidates[0].remapAllowed = false;
+	ASSERT_FALSE(FindUniqueUtpPortRemapCandidate(candidates, ip, 4160, 30'099).has_value());
+	candidates[0].remapAllowed = true;
+	candidates[0].registeredAtMs = 30'200;
+	ASSERT_FALSE(FindUniqueUtpPortRemapCandidate(candidates, ip, 4160, 30'099).has_value());
 }

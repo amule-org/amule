@@ -31,6 +31,7 @@
 #include <functional>
 #include <memory>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include "utp.h"
@@ -138,6 +139,16 @@ public:
 	[[nodiscard]] Value* lookup(Key const& key) const {
 		const auto iter = map_.find(key);
 		return iter != map_.end() ? iter->second.get() : nullptr;
+	}
+
+	bool rekey(Key const& oldKey, Key const& newKey, Value* expectedValue) {
+		const auto oldEntry = map_.find(oldKey);
+		if (oldEntry == map_.end() || oldEntry->second.get() != expectedValue || map_.find(newKey) != map_.end()) {
+			return false;
+		}
+		auto node = map_.extract(oldEntry);
+		node.key() = newKey;
+		return map_.insert(std::move(node)).inserted;
 	}
 
 	void add(Key const& key, Value* value) {

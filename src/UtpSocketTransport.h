@@ -181,9 +181,24 @@ public:
 		std::lock_guard<std::mutex> lock(m_mutex);
 		return m_stream.LastError();
 	}
-	//! Fixed for the transport's lifetime, so it needs no lock.
-	CNetworkAddress GetPeerAddress() const override { return m_peer; }
-	uint16_t GetPeerPort() const override { return m_peerPort; }
+	CNetworkAddress GetPeerAddress() const override
+	{
+		std::lock_guard<std::mutex> lock(m_mutex);
+		return m_peer;
+	}
+	uint16_t GetPeerPort() const override
+	{
+		std::lock_guard<std::mutex> lock(m_mutex);
+		return m_peerPort;
+	}
+
+	//! Called only when libutp accepts a bounded initial-handshake port remap.
+	void UpdatePeerEndpoint(const CNetworkAddress &peer, uint16_t port)
+	{
+		std::lock_guard<std::mutex> lock(m_mutex);
+		m_peer = peer;
+		m_peerPort = port;
+	}
 
 	uint32_t Read(void *buffer, uint32_t length) override
 	{
@@ -560,8 +575,8 @@ private:
 	IUtpSocketOperations &m_operations;
 	mutable std::mutex m_mutex;
 	IUtpSocketOperations::Handle m_socket;
-	const CNetworkAddress m_peer;
-	const uint16_t m_peerPort;
+	CNetworkAddress m_peer;
+	uint16_t m_peerPort;
 	const bool m_inbound;
 	// Non-owning: the owner must quiesce Write()/queued pumps before destruction
 	// and keep the sink alive through all calls. Callbacks must not delete this
