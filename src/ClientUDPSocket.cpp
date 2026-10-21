@@ -630,12 +630,17 @@ void CClientUDPSocket::HandleLowIdHolePunch(uint32 host, uint16 port)
 	NatServerHolePunch::IPv4 source{};
 	PokeUInt32(source.data(), host);
 	const std::uint64_t now = ::GetTickCount64();
-	const auto tcpPort = connect->LowIdHolePunchExpectedEndpoints().Take(source, port, now);
-	if (tcpPort.has_value() && connect->LowIdHolePunchActionLimiter().Admit(now)) {
-		AddDebugLogLineN(logClientUDP,
-			CFormat("OP_HOLEPUNCH from %s; dialling its observed UDP port") %
-				Uint32_16toStringIP_Port(host, port));
-		DialLowIdHolePunchPeer(host, *tcpPort, port);
+	const NatServerHolePunch::PunchAction action =
+		connect->LowIdHolePunchExpectedEndpoints().Take(source, port, now);
+	if (action.kind == NatServerHolePunch::PunchAction::DialNow) {
+		if (connect->LowIdHolePunchActionLimiter().Admit(now)) {
+			AddDebugLogLineN(logClientUDP,
+				CFormat("OP_HOLEPUNCH from %s; dialling its observed UDP port") %
+					Uint32_16toStringIP_Port(host, port));
+			DialLowIdHolePunchPeer(host, action.tcpPort, port);
+		}
+	} else if (action.kind == NatServerHolePunch::PunchAction::DialLater) {
+		connect->LowIdHolePunchDialBacks().Schedule(source, action.tcpPort, port, now);
 	}
 }
 #endif

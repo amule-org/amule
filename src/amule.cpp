@@ -2484,6 +2484,9 @@ void CamuleApp::OnCoreTimer(CTimerEvent &WXUNUSED(evt))
 		}
 		clientcredits->Process();
 		clientlist->Process();
+#if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
+		serverconnect->ProcessLowIdHolePunchDialBacks();
+#endif
 
 		// Publish files to server if needed.
 		sharedfiles->Process();

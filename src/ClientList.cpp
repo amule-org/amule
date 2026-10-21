@@ -460,6 +460,9 @@ bool CClientList::AttachToAlreadyKnown(
 						}
 						return true;
 					}
+					if (found_client->GetDownloadState() == DS_CONNECTED) {
+						found_client->NoteFileRequestLostToSocketSwap();
+					}
 				}
 #endif
 				foundSocket->Safe_Delete();

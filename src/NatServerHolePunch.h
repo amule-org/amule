@@ -56,6 +56,8 @@ struct Info
 	std::uint16_t udpPort;
 	Hash userHash;
 	std::uint8_t role; // Opaque: decoding does not authorize a peer action.
+	// The server ID of the peer described, present only in a frame of 29 bytes or more.
+	std::optional<std::uint32_t> peerId;
 };
 struct Failure
 {
@@ -136,6 +138,9 @@ inline std::optional<Info> ParseInfo(const std::uint8_t *data, std::size_t size)
 	info.udpPort = static_cast<std::uint16_t>(Detail::ReadLE(data + 6, 2));
 	std::copy_n(data + 8, 16, info.userHash.begin());
 	info.role = data[24];
+	if (size >= 29) {
+		info.peerId = Detail::ReadLE(data + 25, 4);
+	}
 	return info;
 }
 inline std::array<std::uint8_t, 5> BuildFailure(const Failure &failure)
@@ -249,55 +254,62 @@ inline bool ShouldKeepLowIdServerSource(const LowIdServerSourceFacts &facts)
 
 // Server-coordinated punch state.
 
-// One 0x60 outstanding per server limits requests, not peer identity. Expire a missing reply
-// after 30 s so the next LowID source can be tried.
-constexpr std::uint64_t kOutstandingRequestTimeoutMs = 30'000;
+// A 0x61 names the peer's server ID, so every 0x60 still waiting for its answer can be matched
+// exactly. A request that never gets one expires after 30 s.
+constexpr std::uint64_t kPendingRequestTimeoutMs = 30'000;
+constexpr std::size_t kMaxPendingRequests = 8;
 
-class OutstandingRequestTracker
+class PendingRequestSet
 {
 public:
-	bool CanSend(std::uint64_t now) const noexcept { return !Current(now).has_value(); }
-	struct Slot
+	bool CanSend(std::uint32_t targetId, std::uint64_t now)
 	{
-		std::uint32_t targetId;
-		std::uint16_t tcpPort;
-		std::uint64_t sentAt;
-	};
-	void OnSent(std::uint32_t targetId, std::uint16_t tcpPort, std::uint64_t now) noexcept
-	{
-		m_outstanding = Slot{ targetId, tcpPort, now };
+		Evict(now);
+		return m_pending.size() < kMaxPendingRequests && Find(targetId) == m_pending.end();
 	}
-	// A 0x62 identifies the failed target; an INFO with a matching TCP port may release the slot.
-	// A different target ID leaves the outstanding request alone.
-	void Release(std::uint32_t targetId) noexcept
+	void OnSent(std::uint32_t targetId, std::uint64_t now)
 	{
-		if (m_outstanding.has_value() && m_outstanding->targetId == targetId) {
-			m_outstanding.reset();
+		Evict(now);
+		if (Find(targetId) == m_pending.end()) {
+			m_pending.push_back({ targetId, now });
 		}
 	}
-	// The live outstanding request, or nullopt after release or expiry.
-	std::optional<Slot> Current(std::uint64_t now) const noexcept
+	// True when a request for targetId was pending, which makes this side its requester.
+	bool Take(std::uint32_t targetId, std::uint64_t now)
 	{
-		if (!m_outstanding.has_value() || Expired(*m_outstanding, now)) {
-			return std::nullopt;
+		Evict(now);
+		const auto match = Find(targetId);
+		if (match == m_pending.end()) {
+			return false;
 		}
-		return m_outstanding;
+		m_pending.erase(match);
+		return true;
 	}
+	// A 0x62 identifies the failed target.
+	void Release(std::uint32_t targetId) { Take(targetId, 0); }
 
 private:
-	static bool Expired(const Slot &slot, std::uint64_t now) noexcept
+	struct Entry
 	{
-		return now >= slot.sentAt && now - slot.sentAt >= kOutstandingRequestTimeoutMs;
+		std::uint32_t targetId;
+		std::uint64_t sentAt;
+	};
+	std::vector<Entry>::iterator Find(std::uint32_t targetId)
+	{
+		return std::find_if(m_pending.begin(), m_pending.end(), [targetId](const Entry &entry) {
+			return entry.targetId == targetId;
+		});
 	}
-	std::optional<Slot> m_outstanding;
+	void Evict(std::uint64_t now)
+	{
+		const auto firstLive =
+			std::remove_if(m_pending.begin(), m_pending.end(), [now](const Entry &entry) {
+				return now >= entry.sentAt && now - entry.sentAt >= kPendingRequestTimeoutMs;
+			});
+		m_pending.erase(firstLive, m_pending.end());
+	}
+	std::vector<Entry> m_pending;
 };
-
-// Matching TCP ports only authorizes an extra dial; OP_HELLO establishes identity.
-inline bool ShouldDialForPendingRequest(
-	const std::optional<OutstandingRequestTracker::Slot> &pending, std::uint16_t peerTcpPort) noexcept
-{
-	return pending.has_value() && peerTcpPort != 0 && pending->tcpPort == peerTcpPort;
-}
 
 // ed2k-server resends 0x61 on purpose, up to three times per side. 10 s spans
 // that burst without silently dropping a later, independent rendezvous for the same peer.
@@ -378,6 +390,19 @@ private:
 // A punch reply is accepted for 30 s after the server gives us its peer endpoint.
 constexpr std::uint64_t kExpectedEndpointTtlMs = 30'000;
 
+// What a peer's punch asks of us.
+struct PunchAction
+{
+	enum Kind
+	{
+		None,
+		DialNow,
+		DialLater
+	};
+	Kind kind = None;
+	std::uint16_t tcpPort = 0;
+};
+
 // A server-announced endpoint may trigger one dial back when its UDP punch arrives. The TCP
 // port is kept only for a temporary client; OP_HELLO establishes the peer's actual identity.
 class ExpectedEndpointRegistry
@@ -400,21 +425,24 @@ public:
 			match->dialledUdpPort = udpPort;
 		}
 	}
-	// The TCP port to dial for a punch from sourceIP:sourcePort, or nothing when no endpoint
-	// is expected or a dial to that very port is already in flight.
-	std::optional<std::uint16_t> Take(const IPv4 &sourceIP, std::uint16_t sourcePort, std::uint64_t now)
+	// A punch from an endpoint we dialled needs nothing more from that port and a dial now
+	// from another; a peer we did not dial gets a dial back later, if no stream arrives.
+	PunchAction Take(const IPv4 &sourceIP, std::uint16_t sourcePort, std::uint64_t now)
 	{
 		Evict(now);
 		const auto match = Find(sourceIP);
 		if (match == m_expected.end()) {
-			return std::nullopt;
+			return {};
 		}
 		const Entry entry = *match;
 		m_expected.erase(match);
-		if (entry.dialledUdpPort == sourcePort) {
-			return std::nullopt;
+		if (!entry.dialledUdpPort.has_value()) {
+			return { PunchAction::DialLater, entry.tcpPort };
 		}
-		return entry.tcpPort;
+		if (*entry.dialledUdpPort == sourcePort) {
+			return {};
+		}
+		return { PunchAction::DialNow, entry.tcpPort };
 	}
 
 private:
@@ -441,6 +469,48 @@ private:
 		m_expected.erase(firstLive, m_expected.end());
 	}
 	std::vector<Entry> m_expected;
+};
+
+// The side that did not request the punch dials back only when the peer's own stream has not
+// arrived by then, which normally leaves a single connection.
+constexpr std::uint64_t kDialBackDelayMs = 3'000;
+constexpr std::size_t kMaxDialBacks = 16;
+
+class DialBackSchedule
+{
+public:
+	struct Entry
+	{
+		IPv4 peerIP;
+		std::uint16_t tcpPort;
+		std::uint16_t udpPort;
+		std::uint64_t dueAt;
+	};
+	void Schedule(const IPv4 &peerIP, std::uint16_t tcpPort, std::uint16_t udpPort, std::uint64_t now)
+	{
+		const auto same = std::find_if(m_entries.begin(),
+			m_entries.end(),
+			[&peerIP](const Entry &entry) { return entry.peerIP == peerIP; });
+		if (same != m_entries.end()) {
+			m_entries.erase(same);
+		} else if (m_entries.size() >= kMaxDialBacks) {
+			m_entries.erase(m_entries.begin());
+		}
+		m_entries.push_back({ peerIP, tcpPort, udpPort, now + kDialBackDelayMs });
+	}
+	std::vector<Entry> TakeDue(std::uint64_t now)
+	{
+		std::vector<Entry> due;
+		const auto firstPending = std::stable_partition(m_entries.begin(),
+			m_entries.end(),
+			[now](const Entry &entry) { return now >= entry.dueAt; });
+		due.assign(m_entries.begin(), firstPending);
+		m_entries.erase(m_entries.begin(), firstPending);
+		return due;
+	}
+
+private:
+	std::vector<Entry> m_entries;
 };
 } // namespace NatServerHolePunch
 #endif // ENABLE_NATT_SERVER_COORDINATION

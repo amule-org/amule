@@ -57,6 +57,8 @@
 #include "NatServerHolePunch.h" // Needed for BuildUdpPortsLoginValue, ShouldSendKeepalive
 #include "NetworkFunctions.h"   // Needed for Uint32_16toStringIP_Port
 #include "ClientUDPSocket.h"    // Needed for the complete type behind theApp->clientudp
+#include "ClientList.h"         // Needed for theApp->clientlist->FindClientByIP
+#include "updownclient.h"       // Needed for CUpDownClient::IsConnected
 #include <algorithm>            // Needed for std::copy_n
 #endif
 
@@ -811,9 +813,28 @@ bool CServerConnect::IsConnectedObfuscated() const
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 void CServerConnect::ResetLowIdHolePunchState()
 {
-	m_lowIdHolePunchTracker = NatServerHolePunch::OutstandingRequestTracker();
+	m_lowIdHolePunchPendingRequests = NatServerHolePunch::PendingRequestSet();
+	m_lowIdHolePunchDialBacks = NatServerHolePunch::DialBackSchedule();
 	m_lowIdHolePunchExpectedEndpoints = NatServerHolePunch::ExpectedEndpointRegistry();
 }
+
+#ifdef AMULE_UTP_TRANSPORT
+void CServerConnect::ProcessLowIdHolePunchDialBacks()
+{
+	const std::uint64_t now = ::GetTickCount64();
+	for (const NatServerHolePunch::DialBackSchedule::Entry &due :
+		m_lowIdHolePunchDialBacks.TakeDue(now)) {
+		const uint32 ip = PeekUInt32(due.peerIP.data());
+		CUpDownClient *arrived = theApp->clientlist->FindClientByIP(ip);
+		if (arrived != nullptr && arrived->IsConnected()) {
+			continue;
+		}
+		if (m_lowIdHolePunchActionLimiter.Admit(now)) {
+			theApp->clientudp->DialLowIdHolePunchPeer(ip, due.tcpPort, due.udpPort);
+		}
+	}
+}
+#endif
 
 void CServerConnect::TrySendLowIdHolePunchKeepalive()
 {

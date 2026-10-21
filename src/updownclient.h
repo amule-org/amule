@@ -219,6 +219,11 @@ public:
 	bool TryServerVouchedLowIdUtpDial();
 #endif
 	void ConnectionEstablished();
+#ifdef AMULE_UTP_TRANSPORT
+	//! The uTP tie-break kept a different stream than the one that carried our file request;
+	//! ConnectionEstablished() asks again on the kept one.
+	void NoteFileRequestLostToSocketSwap() { m_fileRequestLostToSocketSwap = true; }
+#endif
 	const wxString &GetUserName() const { return m_Username; }
 	// Only use this when you know the real IP or when your clearing it.
 	void SetIP(uint32 val);
@@ -982,6 +987,9 @@ private:
 	uint8 m_nDownloadState;
 	uint16 m_nPartCount;
 	uint64 m_dwLastAskedTime;
+#ifdef AMULE_UTP_TRANSPORT
+	bool m_fileRequestLostToSocketSwap = false;
+#endif
 	wxString m_clientFilename;
 	uint64 m_nTransferredDown;
 	uint16 m_lastDownloadingPart; // last Part that was downloading

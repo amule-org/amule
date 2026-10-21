@@ -126,10 +126,11 @@ public:
 	void TrySendLowIdHolePunchKeepalive();
 
 	//! Target IDs are scoped to a server session, so a reconnect resets this state.
-	NatServerHolePunch::OutstandingRequestTracker &LowIdHolePunchTracker()
+	NatServerHolePunch::PendingRequestSet &LowIdHolePunchPendingRequests()
 	{
-		return m_lowIdHolePunchTracker;
+		return m_lowIdHolePunchPendingRequests;
 	}
+	NatServerHolePunch::DialBackSchedule &LowIdHolePunchDialBacks() { return m_lowIdHolePunchDialBacks; }
 	NatServerHolePunch::DuplicateInfoSuppressor &LowIdHolePunchDuplicates()
 	{
 		return m_lowIdHolePunchDuplicates;
@@ -142,9 +143,14 @@ public:
 	{
 		return m_lowIdHolePunchExpectedEndpoints;
 	}
-	//! Clears the outstanding-request slot and the expected-endpoint registry: called on a new
+	//! Clears the pending requests, expected endpoints and waiting dial backs: called on a new
 	//! login, since a previous connection's target IDs mean nothing on a different server.
 	void ResetLowIdHolePunchState();
+#ifdef AMULE_UTP_TRANSPORT
+	//! Dials back each punched peer whose delay ran out without a stream from it. Called about
+	//! once a second from CamuleApp::OnCoreTimer.
+	void ProcessLowIdHolePunchDialBacks();
+#endif
 #endif
 
 	//! Records that a server's hostname resolved during the current sweep.
@@ -203,7 +209,8 @@ private:
 	ServerSocketMap connectionattemps;
 
 #ifdef ENABLE_NATT_SERVER_COORDINATION
-	NatServerHolePunch::OutstandingRequestTracker m_lowIdHolePunchTracker;
+	NatServerHolePunch::PendingRequestSet m_lowIdHolePunchPendingRequests;
+	NatServerHolePunch::DialBackSchedule m_lowIdHolePunchDialBacks;
 	NatServerHolePunch::DuplicateInfoSuppressor m_lowIdHolePunchDuplicates;
 	NatServerHolePunch::ActionRateLimiter m_lowIdHolePunchActionLimiter;
 	NatServerHolePunch::ExpectedEndpointRegistry m_lowIdHolePunchExpectedEndpoints;

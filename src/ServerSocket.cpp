@@ -84,8 +84,10 @@ void HandleLowIdHolePunchInfo(
 		!serverconnect->LowIdHolePunchActionLimiter().Admit(now)) {
 		return;
 	}
-	const auto pending = serverconnect->LowIdHolePunchTracker().Current(now);
-	const bool shouldDial = NatServerHolePunch::ShouldDialForPendingRequest(pending, info.tcpPort);
+	// Only a 0x61 naming a peer we asked about makes us its requester; any other, including a
+	// 25-byte one, leaves us the target, who punches and waits for the peer's stream.
+	const bool requester = info.peerId.has_value() &&
+			       serverconnect->LowIdHolePunchPendingRequests().Take(*info.peerId, now);
 	serverconnect->LowIdHolePunchExpectedEndpoints().Register(info.peerIP, info.tcpPort, now);
 	CPacket *punch = new CPacket(OP_HOLEPUNCH, 0, OP_EMULEPROT);
 	theStats::AddUpOverheadOther(punch->GetPacketSize());
@@ -93,8 +95,7 @@ void HandleLowIdHolePunchInfo(
 	AddDebugLogLineN(logServer,
 		CFormat("Client UDP socket: OP_HOLEPUNCH to %s") %
 			Uint32_16toStringIP_Port(peerIP, info.udpPort));
-	if (shouldDial) {
-		serverconnect->LowIdHolePunchTracker().Release(pending->targetId);
+	if (requester) {
 		if (theApp->clientudp->DialLowIdHolePunchPeer(peerIP, info.tcpPort, info.udpPort)) {
 			serverconnect->LowIdHolePunchExpectedEndpoints().NoteDialled(
 				info.peerIP, info.udpPort);
@@ -744,7 +745,7 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 				NatServerHolePunch::ParseFailure(packet, size);
 			if (failure.has_value()) {
 				NatServerHolePunch::LogFailure(logServer, *failure);
-				serverconnect->LowIdHolePunchTracker().Release(failure->targetId);
+				serverconnect->LowIdHolePunchPendingRequests().Release(failure->targetId);
 			}
 			break;
 		}

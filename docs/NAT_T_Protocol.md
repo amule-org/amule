@@ -177,9 +177,9 @@ none of `0xF9`, `0x9F` or `0x60` and cannot act on `0x61`:
   `TrySendLugdunumNatCallbackRequest()`, `CUpDownClient::TrySendLowIdHolePunchRequest()` sends
   `<target_id 4><our_udp_port 2>` over the server TCP link
   (`NatServerHolePunch::ShouldRequestLowIdHolePunch()`), at most once per source, and only when
-  `thePrefs::GetEffectiveUDPPort()` is nonzero. At most one request is outstanding per server;
-  it expires after 30 s or is released after a matching `0x61` TCP-port hint or `0x62` target ID;
-  this limits requests, but does not establish the remote peer's identity;
+  `thePrefs::GetEffectiveUDPPort()` is nonzero. Up to 8 requests may be pending per server, one
+  per target ID; each expires after 30 s or is released by a `0x62` for its target ID. A source
+  whose request found no room is asked again from the download queue's `DS_LOWTOLOWIP` pass;
 - keeping LowID sources: ed2k-server sends LowID sources to any LowID requester
   unconditionally (confirmed against its `get_sources.rs`: no opt-in flag gates it, unlike
   Lugdunum). `CPartFile::AddSources()` therefore keeps one from our current,
@@ -189,17 +189,22 @@ none of `0xF9`, `0x9F` or `0x60` and cannot act on `0x61`:
 - receiving `0x61` on the server TCP link (`ServerSocket.cpp`): after validating the advertised
   IP against LAN, IP-filter and ban policies, register its peer endpoint as expected for 30 s,
   then send an empty `OP_HOLEPUNCH` (`0xA1`, `OP_EMULEPROT`) from the client UDP socket to it.
-  If the sole pending `0x60` target's TCP port matches the `0x61` TCP port, also start a uTP
-  dial. That port comparison is only a dial hint: a 25-byte `0x61` cannot identify which source
-  it describes. Never write the `0x61` hash or address into a download source. The peer's
-  `OP_HELLO` establishes identity, and the existing client-list matching then attaches it to
-  the LowID source. A 29-byte `0x61` with the optional trailing peer ID from
-  andrey23127/ed2k-server#38 is not required. Repeated `0x61` for the same hash are ignored
-  for 10 s and server-directed actions are limited to 20 per minute;
-- receiving `OP_HOLEPUNCH` from a recently expected IP: accept it only once, then dial uTP
-  to the datagram's **source** UDP port, which may differ from the port in `0x61` after NAT.
-  The ordinary uTP connection and `OP_HELLO` perform the rest; `ShouldKeepFoundUtp()` remains
-  the collision backstop. No TCP fallback is available between two LowID peers;
+  The trailing `peer_id` of a 29-byte `0x61` (ed2k-server 0.9.84 and later; read only when the
+  payload is 29 bytes or more) is the server ID of the peer described. When it names a target
+  of one of our pending `0x60` requests, this side is the **requester** and dials uTP at once.
+  Any other `0x61`, including a 25-byte one, leaves this side the **target**: it punches and
+  waits. Never write the `0x61` hash or address into a download source. The peer's `OP_HELLO`
+  (or, for a dial of ours, its `OP_HELLOANSWER`) establishes identity, and the existing
+  client-list matching attaches the stream to the LowID source. Repeated `0x61` for the same
+  hash are ignored for 10 s and server-directed actions are limited to 20 per minute;
+- receiving `OP_HOLEPUNCH` from a recently expected IP: accept it only once. A peer we already
+  dialled needs nothing more when the punch comes from the port we dialled, and a dial to its
+  **source** UDP port when it comes from another, which is the NAT's real mapping. A peer we
+  did not dial is dialled back after 3 s, only if no stream from its IP has connected by
+  then, which normally leaves a single connection. The ordinary uTP connection and `OP_HELLO`
+  perform the rest; `ShouldKeepFoundUtp()` remains the collision backstop, and when it swaps
+  the stream under a source that had already sent its file request, the request is sent again
+  on the kept stream. No TCP fallback is available between two LowID peers;
 - receiving `0x62`: log the failure and release the matching outstanding target ID.
 
 The runtime setting remains off by default. Lugdunum's server-coordinated callback is still

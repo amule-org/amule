@@ -1878,7 +1878,8 @@ bool CUpDownClient::TrySendLowIdHolePunchRequest()
 	if (!NatServerHolePunch::ShouldRequestLowIdHolePunch(facts)) {
 		return false;
 	}
-	if (!theApp->serverconnect->LowIdHolePunchTracker().CanSend(::GetTickCount64())) {
+	if (!theApp->serverconnect->LowIdHolePunchPendingRequests().CanSend(
+		    GetUserIDHybrid(), ::GetTickCount64())) {
 		return false;
 	}
 
@@ -1891,8 +1892,7 @@ bool CUpDownClient::TrySendLowIdHolePunchRequest()
 		logServer, CFormat("Server: OP_LOWID_HOLEPUNCH_REQUEST for source %u") % GetUserIDHybrid());
 	theStats::AddUpOverheadServer(packet->GetPacketSize());
 	theApp->serverconnect->SendPacket(packet);
-	theApp->serverconnect->LowIdHolePunchTracker().OnSent(
-		GetUserIDHybrid(), GetUserPort(), ::GetTickCount64());
+	theApp->serverconnect->LowIdHolePunchPendingRequests().OnSent(GetUserIDHybrid(), ::GetTickCount64());
 	m_lowIdHolePunchRequested = true;
 	return true;
 }
@@ -2424,6 +2424,14 @@ void CUpDownClient::ConnectionEstablished()
 			SendFileRequest();
 		}
 	}
+#ifdef AMULE_UTP_TRANSPORT
+	if (m_fileRequestLostToSocketSwap) {
+		m_fileRequestLostToSocketSwap = false;
+		if (GetDownloadState() == DS_CONNECTED) {
+			SendFileRequest();
+		}
+	}
+#endif
 	switch (GetUploadState()) {
 	case US_CONNECTING:
 	case US_WAITCALLBACK:
