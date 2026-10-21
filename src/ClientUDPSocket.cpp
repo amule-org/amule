@@ -674,20 +674,20 @@ bool CClientUDPSocket::DialLugdunumNatCallbackPeer(
 	client->SetUDPPort(target.udpPort);
 	client->MarkLowIdHolePunchDial();
 	client->MarkLugdunumCallbackDial(failureKey);
-	const bool started = client->TryServerVouchedLowIdUtpDial();
-	if (!started) {
-		LugdunumNatTraversal::HandleCallbackDialFailure(failureKey,
-			[this](const LugdunumNatTraversal::CallbackFailureKey &key) {
-				RecordLugdunumNatCallbackFailure(key);
-			},
-			[client](std::uint32_t requesterId) {
-				client->TrySendLugdunumNatCallbackRequest(requesterId);
-			});
-		if (CUpDownClient *checked = ref.GetClientChecked()) {
-			checked->Safe_Delete();
-		}
-	}
-	return started;
+	return LugdunumNatTraversal::RunCallbackDialApplication(
+		failureKey,
+		[client]() { return client->TryServerVouchedLowIdUtpDial(); },
+		[this](const LugdunumNatTraversal::CallbackFailureKey &key) {
+			RecordLugdunumNatCallbackFailure(key);
+		},
+		[client](std::uint32_t requesterId) {
+			client->TrySendLugdunumNatCallbackRequest(requesterId);
+		},
+		[&ref]() {
+			if (CUpDownClient *checked = ref.GetClientChecked()) {
+				checked->Safe_Delete();
+			}
+		});
 }
 
 void CClientUDPSocket::HandleLowIdHolePunch(uint32 host, uint16 port)

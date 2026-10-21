@@ -564,3 +564,59 @@ TEST(LugdunumNatTraversal, DispatchAndFailureActionsUseInjectedOperations)
 	ASSERT_EQUALS(1, callbackRequests);
 	ASSERT_EQUALS(requesterKey.requesterId, requestedId);
 }
+
+TEST(LugdunumNatTraversal, FailedCallbackAttemptKeepsSourceRetryableThroughApplicationSeam)
+{
+	const CallbackFailureKey key{ 0x0A000001, 4661, 0x12345678, 0xC0000201, 4662 };
+	CallbackFailureMemory failures;
+	struct FakeClientRegistry
+	{
+		int sourceCount = 1;
+		int temporaryClients = 0;
+	} clients;
+	int dialCalls = 0;
+	int recordedFailures = 0;
+	int callbackRequests = 0;
+	std::uint32_t requestedId = 0;
+
+	const auto attempt = [&](std::uint64_t now) {
+		if (failures.IsCoolingDown(key, now)) {
+			return false;
+		}
+		return RunCallbackDialApplication(
+			key,
+			[&]() {
+				++dialCalls;
+				++clients.temporaryClients;
+				return false;
+			},
+			[&](const CallbackFailureKey &failedKey) {
+				++recordedFailures;
+				failures.RecordFailure(failedKey, now);
+			},
+			[&](std::uint32_t requesterId) {
+				++callbackRequests;
+				requestedId = requesterId;
+			},
+			[&]() { --clients.temporaryClients; });
+	};
+
+	ASSERT_FALSE(attempt(100));
+	ASSERT_EQUALS(1, clients.sourceCount);
+	ASSERT_EQUALS(0, clients.temporaryClients);
+	ASSERT_EQUALS(1, dialCalls);
+	ASSERT_EQUALS(1, recordedFailures);
+	ASSERT_EQUALS(1, callbackRequests);
+	ASSERT_EQUALS(key.requesterId, requestedId);
+
+	ASSERT_FALSE(attempt(101));
+	ASSERT_EQUALS(1, dialCalls);
+	ASSERT_EQUALS(1, clients.sourceCount);
+
+	ASSERT_FALSE(attempt(100 + CallbackFailureMemory::CooldownMs));
+	ASSERT_EQUALS(2, dialCalls);
+	ASSERT_EQUALS(1, clients.sourceCount);
+	ASSERT_EQUALS(0, clients.temporaryClients);
+	ASSERT_EQUALS(2, recordedFailures);
+	ASSERT_EQUALS(2, callbackRequests);
+}

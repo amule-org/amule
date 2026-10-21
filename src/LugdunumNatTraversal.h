@@ -346,6 +346,26 @@ bool HandleCallbackDialFailure(
 	return true;
 }
 
+template <typename StartDial,
+	typename RecordFailure,
+	typename RequestCallback,
+	typename RemoveTemporaryClient>
+bool RunCallbackDialApplication(const CallbackFailureKey &key,
+	StartDial &&startDial,
+	RecordFailure &&recordFailure,
+	RequestCallback &&requestCallback,
+	RemoveTemporaryClient &&removeTemporaryClient)
+{
+	if (std::forward<StartDial>(startDial)()) {
+		return true;
+	}
+	HandleCallbackDialFailure(key,
+		std::forward<RecordFailure>(recordFailure),
+		std::forward<RequestCallback>(requestCallback));
+	std::forward<RemoveTemporaryClient>(removeTemporaryClient)();
+	return false;
+}
+
 } // namespace LugdunumNatTraversal
 
 #endif // ENABLE_NATT_SERVER_COORDINATION
