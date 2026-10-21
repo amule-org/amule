@@ -28,6 +28,7 @@
 
 #include "StreamTransport.h" // IStreamTransport and its event sink
 #include "Types.h"
+#include <atomic> // The transport's receive-event latch
 #include <memory> // shared_ptr for CAsioUDPSocketImpl ownership
 class amuleIPV4Address;
 class CMuleUDPSocket;
@@ -207,6 +208,10 @@ private:
 	// GetIP() hands back a borrowed pointer, so the text has to outlive the
 	// call. Written once at attach; never from a const accessor.
 	wxString m_peerText;
+	// A transport has no asio buffer to re-announce, so the bridge posts the next receive event
+	// itself, once at a time, as the asio socket does.
+	void PostTransportReadEvent();
+	std::atomic<bool> m_transportReadEventPending{ false };
 
 	// shared_ptr so the asio impl can outlive this wrapper for as long as any in-flight async
 	// callback still holds a shared_from_this() ref. Required to fix the wake-from-sleep use-

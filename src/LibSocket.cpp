@@ -29,5 +29,6 @@
 
 std::unique_ptr<IStreamTransport> CLibSocket::DetachTransport()
 {
+	m_transportReadEventPending.store(false, std::memory_order_release);
 	return std::move(m_transport);
 }

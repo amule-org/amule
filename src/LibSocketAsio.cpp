@@ -1472,7 +1472,16 @@ void CLibSocket::Notify(bool notify)
 
 uint32 CLibSocket::Read(void *buffer, uint32 nbytes)
 {
-	return m_transport ? m_transport->Read(buffer, nbytes) : m_aSocket->Read((char *)buffer, nbytes);
+	if (!m_transport) {
+		return m_aSocket->Read((char *)buffer, nbytes);
+	}
+	const uint32 count = m_transport->Read(buffer, nbytes);
+	// A packet reader takes one packet per event, so bytes left behind would wait for the next
+	// payload to arrive and the last packet of a burst would never be read.
+	if (!m_transport->BlocksRead()) {
+		PostTransportReadEvent();
+	}
+	return count;
 }
 
 uint32 CLibSocket::Write(const void *buffer, uint32 nbytes)
@@ -1513,6 +1522,7 @@ bool CLibSocket::BlocksWrite() const
 
 void CLibSocket::EventProcessed()
 {
+	m_transportReadEventPending.store(false, std::memory_order_release);
 	m_aSocket->EventProcessed();
 }
 
@@ -1552,9 +1562,16 @@ void CLibSocket::OnStreamConnected()
 	CoreNotify_LibSocketConnect(this, 0);
 }
 
+void CLibSocket::PostTransportReadEvent()
+{
+	if (!m_transportReadEventPending.exchange(true, std::memory_order_acq_rel)) {
+		CoreNotify_LibSocketReceive(this, 0);
+	}
+}
+
 void CLibSocket::OnStreamReadable()
 {
-	CoreNotify_LibSocketReceive(this, 0);
+	PostTransportReadEvent();
 }
 
 void CLibSocket::OnStreamWritable()

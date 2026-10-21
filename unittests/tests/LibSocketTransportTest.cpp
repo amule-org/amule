@@ -201,7 +201,7 @@ public:
 	void SetEvents(IStreamTransportEvents *) override {}
 	bool ObfuscatesStream() const override { return false; }
 	bool IsOk() const override { return ok; }
-	bool BlocksRead() const override { return true; }
+	bool BlocksRead() const override { return blocksRead; }
 	bool BlocksWrite() const override { return true; }
 	int LastError() const override { return 0x7501; }
 	CNetworkAddress GetPeerAddress() const override { return peer; }
@@ -225,6 +225,7 @@ public:
 	void Flush() override { ++flushCalls; }
 
 	bool ok = true;
+	bool blocksRead = true;
 	std::vector<uint8_t> written;
 	int closeCalls = 0;
 	int flushCalls = 0;
@@ -338,6 +339,59 @@ TEST(LibSocketTransport, ReadAndWriteReachTheTransport)
 	const char payload[] = "abc";
 	ASSERT_EQUALS(3u, socket.Write(payload, 3));
 	ASSERT_EQUALS(3u, (unsigned)fake->written.size());
+}
+
+TEST(LibSocketTransport, DataLeftAfterAReadIsAnnouncedOnceUntilTheEventIsProcessed)
+{
+	CLibSocket socket;
+	CFakeTransport *fake = Attach(socket);
+	char out[4];
+	const int before = s_queuedNotifications.load();
+
+	// A drained stream has nothing more to announce.
+	fake->blocksRead = true;
+	socket.Read(out, sizeof(out));
+	ASSERT_EQUALS(before, s_queuedNotifications.load());
+
+	// A packet reader takes one packet per event, so data left behind must raise the next one.
+	fake->blocksRead = false;
+	socket.Read(out, sizeof(out));
+	ASSERT_EQUALS(before + 1, s_queuedNotifications.load());
+	socket.Read(out, sizeof(out));
+	ASSERT_EQUALS(before + 1, s_queuedNotifications.load());
+
+	// Handling the event re-arms the announcement.
+	socket.EventProcessed();
+	socket.Read(out, sizeof(out));
+	ASSERT_EQUALS(before + 2, s_queuedNotifications.load());
+}
+
+TEST(LibSocketTransport, ArrivingPayloadsShareOneEventUntilItIsProcessed)
+{
+	CLibSocket socket;
+	Attach(socket);
+	const int before = s_queuedNotifications.load();
+
+	socket.OnStreamReadable();
+	socket.OnStreamReadable();
+	ASSERT_EQUALS(before + 1, s_queuedNotifications.load());
+
+	socket.EventProcessed();
+	socket.OnStreamReadable();
+	ASSERT_EQUALS(before + 2, s_queuedNotifications.load());
+}
+
+TEST(LibSocketTransport, AReadThatLeavesDataSharesTheEventWithAnArrivingPayload)
+{
+	CLibSocket socket;
+	CFakeTransport *fake = Attach(socket);
+	char out[4];
+	const int before = s_queuedNotifications.load();
+
+	fake->blocksRead = false;
+	socket.Read(out, sizeof(out));
+	socket.OnStreamReadable();
+	ASSERT_EQUALS(before + 1, s_queuedNotifications.load());
 }
 
 TEST(LibSocketTransport, ThePeerIsTheTransportsPeer)
