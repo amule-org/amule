@@ -462,18 +462,21 @@ wxString get_backtrace(unsigned n)
 	std::vector<wxString> rawline(num_entries);
 	std::vector<wxString> libname(num_entries);
 	std::vector<wxString> funcname(num_entries);
+	std::vector<wxString> offset(num_entries);
 	std::vector<wxString> address(num_entries);
 	wxString AllAddresses;
 
 	for (int i = 0; i < num_entries; ++i) {
 		wxString wxBtString = wxConvLibc.cMB2WX(bt_strings[i]);
 		rawline[i] = wxBtString;
-		int posLPar = wxBtString.Find('(');
-		int posRPar = wxBtString.Find(')');
-		int posLBra = wxBtString.Find('[');
-		int posRBra = wxBtString.Find(']');
+		// glibc writes "path(symbol+0xoffset) [0xaddress]". Search from the end: the path comes
+		// first and may itself hold any of these characters, a mangled symbol holds none.
+		int posLPar = wxBtString.Find('(', true);
+		int posRPar = wxBtString.Find(')', true);
+		int posLBra = wxBtString.Find('[', true);
+		int posRBra = wxBtString.Find(']', true);
 		bool hasFunction = true;
-		if (posLPar == -1 || posRPar == -1) {
+		if (posLPar == -1 || posRPar < posLPar) {
 			if (posLBra == -1 || posRBra == -1) {
 				/* It is important to have exactly num_entries
 				 * addresses in AllAddresses */
@@ -489,8 +492,10 @@ wxString get_backtrace(unsigned n)
 		/* Function name */
 		if (hasFunction) {
 			int posPlus = wxBtString.Find('+', true);
-			if (posPlus == -1)
-				posPlus = posRPar;
+			if (posPlus < posLPar || posPlus > posRPar) {
+				posPlus = posRPar; // no offset, or a '+' that belongs to the path
+			}
+			offset[i] = wxBtString.Mid(posPlus, posRPar - posPlus);
 			len = posPlus - posLPar - 1;
 			funcname[i] = wxBtString.Mid(posLPar + 1, len);
 			wxString demangled = demangle(funcname[i]);
@@ -528,8 +533,8 @@ wxString get_backtrace(unsigned n)
 	// No assert when the symbols are missing: this runs from the fatal-signal and assert
 	// handlers, so a failed assert here re-enters get_backtrace(), fails again, and wx traps on
 	// the nested assert -- replacing the crash being reported with a SIGTRAP. The frames fall
-	// back to the lines backtrace_symbols() gave us. Who watches the watchmen? Not an assert, it
-	// turns out.
+	// back to what backtrace_symbols() gave us: each one's name, where it has one, and offset.
+	// Who watches the watchmen? Not an assert, it turns out.
 	//
 	// Read once: another thread may still be setting the symbols up, and the loop and the
 	// formatting below must agree on whether the loop filled the line info.
@@ -614,22 +619,34 @@ wxString get_backtrace(unsigned n)
 	for (int i = n + 1; i < num_entries; ++i) {
 		wxString btLine;
 		btLine << "[" << i << "] ";
-		// Nothing to resolve against (a stripped or unreadable binary, or no addr2line): the line
-		// as backtrace_symbols() gave it. It keeps the module-relative +0x offset addr2line needs
-		// later; the runtime address alone is useless once ASLR has moved a PIE binary.
-		if (!hasLineNumberInfo) {
+		// A line the parser could not split: as backtrace_symbols() gave it, which still holds
+		// whatever offset there is.
+		if (libname[i].IsEmpty()) {
 			trace += btLine + rawline[i] + "\n";
 			continue;
 		}
+		const bool namedBySymbols = !funcname[i].IsEmpty();
 		/* If we have no function name, use the result from addr2line */
-		if (funcname[i].IsEmpty()) {
-			funcname[i] = out[2 * i];
+		if (!namedBySymbols) {
+			funcname[i] = hasLineNumberInfo ? out[2 * i] : wxString("??");
 		}
-		btLine << funcname[i] << " in ";
-		/* If addr2line did not find a line number, use bt_string */
-		if (out[2 * i + 1].Mid(0, 2) == "??") {
-			btLine += libname[i] + "[" + address[i] + "]";
+		/* If addr2line did not find a line number, use bt_string. So does a frame with nothing to
+		 * resolve against at all: a stripped or unreadable binary, or no addr2line. */
+		if (!hasLineNumberInfo || out[2 * i + 1].Mid(0, 2) == "??") {
+			// Keep the offset: into the function backtrace_symbols() named, or else into the
+			// module, which is how a frame in a shared library -- never one bfd resolves -- is
+			// looked up later. The runtime address only matches a core of this same run.
+			if (namedBySymbols) {
+				btLine << funcname[i] << offset[i] << " in " << libname[i];
+			} else {
+				btLine << funcname[i] << " in " << libname[i];
+				if (!offset[i].IsEmpty()) {
+					btLine << "(" << offset[i] << ")";
+				}
+			}
+			btLine << "[" << address[i] << "]";
 		} else {
+			btLine << funcname[i] << " in ";
 #if TOO_VERBOSE_BACKTRACE
 			btLine += out[2 * i + 1];
 #else
