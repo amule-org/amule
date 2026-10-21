@@ -131,7 +131,7 @@ TEST(UtpDialPolicy, HelloAttachmentHonorsOnlyTheVerifiedSynWinnerToken)
 
 	const SUtpHelloAttachmentDecision withoutPeerHash =
 		DecideUtpHelloAttachment(false, false, false, localHash, nullptr);
-	ASSERT_FALSE(withoutPeerHash.keepFound);
+	ASSERT_TRUE(withoutPeerHash.keepFound);
 	ASSERT_FALSE(withoutPeerHash.socketSwap);
 }
 

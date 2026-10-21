@@ -116,7 +116,7 @@ inline SUtpHelloAttachmentDecision DecideUtpHelloAttachment(bool incomingSynWinn
 		const bool keepFound = ShouldKeepFoundUtp(foundInbound, localHash, peerHash);
 		return { keepFound, !keepFound };
 	}
-	return {};
+	return { true, false };
 }
 
 template <typename NoteFileRequestLost, typename CloseFoundSocket, typename AttachIncomingSocket>
