@@ -1826,8 +1826,7 @@ void CUpDownClient::TrySendLugdunumNatCallbackRequest(uint32 targetId) const
 		return;
 	}
 
-	const LugdunumNatTraversal::CallbackRequest request{ targetId,
-		theApp->serverconnect->GetClientID() };
+	const LugdunumNatTraversal::CallbackRequest request{ targetId, theApp->serverconnect->GetClientID() };
 	const std::array<std::uint8_t, 8> payload = LugdunumNatTraversal::BuildCallbackRequest(request);
 	CMemFile data(payload.data(), payload.size());
 	CPacket *packet = new CPacket(data, OP_EDONKEYPROT, OP_NAT_CALLBACKREQUEST);

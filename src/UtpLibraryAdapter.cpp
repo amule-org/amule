@@ -137,8 +137,13 @@ public:
 			!pending->IsOk()) {
 			return false;
 		}
-		AddRemapCandidate(
-			socket, ip, port, options.nowMs, options.allowInitialPortRemap, options.clientToken, true);
+		AddRemapCandidate(socket,
+			ip,
+			port,
+			options.nowMs,
+			options.allowInitialPortRemap,
+			options.clientToken,
+			true);
 		transport = std::move(pending);
 		return true;
 	}
@@ -180,12 +185,16 @@ public:
 	{
 		return ProcessDatagram(payload, length, ip, port, 0);
 	}
-	bool ProcessDatagram(
-		const uint8_t *payload, size_t length, uint32_t ip, uint16_t port, std::uint64_t nowMs) override
+	bool ProcessDatagram(const uint8_t *payload,
+		size_t length,
+		uint32_t ip,
+		uint16_t port,
+		std::uint64_t nowMs) override
 	{
 		m_nowMs = nowMs;
 		const sockaddr_in address = MakeAddress(ip, port);
-		const auto candidateIndex = FindUniqueUtpPortRemapCandidate(m_remapCandidates, ip, port, nowMs);
+		const auto candidateIndex =
+			FindUniqueUtpPortRemapCandidate(m_remapCandidates, ip, port, nowMs);
 		int remapped = 0;
 		bool claimed = false;
 		if (candidateIndex.has_value()) {
@@ -195,24 +204,24 @@ public:
 			m_remapObservedIp = ip;
 			m_remapObservedPort = port;
 			claimed = utp_process_udp_with_expected_endpoint(m_context,
-						payload,
-						length,
-						reinterpret_cast<const sockaddr *>(&address),
-						sizeof(address),
-						reinterpret_cast<const sockaddr *>(&expected),
-						sizeof(expected),
-						kUtpPortRemapWindow,
-						&remapped) != 0;
+					  payload,
+					  length,
+					  reinterpret_cast<const sockaddr *>(&address),
+					  sizeof(address),
+					  reinterpret_cast<const sockaddr *>(&expected),
+					  sizeof(expected),
+					  kUtpPortRemapWindow,
+					  &remapped) != 0;
 			m_remapInProgressSocket = nullptr;
 			if (remapped != 0) {
 				UpdatePeerEndpoint(candidate.socket, ip, port);
 			}
 		} else {
 			claimed = utp_process_udp(m_context,
-						payload,
-						length,
-						reinterpret_cast<const sockaddr *>(&address),
-						sizeof(address)) != 0;
+					  payload,
+					  length,
+					  reinterpret_cast<const sockaddr *>(&address),
+					  sizeof(address)) != 0;
 		}
 		// Not inside UTP_ON_ACCEPT: utp_close() can produce DESTROYING before
 		// it returns, re-entering the callback that is still deciding.
@@ -269,10 +278,10 @@ private:
 	void RemoveRemapCandidate(utp_socket *socket)
 	{
 		m_remapCandidates.erase(std::remove_if(m_remapCandidates.begin(),
-							m_remapCandidates.end(),
-								[socket](const SPendingHandshake &candidate) {
-									return candidate.socket == socket;
-								}),
+						m_remapCandidates.end(),
+						[socket](const SPendingHandshake &candidate) {
+							return candidate.socket == socket;
+						}),
 			m_remapCandidates.end());
 	}
 
@@ -286,7 +295,8 @@ private:
 	void UpdatePeerEndpoint(utp_socket *socket, uint32_t ip, uint16_t port)
 	{
 		const auto found = m_endpoints.find(socket);
-		if (found == m_endpoints.end() || (found->second.first == ip && found->second.second == port)) {
+		if (found == m_endpoints.end() ||
+			(found->second.first == ip && found->second.second == port)) {
 			return;
 		}
 		m_peers.Remove(found->second.first, found->second.second);

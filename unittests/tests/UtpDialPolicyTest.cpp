@@ -82,24 +82,13 @@ TEST(UtpDialPolicy, SimultaneousOpenUsesEndpointTupleOrder)
 	const SUtpEndpoint remoteHigher{ { 192, 0, 2, 2 }, 4672 };
 	const SUtpEndpoint sameAddressHigherPort{ { 192, 0, 2, 1 }, 4673 };
 
-	ASSERT_TRUE(DecideUtpSimultaneousOpen(localLower,
-		remoteHigher,
-		nullptr,
-		false,
-		nullptr,
-		false) == EUtpSimultaneousOpenDecision::KeepOutgoing);
-	ASSERT_TRUE(DecideUtpSimultaneousOpen(remoteHigher,
-		localLower,
-		nullptr,
-		false,
-		nullptr,
-		false) == EUtpSimultaneousOpenDecision::KeepIncoming);
-	ASSERT_TRUE(DecideUtpSimultaneousOpen(localLower,
-		sameAddressHigherPort,
-		nullptr,
-		false,
-		nullptr,
-		false) == EUtpSimultaneousOpenDecision::KeepOutgoing);
+	ASSERT_TRUE(DecideUtpSimultaneousOpen(localLower, remoteHigher, nullptr, false, nullptr, false) ==
+		    EUtpSimultaneousOpenDecision::KeepOutgoing);
+	ASSERT_TRUE(DecideUtpSimultaneousOpen(remoteHigher, localLower, nullptr, false, nullptr, false) ==
+		    EUtpSimultaneousOpenDecision::KeepIncoming);
+	ASSERT_TRUE(DecideUtpSimultaneousOpen(
+			    localLower, sameAddressHigherPort, nullptr, false, nullptr, false) ==
+		    EUtpSimultaneousOpenDecision::KeepOutgoing);
 }
 
 TEST(UtpDialPolicy, EndpointFactoryUsesEd2kNetworkOrder)
@@ -146,7 +135,8 @@ TEST(UtpDialPolicy, HelloAttachmentSwapsToVerifiedWinnerAndRecoversFileRequest)
 	bool incomingAttached = false;
 	int sequence = 0;
 
-	const bool swapped = ApplyUtpHelloSocketSwap(decision,
+	const bool swapped = ApplyUtpHelloSocketSwap(
+		decision,
 		true,
 		[&]() {
 			ASSERT_EQUALS(0, sequence);
@@ -200,8 +190,7 @@ TEST(UtpDialPolicy, HelloSocketSwapRetriesFileRequestOnSurvivingConnection)
 	ASSERT_TRUE(RetryFileRequestAfterUtpSocketSwap(fileRequestLost, true, [&]() { ++requestsSent; }));
 	ASSERT_EQUALS(1, requestsSent);
 	ASSERT_FALSE(fileRequestLost);
-	ASSERT_FALSE(
-		RetryFileRequestAfterUtpSocketSwap(fileRequestLost, true, [&]() { ++requestsSent; }));
+	ASSERT_FALSE(RetryFileRequestAfterUtpSocketSwap(fileRequestLost, true, [&]() { ++requestsSent; }));
 	ASSERT_EQUALS(1, requestsSent);
 }
 
@@ -212,24 +201,12 @@ TEST(UtpDialPolicy, SimultaneousOpenUsesHashesOnlyWhenEndpointsCannotOrder)
 	const uint8_t higherHash[16] = { 1 };
 	const std::optional<SUtpEndpoint> unavailable;
 
-	ASSERT_TRUE(DecideUtpSimultaneousOpen(unavailable,
-		endpoint,
-		lowerHash,
-		true,
-		higherHash,
-		true) == EUtpSimultaneousOpenDecision::KeepOutgoing);
-	ASSERT_TRUE(DecideUtpSimultaneousOpen(unavailable,
-		endpoint,
-		higherHash,
-		true,
-		lowerHash,
-		true) == EUtpSimultaneousOpenDecision::KeepIncoming);
-	ASSERT_TRUE(DecideUtpSimultaneousOpen(endpoint,
-		endpoint,
-		lowerHash,
-		true,
-		higherHash,
-		true) == EUtpSimultaneousOpenDecision::KeepOutgoing);
+	ASSERT_TRUE(DecideUtpSimultaneousOpen(unavailable, endpoint, lowerHash, true, higherHash, true) ==
+		    EUtpSimultaneousOpenDecision::KeepOutgoing);
+	ASSERT_TRUE(DecideUtpSimultaneousOpen(unavailable, endpoint, higherHash, true, lowerHash, true) ==
+		    EUtpSimultaneousOpenDecision::KeepIncoming);
+	ASSERT_TRUE(DecideUtpSimultaneousOpen(endpoint, endpoint, lowerHash, true, higherHash, true) ==
+		    EUtpSimultaneousOpenDecision::KeepOutgoing);
 }
 
 TEST(UtpDialPolicy, SimultaneousOpenRejectsWhenNoDeterministicOrderExists)
@@ -237,24 +214,12 @@ TEST(UtpDialPolicy, SimultaneousOpenRejectsWhenNoDeterministicOrderExists)
 	const uint8_t equalHash[16] = { 1 };
 	const std::optional<SUtpEndpoint> unavailable;
 
-	ASSERT_TRUE(DecideUtpSimultaneousOpen(unavailable,
-		unavailable,
-		nullptr,
-		false,
-		nullptr,
-		false) == EUtpSimultaneousOpenDecision::KeepOutgoing);
-	ASSERT_TRUE(DecideUtpSimultaneousOpen(unavailable,
-		unavailable,
-		equalHash,
-		true,
-		equalHash,
-		true) == EUtpSimultaneousOpenDecision::KeepOutgoing);
-	ASSERT_TRUE(DecideUtpSimultaneousOpen(unavailable,
-		unavailable,
-		equalHash,
-		false,
-		equalHash,
-		false) == EUtpSimultaneousOpenDecision::KeepOutgoing);
+	ASSERT_TRUE(DecideUtpSimultaneousOpen(unavailable, unavailable, nullptr, false, nullptr, false) ==
+		    EUtpSimultaneousOpenDecision::KeepOutgoing);
+	ASSERT_TRUE(DecideUtpSimultaneousOpen(unavailable, unavailable, equalHash, true, equalHash, true) ==
+		    EUtpSimultaneousOpenDecision::KeepOutgoing);
+	ASSERT_TRUE(DecideUtpSimultaneousOpen(unavailable, unavailable, equalHash, false, equalHash, false) ==
+		    EUtpSimultaneousOpenDecision::KeepOutgoing);
 }
 
 // A peer owed obfuscation is kept on TCP rather than dialled in the clear: the
@@ -311,15 +276,15 @@ TEST(UtpDialPolicy, IncomingSynFindsOnlyOneLiveOutboundHandshake)
 	ASSERT_TRUE(changedPort.status == EUtpSynCandidateStatus::Unique);
 	ASSERT_EQUALS((std::size_t)0, changedPort.index);
 	ASSERT_TRUE(FindUniqueUtpSynCandidate(candidates, ip, 4160, 30'100).status ==
-		EUtpSynCandidateStatus::None);
+		    EUtpSynCandidateStatus::None);
 	ASSERT_TRUE(FindUniqueUtpSynCandidate(candidates, ip + 1, 4160, 30'099).status ==
-		EUtpSynCandidateStatus::None);
+		    EUtpSynCandidateStatus::None);
 
 	candidates[0].outbound = false;
-	ASSERT_TRUE(FindUniqueUtpSynCandidate(candidates, ip, 4672, 100).status ==
-		EUtpSynCandidateStatus::None);
+	ASSERT_TRUE(
+		FindUniqueUtpSynCandidate(candidates, ip, 4672, 100).status == EUtpSynCandidateStatus::None);
 	candidates[0].outbound = true;
 	candidates.push_back({ ip, 5000, 100, true, true, true });
 	ASSERT_TRUE(FindUniqueUtpSynCandidate(candidates, ip, 4800, 30'099).status ==
-		EUtpSynCandidateStatus::Ambiguous);
+		    EUtpSynCandidateStatus::Ambiguous);
 }

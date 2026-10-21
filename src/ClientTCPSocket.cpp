@@ -331,7 +331,8 @@ void CClientTCPSocket::Disconnect(const wxString &strReason)
 		uint32 requesterId = 0;
 		LugdunumNatTraversal::CallbackFailureKey failureKey{};
 		if (m_client->TakeLugdunumCallbackRequestOnFailure(requesterId, failureKey)) {
-			LugdunumNatTraversal::HandleCallbackDialFailure(failureKey,
+			LugdunumNatTraversal::HandleCallbackDialFailure(
+				failureKey,
 				[this](const LugdunumNatTraversal::CallbackFailureKey &key) {
 					if (theApp->clientudp != nullptr) {
 						theApp->clientudp->RecordLugdunumNatCallbackFailure(key);
@@ -398,8 +399,7 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 		if (m_client->IsLugdunumCallbackDial()) {
 			const LugdunumNatTraversal::CallbackFailureKey failureKey =
 				m_client->GetLugdunumCallbackFailureKey();
-			LugdunumNatTraversal::ClearCallbackFailureAfterHello(
-				failureKey,
+			LugdunumNatTraversal::ClearCallbackFailureAfterHello(failureKey,
 				m_client->GetUserIDHybrid(),
 				[this](const LugdunumNatTraversal::CallbackFailureKey &key) {
 					if (theApp->clientudp != nullptr) {
@@ -508,8 +508,7 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 		if (m_client->IsLugdunumCallbackDial()) {
 			const LugdunumNatTraversal::CallbackFailureKey failureKey =
 				m_client->GetLugdunumCallbackFailureKey();
-			LugdunumNatTraversal::ClearCallbackFailureAfterHello(
-				failureKey,
+			LugdunumNatTraversal::ClearCallbackFailureAfterHello(failureKey,
 				m_client->GetUserIDHybrid(),
 				[this](const LugdunumNatTraversal::CallbackFailureKey &key) {
 					if (theApp->clientudp != nullptr) {

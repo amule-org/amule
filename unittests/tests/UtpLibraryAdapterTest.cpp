@@ -186,8 +186,8 @@ void Pump(SLoopback &loop, int rounds = 64, uint16_t remapClientPortAfterFirstSe
 			loop.toServer.pop_front();
 			if (loop.clientSourcePort != kPeerPort) {
 				loop.sawChangedPortDatagram = true;
-				loop.sawRemapCandidate |=
-					loop.server->HasExpectedPortRemapPeer(kPeerIp, loop.clientSourcePort, loop.nowMs);
+				loop.sawRemapCandidate |= loop.server->HasExpectedPortRemapPeer(
+					kPeerIp, loop.clientSourcePort, loop.nowMs);
 			}
 			loop.server->ProcessDatagram(
 				datagram.data(), datagram.size(), kPeerIp, loop.clientSourcePort, loop.nowMs);
@@ -283,8 +283,7 @@ TEST(UtpLibraryAdapter, IncomingSynRejectsAfterTheAcceptorKeepsTheOutgoingAttemp
 	ASSERT_TRUE(loop.server->Dial(kPeerIp, kPeerPort, false, nullptr, options, outgoing));
 	const std::vector<uint8_t> incomingSyn = loop.toServer.front();
 	loop.toServer.pop_front();
-	loop.server->ProcessDatagram(
-		incomingSyn.data(), incomingSyn.size(), kPeerIp, kPeerPort, loop.nowMs);
+	loop.server->ProcessDatagram(incomingSyn.data(), incomingSyn.size(), kPeerIp, kPeerPort, loop.nowMs);
 
 	ASSERT_EQUALS(1, acceptor.synDecisions);
 	ASSERT_TRUE(acceptor.lastCandidate.status == EUtpSynCandidateStatus::Unique);
@@ -314,8 +313,7 @@ TEST(UtpLibraryAdapter, IncomingSynWinnerFlowsThroughVerifiedHelloAttachmentSeam
 	ASSERT_TRUE(loop.server->Dial(kPeerIp, kPeerPort, false, nullptr, options, outgoing));
 	const std::vector<uint8_t> incomingSyn = loop.toServer.front();
 	loop.toServer.pop_front();
-	loop.server->ProcessDatagram(
-		incomingSyn.data(), incomingSyn.size(), kPeerIp, kPeerPort, loop.nowMs);
+	loop.server->ProcessDatagram(incomingSyn.data(), incomingSyn.size(), kPeerIp, kPeerPort, loop.nowMs);
 
 	ASSERT_TRUE(acceptor.lastCandidate.status == EUtpSynCandidateStatus::Unique);
 	ASSERT_EQUALS((uint32_t)91, acceptor.lastCandidate.clientToken);
@@ -337,8 +335,7 @@ TEST(UtpLibraryAdapter, IncomingSynWinnerFlowsThroughVerifiedHelloAttachmentSeam
 	SUtpIncomingSynWinner winner;
 	winner.Select(acceptor.lastDecision.candidateToken);
 	const uint32_t helloPeerToken = intended.ecid;
-	const bool verifiedHelloMatch =
-		winner.Consume(helloPeerToken) && helloPeerToken == intended.ecid;
+	const bool verifiedHelloMatch = winner.Consume(helloPeerToken) && helloPeerToken == intended.ecid;
 	ASSERT_TRUE(verifiedHelloMatch);
 	ASSERT_FALSE(winner.Consume(helloPeerToken));
 

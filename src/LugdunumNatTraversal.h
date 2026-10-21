@@ -241,8 +241,7 @@ inline CallbackDialTarget BuildCallbackDialTarget(const ForwardedCallback &callb
 	return { 0, callback.seenIp, callback.seenUdpPort };
 }
 
-template <typename Dialer>
-bool DispatchForwardedCallback(const ForwardedCallback &callback, Dialer &&dialer)
+template <typename Dialer> bool DispatchForwardedCallback(const ForwardedCallback &callback, Dialer &&dialer)
 {
 	if (!callback.ok) {
 		return false;
@@ -263,15 +262,14 @@ struct CallbackFailureKey
 	{
 		return std::tie(serverIp, serverPort, requesterId, endpointIp, endpointUdpPort) <
 		       std::tie(other.serverIp,
-			other.serverPort,
-			other.requesterId,
-			other.endpointIp,
-			other.endpointUdpPort);
+			       other.serverPort,
+			       other.requesterId,
+			       other.endpointIp,
+			       other.endpointUdpPort);
 	}
 };
 
-inline bool ShouldClearCallbackFailureAfterHello(
-	const CallbackFailureKey &key, std::uint32_t actualPeerId)
+inline bool ShouldClearCallbackFailureAfterHello(const CallbackFailureKey &key, std::uint32_t actualPeerId)
 {
 	return key.requesterId == 0 || key.requesterId == actualPeerId;
 }

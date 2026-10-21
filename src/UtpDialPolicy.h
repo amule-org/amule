@@ -203,9 +203,9 @@ inline std::optional<SUtpEndpoint> MakeUtpEndpointFromNetworkOrder(std::uint32_t
 		return std::nullopt;
 	}
 	return SUtpEndpoint{ { static_cast<uint8_t>(ip),
-		static_cast<uint8_t>(ip >> 8),
-		static_cast<uint8_t>(ip >> 16),
-		static_cast<uint8_t>(ip >> 24) },
+				     static_cast<uint8_t>(ip >> 8),
+				     static_cast<uint8_t>(ip >> 16),
+				     static_cast<uint8_t>(ip >> 24) },
 		port };
 }
 
@@ -226,13 +226,13 @@ inline EUtpSimultaneousOpenDecision DecideUtpSimultaneousOpen(
 	if (localEndpoint && remoteEndpoint && localEndpoint->port != 0 && remoteEndpoint->port != 0) {
 		if (localEndpoint->address != remoteEndpoint->address) {
 			return localEndpoint->address < remoteEndpoint->address
-				? EUtpSimultaneousOpenDecision::KeepOutgoing
-				: EUtpSimultaneousOpenDecision::KeepIncoming;
+				       ? EUtpSimultaneousOpenDecision::KeepOutgoing
+				       : EUtpSimultaneousOpenDecision::KeepIncoming;
 		}
 		if (localEndpoint->port != remoteEndpoint->port) {
 			return localEndpoint->port < remoteEndpoint->port
-				? EUtpSimultaneousOpenDecision::KeepOutgoing
-				: EUtpSimultaneousOpenDecision::KeepIncoming;
+				       ? EUtpSimultaneousOpenDecision::KeepOutgoing
+				       : EUtpSimultaneousOpenDecision::KeepIncoming;
 		}
 	}
 
@@ -240,7 +240,7 @@ inline EUtpSimultaneousOpenDecision DecideUtpSimultaneousOpen(
 		const int comparison = std::memcmp(localHash, peerHash, 16);
 		if (comparison != 0) {
 			return comparison < 0 ? EUtpSimultaneousOpenDecision::KeepOutgoing
-					     : EUtpSimultaneousOpenDecision::KeepIncoming;
+					      : EUtpSimultaneousOpenDecision::KeepIncoming;
 		}
 	}
 	return EUtpSimultaneousOpenDecision::KeepOutgoing;
@@ -282,16 +282,16 @@ SUtpSynCandidateMatch FindUniqueUtpSynCandidate(
 	std::size_t index = 0;
 	for (const auto &candidate : candidates) {
 		const std::uint16_t expectedPort = candidate.port;
-		const std::uint16_t delta = expectedPort > observedPort
-			? expectedPort - observedPort
-			: observedPort - expectedPort;
+		const std::uint16_t delta = expectedPort > observedPort ? expectedPort - observedPort
+									: observedPort - expectedPort;
 		const bool exactEndpoint = expectedPort == observedPort;
-		const bool boundedPortChange = candidate.remapAllowed && !exactEndpoint && delta <= kUtpPortRemapWindow &&
-					       nowMs >= candidate.registeredAtMs &&
-					       nowMs - candidate.registeredAtMs < kUtpPortRemapExpectedPeerTtlMs;
-		const bool eligible = candidate.outbound && candidate.handshakePending && candidate.ip == observedIp &&
-				      observedIp != 0 && observedPort != 0 && expectedPort != 0 &&
-				      (exactEndpoint || boundedPortChange);
+		const bool boundedPortChange =
+			candidate.remapAllowed && !exactEndpoint && delta <= kUtpPortRemapWindow &&
+			nowMs >= candidate.registeredAtMs &&
+			nowMs - candidate.registeredAtMs < kUtpPortRemapExpectedPeerTtlMs;
+		const bool eligible = candidate.outbound && candidate.handshakePending &&
+				      candidate.ip == observedIp && observedIp != 0 && observedPort != 0 &&
+				      expectedPort != 0 && (exactEndpoint || boundedPortChange);
 		if (eligible) {
 			if (match.has_value()) {
 				return { EUtpSynCandidateStatus::Ambiguous, 0 };
@@ -313,12 +313,11 @@ std::optional<std::size_t> FindUniqueUtpPortRemapCandidate(
 	std::size_t index = 0;
 	for (const auto &candidate : candidates) {
 		const std::uint16_t expectedPort = candidate.port;
-		const std::uint16_t delta = expectedPort > observedPort
-			? expectedPort - observedPort
-			: observedPort - expectedPort;
-		const bool eligible = candidate.remapAllowed && candidate.handshakePending && candidate.ip == observedIp &&
-				      observedPort != 0 && expectedPort != 0 && expectedPort != observedPort &&
-				      nowMs >= candidate.registeredAtMs &&
+		const std::uint16_t delta = expectedPort > observedPort ? expectedPort - observedPort
+									: observedPort - expectedPort;
+		const bool eligible = candidate.remapAllowed && candidate.handshakePending &&
+				      candidate.ip == observedIp && observedPort != 0 && expectedPort != 0 &&
+				      expectedPort != observedPort && nowMs >= candidate.registeredAtMs &&
 				      nowMs - candidate.registeredAtMs < kUtpPortRemapExpectedPeerTtlMs &&
 				      delta <= kUtpPortRemapWindow;
 		if (eligible) {

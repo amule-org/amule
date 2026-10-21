@@ -165,8 +165,7 @@ public:
 	virtual ~IUtpStreamAcceptor() = default;
 
 	//! Selects the simultaneous-open disposition before a transport is transferred.
-	virtual SUtpIncomingSynDecision DecideIncomingSyn(
-		uint32_t, uint16_t, const SUtpSynCandidateInfo &)
+	virtual SUtpIncomingSynDecision DecideIncomingSyn(uint32_t, uint16_t, const SUtpSynCandidateInfo &)
 	{
 		return {};
 	}
@@ -265,8 +264,11 @@ public:
 	{
 		return ProcessDatagram(payload, length, ip, port, 0);
 	}
-	bool ProcessDatagram(
-		const uint8_t *payload, size_t length, uint32_t ip, uint16_t port, std::uint64_t nowMs) override
+	bool ProcessDatagram(const uint8_t *payload,
+		size_t length,
+		uint32_t ip,
+		uint16_t port,
+		std::uint64_t nowMs) override
 	{
 		if (!Configure()) {
 			return false;

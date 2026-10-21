@@ -73,12 +73,13 @@ SUtpIncomingSynDecision CUtpStreamAcceptor::DecideIncomingSyn(
 	const std::optional<SUtpEndpoint> remoteEndpoint = MakeUtpEndpointFromNetworkOrder(ip, port);
 
 	const uint8_t *localHash = thePrefs::GetUserHash().GetHash();
-	const bool localHashValid = localHash != nullptr &&
+	const bool localHashValid =
+		localHash != nullptr &&
 		std::any_of(localHash, localHash + 16, [](uint8_t byte) { return byte != 0; });
 	const bool peerHashValid = peer->HasValidHash();
 	const uint8_t *peerHash = peerHashValid ? peer->GetUserHash().GetHash() : nullptr;
 	if (DecideUtpSimultaneousOpen(
-			localEndpoint, remoteEndpoint, localHash, localHashValid, peerHash, peerHashValid) ==
+		    localEndpoint, remoteEndpoint, localHash, localHashValid, peerHash, peerHashValid) ==
 		EUtpSimultaneousOpenDecision::KeepIncoming) {
 		return { EUtpIncomingSynDisposition::AcceptKeepIncoming, candidate.clientToken };
 	}

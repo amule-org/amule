@@ -64,7 +64,10 @@ public:
 	void ApplyUtpCryptParameters();
 	bool IsUtpInbound() const;
 	void SetUtpIncomingSynWinner(uint32_t peerToken) { m_utpIncomingSynWinner.Select(peerToken); }
-	bool ConsumeUtpIncomingSynWinner(uint32_t peerToken) { return m_utpIncomingSynWinner.Consume(peerToken); }
+	bool ConsumeUtpIncomingSynWinner(uint32_t peerToken)
+	{
+		return m_utpIncomingSynWinner.Consume(peerToken);
+	}
 	uint32_t TakeUtpIncomingSynWinner() { return m_utpIncomingSynWinner.Take(); }
 	void ClearUtpIncomingSynWinner() { m_utpIncomingSynWinner.Clear(); }
 #endif

@@ -501,7 +501,6 @@ TEST(LugdunumNatTraversal, SuccessfulCallbackHelloClearsOnlyTheMatchingPeerFailu
 	ASSERT_TRUE(ClearCallbackFailureAfterHello(reverseCallback, 0x87654321, [](const auto &) {}));
 }
 
-
 TEST(LugdunumNatTraversal, ReverseCallbackFailureMemoryFallsBackToObservedEndpoint)
 {
 	CallbackFailureMemory failures;
