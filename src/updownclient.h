@@ -355,6 +355,7 @@ public:
 	//! A temporary client dialled on a server-announced endpoint. It becomes a download
 	//! source only through the client list match of its hello answer.
 	void MarkLowIdHolePunchDial() { m_lowIdHolePunchDial = true; }
+	bool IsLowIdHolePunchDial() const { return m_lowIdHolePunchDial; }
 	bool TakeLowIdHolePunchDial()
 	{
 		const bool wasDial = m_lowIdHolePunchDial;

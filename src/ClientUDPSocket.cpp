@@ -635,13 +635,15 @@ bool CClientUDPSocket::DialLugdunumNatCallbackPeer(
 		return false;
 	}
 
-	// The callback's requester ID and hash are not peer identity. The temporary client is
-	// reconciled only after OP_HELLO supplies the actual identity.
+	// The forwarded endpoint is a route hint, not an identity; OP_HELLO supplies the peer ID.
+	const LugdunumNatTraversal::CallbackDialTarget target =
+		LugdunumNatTraversal::BuildCallbackDialTarget(callback);
 	CUpDownClient *client = new CUpDownClient(
-		0, callback.seenIp, server->GetIP(), server->GetPort(), nullptr, true, false);
+		0, target.provisionalUserId, server->GetIP(), server->GetPort(), nullptr, true, false);
+	client->SetUserAddress(CNetworkAddress::FromIPv4NetworkOrder(target.ip));
 	theApp->clientlist->AddClient(client);
 	CClientRef ref{ client CLIENT_DEBUGSTRING("Lugdunum callback dial") };
-	client->SetUDPPort(callback.seenUdpPort);
+	client->SetUDPPort(target.udpPort);
 	client->MarkLowIdHolePunchDial();
 	client->MarkLugdunumCallbackDial(callback.requesterId);
 	const bool started = client->TryServerVouchedLowIdUtpDial();

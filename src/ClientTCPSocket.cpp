@@ -83,6 +83,13 @@ CClientTCPSocket::CClientTCPSocket(CUpDownClient *in_client, const CProxyData *P
 		m_remoteip = 0;
 	}
 	m_remoteAddress = CNetworkAddress::FromIPv4NetworkOrderOrAbsent(m_remoteip);
+#if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
+	if (in_client != nullptr && in_client->IsLowIdHolePunchDial()) {
+		// Server-vouched dials carry a route address separately from peer identity until hello.
+		m_remoteAddress = in_client->GetUserAddress().Unmapped();
+		m_remoteip = m_remoteAddress.ToIPv4NetworkOrderOrZero();
+	}
+#endif
 #ifdef ENABLE_IPV6
 	// A native IPv6 peer has no IPv4 hybrid ID; OnReceive() filters on the address dialled.
 	if (in_client) {

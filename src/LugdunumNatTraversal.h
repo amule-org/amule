@@ -225,6 +225,19 @@ inline ForwardedCallback ParseForwardedCallback(const std::uint8_t *data, std::s
 	return result;
 }
 
+struct CallbackDialTarget
+{
+	std::uint32_t provisionalUserId = 0;
+	std::uint32_t ip = 0;
+	std::uint16_t udpPort = 0;
+};
+
+// The forwarded IP/UDP tuple selects a route only; a peer ID is established by OP_HELLO.
+inline CallbackDialTarget BuildCallbackDialTarget(const ForwardedCallback &callback)
+{
+	return { 0, callback.seenIp, callback.seenUdpPort };
+}
+
 inline bool ShouldDialForwardedCallback(
 	const ForwardedCallback &callback, bool serverCallbackActive, bool settingEnabled)
 {

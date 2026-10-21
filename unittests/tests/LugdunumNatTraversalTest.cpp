@@ -438,3 +438,19 @@ TEST(LugdunumNatTraversal, ReverseCallbackStillDialsButCannotStartReciprocalRequ
 	callback.seenUdpPort = 0;
 	ASSERT_FALSE(ShouldDialForwardedCallback(callback, true, true));
 }
+
+TEST(LugdunumNatTraversal, CallbackDialKeepsObservedEndpointOutOfPeerId)
+{
+	ForwardedCallback callback;
+	callback.ok = true;
+	callback.seenIp = 0x01020304;
+	callback.seenUdpPort = 4662;
+	callback.requesterId = 0x12345678;
+	callback.hasObfuscation = true;
+	callback.userHash.fill(0xAB);
+
+	const CallbackDialTarget target = BuildCallbackDialTarget(callback);
+	ASSERT_EQUALS(0u, target.provisionalUserId);
+	ASSERT_EQUALS(callback.seenIp, target.ip);
+	ASSERT_EQUALS(callback.seenUdpPort, target.udpPort);
+}
