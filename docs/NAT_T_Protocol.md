@@ -200,9 +200,9 @@ none of `0xF9`, `0x9F` or `0x60` and cannot act on `0x61`:
 - receiving `OP_HOLEPUNCH` from a recently expected IP: accept it only once. A peer we already
   dialled needs nothing more when the punch comes from the port we dialled, and a dial to its
   **source** UDP port when it comes from another, which is the NAT's real mapping. A peer we
-  did not dial is dialled back after 3 s, only if no stream from its IP has connected by
-  then, which normally leaves a single connection. The ordinary uTP connection and `OP_HELLO`
-  perform the rest; `ShouldKeepFoundUtp()` remains the collision backstop, and when it swaps
+  did not dial is dialled back after 3 s, only if that peer (its IP and TCP port) has not
+  connected by then, which normally leaves a single connection. The ordinary uTP connection
+  and `OP_HELLO` perform the rest; `ShouldKeepFoundUtp()` remains the collision backstop, and when it swaps
   the stream under a source that had already sent its file request, the request is sent again
   on the kept stream. No TCP fallback is available between two LowID peers;
 - receiving `0x62`: log the failure and release the matching outstanding target ID.

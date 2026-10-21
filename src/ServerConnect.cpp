@@ -825,7 +825,8 @@ void CServerConnect::ProcessLowIdHolePunchDialBacks()
 	for (const NatServerHolePunch::DialBackSchedule::Entry &due :
 		m_lowIdHolePunchDialBacks.TakeDue(now)) {
 		const uint32 ip = PeekUInt32(due.peerIP.data());
-		CUpDownClient *arrived = theApp->clientlist->FindClientByIP(ip);
+		// IP and listen port: several clients can share one IP behind a NAT.
+		CUpDownClient *arrived = theApp->clientlist->FindClientByIP(ip, due.tcpPort);
 		if (arrived != nullptr && arrived->IsConnected()) {
 			continue;
 		}
