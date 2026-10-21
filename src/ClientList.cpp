@@ -43,11 +43,11 @@
 #include "LugdunumNatTraversal.h" // Needed for verified callback failure clearing
 #endif
 #include "DownloadQueue.h" // Needed for CDownloadQueue
-#include "UploadQueue.h"      // Needed for CUploadQueue
-#include "IPFilter.h"         // Needed for CIPFIlter
-#include "updownclient.h"     // Needed for CUpDownClient
-#include "Preferences.h"      // Needed for thePrefs
-#include "Statistics.h"       // Needed for theStats
+#include "UploadQueue.h"   // Needed for CUploadQueue
+#include "IPFilter.h"      // Needed for CIPFIlter
+#include "updownclient.h"  // Needed for CUpDownClient
+#include "Preferences.h"   // Needed for thePrefs
+#include "Statistics.h"    // Needed for theStats
 #include "Logger.h"
 #include "GuiEvents.h" // Needed for Notify_*
 #include "Packet.h"
@@ -422,39 +422,43 @@ bool CClientList::AttachToAlreadyKnown(
 			outgoingSynCandidate != tocheck) {
 			bool candidateMatchesHello = false;
 #if defined(ENABLE_NATT_SERVER_COORDINATION)
-		if (outgoingSynCandidate->IsLugdunumCallbackDial()) {
-			const LugdunumNatTraversal::CallbackFailureKey failureKey =
-				outgoingSynCandidate->GetLugdunumCallbackFailureKey();
-			candidateMatchesHello = LugdunumNatTraversal::ShouldClearCallbackFailureAfterHello(
-				failureKey, found_client->GetUserIDHybrid());
+			if (outgoingSynCandidate->IsLugdunumCallbackDial()) {
+				const LugdunumNatTraversal::CallbackFailureKey failureKey =
+					outgoingSynCandidate->GetLugdunumCallbackFailureKey();
+				candidateMatchesHello =
+					LugdunumNatTraversal::ShouldClearCallbackFailureAfterHello(
+						failureKey, found_client->GetUserIDHybrid());
+				if (candidateMatchesHello) {
+					LugdunumNatTraversal::ClearCallbackFailureAfterHello(failureKey,
+						found_client->GetUserIDHybrid(),
+						[this](const LugdunumNatTraversal::CallbackFailureKey &key) {
+							if (theApp->clientudp != nullptr) {
+								theApp->clientudp
+									->ClearLugdunumNatCallbackFailure(
+										key);
+							}
+						});
+					uint32 requesterId = 0;
+					LugdunumNatTraversal::CallbackFailureKey ignoredKey{};
+					outgoingSynCandidate->TakeLugdunumCallbackRequestOnFailure(
+						requesterId, ignoredKey);
+				}
+			}
+#endif
+			if (!candidateMatchesHello && outgoingSynCandidate->HasValidHash() &&
+				found_client->HasValidHash()) {
+				candidateMatchesHello =
+					std::memcmp(outgoingSynCandidate->GetUserHash().GetHash(),
+						found_client->GetUserHash().GetHash(),
+						16) == 0;
+			}
 			if (candidateMatchesHello) {
-				LugdunumNatTraversal::ClearCallbackFailureAfterHello(failureKey,
-					found_client->GetUserIDHybrid(),
-					[this](const LugdunumNatTraversal::CallbackFailureKey &key) {
-						if (theApp->clientudp != nullptr) {
-							theApp->clientudp->ClearLugdunumNatCallbackFailure(key);
-						}
-					});
-				uint32 requesterId = 0;
-				LugdunumNatTraversal::CallbackFailureKey ignoredKey{};
-				outgoingSynCandidate->TakeLugdunumCallbackRequestOnFailure(requesterId, ignoredKey);
+				outgoingSynCandidate->Safe_Delete();
 			}
 		}
 #endif
-		if (!candidateMatchesHello && outgoingSynCandidate->HasValidHash() && found_client->HasValidHash()) {
-			candidateMatchesHello = std::memcmp(outgoingSynCandidate->GetUserHash().GetHash(),
-				found_client->GetUserHash().GetHash(),
-				16) == 0;
-		}
-		if (candidateMatchesHello) {
-			outgoingSynCandidate->Safe_Delete();
-		}
-	}
-#endif
 		if (sender) {
-#ifdef AMULE_UTP_TRANSPORT
 			bool socketAttachedBySwap = false;
-#endif
 			if (found_client->GetSocket()) {
 				if (found_client->IsConnected() &&
 					(found_client->GetUserAddress() != tocheck->GetUserAddress() ||
@@ -494,16 +498,21 @@ bool CClientList::AttachToAlreadyKnown(
 #ifdef AMULE_UTP_TRANSPORT
 				if (foundSocket->HasTransport() && sender->HasTransport() &&
 					foundSocket->IsUtpInbound() != sender->IsUtpInbound()) {
-					const SUtpHelloAttachmentResult attachment = AttachUtpSocketAfterVerifiedHello(
-						incomingSynWinner,
-						foundSocket->IsUtpInbound(),
-						found_client->HasValidHash() && tocheck->HasValidHash(),
-						thePrefs::GetUserHash().GetHash(),
-						tocheck->GetUserHash().GetHash(),
-						found_client->GetDownloadState() == DS_CONNECTED,
-						[&]() { found_client->NoteFileRequestLostToSocketSwap(); },
-						[&]() { foundSocket->Safe_Delete(); },
-						[&]() { found_client->SetSocket(sender); });
+					const SUtpHelloAttachmentResult attachment =
+						AttachUtpSocketAfterVerifiedHello(
+							incomingSynWinner,
+							foundSocket->IsUtpInbound(),
+							found_client->HasValidHash() &&
+								tocheck->HasValidHash(),
+							thePrefs::GetUserHash().GetHash(),
+							tocheck->GetUserHash().GetHash(),
+							found_client->GetDownloadState() == DS_CONNECTED,
+							[&]() {
+								found_client
+									->NoteFileRequestLostToSocketSwap();
+							},
+							[&]() { foundSocket->Safe_Delete(); },
+							[&]() { found_client->SetSocket(sender); });
 					if (attachment.decision.keepFound) {
 						// `client` aliases sender->m_client, so the survivor
 						// must not be written back: ~CClientTCPSocket() would
