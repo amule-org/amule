@@ -45,10 +45,10 @@
 #define MULE_HAVE_ABORT_BACKTRACE 1
 #endif
 
-// get_backtrace() resolves frames through bfd only on Linux. Elsewhere -- FreeBSD has execinfo.h
-// in base and bfd.h with binutils -- it returns a placeholder, with no frames to check.
-#if defined(MULE_HAVE_ABORT_BACKTRACE) && defined(HAVE_BFD) && defined(__linux__)
-#define MULE_HAVE_BFD_BACKTRACE 1
+// get_backtrace() resolves frames only on Linux, through bfd or else addr2line. Elsewhere --
+// FreeBSD has execinfo.h in base -- it returns a placeholder, with no frames to check.
+#if defined(MULE_HAVE_ABORT_BACKTRACE) && defined(__linux__)
+#define MULE_HAVE_LINUX_BACKTRACE 1
 #endif
 
 #ifdef MULE_HAVE_ABORT_BACKTRACE
@@ -72,6 +72,7 @@
 #include <spawn.h>
 #include <ostream>
 #include <streambuf>
+#include <utility>
 
 extern char **environ; // for posix_spawnp()
 #endif
@@ -459,10 +460,11 @@ bool Contains(const std::string &haystack, const char *needle)
 	return haystack.find(needle) != std::string::npos;
 }
 
-#ifdef MULE_HAVE_BFD_BACKTRACE
-// A binary bfd gets no symbols from: one the running user may execute but not read (an
-// execute-only mode, or a container user the file's owner does not map to), so /proc/self/exe
-// cannot be opened, or a stripped one, which opens but has no symbol table. get_backtrace() is
+#ifdef MULE_HAVE_LINUX_BACKTRACE
+// A binary bfd or addr2line gets no symbols from: one the running user may execute but not read
+// (an execute-only mode, or a container user the file's owner does not map to), so
+// /proc/self/exe cannot be opened, or a stripped one, which opens but has no symbol table. Or,
+// without bfd, no addr2line to ask at all. get_backtrace() is
 // called from the fatal-signal and assert handlers, so it has to degrade to raw frames rather than
 // assert -- the assert re-entered get_backtrace() and turned the crash being reported into a
 // SIGTRAP.
@@ -474,6 +476,8 @@ bool Contains(const std::string &haystack, const char *needle)
 const char kBacktraceChildEnv[] = "MULE_TEST_BACKTRACE_CHILD";
 
 std::string s_childCopy;
+// The PATH the child runs with, when not this process's own.
+std::string s_childPath;
 
 void OnAssertInBacktraceChild(const wxString &, int, const wxString &, const wxString &cond, const wxString &)
 {
@@ -492,17 +496,26 @@ std::string ThisBinaryPath()
 	return std::string(self, static_cast<size_t>(len));
 }
 
+// The frame the backtraces are taken in. Its name runs to over 1100 characters, mangled or not,
+// longer than a line fgets() reads in one go: Boost.Asio has hundreds of names like it, and
+// addr2line prints them whole.
+template <int... I> __attribute__((noinline)) void ReportFromALongName(std::integer_sequence<int, I...>)
+{
+	// Twice: the second call must neither retry the open nor use the handle the first one
+	// failed to set up.
+	fprintf(stderr, "%s", static_cast<const char *>(get_backtrace(0).utf8_str()));
+	fprintf(stderr, "%s", static_cast<const char *>(get_backtrace(0).utf8_str()));
+	_exit(0);
+}
+
 // Reports from the virtual call std::ostream::write() makes into it, so the stack holds a
 // library frame with a C++ name, which has to come out demangled whether or not symbols loaded.
 struct ReportingStreamBuf : public std::streambuf
 {
 	std::streamsize xsputn(const char *, std::streamsize) override
 	{
-		// Twice: the second call must neither retry the open nor use the handle the first one
-		// failed to set up.
-		fprintf(stderr, "%s", static_cast<const char *>(get_backtrace(0).utf8_str()));
-		fprintf(stderr, "%s", static_cast<const char *>(get_backtrace(0).utf8_str()));
-		_exit(0);
+		ReportFromALongName(std::make_integer_sequence<int, 200>());
+		return 0; // not reached
 	}
 };
 
@@ -527,6 +540,9 @@ struct BacktraceChild
 void ChildExecCopy()
 {
 	setenv(kBacktraceChildEnv, s_childCopy.c_str(), 1);
+	if (!s_childPath.empty()) {
+		setenv("PATH", s_childPath.c_str(), 1);
+	}
 	execl(s_childCopy.c_str(), s_childCopy.c_str(), static_cast<char *>(nullptr));
 	_exit(98); // exec failed
 }
@@ -628,6 +644,25 @@ bool NamesLibraryFramesDemangled(const std::string &stderrText)
 	return named >= 2 && !Contains(stderrText, "(_Z") && !Contains(stderrText, "] _Z");
 }
 
+// How many lines name `what` and run longer than `length` characters.
+int CountLinesLongerThan(const std::string &stderrText, const char *what, size_t length)
+{
+	int found = 0;
+	std::string::size_type start = 0;
+	while (start < stderrText.size()) {
+		std::string::size_type end = stderrText.find('\n', start);
+		if (end == std::string::npos) {
+			end = stderrText.size();
+		}
+		if (end - start > length &&
+			stderrText.substr(start, end - start).find(what) != std::string::npos) {
+			++found;
+		}
+		start = end + 1;
+	}
+	return found;
+}
+
 // Every line that names the path names it as the module, after " in ", and never where the
 // function goes -- which is where a parser that takes the path's '(' for glibc's put it. bfd may
 // resolve the frame to file:line instead, so the path may not appear at all.
@@ -648,7 +683,7 @@ bool ThePathOnlyFollowsIn(const std::string &stderrText, const char *pathPart)
 	}
 	return true;
 }
-#endif // MULE_HAVE_BFD_BACKTRACE
+#endif // MULE_HAVE_LINUX_BACKTRACE
 
 } // namespace
 
@@ -927,7 +962,7 @@ TEST(FatalAbortBacktrace, TheTrapSuppressionDoesNotMuteAnAbort)
 	ASSERT_TRUE(Contains(r.stderr_text, "FATAL BACKTRACE FOLLOWS"));
 }
 
-#ifdef MULE_HAVE_BFD_BACKTRACE
+#ifdef MULE_HAVE_LINUX_BACKTRACE
 TEST(FatalAbortBacktrace, AnUnreadableBinaryStillGivesRawFrames)
 {
 	// Root reads an execute-only file regardless, so the case cannot be set up there.
@@ -946,7 +981,9 @@ TEST(FatalAbortBacktrace, AnUnreadableBinaryStillGivesRawFrames)
 	ASSERT_FALSE(r.exited_on_signal);
 	ASSERT_EQUALS(0, r.exit_code);
 	ASSERT_FALSE(Contains(r.stderr_text, "ASSERT FIRED"));
+#ifdef HAVE_BFD
 	ASSERT_EQUALS(1, CountOccurrences(r.stderr_text, "Error while opening file for backtrace symbols"));
+#endif
 	ASSERT_TRUE(HasRawFramesOfTheCopy(r.stderr_text));
 	ASSERT_TRUE(NamesLibraryFramesDemangled(r.stderr_text));
 }
@@ -971,7 +1008,9 @@ TEST(FatalAbortBacktrace, AStrippedBinaryStillGivesRawFrames)
 	ASSERT_FALSE(r.exited_on_signal);
 	ASSERT_EQUALS(0, r.exit_code);
 	ASSERT_FALSE(Contains(r.stderr_text, "ASSERT FIRED"));
+#ifdef HAVE_BFD
 	ASSERT_EQUALS(1, CountOccurrences(r.stderr_text, "No symbols in the executable"));
+#endif
 	ASSERT_TRUE(HasRawFramesOfTheCopy(r.stderr_text));
 	ASSERT_TRUE(NamesLibraryFramesDemangled(r.stderr_text));
 }
@@ -998,7 +1037,54 @@ TEST(FatalAbortBacktrace, AnUnresolvedFrameKeepsItsOffset)
 	// glibc's exported entry point, on every startup stack, with its offset into the function.
 	ASSERT_TRUE(CountOccurrences(r.stderr_text, "] __libc_start_main+0x") >= 2);
 }
-#endif // MULE_HAVE_BFD_BACKTRACE
+
+#ifndef HAVE_BFD
+// addr2line prints the long name of the frame the backtraces are taken in on one line, longer than
+// a single fgets() reads. Read in pieces, the extra lines would pair every later frame with the
+// wrong name, or fail the count and leave every frame unresolved.
+TEST(FatalAbortBacktrace, ALongFunctionNameKeepsTheFramesResolved)
+{
+	const bool copied = CopyThisBinary(".longname.");
+	RemoveTheCopyOnExit removeTheCopy;
+	ASSERT_TRUE(copied);
+	ASSERT_EQUALS(0, chmod(s_childCopy.c_str(), 0755));
+
+	const ChildResult r = RunInChild(ChildExecCopy);
+
+	ASSERT_FALSE(r.timed_out);
+	ASSERT_FALSE(r.exited_on_signal);
+	ASSERT_EQUALS(0, r.exit_code);
+	ASSERT_FALSE(Contains(r.stderr_text, "ASSERT FIRED"));
+	// Named by addr2line on one line longer than fgets() reads at once -- its demangler may leave
+	// the name mangled, which is beside the point here -- and the frame after it named right,
+	// which a pairing shifted by extra lines would not give.
+	ASSERT_TRUE(CountLinesLongerThan(r.stderr_text, "ReportFromALongName", 1023) >= 2);
+	ASSERT_TRUE(
+		CountOccurrences(r.stderr_text, "] (anonymous namespace)::ReportingStreamBuf::xsputn(") >= 2);
+}
+
+// Without bfd, frames are resolved by running addr2line, which may not be installed. A failed run
+// still prints nothing, and its frames must not be read as though it had answered.
+TEST(FatalAbortBacktrace, AMissingAddr2lineStillGivesRawFrames)
+{
+	const bool copied = CopyThisBinary(".noaddr2line.");
+	RemoveTheCopyOnExit removeTheCopy;
+	ASSERT_TRUE(copied);
+	ASSERT_EQUALS(0, chmod(s_childCopy.c_str(), 0755));
+
+	s_childPath = "/nonexistent";
+	const ChildResult r = RunInChild(ChildExecCopy);
+	s_childPath.clear();
+
+	ASSERT_FALSE(r.timed_out);
+	ASSERT_FALSE(r.exited_on_signal);
+	ASSERT_EQUALS(0, r.exit_code);
+	ASSERT_FALSE(Contains(r.stderr_text, "ASSERT FIRED"));
+	ASSERT_TRUE(HasRawFramesOfTheCopy(r.stderr_text));
+	ASSERT_TRUE(NamesLibraryFramesDemangled(r.stderr_text));
+}
+#endif
+#endif // MULE_HAVE_LINUX_BACKTRACE
 
 #else /* !MULE_HAVE_ABORT_BACKTRACE */
 

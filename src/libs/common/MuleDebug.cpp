@@ -25,7 +25,7 @@
 
 #include <cstdlib> // Needed for std::abort()
 #include <cstdio>  // Needed for popen/pclose/fgets in the addr2line fallback
-#include <cstring> // Needed for strlen in the addr2line fallback
+#include <cstring> // Needed for memset in the signal handlers' setup
 #include <cerrno>  // Needed for EINTR in the SIGABRT handler's write loop
 #include <csignal> // Needed for sigaction/raise in the SIGABRT handler
 #include <cstdint> // uintptr_t for pointer subtraction in the bfd
@@ -45,6 +45,7 @@
 #include <pthread.h>  // Needed for the trap suppression's owning thread
 #include <poll.h>     // Needed for the writability waits in WriteAll and the handler
 #include <sys/stat.h> // Needed for fstat in SameFile
+#include <sys/wait.h> // Needed for WIFEXITED on addr2line's exit status
 #include <unistd.h>   // Needed for dup/dup2 in ReserveCrashFd and write in WriteAll
 #endif
 
@@ -598,15 +599,37 @@ wxString get_backtrace(unsigned n)
 		// through to wxTrap()'s int3. popen() is fork+waitpid with no wx in it.
 		FILE *pipe = popen((const char *)command.mb_str(), "r");
 		if (pipe) {
-			char line[1024];
-			while (fgets(line, sizeof(line), pipe)) {
-				size_t len = std::strlen(line);
-				while (len > 0 && (line[len - 1] == '\n' || line[len - 1] == '\r')) {
-					line[--len] = '\0';
+			// One entry per line, however long: fgets() also stops where its buffer ends, and a
+			// demangled name can run to several times that -- hundreds of Boost.Asio ones do.
+			// Taking each piece for a line would pair every later frame with the wrong name,
+			// or fail the count below.
+			std::string line;
+			char chunk[1024];
+			bool more = true;
+			while (more) {
+				more = fgets(chunk, sizeof(chunk), pipe) != nullptr;
+				if (more) {
+					line += chunk;
+					if (line.empty() || line.back() != '\n') {
+						continue;
+					}
+				} else if (line.empty()) {
+					break; // the output ended on a full line
 				}
-				out.Add(wxConvLibc.cMB2WX(line));
+				while (!line.empty() && (line.back() == '\n' || line.back() == '\r')) {
+					line.pop_back();
+				}
+				out.Add(wxConvLibc.cMB2WX(line.c_str()));
+				line.clear();
 			}
-			hasLineNumberInfo = (pclose(pipe) != -1);
+			// Only an addr2line that ran and answered every address. pclose() returns -1 only
+			// for its own failure: a missing addr2line (the shell's 127) or one that could not
+			// read the binary exits non-zero having printed nothing, and the frames below
+			// would read past the end of out[] -- inside the crash handler, where wx's range
+			// assert then nests.
+			const int status = pclose(pipe);
+			hasLineNumberInfo = status != -1 && WIFEXITED(status) && WEXITSTATUS(status) == 0 &&
+					    out.GetCount() == 2 * static_cast<size_t>(num_entries);
 		} else {
 			hasLineNumberInfo = false;
 		}
