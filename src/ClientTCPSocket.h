@@ -29,6 +29,9 @@
 #define CLIENTTCPSOCKET_H
 
 #include "EMSocket.h" // Needed for CEMSocket
+#ifdef AMULE_UTP_TRANSPORT
+#include "UtpDialPolicy.h" // Needed for the incoming SYN winner token
+#endif
 
 #include <atomic>
 
@@ -60,6 +63,10 @@ public:
 	//! Hands this peer's obfuscation preference and hash to an attached stream.
 	void ApplyUtpCryptParameters();
 	bool IsUtpInbound() const;
+	void SetUtpIncomingSynWinner(uint32_t peerToken) { m_utpIncomingSynWinner.Select(peerToken); }
+	bool ConsumeUtpIncomingSynWinner(uint32_t peerToken) { return m_utpIncomingSynWinner.Consume(peerToken); }
+	uint32_t TakeUtpIncomingSynWinner() { return m_utpIncomingSynWinner.Take(); }
+	void ClearUtpIncomingSynWinner() { m_utpIncomingSynWinner.Clear(); }
 #endif
 
 	bool CheckTimeOut();
@@ -108,6 +115,7 @@ private:
 #ifdef AMULE_UTP_TRANSPORT
 	bool TryUtpTcpFallback();
 	bool m_utpFallbackAttempted = false;
+	SUtpIncomingSynWinner m_utpIncomingSynWinner;
 #endif
 
 	bool ProcessPacket(const uint8_t *packet, uint32 size, uint8 opcode);

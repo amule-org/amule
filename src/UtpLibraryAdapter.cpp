@@ -137,9 +137,8 @@ public:
 			!pending->IsOk()) {
 			return false;
 		}
-		if (options.allowInitialPortRemap) {
-			AddRemapCandidate(socket, ip, port, options.nowMs);
-		}
+		AddRemapCandidate(
+			socket, ip, port, options.nowMs, options.allowInitialPortRemap, options.clientToken, true);
 		transport = std::move(pending);
 		return true;
 	}
@@ -246,7 +245,13 @@ private:
 		return address;
 	}
 
-	void AddRemapCandidate(utp_socket *socket, uint32_t ip, uint16_t port, std::uint64_t registeredAtMs)
+	void AddRemapCandidate(utp_socket *socket,
+		uint32_t ip,
+		uint16_t port,
+		std::uint64_t registeredAtMs,
+		bool remapAllowed,
+		uint32_t clientToken,
+		bool outbound)
 	{
 		RemoveRemapCandidate(socket);
 		SPendingHandshake candidate;
@@ -254,7 +259,9 @@ private:
 		candidate.port = port;
 		candidate.registeredAtMs = registeredAtMs;
 		candidate.handshakePending = true;
-		candidate.remapAllowed = true;
+		candidate.remapAllowed = remapAllowed;
+		candidate.outbound = outbound;
+		candidate.clientToken = clientToken;
 		candidate.socket = socket;
 		m_remapCandidates.push_back(candidate);
 	}
@@ -343,6 +350,23 @@ private:
 			ip |= static_cast<uint32_t>(bytes[i]) << (8 * i);
 		}
 		const uint16_t port = ntohs(address->sin_port);
+		const SUtpSynCandidateMatch candidateMatch =
+			FindUniqueUtpSynCandidate(s_self->m_remapCandidates, ip, port, s_self->m_nowMs);
+		SUtpSynCandidateInfo candidateInfo;
+		candidateInfo.status = candidateMatch.status;
+		if (candidateMatch.status == EUtpSynCandidateStatus::Unique) {
+			const SPendingHandshake &candidate = s_self->m_remapCandidates[candidateMatch.index];
+			candidateInfo.ip = candidate.ip;
+			candidateInfo.port = candidate.port;
+			candidateInfo.clientToken = candidate.clientToken;
+		}
+		const SUtpIncomingSynDecision decision =
+			s_self->m_acceptor->DecideIncomingSyn(ip, port, candidateInfo);
+		if (decision.disposition == EUtpIncomingSynDisposition::RejectKeepOutgoing) {
+			// Close only after utp_process_udp returns; utp_close re-enters callbacks.
+			s_self->m_refused.push_back(args->socket);
+			return 0;
+		}
 
 		// Interface type so the seam can move out of it; the concrete pointer
 		// stays for the setup below.
@@ -370,7 +394,7 @@ private:
 		// Briefly registering a refused endpoint costs nothing: libutp still holds
 		// the socket until the close below.
 		s_self->Register(args->socket, ip, port);
-		if (!s_self->m_acceptor->AcceptStream(transport, ip, port)) {
+		if (!s_self->m_acceptor->AcceptStream(transport, ip, port, decision)) {
 			// Forgotten at once, unlike an admitted stream: a refused peer has no
 			// FIN to acknowledge, and leaving its endpoint on the gate until the
 			// socket is destroyed would let its next frames reach libutp.
@@ -380,7 +404,7 @@ private:
 			s_self->m_refusedStreams.push_back(std::move(transport));
 			return 0;
 		}
-		s_self->AddRemapCandidate(args->socket, ip, port, s_self->m_nowMs);
+		s_self->AddRemapCandidate(args->socket, ip, port, s_self->m_nowMs, true, 0, false);
 		return 0;
 	}
 

@@ -187,6 +187,10 @@ TEST(UtpDialPolicy, IncomingWinnerTokenIsConsumedOnlyByOneVerifiedHello)
 	winner.Select(91);
 	ASSERT_TRUE(winner.Consume(91));
 	ASSERT_FALSE(winner.Consume(91));
+
+	winner.Select(91);
+	ASSERT_EQUALS((uint32_t)91, winner.Take());
+	ASSERT_EQUALS((uint32_t)0, winner.Take());
 }
 
 TEST(UtpDialPolicy, HelloSocketSwapRetriesFileRequestOnSurvivingConnection)

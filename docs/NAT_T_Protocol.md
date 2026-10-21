@@ -233,9 +233,10 @@ and eNode uses that bit for meta search; aMule does not define it.
 `<ID 4><flags 4><server TCP port 4><reported IP 4><obfuscation TCP port 4><your port 4>`.
 For a LowID, "your port" is our TCP port as the server sees it, after any NAT.
 
-aMule implements, only under `ENABLE_NATT_SERVER_COORDINATION` (**experimental**, off by
-default; default and `ENABLE_IPV6` builds are unaffected) and only when the runtime setting below
-is also on:
+The Lugdunum callback relay remains gated by `ENABLE_NATT_SERVER_COORDINATION` (**experimental**, off by
+default; default and `ENABLE_IPV6` builds are unaffected) and the runtime setting below. Acting on a
+forwarded callback by dialing uTP additionally requires `ENABLE_UTP` (`AMULE_UTP_TRANSPORT`) in the
+`amule` or `amuled` target:
 
 - runtime opt-in: `thePrefs::IsLugdunumNatCallbackEnabled()` (`amule.conf` key
   `/eMule/LugdunumNatCallback`, default **off**, no widget, no EC tag). It gates the login
@@ -261,28 +262,19 @@ is also on:
   `GetObfuscationPortUDP()`. It is hooked at the LowID-to-LowID decline in `TryToContact()`, so
   it is sent at most once per source: a `DS_LOWTOLOWIP` source is not asked again. Requests are
   not paced across sources; NeoMule does not pace them either (each waits 3 s for a ping first);
-- receiving `0xA7` server-way on the client UDP socket: `ClientUDPSocket.cpp` recognises a
-  same-IP, callback-capable datagram as worth a `DecryptReceivedServer` attempt, picking the
-  base key the same way `CServerUDPSocket::OnPacketReceived` does -- a pending crypt-ping
-  reply's challenge over the established server key -- and routes on an actual decrypt only
-  (never on IP match alone), then logs and stops: no reply, no punch;
-- receiving `0x37` on the server TCP link (`ServerSocket.cpp`): parsed and logged the same way,
-  sharing one handler (`LugdunumNatTraversal::LogForwardedCallback`,
-  `src/LugdunumNatCallbackLog.h`) with the UDP path;
-- pure codecs and decisions for the above (`src/LugdunumNatTraversal.h`). The port width was
-  confirmed against NeoMule's `opcodes.h` (`<IP 4><UDP port 2><requester ID 4>`), so it is read
-  as a 2-byte uint16.
+- receiving `0xA7` server-way on the client UDP socket: `ClientUDPSocket.cpp` tries the same key selection as `CServerUDPSocket::OnPacketReceived` (a pending crypt-ping challenge before the established server key) and dispatches only after successful decryption; `0x37` on the server TCP link uses the same callback action. With the runtime opt-in and uTP build gate, either opcode starts a temporary uTP dial to the observed IP/UDP port. Callback requester ID/hash are routing hints, never provisional peer identity. A zero requester ID still permits this dial but forbids another callback request after failure;
+- after the stream's `OP_HELLO` identifies a known source, `ClientList.cpp` attaches the temporary socket to that verified peer. A SYN-time winner token is one-shot and authorizes the incoming socket only for the peer whose outgoing attempt it matched;
+- incoming-SYN arbitration in `UtpStreamAcceptor.cpp` compares the observed remote IPv4/port with the local public IPv4 and verified external Kad UDP port. The smaller endpoint tuple keeps its outgoing connection and rejects the incoming socket; the larger tuple keeps incoming. If endpoints are unavailable or equal, compare hashes only when both are valid; otherwise keep outgoing. A local outgoing-client token identifies the candidate through the dial and adapter but is never peer identity. The accepted winner carries that token until verified `OP_HELLO`; only then is the matching outgoing attempt retired, outside the libutp callback. If HELLO cannot be matched to the candidate, retain the outgoing attempt and apply the ordinary fail-closed source-socket policy. When an incoming winner replaces a connected download socket, its lost file request is sent again once after connection establishment;
+- failed callback dials are remembered for 10 minutes by server, requester (endpoint-only for requester ID zero), and observed endpoint. A changed endpoint can retry immediately, and a successful verified HELLO clears the matching failure record; the source remains eligible for a later callback after cooldown;
+- NAT source-port remapping is limited to one live expected outgoing peer on the same IPv4 address and within ±512 ports, with the existing 30-second expectation lifetime. The tuple can change only during `CS_SYN_SENT`/`CS_SYN_RECV`; incoming SYNs keep normal admission so the tie-break still runs, and established traffic remains bound to its exact tuple;
+- pure callback codecs and shared failure policy live in `src/LugdunumNatTraversal.h`; endpoint, candidate, tie-break, and attachment decisions live in `src/UtpDialPolicy.h`.
 
-Not implemented: answering a forwarded callback, any hole punch, and any peer tunnel. Until
-then a server may forward our request to a peer that tries to punch to us with no answer, and
-the kept LowID sources cannot be contacted but count toward the per-file source limit. The
-switch must therefore stay off in default and packaged builds, and the runtime setting above
-stays off until that slice lands.
+The runtime setting and `ENABLE_NATT_SERVER_COORDINATION` remain off by default. This experimental behavior has deterministic policy and adapter coverage but has not been live-network validated.
 
 **Live validation** (PR #2002, got3nks): on eMule Sunrise (`17.15 (lugdunum)`), an opted-in
 LowID sharing a file and an opted-in LowID requester on the same server, both behind one public
 IP, completed the opt-in and the server handed the requester a `DS_LOWTOLOWIP` source -- a
 NatT-capable LowID source is only handed to a NatT-capable LowID requester, matching the wiki.
 The requester's `OP_NAT_CALLBACKREQUEST` then reached the sharer: the forwarded callback arrived
-as **`OP_NAT_CALLBACKREQUESTED` (`0x37`) over the TCP link**, not `0xA7` over UDP, confirming
-Lugdunum's NatT relay works end to end up to the unanswered-callback point above.
+as **`OP_NAT_CALLBACKREQUESTED` (`0x37`) over the TCP link**, not `0xA7` over UDP. This historical
+observation confirms the relay delivery path; it does not validate the current uTP implementation.

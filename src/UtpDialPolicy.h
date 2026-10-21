@@ -86,6 +86,13 @@ struct SUtpIncomingSynWinner
 		return matches;
 	}
 
+	std::uint32_t Take()
+	{
+		const std::uint32_t peerToken = m_selected ? m_peerToken : 0;
+		Clear();
+		return peerToken;
+	}
+
 	void Clear()
 	{
 		m_selected = false;
@@ -250,6 +257,7 @@ struct SUtpRemapCandidate
 	bool handshakePending = false;
 	bool remapAllowed = false;
 	bool outbound = false;
+	std::uint32_t clientToken = 0;
 };
 
 enum class EUtpSynCandidateStatus

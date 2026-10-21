@@ -59,6 +59,7 @@ struct SUtpDialOptions
 {
 	bool allowInitialPortRemap = false;
 	std::uint64_t nowMs = 0;
+	uint32_t clientToken = 0; // Local owner token only; OP_HELLO still establishes peer identity.
 };
 
 class IUtpContext
@@ -136,11 +137,39 @@ private:
 
 // Library seam: no libutp types escape the adapter.
 
+struct SUtpSynCandidateInfo
+{
+	EUtpSynCandidateStatus status = EUtpSynCandidateStatus::None;
+	uint32_t ip = 0;
+	uint16_t port = 0;
+	uint32_t clientToken = 0;
+};
+
+enum class EUtpIncomingSynDisposition
+{
+	Accept,
+	RejectKeepOutgoing,
+	AcceptKeepIncoming
+};
+
+struct SUtpIncomingSynDecision
+{
+	EUtpIncomingSynDisposition disposition = EUtpIncomingSynDisposition::Accept;
+	uint32_t candidateToken = 0;
+};
+
 //! Where an accepted uTP stream is offered for admission.
 class IUtpStreamAcceptor
 {
 public:
 	virtual ~IUtpStreamAcceptor() = default;
+
+	//! Selects the simultaneous-open disposition before a transport is transferred.
+	virtual SUtpIncomingSynDecision DecideIncomingSyn(
+		uint32_t, uint16_t, const SUtpSynCandidateInfo &)
+	{
+		return {};
+	}
 
 	/**
 	 * Offers one accepted stream.
@@ -150,6 +179,13 @@ public:
 	 */
 	virtual bool AcceptStream(
 		std::unique_ptr<IStreamTransport> &transport, uint32_t ip, uint16_t port) = 0;
+	virtual bool AcceptStream(std::unique_ptr<IStreamTransport> &transport,
+		uint32_t ip,
+		uint16_t port,
+		const SUtpIncomingSynDecision &)
+	{
+		return AcceptStream(transport, ip, port);
+	}
 };
 
 class IUtpLibrary

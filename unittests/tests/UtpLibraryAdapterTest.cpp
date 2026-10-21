@@ -28,6 +28,7 @@
 #include <UtpSocketTransport.h>
 #include <UtpStream.h>
 #include <UtpLibraryAdapter.h>
+#include "UtpDialPolicy.h"
 #include <libs/common/Format.h>
 
 #include <libutp/utp.h>
@@ -86,6 +87,28 @@ public:
 class CFakeAcceptor : public IUtpStreamAcceptor
 {
 public:
+	SUtpIncomingSynDecision DecideIncomingSyn(
+		uint32_t, uint16_t, const SUtpSynCandidateInfo &candidate) override
+	{
+		++synDecisions;
+		lastCandidate = candidate;
+		SUtpIncomingSynDecision decision = synDecision;
+		if (decision.disposition == EUtpIncomingSynDisposition::AcceptKeepIncoming &&
+			decision.candidateToken == 0) {
+			decision.candidateToken = candidate.clientToken;
+		}
+		return decision;
+	}
+
+	bool AcceptStream(std::unique_ptr<IStreamTransport> &transport,
+		uint32_t ip,
+		uint16_t port,
+		const SUtpIncomingSynDecision &decision) override
+	{
+		lastDecision = decision;
+		return AcceptStream(transport, ip, port);
+	}
+
 	bool AcceptStream(std::unique_ptr<IStreamTransport> &transport, uint32_t ip, uint16_t port) override
 	{
 		++offers;
@@ -100,8 +123,12 @@ public:
 
 	bool admit = true;
 	int offers = 0;
+	int synDecisions = 0;
 	uint32_t lastIp = 0;
 	uint16_t lastPort = 0;
+	SUtpSynCandidateInfo lastCandidate;
+	SUtpIncomingSynDecision synDecision;
+	SUtpIncomingSynDecision lastDecision;
 	std::unique_ptr<IStreamTransport> accepted;
 };
 
@@ -236,6 +263,121 @@ TEST(UtpLibraryAdapter, AnInboundSynReachesAdmissionWithItsPeer)
 	// Registered only on success, which is what lets the peer's later non-SYN
 	// frames through the ingress filter.
 	ASSERT_TRUE(loop.server->HasRegisteredPeer(kPeerIp, kPeerPort));
+	Teardown(loop);
+}
+
+TEST(UtpLibraryAdapter, IncomingSynRejectsAfterTheAcceptorKeepsTheOutgoingAttempt)
+{
+	SLoopback loop;
+	g_loop = &loop;
+	CServerSink sink;
+	CFakeAcceptor acceptor;
+	acceptor.synDecision.disposition = EUtpIncomingSynDisposition::RejectKeepOutgoing;
+	loop.server = CreateUtpLibrary();
+	ASSERT_TRUE(loop.server->Create(sink));
+	loop.server->SetAcceptor(&acceptor);
+	StartClient(loop);
+
+	std::unique_ptr<IStreamTransport> outgoing;
+	const SUtpDialOptions options{ true, loop.nowMs };
+	ASSERT_TRUE(loop.server->Dial(kPeerIp, kPeerPort, false, nullptr, options, outgoing));
+	const std::vector<uint8_t> incomingSyn = loop.toServer.front();
+	loop.toServer.pop_front();
+	loop.server->ProcessDatagram(
+		incomingSyn.data(), incomingSyn.size(), kPeerIp, kPeerPort, loop.nowMs);
+
+	ASSERT_EQUALS(1, acceptor.synDecisions);
+	ASSERT_TRUE(acceptor.lastCandidate.status == EUtpSynCandidateStatus::Unique);
+	ASSERT_EQUALS(kPeerIp, acceptor.lastCandidate.ip);
+	ASSERT_EQUALS(kPeerPort, acceptor.lastCandidate.port);
+	ASSERT_EQUALS(0, acceptor.offers);
+	ASSERT_TRUE(outgoing != nullptr);
+	ASSERT_FALSE(outgoing->IsConnected());
+	outgoing.reset();
+	Teardown(loop);
+}
+
+TEST(UtpLibraryAdapter, IncomingSynWinnerFlowsThroughVerifiedHelloAttachmentSeam)
+{
+	SLoopback loop;
+	g_loop = &loop;
+	CServerSink sink;
+	CFakeAcceptor acceptor;
+	acceptor.synDecision = { EUtpIncomingSynDisposition::AcceptKeepIncoming, 0 };
+	loop.server = CreateUtpLibrary();
+	ASSERT_TRUE(loop.server->Create(sink));
+	loop.server->SetAcceptor(&acceptor);
+	StartClient(loop);
+
+	std::unique_ptr<IStreamTransport> outgoing;
+	const SUtpDialOptions options{ true, loop.nowMs, 91 };
+	ASSERT_TRUE(loop.server->Dial(kPeerIp, kPeerPort, false, nullptr, options, outgoing));
+	const std::vector<uint8_t> incomingSyn = loop.toServer.front();
+	loop.toServer.pop_front();
+	loop.server->ProcessDatagram(
+		incomingSyn.data(), incomingSyn.size(), kPeerIp, kPeerPort, loop.nowMs);
+
+	ASSERT_TRUE(acceptor.lastCandidate.status == EUtpSynCandidateStatus::Unique);
+	ASSERT_EQUALS((uint32_t)91, acceptor.lastCandidate.clientToken);
+	ASSERT_TRUE(acceptor.lastDecision.disposition == EUtpIncomingSynDisposition::AcceptKeepIncoming);
+	ASSERT_EQUALS((uint32_t)91, acceptor.lastDecision.candidateToken);
+	ASSERT_EQUALS(1, acceptor.offers);
+	ASSERT_TRUE(acceptor.accepted != nullptr);
+
+	// Model the application boundary after OP_HELLO identifies the intended existing client.
+	struct SPeerFixture
+	{
+		uint32_t ecid;
+		IStreamTransport *socket;
+		bool fileRequestLost = false;
+		int fileRequestsSent = 0;
+	};
+	SPeerFixture intended{ 91, outgoing.get() };
+	SPeerFixture temporary{ 0, acceptor.accepted.get() };
+	SUtpIncomingSynWinner winner;
+	winner.Select(acceptor.lastDecision.candidateToken);
+	const uint32_t helloPeerToken = intended.ecid;
+	const bool verifiedHelloMatch =
+		winner.Consume(helloPeerToken) && helloPeerToken == intended.ecid;
+	ASSERT_TRUE(verifiedHelloMatch);
+	ASSERT_FALSE(winner.Consume(helloPeerToken));
+
+	const uint8_t localHash[16] = { 0 };
+	const uint8_t peerHash[16] = { 1 };
+	bool outgoingRetired = false;
+	const SUtpHelloAttachmentResult attachment = AttachUtpSocketAfterVerifiedHello(
+		verifiedHelloMatch,
+		false,
+		true,
+		localHash,
+		peerHash,
+		true,
+		[&]() { intended.fileRequestLost = true; },
+		[&]() {
+			intended.socket = nullptr;
+			outgoingRetired = true;
+		},
+		[&]() {
+			intended.socket = temporary.socket;
+			temporary.socket = nullptr;
+		});
+	ASSERT_FALSE(attachment.decision.keepFound);
+	ASSERT_TRUE(attachment.decision.socketSwap);
+	ASSERT_TRUE(attachment.socketAttached);
+	ASSERT_TRUE(outgoingRetired);
+	ASSERT_TRUE(intended.socket == acceptor.accepted.get());
+	ASSERT_TRUE(temporary.socket == nullptr);
+
+	ASSERT_TRUE(RetryFileRequestAfterUtpSocketSwap(
+		intended.fileRequestLost, true, [&]() { ++intended.fileRequestsSent; }));
+	ASSERT_EQUALS(1, intended.fileRequestsSent);
+	ASSERT_FALSE(intended.fileRequestLost);
+	ASSERT_FALSE(RetryFileRequestAfterUtpSocketSwap(
+		intended.fileRequestLost, true, [&]() { ++intended.fileRequestsSent; }));
+	ASSERT_EQUALS(1, intended.fileRequestsSent);
+
+	acceptor.accepted.reset();
+	outgoing.reset();
 	Teardown(loop);
 }
 

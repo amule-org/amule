@@ -88,6 +88,9 @@
 #endif
 #include "ChatState.h"         // Needed for ChatStateAfterFailedConnect
 #include "ContactDialPolicy.h" // Needed for DecideContactRoute
+#ifdef AMULE_UTP_TRANSPORT
+#include "UtpDialPolicy.h" // Needed for file-request recovery after a uTP socket swap
+#endif
 #include "Logger.h"
 #include "DataToText.h" // Needed for GetSoftName()
 #include "GuiEvents.h"  // Needed for Notify_
@@ -2188,10 +2191,12 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 		if (!m_socket->IsOk() && ShouldTryIPv4Utp(GetDialAddress()) &&
 			DecideUtpDial(facts) == EUtpDialDecision::TryUtp) {
 			std::unique_ptr<IStreamTransport> transport;
+			const SUtpDialOptions dialOptions{ false, ::GetTickCount64(), ECID() };
 			if (utp->Dial(GetConnectIP(),
 				    utpPort,
 				    ShouldReceiveCryptUDPPackets(),
 				    HasValidHash() ? GetUserHash().GetHash() : nullptr,
+				    dialOptions,
 				    transport)) {
 				// Attached first: the socket refuses stream obfuscation once
 				// it is carried by a transport that obfuscates its own frames.
@@ -2235,7 +2240,7 @@ bool CUpDownClient::TryServerVouchedLowIdUtpDial()
 		return false;
 	}
 	std::unique_ptr<IStreamTransport> transport;
-	const SUtpDialOptions dialOptions{ true, ::GetTickCount64() };
+	const SUtpDialOptions dialOptions{ true, ::GetTickCount64(), ECID() };
 	if (!utp->Dial(GetConnectIP(),
 		    GetUDPPort(),
 		    ShouldReceiveCryptUDPPackets(),
@@ -2432,12 +2437,9 @@ void CUpDownClient::ConnectionEstablished()
 		}
 	}
 #ifdef AMULE_UTP_TRANSPORT
-	if (m_fileRequestLostToSocketSwap) {
-		m_fileRequestLostToSocketSwap = false;
-		if (GetDownloadState() == DS_CONNECTED) {
-			SendFileRequest();
-		}
-	}
+	RetryFileRequestAfterUtpSocketSwap(m_fileRequestLostToSocketSwap,
+		GetDownloadState() == DS_CONNECTED,
+		[&]() { SendFileRequest(); });
 #endif
 	switch (GetUploadState()) {
 	case US_CONNECTING:

@@ -70,7 +70,13 @@ constexpr EUtpAdmission DecideUtpAdmission(
 class CUtpStreamAcceptor : public IUtpStreamAcceptor
 {
 public:
+	SUtpIncomingSynDecision DecideIncomingSyn(
+		uint32_t ip, uint16_t port, const SUtpSynCandidateInfo &candidate) override;
 	bool AcceptStream(std::unique_ptr<IStreamTransport> &transport, uint32_t ip, uint16_t port) override;
+	bool AcceptStream(std::unique_ptr<IStreamTransport> &transport,
+		uint32_t ip,
+		uint16_t port,
+		const SUtpIncomingSynDecision &decision) override;
 };
 
 #endif // UTPSTREAMACCEPTOR_H

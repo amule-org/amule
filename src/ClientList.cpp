@@ -37,7 +37,12 @@
 #include "amule.h"            // Needed for theApp
 #include "ChatSessionStore.h" // Needed for CChatSessionStore
 #include "ClientTCPSocket.h"  // Needed for CClientTCPSocket
-#include "DownloadQueue.h"    // Needed for CDownloadQueue
+#include <cstring>
+#if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
+#include "ClientUDPSocket.h"      // Needed to clear callback failure after verified HELLO
+#include "LugdunumNatTraversal.h" // Needed for verified callback failure clearing
+#endif
+#include "DownloadQueue.h" // Needed for CDownloadQueue
 #include "UploadQueue.h"      // Needed for CUploadQueue
 #include "IPFilter.h"         // Needed for CIPFIlter
 #include "updownclient.h"     // Needed for CUpDownClient
@@ -395,6 +400,15 @@ bool CClientList::AttachToAlreadyKnown(
 	CUpDownClient *tocheck = (*client);
 
 	CUpDownClient *found_client = FindMatchingClient(tocheck, matchOthersOnly ? tocheck : nullptr);
+#ifdef AMULE_UTP_TRANSPORT
+	const uint32_t incomingSynWinnerToken = sender != nullptr ? sender->TakeUtpIncomingSynWinner() : 0;
+	CUpDownClient *outgoingSynCandidate =
+		incomingSynWinnerToken != 0 ? FindClientByECID(incomingSynWinnerToken) : nullptr;
+	bool incomingSynWinner = false;
+	if (found_client != nullptr && tocheck != found_client) {
+		incomingSynWinner = incomingSynWinnerToken == found_client->ECID();
+	}
+#endif
 
 	if (tocheck == found_client) {
 		// We found the same client instance (client may have sent more than one OP_HELLO). do not
@@ -403,7 +417,44 @@ bool CClientList::AttachToAlreadyKnown(
 	}
 
 	if (found_client != NULL) {
+#ifdef AMULE_UTP_TRANSPORT
+		if (outgoingSynCandidate != nullptr && outgoingSynCandidate != found_client &&
+			outgoingSynCandidate != tocheck) {
+			bool candidateMatchesHello = false;
+#if defined(ENABLE_NATT_SERVER_COORDINATION)
+		if (outgoingSynCandidate->IsLugdunumCallbackDial()) {
+			const LugdunumNatTraversal::CallbackFailureKey failureKey =
+				outgoingSynCandidate->GetLugdunumCallbackFailureKey();
+			candidateMatchesHello = LugdunumNatTraversal::ShouldClearCallbackFailureAfterHello(
+				failureKey, found_client->GetUserIDHybrid());
+			if (candidateMatchesHello) {
+				LugdunumNatTraversal::ClearCallbackFailureAfterHello(failureKey,
+					found_client->GetUserIDHybrid(),
+					[this](const LugdunumNatTraversal::CallbackFailureKey &key) {
+						if (theApp->clientudp != nullptr) {
+							theApp->clientudp->ClearLugdunumNatCallbackFailure(key);
+						}
+					});
+				uint32 requesterId = 0;
+				LugdunumNatTraversal::CallbackFailureKey ignoredKey{};
+				outgoingSynCandidate->TakeLugdunumCallbackRequestOnFailure(requesterId, ignoredKey);
+			}
+		}
+#endif
+		if (!candidateMatchesHello && outgoingSynCandidate->HasValidHash() && found_client->HasValidHash()) {
+			candidateMatchesHello = std::memcmp(outgoingSynCandidate->GetUserHash().GetHash(),
+				found_client->GetUserHash().GetHash(),
+				16) == 0;
+		}
+		if (candidateMatchesHello) {
+			outgoingSynCandidate->Safe_Delete();
+		}
+	}
+#endif
 		if (sender) {
+#ifdef AMULE_UTP_TRANSPORT
+			bool socketAttachedBySwap = false;
+#endif
 			if (found_client->GetSocket()) {
 				if (found_client->IsConnected() &&
 					(found_client->GetUserAddress() != tocheck->GetUserAddress() ||
@@ -442,12 +493,18 @@ bool CClientList::AttachToAlreadyKnown(
 				CClientTCPSocket *foundSocket = found_client->GetSocket();
 #ifdef AMULE_UTP_TRANSPORT
 				if (foundSocket->HasTransport() && sender->HasTransport() &&
-					foundSocket->IsUtpInbound() != sender->IsUtpInbound() &&
-					found_client->HasValidHash() && tocheck->HasValidHash()) {
-					const bool keepFound = ShouldKeepFoundUtp(foundSocket->IsUtpInbound(),
+					foundSocket->IsUtpInbound() != sender->IsUtpInbound()) {
+					const SUtpHelloAttachmentResult attachment = AttachUtpSocketAfterVerifiedHello(
+						incomingSynWinner,
+						foundSocket->IsUtpInbound(),
+						found_client->HasValidHash() && tocheck->HasValidHash(),
 						thePrefs::GetUserHash().GetHash(),
-						tocheck->GetUserHash().GetHash());
-					if (keepFound) {
+						tocheck->GetUserHash().GetHash(),
+						found_client->GetDownloadState() == DS_CONNECTED,
+						[&]() { found_client->NoteFileRequestLostToSocketSwap(); },
+						[&]() { foundSocket->Safe_Delete(); },
+						[&]() { found_client->SetSocket(sender); });
+					if (attachment.decision.keepFound) {
 						// `client` aliases sender->m_client, so the survivor
 						// must not be written back: ~CClientTCPSocket() would
 						// then strip found_client of the socket just kept.
@@ -460,14 +517,20 @@ bool CClientList::AttachToAlreadyKnown(
 						}
 						return true;
 					}
-					if (found_client->GetDownloadState() == DS_CONNECTED) {
-						found_client->NoteFileRequestLostToSocketSwap();
-					}
+					socketAttachedBySwap = attachment.socketAttached;
 				}
 #endif
-				foundSocket->Safe_Delete();
+				if (!socketAttachedBySwap) {
+					foundSocket->Safe_Delete();
+				}
 			}
+#ifdef AMULE_UTP_TRANSPORT
+			if (!socketAttachedBySwap) {
+				found_client->SetSocket(sender);
+			}
+#else
 			found_client->SetSocket(sender);
+#endif
 			tocheck->SetSocket(NULL);
 		}
 		*client = 0;

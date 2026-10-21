@@ -33,11 +33,68 @@
 #include "Statistics.h"
 #include "StreamTransport.h"
 #include "amule.h"
+#include "updownclient.h"
+#include "kademlia/kademlia/Kademlia.h"
+#include "kademlia/kademlia/Prefs.h"
+#include "kademlia/kademlia/UDPFirewallTester.h"
+
+#include <algorithm>
 
 #ifdef AMULE_UTP_TRANSPORT
 
+SUtpIncomingSynDecision CUtpStreamAcceptor::DecideIncomingSyn(
+	uint32_t ip, uint16_t port, const SUtpSynCandidateInfo &candidate)
+{
+	if (candidate.status == EUtpSynCandidateStatus::None) {
+		return {};
+	}
+	if (candidate.status != EUtpSynCandidateStatus::Unique || candidate.clientToken == 0 ||
+		candidate.ip == 0 || candidate.port == 0 || !theApp->clientlist) {
+		return { EUtpIncomingSynDisposition::RejectKeepOutgoing, 0 };
+	}
+
+	CUpDownClient *peer = theApp->clientlist->FindClientByECID(candidate.clientToken);
+	if (peer == nullptr || peer->IsConnected()) {
+		return { EUtpIncomingSynDisposition::RejectKeepOutgoing, 0 };
+	}
+	CClientTCPSocket *outgoing = peer->GetSocket();
+	if (outgoing == nullptr || !outgoing->HasTransport() || outgoing->IsUtpInbound()) {
+		return { EUtpIncomingSynDisposition::RejectKeepOutgoing, 0 };
+	}
+
+	std::optional<SUtpEndpoint> localEndpoint;
+	const uint32_t publicIp = theApp->GetPublicIP(true);
+	if (publicIp != 0 && Kademlia::CKademlia::IsConnected() &&
+		Kademlia::CKademlia::GetPrefs()->GetUseExternKadPort() &&
+		Kademlia::CUDPFirewallTester::IsVerified()) {
+		localEndpoint = MakeUtpEndpointFromNetworkOrder(
+			publicIp, Kademlia::CKademlia::GetPrefs()->GetExternalKadPort());
+	}
+	const std::optional<SUtpEndpoint> remoteEndpoint = MakeUtpEndpointFromNetworkOrder(ip, port);
+
+	const uint8_t *localHash = thePrefs::GetUserHash().GetHash();
+	const bool localHashValid = localHash != nullptr &&
+		std::any_of(localHash, localHash + 16, [](uint8_t byte) { return byte != 0; });
+	const bool peerHashValid = peer->HasValidHash();
+	const uint8_t *peerHash = peerHashValid ? peer->GetUserHash().GetHash() : nullptr;
+	if (DecideUtpSimultaneousOpen(
+			localEndpoint, remoteEndpoint, localHash, localHashValid, peerHash, peerHashValid) ==
+		EUtpSimultaneousOpenDecision::KeepIncoming) {
+		return { EUtpIncomingSynDisposition::AcceptKeepIncoming, candidate.clientToken };
+	}
+	return { EUtpIncomingSynDisposition::RejectKeepOutgoing, 0 };
+}
+
 bool CUtpStreamAcceptor::AcceptStream(
 	std::unique_ptr<IStreamTransport> &transport, uint32_t ip, uint16_t port)
+{
+	return AcceptStream(transport, ip, port, {});
+}
+
+bool CUtpStreamAcceptor::AcceptStream(std::unique_ptr<IStreamTransport> &transport,
+	uint32_t ip,
+	uint16_t port,
+	const SUtpIncomingSynDecision &synDecision)
 {
 	// Refusals come before ownership moves: destroying a transport closes its
 	// socket, and the adapter closes a refused one too.
@@ -69,6 +126,9 @@ bool CUtpStreamAcceptor::AcceptStream(
 	}
 
 	auto *socket = new CClientTCPSocket();
+	if (synDecision.disposition == EUtpIncomingSynDisposition::AcceptKeepIncoming) {
+		socket->SetUtpIncomingSynWinner(synDecision.candidateToken);
+	}
 	// AttachTransport() installs the event sink before it takes ownership, so
 	// an early callback always has somewhere to deliver.
 	socket->AttachTransport(std::move(transport));
