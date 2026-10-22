@@ -686,6 +686,12 @@ void CState::ReconcileKnownClientsLocked()
 		// get a row of their own once they identify.
 		if (c.user_hash.empty() || c.user_hash.find_first_not_of('0') == std::string::npos)
 			continue;
+		// Nor is a hash without a hello. Kad, source exchange and server callbacks hand the
+		// core a peer's hash before it ever connects, and until the hello attaches its credit
+		// record the core reports zero totals and a zero ratio for it. The name arrives in
+		// that same hello; no path seeds both a name and a hash before it.
+		if (c.client_name.empty())
+			continue;
 
 		auto it = m_known_of_hash.find(c.user_hash);
 		if (it == m_known_of_hash.end()) {
@@ -716,7 +722,8 @@ void CState::ReconcileKnownClientsLocked()
 		// UpdateMeta() bumps it once per client object at the hello, and a hello needs a
 		// connection. Firing on the peer merely APPEARING in the client list would run the
 		// count ahead of the daemon's, since that is earlier and also happens for a peer
-		// that never connects. It can still over-count by one if a peer
+		// that never connects. The name gate above also keeps out a connection that never
+		// got as far as the hello. It can still over-count by one if a peer
 		// drops out of the update for a tick and returns, because the departure sweep
 		// clears connected for it.
 		if (!was_connected && k.connected)
@@ -733,19 +740,16 @@ void CState::ReconcileKnownClientsLocked()
 		k.credit_ratio = c.credit_ratio;
 		k.has_credit_ratio = c.has_credit_ratio;
 		// Identity, when the peer in front of us knows more than the record. A record only
-		// gains a name once the core writes its metadata. Guarded on the live name being
-		// known: a peer mid-handshake must not blank a stored one.
-		if (!c.client_name.empty()) {
-			k.client_name = c.client_name;
-			k.ip = c.ip;
-			k.port = c.port;
-			k.kad_port = c.kad_port;
-			k.country_code = c.country_code;
-			k.software = c.software;
-			k.software_version = c.software_version;
-			k.source_origin = c.source_origin;
-			k.obfuscation_state = c.obfuscation_state;
-		}
+		// gains a name once the core writes its metadata.
+		k.client_name = c.client_name;
+		k.ip = c.ip;
+		k.port = c.port;
+		k.kad_port = c.kad_port;
+		k.country_code = c.country_code;
+		k.software = c.software;
+		k.software_version = c.software_version;
+		k.source_origin = c.source_origin;
+		k.obfuscation_state = c.obfuscation_state;
 	}
 
 	// Whoever was connected last tick and is not in this one has gone. Found through the

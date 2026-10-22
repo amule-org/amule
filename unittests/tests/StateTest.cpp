@@ -616,6 +616,109 @@ TEST(State, MutateClientsAndSharedRoundtrip)
 	ASSERT_EQUALS(std::string("shared.iso"), Shared(s)[0].name);
 }
 
+namespace
+{
+
+const char *const kKnownHash = "0123456789abcdef0123456789abcdef";
+
+KnownClientSnapshot StoredKnownClient()
+{
+	KnownClientSnapshot k;
+	k.user_hash = kKnownHash;
+	k.client_name = "stored-peer";
+	k.uploaded_bytes_total = 500000000;
+	k.downloaded_bytes_total = 2000000;
+	k.credit_ratio = 1.0;
+	k.has_credit_ratio = true;
+	k.session_count = 1;
+	return k;
+}
+
+// What the core sends for a client object that has the peer's hash but no credit record:
+// no name, zero totals, a zero ratio.
+void PutPreHelloClient(CState &s, bool connected)
+{
+	s.MutateClients([connected](std::map<std::uint32_t, ClientSnapshot> &cache) {
+		ClientSnapshot c;
+		c.ecid = 30;
+		c.user_hash = kKnownHash;
+		c.has_credit_ratio = true;
+		c.connected = connected;
+		c.has_connected = true;
+		cache[c.ecid] = c;
+	});
+}
+
+} // namespace
+
+// #2027: a server callback, a Kad source or source exchange gives the core a peer's hash
+// before any hello. The zeros it reports for that object must not replace the stored history.
+TEST(State, KnownClientKeepsItsHistoryAgainstAPreHelloClient)
+{
+	CState s;
+	std::vector<KnownClientSnapshot> rows;
+	rows.push_back(StoredKnownClient());
+	s.SetKnownClients(std::move(rows));
+
+	PutPreHelloClient(s, true);
+	s.ReconcileKnownClients();
+
+	s.WithKnownClients([](const std::vector<KnownClientSnapshot> &known) {
+		ASSERT_EQUALS(static_cast<size_t>(1), known.size());
+		ASSERT_EQUALS(static_cast<std::uint64_t>(500000000), known[0].uploaded_bytes_total);
+		ASSERT_EQUALS(static_cast<std::uint64_t>(2000000), known[0].downloaded_bytes_total);
+		ASSERT_EQUALS(1.0, known[0].credit_ratio);
+		ASSERT_EQUALS(static_cast<std::uint32_t>(1), known[0].session_count);
+		ASSERT_FALSE(known[0].connected);
+	});
+}
+
+// Only a hello writes a credit record, so a hash with no hello has no row to reflect.
+TEST(State, PreHelloClientAddsNoKnownRow)
+{
+	CState s;
+	s.SetKnownClients({});
+
+	PutPreHelloClient(s, false);
+	s.ReconcileKnownClients();
+
+	s.WithKnownClients([](const std::vector<KnownClientSnapshot> &known) {
+		ASSERT_EQUALS(static_cast<size_t>(0), known.size());
+	});
+}
+
+// A connection that never reaches the hello is not a session; the hello that follows is one.
+TEST(State, KnownSessionCountsTheHelloNotTheConnect)
+{
+	CState s;
+	std::vector<KnownClientSnapshot> rows;
+	rows.push_back(StoredKnownClient());
+	s.SetKnownClients(std::move(rows));
+
+	PutPreHelloClient(s, true);
+	s.ReconcileKnownClients();
+	s.WithKnownClients([](const std::vector<KnownClientSnapshot> &known) {
+		ASSERT_EQUALS(static_cast<std::uint32_t>(1), known[0].session_count);
+	});
+
+	s.MutateClients([](std::map<std::uint32_t, ClientSnapshot> &cache) {
+		ClientSnapshot &c = cache[30];
+		c.client_name = "live-peer";
+		c.uploaded_bytes_total = 600000000;
+		c.downloaded_bytes_total = 2000000;
+		c.credit_ratio = 1.0;
+	});
+	s.ReconcileKnownClients();
+
+	s.WithKnownClients([](const std::vector<KnownClientSnapshot> &known) {
+		ASSERT_EQUALS(static_cast<size_t>(1), known.size());
+		ASSERT_EQUALS(static_cast<std::uint32_t>(2), known[0].session_count);
+		ASSERT_EQUALS(static_cast<std::uint64_t>(600000000), known[0].uploaded_bytes_total);
+		ASSERT_EQUALS(std::string("live-peer"), known[0].client_name);
+		ASSERT_TRUE(known[0].connected);
+	});
+}
+
 TEST(State, WriteKadAndPreferencesRoundtrip)
 {
 	CState s;

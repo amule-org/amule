@@ -1519,6 +1519,7 @@ The store is read from the daemon **once**, on the first request, and maintained
 
 - a client that connects is added, with `first_seen_at` and `session_count` set to what the daemon recorded when it said hello;
 - a connected client's `connected`, `uploaded_bytes_total`, `downloaded_bytes_total` and `credit_ratio` track the live client state;
+- a client that has not said hello yet changes nothing, even when the daemon already knows its user hash (a Kad or source-exchange source, or a server callback). The daemon has no credit record for it until the hello, so it would report zero totals;
 - a bare record gains its name, address, software and origin once its client identifies;
 - a connected client's `last_seen_at` is now, and a client that leaves has `connected` cleared with `last_seen_at` stamped at the moment it went.
 
