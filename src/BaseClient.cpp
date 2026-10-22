@@ -2415,7 +2415,7 @@ void CUpDownClient::ConnectionEstablished()
 	switch (GetDownloadState()) {
 #if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
 	case DS_LOWTOLOWIP:
-		if (!thePrefs::IsLowIdHolePunchEnabled()) {
+		if (!thePrefs::IsLowIdHolePunchEnabled() && !thePrefs::IsLugdunumNatCallbackEnabled()) {
 			break;
 		}
 		[[fallthrough]];
