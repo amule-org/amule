@@ -338,8 +338,12 @@ void CClientTCPSocket::Disconnect(const wxString &strReason)
 						theApp->clientudp->RecordLugdunumNatCallbackFailure(key);
 					}
 				},
-				[this](uint32 requester) {
-					m_client->TrySendLugdunumNatCallbackRequest(requester);
+				[this, &failureKey](uint32 requester) {
+					if (theApp->clientudp == nullptr ||
+						!theApp->clientudp->IsLugdunumCallbackRendezvousActive(
+							failureKey)) {
+						m_client->TrySendLugdunumNatCallbackRequest(requester);
+					}
 				});
 		}
 #endif
@@ -407,6 +411,9 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 					}
 				});
 			m_client->CompleteLugdunumCallbackDial();
+			if (theApp->clientudp != nullptr) {
+				theApp->clientudp->CompleteLugdunumCallbackRendezvous(failureKey);
+			}
 		}
 		// The answer establishes identity for this server-vouched temporary dial: attach it to
 		// an already-known peer, as an incoming hello does, so any pending source request follows
@@ -516,6 +523,9 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 					}
 				});
 			m_client->CompleteLugdunumCallbackDial();
+			if (theApp->clientudp != nullptr) {
+				theApp->clientudp->CompleteLugdunumCallbackRendezvous(failureKey);
+			}
 		}
 #endif
 		wxASSERT(m_client);

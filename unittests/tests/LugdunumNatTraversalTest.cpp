@@ -32,6 +32,42 @@ using namespace LugdunumNatTraversal;
 
 DECLARE_SIMPLE(LugdunumNatTraversal)
 
+TEST(LugdunumNatTraversal, KeepsCallbackPinholeOpenAndRequestsReverseEarly)
+{
+	CCallbackRendezvous rendezvous;
+	const CallbackFailureKey key{ 1, 2, 3, 0x0100007F, 4672 };
+
+	ASSERT_TRUE(rendezvous.Start(key, 0x0100007F, 4672, 100));
+	ASSERT_TRUE(rendezvous.Tick(3099).empty());
+	const std::vector<CallbackRendezvousAction> first = rendezvous.Tick(3100);
+	ASSERT_EQUALS(1, (int)first.size());
+	ASSERT_TRUE(first[0].sendKeepalive);
+	ASSERT_TRUE(first[0].requestReverseCallback);
+	ASSERT_TRUE(first[0].key == key);
+
+	ASSERT_TRUE(rendezvous.Tick(6099).empty());
+	const std::vector<CallbackRendezvousAction> second = rendezvous.Tick(6100);
+	ASSERT_EQUALS(1, (int)second.size());
+	ASSERT_TRUE(second[0].sendKeepalive);
+	ASSERT_FALSE(second[0].requestReverseCallback);
+
+	ASSERT_TRUE(rendezvous.Complete(key));
+	ASSERT_TRUE(rendezvous.Tick(9100).empty());
+}
+
+TEST(LugdunumNatTraversal, ReverseCallbackNeverRequestsAnotherReverseAndRendezvousExpires)
+{
+	CCallbackRendezvous rendezvous;
+	const CallbackFailureKey reverseKey{ 1, 2, 0, 0x0100007F, 4672 };
+	ASSERT_TRUE(rendezvous.Start(reverseKey, 0x0100007F, 4672, 0));
+
+	const std::vector<CallbackRendezvousAction> action = rendezvous.Tick(3000);
+	ASSERT_EQUALS(1, (int)action.size());
+	ASSERT_TRUE(action[0].sendKeepalive);
+	ASSERT_FALSE(action[0].requestReverseCallback);
+	ASSERT_TRUE(rendezvous.Tick(60000).empty());
+}
+
 TEST(LugdunumNatTraversal, ParsesLiveIdChangeVectors)
 {
 	// Mazinga, without 0x1000 (S3): id, flags, aux (server) port only.

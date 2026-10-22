@@ -189,6 +189,9 @@ CClientUDPSocket::~CClientUDPSocket()
 void CClientUDPSocket::TickUtp()
 {
 	wxASSERT(wxIsMainThread());
+#ifdef ENABLE_NATT_SERVER_COORDINATION
+	TickLugdunumCallbackRendezvous();
+#endif
 	m_utp.Tick();
 }
 
@@ -638,6 +641,82 @@ void CClientUDPSocket::ClearLugdunumNatCallbackFailure(const LugdunumNatTraversa
 	m_lugdunumCallbackFailures.Clear(key);
 }
 
+bool CClientUDPSocket::IsLugdunumCallbackRendezvousActive(
+	const LugdunumNatTraversal::CallbackFailureKey &key) const
+{
+	return m_lugdunumCallbackRendezvous.IsActive(key);
+}
+
+void CClientUDPSocket::CompleteLugdunumCallbackRendezvous(const LugdunumNatTraversal::CallbackFailureKey &key)
+{
+	m_lugdunumCallbackRendezvous.Complete(key);
+}
+
+void CClientUDPSocket::SendLugdunumNatCallbackRequest(const LugdunumNatTraversal::CallbackFailureKey &key)
+{
+	if (theApp->serverconnect == nullptr || !Ok()) {
+		return;
+	}
+	CServer *server = theApp->serverconnect->GetCurrentServer();
+	if (server == nullptr) {
+		return;
+	}
+	CServer *serverListEntry =
+		theApp->serverlist->GetServerByAddress(server->GetAddress(), server->GetPort());
+	if (serverListEntry == nullptr) {
+		return;
+	}
+	const LugdunumNatTraversal::CallbackRequestFacts facts{ theApp->serverconnect->GetClientID(),
+		key.requesterId,
+		server->GetIP() == key.serverIp && server->GetPort() == key.serverPort,
+		server->IsLugdunumNatCallbackActive(),
+		thePrefs::IsServerCryptLayerUDPEnabled(),
+		serverListEntry->GetServerKeyUDP(),
+		serverListEntry->SupportsObfuscationUDP(),
+		thePrefs::IsLugdunumNatCallbackEnabled() };
+	if (!LugdunumNatTraversal::ShouldRequestLugdunumNatCallback(facts)) {
+		return;
+	}
+	const LugdunumNatTraversal::CallbackRequest request{ key.requesterId,
+		theApp->serverconnect->GetClientID() };
+	const auto payload = LugdunumNatTraversal::BuildCallbackRequest(request);
+	CMemFile data(payload.data(), payload.size());
+	CPacket *packet = new CPacket(data, OP_EDONKEYPROT, OP_NAT_CALLBACKREQUEST);
+	uint16 rawSize = static_cast<uint16>(packet->GetPacketSize() + 2);
+	uint8_t *raw = new uint8_t[rawSize];
+	memcpy(raw, packet->GetUDPHeader(), 2);
+	memcpy(raw + 2, packet->GetDataBuffer(), packet->GetPacketSize());
+	delete packet;
+	rawSize = static_cast<uint16>(CEncryptedDatagramSocket::EncryptSendServer(
+		&raw, rawSize, serverListEntry->GetServerKeyUDP()));
+	CMemFile encryptedData(raw + 2, rawSize - 2);
+	CPacket *encrypted = new CPacket(encryptedData, raw[0], raw[1]);
+	delete[] raw;
+	theStats::AddUpOverheadOther(encrypted->GetPacketSize());
+	SendPacket(encrypted,
+		server->GetIP(),
+		serverListEntry->GetObfuscationPortUDP(),
+		false,
+		nullptr,
+		false,
+		0);
+}
+
+void CClientUDPSocket::TickLugdunumCallbackRendezvous()
+{
+	for (const LugdunumNatTraversal::CallbackRendezvousAction &action :
+		m_lugdunumCallbackRendezvous.Tick(::GetTickCount64())) {
+		if (action.requestReverseCallback) {
+			SendLugdunumNatCallbackRequest(action.key);
+		}
+		if (action.sendKeepalive && Ok()) {
+			CPacket *punch = new CPacket(OP_HOLEPUNCH, 0, OP_EMULEPROT);
+			theStats::AddUpOverheadOther(punch->GetPacketSize());
+			SendPacket(punch, action.ip, action.udpPort, false, nullptr, false, 0);
+		}
+	}
+}
+
 bool CClientUDPSocket::DialLugdunumNatCallbackPeer(const LugdunumNatTraversal::ForwardedCallback &callback)
 {
 	CServerConnect *connect = theApp->serverconnect;
@@ -675,7 +754,7 @@ bool CClientUDPSocket::DialLugdunumNatCallbackPeer(const LugdunumNatTraversal::F
 	client->SetUDPPort(target.udpPort);
 	client->MarkLowIdHolePunchDial();
 	client->MarkLugdunumCallbackDial(failureKey);
-	return LugdunumNatTraversal::RunCallbackDialApplication(
+	const bool started = LugdunumNatTraversal::RunCallbackDialApplication(
 		failureKey,
 		[client]() { return client->TryServerVouchedLowIdUtpDial(); },
 		[this](const LugdunumNatTraversal::CallbackFailureKey &key) {
@@ -689,6 +768,10 @@ bool CClientUDPSocket::DialLugdunumNatCallbackPeer(const LugdunumNatTraversal::F
 				checked->Safe_Delete();
 			}
 		});
+	if (started) {
+		m_lugdunumCallbackRendezvous.Start(failureKey, target.ip, target.udpPort, ::GetTickCount64());
+	}
+	return started;
 }
 
 void CClientUDPSocket::HandleLowIdHolePunch(uint32 host, uint16 port)

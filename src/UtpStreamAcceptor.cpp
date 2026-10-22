@@ -67,6 +67,9 @@ SUtpIncomingSynDecision CUtpStreamAcceptor::DecideIncomingSyn(
 		Kademlia::CUDPFirewallTester::IsVerified()) {
 		externalUdpPort = Kademlia::CKademlia::GetPrefs()->GetExternalKadPort();
 	}
+	if (!CanRejectIncomingUtpSynForSimultaneousOpen(externalUdpPort)) {
+		return { EUtpIncomingSynDisposition::AcceptKeepIncoming, candidate.clientToken };
+	}
 	const std::optional<SUtpEndpoint> localEndpoint = MakeLocalUtpEndpoint(
 		theApp->GetPublicIP(true), externalUdpPort, thePrefs::GetUDPPort(), thePrefs::GetPort());
 	const std::optional<SUtpEndpoint> remoteEndpoint = MakeUtpEndpointFromNetworkOrder(ip, port);

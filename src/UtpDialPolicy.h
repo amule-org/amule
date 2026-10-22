@@ -217,6 +217,15 @@ inline std::optional<SUtpEndpoint> MakeLocalUtpEndpoint(
 	return MakeUtpEndpointFromNetworkOrder(publicIp, bestUdpPort);
 }
 
+// A configured UDP port is not evidence of a NAT's public mapping. Before Kad has verified an
+// external UDP port, rejecting an incoming simultaneous-open SYN risks both peers retaining their
+// outgoing dials based on different local tuples. Accept it and let OP_HELLO make the final
+// identity and winner decision instead.
+inline bool CanRejectIncomingUtpSynForSimultaneousOpen(std::uint16_t externalUdpPort)
+{
+	return externalUdpPort != 0;
+}
+
 inline bool CanInstallUtpPortTranslation(bool observedEndpointMapped, bool expectedEndpointMapped)
 {
 	return !observedEndpointMapped && !expectedEndpointMapped;

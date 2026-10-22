@@ -268,6 +268,13 @@ struct CallbackFailureKey
 			       other.endpointIp,
 			       other.endpointUdpPort);
 	}
+
+	bool operator==(const CallbackFailureKey &other) const
+	{
+		return serverIp == other.serverIp && serverPort == other.serverPort &&
+		       requesterId == other.requesterId && endpointIp == other.endpointIp &&
+		       endpointUdpPort == other.endpointUdpPort;
+	}
 };
 
 class ForwardedCallbackActionGuard
@@ -379,6 +386,83 @@ private:
 	}
 
 	std::map<CallbackFailureKey, std::uint64_t> m_failures;
+};
+
+// Main-thread callback rendezvous state. The initial uTP SYN opens the pinhole; after three
+// seconds without a stream, request the reciprocal callback and send a small peer datagram every
+// three seconds so a port-restricted NAT still admits the delayed reciprocal SYN. State ends on a
+// verified HELLO or after one minute, whichever comes first.
+struct CallbackRendezvousAction
+{
+	CallbackFailureKey key;
+	std::uint32_t ip = 0;
+	std::uint16_t udpPort = 0;
+	bool requestReverseCallback = false;
+	bool sendKeepalive = false;
+};
+
+class CCallbackRendezvous
+{
+public:
+	static constexpr std::uint64_t ReverseAfterMs = 3'000;
+	static constexpr std::uint64_t KeepaliveIntervalMs = 3'000;
+	static constexpr std::uint64_t LifetimeMs = 60'000;
+	static constexpr std::size_t MaxPending = 20;
+
+	bool Start(
+		const CallbackFailureKey &key, std::uint32_t ip, std::uint16_t udpPort, std::uint64_t nowMs)
+	{
+		if (ip == 0 || udpPort == 0 || m_pending.find(key) != m_pending.end() ||
+			m_pending.size() >= MaxPending) {
+			return false;
+		}
+		m_pending.emplace(key, Pending{ ip, udpPort, nowMs });
+		return true;
+	}
+
+	bool Complete(const CallbackFailureKey &key) { return m_pending.erase(key) != 0; }
+	bool IsActive(const CallbackFailureKey &key) const { return m_pending.find(key) != m_pending.end(); }
+
+	std::vector<CallbackRendezvousAction> Tick(std::uint64_t nowMs)
+	{
+		std::vector<CallbackRendezvousAction> actions;
+		for (auto entry = m_pending.begin(); entry != m_pending.end();) {
+			Pending &pending = entry->second;
+			if (nowMs >= pending.startedAtMs && nowMs - pending.startedAtMs >= LifetimeMs) {
+				entry = m_pending.erase(entry);
+				continue;
+			}
+			const bool dueForKeepalive = nowMs >= pending.nextKeepaliveAtMs;
+			const bool dueForReverse = !pending.reverseRequested &&
+						   nowMs >= pending.startedAtMs &&
+						   nowMs - pending.startedAtMs >= ReverseAfterMs;
+			if (dueForKeepalive || dueForReverse) {
+				actions.push_back({ entry->first,
+					pending.ip,
+					pending.udpPort,
+					dueForReverse && entry->first.requesterId != 0,
+					dueForKeepalive });
+				pending.reverseRequested = pending.reverseRequested || dueForReverse;
+				if (dueForKeepalive) {
+					pending.nextKeepaliveAtMs = nowMs + KeepaliveIntervalMs;
+				}
+			}
+			++entry;
+		}
+		return actions;
+	}
+
+private:
+	struct Pending
+	{
+		std::uint32_t ip;
+		std::uint16_t udpPort;
+		std::uint64_t startedAtMs;
+		std::uint64_t nextKeepaliveAtMs = startedAtMs + KeepaliveIntervalMs;
+		bool reverseRequested = false;
+	};
+
+	std::map<CallbackFailureKey, Pending> m_pending;
 };
 
 inline bool ShouldDialForwardedCallback(

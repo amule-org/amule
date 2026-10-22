@@ -112,6 +112,12 @@ TEST(UtpDialPolicy, LocalEndpointUsesBestAvailableUdpPort)
 	ASSERT_FALSE(MakeLocalUtpEndpoint(0, 4777, 4662, 4661).has_value());
 }
 
+TEST(UtpDialPolicy, RejectsIncomingSynOnlyWhenExternalUdpPortIsKnown)
+{
+	ASSERT_TRUE(CanRejectIncomingUtpSynForSimultaneousOpen(4672));
+	ASSERT_FALSE(CanRejectIncomingUtpSynForSimultaneousOpen(0));
+}
+
 TEST(UtpDialPolicy, TranslationRefusesEndpointCollisions)
 {
 	ASSERT_TRUE(CanInstallUtpPortTranslation(false, false));

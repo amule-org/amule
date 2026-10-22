@@ -72,6 +72,8 @@ public:
 	bool IsLugdunumNatCallbackCoolingDown(const LugdunumNatTraversal::CallbackFailureKey &key);
 	void RecordLugdunumNatCallbackFailure(const LugdunumNatTraversal::CallbackFailureKey &key);
 	void ClearLugdunumNatCallbackFailure(const LugdunumNatTraversal::CallbackFailureKey &key);
+	bool IsLugdunumCallbackRendezvousActive(const LugdunumNatTraversal::CallbackFailureKey &key) const;
+	void CompleteLugdunumCallbackRendezvous(const LugdunumNatTraversal::CallbackFailureKey &key);
 #endif
 #endif
 #ifdef AMULE_QUIC_TRANSPORT
@@ -97,6 +99,7 @@ private:
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 	LugdunumNatTraversal::CallbackFailureMemory m_lugdunumCallbackFailures;
 	LugdunumNatTraversal::ForwardedCallbackActionGuard m_lugdunumCallbackActions;
+	LugdunumNatTraversal::CCallbackRendezvous m_lugdunumCallbackRendezvous;
 #endif
 #endif
 #ifdef AMULE_QUIC_TRANSPORT
@@ -121,6 +124,8 @@ private:
 	bool TryProcessServerWayNatCallback(uint32 ip, uint8_t *buffer, size_t length);
 #ifdef AMULE_UTP_TRANSPORT
 	void HandleLowIdHolePunch(uint32 host, uint16 port);
+	void SendLugdunumNatCallbackRequest(const LugdunumNatTraversal::CallbackFailureKey &key);
+	void TickLugdunumCallbackRendezvous();
 #endif
 #endif
 
