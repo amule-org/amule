@@ -701,15 +701,12 @@ static void utp_register_sent_packet(utp_context *ctx, size_t length)
 	}
 }
 
-// A context may emit a stateless reset without an owning socket, but every UTPSocket send must
-// retain its origin through UTP_SENDTO so embedding applications can select per-stream metadata.
-void send_to_addr(
-	utp_context *ctx, UTPSocket *socket, const byte *p, size_t len, const PackedSockAddr &addr, int flags = 0)
+void send_to_addr(utp_context *ctx, const byte *p, size_t len, const PackedSockAddr &addr, int flags = 0)
 {
 	socklen_t tolen;
 	SOCKADDR_STORAGE to = addr.get_sockaddr_storage(&tolen);
 	utp_register_sent_packet(ctx, len);
-	utp_call_sendto(ctx, socket, p, len, (const struct sockaddr *)&to, tolen, flags);
+	utp_call_sendto(ctx, NULL, p, len, (const struct sockaddr *)&to, tolen, flags);
 }
 
 void UTPSocket::schedule_ack()
@@ -765,7 +762,7 @@ void UTPSocket::send_data(byte* b, size_t length, bandwidth_type_t type, uint32 
 		addrfmt(addr, addrbuf), (uint)length, conn_id_send, time, reply_micro, flagnames[flags2],
 		seq_nr, ack_nr);
 #endif
-	send_to_addr(ctx, this, b, length, addr, flags);
+	send_to_addr(ctx, b, length, addr, flags);
 	removeSocketFromAckList(this);
 }
 
@@ -862,7 +859,7 @@ void UTPSocket::send_rst(utp_context *ctx,
 
 //	LOG_DEBUG("%s: Sending RST id:%u seq_nr:%u ack_nr:%u", addrfmt(addr, addrbuf), conn_id_send, seq_nr, ack_nr);
 //	LOG_DEBUG("send %s len:%u id:%u", addrfmt(addr, addrbuf), (uint)len, conn_id_send);
-	send_to_addr(ctx, NULL, (const byte*)&pf1, len, addr);
+	send_to_addr(ctx, (const byte*)&pf1, len, addr);
 }
 
 void UTPSocket::send_packet(OutgoingPacket *pkt)

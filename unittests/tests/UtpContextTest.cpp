@@ -321,8 +321,7 @@ TEST(UtpContext, UdpSizingKeepsTheFamilyAwarenessLibutpHad)
 
 // The obfuscation header is part of the datagram too. EncryptSendClient() prepends
 // CRYPT_HEADER_WITHOUTPADDING, so a budget that counts only the envelope lets a full-size
-// encrypted packet exceed the very limit the override exists to respect. Dormant while the send
-// path is unencrypted, and the reason the two must be fixed together rather than in either order.
+// encrypted packet exceed the very limit the override exists to respect.
 TEST(UtpContext, TheUdpBudgetLeavesRoomForTheObfuscationHeader)
 {
 	ASSERT_EQUALS(8ull, kUtpCryptHeaderBytes);

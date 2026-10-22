@@ -29,6 +29,8 @@
 #include <libutp/utp.h>
 
 #include <algorithm>
+#include <array>
+#include <cstring>
 #include <map>
 #include <utility>
 #include <vector>
@@ -60,8 +62,15 @@ public:
 	void CloseSocket(Handle socket) override
 	{
 		auto *raw = static_cast<utp_socket *>(socket);
-		// Closed before the userdata goes, so the FIN this sends carries the
-		// stream's crypt parameters like every other datagram on it.
+		// Kept until DESTROYING, so the FIN's retransmits and the final ACKs stay
+		// obfuscated after the transport is gone. Before utp_close(), which can
+		// destroy the socket before it returns.
+		const uint8_t *userHash = nullptr;
+		if (const CUtpSocketTransport *transport = TransportOf(raw)) {
+			if (transport->CryptParameters(&userHash)) {
+				std::copy(userHash, userHash + kUserHashBytes, m_closingCrypt[raw].begin());
+			}
+		}
 		utp_close(raw);
 		// utp_close() only starts the socket dying; DESTROYING arrives later and
 		// would hand a callback a freed transport.
@@ -88,6 +97,7 @@ public:
 		utp_context_set_userdata(m_context, &sink);
 		s_self = this;
 		utp_set_callback(m_context, UTP_SENDTO, SendTo);
+		utp_set_callback(m_context, UTP_ON_OVERHEAD_STATISTICS, OnOverheadStatistics);
 		utp_set_callback(m_context, UTP_GET_UDP_MTU, GetUdpMtu);
 		utp_set_callback(m_context, UTP_GET_UDP_OVERHEAD, GetUdpOverhead);
 		utp_set_callback(m_context, UTP_ON_ACCEPT, OnAccept);
@@ -369,15 +379,46 @@ private:
 		// several clients. A context-level send has no verified peer.
 		bool encrypt = false;
 		const uint8_t *userHash = nullptr;
-		if (args->socket != nullptr) {
+		utp_socket *socket = args->socket;
+		if (socket == nullptr && s_self != nullptr) {
+			socket = std::exchange(s_self->m_sending, nullptr);
+			if (socket != nullptr && !IsPeerOf(socket, args->address, args->address_len)) {
+				socket = nullptr;
+			}
+		}
+		if (socket != nullptr) {
 			const auto *transport =
-				static_cast<const CUtpSocketTransport *>(utp_get_userdata(args->socket));
+				static_cast<const CUtpSocketTransport *>(utp_get_userdata(socket));
 			if (transport != nullptr) {
 				encrypt = transport->CryptParameters(&userHash);
+			} else if (s_self != nullptr) {
+				const auto closing = s_self->m_closingCrypt.find(socket);
+				if (closing != s_self->m_closingCrypt.end()) {
+					encrypt = true;
+					userHash = closing->second.data();
+				}
 			}
 		}
 		sink->SendUtpDatagram(args->buf, args->len, ip, port, encrypt, userHash);
 		return 0;
+	}
+	// libutp passes UTP_SENDTO no socket, but reports each socket's send here
+	// immediately before it.
+	static uint64 OnOverheadStatistics(utp_callback_arguments *args)
+	{
+		if (s_self != nullptr && args->send) {
+			s_self->m_sending = args->socket;
+		}
+		return 0;
+	}
+	// The SYN-ACK is also reported with no send after it; a socket-less reset
+	// that follows must not inherit it.
+	static bool IsPeerOf(utp_socket *socket, const sockaddr *address, socklen_t length)
+	{
+		sockaddr_storage peer{};
+		socklen_t peerLength = sizeof(peer);
+		return utp_getpeername(socket, reinterpret_cast<sockaddr *>(&peer), &peerLength) == 0 &&
+		       peerLength == length && std::memcmp(&peer, address, length) == 0;
 	}
 	//! The transport that owns a socket, or null for one we never accepted.
 	static CUtpSocketTransport *TransportOf(utp_socket *socket)
@@ -566,6 +607,10 @@ private:
 
 	void Forget(utp_socket *socket)
 	{
+		if (m_sending == socket) {
+			m_sending = nullptr;
+		}
+		m_closingCrypt.erase(socket);
 		RemoveRemapCandidate(socket);
 		RemovePortRemap(socket);
 		const auto found = m_endpoints.find(socket);
@@ -595,6 +640,10 @@ private:
 	// Sockets refused before a transport existed, closed once libutp has
 	// finished with the datagram.
 	std::vector<utp_socket *> m_refused;
+	utp_socket *m_sending = nullptr;
+	static constexpr size_t kUserHashBytes = 16;
+	// Crypt parameters of closed sockets that libutp still sends on.
+	std::map<utp_socket *, std::array<uint8_t, kUserHashBytes>> m_closingCrypt;
 	// Refused streams, destroyed at the same point. Destruction is the close.
 	std::vector<std::unique_ptr<IStreamTransport>> m_refusedStreams;
 	// libutp's callbacks carry only the context's user pointer, which already

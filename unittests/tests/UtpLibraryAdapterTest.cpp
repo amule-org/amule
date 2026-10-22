@@ -782,6 +782,44 @@ TEST(UtpLibraryAdapter, AClosingStreamKeepsItsEndpointUntilTheSocketDies)
 	Teardown(loop);
 }
 
+TEST(UtpLibraryAdapter, AClosedStreamStaysObfuscatedUntilTheSocketDies)
+{
+	// CloseSocket() drops the transport, but libutp still sends on the socket:
+	// here the ACK of data the peer sent before it saw our FIN.
+	SLoopback loop;
+	g_loop = &loop;
+	CServerSink sink;
+	CFakeAcceptor acceptor;
+	loop.server = CreateUtpLibrary();
+	ASSERT_TRUE(loop.server->Create(sink));
+	loop.server->SetAcceptor(&acceptor);
+	StartClient(loop);
+	Pump(loop);
+	ASSERT_TRUE(acceptor.accepted != nullptr);
+	const uint8_t userHash[16] = { 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 9, 8, 7, 6, 5, 4 };
+	static_cast<CUtpSocketTransport *>(acceptor.accepted.get())->SetCryptParameters(true, userHash);
+	// Takes the accepted socket out of SYN_RECV, where utp_close() sends no FIN.
+	const uint8_t payload = 0xA5;
+	utp_iovec vector{ const_cast<uint8_t *>(&payload), 1 };
+	ASSERT_EQUALS(1, (int)utp_writev(loop.clientSocket, &vector, 1));
+	Pump(loop);
+
+	acceptor.accepted->Close();
+	const unsigned afterFin = sink.datagrams;
+	ASSERT_TRUE(sink.lastEncrypt);
+	ASSERT_EQUALS(1, (int)utp_writev(loop.clientSocket, &vector, 1));
+	sink.lastEncrypt = false;
+	Pump(loop);
+	Pump(loop);
+	ASSERT_TRUE(sink.datagrams > afterFin);
+	ASSERT_TRUE(sink.lastEncrypt);
+	ASSERT_EQUALS(16, (int)sink.lastUserHash.size());
+	for (unsigned i = 0; i < sink.lastUserHash.size(); ++i) {
+		ASSERT_EQUALS((int)userHash[i], (int)sink.lastUserHash[i]);
+	}
+	Teardown(loop);
+}
+
 TEST(UtpLibraryAdapter, ARefusedSecondStreamMustNotDeregisterTheLivePeer)
 {
 	// A peer uses one client UDP port, so a second stream shares its endpoint
