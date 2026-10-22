@@ -112,6 +112,17 @@ void RefreshPreferencesPage(wxWindow *window)
 	}
 }
 
+// Minimize to Tray needs the tray icon, and on GTK an X11 session: Wayland never reports that
+// a window was minimized. SanitiseTrayPreferences() forces the setting off to match.
+bool MinToTrayUsable(bool trayIcon)
+{
+#ifdef __WXGTK__
+	return trayIcon && !CamuleAppCommon::IsWaylandSession();
+#else
+	return trayIcon;
+#endif
+}
+
 #ifdef CLIENT_GUI
 // The open Preferences dialog, or NULL. Lets a GET_SHARED_DIRS reply repaint
 // the editor without holding a pointer that could outlive the dialog.
@@ -926,12 +937,7 @@ bool PrefsUnifiedDlg::TransferToWindow()
 	// back there.
 	FindWindow(IDC_MACHIDEONCLOSE)->Enable(thePrefs::UseTrayIcon());
 
-#ifdef __WXGTK__
-	const bool minTrayUsable = thePrefs::UseTrayIcon() && !CamuleAppCommon::IsWaylandSession();
-#else
-	const bool minTrayUsable = thePrefs::UseTrayIcon();
-#endif
-	FindWindow(IDC_MINTRAY)->Enable(minTrayUsable);
+	FindWindow(IDC_MINTRAY)->Enable(MinToTrayUsable(thePrefs::UseTrayIcon()));
 
 	UpdateMessageFilterControls();
 	FindWindow(IDC_COMMENTWORD)->Enable(CastChild(IDC_FILTERCOMMENTS, wxCheckBox)->IsChecked());
@@ -1998,7 +2004,7 @@ void PrefsUnifiedDlg::OnCheckBoxChange(wxCommandEvent &event)
 		break;
 
 	case IDC_ENABLETRAYICON:
-		FindWindow(IDC_MINTRAY)->Enable(value);
+		FindWindow(IDC_MINTRAY)->Enable(MinToTrayUsable(value));
 		// HideOnClose's recovery surface is the tray icon, so its checkbox follows tray-icon
 		// state too. Live-update both here so the user does not have to close and reopen prefs
 		// to see dependent options gate correctly.
