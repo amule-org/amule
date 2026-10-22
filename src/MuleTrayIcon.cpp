@@ -70,7 +70,7 @@ void CMuleTrayIcon::DoShowHide()
 	} else {
 		theApp->amuledlg->RestoreMainWindow();
 	}
-#ifdef WITH_LIBAYATANA_APPINDICATOR
+#ifdef __WXGTK__
 	// The SNI menu is static between state changes, so without this poke the
 	// "Hide aMule" / "Show aMule" label would lag a click behind.
 	RebuildMenu();
@@ -734,6 +734,17 @@ void CMuleTrayIcon::UpdateTray()
 	}
 }
 
+#ifdef __WXGTK__
+void CMuleTrayIcon::RebuildMenu()
+{
+#if defined(wxUSE_APPINDICATOR) && wxUSE_APPINDICATOR
+	// wx's AppIndicator backend builds the menu inside SetIcon(). Deferred because this can run
+	// from an event of the current menu, which SetIcon() deletes.
+	CallAfter(&CMuleTrayIcon::UpdateTray);
+#endif
+}
+#endif
+
 wxMenu *CMuleTrayIcon::CreatePopupMenu()
 {
 	const double kBpsUp = static_cast<double>(theStats::GetDisplayUploadRate()) / 1024.0;
@@ -750,8 +761,11 @@ wxMenu *CMuleTrayIcon::CreatePopupMenu()
 	traymenu->Append(TRAY_MENU_INFO, label);
 	traymenu->AppendSeparator();
 
-	// Treat iconized as not visible -- see DoShowHide for rationale.
-	if (theApp->amuledlg->IsShown() && !theApp->amuledlg->IsTrayLogicallyIconized()) {
+	// Treat iconized as not visible -- see DoShowHide for rationale. wx's AppIndicator backend
+	// builds this menu inside SetIcon(), which first runs from the CamuleDlg constructor: before
+	// theApp->amuledlg is set, and in amule before theApp->serverconnect exists.
+	const CamuleDlg *dlg = theApp->amuledlg;
+	if (dlg && dlg->IsShown() && !dlg->IsTrayLogicallyIconized()) {
 		traymenu->Append(TRAY_MENU_HIDE, _("Hide aMule"));
 	} else {
 		traymenu->Append(TRAY_MENU_SHOW, _("Show aMule"));
@@ -815,9 +829,11 @@ wxMenu *CMuleTrayIcon::CreatePopupMenu()
 		wxString temp_name = _("ServerName: ");
 		wxString temp_ip = _("ServerIP: ");
 
-		if (theApp->serverconnect->GetCurrentServer()) {
-			temp_name += theApp->serverconnect->GetCurrentServer()->GetListName();
-			temp_ip += theApp->serverconnect->GetCurrentServer()->GetFullIP();
+		const CServer *server =
+			theApp->serverconnect ? theApp->serverconnect->GetCurrentServer() : nullptr;
+		if (server) {
+			temp_name += server->GetListName();
+			temp_ip += server->GetFullIP();
 		} else {
 			temp_name += _("Not connected");
 			temp_ip += _("Not Connected");

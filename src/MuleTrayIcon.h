@@ -112,10 +112,11 @@ public:
 	void DoSetUploadLimit(long kBytesPerSec); // UNLIMITED for no cap
 	void DoSetDownloadLimit(long kBytesPerSec);
 
-#ifdef WITH_LIBAYATANA_APPINDICATOR
-	// SNI menus are built once and held; callers re-invoke this to refresh the "Show
-	// aMule"/"Hide aMule" label after the main window's visibility changes outside the tray
-	// click path (close-button HideOnClose, minimize-to-tray).
+#ifdef __WXGTK__
+	// SNI menus (libayatana, or wx 3.2.12+ built with AppIndicator support) are built once and
+	// held; callers re-invoke this to refresh the "Show aMule"/"Hide aMule" label after the main
+	// window's visibility changes outside the tray click path (close-button HideOnClose,
+	// minimize-to-tray).
 	void RebuildMenu();
 #endif
 

@@ -1710,7 +1710,7 @@ void CamuleDlg::OnShow(wxShowEvent &evt)
 	} else {
 		DismissComboPopups(this);
 	}
-#ifdef WITH_LIBAYATANA_APPINDICATOR
+#ifdef __WXGTK__
 	// SNI tray menus are static between rebuilds, so the "Show aMule"/"Hide aMule" entry's
 	// label can drift out of sync when the window is hidden via paths that do not go through
 	// CMuleTrayIcon::DoShowHide (close-button HideOnClose, minimize-to-tray, a programmatic
@@ -1743,7 +1743,7 @@ void CamuleDlg::OnMinimize(wxIconizeEvent &evt)
 	}
 #endif
 
-#ifdef WITH_LIBAYATANA_APPINDICATOR
+#ifdef __WXGTK__
 	// SNI tray menu is built once and held; iconize does not fire EVT_SHOW so OnShow's
 	// RebuildMenu() does not run. Push the refresh from here so the "Show aMule"/"Hide aMule"
 	// label follows iconize transitions too.
