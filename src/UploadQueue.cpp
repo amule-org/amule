@@ -129,8 +129,17 @@ void CUploadQueue::SortGetBestClient(CClientRef *bestClient)
 			// There's a better high id client
 			cur_client->m_bAddNextConnect = false;
 		} else {
-			if (cur_client->HasLowID() && !cur_client->IsConnected() &&
-				!cur_client->IsCallableIPv6Contact()) {
+			if (!HasUploadSlotRoom(cur_client)) {
+				// Keeps its place in the queue until its scope frees a slot
+				cur_client->m_bAddNextConnect = false;
+				if (bestClient) {
+					AddDebugLogLineN(logLocalClient,
+						"Skipped upload slot for " + cur_client->GetFullIP() +
+							": its accounting scope holds the maximum number of "
+							"slots");
+				}
+			} else if (cur_client->HasLowID() && !cur_client->IsConnected() &&
+				   !cur_client->IsCallableIPv6Contact()) {
 				// No better high id client, so start upload to this one once it connects
 				cur_client->m_bAddNextConnect = true;
 			} else {
@@ -159,6 +168,17 @@ void CUploadQueue::SortGetBestClient(CClientRef *bestClient)
 				c->ECID() % c->GetUserName());
 	}
 #endif // __DEBUG__
+}
+
+bool CUploadQueue::HasUploadSlotRoom(const CUpDownClient *client) const
+{
+	// A friend slot is the user's own grant.
+	return client->GetFriendSlot() ||
+	       UploadQueueAddressPolicy::HasUploadSlotRoom(client->GetUserAddress(),
+		       m_uploadinglist,
+		       [](const CClientRef &ref) -> const CNetworkAddress & {
+			       return ref.GetClient()->GetUserAddress();
+		       });
 }
 
 void CUploadQueue::AddUpNextClient(CUpDownClient *directadd)
@@ -465,7 +485,7 @@ void CUploadQueue::AddClientToQueue(CUpDownClient *client)
 					if (lastupslotHighID) {
 						maxSlots++;
 					}
-					if (m_uploadinglist.size() < maxSlots) {
+					if (m_uploadinglist.size() < maxSlots && HasUploadSlotRoom(client)) {
 						client->m_bAddNextConnect = false;
 						RemoveFromWaitingQueue(client);
 						AddUpNextClient(client);
@@ -567,7 +587,8 @@ void CUploadQueue::AddClientToQueue(CUpDownClient *client)
 	client->ClearWaitStartTime();
 	// if possible start upload right away
 	if (m_waitinglist.empty() && tick - m_nLastStartUpload >= 1000 &&
-		m_uploadinglist.size() < GetMaxSlots() && !theApp->listensocket->TooManySockets()) {
+		m_uploadinglist.size() < GetMaxSlots() && !theApp->listensocket->TooManySockets() &&
+		HasUploadSlotRoom(client)) {
 		AddUpNextClient(client);
 		m_nLastStartUpload = tick;
 	} else {

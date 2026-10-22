@@ -24,6 +24,8 @@
 
 #include <muleunit/test.h>
 
+#include <vector>
+
 #include "UploadQueueAddressPolicy.h"
 
 using namespace muleunit;
@@ -91,4 +93,49 @@ TEST(UploadQueueAddressPolicy, RateLimitScopeAggregatesOnlyDelegatedPrefixes)
 	ASSERT_TRUE(UploadQueueAddressPolicy::MatchesRateLimitScope(
 		CNetworkAddress::FromString("2001:db8:1:2::1"),
 		CNetworkAddress::FromString("2001:db8:1:2::dead:beef")));
+}
+
+namespace
+{
+bool HasRoom(const char *candidate, const std::vector<CNetworkAddress> &uploading)
+{
+	return UploadQueueAddressPolicy::HasUploadSlotRoom(CNetworkAddress::FromString(candidate),
+		uploading,
+		[](const CNetworkAddress &address) -> const CNetworkAddress & { return address; });
+}
+} // namespace
+
+// One host rotating user hashes over several ports must not collect a slot per hash.
+TEST(UploadQueueAddressPolicy, CapsUploadSlotsPerScope)
+{
+	static_assert(UploadQueueAddressPolicy::MaxUploadSlotsPerScope == 2);
+	const auto host = CNetworkAddress::FromString("192.0.2.7");
+	const auto other = CNetworkAddress::FromString("192.0.2.8");
+
+	ASSERT_TRUE(HasRoom("192.0.2.7", {}));
+	ASSERT_TRUE(HasRoom("192.0.2.7", { host, other }));
+	ASSERT_FALSE(HasRoom("192.0.2.7", { host, other, host }));
+	ASSERT_FALSE(HasRoom("::ffff:192.0.2.7", { host, host }));
+	ASSERT_TRUE(HasRoom("192.0.2.8", { host, host, other }));
+}
+
+TEST(UploadQueueAddressPolicy, CapsUploadSlotsPerIpv6Prefix)
+{
+	const std::vector<CNetworkAddress> uploading = { CNetworkAddress::FromString("2001:db8:1:2::1"),
+		CNetworkAddress::FromString("2001:db8:1:2::2") };
+
+	ASSERT_FALSE(HasRoom("2001:db8:1:2::3", uploading));
+	ASSERT_TRUE(HasRoom("2001:db8:1:3::1", uploading));
+	// Link-local is not a delegated prefix, so each address is its own scope.
+	ASSERT_TRUE(HasRoom("fe80::3",
+		{ CNetworkAddress::FromString("fe80::1"), CNetworkAddress::FromString("fe80::2") }));
+}
+
+TEST(UploadQueueAddressPolicy, UploadSlotCapIgnoresAddresslessPeers)
+{
+	const CNetworkAddress absent;
+	ASSERT_TRUE(HasRoom("::", { CNetworkAddress::FromString("::"), CNetworkAddress::FromString("::") }));
+	ASSERT_TRUE(UploadQueueAddressPolicy::HasUploadSlotRoom(absent,
+		std::vector<CNetworkAddress>{ absent, absent },
+		[](const CNetworkAddress &address) -> const CNetworkAddress & { return address; }));
 }
