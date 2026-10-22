@@ -827,6 +827,20 @@ void CUpDownClient::ProcessBlockPacket(const uint8_t *packet, uint32 size, bool 
 		return;
 	}
 
+	// A block packet must at least carry its fixed header: file hash (16),
+	// start position (4, or 8 with largeblocks) and either the compressed
+	// block size (4) or the end position (4, or 8 with largeblocks). Shorter
+	// datagrams are malformed; reject them before parsing instead of failing
+	// halfway through with a generic read error.
+	const uint32 offsetFieldSize = largeblocks ? 8 : 4;
+	const uint32 minBlockHeaderSize = 16 + offsetFieldSize + (packed ? 4 : offsetFieldSize);
+	if (size < minBlockHeaderSize) {
+		AddDebugLogLineC(logRemoteClient,
+			CFormat("Error reading data packet: block header too short: RS: %i, need at least %i")
+				% static_cast<int>(size) % static_cast<int>(minBlockHeaderSize));
+		return;
+	}
+
 	// This vars are defined here to be able to use them on the catch
 	int header_size = 16;
 	uint64 nStartPos = 0;

@@ -845,6 +845,15 @@ void CClientUDPSocket::ProcessPacket(uint8_t *packet, int16 size, int8 opcode, u
 		AddDebugLogLineN(logClientUDP, "Client UDP socket: OP_REASKFILEPING");
 		theStats::AddDownOverheadFileRequest(size);
 
+		// A reask always carries the 16-byte file hash. Shorter datagrams are
+		// malformed: reject them before the parser reads past the buffer.
+		if (size < 16) {
+			AddDebugLogLineN(logClientUDP,
+				CFormat("Client UDP socket: rejected short OP_REASKFILEPING (%u bytes) from %s:%u")
+					% static_cast<unsigned>(size) % Uint32toStringIP(host) % static_cast<unsigned>(port));
+			break;
+		}
+
 		CMemFile data_in(packet, size);
 		CMD4Hash reqfilehash = data_in.ReadHash();
 		CKnownFile *reqfile = theApp->sharedfiles->GetFileByID(reqfilehash);
@@ -892,6 +901,13 @@ void CClientUDPSocket::ProcessPacket(uint8_t *packet, int16 size, int8 opcode, u
 				if (sender->GetUDPVersion() > 3) {
 					sender->ProcessExtendedInfo(&data_in, reqfile);
 				} else if (sender->GetUDPVersion() > 2) {
+					// Legacy reask layout is file hash (16) + complete-source count (2).
+					if (size < 18) {
+						AddDebugLogLineN(logClientUDP,
+							CFormat("Client UDP socket: rejected short OP_REASKFILEPING source count (%u bytes) from %s:%u")
+								% static_cast<unsigned>(size) % Uint32toStringIP(host) % static_cast<unsigned>(port));
+						break;
+					}
 					uint16 nCompleteCountLast = sender->GetUpCompleteSourcesCount();
 					uint16 nCompleteCountNew = data_in.ReadUInt16();
 					sender->SetUpCompleteSourcesCount(nCompleteCountNew);
@@ -957,11 +973,24 @@ void CClientUDPSocket::ProcessPacket(uint8_t *packet, int16 size, int8 opcode, u
 	}
 	case OP_REASKACK: {
 		theStats::AddDownOverheadFileRequest(size);
+		// Queue rank (2 bytes) is mandatory, after any optional file status.
+		if (size < 2) {
+			AddDebugLogLineN(logClientUDP,
+				CFormat("Client UDP socket: rejected short OP_REASKACK (%u bytes) from %s:%u")
+					% static_cast<unsigned>(size) % Uint32toStringIP(host) % static_cast<unsigned>(port));
+			break;
+		}
 		CUpDownClient *sender = theApp->downloadqueue->GetDownloadClientByIP_UDP(host, port);
 		if (sender) {
 			CMemFile data_in(packet, size);
 			if (sender->GetUDPVersion() > 3) {
 				sender->ProcessFileStatus(true, &data_in, sender->GetRequestFile());
+			}
+			if (data_in.GetAvailable() < 2) {
+				AddDebugLogLineN(logClientUDP,
+					CFormat("Client UDP socket: rejected OP_REASKACK without queue rank from %s:%u")
+						% Uint32toStringIP(host) % static_cast<unsigned>(port));
+				break;
 			}
 			uint16 nRank = data_in.ReadUInt16();
 			sender->SetRemoteQueueFull(false);
@@ -982,6 +1011,13 @@ void CClientUDPSocket::ProcessPacket(uint8_t *packet, int16 size, int8 opcode, u
 	case OP_DIRECTCALLBACKREQ: {
 		AddDebugLogLineN(logClientUDP, "Client UDP socket: OP_DIRECTCALLBACKREQ");
 		theStats::AddDownOverheadOther(size);
+		// Layout is TCP port (2) + user hash (16) + connect options (1).
+		if (size < 19) {
+			AddDebugLogLineN(logClientUDP,
+				CFormat("Client UDP socket: rejected short OP_DIRECTCALLBACKREQ (%u bytes) from %s:%u")
+					% static_cast<unsigned>(size) % Uint32toStringIP(host) % static_cast<unsigned>(port));
+			break;
+		}
 		if (!theApp->clientlist->AllowCallbackRequest(host)) {
 			AddDebugLogLineN(logClientUDP,
 				"Ignored DirectCallback Request because this IP (" + Uint32toStringIP(host) +

@@ -308,12 +308,18 @@ void CServerConnect::ConnectionEstablished(CServerSocket *sender)
 			dwCryptFlags |= SRVCAP_SUPPORTCRYPT;
 		}
 
-		if (thePrefs::IsClientCryptLayerRequested()) {
-			dwCryptFlags |= SRVCAP_REQUESTCRYPT;
-		}
+		// Keep callback negotiation conservative when the server connection is
+		// already obfuscated: requesting (or requiring) crypt on top of an
+		// obfuscated link makes the server pick callback semantics that do not
+		// match the transport we actually ended up with.
+		if (!sender->IsServerCryptEnabledConnection()) {
+			if (thePrefs::IsClientCryptLayerRequested()) {
+				dwCryptFlags |= SRVCAP_REQUESTCRYPT;
+			}
 
-		if (thePrefs::IsClientCryptLayerRequired()) {
-			dwCryptFlags |= SRVCAP_REQUIRECRYPT;
+			if (thePrefs::IsClientCryptLayerRequired()) {
+				dwCryptFlags |= SRVCAP_REQUIRECRYPT;
+			}
 		}
 
 		uint32 dwNatTraversalFlags = 0;
@@ -583,6 +589,22 @@ void CServerConnect::CheckForTimeout()
 					    value->cur_server->GetPort());
 
 				connectionattemps.erase(key);
+
+				// A single obfuscated connection attempt that times out is not
+				// proof the server is unreachable: the obfuscated handshake can
+				// stall where a plain one would succeed. Retry the same server
+				// without obfuscation before giving up on it, mirroring the
+				// connection-failure path in ConnectionFailed().
+				CServer *retryServer = value->cur_server;
+				if (singleconnecting && value->IsServerCryptEnabledConnection() &&
+					!thePrefs::IsClientCryptLayerRequired()) {
+					AddLogLineN(CFormat(_("Connection attempt to %s (%s:%i) timed out; retrying without obfuscation.")) %
+						    value->info % retryServer->GetFullIP() % retryServer->GetPort());
+					DestroySocket(value);
+					ConnectToServer(retryServer, false, true);
+					// The retry replaced the whole attempt map, so this sweep is over.
+					break;
+					}
 
 				TryAnotherConnectionrequest();
 				DestroySocket(value);
