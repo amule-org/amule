@@ -73,11 +73,15 @@ public:
 		uint32_t ip,
 		uint16_t port,
 		bool encrypt,
-		const uint8_t *) override
+		const uint8_t *userHash) override
 	{
 		lastIp = ip;
 		lastPort = port;
 		lastEncrypt = encrypt;
+		lastUserHash.clear();
+		if (userHash != nullptr) {
+			lastUserHash.assign(userHash, userHash + 16);
+		}
 		++datagrams;
 		if (!dropOldPort || port == g_loop->clientSourcePort) {
 			g_loop->toClient.emplace_back(payload, payload + length);
@@ -89,6 +93,7 @@ public:
 	uint16_t lastPort = 0;
 	bool dropOldPort = false;
 	bool lastEncrypt = false;
+	std::vector<uint8_t> lastUserHash;
 	unsigned droppedOldPortDatagrams = 0;
 	unsigned datagrams = 0;
 };
@@ -414,6 +419,25 @@ TEST(UtpLibraryAdapter, OutboundDialSendsItsSynToTheRequestedEndpoint)
 	ASSERT_TRUE(loop.server->Dial(kPeerIp, kPeerPort, false, nullptr, transport));
 	ASSERT_EQUALS(kPeerIp, sink.lastIp);
 	ASSERT_EQUALS((int)kPeerPort, (int)sink.lastPort);
+	Teardown(loop);
+}
+
+TEST(UtpLibraryAdapter, OutboundEncryptedSynRetainsItsSocketCryptParameters)
+{
+	SLoopback loop;
+	g_loop = &loop;
+	CServerSink sink;
+	loop.server = CreateUtpLibrary();
+	ASSERT_TRUE(loop.server->Create(sink));
+	const uint8_t userHash[16] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
+
+	std::unique_ptr<IStreamTransport> transport;
+	ASSERT_TRUE(loop.server->Dial(kPeerIp, kPeerPort, true, userHash, transport));
+	ASSERT_TRUE(sink.lastEncrypt);
+	ASSERT_EQUALS(16, (int)sink.lastUserHash.size());
+	for (unsigned i = 0; i < sink.lastUserHash.size(); ++i) {
+		ASSERT_EQUALS((int)userHash[i], (int)sink.lastUserHash[i]);
+	}
 	Teardown(loop);
 }
 
