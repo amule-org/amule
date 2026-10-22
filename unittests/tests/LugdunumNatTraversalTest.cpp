@@ -619,3 +619,23 @@ TEST(LugdunumNatTraversal, FailedCallbackAttemptKeepsSourceRetryableThroughAppli
 	ASSERT_EQUALS(2, recordedFailures);
 	ASSERT_EQUALS(2, callbackRequests);
 }
+
+TEST(LugdunumNatTraversal, ForwardedCallbackGuardDeduplicatesAndBoundsActions)
+{
+	ForwardedCallbackActionGuard guard;
+	const CallbackFailureKey key{ 0x0A000001, 4661, 0x12345678, 0xC0000201, 4662 };
+	ASSERT_TRUE(guard.Admit(key, 100));
+	ASSERT_FALSE(guard.Admit(key, 100 + ForwardedCallbackActionGuard::DuplicateWindowMs - 1));
+	ASSERT_TRUE(guard.Admit(key, 100 + ForwardedCallbackActionGuard::DuplicateWindowMs));
+
+	CallbackFailureKey distinct = key;
+	for (std::size_t index = 0; index < ForwardedCallbackActionGuard::MaxActions - 2; ++index) {
+		distinct.requesterId = static_cast<std::uint32_t>(index + 1);
+		ASSERT_TRUE(guard.Admit(distinct, 20'000));
+	}
+	distinct.requesterId = 0xFFFFFFFF;
+	ASSERT_FALSE(guard.Admit(distinct, 20'000));
+	distinct.serverIp = 0x0A000002;
+	ASSERT_TRUE(guard.Admit(distinct, 20'000));
+	ASSERT_TRUE(guard.Admit(distinct, 100 + ForwardedCallbackActionGuard::ActionWindowMs));
+}

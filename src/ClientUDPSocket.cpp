@@ -662,7 +662,8 @@ bool CClientUDPSocket::DialLugdunumNatCallbackPeer(const LugdunumNatTraversal::F
 	const LugdunumNatTraversal::CallbackFailureKey failureKey{
 		server->GetIP(), server->GetPort(), callback.requesterId, target.ip, target.udpPort
 	};
-	if (IsLugdunumNatCallbackCoolingDown(failureKey)) {
+	if (IsLugdunumNatCallbackCoolingDown(failureKey) ||
+		!m_lugdunumCallbackActions.Admit(failureKey, ::GetTickCount64())) {
 		return false;
 	}
 

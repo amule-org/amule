@@ -103,6 +103,15 @@ TEST(UtpDialPolicy, EndpointFactoryUsesEd2kNetworkOrder)
 	ASSERT_FALSE(MakeUtpEndpointFromNetworkOrder(0x010200C0, 0).has_value());
 }
 
+TEST(UtpDialPolicy, LocalEndpointUsesBestAvailableUdpPort)
+{
+	const std::uint32_t publicIp = 0x010200C0;
+	ASSERT_EQUALS((int)4777, (int)MakeLocalUtpEndpoint(publicIp, 4777, 4662, 4661)->port);
+	ASSERT_EQUALS((int)4662, (int)MakeLocalUtpEndpoint(publicIp, 0, 4662, 4661)->port);
+	ASSERT_EQUALS((int)4661, (int)MakeLocalUtpEndpoint(publicIp, 0, 0, 4661)->port);
+	ASSERT_FALSE(MakeLocalUtpEndpoint(0, 4777, 4662, 4661).has_value());
+}
+
 TEST(UtpDialPolicy, HelloAttachmentHonorsOnlyTheVerifiedSynWinnerToken)
 {
 	const uint8_t localHash[16] = { 0 };
@@ -236,7 +245,7 @@ TEST(UtpDialPolicy, ObfuscationOwedButUnavailableStaysOnTcp)
 TEST(UtpDialPolicy, RemapRequiresOneLiveExpectedPeerDuringTheHandshake)
 {
 	constexpr std::uint32_t ip = 0x0100007F;
-	std::vector<SUtpRemapCandidate> candidates{ { ip, 4672, 100, true, true } };
+	std::vector<SUtpRemapCandidate> candidates{ { ip, 4672, 100, true, true, true } };
 
 	const auto lowerBoundary = FindUniqueUtpPortRemapCandidate(candidates, ip, 4160, 30'099);
 	ASSERT_TRUE(lowerBoundary.has_value());
@@ -249,7 +258,7 @@ TEST(UtpDialPolicy, RemapRequiresOneLiveExpectedPeerDuringTheHandshake)
 	ASSERT_FALSE(FindUniqueUtpPortRemapCandidate(candidates, ip + 1, 4160, 30'099).has_value());
 	ASSERT_FALSE(FindUniqueUtpPortRemapCandidate(candidates, ip, 4672, 30'099).has_value());
 
-	candidates.push_back({ ip, 5000, 100, true, true });
+	candidates.push_back({ ip, 5000, 100, true, true, true });
 	ASSERT_FALSE(FindUniqueUtpPortRemapCandidate(candidates, ip, 4800, 30'099).has_value());
 	candidates.pop_back();
 	candidates[0].handshakePending = false;

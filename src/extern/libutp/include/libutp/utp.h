@@ -155,8 +155,6 @@ void*			utp_context_get_userdata		(utp_context *ctx);
 int				utp_context_set_option			(utp_context *ctx, int opt, int val);
 int				utp_context_get_option			(utp_context *ctx, int opt);
 int				utp_process_udp					(utp_context *ctx, const byte *buf, size_t len, const struct sockaddr *to, socklen_t tolen);
-// The expected endpoint is a one-datagram remap hint; caller must first verify a unique, live peer.
-int				utp_process_udp_with_expected_endpoint(utp_context *ctx, const byte *buf, size_t len, const struct sockaddr *to, socklen_t tolen, const struct sockaddr *expected, socklen_t expected_len, uint16 port_window, int *remapped);
 int				utp_process_icmp_error			(utp_context *ctx, const byte *buffer, size_t len, const struct sockaddr *to, socklen_t tolen);
 int				utp_process_icmp_fragmentation	(utp_context *ctx, const byte *buffer, size_t len, const struct sockaddr *to, socklen_t tolen, uint16 next_hop_mtu);
 void			utp_check_timeouts				(utp_context *ctx);

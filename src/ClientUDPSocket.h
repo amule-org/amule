@@ -96,6 +96,7 @@ private:
 	CUtpStreamAcceptor m_utpAcceptor;
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 	LugdunumNatTraversal::CallbackFailureMemory m_lugdunumCallbackFailures;
+	LugdunumNatTraversal::ForwardedCallbackActionGuard m_lugdunumCallbackActions;
 #endif
 #endif
 #ifdef AMULE_QUIC_TRANSPORT

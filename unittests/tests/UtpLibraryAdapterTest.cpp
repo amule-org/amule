@@ -401,7 +401,7 @@ TEST(UtpLibraryAdapter, OutboundHandshakeRemapsOneExpectedPeerToItsObservedPort)
 	Teardown(loop);
 }
 
-TEST(UtpLibraryAdapter, InboundHandshakeRemapsOnlyBeforeTheConnectionIsEstablished)
+TEST(UtpLibraryAdapter, InboundStreamNeverBecomesPortRemapEligible)
 {
 	SLoopback loop;
 	g_loop = &loop;
@@ -411,7 +411,6 @@ TEST(UtpLibraryAdapter, InboundHandshakeRemapsOnlyBeforeTheConnectionIsEstablish
 	ASSERT_TRUE(loop.server->Create(sink));
 	loop.server->SetAcceptor(&acceptor);
 	StartClient(loop);
-
 	Pump(loop);
 
 	ASSERT_TRUE(acceptor.accepted != nullptr);
@@ -423,47 +422,10 @@ TEST(UtpLibraryAdapter, InboundHandshakeRemapsOnlyBeforeTheConnectionIsEstablish
 	Pump(loop);
 
 	ASSERT_TRUE(loop.sawChangedPortDatagram);
-	ASSERT_TRUE(loop.sawRemapCandidate);
-	ASSERT_TRUE(loop.server->HasRegisteredPeer(kPeerIp, kPeerPort + kUtpPortRemapWindow));
-	ASSERT_FALSE(loop.server->HasRegisteredPeer(kPeerIp, kPeerPort));
-	ASSERT_EQUALS((int)(kPeerPort + kUtpPortRemapWindow), (int)acceptor.accepted->GetPeerPort());
-	Teardown(loop);
-}
-
-TEST(UtpLibraryAdapter, EstablishedInboundStreamRemainsBoundToItsRemappedTuple)
-{
-	SLoopback loop;
-	g_loop = &loop;
-	CServerSink sink;
-	CFakeAcceptor acceptor;
-	loop.server = CreateUtpLibrary();
-	ASSERT_TRUE(loop.server->Create(sink));
-	loop.server->SetAcceptor(&acceptor);
-	StartClient(loop);
-	Pump(loop);
-	ASSERT_TRUE(acceptor.accepted != nullptr);
-	ASSERT_TRUE(loop.clientConnected);
-
-	const uint16_t remappedPort = kPeerPort + kUtpPortRemapWindow;
-	uint8_t first = 0x5A;
-	utp_iovec firstVector{ &first, 1 };
-	ASSERT_EQUALS(1, (int)utp_writev(loop.clientSocket, &firstVector, 1));
-	loop.clientSourcePort = remappedPort;
-	Pump(loop);
-	ASSERT_TRUE(loop.server->HasRegisteredPeer(kPeerIp, remappedPort));
-	uint8_t received = 0;
-	ASSERT_EQUALS(1, (int)acceptor.accepted->Read(&received, 1));
-	ASSERT_EQUALS((int)first, (int)received);
-
-	uint8_t second = 0x6B;
-	utp_iovec secondVector{ &second, 1 };
-	ASSERT_EQUALS(1, (int)utp_writev(loop.clientSocket, &secondVector, 1));
-	loop.clientSourcePort = remappedPort + 1;
-	Pump(loop);
-	ASSERT_TRUE(loop.server->HasRegisteredPeer(kPeerIp, remappedPort));
-	ASSERT_FALSE(loop.server->HasRegisteredPeer(kPeerIp, remappedPort + 1));
-	ASSERT_EQUALS((int)remappedPort, (int)acceptor.accepted->GetPeerPort());
-	ASSERT_EQUALS(0, (int)acceptor.accepted->Read(&received, 1));
+	ASSERT_FALSE(loop.sawRemapCandidate);
+	ASSERT_TRUE(loop.server->HasRegisteredPeer(kPeerIp, kPeerPort));
+	ASSERT_FALSE(loop.server->HasRegisteredPeer(kPeerIp, kPeerPort + kUtpPortRemapWindow));
+	ASSERT_EQUALS((int)kPeerPort, (int)acceptor.accepted->GetPeerPort());
 	Teardown(loop);
 }
 

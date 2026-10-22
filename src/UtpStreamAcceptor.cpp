@@ -62,14 +62,13 @@ SUtpIncomingSynDecision CUtpStreamAcceptor::DecideIncomingSyn(
 		return { EUtpIncomingSynDisposition::RejectKeepOutgoing, 0 };
 	}
 
-	std::optional<SUtpEndpoint> localEndpoint;
-	const uint32_t publicIp = theApp->GetPublicIP(true);
-	if (publicIp != 0 && Kademlia::CKademlia::IsConnected() &&
-		Kademlia::CKademlia::GetPrefs()->GetUseExternKadPort() &&
+	uint16_t externalUdpPort = 0;
+	if (Kademlia::CKademlia::IsConnected() && Kademlia::CKademlia::GetPrefs()->GetUseExternKadPort() &&
 		Kademlia::CUDPFirewallTester::IsVerified()) {
-		localEndpoint = MakeUtpEndpointFromNetworkOrder(
-			publicIp, Kademlia::CKademlia::GetPrefs()->GetExternalKadPort());
+		externalUdpPort = Kademlia::CKademlia::GetPrefs()->GetExternalKadPort();
 	}
+	const std::optional<SUtpEndpoint> localEndpoint = MakeLocalUtpEndpoint(
+		theApp->GetPublicIP(true), externalUdpPort, thePrefs::GetUDPPort(), thePrefs::GetPort());
 	const std::optional<SUtpEndpoint> remoteEndpoint = MakeUtpEndpointFromNetworkOrder(ip, port);
 
 	const uint8_t *localHash = thePrefs::GetUserHash().GetHash();

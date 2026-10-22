@@ -40,6 +40,7 @@
 #include <map>
 #include <tuple>
 #include <utility>
+#include <vector>
 
 namespace LugdunumNatTraversal
 {
@@ -267,6 +268,67 @@ struct CallbackFailureKey
 			       other.endpointIp,
 			       other.endpointUdpPort);
 	}
+};
+
+class ForwardedCallbackActionGuard
+{
+public:
+	static constexpr std::uint64_t DuplicateWindowMs = 10'000;
+	static constexpr std::uint64_t ActionWindowMs = 60'000;
+	static constexpr std::size_t MaxDuplicateEntries = 256;
+	static constexpr std::size_t MaxActions = 20;
+
+	bool Admit(const CallbackFailureKey &key, std::uint64_t nowMs)
+	{
+		Prune(nowMs);
+		const CallbackServer server{ key.serverIp, key.serverPort };
+		std::vector<std::uint64_t> &actions = m_actions[server];
+		if (m_duplicates.find(key) != m_duplicates.end() || actions.size() >= MaxActions) {
+			return false;
+		}
+		if (m_duplicates.size() == MaxDuplicateEntries) {
+			const auto oldest = std::min_element(m_duplicates.begin(),
+				m_duplicates.end(),
+				[](const auto &left, const auto &right) {
+					return left.second < right.second;
+				});
+			m_duplicates.erase(oldest);
+		}
+		m_duplicates.emplace(key, nowMs);
+		actions.push_back(nowMs);
+		return true;
+	}
+
+private:
+	void Prune(std::uint64_t nowMs)
+	{
+		for (auto entry = m_duplicates.begin(); entry != m_duplicates.end();) {
+			if (nowMs >= entry->second && nowMs - entry->second >= DuplicateWindowMs) {
+				entry = m_duplicates.erase(entry);
+			} else {
+				++entry;
+			}
+		}
+		for (auto actionWindow = m_actions.begin(); actionWindow != m_actions.end();) {
+			std::vector<std::uint64_t> &actions = actionWindow->second;
+			actions.erase(std::remove_if(actions.begin(),
+					      actions.end(),
+					      [nowMs](std::uint64_t actionAt) {
+						      return nowMs >= actionAt &&
+							     nowMs - actionAt >= ActionWindowMs;
+					      }),
+				actions.end());
+			if (actions.empty()) {
+				actionWindow = m_actions.erase(actionWindow);
+			} else {
+				++actionWindow;
+			}
+		}
+	}
+
+	using CallbackServer = std::pair<std::uint32_t, std::uint16_t>;
+	std::map<CallbackFailureKey, std::uint64_t> m_duplicates;
+	std::map<CallbackServer, std::vector<std::uint64_t>> m_actions;
 };
 
 inline bool ShouldClearCallbackFailureAfterHello(const CallbackFailureKey &key, std::uint32_t actualPeerId)

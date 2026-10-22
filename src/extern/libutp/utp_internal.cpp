@@ -2822,50 +2822,10 @@ UTPSocket* LookupAdjacent(utp_context *ctx, PackedSockAddr const& addr, uint32 c
 	return nullptr;
 }
 
-static UTPSocket *utp_remap_expected_endpoint(utp_context *ctx,
-	const PackedSockAddr &addr,
-	const PackedSockAddr &expected_addr,
-	uint32 id,
-	uint16 port_window,
-	int *remapped)
-{
-	const uint16 delta = expected_addr._port > addr._port ? expected_addr._port - addr._port : addr._port - expected_addr._port;
-	if (addr.get_family() != AF_INET || expected_addr.get_family() != AF_INET ||
-		expected_addr._sin4 != addr._sin4 || expected_addr._port == addr._port || delta > port_window) {
-		return nullptr;
-	}
-
-	UTPSocket *candidate = LookupAdjacent(ctx, expected_addr, id);
-	if (candidate == nullptr || (candidate->state != CS_SYN_SENT && candidate->state != CS_SYN_RECV)) {
-		return nullptr;
-	}
-	const UTPSocketKey old_key{ expected_addr, candidate->conn_id_recv };
-	const UTPSocketKey new_key{ addr, candidate->conn_id_recv };
-	if (!ctx->utp_sockets.rekey(old_key, new_key, candidate)) {
-		return nullptr;
-	}
-	candidate->addr = addr;
-	ctx->last_utp_socket = candidate;
-	if (remapped != nullptr) {
-		*remapped = 1;
-	}
-	return candidate;
-}
 
 // Returns 1 if the UDP payload was recognized as a UTP packet, or 0 if it was not
-static int utp_process_udp_impl(utp_context *ctx,
-	const byte *buffer,
-	size_t len,
-	const struct sockaddr *to,
-	socklen_t tolen,
-	const struct sockaddr *expected,
-	socklen_t expected_len,
-	uint16 port_window,
-	int *remapped)
+int utp_process_udp(utp_context *ctx, const byte *buffer, size_t len, const struct sockaddr *to, socklen_t tolen)
 {
-	if (remapped != nullptr) {
-		*remapped = 0;
-	}
 	assert(ctx);
 	if (!ctx) return 0;
 
@@ -2902,12 +2862,6 @@ static int utp_process_udp_impl(utp_context *ctx,
 	#endif
 
 	const byte flags = pf1->type();
-	PackedSockAddr expected_addr;
-	const bool has_expected_endpoint =
-		expected != nullptr && expected->sa_family == AF_INET && expected_len >= sizeof(sockaddr_in);
-	if (has_expected_endpoint) {
-		expected_addr = PackedSockAddr(reinterpret_cast<const SOCKADDR_STORAGE *>(expected), expected_len);
-	}
 
 	if (flags == ST_RESET) {
 		if (auto* conn = LookupAdjacent(ctx, addr, id); conn != nullptr) {
@@ -2938,10 +2892,6 @@ static int utp_process_udp_impl(utp_context *ctx,
 			conn = ctx->last_utp_socket;
 		} else if (auto* lookup = ctx->utp_sockets.lookup(UTPSocketKey{ addr, id }); lookup != nullptr) {
 			conn = ctx->last_utp_socket = lookup;
-		}
-
-		if (conn == nullptr && has_expected_endpoint) {
-			conn = utp_remap_expected_endpoint(ctx, addr, expected_addr, id, port_window, remapped);
 		}
 
 		if (conn) {
@@ -3056,24 +3006,6 @@ static int utp_process_udp_impl(utp_context *ctx,
 	}
 
 	return 1;
-}
-
-int utp_process_udp(utp_context *ctx, const byte *buffer, size_t len, const struct sockaddr *to, socklen_t tolen)
-{
-	return utp_process_udp_impl(ctx, buffer, len, to, tolen, nullptr, 0, 0, nullptr);
-}
-
-int utp_process_udp_with_expected_endpoint(utp_context *ctx,
-	const byte *buffer,
-	size_t len,
-	const struct sockaddr *to,
-	socklen_t tolen,
-	const struct sockaddr *expected,
-	socklen_t expected_len,
-	uint16 port_window,
-	int *remapped)
-{
-	return utp_process_udp_impl(ctx, buffer, len, to, tolen, expected, expected_len, port_window, remapped);
 }
 
 // Called by utp_process_icmp_fragmentation() and utp_process_icmp_error() below

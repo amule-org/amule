@@ -209,6 +209,14 @@ inline std::optional<SUtpEndpoint> MakeUtpEndpointFromNetworkOrder(std::uint32_t
 		port };
 }
 
+inline std::optional<SUtpEndpoint> MakeLocalUtpEndpoint(
+	std::uint32_t publicIp, std::uint16_t externalUdpPort, std::uint16_t udpPort, std::uint16_t tcpPort)
+{
+	const std::uint16_t bestUdpPort =
+		externalUdpPort != 0 ? externalUdpPort : (udpPort != 0 ? udpPort : tcpPort);
+	return MakeUtpEndpointFromNetworkOrder(publicIp, bestUdpPort);
+}
+
 enum class EUtpSimultaneousOpenDecision
 {
 	KeepOutgoing,
@@ -315,8 +323,9 @@ std::optional<std::size_t> FindUniqueUtpPortRemapCandidate(
 		const std::uint16_t expectedPort = candidate.port;
 		const std::uint16_t delta = expectedPort > observedPort ? expectedPort - observedPort
 									: observedPort - expectedPort;
-		const bool eligible = candidate.remapAllowed && candidate.handshakePending &&
-				      candidate.ip == observedIp && observedPort != 0 && expectedPort != 0 &&
+		const bool eligible = candidate.outbound && candidate.remapAllowed &&
+				      candidate.handshakePending && candidate.ip == observedIp &&
+				      observedPort != 0 && expectedPort != 0 &&
 				      expectedPort != observedPort && nowMs >= candidate.registeredAtMs &&
 				      nowMs - candidate.registeredAtMs < kUtpPortRemapExpectedPeerTtlMs &&
 				      delta <= kUtpPortRemapWindow;

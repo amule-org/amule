@@ -195,25 +195,22 @@ public:
 		const sockaddr_in address = MakeAddress(ip, port);
 		const auto candidateIndex =
 			FindUniqueUtpPortRemapCandidate(m_remapCandidates, ip, port, nowMs);
-		int remapped = 0;
 		bool claimed = false;
 		if (candidateIndex.has_value()) {
 			const SPendingHandshake candidate = m_remapCandidates[*candidateIndex];
 			const sockaddr_in expected = MakeAddress(candidate.ip, candidate.port);
+			// libutp still sees the original handshake tuple. During this call only,
+			// SendTo redirects this socket's response to the observed NAT mapping.
 			m_remapInProgressSocket = candidate.socket;
 			m_remapObservedIp = ip;
 			m_remapObservedPort = port;
-			claimed = utp_process_udp_with_expected_endpoint(m_context,
+			claimed = utp_process_udp(m_context,
 					  payload,
 					  length,
-					  reinterpret_cast<const sockaddr *>(&address),
-					  sizeof(address),
 					  reinterpret_cast<const sockaddr *>(&expected),
-					  sizeof(expected),
-					  kUtpPortRemapWindow,
-					  &remapped) != 0;
+					  sizeof(expected)) != 0;
 			m_remapInProgressSocket = nullptr;
-			if (remapped != 0) {
+			if (claimed) {
 				UpdatePeerEndpoint(candidate.socket, ip, port);
 			}
 		} else {
@@ -319,6 +316,11 @@ private:
 		for (unsigned i = 0; i < 4; ++i) {
 			ip |= static_cast<uint32_t>(bytes[i]) << (8 * i);
 		}
+		uint16_t port = ntohs(address->sin_port);
+		if (s_self != nullptr && s_self->m_remapInProgressSocket == args->socket) {
+			ip = s_self->m_remapObservedIp;
+			port = s_self->m_remapObservedPort;
+		}
 		auto *sink = static_cast<IUtpDatagramSink *>(utp_context_get_userdata(args->context));
 		// From the socket, never the destination: an address can belong to
 		// several clients. A context-level send has no verified peer.
@@ -331,7 +333,7 @@ private:
 				encrypt = transport->CryptParameters(&userHash);
 			}
 		}
-		sink->SendUtpDatagram(args->buf, args->len, ip, ntohs(address->sin_port), encrypt, userHash);
+		sink->SendUtpDatagram(args->buf, args->len, ip, port, encrypt, userHash);
 		return 0;
 	}
 	//! The transport that owns a socket, or null for one we never accepted.
@@ -414,7 +416,6 @@ private:
 			s_self->m_refusedStreams.push_back(std::move(transport));
 			return 0;
 		}
-		s_self->AddRemapCandidate(args->socket, ip, port, s_self->m_nowMs, true, 0, false);
 		return 0;
 	}
 
