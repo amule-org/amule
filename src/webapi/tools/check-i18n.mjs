@@ -11,7 +11,15 @@
 // keys are derived (prefs_field_<category>_<key>) rather than written out --
 // a renamed field with no matching dictionary entry would otherwise render
 // the raw key with no error anywhere.
+// With I18N_BASE set to a commit, also fails on a locale key added since that
+// commit whose value is the English text. New strings go into en.json only:
+// Weblate reads any non-empty value as a translation, so an English copy lands
+// in that language as if it were translated. A value the locale already had
+// in the base is allowed, so a renamed key can carry a kept-English word
+// ("Upload") along. CI sets I18N_BASE on pull requests except Weblate's own,
+// where a value equal to English is a translator's choice.
 // Run: node src/webapi/tools/check-i18n.mjs
+import { execFileSync } from "node:child_process";
 import { readFileSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import assert from "node:assert";
@@ -55,10 +63,24 @@ for (const code of LANGS) {
   assert.ok(code === "en" || files.includes(code + ".json"), "i18n.js LANGS: no " + code + ".json");
 }
 
+const base = process.env.I18N_BASE;
+const git = (...args) => execFileSync("git", args, { cwd: dir, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
+// Asserted up front: a base that was not fetched would otherwise read as
+// "every locale is new" and flag every value that happens to match English.
+if (base) {
+  try { git("cat-file", "-e", base + "^{commit}"); } catch (_) { assert.fail("I18N_BASE " + base + " is not a fetched commit"); }
+}
+const copied = [];
+
 for (const file of files) {
   const code = file.slice(0, -5);
   bcp47(code, file);
   const dict = load(file);
+  let old = {};
+  if (base) {
+    try { old = JSON.parse(git("show", base + ":./" + file)); } catch (_) {} // a locale new since base
+  }
+  const oldValues = new Set(Object.values(old));
   const extra = [];
   for (const [k, v] of Object.entries(dict)) {
     assert.strictEqual(typeof v, "string", file + ": \"" + k + "\" is not a string");
@@ -66,6 +88,7 @@ for (const file of files) {
     const m = k.match(PLURAL);
     const src = k in en ? k : m && m[1] + "_other" in en ? m[1] + "_other" : null;
     if (src === null) { extra.push(k); continue; }
+    if (base && !old[k] && v === en[src] && !oldValues.has(v)) copied.push(file + ": " + k);
     const ph = (s) => m ? placeholders(s).split(",").filter((p) => p !== "{n}").join(",") : placeholders(s);
     assert.strictEqual(ph(v), ph(en[src]),
       file + ": placeholder mismatch in \"" + k + "\"");
@@ -82,6 +105,8 @@ for (const file of files) {
   }
   console.log(file + ": OK (" + Object.keys(dict).length + " keys, " + missing + " untranslated)");
 }
+assert.deepStrictEqual(copied, [], "English text added to locale files; add new strings to en.json only");
+if (base) console.log("locales: OK (no English copies added since " + base + ")");
 
 // --- Preferences field labels resolve -----------------------------------
 // The view derives each label key from the field's category and name, so a
