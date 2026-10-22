@@ -75,9 +75,13 @@ bool HasUploadSlotRoom(const CNetworkAddress &candidate, const Range &uploading,
 	if (!IsMatchable(candidate)) {
 		return true;
 	}
+	// One value for the whole walk, as in the waiting-queue cap.
+	const CNetworkAddress scope = PeerAddressing::RateLimitScope(candidate);
 	unsigned held = 0;
 	for (const auto &peer : uploading) {
-		if (MatchesRateLimitScope(candidate, addressOf(peer)) && ++held >= MaxUploadSlotsPerScope) {
+		const CNetworkAddress &address = addressOf(peer);
+		if (IsMatchable(address) && PeerAddressing::RateLimitScope(address) == scope &&
+			++held >= MaxUploadSlotsPerScope) {
 			return false;
 		}
 	}
