@@ -37,7 +37,9 @@ the standard C library on most GNU systems.
 Without `libayatana-appindicator3` the tray falls back to the legacy
 `GtkStatusIcon` API, which GNOME Shell dropped in 3.26 and wlroots
 compositors don't implement (silently invisible on Fedora / vanilla GNOME /
-Sway). Apt: `libayatana-appindicator3-dev`; RPM:
+Sway). Such builds offer the tray icon only when wxWidgets finds a system
+tray: an X11 tray, or a StatusNotifierItem host when wxWidgets 3.2.12+ is
+built with AppIndicator support. Apt: `libayatana-appindicator3-dev`; RPM:
 `libayatana-appindicator-gtk3-devel`.
 
 ### Linux-only note: glib-2.0 dev headers

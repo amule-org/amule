@@ -50,6 +50,9 @@
 
 #include <memory> // std::unique_ptr (progress dialog lifetime)
 #include <wx/stdpaths.h>
+#ifdef __WXGTK__
+#include <wx/taskbar.h> // wxTaskBarIcon::IsAvailable (legacy tray availability)
+#endif
 #include <wx/utils.h> // wxGetUserHome
 
 // Network-interface enumeration for the "Bind to interface" and "Bind to IP"
@@ -463,16 +466,19 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 			// wxTaskBarIcon maps to NSStatusItem on Mac, NOTIFYICONDATA on Windows,
 			// GtkStatusIcon / libayatana SNI on Linux.
 #if defined(__WXGTK__) && !defined(WITH_LIBAYATANA_APPINDICATOR)
-			// On Linux without libayatana-appindicator3 the only backend wxTaskBarIcon can
-			// fall back to is the legacy GtkStatusIcon API, which GNOME Shell dropped in 3.26
-			// and wlroots-based compositors never implemented -- the tray icon is silently
-			// invisible. Disable the option so users do not enable a feature that does
-			// nothing. CamuleApp::OnInit force-clears UseTrayIcon at startup for the same
-			// reason.
-			FindWindow(IDC_ENABLETRAYICON)->Enable(false);
-			FindWindow(IDC_ENABLETRAYICON)
-				->SetToolTip(_("Tray icon support requires libayatana-appindicator3 at "
-					       "compile time."));
+			// On Linux without libayatana-appindicator3 the tray falls back to wxTaskBarIcon,
+			// which needs a host it can reach: an X11 system tray for GtkStatusIcon, or an SNI
+			// watcher when wx (3.2.12+) is built with AppIndicator support. GNOME Shell and
+			// native Wayland often have neither, and the icon is then silently invisible, so
+			// disable the option rather than let users enable a feature that does nothing.
+			// SanitiseTrayPreferences() force-clears UseTrayIcon at startup for the same reason.
+			if (!wxTaskBarIcon::IsAvailable()) {
+				FindWindow(IDC_ENABLETRAYICON)->Enable(false);
+				FindWindow(IDC_ENABLETRAYICON)
+					->SetToolTip(
+						_("No system tray found. Use a desktop with a system "
+						  "tray, or build aMule with libayatana-appindicator3."));
+			}
 #endif
 
 #ifdef __WXGTK__

@@ -322,7 +322,7 @@ public:
 	/// Forces the tray-dependent preferences off where the tray cannot deliver what they
 	/// promise. Both settings hide the main window and leave the tray icon as the only way
 	/// back, so each has to be switched off wherever that icon will not be there: no SNI
-	/// backend on Linux (the legacy GtkStatusIcon is invisible on modern desktops), a Wayland
+	/// backend and no tray host for wxTaskBarIcon on Linux, a Wayland
 	/// session (no iconify notification to hide on), or the tray icon simply turned off. Called
 	/// by every GUI app before it builds its window -- amuled inherits it harmlessly, having no
 	/// window to hide.

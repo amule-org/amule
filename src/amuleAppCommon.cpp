@@ -46,6 +46,9 @@
 #ifdef __WXGTK__
 #include <stdlib.h> // Needed for getenv (IsWaylandSession)
 #include <string.h> // Needed for strcmp (IsWaylandSession)
+#ifndef AMULE_DAEMON
+#include <wx/taskbar.h> // Needed for wxTaskBarIcon::IsAvailable
+#endif
 #endif
 
 #include "amule.h"                  // Interface declarations.
@@ -216,13 +219,15 @@ bool CamuleAppCommon::IsWaylandSession()
 
 void CamuleAppCommon::SanitiseTrayPreferences()
 {
-#if defined(__WXGTK__) && !defined(WITH_LIBAYATANA_APPINDICATOR)
-	// On Linux without libayatana-appindicator3 the tray icon falls back to the legacy
-	// GtkStatusIcon backend, which GNOME Shell dropped in 3.26 and wlroots compositors never
-	// picked up -- the icon is silently invisible. Force the pref off so users do not end up
-	// with the window hidden via HideOnClose and no surface to bring it back; the sanity check
-	// below cascades MinToTray off too.
-	thePrefs::SetUseTrayIcon(false);
+#if defined(__WXGTK__) && !defined(WITH_LIBAYATANA_APPINDICATOR) && !defined(AMULE_DAEMON)
+	// On Linux without libayatana-appindicator3 the tray icon falls back to wxTaskBarIcon: an
+	// X11 system tray for GtkStatusIcon, or an SNI watcher when wx (3.2.12+) is built with
+	// AppIndicator support. Without that host the icon is silently invisible. Force the pref
+	// off there so users do not end up with the window hidden via HideOnClose and no surface
+	// to bring it back; the sanity check below cascades MinToTray off too.
+	if (!wxTaskBarIcon::IsAvailable()) {
+		thePrefs::SetUseTrayIcon(false);
+	}
 #endif
 
 #ifdef __WXGTK__

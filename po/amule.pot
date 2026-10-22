@@ -6680,7 +6680,7 @@ msgid ""
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
-msgid "Tray icon support requires libayatana-appindicator3 at compile time."
+msgid "No system tray found. Use a desktop with a system tray, or build aMule with libayatana-appindicator3."
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
