@@ -1928,6 +1928,15 @@ bool CClientTCPSocket::ProcessExtPacket(const uint8_t *buffer, uint32 size, uint
 		if (!Kademlia::CKademlia::IsRunning()) {
 			break;
 		}
+		// Layout is buddy check ID (16) + file ID (16) + IP (4) + TCP port (2).
+		// Reject short packets here instead of failing half-way through the
+		// parse, which would drop the whole connection.
+		if (size < 38) {
+			AddDebugLogLineN(logRemoteClient,
+				CFormat("Remote Client: rejected short OP_CALLBACK (%u bytes) from %s") %
+					size % m_client->GetFullIP());
+			break;
+		}
 		CMemFile data(buffer, size);
 		CUInt128 check = data.ReadUInt128();
 		uint8_t receivedBytes[16];
@@ -2008,6 +2017,15 @@ bool CClientTCPSocket::ProcessExtPacket(const uint8_t *buffer, uint32 size, uint
 		}
 		AddDebugLogLineN(
 			logRemoteClient, "Remote Client: OP_REASKCALLBACKTCP from " + m_client->GetFullIP());
+		// Layout is destination IP (4) + TCP port (2) + file hash (16). Reject
+		// short packets here instead of failing half-way through the parse,
+		// which would drop the whole connection.
+		if (size < 22) {
+			AddDebugLogLineN(logRemoteClient,
+				CFormat("Remote Client: rejected short OP_REASKCALLBACKTCP (%u bytes) from %s") %
+					size % m_client->GetFullIP());
+			break;
+		}
 		CMemFile data_in(buffer, size);
 		uint32 destip = data_in.ReadUInt32();
 		if (destip == 0xFFFFFFFF) {
