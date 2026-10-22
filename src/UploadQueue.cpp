@@ -121,6 +121,8 @@ void CUploadQueue::SortGetBestClient(CClientRef *bestClient)
 	// clients as enabled for upload.
 	uint16 rank = 1;
 	bool bestClientFound = false;
+	// The first client its scope cap holds back that could take a slot now.
+	CClientRefList::iterator overCap = m_waitinglist.end();
 	for (it = m_waitinglist.begin(); it != m_waitinglist.end();) {
 		CClientRefList::iterator it2 = it++;
 		CUpDownClient *cur_client = it2->GetClient();
@@ -129,17 +131,14 @@ void CUploadQueue::SortGetBestClient(CClientRef *bestClient)
 			// There's a better high id client
 			cur_client->m_bAddNextConnect = false;
 		} else {
+			const bool waitsForConnect = cur_client->HasLowID() && !cur_client->IsConnected() &&
+						     !cur_client->IsCallableIPv6Contact();
 			if (!HasUploadSlotRoom(cur_client)) {
-				// Keeps its place in the queue until its scope frees a slot
 				cur_client->m_bAddNextConnect = false;
-				if (bestClient) {
-					AddDebugLogLineN(logLocalClient,
-						"Skipped upload slot for " + cur_client->GetFullIP() +
-							": its accounting scope holds the maximum number of "
-							"slots");
+				if (!waitsForConnect && overCap == m_waitinglist.end()) {
+					overCap = it2;
 				}
-			} else if (cur_client->HasLowID() && !cur_client->IsConnected() &&
-				   !cur_client->IsCallableIPv6Contact()) {
+			} else if (waitsForConnect) {
 				// No better high id client, so start upload to this one once it connects
 				cur_client->m_bAddNextConnect = true;
 			} else {
@@ -148,6 +147,13 @@ void CUploadQueue::SortGetBestClient(CClientRef *bestClient)
 				bestClientFound = true;
 				cur_client->m_bAddNextConnect = false;
 				if (bestClient) {
+					if (overCap != m_waitinglist.end()) {
+						AddDebugLogLineN(logLocalClient,
+							"Skipped upload slot for " +
+								overCap->GetClient()->GetFullIP() +
+								": its accounting scope holds the maximum "
+								"number of slots");
+					}
 					bestClient->Link(cur_client CLIENT_DEBUGSTRING(
 						"CUploadQueue::SortGetBestClient"));
 					RemoveFromWaitingQueue(it2);
@@ -156,6 +162,22 @@ void CUploadQueue::SortGetBestClient(CClientRef *bestClient)
 				}
 			}
 		}
+	}
+
+	// A soft cap. A slot is free whenever bestClient is asked for, so with nobody else able to
+	// take it, a capped client gets spare capacity only. Once others wait, slots fill, kicking
+	// resumes, and rotation brings the scope back under its cap.
+	if (bestClient && !bestClientFound && overCap != m_waitinglist.end()) {
+		for (it = std::next(overCap); it != m_waitinglist.end(); ++it) {
+			it->GetClient()->SetUploadQueueWaitingPosition(
+				it->GetClient()->GetUploadQueueWaitingPosition() - 1);
+		}
+		AddDebugLogLineN(logLocalClient,
+			"Spare upload slot over the scope cap for " + overCap->GetClient()->GetFullIP());
+		bestClient->Link(overCap->GetClient() CLIENT_DEBUGSTRING("CUploadQueue::SortGetBestClient"));
+		RemoveFromWaitingQueue(overCap);
+		rank--;
+		lastupslotHighID = true;
 	}
 
 #ifdef __DEBUG__
@@ -587,8 +609,7 @@ void CUploadQueue::AddClientToQueue(CUpDownClient *client)
 	client->ClearWaitStartTime();
 	// if possible start upload right away
 	if (m_waitinglist.empty() && tick - m_nLastStartUpload >= 1000 &&
-		m_uploadinglist.size() < GetMaxSlots() && !theApp->listensocket->TooManySockets() &&
-		HasUploadSlotRoom(client)) {
+		m_uploadinglist.size() < GetMaxSlots() && !theApp->listensocket->TooManySockets()) {
 		AddUpNextClient(client);
 		m_nLastStartUpload = tick;
 	} else {
