@@ -221,6 +221,8 @@ public:
 	void LaunchUrl(const wxString &url);
 
 	void CreateSystray();
+	// Turns the tray icon off for a preference change; RemoveSystray() is for shutdown.
+	void HideSystray();
 	void RemoveSystray();
 
 	/**
@@ -325,6 +327,8 @@ private:
 	wxToolBar *m_wndToolbar;
 	wxTimer *gui_timer;
 	CMuleTrayIcon *m_wndTaskbarNotifier;
+	// Kept by HideSystray() for CreateSystray() to show again; see HideSystray().
+	CMuleTrayIcon *m_hiddenTaskbarNotifier;
 	DialogType m_nActiveDialog;
 	bool m_is_safe_state;
 	bool m_BlinkMessages;

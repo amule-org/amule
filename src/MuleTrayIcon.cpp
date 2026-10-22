@@ -361,6 +361,14 @@ CMuleTrayIcon::~CMuleTrayIcon()
 	// m_menu is owned by the indicator (set_menu took the floating ref).
 }
 
+void CMuleTrayIcon::SetVisible(bool visible)
+{
+	if (m_indicator) {
+		app_indicator_set_status(
+			m_indicator, visible ? APP_INDICATOR_STATUS_ACTIVE : APP_INDICATOR_STATUS_PASSIVE);
+	}
+}
+
 void CMuleTrayIcon::SetTrayIcon(int Icon, uint32 /*percent*/)
 {
 	// SNI has no per-frame icon overlays, so the legacy backend's percent bar is dropped here.
@@ -642,6 +650,7 @@ CMuleTrayIcon::CMuleTrayIcon()
 {
 	Old_Icon = -1;
 	Old_SpeedSize = 0xFFFF; // must be > any possible one.
+	m_visible = true;
 }
 
 CMuleTrayIcon::~CMuleTrayIcon() {}
@@ -718,14 +727,36 @@ void CMuleTrayIcon::SetTrayIcon(int Icon, uint32 percent)
 
 void CMuleTrayIcon::SetTrayToolTip(const wxString &Tip)
 {
+	// Called on every rate update. wx's AppIndicator backend shows no tooltip, yet each of its
+	// SetIcon() calls writes a new icon file and re-registers the indicator with the host.
+	if (Tip == CurrentTip) {
+		return;
+	}
 	CurrentTip = Tip;
+#if !(defined(wxUSE_APPINDICATOR) && wxUSE_APPINDICATOR)
 	UpdateTray();
+#endif
 }
 
 // Private functions
 
+void CMuleTrayIcon::SetVisible(bool visible)
+{
+	m_visible = visible;
+	if (visible) {
+		Old_Icon = -1; // RemoveIcon() dropped the icon SetTrayIcon() remembers.
+	} else {
+		// With wx's AppIndicator backend this only sets the indicator passive.
+		RemoveIcon();
+	}
+}
+
 void CMuleTrayIcon::UpdateTray()
 {
+	// A deferred RebuildMenu() must not bring back a hidden icon.
+	if (!m_visible) {
+		return;
+	}
 #ifndef __WXCOCOA__
 	if (IsOk())
 #endif

@@ -2006,7 +2006,7 @@ void PrefsUnifiedDlg::OnCheckBoxChange(wxCommandEvent &event)
 		if (value) {
 			theApp->amuledlg->CreateSystray();
 		} else {
-			theApp->amuledlg->RemoveSystray();
+			theApp->amuledlg->HideSystray();
 		}
 		thePrefs::SetUseTrayIcon(value);
 		break;

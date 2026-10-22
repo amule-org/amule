@@ -178,6 +178,7 @@ CamuleDlg::CamuleDlg(wxWindow *pParent, const wxString &title, wxPoint where, wx
 , m_prefsVisible(false)
 , m_wndToolbar(NULL)
 , m_wndTaskbarNotifier(NULL)
+, m_hiddenTaskbarNotifier(nullptr)
 , m_nActiveDialog(DT_NETWORKS_WND)
 , m_is_safe_state(false)
 , m_BlinkMessages(false)
@@ -561,9 +562,32 @@ void CamuleDlg::CreateSystray()
 {
 	wxCHECK_RET(m_wndTaskbarNotifier == NULL, "Systray already created");
 
-	m_wndTaskbarNotifier = new CMuleTrayIcon();
+	if (m_hiddenTaskbarNotifier) {
+		m_wndTaskbarNotifier = m_hiddenTaskbarNotifier;
+		m_hiddenTaskbarNotifier = nullptr;
+		m_wndTaskbarNotifier->SetVisible(true);
+	} else {
+		m_wndTaskbarNotifier = new CMuleTrayIcon();
+	}
 	// This will effectively show the Tray Icon.
 	UpdateTrayIcon(0);
+}
+
+void CamuleDlg::HideSystray()
+{
+#ifdef __WXGTK__
+	// SNI hosts key an item by bus name and object path, and a new indicator in this process
+	// gets both back. GNOME's AppIndicator extension then resets the stale item instead of
+	// showing the new one, so a re-enabled icon stayed away until a restart. Hide the
+	// indicator and keep it instead.
+	if (m_wndTaskbarNotifier) {
+		m_wndTaskbarNotifier->SetVisible(false);
+		m_hiddenTaskbarNotifier = m_wndTaskbarNotifier;
+		m_wndTaskbarNotifier = nullptr;
+	}
+#else
+	RemoveSystray();
+#endif
 }
 
 void CamuleDlg::RemoveSystray()
@@ -584,9 +608,14 @@ void CamuleDlg::RemoveSystray()
 	// each click is a separate event, so the pending deletion has run by the time
 	// CreateSystray() looks.
 	CMuleTrayIcon *icon = m_wndTaskbarNotifier;
+	CMuleTrayIcon *hidden = m_hiddenTaskbarNotifier;
 	m_wndTaskbarNotifier = NULL;
-	if (icon) {
-		CallAfter([icon] { delete icon; });
+	m_hiddenTaskbarNotifier = nullptr;
+	if (icon || hidden) {
+		CallAfter([icon, hidden] {
+			delete icon;
+			delete hidden;
+		});
 	}
 }
 

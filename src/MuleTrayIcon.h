@@ -99,6 +99,12 @@ public:
 	 */
 	void SetTrayToolTip(const wxString &Tip);
 
+	/**
+	 * Hides or shows the icon while keeping it, see CamuleDlg::HideSystray(). After showing,
+	 * the next SetTrayIcon() sets the icon again.
+	 */
+	void SetVisible(bool visible);
+
 	// Action handlers -- invoked by the GTK menu (Ayatana backend) or by
 	// the wxMenu event table (wxTaskBarIcon backend).
 	void DoConnectDisconnect();
@@ -138,6 +144,7 @@ private:
 
 	int Old_Icon;
 	int Old_SpeedSize;
+	bool m_visible;
 
 	// The unmodified artwork for each state, indexed by TRAY_ICON_*, loaded once. SetTrayIcon()
 	// composes the speed bar onto a copy of one of these rather than onto the icon it drew last
