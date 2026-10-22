@@ -525,8 +525,20 @@ CAICHHashSet::~CAICHHashSet(void)
 bool CAICHHashSet::CreatePartRecoveryData(uint64 nPartStartPos, CFileDataIO *fileDataOut, bool bDbgDontLoad)
 {
 	wxASSERT(m_pOwner);
+	if (m_pOwner == NULL) {
+		return false;
+	}
 	if (m_pOwner->IsPartFile() || m_eStatus != AICH_HASHSETCOMPLETE) {
 		wxFAIL;
+		return false;
+	}
+	// A recovery request for a position at or past the end of the file cannot
+	// be answered; without this guard the size computation below underflows and
+	// the tree is asked for a range that does not exist.
+	if (nPartStartPos >= m_pOwner->GetFileSize()) {
+		AddDebugLogLineN(logSHAHashSet,
+			CFormat("Created RecoveryData error: part start %llu is past end of file '%s'") %
+				nPartStartPos % m_pOwner->GetFileName());
 		return false;
 	}
 	if (m_pHashTree.m_nDataSize <= EMBLOCKSIZE) {
