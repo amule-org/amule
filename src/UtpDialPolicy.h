@@ -217,6 +217,11 @@ inline std::optional<SUtpEndpoint> MakeLocalUtpEndpoint(
 	return MakeUtpEndpointFromNetworkOrder(publicIp, bestUdpPort);
 }
 
+inline bool CanInstallUtpPortTranslation(bool observedEndpointMapped, bool expectedEndpointMapped)
+{
+	return !observedEndpointMapped && !expectedEndpointMapped;
+}
+
 enum class EUtpSimultaneousOpenDecision
 {
 	KeepOutgoing,

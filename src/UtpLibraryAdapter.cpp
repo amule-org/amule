@@ -38,6 +38,8 @@ namespace
 class CUtpLibraryAdapter final : public IUtpLibrary, public IUtpSocketOperations
 {
 public:
+	using Endpoint = std::pair<uint32_t, uint16_t>;
+
 	~CUtpLibraryAdapter() override { Destroy(); }
 
 	// -- IUtpSocketOperations, the four per-socket libutp calls ---------
@@ -175,6 +177,9 @@ public:
 		// libutp never told us about, and its endpoint is dead either way.
 		m_endpoints.clear();
 		m_remapCandidates.clear();
+		m_remapInputs.clear();
+		m_remapOutputs.clear();
+		m_socketRemaps.clear();
 		m_context = nullptr;
 		m_acceptor = nullptr;
 		if (s_self == this) {
@@ -192,33 +197,42 @@ public:
 		std::uint64_t nowMs) override
 	{
 		m_nowMs = nowMs;
-		const sockaddr_in address = MakeAddress(ip, port);
-		const auto candidateIndex =
-			FindUniqueUtpPortRemapCandidate(m_remapCandidates, ip, port, nowMs);
-		bool claimed = false;
-		if (candidateIndex.has_value()) {
-			const SPendingHandshake candidate = m_remapCandidates[*candidateIndex];
-			const sockaddr_in expected = MakeAddress(candidate.ip, candidate.port);
-			// libutp still sees the original handshake tuple. During this call only,
-			// SendTo redirects this socket's response to the observed NAT mapping.
-			m_remapInProgressSocket = candidate.socket;
-			m_remapObservedIp = ip;
-			m_remapObservedPort = port;
-			claimed = utp_process_udp(m_context,
-					  payload,
-					  length,
-					  reinterpret_cast<const sockaddr *>(&expected),
-					  sizeof(expected)) != 0;
-			m_remapInProgressSocket = nullptr;
-			if (claimed) {
-				UpdatePeerEndpoint(candidate.socket, ip, port);
-			}
+		const Endpoint observed{ ip, port };
+		Endpoint expected = observed;
+		utp_socket *remappedSocket = nullptr;
+		const auto translation = m_remapInputs.find(observed);
+		if (translation != m_remapInputs.end()) {
+			expected = translation->second;
 		} else {
-			claimed = utp_process_udp(m_context,
-					  payload,
-					  length,
-					  reinterpret_cast<const sockaddr *>(&address),
-					  sizeof(address)) != 0;
+			const auto candidateIndex =
+				FindUniqueUtpPortRemapCandidate(m_remapCandidates, ip, port, nowMs);
+			if (candidateIndex.has_value()) {
+				const SPendingHandshake &candidate = m_remapCandidates[*candidateIndex];
+				const Endpoint candidateExpected{ candidate.ip, candidate.port };
+				// A second socket must never overwrite a live endpoint translation:
+				// libutp has no socket in UTP_SENDTO, so ambiguity must fail closed.
+				if (CanInstallPortRemap(candidate.socket, candidateExpected, observed)) {
+					expected = candidateExpected;
+					remappedSocket = candidate.socket;
+					// libutp keys the socket by its original tuple. Install a provisional
+					// destination-keyed translation so its immediate response reaches the
+					// observed NAT mapping even though UTP_SENDTO has no socket argument.
+					InstallPortRemap(remappedSocket, expected, observed);
+				}
+			}
+		}
+		const sockaddr_in address = MakeAddress(expected.first, expected.second);
+		const bool claimed = utp_process_udp(m_context,
+					     payload,
+					     length,
+					     reinterpret_cast<const sockaddr *>(&address),
+					     sizeof(address)) != 0;
+		if (remappedSocket != nullptr) {
+			if (claimed) {
+				UpdatePeerEndpoint(remappedSocket, ip, port);
+			} else {
+				RemovePortRemap(remappedSocket);
+			}
 		}
 		// Not inside UTP_ON_ACCEPT: utp_close() can produce DESTROYING before
 		// it returns, re-entering the callback that is still deciding.
@@ -282,11 +296,37 @@ private:
 			m_remapCandidates.end());
 	}
 
-	void UpdatePeerDuringRemapCallback(utp_socket *socket)
+	bool CanInstallPortRemap(utp_socket *socket, const Endpoint &expected, const Endpoint &observed) const
 	{
-		if (m_remapInProgressSocket == socket) {
-			UpdatePeerEndpoint(socket, m_remapObservedIp, m_remapObservedPort);
+		const auto input = m_remapInputs.find(observed);
+		const auto output = m_remapOutputs.find(expected);
+		return CanInstallUtpPortTranslation(
+			       input != m_remapInputs.end(), output != m_remapOutputs.end()) &&
+		       m_socketRemaps.find(socket) == m_socketRemaps.end();
+	}
+
+	void InstallPortRemap(utp_socket *socket, const Endpoint &expected, const Endpoint &observed)
+	{
+		m_remapInputs.emplace(observed, expected);
+		m_remapOutputs.emplace(expected, observed);
+		m_socketRemaps.emplace(socket, std::make_pair(expected, observed));
+	}
+
+	void RemovePortRemap(utp_socket *socket)
+	{
+		const auto found = m_socketRemaps.find(socket);
+		if (found == m_socketRemaps.end()) {
+			return;
 		}
+		const auto input = m_remapInputs.find(found->second.second);
+		if (input != m_remapInputs.end() && input->second == found->second.first) {
+			m_remapInputs.erase(input);
+		}
+		const auto output = m_remapOutputs.find(found->second.first);
+		if (output != m_remapOutputs.end() && output->second == found->second.second) {
+			m_remapOutputs.erase(output);
+		}
+		m_socketRemaps.erase(found);
 	}
 
 	void UpdatePeerEndpoint(utp_socket *socket, uint32_t ip, uint16_t port)
@@ -317,9 +357,12 @@ private:
 			ip |= static_cast<uint32_t>(bytes[i]) << (8 * i);
 		}
 		uint16_t port = ntohs(address->sin_port);
-		if (s_self != nullptr && s_self->m_remapInProgressSocket == args->socket) {
-			ip = s_self->m_remapObservedIp;
-			port = s_self->m_remapObservedPort;
+		if (s_self != nullptr) {
+			const auto translation = s_self->m_remapOutputs.find({ ip, port });
+			if (translation != s_self->m_remapOutputs.end()) {
+				ip = translation->second.first;
+				port = translation->second.second;
+			}
 		}
 		auto *sink = static_cast<IUtpDatagramSink *>(utp_context_get_userdata(args->context));
 		// From the socket, never the destination: an address can belong to
@@ -427,7 +470,6 @@ private:
 			s_self->Forget(args->socket);
 		}
 		if (args->state == UTP_STATE_CONNECT && s_self != nullptr) {
-			s_self->UpdatePeerDuringRemapCallback(args->socket);
 			s_self->RemoveRemapCandidate(args->socket);
 		}
 		CUtpSocketTransport *transport = TransportOf(args->socket);
@@ -491,7 +533,6 @@ private:
 	static uint64 OnRead(utp_callback_arguments *args)
 	{
 		if (s_self != nullptr) {
-			s_self->UpdatePeerDuringRemapCallback(args->socket);
 			s_self->RemoveRemapCandidate(args->socket);
 		}
 		CUtpSocketTransport *transport = TransportOf(args->socket);
@@ -526,6 +567,7 @@ private:
 	void Forget(utp_socket *socket)
 	{
 		RemoveRemapCandidate(socket);
+		RemovePortRemap(socket);
 		const auto found = m_endpoints.find(socket);
 		if (found == m_endpoints.end()) {
 			return;
@@ -541,10 +583,15 @@ private:
 	// socket is destroyed rather than until its userdata is cleared.
 	std::map<utp_socket *, std::pair<uint32_t, uint16_t>> m_endpoints;
 	std::vector<SPendingHandshake> m_remapCandidates;
+	// Client UDP ingress, libutp callbacks, and TickUtp all run on the main
+	// thread. libutp itself is not thread-safe, so these maps share that
+	// confinement rather than adding a lock around only adapter bookkeeping.
+	// libutp keeps its socket hash under the original tuple, while the NAT
+	// now uses the observed one. Keep both translations until DESTROYING.
+	std::map<Endpoint, Endpoint> m_remapInputs;
+	std::map<Endpoint, Endpoint> m_remapOutputs;
+	std::map<utp_socket *, std::pair<Endpoint, Endpoint>> m_socketRemaps;
 	std::uint64_t m_nowMs = 0;
-	utp_socket *m_remapInProgressSocket = nullptr;
-	uint32_t m_remapObservedIp = 0;
-	uint16_t m_remapObservedPort = 0;
 	// Sockets refused before a transport existed, closed once libutp has
 	// finished with the datagram.
 	std::vector<utp_socket *> m_refused;

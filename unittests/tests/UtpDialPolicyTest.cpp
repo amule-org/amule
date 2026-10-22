@@ -112,6 +112,14 @@ TEST(UtpDialPolicy, LocalEndpointUsesBestAvailableUdpPort)
 	ASSERT_FALSE(MakeLocalUtpEndpoint(0, 4777, 4662, 4661).has_value());
 }
 
+TEST(UtpDialPolicy, TranslationRefusesEndpointCollisions)
+{
+	ASSERT_TRUE(CanInstallUtpPortTranslation(false, false));
+	ASSERT_FALSE(CanInstallUtpPortTranslation(true, false));
+	ASSERT_FALSE(CanInstallUtpPortTranslation(false, true));
+	ASSERT_FALSE(CanInstallUtpPortTranslation(true, true));
+}
+
 TEST(UtpDialPolicy, HelloAttachmentHonorsOnlyTheVerifiedSynWinnerToken)
 {
 	const uint8_t localHash[16] = { 0 };

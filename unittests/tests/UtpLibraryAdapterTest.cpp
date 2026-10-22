@@ -70,16 +70,26 @@ class CServerSink : public IUtpDatagramSink
 public:
 	void SendUtpDatagram(const uint8_t *payload,
 		size_t length,
-		uint32_t,
-		uint16_t,
+		uint32_t ip,
+		uint16_t port,
 		bool encrypt,
 		const uint8_t *) override
 	{
+		lastIp = ip;
+		lastPort = port;
 		lastEncrypt = encrypt;
 		++datagrams;
-		g_loop->toClient.emplace_back(payload, payload + length);
+		if (!dropOldPort || port == g_loop->clientSourcePort) {
+			g_loop->toClient.emplace_back(payload, payload + length);
+		} else {
+			++droppedOldPortDatagrams;
+		}
 	}
+	uint32_t lastIp = 0;
+	uint16_t lastPort = 0;
+	bool dropOldPort = false;
 	bool lastEncrypt = false;
+	unsigned droppedOldPortDatagrams = 0;
 	unsigned datagrams = 0;
 };
 
@@ -378,6 +388,35 @@ TEST(UtpLibraryAdapter, IncomingSynWinnerFlowsThroughVerifiedHelloAttachmentSeam
 	Teardown(loop);
 }
 
+TEST(UtpLibraryAdapter, LoopbackSinkDropsPacketsAddressedToOldPeerPort)
+{
+	SLoopback loop;
+	g_loop = &loop;
+	loop.clientSourcePort = kPeerPort + kUtpPortRemapWindow;
+	CServerSink sink;
+	sink.dropOldPort = true;
+	const uint8_t payload = 0x5A;
+	sink.SendUtpDatagram(&payload, 1, kPeerIp, kPeerPort, false, nullptr);
+	ASSERT_EQUALS(1, (int)sink.droppedOldPortDatagrams);
+	ASSERT_TRUE(loop.toClient.empty());
+	Teardown(loop);
+}
+
+TEST(UtpLibraryAdapter, OutboundDialSendsItsSynToTheRequestedEndpoint)
+{
+	SLoopback loop;
+	g_loop = &loop;
+	CServerSink sink;
+	loop.server = CreateUtpLibrary();
+	ASSERT_TRUE(loop.server->Create(sink));
+
+	std::unique_ptr<IStreamTransport> transport;
+	ASSERT_TRUE(loop.server->Dial(kPeerIp, kPeerPort, false, nullptr, transport));
+	ASSERT_EQUALS(kPeerIp, sink.lastIp);
+	ASSERT_EQUALS((int)kPeerPort, (int)sink.lastPort);
+	Teardown(loop);
+}
+
 TEST(UtpLibraryAdapter, OutboundHandshakeRemapsOneExpectedPeerToItsObservedPort)
 {
 	SLoopback loop;
@@ -398,6 +437,26 @@ TEST(UtpLibraryAdapter, OutboundHandshakeRemapsOneExpectedPeerToItsObservedPort)
 	ASSERT_TRUE(loop.server->HasRegisteredPeer(kPeerIp, kPeerPort + kUtpPortRemapWindow));
 	ASSERT_FALSE(loop.server->HasRegisteredPeer(kPeerIp, kPeerPort));
 	ASSERT_EQUALS((int)(kPeerPort + kUtpPortRemapWindow), (int)transport->GetPeerPort());
+
+	const uint8_t payload = 0xA5;
+	sink.dropOldPort = true;
+	ASSERT_EQUALS(1, (int)transport->Write(&payload, 1));
+	transport->Flush();
+	Pump(loop);
+	ASSERT_EQUALS(0, (int)sink.droppedOldPortDatagrams);
+	ASSERT_TRUE(!loop.clientRead.empty());
+	ASSERT_EQUALS((int)payload, (int)loop.clientRead.back());
+
+	utp_iovec vector{ const_cast<uint8_t *>(&payload), 1 };
+	ASSERT_EQUALS(1, (int)utp_writev(loop.clientSocket, &vector, 1));
+	std::vector<uint8_t> received(1024);
+	uint32_t receivedBytes = 0;
+	for (int round = 0; round < 64 && receivedBytes == 0; ++round) {
+		Pump(loop);
+		receivedBytes = transport->Read(received.data(), static_cast<uint32_t>(received.size()));
+	}
+	ASSERT_EQUALS(1, (int)receivedBytes);
+	ASSERT_EQUALS((int)payload, (int)received[0]);
 	Teardown(loop);
 }
 
