@@ -1043,11 +1043,5 @@
   "downloads_confirm_delete_selected_one": "Apagar do disco o arquivo selecionado? Arquivos completos serão apagados permanentemente; downloads ativos serão cancelados e removidos. Isto não pode ser desfeito.",
   "downloads_confirm_delete_selected_many": "Apagar do disco os {n} arquivos selecionados? Arquivos completos serão apagados permanentemente; downloads ativos serão cancelados e removidos. Isto não pode ser desfeito.",
   "downloads_confirm_delete_selected_other": "Apagar do disco os {n} arquivos selecionados? Arquivos completos serão apagados permanentemente; downloads ativos serão cancelados e removidos. Isto não pode ser desfeito.",
-  "prefs_field_servers_update_urls": "Server list source URLs (one per line)",
-  "prefs_field_servers_update_list": "Update server list",
-  "prefs_field_files_shared_file_reverify_days": "Verificar dados locais dos arquivos compartilhados solicitados a cada N dias (0 = desativado)",
-  "prefs_sources_apply_first": "Apply your changes first",
-  "prefs_sources_saved_help": "Downloads from the saved sources.",
-  "prefs_sources_one_off": "One-off URL",
-  "prefs_sources_download_once": "Download once"
+  "prefs_field_files_shared_file_reverify_days": "Verificar dados locais dos arquivos compartilhados solicitados a cada N dias (0 = desativado)"
 }

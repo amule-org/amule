@@ -18,11 +18,5 @@
   "common_cancel": "取消",
   "app_language": "语言",
   "common_err_unauthorized": "未授权。",
-  "common_yes": "是",
-  "prefs_field_servers_update_urls": "Server list source URLs (one per line)",
-  "prefs_field_servers_update_list": "Update server list",
-  "prefs_sources_apply_first": "Apply your changes first",
-  "prefs_sources_saved_help": "Downloads from the saved sources.",
-  "prefs_sources_one_off": "One-off URL",
-  "prefs_sources_download_once": "Download once"
+  "common_yes": "是"
 }

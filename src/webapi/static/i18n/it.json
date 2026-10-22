@@ -1043,11 +1043,5 @@
   "downloads_confirm_delete_selected_one": "Eliminare dal disco il file selezionato? I file completati verranno eliminati definitivamente; i download attivi verranno annullati e rimossi. L'operazione non può essere annullata.",
   "downloads_confirm_delete_selected_many": "Eliminare dal disco i {n} file selezionati? I file completati verranno eliminati definitivamente; i download attivi verranno annullati e rimossi. L'operazione non può essere annullata.",
   "downloads_confirm_delete_selected_other": "Eliminare dal disco i {n} file selezionati? I file completati verranno eliminati definitivamente; i download attivi verranno annullati e rimossi. L'operazione non può essere annullata.",
-  "prefs_field_files_shared_file_reverify_days": "Verifica i dati locali dei file condivisi richiesti ogni N giorni (0 = disattivato)",
-  "prefs_field_servers_update_urls": "Server list source URLs (one per line)",
-  "prefs_field_servers_update_list": "Update server list",
-  "prefs_sources_apply_first": "Apply your changes first",
-  "prefs_sources_saved_help": "Downloads from the saved sources.",
-  "prefs_sources_one_off": "One-off URL",
-  "prefs_sources_download_once": "Download once"
+  "prefs_field_files_shared_file_reverify_days": "Verifica i dati locali dei file condivisi richiesti ogni N giorni (0 = disattivato)"
 }

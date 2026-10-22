@@ -1,11 +1,5 @@
 {
   "common_network_error": "Erreur réseau : {message}",
   "common_err_bad_request": "Demande invalide : {message}",
-  "common_err_unauthorized": "Non autorisé.",
-  "prefs_field_servers_update_urls": "Server list source URLs (one per line)",
-  "prefs_field_servers_update_list": "Update server list",
-  "prefs_sources_apply_first": "Apply your changes first",
-  "prefs_sources_saved_help": "Downloads from the saved sources.",
-  "prefs_sources_one_off": "One-off URL",
-  "prefs_sources_download_once": "Download once"
+  "common_err_unauthorized": "Non autorisé."
 }

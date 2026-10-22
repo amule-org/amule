@@ -1043,11 +1043,5 @@
   "downloads_confirm_delete_selected_one": "Voleu esborrar del disc el fitxer seleccionat? Els fitxers completats s'esborraran permanentment; les baixades actives es cancel·laran i s'eliminaran. Això no es pot desfer.",
   "downloads_confirm_delete_selected_many": "Voleu esborrar del disc els {n} fitxers seleccionats? Els fitxers completats s'esborraran permanentment; les baixades actives es cancel·laran i s'eliminaran. Això no es pot desfer.",
   "downloads_confirm_delete_selected_other": "Voleu esborrar del disc els {n} fitxers seleccionats? Els fitxers completats s'esborraran permanentment; les baixades actives es cancel·laran i s'eliminaran. Això no es pot desfer.",
-  "prefs_field_servers_update_urls": "Server list source URLs (one per line)",
-  "prefs_field_servers_update_list": "Update server list",
-  "prefs_field_files_shared_file_reverify_days": "Verifica les dades locals dels fitxers compartits sol·licitats cada N dies (0 = desactivat)",
-  "prefs_sources_apply_first": "Apply your changes first",
-  "prefs_sources_saved_help": "Downloads from the saved sources.",
-  "prefs_sources_one_off": "One-off URL",
-  "prefs_sources_download_once": "Download once"
+  "prefs_field_files_shared_file_reverify_days": "Verifica les dades locals dels fitxers compartits sol·licitats cada N dies (0 = desactivat)"
 }

@@ -1027,17 +1027,11 @@
   "stats_tree_upload_avg_time": "Gemiddelde uploadtijd: %s",
   "downloads_files_count_one": "{n} bestand",
   "downloads_files_count_other": "{n} bestanden",
-  "prefs_field_servers_update_urls": "Server list source URLs (one per line)",
-  "prefs_field_servers_update_list": "Update server list",
   "shared_delete_incomplete": "Dit bestand wordt nog gedownload. Annuleer dit vanuit Downloads.",
   "downloads_confirm_delete_disk": "Verwijder “{name}” permanent van de schijf?\n\nMap: {directory}\n\nHet bestand zal niet meer worden gedeeld. Dit kan niet ongedaan worden gemaakt.",
   "downloads_delete_disk": "Verwijderen van schijf",
   "downloads_delete_more": "... en nog {n}",
   "downloads_confirm_delete_selected_one": "Verwijder het geselecteerde bestand van de schijf? Voltooide bestanden zullen permanent verwijderd worden, actieve downloads worden geannuleerd en verwijderd. Dit kan niet ongedaan worden gemaakt.",
   "downloads_confirm_delete_selected_other": "Verwijder de {n} geselecteerde bestanden van de schijf? Voltooide bestanden zullen permanent verwijderd worden, actieve downloads worden geannuleerd en verwijderd. Dit kan niet ongedaan worden gemaakt.",
-  "prefs_field_files_shared_file_reverify_days": "Verifiëer Lokale Gegevens van aangevraagde gedeelde bestanden elke N dagen (0 = uitgeschakeld)",
-  "prefs_sources_apply_first": "Apply your changes first",
-  "prefs_sources_saved_help": "Downloads from the saved sources.",
-  "prefs_sources_one_off": "One-off URL",
-  "prefs_sources_download_once": "Download once"
+  "prefs_field_files_shared_file_reverify_days": "Verifiëer Lokale Gegevens van aangevraagde gedeelde bestanden elke N dagen (0 = uitgeschakeld)"
 }

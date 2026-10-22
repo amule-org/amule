@@ -1041,11 +1041,5 @@
   "messages_captcha_passed": "CAPTCHA superado. Tu mensaje se ha entregado.",
   "messages_captcha_retry": "CAPTCHA fallido. Envía otro mensaje para volver a intentarlo.",
   "messages_captcha_exhausted": "CAPTCHA fallido. No quedan más intentos.",
-  "messages_captcha_image": "CAPTCHA del chat",
-  "prefs_field_servers_update_urls": "Server list source URLs (one per line)",
-  "prefs_field_servers_update_list": "Update server list",
-  "prefs_sources_apply_first": "Apply your changes first",
-  "prefs_sources_saved_help": "Downloads from the saved sources.",
-  "prefs_sources_one_off": "One-off URL",
-  "prefs_sources_download_once": "Download once"
+  "messages_captcha_image": "CAPTCHA del chat"
 }
