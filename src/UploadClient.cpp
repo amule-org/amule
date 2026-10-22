@@ -30,6 +30,8 @@
 
 #include <zlib.h>
 
+#include <memory> // Needed for std::unique_ptr
+
 #include "ClientCredits.h"   // Needed for CClientCredits
 #include "Packet.h"          // Needed for CPacket
 #include "MemFile.h"         // Needed for CMemFile
@@ -320,11 +322,15 @@ void CUpDownClient::SetUploadFileID(CKnownFile *newreqfile)
 
 void CUpDownClient::AddReqBlock(Requested_Block_Struct *reqblock, bool bSignalIOThread)
 {
+	// Own the request from here on. Every early return below used to delete it
+	// by hand, and a single missed path would leak the block; the queue takes
+	// over ownership via release() only once the block is actually stored.
+	std::unique_ptr<Requested_Block_Struct> reqblockOwner(reqblock);
+
 	if (GetUploadState() != US_UPLOADING) {
 		AddDebugLogLineN(logRemoteClient,
 			"UploadClient: Client tried to add requested block when not in upload slot! "
 			"Prevented requested blocks from being added.");
-		delete reqblock;
 		return;
 	}
 
@@ -332,7 +338,6 @@ void CUpDownClient::AddReqBlock(Requested_Block_Struct *reqblock, bool bSignalIO
 	CKnownFile *srcfile = theApp->sharedfiles->GetFileByID(CMD4Hash(reqblock->FileID));
 	if (srcfile == NULL) {
 		AddDebugLogLineN(logRemoteClient, "AddReqBlock: Requested file not found in shared files");
-		delete reqblock;
 		return;
 	}
 
@@ -341,20 +346,17 @@ void CUpDownClient::AddReqBlock(Requested_Block_Struct *reqblock, bool bSignalIO
 		AddDebugLogLineN(logRemoteClient,
 			CFormat("AddReqBlock: Requested block not complete (%llu - %llu)") %
 				reqblock->StartOffset % (reqblock->EndOffset - 1));
-		delete reqblock;
 		return;
 	}
 
 	if (reqblock->StartOffset >= reqblock->EndOffset || reqblock->EndOffset > srcfile->GetFileSize()) {
 		AddDebugLogLineN(logRemoteClient,
 			"AddReqBlock: Invalid block request (out of range or negative size)");
-		delete reqblock;
 		return;
 	}
 
 	if (reqblock->EndOffset - reqblock->StartOffset > EMBLOCKSIZE * 3) {
 		AddDebugLogLineN(logRemoteClient, "AddReqBlock: Block request too large");
-		delete reqblock;
 		return;
 	}
 
@@ -372,7 +374,6 @@ void CUpDownClient::AddReqBlock(Requested_Block_Struct *reqblock, bool bSignalIO
 			CFormat("AddReqBlock: Requested block is in a corrupt part (%llu - %llu), ending the "
 				"upload session") %
 				reqblock->StartOffset % (reqblock->EndOffset - 1));
-		delete reqblock;
 		if (theApp->uploadqueue->RemoveFromUploadQueue(this)) {
 			EndUploadSessionWithStatus(srcfile);
 		}
@@ -381,13 +382,11 @@ void CUpDownClient::AddReqBlock(Requested_Block_Struct *reqblock, bool bSignalIO
 
 	if (!theApp->uploadqueue->IsDownloading(this)) {
 		AddDebugLogLineN(logRemoteClient, "AddReqBlock: Client not in upload list");
-		delete reqblock;
 		return;
 	}
 
 	if (m_bIOError) {
 		AddDebugLogLineN(logRemoteClient, "AddReqBlock: Client has pending IO error");
-		delete reqblock;
 		return;
 	}
 
@@ -402,7 +401,6 @@ void CUpDownClient::AddReqBlock(Requested_Block_Struct *reqblock, bool bSignalIO
 			for (; it != m_DoneBlocks_list.end(); ++it) {
 				if (reqblock->StartOffset == (*it)->StartOffset &&
 					reqblock->EndOffset == (*it)->EndOffset) {
-					delete reqblock;
 					return;
 				}
 			}
@@ -413,13 +411,12 @@ void CUpDownClient::AddReqBlock(Requested_Block_Struct *reqblock, bool bSignalIO
 			for (; it != m_BlockRequests_queue.end(); ++it) {
 				if (reqblock->StartOffset == (*it)->StartOffset &&
 					reqblock->EndOffset == (*it)->EndOffset) {
-					delete reqblock;
 					return;
 				}
 			}
 		}
 
-		m_BlockRequests_queue.push_back(reqblock);
+		m_BlockRequests_queue.push_back(reqblockOwner.release());
 	} // release lock before signalling to avoid contention
 
 	// Notify disk I/O thread that new block requests are available.
