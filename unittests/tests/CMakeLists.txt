@@ -1,3 +1,14 @@
+# Shared log rendering and the wx event envelope, without a running daemon.
+add_executable (LogRecordTest
+	LogRecordTest.cpp
+	${CMAKE_SOURCE_DIR}/src/LoggerConsole.cpp
+)
+target_include_directories (LogRecordTest PRIVATE
+	${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include
+)
+target_link_libraries (LogRecordTest muleunit mulecommon)
+add_test (NAME LogRecordTest COMMAND LogRecordTest)
+
 # Shared application anchors for headless tests that link production core code.
 function (add_application_test_stubs target)
 	target_sources (${target} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ApplicationTestStubs.cpp)
@@ -11,6 +22,18 @@ endfunction()
 find_package (Python3 QUIET COMPONENTS Interpreter)
 
 if (Python3_Interpreter_FOUND)
+	add_executable (ConsoleLoggerProbe
+		ConsoleLoggerProbe.cpp
+		${CMAKE_SOURCE_DIR}/src/LoggerConsole.cpp
+	)
+	target_include_directories (ConsoleLoggerProbe PRIVATE
+		${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include ${CMAKE_SOURCE_DIR}/src/libs
+	)
+	target_link_libraries (ConsoleLoggerProbe mulecommon)
+	add_test (NAME ConsoleLoggerIdentityTest
+		COMMAND ${Python3_EXECUTABLE}
+			${CMAKE_CURRENT_SOURCE_DIR}/ConsoleLoggerIdentityTest.py $<TARGET_FILE:ConsoleLoggerProbe>
+	)
 	add_test (NAME IntegrationFixtureUnitTest
 		COMMAND ${Python3_EXECUTABLE} -u ${CMAKE_CURRENT_SOURCE_DIR}/IntegrationFixtureUnitTest.py -v
 	)
@@ -1949,8 +1972,7 @@ if (LIBATOMIC)
 endif()
 
 # amuleapi log tee: CRotatingLog's size cap, line stamping and the tee itself.
-# LogTee.cpp is plain POSIX/std (no wx), so only muleunit + mulecommon are
-# needed for the harness.
+# The tee shares the wx-based log formatter, linked through mulecommon.
 add_executable (LogTeeTest
 	LogTeeTest.cpp
 	${CMAKE_SOURCE_DIR}/src/webapi/LogTee.cpp
@@ -2676,6 +2698,10 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 		add_test (NAME PathDefaultsIntegrationTest
 			COMMAND ${Python3_EXECUTABLE}
 				${CMAKE_CURRENT_SOURCE_DIR}/PathDefaultsIntegrationTest.py $<TARGET_FILE:amuled>
+		)
+		add_test (NAME LoggingFormatIntegrationTest
+			COMMAND ${Python3_EXECUTABLE}
+				${CMAKE_CURRENT_SOURCE_DIR}/LoggingFormatIntegrationTest.py $<TARGET_FILE:amuled>
 		)
 		add_test (NAME LogfilePathIntegrationTest
 			COMMAND ${Python3_EXECUTABLE}

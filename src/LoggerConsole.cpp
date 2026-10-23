@@ -24,6 +24,7 @@
 //
 
 #include <sstream>
+#include <mutex>
 #include <common/StringFunctions.h> // for char2unicode()
 
 #include "Logger.h" // for Add(Debug)LogLineM()
@@ -64,36 +65,58 @@ void CLogger::SetVerbose(bool verbose)
 
 void CLogger::AddLogLine(const wxString &file, int line, bool critical, const std::ostringstream &msg)
 {
-	AddLogLine(file, line, critical, static_cast<DebugType>(0), msg);
+	AddLogLine(file, line, critical, logStandard, msg);
 }
 
 void CLogger::AddLogLine(const wxString &file,
 	int line,
 	bool critical,
-	DebugType /* type */,
+	DebugType type,
 	const wxString &str,
-	bool /*  toStdout */,
-	bool /* toGUI */)
+	bool toStdout,
+	bool toGUI)
 {
-	std::string s;
-	if (critical) {
-		s = "Critical message: ";
-	}
-	printf("%s(%d): %s%s\n",
-		(const char *)unicode2char(file),
-		line,
-		s.c_str(),
-		(const char *)unicode2char(str));
+#ifdef __DEBUG__
+	wxString message(str);
+	message = file + wxString::Format("(%d): ", line) + message;
+#else
+	const wxString &message = str;
+	(void)file;
+	(void)line;
+#endif
+	Log(type != logStandard && !critical ? LogLevel::Debug : LogLevel::Info,
+		m_programName,
+		message,
+		critical,
+		toStdout,
+		toGUI);
+}
+
+void CLogger::Log(LogLevel level,
+	const wxString &category,
+	const wxString &message,
+	bool toStatusBar,
+	bool toStdout,
+	bool toGUI)
+{
+	Log(CLogRecord(level, category, message), toStatusBar, toStdout, toGUI);
+}
+
+void CLogger::Log(const CLogRecord &record, bool, bool, bool)
+{
+	const wxString rendered = FormatLogLines(record);
+	const wxScopedCharBuffer text = rendered.utf8_str();
+	// Write each complete record under one lock, including multiline messages.
+	static std::mutex mutex;
+	const std::lock_guard<std::mutex> lock(mutex);
+	std::fwrite(text.data(), 1, text.length(), stdout);
+	std::fflush(stdout);
 }
 
 void CLogger::AddLogLine(
-	const wxString &file, int line, bool critical, DebugType /*type*/, const std::ostringstream &msg)
+	const wxString &file, int line, bool critical, DebugType type, const std::ostringstream &msg)
 {
-	std::string s;
-	if (critical) {
-		s = "Critical message: ";
-	}
-	printf("%s(%d): %s%s\n", (const char *)unicode2char(file), line, s.c_str(), msg.str().c_str());
+	AddLogLine(file, line, critical, type, wxString(char2unicode(msg.str().c_str())));
 }
 
 CLogger theLogger;

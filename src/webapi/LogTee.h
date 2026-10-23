@@ -89,12 +89,12 @@ private:
 	volatile std::sig_atomic_t m_crashFd = -1;
 };
 
-// The local "YYYY-MM-DD HH:MM:SS: " prefix. Same format as amuled's CLogger::DoLines().
+// Shared-format INFO prefix for unstructured output captured from the process descriptors.
 std::string LocalLogStamp();
 
 // Prefixes each line with a timestamp as the bytes stream past. Stateful because a line can
 // span two reads. A line is stamped when its first byte arrives; blank lines are not stamped,
-// matching amuled.
+// matching amuled. An existing local-time millisecond record prefix with UTC offset is passed through.
 class CLineStamper
 {
 public:
@@ -105,9 +105,14 @@ public:
 	// The input with a stamp inserted at every line start.
 	std::string Feed(const char *buf, std::size_t n);
 
+	// Release an incomplete timestamp probe at end of stream.
+	std::string Flush();
+
 private:
 	Clock m_clock;
 	bool m_atLineStart = true;
+	std::string m_prefix;
+	std::string m_pendingStamp;
 };
 
 // Holds back a trailing partial line, so a file shared by two streams only ever gets whole lines

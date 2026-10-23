@@ -127,7 +127,17 @@ void CLogger::AddLogLine(const wxString &DEBUG_ONLY(file),
 	bool toStdout,
 	bool toGUI)
 {
+#ifdef __DEBUG__
 	wxString msg(str);
+#else
+	const wxString &msg = str;
+#endif
+	wxString category =
+#ifdef CLIENT_GUI
+		"remote-GUI";
+#else
+		"";
+#endif
 	// handle Debug messages
 	if (type != logStandard) {
 		if (!critical && !IsEnabled(type)) {
@@ -143,7 +153,7 @@ void CLogger::AddLogLine(const wxString &DEBUG_ONLY(file),
 			const CDebugCategory &cat = g_debugcats[index];
 			wxASSERT(type == cat.GetType());
 
-			msg = cat.GetName() + ": " + msg;
+			category = cat.GetName();
 		} else {
 			wxFAIL;
 		}
@@ -156,13 +166,33 @@ void CLogger::AddLogLine(const wxString &DEBUG_ONLY(file),
 	}
 #endif
 
+	// Legacy C means status-bar visibility, not severity. Preserve it as INFO
+	// until call sites are explicitly classified; ordinary debug traces are DEBUG.
+	Log(type != logStandard && !critical ? LogLevel::Debug : LogLevel::Info,
+		category,
+		msg,
+		critical,
+		toStdout,
+		toGUI);
+}
+
+void CLogger::Log(LogLevel level,
+	const wxString &category,
+	const wxString &message,
+	bool toStatusBar,
+	bool toStdout,
+	bool toGUI)
+{
+	Log(CLogRecord(level, category, message), toStatusBar, toStdout, toGUI);
+}
+
+void CLogger::Log(const CLogRecord &record, bool toStatusBar, bool toStdout, bool toGUI)
+{
 	if (toGUI && !wxThread::IsMain()) {
-		// put to background
-		CLoggingEvent Event(critical, toStdout, toGUI, msg);
-		AddPendingEvent(Event);
+		CLoggingEvent event(toStatusBar, toStdout, toGUI, record);
+		AddPendingEvent(event);
 	} else {
-		// Try to handle events immediately when possible (to save to file).
-		DoLines(msg, critical, toStdout, toGUI);
+		DoLines(record, toStatusBar, toStdout, toGUI);
 	}
 }
 
@@ -213,35 +243,20 @@ void CLogger::CloseLogfile()
 
 void CLogger::OnLoggingEvent(class CLoggingEvent &evt)
 {
-	DoLines(evt.Message(), evt.IsCritical(), evt.ToStdout(), evt.ToGUI());
+	DoLines(evt.Record(), evt.IsCritical(), evt.ToStdout(), evt.ToGUI());
 }
 
-void CLogger::DoLines(const wxString &lines, bool critical, bool toStdout, bool toGUI)
+void CLogger::DoLines(const CLogRecord &record, bool critical, bool toStdout, bool toGUI)
 {
-	// Remove newspace at end
-	wxString bufferline = lines.Strip(wxString::trailing);
-
-	wxString stamp = wxDateTime::Now().FormatISODate() + " " + wxDateTime::Now().FormatISOTime()
-#ifdef CLIENT_GUI
-			 + " (remote-GUI): ";
-#else
-			 + ": ";
-#endif
-
-	// critical lines get a ! prepended, ordinary lines a blank
-	// logfile-only lines get a . to prevent transmission on EC
-	wxString prefix = !toGUI ? "." : (critical ? "!" : " ");
-
-	if (bufferline.IsEmpty()) {
-		// If it's empty we just write a blank line with no timestamp.
-		DoLine(" \n", toStdout, toGUI);
-	} else {
-		// Split multi-line messages into individual lines
-		wxStringTokenizer tokens(bufferline, "\n");
-		while (tokens.HasMoreTokens()) {
-			wxString fullline = prefix + stamp + tokens.GetNextToken() + "\n";
-			DoLine(fullline, toStdout, toGUI);
-		}
+	const wxString lines = FormatLogLines(record);
+	const wxString marker(static_cast<wxChar>(LegacyLogMarker(critical, toGUI)));
+	if (lines == "\n") {
+		DoLine(marker + "\n", toStdout, toGUI);
+		return;
+	}
+	wxStringTokenizer tokens(lines, "\n", wxTOKEN_RET_EMPTY);
+	while (tokens.HasMoreTokens()) {
+		DoLine(marker + tokens.GetNextToken() + "\n", toStdout, toGUI);
 	}
 }
 
@@ -261,7 +276,7 @@ void CLogger::DoLine(const wxString &line, bool toStdout, bool GUI_ONLY(toGUI))
 			// -- common in headless deployments where amuled runs without LANG or
 			// LC_ALL and never calls setlocale (#40). The on-disk log already writes
 			// UTF-8, so the two sinks now agree.
-			printf("%s", (const char *)line.utf8_str());
+			printf("%s", (const char *)line.Mid(1).utf8_str());
 			// stdout is block-buffered when it is not a TTY (pipe, file, Docker without -t).
 			fflush(stdout);
 		}
@@ -326,22 +341,29 @@ wxEND_EVENT_TABLE()
 
 CLoggerTarget::CLoggerTarget() {}
 
-void CLoggerTarget::DoLogText(const wxString &msg)
+void CLoggerTarget::DoLogRecord(wxLogLevel level, const wxString &msg, const wxLogRecordInfo &info)
 {
-	// prevent infinite recursion
-	static bool recursion = false;
+	// A thread-local guard does not suppress unrelated messages on other threads.
+	static thread_local bool recursion = false;
 	if (recursion) {
 		return;
 	}
 	recursion = true;
-
-	// This is much simpler than manually handling all wx log-types.
-	if (msg.StartsWith(_("ERROR: ")) || msg.StartsWith(_("WARNING: "))) {
-		AddLogLineC(msg);
-	} else {
-		AddLogLineN(msg);
+	LogLevel severity = LogLevel::Info;
+	if (level == wxLOG_Error || level == wxLOG_FatalError) {
+		severity = LogLevel::Error;
+	} else if (level == wxLOG_Warning) {
+		severity = LogLevel::Warning;
+	} else if (level == wxLOG_Debug) {
+		severity = LogLevel::Debug;
+	} else if (level == wxLOG_Trace) {
+		severity = LogLevel::Trace;
 	}
-
+	wxDateTime timestamp;
+	timestamp.Set(static_cast<time_t>(info.timestampMS / 1000));
+	timestamp.SetMillisecond(static_cast<wxDateTime::wxDateTime_t>(info.timestampMS % 1000));
+	theLogger.Log(CLogRecord(severity, "wx", msg, timestamp),
+		level == wxLOG_Error || level == wxLOG_FatalError || level == wxLOG_Warning);
 	recursion = false;
 }
 

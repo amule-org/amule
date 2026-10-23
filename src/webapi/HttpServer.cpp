@@ -22,6 +22,8 @@
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 //
 
+#include "LogDiagnostic.h"
+
 #include "HttpServer.h"
 
 #include "JsonWriter.h"
@@ -64,7 +66,6 @@
 #include <cctype>
 #include <chrono>
 #include <cstring>
-#include <iostream>
 #include <memory>
 #include <mutex>
 #include <sstream>
@@ -408,8 +409,8 @@ public:
 		// invariant is enforced in Release too.
 		if (m_stream_worker.joinable()) {
 			if (!m_worker_exited.load(std::memory_order_acquire)) {
-				std::cerr << "amuleapi: FATAL Session dtor reached "
-					     "with worker still running\n";
+				webapi::CLogDiagnostic(LogLevel::Error) << "Session dtor reached "
+									   "with worker still running\n";
 				std::abort();
 			}
 			m_stream_worker.detach();
@@ -622,7 +623,8 @@ private:
 				// echoes the offending input character; a future header-driven throw
 				// could reflect Authorization fragments), so keep the body generic and
 				// log the detail to stderr.
-				std::cerr << "amuleapi: 500 from handler: " << e.what() << "\n";
+				webapi::CLogDiagnostic(LogLevel::Error)
+					<< "500 from handler: " << e.what() << "\n";
 				resp.status = 500;
 				resp.content_type = "application/json";
 				resp.body = "{\"error\":{\"code\":\"internal_error\","
@@ -1605,12 +1607,12 @@ bool CHttpServer::Start(const std::string &bind_address,
 	// and lock out legitimate subscribers. Surface a one-time WARN so an operator switching
 	// the bind catches it in the daemon log.
 	if (!addr.is_loopback()) {
-		std::cerr << "amuleapi: WARN BindAddress=" << bind_address
-			  << " is not loopback. SSE sessions are capped at "
-			  << kMaxConcurrentStreamingSessions
-			  << " concurrent; beyond that the daemon returns "
-			     "503. Put a reverse proxy in front for remote "
-			     "access.\n";
+		webapi::CLogDiagnostic(LogLevel::Warning)
+			<< "BindAddress=" << bind_address << " is not loopback. SSE sessions are capped at "
+			<< kMaxConcurrentStreamingSessions
+			<< " concurrent; beyond that the daemon returns "
+			   "503. Put a reverse proxy in front for remote "
+			   "access.\n";
 	}
 
 	// Not asio::thread_pool(kHandlerPoolThreads): when its constructor fails to create a thread
@@ -1657,8 +1659,8 @@ bool CHttpServer::Start(const std::string &bind_address,
 				// io_context exception propagation: the server thread dies quietly. Catch +
 				// log to stderr so an operator running in foreground sees a one-line cause;
 				// daemon mode loses the message.
-				std::cerr << "amuleapi: HTTP I/O loop exited on exception: " << e.what()
-					  << '\n';
+				webapi::CLogDiagnostic(LogLevel::Error)
+					<< "HTTP I/O loop exited on exception: " << e.what() << '\n';
 			}
 			m_impl->running.store(false, std::memory_order_release);
 		});

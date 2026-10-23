@@ -22,6 +22,8 @@
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 //
 
+#include "LogDiagnostic.h"
+
 #include "App.h"
 
 #include <common/MuleDebug.h> // Needed for SetFatalAbortRedirectFd
@@ -50,7 +52,6 @@
 #include <csignal>
 #include <cstring>
 #include <cstdlib>
-#include <iostream>
 #include <thread>
 
 // mallopt. Guarded because macOS has no <malloc.h>; M_ARENA_MAX below then
@@ -227,7 +228,8 @@ bool CamuleapiApp::OnCmdLineParsed(wxCmdLineParser &parser)
 		static_cast<unsigned>(m_cliSetAdminPassStdin) +
 		static_cast<unsigned>(m_cliSetGuestPassStdin) + static_cast<unsigned>(m_cliSetEcPassStdin);
 	if (setters > 1) {
-		std::cerr << "amuleapi: choose exactly one password setter per invocation\n";
+		webapi::CLogDiagnostic(LogLevel::Error)
+			<< "choose exactly one password setter per invocation\n";
 		std::exit(1);
 	}
 	m_cliHasSetAdminPass = m_cliHasSetAdminPass || m_cliSetAdminPassStdin;
@@ -267,11 +269,12 @@ bool CamuleapiApp::OnInit()
 							 : (m_cliSetAdminPassStdin ? "New admin password: "
 										   : "New guest password: ");
 		if (!mulecommon::ReadPassword(prompt, !m_cliSetEcPassStdin, password, error)) {
-			std::cerr << "amuleapi: " << error << '\n';
+			webapi::CLogDiagnostic(LogLevel::Error) << error << '\n';
 			std::exit(1);
 		}
 		if ((m_cliSetAdminPassStdin || m_cliSetEcPassStdin) && password.empty()) {
-			std::cerr << "amuleapi: admin and EC passwords must not be empty\n";
+			webapi::CLogDiagnostic(LogLevel::Error)
+				<< "admin and EC passwords must not be empty\n";
 			std::exit(1);
 		}
 		const wxString plain = wxString::FromUTF8(password.data(), password.size());
@@ -288,7 +291,7 @@ bool CamuleapiApp::OnInit()
 	// std::exit propagates setup failures; returning false from wx OnInit can exit zero.
 	if (m_cliHasSetAdminPass || m_cliHasSetGuestPass || m_cliSetEcPassStdin) {
 		if (!m_apiConfig.Load(config_dir)) {
-			std::cerr << "amuleapi: " << m_apiConfig.LastError() << '\n';
+			webapi::CLogDiagnostic(LogLevel::Error) << m_apiConfig.LastError() << '\n';
 			std::exit(1);
 		}
 		const int rc = m_cliSetEcPassStdin
@@ -329,8 +332,8 @@ bool CamuleapiApp::OnInit()
 		} else if (toFile) {
 			// Say so rather than fall back silently: without the redirect a backtrace goes into
 			// the pipe nobody drains, which is the exact silence the redirect exists to remove.
-			std::cerr << "amuleapi: WARN no crash descriptor for the log file, "
-				     "a fatal backtrace may be lost\n";
+			webapi::CLogDiagnostic(LogLevel::Warning) << "no crash descriptor for the log file, "
+								     "a fatal backtrace may be lost\n";
 		}
 #endif
 		if (toFile) {
@@ -340,14 +343,15 @@ bool CamuleapiApp::OnInit()
 		m_logTee.reset();
 	}
 	if (!toFile && !logPath.IsEmpty()) {
-		std::cerr << "amuleapi: WARN could not open log file '" << (const char *)logPath.utf8_str()
-			  << "', continuing without it\n";
+		webapi::CLogDiagnostic(LogLevel::Warning)
+			<< "could not open log file '" << (const char *)logPath.utf8_str()
+			<< "', continuing without it\n";
 	}
 
 	// Route wxWidgets' own log channel to stderr. amuleapi is a wxApp with the GUI core linked,
 	// so the default target is wxLogGui -- message boxes, useless on a headless daemon and
-	// never reaching the log. wxLogStderr sends them where the tee above picks them up.
-	delete wxLog::SetActiveTarget(new wxLogStderr);
+	// never reaching the log. The shared-format target sends them where the tee picks them up.
+	delete wxLog::SetActiveTarget(new webapi::CApiLogTarget);
 
 	if (!LoadAmuleapiConfig()) {
 		// Error already printed via Show(...).
@@ -454,7 +458,8 @@ int CamuleapiApp::RunSetEcPass()
 {
 	const std::string digest(MD5Sum(m_cliSetEcPass).GetHash().Lower().utf8_str());
 	if (!m_apiConfig.SetEcPasswordMD5(digest)) {
-		std::cerr << "amuleapi: --set-ec-pass-stdin failed: " << m_apiConfig.LastError() << '\n';
+		webapi::CLogDiagnostic(LogLevel::Error)
+			<< "--set-ec-pass-stdin failed: " << m_apiConfig.LastError() << '\n';
 		return 1;
 	}
 	Show("amuleapi: EC PasswordMD5 updated; plaintext Password removed.\n");
@@ -701,22 +706,24 @@ void CamuleapiApp::TextShell(const wxString & /*prompt*/)
 			was_failed = true;
 			++ec_consecutive_failures;
 			if (!ec_warn_logged && ec_consecutive_failures >= kEcFailWarnAfter) {
-				std::cerr << "amuleapi: WARN EC has returned null "
-					     "for "
-					  << ec_consecutive_failures << " consecutive ticks (~"
-					  << ec_consecutive_failures
-					  << " s). amuled may be down or the EC "
-					     "socket may have dropped. Will exit "
-					     "after "
-					  << kEcFailExitAfter
-					  << " failed ticks so a process supervisor "
-					     "can restart the pair.\n";
+				webapi::CLogDiagnostic(LogLevel::Warning)
+					<< "EC has returned null "
+					   "for "
+					<< ec_consecutive_failures << " consecutive ticks (~"
+					<< ec_consecutive_failures
+					<< " s). amuled may be down or the EC "
+					   "socket may have dropped. Will exit "
+					   "after "
+					<< kEcFailExitAfter
+					<< " failed ticks so a process supervisor "
+					   "can restart the pair.\n";
 				ec_warn_logged = true;
 			}
 			if (ec_consecutive_failures >= kEcFailExitAfter) {
-				std::cerr << "amuleapi: FATAL EC has been silent "
-					     "for "
-					  << ec_consecutive_failures << " consecutive ticks. Exiting.\n";
+				webapi::CLogDiagnostic(LogLevel::Error)
+					<< "EC has been silent "
+					   "for "
+					<< ec_consecutive_failures << " consecutive ticks. Exiting.\n";
 				// EC is gone: exit non-zero so the supervisor restarts the pair,
 				// matching the OnLost handler above.
 				g_ecConnectionLost.store(true, std::memory_order_release);
@@ -728,8 +735,8 @@ void CamuleapiApp::TextShell(const wxString & /*prompt*/)
 		if (tick_duration >= kOverrunWarn) {
 			const auto ms =
 				std::chrono::duration_cast<std::chrono::milliseconds>(tick_duration).count();
-			std::cerr
-				<< "amuleapi: WARN refresher tick took " << ms << " ms (> "
+			webapi::CLogDiagnostic(LogLevel::Warning)
+				<< "refresher tick took " << ms << " ms (> "
 				<< std::chrono::duration_cast<std::chrono::milliseconds>(kOverrunWarn).count()
 				<< " ms budget): likely EC-mutex contention or a "
 				   "stalled SendRecvSerialized.\n";

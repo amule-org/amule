@@ -25,6 +25,7 @@
 #include <muleunit/test.h>
 
 #include "LogTee.h"
+#include "LogDiagnostic.h"
 
 #include <algorithm>
 #include <cstdio>
@@ -230,15 +231,17 @@ std::string FeedInChunks(CLineStamper &stamper, const std::string &in, std::size
 	return out;
 }
 
-// "YYYY-MM-DD HH:MM:SS: "
+// Shared-format timestamp, severity and program tag.
 bool HasStampShape(const std::string &line)
 {
-	static const char kShape[] = "dddd-dd-dd dd:dd:dd: ";
+	static const char kShape[] = "dddd-dd-ddTdd:dd:dd.ddd+dd:dd INFO  [amuleapi] ";
 	if (line.size() < sizeof(kShape) - 1) {
 		return false;
 	}
 	for (std::size_t i = 0; i < sizeof(kShape) - 1; ++i) {
-		const bool ok = kShape[i] == 'd' ? (line[i] >= '0' && line[i] <= '9') : line[i] == kShape[i];
+		const bool ok = kShape[i] == 'd' ? (line[i] >= '0' && line[i] <= '9')
+						 : (kShape[i] == '+' ? (line[i] == '+' || line[i] == '-')
+								     : line[i] == kShape[i]);
 		if (!ok) {
 			return false;
 		}
@@ -335,6 +338,58 @@ private:
 
 } // namespace
 
+TEST(LogTee, ApiDiagnosticsRetainSeverityUtf8AndMultilinePrefixes)
+{
+	const std::string outPath = TmpPath("_diagnostic.out");
+	const std::string errPath = TmpPath("_diagnostic.err");
+	const wxDateTime timestamp(static_cast<time_t>(0));
+	const CLogRecord record(LogLevel::Warning, "amuleapi", "", timestamp);
+	const std::string prefix(FormatLogPrefix(record).utf8_str());
+	{
+		CConsoleCapture capture(outPath, errPath);
+		WriteDiagnostic(CLogRecord(
+			LogLevel::Warning, "amuleapi", wxString::FromUTF8("first café\n\nthird"), timestamp));
+		CLogDiagnostic(LogLevel::Error) << "failure " << 42;
+	}
+	const std::string text = ReadFile(errPath);
+	const std::string expected = prefix + "first café\n" + prefix + "\n" + prefix + "third\n";
+	ASSERT_EQUALS(expected, text.substr(0, expected.size()));
+	ASSERT_TRUE(text.find(" ERROR [amuleapi] failure 42\n") != std::string::npos);
+	ASSERT_EQUALS(std::string(), ReadFile(outPath));
+	Cleanup(outPath);
+	Cleanup(errPath);
+}
+
+TEST(LogTee, ApiWxTargetRetainsNativeSeverityAndTimestamp)
+{
+	class Target : public CApiLogTarget
+	{
+	public:
+		using CApiLogTarget::DoLogRecord;
+	};
+	const std::string outPath = TmpPath("_wx.out");
+	const std::string errPath = TmpPath("_wx.err");
+	wxLogRecordInfo info;
+	info.timestampMS = 123;
+	wxDateTime timestamp(static_cast<time_t>(0));
+	timestamp.SetMillisecond(123);
+	{
+		CConsoleCapture capture(outPath, errPath);
+		Target target;
+		target.DoLogRecord(wxLOG_Warning, "native warning", info);
+		target.DoLogRecord(wxLOG_Error, "native error", info);
+	}
+	ASSERT_EQUALS(std::string(FormatLogLines(
+			      CLogRecord(LogLevel::Warning, "amuleapi", "native warning", timestamp))
+					  .utf8_str()) +
+			      std::string(FormatLogLines(
+				      CLogRecord(LogLevel::Error, "amuleapi", "native error", timestamp))
+						  .utf8_str()),
+		ReadFile(errPath));
+	Cleanup(outPath);
+	Cleanup(errPath);
+}
+
 TEST(LogTee, StamperStampsEachLine)
 {
 	FakeClock clock;
@@ -404,6 +459,74 @@ TEST(LogTee, StamperOutputIndependentOfReadBoundaries)
 	}
 }
 
+TEST(LogTee, StructuredRecordIsNotTimestampedTwice)
+{
+	for (const std::string offset : { "+08:00", "-04:30", "+00:00" }) {
+		const std::string input = "1970-01-01T00:00:00.123" + offset + " INFO  café\n";
+		for (std::size_t split = 0; split <= input.size(); ++split) {
+			FakeClock clock;
+			CLineStamper stamper(clock.Get());
+			std::string out = stamper.Feed(input.data(), split);
+			out += stamper.Feed(input.data() + split, input.size() - split);
+			out += stamper.Flush();
+			ASSERT_EQUALS(input, out);
+		}
+		FakeClock clock;
+		CLineStamper stamper(clock.Get());
+		ASSERT_EQUALS(input, FeedInChunks(stamper, input, 1));
+	}
+}
+
+TEST(LogTee, TimestampProbeDoesNotLoseRawOutput)
+{
+	for (const std::string input : { "2026",
+		     "2026-10-18T00:00:00.123X raw\n",
+		     "2026-10-18T00:00:00.123+08",
+		     "2026-10-18T00:00:00.123+08:",
+		     "2026-10-18T00:00:00.123+0800 raw\n",
+		     "2026-10-18T00:00:00.123*0800 raw\n",
+		     "123\n",
+		     "1\r\n" }) {
+		FakeClock clock;
+		CLineStamper stamper(clock.Get());
+		std::string out = FeedInChunks(stamper, input, 1);
+		out += stamper.Flush();
+		ASSERT_EQUALS(std::string("[T]") + input, out);
+		ASSERT_EQUALS(std::string(), stamper.Flush());
+		ASSERT_EQUALS(1, clock.calls);
+	}
+}
+
+TEST(LogTee, TeePreservesStructuredRecordsAndFlushesIncompleteProbe)
+{
+	const std::string path = TmpPath("_structured.log");
+	const std::string outPath = TmpPath("_structured.out");
+	const std::string errPath = TmpPath("_structured.err");
+	Cleanup(path);
+	const std::string record = "1970-01-01T00:00:00.123+08:00 ERROR [amuleapi] message\n";
+	bool installed = false;
+	{
+		CConsoleCapture capture(outPath, errPath);
+		CLogTee tee;
+		installed = tee.Install(path, 0);
+		if (installed) {
+			const std::string text = record + "2026";
+			OsWriteFd(1, text.data(), static_cast<unsigned>(text.size()));
+			tee.Uninstall();
+		}
+	}
+	ASSERT_TRUE(installed);
+	const std::string output = ReadFile(outPath);
+	ASSERT_EQUALS(record, output.substr(0, record.size()));
+	const std::string tail = output.substr(record.size());
+	ASSERT_TRUE(HasStampShape(tail));
+	ASSERT_EQUALS(std::string("2026"), tail.substr(47));
+	ASSERT_EQUALS(output + "\n", ReadFile(path));
+	Cleanup(path);
+	std::remove(outPath.c_str());
+	std::remove(errPath.c_str());
+}
+
 TEST(LogTee, AssemblerHoldsAPartialLine)
 {
 	CLineAssembler lines;
@@ -426,7 +549,7 @@ TEST(LogTee, AssemblerReleasesAnOverlongLine)
 TEST(LogTee, LocalLogStampShape)
 {
 	const std::string stamp = LocalLogStamp();
-	ASSERT_EQUALS(static_cast<size_t>(21), stamp.size());
+	ASSERT_EQUALS(static_cast<size_t>(47), stamp.size());
 	ASSERT_TRUE(HasStampShape(stamp));
 }
 
@@ -458,15 +581,15 @@ TEST(LogTee, TeeStampsConsoleAndFile)
 	const std::vector<std::string> outLines = SplitLines(ReadFile(outPath));
 	ASSERT_EQUALS(static_cast<size_t>(2), outLines.size());
 	ASSERT_TRUE(HasStampShape(outLines[0]));
-	ASSERT_EQUALS(longLine, outLines[0].substr(21));
-	ASSERT_EQUALS(std::string("out-two"), outLines[1].substr(21));
+	ASSERT_EQUALS(longLine, outLines[0].substr(47));
+	ASSERT_EQUALS(std::string("out-two"), outLines[1].substr(47));
 
 	const std::vector<std::string> errLines = SplitLines(ReadFile(errPath));
 	ASSERT_EQUALS(static_cast<size_t>(3), errLines.size());
 	ASSERT_TRUE(HasStampShape(errLines[0]));
-	ASSERT_EQUALS(std::string("err-one"), errLines[0].substr(21));
+	ASSERT_EQUALS(std::string("err-one"), errLines[0].substr(47));
 	ASSERT_EQUALS(std::string(""), errLines[1]);
-	ASSERT_EQUALS(std::string("err-two"), errLines[2].substr(21));
+	ASSERT_EQUALS(std::string("err-two"), errLines[2].substr(47));
 
 	// The two streams interleave in the file, so compare contents rather than order.
 	std::vector<std::string> fileLines = SplitLines(ReadFile(logPath));
@@ -479,7 +602,7 @@ TEST(LogTee, TeeStampsConsoleAndFile)
 			continue;
 		}
 		ASSERT_TRUE(HasStampShape(line));
-		payloads.push_back(line.substr(21));
+		payloads.push_back(line.substr(47));
 	}
 	ASSERT_EQUALS(1, blank);
 	std::sort(payloads.begin(), payloads.end());
@@ -517,7 +640,7 @@ TEST(LogTee, TeeEndsAnUnfinishedLineInTheFile)
 	std::vector<std::string> payloads;
 	for (const std::string &line : SplitLines(ReadFile(logPath))) {
 		ASSERT_TRUE(HasStampShape(line));
-		payloads.push_back(line.substr(21));
+		payloads.push_back(line.substr(47));
 	}
 	std::sort(payloads.begin(), payloads.end());
 	const std::vector<std::string> expected = { "after", "prompt: " };
@@ -554,7 +677,7 @@ TEST(LogTee, ConsoleOnlyInstallStamps)
 	const std::vector<std::string> errLines = SplitLines(ReadFile(errPath));
 	ASSERT_EQUALS(static_cast<size_t>(1), errLines.size());
 	ASSERT_TRUE(HasStampShape(errLines[0]));
-	ASSERT_EQUALS(std::string("hello"), errLines[0].substr(21));
+	ASSERT_EQUALS(std::string("hello"), errLines[0].substr(47));
 
 	std::remove(outPath.c_str());
 	std::remove(errPath.c_str());

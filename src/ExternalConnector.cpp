@@ -501,6 +501,7 @@ void CaMuleExternalConnector::ConnectAndRun(const wxString &ProgName, const wxSt
 void CaMuleExternalConnector::OnInitCmdLine(wxCmdLineParser &parser, const char *appname)
 {
 	m_appname = appname;
+	theLogger.SetProgramName(wxString::FromAscii(appname));
 
 	parser.AddSwitch("", "help", _("Show this help text."), wxCMD_LINE_PARAM_OPTIONAL);
 	parser.AddOption("h",

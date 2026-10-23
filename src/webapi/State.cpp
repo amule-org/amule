@@ -22,10 +22,11 @@
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 //
 
+#include "LogDiagnostic.h"
+
 #include "State.h"
 
-#include <cstdlib>  // std::abort
-#include <iostream> // std::cerr
+#include <cstdlib> // std::abort
 
 #include <algorithm>
 #include <cstdio>
@@ -186,8 +187,8 @@ CState::ReentryGuard::ReentryGuard(const CState *self)
 : m_prev(t_in_callback)
 {
 	if (t_in_callback == self) {
-		std::cerr << "amuleapi: FATAL CState callback re-entered the same CState; "
-			     "this would deadlock on a non-recursive lock\n";
+		webapi::CLogDiagnostic(LogLevel::Error) << "CState callback re-entered the same CState; "
+							   "this would deadlock on a non-recursive lock\n";
 		std::abort();
 	}
 	t_in_callback = self;

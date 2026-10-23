@@ -23,11 +23,11 @@
 //
 
 #include "LogTee.h"
+#include "../LogRecord.h"
 
 #include <cerrno>
 #include <cstdio>
 #include <cstring>
-#include <ctime>
 #include <utility>
 
 #ifdef _WIN32
@@ -161,16 +161,11 @@ void WriteAll(int fd, const char *buf, std::size_t n)
 
 std::string LocalLogStamp()
 {
-	const std::time_t now = std::time(nullptr);
-	std::tm local{};
-#ifdef _WIN32
-	localtime_s(&local, &now);
-#else
-	localtime_r(&now, &local);
-#endif
-	char buf[32];
-	const std::size_t len = std::strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S: ", &local);
-	return std::string(buf, len);
+	// Raw descriptor output has no severity metadata. Label it INFO and identify
+	// the program, using exactly the same timestamp and level layout as CLogger.
+	const wxString line = FormatLogPrefix(CLogRecord(LogLevel::Info, "amuleapi", ""));
+	const wxScopedCharBuffer bytes = line.utf8_str();
+	return std::string(bytes.data(), bytes.length());
 }
 
 CLineStamper::CLineStamper(Clock clock)
@@ -186,11 +181,30 @@ std::string CLineStamper::Feed(const char *buf, std::size_t n)
 	while (i < n) {
 		if (m_atLineStart) {
 			// \r too, so a Windows "\r\n" blank line stays unstamped.
-			if (buf[i] == '\n' || buf[i] == '\r') {
+			if (m_prefix.empty() && (buf[i] == '\n' || buf[i] == '\r')) {
 				out += buf[i++];
 				continue;
 			}
-			out += m_clock();
+			// CLoggerConsole now emits complete timestamped records. Probe only the
+			// local-time prefix with numeric UTC offset across arbitrary read boundaries.
+			static constexpr char pattern[] = "0000-00-00T00:00:00.000+00:00 ";
+			if (m_prefix.empty()) {
+				m_pendingStamp = m_clock();
+			}
+			const char expected = pattern[m_prefix.size()];
+			if (expected == '0' ? (buf[i] >= '0' && buf[i] <= '9')
+					    : (expected == '+' ? (buf[i] == '+' || buf[i] == '-')
+							       : buf[i] == expected)) {
+				m_prefix += buf[i++];
+				if (m_prefix.size() != sizeof(pattern) - 1) {
+					continue;
+				}
+				out += m_prefix;
+			} else {
+				out += m_pendingStamp + m_prefix;
+			}
+			m_prefix.clear();
+			m_pendingStamp.clear();
 			m_atLineStart = false;
 		}
 		const void *nl = std::memchr(buf + i, '\n', n - i);
@@ -200,6 +214,15 @@ std::string CLineStamper::Feed(const char *buf, std::size_t n)
 		i = end;
 		m_atLineStart = nl != nullptr;
 	}
+	return out;
+}
+
+std::string CLineStamper::Flush()
+{
+	const std::string out = m_prefix.empty() ? std::string() : m_pendingStamp + m_prefix;
+	m_prefix.clear();
+	m_pendingStamp.clear();
+	m_atLineStart = true;
 	return out;
 }
 
@@ -436,6 +459,10 @@ void CLogTee::Pump(int readFd, int consoleFd)
 			break;
 		}
 	}
+	const std::string tail = stamper.Flush();
+	WriteAll(consoleFd, tail.data(), tail.size());
+	const std::string whole = lines.Take(tail.data(), tail.size());
+	m_log.Write(whole.data(), whole.size());
 	const std::string rest = lines.Flush();
 	m_log.Write(rest.data(), rest.size());
 }

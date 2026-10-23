@@ -22,6 +22,8 @@
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 //
 
+#include "LogDiagnostic.h"
+
 #include "../PeerCapabilities.h" // Needed for CPeerCapabilities::GetApiTokens
 #include "EventDiff.h"
 
@@ -37,7 +39,6 @@
 #include <atomic>
 #include <cstdint>
 #include <cstdlib>
-#include <iostream>
 #include <sstream>
 #include <thread>
 #include <type_traits>
@@ -666,9 +667,9 @@ void EnforceSinglePublisher()
 	}
 	if (expected == self)
 		return;
-	std::cerr << "amuleapi: EmitDiffsAndUpdate called from two "
-		     "different threads; this breaks the single-writer "
-		     "invariant on LastSeenState and the EventBus.\n";
+	webapi::CLogDiagnostic(LogLevel::Error) << "EmitDiffsAndUpdate called from two "
+						   "different threads; this breaks the single-writer "
+						   "invariant on LastSeenState and the EventBus.\n";
 	std::abort();
 }
 
@@ -678,8 +679,9 @@ void EnforceSinglePublisher()
 // event is invisible and a lost `shared_removed` leaves a ghost row on every client.
 [[noreturn]] void AbortOnMissingBaseline(const char *event_name, std::uint32_t ecid)
 {
-	std::cerr << "amuleapi: file diff lost the baseline entry for ECID " << ecid << " while building "
-		  << event_name << "; the prev.files erase has moved ahead of the batch build.\n";
+	webapi::CLogDiagnostic(LogLevel::Error)
+		<< "file diff lost the baseline entry for ECID " << ecid << " while building " << event_name
+		<< "; the prev.files erase has moved ahead of the batch build.\n";
 	std::abort();
 }
 
