@@ -105,13 +105,6 @@ public:
 	void SetClientID(uint32 newid);
 	bool IsLocalServer(uint32 dwIP, uint16 nPort);
 
-	/// True if `ip` matches the currently connected ed2k server, or any in-flight CServerSocket
-	/// whose login attempt is still outstanding. CClientTCPSocket uses it to short-circuit the
-	/// global download-bandwidth throttler for inbound peer connections that are really the
-	/// server's HighID-callback probe (#778). Without that bypass, a saturated peer-side
-	/// download budget delays the probe past the server's verification timer and we end up with
-	/// a permanent LowID under sustained load.
-	bool IsServerIP(uint32 ip) const;
 	void TryAnotherConnectionrequest();
 	bool IsSingleConnect() { return singleconnecting; }
 	void KeepConnectionAlive();

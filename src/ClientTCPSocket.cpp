@@ -62,7 +62,6 @@
 #include "DownloadQueue.h"              // Needed for CDownloadQueue
 #include "Server.h"                     // Needed for CServer
 #include "ServerList.h"                 // Needed for CServerList
-#include "ServerConnect.h"              // Needed for CServerConnect::IsServerIP (#778)
 #include "IPFilter.h"                   // Needed for CIPFilter
 #include "ListenSocket.h"               // Needed for CListenSocket
 #include "GuiEvents.h"                  // Needed for Notify_*
@@ -191,15 +190,10 @@ bool CClientTCPSocket::InitNetworkData(AdmissionTransport transport)
 
 bool CClientTCPSocket::IsDownloadThrottled() const
 {
-	// An inbound peer connection from the ed2k server we are connected (or connecting) to is
-	// the server's HighID-callback probe, not peer download traffic. Skip the global download
-	// throttler so a saturated peer-side budget cannot delay the probe past the server's
-	// verification timer (#778). Same shape as CServerSocket's permanent bypass, gated on IP-
-	// match instead of being unconditional.
-	if (m_remoteip != 0 && theApp->serverconnect && theApp->serverconnect->IsServerIP(m_remoteip)) {
-		return false;
-	}
-	return true;
+	// Only download data counts against the cap, as in eMule. Anything else waits behind the
+	// downloads when the cap is saturated: a LowID source calling us back gets its hello read
+	// too late and the callback times out, and the server's HighID probe (#778) misses its timer.
+	return m_client && m_client->GetDownloadState() == DS_DOWNLOADING;
 }
 
 void CClientTCPSocket::ResetTimeOutTimer()
