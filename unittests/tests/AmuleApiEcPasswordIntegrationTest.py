@@ -69,7 +69,7 @@ def run(daemon_binary, api_binary):
                                            check=True, env=env, stdout=log, stderr=log, timeout=10)
                             assert 'Password=' not in conf.read_text()
                         server = subprocess.Popen(command + ['--host=127.0.0.1', '--port=' + str(ec_port),
-                            '--http-port=' + str(http_port), '--disable-ec-encryption'],
+                            '--http-port=' + str(http_port)],
                             env=env, stdout=log, stderr=log)
                         try:
                             url = f'http://127.0.0.1:{http_port}/api/v1'

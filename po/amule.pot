@@ -6066,10 +6066,6 @@ msgid "Remember those settings"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Encrypt the connection (recommended)"
-msgstr ""
-
-#: src/muuli_wdr.cpp
 msgid "Force ZLIB compression"
 msgstr ""
 

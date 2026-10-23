@@ -70,7 +70,6 @@ class CEConnectDlg : public wxDialog
 	wxString passwd;
 	bool m_save_user_pass;
 	bool m_force_zlib;
-	bool m_encryption;
 
 	wxDECLARE_EVENT_TABLE();
 
@@ -85,10 +84,6 @@ public:
 	wxString PassHash();
 	bool SaveUserPass() { return m_save_user_pass; }
 	bool ForceZlib() { return m_force_zlib; }
-
-	/// Whether to offer EC transport encryption. Ticked by default: the daemon only
-	/// encrypts what a client asks for, and only the client knows the address it dialed.
-	bool Encryption() { return m_encryption; }
 };
 
 wxDECLARE_EVENT(wxEVT_EC_INIT_DONE, wxEvent);

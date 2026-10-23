@@ -169,7 +169,6 @@ bool CAmuleApiConfig::LoadAmuleapiConf(const wxString &path)
 			       "Host=127.0.0.1\n"
 			       "Port=4712\n"
 			       "PasswordMD5=\n"
-			       "Encryption=1\n"
 			       "\n"
 			       "[Auth]\n"
 			       "LoginFailureWindowSeconds=60\n"
@@ -257,9 +256,6 @@ bool CAmuleApiConfig::LoadAmuleapiConf(const wxString &path)
 	}
 	if (cfg.Read("/EC/PasswordMD5", &s)) {
 		m_ec.password_md5 = std::string(s.utf8_str());
-	}
-	if (cfg.Read("/EC/Encryption", &n)) {
-		m_ec.encryption = (n != 0);
 	}
 
 	if (cfg.Read("/Auth/LoginFailureWindowSeconds", &n) && n > 0) {

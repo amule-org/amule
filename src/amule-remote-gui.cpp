@@ -109,10 +109,6 @@ CEConnectDlg::CEConnectDlg()
 	CastChild(ID_REMOTE_PORT, wxTextCtrl)->SetValue(pref_port);
 	CastChild(ID_EC_PASSWD, wxTextCtrl)->SetValue(pwd_hash);
 	CastChild(ID_EC_FORCE_ZLIB, wxCheckBox)->SetValue(pref_force_zlib != 0);
-	// Default 1: a config predating this key gets encryption.
-	long pref_encryption;
-	wxConfig::Get()->Read("/EC/Encryption", &pref_encryption, 1);
-	CastChild(ID_EC_ENCRYPTION, wxCheckBox)->SetValue(pref_encryption != 0);
 
 	CentreOnParent();
 }
@@ -139,7 +135,6 @@ void CEConnectDlg::OnOK(wxCommandEvent &evt)
 	}
 	m_save_user_pass = CastChild(ID_EC_SAVE, wxCheckBox)->IsChecked();
 	m_force_zlib = CastChild(ID_EC_FORCE_ZLIB, wxCheckBox)->IsChecked();
-	m_encryption = CastChild(ID_EC_ENCRYPTION, wxCheckBox)->IsChecked();
 	evt.Skip();
 }
 
@@ -682,7 +677,6 @@ bool CamuleRemoteGuiApp::ShowConnectionDialog()
 		// not re-apply these two: the dialog owns them and sets them again on the fresh
 		// object right here.
 		m_connect->SetForceZlib(dialog->ForceZlib());
-		m_connect->SetCanAEAD(dialog->Encryption());
 		if (m_connect->ConnectToCore(
 			    dialog->Host(), dialog->Port(), dialog->PassHash(), "amule-remote", "0x0001")) {
 			// Sync part succeeded; async OnECConnection will
@@ -1131,7 +1125,6 @@ void CamuleRemoteGuiApp::Startup()
 		wxConfig::Get()->Write("/EC/Port", dialog->Port());
 		wxConfig::Get()->Write("/EC/Password", dialog->PassHash());
 		wxConfig::Get()->Write("/EC/ForceZLIB", dialog->ForceZlib() ? 1l : 0l);
-		wxConfig::Get()->Write("/EC/Encryption", dialog->Encryption() ? 1l : 0l);
 	}
 	// Capture the EC connection params so a post-startup reconnect
 	// (issue #444) can re-dial without the (about-to-be-destroyed) dialog.

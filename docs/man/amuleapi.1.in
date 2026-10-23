@@ -64,8 +64,8 @@ Windows). Creates the dir with mode 0700 if absent.
 .B_untranslated [ \-\-disable\-ec\-encryption ]\fR
 Do not encrypt the link to \fBamuled\fR(1). Encryption is on by default
 whenever the remote aMule supports it. Turning it off lets anyone watching
-the connection read and alter everything after the login. Same as
-\fBEncryption=0\fR in \fIamuleapi.conf\fR.
+the connection read and alter everything after the login. This explicit
+command-line choice is not saved in \fIamuleapi.conf\fR.
 .TP
 .B_untranslated [ \-\-force\-zlib ]\fR
 Always compress the link to \fBamuled\fR(1). By default amuleapi skips

@@ -697,8 +697,6 @@ void CaMuleExternalConnector::LoadConfigFile()
 		m_configFile->ReadHash("/EC/Password", &m_password);
 		m_ZLIB = m_configFile->Read("/EC/ZLIB", 1l) != 0;
 		m_forceZLIB = m_configFile->Read("/EC/ForceZLIB", 0l) != 0;
-		// Defaults to 1: a config file predating this key gets encryption.
-		m_ECEncryption = m_configFile->Read("/EC/Encryption", 1l) != 0;
 	}
 }
 
@@ -717,7 +715,7 @@ void CaMuleExternalConnector::SaveConfigFile()
 		// enabled default on every save (#817).
 		m_configFile->Write("/EC/ZLIB", m_ZLIB ? 1l : 0l);
 		m_configFile->Write("/EC/ForceZLIB", m_forceZLIB ? 1l : 0l);
-		m_configFile->Write("/EC/Encryption", m_ECEncryption ? 1l : 0l);
+		m_configFile->DeleteEntry("/EC/Encryption");
 	}
 }
 
