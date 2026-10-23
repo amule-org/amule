@@ -86,7 +86,8 @@ CClientTCPSocket::CClientTCPSocket(CUpDownClient *in_client, const CProxyData *P
 #if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
 	if (in_client != nullptr && in_client->IsLowIdHolePunchDial()) {
 		// Server-vouched dials carry a route address separately from peer identity until hello.
-		m_remoteAddress = in_client->GetUserAddress().Unmapped();
+		// The route, not the identity: the hole-punch dial sets no user address before then.
+		m_remoteAddress = in_client->GetConnectAddress().Unmapped();
 		m_remoteip = m_remoteAddress.ToIPv4NetworkOrderOrZero();
 	}
 #endif
