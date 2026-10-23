@@ -226,6 +226,7 @@
   "search_type_all": "All networks",
   "search_update_results": "Update results",
   "search_tab_close": "Close search",
+  "search_tab_restore": "Load search into the form",
   "search_close_all": "Close all",
   "search_extend": "Extend",
   "search_extend_title": "Ask the Kad nodes already queried for a wider set of results",

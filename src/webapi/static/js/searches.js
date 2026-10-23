@@ -8,6 +8,9 @@
 // BACKGROUND tab never re-renders the visible table:
 //   store "searches"    -> { tabs: [light tab descriptors], activeId }
 //   store "search:<id>" -> that search's results array, active tab only.
+//
+// Each light descriptor also carries the tab's raw search-form state
+// (`params`), loaded into the form via the tab's arrow icon.
 
 import { api } from "./api.js";
 import { data } from "./events.js";
@@ -37,10 +40,13 @@ let offs = [];
 let lastResult = null, lastResultRemoved = null, lastProgress = null, lastClosed = null;
 
 function newTab({ id, query = "", label = "", kind = "global", state = "running", startedAt = 0,
-                 percent = 0, count = 0 }) {
+                 percent = 0, count = 0, params = null }) {
   return {
     id, query, label: label || query, kind, state, percent, startedAt,
     results: new Map(), count, fetching: false,
+    // Raw search-form state, loaded into the form by the tab's arrow icon.
+    // null for a browse, which is not a form search.
+    params,
     // Per-tab UI state: switching tabs and coming back must restore it, so it
     // cannot live in the view's component state.
     ui: { selection: new Set(), filter: "", filterHave: "all", cat: 0, rowCat: {}, rowEcid: {} },
@@ -68,6 +74,8 @@ function tabList() {
     // the listing snapshot, and an unopened one has only the listing.
     percent: x.percent, count: Math.max(x.count || 0, x.results.size),
     moreExhausted: !!x.moreExhausted, kadActive: !!x.kadActive,
+    // Raw form state, loaded into the form by the tab's arrow icon.
+    params: x.params,
   }));
 }
 
@@ -115,6 +123,10 @@ async function refresh(id) {
     const pr = r.progress || {};
     if (pr.state) cur.state = pr.state;
     if (pr.type) cur.kind = pr.type;
+    // Adopted tabs: the listing has no filters, only query + type.
+    if (!cur.params) cur.params = {};
+    if (r.query && !cur.params.query) cur.params.query = r.query;
+    if (pr.type && !cur.params.type) cur.params.type = pr.type;
     cur.percent = pr.percent || 0;
     cur.kadActive = pr.kad_active === true;
     publishTabs();
@@ -129,6 +141,33 @@ async function refresh(id) {
   }
 }
 
+// The full start parameters a listing row carries, in the form's vocabulary. A daemon that
+// does not report them (older daemon, browse) still yields query + type. 0 means "no cap",
+// like the POST body.
+//
+// Sizes arrive as bytes; show them in the largest unit that divides them exactly, so a
+// restored value reads like what the user typed (1000 MiB, not 1048576000 B). The form
+// always multiplies number × unit, so user-entered values divide exactly.
+const SIZE_UNITS = { B: 1, KiB: 1024, MiB: 1048576, GiB: 1073741824 };
+const niceSize = (bytes) => {
+  for (const unit of ["GiB", "MiB", "KiB"]) {
+    const f = SIZE_UNITS[unit];
+    if (Number.isInteger(bytes / f)) return { n: bytes / f, unit };
+  }
+  return { n: bytes, unit: "B" };
+};
+const rowParams = (s) => {
+  const mn = s.min_size_bytes > 0 ? niceSize(s.min_size_bytes) : null;
+  const mx = s.max_size_bytes > 0 ? niceSize(s.max_size_bytes) : null;
+  return {
+    query: s.query || "", type: s.type || "global",
+    fileType: s.file_type || "", ext: s.extension || "",
+    minAvail: s.min_source_count > 0 ? s.min_source_count : null,
+    minSize: mn ? String(mn.n) : null, minUnit: mn ? mn.unit : "MiB",
+    maxSize: mx ? String(mx.n) : null, maxUnit: mx ? mx.unit : "MiB",
+  };
+};
+
 // Open a tab for every search the daemon holds. Results are fetched lazily on
 // first activation: adopting 20 searches must not fire 20 requests.
 async function adopt() {
@@ -141,6 +180,14 @@ async function adopt() {
     const known = tabs.get(s.search_id);
     if (known) {
       if (!known.query && s.query) { known.query = s.query; known.label = known.label || s.query; }
+      // Same backfill for the form params: query/type from an older daemon, the full set
+      // when the listing carries it. Never overwrite what this session's own start stored.
+      if (!known.params) known.params = {};
+      for (const [k, v] of Object.entries(rowParams(s))) {
+        if ((known.params[k] == null || known.params[k] === "") && v != null && v !== "") {
+          known.params[k] = v;
+        }
+      }
       // Keep an unopened tab's badge current. Only while it holds no results
       // of its own -- once fetched, its own map is the better number and the
       // listing snapshot must not walk it back.
@@ -158,6 +205,7 @@ async function adopt() {
       id: s.search_id, query: s.query || "", kind: s.type || "global",
       state: s.state || "finished", startedAt: s.started_at || 0,
       count: typeof s.result_count === "number" ? s.result_count : 0,
+      params: rowParams(s),
     }));
     added = true;
   }
@@ -340,8 +388,9 @@ export const searches = {
   },
 
   // POST /search -> a new tab, which becomes active. `label` overrides what
-  // the strip shows (a related:: query is unreadable in a tab).
-  async start(body, label) {
+  // the strip shows (a related:: query is unreadable in a tab). `params` is
+  // the raw form state, loaded back into the form by the tab's arrow icon.
+  async start(body, label, params) {
     // The 202 answers with the created search as the same row GET /search
     // lists, so the tab is seeded from what the daemon recorded rather than
     // from what we asked for -- `kind` and `startedAt` in particular, which
@@ -353,6 +402,7 @@ export const searches = {
       kind: r.type || body.type || "global",
       state: r.state || "running",
       startedAt: r.started_at || nowSec(),
+      params,
     }));
     setActive(id);
     return id;
@@ -392,7 +442,12 @@ export const searches = {
     // Upper-case like the desktop (CMD4Hash::Encode): the ed2k server parses
     // this keyword, not us, so don't gamble on it folding case.
     const keyword = hashes.map((h) => String(h).toUpperCase()).join("::");
-    return searches.start({ query: "related::" + keyword, type: "local" }, label);
+    // The arrow restores this query into the form, so it must carry the
+    // "related::" magic prefix: a bare hash list re-run would be a text search
+    // for garbage, not the related-files search the tab came from.
+    const relatedQuery = "related::" + keyword;
+    return searches.start({ query: relatedQuery, type: "local" }, label,
+      { query: relatedQuery, type: "local" });
   },
 
   async stop(id) {

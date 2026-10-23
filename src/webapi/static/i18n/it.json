@@ -225,6 +225,7 @@
   "search_type_all": "Tutte le reti",
   "search_update_results": "Aggiorna risultati",
   "search_tab_close": "Chiudi ricerca",
+  "search_tab_restore": "Carica ricerca nel modulo",
   "search_close_all": "Chiudi tutte",
   "search_extend": "Estendi",
   "search_extend_title": "Chiedi ai nodi Kad già interrogati un insieme più ampio di risultati",

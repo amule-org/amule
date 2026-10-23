@@ -640,6 +640,7 @@
   "search_type_all": "Все сети",
   "search_update_results": "Обновить результаты",
   "search_tab_close": "Закрыть поиск",
+  "search_tab_restore": "Загрузить поиск в форму",
   "search_close_all": "Закрыть все",
   "search_extend": "Расширить",
   "search_extend_title": "Запросить у уже опрошенных узлов Kad более широкий набор результатов",

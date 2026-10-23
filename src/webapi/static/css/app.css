@@ -687,8 +687,22 @@ table.data.virtual td.name .name-select { width: 100%; max-width: 100%; }
   border-radius: 0 var(--radius) 0 0; margin-bottom: -1px;
   padding: 0 9px; cursor: pointer; font: inherit; line-height: 1.4;
 }
-.tab-close:hover { background: var(--surface); color: var(--bad); }
-.tab-item .tab.active + .tab-close { background: var(--surface); color: var(--text); border-bottom-color: var(--surface); }
+.tab-close:hover { background: var(--surface-2); color: var(--bad); }
+.tab-restore {
+  border: none;
+  border-top: 1px solid var(--border);
+  background: var(--surface-2); color: var(--text-dim);
+  margin-left: -1px; margin-bottom: -1px;
+  padding: 0 6px; cursor: pointer; font: inherit; line-height: 1.4;
+  display: inline-flex; align-items: center;
+}
+.tab-restore:hover { background: var(--surface-2); color: var(--bad); }
+.tab-item .tab.active + .tab-restore { background: var(--surface); color: var(--text); }
+.tab-item .tab.active ~ .tab-close { background: var(--surface); color: var(--text); border-bottom-color: var(--surface); }
+/* Hover beats the active rules above (same specificity, later in the sheet):
+   gray chip + red icon, visible in both tab states. */
+.tab-item .tab.active + .tab-restore:hover,
+.tab-item .tab.active ~ .tab-close:hover { background: var(--surface-2); color: var(--bad); }
 .tab.running { font-style: italic; }
 .tab.running .tab-badge { background: var(--accent); color: var(--accent-contrast); }
 

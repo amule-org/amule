@@ -609,6 +609,7 @@
   "search_ftype_archive": "Arxius",
   "stats_tree_servers_total_users": "Usuaris totals: %llu",
   "search_tab_close": "Tanca la cerca",
+  "search_tab_restore": "Carrega la cerca al formulari",
   "shared_prio_normal": "Normal",
   "prefs_opt_proxy_http": "HTTP",
   "networks_kad_buddy_not_needed_udp": "Cap amic necessari - Port UDP obert",

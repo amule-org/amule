@@ -41,6 +41,22 @@ export default function Search({ isGuest }) {
   const reg = useStore("searches") || { tabs: [], activeId: 0 };
   const active = reg.tabs.find((x) => x.id === reg.activeId) || null;
 
+  // Copy a tab's saved search into the form for a re-run.
+  const restoreForm = (key) => {
+    const tab = reg.tabs.find((x) => String(x.id) === String(key));
+    const p = tab && tab.params;
+    if (!p || tab.kind === "browse") return;
+    setQuery(p.query || "");
+    setType(p.type || "global");
+    setFileType(p.fileType || "");
+    setExt(p.ext || "");
+    setMinAvail(p.minAvail != null ? String(p.minAvail) : "");
+    setMinSize(p.minSize != null ? String(p.minSize) : "");
+    setMinUnit(p.minUnit || "MiB");
+    setMaxSize(p.maxSize != null ? String(p.maxSize) : "");
+    setMaxUnit(p.maxUnit || "MiB");
+  };
+
   useEffect(() => {
     // Idempotent: attaches the stream routing and adopts whatever the daemon
     // already holds (this browser's searches, another client's, or ones
@@ -68,8 +84,11 @@ export default function Search({ isGuest }) {
     if (mx) body.max_size_bytes = mx;
     try {
       // Every start opens its own tab; the query stays in the box so refining
-      // and re-running is one edit.
-      await searches.start(body);
+      // and re-running is one edit. The raw form state rides along for the
+      // tab's arrow icon.
+      await searches.start(body, null, {
+        query: q, type, fileType, ext, minAvail, minSize, minUnit, maxSize, maxUnit,
+      });
       toast(t("search_toast_search_started"), "success");
     } catch (err) { toast(terr(err) || t("search_error"), "error"); }
   };
@@ -81,7 +100,7 @@ export default function Search({ isGuest }) {
 
   const tabItems = reg.tabs.map((x) => {
     const full = x.label || x.query || ("#" + x.id);
-    return {
+    const item = {
       key: String(x.id),
       label: full.length > TAB_LABEL_MAX ? full.slice(0, TAB_LABEL_MAX - 1) + "…" : full,
       title: full + " · " + t("search_type_" + x.kind),
@@ -89,6 +108,12 @@ export default function Search({ isGuest }) {
       cls: x.state === "running" ? "running" : "",
       closeLabel: t("search_tab_close"),
     };
+    // Up-arrow loads this tab's search into the form; browses have none, and neither
+    // does a related search -- its query is the magic "related::" keyword, not user
+    // input the form can re-express.
+    if (x.params && x.kind !== "browse" && !x.query.startsWith("related::"))
+      item.restoreLabel = t("search_tab_restore");
+    return item;
   });
 
   return html`
@@ -125,9 +150,17 @@ export default function Search({ isGuest }) {
       <${Tabs} tabs=${tabItems} active=${String(reg.activeId)}
                onSelect=${(k) => searches.setActive(Number(k))}
                onClose=${(k) => searches.close(Number(k))}
+               onRestore=${restoreForm}
                extra=${reg.tabs.length > 1 ? html`
                  <button class="btn btn-sm admin-only" type="button"
-                         onClick=${() => searches.closeAll()}>${t("search_close_all")}</button>` : null} />
+                         onClick=${() => {
+                           searches.closeAll();
+                           // Nothing is left to restore or re-run: the form keeps only
+                           // stale filters, so clear it back to defaults.
+                           setQuery(""); setType("global"); setFileType(""); setExt("");
+                           setMinAvail(""); setMinSize(""); setMinUnit("MiB");
+                           setMaxSize(""); setMaxUnit("MiB");
+                         }}>${t("search_close_all")}</button>` : null} />
       <div class="net-pane-body">
         <${ResultsPane} key=${active.id} tab=${active} categories=${categories} />
       </div>

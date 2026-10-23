@@ -270,6 +270,7 @@
   "search_related": "Gerelateerd",
   "search_ftype_archive": "Archieven",
   "search_tab_close": "Sluit zoeken",
+  "search_tab_restore": "Laad zoekopdracht in het formulier",
   "prefs_opt_proxy_http": "HTTP",
   "search_stop": "Stop",
   "search_status_queued_canceled": "In wachtrij (geannuleerd)",

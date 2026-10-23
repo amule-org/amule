@@ -204,6 +204,7 @@
   "search_status_downloaded": "Baixado",
   "search_related": "Relacionados",
   "search_tab_close": "Fechar a busca",
+  "search_tab_restore": "Carregar a busca no formulário",
   "networks_kad_buddy_not_needed_udp": "Nenhum amigo necessário - porta UDP aberta",
   "networks_kad_group_index": "Índice",
   "search_stop": "Parar",

@@ -187,7 +187,7 @@ export function IdentityLine({ file, copy, extra, titleKey }) {
 // A closable tab becomes a two-button group rather than a button inside a
 // button: nesting interactive elements is invalid markup and screen readers do
 // not reliably expose the inner one.
-export function Tabs({ tabs, active, onSelect, onClose, extra, cls = "" }) {
+export function Tabs({ tabs, active, onSelect, onClose, onRestore, extra, cls = "" }) {
   const tabButton = (tab) => html`
     <button type="button" role="tab"
             class=${"tab" + (tab.key === active ? " active" : "") + (tab.cls ? " " + tab.cls : "")}
@@ -196,14 +196,24 @@ export function Tabs({ tabs, active, onSelect, onClose, extra, cls = "" }) {
       ${tab.label}
       ${tab.badge != null ? html`<span class="tab-badge">${tab.badge}</span>` : null}
     </button>`;
+  // Optional per-tab action button (a tab carries restoreLabel to show it).
+  const restoreButton = (tab) => (onRestore && tab.restoreLabel ? html`
+    <button type="button" class="tab-restore" title=${tab.restoreLabel}
+            aria-label=${tab.restoreLabel} onClick=${() => onRestore(tab.key)}>
+      <${Icon} name="up" size=${14} />
+    </button>` : null);
   return html`
     <div class=${"tabs" + (cls ? " " + cls : "")} role="tablist">
-      ${tabs.map((tab) => (onClose ? html`
-        <span class="tab-item" role="presentation">
-          ${tabButton(tab)}
-          <button type="button" class="tab-close" title=${tab.closeLabel}
-                  aria-label=${tab.closeLabel} onClick=${() => onClose(tab.key)}>×</button>
-        </span>` : tabButton(tab)))}
+      ${tabs.map((tab) => {
+        const restore = restoreButton(tab);
+        return onClose || restore ? html`
+          <span class="tab-item" role="presentation">
+            ${tabButton(tab)}
+            ${restore}
+            ${onClose ? html`<button type="button" class="tab-close" title=${tab.closeLabel}
+                    aria-label=${tab.closeLabel} onClick=${() => onClose(tab.key)}>×</button>` : null}
+          </span>` : tabButton(tab);
+      })}
       ${extra ? html`<div class="tabs-extra">${extra}</div>` : null}
     </div>`;
 }
