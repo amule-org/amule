@@ -24,9 +24,9 @@
 
 #include "Logger.h"
 
-#include <common/MuleDebug.h> // Needed for ReserveCrashFd
+#include <common/MuleDebug.h>       // Needed for ReserveCrashFd
+#include <common/StringFunctions.h> // Needed for char2unicode
 #include "amule.h"
-#include "Preferences.h"
 #include <common/Macros.h>
 #include <common/MacrosProgramSpecific.h>
 #include <sstream>
@@ -82,23 +82,7 @@ CDebugCategory g_debugcats[] = { CDebugCategory(logGeneral, "General"),
 	CDebugCategory(logVerifyLocalData, "Verify Local Data") };
 
 const int categoryCount = itemsof(g_debugcats);
-
-#ifdef __DEBUG__
-bool CLogger::IsEnabled(DebugType type) const
-{
-	int index = (int)type;
-
-	if (index >= 0 && index < categoryCount) {
-		const CDebugCategory &cat = g_debugcats[index];
-		wxASSERT(type == cat.GetType());
-
-		return (cat.IsEnabled() && thePrefs::GetVerbose());
-	}
-
-	wxFAIL;
-	return false;
-}
-#endif
+static_assert(categoryCount == logCategoryCount, "Update the debug category table");
 
 void CLogger::SetEnabled(DebugType type, bool enabled)
 {
@@ -109,6 +93,7 @@ void CLogger::SetEnabled(DebugType type, bool enabled)
 		wxASSERT(type == cat.GetType());
 
 		cat.SetEnabled(enabled);
+		m_debugEnabled[index].store(enabled && m_verbose, std::memory_order_relaxed);
 	} else {
 		wxFAIL;
 	}
@@ -116,7 +101,10 @@ void CLogger::SetEnabled(DebugType type, bool enabled)
 
 void CLogger::SetVerbose(bool verbose)
 {
-	thePrefs::SetVerbose(verbose);
+	m_verbose = verbose;
+	for (int i = 0; i < categoryCount; ++i) {
+		m_debugEnabled[i].store(verbose && g_debugcats[i].IsEnabled(), std::memory_order_relaxed);
+	}
 }
 
 void CLogger::AddLogLine(const wxString &DEBUG_ONLY(file),
@@ -133,7 +121,7 @@ void CLogger::AddLogLine(const wxString &DEBUG_ONLY(file),
 		if (!critical && !IsEnabled(type)) {
 			return;
 		}
-		if (!critical && thePrefs::GetVerboseLogfile()) {
+		if (!critical && m_verboseLogfile.load(std::memory_order_relaxed)) {
 			// print non critical debug messages only to the logfile
 			toGUI = false;
 		}

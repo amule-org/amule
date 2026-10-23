@@ -354,9 +354,9 @@ public:
 	static uint8 GetSmartIdState() { return s_smartidstate; }
 	static void SetSmartIdState(uint8 in_smartidstate) { s_smartidstate = in_smartidstate; }
 	static bool GetVerbose() { return s_bVerbose; }
-	static void SetVerbose(bool val) { s_bVerbose = val; }
+	static void SetVerbose(bool val);
 	static bool GetVerboseLogfile() { return s_bVerboseLogfile; }
-	static void SetVerboseLogfile(bool val) { s_bVerboseLogfile = val; }
+	static void SetVerboseLogfile(bool val);
 	static bool GetPreviewPrio() { return s_bpreviewprio; }
 	static void SetPreviewPrio(bool in) { s_bpreviewprio = in; }
 	static bool StartNextFile() { return s_bstartnextfile; }

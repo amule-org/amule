@@ -1,3 +1,27 @@
+# Test the real logging macros in both build types, without MULEUNIT replacements.
+foreach (logger_test IN ITEMS LoggerRuntimeTest LoggerConsoleRuntimeTest)
+	if (logger_test STREQUAL "LoggerRuntimeTest")
+		set (logger_source Logger.cpp)
+	else ()
+		set (logger_source LoggerConsole.cpp)
+	endif ()
+	add_executable (${logger_test}
+		LoggerRuntimeTest.cpp
+		${CMAKE_SOURCE_DIR}/src/${logger_source}
+	)
+	target_compile_definitions (${logger_test} PRIVATE AMULE_DAEMON wxUSE_GUI=0)
+	if (logger_test STREQUAL "LoggerConsoleRuntimeTest")
+		target_compile_definitions (${logger_test} PRIVATE LOGGER_CONSOLE_TEST)
+	endif ()
+	target_include_directories (${logger_test} PRIVATE
+		${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include
+		${CMAKE_SOURCE_DIR}/src/libs ${CMAKE_BINARY_DIR}/src/libs
+		${CMAKE_BINARY_DIR}/src/libs/ec/cpp
+	)
+	target_link_libraries (${logger_test} PRIVATE mulecommon wxWidgets::BASE)
+	add_test (NAME ${logger_test} COMMAND ${logger_test})
+endforeach ()
+
 # Shared application anchors for headless tests that link production core code.
 function (add_application_test_stubs target)
 	target_sources (${target} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ApplicationTestStubs.cpp)
@@ -9,6 +33,12 @@ function (add_application_test_stubs target)
 endfunction()
 
 find_package (Python3 QUIET COMPONENTS Interpreter)
+if (BUILD_FILEVIEW AND Python3_Interpreter_FOUND)
+	add_test (NAME FileViewLoggingRegressionTest
+		COMMAND ${Python3_EXECUTABLE}
+			${CMAKE_CURRENT_SOURCE_DIR}/FileViewLoggingRegressionTest.py $<TARGET_FILE:fileview>
+	)
+endif ()
 
 if (Python3_Interpreter_FOUND)
 	add_test (NAME IntegrationFixtureUnitTest
@@ -2676,6 +2706,10 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 		add_test (NAME PathDefaultsIntegrationTest
 			COMMAND ${Python3_EXECUTABLE}
 				${CMAKE_CURRENT_SOURCE_DIR}/PathDefaultsIntegrationTest.py $<TARGET_FILE:amuled>
+		)
+		add_test (NAME LoggerRuntimeIntegrationTest
+			COMMAND ${Python3_EXECUTABLE}
+				${CMAKE_CURRENT_SOURCE_DIR}/LoggerRuntimeIntegrationTest.py $<TARGET_FILE:amuled>
 		)
 		add_test (NAME LogfilePathIntegrationTest
 			COMMAND ${Python3_EXECUTABLE}

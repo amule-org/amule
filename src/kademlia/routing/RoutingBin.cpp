@@ -385,7 +385,7 @@ void CRoutingBin::SetAllContactsVerified()
 	}
 }
 
-bool CRoutingBin::CheckGlobalIPLimits(uint32_t ip, uint16_t DEBUG_ONLY(port))
+bool CRoutingBin::CheckGlobalIPLimits(uint32_t ip, uint16_t port)
 {
 	// no more than 1 KadID per IP
 	uint32_t sameIPCount = 0;

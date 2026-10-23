@@ -1024,7 +1024,7 @@ private:
 		dispatch(m_strand, [self]() { self->DispatchBackgroundRead(); });
 	}
 
-	void PostReadEvent(int DEBUG_ONLY(from))
+	void PostReadEvent(int from)
 	{
 		// One atomic step, so exactly one caller can win the right to notify: a plain
 		// test-then-set lets the ASIO thread and the main thread both see it clear and post twice,

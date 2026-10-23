@@ -682,7 +682,7 @@ public:
 	bool GetSentCancelTransfer() const { return m_fSentCancelTransfer; }
 	void SetSentCancelTransfer(bool bVal) { m_fSentCancelTransfer = bVal; }
 
-	DEBUG_ONLY(wxString GetClientFullInfo();)
+	wxString GetClientFullInfo();
 	wxString GetClientShortInfo();
 
 	const wxString &GetClientOSInfo() const { return m_sClientOSInfo; }

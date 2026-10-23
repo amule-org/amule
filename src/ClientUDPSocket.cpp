@@ -346,11 +346,11 @@ void CClientUDPSocket::OnPacketReceived(
 				AddDebugLogLineN(logClientUDP,
 					CFormat("Unknown opcode on received packet: 0x%x") % protocol);
 			}
-		} catch (const wxString &DEBUG_ONLY(e)) {
+		} catch (const wxString &e) {
 			AddDebugLogLineN(logClientUDP, "Error while parsing UDP packet: " + e);
-		} catch (const CInvalidPacket &DEBUG_ONLY(e)) {
+		} catch (const CInvalidPacket &e) {
 			AddDebugLogLineN(logClientUDP, "Invalid UDP packet encountered: " + e.what());
-		} catch (const CEOFException &DEBUG_ONLY(e)) {
+		} catch (const CEOFException &e) {
 			AddDebugLogLineN(logClientUDP,
 				"Malformed packet encountered while parsing UDP packet: " + e.what());
 		}

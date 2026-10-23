@@ -353,7 +353,7 @@ ReadRequest_Struct *CUploadDiskIOThread::PrepareRead(uint32 clientId)
 			}
 		}
 		return req;
-	} catch (const wxString &DEBUG_ONLY(error)) {
+	} catch (const wxString &error) {
 		AddDebugLogLineN(logClient,
 			CFormat("CUploadDiskIOThread: error for client '%s': %s") % client->GetUserName() %
 				error);

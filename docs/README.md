@@ -69,6 +69,36 @@ For `amulegui`, the setting is in `remote.conf` and controls its local log, whos
 default filename is `remotelogfile`.
 
 
+## Debug logging
+
+Release and Debug builds both support **Preferences → Debugging**. Enable verbose
+logging and select the categories you need; changes apply immediately. Turning
+verbose logging off keeps your category selections. Debug logging is off by default.
+Debug logs can contain peer IP addresses, user hashes and file names; review them
+before sharing.
+
+For `amuled`, stop the daemon and set the same options in `amule.conf`, then restart:
+
+```ini
+[eMule]
+VerboseDebug=1
+VerboseDebugLogfile=1
+[Debug]
+Cat_General=1
+Cat_ThreadScheduler=1
+```
+
+`VerboseDebugLogfile=1` keeps non-critical debug messages in the logfile and excludes
+them from incremental remote log replay. The existing EC verbose preference can toggle the
+configured daemon categories while it runs. In `amulegui`, the Debugging page
+controls the remote GUI's own logging; configure daemon categories in its
+`amule.conf`. `amulecmd` and `amuleweb` also enable their own runtime diagnostics
+with `--verbose` or `VerboseDebug=1` in the core configuration.
+
+Some diagnostics require Debug-only bookkeeping and remain available only in Debug
+builds. Ordinary messages and critical status messages keep their existing behavior.
+
+
 ## First-run checklist
 
 aMule ships with reasonable defaults and is usable as-is. Three

@@ -332,7 +332,7 @@ void CKademlia::ProcessPacket(const uint8_t *data,
 			instance->m_udpListener->ProcessPacket(
 				data, lenData, ip, port, validReceiverKey, senderKey);
 		}
-	} catch (const wxString &DEBUG_ONLY(error)) {
+	} catch (const wxString &error) {
 		AddDebugLogLineN(logKadMain,
 			CFormat("Exception on Kad ProcessPacket while processing packet (length = %u) from "
 				"%s:") %

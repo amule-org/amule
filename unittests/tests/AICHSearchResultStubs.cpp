@@ -67,14 +67,11 @@ void CPartFile::RequestAICHRecovery(uint16)
 	FAIL_M("AICH consensus test unexpectedly requested recovery");
 }
 
-#ifdef __DEBUG__
 wxString CUpDownClient::GetClientFullInfo()
 {
 	FAIL_M("AICH consensus test unexpectedly inspected a recovery client");
 	return wxString();
 }
-
-#endif
 
 // Search model tests do not query live queues, clients, or Kad notes. UI
 // notifications are intentionally ignored by this headless fixture.

@@ -269,7 +269,7 @@ CSearch *CSearchManager::PrepareLookup(uint32_t type, bool start, const CUInt128
 			CSearch *started = s.get();
 			return StartSearch(s.release()) ? started : nullptr;
 		}
-	} catch (const CEOFException &DEBUG_ONLY(err)) {
+	} catch (const CEOFException &err) {
 		AddDebugLogLineN(
 			logKadSearch, "CEOFException in CSearchManager::PrepareLookup: " + err.what());
 		return NULL;

@@ -28,6 +28,7 @@
 #include <wx/log.h>
 #include <wx/event.h>
 #include <iosfwd>
+#include <atomic>
 
 enum DebugType
 {
@@ -118,7 +119,8 @@ enum DebugType
 	//! Media-metadata probing (ffprobe) subsystem.
 	logMediaProbe,
 	//! Warnings/Errors related to Verify Local Data subsystem
-	logVerifyLocalData
+	logVerifyLocalData,
+	logCategoryCount
 	// IMPORTANT NOTE: when you add values to this enum, update the g_debugcats
 	// array in Logger.cpp!
 };
@@ -162,21 +164,24 @@ class CLogger : public wxEvtHandler
 {
 public:
 	/// True if debug messages should be generated for this category.
-#ifdef __DEBUG__
-	bool IsEnabled(DebugType) const;
-#else
-	bool IsEnabled(DebugType) const { return false; }
-#endif
+	bool IsEnabled(DebugType type) const
+	{
+		return type >= logGeneral && type < logCategoryCount &&
+		       m_debugEnabled[type].load(std::memory_order_relaxed);
+	}
 
-	/// Enables or disables debug messages for a category.
+	/// Enables or disables a category. Configuration changes run on the main thread.
 	void SetEnabled(DebugType type, bool enabled);
 
-	/// Sets the global verbose-debug flag that gates IsEnabled() per category. The amuled /
-	/// monolithic build stores this in thePrefs; the console binaries (amuleweb, amulecmd) keep
-	/// their own static, not linking CPreferences. ExternalConnector calls this with
-	/// /eMule/VerboseDebug after loading amule.conf and again after parsing --verbose, so both
-	/// paths drive the same gate.
+	/// Sets the global verbose gate on the main thread, preserving category selections.
+	/// Console binaries enable all categories when verbose output is requested.
 	void SetVerbose(bool verbose);
+
+	/// Controls logfile-only routing; workers read an atomic copy of the preference.
+	void SetVerboseLogfile(bool logfileOnly)
+	{
+		m_verboseLogfile.store(logfileOnly, std::memory_order_relaxed);
+	}
 
 	/// True if logging to stdout is enabled.
 	bool IsEnabledStdoutLog() const { return m_StdoutLog; }
@@ -237,6 +242,11 @@ public:
 	}
 
 private:
+	// Publish effective category gates so a disabled call costs one inline atomic load.
+	// Category selections and m_verbose are only changed on the main thread.
+	std::atomic<bool> m_debugEnabled[logCategoryCount]{};
+	bool m_verbose = false;
+	std::atomic<bool> m_verboseLogfile{ false };
 	class wxFFileOutputStream *applog; // the logfile
 	wxString m_LogfileName;
 	int m_crashFd = -1;
@@ -379,15 +389,12 @@ public:
 	} while (false)
 #else
 // Macros for 'N'on critical logging
-#ifdef __DEBUG__
-#define AddDebugLogLineN(type, string) \
-	if (theLogger.IsEnabled(type)) \
-	theLogger.AddLogLine(__TFILE__, __LINE__, false, type, string)
-#else
 #define AddDebugLogLineN(type, string) \
 	do { \
+		if (theLogger.IsEnabled(type)) { \
+			theLogger.AddLogLine(__TFILE__, __LINE__, false, type, string); \
+		} \
 	} while (false)
-#endif
 #define AddLogLineN(string) theLogger.AddLogLine(__TFILE__, __LINE__, false, logStandard, string)
 #define AddLogLineNS(string) theLogger.AddLogLine(__TFILE__, __LINE__, false, logStandard, string, true)
 // Macros for 'C'ritical logging
@@ -395,15 +402,12 @@ public:
 #define AddLogLineC(string) theLogger.AddLogLine(__TFILE__, __LINE__, true, logStandard, string)
 #define AddLogLineCS(string) theLogger.AddLogLine(__TFILE__, __LINE__, true, logStandard, string, true)
 // Macros for logging to logfile only
-#ifdef __DEBUG__
-#define AddDebugLogLineF(type, string) \
-	if (theLogger.IsEnabled(type)) \
-	theLogger.AddLogLine(__TFILE__, __LINE__, false, type, string, false, false)
-#else
 #define AddDebugLogLineF(type, string) \
 	do { \
+		if (theLogger.IsEnabled(type)) { \
+			theLogger.AddLogLine(__TFILE__, __LINE__, false, type, string, false, false); \
+		} \
 	} while (false)
-#endif
 #define AddLogLineF(string) \
 	theLogger.AddLogLine(__TFILE__, __LINE__, false, logStandard, string, false, false)
 #endif

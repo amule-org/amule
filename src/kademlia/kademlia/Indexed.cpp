@@ -1099,10 +1099,12 @@ void CIndexed::SendValidKeywordResult(const CUInt128 &keyID,
 			}
 		} while (!onlyTrusted);
 
+#ifdef __DEBUG__
 		AddDebugLogLineN(logKadIndex,
 			CFormat("Kad keyword search result request: Sent %u trusted and %u untrusted "
 				"results") %
 				dbgResultsTrusted % dbgResultsUntrusted);
+#endif
 
 		if (count > 0) {
 			uint16_t countLeft = (uint16_t)count % 50;

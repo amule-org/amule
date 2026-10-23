@@ -825,7 +825,7 @@ void CServerSocket::ConnectToServer(CServer *server, bool bNoCrypt)
 	}
 }
 
-void CServerSocket::OnError(int DEBUG_ONLY(nErrorCode))
+void CServerSocket::OnError(int nErrorCode)
 {
 	AddDebugLogLineN(logServer,
 		CFormat("Error in serversocket: %s(%s:%i): %u") % cur_server->GetListName() %

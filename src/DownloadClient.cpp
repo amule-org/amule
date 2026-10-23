@@ -241,10 +241,12 @@ void CUpDownClient::SendFileRequest()
 			OP_EMULEPROT,
 			(SupportExtMultiPacket() ? OP_MULTIPACKET_EXT : OP_MULTIPACKET));
 		theStats::AddUpOverheadFileRequest(packet->GetPacketSize());
+#ifdef __DEBUG__
 		AddDebugLogLineN(logLocalClient,
 			CFormat("Local Client: %s (%s) to %s") %
 				(SupportExtMultiPacket() ? "OP_MULTIPACKET_EXT" : "OP_MULTIPACKET") %
 				sent_opcodes % GetFullIP());
+#endif
 		SendPacket(packet, true);
 	} else {
 		if (GetExtendedRequestsVersion() > 0) {
@@ -1704,7 +1706,6 @@ void CUpDownClient::ProcessAICHRequest(const uint8_t *packet, uint32 size)
 					CFormat("AICH Packet Request: Successfully created and send "
 						"recoverydata for '%s' to %s") %
 						pKnownFile->GetFileName() % GetClientFullInfo());
-
 				CPacket *packAnswer = new CPacket(fileResponse, OP_EMULEPROT, OP_AICHANSWER);
 				theStats::AddUpOverheadOther(packAnswer->GetPacketSize());
 				AddDebugLogLineN(

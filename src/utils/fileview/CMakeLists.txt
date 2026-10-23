@@ -1,5 +1,7 @@
 add_executable (fileview
 	${SRC_DIR}/kademlia/utils/UInt128.cpp
+	# Shared file I/O reads the real CLogger layout through inline category checks.
+	${SRC_DIR}/LoggerConsole.cpp
 	${SRC_DIR}/CFile.cpp
 	${SRC_DIR}/OtherFunctions.cpp
 	${SRC_DIR}/SafeFile.cpp

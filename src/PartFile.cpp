@@ -2690,7 +2690,9 @@ void CPartFile::Delete()
 	uint16 removed =
 #endif
 		theApp->uploadqueue->SuspendUpload(GetFileHash(), true);
+#ifdef __DEBUG__
 	AddDebugLogLineN(logPartFile, CFormat("\tSuspended upload to %d clients") % removed);
+#endif
 	theApp->sharedfiles->RemoveFile(this);
 	AddDebugLogLineN(logPartFile, "\tRemoved from shared");
 	theApp->downloadqueue->RemoveFile(this);
