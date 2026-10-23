@@ -1,5 +1,6 @@
 add_library (ec STATIC
 	ECCrypt.cpp
+	ECSRP.cpp
 	ECMemSocket.cpp
 	ECMuleSocket.cpp
 	ECPacket.cpp
