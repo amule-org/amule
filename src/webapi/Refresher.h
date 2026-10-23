@@ -140,6 +140,11 @@ std::string FileTypeToken(const std::string &name);
 // value the rows report, and adding a category means touching one file.
 std::string SearchFileTypeTerm(const std::string &token);
 
+// The reverse of SearchFileTypeTerm: an ed2k FT_FILETYPE term (as the daemon reports for a search)
+// back to the token GET /search rows use, or "" for an unknown term. The search list carries
+// terms, the client edits tokens.
+std::string SearchFileTypeToken(const std::string &term);
+
 // The accepted tokens as a quoted, comma-separated list, for the error message the handler returns.
 // Built from the same table, so a category added there names itself in the error too.
 std::string SearchFileTypeTokenList();

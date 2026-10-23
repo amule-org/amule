@@ -3151,6 +3151,15 @@ struct SearchListRow
 	std::time_t started_at = 0; // 0 = not started by this process
 	bool has_result_count = false;
 	std::uint32_t result_count = 0;
+	// Start parameters, as the daemon recorded them; absent for a browse or an older daemon.
+	std::string file_type; // API token, not the ed2k term
+	std::string extension;
+	bool has_min_size = false;
+	std::uint64_t min_size = 0;
+	bool has_max_size = false;
+	std::uint64_t max_size = 0;
+	bool has_min_source_count = false;
+	std::uint32_t min_source_count = 0;
 };
 
 void WriteSearchListRow(CJsonWriter &w, const SearchListRow &row)
@@ -3175,6 +3184,22 @@ void WriteSearchListRow(CJsonWriter &w, const SearchListRow &row)
 		w.Key("result_count");
 		w.ValueInt(static_cast<int64_t>(row.result_count));
 	}
+	// The same keys POST /search accepts, so a client can rebuild the form and re-run the
+	// search without translating anything. Only a search the daemon started from a form
+	// carries them: a browse and an older daemon omit file_type/extension, and the three
+	// numeric caps come out as null rather than as a fabricated all-default form.
+	if (!row.file_type.empty()) {
+		w.Key("file_type");
+		w.ValueString(wxString::FromUTF8(row.file_type.c_str()));
+	}
+	if (!row.extension.empty()) {
+		w.Key("extension");
+		w.ValueString(wxString::FromUTF8(row.extension.c_str()));
+	}
+	WriteIntOrNull(w, "min_size_bytes", row.has_min_size, static_cast<int64_t>(row.min_size));
+	WriteIntOrNull(w, "max_size_bytes", row.has_max_size, static_cast<int64_t>(row.max_size));
+	WriteIntOrNull(
+		w, "min_source_count", row.has_min_source_count, static_cast<int64_t>(row.min_source_count));
 	w.EndObject();
 }
 
@@ -7777,6 +7802,27 @@ CHttpServer::Response CApiDispatcher::HandleSearchList(const CHttpServer::Reques
 			row.has_result_count = true;
 			row.result_count = static_cast<std::uint32_t>(countTag->GetInt());
 		}
+		// Start parameters, reported as the POST /search vocabulary so a client can reload
+		// the form as-is. The daemon speaks ed2k terms for the file type; rows speak tokens.
+		if (const CECTag *tag = entry.GetTagByName(EC_TAG_SEARCH_FILE_TYPE)) {
+			row.file_type =
+				webapi::SearchFileTypeToken(std::string(tag->GetStringData().utf8_str()));
+		}
+		if (const CECTag *tag = entry.GetTagByName(EC_TAG_SEARCH_EXTENSION)) {
+			row.extension = std::string(tag->GetStringData().utf8_str());
+		}
+		if (const CECTag *tag = entry.GetTagByName(EC_TAG_SEARCH_MIN_SIZE)) {
+			row.has_min_size = true;
+			row.min_size = static_cast<std::uint64_t>(tag->GetInt());
+		}
+		if (const CECTag *tag = entry.GetTagByName(EC_TAG_SEARCH_MAX_SIZE)) {
+			row.has_max_size = true;
+			row.max_size = static_cast<std::uint64_t>(tag->GetInt());
+		}
+		if (const CECTag *tag = entry.GetTagByName(EC_TAG_SEARCH_AVAILABILITY)) {
+			row.has_min_source_count = true;
+			row.min_source_count = static_cast<std::uint32_t>(tag->GetInt());
+		}
 		rows.push_back(std::move(row));
 	}
 	delete ec_resp;
@@ -10620,6 +10666,7 @@ CHttpServer::Response CApiDispatcher::HandleSearchStart(const CHttpServer::Reque
 	}
 
 	std::string file_type;
+	std::string file_type_token;
 	{
 		const auto it = obj.find("file_type");
 		if (it != obj.end()) {
@@ -10638,6 +10685,7 @@ CHttpServer::Response CApiDispatcher::HandleSearchStart(const CHttpServer::Reque
 								", or omitted for any type";
 					return ErrorResponse(400, "bad_request", msg.c_str());
 				}
+				file_type_token = token;
 			}
 		}
 	}
@@ -10756,13 +10804,24 @@ CHttpServer::Response CApiDispatcher::HandleSearchStart(const CHttpServer::Reque
 	m_state.MarkSearchStarted(search_id, search_kind, query, kad_active);
 
 	// Same creation shape as the browse handler above: the daemon hands back
-	// EC_TAG_SEARCH_ID, so the response carries the resource and a Location.
+	// EC_TAG_SEARCH_ID, so the response carries the resource and a Location. The row
+	// carries the form the daemon recorded for this search, exactly as GET /search will
+	// report it, so a client can drop it straight into its collection.
 	SearchListRow row;
 	row.search_id = search_id;
 	row.query = wxString::FromUTF8(query.c_str());
 	row.kind = search_kind;
 	row.state = "running";
 	row.started_at = m_state.SearchStartedAt(search_id);
+	row.file_type = file_type_token;
+	row.extension = extension;
+	// Always recorded, unlike on a restored search: 0 means the form really had no cap.
+	row.has_min_size = true;
+	row.min_size = min_size;
+	row.has_max_size = true;
+	row.max_size = max_size;
+	row.has_min_source_count = true;
+	row.min_source_count = min_avail;
 
 	CHttpServer::Response r;
 	r.status = 202;

@@ -323,7 +323,7 @@ Rows added or removed *during* a sweep are not missed: both emit an SSE event, s
 | `GET /friends`        | **`ecid`** (id), `name`, `connected` |
 | `GET /chats`          | **`client_ecid`** (id), `last_message_at`, `name` |
 | `GET /search/{id}/results` | **`hash`** (id), `name`, `size_bytes`, `sources.total`, `rating`, `directory` |
-| `GET /search`         | **`search_id`** (id), `query`, `started_at`, `result_count` |
+| `GET /search`         | **`search_id`** (id), `query`, `type`, `state`, `file_type`, `extension`, `min_size_bytes`, `max_size_bytes`, `min_source_count`, `started_at`, `result_count` |
 | `GET /categories`     | **`index`** (id), `name` |
 
 The column marked **id** is the endpoint's identity: immutable for the life of the row, and the only one `after` accepts. Note that `ecid` is stable **within a daemon session** only — `CECID` hands ids out from a counter that restarts with the process — which is enough for a bootstrap sweep, since a reconnect invalidates the sweep anyway and triggers a `resync`.
@@ -2959,9 +2959,12 @@ Lists every search amuled currently holds — including ones started by a **diff
 ```json
 {
   "searches": [
-    { "search_id": 42, "query": "ubuntu desktop iso", "type": "global", "state": "finished", "client_ecid": null, "started_at": 1751000000, "result_count": 182 },
-    { "search_id": 43, "query": "debian",             "type": "kad",    "state": "running",  "client_ecid": null, "started_at": 1751000042, "result_count": 57  },
-    { "search_id": 44, "query": "SomePeerNick",       "type": "browse", "state": "running",  "client_ecid": 621,  "result_count": 237 }
+    { "search_id": 42, "query": "ubuntu desktop iso", "type": "global", "state": "finished", "client_ecid": null, "started_at": 1751000000, "result_count": 182,
+      "file_type": "disc_image", "extension": "iso", "min_size_bytes": 1000000000, "max_size_bytes": 5000000000, "min_source_count": 5 },
+    { "search_id": 43, "query": "debian",             "type": "kad",    "state": "running",  "client_ecid": null, "started_at": 1751000042, "result_count": 57,
+      "min_size_bytes": null, "max_size_bytes": null, "min_source_count": null },
+    { "search_id": 44, "query": "SomePeerNick",       "type": "browse", "state": "running",  "client_ecid": 621,  "result_count": 237,
+      "min_size_bytes": null, "max_size_bytes": null, "min_source_count": null }
   ],
   "total": 3,
   "offset": 0,
@@ -2987,6 +2990,10 @@ It is **omitted** for any search this `amuleapi` process did not start itself �
 
 It exists so a client that adopts the whole list and fetches each search's results lazily — on first activation of a tab, rather than all at once at load — has a number to label an unopened tab with. It is **omitted**, not zeroed, when the daemon does not report it: a daemon older than this field sends nothing, and "does not report counts" has to stay distinguishable from "this search found nothing". Same rule as `started_at` above.
 
+The start parameters a search was submitted with ride along on its row, in the same vocabulary [`POST /search`](#post-apiv1search) accepts, so a client can reload the form and re-run the search without translating anything: `file_type` (the token form — `"audio"`, `"video"`, `"picture"`, `"text"`, `"program"`, `"archive"`, `"disc_image"` — never the ed2k term the daemon stores), `extension`, `min_size_bytes`, `max_size_bytes`, and `min_source_count`, with `0` meaning "no cap" exactly as on the POST side.
+
+They describe the form the search was **actually started from**, as the daemon recorded it, so a search adopted from another client shows that client's filters, not this one's. Only a search the daemon started from a form carries them: a `"browse"` has none, and neither does one restored from a `StoredSearches.met` written before format 0x02, or reported by an older daemon. For those, `file_type` and `extension` are omitted, and the three numeric keys read `null` — which keeps "the form had no cap" (`0`) distinguishable from "there is no form" (`null`). The numeric keys are always present so a row's shape does not depend on which daemon produced it. The file format itself is one-way: a `StoredSearches.met` written at 0x02 is rejected as corrupt by a pre-0x02 daemon, so downgrading amuled restores no searches and its next save rewrites the file at 0x01, dropping the stored history.
+
 amuled only tracks multiple concurrent searches for clients that advertise multi-search support; `amuleapi` does, so this always reflects the full live set. `searches` is an empty array when amuled holds no searches, never an error.
 
 **Errors:** `503 ec_unavailable`.
@@ -3011,7 +3018,7 @@ Kicks off a new search. amuleapi supports **several concurrent searches** — a 
 }
 ```
 
-Only `query` is required. `type` defaults to `"global"`; valid values are `"local"`, `"global"`, `"kad"`, `"all"`. `"all"` searches eD2k and Kad together, falling back to the available network if the other cannot start. It requires the daemon to advertise `EC_TAG_CAN_SEARCH_ALL`; otherwise the API returns `503 ec_unsupported` before sending a search request. `GET /status` exposes this capability as `search_all_supported` (boolean), which the WebUI uses to offer All. This additive value keeps `/api/v1` compatible. `file_type` filters by category and takes the same tokens the result rows report: `"audio"`, `"video"`, `"picture"`, `"text"`, `"program"`, `"archive"`, `"disc_image"`. Omit it, or send `""`, for any type; anything else is `400 bad_request`, `"unknown"` included, since no ed2k category corresponds to it. `min_size_bytes`, `max_size_bytes` and `min_source_count` are integers: a fractional value is a `400` rather than being truncated, so a client that computed a size cannot half-apply a filter it thinks it set. A `"global"`/`"local"` (ed2k) search and a `"kad"` search run independently and can be in flight at the same time; starting one never disturbs the other.
+Only `query` is required. `type` defaults to `"global"`; valid values are `"local"`, `"global"`, `"kad"`, `"all"`. `"all"` searches eD2k and Kad together, falling back to the available network if the other cannot start. It requires the daemon to advertise `EC_TAG_CAN_SEARCH_ALL`; otherwise the API returns `503 ec_unsupported` before sending a search request. `GET /status` exposes this capability as `search_all_supported` (boolean), which the WebUI uses to offer All. This additive value keeps `/api/v1` compatible. `file_type` filters by category and takes the same tokens the result rows report: `"audio"`, `"video"`, `"picture"`, `"text"`, `"program"`, `"archive"`, `"disc_image"`. Omit it, or send `""`, for any type; anything else is `400 bad_request`, `"unknown"` included, since no ed2k category corresponds to it. `extension` filters by filename extension as the user typed it (e.g. `"iso"`); omit it, or send `""`, for any extension. `min_size_bytes`, `max_size_bytes` and `min_source_count` are integers: a fractional value is a `400` rather than being truncated, so a client that computed a size cannot half-apply a filter it thinks it set. A `"global"`/`"local"` (ed2k) search and a `"kad"` search run independently and can be in flight at the same time; starting one never disturbs the other.
 
 **Response:** `202 Accepted`, with a `Location: /api/v1/search/{search_id}` header and the created search as the body -- the same row [`GET /search`](#get-apiv1search) lists, so it can go straight into a collection the client already keeps:
 
@@ -3022,7 +3029,12 @@ Only `query` is required. `type` defaults to `"global"`; valid values are `"loca
   "type":        "global",
   "state":       "running",
   "client_ecid": null,
-  "started_at":  1750412400
+  "started_at":  1750412400,
+  "file_type":   "disc_image",
+  "extension":   "iso",
+  "min_size_bytes":  1000000000,
+  "max_size_bytes":  5000000000,
+  "min_source_count": 5
 }
 ```
 

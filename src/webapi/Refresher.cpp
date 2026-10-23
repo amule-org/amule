@@ -2388,6 +2388,16 @@ std::string SearchFileTypeTerm(const std::string &token)
 	return std::string();
 }
 
+std::string SearchFileTypeToken(const std::string &term)
+{
+	for (const auto &entry : kSearchFileTypes) {
+		if (term == std::string(wxString(entry.second).utf8_str())) {
+			return entry.first;
+		}
+	}
+	return std::string();
+}
+
 std::string SearchFileTypeTokenList()
 {
 	std::string list;
