@@ -244,8 +244,8 @@ void CEMSocket::OnReceive(int nErrorCode)
 		// something. readMax can legitimately be 0 here for empty-payload packets, and the
 		// do-while iteration still has to fall through to the packet-processing block
 		// below, so Reserve(0) must not short-circuit that path. Sockets that opt out via
-		// IsDownloadThrottled() (server control sockets) skip the reservation and do not
-		// count against the cap.
+		// IsDownloadThrottled() (server sockets, and client sockets we are not downloading
+		// from) skip the reservation and do not count against the cap.
 		const bool throttled = IsDownloadThrottled();
 		uint32 grantedBytes = 0;
 		ret = 0;

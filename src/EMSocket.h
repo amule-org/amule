@@ -107,10 +107,9 @@ public:
 	bool HasQueues(bool bOnlyStandardPackets = false) const;
 	bool IsBusyQuickCheck() const { return m_bBusy; }
 
-	// Whether OnReceive should gate reads through the global download bandwidth budget. Peer
-	// file-transfer sockets do; server-control sockets do not, their traffic being tiny and
-	// latency-sensitive, and would stall silently under a download cap tight enough to exhaust
-	// the throttler bucket.
+	// Whether OnReceive should gate reads through the global download bandwidth budget. Only
+	// client sockets we are downloading from do. Everything else is small and latency-sensitive,
+	// and would stall silently under a download cap tight enough to exhaust the throttler bucket.
 	virtual bool IsDownloadThrottled() const { return true; }
 
 	// protected:
