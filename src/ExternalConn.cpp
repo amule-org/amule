@@ -1478,6 +1478,12 @@ static CECPacket *Get_EC_Response_StatRequest(const CECPacket *request, CLoggerA
 			CDisplayRateCounter::ClampRate(theStats::GetDisplayDownOverheadRate())));
 		response->AddTag(CECTag(EC_TAG_STATS_BANNED_COUNT, /*(uint32)*/ theStats::GetBannedCount()));
 		AddLoggerTag(response, LoggerAccess);
+		// Session statistics are inexpensive scalar reads, carried on the existing poll.
+		response->AddTag(CECTag(EC_TAG_STATS_SESSION_SENT_BYTES, theStats::GetSessionSentBytes()));
+		response->AddTag(
+			CECTag(EC_TAG_STATS_SESSION_RECEIVED_BYTES, theStats::GetSessionReceivedBytes()));
+		response->AddTag(CECTag(EC_TAG_STATS_ACTIVE_CONNECTIONS, theStats::GetActiveConnections()));
+		response->AddTag(CECTag(EC_TAG_STATS_UPTIME_SECONDS, theStats::GetUptimeSeconds()));
 		// Needed only for the remote tray icon context menu
 		response->AddTag(CECTag(EC_TAG_STATS_TOTAL_SENT_BYTES, theStats::GetTotalSentBytes()));
 		response->AddTag(

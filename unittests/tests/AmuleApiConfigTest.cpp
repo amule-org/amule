@@ -481,3 +481,67 @@ TEST(AmuleApiConfig, EcSetupMigratesPlaintextAndPreservesSettings)
 	ASSERT_TRUE(text.Find("legacy-secret") == wxNOT_FOUND);
 	ASSERT_TRUE(text.Find("Password=") == wxNOT_FOUND);
 }
+
+TEST(AmuleApiConfig, MetricsDisabledByDefault)
+{
+	CAmuleApiConfig cfg;
+	ASSERT_TRUE(cfg.Load(MakeTmpDir("metrics-default")));
+	ASSERT_FALSE(cfg.MetricsCfg().enabled);
+	ASSERT_FALSE(cfg.MetricsCfg().IsActive());
+	ASSERT_TRUE(cfg.MetricsCfg().token.empty());
+}
+
+TEST(AmuleApiConfig, MetricsRequireDedicatedValidToken)
+{
+	CAmuleApiConfig missing;
+	ASSERT_TRUE(LoadHandWrittenConf("metrics-missing", "[Metrics]\nEnabled=1\nToken=", missing));
+	ASSERT_FALSE(missing.MetricsCfg().IsActive());
+	CAmuleApiConfig invalid;
+	ASSERT_TRUE(LoadHandWrittenConf("metrics-invalid",
+		"[Metrics]\nEnabled=1\nToken=" + std::string(32, ' ') + "bad token",
+		invalid));
+	ASSERT_FALSE(invalid.MetricsCfg().IsActive());
+	ASSERT_TRUE(invalid.MetricsCfg().token.empty());
+	CAmuleApiConfig valid;
+	const std::string token(64, 'a');
+	ASSERT_TRUE(LoadHandWrittenConf("metrics-valid", "[Metrics]\nEnabled=1\nToken=" + token, valid));
+	ASSERT_TRUE(valid.MetricsCfg().enabled);
+	ASSERT_EQUALS(token, valid.MetricsCfg().token);
+	ASSERT_TRUE(valid.MetricsCfg().IsActive());
+	CAmuleApiConfig token_only;
+	ASSERT_TRUE(LoadHandWrittenConf("metrics-token-only", "[Metrics]\nToken=" + token, token_only));
+	ASSERT_FALSE(token_only.MetricsCfg().IsActive());
+	CAmuleApiConfig disabled;
+	ASSERT_TRUE(LoadHandWrittenConf(
+		"metrics-explicit-disabled", "[Metrics]\nEnabled=0\nToken=" + token, disabled));
+	ASSERT_FALSE(disabled.MetricsCfg().IsActive());
+}
+
+TEST(AmuleApiConfig, ReloadWithoutMetricsSectionDisablesPreviousCredential)
+{
+	CAmuleApiConfig cfg;
+	ASSERT_TRUE(LoadHandWrittenConf(
+		"metrics-reload-enabled", "[Metrics]\nEnabled=1\nToken=" + std::string(64, 'b'), cfg));
+	ASSERT_TRUE(cfg.MetricsCfg().enabled);
+	ASSERT_TRUE(LoadHandWrittenConf("metrics-reload-disabled", "", cfg));
+	ASSERT_FALSE(cfg.MetricsCfg().enabled);
+	ASSERT_FALSE(cfg.MetricsCfg().IsActive());
+	ASSERT_TRUE(cfg.MetricsCfg().token.empty());
+}
+
+TEST(AmuleApiConfig, MetricsLimiterIsConfigurableAndResetsOnReload)
+{
+	CAmuleApiConfig cfg;
+	ASSERT_TRUE(LoadHandWrittenConf("metrics-limits",
+		"[Metrics]\nFailureThreshold=4\nFailureWindowSeconds=15\nLockoutSeconds=25",
+		cfg));
+	ASSERT_EQUALS(4u, cfg.MetricsCfg().failure_threshold);
+	ASSERT_EQUALS(15u, cfg.MetricsCfg().failure_window_seconds);
+	ASSERT_EQUALS(25u, cfg.MetricsCfg().lockout_seconds);
+	ASSERT_TRUE(LoadHandWrittenConf("metrics-limits-default",
+		"[Metrics]\nFailureThreshold=0\nFailureWindowSeconds=-1\nLockoutSeconds=0",
+		cfg));
+	ASSERT_EQUALS(30u, cfg.MetricsCfg().failure_threshold);
+	ASSERT_EQUALS(60u, cfg.MetricsCfg().failure_window_seconds);
+	ASSERT_EQUALS(300u, cfg.MetricsCfg().lockout_seconds);
+}

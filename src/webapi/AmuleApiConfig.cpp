@@ -179,6 +179,13 @@ bool CAmuleApiConfig::LoadAmuleapiConf(const wxString &path)
 			       "TokenFailureThreshold=30\n"
 			       "TokenLockoutSeconds=300\n"
 			       "\n"
+			       "[Metrics]\n"
+			       "Enabled=0\n"
+			       "Token=\n"
+			       "FailureWindowSeconds=60\n"
+			       "FailureThreshold=30\n"
+			       "LockoutSeconds=300\n"
+			       "\n"
 			       "[Streaming]\n"
 			       "EventBusRingCapacity=16384\n"
 			       "MaxConcurrentFileResponses=6\n";
@@ -279,6 +286,41 @@ bool CAmuleApiConfig::LoadAmuleapiConf(const wxString &path)
 	}
 	if (cfg.Read("/Auth/TokenLockoutSeconds", &n) && n > 0) {
 		m_auth.token_lockout_seconds = static_cast<unsigned>(n);
+	}
+
+	// Restore defaults on every load, including when a reused config object reads
+	// a profile without a Metrics section. Never retain a previous scrape credential.
+	m_metrics = Metrics{};
+	if (cfg.Read("/Metrics/Enabled", &n)) {
+		m_metrics.enabled = (n != 0);
+	}
+	if (cfg.Read("/Metrics/Token", &s)) {
+		m_metrics.token = std::string(s.utf8_str());
+	}
+	if (cfg.Read("/Metrics/FailureWindowSeconds", &n) && n > 0)
+		m_metrics.failure_window_seconds = static_cast<unsigned>(n);
+	if (cfg.Read("/Metrics/FailureThreshold", &n) && n > 0)
+		m_metrics.failure_threshold = static_cast<unsigned>(n);
+	if (cfg.Read("/Metrics/LockoutSeconds", &n) && n > 0)
+		m_metrics.lockout_seconds = static_cast<unsigned>(n);
+	if (m_metrics.IsActive()) {
+		// RFC 6750 b64token alphabet: a printable token that survives a bearer header
+		// unchanged. Require a useful minimum length; generate 32 random bytes in practice.
+		const auto &token = m_metrics.token;
+		const auto end = token.find('=');
+		const auto body = token.substr(0, end);
+		if (token.size() < 32 || token.size() > 256 || body.empty() ||
+			body.find_first_not_of(
+				"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~+/") !=
+				std::string::npos ||
+			(end != std::string::npos &&
+				token.find_first_not_of('=', end) != std::string::npos)) {
+			std::fputs("amuleapi: invalid [Metrics]/Token (expected 32-256 bearer-token "
+				   "characters); metrics disabled\n",
+				stderr);
+			m_metrics.enabled = false;
+			m_metrics.token.clear();
+		}
 	}
 
 	// `[Streaming]/EventBusRingCapacity`. Anything below the CEventBus floor is

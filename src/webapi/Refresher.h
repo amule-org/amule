@@ -40,6 +40,7 @@ namespace webapi
 {
 
 class CState;
+struct MetricsSnapshot;
 
 // Single tick of the EC poller. Issues every cached request, parses each response into a snapshot
 // struct, writes it under CState's exclusive lock. Returns true on success, false if any EC
@@ -52,7 +53,9 @@ class CState;
 //
 // Pure-function shape (app + state by reference, returns bool) so the tick body is unit-testable
 // against a mock EC reply.
-bool RefresherTick(CamuleapiApp &app, CState &state);
+// When supplied, captures this tick's metrics before other refreshes can mutate CState.
+// The caller publishes this candidate only if the whole tick succeeds.
+bool RefresherTick(CamuleapiApp &app, CState &state, MetricsSnapshot *metrics = nullptr);
 
 // Outcome of one EC_OP_SEARCH_RESULTS fetch for a single search.
 enum class SearchFetchOutcome

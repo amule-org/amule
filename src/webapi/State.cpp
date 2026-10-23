@@ -90,6 +90,67 @@ bool CState::EcConnected() const
 	return m_ec_connected;
 }
 
+const std::array<const char *, 11> &MetricsSnapshot::DownloadStatuses()
+{
+	static const std::array<const char *, 11> names{ { "downloading",
+		"waiting",
+		"hashing",
+		"erroneous",
+		"insufficient_disk",
+		"paused",
+		"allocating",
+		"stopped",
+		"completing",
+		"completed",
+		"unknown" } };
+	return names;
+}
+
+void MetricsSnapshot::CountDownloads(const FileMap &files)
+{
+	downloads.fill(0);
+	const auto &names = MetricsSnapshot::DownloadStatuses();
+	for (const auto &entry : files) {
+		if (!entry.second.is_downloading)
+			continue;
+		const auto &status = entry.second.download.status;
+		std::size_t index = 0;
+		while (index + 1 < names.size() && status != names[index])
+			++index;
+		++downloads[index];
+	}
+}
+
+void MetricsSnapshot::CountClients(const std::map<std::uint32_t, ClientSnapshot> &clients)
+{
+	active_uploads = 0;
+	for (const auto &entry : clients) {
+		if (entry.second.upload_state == "uploading")
+			++active_uploads;
+	}
+}
+
+void MetricsSnapshot::CountServers(const std::map<std::uint32_t, ServerSnapshot> &cache)
+{
+	servers = cache.size();
+	connected_server_users = {};
+	if (status.ed2k_state != "connected")
+		return;
+	const std::string address = status.server_ip + ":" + std::to_string(status.server_port);
+	for (const auto &entry : cache) {
+		if (entry.second.address == address) {
+			connected_server_users = { entry.second.users, true };
+			break;
+		}
+	}
+}
+
+MetricsSnapshot CState::Metrics() const
+{
+	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
+	return m_metrics;
+}
+
 StatusSnapshot CState::Status() const
 {
 	std::shared_lock<std::shared_timed_mutex> lock(m_mu);
@@ -914,7 +975,7 @@ std::uint64_t CState::SnapshotRevision() const
 	return m_snapshot_rev;
 }
 
-void CState::MarkTickSuccess()
+void CState::MarkTickSuccess(const MetricsSnapshot *metrics)
 {
 	std::unique_lock<std::shared_timed_mutex> lock(m_mu);
 	m_has_first_snapshot = true;
@@ -924,6 +985,12 @@ void CState::MarkTickSuccess()
 	// the implicit skew (typically 50-200 ms, more under EC-mutex contention). Fine for coarse
 	// freshness checks, not sub-second ones.
 	m_snapshot_at = std::time(nullptr);
+	if (metrics) {
+		MetricsSnapshot next = *metrics;
+		next.ec_connected = true;
+		next.snapshot_at = m_snapshot_at;
+		m_metrics = std::move(next);
+	}
 }
 
 void CState::MarkTickFailure()
@@ -937,6 +1004,7 @@ void CState::MarkTickFailure()
 	// transaction" model is atomic for events but NOT for state -- there is no rollback. CState
 	// is a best-effort cache; LastSeenState is the authoritative event baseline.
 	m_ec_connected = false;
+	m_metrics.ec_connected = false;
 }
 
 } // namespace webapi

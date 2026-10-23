@@ -3128,10 +3128,12 @@ if (ENABLE_INTEGRATION_TESTS AND ENABLE_IP2COUNTRY AND BUILD_DAEMON AND BUILD_AM
 	endif ()
 endif ()
 
-add_executable (WindowGeometryTest WindowGeometryTest.cpp)
-target_include_directories (WindowGeometryTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
-target_link_libraries (WindowGeometryTest muleunit mulecommon)
-add_test (NAME WindowGeometryTest COMMAND WindowGeometryTest)
+if (BUILD_MONOLITHIC OR BUILD_REMOTEGUI)
+	add_executable (WindowGeometryTest WindowGeometryTest.cpp)
+	target_include_directories (WindowGeometryTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
+	target_link_libraries (WindowGeometryTest muleunit mulecommon wxWidgets::CORE)
+	add_test (NAME WindowGeometryTest COMMAND WindowGeometryTest)
+endif ()
 
 add_executable (BandwidthRateConversionTest BandwidthRateConversionTest.cpp)
 target_include_directories (BandwidthRateConversionTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
@@ -3151,3 +3153,19 @@ if (TARGET wxWidgets::CORE)
 	set_tests_properties (BandwidthRateInputEnglishTest BandwidthRateInputItalianTest
 		PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 60)
 endif()
+
+# Prometheus serializer and successful-tick publication, without a daemon or EC.
+add_executable (MetricsTest
+	MetricsTest.cpp
+	${CMAKE_SOURCE_DIR}/src/webapi/Metrics.cpp
+	${CMAKE_SOURCE_DIR}/src/webapi/State.cpp
+)
+add_test (NAME MetricsTest COMMAND MetricsTest)
+target_include_directories (MetricsTest PRIVATE ${CMAKE_SOURCE_DIR}/src/webapi)
+target_link_libraries (MetricsTest muleunit mulecommon)
+
+if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND BUILD_AMULEAPI AND Python3_Interpreter_FOUND AND UNIX AND NOT APPLE)
+	add_test (NAME MetricsIntegrationTest
+		COMMAND ${Python3_EXECUTABLE} -u ${CMAKE_CURRENT_SOURCE_DIR}/MetricsIntegrationTest.py
+			$<TARGET_FILE:amuled> $<TARGET_FILE:amuleapi>)
+endif ()

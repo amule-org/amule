@@ -32,6 +32,7 @@ add_executable (amuleapi
 	EventDiff.cpp
 	HttpServer.cpp
 	LogTee.cpp
+	Metrics.cpp
 	PrefsSchema.cpp
 	Refresher.cpp
 	RefresherTick.cpp

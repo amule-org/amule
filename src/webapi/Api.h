@@ -102,6 +102,7 @@ public:
 	webapi::CRateLimiter &RateLimiter() { return m_rateLimiter; }
 
 private:
+	CHttpServer::Response HandleMetrics(const CHttpServer::Request &);
 	CHttpServer::Response HandleVersion(const CHttpServer::Request &);
 	CHttpServer::Response HandleVersionCheck(const CHttpServer::Request &);
 	CHttpServer::Response HandleLogin(const CHttpServer::Request &);
@@ -341,6 +342,8 @@ private:
 	// should not lock the user out, but a credential-stuffing attempt burning through stolen
 	// bearer tokens DOES need a brake. Default 30 failures in 60 s -> 5 min lockout.
 	webapi::CRateLimiter m_authRateLimiter;
+	// Isolated from API/JWT failures, including behind a shared reverse proxy.
+	webapi::CRateLimiter m_metricsRateLimiter;
 
 	// Lazy-fetch TTL caches. Each stores the snapshot value PLUS the wall-clock time at fetch,
 	// so handlers render `snapshot_at` against actual freshness rather than the refresher's

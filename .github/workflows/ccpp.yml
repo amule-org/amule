@@ -146,14 +146,17 @@ env:
   # on Windows runners. UnicodeCommandLineIntegrationTest launches three daemon processes,
   # each with a 15 s watchdog. AmuleApiPasswordInputTest exercises setup and native
   # terminal input without a daemon. ConnectorConfigPathTest launches multiple offline clients.
+  # UploadPacketBuilderTest compares compressed wire packets across many inputs; IndexedLoadTest
+  # round-trips large disk indexes. FatalAbortBacktraceTest starts 17 crash-reporting children,
+  # including a wedged-console case with its own watchdog. These can exceed 10 s on busy runners.
   # Give these tests 60 s; fast unit tests keep their 10 s budget.
   # Keep the budgets here rather than in TIMEOUT properties, which would also cap distro
   # builds that run ctest with no limit.
-  ctest_slow_unit_tests: '^(CredentialsTest|AmuleApiConfigTest|IntegrationFixtureUnitTest|UnicodeCommandLineIntegrationTest|AmuleApiPasswordInputTest|ConnectorConfigPathTest-(amulecmd|amuleweb))$'
+  ctest_slow_unit_tests: '^(UploadPacketBuilderTest|FatalAbortBacktraceTest|IndexedLoadTest|CredentialsTest|AmuleApiConfigTest|IntegrationFixtureUnitTest|UnicodeCommandLineIntegrationTest|AmuleApiPasswordInputTest|ConnectorConfigPathTest-(amulecmd|amuleweb))$'
   # Integration tests start and restart real processes. Run them separately
   # on Ubuntu outside the fast unit-test time budget, with 300 s each so a hung daemon
   # still fails the job. AllSearchIntegrationTest takes about 15 s on the runners.
-  ctest_fast_exclude: '^(NetworkPreferencesIntegrationTest|ConnectorConfigPathTest-(amulecmd|amuleweb)|AmuleApiPasswordInputTest|AmuleApiEcPasswordIntegrationTest|CredentialsTest|AmuleApiConfigTest|IntegrationFixtureUnitTest|UnicodeCommandLineIntegrationTest|AmuleApiRestartIntegrationTest|AllSearchIntegrationTest|AllSearchClientCapabilityTest|ChatCaptchaIntegrationTest|PathDefaultsIntegrationTest|LogfilePathIntegrationTest|KadIndexLifecycleECTest|ShareWatcherMoveIntegrationTest|DisplayRatesIntegrationTest|DownloadDisplayRatesIntegrationTest|UploadRefillIntegrationTest|UploadRefillCompressedIntegrationTest|KnownHistoryIntegrationTest|ServerListSourcesIntegrationTest|ServerListGuiIntegrationTest|ServerListFallbackIntegrationTest|ServerListFallbackApiIntegrationTest|KadDistributionECTest|KadPopulatedDistributionECTest|KadLookupECTest|KadPopulatedLookupECTest|CompletedFileDeleteIntegrationTest|CompletedFileDeleteCapabilityTest|SharedMembershipIntegrationTest)$'
+  ctest_fast_exclude: '^(UploadPacketBuilderTest|FatalAbortBacktraceTest|IndexedLoadTest|NetworkPreferencesIntegrationTest|ConnectorConfigPathTest-(amulecmd|amuleweb)|AmuleApiPasswordInputTest|AmuleApiEcPasswordIntegrationTest|CredentialsTest|AmuleApiConfigTest|IntegrationFixtureUnitTest|UnicodeCommandLineIntegrationTest|AmuleApiRestartIntegrationTest|AllSearchIntegrationTest|AllSearchClientCapabilityTest|ChatCaptchaIntegrationTest|PathDefaultsIntegrationTest|LogfilePathIntegrationTest|KadIndexLifecycleECTest|ShareWatcherMoveIntegrationTest|DisplayRatesIntegrationTest|DownloadDisplayRatesIntegrationTest|UploadRefillIntegrationTest|UploadRefillCompressedIntegrationTest|KnownHistoryIntegrationTest|ServerListSourcesIntegrationTest|ServerListGuiIntegrationTest|ServerListFallbackIntegrationTest|ServerListFallbackApiIntegrationTest|KadDistributionECTest|KadPopulatedDistributionECTest|KadLookupECTest|KadPopulatedLookupECTest|CompletedFileDeleteIntegrationTest|CompletedFileDeleteCapabilityTest|SharedMembershipIntegrationTest|MetricsIntegrationTest)$'
 
 jobs:
   # Window IDs in muuli_wdr.h and each EC enum in the .abstract files must not repeat a value. Two
@@ -233,7 +236,7 @@ jobs:
           xvfb-run -a ctest ${{ env.ctest_flags }} --timeout 10 -E '${{ env.ctest_fast_exclude }}|${{ env.ctest_shared_file_reverify }}' &&
           xvfb-run -a ctest ${{ env.ctest_flags }} --timeout 60 -R '${{ env.ctest_slow_unit_tests }}'
       - name: run integration tests
-        run: ctest ${{ env.ctest_flags }} --timeout 300 --no-tests=error -R '^(NetworkPreferencesIntegration|AmuleApiRestartIntegration|AllSearch(Integration|ClientCapability)|ChatCaptchaIntegration|PathDefaultsIntegration|LogfilePathIntegration|KadIndexLifecycleEC|ShareWatcherMoveIntegration|(Download)?DisplayRatesIntegration|UploadRefill(Compressed)?Integration|KnownHistoryIntegration|ServerListSourcesIntegration|ServerListGuiIntegration|ServerListFallback(Api)?Integration|KadDistributionEC|KadPopulatedDistributionEC|Kad(Populated)?LookupEC|CompletedFileDelete(Integration|Capability)|SharedMembershipIntegration|AmuleApiEcPasswordIntegration)Test$'
+        run: ctest ${{ env.ctest_flags }} --timeout 300 --no-tests=error -R '^(NetworkPreferencesIntegration|AmuleApiRestartIntegration|AllSearch(Integration|ClientCapability)|ChatCaptchaIntegration|PathDefaultsIntegration|LogfilePathIntegration|KadIndexLifecycleEC|ShareWatcherMoveIntegration|(Download)?DisplayRatesIntegration|UploadRefill(Compressed)?Integration|KnownHistoryIntegration|ServerListSourcesIntegration|ServerListGuiIntegration|ServerListFallback(Api)?Integration|KadDistributionEC|KadPopulatedDistributionEC|Kad(Populated)?LookupEC|CompletedFileDelete(Integration|Capability)|SharedMembershipIntegration|AmuleApiEcPasswordIntegration|MetricsIntegration)Test$'
       - name: run shared-file reverify integration test
         run: ctest ${{ env.ctest_flags }} --timeout 300 --no-tests=error -R '${{ env.ctest_shared_file_reverify }}'
       # amuleapi_curl_smoke drives these two against a live daemon rather than
@@ -345,7 +348,7 @@ jobs:
           xvfb-run -a ctest ${{ env.ctest_flags }} --timeout 10 -E '${{ env.ctest_fast_exclude }}|${{ env.ctest_shared_file_reverify }}' &&
           xvfb-run -a ctest ${{ env.ctest_flags }} --timeout 60 -R '${{ env.ctest_slow_unit_tests }}'
       - name: run integration tests
-        run: ctest ${{ env.ctest_flags }} --timeout 300 --no-tests=error -R '^(NetworkPreferencesIntegration|AmuleApiRestartIntegration|AllSearch(Integration|ClientCapability)|ChatCaptchaIntegration|PathDefaultsIntegration|LogfilePathIntegration|KadIndexLifecycleEC|ShareWatcherMoveIntegration|(Download)?DisplayRatesIntegration|UploadRefill(Compressed)?Integration|KnownHistoryIntegration|ServerListSourcesIntegration|ServerListGuiIntegration|ServerListFallback(Api)?Integration|KadDistributionEC|KadPopulatedDistributionEC|Kad(Populated)?LookupEC|CompletedFileDelete(Integration|Capability)|SharedMembershipIntegration|AmuleApiEcPasswordIntegration)Test$'
+        run: ctest ${{ env.ctest_flags }} --timeout 300 --no-tests=error -R '^(NetworkPreferencesIntegration|AmuleApiRestartIntegration|AllSearch(Integration|ClientCapability)|ChatCaptchaIntegration|PathDefaultsIntegration|LogfilePathIntegration|KadIndexLifecycleEC|ShareWatcherMoveIntegration|(Download)?DisplayRatesIntegration|UploadRefill(Compressed)?Integration|KnownHistoryIntegration|ServerListSourcesIntegration|ServerListGuiIntegration|ServerListFallback(Api)?Integration|KadDistributionEC|KadPopulatedDistributionEC|Kad(Populated)?LookupEC|CompletedFileDelete(Integration|Capability)|SharedMembershipIntegration|AmuleApiEcPasswordIntegration|MetricsIntegration)Test$'
       - name: run shared-file reverify integration test
         run: ctest ${{ env.ctest_flags }} --timeout 300 --no-tests=error -R '${{ env.ctest_shared_file_reverify }}'
 

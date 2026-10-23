@@ -25,6 +25,7 @@
 #ifndef WEBAPI_STATE_H
 #define WEBAPI_STATE_H
 
+#include <array>
 #include <chrono>
 #include <cstdint>
 #include <ctime>
@@ -1246,8 +1247,25 @@ struct PreferencesSnapshot
 	std::set<std::string> unknown_categories;
 };
 
+// Optional EC values retain presence separately: an old daemon must not look like zero.
+struct OptionalStat
+{
+	std::uint64_t value = 0;
+	bool present = false;
+};
+
 struct StatusSnapshot
 {
+	OptionalStat session_sent_bytes;
+	OptionalStat session_received_bytes;
+	OptionalStat active_connections;
+	OptionalStat uptime_seconds;
+	OptionalStat total_sent_bytes;
+	OptionalStat total_received_bytes;
+	OptionalStat upload_limit_bytes_per_second;
+	OptionalStat download_limit_bytes_per_second;
+	OptionalStat shared_file_count;
+	OptionalStat banned_client_count;
 	bool search_all_supported = false; // negotiated EC capability
 	// "connected" / "connecting" / "disconnected" -- the literal string the API
 	// returns, decoded at parse time so the snapshot is self-describing.
@@ -1496,6 +1514,25 @@ private:
 	index_type m_shared_by_hash;
 };
 
+// Published only at the end of a successful tick. Scrapes copy this bounded snapshot;
+// they never copy the file/client maps or observe a partially applied refresh.
+struct MetricsSnapshot
+{
+	StatusSnapshot status;
+	KadSnapshot kad;
+	bool ec_connected = false;
+	std::time_t snapshot_at = 0;
+	std::string daemon_version;
+	std::uint64_t active_uploads = 0;
+	std::uint64_t servers = 0;
+	OptionalStat connected_server_users;
+	std::array<std::uint64_t, 11> downloads{};
+	void CountClients(const std::map<std::uint32_t, ClientSnapshot> &clients);
+	void CountServers(const std::map<std::uint32_t, ServerSnapshot> &servers);
+	static const std::array<const char *, 11> &DownloadStatuses();
+	void CountDownloads(const FileMap &files);
+};
+
 // One State instance per amuleapi process. The mutex protects every member;
 // refresh swaps the whole struct under it, handlers read what they need.
 class CState
@@ -1527,6 +1564,7 @@ public:
 		bool ec_connected = false;
 	};
 	DashboardSnapshot Dashboard() const;
+	MetricsSnapshot Metrics() const;
 	PreferencesSnapshot Preferences() const;
 	// Full snapshot of the amule log lines (oldest-first). Handlers slice the
 	// tail before serialising via `?tail=N`.
@@ -1804,7 +1842,7 @@ public:
 	void CloseSearch(std::uint32_t search_id);
 	void WriteStatsTree(StatsTreeNode t);
 	void WriteGraphs(StatsGraphs g);
-	void MarkTickSuccess();
+	void MarkTickSuccess(const MetricsSnapshot *metrics = nullptr);
 	// Monotonic counter advanced by every successful refresh, from the background loop and
 	// from the inline refreshes mutating handlers run. `snapshot_at` cannot play this role:
 	// it is whole seconds, so two refreshes inside one second are indistinguishable, and it
@@ -1826,6 +1864,7 @@ private:
 	std::time_t m_snapshot_at = 0;
 	std::uint64_t m_snapshot_rev = 0;
 
+	MetricsSnapshot m_metrics;
 	StatusSnapshot m_status;
 	KadSnapshot m_kad;
 	PreferencesSnapshot m_preferences;

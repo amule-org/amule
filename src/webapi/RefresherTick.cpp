@@ -137,8 +137,11 @@ SearchFetchOutcome FetchOneSearchFull(CamuleapiApp &app, CState &state, std::uin
 	return outcome;
 }
 
-bool RefresherTick(CamuleapiApp &app, CState &state)
+bool RefresherTick(CamuleapiApp &app, CState &state, MetricsSnapshot *metrics)
 {
+	if (metrics)
+		metrics->daemon_version = std::string(app.GetDaemonVersion().utf8_str());
+
 	// Per-tick budget: a few EC ops via SendRecvSerialized (m_ec_mtx-serialised). Any failure
 	// bails the whole tick so the cache stays internally consistent. STAT_REQ runs first as the
 	// cheapest probe: an EC drop between ticks is caught before larger queries burn roundtrips.
@@ -150,14 +153,21 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 	{
 		std::unique_ptr<CECPacket> req(new CECPacket(EC_OP_STAT_REQ, EC_DETAIL_FULL));
 		const CECPacket *resp = app.SendRecvSerialized(req.get());
-		if (!resp)
+		// A protocol error is a failed refresh even when the socket is still alive.
+		if (!resp || resp->GetOpCode() == EC_OP_FAILED) {
+			delete resp;
 			return false;
+		}
 		StatusSnapshot s;
 		ParseStatusFromPacket(resp, s);
 		s.search_all_supported = app.IsServerSearchAllActive();
+		if (metrics)
+			metrics->status = s;
 		state.WriteStatus(std::move(s));
 		KadSnapshot k;
 		ParseKadFromPacket(resp, k);
+		if (metrics)
+			metrics->kad = k;
 		state.WriteKad(std::move(k));
 		std::vector<std::string> new_log_lines;
 		ParseAmuleLogFromPacket(resp, new_log_lines);
@@ -178,8 +188,11 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 	{
 		std::unique_ptr<CECPacket> req(new CECPacket(EC_OP_GET_UPDATE, EC_DETAIL_INC_UPDATE));
 		const CECPacket *resp = app.SendRecvSerialized(req.get());
-		if (!resp)
+		// A protocol error is a failed refresh even when the socket is still alive.
+		if (!resp || resp->GetOpCode() == EC_OP_FAILED) {
+			delete resp;
 			return false;
+		}
 		auto &rle = app.PartfileRleStateRequireStateWriteLock();
 
 		// Snapshot the cache's pre-tick ECID set so rle_state entries can be
@@ -191,6 +204,8 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 					ecids_before.insert(kv.first);
 			}
 			ApplyGetUpdateToDownloads(resp, cache, rle);
+			if (metrics)
+				metrics->CountDownloads(cache);
 			// Evict RLE state for ECIDs that no longer carry the downloading role.
 			// The walker handles FILE_REMOVED already; this is defence in depth.
 			for (auto ecid : ecids_before) {
@@ -213,6 +228,8 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 
 		state.MutateServers([&](std::map<std::uint32_t, ServerSnapshot> &cache) {
 			ApplyGetUpdateToServers(resp, cache);
+			if (metrics)
+				metrics->CountServers(cache);
 		});
 
 		state.MutateFriends([&](std::map<std::uint32_t, FriendSnapshot> &cache) {
@@ -226,6 +243,8 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 		state.MutateClientsWithFiles(
 			[&](std::map<std::uint32_t, ClientSnapshot> &cache, const FileMap &files) {
 				ApplyGetUpdateToClients(resp, cache, files);
+				if (metrics)
+					metrics->CountClients(cache);
 			});
 		delete resp;
 
@@ -445,8 +464,11 @@ bool RefresherTick(CamuleapiApp &app, CState &state)
 		std::unique_ptr<CECPacket> req(new CECPacket(EC_OP_GET_PREFERENCES));
 		req->AddTag(CECTag(EC_TAG_SELECT_PREFS, selection));
 		const CECPacket *resp = app.SendRecvSerialized(req.get());
-		if (!resp)
+		// A protocol error is a failed refresh even when the socket is still alive.
+		if (!resp || resp->GetOpCode() == EC_OP_FAILED) {
+			delete resp;
 			return false;
+		}
 		PreferencesSnapshot p;
 		std::vector<CategorySnapshot> cats;
 		ParsePreferencesFromPacket(resp, p, cats);

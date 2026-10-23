@@ -3900,3 +3900,65 @@ TEST(PrefsSchema, SharedFileReverifyDefaultsOffAndUsesBoundedUint32)
 	webapi::ParsePreferencesFromPacket(&response, prefs, categories);
 	ASSERT_EQUALS(static_cast<std::uint32_t>(3650u), prefs.files.shared_file_reverify_days);
 }
+
+TEST(Refresher, OptionalMetricsTagsPreservePresenceAndWideCounters)
+{
+	CECPacket empty(EC_OP_STATS);
+	StatusSnapshot missing;
+	ParseStatusFromPacket(&empty, missing);
+	ASSERT_FALSE(missing.total_sent_bytes.present);
+	ASSERT_FALSE(missing.total_received_bytes.present);
+	ASSERT_FALSE(missing.upload_limit_bytes_per_second.present);
+	ASSERT_FALSE(missing.download_limit_bytes_per_second.present);
+	ASSERT_FALSE(missing.shared_file_count.present);
+	ASSERT_FALSE(missing.banned_client_count.present);
+
+	CECPacket response(EC_OP_STATS);
+	const std::uint64_t total = 123456789012345ULL;
+	response.AddTag(CECTag(EC_TAG_STATS_TOTAL_SENT_BYTES, total));
+	response.AddTag(CECTag(EC_TAG_STATS_TOTAL_RECEIVED_BYTES, total + 1));
+	response.AddTag(CECTag(EC_TAG_STATS_UL_SPEED_LIMIT, static_cast<std::uint32_t>(0)));
+	response.AddTag(CECTag(EC_TAG_STATS_DL_SPEED_LIMIT, static_cast<std::uint32_t>(102400)));
+	response.AddTag(CECTag(EC_TAG_STATS_SHARED_FILE_COUNT, static_cast<std::uint32_t>(2)));
+	response.AddTag(CECTag(EC_TAG_STATS_BANNED_COUNT, static_cast<std::uint32_t>(0)));
+	StatusSnapshot parsed;
+	ParseStatusFromPacket(&response, parsed);
+	ASSERT_TRUE(parsed.total_sent_bytes.present);
+	ASSERT_EQUALS(total, parsed.total_sent_bytes.value);
+	ASSERT_TRUE(parsed.total_received_bytes.present);
+	ASSERT_EQUALS(total + 1, parsed.total_received_bytes.value);
+	ASSERT_TRUE(parsed.upload_limit_bytes_per_second.present);
+	ASSERT_EQUALS(static_cast<std::uint64_t>(0), parsed.upload_limit_bytes_per_second.value);
+	ASSERT_TRUE(parsed.download_limit_bytes_per_second.present);
+	ASSERT_EQUALS(static_cast<std::uint64_t>(102400), parsed.download_limit_bytes_per_second.value);
+	ASSERT_TRUE(parsed.shared_file_count.present);
+	ASSERT_EQUALS(static_cast<std::uint64_t>(2), parsed.shared_file_count.value);
+	ASSERT_TRUE(parsed.banned_client_count.present);
+}
+
+TEST(Refresher, OptionalSessionMetricsAreByteAccurateAndDoNotLatchMissingTags)
+{
+	CECPacket response(EC_OP_STATS);
+	const std::uint64_t bytes = 123456789012345ULL;
+	response.AddTag(CECTag(EC_TAG_STATS_SESSION_SENT_BYTES, bytes));
+	response.AddTag(CECTag(EC_TAG_STATS_SESSION_RECEIVED_BYTES, static_cast<std::uint64_t>(0)));
+	response.AddTag(CECTag(EC_TAG_STATS_ACTIVE_CONNECTIONS, static_cast<std::uint32_t>(7)));
+	response.AddTag(CECTag(EC_TAG_STATS_UPTIME_SECONDS, static_cast<std::uint64_t>(42)));
+	StatusSnapshot parsed;
+	ParseStatusFromPacket(&response, parsed);
+	ASSERT_TRUE(parsed.session_sent_bytes.present);
+	ASSERT_EQUALS(bytes, parsed.session_sent_bytes.value);
+	ASSERT_TRUE(parsed.session_received_bytes.present);
+	ASSERT_EQUALS(static_cast<std::uint64_t>(0), parsed.session_received_bytes.value);
+	ASSERT_TRUE(parsed.active_connections.present);
+	ASSERT_EQUALS(static_cast<std::uint64_t>(7), parsed.active_connections.value);
+	ASSERT_TRUE(parsed.uptime_seconds.present);
+	ASSERT_EQUALS(static_cast<std::uint64_t>(42), parsed.uptime_seconds.value);
+	CECPacket older(EC_OP_STATS);
+	StatusSnapshot missing;
+	ParseStatusFromPacket(&older, missing);
+	ASSERT_FALSE(missing.session_sent_bytes.present);
+	ASSERT_FALSE(missing.session_received_bytes.present);
+	ASSERT_FALSE(missing.active_connections.present);
+	ASSERT_FALSE(missing.uptime_seconds.present);
+}

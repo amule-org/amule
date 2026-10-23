@@ -252,6 +252,23 @@ void ParseStatusFromPacket(const CECPacket *resp, StatusSnapshot &out)
 	if (const CECTag *t = resp->GetTagByName(EC_TAG_STATS_UL_SPEED)) {
 		out.upload_bytes_per_second = static_cast<std::uint64_t>(t->GetInt());
 	}
+	auto optional_stat = [&](ec_tagname_t name, OptionalStat &value) {
+		if (const CECTag *tag = resp->GetTagByName(name)) {
+			value.value = tag->GetInt();
+			value.present = true;
+		}
+	};
+	optional_stat(EC_TAG_STATS_SESSION_SENT_BYTES, out.session_sent_bytes);
+	optional_stat(EC_TAG_STATS_SESSION_RECEIVED_BYTES, out.session_received_bytes);
+	optional_stat(EC_TAG_STATS_ACTIVE_CONNECTIONS, out.active_connections);
+	optional_stat(EC_TAG_STATS_UPTIME_SECONDS, out.uptime_seconds);
+	optional_stat(EC_TAG_STATS_TOTAL_SENT_BYTES, out.total_sent_bytes);
+	optional_stat(EC_TAG_STATS_TOTAL_RECEIVED_BYTES, out.total_received_bytes);
+	optional_stat(EC_TAG_STATS_UL_SPEED_LIMIT, out.upload_limit_bytes_per_second);
+	optional_stat(EC_TAG_STATS_DL_SPEED_LIMIT, out.download_limit_bytes_per_second);
+	optional_stat(EC_TAG_STATS_SHARED_FILE_COUNT, out.shared_file_count);
+	optional_stat(EC_TAG_STATS_BANNED_COUNT, out.banned_client_count);
+
 	// Overhead rates and free space ride the same EC_DETAIL_FULL response. The two disk
 	// figures are cast through int64 on purpose: amuled's FREE_SPACE_UNKNOWN is -1 and the
 	// serializer casts it to uint64, so an unsigned read would turn "unknown" into

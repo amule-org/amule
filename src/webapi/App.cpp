@@ -669,9 +669,11 @@ void CamuleapiApp::TextShell(const wxString & /*prompt*/)
 		if (was_failed) {
 			m_state.ResetLists();
 		}
-		const bool ok = webapi::RefresherTick(*this, m_state);
+		webapi::MetricsSnapshot metrics;
+		auto *candidate = m_apiConfig.MetricsCfg().IsActive() ? &metrics : nullptr;
+		const bool ok = webapi::RefresherTick(*this, m_state, candidate);
 		if (ok) {
-			m_state.MarkTickSuccess();
+			m_state.MarkTickSuccess(candidate);
 			was_failed = false;
 			ec_consecutive_failures = 0;
 			ec_warn_logged = false;

@@ -24,6 +24,8 @@
 
 #include "Api.h"
 #include "ServerListSources.h"
+#include "Metrics.h"
+#include <ConstantTime.h>
 #include "JsonDepthScan.h" // webapi::JsonNestingWithinLimit
 
 #include "ClientTagNames.h" // Needed for the shared client-tag token decoders
@@ -587,6 +589,9 @@ CApiDispatcher::CApiDispatcher(CAmuleApiConfig &config, CJwt &jwt, webapi::CStat
 m_authRateLimiter(webapi::CRateLimiter::Config{ config.AuthCfg().token_failure_window_seconds,
 	config.AuthCfg().token_failure_threshold,
 	config.AuthCfg().token_lockout_seconds })
+, m_metricsRateLimiter(webapi::CRateLimiter::Config{ config.MetricsCfg().failure_window_seconds,
+	  config.MetricsCfg().failure_threshold,
+	  config.MetricsCfg().lockout_seconds })
 {
 }
 
@@ -761,7 +766,9 @@ CHttpServer::Response CApiDispatcher::Dispatch(const CHttpServer::Request &req)
 	// answered -- as the static path did, since it clears the body for HEAD so only
 	// the GET reached the hashing branch.
 	const bool handler_set_etag = (resp.headers.find("ETag") != resp.headers.end());
-	if (webapi::ShouldStampEtag(is_safe_method, handler_set_etag, resp.status, resp.body.empty())) {
+	if ((resp.headers.find("Cache-Control") == resp.headers.end() ||
+		    resp.headers.at("Cache-Control") != "no-store") &&
+		webapi::ShouldStampEtag(is_safe_method, handler_set_etag, resp.status, resp.body.empty())) {
 		// Skip the MD5 over a multi-MB body when nothing has changed. The key is
 		// (target, snapshot revision): a revision advances on every eligible write,
 		// so unlike a timestamp it cannot stand still through a mutation or collapse
@@ -874,6 +881,10 @@ CHttpServer::Response CApiDispatcher::DispatchToHandler(const CHttpServer::Reque
 		path = web_api_path::StripTrailingSlash(path);
 	}
 
+	// Reserve this path even when disabled: the SPA fallback must not serve index.html.
+	if (path == "/metrics") {
+		return HandleMetrics(req);
+	}
 	if (path == "/api/v1/health") {
 		if (req.method != "GET" && req.method != "HEAD") {
 			return MethodNotAllowed("GET, HEAD", "only GET / HEAD on /health");
@@ -1812,6 +1823,41 @@ CHttpServer::Response CApiDispatcher::HandleHealth(const CHttpServer::Request &)
 	w.EndObject();
 	FinalizeJsonBody(w, r);
 	return r;
+}
+
+CHttpServer::Response CApiDispatcher::HandleMetrics(const CHttpServer::Request &req)
+{
+	const auto &config = m_config.MetricsCfg();
+	if (!config.IsActive())
+		return ErrorResponse(
+			404, "not_found", "metrics are disabled or no metrics token is configured");
+	if (req.method != "GET" && req.method != "HEAD")
+		return MethodNotAllowed("GET, HEAD", "only GET or HEAD on /metrics");
+	const auto decision = m_metricsRateLimiter.Check(req.remote_addr);
+	if (decision.locked_out) {
+		auto response =
+			ErrorResponse(429, "rate_limited", "too many failed metrics authentication attempts");
+		response.headers["Retry-After"] = std::to_string(decision.retry_after_seconds);
+		response.headers["Cache-Control"] = "no-store";
+		return response;
+	}
+	const auto token =
+		webapi::ExtractBearerToken(FindHeaderCaseInsensitive(req.headers, "Authorization"));
+	if (token.empty() || !webcommon::ConstantTimeEquals(token, config.token)) {
+		m_metricsRateLimiter.NoteFailure(req.remote_addr);
+		auto response = ErrorResponse(401, "unauthorized", "invalid or missing metrics bearer token");
+		response.headers["WWW-Authenticate"] = "Bearer realm=\"metrics\"";
+		response.headers["Cache-Control"] = "no-store";
+		return response;
+	}
+	m_metricsRateLimiter.NoteSuccess(req.remote_addr);
+	CHttpServer::Response response;
+	response.status = 200;
+	response.content_type = "text/plain; version=0.0.4; charset=utf-8";
+	response.headers["Cache-Control"] = "no-store";
+	response.body =
+		webapi::SerializeMetrics(m_state.Metrics(), std::string(GetShortMuleVersion().utf8_str()));
+	return response;
 }
 
 CHttpServer::Response CApiDispatcher::HandleVersion(const CHttpServer::Request &req)
