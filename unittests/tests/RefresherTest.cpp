@@ -3657,6 +3657,39 @@ TEST(Refresher, SearchFileTypeTermRejectsAnythingElse)
 	ASSERT_EQUALS(std::string(""), SearchFileTypeTerm("iso"));
 }
 
+// The reverse mapping the search rows need: an ed2k term, as the daemon reports a search's
+// start parameters, back to the token rows and POST bodies carry.
+TEST(Refresher, SearchFileTypeTokenCoversEveryTerm)
+{
+	ASSERT_EQUALS(std::string("audio"), SearchFileTypeToken("Audio"));
+	ASSERT_EQUALS(std::string("video"), SearchFileTypeToken("Video"));
+	ASSERT_EQUALS(std::string("picture"), SearchFileTypeToken("Image"));
+	ASSERT_EQUALS(std::string("text"), SearchFileTypeToken("Doc"));
+	ASSERT_EQUALS(std::string("program"), SearchFileTypeToken("Pro"));
+	ASSERT_EQUALS(std::string("archive"), SearchFileTypeToken("Arc"));
+	ASSERT_EQUALS(std::string("disc_image"), SearchFileTypeToken("Iso"));
+}
+
+// Anything else is not a term this build's table produced; the rows say so with an empty
+// token rather than a guess.
+TEST(Refresher, SearchFileTypeTokenRejectsAnythingElse)
+{
+	ASSERT_EQUALS(std::string(""), SearchFileTypeToken(""));
+	ASSERT_EQUALS(std::string(""), SearchFileTypeToken("audio"));
+	ASSERT_EQUALS(std::string(""), SearchFileTypeToken("Unknown"));
+	ASSERT_EQUALS(std::string(""), SearchFileTypeToken("iso"));
+}
+
+// Built from the same table, so a token posted, applied, and re-reported reads back as
+// itself even after a category is added.
+TEST(Refresher, SearchFileTypeMappingsAreInverse)
+{
+	for (const std::string token :
+		{ "audio", "video", "picture", "text", "program", "archive", "disc_image" }) {
+		ASSERT_EQUALS(token, SearchFileTypeToken(SearchFileTypeTerm(token)));
+	}
+}
+
 TEST(Refresher, StatusFreeSpaceUnknownSentinelReadsBackAsMinusOne)
 {
 	// amuled's FREE_SPACE_UNKNOWN is a signed -1 and its EC serializer casts it straight to

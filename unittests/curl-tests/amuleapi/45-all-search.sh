@@ -39,6 +39,14 @@ jq -e --argjson sid "$ALL_SID" \
 	'any(.searches[]; .search_id == $sid and .type == "all")' "$TMP/searches" >/dev/null \
 	|| fail 'GET /search did not report type all'
 echo 'PASS: GET /search reports type all'
+# The fixture is a pre-0x02 StoredSearches.met: no form was recorded for it, so the
+# row carries no form fields -- the three numeric caps as null, the strings omitted.
+jq -e --argjson sid "$ALL_SID" \
+	'any(.searches[]; .search_id == $sid and (.file_type | not) and (.extension | not)
+		and .min_size_bytes == null and .max_size_bytes == null
+		and .min_source_count == null)' "$TMP/searches" >/dev/null \
+	|| fail 'GET /search gave a pre-0x02 restored search a form it never had'
+echo 'PASS: GET /search leaves a pre-0x02 restored search without a form'
 curl -fsS --max-time 10 -H "$AUTH" "$API/search/$ALL_SID/results" >"$TMP/results"
 echo 'PASS: GET All search results'
 # Starts are capability-gated, and All can use Kad alone in this offline fixture.
@@ -53,12 +61,25 @@ curl -fsS --max-time 10 -X POST -H "$AUTH" -H 'Content-Type: application/json' \
 	-d '{"network":"kad"}' "$API/networks/connect" >/dev/null
 STATUS=$(curl -sS --max-time 10 -o "$TMP/start" -w '%{http_code}' \
 	-X POST -H "$AUTH" -H 'Content-Type: application/json' \
-	-d '{"query":"offlineallregression","type":"all","file_type":"archive","min_source_count":2}' "$API/search")
+	-d '{"query":"offlineallregression","type":"all","file_type":"archive","extension":"zip","min_size_bytes":1048576,"max_size_bytes":5242880,"min_source_count":2}' "$API/search")
 [ "$STATUS" = 202 ] || fail "POST All returned $STATUS: $(cat "$TMP/start")"
 SID=$(jq -er '.search_id' "$TMP/start")
 jq -e '.type == "all" and .state == "running"' "$TMP/start" >/dev/null \
 	|| fail 'POST All response has wrong type/state'
-echo 'PASS: POST All starts using Kad fallback'
+# The creation echoes the form in the row vocabulary: the daemon recorded the same
+# parameters the client sent, so the row carries them back like GET /search will.
+jq -e '.file_type == "archive" and .extension == "zip"
+	and .min_size_bytes == 1048576 and .max_size_bytes == 5242880
+	and .min_source_count == 2' "$TMP/start" >/dev/null \
+	|| fail 'POST All response did not echo the submitted form'
+echo 'PASS: POST All starts using Kad fallback and echoes its form'
+curl -fsS --max-time 10 -H "$AUTH" "$API/search" >"$TMP/searches"
+jq -e --argjson sid "$SID" \
+	'any(.searches[]; .search_id == $sid and .file_type == "archive"
+		and .extension == "zip" and .min_size_bytes == 1048576
+		and .max_size_bytes == 5242880 and .min_source_count == 2)' "$TMP/searches" >/dev/null \
+	|| fail 'GET /search did not report the submitted form back'
+echo 'PASS: GET /search reports the form a search was started with'
 STATUS=$(curl -sS --max-time 10 -o "$TMP/more" -w '%{http_code}' \
 	-X POST -H "$AUTH" "$API/search/$SID/more")
 [ "$STATUS" = 202 ] || fail "more on active All returned $STATUS: $(cat "$TMP/more")"
