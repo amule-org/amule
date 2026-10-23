@@ -69,6 +69,11 @@ if (BUILD_MONOLITHIC OR BUILD_DAEMON)
 		list (APPEND CORE_SOURCES QuicContext.cpp QuicGnuTlsSession.cpp QuicNgtcp2Adapter.cpp QuicSocketTransport.cpp QuicStreamAcceptor.cpp)
 	endif()
 
+	# Policy tests compile this source directly even when the core omits it.
+	if (ENABLE_ED2K_OFFERFILES_V1)
+		list (APPEND CORE_SOURCES OfferFilesPolicy.cpp)
+	endif()
+
 	# Only compiled in when the switch is on. Every call site is behind the
 	# same guard, so with the switch off these two would be dead weight in
 	# the binary; the unit tests compile them directly, so gating them here

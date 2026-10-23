@@ -6,6 +6,7 @@ import configparser
 from pathlib import Path
 import errno
 import hashlib
+import struct
 from itertools import cycle
 import tempfile
 import unittest
@@ -14,6 +15,7 @@ from unittest.mock import patch
 import AllSearchIntegrationTest
 import DaemonConfig
 import LogfilePathIntegrationTest
+from OfferFilesInteropPeer import login_tags
 
 
 class ReusingSocket:
@@ -180,6 +182,37 @@ class IntegrationFixtureUnitTest(unittest.TestCase):
             with patch.object(LogfilePathIntegrationTest.subprocess, 'Popen', FailedDaemon):
                 LogfilePathIntegrationTest.run('unused-daemon', root, failure=True,
                                                expected=root / 'logfile')
+
+
+class OfferFilesLoginUnitTest(unittest.TestCase):
+    def test_offerfiles_login_request_with_other_extensions(self):
+        standard = (b'\x02\x01\x00\x01\x04\x00test'
+                    + b''.join(b'\x03\x01\x00' + bytes([name]) + struct.pack('<I', 1)
+                               for name in (0x11, 0x20, 0xfb)))
+        request = b'\x03\x0c\x00offerfiles_v\x01\x00\x00\x00'
+        ipv6 = b'\x01\x01\x00\xae' + bytes.fromhex('20014860000000000000000000008888')
+        for extensions in (request, request + ipv6, ipv6 + request):
+            count = 4 + 1 + (ipv6 in extensions)
+            payload = bytes(22) + struct.pack('<I', count) + standard + extensions
+            self.assertEqual(login_tags(payload)[b'offerfiles_v'], 1)
+        payload = bytes(22) + struct.pack('<I', 5) + standard + ipv6
+        self.assertNotIn(b'offerfiles_v', login_tags(payload))
+        # The request bytes inside a nickname are not an actual extension.
+        nickname = b'\x02\x01\x00\x01' + struct.pack('<H', len(request)) + request
+        payload = bytes(22) + struct.pack('<I', 4) + nickname + standard[10:]
+        self.assertNotIn(b'offerfiles_v', login_tags(payload))
+
+    def test_offerfiles_login_rejects_wrong_request_integer_width(self):
+        for kind, width in ((8, 2), (9, 1), (11, 8)):
+            request = bytes([kind]) + b'\x0c\x00offerfiles_v' + (1).to_bytes(width, 'little')
+            payload = bytes(22) + struct.pack('<I', 1) + request
+            with self.assertRaisesRegex(AssertionError, 'must use uint32'):
+                login_tags(payload)
+
+    def test_offerfiles_login_rejects_truncated_hash_tags(self):
+        payload = bytes(22) + struct.pack('<I', 1) + b'\x01\x01\x00\xae' + bytes(15)
+        with self.assertRaisesRegex(AssertionError, 'truncated tag value'):
+            login_tags(payload)
 
 
 class DaemonConfigUnitTest(unittest.TestCase):

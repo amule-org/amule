@@ -33,6 +33,9 @@
 #ifdef ENABLE_IPV6
 #include "NetworkAddress.h" // Needed for CNetworkAddress
 #endif
+#ifdef ENABLE_ED2K_OFFERFILES_V1
+#include "OfferFilesPolicy.h"
+#endif
 
 // CServerSocket
 
@@ -64,11 +67,24 @@ public:
 		bool delpacket = true,
 		bool controlpacket = true,
 		uint32 actualPayloadSize = 0) override;
+	bool TrySendPacket(CPacket *packet,
+		bool delpacket = true,
+		bool controlpacket = true,
+		uint32 actualPayloadSize = 0);
 	bool IsSolving() const { return m_IsSolving; };
 	void OnHostnameResolved(uint32 ip);
 	CServer *GetServerConnected() const { return serverconnect->GetCurrentServer(); }
 
 	uint32 GetServerIP() const;
+#ifdef ENABLE_ED2K_OFFERFILES_V1
+	const COfferFilesAdvertisement *GetOfferFilesAdvertisement() const
+	{
+		return m_offerFilesPolicy.Get();
+	}
+	bool RequestedOfferFilesV1() const { return m_offerFilesPolicy.Requested(); }
+	bool CanPublishOfferFiles(uint64 now) const { return m_offerFilesPolicy.CanPublish(now); }
+	COfferFilesPublication &GetOfferFilesPublication() { return m_offerFilesPublication; }
+#endif
 	// The port ConnectToServer() dialed: the obfuscation port, or GetConnPort(), which can be an
 	// aux port rather than the advertised one.
 	uint16 GetConnectPort() const { return m_connectPort; }
@@ -107,6 +123,10 @@ private:
 	uint64 m_dwLastTransmission;
 
 	bool m_IsSolving;
+#ifdef ENABLE_ED2K_OFFERFILES_V1
+	COfferFilesConnectionPolicy m_offerFilesPolicy;
+	COfferFilesPublication m_offerFilesPublication;
+#endif
 	uint16 m_connectPort = 0;
 #ifdef ENABLE_IPV6
 	CNetworkAddress m_loginIPv6;

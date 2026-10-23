@@ -264,6 +264,9 @@ bool CPreferences::s_MediaMetadataEnabled;
 wxString CPreferences::s_MediaMetadataFFProbePath;
 bool CPreferences::s_ConnectToKad;
 bool CPreferences::s_ConnectToED2K;
+#ifdef ENABLE_ED2K_OFFERFILES_V1
+bool CPreferences::s_ExperimentalED2KPublication = false;
+#endif
 bool CPreferences::s_KadProtocol10;
 bool CPreferences::s_KadStrictAichPublishers;
 bool CPreferences::s_KadProtocol10Supported = true;
@@ -1496,6 +1499,11 @@ void CPreferences::BuildItemList(const wxString &appdir)
 	// Same rationale, for ed2k-server's LowID hole punch: off by default, independent of
 	// the Lugdunum setting -- a server speaks one protocol or the other, never both.
 	s_MiscList.push_back(new Cfg_Bool("/eMule/LowIdHolePunch", s_LowIdHolePunchEnabled, false));
+#endif
+
+#ifdef ENABLE_ED2K_OFFERFILES_V1
+	NewCfgItem(IDC_EXPERIMENTAL_ED2K_PUBLICATION,
+		(new Cfg_Bool("/eMule/ExperimentalED2KPublication", s_ExperimentalED2KPublication, false)));
 #endif
 
 	/** Power management */
