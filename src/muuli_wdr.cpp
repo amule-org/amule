@@ -2367,8 +2367,6 @@ wxSizer *PreferencesRemoteControlsTab( wxWindow *parent, bool call_fit, bool set
     CMuleTextCtrl *item13 = new CMuleTextCtrl( item2, IDC_EXT_CONN_PASSWD, "", wxDefaultPosition, wxDefaultSize, wxTE_PASSWORD );
     item11->Add( item13, wxSizerFlags(1).Center().Border(wxLEFT, 5) );
     item1->Add( item11, wxSizerFlags().Expand().CenterVertical() );
-    wxCheckBox *item13b = new wxCheckBox( item2, IDC_EXT_CONN_REQUIRE_ENCRYPTION, _("Require encrypted connections (rejects clients that cannot encrypt)"), wxDefaultPosition, wxDefaultSize, 0 );
-    item1->Add( item13b, wxSizerFlags().CenterVertical().Border(wxALL, 5) );
     item0->Add( item1, wxSizerFlags().Expand().Border(wxALL, 0) );
     wxStaticBox *item37 = new wxStaticBox( parent, -1, _("aMule API server parameters") );
     wxStaticBoxSizer *item36 = new wxStaticBoxSizer( item37, wxVERTICAL );
@@ -3348,9 +3346,6 @@ wxSizer *CoreConnect( wxWindow *parent, bool call_fit, bool set_sizer )
     wxCheckBox *item13 = new wxCheckBox( parent, ID_EC_SAVE, _("Remember those settings"), wxDefaultPosition, wxDefaultSize, 0 );
     item13->SetValue( TRUE );
     item0->Add( item13, wxSizerFlags().CenterVertical().Border(wxALL, 5) );
-    wxCheckBox *item13a = new wxCheckBox( parent, ID_EC_ENCRYPTION, _("Encrypt the connection (recommended)"), wxDefaultPosition, wxDefaultSize, 0 );
-    item13a->SetValue( TRUE );
-    item0->Add( item13a, wxSizerFlags().CenterVertical().Border(wxALL, 5) );
     wxCheckBox *item13b = new wxCheckBox( parent, ID_EC_FORCE_ZLIB, _("Force ZLIB compression"), wxDefaultPosition, wxDefaultSize, 0 );
     item0->Add( item13b, wxSizerFlags().CenterVertical().Border(wxALL, 5) );
     wxBoxSizer *item14 = new wxBoxSizer( wxHORIZONTAL );

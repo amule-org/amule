@@ -154,7 +154,13 @@ import sys, re, os
 conf, md5, ecport = sys.argv[1], sys.argv[2], sys.argv[3]
 s = open(conf).read() if os.path.exists(conf) else "[ExternalConnect]\nAcceptExternalConnections=1\nECPort=%s\nECPassword=%s\n" % (ecport, md5)
 s = re.sub(r'AcceptExternalConnections=\d', 'AcceptExternalConnections=1', s)
-s = re.sub(r'ECPassword=.*', 'ECPassword=' + md5, s)
+# This development helper explicitly resets the EC password. Let the core
+# migrate that input once rather than retaining an obsolete verifier.
+s = re.sub(r'(?m)^ECPasswordVerifier=.*\n?', '', s)
+s = re.sub(r'(?m)^ECPassword=.*\n?', '', s)
+if '[ExternalConnect]' not in s:
+    s += '\n[ExternalConnect]\n'
+s = s.replace('[ExternalConnect]\n', '[ExternalConnect]\nECPassword=' + md5 + '\n')
 s = re.sub(r'ECPort=.*', 'ECPort=' + ecport, s)
 open(conf, 'w').write(s)
 PY

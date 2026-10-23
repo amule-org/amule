@@ -51,17 +51,11 @@ def field(tags, name):
 class EC:
     def __init__(self, port):
         self.sock = socket.create_connection(('127.0.0.1', port), timeout=10)
-        op, tags = self.call('EC_OP_AUTH_REQ', [
-            string(C['EC_TAG_CLIENT_NAME'], 'Complete-file regression'),
-            string(C['EC_TAG_CLIENT_VERSION'], '1'),
-            tag(C['EC_TAG_PROTOCOL_VERSION'], struct.pack('!H', C['EC_CURRENT_PROTOCOL_VERSION']), 3)])
-        assert op == C['EC_OP_AUTH_SALT'], (op, tags)
-        salt = field(tags, 'EC_TAG_PASSWD_SALT')
-        proof = hashlib.md5((hashlib.md5(b'regression').hexdigest() +
-                            hashlib.md5(f'{salt:X}'.encode()).hexdigest()).encode()).digest()
-        op, tags = self.call('EC_OP_AUTH_PASSWD', [tag(C['EC_TAG_PASSWD_HASH'], proof, 9)])
-        assert op == C['EC_OP_AUTH_OK'], (op, tags)
-        assert field(tags, 'EC_TAG_CAN_DELETE_COMPLETE') is not None, tags
+        from ECWire import authenticate
+        caps = [tag(C['EC_TAG_CAN_PARTIAL_UPDATE'])] if getattr(self, 'partial', False) else []
+        self.sock, op, tags = authenticate(self.sock, hashlib.md5(b'regression').digest(), capabilities=caps)
+        assert op == C['EC_OP_AUTH_OK'] and C['EC_TAG_CAN_DELETE_COMPLETE'] in tags, (op, tags)
+        if caps: assert C['EC_TAG_CAN_PARTIAL_UPDATE'] in tags
         self.file_cache = {}
 
     def call(self, op, tags=()):
@@ -259,7 +253,7 @@ def run(daemon, api):
                 hp = free_ports(1)[0]
                 base = f'http://127.0.0.1:{hp}/api/v1'
                 api_proc = subprocess.Popen([api, '--config-dir='+str(api_root), '--host=127.0.0.1',
-                    '--port='+str(ec_port), '--http-port='+str(hp), '--disable-ec-encryption'],
+                    '--port='+str(ec_port), '--http-port='+str(hp)],
                     env=env, stdout=api_log, stderr=api_log)
                 processes.append(api_proc)
                 def healthy():

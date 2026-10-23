@@ -22,14 +22,6 @@ class UpdateClient(EC):
         self.rows = {}
         self.last_files = {}
 
-    def call(self, op, tags=()):
-        if op == 'EC_OP_AUTH_REQ' and self.partial:
-            tags = [*tags, tag(C['EC_TAG_CAN_PARTIAL_UPDATE'])]
-        reply, children = super().call(op, tags)
-        if op == 'EC_OP_AUTH_PASSWD' and self.partial:
-            assert field(children, 'EC_TAG_CAN_PARTIAL_UPDATE') is not None, children
-        return reply, children
-
     def poll(self):
         op, tags = self.call('EC_OP_GET_UPDATE',
                             [integer(C['EC_TAG_DETAIL_LEVEL'], C['EC_DETAIL_INC_UPDATE'])])
@@ -106,7 +98,7 @@ def run(daemon, api, root):
             config = api_dir / 'amuleapi.conf'
             config.write_text(config.read_text().replace('PasswordMD5=', 'PasswordMD5=' + hashlib.md5(b'regression').hexdigest(), 1))
             server = subprocess.Popen([api, '--config-dir='+str(api_dir), '--host=127.0.0.1',
-                '--port='+str(ec_port), '--http-port='+str(http_port), '--disable-ec-encryption'],
+                '--port='+str(ec_port), '--http-port='+str(http_port)],
                 env=env, stdout=log, stderr=log)
             processes.append(server)
             base = f'http://127.0.0.1:{http_port}/api/v1'

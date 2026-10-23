@@ -4,7 +4,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
-"POT-Creation-Date: 2026-10-07 10:08-0400\n"
+"POT-Creation-Date: 2026-10-19 14:41+0000\n"
 "PO-Revision-Date: 2026-10-07 16:31+0000\n"
 "Last-Translator: Sebastiano Pistore <SebastianoPistore.info@protonmail.ch>\n"
 "Language-Team: \n"
@@ -465,11 +465,6 @@ msgstr "I<E<lt>yolE<gt>>a dayalı yapılandırma dosyası yaratır ve çıkar. Y
 
 #. type: Plain text
 #: amulecmd.1.in amuleweb.1.in
-msgid "Do not encrypt the External Connection link.  Encryption is negotiated automatically whenever the remote aMule supports it, and is on by default for every destination, local or remote.  Turning it off leaves everything after the login readable, and modifiable, by anyone able to observe the connection."
-msgstr "Harici Bağlantı bağlantısını şifreleme.  Şifreleme uzaktaki aMule bunu desteklediğinde otomatik olarak müzakere edilir ve gerek uzak, gerekse yerel her hedef için varsaylan olarak etkindir.  Bunu devre dışı bırakmak oturum açıldıktan sonraki her şeyi bağlantıyı gözlemleyebilen herkes tarafından okunabilir ve değiştirilebilir olarak bırakır."
-
-#. type: Plain text
-#: amulecmd.1.in amuleweb.1.in
 msgid "Force ZLIB compression on the External Connection link regardless of the dialed-IP locality.  Useful when the server side is reachable over a VPN tunnel that resolves to a LAN IP and the heuristic would otherwise skip compression."
 msgstr "Seçilen IP adresinin konumuna bakılmaksızın Harici Bağlantı için ZLIB sıkıştırmasını zorlar.  Sunucuya, bir LAN IP adresine çözümlenen VPN tüneli üzerinden erişilebildiğinde ve aksi takdirde sezgisel algoritmanın sıkıştırmayı atlayacağı durumlarda kullanışlıdır."
 
@@ -840,6 +835,11 @@ msgstr "ya da"
 #: amulecmd.1.in
 msgid "B<amulecmd> B<--create-config-from>=I</home/username/.aMule/amule.conf>"
 msgstr "B<amulecmd> B<--create-config-from>=I</home/kullanıcıadı/.aMule/amule.conf>"
+
+#. type: Plain text
+#: amulecmd.1.in amuleweb.1.in
+msgid "After daemon credential migration, supply the client password with B<-P> or enter it at the password prompt; the daemon verifier cannot supply it."
+msgstr ""
 
 #. type: Plain text
 #: amulecmd.1.in amuleweb.1.in
@@ -1445,6 +1445,9 @@ msgstr "B<wxcas> çevrimiçi imzanızın içeriklerini güzel bir wx penceresind
 #: ../../src/utils/wxCas/docs/wxcas.1.in
 msgid "Based on Pedro de Oliveira's B<cas>(1).  B<wxcas> was written by ThePolish E<lt>thepolish@vipmail.ruE<gt>"
 msgstr "Pedro de Oliveira'nın B<cas>(1) programına dayalıdır. B<wxcas> ThePolish E<lt>thepolish@vipmail.ruE<gt> tarafından yazılmıştır"
+
+#~ msgid "Do not encrypt the External Connection link.  Encryption is negotiated automatically whenever the remote aMule supports it, and is on by default for every destination, local or remote.  Turning it off leaves everything after the login readable, and modifiable, by anyone able to observe the connection."
+#~ msgstr "Harici Bağlantı bağlantısını şifreleme.  Şifreleme uzaktaki aMule bunu desteklediğinde otomatik olarak müzakere edilir ve gerek uzak, gerekse yerel her hedef için varsaylan olarak etkindir.  Bunu devre dışı bırakmak oturum açıldıktan sonraki her şeyi bağlantıyı gözlemleyebilen herkes tarafından okunabilir ve değiştirilebilir olarak bırakır."
 
 #, fuzzy
 #~| msgid "B<[ -geometry >I<E<lt>geomE<gt>> B<]>"

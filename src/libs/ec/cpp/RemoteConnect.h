@@ -27,6 +27,7 @@
 #define REMOTECONNECT_H
 
 #include "ECMuleSocket.h"
+#include "ECSRP.h"
 
 #include <chrono>     // steady_clock for the reply watchdog
 #include "ECPacket.h" // Needed for CECPacket
@@ -67,7 +68,6 @@ public:
 		bool canChat = false,
 		bool canChatSessions = false,
 		bool canChatPeerHash = false,
-		bool canAEAD = false,
 		const std::vector<uint8_t> &clientNonce = std::vector<uint8_t>(),
 		const std::vector<uint8_t> &clientPubKey = std::vector<uint8_t>());
 };
@@ -75,10 +75,7 @@ public:
 class CECAuthPacket : public CECPacket
 {
 public:
-	/// @a clientConfirm proves knowledge of the credential over the handshake
-	/// transcript; empty when no encryption was negotiated.
-	CECAuthPacket(
-		const wxString &pass, const std::vector<uint8_t> &clientConfirm = std::vector<uint8_t>());
+	explicit CECAuthPacket(const std::vector<uint8_t> &proof);
 };
 
 // #warning Kry TODO - move to abstract layer.
@@ -106,6 +103,11 @@ private:
 	wxEvtHandler *m_notifier;
 
 	wxString m_connectionPassword;
+	ECSRP::Client m_srp;
+	ECSRP::Bytes m_srpA;
+	uint8_t m_srpCredential = ECSRP::Password;
+	void AddSRPLogin(CECPacket &packet);
+
 	wxString m_server_reply;
 	wxString m_serverVersion;
 	wxString m_client;
@@ -114,10 +116,6 @@ private:
 	bool m_canZLIB;
 	bool m_canUTF8numbers;
 	bool m_canNotify;
-
-	// Offer transport encryption. On by default in every shipped client; the
-	// user-facing switches only exist to turn it off.
-	bool m_canAEAD;
 
 	// Our half of the key-derivation salt, generated per connection attempt and kept
 	// so the derivation can run once the daemon's half arrives in EC_OP_AUTH_SALT.
@@ -128,6 +126,7 @@ private:
 	// side and the first sealed packet fails, rather than quietly dropping to
 	// something weaker.
 	std::vector<uint8_t> m_aeadOffered;
+	std::vector<uint8_t> m_aeadTranscript;
 
 	// Our ephemeral X25519 pair for this connection attempt. The private half is
 	// wiped as soon as the shared secret is derived: it is what an attacker with a
@@ -136,42 +135,28 @@ private:
 	std::vector<uint8_t> m_aeadEphPriv;
 	std::vector<uint8_t> m_aeadEphPub;
 
-	// md5 of the password, lower-cased -- the value both ends hold and neither
-	// transmits. Captured before the salted-challenge step overwrites
-	// m_connectionPassword with the value that does go on the wire.
-	//
-	// No longer key material: the channel key comes from the ephemeral exchange
-	// alone, or a password learned later would decrypt an earlier recording. The
-	// confirmation tags are keyed on this instead.
-	wxString m_aeadSecret;
-
 	// Our confirmation, sent with EC_OP_AUTH_PASSWD, and the daemon's, which must
 	// come back in EC_OP_AUTH_OK. With the key no longer derived from the password,
 	// these are what a relay cannot produce: it runs a different exchange on each
 	// leg, so the transcripts differ and at least one check fails.
-	std::vector<uint8_t> m_aeadClientConfirm;
-	std::vector<uint8_t> m_aeadExpectedServerConfirm;
+	std::vector<uint8_t> m_srpClientProof;
 
 	/// Set when the daemon named a cipher and the keys derived cleanly.
 	bool m_aeadNegotiated;
 
-	/**
-	 * Derive session keys from EC_OP_AUTH_SALT, and arm after the next write.
-	 *
-	 * Arming is deferred by one packet because EC_OP_AUTH_PASSWD still has to
-	 * leave in clear: the daemon cannot open it until it has run the same
-	 * derivation, which it only does once the password checks out.
+	/** Derive X25519 session keys from AUTH_SALT and start sealing immediately.
+	 * The daemon has already installed its keys, so the next packet, M1, is sealed.
 	 */
 	void SetupAEADFromSalt(const CECPacket *reply);
 
 	/**
-	 * Check the daemon's key-confirmation tag in EC_OP_AUTH_OK.
+	 * Check the daemon's SRP evidence M2 in EC_OP_AUTH_OK.
 	 *
 	 * Only meaningful once encryption was negotiated; a false return means the
 	 * peer completed a key exchange but cannot prove it knows the credential,
 	 * which is what a relay looks like. The caller drops the connection.
 	 */
-	bool VerifyServerConfirm(const CECPacket *reply) const;
+	bool VerifyServerProof(const CECPacket *reply);
 
 	// Set in ConnectToCore when the dialed address resolves to a loopback, RFC1918 or
 	// RFC3927 IP. Drives the EC_TAG_PREFER_NO_ZLIB hint, and means nothing unless
@@ -274,16 +259,7 @@ public:
 	CRemoteConnect(wxEvtHandler *evt_handler);
 
 	void SetCapabilities(bool canZLIB, bool canUTF8numbers, bool canNotify);
-
-	/**
-	 * Offer (or refuse to offer) transport encryption.
-	 *
-	 * Defaults to on; the switches that reach this are all opt-OUT. Refusing does
-	 * not fail a connection -- it leaves the session in clear, which is what the
-	 * daemon's own policy may then reject.
-	 */
-	void SetCanAEAD(bool canAEAD) { m_canAEAD = canAEAD; }
-	bool GetCanAEAD() const { return m_canAEAD; }
+	void SetTokenCredential(uint8_t credential) { m_srpCredential = credential; }
 
 	/// True once keys were derived for this connection, i.e. the daemon accepted the
 	/// offer. Used to insist that EC_OP_AUTH_OK really did arrive sealed.

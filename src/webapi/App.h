@@ -200,8 +200,6 @@ private:
 	// amuleapi keeps its settings in amuleapi.conf and never reads or writes
 	// remote.conf, so amuleapi.conf is what marks a portable amuleapi.
 	wxString PortableProbeFile() const override { return "amuleapi.conf"; }
-
-	bool m_cliHasEcEncryption = false;
 };
 
 DECLARE_APP(CamuleapiApp)

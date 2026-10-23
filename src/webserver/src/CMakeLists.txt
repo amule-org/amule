@@ -49,6 +49,7 @@ target_include_directories (amuleweb
 )
 
 target_link_libraries (amuleweb
+	PRIVATE webcommon
 	PRIVATE ec
 	PRIVATE mulecommon
 	PRIVATE mulesocket

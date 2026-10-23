@@ -26,6 +26,7 @@
 #ifndef AMULE_H
 #define AMULE_H
 
+#include "libs/ec/cpp/ECSRP.h"
 #include <wx/app.h>      // Needed for wxApp
 #include <wx/datetime.h> // Needed for wxDateTime (ED2K/Kad "Connected since")
 #include <wx/intl.h>     // Needed for wxLocale
@@ -603,22 +604,21 @@ protected:
 	void StartAmuleApi(bool startup);
 	void ScheduleAmuleApiRestart();
 	bool ClearAmuleApiToken();
+	bool ClearAmulewebToken();
+	bool PrepareAmulewebToken();
 
-	// Ephemeral EC credential for the amuleapi we spawn. Generated fresh every start, handed
-	// over through a 0600 file in the config dir that the child deletes as soon as it has read
-	// it, and accepted by the EC server alongside the configured password for the lifetime of
-	// that child.
-	//
-	// The point is that amuleapi never needs the value in amule.conf. That stored value IS the
-	// credential -- the challenge hashes it directly -- so a compromised network-facing daemon
-	// holding it would hold the equivalent of the user's EC password. Empty when we did not
-	// spawn amuleapi, in which case no token is accepted at all.
-	wxString m_ecToken;
+	// Independent verifier-only credentials for the helpers we spawn. Raw tokens
+	// exist only during the owner-only file handoff and in the child that consumes
+	// them. A dummy verifier makes an absent/revoked token follow the same handshake.
+	ECSRP::Verifier m_ecTokenVerifier;
+	ECSRP::Verifier m_ecWebTokenVerifier;
+	ECSRP::Verifier m_ecDummyTokenVerifier;
 
 	// Uptime-ms deadline after which the token file is removed whether or not the child read
 	// it: a child that dies before reading would leave a live secret at rest. 0 = nothing
 	// pending.
 	uint64 m_ecTokenFileExpiryMs = 0;
+	uint64 m_ecWebTokenFileExpiryMs = 0;
 
 	wxString server_msg;
 
@@ -626,10 +626,10 @@ protected:
 
 public:
 	void OnAmuleApiTerminated(int pid, int status);
+	void OnAmulewebTerminated();
 
-	// The ephemeral EC credential handed to the spawned amuleapi, empty when none was issued.
-	// The EC server's authentication path accepts it alongside the configured password.
-	const wxString &GetEcToken() const { return m_ecToken; }
+	// Select the API (1) or web (2) child verifier, or the dummy when revoked.
+	const ECSRP::Verifier &GetEcTokenVerifier(uint8_t credential = 1);
 
 #ifdef ENABLE_VERSION_CHECK
 	// Result of the last completed version check, relayed over EC to

@@ -301,9 +301,9 @@ CEC_Prefs_Packet::CEC_Prefs_Packet(
 		rc_prefs.AddTag(CECTag(EC_TAG_EXTERNALCONN_INTERFACE, thePrefs::GetECNetworkInterface()));
 		rc_prefs.AddTag(CECTag(EC_TAG_EXTERNALCONN_PORT, thePrefs::ECPort()));
 		rc_prefs.AddTag(CECTag(EC_TAG_EXTERNALCONN_UPNP, thePrefs::GetUPnPECEnabled()));
+		rc_prefs.AddTag(CECTag(EC_TAG_EXTERNALCONN_REQUIRE_ENCRYPTION, true));
 		rc_prefs.AddTag(
-			CECTag(EC_TAG_EXTERNALCONN_REQUIRE_ENCRYPTION, thePrefs::ECRequireEncryption()));
-		rc_prefs.AddTag(CECTag(EC_TAG_EXTERNALCONN_PASSWD_SET, !thePrefs::ECPassword().IsEmpty()));
+			CECTag(EC_TAG_EXTERNALCONN_PASSWD_SET, !thePrefs::ECPasswordVerifier().IsEmpty()));
 		AddTag(rc_prefs);
 	}
 
@@ -762,6 +762,11 @@ bool CEC_Prefs_Packet::Apply() const
 	}
 
 	if ((thisTab = GetTagByName(EC_TAG_PREFS_REMOTECTRL)) != NULL) {
+#ifdef CLIENT_GUI
+		if ((oneTag = thisTab->GetTagByName(EC_TAG_EXTERNALCONN_PASSWD_SET)) != nullptr) {
+			thePrefs::LoadECVerifier(oneTag->GetInt() ? "set" : "");
+		}
+#endif
 		ApplyBoolean(use_tag, thisTab, thePrefs::SetWSIsEnabled, EC_TAG_WEBSERVER_AUTORUN);
 		if ((oneTag = thisTab->GetTagByName(EC_TAG_WEBSERVER_PORT)) != NULL) {
 			thePrefs::SetWSPort(oneTag->GetInt());

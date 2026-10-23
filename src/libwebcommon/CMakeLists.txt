@@ -1,9 +1,8 @@
 # libwebcommon — pure-logic primitives for the amuleapi REST surface.
 #
 # Linked into the amuleapi binary and the libwebcommon unit-test
-# target. NOT linked into amuleweb: amuleweb's behaviour on 3.0.x is
-# bit-identical to 3.0.0 and is built from the same translation units
-# it always was. If a downstream consumer (e.g. a hypothetical
+# target, and into amuleweb for the core's ephemeral EC token handoff.
+# If a downstream consumer (e.g. a hypothetical
 # integration test or a third-party amule front-end) wants the same
 # JWT / ETag / route-pattern primitives, link against this lib too.
 

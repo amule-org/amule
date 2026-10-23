@@ -23,6 +23,7 @@
 //
 
 #include "App.h"
+#include "libs/ec/cpp/ECSRP.h"
 
 #include <common/MuleDebug.h> // Needed for SetFatalAbortRedirectFd
 
@@ -238,7 +239,6 @@ bool CamuleapiApp::OnCmdLineParsed(wxCmdLineParser &parser)
 	// filled-in default.
 	m_cliHasEcHost = parser.Found("host");
 	m_cliHasEcPort = parser.Found("port");
-	m_cliHasEcEncryption = parser.Found("disable-ec-encryption");
 
 	return CaMuleExternalConnector::OnCmdLineParsed(parser);
 }
@@ -383,11 +383,6 @@ bool CamuleapiApp::LoadAmuleapiConfig()
 	if (!m_cliHasEcPort) {
 		m_port = static_cast<long>(m_apiConfig.EcCfg().port);
 	}
-	if (!m_cliHasEcEncryption) {
-		// amuleapi.conf is the only config file amuleapi reads (see
-		// UsesConnectorConfigFile), so it is the sole source below the command line.
-		m_ECEncryption = m_apiConfig.EcCfg().encryption;
-	}
 	if (!m_apiConfig.EcCfg().password_md5.empty()) {
 		m_password.Decode(wxString::FromUTF8(m_apiConfig.EcCfg().password_md5.c_str()));
 	} else if (!m_apiConfig.EcCfg().password.empty()) {
@@ -411,6 +406,7 @@ bool CamuleapiApp::LoadAmuleapiConfig()
 		std::string token;
 		if (webcommon::ReadAndConsumeEcToken(tokenPath, token)) {
 			m_password.Decode(wxString::FromUTF8(token.c_str()));
+			m_ECTokenCredential = ECSRP::ApiToken;
 			// Worth one line: it tells an operator which credential this instance is
 			// using, and is what the "no token left on disk" check looks for.
 			Show("amuleapi: using the ephemeral EC token from the core.\n");

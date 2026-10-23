@@ -882,6 +882,10 @@ void CECTag::DebugPrint(int level, bool print_empty) const
 		wxString s1 = CFormat("%s%s %d = ") % space % GetDebugNameECTagNames(m_tagName) % m_dataLen;
 		wxString s2;
 		switch (m_tagName) {
+		case EC_TAG_EXTERNALCONN_PASSWD:
+		case EC_TAG_PASSWD_HASH:
+			s2 = "[redacted]";
+			break;
 		case EC_TAG_DETAIL_LEVEL:
 			s2 = GetDebugNameEC_DETAIL_LEVEL(GetInt());
 			break;

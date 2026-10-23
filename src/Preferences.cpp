@@ -25,6 +25,8 @@
 
 #include <wx/wx.h>
 #include "Preferences.h"
+#include "ECClientPassword.h"
+#include "libs/ec/cpp/ECSRPConfig.h"
 #include "ServerListSources.h"
 #include <wx/file.h>
 
@@ -210,14 +212,15 @@ wxString CPreferences::s_WebTemplate;
 bool CPreferences::s_showCatTabInfos;
 AllCategoryFilter CPreferences::s_allcatFilter;
 bool CPreferences::s_AcceptExternalConnections;
-bool CPreferences::s_ECRequireEncryption;
 wxString CPreferences::s_ECAddr;
 wxString CPreferences::s_ECNetworkInterface;
 uint32 CPreferences::s_ECPort;
 uint32 CPreferences::s_ECAuthFailureWindowSeconds;
 uint32 CPreferences::s_ECAuthFailureThreshold;
 uint32 CPreferences::s_ECAuthLockoutSeconds;
-wxString CPreferences::s_ECPassword;
+wxString CPreferences::s_ECPasswordVerifier;
+wxString CPreferences::s_ECPasswordLoadError;
+wxString CPreferences::s_ECPasswordInput;
 bool CPreferences::s_TransmitOnlyUploadingClients;
 bool CPreferences::s_IPFilterClients;
 bool CPreferences::s_IPFilterServers;
@@ -454,6 +457,77 @@ public:
 	}
 #endif
 };
+
+// The UI holds a placeholder, never a copy of the daemon verifier or old digest.
+class Cfg_ECPassword : public Cfg_Str
+{
+public:
+	Cfg_ECPassword(wxString &input)
+	: Cfg_Str("/ExternalConnect/ECPasswordVerifier", input)
+	{
+	}
+	void LoadFromFile(wxConfigBase *cfg) override
+	{
+#ifndef CLIENT_GUI
+		wxString verifier, error;
+		const bool loaded = ECSRP::LoadCredential(*cfg, verifier, error);
+		CPreferences::SetECPasswordLoadError(loaded ? wxString() : error);
+		if (!loaded)
+			verifier = "invalid";
+		CPreferences::LoadECVerifier(verifier);
+		if (!error.IsEmpty())
+			AddLogLineCS(error);
+		m_value = CPreferences::ECPasswordVerifier().IsEmpty() ? "" : "********";
+#endif
+	}
+	void SaveToFile(wxConfigBase *) override {}
+#ifndef AMULE_DAEMON
+	bool TransferToWindow() override
+	{
+		if (auto *field = wxDynamicCast(m_widget, wxTextCtrl)) {
+			field->ChangeValue(ECClientPassword::Display(m_value));
+			field->DiscardEdits();
+			return true;
+		}
+		return false;
+	}
+	bool TransferFromWindow() override
+	{
+		if (const auto *field = wxDynamicCast(m_widget, wxTextCtrl)) {
+			SetChanged(
+				ECClientPassword::ReadInput(m_value, field->GetValue(), field->IsModified()));
+			return true;
+		}
+		return false;
+	}
+#endif
+};
+
+#ifndef CLIENT_GUI
+bool CPreferences::SetECPass(const wxString &digest)
+{
+	wxString error;
+	const bool ok = ECSRP::StoreCredential(*wxConfigBase::Get(), digest, s_ECPasswordVerifier, error);
+	if (ok)
+		s_ECPasswordLoadError.clear();
+	if (!error.IsEmpty())
+		AddLogLineC(error);
+	return ok;
+}
+
+bool CPreferences::SetECPasswordVerifier(const wxString &record)
+{
+	wxString error;
+	const bool ok =
+		ECSRP::StorePreparedCredential(*wxConfigBase::Get(), record, s_ECPasswordVerifier, error);
+	if (!error.IsEmpty())
+		AddLogLineC(error);
+	if (ok)
+		s_ECPasswordLoadError.clear();
+	return ok;
+}
+
+#endif
 
 /** Cfg class for CPath. */
 class Cfg_Path : public Cfg_Str
@@ -1261,8 +1335,6 @@ void CPreferences::BuildItemList(const wxString &appdir)
 	NewCfgItem(IDC_EXT_CONN_ACCEPT,
 		(new Cfg_Bool(
 			"/ExternalConnect/AcceptExternalConnections", s_AcceptExternalConnections, false)));
-	NewCfgItem(IDC_EXT_CONN_REQUIRE_ENCRYPTION,
-		(new Cfg_Bool("/ExternalConnect/RequireEncryption", s_ECRequireEncryption, false)));
 	// Loopback by default, so a fresh install does not expose the external connection --
 	// which grants full control of the daemon -- to the whole network before the user has
 	// thought about it. Existing configs are untouched: aMule writes every key on save, so
@@ -1272,8 +1344,7 @@ void CPreferences::BuildItemList(const wxString &appdir)
 	NewCfgItem(IDC_EC_INTERFACE,
 		(new Cfg_Str("/ExternalConnect/ECNetworkInterface", s_ECNetworkInterface, "")));
 	NewCfgItem(IDC_EXT_CONN_TCP_PORT, (MkCfg_Int("/ExternalConnect/ECPort", s_ECPort, 4712)));
-	NewCfgItem(IDC_EXT_CONN_PASSWD,
-		(new Cfg_Str_Encrypted("/ExternalConnect/ECPassword", s_ECPassword, "")));
+	NewCfgItem(IDC_EXT_CONN_PASSWD, (new Cfg_ECPassword(s_ECPasswordInput)));
 	NewCfgItem(IDC_UPNP_EC_ENABLED,
 		(new Cfg_Bool("/ExternalConnect/UPnPECEnabled", s_UPnPECEnabled, false)));
 	// Brute-force throttle for the EC password exchange. Config-only, with no dialog field:

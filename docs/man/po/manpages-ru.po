@@ -6,7 +6,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: manpages-ru\n"
-"POT-Creation-Date: 2026-10-07 10:08-0400\n"
+"POT-Creation-Date: 2026-10-19 14:41+0000\n"
 "PO-Revision-Date: 2026-10-12 16:51+0000\n"
 "Last-Translator: Sebastiano Pistore <SebastianoPistore.info@protonmail.ch>\n"
 "Language-Team: Russian <LL@li.org>\n"
@@ -466,11 +466,6 @@ msgstr "Создать файл конфигурации на основе фа�
 
 #. type: Plain text
 #: amulecmd.1.in amuleweb.1.in
-msgid "Do not encrypt the External Connection link.  Encryption is negotiated automatically whenever the remote aMule supports it, and is on by default for every destination, local or remote.  Turning it off leaves everything after the login readable, and modifiable, by anyone able to observe the connection."
-msgstr "Не шифровать соединение внешнего подключения. Шифрование согласовывается автоматически, когда удалённый aMule его поддерживает, и включено по умолчанию для любого назначения, локального или удалённого. Его отключение делает всё после входа в систему читаемым и изменяемым для любого, кто может наблюдать за соединением."
-
-#. type: Plain text
-#: amulecmd.1.in amuleweb.1.in
 msgid "Force ZLIB compression on the External Connection link regardless of the dialed-IP locality.  Useful when the server side is reachable over a VPN tunnel that resolves to a LAN IP and the heuristic would otherwise skip compression."
 msgstr "Принудительно использовать сжатие ZLIB для соединения внешнего подключения независимо от локальности вызванного IP-адреса. Полезно, когда серверная сторона доступна через VPN-туннель, который разрешается в локальный IP-адрес, и эвристика в противном случае пропустила бы сжатие."
 
@@ -841,6 +836,11 @@ msgstr "или"
 #: amulecmd.1.in
 msgid "B<amulecmd> B<--create-config-from>=I</home/username/.aMule/amule.conf>"
 msgstr "B<amulecmd> B<--create-config-from>=I</home/username/.aMule/amule.conf>"
+
+#. type: Plain text
+#: amulecmd.1.in amuleweb.1.in
+msgid "After daemon credential migration, supply the client password with B<-P> or enter it at the password prompt; the daemon verifier cannot supply it."
+msgstr ""
 
 #. type: Plain text
 #: amulecmd.1.in amuleweb.1.in
@@ -1444,6 +1444,9 @@ msgstr "B<wxcas> - программа для отображения содерж
 #: ../../src/utils/wxCas/docs/wxcas.1.in
 msgid "Based on Pedro de Oliveira's B<cas>(1).  B<wxcas> was written by ThePolish E<lt>thepolish@vipmail.ruE<gt>"
 msgstr "Основана на программе B<cas>(1) написанной Pedro de Oliveira. B<wxcas> была написана ThePolish E<lt>thepolish@vipmail.ruE<gt>"
+
+#~ msgid "Do not encrypt the External Connection link.  Encryption is negotiated automatically whenever the remote aMule supports it, and is on by default for every destination, local or remote.  Turning it off leaves everything after the login readable, and modifiable, by anyone able to observe the connection."
+#~ msgstr "Не шифровать соединение внешнего подключения. Шифрование согласовывается автоматически, когда удалённый aMule его поддерживает, и включено по умолчанию для любого назначения, локального или удалённого. Его отключение делает всё после входа в систему читаемым и изменяемым для любого, кто может наблюдать за соединением."
 
 #, fuzzy
 #~| msgid "B<[ -geometry >I<E<lt>geomE<gt>> B<]>"

@@ -13,6 +13,7 @@ import tempfile
 import threading
 import zlib
 
+from ECWire import accept  # Preflight in the parent before starting fixtures.
 from AllSearchIntegrationTest import C, exact, free_ports, integer, string, tag
 from CompletedFileDeleteIntegrationTest import eventually, http
 
@@ -22,6 +23,9 @@ FILE_HASH = 'a448017aaf21d8525fc10ae87aa6729d'
 class LegacyCore(socketserver.BaseRequestHandler):
     def handle(self):
         try:
+            caps = [tag(0x002A)]
+            if self.server.mode != 'legacy': caps.append(tag(C['EC_TAG_CAN_DELETE_COMPLETE']))
+            self.request = accept(self.request, capabilities=caps)
             while True:
                 flags, size = struct.unpack('!II', exact(self.request, 8))
                 body = exact(self.request, size)
@@ -29,16 +33,7 @@ class LegacyCore(socketserver.BaseRequestHandler):
                     body = zlib.decompress(body)
                 op = body[0]
                 self.server.ops.append(op)
-                if op == C['EC_OP_AUTH_REQ']:
-                    reply, tags = C['EC_OP_AUTH_SALT'], [integer(C['EC_TAG_PASSWD_SALT'], 123)]
-                elif op == C['EC_OP_AUTH_PASSWD']:
-                    # Kad lookup support shipped at 0x002A before complete-file
-                    # deletion. Its presence must never enable disk deletion.
-                    reply, tags = C['EC_OP_AUTH_OK'], [string(C['EC_TAG_SERVER_VERSION'], 'legacy-fixture'),
-                                                     tag(0x002A, b'', 1)]
-                    if self.server.mode != 'legacy':
-                        tags.append(tag(C['EC_TAG_CAN_DELETE_COMPLETE'], b'', 1))
-                elif op == C['EC_OP_GET_UPDATE']:
+                if op == C['EC_OP_GET_UPDATE']:
                     children = [tag(C['EC_TAG_PARTFILE_HASH'], bytes.fromhex(FILE_HASH), 9),
                                 string(C['EC_TAG_PARTFILE_NAME'], 'completed.txt'),
                                 integer(C['EC_TAG_PARTFILE_SIZE_FULL'], 3),
@@ -77,7 +72,7 @@ def run(api, mode):
             hp = free_ports(1)[0]
             base = f'http://127.0.0.1:{hp}/api/v1'
             proc = subprocess.Popen([api, '--config-dir='+tmp, '--host=127.0.0.1',
-                '--port='+str(core.server_address[1]), '--http-port='+str(hp), '--disable-ec-encryption'],
+                '--port='+str(core.server_address[1]), '--http-port='+str(hp)],
                 env=env, stdout=log, stderr=log)
             try:
                 def healthy():

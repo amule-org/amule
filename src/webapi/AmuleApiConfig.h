@@ -77,9 +77,6 @@ public:
 		unsigned port = 4712;
 		std::string password;     // plaintext [EC]/Password; never inferred from its shape
 		std::string password_md5; // explicit [EC]/PasswordMD5, sufficient to authenticate
-		// Offer EC transport encryption. On by default for every destination; only
-		// the client knows what it dialed, so the choice lives here, not in amuled.
-		bool encryption = true;
 	};
 
 	struct Auth

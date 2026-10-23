@@ -2,6 +2,19 @@
 
 The history of every aMule release. Versions are listed newest first.
 
+## Version 3.2.0 (unreleased)
+
+Upgrade the core, amulegui, amulecmd, amuleweb and amuleapi together. EC now requires
+SRP-6a over encrypted X25519 sessions. The first startup automatically replaces
+ECPassword with ECPasswordVerifier; older clients cannot authenticate afterward.
+Encryption opt-outs are removed; `--disable-ec-encryption` now fails as an unknown option. A downgrade
+requires setting a password again. See [EC authentication](EC_SRP.md) for the
+format, migration failure behavior and limits concerning old credential copies.
+Invalid or empty-password legacy ECPassword digests are rejected with a recovery
+message naming `amuled --ec-config`, rather than blaming a missing verifier.
+Old MD5 digest copies in backups or remote.conf can still authenticate until
+the EC password is changed.
+
 ---
 
 ## Version 3.1.0 - "Three versions in a year! Can we have some REST?"

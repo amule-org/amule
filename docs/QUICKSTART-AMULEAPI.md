@@ -251,7 +251,6 @@ BasePath=                 ; path prefix behind a proxy, e.g. /amule
 Host=127.0.0.1            ; where amuled is
 Port=4712
 PasswordMD5=              ; EC digest; set with --set-ec-pass-stdin
-Encryption=1              ; encrypt the link to amuled
 
 [Auth]
 LoginFailureWindowSeconds=60

@@ -279,17 +279,6 @@ std::vector<uint8_t> BuildTranscript(const std::vector<uint8_t> &offeredCiphers,
 	return out;
 }
 
-std::vector<uint8_t> ConfirmTag(
-	const std::vector<uint8_t> &secret, const std::vector<uint8_t> &transcript, const char *label)
-{
-	const size_t labelLen = label ? strlen(label) : 0;
-	const std::vector<uint8_t> info((const uint8_t *)label, (const uint8_t *)label + labelLen);
-	// Credential as keying material, transcript as salt: extract-then-expand
-	// over the transcript is a MAC of it under the credential, which is all a
-	// confirmation needs and avoids introducing a second primitive.
-	return HkdfSha256(secret, transcript, info, CONFIRM_TAG_LEN);
-}
-
 bool ConstantTimeEquals(const std::vector<uint8_t> &a, const std::vector<uint8_t> &b)
 {
 	if (a.size() != b.size() || a.empty()) {

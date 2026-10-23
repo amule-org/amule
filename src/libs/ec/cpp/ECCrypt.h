@@ -39,10 +39,8 @@
  * password: the keys that opened it existed only for its duration.
  *
  * A raw exchange authenticates nobody, so an active man in the middle could run
- * one exchange with each side and relay. The shared password closes that through
- * the confirmation tags below: each side proves it knows the password over the
- * exact handshake it saw, and a relay's two handshakes differ, so at least one
- * check fails. No certificates needed.
+ * one exchange with each side and relay. ECSRP binds its evidence to the exact
+ * X25519 transcript on each side, so relaying across separate exchanges fails.
  *
  * No new dependency: the `ec` library already links Crypto++, which also backs
  * aMule's eD2k obfuscation, secure identification and the webserver's HMAC.
@@ -118,7 +116,7 @@ constexpr size_t X25519_KEY_LEN = 32;
  * discarded once the session key is derived. That is what gives forward secrecy.
  *
  * @return false if randomness is unavailable; both outputs are cleared and the
- *         caller must stay in clear rather than use a predictable key.
+ *         caller must refuse authentication rather than use a predictable key.
  */
 bool GenerateX25519KeyPair(std::vector<uint8_t> &privOut, std::vector<uint8_t> &pubOut);
 
@@ -149,27 +147,6 @@ std::vector<uint8_t> BuildTranscript(const std::vector<uint8_t> &offeredCiphers,
 	const std::vector<uint8_t> &serverNonce,
 	const std::vector<uint8_t> &clientPub,
 	const std::vector<uint8_t> &serverPub);
-
-/**
- * Key-confirmation tag proving knowledge of the EC credential.
- *
- * The channel key comes from the ephemeral exchange alone, so the password no
- * longer stops an active man in the middle, who can complete two exchanges and
- * relay. The tag catches that: it binds the credential to the transcript, which
- * differs on the two legs of a relay, so at least one check fails.
- *
- * Built from the existing HKDF rather than a separate HMAC: extract-then-expand
- * with the credential as keying material is a MAC over the transcript, and
- * reusing it keeps the crypto surface to what is already reviewed.
- *
- * @param label direction tag, so the two sides' confirmations differ and one
- *              cannot be replayed as the other.
- */
-std::vector<uint8_t> ConfirmTag(
-	const std::vector<uint8_t> &secret, const std::vector<uint8_t> &transcript, const char *label);
-
-/// Length of a confirmation tag.
-constexpr size_t CONFIRM_TAG_LEN = 32;
 
 /**
  * Constant-time equality for secrets.

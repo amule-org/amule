@@ -366,6 +366,9 @@ TEST(Credentials, EcTokenFilePathJoinsLikeCredentialsPath)
 	// Distinct from the credential store: one is ephemeral, the other is
 	// the persistent password file.
 	ASSERT_TRUE(EcTokenFilePath("/tmp/x") != CredentialsFilePath("/tmp/x"));
+	ASSERT_EQUALS(std::string("amuleweb-ec-token"), EcWebTokenFilePath(""));
+	ASSERT_EQUALS(std::string("/tmp/x/amuleweb-ec-token"), EcWebTokenFilePath("/tmp/x/"));
+	ASSERT_TRUE(EcWebTokenFilePath("/tmp/x") != EcTokenFilePath("/tmp/x"));
 }
 
 TEST(Credentials, GeneratedTokenHasTheMd5HexShape)

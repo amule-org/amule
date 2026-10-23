@@ -130,3 +130,4 @@ src/webserver/src/WebInterface.cpp
 src/webserver/src/WebServer.cpp
 packaging/windows/installer_strings.c
 src/kademlia/kademlia/Indexed.cpp
+src/libs/ec/cpp/ECSRPConfig.cpp

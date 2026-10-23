@@ -315,6 +315,11 @@ std::string EcTokenFilePath(const std::string &config_dir)
 	return JoinConfigDir(config_dir, "amuleapi-ec-token");
 }
 
+std::string EcWebTokenFilePath(const std::string &config_dir)
+{
+	return JoinConfigDir(config_dir, "amuleweb-ec-token");
+}
+
 bool ReadAndConsumeEcToken(const std::string &path, std::string &out)
 {
 	std::ifstream f(path.c_str(), std::ios::binary);

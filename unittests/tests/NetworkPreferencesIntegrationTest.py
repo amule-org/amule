@@ -76,7 +76,7 @@ def run(daemon_binary, api_binary):
                 (api / 'amuleapi.conf').write_text('[EC]\nPassword=regression\n')
                 (api / 'amuleapi.conf').chmod(0o600)
                 server = subprocess.Popen(command + ['--host=127.0.0.1', '--port=' + str(ec_port),
-                    '--http-port=' + str(http_port), '--disable-ec-encryption'],
+                    '--http-port=' + str(http_port)],
                     env=env, stdout=log, stderr=log)
                 opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
                 url = f'http://127.0.0.1:{http_port}/api/v1'

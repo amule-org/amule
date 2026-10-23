@@ -36,8 +36,10 @@
 
 #include <ec/cpp/ECFileConfig.h> // Needed for CECFileConfig
 #include <common/MD5Sum.h>
+#include <Credentials.h>
 
 #include "WebServer.h"
+#include "libs/ec/cpp/ECSRP.h"
 
 #include <wx/apptrait.h>
 #include <wx/socket.h>
@@ -310,6 +312,18 @@ bool CamulewebApp::OnCmdLineParsed(wxCmdLineParser &parser)
 		// relative to the CWD, so the per-user template dir was never found when amuleweb
 		// was spawned by the aMule GUI.
 		m_configDir = wxFileName(aMuleConfigFile).GetPathWithSep();
+		std::string token;
+		if (webcommon::ReadAndConsumeEcToken(
+			    webcommon::EcWebTokenFilePath(std::string(m_configDir.utf8_str())), token)) {
+			m_password.Decode(wxString::FromUTF8(token.c_str()));
+			m_ECTokenCredential = ECSRP::WebToken;
+		}
+		if (m_password.IsEmpty()) {
+			// A verifier is not a client credential. Never prompt on the redirected
+			// stdin of a core-spawned helper when its token is absent or invalid.
+			fprintf(stderr, "FATAL ERROR: No EC credential for core-spawned amuleweb.\n");
+			return false;
+		}
 
 		if (!(m_TemplateOk = GetTemplateDir(m_TemplateName, m_TemplateDir))) {
 			// no reason to run webserver without a template

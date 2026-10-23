@@ -64,6 +64,7 @@
 #include "DataToText.h"       // Needed for GetSoftName()
 #include "DownloadListCtrl.h" // Needed for CDownloadListCtrl
 #include "ECPrefsDiff.h"      // Needed for MakePrefsDiffPacket
+#include "ECClientPassword.h"
 #include "Friend.h"
 #include "GetTickCount.h" // Needed for GetTickCount64
 #include "GuiEvents.h"
@@ -109,10 +110,6 @@ CEConnectDlg::CEConnectDlg()
 	CastChild(ID_REMOTE_PORT, wxTextCtrl)->SetValue(pref_port);
 	CastChild(ID_EC_PASSWD, wxTextCtrl)->SetValue(pwd_hash);
 	CastChild(ID_EC_FORCE_ZLIB, wxCheckBox)->SetValue(pref_force_zlib != 0);
-	// Default 1: a config predating this key gets encryption.
-	long pref_encryption;
-	wxConfig::Get()->Read("/EC/Encryption", &pref_encryption, 1);
-	CastChild(ID_EC_ENCRYPTION, wxCheckBox)->SetValue(pref_encryption != 0);
 
 	CentreOnParent();
 }
@@ -139,7 +136,6 @@ void CEConnectDlg::OnOK(wxCommandEvent &evt)
 	}
 	m_save_user_pass = CastChild(ID_EC_SAVE, wxCheckBox)->IsChecked();
 	m_force_zlib = CastChild(ID_EC_FORCE_ZLIB, wxCheckBox)->IsChecked();
-	m_encryption = CastChild(ID_EC_ENCRYPTION, wxCheckBox)->IsChecked();
 	evt.Skip();
 }
 
@@ -682,7 +678,6 @@ bool CamuleRemoteGuiApp::ShowConnectionDialog()
 		// not re-apply these two: the dialog owns them and sets them again on the fresh
 		// object right here.
 		m_connect->SetForceZlib(dialog->ForceZlib());
-		m_connect->SetCanAEAD(dialog->Encryption());
 		if (m_connect->ConnectToCore(
 			    dialog->Host(), dialog->Port(), dialog->PassHash(), "amule-remote", "0x0001")) {
 			// Sync part succeeded; async OnECConnection will
@@ -1131,7 +1126,6 @@ void CamuleRemoteGuiApp::Startup()
 		wxConfig::Get()->Write("/EC/Port", dialog->Port());
 		wxConfig::Get()->Write("/EC/Password", dialog->PassHash());
 		wxConfig::Get()->Write("/EC/ForceZLIB", dialog->ForceZlib() ? 1l : 0l);
-		wxConfig::Get()->Write("/EC/Encryption", dialog->Encryption() ? 1l : 0l);
 	}
 	// Capture the EC connection params so a post-startup reconnect
 	// (issue #444) can re-dial without the (about-to-be-destroyed) dialog.
@@ -1727,13 +1721,23 @@ void CPreferencesRem::UpdateNetworks(bool ed2kEnabled, bool kadEnabled)
 	}
 }
 
+void CamuleRemoteGuiApp::CommitECPasswordChange(const wxString &digest)
+{
+	wxConfigBase *cfg = wxConfigBase::Get();
+	if (!ECClientPassword::Commit(*cfg, m_ecHost, m_ecPort, m_ecPass, digest))
+		AddLogLineC(_("The EC password changed on the daemon, but the saved client password "
+			      "could not be updated."));
+}
+
 class CPrefsSetHandler : public CECPacketHandlerBase
 {
+	wxString m_ecPassword;
 	std::shared_ptr<unsigned> m_pendingNetworkWrites;
 
 public:
-	explicit CPrefsSetHandler(std::shared_ptr<unsigned> pendingNetworkWrites)
-	: m_pendingNetworkWrites(std::move(pendingNetworkWrites))
+	explicit CPrefsSetHandler(const wxString &ecPassword, std::shared_ptr<unsigned> pendingNetworkWrites)
+	: m_ecPassword(ecPassword)
+	, m_pendingNetworkWrites(std::move(pendingNetworkWrites))
 	{
 		if (m_pendingNetworkWrites) {
 			++*m_pendingNetworkWrites;
@@ -1752,6 +1756,13 @@ private:
 
 	void HandlePacket(const CECPacket *packet) override
 	{
+		if (packet->GetOpCode() == EC_OP_NOOP && !m_ecPassword.IsEmpty()) {
+			theApp->CommitECPasswordChange(m_ecPassword);
+			thePrefs::LoadECVerifier("set");
+			// A late reply must not discard an edit in a newly opened dialog.
+			if (thePrefs::PendingECPass() == m_ecPassword)
+				thePrefs::ClearPendingECPass();
+		}
 		if (packet->GetOpCode() == EC_OP_FAILED) {
 			const CECTag *tag = packet->GetTagByName(EC_TAG_STRING);
 			const wxString message =
@@ -1772,19 +1783,31 @@ private:
 	}
 };
 
-void CPreferencesRem::SendChangesToRemote()
+void CPreferencesRem::SendChangesToRemote(bool includeECPassword)
 {
 	auto current = std::make_unique<CEC_Prefs_Packet>(
 		m_exchange_send_selected_prefs, EC_DETAIL_UPDATE, EC_DETAIL_FULL);
 	if (m_remoteState) {
 		const std::unique_ptr<CECPacket> changes = MakePrefsDiffPacket(*m_remoteState, *current);
+		wxString ecPassword;
+		CMD4Hash digest;
+		if (includeECPassword && thePrefs::PendingECPass() != "********" &&
+			digest.Decode(thePrefs::PendingECPass())) {
+			ecPassword = thePrefs::PendingECPass();
+			auto *remote = changes->GetTagByName(EC_TAG_PREFS_REMOTECTRL);
+			if (!remote) {
+				changes->AddTag(CECEmptyTag(EC_TAG_PREFS_REMOTECTRL));
+				remote = changes->GetTagByName(EC_TAG_PREFS_REMOTECTRL);
+			}
+			remote->AddTag(CECTag(EC_TAG_EXTERNALCONN_PASSWD, digest));
+		}
 		if (changes->GetTagCount() > 0) {
 			const CECTag *connection = changes->GetTagByName(EC_TAG_PREFS_CONNECTIONS);
 			const bool networksChanged =
 				connection && (connection->GetTagByName(EC_TAG_NETWORK_ED2K) ||
 						      connection->GetTagByName(EC_TAG_NETWORK_KADEMLIA));
-			m_conn->SendRequest(
-				new CPrefsSetHandler(networksChanged ? m_pendingNetworkWrites : nullptr),
+			m_conn->SendRequest(new CPrefsSetHandler(ecPassword,
+						    networksChanged ? m_pendingNetworkWrites : nullptr),
 				changes.get());
 		}
 	}

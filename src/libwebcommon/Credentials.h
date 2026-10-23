@@ -148,6 +148,8 @@ std::string CredentialsFilePath(const std::string &config_dir);
 // Deliberately not passed on the command line: argv is world-readable via ps, so a path there would
 // tell every local user exactly where to look during the window the file exists.
 std::string EcTokenFilePath(const std::string &config_dir);
+// Independent credential for the core-spawned legacy web server.
+std::string EcWebTokenFilePath(const std::string &config_dir);
 
 // A fresh EC token: 16 random bytes as 32 lowercase hex characters.
 //

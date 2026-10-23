@@ -18,13 +18,9 @@ from UploadRefillIntegrationTest import run
 
 
 class PartialUpdateEC(EC):
-    def call(self, op, tags=()):
-        if op == C['EC_OP_AUTH_REQ']:
-            tags = [*tags, tag(C['EC_TAG_CAN_PARTIAL_UPDATE'])]
-        reply, fields = super().call(op, tags)
-        if op == C['EC_OP_AUTH_PASSWD']:
-            assert C['EC_TAG_CAN_PARTIAL_UPDATE'] in fields, fields
-        return reply, fields
+    def __init__(self, port):
+        super().__init__(port, capabilities=[tag(C['EC_TAG_CAN_PARTIAL_UPDATE'])])
+        assert C['EC_TAG_CAN_PARTIAL_UPDATE'] in self.auth_tags, self.auth_tags
 
 
 class DisplayRateMirror:

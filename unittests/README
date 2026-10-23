@@ -229,3 +229,9 @@ the server UDP label must follow external changes. Finally stage a network
 change and enable API guest access without a password: the rejected save must
 leave the core network flags unchanged. Supply valid settings and retry; the
 staged network change must then apply. Run these checks in both desktop clients.
+
+EC integration-test requirements
+-------------------------------
+Tests that authenticate through ECWire require Python 3 with the cryptography
+module (python3-cryptography on Debian/Ubuntu). These tests return skip code 77
+when the module is unavailable, including fixtures importing the EC helper.

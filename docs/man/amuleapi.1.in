@@ -61,12 +61,6 @@ aMule data directory that \fBamuled\fR uses (~/.aMule/ on Linux,
 ~/Library/Application Support/aMule/ on macOS, %APPDATA%\\aMule\\ on
 Windows). Creates the dir with mode 0700 if absent.
 .TP
-.B_untranslated [ \-\-disable\-ec\-encryption ]\fR
-Do not encrypt the link to \fBamuled\fR(1). Encryption is on by default
-whenever the remote aMule supports it. Turning it off lets anyone watching
-the connection read and alter everything after the login. Same as
-\fBEncryption=0\fR in \fIamuleapi.conf\fR.
-.TP
 .B_untranslated [ \-\-force\-zlib ]\fR
 Always compress the link to \fBamuled\fR(1). By default amuleapi skips
 compression when amuled's address is on the local network. Use this when

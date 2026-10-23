@@ -5,24 +5,21 @@
 import hashlib
 import json, os, socketserver, struct, subprocess, sys, tempfile, threading, time, urllib.request, zlib
 from pathlib import Path
+from ECWire import accept  # Preflight in the parent before starting fixtures.
 from AllSearchIntegrationTest import (C, PortCollision, exact, free_ports,
                                       integer, retry_port_collisions, string)
 requests = []
 class Handler(socketserver.BaseRequestHandler):
     def handle(self):
         try:
+            self.request = accept(self.request)
             while True:
                 flags, size = struct.unpack('!II', exact(self.request, 8))
                 body = exact(self.request, size)
                 if flags & 1: body = zlib.decompress(body)
                 op = body[0]
                 requests.append(op)
-                if op == C['EC_OP_AUTH_REQ']:
-                    reply, tags = C['EC_OP_AUTH_SALT'], [integer(C['EC_TAG_PASSWD_SALT'], 123)]
-                elif op == C['EC_OP_AUTH_PASSWD']:
-                    reply, tags = C['EC_OP_AUTH_OK'], [string(C['EC_TAG_SERVER_VERSION'], 'legacy-fixture')]
-                else:
-                    reply, tags = C['EC_OP_NOOP'], []
+                reply, tags = C['EC_OP_NOOP'], []
                 payload = bytes([reply]) + struct.pack('!H', len(tags)) + b''.join(tags)
                 self.request.sendall(struct.pack('!II', 0x20, len(payload)) + payload)
         except (EOFError, OSError): pass
@@ -49,7 +46,7 @@ def run(api, cmd):
             thread=threading.Thread(target=legacy.serve_forever, daemon=True); thread.start()
             port=legacy.server_address[1]; hp=free_ports(1)[0]; url=f'http://127.0.0.1:{hp}/api/v1'
             with (cfg/'api.log').open('w') as log:
-                proc=subprocess.Popen([api, '--config-dir='+tmp, '--host=127.0.0.1', '--port='+str(port), '--http-port='+str(hp), '--disable-ec-encryption'], env=env, stdout=log, stderr=log)
+                proc=subprocess.Popen([api, '--config-dir='+tmp, '--host=127.0.0.1', '--port='+str(port), '--http-port='+str(hp)], env=env, stdout=log, stderr=log)
                 try:
                     deadline=time.monotonic()+30
                     while time.monotonic()<deadline:
@@ -75,7 +72,7 @@ def run(api, cmd):
                     status, result=http(url+'/status', token=token)
                     assert status==200 and result['search_all_supported'] is False, (status,result)
                     print('PASS: REST reports absent All capability as false')
-                    out=subprocess.run([cmd, '-h','127.0.0.1','-p',str(port),'-P','regression','--disable-ec-encryption','-c','search all legacyguard'], env=env, capture_output=True, text=True, timeout=15)
+                    out=subprocess.run([cmd, '-h','127.0.0.1','-p',str(port),'-P','regression','-c','search all legacyguard'], env=env, capture_output=True, text=True, timeout=15)
                     assert 'does not support All searches' in out.stdout+out.stderr, out
                     assert C['EC_OP_SEARCH_START'] not in requests, requests
                     print('PASS: amulecmd reports unsupported All without sending SEARCH_START')

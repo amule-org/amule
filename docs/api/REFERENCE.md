@@ -2414,7 +2414,7 @@ Returns every preference category amuled carries over EC. The `general` and `con
     "amuleapi": { "enabled": true, "port": 4713, "bind_address": "0.0.0.0" },
     "external_connections": {
       "enabled": true, "bind_address": "127.0.0.1", "bind_interface": "", "port": 4712,
-      "upnp_enabled": false, "encryption_required": false, "password_set": true
+      "upnp_enabled": false, "encryption_required": true, "password_set": true
     }
   },
   "online_signature": { "enabled": false, "directory": "/home/me/.aMule", "update_frequency_seconds": 5 },
@@ -2483,7 +2483,7 @@ Body shape mirrors the GET; every sub-object and every field is optional, and fi
 
 `remote_controls` nests its three independent subsystems as `remote_controls.webserver`, `remote_controls.amuleapi` and `remote_controls.external_connections` rather than prefixing every field. It reports amuleapi's `enabled` / `port` / `bind_address`, but **not** whether its admin or guest password is set. Those live in `amuleapi-passwords`, which amuleapi owns and which may sit on a different host from amuled — so the daemon's view of that file can be the wrong one. Ask the API that actually reads it: [`GET /auth/passwords`](#get-apiv1authpasswords), which is admin-only, whereas this endpoint is readable by any authenticated role. `webserver.guest_enabled` is reported because it is a genuine amuled preference rather than a fact about another process's file.
 
-`remote_controls.external_connections` is the EC listener amuleapi itself reaches the core through, and it is **read-only**. `enabled` is whether external connections are accepted, `bind_address` and `bind_interface` are the address and network interface it listens on (empty for any), `port` is its TCP port, `upnp_enabled` is whether UPnP forwards that port (no effect when `connection.upnp_supported` is `false`), and `encryption_required` is whether a client that cannot encrypt is refused. `password_set` says whether an EC password is configured; the password itself is never returned. These are the saved settings, which the core applies on its next start, so after a change they can differ from the listener serving this connection. Against an amuled that predates them, all seven are `null`.
+`remote_controls.external_connections` is the EC listener amuleapi itself reaches the core through, and it is **read-only**. `enabled` is whether external connections are accepted, `bind_address` and `bind_interface` are the address and network interface it listens on (empty for any), `port` is its TCP port, `upnp_enabled` is whether UPnP forwards that port (no effect when `connection.upnp_supported` is `false`), and `encryption_required` is always true: EC encryption is mandatory. `password_set` says whether an EC password is configured; the password itself is never returned. These are the saved settings, which the core applies on its next start, so after a change they can differ from the listener serving this connection. Against an amuled that predates them, all seven are `null`.
 
 **Write-only passwords** (accepted here, never echoed on GET) live under `remote_controls.webserver`: `password`, `guest_password`. Send the plaintext — amuled stores the hash. `guest_password` is accepted whether or not the webserver's guest access is enabled: amuled stores the hash either way, and it simply sits inert until `guest_enabled` is turned on. (amuleapi's own [`PATCH /auth/passwords`](#patch-apiv1authpasswords) does enforce the pairing, and answers `400`; these are different credentials on different daemons.)
 

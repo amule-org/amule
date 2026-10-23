@@ -496,14 +496,16 @@ void CECSocket::OnInput()
 			} else {
 				CSmartPtr<const CECPacket> packet(ReadPacket());
 				m_curr_rx_data->Rewind();
-				if (packet.get()) {
-					CSmartPtr<const CECPacket> reply(
-						OnPacketReceived(packet.get(), m_curr_packet_len));
-					if (reply.get()) {
-						SendPacket(reply.get());
-					}
-				} else {
-					AddDebugLogLineN(logEC, "OnInput: no packet");
+				if (!packet.get() || !IsSocketConnected()) {
+					return;
+				}
+				CSmartPtr<const CECPacket> reply(
+					OnPacketReceived(packet.get(), m_curr_packet_len));
+				if (reply.get() && IsSocketConnected()) {
+					SendPacket(reply.get());
+				}
+				if (!IsSocketConnected()) {
+					return;
 				}
 				m_bytes_needed = EC_HEADER_SIZE;
 				m_in_header = true;
@@ -1196,6 +1198,20 @@ const CECPacket *CECSocket::ReadPacket()
 		cout << "ReadPacket: packet have invalid flags " << flags << '\n';
 		CloseAndDispatchLost();
 		return 0;
+	}
+
+	// Both event-driven dispatch and synchronous SendRecvPacket use this reader.
+	// An application-level check alone leaves synchronous command replies open
+	// to plaintext injection after an otherwise authenticated encrypted login.
+	if (m_crypt_ready && !(flags & EC_FLAG_ENCRYPTED)) {
+		const char *const message =
+			"EC received an unencrypted packet after key setup; dropping the connection.";
+		// Console clients may exit from OnLost before queued logger events run.
+		fprintf(stderr, "amule: %s\n", message);
+		fflush(stderr);
+		AddLogLineC(message);
+		CloseAndDispatchLost();
+		return nullptr;
 	}
 
 	if (flags & EC_FLAG_ENCRYPTED) {

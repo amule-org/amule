@@ -977,9 +977,6 @@ bool PrefsUnifiedDlg::TransferToWindow()
 		IDC_EC_INTERFACETEXT,
 		IDC_EXT_CONN_TCP_PORT,
 		IDC_EXT_CONN_TCPPORTTEXT,
-		IDC_EXT_CONN_PASSWD,
-		IDC_EXT_CONN_PASSWDTEXT,
-		IDC_EXT_CONN_REQUIRE_ENCRYPTION,
 		// ffprobe "Browse" (local file picker) and "Detect" (auto-detects on the GUI host, not
 		// the daemon) cannot target the daemon filesystem. The enable toggle + path field are
 		// EC-wired and stay visible.
@@ -1281,7 +1278,16 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 	// the way out, so the dialog closed with the user's intent discarded and the message
 	// already dismissed. Keep the dialog open on the password field instead. Wording
 	// unchanged so existing translations still apply.
-	if (thePrefs::AcceptExternalConnections() && thePrefs::ECPassword().IsEmpty()) {
+	const bool ecPasswordSet = CfgChanged(IDC_EXT_CONN_PASSWD)
+					   ? !thePrefs::PendingECPass().IsEmpty()
+					   : !thePrefs::ECPasswordVerifier().IsEmpty();
+#ifdef CLIENT_GUI
+	// A connected remote GUI is necessarily using an enabled EC listener.
+	const bool ecEnabled = true;
+#else
+	const bool ecEnabled = thePrefs::AcceptExternalConnections();
+#endif
+	if (ecEnabled && !ecPasswordSet) {
 		wxMessageBox(_("You have enabled external connections but have not specified a "
 			       "password.\nExternal connections cannot be enabled unless a valid "
 			       "password is specified."),
@@ -1294,18 +1300,26 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 		return;
 	}
 
+	// Credential changes commit only after validation and cancellable work above.
+#ifndef CLIENT_GUI
+	if (CfgChanged(IDC_EXT_CONN_PASSWD)) {
+		if (!thePrefs::SetECPass(thePrefs::PendingECPass())) {
+			wxMessageBox(_("Could not update EC password verifier."),
+				_("ERROR"),
+				wxOK | wxICON_ERROR,
+				this);
+			if (wxWindow *field = FindWindow(IDC_EXT_CONN_PASSWD))
+				field->SetFocus();
+			return;
+		}
+		thePrefs::ClearPendingECPass();
+	}
+#endif
+
 	const bool ed2kWasEnabled = thePrefs::GetNetworkED2K();
 	const bool kadWasEnabled = thePrefs::GetNetworkKademlia();
 	GetCfg(IDC_NETWORKED2K)->TransferFromWindow();
 	GetCfg(IDC_NETWORKKAD)->TransferFromWindow();
-
-#ifdef CLIENT_GUI
-	// Send only after validation, including the network flags committed just above.
-	theApp->glob_prefs->SendChangesToRemote();
-#ifdef GEOIP_GUI
-	thePrefs::SetGeoIPUpdateRequested(false);
-#endif
-#endif
 
 	bool restart_needed = false;
 	wxString restart_needed_msg = _("aMule must be restarted to enable these changes:\n\n");
@@ -1382,7 +1396,7 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 	// this list: amuleapi re-reads amuleapi-passwords on every login, so a password change
 	// is live. Skip the prompt when external connections will not be usable, so we do not
 	// tell the user to restart for a service that will not run.
-	const bool ecUsable = thePrefs::AcceptExternalConnections() && !thePrefs::ECPassword().IsEmpty();
+	const bool ecUsable = ecEnabled && ecPasswordSet;
 	if (ecUsable && (CfgChanged(IDC_ENABLE_AMULEAPI) || CfgChanged(IDC_AMULEAPI_PORT) ||
 				CfgChanged(IDC_AMULEAPI_BIND))) {
 		restart_needed = true;
@@ -1432,6 +1446,12 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 		}
 	}
 
+#ifdef CLIENT_GUI
+	theApp->glob_prefs->SendChangesToRemote(true);
+#ifdef GEOIP_GUI
+	thePrefs::SetGeoIPUpdateRequested(false);
+#endif
+#endif
 	// save the preferences on ok
 	theApp->glob_prefs->Save();
 
@@ -1694,12 +1714,17 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 			this);
 	}
 
+	thePrefs::ClearPendingECPass();
 	EndSharedDirsSession();
 	Show(false);
 }
 
 void PrefsUnifiedDlg::OnClose(wxCloseEvent &event)
 {
+	thePrefs::ClearPendingECPass();
+#if defined(CLIENT_GUI) && defined(GEOIP_GUI)
+	thePrefs::SetGeoIPUpdateRequested(false);
+#endif
 	Show(false);
 	EndSharedDirsSession();
 
@@ -1724,6 +1749,10 @@ void PrefsUnifiedDlg::OnClose(wxCloseEvent &event)
 
 void PrefsUnifiedDlg::OnCancel(wxCommandEvent &WXUNUSED(event))
 {
+	thePrefs::ClearPendingECPass();
+#if defined(CLIENT_GUI) && defined(GEOIP_GUI)
+	thePrefs::SetGeoIPUpdateRequested(false);
+#endif
 	Show(false);
 	// The edits are being thrown away, so the next session may refresh freely.
 	EndSharedDirsSession();

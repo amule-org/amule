@@ -24,6 +24,7 @@
 //
 
 #include "TerminationProcessAmuleweb.h"
+#include "amule.h"
 
 CTerminationProcessAmuleweb::CTerminationProcessAmuleweb(const wxString &cmd, int *webserver_pid)
 : CTerminationProcess(cmd)
@@ -37,6 +38,7 @@ void CTerminationProcessAmuleweb::OnTerminate(int pid, int status)
 {
 	// Tell the application that the webserver is no longer running
 	*m_webserver_pid = 0;
+	theApp->OnAmulewebTerminated();
 
 	// Normal termination processing here
 	CTerminationProcess::OnTerminate(pid, status);

@@ -155,7 +155,7 @@ field uses the same sentinel-extended encoding as the packet-level
 
 ### Section 1.3 — Transport encryption
 
-Everything after authentication may be encrypted. It is negotiated during the
+All authenticated EC traffic must be encrypted. It is negotiated during the
 auth exchange, applies to the application layer only — the 8-byte transmission
 header stays in clear, because the receiver needs the flags and length to know
 a sealed body is coming — and is signalled per packet by `EC_FLAG_ENCRYPTED`.
@@ -167,7 +167,7 @@ bytes in `EC_TAG_AEAD_CLIENT_NONCE` and a 32-byte ephemeral X25519 public key in
 chosen id in `EC_TAG_AEAD_CIPHER`, 32 random bytes of its own in
 `EC_TAG_AEAD_SERVER_NONCE`, and its own ephemeral public key in
 `EC_TAG_AEAD_SERVER_PUBKEY`. A server that omits these tags does not support
-encryption, and the session continues in clear.
+encryption; authentication fails with no plaintext fallback.
 
 The public key is not optional. A peer that offers `EC_TAG_CAN_AEAD` without one
 is malformed, not old — encryption and the key exchange shipped together — and
@@ -197,7 +197,7 @@ transcript = len(offered) || offered || cipher_id
              || client_nonce || server_nonce
              || client_pubkey || server_pubkey
 salt = server_nonce || client_nonce
-info = "aMule EC AEAD v1" || cipher_id || <the offered cipher list, as received>
+info = "aMule EC AEAD v1" || cipher_id || transcript
 okm  = HKDF-SHA256(X25519(client_pubkey, server_pubkey), salt, info, 2*keylen + 8)
 ```
 
@@ -210,27 +210,10 @@ either is altered in transit the two sides derive different keys and the first
 sealed packet fails to authenticate, instead of the session silently dropping
 to a weaker cipher.
 
-**Key confirmation.** An anonymous key exchange authenticates nobody: an
-attacker can complete one exchange with each side and relay between them. Since
-the password no longer keys the channel, it is what closes that instead, as an
-explicit proof over the transcript.
-
-```
-client_confirm = HKDF-SHA256(md5(password), transcript, "ec-confirm-client", 32)
-server_confirm = HKDF-SHA256(md5(password), transcript, "ec-confirm-server", 32)
-```
-
-The client sends `EC_TAG_AEAD_CLIENT_CONFIRM` with `EC_OP_AUTH_PASSWD`; the
-server checks it — in constant time — before authenticating, and returns
-`EC_TAG_AEAD_SERVER_CONFIRM` in the sealed `EC_OP_AUTH_OK`, which the client
-checks in turn. A relay runs a different exchange on each leg, so the two
-transcripts differ and at least one check fails.
-
-A missing, malformed or mismatched tag fails authentication on either side.
-There is no fallback to a password-derived key or to clear: a downgrade an
-attacker could force by dropping one tag would be little better than no defence.
-The transcript covers both public keys, so substituting one is caught here even
-though the exchange itself would succeed.
+**Authentication.** SRP-6a proofs bind the credential to this transcript.
+The daemon retains an augmented verifier instead of a password-equivalent MD5
+digest. The exact v1 profile, byte encodings, proof context, messages and config
+migration are specified in [EC_SRP.md](EC_SRP.md).
 
 **Per-packet nonce.** 12 bytes: the 4-byte derived prefix followed by a 64-bit
 big-endian counter, starting at zero and incremented once per packet in that
@@ -242,16 +225,11 @@ plaintext.
 receiver reverses it. A failed authentication tag is not recoverable and the
 connection is dropped.
 
-**When it starts.** The last plaintext packet from the client is
-`EC_OP_AUTH_PASSWD`; the server replies with `EC_OP_AUTH_OK` already sealed,
-carrying its confirmation tag. If authentication fails no session key is
-installed, so `EC_OP_AUTH_FAIL` is sent in clear.
-
-**Policy.** Whether to encrypt is the client's choice: only the client knows the
-address it dialed, and a server's view of the peer address misclassifies
-tunnelled connections. Every aMule client offers encryption by default. A server
-may be configured to *require* it (`RequireEncryption`), in which case a session
-that negotiated no cipher is refused at authentication time.
+**When it starts.** The client sends `EC_OP_AUTH_REQ` and the daemon answers
+`EC_OP_AUTH_SALT` in plaintext. `EC_OP_AUTH_PASSWD`, `EC_OP_AUTH_OK` and failures
+after the salt are sealed. An encrypted channel is mandatory, including on
+loopback; the former encryption opt-outs are removed. No application command is
+sent or executed until both SRP proofs have been checked.
 
 ## Section 2 — Data types
 
@@ -318,35 +296,17 @@ Have you seen an XML file? Then think of an EC packet as binary XML.
 Otherwise, think of it as a tree: exactly one root, possibly many
 branches and leaves. We'll use the tree analogy below.
 
-About the flags (which are part of the transmission layer): you can
-ignore them at first. Send `0x20` and advertise no capabilities, and
-aMule sends `0x20` back on every packet. Add capabilities later, when
-you need them.
-
-The example packets below are real. They were captured between a
-minimal client and `amuled` 3.1.0, with transport encryption off, and
-transcribed to text. All numbers are hexadecimal, with the `0x` prefix
-left out.
+The examples below show the decrypted application layer. On the wire, every
+authenticated packet has `EC_FLAG_ENCRYPTED` and a sealed body as described in
+Section 1.3. The 3.1.0 plaintext authentication example has been retired.
 
 ### Example 1 — Authentication
 
-A login has two round trips: `EC_OP_AUTH_REQ` gets `EC_OP_AUTH_SALT`,
-then `EC_OP_AUTH_PASSWD` gets `EC_OP_AUTH_OK`. The first packet you send
-must be `EC_OP_AUTH_REQ`. The server answers any other packet with
-`EC_OP_AUTH_FAIL`. Each failure also carries an `EC_TAG_STRING` that
-tells why.
-
-#### Step 1: `EC_OP_AUTH_REQ`
-
-```
-EC_OP_AUTH_REQ (02)
-    +-- EC_TAG_CLIENT_NAME            (0100) optional
-    +-- EC_TAG_CLIENT_VERSION         (0101) optional
-    +-- EC_TAG_PROTOCOL_VERSION       (0002) required
-    +-- EC_TAG_VERSION_ID             (0003) see below
-    +-- EC_TAG_CAN_*                         optional, one per capability
-    +-- EC_TAG_CAN_AEAD, EC_TAG_AEAD_*       optional, see Section 1.3
-```
+Implement the four-message exchange in [EC_SRP.md](EC_SRP.md). Clients must
+advertise X25519/AEAD, send A and the credential selector, check the fixed KDF
+profile, and verify the sealed server proof before sending any command.
+Protocol/snapshot-version checks remain in effect. After repeated failures
+from one address, the daemon temporarily refuses further logins.
 
 `EC_TAG_PROTOCOL_VERSION` must be equal to the server's
 `EC_CURRENT_PROTOCOL_VERSION`, currently `0x0204`. If not, the server
@@ -439,122 +399,17 @@ use. Bumping `EC_CURRENT_PROTOCOL_VERSION` is *not* the mechanism for
 this: that constant gates the handshake as a whole, so raising it
 severs every mixed-version pairing instead of degrading one feature.
 
-What the client of this example sends:
+The first packet must be `EC_OP_AUTH_REQ`; other initial opcodes receive
+`EC_OP_AUTH_FAIL`. AUTH_REQ must include the SRP and AEAD tags listed in
+[EC_SRP.md](EC_SRP.md), in addition to the protocol and optional client fields.
 
-```
-00 00 00 20                       FLAGS
-00 00 00 27                       LENGTH: 39 bytes follow
-02                                EC_OP_AUTH_REQ
-  00 03                           TAGCOUNT: 3
-    02 00                         EC_TAG_CLIENT_NAME (0100 << 1)
-      06                          EC_TAGTYPE_STRING
-      00 00 00 09                 TAGLEN: 9
-      4d 79 43 6c 69 65 6e 74 00  "MyClient" + trailing zero
-    02 02                         EC_TAG_CLIENT_VERSION (0101 << 1)
-      06                          EC_TAGTYPE_STRING
-      00 00 00 04                 TAGLEN: 4
-      31 2e 30 00                 "1.0" + trailing zero
-    00 04                         EC_TAG_PROTOCOL_VERSION (0002 << 1)
-      03                          EC_TAGTYPE_UINT16
-      00 00 00 02                 TAGLEN: 2
-      02 04                       0204
-```
-
-#### Step 2: `EC_OP_AUTH_SALT`
-
-The server answers with a random 64-bit salt, new for each connection:
-
-```
-00 00 00 20                       FLAGS
-00 00 00 12                       LENGTH: 18
-4f                                EC_OP_AUTH_SALT
-  00 01                           TAGCOUNT: 1
-    00 16                         EC_TAG_PASSWD_SALT (000b << 1)
-      05                          EC_TAGTYPE_UINT64
-      00 00 00 08                 TAGLEN: 8
-      85 e4 ba 44 61 96 51 56     the salt
-```
-
-#### Step 3: `EC_OP_AUTH_PASSWD`
-
-The client proves that it knows the password without sending it:
-
-```
-hash = md5(md5_hex(password) + md5_hex(sprintf("%lX", salt)))
-```
-
-`md5_hex` is the digest in lowercase hexadecimal. `%lX` writes the salt
-in uppercase hexadecimal, with no leading zeros. The server keeps
-`md5_hex(password)` as `ECPassword` in `amule.conf`. With the password
-`amule`:
-
-```
-md5_hex("amule")            = ef7628c92bff39c0b3532d36a617cf09
-md5_hex("85E4BA4461965156") = f3fd39a2accf5daba095bbab076af24d
-md5("ef7628c92bff39c0b3532d36a617cf09f3fd39a2accf5daba095bbab076af24d")
-                            = 9dd41c0b85c8b7cd0a0b1a8ecf9f5d29
-```
-
-```
-00 00 00 20                       FLAGS
-00 00 00 1a                       LENGTH: 26
-50                                EC_OP_AUTH_PASSWD
-  00 01                           TAGCOUNT: 1
-    00 02                         EC_TAG_PASSWD_HASH (0001 << 1)
-      09                          EC_TAGTYPE_HASH16
-      00 00 00 10                 TAGLEN: 16
-      9d d4 1c 0b 85 c8 b7 cd     the hash
-      0a 0b 1a 8e cf 9f 5d 29
-```
-
-With encryption, this packet also carries `EC_TAG_AEAD_CLIENT_CONFIRM`
-(see Section 1.3).
-
-#### Step 4: `EC_OP_AUTH_OK`
-
-```
-00 00 00 20                       FLAGS
-00 00 00 72                       LENGTH: 114
-04                                EC_OP_AUTH_OK
-  00 06                           TAGCOUNT: 6
-    0a 16                         EC_TAG_SERVER_VERSION (050b << 1)
-      06                          EC_TAGTYPE_STRING
-      00 00 00 1d                 TAGLEN: 29
-      47 49 54 20 72 65 76 2e     "GIT rev. 3.1.0-89-g091eac4fe"
-      20 33 2e 31 2e 30 2d 38       + trailing zero
-      39 2d 67 30 39 31 65 61
-      63 34 66 65 00
-    00 48                         EC_TAG_AEAD_SERVER_CONFIRM (0024 << 1)
-      01                          EC_TAGTYPE_CUSTOM
-      00 00 00 20                 TAGLEN: 32
-      08 23 7b b6 8a 4d 68 9e     32 bytes, see Section 1.3
-      [...]
-    00 4a                         EC_TAG_SESSION_ID (0025 << 1)
-      05                          EC_TAGTYPE_UINT64
-      00 00 00 08                 TAGLEN: 8
-      5f 44 b2 22 d7 59 9d 58     changes when the daemon restarts
-    00 4c                         EC_TAG_CAN_CLIENT_HISTORY (0026 << 1)
-      01                          EC_TAGTYPE_CUSTOM
-      00 00 00 00                 TAGLEN: 0, an empty tag
-    00 2e                         EC_TAG_CAN_SHAREDDIRS_CONFIG (0017 << 1)
-      01 00 00 00 00              empty
-    00 34                         EC_TAG_CAN_SEARCH_LIST (001a << 1)
-      01 00 00 00 00              empty
-```
-
-The version string comes from a development build. A release sends its
-version number.
-
-Only `EC_TAG_SERVER_VERSION` is always present. The other tags depend
-on the server version and on what the client advertised. This server
-echoes the three capabilities above to every client, and adds the
-capabilities it accepted from the client's list. A client without
-encryption can ignore `EC_TAG_AEAD_SERVER_CONFIRM`. Parse the children:
-do not assume a count or an order.
-
-A wrong password gets `EC_OP_AUTH_FAIL`. After repeated failures from
-one address, the server refuses logins from it for a time, even with
-the right password.
+After verifying M1, the server sends a sealed `EC_OP_AUTH_OK` containing
+`EC_TAG_SRP_M2`, `EC_TAG_SERVER_VERSION`, accepted capability tags, and
+`EC_TAG_SESSION_ID` (a uint64 identifying this daemon process). A changed
+session ID means cached ECIDs from the previous process must be discarded.
+The version string identifies a release or a development snapshot. Parse tags
+by name; do not assume their count or order. Require a valid M2 before using
+any of these fields or sending commands.
 
 ### Example 2 — Simple stats request
 

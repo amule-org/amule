@@ -106,16 +106,15 @@ private:
 	// Keys are derived once the handshake has both nonces and the chosen cipher.
 	// m_crypt_ready says the keys exist; m_crypt_enabled says to seal outgoing
 	// packets. Separate because the packet that completes the handshake must still go
-	// out in clear -- the client sends EC_OP_AUTH_PASSWD unencrypted and only then
-	// switches on, which m_crypt_enable_after_write expresses. Incoming packets are
-	// decided per packet by EC_FLAG_ENCRYPTED.
+	// out in clear -- the daemon sends EC_OP_AUTH_SALT unencrypted and only then
+	// switches on, which m_crypt_enable_after_write expresses. ReadPacket rejects every clear incoming
+	// packet after key setup.
 	ECCrypt::Session m_crypt;
 	bool m_crypt_ready;
 	bool m_crypt_enabled;
 	bool m_crypt_enable_after_write;
 
-	// Whether the packet ReadPacket last returned arrived sealed, so the app dispatch
-	// can reject cleartext injected into a session that negotiated encryption.
+	// Whether the last accepted packet arrived sealed (also used by transport tests).
 	bool m_last_rx_encrypted;
 
 protected:
@@ -186,12 +185,11 @@ public:
 		const std::vector<uint8_t> &transcript,
 		bool isServer);
 
-	/// Seal everything after the packet currently being sent. The client uses
-	/// this so its EC_OP_AUTH_PASSWD leaves in clear but the reply is sealed.
+	/// Seal everything after the packet currently being sent. The daemon uses
+	/// this so its EC_OP_AUTH_SALT leaves in clear but M1 and the reply are sealed.
 	void EnableAEADAfterNextWrite() { m_crypt_enable_after_write = m_crypt_ready; }
 
-	/// Seal from the next packet on. The daemon uses this once the password checks
-	/// out, so EC_OP_AUTH_OK is itself sealed -- proof that it holds the password.
+	/// Seal from the next packet on. The client uses this after checking AUTH_SALT.
 	void EnableAEADNow() { m_crypt_enabled = m_crypt_ready; }
 
 	bool IsAEADReady() const { return m_crypt_ready; }
