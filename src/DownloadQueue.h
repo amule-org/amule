@@ -26,14 +26,16 @@
 #ifndef DOWNLOADQUEUE_H
 #define DOWNLOADQUEUE_H
 
-#include "MD4Hash.h"         // Needed for CMD4Hash
-#include "ObservableQueue.h" // Needed for CObservableQueue
-#include "GetTickCount.h"    // Needed for GetTickCount64
+#include "MD4Hash.h"           // Needed for CMD4Hash
+#include "ObservableQueue.h"   // Needed for CObservableQueue
+#include "GetTickCount.h"      // Needed for GetTickCount64
+#include "GlobalSourceQueue.h" // Needed for CGlobalSourceQueue
 
 #include <atomic> // Needed for std::atomic (m_listGeneration)
 #include <deque>
 #include <functional> // Needed for std::function (LoadProgressCb)
-#include <vector>     // Needed for std::vector (GetPartFileDirs)
+#include <map>
+#include <vector> // Needed for std::vector (GetPartFileDirs)
 
 class CSharedFileList;
 class CSearchFile;
@@ -193,14 +195,12 @@ public:
 	bool AddED2KLink(const CED2KServerLink *link);
 	bool AddED2KLink(const CED2KServerListLink *link);
 
-	/// The server currently being queried by UDP packets.
-	CServer *GetUDPServer() const;
-
-	/// Sets the server to query over UDP.
-	void SetUDPServer(CServer *server);
-
 	/// Stops source-requests from non-connected servers.
 	void StopUDPRequests();
+
+	/// Puts a download just added or resumed first in every non-connected server's global
+	/// source request queue.
+	void RequestGlobalSources(const CMD4Hash &fileHash);
 
 	/* Kad Stuff */
 
@@ -240,14 +240,12 @@ private:
 	//! @a probe: query the disk (startup only), else use CFreeSpaceThread's sample.
 	void CheckDiskspace(const CPath &path, bool probe);
 
-	/// Stops performing UDP requests.
-	void DoStopUDPRequests();
-
 	void ProcessLocalRequests();
 
-	bool SendNextUDPPacket();
-	int GetMaxFilesPerUDPServerPacket() const;
-	bool SendGlobGetSourcesUDPPacket(CMemFile &data);
+	/// Sends the next non-connected server whose queue allows it one global source request.
+	void SendGlobalSources();
+	CGlobalSourceQueue &GlobalSources(const CServer *server);
+	void SendGlobGetSourcesUDPPacket(CMemFile &data, CServer *server);
 
 	void AddToResolve(const CMD4Hash &fileid,
 		const wxString &pszHostname,
@@ -260,14 +258,14 @@ private:
 
 	uint32 m_datarate;
 	uint64 m_lastDiskCheck;
-	uint64 m_lastudpsearchtime;
 	uint64 m_lastsorttime;
 	uint64 m_lastudpstattime;
 	uint64 m_nLastED2KLinkCheck;
-	uint8 m_cRequestsSentToServer;
 	uint64 m_dwNextTCPSrcReq;
 	uint8 m_udcounter;
-	CServer *m_udpserver;
+	// Keyed by address and port, so a server's queue outlives its object.
+	std::map<std::pair<wxString, uint16>, CGlobalSourceQueue> m_globalSources;
+	size_t m_globalSourcesNext = 0;
 
 	/// Stores a source with a dynamic hostname.
 	struct Hostname_Entry
@@ -298,12 +296,6 @@ private:
 
 	//! List of downloads completed and still on display
 	FileList m_completedDownloads;
-
-	//! Observer used to keep track of which servers have yet to be asked for sources
-	CQueueObserver<CServer *> m_queueServers;
-
-	//! Observer used to keep track of which file to send UDP requests for
-	CQueueObserver<CPartFile *> m_queueFiles;
 
 	/* Kad Stuff */
 	uint64 lastkademliafilerequest;

@@ -1044,6 +1044,12 @@ add_test (NAME ServerSourceRecordsTest COMMAND ServerSourceRecordsTest)
 target_include_directories (ServerSourceRecordsTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries (ServerSourceRecordsTest muleunit mulecommon)
 
+# Global source request queue for one server, without the application.
+add_executable (GlobalSourceQueueTest GlobalSourceQueueTest.cpp)
+add_test (NAME GlobalSourceQueueTest COMMAND GlobalSourceQueueTest)
+target_include_directories (GlobalSourceQueueTest PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include)
+target_link_libraries (GlobalSourceQueueTest muleunit mulecommon)
+
 # Which address an OP_FOUNDSOURCES / OP_FOUNDSOURCES_OBFU sentinel source is contacted on, without
 # the application.
 add_executable (ServerIPv6SourcePolicyTest

@@ -72,21 +72,17 @@
 // and 546 / 16 = 34.
 
 #define MAX_FILES_PER_UDP_PACKET 31 // 2+16*31 = 498 ... is still less than 512 bytes!!
-#define MAX_REQUESTS_PER_SERVER 35
 
 CDownloadQueue::CDownloadQueue()
 // Needs to be recursive that that is can own an observer assigned to itself
 : m_mutex(wxMUTEX_RECURSIVE)
 {
 	m_datarate = 0;
-	m_udpserver = 0;
 	m_lastsorttime = 0;
-	m_lastudpsearchtime = 0;
 	m_lastudpstattime = 0;
 	m_udcounter = 0;
 	m_nLastED2KLinkCheck = 0;
 	m_dwNextTCPSrcReq = 0;
-	m_cRequestsSentToServer = 0;
 	m_lastDiskCheck = 0;
 
 	// Static thresholds until dynamic kicks in.
@@ -218,20 +214,6 @@ void CDownloadQueue::CopyFileList(std::vector<CPartFile *> &out_list, bool inclu
 			out_list.push_back(*it);
 		}
 	}
-}
-
-CServer *CDownloadQueue::GetUDPServer() const
-{
-	wxMutexLocker lock(m_mutex);
-
-	return m_udpserver;
-}
-
-void CDownloadQueue::SetUDPServer(CServer *server)
-{
-	wxMutexLocker lock(m_mutex);
-
-	m_udpserver = server;
 }
 
 void CDownloadQueue::SaveSourceSeeds()
@@ -384,6 +366,7 @@ void CDownloadQueue::AddDownload(CPartFile *file, bool paused, uint8 category)
 		m_listGeneration.fetch_add(1, std::memory_order_relaxed);
 		DoSortByPriority();
 	}
+	RequestGlobalSources(file->GetFileHash());
 
 	NotifyObservers(EventType(EventType::INSERTED, file));
 	if (category < theApp->glob_prefs->GetCatCount()) {
@@ -590,9 +573,7 @@ void CDownloadQueue::Process()
 		if (m_udcounter == 10) {
 			m_udcounter = 0;
 			if (theApp->serverconnect->IsUDPSocketAvailable()) {
-				if ((curTick - m_lastudpsearchtime) > UDPSERVERREASKTIME) {
-					SendNextUDPPacket();
-				}
+				SendGlobalSources();
 			}
 		}
 
@@ -936,107 +917,137 @@ static bool IsConnectedServer(const CServer *server)
 	return false;
 }
 
-bool CDownloadQueue::SendNextUDPPacket()
+// Whether a global source request may ask the server about the file.
+static bool WantsGlobalSources(const CPartFile *file, const CServer *server)
 {
-	if (m_filelist.empty() || !theApp->serverconnect->IsUDPSocketAvailable() ||
-		!theApp->IsConnectedED2K()) {
+	const uint8 status = file->GetStatus();
+	if ((status != PS_READY && status != PS_EMPTY) ||
+		file->GetSourceCount() >= thePrefs::GetMaxSourcePerFileUDP()) {
 		return false;
 	}
-
-	if (!m_queueServers.IsActive()) {
-		AddObserver(&m_queueFiles);
-
-		theApp->serverlist->AddObserver(&m_queueServers);
+	if (file->IsLargeFile() && !server->SupportsLargeFilesUDP()) {
+		AddDebugLogLineN(logDownloadQueue,
+			"UDP Request for sources on a large file ignored: server doesn't support it");
+		return false;
 	}
-
-	bool packetSent = false;
-	while (!packetSent) {
-		int filesAllowed = GetMaxFilesPerUDPServerPacket();
-
-		if (filesAllowed < 1 || !m_udpserver || IsConnectedServer(m_udpserver)) {
-			// Select the next server to ask, must not be the connected server
-			do {
-				m_udpserver = m_queueServers.GetNext();
-			} while (IsConnectedServer(m_udpserver));
-
-			m_cRequestsSentToServer = 0;
-			filesAllowed = GetMaxFilesPerUDPServerPacket();
-		}
-
-		// Check if we have asked all servers, in which case we are done
-		if (m_udpserver == NULL) {
-			DoStopUDPRequests();
-
-			return false;
-		}
-
-		// Memoryfile containing the hash of every file to request
-		// 28bytes allocation because 16b + 4b + 8b is the worse case scenario.
-		CMemFile hashlist(28);
-
-		CPartFile *file = m_queueFiles.GetNext();
-
-		while (file && filesAllowed) {
-			uint8 status = file->GetStatus();
-
-			if ((status == PS_READY || status == PS_EMPTY) &&
-				file->GetSourceCount() < thePrefs::GetMaxSourcePerFileUDP()) {
-				if (file->IsLargeFile() && !m_udpserver->SupportsLargeFilesUDP()) {
-					AddDebugLogLineN(logDownloadQueue,
-						"UDP Request for sources on a large file ignored: server "
-						"doesn't support it");
-				} else {
-					++m_cRequestsSentToServer;
-					hashlist.WriteHash(file->GetFileHash());
-					// See the notes on TCP packet
-					if (m_udpserver->GetUDPFlags() & SRV_UDPFLG_EXT_GETSOURCES2) {
-						if (file->IsLargeFile()) {
-							wxASSERT(m_udpserver->SupportsLargeFilesUDP());
-							hashlist.WriteUInt32(0);
-							hashlist.WriteUInt64(file->GetFileSize());
-						} else {
-							hashlist.WriteUInt32(file->GetFileSize());
-						}
-					}
-					--filesAllowed;
-				}
-			}
-
-			// Avoid skipping a file if we can't send any more currently
-			if (filesAllowed) {
-				file = m_queueFiles.GetNext();
-			}
-		}
-
-		if (hashlist.GetLength()) {
-			packetSent = SendGlobGetSourcesUDPPacket(hashlist);
-		}
-
-		if (file == NULL) {
-			m_queueFiles.Reset();
-
-			m_udpserver = NULL;
-		}
-	}
-
 	return true;
+}
+
+static void WriteGlobalSourceRequest(CMemFile &data, const CPartFile *file, const CServer *server)
+{
+	data.WriteHash(file->GetFileHash());
+	// See the notes on TCP packet
+	if (server->GetUDPFlags() & SRV_UDPFLG_EXT_GETSOURCES2) {
+		if (file->IsLargeFile()) {
+			data.WriteUInt32(0);
+			data.WriteUInt64(file->GetFileSize());
+		} else {
+			data.WriteUInt32(file->GetFileSize());
+		}
+	}
+}
+
+CGlobalSourceQueue &CDownloadQueue::GlobalSources(const CServer *server)
+{
+	const std::pair<wxString, uint16> key(server->GetAddress(), server->GetPort());
+	auto found = m_globalSources.find(key);
+	if (found == m_globalSources.end()) {
+		// Each server starts its turn elsewhere, so the servers are asked about different
+		// downloads first.
+		const size_t seed = std::hash<std::string>()(key.first.ToStdString()) ^ key.second;
+		unsigned char start[16];
+		for (size_t i = 0; i < sizeof(start); ++i) {
+			start[i] = static_cast<unsigned char>(seed >> (8 * (i % sizeof(seed))));
+		}
+		found = m_globalSources.emplace(key, CGlobalSourceQueue(CMD4Hash(start))).first;
+	}
+	return found->second;
+}
+
+void CDownloadQueue::RequestGlobalSources(const CMD4Hash &fileHash)
+{
+	if (!theApp->serverlist) {
+		return;
+	}
+
+	wxMutexLocker lock(m_mutex);
+
+	for (const CServer *server : theApp->serverlist->CopySnapshot()) {
+		if (!IsConnectedServer(server)) {
+			GlobalSources(server).Add(fileHash);
+		}
+	}
+}
+
+void CDownloadQueue::SendGlobalSources()
+{
+	if (m_filelist.empty() || !theApp->IsConnectedED2K()) {
+		return;
+	}
+
+	const std::vector<const CServer *> servers = theApp->serverlist->CopySnapshot();
+	for (auto it = m_globalSources.begin(); it != m_globalSources.end();) {
+		const bool listed = std::any_of(servers.begin(), servers.end(), [&it](const CServer *server) {
+			return server->GetAddress() == it->first.first &&
+			       server->GetPort() == it->first.second;
+		});
+		it = listed ? std::next(it) : m_globalSources.erase(it);
+	}
+
+	std::vector<CMD4Hash> downloads;
+	downloads.reserve(m_filelist.size());
+	for (const CPartFile *file : m_filelist) {
+		downloads.push_back(file->GetFileHash());
+	}
+	std::sort(downloads.begin(), downloads.end());
+
+	const uint64 now = ::GetTickCount64();
+	for (size_t i = 0; i < servers.size(); ++i) {
+		const size_t idx = (m_globalSourcesNext + i) % servers.size();
+		if (IsConnectedServer(servers[idx])) {
+			continue;
+		}
+		CServer *server =
+			theApp->serverlist->GetServerByIPTCP(servers[idx]->GetIP(), servers[idx]->GetPort());
+		if (!server) {
+			continue;
+		}
+
+		const uint32 perPacket =
+			(server->GetUDPFlags() & SRV_UDPFLG_EXT_GETSOURCES) ? MAX_FILES_PER_UDP_PACKET : 1;
+		const std::vector<CMD4Hash> asked = GlobalSources(server).Next(
+			now,
+			downloads,
+			[this, server](const CMD4Hash &hash) {
+				const CPartFile *file = GetFileByID(hash);
+				return file && WantsGlobalSources(file, server);
+			},
+			perPacket);
+		if (asked.empty()) {
+			continue;
+		}
+
+		// 28 bytes because 16 + 4 + 8 is the worst case.
+		CMemFile data(28);
+		wxString hashes;
+		for (const CMD4Hash &hash : asked) {
+			WriteGlobalSourceRequest(data, GetFileByID(hash), server);
+			hashes += " " + hash.Encode();
+		}
+		SendGlobGetSourcesUDPPacket(data, server);
+		m_globalSourcesNext = idx + 1;
+		AddDebugLogLineN(logDownloadQueue,
+			CFormat("Asked %s:%u for sources of %u downloads:%s") % server->GetAddress() %
+				server->GetPort() % asked.size() % hashes);
+		return;
+	}
 }
 
 void CDownloadQueue::StopUDPRequests()
 {
 	wxMutexLocker lock(m_mutex);
 
-	DoStopUDPRequests();
-}
-
-void CDownloadQueue::DoStopUDPRequests()
-{
-	// No need to observe when we wont be using the results
-	theApp->serverlist->RemoveObserver(&m_queueServers);
-	RemoveObserver(&m_queueFiles);
-
-	m_udpserver = 0;
-	m_lastudpsearchtime = ::GetTickCount64();
+	m_globalSources.clear();
 }
 
 // Comparison function needed by sort. Returns true if file1 precedes file2
@@ -1375,37 +1386,15 @@ void CDownloadQueue::CheckDiskspace(const CPath &path, bool probe)
 	}
 }
 
-int CDownloadQueue::GetMaxFilesPerUDPServerPacket() const
+void CDownloadQueue::SendGlobGetSourcesUDPPacket(CMemFile &data, CServer *server)
 {
-	if (m_udpserver) {
-		if (m_udpserver->GetUDPFlags() & SRV_UDPFLG_EXT_GETSOURCES) {
-			if (m_cRequestsSentToServer < MAX_REQUESTS_PER_SERVER) {
-				return std::min(MAX_FILES_PER_UDP_PACKET,
-					MAX_REQUESTS_PER_SERVER - m_cRequestsSentToServer);
-			}
-		} else if (m_cRequestsSentToServer < MAX_REQUESTS_PER_SERVER) {
-			return 1;
-		}
-	}
-
-	return 0;
-}
-
-bool CDownloadQueue::SendGlobGetSourcesUDPPacket(CMemFile &data)
-{
-	if (!m_udpserver) {
-		return false;
-	}
-
 	CPacket packet(data,
 		OP_EDONKEYPROT,
-		((m_udpserver->GetUDPFlags() & SRV_UDPFLG_EXT_GETSOURCES2) ? OP_GLOBGETSOURCES2
-									   : OP_GLOBGETSOURCES));
+		((server->GetUDPFlags() & SRV_UDPFLG_EXT_GETSOURCES2) ? OP_GLOBGETSOURCES2
+								      : OP_GLOBGETSOURCES));
 
 	theStats::AddUpOverheadServer(packet.GetPacketSize());
-	theApp->serverconnect->SendUDPPacket(&packet, m_udpserver, false);
-
-	return true;
+	theApp->serverconnect->SendUDPPacket(&packet, server, false);
 }
 
 void CDownloadQueue::AddToResolve(const CMD4Hash &fileid,

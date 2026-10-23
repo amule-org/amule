@@ -383,10 +383,6 @@ bool CServerList::RemoveServer(CServer *in_server, bool fromUser)
 		return false;
 	}
 
-	if (theApp->downloadqueue->GetUDPServer() == in_server) {
-		theApp->downloadqueue->SetUDPServer(nullptr);
-	}
-
 	NotifyObservers(EventType(EventType::REMOVED, in_server));
 
 	if (m_serverpos == it) {

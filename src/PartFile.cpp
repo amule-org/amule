@@ -3023,6 +3023,7 @@ void CPartFile::ResumeFile()
 	m_insufficient = false;
 
 	m_lastsearchtime = 0;
+	theApp->downloadqueue->RequestGlobalSources(GetFileHash());
 	SetStatus(status);
 	SetActive(theApp->IsConnected());
 
