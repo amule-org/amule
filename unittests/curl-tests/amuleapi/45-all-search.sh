@@ -39,14 +39,14 @@ jq -e --argjson sid "$ALL_SID" \
 	'any(.searches[]; .search_id == $sid and .type == "all")' "$TMP/searches" >/dev/null \
 	|| fail 'GET /search did not report type all'
 echo 'PASS: GET /search reports type all'
-# The fixture is a pre-0x02 StoredSearches.met: no form was recorded for it, so the
+# The fixture has no trailing parameter block: no form was recorded for it, so the
 # row carries no form fields -- the three numeric caps as null, the strings omitted.
 jq -e --argjson sid "$ALL_SID" \
 	'any(.searches[]; .search_id == $sid and (.file_type | not) and (.extension | not)
 		and .min_size_bytes == null and .max_size_bytes == null
 		and .min_source_count == null)' "$TMP/searches" >/dev/null \
-	|| fail 'GET /search gave a pre-0x02 restored search a form it never had'
-echo 'PASS: GET /search leaves a pre-0x02 restored search without a form'
+	|| fail 'GET /search gave a restored search without a block a form it never had'
+echo 'PASS: GET /search leaves a pre-block restored search without a form'
 curl -fsS --max-time 10 -H "$AUTH" "$API/search/$ALL_SID/results" >"$TMP/results"
 echo 'PASS: GET All search results'
 # Starts are capability-gated, and All can use Kad alone in this offline fixture.

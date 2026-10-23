@@ -42,8 +42,6 @@
 #include "SearchRequest.h"
 #include "SearchTypeChoices.h"
 
-#include <common/DataFileVersion.h>
-
 #include <ECCodes.h>
 
 using namespace muleunit;
@@ -321,14 +319,4 @@ TEST(AllSearchType, PendingBrowseCloseNeverReplacesEd2kSlot)
 	}
 	requests.Begin(3, KadSearch);
 	ASSERT_FALSE(requests.Take(3)->ReplacesEd2kSlot());
-}
-
-TEST(AllSearchType, StoredSearchesVersionBytesArePinned)
-{
-	// Both are on-disk format: the writer emits STOREDSEARCHES_VERSION and the reader
-	// accepts [STOREDSEARCHES_VERSION_MIN, STOREDSEARCHES_VERSION]. Renumbering either
-	// silently reinterprets (or rejects) files older builds wrote, so a change here has
-	// to be a deliberate format step, not an accidental enum edit.
-	ASSERT_EQUALS(0x02, static_cast<int>(STOREDSEARCHES_VERSION));
-	ASSERT_EQUALS(0x01, static_cast<int>(STOREDSEARCHES_VERSION_MIN));
 }

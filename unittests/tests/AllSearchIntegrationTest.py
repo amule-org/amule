@@ -256,11 +256,14 @@ def stored_param_tags(*tags):
 
 def stored_search(results, kind=C['EC_SEARCH_ALL'], params=b''):
     query = b'restored'
-    # An empty params block keeps the 0x01 layout; supplying one writes the 0x02 header.
-    # The block sits between the start time and the result count (SearchList.cpp).
-    return (struct.pack('<BIIH', 2 if params else 1, 1, 123, len(query)) + query
-            + struct.pack('<BQ', kind, int(time.time())) + params
+    data = (struct.pack('<BIIH', 1, 1, 123, len(query)) + query
+            + struct.pack('<BQ', kind, int(time.time()))
             + struct.pack('<I', len(results)) + b''.join(results))
+    # Start parameters are a trailing block after the records: marker, count, then an id
+    # and a tag list per search. Omitted when the search has no recorded form.
+    if params:
+        data += struct.pack('<II', 0x534D5052, 1) + struct.pack('<I', 123) + params
+    return data
 
 
 def stop_daemon(proc):

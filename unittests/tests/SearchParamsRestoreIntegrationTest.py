@@ -3,12 +3,12 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 """Search start parameters survive a StoredSearches.met round-trip and older files still load.
 
-Version 0x02 writes every search's start parameters as a named tag list, so a client adopting
-the search list can rebuild the form it was started from. The writer must emit exactly the
-filters a search started with (and omit the defaulted ones), the reader must accept every
-current tag plus unknown future ones, and a 0x01 file -- or a known tag of the wrong type --
-must restore without parameters, or not at all. A file newer than 0x02 must be rejected
-outright.
+The start parameters ride in a trailing block after the 0x01 records, keyed by search id, so a
+build that predates the block restores the searches and drops only the filters. The writer must
+emit exactly the filters a search started with (and omit the defaulted ones), the reader must
+accept every current tag plus unknown future ones, and a file without the block -- or a known
+tag of the wrong type, or a trailing block with an unknown marker -- must restore without
+parameters, or not at all.
 """
 from pathlib import Path
 import struct
@@ -70,41 +70,61 @@ def parse_stored(data):
         kind = data[offset]
         offset += 1 + 8  # kind byte + start time
         params = {}
-        if version >= 2:
-            tags = data[offset]
-            offset += 1
-            for _ in range(tags):
-                ttype = data[offset]
-                offset += 1
-                length = struct.unpack_from('<H', data, offset)[0]
-                offset += 2
-                name = data[offset:offset + length].decode()
-                offset += length
-                if ttype == 0x02:  # TAGTYPE_STRING
-                    length = struct.unpack_from('<H', data, offset)[0]
-                    offset += 2
-                    value = data[offset:offset + length].decode()
-                    offset += length
-                elif ttype == 0x09:  # TAGTYPE_UINT8
-                    value = data[offset]
-                    offset += 1
-                elif ttype == 0x08:  # TAGTYPE_UINT16
-                    value = struct.unpack_from('<H', data, offset)[0]
-                    offset += 2
-                elif ttype == 0x03:  # TAGTYPE_UINT32
-                    value = struct.unpack_from('<I', data, offset)[0]
-                    offset += 4
-                elif ttype == 0x0b:  # TAGTYPE_UINT64
-                    value = struct.unpack_from('<Q', data, offset)[0]
-                    offset += 8
-                else:
-                    raise AssertionError(f'fixture parser: unknown tag type 0x{ttype:02x}')
-                params[name] = value
         results = struct.unpack_from('<I', data, offset)[0]
         offset += 4
         assert results == 0, 'fixture parser only handles searches without results'
         searches.append({'id': sid, 'query': query, 'kind': kind, 'params': params})
+    # Trailing start-parameter block, keyed by search id.
+    if offset < len(data):
+        assert struct.unpack_from('<I', data, offset)[0] == 0x534D5052, \
+            'fixture parser: unknown trailing marker'
+        offset += 4
+        entries = struct.unpack_from('<I', data, offset)[0]
+        offset += 4
+        for _ in range(entries):
+            sid = struct.unpack_from('<I', data, offset)[0]
+            offset += 4
+            for entry in searches:
+                if entry['id'] == sid:
+                    offset = read_param_tags(data, offset, entry['params'])
+                    break
+            else:
+                raise AssertionError(f'fixture parser: params for unknown search id {sid}')
     return version, searches
+
+
+def read_param_tags(data, offset, params):
+    """The named tag list of one search's start parameters; returns the new offset."""
+    tags = data[offset]
+    offset += 1
+    for _ in range(tags):
+        ttype = data[offset]
+        offset += 1
+        length = struct.unpack_from('<H', data, offset)[0]
+        offset += 2
+        name = data[offset:offset + length].decode()
+        offset += length
+        if ttype == 0x02:  # TAGTYPE_STRING
+            length = struct.unpack_from('<H', data, offset)[0]
+            offset += 2
+            value = data[offset:offset + length].decode()
+            offset += length
+        elif ttype == 0x09:  # TAGTYPE_UINT8
+            value = data[offset]
+            offset += 1
+        elif ttype == 0x08:  # TAGTYPE_UINT16
+            value = struct.unpack_from('<H', data, offset)[0]
+            offset += 2
+        elif ttype == 0x03:  # TAGTYPE_UINT32
+            value = struct.unpack_from('<I', data, offset)[0]
+            offset += 4
+        elif ttype == 0x0b:  # TAGTYPE_UINT64
+            value = struct.unpack_from('<Q', data, offset)[0]
+            offset += 8
+        else:
+            raise AssertionError(f'fixture parser: unknown tag type 0x{ttype:02x}')
+        params[name] = value
+    return offset
 
 
 def search_list(ec):
@@ -150,7 +170,7 @@ def round_trip(binary, root):
         stop_daemon(proc)
 
     version, searches = parse_stored((root / 'StoredSearches.met').read_bytes())
-    assert version == 2, version
+    assert version == 1, version
     by_id = {entry['id']: entry for entry in searches}
     assert by_id[full]['params'] == {'search.file_type': 'Audio', 'search.extension': '.mp3',
                                      'search.min_size_bytes': FULL['min_size'],
@@ -181,26 +201,20 @@ def round_trip(binary, root):
 
 
 def every_parameter_fixture():
-    """A 0x02 file carrying every parameter the format knows, plus one from the future."""
+    """A file carrying every parameter the format knows, plus one from the future."""
     tags = stored_param_tags(
         stored_string_tag('search.file_type', 'Iso'),
         stored_string_tag('search.extension', '.iso'),
         stored_int_tag('search.min_size_bytes', 1 << 20),
         stored_int_tag('search.max_size_bytes', (1 << 40) + 9),
         stored_int_tag('search.min_source_count', 9),
-        stored_int_tag('search.min_bitrate_kbps', 320),
-        stored_int_tag('search.min_length_seconds', 130),
-        stored_string_tag('search.codec', 'h264'),
-        stored_string_tag('search.title', 'restore me'),
-        stored_string_tag('search.album', 'regression'),
-        stored_string_tag('search.artist', 'aMule'),
         stored_string_tag('search.future_filter', 'written by a newer build'),
     )
     return stored_search([], kind=C['EC_SEARCH_KAD'], params=tags)
 
 
 def current_version_file(binary, root):
-    """A file written by the current version must load, including desktop-only filters."""
+    """A file written by the current version must load, including unknown future filters."""
     (root / 'StoredSearches.met').write_bytes(every_parameter_fixture())
     (proc, ec), _ = boot(binary, root)
     try:
@@ -216,13 +230,11 @@ def current_version_file(binary, root):
     # A clean shutdown re-saves: every known tag survives with its value; the unknown
     # future tag is dropped because this build does not know how to write it.
     version, searches = parse_stored((root / 'StoredSearches.met').read_bytes())
-    assert version == 2
+    assert version == 1
     assert searches[0]['params'] == {
         'search.file_type': 'Iso', 'search.extension': '.iso',
         'search.min_size_bytes': 1 << 20, 'search.max_size_bytes': (1 << 40) + 9,
-        'search.min_source_count': 9, 'search.min_bitrate_kbps': 320,
-        'search.min_length_seconds': 130, 'search.codec': 'h264',
-        'search.title': 'restore me', 'search.album': 'regression', 'search.artist': 'aMule',
+        'search.min_source_count': 9,
     }, searches[0]
 
 
@@ -263,14 +275,12 @@ def legacy_file(binary, root):
         stop_daemon(proc)
 
 
-def future_file(binary, root):
-    """A file from a newer format is rejected outright, never half-read."""
-    raw = bytearray(stored_search([]))
-    raw[0] = 3
-    (root / 'StoredSearches.met').write_bytes(raw)
+def unknown_marker_file(binary, root):
+    """Trailing data with an unknown marker is rejected outright, never half-read."""
+    (root / 'StoredSearches.met').write_bytes(stored_search([]) + struct.pack('<I', 0xDEADBEEF))
     (proc, ec), _ = boot(binary, root)
     try:
-        assert not search_list(ec), 'a newer-format file must restore nothing'
+        assert not search_list(ec), 'an unknown trailing marker must restore nothing'
         log = (root / 'logfile').read_text(errors='replace')
         assert 'corrupted, contains invalid header' in log, log[-2000:]
     finally:
@@ -286,13 +296,13 @@ def main():
             base = Path(scratch)
             for name, phase in (('roundtrip', round_trip), ('current', current_version_file),
                                 ('wrongtype', wrong_type_rejected), ('legacy', legacy_file),
-                                ('future', future_file)):
+                                ('unknownmarker', unknown_marker_file)):
                 root = base / name
                 root.mkdir()
                 phase(binary, root)
     retry_port_collisions(attempt)
     print('PASS: search start parameters round-trip, current-version restore, '
-          'corruption rejection, legacy restore, and future-version rejection')
+          'corruption rejection, legacy restore, and unknown-marker rejection')
 
 
 if __name__ == '__main__':

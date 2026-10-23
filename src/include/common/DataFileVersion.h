@@ -56,8 +56,7 @@ enum CanceledFileListVersions
 
 enum StoredSearchesFileVersions
 {
-	STOREDSEARCHES_VERSION = 0x02,    // 0x02 adds per-search start parameters as a tag list
-	STOREDSEARCHES_VERSION_MIN = 0x01 // first version, query/kind/time/results only
+	STOREDSEARCHES_VERSION = 0x01
 };
 
 #endif // DATAFILEVERSION_H

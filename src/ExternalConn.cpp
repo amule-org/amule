@@ -3023,7 +3023,8 @@ static CECPacket *Get_EC_Response_Search_List()
 		// look up -- already have it from this map entry, no need to re-find.
 		entry.AddTag(EC_TAG_SEARCH_NAME, known.second);
 		// The start parameters, so a client adopting the listing can rebuild the search form
-		// instead of settling for query + kind. Absent for a browse or a pre-0x02 restore.
+		// from what the search was started with. Absent for a browse or a restore without a
+		// recorded form.
 		if (const CSearchList::CSearchParams *params = theApp->searchlist->GetSearchParams(sid)) {
 			if (!params->typeText.IsEmpty()) {
 				entry.AddTag(EC_TAG_SEARCH_FILE_TYPE, params->typeText);

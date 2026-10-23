@@ -153,14 +153,7 @@ export default function Search({ isGuest }) {
                onRestore=${restoreForm}
                extra=${reg.tabs.length > 1 ? html`
                  <button class="btn btn-sm admin-only" type="button"
-                         onClick=${() => {
-                           searches.closeAll();
-                           // Nothing is left to restore or re-run: the form keeps only
-                           // stale filters, so clear it back to defaults.
-                           setQuery(""); setType("global"); setFileType(""); setExt("");
-                           setMinAvail(""); setMinSize(""); setMinUnit("MiB");
-                           setMaxSize(""); setMaxUnit("MiB");
-                         }}>${t("search_close_all")}</button>` : null} />
+                         onClick=${() => searches.closeAll()}>${t("search_close_all")}</button>` : null} />
       <div class="net-pane-body">
         <${ResultsPane} key=${active.id} tab=${active} categories=${categories} />
       </div>

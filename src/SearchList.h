@@ -206,8 +206,8 @@ public:
 
 	/**
 	 * The full start parameters for the given search ID, or nullptr for an unknown id or a
-	 * search without recorded parameters (a browse, or one restored from a pre-0x02
-	 * StoredSearches.met).
+	 * search without recorded parameters (a browse, or one restored from a file without
+	 * a parameter block).
 	 */
 	const CSearchParams *GetSearchParams(uint32_t searchID) const;
 
@@ -310,11 +310,13 @@ public:
 	/**
 	 * Persists every currently-held search (query string, kind, start time, start parameters,
 	 * and its full result tree) to StoredSearches.met, so results survive a restart (issue
-	 * #641 Phase 3). Called periodically after changes and from OnExit() before this object is
-	 * destroyed -- the destructor drains everything via RemoveResults(), so shutdown must save
-	 * first. "View Files" browse tabs are not searches (see GetKnownSearchIds()) and are never
-	 * persisted. Bounded at MAX_STORED_SEARCHES / MAX_STORED_RESULTS_PER_SEARCH; anything
-	 * beyond that is dropped with a log line during clean shutdown rather than silently.
+	 * #641 Phase 3). The start parameters ride in a trailing block after the 0x01 records, so
+	 * a pre-block build restores the searches and drops only the filters. Called periodically
+	 * after changes and from OnExit() before this object is destroyed -- the destructor drains
+	 * everything via RemoveResults(), so shutdown must save first. "View Files" browse tabs are
+	 * not searches (see GetKnownSearchIds()) and are never persisted. Bounded at
+	 * MAX_STORED_SEARCHES / MAX_STORED_RESULTS_PER_SEARCH; anything beyond that is dropped
+	 * with a log line during clean shutdown rather than silently.
 	 */
 	bool StoreSearches(bool reportTruncation = true) const;
 
@@ -589,7 +591,7 @@ private:
 	std::map<uint32_t, wxString> m_searchStrings;
 
 	//! This search's full start parameters, keyed by id (recorded in StartNewSearch, pruned
-	//! in RemoveResults, persisted in StoredSearches.met from version 0x02). Lets a client
+	//! in RemoveResults, persisted in the StoredSearches.met trailing block). Lets a client
 	//! adopting the EC search list rebuild the form it was started from.
 	std::map<uint32_t, CSearchParams> m_searchParams;
 
