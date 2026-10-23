@@ -205,6 +205,13 @@ public:
 	const std::map<uint32_t, wxString> &GetKnownSearchIds() const { return m_searchStrings; }
 
 	/**
+	 * The full start parameters for the given search ID, or nullptr for an unknown id or a
+	 * search without recorded parameters (a browse, or one restored from a pre-0x02
+	 * StoredSearches.met).
+	 */
+	const CSearchParams *GetSearchParams(uint32_t searchID) const;
+
+	/**
 	 * Ask the Kad search identified by searchID to widen its frontier via
 	 * KADEMLIA_FIND_VALUE_MORE. Wired to the search dialog "More" button. Returns true if
 	 * a reask was dispatched. For AllSearch, the ed2k tab ID is mapped to its Kad component.
@@ -301,11 +308,11 @@ public:
 	void RemoveResults(wxUIntPtr searchID);
 
 	/**
-	 * Persists every currently-held search (query string, kind, start time, and its full
-	 * result tree) to StoredSearches.met, so results survive a restart (issue #641 Phase
-	 * 3). Called periodically after changes and from OnExit() before this object is destroyed --
-	 * the destructor drains everything via RemoveResults(), so shutdown must save first.
-	 * "View Files" browse tabs are not searches (see GetKnownSearchIds()) and are never
+	 * Persists every currently-held search (query string, kind, start time, start parameters,
+	 * and its full result tree) to StoredSearches.met, so results survive a restart (issue
+	 * #641 Phase 3). Called periodically after changes and from OnExit() before this object is
+	 * destroyed -- the destructor drains everything via RemoveResults(), so shutdown must save
+	 * first. "View Files" browse tabs are not searches (see GetKnownSearchIds()) and are never
 	 * persisted. Bounded at MAX_STORED_SEARCHES / MAX_STORED_RESULTS_PER_SEARCH; anything
 	 * beyond that is dropped with a log line during clean shutdown rather than silently.
 	 */
@@ -580,6 +587,11 @@ private:
 	//! in RemoveResults). Needed to label a search enumerated via EC_OP_SEARCH_LIST for a
 	//! client that did not start it locally.
 	std::map<uint32_t, wxString> m_searchStrings;
+
+	//! This search's full start parameters, keyed by id (recorded in StartNewSearch, pruned
+	//! in RemoveResults, persisted in StoredSearches.met from version 0x02). Lets a client
+	//! adopting the EC search list rebuild the form it was started from.
+	std::map<uint32_t, CSearchParams> m_searchParams;
 
 	//! ED2K-side counterpart of m_KadSearchFinished, covering both local and global
 	//! searches. Cleared in StartNewSearch when an ED2K search is issued, set again in

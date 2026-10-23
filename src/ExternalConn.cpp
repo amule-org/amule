@@ -3022,6 +3022,19 @@ static CECPacket *Get_EC_Response_Search_List()
 		// known.second is the same string GetSearchStringById(sid) would
 		// look up -- already have it from this map entry, no need to re-find.
 		entry.AddTag(EC_TAG_SEARCH_NAME, known.second);
+		// The start parameters, so a client adopting the listing can rebuild the search form
+		// instead of settling for query + kind. Absent for a browse or a pre-0x02 restore.
+		if (const CSearchList::CSearchParams *params = theApp->searchlist->GetSearchParams(sid)) {
+			if (!params->typeText.IsEmpty()) {
+				entry.AddTag(EC_TAG_SEARCH_FILE_TYPE, params->typeText);
+			}
+			if (!params->extension.IsEmpty()) {
+				entry.AddTag(EC_TAG_SEARCH_EXTENSION, params->extension);
+			}
+			entry.AddTag(EC_TAG_SEARCH_MIN_SIZE, static_cast<uint64_t>(params->minSize));
+			entry.AddTag(EC_TAG_SEARCH_MAX_SIZE, static_cast<uint64_t>(params->maxSize));
+			entry.AddTag(EC_TAG_SEARCH_AVAILABILITY, static_cast<uint32_t>(params->availability));
+		}
 		// A browse also carries the peer it is listing: without it a remote GUI cannot
 		// build a browse tab at all, since a tab with no ecid is by definition not a
 		// browse (CSearchListCtrl::IsBrowse).

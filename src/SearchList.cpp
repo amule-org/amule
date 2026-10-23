@@ -30,6 +30,7 @@
 #include "BrowseManager.h"
 
 #include <algorithm> // Needed for std::sort (StoreSearches)
+#include <limits>    // Needed for std::numeric_limits (StoredSearches parameter tags)
 #include <utility>   // Needed for std::move (LoadSearches)
 
 #include <protocol/Protocols.h>
@@ -51,6 +52,7 @@
 #include "Preferences.h" // Needed for thePrefs::GetConfigDir
 #include "Logger.h"      // Needed for AddLogLineM/...
 #include "Packet.h"      // Needed for CPacket
+#include "Tag.h"         // Needed for CTag (StoredSearches.met parameter tags)
 #include "GuiEvents.h"   // Needed for Notify_*
 
 #ifndef AMULE_DAEMON
@@ -142,6 +144,7 @@ void CSearchList::RemoveResults(wxUIntPtr searchID)
 	m_searchStartTimes.erase(static_cast<uint32_t>(searchID));
 	m_searchKinds.erase(static_cast<uint32_t>(searchID));
 	m_searchStrings.erase(static_cast<uint32_t>(searchID));
+	m_searchParams.erase(static_cast<uint32_t>(searchID));
 	m_browsePeers.erase(static_cast<uint32_t>(searchID));
 
 	m_resultTypes.erase(static_cast<uint32_t>(searchID));
@@ -162,6 +165,120 @@ void CSearchList::RemoveResults(wxUIntPtr searchID)
 }
 
 const wxChar *const CSearchList::s_storedSearchesFilename = wxT("StoredSearches.met");
+
+namespace
+{
+//! Namespaced names keep these file tags distinct from the result tags a search already uses.
+const wxChar *const kSearchTagFileType = wxT("search.file_type");
+const wxChar *const kSearchTagExtension = wxT("search.extension");
+const wxChar *const kSearchTagMinSize = wxT("search.min_size_bytes");
+const wxChar *const kSearchTagMaxSize = wxT("search.max_size_bytes");
+const wxChar *const kSearchTagMinSourceCount = wxT("search.min_source_count");
+const wxChar *const kSearchTagMinBitrate = wxT("search.min_bitrate_kbps");
+const wxChar *const kSearchTagMinLength = wxT("search.min_length_seconds");
+const wxChar *const kSearchTagCodec = wxT("search.codec");
+const wxChar *const kSearchTagTitle = wxT("search.title");
+const wxChar *const kSearchTagAlbum = wxT("search.album");
+const wxChar *const kSearchTagArtist = wxT("search.artist");
+
+//! Add a sparse tag. Zero and empty values are the defaults on read, so they are omitted.
+void AddStringTag(TagPtrList &tags, const wxChar *name, const wxString &value)
+{
+	if (!value.IsEmpty()) {
+		tags.push_back(new CTagString(name, value));
+	}
+}
+
+void AddIntTag(TagPtrList &tags, const wxChar *name, uint64 value)
+{
+	if (value != 0) {
+		tags.push_back(new CTagVarInt(name, value));
+	}
+}
+
+//! A known name with the wrong type is corruption, not a value to default to zero or empty.
+wxString ReadStringTag(const CTag &tag)
+{
+	if (!tag.IsStr()) {
+		throw CInvalidPacket(CFormat("Search parameter tag '%s' is not a string") % tag.GetName());
+	}
+	return tag.GetStr();
+}
+
+uint64 ReadIntTag(const CTag &tag)
+{
+	if (!tag.IsInt()) {
+		throw CInvalidPacket(CFormat("Search parameter tag '%s' is not an integer") % tag.GetName());
+	}
+	return tag.GetInt();
+}
+
+uint32 ReadUInt32Tag(const CTag &tag)
+{
+	const uint64 value = ReadIntTag(tag);
+	if (value > std::numeric_limits<uint32>::max()) {
+		throw CInvalidPacket(CFormat("Search parameter tag '%s' is out of range") % tag.GetName());
+	}
+	return static_cast<uint32>(value);
+}
+
+void WriteSearchParams(CFileDataIO &file, const CSearchList::CSearchParams &params)
+{
+	TagPtrList tags;
+	AddStringTag(tags, kSearchTagFileType, params.typeText);
+	AddStringTag(tags, kSearchTagExtension, params.extension);
+	AddIntTag(tags, kSearchTagMinSize, params.minSize);
+	AddIntTag(tags, kSearchTagMaxSize, params.maxSize);
+	AddIntTag(tags, kSearchTagMinSourceCount, params.availability);
+	AddIntTag(tags, kSearchTagMinBitrate, params.minBitrateKbps);
+	AddIntTag(tags, kSearchTagMinLength, params.minLength);
+	AddStringTag(tags, kSearchTagCodec, params.codec);
+	AddStringTag(tags, kSearchTagTitle, params.title);
+	AddStringTag(tags, kSearchTagAlbum, params.album);
+	AddStringTag(tags, kSearchTagArtist, params.artist);
+
+	file.WriteTagPtrList(tags);
+	deleteTagPtrListEntries(&tags);
+}
+
+void ReadSearchParams(CFileDataIO &file, CSearchList::CSearchParams &params)
+{
+	params = CSearchList::CSearchParams();
+
+	TagPtrList tags;
+	file.ReadTagPtrList(&tags, true);
+	for (const CTag *tag : tags) {
+		const wxString &name = tag->GetName();
+		if (name == kSearchTagFileType) {
+			params.typeText = ReadStringTag(*tag);
+		} else if (name == kSearchTagExtension) {
+			params.extension = ReadStringTag(*tag);
+		} else if (name == kSearchTagMinSize) {
+			params.minSize = ReadIntTag(*tag);
+		} else if (name == kSearchTagMaxSize) {
+			params.maxSize = ReadIntTag(*tag);
+		} else if (name == kSearchTagMinSourceCount) {
+			params.availability = ReadUInt32Tag(*tag);
+		} else if (name == kSearchTagMinBitrate) {
+			params.minBitrateKbps = ReadUInt32Tag(*tag);
+		} else if (name == kSearchTagMinLength) {
+			params.minLength = ReadUInt32Tag(*tag);
+		} else if (name == kSearchTagCodec) {
+			params.codec = ReadStringTag(*tag);
+		} else if (name == kSearchTagTitle) {
+			params.title = ReadStringTag(*tag);
+		} else if (name == kSearchTagAlbum) {
+			params.album = ReadStringTag(*tag);
+		} else if (name == kSearchTagArtist) {
+			params.artist = ReadStringTag(*tag);
+		} else {
+			// Unknown names are additive: a filter written by a newer build is simply not
+			// used by this one.
+		}
+	}
+	deleteTagPtrListEntries(&tags);
+}
+} // namespace
 
 bool CSearchList::StoreSearches(bool reportTruncation) const
 {
@@ -226,6 +343,16 @@ bool CSearchList::StoreSearches(bool reportTruncation) const
 		file.WriteString(m_searchStrings.at(id), utf8strRaw);
 		file.WriteUInt8(static_cast<uint8>(m_searchKinds.at(id)));
 		file.WriteUInt64(static_cast<uint64>(m_searchStartTimes.at(id)));
+
+		// The start parameters, so a restored search reopens its own form. Searches with no
+		// recorded parameters (there are none in practice -- StartNewSearch always records --
+		// but a defensive reader must not depend on it) fall back to empty values. The tag
+		// list keeps the block additive: a new filter is another named tag, not a new layout.
+		static const CSearchParams emptyParams;
+		const std::map<uint32_t, CSearchParams>::const_iterator pi = m_searchParams.find(id);
+		const CSearchParams &p = (pi == m_searchParams.end()) ? emptyParams : pi->second;
+		WriteSearchParams(file, p);
+
 		file.WriteUInt32(static_cast<uint32>(resultCount));
 
 		for (std::size_t i = 0; i < resultCount; ++i) {
@@ -277,6 +404,7 @@ struct LoadedSearch
 	wxString queryString;
 	SearchType kind;
 	time_t startTime;
+	CSearchList::CSearchParams params; // empty for a pre-0x02 file
 	std::vector<std::unique_ptr<CSearchFile>> results;
 };
 } // namespace
@@ -306,12 +434,18 @@ std::vector<uint32_t> CSearchList::LoadSearches()
 
 	std::vector<LoadedSearch> loaded;
 
+	// 0x02 added the per-search start-parameter block as a tag list. Older files carry none.
+	// Read before the try so the commit loop below can tell a restored form apart from a
+	// search the file never recorded parameters for.
+	bool hasParams = false;
+
 	try {
 		uint8 version = file.ReadUInt8();
-		if (version != STOREDSEARCHES_VERSION) {
+		if (version < STOREDSEARCHES_VERSION_MIN || version > STOREDSEARCHES_VERSION) {
 			AddLogLineC(_("WARNING: Stored search list corrupted, contains invalid header."));
 			return restored;
 		}
+		hasParams = version >= STOREDSEARCHES_VERSION;
 
 		uint32 searchCount = file.ReadUInt32();
 		if (searchCount > MAX_STORED_SEARCHES * 2) {
@@ -329,6 +463,10 @@ std::vector<uint32_t> CSearchList::LoadSearches()
 			entry.queryString = file.ReadString(true);
 			entry.kind = static_cast<SearchType>(file.ReadUInt8());
 			entry.startTime = static_cast<time_t>(file.ReadUInt64());
+
+			if (hasParams) {
+				ReadSearchParams(file, entry.params);
+			}
 
 			uint32 resultCount = file.ReadUInt32();
 			if (resultCount > MAX_STORED_RESULTS_PER_SEARCH * 2) {
@@ -367,6 +505,12 @@ std::vector<uint32_t> CSearchList::LoadSearches()
 		m_searchStrings[entry.id] = entry.queryString;
 		m_searchKinds[entry.id] = entry.kind;
 		m_searchStartTimes[entry.id] = entry.startTime;
+		// Only a search the file actually recorded parameters for carries a form: a
+		// pre-0x02 restore must leave GetSearchParams() at nullptr so the listing omits
+		// the tags rather than reporting a form of all defaults as if the user typed them.
+		if (hasParams) {
+			m_searchParams[entry.id] = entry.params;
+		}
 
 		// Reserve the id so the first new search of the same kind this session cannot be handed
 		// it -- both counters restart every launch, so without this a restored search collides
@@ -568,6 +712,7 @@ wxString CSearchList::StartNewSearch(uint32 *searchID, SearchType type, CSearchP
 	// search's real type regardless of the scalar anchor bookkeeping.
 	m_searchKinds[static_cast<uint32_t>(*searchID)] = type;
 	m_searchStrings[static_cast<uint32_t>(*searchID)] = params.searchString;
+	m_searchParams[static_cast<uint32_t>(*searchID)] = params;
 	MarkStoredSearchesDirty(static_cast<uint32_t>(*searchID));
 	// Concurrent Kad searches can have different filters. Apply each query's own
 	// filter rather than whichever type was most recently submitted.
@@ -1168,6 +1313,12 @@ wxString CSearchList::GetSearchStringById(uint32_t searchID) const
 {
 	std::map<uint32_t, wxString>::const_iterator it = m_searchStrings.find(searchID);
 	return it != m_searchStrings.end() ? it->second : wxString();
+}
+
+const CSearchList::CSearchParams *CSearchList::GetSearchParams(uint32_t searchID) const
+{
+	std::map<uint32_t, CSearchParams>::const_iterator it = m_searchParams.find(searchID);
+	return it != m_searchParams.end() ? &it->second : nullptr;
 }
 
 bool CSearchList::IsKnownSearchId(uint32_t searchID) const
