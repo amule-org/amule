@@ -696,11 +696,12 @@ table.data.virtual td.name .name-select { width: 100%; max-width: 100%; }
   padding: 0 6px; cursor: pointer; font: inherit; line-height: 1.4;
   display: inline-flex; align-items: center;
 }
-.tab-restore:hover { background: var(--surface-2); color: var(--accent); }
+.tab-restore:hover { background: var(--surface); color: var(--accent); }
 .tab-item .tab.active + .tab-restore { background: var(--surface); color: var(--text); }
-.tab-item .tab.active + .tab-close { background: var(--surface); color: var(--text); border-bottom-color: var(--surface); }
-/* Hover beats the active rule above (same specificity, later in the sheet). */
+.tab-item .tab.active ~ .tab-close { background: var(--surface); color: var(--text); border-bottom-color: var(--surface); }
+/* Hover beats the active rules above (same specificity, later in the sheet). */
 .tab-item .tab.active + .tab-restore:hover { background: var(--surface-2); color: var(--accent); }
+.tab-item .tab.active ~ .tab-close:hover { background: var(--surface-2); color: var(--bad); }
 .tab.running { font-style: italic; }
 .tab.running .tab-badge { background: var(--accent); color: var(--accent-contrast); }
 
