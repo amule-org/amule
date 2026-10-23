@@ -139,6 +139,8 @@ jobs:
         env:
           APPIMAGE_CACHE_SCOPE: ${{ github.event_name != 'workflow_call' && format('appimage-{0}', matrix.arch) || '' }}
         run: packaging/linux/build.sh appimage
+      - name: Test packaged media runtime
+        run: python3 packaging/media/test-runtime.py --appimage "$(ls dist/aMule-*-Linux-*.AppImage | head -1)"
       - name: Validate via cross-distro Docker matrix
         run: packaging/linux/build.sh validate
       - name: Save ccache
@@ -180,6 +182,9 @@ jobs:
         with:
           fetch-depth: 0  # git describe for the version string
 
+      - name: Check Linux packaging wrappers
+        run: python3 -m unittest discover -s packaging/linux/tests -v
+
       - name: Set up Buildx
         uses: docker/setup-buildx-action@v4
 
@@ -192,6 +197,12 @@ jobs:
         env:
           STATIC_CACHE_SCOPE: ${{ github.event_name != 'workflow_call' && format('linux-static-{0}', matrix.arch) || '' }}
         run: packaging/linux/build.sh static
+      - name: Test packaged media runtime
+        run: |
+          STAGE=$(mktemp -d)
+          tar -xzf "$(ls dist/aMule-*-Linux-*-static.tar.gz | head -1)" -C "$STAGE"
+          BUNDLE=$(find "$STAGE" -mindepth 1 -maxdepth 1 -type d | head -1)
+          python3 packaging/media/test-runtime.py --bin-dir "$BUNDLE" --licenses "$BUNDLE/licenses"
 
       - uses: actions/upload-artifact@v7
         with:
@@ -262,8 +273,16 @@ jobs:
         run: |
           mkdir -p "$CCACHE_DIR"
           echo "max_size = 1.0G" > "$CCACHE_DIR/ccache.conf"
+      - name: Check Flatpak source provenance
+        run: python3 -m unittest discover -s packaging/linux/tests -p test_flatpak_source.py -v
       - name: Build Flatpak
         run: packaging/linux/build.sh flatpak
+      - name: Test packaged media runtime
+        run: |
+          flatpak install --user --noninteractive "$(ls dist/aMule-*-Linux-*.flatpak | head -1)"
+          LOCATION=$(flatpak info --user --show-location org.amule.aMule)
+          python3 packaging/media/test-runtime.py --flatpak org.amule.aMule \
+            --licenses "$LOCATION/files/share/licenses/amule-media-probe"
       - name: Save flatpak-builder ccache
         if: always() && github.event_name == 'push' && github.ref == 'refs/heads/master'
         uses: ./.github/actions/cache-save-newest
@@ -598,6 +617,9 @@ jobs:
           # next to aMule.app via make_dmg, so its absence would mean
           # BUILD_REMOTEGUI didn't actually produce a bundle.
           [ -d "${MNT}/aMuleGUI.app" ] || { echo "aMuleGUI.app missing from per-arch dmg" >&2; exit 1; }
+          python3 packaging/media/test-runtime.py \
+              --bin-dir "${MNT}/aMule.app/Contents/MacOS" \
+              --licenses "${MNT}/aMule.app/Contents/Resources/licenses/amule-media-probe"
           hdiutil detach "${MNT}"
       - name: Save ccache
         if: always() && github.event_name == 'push' && github.ref == 'refs/heads/master'
@@ -709,6 +731,17 @@ jobs:
           ln -s /Applications "${STAGE}/Applications"
           packaging/macos/create-dmg.sh "aMule ${VERSION}" "${STAGE}" \
               "dist/aMule-${VERSION}-macOS-universal2.dmg"
+      - name: Test Universal2 packaged media runtime
+        run: |
+          sudo softwareupdate --install-rosetta --agree-to-license
+          MNT=$(mktemp -d)
+          hdiutil attach -nobrowse -mountpoint "$MNT" "$(ls dist/*-universal2.dmg | head -1)"
+          for ARCH in arm64 x86_64; do
+            python3 packaging/media/test-runtime.py --arch "$ARCH" \
+                --bin-dir "$MNT/aMule.app/Contents/MacOS" \
+                --licenses "$MNT/aMule.app/Contents/Resources/licenses/amule-media-probe"
+          done
+          hdiutil detach "$MNT"
       - uses: actions/upload-artifact@v7
         with:
           name: macos-universal2
@@ -772,11 +805,13 @@ jobs:
             ${{ matrix.pkg_prefix }}-make
             ${{ matrix.pkg_prefix }}-ninja
             ${{ matrix.pkg_prefix }}-pkgconf
+            ${{ matrix.pkg_prefix }}-python
             ${{ matrix.pkg_prefix }}-readline
             ${{ matrix.pkg_prefix }}-toolchain
             ${{ matrix.pkg_prefix }}-wxwidgets3.3-msw
             ${{ matrix.pkg_prefix }}-zlib
             git
+            python
             zip
         run: |
           set -euo pipefail
@@ -855,6 +890,14 @@ jobs:
           # Pattern accepts the dev placeholder ("aMuleD GIT ...") and
           # any tagged-release banner ("aMuleD 3.0.0 ...", etc.).
           grep -q '^aMuleD ' /tmp/version.txt
+      - name: Test packaged media runtime
+        run: |
+          # Test an extraction of the final zip at a relocated path.
+          STAGE=$(mktemp -d)
+          unzip -q "$(ls dist/aMule-*-Windows-${{ matrix.arch }}.zip | head -1)" -d "$STAGE"
+          BUNDLE=$(find "$STAGE" -mindepth 1 -maxdepth 1 -type d | head -1)
+          "$MINGW_PREFIX/bin/python.exe" packaging/media/test-runtime.py \
+              --bin-dir "$BUNDLE/bin" --licenses "$BUNDLE/share/licenses/amule-media-probe"
       - name: Save ccache
         if: always() && github.event_name == 'push' && github.ref == 'refs/heads/master'
         uses: ./.github/actions/cache-save-newest
@@ -919,6 +962,10 @@ jobs:
           # The action's package cache saves on every event, with no way to limit
           # it to master, and these packages are only ~50 MB.
           cache: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+          architecture: ${{ matrix.arch }}
       - name: Install NSIS
         # NSIS isn't packaged for every MSYS2 environment (e.g. no
         # clangarm64 build), so install the Windows-native NSIS via
@@ -985,6 +1032,8 @@ jobs:
             echo Uninstall.exe missing after silent install
             exit /b 1
           )
+          python packaging\media\test-runtime.py --bin-dir C:\amule-installtest\bin --licenses C:\amule-installtest\share\licenses\amule-media-probe
+          if errorlevel 1 exit /b 1
           rem _? keeps the uninstaller from spawning a copy of itself
           rem in %TEMP% and returning before the work is done.
           "C:\amule-installtest\Uninstall.exe" /S _?=C:\amule-installtest

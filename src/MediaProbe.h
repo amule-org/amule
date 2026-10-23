@@ -31,7 +31,7 @@
 class CPath;
 
 // Media metadata extracted from a shared file, advertised alongside search results via
-// FT_MEDIA_LENGTH / _BITRATE / _CODEC on the CKnownFile. Populated by ffprobe; fields default to 0
+// FT_MEDIA_LENGTH / _BITRATE / _CODEC on the CKnownFile. Populated by the bundled helper; fields default to 0
 // or empty so downstream code can gate on nonzero-ness cheaply.
 struct MediaInfo
 {
@@ -59,39 +59,25 @@ namespace MediaProbe
 // which the caller reports as a failed probe so no empty tags are attached.
 bool ParseProbeOutput(const wxArrayString &lines, MediaInfo &out);
 
-// The `-show_entries` argument Probe() passes, exposed so a test feeds the parser output produced
+// The legacy ffprobe `-show_entries` reference request, exposed so a test feeds the parser output produced
 // by this exact request rather than a hand-written approximation of it.
 const wxChar *ProbeEntries();
 
-// Locate an ffprobe binary. Tries `ffprobe` on PATH first, via a quick `-version` invocation, then
-// a per-platform list of well-known install locations (Homebrew / MacPorts, scoop / chocolatey /
-// winget, distro bin paths). Empty when nothing was found.
-//
-// Runs synchronously and spawns at least one child process, each bounded by its own timeout. Cheap
-// in the ordinary cases, but still a subprocess walk, so prefer DetectedPath() below, which pays
-// for it once. Safe to call from any thread.
+// Locate the bundled amule-media-probe executable alongside the running core.
 wxString AutoDetectPath();
 
 // AutoDetectPath() memoised for the life of the process, and the entry point everything but the
 // detection itself should use.
 //
-// The result describes the machine rather than a user choice, so it is derived at runtime and never
-// persisted: an empty `ffprobe_path` preference means "ask this", not "feature off". `redetect`
-// forces a fresh scan and replaces the cache, for the Preferences "Detect" button.
-//
-// Logs the outcome exactly once: a visible line when nothing was found, the only notice a headless
-// operator gets that extraction is inert, and a debug line naming the binary when something was.
-// Safe to call from any thread.
+// Logs missing helper once. redetect refreshes the cached sibling path.
 wxString DetectedPath(bool redetect = false);
 
-// Probe a single file. Returns true on success and populates `out`; false on any failure -- binary
-// missing, unreadable or non-media file, ffprobe hard error, malformed output. Failures emit a
-// debug line but never surface anything user-facing: a file the probe cannot read is still shared,
-// without media tags.
+// Probe a single file, populating `out` only for Extracted. Other outcomes describe
+// file rejection, an unavailable helper or cancellation. The file remains shared.
 //
-// The probe spawns ffprobe as a child and waits for it with a `timeoutMs` wall-clock bound, killing
+// The probe spawns the helper once per file and waits for it with a `timeoutMs` wall-clock bound, killing
 // it on expiry. `keepRunning` is polled during the wait, so worker shutdown kills the child at once
-// and the caller's join can complete. Both bounds mean a slow or hung ffprobe can never wedge the
+// and the caller's join can complete. Both bounds mean a slow or hung helper can never wedge the
 // worker.
 //
 // Callers MUST run this off the main thread: it blocks for the duration of the child, typically
@@ -99,16 +85,16 @@ wxString DetectedPath(bool redetect = false);
 
 //! Why a probe produced no metadata. The distinction matters because one of these is a statement
 //! about the FILE and the rest about the environment: only the first justifies recording "this file
-//! cannot be probed" and skipping it on later scans. Marking on the others would let a mistyped
-//! ffprobe path, a spun-down disk or a shutdown mid-scan brand every file it touched as permanently
+//! cannot be probed" and skipping it on later scans. Marking on the others would let a missing
+//! helper, a spun-down disk or a shutdown mid-scan brand every file it touched as permanently
 //! unprobeable (issue #1116).
 enum class ProbeOutcome
 {
 	Extracted,        //!< usable metadata came back
-	NoUsableMetadata, //!< ffprobe ran and exited 0, and there was nothing in it
-	UnreadableFile,   //!< ffprobe ran and exited non-zero: it could not read this file
-	OutputTooLarge,   //!< ffprobe ran, but the file's tags are implausibly large
-	Unavailable,      //!< the binary could not be launched at all
+	NoUsableMetadata, //!< MediaInfo found no usable metadata
+	UnreadableFile,   //!< MediaInfo explicitly rejected the input
+	OutputTooLarge,   //!< legacy outcome retained for compatibility
+	Unavailable,      //!< helper unavailable, bad protocol or unexpected exit
 	Cancelled,        //!< timed out, or shutdown cancelled the drain
 	Vanished,         //!< the file was gone by the time the worker got to it
 };
@@ -117,22 +103,8 @@ enum class ProbeOutcome
 //! machine it runs on, and so may be recorded against the file.
 inline bool IsFileVerdict(ProbeOutcome outcome)
 {
-	// UnreadableFile counts: a non-zero exit is how a WORKING ffprobe rejects a file it cannot
-	// parse, which is the ordinary broken-download case and the one users report as retried
-	// forever. A binary that cannot be launched is a different code path (kSpawnFailed), so a
-	// missing or mistyped path never arrives here.
-	//
-	// The gap: a non-zero exit cannot distinguish "ffprobe read this file and it is broken"
-	// from "ffprobe could not open it". FileExists() is a stat, so a file present but
-	// unreadable -- no read permission, or a network mount hiccupping -- reaches a perfectly
-	// good ffprobe, exits non-zero, and is recorded as unprobeable. An SMB or NFS share can
-	// lose a whole library's metadata to one bad moment that way.
-	//
-	// Separating the two means reading ffprobe's stderr, which currently goes to /dev/null.
-	// Until then a media refresh is the way back: it ignores the marks and clears them on
-	// success.
-	return outcome == ProbeOutcome::NoUsableMetadata || outcome == ProbeOutcome::UnreadableFile ||
-	       outcome == ProbeOutcome::OutputTooLarge;
+	// Only file verdicts persist; cancellation and missing helpers are retried.
+	return outcome == ProbeOutcome::NoUsableMetadata || outcome == ProbeOutcome::UnreadableFile;
 }
 
 //! \param bulk true when the caller is draining a batch of queued probes, in which case the per-
@@ -141,7 +113,7 @@ inline bool IsFileVerdict(ProbeOutcome outcome)
 //! \param logFailure whether a failure may name its file. Failures are worth naming even in bulk,
 //! since a count alone is not actionable, but a broken ffprobe fails EVERY file, so the caller caps
 //! how many it names.
-ProbeOutcome Probe(const wxString &ffprobePath,
+ProbeOutcome Probe(const wxString &helperPath,
 	const CPath &file,
 	MediaInfo &out,
 	unsigned timeoutMs,

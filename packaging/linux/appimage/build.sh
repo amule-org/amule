@@ -32,9 +32,16 @@ VERSION=$(cd "${REPO}" && git describe --tags --always --dirty)
 
 mkdir -p "${ARTIFACT_DIR}"
 
-# 1. Configure + build aMule.
+# 1. Build the pinned media libraries without network readers.
+MEDIA_PREFIX="${BUILD_DIR}/media-prefix"
+"${REPO}/packaging/media/build-static.sh" "${MEDIA_PREFIX}" "${BUILD_DIR}/media-sources"
+
+# Configure + build aMule.
 cmake -B "${BUILD_DIR}" -S "${REPO}" -G Ninja \
     -DCMAKE_BUILD_TYPE=Release \
+    -DMEDIAINFO_LIBRARY="${MEDIA_PREFIX}/lib/libmediainfo.a" \
+    -DMEDIA_ZEN_LIBRARY="${MEDIA_PREFIX}/lib/libzen.a" \
+    -DMEDIA_PROBE_STATIC=ON \
     -DCMAKE_INSTALL_PREFIX=/usr \
     -DBUILD_MONOLITHIC=YES \
     -DBUILD_REMOTEGUI=YES \
@@ -67,7 +74,7 @@ DESTDIR="${APPDIR}" cmake --install "${BUILD_DIR}"
 #    invokes the daemon, amulegui invokes the remote GUI, and so on.
 #    Listing each via --executable makes linuxdeploy walk their .so
 #    deps and bundle every transitive library.
-EXTRA_BINS=(amuled amulegui amulecmd amuleweb amuleapi ed2k cas wxcas alc alcc)
+EXTRA_BINS=(amule-media-probe amuled amulegui amulecmd amuleweb amuleapi ed2k cas wxcas alc alcc)
 EXEC_ARGS=()
 for bin in "${EXTRA_BINS[@]}"; do
     if [ -x "${APPDIR}/usr/bin/${bin}" ]; then

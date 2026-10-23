@@ -23,6 +23,7 @@
 #include <map>
 #include <cmath>
 #include <cstdlib>
+#include <cstdint>
 #include <mutex>
 #include <string>
 #include <vector>
@@ -37,21 +38,19 @@
 
 #include <common/Format.h>
 
-#include "AppImageEnv.h"      // Needed for GetSanitizedExecEnv
-#include "HelperBinaryPath.h" // Needed for FindProgram
 #include "Logger.h"
 #include "libs/common/Path.h"
 
 // Native child-process primitives for the bounded, killable probe runner. wxExecute/wxProcess async
 // bookkeeping is bound to the main-thread event loop (its SIGCHLD reaper fires
 // wxProcess::OnTerminate there), so polling it from the probe worker races that loop -- a use-
-// after-free. Managing ffprobe with native primitives keeps the whole lifecycle on this thread.
+// after-free. Managing the helper with native primitives keeps the whole lifecycle on this thread.
 #ifdef __WXMSW__
 #include <windows.h>
-#include <aclapi.h> // Needed for GetNamedSecurityInfoW
-#include <sddl.h>   // Needed for ConvertStringSidToSidW
 #else
 #include <csignal>
+#include <cerrno>
+#include <sys/stat.h>
 #include <fcntl.h>
 #include <spawn.h>
 #include <sys/wait.h>
@@ -70,8 +69,8 @@ namespace MediaProbe
 namespace
 {
 
-// Return values for RunBoundedFFProbe: a child exit code (>= 0), or one of:
-constexpr int kSpawnFailed = -1;    // couldn't launch the binary at all
+// Return values for RunBoundedHelper: a child exit code (>= 0), or one of:
+constexpr int kSpawnFailed = -1;    // unavailable helper, abnormal exit or malformed response
 constexpr int kKilled = -2;         // overran timeoutMs, or keepRunning went false
 constexpr int kOutputTooLarge = -3; // reply exceeded the read budget; see the slurp
 
@@ -79,21 +78,29 @@ constexpr int kOutputTooLarge = -3; // reply exceeded the read budget; see the s
 // loop also polls `keepRunning`, so worker shutdown kills the child at once. Real argv, no shell,
 // so paths need no escaping. See the include-block note for why this bypasses wxExecute/wxProcess
 // entirely.
-int RunBoundedFFProbe(const wxString &exe,
+int RunBoundedHelper(const wxString &exe,
 	const wxArrayString &argv,
 	unsigned timeoutMs,
 	const std::atomic<bool> &keepRunning,
-	wxArrayString &stdoutLines)
+	wxArrayString &stdoutLines,
+	const CPath &input)
 {
+	if (!keepRunning || !timeoutMs)
+		return kKilled;
 	const wxString tmpPath = wxFileName::CreateTempFileName(wxT("amule-mediaprobe"));
 	if (tmpPath.IsEmpty()) {
 		return kSpawnFailed;
 	}
 
 	int exitCode = kSpawnFailed;
+	const wxFileOffset kMaxProbeOutputBytes = 64 * 1024;
+	const auto outputTooLarge = [&] {
+		wxFFile output(tmpPath, wxT("rb"));
+		return output.IsOpened() && output.Length() > kMaxProbeOutputBytes;
+	};
 
 #ifdef __WXMSW__
-	const wxString program = FindProgram(exe);
+	const wxString program = exe;
 	if (program.IsEmpty()) {
 		wxRemoveFile(tmpPath);
 		return kSpawnFailed;
@@ -122,8 +129,16 @@ int RunBoundedFFProbe(const wxString &exe,
 	if (hJob != nullptr) {
 		JOBOBJECT_EXTENDED_LIMIT_INFORMATION jeli;
 		::ZeroMemory(&jeli, sizeof(jeli));
-		jeli.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
-		::SetInformationJobObject(hJob, JobObjectExtendedLimitInformation, &jeli, sizeof(jeli));
+		jeli.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE |
+							JOB_OBJECT_LIMIT_ACTIVE_PROCESS |
+							JOB_OBJECT_LIMIT_PROCESS_MEMORY;
+		jeli.BasicLimitInformation.ActiveProcessLimit = 1;
+		jeli.ProcessMemoryLimit = size_t(1024) * 1024 * 1024;
+		if (!::SetInformationJobObject(
+			    hJob, JobObjectExtendedLimitInformation, &jeli, sizeof(jeli))) {
+			::CloseHandle(hJob);
+			hJob = nullptr;
+		}
 	}
 
 	// Quote each token for the single command-line string CreateProcess wants.
@@ -133,29 +148,84 @@ int RunBoundedFFProbe(const wxString &exe,
 	}
 	std::vector<wchar_t> cmdBuf(cmdLine.wc_str(), cmdLine.wc_str() + cmdLine.length() + 1);
 
-	STARTUPINFOW si;
+	HANDLE hIn = ::CreateFileW(input.GetRaw().wc_str(),
+		GENERIC_READ,
+		FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+		&sa,
+		OPEN_EXISTING,
+		0,
+		nullptr);
+	HANDLE hErr = ::CreateFileW(
+		L"NUL", GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, &sa, OPEN_EXISTING, 0, nullptr);
+	if (hIn == INVALID_HANDLE_VALUE || hErr == INVALID_HANDLE_VALUE) {
+		if (hIn != INVALID_HANDLE_VALUE)
+			::CloseHandle(hIn);
+		if (hErr != INVALID_HANDLE_VALUE)
+			::CloseHandle(hErr);
+		::CloseHandle(hOut);
+		if (hJob)
+			::CloseHandle(hJob);
+		wxRemoveFile(tmpPath);
+		return kSpawnFailed;
+	}
+	STARTUPINFOEXW extended;
+	::ZeroMemory(&extended, sizeof(extended));
+	STARTUPINFOW &si = extended.StartupInfo;
 	::ZeroMemory(&si, sizeof(si));
-	si.cb = sizeof(si);
+	si.cb = sizeof(extended);
 	si.dwFlags = STARTF_USESTDHANDLES;
-	si.hStdInput = ::GetStdHandle(STD_INPUT_HANDLE);
+	si.hStdInput = hIn;
 	si.hStdOutput = hOut;
-	si.hStdError = hOut;
+	si.hStdError = hErr;
+	SIZE_T bytes = 0;
+	::InitializeProcThreadAttributeList(nullptr, 1, 0, &bytes);
+	std::vector<unsigned char> attributes(bytes);
+	extended.lpAttributeList = reinterpret_cast<LPPROC_THREAD_ATTRIBUTE_LIST>(attributes.data());
+	HANDLE inherited[] = { hIn, hOut, hErr };
+	if (!::InitializeProcThreadAttributeList(extended.lpAttributeList, 1, 0, &bytes)) {
+		::CloseHandle(hIn);
+		::CloseHandle(hErr);
+		::CloseHandle(hOut);
+		if (hJob)
+			::CloseHandle(hJob);
+		wxRemoveFile(tmpPath);
+		return kSpawnFailed;
+	}
+	if (!::UpdateProcThreadAttribute(extended.lpAttributeList,
+		    0,
+		    PROC_THREAD_ATTRIBUTE_HANDLE_LIST,
+		    inherited,
+		    sizeof(inherited),
+		    nullptr,
+		    nullptr)) {
+		::DeleteProcThreadAttributeList(extended.lpAttributeList);
+		::CloseHandle(hIn);
+		::CloseHandle(hErr);
+		::CloseHandle(hOut);
+		if (hJob)
+			::CloseHandle(hJob);
+		wxRemoveFile(tmpPath);
+		return kSpawnFailed;
+	}
 
 	PROCESS_INFORMATION pi;
 	::ZeroMemory(&pi, sizeof(pi));
 
 	// Start suspended so the child is in the job before it runs (and thus
 	// before it can spawn a grandchild that escapes the job), then resume.
-	const BOOL ok = ::CreateProcessW(nullptr,
+	const BOOL ok = ::CreateProcessW(exe.wc_str(),
 		cmdBuf.data(),
 		nullptr,
 		nullptr,
 		TRUE,
-		CREATE_NO_WINDOW | CREATE_SUSPENDED,
+		CREATE_NO_WINDOW | CREATE_SUSPENDED | EXTENDED_STARTUPINFO_PRESENT,
 		nullptr,
 		nullptr,
 		&si,
 		&pi);
+	::DeleteProcThreadAttributeList(extended.lpAttributeList);
+	::CloseHandle(hIn);
+	::CloseHandle(hErr);
 	::CloseHandle(hOut);
 	if (!ok) {
 		if (hJob != nullptr) {
@@ -164,8 +234,11 @@ int RunBoundedFFProbe(const wxString &exe,
 		wxRemoveFile(tmpPath);
 		return kSpawnFailed;
 	}
-	if (hJob != nullptr) {
-		::AssignProcessToJobObject(hJob, pi.hProcess);
+	if (hJob != nullptr && !::AssignProcessToJobObject(hJob, pi.hProcess)) {
+		// An outer job may reject assignment. Timeout must then terminate the
+		// process directly rather than waiting forever after killing an empty job.
+		::CloseHandle(hJob);
+		hJob = nullptr;
 	}
 	::ResumeThread(pi.hThread);
 
@@ -177,7 +250,8 @@ int RunBoundedFFProbe(const wxString &exe,
 			exitCode = static_cast<int>(code);
 			break;
 		}
-		if (!keepRunning || static_cast<unsigned>(sw.Time()) >= timeoutMs) {
+		const bool oversized = outputTooLarge();
+		if (!keepRunning || static_cast<unsigned>(sw.Time()) >= timeoutMs || oversized) {
 			// Kill the whole job (wrapper + real ffprobe); fall back to the bare
 			// process if the job could not be created.
 			if (hJob != nullptr) {
@@ -186,7 +260,7 @@ int RunBoundedFFProbe(const wxString &exe,
 				::TerminateProcess(pi.hProcess, 1);
 			}
 			::WaitForSingleObject(pi.hProcess, INFINITE);
-			exitCode = kKilled;
+			exitCode = oversized ? kOutputTooLarge : kKilled;
 			break;
 		}
 	}
@@ -209,30 +283,27 @@ int RunBoundedFFProbe(const wxString &exe,
 	}
 	cargv.push_back(nullptr);
 
-	// ffprobe is a host program, so it must not inherit the bundle's library paths: inside an
-	// AppImage our libraries are older than the host's and the loader rejects the mismatch
-	// (#1463). The wxExecute call sites strip them the same way.
-	wxExecuteEnv execEnv;
-	std::vector<std::string> envStorage;
-	std::vector<char *> cenvp;
+	// Bundled helper must inherit the bundle library environment.
 	char **envp = environ;
-	if (AppImageEnv::GetSanitizedExecEnv(execEnv)) {
-		envStorage.reserve(execEnv.env.size());
-		for (const auto &var : execEnv.env) {
-			envStorage.emplace_back((var.first + wxT("=") + var.second).fn_str());
-		}
-		cenvp.reserve(envStorage.size() + 1);
-		for (std::string &s : envStorage) {
-			cenvp.push_back(const_cast<char *>(s.c_str()));
-		}
-		cenvp.push_back(nullptr);
-		envp = cenvp.data();
-	}
 
 	const std::string tmpNative(tmpPath.fn_str());
 
 	posix_spawn_file_actions_t fa;
 	posix_spawn_file_actions_init(&fa);
+	const int inputFd = open(input.GetRaw().fn_str(), O_RDONLY | O_CLOEXEC | O_NONBLOCK);
+	struct stat inputStat;
+	if (inputFd < 0 || fstat(inputFd, &inputStat) != 0 || !S_ISREG(inputStat.st_mode)) {
+		if (inputFd >= 0)
+			close(inputFd);
+		posix_spawn_file_actions_destroy(&fa);
+		wxRemoveFile(tmpPath);
+		return kSpawnFailed;
+	}
+	posix_spawn_file_actions_adddup2(&fa, inputFd, STDIN_FILENO);
+	if (inputFd != STDIN_FILENO)
+		posix_spawn_file_actions_addclose(&fa, inputFd);
+	else
+		fcntl(inputFd, F_SETFD, 0);
 	// stdout -> temp file, stderr -> /dev/null (we parse stdout only).
 	posix_spawn_file_actions_addopen(
 		&fa, STDOUT_FILENO, tmpNative.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0600);
@@ -248,7 +319,8 @@ int RunBoundedFFProbe(const wxString &exe,
 	posix_spawnattr_setpgroup(&attr, 0);
 
 	pid_t pid = 0;
-	const int rc = posix_spawnp(&pid, cargv[0], &fa, &attr, cargv.data(), envp);
+	const int rc = posix_spawn(&pid, cargv[0], &fa, &attr, cargv.data(), envp);
+	close(inputFd);
 	posix_spawnattr_destroy(&attr);
 	posix_spawn_file_actions_destroy(&fa);
 	if (rc != 0) {
@@ -261,17 +333,22 @@ int RunBoundedFFProbe(const wxString &exe,
 		int status = 0;
 		const pid_t r = waitpid(pid, &status, WNOHANG);
 		if (r == pid) {
-			exitCode = WIFEXITED(status) ? WEXITSTATUS(status) : kKilled;
+			exitCode = WIFEXITED(status) ? WEXITSTATUS(status) : kSpawnFailed;
 			break;
+		}
+		if (r == -1 && errno == EINTR) {
+			continue;
 		}
 		if (r == -1) { // vanished / already reaped
-			exitCode = kKilled;
+			exitCode = kSpawnFailed;
 			break;
 		}
-		if (!keepRunning || static_cast<unsigned>(sw.Time()) >= timeoutMs) {
-			kill(-pid, SIGKILL);      // whole group: wrapper + real ffprobe
-			waitpid(pid, &status, 0); // reap the leader; init reaps the rest
-			exitCode = kKilled;
+		const bool oversized = outputTooLarge();
+		if (!keepRunning || static_cast<unsigned>(sw.Time()) >= timeoutMs || oversized) {
+			kill(-pid, SIGKILL); // whole group: wrapper + real ffprobe
+			while (waitpid(pid, &status, 0) == -1 && errno == EINTR) {
+			} // reap the leader; init reaps the rest
+			exitCode = oversized ? kOutputTooLarge : kKilled;
 			break;
 		}
 		wxMilliSleep(25);
@@ -286,21 +363,29 @@ int RunBoundedFFProbe(const wxString &exe,
 	// and the unescaper before kMaxTagChars ever applies. A legitimate five-field reply is a
 	// few hundred bytes, and anything past the cap is treated as a failed probe rather than
 	// truncated.
-	const wxFileOffset kMaxProbeOutputBytes = 1024 * 1024;
-	if (exitCode >= 0) {
+	if (exitCode == 0) {
 		wxFFile f(tmpPath, wxT("rb"));
 		wxString content;
 		if (f.IsOpened() && f.Length() > kMaxProbeOutputBytes) {
 			AddDebugLogLineN(logMediaProbe,
-				CFormat(wxT("MediaProbe: ffprobe output too large (%lld bytes), ignoring")) %
+				CFormat(wxT("MediaProbe: helper output too large (%lld bytes), ignoring")) %
 					static_cast<long long>(f.Length()));
 			// Its own sentinel, not kSpawnFailed: ffprobe ran fine, so
 			// reporting "failed (code -1)" would name the wrong thing.
 			exitCode = kOutputTooLarge;
 		} else if (f.IsOpened() && f.ReadAll(&content, wxConvUTF8)) {
-			wxStringTokenizer tok(content, wxT("\r\n"), wxTOKEN_STRTOK);
-			while (tok.HasMoreTokens()) {
-				stdoutLines.Add(tok.GetNextToken());
+			// Exactly LF-delimited records, including the terminal newline. Do not
+			// silently discard blank lines or CR bytes from malformed responses.
+			if (content.empty() || content.Last() != wxT('\n') ||
+				content.find(wxT('\r')) != wxString::npos ||
+				content.find(wxT('\0')) != wxString::npos) {
+				exitCode = kSpawnFailed;
+			} else {
+				content.RemoveLast();
+				wxStringTokenizer tok(content, wxT("\n"), wxTOKEN_RET_EMPTY_ALL);
+				while (tok.HasMoreTokens()) {
+					stdoutLines.Add(tok.GetNextToken());
+				}
 			}
 		}
 	}
@@ -310,194 +395,28 @@ int RunBoundedFFProbe(const wxString &exe,
 
 } // anonymous namespace
 
-namespace
-{
-
-// Wall-clock bound for one `-version` invocation. A working ffprobe answers in milliseconds; one
-// that has not by now is wedged (a stale network mount, a wrapper blocked on a lock) and must not
-// hold up whoever asked.
-constexpr unsigned kDetectTimeoutMs = 3000;
-
-// True if `binary` runs cleanly enough to print its own -version output. Serves both as the "is
-// ffprobe on PATH" probe and as the "does this path work" one.
-//
-// Goes through RunBoundedFFProbe because that puts a deadline on a binary that never returns and is
-// callable off the main thread; wxExecute is neither (see the include-block note above). Bare
-// `ffprobe` still resolves through PATH: posix_spawnp searches it, and on Windows FindProgram does.
-bool CanRun(const wxString &binary)
-{
-	// Detection is never cancelled part-way; only the timeout bounds it.
-	const std::atomic<bool> keepRunning{ true };
-	wxArrayString argv, out;
-	argv.Add(wxT("-version"));
-	return RunBoundedFFProbe(binary, argv, kDetectTimeoutMs, keepRunning, out) == 0;
-}
-
-// Well-known install locations, tried in order; one entry per install-manager, since we want the
-// first existing binary rather than every possible location. ARM64 Homebrew before Intel, matching
-// what a bare PATH lookup finds first.
-wxArrayString WellKnownPaths()
-{
-	wxArrayString paths;
-#if defined(__WXMAC__)
-	paths.Add(wxT("/opt/homebrew/bin/ffprobe"));
-	paths.Add(wxT("/usr/local/bin/ffprobe"));
-	paths.Add(wxT("/opt/local/bin/ffprobe")); // MacPorts
-#elif defined(__WXMSW__)
-	// WinGet's per-app dir carries the package version, so there is no leaf to hardcode --
-	// WinGet users are found by the `where.exe` PATH probe instead. Chocolatey and scoop have
-	// stable roots.
-	paths.Add(wxT("C:\\ffmpeg\\bin\\ffprobe.exe"));
-	paths.Add(wxT("C:\\ProgramData\\chocolatey\\bin\\ffprobe.exe"));
-	if (const wxChar *home = wxGetenv(wxT("USERPROFILE"))) {
-		paths.Add(wxString(home) + wxT("\\scoop\\apps\\ffmpeg\\current\\bin\\ffprobe.exe"));
-	}
-#else
-	// Snap and Flatpak users typically launch ffprobe out of their sandbox root; the snap case
-	// is covered explicitly, flatpak users point the preference at their wrapper manually.
-	paths.Add(wxT("/usr/bin/ffprobe"));
-	paths.Add(wxT("/usr/local/bin/ffprobe"));
-	paths.Add(wxT("/snap/bin/ffprobe"));
-#endif
-	return paths;
-}
-
-#ifdef __WXMSW__
-// True if `path` is owned by this user, Administrators, SYSTEM or TrustedInstaller.
-bool HasTrustedOwner(const wxString &path)
-{
-	PSID owner = nullptr;
-	PSECURITY_DESCRIPTOR sd = nullptr;
-	if (::GetNamedSecurityInfoW(path.wc_str(),
-		    SE_FILE_OBJECT,
-		    OWNER_SECURITY_INFORMATION,
-		    &owner,
-		    nullptr,
-		    nullptr,
-		    nullptr,
-		    &sd) != ERROR_SUCCESS) {
-		return false;
-	}
-	bool trusted = ::IsWellKnownSid(owner, WinBuiltinAdministratorsSid) ||
-		       ::IsWellKnownSid(owner, WinLocalSystemSid);
-	if (!trusted) {
-		PSID installer = nullptr;
-		if (::ConvertStringSidToSidW(
-			    L"S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464", &installer)) {
-			trusted = ::EqualSid(owner, installer) != FALSE;
-			::LocalFree(installer);
-		}
-	}
-	if (!trusted) {
-		HANDLE token = nullptr;
-		if (::OpenProcessToken(::GetCurrentProcess(), TOKEN_QUERY, &token)) {
-			DWORD size = 0;
-			::GetTokenInformation(token, TokenUser, nullptr, 0, &size);
-			std::vector<BYTE> user(size);
-			if (size && ::GetTokenInformation(token, TokenUser, user.data(), size, &size)) {
-				trusted = ::EqualSid(owner,
-						  reinterpret_cast<TOKEN_USER *>(user.data())->User.Sid) !=
-					  FALSE;
-			}
-			::CloseHandle(token);
-		}
-	}
-	::LocalFree(sd);
-	return trusted;
-}
-
-// Any account may create C:\ffmpeg or a folder under C:\ProgramData, so a well-known path is
-// used only if the file and every folder above it have a trusted owner. Otherwise another user
-// could plant an ffprobe.exe, or a DLL beside a real one, that would run as us.
-bool IsTrustedLocation(const wxString &file)
-{
-	wxFileName name(file);
-	if (!HasTrustedOwner(name.GetFullPath())) {
-		return false;
-	}
-	while (name.GetDirCount() > 0) {
-		if (!HasTrustedOwner(name.GetPath())) {
-			return false;
-		}
-		name.RemoveLastDir();
-	}
-	return true;
-}
-
-#else
-bool IsTrustedLocation(const wxString &)
-{
-	return true;
-}
-#endif
-
-} // anonymous namespace
-
 wxString AutoDetectPath()
 {
-	// Fast path: ffprobe on PATH, which is what most Linux and BSD installs give for free. On
-	// macOS and Windows this often fails even when ffprobe IS installed, because GUI-launched
-	// processes get a minimal PATH (launchd's lacks /opt/homebrew; Windows GUI apps can miss
-	// choco/scoop).
+	wxFileName binary(wxStandardPaths::Get().GetExecutablePath());
 #ifdef __WXMSW__
-	const wxString onPath = FindProgram(wxT("ffprobe"));
-	if (!onPath.IsEmpty() && CanRun(onPath)) {
-		return onPath;
-	}
+	binary.SetFullName(wxT("amule-media-probe.exe"));
 #else
-	if (CanRun(wxT("ffprobe"))) {
-		return wxT("ffprobe");
-	}
+	binary.SetFullName(wxT("amule-media-probe"));
 #endif
-
-	for (const wxString &candidate : WellKnownPaths()) {
-		if (!wxFileName::FileExists(candidate)) {
-			continue;
-		}
-		if (!IsTrustedLocation(candidate)) {
-			AddLogLineN(CFormat(_("Media metadata: not using %s, because another user owns it "
-					      "or a folder above it.")) %
-				    candidate);
-			continue;
-		}
-		if (CanRun(candidate)) {
-			return candidate;
-		}
-	}
-
-	return wxEmptyString;
+	return binary.FileExists() ? binary.GetFullPath() : wxString();
 }
 
 wxString DetectedPath(bool redetect)
 {
-	// Detection describes the machine, not a user choice, so it is derived at runtime and never
-	// written to the config file. Memoised because it costs at least one subprocess and cannot
-	// change under a running daemon without someone installing ffmpeg -- which `redetect` is
-	// for.
-	//
-	// The lock is held across the detection itself so two callers cannot race two scans; worst
-	// case that is one subprocess spawn's worth of blocking.
 	static std::mutex mutex;
 	static bool done = false;
 	static wxString cached;
-
 	std::lock_guard<std::mutex> lock(mutex);
-	if (done && !redetect) {
-		return cached;
-	}
-	cached = AutoDetectPath();
-	done = true;
-
-	if (cached.IsEmpty()) {
-		// Not a debug line: the operator asked for metadata extraction and is getting none,
-		// and on a headless daemon this is the only place that can say why. Fires once per
-		// process -- the memo above guarantees it.
-		AddLogLineN(_("Media metadata: no ffprobe binary found. Install ffmpeg, or set the "
-			      "ffprobe path in preferences; length, bitrate and codec will not be "
-			      "extracted."));
-	} else {
-		AddDebugLogLineN(
-			logMediaProbe, CFormat(wxT("MediaProbe: auto-detected ffprobe at %s")) % cached);
+	if (!done || redetect) {
+		cached = AutoDetectPath();
+		done = true;
+		if (cached.empty())
+			AddLogLineN(_("Media metadata: bundled amule-media-probe helper is unavailable."));
 	}
 	return cached;
 }
@@ -634,7 +553,7 @@ const size_t kMaxTagChars = 256;
 // The cap is what keeps oversized text out of known.met, out of the log line and off the wire;
 // without it the only bound anywhere was the wire format's 0xFFFF truncation, a packet-integrity
 // guard rather than a policy. How much is READ is bounded separately, at the slurp in
-// RunBoundedFFProbe.
+// RunBoundedHelper.
 //
 // Control characters are dropped because the value reaches a log line (and through it GET
 // /api/v1/logs/amule) and several list controls, where a raw newline lets one field impersonate
@@ -811,7 +730,70 @@ bool ParseProbeOutput(const wxArrayString &lines, MediaInfo &out)
 	return true;
 }
 
-ProbeOutcome Probe(const wxString &ffprobePath,
+namespace
+{
+bool IsHelperString(const wxString &value)
+{
+	if (value.length() < 2 || value[0] != wxT('"') || value.Last() != wxT('"'))
+		return false;
+	for (size_t i = 1; i + 1 < value.length(); ++i) {
+		const wxUniChar c = value[i];
+		if (c == wxT('"') || (c < 32 && c != wxT('\t')) || c == 127)
+			return false;
+		if (c == wxT('\\')) {
+			if (++i + 1 >= value.length())
+				return false;
+			const wxUniChar escaped = value[i];
+			if (escaped != wxT('n') && escaped != wxT('r') && escaped != wxT('\\') &&
+				escaped != wxT('"'))
+				return false;
+		}
+	}
+	return true;
+}
+bool ParseHelperOutput(const wxArrayString &lines, MediaInfo &info)
+{
+	if (lines.size() != 9 || lines[0] != wxT("AMMP 1") || lines[8] != wxT("END"))
+		return false;
+	static const wxChar *keys[] = { wxT("format.duration="),
+		wxT("format.bit_rate="),
+		wxT("streams.stream.0.codec_type="),
+		wxT("streams.stream.0.codec_name="),
+		wxT("format.tags.artist="),
+		wxT("format.tags.album="),
+		wxT("format.tags.title=") };
+	for (size_t i = 0; i < 7; ++i)
+		if (!lines[i + 1].StartsWith(keys[i]))
+			return false;
+	if (lines[3].AfterFirst(wxT('=')) != wxT("\"audio\""))
+		return false;
+	for (size_t i = 4; i <= 7; ++i)
+		if (!IsHelperString(lines[i].AfterFirst(wxT('='))))
+			return false;
+	for (size_t i : { size_t(1), size_t(2) }) {
+		const wxString value = lines[i].AfterFirst(wxT('='));
+		if (value.empty() || value.length() > 13)
+			return false;
+		for (const wxUniChar c : value)
+			if (c < wxT('0') || c > wxT('9'))
+				return false;
+		wxULongLong_t number = 0;
+		if (!value.ToULongLong(&number) || (i == 1 && number > UINT32_MAX) ||
+			(i == 2 && (number > uint64_t(UINT32_MAX) * 1000 || number % 1000 != 0)))
+			return false;
+	}
+	const wxString codec = UnflattenValue(lines[4].AfterFirst(wxT('=')));
+	if (codec.length() > 32)
+		return false;
+	for (const wxUniChar c : codec) {
+		if (!((c >= wxT('a') && c <= wxT('z')) || (c >= wxT('0') && c <= wxT('9')) || c == wxT('_')))
+			return false;
+	}
+	return ParseProbeOutput(lines, info);
+}
+} // namespace
+
+ProbeOutcome Probe(const wxString &helperPath,
 	const CPath &file,
 	MediaInfo &out,
 	unsigned timeoutMs,
@@ -819,128 +801,32 @@ ProbeOutcome Probe(const wxString &ffprobePath,
 	bool bulk,
 	bool logFailure)
 {
-	if (ffprobePath.IsEmpty()) {
-		return ProbeOutcome::Unavailable;
-	}
-
-	// A job is queued only once hashing has finished, but nothing re-checks between the queue
-	// and the worker picking the job up, and that gap widens whenever the probe queue backs up.
-	// One stat beats announcing a probe of a file deleted in the meantime and then forking on
-	// it purely to fail.
-	if (!file.FileExists()) {
-		// A share with stale known.met entries hits this on every refresh, so it
-		// has to say what happened: without a line it is indistinguishable from a
-		// file ffprobe rejected, while still consuming a naming-budget slot.
-		AddDebugLogLineN(logMediaProbe,
-			CFormat(wxT("MediaProbe: %s vanished before probing, skipping")) %
-				file.GetPrintable());
-		if (logFailure) {
-			AddLogLineN(CFormat(_("Media metadata: %s is gone, nothing to extract")) %
-				    file.GetPrintable());
-		}
-		return ProbeOutcome::Vanished;
-	}
-
-	// -show_entries constrains the output to what we care about; see
-	// ProbeEntries() for the field list.
-	//
-	// -of flat, and NOT the more readable `default` writer, because this request
-	// pulls attacker-controlled text into the output: a container tag is arbitrary
-	// UTF-8 and may contain newlines (Vorbis comments and Matroska tags allow them
-	// outright). `default` does not escape its values, so each embedded newline
-	// becomes another key=value line inside the tag's own section -- a title of
-	// "Song\nduration=99999999" injects a duration line after the real one, and
-	// this parser is last-write-wins. That forged value would be published as
-	// FT_MEDIA_LENGTH to every server and Kad node. A crafted line can move the
-	// section boundaries too.
-	//
-	// `flat` escapes \n, \r, \\ and " in values, and its dotted keys carry the
-	// section AND the stream index, so attribution comes from the key rather than
-	// from delimiter lines a value could also forge.
-	//
-	// -v error silences informational chatter.
-	wxArrayString argv;
-	argv.Add(wxT("-v"));
-	argv.Add(wxT("error"));
-	argv.Add(wxT("-show_entries"));
-	argv.Add(ProbeEntries());
-	argv.Add(wxT("-of"));
-	argv.Add(wxT("flat"));
-	argv.Add(file.GetRaw());
-
-	// Info level, not debug: media metadata is a feature the user explicitly
-	// enables and points at a binary, so it needs feedback that the binary worked
-	// and which file was probed. Emitted immediately before the spawn, so it fires
-	// once per ffprobe execution rather than once per queued job.
-	if (!bulk) {
-		AddLogLineN(CFormat(_("Extracting media metadata with ffprobe: %s")) % file.GetPrintable());
-	}
-
-	// Bounded + killable: this runs on the dedicated CMediaProbeThread, so a
-	// slow or hung ffprobe can only delay other probes, never completions, and
-	// cannot wedge the worker or the shutdown join.
-	wxArrayString stdout_lines;
-	const int rc = RunBoundedFFProbe(ffprobePath, argv, timeoutMs, keepRunning, stdout_lines);
-	// Failures are info level and are named even in bulk. They are rare, and now
-	// that a failed file is marked and not retried each one is reported once and
-	// then never again; a count with no filenames withholds the only thing the
-	// user needs to act on.
-	if (rc == kKilled) {
-		if (logFailure) {
-			AddLogLineN(CFormat(_("Media metadata: ffprobe timed out or was cancelled for %s")) %
-				    file.GetPrintable());
-		}
+	if (!keepRunning || !timeoutMs)
 		return ProbeOutcome::Cancelled;
-	}
-	if (rc == kOutputTooLarge) {
-		// ffprobe itself succeeded; what it produced was implausible for the five
-		// fields asked for, which means the file carries a tag crafted to be
-		// enormous. Named separately so this is not reported as a failure of the
-		// binary.
-		if (logFailure) {
-			AddLogLineN(CFormat(_("Media metadata: ignoring implausibly large ffprobe output "
-					      "for %s")) %
-				    file.GetPrintable());
-		}
-		return ProbeOutcome::OutputTooLarge;
-	}
-	// Distinguished from a non-zero exit on purpose: this one is about the binary
-	// rather than the file, so it must not be recorded against the file and needs
-	// a message that sends the user to their ffprobe setting.
-	if (rc == kSpawnFailed) {
-		if (logFailure) {
-			AddLogLineN(CFormat(_("Media metadata: could not run ffprobe (%s) -- check the "
-					      "media metadata settings")) %
-				    ffprobePath);
-		}
+	if (helperPath.empty())
 		return ProbeOutcome::Unavailable;
+	if (!file.FileExists())
+		return ProbeOutcome::Vanished;
+	if (!bulk)
+		AddLogLineN(CFormat(_("Extracting media metadata: %s")) % file.GetPrintable());
+	wxArrayString args, lines;
+	MediaInfo result;
+	const int rc = RunBoundedHelper(helperPath, args, timeoutMs, keepRunning, lines, file);
+	if (!keepRunning || rc == kKilled)
+		return ProbeOutcome::Cancelled;
+	if (rc == 0 && ParseHelperOutput(lines, result)) {
+		out = result;
+		return ProbeOutcome::Extracted;
 	}
-	if (rc != 0) {
-		if (logFailure) {
-			AddLogLineN(CFormat(_("Media metadata: ffprobe failed (code %d) for %s")) % rc %
-				    file.GetPrintable());
-		}
-		return ProbeOutcome::UnreadableFile;
-	}
-
-	MediaInfo info;
-	if (!ParseProbeOutput(stdout_lines, info)) {
-		// Neither a duration nor a codec came back, so there is nothing worth
-		// advertising -- report a failed probe rather than attaching empty tags.
-		// Named in the log because it is the most likely way a file fails (ffprobe
-		// exits 0), and the file is otherwise silently re-probed on every reload.
-		if (logFailure) {
-			AddLogLineN(CFormat(_("Media metadata: ffprobe found nothing usable in %s")) %
-				    file.GetPrintable());
-		}
+	if (logFailure)
+		AddLogLineN(CFormat(_("Media metadata: parser failed for %s")) % file.GetPrintable());
+	// Only documented parser rejections describe the file. Loader failures,
+	// protocol errors and unexpected exits must not poison known.met entries.
+	if (rc == 10)
 		return ProbeOutcome::NoUsableMetadata;
-	}
-
-	AddDebugLogLineN(logMediaProbe,
-		CFormat(wxT("MediaProbe: extracted %s -> length=%us bitrate=%ukbps codec=%s")) %
-			file.GetPrintable() % info.length_seconds % info.bitrate_kbps % info.codec);
-	out = info;
-	return ProbeOutcome::Extracted;
+	if (rc == 11)
+		return ProbeOutcome::UnreadableFile;
+	return ProbeOutcome::Unavailable;
 }
 
 } // namespace MediaProbe

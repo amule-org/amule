@@ -243,7 +243,6 @@ private:
 	void OnButtonExcludePreview(wxCommandEvent &event);
 #endif
 	void OnButtonEditAddr(wxCommandEvent &event);
-	void OnButtonMediaMetaDetect(wxCommandEvent &event);
 	void OnButtonTweaksReset(wxCommandEvent &event);
 	void OnButtonColorChange(wxCommandEvent &event);
 	void OnButtonIPFilterReload(wxCommandEvent &event);

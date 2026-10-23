@@ -19,7 +19,7 @@ commands:
   flatpak [arch]             produce .flatpak bundle in dist/
                              arch: host (default) | x86_64 | aarch64
   static [arch]              produce a fully static musl daemon tarball
-                             (amuled + amulecmd + amuleapi) in dist/
+                             (amuled + amulecmd + amuleapi + amule-media-probe) in dist/
                              arch: host (default) | x86_64 | aarch64
   validate [arch]            run amuled --version inside a fixed matrix
                              of distro Docker images to catch lib-load
@@ -170,7 +170,9 @@ render_flatpak_manifest() {
         exit 1
     }
     echo "==> Rendering ${out}"
-    envsubst < "${in}" > "${out}"
+    AMULE_SOURCE_URL="${AMULE_SOURCE_URL:-https://github.com/amule-org/amule.git}" \
+    AMULE_SOURCE_REF="${AMULE_SOURCE_REF:-branch: ${AMULE_REVISION}}" \
+        envsubst < "${in}" > "${out}"
 }
 
 build_flatpak() {
@@ -195,7 +197,14 @@ build_flatpak() {
         fi
     fi
 
-    render_flatpak_manifest
+    # Build the committed checkout, just like the AppImage and static tracks.
+    # Cloning this local repository includes the exact sources and notices under
+    # review; fetching upstream master instead silently packaged a different app.
+    local source_url source_commit
+    source_url=$(python3 -c 'import pathlib, sys; print(pathlib.Path(sys.argv[1]).as_uri())' "${REPO_ROOT}")
+    source_commit=$(git -C "${REPO_ROOT}" rev-parse HEAD)
+    echo "==> Flatpak source: ${source_commit} from ${source_url} (committed files)"
+    AMULE_SOURCE_URL="${source_url}" AMULE_SOURCE_REF="commit: ${source_commit}" render_flatpak_manifest
     local manifest="${SCRIPT_DIR}/flatpak/${APP_ID}.yaml"
     local statedir="${REPO_ROOT}/build-flatpak-${target_arch}"
     local repodir="${REPO_ROOT}/build-flatpak-${target_arch}-repo"
@@ -311,7 +320,7 @@ build_static() {
 
     # Belt-and-suspenders: the Dockerfile already gates on this, re-check here.
     local b
-    for b in amuled amulecmd amuleapi; do
+    for b in amuled amulecmd amuleapi amule-media-probe; do
         file "${outdir}/${b}" | grep -q "statically linked" \
             || { echo "fatal: ${b} is not statically linked" >&2; exit 1; }
     done
@@ -322,7 +331,10 @@ build_static() {
     version=$(cd "${REPO_ROOT}" && git describe --tags --always --dirty 2>/dev/null || echo "snapshot")
     local stem="aMule-${version}-Linux-${arch_label}-static"
     mkdir -p "${outdir}/${stem}"
-    cp "${outdir}/amuled" "${outdir}/amulecmd" "${outdir}/amuleapi" "${outdir}/${stem}/"
+    for b in amuled amulecmd amuleapi amule-media-probe; do
+        cp "${outdir}/${b}" "${outdir}/${stem}/"
+    done
+    cp -R "${outdir}/licenses" "${outdir}/${stem}/licenses"
 
     # The WebUI ships inside this bundle. amuleapi serves no assets of its
     # own, so a static-binary operator who fetched this tarball had a daemon

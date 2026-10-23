@@ -381,12 +381,12 @@ _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: applica
 	"$API/preferences"
 _assert_status 200 "PATCH media-probe + security + onlinesig + iface → 200"
 _assert_json_eq '.files.media_metadata_enabled' "$MM_TOGGLE" 'files.media_metadata_enabled toggled in response'
-_assert_json_eq '.files.ffprobe_path' /usr/bin/ffprobe 'files.ffprobe_path set in response'
+_assert_json_eq '.files.ffprobe_path' '' 'reserved files.ffprobe_path is a no-op in response'
 _assert_json_eq '.security.reject_spoofed_source_ips' "$PARANOID_TOGGLE" 'security.reject_spoofed_source_ips toggled in response'
 _assert_json_eq '.online_signature.update_frequency_seconds' 123 'online_signature.update_frequency_seconds=123 in response'
 _assert_json_eq '.connection.bind_interface' tun0 'connection.bind_interface set in response'
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
-_assert_json_eq '.files.ffprobe_path' /usr/bin/ffprobe 'files.ffprobe_path persisted (no stale GET)'
+_assert_json_eq '.files.ffprobe_path' '' 'reserved files.ffprobe_path remains empty on GET'
 _assert_json_eq '.online_signature.update_frequency_seconds' 123 'online_signature.update_frequency_seconds persisted'
 _assert_json_eq '.connection.bind_interface' tun0 'connection.bind_interface persisted'
 

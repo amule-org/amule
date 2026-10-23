@@ -36,7 +36,7 @@ env:
     libcrypto++-dev \
     libgd-dev \
     libglib2.0-dev \
-    libmaxminddb-dev \
+    libmediainfo-dev libmaxminddb-dev \
     libreadline-dev \
     libupnp-dev \
     libwxgtk3.2-dev \

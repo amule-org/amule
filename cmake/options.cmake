@@ -378,3 +378,5 @@ foreach (experimental_option IN LISTS AMULE_EXPERIMENTAL_OPTIONS)
 		add_compile_definitions (${experimental_option})
 	endif()
 endforeach()
+
+option(ENABLE_MEDIA_PROBE "Build bundled MediaInfo media metadata helper" ON)

@@ -2874,9 +2874,9 @@ void CamuleApp::OnMediaProbeFinished(CMediaProbeEvent &evt)
 		// and marking on those would mean one mistyped ffprobe path brands every media file
 		// in the library.
 		if (evt.MarkUnprobeable()) {
-			file->AddTagUnique(CTagInt32(FT_MEDIA_PROBE_FAILED, 1));
+			file->AddTagUnique(CTagInt32(FT_MEDIA_PROBE_FAILED, 2));
 			if (sharedFile) {
-				sharedFile->AddTagUnique(CTagInt32(FT_MEDIA_PROBE_FAILED, 1));
+				sharedFile->AddTagUnique(CTagInt32(FT_MEDIA_PROBE_FAILED, 2));
 			}
 			m_knownMetDirtiedMs = theStats::GetUptimeMillis();
 		}
