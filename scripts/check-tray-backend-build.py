@@ -28,6 +28,10 @@ def main():
     for entry in entries:
         if Path(entry["file"]).name in SOURCES:
             command = entry.get("arguments") or shlex.split(entry["command"])
+            # Only probe real GUI consumers here.
+            if not any("CMakeFiles/amule.dir/" in c or "CMakeFiles/amulegui.dir/" in c
+                       for c in command):
+                continue
             gui = "amulegui" if any(c.startswith("-DCLIENT_GUI") for c in command) else "amule"
             selected.append((entry, command, gui))
     guis = ("amule", "amulegui") if args.require_remote_gui else ("amule",)

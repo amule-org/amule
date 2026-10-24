@@ -1,7 +1,8 @@
 // Run the production confirmation/selection helpers without a browser or a daemon.
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
-const source = await readFile(new URL('../../src/webapi/static/js/download-delete.js', import.meta.url), 'utf8');
+import { readFileSync } from 'node:fs';
+// These small, immutable fixtures need no asynchronous filesystem scheduling.
+const source = readFileSync(new URL('../../src/webapi/static/js/download-delete.js', import.meta.url), 'utf8');
 const { prepareDownloadDeletion, prepareSharedDeletion, selectionAfterDeletion } = await import('data:text/javascript;base64,' + Buffer.from(source).toString('base64'));
 
 const selection = ['a', 'b'];
@@ -33,7 +34,7 @@ console.log('PASS: confirmed selection frozen; failed/new selections retained; a
 
 // All-503 bulk errors use a results envelope, rather than a top-level error.
 // Preserve the actionable per-file error instead of reducing it to "HTTP 503".
-const apiSource = (await readFile(new URL('../../src/webapi/static/js/api.js', import.meta.url), 'utf8'))
+const apiSource = readFileSync(new URL('../../src/webapi/static/js/api.js', import.meta.url), 'utf8')
   .replace('import { t } from "./i18n.js";', 'const t = (key) => key;');
 globalThis.window = { location: { pathname: "/" } };
 const { api } = await import('data:text/javascript;base64,' + Buffer.from(apiSource).toString('base64'));
@@ -68,7 +69,7 @@ globalThis.sharedDeleteDeps = {
   terr: (e) => e.message,
   prepareSharedDeletion,
 };
-let actionSource = await readFile(new URL('../../src/webapi/static/js/shared-delete.js', import.meta.url), 'utf8');
+let actionSource = readFileSync(new URL('../../src/webapi/static/js/shared-delete.js', import.meta.url), 'utf8');
 actionSource = actionSource.replace(/^import .*;$/gm, '');
 actionSource = 'const { api, data, confirmDialog, toast, t, terr, prepareSharedDeletion } = globalThis.sharedDeleteDeps;\n' + actionSource;
 const { deleteSharedFile } = await import('data:text/javascript;base64,' + Buffer.from(actionSource).toString('base64'));

@@ -150,3 +150,21 @@ out-of-range percentages before converting to an integer.
 `AMULE_ICON_TEST_OUTPUT` exports tray
 renders. Native Windows/macOS tray sizing and physical display transitions still
 need desktop verification.
+
+## Template tray artwork
+
+`tray_{high,low,disconnected}_template.svg` are original aMule artwork (GPL-2.0-or-later).
+A shared mule silhouette uses a check, padlock or cross to distinguish connection
+states after AppKit applies its template tint. The final two columns remain clear
+for the speed bar. Windows and Linux continue using the coloured tray artwork.
+Render the 22-pixel PNG twins with librsvg and regenerate `icon_data.c` using
+`embed_icons.py`; both vector and raster fallbacks are checked in.
+
+## Installed tray state variants
+
+CMake generates the installed SNI variants from the existing coloured tray artwork
+at configure time and regenerates them when the originals change. They shift its
+20-pixel-wide content right by one pixel on the 22-pixel canvas, replacing the
+asymmetric speed-bar reserve with equal margins. SVGs use a `-1 0 22 22` viewBox;
+only scalable SVGs are installed for AppIndicator theme lookup. No duplicate
+sources or shifted PNGs are retained, and these variants are not separately embedded.

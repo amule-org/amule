@@ -341,6 +341,46 @@ int main(int argc, char **argv)
 			CheckTrayComposition(MuleTray::MakeArtworkFallback(fallback), state, "png", output);
 		}
 
+		Phase("macOS template tray state shapes");
+		std::vector<std::vector<unsigned char>> masks;
+		for (const char *state :
+			{ "tray_high_template", "tray_low_template", "tray_disconnected_template" }) {
+			const auto entry = amule_find_icon(state);
+			require(entry && entry->svg_len && entry->png_len, "template artwork missing");
+			const auto artwork =
+				wxArtProvider::GetBitmapBundle(wxString("amule:") + state, wxART_OTHER);
+			require(artwork.IsOk(), "template bundle invalid");
+			wxMemoryInputStream stream(entry->png_data, entry->png_len);
+			const wxImage fallback(stream, wxBITMAP_TYPE_PNG);
+			for (const auto &bundle : { artwork, MuleTray::MakeArtworkFallback(fallback) }) {
+				for (int size : { 16, 22, 32, 44, 64 }) {
+					const wxImage image =
+						bundle.GetBitmap(wxSize(size, size)).ConvertToImage();
+					require(image.IsOk() && image.HasAlpha(), "template alpha missing");
+					int opaque = 0;
+					for (int y = 0; y < size; ++y) {
+						for (int x = 0; x < size; ++x) {
+							if (image.GetAlpha(x, y)) {
+								require(image.GetRed(x, y) == 0 &&
+										image.GetGreen(x, y) == 0 &&
+										image.GetBlue(x, y) == 0,
+									"template is not monochrome");
+								++opaque;
+							}
+						}
+					}
+					require(opaque > size * size / 8 && opaque < size * size * 3 / 4,
+						"template silhouette empty or solid");
+				}
+			}
+			const wxImage image = artwork.GetBitmap(wxSize(22, 22)).ConvertToImage();
+			masks.emplace_back(image.GetAlpha(), image.GetAlpha() + 22 * 22);
+			CheckTrayComposition(artwork, state, "svg", output);
+			CheckTrayComposition(MuleTray::MakeArtworkFallback(fallback), state, "png", output);
+		}
+		require(masks[0] != masks[1] && masks[1] != masks[2] && masks[0] != masks[2],
+			"template states have identical shapes");
+
 		Phase("legacy flag padding");
 		for (const char *code : { "an", "unknown" }) {
 			for (int scale : { 1, 2, 3 }) {
@@ -381,10 +421,10 @@ int main(int argc, char **argv)
 			for (double scale : { 1.0, 1.5, 2.0, 3.0, 4.0 }) {
 				Rendering(entry.name, scale);
 				wxBitmap b;
-				// wxMSW scales DIP into drawing coordinates before GetFlag;
-				// its logical bitmap dimensions are physical pixels. GTK/macOS
-				// instead use a backing scale with fixed logical dimensions.
-#ifdef __WXMSW__
+				// wxMSW scales DIP into drawing coordinates before GetFlag.
+				// GTK2 also has no bitmap backing-scale support: its logical
+				// dimensions are physical pixels. GTK3/macOS retain logical size.
+#if defined(__WXMSW__) || (defined(__WXGTK__) && !defined(__WXGTK3__))
 				const wxSize flagSize(wxRound(16 * scale), wxRound(12 * scale));
 				const double contentScale = 1.0;
 #else

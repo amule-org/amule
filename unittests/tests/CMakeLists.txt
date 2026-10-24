@@ -78,6 +78,14 @@ if (BUILD_MONOLITHIC OR BUILD_REMOTEGUI)
 	endif()
 endif()
 
+if (APPLE AND (BUILD_MONOLITHIC OR BUILD_REMOTEGUI))
+	add_executable (NativeTrayIconMacTest NativeTrayIconMacTest.mm ${CMAKE_SOURCE_DIR}/src/NativeTrayIcon_mac.mm)
+	target_include_directories (NativeTrayIconMacTest PRIVATE "${CMAKE_BINARY_DIR}" "${CMAKE_SOURCE_DIR}/src")
+	target_link_libraries (NativeTrayIconMacTest PRIVATE wxWidgets::CORE wxWidgets::ADV "-framework AppKit")
+	add_test (NAME NativeTrayIconMacTest COMMAND NativeTrayIconMacTest)
+	set_tests_properties (NativeTrayIconMacTest PROPERTIES LABELS "gui" TIMEOUT 30 SKIP_RETURN_CODE 77)
+endif ()
+
 # The checked-in lexer and native IPv6 rule store, without the application.
 add_executable (IPFilterIPv6Test
 	IPFilterIPv6Test.cpp

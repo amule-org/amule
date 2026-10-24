@@ -53,7 +53,7 @@ enum
 
 // Backend selection:
 //
-// Linux with libayatana-appindicator3 -> SNI (StatusNotifierItem) backend talking D-Bus directly.
+// Linux wxGTK3 with libayatana-appindicator3 -> SNI (StatusNotifierItem) backend talking D-Bus directly.
 // This is what GNOME Shell (with the AppIndicators extension Ubuntu ships by default), KDE Plasma,
 // Sway/wlroots and every other modern desktop actually consume.
 //
@@ -67,7 +67,7 @@ struct _GtkWidget;
 typedef struct _AppIndicator AppIndicator;
 typedef struct _GtkWidget GtkWidget;
 #else
-#include <wx/taskbar.h>
+#include "NativeTrayIcon.h"
 #include <wx/bmpbndl.h>
 #include <wx/colour.h>
 class wxMenu;
@@ -78,7 +78,7 @@ class wxMenu;
  */
 class CMuleTrayIcon
 #ifndef WITH_LIBAYATANA_APPINDICATOR
-: public wxTaskBarIcon
+: public MuleTrayIconBase
 #endif
 {
 public:
