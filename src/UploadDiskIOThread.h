@@ -28,7 +28,14 @@
 
 #include <list>
 #include <atomic>
-#include <utility> // Needed for std::pair
+#include <memory>
+#include <map>
+#include <vector>
+#include "StorageReadPool.h"
+#include "UploadStorageMap.h"
+#include "UploadBuffering.h"
+#include "UploadReadDiagnostics.h"
+#include "UploadPipelinePressure.h"
 
 #include <wx/thread.h>
 
@@ -41,32 +48,48 @@ class CPacket;
 class CPartFile;
 class CUpDownClient;
 
-// Mirrors eMule's OpenOvFile_Struct (UploadDiskIOThread.h:20-28). eMule's HANDLE hFile is the
-// read handle `file`, kept open between blocks of a complete file and closed once idle.
+// The coordinator owns cache metadata; only a worker with the storage permit
+// may open/read/close the handle. A request pins its entry until completion.
 struct OpenFile_Struct
 {
 	uint8 ucMD4FileHash[16];
-	CFileAutoClose file; // complete files only; opened lazily in ReadBlock
-	uint32 lastRead;     // TheTime of the last block request
-	uint32 nInUse;       // number of active reads for this file
-	uint64 uFileSize;
-	bool bCompress; // true if this file type should be compressed
+	CFileAutoClose file;
+	CPath path;
+	std::string storage;
+	uint64 lastRead = 0;
+	bool cached = false;
+	bool bCompress = false;
 };
 
-// Mirrors eMule's OverlappedEx_Struct (UploadDiskIOThread.h:32-41)
-// OVERLAPPED removed -- reads are synchronous on this thread via CFileArea.
+enum UploadReadResult
+{
+	READ_OK,
+	READ_DEFERRED,
+	READ_FAILED,
+	READ_OPEN_FAILED
+};
+
 struct ReadRequest_Struct
 {
-	OpenFile_Struct *pFileStruct = nullptr; // set by PrepareRead
-	// The client's ECID, not its pointer: the read runs without the uploading-list lock, and a
-	// freed client's address can be reused by a new one.
+	~ReadRequest_Struct();
+	void ReleasePartFile();
+	std::shared_ptr<OpenFile_Struct> pFileStruct;
 	uint32 clientId = 0;
+	uint64 session = 0;
 	uint8 ucMD4FileHash[16];
 	uint64 uStartOffset = 0;
 	uint64 uEndOffset = 0;
-	CPartFile *pPartFile = nullptr; // pinned for the read; null for a complete file
-	CPath path;                     // complete file only
-	CFileArea area;                 // holds read buffer; replaces BYTE* pBuffer + OVERLAPPED
+	CPartFile *pPartFile = nullptr;
+	CPath path;
+	std::string storage;
+	CFileArea area;
+	std::vector<uint8> data; // owned copy only when area was mapped
+	UploadBufferBudget::Lease bufferReservation;
+	UploadReadResult result = READ_FAILED;
+	bool closeOnly = false;
+	std::unique_ptr<UploadStorageMap> storageMap; // discovery job, without a file/client
+	bool discoverNetwork = true;
+	UploadReadTiming timing;
 };
 
 // Port of eMule's CUploadDiskIOThread (UploadDiskIOThread.h:48-86). Windows primitives replaced
@@ -74,7 +97,7 @@ struct ReadRequest_Struct
 //   CWinThread           -> wxThread (joinable)
 //   CEvent               -> wxCondition + wxMutex
 //   WaitForMultipleObjects -> wxCondition::WaitTimeout()
-//   ReadFile(OVERLAPPED) -> CFileArea::ReadAt() (synchronous, on this thread)
+//   ReadFile(OVERLAPPED) -> bounded blocking workers, coordinated by this thread
 //   HANDLE file handles  -> CFileAutoClose cached per file in OpenFile_Struct
 //   CCriticalSection     -> wxMutex + wxMutexLocker
 class CUploadDiskIOThread : public wxThread
@@ -88,27 +111,21 @@ public:
 	void SocketNeedsMoreData();       // eMule ref: UploadDiskIOThread.h:56
 
 private:
+	void SamplePipelinePressure();
 	void *Entry() override; // replaces RunProc/RunInternal
 
-	enum ReadResult
-	{
-		READ_OK,
-		READ_DEFERRED,
-		READ_FAILED,
-		READ_OPEN_FAILED
-	};
-
-	// StartCreateNextBlockPackage runs each block through PrepareRead, ReadBlock, CommitRead.
-	bool StartCreateNextBlockPackage(uint32 clientId); // eMule ref: line 185
-	ReadRequest_Struct *PrepareRead(uint32 clientId);
+	using ReadResult = UploadReadResult;
+	void DrainCompletions(bool deliver);
+	void QueueIdleCloses();
+	void ReportDiagnostics(bool final = false);
+	std::unique_ptr<ReadRequest_Struct> PrepareRead(uint32 clientId);
 	static ReadResult ReadBlock(ReadRequest_Struct *req);
 	bool CommitRead(ReadRequest_Struct *req, ReadResult result);
-	void ReadCompletionRoutine(ReadRequest_Struct *req); // eMule ref: line 369
+	bool ReadCompletionRoutine(ReadRequest_Struct *req); // true if payload was queued
 	void DiscardRequest(ReadRequest_Struct *req);        // frees a req never committed
-	bool ReleaseOpenFile(OpenFile_Struct *pFileStruct);  // eMule ref: line 498, decrement-only
 
+	bool m_started = false;
 	std::atomic<bool> m_bRun{ false }; // eMule ref: m_bRun (line 77)
-	bool m_bSignalThrottler;           // eMule ref: m_bSignalThrottler (line 78)
 
 	wxMutex m_mutex;
 	wxCondition m_condition; // replaces m_eventNewBlockRequests + m_eventSocketNeedsData
@@ -116,13 +133,29 @@ private:
 	// Prevents lost wakeups when signal arrives before WaitTimeout() is entered.
 	bool m_bNewBlocksPending;   // set by NewBlockRequestsAvailable()
 	bool m_bSocketNeedsPending; // set by SocketNeedsMoreData()
-	// m_eventAsyncIOFinished not needed -- reads complete synchronously on this thread
 
-	// LRU handle cache: front is most recently used, idle structs (nInUse == 0) are evicted
-	// from the back once the list exceeds MAX_CACHED_OPEN_FILES. eMule ref: line 83.
-	std::list<OpenFile_Struct *> m_listOpenFiles;
-	std::list<ReadRequest_Struct *> m_listFinishedIO; // eMule ref: line 85
-	// m_listPendingIO not needed -- reads are synchronous, go straight to m_listFinishedIO
+	std::unique_ptr<StorageReadPool<ReadRequest_Struct>> m_pool;
+	std::map<uint32, uint64> m_pendingClients;
+	std::map<uint32, uint64> m_retryAfter;
+	// Oldest successful dispatch wins, independently of activity on other volumes.
+	std::map<uint32, uint64> m_lastDispatch;
+	uint64 m_dispatchSequence = 0;
+	UploadStorageMap m_storageMap;
+	uint64 m_storageRefreshed = 0;
+	bool m_storageMapReady = false;
+	// Resolve each spelled path once per mount-table snapshot, including busy volumes.
+	std::map<std::string, std::string> m_storageKeys;
+	UploadBufferBudget m_bufferBudget;
+	UploadReadDiagnostics m_diagnostics;
+	bool m_collectDiagnostics = false;
+	uint64 m_lastDiagnostics = 0;
+	UploadPipelinePressure m_pipelinePressure;
+	// Sampling state is private to the coordinator and only used with FileIO enabled.
+	UploadPipelinePressure::Snapshot m_pipelineSnapshot;
+	uint64 m_lastPipelineLog = 0;
+	uint64 m_lastReadMs = 0, m_lastHandoffMs = 0, m_lastCompletedMs = 0;
+	bool m_needCacheSlot = false;
+	std::list<std::shared_ptr<OpenFile_Struct>> m_listOpenFiles;
 };
 
 #endif

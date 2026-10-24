@@ -879,6 +879,7 @@ private:
 	// atomic: CUploadDiskIOThread reads both, and adds to m_addedPayloadQueueSession
 	std::atomic<sint64> m_nCurQueueSessionPayloadUp;
 	std::atomic<sint64> m_addedPayloadQueueSession;
+	uint64 m_uploadReadSession = 0; // protected by m_blockListLock; rejects late read completions
 
 	struct TransferredData
 	{

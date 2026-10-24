@@ -452,6 +452,7 @@ void *UploadBandwidthThrottler::Entry()
 			}
 
 			m_SentBytesSinceLastCall += spentBytes;
+			m_pipelineSentBytes.fetch_add(spentBytes, std::memory_order_relaxed);
 			m_SentBytesSinceLastCallOverhead += spentOverhead;
 
 			if (spentBytes == 0) { // spentBytes includes the overhead

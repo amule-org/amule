@@ -43,6 +43,8 @@ public:
 	~UploadBandwidthThrottler();
 
 	uint64 GetNumberOfSentBytesSinceLastCallAndReset();
+	// Independent lifetime total for observation; reading it consumes no accounting.
+	uint64 PipelineSentBytes() const { return m_pipelineSentBytes.load(std::memory_order_relaxed); }
 	uint64 GetNumberOfSentBytesOverheadSinceLastCallAndReset();
 
 	void AddToStandardList(uint32 index, ThrottledFileSocket *socket);
@@ -93,6 +95,7 @@ private:
 
 	uint64 m_SentBytesSinceLastCall;
 	uint64 m_SentBytesSinceLastCallOverhead;
+	std::atomic<uint64> m_pipelineSentBytes{ 0 };
 };
 
 #endif
