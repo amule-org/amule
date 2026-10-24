@@ -45,5 +45,36 @@ class DrawingFailureTest(unittest.TestCase):
                 smoke.check_drawing_failures(Path(directory) / "missing.log")
 
 
+class ProfileFixtureTest(unittest.TestCase):
+    def test_uses_the_allowed_default_profile(self):
+        with tempfile.TemporaryDirectory() as directory:
+            home = Path(directory)
+            profile = smoke.prepare_profile(home, "gnome-wayland")
+            self.assertEqual(profile, home / ".aMule")
+            self.assertIn("Nick=Flatpak smoke profile", (profile / "amule.conf").read_text())
+
+    def test_refuses_existing_profile_without_changing_it(self):
+        with tempfile.TemporaryDirectory() as directory:
+            home = Path(directory)
+            profile = home / ".aMule"
+            profile.mkdir()
+            identity = profile / "preferences.dat"
+            identity.write_bytes(b"existing identity")
+            with self.assertRaisesRegex(RuntimeError, "empty aMule profile"):
+                smoke.prepare_profile(home, "x11")
+            self.assertEqual(identity.read_bytes(), b"existing identity")
+            self.assertEqual(list(profile.iterdir()), [identity])
+
+    def test_refuses_symlinked_profile(self):
+        with tempfile.TemporaryDirectory() as directory:
+            home = Path(directory)
+            target = home / "real-profile"
+            target.mkdir()
+            (home / ".aMule").symlink_to(target, target_is_directory=True)
+            with self.assertRaisesRegex(RuntimeError, "symlinked"):
+                smoke.prepare_profile(home, "x11")
+            self.assertEqual(list(target.iterdir()), [])
+
+
 if __name__ == "__main__":
     unittest.main()

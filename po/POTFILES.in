@@ -41,6 +41,7 @@ src/FileRenameDialog.h
 src/ExternalCommand.cpp
 src/FileLaunch.cpp
 src/FirstRunWizard.cpp
+src/FolderAccess.cpp
 src/FriendList.cpp
 src/FriendListCtrl.cpp
 src/GenericClientListCtrl.cpp

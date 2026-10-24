@@ -186,3 +186,37 @@ TEST(ShareExclude, ExpansionCapsSeenNames)
 
 	wxFileName::Rmdir(root.GetRaw(), wxPATH_RMDIR_RECURSIVE);
 }
+
+TEST(ShareExclude, OfficeDocumentsMatchExactExtensions)
+{
+	const char *blocked[] = { "Letter.DOC",
+		"letter.docx",
+		"macro.DoCm",
+		"template.dotm",
+		"budget.xlsx",
+		"macro.xlsm",
+		"book.xlsb",
+		"slides.PPTX",
+		"macro.pptm",
+		"report.odt",
+		"sheet.ods",
+		"slides.odp",
+		"database.odb",
+		"notes.rtf",
+		"contacts.csv",
+		"contacts.TSV" };
+	for (const char *name : blocked) {
+		ASSERT_TRUE(ShareExclude::IsOfficeDocument(name));
+	}
+	const char *allowed[] = { "music.mp3",
+		"movie.mkv",
+		"document.docx.zip",
+		"docx",
+		"report.docx.bak",
+		"photo.jpeg",
+		"README",
+		"report.docx.exe" };
+	for (const char *name : allowed) {
+		ASSERT_TRUE(!ShareExclude::IsOfficeDocument(name));
+	}
+}

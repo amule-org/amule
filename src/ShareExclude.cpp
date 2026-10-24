@@ -98,6 +98,53 @@ bool CShareExcludeFilter::Matches(const wxString &fileName) const
 namespace ShareExclude
 {
 
+bool IsOfficeDocument(const wxString &fileName)
+{
+	const wxString ext = wxFileName(fileName).GetExt().Lower();
+	static const char *const extensions[] = { "doc",
+		"docx",
+		"docm",
+		"dot",
+		"dotx",
+		"dotm",
+		"xls",
+		"xlsx",
+		"xlsm",
+		"xlsb",
+		"xlt",
+		"xltx",
+		"xltm",
+		"xlam",
+		"ppt",
+		"pptx",
+		"pptm",
+		"pot",
+		"potx",
+		"potm",
+		"pps",
+		"ppsx",
+		"ppsm",
+		"odt",
+		"ott",
+		"ods",
+		"ots",
+		"odp",
+		"otp",
+		"odg",
+		"otg",
+		"odf",
+		"odb",
+		"rtf",
+		"csv",
+		"tsv" };
+	for (const char *candidate : extensions) {
+		if (ext == candidate) {
+			return true;
+		}
+	}
+	return false;
+}
+
 bool HasExcludedFolderBelow(const CShareExcludeFilter &filter, const CPath &root, const CPath &path)
 {
 	const size_t rootLength = root.GetRaw().length();

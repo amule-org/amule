@@ -62,6 +62,9 @@ namespace ShareExclude
 
 typedef std::vector<CPath> PathList;
 
+// Exact, case-insensitive extension check; does not match a suffix in the middle of a name.
+bool IsOfficeDocument(const wxString &fileName);
+
 // True if a folder below `root`, up to and including `path`, matches `filter`. `root` itself is
 // never tested: the user picked it.
 bool HasExcludedFolderBelow(const CShareExcludeFilter &filter, const CPath &root, const CPath &path);

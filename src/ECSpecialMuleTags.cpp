@@ -446,6 +446,8 @@ CEC_Prefs_Packet::CEC_Prefs_Packet(
 			CECTag(EC_TAG_DIRECTORIES_EXCLUDE_PATTERNS, thePrefs::GetExcludeSharePatterns()));
 		dirPrefs.AddTag(
 			CECTag(EC_TAG_DIRECTORIES_EXCLUDE_REGEX, thePrefs::ExcludeSharePatternsUseRegex()));
+		dirPrefs.AddTag(
+			CECTag(EC_TAG_DIRECTORIES_EXCLUDE_OFFICE, thePrefs::ExcludeOfficeDocuments()));
 		AddTag(dirPrefs);
 	}
 
@@ -894,6 +896,10 @@ bool CEC_Prefs_Packet::Apply() const
 	}
 
 	if ((thisTab = GetTagByName(EC_TAG_PREFS_DIRECTORIES)) != NULL) {
+#ifdef CLIENT_GUI
+		thePrefs::SetOfficeExclusionAvailable(
+			thisTab->GetTagByName(EC_TAG_DIRECTORIES_EXCLUDE_OFFICE) != nullptr);
+#endif
 		if ((oneTag = thisTab->GetTagByName(EC_TAG_DIRECTORIES_INCOMING)) != NULL) {
 			thePrefs::SetIncomingDir(CPath(oneTag->GetStringData()));
 		}
@@ -928,6 +934,13 @@ bool CEC_Prefs_Packet::Apply() const
 			const bool useRegex = oneTag->GetInt() != 0;
 			if (useRegex != thePrefs::ExcludeSharePatternsUseRegex()) {
 				thePrefs::SetExcludeSharePatternsUseRegex(useRegex);
+				excludeChanged = true;
+			}
+		}
+		if ((oneTag = thisTab->GetTagByName(EC_TAG_DIRECTORIES_EXCLUDE_OFFICE)) != nullptr) {
+			const bool excludeOffice = oneTag->GetInt() != 0;
+			if (excludeOffice != thePrefs::ExcludeOfficeDocuments()) {
+				thePrefs::SetExcludeOfficeDocuments(excludeOffice);
 				excludeChanged = true;
 			}
 		}

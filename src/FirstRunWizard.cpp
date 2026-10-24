@@ -41,9 +41,10 @@
 #include <wx/msgdlg.h>
 #include <wx/valtext.h>
 
-#include "amule.h"                  // Needed for theApp / glob_prefs
-#include "AutostartManager.h"       // Needed for Integrations page autostart toggle
-#include "Preferences.h"            // Needed for thePrefs
+#include "amule.h"            // Needed for theApp / glob_prefs
+#include "AutostartManager.h" // Needed for Integrations page autostart toggle
+#include "Preferences.h"      // Needed for thePrefs
+#include "FolderAccess.h"
 #include "ProtocolHandlerManager.h" // Needed for Integrations page URL-scheme toggles
 #include <common/Format.h>
 #include <common/Path.h> // Needed for CPath
@@ -591,11 +592,8 @@ void CFirstRunWizard::OnUploadChanged(wxSpinEvent &WXUNUSED(evt))
 
 void CFirstRunWizard::OnBrowseIncoming(wxCommandEvent &WXUNUSED(evt))
 {
-	wxString dir = ::wxDirSelector(_("Destination folder for downloads"),
-		m_incomingCtrl->GetValue(),
-		0,
-		wxDefaultPosition,
-		this);
+	wxString dir = FolderAccess::Choose(
+		this, _("Allow writing completed downloads"), m_incomingCtrl->GetValue(), true);
 	if (!dir.IsEmpty()) {
 		m_incomingCtrl->SetValue(dir);
 	}
@@ -603,8 +601,8 @@ void CFirstRunWizard::OnBrowseIncoming(wxCommandEvent &WXUNUSED(evt))
 
 void CFirstRunWizard::OnBrowseTemp(wxCommandEvent &WXUNUSED(evt))
 {
-	wxString dir = ::wxDirSelector(
-		_("Folder for temporary download files"), m_tempCtrl->GetValue(), 0, wxDefaultPosition, this);
+	wxString dir = FolderAccess::Choose(
+		this, _("Allow writing temporary download files"), m_tempCtrl->GetValue(), true);
 	if (!dir.IsEmpty()) {
 		m_tempCtrl->SetValue(dir);
 	}

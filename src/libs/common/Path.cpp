@@ -638,6 +638,46 @@ bool CPath::BackupFile(const CPath &src, const wxString &appendix)
 
 	CPath dst = CPath(src.m_filesystem + appendix);
 
+	if (wxFileExists("/.flatpak-info") || wxGetEnv("FLATPAK_ID", nullptr)) {
+		// wxCopyFile copies permissions with chmod, which the read-only policy
+		// deliberately denies. Create an owner-only temporary backup instead.
+		wxFile input(src.m_filesystem, wxFile::read);
+		if (!input.IsOpened()) {
+			return false;
+		}
+		wxFile output;
+		const wxString temporary =
+			wxFileName::CreateTempFileName(dst.m_filesystem + ".tmp.", &output);
+		if (temporary.empty()) {
+			return false;
+		}
+		bool ok = true;
+		char buffer[65536];
+		for (;;) {
+			const auto count = input.Read(buffer, sizeof(buffer));
+			if (count < 0) {
+				ok = false;
+				break;
+			}
+			if (count == 0) {
+				break;
+			}
+			if (output.Write(buffer, static_cast<size_t>(count)) != static_cast<size_t>(count)) {
+				ok = false;
+				break;
+			}
+		}
+		ok = output.Flush() && ok;
+		ok = output.Close() && ok;
+		if (ok) {
+			ok = wxRenameFile(temporary, dst.m_filesystem, true);
+		}
+		if (!ok) {
+			wxRemoveFile(temporary);
+		}
+		return ok;
+	}
+
 	// Small same-directory .met/config backup, so wxCopyFile's 4 KiB buffer is
 	// fine. Large copies use CFile::CloneFile; mulecommon deliberately has no
 	// dependency on the CFile layer (amule-org/amule#11).

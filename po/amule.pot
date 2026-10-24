@@ -1385,7 +1385,7 @@ msgid "New Category"
 msgstr ""
 
 #: src/CatDialog.cpp
-msgid "Choose a folder for incoming files"
+msgid "Allow writing category downloads"
 msgstr ""
 
 #: src/CatDialog.cpp
@@ -1995,7 +1995,19 @@ msgid "Cannot unshare inside a recursive share"
 msgstr ""
 
 #: src/DirectoryTreeCtrl.cpp
+msgid "This folder is unavailable. Reconnect the drive or use Approve folder to restore access. Its saved sharing setting has been preserved."
+msgstr ""
+
+#: src/DirectoryTreeCtrl.cpp
+msgid "Folder unavailable"
+msgstr ""
+
+#: src/DirectoryTreeCtrl.cpp
 msgid "Cannot modify inside a recursive share"
+msgstr ""
+
+#: src/DirectoryTreeCtrl.cpp
+msgid " (unavailable)"
 msgstr ""
 
 #: src/DownloadListCtrl.cpp
@@ -3074,11 +3086,59 @@ msgid ""
 msgstr ""
 
 #: src/FirstRunWizard.cpp
+msgid "Allow writing completed downloads"
+msgstr ""
+
+#: src/FirstRunWizard.cpp
+msgid "Allow writing temporary download files"
+msgstr ""
+
+#: src/FirstRunWizard.cpp
 msgid "Show this setup wizard again the next time you start aMule?"
 msgstr ""
 
 #: src/FirstRunWizard.cpp
 msgid "Setup not finished"
+msgstr ""
+
+#: src/FolderAccess.cpp
+msgid "Approve a folder in the system folder chooser."
+msgstr ""
+
+#: src/FolderAccess.cpp
+msgid "This folder already has write access for downloads or application data. Sharing it does not remove that existing write access."
+msgstr ""
+
+#: src/FolderAccess.cpp
+msgid "Existing write access"
+msgstr ""
+
+#: src/FolderAccess.cpp
+msgid "This destination needs read and write access. Approve writing in the system chooser."
+msgstr ""
+
+#: src/FolderAccess.cpp
+msgid "Download folder"
+msgstr ""
+
+#: src/FolderAccess.cpp
+msgid "The system folder chooser is unavailable. Check that your desktop portal is installed and running. Folder permissions have not been changed."
+msgstr ""
+
+#: src/FolderAccess.cpp
+msgid "Folder access"
+msgstr ""
+
+#: src/FolderAccess.cpp
+msgid "This build does not support the system folder portal."
+msgstr ""
+
+#: src/FolderAccess.cpp
+msgid "Write access has been approved. Restart aMule, then select this download destination. Existing download paths and files are unchanged."
+msgstr ""
+
+#: src/FolderAccess.cpp
+msgid "Restart required"
 msgstr ""
 
 #: src/FriendList.cpp
@@ -5261,7 +5321,39 @@ msgid "Remove"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "(Right click on folder icon for recursive share)"
+msgid "Check folders to share; right-click to include subfolders."
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Check a folder or press Space to share it. A mixed checkbox means subfolders are selected. Right-click to include all subfolders."
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Approve folders before sharing. Sharing access is read-only in Flatpak; download folders need write access."
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Enter a folder path (optional)"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Type a path, including an external drive or NAS mount. In Flatpak you must confirm the folder in the system chooser. Approval does not automatically share its files."
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Custom folder"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Home"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Optional roots. Selecting one does not grant access; approve it or one of its subfolders in the system chooser."
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Approve folder..."
 msgstr ""
 
 #: src/muuli_wdr.cpp
@@ -5274,6 +5366,14 @@ msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Follow symbolic links in shared folders"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Exclude office documents from sharing"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Do not share Word, Excel, PowerPoint, OpenDocument, RTF, CSV or TSV files, including macro-enabled documents. Applies to completed and partial downloads too. Files remain on disk and downloads continue."
 msgstr ""
 
 #: src/muuli_wdr.cpp
@@ -6915,6 +7015,10 @@ msgstr ""
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "Choose a folder for %s"
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "Approve read-only folder access"
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp

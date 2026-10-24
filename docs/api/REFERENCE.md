@@ -2324,7 +2324,7 @@ Deleting `index 0` is refused here, before any EC roundtrip: `400 bad_request` (
 
 **Auth:** `GUEST`
 
-Returns every preference category amuled carries over EC. The `general` and `connection` sub-objects are the original common-case set; the remaining categories map 1:1 to the daemon's own settings and mirror the desktop "Preferences" tabs.
+Returns every preference category amuled carries over EC. The complete payload contains 132 preference fields. The `general` and `connection` sub-objects are the original common-case set; the remaining categories map 1:1 to the daemon's own settings and mirror the desktop "Preferences" tabs.
 
 ```json
 {
@@ -2367,7 +2367,8 @@ Returns every preference category amuled carries over EC. The `general` and `con
     "rescan_on_startup": true,
     "follow_symlinks": false,
     "exclude_patterns": "",
-    "exclude_patterns_use_regex": false
+    "exclude_patterns_use_regex": false,
+    "exclude_office_documents": true
   },
   "files": {
     "ich_enabled": true, "trust_unverified_aich_hashes": false,
@@ -2433,6 +2434,11 @@ Returns every preference category amuled carries over EC. The `general` and `con
   }
 }
 ```
+
+`directories.exclude_office_documents` excludes Word, Excel, PowerPoint,
+OpenDocument, RTF, CSV and TSV extensions from sharing, independently of custom
+patterns. It defaults to true, including for existing profiles, and applies to
+partial and completed downloads without deleting files or preventing downloads.
 
 `files.shared_file_reverify_days` is a read/write unsigned 32-bit interval in days
 (0–3650), default `0` (off). A valid block request for an overdue completed

@@ -97,6 +97,10 @@ protected:
 	//! browsing *this* machine's filesystem, so the Directories tab builds a path list editor
 	//! instead of the tree.
 	CDirectoryTreeCtrl *m_ShareSelector;
+#ifndef CLIENT_GUI
+	void OnApproveFolder(wxCommandEvent &evt);
+	void OnOptionalFolderRoot(wxCommandEvent &evt);
+#endif
 
 #ifdef CLIENT_GUI
 	//! Set once the user adds or removes a row, cleared when the session ends. Guards the

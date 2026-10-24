@@ -162,6 +162,7 @@ const PrefField kSchema[] = {
 	PREF_BOOL("directories", "rescan_on_startup", EC_TAG_DIRECTORIES_AUTO_RESCAN, PrefEnc::Presence, false, PrefAccess::ReadWrite, directories.rescan_on_startup),
 	PREF_STR("directories", "exclude_patterns", EC_TAG_DIRECTORIES_EXCLUDE_PATTERNS, PrefAccess::ReadWrite, directories.exclude_patterns),
 	PREF_BOOL("directories", "exclude_patterns_use_regex", EC_TAG_DIRECTORIES_EXCLUDE_REGEX, PrefEnc::Value, false, PrefAccess::ReadWrite, directories.exclude_patterns_use_regex),
+	PREF_BOOL("directories", "exclude_office_documents", EC_TAG_DIRECTORIES_EXCLUDE_OFFICE, PrefEnc::Value, false, PrefAccess::ReadWrite, directories.exclude_office_documents),
 	PREF_BOOL("directories", "follow_symlinks", EC_TAG_DIRECTORIES_FOLLOW_SYMLINKS, PrefEnc::Presence, false, PrefAccess::ReadWrite, directories.follow_symlinks),
 	PREF_STR("directories", "incoming_path", EC_TAG_DIRECTORIES_INCOMING, PrefAccess::ReadWrite, directories.incoming_path),
 	PREF_BOOL("directories", "share_hidden", EC_TAG_DIRECTORIES_SHARE_HIDDEN, PrefEnc::Presence, false, PrefAccess::ReadWrite, directories.share_hidden),

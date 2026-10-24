@@ -915,6 +915,7 @@
   "prefs_field_directories_share_hidden": "Share hidden files",
   "prefs_field_directories_rescan_on_startup": "Automatically rescan shared folders for changes",
   "prefs_field_directories_follow_symlinks": "Follow symbolic links in shared folders",
+  "prefs_field_directories_exclude_office_documents": "Exclude office documents from sharing",
   "prefs_field_directories_exclude_patterns": "Exclude files and folders matching",
   "prefs_field_directories_exclude_patterns_use_regex": "Patterns are regular expressions",
   "prefs_field_files_ich_enabled": "Enable I.C.H.",

@@ -30,6 +30,9 @@
 #include <wx/artprov.h> // Needed for the "amule:folder"/"amule:folder_shared" art ids
 #include <wx/filename.h>
 #include <wx/imaglist.h>
+#include <wx/dcmemory.h>
+#include <wx/renderer.h>
+#include "FolderAccess.h"
 #include <wx/msgdlg.h> // Needed for wxMessageBox (was pulled in transitively via muuli_wdr.h's wx/wx.h)
 
 #include <common/StringFunctions.h>
@@ -38,6 +41,8 @@
 #include "Preferences.h" // Needed for thePrefs::HasExcludedFolderBelow
 
 wxBEGIN_EVENT_TABLE(CDirectoryTreeCtrl, wxTreeCtrl)
+	EVT_LEFT_DOWN(CDirectoryTreeCtrl::OnCheckboxClick)
+	EVT_TREE_KEY_DOWN(wxID_ANY, CDirectoryTreeCtrl::OnCheckboxKey)
 	EVT_TREE_ITEM_RIGHT_CLICK(wxID_ANY, CDirectoryTreeCtrl::OnRButtonDown)
 	EVT_TREE_ITEM_ACTIVATED(wxID_ANY, CDirectoryTreeCtrl::OnItemActivated)
 	EVT_TREE_ITEM_EXPANDED(wxID_ANY, CDirectoryTreeCtrl::OnItemExpanding)
@@ -130,13 +135,47 @@ void CDirectoryTreeCtrl::Init()
 	images->Add(wxArtProvider::GetBitmap("amule:folder_shared", wxART_OTHER, wxSize(16, 16)));
 	AssignImageList(images);
 
+	// Native-rendered state images work on wxGTK, wxMSW and wxOSX. Keep the
+	// folder icons separate, like eMuleBB's state-image checkbox tree.
+	auto *checks = new wxImageList(16, 16, true);
+	for (int state = 0; state < 3; ++state) {
+		wxBitmap bitmap(16, 16);
+		wxMemoryDC dc(bitmap);
+		dc.SetBackground(wxBrush(GetBackgroundColour()));
+		dc.Clear();
+		const int flags = static_cast<int>(
+			state == 1 ? wxCONTROL_CHECKED : (state == 2 ? wxCONTROL_UNDETERMINED : 0));
+		wxRendererNative::Get().DrawCheckBox(this, dc, wxRect(0, 0, 16, 16), flags);
+		dc.SelectObject(wxNullBitmap);
+		checks->Add(bitmap);
+	}
+	AssignStateImageList(checks);
+
 	// Create an empty root item, which we can
 	// safely append when creating a full path.
 	m_root = AddRoot("", IMAGE_FOLDER, -1, new CItemData(CPath()));
 
 	if (!m_IsRemote) {
 #ifndef __WINDOWS__
-		AddChildItem(m_root, CPath("/"));
+		if (FolderAccess::IsSandboxed()) {
+			// Never enumerate the host merely to populate a chooser. Approved portal
+			// roots and existing configured shares remain visible, including offline roots.
+			std::map<wxString, CPath> roots;
+			for (const auto &folder : FolderAccess::ApprovedFolders()) {
+				roots.emplace(GetKey(folder), folder);
+			}
+			for (const auto &entry : m_lstShared) {
+				roots.emplace(entry.first, entry.second);
+			}
+			for (const auto &entry : m_lstSharedRecursive) {
+				roots.emplace(entry.first, entry.second);
+			}
+			for (const auto &entry : roots) {
+				AddChildItem(m_root, entry.second);
+			}
+		} else {
+			AddChildItem(m_root, CPath("/"));
+		}
 #else
 		::wxSetCursor(*wxHOURGLASS_CURSOR);
 		uint32 drives = GetLogicalDrives();
@@ -162,6 +201,7 @@ void CDirectoryTreeCtrl::Init()
 	HasChanged = false;
 
 	UpdateSharedDirectories();
+	RefreshCheckboxes(m_root);
 
 	// Remember what this paint was based on (see NeedsRepaintFor).
 	m_paintedRoots.clear();
@@ -190,6 +230,91 @@ bool CDirectoryTreeCtrl::NeedsRepaintFor(const PathList &explicitDirs, const Pat
 	return wanted != m_paintedRoots;
 }
 
+void CDirectoryTreeCtrl::AddFolder(const CPath &path)
+{
+	Init();
+	if (FolderAccess::IsSandboxed()) {
+		const CPath host(FolderAccess::HostPath(path.GetRaw()));
+		bool remapped = false;
+		auto restore = [&](SharedMap &shares) {
+			SharedMap restored;
+			for (const auto &entry : shares) {
+				const CPath original(FolderAccess::HostPath(entry.second.GetRaw()));
+				if (original.StartsWith(host)) {
+					wxString suffix = original.GetRaw().Mid(host.GetRaw().length());
+					while (suffix.StartsWith("/")) {
+						suffix = suffix.Mid(1);
+					}
+					const CPath replacement = path.JoinPaths(CPath(suffix));
+					restored.emplace(GetKey(replacement), replacement);
+					remapped = remapped || replacement != entry.second;
+				} else {
+					restored.insert(entry);
+				}
+			}
+			shares.swap(restored);
+		};
+		restore(m_lstShared);
+		restore(m_lstSharedRecursive);
+		if (remapped) {
+			Rebuild();
+			HasChanged = true;
+		}
+	}
+	wxTreeItemIdValue cookie;
+	for (wxTreeItemId item = GetFirstChild(m_root, cookie); item.IsOk();
+		item = GetNextChild(m_root, cookie)) {
+		if (GetFullPath(item) == path) {
+			SelectItem(item);
+			EnsureVisible(item);
+			return;
+		}
+	}
+	AddChildItem(m_root, path);
+	wxTreeItemId item = GetLastChild(m_root);
+	SelectItem(item);
+	EnsureVisible(item);
+	RefreshCheckboxes(m_root);
+}
+
+void CDirectoryTreeCtrl::RefreshCheckboxes(wxTreeItemId item)
+{
+	if (item != m_root && GetItemData(item)) {
+		const CPath path = GetFullPath(item);
+		const bool checked = IsShared(path) || IsRecursiveShare(path) || IsInsideRecursiveShare(path);
+		SetItemState(item, checked ? 1 : (HasSharedSubdirectory(path) ? 2 : 0));
+	}
+	wxTreeItemIdValue cookie;
+	for (wxTreeItemId child = GetFirstChild(item, cookie); child.IsOk();
+		child = GetNextChild(item, cookie)) {
+		if (GetItemData(child)) {
+			RefreshCheckboxes(child);
+		}
+	}
+}
+
+void CDirectoryTreeCtrl::OnCheckboxClick(wxMouseEvent &evt)
+{
+	int flags = 0;
+	const wxTreeItemId item = HitTest(evt.GetPosition(), flags);
+	if (item.IsOk() && (flags & wxTREE_HITTEST_ONITEMSTATEICON)) {
+		SelectItem(item);
+		wxTreeEvent toggle(wxEVT_TREE_ITEM_ACTIVATED, this, item);
+		OnItemActivated(toggle);
+		return;
+	}
+	evt.Skip();
+}
+
+void CDirectoryTreeCtrl::OnCheckboxKey(wxTreeEvent &evt)
+{
+	if (evt.GetKeyCode() == WXK_SPACE && evt.GetItem().IsOk()) {
+		OnItemActivated(evt);
+	} else {
+		evt.Skip();
+	}
+}
+
 void CDirectoryTreeCtrl::OnItemExpanding(wxTreeEvent &evt)
 {
 	wxTreeItemId hItem = evt.GetItem();
@@ -198,6 +323,7 @@ void CDirectoryTreeCtrl::OnItemExpanding(wxTreeEvent &evt)
 	AddSubdirectories(hItem, GetFullPath(hItem));
 
 	SortChildren(hItem);
+	RefreshCheckboxes(hItem);
 }
 
 void CDirectoryTreeCtrl::OnItemActivated(wxTreeEvent &evt)
@@ -219,7 +345,16 @@ void CDirectoryTreeCtrl::OnItemActivated(wxTreeEvent &evt)
 			this);
 		return;
 	}
+	if (!IsBold(hItem) && !GetFullPath(hItem).DirExists()) {
+		wxMessageBox(_("This folder is unavailable. Reconnect the drive or use Approve folder "
+			       "to restore access. Its saved sharing setting has been preserved."),
+			_("Folder unavailable"),
+			wxOK | wxICON_INFORMATION,
+			this);
+		return;
+	}
 	CheckChanged(hItem, !IsBold(hItem), false);
+	RefreshCheckboxes(m_root);
 	HasChanged = true;
 }
 
@@ -280,6 +415,7 @@ void CDirectoryTreeCtrl::OnRButtonDown(wxTreeEvent &evt)
 		ApplyRecursiveMark(hItem, true);
 	}
 	HasChanged = true;
+	RefreshCheckboxes(m_root);
 }
 
 void CDirectoryTreeCtrl::MarkChildren(wxTreeItemId hChild, bool mark, bool recursed)
@@ -314,13 +450,18 @@ void CDirectoryTreeCtrl::AddChildItem(wxTreeItemId hBranch, const CPath &item)
 	wxCHECK_RET(hBranch.IsOk(), "Attempted to add children to invalid item");
 
 	CPath fullPath = GetFullPath(hBranch).JoinPaths(item);
-	wxTreeItemId treeItem =
-		AppendItem(hBranch, item.GetPrintable(), IMAGE_FOLDER, -1, new CItemData(item));
+	wxString label = hBranch == m_root && FolderAccess::IsSandboxed()
+				 ? FolderAccess::HostPath(item.GetRaw())
+				 : item.GetPrintable();
+	if (hBranch == m_root && !fullPath.DirExists()) {
+		label += _(" (unavailable)");
+	}
+	wxTreeItemId treeItem = AppendItem(hBranch, label, IMAGE_FOLDER, -1, new CItemData(item));
 
 	// BUG: wxGenericTreeControl does not set text calculated sizes when the item is created in
 	// AppendItem. That asserts on Mac and possibly other systems, so the string has to be set
 	// again here.
-	SetItemText(treeItem, item.GetPrintable());
+	SetItemText(treeItem, label);
 
 	// Bold means "this directory is part of the pending share set", covering both the explicit
 	// case (m_lstShared) and a descendant of a recursive-share root (m_lstSharedRecursive). The

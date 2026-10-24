@@ -30,6 +30,7 @@
 #include <io.h> // Do_not_auto_remove
 #endif
 
+#include "FolderAccess.h"
 #include "CatDialog.h"              // Interface declarations.
 #include "DownloadListCtrl.h"       // Needed for CDownloadListCtrl
 #include "TransferWnd.h"            // Needed for CTransferWnd
@@ -109,8 +110,7 @@ void CCatDialog::OnBnClickedBrowse(wxCommandEvent &WXUNUSED(evt))
 {
 	wxString dir = CastChild(IDC_INCOMING, wxTextCtrl)->GetValue();
 
-	dir = wxDirSelector(
-		_("Choose a folder for incoming files"), dir, wxDD_DEFAULT_STYLE, wxDefaultPosition, this);
+	dir = FolderAccess::Choose(this, _("Allow writing category downloads"), dir, true);
 	if (!dir.IsEmpty()) {
 		CastChild(IDC_INCOMING, wxTextCtrl)->SetValue(dir);
 	}

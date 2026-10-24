@@ -1964,12 +1964,34 @@ wxSizer *PreferencesDirectoriesTab( wxWindow *parent, bool call_fit, bool set_si
     itemSDAddRow->Add( itemSDRemove, wxSizerFlags().CenterVertical().Border(wxLEFT, 4) );
     item9->Add( itemSDAddRow, wxSizerFlags().Expand().Border(wxTOP, 4) );
 #else
-    wxStaticText *item11 = new wxStaticText( item10, -1, _("(Right click on folder icon for recursive share)"), wxDefaultPosition, wxDefaultSize, wxALIGN_CENTRE );
+    wxStaticText *item11 = new wxStaticText( item10, -1, _("Check folders to share; right-click to include subfolders."), wxDefaultPosition, wxDefaultSize, wxALIGN_CENTRE );
     item9->Add( item11, 0, wxALIGN_CENTER, 0 );
 
     CDirectoryTreeCtrl *item12 = new CDirectoryTreeCtrl(item10, IDC_SHARESELECTOR, wxPoint(0,0), wxSize(100,100), wxSUNKEN_BORDER|wxTR_DEFAULT_STYLE|wxTR_HIDE_ROOT );
     wxASSERT( item12 );
+    item12->SetToolTip(_("Check a folder or press Space to share it. A mixed checkbox means subfolders are selected. Right-click to include all subfolders."));
     item9->Add( item12, wxSizerFlags(1).Expand().CenterVertical() );
+    wxStaticText *accessHint = new wxStaticText(item10, wxID_ANY,
+        _("Approve folders before sharing. Sharing access is read-only in Flatpak; download folders need write access."));
+    accessHint->Wrap(parent->FromDIP(380));
+    item9->Add(accessHint, wxSizerFlags().Expand().Border(wxTOP, 4));
+    wxBoxSizer *accessRow = new wxBoxSizer(wxHORIZONTAL);
+    wxTextCtrl *accessPath = new wxTextCtrl(item10, IDC_APPROVED_FOLDER_PATH, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER);
+    accessPath->SetHint(_("Enter a folder path (optional)"));
+    accessPath->SetToolTip(_("Type a path, including an external drive or NAS mount. In Flatpak you must confirm the folder in the system chooser. Approval does not automatically share its files."));
+    wxArrayString optionalRoots;
+    optionalRoots.Add(_("Custom folder"));
+    optionalRoots.Add(_("Home"));
+    optionalRoots.Add("/media");
+    optionalRoots.Add("/mnt");
+    optionalRoots.Add("/run/media");
+    wxChoice *accessRoot = new wxChoice(item10, IDC_APPROVED_FOLDER_ROOT, wxDefaultPosition, wxDefaultSize, optionalRoots);
+    accessRoot->SetSelection(0);
+    accessRoot->SetToolTip(_("Optional roots. Selecting one does not grant access; approve it or one of its subfolders in the system chooser."));
+    accessRow->Add(accessRoot, 0, wxRIGHT, 4);
+    accessRow->Add(accessPath, wxSizerFlags(1).Expand().Border(wxRIGHT, 4));
+    accessRow->Add(new wxButton(item10, IDC_APPROVED_FOLDER_ADD, _("Approve folder...")), 0);
+    item9->Add(accessRow, wxSizerFlags().Expand().Border(wxTOP, 4));
 #endif
     wxCheckBox *item13 = new wxCheckBox( item10, IDC_SHAREHIDDENFILES, _("Share hidden files"), wxDefaultPosition, wxDefaultSize, 0 );
     item13->SetValue( TRUE );
@@ -1985,6 +2007,10 @@ wxSizer *PreferencesDirectoriesTab( wxWindow *parent, bool call_fit, bool set_si
     wxCheckBox *itemFollowSymlinks = new wxCheckBox( item10, IDC_FOLLOW_SYMLINKS_SHARED, _("Follow symbolic links in shared folders"), wxDefaultPosition, wxDefaultSize, 0 );
     itemFollowSymlinks->SetValue( TRUE );
     item9->Add( itemFollowSymlinks, 0, wxALIGN_CENTER_VERTICAL, 0 );
+
+    wxCheckBox *office = new wxCheckBox(item10, IDC_EXCLUDE_OFFICE_DOCUMENTS, _("Exclude office documents from sharing"));
+    office->SetToolTip(_("Do not share Word, Excel, PowerPoint, OpenDocument, RTF, CSV or TSV files, including macro-enabled documents. Applies to completed and partial downloads too. Files remain on disk and downloads continue."));
+    item9->Add(office, 0, wxALIGN_CENTER_VERTICAL, 0);
 
     // Shared-file exclusion filter: files whose name matches are not shared.
     wxBoxSizer *itemExcludeRow = new wxBoxSizer( wxHORIZONTAL );

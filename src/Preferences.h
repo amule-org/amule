@@ -735,10 +735,15 @@ public:
 	{
 		s_ShareExcludeFilter.Compile(s_ExcludeSharePatterns, s_ExcludeSharePatternsUseRegex);
 	}
+	static bool ExcludeOfficeDocuments() { return s_ExcludeOfficeDocuments; }
+	static bool OfficeExclusionAvailable() { return s_officeExclusionAvailable; }
+	static void SetOfficeExclusionAvailable(bool value) { s_officeExclusionAvailable = value; }
+	static void SetExcludeOfficeDocuments(bool value) { s_ExcludeOfficeDocuments = value; }
 	// True if the shared-file or folder basename matches the live exclusion filter.
 	static bool IsShareExcluded(const wxString &fileName)
 	{
-		return s_ShareExcludeFilter.Matches(fileName);
+		return (s_ExcludeOfficeDocuments && ShareExclude::IsOfficeDocument(fileName)) ||
+		       s_ShareExcludeFilter.Matches(fileName);
 	}
 	// True if a folder below `root`, up to and including `path`, matches the live exclusion
 	// filter. `root` itself is never tested: the user picked it.
@@ -746,8 +751,10 @@ public:
 	// How many names in the list a candidate (pattern, useRegex) would exclude -- for the
 	// Directories panel's live preview, which tests a typed-but-unsaved pattern without touching
 	// the live filter. wxNOT_FOUND if the regex does not compile.
-	static int PreviewExcludeCount(
-		const wxString &patterns, bool useRegex, const wxArrayString &fileNames);
+	static int PreviewExcludeCount(const wxString &patterns,
+		bool useRegex,
+		const wxArrayString &fileNames,
+		bool excludeOffice = false);
 
 	// Version check
 
@@ -1166,6 +1173,8 @@ protected:
 	// flag, and the compiled filter derived from them.
 	static wxString s_ExcludeSharePatterns;
 	static bool s_ExcludeSharePatternsUseRegex;
+	static bool s_ExcludeOfficeDocuments;
+	static bool s_officeExclusionAvailable;
 	static CShareExcludeFilter s_ShareExcludeFilter;
 
 	// Version check

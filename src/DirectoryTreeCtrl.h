@@ -71,6 +71,8 @@ public:
 	bool NeedsRepaintFor(const PathList &explicitDirs, const PathList &recursiveDirs) const;
 
 	void Init();
+	// Adds an approved root without automatically sharing its files.
+	void AddFolder(const CPath &path);
 
 private:
 	void AddChildItem(wxTreeItemId hBranch, const CPath &item);
@@ -107,6 +109,9 @@ private:
 	// to find them.
 	void DelSharesUnder(const CPath &root);
 
+	void RefreshCheckboxes(wxTreeItemId item);
+	void OnCheckboxClick(wxMouseEvent &evt);
+	void OnCheckboxKey(wxTreeEvent &evt);
 	void OnItemExpanding(wxTreeEvent &evt);
 	void OnRButtonDown(wxTreeEvent &evt);
 	void OnItemActivated(wxTreeEvent &evt);

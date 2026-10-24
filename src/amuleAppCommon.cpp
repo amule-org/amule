@@ -25,6 +25,7 @@
 // Functions common to all three apps (amule, amuled, amulegui) but preprocessor-dependent (they
 // use theApp, thePrefs), so this file is compiled separately for each app.
 
+#include "FolderAccess.h"
 #include <signal.h> // Needed for raise(), SIGABRT
 #if defined(AMULE_DAEMON) && !defined(__WINDOWS__)
 #include <cerrno>
@@ -1191,11 +1192,46 @@ bool CamuleAppCommon::CheckMuleDirectory(
 			      "aMule cannot proceed. To fix this, you must set read/write/exec\n"
 			      "permissions for the folder '%s'") %
 		      desc % directory;
-	} else if (CPath::MakeDir(directory)) {
+	} else if ((!FolderAccess::IsSandboxed() || desc == "configuration" ||
+			   directory.StartsWith(CPath(thePrefs::GetConfigDir()))) &&
+		   CPath::MakeDir(directory)) {
 		outDir = directory;
 		return true;
 	} else {
 		msg << CFormat("Could not create the %s directory at '%s'.") % desc % directory;
+	}
+
+	if (FolderAccess::IsSandboxed() && (desc == "temp" || desc == "incoming")) {
+		msg << "\nYour existing download folder and its files have not been moved. "
+		       "Approve the same folder in the system chooser to restore access.";
+#ifndef AMULE_DAEMON
+		if (theApp->ShowAlert(msg, "Approve download folder", wxICON_INFORMATION | wxOK | wxCANCEL) ==
+			wxOK) {
+			const wxString approved = FolderAccess::Choose(nullptr,
+				"Approve write access to the existing download folder",
+				FolderAccess::HostPath(directory.GetRaw()),
+				true);
+			if (!approved.empty() && CPath(approved).IsDir(CPath::readwritable) &&
+				CPath(FolderAccess::HostPath(approved)) ==
+					CPath(FolderAccess::HostPath(directory.GetRaw()))) {
+				outDir = CPath(approved);
+				return true;
+			}
+			if (!approved.empty()) {
+				theApp->ShowAlert(
+					"The selected folder does not match the existing download folder. "
+					"The configured path and existing files have been preserved.",
+					"Download folder unchanged",
+					wxICON_ERROR | wxOK);
+			}
+		}
+#else
+		msg << "\nFor a headless core, grant this exact directory read/write access "
+		       "with Flatseal or flatpak override before restarting.";
+		theApp->ShowAlert(msg, "Download folder access required", wxICON_ERROR | wxOK);
+#endif
+		outDir = CPath();
+		return false;
 	}
 
 	const CPath fallback(alternative);

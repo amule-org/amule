@@ -118,6 +118,7 @@ const TABS = [
       { key: "follow_symlinks", type: "bool" },
       { key: "exclude_patterns", type: "text" },
       { key: "exclude_patterns_use_regex", type: "bool" },
+      { key: "exclude_office_documents", type: "bool" },
     ] },
   ] },
   { id: "servers", labelKey: "prefs_servers", cat: "servers", groups: [

@@ -419,7 +419,8 @@ void CSharedFileList::FindSharedFiles(const ReloadYieldCb &yieldCb, bool &aborte
 	for (uint32 i = 0; i < theApp->downloadqueue->GetFileCount(); ++i) {
 		CPartFile *file = theApp->downloadqueue->GetFileByIndex(i);
 
-		if (file->GetStatus(true) == PS_READY) {
+		if (file->GetStatus(true) == PS_READY &&
+			!thePrefs::IsShareExcluded(file->GetFileName().GetPrintable())) {
 			AddLogLineNS(
 				CFormat(_("Adding file %s to shares")) % file->GetFullName().GetPrintable());
 			AddFile(file);
@@ -705,6 +706,10 @@ CSharedFileList::AddPathResult CSharedFileList::AddPathToShares(
 
 bool CSharedFileList::AddFile(CKnownFile *pFile)
 {
+	if (thePrefs::IsShareExcluded(pFile->GetFileName().GetPrintable())) {
+		return false;
+	}
+
 	wxASSERT(pFile->GetHashCount() == pFile->GetED2KPartHashCount());
 
 	wxMutexLocker lock(list_mut);
@@ -904,6 +909,15 @@ bool CSharedFileList::RefreshMediaMetadata(const CMD4Hash &hash)
 
 void CSharedFileList::SafeAddKFile(CKnownFile *toadd, bool bOnlyAdd)
 {
+	if (thePrefs::IsShareExcluded(toadd->GetFileName().GetPrintable())) {
+		// A partfile can have been shared under an earlier name. Completion and rename
+		// must detach it as well as refusing a fresh insert.
+		if (GetFileByID(toadd->GetFileHash()) == toadd) {
+			RemoveFile(toadd);
+		}
+		return;
+	}
+
 	// Straight insert first. If the hash isn't already in m_Files_map
 	// this succeeds and fires the notifier as before.
 	if (AddFile(toadd)) {

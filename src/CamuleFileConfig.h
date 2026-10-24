@@ -22,8 +22,10 @@
 #define CAMULEFILECONFIG_H
 
 #include <wx/fileconf.h>
+#include <memory>
 
 #include "CCtypeAsciiScope.h"
+#include "FolderAccess.h"
 
 // wxFileConfig subclass that wraps every read / write / flush / path-navigating call with
 // CCtypeAsciiScope. amule.conf is parsed and written through this subclass exclusively (see
@@ -37,12 +39,38 @@
 class CamuleFileConfig : public wxFileConfig
 {
 public:
-	using wxFileConfig::wxFileConfig;
+	CamuleFileConfig(const wxString &appName = wxEmptyString,
+		const wxString &vendorName = wxEmptyString,
+		const wxString &local = wxEmptyString,
+		const wxString &global = wxEmptyString,
+		long style = wxCONFIG_USE_LOCAL_FILE | wxCONFIG_USE_GLOBAL_FILE,
+		const wxMBConv &conversion = wxConvAuto())
+	: wxFileConfig(appName, vendorName, local, global, style, conversion)
+	, m_profilePath(local)
+	, m_conversion(conversion.Clone())
+	{
+		if (FolderAccess::IsSandboxed()) {
+			DisableAutoSave();
+		}
+	}
+
+	~CamuleFileConfig() override
+	{
+		if (FolderAccess::IsSandboxed()) {
+			Flush();
+		}
+	}
 
 	bool Flush(bool bCurrentOnly = false) override
 	{
 		CCtypeAsciiScope scope;
-		return wxFileConfig::Flush(bCurrentOnly);
+		if (!FolderAccess::IsSandboxed()) {
+			return wxFileConfig::Flush(bCurrentOnly);
+		}
+		if (m_profilePath.empty()) {
+			return wxFileConfig::Flush(bCurrentOnly);
+		}
+		return FolderAccess::SaveConfig(*this, m_profilePath, *m_conversion);
 	}
 
 	bool HasGroup(const wxString &strName) const override
@@ -127,6 +155,10 @@ protected:
 		return wxFileConfig::DoWriteBinary(key, buf);
 	}
 #endif
+
+private:
+	wxString m_profilePath;
+	std::unique_ptr<wxMBConv> m_conversion;
 };
 
 #endif // CAMULEFILECONFIG_H

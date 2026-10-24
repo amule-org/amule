@@ -53,18 +53,10 @@ finish-args:
   - --share=ipc
   - --socket=fallback-x11
   - --socket=wayland
-  # Full home access. aMule is a P2P client where users mark arbitrary
-  # folders as shared (uploads) and pick arbitrary destinations for
-  # Incoming / Temp / completed-files dirs (downloads). Restricting to
-  # xdg-download alone makes the most common config — "share my Music
-  # folder, save downloads to ~/Movies" — silently fail. This matches
-  # qBittorrent / Transmission on Flathub for the same reason.
-  #
-  # Side benefit: aMule's config dir at ~/.aMule/ now lives on the host
-  # at the standard path (not ~/.var/app/...), so state survives reboots
-  # without needing --persist, and the Flatpak shares config with any
-  # non-Flatpak aMule install side by side.
-  - --filesystem=home
+  # Retain existing identities, settings and default Incoming / Temp files.
+  # Other folders must be approved with the desktop folder chooser.
+  # Sharing grants are read-only; download destinations request write access.
+  - --filesystem=~/.aMule:create
   # Wake-from-sleep (long-running daemon-ish behaviour).
   - --talk-name=org.freedesktop.PowerManagement.Inhibit
   # SNI (StatusNotifierItem) tray icon support. Flatpak denies all
@@ -298,10 +290,9 @@ modules:
   # lookup in client lists / search results / transfers). The matching
   # GeoLite2-Country.mmdb database is NOT shipped: MaxMind's licence
   # forbids redistribution, and the file changes monthly. Users drop
-  # their own copy into the Flatpak's per-app data dir at runtime,
-  # which lives at ~/.var/app/org.amule.aMule/data/.aMule/ on the
-  # host. Without the .mmdb the feature stays inert; the lib being
-  # built in is what allows the on-disk database to be picked up.
+  # their own copy into the retained ~/.aMule profile at runtime.
+  # Without the .mmdb the feature stays inert; the lib being built
+  # in is what allows the on-disk database to be picked up.
   - name: libmaxminddb
     buildsystem: autotools
     config-opts:

@@ -1064,6 +1064,7 @@ struct PreferencesSnapshot
 		bool follow_symlinks = false;
 		std::string exclude_patterns;
 		bool exclude_patterns_use_regex = false;
+		bool exclude_office_documents = true;
 	} directories;
 
 	// [Files] EC_TAG_PREFS_FILES

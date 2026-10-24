@@ -81,6 +81,7 @@ private:
 	// Re-theme on a live light/dark switch (Scintilla snapshots colours; it will
 	// not follow the appearance on its own).
 	void OnSysColourChanged(wxSysColourChangedEvent &event);
+	void OnPaint(wxPaintEvent &event);
 
 	// Scintilla style ids: 0 is the default text style, 1 adds bold.
 	enum

@@ -2821,6 +2821,13 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 	endif ()
 endif ()
 
+# Verify shutdown reaches the core before the text client exits.
+if (BUILD_AMULECMD AND Python3_Interpreter_FOUND)
+	add_test (NAME AmulecmdShutdownTest
+		COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/AmulecmdShutdownTest.py
+			$<TARGET_FILE:amulecmd>)
+endif ()
+
 # Exercise native scrolling/sizer behavior without starting the aMule application.
 # MuleUnit defines wxUSE_GUI=0, so this test owns a minimal wxApp instead.
 if (TARGET wxWidgets::CORE)
@@ -2999,6 +3006,46 @@ add_executable (RemoteDownloadEventsTest RemoteDownloadEventsTest.cpp)
 add_test (NAME RemoteDownloadEventsTest COMMAND RemoteDownloadEventsTest)
 target_include_directories (RemoteDownloadEventsTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries (RemoteDownloadEventsTest muleunit mulecommon)
+
+add_executable (FolderWriteSandboxTest
+	FolderWriteSandboxTest.cpp
+	${CMAKE_SOURCE_DIR}/src/FolderWriteSandbox.cpp
+)
+target_include_directories (FolderWriteSandboxTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
+add_test (NAME FolderWriteSandboxTest COMMAND FolderWriteSandboxTest)
+set_tests_properties (FolderWriteSandboxTest PROPERTIES SKIP_RETURN_CODE 77)
+
+if (GLIB_FOUND AND (BUILD_MONOLITHIC OR BUILD_REMOTEGUI) AND UNIX AND NOT APPLE)
+	add_executable (FolderAccessPortalDriver
+		FolderAccessPortalDriver.cpp
+		${CMAKE_SOURCE_DIR}/src/FolderAccess.cpp
+		${CMAKE_SOURCE_DIR}/src/FolderWriteSandbox.cpp
+	)
+	target_compile_definitions (FolderAccessPortalDriver PRIVATE CLIENT_GUI HAVE_GIO WXUSINGDLL)
+	target_include_directories (FolderAccessPortalDriver PRIVATE
+		${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include
+		${CMAKE_SOURCE_DIR}/src/libs ${CMAKE_BINARY_DIR}/src/libs ${GLIB_INCLUDE_DIRS})
+	target_link_libraries (FolderAccessPortalDriver PRIVATE mulecommon wxWidgets::CORE ${GLIB_LIBRARIES} ZLIB::ZLIB)
+	find_program (AMULE_DBUS_RUN_SESSION dbus-run-session)
+	find_program (AMULE_XVFB_RUN xvfb-run)
+	# GI is optional outside Linux GUI test hosts. Prefer the system Python, whose
+	# GI bindings match the installed GLib, rather than an unrelated virtualenv.
+	find_program (AMULE_GI_PYTHON NAMES python3 PATHS /usr/bin NO_DEFAULT_PATH)
+	if (AMULE_GI_PYTHON)
+		execute_process (COMMAND ${AMULE_GI_PYTHON} -c "import gi" RESULT_VARIABLE AMULE_HAS_GI)
+	endif()
+	if (AMULE_DBUS_RUN_SESSION AND AMULE_XVFB_RUN AND AMULE_GI_PYTHON AND AMULE_HAS_GI EQUAL 0)
+		add_test (NAME FolderAccessPortalTest COMMAND ${AMULE_DBUS_RUN_SESSION} --
+			${AMULE_XVFB_RUN} -a ${AMULE_GI_PYTHON} ${CMAKE_CURRENT_SOURCE_DIR}/FolderAccessPortalTest.py
+			$<TARGET_FILE:FolderAccessPortalDriver>)
+		set_tests_properties (FolderAccessPortalTest PROPERTIES TIMEOUT 90 LABELS "gui")
+	endif()
+endif()
+
+if (Python3_Interpreter_FOUND)
+	add_test (NAME FlatpakPermissionTest COMMAND ${Python3_EXECUTABLE}
+		${CMAKE_SOURCE_DIR}/packaging/linux/flatpak/test_permissions.py -v)
+endif()
 
 # Download block reservations: no peer objects or network state.
 add_executable (BlockReservationTest BlockReservationTest.cpp)

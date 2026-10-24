@@ -83,6 +83,7 @@
 #include "ClientList.h"
 #include "DirectoryTreeCtrl.h" // Needed for CDirectoryTreeCtrl
 #include "Preferences.h"
+#include "FolderAccess.h"
 #include "SharedDirsApplyTask.h" // Recursive-share expansion worker
 #include "muuli_wdr.h"
 #include "Logger.h"
@@ -210,6 +211,9 @@ wxBEGIN_EVENT_TABLE(PrefsUnifiedDlg, wxDialog)
 	EVT_BUTTON(IDC_MEDIAMETA_FFPROBEDETECT, PrefsUnifiedDlg::OnButtonMediaMetaDetect)
 	EVT_BUTTON(IDC_TWEAKS_RESET, PrefsUnifiedDlg::OnButtonTweaksReset)
 #ifndef CLIENT_GUI
+	EVT_TEXT_ENTER(IDC_APPROVED_FOLDER_PATH, PrefsUnifiedDlg::OnApproveFolder)
+	EVT_CHOICE(IDC_APPROVED_FOLDER_ROOT, PrefsUnifiedDlg::OnOptionalFolderRoot)
+	EVT_BUTTON(IDC_APPROVED_FOLDER_ADD, PrefsUnifiedDlg::OnApproveFolder)
 	EVT_BUTTON(IDC_EXCLUDE_SHARE_PREVIEW, PrefsUnifiedDlg::OnButtonExcludePreview)
 #endif
 
@@ -595,6 +599,7 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 	}
 
 #ifdef CLIENT_GUI
+	FindWindow(IDC_EXCLUDE_OFFICE_DOCUMENTS)->Show(thePrefs::OfficeExclusionAvailable());
 	// The shared-file exclusion preview counts against the core's in-memory shared list,
 	// which the remote GUI has no local access to. Remove the button and its info label
 	// here; the pattern/regex fields still work and sync to amuled over EC.
@@ -1228,8 +1233,9 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 	TransferFromWindow();
 
 	// Before the share commit below, whose reload must already use the new filter.
-	const bool excludeFilterChanged =
-		CfgChanged(IDC_EXCLUDE_SHARE_PATTERNS) || CfgChanged(IDC_EXCLUDE_SHARE_REGEX);
+	const bool excludeFilterChanged = CfgChanged(IDC_EXCLUDE_SHARE_PATTERNS) ||
+					  CfgChanged(IDC_EXCLUDE_SHARE_REGEX) ||
+					  CfgChanged(IDC_EXCLUDE_OFFICE_DOCUMENTS);
 	if (excludeFilterChanged) {
 		// Reject-on-apply: in regex mode an invalid expression leaves the filter disabled
 		// (fail-open, never exclude-all), so tell the user rather than silently sharing
@@ -2108,13 +2114,46 @@ void PrefsUnifiedDlg::OnButtonDir(wxCommandEvent &event)
 	type = CFormat(_("Choose a folder for %s")) % type;
 	wxTextCtrl *widget = CastChild(id, wxTextCtrl);
 	wxString dir = widget->GetValue();
-	wxString str = wxDirSelector(type, dir, wxDD_DEFAULT_STYLE, wxDefaultPosition, this);
+	wxString str = FolderAccess::Choose(this, type, dir, true);
 	if (!str.IsEmpty()) {
 		widget->SetValue(str);
 	}
 }
 
 #ifndef CLIENT_GUI
+void PrefsUnifiedDlg::OnOptionalFolderRoot(wxCommandEvent &event)
+{
+	wxString path;
+	switch (event.GetSelection()) {
+	case 1:
+		path = wxGetHomeDir();
+		break;
+	case 2:
+		path = "/media";
+		break;
+	case 3:
+		path = "/mnt";
+		break;
+	case 4:
+		path = "/run/media";
+		break;
+	default:
+		break;
+	}
+	CastChild(IDC_APPROVED_FOLDER_PATH, wxTextCtrl)->SetValue(path);
+}
+
+void PrefsUnifiedDlg::OnApproveFolder(wxCommandEvent &WXUNUSED(event))
+{
+	wxTextCtrl *path = CastChild(IDC_APPROVED_FOLDER_PATH, wxTextCtrl);
+	const wxString approved = FolderAccess::Choose(
+		this, _("Approve read-only folder access"), path->GetValue().Strip(wxString::both), false);
+	if (!approved.empty()) {
+		m_ShareSelector->AddFolder(CPath(approved));
+		path->Clear();
+	}
+}
+
 void PrefsUnifiedDlg::OnButtonExcludePreview(wxCommandEvent &WXUNUSED(event))
 {
 	wxStaticText *info = CastChild(IDC_EXCLUDE_SHARE_PREVIEW_INFO, wxStaticText);
@@ -2129,7 +2168,8 @@ void PrefsUnifiedDlg::OnButtonExcludePreview(wxCommandEvent &WXUNUSED(event))
 	bool truncated = false;
 	theApp->sharedfiles->GetShareCandidateNames(names, truncated);
 
-	const int excluded = thePrefs::PreviewExcludeCount(patterns, useRegex, names);
+	const int excluded = thePrefs::PreviewExcludeCount(
+		patterns, useRegex, names, CastChild(IDC_EXCLUDE_OFFICE_DOCUMENTS, wxCheckBox)->GetValue());
 	if (excluded == wxNOT_FOUND) {
 		info->SetLabel(_("Invalid regular expression"));
 	} else {

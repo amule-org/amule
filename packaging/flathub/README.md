@@ -15,6 +15,9 @@ packaging build. That path uses
 `branch: master` for aMule so dev / CI Flatpak builds always pick up
 the current tip without manual updates.
 
+Both manifests use explicit folder approval and preserve the existing `~/.aMule`
+profile. See [folder access and existing profiles](../linux/flatpak/README.md#folder-access-and-existing-profiles).
+
 ## Why two manifests
 
 Flathub's submission policy forbids mutable refs (branch names) and
@@ -55,7 +58,7 @@ archive + sha256 pinned).
 4. Open a PR against `flathub/flathub:new-pr` titled
    `aMule (org.amule.aMule)`.
 5. A Flathub volunteer reviewer will look at the manifest, may ask for
-   changes (commonly: justification for `--filesystem=host`, app-id
+   changes (commonly: justification for the retained profile permission, app-id
    domain ownership confirmation), and merge when satisfied.
 6. Once merged, Flathub creates a dedicated repo at
    `github.com/flathub/org.amule.aMule` and grants the submitter admin
