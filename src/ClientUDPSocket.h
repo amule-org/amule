@@ -29,7 +29,9 @@
 #include "MuleUDPSocket.h"
 #include "ReservedProtocolFrames.h" // Needed for CFrameLogThrottle
 
+#include <array>
 #include <memory>
+#include <cstdint>
 
 #if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
 #include "LugdunumNatTraversal.h"
@@ -44,6 +46,8 @@
 #include "QuicNgtcp2Adapter.h"
 #include "NatRendezvousPolicy.h"
 #include "QuicStreamAcceptor.h"
+#include "QuicCapsRequestLedger.h"
+#include "QuicCapabilityCache.h"
 #endif
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 namespace LugdunumNatTraversal
@@ -81,6 +85,15 @@ public:
 	//! datagram. Without this a connection that stops receiving ACKs would never retransmit
 	//! and never time out.
 	void TickQuic();
+	bool SendQuicCapsRequest(const std::array<uint8_t, 16> &peer,
+		uint32_t ipv4,
+		uint16_t udpPort,
+		const std::array<uint8_t, 16> &fileHash);
+	//! Sends CAPS for an unknown peer, but only dials QUIC for a cached compatible peer.
+	bool TryQuicDial(const std::array<uint8_t, 16> &peer,
+		uint32_t ipv4,
+		uint16_t udpPort,
+		const std::array<uint8_t, 16> &fileHash);
 #endif
 
 protected:
@@ -112,6 +125,8 @@ private:
 	CQuicContext m_quic;
 	CQuicStreamAcceptor m_quicAcceptor;
 	NatRendezvous::CRequesterLimiter m_capsAckLimiter;
+	CQuicCapsRequestLedger m_capsRequestLedger{ 256 };
+	CQuicCapabilityCache m_capabilityCache{ 256 };
 #endif
 	void OnPacketReceived(
 		const CNetworkAddress &address, uint16 port, uint8_t *buffer, size_t length) override;

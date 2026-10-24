@@ -288,6 +288,18 @@ target_include_directories (SecIdentTest
 )
 target_link_libraries (SecIdentTest muleunit mulecommon)
 
+# Pure bounded EAQC request ledger, keyed by the confirmed wire fields.
+add_executable (QuicCapsRequestLedgerTest QuicCapsRequestLedgerTest.cpp)
+add_test (NAME QuicCapsRequestLedgerTest COMMAND QuicCapsRequestLedgerTest)
+target_include_directories (QuicCapsRequestLedgerTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries (QuicCapsRequestLedgerTest muleunit mulecommon)
+
+# Pure QUIC capability state, keyed by authenticated peer identity.
+add_executable (QuicCapabilityCacheTest QuicCapabilityCacheTest.cpp)
+add_test (NAME QuicCapabilityCacheTest COMMAND QuicCapabilityCacheTest)
+target_include_directories (QuicCapabilityCacheTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries (QuicCapabilityCacheTest muleunit mulecommon)
+
 # Pure QUIC NAT-T wire identity and peer proof helpers.
 add_executable (QuicNattProtocolTest QuicNattProtocolTest.cpp)
 add_test (NAME QuicNattProtocolTest COMMAND QuicNattProtocolTest)

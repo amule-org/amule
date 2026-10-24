@@ -36,6 +36,12 @@ static constexpr char QUIC_NATT_ALPN[] = "ed2k-ai-natt-quic-v1";
 static constexpr size_t EAQN1_PROOF_SIZE = 37;
 static constexpr size_t EAQC_FRAME_SIZE = 54;
 
+// EAQC option bits are capabilities, not a closed enum: peers may add bits in
+// future revisions and those bits must survive decoding.
+static constexpr uint8_t EAQC_CAP_DIRECT_CALLBACK = 0x08;
+static constexpr uint8_t EAQC_CAP_QUIC = 0x40;
+static constexpr uint8_t EAQC_CAP_UTP = 0x80;
+
 struct EaqcFrame
 {
 	uint8_t options = 0;
@@ -64,11 +70,13 @@ inline std::array<uint8_t, EAQC_FRAME_SIZE> EncodeEaqcFrame(uint8_t options,
 
 inline std::array<uint8_t, EAQC_FRAME_SIZE> BuildEaqcCapsAck(const EaqcFrame &request,
 	const std::array<uint8_t, 16> &ourUserHash,
+	bool quicAvailable,
 	bool directCallback,
 	bool utpAvailable)
 {
-	const auto options =
-		static_cast<uint8_t>(0x40 | (directCallback ? 0x08 : 0x00) | (utpAvailable ? 0x80 : 0x00));
+	const auto options = static_cast<uint8_t>((quicAvailable ? EAQC_CAP_QUIC : 0) |
+						  (directCallback ? EAQC_CAP_DIRECT_CALLBACK : 0) |
+						  (utpAvailable ? EAQC_CAP_UTP : 0));
 	return EncodeEaqcFrame(options, ourUserHash, request.senderUserHash, request.fileHash);
 }
 

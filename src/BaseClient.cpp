@@ -81,7 +81,10 @@
 #include "FriendList.h"      // Needed for CFriendList
 #include "Statistics.h"      // Needed for theStats
 #include "ClientUDPSocket.h"
-#include "AddressFamilyPolicy.h" // Needed for AddressFamilyPolicy::Permits
+#include "AddressFamilyPolicy.h"
+#ifdef AMULE_QUIC_TRANSPORT
+#include <array>
+#endif // Needed for AddressFamilyPolicy::Permits
 #ifdef ENABLE_IPV6
 #include "AdvertisedIPv6.h"         // Needed for AdvertisedIPv6ForPeers
 #include "IPv6ChangeNotification.h" // Needed for OP_CHANGE_CLIENT_IP policy
@@ -1995,6 +1998,22 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 			}
 		}
 	}
+
+#ifdef AMULE_QUIC_TRANSPORT
+	// QUIC is deliberately an opportunistic overlay: probing an unknown peer never delays the
+	// established TCP/uTP path, while only a positively cached capability may replace it.
+	if (GetConnectIP() != 0 && GetUDPPort() != 0 && HasValidHash() && theApp->clientudp != nullptr) {
+		std::array<uint8_t, 16> fileHash{};
+		if (m_reqfile != nullptr) {
+			std::copy_n(m_reqfile->GetFileHash().GetHash(), fileHash.size(), fileHash.begin());
+		}
+		std::array<uint8_t, 16> peerHash{};
+		std::copy_n(GetUserHash().GetHash(), peerHash.size(), peerHash.begin());
+		if (theApp->clientudp->TryQuicDial(peerHash, GetConnectIP(), GetUDPPort(), fileHash)) {
+			return EContactResult::Contacting;
+		}
+	}
+#endif
 
 	if (!m_socket || !m_socket->IsConnected()) {
 		if (m_socket) {
