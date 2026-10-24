@@ -23,9 +23,11 @@
 
 #include <muleunit/test.h>
 #include <QuicContext.h>
+#include <QuicCapabilityCache.h>
 #include <NetworkAddress.h>
 
 #include <algorithm>
+#include <array>
 #include <memory>
 #include <vector>
 
@@ -42,6 +44,7 @@ std::vector<uint8_t> Initial(uint8_t cid, size_t length = CQuicContext::kMinInit
 }
 
 const CNetworkAddress kPeer = CNetworkAddress::FromString("192.0.2.1");
+const std::array<uint8_t, 16> kPeerIdentity = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
 
 CNetworkAddress PeerNumber(unsigned n)
 {
@@ -115,6 +118,8 @@ struct FakeFactory : IQuicConnectionFactory
 	CNetworkAddress lastAddress;
 	uint16_t lastPort = 0;
 	std::string lastCid;
+	unsigned outboundCalls = 0;
+	std::array<uint8_t, 16> lastExpectedIdentity{};
 
 	std::unique_ptr<IQuicConnection> CreateInbound(const uint8_t *,
 		size_t,
@@ -136,8 +141,61 @@ struct FakeFactory : IQuicConnectionFactory
 		created.push_back(next.get());
 		return std::move(next);
 	}
+
+	std::unique_ptr<IQuicConnection> CreateOutbound(const CNetworkAddress &address,
+		uint16_t port,
+		const std::array<uint8_t, 16> &expectedIdentity,
+		uint64_t) override
+	{
+		++outboundCalls;
+		lastAddress = address;
+		lastPort = port;
+		lastExpectedIdentity = expectedIdentity;
+		if (!next) {
+			return nullptr;
+		}
+		created.push_back(next.get());
+		return std::move(next);
+	}
 };
 } // namespace
+
+TEST(QuicContext, CapabilityPolicyOnlyAllowsCachedCompatiblePeers)
+{
+	CQuicCapabilityCache cache(8);
+	const auto peer = kPeerIdentity;
+	ASSERT_EQUALS((int)QuicCapabilityState::Unknown, (int)cache.Lookup(peer, 0).state);
+	cache.Remember(peer, 0, 1, 1000);
+	ASSERT_EQUALS((int)QuicCapabilityState::Incompatible, (int)cache.Lookup(peer, 1).state);
+	cache.Remember(peer, QuicNatt::EAQC_CAP_QUIC, 2, 1000);
+	ASSERT_EQUALS((int)QuicCapabilityState::Compatible, (int)cache.Lookup(peer, 2).state);
+	cache.RememberFailure(peer, 3, 1000);
+	ASSERT_EQUALS((int)QuicCapabilityState::Cooldown, (int)cache.Lookup(peer, 3).state);
+}
+
+TEST(QuicContext, CapabilityProbeExpiresAndReturnsToUnknown)
+{
+	CQuicCapabilityCache cache(8);
+	cache.Remember(kPeerIdentity, QuicNatt::EAQC_CAP_QUIC, 10, 5);
+	ASSERT_EQUALS((int)QuicCapabilityState::Compatible, (int)cache.Lookup(kPeerIdentity, 14).state);
+	ASSERT_EQUALS((int)QuicCapabilityState::Unknown, (int)cache.Lookup(kPeerIdentity, 15).state);
+}
+
+TEST(QuicContext, OutboundDialCreatesOwnedConnection)
+{
+	FakeFactory factory;
+	factory.next = std::make_unique<FakeConnection>();
+	CQuicContext context(&factory);
+
+	ASSERT_TRUE(context.Dial(kPeer, 4672, kPeerIdentity, 0));
+	ASSERT_EQUALS(1u, factory.outboundCalls);
+	ASSERT_TRUE(factory.lastAddress == kPeer);
+	ASSERT_EQUALS(4672u, factory.lastPort);
+	for (size_t i = 0; i < kPeerIdentity.size(); ++i) {
+		ASSERT_EQUALS((int)kPeerIdentity[i], (int)factory.lastExpectedIdentity[i]);
+	}
+	ASSERT_EQUALS(1u, context.ConnectionCount());
+}
 
 TEST(QuicContext, DeclinesUntilConnectionOwnerExists)
 {

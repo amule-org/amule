@@ -27,6 +27,7 @@
 #include "NatRendezvousPolicy.h"
 #include "NetworkAddress.h"
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <map>
@@ -78,6 +79,13 @@ public:
 		uint16_t,
 		const std::string &,
 		uint64_t nowMs) = 0;
+	//! Creates an initiated connection whose EAQN1 proof must authenticate the
+	//! expected peer identity learned from its ed2k hello.
+	virtual std::unique_ptr<IQuicConnection> CreateOutbound(
+		const CNetworkAddress &, uint16_t, const std::array<uint8_t, 16> &, uint64_t)
+	{
+		return nullptr;
+	}
 };
 
 class CQuicContext final
@@ -101,6 +109,12 @@ public:
 		size_t length,
 		const CNetworkAddress &address,
 		uint16_t port,
+		uint64_t nowMs);
+	//! Starts one authenticated outbound connection. The peer identity is only
+	//! the one learned from its ed2k hello; endpoint data never substitutes it.
+	bool Dial(const CNetworkAddress &address,
+		uint16_t port,
+		const std::array<uint8_t, 16> &expectedPeerIdentity,
 		uint64_t nowMs);
 	//! Services every live connection's timers. Must be called periodically regardless of
 	//! whether any datagram has arrived -- this is what lets a connection recover from loss

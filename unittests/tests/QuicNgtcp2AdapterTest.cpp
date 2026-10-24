@@ -87,6 +87,20 @@ struct Engine : IQuicNgtcp2Engine
 		++created;
 		return create ? &token : nullptr;
 	}
+	unsigned clientCreated = 0;
+	std::array<uint8_t, 16> lastExpectedIdentity{};
+	Handle CreateClient(const CQuicTlsPolicy &,
+		const CNetworkAddress &address,
+		uint16_t port,
+		const std::array<uint8_t, 16> &expectedIdentity,
+		uint64_t) override
+	{
+		++clientCreated;
+		lastAddress = address;
+		lastPort = port;
+		lastExpectedIdentity = expectedIdentity;
+		return create ? &token : nullptr;
+	}
 	bool Read(Handle handle, const uint8_t *, size_t, uint64_t) override
 	{
 		if (handle == nullptr) {
@@ -148,6 +162,14 @@ struct Engine : IQuicNgtcp2Engine
 	uint64_t GetAdvertisedReadWindow(Handle handle) const override { return handle != nullptr ? 1u : 0u; }
 	bool hasOpenStream = false;
 	bool HasOpenStream(Handle handle) const override { return handle != nullptr && hasOpenStream; }
+	bool OpenLocalBidiStream(Handle handle) override
+	{
+		if (handle == nullptr || hasOpenStream) {
+			return false;
+		}
+		hasOpenStream = true;
+		return true;
+	}
 	CQuicSocketTransport *attachedTransport = nullptr;
 	void AttachTransport(Handle handle, CQuicSocketTransport *transport) override
 	{
@@ -283,14 +305,104 @@ TEST(QuicNgtcp2Adapter, MissingDependenciesFailClosed)
 	CQuicTlsPolicy noCredentials = policy;
 	noCredentials.credentials = nullptr;
 	ASSERT_TRUE(!CQuicNgtcp2Factory(noCredentials, sink, engine, kTestIdentity)
-			     .CreateInbound(p.data(), p.size(), kPeer, 2, kDcid, 0));
+			.CreateInbound(p.data(), p.size(), kPeer, 2, kDcid, 0));
 	ASSERT_EQUALS(0u, engine->created);
 
 	ASSERT_TRUE(!CQuicNgtcp2Factory(policy, nullptr, engine, kTestIdentity)
-			     .CreateInbound(p.data(), p.size(), kPeer, 2, kDcid, 0));
+			.CreateInbound(p.data(), p.size(), kPeer, 2, kDcid, 0));
 	ASSERT_TRUE(!CQuicNgtcp2Factory(policy, sink, nullptr, kTestIdentity)
-			     .CreateInbound(p.data(), p.size(), kPeer, 2, kDcid, 0));
+			.CreateInbound(p.data(), p.size(), kPeer, 2, kDcid, 0));
 	ASSERT_EQUALS(0u, engine->created);
+}
+
+TEST(QuicNgtcp2Adapter, OutboundFactoryCreatesAnAuthenticatedClient)
+{
+	Session s;
+	Credentials c;
+	Verifier v;
+	auto sink = std::make_shared<Sink>();
+	auto engine = std::make_shared<Engine>();
+	CQuicNgtcp2Factory factory(Policy(s, c, v), sink, engine, kTestIdentity);
+
+	auto connection = factory.CreateOutbound(kPeer, 4672, kTestPeerIdentity, 0);
+	ASSERT_TRUE(connection != nullptr);
+	ASSERT_EQUALS(1u, engine->clientCreated);
+	ASSERT_TRUE(engine->lastAddress == kPeer);
+	ASSERT_EQUALS(4672u, engine->lastPort);
+	for (size_t i = 0; i < kTestPeerIdentity.size(); ++i) {
+		ASSERT_EQUALS((int)kTestPeerIdentity[i], (int)engine->lastExpectedIdentity[i]);
+	}
+}
+
+TEST(QuicNgtcp2Adapter, OutboundProofIsNotResentWhilePeerProofIsPending)
+{
+	Session s;
+	Credentials c;
+	Verifier v;
+	auto sink = std::make_shared<Sink>();
+	auto engine = std::make_shared<Engine>();
+	CQuicNgtcp2Factory factory(Policy(s, c, v), sink, engine, kTestIdentity);
+	StubAcceptor acceptor;
+	factory.SetAcceptor(&acceptor);
+	auto connection = factory.CreateOutbound(kPeer, 4672, kTestPeerIdentity, 0);
+	ASSERT_TRUE(connection != nullptr);
+	engine->hasOpenStream = true;
+
+	ASSERT_TRUE(connection->ProcessDatagram(Initial().data(), Initial().size(), 0));
+	ASSERT_EQUALS(1u, engine->writeStreamDataCalls);
+	connection->Tick(1);
+	connection->Tick(2);
+	ASSERT_EQUALS(1u, engine->writeStreamDataCalls);
+	ASSERT_TRUE(acceptor.accepted == nullptr);
+
+	const auto matchingProof = QuicNatt::BuildEaqn1Proof(kTestPeerIdentity, &kTestIdentity);
+	engine->streamData.assign(matchingProof.begin(), matchingProof.end());
+	connection->Tick(3);
+	ASSERT_TRUE(!connection->IsClosed());
+	ASSERT_TRUE(acceptor.accepted != nullptr);
+	ASSERT_EQUALS(1u, engine->writeStreamDataCalls);
+	acceptor.accepted.reset();
+}
+
+TEST(QuicNgtcp2Adapter, OutboundMatchingProofIsAccepted)
+{
+	Session s;
+	Credentials c;
+	Verifier v;
+	auto sink = std::make_shared<Sink>();
+	auto engine = std::make_shared<Engine>();
+	CQuicNgtcp2Factory factory(Policy(s, c, v), sink, engine, kTestIdentity);
+	StubAcceptor acceptor;
+	factory.SetAcceptor(&acceptor);
+	auto connection = factory.CreateOutbound(kPeer, 4672, kTestPeerIdentity, 0);
+	ASSERT_TRUE(connection != nullptr);
+	const auto matchingProof = QuicNatt::BuildEaqn1Proof(kTestPeerIdentity, &kTestIdentity);
+	engine->streamData.assign(matchingProof.begin(), matchingProof.end());
+	engine->hasOpenStream = true;
+	ASSERT_TRUE(connection->ProcessDatagram(Initial().data(), Initial().size(), 0));
+	ASSERT_TRUE(!connection->IsClosed());
+	ASSERT_TRUE(acceptor.accepted != nullptr);
+	acceptor.accepted.reset();
+}
+
+TEST(QuicNgtcp2Adapter, OutboundMismatchingProofIsRejectedBeforeAcceptance)
+{
+	Session s;
+	Credentials c;
+	Verifier v;
+	auto sink = std::make_shared<Sink>();
+	auto engine = std::make_shared<Engine>();
+	CQuicNgtcp2Factory factory(Policy(s, c, v), sink, engine, kTestIdentity);
+	StubAcceptor acceptor;
+	factory.SetAcceptor(&acceptor);
+	auto connection = factory.CreateOutbound(kPeer, 4672, kTestPeerIdentity, 0);
+	ASSERT_TRUE(connection != nullptr);
+	const auto mismatchingProof = QuicNatt::BuildEaqn1Proof(kTestIdentity, &kTestIdentity);
+	engine->streamData.assign(mismatchingProof.begin(), mismatchingProof.end());
+	engine->hasOpenStream = true;
+	ASSERT_TRUE(connection->ProcessDatagram(Initial().data(), Initial().size(), 0));
+	ASSERT_TRUE(connection->IsClosed());
+	ASSERT_TRUE(acceptor.accepted == nullptr);
 }
 
 TEST(QuicNgtcp2Adapter, InitialMetadataIsCaptured)

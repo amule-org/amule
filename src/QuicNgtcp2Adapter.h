@@ -70,6 +70,13 @@ public:
 		uint16_t,
 		const CQuicInitialMetadata &,
 		uint64_t nowMs) = 0;
+	//! Creates an outbound TLS 1.3/ngtcp2 client connection to an authenticated
+	//! peer. The identity comes from its ed2k hello, never from its endpoint.
+	virtual Handle CreateClient(const CQuicTlsPolicy &,
+		const CNetworkAddress &,
+		uint16_t,
+		const std::array<uint8_t, 16> &expectedPeerIdentity,
+		uint64_t nowMs) = 0;
 	//! @p nowMs is the same monotonic millisecond tick CQuicContext::ProcessDatagram() received.
 	virtual bool Read(Handle, const uint8_t *, size_t, uint64_t nowMs) = 0;
 	virtual bool Flush(
@@ -97,6 +104,9 @@ public:
 	//! True once the peer has opened its one stream (QuicSocketTransport.h). The point at which
 	//! a connection has something worth handing to the rest of aMule.
 	virtual bool HasOpenStream(Handle) const = 0;
+	//! Opens the single local bidirectional stream used by an outbound authenticated dial.
+	//! Inbound connections never call this operation; their peer stream remains the admission trigger.
+	virtual bool OpenLocalBidiStream(Handle) = 0;
 	//! From this call on, new stream bytes go straight to @p transport (still non-owning: the
 	//! caller keeps it alive) instead of being buffered for DrainStreamData(). Whatever
 	//! DrainStreamData() had not yet returned is not retroactively delivered -- the caller must
@@ -174,6 +184,10 @@ public:
 		const CNetworkAddress &,
 		uint16_t,
 		const std::string &,
+		uint64_t nowMs) override;
+	std::unique_ptr<IQuicConnection> CreateOutbound(const CNetworkAddress &,
+		uint16_t,
+		const std::array<uint8_t, 16> &expectedPeerIdentity,
 		uint64_t nowMs) override;
 
 private:

@@ -167,19 +167,21 @@ TEST(QuicNattProtocol, EaqcCapsAckEchoesRequestAndAdvertisesQuic)
 	const auto sender = Hash(33);
 	const auto file = Hash(65);
 	EaqcFrame request{ 0, sender, local, file };
-	const auto ack = BuildEaqcCapsAck(request, local, true, false);
+	const auto ack = BuildEaqcCapsAck(request, local, true, true, false);
 	EaqcFrame decoded{};
 	ASSERT_TRUE(DecodeEaqcFrame(ack.data(), ack.size(), sender, decoded));
-	ASSERT_EQUALS(0x48, ack[5]);
+	ASSERT_EQUALS(EAQC_CAP_QUIC | EAQC_CAP_DIRECT_CALLBACK, ack[5]);
 	ASSERT_TRUE(decoded.senderUserHash == local);
 	ASSERT_TRUE(decoded.expectedPeerHash == sender);
 	ASSERT_TRUE(decoded.fileHash == file);
-	const auto noCallback = BuildEaqcCapsAck(request, local, false, false);
-	ASSERT_EQUALS(0x40, noCallback[5]);
-	const auto withUtp = BuildEaqcCapsAck(request, local, false, true);
-	ASSERT_EQUALS(0xC0, withUtp[5]);
-	const auto everything = BuildEaqcCapsAck(request, local, true, true);
-	ASSERT_EQUALS(0xC8, everything[5]);
+	const auto noCallback = BuildEaqcCapsAck(request, local, true, false, false);
+	ASSERT_EQUALS(EAQC_CAP_QUIC, noCallback[5]);
+	const auto withUtp = BuildEaqcCapsAck(request, local, false, false, true);
+	ASSERT_EQUALS(EAQC_CAP_UTP, withUtp[5]);
+	const auto everything = BuildEaqcCapsAck(request, local, true, true, true);
+	ASSERT_EQUALS(EAQC_CAP_QUIC | EAQC_CAP_DIRECT_CALLBACK | EAQC_CAP_UTP, everything[5]);
+	const auto noQuic = BuildEaqcCapsAck(request, local, false, true, true);
+	ASSERT_EQUALS(EAQC_CAP_DIRECT_CALLBACK | EAQC_CAP_UTP, noQuic[5]);
 }
 
 TEST(QuicNattProtocol, EaqcCodecValidatesLengthAndIdentity)
@@ -203,6 +205,8 @@ TEST(QuicNattProtocol, EaqcCodecValidatesLengthAndIdentity)
 	ASSERT_FALSE(DecodeEaqcFrame(bad.data(), bad.size(), local, decoded));
 	const auto mismatch = EncodeEaqcFrame(0, sender, Hash(90), file);
 	ASSERT_FALSE(DecodeEaqcFrame(mismatch.data(), mismatch.size(), local, decoded));
+	const auto unknownBits = EncodeEaqcFrame(0x01, sender, local, file);
+	ASSERT_TRUE(DecodeEaqcFrame(unknownBits.data(), unknownBits.size(), local, decoded));
 }
 
 TEST(QuicNattProtocol, AlpnRequiresExactBytesAndLength)
