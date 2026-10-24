@@ -3177,3 +3177,8 @@ if (TARGET wxWidgets::CORE)
 	set_tests_properties (BandwidthRateInputEnglishTest BandwidthRateInputItalianTest
 		PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 60)
 endif()
+
+add_executable (WriteBufferBudgetTest WriteBufferBudgetTest.cpp)
+add_test (NAME WriteBufferBudgetTest COMMAND WriteBufferBudgetTest)
+target_include_directories (WriteBufferBudgetTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries (WriteBufferBudgetTest muleunit mulecommon)
