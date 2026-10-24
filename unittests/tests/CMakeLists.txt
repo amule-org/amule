@@ -199,6 +199,17 @@ add_test (NAME ProtocolPeerIdentityTest COMMAND ProtocolPeerIdentityTest)
 target_include_directories (ProtocolPeerIdentityTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries (ProtocolPeerIdentityTest muleunit mulecommon)
 
+# Worker admission and mount lookup run without the application or real disks.
+add_executable (StorageReadPoolTest StorageReadPoolTest.cpp)
+add_test (NAME StorageReadPoolTest COMMAND StorageReadPoolTest)
+target_include_directories (StorageReadPoolTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries (StorageReadPoolTest muleunit mulecommon)
+
+add_executable (UploadStorageMapTest UploadStorageMapTest.cpp)
+add_test (NAME UploadStorageMapTest COMMAND UploadStorageMapTest)
+target_include_directories (UploadStorageMapTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries (UploadStorageMapTest muleunit mulecommon)
+
 # Per-socket refill thresholds use original payload, independent of statistics resets.
 add_executable (UploadRefillTest UploadRefillTest.cpp)
 add_test (NAME UploadRefillTest COMMAND UploadRefillTest)
@@ -2691,6 +2702,8 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 				${CMAKE_CURRENT_SOURCE_DIR}/AmuleApiRestartIntegrationTest.py $<TARGET_FILE:amuled>
 		)
 		if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+			add_library (UploadReadDelay MODULE UploadReadDelay.cpp)
+			target_link_libraries (UploadReadDelay ${CMAKE_DL_LIBS} ZLIB::ZLIB)
 			add_test (NAME DisplayRatesIntegrationTest
 				COMMAND ${Python3_EXECUTABLE} -u
 					${CMAKE_CURRENT_SOURCE_DIR}/DisplayRatesIntegrationTest.py $<TARGET_FILE:amuled>
@@ -2716,7 +2729,12 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 				COMMAND ${Python3_EXECUTABLE} -u
 					${CMAKE_CURRENT_SOURCE_DIR}/UploadRefillIntegrationTest.py
 					$<TARGET_FILE:amuled> --seconds 3
+					--storage-delay-fixture $<TARGET_FILE:UploadReadDelay>
 			)
+			if (NOT MMAP_SUPPORTED)
+				set_tests_properties (UploadRefillIntegrationTest PROPERTIES
+					ENVIRONMENT "AMULE_TEST_SKIP_MMAP=1")
+			endif()
 			add_test (NAME UploadRefillCompressedIntegrationTest
 				COMMAND ${Python3_EXECUTABLE} -u
 					${CMAKE_CURRENT_SOURCE_DIR}/UploadRefillIntegrationTest.py

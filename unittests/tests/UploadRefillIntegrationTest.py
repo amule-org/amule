@@ -249,7 +249,17 @@ if __name__ == '__main__':
     parser.add_argument('--rate', type=int, default=2560, help='upload cap in KiB/s')
     parser.add_argument('--compress', action='store_true')
     parser.add_argument('--pause-ms', type=float, default=0, help='delay each packet on first peer')
+    parser.add_argument('--storage-delay-fixture', help='also run controlled read-delay cases (Linux)')
     args = parser.parse_args()
     print(json.dumps(retry_port_collisions(
         run, str(Path(args.binary).resolve()), args.seconds, args.slots, args.rate,
         args.compress, args.pause_ms)))
+    if args.storage_delay_fixture:
+        from UploadStorageDelayIntegrationTest import run as run_storage_delay
+        for case in ('small', 'full', 'large', 'mixed'):
+            retry_port_collisions(run_storage_delay, str(Path(args.binary).resolve()),
+                                  str(Path(args.storage_delay_fixture).resolve()), case)
+        from UploadStoragePoolIntegrationTest import run as run_storage_pool
+        for stage in ('read', 'open', 'session', 'packet-session', 'heap-buffer', 'mapped-copy', 'mapped-fault', 'shutdown', 'fairness', 'discovery'):
+            retry_port_collisions(run_storage_pool, str(Path(args.binary).resolve()),
+                                  str(Path(args.storage_delay_fixture).resolve()), stage)

@@ -293,6 +293,7 @@ if (BUILD_DAEMON)
 	if (WIN32)
 		target_link_libraries (amuled
 			PRIVATE shlwapi.lib
+			PRIVATE mpr
 		)
 	endif()
 
@@ -413,6 +414,7 @@ if (BUILD_MONOLITHIC)
 	if (WIN32)
 		target_link_libraries (amule
 			PRIVATE shlwapi.lib
+			PRIVATE mpr
 		)
 
 		set_target_properties (amule PROPERTIES
