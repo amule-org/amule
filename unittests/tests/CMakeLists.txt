@@ -3155,3 +3155,13 @@ if (TARGET wxWidgets::CORE)
 	set_tests_properties (BandwidthRateInputEnglishTest BandwidthRateInputItalianTest
 		PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 60)
 endif()
+
+add_executable (ECSRPTest ECSRPTest.cpp ${CMAKE_SOURCE_DIR}/src/LoggerConsole.cpp)
+target_include_directories (ECSRPTest PRIVATE ${CMAKE_SOURCE_DIR}/src/libs ${CMAKE_BINARY_DIR}/src/libs ${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include ${CMAKE_SOURCE_DIR}/src/libs/ec/cpp)
+target_link_libraries (ECSRPTest PRIVATE ec mulecommon)
+add_test (NAME ECSRPTest COMMAND ECSRPTest)
+
+add_executable (ECSRPConfigTest ECSRPConfigTest.cpp ${CMAKE_SOURCE_DIR}/src/LoggerConsole.cpp)
+target_include_directories (ECSRPConfigTest PRIVATE ${CMAKE_SOURCE_DIR}/src/libs ${CMAKE_BINARY_DIR}/src/libs ${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include ${CMAKE_SOURCE_DIR}/src/libs/ec/cpp)
+target_link_libraries (ECSRPConfigTest PRIVATE ec mulecommon)
+add_test (NAME ECSRPConfigTest COMMAND ECSRPConfigTest)

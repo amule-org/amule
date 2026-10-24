@@ -76,6 +76,14 @@
 #include CRYPTO_HEADER(cpu.h)
 #endif
 
+// SRP arithmetic and password stretching are needed only by the EC verifier.
+#ifdef CRYPTOPP_INC_NEED_SRP
+#include CRYPTO_HEADER(integer.h)
+#include CRYPTO_HEADER(nbtheory.h)
+#include CRYPTO_HEADER(scrypt.h)
+#include CRYPTO_HEADER(hmac.h)
+#endif
+
 #include "WarningsPop.h"
 
 #endif /* CRYPTOPP_INC_H */

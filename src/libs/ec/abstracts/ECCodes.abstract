@@ -286,6 +286,13 @@ EC_TAG_CAN_CHAT_PEER_HASH                 0x0028
 EC_TAG_CAN_DELETE_COMPLETE                0x002B
 ## Optional child of EC_TAG_CONNSTATE: uint8, ED2K = bit 0, Kad = bit 1.
 EC_TAG_NETWORKS_ENABLED                   0x002C
+EC_TAG_SRP_A                              0x002D
+EC_TAG_SRP_B                              0x002E
+EC_TAG_SRP_PROFILE                        0x002F
+EC_TAG_SRP_SALT                           0x0030
+EC_TAG_SRP_CREDENTIAL                     0x0031
+EC_TAG_SRP_M1                             0x0032
+EC_TAG_SRP_M2                             0x0033
 
 
 EC_TAG_CLIENT_NAME                        0x0100
