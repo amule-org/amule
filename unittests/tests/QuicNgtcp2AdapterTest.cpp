@@ -305,13 +305,13 @@ TEST(QuicNgtcp2Adapter, MissingDependenciesFailClosed)
 	CQuicTlsPolicy noCredentials = policy;
 	noCredentials.credentials = nullptr;
 	ASSERT_TRUE(!CQuicNgtcp2Factory(noCredentials, sink, engine, kTestIdentity)
-			.CreateInbound(p.data(), p.size(), kPeer, 2, kDcid, 0));
+			     .CreateInbound(p.data(), p.size(), kPeer, 2, kDcid, 0));
 	ASSERT_EQUALS(0u, engine->created);
 
 	ASSERT_TRUE(!CQuicNgtcp2Factory(policy, nullptr, engine, kTestIdentity)
-			.CreateInbound(p.data(), p.size(), kPeer, 2, kDcid, 0));
+			     .CreateInbound(p.data(), p.size(), kPeer, 2, kDcid, 0));
 	ASSERT_TRUE(!CQuicNgtcp2Factory(policy, sink, nullptr, kTestIdentity)
-			.CreateInbound(p.data(), p.size(), kPeer, 2, kDcid, 0));
+			     .CreateInbound(p.data(), p.size(), kPeer, 2, kDcid, 0));
 	ASSERT_EQUALS(0u, engine->created);
 }
 
