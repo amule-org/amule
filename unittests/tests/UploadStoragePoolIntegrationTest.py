@@ -90,7 +90,7 @@ def run(binary, fixture, stage):
                         break
                     assert time.monotonic() < deadline, f'shares missing: {files}'
                     time.sleep(0.05)
-                bad_count = 1 if stage in ('session', 'packet-session', 'heap-buffer', 'mapped-copy', 'mapped-fault', 'shutdown', 'discovery') else (2 if stage == 'fairness' else 4)
+                bad_count = 1 if stage in ('session', 'packet-session', 'heap-buffer', 'mapped-copy', 'mapped-fault', 'shutdown', 'discovery', 'open-failure') else (2 if stage == 'fairness' else 4)
                 for index in range(bad_count):
                     peers.append(Peer(peer_port, index,
                                       files[slow_name if index == 0 else f'bad-{index}.bin'],
@@ -180,6 +180,20 @@ def run(binary, fixture, stage):
                     assert len(packed) == packed_size, 'compressed length differs'
                     assert zlib.decompress(packed) == bad_data[0][BLOCK:2 * BLOCK], 'upload data differs'
                     print('packet-session: slot reused while packing; old packets discarded, new payload verified')
+                    return
+                if stage == 'open-failure':
+                    # The request owns an uncached entry, but Open() never produces a handle.
+                    # Worker cleanup must not try to close that unopened CFile.
+                    (slow / slow_name).unlink()
+                    peers[0].request([(0, BLOCK)])
+                    deadline = time.monotonic() + 10
+                    while slow_name in shared(ec):
+                        assert proc.poll() is None and time.monotonic() < deadline, \
+                            'failed open was not completed'
+                    healthy.request([(0, BLOCK)])
+                    healthy.receive((0, BLOCK), healthy_data)
+                    assert proc.poll() is None, 'daemon exited while cleaning up a failed open'
+                    print('open-failure: unopened upload handle cleaned up; healthy peer continued')
                     return
                 expected = (1 << 64) - 1 if stage == 'open' else 0
                 peers[0].request([(0, BLOCK)])
@@ -279,7 +293,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('binary')
     parser.add_argument('fixture')
-    parser.add_argument('--stage', choices=('read', 'open', 'session', 'packet-session', 'heap-buffer', 'mapped-copy', 'mapped-fault', 'shutdown', 'fairness', 'discovery'))
+    parser.add_argument('--stage', choices=('read', 'open', 'session', 'packet-session', 'heap-buffer', 'mapped-copy', 'mapped-fault', 'shutdown', 'fairness', 'discovery', 'open-failure'))
     args = parser.parse_args()
-    for stage in ([args.stage] if args.stage else ('read', 'open', 'session', 'packet-session', 'heap-buffer', 'mapped-copy', 'mapped-fault', 'shutdown', 'fairness', 'discovery')):
+    for stage in ([args.stage] if args.stage else ('read', 'open', 'session', 'packet-session', 'heap-buffer', 'mapped-copy', 'mapped-fault', 'shutdown', 'fairness', 'discovery', 'open-failure')):
         retry_port_collisions(run, str(Path(args.binary).resolve()), str(Path(args.fixture).resolve()), stage)

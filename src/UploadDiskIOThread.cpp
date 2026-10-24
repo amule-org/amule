@@ -464,7 +464,10 @@ CUploadDiskIOThread::ReadResult CUploadDiskIOThread::ReadBlock(ReadRequest_Struc
 		~Cleanup()
 		{
 			req->ReleasePartFile();
-			if (!req->pFileStruct->cached || req->closeOnly) {
+			// Open can fail, and the stale-handle retry closes before throwing. In both
+			// cases this cleanup still owns the uncached entry, but no open handle.
+			if ((!req->pFileStruct->cached || req->closeOnly) &&
+				req->pFileStruct->file.IsOpened()) {
 				req->pFileStruct->file.Close();
 			}
 		}
