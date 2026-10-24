@@ -176,8 +176,8 @@ const wxChar *const kSearchTagMaxSize = wxT("search.max_size_bytes");
 const wxChar *const kSearchTagMinSourceCount = wxT("search.min_source_count");
 
 //! Trailing-block marker, written once after the 0x01 records when any search has recorded
-//! parameters. Trailing data with any other value means a layout this build does not know,
-//! and the file is rejected.
+//! parameters. Trailing data with any other value is a layout this build does not know; the
+//! searches already read are kept and only the unknown block is skipped.
 const uint32 kStoredSearchesParamsMarker = 0x534D5052; // "SMPR"
 
 //! Add a sparse tag. Zero and empty values are the defaults on read, so they are omitted.
@@ -478,36 +478,39 @@ std::vector<uint32_t> CSearchList::LoadSearches()
 
 		// Trailing start-parameter block, keyed by search id. Absent for a file a build
 		// that predates the block wrote: those searches restore without a recorded form.
-		// Trailing data without the marker is rejected like an unknown header, so a
-		// layout this build does not know is never half-read.
+		// A block with an unknown marker is a newer layout this build does not know; every
+		// search has parsed by now, so stop reading and keep them without forms instead of
+		// rejecting the file (which would lose the whole list on a downgrade's next save).
 		if (!file.Eof()) {
 			if (file.ReadUInt32() != kStoredSearchesParamsMarker) {
-				AddLogLineC(
-					_("WARNING: Stored search list corrupted, contains invalid header."));
-				return restored;
-			}
-			uint32 paramCount = file.ReadUInt32();
-			if (paramCount > MAX_STORED_SEARCHES * 2) {
-				AddLogLineC(
-					_("WARNING: Stored search list corrupted, contains invalid header."));
-				return restored;
-			}
-			for (uint32 i = 0; i < paramCount; ++i) {
-				const uint32 id = file.ReadUInt32();
-				LoadedSearch *entry = nullptr;
-				for (LoadedSearch &candidate : loaded) {
-					if (candidate.id == id) {
-						entry = &candidate;
-						break;
+				AddDebugLogLineN(logSearch,
+					CFormat("Ignoring unknown trailing block in %s: searches restore "
+						"without parameters") %
+						s_storedSearchesFilename);
+			} else {
+				uint32 paramCount = file.ReadUInt32();
+				if (paramCount > MAX_STORED_SEARCHES * 2) {
+					AddLogLineC(_("WARNING: Stored search list corrupted, contains "
+						      "invalid header."));
+					return restored;
+				}
+				for (uint32 i = 0; i < paramCount; ++i) {
+					const uint32 id = file.ReadUInt32();
+					LoadedSearch *entry = nullptr;
+					for (LoadedSearch &candidate : loaded) {
+						if (candidate.id == id) {
+							entry = &candidate;
+							break;
+						}
 					}
+					if (entry == nullptr) {
+						throw CInvalidPacket(CFormat("Parameter block references "
+									     "unknown search id %u") %
+								     id);
+					}
+					ReadSearchParams(file, entry->params);
+					entry->hasParams = true;
 				}
-				if (entry == nullptr) {
-					throw CInvalidPacket(
-						CFormat("Parameter block references unknown search id %u") %
-						id);
-				}
-				ReadSearchParams(file, entry->params);
-				entry->hasParams = true;
 			}
 		}
 	} catch (const CInvalidPacket &e) {

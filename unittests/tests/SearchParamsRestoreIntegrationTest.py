@@ -6,9 +6,9 @@
 The start parameters ride in a trailing block after the 0x01 records, keyed by search id, so a
 build that predates the block restores the searches and drops only the filters. The writer must
 emit exactly the filters a search started with (and omit the defaulted ones), the reader must
-accept every current tag plus unknown future ones, and a file without the block -- or a known
-tag of the wrong type, or a trailing block with an unknown marker -- must restore without
-parameters, or not at all.
+accept every current tag plus unknown future ones, a file without the block or a block with an
+unknown marker must restore the searches without parameters, and a known tag of the wrong type
+must reject the file outright.
 """
 from pathlib import Path
 import struct
@@ -276,13 +276,18 @@ def legacy_file(binary, root):
 
 
 def unknown_marker_file(binary, root):
-    """Trailing data with an unknown marker is rejected outright, never half-read."""
+    """Trailing data with an unknown marker restores the searches without forms."""
     (root / 'StoredSearches.met').write_bytes(stored_search([]) + struct.pack('<I', 0xDEADBEEF))
     (proc, ec), _ = boot(binary, root)
     try:
-        assert not search_list(ec), 'an unknown trailing marker must restore nothing'
+        fields = search_list(ec)[123]
+        assert C['EC_TAG_SEARCH_FILE_TYPE'] not in fields
+        assert C['EC_TAG_SEARCH_EXTENSION'] not in fields
+        assert C['EC_TAG_SEARCH_MIN_SIZE'] not in fields
+        assert C['EC_TAG_SEARCH_MAX_SIZE'] not in fields
+        assert C['EC_TAG_SEARCH_AVAILABILITY'] not in fields
         log = (root / 'logfile').read_text(errors='replace')
-        assert 'corrupted, contains invalid header' in log, log[-2000:]
+        assert 'corrupted, contains invalid header' not in log, log[-2000:]
     finally:
         ec.sock.close()
         stop_daemon(proc)
@@ -302,7 +307,7 @@ def main():
                 phase(binary, root)
     retry_port_collisions(attempt)
     print('PASS: search start parameters round-trip, current-version restore, '
-          'corruption rejection, legacy restore, and unknown-marker rejection')
+          'corruption rejection, legacy restore, and unknown-marker restore')
 
 
 if __name__ == '__main__':
