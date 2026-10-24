@@ -1038,6 +1038,7 @@ private:
 	bool m_bUDPPending;
 	bool m_bHashsetRequested;
 
+	bool m_writeBufferBlocked = false;
 	std::list<Pending_Block_Struct *> m_PendingBlocks_list;
 	std::list<Requested_Block_Struct *> m_DownloadBlocks_list;
 

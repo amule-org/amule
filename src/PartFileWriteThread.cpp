@@ -34,9 +34,43 @@
 
 #include <map>
 #include <set>
+#include <wx/filefn.h>
+#ifdef __WXMSW__
+#include <windows.h>
+#endif
 
 namespace
 {
+// Run provider queries only on the writer. Resolve the actual directory rather
+// than its spelling, so symlinks/bind mounts and Windows volume aliases share
+// credits. Failed discovery stays in the conservative unknown group.
+void IdentifyWriteVolume(const CPath &dir)
+{
+	std::string volume;
+#ifdef __WXMSW__
+	HANDLE handle = CreateFileW(dir.GetRaw().wc_str(),
+		0,
+		FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+		nullptr,
+		OPEN_EXISTING,
+		FILE_FLAG_BACKUP_SEMANTICS,
+		nullptr);
+	if (handle != INVALID_HANDLE_VALUE) {
+		BY_HANDLE_FILE_INFORMATION info{};
+		if (GetFileInformationByHandle(handle, &info)) {
+			volume = "device:" + std::to_string(info.dwVolumeSerialNumber);
+		}
+		CloseHandle(handle);
+	}
+#else
+	wxStructStat info{};
+	if (wxStat(dir.GetRaw(), &info) == 0) {
+		volume = "device:" + std::to_string(info.st_dev);
+	}
+#endif
+	WriteBufferBudget::Get().Identify(dir.GetRaw().ToStdString(wxConvUTF8), volume);
+}
+
 // The free-space check FlushBuffer made on the main thread, where a probe on a busy or hung mount
 // blocked it: one live probe per directory per batch, less what the batch writes there. Returns
 // the files that do not fit.
@@ -56,6 +90,7 @@ std::set<const CPartFile *> FilesWithoutSpace(const std::list<ToWrite> &batch)
 		}
 		auto dir = freeByDir.find(w.dir.GetRaw());
 		if (dir == freeByDir.end()) {
+			IdentifyWriteVolume(w.dir);
 			dir = freeByDir.emplace(w.dir.GetRaw(), CPath::GetFreeSpaceAt(w.dir)).first;
 		}
 		if (FreeSpaceAllows(dir->second, file->second, w.checkSpace, w.minFree)) {
