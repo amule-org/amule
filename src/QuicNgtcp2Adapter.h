@@ -36,7 +36,12 @@
 #include <vector>
 
 class CQuicSocketTransport;
+class CUpDownClient;
+class IStreamTransport;
 class IQuicStreamAcceptor;
+using CQuicOutboundHandoff =
+	std::function<CQuicSocketTransport *(CUpDownClient *, std::unique_ptr<IStreamTransport>)>;
+using CQuicDialFailure = std::function<void(CUpDownClient *, const std::array<uint8_t, 16> &)>;
 
 struct CQuicTlsPolicy
 {
@@ -170,11 +175,14 @@ public:
 	//! leaves each transport on its own default, the real clock. Tests substitute a fake so a
 	//! transport's Flush()/Close() stay on the same synthetic timeline as the engine calls
 	//! driving the test.
+	using OutboundHandoff = CQuicOutboundHandoff;
 	CQuicNgtcp2Factory(const CQuicTlsPolicy &,
 		std::shared_ptr<IQuicDatagramSink>,
 		std::shared_ptr<IQuicNgtcp2Engine>,
 		const std::array<uint8_t, 16> &localIdentity,
-		std::function<uint64_t()> transportClock = nullptr);
+		std::function<uint64_t()> transportClock = nullptr,
+		OutboundHandoff outboundHandoff = nullptr,
+		CQuicDialFailure dialFailure = nullptr);
 	//! Held, not owned: the caller (CClientUDPSocket) keeps the acceptor alive for at least as
 	//! long as this factory. Null refuses every stream's hand-off, which is the state before an
 	//! acceptor exists -- the connection itself is still admitted and still works.
@@ -189,6 +197,11 @@ public:
 		uint16_t,
 		const std::array<uint8_t, 16> &expectedPeerIdentity,
 		uint64_t nowMs) override;
+	std::unique_ptr<IQuicConnection> CreateOutboundForClient(const CNetworkAddress &,
+		uint16_t,
+		const std::array<uint8_t, 16> &,
+		uint64_t,
+		CUpDownClient *) override;
 
 private:
 	CQuicTlsPolicy m_policy;
@@ -196,6 +209,8 @@ private:
 	std::array<uint8_t, 16> m_localIdentity;
 	std::shared_ptr<IQuicNgtcp2Engine> m_engine;
 	std::function<uint64_t()> m_transportClock;
+	OutboundHandoff m_outboundHandoff;
+	CQuicDialFailure m_dialFailure;
 	IQuicStreamAcceptor *m_acceptor = nullptr;
 };
 

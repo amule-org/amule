@@ -334,6 +334,38 @@ TEST(QuicNgtcp2Adapter, OutboundFactoryCreatesAnAuthenticatedClient)
 	}
 }
 
+TEST(QuicNgtcp2Adapter, OutboundOwnerHandoffAttachesTransport)
+{
+	Session s;
+	Credentials c;
+	Verifier v;
+	auto sink = std::make_shared<Sink>();
+	auto engine = std::make_shared<Engine>();
+	std::unique_ptr<IStreamTransport> handedOff;
+	CQuicSocketTransport *handedOffRaw = nullptr;
+	CQuicNgtcp2Factory factory(Policy(s, c, v),
+		sink,
+		engine,
+		kTestIdentity,
+		nullptr,
+		[&](CUpDownClient *, std::unique_ptr<IStreamTransport> transport) {
+			handedOffRaw = static_cast<CQuicSocketTransport *>(transport.get());
+			handedOff = std::move(transport);
+			return handedOffRaw;
+		});
+	// The adapter uses an injected handoff seam; this test does not link the TCP socket hierarchy.
+	auto *owner = reinterpret_cast<CUpDownClient *>(static_cast<uintptr_t>(1));
+	auto connection = factory.CreateOutboundForClient(kPeer, 4672, kTestPeerIdentity, 0, owner);
+	ASSERT_TRUE(connection != nullptr);
+	engine->hasOpenStream = true;
+	const auto matchingProof = QuicNatt::BuildEaqn1Proof(kTestPeerIdentity, &kTestIdentity);
+	engine->streamData.assign(matchingProof.begin(), matchingProof.end());
+
+	ASSERT_TRUE(connection->ProcessDatagram(Initial().data(), Initial().size(), 0));
+	ASSERT_TRUE(engine->attachedTransport != nullptr);
+	ASSERT_TRUE(engine->attachedTransport == handedOffRaw);
+}
+
 TEST(QuicNgtcp2Adapter, OutboundProofIsNotResentWhilePeerProofIsPending)
 {
 	Session s;

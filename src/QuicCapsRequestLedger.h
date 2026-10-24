@@ -27,17 +27,18 @@ public:
 	}
 
 	// Records one request. The oldest record is evicted when the bound is full.
-	// A request with the same complete wire identity is not recorded twice.
+	// A request with the same peer and endpoint identity is not recorded twice;
+	// the file hash is retained for wire bookkeeping but is informational on ACK.
 	bool Add(const std::array<uint8_t, 16> &peer,
 		uint32_t ipv4,
 		uint16_t udpPort,
 		const std::array<uint8_t, 16> &fileHash,
 		uint64_t nowMs)
 	{
-		if (m_maximum == 0)
+		if (m_maximum == 0 || peer == std::array<uint8_t, 16>{} || ipv4 == 0 || udpPort == 0)
 			return false;
 		Expire(nowMs);
-		if (Find(peer, ipv4, udpPort, fileHash) != m_records.end())
+		if (Find(peer, ipv4, udpPort) != m_records.end())
 			return false;
 		if (m_records.size() == m_maximum)
 			m_records.erase(m_records.begin());
@@ -49,10 +50,10 @@ public:
 	bool Consume(const std::array<uint8_t, 16> &peer,
 		uint32_t ipv4,
 		uint16_t udpPort,
-		const std::array<uint8_t, 16> &fileHash,
+		const std::array<uint8_t, 16> & /*fileHash*/,
 		uint64_t nowMs)
 	{
-		auto found = Find(peer, ipv4, udpPort, fileHash);
+		auto found = Find(peer, ipv4, udpPort);
 		if (found == m_records.end() || nowMs >= found->expiresAt)
 			return false;
 		m_records.erase(found);
@@ -78,14 +79,10 @@ public:
 private:
 	using Iterator = std::vector<QuicCapsRequestRecord>::iterator;
 
-	Iterator Find(const std::array<uint8_t, 16> &peer,
-		uint32_t ipv4,
-		uint16_t udpPort,
-		const std::array<uint8_t, 16> &fileHash)
+	Iterator Find(const std::array<uint8_t, 16> &peer, uint32_t ipv4, uint16_t udpPort)
 	{
 		for (auto it = m_records.begin(); it != m_records.end(); ++it)
-			if (it->peer == peer && it->ipv4 == ipv4 && it->udpPort == udpPort &&
-				it->fileHash == fileHash)
+			if (it->peer == peer && it->ipv4 == ipv4 && it->udpPort == udpPort)
 				return it;
 		return m_records.end();
 	}

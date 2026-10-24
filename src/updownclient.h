@@ -215,6 +215,8 @@ public:
 	/// As TryToContact, reduced to the historical answer: false means the client was deleted
 	/// (or Connect() declined to start) and must not be touched again.
 	bool TryToConnect(bool bIgnoreMaxCon = false);
+	//! Called when an in-flight QUIC dial fails; resumes the normal policy without another QUIC probe.
+	void QuicDialFailed();
 	bool Connect();
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 	//! Sends a reciprocal request for a callback-provided peer ID after its dial fails.
@@ -694,6 +696,10 @@ public:
 	/// Sets the client's current socket, which may be NULL. Does NOT delete the old one.
 	void SetSocket(CClientTCPSocket *socket);
 
+	/// Replaces a disconnected current socket, deleting it before installing the replacement.
+	/// Returns false when the current socket is still connected.
+	bool ReplaceSocket(CClientTCPSocket *socket);
+
 	/// The socket this client uses, possibly NULL. The socket object is volatile and can vanish
 	/// between two calls, so prefer the safer wrappers below, which check it first.
 	CClientTCPSocket *GetSocket() const { return m_socket; }
@@ -1023,6 +1029,9 @@ private:
 	uint64 m_dwLastAskedTime;
 #ifdef AMULE_UTP_TRANSPORT
 	bool m_fileRequestLostToSocketSwap = false;
+#endif
+#ifdef AMULE_QUIC_TRANSPORT
+	bool m_skipQuicDial = false;
 #endif
 	wxString m_clientFilename;
 	uint64 m_nTransferredDown;

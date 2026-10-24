@@ -60,6 +60,7 @@
 #ifdef AMULE_QUIC_TRANSPORT
 #include "QuicTls.h"
 #include "QuicNgtcp2Adapter.h"
+#include "QuicSocketTransport.h"
 #include "QuicNattProtocol.h"
 #include "NatRendezvousPolicy.h"
 #include "QuicCapsRequestLedger.h"
@@ -86,7 +87,31 @@
 namespace
 {
 std::array<uint8_t, 16> QuicLocalIdentityFromUserHash();
+
+bool QuicNatTEnabled()
+{
+#if defined(ENABLE_NATT_SERVER_COORDINATION)
+	return thePrefs::IsLowIdHolePunchEnabled() || thePrefs::IsLugdunumNatCallbackEnabled();
+#else
+	return false;
+#endif
 }
+
+uint8_t QuicLocalCapabilityOptions()
+{
+	return static_cast<uint8_t>(QuicNatt::EAQC_CAP_QUIC |
+				    ((Kademlia::CPrefs::GetMyConnectOptions(false, true) &
+					     QuicNatt::EAQC_CAP_DIRECT_CALLBACK) != 0
+						    ? QuicNatt::EAQC_CAP_DIRECT_CALLBACK
+						    : 0) |
+#ifdef AMULE_UTP_TRANSPORT
+				    QuicNatt::EAQC_CAP_UTP
+#else
+				    0
+#endif
+	);
+}
+} // namespace
 
 bool CClientUDPSocket::SendQuicCapsRequest(const std::array<uint8_t, 16> &peer,
 	uint32_t ipv4,
@@ -94,9 +119,10 @@ bool CClientUDPSocket::SendQuicCapsRequest(const std::array<uint8_t, 16> &peer,
 	const std::array<uint8_t, 16> &fileHash)
 {
 	const auto zero = std::array<uint8_t, 16>{};
-	if (peer == zero || ipv4 == 0 || udpPort == 0 || !Ok())
+	if (!QuicNatTEnabled() || peer == zero || ipv4 == 0 || udpPort == 0 || !Ok())
 		return false;
-	const auto frame = QuicNatt::EncodeEaqcFrame(0, QuicLocalIdentityFromUserHash(), peer, fileHash);
+	const auto frame = QuicNatt::EncodeEaqcFrame(
+		QuicLocalCapabilityOptions(), QuicLocalIdentityFromUserHash(), peer, fileHash);
 	auto packet = std::make_unique<CPacket>(
 		OP_NATT_FRAME_CAPS, static_cast<uint32>(frame.size()), OP_UDPRESERVEDPROT2);
 	packet->CopyToDataBuffer(0, frame.data(), static_cast<unsigned int>(frame.size()));
@@ -108,8 +134,11 @@ bool CClientUDPSocket::SendQuicCapsRequest(const std::array<uint8_t, 16> &peer,
 bool CClientUDPSocket::TryQuicDial(const std::array<uint8_t, 16> &peer,
 	uint32_t ipv4,
 	uint16_t udpPort,
-	const std::array<uint8_t, 16> &fileHash)
+	const std::array<uint8_t, 16> &fileHash,
+	CUpDownClient *owner)
 {
+	if (!QuicNatTEnabled())
+		return false;
 	const uint64_t now = ::GetTickCount64();
 	const auto result = m_capabilityCache.Lookup(peer, now);
 	if (result.state == QuicCapabilityState::Unknown) {
@@ -118,7 +147,7 @@ bool CClientUDPSocket::TryQuicDial(const std::array<uint8_t, 16> &peer,
 	}
 	if (result.state != QuicCapabilityState::Compatible || ipv4 == 0 || udpPort == 0 || !Ok())
 		return false;
-	if (m_quic.Dial(CNetworkAddress::FromIPv4NetworkOrder(ipv4), udpPort, peer, now))
+	if (m_quic.Dial(CNetworkAddress::FromIPv4NetworkOrder(ipv4), udpPort, peer, now, owner))
 		return true;
 	m_capabilityCache.RememberFailure(peer, now, 30000);
 	return false;
@@ -182,10 +211,33 @@ CClientUDPSocket::CClientUDPSocket(const amuleIPV4Address &address, const CProxy
 , m_quicCredentials(CreateProductionQuicCredentials())
 , m_quicSink(std::make_shared<CQuicUdpSink>(*this))
 , m_quicEngine(CreateProductionQuicNgtcp2Engine())
-, m_quicFactory(std::make_unique<CQuicNgtcp2Factory>(CQuicTlsPolicy{ m_quicCredentials.get() },
+, m_quicFactory(std::make_unique<CQuicNgtcp2Factory>(
+	  CQuicTlsPolicy{ m_quicCredentials.get() },
 	  m_quicSink,
 	  m_quicEngine,
-	  QuicLocalIdentityFromUserHash()))
+	  QuicLocalIdentityFromUserHash(),
+	  nullptr,
+	  [](CUpDownClient *owner, std::unique_ptr<IStreamTransport> transport) -> CQuicSocketTransport * {
+		  if (owner == nullptr)
+			  return nullptr;
+		  auto *raw = dynamic_cast<CQuicSocketTransport *>(transport.get());
+		  if (raw == nullptr)
+			  return nullptr;
+		  // The QUIC handoff must not let the socket constructor silently orphan a
+		  // disconnected TCP/uTP socket. Remove that owner link first; the constructor
+		  // then installs the new socket through the normal SetClient path.
+		  if (!owner->ReplaceSocket(nullptr))
+			  return nullptr;
+		  auto *socket = new CClientTCPSocket(owner, thePrefs::GetProxyData());
+		  socket->AttachTransport(std::move(transport));
+		  owner->SendHelloPacket();
+		  return raw;
+	  },
+	  [this](CUpDownClient *owner, const std::array<uint8_t, 16> &peer) {
+		  m_capabilityCache.RememberFailure(peer, ::GetTickCount64(), 30000);
+		  if (owner != nullptr)
+			  owner->QuicDialFailed();
+	  }))
 , m_quic(m_quicFactory.get())
 #endif
 {
@@ -550,6 +602,8 @@ void CClientUDPSocket::ProcessReservedProt2Frame(
 
 	case OP_NATT_FRAME_QUIC:
 #ifdef AMULE_QUIC_TRANSPORT
+		if (!QuicNatTEnabled())
+			break;
 		if (m_quic.ProcessDatagram(classified.payload,
 			    classified.payloadLength,
 			    CNetworkAddress::FromIPv4NetworkOrderOrAbsent(ip),
@@ -578,6 +632,8 @@ void CClientUDPSocket::ProcessReservedProt2Frame(
 	case OP_NATT_FRAME_CAPS:
 #ifdef AMULE_QUIC_TRANSPORT
 	{
+		if (!QuicNatTEnabled())
+			break;
 		QuicNatt::EaqcFrame request{};
 		const auto localHash = QuicLocalIdentityFromUserHash();
 		if (!QuicNatt::DecodeEaqcFrame(
@@ -589,17 +645,8 @@ void CClientUDPSocket::ProcessReservedProt2Frame(
 		if (!m_capsAckLimiter.Admit(address, now)) {
 			break;
 		}
-		const auto ack = QuicNatt::BuildEaqcCapsAck(request,
-			localHash,
-			true,
-			(Kademlia::CPrefs::GetMyConnectOptions(false, true) &
-				QuicNatt::EAQC_CAP_DIRECT_CALLBACK) != 0,
-#ifdef AMULE_UTP_TRANSPORT
-			true
-#else
-			false
-#endif
-		);
+		const auto ack = QuicNatt::EncodeEaqcFrame(
+			QuicLocalCapabilityOptions(), localHash, request.senderUserHash, request.fileHash);
 		auto response = std::make_unique<CPacket>(
 			OP_NATT_FRAME_CAPS_ACK, static_cast<uint32>(ack.size()), OP_UDPRESERVEDPROT2);
 		response->CopyToDataBuffer(0, ack.data(), static_cast<unsigned int>(ack.size()));
@@ -619,6 +666,8 @@ void CClientUDPSocket::ProcessReservedProt2Frame(
 	case OP_NATT_FRAME_CAPS_ACK:
 #ifdef AMULE_QUIC_TRANSPORT
 	{
+		if (!QuicNatTEnabled())
+			break;
 		QuicNatt::EaqcFrame ack{};
 		const auto now = ::GetTickCount64();
 		if (!QuicNatt::DecodeEaqcFrame(classified.payload,
@@ -627,10 +676,10 @@ void CClientUDPSocket::ProcessReservedProt2Frame(
 			    ack))
 			break;
 		const auto zero = std::array<uint8_t, 16>{};
-		if (ack.senderUserHash == zero ||
+		if (ack.senderUserHash == zero || ack.options == 0 ||
 			!m_capsRequestLedger.Consume(ack.senderUserHash, ip, port, ack.fileHash, now))
 			break;
-		m_capabilityCache.Remember(ack.senderUserHash, ack.options, now, 30000);
+		m_capabilityCache.Remember(ack.senderUserHash, ack.options, now, 29 * 60 * 1000);
 	}
 #else
 		if (m_unservedFrameLog.ShouldLog(::GetTickCount64())) {

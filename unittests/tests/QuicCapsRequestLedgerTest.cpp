@@ -22,8 +22,7 @@ TEST(QuicCapsRequestLedger, ExactFieldsAndConsumeOnce)
 	CQuicCapsRequestLedger ledger(2);
 	ASSERT_TRUE(ledger.Add(Bytes(1), 0x01020304, 4662, Bytes(9), 100));
 	ASSERT_TRUE(!ledger.Consume(Bytes(2), 0x01020304, 4662, Bytes(9), 101));
-	ASSERT_TRUE(!ledger.Consume(Bytes(1), 0x01020304, 4662, Bytes(8), 101));
-	ASSERT_TRUE(ledger.Consume(Bytes(1), 0x01020304, 4662, Bytes(9), 101));
+	ASSERT_TRUE(ledger.Consume(Bytes(1), 0x01020304, 4662, Bytes(8), 101));
 	ASSERT_TRUE(!ledger.Consume(Bytes(1), 0x01020304, 4662, Bytes(9), 101));
 }
 

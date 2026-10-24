@@ -24,6 +24,7 @@
 #include "QuicGnuTlsSession.h"
 #include "QuicNattProtocol.h"
 #include "QuicNgtcp2Adapter.h"
+#include "updownclient.h"
 #include "QuicSocketTransport.h"
 #include "QuicStreamAcceptor.h"
 
@@ -211,7 +212,10 @@ public:
 		IQuicStreamAcceptor *acceptor,
 		const std::array<uint8_t, 16> &localIdentity,
 		std::function<uint64_t()> transportClock,
-		const std::array<uint8_t, 16> *expectedPeerIdentity = nullptr)
+		const std::array<uint8_t, 16> *expectedPeerIdentity = nullptr,
+		CUpDownClient *owner = nullptr,
+		CQuicNgtcp2Factory::OutboundHandoff outboundHandoff = nullptr,
+		CQuicDialFailure dialFailure = nullptr)
 	: m_engine(std::move(engine))
 	, m_sink(std::move(sink))
 	, m_handle(handle)
@@ -224,6 +228,9 @@ public:
 	, m_hasExpectedPeerIdentity(expectedPeerIdentity != nullptr)
 	, m_expectedPeerIdentity(
 		  expectedPeerIdentity != nullptr ? *expectedPeerIdentity : std::array<uint8_t, 16>{})
+	, m_owner(owner)
+	, m_outboundHandoff(std::move(outboundHandoff))
+	, m_dialFailure(std::move(dialFailure))
 	{
 	}
 
@@ -315,6 +322,7 @@ public:
 			// down, so a byte that arrives in the gap is buffered (DrainStreamData()) rather than
 			// delivered to a transport that just asked to stop hearing from this connection.
 			m_engine->AttachTransport(m_handle, nullptr);
+			m_attachedTransport = nullptr;
 			// Graceful, not ShutdownStream()'s reset: a transport-initiated close is always a
 			// voluntary one (CQuicSocketTransport::Close(), itself already having had its own
 			// chance to flush anything queued) -- there is nothing here that justifies discarding
@@ -330,6 +338,7 @@ public:
 			// can be trusted enough to try preserving, so this resets it instead of asking for a
 			// graceful FIN.
 			m_engine->AttachTransport(m_handle, nullptr);
+			m_attachedTransport = nullptr;
 			m_engine->ShutdownStream(m_handle);
 		}
 	}
@@ -344,8 +353,22 @@ public:
 		if (m_closed)
 			return;
 		m_closed = true;
+		// The handed-off transport is owned by the caller and may outlive this connection.  Detach
+		// it before destroying the engine handle so its destructor cannot call back through a
+		// dangling IQuicStreamOperations reference.
+		if (m_attachedTransport != nullptr) {
+			// Invalidate the transport's copy of the handle before destroying the engine
+			// handle.  Detaching only the engine callback leaves a handed-off transport
+			// holding this connection as its IQuicStreamOperations reference; its destructor
+			// would otherwise call CloseStream() through this object after it has gone away.
+			m_attachedTransport->OnEnded();
+			m_engine->AttachTransport(m_handle, nullptr);
+			m_attachedTransport = nullptr;
+		}
 		m_engine->Destroy(m_handle);
 		m_handle = nullptr;
+		if (m_owner != nullptr && !m_streamOffered && m_dialFailure != nullptr)
+			m_dialFailure(m_owner, m_expectedPeerIdentity);
 	}
 
 private:
@@ -354,22 +377,28 @@ private:
 	// ProcessDatagram(), since that is the only place a stream can newly open.
 	void OfferStreamIfJustOpened()
 	{
-		if (m_streamOffered || m_acceptor == nullptr || !m_engine->HasOpenStream(m_handle)) {
+		if (m_streamOffered || (m_acceptor == nullptr && m_owner == nullptr) ||
+			!m_engine->HasOpenStream(m_handle)) {
 			return;
 		}
 		if (!m_proofExchanged && !TryExchangeEaqn1Proof()) {
 			return;
 		}
-		m_streamOffered = true;
 		auto owned = std::make_unique<CQuicSocketTransport>(
 			*this, m_handle, m_address, m_port, nullptr, true, m_transportClock);
 		CQuicSocketTransport *raw = owned.get();
 		std::unique_ptr<IStreamTransport> transport(std::move(owned));
-		if (!m_acceptor->AcceptStream(transport, m_address, m_port)) {
+		if (m_owner != nullptr) {
+			if (m_outboundHandoff == nullptr || (m_outboundTransport = m_outboundHandoff(m_owner,
+								     std::move(transport))) == nullptr) {
+				return;
+			}
+		} else if (!m_acceptor->AcceptStream(transport, m_address, m_port)) {
 			// Refused: the transport the acceptor declined is still ours to destroy, exactly as
 			// CUtpLibraryAdapter does for a refused uTP stream.
 			return;
 		}
+		m_streamOffered = true;
 		// Deliver whatever arrived after the proof (held back from the stream buffer while this
 		// connection was still waiting on TryExchangeEaqn1Proof()), then everything from here on
 		// goes straight to it (see AttachTransport()'s contract).
@@ -382,6 +411,10 @@ private:
 			raw->OnPayload(buffered.data(), buffered.size());
 		}
 		m_engine->AttachTransport(m_handle, raw);
+		m_attachedTransport = raw;
+		// Outbound QUIC belongs to the dialing client, so use its ordinary socket owner and
+		// send the normal eD2k hello through that socket. The peer identity remains established
+		// only by the validated QUIC proof followed by the hello exchange.
 		// The handshake that had to complete before a stream could even open already proved
 		// connectivity; this is the equivalent of CUtpSocketTransport::MarkConnected() for a
 		// transport libutp's own state machine would otherwise have marked itself.
@@ -513,6 +546,11 @@ private:
 	std::function<uint64_t()> m_transportClock;
 	const bool m_hasExpectedPeerIdentity;
 	const std::array<uint8_t, 16> m_expectedPeerIdentity;
+	CUpDownClient *m_owner = nullptr;
+	CQuicSocketTransport *m_outboundTransport = nullptr;
+	CQuicSocketTransport *m_attachedTransport = nullptr;
+	CQuicNgtcp2Factory::OutboundHandoff m_outboundHandoff;
+	CQuicDialFailure m_dialFailure;
 	//! Accumulated until it reaches EAQN1_PROOF_SIZE: a peer's proof can in principle arrive
 	//! split across more than one recv_stream_data() delivery, and nothing shorter than the
 	//! full proof is safe to validate.
@@ -1400,12 +1438,16 @@ CQuicNgtcp2Factory::CQuicNgtcp2Factory(const CQuicTlsPolicy &policy,
 	std::shared_ptr<IQuicDatagramSink> sink,
 	std::shared_ptr<IQuicNgtcp2Engine> engine,
 	const std::array<uint8_t, 16> &localIdentity,
-	std::function<uint64_t()> transportClock)
+	std::function<uint64_t()> transportClock,
+	CQuicNgtcp2Factory::OutboundHandoff outboundHandoff,
+	CQuicDialFailure dialFailure)
 : m_policy(policy)
 , m_sink(std::move(sink))
 , m_localIdentity(localIdentity)
 , m_engine(std::move(engine))
 , m_transportClock(std::move(transportClock))
+, m_outboundHandoff(std::move(outboundHandoff))
+, m_dialFailure(std::move(dialFailure))
 {
 }
 
@@ -1469,6 +1511,36 @@ std::unique_ptr<IQuicConnection> CQuicNgtcp2Factory::CreateOutbound(const CNetwo
 		m_localIdentity,
 		m_transportClock,
 		&expectedPeerIdentity);
+}
+
+std::unique_ptr<IQuicConnection> CQuicNgtcp2Factory::CreateOutboundForClient(const CNetworkAddress &address,
+	uint16_t port,
+	const std::array<uint8_t, 16> &expectedPeerIdentity,
+	uint64_t nowMs,
+	CUpDownClient *owner)
+{
+	if (m_sink == nullptr || m_engine == nullptr || owner == nullptr)
+		return nullptr;
+	IQuicNgtcp2Engine::Handle handle =
+		m_engine->CreateClient(m_policy, address, port, expectedPeerIdentity, nowMs);
+	if (handle == nullptr || !m_engine->OpenLocalBidiStream(handle)) {
+		if (handle != nullptr)
+			m_engine->Destroy(handle);
+		return nullptr;
+	}
+	return std::make_unique<CQuicNgtcp2Connection>(m_engine,
+		m_sink,
+		handle,
+		address,
+		port,
+		m_engine->GetIssuedConnectionId(handle),
+		nullptr,
+		m_localIdentity,
+		m_transportClock,
+		&expectedPeerIdentity,
+		owner,
+		m_outboundHandoff,
+		m_dialFailure);
 }
 
 std::shared_ptr<IQuicNgtcp2Engine> CreateProductionQuicNgtcp2Engine()

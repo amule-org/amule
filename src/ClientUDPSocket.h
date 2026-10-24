@@ -26,6 +26,8 @@
 #ifndef CLIENTUDPSOCKET_H
 #define CLIENTUDPSOCKET_H
 
+class CUpDownClient;
+
 #include "MuleUDPSocket.h"
 #include "ReservedProtocolFrames.h" // Needed for CFrameLogThrottle
 
@@ -93,7 +95,8 @@ public:
 	bool TryQuicDial(const std::array<uint8_t, 16> &peer,
 		uint32_t ipv4,
 		uint16_t udpPort,
-		const std::array<uint8_t, 16> &fileHash);
+		const std::array<uint8_t, 16> &fileHash,
+		CUpDownClient *owner = nullptr);
 #endif
 
 protected:

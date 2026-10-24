@@ -65,6 +65,8 @@ public:
 	virtual void Tick(uint64_t nowMs) { (void)nowMs; }
 };
 
+class CUpDownClient;
+
 class IQuicConnectionFactory
 {
 public:
@@ -85,6 +87,14 @@ public:
 		const CNetworkAddress &, uint16_t, const std::array<uint8_t, 16> &, uint64_t)
 	{
 		return nullptr;
+	}
+	virtual std::unique_ptr<IQuicConnection> CreateOutboundForClient(const CNetworkAddress &address,
+		uint16_t port,
+		const std::array<uint8_t, 16> &identity,
+		uint64_t nowMs,
+		CUpDownClient *)
+	{
+		return CreateOutbound(address, port, identity, nowMs);
 	}
 };
 
@@ -115,7 +125,8 @@ public:
 	bool Dial(const CNetworkAddress &address,
 		uint16_t port,
 		const std::array<uint8_t, 16> &expectedPeerIdentity,
-		uint64_t nowMs);
+		uint64_t nowMs,
+		CUpDownClient *owner = nullptr);
 	//! Services every live connection's timers. Must be called periodically regardless of
 	//! whether any datagram has arrived -- this is what lets a connection recover from loss
 	//! instead of hanging forever once nothing more is received from the peer.

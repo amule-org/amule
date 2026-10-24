@@ -164,13 +164,14 @@ bool CQuicContext::AdmitNewConnection(const CNetworkAddress &address, uint64_t n
 bool CQuicContext::Dial(const CNetworkAddress &address,
 	uint16_t port,
 	const std::array<uint8_t, 16> &expectedPeerIdentity,
-	uint64_t nowMs)
+	uint64_t nowMs,
+	CUpDownClient *owner)
 {
 	if (port == 0 || m_factory == nullptr) {
 		return false;
 	}
 	std::unique_ptr<IQuicConnection> connection =
-		m_factory->CreateOutbound(address, port, expectedPeerIdentity, nowMs);
+		m_factory->CreateOutboundForClient(address, port, expectedPeerIdentity, nowMs, owner);
 	if (!connection || connection->IsClosed()) {
 		return false;
 	}

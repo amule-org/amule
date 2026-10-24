@@ -1633,6 +1633,20 @@ bool CUpDownClient::Disconnected(const wxString &DEBUG_ONLY(strReason), bool bFr
 
 // The returned bool is not whether TryToConnect succeeded: false means the client was
 // deleted, true means it was not.
+void CUpDownClient::QuicDialFailed()
+{
+	// QUIC is opportunistic. The failure callback is delivered by the UDP event loop, so resume
+	// the ordinary contact policy here. Consume the QUIC choice before re-entry: otherwise the
+	// fallback can immediately select the same failed transport again.
+#ifdef AMULE_QUIC_TRANSPORT
+	m_skipQuicDial = true;
+#endif
+	TryToContact(true);
+#ifdef AMULE_QUIC_TRANSPORT
+	m_skipQuicDial = false;
+#endif
+}
+
 bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon)
 {
 	const EContactResult result = TryToContact(bIgnoreMaxCon);
@@ -1929,6 +1943,13 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 		}
 	}
 
+	// A live socket always wins. Keep this guard before every transport choice: Connect() is a
+	// no-op on a live socket, and attaching QUIC/uTP here would create a second transport.
+	if (m_socket && m_socket->IsConnected()) {
+		ConnectionEstablished();
+		return EContactResult::Contacting;
+	}
+
 	// Freeze the target before checking it. The security checks, socket constructor and Connect()
 	// must all use this same address, even if a preference changes mid-attempt.
 	m_preparedDialAddress = GetDialAddress();
@@ -1998,30 +2019,11 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 		}
 	}
 
-#ifdef AMULE_QUIC_TRANSPORT
-	// QUIC is deliberately an opportunistic overlay: probing an unknown peer never delays the
-	// established TCP/uTP path, while only a positively cached capability may replace it.
-	if (GetConnectIP() != 0 && GetUDPPort() != 0 && HasValidHash() && theApp->clientudp != nullptr) {
-		std::array<uint8_t, 16> fileHash{};
-		if (m_reqfile != nullptr) {
-			std::copy_n(m_reqfile->GetFileHash().GetHash(), fileHash.size(), fileHash.begin());
-		}
-		std::array<uint8_t, 16> peerHash{};
-		std::copy_n(GetUserHash().GetHash(), peerHash.size(), peerHash.begin());
-		if (theApp->clientudp->TryQuicDial(peerHash, GetConnectIP(), GetUDPPort(), fileHash)) {
-			return EContactResult::Contacting;
-		}
-	}
-#endif
-
 	if (!m_socket || !m_socket->IsConnected()) {
 		if (m_socket) {
 			m_socket->Safe_Delete();
 		}
 		m_socket = new CClientTCPSocket(this, thePrefs::GetProxyData());
-	} else {
-		ConnectionEstablished();
-		return EContactResult::Contacting;
 	}
 
 	if (HasLowID() && SupportsDirectUDPCallback() && thePrefs::GetEffectiveUDPPort() != 0 &&
@@ -2243,6 +2245,21 @@ bool CUpDownClient::TryServerVouchedLowIdUtpDial()
 	if (m_socket != nullptr && m_socket->IsOk()) {
 		return false;
 	}
+#ifdef AMULE_QUIC_TRANSPORT
+	// QUIC is selected only for an authenticated LowID NAT-T rendezvous; HighID contact
+	// remains TCP (and the uTP fallback below remains available for this route).
+	if (!m_skipQuicDial && HasValidHash() && GetConnectIP() != 0 && GetUDPPort() != 0) {
+		std::array<uint8_t, 16> peerHash{};
+		std::copy_n(GetUserHash().GetHash(), peerHash.size(), peerHash.begin());
+		std::array<uint8_t, 16> fileHash{};
+		if (m_reqfile != nullptr) {
+			std::copy_n(m_reqfile->GetFileHash().GetHash(), fileHash.size(), fileHash.begin());
+		}
+		if (theApp->clientudp->TryQuicDial(peerHash, GetConnectIP(), GetUDPPort(), fileHash, this)) {
+			return true;
+		}
+	}
+#endif
 	IUtpContext *utp = theApp->clientudp->GetUtpContext();
 	const bool canSend = utp != nullptr && utp->IsAvailable() && theApp->clientudp->Ok();
 	const bool obfuscationSatisfied = !WantsStreamObfuscation() || ShouldReceiveCryptUDPPackets();
@@ -2495,6 +2512,18 @@ int CUpDownClient::GetHashType() const
 	}
 
 	return SO_UNKNOWN;
+}
+
+bool CUpDownClient::ReplaceSocket(CClientTCPSocket *socket)
+{
+	if (m_socket != NULL && m_socket->IsConnected()) {
+		return false;
+	}
+	if (m_socket != NULL) {
+		m_socket->Safe_Delete();
+	}
+	SetSocket(socket);
+	return true;
 }
 
 void CUpDownClient::SetSocket(CClientTCPSocket *socket)
