@@ -229,3 +229,175 @@ the server UDP label must follow external changes. Finally stage a network
 change and enable API guest access without a password: the rejected save must
 leave the core network flags unchanged. Supply valid settings and retry; the
 staged network change must then apply. Run these checks in both desktop clients.
+
+Upload storage-delay regression (Linux)
+--------------------------------------
+With BUILD_DAEMON=ON, BUILD_TESTING=ON and ENABLE_INTEGRATION_TESTS=ON:
+
+  cmake --build build --target amuled UploadReadDelay
+  ctest --test-dir build -R '^UploadRefillIntegrationTest$' --output-on-failure
+
+UploadRefillIntegrationTest also runs the controlled storage-delay cases, using
+the existing CI integration-test budget. The delay cases can be run separately:
+
+  python3 unittests/tests/UploadStorageDelayIntegrationTest.py \
+    build/src/amuled build/unittests/tests/libUploadReadDelay.so
+
+The delay test uses isolated offline daemon profiles and two loopback peers. A
+test-only LD_PRELOAD library gates actual reads of one synthetic shared file with pipes.
+While a later read is held, the preceding block must already reach its peer.
+Each client keeps at most one read outstanding: the other peer must be served
+before the busy peer's twelfth read, for small, full, three-block and mixed
+request sizes.
+Payload contents and packet continuity are checked throughout. No production
+hooks, public peers, storage hardware or timed sleeps simulate the delay.
+These cases test delivery and sweep fairness. Progress on other storage while
+an individual read is blocked is covered by the pool cases below.
+
+Upload storage-worker isolation (Linux)
+--------------------------------------
+UploadRefillIntegrationTest also runs UploadStoragePoolIntegrationTest.py using
+that same preload fixture and CI integration budget. To run just the pool cases:
+
+  python3 unittests/tests/UploadStoragePoolIntegrationTest.py \
+    build/src/amuled build/unittests/tests/libUploadReadDelay.so
+
+The fixture substitutes only the process's mount-table input, then holds actual
+reads or opens behind pipe gates. Four clients request files from one storage
+ID through two directory aliases; another storage ID must continue uploading
+before any gate is released. The test checks the per-storage limit, recovery,
+a disconnect while blocked, same-client/same-block upload-session reuse, and
+shutdown while a worker still owns a read. A compression gate also reuses a
+client/socket while its old session builds packets outside the upload-list lock;
+only the new session may receive data. Additional cases verify that heap reads
+reuse their original buffer and that mapped reads copy successfully or reject a
+SIGBUS caused by truncating the file after prefaulting, without ending the daemon. It also checks that two slow-volume
+peers alternate while a fast-volume peer completes a read between every release,
+and that uploads continue while storage discovery is blocked. No system mounts
+are changed.
+StorageReadPoolTest covers admission, retained completion budgets and worker
+exceptions without a daemon. UploadStorageMapTest checks prefix boundaries,
+lexical path normalization, mount escapes, macOS firmlink spellings and Windows
+mapped-drive/UNC aliases. A pool unit test checks that a refreshed storage key
+continues to reserve the permit for an already outstanding read.
+
+The pool has four outstanding ownership slots, at most one per filesystem/volume
+identity, including completed results not yet delivered. File open/read/close
+operations stay on workers; packet delivery uses copied buffers. Complete-file
+handles remain cached (32 entries); uncached and idle-handle closes use workers
+and the same storage limits. One pending read per client and admission in order
+of oldest successful dispatch keep peers on the same volume fair, independently
+of how frequently other volumes complete reads.
+
+The coordinator queues all currently ready completions before waking the upload
+throttler once for that batch. An empty batch, discarded session or close-only
+completion does not trigger a wake. Draining never waits for outstanding reads,
+so a stalled volume cannot hold back packets from a completed read.
+
+Linux identifies groups from mountinfo device IDs, macOS/FreeBSD from cached
+mount IDs, and Windows from volume GUIDs (UNC paths use the server/share).
+On macOS, the root fallback shares the Data volume's key when that mount exists,
+so firmlink and explicit Data spellings cannot bypass the volume limit. Windows
+mapped drives use WNetGetConnectionW to share their UNC server/share key.
+Discovery runs on one bounded pool slot; lookups use the last successful snapshot
+while a provider is blocked. Windows publishes a local-only snapshot before
+consulting network providers at startup. Refreshing reclassifies outstanding
+permits and cached handles before admitting new reads. Unmapped paths, including
+reads before the first successful snapshot, share one conservative group.
+These are filesystem/volume limits,
+not physical-controller topology: different volumes on the same hardware can
+consume separate slots. Paths crossing volumes through symlinks may also be
+grouped conservatively by their spelled mount path. Four distinct stalled groups
+can occupy all four workers. Shutdown joins accepted reads; it cannot interrupt
+an indefinitely blocked kernel call or safely detach a worker using core data.
+
+Native storage-worker acceptance (Windows, macOS and FreeBSD)
+-----------------------------------------------------------
+The Linux fixture and cross-platform builds do not validate native discovery.
+Use an isolated offline profile and disposable shared files, with loopback peers
+on two existing volumes. Record the source revision, OS version, build type,
+toolchain, filesystem types and whether the paths are local or network shares.
+
+First verify byte-correct transfers from both volumes. Then delay reads on one
+volume with a platform-native test fixture and verify that peers on the other
+volume keep receiving data before the delay is released. Request from several
+paths on the delayed volume, including a second mount path/drive letter for that
+same volume where available: they must share one outstanding job. On Windows,
+also check that two directories on one UNC server/share are grouped together
+with mapped-drive spellings and that a separate share can progress. On macOS,
+compare /private/tmp paths with /System/Volumes/Data/private/tmp spellings.
+Queue two peers on the slow volume alongside a fast-volume peer; both slow peers
+must make progress. Do not create aliases or change system mounts merely to run
+this check.
+
+Release the delay and verify recovery and payload integrity. Repeat with a
+disconnect and upload-slot reuse while the read is held; an old completion must
+not reach the new session. Finally request shutdown while a read is held: the
+application must wait for that read, then exit cleanly when it is released.
+Keep opens, reads and closes off the coordinator in each native run. Record
+unavailable alias/UNC/fault-injection cases as untested, rather than treating a
+successful build or ordinary two-volume transfer as an isolation test.
+
+Time-based upload buffering
+---------------------------
+UploadBufferingTest exercises the two-second read-ahead target (at least one
+block plus a byte, at most 4 MiB), overflow-safe rate arithmetic, per-socket and
+global admission, tiny-request overhead, concurrent release, and ownership after
+the coordinator disappears. Existing upload integration cases cover normal and
+compressed packets, disconnects, session reuse, and controlled storage delays.
+Read-ahead uses a one-second window of original payload drained by the socket,
+with the client wire rate as a conservative warmup floor. This sizes compressed
+uploads by source consumption, rather than their smaller wire representation.
+UploadRefillTest checks this distinction, idle expiry and disconnect reset.
+
+Read admission charges four times the original payload plus 4 KiB per request,
+with a 16 MiB per-socket and 128 MiB aggregate charge limit. This reserves room
+for read/copy/compression buffers and packet overhead, even for tiny requests.
+Pending reads and finished results retain their charge; all packets of a block
+share its reservation until the last packet is sent or discarded. Truncation
+keeps the current packet's reservation, and session/statistics resets do not
+reset the socket's budget or queued-payload count. Releasing a queued block
+wakes the coordinator so another client can use the freed capacity.
+
+These are conservative application-buffer charges, not a process-RSS limit.
+Allocator bookkeeping, short rate history, fixed compressor workspaces, file-handle caches,
+transport buffers and kernel TCP buffers are outside these counters. A request
+may overshoot the time target, but admission still requires room under both
+charge limits. Two seconds is bounded read-ahead, not a promise to hide longer
+storage stalls or compensate for a peer's small protocol request window.
+
+Upload storage diagnostics (debug builds)
+----------------------------------------
+Enable verbose debug output and the FileIO category (amule.conf:
+[eMule] VerboseDebug=1; [Debug] Cat_FileIO=1, on separate lines). The logfile
+receives an "Upload storage:" summary every 30 seconds and at coordinator
+shutdown. Release builds retain the existing policy of compiling out debug logs.
+No paths, file hashes, storage keys or client identities enter these summaries.
+
+work_ms, queue_ms, completion_ms and close_ms are total/maximum milliseconds
+for completed operations in the interval. Work covers opening/reopening, reading,
+prefault/copy and worker cleanup, including failed/deferred or stale reads; it
+is not a disk-only measurement. Idle cache closes are separate. completion_ms
+ends when the coordinator takes the result, before packet construction/sending.
+slow_1s counts completed read jobs taking at least one second. pending/oldest_ms
+cover admitted upload reads (queued, running or finished), exposing a stuck read
+before it completes. charged_bytes is current conservative application-buffer
+accounting, not RSS. These process-wide aggregates do not identify a drive.
+
+denials counts unsuccessful admission attempts by reason: a storage group is
+occupied, the socket memory cap is reached, or the global memory cap is reached.
+pressure_ms is sampled wall time since the previous sweep observed any such
+denial; workers_full instead measures all four ownership slots being occupied,
+including idle closes and undelivered completions. Reasons can overlap and do
+not sum to client wait time. Recovery is observed on a subsequent sweep (normally
+within the 500 ms idle poll, but coordinator work can extend that interval).
+A reset keeps ongoing pressure active in the next reporting interval. Counts
+are observations, not unique requests, bytes, physical-device latency or exact
+per-client waits. No per-client/drive history or unbounded histogram is retained.
+
+UploadReadDiagnosticsTest uses an injected clock for latency, exception and
+pressure/reset tests; UploadBufferingTest checks the actual cap denial reasons.
+Debug Linux builds also register UploadStorageDiagnosticsIntegrationTest: a
+pipe-held read stays blocked until a periodic report exposes its pending age,
+while healthy-drive uploads continue. The shutdown logfile must then report its
+completed latency and same-storage admission denials. This adds about 30 seconds.

@@ -32,6 +32,7 @@
 #include "EncryptedStreamSocket.h" // Needed for CEncryptedStreamSocket
 
 #include "UploadRefill.h"
+#include "UploadBuffering.h"
 
 #include "ThrottledSocket.h" // Needed for ThrottledFileSocket
 
@@ -56,6 +57,7 @@ public:
 		bool delpacket = true,
 		bool controlpacket = true,
 		uint32 actualPayloadSize = 0);
+	void SendUploadPacket(CPacket *packet, uint32 payload, UploadBufferBudget::Lease reservation);
 	// The extra term is guarded so the TCP path keeps answering exactly as it
 	// did: byConnected is this class's own state machine, and only a stream the
 	// asio socket does not own can disagree with it.
@@ -87,7 +89,12 @@ public:
 	uint64 GetSentFileBytesForDisplayAndReset();
 	uint64 GetSentPayloadSinceLastCallAndReset();
 	uint64 PeekSentPayload(); // Non-resetting peek -- for disk I/O thread buffer check
-	void SetUploadBufferTarget(uint32 payload);
+	uint32 UpdateUploadBufferTarget(uint32 wireRate);
+	uint64 QueuedUploadPayload() const;
+	const std::shared_ptr<UploadBufferBudget::Account> &UploadBufferAccount() const
+	{
+		return m_uploadBufferAccount;
+	}
 	void TruncateQueues();
 
 	SocketSentBytes SendControlData(uint32 maxNumberOfBytesToSend, uint32 minFragSize) override
@@ -146,6 +153,11 @@ private:
 	virtual SocketSentBytes Send(
 		uint32 maxNumberOfBytesToSend, uint32 minFragSize, bool onlyAllowedToSendControlPacket);
 	void ClearQueues();
+	void QueuePacket(CPacket *packet,
+		bool delpacket,
+		bool controlpacket,
+		uint32 actualPayloadSize,
+		UploadBufferBudget::Lease reservation);
 
 	uint32 GetNextFragSize(uint32 current, uint32 minFragSize);
 
@@ -175,6 +187,7 @@ private:
 	{
 		uint32 actualPayloadSize;
 		CPacket *packet;
+		UploadBufferBudget::Lease reservation;
 	};
 
 	typedef std::list<StandardPacketQueueEntry> CStdPacketQueue;
@@ -184,6 +197,9 @@ private:
 
 	mutable std::mutex m_sendLocker;
 	UploadRefill m_uploadRefill;
+	const std::shared_ptr<UploadBufferBudget::Account> m_uploadBufferAccount =
+		std::make_shared<UploadBufferBudget::Account>();
+	UploadBufferBudget::Lease m_uploadBufferReservation;
 
 	uint64 m_numberOfSentBytesCompleteFile;
 	uint64 m_numberOfSentBytesPartFile;

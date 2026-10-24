@@ -96,6 +96,7 @@ public:
 		bool delpacket = true,
 		bool controlpacket = true,
 		uint32 actualPayloadSize = 0) override;
+	void SendUploadPacket(CPacket *packet, uint32 payload, UploadBufferBudget::Lease reservation);
 	SocketSentBytes SendControlData(
 		uint32 maxNumberOfBytesToSend, uint32 overchargeMaxBytesToSend) override;
 	SocketSentBytes SendFileAndControlData(
