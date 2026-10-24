@@ -415,8 +415,8 @@ CUploadDiskIOThread::ReadResult CUploadDiskIOThread::ReadBlock(ReadRequest_Struc
 			}
 		}
 		if (result == READ_OK) {
-			// An mmap read only maps the range: fault it in now, or the disk reads (and any
-			// SIGBUS error) happen while the packets are built under uploadLock.
+			// An mmap read only maps the range: fault it in now, so the disk reads and any
+			// SIGBUS error happen here, where CheckError sees them, not while packing.
 			req->area.Prefault();
 			req->area.CheckError();
 		}
@@ -496,10 +496,14 @@ void CUploadDiskIOThread::ReadCompletionRoutine(ReadRequest_Struct *req)
 		return;
 	}
 
-	bool bError = false;
-
-	// Check the client is still in the upload list, and hold uploadLock through SendPacket so a
-	// concurrent disconnect cannot free the socket; matches eMule's lock scope.
+	// The packets are built without uploadLock. Building allocates and copies the block, and
+	// compresses it for clients that take that; an allocation the kernel stalls under memory
+	// pressure then held the lock for seconds, while the main thread needs it to add or drop
+	// an upload slot.
+	bool useCompression = false;
+	uint32 dataRate = 0;
+	const CClientTCPSocket *packedFor = nullptr;
+	uint64 sessionStart = 0;
 	{
 		wxMutexLocker uploadLock(theApp->uploadqueue->GetUploadingListLock());
 		CUpDownClient *client = theApp->uploadqueue->FindUploadingClient(req->clientId);
@@ -508,72 +512,77 @@ void CUploadDiskIOThread::ReadCompletionRoutine(ReadRequest_Struct *req)
 			AddDebugLogLineN(logClient,
 				"CUploadDiskIOThread::ReadCompletionRoutine: Client not found in uploadlist "
 				"anymore, discarding block");
-			bError = true;
-		}
-
-		if (!bError) {
+		} else if (client->GetSocket() == nullptr || !client->IsConnected()) {
+			AddDebugLogLineN(logClient,
+				"CUploadDiskIOThread::ReadCompletionRoutine: Client has no connected socket");
+			client->m_bIOError = true;
+		} else {
 			CClientTCPSocket *pSocket = client->GetSocket();
-
-			if (pSocket == NULL || !client->IsConnected()) {
-				AddDebugLogLineN(logClient,
-					"CUploadDiskIOThread::ReadCompletionRoutine: Client has no connected "
-					"socket");
-				bError = true;
-				client->m_bIOError = true;
-			}
-
-			if (!bError) {
-				// Disable compression if the socket is starved and the data rate is
-				// high. Once disabled for a client it stays disabled for the session.
-				bool bUseCompression = false;
-				if (!client->m_bDisableCompression && req->pFileStruct->bCompress &&
-					client->m_byDataCompVer == 1) {
-					if ((sint32)m_listFinishedIO.size() >
-							MAX_FINISHED_REQUESTS_COMPRESSION &&
-						theStats::GetUploadRate() > SLOT_COMPRESSIONCHECK_DATARATE) {
-						client->m_bDisableCompression = true;
-					} else if (client->GetUploadDatarate() >
-							   SLOT_COMPRESSIONCHECK_DATARATE &&
-						   pSocket != NULL && !pSocket->HasQueues(true) &&
-						   !pSocket->IsBusyQuickCheck()) {
-						client->m_bDisableCompression = true;
-					} else {
-						bUseCompression = true;
-					}
-				}
-
-				// Build packets into a local list, then send them out. CommitRead set
-				// the file ID.
-				CPacketList packetList;
-				uint32 data_rate = client->GetUploadDatarate();
-				if (bUseCompression) {
-					UploadPacketBuilder::Packed(req->area.GetBuffer(),
-						req->uStartOffset,
-						req->uEndOffset,
-						packetList,
-						req->pFileStruct->ucMD4FileHash,
-						data_rate,
-						&theStats::AddUpOverheadFileRequest);
+			// Disable compression if the socket is starved and the data rate is high. Once
+			// disabled for a client it stays disabled for the session.
+			if (!client->m_bDisableCompression && req->pFileStruct->bCompress &&
+				client->m_byDataCompVer == 1) {
+				if ((sint32)m_listFinishedIO.size() > MAX_FINISHED_REQUESTS_COMPRESSION &&
+					theStats::GetUploadRate() > SLOT_COMPRESSIONCHECK_DATARATE) {
+					client->m_bDisableCompression = true;
+				} else if (client->GetUploadDatarate() > SLOT_COMPRESSIONCHECK_DATARATE &&
+					   !pSocket->HasQueues(true) && !pSocket->IsBusyQuickCheck()) {
+					client->m_bDisableCompression = true;
 				} else {
-					UploadPacketBuilder::Standard(req->area.GetBuffer(),
-						req->uStartOffset,
-						req->uEndOffset,
-						packetList,
-						req->pFileStruct->ucMD4FileHash,
-						data_rate,
-						&theStats::AddUpOverheadFileRequest);
+					useCompression = true;
 				}
+			}
+			dataRate = client->GetUploadDatarate();
+			packedFor = pSocket;
+			sessionStart = client->GetUpStartTime();
+		}
+	}
 
-				for (CPacketList::iterator it = packetList.begin(); it != packetList.end();
-					++it) {
-					theStats::AddUploadToSoft(client->GetClientSoft(), it->second);
-					pSocket->SendPacket(it->first, true, false, it->second);
+	if (packedFor != nullptr) {
+		// CommitRead set the file ID.
+		CPacketList packetList;
+		if (useCompression) {
+			UploadPacketBuilder::Packed(req->area.GetBuffer(),
+				req->uStartOffset,
+				req->uEndOffset,
+				packetList,
+				req->pFileStruct->ucMD4FileHash,
+				dataRate,
+				&theStats::AddUpOverheadFileRequest);
+		} else {
+			UploadPacketBuilder::Standard(req->area.GetBuffer(),
+				req->uStartOffset,
+				req->uEndOffset,
+				packetList,
+				req->pFileStruct->ucMD4FileHash,
+				dataRate,
+				&theStats::AddUpOverheadFileRequest);
+		}
+
+		// Held through SendPacket so a concurrent disconnect cannot free the socket, as in
+		// eMule. The block belongs to the connection and upload session it was read for.
+		{
+			wxMutexLocker uploadLock(theApp->uploadqueue->GetUploadingListLock());
+			CUpDownClient *client = theApp->uploadqueue->FindUploadingClient(req->clientId);
+			CClientTCPSocket *pSocket = client ? client->GetSocket() : nullptr;
+			if (client != nullptr && pSocket == packedFor && client->IsConnected() &&
+				client->GetUpStartTime() == sessionStart) {
+				for (const auto &packet : packetList) {
+					theStats::AddUploadToSoft(client->GetClientSoft(), packet.second);
+					pSocket->SendPacket(packet.first, true, false, packet.second);
 				}
-
+				packetList.clear();
 				m_bSignalThrottler = true;
+			} else {
+				AddDebugLogLineN(logClient,
+					"CUploadDiskIOThread::ReadCompletionRoutine: Client left or "
+					"reconnected while its block was packed, discarding it");
 			}
 		}
-	} // uploadLock released here
+		for (const auto &packet : packetList) {
+			delete packet.first;
+		}
+	}
 
 	ReleaseOpenFile(req->pFileStruct);
 	delete req;

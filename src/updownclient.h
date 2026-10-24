@@ -476,6 +476,7 @@ public:
 
 	void AddReqBlock(Requested_Block_Struct *reqblock, bool bSignalIOThread = true);
 	void SetUpStartTime() { m_dwUploadTime = ::GetTickCount64(); }
+	uint64 GetUpStartTime() const { return m_dwUploadTime; }
 	void SetWaitStartTime();
 	void ClearWaitStartTime();
 	void SendHashsetPacket(const CMD4Hash &forfileid);
