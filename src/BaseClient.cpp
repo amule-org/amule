@@ -2516,10 +2516,10 @@ int CUpDownClient::GetHashType() const
 
 bool CUpDownClient::ReplaceSocket(CClientTCPSocket *socket)
 {
-	if (m_socket != NULL && m_socket->IsConnected()) {
+	if (m_socket != nullptr && m_socket->IsConnected()) {
 		return false;
 	}
-	if (m_socket != NULL) {
+	if (m_socket != nullptr) {
 		m_socket->Safe_Delete();
 	}
 	SetSocket(socket);
