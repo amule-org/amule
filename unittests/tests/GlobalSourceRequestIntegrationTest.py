@@ -91,6 +91,10 @@ def run(binary):
                     time.sleep(0.2)
                 assert not any(paused in hashes for hashes in asked.values()), 'a paused download was asked'
                 ec.sock.close()
+            except BaseException:
+                logfile = root / 'logfile'
+                print(logfile.read_text(errors='replace')[-5000:] if logfile.exists() else 'no logfile')
+                raise
             finally:
                 stop.set()
                 workers[0].join()

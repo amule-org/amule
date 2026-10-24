@@ -462,7 +462,9 @@ void CServerUDPSocket::SendQueue()
 			CServer *update = theApp->serverlist->GetServerByAddress(item.addr, item.serverPort);
 			if (update) {
 				const uint64 now = ::GetTickCount64();
-				if (update->GetLastDNSSolve() + DNS_SOLVE_TIME < now) {
+				// Ticks count from boot: 0 means never resolved, not checked recently.
+				if (update->GetLastDNSSolve() == 0 ||
+					update->GetLastDNSSolve() + DNS_SOLVE_TIME < now) {
 					// Its time for a new check.
 					CAsyncDNS *dns = new CAsyncDNS(item.addr, DNS_UDP, theApp, this);
 					if ((dns->Create() != wxTHREAD_NO_ERROR) ||
