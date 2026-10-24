@@ -59,8 +59,17 @@ inline bool MatchesRateLimitScope(const CNetworkAddress &first, const CNetworkAd
 	       PeerAddressing::RateLimitScope(first) == PeerAddressing::RateLimitScope(second);
 }
 
-/** Upload slots one accounting scope may hold at once. */
+/** Upload slots one accounting scope may hold while other clients can use the slot. */
 inline constexpr unsigned MaxUploadSlotsPerScope = 2;
+
+/**
+ * Upload slots one accounting scope may hold even when nobody else can use them.
+ *
+ * Above MaxUploadSlotsPerScope a scope gets spare capacity only, but with unlimited upload a fast
+ * line nearly always has spare slots (up to 250), and kicking runs only once all of them are taken.
+ * Generous, so that many users behind one CGNAT IPv4 are still served at once.
+ */
+inline constexpr unsigned HardMaxUploadSlotsPerScope = 10;
 
 /**
  * Whether a peer at `candidate` may take another upload slot, given the peers already uploading.
@@ -70,7 +79,10 @@ inline constexpr unsigned MaxUploadSlotsPerScope = 2;
  * slot. Like that cap, an address without a host identity is outside this one.
  */
 template <typename Range, typename AddressOf>
-bool HasUploadSlotRoom(const CNetworkAddress &candidate, const Range &uploading, AddressOf addressOf)
+bool HasUploadSlotRoom(const CNetworkAddress &candidate,
+	const Range &uploading,
+	AddressOf addressOf,
+	unsigned limit = MaxUploadSlotsPerScope)
 {
 	if (!IsMatchable(candidate)) {
 		return true;
@@ -81,7 +93,7 @@ bool HasUploadSlotRoom(const CNetworkAddress &candidate, const Range &uploading,
 	for (const auto &peer : uploading) {
 		const CNetworkAddress &address = addressOf(peer);
 		if (IsMatchable(address) && PeerAddressing::RateLimitScope(address) == scope &&
-			++held >= MaxUploadSlotsPerScope) {
+			++held >= limit) {
 			return false;
 		}
 	}

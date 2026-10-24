@@ -2740,6 +2740,11 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 					${CMAKE_CURRENT_SOURCE_DIR}/UploadRefillIntegrationTest.py
 					$<TARGET_FILE:amuled> --seconds 3 --compress
 			)
+			# Two loopback peer addresses (127.0.0.2, 127.0.0.3) need Linux.
+			add_test (NAME UploadSlotScopeIntegrationTest
+				COMMAND ${Python3_EXECUTABLE} -u
+					${CMAKE_CURRENT_SOURCE_DIR}/UploadSlotScopeIntegrationTest.py $<TARGET_FILE:amuled>
+			)
 		endif()
 		add_test (NAME PathDefaultsIntegrationTest
 			COMMAND ${Python3_EXECUTABLE}

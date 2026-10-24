@@ -97,11 +97,15 @@ TEST(UploadQueueAddressPolicy, RateLimitScopeAggregatesOnlyDelegatedPrefixes)
 
 namespace
 {
-bool HasRoom(const char *candidate, const std::vector<CNetworkAddress> &uploading)
+bool HasRoom(const char *candidate,
+	const std::vector<CNetworkAddress> &uploading,
+	unsigned limit = UploadQueueAddressPolicy::MaxUploadSlotsPerScope)
 {
-	return UploadQueueAddressPolicy::HasUploadSlotRoom(CNetworkAddress::FromString(candidate),
+	return UploadQueueAddressPolicy::HasUploadSlotRoom(
+		CNetworkAddress::FromString(candidate),
 		uploading,
-		[](const CNetworkAddress &address) -> const CNetworkAddress & { return address; });
+		[](const CNetworkAddress &address) -> const CNetworkAddress & { return address; },
+		limit);
 }
 } // namespace
 
@@ -138,4 +142,23 @@ TEST(UploadQueueAddressPolicy, UploadSlotCapIgnoresAddresslessPeers)
 	ASSERT_TRUE(UploadQueueAddressPolicy::HasUploadSlotRoom(absent,
 		std::vector<CNetworkAddress>{ absent, absent },
 		[](const CNetworkAddress &address) -> const CNetworkAddress & { return address; }));
+}
+
+// Spare capacity is nearly unlimited on a fast line with unlimited upload, so it needs a bound too.
+TEST(UploadQueueAddressPolicy, HardCapBoundsSpareSlotsPerScope)
+{
+	constexpr unsigned hard = UploadQueueAddressPolicy::HardMaxUploadSlotsPerScope;
+	static_assert(hard == 10);
+	const auto host = CNetworkAddress::FromString("192.0.2.7");
+	std::vector<CNetworkAddress> uploading(hard - 1, host);
+
+	ASSERT_TRUE(HasRoom("192.0.2.7", uploading, hard));
+	uploading.push_back(host);
+	ASSERT_FALSE(HasRoom("192.0.2.7", uploading, hard));
+	ASSERT_FALSE(HasRoom("::ffff:192.0.2.7", uploading, hard));
+	ASSERT_TRUE(HasRoom("192.0.2.8", uploading, hard));
+
+	const std::vector<CNetworkAddress> prefix(hard, CNetworkAddress::FromString("2001:db8:1:2::1"));
+	ASSERT_FALSE(HasRoom("2001:db8:1:2::3", prefix, hard));
+	ASSERT_TRUE(HasRoom("2001:db8:1:3::1", prefix, hard));
 }

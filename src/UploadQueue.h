@@ -83,7 +83,7 @@ private:
 	void RemoveFromWaitingQueue(CClientRefList::iterator pos);
 	uint32 GetMaxSlots() const;
 	void AddUpNextClient(CUpDownClient *directadd = 0);
-	bool HasUploadSlotRoom(const CUpDownClient *client) const;
+	bool HasUploadSlotRoom(const CUpDownClient *client, unsigned limit) const;
 	bool IsSuspended(const CMD4Hash &hash)
 	{
 		return suspendedUploadsSet.find(hash) != suspendedUploadsSet.end();
