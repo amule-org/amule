@@ -108,6 +108,7 @@ class CPartFile : public CKnownFile
 	friend class CPartFileWriteThread;
 	friend class CPartFileHashThread;
 	friend class CUploadDiskIOThread;
+	friend struct ReadRequest_Struct; // releases a worker-owned upload read pin
 
 public:
 	typedef std::list<Requested_Block_Struct *> CReqBlockPtrList;

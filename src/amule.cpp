@@ -407,6 +407,14 @@ int CamuleApp::OnExit()
 		AddLogLineNS(_("aMule OnExit: Terminating core."));
 	}
 
+	// Drain upload reads before destroying shared files, clients or uploadqueue.
+	// Workers may still own a part-file pin and the coordinator validates completions.
+	if (uploadDiskIOThread) {
+		uploadDiskIOThread->EndThread();
+		delete uploadDiskIOThread;
+		uploadDiskIOThread = nullptr;
+	}
+
 	delete serverlist;
 	serverlist = NULL;
 
@@ -462,14 +470,6 @@ int CamuleApp::OnExit()
 
 	delete clientlist;
 	clientlist = NULL;
-
-	// Stop the upload disk I/O thread before deleting uploadqueue -- the thread iterates
-	// uploadqueue->GetUploadingList() and will crash if it runs after uploadqueue is freed.
-	if (uploadDiskIOThread) {
-		uploadDiskIOThread->EndThread();
-		delete uploadDiskIOThread;
-		uploadDiskIOThread = NULL;
-	}
 
 	delete uploadqueue;
 	uploadqueue = NULL;

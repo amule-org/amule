@@ -119,6 +119,7 @@ CEMSocket::~CEMSocket()
 void CEMSocket::ClearQueues()
 {
 	std::lock_guard<std::mutex> lock(m_sendLocker);
+	const bool releasedBudget = m_uploadBufferReservation || !m_standard_queue.empty();
 
 	DeleteContents(m_control_queue);
 
@@ -146,8 +147,12 @@ void CEMSocket::ClearQueues()
 	// Upload control
 	delete[] sendbuffer;
 	sendbuffer = NULL;
+	m_uploadBufferReservation.reset();
 	sendblen = 0;
 	sent = 0;
+	if (releasedBudget && theApp->uploadDiskIOThread) {
+		theApp->uploadDiskIOThread->SocketNeedsMoreData();
+	}
 }
 
 void CEMSocket::QuiesceForRedial()
@@ -345,6 +350,23 @@ void CEMSocket::WakeIfPaused()
  */
 void CEMSocket::SendPacket(CPacket *packet, bool delpacket, bool controlpacket, uint32 actualPayloadSize)
 {
+	QueuePacket(packet, delpacket, controlpacket, actualPayloadSize, {});
+}
+
+void CEMSocket::SendUploadPacket(CPacket *packet, uint32 payload, UploadBufferBudget::Lease reservation)
+{
+	// Queue insertion can allocate. Until it succeeds this call owns the packet.
+	std::unique_ptr<CPacket> owner(packet);
+	QueuePacket(packet, true, false, payload, std::move(reservation));
+	owner.release();
+}
+
+void CEMSocket::QueuePacket(CPacket *packet,
+	bool delpacket,
+	bool controlpacket,
+	uint32 actualPayloadSize,
+	UploadBufferBudget::Lease reservation)
+{
 	std::lock_guard<std::mutex> lock(m_sendLocker);
 
 	if (byConnected == ES_DISCONNECTED) {
@@ -364,8 +386,7 @@ void CEMSocket::SendPacket(CPacket *packet, bool delpacket, bool controlpacket, 
 		} else {
 			bool first = !((sendbuffer && !m_currentPacket_is_controlpacket) ||
 				       !m_standard_queue.empty());
-			StandardPacketQueueEntry queueEntry = { actualPayloadSize, packet };
-			m_standard_queue.push_back(queueEntry);
+			m_standard_queue.push_back({ actualPayloadSize, packet, std::move(reservation) });
 			m_uploadRefill.Queue(actualPayloadSize);
 
 			// reset timeout for the first time
@@ -425,14 +446,25 @@ uint64 CEMSocket::GetSentPayloadSinceLastCallAndReset()
 	return sentBytes;
 }
 
-void CEMSocket::SetUploadBufferTarget(uint32 payload)
+uint32 CEMSocket::UpdateUploadBufferTarget(uint32 wireRate)
 {
 	std::lock_guard<std::mutex> lock(m_sendLocker);
+	// Compressed data consumes source payload faster than its wire rate. Sample
+	// original payload completions; the client rate supplies conservative warmup.
+	const uint32 payload = UploadBufferTarget(
+		std::max(wireRate, m_uploadRefill.PayloadRate(GetTickCount64())), EMBLOCKSIZE);
 	if (m_uploadRefill.SetTarget(payload) && theApp->uploadDiskIOThread) {
-		// PrepareRead's payload snapshot precedes this lock. If the target grew
-		// above the remaining queue, keep a refill pending for a fresh snapshot.
+		// A growing target may need a fresh pass without another crossing of the
+		// previous threshold.
 		theApp->uploadDiskIOThread->SocketNeedsMoreData();
 	}
+	return payload;
+}
+
+uint64 CEMSocket::QueuedUploadPayload() const
+{
+	std::lock_guard<std::mutex> lock(m_sendLocker);
+	return m_uploadRefill.Queued();
 }
 
 // Non-resetting peek at bytes sent since the last GetSentPayloadSinceLastCallAndReset(). Used by
@@ -565,10 +597,12 @@ SocketSentBytes CEMSocket::Send(
 				} else if (!m_standard_queue
 						    .empty() /*&& onlyAllowedToSendControlPacket == false*/) {
 					m_currentPacket_is_controlpacket = false;
-					StandardPacketQueueEntry queueEntry = m_standard_queue.front();
+					StandardPacketQueueEntry queueEntry =
+						std::move(m_standard_queue.front());
 					m_standard_queue.pop_front();
 					curPacket = queueEntry.packet;
 					m_actualPayloadSize = queueEntry.actualPayloadSize;
+					m_uploadBufferReservation = std::move(queueEntry.reservation);
 
 					// remember this for statistics purposes.
 					m_currentPackageIsFromPartFile = curPacket->IsFromPF();
@@ -729,9 +763,14 @@ SocketSentBytes CEMSocket::Send(
 
 				if (!m_currentPacket_is_controlpacket) {
 					m_actualPayloadSizeSent += m_actualPayloadSize;
+					const bool releasedBudget =
+						m_uploadBufferReservation &&
+						m_uploadBufferReservation.use_count() == 1;
+					m_uploadBufferReservation.reset();
 					// Match the disk worker's send-ahead check. Wake once when the
 					// original payload crosses below its target, or the queue drains.
-					if (m_uploadRefill.Complete(m_actualPayloadSize) &&
+					if ((m_uploadRefill.Complete(m_actualPayloadSize, now) ||
+						    releasedBudget) &&
 						theApp->uploadDiskIOThread) {
 						theApp->uploadDiskIOThread->SocketNeedsMoreData();
 					}
@@ -840,6 +879,7 @@ uint32 CEMSocket::GetNeededBytes()
 void CEMSocket::TruncateQueues()
 {
 	std::lock_guard<std::mutex> lock(m_sendLocker);
+	const bool releasedBudget = !m_standard_queue.empty();
 
 	// Clear the standard queue totally
 	// Please note! There may still be a standardpacket in the sendbuffer variable!
@@ -850,6 +890,9 @@ void CEMSocket::TruncateQueues()
 	}
 
 	m_standard_queue.clear();
+	if (releasedBudget && theApp->uploadDiskIOThread) {
+		theApp->uploadDiskIOThread->SocketNeedsMoreData();
+	}
 }
 
 uint64 CEMSocket::GetTimeOut() const

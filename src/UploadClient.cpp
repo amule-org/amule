@@ -464,6 +464,7 @@ void CUpDownClient::ResetSessionUp()
 	{
 		// The disk I/O thread reads the two as a pair under this lock.
 		wxMutexLocker lock(m_blockListLock);
+		++m_uploadReadSession;
 		m_addedPayloadQueueSession = 0;
 		m_nCurQueueSessionPayloadUp = 0;
 	}

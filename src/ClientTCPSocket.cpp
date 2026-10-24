@@ -2417,4 +2417,11 @@ void CClientTCPSocket::SendPacket(
 	ResetTimeOutTimer();
 	CEMSocket::SendPacket(packet, delpacket, controlpacket, actualPayloadSize);
 }
+
+void CClientTCPSocket::SendUploadPacket(
+	CPacket *packet, uint32 payload, UploadBufferBudget::Lease reservation)
+{
+	ResetTimeOutTimer();
+	CEMSocket::SendUploadPacket(packet, payload, std::move(reservation));
+}
 // File_checked_for_headers

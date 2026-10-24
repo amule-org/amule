@@ -73,6 +73,9 @@ public:
 	 */
 	uint8_t *GetBuffer() const { return m_buffer; };
 
+	//! Whether the current read still uses file-backed pages.
+	bool IsMapped() const { return m_mmap_buffer != nullptr; }
+
 	/**
 	 * Touches every page of a memory-mapped read, so its disk reads (and any SIGBUS error)
 	 * happen now rather than wherever the buffer is first used. No-op if not mapped.
