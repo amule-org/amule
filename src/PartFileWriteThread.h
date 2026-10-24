@@ -26,12 +26,12 @@
 #ifndef PARTFILEWRITETHREAD_H
 #define PARTFILEWRITETHREAD_H
 
-#include <list>
+#include "VolumeWritePool.h"
+#include "PartFileWriteSession.h"
+#include <memory>
 #include <atomic>
 
 #include <common/Path.h> // Needed for CPath
-
-#include <wx/thread.h>
 
 class CPartFile;
 class CKnownFile;
@@ -52,50 +52,37 @@ struct ToWrite
 	CPartFile *pFile;
 	PartFileBufferedData *pBuffer;
 	//! For the free-space check, taken on the main thread when queued: the part file's
-	//! directory and the user's limit, if it is on.
-	CPath dir;
+	//! actual data path and the user's limit, if it is on.
+	CPath partPath;
 	bool checkSpace;
 	uint64 minFree;
+	std::shared_ptr<PartFileWriteSession> session;
 };
 
-// Port of eMule's CPartFileWriteThread (PartFileWriteThread.h:35-67). Windows primitives
-// replaced with wxWidgets equivalents:
-//   CWinThread             -> wxThread (joinable)
-//   IOCP + overlapped I/O  -> synchronous CFileArea::FlushAt() on this thread
-//   GetQueuedCompletionStatus -> wxCondition::WaitTimeout()
-//   PostQueuedCompletionStatus -> wxCondition::Signal()
-//   CCriticalSection       -> wxMutex + wxMutexLocker
-class CPartFileWriteThread : public wxThread
+// Bounded asynchronous writer: one batch per discovered filesystem volume.
+class CPartFileWriteThread
 {
 public:
 	CPartFileWriteThread();
 	~CPartFileWriteThread();
 
 	void EndThread(); // eMule ref: PartFileWriteThread.cpp:62
-	void QueueWrite(CPartFile *pFile,
-		PartFileBufferedData *pBuffer,
-		const CPath &dir,
-		bool checkSpace,
-		uint64 minFree);
-	bool IsRunning() const { return m_bRun; }
+	bool PrepareFile(CPartFile *file);
+	bool QueueWrite(CPartFile *pFile, PartFileBufferedData *pBuffer, bool checkSpace, uint64 minFree);
+	bool IsRunning() const { return m_pool != nullptr && m_running; }
 
-	// Pointer-value strip of any pending writes whose pFile == `file`. Called by
-	// MuleNotify::KnownFileBeingDestroyed before the CPartFile is freed. Takes m_mutex so the
-	// write loop cannot race with the strip. Pending PartFileBufferedData entries are deleted
-	// here because the partfile they were meant for is gone -- the bytes are dropped, matching
-	// the cancel semantics.
+	// Revoke queued ownership for a cancelling file. Active jobs retain their
+	// pin until the provider call returns; CPartFile waits before closing/freeing.
 	void DropReferencesTo(const CKnownFile *file);
 
 private:
-	void *Entry() override;
-
-	std::atomic<bool> m_bRun{ false };
-	bool m_bWorkPending; // sticky wake flag
-
-	wxMutex m_mutex;
-	wxCondition m_condition;
-
-	std::list<ToWrite> m_flushList; // protected by m_mutex
+	static void Finish(ToWrite &write, uint8 status);
+	void WriteBatch(std::vector<ToWrite> &batch);
+	std::atomic<bool> m_running{ true };
+	std::unique_ptr<VolumeWritePool<ToWrite>> m_pool;
+	// QueueWrite/DropReferencesTo are main-thread operations; values are weak
+	// so completed/deleted files are never kept alive by the registry.
+	std::map<const CKnownFile *, std::weak_ptr<PartFileWriteSession>> m_sessions;
 };
 
 #endif // PARTFILEWRITETHREAD_H

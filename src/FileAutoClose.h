@@ -92,6 +92,7 @@ public:
 	 * The path of the currently opened file.
 	 */
 	const CPath &GetFilePath() const;
+	std::string GetKnownStorageIdentity() const { return m_file.GetKnownStorageIdentity(); }
 
 	/**
 	 * True if the file is opened.
@@ -107,6 +108,9 @@ public:
 	 * Writes @a count bytes from @a buffer at @a offset in the file. See CFileDataIO::Write.
 	 */
 	void WriteAt(const void *buffer, uint64 offset, size_t count);
+
+	// Seeks once and writes the scatter list; updates known size only on success.
+	void WriteSegmentsAt(const CFile::WriteSegment *segments, size_t count, uint64 offset);
 
 	/**
 	 * True when the file position is at or past the end of the file.

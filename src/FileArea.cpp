@@ -36,6 +36,7 @@
 #include <signal.h>
 #endif
 
+#include <array>
 #include "FileArea.h"      // Interface declarations.
 #include "FileAutoClose.h" // Needed for CFileAutoClose
 
@@ -349,6 +350,38 @@ void CFileArea::FlushAt(CFileAutoClose &file, uint64 offset, size_t count)
 #endif
 	file.WriteAt(m_buffer, offset, count);
 	Close();
+}
+
+void CFileArea::FlushAdjacentAt(CFileAutoClose &file, const WriteRange *ranges, size_t count)
+{
+	if (ranges == nullptr || count == 0 || count > CFile::kMaxWriteSegments) {
+		throw CIOFailureException("Invalid adjacent write group.");
+	}
+	std::array<CFile::WriteSegment, CFile::kMaxWriteSegments> segments{};
+	uint64 next = ranges[0].offset;
+	size_t bytes = 0;
+	for (size_t i = 0; i < count; ++i) {
+		const auto &range = ranges[i];
+		if (range.area == nullptr || range.area->GetBuffer() == nullptr || range.size == 0 ||
+			range.offset != next || range.size > CFile::kMaxWriteBytes - bytes ||
+			(count > 1 && range.area->IsMapped())) {
+			throw CIOFailureException("Write group is not a bounded adjacent heap range.");
+		}
+		segments[i] = { range.area->GetBuffer(), range.size };
+		bytes += range.size;
+		next += range.size;
+		if (next < range.offset) {
+			throw CIOFailureException("Write range overflow.");
+		}
+	}
+	if (count == 1) {
+		ranges[0].area->FlushAt(file, ranges[0].offset, ranges[0].size);
+		return;
+	}
+	file.WriteSegmentsAt(segments.data(), count, ranges[0].offset);
+	for (size_t i = 0; i < count; ++i) {
+		ranges[i].area->Close();
+	}
 }
 
 void CFileArea::Prefault()

@@ -31,6 +31,8 @@
 
 #include <wx/file.h> // Needed for constants
 
+#include <atomic>
+#include <string>
 #include <memory> // Needed for std::unique_ptr
 #include <mutex>  // Needed for std::recursive_mutex
 
@@ -148,6 +150,17 @@ public:
 	 */
 	int fd() const;
 
+	struct WriteSegment
+	{
+		const void *data;
+		size_t size;
+	};
+	static constexpr size_t kMaxWriteSegments = 16;
+	static constexpr size_t kMaxWriteBytes = 1024 * 1024;
+	// Immediately writes a bounded scatter list at the current position. Throws
+	// on a short write as well as an error; the caller owns all retry buffers.
+	void WriteSegments(const WriteSegment *segments, size_t count);
+
 	/** Flushes data not yet written. Calling it on a closed file is illegal. */
 	bool Flush();
 
@@ -175,6 +188,9 @@ public:
 
 	/** Returns the path of the currently opened file. */
 	const CPath &GetFilePath() const;
+	// Cached from an existing successful length/fstat query; performs no I/O.
+	// Empty where the platform metadata does not identify a filesystem volume.
+	std::string GetKnownStorageIdentity() const;
 
 	/** Returns true if the file is opened. */
 	bool IsOpened() const;
@@ -201,6 +217,8 @@ private:
 
 	//! File descriptor or 'fd_invalid' if not opened
 	int m_fd;
+	mutable std::atomic<uint64> m_storageDevice{ 0 };
+	mutable std::atomic<bool> m_storageKnown{ false };
 
 	//! The full path to the current file.
 	CPath m_filePath;

@@ -68,10 +68,24 @@ public:
 	 */
 	void FlushAt(CFileAutoClose &file, uint64 offset, size_t count);
 
+	struct WriteRange
+	{
+		CFileArea *area;
+		uint64 offset;
+		size_t size;
+	};
+	// Flushes adjacent heap-backed ranges as one scatter write. Validation and
+	// I/O failures retain every area; success closes them all. A single mapped
+	// area uses FlushAt and preserves its mapped-error recovery behavior.
+	static void FlushAdjacentAt(CFileAutoClose &file, const WriteRange *ranges, size_t count);
+
 	/**
 	 * The buffer holding the data read or to be written, or NULL if not initialized.
 	 */
 	uint8_t *GetBuffer() const { return m_buffer; };
+
+	//! Whether the current read still uses file-backed pages.
+	bool IsMapped() const { return m_mmap_buffer != nullptr; }
 
 	/**
 	 * Touches every page of a memory-mapped read, so its disk reads (and any SIGBUS error)

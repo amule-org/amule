@@ -157,3 +157,19 @@ TEST(CFileAutoClose, ASharedDeleteReadHandleLetsTheFileMove)
 	ASSERT_TRUE(CPath::RemoveFile(RenamedFile()));
 	ASSERT_TRUE(file.Close());
 }
+
+#ifndef __WINDOWS__
+TEST(CFileAutoClose, DescriptorIdentitySurvivesRenameAndAutoCloseWithoutProbingThePath)
+{
+	CFileAutoClose file;
+	ASSERT_TRUE(file.Open(TestFile(), CFile::read, true));
+	const auto identity = file.GetKnownStorageIdentity();
+	ASSERT_FALSE(identity.empty());
+	ASSERT_TRUE(CPath::RenameFile(TestFile(), RenamedFile()));
+	ASSERT_EQUALS(identity, file.GetKnownStorageIdentity());
+	ASSERT_TRUE(file.Release(true));
+	// The old path is gone and the descriptor is closed. The cached getter
+	// must neither probe it nor force a reopen to return this last identity.
+	ASSERT_EQUALS(identity, file.GetKnownStorageIdentity());
+}
+#endif

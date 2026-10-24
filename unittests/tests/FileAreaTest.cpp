@@ -10,6 +10,25 @@
 #include <atomic>
 #include <cerrno>
 #include <cstring>
+#include "WriteBufferBudget.h"
+#ifdef AMULE_TEST_WRAP_MSYNC
+#include <sys/uio.h>
+namespace
+{
+unsigned vectorCalls = 0;
+bool shortVectorWrite = false;
+} // namespace
+extern "C" ssize_t __real_writev(int fd, const iovec *iov, int count);
+extern "C" ssize_t __wrap_writev(int fd, const iovec *iov, int count)
+{
+	++vectorCalls;
+	if (shortVectorWrite) {
+		iovec first{ iov[0].iov_base, iov[0].iov_len / 2 };
+		return __real_writev(fd, &first, 1);
+	}
+	return __real_writev(fd, iov, count);
+}
+#endif
 
 std::atomic<uint32> TheTime{ 0 };
 
@@ -63,6 +82,9 @@ void setUp()
 }
 void tearDown()
 {
+#ifdef AMULE_TEST_WRAP_MSYNC
+	shortVectorWrite = false;
+#endif
 #if defined(AMULE_TEST_WRAP_MSYNC) && defined(MMAP_SUPPORTED)
 	failSync = false;
 	truncateOnFailure = -1;
@@ -198,3 +220,57 @@ TEST(FileArea, MappedSyncFailureSurvivesLostPages)
 	} // ~CFileArea must not rethrow the SIGBUS from the copy
 }
 #endif
+
+TEST(FileArea, AdjacentFragmentsUseOneWriteAndRetainOwnershipOnPartialFailure)
+{
+	CFileAutoClose file(TestFile(), CFile::read_write);
+	std::array<CFileArea, 16> areas;
+	std::array<CFileArea::WriteRange, 16> ranges{};
+	WriteBufferBudget budget;
+	std::array<WriteBufferBudget::Credit, 16> credits;
+	for (size_t i = 0; i < areas.size(); ++i) {
+		areas[i].StartWriteAt(file, 17 + i * 23, 23);
+		std::memset(areas[i].GetBuffer(), static_cast<int>(i + 1), 23);
+		ranges[i] = { &areas[i], 17 + i * 23, 23 };
+		credits[i] = budget.Reserve("test", 23);
+	}
+#ifdef AMULE_TEST_WRAP_MSYNC
+	const auto before = vectorCalls;
+	shortVectorWrite = true;
+	ASSERT_RAISES(CIOFailureException, CFileArea::FlushAdjacentAt(file, ranges.data(), ranges.size()));
+	ASSERT_EQUALS(before + 1, vectorCalls);
+	ASSERT_EQUALS(uint64_t{ 368 }, budget.Used());
+	for (size_t i = 0; i < areas.size(); ++i) {
+		ASSERT_TRUE(areas[i].GetBuffer() != nullptr);
+		ASSERT_EQUALS(static_cast<int>(i + 1), static_cast<int>(areas[i].GetBuffer()[22]));
+	}
+	shortVectorWrite = false;
+#endif
+	CFileArea::FlushAdjacentAt(file, ranges.data(), ranges.size());
+#ifdef AMULE_TEST_WRAP_MSYNC
+	ASSERT_EQUALS(before + 2, vectorCalls);
+#endif
+	std::array<unsigned char, 385> data{};
+	file.ReadAt(data.data(), 0, data.size());
+	for (size_t i = 0; i < data.size(); ++i) {
+		ASSERT_EQUALS(i < 17 ? 0 : static_cast<int>((i - 17) / 23 + 1), static_cast<int>(data[i]));
+	}
+	for (auto &area : areas) {
+		ASSERT_TRUE(area.GetBuffer() == nullptr);
+	}
+	// Completion harvesting, rather than the I/O helper, owns credit release.
+	ASSERT_EQUALS(uint64_t{ 368 }, budget.Used());
+	credits.fill(nullptr);
+	ASSERT_EQUALS(uint64_t{ 0 }, budget.Used());
+}
+
+TEST(FileArea, NonAdjacentGroupRetainsBothBuffers)
+{
+	CFileAutoClose file(TestFile(), CFile::read_write);
+	CFileArea first, second;
+	first.StartWriteAt(file, 0, 23);
+	second.StartWriteAt(file, 24, 23);
+	const CFileArea::WriteRange ranges[] = { { &first, 0, 23 }, { &second, 24, 23 } };
+	ASSERT_RAISES(CIOFailureException, CFileArea::FlushAdjacentAt(file, ranges, 2));
+	ASSERT_TRUE(first.GetBuffer() != nullptr && second.GetBuffer() != nullptr);
+}

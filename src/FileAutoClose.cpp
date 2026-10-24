@@ -23,6 +23,7 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
+#include <limits>
 #include "FileAutoClose.h"
 #include "GetTickCount.h" // for TheTime
 #include "Logger.h"       // Needed for AddDebugLogLineN
@@ -117,6 +118,23 @@ void CFileAutoClose::WriteAt(const void *buffer, uint64 offset, size_t count)
 	m_file.Seek(offset);
 	m_file.Write(buffer, count); // throws on failure
 	const uint64 end = offset + count;
+	uint64 known = m_knownSize.load(std::memory_order_relaxed);
+	while (end > known && !m_knownSize.compare_exchange_weak(known, end, std::memory_order_relaxed)) {
+	}
+}
+
+void CFileAutoClose::WriteSegmentsAt(const CFile::WriteSegment *segments, size_t count, uint64 offset)
+{
+	if (offset > static_cast<uint64>(std::numeric_limits<sint64>::max())) {
+		throw CSeekFailureException("Scatter write offset is out of range.");
+	}
+	CInUse inUse(*this);
+	m_file.Seek(static_cast<sint64>(offset));
+	m_file.WriteSegments(segments, count);
+	uint64 end = offset;
+	for (size_t i = 0; i < count; ++i) {
+		end += segments[i].size;
+	}
 	uint64 known = m_knownSize.load(std::memory_order_relaxed);
 	while (end > known && !m_knownSize.compare_exchange_weak(known, end, std::memory_order_relaxed)) {
 	}

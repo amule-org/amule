@@ -377,6 +377,7 @@ CPartFile::~CPartFile()
 	if (m_hpartfile.IsOpened()) {
 		// FlushBuffer drains buffered writes / harvests Phase 2's PB_WRITTEN items into
 		// m_aChangedPart. Phase 3 itself returns early due to m_inDestructor.
+		WaitForWrites();
 		FlushBuffer();
 
 		// Sync-hash any parts still flagged dirty in m_aChangedPart.
@@ -1653,7 +1654,9 @@ uint32 CPartFile::Process(uint8 m_icounter)
 	// bypass drains Phase 3 at Process()-tick rate (~100 ms) instead of every 60 s when the
 	// file is idle.
 	if ((m_nTotalBufferData > thePrefs::GetFileBufferSize()) ||
-		(dwCurTick > (m_nLastBufferFlushTime + BUFFER_TIME_LIMIT)) || HasPendingHashWork()) {
+		(dwCurTick > (m_nLastBufferFlushTime + BUFFER_TIME_LIMIT)) || HasPendingHashWork() ||
+		(m_nTotalBufferData != 0 &&
+			WriteBufferBudget::Get().IsPressured(m_PartPath.GetRaw().ToStdString(wxConvUTF8)))) {
 		FlushBuffer();
 	}
 
@@ -2241,9 +2244,25 @@ void CPartFile::UpdatePartsInfo()
 }
 
 // [Maella -Enhanced Chunk Selection- (based on jicxicmic)]
-bool CPartFile::GetNextRequestedBlock(
-	CUpDownClient *sender, std::vector<Requested_Block_Struct *> &toadd, uint16 &count)
+bool CPartFile::GetNextRequestedBlock(CUpDownClient *sender,
+	std::vector<Requested_Block_Struct *> &toadd,
+	uint16 &count,
+	bool *writeLimited)
 {
+	if (writeLimited != nullptr) {
+		*writeLimited = false;
+	}
+
+	// Discover before reserving network data: unknown-volume debt from a full
+	// stalled volume must not prevent a healthy new file getting its identity.
+	auto *writer = theApp->partFileWriteThread;
+	if (writer != nullptr && writer->IsRunning() && !writer->PrepareFile(this)) {
+		if (writeLimited != nullptr) {
+			*writeLimited = true;
+		}
+		count = 0;
+		return false;
+	}
 
 	// Returns a list of blocks (~180KB) to download. To avoid prematurely stopping the
 	// download, all blocks requested from the same source must lie within the same chunk
@@ -2294,6 +2313,17 @@ bool CPartFile::GetNextRequestedBlock(
 		if (sender->GetLastPartAsked() != 0xffff) {
 			Requested_Block_Struct *pBlock = new Requested_Block_Struct;
 			if (GetNextEmptyBlockInPart(sender->GetLastPartAsked(), pBlock) == true) {
+				auto credit = WriteBufferBudget::Get().Reserve(
+					m_PartPath.GetRaw().ToStdString(wxConvUTF8),
+					pBlock->EndOffset - pBlock->StartOffset + 1);
+				if (!credit) {
+					if (writeLimited != nullptr) {
+						*writeLimited = true;
+					}
+					delete pBlock;
+					break;
+				}
+				m_writeCredits.emplace(pBlock, std::move(credit));
 				// Keep a track of all pending requested blocks
 				m_requestedblocks_list.push_back(pBlock);
 				// Update list of blocks to return
@@ -2488,6 +2518,7 @@ void CPartFile::RemoveBlockFromList(uint64 start, uint64 end)
 		std::list<Requested_Block_Struct *>::iterator it2 = it++;
 
 		if ((*it2)->StartOffset <= start && (*it2)->EndOffset >= end) {
+			m_writeCredits.erase(*it2);
 			m_requestedblocks_list.erase(it2);
 		}
 	}
@@ -2496,6 +2527,7 @@ void CPartFile::RemoveBlockFromList(uint64 start, uint64 end)
 void CPartFile::RemoveAllRequestedBlocks(void)
 {
 	m_requestedblocks_list.clear();
+	m_writeCredits.clear();
 }
 
 void CPartFile::CompleteFile(bool bIsHashingDone)
@@ -2723,6 +2755,8 @@ void CPartFile::Delete()
 	// SuspendUpload above dropped this file's uploaders under the uploading-list lock, so no
 	// new upload read can start.
 	WaitForUploadReads();
+
+	WaitForWrites();
 
 	// Same reasoning as PerformFileComplete: the upload reader holds
 	// m_hpartfileMutex around its Seek+Read, so the close takes it too.
@@ -3511,47 +3545,66 @@ uint32 CPartFile::WriteToBuffer(uint32 transize,
 		}
 	}
 
-	// log transferinformation in our "blackbox"
-	m_CorruptionBlackBox->TransferredData(start, end, client->GetIP());
-
-	// Stamp for FlushBuffer's Phase 3 quiescent guard, and for the download-list "Last
-	// Reception" column. The latter must stamp on real data arrival, not on every periodic
-	// FlushBuffer call, or idle/paused/stalled files all read "now" and the column stops
-	// being useful.
+	const auto credit = m_writeCredits.find(block);
+	if (credit == m_writeCredits.end()) {
+		return 0; // cancelled or invalidated request: no owned write capacity
+	}
+	// Stamp real accepted reception, rather than periodic flushing.
 	m_nLastBlockReceivedTick = GetTickCount64();
 	m_lastDateChanged = wxDateTime::GetTimeNow();
 
-	// Create a new buffered queue entry
-	PartFileBufferedData *item = new PartFileBufferedData(m_hpartfile, data, start, end, block);
-
-	InsertPartFileBufferedWrite(m_BufferedData_list, item);
-
-	// Increment buffer size marker
-	m_nTotalBufferData += lenData;
-
-	// Mark this small section of the file as filled
-	FillGap(item->start, item->end);
-
-	// Update the flushed mark on the requested block
-	// The loop here is unfortunate but necessary to detect deleted blocks.
-
-	std::list<Requested_Block_Struct *>::iterator it2 = m_requestedblocks_list.begin();
-	for (; it2 != m_requestedblocks_list.end(); ++it2) {
-		if (*it2 == item->block) {
-			item->block->transferred += lenData;
+	struct Fragment
+	{
+		uint64 start;
+		uint64 end;
+	};
+	std::vector<Fragment> fragments;
+	for (auto gap = m_gaplist.begin(); gap != m_gaplist.end(); ++gap) {
+		if (gap.start() > end) {
+			break;
+		}
+		if (gap.end() >= start) {
+			fragments.push_back({ std::max(start, gap.start()), std::min(end, gap.end()) });
 		}
 	}
+	uint32 buffered = 0;
+	for (const auto &fragment : fragments) {
+		auto *item = new PartFileBufferedData(m_hpartfile,
+			data + fragment.start - start,
+			fragment.start,
+			fragment.end,
+			block,
+			credit->second);
+		InsertPartFileBufferedWrite(m_BufferedData_list, item);
+		const uint32 bytes = static_cast<uint32>(fragment.end - fragment.start + 1);
+		m_nTotalBufferData += bytes;
+		buffered += bytes;
+		// Attribute only the bytes actually retained, not overlapping duplicates.
+		m_CorruptionBlackBox->TransferredData(fragment.start, fragment.end, client->GetIP());
+		FillGap(fragment.start, fragment.end);
+	}
+	block->transferred += buffered;
 
 	if (m_gaplist.IsComplete()) {
 		FlushBuffer();
 	}
 
 	// Return the length of data written to the buffer
-	return lenData;
+	return buffered;
+}
+
+void CPartFile::WaitForWrites()
+{
+	while (m_iWrites.load() != 0) {
+		wxMilliSleep(10);
+	}
 }
 
 void CPartFile::FlushBuffer(bool fromAICHRecoveryDataAvailable)
 {
+	if (m_deleting) {
+		return;
+	}
 	m_nLastBufferFlushTime = GetTickCount64();
 
 	uint32 partCount = GetPartCount();
@@ -3570,7 +3623,9 @@ void CPartFile::FlushBuffer(bool fromAICHRecoveryDataAvailable)
 	// fit (PB_NOSPACE). Probing here would block the main thread on a busy or hung mount, as
 	// ntfs-3g does during a trim. Without the write thread (shutdown), check here as before.
 	CPartFileWriteThread *pThread = theApp->partFileWriteThread;
-	const bool threaded = pThread && pThread->IsRunning();
+	// Teardown first joins this file's accepted work, then drains synchronously.
+	// It cannot enqueue another bounded batch and close while that batch runs.
+	const bool threaded = pThread && pThread->IsRunning() && !m_inDestructor;
 	const bool refused = PutBackRefusedWrites();
 	if (!m_BufferedData_list.empty() && (threaded ? refused : !CheckFreeDiskSpace(m_nTotalBufferData))) {
 		PauseForSpace();
@@ -3586,11 +3641,13 @@ void CPartFile::FlushBuffer(bool fromAICHRecoveryDataAvailable)
 			if (item->flushed == PB_READY) {
 				item->flushed = PB_PENDING;
 				++m_iWrites;
-				pThread->QueueWrite(this,
-					item,
-					GetFilePath(),
-					thePrefs::IsCheckDiskspaceEnabled(),
-					thePrefs::GetMinFreeDiskSpace());
+				if (!pThread->QueueWrite(this,
+					    item,
+					    thePrefs::IsCheckDiskspaceEnabled(),
+					    thePrefs::GetMinFreeDiskSpace())) {
+					--m_iWrites;
+					item->flushed = PB_READY;
+				}
 			}
 		}
 	}
@@ -3604,6 +3661,10 @@ void CPartFile::FlushBuffer(bool fromAICHRecoveryDataAvailable)
 
 		switch (item->flushed) {
 		case PB_READY:
+			if (threaded) {
+				++it; // bounded queue full: retry without doing I/O on this thread
+				continue;
+			}
 			// Write thread not running -- fall back to synchronous write
 			{
 				wxASSERT((item->end - item->start) < 0xFFFFFFFF);
