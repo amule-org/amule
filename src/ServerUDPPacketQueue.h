@@ -17,6 +17,8 @@ struct ServerUDPPacket
 	uint32 ip = 0;
 	uint16 port = 0;
 	wxString addr;
+	// The server's TCP port, for GetServerByAddress(); port is where the packet goes.
+	uint16 serverPort = 0;
 };
 
 // DNS can stall delivery indefinitely. Bound both the number of retained

@@ -392,6 +392,7 @@ void CServerUDPSocket::SendPacket(
 
 	if (host->HasDynIP()) {
 		item.addr = host->GetDynIP();
+		item.serverPort = host->GetPort();
 	} else {
 		item.ip = host->GetIP();
 	}
@@ -458,7 +459,7 @@ void CServerUDPSocket::SendQueue()
 		wxASSERT(item.ip || !item.addr.IsEmpty());
 		if (!item.addr.IsEmpty()) {
 			// This not an ip but a hostname. Resolve it.
-			CServer *update = theApp->serverlist->GetServerByAddress(item.addr, item.port);
+			CServer *update = theApp->serverlist->GetServerByAddress(item.addr, item.serverPort);
 			if (update) {
 				const uint64 now = ::GetTickCount64();
 				if (update->GetLastDNSSolve() + DNS_SOLVE_TIME < now) {
@@ -553,7 +554,7 @@ void CServerUDPSocket::OnHostnameResolved(uint32 ip)
 	wxCHECK_RET(!item.ip && !item.addr.IsEmpty(), "DNS resolution not expected.");
 
 	/* An asynchronous database routine completed. */
-	CServer *update = theApp->serverlist->GetServerByAddress(item.addr, item.port);
+	CServer *update = theApp->serverlist->GetServerByAddress(item.addr, item.serverPort);
 	if (ip == 0) {
 		// The server may have been removed while its name was being resolved.
 		if (update) {

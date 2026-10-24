@@ -917,14 +917,17 @@ static bool IsConnectedServer(const CServer *server)
 	return false;
 }
 
-// Whether a global source request may ask the server about the file.
-static bool WantsGlobalSources(const CPartFile *file, const CServer *server)
+// Whether a global source request may ask any server about the file.
+static bool WantsGlobalSources(const CPartFile *file)
 {
 	const uint8 status = file->GetStatus();
-	if ((status != PS_READY && status != PS_EMPTY) ||
-		file->GetSourceCount() >= thePrefs::GetMaxSourcePerFileUDP()) {
-		return false;
-	}
+	return (status == PS_READY || status == PS_EMPTY) &&
+	       file->GetSourceCount() < thePrefs::GetMaxSourcePerFileUDP();
+}
+
+// Whether the server can be asked about a file that WantsGlobalSources().
+static bool ServerTakesGlobalSources(const CPartFile *file, const CServer *server)
+{
 	if (file->IsLargeFile() && !server->SupportsLargeFilesUDP()) {
 		AddDebugLogLineN(logDownloadQueue,
 			"UDP Request for sources on a large file ignored: server doesn't support it");
@@ -994,12 +997,28 @@ void CDownloadQueue::SendGlobalSources()
 		it = listed ? std::next(it) : m_globalSources.erase(it);
 	}
 
-	std::vector<CMD4Hash> downloads;
-	downloads.reserve(m_filelist.size());
+	// Filtered once per call, so a paused download costs no lookup per server.
+	std::vector<std::pair<CMD4Hash, const CPartFile *>> wanted;
 	for (const CPartFile *file : m_filelist) {
-		downloads.push_back(file->GetFileHash());
+		if (WantsGlobalSources(file)) {
+			wanted.emplace_back(file->GetFileHash(), file);
+		}
 	}
-	std::sort(downloads.begin(), downloads.end());
+	std::sort(wanted.begin(), wanted.end(), [](const auto &left, const auto &right) {
+		return left.first < right.first;
+	});
+	std::vector<CMD4Hash> downloads;
+	downloads.reserve(wanted.size());
+	for (const auto &entry : wanted) {
+		downloads.push_back(entry.first);
+	}
+	const auto findWanted = [&wanted](const CMD4Hash &hash) -> const CPartFile * {
+		const auto it = std::lower_bound(
+			wanted.begin(), wanted.end(), hash, [](const auto &entry, const CMD4Hash &key) {
+				return entry.first < key;
+			});
+		return it != wanted.end() && it->first == hash ? it->second : nullptr;
+	};
 
 	const uint64 now = ::GetTickCount64();
 	for (size_t i = 0; i < servers.size(); ++i) {
@@ -1007,8 +1026,9 @@ void CDownloadQueue::SendGlobalSources()
 		if (IsConnectedServer(servers[idx])) {
 			continue;
 		}
-		CServer *server =
-			theApp->serverlist->GetServerByIPTCP(servers[idx]->GetIP(), servers[idx]->GetPort());
+		// By address, as m_globalSources: a server known by name has IP 0 until it resolves.
+		CServer *server = theApp->serverlist->GetServerByAddress(
+			servers[idx]->GetAddress(), servers[idx]->GetPort());
 		if (!server) {
 			continue;
 		}
@@ -1018,9 +1038,9 @@ void CDownloadQueue::SendGlobalSources()
 		const std::vector<CMD4Hash> asked = GlobalSources(server).Next(
 			now,
 			downloads,
-			[this, server](const CMD4Hash &hash) {
-				const CPartFile *file = GetFileByID(hash);
-				return file && WantsGlobalSources(file, server);
+			[&findWanted, server](const CMD4Hash &hash) {
+				const CPartFile *file = findWanted(hash);
+				return file && ServerTakesGlobalSources(file, server);
 			},
 			perPacket);
 		if (asked.empty()) {
@@ -1031,7 +1051,7 @@ void CDownloadQueue::SendGlobalSources()
 		CMemFile data(28);
 		wxString hashes;
 		for (const CMD4Hash &hash : asked) {
-			WriteGlobalSourceRequest(data, GetFileByID(hash), server);
+			WriteGlobalSourceRequest(data, findWanted(hash), server);
 			hashes += " " + hash.Encode();
 		}
 		SendGlobGetSourcesUDPPacket(data, server);
