@@ -3209,3 +3209,30 @@ if (TARGET wxWidgets::CORE)
 	set_tests_properties (BandwidthRateInputEnglishTest BandwidthRateInputItalianTest
 		PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 60)
 endif()
+
+add_executable (WriteBufferBudgetTest WriteBufferBudgetTest.cpp)
+add_test (NAME WriteBufferBudgetTest COMMAND WriteBufferBudgetTest)
+target_include_directories (WriteBufferBudgetTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries (WriteBufferBudgetTest muleunit mulecommon)
+
+if (BUILD_DAEMON AND ENABLE_INTEGRATION_TESTS AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
+	add_library (WriteBufferStall SHARED WriteBufferStall.cpp)
+	target_link_libraries (WriteBufferStall PRIVATE ${CMAKE_DL_LIBS})
+	add_test (NAME WriteBackpressureIntegrationTest
+		COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/WriteBackpressureIntegrationTest.py
+			$<TARGET_FILE:amuled> $<TARGET_FILE:WriteBufferStall>)
+	set_tests_properties (WriteBackpressureIntegrationTest PROPERTIES TIMEOUT 90 RUN_SERIAL TRUE)
+endif ()
+
+add_executable (VolumeWritePoolTest VolumeWritePoolTest.cpp)
+add_test (NAME VolumeWritePoolTest COMMAND VolumeWritePoolTest)
+target_include_directories (VolumeWritePoolTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries (VolumeWritePoolTest muleunit mulecommon Threads::Threads)
+
+if (TARGET WriteBufferStall)
+	add_test (NAME WriteVolumeIsolationIntegrationTest
+		COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/WriteVolumeIsolationIntegrationTest.py
+			$<TARGET_FILE:amuled> $<TARGET_FILE:WriteBufferStall>)
+	set_tests_properties (WriteVolumeIsolationIntegrationTest PROPERTIES
+		TIMEOUT 90 RUN_SERIAL TRUE SKIP_RETURN_CODE 77)
+endif ()

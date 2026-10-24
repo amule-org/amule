@@ -233,6 +233,7 @@ bool CFile::Open(const CPath &fileName, OpenMode mode, int accessMode, bool shar
 	}
 
 	m_safeWrite = false;
+	m_storageKnown = false;
 	m_filePath = fileName;
 	m_writeBufferPending = 0;
 	// Buffer writes for any mode that can actually write, unless SetWriteBuffering turned it
@@ -529,7 +530,22 @@ uint64 CFile::GetLength() const
 		throw CIOFailureException(wxString("Failed to retrieve length of file: ") + wxSysErrorMsg());
 	}
 
+#ifndef __WINDOWS__
+	// Reuse this metadata sample instead of adding a volume probe to the
+	// receive/main thread. Unlike a directory spelling, st_dev belongs to the
+	// actual open file, including symlinks into another filesystem.
+	m_storageDevice.store(static_cast<uint64>(buf.st_dev), std::memory_order_relaxed);
+	m_storageKnown.store(true, std::memory_order_release);
+#endif
 	return buf.st_size;
+}
+
+std::string CFile::GetKnownStorageIdentity() const
+{
+	if (!m_storageKnown.load(std::memory_order_acquire)) {
+		return {};
+	}
+	return "device:" + std::to_string(m_storageDevice.load(std::memory_order_relaxed));
 }
 
 uint64 CFile::GetAvailable() const

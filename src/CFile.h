@@ -31,6 +31,8 @@
 
 #include <wx/file.h> // Needed for constants
 
+#include <atomic>
+#include <string>
 #include <memory> // Needed for std::unique_ptr
 #include <mutex>  // Needed for std::recursive_mutex
 
@@ -175,6 +177,9 @@ public:
 
 	/** Returns the path of the currently opened file. */
 	const CPath &GetFilePath() const;
+	// Cached from an existing successful length/fstat query; performs no I/O.
+	// Empty where the platform metadata does not identify a filesystem volume.
+	std::string GetKnownStorageIdentity() const;
 
 	/** Returns true if the file is opened. */
 	bool IsOpened() const;
@@ -201,6 +206,8 @@ private:
 
 	//! File descriptor or 'fd_invalid' if not opened
 	int m_fd;
+	mutable std::atomic<uint64> m_storageDevice{ 0 };
+	mutable std::atomic<bool> m_storageKnown{ false };
 
 	//! The full path to the current file.
 	CPath m_filePath;

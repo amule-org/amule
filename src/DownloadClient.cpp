@@ -562,6 +562,7 @@ void CUpDownClient::ProcessHashSet(const uint8_t *packet, uint32 size)
 
 void CUpDownClient::SendBlockRequests()
 {
+	m_writeBufferBlocked = false;
 	m_dwLastBlockReceived = ::GetTickCount64();
 
 	if (!m_reqfile) {
@@ -604,7 +605,7 @@ void CUpDownClient::SendBlockRequests()
 		if (inSystem < pendingCap) {
 			uint16 count = (uint16)(pendingCap - inSystem);
 			std::vector<Requested_Block_Struct *> toadd;
-			if (m_reqfile->GetNextRequestedBlock(this, toadd, count)) {
+			if (m_reqfile->GetNextRequestedBlock(this, toadd, count, &m_writeBufferBlocked)) {
 				for (uint16 i = 0; i < count; i++) {
 					m_DownloadBlocks_list.push_back(toadd[i]);
 				}
@@ -626,6 +627,11 @@ void CUpDownClient::SendBlockRequests()
 	}
 
 	if (m_PendingBlocks_list.empty()) {
+		if (m_writeBufferBlocked) {
+			// Keep the upload slot. The download tick retries after writes drain;
+			// exhausted disk credits do not mean the source has no needed parts.
+			return;
+		}
 
 		CUpDownClient *slower_client = NULL;
 
@@ -668,7 +674,7 @@ void CUpDownClient::SendBlockRequests()
 			wxASSERT(m_PendingBlocks_list.empty());
 			uint16 count = (uint16)pendingCap;
 			std::vector<Requested_Block_Struct *> toadd;
-			if (m_reqfile->GetNextRequestedBlock(this, toadd, count)) {
+			if (m_reqfile->GetNextRequestedBlock(this, toadd, count, &m_writeBufferBlocked)) {
 				for (int i = 0; i != count; i++) {
 					Pending_Block_Struct *pblock = new Pending_Block_Struct;
 					pblock->block = toadd[i];
@@ -681,6 +687,9 @@ void CUpDownClient::SendBlockRequests()
 					m_PendingBlocks_list.push_back(pblock);
 				}
 			} else {
+				if (m_writeBufferBlocked) {
+					return;
+				}
 				// It's possible the freed blocks were not available on our source.
 				// Just drop ourselves gracefully instead of crashing.
 				if (!GetSentCancelTransfer()) {

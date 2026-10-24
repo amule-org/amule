@@ -34,29 +34,95 @@
 
 #include <map>
 #include <set>
+#include <wx/filefn.h>
+#include <wx/filename.h>
+#ifdef __WXMSW__
+#include <windows.h>
+#endif
 
 namespace
 {
+// Run provider queries only on the writer. Resolve the actual directory rather
+// than its spelling, so symlinks/bind mounts and Windows volume aliases share
+// credits. Failed discovery stays in the conservative unknown group.
+std::string IdentifyWriteVolume(ToWrite &write)
+{
+	const CPath &path = write.partPath;
+	CPath spacePath = path;
+	std::string volume;
+#ifdef __WXMSW__
+	spacePath = CPath(); // Unknown target space must fail closed.
+	HANDLE handle = CreateFileW(path.GetRaw().wc_str(),
+		0,
+		FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+		nullptr,
+		OPEN_EXISTING,
+		FILE_FLAG_BACKUP_SEMANTICS,
+		nullptr);
+	if (handle != INVALID_HANDLE_VALUE) {
+		BY_HANDLE_FILE_INFORMATION info{};
+		if (GetFileInformationByHandle(handle, &info)) {
+			volume = "device:" + std::to_string(info.dwVolumeSerialNumber);
+			// Resolve file symlinks/reparse points before choosing a directory
+			// for GetDiskFreeSpaceEx. This query stays on the worker too.
+			std::vector<wchar_t> finalPath(32768);
+			const DWORD size = GetFinalPathNameByHandleW(handle,
+				finalPath.data(),
+				static_cast<DWORD>(finalPath.size()),
+				FILE_NAME_NORMALIZED);
+			if (size > 0 && size < finalPath.size()) {
+				spacePath = CPath(wxFileName(wxString(finalPath.data(), size)).GetPath());
+			} else {
+				volume.clear();
+			}
+		}
+		CloseHandle(handle);
+	}
+#else
+	wxStructStat info{};
+	if (wxStat(path.GetRaw(), &info) == 0) {
+		volume = "device:" + std::to_string(static_cast<uint64_t>(info.st_dev));
+	}
+#endif
+	write.session->volume = volume;
+	write.session->spacePath = spacePath;
+	WriteBufferBudget::Get().Identify(path.GetRaw().ToStdString(wxConvUTF8), volume);
+	return volume;
+}
+
 // The free-space check FlushBuffer made on the main thread, where a probe on a busy or hung mount
 // blocked it: one live probe per directory per batch, less what the batch writes there. Returns
 // the files that do not fit.
-std::set<const CPartFile *> FilesWithoutSpace(const std::list<ToWrite> &batch)
+std::set<const CPartFile *> FilesWithoutSpace(const std::vector<ToWrite> &batch)
 {
 	std::map<const CPartFile *, uint64> bytes;
 	for (const ToWrite &w : batch) {
+		if (w.pBuffer == nullptr || w.session->cancelled.load()) {
+			continue;
+		}
 		bytes[w.pFile] += w.pBuffer->end - w.pBuffer->start + 1;
 	}
 
-	std::map<wxString, sint64> freeByDir;
+	std::map<std::string, sint64> freeByVolume;
 	std::set<const CPartFile *> noSpace;
 	for (const ToWrite &w : batch) {
+		if (w.pBuffer == nullptr || w.session->cancelled.load()) {
+			continue;
+		}
 		auto file = bytes.find(w.pFile);
 		if (file == bytes.end()) {
 			continue; // already decided
 		}
-		auto dir = freeByDir.find(w.dir.GetRaw());
-		if (dir == freeByDir.end()) {
-			dir = freeByDir.emplace(w.dir.GetRaw(), CPath::GetFreeSpaceAt(w.dir)).first;
+		const auto &volume = w.session->volume;
+		const std::string key = volume.empty() ? w.partPath.GetRaw().ToStdString(wxConvUTF8) : volume;
+		auto dir = freeByVolume.find(key);
+		if (dir == freeByVolume.end()) {
+			dir = freeByVolume
+				      .emplace(key,
+					      w.session->spacePath.IsOk()
+						      ? CPath::GetFreeSpaceAt(w.session->spacePath)
+						      : wxInvalidOffset)
+				      .first;
 		}
 		if (FreeSpaceAllows(dir->second, file->second, w.checkSpace, w.minFree)) {
 			dir->second -= static_cast<sint64>(file->second);
@@ -69,156 +135,145 @@ std::set<const CPartFile *> FilesWithoutSpace(const std::list<ToWrite> &batch)
 }
 } // namespace
 
-// eMule ref: CPartFileWriteThread::CPartFileWriteThread()
 CPartFileWriteThread::CPartFileWriteThread()
-: wxThread(wxTHREAD_JOINABLE)
-, m_condition(m_mutex)
 {
-	m_bRun = false;
-	m_bWorkPending = false;
-
-	wxMutexLocker lock(m_mutex);
-	if (Create() == wxTHREAD_NO_ERROR) {
-		Run();
-	}
+	m_pool = std::make_unique<VolumeWritePool<ToWrite>>(
+		[](ToWrite &write) {
+			return write.session->cancelled.load() ? std::string("unknown")
+							       : IdentifyWriteVolume(write);
+		},
+		[this](std::vector<ToWrite> &batch) { WriteBatch(batch); },
+		[](std::vector<ToWrite> &batch, const std::exception_ptr &) {
+			for (auto &write : batch) {
+				if (write.pFile != nullptr) {
+					if (write.pBuffer == nullptr) {
+						write.session->preparing = false;
+					}
+					Finish(write, PB_ERROR);
+				}
+			}
+		},
+		[](ToWrite &write) {
+			if (write.session->cancelled.load()) {
+				Finish(write, PB_READY);
+				return true;
+			}
+			write.session->ready = true;
+			if (write.pBuffer == nullptr) {
+				Finish(write, PB_READY);
+				return true;
+			}
+			return false;
+		});
 }
 
-CPartFileWriteThread::~CPartFileWriteThread()
-{
-	// EndThread() must have been called before destruction.
-}
+CPartFileWriteThread::~CPartFileWriteThread() = default;
 
-// eMule ref: CPartFileWriteThread::EndThread()
 void CPartFileWriteThread::EndThread()
 {
-	{
-		wxMutexLocker lock(m_mutex);
-		m_bRun = false;
-		m_bWorkPending = true;
-		m_condition.Signal();
-	}
-	Wait();
+	m_running = false;
+	m_pool->Stop();
 }
 
-// Called by the main thread to queue a write item.
-// eMule ref: CPartFileWriteThread::WakeUpCall()
-void CPartFileWriteThread::QueueWrite(
-	CPartFile *pFile, PartFileBufferedData *pBuffer, const CPath &dir, bool checkSpace, uint64 minFree)
+bool CPartFileWriteThread::PrepareFile(CPartFile *file)
 {
-	wxMutexLocker lock(m_mutex);
-	m_flushList.push_back(ToWrite{ pFile, pBuffer, dir, checkSpace, minFree });
-	m_bWorkPending = true;
-	m_condition.Signal();
+	auto &session = file->m_writeSession;
+	if (session->ready) {
+		return true;
+	}
+	// POSIX open/create already sampled fstat for the known file size. Reuse
+	// its descriptor identity without issuing another provider call. In
+	// particular, four cold files on a hung mount cannot consume all workers
+	// merely to rediscover a device that was known when they opened.
+	if (!session->preparing) {
+		const auto identity = file->m_hpartfile.GetKnownStorageIdentity();
+		if (!identity.empty()) {
+			session->volume = identity;
+			session->spacePath = file->m_PartPath;
+			WriteBufferBudget::Get().Identify(
+				file->m_PartPath.GetRaw().ToStdString(wxConvUTF8), identity);
+			session->ready = true;
+			return true;
+		}
+	}
+	if (!session->preparing.exchange(true)) {
+		m_sessions[file] = session;
+		++file->m_iWrites;
+		if (!m_pool->Submit(std::to_string(session->id),
+			    ToWrite{ file, nullptr, file->m_PartPath, false, 0, session },
+			    "",
+			    true)) {
+			--file->m_iWrites;
+			session->preparing = false;
+		}
+	}
+	return session->ready;
+}
+
+bool CPartFileWriteThread::QueueWrite(
+	CPartFile *file, PartFileBufferedData *buffer, bool checkSpace, uint64 minFree)
+{
+	if (!m_running || file->m_writeSession->cancelled.load()) {
+		return false;
+	}
+	m_sessions[file] = file->m_writeSession;
+	return m_pool->Submit(std::to_string(file->m_writeSession->id),
+		ToWrite{ file, buffer, file->m_PartPath, checkSpace, minFree, file->m_writeSession },
+		file->m_writeSession->ready
+			? (file->m_writeSession->volume.empty() ? "unknown" : file->m_writeSession->volume)
+			: "");
+}
+
+void CPartFileWriteThread::Finish(ToWrite &write, uint8 status)
+{
+	CPartFile *file = write.pFile;
+	if (write.pBuffer != nullptr) {
+		write.pBuffer->flushed = status;
+	}
+	write.pFile = nullptr;
+	// Publish the buffer result BEFORE releasing the last file pin. The owner
+	// may close/free immediately after observing zero; never touch it again.
+	--file->m_iWrites;
 }
 
 void CPartFileWriteThread::DropReferencesTo(const CKnownFile *file)
 {
-	// Pointer-value strip of any pending write item whose pFile matches `file`. Called from
-	// MuleNotify::KnownFileBeingDestroyed before CPartFile is freed, or the write loop would
-	// deref the dangling pFile on the next tick. CPartFile inherits from CKnownFile at the same
-	// address, so the cast never derefs.
-	//
-	// pBuffer is NOT deleted here: ownership stays with CPartFile::m_BufferedData_list, which
-	// ~CPartFile frees, so deleting it here too would double-free.
-	wxMutexLocker lock(m_mutex);
-	for (std::list<ToWrite>::iterator it = m_flushList.begin(); it != m_flushList.end();
-		/* manual ++ */) {
-		if (static_cast<const CKnownFile *>(it->pFile) == file) {
-			it = m_flushList.erase(it);
-		} else {
-			++it;
+	const auto found = m_sessions.find(file);
+	if (found != m_sessions.end()) {
+		if (auto token = found->second.lock()) {
+			token->cancelled.store(true);
 		}
+		m_sessions.erase(found);
 	}
+	m_pool->CancelQueued(
+		[file](const ToWrite &write) { return static_cast<const CKnownFile *>(write.pFile) == file; },
+		[](ToWrite &write) { Finish(write, PB_READY); });
 }
 
-// Replaces eMule's IOCP + overlapped WriteFile with synchronous CFileArea::FlushAt(). The thread is
-// dedicated to writes, so blocking on disk I/O is fine -- the win is that the main thread no longer
-// stalls.
-void *CPartFileWriteThread::Entry()
+void CPartFileWriteThread::WriteBatch(std::vector<ToWrite> &batch)
 {
-	m_bRun = true;
-
-	// Loop until EndThread() clears m_bRun, then drain one final batch before returning. A
-	// shutdown signal must never drop queued writes: WriteToBuffer FillGap()s each range at
-	// queue time and the gaplist is persisted, so a dropped write would leave the .met claiming
-	// bytes that never reached disk -- a silently corrupt part on the next launch.
-	for (;;) {
-		// Move queued items to a local work list under the lock, so the main thread
-		// can keep queueing while we process it.
-		std::list<ToWrite> workList;
-		bool keepRunning;
-		{
-			wxMutexLocker lock(m_mutex);
-			if (m_bRun && !m_bWorkPending) {
-				m_condition.WaitTimeout(500);
-			}
-			m_bWorkPending = false;
-			workList.swap(m_flushList);
-			// Captured under the lock together with the swap, so the
-			// batch we just took is drained whatever m_bRun does next.
-			keepRunning = m_bRun;
+	const auto noSpace = FilesWithoutSpace(batch);
+	for (auto &write : batch) {
+		if (write.session->cancelled.load()) {
+			Finish(write, PB_READY);
+			continue;
 		}
-
-		const std::set<const CPartFile *> noSpace = FilesWithoutSpace(workList);
-
-		// Process all queued writes synchronously. No m_bRun check in the loop condition: a
-		// batch, once taken, is always written in full so a shutdown never abandons it
-		// half-drained.
-		// eMule ref: WriteBuffers() -- line 122
-		for (std::list<ToWrite>::iterator it = workList.begin(); it != workList.end(); ++it) {
-			PartFileBufferedData *pBuffer = it->pBuffer;
-			uint32 lenData = (uint32)(pBuffer->end - pBuffer->start + 1);
-
-			if (noSpace.count(it->pFile) != 0) {
-				--it->pFile->m_iWrites;
-				pBuffer->flushed = PB_NOSPACE;
-				continue;
-			}
-
-			// Synchronous write via CFileArea::FlushAt(), which writes the buffered
-			// data at the given offset.
-			//
-			// Lock m_hpartfileMutex against CPartFileHashThread: with ENABLE_MMAP=OFF
-			// the underlying CFileAutoClose::WriteAt does Seek+Write on the shared fd
-			// while HashSinglePart does Seek+Read on the same one, and the two race on
-			// the file position without it.
-			//
-			// FlushAt can throw CIOFailureException on a disk-full, EIO or permission
-			// failure. Catching it keeps the worker alive: an unhandled exception in
-			// Entry() reaches wxApp::OnUnhandledException(), whose terminate handler
-			// aborts the process. On failure the item is marked PB_ERROR so the main
-			// thread retries on the next FlushBuffer.
-			bool writeOk = true;
-			try {
-				std::lock_guard<std::mutex> lock(it->pFile->m_hpartfileMutex);
-				pBuffer->area.FlushAt(it->pFile->m_hpartfile, pBuffer->start, lenData);
-			} catch (const CIOFailureException &e) {
-				AddDebugLogLineC(logPartFile,
-					CFormat("Write thread: I/O failure on '%s' at offset %llu (%u "
-						"bytes): %s") %
-						it->pFile->GetFileName() % pBuffer->start % lenData %
-						e.what());
-				writeOk = false;
-			}
-
-			// eMule ref: WriteCompletionRoutine line 179 -- decrement in write thread
-			// so main thread can check m_iWrites at any time.
-			--it->pFile->m_iWrites;
-
-			// Mark the buffer written or errored so the main thread can harvest it.
-			// PB_ERROR is handled in FlushBuffer Phase 2, which resets it to PB_READY
-			// for retry -- and if the disk is genuinely full, the free-space check above
-			// refuses the next batch and the file is paused.
-			pBuffer->flushed = writeOk ? PB_WRITTEN : PB_ERROR;
+		if (noSpace.count(write.pFile) != 0) {
+			Finish(write, PB_NOSPACE);
+			continue;
 		}
-
-		// Exit only after the batch above is on disk, so EndThread()
-		// genuinely drains rather than dropping in-flight writes.
-		if (!keepRunning) {
-			break;
+		const uint32 bytes = static_cast<uint32>(write.pBuffer->end - write.pBuffer->start + 1);
+		bool ok = true;
+		try {
+			std::lock_guard<std::mutex> lock(write.pFile->m_hpartfileMutex);
+			write.pBuffer->area.FlushAt(write.pFile->m_hpartfile, write.pBuffer->start, bytes);
+		} catch (const CIOFailureException &error) {
+			AddDebugLogLineC(logPartFile,
+				CFormat("Write thread: I/O failure on '%s': %s") %
+					write.pFile->GetFileName() % error.what());
+			ok = false;
 		}
+		Finish(write, ok ? PB_WRITTEN : PB_ERROR);
 	}
-
-	return NULL;
 }
 // File_checked_for_headers

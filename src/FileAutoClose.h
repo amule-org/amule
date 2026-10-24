@@ -92,6 +92,7 @@ public:
 	 * The path of the currently opened file.
 	 */
 	const CPath &GetFilePath() const;
+	std::string GetKnownStorageIdentity() const { return m_file.GetKnownStorageIdentity(); }
 
 	/**
 	 * True if the file is opened.
