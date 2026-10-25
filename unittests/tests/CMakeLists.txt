@@ -2729,7 +2729,6 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 				COMMAND ${Python3_EXECUTABLE} -u
 					${CMAKE_CURRENT_SOURCE_DIR}/TinyBlockPacketIntegrationTest.py $<TARGET_FILE:amuled>
 			)
-			set_tests_properties (TinyBlockPacketIntegrationTest PROPERTIES TIMEOUT 120)
 			add_test (NAME CallbackCooldownIntegrationTest
 				COMMAND ${Python3_EXECUTABLE} -u
 					${CMAKE_CURRENT_SOURCE_DIR}/CallbackCooldownIntegrationTest.py $<TARGET_FILE:amuled>

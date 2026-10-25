@@ -3,8 +3,10 @@
 #include <muleunit/test.h>
 #include "PartFileBuffering.h"
 
+#include <algorithm>
 #include <array>
 #include <cstdint>
+#include <map>
 
 using namespace muleunit;
 DECLARE_SIMPLE(PartFileBuffering)
