@@ -19,10 +19,32 @@ import time
 import zlib
 
 from AllSearchIntegrationTest import connect_daemon, free_ports, retry_port_collisions, stop_daemon
+from CancelCompletedIntegrationTest import md4
 from DaemonConfig import write_amule_conf
 from ShareWatcherMoveIntegrationTest import shared
 from UploadStorageDelayIntegrationTest import BLOCK, Peer, wait_read
 from UploadRefillIntegrationTest import packet, send
+
+
+PARTSIZE = 9728000
+
+
+def seed_incomplete_part(root, data):
+    """Share a complete first part while leaving the final part incomplete."""
+    part = root / 'Temp/001.part'
+    part.write_bytes(data)
+    part_hashes = [md4(data[:PARTSIZE]), md4(data[PARTSIZE:])]
+    file_hash = md4(b''.join(part_hashes))
+    name = b'incomplete.bin'
+    tags = [bytes([0x82, 0x01]) + struct.pack('<H', len(name)) + name,
+            bytes([0x83, 0x02]) + struct.pack('<I', len(data))]
+    for mark, value in ((0x09, PARTSIZE), (0x0a, len(data))):
+        key = bytes([mark]) + b'0'
+        tags.append(b'\x03' + struct.pack('<H', len(key)) + key + struct.pack('<I', value))
+    part.with_suffix('.part.met').write_bytes(
+        b'\xe0' + struct.pack('<I', int(part.stat().st_mtime)) + file_hash
+        + struct.pack('<H', len(part_hashes)) + b''.join(part_hashes)
+        + struct.pack('<I', len(tags)) + b''.join(tags))
 
 
 def run(binary, fixture, stage):
@@ -42,6 +64,10 @@ def run(binary, fixture, stage):
             ((slow if index < 2 else alias) / (slow_name if index == 0 else f'bad-{index}.bin')).write_bytes(data)
         healthy_data = os.urandom((7 if stage == 'fairness' else 3) * BLOCK)
         (incoming / 'healthy.bin').write_bytes(healthy_data)
+        pattern = bytes(range(251))
+        part_data = (pattern * ((PARTSIZE + BLOCK) // len(pattern) + 1))[:PARTSIZE + BLOCK]
+        if stage == 'part-file':
+            seed_incomplete_part(root, part_data)
         (root / 'shareddir.dat').write_text(f'{slow}\n{alias}\n')
         # Escape paths as mountinfo does, including user TMPDIR paths containing spaces.
         def escaped(path):
@@ -86,14 +112,14 @@ def run(binary, fixture, stage):
                 deadline = time.monotonic() + 30
                 while True:
                     files = shared(ec)
-                    if len(files) == 5:
+                    if len(files) == (6 if stage == 'part-file' else 5):
                         break
                     assert time.monotonic() < deadline, f'shares missing: {files}'
                     time.sleep(0.05)
-                bad_count = 1 if stage in ('session', 'packet-session', 'heap-buffer', 'mapped-copy', 'mapped-fault', 'shutdown', 'discovery', 'open-failure') else (2 if stage == 'fairness' else 4)
+                bad_count = 1 if stage in ('session', 'packet-session', 'heap-buffer', 'mapped-copy', 'mapped-fault', 'shutdown', 'discovery', 'open-failure', 'part-file') else (2 if stage == 'fairness' else 4)
                 for index in range(bad_count):
                     peers.append(Peer(peer_port, index,
-                                      files[slow_name if index == 0 else f'bad-{index}.bin'],
+                                      files['incomplete.bin' if stage == 'part-file' else (slow_name if index == 0 else f'bad-{index}.bin')],
                                       compress=stage in ('packet-session', 'heap-buffer')))
                 peers.append(Peer(peer_port, bad_count, files['healthy.bin']))
                 healthy = peers[bad_count]
@@ -187,13 +213,21 @@ def run(binary, fixture, stage):
                     (slow / slow_name).unlink()
                     peers[0].request([(0, BLOCK)])
                     deadline = time.monotonic() + 10
-                    while slow_name in shared(ec):
+                    message = f'Failed to open file ({slow_name}), removing from list of shared files.'
+                    while message not in (root / 'logfile').read_text(errors='replace'):
                         assert proc.poll() is None and time.monotonic() < deadline, \
-                            'failed open was not completed'
+                            'failed-open path was not reached'
+                        time.sleep(0.05)
                     healthy.request([(0, BLOCK)])
                     healthy.receive((0, BLOCK), healthy_data)
                     assert proc.poll() is None, 'daemon exited while cleaning up a failed open'
                     print('open-failure: unopened upload handle cleaned up; healthy peer continued')
+                    return
+                if stage == 'part-file':
+                    peers[0].request([(0, BLOCK)])
+                    peers[0].receive((0, BLOCK), part_data)
+                    assert proc.poll() is None, 'daemon exited while cleaning up a part-file read'
+                    print('part-file: complete range uploaded from an incomplete part file')
                     return
                 expected = (1 << 64) - 1 if stage == 'open' else 0
                 peers[0].request([(0, BLOCK)])
@@ -293,7 +327,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('binary')
     parser.add_argument('fixture')
-    parser.add_argument('--stage', choices=('read', 'open', 'session', 'packet-session', 'heap-buffer', 'mapped-copy', 'mapped-fault', 'shutdown', 'fairness', 'discovery', 'open-failure'))
+    parser.add_argument('--stage', choices=('read', 'open', 'session', 'packet-session', 'heap-buffer', 'mapped-copy', 'mapped-fault', 'shutdown', 'fairness', 'discovery', 'open-failure', 'part-file'))
     args = parser.parse_args()
-    for stage in ([args.stage] if args.stage else ('read', 'open', 'session', 'packet-session', 'heap-buffer', 'mapped-copy', 'mapped-fault', 'shutdown', 'fairness', 'discovery', 'open-failure')):
+    for stage in ([args.stage] if args.stage else ('read', 'open', 'session', 'packet-session', 'heap-buffer', 'mapped-copy', 'mapped-fault', 'shutdown', 'fairness', 'discovery', 'open-failure', 'part-file')):
         retry_port_collisions(run, str(Path(args.binary).resolve()), str(Path(args.fixture).resolve()), stage)

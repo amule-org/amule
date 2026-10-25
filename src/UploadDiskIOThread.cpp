@@ -461,14 +461,22 @@ CUploadDiskIOThread::ReadResult CUploadDiskIOThread::ReadBlock(ReadRequest_Struc
 	struct Cleanup
 	{
 		ReadRequest_Struct *req;
-		~Cleanup()
+		~Cleanup() noexcept
 		{
-			req->ReleasePartFile();
-			// Open can fail, and the stale-handle retry closes before throwing. In both
-			// cases this cleanup still owns the uncached entry, but no open handle.
-			if ((!req->pFileStruct->cached || req->closeOnly) &&
-				req->pFileStruct->file.IsOpened()) {
-				req->pFileStruct->file.Close();
+			try {
+				req->ReleasePartFile();
+				// Open can fail, and the stale-handle retry closes before throwing. In both
+				// cases this cleanup still owns the uncached entry, but no open handle.
+				if ((!req->pFileStruct->cached || req->closeOnly) &&
+					req->pFileStruct->file.IsOpened()) {
+					req->pFileStruct->file.Close();
+				}
+			} catch (const CSafeIOException &error) {
+				AddDebugLogLineC(logClient,
+					wxString("CUploadDiskIOThread: cleanup failed: ") + error.what());
+			} catch (...) {
+				AddDebugLogLineC(logClient,
+					"CUploadDiskIOThread: cleanup failed with an unexpected exception");
 			}
 		}
 	} cleanup{ req };
