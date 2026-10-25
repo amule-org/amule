@@ -3,15 +3,14 @@
 #ifndef PARTFILEBUFFERING_H
 #define PARTFILEBUFFERING_H
 
-#include <algorithm>
-#include <list>
+#include <cstdint>
+#include <map>
 
-// Keep pending writes in ascending file-offset order. Equal ends retain arrival order.
-template <typename Entry> void InsertPartFileBufferedWrite(std::list<Entry *> &buffers, Entry *item)
+// Keep pending writes in ascending file-offset order. multimap inserts after equal keys,
+// so equal ends retain arrival order.
+template <typename Entry>
+void InsertPartFileBufferedWrite(std::multimap<uint64_t, Entry *> &buffers, Entry *item)
 {
-	const auto position = std::find_if(buffers.begin(), buffers.end(), [item](const Entry *queued) {
-		return item->end < queued->end;
-	});
-	buffers.insert(position, item);
+	buffers.emplace(item->end, item);
 }
 #endif

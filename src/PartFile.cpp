@@ -3082,7 +3082,8 @@ void CPartFile::PauseForSpace()
 bool CPartFile::PutBackRefusedWrites()
 {
 	bool refused = false;
-	for (PartFileBufferedData *item : m_BufferedData_list) {
+	for (const auto &entry : m_BufferedData_list) {
+		PartFileBufferedData *item = entry.second;
 		if (item->flushed == PB_NOSPACE) {
 			item->flushed = PB_READY;
 			refused = true;
@@ -3571,11 +3572,18 @@ uint32 CPartFile::WriteToBuffer(uint32 transize,
 		FillGap(fragment.start, fragment.end);
 	}
 	block->transferred += buffered;
+	m_nBufferedSinceFlush += buffered;
+	m_nWritesSinceFlush += fragments.size();
 
 	// Start draining on reception instead of waiting for the periodic file
 	// tick; at high rates that delay alone can fill a healthy volume's budget.
-	if (m_gaplist.IsComplete() ||
-		WriteBufferBudget::Get().ShouldFlush(GetFilePath().GetRaw().ToStdString(wxConvUTF8))) {
+	// FlushBuffer walks every buffered write, so wait for a full-size packet's
+	// worth of data: tiny packets would otherwise make reception quadratic.
+	// Byte thresholds never trip for tiny packets, so also flush by count to
+	// bound their per-write bookkeeping.
+	if (m_gaplist.IsComplete() || m_nWritesSinceFlush >= 4096 ||
+		(m_nBufferedSinceFlush >= 10240 && WriteBufferBudget::Get().ShouldFlush(
+							   GetFilePath().GetRaw().ToStdString(wxConvUTF8)))) {
 		FlushBuffer();
 	}
 
@@ -3586,6 +3594,8 @@ uint32 CPartFile::WriteToBuffer(uint32 transize,
 void CPartFile::FlushBuffer(bool fromAICHRecoveryDataAvailable)
 {
 	m_nLastBufferFlushTime = GetTickCount64();
+	m_nBufferedSinceFlush = 0;
+	m_nWritesSinceFlush = 0;
 
 	uint32 partCount = GetPartCount();
 	// Persistent tracking of parts needing hash verification (eMule ref: m_aChangedPart).
@@ -3612,10 +3622,8 @@ void CPartFile::FlushBuffer(bool fromAICHRecoveryDataAvailable)
 
 	// eMule ref: PartFile.cpp:4102-4127 -- Phase 1: queue PB_READY items to the write thread
 	if (threaded) {
-		for (std::list<PartFileBufferedData *>::iterator it = m_BufferedData_list.begin();
-			it != m_BufferedData_list.end();
-			++it) {
-			PartFileBufferedData *item = *it;
+		for (auto it = m_BufferedData_list.begin(); it != m_BufferedData_list.end(); ++it) {
+			PartFileBufferedData *item = it->second;
 			if (item->flushed == PB_READY) {
 				item->flushed = PB_PENDING;
 				++m_iWrites;
@@ -3631,9 +3639,8 @@ void CPartFile::FlushBuffer(bool fromAICHRecoveryDataAvailable)
 	// eMule ref: PartFile.cpp:4129-4145 -- Phase 2: harvest completed writes
 	bool refusedNow = false;
 	bool failed = false;
-	for (std::list<PartFileBufferedData *>::iterator it = m_BufferedData_list.begin();
-		it != m_BufferedData_list.end();) {
-		PartFileBufferedData *item = *it;
+	for (auto it = m_BufferedData_list.begin(); it != m_BufferedData_list.end();) {
+		PartFileBufferedData *item = it->second;
 
 		switch (item->flushed) {
 		case PB_READY:
@@ -3760,7 +3767,8 @@ void CPartFile::FlushBuffer(bool fromAICHRecoveryDataAvailable)
 			const uint64 partStart = (uint64)partNumber * PARTSIZE;
 			const uint64 partEnd = std::min<uint64>(partStart + PARTSIZE - 1, GetFileSize() - 1);
 			bool pendingWrite = false;
-			for (const PartFileBufferedData *item : m_BufferedData_list) {
+			for (const auto &entry : m_BufferedData_list) {
+				const PartFileBufferedData *item = entry.second;
 				if (item->flushed == PB_WRITTEN) {
 					continue;
 				}
@@ -3860,9 +3868,8 @@ void CPartFile::FlushBuffer(bool fromAICHRecoveryDataAvailable)
 	// below runs. Without this sweep, the gap-closing write at completion would leave
 	// m_BufferedData_list non-empty, fail the trailing check, and stick the download at
 	// 99.9% for another 60 s.
-	for (std::list<PartFileBufferedData *>::iterator it = m_BufferedData_list.begin();
-		it != m_BufferedData_list.end();) {
-		PartFileBufferedData *item = *it;
+	for (auto it = m_BufferedData_list.begin(); it != m_BufferedData_list.end();) {
+		PartFileBufferedData *item = it->second;
 		if (item->flushed == PB_WRITTEN) {
 			uint32 lenData = (uint32)(item->end - item->start + 1);
 			for (uint32 curpart = (item->start / PARTSIZE); curpart <= (item->end / PARTSIZE);

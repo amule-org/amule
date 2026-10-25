@@ -32,6 +32,7 @@
 #include "FileArea.h" // Needed for CFileArea (PartFileBufferedData)
 #include <array>      // Needed for std::array (m_ecTickState)
 #include <atomic>     // Needed for std::atomic (m_iWrites, flushed)
+#include <map>        // Needed for std::multimap (m_BufferedData_list)
 #include <memory>     // Needed for std::shared_ptr (m_metSave)
 #include <mutex>      // Needed for std::mutex (m_hpartfileMutex)
 
@@ -464,10 +465,13 @@ private:
 
 	uint64 m_lastRefreshedDLDisplay;
 
-	// Buffered data to be written
-	std::list<class PartFileBufferedData *> m_BufferedData_list;
+	// Buffered data to be written, keyed by end offset. Inserts stay logarithmic when a
+	// source sends many tiny packets.
+	std::multimap<uint64, class PartFileBufferedData *> m_BufferedData_list;
 
 	uint32 m_nTotalBufferData;
+	uint32 m_nBufferedSinceFlush = 0;
+	size_t m_nWritesSinceFlush = 0;
 	uint64 m_nLastBufferFlushTime;
 	std::atomic<int32> m_iWrites; // eMule ref: count of items queued to write thread (not yet PB_WRITTEN)
 	std::vector<bool> m_aChangedPart; // eMule ref: persistent tracking of parts needing hash verification
