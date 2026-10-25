@@ -229,7 +229,7 @@ public:
 	, m_hasExpectedPeerIdentity(expectedPeerIdentity != nullptr)
 	, m_expectedPeerIdentity(
 		  expectedPeerIdentity != nullptr ? *expectedPeerIdentity : std::array<uint8_t, 16>{})
-	, m_ownerRef(owner)
+	, m_ownerRef(CCLIENTREF(owner, "CQuicNgtcp2Connection"))
 	, m_outboundHandoff(std::move(outboundHandoff))
 	, m_dialFailure(std::move(dialFailure))
 	{
