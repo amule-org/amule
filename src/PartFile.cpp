@@ -1655,8 +1655,7 @@ uint32 CPartFile::Process(uint8 m_icounter)
 	// file is idle.
 	if ((m_nTotalBufferData > thePrefs::GetFileBufferSize()) ||
 		(dwCurTick > (m_nLastBufferFlushTime + BUFFER_TIME_LIMIT)) || HasPendingHashWork() ||
-		(m_nTotalBufferData != 0 && WriteBufferBudget::Get().ShouldFlush(
-						    GetFilePath().GetRaw().ToStdString(wxConvUTF8)))) {
+		(m_nTotalBufferData != 0 && WriteBufferBudget::Get().ShouldFlush())) {
 		FlushBuffer();
 	}
 
@@ -2255,7 +2254,7 @@ bool CPartFile::GetNextRequestedBlock(CUpDownClient *sender,
 
 	// Only resident dirty payload applies backpressure. Outstanding requests do
 	// not occupy memory and must not constrain a healthy network pipeline.
-	if (WriteBufferBudget::Get().IsPressured(GetFilePath().GetRaw().ToStdString(wxConvUTF8))) {
+	if (WriteBufferBudget::Get().IsPressured()) {
 		if (writeLimited != nullptr) {
 			*writeLimited = true;
 		}
@@ -3561,8 +3560,7 @@ uint32 CPartFile::WriteToBuffer(uint32 transize,
 			fragment.start,
 			fragment.end,
 			block,
-			WriteBufferBudget::Get().Charge(GetFilePath().GetRaw().ToStdString(wxConvUTF8),
-				fragment.end - fragment.start + 1));
+			WriteBufferBudget::Get().Charge(fragment.end - fragment.start + 1));
 		InsertPartFileBufferedWrite(m_BufferedData_list, item);
 		const uint32 bytes = static_cast<uint32>(fragment.end - fragment.start + 1);
 		m_nTotalBufferData += bytes;
@@ -3582,8 +3580,7 @@ uint32 CPartFile::WriteToBuffer(uint32 transize,
 	// Byte thresholds never trip for tiny packets, so also flush by count to
 	// bound their per-write bookkeeping.
 	if (m_gaplist.IsComplete() || m_nWritesSinceFlush >= 4096 ||
-		(m_nBufferedSinceFlush >= 10240 && WriteBufferBudget::Get().ShouldFlush(
-							   GetFilePath().GetRaw().ToStdString(wxConvUTF8)))) {
+		(m_nBufferedSinceFlush >= 10240 && WriteBufferBudget::Get().ShouldFlush())) {
 		FlushBuffer();
 	}
 
