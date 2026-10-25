@@ -45,6 +45,8 @@ public:
 	virtual bool ProcessDatagram(const uint8_t *, size_t, uint64_t nowMs) = 0;
 	virtual bool IsClosed() const = 0;
 	virtual void Close() = 0;
+	//! Closes during context teardown without invoking owner/fallback callbacks.
+	virtual void CloseForShutdown() { Close(); }
 	//! True for a connection ID this server issued and has not retired. After the server's
 	//! first Initial the client switches its DCID to one of these (RFC 9000 section 7.2).
 	virtual bool OwnsConnectionId(const std::string &) const = 0;

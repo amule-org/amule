@@ -37,6 +37,8 @@
 using namespace muleunit;
 DECLARE_SIMPLE(QuicNgtcp2Adapter)
 
+void QuicClientRefTestForget(CUpDownClient *client);
+
 namespace
 {
 struct Session : IQuicNgtcp2TlsSession
@@ -343,12 +345,14 @@ TEST(QuicNgtcp2Adapter, OutboundOwnerHandoffAttachesTransport)
 	auto engine = std::make_shared<Engine>();
 	std::unique_ptr<IStreamTransport> handedOff;
 	CQuicSocketTransport *handedOffRaw = nullptr;
+	unsigned handoffCount = 0;
 	CQuicNgtcp2Factory factory(Policy(s, c, v),
 		sink,
 		engine,
 		kTestIdentity,
 		nullptr,
 		[&](CUpDownClient *, std::unique_ptr<IStreamTransport> transport) {
+			++handoffCount;
 			handedOffRaw = static_cast<CQuicSocketTransport *>(transport.get());
 			handedOff = std::move(transport);
 			return handedOffRaw;
@@ -364,6 +368,31 @@ TEST(QuicNgtcp2Adapter, OutboundOwnerHandoffAttachesTransport)
 	ASSERT_TRUE(connection->ProcessDatagram(Initial().data(), Initial().size(), 0));
 	ASSERT_TRUE(engine->attachedTransport != nullptr);
 	ASSERT_TRUE(engine->attachedTransport == handedOffRaw);
+	ASSERT_EQUALS(1u, handoffCount);
+}
+
+TEST(QuicNgtcp2Adapter, LateReadFailureAfterOwnerDeletionDoesNotInvokeDialFailure)
+{
+	Session s;
+	Credentials c;
+	Verifier v;
+	auto sink = std::make_shared<Sink>();
+	auto engine = std::make_shared<Engine>();
+	unsigned failures = 0;
+	CQuicNgtcp2Factory factory(Policy(s, c, v),
+		sink,
+		engine,
+		kTestIdentity,
+		nullptr,
+		nullptr,
+		[&](CUpDownClient *, const std::array<uint8_t, 16> &) { ++failures; });
+	auto *owner = reinterpret_cast<CUpDownClient *>(static_cast<uintptr_t>(1));
+	auto connection = factory.CreateOutboundForClient(kPeer, 4672, kTestPeerIdentity, 0, owner);
+	ASSERT_TRUE(connection != nullptr);
+	QuicClientRefTestForget(owner);
+	engine->read = false;
+	ASSERT_TRUE(!connection->ProcessDatagram(Initial().data(), Initial().size(), 0));
+	ASSERT_EQUALS(0u, failures);
 }
 
 TEST(QuicNgtcp2Adapter, OutboundProofIsNotResentWhilePeerProofIsPending)

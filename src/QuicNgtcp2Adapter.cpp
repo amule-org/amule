@@ -25,6 +25,7 @@
 #include "QuicNattProtocol.h"
 #include "QuicNgtcp2Adapter.h"
 #include "updownclient.h"
+#include "ClientRef.h"
 #include "QuicSocketTransport.h"
 #include "QuicStreamAcceptor.h"
 
@@ -228,13 +229,19 @@ public:
 	, m_hasExpectedPeerIdentity(expectedPeerIdentity != nullptr)
 	, m_expectedPeerIdentity(
 		  expectedPeerIdentity != nullptr ? *expectedPeerIdentity : std::array<uint8_t, 16>{})
-	, m_owner(owner)
+	, m_ownerRef(owner)
 	, m_outboundHandoff(std::move(outboundHandoff))
 	, m_dialFailure(std::move(dialFailure))
 	{
 	}
 
 	~CQuicNgtcp2Connection() override { Close(); }
+
+	void CloseForShutdown() override
+	{
+		m_suppressDialFailure = true;
+		Close();
+	}
 
 	bool ProcessDatagram(const uint8_t *data, size_t length, uint64_t nowMs) override
 	{
@@ -367,8 +374,10 @@ public:
 		}
 		m_engine->Destroy(m_handle);
 		m_handle = nullptr;
-		if (m_owner != nullptr && !m_streamOffered && m_dialFailure != nullptr)
-			m_dialFailure(m_owner, m_expectedPeerIdentity);
+		CUpDownClient *owner = m_ownerRef.GetClientChecked();
+		if (!m_suppressDialFailure && owner != nullptr && !m_streamOffered &&
+			m_dialFailure != nullptr)
+			m_dialFailure(owner, m_expectedPeerIdentity);
 	}
 
 private:
@@ -377,7 +386,8 @@ private:
 	// ProcessDatagram(), since that is the only place a stream can newly open.
 	void OfferStreamIfJustOpened()
 	{
-		if (m_streamOffered || (m_acceptor == nullptr && m_owner == nullptr) ||
+		CUpDownClient *owner = m_ownerRef.GetClientChecked();
+		if (m_streamOffered || (m_acceptor == nullptr && owner == nullptr) ||
 			!m_engine->HasOpenStream(m_handle)) {
 			return;
 		}
@@ -385,11 +395,11 @@ private:
 			return;
 		}
 		auto owned = std::make_unique<CQuicSocketTransport>(
-			*this, m_handle, m_address, m_port, nullptr, true, m_transportClock);
+			*this, m_handle, m_address, m_port, nullptr, false, m_transportClock);
 		CQuicSocketTransport *raw = owned.get();
 		std::unique_ptr<IStreamTransport> transport(std::move(owned));
-		if (m_owner != nullptr) {
-			if (m_outboundHandoff == nullptr || (m_outboundTransport = m_outboundHandoff(m_owner,
+		if (owner != nullptr) {
+			if (m_outboundHandoff == nullptr || (m_outboundTransport = m_outboundHandoff(owner,
 								     std::move(transport))) == nullptr) {
 				return;
 			}
@@ -546,7 +556,7 @@ private:
 	std::function<uint64_t()> m_transportClock;
 	const bool m_hasExpectedPeerIdentity;
 	const std::array<uint8_t, 16> m_expectedPeerIdentity;
-	CUpDownClient *m_owner = nullptr;
+	CClientRef m_ownerRef;
 	CQuicSocketTransport *m_outboundTransport = nullptr;
 	CQuicSocketTransport *m_attachedTransport = nullptr;
 	CQuicNgtcp2Factory::OutboundHandoff m_outboundHandoff;
@@ -567,6 +577,7 @@ private:
 	uint64_t m_lastNowMs = 0;
 	bool m_streamOffered = false;
 	bool m_closed = false;
+	bool m_suppressDialFailure = false;
 };
 
 class CProductionNgtcp2Engine final : public IQuicNgtcp2Engine
@@ -818,10 +829,9 @@ public:
 		return handle;
 	}
 
-	// This endpoint is always the one that dials out; the peer (CreateServer()'s side of this
-	// same handshake) is the one that opens the connection's one application stream and sends
-	// its EAQN1 proof first -- OnStreamOpen()/OnRecvStreamData() above already handle that
-	// generically, keyed only by ngtcp2_conn*, with no client/server distinction of their own.
+	// This endpoint dials out and opens its one local application stream first. It sends the
+	// EAQN1 proof on that stream, while the peer's proof arrives on the same stream; the generic
+	// OnStreamOpen()/OnRecvStreamData() callbacks above handle both directions by connection.
 	Handle CreateClient(const CQuicTlsPolicy &,
 		const CNetworkAddress &,
 		uint16_t,

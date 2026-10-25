@@ -414,6 +414,7 @@ if (ENABLE_QUIC)
 
 	add_executable (QuicNgtcp2AdapterTest
 		QuicNgtcp2AdapterTest.cpp
+		QuicClientRefTestShim.cpp
 		${CMAKE_SOURCE_DIR}/src/QuicNgtcp2Adapter.cpp
 		${CMAKE_SOURCE_DIR}/src/QuicContext.cpp
 		${CMAKE_SOURCE_DIR}/src/QuicGnuTlsSession.cpp
@@ -434,6 +435,7 @@ if (ENABLE_QUIC)
 
 	add_executable (QuicNgtcp2HandshakeTest
 		QuicNgtcp2HandshakeTest.cpp
+		QuicClientRefTestShim.cpp
 		${CMAKE_SOURCE_DIR}/src/QuicNgtcp2Adapter.cpp
 		${CMAKE_SOURCE_DIR}/src/QuicContext.cpp
 		${CMAKE_SOURCE_DIR}/src/QuicGnuTlsSession.cpp

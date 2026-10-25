@@ -30,7 +30,7 @@
 CQuicContext::~CQuicContext()
 {
 	for (auto &entry : m_connections) {
-		entry.second->Close();
+		entry.second->CloseForShutdown();
 	}
 }
 

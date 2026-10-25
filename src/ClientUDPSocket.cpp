@@ -90,11 +90,9 @@ std::array<uint8_t, 16> QuicLocalIdentityFromUserHash();
 
 bool QuicNatTEnabled()
 {
-#if defined(ENABLE_NATT_SERVER_COORDINATION)
-	return thePrefs::IsLowIdHolePunchEnabled() || thePrefs::IsLugdunumNatCallbackEnabled();
-#else
-	return false;
-#endif
+	// QUIC NAT-T has its own amule.conf opt-in. It must not inherit the legacy
+	// server-coordinated NAT settings, and remains available in QUIC-only builds.
+	return thePrefs::IsQuicNatTEnabled();
 }
 
 uint8_t QuicLocalCapabilityOptions()
@@ -230,7 +228,6 @@ CClientUDPSocket::CClientUDPSocket(const amuleIPV4Address &address, const CProxy
 			  return nullptr;
 		  auto *socket = new CClientTCPSocket(owner, thePrefs::GetProxyData());
 		  socket->AttachTransport(std::move(transport));
-		  owner->SendHelloPacket();
 		  return raw;
 	  },
 	  [this](CUpDownClient *owner, const std::array<uint8_t, 16> &peer) {

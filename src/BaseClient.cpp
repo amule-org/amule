@@ -81,10 +81,9 @@
 #include "FriendList.h"      // Needed for CFriendList
 #include "Statistics.h"      // Needed for theStats
 #include "ClientUDPSocket.h"
-#include "AddressFamilyPolicy.h"
-#ifdef AMULE_QUIC_TRANSPORT
 #include <array>
-#endif // Needed for AddressFamilyPolicy::Permits
+
+#include "AddressFamilyPolicy.h" // Needed for AddressFamilyPolicy::Permits
 #ifdef ENABLE_IPV6
 #include "AdvertisedIPv6.h"         // Needed for AdvertisedIPv6ForPeers
 #include "IPv6ChangeNotification.h" // Needed for OP_CHANGE_CLIENT_IP policy
@@ -1635,6 +1634,21 @@ bool CUpDownClient::Disconnected(const wxString &DEBUG_ONLY(strReason), bool bFr
 // deleted, true means it was not.
 void CUpDownClient::QuicDialFailed()
 {
+	// Temporary clients created for server-vouched LowID rendezvous have no TCP fallback:
+	// continue through the existing uTP path, with QUIC suppressed.
+#if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
+	if ((IsLowIdHolePunchDial() || IsLugdunumCallbackDial()) && !HasBeenDeleted()) {
+#ifdef AMULE_QUIC_TRANSPORT
+		m_skipQuicDial = true;
+#endif
+		TryServerVouchedLowIdUtpDial();
+#ifdef AMULE_QUIC_TRANSPORT
+		m_skipQuicDial = false;
+#endif
+		return;
+	}
+#endif
+
 	// QUIC is opportunistic. The failure callback is delivered by the UDP event loop, so resume
 	// the ordinary contact policy here. Consume the QUIC choice before re-entry: otherwise the
 	// fallback can immediately select the same failed transport again.
