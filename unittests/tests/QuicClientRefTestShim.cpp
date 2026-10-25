@@ -23,11 +23,7 @@ CClientRef::CClientRef(CUpDownClient *client)
 	clientRefs[this] = client;
 }
 
-#ifdef DEBUG_ZOMBIE_CLIENTS
-void CClientRef::Unlink(wxString)
-#else
 void CClientRef::Unlink()
-#endif
 {
 	clientRefs.erase(this);
 }
