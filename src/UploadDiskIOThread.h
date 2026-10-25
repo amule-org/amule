@@ -85,6 +85,7 @@ struct ReadRequest_Struct
 	UploadReadResult result = READ_FAILED;
 	bool bCompress = false;
 	bool closeOnly = false;
+	bool continues = false;                       // the client's next block starts where this one ends
 	std::unique_ptr<UploadStorageMap> storageMap; // discovery job, without a file/client
 	std::vector<std::string> resolveDirectories;  // discovery job only
 	bool discoverNetwork = true;
@@ -136,6 +137,16 @@ private:
 	// Oldest successful dispatch wins, independently of activity on other volumes.
 	std::map<uint32, uint64> m_lastDispatch;
 	uint64 m_dispatchSequence = 0;
+	// A disk reads a client's next contiguous block without seeking, so a volume
+	// stays with that client for a short turn before the oldest dispatch wins.
+	struct Turn
+	{
+		uint32 client = 0;
+		unsigned reads = 0;
+		uint64 started = 0;
+		bool continues = false;
+	};
+	std::map<std::string, Turn> m_turns;
 	// Each client's last storage key, to skip it cheaply while that volume is busy.
 	std::map<uint32, std::string> m_clientStorage;
 	// Directories read from, resolved by each discovery job.

@@ -223,11 +223,29 @@ void CUploadDiskIOThread::DispatchReads()
 	for (auto it = m_clientStorage.begin(); it != m_clientStorage.end();) {
 		it = !uploading(it->first) ? m_clientStorage.erase(it) : std::next(it);
 	}
+	for (auto it = m_turns.begin(); it != m_turns.end();) {
+		it = !uploading(it->second.client) ? m_turns.erase(it) : std::next(it);
+	}
 	const auto lastDispatch = [this](uint32 id) {
 		const auto it = m_lastDispatch.find(id);
 		return it == m_lastDispatch.end() ? 0 : it->second;
 	};
+	// A client whose last read ended where its next block starts keeps its volume
+	// for a few reads: a disk then reads on without a seek.
+	const auto continuing = [this, now](uint32 id) {
+		const auto storage = m_clientStorage.find(id);
+		if (storage == m_clientStorage.end()) {
+			return false;
+		}
+		const auto turn = m_turns.find(storage->second);
+		return turn != m_turns.end() && turn->second.client == id && turn->second.continues &&
+		       turn->second.reads < 3 && now - turn->second.started < 50;
+	};
 	std::stable_sort(clients.begin(), clients.end(), [&](uint32 left, uint32 right) {
+		const bool leftContinues = continuing(left);
+		if (leftContinues != continuing(right)) {
+			return leftContinues;
+		}
 		return lastDispatch(left) < lastDispatch(right);
 	});
 	for (uint32 clientId : clients) {
@@ -246,9 +264,16 @@ void CUploadDiskIOThread::DispatchReads()
 		if (!req) {
 			continue;
 		}
-		if (m_pool->Submit(req->storage, req)) {
+		const std::string storage = req->storage;
+		if (m_pool->Submit(storage, req)) {
 			m_pendingClients.insert(clientId);
 			m_lastDispatch[clientId] = ++m_dispatchSequence;
+			auto &turn = m_turns[storage];
+			if (turn.client != clientId || !turn.continues) {
+				turn = Turn{ clientId, 0, now, false };
+			}
+			++turn.reads;
+			turn.continues = false;
 		}
 	}
 	QueueIdleCloses();
@@ -272,6 +297,7 @@ void CUploadDiskIOThread::DrainCompletions(bool deliver)
 				}
 				m_storageKeys.clear();
 				m_clientStorage.clear();
+				m_turns.clear();
 				m_pool->ReclassifyStorage([this](const ReadRequest_Struct &req,
 								  const std::string &previous) {
 					return req.storageMap ? previous
@@ -301,6 +327,10 @@ void CUploadDiskIOThread::DrainCompletions(bool deliver)
 		}
 		if (deliver && !req->closeOnly &&
 			CommitRead(*req, completed.error ? READ_FAILED : req->result)) {
+			const auto turn = m_turns.find(req->storage);
+			if (turn != m_turns.end() && turn->second.client == req->clientId) {
+				turn->second.continues = req->continues;
+			}
 			dataQueued = ReadCompletionRoutine(*req) || dataQueued;
 		}
 	}
@@ -626,6 +656,10 @@ bool CUploadDiskIOThread::CommitRead(ReadRequest_Struct &req, ReadResult result)
 	srcfile->statistic.AddTransferred(togo);
 	PushDoneBlock(client->m_DoneBlocks_list, currentblock);
 	client->m_BlockRequests_queue.pop_front();
+	const Requested_Block_Struct *next =
+		client->m_BlockRequests_queue.empty() ? nullptr : client->m_BlockRequests_queue.front();
+	req.continues = next != nullptr && md4cmp(next->FileID, req.ucMD4FileHash) == 0 &&
+			next->StartOffset == req.uEndOffset;
 	return true;
 }
 
