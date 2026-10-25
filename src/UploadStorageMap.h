@@ -23,6 +23,7 @@
 
 #include <filesystem>
 #include <algorithm>
+#include <map>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -33,6 +34,19 @@ class UploadStorageMap
 {
 public:
 	bool Refresh(bool includeNetwork = true); // false leaves the previous snapshot intact
+	// A shared directory can be a symlink to another volume. Resolve the given
+	// directories on the worker, so Lookup keys their files by the target's volume.
+	void ResolveDirectories(const std::vector<std::string> &directories);
+	void AddResolvedDirectory(const std::string &directory, const std::string &target)
+	{
+		auto trim = [](std::string path) {
+			while (path.size() > 1 && path.back() == '/') {
+				path.pop_back();
+			}
+			return path;
+		};
+		m_resolved[trim(Normalize(directory, false))] = trim(Normalize(target, false));
+	}
 	void Add(std::string path, std::string key)
 	{
 		while (path.size() > 1 && path.back() == '/') {
@@ -87,10 +101,13 @@ public:
 	}
 	std::string Lookup(const std::string &input, bool windows = false) const
 	{
-		const std::string normalized = windows ? WindowsPath(input) : input;
-		std::string path = std::filesystem::u8path(normalized).lexically_normal().generic_u8string();
-		if (windows && normalized.compare(0, 2, "//") == 0 && path.compare(0, 2, "//") != 0) {
-			path.insert(0, "/");
+		std::string path = Normalize(input, windows);
+		const auto slash = path.rfind('/');
+		if (!windows && slash != std::string::npos && slash != 0) {
+			const auto resolved = m_resolved.find(path.substr(0, slash));
+			if (resolved != m_resolved.end()) {
+				path = resolved->second + path.substr(slash);
+			}
 		}
 		const Mount *best = nullptr;
 		for (const auto &mount : m_mounts) {
@@ -116,6 +133,15 @@ public:
 	}
 
 private:
+	static std::string Normalize(const std::string &input, bool windows)
+	{
+		const std::string normalized = windows ? WindowsPath(input) : input;
+		std::string path = std::filesystem::u8path(normalized).lexically_normal().generic_u8string();
+		if (windows && normalized.compare(0, 2, "//") == 0 && path.compare(0, 2, "//") != 0) {
+			path.insert(0, "/");
+		}
+		return path;
+	}
 	static std::string WindowsPath(std::string path)
 	{
 		for (char &character : path) {
@@ -133,5 +159,6 @@ private:
 		std::string key;
 	};
 	std::vector<Mount> m_mounts;
+	std::map<std::string, std::string> m_resolved; // spelled directory -> real path
 };
 #endif

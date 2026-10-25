@@ -531,13 +531,6 @@ int CamuleApp::OnExit()
 	glob_prefs = NULL;
 	CPreferences::EraseItemList();
 
-	// Shut down disk I/O thread before throttler -- eMule ref: emule.cpp shutdown order
-	if (uploadDiskIOThread) {
-		uploadDiskIOThread->EndThread();
-		delete uploadDiskIOThread;
-		uploadDiskIOThread = NULL;
-	}
-
 	delete uploadBandwidthThrottler;
 	uploadBandwidthThrottler = NULL;
 

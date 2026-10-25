@@ -30,6 +30,7 @@
 #include <atomic>
 #include <memory>
 #include <set>
+#include <string>
 #include <map>
 #include <vector>
 #include "StorageReadPool.h"
@@ -56,7 +57,6 @@ struct OpenFile_Struct
 	std::string storage;
 	uint64 lastRead = 0;
 	bool cached = false;
-	bool bCompress = false;
 };
 
 enum UploadReadResult
@@ -71,7 +71,7 @@ struct ReadRequest_Struct
 {
 	~ReadRequest_Struct();
 	void ReleasePartFile();
-	std::shared_ptr<OpenFile_Struct> pFileStruct;
+	std::shared_ptr<OpenFile_Struct> pFileStruct; // complete files only
 	uint32 clientId = 0;
 	uint64 session = 0;
 	uint8 ucMD4FileHash[16];
@@ -83,8 +83,10 @@ struct ReadRequest_Struct
 	CFileArea area;
 	std::vector<uint8> data; // owned copy only when area was mapped
 	UploadReadResult result = READ_FAILED;
+	bool bCompress = false;
 	bool closeOnly = false;
 	std::unique_ptr<UploadStorageMap> storageMap; // discovery job, without a file/client
+	std::vector<std::string> resolveDirectories;  // discovery job only
 	bool discoverNetwork = true;
 };
 
@@ -110,13 +112,13 @@ private:
 	void *Entry() override; // replaces RunProc/RunInternal
 
 	using ReadResult = UploadReadResult;
+	void DispatchReads();
 	void DrainCompletions(bool deliver);
 	void QueueIdleCloses();
 	std::unique_ptr<ReadRequest_Struct> PrepareRead(uint32 clientId);
 	static ReadResult ReadBlock(ReadRequest_Struct *req);
-	bool CommitRead(ReadRequest_Struct *req, ReadResult result);
-	bool ReadCompletionRoutine(ReadRequest_Struct *req); // true if payload was queued
-	void DiscardRequest(ReadRequest_Struct *req);        // frees a req never committed
+	bool CommitRead(ReadRequest_Struct &req, ReadResult result);
+	bool ReadCompletionRoutine(ReadRequest_Struct &req); // true if payload was queued
 
 	bool m_started = false;
 	std::atomic<bool> m_bRun{ false }; // eMule ref: m_bRun (line 77)
@@ -134,6 +136,10 @@ private:
 	// Oldest successful dispatch wins, independently of activity on other volumes.
 	std::map<uint32, uint64> m_lastDispatch;
 	uint64 m_dispatchSequence = 0;
+	// Each client's last storage key, to skip it cheaply while that volume is busy.
+	std::map<uint32, std::string> m_clientStorage;
+	// Directories read from, resolved by each discovery job.
+	std::set<std::string> m_readDirectories;
 	UploadStorageMap m_storageMap;
 	uint64 m_storageRefreshed = 0;
 	bool m_storageMapReady = false;

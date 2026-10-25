@@ -70,3 +70,19 @@ TEST(UploadStorageMap, WindowsMappedDrivesShareTheirUncBudget)
 	ASSERT_EQUALS(std::string("unknown"), map.Lookup("w:/file", true));
 	ASSERT_EQUALS(std::string("unknown"), map.Lookup("//nas/", true));
 }
+
+TEST(UploadStorageMap, SymlinkedDirectoriesUseTheirTargetVolume)
+{
+	UploadStorageMap map;
+	map.Add("/", "root");
+	map.Add("/media/disk", "disk");
+	map.AddResolvedDirectory("/home/user/shared/", "/media/disk/shared");
+	ASSERT_EQUALS(std::string("disk"), map.Lookup("/home/user/shared/a.bin"));
+	ASSERT_EQUALS(std::string("disk"), map.Lookup("/home/user/./shared/a.bin"));
+	// Only files directly in a resolved directory follow it.
+	ASSERT_EQUALS(std::string("root"), map.Lookup("/home/user/shared/sub/a.bin"));
+	ASSERT_EQUALS(std::string("root"), map.Lookup("/home/user/other/a.bin"));
+	// Windows spellings are never resolved.
+	map.AddResolvedDirectory("c:/shared", "/media/disk");
+	ASSERT_EQUALS(std::string("unknown"), map.Lookup("C:\\shared\\a.bin", true));
+}

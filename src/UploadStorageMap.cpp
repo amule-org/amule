@@ -112,3 +112,18 @@ bool UploadStorageMap::Refresh([[maybe_unused]] bool includeNetwork)
 	}
 	return false;
 }
+
+void UploadStorageMap::ResolveDirectories([[maybe_unused]] const std::vector<std::string> &directories)
+{
+#ifndef _WIN32
+	// Windows junctions and symlinks keep the volume of their spelled path.
+	for (const auto &directory : directories) {
+		if (char *target = ::realpath(directory.c_str(), nullptr)) {
+			if (directory != target) {
+				AddResolvedDirectory(directory, target);
+			}
+			std::free(target);
+		}
+	}
+#endif
+}
