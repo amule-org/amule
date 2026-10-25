@@ -471,7 +471,7 @@ CUploadDiskIOThread::ReadResult CUploadDiskIOThread::ReadBlock(ReadRequest_Struc
 					req->pFileStruct->file.IsOpened()) {
 					req->pFileStruct->file.Close();
 				}
-			} catch (const CSafeIOException &error) {
+			} catch (const CMuleException &error) {
 				AddDebugLogLineC(logClient,
 					wxString("CUploadDiskIOThread: cleanup failed: ") + error.what());
 			} catch (...) {
