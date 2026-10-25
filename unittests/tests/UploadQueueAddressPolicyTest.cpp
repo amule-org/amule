@@ -101,11 +101,10 @@ bool HasRoom(const char *candidate,
 	const std::vector<CNetworkAddress> &uploading,
 	unsigned limit = UploadQueueAddressPolicy::MaxUploadSlotsPerScope)
 {
-	return UploadQueueAddressPolicy::HasUploadSlotRoom(
-		CNetworkAddress::FromString(candidate),
-		uploading,
-		[](const CNetworkAddress &address) -> const CNetworkAddress & { return address; },
-		limit);
+	return UploadQueueAddressPolicy::UploadSlotsInScope(CNetworkAddress::FromString(candidate),
+		       uploading,
+		       [](const CNetworkAddress &address) -> const CNetworkAddress & { return address; }) <
+	       limit;
 }
 } // namespace
 
@@ -139,9 +138,10 @@ TEST(UploadQueueAddressPolicy, UploadSlotCapIgnoresAddresslessPeers)
 {
 	const CNetworkAddress absent;
 	ASSERT_TRUE(HasRoom("::", { CNetworkAddress::FromString("::"), CNetworkAddress::FromString("::") }));
-	ASSERT_TRUE(UploadQueueAddressPolicy::HasUploadSlotRoom(absent,
-		std::vector<CNetworkAddress>{ absent, absent },
-		[](const CNetworkAddress &address) -> const CNetworkAddress & { return address; }));
+	ASSERT_EQUALS(0u,
+		UploadQueueAddressPolicy::UploadSlotsInScope(absent,
+			std::vector<CNetworkAddress>{ absent, absent },
+			[](const CNetworkAddress &address) -> const CNetworkAddress & { return address; }));
 }
 
 // Spare capacity is nearly unlimited on a fast line with unlimited upload, so it needs a bound too.

@@ -136,10 +136,11 @@ void CUploadQueue::SortGetBestClient(CClientRef *bestClient)
 		} else {
 			const bool waitsForConnect = cur_client->HasLowID() && !cur_client->IsConnected() &&
 						     !cur_client->IsCallableIPv6Contact();
-			if (!HasUploadSlotRoom(cur_client, MaxUploadSlotsPerScope)) {
+			const unsigned held = UploadSlotsInScope(cur_client);
+			if (held >= MaxUploadSlotsPerScope) {
 				cur_client->m_bAddNextConnect = false;
 				if (!waitsForConnect && overCap == m_waitinglist.end() &&
-					HasUploadSlotRoom(cur_client, HardMaxUploadSlotsPerScope)) {
+					held < HardMaxUploadSlotsPerScope) {
 					overCap = it2;
 				}
 			} else if (waitsForConnect) {
@@ -169,8 +170,9 @@ void CUploadQueue::SortGetBestClient(CClientRef *bestClient)
 	}
 
 	// A soft cap. A slot is free whenever bestClient is asked for, so with nobody else able to
-	// take it, a capped client gets spare capacity only, up to the hard cap. Once others wait,
-	// slots fill, kicking resumes, and rotation brings the scope back under its cap.
+	// take it, a capped client gets spare capacity only, up to the hard cap. A LowID client still
+	// waiting to connect gets none above the soft cap. Once others wait, slots fill, kicking
+	// resumes, and rotation brings the scope back under its cap.
 	if (bestClient && !bestClientFound && overCap != m_waitinglist.end()) {
 		for (it = std::next(overCap); it != m_waitinglist.end(); ++it) {
 			it->GetClient()->SetUploadQueueWaitingPosition(
@@ -196,15 +198,17 @@ void CUploadQueue::SortGetBestClient(CClientRef *bestClient)
 #endif // __DEBUG__
 }
 
-bool CUploadQueue::HasUploadSlotRoom(const CUpDownClient *client, unsigned limit) const
+unsigned CUploadQueue::UploadSlotsInScope(const CUpDownClient *client) const
 {
-	const auto addressOf = [](const CClientRef &ref) -> const CNetworkAddress & {
-		return ref.GetClient()->GetUserAddress();
-	};
-	// A friend slot is the user's own grant.
-	return client->GetFriendSlot() ||
-	       UploadQueueAddressPolicy::HasUploadSlotRoom(
-		       client->GetUserAddress(), m_uploadinglist, addressOf, limit);
+	// A friend slot is the user's own grant, so no scope cap applies.
+	if (client->GetFriendSlot()) {
+		return 0;
+	}
+	return UploadQueueAddressPolicy::UploadSlotsInScope(client->GetUserAddress(),
+		m_uploadinglist,
+		[](const CClientRef &ref) -> const CNetworkAddress & {
+			return ref.GetClient()->GetUserAddress();
+		});
 }
 
 void CUploadQueue::AddUpNextClient(CUpDownClient *directadd)
@@ -512,7 +516,7 @@ void CUploadQueue::AddClientToQueue(CUpDownClient *client)
 						maxSlots++;
 					}
 					if (m_uploadinglist.size() < maxSlots &&
-						HasUploadSlotRoom(client, MaxUploadSlotsPerScope)) {
+						UploadSlotsInScope(client) < MaxUploadSlotsPerScope) {
 						client->m_bAddNextConnect = false;
 						RemoveFromWaitingQueue(client);
 						AddUpNextClient(client);
@@ -615,7 +619,7 @@ void CUploadQueue::AddClientToQueue(CUpDownClient *client)
 	// if possible start upload right away; with nobody waiting the slot is spare capacity
 	if (m_waitinglist.empty() && tick - m_nLastStartUpload >= 1000 &&
 		m_uploadinglist.size() < GetMaxSlots() && !theApp->listensocket->TooManySockets() &&
-		HasUploadSlotRoom(client, HardMaxUploadSlotsPerScope)) {
+		UploadSlotsInScope(client) < HardMaxUploadSlotsPerScope) {
 		AddUpNextClient(client);
 		m_nLastStartUpload = tick;
 	} else {

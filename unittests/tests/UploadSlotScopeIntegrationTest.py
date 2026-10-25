@@ -105,6 +105,9 @@ def run(binary, address_a, address_b):
                 for index in range(HARD_CAP):
                     peer = open_peer(address_a, f'scope-a-{index}')
                     assert peer.wait_for(OP_ACCEPTUPLOADREQ, 10), f'session {index} from A got no slot'
+                # The empty-queue start runs only a second after the last slot started; within it the
+                # session would be queued and capped by the best-client pick instead.
+                time.sleep(1.5)
                 extra = open_peer(address_a, 'scope-a-extra')
                 assert not extra.wait_for(OP_ACCEPTUPLOADREQ, 4), 'A got more than 10 slots'
                 other = open_peer(address_b, 'scope-b')
