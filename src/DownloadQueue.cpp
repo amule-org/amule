@@ -82,7 +82,6 @@ CDownloadQueue::CDownloadQueue()
 	m_lastudpstattime = 0;
 	m_udcounter = 0;
 	m_nLastED2KLinkCheck = 0;
-	m_dwNextTCPSrcReq = 0;
 	m_lastDiskCheck = 0;
 
 	// Static thresholds until dynamic kicks in.
@@ -1104,7 +1103,6 @@ void CDownloadQueue::ResetLocalServerRequests()
 {
 	wxMutexLocker lock(m_mutex);
 
-	m_dwNextTCPSrcReq = 0;
 	m_localServerReqQueue.clear();
 
 	for (FileQueue::size_type i = 0; i < m_filelist.size(); i++) {
@@ -1128,11 +1126,12 @@ void CDownloadQueue::ProcessLocalRequests()
 	bool bServerSupportsLargeFiles = theApp->serverconnect && theApp->serverconnect->GetCurrentServer() &&
 					 theApp->serverconnect->GetCurrentServer()->SupportsLargeFilesTCP();
 
-	if ((!m_localServerReqQueue.empty()) && (m_dwNextTCPSrcReq < ::GetTickCount64())) {
+	const uint64 now = ::GetTickCount64();
+	if (!m_localServerReqQueue.empty() && m_localRequests.Available(now) > 0) {
 		CMemFile dataTcpFrame(22);
-		const int iMaxFilesPerTcpFrame = 15;
-		int iFiles = 0;
-		while (!m_localServerReqQueue.empty() && iFiles < iMaxFilesPerTcpFrame) {
+		const uint32 maxFiles = std::min<uint32>(15, m_localRequests.Available(now));
+		uint32 sent = 0;
+		while (!m_localServerReqQueue.empty() && sent < maxFiles) {
 			// find the file with the longest waitingtime
 			uint64 dwBestWaitTime = 0xFFFFFFFFFFFFFFFF;
 
@@ -1169,9 +1168,8 @@ void CDownloadQueue::ProcessLocalRequests()
 			if (posNextRequest != m_localServerReqQueue.end()) {
 				CPartFile *cur_file = (*posNextRequest);
 				cur_file->SetLocalSrcRequestQueued(false);
-				cur_file->SetLastSearchTime(::GetTickCount64());
+				cur_file->SetLastSearchTime(now);
 				m_localServerReqQueue.erase(posNextRequest);
-				iFiles++;
 
 				if (!bServerSupportsLargeFiles && cur_file->IsLargeFile()) {
 					AddDebugLogLineN(logDownloadQueue,
@@ -1204,6 +1202,7 @@ void CDownloadQueue::ProcessLocalRequests()
 					}
 					CPacket packet(data, OP_EDONKEYPROT, byOpcode);
 					dataTcpFrame.Write(packet.GetPacket(), packet.GetRealPacketSize());
+					++sent;
 				}
 			}
 		}
@@ -1222,9 +1221,7 @@ void CDownloadQueue::ProcessLocalRequests()
 			AddDebugLogLineN(logDownloadQueue, "Sent local sources request packet.");
 			theStats::AddUpOverheadServer(size);
 		}
-
-		// next TCP frame with up to 15 source requests is allowed to be sent in..
-		m_dwNextTCPSrcReq = ::GetTickCount64() + SEC2MS(iMaxFilesPerTcpFrame * (16 + 4));
+		m_localRequests.Spend(now, sent);
 	}
 }
 
@@ -1232,7 +1229,12 @@ void CDownloadQueue::SendLocalSrcRequest(CPartFile *sender)
 {
 	wxMutexLocker lock(m_mutex);
 
-	m_localServerReqQueue.push_back(sender);
+	// A download never asked goes first, so it is not stuck behind a large batch added earlier.
+	if (sender->GetLastSearchTime() == 0) {
+		m_localServerReqQueue.push_front(sender);
+	} else {
+		m_localServerReqQueue.push_back(sender);
+	}
 }
 
 void CDownloadQueue::ResetCatParts(uint8 cat)

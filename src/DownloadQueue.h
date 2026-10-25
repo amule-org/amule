@@ -26,10 +26,12 @@
 #ifndef DOWNLOADQUEUE_H
 #define DOWNLOADQUEUE_H
 
-#include "MD4Hash.h"           // Needed for CMD4Hash
-#include "ObservableQueue.h"   // Needed for CObservableQueue
-#include "GetTickCount.h"      // Needed for GetTickCount64
-#include "GlobalSourceQueue.h" // Needed for CGlobalSourceQueue
+#include "MD4Hash.h"                 // Needed for CMD4Hash
+#include "ObservableQueue.h"         // Needed for CObservableQueue
+#include "GetTickCount.h"            // Needed for GetTickCount64
+#include "GlobalSourceQueue.h"       // Needed for CGlobalSourceQueue
+#include "Refill.h"                  // Needed for CRefill
+#include <protocol/ed2k/Constants.h> // Needed for LOCALSERVER_SOURCE_REQUESTS
 
 #include <atomic> // Needed for std::atomic (m_listGeneration)
 #include <deque>
@@ -261,7 +263,7 @@ private:
 	uint64 m_lastsorttime;
 	uint64 m_lastudpstattime;
 	uint64 m_nLastED2KLinkCheck;
-	uint64 m_dwNextTCPSrcReq;
+	CRefill m_localRequests{ LOCALSERVER_SOURCE_REQUESTS, LOCALSERVER_MS_PER_SOURCE_REQUEST };
 	uint8 m_udcounter;
 	// Keyed by address and port, so a server's queue outlives its object.
 	std::map<std::pair<wxString, uint16>, CGlobalSourceQueue> m_globalSources;

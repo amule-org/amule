@@ -40,7 +40,12 @@
 #define SERVERREASKTIME \
 	800000 // don't set this too low, it wont speed up anything, but it could kill amule or your
 	       // internetconnection
-#define UDPSERVERREASKTIME 1300000    // 1300000 <- original value ***
+#define UDPSERVERREASKTIME 1300000 // 1300000 <- original value ***
+// Source requests to the connected server. Lugdunum 17.15 answers at most 7 per 28 s from an IP
+// and drops the rest without a reply. 5 at once, then one per 20 s, stays under that in any 28 s
+// and keeps the old long-run pace of 15 per 300 s.
+#define LOCALSERVER_SOURCE_REQUESTS 5
+#define LOCALSERVER_MS_PER_SOURCE_REQUEST 20000
 #define SOURCECLIENTREASKS MIN2MS(40) // 40 mins
 #define SOURCECLIENTREASKF MIN2MS(5)  // 5 mins
 #define UDPSERVERSTATTIME SEC2MS(5)   // 5 secs

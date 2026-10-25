@@ -22,6 +22,7 @@
 #define GLOBALSOURCEQUEUE_H
 
 #include "MD4Hash.h"                 // Needed for CMD4Hash
+#include "Refill.h"                  // Needed for CRefill
 #include "Types.h"                   // Needed for uint64, needed by Constants.h
 #include <protocol/ed2k/Constants.h> // Needed for UDPSERVERREASKTIME
 
@@ -132,37 +133,6 @@ public:
 	}
 
 private:
-	// Refills one unit every msPer, up to capacity.
-	class CRefill
-	{
-	public:
-		CRefill(uint32_t capacity, uint64_t msPer)
-		: m_capacity(capacity)
-		, m_msPer(msPer)
-		{
-		}
-
-		uint32_t Available(uint64_t now) const
-		{
-			if (m_fullAt <= now) {
-				return m_capacity;
-			}
-			const uint64_t owed = (m_fullAt - now + m_msPer - 1) / m_msPer;
-			return owed >= m_capacity ? 0 : m_capacity - static_cast<uint32_t>(owed);
-		}
-
-		void Spend(uint64_t now, uint32_t units)
-		{
-			m_fullAt = std::max(m_fullAt, now) + units * m_msPer;
-		}
-
-	private:
-		uint32_t m_capacity;
-		uint64_t m_msPer;
-		// When it is back to capacity.
-		uint64_t m_fullAt = 0;
-	};
-
 	void ForgetOlderThan(uint64_t now)
 	{
 		for (auto it = m_recent.begin(); it != m_recent.end();) {

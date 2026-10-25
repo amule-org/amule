@@ -1061,6 +1061,11 @@ add_test (NAME GlobalSourceQueueTest COMMAND GlobalSourceQueueTest)
 target_include_directories (GlobalSourceQueueTest PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include)
 target_link_libraries (GlobalSourceQueueTest muleunit mulecommon)
 
+add_executable (RefillTest RefillTest.cpp)
+add_test (NAME RefillTest COMMAND RefillTest)
+target_include_directories (RefillTest PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include)
+target_link_libraries (RefillTest muleunit mulecommon)
+
 # Which address an OP_FOUNDSOURCES / OP_FOUNDSOURCES_OBFU sentinel source is contacted on, without
 # the application.
 add_executable (ServerIPv6SourcePolicyTest
