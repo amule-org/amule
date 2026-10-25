@@ -230,6 +230,9 @@ jobs:
         run: ccache --show-stats
       - name: run tests
         run: |
+          # One sequential read of the image's cold node binary. Paging it in on first
+          # run takes seconds while the disk is busy after the build (DownloadDeleteTest).
+          cat "$(command -v node)" > /dev/null
           xvfb-run -a ctest ${{ env.ctest_flags }} --timeout 10 -E '${{ env.ctest_fast_exclude }}|${{ env.ctest_shared_file_reverify }}' &&
           xvfb-run -a ctest ${{ env.ctest_flags }} --timeout 60 -R '${{ env.ctest_slow_unit_tests }}'
       - name: run integration tests
@@ -342,6 +345,9 @@ jobs:
         run: ccache --show-stats
       - name: run tests
         run: |
+          # One sequential read of the image's cold node binary. Paging it in on first
+          # run takes seconds while the disk is busy after the build (DownloadDeleteTest).
+          cat "$(command -v node)" > /dev/null
           xvfb-run -a ctest ${{ env.ctest_flags }} --timeout 10 -E '${{ env.ctest_fast_exclude }}|${{ env.ctest_shared_file_reverify }}' &&
           xvfb-run -a ctest ${{ env.ctest_flags }} --timeout 60 -R '${{ env.ctest_slow_unit_tests }}'
       - name: run integration tests
