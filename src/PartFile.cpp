@@ -3622,8 +3622,8 @@ void CPartFile::FlushBuffer(bool fromAICHRecoveryDataAvailable)
 
 	// eMule ref: PartFile.cpp:4102-4127 -- Phase 1: queue PB_READY items to the write thread
 	if (threaded) {
-		for (auto it = m_BufferedData_list.begin(); it != m_BufferedData_list.end(); ++it) {
-			PartFileBufferedData *item = it->second;
+		for (const auto &entry : m_BufferedData_list) {
+			PartFileBufferedData *item = entry.second;
 			if (item->flushed == PB_READY) {
 				item->flushed = PB_PENDING;
 				++m_iWrites;
