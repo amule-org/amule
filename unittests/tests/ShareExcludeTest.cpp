@@ -186,3 +186,94 @@ TEST(ShareExclude, ExpansionCapsSeenNames)
 
 	wxFileName::Rmdir(root.GetRaw(), wxPATH_RMDIR_RECURSIVE);
 }
+
+// Office documents are excluded as plain globs inside the default ExcludeSharePatterns, so the
+// user sees and edits them in the same field as every other pattern. The globs are pinned
+// against the shipped default itself, so the two cannot drift apart.
+TEST(ShareExclude, OfficeDocumentGlobsMatchExactExtensions)
+{
+	CShareExcludeFilter filter;
+	filter.Compile(ShareExclude::kDefaultPatterns, false);
+	ASSERT_TRUE(filter.IsValid());
+
+	const char *blocked[] = { "Letter.DOC",
+		"letter.docx",
+		"macro.DoCm",
+		"template.dot",
+		"template.dotx",
+		"template.dotm",
+		"budget.xls",
+		"budget.xlsx",
+		"macro.xlsm",
+		"book.xlsb",
+		"template.xlt",
+		"template.xltx",
+		"template.xltm",
+		"addin.xlam",
+		"slides.ppt",
+		"slides.PPTX",
+		"macro.pptm",
+		"template.pot",
+		"template.potx",
+		"template.potm",
+		"show.pps",
+		"show.ppsx",
+		"show.ppsm",
+		"report.odt",
+		"template.ott",
+		"sheet.ods",
+		"template.ots",
+		"slides.odp",
+		"template.otp",
+		"drawing.odg",
+		"template.otg",
+		"formula.odf",
+		"database.odb",
+		"notes.rtf",
+		"contacts.csv",
+		"contacts.TSV" };
+	for (const char *name : blocked) {
+		ASSERT_TRUE_M(filter.Matches(name), name);
+	}
+	const char *allowed[] = { "music.mp3",
+		"movie.mkv",
+		"document.docx.zip",
+		"docx",
+		"report.docx.bak",
+		"photo.jpeg",
+		"README",
+		"report.docx.exe" };
+	for (const char *name : allowed) {
+		ASSERT_TRUE_M(!filter.Matches(name), name);
+	}
+}
+
+TEST(ShareExclude, DefaultMetadataPatternsRemainExcluded)
+{
+	CShareExcludeFilter filter;
+	filter.Compile(ShareExclude::kDefaultPatterns, false);
+	const char *blocked[] = { ".DS_Store",
+		"._photo.jpg",
+		".Spotlight-V100",
+		".Trashes",
+		".fseventsd",
+		".DocumentRevisions-V100",
+		".TemporaryItems",
+		".apdisk",
+		"Thumbs.db",
+		"ehthumbs.db",
+		"desktop.ini",
+		".directory" };
+	for (const char *name : blocked) {
+		ASSERT_TRUE_M(filter.Matches(name), name);
+	}
+	const char *allowed[] = { "download.part",
+		"download.tmp",
+		"download.!ut",
+		"INCOMPLETE.bin",
+		"report.docx.bak",
+		"Thumbs.db.backup" };
+	for (const char *name : allowed) {
+		ASSERT_TRUE_M(!filter.Matches(name), name);
+	}
+}

@@ -1415,21 +1415,13 @@ void CPreferences::BuildItemList(const wxString &appdir)
 	 * Shared-file exclusion by name. A '|'-separated list of wildcard patterns, or a
 	 * single regex when ExcludeSharePatternsUseRegex is on.
 	 *
-	 * The default excludes OS-generated metadata junk that no peer wants to download.
-	 * Matching is case-insensitive. Configs missing the key pick this up on load (not
-	 * just fresh installs) -- intentional for this junk, which should never have been
-	 * shared: macOS .DS_Store, ._* (AppleDouble), .Spotlight-V100, .Trashes, .fseventsd,
-	 * .DocumentRevisions-V100, .TemporaryItems, .apdisk; Windows Thumbs.db, ehthumbs.db,
-	 * desktop.ini; Linux .directory (KDE folder metadata). Deliberately NOT included:
-	 * broad download-temp globs (*.part, *.tmp, *.!ut, *INCOMPLETE*) -- those can match
-	 * real user files, so they are left for the user to add.
+	 * Missing keys use the OS-metadata and office-document defaults in ShareExclude.h.
+	 * A saved list is kept, so profiles with a saved value do not gain the office globs.
 	 */
 	NewCfgItem(IDC_EXCLUDE_SHARE_PATTERNS,
 		(new Cfg_Str("/eMule/ExcludeSharePatterns",
 			s_ExcludeSharePatterns,
-			".DS_Store|._*|.Spotlight-V100|.Trashes|.fseventsd|"
-			".DocumentRevisions-V100|.TemporaryItems|.apdisk|"
-			"Thumbs.db|ehthumbs.db|desktop.ini|.directory")));
+			ShareExclude::kDefaultPatterns)));
 	NewCfgItem(IDC_EXCLUDE_SHARE_REGEX,
 		(new Cfg_Bool("/eMule/ExcludeSharePatternsUseRegex", s_ExcludeSharePatternsUseRegex, false)));
 

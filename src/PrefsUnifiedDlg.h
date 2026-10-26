@@ -140,22 +140,6 @@ protected:
 	//! daemon's path, nothing here to browse to), but the local side is a real folder on this
 	//! machine.
 	void OnPathMappingBrowse(wxCommandEvent &evt);
-	//! Re-flows the explanatory paragraph above the path-mapping list on resize. Bound on the
-	//! PAGE, not on the paragraph: wxStaticText::SetLabel() resizes the control to fit its
-	//! label, so a handler on the paragraph that rewrites the paragraph feeds itself (stack
-	//! exhaustion inside SetLabel). The page's width is set by the dialog and unmoved by
-	//! anything the label does.
-	void OnPathMappingPageResize(wxSizeEvent &evt);
-	//! Wraps that paragraph to the page's current client width.
-	void WrapPathMappingHint();
-
-	//! The paragraph with no line breaks in it. wxStaticText::Wrap() only ever inserts breaks
-	//! and treats any newline already there as hard, so re-flowing to a WIDER page has to start
-	//! from unwrapped text.
-	wxString m_pathMappingHintText;
-	//! Width last wrapped to, so a resize that leaves the width alone (a
-	//! height-only change, say) does no work.
-	int m_pathMappingHintWrapWidth;
 
 public:
 	//! Repaint the editor when a GET_SHARED_DIRS reply lands while the dialog is open. A no-op

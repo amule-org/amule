@@ -26,6 +26,8 @@
 #ifndef EDITSERVERLISTDLG_H
 #define EDITSERVERLISTDLG_H
 
+#include <wx/dialog.h>
+
 class wxTextCtrl;
 
 void EditServerListSources(wxWindow *parent);

@@ -325,7 +325,6 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 	s_openPrefsDlg = this;
 	m_sharedDirsDirty = false;
 	m_sharedDirsLoaded = false;
-	m_pathMappingHintWrapWidth = 0;
 #endif
 	preferencesDlgTop(this, false);
 
@@ -3445,53 +3444,9 @@ void PrefsUnifiedDlg::PopulatePathMappingList()
 		++row;
 	}
 
-	// muuli_wdr.cpp wraps the paragraph above the list once, so the page has a sane minimum
-	// width; from here on it follows the page. Bound on the page rather than on the
-	// paragraph, and idempotently, since this page's controls do not exist until
-	// PreferencesPathMappingTab() builds them and Populate is the first point afterwards
-	// that runs.
-	if (wxStaticText *hint = CastChild(IDC_PATHMAP_HINT, wxStaticText)) {
-		if (m_pathMappingHintText.IsEmpty()) {
-			// Arrives already wrapped, so the breaks come back out: Wrap() would otherwise
-			// keep them forever and could only ever narrow the text further.
-			m_pathMappingHintText = hint->GetLabel();
-			m_pathMappingHintText.Replace("\n", " ");
-		}
-		if (wxWindow *page = hint->GetParent()) {
-			page->Unbind(wxEVT_SIZE, &PrefsUnifiedDlg::OnPathMappingPageResize, this);
-			page->Bind(wxEVT_SIZE, &PrefsUnifiedDlg::OnPathMappingPageResize, this);
-		}
-		WrapPathMappingHint();
+	if (auto *hint = dynamic_cast<WrappingStaticText *>(FindWindow(IDC_PATHMAP_HINT))) {
+		hint->SetLayoutCallback([hint] { RefreshPreferencesPage(hint); });
 	}
-}
-
-void PrefsUnifiedDlg::OnPathMappingPageResize(wxSizeEvent &evt)
-{
-	WrapPathMappingHint();
-	evt.Skip();
-}
-
-void PrefsUnifiedDlg::WrapPathMappingHint()
-{
-	wxStaticText *hint = CastChild(IDC_PATHMAP_HINT, wxStaticText);
-	if (hint == nullptr || m_pathMappingHintText.IsEmpty()) {
-		return;
-	}
-	wxWindow *page = hint->GetParent();
-	if (page == nullptr) {
-		return;
-	}
-	// The page's width, never the label's: the label's width is whatever the
-	// last SetLabel() made it, which is exactly the feedback this avoids.
-	const int width = page->GetClientSize().GetWidth();
-	if (width <= 0 || width == m_pathMappingHintWrapWidth) {
-		return;
-	}
-	m_pathMappingHintWrapWidth = width;
-	hint->SetLabel(m_pathMappingHintText);
-	hint->Wrap(width);
-	// The paragraph's height has changed, so the rest of the page moves.
-	RefreshPreferencesPage(page);
 }
 
 void PrefsUnifiedDlg::HarvestPathMappingList()

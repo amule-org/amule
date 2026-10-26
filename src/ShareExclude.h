@@ -62,6 +62,18 @@ namespace ShareExclude
 
 typedef std::vector<CPath> PathList;
 
+// Default filename globs: OS folder metadata no peer wants, and office documents, which often
+// hold private data. Broad download-temp globs (*.part, *.tmp, *.!ut, *INCOMPLETE*) are left
+// out on purpose: they can match real user files.
+constexpr const char *kDefaultPatterns = ".DS_Store|._*|.Spotlight-V100|.Trashes|.fseventsd|"
+					 ".DocumentRevisions-V100|.TemporaryItems|.apdisk|"
+					 "Thumbs.db|ehthumbs.db|desktop.ini|.directory|"
+					 "*.doc|*.docx|*.docm|*.dot|*.dotx|*.dotm|"
+					 "*.xls|*.xlsx|*.xlsm|*.xlsb|*.xlt|*.xltx|*.xltm|*.xlam|"
+					 "*.ppt|*.pptx|*.pptm|*.pot|*.potx|*.potm|*.pps|*.ppsx|*.ppsm|"
+					 "*.odt|*.ott|*.ods|*.ots|*.odp|*.otp|*.odg|*.otg|*.odf|*.odb|"
+					 "*.rtf|*.csv|*.tsv";
+
 // True if a folder below `root`, up to and including `path`, matches `filter`. `root` itself is
 // never tested: the user picked it.
 bool HasExcludedFolderBelow(const CShareExcludeFilter &filter, const CPath &root, const CPath &path);

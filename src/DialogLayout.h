@@ -26,12 +26,107 @@
 #define DIALOG_LAYOUT_H
 
 #include <wx/display.h>
+#include <wx/event.h>
 #include <wx/scrolwin.h>
 #include <wx/sizer.h>
 #include <wx/settings.h>
+#include <wx/stattext.h>
 
+#include <functional>
 #include <utility>
 #include <vector>
+
+// Wrap to the space assigned by the containing sizer, including nested layouts.
+class WrappingStaticText : public wxStaticText
+{
+public:
+	WrappingStaticText(wxWindow *parent, wxWindowID id, const wxString &text)
+	: wxStaticText(parent, id, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxST_NO_AUTORESIZE)
+	, m_text(text)
+	{
+		SetLabelText(m_text);
+		// The original translation must not dictate the container's minimum width.
+		SetMinSize(wxSize(FromDIP(20), -1));
+		Bind(wxEVT_SIZE, &WrappingStaticText::OnSize, this);
+		for (wxWindow *ancestor = parent; ancestor; ancestor = ancestor->GetParent()) {
+			if (auto *page = dynamic_cast<wxScrolledWindow *>(ancestor)) {
+				m_viewport = page;
+				page->Bind(wxEVT_SIZE, &WrappingStaticText::OnSize, this);
+				break;
+			}
+		}
+	}
+
+	~WrappingStaticText() override
+	{
+		if (m_viewport) {
+			m_viewport->Unbind(wxEVT_SIZE, &WrappingStaticText::OnSize, this);
+		}
+	}
+
+	void SetLayoutCallback(std::function<void()> callback) { m_layoutCallback = std::move(callback); }
+
+	bool SetFont(const wxFont &font) override
+	{
+		const bool changed = wxStaticText::SetFont(font);
+		if (changed) {
+			m_wrapWidth = -1;
+			Rewrap();
+		}
+		return changed;
+	}
+
+private:
+	void OnSize(wxSizeEvent &event)
+	{
+		Rewrap();
+		event.Skip();
+	}
+
+	void Rewrap()
+	{
+		int width = GetClientSize().x;
+		// A page measured before it is shown still has its default size (about 20 px on
+		// wxOSX), which would wrap one word per line and inflate its minimum height.
+		if (m_viewport && m_viewport->IsShownOnScreen()) {
+			// Other fields may keep the virtual page wider than its viewport.
+			int left = 0;
+			for (wxWindow *window = this; window != m_viewport; window = window->GetParent()) {
+				left += window->GetPosition().x + window->GetClientAreaOrigin().x;
+			}
+			width = wxMin(width, m_viewport->GetClientSize().x - wxMax(0, left));
+		}
+		if (width <= 0 || width == m_wrapWidth) {
+			return;
+		}
+		m_wrapWidth = width;
+		// New wxWidgets caches the width; older versions only insert line breaks.
+		Wrap(-1);
+		SetLabelText(m_text);
+		Wrap(width);
+		InvalidateBestSize();
+		if (!m_layoutPending) {
+			m_layoutPending = true;
+			// Finish the current sizer pass before applying the new label height.
+			// Queue on the control so destruction also discards the pending callback.
+			CallAfter([this] {
+				m_layoutPending = false;
+				InvalidateBestSize();
+				if (m_layoutCallback) {
+					m_layoutCallback();
+				} else {
+					GetParent()->Layout();
+				}
+			});
+		}
+	}
+
+	const wxString m_text;
+	int m_wrapWidth = -1;
+	bool m_layoutPending = false;
+	std::function<void()> m_layoutCallback;
+	wxScrolledWindow *m_viewport = nullptr;
+};
 
 // Horizontal scroll units must be exact pixels: larger units round the range
 // past the virtual content edge and expose a blank strip at the right.

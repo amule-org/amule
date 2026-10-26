@@ -2799,6 +2799,11 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 			)
 			set_tests_properties (UploadSlotScopeIntegrationTest PROPERTIES LABELS "integration")
 		endif()
+		add_test (NAME ShareExcludeDefaultsIntegrationTest
+			COMMAND ${Python3_EXECUTABLE}
+				${CMAKE_CURRENT_SOURCE_DIR}/ShareExcludeDefaultsIntegrationTest.py $<TARGET_FILE:amuled>
+		)
+		set_tests_properties (ShareExcludeDefaultsIntegrationTest PROPERTIES LABELS "integration")
 		add_test (NAME PathDefaultsIntegrationTest
 			COMMAND ${Python3_EXECUTABLE}
 				${CMAKE_CURRENT_SOURCE_DIR}/PathDefaultsIntegrationTest.py $<TARGET_FILE:amuled>
@@ -2980,6 +2985,19 @@ if (TARGET wxWidgets::CORE)
 	target_link_libraries (DialogLayoutTest PRIVATE wxWidgets::CORE mulecommon)
 	add_test (NAME DialogLayoutTest COMMAND DialogLayoutTest)
 	set_tests_properties (DialogLayoutTest PROPERTIES SKIP_RETURN_CODE 77)
+	add_executable (EditServerListDlgTest
+		EditServerListDlgTest.cpp
+		${CMAKE_SOURCE_DIR}/src/EditServerListDlg.cpp
+	)
+	if (WIN32)
+		target_sources (EditServerListDlgTest PRIVATE DialogLayoutTest.rc)
+	endif()
+	target_include_directories (EditServerListDlgTest PRIVATE
+		${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src
+		${CMAKE_SOURCE_DIR}/src/include ${CMAKE_SOURCE_DIR}/src/libs)
+	target_link_libraries (EditServerListDlgTest PRIVATE wxWidgets::CORE)
+	add_test (NAME EditServerListDlgTest COMMAND EditServerListDlgTest)
+	set_tests_properties (EditServerListDlgTest PROPERTIES SKIP_RETURN_CODE 77)
 	add_executable (BandwidthLimitSliderTest BandwidthLimitSliderTest.cpp)
 	if (WIN32)
 		target_sources (BandwidthLimitSliderTest PRIVATE DialogLayoutTest.rc)
