@@ -43,10 +43,22 @@
 
 using namespace muleunit;
 
+namespace
+{
+// Every config dir the current test created, removed in tearDown().
+std::vector<wxString> g_tmpDirs;
+} // namespace
+
 DECLARE(AmuleApiConfig)
-// Fresh per-test config dir under the system temp tree. Tearing down inside the test bodies
-// works around muleunit's lack of a TearDown hook in the DECLARE_SIMPLE style -- each test owns
-// its own dir. wxStandardPaths::GetTempDir() returns `/tmp` on POSIX and `%TEMP%` on Windows, so
+void tearDown()
+{
+	for (const wxString &dir : g_tmpDirs) {
+		wxFileName::Rmdir(dir, wxPATH_RMDIR_RECURSIVE);
+	}
+	g_tmpDirs.clear();
+}
+// Fresh per-test config dir under the system temp tree, removed again by tearDown() -- each test
+// owns its own dir. wxStandardPaths::GetTempDir() returns `/tmp` on POSIX and `%TEMP%` on Windows, so
 // the test is portable across the CI matrix.
 wxString MakeTmpDir(const char *tag)
 {
@@ -63,6 +75,7 @@ wxString MakeTmpDir(const char *tag)
 	::wxRemoveFile(pwfile);
 	::wxRemoveFile(conf);
 	::wxRmdir(d);
+	g_tmpDirs.push_back(d);
 	return d;
 }
 END_DECLARE;
@@ -104,6 +117,7 @@ bool LoadHandWrittenConf(const char *tag, const std::string &extra, CAmuleApiCon
 	::wxRemoveFile(dir + "/amuleapi.conf");
 	::wxRmdir(dir);
 	::wxMkdir(dir, 0700);
+	g_tmpDirs.push_back(dir);
 
 	const std::string conf = "[Server]\nBindAddress=127.0.0.1\nPort=4713\n" + extra + "\n";
 	wxFile f(dir + "/amuleapi.conf", wxFile::write);

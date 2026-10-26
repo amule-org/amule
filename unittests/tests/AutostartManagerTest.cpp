@@ -33,10 +33,6 @@
 
 using namespace muleunit;
 
-// Linux only: the Windows and macOS backends write the user's own registry and LaunchAgents,
-// while this one follows $XDG_CONFIG_HOME into a scratch directory.
-DECLARE_SIMPLE(AutostartManager)
-
 namespace
 {
 wxString g_configHome;
@@ -76,6 +72,15 @@ void Rewrite(const wxString &from, const wxString &to)
 	WriteEntry(content);
 }
 } // namespace
+
+// Linux only: the Windows and macOS backends write the user's own registry and LaunchAgents,
+// while this one follows $XDG_CONFIG_HOME into a scratch directory.
+DECLARE(AutostartManager)
+void tearDown()
+{
+	wxFileName::Rmdir(g_configHome, wxPATH_RMDIR_RECURSIVE);
+}
+END_DECLARE;
 
 TEST(AutostartManager, OffWhenTheDesktopSwitchesItOff)
 {
