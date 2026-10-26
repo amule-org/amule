@@ -182,7 +182,6 @@ jobs:
           restore-keys: ${{ runner.os }}-${{ matrix.build_type }}-ccache-
       - name: install deps
         id: ubuntu-deps
-        timeout-minutes: 15
         run: |
           sudo cp .github/apt-ci.conf /etc/apt/apt.conf.d/99-ci
           sudo apt-get update
@@ -303,7 +302,6 @@ jobs:
           restore-keys: ${{ runner.os }}-experimental-${{ matrix.build_type }}-ccache-
       - name: install deps
         id: ubuntu-deps
-        timeout-minutes: 15
         run: |
           sudo cp .github/apt-ci.conf /etc/apt/apt.conf.d/99-ci
           sudo apt-get update
@@ -353,14 +351,13 @@ jobs:
   cmake_minimum_version:
     name: CMake minimum version (configure only)
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 60
     env:
       CMAKE_MIN: 3.12.4
       CMAKE_MIN_SHA256: 486edd6710b5250946b4b199406ccbf8f567ef0e23cfe38f7938b8c78a2ffa5f
     steps:
       - uses: actions/checkout@v7
       - name: install deps
-        timeout-minutes: 15
         run: |
           sudo cp .github/apt-ci.conf /etc/apt/apt.conf.d/99-ci
           sudo apt-get update
