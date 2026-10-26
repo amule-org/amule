@@ -60,7 +60,7 @@ inline bool IsValidChatCaptcha(const unsigned char *data, std::size_t size)
 		}
 	}
 	const auto stride = ((width * bits + 31) / 32) * 4;
-	return stride * height <= size - offset;
+	return static_cast<std::size_t>(stride) * height <= size - offset;
 }
 
 #endif // CHATCAPTCHA_H
