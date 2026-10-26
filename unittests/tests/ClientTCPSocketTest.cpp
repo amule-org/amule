@@ -102,6 +102,7 @@ uint8 CPreferences::s_byCryptTCPPaddingLength;
 bool CPreferences::s_IsClientCryptLayerSupported;
 bool CPreferences::s_IsClientCryptLayerRequired;
 bool CPreferences::s_bCryptLayerRequested;
+bool CPreferences::s_bVerbose;
 
 // CListenSocket::AddSocket()/RemoveSocket() bump the real stats tree CStatistics builds in its
 // own constructor; this test links the real Statistics.cpp/StatTree.cpp and constructs one real

@@ -414,7 +414,7 @@ bool CBrowseManager::AwaitingDirectoryList(const CUpDownClient *) const
 {
 	return false;
 }
-void CBrowseManager::OnDirectoryList(CUpDownClient *, int, unsigned long) {}
+void CBrowseManager::OnDirectoryList(CUpDownClient *, int, std::uint64_t) {}
 std::uint32_t CBrowseManager::SearchIdFor(const CUpDownClient *) const
 {
 	return 0;

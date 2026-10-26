@@ -23,6 +23,7 @@ endif ()
 # reached. --gc-sections discards the application-wide code (download/upload queues, Kademlia,
 # the GUI notifier, CUpDownClient's own packet handling) this test's call graph never reaches;
 # only the symbols it does reach need defining in the test file itself.
+if (ENABLE_UTP AND ENABLE_QUIC)
 add_executable (ClientTCPSocketTest
 	ClientTCPSocketTest.cpp
 	${CMAKE_SOURCE_DIR}/src/ClientTCPSocket.cpp
@@ -69,6 +70,7 @@ target_compile_options (ClientTCPSocketTest PRIVATE -ffunction-sections -fdata-s
 target_link_options (ClientTCPSocketTest PRIVATE -Wl,--gc-sections)
 target_link_libraries (ClientTCPSocketTest muleunit mulecommon wxWidgets::BASE CRYPTOPP::CRYPTOPP ZLIB::ZLIB ${Boost_LIBRARIES})
 add_test (NAME ClientTCPSocketTest COMMAND ClientTCPSocketTest)
+endif()
 
 # Drives the real ServiceQuicCapsHoldoffs() (not only the pure DecideQuicCapsHoldoff() helper
 # QuicCapsHoldoffTest.cpp covers) through a real, production-constructed CClientUDPSocket. Its
