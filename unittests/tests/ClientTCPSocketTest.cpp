@@ -47,7 +47,6 @@
 #include <ServerConnect.h>
 #include <PartFile.h>
 #include <KnownFile.h>
-#include <Logger.h>
 #include <StateMachine.h>
 #include <Packet.h>
 
