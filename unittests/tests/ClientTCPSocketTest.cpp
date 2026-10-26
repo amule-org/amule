@@ -47,6 +47,7 @@
 #include <ServerConnect.h>
 #include <PartFile.h>
 #include <KnownFile.h>
+#include <Logger.h>
 #include <StateMachine.h>
 #include <Packet.h>
 
@@ -237,6 +238,14 @@ bool CUpDownClient::Connect()
 {
 	return false;
 }
+CNetworkAddress CUpDownClient::GetDialAddress() const
+{
+	return CNetworkAddress();
+}
+#ifdef ENABLE_IPV6
+void CUpDownClient::MarkIPv6ChangeConnectionReady() {}
+void CUpDownClient::UpdateModIPv6(const CNetworkAddress &) {}
+#endif
 bool CUpDownClient::Disconnected(const wxString &, bool)
 {
 	return false;
@@ -295,7 +304,7 @@ bool CBrowseManager::AwaitingDirectoryList(const CUpDownClient *) const
 {
 	return false;
 }
-void CBrowseManager::OnDirectoryList(CUpDownClient *, int, unsigned long) {}
+void CBrowseManager::OnDirectoryList(CUpDownClient *, int, std::uint64_t) {}
 CKnownFile *CSharedFileList::GetFileByID(const CMD4Hash &)
 {
 	return nullptr;
