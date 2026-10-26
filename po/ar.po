@@ -5186,7 +5186,7 @@ msgstr "أعد المحاولة"
 
 #: src/muuli_wdr.cpp
 #, fuzzy
-msgid "Edit sources…"
+msgid "Edit sources..."
 msgstr "مصادر الملف:"
 
 #: src/muuli_wdr.cpp

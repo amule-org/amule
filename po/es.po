@@ -5173,7 +5173,7 @@ msgstr "reintentos"
 
 #: src/muuli_wdr.cpp
 #, fuzzy
-msgid "Edit sources…"
+msgid "Edit sources..."
 msgstr "Fuentes del archivo:"
 
 #: src/muuli_wdr.cpp

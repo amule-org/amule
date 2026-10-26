@@ -5178,7 +5178,7 @@ msgid "retries"
 msgstr "pokusech"
 
 #: src/muuli_wdr.cpp
-msgid "Edit sources…"
+msgid "Edit sources..."
 msgstr "Upravit zdroje…"
 
 #: src/muuli_wdr.cpp

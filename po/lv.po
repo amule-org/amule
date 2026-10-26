@@ -5199,7 +5199,7 @@ msgstr "mēģinājumiem"
 
 #: src/muuli_wdr.cpp
 #, fuzzy
-msgid "Edit sources…"
+msgid "Edit sources..."
 msgstr "Datnes avoti:"
 
 #: src/muuli_wdr.cpp

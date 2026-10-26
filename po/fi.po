@@ -5196,7 +5196,7 @@ msgid "retries"
 msgstr "yrityksen jälkeen"
 
 #: src/muuli_wdr.cpp
-msgid "Edit sources…"
+msgid "Edit sources..."
 msgstr "Muokkaa lähteitä…"
 
 #: src/muuli_wdr.cpp

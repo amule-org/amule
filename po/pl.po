@@ -5219,7 +5219,7 @@ msgstr "próbach"
 
 #: src/muuli_wdr.cpp
 #, fuzzy
-msgid "Edit sources…"
+msgid "Edit sources..."
 msgstr "Źródła pliku:"
 
 #: src/muuli_wdr.cpp

@@ -5193,7 +5193,7 @@ msgstr "προσπάθειες"
 
 #: src/muuli_wdr.cpp
 #, fuzzy
-msgid "Edit sources…"
+msgid "Edit sources..."
 msgstr "Πηγές αρχείου:"
 
 #: src/muuli_wdr.cpp

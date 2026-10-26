@@ -5172,7 +5172,7 @@ msgstr "pokusaja"
 
 #: src/muuli_wdr.cpp
 #, fuzzy
-msgid "Edit sources…"
+msgid "Edit sources..."
 msgstr "Nadjeni izvori :"
 
 #: src/muuli_wdr.cpp

@@ -5191,7 +5191,7 @@ msgstr "katset"
 
 #: src/muuli_wdr.cpp
 #, fuzzy
-msgid "Edit sources…"
+msgid "Edit sources..."
 msgstr "Faili allikad:"
 
 #: src/muuli_wdr.cpp

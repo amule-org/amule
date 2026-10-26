@@ -5043,7 +5043,7 @@ msgid "retries"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Edit sources…"
+msgid "Edit sources..."
 msgstr ""
 
 #: src/muuli_wdr.cpp

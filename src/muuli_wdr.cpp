@@ -1707,7 +1707,7 @@ wxSizer *PreferencesServerTab( wxWindow *parent, bool call_fit, bool set_sizer )
     wxCheckBox *item6 = new wxCheckBox( parent, IDC_AUTOSERVER, _("Auto-update server list at startup"), wxDefaultPosition, wxDefaultSize, 0 );
     item5->Add( item6, wxSizerFlags().CenterVertical() );
 
-    wxButton *item7 = new wxButton( parent, IDC_EDITADR, _("Edit sources…"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxButton *item7 = new wxButton( parent, IDC_EDITADR, _("Edit sources..."), wxDefaultPosition, wxDefaultSize, 0 );
     item5->Add( item7, wxSizerFlags().CenterVertical().Right().Border(wxLEFT, 5) );
     item0->Add( item5, wxSizerFlags().Expand().CenterVertical() );
     wxCheckBox *item8 = new wxCheckBox( parent, IDC_UPDATESERVERCONNECT, _("Update server list when connecting to a server"), wxDefaultPosition, wxDefaultSize, 0 );
@@ -2726,7 +2726,7 @@ wxSizer *serverListDlgUp( wxWindow *parent, bool call_fit, bool set_sizer )
     wxButton *item2 = new wxButton( parent, ID_UPDATELIST, _("Update server list") );
     item2->SetName( "updateList" );
     item1->Add( item2, wxSizerFlags().Center() );
-    wxButton *editSources = new wxButton( parent, wxID_ANY, _("Edit sources…") );
+    wxButton *editSources = new wxButton( parent, wxID_ANY, _("Edit sources...") );
     editSources->SetName( "editServerSources" );
     item1->Add( editSources, wxSizerFlags().Center().Border(wxLEFT, 5) );
 

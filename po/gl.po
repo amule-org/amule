@@ -5208,7 +5208,7 @@ msgstr "intentos"
 
 #: src/muuli_wdr.cpp
 #, fuzzy
-msgid "Edit sources…"
+msgid "Edit sources..."
 msgstr "Fontes do ficheiro:"
 
 #: src/muuli_wdr.cpp

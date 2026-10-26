@@ -5239,7 +5239,7 @@ msgstr "poskusih"
 
 #: src/muuli_wdr.cpp
 #, fuzzy
-msgid "Edit sources…"
+msgid "Edit sources..."
 msgstr "Viri datoteke:"
 
 #: src/muuli_wdr.cpp

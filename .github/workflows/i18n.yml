@@ -54,6 +54,9 @@ jobs:
       - name: POTFILES.in lists every file marking strings
         run: ./scripts/check-potfiles.sh
 
+      - name: Msgids and wx UI narrow strings are ASCII
+        run: python3 scripts/check-ascii-strings.py
+
       - name: Regenerate pot
         run: ./scripts/update-po.sh
 

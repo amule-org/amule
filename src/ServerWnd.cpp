@@ -138,7 +138,7 @@ CServerWnd::CServerWnd(wxWindow *pParent /*=NULL*/, int splitter_pos)
 	auto *sourceField = CastChild(IDC_SERVERLISTURL, wxTextCtrl);
 	sourceField->SetToolTip(_("Download this server.met URL once without saving it."));
 
-	sourceField->SetHint("https://…/server.met");
+	sourceField->SetHint("https://.../server.met");
 	auto *editSources = wxDynamicCast(FindWindowByName("editServerSources", this), wxButton);
 	editSources->Bind(wxEVT_BUTTON, [this](wxCommandEvent &) { EditServerListSources(this); });
 	auto *downloadOnce = wxDynamicCast(FindWindowByName("downloadServerListOnce", this), wxButton);

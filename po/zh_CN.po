@@ -5159,7 +5159,7 @@ msgid "retries"
 msgstr "次连接失败，则删除该服务器"
 
 #: src/muuli_wdr.cpp
-msgid "Edit sources…"
+msgid "Edit sources..."
 msgstr "编辑来源…"
 
 #: src/muuli_wdr.cpp

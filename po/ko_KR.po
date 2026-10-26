@@ -5193,7 +5193,7 @@ msgstr "재시도"
 
 #: src/muuli_wdr.cpp
 #, fuzzy
-msgid "Edit sources…"
+msgid "Edit sources..."
 msgstr "파일 자료:"
 
 #: src/muuli_wdr.cpp

@@ -5168,7 +5168,7 @@ msgstr "回"
 
 #: src/muuli_wdr.cpp
 #, fuzzy
-msgid "Edit sources…"
+msgid "Edit sources..."
 msgstr "ファイルソース："
 
 #: src/muuli_wdr.cpp

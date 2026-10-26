@@ -5153,7 +5153,7 @@ msgstr "পুনঃচেষ্টা"
 
 #: src/muuli_wdr.cpp
 #, fuzzy
-msgid "Edit sources…"
+msgid "Edit sources..."
 msgstr "ফাইল সোর্স:"
 
 #: src/muuli_wdr.cpp

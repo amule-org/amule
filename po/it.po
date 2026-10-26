@@ -5170,7 +5170,7 @@ msgid "retries"
 msgstr "tentativi"
 
 #: src/muuli_wdr.cpp
-msgid "Edit sources…"
+msgid "Edit sources..."
 msgstr "Modifica sorgenti…"
 
 #: src/muuli_wdr.cpp

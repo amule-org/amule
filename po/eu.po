@@ -5194,7 +5194,7 @@ msgstr "saiakerak"
 
 #: src/muuli_wdr.cpp
 #, fuzzy
-msgid "Edit sources…"
+msgid "Edit sources..."
 msgstr "Fitxategiaren iturburua:"
 
 #: src/muuli_wdr.cpp

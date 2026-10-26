@@ -5161,7 +5161,7 @@ msgid "retries"
 msgstr "intents"
 
 #: src/muuli_wdr.cpp
-msgid "Edit sources…"
+msgid "Edit sources..."
 msgstr "Edita les fonts…"
 
 #: src/muuli_wdr.cpp
