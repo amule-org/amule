@@ -591,5 +591,10 @@ private:
 	uint8_t m_userHash[kUserHashBytes] = { 0 };
 };
 
+inline CUtpSocketTransport *AsUtpSocketTransport(IStreamTransport *transport)
+{
+	return dynamic_cast<CUtpSocketTransport *>(transport);
+}
+
 #endif // UTPSOCKETTRANSPORT_H
 // File_checked_for_headers

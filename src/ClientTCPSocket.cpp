@@ -127,7 +127,7 @@ void CClientTCPSocket::ApplyUtpCryptParameters()
 		return;
 	}
 	// QUIC has no datagram crypt parameters: TLS protects its packets.
-	auto *utp = dynamic_cast<CUtpSocketTransport *>(GetTransport());
+	auto *utp = AsUtpSocketTransport(GetTransport());
 	if (utp == nullptr) {
 		return;
 	}

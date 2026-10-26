@@ -23,6 +23,7 @@
 
 #include <muleunit/test.h>
 #include <QuicSocketTransport.h>
+#include <UtpSocketTransport.h>
 #include <functional>
 #include <vector>
 using namespace muleunit;
@@ -85,6 +86,15 @@ TEST(QuicTransportContract, FreshTransportIsWritable)
 	Events e;
 	CQuicSocketTransport t(o, H(), CNetworkAddress::FromString("192.0.2.1"), 1, &e, false);
 	ASSERT_TRUE(!t.BlocksWrite());
+}
+
+TEST(QuicTransportContract, IsNotUtpTransport)
+{
+	Ops o;
+	Events e;
+	CQuicSocketTransport t(o, H(), CNetworkAddress::FromString("192.0.2.1"), 1, &e, false);
+
+	ASSERT_TRUE(AsUtpSocketTransport(&t) == nullptr);
 }
 
 TEST(QuicTransportContract, EmptyPayloadIsNotReadable)
