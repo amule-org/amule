@@ -1,3 +1,7 @@
+# CI picks a test's time budget by label (.github/workflows/ccpp.yml): unlabelled tests get
+# 10 s, "slow" 60 s, "integration" 300 s, and "reverify" runs in a step of its own. Label a
+# test next to its add_test, so adding one never touches the workflow.
+
 # Shared application anchors for headless tests that link production core code.
 function (add_application_test_stubs target)
 	target_sources (${target} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ApplicationTestStubs.cpp)
@@ -14,6 +18,8 @@ if (Python3_Interpreter_FOUND)
 	add_test (NAME IntegrationFixtureUnitTest
 		COMMAND ${Python3_EXECUTABLE} -u ${CMAKE_CURRENT_SOURCE_DIR}/IntegrationFixtureUnitTest.py -v
 	)
+	# 60 s lane. Python startup and temporary-file I/O are slow on Windows runners.
+	set_tests_properties (IntegrationFixtureUnitTest PROPERTIES LABELS "slow")
 endif ()
 
 add_test (NAME QuicCMakeConfigTest
@@ -1695,6 +1701,8 @@ if (Python3_Interpreter_FOUND)
 			add_test (NAME ConnectorConfigPathTest-${connector}
 				COMMAND ${Python3_EXECUTABLE}
 					${CMAKE_CURRENT_SOURCE_DIR}/ConnectorConfigPathTest.py $<TARGET_FILE:${connector}>)
+			# 60 s lane. Launches several offline clients.
+			set_tests_properties (ConnectorConfigPathTest-${connector} PROPERTIES LABELS "slow")
 		endif ()
 	endforeach ()
 endif ()
@@ -1786,6 +1794,8 @@ add_executable (CredentialsTest
 )
 
 add_test (NAME CredentialsTest COMMAND CredentialsTest)
+# 60 s lane. Runs the production 210,000-iteration PBKDF2.
+set_tests_properties (CredentialsTest PROPERTIES LABELS "slow")
 
 target_link_libraries (CredentialsTest
 	muleunit
@@ -2069,6 +2079,8 @@ add_executable (AmuleApiConfigTest
 	${CMAKE_SOURCE_DIR}/src/webapi/AmuleApiConfig.cpp
 )
 add_test (NAME AmuleApiConfigTest COMMAND AmuleApiConfigTest)
+# 60 s lane. Runs the production 210,000-iteration PBKDF2.
+set_tests_properties (AmuleApiConfigTest PROPERTIES LABELS "slow")
 target_include_directories (AmuleApiConfigTest
 	PRIVATE ${CMAKE_SOURCE_DIR}/src/webapi
 )
@@ -2703,6 +2715,8 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND Python3_Interpreter_FOUND)
 		COMMAND ${Python3_EXECUTABLE}
 			${CMAKE_CURRENT_SOURCE_DIR}/UnicodeCommandLineIntegrationTest.py $<TARGET_FILE:amuled>
 	)
+	# 60 s lane. Launches three daemons, each with a 15 s watchdog.
+	set_tests_properties (UnicodeCommandLineIntegrationTest PROPERTIES LABELS "slow")
 endif ()
 if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 	if (Python3_Interpreter_FOUND)
@@ -2710,14 +2724,17 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 			COMMAND ${Python3_EXECUTABLE}
 				${CMAKE_CURRENT_SOURCE_DIR}/ECDisconnectIntegrationTest.py $<TARGET_FILE:amuled>
 		)
+		set_tests_properties (ECDisconnectIntegrationTest PROPERTIES LABELS "integration")
 		add_test (NAME KadDistributionECTest COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/KadDistributionECTest.py $<TARGET_FILE:amuled>)
+		set_tests_properties (KadDistributionECTest PROPERTIES LABELS "integration")
 		add_test (NAME KadPopulatedDistributionECTest COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/KadDistributionECTest.py $<TARGET_FILE:amuled> --populated)
-		set_tests_properties (KadPopulatedDistributionECTest PROPERTIES SKIP_RETURN_CODE 77)
+		set_tests_properties (KadPopulatedDistributionECTest PROPERTIES SKIP_RETURN_CODE 77 LABELS "integration")
 		target_compile_definitions (amuled PRIVATE AMULE_API_RESTART_TEST_HOOK)
 		add_test (NAME AmuleApiRestartIntegrationTest
 			COMMAND ${Python3_EXECUTABLE}
 				${CMAKE_CURRENT_SOURCE_DIR}/AmuleApiRestartIntegrationTest.py $<TARGET_FILE:amuled>
 		)
+		set_tests_properties (AmuleApiRestartIntegrationTest PROPERTIES LABELS "integration")
 		if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
 			add_library (UploadReadDelay MODULE UploadReadDelay.cpp)
 			target_link_libraries (UploadReadDelay ${CMAKE_DL_LIBS} ZLIB::ZLIB)
@@ -2725,15 +2742,17 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 				COMMAND ${Python3_EXECUTABLE} -u
 					${CMAKE_CURRENT_SOURCE_DIR}/DisplayRatesIntegrationTest.py $<TARGET_FILE:amuled>
 			)
-			set_tests_properties (DisplayRatesIntegrationTest PROPERTIES TIMEOUT 90)
+			set_tests_properties (DisplayRatesIntegrationTest PROPERTIES TIMEOUT 90 LABELS "integration")
 			add_test (NAME DownloadDisplayRatesIntegrationTest
 				COMMAND ${Python3_EXECUTABLE} -u
 					${CMAKE_CURRENT_SOURCE_DIR}/DownloadDisplayRatesIntegrationTest.py $<TARGET_FILE:amuled>
 			)
+			set_tests_properties (DownloadDisplayRatesIntegrationTest PROPERTIES LABELS "integration")
 			add_test (NAME DownloadLimitHelloIntegrationTest
 				COMMAND ${Python3_EXECUTABLE} -u
 					${CMAKE_CURRENT_SOURCE_DIR}/DownloadLimitHelloIntegrationTest.py $<TARGET_FILE:amuled>
 			)
+			set_tests_properties (DownloadLimitHelloIntegrationTest PROPERTIES LABELS "integration")
 			add_test (NAME ShortBlockPacketIntegrationTest
 				COMMAND ${Python3_EXECUTABLE} -u
 					${CMAKE_CURRENT_SOURCE_DIR}/ShortBlockPacketIntegrationTest.py $<TARGET_FILE:amuled>
@@ -2742,6 +2761,7 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 				COMMAND ${Python3_EXECUTABLE} -u
 					${CMAKE_CURRENT_SOURCE_DIR}/TinyBlockPacketIntegrationTest.py $<TARGET_FILE:amuled>
 			)
+			set_tests_properties (TinyBlockPacketIntegrationTest PROPERTIES LABELS "integration")
 			add_test (NAME CallbackCooldownIntegrationTest
 				COMMAND ${Python3_EXECUTABLE} -u
 					${CMAKE_CURRENT_SOURCE_DIR}/CallbackCooldownIntegrationTest.py $<TARGET_FILE:amuled>
@@ -2752,6 +2772,7 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 					$<TARGET_FILE:amuled> --seconds 3
 					--storage-delay-fixture $<TARGET_FILE:UploadReadDelay>
 			)
+			set_tests_properties (UploadRefillIntegrationTest PROPERTIES LABELS "integration")
 			if (NOT MMAP_SUPPORTED)
 				set_tests_properties (UploadRefillIntegrationTest PROPERTIES
 					ENVIRONMENT "AMULE_TEST_SKIP_MMAP=1")
@@ -2761,32 +2782,39 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 					${CMAKE_CURRENT_SOURCE_DIR}/UploadRefillIntegrationTest.py
 					$<TARGET_FILE:amuled> --seconds 3 --compress
 			)
+			set_tests_properties (UploadRefillCompressedIntegrationTest PROPERTIES LABELS "integration")
 			# Two loopback peer addresses (127.0.0.2, 127.0.0.3) need Linux.
 			add_test (NAME UploadSlotScopeIntegrationTest
 				COMMAND ${Python3_EXECUTABLE} -u
 					${CMAKE_CURRENT_SOURCE_DIR}/UploadSlotScopeIntegrationTest.py $<TARGET_FILE:amuled>
 			)
+			set_tests_properties (UploadSlotScopeIntegrationTest PROPERTIES LABELS "integration")
 		endif()
 		add_test (NAME PathDefaultsIntegrationTest
 			COMMAND ${Python3_EXECUTABLE}
 				${CMAKE_CURRENT_SOURCE_DIR}/PathDefaultsIntegrationTest.py $<TARGET_FILE:amuled>
 		)
+		set_tests_properties (PathDefaultsIntegrationTest PROPERTIES LABELS "integration")
 		add_test (NAME LogfilePathIntegrationTest
 			COMMAND ${Python3_EXECUTABLE}
 				${CMAKE_CURRENT_SOURCE_DIR}/LogfilePathIntegrationTest.py $<TARGET_FILE:amuled>
 		)
+		set_tests_properties (LogfilePathIntegrationTest PROPERTIES LABELS "integration")
 		add_test (NAME KadIndexLifecycleECTest
 			COMMAND ${Python3_EXECUTABLE}
 				${CMAKE_CURRENT_SOURCE_DIR}/KadIndexLifecycleECTest.py $<TARGET_FILE:amuled>
 		)
+		set_tests_properties (KadIndexLifecycleECTest PROPERTIES LABELS "integration")
 		add_test (NAME AllSearchIntegrationTest
 			COMMAND ${Python3_EXECUTABLE}
 				${CMAKE_CURRENT_SOURCE_DIR}/AllSearchIntegrationTest.py $<TARGET_FILE:amuled>
 		)
+		set_tests_properties (AllSearchIntegrationTest PROPERTIES LABELS "integration")
 		add_test (NAME SearchParamsRestoreIntegrationTest
 			COMMAND ${Python3_EXECUTABLE}
 				${CMAKE_CURRENT_SOURCE_DIR}/SearchParamsRestoreIntegrationTest.py $<TARGET_FILE:amuled>
 		)
+		set_tests_properties (SearchParamsRestoreIntegrationTest PROPERTIES LABELS "integration")
 		add_test (NAME CategoryTagECTest
 			COMMAND ${Python3_EXECUTABLE}
 				${CMAKE_CURRENT_SOURCE_DIR}/CategoryTagECTest.py $<TARGET_FILE:amuled>
@@ -2803,25 +2831,29 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 			COMMAND ${Python3_EXECUTABLE}
 				${CMAKE_CURRENT_SOURCE_DIR}/KadLookupECTest.py $<TARGET_FILE:amuled>
 		)
+		set_tests_properties (KadLookupECTest PROPERTIES LABELS "integration")
 		add_test (NAME KadPopulatedLookupECTest
 			COMMAND ${Python3_EXECUTABLE}
 				${CMAKE_CURRENT_SOURCE_DIR}/KadLookupECTest.py $<TARGET_FILE:amuled> --populated
 		)
-		set_tests_properties (KadPopulatedLookupECTest PROPERTIES SKIP_RETURN_CODE 77)
+		set_tests_properties (KadPopulatedLookupECTest PROPERTIES SKIP_RETURN_CODE 77 LABELS "integration")
 		add_test (NAME ShareExclusionLifecycleIntegrationTest
 			COMMAND ${Python3_EXECUTABLE}
 				${CMAKE_CURRENT_SOURCE_DIR}/ShareExclusionLifecycleIntegrationTest.py $<TARGET_FILE:amuled>
 		)
+		set_tests_properties (ShareExclusionLifecycleIntegrationTest PROPERTIES LABELS "integration")
 		add_test (NAME ShareWatcherMoveIntegrationTest
 			COMMAND ${Python3_EXECUTABLE}
 				${CMAKE_CURRENT_SOURCE_DIR}/ShareWatcherMoveIntegrationTest.py $<TARGET_FILE:amuled>
 		)
+		set_tests_properties (ShareWatcherMoveIntegrationTest PROPERTIES LABELS "integration")
 		if (BUILD_AMULEAPI)
 			add_test (NAME ChatCaptchaIntegrationTest
 				COMMAND ${Python3_EXECUTABLE}
 					${CMAKE_SOURCE_DIR}/unittests/curl-tests/amuleapi/chat-captcha-peer.py
 					--amuled $<TARGET_FILE:amuled> --amuleapi $<TARGET_FILE:amuleapi>
 			)
+			set_tests_properties (ChatCaptchaIntegrationTest PROPERTIES LABELS "integration")
 		endif ()
 		if (BUILD_MONOLITHIC AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
 			find_program (AMULE_XVFB_RUN xvfb-run)
@@ -2834,24 +2866,28 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 			else ()
 				add_test (NAME ServerListGuiIntegrationTest COMMAND ${SERVER_LIST_GUI_TEST_COMMAND})
 			endif ()
-			set_tests_properties (ServerListGuiIntegrationTest PROPERTIES SKIP_RETURN_CODE 77)
+			set_tests_properties (ServerListGuiIntegrationTest PROPERTIES SKIP_RETURN_CODE 77 LABELS "integration")
 		endif ()
 		add_test (NAME ServerListSourcesIntegrationTest
 			COMMAND ${Python3_EXECUTABLE}
 				${CMAKE_CURRENT_SOURCE_DIR}/ServerListSourcesIntegrationTest.py $<TARGET_FILE:amuled>
 		)
+		set_tests_properties (ServerListSourcesIntegrationTest PROPERTIES LABELS "integration")
 		add_test (NAME SharedFileReverifyIntegrationTest
 			COMMAND ${Python3_EXECUTABLE} -u
 				${CMAKE_CURRENT_SOURCE_DIR}/SharedFileReverifyIntegrationTest.py $<TARGET_FILE:amuled>
 		)
+		set_tests_properties (SharedFileReverifyIntegrationTest PROPERTIES LABELS "reverify")
 		add_test (NAME KnownHistoryIntegrationTest
 			COMMAND ${Python3_EXECUTABLE}
 				${CMAKE_CURRENT_SOURCE_DIR}/KnownHistoryIntegrationTest.py $<TARGET_FILE:amuled>
 		)
+		set_tests_properties (KnownHistoryIntegrationTest PROPERTIES LABELS "integration")
 		add_test (NAME GlobalSourceRequestIntegrationTest
 			COMMAND ${Python3_EXECUTABLE} -u
 				${CMAKE_CURRENT_SOURCE_DIR}/GlobalSourceRequestIntegrationTest.py $<TARGET_FILE:amuled>
 		)
+		set_tests_properties (GlobalSourceRequestIntegrationTest PROPERTIES LABELS "integration")
 		add_test (NAME PacketReceiveIntegrationTest
 			COMMAND ${Python3_EXECUTABLE}
 				${CMAKE_CURRENT_SOURCE_DIR}/PacketReceiveIntegrationTest.py $<TARGET_FILE:amuled>
@@ -2860,12 +2896,14 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 			COMMAND ${Python3_EXECUTABLE}
 				${CMAKE_CURRENT_SOURCE_DIR}/ServerListFallbackIntegrationTest.py $<TARGET_FILE:amuled>
 		)
+		set_tests_properties (ServerListFallbackIntegrationTest PROPERTIES LABELS "integration")
 		if (BUILD_AMULEAPI)
 			add_test (NAME ServerListFallbackApiIntegrationTest
 				COMMAND ${Python3_EXECUTABLE}
 					${CMAKE_CURRENT_SOURCE_DIR}/ServerListFallbackIntegrationTest.py
 					$<TARGET_FILE:amuled> $<TARGET_FILE:amuleapi>
 			)
+			set_tests_properties (ServerListFallbackApiIntegrationTest PROPERTIES LABELS "integration")
 		endif ()
 		add_test (NAME ServerTrustIntegrationTest
 			COMMAND ${Python3_EXECUTABLE}
@@ -2901,6 +2939,7 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 					${CMAKE_CURRENT_SOURCE_DIR}/AllSearchClientCapabilityTest.py
 					$<TARGET_FILE:amuleapi> $<TARGET_FILE:amulecmd>
 			)
+			set_tests_properties (AllSearchClientCapabilityTest PROPERTIES LABELS "integration")
 		endif ()
 	endif ()
 endif ()
@@ -2910,6 +2949,8 @@ if (BUILD_AMULECMD AND Python3_Interpreter_FOUND)
 	add_test (NAME AmulecmdShutdownTest
 		COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/AmulecmdShutdownTest.py
 			$<TARGET_FILE:amulecmd>)
+	# 60 s lane. Windows Debug runners rarely stall it for 8-10 s; the cause is not known.
+	set_tests_properties (AmulecmdShutdownTest PROPERTIES LABELS "slow")
 endif ()
 
 # Exercise native scrolling/sizer behavior without starting the aMule application.
@@ -3176,22 +3217,25 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND BUILD_AMULEAPI AND UNIX AND NO
 				${CMAKE_CURRENT_SOURCE_DIR}/SharedMembershipIntegrationTest.py
 				$<TARGET_FILE:amuled> $<TARGET_FILE:amuleapi>
 		)
+		set_tests_properties (SharedMembershipIntegrationTest PROPERTIES LABELS "integration")
 		add_test (NAME CompletedFileDeleteIntegrationTest
 			COMMAND ${Python3_EXECUTABLE}
 				${CMAKE_CURRENT_SOURCE_DIR}/CompletedFileDeleteIntegrationTest.py
 				$<TARGET_FILE:amuled> $<TARGET_FILE:amuleapi>
 		)
-		set_tests_properties (CompletedFileDeleteIntegrationTest PROPERTIES SKIP_RETURN_CODE 77)
+		set_tests_properties (CompletedFileDeleteIntegrationTest PROPERTIES SKIP_RETURN_CODE 77 LABELS "integration")
 		add_test (NAME HashingCancelIntegrationTest
 			COMMAND ${Python3_EXECUTABLE}
 				${CMAKE_CURRENT_SOURCE_DIR}/HashingCancelIntegrationTest.py
 				$<TARGET_FILE:amuled> $<TARGET_FILE:amuleapi>
 		)
+		set_tests_properties (HashingCancelIntegrationTest PROPERTIES LABELS "integration")
 		add_test (NAME CompletedFileDeleteCapabilityTest
 			COMMAND ${Python3_EXECUTABLE}
 				${CMAKE_CURRENT_SOURCE_DIR}/CompletedFileDeleteCapabilityTest.py
 				$<TARGET_FILE:amuleapi>
 		)
+		set_tests_properties (CompletedFileDeleteCapabilityTest PROPERTIES LABELS "integration")
 	endif ()
 endif ()
 
@@ -3220,6 +3264,8 @@ if (BUILD_AMULEAPI AND Python3_Interpreter_FOUND)
 		COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/AmuleApiPasswordInputTest.py
 			$<TARGET_FILE:amuleapi>
 	)
+	# 60 s lane. Exercises setup and native terminal input.
+	set_tests_properties (AmuleApiPasswordInputTest PROPERTIES LABELS "slow")
 endif ()
 
 if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND BUILD_AMULEAPI AND Python3_Interpreter_FOUND)
@@ -3228,11 +3274,13 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND BUILD_AMULEAPI AND Python3_Int
 			COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/NetworkPreferencesIntegrationTest.py
 				$<TARGET_FILE:amuled> $<TARGET_FILE:amuleapi>
 		)
+		set_tests_properties (NetworkPreferencesIntegrationTest PROPERTIES LABELS "integration")
 	endif ()
 	add_test (NAME AmuleApiEcPasswordIntegrationTest
 		COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/AmuleApiEcPasswordIntegrationTest.py
 			$<TARGET_FILE:amuled> $<TARGET_FILE:amuleapi>
 	)
+	set_tests_properties (AmuleApiEcPasswordIntegrationTest PROPERTIES LABELS "integration")
 endif ()
 
 # Download diagnostics must never expose URL credentials to log/status readers.
