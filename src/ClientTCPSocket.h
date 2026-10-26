@@ -45,6 +45,10 @@ class CTimerWnd;
 
 class CClientTCPSocket : public CEMSocket
 {
+	// Access to the private SetClient() for a unit test that attaches a client after
+	// construction, since the constructor itself dereferences a real in_client.
+	friend class ClientTCPSocketTestFixture;
+
 public:
 	enum class AdmissionTransport
 	{

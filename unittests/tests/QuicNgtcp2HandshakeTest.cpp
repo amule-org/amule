@@ -675,10 +675,9 @@ TEST(QuicNgtcp2Handshake, LostFirstAttemptIsRetransmittedWithoutCorruptingTheRep
 	ASSERT_TRUE(client.Received() == reply2);
 }
 
-// got3nks' review on #1710 (finding #4, High): with exactly one stream per connection by design,
-// nothing previously noticed when that stream ended -- the connection just sat there, occupying
-// one of CQuicContext::kMaxConnectionsPerScope's slots, until the idle timeout eventually caught
-// up with it. Proves the real engine's FIN handling actually ends the connection promptly.
+// With exactly one stream per connection by design, the connection must end promptly when that
+// stream ends, rather than occupying one of CQuicContext::kMaxConnectionsPerScope's slots until
+// the idle timeout catches up with it.
 TEST(QuicNgtcp2Handshake, TheStreamEndingClosesTheWholeConnection)
 {
 	CQuicEphemeralCredentials credentials;
@@ -712,11 +711,10 @@ TEST(QuicNgtcp2Handshake, TheStreamEndingClosesTheWholeConnection)
 	ASSERT_TRUE(connection->IsClosed());
 }
 
-// got3nks' review on #1710 (finding #5, High): NGTCP2_ERR_STREAM_DATA_BLOCKED is documented as
-// non-fatal (the stream is flow-control blocked, not the connection), but previously mapped to
-// -1 like any other error, tearing the stream down over something a peer extending its window a
-// moment later would otherwise have resolved on its own. This also proves CQuicSocketTransport's
-// write path does not busy-loop while blocked, and that IQuicNgtcp2Engine::NotifyWritable() is
+// NGTCP2_ERR_STREAM_DATA_BLOCKED is non-fatal: the stream is flow-control blocked, not the
+// connection, and a peer extending its window must still resolve it. Also proves
+// CQuicSocketTransport's write path does not busy-loop while blocked, and that
+// IQuicNgtcp2Engine::NotifyWritable() is
 // what resumes it once the peer's extended window makes room again.
 TEST(QuicNgtcp2Handshake, FlowControlBlockDoesNotLoseTheStreamAndRecoversOnceUnblocked)
 {
@@ -792,10 +790,8 @@ TEST(QuicNgtcp2Handshake, FlowControlBlockDoesNotLoseTheStreamAndRecoversOnceUnb
 	ASSERT_TRUE(progressed);
 }
 
-// got3nks' review on #1710 (finding #6, Medium): Close() used to ask the engine to reset the
-// stream outright (ngtcp2_conn_shutdown_stream()), discarding whatever was still queued in the
-// transport's own buffer and never handed to WriteStream() at all -- a clean eD2k close could
-// silently drop its last packet. Proves Close() gives that data one last chance to go out first.
+// A clean eD2k close must not silently drop data still queued in the transport's own buffer:
+// Close() must give it one last chance to go out first.
 TEST(QuicNgtcp2Handshake, CloseFlushesQueuedDataBeforeEndingTheStreamCleanly)
 {
 	CQuicEphemeralCredentials credentials;
@@ -835,11 +831,9 @@ TEST(QuicNgtcp2Handshake, CloseFlushesQueuedDataBeforeEndingTheStreamCleanly)
 	ASSERT_TRUE(client.Received() == payload);
 }
 
-// Post-merge review audit (independent of got3nks' 9 findings, same PR #1710): the
-// unackedSendBytes + length > kReadWindow check in WriteStreamData() compared the caller's
-// whole offered chunk against the remaining budget, not what ngtcp2 could actually accept (one
-// packet's worth) -- a single prior write still unacknowledged could abort the stream over a
-// second write ngtcp2 would have happily split across many packets instead. Proves a large
+// A single prior write still unacknowledged must not abort the stream over a second write
+// ngtcp2 can split across many packets: only the current packet's worth of room matters, not
+// the whole offered chunk against the remaining budget. Proves a large
 // write survives when something small is already unacknowledged, rather than ending the stream.
 TEST(QuicNgtcp2Handshake, LargeWriteWithUnackedDataPendingIsOfferedPartiallyInsteadOfAbortingTheStream)
 {
@@ -982,16 +976,13 @@ TEST(QuicNgtcp2Handshake, FlushesAtOneTimestampSendABurstNotOnePacket)
 
 void QuicClientRefTestForget(CUpDownClient *client);
 
-// got3nks' live test on #1710/#1177 found the production outbound dial always failed: the real
-// client engine (CQuicNgtcp2Factory::CreateOutboundForClient(), not a fake, and not the
-// hand-rolled CTestQuicClient above, which only opens its stream after DriveHandshake()
-// completes) used to call OpenLocalBidiStream() synchronously inside Dial() itself, before any
-// packet round-trip -- before the peer's transport parameters, which raise the local stream
-// limit from 0, had any chance to arrive. ngtcp2_conn_open_bidi_stream() then failed with
-// NGTCP2_ERR_STREAM_ID_BLOCKED every single time, logged nowhere, and uTP silently took over.
-// Both sides here are the real production engine: this is the first test that drives the real
-// client all the way to a real server and back, proving the EAQN1 handoff the live test wanted
-// to see actually completes.
+// The real client engine (CQuicNgtcp2Factory::CreateOutboundForClient(), not a fake, and not
+// the hand-rolled CTestQuicClient above, which only opens its stream after DriveHandshake()
+// completes) must not open its local stream before the peer's transport parameters, which
+// raise the local stream limit from 0, have arrived -- ngtcp2_conn_open_bidi_stream() fails
+// with NGTCP2_ERR_STREAM_ID_BLOCKED otherwise. Both sides here are the real production engine:
+// this drives the real client all the way to a real server and back, proving the EAQN1 handoff
+// actually completes.
 TEST(QuicNgtcp2Handshake, RealClientDialsARealServerAndCompletesTheHandoff)
 {
 	// Shared with both transports this test writes through after the handoff: their Flush()
@@ -1074,11 +1065,9 @@ TEST(QuicNgtcp2Handshake, RealClientDialsARealServerAndCompletesTheHandoff)
 	ASSERT_TRUE(handedOff != nullptr);
 	ASSERT_TRUE(serverAcceptor.accepted != nullptr);
 
-	// Extends past the handoff (got3nks' review, live-test round): real application bytes,
-	// through the real engines on both sides, now that MarkConnected()/BlocksRead() are both
-	// fixed. A write on one side must arrive intact on the other's accepted transport, and
-	// BlocksRead() must track "did the last Read() find anything", not "is the buffer currently
-	// empty".
+	// Real application bytes, through the real engines on both sides: a write on one side must
+	// arrive intact on the other's accepted transport, and BlocksRead() must track "did the last
+	// Read() find anything", not "is the buffer currently empty".
 	IStreamTransport *serverTransport = serverAcceptor.accepted.get();
 	const std::vector<uint8_t> clientToServer{ 'h', 'i' };
 	ASSERT_EQUALS(static_cast<uint32_t>(clientToServer.size()),

@@ -395,14 +395,11 @@ TEST(QuicNgtcp2Adapter, LateReadFailureAfterOwnerDeletionDoesNotInvokeDialFailur
 	ASSERT_EQUALS(0u, failures);
 }
 
-// got3nks' review on #1710/#1177 (still-open finding F, part 2 of 2): a late failure, after the
-// owner is still alive, is exactly what CUpDownClient::QuicDialFailed() (BaseClient.cpp) resumes
-// uTP from -- that resumption itself needs the full CUpDownClient/CClientUDPSocket/IUtpContext
-// graph this isolated adapter target intentionally does not link (see
-// LateReadFailureAfterOwnerDeletionDoesNotInvokeDialFailure above, this test's negative
-// counterpart). What this adapter is responsible for, and what this proves, is that the
-// fallback is reachable at all: exactly one dial-failure callback, naming the right owner and
-// peer identity, which is QuicDialFailed()'s own entire trigger.
+// A late failure with the owner still alive is QuicDialFailed()'s (BaseClient.cpp) entire
+// trigger to resume uTP; that resumption itself needs the full CUpDownClient/CClientUDPSocket/
+// IUtpContext graph this isolated adapter target does not link. Proves what this adapter is
+// responsible for instead: exactly one dial-failure callback, naming the right owner and peer
+// identity.
 TEST(QuicNgtcp2Adapter, LateReadFailureBeforeHandoffInvokesDialFailureExactlyOnce)
 {
 	Session s;
@@ -437,13 +434,8 @@ TEST(QuicNgtcp2Adapter, LateReadFailureBeforeHandoffInvokesDialFailureExactlyOnc
 	QuicClientRefTestForget(owner);
 }
 
-// got3nks' review, still-open finding F, part 1 of 2: the outbound handoff lambda used to call
-// owner->SendHelloPacket() explicitly, right before MarkConnected() -> OnStreamConnected() ->
-// CClientTCPSocket::OnConnect() sent a second one (finding B, now fixed by removing the explicit
-// call). This proves the remaining path -- MarkConnected() -- reaches the handed-off transport's
-// events listener exactly once, even across more datagrams/ticks after the handoff has already
-// happened, which is what makes "exactly one hello" a structural property instead of a
-// coincidence of this test's own timing.
+// MarkConnected() must reach the handed-off transport's events listener exactly once, even
+// across more datagrams/ticks after the handoff has already happened.
 TEST(QuicNgtcp2Adapter, OutboundHandoffSignalsConnectedExactlyOnce)
 {
 	Session s;
@@ -770,10 +762,9 @@ TEST(QuicNgtcp2Adapter, ProductionEngineTickServicesRealExpiryTimersWithoutCrash
 	ASSERT_TRUE(!connection->IsClosed());
 }
 
-// got3nks' review on #1710 (finding #3, High): without a handshake timeout, handle_expiry()
-// never ends a connection stuck at Initial, so spoofed Initials could occupy admission slots
-// permanently. Proves CreateServer() actually configures one (QuicNgtcp2Adapter.cpp's
-// kHandshakeTimeoutMs), not just that Tick() can be called safely.
+// Without a handshake timeout, handle_expiry() never ends a connection stuck at Initial, so
+// spoofed Initials could occupy admission slots permanently. Proves CreateServer() actually
+// configures one.
 TEST(QuicNgtcp2Adapter, ProductionEngineTimesOutAHandshakeThatNeverCompletes)
 {
 	Session s;

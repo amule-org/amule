@@ -65,8 +65,8 @@ bool ParseInitialMetadata(const uint8_t *data, size_t length, CQuicInitialMetada
 
 constexpr size_t kMaxUdpPayload = 1452;
 constexpr int kMaxFlushPacketsPerCall = 16;
-// got3nks' review on #1710 (finding #3, High): without these, handle_expiry() never ends a
-// connection on its own, and spoofed Initials could fill every admission slot permanently.
+// Without these, handle_expiry() never ends a connection on its own, and spoofed Initials
+// could fill every admission slot permanently.
 constexpr uint64_t kHandshakeTimeoutMs = 10000; // 10s: generous even over a slow real path.
 constexpr uint64_t kIdleTimeoutMs = 60000;      // 60s of silence after that is a dead peer.
 

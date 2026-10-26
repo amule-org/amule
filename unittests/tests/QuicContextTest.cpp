@@ -303,11 +303,11 @@ TEST(QuicContext, NonInitialRoutesByCidWhenConnectionsExposeOne)
 	ASSERT_EQUALS(2u, factory.created[1]->calls);
 }
 
-// got3nks' review on #1710 (finding #8, Low): a non-Initial packet is not necessarily a short
-// header -- a Handshake packet is a long header too, with its CID at a different offset and an
-// explicit length byte (RFC 9000 section 17.2), unlike a short header's. Reading it at the short
-// header's offset 1 would read into the version field instead and never match, falling back to
-// endpoint routing, which this test's two connections at one endpoint make ambiguous.
+// A non-Initial packet is not necessarily a short header -- a Handshake packet is a long header
+// too, with its CID at a different offset and an explicit length byte (RFC 9000 section 17.2),
+// unlike a short header's. Reading it at the short header's offset 1 would read into the version
+// field instead and never match, falling back to endpoint routing, which this test's two
+// connections at one endpoint make ambiguous.
 TEST(QuicContext, NonInitialLongHeaderRoutesByCidWhenConnectionsExposeOne)
 {
 	FakeFactory factory;

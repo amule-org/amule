@@ -142,10 +142,7 @@ bool CClientUDPSocket::TryQuicDial(const std::array<uint8_t, 16> &peer,
 	if (result.state == QuicCapabilityState::Unknown) {
 		SendQuicCapsRequest(peer, ipv4, udpPort, fileHash);
 #if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
-		// Hold the transport choice open rather than falling back to uTP on first contact:
-		// eMuleAI resends CAPS twice more and waits for the ACK before giving up on QUIC
-		// (srchybrid/BaseClient.cpp:3627-3637). Only a server-vouched LowID/Lugdunum dial
-		// passes an owner here, and only that dial has a uTP fallback to hold open for.
+		// Only server-vouched LowID dials pass an owner, and only they have a uTP fallback to hold.
 		if (owner != nullptr) {
 			m_quicCapsHoldoffs.push_back(SQuicCapsHoldoff{ peer,
 				ipv4,

@@ -68,6 +68,12 @@ class CClientUDPSocket : public CMuleUDPSocket
 			 private IUtpDatagramSink
 #endif
 {
+#if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT) && defined(AMULE_QUIC_TRANSPORT)
+	// Access to ServiceQuicCapsHoldoffs() and the holdoff/capability state it reads, for a unit
+	// test driving the real function directly rather than only its pure decision helper.
+	friend class ClientUDPSocketQuicHoldoffTestFixture;
+#endif
+
 public:
 	CClientUDPSocket(const amuleIPV4Address &address, const CProxyData *ProxyData = NULL);
 	bool Rebind(const amuleIPV4Address &address);

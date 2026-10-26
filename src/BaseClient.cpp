@@ -2270,11 +2270,7 @@ bool CUpDownClient::TryServerVouchedLowIdUtpDial()
 		if (m_reqfile != nullptr) {
 			std::copy_n(m_reqfile->GetFileHash().GetHash(), fileHash.size(), fileHash.begin());
 		}
-		// TryQuicDial() also returns true once the peer's capability is Unknown: it then holds
-		// the transport choice open (CAPS resent up to three times) instead of falling back to
-		// uTP on first contact, the design gap PR #2075 review finding 5 called out. Reaching
-		// this log line therefore means the peer is already known incompatible or cooling down,
-		// QUIC NAT-T is disabled, or the dial itself failed to start -- never a fresh probe.
+		// TryQuicDial() also returns true while a CAPS answer is pending.
 		if (theApp->clientudp->TryQuicDial(peerHash, GetConnectIP(), GetUDPPort(), fileHash, this)) {
 			return true;
 		}

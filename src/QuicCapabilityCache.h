@@ -158,10 +158,10 @@ private:
 };
 
 // Pure CAPS resend/resolve policy for a peer whose capability was still Unknown when a
-// server-vouched LowID dial started. Mirrors eMuleAI's own three-probe hold: it resends CAPS
-// up to twice more and holds the transport choice for DIRECT_NATT_CAPS_LEGACY_TIMEOUT_MS
-// (srchybrid/Opcodes.h:213) before giving up on QUIC (srchybrid/BaseClient.cpp:3627-3637).
-// Pure inputs/outputs only: the caller owns the clock, the socket, and the client reference.
+// server-vouched LowID dial started: resends CAPS up to twice more and holds the transport
+// choice for the same timeout as eMuleAI's DIRECT_NATT_CAPS_LEGACY_TIMEOUT_MS before giving up
+// on QUIC. Pure inputs/outputs only: the caller owns the clock, the socket, and the client
+// reference.
 constexpr uint64_t kQuicCapsHoldoffDeadlineMs = 1500;
 constexpr uint64_t kQuicCapsHoldoffResendIntervalMs = 500;
 constexpr int kQuicCapsHoldoffMaxProbes = 3;
