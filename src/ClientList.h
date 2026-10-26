@@ -266,6 +266,7 @@ public:
 	 * Stops a chat session with a client.
 	 */
 	void SetChatState(const CChatPeer &peer, uint8 state);
+	void CloseChatSession(const CChatPeer &peer);
 
 	uint8 GetBuddyStatus() const { return m_nBuddyStatus; }
 	// This must be used on CreateKadSourceLink and if we ever add the columns

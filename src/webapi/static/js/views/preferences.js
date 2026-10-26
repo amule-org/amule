@@ -249,6 +249,9 @@ const TABS = [
       { key: "accept_from_known_clients_only", type: "bool", sub: true, gatedBy: "enabled", gatedByNot: "filter_all_messages" },
       { key: "filter_by_keyword", type: "bool", sub: true, gatedBy: "enabled", gatedByNot: "filter_all_messages" },
       { key: "keywords", type: "text", sub: 2, gatedBy: ["enabled", "filter_by_keyword"], gatedByNot: "filter_all_messages" },
+      { key: "advanced_spam_filter_supported", type: "bool", hidden: true },
+      { key: "advanced_spam_filter", type: "bool", gatedBy: "advanced_spam_filter_supported" },
+      { key: "use_captchas", type: "bool", titleKey: "prefs_field_message_filter_use_captchas_help", sub: true, gatedBy: ["advanced_spam_filter_supported", "advanced_spam_filter"] },
       { key: "log_filtered_messages", type: "bool" },
     ] },
     { legendKey: "prefs_group_comments", fields: [
@@ -574,7 +577,7 @@ export default function Preferences({ isGuest }) {
         <div class=${"field field-inline" + subCls}>
           <input type="checkbox" id=${id} checked=${checked} disabled=${disabled}
                  onChange=${(e) => setVal(id, f.invert ? !e.target.checked : e.target.checked)} />
-          <label for=${id}>${label}</label>
+          <label for=${id} title=${f.titleKey ? t(f.titleKey) : undefined}>${label}</label>
         </div>`;
     }
     if (f.type === "select") {

@@ -4570,13 +4570,8 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 				break;
 			}
 			peer = session->peer;
-			theApp->chatsessions->CloseSession(peer);
 		}
-		theApp->clientlist->SetChatState(peer, MS_NONE);
-		// Closing is global, matching how closing a search tab destroys the core bucket for
-		// every client: the next EC_OP_CHAT_SESSIONS reply simply omits the session and
-		// each client drops its tab.
-		Notify_Chat_SessionRemoved(peer);
+		theApp->clientlist->CloseChatSession(peer);
 		response = new CECPacket(EC_OP_NOOP);
 		break;
 	}

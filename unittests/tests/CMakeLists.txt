@@ -1860,6 +1860,15 @@ target_link_libraries (ShareExcludeTest
 	ZLIB::ZLIB
 )
 
+# The production BMP writer must work with wx base alone and no DISPLAY.
+add_executable (ChatCaptchaGeneratorTest
+	ChatCaptchaGeneratorTest.cpp
+	${CMAKE_SOURCE_DIR}/src/CaptchaGenerator.cpp
+)
+add_test (NAME ChatCaptchaGeneratorTest COMMAND ChatCaptchaGeneratorTest)
+target_include_directories (ChatCaptchaGeneratorTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries (ChatCaptchaGeneratorTest muleunit mulecommon)
+
 add_executable (ChatSessionStoreTest
 	ChatSessionStoreTest.cpp
 	${CMAKE_SOURCE_DIR}/src/ChatSessionStore.cpp
@@ -2847,6 +2856,12 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 				${CMAKE_CURRENT_SOURCE_DIR}/ShareWatcherMoveIntegrationTest.py $<TARGET_FILE:amuled>
 		)
 		set_tests_properties (ShareWatcherMoveIntegrationTest PROPERTIES LABELS "integration")
+		add_test (NAME ChatSpamFilterIntegrationTest
+			COMMAND ${Python3_EXECUTABLE}
+				${CMAKE_CURRENT_SOURCE_DIR}/ChatSpamFilterIntegrationTest.py
+				$<TARGET_FILE:amuled> $<$<CONFIG:Debug>:--debug-build>
+		)
+		set_tests_properties (ChatSpamFilterIntegrationTest PROPERTIES LABELS "integration")
 		if (BUILD_AMULEAPI)
 			add_test (NAME ChatCaptchaIntegrationTest
 				COMMAND ${Python3_EXECUTABLE}

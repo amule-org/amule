@@ -3238,6 +3238,12 @@ wxSizer *PreferencesFilteringTab( wxWindow *parent, bool call_fit, bool set_size
     wxTextCtrl *item8 = new wxTextCtrl( item2, IDC_MSGWORD, "", wxDefaultPosition, wxSize(80,-1), 0 );
     item8->SetToolTip( _("add here the words amule should filter and block messages including it") );
     item1->Add( item8, wxSizerFlags().Expand().CenterVertical().Border(wxLEFT, 50) );
+    wxCheckBox *advancedSpam = new wxCheckBox(item2, IDC_MSGADVSPAM, _("Enable advanced spam filter"));
+    advancedSpam->SetToolTip(_("Block unsolicited links and repeated messages from non-friends."));
+    item1->Add(advancedSpam, wxSizerFlags().CenterVertical());
+    wxCheckBox *chatCaptcha = new wxCheckBox(item2, IDC_MSGCAPTCHA, _("Require a CAPTCHA for first messages from non-friends"));
+    chatCaptcha->SetToolTip(_("Withhold the message until the sender solves the challenge. Clients without CAPTCHA support cannot start a chat."));
+    item1->Add(chatCaptcha, wxSizerFlags().CenterVertical().Border(wxLEFT, 25));
     wxCheckBox *item9 = new wxCheckBox( item2, IDC_MSGLOG, _("Show received messages in the log"), wxDefaultPosition, wxDefaultSize, 0 );
     item1->Add( item9, wxSizerFlags().CenterVertical().Border(wxALL, 0) );
     item0->Add( item1, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 0) );

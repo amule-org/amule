@@ -1142,6 +1142,9 @@ struct PreferencesSnapshot
 	// [MessageFilter] EC_TAG_PREFS_MESSAGEFILTER
 	struct MessageFilterPrefs
 	{
+		bool advanced_spam_filter_supported = false;
+		bool advanced_spam_filter = false;
+		bool use_captchas = false;
 		bool enabled = false;
 		bool filter_all_messages = false;
 		bool accept_from_friends_only = false;

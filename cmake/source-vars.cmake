@@ -11,6 +11,7 @@ if (BUILD_MONOLITHIC OR BUILD_DAEMON)
 		kademlia/routing/RoutingZone.cpp
 		amule.cpp
 		BaseClient.cpp
+		CaptchaGenerator.cpp
 		BrowseLifecycle.cpp
 		BrowseManager.cpp
 		BrowseStore.cpp

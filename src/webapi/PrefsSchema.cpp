@@ -220,6 +220,9 @@ const PrefField kSchema[] = {
 	PREF_BOOL("security", "system_ipfilter_enabled", EC_TAG_IPFILTER_SYSTEM, PrefEnc::Presence, false, PrefAccess::ReadWrite, security.system_ipfilter_enabled),
 
 	// [message_filter]
+	PREF_BOOL("message_filter", "advanced_spam_filter_supported", EC_TAG_MSGFILTER_ADVANCED, PrefEnc::Presence, false, PrefAccess::ReadOnly, message_filter.advanced_spam_filter_supported),
+	PREF_BOOL_GATED("message_filter", "advanced_spam_filter", EC_TAG_MSGFILTER_ADVANCED, PrefEnc::Value, false, PrefAccess::ReadWrite, message_filter.advanced_spam_filter, "advanced_spam_filter_supported"),
+	PREF_BOOL_GATED("message_filter", "use_captchas", EC_TAG_MSGFILTER_CAPTCHA, PrefEnc::Value, false, PrefAccess::ReadWrite, message_filter.use_captchas, "advanced_spam_filter_supported"),
 	PREF_BOOL("message_filter", "accept_from_friends_only", EC_TAG_MSGFILTER_FRIENDS, PrefEnc::Presence, false, PrefAccess::ReadWrite, message_filter.accept_from_friends_only),
 	PREF_BOOL("message_filter", "accept_from_known_clients_only", EC_TAG_MSGFILTER_SECURE, PrefEnc::Presence, false, PrefAccess::ReadWrite, message_filter.accept_from_known_clients_only),
 	PREF_BOOL("message_filter", "filter_by_keyword", EC_TAG_MSGFILTER_BY_KEYWORD, PrefEnc::Presence, false, PrefAccess::ReadWrite, message_filter.filter_by_keyword),

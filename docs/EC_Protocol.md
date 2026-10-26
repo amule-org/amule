@@ -937,3 +937,16 @@ requests from legacy clients. Optional `EC_TAG_ECID`, `EC_TAG_KNOWNFILE_PATH`, a
 `EC_TAG_PARTFILE_NAME` children on each partfile hash are checked before cancellation.
 The API sends these children so a renamed or replaced active target cannot be cancelled
 using an outdated snapshot.
+
+### Chat spam preferences
+
+`EC_TAG_PREFS_MESSAGEFILTER` includes `EC_TAG_MSGFILTER_ADVANCED` (`0x140A`)
+and `EC_TAG_MSGFILTER_CAPTCHA` (`0x140B`). Both are explicit integer booleans
+on reads and writes, including at `EC_DETAIL_CMD`. A core that supports these
+settings always sends both tags, even when false. An older core omits them;
+clients should disable these controls in that case. A SET that omits either
+tag leaves that setting unchanged, so older clients can still save the group.
+
+The CAPTCHA setting stores the user's choice independently, but takes effect
+only while the advanced filter is enabled. See [chat protection](ChatSpamFilter.md)
+for defaults and how incoming messages are handled.

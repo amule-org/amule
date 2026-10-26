@@ -355,7 +355,6 @@ if (BUILD_MONOLITHIC)
 		${CORE_SOURCES}
 		${GUI_SOURCES}
 		CaptchaDialog.cpp
-		CaptchaGenerator.cpp
 		PartFileConvert.cpp
 		PartFileConvertDlg.cpp
 		# Not in GUI_SOURCES: amulegui shares that list; startup and

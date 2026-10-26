@@ -25,16 +25,85 @@
 
 #include "CaptchaGenerator.h"
 #include "RandomFunctions.h"
-#include "MemFile.h"
-#include <wx/bitmap.h>
-#include <wx/dcmemory.h>
-#include <wx/font.h>
 
-#define LETTERSIZE 32
-#define CROWDEDSIZE 20
+#include <algorithm>
+#include <cmath>
 
-// fairly simply captcha generator, might be improved is spammers think its really worth it solving captchas
-// on aMule
+namespace
+{
+// Original 5 x 7 block glyphs. Omit digits 2, 5, 6 and 8, which resemble Z, S, G and B.
+// Answers are checked locally; the alphabet is not part of the wire format.
+// No system fonts, image handlers or wx GUI initialization are needed.
+constexpr char alphabet[] = "ABCDEFGHJKLMNPQRSTUVWXYZ13479";
+constexpr unsigned char glyphs[][7] = {
+	{ 14, 17, 17, 31, 17, 17, 17 }, // A
+	{ 30, 17, 17, 30, 17, 17, 30 }, // B
+	{ 14, 17, 16, 16, 16, 17, 14 }, // C
+	{ 30, 17, 17, 17, 17, 17, 30 }, // D
+	{ 31, 16, 16, 30, 16, 16, 31 }, // E
+	{ 31, 16, 16, 30, 16, 16, 16 }, // F
+	{ 14, 17, 16, 23, 17, 17, 15 }, // G
+	{ 17, 17, 17, 31, 17, 17, 17 }, // H
+	{ 7, 2, 2, 2, 18, 18, 12 },     // J
+	{ 17, 18, 20, 24, 20, 18, 17 }, // K
+	{ 16, 16, 16, 16, 16, 16, 31 }, // L
+	{ 17, 27, 21, 21, 17, 17, 17 }, // M
+	{ 17, 25, 25, 21, 19, 19, 17 }, // N
+	{ 30, 17, 17, 30, 16, 16, 16 }, // P
+	{ 14, 17, 17, 17, 21, 18, 13 }, // Q
+	{ 30, 17, 17, 30, 20, 18, 17 }, // R
+	{ 15, 16, 16, 14, 1, 1, 30 },   // S
+	{ 31, 4, 4, 4, 4, 4, 4 },       // T
+	{ 17, 17, 17, 17, 17, 17, 14 }, // U
+	{ 17, 17, 17, 17, 17, 10, 4 },  // V
+	{ 17, 17, 17, 21, 21, 27, 17 }, // W
+	{ 17, 17, 10, 4, 10, 17, 17 },  // X
+	{ 17, 17, 10, 4, 4, 4, 4 },     // Y
+	{ 31, 1, 2, 4, 8, 16, 31 },     // Z
+	{ 4, 12, 4, 4, 4, 4, 14 },      // 1
+	{ 30, 1, 1, 14, 1, 1, 30 },     // 3
+	{ 2, 6, 10, 18, 31, 2, 2 },     // 4
+	{ 31, 1, 2, 4, 8, 8, 8 },       // 7
+	{ 14, 17, 17, 15, 1, 1, 14 },   // 9
+};
+static_assert(
+	sizeof(glyphs) / sizeof(glyphs[0]) == sizeof(alphabet) - 1, "Every CAPTCHA character needs a glyph");
+constexpr unsigned height = 48;
+constexpr unsigned letterSpacing = 22;
+constexpr unsigned pixelOffset = 62; // BITMAPFILEHEADER, BITMAPINFOHEADER, two palette entries
+} // namespace
+
+bool MatchesChatCaptchaAnswer(const wxString &challenge, const wxString &answer)
+{
+	const wxString expected = challenge.Upper();
+	wxString supplied = answer.Upper();
+	supplied.Trim();
+	if (expected.IsEmpty() || supplied.Length() < expected.Length()) {
+		return false;
+	}
+	// Peers may prefix the answer with explanatory text; keep the existing suffix behavior.
+	supplied = supplied.Right(expected.Length());
+	const auto canonical = [](wxUniChar character) {
+		switch (character.GetValue()) {
+		case '2':
+			return wxUniChar('Z');
+		case '5':
+			return wxUniChar('S');
+		case '6':
+			return wxUniChar('G');
+		case '8':
+			return wxUniChar('B');
+		default:
+			return character;
+		}
+	};
+	for (size_t i = 0; i < expected.Length(); ++i) {
+		if (canonical(supplied[i]) != canonical(expected[i])) {
+			return false;
+		}
+	}
+	return true;
+}
 
 CCaptchaGenerator::CCaptchaGenerator(uint32 nLetterCount)
 {
@@ -43,43 +112,73 @@ CCaptchaGenerator::CCaptchaGenerator(uint32 nLetterCount)
 
 void CCaptchaGenerator::ReGenerateCaptcha(uint32 nLetterCount)
 {
-	static wxString schCaptchaContent = "ABCDEFGHJKLMNPQRSTUVWXYZ123456789";
-	m_strCaptchaText.Clear();
-	// Bitmap must be created with full depth, or it will fail on GTK
-	wxBitmap pimgResult(LETTERSIZE + (nLetterCount - 1) * CROWDEDSIZE, 36);
-	wxMemoryDC dc(pimgResult);
-	dc.SetBackground(*wxWHITE_BRUSH);
-	dc.Clear();
-	dc.SetTextForeground(*wxBLACK);
-	dc.SetTextBackground(*wxWHITE);
-	double lastrotate = 15.0;
-
-	for (uint32 i = 0; i < nLetterCount; i++) {
-		wxString strLetter(schCaptchaContent[GetRandomUint16() % schCaptchaContent.length()]);
-		m_strCaptchaText += strLetter;
-
-		uint16 nRandomSize = 30 - GetRandomUint16() % 12;
-		wxFont font(nRandomSize, wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD);
-		dc.SetFont(font);
-		uint16 nRandomOffset = 3 + GetRandomUint16() % 8;
-		uint16 maxRotate = 50 - nRandomSize; // rotate small letters more than large letters
-		double fRotate = (double)(maxRotate - (GetRandomUint16() % (maxRotate * 2)));
-		// limit angle diff - it causes too much overlap since wx rotates at the corner
-		// (maybe I'll redo that with some coordinate transformation one day)
-		if (fRotate - lastrotate > 20) {
-			fRotate = lastrotate + 20;
-		} else if (fRotate - lastrotate < -20) {
-			fRotate = lastrotate - 20;
+	// Keep every generated image within the peer validator's 10 < width < 150 bounds.
+	const unsigned count = std::max(1U, std::min(nLetterCount, 6U));
+	const unsigned width = 8 + count * letterSpacing;
+	const unsigned stride = ((width + 31) / 32) * 4;
+	m_image.assign(pixelOffset + stride * height, 0);
+	const auto write32 = [this](unsigned offset, unsigned value) {
+		for (unsigned byte = 0; byte < 4; ++byte) {
+			m_image[offset + byte] = static_cast<unsigned char>(value >> (8 * byte));
 		}
-		dc.DrawRotatedText(strLetter, nRandomOffset + i * CROWDEDSIZE, 0, fRotate);
+	};
+	m_image[0] = 'B';
+	m_image[1] = 'M';
+	write32(2, static_cast<unsigned>(m_image.size()));
+	write32(10, pixelOffset);
+	write32(14, 40);
+	write32(18, width);
+	write32(22, height); // bottom-up rows
+	m_image[26] = 1;     // one plane
+	m_image[28] = 1;     // one bit per pixel, BI_RGB (uncompressed)
+	write32(34, stride * height);
+	write32(46, 2);
+	m_image[54] = m_image[55] = m_image[56] = 255; // white background, black foreground
+
+	m_strCaptchaText.Clear();
+	for (unsigned letter = 0; letter < count; ++letter) {
+		const unsigned index = GetRandomUint16() % (sizeof(alphabet) - 1);
+		m_strCaptchaText += static_cast<wxChar>(alphabet[index]);
+		const double scaleX = 2.6 + (GetRandomUint16() % 101) * 0.004;
+		const double scaleY = 3.0 + (GetRandomUint16() % 101) * 0.006;
+		const int centerX = 15 + static_cast<int>(letter * letterSpacing);
+		const int centerY = 24 + static_cast<int>(GetRandomUint16() % 5) - 2;
+		const double angle =
+			(static_cast<int>(GetRandomUint16() % 21) - 10) * 3.14159265358979323846 / 180.0;
+		const double shear = (static_cast<int>(GetRandomUint16() % 21) - 10) / 100.0;
+		const double cosine = std::cos(angle);
+		const double sine = std::sin(angle);
+		// Each glyph stays in its own cell: neighboring letters may touch, never overlap.
+		// Inverse-map destination pixels so enlarged and rotated strokes have no holes.
+		for (unsigned y = 0; y < height; ++y) {
+			for (unsigned x = 4 + letter * letterSpacing; x < 4 + (letter + 1) * letterSpacing;
+				++x) {
+				const double dx = static_cast<double>(x) - centerX;
+				const double dy = static_cast<double>(y) - centerY;
+				const int column = static_cast<int>(std::floor(
+					(dx * cosine + dy * sine - shear * (-dx * sine + dy * cosine)) /
+						scaleX +
+					2.5));
+				const int row = static_cast<int>(
+					std::floor((-dx * sine + dy * cosine) / scaleY + 3.5));
+				if (column >= 0 && column < 5 && row >= 0 && row < 7 &&
+					(glyphs[index][row] & (1U << (4 - column)))) {
+					m_image[pixelOffset + (height - 1 - y) * stride + x / 8] |=
+						static_cast<unsigned char>(0x80U >> (x % 8));
+				}
+			}
+		}
 	}
-	m_pimgCaptcha = pimgResult.ConvertToImage();
-	// wx always saves as 24 bpp except when it gets this WELL DOCUMENTED option...
-	m_pimgCaptcha.SetOption(wxIMAGE_OPTION_BMP_FORMAT, wxBMP_1BPP);
-	// m_pimgCaptcha.SaveFile("captcha.bmp", wxBITMAP_TYPE_BMP);
+	// Light background noise must not obscure the distinguishing strokes of a letter.
+	for (unsigned dot = 0; dot < width * height / 128; ++dot) {
+		const unsigned x = GetRandomUint16() % width;
+		const unsigned y = GetRandomUint16() % height;
+		m_image[pixelOffset + y * stride + x / 8] |= static_cast<unsigned char>(0x80U >> (x % 8));
+	}
 }
 
 bool CCaptchaGenerator::WriteCaptchaImage(wxMemoryOutputStream &file)
 {
-	return m_pimgCaptcha.SaveFile(file, wxBITMAP_TYPE_BMP);
+	file.Write(m_image.data(), m_image.size());
+	return file.IsOk();
 }

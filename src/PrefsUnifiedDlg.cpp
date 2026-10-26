@@ -155,6 +155,7 @@ wxBEGIN_EVENT_TABLE(PrefsUnifiedDlg, wxDialog)
 	EVT_CHECKBOX(IDC_REMOVEDEAD, PrefsUnifiedDlg::OnCheckBoxChange)
 	EVT_CHECKBOX(IDC_AUTOSERVER, PrefsUnifiedDlg::OnCheckBoxChange)
 	EVT_CHECKBOX(IDC_AUTOIPFILTER, PrefsUnifiedDlg::OnCheckBoxChange)
+	EVT_CHECKBOX(IDC_MSGADVSPAM, PrefsUnifiedDlg::OnCheckBoxChange)
 	EVT_CHECKBOX(IDC_MSGFILTER, PrefsUnifiedDlg::OnCheckBoxChange)
 	EVT_CHECKBOX(IDC_MSGFILTER_ALL, PrefsUnifiedDlg::OnCheckBoxChange)
 	EVT_CHECKBOX(IDC_MSGFILTER_WORD, PrefsUnifiedDlg::OnCheckBoxChange)
@@ -1191,6 +1192,10 @@ bool PrefsUnifiedDlg::CfgChanged(int ID)
 
 void PrefsUnifiedDlg::UpdateMessageFilterControls()
 {
+	FindWindow(IDC_MSGADVSPAM)->Enable(thePrefs::GetChatSpamFilterSupported());
+	FindWindow(IDC_MSGCAPTCHA)
+		->Enable(thePrefs::GetChatSpamFilterSupported() &&
+			 CastChild(IDC_MSGADVSPAM, wxCheckBox)->IsChecked());
 	const bool filtering = CastChild(IDC_MSGFILTER, wxCheckBox)->IsChecked();
 	const bool selective = filtering && !CastChild(IDC_MSGFILTER_ALL, wxCheckBox)->IsChecked();
 	FindWindow(IDC_MSGFILTER_ALL)->Enable(filtering);
@@ -1977,6 +1982,7 @@ void PrefsUnifiedDlg::OnCheckBoxChange(wxCommandEvent &event)
 		}
 		break;
 
+	case IDC_MSGADVSPAM:
 	case IDC_MSGFILTER:
 	case IDC_MSGFILTER_ALL:
 	case IDC_MSGFILTER_WORD:

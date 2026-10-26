@@ -227,6 +227,15 @@ CEC_Prefs_Packet::CEC_Prefs_Packet(
 		}
 		msg_prefs.AddTag(
 			CECTag(EC_TAG_MSGFILTER_COMMENT_KEYWORDS, thePrefs::GetCommentFilterString()));
+#ifdef CLIENT_GUI
+		if (thePrefs::GetChatSpamFilterSupported()) {
+#endif
+			msg_prefs.AddTag(
+				CECTag(EC_TAG_MSGFILTER_ADVANCED, thePrefs::IsAdvancedSpamfilterEnabled()));
+			msg_prefs.AddTag(CECTag(EC_TAG_MSGFILTER_CAPTCHA, thePrefs::IsChatCaptchaEnabled()));
+#ifdef CLIENT_GUI
+		}
+#endif
 		AddTag(msg_prefs);
 	}
 
@@ -746,6 +755,18 @@ bool CEC_Prefs_Packet::Apply() const
 	}
 
 	if ((thisTab = GetTagByName(EC_TAG_PREFS_MESSAGEFILTER)) != NULL) {
+#ifdef CLIENT_GUI
+		thePrefs::SetChatSpamFilterSupported(thisTab->GetTagByName(EC_TAG_MSGFILTER_ADVANCED) &&
+						     thisTab->GetTagByName(EC_TAG_MSGFILTER_CAPTCHA));
+#endif
+		// These new options use explicit values at every detail level. An older
+		// GUI saving the message group must not turn either option off by omission.
+		if (const auto *tag = thisTab->GetTagByName(EC_TAG_MSGFILTER_ADVANCED)) {
+			thePrefs::SetAdvancedSpamfilterEnabled(tag->GetInt() != 0);
+		}
+		if (const auto *tag = thisTab->GetTagByName(EC_TAG_MSGFILTER_CAPTCHA)) {
+			thePrefs::SetChatCaptchaEnabled(tag->GetInt() != 0);
+		}
 		ApplyBoolean(use_tag, thisTab, thePrefs::SetMustFilterMessages, EC_TAG_MSGFILTER_ENABLED);
 		ApplyBoolean(use_tag, thisTab, thePrefs::SetFilterAllMessages, EC_TAG_MSGFILTER_ALL);
 		ApplyBoolean(use_tag, thisTab, thePrefs::SetMsgOnlyFriends, EC_TAG_MSGFILTER_FRIENDS);

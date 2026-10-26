@@ -2404,7 +2404,8 @@ Returns every preference category amuled carries over EC. The `general` and `con
     "enabled": false, "filter_all_messages": false,
     "accept_from_friends_only": false, "accept_from_known_clients_only": false,
     "filter_by_keyword": false, "keywords": "",
-    "log_filtered_messages": true, "filter_comments": false, "comment_keywords": ""
+    "log_filtered_messages": true, "filter_comments": false, "comment_keywords": "",
+    "advanced_spam_filter_supported": true, "advanced_spam_filter": false, "use_captchas": false
   },
   "remote_controls": {
     "webserver": {

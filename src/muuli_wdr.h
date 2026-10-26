@@ -581,6 +581,8 @@ wxSizer *PreferencesOnlineSigTab(wxWindow *parent, bool call_fit = TRUE, bool se
 #define IDC_MSGFILTER_WORD 10288
 #define IDC_MSGWORD 10289
 #define IDC_MSGLOG 10290
+#define IDC_MSGADVSPAM 10526
+#define IDC_MSGCAPTCHA 10527
 #define IDC_FILTERCOMMENTS 10291
 #define IDC_COMMENTWORD 10292
 wxSizer *PreferencesFilteringTab(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);

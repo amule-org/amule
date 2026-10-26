@@ -625,6 +625,10 @@ EC_TAG_SELECT_PREFS                       0x1000
 		EC_TAG_MSGFILTER_SHOW_IN_LOG              0x1407
 		EC_TAG_MSGFILTER_FILTER_COMMENTS          0x1408
 		EC_TAG_MSGFILTER_COMMENT_KEYWORDS         0x1409
+## Explicit integer booleans, always returned, optional on SET even at EC_DETAIL_CMD.
+## Missing means an older core/client; never reset these settings on an omitted tag.
+		EC_TAG_MSGFILTER_ADVANCED                0x140A
+		EC_TAG_MSGFILTER_CAPTCHA                 0x140B
 
 	EC_TAG_PREFS_REMOTECTRL                   0x1500
 		EC_TAG_WEBSERVER_AUTORUN                  0x1501

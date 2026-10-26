@@ -129,6 +129,16 @@ StaticRoot={Path(__file__).resolve().parents[3] / 'src/webapi/static'}
 
         wait_for(lambda: request("/health"), "API startup")
         token = request("/auth/login?include_token=true", {"password": "captcha-admin"})["token"]
+        # The daemon defaults on when the keys are absent; API writes preserve the
+        # CAPTCHA sub-option independently of its advanced-filter parent.
+        prefs = request("/preferences")["message_filter"]
+        assert prefs["advanced_spam_filter_supported"] is True
+        assert prefs["advanced_spam_filter"] is True and prefs["use_captchas"] is True
+        for advanced, captcha in [(True, True), (False, True), (True, False), (False, False)]:
+            values = {"advanced_spam_filter": advanced, "use_captchas": captcha}
+            request("/preferences", {"message_filter": values}, "PATCH")
+            current = request("/preferences")["message_filter"]
+            assert all(current[key] == value for key, value in values.items()), current
         stream = urllib.request.urlopen(urllib.request.Request(root + "/events",
             headers={"Authorization": "Bearer " + token}), timeout=15)
         ec = EC(ec_port, password="captcha-test")

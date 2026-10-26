@@ -2751,9 +2751,9 @@ TEST(Refresher, PrefsSchemaIsWellFormed)
 			++emitted;
 	}
 
-	// The documented payload is 131 fields. A row added or dropped without
+	// The documented payload is 134 fields. A row added or dropped without
 	// updating docs/api/REFERENCE.md should trip this.
-	ASSERT_EQUALS(static_cast<std::size_t>(131), emitted);
+	ASSERT_EQUALS(static_cast<std::size_t>(134), emitted);
 }
 
 // The schema's irregularities are enumerated rather than merely counted: each is deliberate and
@@ -3932,4 +3932,27 @@ TEST(PrefsSchema, SharedFileReverifyDefaultsOffAndUsesBoundedUint32)
 	std::vector<webapi::CategorySnapshot> categories;
 	webapi::ParsePreferencesFromPacket(&response, prefs, categories);
 	ASSERT_EQUALS(static_cast<std::uint32_t>(3650u), prefs.files.shared_file_reverify_days);
+}
+
+TEST(Refresher, ChatSpamPreferencesDistinguishDisabledFromUnsupported)
+{
+	for (unsigned enabled = 0; enabled < 2; ++enabled) {
+		CECPacket response(EC_OP_SET_PREFERENCES);
+		CECEmptyTag group(EC_TAG_PREFS_MESSAGEFILTER);
+		group.AddTag(CECTag(EC_TAG_MSGFILTER_ADVANCED, static_cast<uint8>(enabled)));
+		group.AddTag(CECTag(EC_TAG_MSGFILTER_CAPTCHA, static_cast<uint8>(1 - enabled)));
+		response.AddTag(group);
+		PreferencesSnapshot prefs;
+		std::vector<CategorySnapshot> categories;
+		ParsePreferencesFromPacket(&response, prefs, categories);
+		ASSERT_TRUE(prefs.message_filter.advanced_spam_filter_supported);
+		ASSERT_EQUALS(enabled != 0, prefs.message_filter.advanced_spam_filter);
+		ASSERT_EQUALS(enabled == 0, prefs.message_filter.use_captchas);
+	}
+	CECPacket oldCore(EC_OP_SET_PREFERENCES);
+	oldCore.AddTag(CECEmptyTag(EC_TAG_PREFS_MESSAGEFILTER));
+	PreferencesSnapshot prefs;
+	std::vector<CategorySnapshot> categories;
+	ParsePreferencesFromPacket(&oldCore, prefs, categories);
+	ASSERT_FALSE(prefs.message_filter.advanced_spam_filter_supported);
 }

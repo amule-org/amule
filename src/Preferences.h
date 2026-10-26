@@ -694,7 +694,15 @@ public:
 	static bool ShowMessagesInLog() { return s_ShowMessagesInLog; }
 	static void SetShowMessagesInLog(bool val) { s_ShowMessagesInLog = val; }
 	static bool IsAdvancedSpamfilterEnabled() { return s_IsAdvancedSpamfilterEnabled; }
-	static bool IsChatCaptchaEnabled() { return IsAdvancedSpamfilterEnabled() && s_IsChatCaptchaEnabled; }
+	static void SetAdvancedSpamfilterEnabled(bool val) { s_IsAdvancedSpamfilterEnabled = val; }
+	static bool IsChatCaptchaEnabled() { return s_IsChatCaptchaEnabled; }
+	static void SetChatCaptchaEnabled(bool val) { s_IsChatCaptchaEnabled = val; }
+#ifdef CLIENT_GUI
+	static bool GetChatSpamFilterSupported() { return s_chatSpamFilterSupported; }
+	static void SetChatSpamFilterSupported(bool val) { s_chatSpamFilterSupported = val; }
+#else
+	static bool GetChatSpamFilterSupported() { return true; }
+#endif
 
 	static bool FilterComments() { return s_FilterComments; }
 	static void SetFilterComments(bool val) { s_FilterComments = val; }
@@ -1149,6 +1157,9 @@ protected:
 	static bool s_ShowMessagesInLog;
 	static bool s_IsAdvancedSpamfilterEnabled;
 	static bool s_IsChatCaptchaEnabled;
+#ifdef CLIENT_GUI
+	static bool s_chatSpamFilterSupported;
+#endif
 
 	static bool s_FilterComments;
 	static wxString s_CommentFilterString;

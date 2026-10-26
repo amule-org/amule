@@ -67,11 +67,11 @@
 #include "ClientList.h"       // Needed for CClientList
 #include "ChatSessionStore.h" // Needed for CChatSessionStore
 #include "ChatCaptcha.h"
+#include "CaptchaGenerator.h"
 #ifndef AMULE_DAEMON
 #include "amuleDlg.h"      // Needed for CamuleDlg
 #include "CaptchaDialog.h" // Needed for CCaptchaDialog
-#include "CaptchaGenerator.h"
-#include "ChatWnd.h" // Needed for CChatWnd
+#include "ChatWnd.h"       // Needed for CChatWnd
 #endif
 #include "BrowseManager.h"
 #include "amule.h"           // Needed for theApp
@@ -3654,11 +3654,7 @@ void CUpDownClient::ProcessCaptchaReqRes(uint8 status)
 #endif
 }
 
-// Shared by both builds. The advanced spam filter (captcha + URL heuristic) is GUI-only --
-// CCaptchaGenerator lives in the monolithic target and the spam path touches the chat
-// window -- so it is compiled out on the daemon, which relays incoming messages to amulegui
-// with the message filter alone. By-value to match the header signature: the non-daemon
-// path reassigns `message` (captcha), so the parameter cannot be const-ref.
+// The core applies the same chat protection in both builds, before recording any message.
 // NOLINTNEXTLINE(performance-unnecessary-value-param)
 void CUpDownClient::ProcessChatMessage(wxString message)
 {
@@ -3671,9 +3667,8 @@ void CUpDownClient::ProcessChatMessage(wxString message)
 		return;
 	}
 
-#ifndef AMULE_DAEMON
 	// advanced spamfilter check
-	if (thePrefs::IsChatCaptchaEnabled() && !IsFriend()) {
+	if (thePrefs::IsAdvancedSpamfilterEnabled() && thePrefs::IsChatCaptchaEnabled() && !IsFriend()) {
 		// captcha checks outrank any further checks - if the captcha has been solved, we assume it's
 		// not spam first check if we need to send a captcha request to this client
 		if (GetMessagesSent() == 0 && GetMessagesReceived() == 0 &&
@@ -3741,8 +3736,7 @@ void CUpDownClient::ProcessChatMessage(wxString message)
 				// this message must be the answer to the captcha request we sent him, let's
 				// verify
 				wxASSERT(!m_strCaptchaChallenge.IsEmpty());
-				if (m_strCaptchaChallenge.CmpNoCase(message.Trim().Right(std::min(
-					    message.Length(), m_strCaptchaChallenge.Length()))) == 0) {
+				if (MatchesChatCaptchaAnswer(m_strCaptchaChallenge, message)) {
 					// allright
 					AddDebugLogLineN(logClient,
 						CFormat("Captcha solved, showing withheld message (%s)") %
@@ -3753,6 +3747,7 @@ void CUpDownClient::ProcessChatMessage(wxString message)
 								  // later if the captcha has been solved
 					// replace captchaanswer with withheld message and show it
 					message = m_strCaptchaPendingMsg;
+					m_strCaptchaPendingMsg.Clear();
 					m_cCaptchasSent = 0;
 					m_strCaptchaChallenge.Clear();
 					CPacket *packet =
@@ -3782,10 +3777,8 @@ void CUpDownClient::ProcessChatMessage(wxString message)
 
 	if (thePrefs::IsAdvancedSpamfilterEnabled() &&
 		!IsFriend()) { // friends are never spammer... (but what if two spammers are friends :P )
-		bool bIsSpam = false;
-		if (m_fIsSpammer) {
-			bIsSpam = true;
-		} else {
+		bool bIsSpam = m_fIsSpammer;
+		if (!bIsSpam) {
 			// First fixed criteria: a client that sends an URL in its first message before I
 			// respond has a 99.9% chance of being some poor guy advertising his leech mod, or
 			// selling you something.
@@ -3812,11 +3805,10 @@ void CUpDownClient::ProcessChatMessage(wxString message)
 			AddDebugLogLineN(
 				logClient, CFormat("'%s' has been marked as spammer") % GetUserName());
 			SetSpammer(true);
-			theApp->amuledlg->m_chatwnd->EndSession(GetChatPeer());
+			theApp->clientlist->CloseChatSession(GetChatPeer());
 			return;
 		}
 	}
-#endif // AMULE_DAEMON
 
 	wxString logMsg = CFormat(_("New message from '%s' (IP:%s)")) % GetUserName() % GetFullIP();
 	if (thePrefs::ShowMessagesInLog()) {
