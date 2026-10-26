@@ -88,9 +88,21 @@ void Resize(wxDialog &dialog, int width, int height)
 {
 	dialog.SetClientSize(dialog.FromDIP(wxSize(width, height)));
 	dialog.SendSizeEvent();
+#ifdef __WXGTK__
+	// An X11 window manager answers each resize late, briefly restoring the previous size,
+	// so wait until the new size, raised to the dialog minimum, holds.
+	wxSize expected = dialog.FromDIP(wxSize(width, height));
+	expected.IncTo(dialog.GetMinClientSize());
+	for (int attempt = 0, stable = 0; attempt < 300 && stable < 5; ++attempt) {
+		wxMilliSleep(10);
+		wxTheApp->Yield(true);
+		stable = dialog.GetClientSize() == expected ? stable + 1 : 0;
+	}
+#else
 	for (int pass = 0; pass < 3; ++pass) {
 		wxTheApp->Yield();
 	}
+#endif
 }
 
 void CheckButtonsVisible(wxDialog &dialog)

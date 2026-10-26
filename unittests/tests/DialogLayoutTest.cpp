@@ -114,9 +114,20 @@ void TestWrappingText(const wxString &message, bool scrolled, bool largerFont)
 		dialog.SetClientSize(dialog.FromDIP(wxSize(width, 500)));
 		dialog.SendSizeEvent();
 		// Drain deferred layouts, including a scrollbar-induced size change.
+#ifdef __WXGTK__
+		// An X11 window manager answers each resize late, briefly restoring the previous
+		// size, so wait until the new size holds.
+		for (int attempt = 0, stable = 0; attempt < 300 && stable < 5; ++attempt) {
+			wxMilliSleep(10);
+			wxTheApp->Yield(true);
+			stable =
+				dialog.GetClientSize() == dialog.FromDIP(wxSize(width, 500)) ? stable + 1 : 0;
+		}
+#else
 		for (int pass = 0; pass < 3; ++pass) {
 			wxTheApp->Yield();
 		}
+#endif
 		Check(dialog.GetClientSize() == dialog.FromDIP(wxSize(width, 500)),
 			"Translation prevented resizing the dialog");
 		label->InvalidateBestSize();
