@@ -826,10 +826,12 @@ public:
 	static uint32 GetKadUDPKey() { return s_dwKadUDPKey; }
 	static uint8 GetCryptTCPPaddingLength() { return s_byCryptTCPPaddingLength; }
 
+#ifdef AMULE_QUIC_TRANSPORT
 	// Runtime opt-in for QUIC NAT traversal: gates QUIC NAT-T probes, dials,
 	// capability advertisements and answers. amule.conf-only, off by default --
 	// no widget, no EC tag. Independent from the legacy server-coordinated NAT settings.
 	static bool IsQuicNatTEnabled() { return s_QuicNatTEnabled; }
+#endif
 
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 	// Runtime opt-in for Lugdunum's NAT callback: gates the login opt-in, the
@@ -1204,7 +1206,9 @@ protected:
 	static bool s_bCryptLayerRequested;
 	static uint32 s_dwKadUDPKey;
 	static uint8 s_byCryptTCPPaddingLength;
+#ifdef AMULE_QUIC_TRANSPORT
 	static bool s_QuicNatTEnabled;
+#endif
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 	static bool s_LugdunumNatCallbackEnabled;
 	static bool s_LowIdHolePunchEnabled;

@@ -274,7 +274,9 @@ bool CPreferences::s_bCryptLayerRequested;
 bool CPreferences::s_IsClientCryptLayerRequired;
 uint32 CPreferences::s_dwKadUDPKey;
 uint8 CPreferences::s_byCryptTCPPaddingLength;
+#ifdef AMULE_QUIC_TRANSPORT
 bool CPreferences::s_QuicNatTEnabled;
+#endif
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 bool CPreferences::s_LugdunumNatCallbackEnabled;
 bool CPreferences::s_LowIdHolePunchEnabled;
@@ -1489,9 +1491,11 @@ void CPreferences::BuildItemList(const wxString &appdir)
 	s_MiscList.push_back(MkCfg_Int("/Obfuscation/CryptoKadUDPKey", s_dwKadUDPKey, GetRandomUint32()));
 #endif
 
+#ifdef AMULE_QUIC_TRANSPORT
 	// Runtime opt-in for QUIC NAT traversal. Keep this independent from the
 	// server-coordinated NAT settings so QUIC-only builds can opt in explicitly.
 	s_MiscList.push_back(new Cfg_Bool("/eMule/QuicNatT", s_QuicNatTEnabled, false));
+#endif
 
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 	// Runtime opt-in for Lugdunum's NAT callback: off by default, so turning on

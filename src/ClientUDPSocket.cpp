@@ -709,7 +709,8 @@ void CClientUDPSocket::ProcessReservedProt2Frame(
 }
 
 #if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
-bool CClientUDPSocket::DialLowIdHolePunchPeer(uint32 ip, uint16 tcpPort, uint16 udpPort)
+bool CClientUDPSocket::DialLowIdHolePunchPeer(
+	uint32 ip, uint16 tcpPort, uint16 udpPort, const std::array<std::uint8_t, 16> &userHash)
 {
 	if (tcpPort == 0 || udpPort == 0 || !Ok() || !m_utp.IsAvailable() ||
 		!IsGoodIP(ip, thePrefs::FilterLanIPs()) || theApp->ipfilter->IsFiltered(ip) ||
@@ -720,6 +721,10 @@ bool CClientUDPSocket::DialLowIdHolePunchPeer(uint32 ip, uint16 tcpPort, uint16 
 	// This temporary client is not a download source. OP_HELLO, not server-supplied
 	// INFO fields, decides which existing LowID source the new stream belongs to.
 	CUpDownClient *client = new CUpDownClient(tcpPort, ip, 0, 0, nullptr, true, false);
+	// The server-vouched punch dial needs HasValidHash() for the CAPS probe and the QUIC
+	// selection in TryServerVouchedLowIdUtpDial(); set it before AddClient() so the client
+	// list indexes it immediately, matching the OP_DIRECTCALLBACKREQ pattern.
+	client->SetUserHash(CMD4Hash(userHash.data()));
 	theApp->clientlist->AddClient(client);
 	CClientRef ref{ client CLIENT_DEBUGSTRING("LowID hole punch dial") };
 	client->SetUDPPort(udpPort);
@@ -856,6 +861,11 @@ bool CClientUDPSocket::DialLugdunumNatCallbackPeer(const LugdunumNatTraversal::F
 	CUpDownClient *client = new CUpDownClient(
 		0, target.provisionalUserId, server->GetIP(), server->GetPort(), nullptr, true, false);
 	client->SetUserAddress(CNetworkAddress::FromIPv4NetworkOrder(target.ip));
+	// Only the 27-byte forward carries a hash; a shorter one leaves the client HasValidHash()
+	// false, same as before, so CAPS/QUIC stay gated on an actually-known identity.
+	if (callback.hasObfuscation) {
+		client->SetUserHash(CMD4Hash(callback.userHash.data()));
+	}
 	theApp->clientlist->AddClient(client);
 	CClientRef ref{ client CLIENT_DEBUGSTRING("Lugdunum callback dial") };
 	client->SetUDPPort(target.udpPort);
@@ -903,7 +913,9 @@ void CClientUDPSocket::HandleLowIdHolePunch(uint32 host, uint16 port)
 			AddDebugLogLineN(logClientUDP,
 				CFormat("OP_HOLEPUNCH from %s; dialling its observed UDP port") %
 					Uint32_16toStringIP_Port(host, port));
-			DialLowIdHolePunchPeer(host, action.tcpPort, port);
+			// OP_HOLEPUNCH carries no user hash; this target-side dial has none to propagate,
+			// unlike the requester-side dial in HandleLowIdHolePunchInfo().
+			DialLowIdHolePunchPeer(host, action.tcpPort, port, std::array<std::uint8_t, 16>{});
 		}
 	} else if (action.kind == NatServerHolePunch::PunchAction::DialLater) {
 		connect->LowIdHolePunchDialBacks().Schedule(source, action.tcpPort, port, now);

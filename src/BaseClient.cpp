@@ -28,6 +28,8 @@
 #include <wx/mstream.h>
 #include <wx/tokenzr.h>
 
+#include <array>
+
 #include "updownclient.h"   // Needed for CUpDownClient
 #include "SharedFileList.h" // Needed for CSharedFileList
 
@@ -81,7 +83,6 @@
 #include "FriendList.h"      // Needed for CFriendList
 #include "Statistics.h"      // Needed for theStats
 #include "ClientUDPSocket.h"
-#include <array>
 
 #include "AddressFamilyPolicy.h" // Needed for AddressFamilyPolicy::Permits
 #ifdef ENABLE_IPV6
@@ -1630,8 +1631,6 @@ bool CUpDownClient::Disconnected(const wxString &DEBUG_ONLY(strReason), bool bFr
 	return bDelete;
 }
 
-// The returned bool is not whether TryToConnect succeeded: false means the client was
-// deleted, true means it was not.
 void CUpDownClient::QuicDialFailed()
 {
 	// Temporary clients created for server-vouched LowID rendezvous have no TCP fallback:
@@ -1660,6 +1659,9 @@ void CUpDownClient::QuicDialFailed()
 	m_skipQuicDial = false;
 #endif
 }
+
+// The returned bool is not whether TryToConnect succeeded: false means the client was
+// deleted, true means it was not.
 
 bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon)
 {
@@ -2272,6 +2274,9 @@ bool CUpDownClient::TryServerVouchedLowIdUtpDial()
 		if (theApp->clientudp->TryQuicDial(peerHash, GetConnectIP(), GetUDPPort(), fileHash, this)) {
 			return true;
 		}
+		AddDebugLogLineN(logClientUDP,
+			CFormat("QUIC dial to %s did not start; falling back to uTP") %
+				Uint32_16toStringIP_Port(GetConnectIP(), GetUDPPort()));
 	}
 #endif
 	IUtpContext *utp = theApp->clientudp->GetUtpContext();

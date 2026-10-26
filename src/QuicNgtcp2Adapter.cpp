@@ -401,6 +401,13 @@ private:
 		if (owner != nullptr) {
 			if (m_outboundHandoff == nullptr || (m_outboundTransport = m_outboundHandoff(owner,
 								     std::move(transport))) == nullptr) {
+				// Refused (e.g. the owner already has a live connected socket): nothing will
+				// ever make this handoff succeed later, so there is no reason to keep this
+				// connection open until the idle timeout. Close() is safe to call from here:
+				// it does not delete this connection object, and its own dial-failure
+				// callback is itself harmless against an owner that is already connected
+				// (TryToContact()'s live- socket guard makes that a no-op).
+				Close();
 				return;
 			}
 		} else if (!m_acceptor->AcceptStream(transport, m_address, m_port)) {
@@ -668,6 +675,31 @@ public:
 		return 0;
 	}
 
+	// The client's own CreateClient() opens no stream eagerly: right after ngtcp2_conn_client_new()
+	// the peer's transport parameters have not arrived, so the local bidi stream limit is still 0
+	// and ngtcp2_conn_open_bidi_stream() would fail with NGTCP2_ERR_STREAM_ID_BLOCKED. This
+	// callback fires once the handshake raises that limit (max_streams > 0), which is the first
+	// point opening a stream can succeed; CQuicNgtcp2Connection::OfferStreamIfJustOpened(), called
+	// right after Read()/Flush() in ProcessDatagram() and again from Tick(), notices the open
+	// stream and sends the EAQN1 proof. Only this connection's own one stream is ever opened, so
+	// the existing streamId guard below also protects against ngtcp2 calling back again.
+	static int OnExtendMaxLocalStreamsBidi(ngtcp2_conn *conn, uint64_t maxStreams, void *userData)
+	{
+		if (maxStreams == 0) {
+			return 0;
+		}
+		auto *engine = static_cast<CProductionNgtcp2Engine *>(userData);
+		auto it = engine->m_connections.find(conn);
+		if (it == engine->m_connections.end() || it->second.streamId >= 0) {
+			return 0;
+		}
+		int64_t streamId = -1;
+		if (ngtcp2_conn_open_bidi_stream(conn, &streamId, nullptr) == 0) {
+			it->second.streamId = streamId;
+		}
+		return 0;
+	}
+
 	//! See ConnectionInfo::unackedSendChunks: this is what makes it safe for WriteStreamData()'s
 	//! caller to free its own copy the instant that call returns -- it erases our copy instead,
 	//! once (and only once) ngtcp2 will never need to read it again.
@@ -874,6 +906,8 @@ public:
 		callbacks.acked_stream_data_offset = OnAckedStreamData;
 		callbacks.stream_close = OnStreamClose;
 		callbacks.stream_reset = OnStreamReset;
+		// Only the client opens a local stream; see OnExtendMaxLocalStreamsBidi's own comment.
+		callbacks.extend_max_local_streams_bidi = OnExtendMaxLocalStreamsBidi;
 
 		ngtcp2_settings settings = {};
 		ngtcp2_settings_default(&settings);
@@ -1506,7 +1540,17 @@ std::unique_ptr<IQuicConnection> CQuicNgtcp2Factory::CreateOutbound(const CNetwo
 		m_engine->CreateClient(m_policy, address, port, expectedPeerIdentity, nowMs);
 	if (handle == nullptr)
 		return nullptr;
-	if (!m_engine->OpenLocalBidiStream(handle)) {
+	// The local stream opens later, from OnExtendMaxLocalStreamsBidi() once the handshake raises
+	// the peer-advertised limit above 0 -- not here, before the peer's transport parameters have
+	// even arrived.
+	//
+	// A fresh client connection has nothing scheduled yet (ngtcp2_conn_get_expiry() -- see its
+	// own doc comment -- returns this connection's settings.handshake_timeout deadline, not an
+	// imminent one), so CQuicContext::Tick()'s own expiry-gated send would otherwise never fire
+	// before that whole deadline elapses: this dial would just time out having sent nothing.
+	// Flush the first Initial/ClientHello flight unconditionally, exactly as ProcessDatagram()
+	// already does for every later exchange.
+	if (!m_engine->Flush(handle, *m_sink, address, port, nowMs)) {
 		m_engine->Destroy(handle);
 		return nullptr;
 	}
@@ -1533,9 +1577,14 @@ std::unique_ptr<IQuicConnection> CQuicNgtcp2Factory::CreateOutboundForClient(con
 		return nullptr;
 	IQuicNgtcp2Engine::Handle handle =
 		m_engine->CreateClient(m_policy, address, port, expectedPeerIdentity, nowMs);
-	if (handle == nullptr || !m_engine->OpenLocalBidiStream(handle)) {
-		if (handle != nullptr)
-			m_engine->Destroy(handle);
+	if (handle == nullptr) {
+		return nullptr;
+	}
+	// Same as CreateOutbound() above: the local stream opens later, from
+	// OnExtendMaxLocalStreamsBidi(), once the handshake actually permits it. Same reason for the
+	// unconditional first flush, too: see CreateOutbound()'s own comment.
+	if (!m_engine->Flush(handle, *m_sink, address, port, nowMs)) {
+		m_engine->Destroy(handle);
 		return nullptr;
 	}
 	return std::make_unique<CQuicNgtcp2Connection>(m_engine,

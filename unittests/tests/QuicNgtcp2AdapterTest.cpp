@@ -395,6 +395,103 @@ TEST(QuicNgtcp2Adapter, LateReadFailureAfterOwnerDeletionDoesNotInvokeDialFailur
 	ASSERT_EQUALS(0u, failures);
 }
 
+// got3nks' review on #1710/#1177 (still-open finding F, part 2 of 2): a late failure, after the
+// owner is still alive, is exactly what CUpDownClient::QuicDialFailed() (BaseClient.cpp) resumes
+// uTP from -- that resumption itself needs the full CUpDownClient/CClientUDPSocket/IUtpContext
+// graph this isolated adapter target intentionally does not link (see
+// LateReadFailureAfterOwnerDeletionDoesNotInvokeDialFailure above, this test's negative
+// counterpart). What this adapter is responsible for, and what this proves, is that the
+// fallback is reachable at all: exactly one dial-failure callback, naming the right owner and
+// peer identity, which is QuicDialFailed()'s own entire trigger.
+TEST(QuicNgtcp2Adapter, LateReadFailureBeforeHandoffInvokesDialFailureExactlyOnce)
+{
+	Session s;
+	Credentials c;
+	Verifier v;
+	auto sink = std::make_shared<Sink>();
+	auto engine = std::make_shared<Engine>();
+	unsigned failures = 0;
+	CUpDownClient *failedOwner = nullptr;
+	std::array<uint8_t, 16> failedPeerIdentity{};
+	CQuicNgtcp2Factory factory(Policy(s, c, v),
+		sink,
+		engine,
+		kTestIdentity,
+		nullptr,
+		nullptr,
+		[&](CUpDownClient *owner, const std::array<uint8_t, 16> &peer) {
+			++failures;
+			failedOwner = owner;
+			failedPeerIdentity = peer;
+		});
+	auto *owner = reinterpret_cast<CUpDownClient *>(static_cast<uintptr_t>(1));
+	auto connection = factory.CreateOutboundForClient(kPeer, 4672, kTestPeerIdentity, 0, owner);
+	ASSERT_TRUE(connection != nullptr);
+	engine->read = false;
+	ASSERT_TRUE(!connection->ProcessDatagram(Initial().data(), Initial().size(), 0));
+	ASSERT_EQUALS(1u, failures);
+	ASSERT_TRUE(failedOwner == owner);
+	for (size_t i = 0; i < kTestPeerIdentity.size(); ++i) {
+		ASSERT_EQUALS((int)kTestPeerIdentity[i], (int)failedPeerIdentity[i]);
+	}
+	QuicClientRefTestForget(owner);
+}
+
+// got3nks' review, still-open finding F, part 1 of 2: the outbound handoff lambda used to call
+// owner->SendHelloPacket() explicitly, right before MarkConnected() -> OnStreamConnected() ->
+// CClientTCPSocket::OnConnect() sent a second one (finding B, now fixed by removing the explicit
+// call). This proves the remaining path -- MarkConnected() -- reaches the handed-off transport's
+// events listener exactly once, even across more datagrams/ticks after the handoff has already
+// happened, which is what makes "exactly one hello" a structural property instead of a
+// coincidence of this test's own timing.
+TEST(QuicNgtcp2Adapter, OutboundHandoffSignalsConnectedExactlyOnce)
+{
+	Session s;
+	Credentials c;
+	Verifier v;
+	auto sink = std::make_shared<Sink>();
+	auto engine = std::make_shared<Engine>();
+	struct CountingEvents : IStreamTransportEvents
+	{
+		unsigned connectedCount = 0;
+		void OnStreamConnected() override { ++connectedCount; }
+		void OnStreamReadable() override {}
+		void OnStreamWritable() override {}
+		void OnStreamLost() override {}
+		void OnFlushRequested() override {}
+	} events;
+	std::unique_ptr<IStreamTransport> handedOff;
+	CQuicSocketTransport *handedOffRaw = nullptr;
+	CQuicNgtcp2Factory factory(Policy(s, c, v),
+		sink,
+		engine,
+		kTestIdentity,
+		nullptr,
+		[&](CUpDownClient *, std::unique_ptr<IStreamTransport> transport) {
+			handedOffRaw = static_cast<CQuicSocketTransport *>(transport.get());
+			handedOffRaw->SetEvents(&events);
+			handedOff = std::move(transport);
+			return handedOffRaw;
+		});
+	auto *owner = reinterpret_cast<CUpDownClient *>(static_cast<uintptr_t>(1));
+	auto connection = factory.CreateOutboundForClient(kPeer, 4672, kTestPeerIdentity, 0, owner);
+	ASSERT_TRUE(connection != nullptr);
+	engine->hasOpenStream = true;
+	const auto matchingProof = QuicNatt::BuildEaqn1Proof(kTestPeerIdentity, &kTestIdentity);
+	engine->streamData.assign(matchingProof.begin(), matchingProof.end());
+
+	ASSERT_TRUE(connection->ProcessDatagram(Initial().data(), Initial().size(), 0));
+	ASSERT_TRUE(handedOffRaw != nullptr);
+	ASSERT_EQUALS(1u, events.connectedCount);
+
+	// Further datagrams/ticks after the handoff must not signal a second connect: m_streamOffered
+	// guards OfferStreamIfJustOpened() itself, so this never reaches MarkConnected() again.
+	ASSERT_TRUE(connection->ProcessDatagram(Initial().data(), Initial().size(), 0));
+	connection->Tick(0);
+	ASSERT_EQUALS(1u, events.connectedCount);
+	QuicClientRefTestForget(owner);
+}
+
 TEST(QuicNgtcp2Adapter, OutboundProofIsNotResentWhilePeerProofIsPending)
 {
 	Session s;

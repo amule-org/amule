@@ -96,7 +96,8 @@ void HandleLowIdHolePunchInfo(
 		CFormat("Client UDP socket: OP_HOLEPUNCH to %s") %
 			Uint32_16toStringIP_Port(peerIP, info.udpPort));
 	if (requester) {
-		if (theApp->clientudp->DialLowIdHolePunchPeer(peerIP, info.tcpPort, info.udpPort)) {
+		if (theApp->clientudp->DialLowIdHolePunchPeer(
+			    peerIP, info.tcpPort, info.udpPort, info.userHash)) {
 			serverconnect->LowIdHolePunchExpectedEndpoints().NoteDialled(
 				info.peerIP, info.udpPort);
 		}

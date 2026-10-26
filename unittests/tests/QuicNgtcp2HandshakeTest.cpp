@@ -979,3 +979,93 @@ TEST(QuicNgtcp2Handshake, FlushesAtOneTimestampSendABurstNotOnePacket)
 	// The initial congestion window alone admits about ten full packets.
 	ASSERT_TRUE(sink->sent.size() >= 5);
 }
+
+void QuicClientRefTestForget(CUpDownClient *client);
+
+// got3nks' live test on #1710/#1177 found the production outbound dial always failed: the real
+// client engine (CQuicNgtcp2Factory::CreateOutboundForClient(), not a fake, and not the
+// hand-rolled CTestQuicClient above, which only opens its stream after DriveHandshake()
+// completes) used to call OpenLocalBidiStream() synchronously inside Dial() itself, before any
+// packet round-trip -- before the peer's transport parameters, which raise the local stream
+// limit from 0, had any chance to arrive. ngtcp2_conn_open_bidi_stream() then failed with
+// NGTCP2_ERR_STREAM_ID_BLOCKED every single time, logged nowhere, and uTP silently took over.
+// Both sides here are the real production engine: this is the first test that drives the real
+// client all the way to a real server and back, proving the EAQN1 handoff the live test wanted
+// to see actually completes.
+TEST(QuicNgtcp2Handshake, RealClientDialsARealServerAndCompletesTheHandoff)
+{
+	CQuicEphemeralCredentials serverCredentials;
+	ASSERT_TRUE(serverCredentials.NativeGnuTlsCredentials() != nullptr);
+	CQuicTlsPolicy serverPolicy{ &serverCredentials };
+	auto serverSink = std::make_shared<CollectingSink>();
+	auto serverEngine = CreateProductionQuicNgtcp2Engine();
+	CQuicNgtcp2Factory serverFactory(serverPolicy, serverSink, serverEngine, kTestServerIdentity);
+	// The server's own OfferStreamIfJustOpened() needs an acceptor (or owner) to proceed past its
+	// own early-return guard at all -- without one, it would never call TryExchangeEaqn1Proof()
+	// and the client's proof would never get a reply.
+	AcceptingAcceptor serverAcceptor;
+	serverFactory.SetAcceptor(&serverAcceptor);
+
+	// CreateClient() never reads policy.credentials (see its own comment in QuicNgtcp2Adapter.cpp);
+	// only the server side needs a real certificate.
+	CQuicTlsPolicy clientPolicy{ nullptr };
+	auto clientSink = std::make_shared<CollectingSink>();
+	auto clientEngine = CreateProductionQuicNgtcp2Engine();
+	std::unique_ptr<IStreamTransport> handedOff;
+	CQuicSocketTransport *handedOffRaw = nullptr;
+	CQuicNgtcp2Factory clientFactory(clientPolicy,
+		clientSink,
+		clientEngine,
+		kTestClientIdentity,
+		nullptr,
+		[&](CUpDownClient *, std::unique_ptr<IStreamTransport> transport) {
+			handedOffRaw = static_cast<CQuicSocketTransport *>(transport.get());
+			handedOff = std::move(transport);
+			return handedOffRaw;
+		});
+
+	auto *owner = reinterpret_cast<CUpDownClient *>(static_cast<uintptr_t>(1));
+	uint64_t nowMs = 0;
+	std::unique_ptr<IQuicConnection> clientConnection =
+		clientFactory.CreateOutboundForClient(kPeer, 4672, kTestServerIdentity, nowMs, owner);
+	ASSERT_TRUE(clientConnection != nullptr);
+
+	// Drives both real engines the same way CQuicContext::Tick() and CQuicContext::ProcessDatagram()
+	// do in production: the client's periodic Tick() is what sends its first Initial and, later,
+	// opens its local stream once OnExtendMaxLocalStreamsBidi() lets it -- nothing here forces that
+	// open the way the old, now-removed eager call did.
+	std::unique_ptr<IQuicConnection> serverConnection;
+	constexpr int kMaxRounds = 40;
+	for (int round = 0; round < kMaxRounds && !handedOff; ++round, nowMs += 10) {
+		clientConnection->Tick(nowMs);
+		for (const auto &datagram : clientSink->sent) {
+			if (!serverConnection) {
+				const std::string dcid = ExtractInitialDcid(datagram);
+				ASSERT_TRUE(!dcid.empty());
+				serverConnection = serverFactory.CreateInbound(
+					datagram.data(), datagram.size(), kPeer, 4672, dcid, nowMs);
+				ASSERT_TRUE(serverConnection != nullptr);
+			}
+			ASSERT_TRUE(
+				serverConnection->ProcessDatagram(datagram.data(), datagram.size(), nowMs));
+		}
+		clientSink->sent.clear();
+		if (serverConnection) {
+			for (const auto &datagram : serverSink->sent) {
+				ASSERT_TRUE(clientConnection->ProcessDatagram(
+					datagram.data(), datagram.size(), nowMs));
+			}
+			serverSink->sent.clear();
+		}
+	}
+
+	ASSERT_TRUE(serverConnection != nullptr);
+	ASSERT_TRUE(!clientConnection->IsClosed());
+	ASSERT_TRUE(!serverConnection->IsClosed());
+	// The handoff itself is the proof the local stream actually opened: OfferStreamIfJustOpened()
+	// only reaches it once HasOpenStream() is true and the EAQN1 proof exchange has completed in
+	// both directions.
+	ASSERT_TRUE(handedOff != nullptr);
+	ASSERT_TRUE(serverAcceptor.accepted != nullptr);
+	QuicClientRefTestForget(owner);
+}
