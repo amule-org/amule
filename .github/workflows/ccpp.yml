@@ -14,6 +14,7 @@ on:
       - 'scripts/check-tray-backend-build.py'
       - '.github/workflows/ccpp.yml'
       - '.github/apt-ci.conf'
+      - '.github/actions/apt-install/**'
   pull_request:
     branches: [ "**" ]
     paths:
@@ -27,6 +28,7 @@ on:
       - 'scripts/check-tray-backend-build.py'
       - '.github/workflows/ccpp.yml'
       - '.github/apt-ci.conf'
+      - '.github/actions/apt-install/**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ github.ref == 'refs/heads/master' && github.sha || '' }}
@@ -182,10 +184,13 @@ jobs:
           restore-keys: ${{ runner.os }}-${{ matrix.build_type }}-ccache-
       - name: install deps
         id: ubuntu-deps
+        uses: ./.github/actions/apt-install
+        with:
+          packages: ${{ env.cmake_ubuntu_deps }}
+          # Both build types install the same packages; one save is enough.
+          save: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && matrix.build_type == 'Debug' }}
+      - name: generate test locales
         run: |
-          sudo cp .github/apt-ci.conf /etc/apt/apt.conf.d/99-ci
-          sudo apt-get update
-          sudo apt-get install -y ${{ env.cmake_ubuntu_deps }}
           # Exercise grouped numbers and decimal commas in the calculator tests.
           sudo localedef -i en_US -f UTF-8 en_US.UTF-8
           sudo localedef -i it_IT -f UTF-8 it_IT.UTF-8
@@ -302,10 +307,11 @@ jobs:
           restore-keys: ${{ runner.os }}-experimental-${{ matrix.build_type }}-ccache-
       - name: install deps
         id: ubuntu-deps
+        uses: ./.github/actions/apt-install
+        with:
+          packages: ${{ env.cmake_ubuntu_deps }}
+      - name: generate test locales
         run: |
-          sudo cp .github/apt-ci.conf /etc/apt/apt.conf.d/99-ci
-          sudo apt-get update
-          sudo apt-get install -y ${{ env.cmake_ubuntu_deps }}
           # Exercise grouped numbers and decimal commas in the calculator tests.
           sudo localedef -i en_US -f UTF-8 en_US.UTF-8
           sudo localedef -i it_IT -f UTF-8 it_IT.UTF-8
@@ -358,10 +364,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: install deps
-        run: |
-          sudo cp .github/apt-ci.conf /etc/apt/apt.conf.d/99-ci
-          sudo apt-get update
-          sudo apt-get install -y ${{ env.cmake_ubuntu_deps }}
+        uses: ./.github/actions/apt-install
+        with:
+          packages: ${{ env.cmake_ubuntu_deps }}
       - uses: ./.github/actions/ngtcp2
       - name: fetch CMake ${{ env.CMAKE_MIN }}
         run: |

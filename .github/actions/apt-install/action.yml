@@ -1,0 +1,68 @@
+# apt-get install with the downloaded .deb files kept in an Actions cache.
+#
+# The Azure Ubuntu mirror sometimes serves packages at 50 kB/s, which turns a
+# 7-second download into 20 minutes. The package indexes still come from the
+# mirror, but they stayed fast even then. With the cache, apt fetches only the
+# packages that changed since the last save.
+#
+# The archive directory is our own, not /var/cache/apt/archives, so a runner
+# image hook that empties the default one cannot touch it.
+name: Install Ubuntu packages
+description: apt-get install the given packages, reusing .deb files cached by an earlier run.
+
+inputs:
+  packages:
+    description: Packages to install, separated by whitespace. Backslashes are dropped, so a line-continued list works.
+    required: true
+  save:
+    description: "'true' saves the .deb files when apt downloaded any. Let one job per workflow run save."
+    default: 'false'
+
+runs:
+  using: composite
+  steps:
+    - name: Prepare the archive directory
+      id: prep
+      shell: bash
+      run: |
+        set -euo pipefail
+        . /etc/os-release
+        echo "family=${RUNNER_OS}-apt-${ID}-${VERSION_ID}" >> "$GITHUB_OUTPUT"
+        echo "dir=${RUNNER_TEMP}/apt-archives" >> "$GITHUB_OUTPUT"
+    - name: Restore cached packages
+      uses: actions/cache/restore@v6
+      with:
+        path: ${{ steps.prep.outputs.dir }}/*.deb
+        key: ${{ steps.prep.outputs.family }}-${{ github.run_id }}
+        restore-keys: ${{ steps.prep.outputs.family }}-
+    - name: Install packages
+      id: install
+      shell: bash
+      env:
+        ARCHIVES: ${{ steps.prep.outputs.dir }}
+        PACKAGES: ${{ inputs.packages }}
+      run: |
+        set -euo pipefail
+        sudo cp .github/apt-ci.conf /etc/apt/apt.conf.d/99-ci
+        # apt downloads as the _apt user.
+        sudo mkdir -p "$ARCHIVES/partial"
+        sudo chown _apt "$ARCHIVES/partial"
+        apt=(sudo apt-get -o "Dir::Cache::Archives=$ARCHIVES")
+        debs() { find "$ARCHIVES" -maxdepth 1 -name '*.deb' -printf '%f\n' | sort; }
+        before=$(debs)
+        "${apt[@]}" update
+        # shellcheck disable=SC2046 # one package per word
+        "${apt[@]}" install -y $(tr '\\\n' '  ' <<<"$PACKAGES")
+        # Drop versions the mirror no longer has, so the cache does not grow.
+        "${apt[@]}" autoclean
+        if [ "$(debs)" = "$before" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+        else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+        fi
+    - name: Save packages
+      if: inputs.save == 'true' && steps.install.outputs.changed == 'true'
+      uses: ./.github/actions/cache-save-newest
+      with:
+        path: ${{ steps.prep.outputs.dir }}/*.deb
+        key: ${{ steps.prep.outputs.family }}-${{ github.run_id }}
