@@ -106,6 +106,10 @@ TEST(QuicTransportLifecycle, LifecycleAndIdempotentLoss)
 	t.MarkConnected();
 	ASSERT_TRUE(t.IsConnected());
 	ASSERT_EQUALS(1, e.connected);
+	// CEMSocket only becomes ES_CONNECTED, and so able to Send(), in OnSend()/OnReceive() --
+	// without this, a connected transport's own first application write (the dialler's hello)
+	// would queue forever (got3nks' review on #1177, finding 1 of the live-test round).
+	ASSERT_EQUALS(1, e.writable);
 	t.OnEnded(7);
 	t.OnEnded(8);
 	ASSERT_TRUE(!t.IsOk());
@@ -153,6 +157,12 @@ TEST(QuicTransportReads, ReadBufferAndFailure)
 	uint8_t out[2];
 	ASSERT_EQUALS(2u, t.Read(out, 2));
 	ASSERT_EQUALS(4, (int)out[0]);
+	// Socket semantics, not "buffer currently empty": the read that drained the buffer returned
+	// bytes, so CEMSocket::OnReceive() must not treat it as blocked (got3nks' review on #1177,
+	// finding 2 of the live-test round -- the old m_read.empty() check lost this exact read).
+	ASSERT_TRUE(!t.BlocksRead());
+	// Only a Read() that finds nothing reports blocking.
+	ASSERT_EQUALS(0u, t.Read(out, 2));
 	ASSERT_TRUE(t.BlocksRead());
 	t.Close();
 	ASSERT_EQUALS(1, o.closes);

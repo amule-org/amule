@@ -381,9 +381,11 @@ public:
 	}
 
 private:
-	// The point a connection has something worth handing to the rest of aMule: the peer has
-	// opened its one stream (QuicSocketTransport.h). Checked after every successful
-	// ProcessDatagram(), since that is the only place a stream can newly open.
+	// The point a connection has something worth handing to the rest of aMule: either side's
+	// one stream has opened (QuicSocketTransport.h) -- the peer's, for an inbound connection, or
+	// this side's own, for an outbound dial, once OnExtendMaxLocalStreamsBidi() lets it open.
+	// Checked after every successful ProcessDatagram() and from Tick(), since either is a place
+	// a stream can newly open.
 	void OfferStreamIfJustOpened()
 	{
 		CUpDownClient *owner = m_ownerRef.GetClientChecked();

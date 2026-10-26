@@ -73,7 +73,11 @@ public:
 	CQuicSocketTransport &operator=(const CQuicSocketTransport &) = delete;
 	bool IsConnected() const override;
 	bool IsInbound() const override { return m_inbound; }
-	bool ObfuscatesStream() const override { return false; }
+	// TLS 1.3 already protects every QUIC byte; a second eD2k-layer RC4 handshake inside it
+	// would send bytes a peer that skips the negotiation (eMuleAI, and every other NAT-T
+	// transport this codebase has) reads as eD2k application data instead. uTP returns true
+	// for the same reason.
+	bool ObfuscatesStream() const override { return true; }
 	void SetEvents(IStreamTransportEvents *) override;
 	bool IsOk() const override;
 	uint32_t Read(void *, uint32_t) override;
@@ -141,6 +145,11 @@ private:
 	//! queue empties on its own or ~CQuicSocketTransport() cuts it short.
 	bool m_draining = false;
 	bool m_blocksWrite = false;
+	// Socket semantics, not "buffer currently empty": set by a Read() that found nothing to
+	// return, cleared by one that returned bytes. CEMSocket::OnReceive() drops the bytes of a
+	// Read() that reports blocking, so the read that actually drains the buffer must report
+	// false here even though m_read may already be empty by the time it checks again.
+	bool m_blocksRead = false;
 	int m_error = 0;
 };
 

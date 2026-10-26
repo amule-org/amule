@@ -1662,7 +1662,6 @@ void CUpDownClient::QuicDialFailed()
 
 // The returned bool is not whether TryToConnect succeeded: false means the client was
 // deleted, true means it was not.
-
 bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon)
 {
 	const EContactResult result = TryToContact(bIgnoreMaxCon);
@@ -2271,11 +2270,17 @@ bool CUpDownClient::TryServerVouchedLowIdUtpDial()
 		if (m_reqfile != nullptr) {
 			std::copy_n(m_reqfile->GetFileHash().GetHash(), fileHash.size(), fileHash.begin());
 		}
+		// TryQuicDial() also returns true once the peer's capability is Unknown: it then holds
+		// the transport choice open (CAPS resent up to three times) instead of falling back to
+		// uTP on first contact, the design gap PR #2075 review finding 5 called out. Reaching
+		// this log line therefore means the peer is already known incompatible or cooling down,
+		// QUIC NAT-T is disabled, or the dial itself failed to start -- never a fresh probe.
 		if (theApp->clientudp->TryQuicDial(peerHash, GetConnectIP(), GetUDPPort(), fileHash, this)) {
 			return true;
 		}
 		AddDebugLogLineN(logClientUDP,
-			CFormat("QUIC dial to %s did not start; falling back to uTP") %
+			CFormat("QUIC dial to %s not possible (disabled, incompatible peer, cooldown, or "
+				"dial start failed); falling back to uTP") %
 				Uint32_16toStringIP_Port(GetConnectIP(), GetUDPPort()));
 	}
 #endif

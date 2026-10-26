@@ -994,12 +994,18 @@ void QuicClientRefTestForget(CUpDownClient *client);
 // to see actually completes.
 TEST(QuicNgtcp2Handshake, RealClientDialsARealServerAndCompletesTheHandoff)
 {
+	// Shared with both transports this test writes through after the handoff: their Flush()
+	// otherwise defaults to the real wall clock, which ngtcp2 refuses to accept once this same
+	// connection has already been driven with this test's own small, synthetic nowMs values
+	// (conn_update_timestamp() asserts its clock is monotonic).
+	uint64_t nowMs = 0;
 	CQuicEphemeralCredentials serverCredentials;
 	ASSERT_TRUE(serverCredentials.NativeGnuTlsCredentials() != nullptr);
 	CQuicTlsPolicy serverPolicy{ &serverCredentials };
 	auto serverSink = std::make_shared<CollectingSink>();
 	auto serverEngine = CreateProductionQuicNgtcp2Engine();
-	CQuicNgtcp2Factory serverFactory(serverPolicy, serverSink, serverEngine, kTestServerIdentity);
+	CQuicNgtcp2Factory serverFactory(
+		serverPolicy, serverSink, serverEngine, kTestServerIdentity, [&nowMs] { return nowMs; });
 	// The server's own OfferStreamIfJustOpened() needs an acceptor (or owner) to proceed past its
 	// own early-return guard at all -- without one, it would never call TryExchangeEaqn1Proof()
 	// and the client's proof would never get a reply.
@@ -1013,11 +1019,12 @@ TEST(QuicNgtcp2Handshake, RealClientDialsARealServerAndCompletesTheHandoff)
 	auto clientEngine = CreateProductionQuicNgtcp2Engine();
 	std::unique_ptr<IStreamTransport> handedOff;
 	CQuicSocketTransport *handedOffRaw = nullptr;
-	CQuicNgtcp2Factory clientFactory(clientPolicy,
+	CQuicNgtcp2Factory clientFactory(
+		clientPolicy,
 		clientSink,
 		clientEngine,
 		kTestClientIdentity,
-		nullptr,
+		[&nowMs] { return nowMs; },
 		[&](CUpDownClient *, std::unique_ptr<IStreamTransport> transport) {
 			handedOffRaw = static_cast<CQuicSocketTransport *>(transport.get());
 			handedOff = std::move(transport);
@@ -1025,7 +1032,6 @@ TEST(QuicNgtcp2Handshake, RealClientDialsARealServerAndCompletesTheHandoff)
 		});
 
 	auto *owner = reinterpret_cast<CUpDownClient *>(static_cast<uintptr_t>(1));
-	uint64_t nowMs = 0;
 	std::unique_ptr<IQuicConnection> clientConnection =
 		clientFactory.CreateOutboundForClient(kPeer, 4672, kTestServerIdentity, nowMs, owner);
 	ASSERT_TRUE(clientConnection != nullptr);
@@ -1067,5 +1073,42 @@ TEST(QuicNgtcp2Handshake, RealClientDialsARealServerAndCompletesTheHandoff)
 	// both directions.
 	ASSERT_TRUE(handedOff != nullptr);
 	ASSERT_TRUE(serverAcceptor.accepted != nullptr);
+
+	// Extends past the handoff (got3nks' review, live-test round): real application bytes,
+	// through the real engines on both sides, now that MarkConnected()/BlocksRead() are both
+	// fixed. A write on one side must arrive intact on the other's accepted transport, and
+	// BlocksRead() must track "did the last Read() find anything", not "is the buffer currently
+	// empty".
+	IStreamTransport *serverTransport = serverAcceptor.accepted.get();
+	const std::vector<uint8_t> clientToServer{ 'h', 'i' };
+	ASSERT_EQUALS(static_cast<uint32_t>(clientToServer.size()),
+		handedOffRaw->Write(clientToServer.data(), static_cast<uint32_t>(clientToServer.size())));
+	handedOffRaw->Flush();
+	for (const auto &datagram : clientSink->sent) {
+		ASSERT_TRUE(serverConnection->ProcessDatagram(datagram.data(), datagram.size(), nowMs));
+	}
+	clientSink->sent.clear();
+	uint8_t buf[64] = {};
+	const uint32_t readBytes = serverTransport->Read(buf, sizeof(buf));
+	ASSERT_EQUALS(static_cast<uint32_t>(clientToServer.size()), readBytes);
+	ASSERT_TRUE(std::vector<uint8_t>(buf, buf + readBytes) == clientToServer);
+	ASSERT_TRUE(!serverTransport->BlocksRead());
+	// Nothing left to read: the fixed socket semantics now correctly report blocking here.
+	ASSERT_EQUALS(0u, serverTransport->Read(buf, sizeof(buf)));
+	ASSERT_TRUE(serverTransport->BlocksRead());
+
+	const std::vector<uint8_t> serverToClient{ 'o', 'k' };
+	ASSERT_EQUALS(static_cast<uint32_t>(serverToClient.size()),
+		serverTransport->Write(serverToClient.data(), static_cast<uint32_t>(serverToClient.size())));
+	serverTransport->Flush();
+	for (const auto &datagram : serverSink->sent) {
+		ASSERT_TRUE(clientConnection->ProcessDatagram(datagram.data(), datagram.size(), nowMs));
+	}
+	serverSink->sent.clear();
+	uint8_t buf2[64] = {};
+	const uint32_t readBytes2 = handedOffRaw->Read(buf2, sizeof(buf2));
+	ASSERT_EQUALS(static_cast<uint32_t>(serverToClient.size()), readBytes2);
+	ASSERT_TRUE(std::vector<uint8_t>(buf2, buf2 + readBytes2) == serverToClient);
+
 	QuicClientRefTestForget(owner);
 }

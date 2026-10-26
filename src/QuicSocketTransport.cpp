@@ -66,7 +66,7 @@ bool CQuicSocketTransport::IsOk() const
 bool CQuicSocketTransport::BlocksRead() const
 {
 	std::lock_guard<std::mutex> l(m_mutex);
-	return m_read.empty() && !m_closed;
+	return m_blocksRead;
 }
 bool CQuicSocketTransport::BlocksWrite() const
 {
@@ -100,6 +100,10 @@ uint32_t CQuicSocketTransport::Read(void *buffer, uint32_t length)
 		const auto consumed = static_cast<std::deque<uint8_t>::difference_type>(n);
 		std::copy(m_read.begin(), m_read.begin() + consumed, static_cast<uint8_t *>(buffer));
 		m_read.erase(m_read.begin(), m_read.begin() + consumed);
+		// Socket semantics: only a Read() that found nothing blocks. CEMSocket::OnReceive() drops
+		// the bytes of a Read() that reports blocking, so the read that drains the buffer must not
+		// report it, even though m_read may now be empty.
+		m_blocksRead = n == 0 && !m_closed;
 		if (n && !m_closed)
 			handle = m_handle;
 	}
@@ -353,11 +357,16 @@ void CQuicSocketTransport::MarkConnected()
 		std::lock_guard<std::mutex> l(m_mutex);
 		if (!m_closed && !m_connected) {
 			m_connected = true;
+			// CEMSocket only becomes ES_CONNECTED in OnSend()/OnReceive(); without this it never
+			// calls Send() and the dialler's own OP_HELLO queues forever. uTP's MarkConnected()
+			// raises the same pair right after connecting.
 			event = m_events;
 		}
 	}
-	if (event)
+	if (event) {
 		event->OnStreamConnected();
+		event->OnStreamWritable();
+	}
 }
 size_t CQuicSocketTransport::OnPayload(const uint8_t *data, size_t length)
 {

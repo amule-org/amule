@@ -141,6 +141,22 @@ bool CClientUDPSocket::TryQuicDial(const std::array<uint8_t, 16> &peer,
 	const auto result = m_capabilityCache.Lookup(peer, now);
 	if (result.state == QuicCapabilityState::Unknown) {
 		SendQuicCapsRequest(peer, ipv4, udpPort, fileHash);
+#if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
+		// Hold the transport choice open rather than falling back to uTP on first contact:
+		// eMuleAI resends CAPS twice more and waits for the ACK before giving up on QUIC
+		// (srchybrid/BaseClient.cpp:3627-3637). Only a server-vouched LowID/Lugdunum dial
+		// passes an owner here, and only that dial has a uTP fallback to hold open for.
+		if (owner != nullptr) {
+			m_quicCapsHoldoffs.push_back(SQuicCapsHoldoff{ peer,
+				ipv4,
+				udpPort,
+				fileHash,
+				now,
+				1,
+				CCLIENTREF(owner, "CClientUDPSocket::quicCapsHoldoff") });
+			return true;
+		}
+#endif
 		return false;
 	}
 	if (result.state != QuicCapabilityState::Compatible || ipv4 == 0 || udpPort == 0 || !Ok())
@@ -150,6 +166,49 @@ bool CClientUDPSocket::TryQuicDial(const std::array<uint8_t, 16> &peer,
 	m_capabilityCache.RememberFailure(peer, now, 30000);
 	return false;
 }
+
+#if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
+void CClientUDPSocket::ServiceQuicCapsHoldoffs(uint64_t nowMs)
+{
+	for (auto it = m_quicCapsHoldoffs.begin(); it != m_quicCapsHoldoffs.end();) {
+		CUpDownClient *owner = it->owner.GetClientChecked();
+		if (owner == nullptr) {
+			it = m_quicCapsHoldoffs.erase(it);
+			continue;
+		}
+		const auto result = m_capabilityCache.Lookup(it->peer, nowMs);
+		const auto decision =
+			DecideQuicCapsHoldoff(result.state, it->probesSent, nowMs - it->startedAt);
+		if (decision.resend) {
+			SendQuicCapsRequest(it->peer, it->ipv4, it->udpPort, it->fileHash);
+			++it->probesSent;
+			++it;
+			continue;
+		}
+		if (decision.resolveQuic) {
+			if (it->ipv4 != 0 && it->udpPort != 0 && Ok() &&
+				m_quic.Dial(CNetworkAddress::FromIPv4NetworkOrder(it->ipv4),
+					it->udpPort,
+					it->peer,
+					nowMs,
+					owner)) {
+				it = m_quicCapsHoldoffs.erase(it);
+				continue;
+			}
+			m_capabilityCache.RememberFailure(it->peer, nowMs, 30000);
+			owner->QuicDialFailed();
+			it = m_quicCapsHoldoffs.erase(it);
+			continue;
+		}
+		if (decision.resolveUtp) {
+			owner->QuicDialFailed();
+			it = m_quicCapsHoldoffs.erase(it);
+			continue;
+		}
+		++it;
+	}
+}
+#endif
 
 namespace
 {
@@ -323,6 +382,9 @@ void CClientUDPSocket::TickQuic()
 {
 	wxASSERT(wxIsMainThread());
 	m_quic.Tick(::GetTickCount64());
+#if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
+	ServiceQuicCapsHoldoffs(::GetTickCount64());
+#endif
 }
 #endif
 
@@ -723,8 +785,13 @@ bool CClientUDPSocket::DialLowIdHolePunchPeer(
 	CUpDownClient *client = new CUpDownClient(tcpPort, ip, 0, 0, nullptr, true, false);
 	// The server-vouched punch dial needs HasValidHash() for the CAPS probe and the QUIC
 	// selection in TryServerVouchedLowIdUtpDial(); set it before AddClient() so the client
-	// list indexes it immediately, matching the OP_DIRECTCALLBACKREQ pattern.
-	client->SetUserHash(CMD4Hash(userHash.data()));
+	// list indexes it immediately, matching the OP_DIRECTCALLBACKREQ pattern. The target-side
+	// dial (OP_HOLEPUNCH-triggered, no 0x61 in hand) has nothing to pass here, and an all-zero
+	// hash is not a real one: skip the call rather than running the hash-list/chat-adoption
+	// machinery in SetUserHash() for nothing.
+	if (userHash != std::array<std::uint8_t, 16>{}) {
+		client->SetUserHash(CMD4Hash(userHash.data()));
+	}
 	theApp->clientlist->AddClient(client);
 	CClientRef ref{ client CLIENT_DEBUGSTRING("LowID hole punch dial") };
 	client->SetUDPPort(udpPort);

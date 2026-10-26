@@ -126,13 +126,21 @@ void CClientTCPSocket::ApplyUtpCryptParameters()
 	if (!HasTransport() || m_client == nullptr) {
 		return;
 	}
+	// GetTransport() can also be a QUIC transport (AMULE_QUIC_TRANSPORT): it has no datagram
+	// crypt parameters of its own -- TLS 1.3 already protects the stream -- so a hello/hello-
+	// answer on one must not reach SetCryptParameters() at all. An unchecked static_cast here
+	// previously called it on a CQuicSocketTransport as if it were uTP's, corrupting memory on
+	// any peer that completed a QUIC handshake.
+	auto *utp = dynamic_cast<CUtpSocketTransport *>(GetTransport());
+	if (utp == nullptr) {
+		return;
+	}
 	// The same pair every other UDP send site passes together: whether this
 	// peer wants obfuscated datagrams, and the hash they are keyed on. Copied
 	// by the transport, because the client can be replaced while the stream
 	// outlives it.
-	static_cast<CUtpSocketTransport *>(GetTransport())
-		->SetCryptParameters(m_client->ShouldReceiveCryptUDPPackets(),
-			m_client->HasValidHash() ? m_client->GetUserHash().GetHash() : nullptr);
+	utp->SetCryptParameters(m_client->ShouldReceiveCryptUDPPackets(),
+		m_client->HasValidHash() ? m_client->GetUserHash().GetHash() : nullptr);
 }
 
 bool CClientTCPSocket::IsUtpInbound() const

@@ -157,4 +157,35 @@ private:
 	std::list<std::array<uint8_t, 16>> m_lru;
 };
 
+// Pure CAPS resend/resolve policy for a peer whose capability was still Unknown when a
+// server-vouched LowID dial started. Mirrors eMuleAI's own three-probe hold: it resends CAPS
+// up to twice more and holds the transport choice for DIRECT_NATT_CAPS_LEGACY_TIMEOUT_MS
+// (srchybrid/Opcodes.h:213) before giving up on QUIC (srchybrid/BaseClient.cpp:3627-3637).
+// Pure inputs/outputs only: the caller owns the clock, the socket, and the client reference.
+constexpr uint64_t kQuicCapsHoldoffDeadlineMs = 1500;
+constexpr uint64_t kQuicCapsHoldoffResendIntervalMs = 500;
+constexpr int kQuicCapsHoldoffMaxProbes = 3;
+
+struct QuicCapsHoldoffDecision
+{
+	bool resend = false;
+	bool resolveQuic = false;
+	bool resolveUtp = false;
+};
+
+inline QuicCapsHoldoffDecision DecideQuicCapsHoldoff(
+	QuicCapabilityState state, int probesSent, uint64_t elapsedMs)
+{
+	if (state == QuicCapabilityState::Compatible)
+		return { false, true, false };
+	if (state == QuicCapabilityState::Incompatible || state == QuicCapabilityState::Cooldown ||
+		elapsedMs >= kQuicCapsHoldoffDeadlineMs)
+		return { false, false, true };
+	// Still Unknown and within the deadline: resend once per 500 ms window, up to three
+	// probes total (the first one is already sent before the holdoff is registered).
+	const bool resend = probesSent < kQuicCapsHoldoffMaxProbes &&
+			    elapsedMs >= static_cast<uint64_t>(probesSent) * kQuicCapsHoldoffResendIntervalMs;
+	return { resend, false, false };
+}
+
 #endif
