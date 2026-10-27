@@ -43,36 +43,45 @@
 int writeconfig(void)
 {
 	FILE *config;
-	char *path;
-	unsigned int i;
-	char *def[] = { "# cas config file\n",
-		"#\n",
-		"# font - full path to a ttf font\n",
-		"# font_size - size the font\n",
-		"# source_image - image where the text will be written\n",
-		"# *_line - x,y,[1/0] enabled or disabled\n\n",
-		"font /usr/share/fonts/corefonts/times.ttf\n",
-		"font_size 10.5\n",
-		"source_image /usr/share/cas/stat.png\n",
-		"first_line 23,17,1\n",
-		"second_line 23,34,1\n",
-		"third_line 23,51,1\n",
-		"fourth_line 23,68,1\n",
-		"fifth_line 23,85,1\n",
-		"sixth_line 23,102,1\n",
-		"seventh_line 23,119,1\n",
-		"template /usr/share/cas/tmp.html\n",
-		"img_type 0\n" };
+	char *path, *font, *source, *template;
 
 	path = get_path("casrc");
 	if (path == NULL)
 		return 0;
 
-	if ((config = fopen(path, "w")) == NULL)
+	if ((config = fopen(path, "w")) == NULL) {
+		free(path);
 		return 0;
+	}
 
-	for (i = 0; i < sizeof(def) / sizeof(char *); i++)
-		fprintf(config, "%s", def[i]);
+	font = get_default_font();
+	source = get_data_path("stat.png");
+	template = get_data_path("tmp.html");
+	fprintf(config,
+		"# cas config file\n"
+		"#\n"
+		"# font - full path to a ttf font\n"
+		"# font_size - size the font\n"
+		"# source_image - image where the text will be written\n"
+		"# *_line - x,y,[1/0] enabled or disabled\n\n"
+		"font %s\n"
+		"font_size 10.5\n"
+		"source_image %s\n"
+		"first_line 23,17,1\n"
+		"second_line 23,34,1\n"
+		"third_line 23,51,1\n"
+		"fourth_line 23,68,1\n"
+		"fifth_line 23,85,1\n"
+		"sixth_line 23,102,1\n"
+		"seventh_line 23,119,1\n"
+		"template %s\n"
+		"img_type 0\n",
+		font ? font : "",
+		source ? source : "",
+		template ? template : "");
+	free(font);
+	free(source);
+	free(template);
 
 	fclose(config);
 
@@ -82,10 +91,24 @@ int writeconfig(void)
 	return 1;
 }
 
+/* The rest of the line after the key, so a path may contain spaces. */
+static void read_value(const char *line, char *value)
+{
+	size_t len;
+
+	line += strcspn(line, " \t");
+	line += strspn(line, " \t");
+	len = strcspn(line, "\r\n");
+	if (len > MAX_CONF_ARG_LEN)
+		len = MAX_CONF_ARG_LEN;
+	memcpy(value, line, len);
+	value[len] = '\0';
+}
+
 /* Jacobo221 - [ToDo] There should be a check for corrupt config files! */
 int readconfig(CONF *config)
 {
-	char buffer[120], option[15], *path;
+	char buffer[MAX_CONF_ARG_LEN + MAX_CONF_KEY_LEN + 4], option[15], *path;
 	FILE *conf;
 	int i;
 	char lines[IMG_TEXTLINES][13] = { "first_line",
@@ -117,7 +140,7 @@ int readconfig(CONF *config)
 		// fgets() is null-checked, so a failed read is handled; the legacy
 		// feof() loop is harmless here.
 		// NOLINTNEXTLINE(clang-analyzer-unix.Stream)
-		if (fgets(buffer, 120, conf)) {
+		if (fgets(buffer, sizeof(buffer), conf)) {
 			if (buffer[0] != '#') {
 				/* Only two fields per line */
 				sscanf(buffer,
@@ -126,22 +149,16 @@ int readconfig(CONF *config)
 				fflush(stdout);
 				// Jacobo221 - [ToDo] So lines can't be swapped...
 				if (strcmp(option, "font") == 0) {
-					sscanf(buffer,
-						"%*" MAX_CONF_KEY_LEN_STR "s %" MAX_CONF_ARG_LEN_STR "s",
-						config->font);
+					read_value(buffer, config->font);
 				}
 				if (strcmp(option, "font_size") == 0) {
 					sscanf(buffer, "%*" MAX_CONF_KEY_LEN_STR "s %10f", &config->size);
 				}
 				if (strcmp(option, "source_image") == 0) {
-					sscanf(buffer,
-						"%*" MAX_CONF_KEY_LEN_STR "s %" MAX_CONF_ARG_LEN_STR "s",
-						config->source);
+					read_value(buffer, config->source);
 				}
 				if (strcmp(option, "template") == 0) {
-					sscanf(buffer,
-						"%*" MAX_CONF_KEY_LEN_STR "s %" MAX_CONF_ARG_LEN_STR "s",
-						config->template);
+					read_value(buffer, config->template);
 				}
 				if (strcmp(option, "img_type") == 0) {
 					sscanf(buffer, "%*" MAX_CONF_KEY_LEN_STR "s %1d", &config->img_type);

@@ -29,7 +29,7 @@
 #define CAS_CONFIGFILE_H
 
 #define IMG_TEXTLINES 7
-#define MAX_CONF_ARG_LEN 120
+#define MAX_CONF_ARG_LEN 1024
 
 typedef struct
 {

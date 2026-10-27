@@ -37,7 +37,7 @@
 #include "functions.h"
 #include "version.h"
 
-int create_html(char *stats[20], char *lines[6], char template[120], char *path_for_html)
+int create_html(char *stats[20], char *lines[6], char *template, char *path_for_html)
 {
 	/* Strings */
 	char *path = NULL;

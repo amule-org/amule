@@ -143,6 +143,12 @@ build() {
                 -p "@executable_path/../libs/" >/dev/null
         fi
     done
+    # cas's default casrc points at its image and HTML template here.
+    if [[ -x "${APP_BUNDLE}/Contents/MacOS/cas" ]]; then
+        mkdir -p "${APP_BUNDLE}/Contents/Resources/cas"
+        cp -f "${REPO_ROOT}/src/utils/cas/stat.png" "${REPO_ROOT}/src/utils/cas/tmp.html" \
+            "${APP_BUNDLE}/Contents/Resources/cas/"
+    fi
 
     collect_licenses "${APP_BUNDLE}"
     [[ -d "${GUI_BUNDLE}" ]] && collect_licenses "${GUI_BUNDLE}"

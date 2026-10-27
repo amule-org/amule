@@ -30,6 +30,8 @@
 
 char *get_path(const char *file);
 char *get_amule_path(const char *file, int force_directory, const char *cmdline_path);
+char *get_data_path(const char *file);
+char *get_default_font(void);
 char *convbytes(char *input);
 char *timeconv(char *input);
 void replace(char *tmpl, const char *search, const char *replace);
