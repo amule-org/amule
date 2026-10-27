@@ -376,3 +376,23 @@ downloads one at runtime from the source chosen in the preferences:
 
 The desktop preferences show the attribution for the loaded database, and the
 Web UI About page credits DB-IP.
+
+## Libraries bundled in the binary packages
+
+Each binary package also carries the license files of the libraries it bundles
+or links statically:
+
+| Package | Location |
+|---------|----------|
+| AppImage | `usr/share/licenses/<package>/`: the Debian copyright file of each bundled library, plus wxWidgets, libupnp and libayatana-appindicator, which are built from source |
+| Flatpak | `/app/share/licenses/<module>/` for each module the manifest builds |
+| macOS | `aMule.app/Contents/Resources/licenses/<formula>/` and the same in `aMuleGUI.app`, from the Homebrew kegs |
+| Windows installer and zip | `licenses/<package>/`, from the MSYS2 packages, plus libupnp |
+| Linux static tarball | `licenses/`: Crypto++, wxWidgets and libupnp, plus `alpine-packages.tsv` with the version, SPDX license and upstream of each Alpine package linked in |
+
+Alpine packages ship no license texts, so the static tarball lists those
+libraries rather than carrying their texts.
+
+Linux builds that find GNU libbfd (the AppImage and the static tarball) use it
+for crash backtraces. libbfd is GPL-3.0-or-later, and aMule's "or later"
+clause lets those binaries be distributed under GPL-3.0.

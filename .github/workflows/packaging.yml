@@ -834,6 +834,9 @@ jobs:
             -DCMAKE_INSTALL_PREFIX="$MINGW_PREFIX"
           cmake --build /tmp/libupnp/build
           cmake --install /tmp/libupnp/build
+          # No package owns it, so packaging/windows/build.sh takes its
+          # license from here.
+          install -Dm644 /tmp/libupnp/COPYING "$MINGW_PREFIX/share/licenses/libupnp/COPYING"
       - name: Build portable .zip
         env:
           WINDOWS_MSYSTEM: ${{ matrix.msystem }}

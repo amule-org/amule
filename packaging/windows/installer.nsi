@@ -505,6 +505,7 @@ Section "Uninstall" un.SecUninstall
   RMDir /r "$INSTDIR\share"
   RMDir /r "$INSTDIR\etc"
   RMDir /r "$INSTDIR\lib"
+  RMDir /r "$INSTDIR\licenses"
   Delete   "$INSTDIR\COPYING.txt"
   Delete   "$INSTDIR\Uninstall.exe"
 

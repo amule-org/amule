@@ -109,6 +109,7 @@ RUN wget -qO /tmp/appindicator.tar.gz "${APPINDICATOR_TARBALL_URL}" \
         -DENABLE_TESTS=OFF -DENABLE_GTKDOC=OFF \
         -DCMAKE_INSTALL_PREFIX=/usr/local -DCMAKE_INSTALL_LIBDIR=lib \
     && cmake --build /tmp/appindicator/build && cmake --install /tmp/appindicator/build \
+    && install -Dm644 -t /usr/local/share/licenses/libayatana-appindicator /tmp/appindicator/COPYING* \
     && ldconfig \
     && rm -rf /tmp/appindicator /tmp/appindicator.tar.gz
 
@@ -120,6 +121,7 @@ RUN wget -qO /tmp/libupnp.tar.gz "${LIBUPNP_TARBALL_URL}" \
         -DUPNP_BUILD_SAMPLES=OFF -DUPNP_BUILD_TESTS=OFF -Dreuseaddr=ON -Dipv6=ON \
         -DCMAKE_INSTALL_PREFIX=/usr/local -DCMAKE_INSTALL_LIBDIR=lib \
     && cmake --build /tmp/libupnp/build && cmake --install /tmp/libupnp/build \
+    && install -Dm644 -t /usr/local/share/licenses/libupnp /tmp/libupnp/COPYING \
     && ldconfig \
     && rm -rf /tmp/libupnp /tmp/libupnp.tar.gz
 
@@ -151,6 +153,8 @@ RUN wget -q "https://github.com/wxWidgets/wxWidgets/releases/download/v${WX_VERS
         --with-libcurl \
     && make -j"$(nproc)" \
     && make install \
+    && install -Dm644 -t /usr/local/share/licenses/wxwidgets \
+        docs/licence.txt docs/licendoc.txt docs/lgpl.txt docs/gpl.txt docs/preamble.txt \
     && cd / \
     && rm -rf /opt/wxwidgets
 

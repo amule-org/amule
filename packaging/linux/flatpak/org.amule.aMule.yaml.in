@@ -105,6 +105,7 @@ modules:
     build-commands:
       - make -j2 shared
       - make install PREFIX=/app
+      - install -Dm644 -t /app/share/licenses/cryptopp License.txt
     # Upstream's cryptopp890.zip has filename-case collisions that
     # break flatpak-builder's extractor ("File already exists" on
     # TestVectors/Readme.txt). Fetch via git instead — same content,
@@ -135,6 +136,8 @@ modules:
       - -Dreuseaddr=ON
       - -Dipv6=ON
       - -DCMAKE_INSTALL_LIBDIR=lib
+    post-install:
+      - install -Dm644 -t /app/share/licenses/libupnp COPYING
     sources:
       - type: archive
         url: ${LIBUPNP_TARBALL_URL}
@@ -151,6 +154,7 @@ modules:
     build-commands:
       - ./bootstrap.sh --prefix=/app --with-libraries=system
       - ./b2 -j2 install --prefix=/app
+      - install -Dm644 -t /app/share/licenses/boost LICENSE_1_0.txt
     sources:
       - type: archive
         url: ${BOOST_TARBALL_URL}
@@ -166,6 +170,8 @@ modules:
       - --without-webp
       - --without-xpm
       - --without-fontconfig
+    post-install:
+      - install -Dm644 -t /app/share/licenses/libgd COPYING
     sources:
       - type: archive
         url: ${LIBGD_TARBALL_URL}
@@ -232,6 +238,8 @@ modules:
     make-args:
       - 'CFLAGS=-Wall -O2 -g -fPIC -Wno-error'
       - 'CXXFLAGS=-Wall -O2 -g -fPIC -Wno-error'
+    post-install:
+      - install -Dm644 -t /app/share/licenses/libdbusmenu COPYING*
     sources:
       - type: archive
         # libdbusmenu 16.04.0 is only on launchpad.net — Debian/Ubuntu
@@ -256,6 +264,8 @@ modules:
     config-opts:
       - -DENABLE_TESTS=OFF
       - -DCMAKE_INSTALL_LIBDIR=lib
+    post-install:
+      - install -Dm644 -t /app/share/licenses/ayatana-ido COPYING*
     sources:
       - type: archive
         url: https://github.com/AyatanaIndicators/ayatana-ido/archive/refs/tags/0.10.4.tar.gz
@@ -266,6 +276,8 @@ modules:
     config-opts:
       - -DENABLE_TESTS=OFF
       - -DCMAKE_INSTALL_LIBDIR=lib
+    post-install:
+      - install -Dm644 -t /app/share/licenses/libayatana-indicator COPYING*
     sources:
       - type: archive
         url: https://github.com/AyatanaIndicators/libayatana-indicator/archive/refs/tags/0.9.4.tar.gz
@@ -286,6 +298,8 @@ modules:
       # needed for our runtime use of the lib. Note: spelling is
       # ENABLE_GTKDOC (one word), not ENABLE_GTK_DOC.
       - -DENABLE_GTKDOC=OFF
+    post-install:
+      - install -Dm644 -t /app/share/licenses/libayatana-appindicator COPYING*
     sources:
       - type: archive
         # 0.6.0, not 0.5.94: 0.6.0 is the first release that answers the
@@ -307,6 +321,8 @@ modules:
     config-opts:
       - --disable-static
       - --disable-tests
+    post-install:
+      - install -Dm644 -t /app/share/licenses/libmaxminddb LICENSE NOTICE
     sources:
       - type: archive
         url: https://github.com/maxmind/libmaxminddb/releases/download/1.13.3/libmaxminddb-1.13.3.tar.gz
@@ -329,6 +345,8 @@ modules:
       - --without-libmspack
       - --without-opengl
       - --with-libcurl
+    post-install:
+      - install -Dm644 -t /app/share/licenses/wxwidgets docs/licence.txt docs/licendoc.txt docs/lgpl.txt docs/gpl.txt docs/preamble.txt
     sources:
       - type: archive
         url: ${WX_TARBALL_URL}

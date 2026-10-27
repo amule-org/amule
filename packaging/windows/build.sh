@@ -65,6 +65,56 @@ require_tool() {
     }
 }
 
+# Copy the license files of every bundled DLL's package into licenses/,
+# plus the packages that ship without a DLL of their own: the CA bundle,
+# and libraries that may be linked statically or are header-only.
+collect_licenses() {
+    local dest="${PORTABLE_DIR}/licenses"
+    rm -rf "${dest}"
+    mkdir -p "${dest}"
+
+    local pkgs=() dll name pkg
+    for dll in "${PORTABLE_DIR}"/bin/*.dll; do
+        name=$(basename "${dll}")
+        if pkg=$(pacman -Qqo "${MINGW_PREFIX}/bin/${name}" 2>/dev/null); then
+            pkgs+=("${pkg}")
+        else
+            case "${name}" in
+                # Built from source into MINGW_PREFIX by packaging.yml, which
+                # installs its COPYING under share/licenses/libupnp.
+                libupnp*.dll|libixml*.dll) pkgs+=(libupnp) ;;
+                *) echo "warning: no package owns ${name}" >&2 ;;
+            esac
+        fi
+    done
+    for pkg in boost crypto++ ca-certificates; do
+        pkgs+=("${MINGW_PACKAGE_PREFIX}-${pkg}")
+    done
+
+    local file short missing=()
+    for pkg in $(printf '%s\n' "${pkgs[@]}" | sort -u); do
+        short=${pkg#"${MINGW_PACKAGE_PREFIX}-"}
+        local files=()
+        if [[ "${pkg}" == libupnp ]]; then
+            files=("${MINGW_PREFIX}"/share/licenses/libupnp/*)
+        elif pacman -Q "${pkg}" >/dev/null 2>&1; then
+            mapfile -t files < <(pacman -Qql "${pkg}" | grep "/share/licenses/.*[^/]$" || true)
+        fi
+        if [[ ${#files[@]} -eq 0 || ! -e "${files[0]}" ]]; then
+            missing+=("${short}")
+            continue
+        fi
+        mkdir -p "${dest}/${short}"
+        for file in "${files[@]}"; do
+            cp -f "${file}" "${dest}/${short}/"
+        done
+    done
+    echo "==> Collected licenses for $(ls "${dest}" | wc -l) packages"
+    if [[ ${#missing[@]} -gt 0 ]]; then
+        echo "warning: no license files found for: ${missing[*]}" >&2
+    fi
+}
+
 build() {
     require_tool cmake "mingw-w64-${ARCH}-cmake"
     require_tool mingw32-make "mingw-w64-${ARCH}-make"
@@ -120,6 +170,7 @@ build() {
     echo "==> Installing portable tree to ${PORTABLE_DIR}"
     rm -rf "${PORTABLE_DIR}"
     cmake --install "${BUILD_DIR}" --prefix "${PORTABLE_DIR}"
+    collect_licenses
 
     echo "==> Producing ${ZIP_NAME}"
     cd "$(dirname "${PORTABLE_DIR}")"
