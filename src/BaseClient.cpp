@@ -1889,7 +1889,9 @@ void CUpDownClient::TrySendLugdunumNatCallbackRequest(uint32 targetId) const
 		0);
 }
 
-NatServerHolePunch::RequestFacts CUpDownClient::LowIdHolePunchRequestFacts() const
+namespace
+{
+NatServerHolePunch::RequestFacts BuildLowIdHolePunchRequestFacts(const CUpDownClient &client)
 {
 	NatServerHolePunch::RequestFacts facts;
 	if (theApp->serverconnect == nullptr) {
@@ -1900,8 +1902,8 @@ NatServerHolePunch::RequestFacts CUpDownClient::LowIdHolePunchRequestFacts() con
 		return facts;
 	}
 	facts.ourId = theApp->serverconnect->GetClientID();
-	facts.sourceId = GetUserIDHybrid();
-	facts.sameServer = theApp->serverconnect->IsLocalServer(GetServerIP(), GetServerPort());
+	facts.sourceId = client.GetUserIDHybrid();
+	facts.sameServer = theApp->serverconnect->IsLocalServer(client.GetServerIP(), client.GetServerPort());
 	facts.serverAnnouncesHolePunch = server->SupportsLowIdHolePunch();
 	facts.settingEnabled = thePrefs::IsLowIdHolePunchEnabled();
 	facts.ourUdpPort = thePrefs::GetEffectiveUDPPort();
@@ -1910,10 +1912,11 @@ NatServerHolePunch::RequestFacts CUpDownClient::LowIdHolePunchRequestFacts() con
 #endif
 	return facts;
 }
+} // namespace
 
 bool CUpDownClient::TrySendLowIdHolePunchRequest()
 {
-	const NatServerHolePunch::RequestFacts facts = LowIdHolePunchRequestFacts();
+	const NatServerHolePunch::RequestFacts facts = BuildLowIdHolePunchRequestFacts(*this);
 	if (!NatServerHolePunch::ShouldRequestLowIdHolePunch(facts)) {
 		return false;
 	}
@@ -1922,7 +1925,7 @@ bool CUpDownClient::TrySendLowIdHolePunchRequest()
 		return false;
 	}
 
-	const NatServerHolePunch::Request request{ GetUserIDHybrid(), ourUdpPort };
+	const NatServerHolePunch::Request request{ GetUserIDHybrid(), facts.ourUdpPort };
 	const std::array<std::uint8_t, 6> payload = NatServerHolePunch::BuildRequest(request);
 	CMemFile data(payload.data(), payload.size());
 	CPacket *packet = new CPacket(data, OP_EDONKEYPROT, NatServerTcp::OP_LOWID_HOLEPUNCH_REQUEST);
@@ -1985,7 +1988,7 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 				// Sent once per source: a DS_LOWTOLOWIP source is not asked again.
 				if (NatServerHolePunch::ShouldRequestLowIdHolePunch(
-					    LowIdHolePunchRequestFacts())) {
+					    BuildLowIdHolePunchRequestFacts(*this))) {
 					TrySendLowIdHolePunchRequest();
 				} else {
 					TrySendLugdunumNatCallbackRequest();
