@@ -70,6 +70,7 @@
   "about_website": "Website",
   "about_source": "Source code",
   "about_license": "License",
+  "about_country_data": "IP-to-country data",
   "about_version_mismatch": "Web UI ({ui}) and daemon ({daemon}) versions differ.",
   "about_alert_tip": "Version notice",
   "about_load_error": "Could not load version info",

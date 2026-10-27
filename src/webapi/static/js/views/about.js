@@ -11,7 +11,9 @@ import { Icon } from "../icons.js";
 const LINKS = [
   { key: "about_website", href: "https://amule-org.github.io", text: "amule-org.github.io" },
   { key: "about_source", href: "https://github.com/amule-org/amule", text: "github.com/amule-org/amule" },
-  { key: "about_license", href: "https://www.gnu.org/licenses/old-licenses/gpl-2.0.html", text: "GPLv2" },
+  { key: "about_license", href: "https://www.gnu.org/licenses/old-licenses/gpl-2.0.html", text: "GPL-2.0-or-later" },
+  // CC BY 4.0 requires the credit wherever the flags it drives are shown.
+  { key: "about_country_data", href: "https://db-ip.com", text: "DB-IP.com (CC BY 4.0)" },
 ];
 
 export default function About() {

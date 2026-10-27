@@ -323,6 +323,7 @@ build_static() {
     local stem="aMule-${version}-Linux-${arch_label}-static"
     mkdir -p "${outdir}/${stem}"
     cp "${outdir}/amuled" "${outdir}/amulecmd" "${outdir}/amuleapi" "${outdir}/${stem}/"
+    cp "${REPO_ROOT}/LICENSE.md" "${REPO_ROOT}/docs/THIRDPARTY.md" "${outdir}/${stem}/"
 
     # The WebUI ships inside this bundle. amuleapi serves no assets of its
     # own, so a static-binary operator who fetched this tarball had a daemon

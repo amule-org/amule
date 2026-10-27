@@ -1,7 +1,8 @@
 # Third-party components
 
-aMule binary distributions (AppImage, Flatpak, .deb, macOS bundle, Windows
-installer) include code from third parties under their own licenses. Permissive
+aMule binary distributions (AppImage, Flatpak, Linux static tarball, macOS
+bundle, Windows installer and zip) include code, artwork and data from third
+parties under their own licenses. Permissive
 components (MIT, BSD) require copyright-notice reproduction. LGPL components
 require shipping the licence text and publishing the exact sources of the
 bundled versions, whether the build links them statically or dynamically.
@@ -45,7 +46,8 @@ Full license text in
 > ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 > POSSIBILITY OF SUCH DAMAGE.
 
-The vendored header is unmodified upstream 1.3.0; the
+The vendored header is upstream 1.3.0 with two comment lines added at the
+top that turn clang-format off; the code itself is unmodified. The
 `PICOJSON_USE_INT64` toggle is defined at use sites rather than as a
 modification to the header.
 
@@ -234,3 +236,143 @@ SOFTWARE.
 The retained legacy `an.png` and `unknown.png` flags are FamFamFam artwork by
 Mark James (http://www.famfamfam.com/lab/icons/flags/), distributed as public
 domain; attribution appreciated but not required, per the original notice.
+
+## Web UI libraries - Preact and htm
+
+The Web UI that amuleapi serves loads these from
+[`src/webapi/static/js/vendor/`](../src/webapi/static/js/vendor/). They ship
+with amuleapi, next to their license files, in every package that includes it.
+
+| Library | Version | Upstream | License | Files |
+|---------|---------|----------|---------|-------|
+| Preact and `preact/hooks` | 10.29.2 | <https://github.com/preactjs/preact> | MIT | `preact.module.js`, `hooks.module.js`, `preact.LICENSE` |
+| htm | 3.1.1 | <https://github.com/developit/htm> | Apache-2.0 | `htm.module.js`, `htm.LICENSE` |
+
+Each file is the upstream build, with its name and version on the first line.
+
+```text
+The MIT License (MIT)
+
+Copyright (c) 2015-present Jason Miller
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+htm is under the Apache License 2.0. Its full text ships as `htm.LICENSE`, and
+upstream has no NOTICE file. Apache-2.0 is compatible with GPL-3.0, and aMule's
+"or later" clause allows the combination to be distributed under GPL-3.0.
+
+```text
+Copyright 2018 Google Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+```
+
+## Libgcrypt `bithelp.h`
+
+Bit-rotation helpers from Libgcrypt, at
+[`src/utils/aLinkCreator/src/bithelp.h`](../src/utils/aLinkCreator/src/bithelp.h),
+built into `alc` and `alcc`. License: LGPL-2.1-or-later. Section 3 of the LGPL
+allows applying the GPL to it instead, so it is distributed in those binaries
+under aMule's GPL-2.0-or-later.
+
+> Copyright (c) 1999-2011 Free Software Foundation, Inc.
+>
+> This file is part of Libgcrypt.
+>
+> Libgcrypt is free software; you can redistribute it and/or modify
+> it under the terms of the GNU Lesser general Public License as
+> published by the Free Software Foundation; either version 2.1 of
+> the License, or (at your option) any later version.
+
+## macOS backtrace code - Edd Dawson
+
+The macOS branch of
+[`src/libs/common/MuleDebug.cpp`](../src/libs/common/MuleDebug.cpp) (stack
+frame list and demangling) is modified from code by Edd Dawson under the Boost
+Software License 1.0. It is compiled into the macOS binaries only. The BSL
+requires the notice in source copies, not in object code; the text is at
+[`src/libs/common/LICENSE_1_0.txt`](../src/libs/common/LICENSE_1_0.txt).
+
+```text
+Copyright 2007 Edd Dawson.
+
+Boost Software License - Version 1.0 - August 17th, 2003
+
+Permission is hereby granted, free of charge, to any person or organization
+obtaining a copy of the software and accompanying documentation covered by
+this license (the "Software") to use, reproduce, display, distribute,
+execute, and transmit the Software, and to prepare derivative works of the
+Software, and to permit third-parties to whom the Software is furnished to
+do so, all subject to the following:
+
+The copyright notices in the Software and this entire statement, including
+the above license grant, this restriction and the following disclaimer,
+must be included in all copies of the Software, in whole or in part, and
+all derivative works of the Software, unless such copies or derivative
+works are solely in the form of machine-executable object code generated by
+a source language processor.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, TITLE AND NON-INFRINGEMENT. IN NO EVENT
+SHALL THE COPYRIGHT HOLDERS OR ANYONE DISTRIBUTING THE SOFTWARE BE LIABLE
+FOR ANY DAMAGES OR OTHER LIABILITY, WHETHER IN CONTRACT, TORT OR OTHERWISE,
+ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+```
+
+## Toolbar and client skins
+
+The optional skins in [`src/skins/`](../src/skins/) are installed for `amule`
+and `amulegui` (`INSTALL_SKINS`). They were contributed to aMule for distribution with it. Only
+`tango.zip` carries its own notice; for the others, no license beyond that
+contribution was recorded.
+
+| Skin | Added | Origin |
+|------|-------|--------|
+| `tango.zip` | 2007, updated 2008 | Assembled by mischamajskij from Tango Desktop Project, GNOME 2.18, Pidgin and aMule community icons. Its `README` licenses the icons under CC BY-SA 2.5 or GPL-2.0, depending on their origin. |
+| `gnome.zip`, `kde4.zip`, `xfce.zip` | 2007 | Shipped by johkra and later updated by deloun, named after the GNOME, KDE 4 and Xfce desktops. No license was recorded. |
+| `Mac_Gray.zip`, `priscilla.zip` | 2008 | Toolbar skins by greek. No license was recorded. |
+| `papirus.zip` | 2019 | Added by jEsuSdA, named after the Papirus icon theme (GPL-3.0). No license was recorded. |
+
+## IP-to-country data - DB-IP and MaxMind GeoLite2
+
+aMule does not ship a country database. When country flags are enabled, it
+downloads one at runtime from the source chosen in the preferences:
+
+- **DB-IP** (default): DB-IP's free IP to Country Lite database, licensed
+  CC BY 4.0. Attribution: "IP-to-Country data by DB-IP.com"
+  (<https://db-ip.com>).
+- **MaxMind GeoLite2**: needs a license key and is under the GeoLite2 End User
+  License Agreement. Attribution: "This product includes GeoLite2 data created
+  by MaxMind, available from <https://www.maxmind.com>."
+
+The desktop preferences show the attribution for the loaded database, and the
+Web UI About page credits DB-IP.

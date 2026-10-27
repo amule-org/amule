@@ -69,6 +69,7 @@
   "about_website": "Sitio web",
   "about_source": "Código fuente",
   "about_license": "Licencia",
+  "about_country_data": "Datos IP-país",
   "about_version_mismatch": "Las versiones de la Web UI ({ui}) y del demonio ({daemon}) no coinciden.",
   "about_alert_tip": "Aviso de versión",
   "about_load_error": "No se pudo cargar la información de versión",

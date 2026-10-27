@@ -484,6 +484,7 @@
   "about_website": "Веб-сайт",
   "about_source": "Исходный код",
   "about_license": "Лицензия",
+  "about_country_data": "Данные IP-страна",
   "about_version_mismatch": "Версии веб-интерфейса ({ui}) и демона ({daemon}) различаются.",
   "about_alert_tip": "Уведомление о версии",
   "about_load_error": "Не удалось подгрузить сведения о версии",

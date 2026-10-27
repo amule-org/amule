@@ -90,6 +90,7 @@
   "networks_server_failed": "Falhas",
   "app_firewalled": "Sob firewall",
   "about_license": "Licença",
+  "about_country_data": "Dados IP-país",
   "app_view_error": "Não foi possível carregar esta seção. Por favor, tente novamente.",
   "login_err_rate_limited": "Muitas tentativas falharam. Por favor, tente novamente mais tarde.",
   "networks_server_connect": "Conectar",

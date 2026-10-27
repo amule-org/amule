@@ -53,7 +53,7 @@ bare specifiers are wired to these files by the import map in `static/index.html
 |---------|-----------|---------|------|---------|
 | [preact](https://preactjs.com) | `preact` | 10.29.2 | `static/js/vendor/preact.module.js` | MIT |
 | preact hooks | `preact/hooks` | 10.29.2 | `static/js/vendor/hooks.module.js` | MIT |
-| [htm](https://github.com/developit/htm) | `htm` | 3.1.1 | `static/js/vendor/htm.module.js` | MIT |
+| [htm](https://github.com/developit/htm) | `htm` | 3.1.1 | `static/js/vendor/htm.module.js` | Apache-2.0 |
 
 Each vendored file carries its name and version as a comment on the first line,
 and ships next to its `*.LICENSE`.
