@@ -441,6 +441,10 @@ jobs:
           # NOT --quiet: when the next formula loses its Intel bottle,
           # the reason has to be in the log.
           ${{ matrix.archcmd }} $BREW install $BREW_DEPS
+          # A restored x86_64 keg can link a bottled formula that the cache does
+          # not carry (libtiff links zstd); install it unless something else
+          # pulled it in.
+          ${{ matrix.archcmd }} $BREW install $(${{ matrix.archcmd }} $BREW deps --union $BREW_DEPS)
           # Native on both legs: ccache 4.14.1 has no Intel bottle and builds with gcc, which has
           # none either. It only launches the compiler, so an arm64 ccache serves the x86_64 build.
           /opt/homebrew/bin/brew install ccache
@@ -600,6 +604,9 @@ jobs:
           cp "$SRC/COPYING" "$PREFIX/share/licenses/libgd/"
           echo "LIBGD_PREFIX=$PREFIX" >> "$GITHUB_ENV"
       - name: Build native-arch .app
+        # dylibbundler asks on stdin for a library it cannot find and loops on
+        # an empty answer, so a missing dylib would otherwise hold the runner.
+        timeout-minutes: 60
         env:
           MACOS_ARCHITECTURES: ${{ matrix.arch }}
         run: ${{ matrix.archcmd }} packaging/macos/build.sh
