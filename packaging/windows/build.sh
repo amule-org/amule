@@ -101,8 +101,16 @@ collect_licenses() {
             mapfile -t files < <(pacman -Qql "${pkg}" | grep "/share/licenses/.*[^/]$" || true)
         fi
         if [[ ${#files[@]} -eq 0 || ! -e "${files[0]}" ]]; then
-            missing+=("${short}")
-            continue
+            # Some MSYS2 packages ship no license files, or ship them in a
+            # sibling package; use the copy in packaging/licenses.
+            local fallback="${REPO_ROOT}/packaging/licenses/${short}"
+            [[ "${short}" == wxwidgets* ]] && fallback="${REPO_ROOT}/packaging/licenses/wxwidgets"
+            if [[ -d "${fallback}" ]]; then
+                files=("${fallback}"/*)
+            else
+                missing+=("${short}")
+                continue
+            fi
         fi
         mkdir -p "${dest}/${short}"
         for file in "${files[@]}"; do
