@@ -23,14 +23,6 @@ CClientRef::CClientRef(CUpDownClient *client)
 	clientRefs[this] = client;
 }
 
-// Needed for real std::vector<SQuicCapsHoldoff> growth (SQuicCapsHoldoff holds a CClientRef
-// owner): not just a dead-code vtable entry, so it must actually copy the mapped client.
-CClientRef::CClientRef(const CClientRef &other)
-{
-	auto it = clientRefs.find(&other);
-	clientRefs[this] = it == clientRefs.end() ? nullptr : it->second;
-}
-
 #ifdef DEBUG_ZOMBIE_CLIENTS
 void CClientRef::Link(CUpDownClient *client, wxString)
 #else
@@ -43,17 +35,6 @@ void CClientRef::Link(CUpDownClient *client)
 void CClientRef::Unlink()
 {
 	clientRefs.erase(this);
-}
-
-// Never actually invoked by the QUIC holdoff tests (no OnPacketReceived()/ProcessPacket() code
-// path runs), only linked because CClientUDPSocket's vtable pins those methods alive.
-uint32 CClientRef::GetIP() const
-{
-	return 0;
-}
-uint16_t CClientRef::GetUserPort() const
-{
-	return 0;
 }
 
 CUpDownClient *CClientRef::GetClientChecked()

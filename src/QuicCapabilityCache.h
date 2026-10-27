@@ -29,8 +29,11 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <list>
 #include <map>
+#include <utility>
+#include <vector>
 
 // Pure, process-local capability state.  The caller supplies monotonic time;
 // this type deliberately has no knowledge of clients, endpoints, or routing.
@@ -187,5 +190,90 @@ inline QuicCapsHoldoffDecision DecideQuicCapsHoldoff(
 			    elapsedMs >= static_cast<uint64_t>(probesSent) * kQuicCapsHoldoffResendIntervalMs;
 	return { resend, false, false };
 }
+
+//! Peers whose transport choice waits for a CAPS answer. Owner keeps the dialling client alive.
+template <typename Owner> class CQuicCapsHoldoffs
+{
+public:
+	struct STarget
+	{
+		std::array<uint8_t, 16> peer;
+		uint32_t ipv4;
+		uint16_t udpPort;
+		std::array<uint8_t, 16> fileHash;
+	};
+
+	struct SCallbacks
+	{
+		std::function<bool(Owner &)> isAlive;
+		std::function<QuicCapabilityState(const std::array<uint8_t, 16> &, uint64_t)> lookup;
+		std::function<void(const STarget &)> sendCaps;
+		//! False when the dial did not start.
+		std::function<bool(const STarget &, Owner &, uint64_t)> dialQuic;
+		std::function<void(const STarget &, Owner &, uint64_t)> quicDialFailed;
+		std::function<void(Owner &)> fallBackToUtp;
+	};
+
+	explicit CQuicCapsHoldoffs(SCallbacks callbacks)
+	: m_callbacks(std::move(callbacks))
+	{
+	}
+
+	//! Call after sending the first CAPS.
+	void Add(const STarget &target, uint64_t nowMs, Owner owner)
+	{
+		m_entries.push_back(SEntry{ target, nowMs, 1, std::move(owner) });
+	}
+
+	bool Empty() const { return m_entries.empty(); }
+
+	void Service(uint64_t nowMs)
+	{
+		// Indexed, and each entry is removed before its callbacks run: they can call Add().
+		for (std::size_t i = 0; i < m_entries.size();) {
+			SEntry &entry = m_entries[i];
+			if (!m_callbacks.isAlive(entry.owner)) {
+				RemoveAt(i);
+				continue;
+			}
+			const auto decision =
+				DecideQuicCapsHoldoff(m_callbacks.lookup(entry.target.peer, nowMs),
+					entry.probesSent,
+					nowMs - entry.startedAt);
+			if (decision.resend) {
+				++entry.probesSent;
+				const STarget target = entry.target;
+				++i;
+				m_callbacks.sendCaps(target);
+				continue;
+			}
+			if (!decision.resolveQuic && !decision.resolveUtp) {
+				++i;
+				continue;
+			}
+			SEntry resolved = std::move(entry);
+			RemoveAt(i);
+			if (decision.resolveUtp) {
+				m_callbacks.fallBackToUtp(resolved.owner);
+			} else if (!m_callbacks.dialQuic(resolved.target, resolved.owner, nowMs)) {
+				m_callbacks.quicDialFailed(resolved.target, resolved.owner, nowMs);
+			}
+		}
+	}
+
+private:
+	struct SEntry
+	{
+		STarget target;
+		uint64_t startedAt;
+		int probesSent;
+		Owner owner;
+	};
+
+	void RemoveAt(std::size_t i) { m_entries.erase(m_entries.begin() + static_cast<std::ptrdiff_t>(i)); }
+
+	SCallbacks m_callbacks;
+	std::vector<SEntry> m_entries;
+};
 
 #endif

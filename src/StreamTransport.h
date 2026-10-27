@@ -73,7 +73,7 @@ public:
 	 */
 	virtual bool ObfuscatesStream() const = 0;
 
-	//! uTP overrides this to configure its datagram obfuscation; stream transports ignore it.
+	//! Datagram obfuscation settings. Only uTP uses them.
 	virtual void SetCryptParameters(bool, const uint8_t *) {}
 
 	virtual void SetEvents(IStreamTransportEvents *events) = 0;

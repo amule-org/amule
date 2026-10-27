@@ -123,7 +123,6 @@ void CClientTCPSocket::ApplyUtpCryptParameters()
 	if (!HasTransport() || m_client == nullptr) {
 		return;
 	}
-	// Stream transports ignore datagram crypt parameters; uTP applies them.
 	GetTransport()->SetCryptParameters(m_client->ShouldReceiveCryptUDPPackets(),
 		m_client->HasValidHash() ? m_client->GetUserHash().GetHash() : nullptr);
 }

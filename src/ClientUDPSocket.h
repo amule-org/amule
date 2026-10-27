@@ -139,22 +139,10 @@ private:
 	CQuicCapsRequestLedger m_capsRequestLedger{ 256 };
 	CQuicCapabilityCache m_capabilityCache{ 256 };
 #if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
-	//! One peer whose first CAPS probe (TryQuicDial()) found the capability cache Unknown.
-	//! Held across TickQuic() until the ACK resolves it or kQuicCapsHoldoffDeadlineMs elapses.
-	struct SQuicCapsHoldoff
-	{
-		std::array<uint8_t, 16> peer;
-		uint32_t ipv4;
-		uint16_t udpPort;
-		std::array<uint8_t, 16> fileHash;
-		uint64_t startedAt;
-		int probesSent;
-		// Punch-dial temporary clients drop their last CClientRef once the dial "starts" and
-		// have no socket until the handoff; this is the only thing keeping the owner alive.
-		CClientRef owner;
-	};
-	void ServiceQuicCapsHoldoffs(uint64_t nowMs);
-	std::vector<SQuicCapsHoldoff> m_quicCapsHoldoffs;
+	// Punch-dial temporary clients drop their last CClientRef once the dial starts and have no
+	// socket until the handoff; the holdoff's reference is the only thing keeping them alive.
+	CQuicCapsHoldoffs<CClientRef> m_quicCapsHoldoffs;
+	CQuicCapsHoldoffs<CClientRef>::SCallbacks QuicCapsHoldoffCallbacks();
 #endif
 #endif
 	void OnPacketReceived(

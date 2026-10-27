@@ -317,7 +317,7 @@ add_test (NAME QuicNattProtocolTest COMMAND QuicNattProtocolTest)
 target_include_directories (QuicNattProtocolTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries (QuicNattProtocolTest muleunit mulecommon)
 
-# Pure CAPS resend/resolve policy for a holdoff dial whose capability started out Unknown.
+# CAPS holdoff policy, and its tick loop driven through fakes.
 add_executable (QuicCapsHoldoffTest QuicCapsHoldoffTest.cpp)
 add_test (NAME QuicCapsHoldoffTest COMMAND QuicCapsHoldoffTest)
 target_include_directories (QuicCapsHoldoffTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
