@@ -349,7 +349,7 @@ int CEncryptedStreamSocket::Read(void *lpBuf, uint32_t nBufLen)
 			// If we require an encrypted connection, cut it here. Rare against up-to-
 			// date eMule clients, which check for incompatibility before connecting
 			// where they can.
-			if (thePrefs::IsClientCryptLayerRequired()) {
+			if (thePrefs::IsClientCryptLayerRequired() && !TransportObfuscates()) {
 				// Even with Require enabled we still have to accept the unencrypted
 				// connections used for lowid/firewall checks by servers and by
 				// clients we selected ourselves; refusing them would always result
