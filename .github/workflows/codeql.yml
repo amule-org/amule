@@ -119,12 +119,22 @@ jobs:
       # - name: Setup runtime (example)
       #   uses: actions/setup-example@v1
 
+      # Before init, so the CodeQL tracer does not watch apt.
+      - name: install deps
+        if: matrix.build-mode == 'manual'
+        uses: ./.github/actions/apt-install
+        with:
+          packages: ${{ env.cmake_ubuntu_deps }}
+
       # Initializes the CodeQL tools for scanning.
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
+          # A cache from the same sources did not make the C++ extraction
+          # faster, and it took 1-3 GB of the Actions cache.
+          trap-caching: false
           # If you wish to specify custom queries, you can do so here or in a config file.
           # By default, queries listed here will override any specified in a config file.
           # Prefix the list here with "+" to use these queries and those in the config file.
@@ -149,8 +159,6 @@ jobs:
           # echo '  make release'
           # exit 1
 
-          sudo apt-get update
-          sudo apt-get install -y ${{ env.cmake_ubuntu_deps }}
           cmake \
             ${{ env.cmake_common_config_flags }} \
             ${{ env.cmake_ubuntu_config_flags }}
