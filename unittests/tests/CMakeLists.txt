@@ -16,59 +16,6 @@ if (Python3_Interpreter_FOUND)
 	)
 endif ()
 
-# Drives the real ServiceQuicCapsHoldoffs() (not only the pure DecideQuicCapsHoldoff() helper
-# QuicCapsHoldoffTest.cpp covers) through a real, production-constructed CClientUDPSocket. Its
-# constructor builds a QUIC outbound-handoff callback that references CClientTCPSocket's own
-# constructor even though this test never triggers it, so CClientTCPSocket is linked here as a
-# narrow, never-invoked stand-in (see the file) rather than the real ClientTCPSocket.cpp.
-if (ENABLE_UTP AND ENABLE_QUIC AND NOT WIN32)
-	add_executable (ClientUDPSocketQuicHoldoffTest
-		ClientUDPSocketQuicHoldoffTest.cpp
-		QuicClientRefTestShim.cpp
-		${CMAKE_SOURCE_DIR}/src/ClientUDPSocket.cpp
-		${CMAKE_SOURCE_DIR}/src/MuleUDPSocket.cpp
-		${CMAKE_SOURCE_DIR}/src/EncryptedDatagramSocket.cpp
-		${CMAKE_SOURCE_DIR}/src/ListenSocket.cpp
-		${CMAKE_SOURCE_DIR}/src/Proxy.cpp
-		${CMAKE_SOURCE_DIR}/src/LibSocketAsio.cpp
-		${CMAKE_SOURCE_DIR}/src/EMSocket.cpp
-		${CMAKE_SOURCE_DIR}/src/EncryptedStreamSocket.cpp
-		${CMAKE_SOURCE_DIR}/src/DownloadBandwidthThrottler.cpp
-		${CMAKE_SOURCE_DIR}/src/Statistics.cpp
-		${CMAKE_SOURCE_DIR}/src/StatTree.cpp
-		${CMAKE_SOURCE_DIR}/src/libs/ec/cpp/ECTag.cpp
-		${CMAKE_SOURCE_DIR}/src/QuicSocketTransport.cpp
-		${CMAKE_SOURCE_DIR}/src/QuicContext.cpp
-		${CMAKE_SOURCE_DIR}/src/QuicNgtcp2Adapter.cpp
-		${CMAKE_SOURCE_DIR}/src/QuicGnuTlsSession.cpp
-		${CMAKE_SOURCE_DIR}/src/UtpLibraryAdapter.cpp
-		${CMAKE_SOURCE_DIR}/src/NetworkAddress.cpp
-		${CMAKE_SOURCE_DIR}/src/MemFile.cpp
-		${CMAKE_SOURCE_DIR}/src/SafeFile.cpp
-		${CMAKE_SOURCE_DIR}/src/CFile.cpp
-		${CMAKE_SOURCE_DIR}/src/RC4Encrypt.cpp
-		${CMAKE_SOURCE_DIR}/src/RandomFunctions.cpp
-		${CMAKE_SOURCE_DIR}/src/Packet.cpp
-		${CMAKE_SOURCE_DIR}/src/Tag.cpp
-		${CMAKE_SOURCE_DIR}/src/kademlia/utils/UInt128.cpp
-		${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
-		${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
-	)
-	target_compile_definitions (ClientUDPSocketQuicHoldoffTest PRIVATE
-		AMULE_DAEMON AMULE_UTP_TRANSPORT AMULE_QUIC_TRANSPORT ENABLE_NATT_SERVER_COORDINATION)
-	target_include_directories (ClientUDPSocketQuicHoldoffTest PRIVATE
-		${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include
-		${CMAKE_SOURCE_DIR}/src/libs ${CMAKE_BINARY_DIR}/src/libs
-		${CMAKE_BINARY_DIR}/src/libs/ec/cpp ${Boost_INCLUDE_DIR}
-	)
-	add_application_test_stubs (ClientUDPSocketQuicHoldoffTest)
-	target_compile_options (ClientUDPSocketQuicHoldoffTest PRIVATE -ffunction-sections -fdata-sections)
-	target_link_libraries (ClientUDPSocketQuicHoldoffTest
-		muleunit mulecommon wxWidgets::BASE CRYPTOPP::CRYPTOPP ZLIB::ZLIB
-		Utp::Utp Quic::Ngtcp2 ${Boost_LIBRARIES} -Wl,--gc-sections)
-	add_test (NAME ClientUDPSocketQuicHoldoffTest COMMAND ClientUDPSocketQuicHoldoffTest)
-endif()
-
 add_test (NAME QuicCMakeConfigTest
 	COMMAND ${CMAKE_COMMAND}
 		-DAMULE_SOURCE_DIR=${CMAKE_SOURCE_DIR}

@@ -454,7 +454,7 @@ public:
 	 * several clients, and the wrong hash leaves the recipient unable to
 	 * decrypt. Copied because AttachToAlreadyKnown() can replace the client.
 	 */
-	void SetCryptParameters(bool encrypt, const uint8_t *userHash)
+	void SetCryptParameters(bool encrypt, const uint8_t *userHash) override
 	{
 		std::lock_guard<std::mutex> lock(m_mutex);
 		m_encrypt = encrypt && userHash != nullptr;
@@ -590,11 +590,6 @@ private:
 	bool m_encrypt = false;
 	uint8_t m_userHash[kUserHashBytes] = { 0 };
 };
-
-inline CUtpSocketTransport *AsUtpSocketTransport(IStreamTransport *transport)
-{
-	return dynamic_cast<CUtpSocketTransport *>(transport);
-}
 
 #endif // UTPSOCKETTRANSPORT_H
 // File_checked_for_headers
