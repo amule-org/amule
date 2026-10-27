@@ -69,7 +69,6 @@
   "about_website": "Sito web",
   "about_source": "Codice sorgente",
   "about_license": "Licenza",
-  "about_country_data": "Dati IP-paese",
   "about_version_mismatch": "Le versioni di Web UI ({ui}) e demone ({daemon}) sono diverse.",
   "about_alert_tip": "Avviso di versione",
   "about_load_error": "Impossibile caricare le informazioni sulla versione",

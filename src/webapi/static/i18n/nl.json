@@ -165,7 +165,6 @@
   "networks_server_failed": "Mislukt",
   "networks_kad_buddy_connecting": "Verbinden met buddy",
   "about_license": "Licentie",
-  "about_country_data": "IP-landgegevens",
   "app_view_error": "Laden van dit deel mislukt. Probeer nogmaals.",
   "login_err_rate_limited": "Te veel mislukte pogingen. Probeer het later opnieuw.",
   "networks_server_connect": "Verbinden",

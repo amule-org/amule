@@ -844,7 +844,6 @@
   "app_firewalled": "Protegit per tallafocs",
   "stats_tree_peak_connections": "Pic de connexions (aprox.): %i",
   "about_license": "Llicència",
-  "about_country_data": "Dades IP-país",
   "prefs_field_remote_controls_amuleapi_port": "Port HTTP",
   "shared_media_refresh_all_tip": "Torna a analitzar tots els fitxers d'àudio i vídeo compartits i en substitueix les metadades multimèdia. S'executa en segon pla; el progrés es mostra al registre de l'aMule.",
   "prefs_field_servers_update_list_from_server": "Actualitza la llista de servidors quan es connecti amb un servidor",
