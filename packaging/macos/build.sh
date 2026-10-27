@@ -60,7 +60,9 @@ build() {
     # can find Homebrew headers.
     export CPATH="${BREW_PREFIX}/include"
     export LIBRARY_PATH="${BREW_PREFIX}/lib"
-    export PKG_CONFIG_PATH="${BREW_PREFIX}/lib/pkgconfig:$(brew --prefix gd)/lib/pkgconfig:$(brew --prefix libupnp)/lib/pkgconfig:$(brew --prefix gettext)/lib/pkgconfig"
+    # LIBGD_PREFIX: a libgd built without Homebrew's codec dependencies (see
+    # packaging.yml); local builds use the gd keg.
+    export PKG_CONFIG_PATH="${BREW_PREFIX}/lib/pkgconfig:${LIBGD_PREFIX:-$(brew --prefix gd)}/lib/pkgconfig:$(brew --prefix libupnp)/lib/pkgconfig:$(brew --prefix gettext)/lib/pkgconfig"
     export PATH="$(brew --prefix gettext)/bin:${PATH}"
 
     # MACOS_ARCHITECTURES empty → native arch (whatever Homebrew
@@ -173,6 +175,11 @@ collect_licenses() {
 
     local formulae=(boost cryptopp) lib keg
     for lib in "${app}"/Contents/libs/*.dylib; do
+        if [[ -n "${LIBGD_PREFIX:-}" && -e "${LIBGD_PREFIX}/lib/$(basename "${lib}")" ]]; then
+            mkdir -p "${dest}/libgd"
+            cp -f "${LIBGD_PREFIX}"/share/licenses/libgd/* "${dest}/libgd/"
+            continue
+        fi
         keg=$(find "${BREW_PREFIX}/Cellar" -path "*/lib/$(basename "${lib}")" -print -quit)
         if [[ -z "${keg}" ]]; then
             echo "warning: no keg holds $(basename "${lib}")" >&2

@@ -324,7 +324,8 @@ jobs:
     env:
       # What the .app build needs from Homebrew. On x86_64 the keg cache is
       # limited to these and their dependency closure.
-      BREW_DEPS: cmake wxwidgets cryptopp libupnp gd gettext boost dylibbundler libmaxminddb
+      # freetype, jpeg-turbo and libpng are for the libgd built below.
+      BREW_DEPS: cmake wxwidgets cryptopp libupnp freetype jpeg-turbo libpng gettext boost dylibbundler libmaxminddb
     steps:
       - uses: actions/checkout@v7
         with:
@@ -571,6 +572,33 @@ jobs:
       - name: Zero ccache stats
         if: github.event_name != 'workflow_call'
         run: ccache --zero-stats
+      # Homebrew's gd links libavif, which bundled aom, dav1d and libvmaf that
+      # nothing in aMule uses. Only cas links libgd, and it needs PNG, JPEG and
+      # FreeType. build.sh finds this one through LIBGD_PREFIX.
+      - name: Build libgd from source
+        run: |
+          set -euo pipefail
+          . packaging/linux/versions.env
+          . packaging/macos/versions.env
+          SRC="$RUNNER_TEMP/libgd-src"
+          PREFIX="$RUNNER_TEMP/libgd"
+          curl -fsSL -o "$RUNNER_TEMP/libgd.tar.xz" "$LIBGD_TARBALL_URL"
+          echo "$LIBGD_SHA256  $RUNNER_TEMP/libgd.tar.xz" | shasum -a 256 -c -
+          mkdir -p "$SRC"
+          tar -xf "$RUNNER_TEMP/libgd.tar.xz" -C "$SRC" --strip-components=1
+          # An absolute install name, so dylibbundler can follow it from cas.
+          ${{ matrix.archcmd }} cmake -S "$SRC" -B "$SRC/build" -DCMAKE_BUILD_TYPE=Release \
+            -DENABLE_PNG=ON -DENABLE_JPEG=ON -DENABLE_FREETYPE=ON \
+            -DCMAKE_OSX_ARCHITECTURES=${{ matrix.arch }} \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET="$MACOS_DEPLOYMENT_TARGET" \
+            -DCMAKE_PREFIX_PATH=${{ matrix.brew_prefix }} \
+            -DCMAKE_MACOSX_RPATH=OFF -DCMAKE_INSTALL_NAME_DIR="$PREFIX/lib" \
+            -DCMAKE_INSTALL_PREFIX="$PREFIX"
+          ${{ matrix.archcmd }} cmake --build "$SRC/build" -j"$(sysctl -n hw.ncpu)"
+          ${{ matrix.archcmd }} cmake --install "$SRC/build"
+          mkdir -p "$PREFIX/share/licenses/libgd"
+          cp "$SRC/COPYING" "$PREFIX/share/licenses/libgd/"
+          echo "LIBGD_PREFIX=$PREFIX" >> "$GITHUB_ENV"
       - name: Build native-arch .app
         env:
           MACOS_ARCHITECTURES: ${{ matrix.arch }}
