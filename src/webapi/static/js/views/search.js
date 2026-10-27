@@ -8,13 +8,12 @@ import { data } from "../events.js";
 import { html, useState, useEffect, useStore } from "../dom.js";
 import { Badge, checkCell, listPlaceholder, Tabs, CommentsList, ratingLabel, toast } from "../components.js";
 import { VirtualTable, sortRows, textMatcher, useTablePrefs, ColumnPicker } from "../table.js";
-import { formatBytes, formatDuration, formatInt, fileTypeLabel } from "../format.js";
+import { formatBytes, formatDuration, formatInt, fileTypeLabel, SIZE_UNITS } from "../format.js";
 import { Icon } from "../icons.js";
 import { searches } from "../searches.js";
 import { categoryOptions } from "./categories.js";
 import { t, tn, terr } from "../i18n.js";
 
-const SIZE_UNITS = { B: 1, KiB: 1024, MiB: 1048576, GiB: 1073741824 };
 // The file_type tokens the API rows report and accept as a filter; amuleapi
 // maps them to the ed2k terms. "" = any type.
 const FILE_TYPES = ["", "audio", "video", "picture", "text", "program", "archive", "disc_image"];

@@ -3151,14 +3151,13 @@ struct SearchListRow
 	std::time_t started_at = 0; // 0 = not started by this process
 	bool has_result_count = false;
 	std::uint32_t result_count = 0;
-	// Start parameters, as the daemon recorded them; absent for a browse or an older daemon.
+	// Start parameters, as the daemon recorded them. No form for a browse, a search restored
+	// without one, or an older daemon.
+	bool has_form = false;
 	std::string file_type; // API token, not the ed2k term
 	std::string extension;
-	bool has_min_size = false;
 	std::uint64_t min_size = 0;
-	bool has_max_size = false;
 	std::uint64_t max_size = 0;
-	bool has_min_source_count = false;
 	std::uint32_t min_source_count = 0;
 };
 
@@ -3185,21 +3184,13 @@ void WriteSearchListRow(CJsonWriter &w, const SearchListRow &row)
 		w.ValueInt(static_cast<int64_t>(row.result_count));
 	}
 	// The same keys POST /search accepts, so a client can rebuild the form and re-run the
-	// search without translating anything. Only a search the daemon started from a form
-	// carries them: a browse and an older daemon omit file_type/extension, and the three
-	// numeric caps come out as null rather than as a fabricated all-default form.
-	if (!row.file_type.empty()) {
-		w.Key("file_type");
-		w.ValueString(wxString::FromUTF8(row.file_type.c_str()));
-	}
-	if (!row.extension.empty()) {
-		w.Key("extension");
-		w.ValueString(wxString::FromUTF8(row.extension.c_str()));
-	}
-	WriteIntOrNull(w, "min_size_bytes", row.has_min_size, static_cast<int64_t>(row.min_size));
-	WriteIntOrNull(w, "max_size_bytes", row.has_max_size, static_cast<int64_t>(row.max_size));
-	WriteIntOrNull(
-		w, "min_source_count", row.has_min_source_count, static_cast<int64_t>(row.min_source_count));
+	// search without translating anything. A row without a recorded form reads null rather
+	// than a fabricated all-default form; "" and 0 mean the form had no such filter.
+	WriteStringOrNull(w, "file_type", row.has_form, row.file_type);
+	WriteStringOrNull(w, "extension", row.has_form, row.extension);
+	WriteIntOrNull(w, "min_size_bytes", row.has_form, static_cast<int64_t>(row.min_size));
+	WriteIntOrNull(w, "max_size_bytes", row.has_form, static_cast<int64_t>(row.max_size));
+	WriteIntOrNull(w, "min_source_count", row.has_form, static_cast<int64_t>(row.min_source_count));
 	w.EndObject();
 }
 
@@ -7816,6 +7807,8 @@ CHttpServer::Response CApiDispatcher::HandleSearchList(const CHttpServer::Reques
 		}
 		// Start parameters, reported as the POST /search vocabulary so a client can reload
 		// the form as-is. The daemon speaks ed2k terms for the file type; rows speak tokens.
+		// It sends the three numeric tags whenever it recorded a form, the strings only when
+		// non-empty.
 		if (const CECTag *tag = entry.GetTagByName(EC_TAG_SEARCH_FILE_TYPE)) {
 			row.file_type =
 				webapi::SearchFileTypeToken(std::string(tag->GetStringData().utf8_str()));
@@ -7824,15 +7817,13 @@ CHttpServer::Response CApiDispatcher::HandleSearchList(const CHttpServer::Reques
 			row.extension = std::string(tag->GetStringData().utf8_str());
 		}
 		if (const CECTag *tag = entry.GetTagByName(EC_TAG_SEARCH_MIN_SIZE)) {
-			row.has_min_size = true;
+			row.has_form = true;
 			row.min_size = static_cast<std::uint64_t>(tag->GetInt());
 		}
 		if (const CECTag *tag = entry.GetTagByName(EC_TAG_SEARCH_MAX_SIZE)) {
-			row.has_max_size = true;
 			row.max_size = static_cast<std::uint64_t>(tag->GetInt());
 		}
 		if (const CECTag *tag = entry.GetTagByName(EC_TAG_SEARCH_AVAILABILITY)) {
-			row.has_min_source_count = true;
 			row.min_source_count = static_cast<std::uint32_t>(tag->GetInt());
 		}
 		rows.push_back(std::move(row));
@@ -10829,14 +10820,12 @@ CHttpServer::Response CApiDispatcher::HandleSearchStart(const CHttpServer::Reque
 	row.kind = search_kind;
 	row.state = "running";
 	row.started_at = m_state.SearchStartedAt(search_id);
+	// Always recorded, unlike on a restored search: "" and 0 mean the form had no filter.
+	row.has_form = true;
 	row.file_type = file_type_token;
 	row.extension = extension;
-	// Always recorded, unlike on a restored search: 0 means the form really had no cap.
-	row.has_min_size = true;
 	row.min_size = min_size;
-	row.has_max_size = true;
 	row.max_size = max_size;
-	row.has_min_source_count = true;
 	row.min_source_count = min_avail;
 
 	CHttpServer::Response r;

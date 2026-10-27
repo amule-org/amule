@@ -39,10 +39,11 @@ jq -e --argjson sid "$ALL_SID" \
 	'any(.searches[]; .search_id == $sid and .type == "all")' "$TMP/searches" >/dev/null \
 	|| fail 'GET /search did not report type all'
 echo 'PASS: GET /search reports type all'
-# The fixture has no trailing parameter block: no form was recorded for it, so the
-# row carries no form fields -- the three numeric caps as null, the strings omitted.
+# The fixture has no trailing parameter block: no form was recorded for it, so all five
+# form fields are present and null.
 jq -e --argjson sid "$ALL_SID" \
-	'any(.searches[]; .search_id == $sid and (.file_type | not) and (.extension | not)
+	'any(.searches[]; .search_id == $sid and has("file_type") and has("extension")
+		and .file_type == null and .extension == null
 		and .min_size_bytes == null and .max_size_bytes == null
 		and .min_source_count == null)' "$TMP/searches" >/dev/null \
 	|| fail 'GET /search gave a restored search without a block a form it never had'
@@ -99,6 +100,22 @@ STATUS=$(curl -sS --max-time 10 -o "$TMP/delete" -w '%{http_code}' \
 	-X DELETE -H "$AUTH" "$API/search/$SID")
 [ "$STATUS" = 204 ] || fail "delete API-started All returned $STATUS"
 echo 'PASS: delete API-started All'
+# A form with no filters reads "" and 0, which keeps it apart from a search without one (null).
+STATUS=$(curl -sS --max-time 10 -o "$TMP/start" -w '%{http_code}' \
+	-X POST -H "$AUTH" -H 'Content-Type: application/json' \
+	-d '{"query":"offlineemptyform","type":"kad"}' "$API/search")
+[ "$STATUS" = 202 ] || fail "POST unfiltered Kad returned $STATUS: $(cat "$TMP/start")"
+SID=$(jq -er '.search_id' "$TMP/start")
+EMPTY_FORM='.file_type == "" and .extension == "" and .min_size_bytes == 0
+	and .max_size_bytes == 0 and .min_source_count == 0'
+jq -e "$EMPTY_FORM" "$TMP/start" >/dev/null || fail 'POST echo of an unfiltered form is not "" and 0'
+curl -fsS --max-time 10 -H "$AUTH" "$API/search" \
+	| jq -e --argjson sid "$SID" "any(.searches[]; .search_id == \$sid and $EMPTY_FORM)" >/dev/null \
+	|| fail 'GET /search row of an unfiltered form is not "" and 0'
+STATUS=$(curl -sS --max-time 10 -o "$TMP/delete" -w '%{http_code}' \
+	-X DELETE -H "$AUTH" "$API/search/$SID")
+[ "$STATUS" = 204 ] || fail "delete unfiltered Kad returned $STATUS"
+echo 'PASS: an unfiltered form reads "" and 0, not null'
 wait "$SSE_PID" || true
 SSE_PID=
 awk '/^event: / { progress = ($0 == "event: search_progress") }
@@ -111,4 +128,4 @@ STATUS=$(curl -sS --max-time 10 -o "$TMP/delete" -w '%{http_code}' \
 	-X DELETE -H "$AUTH" "$API/search/$ALL_SID")
 [ "$STATUS" = 204 ] || fail "DELETE All search returned $STATUS"
 echo 'PASS: DELETE All search (HTTP 204)'
-echo 'OK: 11/11 passed (no skips)'
+echo 'OK: 12/12 passed (no skips)'

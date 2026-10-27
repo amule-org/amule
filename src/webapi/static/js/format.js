@@ -7,6 +7,9 @@ import { t } from "./i18n.js";
 // CastItoXBytes on the GUI side.
 const UNITS = ["B", "KiB", "MiB", "GiB", "TiB", "PiB"];
 
+// The search form's size units, shared with the tab restore that refills the form.
+export const SIZE_UNITS = { B: 1, KiB: 1024, MiB: 1048576, GiB: 1073741824 };
+
 export function formatBytes(n) {
   n = Number(n) || 0;
   let i = 0;

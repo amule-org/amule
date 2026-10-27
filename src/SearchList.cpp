@@ -324,7 +324,6 @@ bool CSearchList::StoreSearches(bool reportTruncation) const
 		file.WriteString(m_searchStrings.at(id), utf8strRaw);
 		file.WriteUInt8(static_cast<uint8>(m_searchKinds.at(id)));
 		file.WriteUInt64(static_cast<uint64>(m_searchStartTimes.at(id)));
-
 		file.WriteUInt32(static_cast<uint32>(resultCount));
 
 		for (std::size_t i = 0; i < resultCount; ++i) {
@@ -404,6 +403,44 @@ struct LoadedSearch
 	CSearchList::CSearchParams params; // empty for a search the file records no form for
 	std::vector<std::unique_ptr<CSearchFile>> results;
 };
+
+//! Reads the start-parameter block after its marker. A damaged block leaves every search
+//! without a form and returns false with the reason in `error`.
+bool ReadStoredSearchParams(CFileDataIO &file, std::vector<LoadedSearch> &loaded, wxString &error)
+{
+	try {
+		const uint32 paramCount = file.ReadUInt32();
+		if (paramCount > loaded.size()) {
+			throw CInvalidPacket(CFormat("Parameter block holds %u forms for %u searches") %
+					     paramCount % static_cast<uint32>(loaded.size()));
+		}
+		for (uint32 i = 0; i < paramCount; ++i) {
+			const uint32 id = file.ReadUInt32();
+			LoadedSearch *entry = nullptr;
+			for (LoadedSearch &candidate : loaded) {
+				if (candidate.id == id) {
+					entry = &candidate;
+					break;
+				}
+			}
+			if (entry == nullptr) {
+				throw CInvalidPacket(
+					CFormat("Parameter block references unknown search id %u") % id);
+			}
+			ReadSearchParams(file, entry->params);
+			entry->hasParams = true;
+		}
+		return true;
+	} catch (const CInvalidPacket &e) {
+		error = e.what();
+	} catch (const CSafeIOException &e) {
+		error = e.what();
+	}
+	for (LoadedSearch &entry : loaded) {
+		entry.hasParams = false;
+	}
+	return false;
+}
 } // namespace
 
 std::vector<uint32_t> CSearchList::LoadSearches()
@@ -478,39 +515,18 @@ std::vector<uint32_t> CSearchList::LoadSearches()
 
 		// Trailing start-parameter block, keyed by search id. Absent for a file a build
 		// that predates the block wrote: those searches restore without a recorded form.
-		// A block with an unknown marker is a newer layout this build does not know; every
-		// search has parsed by now, so stop reading and keep them without forms instead of
-		// rejecting the file (which would lose the whole list on a downgrade's next save).
+		// Every search has parsed by now, so an unknown or damaged block costs only the
+		// forms. Rejecting the file instead would lose the whole list on the next save.
 		if (!file.Eof()) {
+			wxString error;
 			if (file.ReadUInt32() != kStoredSearchesParamsMarker) {
 				AddDebugLogLineN(logSearch,
 					CFormat("Ignoring unknown trailing block in %s: searches restore "
 						"without parameters") %
 						s_storedSearchesFilename);
-			} else {
-				uint32 paramCount = file.ReadUInt32();
-				if (paramCount > MAX_STORED_SEARCHES * 2) {
-					AddLogLineC(_("WARNING: Stored search list corrupted, contains "
-						      "invalid header."));
-					return restored;
-				}
-				for (uint32 i = 0; i < paramCount; ++i) {
-					const uint32 id = file.ReadUInt32();
-					LoadedSearch *entry = nullptr;
-					for (LoadedSearch &candidate : loaded) {
-						if (candidate.id == id) {
-							entry = &candidate;
-							break;
-						}
-					}
-					if (entry == nullptr) {
-						throw CInvalidPacket(CFormat("Parameter block references "
-									     "unknown search id %u") %
-								     id);
-					}
-					ReadSearchParams(file, entry->params);
-					entry->hasParams = true;
-				}
+			} else if (!ReadStoredSearchParams(file, loaded, error)) {
+				AddLogLineC(_("Invalid entry in stored search list, file may be corrupt") +
+					    ": " + error);
 			}
 		}
 	} catch (const CInvalidPacket &e) {

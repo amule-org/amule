@@ -7,8 +7,8 @@ The start parameters ride in a trailing block after the 0x01 records, keyed by s
 build that predates the block restores the searches and drops only the filters. The writer must
 emit exactly the filters a search started with (and omit the defaulted ones), the reader must
 accept every current tag plus unknown future ones, a file without the block or a block with an
-unknown marker must restore the searches without parameters, and a known tag of the wrong type
-must reject the file outright.
+unknown marker must restore the searches without parameters, and a damaged block (a known tag of
+the wrong type, or more forms than searches) must restore them without parameters too.
 """
 from pathlib import Path
 import struct
@@ -238,6 +238,11 @@ def current_version_file(binary, root):
     }, searches[0]
 
 
+def assert_no_form(fields):
+    for name in ('FILE_TYPE', 'EXTENSION', 'MIN_SIZE', 'MAX_SIZE', 'AVAILABILITY'):
+        assert C['EC_TAG_SEARCH_' + name] not in fields, (name, fields)
+
+
 def wrong_type_fixture():
     """A known parameter name carrying the wrong tag type is corruption."""
     name = b'search.min_size_bytes'
@@ -246,17 +251,25 @@ def wrong_type_fixture():
     return stored_search([], params=stored_param_tags(bad))
 
 
-def wrong_type_rejected(binary, root):
-    """One corrupt tag must reject the whole file, not default that filter away."""
-    (root / 'StoredSearches.met').write_bytes(wrong_type_fixture())
-    (proc, ec), _ = boot(binary, root)
-    try:
-        assert not search_list(ec), 'a corrupt parameter tag must discard every stored search'
-        log = (root / 'logfile').read_text(errors='replace')
-        assert 'Invalid entry in stored search list' in log, log[-2000:]
-    finally:
-        ec.sock.close()
-        stop_daemon(proc)
+def over_count_fixture():
+    """A block claiming more forms than the file holds searches."""
+    params = stored_param_tags(stored_string_tag('search.file_type', 'Iso'))
+    return stored_search([]) + struct.pack('<III', 0x534D5052, 2, 123) + params
+
+
+def damaged_block_keeps_searches(fixture, reason):
+    """A damaged block costs only the forms: the search and its results restore without one."""
+    def phase(binary, root):
+        (root / 'StoredSearches.met').write_bytes(fixture())
+        (proc, ec), _ = boot(binary, root)
+        try:
+            assert_no_form(search_list(ec)[123])
+            log = (root / 'logfile').read_text(errors='replace')
+            assert 'Invalid entry in stored search list' in log and reason in log, log[-2000:]
+        finally:
+            ec.sock.close()
+            stop_daemon(proc)
+    return phase
 
 
 def legacy_file(binary, root):
@@ -265,11 +278,7 @@ def legacy_file(binary, root):
     (proc, ec), _ = boot(binary, root)
     try:
         fields = search_list(ec)[123]
-        assert C['EC_TAG_SEARCH_FILE_TYPE'] not in fields
-        assert C['EC_TAG_SEARCH_EXTENSION'] not in fields
-        assert C['EC_TAG_SEARCH_MIN_SIZE'] not in fields
-        assert C['EC_TAG_SEARCH_MAX_SIZE'] not in fields
-        assert C['EC_TAG_SEARCH_AVAILABILITY'] not in fields
+        assert_no_form(fields)
     finally:
         ec.sock.close()
         stop_daemon(proc)
@@ -281,11 +290,7 @@ def unknown_marker_file(binary, root):
     (proc, ec), _ = boot(binary, root)
     try:
         fields = search_list(ec)[123]
-        assert C['EC_TAG_SEARCH_FILE_TYPE'] not in fields
-        assert C['EC_TAG_SEARCH_EXTENSION'] not in fields
-        assert C['EC_TAG_SEARCH_MIN_SIZE'] not in fields
-        assert C['EC_TAG_SEARCH_MAX_SIZE'] not in fields
-        assert C['EC_TAG_SEARCH_AVAILABILITY'] not in fields
+        assert_no_form(fields)
         log = (root / 'logfile').read_text(errors='replace')
         assert 'corrupted, contains invalid header' not in log, log[-2000:]
     finally:
@@ -300,14 +305,17 @@ def main():
         with tempfile.TemporaryDirectory(prefix='amule-search-params-') as scratch:
             base = Path(scratch)
             for name, phase in (('roundtrip', round_trip), ('current', current_version_file),
-                                ('wrongtype', wrong_type_rejected), ('legacy', legacy_file),
-                                ('unknownmarker', unknown_marker_file)):
+                                ('wrongtype', damaged_block_keeps_searches(
+                                    wrong_type_fixture, 'is not an integer')),
+                                ('overcount', damaged_block_keeps_searches(
+                                    over_count_fixture, 'holds 2 forms for 1 searches')),
+                                ('legacy', legacy_file), ('unknownmarker', unknown_marker_file)):
                 root = base / name
                 root.mkdir()
                 phase(binary, root)
     retry_port_collisions(attempt)
     print('PASS: search start parameters round-trip, current-version restore, '
-          'corruption rejection, legacy restore, and unknown-marker restore')
+          'damaged-block restore, legacy restore, and unknown-marker restore')
 
 
 if __name__ == '__main__':

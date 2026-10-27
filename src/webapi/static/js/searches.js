@@ -17,6 +17,7 @@ import { data } from "./events.js";
 import { store } from "./store.js";
 import { toast } from "./components.js";
 import { t, terr } from "./i18n.js";
+import { SIZE_UNITS } from "./format.js";
 
 // Trailing throttles, separate because the strip is cheap and the table is not.
 const TABS_SYNC_MS = 1000;
@@ -148,7 +149,6 @@ async function refresh(id) {
 // Sizes arrive as bytes; show them in the largest unit that divides them exactly, so a
 // restored value reads like what the user typed (1000 MiB, not 1048576000 B). The form
 // always multiplies number × unit, so user-entered values divide exactly.
-const SIZE_UNITS = { B: 1, KiB: 1024, MiB: 1048576, GiB: 1073741824 };
 const niceSize = (bytes) => {
   for (const unit of ["GiB", "MiB", "KiB"]) {
     const f = SIZE_UNITS[unit];
