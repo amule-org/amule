@@ -1958,13 +1958,6 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 		}
 	}
 
-	// A live socket always wins. Keep this guard before every transport choice: Connect() is a
-	// no-op on a live socket, and attaching QUIC/uTP here would create a second transport.
-	if (m_socket && m_socket->IsConnected()) {
-		ConnectionEstablished();
-		return EContactResult::Contacting;
-	}
-
 	// Freeze the target before checking it. The security checks, socket constructor and Connect()
 	// must all use this same address, even if a preference changes mid-attempt.
 	m_preparedDialAddress = GetDialAddress();
@@ -2039,6 +2032,9 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 			m_socket->Safe_Delete();
 		}
 		m_socket = new CClientTCPSocket(this, thePrefs::GetProxyData());
+	} else {
+		ConnectionEstablished();
+		return EContactResult::Contacting;
 	}
 
 	if (HasLowID() && SupportsDirectUDPCallback() && thePrefs::GetEffectiveUDPPort() != 0 &&
