@@ -83,7 +83,6 @@
 #include "FriendList.h"      // Needed for CFriendList
 #include "Statistics.h"      // Needed for theStats
 #include "ClientUDPSocket.h"
-
 #include "AddressFamilyPolicy.h" // Needed for AddressFamilyPolicy::Permits
 #ifdef ENABLE_IPV6
 #include "AdvertisedIPv6.h"         // Needed for AdvertisedIPv6ForPeers
