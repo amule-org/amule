@@ -121,6 +121,10 @@ modules:
       - --without-webp
       - --without-xpm
       - --without-fontconfig
+      # The runtime has libheif and libavif, which configure would pick up;
+      # cas only reads and writes PNG and JPEG.
+      - --without-heif
+      - --without-avif
     sources:
       - type: archive
         url: https://github.com/libgd/libgd/releases/download/gd-2.3.3/libgd-2.3.3.tar.xz

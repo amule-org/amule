@@ -170,6 +170,10 @@ modules:
       - --without-webp
       - --without-xpm
       - --without-fontconfig
+      # The runtime has libheif and libavif, which configure would pick up;
+      # cas only reads and writes PNG and JPEG.
+      - --without-heif
+      - --without-avif
     post-install:
       - install -Dm644 -t /app/share/licenses/libgd COPYING
     sources:
