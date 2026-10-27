@@ -766,9 +766,11 @@ jobs:
             ${{ matrix.pkg_prefix }}-ccache
             ${{ matrix.pkg_prefix }}-cmake
             ${{ matrix.pkg_prefix }}-crypto++
+            ${{ matrix.pkg_prefix }}-freetype
             ${{ matrix.pkg_prefix }}-gettext
-            ${{ matrix.pkg_prefix }}-libgd
+            ${{ matrix.pkg_prefix }}-libjpeg-turbo
             ${{ matrix.pkg_prefix }}-libmaxminddb
+            ${{ matrix.pkg_prefix }}-libpng
             ${{ matrix.pkg_prefix }}-make
             ${{ matrix.pkg_prefix }}-ninja
             ${{ matrix.pkg_prefix }}-pkgconf
@@ -837,6 +839,23 @@ jobs:
           # No package owns it, so packaging/windows/build.sh takes its
           # license from here.
           install -Dm644 /tmp/libupnp/COPYING "$MINGW_PREFIX/share/licenses/libupnp/COPYING"
+      # MSYS2's libgd is built with HEIF and AVIF support, which bundled
+      # x264, x265, AV1 and other codec DLLs that nothing in aMule uses. Only
+      # cas links libgd, and it needs PNG, JPEG and FreeType.
+      - name: Build libgd from source
+        run: |
+          set -euo pipefail
+          . packaging/linux/versions.env
+          curl -L -o /tmp/libgd.tar.xz "$LIBGD_TARBALL_URL"
+          echo "$LIBGD_SHA256  /tmp/libgd.tar.xz" | sha256sum -c -
+          mkdir -p /tmp/libgd
+          tar -xf /tmp/libgd.tar.xz -C /tmp/libgd --strip-components=1
+          cmake -S /tmp/libgd -B /tmp/libgd/build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+            -DENABLE_PNG=ON -DENABLE_JPEG=ON -DENABLE_FREETYPE=ON \
+            -DCMAKE_INSTALL_PREFIX="$MINGW_PREFIX"
+          cmake --build /tmp/libgd/build
+          cmake --install /tmp/libgd/build
+          install -Dm644 /tmp/libgd/COPYING "$MINGW_PREFIX/share/licenses/libgd/COPYING"
       - name: Build portable .zip
         env:
           WINDOWS_MSYSTEM: ${{ matrix.msystem }}

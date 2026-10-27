@@ -81,8 +81,9 @@ collect_licenses() {
         else
             case "${name}" in
                 # Built from source into MINGW_PREFIX by packaging.yml, which
-                # installs its COPYING under share/licenses/libupnp.
+                # installs their COPYING under share/licenses/<name>.
                 libupnp*.dll|libixml*.dll) pkgs+=(libupnp) ;;
+                libgd.dll) pkgs+=(libgd) ;;
                 *) echo "warning: no package owns ${name}" >&2 ;;
             esac
         fi
@@ -95,8 +96,8 @@ collect_licenses() {
     for pkg in $(printf '%s\n' "${pkgs[@]}" | sort -u); do
         short=${pkg#"${MINGW_PACKAGE_PREFIX}-"}
         local files=()
-        if [[ "${pkg}" == libupnp ]]; then
-            files=("${MINGW_PREFIX}"/share/licenses/libupnp/*)
+        if [[ "${pkg}" == libupnp || "${pkg}" == libgd ]]; then
+            files=("${MINGW_PREFIX}/share/licenses/${pkg}"/*)
         elif pacman -Q "${pkg}" >/dev/null 2>&1; then
             mapfile -t files < <(pacman -Qql "${pkg}" | grep "/share/licenses/.*[^/]$" || true)
         fi
