@@ -13,7 +13,10 @@ description: apt-get install the given packages, reusing .deb files cached by an
 inputs:
   packages:
     description: Packages to install, separated by whitespace. Backslashes are dropped, so a line-continued list works.
-    required: true
+    default: ''
+  satisfy:
+    description: A Depends field, versions allowed, passed to apt-get satisfy.
+    default: ''
   save:
     description: "'true' saves the .deb files when apt downloaded any. Let one job per workflow run save."
     default: 'false'
@@ -41,6 +44,7 @@ runs:
       env:
         ARCHIVES: ${{ steps.prep.outputs.dir }}
         PACKAGES: ${{ inputs.packages }}
+        SATISFY: ${{ inputs.satisfy }}
       run: |
         set -euo pipefail
         sudo cp .github/apt-ci.conf /etc/apt/apt.conf.d/99-ci
@@ -51,8 +55,13 @@ runs:
         debs() { find "$ARCHIVES" -maxdepth 1 -name '*.deb' -printf '%f\n' | sort; }
         before=$(debs)
         "${apt[@]}" update
-        # shellcheck disable=SC2046 # one package per word
-        "${apt[@]}" install -y $(tr '\\\n' '  ' <<<"$PACKAGES")
+        if [ -n "$PACKAGES" ]; then
+            # shellcheck disable=SC2046 # one package per word
+            "${apt[@]}" install -y $(tr '\\\n' '  ' <<<"$PACKAGES")
+        fi
+        if [ -n "$SATISFY" ]; then
+            "${apt[@]}" satisfy -y "$SATISFY"
+        fi
         # Drop versions the mirror no longer has, so the cache does not grow.
         "${apt[@]}" autoclean
         if [ "$(debs)" = "$before" ]; then

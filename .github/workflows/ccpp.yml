@@ -414,12 +414,16 @@ jobs:
       # The build job derived runtime-deps.txt from these exact binaries, so it
       # stays matched without installing compilers and development headers here.
       # apt-get satisfy takes it as a Depends field, versions included.
-      - name: install runtime deps
+      - name: read runtime deps
+        id: runtime-deps
         run: |
-          sudo cp .github/apt-ci.conf /etc/apt/apt.conf.d/99-ci
-          sudo apt-get update
           test -s runtime-deps.txt
-          sudo apt-get satisfy -y "$(cat runtime-deps.txt)" jq
+          echo "depends=$(cat runtime-deps.txt)" >> "$GITHUB_OUTPUT"
+      - name: install runtime deps
+        uses: ./.github/actions/apt-install
+        with:
+          packages: jq
+          satisfy: ${{ steps.runtime-deps.outputs.depends }}
       # Every peer-to-peer switch is off, so the daemon joins no ed2k server,
       # bootstraps no Kad and opens no UPnP mapping. It still makes the two
       # ordinary startup fetches over HTTPS -- the release check and the GeoIP

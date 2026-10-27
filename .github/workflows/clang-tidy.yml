@@ -12,6 +12,8 @@ on:
       - '.clang-tidy'
       - '.clang-tidy-new-code'
       - '.github/workflows/clang-tidy.yml'
+      - '.github/apt-ci.conf'
+      - '.github/actions/apt-install/**'
   pull_request:
     branches: [ "**" ]
     paths:
@@ -23,6 +25,8 @@ on:
       - '.clang-tidy'
       - '.clang-tidy-new-code'
       - '.github/workflows/clang-tidy.yml'
+      - '.github/apt-ci.conf'
+      - '.github/actions/apt-install/**'
 
 # Supersede an older run only when a newer push makes it pointless, which means
 # within one branch or one PR. The default branch is the exception: every commit
@@ -135,9 +139,13 @@ jobs:
           key: clang-tidy-ctcache-llvm${{ env.LLVM_VERSION }}-${{ env.CTCACHE_SHA }}-${{ github.run_id }}
           restore-keys: clang-tidy-ctcache-llvm${{ env.LLVM_VERSION }}-${{ env.CTCACHE_SHA }}-
       - name: install deps
+        uses: ./.github/actions/apt-install
+        with:
+          packages: ${{ env.cmake_ubuntu_deps }} jq
+      # Not cached: apt.llvm.org stayed fast, and its large packages change
+      # with every LLVM snapshot.
+      - name: install clang-tidy
         run: |
-          sudo apt-get update
-          sudo apt-get install -y ${{ env.cmake_ubuntu_deps }} jq
           wget -qO- https://apt.llvm.org/llvm.sh | sudo bash -s -- ${LLVM_VERSION}
           sudo apt-get install -y clang-tidy-${LLVM_VERSION}
       - uses: ./.github/actions/ngtcp2
@@ -239,9 +247,11 @@ jobs:
           key: clang-tidy-ccache-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
           restore-keys: clang-tidy-ccache-
       - name: install deps
+        uses: ./.github/actions/apt-install
+        with:
+          packages: ${{ env.cmake_ubuntu_deps }}
+      - name: install clang-tidy
         run: |
-          sudo apt-get update
-          sudo apt-get install -y ${{ env.cmake_ubuntu_deps }}
           wget -qO- https://apt.llvm.org/llvm.sh | sudo bash -s -- ${LLVM_VERSION}
           sudo apt-get install -y clang-tidy-${LLVM_VERSION}
       - uses: ./.github/actions/ngtcp2
