@@ -47,6 +47,7 @@
 #include "KadBuddyLiveness.h"
 #if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
 #include "LugdunumNatTraversal.h"
+#include "NatServerHolePunch.h"
 #endif
 
 #include <map>
@@ -340,6 +341,7 @@ private:
 	EContactRoute ContactRoute() const;
 	SContactFacts ContactFactsFor(const CNetworkAddress &address) const;
 #ifdef ENABLE_NATT_SERVER_COORDINATION
+	NatServerHolePunch::RequestFacts LowIdHolePunchRequestFacts() const;
 	//! Sends OP_NAT_CALLBACKREQUEST for this LowID source when the Lugdunum preconditions hold.
 	//! Called from TryToContact's LowID->LowID decline, so at most once per source: a
 	//! DS_LOWTOLOWIP source is not asked again.

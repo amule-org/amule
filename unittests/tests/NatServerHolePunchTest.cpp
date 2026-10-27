@@ -205,7 +205,6 @@ TEST(NatServerHolePunch, RequestsHolePunchOnlyWhenEveryPreconditionHolds)
 	facts.sourceId = 200; // LowID
 	facts.sameServer = true;
 	facts.serverAnnouncesHolePunch = true;
-	facts.serverIsLugdunumActive = false;
 	facts.settingEnabled = true;
 	facts.ourUdpPort = 4672;
 	facts.utpAvailable = true;
@@ -232,12 +231,6 @@ TEST(NatServerHolePunch, RequestsHolePunchOnlyWhenEveryPreconditionHolds)
 	RequestFacts notCapable = facts;
 	notCapable.serverAnnouncesHolePunch = false;
 	ASSERT_FALSE(ShouldRequestLowIdHolePunch(notCapable));
-
-	// A server is either Lugdunum or ed2k-server: a Lugdunum-active server is left to
-	// TrySendLugdunumNatCallbackRequest, even if it also happened to carry this flag.
-	RequestFacts lugdunumActive = facts;
-	lugdunumActive.serverIsLugdunumActive = true;
-	ASSERT_FALSE(ShouldRequestLowIdHolePunch(lugdunumActive));
 
 	RequestFacts highIdSource = facts;
 	highIdSource.sourceId = 20000000;

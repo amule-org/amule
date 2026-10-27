@@ -1889,29 +1889,31 @@ void CUpDownClient::TrySendLugdunumNatCallbackRequest(uint32 targetId) const
 		0);
 }
 
-bool CUpDownClient::TrySendLowIdHolePunchRequest()
+NatServerHolePunch::RequestFacts CUpDownClient::LowIdHolePunchRequestFacts() const
 {
+	NatServerHolePunch::RequestFacts facts;
 	if (theApp->serverconnect == nullptr) {
-		return false;
+		return facts;
 	}
 	CServer *server = theApp->serverconnect->GetCurrentServer();
 	if (server == nullptr) {
-		return false;
+		return facts;
 	}
-	const uint16 ourUdpPort = thePrefs::GetEffectiveUDPPort();
+	facts.ourId = theApp->serverconnect->GetClientID();
+	facts.sourceId = GetUserIDHybrid();
+	facts.sameServer = theApp->serverconnect->IsLocalServer(GetServerIP(), GetServerPort());
+	facts.serverAnnouncesHolePunch = server->SupportsLowIdHolePunch();
+	facts.settingEnabled = thePrefs::IsLowIdHolePunchEnabled();
+	facts.ourUdpPort = thePrefs::GetEffectiveUDPPort();
 #ifdef AMULE_UTP_TRANSPORT
-	const bool lowIdHolePunchUtpAvailable = true;
-#else
-	const bool lowIdHolePunchUtpAvailable = false;
+	facts.utpAvailable = true;
 #endif
-	const NatServerHolePunch::RequestFacts facts{ theApp->serverconnect->GetClientID(),
-		GetUserIDHybrid(),
-		theApp->serverconnect->IsLocalServer(GetServerIP(), GetServerPort()),
-		server->SupportsLowIdHolePunch(),
-		server->IsLugdunumNatCallbackActive(),
-		thePrefs::IsLowIdHolePunchEnabled(),
-		ourUdpPort,
-		lowIdHolePunchUtpAvailable };
+	return facts;
+}
+
+bool CUpDownClient::TrySendLowIdHolePunchRequest()
+{
+	const NatServerHolePunch::RequestFacts facts = LowIdHolePunchRequestFacts();
 	if (!NatServerHolePunch::ShouldRequestLowIdHolePunch(facts)) {
 		return false;
 	}
@@ -1981,11 +1983,13 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 			// We cannot do a callback!
 			if (GetDownloadState() == DS_CONNECTING) {
 #ifdef ENABLE_NATT_SERVER_COORDINATION
-				// Sent once per source: a DS_LOWTOLOWIP source is not asked again. A server
-				// is either Lugdunum or ed2k-server; each call no-ops on the
-				// other's server.
-				TrySendLugdunumNatCallbackRequest();
-				TrySendLowIdHolePunchRequest();
+				// Sent once per source: a DS_LOWTOLOWIP source is not asked again.
+				if (NatServerHolePunch::ShouldRequestLowIdHolePunch(
+					    LowIdHolePunchRequestFacts())) {
+					TrySendLowIdHolePunchRequest();
+				} else {
+					TrySendLugdunumNatCallbackRequest();
+				}
 #endif
 				SetDownloadState(DS_LOWTOLOWIP);
 			} else if (GetDownloadState() == DS_REQHASHSET) {

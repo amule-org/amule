@@ -212,9 +212,6 @@ struct RequestFacts
 	std::uint32_t sourceId = 0;
 	bool sameServer = false;
 	bool serverAnnouncesHolePunch = false;
-	// A server is either Lugdunum or ed2k-server: one announcing Lugdunum's NAT
-	// callback is handled by TrySendLugdunumNatCallbackRequest instead, never both.
-	bool serverIsLugdunumActive = false;
 	bool settingEnabled = false;
 	std::uint16_t ourUdpPort = 0;
 	// See KeepaliveFacts::utpAvailable.
@@ -226,8 +223,8 @@ struct RequestFacts
 // must be enabled, and the build must be able to act on the server's word.
 inline bool ShouldRequestLowIdHolePunch(const RequestFacts &facts)
 {
-	if (!facts.settingEnabled || !facts.sameServer || facts.serverIsLugdunumActive ||
-		!facts.serverAnnouncesHolePunch || facts.ourUdpPort == 0 || !facts.utpAvailable) {
+	if (!facts.settingEnabled || !facts.sameServer || !facts.serverAnnouncesHolePunch ||
+		facts.ourUdpPort == 0 || !facts.utpAvailable) {
 		return false;
 	}
 	return IsLowID(facts.ourId) && IsLowID(facts.sourceId);
