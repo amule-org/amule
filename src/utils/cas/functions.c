@@ -61,15 +61,27 @@
 #endif
 #endif
 
+/* dir and file joined by one separator.
+ * !! it's caller's responsibility to free return value
+ */
+static char *join_path(const char *dir, const char *file)
+{
+	size_t len = strlen(dir);
+	const char *sep = (len > 0 && dir[len - 1] != CAS_DIR_SEPARATOR[0]) ? CAS_DIR_SEPARATOR : "";
+	char *ret = malloc(len + strlen(sep) + strlen(file) + 1);
+
+	if (ret != NULL)
+		sprintf(ret, "%s%s%s", dir, sep, file);
+	return ret;
+}
+
 /* try (hard) to get correct path for aMule signature
  * !! it's caller's responsibility to free return value
  */
 
 char *get_path(const char *file)
 {
-	char *ret; /* caller should free return value */
 	static char *saved_home = NULL;
-	static size_t home_len = 0;
 
 	if (saved_home == NULL) {
 #ifdef __APPLE__
@@ -149,62 +161,36 @@ char *get_path(const char *file)
 			home = pwd->pw_dir;
 #endif /* CAS_UNIX */
 		}
-		strcat(home, CAS_DIR_SEPARATOR ".aMule");
+		/* Not strcat: home is the environment's own buffer. */
+		saved_home = join_path(home, ".aMule");
 
 #endif /* !__APPLE__ && !__WIN32__ */
 
-		/* save the result for future calls */
-		home_len = strlen(home);
-		if ((saved_home = strdup(home)) == NULL)
+#if defined(__APPLE__) || defined(__WIN32__)
+		saved_home = strdup(home);
+#endif
+		/* kept for future calls */
+		if (saved_home == NULL)
 			return NULL;
 	}
 
-	/* get full path space */
-
-	/* Unleashed - Guys... you broke this and it was OK
-	 * "+ 2" means "plus '/' and '\0'"
-	 */
-	ret = malloc((home_len + strlen(file) + 2) * sizeof(char));
-	if (ret == NULL)
-		return NULL;
-
-	strcpy(ret, saved_home);
-	ret[home_len] = CAS_DIR_SEPARATOR[0];
-	ret[home_len + 1] = '\0';
-	strcat(ret, file);
-	/* the string is guaranteed to be null-terminated
-	 * so no need to do this...
-	 * ret[total_len] = '\0';
-	 */
-
-	return ret;
+	return join_path(saved_home, file);
 }
 
 char *get_amule_path(const char *file, int force_directory, const char *cmdline_path)
 {
-	char *path;
+	size_t len;
 
 	if (!cmdline_path) {
 		return get_path(file);
 	}
 
-	if ((path = malloc(strlen(cmdline_path) + strlen(file) + 2)) == NULL) {
-		return NULL;
+	/* A directory gets the default name appended; a file path is used as is. */
+	len = strlen(cmdline_path);
+	if (force_directory || (len > 0 && cmdline_path[len - 1] == CAS_DIR_SEPARATOR[0])) {
+		return join_path(cmdline_path, file);
 	}
-
-	strcpy(path, cmdline_path);
-	if (force_directory) {
-		if (path[strlen(path) - 1] != CAS_DIR_SEPARATOR[0]) {
-			strcat(path, CAS_DIR_SEPARATOR);
-		}
-		strcat(path, file);
-	} else {
-		if (path[strlen(path) - 1] == CAS_DIR_SEPARATOR[0]) {
-			strcat(path, file);
-		}
-	}
-
-	return path;
+	return strdup(cmdline_path);
 }
 
 /*
@@ -320,21 +306,21 @@ char *timeconv(char *input)
 char *get_data_path(const char *file)
 {
 	char exe[PATH_MAX];
-	char *sep, *ret;
+	char *sep, *dir, *ret;
 #if defined(__APPLE__)
-	const char *rel = "/../Resources/cas/";
+	const char *rel = "../Resources/cas";
 	uint32_t size = sizeof(exe);
 
 	if (_NSGetExecutablePath(exe, &size) != 0)
 		return NULL;
 #elif defined(__WIN32__)
-	const char *rel = "\\..\\share\\cas\\";
+	const char *rel = "..\\share\\cas";
 	DWORD len = GetModuleFileNameA(NULL, exe, sizeof(exe));
 
 	if (len == 0 || len == sizeof(exe))
 		return NULL;
 #else
-	const char *rel = "/../share/cas/";
+	const char *rel = "../share/cas";
 	ssize_t len = readlink("/proc/self/exe", exe, sizeof(exe) - 1);
 
 	if (len <= 0) {
@@ -348,10 +334,10 @@ char *get_data_path(const char *file)
 		return NULL;
 	*sep = '\0';
 
-	ret = malloc(strlen(exe) + strlen(rel) + strlen(file) + 1);
-	if (ret == NULL)
+	if ((dir = join_path(exe, rel)) == NULL)
 		return NULL;
-	sprintf(ret, "%s%s%s", exe, rel, file);
+	ret = join_path(dir, file);
+	free(dir);
 	return ret;
 }
 
