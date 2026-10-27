@@ -235,6 +235,10 @@ TEST(Packet, MemoryFilePositionBeyond32BitsIsPreserved)
 	CMemFile file;
 	file.WriteUInt32(0x04030201);
 	const sint64 position = (sint64{ 1 } << 32) + 2;
+	// CMemFile keeps its position in a size_t, so a 32-bit host cannot seek past 4 GiB.
+	if (std::numeric_limits<size_t>::max() < static_cast<uint64>(position)) {
+		return;
+	}
 	file.Seek(position, wxFromStart);
 	CPacket packet(file, OP_EMULEPROT, 0x53);
 	ASSERT_TRUE(file.GetPosition() == static_cast<uint64>(position));
