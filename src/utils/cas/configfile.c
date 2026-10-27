@@ -96,9 +96,12 @@ static void read_value(const char *line, char *value)
 {
 	size_t len;
 
+	line += strspn(line, " \t");
 	line += strcspn(line, " \t");
 	line += strspn(line, " \t");
 	len = strcspn(line, "\r\n");
+	while (len > 0 && (line[len - 1] == ' ' || line[len - 1] == '\t'))
+		len--;
 	if (len > MAX_CONF_ARG_LEN)
 		len = MAX_CONF_ARG_LEN;
 	memcpy(value, line, len);

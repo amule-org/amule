@@ -67,7 +67,7 @@
 static char *join_path(const char *dir, const char *file)
 {
 	size_t len = strlen(dir);
-	const char *sep = (len > 0 && dir[len - 1] != CAS_DIR_SEPARATOR[0]) ? CAS_DIR_SEPARATOR : "";
+	const char *sep = (len == 0 || dir[len - 1] != CAS_DIR_SEPARATOR[0]) ? CAS_DIR_SEPARATOR : "";
 	char *ret = malloc(len + strlen(sep) + strlen(file) + 1);
 
 	if (ret != NULL)
