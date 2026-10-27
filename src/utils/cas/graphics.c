@@ -94,7 +94,7 @@ int createimage(CONF *config, char *lines[IMG_TEXTLINES], char *path_for_picture
 		perror("could not get JPG path\n");
 		return 0;
 	}
-	out = fopen(path, "w");
+	out = fopen(path, "wb");
 	free(path);
 
 	if (config->img_type == 0) {
