@@ -1259,6 +1259,37 @@ target_link_libraries (KadEntryTagListTest
 	mulecommon
 )
 
+# GHSA-52mv: the Kad keyword match runs within a work budget shared by all entries of one
+# request, and the search tree parser limits nodes and depth. Like KadEntryTagListTest, this
+# links Entry.cpp and the parser alone, not the Kad index.
+add_executable (KadSearchMatchTest
+	KadSearchMatchTest.cpp
+	${CMAKE_SOURCE_DIR}/src/kademlia/kademlia/Entry.cpp
+	${CMAKE_SOURCE_DIR}/src/kademlia/net/SearchExpression.cpp
+	${CMAKE_SOURCE_DIR}/src/kademlia/kademlia/AICHHashList.cpp
+	${CMAKE_SOURCE_DIR}/src/SafeFile.cpp
+	${CMAKE_SOURCE_DIR}/src/MemFile.cpp
+	${CMAKE_SOURCE_DIR}/src/Tag.cpp
+	${CMAKE_SOURCE_DIR}/src/GetTickCount.cpp
+	${CMAKE_SOURCE_DIR}/src/LoggerConsole.cpp
+	KadPrefsStub.cpp
+)
+
+add_test (NAME KadSearchMatchTest
+	COMMAND KadSearchMatchTest
+)
+
+target_include_directories (KadSearchMatchTest
+	PRIVATE ${CMAKE_BINARY_DIR}
+	PRIVATE ${CMAKE_SOURCE_DIR}/src
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
+)
+
+target_link_libraries (KadSearchMatchTest
+	muleunit
+	mulecommon
+)
+
 # The adaptive Kad response-time ceiling. CFastKad takes "now" as a parameter
 # rather than reading a clock, which is what lets the cold start, a known series
 # of samples, the eviction rule and the window bound all be pinned without

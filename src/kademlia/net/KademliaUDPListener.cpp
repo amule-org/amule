@@ -36,6 +36,7 @@ there client on the eMule forum..
 #include <wx/wx.h>
 
 #include "KademliaUDPListener.h"
+#include "SearchExpression.h"
 
 #include <protocol/Protocols.h>
 #include <protocol/kad/Constants.h>
@@ -936,164 +937,6 @@ void CKademliaUDPListener::ProcessKademlia2Response(const uint8_t *packetData,
 	CSearchManager::ProcessResponse(target, ip, port, results.release());
 }
 
-void CKademliaUDPListener::Free(SSearchTerm *pSearchTerms)
-{
-	if (pSearchTerms) {
-		Free(pSearchTerms->left);
-		Free(pSearchTerms->right);
-		delete pSearchTerms;
-	}
-}
-
-SSearchTerm *CKademliaUDPListener::CreateSearchExpressionTree(CMemFile &bio, int iLevel)
-{
-	// the max. depth has to match our own limit for creating the search expression
-	// (see also 'ParsedSearchExpression' and 'GetSearchPacket')
-	if (iLevel >= 24) {
-		AddDebugLogLineN(logKadSearch, "***NOTE: Search expression tree exceeds depth limit!");
-		return NULL;
-	}
-	iLevel++;
-
-	uint8_t op = bio.ReadUInt8();
-	if (op == 0x00) {
-		uint8_t boolop = bio.ReadUInt8();
-		// The recursive children below read from `bio` and can throw CEOFException on a
-		// truncated packet. Without a guard the parent node and the already-built left
-		// subtree leak during unwinding: ~SSearchTerm does not recurse into left/right,
-		// only the explicit Free() walk does, and that is only reached on the success and
-		// NULL-return paths (#884).
-		if (boolop == 0x00) { // AND
-			SSearchTerm *pSearchTerm = new SSearchTerm;
-			pSearchTerm->type = SSearchTerm::AND;
-			try {
-				if ((pSearchTerm->left = CreateSearchExpressionTree(bio, iLevel)) == NULL) {
-					delete pSearchTerm;
-					return NULL;
-				}
-				if ((pSearchTerm->right = CreateSearchExpressionTree(bio, iLevel)) == NULL) {
-					Free(pSearchTerm->left);
-					delete pSearchTerm;
-					return NULL;
-				}
-			} catch (...) {
-				Free(pSearchTerm);
-				throw;
-			}
-			return pSearchTerm;
-		} else if (boolop == 0x01) { // OR
-			SSearchTerm *pSearchTerm = new SSearchTerm;
-			pSearchTerm->type = SSearchTerm::OR;
-			try {
-				if ((pSearchTerm->left = CreateSearchExpressionTree(bio, iLevel)) == NULL) {
-					delete pSearchTerm;
-					return NULL;
-				}
-				if ((pSearchTerm->right = CreateSearchExpressionTree(bio, iLevel)) == NULL) {
-					Free(pSearchTerm->left);
-					delete pSearchTerm;
-					return NULL;
-				}
-			} catch (...) {
-				Free(pSearchTerm);
-				throw;
-			}
-			return pSearchTerm;
-		} else if (boolop == 0x02) { // NOT
-			SSearchTerm *pSearchTerm = new SSearchTerm;
-			pSearchTerm->type = SSearchTerm::NOT;
-			try {
-				if ((pSearchTerm->left = CreateSearchExpressionTree(bio, iLevel)) == NULL) {
-					delete pSearchTerm;
-					return NULL;
-				}
-				if ((pSearchTerm->right = CreateSearchExpressionTree(bio, iLevel)) == NULL) {
-					Free(pSearchTerm->left);
-					delete pSearchTerm;
-					return NULL;
-				}
-			} catch (...) {
-				Free(pSearchTerm);
-				throw;
-			}
-			return pSearchTerm;
-		} else {
-			AddDebugLogLineN(logKadSearch,
-				CFormat("*** Unknown boolean search operator 0x%02x "
-					"(CreateSearchExpressionTree)") %
-					boolop);
-			return NULL;
-		}
-	} else if (op == 0x01) { // String
-		wxString str(bio.ReadString(true));
-
-		// Make lowercase, the search code expects lower case strings!
-		str.MakeLower();
-
-		SSearchTerm *pSearchTerm = new SSearchTerm;
-		pSearchTerm->type = SSearchTerm::String;
-		pSearchTerm->astr = new wxArrayString;
-
-		// pre-tokenize the string term
-		// #warning TODO: TokenizeOptQuotedSearchTerm
-		wxStringTokenizer token(str, CSearchManager::GetInvalidKeywordChars(), wxTOKEN_DEFAULT);
-		while (token.HasMoreTokens()) {
-			wxString strTok(token.GetNextToken());
-			if (!strTok.IsEmpty()) {
-				pSearchTerm->astr->Add(strTok);
-			}
-		}
-
-		return pSearchTerm;
-	} else if (op == 0x02) { // Meta tag
-		wxString strValue(bio.ReadString(true));
-		// Make lowercase, the search code expects lower case strings!
-		strValue.MakeLower();
-
-		wxString strTagName = bio.ReadString(false);
-
-		SSearchTerm *pSearchTerm = new SSearchTerm;
-		pSearchTerm->type = SSearchTerm::MetaTag;
-		pSearchTerm->tag = new CTagString(strTagName, strValue);
-		return pSearchTerm;
-	} else if (op == 0x03 || op == 0x08) { // Numeric relation (0x03=32-bit or 0x08=64-bit)
-		static const struct
-		{
-			SSearchTerm::ESearchTermType eSearchTermOp;
-			wxString pszOp;
-		} _aOps[] = {
-			{ SSearchTerm::OpEqual, "=" },         // mmop=0x00
-			{ SSearchTerm::OpGreater, ">" },       // mmop=0x01
-			{ SSearchTerm::OpLess, "<" },          // mmop=0x02
-			{ SSearchTerm::OpGreaterEqual, ">=" }, // mmop=0x03
-			{ SSearchTerm::OpLessEqual, "<=" },    // mmop=0x04
-			{ SSearchTerm::OpNotEqual, "<>" }      // mmop=0x05
-		};
-
-		uint64_t ullValue = (op == 0x03) ? bio.ReadUInt32() : bio.ReadUInt64();
-
-		uint8_t mmop = bio.ReadUInt8();
-		if (mmop >= itemsof(_aOps)) {
-			AddDebugLogLineN(logKadSearch,
-				CFormat("*** Unknown integer search op=0x%02x (CreateSearchExpressionTree)") %
-					mmop);
-			return NULL;
-		}
-
-		wxString strTagName = bio.ReadString(false);
-
-		SSearchTerm *pSearchTerm = new SSearchTerm;
-		pSearchTerm->type = _aOps[mmop].eSearchTermOp;
-		pSearchTerm->tag = new CTagVarInt(strTagName, ullValue);
-
-		return pSearchTerm;
-	} else {
-		AddDebugLogLineN(logKadSearch,
-			CFormat("*** Unknown search op=0x%02x (CreateSearchExpressionTree)") % op);
-		return NULL;
-	}
-}
-
 // KADEMLIA2_SEARCH_KEY_REQ
 // Used in Kad2.0 only
 void CKademliaUDPListener::Process2SearchKeyRequest(const uint8_t *packetData,
@@ -1109,7 +952,7 @@ void CKademliaUDPListener::Process2SearchKeyRequest(const uint8_t *packetData,
 	startPosition &= 0x7FFF;
 	SSearchTerm *pSearchTerms = NULL;
 	if (restrictive) {
-		pSearchTerms = CreateSearchExpressionTree(bio, 0);
+		pSearchTerms = ParseSearchExpression(bio);
 		if (pSearchTerms == NULL) {
 			throw wxString("Invalid search expression");
 		}
@@ -1117,7 +960,7 @@ void CKademliaUDPListener::Process2SearchKeyRequest(const uint8_t *packetData,
 	CKademlia::GetIndexed()->SendValidKeywordResult(
 		target, pSearchTerms, ip, port, false, startPosition, senderKey);
 	if (pSearchTerms) {
-		Free(pSearchTerms);
+		FreeSearchExpression(pSearchTerms);
 	}
 }
 

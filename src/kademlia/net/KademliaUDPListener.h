@@ -114,9 +114,6 @@ public:
 	void ExpireClientSearch(CKadClientSearcher *expireImmediately = NULL);
 
 private:
-	static SSearchTerm *CreateSearchExpressionTree(CMemFile &bio, int iLevel);
-	static void Free(SSearchTerm *pSearchTerms);
-
 	// Kad1.0
 	void SendLegacyChallenge(uint32_t ip, uint16_t port, const CUInt128 &contactID);
 

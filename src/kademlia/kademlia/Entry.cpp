@@ -37,6 +37,7 @@ there client on the eMule forum..
 */
 
 #include "Entry.h"
+#include <algorithm>
 #include <stdexcept>
 #include <common/Macros.h>
 #include <tags/FileTags.h>
@@ -251,18 +252,141 @@ CKeyEntry::~CKeyEntry()
 	}
 }
 
-bool CKeyEntry::SearchTermsMatch(const SSearchTerm *searchTerm) const
+// Matching cost in units of about 0.1 ns, calibrated on the slowest C library measured (macOS):
+// about 0.3 ns per character scanned or compared, 2 ns per character lowercased. The fixed parts
+// stand for the call overhead, which dominates when names and words are short.
+static const uint64_t NODE_COST = 64;
+static const uint64_t LOOKUP_COST = 128;
+static const uint64_t NAME_COST = 64;
+static const uint64_t LOWER_CHAR_COST = 20;
+// Per character scanned or compared.
+static const uint64_t CHAR_COST = 3;
+// Per position where the word's first character occurs: a compare call, plus the compare.
+static const uint64_t CANDIDATE_COST = 48;
+// Per tag a tag condition may visit while looking up its tag.
+static const uint64_t TAG_COST = 48;
+// Per character a case-insensitive compare may examine.
+static const uint64_t NOCASE_CHAR_COST = 50;
+
+struct CKeyEntry::MatchState
 {
+	uint64_t &budget;
+	const CKeyEntry &entry;
+	wxString nameLower;
+	bool haveName = false;
+	wxString extension;
+	bool haveExtension = false;
+	bool hasExtension = false;
+	bool exhausted = false;
+
+	MatchState(uint64_t &b, const CKeyEntry &e)
+	: budget(b)
+	, entry(e)
+	{
+	}
+
+	bool Spend(uint64_t cost)
+	{
+		if (exhausted || cost > budget) {
+			budget = 0;
+			exhausted = true;
+			return false;
+		}
+		budget -= cost;
+		return true;
+	}
+
+	// Built on first use, then shared by every leaf of the tree. Null once the budget is spent.
+	const wxString *NameLower()
+	{
+		if (!haveName) {
+			nameLower = entry.GetCommonFileNameLowerCase();
+			haveName = true;
+			if (!Spend(NAME_COST + LOWER_CHAR_COST * nameLower.length())) {
+				return nullptr;
+			}
+		}
+		return exhausted ? nullptr : &nameLower;
+	}
+
+	// The extension of the lowercased name, built once per entry. Null when the name has none
+	// or the budget is spent.
+	const wxString *Extension()
+	{
+		if (!haveExtension) {
+			const wxString *name = NameLower();
+			if (name == nullptr) {
+				return nullptr;
+			}
+			haveExtension = true;
+			if (!Spend(LOOKUP_COST + CHAR_COST * name->length())) {
+				return nullptr;
+			}
+			const int dot = name->Find('.', true);
+			hasExtension = dot != wxNOT_FOUND;
+			if (hasExtension) {
+				extension = name->Mid(dot + 1);
+			}
+		}
+		return exhausted || !hasExtension ? nullptr : &extension;
+	}
+
+	bool EqualNoCase(const wxString &a, const wxString &b)
+	{
+		return Spend(LOOKUP_COST + NOCASE_CHAR_COST * std::min(a.length(), b.length())) &&
+		       a.CmpNoCase(b) == 0;
+	}
+
+	// A substring search pays for each position where the word's first character occurs, not
+	// for every position: a name of "aaaa..." makes every position a compare, a name without
+	// the character costs one scan. Returns false when not found or out of budget.
+	bool Contains(const wxString &name, const wxString &word)
+	{
+		const size_t nameLen = name.length();
+		const size_t wordLen = word.length();
+		if (!Spend(LOOKUP_COST + CHAR_COST * nameLen)) {
+			return false;
+		}
+		if (wordLen == 0) {
+			return true;
+		}
+		const wxUniChar first = word[0];
+		for (size_t pos = name.find(first); pos != wxString::npos && pos + wordLen <= nameLen;
+			pos = name.find(first, pos + 1)) {
+			if (!Spend(CANDIDATE_COST + CHAR_COST * wordLen)) {
+				return false;
+			}
+			if (name.compare(pos, wordLen, word) == 0) {
+				return true;
+			}
+		}
+		return false;
+	}
+};
+
+bool CKeyEntry::SearchTermsMatch(const SSearchTerm *searchTerm, uint64_t &budget) const
+{
+	MatchState state(budget, *this);
+	// A NOT whose right side ran out of budget would otherwise match.
+	return MatchTerm(searchTerm, state) && !state.exhausted;
+}
+
+bool CKeyEntry::MatchTerm(const SSearchTerm *searchTerm, MatchState &state) const
+{
+	if (!state.Spend(NODE_COST)) {
+		return false;
+	}
+
 	if (searchTerm->type == SSearchTerm::AND) {
-		return SearchTermsMatch(searchTerm->left) && SearchTermsMatch(searchTerm->right);
+		return MatchTerm(searchTerm->left, state) && MatchTerm(searchTerm->right, state);
 	}
 
 	if (searchTerm->type == SSearchTerm::OR) {
-		return SearchTermsMatch(searchTerm->left) || SearchTermsMatch(searchTerm->right);
+		return MatchTerm(searchTerm->left, state) || MatchTerm(searchTerm->right, state);
 	}
 
 	if (searchTerm->type == SSearchTerm::NOT) {
-		return SearchTermsMatch(searchTerm->left) && !SearchTermsMatch(searchTerm->right);
+		return MatchTerm(searchTerm->left, state) && !MatchTerm(searchTerm->right, state);
 	}
 
 	// word which is to be searched in the file name (and in additional meta data as done by some ed2k
@@ -275,15 +399,24 @@ bool CKeyEntry::SearchTermsMatch(const SSearchTerm *searchTerm) const
 		// With more than one search string (e.g. "aaa bbb ccc") the whole thing is handled
 		// as "aaa AND bbb AND ccc": every string has to be found in the tokenized file
 		// name.
-		wxString commonFileNameLower(GetCommonFileNameLowerCase());
+		const wxString *nameLower = state.NameLower();
+		if (nameLower == nullptr) {
+			return false;
+		}
 		for (int i = 0; i < strSearchTerms; i++) {
 			// this will not give the same results as when tokenizing the filename string, but it
 			// is 20 times faster.
-			if (commonFileNameLower.Find((*(searchTerm->astr))[i]) == -1) {
+			if (!state.Contains(*nameLower, (*(searchTerm->astr))[i])) {
 				return false;
 			}
 		}
 		return true;
+	}
+
+	// The remaining conditions look up their tag in the entry's tag list, which a keyword
+	// publish can fill with up to 253 tags.
+	if (!state.Spend(TAG_COST * m_taglist.size())) {
+		return false;
 	}
 
 	if (searchTerm->type == SSearchTerm::MetaTag) {
@@ -292,19 +425,14 @@ bool CKeyEntry::SearchTermsMatch(const SSearchTerm *searchTerm) const
 				// 21-Sep-2006 []: Special handling for TAG_FILEFORMAT which is already part
 				// of the filename and thus does not need to get published nor stored
 				// explicitly,
-				wxString commonFileName(GetCommonFileName());
-				int ext = commonFileName.Find('.', true);
-				if (ext != wxNOT_FOUND) {
-					return commonFileName.Mid(ext + 1).CmpNoCase(
-						       searchTerm->tag->GetStr()) == 0;
-				}
+				const wxString *extension = state.Extension();
+				return extension != nullptr &&
+				       state.EqualNoCase(*extension, searchTerm->tag->GetStr());
 			} else {
-				for (TagPtrList::const_iterator it = m_taglist.begin(); it != m_taglist.end();
-					++it) {
-					if ((*it)->IsStr() &&
-						searchTerm->tag->GetName() == (*it)->GetName()) {
-						return (*it)->GetStr().CmpNoCase(searchTerm->tag->GetStr()) ==
-						       0;
+				for (const CTag *tag : m_taglist) {
+					if (tag->IsStr() && searchTerm->tag->GetName() == tag->GetName()) {
+						return state.EqualNoCase(
+							tag->GetStr(), searchTerm->tag->GetStr());
 					}
 				}
 			}

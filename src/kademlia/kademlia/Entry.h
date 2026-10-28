@@ -137,7 +137,14 @@ public:
 	virtual CEntry *Copy() const { return CEntry::Copy(); }
 	virtual bool IsKeyEntry() const noexcept { return true; }
 
-	bool SearchTermsMatch(const SSearchTerm *searchTerm) const;
+	// The matching work one keyword search request may do, in units of about 0.1 ns (see
+	// Entry.cpp): roughly 0.1 s on a current desktop. The widest search the eMule
+	// and aMule search boxes allow uses a quarter of it on a key that holds 50,000 entries.
+	static const uint64_t SEARCH_BUDGET = 1000000000;
+
+	// Takes the cost of the nodes visited, words looked up and tags scanned from budget. A tree
+	// that runs out of budget does not match, and the caller stops when it reaches 0.
+	bool SearchTermsMatch(const SSearchTerm *searchTerm, uint64_t &budget) const;
 	void MergeIPsAndFilenames(CKeyEntry *fromEntry);
 	void CleanUpTrackedPublishers();
 	double GetTrustValue();
@@ -158,6 +165,8 @@ public:
 	void WriteTagListWithPublishInfo(CFileDataIO *data);
 
 protected:
+	struct MatchState;
+	bool MatchTerm(const SSearchTerm *searchTerm, MatchState &state) const;
 	void ReCalculateTrustValue();
 	void AdjustGlobalPublishTracking(uint32_t ip, bool increase, const wxString &dbgReason);
 
