@@ -156,8 +156,8 @@ public:
 	}
 	bool IsInbound() const override { return m_inbound; }
 
-	//! True for a dialed stream once its parameters are set, and for an inbound one that opened
-	//! with an obfuscated SYN: the hello that would set them has not been read yet.
+	//! An inbound stream has no crypt parameters until its hello is read, so until then the SYN's
+	//! obfuscation answers.
 	bool ObfuscatesStream() const override
 	{
 		std::lock_guard<std::mutex> lock(m_mutex);
@@ -465,6 +465,7 @@ public:
 	{
 		std::lock_guard<std::mutex> lock(m_mutex);
 		m_encrypt = encrypt && userHash != nullptr;
+		m_synObfuscated = false;
 		if (m_encrypt) {
 			std::copy(userHash, userHash + kUserHashBytes, m_userHash);
 		}

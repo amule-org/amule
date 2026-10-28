@@ -351,16 +351,10 @@ int CEncryptedStreamSocket::Read(void *lpBuf, uint32_t nBufLen)
 			// date eMule clients, which check for incompatibility before connecting
 			// where they can.
 			if (thePrefs::IsClientCryptLayerRequired()) {
-				// Even with Require enabled we still have to accept the unencrypted
-				// connections used for lowid/firewall checks by servers and by
-				// clients we selected ourselves; refusing them would always result
-				// in a lowid/firewalled status. The .ini option
-				// ClientCryptLayerRequiredStrict is the only exception, ignoring
-				// even test connections.
 				const uint32_t ip = GetPeerInt();
 				const bool isTestConnection = theApp->serverconnect->AwaitingTestFromIP(ip) ||
 							      theApp->clientlist->IsKadFirewallCheckIP(ip);
-				if (EncryptionRequirement::MustRefusePlainConnection(true,
+				if (EncryptionRequirement::MustRefusePlainConnection(
 					    thePrefs::IsClientCryptLayerRequiredStrict(),
 					    TransportObfuscates(),
 					    isTestConnection)) {

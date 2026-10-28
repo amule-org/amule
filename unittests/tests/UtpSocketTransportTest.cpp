@@ -927,6 +927,16 @@ TEST(UtpSocketTransport, InboundStreamFromAPlainSynDoesNotReportObfuscation)
 	ASSERT_FALSE(transport.ObfuscatesStream());
 }
 
+TEST(UtpSocketTransport, CryptParametersReplaceTheSynOrigin)
+{
+	FakeOperations ops;
+	CUtpSocketTransport transport = MakeInboundTransport(ops);
+	transport.MarkSynObfuscated(true);
+	const uint8_t peerHash[16] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
+	transport.SetCryptParameters(false, peerHash);
+	ASSERT_FALSE(transport.ObfuscatesStream());
+}
+
 TEST(UtpSocketTransport, ADialedStreamIgnoresTheSynOrigin)
 {
 	FakeOperations ops;

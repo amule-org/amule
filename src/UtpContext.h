@@ -81,9 +81,8 @@ public:
 		uint32_t ip,
 		uint16_t port,
 		std::uint64_t nowMs,
-		bool obfuscated)
+		[[maybe_unused]] bool obfuscated)
 	{
-		(void)obfuscated;
 		return ProcessDatagram(payload, length, ip, port, nowMs);
 	}
 	virtual void Tick() = 0;
@@ -216,9 +215,8 @@ public:
 		uint32_t ip,
 		uint16_t port,
 		std::uint64_t nowMs,
-		bool obfuscated)
+		[[maybe_unused]] bool obfuscated)
 	{
-		(void)obfuscated;
 		return ProcessDatagram(payload, length, ip, port, nowMs);
 	}
 	virtual void IssueDeferredAcks() = 0;
@@ -292,12 +290,7 @@ public:
 		uint16_t port,
 		std::uint64_t nowMs) override
 	{
-		if (!Configure()) {
-			return false;
-		}
-		const bool claimed = m_library->ProcessDatagram(payload, length, ip, port, nowMs);
-		m_library->IssueDeferredAcks();
-		return claimed;
+		return ProcessDatagram(payload, length, ip, port, nowMs, false);
 	}
 	bool ProcessDatagram(const uint8_t *payload,
 		size_t length,
@@ -408,16 +401,6 @@ inline bool ProcessUtpFrame(
 {
 	return frame.disposition == RP2_KNOWN_TYPE && frame.type == OP_NATT_FRAME_UTP &&
 	       context.ProcessDatagram(frame.payload, frame.payloadLength, ip, port);
-}
-
-inline bool ProcessUtpFrame(IUtpContext &context,
-	const SReservedProt2Frame &frame,
-	uint32_t ip,
-	uint16_t port,
-	std::uint64_t nowMs)
-{
-	return frame.disposition == RP2_KNOWN_TYPE && frame.type == OP_NATT_FRAME_UTP &&
-	       context.ProcessDatagram(frame.payload, frame.payloadLength, ip, port, nowMs);
 }
 
 inline bool ProcessUtpFrame(IUtpContext &context,

@@ -27,16 +27,16 @@
 namespace EncryptionRequirement
 {
 /**
- * Whether an inbound connection that opened with a plain ed2k header must be refused.
+ * Whether an inbound connection that opened with a plain ed2k header must be refused while
+ * "require encryption" is on.
  *
  * A transport that already obfuscates its stream satisfies "require encryption". A connection used
  * for a server or Kad firewall check is exempt, so refusing it cannot leave a node LowID, unless
  * the strict option ignores even those.
  */
-constexpr bool MustRefusePlainConnection(
-	bool required, bool strict, bool transportObfuscates, bool isTestConnection)
+constexpr bool MustRefusePlainConnection(bool strict, bool transportObfuscates, bool isTestConnection)
 {
-	return required && !transportObfuscates && (strict || !isTestConnection);
+	return !transportObfuscates && (strict || !isTestConnection);
 }
 } // namespace EncryptionRequirement
 

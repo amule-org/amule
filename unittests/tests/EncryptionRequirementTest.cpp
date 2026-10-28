@@ -32,23 +32,17 @@ DECLARE_SIMPLE(EncryptionRequirement)
 
 TEST(EncryptionRequirement, ObfuscatingTransportSatisfiesRequire)
 {
-	ASSERT_FALSE(MustRefusePlainConnection(true, false, true, false));
-	ASSERT_FALSE(MustRefusePlainConnection(true, true, true, false));
+	ASSERT_FALSE(MustRefusePlainConnection(false, true, false));
+	ASSERT_FALSE(MustRefusePlainConnection(true, true, false));
 }
 
-TEST(EncryptionRequirement, PlainTransportIsRefusedWhenRequired)
+TEST(EncryptionRequirement, PlainTransportIsRefused)
 {
-	ASSERT_TRUE(MustRefusePlainConnection(true, false, false, false));
+	ASSERT_TRUE(MustRefusePlainConnection(false, false, false));
 }
 
 TEST(EncryptionRequirement, TestConnectionIsExemptUnlessStrict)
 {
-	ASSERT_FALSE(MustRefusePlainConnection(true, false, false, true));
-	ASSERT_TRUE(MustRefusePlainConnection(true, true, false, true));
-}
-
-TEST(EncryptionRequirement, NothingIsRefusedWhenNotRequired)
-{
-	ASSERT_FALSE(MustRefusePlainConnection(false, false, false, false));
-	ASSERT_FALSE(MustRefusePlainConnection(false, true, false, false));
+	ASSERT_FALSE(MustRefusePlainConnection(false, false, true));
+	ASSERT_TRUE(MustRefusePlainConnection(true, false, true));
 }

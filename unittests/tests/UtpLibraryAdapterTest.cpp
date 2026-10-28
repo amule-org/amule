@@ -281,6 +281,38 @@ TEST(UtpLibraryAdapter, AnInboundSynReachesAdmissionWithItsPeer)
 	Teardown(loop);
 }
 
+namespace
+{
+//! Feeds the client's SYN to the server as having arrived obfuscated or not.
+bool AcceptedStreamObfuscates(bool synObfuscated)
+{
+	SLoopback loop;
+	g_loop = &loop;
+	CServerSink sink;
+	CFakeAcceptor acceptor;
+	loop.server = CreateUtpLibrary();
+	loop.server->Create(sink);
+	loop.server->SetAcceptor(&acceptor);
+	StartClient(loop);
+	const std::vector<uint8_t> syn = loop.toServer.front();
+	loop.toServer.pop_front();
+	loop.server->ProcessDatagram(syn.data(), syn.size(), kPeerIp, kPeerPort, loop.nowMs, synObfuscated);
+	const bool obfuscates = acceptor.accepted != nullptr && acceptor.accepted->ObfuscatesStream();
+	Teardown(loop);
+	return obfuscates;
+}
+} // namespace
+
+TEST(UtpLibraryAdapter, AnObfuscatedSynOpensAStreamThatReportsObfuscation)
+{
+	ASSERT_TRUE(AcceptedStreamObfuscates(true));
+}
+
+TEST(UtpLibraryAdapter, APlainSynOpensAStreamThatDoesNotReportObfuscation)
+{
+	ASSERT_FALSE(AcceptedStreamObfuscates(false));
+}
+
 TEST(UtpLibraryAdapter, IncomingSynRejectsAfterTheAcceptorKeepsTheOutgoingAttempt)
 {
 	SLoopback loop;
