@@ -81,6 +81,40 @@ without sending an unsupported response. The receive and response path is in
 [`src/ClientUDPSocket.cpp`](../src/ClientUDPSocket.cpp), with the limiter policy
 in [`src/NatRendezvousPolicy.h`](../src/NatRendezvousPolicy.h).
 
+## Key frame (QUIC datagram obfuscation)
+
+A key frame tells the receiver which user hash to obfuscate its datagrams to the sender with:
+
+```text
+OP_UDPRESERVEDPROT2 (0xB2) | 0xFF | user hash (16 bytes)
+```
+
+The wire format is eMuleAI's. A receiver accepts a payload of at least 16 bytes, ignores any surplus and
+rejects an all-zero hash. The type is `OP_NATT_FRAME_KEY` in
+[`src/include/protocol/Protocols.h`](../src/include/protocol/Protocols.h).
+
+What aMule does with it, in QUIC builds and only while `QuicNatT=1`:
+
+- **Sending.** Every QUIC datagram is obfuscated with the peer's hash when it is known: the identity aMule
+  dialled, or the hash a key frame announced. A QUIC long-header packet is preceded by aMule's own key
+  frame, at most one per endpoint every 10 s. aMule sends its key frame only where it can itself be
+  obfuscated; eMuleAI also sends it in the clear when it has no key, which exposes the sender's user hash
+  to anyone on the path. With `ClientCryptLayerSupported` off, nothing is obfuscated and no key frame is
+  sent.
+- **Receiving.** A key frame is honoured only from an endpoint a rendezvous announced (the ed2k-server
+  `0x61` or Lugdunum's forwarded callback) in the last 30 s. It replaces an earlier announced hash but
+  never the identity aMule dialled, and is otherwise ignored, because nothing authenticates the frame. A
+  held hash expires after 120 s without use, and the table holds at most 256 endpoints. Nothing is
+  persisted: the hash selects an obfuscation key for one live exchange and is not an identity, which the
+  `OP_HELLO` still establishes.
+
+The datagram's own TLS 1.3 protection does not depend on this layer. It only hides the Initial and its
+ALPN from the path. eMuleAI does not require it: its QUIC receiver drops a frame only when no session
+matches. CAPS and CAPS_ACK stay unobfuscated, as specified above.
+
+The decisions are in [`src/NatKeyFrame.h`](../src/NatKeyFrame.h), driven from
+[`src/ClientUDPSocket.cpp`](../src/ClientUDPSocket.cpp). uTP does not use key frames yet.
+
 ## Scope and interoperability status
 
 This exchange only negotiates capability information. It does not provide

@@ -28,15 +28,17 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <map>
 #include <optional>
+#include <utility>
 
 /**
  * The NAT-T key frame: a NAT-T frame (type 0xFF) carrying the sender's 16-byte user hash, which
  * tells the receiver what to obfuscate its datagrams to that endpoint with.
  *
- * Both containers are bounded and take the clock as an argument, so a flood of endpoints can neither
- * grow them nor depend on wall time. Neither persists anything: a hash learned here selects an
+ * Every container is bounded and takes the clock as an argument, so a flood of endpoints can neither
+ * grow them nor depend on wall time. Neither persists anything: a hash held here selects an
  * obfuscation key for one live exchange and is not an identity (the hello stays authoritative).
  */
 namespace NatKeyFrame
@@ -87,9 +89,32 @@ template <typename Map> void EvictOldest(Map &entries)
 	}
 	entries.erase(oldest);
 }
+
+template <typename Map> void PurgeElapsed(Map &entries, std::uint64_t now, std::uint64_t window)
+{
+	for (auto it = entries.begin(); it != entries.end();) {
+		it = Elapsed(now, it->second.stamp, window) ? entries.erase(it) : std::next(it);
+	}
+}
+
+//! Makes room for one more entry: expired ones first, then the oldest.
+template <typename Map>
+void MakeRoom(Map &entries, std::size_t capacity, std::uint64_t now, std::uint64_t window)
+{
+	PurgeElapsed(entries, now, window);
+	while (entries.size() >= capacity) {
+		EvictOldest(entries);
+	}
+}
 } // namespace Detail
 
-//! Hash a peer announced for its endpoint, kept only while that endpoint stays in use.
+/**
+ * Hash a peer is known by for its endpoint, kept only while that endpoint stays in use.
+ *
+ * Two origins. The identity we dialled is the key the peer's datagrams decrypt with. An announced one
+ * comes from a key frame, which nothing authenticates, so it can be replaced by a later key frame but
+ * never displaces what we dialled.
+ */
 class CPeerKeyCache
 {
 public:
@@ -99,20 +124,21 @@ public:
 	{
 	}
 
+	//! The identity we dialled; always wins.
 	void Learn(std::uint32_t ip, std::uint16_t port, const Hash &hash, std::uint64_t nowMs)
 	{
-		if (m_capacity == 0) {
-			return;
+		Store(ip, port, hash, nowMs, true);
+	}
+
+	//! False, and nothing stored, when a live entry for the endpoint is the identity we dialled.
+	bool LearnAnnounced(std::uint32_t ip, std::uint16_t port, const Hash &hash, std::uint64_t nowMs)
+	{
+		const auto existing = m_entries.find(Detail::EndpointKey(ip, port));
+		if (existing != m_entries.end() && existing->second.dialled &&
+			!Detail::Elapsed(nowMs, existing->second.stamp, m_idleMs)) {
+			return false;
 		}
-		const std::uint64_t key = Detail::EndpointKey(ip, port);
-		auto existing = m_entries.find(key);
-		if (existing == m_entries.end()) {
-			PurgeExpired(nowMs);
-			while (m_entries.size() >= m_capacity) {
-				Detail::EvictOldest(m_entries);
-			}
-		}
-		m_entries[key] = Entry{ hash, nowMs };
+		return Store(ip, port, hash, nowMs, false);
 	}
 
 	//! A hit counts as use and extends the entry's life.
@@ -137,14 +163,20 @@ private:
 	{
 		Hash hash;
 		std::uint64_t stamp;
+		bool dialled;
 	};
 
-	void PurgeExpired(std::uint64_t nowMs)
+	bool Store(std::uint32_t ip, std::uint16_t port, const Hash &hash, std::uint64_t nowMs, bool dialled)
 	{
-		for (auto it = m_entries.begin(); it != m_entries.end();) {
-			it = Detail::Elapsed(nowMs, it->second.stamp, m_idleMs) ? m_entries.erase(it)
-										: std::next(it);
+		if (m_capacity == 0) {
+			return false;
 		}
+		const std::uint64_t key = Detail::EndpointKey(ip, port);
+		if (m_entries.find(key) == m_entries.end()) {
+			Detail::MakeRoom(m_entries, m_capacity, nowMs, m_idleMs);
+		}
+		m_entries[key] = Entry{ hash, nowMs, dialled };
+		return true;
 	}
 
 	std::size_t m_capacity;
@@ -176,10 +208,7 @@ public:
 			existing->second.stamp = nowMs;
 			return true;
 		}
-		PurgeExpired(nowMs);
-		while (m_entries.size() >= m_capacity) {
-			Detail::EvictOldest(m_entries);
-		}
+		Detail::MakeRoom(m_entries, m_capacity, nowMs, m_windowMs);
 		m_entries[key] = Entry{ nowMs };
 		return true;
 	}
@@ -192,16 +221,49 @@ private:
 		std::uint64_t stamp;
 	};
 
-	void PurgeExpired(std::uint64_t nowMs)
-	{
-		for (auto it = m_entries.begin(); it != m_entries.end();) {
-			it = Detail::Elapsed(nowMs, it->second.stamp, m_windowMs) ? m_entries.erase(it)
-										  : std::next(it);
-		}
-	}
-
 	std::size_t m_capacity;
 	std::uint64_t m_windowMs;
+	std::map<std::uint64_t, Entry> m_entries;
+};
+
+//! Endpoints a rendezvous told us a peer will contact us from. Only these may announce a key.
+class CExpectedPeers
+{
+public:
+	CExpectedPeers(std::size_t capacity, std::uint64_t ttlMs)
+	: m_capacity(capacity)
+	, m_ttlMs(ttlMs)
+	{
+	}
+
+	void Expect(std::uint32_t ip, std::uint16_t port, std::uint64_t nowMs)
+	{
+		if (m_capacity == 0) {
+			return;
+		}
+		const std::uint64_t key = Detail::EndpointKey(ip, port);
+		if (m_entries.find(key) == m_entries.end()) {
+			Detail::MakeRoom(m_entries, m_capacity, nowMs, m_ttlMs);
+		}
+		m_entries[key] = Entry{ nowMs };
+	}
+
+	bool IsExpected(std::uint32_t ip, std::uint16_t port, std::uint64_t nowMs) const
+	{
+		const auto found = m_entries.find(Detail::EndpointKey(ip, port));
+		return found != m_entries.end() && !Detail::Elapsed(nowMs, found->second.stamp, m_ttlMs);
+	}
+
+	std::size_t Size() const { return m_entries.size(); }
+
+private:
+	struct Entry
+	{
+		std::uint64_t stamp;
+	};
+
+	std::size_t m_capacity;
+	std::uint64_t m_ttlMs;
 	std::map<std::uint64_t, Entry> m_entries;
 };
 
@@ -237,17 +299,102 @@ inline SendPlan PlanDatagram(CPeerKeyCache &keys,
 	return plan;
 }
 
-//! A key frame names a key for its endpoint but never replaces one we already hold: the frame is
-//! unauthenticated, and a spoofed one must not be able to break a live exchange.
-inline bool LearnFromKeyFrame(
-	CPeerKeyCache &keys, std::uint32_t ip, std::uint16_t port, const Hash &hash, std::uint64_t nowMs)
+enum class KeyFrameResult
 {
-	if (keys.Lookup(ip, port, nowMs).has_value()) {
-		return false;
+	//! The runtime opt-in is off: a datagram nobody asked for changes nothing.
+	Disabled,
+	Malformed,
+	//! No rendezvous told us this endpoint would contact us.
+	Unexpected,
+	//! We already hold the identity we dialled for this endpoint.
+	Held,
+	Learned
+};
+
+struct Callbacks
+{
+	//! The runtime opt-in for QUIC NAT-T.
+	std::function<bool()> enabled;
+	//! Whether the user allows the UDP obfuscation layer at all.
+	std::function<bool()> obfuscationOn;
+	//! Sends our key frame, obfuscated with @a key.
+	std::function<void(std::uint32_t ip, std::uint16_t port, const Hash &key)> sendKeyFrame;
+	//! Sends one QUIC datagram, obfuscated with @a key unless it is null.
+	std::function<void(const std::uint8_t *payload,
+		std::size_t length,
+		std::uint32_t ip,
+		std::uint16_t port,
+		const Hash *key)>
+		sendDatagram;
+};
+
+/**
+ * Sends QUIC datagrams and handles key frames, with everything that touches a socket or a preference
+ * behind a callback so it can be driven by fakes.
+ */
+class CKeyFrameService
+{
+public:
+	explicit CKeyFrameService(Callbacks callbacks)
+	: m_callbacks(std::move(callbacks))
+	{
 	}
-	keys.Learn(ip, port, hash, nowMs);
-	return keys.Lookup(ip, port, nowMs).has_value();
-}
+
+	//! A rendezvous says this peer is about to contact us.
+	void ExpectPeer(std::uint32_t ip, std::uint16_t port, std::uint64_t nowMs)
+	{
+		m_expected.Expect(ip, port, nowMs);
+	}
+
+	//! We are dialling this identity: it is the key the peer's datagrams decrypt with.
+	void NoteDialled(std::uint32_t ip, std::uint16_t port, const Hash &hash, std::uint64_t nowMs)
+	{
+		m_keys.Learn(ip, port, hash, nowMs);
+	}
+
+	KeyFrameResult OnKeyFrame(const std::uint8_t *payload,
+		std::size_t length,
+		std::uint32_t ip,
+		std::uint16_t port,
+		std::uint64_t nowMs)
+	{
+		if (!m_callbacks.enabled()) {
+			return KeyFrameResult::Disabled;
+		}
+		const std::optional<Hash> hash = ParsePayload(payload, length);
+		if (!hash) {
+			return KeyFrameResult::Malformed;
+		}
+		if (!m_expected.IsExpected(ip, port, nowMs)) {
+			return KeyFrameResult::Unexpected;
+		}
+		return m_keys.LearnAnnounced(ip, port, *hash, nowMs) ? KeyFrameResult::Learned
+								     : KeyFrameResult::Held;
+	}
+
+	void SendDatagram(const std::uint8_t *payload,
+		std::size_t length,
+		std::uint32_t ip,
+		std::uint16_t port,
+		std::uint64_t nowMs)
+	{
+		SendPlan plan;
+		if (m_callbacks.obfuscationOn()) {
+			plan = PlanDatagram(
+				m_keys, m_gate, ip, port, IsQuicLongHeader(payload, length), nowMs);
+		}
+		if (plan.sendKeyFrame) {
+			m_callbacks.sendKeyFrame(ip, port, *plan.key);
+		}
+		m_callbacks.sendDatagram(payload, length, ip, port, plan.key ? &*plan.key : nullptr);
+	}
+
+private:
+	Callbacks m_callbacks;
+	CPeerKeyCache m_keys{ 256, 120000 };
+	CSendGate m_gate{ 256, 10000 };
+	CExpectedPeers m_expected{ 256, 30000 };
+};
 } // namespace NatKeyFrame
 
 #endif // AMULE_NAT_KEY_FRAME_H

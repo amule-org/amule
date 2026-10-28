@@ -25,6 +25,9 @@
 
 #include "NatKeyFrame.h"
 
+#include <string>
+#include <vector>
+
 using namespace muleunit;
 using namespace NatKeyFrame;
 
@@ -212,17 +215,187 @@ TEST(NatKeyFrame, TheKeyFrameGoesOnceAWindowWhileEveryDatagramStaysObfuscated)
 	ASSERT_TRUE(PlanDatagram(cache, gate, 1, 1, true, 10010).sendKeyFrame);
 }
 
-TEST(NatKeyFrame, ARecievedKeyIsLearnedForAnUnknownEndpoint)
+TEST(NatKeyFrame, AnAnnouncedKeyIsStoredForAnUnknownEndpoint)
 {
 	CPeerKeyCache cache(8, 120000);
-	ASSERT_TRUE(LearnFromKeyFrame(cache, 1, 1, MakeHash(5), 0));
-	ASSERT_TRUE(cache.Lookup(1, 1, 1).has_value());
+	ASSERT_TRUE(cache.LearnAnnounced(1, 1, MakeHash(5), 0));
+	ASSERT_TRUE(*cache.Lookup(1, 1, 1) == MakeHash(5));
 }
 
-TEST(NatKeyFrame, ARecievedKeyNeverReplacesOneAlreadyKnown)
+TEST(NatKeyFrame, AnAnnouncedKeyReplacesAnEarlierAnnouncedOne)
+{
+	CPeerKeyCache cache(8, 120000);
+	cache.LearnAnnounced(1, 1, MakeHash(5), 0);
+	ASSERT_TRUE(cache.LearnAnnounced(1, 1, MakeHash(9), 1));
+	ASSERT_TRUE(*cache.Lookup(1, 1, 2) == MakeHash(9));
+}
+
+TEST(NatKeyFrame, AnAnnouncedKeyNeverReplacesTheIdentityWeDialled)
 {
 	CPeerKeyCache cache(8, 120000);
 	cache.Learn(1, 1, MakeHash(5), 0);
-	ASSERT_FALSE(LearnFromKeyFrame(cache, 1, 1, MakeHash(9), 1));
+	ASSERT_FALSE(cache.LearnAnnounced(1, 1, MakeHash(9), 1));
 	ASSERT_TRUE(*cache.Lookup(1, 1, 2) == MakeHash(5));
+}
+
+TEST(NatKeyFrame, ADialledIdentityThatExpiredNoLongerProtectsTheEndpoint)
+{
+	CPeerKeyCache cache(8, 1000);
+	cache.Learn(1, 1, MakeHash(5), 0);
+	ASSERT_TRUE(cache.LearnAnnounced(1, 1, MakeHash(9), 5000));
+	ASSERT_TRUE(*cache.Lookup(1, 1, 5001) == MakeHash(9));
+}
+
+TEST(NatKeyFrame, AZeroCapacityCacheStoresNoAnnouncedKey)
+{
+	CPeerKeyCache cache(0, 1000);
+	ASSERT_FALSE(cache.LearnAnnounced(1, 1, MakeHash(5), 0));
+}
+
+TEST(NatKeyFrame, AnExpectedPeerIsRemembered)
+{
+	CExpectedPeers expected(8, 1000);
+	ASSERT_FALSE(expected.IsExpected(1, 1, 0));
+	expected.Expect(1, 1, 0);
+	ASSERT_TRUE(expected.IsExpected(1, 1, 999));
+	ASSERT_FALSE(expected.IsExpected(1, 2, 999));
+}
+
+TEST(NatKeyFrame, AnExpectationLapses)
+{
+	CExpectedPeers expected(8, 1000);
+	expected.Expect(1, 1, 0);
+	ASSERT_FALSE(expected.IsExpected(1, 1, 1000));
+}
+
+TEST(NatKeyFrame, ExpectationsStayBounded)
+{
+	CExpectedPeers expected(3, 100000);
+	for (std::uint32_t ip = 1; ip <= 20; ++ip) {
+		expected.Expect(ip, 1, ip);
+	}
+	ASSERT_TRUE(expected.Size() <= 3);
+	ASSERT_TRUE(expected.IsExpected(20, 1, 21));
+}
+
+namespace
+{
+//! A service wired to fakes that record what it would have sent.
+struct Rig
+{
+	bool enabled = true;
+	bool obfuscation = true;
+	std::vector<std::string> events;
+	std::vector<std::optional<Hash>> datagramKeys;
+	CKeyFrameService service;
+
+	Rig()
+	: service(MakeCallbacks())
+	{
+	}
+
+	Callbacks MakeCallbacks()
+	{
+		Callbacks callbacks;
+		callbacks.enabled = [this] { return enabled; };
+		callbacks.obfuscationOn = [this] { return obfuscation; };
+		callbacks.sendKeyFrame = [this](std::uint32_t, std::uint16_t, const Hash &) {
+			events.push_back("keyframe");
+		};
+		callbacks.sendDatagram = [this](const std::uint8_t *,
+						 std::size_t,
+						 std::uint32_t,
+						 std::uint16_t,
+						 const Hash *key) {
+			events.push_back("datagram");
+			datagramKeys.push_back(key != nullptr ? std::optional<Hash>(*key) : std::nullopt);
+		};
+		return callbacks;
+	}
+};
+
+const std::uint8_t kLongHeader[] = { 0xC3, 0, 0, 0 };
+const std::uint8_t kShortHeader[] = { 0x43, 0, 0, 0 };
+} // namespace
+
+TEST(NatKeyFrame, AKeyFrameIsIgnoredWhileQuicNatTIsOff)
+{
+	Rig rig;
+	rig.enabled = false;
+	rig.service.ExpectPeer(1, 1, 0);
+	const Hash hash = MakeHash(5);
+	ASSERT_TRUE(rig.service.OnKeyFrame(hash.data(), hash.size(), 1, 1, 1) == KeyFrameResult::Disabled);
+	rig.enabled = true;
+	rig.service.SendDatagram(kShortHeader, sizeof(kShortHeader), 1, 1, 2);
+	ASSERT_FALSE(rig.datagramKeys.back().has_value());
+}
+
+TEST(NatKeyFrame, AKeyFrameFromAnUnexpectedEndpointIsIgnored)
+{
+	Rig rig;
+	const Hash hash = MakeHash(5);
+	ASSERT_TRUE(rig.service.OnKeyFrame(hash.data(), hash.size(), 1, 1, 0) == KeyFrameResult::Unexpected);
+	rig.service.SendDatagram(kShortHeader, sizeof(kShortHeader), 1, 1, 1);
+	ASSERT_FALSE(rig.datagramKeys.back().has_value());
+}
+
+TEST(NatKeyFrame, AKeyFrameFromAnExpectedEndpointObfuscatesOurReplies)
+{
+	Rig rig;
+	rig.service.ExpectPeer(1, 1, 0);
+	const Hash hash = MakeHash(5);
+	ASSERT_TRUE(rig.service.OnKeyFrame(hash.data(), hash.size(), 1, 1, 1) == KeyFrameResult::Learned);
+	rig.service.SendDatagram(kShortHeader, sizeof(kShortHeader), 1, 1, 2);
+	ASSERT_TRUE(*rig.datagramKeys.back() == hash);
+}
+
+TEST(NatKeyFrame, AMalformedKeyFrameLearnsNothing)
+{
+	Rig rig;
+	rig.service.ExpectPeer(1, 1, 0);
+	const std::uint8_t shortPayload[8] = {};
+	ASSERT_TRUE(rig.service.OnKeyFrame(shortPayload, sizeof(shortPayload), 1, 1, 1) ==
+		    KeyFrameResult::Malformed);
+}
+
+TEST(NatKeyFrame, TheIdentityWeDialledSurvivesAKeyFrameFromTheSameEndpoint)
+{
+	Rig rig;
+	rig.service.ExpectPeer(1, 1, 0);
+	rig.service.NoteDialled(1, 1, MakeHash(5), 0);
+	const Hash other = MakeHash(9);
+	ASSERT_TRUE(rig.service.OnKeyFrame(other.data(), other.size(), 1, 1, 1) == KeyFrameResult::Held);
+	rig.service.SendDatagram(kShortHeader, sizeof(kShortHeader), 1, 1, 2);
+	ASSERT_TRUE(*rig.datagramKeys.back() == MakeHash(5));
+}
+
+TEST(NatKeyFrame, OurKeyFrameGoesBeforeALongHeaderAndOnlyOncePerWindow)
+{
+	Rig rig;
+	rig.service.NoteDialled(1, 1, MakeHash(5), 0);
+	rig.service.SendDatagram(kLongHeader, sizeof(kLongHeader), 1, 1, 10);
+	rig.service.SendDatagram(kLongHeader, sizeof(kLongHeader), 1, 1, 20);
+	ASSERT_EQUALS(3, static_cast<int>(rig.events.size()));
+	ASSERT_TRUE(rig.events[0] == "keyframe");
+	ASSERT_TRUE(rig.events[1] == "datagram");
+	ASSERT_TRUE(rig.events[2] == "datagram");
+}
+
+TEST(NatKeyFrame, NothingIsObfuscatedAndNoKeyFrameSentWhenTheUserTurnedObfuscationOff)
+{
+	Rig rig;
+	rig.obfuscation = false;
+	rig.service.NoteDialled(1, 1, MakeHash(5), 0);
+	rig.service.SendDatagram(kLongHeader, sizeof(kLongHeader), 1, 1, 10);
+	ASSERT_EQUALS(1, static_cast<int>(rig.events.size()));
+	ASSERT_TRUE(rig.events[0] == "datagram");
+	ASSERT_FALSE(rig.datagramKeys.back().has_value());
+}
+
+TEST(NatKeyFrame, ADatagramToAnUnknownPeerGoesPlainWithoutOurKeyFrame)
+{
+	Rig rig;
+	rig.service.SendDatagram(kLongHeader, sizeof(kLongHeader), 1, 1, 10);
+	ASSERT_EQUALS(1, static_cast<int>(rig.events.size()));
+	ASSERT_FALSE(rig.datagramKeys.back().has_value());
 }
