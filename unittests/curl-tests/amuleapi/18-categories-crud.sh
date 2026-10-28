@@ -77,6 +77,10 @@ _assert_body_empty() {
 	fi
 }
 
+# A condition the daemon's environment makes untestable (e.g. it could create a path meant to
+# be uncreatable because the smoke is running as root). Counts as neither pass nor fail.
+_skip() { echo "  SKIP  $1"; }
+
 if ! command -v jq >/dev/null 2>&1; then _die "jq is required."; fi
 if ! curl -s -o /dev/null --max-time 2 "$API/health" 2>/dev/null; then
 	_die "amuleapi at $HOST is not reachable."
@@ -191,16 +195,35 @@ fi
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/categories?limit=500"
 BEFORE_IDX=$(printf '%s' "$CURL_BODY" | jq -c '[.categories[].index]')
 
+# A category's save_path is a folder confined to the daemon's allowed roots (EC path
+# hardening). With the out-of-the-box empty gate -- or any gate not covering $TEST_PATH --
+# a create carrying that path is refused outright with 403 path_not_allowed and nothing is
+# created. Detect that, assert the refusal, then create the backbone category WITHOUT a
+# save_path (always allowed) so the rest of the phase has a category to work on.
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d "{\"name\":\"$TEST_NAME\",\"save_path\":\"$TEST_PATH\",\"comment\":\"18-categories-crud test\",\"priority\":\"high\"}" \
 	"$API/categories"
-# 202 with no body. EC_OP_CREATE_CATEGORY answers success or failure and never
-# returns the index it assigned, so naming the new category here meant scanning
-# the snapshot for one with a matching name and falling back to a bodiless 201
-# when the scan came up short. The caller re-reads the collection, which is what
-# the lookup below does.
-_assert_status 202 "POST /categories (create) → 202"
+CREATED_WITH_PATH=1
+if [ "$CURL_STATUS" = "403" ]; then
+	CREATED_WITH_PATH=0
+	_assert_json_eq '.error.code' path_not_allowed \
+		"POST /categories with an out-of-root save_path → 403 path_not_allowed"
+	echo "  SKIP  the save_path round-trip ($TEST_PATH is outside the daemon's allowed roots;"
+	echo "        add it to allowed-remote-dirs.dat on the daemon to exercise it)"
+	_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+		-H "Content-Type: application/json" \
+		-d "{\"name\":\"$TEST_NAME\",\"comment\":\"18-categories-crud test\",\"priority\":\"high\"}" \
+		"$API/categories"
+	_assert_status 202 "POST /categories (create, no save_path) → 202"
+else
+	# 202 with no body. EC_OP_CREATE_CATEGORY answers success or failure and never
+	# returns the index it assigned, so naming the new category here meant scanning
+	# the snapshot for one with a matching name and falling back to a bodiless 201
+	# when the scan came up short. The caller re-reads the collection, which is what
+	# the lookup below does.
+	_assert_status 202 "POST /categories (create) → 202"
+fi
 _assert_body_empty 'create sends no body'
 
 # Verify by GET /categories, which is also where the assigned index comes from.
@@ -218,7 +241,10 @@ fi
 # reads what the daemon actually kept, not what amuleapi guessed it kept.
 LOOKUP=$(printf '%s' "$CURL_BODY" \
 	| jq --argjson i "$NEW_IDX" '[.categories[] | select(.index == $i)] | first')
-for f in name:"$TEST_NAME" save_path:"$TEST_PATH" priority:high; do
+# save_path only round-trips when the daemon accepted it (gate open and covering $TEST_PATH).
+CAT_FIELDS="name:$TEST_NAME priority:high"
+[ "$CREATED_WITH_PATH" = "1" ] && CAT_FIELDS="$CAT_FIELDS save_path:$TEST_PATH"
+for f in $CAT_FIELDS; do
 	key=${f%%:*}; want=${f#*:}
 	got=$(printf '%s' "$LOOKUP" | jq -r ".$key")
 	if [ "$got" = "$want" ]; then
@@ -244,9 +270,16 @@ _assert_status 400 "POST /categories (bad priority enum) → 400"
 # so a read-modify-write round-trip does not fail on a field the client never
 # touched.
 for p in very_low release; do
+	# Omit save_path when the daemon's allowed-roots gate would refuse it: this case is about
+	# the priority enum, not the folder, so a bare create keeps it testable either way.
+	if [ "$CREATED_WITH_PATH" = "1" ]; then
+		PRIO_BODY="{\"name\":\"prio-$p\",\"save_path\":\"$TEST_PATH\",\"priority\":\"$p\"}"
+	else
+		PRIO_BODY="{\"name\":\"prio-$p\",\"priority\":\"$p\"}"
+	fi
 	_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 		-H "Content-Type: application/json" \
-		-d "{\"name\":\"prio-$p\",\"save_path\":\"$TEST_PATH\",\"priority\":\"$p\"}" \
+		-d "$PRIO_BODY" \
 		"$API/categories"
 	_assert_status 202 "POST /categories (priority=$p accepted, R9) → 202"
 	# Leave no residue: a leftover category poisons the next run's create.
@@ -380,45 +413,84 @@ else
 	_fail "create without save_path" "202 returned but no such category in /categories"
 fi
 
-# 8b. A save_path the daemon cannot create. It keeps the incoming directory and
-#     the category still exists. Running as root the mkdir would succeed, so the
-#     assertion is guarded on the substitution actually having happened.
+# 8b/8c. A save_path OUTSIDE the daemon's allowed roots. Under the EC path-hardening gate --
+#     the empty default, or any gate not covering "$UNUSABLE" (a name at the filesystem root) --
+#     the create is refused outright with 403 path_not_allowed and nothing is created, and a
+#     category UPDATE that would move save_path out of root is refused with the whole update
+#     dropped. If instead the daemon's roots DO cover this path (e.g. a root of "/"), amuled
+#     reaches its older behaviour: it cannot create the directory, so it keeps the incoming one
+#     and the category still exists -- the path-substitution contract, still asserted below.
 UNUSABLE=/18-cat-unusable-$$/sub
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d "{\"name\":\"18-cat-badpath\",\"save_path\":\"$UNUSABLE\"}" "$API/categories"
-_assert_status 202 "POST /categories with an uncreatable save_path -> 202 (path substituted)"
-_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/categories"
-BAD_IDX=$(printf '%s' "$CURL_BODY" \
-	| jq -r '[.categories[] | select(.name == "18-cat-badpath")][0].index // empty')
-if [ -n "$BAD_IDX" ]; then
-	_pass "the category survives an uncreatable save_path (index=$BAD_IDX)"
-	BAD_PATH=$(printf '%s' "$CURL_BODY" \
-		| jq -r '[.categories[] | select(.name == "18-cat-badpath")][0].save_path')
-	if [ "$BAD_PATH" = "$UNUSABLE" ]; then
-		_skip "path-substitution check: the daemon could create $UNUSABLE (running as root?)"
-	else
-		_assert_json_eq '[.categories[] | select(.name == "18-cat-badpath")][0].save_path' \
-			"$INCOMING" 'the refused path is replaced by directories.incoming_path, not stored'
-	fi
+if [ "$CURL_STATUS" = "403" ]; then
+	# Gated: out-of-root create refused, nothing created.
+	_assert_json_eq '.error.code' path_not_allowed \
+		"POST /categories with an out-of-root save_path → 403 path_not_allowed"
+	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/categories"
+	_assert_json_eq '[.categories[] | select(.name == "18-cat-badpath")] | length' '0' \
+		"the refused create left no category behind"
 
-	# 8c. The same contract on PATCH: an update whose path is refused still
-	#     applies every other field, and the echoed object reports the path
-	#     that was kept rather than the one that was asked for.
-	_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+	# An out-of-root save_path CHANGE on an existing category is refused too, and the whole
+	# update is dropped -- not even the name lands. Backbone created without a path (allowed).
+	_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 		-H "Content-Type: application/json" \
-		-d "{\"name\":\"18-cat-badpath-renamed\",\"save_path\":\"$UNUSABLE\"}" \
-		"$API/categories/$BAD_IDX"
-	_assert_status 200 "PATCH /categories/$BAD_IDX with an uncreatable save_path -> 200"
-	_assert_json_eq '.name' '18-cat-badpath-renamed' \
-		'the rest of the PATCH lands even when the path is refused'
-	_assert_json_eq "(.save_path == \"$UNUSABLE\")" false \
-		'the echoed save_path is the kept one, not the refused one'
-
-	_curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" "$API/categories/$BAD_IDX"
-	_assert_status 204 "cleanup: DELETE /categories/$BAD_IDX -> 204"
+		-d '{"name":"18-cat-confine"}' "$API/categories"
+	_assert_status 202 "POST /categories (backbone for the update-refusal check) → 202"
+	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/categories"
+	CONFINE_IDX=$(printf '%s' "$CURL_BODY" \
+		| jq -r '[.categories[] | select(.name == "18-cat-confine")][0].index // empty')
+	if [ -n "$CONFINE_IDX" ]; then
+		_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+			-H "Content-Type: application/json" \
+			-d "{\"name\":\"18-cat-confine-renamed\",\"save_path\":\"$UNUSABLE\"}" \
+			"$API/categories/$CONFINE_IDX"
+		_assert_status 403 "PATCH /categories/$CONFINE_IDX out-of-root save_path → 403"
+		_assert_json_eq '.error.code' path_not_allowed 'the out-of-root update is path_not_allowed'
+		_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/categories/$CONFINE_IDX"
+		_assert_json_eq '.name' '18-cat-confine' \
+			'the refused update left the category unchanged (not even the name landed)'
+		_curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" "$API/categories/$CONFINE_IDX"
+		_assert_status 204 "cleanup: DELETE /categories/$CONFINE_IDX -> 204"
+	else
+		_fail "backbone create for update-refusal" "202 returned but no such category in /categories"
+	fi
 else
-	_fail "create with an uncreatable save_path" "202 returned but no such category in /categories"
+	# Ungated (a root covers this path): the older path-substitution contract. Running as root
+	# the mkdir would succeed, so the assertion is guarded on the substitution having happened.
+	_assert_status 202 "POST /categories with an uncreatable save_path -> 202 (path substituted)"
+	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/categories"
+	BAD_IDX=$(printf '%s' "$CURL_BODY" \
+		| jq -r '[.categories[] | select(.name == "18-cat-badpath")][0].index // empty')
+	if [ -n "$BAD_IDX" ]; then
+		_pass "the category survives an uncreatable save_path (index=$BAD_IDX)"
+		BAD_PATH=$(printf '%s' "$CURL_BODY" \
+			| jq -r '[.categories[] | select(.name == "18-cat-badpath")][0].save_path')
+		if [ "$BAD_PATH" = "$UNUSABLE" ]; then
+			_skip "path-substitution check: the daemon could create $UNUSABLE (running as root?)"
+		else
+			_assert_json_eq '[.categories[] | select(.name == "18-cat-badpath")][0].save_path' \
+				"$INCOMING" 'the refused path is replaced by directories.incoming_path, not stored'
+		fi
+
+		# The same contract on PATCH: an update whose path is refused still applies every other
+		# field, and the echoed object reports the path that was kept, not the one asked for.
+		_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+			-H "Content-Type: application/json" \
+			-d "{\"name\":\"18-cat-badpath-renamed\",\"save_path\":\"$UNUSABLE\"}" \
+			"$API/categories/$BAD_IDX"
+		_assert_status 200 "PATCH /categories/$BAD_IDX with an uncreatable save_path -> 200"
+		_assert_json_eq '.name' '18-cat-badpath-renamed' \
+			'the rest of the PATCH lands even when the path is refused'
+		_assert_json_eq "(.save_path == \"$UNUSABLE\")" false \
+			'the echoed save_path is the kept one, not the refused one'
+
+		_curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" "$API/categories/$BAD_IDX"
+		_assert_status 204 "cleanup: DELETE /categories/$BAD_IDX -> 204"
+	else
+		_fail "create with an uncreatable save_path" "202 returned but no such category in /categories"
+	fi
 fi
 
 # --- Summary. -----------------------------------------------------

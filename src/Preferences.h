@@ -193,6 +193,17 @@ public:
 	// exclusion preview. `truncated` makes any count taken from `out` a lower bound.
 	void GetExpandedFolderNames(wxArrayString &out, bool &truncated) const;
 
+	// Allowed-roots confinement for remote (EC / amuleapi) folder changes -- incoming, temp,
+	// shared folders and category paths. The roots are local daemon configuration, loaded from
+	// allowed-remote-dirs.dat and never settable over EC. Empty by default, which refuses every
+	// remote folder change (the opt-in gate). "Only changes are checked" is the caller's job: a
+	// value equal to what is stored, or an entry already in the stored list, is left alone.
+	void LoadAllowedRemoteDirRoots();
+	void SaveAllowedRemoteDirRoots();
+	// True iff a remote client may point a folder preference at `dir`: `dir` is equal to or inside
+	// one of the configured roots (CPath::IsContainedIn resolves ".." and symlinks). No roots -> false.
+	bool IsRemoteDirChangeAllowed(const CPath &dir) const;
+
 	static const wxString &GetConfigDir() { return s_configDir; }
 	static void SetConfigDir(const wxString &dir) { s_configDir = dir; }
 
@@ -424,6 +435,10 @@ public:
 	// file of its own so older binaries see the already-expanded union in shareddir.dat, while
 	// round-tripping that file through an older binary still preserves the recursive intent here.
 	PathList shareddir_recursive_list;
+
+	// Local-only allow-list of roots that confine remote folder changes (see the accessors above).
+	// Empty by default. Loaded from allowed-remote-dirs.dat; never read from or written over EC.
+	PathList allowed_remote_dir_roots;
 
 	// A user-configured remote->local path-prefix substitution, for amuleGUI against a daemon on
 	// another machine whose filesystem is otherwise reachable. remotePrefix is an opaque string

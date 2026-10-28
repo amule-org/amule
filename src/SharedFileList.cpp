@@ -1879,6 +1879,18 @@ void CSharedFileList::VerifyLocalData(const CKnownFile *file) const
 
 bool CSharedFileList::RenameFile(CKnownFile *file, const CPath &newName)
 {
+	// A rename stays in the file's own folder: newName must be a bare file name, never a path. An
+	// EC/amuleapi client controls this string, and the completed-file branch below joins it to the
+	// file's directory and renames on disk, so a value with a directory component or a ".." element
+	// would escape the folder and move the file to an arbitrary location (CWE-22). Refusing it here
+	// covers every caller (EC, amuleapi, GUI).
+	if (!newName.IsBareFileName()) {
+		AddLogLineC(CFormat(_("Refused to rename '%s' to '%s': the new name must be a plain file "
+				      "name, not a path.")) %
+			    file->GetFileName() % newName);
+		return false;
+	}
+
 	if (file->IsPartFile()) {
 		CPartFile *pfile = dynamic_cast<CPartFile *>(file);
 

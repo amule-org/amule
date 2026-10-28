@@ -123,5 +123,6 @@ export function SharedDirectories({ isGuest }) {
           <button class="btn btn-primary btn-sm" type="button" disabled=${busy || !path.trim()}
                   onClick=${submitAdd}>${t("prefs_shdir_add")}</button>
         </div>`}
+      <p class="hint">${t("prefs_allowed_roots_hint")}</p>
     </div>`;
 }

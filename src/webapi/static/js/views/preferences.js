@@ -112,10 +112,19 @@ const TABS = [
     // (which cannot carry the recursive flag each root needs): a fields-less group
     // whose panel the `after` hook renders.
     { legendKey: "prefs_group_shared", after: "shared_directories", fields: [] },
+    // Read-only: the roots the daemon lets a remote client point a folder at. Daemon-local
+    // config (allowed-remote-dirs.dat); empty means every remote folder change is refused.
+    { legendKey: "prefs_group_remote_roots", noteKey: "prefs_allowed_roots_hint", fields: [
+      { key: "allowed_remote_roots", type: "text", readonly: true,
+        derived: (v, cat) => {
+          const a = v[cat + ".allowed_remote_roots"];
+          return Array.isArray(a) && a.length ? a.join(", ") : "";
+        } },
+    ] },
     { legendKey: "prefs_group_shared_options", fields: [
       { key: "share_hidden", type: "bool" },
       { key: "rescan_on_startup", type: "bool" },
-      { key: "follow_symlinks", type: "bool" },
+      { key: "follow_symlinks", type: "bool", readonly: true, titleKey: "prefs_daemon_local_hint" },
       { key: "exclude_patterns", type: "text" },
       { key: "exclude_patterns_use_regex", type: "bool" },
     ] },
@@ -177,7 +186,8 @@ const TABS = [
     ] },
     { legendKey: "prefs_group_media", fields: [
       { key: "media_metadata_enabled", type: "bool" },
-      { key: "ffprobe_path", type: "text", sub: true, gatedBy: "media_metadata_enabled" },
+      { key: "ffprobe_path", type: "text", sub: true, gatedBy: "media_metadata_enabled",
+        readonly: true, titleKey: "prefs_daemon_local_hint" },
     ] },
   ] },
   { id: "security", labelKey: "prefs_security", cat: "security", groups: [
@@ -295,7 +305,8 @@ const TABS = [
     { legendKey: "prefs_group_onlinesig", fields: [
       { key: "enabled", type: "bool" },
       { key: "update_frequency_seconds", type: "int", min: 0, max: 600, sub: true, gatedBy: "enabled" },
-      { key: "directory", type: "text", sub: true, gatedBy: "enabled" },
+      { key: "directory", type: "text", sub: true, gatedBy: "enabled",
+        readonly: true, titleKey: "prefs_daemon_local_hint" },
     ] },
   ] },
   { id: "advanced", labelKey: "prefs_advanced", cat: "advanced", noteKey: "prefs_advanced_warning", groups: [
@@ -495,23 +506,26 @@ export default function Preferences({ isGuest }) {
   const [webuiTheme, setWebuiTheme] = useState(getTheme());
   const [webuiRange, setWebuiRange] = useState(loadGraphInterval());
 
+  // GET /preferences into the flat form state. Also re-run after a partial
+  // save (a refused folder) to resync the form with what the daemon kept.
+  const loadPrefs = () => api.get("preferences").then((p) => {
+    const v = {};
+    for (const tab of TABS)
+      for (const grp of tab.groups)
+        for (const f of grp.fields) {
+          if (f.type === "button") continue;
+          const cat = catOf(tab, f);
+          let val = (catGet(p, cat) || {})[f.key];
+          if (f.type === "server_sources" && Array.isArray(val)) val = val.join("\n");
+          else if (f.scale && typeof val === "number") val = Math.round(val / f.scale);
+          v[cat + "." + f.key] = val;
+        }
+    setValues(v);
+    setSavedSources(v["servers.update_urls"] || "");
+  });
+
   useEffect(() => {
-    api.get("preferences").then((p) => {
-      const v = {};
-      for (const tab of TABS)
-        for (const grp of tab.groups)
-          for (const f of grp.fields) {
-            if (f.type === "button") continue;
-            const cat = catOf(tab, f);
-            let val = (catGet(p, cat) || {})[f.key];
-            if (f.type === "server_sources" && Array.isArray(val)) val = val.join("\n");
-            else if (f.scale && typeof val === "number") val = Math.round(val / f.scale);
-            v[cat + "." + f.key] = val;
-          }
-      setValues(v);
-      setSavedSources(v["servers.update_urls"] || "");
-      setLoaded(true);
-    }).catch((e) => setError(terr(e) || t("prefs_error")));
+    loadPrefs().then(() => setLoaded(true)).catch((e) => setError(terr(e) || t("prefs_error")));
   }, []);
 
   // Gecko leaves blank rows in the multicol .prefs-groups after its subtree is
@@ -576,6 +590,7 @@ export default function Preferences({ isGuest }) {
       return html`
         <div class=${"field field-inline" + subCls}>
           <input type="checkbox" id=${id} checked=${checked} disabled=${disabled}
+                 title=${f.titleKey ? t(f.titleKey) : null}
                  onChange=${(e) => setVal(id, f.invert ? !e.target.checked : e.target.checked)} />
           <label for=${id} title=${f.titleKey ? t(f.titleKey) : undefined}>${label}</label>
         </div>`;
@@ -618,6 +633,7 @@ export default function Preferences({ isGuest }) {
       <input class="input" id=${id} disabled=${disabled}
              type=${f.type === "int" ? "number" : f.type === "password" ? "password" : "text"}
              autocomplete=${f.type === "password" ? "new-password" : null}
+             title=${f.titleKey ? t(f.titleKey) : null}
              min=${f.min} max=${f.max} step=${f.step}
              value=${val === undefined || val === null ? "" : val} onInput=${(e) => setVal(id, e.target.value)} />`;
     return html`
@@ -703,7 +719,13 @@ export default function Preferences({ isGuest }) {
         vs["servers.update_urls"] === values["servers.update_urls"] ? sources : vs["servers.update_urls"] }));
       toast(t("prefs_toast_saved"), "success");
     }
-    catch (err) { toast(terr(err) || t("prefs_error"), "error"); }
+    catch (err) {
+      toast(terr(err) || t("prefs_error"), "error");
+      // A refused folder answers path_not_allowed but the daemon keeps the old
+      // folder and applies the rest of the save. Re-read so the form drops the
+      // refused value and matches the daemon, as amulegui does.
+      if (err.code === "path_not_allowed") loadPrefs().catch(() => {});
+    }
     finally { setBusy(false); }
   };
 
@@ -734,6 +756,7 @@ export default function Preferences({ isGuest }) {
             : tab.groups.filter((g) => !g.hideWhen || !g.hideWhen(values)).map((grp) => html`
             <fieldset>
               <legend>${t(grp.legendKey)}</legend>
+              ${grp.noteKey ? html`<p class="hint">${t(grp.noteKey)}</p>` : null}
               <div class="form-grid">${grp.fields.map((f) => buildField(catOf(tab, f), f))}</div>
               ${grp.after === "amuleapi_credentials"
                 ? html`<${AmuleApiCredentials} isGuest=${isGuest} />` : null}

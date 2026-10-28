@@ -150,6 +150,19 @@ public:
 private:
 #endif
 
+private:
+	//! Fill the allowed-remote-roots list widget from glob_prefs. Read-only on the remote GUI
+	//! (the daemon's reported roots, for display); the editable source on monolithic amule. The
+	//! list widget exists in only one of the two builds, so this no-ops when it is absent.
+	void PopulateAllowedRootsList();
+#ifndef CLIENT_GUI
+	//! Copy the list widget's rows back into glob_prefs' allowed roots (monolithic only).
+	void HarvestAllowedRootsList();
+	void OnAllowedRootAdd(wxCommandEvent &evt);
+	void OnAllowedRootRemove(wxCommandEvent &evt);
+	void OnAllowedRootBrowse(wxCommandEvent &evt);
+#endif
+
 public:
 	//! Re-seed the shared-folders editor at the start of an editing session. The dialog is
 	//! constructed once and reused, so without this it keeps whatever it captured the first

@@ -3,7 +3,12 @@
 #include <common/Path.h>
 #include <common/StringFunctions.h>
 
+#include <wx/filefn.h> // wxRemoveFile
 #include <wx/filename.h>
+
+#ifndef __WXMSW__
+#include <unistd.h> // symlink() for the containment test
+#endif
 
 using namespace muleunit;
 
@@ -488,4 +493,105 @@ TEST(CPath, UnivRoundTrip)
 		const CPath path(input);
 		ASSERT_EQUALS(path.GetRaw(), CPath::FromUniv(CPath::ToUniv(path)).GetRaw());
 	}
+}
+
+TEST(CPath, IsBareFileName)
+{
+	// Plain file names are accepted.
+	ASSERT_TRUE(CPath(wxT("file")).IsBareFileName());
+	ASSERT_TRUE(CPath(wxT("file.ext")).IsBareFileName());
+	ASSERT_TRUE(CPath(wxT("a file.name.ext")).IsBareFileName());
+
+	// Anything with a directory component is rejected -- this is the path-traversal guard for
+	// externally-supplied names (CWE-22): "../" must never be joinable onto a trusted directory.
+	ASSERT_FALSE(CPath(wxT("../file")).IsBareFileName());
+	ASSERT_FALSE(CPath(wxT("a/b")).IsBareFileName());
+	ASSERT_FALSE(CPath(wxT("a/../b")).IsBareFileName());
+	ASSERT_FALSE(CPath(wxT("sub/file")).IsBareFileName());
+	ASSERT_FALSE(CPath(wxT("/etc/passwd")).IsBareFileName());
+
+	// The directory entries and the empty/invalid path are not file names.
+	ASSERT_FALSE(CPath(wxT("..")).IsBareFileName());
+	ASSERT_FALSE(CPath(wxT(".")).IsBareFileName());
+	ASSERT_FALSE(CPath().IsBareFileName());
+}
+
+TEST(CPath, IsContainedIn)
+{
+	// Build a real directory tree in a unique temp workspace: the containment test resolves ".."
+	// and symlinks against the filesystem, so it needs actual directories.
+	const wxString sep = wxFileName::GetPathSeparator();
+	wxString ws = wxFileName::CreateTempFileName(wxT("amule-roots"));
+	wxRemoveFile(ws);
+	wxFileName::Mkdir(ws, 0700, wxPATH_MKDIR_FULL);
+	const wxString data = ws + sep + wxT("data");
+	const wxString database = ws + sep + wxT("database");
+	const wxString outside = ws + sep + wxT("outside");
+	wxFileName::Mkdir(data, 0700, wxPATH_MKDIR_FULL);
+	wxFileName::Mkdir(database, 0700, wxPATH_MKDIR_FULL);
+	wxFileName::Mkdir(outside, 0700, wxPATH_MKDIR_FULL);
+
+	const CPath root(data);
+
+	// Equal to the root, and descendants (whether or not they exist yet), are contained.
+	ASSERT_TRUE(CPath(data).IsContainedIn(root));
+	ASSERT_TRUE(CPath(data + sep + wxT("sub")).IsContainedIn(root));                // not yet created
+	ASSERT_TRUE(CPath(data + sep + wxT("a") + sep + wxT("b")).IsContainedIn(root)); // deeper, not created
+
+	// A sibling that merely shares a name prefix is NOT contained (whole-component compare).
+	ASSERT_FALSE(CPath(database).IsContainedIn(root));
+
+	// "../" escapes are rejected once resolved, as is an unrelated folder.
+	ASSERT_FALSE(CPath(data + sep + wxT("..") + sep + wxT("database")).IsContainedIn(root));
+	ASSERT_FALSE(CPath(data + sep + wxT("..")).IsContainedIn(root));
+	ASSERT_FALSE(CPath(outside).IsContainedIn(root));
+
+#ifndef __WXMSW__
+	// A symlink inside the root that points outside it is rejected (symlinks are resolved).
+	const wxString link = data + sep + wxT("link");
+	ASSERT_TRUE(symlink(outside.fn_str(), link.fn_str()) == 0);
+	ASSERT_FALSE(CPath(link).IsContainedIn(root));
+	// A symlink followed by "..": lexically "<root>/link/../escape" cancels to "<root>/escape"
+	// (inside the root) while the kernel resolves the link first and lands at "<ws>/escape",
+	// outside it. Refused outright because of the ".." component -- the exact bypass that a
+	// lexical "collapse .. then resolve" check let through.
+	ASSERT_FALSE(CPath(link + sep + wxT("..") + sep + wxT("escape")).IsContainedIn(root));
+	// A symlink that stays inside the root is still contained.
+	wxFileName::Mkdir(data + sep + wxT("sub2"), 0700, wxPATH_MKDIR_FULL);
+	const wxString inlink = data + sep + wxT("inlink");
+	ASSERT_TRUE(symlink((data + sep + wxT("sub2")).fn_str(), inlink.fn_str()) == 0);
+	ASSERT_TRUE(CPath(inlink).IsContainedIn(root));
+#endif
+
+	// Clean up the whole workspace.
+	wxFileName::Rmdir(ws, wxPATH_RMDIR_RECURSIVE);
+}
+
+TEST(CPath, CanonicalForContainmentStripsTrailingSeparator)
+{
+	// The stored canonical path must round-trip what a client sent (/.../x, not /.../x/), so it
+	// carries no trailing separator -- except a bare root, which is not a usable path without one.
+	const wxString sep = wxFileName::GetPathSeparator();
+	const wxString seps = wxFileName::GetPathSeparators();
+	wxString ws = wxFileName::CreateTempFileName(wxT("amule-canon"));
+	wxRemoveFile(ws);
+	const wxString sub = ws + sep + wxT("x");
+	wxFileName::Mkdir(sub, 0700, wxPATH_MKDIR_FULL);
+
+	const wxString canon = CPath(sub).CanonicalForContainment().GetRaw();
+	ASSERT_FALSE(canon.IsEmpty());
+	ASSERT_FALSE(seps.Contains(canon.Last()));
+	ASSERT_TRUE(canon.EndsWith(wxT("x")));
+
+	// A not-yet-created descendant is stored the same way (no trailing separator).
+	const wxString canonChild = CPath(sub + sep + wxT("notyet")).CanonicalForContainment().GetRaw();
+	ASSERT_FALSE(seps.Contains(canonChild.Last()));
+	ASSERT_TRUE(canonChild.EndsWith(wxT("notyet")));
+
+#ifndef __WXMSW__
+	// A bare root keeps its separator.
+	ASSERT_EQUALS(sep, CPath(sep).CanonicalForContainment().GetRaw());
+#endif
+
+	wxFileName::Rmdir(ws, wxPATH_RMDIR_RECURSIVE);
 }

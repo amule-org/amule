@@ -138,6 +138,7 @@ export function CategoriesPanel({ isGuest }) {
               ${field(t("downloads_cat_priority"), html`<select class="input" name="category_priority" value=${prio} onChange=${(e) => setPrio(e.target.value)}>${PRIORITIES.map(([v, l]) => html`<option value=${v}>${l}</option>`)}</select>`)}
               ${field(t("downloads_cat_color"), html`<input class="input" name="category_color" type="color" value=${color} onInput=${(e) => setColor(e.target.value)} />`)}
             </div>
+            <p class="hint">${t("prefs_allowed_roots_hint")}</p>
             <div class="modal-actions">
               <button class="btn" type="button" onClick=${() => setFormOpen(false)}>${t("downloads_cat_cancel")}</button>
               <button class="btn btn-primary" type="submit">${editing !== null ? t("downloads_cat_save") : t("downloads_cat_create")}</button>

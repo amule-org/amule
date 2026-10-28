@@ -1800,16 +1800,17 @@ amuled validates every path: a REST client cannot stat the core's filesystem, so
 {
   "results": [
     { "id": "/srv/share", "ok": true },
-    { "id": "/typo", "ok": false, "error": { "code": "not_found", "message": "no such directory" } }
+    { "id": "/typo", "ok": false, "error": { "code": "not_found", "message": "no such directory" } },
+    { "id": "/etc", "ok": false, "error": { "code": "path_not_allowed", "message": "outside the folders the daemon allows (configured on the daemon)" } }
   ]
 }
 ```
 
-`error.code` is `not_found` (missing, or not a directory) or `not_readable` (`403`, amuled cannot read the path). amuled reports these as codes and the API renders them, so its locale never leaks into your response.
+`error.code` is `not_found` (missing, or not a directory), `not_readable` (`403`, amuled cannot read the path), or `path_not_allowed` (`403`, the path is outside the folders the daemon allows remote clients to use — see [the allowed-roots note on `PATCH /preferences`](#patch-apiv1preferences)). amuled reports these as codes and the API renders them, so its locale never leaks into your response. A folder already configured as a share is re-accepted unchecked, so re-sending the current list never drops an existing share even if it now lies outside the allowed roots or its disk is unmounted; only a **newly added** path is validated.
 
 The **rescan is scheduled, not completed**, before the response returns: a successful reply means the new roots are validated and persisted, and that the re-walk will start on amuled's next processing tick. Until it finishes, [`GET /api/v1/shared`](#get-apiv1shared) still serves the previous file list. Observe completion the same way as [`POST /api/v1/shared_reload`](#post-apiv1shared_reload), whose notes on log lines and coalescing apply here too.
 
-**Errors:** `400 bad_request` (`directories` not an array, an entry without a non-empty `path`, non-boolean `recursive`), `502 amuled_rejected`, `503 ec_unavailable`.
+**Errors:** `400 bad_request` (`directories` not an array, an entry without a non-empty `path`, non-boolean `recursive`), `502 amuled_rejected`, `503 ec_unavailable`. A path outside the daemon's allowed roots is not a top-level error: it is a per-item `path_not_allowed` in the `results` envelope above, so the paths that pass still apply.
 
 #### `POST /api/v1/share_directories`
 
@@ -1823,7 +1824,7 @@ curl -s -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/
   "http://$HOST/api/v1/share_directories"
 ```
 
-Idempotent: adding a path that is already configured updates its `recursive` flag rather than failing, so "ensure this folder is shared" is safe to repeat. Same `{results: [...]}` envelope as `PUT`.
+Idempotent: adding a path that is already configured updates its `recursive` flag rather than failing, so "ensure this folder is shared" is safe to repeat. Same `{results: [...]}` envelope as `PUT`, so a path outside the daemon's allowed roots comes back as a single-item `207` with `path_not_allowed` (see `PUT` above).
 
 **Errors:** `400 bad_request` (missing/empty `path`, non-boolean `recursive`), `502 amuled_rejected`, `503 ec_unavailable`.
 
@@ -2278,11 +2279,11 @@ client never has to unpack that (a naive hex print of the integer comes out
 reversed). Anything that is not `#` followed by six hex
 digits is a `400 bad_request`. `priority` accepts the same six levels the category read side can return — `"very_low"` / `"low"` / `"normal"` / `"high"` / `"release"` / `"auto"` — so a read-modify-write round-trip always succeeds (R9). It is applied to the category's member files as a download priority.
 
-**`save_path` is resolved on the daemon's filesystem, not yours,** so it is accepted without being checked here. Omit it and the category is created on the incoming directory, which is amuled's own default. Give a path amuled cannot use — it does not exist and cannot be created — and the category is still created, on the incoming directory again. Either way this is a success, and [`GET /categories/{index}`](#get-apiv1categoriesindex) reports the path that was actually stored. Compare it with what you sent if it matters to you; a `save_path` that comes back different is the daemon saying it could not use yours.
+**`save_path` is resolved on the daemon's filesystem, not yours,** so it is not checked for existence here. Omit it and the category is created on the incoming directory, which is amuled's own default. Give a path that is within the daemon's [allowed roots](#patch-apiv1preferences) but that amuled cannot use — it does not exist and cannot be created — and the category is still created, on the incoming directory again; that is a success, and [`GET /categories/{index}`](#get-apiv1categoriesindex) reports the path that was actually stored (compare it with what you sent — a `save_path` that comes back different is the daemon saying it could not use yours). Give a path **outside** the allowed roots and the category is **not** created: the request is refused with `403 path_not_allowed`.
 
 **Response:** `202 Accepted`, no body. `EC_OP_CREATE_CATEGORY` answers success or failure and never returns the index it assigned, so naming the new category here would mean scanning the snapshot for a matching name and guessing when the scan came up short. Re-read [`GET /categories`](#get-apiv1categories) for the assigned index.
 
-**Errors:** `400 bad_request`, `400 amuled_rejected`, `503 ec_unavailable`.
+**Errors:** `400 bad_request`, `403 path_not_allowed` (`save_path` outside the daemon's allowed roots; nothing is created), `400 amuled_rejected`, `503 ec_unavailable`.
 
 #### `GET /api/v1/categories/{index}`
 
@@ -2302,9 +2303,9 @@ Any subset of the POST body fields. `index 0` (the default category) can be patc
 
 **Response:** `200 OK` with the category object as stored, the same shape [`GET /categories/{index}`](#get-apiv1categoriesindex) returns, so a client can see what landed without a follow-up read.
 
-`save_path` follows the same rule as on create: amuled resolves it on its own filesystem, and when it cannot use the path it keeps the one the category already had. The rest of the request still applies — `name`, `comment`, `color` and `priority` all land — and the echoed object reports the path that was kept. That is the one case where a field you sent is not the field you get back, which is why the response echoes the object rather than answering `204`.
+`save_path` follows the same rule as on create: amuled resolves it on its own filesystem, and when it cannot use a path that is within the [allowed roots](#patch-apiv1preferences) it keeps the one the category already had. The rest of the request still applies — `name`, `comment`, `color` and `priority` all land — and the echoed object reports the path that was kept. That is the one case where a field you sent is not the field you get back, which is why the response echoes the object rather than answering `204`. Only a *change* of `save_path` is checked against the allowed roots, so re-sending the current path always passes; a change to a path **outside** the allowed roots is refused with `403 path_not_allowed` and the **whole update is dropped** — not even `name`/`comment`/`color`/`priority` land — so the category is left exactly as it was.
 
-**Errors:** `400 bad_request` (non-numeric or out-of-range `{index}`, malformed `color`, unknown `priority`), `404 not_found` (no category at that index), `400 amuled_rejected`, `503 ec_unavailable`.
+**Errors:** `400 bad_request` (non-numeric or out-of-range `{index}`, malformed `color`, unknown `priority`), `404 not_found` (no category at that index), `403 path_not_allowed` (a changed `save_path` outside the daemon's allowed roots; the category is left unchanged), `400 amuled_rejected`, `503 ec_unavailable`.
 
 #### `DELETE /api/v1/categories/{index}`
 
@@ -2363,6 +2364,7 @@ Returns every preference category amuled carries over EC. The `general` and `con
     "incoming_path":   "/home/me/.aMule/Incoming",
     "temp_path":       "/home/me/.aMule/Temp",
     "shared_paths":    ["/home/me/media"],
+    "allowed_remote_roots": ["/home/me/media", "/srv/downloads"],
     "share_hidden":    false,
     "rescan_on_startup": true,
     "follow_symlinks": false,
@@ -2449,7 +2451,11 @@ Booleans are plain JSON `true`/`false` regardless of how amuled encodes them on 
 
 `geoip` is the GeoIP (IP-to-country) config category. `supported` is a capability flag: `false` when the connected daemon is built without GeoIP — the config fields are then present but inert. `source` is one of `"dbip"` / `"maxmind"` / `"custom"` (the next-download database selector). `maxmind_license` is returned plainly to admins (it is a config string the daemon already round-trips, not a masked password) and omitted for guests, like `custom_update_url`. `loaded_source`, `db_path`, `db_loaded`, `download_in_progress`, and `last_update_status` are **read-only** live status (the currently loaded DB and any in-flight refresh); they are ignored if sent on PATCH.
 
-`files.media_metadata_enabled` / `files.ffprobe_path` control media-metadata extraction: when enabled, the daemon probes shared audio/video with `ffprobe` to advertise length, bitrate, codec, artist, album and title. `ffprobe_path` is a **daemon-side** path — an empty string means the daemon auto-detects the binary, trying `ffprobe` on its `PATH` and then a per-platform list of well-known install locations. The detected path is deliberately **not** written back: it describes the daemon's machine rather than a choice you made, so `ffprobe_path` keeps reading as `""` while extraction works, and a daemon that moves to a host with ffmpeg somewhere else re-detects on its own. Set the field explicitly to pin one binary and override detection. When nothing is found the daemon logs one line saying so — visible on [`GET /api/v1/logs/amule`](#get-apiv1logsamule) — and extraction stays inert until ffmpeg is installed or the path is set. `connection.bind_address` (empty = bind to any local IP), `connection.bind_interface` (a daemon-side interface name such as `eth0` / `en0` / `tun0`; empty = any), and `online_signature.directory` are likewise daemon-side paths/addresses. These, together with `files.on_finished_start_next_alphabetically`, `security.reject_spoofed_source_ips`, `security.system_ipfilter_enabled`, and `online_signature.update_frequency_seconds`, are ordinary daemon settings; a `bind_address` change takes effect on the next amuled restart.
+`files.media_metadata_enabled` / `files.ffprobe_path` control media-metadata extraction: when enabled, the daemon probes shared audio/video with `ffprobe` to advertise length, bitrate, codec, artist, album and title. `ffprobe_path` is a **daemon-side** path — an empty string means the daemon auto-detects the binary, trying `ffprobe` on its `PATH` and then a per-platform list of well-known install locations. The detected path is deliberately **not** written back: it describes the daemon's machine rather than a choice you made, so `ffprobe_path` keeps reading as `""` while extraction works, and a daemon that moves to a host with ffmpeg somewhere else re-detects on its own. `ffprobe_path` is **read-only over the API**: because the daemon executes this binary, it is configured only in the daemon's own `amule.conf` (`FFProbePath`), never remotely. It is still emitted on `GET` so you can see the daemon's current value; a `PATCH` that would **change** it is rejected with **400 `read_only_field`**, while sending the current value back unchanged — as a read-modify-write of the whole object does — is accepted as a no-op. Pin a specific binary by setting `FFProbePath` in `amule.conf`. When nothing is found the daemon logs one line saying so — visible on [`GET /api/v1/logs/amule`](#get-apiv1logsamule) — and extraction stays inert until ffmpeg is installed or the path is set. `connection.bind_address` (empty = bind to any local IP) and `connection.bind_interface` (a daemon-side interface name such as `eth0` / `en0` / `tun0`; empty = any) are likewise daemon-side addresses. These, together with `files.on_finished_start_next_alphabetically`, `security.reject_spoofed_source_ips`, `security.system_ipfilter_enabled`, and `online_signature.update_frequency_seconds`, are ordinary daemon settings; a `bind_address` change takes effect on the next amuled restart. `online_signature.directory` is where the daemon writes its signature files, so like `files.ffprobe_path` it is read-only over the API — see the note below.
+
+`directories.allowed_remote_roots` is **read-only**: the folders the daemon lets a remote client point `incoming_path`, `temp_path`, `shared_paths` and a category's `save_path` at. It is daemon-local config (`allowed-remote-dirs.dat`), reported here only so a client can show what will be accepted; an **empty array means the daemon refuses every remote folder change**, which is the default. It is ignored if sent on PATCH, and enforced as described under [`PATCH /preferences`](#patch-apiv1preferences).
+
+`directories.follow_symlinks` is **daemon-local**: whether the daemon follows symbolic links while scanning shared folders governs what the shared-files scan traverses on the daemon's own disk, so — like `files.ffprobe_path` — it is configured only on the daemon (`FollowSymlinksInShares` in `amule.conf`) and is read-only over the API. It is emitted on `GET`; a `PATCH` that would **change** it is rejected with **400 `read_only_field`**, while echoing the current value back is accepted as a no-op.
 
 `files.mmap_supported` is **read-only** — the daemon advertises whether it was built with memory-mapped file I/O (`false` on a core without mmap support, e.g. Windows or a build with `-DENABLE_MMAP=OFF`); it is ignored if sent on PATCH. `files.mmap_enabled` is the runtime toggle for memory-mapped block I/O — download writes to part files, upload reads of both shared (completed) and partial files, and hashing (lower per-process memory use, at some write-path cost; best for upload-heavy or memory-constrained hosts). It is **capability-gated**: a PATCH that sets `files.mmap_enabled` is rejected with **409 `option_not_supported`** when `files.mmap_supported` is `false`, so the option is only writable against a daemon that can actually use it. Safe to toggle with active transfers.
 
@@ -2475,6 +2481,10 @@ The `connection.proxy_*` fields configure the proxy the **daemon** routes its P2
 | Refused | `400 bad_request` | `remote_controls.amuleapi.password`, `.guest_password`, `.guest_enabled` |
 
 Read-only fields are **ignored rather than rejected** when they arrive alongside at least one writable field, so the obvious way to use this endpoint -- `GET` the object, change one value, `PATCH` the whole thing back -- keeps working. A body naming *only* read-only fields is a `400` that says which ones: `no writable fields in the request; files.mmap_supported is read-only`.
+
+`files.ffprobe_path` and `online_signature.directory` are stricter than an ordinary read-only field because they name places on the daemon's own filesystem it executes or writes: they are daemon-local config, so an unchanged value echoed back is accepted (a no-op that returns the current object, even when it is the only field sent), but a value that would **change** either is rejected with `400 read_only_field` and the whole request is refused before anything is applied. Set them in the daemon's `amule.conf` instead (`FFProbePath`, `OSDirectory`). `directories.follow_symlinks` is daemon-local for a related reason — following symlinks widens what a share exposes on the daemon's own disk — and behaves the same way (an unchanged echo is a no-op, a change is `400 read_only_field`); set it in `amule.conf` (`FollowSymlinksInShares`).
+
+The folder fields a remote client *can* still set -- `directories.incoming_path`, `directories.temp_path`, `directories.shared_paths` and each category's `save_path` -- are confined to a list of **allowed roots** the daemon configures locally (reported read-only as `directories.allowed_remote_roots`; **empty means the daemon refuses every remote folder change**, which is the out-of-the-box default). A `PATCH` that points one of these at a folder outside the allowed roots is answered `403 path_not_allowed` naming the refused folder(s); the refused folder keeps its current value while **every other field in the same request still applies** (the same partial-apply behaviour as the port-rebind rule below). Only an actual *change* is checked, so echoing the current value back always passes. The allowed roots are daemon-local config and cannot be set through the API; configure them on the daemon (`allowed-remote-dirs.dat`, one path per line). An accepted folder is stored in its resolved canonical form — symlinks are followed (on macOS `/tmp/x` is stored as `/private/tmp/x`) — so a later `GET` may report an equivalent path that differs from the one sent.
 
 Body shape mirrors the GET; every sub-object and every field is optional, and fields not present are left unchanged. Subset example:
 
@@ -2522,7 +2532,7 @@ The three **clamped at daemon start** rows are the reason this is enforced on th
 
 **A low `connection.max_upload_kibibytes_per_second` caps `max_download_kibibytes_per_second`,** which is the one place a `PATCH` changes a field the request did not name. Below `4` KiB/s up the download limit is forced to 3× the upload; below `10` it is forced to 4×. So `PATCH {"connection": {"max_upload_kibibytes_per_second": 3}}` also sets `max_download_kibibytes_per_second` to `9`. This is a deliberate anti-leech rule in the core rather than a defect, it applies whichever of the two you write, and the `PATCH` response echoes the whole preferences object so the adjusted value is visible in the reply.
 
-**Errors:** `400 bad_request` (unknown/mis-typed field, or a body with no recognized fields), `409 option_not_supported` (the connected daemon does not support the option being set: it was built without it, or is too old), `400 amuled_rejected`, `503 ec_unavailable`.
+**Errors:** `400 bad_request` (unknown/mis-typed field, or a body with no recognized fields), `400 read_only_field` (a `PATCH` that would change `files.ffprobe_path`, `online_signature.directory` or `directories.follow_symlinks`, which are daemon-local config), `403 path_not_allowed` (a folder field pointed outside the daemon's allowed roots; names the folder, other fields still apply), `409 option_not_supported` (the connected daemon does not support the option being set: it was built without it, or is too old), `400 amuled_rejected`, `503 ec_unavailable`.
 
 ---
 
@@ -3414,12 +3424,14 @@ Every error code emitted by `/api/v1/*`, sorted by what triggered it. Two codes 
 | `bad_request` | 400 | Body, query, or path-segment validation failed. Body parse depth-cap rejects also surface here. |
 | `amuled_rejected` | 400, 502 | amuled rejected the EC operation and the message carries its reason verbatim (400); or amuled answered but its reply was unusable, e.g. no `search_id` came back from a search or a browse (502). |
 | `captcha_expired` | 409 | The challenge identified by `captcha_id` is no longer pending; its answer was not sent. |
+| `read_only_field` | 400 | A `PATCH /preferences` tried to **change** a field configured only in the daemon's own `amule.conf` and not settable through the API — currently `files.ffprobe_path` (a binary the daemon executes), `online_signature.directory` (a folder the daemon writes into) and `directories.follow_symlinks` (a daemon-side share-scan policy). Sending the field's current value back unchanged (as a read-modify-write of the whole object does) is accepted, not an error. |
 | `request_timeout` | 408 | The request was not completed within the 10 s read timeout. |
 | `unauthorized` | 401 | Missing token, bad signature, expired, revoked, or `iat` invariants failed. |
 | `invalid_credentials` | 401, 403 | `/auth/login` password didn't match any role (401); or `PATCH /auth/passwords` was given a `current_password` that does not match (403). |
 | `forbidden` | 403 | Authenticated as `guest` but the endpoint requires `admin`. |
 | `not_found` | 404 | Resource doesn't exist (unknown hash, ECID, graph name, or no such endpoint). |
 | `not_readable` | 403 | Per-item code from the [`/share_directories`](#post-apiv1share_directories) bulk envelope: amuled cannot read that path. Only ever appears inside a `results[].error`, never as a whole-response error. |
+| `path_not_allowed` | 403 | A folder was pointed outside the roots the daemon lets remote clients use (configured on the daemon; see [`PATCH /preferences`](#patch-apiv1preferences)). Per-item in the [`/share_directories`](#put-apiv1share_directories) envelope; a whole-response error on `PATCH /preferences` (a `directories.*` folder — other fields still apply) and on category create/update (`save_path`). The refused folder's current value is left unchanged. |
 | `method_not_allowed` | 405 | Wrong HTTP verb for the route. The response carries an `Allow` header listing the methods this resource does support. |
 | `option_not_supported` | 409 | `PATCH /preferences` set an option the connected daemon was built without, or is too old to support. |
 | `not_a4af_source` | 409 | The client named on a `POST /downloads/{hash}/a4af` request is not an A4AF source of that download. |

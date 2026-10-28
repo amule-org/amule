@@ -2012,13 +2012,27 @@ wxSizer *PreferencesDirectoriesTab( wxWindow *parent, bool call_fit, bool set_si
     item9->Add( itemPreviewRow, wxSizerFlags().Expand().Border(wxTOP, 4) );
 
     item0->Add( item9, wxSizerFlags(1).Expand().CenterVertical().Border(wxALL, 0) );
+
+#ifdef CLIENT_GUI
+    // The folders the daemon allows a remote client to point incoming/temp/shared/category at.
+    // Read-only here: the list is local daemon configuration (reported over EC), set on the
+    // daemon itself -- an empty list means the daemon refuses every remote folder change.
+    wxStaticBox *itemAR = new wxStaticBox( parent, -1, _("Folders the daemon allows remote changes in") );
+    wxStaticBoxSizer *itemARSizer = new wxStaticBoxSizer( itemAR, wxVERTICAL );
+    wxStaticText *itemARHint = new wxStaticText( itemAR, -1, _("(Read-only. Configured on the daemon; if empty, the daemon refuses every remote folder change.)"), wxDefaultPosition, wxDefaultSize, wxALIGN_CENTRE );
+    itemARSizer->Add( itemARHint, 0, wxALIGN_CENTER, 0 );
+    wxListBox *itemARList = new wxListBox( itemAR, IDC_ALLOWED_ROOTS_LIST, wxDefaultPosition, wxSize(100,70), 0, nullptr, wxLB_SINGLE|wxSUNKEN_BORDER );
+    itemARSizer->Add( itemARList, wxSizerFlags(1).Expand().CenterVertical() );
+    item0->Add( itemARSizer, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 0) );
+#endif
+
     if (set_sizer)
     {
         parent->SetSizer( item0 );
         if (call_fit)
             item0->SetSizeHints( parent );
     }
-    
+
     return item0;
 }
 
@@ -2364,6 +2378,33 @@ wxSizer *PreferencesRemoteControlsTab( wxWindow *parent, bool call_fit, bool set
     wxCheckBox *item13b = new wxCheckBox( item2, IDC_EXT_CONN_REQUIRE_ENCRYPTION, _("Require encrypted connections (rejects clients that cannot encrypt)"), wxDefaultPosition, wxDefaultSize, 0 );
     item1->Add( item13b, wxSizerFlags().CenterVertical().Border(wxALL, 5) );
     item0->Add( item1, wxSizerFlags().Expand().Border(wxALL, 0) );
+
+#ifndef CLIENT_GUI
+    // The folders a remote EC/amuleapi client may point the incoming, temp, shared or category
+    // folders at. Local amule.conf config (allowed-remote-dirs.dat), never settable over EC, and
+    // used only when this instance runs the EC listener or the web server. Empty (the default)
+    // means a remote client cannot change any folder.
+    wxStaticBox *itemARBox = new wxStaticBox( parent, -1, _("Folders remote clients may use") );
+    wxStaticBoxSizer *itemAR = new wxStaticBoxSizer( itemARBox, wxVERTICAL );
+    wxStaticText *itemARHint = new wxStaticText( itemARBox, -1, _("(Remote clients may set the incoming, temp, shared and category folders only inside these. Empty means no remote folder change is allowed. Local changes here are never restricted.)"), wxDefaultPosition, wxDefaultSize, 0 );
+    itemARHint->Wrap( 520 );
+    itemAR->Add( itemARHint, 0, wxALL, 2 );
+    wxListBox *itemARList = new wxListBox( itemARBox, IDC_ALLOWED_ROOTS_LIST, wxDefaultPosition, wxSize(100,80), 0, nullptr, wxLB_SINGLE|wxSUNKEN_BORDER );
+    itemAR->Add( itemARList, wxSizerFlags(1).Expand().CenterVertical() );
+    wxBoxSizer *itemARRow = new wxBoxSizer( wxHORIZONTAL );
+    CMuleTextCtrl *itemARPath = new CMuleTextCtrl( itemARBox, IDC_ALLOWED_ROOT_PATH, "", wxDefaultPosition, wxSize(80,-1), 0 );
+    itemARPath->SetToolTip(_("Absolute path of a folder, e.g. /home/user/aMule. A remote client may then set any folder at or below it."));
+    itemARRow->Add( itemARPath, wxSizerFlags(1).Expand().CenterVertical() );
+    wxButton *itemARBrowse = new wxButton( itemARBox, IDC_ALLOWED_ROOT_BROWSE, _("Browse"), wxDefaultPosition, wxDefaultSize, 0 );
+    itemARRow->Add( itemARBrowse, wxSizerFlags().CenterVertical().Border(wxLEFT, 4) );
+    wxButton *itemARAdd = new wxButton( itemARBox, IDC_ALLOWED_ROOT_ADD, _("Add"), wxDefaultPosition, wxDefaultSize, 0 );
+    itemARRow->Add( itemARAdd, wxSizerFlags().CenterVertical().Border(wxLEFT, 4) );
+    wxButton *itemARRemove = new wxButton( itemARBox, IDC_ALLOWED_ROOT_REMOVE, _("Remove"), wxDefaultPosition, wxDefaultSize, 0 );
+    itemARRow->Add( itemARRemove, wxSizerFlags().CenterVertical().Border(wxLEFT, 4) );
+    itemAR->Add( itemARRow, wxSizerFlags().Expand().Border(wxTOP, 4) );
+    item0->Add( itemAR, wxSizerFlags().Expand().Border(wxALL, 0) );
+#endif
+
     wxStaticBox *item37 = new wxStaticBox( parent, -1, _("aMule API server parameters") );
     wxStaticBoxSizer *item36 = new wxStaticBoxSizer( item37, wxVERTICAL );
 

@@ -1545,6 +1545,22 @@ target_link_libraries (PathTest
 	muleunit
 )
 
+add_executable (MediaProbeFFProbeNameTest
+	MediaProbeFFProbeNameTest.cpp
+	${CMAKE_SOURCE_DIR}/src/MediaProbe.cpp
+	${CMAKE_SOURCE_DIR}/src/AppImageEnv.cpp
+)
+add_test (NAME MediaProbeFFProbeNameTest COMMAND MediaProbeFFProbeNameTest)
+target_include_directories (MediaProbeFFProbeNameTest
+	PRIVATE ${CMAKE_BINARY_DIR}
+	PRIVATE ${CMAKE_SOURCE_DIR}/src
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
+)
+target_link_libraries (MediaProbeFFProbeNameTest
+	muleunit
+	mulecommon
+)
+
 add_executable (FileFunctionsTest
 	FileFunctionsTest.cpp
 )

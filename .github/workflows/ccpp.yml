@@ -436,6 +436,11 @@ jobs:
           set -euo pipefail
           CONF="$RUNNER_TEMP/amuled-conf"
           mkdir -p "$CONF/Incoming" "$CONF/Temp"
+          # Opt a scratch root into the allowed-remote roots so the curl smoke exercises the
+          # positive folder-write assertions (phases 18 and 31 use paths under /tmp), not only
+          # the empty-roots refusals. Without this the daemon refuses every remote folder change
+          # and those assertions are skipped.
+          printf '%s\n' /tmp > "$CONF/allowed-remote-dirs.dat"
           # amuled stores the EC password as its md5. Derive it from the
           # plaintext run-all.sh expects so the two cannot drift apart.
           EC_HASH=$(printf '%s' amule | md5sum | cut -d' ' -f1)

@@ -318,8 +318,21 @@ namespace
 // hold up whoever asked.
 constexpr unsigned kDetectTimeoutMs = 3000;
 
-// True if `binary` runs cleanly enough to print its own -version output. Serves both as the "is
-// ffprobe on PATH" probe and as the "does this path work" one.
+// True if any line of ffprobe's -version output carries its banner ("ffprobe version <n>"). A zero
+// exit alone does not identify the binary -- a shell invoked as `sh -version` also exits 0 -- so the
+// banner is the signal.
+bool OutputHasFFProbeBanner(const wxArrayString &lines)
+{
+	for (const wxString &line : lines) {
+		if (line.Strip(wxString::both).Lower().StartsWith(wxT("ffprobe version"))) {
+			return true;
+		}
+	}
+	return false;
+}
+
+// True if `binary` runs AND identifies itself as ffprobe via its -version banner. Serves both as the
+// "is ffprobe on PATH" probe and as the "does this path work" one.
 //
 // Goes through RunBoundedFFProbe because that puts a deadline on a binary that never returns and is
 // callable off the main thread; wxExecute is neither (see the include-block note above). Bare
@@ -330,7 +343,10 @@ bool CanRun(const wxString &binary)
 	const std::atomic<bool> keepRunning{ true };
 	wxArrayString argv, out;
 	argv.Add(wxT("-version"));
-	return RunBoundedFFProbe(binary, argv, kDetectTimeoutMs, keepRunning, out) == 0;
+	if (RunBoundedFFProbe(binary, argv, kDetectTimeoutMs, keepRunning, out) != 0) {
+		return false;
+	}
+	return OutputHasFFProbeBanner(out);
 }
 
 // Well-known install locations, tried in order; one entry per install-manager, since we want the
@@ -432,6 +448,22 @@ bool IsTrustedLocation(const wxString &)
 #endif
 
 } // anonymous namespace
+
+bool HasFFProbeFileName(const wxString &path)
+{
+	const wxString name = wxFileName(path).GetFullName().Lower();
+	return name == wxT("ffprobe") || name == wxT("ffprobe.exe");
+}
+
+bool IsFFProbeBinary(const wxString &path)
+{
+	// Name first, so nothing but a path actually named ffprobe is ever spawned for the banner
+	// check -- a shell or interpreter is rejected on the name alone. This is a LOCAL validity check
+	// (auto-detection, and the monolithic Preferences dialog), not a security control: the ffprobe
+	// path is not settable over EC, so no remote input reaches here. The banner is a best-effort
+	// "is this really ffprobe" test for a path the local user picked.
+	return HasFFProbeFileName(path) && CanRun(path);
+}
 
 wxString AutoDetectPath()
 {
@@ -859,19 +891,31 @@ ProbeOutcome Probe(const wxString &ffprobePath,
 	// from delimiter lines a value could also forge.
 	//
 	// -v error silences informational chatter.
+	//
+	// -protocol_whitelist file,crypto limits which I/O protocols ffprobe may use on the
+	// peer-supplied file. file is the probed file itself; crypto keeps encrypted local media
+	// (which layers over file) working. Some formats it opens are reference/playlist containers
+	// (HLS/m3u8, concat, and similar) whose entries name other paths or URLs; the whitelist blocks
+	// the network ones outright (http, tcp, ...), so a crafted share cannot make the probe reach
+	// off the host. It does NOT stop a playlist entry pointing at another LOCAL file: ffmpeg's own
+	// demuxer defaults only bound that by extension (the HLS allowed_extensions list, the concat
+	// demuxer's safe=1), so an unrelated local media file's metadata can still be read -- a
+	// host-local exposure, not a network one.
 	wxArrayString argv;
 	argv.Add(wxT("-v"));
 	argv.Add(wxT("error"));
+	argv.Add(wxT("-protocol_whitelist"));
+	argv.Add(wxT("file,crypto"));
 	argv.Add(wxT("-show_entries"));
 	argv.Add(ProbeEntries());
 	argv.Add(wxT("-of"));
 	argv.Add(wxT("flat"));
 	argv.Add(file.GetRaw());
 
-	// Info level, not debug: media metadata is a feature the user explicitly
-	// enables and points at a binary, so it needs feedback that the binary worked
-	// and which file was probed. Emitted immediately before the spawn, so it fires
-	// once per ffprobe execution rather than once per queued job.
+	// Info level, not debug: media metadata extraction is on by default and spawns
+	// an external binary on every received file, so it needs feedback that the binary
+	// worked and which file was probed. Emitted immediately before the spawn, so it
+	// fires once per ffprobe execution rather than once per queued job.
 	if (!bulk) {
 		AddLogLineN(CFormat(_("Extracting media metadata with ffprobe: %s")) % file.GetPrintable());
 	}

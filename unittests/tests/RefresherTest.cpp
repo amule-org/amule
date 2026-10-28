@@ -2719,10 +2719,12 @@ TEST(Refresher, PrefsSchemaIsWellFormed)
 		ASSERT_TRUE(PrefGroupTagFor(f.category) != 0);
 
 		// Rows that round-trip a value need a backing member; rows that
-		// never do must not have one.
-		const bool needs_member = f.access == PrefAccess::ReadWrite ||
-					  f.access == PrefAccess::AdminRead ||
-					  f.access == PrefAccess::ReadOnly || f.access == PrefAccess::Bespoke;
+		// never do must not have one. DaemonLocal reads its member on GET and
+		// compares against it on PATCH (to accept an unchanged echo), so it needs one too.
+		const bool needs_member =
+			f.access == PrefAccess::ReadWrite || f.access == PrefAccess::AdminRead ||
+			f.access == PrefAccess::ReadOnly || f.access == PrefAccess::DaemonLocal ||
+			f.access == PrefAccess::Bespoke;
 		ASSERT_TRUE(needs_member == (f.member != nullptr));
 
 		// Enum rows carry a non-empty, nullptr-terminated name table.
@@ -2751,9 +2753,9 @@ TEST(Refresher, PrefsSchemaIsWellFormed)
 			++emitted;
 	}
 
-	// The documented payload is 134 fields. A row added or dropped without
+	// The documented payload is 135 fields. A row added or dropped without
 	// updating docs/api/REFERENCE.md should trip this.
-	ASSERT_EQUALS(static_cast<std::size_t>(134), emitted);
+	ASSERT_EQUALS(static_cast<std::size_t>(135), emitted);
 }
 
 // The schema's irregularities are enumerated rather than merely counted: each is deliberate and

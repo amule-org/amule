@@ -50,6 +50,7 @@
 #include "Logger.h"
 #include <common/Format.h>   // Needed for CFormat
 #include <common/TextFile.h> // Needed for CTextFile
+#include <wx/filename.h>     // Needed for wxFileName::IsAbsolute in LoadAllowedRemoteDirRoots
 #include <common/ClientVersion.h>
 
 #include "UserEvents.h"
@@ -1089,6 +1090,8 @@ CPreferences::CPreferences()
 	// Not ReloadSharedFolders(): expanding recursive roots walks their whole trees before
 	// anything is on screen, and the startup scan does it again anyway.
 	LoadSavedSharedFolders();
+	// Local-only roots that confine remote folder changes; empty unless the operator configured it.
+	LoadAllowedRemoteDirRoots();
 #else
 	// GUI-local only (see LoadPathMappings' declaration): loaded here, alongside the core's
 	// equivalent local-config reads above, rather than through LoadRemote()'s EC round-trip
@@ -2534,6 +2537,48 @@ void LoadSharedFolderIntents(const wxString &configDir,
 }
 
 } // namespace
+
+void CPreferences::LoadAllowedRemoteDirRoots()
+{
+	// One path per line, like shareddir.dat -- a path can contain any delimiter, so no CSV. Absent
+	// file -> empty list -> every remote folder change refused.
+	LoadDirListFile(s_configDir + "allowed-remote-dirs.dat", allowed_remote_dir_roots);
+
+	// A root must be an absolute path: a relative one resolves against the daemon's working
+	// directory, so it would name different places over time and could be escaped. Drop and log
+	// any relative line rather than silently honouring it.
+	PathList absolute;
+	for (const CPath &root : allowed_remote_dir_roots) {
+		if (root.IsOk() && wxFileName(root.GetRaw()).IsAbsolute()) {
+			absolute.push_back(root);
+		} else {
+			AddLogLineC(CFormat(_("Ignoring a relative path in allowed-remote-dirs.dat "
+					      "(only absolute paths are accepted): %s")) %
+				    root.GetPrintable());
+		}
+	}
+	allowed_remote_dir_roots.swap(absolute);
+}
+
+void CPreferences::SaveAllowedRemoteDirRoots()
+{
+	CTextFile f;
+	if (f.Open(s_configDir + "allowed-remote-dirs.dat", CTextFile::write)) {
+		for (const CPath &root : allowed_remote_dir_roots) {
+			f.WriteLine(root.GetRaw(), wxConvUTF8);
+		}
+	}
+}
+
+bool CPreferences::IsRemoteDirChangeAllowed(const CPath &dir) const
+{
+	for (const CPath &root : allowed_remote_dir_roots) {
+		if (dir.IsContainedIn(root)) {
+			return true;
+		}
+	}
+	return false;
+}
 
 void CPreferences::ReloadSharedFolders()
 {

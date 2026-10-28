@@ -161,6 +161,14 @@ wxSizer *messagePage(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TR
 // File-details dialog: the Verify Local Data section.
 #define IDC_FD_VERIFY_STATUS 10514
 #define IDC_FD_VERIFY_DETAILS 10515
+// Allowed roots for remote folder changes. The list is shown on both builds but never in the
+// same binary: read-only on the remote GUI's Directories page (reported by the daemon), editable
+// via the Add/Remove row on the monolithic Remote Controls page (local amule.conf config).
+#define IDC_ALLOWED_ROOTS_LIST 10530
+#define IDC_ALLOWED_ROOT_PATH 10531
+#define IDC_ALLOWED_ROOT_ADD 10532
+#define IDC_ALLOWED_ROOT_REMOVE 10533
+#define IDC_ALLOWED_ROOT_BROWSE 10534
 #define IDC_LISTCTRLFILENAMES 10051
 #define IDC_TAKEOVER 10052
 #define IDC_CMTBT 10053

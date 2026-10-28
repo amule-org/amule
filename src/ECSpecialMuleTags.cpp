@@ -27,6 +27,7 @@
 #include <ec/cpp/ECSpecialTags.h> // Needed for special EC tag creator classes
 
 #include "config.h" // Needed for ENABLE_VERSION_CHECK
+#include "Logger.h" // for AddLogLineC on the ffprobe refusal path
 #include "Preferences.h"
 #include "amule.h"
 #include "IP2Country.h"     // For CIP2Country status (#440 remote GeoIP config)
@@ -93,6 +94,11 @@ bool CEC_Category_Tag::Create()
 		SetPath(theApp->glob_prefs->GetCatPath(theApp->glob_prefs->GetCatCount() - 1).GetRaw());
 	}
 	return ret;
+}
+
+void CEC_Category_Tag::CanonicalizeStoredPath()
+{
+	SetPath(CPath(Path()).CanonicalForContainment().GetRaw());
 }
 
 CEC_Prefs_Packet::CEC_Prefs_Packet(
@@ -321,7 +327,13 @@ CEC_Prefs_Packet::CEC_Prefs_Packet(
 		if (thePrefs::IsOnlineSignatureEnabled()) {
 			online_sig.AddTag(CECEmptyTag(EC_TAG_ONLINESIG_ENABLED));
 		}
+#ifndef CLIENT_GUI
+		// The daemon reports its online-signature folder so a remote client can display it, but
+		// the path is local daemon configuration: amulegui must not send it back (the core
+		// ignores it anyway, see Apply()), so only the core emits this tag. Same policy as the
+		// ffprobe path.
 		online_sig.AddTag(CECTag(EC_TAG_ONLINESIG_DIRECTORY, thePrefs::GetOSDir().GetRaw()));
+#endif
 		online_sig.AddTag(CECTag(EC_TAG_ONLINESIG_UPDATE, thePrefs::GetOSUpdate()));
 		AddTag(online_sig);
 	}
@@ -424,8 +436,13 @@ CEC_Prefs_Packet::CEC_Prefs_Packet(
 		if (thePrefs::GetMediaMetadataEnabled()) {
 			filePrefs.AddTag(CECEmptyTag(EC_TAG_FILES_MEDIA_METADATA_ENABLED));
 		}
+#ifndef CLIENT_GUI
+		// The daemon reports its ffprobe path so a remote client can display it, but the path is
+		// local daemon configuration: amulegui must not send it back (the core ignores it anyway,
+		// see Apply()), so only the core emits this tag.
 		filePrefs.AddTag(
 			CECTag(EC_TAG_FILES_MEDIA_FFPROBE_PATH, thePrefs::GetMediaMetadataFFProbePath()));
+#endif
 		if (thePrefs::StartNextFileAlpha()) {
 			filePrefs.AddTag(CECEmptyTag(EC_TAG_FILES_START_NEXT_ALPHA));
 		}
@@ -448,13 +465,30 @@ CEC_Prefs_Packet::CEC_Prefs_Packet(
 		if (thePrefs::AutoRescanSharedDirs()) {
 			dirPrefs.AddTag(CECEmptyTag(EC_TAG_DIRECTORIES_AUTO_RESCAN));
 		}
+#ifndef CLIENT_GUI
+		// follow_symlinks widens what a share exposes on the host, so it is local daemon
+		// configuration: the core reports it for display but amulegui must not send it back (the
+		// core ignores a change anyway, see Apply()), so only the core emits this tag.
 		if (thePrefs::FollowSymlinksInShares()) {
 			dirPrefs.AddTag(CECEmptyTag(EC_TAG_DIRECTORIES_FOLLOW_SYMLINKS));
 		}
+#endif
 		dirPrefs.AddTag(
 			CECTag(EC_TAG_DIRECTORIES_EXCLUDE_PATTERNS, thePrefs::GetExcludeSharePatterns()));
 		dirPrefs.AddTag(
 			CECTag(EC_TAG_DIRECTORIES_EXCLUDE_REGEX, thePrefs::ExcludeSharePatternsUseRegex()));
+#ifndef CLIENT_GUI
+		// The allowed-roots list is local daemon configuration, reported read-only so a remote
+		// client can display what the daemon will accept for a folder change. amulegui/amuleapi
+		// never send it back -- the core ignores it in Apply(), which is how it stays unsettable
+		// over EC -- so only the core emits it.
+		CECTag allowedRoots(EC_TAG_DIRECTORIES_ALLOWED_ROOTS,
+			(uint32)theApp->glob_prefs->allowed_remote_dir_roots.size());
+		for (const CPath &root : theApp->glob_prefs->allowed_remote_dir_roots) {
+			allowedRoots.AddTag(CECTag(EC_TAG_STRING, root.GetRaw()));
+		}
+		dirPrefs.AddTag(allowedRoots);
+#endif
 		AddTag(dirPrefs);
 	}
 
@@ -590,12 +624,41 @@ static void ApplyBoolean(bool use_tag, const CECTag *thisTab, void(applyFunc)(bo
 	}
 }
 
+#ifndef CLIENT_GUI
+// Applies a remote change to the incoming or temp folder, confined to the configured roots.
+// Only a real change is checked: re-sending the current value (3.1.0 amulegui resends the
+// whole packet on every save) always passes, and a stored value keeps working even if it now
+// sits outside the roots. A change to a location outside every allowed root is refused -- the
+// old value is kept and the raw path is appended to refusedDirs so the EC_OP_SET_PREFERENCES
+// handler can report it (reason code 3). With no roots configured (the default) every change
+// is refused, which is also the opt-in gate.
+static void ApplyRemoteDirChange(
+	const CECTag *tag, const CPath &(*get)(), void (*set)(const CPath &), wxArrayString *refusedDirs)
+{
+	const CPath newDir(tag->GetStringData());
+	if (newDir.IsSameDir(get())) {
+		set(newDir); // unchanged: keep the current value as-is
+	} else if (theApp->glob_prefs->IsRemoteDirChangeAllowed(newDir)) {
+		// A permitted change: store the canonical (symlink/junction-resolved) path we checked,
+		// not the raw string, so a later use cannot re-resolve it through a repointed link.
+		set(newDir.CanonicalForContainment());
+	} else if (refusedDirs != nullptr) {
+		refusedDirs->Add(tag->GetStringData());
+	}
+}
+#endif
+
 /*
  * Sets every preference except the categories, which work as follows: the remote GUI loads them
  * at startup and then changes them on command, and the webserver is not supposed to change them.
  */
-bool CEC_Prefs_Packet::Apply() const
+bool CEC_Prefs_Packet::Apply(wxArrayString *refusedDirs) const
 {
+#ifdef CLIENT_GUI
+	// Refusals are produced only by the core; amulegui applies the daemon's own state for
+	// display and never refuses a folder here.
+	(void)refusedDirs;
+#endif
 	const CECTag *thisTab = NULL;
 	const CECTag *oneTag = NULL;
 
@@ -835,14 +898,43 @@ bool CEC_Prefs_Packet::Apply() const
 			thePrefs::SetWebPageRefresh(oneTag->GetInt());
 		}
 		if ((oneTag = thisTab->GetTagByName(EC_TAG_WEBSERVER_TEMPLATE)) != NULL) {
-			thePrefs::SetWebTemplate(oneTag->GetStringData());
+			const wxString webTemplate = oneTag->GetStringData();
+			// amuleweb joins this name onto its template search directories without a further
+			// check, so a remote value is confined to a bare file name: a path separator, an
+			// absolute path or a ".."/"." component is refused, which stops it pointing the
+			// webserver at an arbitrary file (CWE-22). An unchanged value always passes; a bad
+			// change is ignored and logged.
+			if (webTemplate == thePrefs::GetWebTemplate() ||
+				CPath(webTemplate).IsBareFileName()) {
+				thePrefs::SetWebTemplate(webTemplate);
+			} else {
+				AddLogLineC(_("Refused a remote request to set the web-server template: the "
+					      "value must be a plain template name, not a path."));
+			}
 		}
 	}
 
 	if ((thisTab = GetTagByName(EC_TAG_PREFS_ONLINESIG)) != NULL) {
 		ApplyBoolean(use_tag, thisTab, thePrefs::SetOnlineSignatureEnabled, EC_TAG_ONLINESIG_ENABLED);
 		if ((oneTag = thisTab->GetTagByName(EC_TAG_ONLINESIG_DIRECTORY)) != nullptr) {
+#ifdef CLIENT_GUI
+			// Remote GUI: the daemon's own value, stored only so the (read-only) Preferences
+			// field can show it. amulegui never sends this tag back (see the emit side).
 			thePrefs::SetOSDir(CPath(oneTag->GetStringData()));
+#else
+			// The online-signature folder is where the core writes amulesig.dat/onlinesig.dat,
+			// a path on the daemon host, so it is NOT remotely settable: EC and amuleapi
+			// credentials administer the application, not the host. It is configured locally in
+			// amule.conf. A value equal to the current one is accepted silently (an older
+			// amulegui resends the whole packet on every save, and amuleapi clients may PATCH
+			// back what they read); a real change is refused and logged. Same policy as the
+			// ffprobe path.
+			if (oneTag->GetStringData() != thePrefs::GetOSDir().GetRaw()) {
+				AddLogLineC(
+					_("Refused a remote request to change the online-signature folder: "
+					  "it can only be set in the daemon's own configuration."));
+			}
+#endif
 		}
 		if ((oneTag = thisTab->GetTagByName(EC_TAG_ONLINESIG_UPDATE)) != nullptr) {
 			thePrefs::SetOSUpdate(oneTag->GetInt());
@@ -902,7 +994,23 @@ bool CEC_Prefs_Packet::Apply() const
 			thePrefs::SetMediaMetadataEnabled,
 			EC_TAG_FILES_MEDIA_METADATA_ENABLED);
 		if ((oneTag = thisTab->GetTagByName(EC_TAG_FILES_MEDIA_FFPROBE_PATH)) != nullptr) {
+#ifdef CLIENT_GUI
+			// Remote GUI: this is the daemon's own value, stored only so the (read-only)
+			// Preferences field can show it. amulegui never sends this tag back (see the emit
+			// side).
 			thePrefs::SetMediaMetadataFFProbePath(oneTag->GetStringData());
+#else
+			// The ffprobe path names a binary the core executes, so it is NOT remotely settable:
+			// EC and amuleapi credentials administer the application, not the host. It is
+			// configured locally in amule.conf. A value equal to the current one is accepted
+			// silently (an older amulegui resends the whole packet on every save, and amuleapi
+			// clients may PATCH back what they read); a real change is refused and logged.
+			if (oneTag->GetStringData() != thePrefs::GetMediaMetadataFFProbePath()) {
+				AddLogLineC(_(
+					"Refused a remote request to change the media-probe (ffprobe) path: "
+					"it can only be set in the daemon's own configuration."));
+			}
+#endif
 		}
 		ApplyBoolean(
 			use_tag, thisTab, thePrefs::SetStartNextFileAlpha, EC_TAG_FILES_START_NEXT_ALPHA);
@@ -916,25 +1024,98 @@ bool CEC_Prefs_Packet::Apply() const
 
 	if ((thisTab = GetTagByName(EC_TAG_PREFS_DIRECTORIES)) != NULL) {
 		if ((oneTag = thisTab->GetTagByName(EC_TAG_DIRECTORIES_INCOMING)) != NULL) {
+#ifdef CLIENT_GUI
 			thePrefs::SetIncomingDir(CPath(oneTag->GetStringData()));
+#else
+			ApplyRemoteDirChange(
+				oneTag, &thePrefs::GetIncomingDir, &thePrefs::SetIncomingDir, refusedDirs);
+#endif
 		}
 		if ((oneTag = thisTab->GetTagByName(EC_TAG_DIRECTORIES_TEMP)) != NULL) {
+#ifdef CLIENT_GUI
 			thePrefs::SetTempDir(CPath(oneTag->GetStringData()));
+#else
+			ApplyRemoteDirChange(
+				oneTag, &thePrefs::GetTempDir, &thePrefs::SetTempDir, refusedDirs);
+#endif
 		}
 		if ((oneTag = thisTab->GetTagByName(EC_TAG_DIRECTORIES_SHARED)) != NULL) {
+#ifdef CLIENT_GUI
 			theApp->glob_prefs->shareddir_list.clear();
 			for (CECTag::const_iterator it = oneTag->begin(); it != oneTag->end(); ++it) {
 				theApp->glob_prefs->shareddir_list.push_back(CPath(it->GetStringData()));
 			}
+#else
+			// Core: confine newly added shares to the allowed roots. An already-shared folder is
+			// kept unchecked -- re-sending the whole list (amulegui does this on every edit) must
+			// not drop a legacy share that now sits outside the roots, nor one whose disk is
+			// currently unmounted. A newly added folder outside every root is skipped and
+			// reported (reason code 3). Removing a folder (absent from the list) is always
+			// allowed. This is the EC_TAG_DIRECTORIES_SHARED route; EC_OP_SET_SHARED_DIRS applies
+			// the same rule.
+			const CPreferences::PathList storedDirs = theApp->glob_prefs->shareddir_list;
+			theApp->glob_prefs->shareddir_list.clear();
+			for (const CECTag &dirTag : *oneTag) {
+				const CPath dir(dirTag.GetStringData());
+				bool alreadyShared = false;
+				for (const CPath &stored : storedDirs) {
+					if (dir.IsSameDir(stored)) {
+						alreadyShared = true;
+						break;
+					}
+				}
+				if (alreadyShared) {
+					theApp->glob_prefs->shareddir_list.push_back(dir);
+				} else if (theApp->glob_prefs->IsRemoteDirChangeAllowed(dir)) {
+					// Store the canonical path we checked, not the raw string (see
+					// ApplyRemoteDirChange / Get_EC_Response_SetSharedDirs).
+					theApp->glob_prefs->shareddir_list.push_back(
+						dir.CanonicalForContainment());
+				} else if (refusedDirs != nullptr) {
+					refusedDirs->Add(dirTag.GetStringData());
+				}
+			}
+#endif
 		}
+#ifdef CLIENT_GUI
+		// Remote GUI: the daemon's allowed-roots list, stored only so the (read-only) Directories
+		// page can show what the daemon will accept. amulegui never sends it back (see the emit
+		// side); the core ignores this tag entirely, so it cannot be set over EC.
+		if ((oneTag = thisTab->GetTagByName(EC_TAG_DIRECTORIES_ALLOWED_ROOTS)) != nullptr) {
+			theApp->glob_prefs->allowed_remote_dir_roots.clear();
+			for (const CECTag &rootTag : *oneTag) {
+				theApp->glob_prefs->allowed_remote_dir_roots.emplace_back(
+					rootTag.GetStringData());
+			}
+		}
+#endif
 		ApplyBoolean(
 			use_tag, thisTab, thePrefs::SetShareHiddenFiles, EC_TAG_DIRECTORIES_SHARE_HIDDEN);
 		ApplyBoolean(
 			use_tag, thisTab, thePrefs::SetAutoRescanSharedDirs, EC_TAG_DIRECTORIES_AUTO_RESCAN);
+#ifdef CLIENT_GUI
+		// Remote GUI: store the daemon's value so the (read-only) Preferences checkbox can show it.
+		// amulegui never sends it back (see the emit side).
 		ApplyBoolean(use_tag,
 			thisTab,
 			thePrefs::SetFollowSymlinksInShares,
 			EC_TAG_DIRECTORIES_FOLLOW_SYMLINKS);
+#else
+		// follow_symlinks decides whether the share walk crosses symlinks out of the shared tree,
+		// so it widens what an allowed share exposes on the host. Like the ffprobe path it is NOT
+		// remotely settable: it is configured locally in amule.conf. A change is refused and
+		// logged; an unchanged value is accepted silently. Only a present tag is considered -- a
+		// presence-encoded packet that omits it (as amulegui now does) means "no request", not
+		// "set false".
+		if (const CECTag *followTag = thisTab->GetTagByName(EC_TAG_DIRECTORIES_FOLLOW_SYMLINKS)) {
+			const bool requested = use_tag ? (followTag->GetInt() != 0) : true;
+			if (requested != thePrefs::FollowSymlinksInShares()) {
+				AddLogLineC(
+					_("Refused a remote request to change the follow-symlinks-in-shares "
+					  "setting: it can only be set in the daemon's own configuration."));
+			}
+		}
+#endif
 
 		// Shared-file exclusion filter. Each incoming tag is compared against the
 		// current value so a recompile and rescan happen only on a real change.

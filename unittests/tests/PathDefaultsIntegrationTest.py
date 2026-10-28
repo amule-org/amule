@@ -156,6 +156,8 @@ def run(binary):
 
         root = base / 'ec-saved'
         ports = write_config(root, {})
+        # A remote folder change needs an allowed root.
+        (root / 'allowed-remote-dirs.dat').write_text(f'{root}\n')
         expected = {'TempDir': root / 'Temp ü', 'IncomingDir': root / 'Incoming д'}
         with daemon(binary, root, ports) as ec:
             # Full detail: without it, aMule reads absent directory flags as false.

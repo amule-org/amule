@@ -141,6 +141,16 @@ _assert_json_eq '.directories | type' 'array' "directories is an array"
 ORIGINAL_DIRS=$(printf '%s' "$CURL_BODY" | jq -c '.directories')
 [ -n "$ORIGINAL_DIRS" ] || _die "could not snapshot the current shared directories"
 
+# Re-PUT the daemon's current roots unchanged. Only a *newly added* folder is checked against
+# the allowed roots, so an already-configured one is re-accepted without a check -- re-sending
+# the whole list must never drop a legacy share that now sits outside the roots (or whose disk
+# is unmounted). So this round-trip has no rejections whatever the daemon's allowed-roots gate.
+_curl -X PUT -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
+	-d "{\"directories\":$ORIGINAL_DIRS}" "$API/share_directories"
+_assert_status 200 "PUT the current roots unchanged → 200 (already-shared entries are not re-checked)"
+_assert_json_eq '[.results[] | select(.ok==false)] | length' '0' \
+	"re-sending the existing roots rejects nothing, even any outside the allowed roots"
+
 # --- 3. Body validation. --------------------------------------------
 _curl -X PUT -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
 	-d 'not json' "$API/share_directories"
@@ -192,6 +202,24 @@ not_found | not_readable)
 	echo "        (it stats paths itself; run this against a daemon on this host"
 	echo "         and as a user that can read the path, or set the scratch path"
 	echo "         to one the daemon can reach)"
+	;;
+path_not_allowed)
+	# The daemon can see the directory but its allowed-roots gate refuses it: either the
+	# out-of-the-box empty gate (which refuses every remote folder change) or a configured
+	# gate that does not cover the temp dir. That is the EC path-hardening refusal, so assert
+	# its contract here -- it is per-item in the 207 envelope, like not_found/not_readable --
+	# and skip the positive add/remove assertions, which need a path the daemon will accept.
+	SHARE_FS_VISIBLE=0
+	_assert_status 207 "POST (scratch dir outside allowed roots) → 207 with a rejection"
+	_assert_json_eq \
+		"[.results[] | select(.id==\"$SCRATCH_DIR\")][0].error.code" 'path_not_allowed' \
+		"a folder outside the allowed roots is rejected as path_not_allowed"
+	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/share_directories"
+	_assert_json_eq \
+		"[.directories[] | select(.path==\"$SCRATCH_DIR\")] | length" '0' \
+		"the refused folder was not stored"
+	echo "  SKIP  the positive add/remove assertions ($SCRATCH_DIR is outside the daemon's"
+	echo "        allowed roots; add it to allowed-remote-dirs.dat on the daemon to exercise them)"
 	;;
 esac
 

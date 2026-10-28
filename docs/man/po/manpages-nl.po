@@ -6,7 +6,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2026-10-07 10:08-0400\n"
+"POT-Creation-Date: 2026-10-18 15:44+0200\n"
 "PO-Revision-Date: 2026-10-08 11:09+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: none\n"
@@ -914,6 +914,29 @@ msgstr "Schakel het opstarten van amuled bij aanmelden in of uit, sluit dan af. 
 #, no-wrap
 msgid "B<[ -t> I<E<lt>numE<gt>>, B<--category>=I<E<lt>numE<gt>> B<]>"
 msgstr "B<[ -t> I<E<lt>numE<gt>>, B<--category>=I<E<lt>numE<gt>> B<]>"
+
+#. type: TP
+#: amuled.1.in
+#, fuzzy, no-wrap
+#| msgid "I<~/.aMule/remote.conf>"
+msgid "I<~/.aMule/allowed-remote-dirs.dat>"
+msgstr "I<~/.aMule/remote.conf>"
+
+#. type: Plain text
+#: amuled.1.in
+msgid "The folders a remote EC or amuleapi client may point the incoming, temporary, shared or category download folders at, one absolute path per line. Empty or absent (the default) means every such remote folder change is refused. On a daemon-only install, such as a container or the Android port with no monolithic aMule to edit the list in its GUI, create or edit this file and restart B<amuled> to allow remote folder changes; relative lines are ignored."
+msgstr ""
+
+#. type: SH
+#: amuled.1.in
+#, no-wrap
+msgid "MEDIA METADATA"
+msgstr ""
+
+#. type: Plain text
+#: amuled.1.in
+msgid "B<amuled> runs B<ffprobe> on each received file to extract the length, bitrate and codec tags it then publishes to the network. This is on by default (B<Enabled=1> under B<[MediaMetadata]> in I<amule.conf>); set B<Enabled=0> there and restart to turn it off. The B<ffprobe> binary is chosen by B<FFProbePath> in the same section and is local daemon configuration; it cannot be set over EC or amuleapi."
+msgstr ""
 
 #. type: TH
 #: amulegui.1.in

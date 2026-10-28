@@ -349,3 +349,16 @@ left off after a dropped connection — see
 - **An admin token can do anything aMule can**, including asking amuled to
   fetch a server list from a URL you supply. Treat the admin password like
   the password to the machine.
+- **Changing a download folder needs the daemon to allow it first.** The
+  incoming, temporary and shared folders, and a category's `save_path`, can
+  only be pointed at folders under a list the daemon keeps locally in
+  `allowed-remote-dirs.dat` (one absolute path per line, in the config
+  folder above). The list is **empty by default**, so out of the box every
+  such change is refused with `403 path_not_allowed` — `GET /preferences`
+  reports the current list as the read-only `directories.allowed_remote_roots`.
+  On a daemon-only install (a container, or the Android port, with no
+  monolithic aMule whose GUI edits the list for you) add the folders you want
+  to permit to that file and restart amuled. The ffprobe path and the
+  online-signature folder are daemon-local in the same spirit: a `PATCH` that
+  would change either answers `400 read_only_field` (sending the current
+  value back is accepted).

@@ -205,6 +205,12 @@ wxBEGIN_EVENT_TABLE(PrefsUnifiedDlg, wxDialog)
 	EVT_BUTTON(IDC_PATHMAP_ADD, PrefsUnifiedDlg::OnPathMappingAdd)
 	EVT_BUTTON(IDC_PATHMAP_REMOVE, PrefsUnifiedDlg::OnPathMappingRemove)
 	EVT_BUTTON(IDC_PATHMAP_BROWSE, PrefsUnifiedDlg::OnPathMappingBrowse)
+#else
+	// The allowed-remote-roots editor is local config, shown only on monolithic amule (on the
+	// remote GUI the same list is read-only, reported by the daemon).
+	EVT_BUTTON(IDC_ALLOWED_ROOT_ADD, PrefsUnifiedDlg::OnAllowedRootAdd)
+	EVT_BUTTON(IDC_ALLOWED_ROOT_REMOVE, PrefsUnifiedDlg::OnAllowedRootRemove)
+	EVT_BUTTON(IDC_ALLOWED_ROOT_BROWSE, PrefsUnifiedDlg::OnAllowedRootBrowse)
 #endif
 	EVT_BUTTON(IDC_SELBROWSER, PrefsUnifiedDlg::OnButtonBrowseApplication)
 	EVT_BUTTON(IDC_MEDIAMETA_FFPROBEBROWSE, PrefsUnifiedDlg::OnButtonBrowseApplication)
@@ -814,6 +820,11 @@ bool PrefsUnifiedDlg::TransferToWindow()
 						 : static_cast<int>(CamuleGuiBase::AppearanceChoice::System));
 	}
 
+	// Allowed roots for remote folder changes: read-only on the remote GUI (the daemon reports
+	// them in its preferences), editable on monolithic amule (local config). The list widget
+	// exists in only one of the two builds; PopulateAllowedRootsList no-ops if it is absent.
+	PopulateAllowedRootsList();
+
 	// Autostart checkbox: state lives in the OS, never aMule.conf, so read live
 	// each time the dialog opens. The thePrefs Cfg machinery does not know it.
 	wxCheckBox *autostartCb = static_cast<wxCheckBox *>(FindWindow(IDC_AUTOSTART_LOGIN));
@@ -990,6 +1001,31 @@ bool PrefsUnifiedDlg::TransferToWindow()
 		if (wxWindow *w = FindWindow(id)) {
 			w->Hide();
 		}
+	}
+	// The ffprobe path is daemon-local configuration, not a remote-settable preference: show the
+	// daemon's value but make it read-only here (amulegui no longer sends this tag -- see the
+	// ECSpecialMuleTags emit side), so the field does not look editable while silently doing
+	// nothing.
+	if (wxTextCtrl *ffprobe = CastChild(IDC_MEDIAMETA_FFPROBEPATH, wxTextCtrl)) {
+		ffprobe->SetEditable(false);
+		ffprobe->SetToolTip(
+			_("Set in the daemon's own configuration (amule.conf); not editable remotely."));
+	}
+	// follow_symlinks is daemon-local too -- it widens what a share exposes on the host, so it is
+	// not remotely settable. Show the daemon's value but disable the checkbox (amulegui no longer
+	// sends this tag), so it does not look editable while silently doing nothing.
+	if (wxWindow *followSymlinks = FindWindow(IDC_FOLLOW_SYMLINKS_SHARED)) {
+		followSymlinks->Enable(false);
+		followSymlinks->SetToolTip(
+			_("Set in the daemon's own configuration (amule.conf); not editable remotely."));
+	}
+	// The online-signature folder is daemon-local as well (the daemon writes its signature files
+	// there, and amulegui no longer sends this tag): make the field read-only like the ffprobe
+	// one. Its Browse button (IDC_SELOSDIR, a local file picker) is already hidden above.
+	if (wxTextCtrl *osdir = CastChild(IDC_OSDIR, wxTextCtrl)) {
+		osdir->SetEditable(false);
+		osdir->SetToolTip(
+			_("Set in the daemon's own configuration (amule.conf); not editable remotely."));
 	}
 #endif
 
@@ -1228,8 +1264,40 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 #ifndef CLIENT_GUI
 	const uint16 previousTcpPort = thePrefs::GetPort();
 	const uint16 previousUdpPort = thePrefs::GetUDPPort();
+	// Snapshot before TransferFromWindow() overwrites it, so a rejected ffprobe path below can be
+	// rolled back in memory (an unsaved bad value would still be read by the probe worker). A copy
+	// for that reason, never a reference to the stored string.
+	// NOLINTNEXTLINE(performance-unnecessary-copy-initialization)
+	const wxString previousFFProbePath(thePrefs::GetMediaMetadataFFProbePath());
 #endif
 	TransferFromWindow();
+
+#ifndef CLIENT_GUI
+	// The ffprobe path names a binary the core will execute. On a local change to a non-empty
+	// value, require it to actually be ffprobe (file name ffprobe/ffprobe.exe + an "ffprobe
+	// version" banner) and reject otherwise, keeping the dialog open on the field. Empty means
+	// "auto-detect", which is valid. This is a local usability check, not a security control --
+	// anyone with a legitimately unusual build can set FFProbePath directly in amule.conf. The
+	// stored value is rolled back so a rejected path is never read by the probe worker.
+	if (CfgChanged(IDC_MEDIAMETA_FFPROBEPATH)) {
+		// Read-only reference: only used below before the rollback mutates the stored string.
+		const wxString &ffprobePath = thePrefs::GetMediaMetadataFFProbePath();
+		if (!ffprobePath.IsEmpty() && !MediaProbe::IsFFProbeBinary(ffprobePath)) {
+			thePrefs::SetMediaMetadataFFProbePath(previousFFProbePath);
+			wxMessageBox(_("That file does not look like ffprobe. Choose a binary named "
+				       "ffprobe (or ffprobe.exe) that reports an \"ffprobe version\" "
+				       "banner, leave the field empty to auto-detect, or set the path "
+				       "directly in amule.conf."),
+				_("Invalid ffprobe path"),
+				wxOK | wxICON_WARNING,
+				this);
+			if (wxWindow *field = FindWindow(IDC_MEDIAMETA_FFPROBEPATH)) {
+				field->SetFocus();
+			}
+			return;
+		}
+	}
+#endif
 
 	// Before the share commit below, whose reload must already use the new filter.
 	const bool excludeFilterChanged =
@@ -1425,6 +1493,12 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 	// Path mappings (#843): harvest before Save(), same as the shared-dirs
 	// commit above, so this ends up persisted alongside the rest.
 	HarvestPathMappingList();
+#else
+	// Allowed roots for remote folder changes are local config in their own file (never over
+	// EC), so harvest the editor and persist them here. The remote GUI shows the daemon's roots
+	// read-only, so it has nothing to harvest.
+	HarvestAllowedRootsList();
+	theApp->glob_prefs->SaveAllowedRemoteDirRoots();
 #endif
 
 	// This belongs to the local GUI, including amulegui's remote.conf. It must
@@ -3525,6 +3599,100 @@ void PrefsUnifiedDlg::OnPathMappingBrowse(wxCommandEvent &WXUNUSED(evt))
 }
 
 #endif // CLIENT_GUI
+
+void PrefsUnifiedDlg::PopulateAllowedRootsList()
+{
+	wxListBox *list = CastChild(IDC_ALLOWED_ROOTS_LIST, wxListBox);
+	if (list == nullptr) {
+		// The list exists on only one of the two builds (read-only Directories page on the
+		// remote GUI, editable Remote Controls page on monolithic amule); no-op otherwise.
+		return;
+	}
+	list->Clear();
+	// Store the raw path as the item string so it round-trips on harvest; for the usual clean
+	// absolute roots the raw form reads the same as the printable one.
+	for (const CPath &root : theApp->glob_prefs->allowed_remote_dir_roots) {
+		list->Append(root.GetRaw());
+	}
+}
+
+#ifndef CLIENT_GUI
+void PrefsUnifiedDlg::HarvestAllowedRootsList()
+{
+	wxListBox *list = CastChild(IDC_ALLOWED_ROOTS_LIST, wxListBox);
+	if (list == nullptr) {
+		return;
+	}
+	CPreferences::PathList roots;
+	const unsigned int count = list->GetCount();
+	for (unsigned int i = 0; i < count; ++i) {
+		const CPath root(list->GetString(i));
+		if (root.IsOk()) {
+			roots.push_back(root);
+		}
+	}
+	theApp->glob_prefs->allowed_remote_dir_roots = roots;
+}
+
+void PrefsUnifiedDlg::OnAllowedRootAdd(wxCommandEvent &WXUNUSED(evt))
+{
+	wxTextCtrl *pathCtrl = CastChild(IDC_ALLOWED_ROOT_PATH, wxTextCtrl);
+	wxListBox *list = CastChild(IDC_ALLOWED_ROOTS_LIST, wxListBox);
+	if (pathCtrl == nullptr || list == nullptr) {
+		return;
+	}
+	const wxString path = pathCtrl->GetValue().Strip(wxString::both);
+	if (path.IsEmpty()) {
+		return;
+	}
+	// A root must be absolute: a relative one resolves against the daemon's working directory, so
+	// the core drops it on load. Refuse it here too rather than store a line that will be ignored.
+	if (!wxFileName(path).IsAbsolute()) {
+		wxMessageBox(_("Please enter an absolute path. A relative path would be resolved against "
+			       "the daemon's working directory, so it is not accepted."),
+			_("Allowed folders for remote clients"),
+			wxOK | wxICON_EXCLAMATION,
+			this);
+		return;
+	}
+	const CPath newRoot(path);
+	for (unsigned int i = 0; i < list->GetCount(); ++i) {
+		if (CPath(list->GetString(i)) == newRoot) {
+			return; // already listed
+		}
+	}
+	list->Append(newRoot.GetRaw());
+	pathCtrl->Clear();
+}
+
+void PrefsUnifiedDlg::OnAllowedRootRemove(wxCommandEvent &WXUNUSED(evt))
+{
+	wxListBox *list = CastChild(IDC_ALLOWED_ROOTS_LIST, wxListBox);
+	if (list == nullptr) {
+		return;
+	}
+	const int sel = list->GetSelection();
+	if (sel != wxNOT_FOUND) {
+		list->Delete(static_cast<unsigned int>(sel));
+	}
+}
+
+void PrefsUnifiedDlg::OnAllowedRootBrowse(wxCommandEvent &WXUNUSED(evt))
+{
+	wxTextCtrl *pathCtrl = CastChild(IDC_ALLOWED_ROOT_PATH, wxTextCtrl);
+	if (pathCtrl == nullptr) {
+		return;
+	}
+	const wxString dir = wxDirSelector(_("Choose a folder remote clients may use"),
+		pathCtrl->GetValue(),
+		wxDD_DEFAULT_STYLE,
+		wxDefaultPosition,
+		this);
+	if (!dir.IsEmpty()) {
+		pathCtrl->SetValue(dir);
+	}
+}
+#endif
 
 void PrefsUnifiedDlg::EndSharedDirsSession()
 {

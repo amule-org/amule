@@ -295,8 +295,10 @@ fi
 # GET yields total="null", which must fail loudly, not skip and pass empty.
 _curl "${AUTH[@]}" "$API/categories?limit=1000000000&sort=index"
 BEFORE_IDX=$(printf '%s' "$CURL_BODY" | jq -c '[.categories[].index]')
+# No save_path: this only needs a second category row to step past, and a save_path would be
+# refused by the daemon's allowed-roots gate (empty by default), seeding nothing.
 curl -s -X POST "${AUTH[@]}" -H "Content-Type: application/json" \
-	-d '{"name":"phase28-cat","save_path":"/tmp/28-cat-sweep"}' \
+	-d '{"name":"phase28-cat"}' \
 	"$API/categories" > /dev/null 2>&1
 _curl "${AUTH[@]}" "$API/categories?limit=1000000000&sort=index"
 _assert_json_ge '.total' 2 '/categories seeded a row to step past'

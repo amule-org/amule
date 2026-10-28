@@ -72,6 +72,18 @@ const wxChar *ProbeEntries();
 // for it once. Safe to call from any thread.
 wxString AutoDetectPath();
 
+// True if `path`'s file name is ffprobe or ffprobe.exe (case-insensitive). The gate used before
+// IsFFProbeBinary spawns anything, so an interpreter such as /bin/sh is never run. Pure; exposed for
+// its test and for the Preferences dialog.
+bool HasFFProbeFileName(const wxString &path);
+
+// True if `path` is a usable ffprobe: its file name is ffprobe/ffprobe.exe AND it emits the
+// "ffprobe version" banner. A LOCAL validity check for a path the user picks in the monolithic
+// Preferences dialog (and for auto-detection) -- NOT a security boundary: the ffprobe path cannot be
+// set over EC, so no remote/attacker input reaches here. Spawns one bounded child; safe from any
+// thread.
+bool IsFFProbeBinary(const wxString &path);
+
 // AutoDetectPath() memoised for the life of the process, and the entry point everything but the
 // detection itself should use.
 //

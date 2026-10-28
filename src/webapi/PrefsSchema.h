@@ -69,12 +69,15 @@ enum class PrefEnc
 
 enum class PrefAccess
 {
-	ReadWrite, // emitted on GET, applied on PATCH
-	AdminRead, // as ReadWrite, but emitted to admins only (credentials)
-	ReadOnly,  // emitted on GET, silently ignored on PATCH (capabilities, live status)
-	WriteOnly, // never emitted, applied on PATCH (passwords)
-	Rejected,  // never emitted, 400 if sent -- the field belongs to another endpoint
-	Bespoke,   // emitted on GET, PATCH handled by dedicated code (see below)
+	ReadWrite,   // emitted on GET, applied on PATCH
+	AdminRead,   // as ReadWrite, but emitted to admins only (credentials)
+	ReadOnly,    // emitted on GET, silently ignored on PATCH (capabilities, live status)
+	WriteOnly,   // never emitted, applied on PATCH (passwords)
+	Rejected,    // never emitted, 400 if sent -- the field belongs to another endpoint
+	DaemonLocal, // emitted on GET; set only in the daemon's own config, so a PATCH that would
+		     // change it is a 400, while the same value sent back (read-modify-write) is a
+		     // no-op. Used for a path the core executes, which must not be settable remotely.
+	Bespoke,     // emitted on GET, PATCH handled by dedicated code (see below)
 };
 
 // `Bespoke` exists for exactly one field: remote_controls.webserver.guest_enabled and its

@@ -1773,6 +1773,16 @@ const CChatSessionStore::Session *ResolveChatSessionTarget(const CECPacket *requ
 
 } // namespace
 
+// Reason codes carried by EC_TAG_SHAREDDIR_ERROR when a directory is refused. Shared by the
+// EC_OP_SET_SHARED_DIRS and EC_OP_SET_PREFERENCES replies so a client sees one vocabulary for
+// a rejected folder, whichever route set it.
+enum
+{
+	EC_SHAREDDIR_ERR_MISSING = 1,       //!< does not exist or is not a directory
+	EC_SHAREDDIR_ERR_UNREADABLE = 2,    //!< exists but cannot be read
+	EC_SHAREDDIR_ERR_OUTSIDE_ROOTS = 3, //!< outside the configured allowed roots
+};
+
 static CECPacket *Get_EC_Response_SetSharedDirs(const CECPacket *request)
 {
 	CECPacket *response = new CECPacket(EC_OP_SET_SHARED_DIRS);
@@ -1780,30 +1790,92 @@ static CECPacket *Get_EC_Response_SetSharedDirs(const CECPacket *request)
 	CPreferences::PathList explicitDirs;
 	CPreferences::PathList recursiveDirs;
 
+	// An already-shared folder is re-accepted without a roots check unless the change widens it:
+	// re-sending the whole list (as the GUI does on every edit) must not drop a legacy share that
+	// now sits outside the allowed roots, nor one whose disk is currently unmounted (its folder is
+	// missing -- a bug that used to delete the share for good). Only a *newly added* folder, or an
+	// existing one turned recursive, is checked; turning recursion off or removing a folder (absent
+	// from the request) is always allowed. recursiveStored tells a currently-recursive share from a
+	// currently-explicit one.
+	const CPreferences::PathList storedDirs = theApp->glob_prefs->shareddir_list;
+	const CPreferences::PathList recursiveStored = theApp->glob_prefs->shareddir_recursive_list;
+
 	for (const CECTag &tag : *request) {
 		if (tag.GetTagName() != EC_TAG_SHAREDDIR) {
 			continue;
 		}
 		const wxString rawPath = tag.GetStringData();
 		const CPath path(rawPath);
-		// EC_SHAREDDIR_ERR_*: 1 = missing or not a directory, 2 = unreadable.
-		uint8 reason = 0;
-		if (!path.IsOk() || !path.DirExists()) {
-			reason = 1;
-		} else if (!wxFileName::IsDirReadable(path.GetRaw())) {
-			reason = 2;
-		}
-		if (reason != 0) {
-			CECTag rejected(EC_TAG_SHAREDDIR_REJECTED, rawPath);
-			rejected.AddTag(CECTag(EC_TAG_SHAREDDIR_ERROR, reason));
-			response->AddTag(rejected);
-			continue;
-		}
 		const CECTag *recursiveTag = tag.GetTagByName(EC_TAG_SHAREDDIR_RECURSIVE);
-		if (recursiveTag != nullptr && recursiveTag->GetInt() != 0) {
-			recursiveDirs.push_back(path);
+		const bool requestedRecursive = recursiveTag != nullptr && recursiveTag->GetInt() != 0;
+
+		// Work out whether this folder is already shared, and with which recursive flag, so a
+		// widening change can be told from a no-op or a narrowing one.
+		bool alreadyShared = false;
+		bool storedRecursive = false;
+		CPath storedEntry;
+		for (const CPath &stored : storedDirs) {
+			if (path.IsSameDir(stored)) {
+				alreadyShared = true;
+				storedEntry = stored;
+				for (const CPath &rec : recursiveStored) {
+					if (path.IsSameDir(rec)) {
+						storedRecursive = true;
+						break;
+					}
+				}
+				break;
+			}
+		}
+
+		// The folder is checked only when the change WIDENS what it exposes: a brand-new folder, or
+		// flipping an existing share from explicit to recursive (recursion pulls in every
+		// subdirectory). Otherwise a client could escalate a legacy non-recursive share such as
+		// $HOME -- which sits outside the (empty-by-default) roots -- into a recursive one. Turning
+		// recursion off only narrows the share, and an unchanged flag is a no-op, so both skip the
+		// check.
+		const bool widening = !alreadyShared || (requestedRecursive && !storedRecursive);
+
+		if (widening) {
+			uint8 reason = 0;
+			if (!path.IsOk() || !path.DirExists()) {
+				reason = EC_SHAREDDIR_ERR_MISSING;
+			} else if (!wxFileName::IsDirReadable(path.GetRaw())) {
+				reason = EC_SHAREDDIR_ERR_UNREADABLE;
+			} else if (!theApp->glob_prefs->IsRemoteDirChangeAllowed(path)) {
+				reason = EC_SHAREDDIR_ERR_OUTSIDE_ROOTS;
+			}
+			if (reason != 0) {
+				CECTag rejected(EC_TAG_SHAREDDIR_REJECTED, rawPath);
+				rejected.AddTag(CECTag(EC_TAG_SHAREDDIR_ERROR, reason));
+				response->AddTag(rejected);
+				// A refused change to an ALREADY-shared folder (turning recursion on) must
+				// not drop the share: re-sending the whole list would then lose it for good,
+				// and a later request with the old flag could not re-add it (it still sits
+				// outside the roots). Keep it exactly as stored -- same path, same flag --
+				// and report the refusal. Only a brand-new folder is dropped on refusal, as
+				// it was never shared.
+				if (alreadyShared) {
+					if (storedRecursive) {
+						recursiveDirs.push_back(storedEntry);
+					} else {
+						explicitDirs.push_back(storedEntry);
+					}
+				}
+				continue;
+			}
+		}
+
+		// Store the canonical (symlink/junction-resolved) path we actually checked, not the raw
+		// string the client sent: otherwise a later operation re-resolves the string and a symlink
+		// repointed after the check would escape. A folder that was not re-checked (an unchanged
+		// flag, or recursion turned off) keeps its value byte-for-byte.
+		const CPath storedPath = widening ? path.CanonicalForContainment() : path;
+
+		if (requestedRecursive) {
+			recursiveDirs.push_back(storedPath);
 		} else {
-			explicitDirs.push_back(path);
+			explicitDirs.push_back(storedPath);
 		}
 	}
 
@@ -4193,7 +4265,11 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 		const wxString oldBindInterface(thePrefs::GetNetworkInterface());
 		bool portRebindFailed = false;
 		wxString networkMessage;
-		if (!static_cast<const CEC_Prefs_Packet *>(request)->Apply()) {
+		// Apply() confines any remote change to the incoming/temp/shared folders to the
+		// configured allowed roots, keeping the old value and listing the refused raw paths
+		// here. The rest of the packet still applies (like the failed-port-rebind path below).
+		wxArrayString refusedDirs;
+		if (!static_cast<const CEC_Prefs_Packet *>(request)->Apply(&refusedDirs)) {
 			response = new CECPacket(EC_OP_FAILED);
 			response->AddTag(CECTag(EC_TAG_STRING,
 				CFormat(_("Could not save server list sources to %s. Check the URLs and file "
@@ -4240,9 +4316,26 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 		// Act on an AdvertiseIPv6 change now, not at the next periodic refresh.
 		AdvertisedIPv6ForPeers();
 #endif
-		response = new CECPacket(portRebindFailed ? EC_OP_FAILED : EC_OP_NOOP);
+		const bool dirsRefused = !refusedDirs.IsEmpty();
+		response = new CECPacket((portRebindFailed || dirsRefused) ? EC_OP_FAILED : EC_OP_NOOP);
 		if (portRebindFailed) {
 			response->AddTag(CECTag(EC_TAG_STRING, networkMessage));
+		}
+		if (dirsRefused) {
+			// One rejected-directory tag per refused folder, carrying reason code 3 (outside
+			// the allowed roots) -- the same structure the EC_OP_SET_SHARED_DIRS reply uses, so
+			// a client has one parser for a rejected folder. The old incoming/temp/shared values
+			// were kept; the rest of the packet applied. A plain-text line follows for simple
+			// clients that do not read the codes.
+			for (const wxString &dir : refusedDirs) {
+				CECTag rejected(EC_TAG_SHAREDDIR_REJECTED, dir);
+				rejected.AddTag(CECTag(
+					EC_TAG_SHAREDDIR_ERROR, (uint8)EC_SHAREDDIR_ERR_OUTSIDE_ROOTS));
+				response->AddTag(rejected);
+			}
+			response->AddTag(CECTag(EC_TAG_STRING,
+				wxTRANSLATE("One or more folders were outside the allowed remote directories "
+					    "and were left unchanged.")));
 		}
 		break;
 	}
@@ -4251,6 +4344,33 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 		if (request->GetTagCount() == 1) {
 			CEC_Category_Tag tag(
 				*static_cast<const CEC_Category_Tag *>(request->GetFirstTagSafe()));
+			const CPath catPath(tag.Path());
+			if (catPath.IsOk() && !theApp->glob_prefs->IsRemoteDirChangeAllowed(catPath)) {
+				// The category's download folder is outside the allowed roots: refuse to
+				// create the category (code 3) rather than silently falling back to the
+				// incoming dir. Nothing is created and no refresh is signalled. Deliberately
+				// WITHOUT EC_TAG_CATEGORY_PATH, which on a failed category reply means
+				// "applied, path kept" -- a success -- see EC_OP_UPDATE_CATEGORY below. The
+				// refused folder is named with the same EC_TAG_SHAREDDIR_REJECTED / code 3
+				// structure the directory routes use, so a client has one parser for an
+				// out-of-root folder whichever operation set it.
+				response = new CECPacket(EC_OP_FAILED);
+				CECTag rejected(EC_TAG_SHAREDDIR_REJECTED, catPath.GetRaw());
+				rejected.AddTag(CECTag(
+					EC_TAG_SHAREDDIR_ERROR, (uint8)EC_SHAREDDIR_ERR_OUTSIDE_ROOTS));
+				response->AddTag(rejected);
+				response->AddTag(CECTag(EC_TAG_STRING,
+					wxTRANSLATE("The category folder is outside the allowed remote "
+						    "directories.")));
+				break;
+			}
+			if (catPath.IsOk()) {
+				// Store the canonical (symlink/junction-resolved) path we just validated,
+				// like the incoming/temp/shared routes, so it cannot be re-resolved later
+				// through a repointed link. An empty path falls back to the incoming dir
+				// inside CreateCategory, so it is left untouched.
+				tag.CanonicalizeStoredPath();
+			}
 			if (tag.Create()) {
 				response = new CECPacket(EC_OP_NOOP);
 			} else {
@@ -4281,6 +4401,40 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 				// No Notify either: there is nothing to refresh, and the
 				// monolithic handler would index on this same value.
 				break;
+			}
+			{
+				const CPath newCatPath(tag.Path());
+				if (newCatPath.IsOk() &&
+					!newCatPath.IsSameDir(theApp->glob_prefs->GetCatPath(tag.GetInt())) &&
+					!theApp->glob_prefs->IsRemoteDirChangeAllowed(newCatPath)) {
+					// A real change of the category folder to a location outside the
+					// allowed roots (code 3): refuse the whole update and leave the
+					// category unchanged. Only a change is checked -- keeping the current
+					// path passes. WITHOUT EC_TAG_CATEGORY_PATH, which on a failed update
+					// reads as "applied, path kept" (a success), like the "No such
+					// category." case above. The refused folder is named with the same
+					// EC_TAG_SHAREDDIR_REJECTED / code 3 structure the directory routes
+					// use.
+					response = new CECPacket(EC_OP_FAILED);
+					response->AddTag(CECTag(EC_TAG_CATEGORY, tag.GetInt()));
+					CECTag rejected(EC_TAG_SHAREDDIR_REJECTED, newCatPath.GetRaw());
+					rejected.AddTag(CECTag(EC_TAG_SHAREDDIR_ERROR,
+						(uint8)EC_SHAREDDIR_ERR_OUTSIDE_ROOTS));
+					response->AddTag(rejected);
+					response->AddTag(CECTag(EC_TAG_STRING,
+						wxTRANSLATE(
+							"The category folder is outside the allowed remote "
+							"directories.")));
+					break;
+				}
+				if (newCatPath.IsOk() &&
+					!newCatPath.IsSameDir(theApp->glob_prefs->GetCatPath(tag.GetInt()))) {
+					// A permitted change of the category folder: store the canonical
+					// (symlink/junction-resolved) path we just checked, like the
+					// incoming/temp/shared routes. An unchanged path keeps its stored
+					// value.
+					tag.CanonicalizeStoredPath();
+				}
 			}
 			if (tag.Apply()) {
 				response = new CECPacket(EC_OP_NOOP);

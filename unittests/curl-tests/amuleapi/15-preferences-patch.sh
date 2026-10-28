@@ -372,23 +372,115 @@ SAVED_IFACE=$(printf '%s' "$CURL_BODY" | jq -r '.connection.bind_interface')
 SAVED_KADREASK=$(printf '%s' "$CURL_BODY" | jq -r '.advanced.kad_source_reask_minutes')
 SAVED_SRCREASK=$(printf '%s' "$CURL_BODY" | jq -r '.advanced.source_reask_minutes')
 
-# Round-trip a bool (files) + string (files) + bool (security) + int (onlinesig)
-# + string (connection.bind_interface).
+# Round-trip a bool (files) + bool (security) + int (onlinesig) + string
+# (connection.bind_interface). ffprobe_path is exercised on its own below: it is daemon-local
+# and cannot be changed through the API.
 MM_TOGGLE=$([ "$SAVED_MM" = "true" ] && echo false || echo true)
 PARANOID_TOGGLE=$([ "$SAVED_PARANOID" = "true" ] && echo false || echo true)
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
-	-d "{\"files\":{\"media_metadata_enabled\":$MM_TOGGLE,\"ffprobe_path\":\"/usr/bin/ffprobe\"},\"security\":{\"reject_spoofed_source_ips\":$PARANOID_TOGGLE},\"online_signature\":{\"update_frequency_seconds\":123},\"connection\":{\"bind_interface\":\"tun0\"}}" \
+	-d "{\"files\":{\"media_metadata_enabled\":$MM_TOGGLE},\"security\":{\"reject_spoofed_source_ips\":$PARANOID_TOGGLE},\"online_signature\":{\"update_frequency_seconds\":123},\"connection\":{\"bind_interface\":\"tun0\"}}" \
 	"$API/preferences"
 _assert_status 200 "PATCH media-probe + security + onlinesig + iface → 200"
 _assert_json_eq '.files.media_metadata_enabled' "$MM_TOGGLE" 'files.media_metadata_enabled toggled in response'
-_assert_json_eq '.files.ffprobe_path' /usr/bin/ffprobe 'files.ffprobe_path set in response'
 _assert_json_eq '.security.reject_spoofed_source_ips' "$PARANOID_TOGGLE" 'security.reject_spoofed_source_ips toggled in response'
 _assert_json_eq '.online_signature.update_frequency_seconds' 123 'online_signature.update_frequency_seconds=123 in response'
 _assert_json_eq '.connection.bind_interface' tun0 'connection.bind_interface set in response'
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
-_assert_json_eq '.files.ffprobe_path' /usr/bin/ffprobe 'files.ffprobe_path persisted (no stale GET)'
 _assert_json_eq '.online_signature.update_frequency_seconds' 123 'online_signature.update_frequency_seconds persisted'
 _assert_json_eq '.connection.bind_interface' tun0 'connection.bind_interface persisted'
+
+# files.ffprobe_path is daemon-local: the daemon executes it, so it is set
+# only in amule.conf and cannot be changed through the API. A PATCH that would change it is a
+# 400 read_only_field and nothing is applied; echoing the current value back (as a read-modify-
+# write of the whole object does) is an accepted no-op → 200.
+CHANGED_FFPROBE="${SAVED_FFPROBE}-changed"
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
+	-d "{\"files\":{\"ffprobe_path\":\"$CHANGED_FFPROBE\"}}" "$API/preferences"
+_assert_status 400 "PATCH changing files.ffprobe_path → 400 (daemon-local)"
+_assert_json_eq '.error.code' read_only_field 'ffprobe_path change rejected with read_only_field'
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
+_assert_json_eq '.files.ffprobe_path' "$SAVED_FFPROBE" 'rejected ffprobe_path change left the stored value unchanged'
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
+	-d "{\"files\":{\"ffprobe_path\":\"$SAVED_FFPROBE\"}}" "$API/preferences"
+_assert_status 200 'PATCH files.ffprobe_path = current value → 200 (no-op)'
+_assert_json_eq '.files.ffprobe_path' "$SAVED_FFPROBE" 'unchanged ffprobe_path still reads as before'
+
+# directories.follow_symlinks is daemon-local like ffprobe: following symlinks widens what a share
+# exposes on the daemon's own disk, a daemon-side policy a remote client must not flip. A change is
+# 400 read_only_field and is not applied; echoing the current value back is an accepted no-op.
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
+SAVED_FOLLOW=$(printf '%s' "$CURL_BODY" | jq -r '.directories.follow_symlinks')
+OTHER_FOLLOW=$([ "$SAVED_FOLLOW" = "true" ] && echo false || echo true)
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
+	-d "{\"directories\":{\"follow_symlinks\":$OTHER_FOLLOW}}" "$API/preferences"
+_assert_status 400 'PATCH changing directories.follow_symlinks → 400 (daemon-local)'
+_assert_json_eq '.error.code' read_only_field 'follow_symlinks change rejected with read_only_field'
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
+_assert_json_eq '.directories.follow_symlinks' "$SAVED_FOLLOW" 'rejected follow_symlinks change left the stored value unchanged'
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
+	-d "{\"directories\":{\"follow_symlinks\":$SAVED_FOLLOW}}" "$API/preferences"
+_assert_status 200 'PATCH directories.follow_symlinks = current value → 200 (no-op)'
+
+# --- 5c-ter. Folder confinement (EC path hardening). -----------------------
+# online_signature.directory is daemon-local like ffprobe (the daemon writes its signature
+# files there); the folders a remote client CAN still set -- incoming/temp/shared and a
+# category's save_path -- are confined to the daemon's allowed roots, reported read-only as
+# directories.allowed_remote_roots (empty = the daemon refuses every remote folder change,
+# which is the out-of-the-box default).
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
+SAVED_OSDIR=$(printf '%s' "$CURL_BODY" | jq -r '.online_signature.directory')
+SAVED_INCOMING=$(printf '%s' "$CURL_BODY" | jq -r '.directories.incoming_path')
+CUR_OSFREQ=$(printf '%s' "$CURL_BODY" | jq -r '.online_signature.update_frequency_seconds')
+ALLOWED_ROOTS=$(printf '%s' "$CURL_BODY" | jq -c '.directories.allowed_remote_roots')
+
+# Read-only: present as an array whatever the daemon's config, and ignored on PATCH.
+_assert_json_eq '(.directories.allowed_remote_roots|type)' array \
+	'directories.allowed_remote_roots is a (read-only) array'
+
+# online_signature.directory: a change is 400 read_only_field and leaves the stored value
+# untouched; echoing the current value back is an accepted no-op (read-modify-write safe).
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
+	-d "{\"online_signature\":{\"directory\":\"${SAVED_OSDIR}/amuleapi-regtest-changed\"}}" "$API/preferences"
+_assert_status 400 'PATCH changing online_signature.directory → 400 (daemon-local)'
+_assert_json_eq '.error.code' read_only_field 'online_signature.directory change rejected with read_only_field'
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
+_assert_json_eq '.online_signature.directory' "$SAVED_OSDIR" 'rejected online_signature.directory change left the stored value unchanged'
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
+	-d "{\"online_signature\":{\"directory\":\"$SAVED_OSDIR\"}}" "$API/preferences"
+_assert_status 200 'PATCH online_signature.directory = current value → 200 (no-op)'
+
+# Only a *change* of a folder is checked, so re-sending the current incoming_path always passes.
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
+	-d "{\"directories\":{\"incoming_path\":\"$SAVED_INCOMING\"}}" "$API/preferences"
+_assert_status 200 'PATCH directories.incoming_path = current value → 200 (only changes are checked)'
+
+# A change pointed OUTSIDE the allowed roots is 403 path_not_allowed; the folder keeps its value
+# while the rest of the same request still applies. Pick a target guaranteed outside the roots:
+# with the empty default every change is refused, so a sibling subdir of the current incoming
+# does it; otherwise a name at the filesystem root is outside any normal share root.
+if [ "$ALLOWED_ROOTS" = "[]" ]; then
+	OUTSIDE_INCOMING="${SAVED_INCOMING%/}/amuleapi-regtest-outside"
+else
+	OUTSIDE_INCOMING="/amuleapi-regtest-outside-$$"
+fi
+ROOT_IS_SLASH=$(printf '%s' "$ALLOWED_ROOTS" | jq -r 'any(.[]; . == "/")' 2>/dev/null)
+if [ "$ROOT_IS_SLASH" = "true" ]; then
+	echo "  SKIP  allowed_remote_roots contains \"/\", so no path is outside it"
+else
+	SIBLING_OSFREQ=$([ "$CUR_OSFREQ" = "321" ] && echo 322 || echo 321)
+	_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
+		-d "{\"directories\":{\"incoming_path\":\"$OUTSIDE_INCOMING\"},\"online_signature\":{\"update_frequency_seconds\":$SIBLING_OSFREQ}}" \
+		"$API/preferences"
+	_assert_status 403 'PATCH incoming_path outside allowed roots → 403'
+	_assert_json_eq '.error.code' path_not_allowed 'out-of-root incoming_path rejected with path_not_allowed'
+	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
+	_assert_json_eq '.directories.incoming_path' "$SAVED_INCOMING" 'refused incoming_path left unchanged'
+	_assert_json_eq '.online_signature.update_frequency_seconds' "$SIBLING_OSFREQ" \
+		'a sibling field in the same request still applied despite the refusal'
+	# Put the sibling back where this section found it.
+	_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
+		-d "{\"online_signature\":{\"update_frequency_seconds\":$CUR_OSFREQ}}" "$API/preferences" >/dev/null 2>&1
+fi
 
 # --- 5c-bis. message_filter show-in-log + comment filter (#596). ----------
 # Newly EC-wired: previously amulegui-local / unreachable over EC.

@@ -1761,13 +1761,32 @@ private:
 	void HandlePacket(const CECPacket *packet) override
 	{
 		if (packet->GetOpCode() == EC_OP_FAILED) {
-			const CECTag *tag = packet->GetTagByName(EC_TAG_STRING);
-			const wxString message =
-				tag ? tag->GetStringData()
-				    : _("The daemon could not apply the connection port changes.");
-			// Refresh the optimistic remote preference view after the daemon rolls back
-			// failed port changes, then show the daemon's explanation on the GUI
-			// thread.
+			// A refused incoming/temp/shared folder comes back as one or more
+			// EC_TAG_SHAREDDIR_REJECTED tags (all reason code 3 here -- outside the allowed
+			// roots); build the message from those, localized client-side, naming each folder.
+			// The core also sends a plain-text EC_TAG_STRING for simple clients; fall back to it
+			// otherwise (e.g. a port-rebind failure, which carries no code).
+			wxString rejectedDirs;
+			for (const CECTag &tag : *packet) {
+				if (tag.GetTagName() == EC_TAG_SHAREDDIR_REJECTED) {
+					rejectedDirs += CFormat("\n%s") % tag.GetStringData();
+				}
+			}
+			wxString message;
+			if (!rejectedDirs.IsEmpty()) {
+				message =
+					CFormat(_("The daemon refused these folders because they are outside "
+						  "the folders it allows (configured on the daemon):%s")) %
+					rejectedDirs;
+			} else {
+				const CECTag *tag = packet->GetTagByName(EC_TAG_STRING);
+				message = tag ? tag->GetStringData()
+					      : wxString(_("The daemon could not apply the connection port "
+							   "changes."));
+			}
+			// Refresh the optimistic remote preference view after the daemon rolls back the
+			// refused changes (it keeps the old folder values), then show the explanation on
+			// the GUI thread.
 			if (theApp->glob_prefs) {
 				theApp->glob_prefs->RefreshFromRemote([message]() {
 					wxTheApp->CallAfter([message]() {
@@ -1847,14 +1866,28 @@ void CSharedDirsHandler::HandlePacket(const CECPacket *packet)
 				continue;
 			}
 			const CECTag *errTag = tag.GetTagByName(EC_TAG_SHAREDDIR_ERROR);
+			const int code = (errTag != nullptr) ? static_cast<int>(errTag->GetInt()) : 0;
 			// Reason codes are translated here, in the user's locale, rather
 			// than shipped as text from a daemon with a different one.
-			const wxString reason = (errTag != nullptr && errTag->GetInt() == 2)
-							? _("not readable")
-							: _("not found");
+			wxString reason;
+			switch (code) {
+			case 2:
+				reason = _("not readable");
+				break;
+			case 3:
+				reason =
+					_("outside the folders the daemon allows (configured on the daemon)");
+				break;
+			default:
+				reason = _("not found");
+				break;
+			}
 			rejected += CFormat("\n%s (%s)") % tag.GetStringData() % reason;
 		}
 		if (!rejected.IsEmpty()) {
+			// Reload the list the core actually kept so the editor stops showing a folder the
+			// daemon refused; the reply refreshes the Preferences editor if it is open.
+			theApp->glob_prefs->LoadSharedDirsRemote();
 			const wxString msg =
 				CFormat(_("The core rejected these shared folders:%s")) % rejected;
 			// Deferred: a modal opened straight from a packet handler spins a nested event
@@ -1921,9 +1954,36 @@ void CAddLinkHandler::HandlePacket(const CECPacket *packet)
 	delete this;
 }
 
+// EC_OP_CREATE_CATEGORY / EC_OP_UPDATE_CATEGORY reply. amulegui applies the change to its own
+// category list optimistically and only then learns the daemon's verdict, so the handler carries
+// enough to undo it: for a create, the new category's index (dropped if refused); for an update,
+// the category's pre-change state (restored if refused). A refusal with no EC_TAG_CATEGORY_PATH
+// (e.g. the folder is outside the roots the daemon allows) rolls the optimistic change back so the
+// UI matches what the core kept.
 class CCatHandler : public CECPacketHandlerBase
 {
-	virtual void HandlePacket(const CECPacket *packet);
+public:
+	explicit CCatHandler(Category_Struct *created)
+	: m_isCreate(true)
+	, m_category(created)
+	{
+	}
+	CCatHandler(Category_Struct *target, const Category_Struct &prev)
+	: m_isCreate(false)
+	, m_category(target)
+	, m_prev(prev)
+	{
+	}
+
+private:
+	void HandlePacket(const CECPacket *packet) override;
+
+	bool m_isCreate;
+	// The category this request created or updated, kept by identity rather than index: a delete
+	// that lands between the optimistic local change and the daemon's async verdict shifts every
+	// index after it, so rolling back a refusal by position could drop or corrupt the wrong row.
+	Category_Struct *m_category;
+	Category_Struct m_prev{};
 };
 
 // EC_OP_DELETE_CATEGORY reply. Holds the index because a successful delete
@@ -1965,10 +2025,18 @@ void CCatDeleteHandler::HandlePacket(const CECPacket *packet)
 
 void CCatHandler::HandlePacket(const CECPacket *packet)
 {
-	if (packet->GetOpCode() == EC_OP_FAILED) {
+	if (packet->GetOpCode() != EC_OP_FAILED) {
+		delete this;
+		return;
+	}
+
+	const CECTag *pathTag = packet->GetTagByName(EC_TAG_CATEGORY_PATH);
+	if (pathTag != nullptr) {
+		// "Created/updated, but the folder you gave could not be used, so this one was kept
+		// instead": the category exists core-side with the kept path, so adopt it locally. The
+		// presence of EC_TAG_CATEGORY_PATH is what marks this from a flat refusal below.
 		const CECTag *catTag = packet->GetTagByName(EC_TAG_CATEGORY);
-		const CECTag *pathTag = packet->GetTagByName(EC_TAG_CATEGORY_PATH);
-		if (catTag && pathTag && catTag->GetInt() < theApp->glob_prefs->GetCatCount()) {
+		if (catTag && catTag->GetInt() < theApp->glob_prefs->GetCatCount()) {
 			int cat = catTag->GetInt();
 			Category_Struct *cs = theApp->glob_prefs->GetCategory(cat);
 			wxString msg = CFormat(_("Can't create directory '%s' for category '%s', keeping "
@@ -1984,7 +2052,49 @@ void CCatHandler::HandlePacket(const CECPacket *packet)
 			// rx state.
 			wxTheApp->CallAfter([msg]() { wxMessageBox(msg, _("ERROR"), wxOK); });
 		}
+		delete this;
+		return;
 	}
+
+	// No path tag: the daemon refused the whole create/update (e.g. the folder is outside the
+	// folders it allows). Undo the optimistic local change so the UI matches the core, then tell
+	// the user. Both the rollback (CommitRemoveCategory can raise a share-reload progress dialog)
+	// and the modal are deferred off the OnPacketReceived stack, which spins a nested wx event
+	// loop that would otherwise corrupt CECSocket rx state; everything is captured by value since
+	// the handler is deleted first.
+	const CECTag *strTag = packet->GetTagByName(EC_TAG_STRING);
+	const wxString reason = strTag ? wxGetTranslation(strTag->GetStringData())
+				       : wxString(_("the daemon refused the request"));
+	const bool isCreate = m_isCreate;
+	Category_Struct *const category = m_category;
+	const Category_Struct prev = m_prev;
+	wxTheApp->CallAfter([isCreate, category, prev, reason]() {
+		// Locate the category by identity, not by the index it had when the request was sent: a
+		// delete in between would have shifted it. A pointer comparison is safe even if the row
+		// was itself deleted meanwhile -- it simply will not be found, and there is nothing to
+		// undo.
+		int idx = 0;
+		bool found = false;
+		for (uint32 i = 0; i < theApp->glob_prefs->GetCatCount(); ++i) {
+			if (theApp->glob_prefs->GetCategory(i) == category) {
+				idx = static_cast<int>(i);
+				found = true;
+				break;
+			}
+		}
+		if (found && theApp->amuledlg && theApp->amuledlg->m_transferwnd) {
+			if (isCreate) {
+				theApp->amuledlg->m_transferwnd->CommitRemoveCategory(idx);
+			} else {
+				*category = prev;
+				theApp->amuledlg->m_transferwnd->UpdateCategory(idx);
+				theApp->amuledlg->m_transferwnd->downloadlistctrl->Refresh();
+			}
+		}
+		wxMessageBox(CFormat(_("The daemon refused the category: %s")) % reason,
+			_("ERROR"),
+			wxOK | wxICON_ERROR);
+	});
 	delete this;
 }
 
@@ -1995,11 +2105,6 @@ bool CPreferencesRem::CreateCategory(Category_Struct *&category,
 	uint32 color,
 	uint8 prio)
 {
-	CECPacket req(EC_OP_CREATE_CATEGORY);
-	CEC_Category_Tag tag(0xffffffff, name, path.GetRaw(), comment, color, prio);
-	req.AddTag(tag);
-	m_conn->SendRequest(new CCatHandler, &req);
-
 	category = new Category_Struct();
 	category->path = path;
 	category->title = name;
@@ -2007,7 +2112,14 @@ bool CPreferencesRem::CreateCategory(Category_Struct *&category,
 	category->color = color;
 	category->prio = prio;
 
+	// Add locally first so the handler can drop this exact category (by identity, not index) if
+	// the daemon refuses the folder.
 	AddCat(category);
+
+	CECPacket req(EC_OP_CREATE_CATEGORY);
+	CEC_Category_Tag tag(0xffffffff, name, path.GetRaw(), comment, color, prio);
+	req.AddTag(tag);
+	m_conn->SendRequest(new CCatHandler(category), &req);
 
 	return true;
 }
@@ -2015,12 +2127,16 @@ bool CPreferencesRem::CreateCategory(Category_Struct *&category,
 bool CPreferencesRem::UpdateCategory(
 	uint8 cat, const wxString &name, const CPath &path, const wxString &comment, uint32 color, uint8 prio)
 {
+	Category_Struct *category = m_CatList[cat];
+	// Snapshot the pre-change state so the handler can restore it if the daemon refuses the
+	// folder, before the optimistic overwrite below.
+	const Category_Struct prev = *category;
+
 	CECPacket req(EC_OP_UPDATE_CATEGORY);
 	CEC_Category_Tag tag(cat, name, path.GetRaw(), comment, color, prio);
 	req.AddTag(tag);
-	m_conn->SendRequest(new CCatHandler, &req);
+	m_conn->SendRequest(new CCatHandler(category, prev), &req);
 
-	Category_Struct *category = m_CatList[cat];
 	category->path = path;
 	category->title = name;
 	category->comment = comment;

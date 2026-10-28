@@ -106,6 +106,31 @@ public:
 	/** Returns the full filename, excluding the path. */
 	CPath GetFullName() const;
 
+	/**
+	 * True if this is a single bare file name with no directory component -- i.e. safe to JoinPaths()
+	 * onto a directory without escaping it. False for an empty/invalid path, anything containing a
+	 * path separator (its leaf would differ from the whole), and the "." / ".." directory entries.
+	 * Use it to validate an externally-supplied name before joining it to a trusted directory, so a
+	 * caller cannot use "../" to traverse out (CWE-22).
+	 */
+	bool IsBareFileName() const;
+
+	/**
+	 * Canonical form for a containment test: made absolute, with "." / ".." collapsed and (on POSIX)
+	 * symlinks resolved. A path that does not exist yet is resolved through its deepest existing
+	 * ancestor, the remaining components re-appended. Returns an invalid CPath when this one is
+	 * invalid. Pair with IsContainedIn().
+	 */
+	CPath CanonicalForContainment(bool requireResolved = false) const;
+
+	/**
+	 * True iff this path, canonicalised, is equal to or inside `root` (also canonicalised). The
+	 * comparison is whole-component -- "/data" does not match "/database" -- and case-insensitive
+	 * where the platform's filesystem is. Use it to confine an externally-supplied directory to a
+	 * configured root, so a "../" or a symlink cannot escape it (CWE-22).
+	 */
+	bool IsContainedIn(const CPath &root) const;
+
 	/** Returns the size of the specified file, or wxInvalidSize on failure. */
 	sint64 GetFileSize() const;
 

@@ -1059,6 +1059,10 @@ struct PreferencesSnapshot
 		std::string incoming_path;
 		std::string temp_path;
 		std::vector<std::string> shared_paths;
+		// Read-only: the folders the daemon will let a remote client point incoming / temp /
+		// shared / category folders at. Configured only on the daemon (empty = it refuses
+		// every remote folder change); reported here so a client can show what will be accepted.
+		std::vector<std::string> allowed_remote_roots;
 		bool share_hidden = false;
 		bool rescan_on_startup = false;
 		bool follow_symlinks = false;

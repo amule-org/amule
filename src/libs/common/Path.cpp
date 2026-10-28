@@ -35,10 +35,17 @@
 #endif
 #include <wx/utils.h>
 #include <wx/filename.h>
-#include <algorithm> // Needed for std::min
+#include <wx/tokenzr.h> // Needed for the ".." component scan in IsContainedIn
+#include <algorithm>    // Needed for std::min
+#include <cstdlib>      // Needed for realpath/free in CanonicalForContainment (POSIX)
+#ifdef __APPLE__
+#include <unistd.h> // pathconf / _PC_CASE_SENSITIVE for the per-volume case check in IsContainedIn
+#endif
 
 #ifndef __WINDOWS__
 #include <sys/stat.h> // Needed for ::stat in GetFileStat
+#else
+#include <windows.h> // CreateFileW / GetFinalPathNameByHandleW for junction resolution
 #endif
 
 // Windows paths are case-insensitive, so compare that way there.
@@ -560,6 +567,194 @@ CPath CPath::RemoveExt() const
 	result.m_filesystem = DoRemoveExt(m_filesystem);
 
 	return result;
+}
+
+bool CPath::IsBareFileName() const
+{
+	if (!IsOk()) {
+		return false;
+	}
+	// "." and ".." are directory entries, not file names.
+	const wxString printable = GetPrintable();
+	if (printable == wxT(".") || printable == wxT("..")) {
+		return false;
+	}
+	// Reject any path separator outright rather than rely on normalisation: the raw string is what
+	// gets joined onto a directory and handed to rename(), so a single embedded '/' (or '\' on a
+	// Windows daemon) is what lets a name traverse out of its folder. Both are checked because a
+	// remote client may send either. This is stricter than "resolves inside the folder" on purpose
+	// -- a legitimate rename never needs a separator.
+	const wxString raw = GetRaw();
+	return printable.find(wxT('/')) == wxString::npos && printable.find(wxT('\\')) == wxString::npos &&
+	       raw.find(wxT('/')) == wxString::npos && raw.find(wxT('\\')) == wxString::npos;
+}
+
+// A path with a ".." in any component. Such a component is never needed for a remote folder, and
+// it cannot be judged lexically: the kernel resolves ".." AFTER following a symlink, so
+// "<root>/link/../x" cancels to "<root>/x" on paper while the filesystem lands it wherever <link>
+// points. IsContainedIn() refuses it outright rather than trying to reason about it.
+static bool HasParentDirComponent(const wxString &raw)
+{
+	wxStringTokenizer tok(raw, wxFileName::GetPathSeparators());
+	while (tok.HasMoreTokens()) {
+		if (tok.GetNextToken() == wxT("..")) {
+			return true;
+		}
+	}
+	return false;
+}
+
+// Resolve symlinks (POSIX) or symlinks and junctions (Windows) in an existing directory to its
+// real location. Returns false when the path cannot be resolved. Normalize() does neither.
+static bool ResolveExistingDir(const wxString &existingDir, wxString &out)
+{
+#ifdef __WXMSW__
+	// FILE_FLAG_BACKUP_SEMANTICS is required to obtain a handle to a *directory*; the share mode
+	// is permissive so an in-use folder still opens. GetFinalPathNameByHandleW walks every
+	// junction and symlink in the path.
+	HANDLE h = ::CreateFileW(existingDir.wc_str(),
+		0,
+		FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+		nullptr,
+		OPEN_EXISTING,
+		FILE_FLAG_BACKUP_SEMANTICS,
+		nullptr);
+	if (h == INVALID_HANDLE_VALUE) {
+		return false;
+	}
+	wchar_t buf[32768];
+	const DWORD n = ::GetFinalPathNameByHandleW(
+		h, buf, (DWORD)WXSIZEOF(buf), FILE_NAME_NORMALIZED | VOLUME_NAME_DOS);
+	::CloseHandle(h);
+	if (n == 0 || n >= WXSIZEOF(buf)) {
+		return false;
+	}
+	wxString resolved(buf, n);
+	// GetFinalPathNameByHandleW returns the \\?\ long-path prefix; strip it so the result compares
+	// against ordinary roots. \\?\UNC\server\share -> \\server\share, \\?\C:\dir -> C:\dir.
+	if (resolved.StartsWith(wxT("\\\\?\\UNC\\"))) {
+		resolved = wxT("\\\\") + resolved.Mid(8);
+	} else if (resolved.StartsWith(wxT("\\\\?\\"))) {
+		resolved = resolved.Mid(4);
+	}
+	out = resolved;
+	return true;
+#else
+	char *resolved = realpath(existingDir.fn_str(), nullptr);
+	if (resolved == nullptr) {
+		return false;
+	}
+	out = wxString(resolved, wxConvFile);
+	free(resolved);
+	return true;
+#endif
+}
+
+// wxFileName::DirName(...).GetFullPath() always ends in a path separator. Drop it so a stored folder
+// round-trips the value a client sent (/tmp/x, not /tmp/x/), while keeping the separator for a bare
+// root (/ or C:\), which is not a usable path without it.
+static wxString WithoutTrailingDirSeparator(const wxString &fullPath)
+{
+	const wxString stripped = StripSeparators(fullPath, wxString::trailing);
+	// Empty (a Unix "/") or a bare volume ("C:") means it was a root -- keep the original form.
+	if (stripped.IsEmpty() || stripped.Last() == wxT(':')) {
+		return fullPath;
+	}
+	return stripped;
+}
+
+CPath CPath::CanonicalForContainment(bool requireResolved) const
+{
+	if (!IsOk()) {
+		return CPath();
+	}
+	// Make absolute and fold case / short names, but DELIBERATELY do not collapse "." / ".."
+	// lexically (no wxPATH_NORM_DOTS): a symlinked escape must be resolved by the filesystem,
+	// below, not cancelled out on the string first. Callers refuse ".." before relying on this
+	// (see IsContainedIn); "." is harmless and the symlink resolution drops it. Treated as a
+	// directory path throughout -- every caller passes a folder (incoming / temp / shared /
+	// category / online-signature).
+	wxFileName fn = wxFileName::DirName(GetRaw());
+	wxString cwd;
+	if (!fn.IsAbsolute()) {
+		cwd = wxGetCwd();
+	}
+	fn.Normalize(wxPATH_NORM_ABSOLUTE | wxPATH_NORM_LONG | wxPATH_NORM_CASE, cwd);
+
+	// Resolve symlinks / junctions, which Normalize() does not. The resolver needs an existing
+	// path, so resolve the deepest existing ancestor and re-append the components below it -- a
+	// not-yet-created incoming/temp/category folder is the normal case. This is what stops a
+	// symlinked (POSIX) or junctioned (Windows) folder from pointing outside the configured roots.
+	wxFileName existing = fn;
+	wxArrayString tail;
+	while (existing.GetDirCount() > 0 && !existing.DirExists()) {
+		tail.Insert(existing.GetDirs().Last(), 0);
+		existing.RemoveLastDir();
+	}
+	wxString resolved;
+	if (ResolveExistingDir(existing.GetFullPath(), resolved)) {
+		wxFileName real = wxFileName::DirName(resolved);
+		for (size_t i = 0; i < tail.GetCount(); ++i) {
+			real.AppendDir(tail[i]);
+		}
+		return CPath(WithoutTrailingDirSeparator(real.GetFullPath()));
+	}
+
+	// The symlinks/junctions could not be resolved (a broken link, a permission wall, a symlink
+	// loop). A caller that only stores the path (the default) keeps the normalized-but-unresolved
+	// form, but the containment check asks for requireResolved so it refuses rather than comparing
+	// a path whose real location is unknown.
+	if (requireResolved) {
+		return CPath();
+	}
+	return CPath(WithoutTrailingDirSeparator(fn.GetFullPath()));
+}
+
+#ifdef __APPLE__
+// Whether the volume holding `dir` (or its nearest existing ancestor) is case-insensitive. macOS
+// mounts case-sensitive and case-insensitive volumes side by side, so this is a per-path property,
+// not a compile-time one -- hence it is scoped to the containment check rather than the global
+// PATHCMP macro, which would also make operator< and StartsWith case-insensitive everywhere.
+// pathconf needs a real path, so walk up to an existing ancestor; fold case only when the FS is
+// DEFINITELY case-insensitive (pathconf returns 0), treating 1 and an error (-1) as case-sensitive
+// so an unknown volume fails closed rather than widening the match.
+static bool VolumeIsCaseInsensitive(const wxString &dir)
+{
+	wxFileName fn = wxFileName::DirName(dir);
+	while (fn.GetDirCount() > 0 && !fn.DirExists()) {
+		fn.RemoveLastDir();
+	}
+	return pathconf(fn.GetFullPath().fn_str(), _PC_CASE_SENSITIVE) == 0;
+}
+#endif
+
+bool CPath::IsContainedIn(const CPath &root) const
+{
+	// Refuse ".." outright: no remote folder needs it, and it cannot be judged lexically against a
+	// path that may contain symlinks (see HasParentDirComponent).
+	if (!IsOk() || HasParentDirComponent(GetRaw())) {
+		return false;
+	}
+	// requireResolved: if the symlinks/junctions cannot be resolved, refuse rather than compare an
+	// unresolved path.
+	const CPath self = CanonicalForContainment(true);
+	const CPath base = root.CanonicalForContainment(true);
+	if (!self.IsOk() || !base.IsOk()) {
+		return false;
+	}
+#ifdef __APPLE__
+	// realpath() already returns the on-disk case, so an existing root and candidate compare
+	// correctly case-sensitively; the gap is a root (or tail) that does not exist yet, whose case
+	// is whatever the client typed. On a case-insensitive volume, match case-insensitively so the
+	// check does not fail closed; on a case-sensitive one, keep the exact comparison so it does not
+	// fail open.
+	if (VolumeIsCaseInsensitive(base.GetRaw())) {
+		return CPath(self.GetRaw().Lower()).StartsWith(CPath(base.GetRaw().Lower()));
+	}
+#endif
+	// StartsWith is a whole-component, case-correct prefix test that also treats an exact match as a
+	// prefix, so this is true when the path equals a root or lies inside it.
+	return self.StartsWith(base);
 }
 
 CPath CPath::RemoveAllExt() const

@@ -3574,6 +3574,47 @@ bool EcCategoryPathKept(const CECPacket *resp, std::string &kept_path)
 	return true;
 }
 
+// EC_TAG_SHAREDDIR_ERROR reason code the core (ExternalConn.cpp) uses for a folder
+// rejected because it lies outside the daemon's configured allowed roots. The other
+// codes -- 1 (missing) and 2 (unreadable) -- map to not_found / not_readable instead.
+constexpr std::int64_t kSharedDirErrOutsideRoots = 3;
+
+// The folders in an EC_OP_FAILED reply that were refused for being outside the daemon's
+// allowed roots (code 3). SET_PREFERENCES, SET_SHARED_DIRS and category create/update all
+// name a refused folder the same way -- one EC_TAG_SHAREDDIR_REJECTED per folder, carrying
+// EC_TAG_SHAREDDIR_ERROR -- so one scan serves them all. Empty when the reply is not that
+// kind of refusal, which the callers tell apart from a genuine failure.
+std::vector<std::string> EcOutsideRootsRefusals(const CECPacket *resp)
+{
+	std::vector<std::string> paths;
+	if (!resp || resp->GetOpCode() != EC_OP_FAILED)
+		return paths;
+	for (const CECTag &tag : *resp) {
+		if (tag.GetTagName() != EC_TAG_SHAREDDIR_REJECTED)
+			continue;
+		const CECTag *err = tag.GetTagByName(EC_TAG_SHAREDDIR_ERROR);
+		if (err != nullptr && err->GetInt() == kSharedDirErrOutsideRoots)
+			paths.emplace_back(tag.GetStringData().utf8_str());
+	}
+	return paths;
+}
+
+// A 403 path_not_allowed naming the folders the daemon refused for being outside its
+// configured allowed roots. Those roots are daemon-local config, so the fix is on the
+// daemon, not in the request.
+CHttpServer::Response PathNotAllowedResponse(const std::vector<std::string> &paths)
+{
+	std::string msg =
+		paths.size() == 1
+			? "the daemon refused this folder because it is outside the folders it allows "
+			  "(configured on the daemon):"
+			: "the daemon refused these folders because they are outside the folders it "
+			  "allows (configured on the daemon):";
+	for (const std::string &p : paths)
+		msg += " " + p;
+	return ErrorResponse(403, "path_not_allowed", msg.c_str());
+}
+
 // Map our wire-string priorities back to amule's PR_* encoding, the inverse of
 // PriorityName in Refresher.cpp. PR_AUTO=5 is the magic value stored as High plus
 // the auto flag. The one place the file-priority vocabulary is declared.
@@ -8366,6 +8407,9 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(const CHttpServer::
 	// gates ApplyBoolean on it -- which is also why every bool below is a value tag.
 	std::unique_ptr<CECPacket> ec_req(new CECPacket(EC_OP_SET_PREFERENCES, EC_DETAIL_FULL));
 	bool any_change = false;
+	// A daemon-local field (e.g. the ffprobe path) sent back unchanged: a valid no-op, so the
+	// request is not "no writable fields" even when it names nothing else.
+	bool daemon_local_noop = false;
 	// Names of read-only fields the body carried, so a request naming only
 	// those can say which ones rather than claiming none were known.
 	std::string skipped_read_only;
@@ -8435,6 +8479,47 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(const CHttpServer::
 					skipped_read_only += ", ";
 				skipped_read_only += std::string(f.category) + "." + f.key;
 			}
+			continue;
+		}
+
+		if (f.access == webapi::PrefAccess::DaemonLocal) {
+			// Emitted on GET but set only in the daemon's own configuration: the ffprobe path
+			// (the core executes it), the online-signature folder (it writes there) and
+			// follow_symlinks (it widens what a share exposes on the host). A read-modify-write
+			// client sends the value back unchanged -- accept that as a no-op; refuse a request
+			// that would actually change it, naming the field. String and bool rows only.
+			const auto it = src->find(f.key);
+			webapi::PreferencesSnapshot &snap =
+				const_cast<webapi::PreferencesSnapshot &>(current);
+			bool changes = false;
+			if (f.type == webapi::PrefType::String) {
+				if (!it->second.is<std::string>()) {
+					const std::string msg =
+						std::string(f.category) + "." + f.key + " must be a string";
+					return ErrorResponse(400, "bad_request", msg.c_str());
+				}
+				changes = it->second.get<std::string>() !=
+					  *static_cast<std::string *>(f.member(snap));
+			} else if (f.type == webapi::PrefType::Bool) {
+				if (!it->second.is<bool>()) {
+					const std::string msg =
+						std::string(f.category) + "." + f.key + " must be a boolean";
+					return ErrorResponse(400, "bad_request", msg.c_str());
+				}
+				changes = it->second.get<bool>() != *static_cast<bool *>(f.member(snap));
+			} else {
+				return ErrorResponse(400,
+					"bad_request",
+					(std::string(f.category) + "." + f.key + " is read-only").c_str());
+			}
+			if (changes) {
+				const std::string msg =
+					std::string(f.category) + "." + f.key +
+					" is set only in the daemon's own configuration (amule.conf) and "
+					"cannot be changed through the API";
+				return ErrorResponse(400, "read_only_field", msg.c_str());
+			}
+			daemon_local_noop = true;
 			continue;
 		}
 
@@ -8552,6 +8637,18 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(const CHttpServer::
 		ec_req->AddTag(groups.find(tag)->second);
 
 	if (!any_change) {
+		// A daemon-local field echoed back unchanged is an accepted no-op: return the current
+		// state (like a successful PATCH) rather than a "nothing writable" error.
+		if (daemon_local_noop) {
+			const webapi::PreferencesSnapshot p = m_state.Preferences();
+			CHttpServer::Response r;
+			r.status = 200;
+			r.content_type = "application/json";
+			CJsonWriter w;
+			WritePreferencesBody(w, p, /*admin=*/true);
+			FinalizeJsonBody(w, r);
+			return r;
+		}
 		if (!skipped_read_only.empty()) {
 			const std::string msg =
 				"no writable fields in the request; " + skipped_read_only +
@@ -8569,11 +8666,19 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(const CHttpServer::
 	}
 	std::string ec_err_msg;
 	if (IsEcFailedResponse(ec_resp, ec_err_msg)) {
+		// A folder (incoming / temp / shared) pointed outside the daemon's allowed roots is
+		// refused with that value left unchanged while the rest of the packet applies -- the
+		// same partial-apply shape as the failed port rebind below. Report it as the dedicated
+		// path_not_allowed naming the folders, rather than a flat amuled_rejected.
+		const std::vector<std::string> refused = EcOutsideRootsRefusals(ec_resp);
 		delete ec_resp;
 		// amuled may have applied other preferences in this request before
-		// rolling back a failed live port rebind. Refresh so an immediate GET
-		// reports the actual mixed result rather than the pre-request snapshot.
+		// rolling back a failed live port rebind (or leaving a refused folder
+		// unchanged). Refresh so an immediate GET reports the actual mixed result
+		// rather than the pre-request snapshot.
 		(void)RefresherTick(m_app, m_state);
+		if (!refused.empty())
+			return PathNotAllowedResponse(refused);
 		return ErrorResponse(400, "amuled_rejected", ec_err_msg.c_str());
 	}
 	delete ec_resp;
@@ -9776,8 +9881,14 @@ CHttpServer::Response ApplySharedDirs(CamuleapiApp &app, const std::vector<Share
 			continue;
 		}
 		const CECTag *err_tag = tag.GetTagByName(EC_TAG_SHAREDDIR_ERROR);
-		rejected[std::string(tag.GetStringData().utf8_str())] =
-			(err_tag != nullptr && err_tag->GetInt() == 2) ? "not_readable" : "not_found";
+		const char *reason = "not_found";
+		if (err_tag != nullptr) {
+			if (err_tag->GetInt() == kSharedDirErrOutsideRoots)
+				reason = "path_not_allowed";
+			else if (err_tag->GetInt() == 2)
+				reason = "not_readable";
+		}
+		rejected[std::string(tag.GetStringData().utf8_str())] = reason;
 	}
 	delete ec_resp;
 
@@ -9790,6 +9901,11 @@ CHttpServer::Response ApplySharedDirs(CamuleapiApp &app, const std::vector<Share
 			results.push_back(BulkOk(path));
 		} else if (it->second == "not_readable") {
 			results.push_back(BulkErr(path, 403, "not_readable", "amuled cannot read that path"));
+		} else if (it->second == "path_not_allowed") {
+			results.push_back(BulkErr(path,
+				403,
+				"path_not_allowed",
+				"outside the folders the daemon allows (configured on the daemon)"));
 		} else {
 			results.push_back(BulkErr(path, 404, "not_found", "no such directory"));
 		}
@@ -10282,12 +10398,16 @@ CHttpServer::Response CApiDispatcher::HandleCategoryCreate(const CHttpServer::Re
 	std::string ec_err_msg;
 	if (IsEcFailedResponse(ec_resp, ec_err_msg)) {
 		// A kept-path reply means the category exists; only the path was refused, and
-		// `save_path` on the follow-up read is the truthful answer. Anything else is a
-		// real failure.
+		// `save_path` on the follow-up read is the truthful answer. A folder outside the
+		// daemon's allowed roots is refused outright (nothing created) -- path_not_allowed.
+		// Anything else is a real failure.
 		std::string kept_path;
 		const bool kept = EcCategoryPathKept(ec_resp, kept_path);
+		const std::vector<std::string> refused = EcOutsideRootsRefusals(ec_resp);
 		delete ec_resp;
 		if (!kept) {
+			if (!refused.empty())
+				return PathNotAllowedResponse(refused);
 			return ErrorResponse(400, "amuled_rejected", ec_err_msg.c_str());
 		}
 	} else {
@@ -10397,11 +10517,16 @@ CHttpServer::Response CApiDispatcher::HandleCategoryUpdate(
 	std::string ec_err_msg;
 	if (IsEcFailedResponse(ec_resp, ec_err_msg)) {
 		// As on create: a kept-path reply is a partial success. Everything else
-		// in this request landed, and the echoed object reports the kept path.
+		// in this request landed, and the echoed object reports the kept path. A change of
+		// the folder to a location outside the daemon's allowed roots is refused with the
+		// whole category left unchanged -- path_not_allowed.
 		std::string kept_path;
 		const bool kept = EcCategoryPathKept(ec_resp, kept_path);
+		const std::vector<std::string> refused = EcOutsideRootsRefusals(ec_resp);
 		delete ec_resp;
 		if (!kept) {
+			if (!refused.empty())
+				return PathNotAllowedResponse(refused);
 			return ErrorResponse(400, "amuled_rejected", ec_err_msg.c_str());
 		}
 	} else {

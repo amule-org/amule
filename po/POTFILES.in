@@ -32,6 +32,7 @@ src/DataToText.cpp
 src/DirectoryTreeCtrl.cpp
 src/DownloadListCtrl.cpp
 src/DownloadQueue.cpp
+src/ECSpecialMuleTags.cpp
 src/EditServerListDlg.cpp
 src/ExternalConn.cpp
 src/ExternalConnector.cpp

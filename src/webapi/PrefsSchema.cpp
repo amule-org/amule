@@ -162,8 +162,11 @@ const PrefField kSchema[] = {
 	PREF_BOOL("directories", "rescan_on_startup", EC_TAG_DIRECTORIES_AUTO_RESCAN, PrefEnc::Presence, false, PrefAccess::ReadWrite, directories.rescan_on_startup),
 	PREF_STR("directories", "exclude_patterns", EC_TAG_DIRECTORIES_EXCLUDE_PATTERNS, PrefAccess::ReadWrite, directories.exclude_patterns),
 	PREF_BOOL("directories", "exclude_patterns_use_regex", EC_TAG_DIRECTORIES_EXCLUDE_REGEX, PrefEnc::Value, false, PrefAccess::ReadWrite, directories.exclude_patterns_use_regex),
-	PREF_BOOL("directories", "follow_symlinks", EC_TAG_DIRECTORIES_FOLLOW_SYMLINKS, PrefEnc::Presence, false, PrefAccess::ReadWrite, directories.follow_symlinks),
+	PREF_BOOL("directories", "follow_symlinks", EC_TAG_DIRECTORIES_FOLLOW_SYMLINKS, PrefEnc::Presence, false, PrefAccess::DaemonLocal, directories.follow_symlinks),
 	PREF_STR("directories", "incoming_path", EC_TAG_DIRECTORIES_INCOMING, PrefAccess::ReadWrite, directories.incoming_path),
+	// Read-only: the daemon's allowed roots for remote folder changes (incoming / temp / shared /
+	// category). Daemon-local config, reported for display; ignored if sent on PATCH.
+	PREF_STRARR("directories", "allowed_remote_roots", EC_TAG_DIRECTORIES_ALLOWED_ROOTS, PrefAccess::ReadOnly, directories.allowed_remote_roots),
 	PREF_BOOL("directories", "share_hidden", EC_TAG_DIRECTORIES_SHARE_HIDDEN, PrefEnc::Presence, false, PrefAccess::ReadWrite, directories.share_hidden),
 	PREF_STRARR("directories", "shared_paths", EC_TAG_DIRECTORIES_SHARED, PrefAccess::ReadWrite, directories.shared_paths),
 	PREF_STR("directories", "temp_path", EC_TAG_DIRECTORIES_TEMP, PrefAccess::ReadWrite, directories.temp_path),
@@ -173,7 +176,7 @@ const PrefField kSchema[] = {
 	PREF_BOOL("files", "trust_unverified_aich_hashes", EC_TAG_FILES_AICH_TRUST, PrefEnc::Presence, false, PrefAccess::ReadWrite, files.trust_unverified_aich_hashes),
 	PREF_BOOL("files", "create_sparse_files", EC_TAG_FILES_CREATE_NORMAL, PrefEnc::Presence, true, PrefAccess::ReadWrite, files.create_sparse_files),
 	PREF_BOOL("files", "endgame_mode_enabled", EC_TAG_FILES_ENDGAME, PrefEnc::Presence, false, PrefAccess::ReadWrite, files.endgame_mode_enabled),
-	PREF_STR("files", "ffprobe_path", EC_TAG_FILES_MEDIA_FFPROBE_PATH, PrefAccess::ReadWrite, files.ffprobe_path),
+	PREF_STR("files", "ffprobe_path", EC_TAG_FILES_MEDIA_FFPROBE_PATH, PrefAccess::DaemonLocal, files.ffprobe_path),
 	PREF_BOOL("files", "ich_enabled", EC_TAG_FILES_ICH_ENABLED, PrefEnc::Presence, false, PrefAccess::ReadWrite, files.ich_enabled),
 	PREF_BOOL("files", "media_metadata_enabled", EC_TAG_FILES_MEDIA_METADATA_ENABLED, PrefEnc::Presence, false, PrefAccess::ReadWrite, files.media_metadata_enabled),
 	PREF_U32("files", "shared_file_reverify_days", EC_TAG_FILES_SHARED_REVERIFY_DAYS, 3650, PrefAccess::ReadWrite, files.shared_file_reverify_days),
@@ -266,7 +269,7 @@ const PrefField kSchema[] = {
 	PREF_BOOL("remote_controls.external_connections", "password_set", EC_TAG_EXTERNALCONN_PASSWD_SET, PrefEnc::Value, false, PrefAccess::ReadOnly, remote_controls.external_connections.password_set),
 
 	// [online_signature]
-	PREF_STR("online_signature", "directory", EC_TAG_ONLINESIG_DIRECTORY, PrefAccess::ReadWrite, online_signature.directory),
+	PREF_STR("online_signature", "directory", EC_TAG_ONLINESIG_DIRECTORY, PrefAccess::DaemonLocal, online_signature.directory),
 	PREF_BOOL("online_signature", "enabled", EC_TAG_ONLINESIG_ENABLED, PrefEnc::Presence, false, PrefAccess::ReadWrite, online_signature.enabled),
 	// 65535, not the uint32 ceiling: CPreferences::SetOSUpdate takes a uint16, so anything larger
 	// wraps on the way in -- 86400 (daily) became 20864 and the PATCH still reported success.
