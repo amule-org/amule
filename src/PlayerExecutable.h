@@ -64,4 +64,14 @@ inline bool IsPlayerAvailable(const wxString &program)
 	return false;
 }
 
+// A macOS application, such as /Applications/VLC.app: a folder, not an executable file.
+inline bool IsAppBundle(const wxString &path)
+{
+	wxString dir = path;
+	while (dir.length() > 1 && dir.EndsWith("/")) {
+		dir.RemoveLast();
+	}
+	return dir.Lower().EndsWith(".app") && wxFileName::DirExists(dir);
+}
+
 #endif // AMULE_PLAYEREXECUTABLE_H

@@ -3336,6 +3336,12 @@ add_test (NAME IndexedLoadTest COMMAND IndexedLoadTest)
 target_include_directories (IndexedLoadTest PRIVATE ${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include ${Boost_INCLUDE_DIR})
 target_link_libraries (IndexedLoadTest muleunit muleappcommon mulecommon Threads::Threads)
 
+# A macOS .app player is a folder; the preview check must still accept it.
+add_executable (AppBundleTest AppBundleTest.cpp)
+add_test (NAME AppBundleTest COMMAND AppBundleTest)
+target_include_directories (AppBundleTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries (AppBundleTest muleunit mulecommon wxWidgets::BASE)
+
 # Event values are untrusted: verify they cannot become additional arguments or
 # shell syntax when passed as positional parameters to a configured shell.
 add_executable (UserEventCommandTest

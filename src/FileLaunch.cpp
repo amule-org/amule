@@ -99,9 +99,15 @@ bool LaunchWithPlayer(const wxString &player, const CPath &path, wxWindow *paren
 	// In Flatpak, also check bare names so a missing host player gets a useful
 	// explanation before wxExecute forks. Other builds retain their usual PATH lookup.
 	const bool inFlatpak = InFlatpak();
+#ifdef __WXMAC__
+	// A folder, which wxExecute opens with Launch Services.
+	const bool appBundle = IsAppBundle(parts[0]);
+#else
+	const bool appBundle = false;
+#endif
 	const bool unavailable =
 		inFlatpak ? !IsPlayerAvailable(parts[0])
-			  : parts[0].StartsWith("/") && !wxFileName::IsFileExecutable(parts[0]);
+			  : parts[0].StartsWith("/") && !appBundle && !wxFileName::IsFileExecutable(parts[0]);
 	if (unavailable) {
 		const wxString message =
 			inFlatpak
