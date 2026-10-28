@@ -315,13 +315,13 @@ The AppImage dispatches on its own filename — symlink it to the
 tool name you want and invoke the symlink:
 
 ```sh
-ln -s aMule-3.0.0-Linux-x64.AppImage amuled
+ln -s aMule-3.2.0-Linux-x64.AppImage amuled
 ./amuled --full-daemon
 
-ln -s aMule-3.0.0-Linux-x64.AppImage amulecmd
+ln -s aMule-3.2.0-Linux-x64.AppImage amulecmd
 ./amulecmd -h 127.0.0.1 -p 4712 -P <password>
 
-ln -s aMule-3.0.0-Linux-x64.AppImage amulegui
+ln -s aMule-3.2.0-Linux-x64.AppImage amulegui
 ./amulegui
 ```
 

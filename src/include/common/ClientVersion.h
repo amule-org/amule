@@ -54,7 +54,7 @@
 #endif
 
 #ifndef VERSION
-#define VERSION "3.1.0-dev"
+#define VERSION "3.2.0-dev"
 #endif
 
 #ifdef __GIT__
@@ -64,7 +64,7 @@
 #endif
 
 #define VERSION_MJR 3
-#define VERSION_MIN 1
+#define VERSION_MIN 2
 #define VERSION_UPDATE 0
 
 #ifndef PACKAGE
