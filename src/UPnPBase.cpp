@@ -237,6 +237,18 @@ static void ProcessActionResponse(IXML_Document *RespDoc, const std::string &act
 	AddDebugLogLineN(logUPnP, msg);
 }
 
+// UpnpResolveURL() strcpy()s into an unsized buffer. libupnp allocates the result as
+// strlen(base) + strlen(rel) + 2: an added '/' and the NUL.
+static int ResolveURL(const std::string &base, const std::string &rel, std::string &absURL)
+{
+	std::vector<char> buf(base.length() + rel.length() + 2);
+	int errcode = UpnpResolveURL(base.c_str(), rel.c_str(), &buf[0]);
+	if (errcode == UPNP_E_SUCCESS) {
+		absURL = &buf[0];
+	}
+	return errcode;
+}
+
 } /* namespace UPnP */
 
 namespace IXML
@@ -449,34 +461,22 @@ CUPnPService::CUPnPService(
 
 	memset(m_SID, 0, sizeof(Upnp_SID));
 
-	std::vector<char> vscpdURL(URLBase.length() + m_SCPDURL.length() + 1);
-	char *scpdURL = &vscpdURL[0];
-	errcode = UpnpResolveURL(URLBase.c_str(), m_SCPDURL.c_str(), scpdURL);
+	errcode = UPnP::ResolveURL(URLBase, m_SCPDURL, m_absSCPDURL);
 	if (errcode != UPNP_E_SUCCESS) {
 		msg << "Error generating scpdURL from " << "|" << URLBase << "|" << m_SCPDURL << "|.";
 		AddDebugLogLineN(logUPnP, msg);
-	} else {
-		m_absSCPDURL = scpdURL;
 	}
 
-	std::vector<char> vcontrolURL(URLBase.length() + m_controlURL.length() + 1);
-	char *controlURL = &vcontrolURL[0];
-	errcode = UpnpResolveURL(URLBase.c_str(), m_controlURL.c_str(), controlURL);
+	errcode = UPnP::ResolveURL(URLBase, m_controlURL, m_absControlURL);
 	if (errcode != UPNP_E_SUCCESS) {
 		msg << "Error generating controlURL from " << "|" << URLBase << "|" << m_controlURL << "|.";
 		AddDebugLogLineN(logUPnP, msg);
-	} else {
-		m_absControlURL = controlURL;
 	}
 
-	std::vector<char> veventURL(URLBase.length() + m_eventSubURL.length() + 1);
-	char *eventURL = &veventURL[0];
-	errcode = UpnpResolveURL(URLBase.c_str(), m_eventSubURL.c_str(), eventURL);
+	errcode = UPnP::ResolveURL(URLBase, m_eventSubURL, m_absEventSubURL);
 	if (errcode != UPNP_E_SUCCESS) {
 		msg << "Error generating eventURL from " << "|" << URLBase << "|" << m_eventSubURL << "|.";
 		AddDebugLogLineN(logUPnP, msg);
-	} else {
-		m_absEventSubURL = eventURL;
 	}
 
 	msg << "\n    Service:" << "\n        serviceType: " << m_serviceType
@@ -519,7 +519,10 @@ CUPnPService::CUPnPService(
 	}
 }
 
-CUPnPService::~CUPnPService() {}
+CUPnPService::~CUPnPService()
+{
+	const_cast<CUPnPControlPoint &>(m_UPnPControlPoint).ForgetService(this);
+}
 
 bool CUPnPService::Execute(
 	const std::string &ActionName, const std::vector<CUPnPArgumentValue> &ArgValue) const
@@ -685,10 +688,8 @@ CUPnPDevice::CUPnPDevice(
 , m_presentationURL(IXML::Element::GetChildValueByTag(device, "presentationURL"))
 {
 	std::ostringstream msg;
-	int presURLlen = strlen(URLBase.c_str()) + strlen(m_presentationURL.c_str()) + 2;
-	std::vector<char> vpresURL(presURLlen);
-	char *presURL = &vpresURL[0];
-	int errcode = UpnpResolveURL(URLBase.c_str(), m_presentationURL.c_str(), presURL);
+	std::string presURL;
+	int errcode = UPnP::ResolveURL(URLBase, m_presentationURL, presURL);
 	if (errcode != UPNP_E_SUCCESS) {
 		msg << "Error generating presentationURL from " << "|" << URLBase << "|" << m_presentationURL
 		    << "|.";
@@ -736,6 +737,7 @@ CUPnPControlPoint::CUPnPControlPoint(unsigned short udpPort)
 , m_RootDeviceListMutex()
 , m_IGWDeviceDetected(false)
 , m_WanService(NULL)
+, m_ServiceMapMutex()
 {
 	s_CtrlPoint = this;
 	std::ostringstream msg;
@@ -815,17 +817,23 @@ error:
 
 CUPnPControlPoint::~CUPnPControlPoint()
 {
-	for (RootDeviceMap::iterator it = m_RootDeviceMap.begin(); it != m_RootDeviceMap.end(); ++it) {
-		delete it->second;
-	}
+	// Stop libupnp first: UpnpFinish() waits for discovery callbacks still in flight, which
+	// would otherwise reach the devices deleted below.
 	UpnpUnRegisterClient(m_UPnPClientHandle);
 	UpnpFinish();
+
+	CUPnPMutexLocker lock(m_RootDeviceListMutex);
+	for (auto &entry : m_RootDeviceMap) {
+		delete entry.second;
+	}
+	m_RootDeviceMap.clear();
 }
 
 bool CUPnPControlPoint::AddPortMappings(std::vector<CUPnPPortMapping> &upnpPortMapping)
 {
+	CUPnPMutexLocker lock(m_ServiceMapMutex);
 	std::ostringstream msg;
-	if (!WanServiceDetected()) {
+	if (!m_WanService || m_ServiceMap.empty()) {
 		msg << "UPnP Error: "
 		       "CUPnPControlPoint::AddPortMapping: "
 		       "WAN Service not detected.";
@@ -902,7 +910,9 @@ void CUPnPControlPoint::RefreshPortMappings()
 		PrivateAddPortMapping(it->second);
 	}
 
-	m_WanService->GetStateVariable("PortMappingNumberOfEntries");
+	if (m_WanService) {
+		m_WanService->GetStateVariable("PortMappingNumberOfEntries");
+	}
 }
 
 bool CUPnPControlPoint::PrivateAddPortMapping(CUPnPPortMapping &upnpPortMapping)
@@ -939,8 +949,9 @@ bool CUPnPControlPoint::PrivateAddPortMapping(CUPnPPortMapping &upnpPortMapping)
 
 bool CUPnPControlPoint::DeletePortMappings(std::vector<CUPnPPortMapping> &upnpPortMapping)
 {
+	CUPnPMutexLocker lock(m_ServiceMapMutex);
 	std::ostringstream msg;
-	if (!WanServiceDetected()) {
+	if (!m_WanService || m_ServiceMap.empty()) {
 		msg << "UPnP Error: "
 		       "CUPnPControlPoint::DeletePortMapping: "
 		       "WAN Service not detected.";
@@ -1281,6 +1292,7 @@ int CUPnPControlPoint::Callback(Upnp_EventType EventType, void *Event, void * /*
 				msg.str(), es_event->ErrCode, NULL, NULL);
 #endif
 		} else {
+			CUPnPMutexLocker lock(upnpCP->m_ServiceMapMutex);
 			ServiceMap::iterator it =
 #if UPNP_VERSION >= 10800
 				upnpCP->m_ServiceMap.find(publisherUrl);
@@ -1462,6 +1474,21 @@ void CUPnPControlPoint::RemoveRootDevice(const char *udn)
 	}
 }
 
+void CUPnPControlPoint::ForgetService(const CUPnPService *service)
+{
+	CUPnPMutexLocker lock(m_ServiceMapMutex);
+	for (ServiceMap::iterator it = m_ServiceMap.begin(); it != m_ServiceMap.end();) {
+		if (it->second == service) {
+			it = m_ServiceMap.erase(it);
+		} else {
+			++it;
+		}
+	}
+	if (m_WanService == service) {
+		m_WanService = m_ServiceMap.empty() ? nullptr : m_ServiceMap.begin()->second;
+	}
+}
+
 bool CUPnPControlPoint::ShouldSkipAdvertisementFetch(const std::string &location)
 {
 	CUPnPMutexLocker lock(m_failedFetchCacheMutex);
@@ -1502,7 +1529,10 @@ void CUPnPControlPoint::Subscribe(CUPnPService &service)
 		CUPnPSCPD *scpd = new CUPnPSCPD(*this, scpdRoot, service.GetAbsSCPDURL());
 		service.SetSCPD(scpd);
 		IXML::Document::Free(scpdDoc);
-		m_ServiceMap[service.GetAbsEventSubURL()] = &service;
+		{
+			CUPnPMutexLocker lock(m_ServiceMapMutex);
+			m_ServiceMap[service.GetAbsEventSubURL()] = &service;
+		}
 		msg << "Successfully retrieved SCPD Document for service " << service.GetServiceType()
 		    << ", absEventSubURL: " << service.GetAbsEventSubURL() << ".";
 		AddDebugLogLineN(logUPnP, msg);
@@ -1537,11 +1567,15 @@ error:
 
 void CUPnPControlPoint::Unsubscribe(CUPnPService &service)
 {
-	ServiceMap::iterator it = m_ServiceMap.find(service.GetAbsEventSubURL());
-	if (it != m_ServiceMap.end()) {
+	{
+		CUPnPMutexLocker lock(m_ServiceMapMutex);
+		ServiceMap::iterator it = m_ServiceMap.find(service.GetAbsEventSubURL());
+		if (it == m_ServiceMap.end()) {
+			return;
+		}
 		m_ServiceMap.erase(it);
-		UpnpUnSubscribe(m_UPnPClientHandle, service.GetSID());
 	}
+	UpnpUnSubscribe(m_UPnPClientHandle, service.GetSID());
 }
 
 #endif /* ENABLE_UPNP */
