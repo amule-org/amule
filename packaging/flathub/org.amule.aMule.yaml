@@ -79,6 +79,7 @@ modules:
     build-commands:
       - make -j2 shared
       - make install PREFIX=/app
+      - install -Dm644 -t /app/share/licenses/cryptopp License.txt
     sources:
       - type: git
         url: https://github.com/weidai11/cryptopp.git
@@ -96,6 +97,8 @@ modules:
       - -Dreuseaddr=ON
       - -Dipv6=ON
       - -DCMAKE_INSTALL_LIBDIR=lib
+    post-install:
+      - install -Dm644 -t /app/share/licenses/libupnp COPYING
     sources:
       - type: archive
         url: https://github.com/pupnp/pupnp/archive/refs/tags/release-22.0.4.tar.gz
@@ -106,6 +109,7 @@ modules:
     build-commands:
       - ./bootstrap.sh --prefix=/app --with-libraries=system
       - ./b2 -j2 install --prefix=/app
+      - install -Dm644 -t /app/share/licenses/boost LICENSE_1_0.txt
     sources:
       - type: archive
         url: https://archives.boost.io/release/1.87.0/source/boost_1_87_0.tar.bz2
@@ -125,6 +129,8 @@ modules:
       # cas only reads and writes PNG and JPEG.
       - --without-heif
       - --without-avif
+    post-install:
+      - install -Dm644 -t /app/share/licenses/libgd COPYING
     sources:
       - type: archive
         url: https://github.com/libgd/libgd/releases/download/gd-2.3.3/libgd-2.3.3.tar.xz
@@ -159,6 +165,8 @@ modules:
     make-args:
       - 'CFLAGS=-Wall -O2 -g -fPIC -Wno-error'
       - 'CXXFLAGS=-Wall -O2 -g -fPIC -Wno-error'
+    post-install:
+      - install -Dm644 -t /app/share/licenses/libdbusmenu COPYING*
     sources:
       - type: archive
         url: https://launchpad.net/libdbusmenu/16.04/16.04.0/+download/libdbusmenu-16.04.0.tar.gz
@@ -169,6 +177,8 @@ modules:
     config-opts:
       - -DENABLE_TESTS=OFF
       - -DCMAKE_INSTALL_LIBDIR=lib
+    post-install:
+      - install -Dm644 -t /app/share/licenses/ayatana-ido COPYING*
     sources:
       - type: archive
         url: https://github.com/AyatanaIndicators/ayatana-ido/archive/refs/tags/0.10.4.tar.gz
@@ -179,6 +189,8 @@ modules:
     config-opts:
       - -DENABLE_TESTS=OFF
       - -DCMAKE_INSTALL_LIBDIR=lib
+    post-install:
+      - install -Dm644 -t /app/share/licenses/libayatana-indicator COPYING*
     sources:
       - type: archive
         url: https://github.com/AyatanaIndicators/libayatana-indicator/archive/refs/tags/0.9.4.tar.gz
@@ -193,6 +205,8 @@ modules:
       - -DFLAVOUR_GTK3=ON
       - -DCMAKE_INSTALL_LIBDIR=lib
       - -DENABLE_GTKDOC=OFF
+    post-install:
+      - install -Dm644 -t /app/share/licenses/libayatana-appindicator COPYING*
     sources:
       - type: archive
         url: https://github.com/AyatanaIndicators/libayatana-appindicator/archive/refs/tags/0.6.0.tar.gz
@@ -203,6 +217,8 @@ modules:
     config-opts:
       - --disable-static
       - --disable-tests
+    post-install:
+      - install -Dm644 -t /app/share/licenses/libmaxminddb LICENSE NOTICE
     sources:
       - type: archive
         url: https://github.com/maxmind/libmaxminddb/releases/download/1.13.3/libmaxminddb-1.13.3.tar.gz
@@ -225,6 +241,8 @@ modules:
       - --without-libmspack
       - --without-opengl
       - --with-libcurl
+    post-install:
+      - install -Dm644 -t /app/share/licenses/wxwidgets docs/licence.txt docs/licendoc.txt docs/lgpl.txt docs/gpl.txt docs/preamble.txt
     sources:
       - type: archive
         url: https://github.com/wxWidgets/wxWidgets/releases/download/v3.2.12/wxWidgets-3.2.12.tar.bz2
@@ -257,13 +275,13 @@ modules:
     sources:
       - type: git
         url: https://github.com/amule-org/amule.git
-        # Pinned to the 3.1.0 release. `commit` is the peeled commit the
-        # annotated 3.1.0 tag resolves to (git rev-parse 3.1.0^{commit});
+        # Pinned to the 3.2.0 release. `commit` is the peeled commit the
+        # annotated 3.2.0 tag resolves to (git rev-parse 3.2.0^{commit});
         # flatpak-builder requires the tag and commit point at the same
         # commit. The x-checker-data block below drives auto-update PRs
         # against future aMule release tags.
-        tag: 3.1.0
-        commit: 909d304d993ee07df6c6f6acf501a6d791d53666
+        tag: 3.2.0
+        commit: 0db738ed62ae660de2970db494976ca592bd878b
         disable-shallow-clone: true
         x-checker-data:
           type: git
