@@ -408,7 +408,13 @@ void CClientUDPSocket::OnPacketReceived(
 		try {
 			switch (protocol) {
 			case OP_EMULEPROT:
-				ProcessPacket(decryptedBuffer + 2, packetLen - 2, opcode, ip, port);
+				// Needs protocol + opcode before any payload; a 1-byte packet would
+				// make packetLen - 2 underflow to a huge length.
+				if (packetLen >= 2) {
+					ProcessPacket(decryptedBuffer + 2, packetLen - 2, opcode, ip, port);
+				} else {
+					throw wxString("eMule UDP packet too short");
+				}
 				break;
 
 			case OP_KADEMLIAHEADER:

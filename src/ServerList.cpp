@@ -54,6 +54,7 @@
 #include "Packet.h"        // Needed for CPacket
 #include "Logger.h"
 #include "ScopedPtr.h"
+#include "RandomFunctions.h" // Needed for GetRandomUint32
 #include <common/Format.h>
 #include "IPFilter.h"
 #include <common/FileFunctions.h> // Needed for UnpackArchive
@@ -297,7 +298,6 @@ void CServerList::ServerStats()
 			return;
 		}
 
-		srand((unsigned)time(NULL));
 		ping_server->SetRealLastPingedTime(
 			currentTime); // this is not used to calculate the next ping, but only to ensure a
 				      // minimum delay for premature pings
@@ -310,7 +310,8 @@ void CServerList::ServerStats()
 			ping_server->SetCryptPingReplyPending(true);
 			uint32 nPacketLen = 4 + (uint8)(rand() % 16); // max padding 16 bytes
 			CScopedArray<uint8_t> pRawPacket(nPacketLen);
-			uint32 dwChallenge = (rand() << 17) | (rand() << 2) | (rand() & 0x03);
+			// The challenge keys the server's encrypted reply, so it must not be guessable.
+			uint32 dwChallenge = GetRandomUint32();
 			if (dwChallenge == 0) {
 				dwChallenge++;
 			}

@@ -103,6 +103,13 @@ void CServerUDPSocket::OnPacketReceived(
 #endif
 	}
 
+	// Decryption can leave less than protocol + opcode; the check above saw the raw length.
+	if (nPayLoadLen < 2) {
+		AddDebugLogLineN(logServerUDP, "Received too short packet from server");
+		theStats::AddDownOverheadOther(length);
+		return;
+	}
+
 	uint8 protocol = pBuffer[0];
 	uint8 opcode = pBuffer[1];
 
