@@ -916,6 +916,7 @@ bool CClientUDPSocket::DialLugdunumNatCallbackPeer(const LugdunumNatTraversal::F
 	// false, same as before, so CAPS/QUIC stay gated on an actually-known identity.
 	if (callback.hasObfuscation) {
 		client->SetUserHash(CMD4Hash(callback.userHash.data()));
+		client->SetConnectOptions(callback.obfuscationSettings, true, false);
 	}
 	theApp->clientlist->AddClient(client);
 	CClientRef ref{ client CLIENT_DEBUGSTRING("Lugdunum callback dial") };
