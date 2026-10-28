@@ -741,9 +741,10 @@ void CECServerSocket::NegotiateAEAD(const CECPacket *request, CECPacket *respons
 	const uint8_t *clientNonceData = (const uint8_t *)clientNonceTag->GetTagData();
 	m_aeadClientNonce.assign(clientNonceData, clientNonceData + clientNonceTag->GetTagDataLen());
 
-	// Transcript: everything both sides exchanged, taken exactly as it reached us. If
-	// any of it was edited in flight our derivation differs from the client's and the
-	// first sealed packet fails, instead of dropping to whatever the attacker preferred.
+	// Transcript: the offered ciphers, the chosen one, both nonces and both public keys,
+	// taken exactly as they reached us. If any of them was edited in flight our derivation
+	// differs from the client's and the first sealed packet fails, instead of dropping to
+	// whatever the attacker preferred. The capability tags are not bound.
 	const std::vector<uint8_t> offeredVec(offered, offered + offeredLen);
 	m_aeadTranscript = ECCrypt::BuildTranscript(
 		offeredVec, m_aeadCipher, m_aeadClientNonce, m_aeadServerNonce, clientPub, ephPub);

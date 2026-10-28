@@ -117,6 +117,8 @@ private:
 	// Whether the packet ReadPacket last returned arrived sealed, so the app dispatch
 	// can reject cleartext injected into a session that negotiated encryption.
 	bool m_last_rx_encrypted;
+	// A sealed packet has arrived on this connection, so every later one must be sealed.
+	bool m_rx_sealed_seen;
 
 protected:
 	// Pure arithmetic, protected rather than private so a test can pin the floor and

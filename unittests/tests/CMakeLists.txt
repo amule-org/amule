@@ -809,6 +809,33 @@ target_link_libraries (ECIdDiffTest
 	mulecommon
 )
 
+# A cleartext packet after a sealed one is rejected on every read path, SendRecvPacket included.
+add_executable (ECSessionSealTest
+	ECSessionSealTest.cpp
+	# See the note on CValueMapTest below.
+	${CMAKE_SOURCE_DIR}/src/LoggerConsole.cpp
+)
+
+add_test (NAME ECSessionSealTest
+	COMMAND ECSessionSealTest
+)
+
+target_include_directories (ECSessionSealTest
+	PRIVATE ${CMAKE_BINARY_DIR}
+	PRIVATE ${CMAKE_SOURCE_DIR}/src
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/libs
+	PRIVATE ${CMAKE_BINARY_DIR}/src/libs
+	PRIVATE ${CMAKE_BINARY_DIR}/src/libs/ec/cpp
+)
+
+target_link_libraries (ECSessionSealTest
+	muleunit
+	ec
+	mulecommon
+	CRYPTOPP::CRYPTOPP
+)
+
 # amulecmd's `progress` output. The daemon answers EC_OP_SEARCH_PROGRESS in
 # three shapes and the client does not choose which: advertising the union
 # capability alongside multi-search is what decides it. Reading one shape as
