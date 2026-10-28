@@ -301,7 +301,7 @@ void CECTag::swap(CECTag &t2)
 	std::swap(m_tagList, t2.m_tagList);
 }
 
-bool CECTag::ReadFromSocket(CECSocket &socket)
+bool CECTag::ReadFromSocket(CECSocket &socket, unsigned depth)
 {
 	ec_tagname_t tmp_tagName;
 	if (!socket.ReadNumber(&tmp_tagName, sizeof(ec_tagname_t))) {
@@ -318,7 +318,7 @@ bool CECTag::ReadFromSocket(CECSocket &socket)
 		return false;
 	}
 
-	if (hasChildren && !ReadChildren(socket)) {
+	if (hasChildren && !ReadChildren(socket, depth + 1)) {
 		return false;
 	}
 
@@ -376,8 +376,12 @@ bool CECTag::WriteTag(CECSocket &socket) const
 	return true;
 }
 
-bool CECTag::ReadChildren(CECSocket &socket)
+bool CECTag::ReadChildren(CECSocket &socket, unsigned depth)
 {
+	// Each level recurses, so an unbounded depth would exhaust the stack.
+	if (depth >= MAX_READ_DEPTH) {
+		return false;
+	}
 	const bool useLargeCount = (socket.m_rx_flags & EC_FLAG_LARGE_TAG_COUNT) != 0;
 	uint16 tmp_tagCount16;
 	if (!socket.ReadNumber(&tmp_tagCount16, sizeof(uint16))) {
@@ -401,7 +405,7 @@ bool CECTag::ReadChildren(CECSocket &socket)
 	for (uint32 i = 0; i < tmp_tagCount; i++) {
 		m_tagList.push_back(CECTag());
 		CECTag &tag = m_tagList.back();
-		if (!tag.ReadFromSocket(socket)) {
+		if (!tag.ReadFromSocket(socket, depth)) {
 			return false;
 		}
 	}

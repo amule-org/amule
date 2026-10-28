@@ -148,6 +148,10 @@ Tags may contain sub-tags. A `TAGCOUNT` field is present only when the
 lowest bit of `TAGNAME` is set. The sub-tags come before the tag's own
 data.
 
+Sub-tags can nest, but not without limit: a receiver rejects a packet
+whose tags nest more than 64 levels below the packet. The deepest tree
+aMule sends, the statistics tree, stays well under that.
+
 When `EC_FLAG_LARGE_TAG_COUNT` is in effect, the sub-tag `TAGCOUNT`
 field uses the same sentinel-extended encoding as the packet-level
 `TAGCOUNT` (a `uint32` follows when the `uint16` reads `0xFFFF`).

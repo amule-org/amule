@@ -868,6 +868,32 @@ target_link_libraries (ECSocketFlagsTest
 	mulecommon
 )
 
+add_executable (ECTagDepthTest
+	ECTagDepthTest.cpp
+	# As for ECIdDiffTest: libec.a references DoECLogLine / theLogger
+	# unconditionally in Debug, so the no-op definitions have to be linked in.
+	${CMAKE_SOURCE_DIR}/src/LoggerConsole.cpp
+)
+
+add_test (NAME ECTagDepthTest
+	COMMAND ECTagDepthTest
+)
+
+target_include_directories (ECTagDepthTest
+	PRIVATE ${CMAKE_BINARY_DIR}
+	PRIVATE ${CMAKE_SOURCE_DIR}/src
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/libs
+	PRIVATE ${CMAKE_BINARY_DIR}/src/libs
+	PRIVATE ${CMAKE_BINARY_DIR}/src/libs/ec/cpp
+)
+
+target_link_libraries (ECTagDepthTest
+	muleunit
+	ec
+	mulecommon
+)
+
 add_executable (CValueMapTest
 	CValueMapTest.cpp
 	# LoggerConsole.cpp provides the no-op DoECLogLine + theLogger symbols that

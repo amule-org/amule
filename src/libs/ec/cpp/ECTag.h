@@ -229,9 +229,13 @@ public:
 protected:
 	uint8_t GetType() const { return m_dataType; }
 
-	bool ReadFromSocket(CECSocket &socket);
+	// Deepest tag level accepted below a packet. Real trees, the recursive
+	// statistics tree included, stay a few levels deep.
+	static constexpr unsigned MAX_READ_DEPTH = 64;
+
+	bool ReadFromSocket(CECSocket &socket, unsigned depth = 0);
 	bool WriteTag(CECSocket &socket) const;
-	bool ReadChildren(CECSocket &socket);
+	bool ReadChildren(CECSocket &socket, unsigned depth = 0);
 	bool WriteChildren(CECSocket &socket) const;
 
 private:
