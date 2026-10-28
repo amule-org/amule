@@ -1,13 +1,13 @@
 # NAT-T UDP EAQC CAPS/CAPS_ACK
 
 This document specifies aMule's experimental capability exchange for the
-eMuleAI NAT-T UDP path. aMule is responder-only: it sends no outbound CAPS or
-CAPS_ACK, performs no rendezvous, and never dials QUIC. eMuleAI initiates CAPS.
+eMuleAI NAT-T UDP path. aMule responds to incoming CAPS and can send CAPS to a
+peer before attempting an outbound QUIC dial when its capability is unknown.
 After the ACK, eMuleAI dials aMule's inbound QUIC endpoint only when it is the
 downloader; as the uploader it opens a passive endpoint and waits for aMule to
-dial, so that direction cannot complete until aMule has a QUIC client role. The
-exchange does not change the normal eD2k handshake and has not yet been
-live-tested against eMuleAI 1.6.
+dial. aMule's outbound role is currently limited to peers it knows are QUIC
+compatible. The exchange does not change the normal eD2k handshake and has not
+yet been live-tested against eMuleAI 1.6.
 
 ## Availability and discovery
 
@@ -30,7 +30,9 @@ OP_UDPRESERVEDPROT2 (0xB2) | type | EAQC payload (54 bytes)
 ```
 
 The type byte is `0x02` for CAPS and `0x03` for CAPS_ACK. The EAQC payload is
-exactly 54 bytes and is unobfuscated. `0xB2` is a reserved UDP protocol byte,
+exactly 54 bytes. CAPS is obfuscated with the dialled peer's hash and CAPS_ACK
+with the sender hash from CAPS, when the sender has a public IP and UDP
+obfuscation is enabled. `0xB2` is a reserved UDP protocol byte,
 not an eD2k opcode; the type byte selects the frame. The constants are defined
 in [`src/include/protocol/Protocols.h`](../src/include/protocol/Protocols.h).
 
@@ -96,21 +98,28 @@ rejects an all-zero hash. The type is `OP_NATT_FRAME_KEY` in
 What aMule does with it, in QUIC builds and only while `QuicNatT=1`:
 
 - **Sending.** Every QUIC datagram is obfuscated with the peer's hash when it is known: the identity aMule
-  dialled, or the hash a key frame announced. A QUIC long-header packet is preceded by aMule's own key
-  frame, at most one per endpoint every 10 s. aMule sends its key frame only where it can itself be
-  obfuscated; eMuleAI also sends it in the clear when it has no key, which exposes the sender's user hash
-  to anyone on the path. With `ClientCryptLayerSupported` off, nothing is obfuscated and no key frame is
-  sent.
+  dialled, or the hash a key frame announced. Obfuscation requires `ClientCryptLayerSupported` and a
+  nonzero sender public IP (`GetPublicIP() != 0`); where the peer sees a different source IP, its sender-IP
+  check may reject the datagram. A QUIC long-header packet is preceded by aMule's own key frame, at most
+  one per endpoint every 10 s. aMule sends its key frame only where it can itself be obfuscated; eMuleAI
+  also sends it in the clear when it has no key, which exposes the sender's user hash to anyone on the
+  path. With either prerequisite unavailable, datagrams go plain and no key frame is sent.
 - **Receiving.** A key frame is honoured only from an endpoint a rendezvous announced (the ed2k-server
-  `0x61` or Lugdunum's forwarded callback) in the last 30 s. It replaces an earlier announced hash but
-  never the identity aMule dialled, and is otherwise ignored, because nothing authenticates the frame. A
-  held hash expires after 120 s without use, and the table holds at most 256 endpoints. Nothing is
-  persisted: the hash selects an obfuscation key for one live exchange and is not an identity, which the
+  `0x61` or Lugdunum's forwarded callback) in the last 30 s, and only when that rendezvous did not provide
+  a peer hash. The server-vouched hash remains authoritative when present. An accepted key frame can
+  replace an earlier announced hash but never the identity aMule dialled; nothing authenticates the frame.
+  A learned hash (including a server-vouched hash) expires after 120 s without outbound use; active
+  datagrams refresh it. The 30 s expected-endpoint window controls only admission of unauthenticated key
+  frames, not the lifetime of a vouched key for an active exchange. Distinct live server-vouched hashes
+  for one endpoint are ambiguous: QUIC datagrams and key frames to that endpoint are dropped until the
+  conflicting 30 s expectation expires, never downgraded to plaintext. The table holds at most 256 endpoints.
+  Nothing is persisted: the hash selects an obfuscation key for one live exchange and is not an identity, which the
   `OP_HELLO` still establishes.
 
 The datagram's own TLS 1.3 protection does not depend on this layer. It only hides the Initial and its
 ALPN from the path. eMuleAI does not require it: its QUIC receiver drops a frame only when no session
-matches. CAPS and CAPS_ACK stay unobfuscated, as specified above.
+matches. CAPS and CAPS_ACK are obfuscated with the recipient hash when the public-IP and obfuscation
+prerequisites are met.
 
 The decisions are in [`src/NatKeyFrame.h`](../src/NatKeyFrame.h), driven from
 [`src/ClientUDPSocket.cpp`](../src/ClientUDPSocket.cpp). uTP does not use key frames yet.

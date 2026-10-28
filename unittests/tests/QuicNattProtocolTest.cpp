@@ -24,6 +24,7 @@
 #include <muleunit/test.h>
 
 #include <QuicNattProtocol.h>
+#include <QuicCapsRequestLedger.h>
 
 #include <algorithm>
 #include <array>
@@ -46,6 +47,27 @@ std::array<uint8_t, 16> Hash(uint8_t first)
 	return hash;
 }
 } // namespace
+
+TEST(QuicNattProtocol, CapsAndAckSendPlansSelectTheirPeerHashAndRespectPlaintextFallback)
+{
+	const auto dialledPeer = Hash(10);
+	const auto capsSender = Hash(40);
+	// These same plans drive the production SendPacket calls for CAPS and CAPS_ACK.
+	const auto caps = MakeQuicCapsSendPlan(true, 0x01020304, dialledPeer);
+	ASSERT_TRUE(caps.obfuscate);
+	ASSERT_TRUE(caps.targetHash == dialledPeer);
+	const auto ack = MakeQuicCapsSendPlan(true, 0x01020304, capsSender);
+	ASSERT_TRUE(ack.obfuscate);
+	ASSERT_TRUE(ack.targetHash == capsSender);
+
+	const std::array<uint8_t, 16> noHash{};
+	const auto unsupported = MakeQuicCapsSendPlan(false, 0x01020304, dialledPeer);
+	ASSERT_FALSE(unsupported.obfuscate);
+	ASSERT_TRUE(unsupported.targetHash == noHash);
+	const auto noPublicIp = MakeQuicCapsSendPlan(true, 0, capsSender);
+	ASSERT_FALSE(noPublicIp.obfuscate);
+	ASSERT_TRUE(noPublicIp.targetHash == noHash);
+}
 
 TEST(QuicNattProtocol, EaqcCodecMatchesWireFixture)
 {

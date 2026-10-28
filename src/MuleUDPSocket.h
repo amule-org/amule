@@ -109,6 +109,14 @@ public:
 		const uint8 *pachTargetClientHashORKadID,
 		bool bKad,
 		uint32 nReceiverVerifyKey);
+	/** Queues a packet if the destination and socket are usable, taking ownership either way. */
+	bool TrySendPacket(CPacket *packet,
+		uint32 IP,
+		uint16 port,
+		bool bEncrypt,
+		const uint8 *pachTargetClientHashORKadID,
+		bool bKad,
+		uint32 nReceiverVerifyKey);
 
 	/**
 	 * True if the socket is Ok. @see wxSocketBase::Ok

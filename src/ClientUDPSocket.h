@@ -95,10 +95,11 @@ public:
 	void TickQuic();
 	//! Sends one QUIC datagram, obfuscated with the peer's hash when it is known. A long header
 	//! is preceded by our key frame, so the peer can obfuscate its replies the same way.
-	void SendQuicFrame(const uint8_t *payload, size_t length, uint32_t ip, uint16_t port);
+	bool SendQuicFrame(const uint8_t *payload, size_t length, uint32_t ip, uint16_t port);
 	//! A rendezvous says this peer is about to contact us from this UDP endpoint; only such an
-	//! endpoint may announce a key frame.
-	void ExpectNatTPeer(uint32_t ip, uint16_t udpPort);
+	//! endpoint may announce a key frame. When supplied, its server-vouched hash is authoritative.
+	void ExpectNatTPeer(
+		uint32_t ip, uint16_t udpPort, const std::array<uint8_t, 16> *vouchedHash = nullptr);
 	bool SendQuicCapsRequest(const std::array<uint8_t, 16> &peer,
 		uint32_t ipv4,
 		uint16_t udpPort,
@@ -145,15 +146,17 @@ private:
 	NatRendezvous::CRequesterLimiter m_capsAckLimiter;
 	CQuicCapsRequestLedger m_capsRequestLedger{ 256 };
 	CQuicCapabilityCache m_capabilityCache{ 256 };
-	NatKeyFrame::Callbacks KeyFrameCallbacks();
 	NatKeyFrame::CKeyFrameService m_keyFrames{ KeyFrameCallbacks() };
-	void HandleNatKeyFrame(const uint8_t *payload, size_t length, uint32_t ip, uint16_t port);
 #if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
 	// Punch-dial temporary clients drop their last CClientRef once the dial starts and have no
 	// socket until the handoff; the holdoff's reference is the only thing keeping them alive.
 	CQuicCapsHoldoffs<CClientRef> m_quicCapsHoldoffs;
 	CQuicCapsHoldoffs<CClientRef>::SCallbacks QuicCapsHoldoffCallbacks();
 #endif
+#endif
+#ifdef AMULE_QUIC_TRANSPORT
+	NatKeyFrame::Callbacks KeyFrameCallbacks();
+	void HandleNatKeyFrame(const uint8_t *payload, size_t length, uint32_t ip, uint16_t port);
 #endif
 	void OnPacketReceived(
 		const CNetworkAddress &address, uint16 port, uint8_t *buffer, size_t length) override;

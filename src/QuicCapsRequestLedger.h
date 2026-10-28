@@ -9,6 +9,26 @@
 #include <cstdint>
 #include <vector>
 
+struct QuicCapsSendPlan
+{
+	bool obfuscate = false;
+	std::array<uint8_t, 16> targetHash{};
+};
+
+//! Shared observable plan for both production CAPS send paths. With no public IP or disabled
+//! obfuscation, the UDP sender transmits plaintext and the target hash is deliberately omitted.
+inline QuicCapsSendPlan MakeQuicCapsSendPlan(
+	bool clientCryptLayerSupported, uint32_t publicIP, const std::array<uint8_t, 16> &targetHash) noexcept
+{
+	QuicCapsSendPlan plan;
+	plan.obfuscate =
+		clientCryptLayerSupported && publicIP != 0 && targetHash != std::array<uint8_t, 16>{};
+	if (plan.obfuscate) {
+		plan.targetHash = targetHash;
+	}
+	return plan;
+}
+
 struct QuicCapsRequestRecord
 {
 	std::array<uint8_t, 16> peer;

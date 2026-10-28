@@ -44,6 +44,10 @@
 namespace NatKeyFrame
 {
 constexpr std::size_t kHashBytes = 16;
+//! A learned peer key (including a server-vouched one) lives until 120 s without outbound use.
+constexpr std::uint64_t kPeerKeyIdleMs = 120000;
+//! Expected endpoints authorize unauthenticated key-frame announcements for 30 s.
+constexpr std::uint64_t kExpectedPeerTtlMs = 30000;
 using Hash = std::array<std::uint8_t, kHashBytes>;
 
 inline Hash BuildPayload(const Hash &userHash)
@@ -111,9 +115,9 @@ void MakeRoom(Map &entries, std::size_t capacity, std::uint64_t now, std::uint64
 /**
  * Hash a peer is known by for its endpoint, kept only while that endpoint stays in use.
  *
- * Two origins. The identity we dialled is the key the peer's datagrams decrypt with. An announced one
- * comes from a key frame, which nothing authenticates, so it can be replaced by a later key frame but
- * never displaces what we dialled.
+ * Server-vouched identity outranks the identity we dialled, which outranks an unauthenticated key-frame
+ * announcement. Only announced hashes may replace earlier announced hashes. Lookup activity refreshes
+ * the common idle lifetime; neither a conflicting dial nor an untrusted announcement extends a voucher.
  */
 class CPeerKeyCache
 {
@@ -124,21 +128,32 @@ public:
 	{
 	}
 
-	//! The identity we dialled; always wins.
+	//! The identity we dialled, unless a live server-vouched hash is more authoritative.
 	void Learn(std::uint32_t ip, std::uint16_t port, const Hash &hash, std::uint64_t nowMs)
 	{
-		Store(ip, port, hash, nowMs, true);
+		const auto existing = m_entries.find(Detail::EndpointKey(ip, port));
+		if (existing != m_entries.end() && existing->second.source == Source::Vouched &&
+			!Detail::Elapsed(nowMs, existing->second.stamp, m_idleMs)) {
+			return;
+		}
+		Store(ip, port, hash, nowMs, Source::Dialled);
 	}
 
-	//! False, and nothing stored, when a live entry for the endpoint is the identity we dialled.
+	//! A current server rendezvous is authoritative over dialled and announced hashes.
+	void LearnVouched(std::uint32_t ip, std::uint16_t port, const Hash &hash, std::uint64_t nowMs)
+	{
+		Store(ip, port, hash, nowMs, Source::Vouched);
+	}
+
+	//! False when a live dialled or server-vouched hash is already known for this endpoint.
 	bool LearnAnnounced(std::uint32_t ip, std::uint16_t port, const Hash &hash, std::uint64_t nowMs)
 	{
 		const auto existing = m_entries.find(Detail::EndpointKey(ip, port));
-		if (existing != m_entries.end() && existing->second.dialled &&
+		if (existing != m_entries.end() && existing->second.source != Source::Announced &&
 			!Detail::Elapsed(nowMs, existing->second.stamp, m_idleMs)) {
 			return false;
 		}
-		return Store(ip, port, hash, nowMs, false);
+		return Store(ip, port, hash, nowMs, Source::Announced);
 	}
 
 	//! A hit counts as use and extends the entry's life.
@@ -156,17 +171,26 @@ public:
 		return found->second.hash;
 	}
 
+	void Forget(std::uint32_t ip, std::uint16_t port) { m_entries.erase(Detail::EndpointKey(ip, port)); }
+
 	std::size_t Size() const { return m_entries.size(); }
 
 private:
+	enum class Source
+	{
+		Announced,
+		Dialled,
+		Vouched
+	};
+
 	struct Entry
 	{
 		Hash hash;
 		std::uint64_t stamp;
-		bool dialled;
+		Source source;
 	};
 
-	bool Store(std::uint32_t ip, std::uint16_t port, const Hash &hash, std::uint64_t nowMs, bool dialled)
+	bool Store(std::uint32_t ip, std::uint16_t port, const Hash &hash, std::uint64_t nowMs, Source source)
 	{
 		if (m_capacity == 0) {
 			return false;
@@ -175,7 +199,7 @@ private:
 		if (m_entries.find(key) == m_entries.end()) {
 			Detail::MakeRoom(m_entries, m_capacity, nowMs, m_idleMs);
 		}
-		m_entries[key] = Entry{ hash, nowMs, dialled };
+		m_entries[key] = Entry{ hash, nowMs, source };
 		return true;
 	}
 
@@ -213,6 +237,8 @@ public:
 		return true;
 	}
 
+	void Forget(std::uint32_t ip, std::uint16_t port) { m_entries.erase(Detail::EndpointKey(ip, port)); }
+
 	std::size_t Size() const { return m_entries.size(); }
 
 private:
@@ -230,22 +256,47 @@ private:
 class CExpectedPeers
 {
 public:
+	enum class Result
+	{
+		Accepted,
+		ConflictingVoucher
+	};
 	CExpectedPeers(std::size_t capacity, std::uint64_t ttlMs)
 	: m_capacity(capacity)
 	, m_ttlMs(ttlMs)
 	{
 	}
 
-	void Expect(std::uint32_t ip, std::uint16_t port, std::uint64_t nowMs)
+	Result Expect(std::uint32_t ip,
+		std::uint16_t port,
+		std::uint64_t nowMs,
+		std::optional<Hash> vouchedHash = std::nullopt)
 	{
 		if (m_capacity == 0) {
-			return;
+			return Result::ConflictingVoucher;
 		}
 		const std::uint64_t key = Detail::EndpointKey(ip, port);
-		if (m_entries.find(key) == m_entries.end()) {
+		auto existing = m_entries.find(key);
+		if (existing != m_entries.end() && !Detail::Elapsed(nowMs, existing->second.stamp, m_ttlMs)) {
+			if (existing->second.conflicted) {
+				existing->second.stamp = nowMs;
+				return Result::ConflictingVoucher;
+			}
+			if (existing->second.vouchedHash && vouchedHash &&
+				*existing->second.vouchedHash != *vouchedHash) {
+				existing->second.stamp = nowMs;
+				existing->second.vouchedHash.reset();
+				existing->second.conflicted = true;
+				return Result::ConflictingVoucher;
+			}
+			if (!vouchedHash) {
+				vouchedHash = existing->second.vouchedHash;
+			}
+		} else if (existing == m_entries.end()) {
 			Detail::MakeRoom(m_entries, m_capacity, nowMs, m_ttlMs);
 		}
-		m_entries[key] = Entry{ nowMs };
+		m_entries[key] = Entry{ nowMs, std::move(vouchedHash), false };
+		return Result::Accepted;
 	}
 
 	bool IsExpected(std::uint32_t ip, std::uint16_t port, std::uint64_t nowMs) const
@@ -254,12 +305,28 @@ public:
 		return found != m_entries.end() && !Detail::Elapsed(nowMs, found->second.stamp, m_ttlMs);
 	}
 
+	bool HasVouchedHash(std::uint32_t ip, std::uint16_t port, std::uint64_t nowMs) const
+	{
+		const auto found = m_entries.find(Detail::EndpointKey(ip, port));
+		return found != m_entries.end() && found->second.vouchedHash.has_value() &&
+		       !Detail::Elapsed(nowMs, found->second.stamp, m_ttlMs);
+	}
+
+	bool HasConflictingVoucher(std::uint32_t ip, std::uint16_t port, std::uint64_t nowMs) const
+	{
+		const auto found = m_entries.find(Detail::EndpointKey(ip, port));
+		return found != m_entries.end() && found->second.conflicted &&
+		       !Detail::Elapsed(nowMs, found->second.stamp, m_ttlMs);
+	}
+
 	std::size_t Size() const { return m_entries.size(); }
 
 private:
 	struct Entry
 	{
 		std::uint64_t stamp;
+		std::optional<Hash> vouchedHash;
+		bool conflicted;
 	};
 
 	std::size_t m_capacity;
@@ -317,10 +384,11 @@ struct Callbacks
 	std::function<bool()> enabled;
 	//! Whether the user allows the UDP obfuscation layer at all.
 	std::function<bool()> obfuscationOn;
-	//! Sends our key frame, obfuscated with @a key.
-	std::function<void(std::uint32_t ip, std::uint16_t port, const Hash &key)> sendKeyFrame;
+	//! Sends our key frame, obfuscated with @a key; false means the sink rejected it.
+	std::function<bool(std::uint32_t ip, std::uint16_t port, const Hash &key)> sendKeyFrame;
 	//! Sends one QUIC datagram, obfuscated with @a key unless it is null.
-	std::function<void(const std::uint8_t *payload,
+	//! False means the datagram was not accepted by the sink.
+	std::function<bool(const std::uint8_t *payload,
 		std::size_t length,
 		std::uint32_t ip,
 		std::uint16_t port,
@@ -341,15 +409,25 @@ public:
 	}
 
 	//! A rendezvous says this peer is about to contact us.
-	void ExpectPeer(std::uint32_t ip, std::uint16_t port, std::uint64_t nowMs)
+	void ExpectPeer(std::uint32_t ip,
+		std::uint16_t port,
+		std::uint64_t nowMs,
+		std::optional<Hash> vouchedHash = std::nullopt)
 	{
-		m_expected.Expect(ip, port, nowMs);
+		const auto result = m_expected.Expect(ip, port, nowMs, vouchedHash);
+		if (result == CExpectedPeers::Result::ConflictingVoucher) {
+			m_keys.Forget(ip, port);
+		} else if (vouchedHash) {
+			m_keys.LearnVouched(ip, port, *vouchedHash, nowMs);
+		}
 	}
 
-	//! We are dialling this identity: it is the key the peer's datagrams decrypt with.
+	//! We are dialling this identity. It is authoritative unless a live server-vouched key exists.
 	void NoteDialled(std::uint32_t ip, std::uint16_t port, const Hash &hash, std::uint64_t nowMs)
 	{
-		m_keys.Learn(ip, port, hash, nowMs);
+		if (!m_expected.HasConflictingVoucher(ip, port, nowMs)) {
+			m_keys.Learn(ip, port, hash, nowMs);
+		}
 	}
 
 	KeyFrameResult OnKeyFrame(const std::uint8_t *payload,
@@ -368,32 +446,49 @@ public:
 		if (!m_expected.IsExpected(ip, port, nowMs)) {
 			return KeyFrameResult::Unexpected;
 		}
+		if (m_expected.HasConflictingVoucher(ip, port, nowMs) ||
+			m_expected.HasVouchedHash(ip, port, nowMs)) {
+			return KeyFrameResult::Held;
+		}
 		return m_keys.LearnAnnounced(ip, port, *hash, nowMs) ? KeyFrameResult::Learned
 								     : KeyFrameResult::Held;
 	}
 
-	void SendDatagram(const std::uint8_t *payload,
+	bool SendDatagram(const std::uint8_t *payload,
 		std::size_t length,
 		std::uint32_t ip,
 		std::uint16_t port,
 		std::uint64_t nowMs)
 	{
+		// A conflicting server identity makes even plaintext unsafe (it exposes QUIC's ALPN).
+		// Fail the sink send rather than silently downgrade or queue any frame.
+		if (m_expected.HasConflictingVoucher(ip, port, nowMs)) {
+			return false;
+		}
 		SendPlan plan;
 		if (m_callbacks.obfuscationOn()) {
 			plan = PlanDatagram(
 				m_keys, m_gate, ip, port, IsQuicLongHeader(payload, length), nowMs);
 		}
-		if (plan.sendKeyFrame) {
-			m_callbacks.sendKeyFrame(ip, port, *plan.key);
+		if (plan.sendKeyFrame && !m_callbacks.sendKeyFrame(ip, port, *plan.key)) {
+			m_gate.Forget(ip, port);
+			return false;
 		}
-		m_callbacks.sendDatagram(payload, length, ip, port, plan.key ? &*plan.key : nullptr);
+		const bool accepted =
+			m_callbacks.sendDatagram(payload, length, ip, port, plan.key ? &*plan.key : nullptr);
+		if (!accepted) {
+			if (plan.sendKeyFrame) {
+				m_gate.Forget(ip, port);
+			}
+		}
+		return accepted;
 	}
 
 private:
 	Callbacks m_callbacks;
-	CPeerKeyCache m_keys{ 256, 120000 };
+	CPeerKeyCache m_keys{ 256, kPeerKeyIdleMs };
 	CSendGate m_gate{ 256, 10000 };
-	CExpectedPeers m_expected{ 256, 30000 };
+	CExpectedPeers m_expected{ 256, kExpectedPeerTtlMs };
 };
 } // namespace NatKeyFrame
 

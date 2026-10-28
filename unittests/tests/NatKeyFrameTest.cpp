@@ -285,6 +285,8 @@ struct Rig
 {
 	bool enabled = true;
 	bool obfuscation = true;
+	bool acceptKeyFrame = true;
+	bool acceptDatagram = true;
 	std::vector<std::string> events;
 	std::vector<std::optional<Hash>> datagramKeys;
 	CKeyFrameService service;
@@ -301,6 +303,7 @@ struct Rig
 		callbacks.obfuscationOn = [this] { return obfuscation; };
 		callbacks.sendKeyFrame = [this](std::uint32_t, std::uint16_t, const Hash &) {
 			events.push_back("keyframe");
+			return acceptKeyFrame;
 		};
 		callbacks.sendDatagram = [this](const std::uint8_t *,
 						 std::size_t,
@@ -309,6 +312,7 @@ struct Rig
 						 const Hash *key) {
 			events.push_back("datagram");
 			datagramKeys.push_back(key != nullptr ? std::optional<Hash>(*key) : std::nullopt);
+			return acceptDatagram;
 		};
 		return callbacks;
 	}
@@ -339,6 +343,41 @@ TEST(NatKeyFrame, AKeyFrameFromAnUnexpectedEndpointIsIgnored)
 	ASSERT_FALSE(rig.datagramKeys.back().has_value());
 }
 
+TEST(NatKeyFrame, FailedLongHeaderEnqueueReleasesKeyFrameGate)
+{
+	Rig rig;
+	const Hash hash = MakeHash(5);
+	rig.service.NoteDialled(1, 1, hash, 0);
+	rig.acceptDatagram = false;
+	ASSERT_FALSE(rig.service.SendDatagram(kLongHeader, sizeof(kLongHeader), 1, 1, 1));
+	ASSERT_EQUALS(2, static_cast<int>(rig.events.size()));
+	ASSERT_TRUE(rig.events[0] == "keyframe");
+	ASSERT_TRUE(rig.events[1] == "datagram");
+
+	rig.acceptDatagram = true;
+	ASSERT_TRUE(rig.service.SendDatagram(kLongHeader, sizeof(kLongHeader), 1, 1, 2));
+	ASSERT_EQUALS(4, static_cast<int>(rig.events.size()));
+	ASSERT_TRUE(rig.events[2] == "keyframe");
+	ASSERT_TRUE(rig.events[3] == "datagram");
+}
+
+TEST(NatKeyFrame, RejectedKeyFrameRefusesDatagramAndRetriesOnNextSend)
+{
+	Rig rig;
+	const Hash hash = MakeHash(5);
+	rig.service.NoteDialled(1, 1, hash, 0);
+	rig.acceptKeyFrame = false;
+	ASSERT_FALSE(rig.service.SendDatagram(kLongHeader, sizeof(kLongHeader), 1, 1, 1));
+	ASSERT_EQUALS(1, static_cast<int>(rig.events.size()));
+	ASSERT_TRUE(rig.events[0] == "keyframe");
+
+	rig.acceptKeyFrame = true;
+	ASSERT_TRUE(rig.service.SendDatagram(kLongHeader, sizeof(kLongHeader), 1, 1, 2));
+	ASSERT_EQUALS(3, static_cast<int>(rig.events.size()));
+	ASSERT_TRUE(rig.events[1] == "keyframe");
+	ASSERT_TRUE(rig.events[2] == "datagram");
+}
+
 TEST(NatKeyFrame, AKeyFrameFromAnExpectedEndpointObfuscatesOurReplies)
 {
 	Rig rig;
@@ -347,6 +386,75 @@ TEST(NatKeyFrame, AKeyFrameFromAnExpectedEndpointObfuscatesOurReplies)
 	ASSERT_TRUE(rig.service.OnKeyFrame(hash.data(), hash.size(), 1, 1, 1) == KeyFrameResult::Learned);
 	rig.service.SendDatagram(kShortHeader, sizeof(kShortHeader), 1, 1, 2);
 	ASSERT_TRUE(*rig.datagramKeys.back() == hash);
+}
+
+TEST(NatKeyFrame, VouchedRendezvousHashSurvivesConflictingDialledAndAnnouncedHashes)
+{
+	Rig rig;
+	const Hash vouched = MakeHash(5);
+	const Hash conflicting = MakeHash(9);
+	rig.service.ExpectPeer(1, 1, 0, vouched);
+	rig.service.NoteDialled(1, 1, conflicting, 1);
+	ASSERT_TRUE(rig.service.OnKeyFrame(conflicting.data(), conflicting.size(), 1, 1, 2) ==
+		    KeyFrameResult::Held);
+	rig.service.SendDatagram(kShortHeader, sizeof(kShortHeader), 1, 1, 2);
+	ASSERT_TRUE(*rig.datagramKeys.back() == vouched);
+}
+
+TEST(NatKeyFrame, ConflictingLiveVouchersFailClosedUntilTheExpectationExpires)
+{
+	Rig rig;
+	const Hash first = MakeHash(5);
+	const Hash conflicting = MakeHash(9);
+	rig.service.ExpectPeer(1, 1, 0, first);
+	rig.service.ExpectPeer(1, 1, 1, conflicting);
+	rig.service.ExpectPeer(1, 1, 2); // A weaker duplicate cannot clear the collision.
+	rig.service.NoteDialled(1, 1, conflicting, 3);
+	ASSERT_TRUE(rig.service.OnKeyFrame(conflicting.data(), conflicting.size(), 1, 1, 4) ==
+		    KeyFrameResult::Held);
+	ASSERT_FALSE(rig.service.SendDatagram(kLongHeader, sizeof(kLongHeader), 1, 1, 5));
+	ASSERT_EQUALS(0, static_cast<int>(rig.events.size()));
+	ASSERT_EQUALS(0, static_cast<int>(rig.datagramKeys.size()));
+
+	// A new expectation after the 30 s session window establishes a fresh authoritative hash.
+	const std::uint64_t newSession = kExpectedPeerTtlMs + 3;
+	rig.service.ExpectPeer(1, 1, newSession, conflicting);
+	ASSERT_TRUE(rig.service.SendDatagram(kLongHeader, sizeof(kLongHeader), 1, 1, newSession + 1));
+	ASSERT_EQUALS(2, static_cast<int>(rig.events.size()));
+	ASSERT_TRUE(rig.events[0] == "keyframe");
+	ASSERT_TRUE(rig.events[1] == "datagram");
+	ASSERT_TRUE(*rig.datagramKeys.back() == conflicting);
+}
+
+TEST(NatKeyFrame, RepeatedMatchingVouchedHashDoesNotCreateACollision)
+{
+	Rig rig;
+	const Hash vouched = MakeHash(5);
+	rig.service.ExpectPeer(1, 1, 0, vouched);
+	rig.service.ExpectPeer(1, 1, 1, vouched);
+	rig.service.SendDatagram(kShortHeader, sizeof(kShortHeader), 1, 1, 2);
+	ASSERT_TRUE(*rig.datagramKeys.back() == vouched);
+}
+
+TEST(NatKeyFrame, VouchedHashLifetimeTracksActiveUseAndExpiresAfterIdleWindow)
+{
+	Rig rig;
+	const Hash vouched = MakeHash(5);
+	const Hash redialled = MakeHash(9);
+	rig.service.ExpectPeer(1, 1, 0, vouched);
+	// The endpoint expectation expires at 30 s, but active-use key state has a 120 s idle TTL.
+	const std::uint64_t firstUse = kExpectedPeerTtlMs;
+	const std::uint64_t secondUse = firstUse + kPeerKeyIdleMs - 1;
+	const std::uint64_t afterIdleExpiry = secondUse + kPeerKeyIdleMs;
+	rig.service.SendDatagram(kShortHeader, sizeof(kShortHeader), 1, 1, firstUse);
+	ASSERT_TRUE(*rig.datagramKeys.back() == vouched);
+	rig.service.NoteDialled(1, 1, redialled, kPeerKeyIdleMs);
+	rig.service.SendDatagram(kShortHeader, sizeof(kShortHeader), 1, 1, secondUse);
+	ASSERT_TRUE(*rig.datagramKeys.back() == vouched);
+	// No use for 120 s expires the vouched entry; a new dial may now establish the key.
+	rig.service.NoteDialled(1, 1, redialled, afterIdleExpiry);
+	rig.service.SendDatagram(kShortHeader, sizeof(kShortHeader), 1, 1, afterIdleExpiry + 1);
+	ASSERT_TRUE(*rig.datagramKeys.back() == redialled);
 }
 
 TEST(NatKeyFrame, AMalformedKeyFrameLearnsNothing)
