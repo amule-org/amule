@@ -536,17 +536,18 @@ bool CKnownFile::LoadHashsetFromFile(const CFileDataIO *file, bool checkhash)
 {
 	CMD4Hash checkid = file->ReadHash();
 
+	// Read into a scratch list: a rejected hashset must leave the stored one untouched.
 	uint16 parts = file->ReadUInt16();
-	m_hashlist.clear();
+	ArrayOfCMD4Hash hashlist;
 	for (uint16 i = 0; i < parts; ++i) {
-		CMD4Hash cur_hash = file->ReadHash();
-		m_hashlist.push_back(cur_hash);
+		hashlist.push_back(file->ReadHash());
 	}
 
 	// SLUGFILLER: SafeHash - always check for valid m_hashlist
 	if (!checkhash) {
 		m_abyFileHash = checkid;
 		if (parts <= 1) { // nothing to check
+			m_hashlist = hashlist;
 			return true;
 		}
 	} else {
@@ -560,14 +561,14 @@ bool CKnownFile::LoadHashsetFromFile(const CFileDataIO *file, bool checkhash)
 	}
 	// SLUGFILLER: SafeHash
 
-	if (!m_hashlist.empty()) {
-		CreateHashFromHashlist(m_hashlist, &checkid);
+	if (!hashlist.empty()) {
+		CreateHashFromHashlist(hashlist, &checkid);
 	}
 
 	if (m_abyFileHash == checkid) {
+		m_hashlist = hashlist;
 		return true;
 	} else {
-		m_hashlist.clear();
 		return false;
 	}
 }

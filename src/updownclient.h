@@ -529,7 +529,11 @@ public:
 	void SetDownloadState(uint8 byNewState);
 	uint64 GetLastAskedTime() const { return m_dwLastAskedTime; }
 	void ResetLastAskedTime() { m_dwLastAskedTime = 0; }
+	// Ask over TCP as soon as the source would not count it as aggressive (see RequestPacing.h).
+	void AskAgainSoon();
 
+	// The source has a part the requested file still misses.
+	bool HasPartWeNeed() const;
 	bool IsPartAvailable(uint16 iPart) const
 	{
 		return (iPart < m_downPartStatus.size()) ? m_downPartStatus.get(iPart) : 0;
@@ -558,6 +562,7 @@ public:
 	void SetRemoteQueueRank(uint16 nr);
 	bool AskForDownload();
 	void SendStartupLoadReq();
+	void SendHashsetRequest();
 	void SendFileRequest();
 	void ProcessHashSet(const uint8_t *packet, uint32 size);
 	bool AddRequestForAnotherFile(CPartFile *file);
@@ -1033,6 +1038,7 @@ private:
 #ifdef AMULE_QUIC_TRANSPORT
 	bool m_skipQuicDial = false;
 #endif
+	uint64 m_lastPacedRequest; // last OP_STARTUPLOADREQ, OP_REASKFILEPING or OP_AICHREQUEST sent
 	wxString m_clientFilename;
 	uint64 m_nTransferredDown;
 	uint16 m_lastDownloadingPart; // last Part that was downloading

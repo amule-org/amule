@@ -1161,6 +1161,10 @@ void CClientUDPSocket::ProcessPacket(uint8_t *packet, int16 size, int8 opcode, u
 			uint16 nRank = data_in.ReadUInt16();
 			sender->SetRemoteQueueFull(false);
 			sender->UDPReaskACK(nRank);
+			// UDP cannot carry the hashset request.
+			if (sender->GetRequestFile() && sender->GetRequestFile()->IsHashSetNeeded()) {
+				sender->AskAgainSoon();
+			}
 		}
 		break;
 	}

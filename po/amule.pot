@@ -6524,6 +6524,11 @@ msgstr[1] ""
 
 #: src/PartFile.cpp
 #, c-format
+msgid "'%s' does not match its file hash, and without the part hashset the corrupt part cannot be found. Waiting for the hashset."
+msgstr ""
+
+#: src/PartFile.cpp
+#, c-format
 msgid "Found completed part (%i) in %s"
 msgstr ""
 

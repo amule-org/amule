@@ -230,6 +230,11 @@ add_test (NAME UploadRefillTest COMMAND UploadRefillTest)
 target_include_directories (UploadRefillTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries (UploadRefillTest muleunit mulecommon)
 
+add_executable (RequestPacingTest RequestPacingTest.cpp)
+add_test (NAME RequestPacingTest COMMAND RequestPacingTest)
+target_include_directories (RequestPacingTest PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include)
+target_link_libraries (RequestPacingTest muleunit mulecommon)
+
 # The done-list cap, without live clients.
 add_executable (UploadBlockListsTest UploadBlockListsTest.cpp)
 add_test (NAME UploadBlockListsTest COMMAND UploadBlockListsTest)

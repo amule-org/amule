@@ -99,6 +99,9 @@
 #include "NatServerHolePunch.h"   // Needed for ShouldKeepLowIdServerSource
 #endif
 
+// How long a source may hold a hashset request before another source is asked.
+static const uint64 HASHSET_REQUEST_TIMEOUT = 60000; // ms
+
 SFileRating::SFileRating(const wxString &u, const wxString &f, sint16 r, const wxString &c)
 : UserName(u)
 , FileName(f)
@@ -1372,6 +1375,28 @@ void CPartFile::PartFileHashFinished(CKnownFile *result)
 				errorfound = true;
 			}
 		}
+	} else if (GetHashCount() != GetED2KPartHashCount()) {
+		// No part hashset, so nothing to compare part by part. The file hash still binds the
+		// data: for a multi-part file it is the MD4 of the part hashes.
+		if (IsComplete(0, GetFileSize() - 1)) {
+			if (result->GetFileHash() == GetFileHash() &&
+				result->GetHashCount() == GetED2KPartHashCount()) {
+				m_hashlist.clear();
+				for (size_t i = 0; i < result->GetHashCount(); ++i) {
+					m_hashlist.push_back(result->GetPartHash(static_cast<uint16>(i)));
+				}
+				m_hashsetneeded = false;
+			} else {
+				AddLogLineC(
+					CFormat(_("'%s' does not match its file hash, and without the part "
+						  "hashset the corrupt part cannot be found. Waiting for the "
+						  "hashset.")) %
+					GetFileName());
+				errorfound = true;
+				m_hashsetneeded = true;
+				m_completionAwaitsHashset = true;
+			}
+		}
 	} else {
 		for (size_t i = 0; i < m_hashlist.size(); ++i) {
 			// Kry - trel_ar's completed-parts check on rehashing: if a file is
@@ -1440,8 +1465,10 @@ void CPartFile::PartFileHashFinished(CKnownFile *result)
 			AddLogLineN(CFormat(_("Finished rehashing %s")) % GetFileName());
 		}
 	} else {
-		SetStatus(PS_READY);
+		SetStatus(m_completionAwaitsHashset ? PS_EMPTY : PS_READY);
 		SavePartFile();
+		// Sources asked during the rehash found nothing to download; the gaps are open now.
+		AskQueuedSourcesAgain();
 		// A part can pass its per-part hash during download yet fail this final full-file
 		// re-hash -- a block rewritten after the part completed, as happens when endgame
 		// source rotation splices a block across two sources. AddGap() above re-opens the
@@ -1649,6 +1676,18 @@ uint32 CPartFile::Process(uint8 m_icounter)
 
 	uint16 old_trans;
 	uint64 dwCurTick = ::GetTickCount64();
+
+	// A source asked for the hashset can hold the request open without answering, and the
+	// flag cleared on sending it stops every other source from being asked. Ask again.
+	if (m_hashsetRequestedAt != 0 && dwCurTick - m_hashsetRequestedAt > HASHSET_REQUEST_TIMEOUT) {
+		m_hashsetRequestedAt = 0;
+		if (GetHashCount() != GetED2KPartHashCount()) {
+			m_hashsetneeded = true;
+			if (m_completionAwaitsHashset) {
+				AskQueuedSourcesAgain();
+			}
+		}
+	}
 
 	// Flush on buffer-full, time-limit, or pending hash drain. The HasPendingHashWork()
 	// bypass drains Phase 3 at Process()-tick rate (~100 ms) instead of every 60 s when the
@@ -2527,6 +2566,9 @@ void CPartFile::CompleteFile(bool bIsHashingDone)
 		wxString("CPartFile::CompleteFile: Hash ") + (bIsHashingDone ? "done" : "not done"));
 
 	if (!bIsHashingDone) {
+		if (m_completionAwaitsHashset) {
+			return; // HashsetReceived() completes it
+		}
 		kBpsDown = 0.0;
 		m_displayDownloadRate = 0;
 		SetStatus(PS_COMPLETING);
@@ -2798,6 +2840,34 @@ void CPartFile::Delete()
 	delete this;
 }
 
+void CPartFile::AskQueuedSourcesAgain()
+{
+	for (const CClientRef &ref : m_SrcList) {
+		CUpDownClient *cur_src = ref.GetClient();
+		const uint8 state = cur_src->GetDownloadState();
+		if (state == DS_ONQUEUE || state == DS_NONEEDEDPARTS) {
+			cur_src->AskAgainSoon();
+		}
+	}
+}
+
+void CPartFile::HashsetRequested()
+{
+	m_hashsetneeded = false;
+	m_hashsetRequestedAt = ::GetTickCount64();
+}
+
+void CPartFile::HashsetReceived()
+{
+	m_hashsetRequestedAt = 0;
+	if (m_completionAwaitsHashset) {
+		m_completionAwaitsHashset = false;
+		if (m_gaplist.IsComplete()) {
+			CompleteFile(false);
+		}
+	}
+}
+
 bool CPartFile::HashSinglePart(uint16 partnumber)
 {
 	if ((GetHashCount() <= partnumber) && (GetPartCount() > 1)) {
@@ -3047,8 +3117,8 @@ void CPartFile::ResumeFile()
 	SetActive(theApp->IsConnected());
 
 	if (m_gaplist.IsComplete() && (GetStatus() == PS_ERROR)) {
-		// The file has already been hashed at this point
-		CompleteFile(true);
+		// Already hashed, unless its parts were never checked against a part hashset.
+		CompleteFile(GetED2KPartHashCount() == 0 || GetHashCount() == GetED2KPartHashCount());
 	}
 
 	UpdateDisplayedInfo(true);

@@ -221,6 +221,7 @@ void CUpDownClient::Init()
 	m_nUserPort = 0;
 	m_nPartCount = 0;
 	m_dwLastAskedTime = 0;
+	m_lastPacedRequest = 0;
 	m_nDownloadState = DS_NONE;
 	m_dwUploadTime = 0;
 	m_nTransferredDown = 0;
