@@ -77,8 +77,7 @@ inline bool Elapsed(std::uint64_t now, std::uint64_t since, std::uint64_t window
 	return now >= since && now - since >= window;
 }
 
-template <typename Map>
-void EvictOldest(Map &entries)
+template <typename Map> void EvictOldest(Map &entries)
 {
 	auto oldest = entries.begin();
 	for (auto it = entries.begin(); it != entries.end(); ++it) {
@@ -143,7 +142,8 @@ private:
 	void PurgeExpired(std::uint64_t nowMs)
 	{
 		for (auto it = m_entries.begin(); it != m_entries.end();) {
-			it = Detail::Elapsed(nowMs, it->second.stamp, m_idleMs) ? m_entries.erase(it) : std::next(it);
+			it = Detail::Elapsed(nowMs, it->second.stamp, m_idleMs) ? m_entries.erase(it)
+										: std::next(it);
 		}
 	}
 
@@ -196,7 +196,7 @@ private:
 	{
 		for (auto it = m_entries.begin(); it != m_entries.end();) {
 			it = Detail::Elapsed(nowMs, it->second.stamp, m_windowMs) ? m_entries.erase(it)
-										   : std::next(it);
+										  : std::next(it);
 		}
 	}
 
@@ -204,6 +204,50 @@ private:
 	std::uint64_t m_windowMs;
 	std::map<std::uint64_t, Entry> m_entries;
 };
+
+//! What to do with one outgoing QUIC datagram.
+struct SendPlan
+{
+	//! Hash to obfuscate the datagram with; empty sends it plain.
+	std::optional<Hash> key;
+	bool sendKeyFrame = false;
+};
+
+//! QUIC long headers (Initial, Handshake) have the top bit set; short-header packets do not.
+inline bool IsQuicLongHeader(const std::uint8_t *datagram, std::size_t length)
+{
+	return datagram != nullptr && length >= 1 && (datagram[0] & 0x80) != 0;
+}
+
+/**
+ * Obfuscate with the peer's hash whenever it is known. Our own key frame precedes a long header, once
+ * per window, and only where it can itself be obfuscated: eMuleAI also sends it in the clear when it
+ * has no key, which would publish our user hash to anyone on the path.
+ */
+inline SendPlan PlanDatagram(CPeerKeyCache &keys,
+	CSendGate &gate,
+	std::uint32_t ip,
+	std::uint16_t port,
+	bool longHeader,
+	std::uint64_t nowMs)
+{
+	SendPlan plan;
+	plan.key = keys.Lookup(ip, port, nowMs);
+	plan.sendKeyFrame = longHeader && plan.key.has_value() && gate.TryAcquire(ip, port, nowMs);
+	return plan;
+}
+
+//! A key frame names a key for its endpoint but never replaces one we already hold: the frame is
+//! unauthenticated, and a spoofed one must not be able to break a live exchange.
+inline bool LearnFromKeyFrame(
+	CPeerKeyCache &keys, std::uint32_t ip, std::uint16_t port, const Hash &hash, std::uint64_t nowMs)
+{
+	if (keys.Lookup(ip, port, nowMs).has_value()) {
+		return false;
+	}
+	keys.Learn(ip, port, hash, nowMs);
+	return keys.Lookup(ip, port, nowMs).has_value();
+}
 } // namespace NatKeyFrame
 
 #endif // AMULE_NAT_KEY_FRAME_H

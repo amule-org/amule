@@ -50,6 +50,7 @@ class CUpDownClient;
 #include "QuicStreamAcceptor.h"
 #include "QuicCapsRequestLedger.h"
 #include "QuicCapabilityCache.h"
+#include "NatKeyFrame.h"
 #endif
 #if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT) && defined(AMULE_QUIC_TRANSPORT)
 #include "ClientRef.h" // Needed for a safe CAPS-holdoff owner reference
@@ -92,6 +93,9 @@ public:
 	//! datagram. Without this a connection that stops receiving ACKs would never retransmit
 	//! and never time out.
 	void TickQuic();
+	//! Sends one QUIC datagram, obfuscated with the peer's hash when it is known. A long header
+	//! is preceded by our key frame, so the peer can obfuscate its replies the same way.
+	void SendQuicFrame(const uint8_t *payload, size_t length, uint32_t ip, uint16_t port);
 	bool SendQuicCapsRequest(const std::array<uint8_t, 16> &peer,
 		uint32_t ipv4,
 		uint16_t udpPort,
@@ -138,6 +142,9 @@ private:
 	NatRendezvous::CRequesterLimiter m_capsAckLimiter;
 	CQuicCapsRequestLedger m_capsRequestLedger{ 256 };
 	CQuicCapabilityCache m_capabilityCache{ 256 };
+	NatKeyFrame::CPeerKeyCache m_peerKeys{ 256, 120000 };
+	NatKeyFrame::CSendGate m_keyFrameGate{ 256, 10000 };
+	void HandleNatKeyFrame(const uint8_t *payload, size_t length, uint32_t ip, uint16_t port);
 #if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
 	// Punch-dial temporary clients drop their last CClientRef once the dial starts and have no
 	// socket until the handoff; the holdoff's reference is the only thing keeping them alive.

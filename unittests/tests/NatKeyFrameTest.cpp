@@ -159,3 +159,70 @@ TEST(NatKeyFrame, SendGateStaysBoundedUnderManyEndpoints)
 	}
 	ASSERT_TRUE(gate.Size() <= 4);
 }
+
+TEST(NatKeyFrame, ALongHeaderHasTheHighBitSet)
+{
+	const std::uint8_t longHeader[] = { 0xC3, 0x00 };
+	const std::uint8_t shortHeader[] = { 0x43, 0x00 };
+	ASSERT_TRUE(IsQuicLongHeader(longHeader, sizeof(longHeader)));
+	ASSERT_FALSE(IsQuicLongHeader(shortHeader, sizeof(shortHeader)));
+	ASSERT_FALSE(IsQuicLongHeader(longHeader, 0));
+	ASSERT_FALSE(IsQuicLongHeader(nullptr, 1));
+}
+
+TEST(NatKeyFrame, ALongHeaderToAKnownPeerCarriesOurKeyFrameAndIsObfuscated)
+{
+	CPeerKeyCache cache(8, 120000);
+	CSendGate gate(8, 10000);
+	cache.Learn(1, 1, MakeHash(5), 0);
+	const SendPlan plan = PlanDatagram(cache, gate, 1, 1, true, 10);
+	ASSERT_TRUE(plan.sendKeyFrame);
+	ASSERT_TRUE(plan.key.has_value());
+	ASSERT_TRUE(*plan.key == MakeHash(5));
+}
+
+TEST(NatKeyFrame, OurKeyFrameIsNeverSentWhereItCouldNotBeObfuscated)
+{
+	CPeerKeyCache cache(8, 120000);
+	CSendGate gate(8, 10000);
+	const SendPlan plan = PlanDatagram(cache, gate, 1, 1, true, 0);
+	ASSERT_FALSE(plan.sendKeyFrame);
+	ASSERT_FALSE(plan.key.has_value());
+}
+
+TEST(NatKeyFrame, AShortHeaderNeverCarriesAKeyFrameButStaysObfuscated)
+{
+	CPeerKeyCache cache(8, 120000);
+	CSendGate gate(8, 10000);
+	cache.Learn(1, 1, MakeHash(5), 0);
+	const SendPlan plan = PlanDatagram(cache, gate, 1, 1, false, 10);
+	ASSERT_FALSE(plan.sendKeyFrame);
+	ASSERT_TRUE(plan.key.has_value());
+}
+
+TEST(NatKeyFrame, TheKeyFrameGoesOnceAWindowWhileEveryDatagramStaysObfuscated)
+{
+	CPeerKeyCache cache(8, 120000);
+	CSendGate gate(8, 10000);
+	cache.Learn(1, 1, MakeHash(5), 0);
+	ASSERT_TRUE(PlanDatagram(cache, gate, 1, 1, true, 10).sendKeyFrame);
+	const SendPlan second = PlanDatagram(cache, gate, 1, 1, true, 20);
+	ASSERT_FALSE(second.sendKeyFrame);
+	ASSERT_TRUE(second.key.has_value());
+	ASSERT_TRUE(PlanDatagram(cache, gate, 1, 1, true, 10010).sendKeyFrame);
+}
+
+TEST(NatKeyFrame, ARecievedKeyIsLearnedForAnUnknownEndpoint)
+{
+	CPeerKeyCache cache(8, 120000);
+	ASSERT_TRUE(LearnFromKeyFrame(cache, 1, 1, MakeHash(5), 0));
+	ASSERT_TRUE(cache.Lookup(1, 1, 1).has_value());
+}
+
+TEST(NatKeyFrame, ARecievedKeyNeverReplacesOneAlreadyKnown)
+{
+	CPeerKeyCache cache(8, 120000);
+	cache.Learn(1, 1, MakeHash(5), 0);
+	ASSERT_FALSE(LearnFromKeyFrame(cache, 1, 1, MakeHash(9), 1));
+	ASSERT_TRUE(*cache.Lookup(1, 1, 2) == MakeHash(5));
+}

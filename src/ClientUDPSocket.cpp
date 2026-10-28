@@ -129,6 +129,51 @@ bool CClientUDPSocket::SendQuicCapsRequest(const std::array<uint8_t, 16> &peer,
 	return true;
 }
 
+void CClientUDPSocket::SendQuicFrame(const uint8_t *payload, size_t length, uint32_t ip, uint16_t port)
+{
+	NatKeyFrame::SendPlan plan;
+	if (thePrefs::IsClientCryptLayerSupported()) {
+		plan = NatKeyFrame::PlanDatagram(m_peerKeys,
+			m_keyFrameGate,
+			ip,
+			port,
+			NatKeyFrame::IsQuicLongHeader(payload, length),
+			::GetTickCount64());
+	}
+	if (plan.sendKeyFrame) {
+		auto keyFrame = std::make_unique<CPacket>(
+			OP_NATT_FRAME_KEY, static_cast<uint32_t>(NatKeyFrame::kHashBytes), OP_UDPRESERVEDPROT2);
+		keyFrame->CopyToDataBuffer(
+			0, thePrefs::GetUserHash().GetHash(), static_cast<unsigned int>(NatKeyFrame::kHashBytes));
+		SendPacket(keyFrame.release(), ip, port, true, plan.key->data(), false, 0);
+	}
+	auto packet = std::make_unique<CPacket>(
+		OP_NATT_FRAME_QUIC, static_cast<uint32_t>(length), OP_UDPRESERVEDPROT2);
+	if (length != 0) {
+		packet->CopyToDataBuffer(0, payload, static_cast<unsigned int>(length));
+	}
+	SendPacket(packet.release(), ip, port, plan.key.has_value(), plan.key ? plan.key->data() : nullptr, false, 0);
+}
+
+void CClientUDPSocket::HandleNatKeyFrame(const uint8_t *payload, size_t length, uint32_t ip, uint16_t port)
+{
+	const auto hash = NatKeyFrame::ParsePayload(payload, length);
+	if (!hash) {
+		if (m_truncatedFrameLog.ShouldLog(::GetTickCount64())) {
+			AddDebugLogLineN(logClientUDP,
+				CFormat("Dropping malformed NAT-T key frame from %s:%u (%u further occurrences "
+					"suppressed)") %
+					Uint32toStringIP(ip) % port % m_truncatedFrameLog.TakeSuppressedCount());
+		}
+		return;
+	}
+	if (NatKeyFrame::LearnFromKeyFrame(m_peerKeys, ip, port, *hash, ::GetTickCount64())) {
+		AddDebugLogLineN(logClientUDP,
+			CFormat("NAT-T key frame from %s:%u: obfuscating replies with its hash") %
+				Uint32toStringIP(ip) % port);
+	}
+}
+
 bool CClientUDPSocket::TryQuicDial(const std::array<uint8_t, 16> &peer,
 	uint32_t ipv4,
 	uint16_t udpPort,
@@ -154,6 +199,9 @@ bool CClientUDPSocket::TryQuicDial(const std::array<uint8_t, 16> &peer,
 	}
 	if (result.state != QuicCapabilityState::Compatible || ipv4 == 0 || udpPort == 0 || !Ok())
 		return false;
+	// The dialled identity is the key the peer's datagrams decrypt with, so it overrides whatever an
+	// unauthenticated key frame said about this endpoint.
+	m_peerKeys.Learn(ipv4, udpPort, peer, now);
 	if (m_quic.Dial(CNetworkAddress::FromIPv4NetworkOrder(ipv4), udpPort, peer, now, owner))
 		return true;
 	m_capabilityCache.RememberFailure(peer, now, 30000);
@@ -198,11 +246,9 @@ std::array<uint8_t, 16> QuicLocalIdentityFromUserHash()
 	return identity;
 }
 
-//! Sends a QUIC datagram the same way SendUtpDatagram() sends a uTP one: wrapped as an
-//! OP_NATT_FRAME_QUIC reserved-protocol frame, unobfuscated. There is no established peer
-//! identity/hash to obfuscate with for a connection this socket did not dial -- every QUIC
-//! connection here is inbound -- and the datagram's own TLS 1.3 protection does not depend on
-//! aMule's separate ed2k UDP obfuscation layer either way.
+//! Hands a QUIC datagram to CClientUDPSocket::SendQuicFrame(), which wraps it as an
+//! OP_NATT_FRAME_QUIC reserved-protocol frame. The datagram's TLS 1.3 protection does not depend on
+//! the ed2k UDP obfuscation layer; the layer only hides the Initial and its ALPN from the path.
 class CQuicUdpSink final : public IQuicDatagramSink
 {
 public:
@@ -221,12 +267,7 @@ public:
 			(length != 0 && payload == nullptr)) {
 			return false;
 		}
-		auto packet = std::make_unique<CPacket>(
-			OP_NATT_FRAME_QUIC, static_cast<uint32_t>(length), OP_UDPRESERVEDPROT2);
-		if (length != 0) {
-			packet->CopyToDataBuffer(0, payload, static_cast<unsigned int>(length));
-		}
-		m_socket.SendPacket(packet.release(), ip, port, false, nullptr, false, 0);
+		m_socket.SendQuicFrame(payload, length, ip, port);
 		return true;
 	}
 
@@ -742,6 +783,9 @@ void CClientUDPSocket::ProcessReservedProt2Frame(
 	break;
 
 	case OP_NATT_FRAME_KEY:
+#ifdef AMULE_QUIC_TRANSPORT
+		HandleNatKeyFrame(classified.payload, classified.payloadLength, ip, port);
+#else
 		if (m_unservedFrameLog.ShouldLog(::GetTickCount64())) {
 			AddDebugLogLineN(logClientUDP,
 				CFormat("Ignoring NAT-T key frame from %s:%u: no NAT traversal in this "
@@ -749,6 +793,7 @@ void CClientUDPSocket::ProcessReservedProt2Frame(
 					Uint32toStringIP(ip) % port %
 					m_unservedFrameLog.TakeSuppressedCount());
 		}
+#endif
 		break;
 
 	default:
