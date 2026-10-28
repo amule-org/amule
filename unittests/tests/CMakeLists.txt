@@ -364,6 +364,12 @@ target_include_directories (NatRendezvousPolicyTest PRIVATE
 )
 target_link_libraries (NatRendezvousPolicyTest muleunit ${Boost_LIBRARIES})
 
+add_executable (NatKeyFrameTest NatKeyFrameTest.cpp)
+target_include_directories (NatKeyFrameTest PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_BINARY_DIR})
+target_compile_features (NatKeyFrameTest PRIVATE cxx_std_17)
+target_link_libraries (NatKeyFrameTest muleunit mulecommon)
+add_test (NAME NatKeyFrameTest COMMAND NatKeyFrameTest)
+
 add_executable (EncryptionRequirementTest EncryptionRequirementTest.cpp)
 target_include_directories (EncryptionRequirementTest PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_BINARY_DIR})
 target_compile_features (EncryptionRequirementTest PRIVATE cxx_std_17)
