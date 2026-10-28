@@ -255,6 +255,22 @@ TEST(Format, EscapedPercentageSign)
 	}
 }
 
+TEST(Format, OversizedFields)
+{
+	const wxString padded = wxString(127, ' ') + "x";
+	ASSERT_EQUALS(padded, wxString(CFormat("%4294967295s") % "x"));
+	ASSERT_EQUALS(padded, wxString(CFormat("%99999999999999999999s") % "x"));
+	ASSERT_EQUALS(wxString(127, ' ') + "7", wxString(CFormat("%4294967295i") % 7));
+	ASSERT_EQUALS(wxString(128, 'a'), wxString(CFormat("%.2000s") % wxString(3000, 'a')));
+	ASSERT_EQUALS(size_t(128 + 310), wxString(CFormat("%.4294967295f") % 1e308).length());
+}
+
+TEST(Format, Escape)
+{
+	ASSERT_EQUALS("%4294967295s %s%%: 3",
+		wxString(CFormat(CFormat::Escape("%4294967295s %s%%") + ": %s") % "3"));
+}
+
 ///////////////////////////////////////////////////////////
 // The following checks for invalid operations
 

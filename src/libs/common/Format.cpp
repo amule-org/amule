@@ -34,8 +34,14 @@
 
 #include <wx/intl.h> // Needed for _()
 
+#include <algorithm>
 #include <errno.h>      // Needed for errno and EINVAL
 #include "strerror_r.h" // Needed for mule_strerror_r()
+
+// Format strings can embed peer-supplied text, so a field cannot ask for unbounded padding.
+// wx's own printf (MinGW) formats numbers in a 512-character scratch buffer, and
+// "%.128f" of the largest double still fits.
+static const unsigned MAX_FIELD_LENGTH = 128;
 
 /** Returns true if the char is a format-type. */
 inline bool isTypeChar(wxChar c)
@@ -323,8 +329,8 @@ void CFormat::Init(const wxString &str)
 					state = efError;
 				}
 				if ((c >= '0') && (c <= '9')) {
-					num *= 10;
-					num += (c - '0');
+					num = std::min(
+						num * 10 + static_cast<unsigned>(c - '0'), MAX_FIELD_LENGTH);
 				}
 				switch (state) {
 				case efArgIndexEnd:
@@ -409,8 +415,12 @@ void CFormat::Init(const wxString &str)
 				default:
 					break;
 				}
-				wxCHECK2_MSG(
-					state != efError, break, "Invalid format specifier: " + it->result);
+				// Not wxCHECK2_MSG: its do/while wrapper would swallow the break, and the
+				// parser table has no row for efError.
+				if (state == efError) {
+					wxFAIL_MSG("Invalid format specifier: " + it->result);
+					break;
+				}
 				if (state == efType) {
 					// Needed by the '%m' conversion, which takes place immediately,
 					// overwriting it->result
@@ -442,6 +452,13 @@ wxString CFormat::GetString() const
 		}
 		result += m_formatString.Mid(lastEnd);
 	}
+	return result;
+}
+
+wxString CFormat::Escape(const wxString &text)
+{
+	wxString result(text);
+	result.Replace("%", "%%");
 	return result;
 }
 

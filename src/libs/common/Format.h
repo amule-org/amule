@@ -99,6 +99,9 @@ public:
 	 */
 	CFormat(const wxString &str) { Init(str); }
 
+	/** @return `text` with every '%' doubled, so it reads literally inside a format string. */
+	static wxString Escape(const wxString &text);
+
 	/**
 	 * Feeds a value into the format string. A type incompatible with the current format field
 	 * skips the field and raises an exception; any type fed to a CFormat with no free fields is

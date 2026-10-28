@@ -1202,8 +1202,10 @@ void CStatistics::AddKnownClient(CUpDownClient *pClient)
 		if (OSNode) {
 			++(*OSNode);
 		} else {
+			// The label is a CFormat string and OSInfo comes from the peer.
 			OSNode = new CStatTreeItemCounter(
-				(OS_ID ? OSInfo : wxString(wxTRANSLATE("Not Received"))) + ": %s",
+				CFormat::Escape(OS_ID ? OSInfo : wxString(wxTRANSLATE("Not Received"))) +
+					": %s",
 				stShowPercent | stHideIfZero);
 			OSNode->SetKey("client_os");
 			// Raw OS string (empty for "Not Received" -> tag omitted).

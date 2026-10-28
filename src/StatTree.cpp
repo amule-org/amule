@@ -301,11 +301,17 @@ void CStatTreeItemSimple::AddECValues(CECTag *tag) const
 #ifndef AMULE_DAEMON
 template <typename _Tp> wxString CStatTreeItemCounterTmpl<_Tp>::GetDisplayString() const
 {
-	wxString my_label = wxGetTranslation(m_label);
-	// This is needed for client names, for example
-	if (my_label == m_label) {
-		if (m_label.Right(4) == ": %s") {
-			my_label = wxGetTranslation(m_label.Mid(0, m_label.Length() - 4)) + wxString(": %s");
+	wxString my_label = m_label;
+	// With a raw value the label head is peer data, which a catalog could translate into a
+	// string containing '%'.
+	if (m_rawvalue.IsEmpty()) {
+		my_label = wxGetTranslation(m_label);
+		// This is needed for client names, for example
+		if (my_label == m_label) {
+			if (m_label.Right(4) == ": %s") {
+				my_label = wxGetTranslation(m_label.Mid(0, m_label.Length() - 4)) +
+					   wxString(": %s");
+			}
 		}
 	}
 	CFormat label(my_label);

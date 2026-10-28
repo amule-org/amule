@@ -1481,6 +1481,34 @@ target_link_libraries (FormatTest
 	muleunit
 )
 
+# Peer-supplied stats-tree labels (client version, OS) render untranslated and literal.
+add_executable (StatTreeLabelTest
+	StatTreeLabelTest.cpp
+	# The CastIto* formatters CEC_StatTree_Node_Tag::GetDisplayString reaches through FormatValue.
+	${CMAKE_SOURCE_DIR}/src/OtherFunctions.cpp
+	# See the note on CValueMapTest below.
+	${CMAKE_SOURCE_DIR}/src/LoggerConsole.cpp
+)
+
+add_test (NAME StatTreeLabelTest
+	COMMAND StatTreeLabelTest
+)
+
+target_include_directories (StatTreeLabelTest
+	PRIVATE ${CMAKE_BINARY_DIR}
+	PRIVATE ${CMAKE_SOURCE_DIR}/src
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/libs
+	PRIVATE ${CMAKE_BINARY_DIR}/src/libs
+	PRIVATE ${CMAKE_BINARY_DIR}/src/libs/ec/cpp
+)
+
+target_link_libraries (StatTreeLabelTest
+	muleunit
+	ec
+	mulecommon
+)
+
 add_executable (NetworkFunctionsTest
 	NetworkFunctionsTest.cpp
 	${CMAKE_SOURCE_DIR}/src/NetworkFunctions.cpp

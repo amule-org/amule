@@ -139,11 +139,14 @@ function tNodeLabel(node) {
   // `label_value` verbatim when present (version/OS string, never translated);
   // when it's absent it's a known placeholder we translate by kind. Keep the
   // ": %s" tail so nodeText still fills the count/percent.
-  // ponytail: heads have no ":".
+  // The head is peer text, so escape its "%" before nodeText formats it, and
+  // split at the last ": %s" since the head may contain ":".
   if (node.key === "client_version" || node.key === "client_os") {
-    const tail = node.label.slice(node.label.indexOf(":"));
-    if (node.label_value) return node.label_value + tail;
-    return tOr("stats_tree_" + node.key + "_unknown", node.label) + tail;
+    const at = node.label.lastIndexOf(": %s");
+    const tail = at >= 0 ? node.label.slice(at) : "";
+    const head = at >= 0 ? node.label.slice(0, at) : node.label;
+    if (node.label_value) return node.label_value.replace(/%/g, "%%") + tail;
+    return tOr("stats_tree_" + node.key + "_unknown", head) + tail;
   }
   return tOr("stats_tree_" + node.key, tLabel(node.label));
 }

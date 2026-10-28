@@ -155,12 +155,17 @@ static void FormatValue(CFormat &format, const CECTag *tag)
 wxString CEC_StatTree_Node_Tag::GetDisplayString() const
 {
 	wxString en_label = GetStringData();
-	wxString my_label = wxGetTranslation(en_label);
-	// This is needed for client names, for example
-	if (my_label == en_label) {
-		if (en_label.Right(4) == ": %s") {
-			my_label =
-				wxGetTranslation(en_label.Mid(0, en_label.Length() - 4)) + wxString(": %s");
+	wxString my_label = en_label;
+	// With a raw value the label head is peer data, which a catalog could translate into a
+	// string containing '%'.
+	if (GetTagByName(EC_TAG_STAT_NODE_RAW) == nullptr) {
+		my_label = wxGetTranslation(en_label);
+		// This is needed for client names, for example
+		if (my_label == en_label) {
+			if (en_label.Right(4) == ": %s") {
+				my_label = wxGetTranslation(en_label.Mid(0, en_label.Length() - 4)) +
+					   wxString(": %s");
+			}
 		}
 	}
 	CFormat label(my_label);
