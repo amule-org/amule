@@ -32,6 +32,7 @@
 
 #include "HTTPDownload.h"           // Interface declarations
 #include "DownloadUrl.h"            // Needed for DownloadUrlForLog, DownloadErrorForLog
+#include "HttpUrl.h"                // Needed for IsHttpUrl
 #include <common/StringFunctions.h> // Needed for unicode2char
 #include "OtherFunctions.h"         // Needed for CastChild
 #include "Logger.h"                 // Needed for AddLogLine*
@@ -308,6 +309,14 @@ static void CustomizeCurlRequest(wxWebRequest &request)
 		if (!thePrefs::GetNetworkInterface().IsEmpty()) {
 			curl_easy_setopt(curl, CURLOPT_SOCKOPTFUNCTION, amuleHttpSockoptCallback);
 		}
+		// IsHttpUrl already gates the request URL; this also holds for redirects.
+#if LIBCURL_VERSION_NUM >= 0x075500
+		curl_easy_setopt(curl, CURLOPT_PROTOCOLS_STR, "http,https");
+		curl_easy_setopt(curl, CURLOPT_REDIR_PROTOCOLS_STR, "http,https");
+#else
+		curl_easy_setopt(curl, CURLOPT_PROTOCOLS, (long)(CURLPROTO_HTTP | CURLPROTO_HTTPS));
+		curl_easy_setopt(curl, CURLOPT_REDIR_PROTOCOLS, (long)(CURLPROTO_HTTP | CURLPROTO_HTTPS));
+#endif
 	}
 #else
 	(void)request;
@@ -318,6 +327,11 @@ static void CustomizeCurlRequest(wxWebRequest &request)
 // HTTP channel is consistent and honours the bind-to-interface preference.
 wxWebRequest CreateAmuleWebRequest(wxEvtHandler *handler, const wxString &url)
 {
+	if (!IsHttpUrl(url)) {
+		AddLogLineC(
+			CFormat(_("Refusing to download %s: only http and https URLs are supported.")) % url);
+		return wxWebRequest();
+	}
 	bool isCurlBackend = false;
 	// The proxy is applied when the session is first handed out, not here:
 	// setting it per request asserts on WinHTTP once a request has been made.

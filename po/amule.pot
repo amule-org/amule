@@ -3199,6 +3199,11 @@ msgstr ""
 
 #: src/HTTPDownload.cpp
 #, c-format
+msgid "Refusing to download %s: only http and https URLs are supported."
+msgstr ""
+
+#: src/HTTPDownload.cpp
+#, c-format
 msgid "HTTP download of %s stopped: it is larger than %u MiB."
 msgstr ""
 

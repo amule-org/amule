@@ -2703,6 +2703,16 @@ target_include_directories (AllSearchTypeTest PRIVATE
 target_link_libraries (AllSearchTypeTest muleunit mulecommon ec)
 
 # Where amule/amuled look for amuleweb and amuleapi before falling back to PATH.
+# Only http and https URLs reach the downloader.
+add_executable (HttpUrlTest HttpUrlTest.cpp)
+add_test (NAME HttpUrlTest COMMAND HttpUrlTest)
+target_include_directories (HttpUrlTest PRIVATE
+	${CMAKE_BINARY_DIR}
+	${CMAKE_SOURCE_DIR}/src
+	${CMAKE_SOURCE_DIR}/src/include
+)
+target_link_libraries (HttpUrlTest muleunit mulecommon wxWidgets::BASE)
+
 add_executable (HelperBinaryPathTest HelperBinaryPathTest.cpp)
 add_test (NAME HelperBinaryPathTest COMMAND HelperBinaryPathTest)
 target_include_directories (HelperBinaryPathTest PRIVATE
