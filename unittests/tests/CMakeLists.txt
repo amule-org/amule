@@ -1981,6 +1981,28 @@ target_link_libraries (ECCryptTest
 	CRYPTOPP::CRYPTOPP
 )
 
+# GHSA-6qxf: a received tag's length has to match its type, and string data always ends in a
+# NUL. Packets are written by hand, since CECTag cannot build a mismatched tag.
+add_executable (ECTagLengthTest
+	ECTagLengthTest.cpp
+	# As for ECSocketFlagsTest: libec.a needs the no-op DoECLogLine / theLogger in Debug.
+	${CMAKE_SOURCE_DIR}/src/LoggerConsole.cpp
+)
+add_test (NAME ECTagLengthTest COMMAND ECTagLengthTest)
+target_include_directories (ECTagLengthTest
+	PRIVATE ${CMAKE_BINARY_DIR}
+	PRIVATE ${CMAKE_SOURCE_DIR}/src
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/libs
+	PRIVATE ${CMAKE_BINARY_DIR}/src/libs
+	PRIVATE ${CMAKE_BINARY_DIR}/src/libs/ec/cpp
+)
+target_link_libraries (ECTagLengthTest
+	muleunit
+	ec
+	mulecommon
+)
+
 add_executable (SharedFilesReloadLatchTest
 	SharedFilesReloadLatchTest.cpp
 )
@@ -2901,6 +2923,11 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 		set_tests_properties (KadDistributionECTest PROPERTIES LABELS "integration")
 		add_test (NAME KadPopulatedDistributionECTest COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/KadDistributionECTest.py $<TARGET_FILE:amuled> --populated)
 		set_tests_properties (KadPopulatedDistributionECTest PROPERTIES SKIP_RETURN_CODE 77 LABELS "integration")
+		add_test (NAME ECAeadTagTypeIntegrationTest
+			COMMAND ${Python3_EXECUTABLE}
+				${CMAKE_CURRENT_SOURCE_DIR}/ECAeadTagTypeIntegrationTest.py $<TARGET_FILE:amuled>
+		)
+		set_tests_properties (ECAeadTagTypeIntegrationTest PROPERTIES LABELS "integration")
 		target_compile_definitions (amuled PRIVATE AMULE_API_RESTART_TEST_HOOK)
 		add_test (NAME AmuleApiRestartIntegrationTest
 			COMMAND ${Python3_EXECUTABLE}

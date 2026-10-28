@@ -662,14 +662,22 @@ void CECServerSocket::NegotiateAEAD(const CECPacket *request, CECPacket *respons
 		// A client that predates this, or one told not to offer it.
 		return;
 	}
+	// GetTagData() asserts on a tag that is not raw bytes, and a peer must not be able to trip
+	// that before login. A mistyped offer or nonce is ignored, like a missing one.
+	if (!offer->IsCustom() || !clientNonceTag->IsCustom()) {
+		AddDebugLogLineN(logEC, "AEAD: offer or nonce has the wrong tag type, ignoring the offer");
+		return;
+	}
 	if (clientNonceTag->GetTagDataLen() != ECCrypt::NONCE_TAG_LEN) {
 		AddDebugLogLineN(logEC, "AEAD: client nonce has the wrong size, ignoring the offer");
 		return;
 	}
-	if (clientPubTag == nullptr || clientPubTag->GetTagDataLen() != ECCrypt::X25519_KEY_LEN) {
+	if (clientPubTag == nullptr || !clientPubTag->IsCustom() ||
+		clientPubTag->GetTagDataLen() != ECCrypt::X25519_KEY_LEN) {
 		// Not an older client -- encryption has never shipped, so anything that offers
 		// it at all is new enough to send a key. A keyless offer is therefore malformed,
 		// or a middlebox stripped the key, and the login is refused rather than degraded.
+		// A mistyped key counts as missing, or retyping it would get around that.
 		m_aeadOfferMalformed = true;
 		AddDebugLogLineN(logEC, "AEAD: offer without a usable public key, refusing the login");
 		return;

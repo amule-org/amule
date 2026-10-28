@@ -274,6 +274,11 @@ that negotiated no cipher is refused at authentication time.
 | `9`       | `EC_TAGTYPE_HASH16`   | 16-byte hash, such as an MD4 file hash. |
 | `10`      | `EC_TAGTYPE_UINT128`  | 16-byte integer, such as a Kad ID. |
 
+A tag of a fixed-size type must carry exactly that many data bytes. A
+receiver closes the connection when it does not, for example on an
+`EC_TAGTYPE_UINT64` tag with 4 data bytes. A tag with no data is an
+empty tag, which any type may be.
+
 ### Integer types
 
 Integer types (`uint8`, `uint16`, `uint32`, …) are always transmitted

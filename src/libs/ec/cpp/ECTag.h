@@ -246,7 +246,12 @@ private:
 	ec_tagtype_t m_dataType;
 	ec_taglen_t m_dataLen;
 	char *m_tagData;
-	void NewData() { m_tagData = new char[m_dataLen]; }
+	// One spare NUL, so string and double data read from a socket always ends.
+	void NewData()
+	{
+		m_tagData = new char[m_dataLen + 1];
+		m_tagData[m_dataLen] = 0;
+	}
 
 	typedef std::list<CECTag> TagList;
 	TagList m_tagList;

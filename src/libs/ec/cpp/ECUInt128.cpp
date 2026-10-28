@@ -51,18 +51,11 @@ void CECTag::AddTag(ec_tagname_t name, const CUInt128 &data, CValueMap *valuemap
 
 CUInt128 CECTag::GetInt128Data() const
 {
-	if (m_dataType != EC_TAGTYPE_UINT128) {
-		EC_ASSERT(m_dataType == EC_TAGTYPE_UNKNOWN);
+	if (m_dataType != EC_TAGTYPE_UINT128 || m_tagData == nullptr) {
 		return CUInt128(false);
 	}
 
-	EC_ASSERT(m_tagData != NULL);
-
-	if (m_tagData) {
-		return CUInt128(reinterpret_cast<const uint8_t *>(m_tagData));
-	} else {
-		return CUInt128(false);
-	}
+	return CUInt128(reinterpret_cast<const uint8_t *>(m_tagData));
 }
 
 CUInt128 CECTag::AssignIfExist(ec_tagname_t tagname, CUInt128 *target) const
