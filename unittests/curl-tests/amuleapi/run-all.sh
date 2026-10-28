@@ -295,6 +295,7 @@ PHASES=(
 	45-all-search.sh
 	46-sse-session-end.sh
 	47-shared-delete.sh
+	48-cross-origin-writes.sh
 	99-peer-fixture-teardown.sh
 )
 

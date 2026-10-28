@@ -8,7 +8,7 @@ The API is versioned in the path. **`/api/v1/` is frozen**: anything that could 
 
 **Cross-cutting concerns**
 - [Base URL and transport](#base-url-and-transport)
-- [Authentication](#authentication) — [Login response shape](#login-response-shape), [Role model](#role-model), [Rate limiting](#rate-limiting), [JWT structure](#jwt-structure)
+- [Authentication](#authentication) — [Cross-origin writes](#cross-origin-writes), [Login response shape](#login-response-shape), [Role model](#role-model), [Rate limiting](#rate-limiting), [JWT structure](#jwt-structure)
 - [Response model](#response-model) — [Success envelope](#success-envelope), [Mutation responses](#mutation-responses), [Idempotency](#idempotency), [IP addresses](#ip-addresses), [List pagination and sorting](#list-pagination-and-sorting), [Bulk mutations and the `results` envelope](#bulk-mutations-and-the-results-envelope), [Error envelope](#error-envelope), [ETag and conditional GET](#etag-and-conditional-get), [CORS](#cors), [Path validation](#path-validation), [Request size limits](#request-size-limits)
 - [Naming rules](#naming-rules) — the conventions every path, parameter and key follows, and why rates are spelled out
 - [Error code catalog](#error-code-catalog)
@@ -144,6 +144,17 @@ Two carriers, one token. amuleapi mints HS256 JWTs at `/auth/login` and accepts 
 - An HttpOnly session cookie named `amuleapi_token` (browser clients).
 
 If both arrive on the same request, the bearer header wins. The cookie attributes are `HttpOnly; SameSite=Strict; Path=/api/v1`, with the path prefixed by [`BasePath`](#base-url-and-transport) when one is set. Cookie lifetime tracks the JWT's `exp` claim (`Max-Age = expires_at - now`).
+
+### Cross-origin writes
+
+`SameSite=Strict` does not stop a page on another port of the same host: the browser treats it as the same site and sends the cookie. So a `POST`, `PUT`, `PATCH` or `DELETE` without a bearer token gets `403 forbidden` when the browser marks it as cross-origin:
+
+- `Sec-Fetch-Site` is present and is neither `same-origin` nor `none`, or
+- without `Sec-Fetch-Site`, `Origin` names a host other than `Host` or the first `X-Forwarded-Host` entry.
+
+An origin in [`CorsOriginAllowlist`](#cors) is always accepted. Requests with a bearer token, and requests with neither header (curl, scripts), are not affected.
+
+The `Origin` fallback only matters for browsers that do not send `Sec-Fetch-Site`, such as Safari before 16.4. Behind a reverse proxy that rewrites `Host`, as nginx does by default, have the proxy set `X-Forwarded-Host` to the original host. Otherwise those browsers get `403` on their own writes.
 
 ### Login response shape
 
@@ -441,6 +452,7 @@ If `amuleapi.conf[Server]/AllowCORS=1`:
 - Every response carries `Vary: Origin`.
 - The origin is echoed in `Access-Control-Allow-Origin` if either the allowlist is empty (any-origin echo) or the request's `Origin` header matches a configured entry.
 - **`Access-Control-Allow-Credentials: true` is sent only for an origin the allowlist names.** With an empty allowlist the echo is `*`-equivalent, and granting credentials there would let any site the user happens to visit call this API with their session cookie and read the replies, which is what the same-origin policy exists to prevent. Anonymous cross-origin reads still work with an empty allowlist; a **credentialed** cross-origin client needs its origin listed in `amuleapi.conf[Server]/CorsOriginAllowlist`: a comma-separated list, entries trimmed, matched by exact string equality against the request's `Origin` header. An origin is a scheme, host and port (`https://app.example.com`, or `http://localhost:5173` in development) with no path and no wildcards, so `https://example.com` does not cover `https://www.example.com` and the two ports of the same host are two entries.
+- A cookie-authenticated write from an origin not in the allowlist is refused, see [Cross-origin writes](#cross-origin-writes).
 - Allowed responses carry `Access-Control-Expose-Headers: ETag, Allow, Retry-After` so clients can read the validator, the supported-method list from a `405`, and the back-off hint from a `429` or `503`, from JS.
 - Preflight (`OPTIONS` with `Access-Control-Request-Method`) returns `204` with `Access-Control-Allow-Methods: GET, HEAD, POST, PUT, PATCH, DELETE, OPTIONS`, `Access-Control-Allow-Headers: Authorization, Content-Type, If-None-Match, Last-Event-ID`, and `Access-Control-Max-Age: 86400`.
 

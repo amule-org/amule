@@ -124,4 +124,60 @@ std::string ExtractCookieValue(const std::string &cookie_header, const std::stri
 	return std::string(v.first, v.second);
 }
 
+namespace
+{
+
+bool EqualsNoCase(const std::string &a, const std::string &b)
+{
+	return a.size() == b.size() && strncasecmp(a.c_str(), b.c_str(), a.size()) == 0;
+}
+
+// "scheme://host[:port]" -> "host[:port]"; empty for "null" or anything else.
+std::string OriginAuthority(const std::string &origin)
+{
+	const std::string::size_type sep = origin.find("://");
+	return sep == std::string::npos ? std::string() : origin.substr(sep + 3);
+}
+
+// A proxy may list several hosts; the first is the one the client asked for.
+std::string FirstListEntry(const std::string &list)
+{
+	const std::string first = list.substr(0, list.find(','));
+	const std::string::size_type b = first.find_first_not_of(" \t");
+	if (b == std::string::npos) {
+		return std::string();
+	}
+	return first.substr(b, first.find_last_not_of(" \t") - b + 1);
+}
+
+} // namespace
+
+bool IsCrossOriginBrowserWrite(const std::string &method,
+	const std::string &sec_fetch_site,
+	const std::string &origin,
+	bool origin_allowlisted,
+	const std::string &host,
+	const std::string &forwarded_host)
+{
+	if (method != "POST" && method != "PUT" && method != "PATCH" && method != "DELETE") {
+		return false;
+	}
+	if (origin_allowlisted) {
+		return false;
+	}
+	if (!sec_fetch_site.empty()) {
+		// "none" is a request the user started, such as a bookmark.
+		return !EqualsNoCase(sec_fetch_site, "same-origin") && !EqualsNoCase(sec_fetch_site, "none");
+	}
+	if (origin.empty()) {
+		return false;
+	}
+	const std::string authority = OriginAuthority(origin);
+	if (authority.empty()) {
+		return true;
+	}
+	const std::string forwarded = FirstListEntry(forwarded_host);
+	return !EqualsNoCase(authority, host) && (forwarded.empty() || !EqualsNoCase(authority, forwarded));
+}
+
 } // namespace webapi

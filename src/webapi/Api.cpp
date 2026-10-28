@@ -744,6 +744,20 @@ CHttpServer::Response CApiDispatcher::Dispatch(const CHttpServer::Request &req)
 		return pre;
 	}
 
+	// A browser attaches the session cookie by itself, never a bearer token, so only
+	// requests without one can be forged from another origin.
+	if (webapi::ExtractBearerToken(FindHeaderCaseInsensitive(req.headers, "Authorization")).empty() &&
+		webapi::IsCrossOriginBrowserWrite(req.method,
+			FindHeaderCaseInsensitive(req.headers, "Sec-Fetch-Site"),
+			FindHeaderCaseInsensitive(req.headers, "Origin"),
+			cors_org.allowlisted,
+			FindHeaderCaseInsensitive(req.headers, "Host"),
+			FindHeaderCaseInsensitive(req.headers, "X-Forwarded-Host"))) {
+		CHttpServer::Response r = ErrorResponse(403, "forbidden", "cross-origin request refused");
+		ApplyCorsHeaders(r.headers, cors_org, cors_enabled);
+		return r;
+	}
+
 	// ETag + If-None-Match -> 304, on GET/HEAD 200 only: a mutation's response carries
 	// post-mutation state the client always wants delivered.
 	//

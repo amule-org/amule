@@ -266,3 +266,67 @@ TEST(Auth, ExtractCookieValue_MissingReturnsEmpty)
 	ASSERT_TRUE(ExtractCookieValue("foo=1; bar=2", "amuleapi_token").empty());
 	ASSERT_TRUE(ExtractCookieValue("", "amuleapi_token").empty());
 }
+
+// ---------- IsCrossOriginBrowserWrite (GHSA-vj9g) ----------------
+
+namespace
+{
+
+bool Refused(const std::string &method,
+	const std::string &fetchSite,
+	const std::string &origin,
+	bool allowlisted = false,
+	const std::string &forwardedHost = "")
+{
+	return IsCrossOriginBrowserWrite(
+		method, fetchSite, origin, allowlisted, "127.0.0.1:4713", forwardedHost);
+}
+
+} // namespace
+
+// The report's case: a page on another port of the same host.
+TEST(Auth, CrossOrigin_SameSitePageOnAnotherPortIsRefused)
+{
+	ASSERT_TRUE(Refused("POST", "same-site", "http://127.0.0.1:4711"));
+	ASSERT_TRUE(Refused("DELETE", "cross-site", "https://evil.example"));
+}
+
+TEST(Auth, CrossOrigin_OwnWebUiIsAllowed)
+{
+	ASSERT_FALSE(Refused("POST", "same-origin", "http://127.0.0.1:4713"));
+	ASSERT_FALSE(Refused("PATCH", "same-origin", ""));
+	ASSERT_FALSE(Refused("POST", "none", ""));
+}
+
+TEST(Auth, CrossOrigin_ReadsAreNeverRefused)
+{
+	ASSERT_FALSE(Refused("GET", "cross-site", "https://evil.example"));
+	ASSERT_FALSE(Refused("HEAD", "same-site", "http://127.0.0.1:4711"));
+}
+
+// curl, scripts and other programs send neither header.
+TEST(Auth, CrossOrigin_NonBrowserClientIsAllowed)
+{
+	ASSERT_FALSE(Refused("POST", "", ""));
+}
+
+TEST(Auth, CrossOrigin_AllowlistedOriginIsAllowed)
+{
+	ASSERT_FALSE(Refused("POST", "same-site", "http://127.0.0.1:5173", true));
+}
+
+// A browser without Sec-Fetch-Site still sends Origin on a POST.
+TEST(Auth, CrossOrigin_OriginAloneIsComparedWithTheHost)
+{
+	ASSERT_FALSE(Refused("POST", "", "http://127.0.0.1:4713"));
+	ASSERT_FALSE(Refused("POST", "", "HTTP://127.0.0.1:4713"));
+	ASSERT_TRUE(Refused("POST", "", "http://127.0.0.1:4711"));
+	ASSERT_TRUE(Refused("POST", "", "null"));
+}
+
+// Behind a proxy that rewrites Host, the client's host arrives in X-Forwarded-Host.
+TEST(Auth, CrossOrigin_ForwardedHostCountsAsOwnOrigin)
+{
+	ASSERT_FALSE(Refused("POST", "", "https://mule.example", false, "mule.example, 10.0.0.2"));
+	ASSERT_TRUE(Refused("POST", "", "https://evil.example", false, "mule.example"));
+}

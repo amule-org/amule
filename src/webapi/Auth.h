@@ -84,6 +84,17 @@ std::string ExtractBearerToken(const std::string &authorization_header);
 // empty string on miss.
 std::string ExtractCookieValue(const std::string &cookie_header, const std::string &cookie_name);
 
+// Did a browser send this write from another origin? SameSite=Strict does not stop a page on
+// another port of the same host from making the browser send the session cookie. Origin and
+// Sec-Fetch-Site are set by the browser, so a request with neither does not come from a page.
+// `host` and `forwarded_host` are the Host and X-Forwarded-Host headers.
+bool IsCrossOriginBrowserWrite(const std::string &method,
+	const std::string &sec_fetch_site,
+	const std::string &origin,
+	bool origin_allowlisted,
+	const std::string &host,
+	const std::string &forwarded_host);
+
 } // namespace webapi
 
 #endif // WEBAPI_AUTH_H

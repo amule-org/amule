@@ -177,9 +177,14 @@ server {
     location / {
         proxy_pass http://127.0.0.1:4713;
         proxy_http_version 1.1;
+        proxy_set_header X-Forwarded-Host $http_host;
     }
 }
 ```
+
+nginx sends amuleapi its own address as `Host`, so `X-Forwarded-Host` passes the
+name the browser used. amuleapi needs it to recognise a browser's own writes
+when the browser does not send `Sec-Fetch-Site`.
 
 `certbot --nginx` will get you those two certificate files.
 
@@ -217,6 +222,7 @@ With nginx, inside your existing `server` block:
 location /amule/ {
     proxy_pass http://127.0.0.1:4713;
     proxy_http_version 1.1;
+    proxy_set_header X-Forwarded-Host $http_host;
 }
 ```
 
