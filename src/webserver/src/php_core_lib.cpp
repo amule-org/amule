@@ -744,6 +744,7 @@ CPhpFilter::CPhpFilter(CWebServerBase *server, CSession *sess, const char *file,
 		CPhPLibContext *context = new CPhPLibContext(server, scan_ptr, len);
 
 #ifndef PHP_STANDALONE_EN
+		context->SetAdmin(sess->m_admin);
 		load_session_vars("HTTP_GET_VARS", sess->m_get_vars);
 		load_session_vars("_SESSION", sess->m_vars);
 #endif

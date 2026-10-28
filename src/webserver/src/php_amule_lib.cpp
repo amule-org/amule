@@ -39,8 +39,22 @@
 
 /* Built-in php functions: amule-specific, accessing EC and internal data structures. */
 
+// Templates check guest_login as well; checking here keeps a template that forgets from granting
+// a guest write access.
+static bool AllowWrite(const char *func)
+{
+	if (CPhPLibContext::g_curr_context->IsAdmin()) {
+		return true;
+	}
+	php_report_error(PHP_WARNING, "%s refused for a guest session", func);
+	return false;
+}
+
 void php_native_shared_file_cmd(PHP_VALUE_NODE *)
 {
+	if (!AllowWrite("amule_do_shared_cmd")) {
+		return;
+	}
 	PHP_SCOPE_ITEM *si = get_scope_item(g_current_scope, "__param_0");
 	if (!si || (si->var->value.type != PHP_VAL_STRING)) {
 		php_report_error(PHP_ERROR, "Invalid or missing argument 1");
@@ -69,12 +83,18 @@ void php_native_shared_file_cmd(PHP_VALUE_NODE *)
 
 void php_native_reload_shared_file_cmd(PHP_VALUE_NODE *)
 {
+	if (!AllowWrite("amule_do_reload_shared_cmd")) {
+		return;
+	}
 	CPhPLibContext::g_curr_context->WebServer()->Send_ReloadSharedFile_Cmd();
 }
 
 /* Usage: php_native_download_file_cmd($file_hash, "command", $optional_arg) */
 void php_native_download_file_cmd(PHP_VALUE_NODE *)
 {
+	if (!AllowWrite("amule_do_download_cmd")) {
+		return;
+	}
 	PHP_SCOPE_ITEM *si = get_scope_item(g_current_scope, "__param_0");
 	if (!si || (si->var->value.type != PHP_VAL_STRING)) {
 		php_report_error(PHP_ERROR, "Invalid or missing argument 1");
@@ -104,6 +124,9 @@ void php_native_download_file_cmd(PHP_VALUE_NODE *)
 /* Usage: amule_kad_connect($bootstrap_ip, $bootstrap_port) */
 void php_native_kad_connect(PHP_VALUE_NODE *)
 {
+	if (!AllowWrite("amule_kad_connect")) {
+		return;
+	}
 	PHP_SCOPE_ITEM *si = get_scope_item(g_current_scope, "__param_0");
 	if (!si) {
 		php_report_error(PHP_ERROR, "Missing or bad argument 1: $bootstrap_ip_addr");
@@ -128,6 +151,9 @@ void php_native_kad_connect(PHP_VALUE_NODE *)
 
 void php_native_kad_disconnect(PHP_VALUE_NODE *)
 {
+	if (!AllowWrite("amule_kad_disconnect")) {
+		return;
+	}
 	CECPacket req(EC_OP_KAD_STOP);
 	CPhPLibContext::g_curr_context->WebServer()->Send_Discard_V2_Request(&req);
 }
@@ -136,6 +162,9 @@ void php_native_kad_disconnect(PHP_VALUE_NODE *)
  * EC_OP_KAD_START. */
 void php_native_kad_start(PHP_VALUE_NODE *)
 {
+	if (!AllowWrite("amule_kad_start")) {
+		return;
+	}
 	CECPacket req(EC_OP_KAD_START);
 	CPhPLibContext::g_curr_context->WebServer()->Send_Discard_V2_Request(&req);
 }
@@ -147,6 +176,9 @@ void php_native_kad_start(PHP_VALUE_NODE *)
  */
 void php_native_kad_update_from_url(PHP_VALUE_NODE *)
 {
+	if (!AllowWrite("amule_kad_update_from_url")) {
+		return;
+	}
 	PHP_SCOPE_ITEM *si = get_scope_item(g_current_scope, "__param_0");
 	if (!si || (si->var->value.type != PHP_VAL_STRING)) {
 		php_report_error(PHP_ERROR, "Missing or bad argument 1: $url");
@@ -168,6 +200,9 @@ void php_native_kad_update_from_url(PHP_VALUE_NODE *)
  */
 void php_native_server_disconnect(PHP_VALUE_NODE *)
 {
+	if (!AllowWrite("amule_server_disconnect")) {
+		return;
+	}
 	CECPacket req(EC_OP_SERVER_DISCONNECT);
 	CPhPLibContext::g_curr_context->WebServer()->Send_Discard_V2_Request(&req);
 }
@@ -175,6 +210,9 @@ void php_native_server_disconnect(PHP_VALUE_NODE *)
 /* Usage: amule_add_server_cmd($server_addr, $server_port, $server_name) */
 void php_native_add_server_cmd(PHP_VALUE_NODE *)
 {
+	if (!AllowWrite("amule_do_add_server_cmd")) {
+		return;
+	}
 	PHP_SCOPE_ITEM *si = get_scope_item(g_current_scope, "__param_0");
 	if (!si || (si->var->value.type != PHP_VAL_STRING)) {
 		php_report_error(PHP_ERROR, "Missing or bad argument 1: $server_addr");
@@ -204,6 +242,9 @@ void php_native_add_server_cmd(PHP_VALUE_NODE *)
 /* Usage: amule_server_cmd($server_ip, $server_port, "command") */
 void php_native_server_cmd(PHP_VALUE_NODE *)
 {
+	if (!AllowWrite("amule_do_server_cmd")) {
+		return;
+	}
 	PHP_SCOPE_ITEM *si = get_scope_item(g_current_scope, "__param_0");
 	if (!si) {
 		php_report_error(PHP_ERROR, "Missing argument 1: $server_ip");
@@ -499,6 +540,9 @@ bool php_2_ec_tag(CECTag *cattag, PHP_2_EC_OPT_DEF *opts, PHP_VALUE_NODE *catvar
 /* Set amule options from the given array, shaped like an amule_get_options result. */
 void php_set_amule_options(PHP_VALUE_NODE *)
 {
+	if (!AllowWrite("amule_set_options")) {
+		return;
+	}
 	PHP_SCOPE_ITEM *si = get_scope_item(g_current_scope, "__param_0");
 	if (!si || (si->var->value.type != PHP_VAL_ARRAY)) {
 		php_report_error(PHP_ERROR, "Invalid or missing argument 1 (options array)");
@@ -553,6 +597,9 @@ void php_set_amule_options(PHP_VALUE_NODE *)
 /* Download one of the search results. Params: hash, category (default 0). */
 void php_native_search_download_cmd(PHP_VALUE_NODE *)
 {
+	if (!AllowWrite("amule_do_search_download_cmd")) {
+		return;
+	}
 	PHP_SCOPE_ITEM *si = get_scope_item(g_current_scope, "__param_0");
 	if (!si || (si->var->value.type != PHP_VAL_STRING)) {
 		php_report_error(PHP_ERROR, "Invalid or missing argument 1 (file hash)");
@@ -574,6 +621,9 @@ void php_native_search_download_cmd(PHP_VALUE_NODE *)
 
 void php_native_search_start_cmd(PHP_VALUE_NODE *)
 {
+	if (!AllowWrite("amule_do_search_start_cmd")) {
+		return;
+	}
 	PHP_SCOPE_ITEM *si = get_scope_item(g_current_scope, "__param_0");
 	if (!si || (si->var->value.type != PHP_VAL_STRING)) {
 		php_report_error(PHP_ERROR, "Invalid or missing argument 1 (search term)");
@@ -658,7 +708,7 @@ void php_get_log(PHP_VALUE_NODE *result)
 		cast_value_dnum(&si->var->value);
 		rst = si->var->value.int_val != 0;
 	}
-	if (rst) {
+	if (rst && AllowWrite("amule_get_log reset")) {
 		CECPacket req(EC_OP_RESET_LOG);
 		CPhPLibContext::g_curr_context->WebServer()->Send_Discard_V2_Request(&req);
 	}
@@ -687,7 +737,7 @@ void php_get_serverinfo(PHP_VALUE_NODE *result)
 		rst = si->var->value.int_val != 0;
 	}
 
-	if (rst) {
+	if (rst && AllowWrite("amule_get_serverinfo reset")) {
 		CECPacket req(EC_OP_CLEAR_SERVERINFO);
 		CPhPLibContext::g_curr_context->WebServer()->Send_Discard_V2_Request(&req);
 	}
@@ -705,6 +755,9 @@ void php_get_serverinfo(PHP_VALUE_NODE *result)
 /* Download an ed2k link. Params: link, category (default 0). */
 void php_native_ed2k_download_cmd(PHP_VALUE_NODE *result)
 {
+	if (!AllowWrite("amule_do_ed2k_download_cmd")) {
+		return;
+	}
 	PHP_SCOPE_ITEM *si = get_scope_item(g_current_scope, "__param_0");
 	if (!si || (si->var->value.type != PHP_VAL_STRING)) {
 		php_report_error(PHP_ERROR, "Invalid or missing argument 1 (file link)");

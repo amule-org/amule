@@ -1938,12 +1938,13 @@ void CScriptWebServer::ProcessURL(ThreadData Data)
 		} else {
 			PwStr = Data.parsedURL.Param("pass");
 		}
-		if (webInterface->m_AdminPass.IsEmpty() && webInterface->m_GuestPass.IsEmpty()) {
+		if (webInterface->m_AdminPass.IsEmpty() && !webInterface->GuestLoginEnabled()) {
 			session->m_vars["login_error"] = "No password specified, login will not be allowed.";
 			Print(_("No password specified, login will not be allowed."));
 		} else if (PwStr.Length()) {
 			Print(_("Checking password\n"));
 			session->m_logged_in = false;
+			session->m_admin = false;
 
 			CMD4Hash PwHash;
 			if (!PwHash.Decode(MD5Sum(PwStr).GetHash())) {
@@ -1952,9 +1953,10 @@ void CScriptWebServer::ProcessURL(ThreadData Data)
 								 "https://github.com/amule-org/amule/issues";
 			} else if (PwHash == webInterface->m_AdminPass) {
 				session->m_logged_in = true;
+				session->m_admin = true;
 				// m_vars is map<string, string> - so _() will not work here !
 				session->m_vars["guest_login"] = "0";
-			} else if (PwHash == webInterface->m_GuestPass) {
+			} else if (PwHash == webInterface->m_GuestPass && webInterface->GuestLoginEnabled()) {
 				session->m_logged_in = true;
 				session->m_vars["guest_login"] = "1";
 			} else {
@@ -1975,6 +1977,7 @@ void CScriptWebServer::ProcessURL(ThreadData Data)
 		if (filename == "login.php") {
 			Print(_("Logout requested\n"));
 			session->m_logged_in = false;
+			session->m_admin = false;
 		}
 	}
 

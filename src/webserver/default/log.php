@@ -24,10 +24,13 @@ body {
 <body>
 <pre>
 <?php
+	$is_admin = ($_SESSION["guest_login"] == 0);
+	$rstsrv = $is_admin ? $HTTP_GET_VARS['rstsrv'] : 0;
+	$rstlog = $is_admin ? $HTTP_GET_VARS['rstlog'] : 0;
 	if ("srv" == $HTTP_GET_VARS['show'] || 1 == $HTTP_GET_VARS['rstsrv']) {
-		echo htmlspecialchars(amule_get_serverinfo($HTTP_GET_VARS['rstsrv']));
+		echo htmlspecialchars(amule_get_serverinfo($rstsrv));
 	 }else {
-		echo htmlspecialchars(amule_get_log($HTTP_GET_VARS['rstlog']));
+		echo htmlspecialchars(amule_get_log($rstlog));
 	}
 ?>
 </pre>

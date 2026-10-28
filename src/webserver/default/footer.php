@@ -16,7 +16,7 @@
         <select name="selectcat" id="selectcat">
         <?php
 		$cats = amule_get_categories();
-		if ( $HTTP_GET_VARS["Submit"] != "" ) {
+		if ( ($HTTP_GET_VARS["Submit"] != "") && ($_SESSION["guest_login"] == 0) ) {
 			$link = $HTTP_GET_VARS["ed2klink"];
 			$target_cat = $HTTP_GET_VARS["selectcat"];
 			$target_cat_idx = 0;

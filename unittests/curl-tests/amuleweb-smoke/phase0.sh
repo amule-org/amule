@@ -16,6 +16,8 @@
 #   HOST=localhost:4711       amuleweb endpoint
 #   PASS=x                    amuleweb full-access password (matches
 #                             amuleweb's `--admin-pass` / remote.conf)
+#   GUEST_PASS=               guest password; set it to run the guest checks
+#   GUEST_DENIED=0            1 when amuleweb runs with --deny-guest
 #
 # Exits 0 on success, 1 on any failed assertion, 2 on bring-up error.
 
@@ -31,7 +33,8 @@ TEST_COUNT=0
 CURL_BODY_FILE=$(mktemp -t amuleweb_smoke_body.XXXXXX)
 CURL_HEADERS_FILE=$(mktemp -t amuleweb_smoke_headers.XXXXXX)
 COOKIE_JAR=$(mktemp -t amuleweb_smoke_cookies.XXXXXX)
-trap 'rm -f "$CURL_BODY_FILE" "$CURL_HEADERS_FILE" "$COOKIE_JAR"' EXIT
+GUEST_JAR=$(mktemp -t amuleweb_smoke_guest.XXXXXX)
+trap 'rm -f "$CURL_BODY_FILE" "$CURL_HEADERS_FILE" "$COOKIE_JAR" "$GUEST_JAR"' EXIT
 
 _die()  { echo "FATAL: $*" >&2; exit 2; }
 _pass() { TEST_COUNT=$((TEST_COUNT+1)); echo "  PASS  $1"; }
@@ -69,6 +72,15 @@ _assert_body_contains() {
 	else
 		_fail "$label" "needle '$needle' not found" \
 			"body head: $(printf '%s' "$CURL_BODY" | head -c 200)"
+	fi
+}
+
+_assert_body_not_contains() {
+	local needle=$1 label=$2
+	if printf '%s' "$CURL_BODY" | grep -q -- "$needle"; then
+		_fail "$label" "needle '$needle' unexpectedly found"
+	else
+		_pass "$label"
 	fi
 }
 
@@ -119,6 +131,36 @@ fi
 _curl "$HOST/amuleweb-main-dload.php"
 _assert_status 200 "GET /amuleweb-main-dload.php post-login"
 _assert_body_contains '<table' "/amuleweb-main-dload.php renders a table"
+
+# 5. Guest role, only when GUEST_PASS is set. A guest is read-only, so
+#    footer.php must not queue its ed2k link; the admin session then
+#    queues the same link as a control and cancels it again. With
+#    GUEST_DENIED=1 the guest password must not log in at all.
+if [ -n "${GUEST_PASS:-}" ]; then
+	ADMIN_JAR=$COOKIE_JAR
+	COOKIE_JAR=$GUEST_JAR
+	_curl -X POST -d "pass=$GUEST_PASS" "$HOST/login.php"
+	if [ "${GUEST_DENIED:-0}" = 1 ]; then
+		_assert_body_contains 'name="pass"' "guest login refused while guest access is denied"
+		COOKIE_JAR=$ADMIN_JAR
+	else
+		_assert_body_not_contains 'name="pass"' "guest login accepted"
+		GUEST_HASH=0123456789ABCDEF0123456789ABCDEF
+		GUEST_FILE=amuleweb-guest-smoke.bin
+		LINK="ed2k%3A%2F%2F%7Cfile%7C$GUEST_FILE%7C1048576%7C$GUEST_HASH%7C%2F"
+		_curl "$HOST/footer.php?Submit=Download+link&selectcat=all&ed2klink=$LINK"
+		_assert_status 200 "guest GET /footer.php with an ed2k link"
+		COOKIE_JAR=$ADMIN_JAR
+		sleep 1
+		_curl "$HOST/amuleweb-main-dload.php"
+		_assert_body_not_contains "$GUEST_FILE" "guest footer.php did not add a download"
+		_curl "$HOST/footer.php?Submit=Download+link&selectcat=all&ed2klink=$LINK"
+		sleep 1
+		_curl "$HOST/amuleweb-main-dload.php"
+		_assert_body_contains "$GUEST_FILE" "admin footer.php adds the same download"
+		_curl "$HOST/amuleweb-main-dload.php?command=cancel&$GUEST_HASH=on"
+	fi
+fi
 
 # Summary.
 echo

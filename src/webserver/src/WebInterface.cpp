@@ -392,6 +392,11 @@ const wxString CamulewebApp::GetGreetingTitle()
 
 void CamulewebApp::Pre_Shell()
 {
+	if (!m_AllowGuest && !m_GuestPass.IsEmpty()) {
+		Show(wxT("NOTE: a guest password is set, but guest access is disabled. Guest logins\n"
+			 "      are refused; use --allow-guest to enable them.\n\n"));
+	}
+
 	// Creating the web server
 	if (m_TemplateOk) {
 		m_webserver = new CScriptWebServer(this, m_TemplateDir);

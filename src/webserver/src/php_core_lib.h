@@ -63,6 +63,7 @@ class CPhPLibContext
 	CWriteStrBuffer *m_curr_str_buffer;
 
 	CWebServerBase *m_server;
+	bool m_admin = false;
 
 public:
 	// parse file and take a "snapshot" of global vars
@@ -85,6 +86,8 @@ public:
 
 #ifndef PHP_STANDALONE_EN
 	CWebServerBase *WebServer() { return m_server; }
+	void SetAdmin(bool admin) { m_admin = admin; }
+	bool IsAdmin() const { return m_admin; }
 #endif
 };
 

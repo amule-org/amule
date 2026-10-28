@@ -817,6 +817,8 @@ class CSession
 {
 public:
 	bool m_logged_in;
+	// Set only by an admin login. Unlike $_SESSION["guest_login"], PHP code cannot change it.
+	bool m_admin = false;
 	time_t m_last_access;
 	std::map<std::string, std::string> m_vars, m_get_vars;
 

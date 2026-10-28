@@ -59,6 +59,7 @@ public:
 	bool m_UseGzip;
 	CMD4Hash m_AdminPass, m_GuestPass;
 	bool m_AllowGuest;
+	bool GuestLoginEnabled() const { return m_AllowGuest && !m_GuestPass.IsEmpty(); }
 
 	long m_WebserverPort;
 	bool m_UPnPWebServerEnabled;
