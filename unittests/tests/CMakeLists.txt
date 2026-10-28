@@ -3180,7 +3180,8 @@ if (TARGET wxWidgets::CORE)
 		${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/libs)
 	target_link_libraries (DialogLayoutTest PRIVATE wxWidgets::CORE mulecommon)
 	add_test (NAME DialogLayoutTest COMMAND DialogLayoutTest)
-	set_tests_properties (DialogLayoutTest PROPERTIES SKIP_RETURN_CODE 77)
+	# 60 s lane. It shows a dozen real dialogs; macOS runners take 2-8 s and once passed 10 s.
+	set_tests_properties (DialogLayoutTest PROPERTIES SKIP_RETURN_CODE 77 LABELS "slow")
 	add_executable (EditServerListDlgTest
 		EditServerListDlgTest.cpp
 		${CMAKE_SOURCE_DIR}/src/EditServerListDlg.cpp
