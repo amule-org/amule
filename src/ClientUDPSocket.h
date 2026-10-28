@@ -168,8 +168,10 @@ private:
 	 * @param frameLength  bytes available from there. Zero is a datagram that carried nothing
 	 * but the
 	 *                     protocol byte.
+	 * @param obfuscated  whether the datagram arrived under the UDP obfuscation layer.
 	 */
-	void ProcessReservedProt2Frame(const uint8_t *frame, size_t frameLength, uint32 ip, uint16 port);
+	void ProcessReservedProt2Frame(
+		const uint8_t *frame, size_t frameLength, uint32 ip, uint16 port, bool obfuscated);
 
 	//! One unknown-frame line per minute, with a suppressed count. A peer speaking a frame type
 	//! this build does not know retries, so the useful information is that it happened plus how

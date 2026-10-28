@@ -156,10 +156,17 @@ public:
 	}
 	bool IsInbound() const override { return m_inbound; }
 
+	//! True for a dialed stream once its parameters are set, and for an inbound one that opened
+	//! with an obfuscated SYN: the hello that would set them has not been read yet.
 	bool ObfuscatesStream() const override
 	{
 		std::lock_guard<std::mutex> lock(m_mutex);
-		return m_encrypt;
+		return m_encrypt || (m_inbound && m_synObfuscated);
+	}
+	void MarkSynObfuscated(bool obfuscated)
+	{
+		std::lock_guard<std::mutex> lock(m_mutex);
+		m_synObfuscated = obfuscated;
 	}
 	bool IsOk() const override
 	{
@@ -588,6 +595,7 @@ private:
 	bool m_flushInProgress = false;
 	bool m_flushAgain = false;
 	bool m_encrypt = false;
+	bool m_synObfuscated = false;
 	uint8_t m_userHash[kUserHashBytes] = { 0 };
 };
 

@@ -206,7 +206,19 @@ public:
 		uint16_t port,
 		std::uint64_t nowMs) override
 	{
+		return ProcessDatagram(payload, length, ip, port, nowMs, false);
+	}
+	bool ProcessDatagram(const uint8_t *payload,
+		size_t length,
+		uint32_t ip,
+		uint16_t port,
+		std::uint64_t nowMs,
+		bool obfuscated) override
+	{
 		m_nowMs = nowMs;
+		// OnAccept() is a bare libutp callback with no datagram argument, so the origin of the SYN
+		// it is about to admit travels here for exactly the span of this call.
+		m_datagramObfuscated = obfuscated;
 		const Endpoint observed{ ip, port };
 		Endpoint expected = observed;
 		utp_socket *remappedSocket = nullptr;
@@ -244,6 +256,7 @@ public:
 				RemovePortRemap(remappedSocket);
 			}
 		}
+		m_datagramObfuscated = false;
 		// Not inside UTP_ON_ACCEPT: utp_close() can produce DESTROYING before
 		// it returns, re-entering the callback that is still deciding.
 		// Destruction is the close, exactly once.
@@ -480,6 +493,7 @@ private:
 		raw->ApplyReceiveBound();
 		// libutp reaches CS_CONNECTED on the peer's first ST_DATA, silently.
 		raw->MarkConnected();
+		raw->MarkSynObfuscated(s_self->m_datagramObfuscated);
 
 		// Registered before admission so that this pairs with the removal in
 		// CloseSocket(), which runs for every socket that has a transport --
@@ -623,6 +637,7 @@ private:
 
 	utp_context *m_context = nullptr;
 	IUtpStreamAcceptor *m_acceptor = nullptr;
+	bool m_datagramObfuscated = false;
 	CUtpPeerRegistry m_peers;
 	// Which endpoint each socket holds, so the registry can be kept until the
 	// socket is destroyed rather than until its userdata is cleared.

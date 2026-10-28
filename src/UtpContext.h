@@ -75,6 +75,17 @@ public:
 	{
 		return ProcessDatagram(payload, length, ip, port);
 	}
+	//! @p obfuscated is whether the datagram arrived under the UDP obfuscation layer.
+	virtual bool ProcessDatagram(const uint8_t *payload,
+		size_t length,
+		uint32_t ip,
+		uint16_t port,
+		std::uint64_t nowMs,
+		bool obfuscated)
+	{
+		(void)obfuscated;
+		return ProcessDatagram(payload, length, ip, port, nowMs);
+	}
 	virtual void Tick() = 0;
 
 	// Unactivated prerequisite. Success transfers a pending stream into an
@@ -199,6 +210,17 @@ public:
 	{
 		return ProcessDatagram(payload, length, ip, port);
 	}
+	//! @p obfuscated is carried to the stream a SYN in this datagram opens.
+	virtual bool ProcessDatagram(const uint8_t *payload,
+		size_t length,
+		uint32_t ip,
+		uint16_t port,
+		std::uint64_t nowMs,
+		bool obfuscated)
+	{
+		(void)obfuscated;
+		return ProcessDatagram(payload, length, ip, port, nowMs);
+	}
 	virtual void IssueDeferredAcks() = 0;
 	virtual void CheckTimeouts() = 0;
 
@@ -274,6 +296,20 @@ public:
 			return false;
 		}
 		const bool claimed = m_library->ProcessDatagram(payload, length, ip, port, nowMs);
+		m_library->IssueDeferredAcks();
+		return claimed;
+	}
+	bool ProcessDatagram(const uint8_t *payload,
+		size_t length,
+		uint32_t ip,
+		uint16_t port,
+		std::uint64_t nowMs,
+		bool obfuscated) override
+	{
+		if (!Configure()) {
+			return false;
+		}
+		const bool claimed = m_library->ProcessDatagram(payload, length, ip, port, nowMs, obfuscated);
 		m_library->IssueDeferredAcks();
 		return claimed;
 	}
@@ -382,6 +418,17 @@ inline bool ProcessUtpFrame(IUtpContext &context,
 {
 	return frame.disposition == RP2_KNOWN_TYPE && frame.type == OP_NATT_FRAME_UTP &&
 	       context.ProcessDatagram(frame.payload, frame.payloadLength, ip, port, nowMs);
+}
+
+inline bool ProcessUtpFrame(IUtpContext &context,
+	const SReservedProt2Frame &frame,
+	uint32_t ip,
+	uint16_t port,
+	std::uint64_t nowMs,
+	bool obfuscated)
+{
+	return frame.disposition == RP2_KNOWN_TYPE && frame.type == OP_NATT_FRAME_UTP &&
+	       context.ProcessDatagram(frame.payload, frame.payloadLength, ip, port, nowMs, obfuscated);
 }
 
 // UDP sizing for libutp, accounting for the two-byte aMule envelope.

@@ -902,4 +902,37 @@ TEST(UtpSocketTransport, ObfuscationIsReportedFromTheCryptParametersItWasGiven)
 	ASSERT_FALSE(transport.ObfuscatesStream());
 }
 
+namespace
+{
+CUtpSocketTransport MakeInboundTransport(FakeOperations &ops)
+{
+	return CUtpSocketTransport(
+		ops, Handle(), CNetworkAddress::FromString("192.0.2.7"), 4662, nullptr, true);
+}
+} // namespace
+
+TEST(UtpSocketTransport, InboundStreamFromAnObfuscatedSynReportsObfuscation)
+{
+	FakeOperations ops;
+	CUtpSocketTransport transport = MakeInboundTransport(ops);
+	transport.MarkSynObfuscated(true);
+	ASSERT_TRUE(transport.ObfuscatesStream());
+}
+
+TEST(UtpSocketTransport, InboundStreamFromAPlainSynDoesNotReportObfuscation)
+{
+	FakeOperations ops;
+	CUtpSocketTransport transport = MakeInboundTransport(ops);
+	transport.MarkSynObfuscated(false);
+	ASSERT_FALSE(transport.ObfuscatesStream());
+}
+
+TEST(UtpSocketTransport, ADialedStreamIgnoresTheSynOrigin)
+{
+	FakeOperations ops;
+	CUtpSocketTransport transport = MakeTransport(ops);
+	transport.MarkSynObfuscated(true);
+	ASSERT_FALSE(transport.ObfuscatesStream());
+}
+
 // File_checked_for_headers

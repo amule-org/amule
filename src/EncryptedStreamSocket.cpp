@@ -72,6 +72,7 @@
  * sizeof(a) and sizeof(b) = 128 bits, g = 2, p = dh768_p (see below), sizeof p, s etc. = 768 bits.
  */
 #include "EncryptedStreamSocket.h"
+#include "EncryptionRequirement.h" // Needed for MustRefusePlainConnection
 #include "StreamTransport.h"
 #include "amule.h"
 #include "Logger.h"
@@ -349,20 +350,22 @@ int CEncryptedStreamSocket::Read(void *lpBuf, uint32_t nBufLen)
 			// If we require an encrypted connection, cut it here. Rare against up-to-
 			// date eMule clients, which check for incompatibility before connecting
 			// where they can.
-			if (thePrefs::IsClientCryptLayerRequired() && !TransportObfuscates()) {
+			if (thePrefs::IsClientCryptLayerRequired()) {
 				// Even with Require enabled we still have to accept the unencrypted
 				// connections used for lowid/firewall checks by servers and by
 				// clients we selected ourselves; refusing them would always result
 				// in a lowid/firewalled status. The .ini option
 				// ClientCryptLayerRequiredStrict is the only exception, ignoring
 				// even test connections.
-				uint32_t ip = GetPeerInt();
-				if (thePrefs::IsClientCryptLayerRequiredStrict() ||
-					(!theApp->serverconnect->AwaitingTestFromIP(ip) &&
-						!theApp->clientlist->IsKadFirewallCheckIP(ip))) {
+				const uint32_t ip = GetPeerInt();
+				const bool isTestConnection = theApp->serverconnect->AwaitingTestFromIP(ip) ||
+							      theApp->clientlist->IsKadFirewallCheckIP(ip);
+				if (EncryptionRequirement::MustRefusePlainConnection(true,
+					    thePrefs::IsClientCryptLayerRequiredStrict(),
+					    TransportObfuscates(),
+					    isTestConnection)) {
 					OnError(ERR_ENCRYPTION_NOTALLOWED);
 					return 0;
-				} else {
 				}
 			}
 			return m_nObfusicationBytesReceived; // buffer was unchanged, we can just pass it
