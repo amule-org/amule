@@ -226,6 +226,37 @@ wxString DescribeRejection(RejectionReason reason)
 	return {};
 }
 
+wxString QuoteUnquotedProgram(const wxString &command, const std::function<bool(const wxString &)> &isFile)
+{
+	const auto names = [&isFile](const wxString &candidate) {
+		return isFile(candidate) ||
+		       (!wxFileName(candidate, wxPATH_WIN).HasExt() && isFile(candidate + ".exe"));
+	};
+	const size_t start = command.find_first_not_of(" \t");
+	if (start == wxString::npos || command[start] == '"') {
+		return command;
+	}
+	size_t end = command.find_first_of(" \t", start);
+	if (end == wxString::npos || names(command.substr(start, end - start))) {
+		return command;
+	}
+	while (end != wxString::npos) {
+		const size_t next = command.find_first_not_of(" \t", end);
+		if (next == wxString::npos || command[next] == '"') {
+			break;
+		}
+		end = command.find_first_of(" \t", next);
+		const wxString candidate =
+			command.substr(start, end == wxString::npos ? wxString::npos : end - start);
+		// A relative candidate would be looked up in the current directory.
+		if (wxFileName(candidate, wxPATH_WIN).IsAbsolute(wxPATH_WIN) && names(candidate)) {
+			return command.Left(start) + "\"" + candidate + "\"" +
+			       (end == wxString::npos ? wxString() : command.Mid(end));
+		}
+	}
+	return command;
+}
+
 wxArrayString Build(const wxString &command,
 	const std::vector<std::pair<wxString, wxString>> &values,
 	bool *substituted,
@@ -248,8 +279,15 @@ wxArrayString Build(const wxString &command,
 	if (command.find(wxChar(0)) != wxString::npos) {
 		return reject(RejectionReason::EmbeddedNul);
 	}
+	// Commands used to reach CreateProcess unsplit, and it resolves an unquoted
+	// C:\Program Files\... program itself.
+	const bool windows = platform == Platform::Windows;
+	const wxString split =
+		windows ? QuoteUnquotedProgram(
+				  command, [](const wxString &path) { return wxFileName::FileExists(path); })
+			: command;
 	wxArrayString args = wxCmdLineParser::ConvertStringToArgs(
-		command, platform == Platform::Windows ? wxCMD_LINE_SPLIT_DOS : wxCMD_LINE_SPLIT_UNIX);
+		split, windows ? wxCMD_LINE_SPLIT_DOS : wxCMD_LINE_SPLIT_UNIX);
 	if (args.IsEmpty() || args[0].empty()) {
 		return reject(RejectionReason::EmptyCommand);
 	}

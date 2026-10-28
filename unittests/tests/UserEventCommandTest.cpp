@@ -667,6 +667,60 @@ TEST(UserEventCommand, ReplaceProgramKeepsTheRestAsWritten)
 		ExternalCommand::ReplaceProgram("cmd /c echo done>>C:\\log.txt", player));
 }
 
+TEST(UserEventCommand, UnquotedProgramPathWithSpacesIsQuoted)
+{
+	const auto isFile = [](const wxString &path) {
+		return path == "C:\\Program Files\\VideoLAN\\VLC\\vlc.exe" || path == "C:\\Tools\\mpv.exe" ||
+		       path == "C:\\My  Apps\\a.exe" || path == "C:\\My  Apps\\a.exe b\\c.exe" ||
+		       path == "Apps Dir\\p.exe";
+	};
+	const wxString vlc = "\"C:\\Program Files\\VideoLAN\\VLC\\vlc.exe\"";
+	ASSERT_EQUALS(vlc,
+		ExternalCommand::QuoteUnquotedProgram("C:\\Program Files\\VideoLAN\\VLC\\vlc.exe", isFile));
+	ASSERT_EQUALS(vlc + " --fullscreen \"%PARTFILE\"",
+		ExternalCommand::QuoteUnquotedProgram(
+			"C:\\Program Files\\VideoLAN\\VLC\\vlc.exe --fullscreen \"%PARTFILE\"", isFile));
+	// ".exe" is implied, as CreateProcess does.
+	ASSERT_EQUALS("  \"C:\\Program Files\\VideoLAN\\VLC\\vlc\"\t%PARTFILE",
+		ExternalCommand::QuoteUnquotedProgram(
+			"  C:\\Program Files\\VideoLAN\\VLC\\vlc\t%PARTFILE", isFile));
+	// The shortest run wins, and blanks inside it are kept as written.
+	ASSERT_EQUALS("\"C:\\My  Apps\\a.exe\" b\\c.exe",
+		ExternalCommand::QuoteUnquotedProgram("C:\\My  Apps\\a.exe b\\c.exe", isFile));
+
+	const wxString unchanged[] = {
+		"\"C:\\Program Files\\VideoLAN\\VLC\\vlc.exe\" %PARTFILE",
+		"C:\\Tools\\mpv.exe --fs %PARTFILE",
+		"C:\\Program Files\\Missing\\player.exe %PARTFILE",
+		"Apps Dir\\p.exe %PARTFILE", // relative: CreateProcess would search the current directory
+		"vlc",
+		"",
+	};
+	for (const wxString &command : unchanged) {
+		ASSERT_EQUALS(command, ExternalCommand::QuoteUnquotedProgram(command, isFile));
+	}
+}
+
+#ifdef __WINDOWS__
+TEST(UserEventCommand, BuildFindsAnUnquotedProgramPathWithSpaces)
+{
+	const wxString dir = wxFileName::CreateTempFileName("amule player ");
+	wxRemoveFile(dir);
+	ASSERT_TRUE(wxMkdir(dir));
+	const wxString player = wxFileName(dir, "player.exe").GetFullPath();
+	ASSERT_TRUE(wxFFile(player, "w").Close());
+	const wxString file = "C:\\Videos\\a b.part";
+	const wxArrayString args =
+		ExternalCommand::Build(player + " --fs %PARTFILE", { { "%PARTFILE", file } }, nullptr);
+	wxRemoveFile(player);
+	wxRmdir(dir);
+	ASSERT_EQUALS(3u, args.size());
+	ASSERT_EQUALS(player, args[0]);
+	ASSERT_EQUALS("--fs", args[1]);
+	ASSERT_EQUALS(file, args[2]);
+}
+#endif
+
 #ifdef __WINDOWS__
 TEST(UserEventCommand, BareProgramIsNotTakenFromTheCurrentDirectory)
 {

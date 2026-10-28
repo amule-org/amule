@@ -26,6 +26,7 @@
 #define EXTERNALCOMMAND_H
 
 #include <wx/arrstr.h>
+#include <functional>
 #include <utility>
 #include <vector>
 
@@ -75,6 +76,11 @@ wxString BuildWindowsCommandLine(const wxArrayString &args, const wxString *unch
 // `commandLine` with its first token, a Windows command line's program, replaced by `program`,
 // quoted. The rest is kept as written.
 wxString ReplaceProgram(const wxString &commandLine, const wxString &program);
+
+// `command` with an unquoted absolute Windows program path that contains blanks put in quotes.
+// Like CreateProcess, the program is the shortest run of words that names a file, ".exe" implied.
+// Unchanged if the first word is already a file, or no run is.
+wxString QuoteUnquotedProgram(const wxString &command, const std::function<bool(const wxString &)> &isFile);
 
 #ifdef __WINDOWS__
 // `commandLine` with a bare program name replaced by its absolute path (see FindProgram), or empty

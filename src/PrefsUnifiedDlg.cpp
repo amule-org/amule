@@ -2290,6 +2290,11 @@ void PrefsUnifiedDlg::OnButtonBrowseApplication(wxCommandEvent &event)
 #endif
 
 	if (!str.IsEmpty()) {
+		// The player and browser fields are command templates, split into words;
+		// the ffprobe field is a plain path.
+		if (id != IDC_MEDIAMETA_FFPROBEPATH && str.find_first_of(" \t") != wxString::npos) {
+			str = "\"" + str + "\"";
+		}
 		wxTextCtrl *widget = CastChild(id, wxTextCtrl);
 		widget->SetValue(str);
 	}
