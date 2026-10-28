@@ -961,6 +961,12 @@ ExternalConn::ExternalConn(amuleIPV4Address addr, wxString *msg)
 			msgLocal = CFormat("*** TCP socket (ECServer) listening on %s:%d") % ip % port;
 			*msg += msgLocal + "\n";
 			AddLogLineN(msgLocal);
+			// amuled never creates the file, so this line is how a headless user learns of it.
+			if (theApp->glob_prefs->allowed_remote_dir_roots.empty()) {
+				AddLogLineN(CFormat(_("Remote clients cannot change folders: no folder is "
+						      "listed in %s")) %
+					    thePrefs::GetAllowedRemoteDirsFile());
+			}
 		} else {
 			msgLocal = CFormat("Could not listen for external connections at %s:%d!") % ip % port;
 			*msg += msgLocal + "\n";

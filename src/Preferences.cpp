@@ -2542,7 +2542,7 @@ void CPreferences::LoadAllowedRemoteDirRoots()
 {
 	// One path per line, like shareddir.dat -- a path can contain any delimiter, so no CSV. Absent
 	// file -> empty list -> every remote folder change refused.
-	LoadDirListFile(s_configDir + "allowed-remote-dirs.dat", allowed_remote_dir_roots);
+	LoadDirListFile(GetAllowedRemoteDirsFile(), allowed_remote_dir_roots);
 
 	// A root must be an absolute path: a relative one resolves against the daemon's working
 	// directory, so it would name different places over time and could be escaped. Drop and log
@@ -2563,7 +2563,7 @@ void CPreferences::LoadAllowedRemoteDirRoots()
 void CPreferences::SaveAllowedRemoteDirRoots()
 {
 	CTextFile f;
-	if (f.Open(s_configDir + "allowed-remote-dirs.dat", CTextFile::write)) {
+	if (f.Open(GetAllowedRemoteDirsFile(), CTextFile::write)) {
 		for (const CPath &root : allowed_remote_dir_roots) {
 			f.WriteLine(root.GetRaw(), wxConvUTF8);
 		}

@@ -2023,6 +2023,9 @@ wxSizer *PreferencesDirectoriesTab( wxWindow *parent, bool call_fit, bool set_si
     itemARSizer->Add( itemARHint, 0, wxALIGN_CENTER, 0 );
     wxListBox *itemARList = new wxListBox( itemAR, IDC_ALLOWED_ROOTS_LIST, wxDefaultPosition, wxSize(100,70), 0, nullptr, wxLB_SINGLE|wxSUNKEN_BORDER );
     itemARSizer->Add( itemARList, wxSizerFlags(1).Expand().CenterVertical() );
+    wxStaticText *itemARHowTo = new wxStaticText( itemAR, -1, _("To allow a folder, add it to allowed-remote-dirs.dat in the daemon's configuration folder, one absolute path per line, then restart the daemon."), wxDefaultPosition, wxDefaultSize, 0 );
+    itemARHowTo->Wrap( 520 );
+    itemARSizer->Add( itemARHowTo, 0, wxTOP, 4 );
     item0->Add( itemARSizer, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 0) );
 #endif
 

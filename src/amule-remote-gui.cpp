@@ -1735,6 +1735,13 @@ void CPreferencesRem::UpdateNetworks(bool ed2kEnabled, bool kadEnabled)
 	}
 }
 
+// The same msgid labels the read-only list in muuli_wdr.cpp.
+static wxString AllowedRemoteDirsHint()
+{
+	return _("To allow a folder, add it to allowed-remote-dirs.dat in the daemon's configuration "
+		 "folder, one absolute path per line, then restart the daemon.");
+}
+
 class CPrefsSetHandler : public CECPacketHandlerBase
 {
 	std::shared_ptr<unsigned> m_pendingNetworkWrites;
@@ -1778,6 +1785,7 @@ private:
 					CFormat(_("The daemon refused these folders because they are outside "
 						  "the folders it allows (configured on the daemon):%s")) %
 					rejectedDirs;
+				message += "\n\n" + AllowedRemoteDirsHint();
 			} else {
 				const CECTag *tag = packet->GetTagByName(EC_TAG_STRING);
 				message = tag ? tag->GetStringData()
@@ -1861,6 +1869,7 @@ void CSharedDirsHandler::HandlePacket(const CECPacket *packet)
 		// a typo'd path cannot become a silently dead share -- the remote user has no way
 		// to browse and check it themselves.
 		wxString rejected;
+		bool outsideRoots = false;
 		for (const CECTag &tag : *packet) {
 			if (tag.GetTagName() != EC_TAG_SHAREDDIR_REJECTED) {
 				continue;
@@ -1883,13 +1892,16 @@ void CSharedDirsHandler::HandlePacket(const CECPacket *packet)
 				break;
 			}
 			rejected += CFormat("\n%s (%s)") % tag.GetStringData() % reason;
+			outsideRoots = outsideRoots || code == 3;
 		}
 		if (!rejected.IsEmpty()) {
 			// Reload the list the core actually kept so the editor stops showing a folder the
 			// daemon refused; the reply refreshes the Preferences editor if it is open.
 			theApp->glob_prefs->LoadSharedDirsRemote();
-			const wxString msg =
-				CFormat(_("The core rejected these shared folders:%s")) % rejected;
+			wxString msg = CFormat(_("The core rejected these shared folders:%s")) % rejected;
+			if (outsideRoots) {
+				msg += "\n\n" + AllowedRemoteDirsHint();
+			}
 			// Deferred: a modal opened straight from a packet handler spins a nested event
 			// loop that re-enters the EC socket and corrupts its receive state (see
 			// CAddLinkHandler).
@@ -2063,8 +2075,12 @@ void CCatHandler::HandlePacket(const CECPacket *packet)
 	// loop that would otherwise corrupt CECSocket rx state; everything is captured by value since
 	// the handler is deleted first.
 	const CECTag *strTag = packet->GetTagByName(EC_TAG_STRING);
-	const wxString reason = strTag ? wxGetTranslation(strTag->GetStringData())
-				       : wxString(_("the daemon refused the request"));
+	wxString reason = strTag ? wxGetTranslation(strTag->GetStringData())
+				 : wxString(_("the daemon refused the request"));
+	// The only rejected-folder code a category reply carries is "outside the allowed roots".
+	if (packet->GetTagByName(EC_TAG_SHAREDDIR_REJECTED) != nullptr) {
+		reason += "\n\n" + AllowedRemoteDirsHint();
+	}
 	const bool isCreate = m_isCreate;
 	Category_Struct *const category = m_category;
 	const Category_Struct prev = m_prev;

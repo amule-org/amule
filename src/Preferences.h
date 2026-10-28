@@ -200,6 +200,7 @@ public:
 	// value equal to what is stored, or an entry already in the stored list, is left alone.
 	void LoadAllowedRemoteDirRoots();
 	void SaveAllowedRemoteDirRoots();
+	static wxString GetAllowedRemoteDirsFile() { return s_configDir + "allowed-remote-dirs.dat"; }
 	// True iff a remote client may point a folder preference at `dir`: `dir` is equal to or inside
 	// one of the configured roots (CPath::IsContainedIn resolves ".." and symlinks). No roots -> false.
 	bool IsRemoteDirChangeAllowed(const CPath &dir) const;
