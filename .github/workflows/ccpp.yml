@@ -8,7 +8,6 @@ on:
       - 'cmake/**'
       - 'CMakeLists.txt'
       - 'unittests/**'
-      - 'po/**'
       - 'config.h.cm'
       - 'scripts/check-unique-ids.py'
       - 'scripts/check-tray-backend-build.py'
@@ -22,7 +21,6 @@ on:
       - 'cmake/**'
       - 'CMakeLists.txt'
       - 'unittests/**'
-      - 'po/**'
       - 'config.h.cm'
       - 'scripts/check-unique-ids.py'
       - 'scripts/check-tray-backend-build.py'
@@ -569,7 +567,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        build_type: [Debug, Release]
+        # macOS runners have a lower concurrency limit than Linux ones. PRs build Debug only,
+        # which also runs the asserts; master builds both.
+        build_type: ${{ github.event_name == 'pull_request' && fromJSON('["Debug"]') || fromJSON('["Debug", "Release"]') }}
     steps:
       - uses: actions/checkout@v7
       - name: restore ccache

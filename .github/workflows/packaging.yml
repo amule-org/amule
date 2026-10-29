@@ -60,6 +60,12 @@ on:
         type: string
         default: ''
 
+# A newer master push supersedes the running packages; each one holds macOS runners
+# for up to an hour. A cancelled Intel build still saves the kegs it compiled.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'push' }}
+
 permissions:
   contents: read
   # cache-save-newest lists the repository's caches and deletes the generations
