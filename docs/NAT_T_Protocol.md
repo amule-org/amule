@@ -17,9 +17,10 @@ eMuleAI 1.6.
 The exchange is compile-time gated by `ENABLE_QUIC`, which defines
 `AMULE_QUIC_TRANSPORT` for the core targets, and runtime gated by the
 `amule.conf` key `/eMule/QuicNatT` (default **off**, no widget, no EC tag). It
-is experimental. A build without QUIC support drops CAPS
-without responding and logs the throttled unsupported-frame event. A QUIC build
-with `QuicNatT` off silently ignores CAPS, CAPS_ACK and QUIC frames. The
+is experimental. A build without QUIC support drops CAPS without responding and
+logs the throttled unsupported-frame event. A QUIC build with `QuicNatT` off
+silently ignores CAPS, CAPS_ACK and QUIC frames, and uses key frames only for uTP
+streams (see [Key frame](#key-frame-quic-and-utp-datagram-obfuscation)). The
 outbound CAPS and QUIC dial also need `ENABLE_NATT_SERVER_COORDINATION` and
 `ENABLE_UTP`, which provide the rendezvous they run on.
 
@@ -114,14 +115,15 @@ If a QUIC dial cannot start, or ends before its stream opens, the peer gets a
 30-second cooldown and the rendezvous falls back to uTP.
 
 Only a dial with a known peer hash can use QUIC: the ed2k-server requester
-that received a 29-byte `0x61`, and a Lugdunum forward that carries the user
-hash. The target-side dial triggered by `OP_HOLEPUNCH`, and its dial-back,
+that received a 29- or 30-byte `0x61`, and a Lugdunum forward that carries the
+user hash. The target-side dial triggered by `OP_HOLEPUNCH`, and its dial-back,
 have no peer hash and always use uTP.
 
 The first CAPS to a peer endpoint is recorded for 30 seconds; the first
 matching ACK consumes it. The request ledger and the capability cache each
 hold at most 256 entries. The file hash is informational: it is echoed and
 recorded, but it does not choose roles.
+
 The dial path is `CUpDownClient::TryServerVouchedLowIdUtpDial()` in
 [`src/BaseClient.cpp`](../src/BaseClient.cpp), with the cache and hold-off
 policy in [`src/QuicCapabilityCache.h`](../src/QuicCapabilityCache.h) and the
@@ -215,8 +217,8 @@ unresolved and must be confirmed on the actual eMuleAI installation.
    `-DENABLE_UTP=ON` for the uTP capability bit), confirm that the target
    under test uses the resulting QUIC-enabled core, and set `QuicNatT=1`
    under `[eMule]` in its `amule.conf`.
-   The build command demonstrates that the image/build path was exercised; it
-   is not interoperation evidence by itself.
+   That build only shows that the build path was exercised; it is not
+   interoperation evidence by itself.
 2. **Confirm the eMuleAI side.** Its documented defaults are
    `EnableNatTraversal=1` and `NatTraversalProtocolMode=0` (prefer QUIC).
    `LogNatTraversalEvents=1` enables NAT-T event logging when available. Do
