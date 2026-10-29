@@ -11,6 +11,8 @@ import tempfile
 
 
 def check(binary):
+    # Named before each run, so a stall says which copy hung. Three runs stay inside the lane.
+    print('running', binary.name, flush=True)
     result = subprocess.run([str(binary)], check=True, capture_output=True, text=True,
                             timeout=15)
     lines = result.stdout.splitlines()
