@@ -101,7 +101,7 @@ bool CClientUDPSocket::SendNatKeyFrame(uint32_t ip, uint16_t port, const NatKeyF
 	std::copy_n(thePrefs::GetUserHash().GetHash(), userHash.size(), userHash.begin());
 	const auto payload = NatKeyFrame::BuildPayload(userHash);
 	packet->CopyToDataBuffer(0, payload.data(), static_cast<unsigned int>(payload.size()));
-	return TrySendPacket(packet, ip, port, true, key.data(), false, 0);
+	return TrySendObfuscatedPacket(packet, ip, port, key.data());
 }
 
 void CClientUDPSocket::ExpectNatTPeer(

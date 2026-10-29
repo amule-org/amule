@@ -140,6 +140,10 @@ The same prerequisites apply, and aMule's own key frame never leaves in the clea
 
 In every case the hello replaces the key-frame hash with the crypt parameters it establishes.
 
+A key frame is queued only while it can be obfuscated, and it is dropped rather than sent plain if
+obfuscation lapses before it leaves (the public IP lost, or the crypt layer switched off, in between).
+Ordinary client UDP keeps its existing plain fallback.
+
 The decisions are in [`src/NatKeyFrame.h`](../src/NatKeyFrame.h), driven from
 [`src/ClientUDPSocket.cpp`](../src/ClientUDPSocket.cpp) and
 [`src/UtpLibraryAdapter.cpp`](../src/UtpLibraryAdapter.cpp).
