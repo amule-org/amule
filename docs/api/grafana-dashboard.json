@@ -1,0 +1,1819 @@
+{
+  "title": "aMule",
+  "uid": "amule-overview",
+  "description": "aMule daemon metrics from amuleapi's /metrics endpoint.",
+  "tags": [
+    "amule",
+    "p2p"
+  ],
+  "editable": true,
+  "graphTooltip": 1,
+  "refresh": "30s",
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "schemaVersion": 39,
+  "version": 1,
+  "templating": {
+    "list": [
+      {
+        "name": "datasource",
+        "label": "Data source",
+        "type": "datasource",
+        "query": "prometheus",
+        "current": {},
+        "hide": 0,
+        "refresh": 1,
+        "regex": "",
+        "options": []
+      },
+      {
+        "name": "job",
+        "label": "Job",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "query": {
+          "query": "label_values(amule_build_info, job)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "definition": "label_values(amule_build_info, job)",
+        "refresh": 2,
+        "sort": 1,
+        "includeAll": false,
+        "allValue": null,
+        "multi": false,
+        "current": {},
+        "options": [],
+        "hide": 0
+      },
+      {
+        "name": "instance",
+        "label": "Instance",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "query": {
+          "query": "label_values(amule_build_info{job=\"$job\"}, instance)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "definition": "label_values(amule_build_info{job=\"$job\"}, instance)",
+        "refresh": 2,
+        "sort": 1,
+        "includeAll": true,
+        "allValue": ".*",
+        "multi": false,
+        "current": {},
+        "options": [],
+        "hide": 0
+      }
+    ]
+  },
+  "annotations": {
+    "list": []
+  },
+  "panels": [
+    {
+      "type": "row",
+      "title": "Status",
+      "id": 2,
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "title": "Versions",
+      "id": 3,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "amuleapi version, and the amuled version from the EC handshake.",
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 1
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "amule_build_info{job=\"$job\", instance=~\"$instance\"}",
+          "refId": "A",
+          "legendFormat": "amuleapi {{version}}"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "amule_build_info{job=\"$job\", instance=~\"$instance\"}",
+          "refId": "B",
+          "legendFormat": "amuled {{daemon_version}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "name",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "EC link",
+      "id": 4,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Whether amuleapi's last refresh from amuled succeeded.",
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 6,
+        "y": 1
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "amule_ec_connected{job=\"$job\", instance=~\"$instance\"}",
+          "refId": "A",
+          "legendFormat": "__auto"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "Down",
+                  "color": "red",
+                  "index": 0
+                },
+                "1": {
+                  "text": "Up",
+                  "color": "green",
+                  "index": 1
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Snapshot age",
+      "id": 5,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "How old amuleapi's data was at the last scrape, so the scrape interval does not count. A growing value means the refresh is stuck.",
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 9,
+        "y": 1
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "timestamp(amule_snapshot_timestamp_seconds{job=\"$job\", instance=~\"$instance\"}) - amule_snapshot_timestamp_seconds{job=\"$job\", instance=~\"$instance\"}",
+          "refId": "A",
+          "legendFormat": "__auto"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 10
+              },
+              {
+                "color": "red",
+                "value": 60
+              }
+            ]
+          },
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "eD2k",
+      "id": 6,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "",
+      "gridPos": {
+        "h": 4,
+        "w": 2,
+        "x": 12,
+        "y": 1
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "amule_network_connected{job=\"$job\", instance=~\"$instance\", network=\"ed2k\"}",
+          "refId": "A",
+          "legendFormat": "__auto"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "Off",
+                  "color": "red",
+                  "index": 0
+                },
+                "1": {
+                  "text": "On",
+                  "color": "green",
+                  "index": 1
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "ID",
+      "id": 7,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Only while eD2k is connected.",
+      "gridPos": {
+        "h": 4,
+        "w": 2,
+        "x": 14,
+        "y": 1
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "amule_ed2k_high_id{job=\"$job\", instance=~\"$instance\"}",
+          "refId": "A",
+          "legendFormat": "__auto"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "LowID",
+                  "color": "orange",
+                  "index": 0
+                },
+                "1": {
+                  "text": "HighID",
+                  "color": "green",
+                  "index": 1
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Kad",
+      "id": 8,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "",
+      "gridPos": {
+        "h": 4,
+        "w": 2,
+        "x": 16,
+        "y": 1
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "amule_network_connected{job=\"$job\", instance=~\"$instance\", network=\"kad\"}",
+          "refId": "A",
+          "legendFormat": "__auto"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "Off",
+                  "color": "red",
+                  "index": 0
+                },
+                "1": {
+                  "text": "On",
+                  "color": "green",
+                  "index": 1
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Kad firewall",
+      "id": 9,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "",
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 18,
+        "y": 1
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "amule_kad_firewalled{job=\"$job\", instance=~\"$instance\", protocol=\"tcp\"}",
+          "refId": "A",
+          "legendFormat": "TCP"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "amule_kad_firewalled{job=\"$job\", instance=~\"$instance\", protocol=\"udp\"}",
+          "refId": "B",
+          "legendFormat": "UDP"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "Open",
+                  "color": "green",
+                  "index": 0
+                },
+                "1": {
+                  "text": "Firewalled",
+                  "color": "orange",
+                  "index": 1
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value_and_name",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Uptime",
+      "id": 10,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "",
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 21,
+        "y": 1
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "amule_uptime_seconds{job=\"$job\", instance=~\"$instance\"}",
+          "refId": "A",
+          "legendFormat": "__auto"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "dtdurations",
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      }
+    },
+    {
+      "type": "row",
+      "title": "Transfers",
+      "id": 11,
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 5
+      },
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "Transfer rate",
+      "id": 12,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Data and protocol overhead rates. Limits show only when set (0 means unlimited).",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 6
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "amule_transfer_rate_bytes_per_second{job=\"$job\", instance=~\"$instance\", kind=\"data\"}",
+          "refId": "A",
+          "legendFormat": "{{direction}}"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "amule_transfer_rate_bytes_per_second{job=\"$job\", instance=~\"$instance\", kind=\"overhead\"}",
+          "refId": "B",
+          "legendFormat": "{{direction}} overhead"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "amule_speed_limit_bytes_per_second{job=\"$job\", instance=~\"$instance\"} > 0",
+          "refId": "C",
+          "legendFormat": "{{direction}} limit"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "binBps",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          },
+          "min": 0
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*limit"
+            },
+            "properties": [
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    10,
+                    10
+                  ]
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 0
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Bytes per interval",
+      "id": 13,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Session bytes moved in each interval, from the daemon's session counters.",
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 12,
+        "y": 6
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "increase(amule_transferred_bytes_total{job=\"$job\", instance=~\"$instance\"}[$__rate_interval])",
+          "refId": "A",
+          "legendFormat": "{{direction}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "custom": {
+            "drawStyle": "bars",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Session",
+      "id": 14,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Bytes since the daemon started.",
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 18,
+        "y": 6
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "amule_transferred_bytes_total{job=\"$job\", instance=~\"$instance\", direction=\"upload\"}",
+          "refId": "A",
+          "legendFormat": "Up"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "amule_transferred_bytes_total{job=\"$job\", instance=~\"$instance\", direction=\"download\"}",
+          "refId": "B",
+          "legendFormat": "Down"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "value_and_name",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Lifetime",
+      "id": 15,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Persisted totals from statistics.dat.",
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 21,
+        "y": 6
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "amule_lifetime_transferred_bytes_total{job=\"$job\", instance=~\"$instance\", direction=\"upload\"}",
+          "refId": "A",
+          "legendFormat": "Up"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "amule_lifetime_transferred_bytes_total{job=\"$job\", instance=~\"$instance\", direction=\"download\"}",
+          "refId": "B",
+          "legendFormat": "Down"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "value_and_name",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Ratio (lifetime)",
+      "id": 16,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Lifetime upload divided by lifetime download.",
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 10
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "amule_lifetime_transferred_bytes_total{job=\"$job\", instance=~\"$instance\", direction=\"upload\"} / ignoring(direction) amule_lifetime_transferred_bytes_total{job=\"$job\", instance=~\"$instance\", direction=\"download\"}",
+          "refId": "A",
+          "legendFormat": "__auto"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 0.5
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      }
+    },
+    {
+      "type": "row",
+      "title": "Activity",
+      "id": 17,
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 14
+      },
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "Downloads by status",
+      "id": 18,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Download rows per status, including completed rows not yet cleared.",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 15
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "amule_downloads{job=\"$job\", instance=~\"$instance\"} > 0",
+          "refId": "A",
+          "legendFormat": "{{status}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 25,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Clients and connections",
+      "id": 19,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 15
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "amule_active_uploads{job=\"$job\", instance=~\"$instance\"}",
+          "refId": "A",
+          "legendFormat": "uploading clients"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "amule_upload_queue_length{job=\"$job\", instance=~\"$instance\"}",
+          "refId": "B",
+          "legendFormat": "upload queue"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "amule_active_connections{job=\"$job\", instance=~\"$instance\"}",
+          "refId": "C",
+          "legendFormat": "active connections"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Sources found",
+      "id": 20,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "",
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 0,
+        "y": 23
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "amule_sources_found{job=\"$job\", instance=~\"$instance\"}",
+          "refId": "A",
+          "legendFormat": "sources"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Shared files",
+      "id": 21,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "",
+      "gridPos": {
+        "h": 7,
+        "w": 4,
+        "x": 8,
+        "y": 23
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "amule_shared_files{job=\"$job\", instance=~\"$instance\"}",
+          "refId": "A",
+          "legendFormat": "__auto"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Banned clients",
+      "id": 22,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "",
+      "gridPos": {
+        "h": 7,
+        "w": 4,
+        "x": 12,
+        "y": 23
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "amule_banned_clients{job=\"$job\", instance=~\"$instance\"}",
+          "refId": "A",
+          "legendFormat": "__auto"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Free disk space",
+      "id": 23,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "",
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 16,
+        "y": 23
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "amule_disk_free_bytes{job=\"$job\", instance=~\"$instance\"}",
+          "refId": "A",
+          "legendFormat": "{{dir}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "type": "row",
+      "title": "Networks",
+      "id": 24,
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 30
+      },
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "title": "eD2k server users",
+      "id": 25,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Users on the connected eD2k server.",
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 0,
+        "y": 31
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "amule_connected_server_users{job=\"$job\", instance=~\"$instance\"}",
+          "refId": "A",
+          "legendFormat": "__auto"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Known servers",
+      "id": 26,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "",
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 4,
+        "y": 31
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "amule_servers{job=\"$job\", instance=~\"$instance\"}",
+          "refId": "A",
+          "legendFormat": "__auto"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Kad nodes",
+      "id": 27,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Contacts in the local Kad routing table.",
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 8,
+        "y": 31
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "amule_kad_network_nodes{job=\"$job\", instance=~\"$instance\"}",
+          "refId": "A",
+          "legendFormat": "__auto"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Kad index load",
+      "id": 28,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "",
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 12,
+        "y": 31
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "amule_kad_index_load{job=\"$job\", instance=~\"$instance\"}",
+          "refId": "A",
+          "legendFormat": "__auto"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Kad indexed",
+      "id": 29,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "",
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 16,
+        "y": 31
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "amule_kad_indexed{job=\"$job\", instance=~\"$instance\"}",
+          "refId": "A",
+          "legendFormat": "{{type}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "value_and_name",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Network users",
+      "id": 30,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "eD2k: total across known servers. Kad: network estimate. Shown only while connected.",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 35
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "amule_ed2k_network_users{job=\"$job\", instance=~\"$instance\"}",
+          "refId": "A",
+          "legendFormat": "eD2k"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "amule_kad_network_users{job=\"$job\", instance=~\"$instance\"}",
+          "refId": "B",
+          "legendFormat": "Kad"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Network files",
+      "id": 31,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Shown only while connected.",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 35
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "amule_ed2k_network_files{job=\"$job\", instance=~\"$instance\"}",
+          "refId": "A",
+          "legendFormat": "eD2k"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "amule_kad_network_files{job=\"$job\", instance=~\"$instance\"}",
+          "refId": "B",
+          "legendFormat": "Kad"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    }
+  ]
+}

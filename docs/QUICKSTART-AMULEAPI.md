@@ -430,3 +430,17 @@ Add this receiver to the Collector's existing metrics pipeline. When using
 The endpoint emits Prometheus text 0.0.4; native OpenMetrics negotiation and OTLP
 push are outside this endpoint's scope. See the [metrics contract](api/REFERENCE.md#get-metrics)
 for the available measurements and failure behavior.
+
+### Grafana dashboard
+
+[`api/grafana-dashboard.json`](api/grafana-dashboard.json) is a ready-made Grafana
+dashboard for these metrics. To use it:
+
+1. In Grafana, open **Dashboards > New > Import** and upload the file.
+2. Pick your Prometheus data source in the **Data source** list at the top.
+3. **Job** lists the scrape jobs that collect amuleapi metrics; pick yours if you
+   have more than one. **Instance** defaults to all.
+
+The dashboard shows connection status, transfer rates and totals, downloads by
+status, clients and queues, free disk space, and eD2k and Kad network figures.
+Values the daemon does not report show as "No data", not as 0.
