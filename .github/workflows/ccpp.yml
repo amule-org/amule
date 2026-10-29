@@ -236,8 +236,8 @@ jobs:
       - name: run shared-file reverify integration test
         run: ctest ${{ env.ctest_flags }} --timeout 300 --no-tests=error -L '^reverify$'
       # amuleapi_curl_smoke drives these two against a live daemon rather than
-      # compiling its own copy. Release only: the smoke times SSE windows, and
-      # a Debug daemon makes those flaky.
+      # compiling its own copy, with the media helper amuled finds beside itself.
+      # Release only: the smoke times SSE windows, and a Debug daemon makes those flaky.
       #
       # A tar rather than the two paths directly, because the artifact upload
       # drops the executable bit (packaging.yml chmods every mach-o back after
@@ -254,11 +254,12 @@ jobs:
           mkdir -p "$shlibdeps/debian"
           printf 'Source: amule\n\nPackage: amule\nArchitecture: any\n' > "$shlibdeps/debian/control"
           depends=$(cd "$shlibdeps" && dpkg-shlibdeps -O \
-            "$GITHUB_WORKSPACE/build/src/amuled" "$GITHUB_WORKSPACE/build/src/webapi/amuleapi")
+            "$GITHUB_WORKSPACE/build/src/amuled" "$GITHUB_WORKSPACE/build/src/webapi/amuleapi" \
+            "$GITHUB_WORKSPACE/build/src/amule-media-probe")
           printf '%s\n' "${depends#shlibs:Depends=}" > runtime-deps.txt
           cat runtime-deps.txt
           tar -cf curl-smoke-binaries.tar \
-            build/src/amuled build/src/webapi/amuleapi runtime-deps.txt
+            build/src/amuled build/src/amule-media-probe build/src/webapi/amuleapi runtime-deps.txt
       - uses: actions/upload-artifact@v7
         if: matrix.build_type == 'Release'
         with:

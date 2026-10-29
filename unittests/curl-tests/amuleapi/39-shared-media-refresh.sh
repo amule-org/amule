@@ -12,8 +12,9 @@
 # been extracted when the response returns -- the probes run on amuled's
 # media-probe worker.
 #
-# Tolerates an empty share and a daemon that predates the operation
-# (503 ec_unsupported).
+# Tolerates an empty share, a daemon that predates the operation
+# (503 ec_unsupported), and a daemon without its media helper, which refuses
+# with 400 amuled_rejected (files.media_metadata_available is false).
 
 set -u
 set -o pipefail
@@ -72,6 +73,10 @@ TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 	"$API/auth/login?include_token=true" | jq -r .token)
 [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ] || _die "login failed"
 
+_curl -H "Authorization: Bearer $TOKEN" "$API/preferences"
+AVAILABLE=$(printf '%s' "$CURL_BODY" | jq -r '.files.media_metadata_available')
+echo "    info: media helper available: $AVAILABLE"
+
 # --- 1. Whole-share refresh. ---------------------------------------
 _curl -X POST -H "Authorization: Bearer $TOKEN" "$API/shared/media/refresh"
 # 503 covers two different situations and only one of them is a skip:
@@ -98,12 +103,17 @@ if [ "$CURL_STATUS" = "503" ]; then
 	echo "FAIL: $FAIL_COUNT/$TEST_COUNT failed"
 	exit 1
 fi
-_assert_status 202 "POST /shared/media/refresh → 202 Accepted"
-# `scope` and the count stay: it is a real count of what the scheduler
-# accepted, which no later read reports. There is no `ok` field; the 202 carries it.
-_assert_json_eq '. | has("ok")' false 'whole-share refresh has no constant ok field'
-_assert_json_eq '.scope'         all   'whole-share refresh reports scope=all'
-_assert_json_eq '.queued_file_count | type' number 'queued_file_count is numeric'
+if [ "$AVAILABLE" = "false" ]; then
+	_assert_status 400 "POST /shared/media/refresh without a media helper → 400"
+	_assert_json_eq '.error.code' amuled_rejected 'missing helper carries error.code=amuled_rejected'
+else
+	_assert_status 202 "POST /shared/media/refresh → 202 Accepted"
+	# `scope` and the count stay: it is a real count of what the scheduler
+	# accepted, which no later read reports. There is no `ok` field; the 202 carries it.
+	_assert_json_eq '. | has("ok")' false 'whole-share refresh has no constant ok field'
+	_assert_json_eq '.scope'         all   'whole-share refresh reports scope=all'
+	_assert_json_eq '.queued_file_count | type' number 'queued_file_count is numeric'
+fi
 
 # --- 2. Method + auth gating. --------------------------------------
 _curl -H "Authorization: Bearer $TOKEN" "$API/shared/media/refresh"
@@ -156,6 +166,10 @@ if [ -n "$HASH" ]; then
 	if [ "$CURL_STATUS" = "409" ]; then
 		_assert_json_eq '.error.code' partfile_unsupported \
 			'incomplete download → 409 partfile_unsupported'
+	elif [ "$AVAILABLE" = "false" ]; then
+		_assert_status 400 "POST /shared/{hash}/media/refresh without a media helper → 400"
+		_assert_json_eq '.error.code' amuled_rejected \
+			'missing helper carries error.code=amuled_rejected'
 	else
 		_assert_status 202 "POST /shared/{hash}/media/refresh → 202"
 		_assert_json_eq '. | has("ok")' false \
@@ -166,7 +180,9 @@ if [ -n "$HASH" ]; then
 	UPPER=$(echo "$HASH" | tr 'a-f' 'A-F')
 	_curl -X POST -H "Authorization: Bearer $TOKEN" \
 		"$API/shared/$UPPER/media/refresh"
-	if [ "$CURL_STATUS" = "202" ] || [ "$CURL_STATUS" = "409" ]; then
+	# A missing helper is refused only after the hash resolved, so 400 counts.
+	if [ "$CURL_STATUS" = "202" ] || [ "$CURL_STATUS" = "409" ] ||
+		{ [ "$AVAILABLE" = "false" ] && [ "$CURL_STATUS" = "400" ]; }; then
 		_pass "uppercase hash is accepted (HTTP $CURL_STATUS)"
 	else
 		_fail "uppercase hash" "expected 202 or 409, got $CURL_STATUS"
