@@ -841,10 +841,7 @@ void CServerConnect::ProcessLowIdHolePunchDialBacks()
 			continue;
 		}
 		if (m_lowIdHolePunchActionLimiter.Admit(now)) {
-			// The dial-back schedule carries no user hash either; see DialLowIdHolePunchPeer's
-			// other OP_HOLEPUNCH-triggered caller in ClientUDPSocket.cpp.
-			theApp->clientudp->DialLowIdHolePunchPeer(
-				ip, due.tcpPort, due.udpPort, std::array<std::uint8_t, 16>{});
+			theApp->clientudp->DialLowIdHolePunchPeer(ip, due.tcpPort, due.udpPort, due.peer);
 		}
 	}
 }

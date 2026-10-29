@@ -274,6 +274,25 @@ TEST(NatServerHolePunch, ReadsThePeerIdOnlyFromAnInfoOf29BytesOrMore)
 	ASSERT_FALSE(ParseInfo(bytes.data(), 28)->peerId.has_value());
 }
 
+TEST(NatServerHolePunch, ReadsThePeerCryptOptionsOnlyFromAnInfoOf30BytesOrMore)
+{
+	std::array<std::uint8_t, 31> bytes{};
+	const Info info{ { { 192, 0, 2, 1 } }, 3, 4, {}, 0 };
+	const auto base = BuildInfo(info);
+	std::copy(base.begin(), base.end(), bytes.begin());
+	bytes[29] = 0x05; // support | require
+
+	const auto withCrypt = ParseInfo(bytes.data(), 30);
+	ASSERT_TRUE(withCrypt.has_value());
+	ASSERT_TRUE(withCrypt->peerCrypt.has_value());
+	ASSERT_EQUALS(0x05, static_cast<int>(*withCrypt->peerCrypt));
+	ASSERT_EQUALS(0x05, static_cast<int>(*ParseInfo(bytes.data(), bytes.size())->peerCrypt));
+
+	// Today's 29-byte INFO, and the legacy 25-byte one, carry no crypt options.
+	ASSERT_FALSE(ParseInfo(bytes.data(), 29)->peerCrypt.has_value());
+	ASSERT_FALSE(ParseInfo(bytes.data(), 25)->peerCrypt.has_value());
+}
+
 TEST(NatServerHolePunch, SeveralRequestsCanBePendingAndEachIsTakenOnce)
 {
 	PendingRequestSet requests;
@@ -307,6 +326,48 @@ TEST(NatServerHolePunch, PendingRequestsAreBoundedAndExpire)
 	ASSERT_FALSE(requests.CanSend(1000, kPendingRequestTimeoutMs - 1));
 	ASSERT_FALSE(requests.Take(1, kPendingRequestTimeoutMs));
 	ASSERT_TRUE(requests.CanSend(1000, kPendingRequestTimeoutMs));
+}
+
+TEST(NatServerHolePunch, AnExpectedEndpointHandsItsVouchedPeerToTheDial)
+{
+	ExpectedEndpointRegistry endpoints;
+	const IPv4 peer{ { 192, 0, 2, 1 } };
+	VouchedPeer vouched;
+	vouched.userHash.fill(0x11);
+	vouched.cryptOptions = 0x03;
+
+	endpoints.Register(peer, 4662, 1, vouched);
+	const PunchAction later = endpoints.Take(peer, 5000, 2);
+	ASSERT_TRUE(later.kind == PunchAction::DialLater);
+	ASSERT_TRUE(later.peer.userHash == vouched.userHash);
+	ASSERT_TRUE(later.peer.cryptOptions == vouched.cryptOptions);
+
+	endpoints.Register(peer, 4662, 3, vouched);
+	endpoints.NoteDialled(peer, 5000);
+	const PunchAction now = endpoints.Take(peer, 5001, 4);
+	ASSERT_TRUE(now.kind == PunchAction::DialNow);
+	ASSERT_TRUE(now.peer.userHash == vouched.userHash);
+	ASSERT_TRUE(now.peer.cryptOptions == vouched.cryptOptions);
+
+	// Without a vouched peer the dial stays as before: no hash, no crypt options.
+	endpoints.Register(peer, 4662, 5);
+	const PunchAction bare = endpoints.Take(peer, 5000, 6);
+	ASSERT_TRUE(bare.peer.userHash == Hash{});
+	ASSERT_FALSE(bare.peer.cryptOptions.has_value());
+}
+
+TEST(NatServerHolePunch, ADialBackKeepsItsVouchedPeer)
+{
+	DialBackSchedule dialBacks;
+	const IPv4 peer{ { 192, 0, 2, 1 } };
+	VouchedPeer vouched;
+	vouched.userHash.fill(0x22);
+	vouched.cryptOptions = 0x01;
+	dialBacks.Schedule(peer, 4662, 5000, 10, vouched);
+	const auto due = dialBacks.TakeDue(10 + kDialBackDelayMs);
+	ASSERT_EQUALS((std::size_t)1, due.size());
+	ASSERT_TRUE(due[0].peer.userHash == vouched.userHash);
+	ASSERT_TRUE(due[0].peer.cryptOptions == vouched.cryptOptions);
 }
 
 TEST(NatServerHolePunch, DuplicateInfoAndActionCapBoundServerDirectedTraffic)

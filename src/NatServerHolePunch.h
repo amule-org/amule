@@ -58,6 +58,8 @@ struct Info
 	std::uint8_t role; // Opaque: decoding does not authorize a peer action.
 	// The server ID of the peer described, present only in a frame of 29 bytes or more.
 	std::optional<std::uint32_t> peerId;
+	// The peer's crypt-layer options, (CT_SERVER_FLAGS >> 9) & 7, only in a frame of 30 bytes or more.
+	std::optional<std::uint8_t> peerCrypt;
 };
 struct Failure
 {
@@ -140,6 +142,9 @@ inline std::optional<Info> ParseInfo(const std::uint8_t *data, std::size_t size)
 	info.role = data[24];
 	if (size >= 29) {
 		info.peerId = Detail::ReadLE(data + 25, 4);
+	}
+	if (size >= 30) {
+		info.peerCrypt = data[29];
 	}
 	return info;
 }
@@ -384,6 +389,13 @@ private:
 	std::deque<std::uint64_t> m_events;
 };
 
+// What a 0x61 told us about the peer, so a dial to it can be obfuscated from its first frame.
+struct VouchedPeer
+{
+	Hash userHash{};
+	std::optional<std::uint8_t> cryptOptions;
+};
+
 // A punch reply is accepted for 30 s after the server gives us its peer endpoint.
 constexpr std::uint64_t kExpectedEndpointTtlMs = 30'000;
 
@@ -398,6 +410,7 @@ struct PunchAction
 	};
 	Kind kind = None;
 	std::uint16_t tcpPort = 0;
+	VouchedPeer peer;
 };
 
 // A server-announced endpoint may trigger one dial back when its UDP punch arrives. The TCP
@@ -405,13 +418,14 @@ struct PunchAction
 class ExpectedEndpointRegistry
 {
 public:
-	void Register(const IPv4 &peerIP, std::uint16_t tcpPort, std::uint64_t now)
+	void Register(
+		const IPv4 &peerIP, std::uint16_t tcpPort, std::uint64_t now, const VouchedPeer &peer = {})
 	{
 		Evict(now);
 		if (tcpPort == 0) {
 			return;
 		}
-		m_expected.push_back({ peerIP, tcpPort, now, std::nullopt });
+		m_expected.push_back({ peerIP, tcpPort, now, std::nullopt, peer });
 	}
 	// Records the UDP port of a dial already started for this endpoint, so the punch that
 	// follows from that same port does not start a second one.
@@ -434,12 +448,12 @@ public:
 		const Entry entry = *match;
 		m_expected.erase(match);
 		if (!entry.dialledUdpPort.has_value()) {
-			return { PunchAction::DialLater, entry.tcpPort };
+			return { PunchAction::DialLater, entry.tcpPort, entry.peer };
 		}
 		if (*entry.dialledUdpPort == sourcePort) {
 			return {};
 		}
-		return { PunchAction::DialNow, entry.tcpPort };
+		return { PunchAction::DialNow, entry.tcpPort, entry.peer };
 	}
 
 private:
@@ -449,6 +463,7 @@ private:
 		std::uint16_t tcpPort;
 		std::uint64_t registeredAt;
 		std::optional<std::uint16_t> dialledUdpPort;
+		VouchedPeer peer;
 	};
 	std::vector<Entry>::iterator Find(const IPv4 &peerIP)
 	{
@@ -482,8 +497,13 @@ public:
 		std::uint16_t tcpPort;
 		std::uint16_t udpPort;
 		std::uint64_t dueAt;
+		VouchedPeer peer;
 	};
-	void Schedule(const IPv4 &peerIP, std::uint16_t tcpPort, std::uint16_t udpPort, std::uint64_t now)
+	void Schedule(const IPv4 &peerIP,
+		std::uint16_t tcpPort,
+		std::uint16_t udpPort,
+		std::uint64_t now,
+		const VouchedPeer &peer = {})
 	{
 		const auto same = std::find_if(m_entries.begin(),
 			m_entries.end(),
@@ -493,7 +513,7 @@ public:
 		} else if (m_entries.size() >= kMaxDialBacks) {
 			m_entries.erase(m_entries.begin());
 		}
-		m_entries.push_back({ peerIP, tcpPort, udpPort, now + kDialBackDelayMs });
+		m_entries.push_back({ peerIP, tcpPort, udpPort, now + kDialBackDelayMs, peer });
 	}
 	std::vector<Entry> TakeDue(std::uint64_t now)
 	{

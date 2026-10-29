@@ -89,7 +89,8 @@ void HandleLowIdHolePunchInfo(
 	// 25-byte one, leaves us the target, who punches and waits for the peer's stream.
 	const bool requester = info.peerId.has_value() &&
 			       serverconnect->LowIdHolePunchPendingRequests().Take(*info.peerId, now);
-	serverconnect->LowIdHolePunchExpectedEndpoints().Register(info.peerIP, info.tcpPort, now);
+	const NatServerHolePunch::VouchedPeer peer{ info.userHash, info.peerCrypt };
+	serverconnect->LowIdHolePunchExpectedEndpoints().Register(info.peerIP, info.tcpPort, now, peer);
 	theApp->clientudp->ExpectNatTPeer(peerIP, info.udpPort, &info.userHash);
 	CPacket *punch = new CPacket(OP_HOLEPUNCH, 0, OP_EMULEPROT);
 	theStats::AddUpOverheadOther(punch->GetPacketSize());
@@ -98,8 +99,7 @@ void HandleLowIdHolePunchInfo(
 		CFormat("Client UDP socket: OP_HOLEPUNCH to %s") %
 			Uint32_16toStringIP_Port(peerIP, info.udpPort));
 	if (requester) {
-		if (theApp->clientudp->DialLowIdHolePunchPeer(
-			    peerIP, info.tcpPort, info.udpPort, info.userHash)) {
+		if (theApp->clientudp->DialLowIdHolePunchPeer(peerIP, info.tcpPort, info.udpPort, peer)) {
 			serverconnect->LowIdHolePunchExpectedEndpoints().NoteDialled(
 				info.peerIP, info.udpPort);
 		}

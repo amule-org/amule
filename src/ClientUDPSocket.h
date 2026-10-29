@@ -37,6 +37,7 @@ class CUpDownClient;
 
 #if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
 #include "LugdunumNatTraversal.h"
+#include "NatServerHolePunch.h" // Needed for VouchedPeer
 #endif
 
 #ifdef AMULE_UTP_TRANSPORT
@@ -81,7 +82,7 @@ public:
 	IUtpContext *GetUtpContext() { return &m_utp; }
 #if defined(ENABLE_NATT_SERVER_COORDINATION)
 	bool DialLowIdHolePunchPeer(
-		uint32 ip, uint16 tcpPort, uint16 udpPort, const std::array<std::uint8_t, 16> &userHash);
+		uint32 ip, uint16 tcpPort, uint16 udpPort, const NatServerHolePunch::VouchedPeer &peer);
 	bool DialLugdunumNatCallbackPeer(const LugdunumNatTraversal::ForwardedCallback &callback);
 	bool IsLugdunumNatCallbackCoolingDown(const LugdunumNatTraversal::CallbackFailureKey &key);
 	void RecordLugdunumNatCallbackFailure(const LugdunumNatTraversal::CallbackFailureKey &key);

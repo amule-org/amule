@@ -261,7 +261,12 @@ none of `0xF9`, `0x9F` or `0x60` and cannot act on `0x61`:
   payload is 29 bytes or more) is the server ID of the peer described. When it names a target
   of one of our pending `0x60` requests, this side is the **requester** and dials uTP at once.
   Any other `0x61`, including a 25-byte one, leaves this side the **target**: it punches and
-  waits. Never write the `0x61` hash or address into a download source. The peer's `OP_HELLO`
+  waits. A 30-byte `0x61` (ed2k-server 0.9.85, between two clients using the hole-punch
+  extension) ends with `peer_crypt`, the peer's `(CT_SERVER_FLAGS >> 9) & 7`. Every dial a
+  `0x61` leads to, the requester's at once and the target's when the punch arrives, carries its
+  hash and, when present, these crypt options (`CUpDownClient::SetConnectOptions()`), so a peer
+  that requires obfuscation accepts it and the uTP dial is obfuscated from its SYN.
+  Never write the `0x61` hash or address into a download source. The peer's `OP_HELLO`
   (or, for a dial of ours, its `OP_HELLOANSWER`) establishes identity, and the existing
   client-list matching attaches the stream to the LowID source. Repeated `0x61` for the same
   hash are ignored for 10 s and server-directed actions are limited to 20 per minute;
