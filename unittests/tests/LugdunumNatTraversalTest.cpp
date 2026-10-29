@@ -334,7 +334,7 @@ TEST(LugdunumNatTraversal, RequestsCallbackOnlyWhenEveryPreconditionHolds)
 {
 	CallbackRequestFacts facts;
 	facts.ourId = 100;    // LowID
-	facts.sourceId = 200; // LowID
+	facts.sourceId = 201; // LowID, odd: a server assigns those to callback-capable clients
 	facts.sameServer = true;
 	facts.serverCallbackCapable = true;
 	facts.serverCryptLayerUdpEnabled = true;
@@ -379,6 +379,25 @@ TEST(LugdunumNatTraversal, RequestsCallbackOnlyWhenEveryPreconditionHolds)
 	CallbackRequestFacts noObfuscation = facts;
 	noObfuscation.serverSupportsObfuscationUdp = false;
 	ASSERT_FALSE(ShouldRequestLugdunumNatCallback(noObfuscation));
+}
+
+TEST(LugdunumNatTraversal, NeverRequestsACallbackForAnEvenLowIdTarget)
+{
+	CallbackRequestFacts facts;
+	facts.ourId = 101;
+	facts.sourceId = 201;
+	facts.sameServer = true;
+	facts.serverCallbackCapable = true;
+	facts.serverCryptLayerUdpEnabled = true;
+	facts.serverKeyUdp = 42;
+	facts.serverSupportsObfuscationUdp = true;
+	facts.settingEnabled = true;
+	ASSERT_TRUE(ShouldRequestLugdunumNatCallback(facts));
+
+	// An even LowID means "not capable" on Lugdunum and on ed2k-server alike.
+	CallbackRequestFacts evenTarget = facts;
+	evenTarget.sourceId = 200;
+	ASSERT_FALSE(ShouldRequestLugdunumNatCallback(evenTarget));
 }
 
 TEST(LugdunumNatTraversal, RecognisesServerWayDatagramsOnlyFromACapableCurrentServer)

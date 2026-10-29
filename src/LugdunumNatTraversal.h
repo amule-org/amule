@@ -144,6 +144,11 @@ inline bool ShouldRequestLugdunumNatCallback(const CallbackRequestFacts &facts)
 	if (!IsLowID(facts.ourId) || !IsLowID(facts.sourceId)) {
 		return false;
 	}
+	// Both server families give a callback-capable client an odd LowID, so an even one cannot
+	// answer and the request would be dropped silently.
+	if ((facts.sourceId & 1) == 0) {
+		return false;
+	}
 	return facts.serverCryptLayerUdpEnabled && facts.serverKeyUdp != 0 &&
 	       facts.serverSupportsObfuscationUdp;
 }

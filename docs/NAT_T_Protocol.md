@@ -322,8 +322,9 @@ forwarded callback by dialing uTP additionally requires `ENABLE_UTP` (`AMULE_UTP
   LowID. As in NeoMule (`CanLow2Low()`), an opted-in server sends only LowID sources it can
   call back, and source records carry no NatT flag of their own
   (`LugdunumNatTraversal::ShouldKeepLowIdServerSource()`);
-- sending `OP_NAT_CALLBACKREQUEST` (`0xA6`): when we are LowID, the source we want is a LowID
-  on our current, callback-active server, and the server-way UDP crypto preconditions hold
+- sending `OP_NAT_CALLBACKREQUEST` (`0xA6`): when we are LowID, the source we want is an odd LowID
+  on our current, callback-active server (both server families give callback-capable clients odd
+  LowIDs, so an even one cannot answer; the reverse callback follows the same rule), and the server-way UDP crypto preconditions hold
   (`thePrefs::IsServerCryptLayerUDPEnabled() && GetServerKeyUDP() != 0 &&
   SupportsObfuscationUDP()`), `BaseClient.cpp` sends one request from the client UDP socket,
   encrypted "the server way" (`CEncryptedDatagramSocket::EncryptSendServer`), to the server's
