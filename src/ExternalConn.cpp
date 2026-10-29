@@ -4583,7 +4583,7 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 		// for the whole share. Answers immediately with how many probes were queued -- the
 		// work happens on the media-probe worker.
 		//
-		// Disabled is not the same answer as "nothing was eligible", and both used to
+		// Disabled or helperless is not the same answer as "nothing was eligible", and both used to
 		// arrive as queued = 0. A caller cannot act on that: a share with no media in it
 		// legitimately queues nothing. Answered first, and as a failure, so REST turns it
 		// into an error naming the reason.
@@ -4591,6 +4591,12 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 			response = new CECPacket(EC_OP_FAILED);
 			response->AddTag(CECTag(EC_TAG_STRING,
 				wxTRANSLATE("Media metadata extraction is disabled in preferences")));
+			break;
+		}
+		if (!thePrefs::IsMediaMetadataAvailable()) {
+			response = new CECPacket(EC_OP_FAILED);
+			response->AddTag(CECTag(EC_TAG_STRING,
+				wxTRANSLATE("This aMule has no media helper (amule-media-probe)")));
 			break;
 		}
 		// Every EC_TAG_KNOWNFILE child, not just the first: the GUI sends one request for a

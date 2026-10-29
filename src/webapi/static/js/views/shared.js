@@ -37,6 +37,8 @@ export default function Shared({ isGuest }) {
   const [filterText, setFilterText] = useState("");
   const [verifying, setVerifying] = useState(false);
   const [detailHash, setDetailHash] = useState(null); // row shown in the detail panel
+  // Tooltip key naming why amuled would refuse a media re-extract, or "".
+  const [mediaBlock, setMediaBlock] = useState("");
 
   // Open (or toggle closed) the detail panel; ignore clicks on a row's own
   // controls (the select-all/select checkbox and the priority dropdown).
@@ -49,6 +51,11 @@ export default function Shared({ isGuest }) {
     data.register({ key: "shared", eventPrefix: "shared", id: "hash",
       list: () => api.list("shared").then((r) => r.shared || []) });
     data.ensure("shared");
+    api.get("preferences").then((p) => {
+      const f = (p || {}).files || {};
+      setMediaBlock(f.media_metadata_available === false ? "shared_media_refresh_tip_unavailable"
+        : f.media_metadata_enabled === false ? "shared_media_refresh_tip_disabled" : "");
+    }).catch(() => {}); // Unknown: amuled still answers the click.
   }, []);
 
   // Close the detail panel if its file is no longer shared (unshared/removed).
@@ -234,8 +241,8 @@ export default function Shared({ isGuest }) {
           <span class="selected-count">${t("shared_selected")} ${selectedCount}</span>
           <span class="vsep" aria-hidden="true"></span>
           <button class="btn btn-sm" onClick=${reload}>${t("shared_refresh_shares")}</button>
-          <button class="btn btn-sm" onClick=${refreshAllMedia}
-                  title=${t("shared_media_refresh_all_tip")}>${t("shared_media_refresh_all")}</button>
+          <button class="btn btn-sm" onClick=${refreshAllMedia} disabled=${!!mediaBlock}
+                  title=${t(mediaBlock || "shared_media_refresh_all_tip")}>${t("shared_media_refresh_all")}</button>
         </div>
         <div class="spacer"></div>
         <div class="toolbar">
@@ -256,7 +263,7 @@ export default function Shared({ isGuest }) {
           <span>${tn("shared_files_count", list.length)}</span>${" · "}<span>${t("shared_size")} ${formatBytes(size)}</span>${" · "}<span>${t("shared_transferred")} ${formatBytes(xs) + " / " + formatBytes(xt)}</span>${" · "}<span>${t("shared_upload_speed")} ${formatSpeed(up)}</span>${freeSpace ? html`${" · "}<span>${t("common_free_space")} ${freeSpace}</span>` : ""}
         </div>`}
     </section>`}>
-        <${SharedDetail} hash=${detailHash} isGuest=${isGuest} />
+        <${SharedDetail} hash=${detailHash} isGuest=${isGuest} mediaBlock=${mediaBlock} />
       <//>
     </div>`;
 }

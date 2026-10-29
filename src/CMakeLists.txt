@@ -583,6 +583,17 @@ if (BUILD_MONOLITHIC)
 				VERBATIM
 			)
 		endif()
+
+		# The core finds its media helper beside itself, in Contents/MacOS.
+		if (AMULE_MEDIA_PROBE)
+			add_dependencies (amule amule-media-probe)
+			add_custom_command (TARGET amule POST_BUILD
+				COMMAND ${CMAKE_COMMAND} -E copy_if_different
+					"$<TARGET_FILE:amule-media-probe>" "$<TARGET_FILE_DIR:amule>/"
+				COMMENT "Bundling amule-media-probe into aMule.app"
+				VERBATIM
+			)
+		endif()
 	endif()
 
 	install (TARGETS amule

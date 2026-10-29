@@ -836,12 +836,18 @@ bool CSharedFileList::MaybeScheduleMediaProbe(CKnownFile *pFile, MediaProbeMode 
 // ask.
 static bool MediaRefreshAvailable()
 {
-	if (thePrefs::GetMediaMetadataEnabled()) {
-		return true;
+	if (!thePrefs::GetMediaMetadataEnabled()) {
+		AddLogLineN(_("Media metadata extraction is disabled in preferences, so there is "
+			      "nothing to re-extract."));
+		return false;
 	}
-	AddLogLineN(_("Media metadata extraction is disabled in preferences, so there is nothing to "
-		      "re-extract."));
-	return false;
+	// The scheduler drops every file without a helper, silently after the one startup line.
+	if (!thePrefs::IsMediaMetadataAvailable()) {
+		AddLogLineN(_("This aMule has no media helper (amule-media-probe), so it cannot "
+			      "re-extract media metadata."));
+		return false;
+	}
+	return true;
 }
 
 unsigned CSharedFileList::RefreshAllMediaMetadata()

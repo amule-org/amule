@@ -3099,6 +3099,14 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 				${CMAKE_CURRENT_SOURCE_DIR}/AllSearchIntegrationTest.py $<TARGET_FILE:amuled>
 		)
 		set_tests_properties (AllSearchIntegrationTest PROPERTIES LABELS "integration")
+		if (TARGET amule-media-probe)
+			add_test (NAME MediaProbeUnavailableTest
+				COMMAND ${Python3_EXECUTABLE}
+					${CMAKE_CURRENT_SOURCE_DIR}/MediaProbeUnavailableTest.py
+					$<TARGET_FILE:amuled> $<TARGET_FILE:amule-media-probe>
+			)
+			set_tests_properties (MediaProbeUnavailableTest PROPERTIES LABELS "integration")
+		endif ()
 		add_test (NAME SearchParamsRestoreIntegrationTest
 			COMMAND ${Python3_EXECUTABLE}
 				${CMAKE_CURRENT_SOURCE_DIR}/SearchParamsRestoreIntegrationTest.py $<TARGET_FILE:amuled>

@@ -1,7 +1,8 @@
 # Bundled media metadata extraction
 
 The core launches `amule-media-probe`. It looks next to its own executable first
-(the Windows, macOS, AppImage and static bundles, and the build tree), then at the
+(the Windows, macOS, AppImage and static bundles, and the build tree, where the
+macOS `aMule.app` gets a copy after each link), then at the
 installed `libexec/amule/amule-media-probe`, relative to its own folder. It never
 searches `PATH`: the helper is internal, so installs keep it out of `bin`. The
 helper uses MediaInfoLib only. It consumes an already-open, seekable regular file on stdin;
@@ -22,10 +23,12 @@ and the key is removed from `amule.conf`. The EC tag stays reserved and the froz
 `/api/v1` field `files.ffprobe_path` reads as empty; a PATCH that would change it
 is `400 read_only_field`.
 The old path, Browse and Detect controls are removed. When the core has no helper
-(built with `-DENABLE_MEDIA_PROBE=OFF`, or installed without it), the toggle stays
-visible but disabled, and amuleapi reports `files.media_metadata_available` as
-`false`. EC tag `EC_TAG_FILES_MEDIA_METADATA_AVAILABLE` carries this to remote
-GUIs; an older core sends nothing, and the toggle stays enabled there.
+(built with `-DENABLE_MEDIA_PROBE=OFF`, or installed without it), the toggle and the
+"Re-extract media metadata" actions stay visible but disabled, and amuleapi reports
+`files.media_metadata_available` as `false`. EC tag
+`EC_TAG_FILES_MEDIA_METADATA_AVAILABLE` carries this to remote GUIs; an older core
+sends nothing, and the controls stay enabled there. A re-extract request that still
+arrives is refused with a reason (EC and REST) or a log line (the monolithic GUI).
 
 Files with a legacy ffprobe failure marker (`FT_MEDIA_PROBE_FAILED=1`) receive
 one retry. Only a MediaInfo file verdict writes marker `2`; the normal scheduling

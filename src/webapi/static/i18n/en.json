@@ -461,6 +461,8 @@
   "shared_media_refresh": "Re-extract media metadata",
   "shared_media_refresh_tip": "Re-probe this file with the bundled media parser and replace its length, bitrate, codec and tags. Reported in the aMule log.",
   "shared_media_refresh_tip_partfile": "Not available while the file is still downloading.",
+  "shared_media_refresh_tip_disabled": "Media metadata extraction is disabled in Preferences.",
+  "shared_media_refresh_tip_unavailable": "This aMule has no media helper (amule-media-probe), so it cannot extract media metadata.",
   "shared_media_refresh_started": "Media metadata re-extraction started. The values update once the probe lands.",
   "shared_media_refresh_all": "Re-extract media",
   "shared_media_refresh_all_tip": "Re-probe every shared audio/video file and replace its media metadata. Runs in the background; progress is in the aMule log.",

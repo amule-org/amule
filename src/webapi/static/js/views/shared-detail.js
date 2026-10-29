@@ -43,7 +43,7 @@ function completeSources(s) {
   return formatInt(r.low) + " – " + formatInt(r.high);
 }
 
-export function SharedDetail({ hash, isGuest }) {
+export function SharedDetail({ hash, isGuest, mediaBlock }) {
   const shared = useStore("shared") || []; // live tick source (SSE)
   const [detail, setDetail] = useState(null);
   const [gone, setGone] = useState(false);
@@ -158,8 +158,8 @@ export function SharedDetail({ hash, isGuest }) {
             ${t("shared_verify")}
           </button>
           ${isMedia ? html`
-          <button class="btn btn-sm admin-only" type="button" disabled=${!!s.incomplete}
-                  title=${t(s.incomplete ? "shared_media_refresh_tip_partfile" : "shared_media_refresh_tip")}
+          <button class="btn btn-sm admin-only" type="button" disabled=${!!s.incomplete || !!mediaBlock}
+                  title=${t(s.incomplete ? "shared_media_refresh_tip_partfile" : mediaBlock || "shared_media_refresh_tip")}
                   onClick=${refreshMedia}>
             ${t("shared_media_refresh")}
           </button>` : null}`)}
