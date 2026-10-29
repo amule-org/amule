@@ -466,20 +466,36 @@ public:
 		std::lock_guard<std::mutex> lock(m_mutex);
 		m_encrypt = encrypt && userHash != nullptr;
 		m_synObfuscated = false;
+		m_hasPreHelloKey = false;
 		if (m_encrypt) {
 			std::copy(userHash, userHash + kUserHashBytes, m_userHash);
 		}
+	}
+
+	/**
+	 * A key-frame hash to obfuscate with until the hello sets the crypt parameters, which replace
+	 * it. It only chooses how we send: ObfuscatesStream() still answers from how the peer sent.
+	 */
+	void SetPreHelloKey(const uint8_t *userHash)
+	{
+		std::lock_guard<std::mutex> lock(m_mutex);
+		std::copy(userHash, userHash + kUserHashBytes, m_preHelloKey);
+		m_hasPreHelloKey = true;
 	}
 
 	//! True when SendUtpDatagram() should obfuscate, with the hash to key on.
 	bool CryptParameters(const uint8_t **userHash) const
 	{
 		std::lock_guard<std::mutex> lock(m_mutex);
-		if (!m_encrypt) {
-			return false;
+		if (m_encrypt) {
+			*userHash = m_userHash;
+			return true;
 		}
-		*userHash = m_userHash;
-		return true;
+		if (m_hasPreHelloKey) {
+			*userHash = m_preHelloKey;
+			return true;
+		}
+		return false;
 	}
 
 	//! Current buffered bytes, pulled synchronously by UTP_GET_READ_BUFFER_SIZE.
@@ -597,7 +613,9 @@ private:
 	bool m_flushAgain = false;
 	bool m_encrypt = false;
 	bool m_synObfuscated = false;
+	bool m_hasPreHelloKey = false;
 	uint8_t m_userHash[kUserHashBytes] = { 0 };
+	uint8_t m_preHelloKey[kUserHashBytes] = { 0 };
 };
 
 #endif // UTPSOCKETTRANSPORT_H

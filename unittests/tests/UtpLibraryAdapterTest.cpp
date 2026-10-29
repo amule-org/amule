@@ -36,6 +36,7 @@
 #include <algorithm>
 #include <deque>
 #include <memory>
+#include <string>
 #include <vector>
 
 using namespace muleunit;
@@ -82,6 +83,8 @@ public:
 		if (userHash != nullptr) {
 			lastUserHash.assign(userHash, userHash + 16);
 		}
+		events.push_back(encrypt ? "datagram-keyed" : "datagram-plain");
+		keys.push_back(lastUserHash);
 		++datagrams;
 		if (!dropOldPort || port == g_loop->clientSourcePort) {
 			g_loop->toClient.emplace_back(payload, payload + length);
@@ -89,8 +92,19 @@ public:
 			++droppedOldPortDatagrams;
 		}
 	}
+	void SendUtpKeyFrame(uint32_t ip, uint16_t port, const uint8_t *peerHash) override
+	{
+		events.push_back("key-frame");
+		keys.emplace_back(peerHash, peerHash + 16);
+		keyFrameIp = ip;
+		keyFramePort = port;
+	}
 	uint32_t lastIp = 0;
 	uint16_t lastPort = 0;
+	uint32_t keyFrameIp = 0;
+	uint16_t keyFramePort = 0;
+	std::vector<std::string> events;
+	std::vector<std::vector<uint8_t>> keys;
 	bool dropOldPort = false;
 	bool lastEncrypt = false;
 	std::vector<uint8_t> lastUserHash;
@@ -881,6 +895,182 @@ TEST(UtpLibraryAdapter, ARefusedSecondStreamMustNotDeregisterTheLivePeer)
 	Pump(loop);
 
 	ASSERT_TRUE(loop.server->HasRegisteredPeer(kPeerIp, kPeerPort));
+	Teardown(loop);
+}
+
+namespace
+{
+const uint8_t kPeerKey[16] = { 7, 7, 7, 7, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
+const uint8_t kOtherKey[16] = { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3 };
+
+bool IsKey(const std::vector<uint8_t> &key, const uint8_t (&expected)[16])
+{
+	return key.size() == 16 && std::equal(key.begin(), key.end(), expected);
+}
+
+//! Hands the client's SYN to the server as plain, keyed for the reply with @a preHelloKey.
+void DeliverSyn(SLoopback &loop, const uint8_t *preHelloKey)
+{
+	const std::vector<uint8_t> syn = loop.toServer.front();
+	loop.toServer.pop_front();
+	loop.server->ProcessDatagram(
+		syn.data(), syn.size(), kPeerIp, kPeerPort, loop.nowMs, false, preHelloKey);
+}
+
+//! The client sends one byte so the server's socket leaves SYN_RECV and acknowledges it.
+void ClientSendsAByte(SLoopback &loop)
+{
+	const uint8_t payload = 0xA5;
+	utp_iovec vector{ const_cast<uint8_t *>(&payload), 1 };
+	utp_writev(loop.clientSocket, &vector, 1);
+	Pump(loop);
+}
+} // namespace
+
+TEST(UtpLibraryAdapter, AnObfuscatedDialSendsOurKeyFrameBeforeTheSyn)
+{
+	SLoopback loop;
+	g_loop = &loop;
+	CServerSink sink;
+	loop.server = CreateUtpLibrary();
+	ASSERT_TRUE(loop.server->Create(sink));
+
+	std::unique_ptr<IStreamTransport> transport;
+	ASSERT_TRUE(loop.server->Dial(kPeerIp, kPeerPort, true, kPeerKey, transport));
+	ASSERT_TRUE(sink.events.size() >= 2);
+	ASSERT_TRUE(sink.events[0] == "key-frame");
+	ASSERT_TRUE(IsKey(sink.keys[0], kPeerKey));
+	ASSERT_EQUALS(kPeerIp, sink.keyFrameIp);
+	ASSERT_EQUALS((int)kPeerPort, (int)sink.keyFramePort);
+	ASSERT_TRUE(sink.events[1] == "datagram-keyed");
+	Teardown(loop);
+}
+
+TEST(UtpLibraryAdapter, APlainDialSendsNoKeyFrame)
+{
+	SLoopback loop;
+	g_loop = &loop;
+	CServerSink sink;
+	loop.server = CreateUtpLibrary();
+	ASSERT_TRUE(loop.server->Create(sink));
+
+	std::unique_ptr<IStreamTransport> transport;
+	ASSERT_TRUE(loop.server->Dial(kPeerIp, kPeerPort, false, nullptr, transport));
+	ASSERT_EQUALS(1, (int)sink.events.size());
+	ASSERT_TRUE(sink.events[0] == "datagram-plain");
+	Teardown(loop);
+}
+
+TEST(UtpLibraryAdapter, AKeyedSynHasItsSynAckAndPreHelloFramesObfuscatedWithThatKey)
+{
+	SLoopback loop;
+	g_loop = &loop;
+	CServerSink sink;
+	CFakeAcceptor acceptor;
+	loop.server = CreateUtpLibrary();
+	ASSERT_TRUE(loop.server->Create(sink));
+	loop.server->SetAcceptor(&acceptor);
+	StartClient(loop);
+
+	DeliverSyn(loop, kPeerKey);
+	ASSERT_TRUE(acceptor.accepted != nullptr);
+	ASSERT_EQUALS(1, (int)sink.events.size());
+	ASSERT_TRUE(sink.events[0] == "datagram-keyed");
+	ASSERT_TRUE(IsKey(sink.keys[0], kPeerKey));
+	// The key only chooses how we send; the peer's SYN arrived plain.
+	ASSERT_FALSE(acceptor.accepted->ObfuscatesStream());
+
+	Pump(loop);
+	ClientSendsAByte(loop);
+	ASSERT_TRUE(sink.events.size() > 1);
+	ASSERT_TRUE(sink.lastEncrypt);
+	ASSERT_TRUE(IsKey(sink.lastUserHash, kPeerKey));
+	Teardown(loop);
+}
+
+TEST(UtpLibraryAdapter, ASynWithoutAKeyStillHasItsSynAckSentPlain)
+{
+	SLoopback loop;
+	g_loop = &loop;
+	CServerSink sink;
+	CFakeAcceptor acceptor;
+	loop.server = CreateUtpLibrary();
+	ASSERT_TRUE(loop.server->Create(sink));
+	loop.server->SetAcceptor(&acceptor);
+	StartClient(loop);
+
+	DeliverSyn(loop, nullptr);
+	ASSERT_TRUE(acceptor.accepted != nullptr);
+	ASSERT_EQUALS(1, (int)sink.events.size());
+	ASSERT_TRUE(sink.events[0] == "datagram-plain");
+	Teardown(loop);
+}
+
+TEST(UtpLibraryAdapter, TheHelloReplacesThePreHelloKey)
+{
+	SLoopback loop;
+	g_loop = &loop;
+	CServerSink sink;
+	CFakeAcceptor acceptor;
+	loop.server = CreateUtpLibrary();
+	ASSERT_TRUE(loop.server->Create(sink));
+	loop.server->SetAcceptor(&acceptor);
+	StartClient(loop);
+	DeliverSyn(loop, kPeerKey);
+	Pump(loop);
+	ASSERT_TRUE(acceptor.accepted != nullptr);
+
+	acceptor.accepted->SetCryptParameters(false, nullptr);
+	ClientSendsAByte(loop);
+	ASSERT_FALSE(sink.lastEncrypt);
+
+	acceptor.accepted->SetCryptParameters(true, kOtherKey);
+	ClientSendsAByte(loop);
+	ASSERT_TRUE(sink.lastEncrypt);
+	ASSERT_TRUE(IsKey(sink.lastUserHash, kOtherKey));
+	Teardown(loop);
+}
+
+TEST(UtpLibraryAdapter, AnAnnouncedKeySwitchesAPlainDialStillInItsHandshake)
+{
+	SLoopback loop;
+	g_loop = &loop;
+	CServerSink sink;
+	loop.server = CreateUtpLibrary();
+	ASSERT_TRUE(loop.server->Create(sink));
+	StartClientAcceptor(loop);
+
+	std::unique_ptr<IStreamTransport> transport;
+	ASSERT_TRUE(loop.server->Dial(kPeerIp, kPeerPort, false, nullptr, transport));
+	ASSERT_FALSE(loop.server->ApplyAnnouncedKey(kPeerIp, kPeerPort + 1, kPeerKey));
+	ASSERT_TRUE(loop.server->ApplyAnnouncedKey(kPeerIp, kPeerPort, kPeerKey));
+	Pump(loop);
+	ASSERT_TRUE(transport->IsConnected());
+	const uint8_t payload = 0x5A;
+	ASSERT_EQUALS(1, (int)transport->Write(&payload, 1));
+	transport->Flush();
+	Pump(loop);
+	ASSERT_TRUE(sink.lastEncrypt);
+	ASSERT_TRUE(IsKey(sink.lastUserHash, kPeerKey));
+	// Connected: the hello is about to decide, and a late key frame changes nothing.
+	ASSERT_FALSE(loop.server->ApplyAnnouncedKey(kPeerIp, kPeerPort, kOtherKey));
+	Teardown(loop);
+}
+
+TEST(UtpLibraryAdapter, AnAnnouncedKeyNeverReplacesTheKeyWeDialledWith)
+{
+	SLoopback loop;
+	g_loop = &loop;
+	CServerSink sink;
+	loop.server = CreateUtpLibrary();
+	ASSERT_TRUE(loop.server->Create(sink));
+	StartClientAcceptor(loop);
+
+	std::unique_ptr<IStreamTransport> transport;
+	ASSERT_TRUE(loop.server->Dial(kPeerIp, kPeerPort, true, kPeerKey, transport));
+	ASSERT_FALSE(loop.server->ApplyAnnouncedKey(kPeerIp, kPeerPort, kOtherKey));
+	Pump(loop);
+	ASSERT_TRUE(IsKey(sink.lastUserHash, kPeerKey));
 	Teardown(loop);
 }
 

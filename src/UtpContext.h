@@ -51,6 +51,8 @@ public:
 		uint16_t port,
 		bool encrypt,
 		const uint8_t *userHash) = 0;
+	//! Sends our key frame, obfuscated with @a peerHash, ahead of an obfuscated dial's SYN.
+	virtual void SendUtpKeyFrame(uint32_t, uint16_t, const uint8_t *) {}
 };
 
 class IStreamTransport;
@@ -85,6 +87,19 @@ public:
 	{
 		return ProcessDatagram(payload, length, ip, port, nowMs);
 	}
+	//! @p preHelloKey, when set, obfuscates the reply to a SYN in this datagram until the hello.
+	virtual bool ProcessDatagram(const uint8_t *payload,
+		size_t length,
+		uint32_t ip,
+		uint16_t port,
+		std::uint64_t nowMs,
+		bool obfuscated,
+		[[maybe_unused]] const uint8_t *preHelloKey)
+	{
+		return ProcessDatagram(payload, length, ip, port, nowMs, obfuscated);
+	}
+	//! Keys a plain dial to that endpoint, still in its handshake, with a hash its key frame announced.
+	virtual bool ApplyAnnouncedKey(uint32_t, uint16_t, const uint8_t *) { return false; }
 	virtual void Tick() = 0;
 
 	// Unactivated prerequisite. Success transfers a pending stream into an
@@ -219,6 +234,19 @@ public:
 	{
 		return ProcessDatagram(payload, length, ip, port, nowMs);
 	}
+	//! @p preHelloKey, when set, obfuscates the reply to a SYN in this datagram until the hello.
+	virtual bool ProcessDatagram(const uint8_t *payload,
+		size_t length,
+		uint32_t ip,
+		uint16_t port,
+		std::uint64_t nowMs,
+		bool obfuscated,
+		[[maybe_unused]] const uint8_t *preHelloKey)
+	{
+		return ProcessDatagram(payload, length, ip, port, nowMs, obfuscated);
+	}
+	//! Keys a plain dial to that endpoint, still in its handshake, with a hash its key frame announced.
+	virtual bool ApplyAnnouncedKey(uint32_t, uint16_t, const uint8_t *) { return false; }
 	virtual void IssueDeferredAcks() = 0;
 	virtual void CheckTimeouts() = 0;
 
@@ -299,12 +327,27 @@ public:
 		std::uint64_t nowMs,
 		bool obfuscated) override
 	{
+		return ProcessDatagram(payload, length, ip, port, nowMs, obfuscated, nullptr);
+	}
+	bool ProcessDatagram(const uint8_t *payload,
+		size_t length,
+		uint32_t ip,
+		uint16_t port,
+		std::uint64_t nowMs,
+		bool obfuscated,
+		const uint8_t *preHelloKey) override
+	{
 		if (!Configure()) {
 			return false;
 		}
-		const bool claimed = m_library->ProcessDatagram(payload, length, ip, port, nowMs, obfuscated);
+		const bool claimed =
+			m_library->ProcessDatagram(payload, length, ip, port, nowMs, obfuscated, preHelloKey);
 		m_library->IssueDeferredAcks();
 		return claimed;
+	}
+	bool ApplyAnnouncedKey(uint32_t ip, uint16_t port, const uint8_t *userHash) override
+	{
+		return m_active && m_library->ApplyAnnouncedKey(ip, port, userHash);
 	}
 	void Tick() override
 	{
@@ -408,10 +451,12 @@ inline bool ProcessUtpFrame(IUtpContext &context,
 	uint32_t ip,
 	uint16_t port,
 	std::uint64_t nowMs,
-	bool obfuscated)
+	bool obfuscated,
+	const uint8_t *preHelloKey = nullptr)
 {
 	return frame.disposition == RP2_KNOWN_TYPE && frame.type == OP_NATT_FRAME_UTP &&
-	       context.ProcessDatagram(frame.payload, frame.payloadLength, ip, port, nowMs, obfuscated);
+	       context.ProcessDatagram(
+		       frame.payload, frame.payloadLength, ip, port, nowMs, obfuscated, preHelloKey);
 }
 
 // UDP sizing for libutp, accounting for the two-byte aMule envelope.

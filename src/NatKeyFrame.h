@@ -314,6 +314,16 @@ public:
 		       !Detail::Elapsed(nowMs, found->second.stamp, m_ttlMs);
 	}
 
+	//! Empty once two live vouchers for the endpoint disagreed.
+	std::optional<Hash> VouchedHash(std::uint32_t ip, std::uint16_t port, std::uint64_t nowMs) const
+	{
+		const auto found = m_entries.find(Detail::EndpointKey(ip, port));
+		if (found == m_entries.end() || Detail::Elapsed(nowMs, found->second.stamp, m_ttlMs)) {
+			return std::nullopt;
+		}
+		return found->second.vouchedHash;
+	}
+
 	bool HasConflictingVoucher(std::uint32_t ip, std::uint16_t port, std::uint64_t nowMs) const
 	{
 		const auto found = m_entries.find(Detail::EndpointKey(ip, port));
@@ -335,6 +345,100 @@ private:
 	std::uint64_t m_ttlMs;
 	std::map<std::uint64_t, Entry> m_entries;
 };
+
+//! An announced key waits this long for the uTP SYN it was sent ahead of.
+constexpr std::uint64_t kHeldKeyTtlMs = 5000;
+
+/**
+ * Key frames announced ahead of a uTP SYN, held per endpoint until that SYN takes them. Unlike the
+ * QUIC cache this accepts any endpoint: a held key only chooses how we obfuscate our reply to a
+ * stream that endpoint itself opens, and is never answered on its own.
+ */
+class CHeldKeys
+{
+public:
+	CHeldKeys(std::size_t capacity, std::uint64_t ttlMs)
+	: m_capacity(capacity)
+	, m_ttlMs(ttlMs)
+	{
+	}
+
+	void Hold(std::uint32_t ip, std::uint16_t port, const Hash &hash, std::uint64_t nowMs)
+	{
+		if (m_capacity == 0) {
+			return;
+		}
+		const std::uint64_t key = Detail::EndpointKey(ip, port);
+		if (m_entries.find(key) == m_entries.end()) {
+			Detail::MakeRoom(m_entries, m_capacity, nowMs, m_ttlMs);
+		}
+		m_entries[key] = Entry{ hash, nowMs };
+	}
+
+	std::optional<Hash> Take(std::uint32_t ip, std::uint16_t port, std::uint64_t nowMs)
+	{
+		const auto found = m_entries.find(Detail::EndpointKey(ip, port));
+		if (found == m_entries.end()) {
+			return std::nullopt;
+		}
+		const Entry entry = found->second;
+		m_entries.erase(found);
+		if (Detail::Elapsed(nowMs, entry.stamp, m_ttlMs)) {
+			return std::nullopt;
+		}
+		return entry.hash;
+	}
+
+	std::size_t Size() const { return m_entries.size(); }
+
+private:
+	struct Entry
+	{
+		Hash hash;
+		std::uint64_t stamp;
+	};
+
+	std::size_t m_capacity;
+	std::uint64_t m_ttlMs;
+	std::map<std::uint64_t, Entry> m_entries;
+};
+
+//! How to answer one inbound uTP SYN.
+struct UtpSynPlan
+{
+	//! Hash to obfuscate the SYN-ACK and every frame before the hello with; empty keeps them plain.
+	std::optional<Hash> key;
+	//! Send our key frame first, so a dialler that did not know our key can switch to obfuscation.
+	bool sendKeyFrame = false;
+};
+
+/**
+ * A server-vouched hash outranks an announced one, and conflicting vouchers key nothing. Our key
+ * frame answers only a plain SYN from an endpoint a rendezvous announced, once per window: an
+ * obfuscated SYN means the dialler already holds our key.
+ */
+inline UtpSynPlan PlanUtpSyn(CExpectedPeers &expected,
+	CHeldKeys &held,
+	CSendGate &gate,
+	std::uint32_t ip,
+	std::uint16_t port,
+	bool synObfuscated,
+	bool canObfuscate,
+	std::uint64_t nowMs)
+{
+	UtpSynPlan plan;
+	std::optional<Hash> announced = held.Take(ip, port, nowMs);
+	if (!canObfuscate || expected.HasConflictingVoucher(ip, port, nowMs)) {
+		return plan;
+	}
+	plan.key = expected.VouchedHash(ip, port, nowMs);
+	if (!plan.key) {
+		plan.key = announced;
+	}
+	plan.sendKeyFrame = plan.key.has_value() && !synObfuscated && expected.IsExpected(ip, port, nowMs) &&
+			    gate.TryAcquire(ip, port, nowMs);
+	return plan;
+}
 
 //! What to do with one outgoing QUIC datagram.
 struct SendPlan

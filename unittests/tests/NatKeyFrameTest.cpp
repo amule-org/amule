@@ -514,3 +514,133 @@ TEST(NatKeyFrame, ADatagramToAnUnknownPeerGoesPlainWithoutOurKeyFrame)
 	ASSERT_EQUALS(1, static_cast<int>(rig.events.size()));
 	ASSERT_FALSE(rig.datagramKeys.back().has_value());
 }
+
+TEST(NatKeyFrame, AVouchedHashIsReadBackForItsEndpointWhileLive)
+{
+	CExpectedPeers expected(4, 100);
+	expected.Expect(1, 1, 0, MakeHash(3));
+	ASSERT_TRUE(expected.VouchedHash(1, 1, 50) == MakeHash(3));
+	ASSERT_FALSE(expected.VouchedHash(1, 2, 50).has_value());
+	ASSERT_FALSE(expected.VouchedHash(1, 1, 100).has_value());
+}
+
+TEST(NatKeyFrame, ConflictingVouchersLeaveNoVouchedHash)
+{
+	CExpectedPeers expected(4, 100);
+	expected.Expect(1, 1, 0, MakeHash(3));
+	expected.Expect(1, 1, 10, MakeHash(4));
+	ASSERT_FALSE(expected.VouchedHash(1, 1, 20).has_value());
+}
+
+TEST(NatKeyFrame, AHeldKeyIsTakenOnceForItsEndpoint)
+{
+	CHeldKeys held(4, kHeldKeyTtlMs);
+	held.Hold(1, 1, MakeHash(5), 0);
+	ASSERT_FALSE(held.Take(1, 2, 10).has_value());
+	ASSERT_TRUE(held.Take(1, 1, 10) == MakeHash(5));
+	ASSERT_FALSE(held.Take(1, 1, 20).has_value());
+}
+
+TEST(NatKeyFrame, AHeldKeyExpires)
+{
+	CHeldKeys held(4, 5000);
+	held.Hold(1, 1, MakeHash(5), 0);
+	ASSERT_FALSE(held.Take(1, 1, 5000).has_value());
+}
+
+TEST(NatKeyFrame, HeldKeysStayBoundedUnderManyEndpoints)
+{
+	CHeldKeys held(3, 5000);
+	for (std::uint16_t port = 1; port <= 10; ++port) {
+		held.Hold(1, port, MakeHash(static_cast<std::uint8_t>(port)), port);
+	}
+	ASSERT_EQUALS(3, static_cast<int>(held.Size()));
+	ASSERT_TRUE(held.Take(1, 10, 11) == MakeHash(10));
+}
+
+TEST(NatKeyFrame, AZeroCapacityHoldsNoKey)
+{
+	CHeldKeys held(0, 5000);
+	held.Hold(1, 1, MakeHash(5), 0);
+	ASSERT_FALSE(held.Take(1, 1, 1).has_value());
+}
+
+namespace
+{
+struct SynRig
+{
+	CExpectedPeers expected{ 8, kExpectedPeerTtlMs };
+	CHeldKeys held{ 8, kHeldKeyTtlMs };
+	CSendGate gate{ 8, kKeyFrameIntervalMs };
+
+	UtpSynPlan Plan(bool synObfuscated, bool canObfuscate = true, std::uint64_t nowMs = 10)
+	{
+		return PlanUtpSyn(expected, held, gate, 1, 1, synObfuscated, canObfuscate, nowMs);
+	}
+};
+} // namespace
+
+TEST(NatKeyFrame, ASynWithNoKnownKeyStaysPlainAndIsNotAnswered)
+{
+	SynRig rig;
+	rig.expected.Expect(1, 1, 0);
+	const UtpSynPlan plan = rig.Plan(false);
+	ASSERT_FALSE(plan.key.has_value());
+	ASSERT_FALSE(plan.sendKeyFrame);
+}
+
+TEST(NatKeyFrame, AHeldKeyKeysTheSynReplyWithoutAnAnswerFromAnUnexpectedEndpoint)
+{
+	SynRig rig;
+	rig.held.Hold(1, 1, MakeHash(6), 0);
+	const UtpSynPlan plan = rig.Plan(false);
+	ASSERT_TRUE(plan.key == MakeHash(6));
+	ASSERT_FALSE(plan.sendKeyFrame);
+}
+
+TEST(NatKeyFrame, AVouchedHashOutranksAHeldKeyForTheSynReply)
+{
+	SynRig rig;
+	rig.expected.Expect(1, 1, 0, MakeHash(3));
+	rig.held.Hold(1, 1, MakeHash(6), 0);
+	ASSERT_TRUE(rig.Plan(true).key == MakeHash(3));
+}
+
+TEST(NatKeyFrame, APlainSynFromAnExpectedKeyedPeerIsAnsweredOnceAWindow)
+{
+	SynRig rig;
+	rig.expected.Expect(1, 1, 0, MakeHash(3));
+	ASSERT_TRUE(rig.Plan(false, true, 10).sendKeyFrame);
+	ASSERT_FALSE(rig.Plan(false, true, 20).sendKeyFrame);
+	ASSERT_TRUE(rig.Plan(false, true, 20).key == MakeHash(3));
+	ASSERT_TRUE(rig.Plan(false, true, 10 + kKeyFrameIntervalMs).sendKeyFrame);
+}
+
+TEST(NatKeyFrame, AnObfuscatedSynIsNotAnsweredBecauseTheDiallerKnowsOurKey)
+{
+	SynRig rig;
+	rig.expected.Expect(1, 1, 0, MakeHash(3));
+	const UtpSynPlan plan = rig.Plan(true);
+	ASSERT_TRUE(plan.key == MakeHash(3));
+	ASSERT_FALSE(plan.sendKeyFrame);
+}
+
+TEST(NatKeyFrame, ConflictingVouchersKeyNothingEvenWithAHeldKey)
+{
+	SynRig rig;
+	rig.expected.Expect(1, 1, 0, MakeHash(3));
+	rig.expected.Expect(1, 1, 1, MakeHash(4));
+	rig.held.Hold(1, 1, MakeHash(6), 0);
+	const UtpSynPlan plan = rig.Plan(false);
+	ASSERT_FALSE(plan.key.has_value());
+	ASSERT_FALSE(plan.sendKeyFrame);
+}
+
+TEST(NatKeyFrame, NoSynReplyIsKeyedWhereObfuscationIsUnavailable)
+{
+	SynRig rig;
+	rig.expected.Expect(1, 1, 0, MakeHash(3));
+	const UtpSynPlan plan = rig.Plan(false, false);
+	ASSERT_FALSE(plan.key.has_value());
+	ASSERT_FALSE(plan.sendKeyFrame);
+}

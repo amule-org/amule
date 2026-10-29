@@ -138,6 +138,12 @@ public:
 		// Register before the SYN, so its reply passes the ingress gate and the
 		// socket-to-endpoint record removes it on every close path.
 		Register(socket, ip, port);
+		// Ahead of the SYN, which utp_connect() sends at once: the peer learns from it how to
+		// obfuscate its SYN-ACK. A plain dial announces nothing, as that would publish our hash.
+		if (encrypt) {
+			auto *sink = static_cast<IUtpDatagramSink *>(utp_context_get_userdata(m_context));
+			sink->SendUtpKeyFrame(ip, port, userHash);
+		}
 		sockaddr_in address{};
 		address.sin_family = AF_INET;
 		address.sin_port = htons(port);
@@ -215,10 +221,24 @@ public:
 		std::uint64_t nowMs,
 		bool obfuscated) override
 	{
+		return ProcessDatagram(payload, length, ip, port, nowMs, obfuscated, nullptr);
+	}
+	bool ProcessDatagram(const uint8_t *payload,
+		size_t length,
+		uint32_t ip,
+		uint16_t port,
+		std::uint64_t nowMs,
+		bool obfuscated,
+		const uint8_t *preHelloKey) override
+	{
 		m_nowMs = nowMs;
 		// OnAccept() is a bare libutp callback with no datagram argument, so the origin of the SYN
 		// it is about to admit travels here for exactly the span of this call.
 		m_datagramObfuscated = obfuscated;
+		// libutp sends the SYN-ACK before UTP_ON_ACCEPT and with no socket, so the key travels the
+		// same way, and only to the endpoint this datagram came from.
+		m_ingressKey = preHelloKey;
+		m_ingress = { ip, port };
 		const Endpoint observed{ ip, port };
 		Endpoint expected = observed;
 		utp_socket *remappedSocket = nullptr;
@@ -257,6 +277,7 @@ public:
 			}
 		}
 		m_datagramObfuscated = false;
+		m_ingressKey = nullptr;
 		// Not inside UTP_ON_ACCEPT: utp_close() can produce DESTROYING before
 		// it returns, re-entering the callback that is still deciding.
 		// Destruction is the close, exactly once.
@@ -266,6 +287,25 @@ public:
 		}
 		m_refused.clear();
 		return claimed;
+	}
+	bool ApplyAnnouncedKey(uint32_t ip, uint16_t port, const uint8_t *userHash) override
+	{
+		bool applied = false;
+		for (const auto &entry : m_endpoints) {
+			if (entry.second != Endpoint{ ip, port }) {
+				continue;
+			}
+			CUtpSocketTransport *transport = TransportOf(entry.first);
+			const uint8_t *current = nullptr;
+			// Only a dial still in its handshake: once connected, the hello is about to decide.
+			if (transport == nullptr || transport->IsInbound() || transport->IsConnected() ||
+				transport->CryptParameters(&current)) {
+				continue;
+			}
+			transport->SetPreHelloKey(userHash);
+			applied = true;
+		}
+		return applied;
 	}
 	void IssueDeferredAcks() override { utp_issue_deferred_acks(m_context); }
 	void CheckTimeouts() override { utp_check_timeouts(m_context); }
@@ -412,6 +452,12 @@ private:
 				}
 			}
 		}
+		// The SYN-ACK leaves before UTP_ON_ACCEPT, from a socket with no transport yet.
+		if (!encrypt && s_self != nullptr && s_self->m_ingressKey != nullptr &&
+			s_self->m_ingress == Endpoint{ ip, port }) {
+			encrypt = true;
+			userHash = s_self->m_ingressKey;
+		}
 		sink->SendUtpDatagram(args->buf, args->len, ip, port, encrypt, userHash);
 		return 0;
 	}
@@ -494,6 +540,9 @@ private:
 		// libutp reaches CS_CONNECTED on the peer's first ST_DATA, silently.
 		raw->MarkConnected();
 		raw->MarkSynObfuscated(s_self->m_datagramObfuscated);
+		if (s_self->m_ingressKey != nullptr) {
+			raw->SetPreHelloKey(s_self->m_ingressKey);
+		}
 
 		// Registered before admission so that this pairs with the removal in
 		// CloseSocket(), which runs for every socket that has a transport --
@@ -638,6 +687,9 @@ private:
 	utp_context *m_context = nullptr;
 	IUtpStreamAcceptor *m_acceptor = nullptr;
 	bool m_datagramObfuscated = false;
+	// Borrowed for the span of one ProcessDatagram() call, like m_datagramObfuscated.
+	const uint8_t *m_ingressKey = nullptr;
+	Endpoint m_ingress;
 	CUtpPeerRegistry m_peers;
 	// Which endpoint each socket holds, so the registry can be kept until the
 	// socket is destroyed rather than until its userdata is cleared.
