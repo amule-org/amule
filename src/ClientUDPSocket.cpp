@@ -464,15 +464,13 @@ void CClientUDPSocket::SendUtpKeyFrame(uint32_t ip, uint16_t port, const uint8_t
 
 void CClientUDPSocket::HandleUtpKeyFrame(const uint8_t *payload, size_t length, uint32_t ip, uint16_t port)
 {
-	const std::optional<NatKeyFrame::Hash> hash = NatKeyFrame::ParsePayload(payload, length);
-	const std::uint64_t now = ::GetTickCount64();
-	// A server-vouched identity for the endpoint is never overridden by an announcement.
-	if (!hash || m_utpExpectedPeers.HasVouchedHash(ip, port, now) ||
-		m_utpExpectedPeers.HasConflictingVoucher(ip, port, now)) {
+	const std::optional<NatKeyFrame::Hash> announced = NatKeyFrame::ParsePayload(payload, length);
+	if (!announced) {
 		return;
 	}
-	m_utpHeldKeys.Hold(ip, port, *hash, now);
-	if (NatTObfuscationAvailable() && m_utp.ApplyAnnouncedKey(ip, port, hash->data())) {
+	const std::optional<NatKeyFrame::Hash> key = NatKeyFrame::AcceptUtpKeyFrame(
+		m_utpExpectedPeers, m_utpHeldKeys, ip, port, *announced, ::GetTickCount64());
+	if (key && NatTObfuscationAvailable() && m_utp.ApplyAnnouncedKey(ip, port, key->data())) {
 		AddDebugLogLineN(logClientUDP,
 			CFormat("NAT-T key frame from %s:%u: obfuscating our uTP dial with its hash") %
 				Uint32toStringIP(ip) % port);

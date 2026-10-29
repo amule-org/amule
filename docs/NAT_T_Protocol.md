@@ -136,12 +136,13 @@ The same prerequisites apply, and aMule's own key frame never leaves in the clea
 - **Answering.** A plain SYN from an endpoint a rendezvous announced, with a key, is preceded by aMule's
   key frame (once per endpoint every 10 s), so a dialler that did not know aMule's hash can switch.
 - **Switching.** A key frame from the peer of a plain dial still in its handshake keys that dial's later
-  frames with the announced hash.
+  frames, with the server-vouched hash when there is one, else with the announced hash. This covers the
+  ed2k-server punch, where both dials are plain but each side has the other's `0x61` hash.
 
 In every case the hello replaces the key-frame hash with the crypt parameters it establishes.
 
 A key frame is queued only while it can be obfuscated, and it is dropped rather than sent plain if
-obfuscation lapses before it leaves (the public IP lost, or the crypt layer switched off, in between).
+obfuscation lapses before it leaves (the public IP lost in between).
 Ordinary client UDP keeps its existing plain fallback.
 
 The decisions are in [`src/NatKeyFrame.h`](../src/NatKeyFrame.h), driven from

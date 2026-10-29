@@ -440,6 +440,27 @@ inline UtpSynPlan PlanUtpSyn(CExpectedPeers &expected,
 	return plan;
 }
 
+/**
+ * The key a uTP key frame switches a plain dial to. A live server-vouched hash outranks the announced
+ * one, which alone is held for the endpoint's next SYN. Conflicting vouchers key nothing.
+ */
+inline std::optional<Hash> AcceptUtpKeyFrame(CExpectedPeers &expected,
+	CHeldKeys &held,
+	std::uint32_t ip,
+	std::uint16_t port,
+	const Hash &announced,
+	std::uint64_t nowMs)
+{
+	if (expected.HasConflictingVoucher(ip, port, nowMs)) {
+		return std::nullopt;
+	}
+	if (std::optional<Hash> vouched = expected.VouchedHash(ip, port, nowMs)) {
+		return vouched;
+	}
+	held.Hold(ip, port, announced, nowMs);
+	return announced;
+}
+
 //! What to do with one outgoing QUIC datagram.
 struct SendPlan
 {

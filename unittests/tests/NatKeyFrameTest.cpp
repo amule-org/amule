@@ -644,3 +644,28 @@ TEST(NatKeyFrame, NoSynReplyIsKeyedWhereObfuscationIsUnavailable)
 	ASSERT_FALSE(plan.key.has_value());
 	ASSERT_FALSE(plan.sendKeyFrame);
 }
+
+TEST(NatKeyFrame, AVouchedHashOutranksAnAnnouncedKeyForTheSwitch)
+{
+	SynRig rig;
+	rig.expected.Expect(1, 1, 0, MakeHash(3));
+	ASSERT_TRUE(AcceptUtpKeyFrame(rig.expected, rig.held, 1, 1, MakeHash(6), 10) == MakeHash(3));
+	ASSERT_EQUALS(0, static_cast<int>(rig.held.Size()));
+}
+
+TEST(NatKeyFrame, AnAnnouncedKeyWithoutAVoucherIsHeldAndSwitches)
+{
+	SynRig rig;
+	rig.expected.Expect(1, 1, 0);
+	ASSERT_TRUE(AcceptUtpKeyFrame(rig.expected, rig.held, 1, 1, MakeHash(6), 10) == MakeHash(6));
+	ASSERT_TRUE(rig.held.Take(1, 1, 20) == MakeHash(6));
+}
+
+TEST(NatKeyFrame, ConflictingVouchersSwitchNothing)
+{
+	SynRig rig;
+	rig.expected.Expect(1, 1, 0, MakeHash(3));
+	rig.expected.Expect(1, 1, 1, MakeHash(4));
+	ASSERT_FALSE(AcceptUtpKeyFrame(rig.expected, rig.held, 1, 1, MakeHash(6), 10).has_value());
+	ASSERT_EQUALS(0, static_cast<int>(rig.held.Size()));
+}
