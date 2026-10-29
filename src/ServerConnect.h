@@ -31,7 +31,8 @@
 #include "amuleIPV4Address.h" // Needed for amuleIPV4Address
 #include "Timer.h"            // Needed for CTimer
 #ifdef ENABLE_NATT_SERVER_COORDINATION
-#include "NatServerHolePunch.h" // Needed for the 0x61 policy state
+#include "NatServerHolePunch.h"   // Needed for the 0x61 policy state
+#include "LugdunumNatTraversal.h" // Needed for ForwardedCallback in the extension's wakes
 #endif
 
 #include <map> // Needed for std::map
@@ -140,10 +141,23 @@ public:
 	//! Clears the pending requests, expected endpoints and waiting dial backs: called on a new
 	//! login, since a previous connection's target IDs mean nothing on a different server.
 	void ResetLowIdHolePunchState();
+	//! We announced the hole-punch extension at login and this server runs it, having also
+	//! answered our Lugdunum opt-in, whose 0x37 it wakes a target with.
+	bool IsHolePunchExtensionActive();
+	//! 0x37 wakes on an extension server, each waiting for the 0x61 that names its requester.
+	NatServerHolePunch::PendingWakeSet<LugdunumNatTraversal::ForwardedCallback> &HolePunchExtensionWakes()
+	{
+		return m_holePunchExtensionWakes;
+	}
+	//! A woken target sends 0x9F at 0, 0.5 and 1 s so the server learns its current UDP port.
+	void StartHolePunchExtensionKeepalives();
 #ifdef AMULE_UTP_TRANSPORT
 	//! Dials back each punched peer whose delay ran out without a stream from it. Called about
 	//! once a second from CamuleApp::OnCoreTimer.
 	void ProcessLowIdHolePunchDialBacks();
+	//! Sends the due wake keepalives, and dials the Lugdunum way for each wake no 0x61 answered.
+	//! Called from every CamuleApp::OnCoreTimer tick, which the 0.5 s burst needs.
+	void ProcessHolePunchExtension();
 #endif
 #endif
 
@@ -208,6 +222,10 @@ private:
 	NatServerHolePunch::DuplicateInfoSuppressor m_lowIdHolePunchDuplicates;
 	NatServerHolePunch::ActionRateLimiter m_lowIdHolePunchActionLimiter;
 	NatServerHolePunch::ExpectedEndpointRegistry m_lowIdHolePunchExpectedEndpoints;
+	NatServerHolePunch::PendingWakeSet<LugdunumNatTraversal::ForwardedCallback> m_holePunchExtensionWakes;
+	NatServerHolePunch::KeepaliveBurst m_holePunchKeepaliveBurst;
+	// Fixed at login, so a setting changed mid-session cannot claim what the server was not told.
+	bool m_announcedHolePunchExtension = false;
 #endif
 };
 

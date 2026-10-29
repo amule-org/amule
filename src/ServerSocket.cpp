@@ -89,6 +89,10 @@ void HandleLowIdHolePunchInfo(
 	// 25-byte one, leaves us the target, who punches and waits for the peer's stream.
 	const bool requester = info.peerId.has_value() &&
 			       serverconnect->LowIdHolePunchPendingRequests().Take(*info.peerId, now);
+	if (info.peerId.has_value()) {
+		// The 0x61 a wake was waiting for: the punch now goes as its role says.
+		serverconnect->HolePunchExtensionWakes().Resolve(*info.peerId);
+	}
 	const NatServerHolePunch::VouchedPeer peer{ info.userHash, info.peerCrypt };
 	serverconnect->LowIdHolePunchExpectedEndpoints().Register(info.peerIP, info.tcpPort, now, peer);
 	theApp->clientudp->ExpectNatTPeer(peerIP, info.udpPort, &info.userHash);
@@ -361,6 +365,10 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 				if (cur_server->SupportsLowIdHolePunch()) {
 					AddDebugLogLineN(logServer,
 						"OP_IDCHANGE: server accepts LowID hole punch requests");
+				}
+				if (cur_server->SupportsHolePunchExtension()) {
+					AddDebugLogLineN(logServer,
+						"OP_IDCHANGE: server runs the hole-punch extension");
 				}
 #endif
 				// copy TCP flags into the server in the server list
@@ -775,7 +783,7 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 						logServer, "OP_NAT_CALLBACKREQUESTED", forwarded);
 #ifdef AMULE_UTP_TRANSPORT
 					if (theApp->clientudp != nullptr) {
-						theApp->clientudp->DialLugdunumNatCallbackPeer(forwarded);
+						theApp->clientudp->HandleForwardedCallback(forwarded);
 					}
 #endif
 				});

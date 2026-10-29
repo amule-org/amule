@@ -328,6 +328,18 @@ void CServerConnect::ConnectionEstablished(CServerSocket *sender)
 		if (thePrefs::IsLugdunumNatCallbackEnabled()) {
 			dwNatTraversalFlags = SRVCAP_NATTRAVERSAL;
 		}
+#ifdef AMULE_UTP_TRANSPORT
+		const bool holePunchUtpAvailable = true;
+#else
+		const bool holePunchUtpAvailable = false;
+#endif
+		m_announcedHolePunchExtension = NatServerHolePunch::ShouldAnnounceHolePunchExtension(
+			thePrefs::IsLowIdHolePunchEnabled(),
+			thePrefs::IsLugdunumNatCallbackEnabled(),
+			holePunchUtpAvailable);
+		if (m_announcedHolePunchExtension) {
+			dwNatTraversalFlags |= SRVCAP_HOLEPUNCH_EXTENSION;
+		}
 #endif
 
 		// FLAGS for server connection
@@ -826,9 +838,43 @@ void CServerConnect::ResetLowIdHolePunchState()
 	m_lowIdHolePunchPendingRequests = NatServerHolePunch::PendingRequestSet();
 	m_lowIdHolePunchDialBacks = NatServerHolePunch::DialBackSchedule();
 	m_lowIdHolePunchExpectedEndpoints = NatServerHolePunch::ExpectedEndpointRegistry();
+	m_holePunchExtensionWakes =
+		NatServerHolePunch::PendingWakeSet<LugdunumNatTraversal::ForwardedCallback>();
+	m_holePunchKeepaliveBurst = NatServerHolePunch::KeepaliveBurst();
+}
+
+bool CServerConnect::IsHolePunchExtensionActive()
+{
+	CServer *server = GetCurrentServer();
+	return m_announcedHolePunchExtension && IsConnected() && server != nullptr &&
+	       server->SupportsHolePunchExtension() && server->IsLugdunumNatCallbackActive();
+}
+
+void CServerConnect::StartHolePunchExtensionKeepalives()
+{
+	m_holePunchKeepaliveBurst.Start(::GetTickCount64());
 }
 
 #ifdef AMULE_UTP_TRANSPORT
+void CServerConnect::ProcessHolePunchExtension()
+{
+	const std::uint64_t now = ::GetTickCount64();
+	for (std::size_t due = m_holePunchKeepaliveBurst.TakeDue(now); due > 0; --due) {
+		TrySendLowIdHolePunchKeepalive();
+	}
+	for (const LugdunumNatTraversal::ForwardedCallback &unanswered :
+		m_holePunchExtensionWakes.TakeExpired(now)) {
+		// No 0x61 followed: a Lugdunum 0xA6 woke us, so dial as Lugdunum's callback does.
+		AddDebugLogLineN(logServer,
+			CFormat("No OP_LOWID_HOLEPUNCH_INFO for wake from requester %u; dialling the "
+				"Lugdunum way") %
+				unanswered.requesterId);
+		if (theApp->clientudp != nullptr) {
+			theApp->clientudp->DialLugdunumNatCallbackPeer(unanswered);
+		}
+	}
+}
+
 void CServerConnect::ProcessLowIdHolePunchDialBacks()
 {
 	const std::uint64_t now = ::GetTickCount64();
@@ -877,6 +923,23 @@ void CServerConnect::TrySendLowIdHolePunchKeepalive()
 	const NatServerHolePunch::Hash payload = NatServerHolePunch::BuildKeepalive(ownHash);
 	CMemFile data(payload.data(), payload.size());
 	CPacket *packet = new CPacket(data, OP_EDONKEYPROT, NatServerUdp::OP_NATT_KEEPALIVE);
+
+	// The server UDP fields are updated on the server-list entry, not on cur_server's snapshot.
+	CServer *serverListEntry =
+		theApp->serverlist->GetServerByAddress(server->GetAddress(), server->GetPort());
+	const NatServerHolePunch::KeepaliveCryptFacts cryptFacts{ IsHolePunchExtensionActive(),
+		thePrefs::IsServerCryptLayerUDPEnabled(),
+		serverListEntry != nullptr ? serverListEntry->GetServerKeyUDP() : 0,
+		serverListEntry != nullptr && serverListEntry->SupportsObfuscationUDP() };
+	if (NatServerHolePunch::ShouldObfuscateKeepalive(cryptFacts)) {
+		const uint16 obfuscationPort = serverListEntry->GetObfuscationPortUDP();
+		AddDebugLogLineN(logServer,
+			CFormat("Client UDP socket: obfuscated OP_SERVER_NATT_KEEPALIVE to %s") %
+				Uint32_16toStringIP_Port(server->GetIP(), obfuscationPort));
+		theStats::AddUpOverheadServer(theApp->clientudp->SendServerWayObfuscated(
+			packet, server->GetIP(), obfuscationPort, cryptFacts.serverKeyUdp));
+		return;
+	}
 
 	const uint16 serverUdpPort = static_cast<uint16>(server->GetPort() + 4);
 	AddDebugLogLineN(logServer,

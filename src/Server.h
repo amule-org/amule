@@ -182,6 +182,11 @@ public:
 	{
 		return NatServerHolePunch::ServerAcceptsHolePunchRequest(GetTCPFlags());
 	}
+	// ed2k-server's hole-punch extension (0.9.85): 0x60 wakes the target with 0x37.
+	bool SupportsHolePunchExtension() const
+	{
+		return NatServerHolePunch::ServerOffersHolePunchExtension(GetTCPFlags());
+	}
 	// This session's OP_IDCHANGE came in the 24-byte form that answers our opt-in. Kept apart from
 	// GetSeenTcpPort(), which may legitimately be 0.
 	bool IsLugdunumNatCallbackActive() const { return m_bLugdunumNatCallbackActive; }

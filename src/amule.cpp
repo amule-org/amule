@@ -2438,6 +2438,9 @@ void CamuleApp::OnCoreTimer(CTimerEvent &WXUNUSED(evt))
 	// tell the static analyser that the Kad recovery's clientudp->Close() further down can
 	// be reached with a null pointer.
 	clientudp->TickUtp();
+#ifdef ENABLE_NATT_SERVER_COORDINATION
+	serverconnect->ProcessHolePunchExtension();
+#endif
 #endif
 #ifdef AMULE_QUIC_TRANSPORT
 	clientudp->TickQuic();
