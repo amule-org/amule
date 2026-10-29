@@ -631,7 +631,8 @@ jobs:
       - name: Build native-arch .app
         # dylibbundler asks on stdin for a library it cannot find and loops on
         # an empty answer, so a missing dylib would otherwise hold the runner.
-        timeout-minutes: 60
+        # Two hours: an x86_64 build under Rosetta can need more than one.
+        timeout-minutes: 120
         env:
           MACOS_ARCHITECTURES: ${{ matrix.arch }}
         run: ${{ matrix.archcmd }} packaging/macos/build.sh
