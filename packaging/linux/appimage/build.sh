@@ -180,6 +180,13 @@ fi
 install -Dm644 /usr/share/icons/hicolor/index.theme \
     "${APPDIR}/usr/share/icons/hicolor/index.theme"
 
+# appimagetool requires the desktop file's icon as a PNG or XPM in the AppDir root, and
+# .DirIcon as a regular file. linuxdeploy leaves only symlinks to the SVG there.
+APP_ICON="${APPDIR}/usr/share/icons/hicolor/256x256/apps/org.amule.aMule.png"
+rm -f "${APPDIR}/org.amule.aMule.png" "${APPDIR}/.DirIcon"
+cp "${APP_ICON}" "${APPDIR}/org.amule.aMule.png"
+cp "${APP_ICON}" "${APPDIR}/.DirIcon"
+
 # 7. Seal the AppDir into the final AppImage with appimagetool directly.
 #    We deliberately do NOT use `linuxdeploy --output appimage` here
 #    because it re-walks the binaries' library deps and would re-bundle
