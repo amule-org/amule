@@ -295,7 +295,7 @@ public:
 		} else if (existing == m_entries.end()) {
 			Detail::MakeRoom(m_entries, m_capacity, nowMs, m_ttlMs);
 		}
-		m_entries[key] = Entry{ nowMs, std::move(vouchedHash), false };
+		m_entries[key] = Entry{ nowMs, vouchedHash, false };
 		return Result::Accepted;
 	}
 
