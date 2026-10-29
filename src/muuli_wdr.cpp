@@ -2594,6 +2594,8 @@ wxSizer *CategoriesEditWindow( wxWindow *parent, bool call_fit, bool set_sizer )
     wxButton *item12 = new wxButton( item2, IDC_BROWSE, "...", wxDefaultPosition, wxDefaultSize, 0 );
     item9->Add( item12, wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 5) );
     item1->Add( item9, wxSizerFlags().Expand().CenterVertical().Border(wxBOTTOM, 5) );
+    wxStaticText *item9_hint = new wxStaticText( item2, -1, _("(All files in this folder are shared with other peers)"), wxDefaultPosition, wxDefaultSize, wxALIGN_CENTRE );
+    item1->Add( item9_hint, wxSizerFlags().Expand().CenterHorizontal().Border(wxLEFT|wxRIGHT, 5) );
     wxFlexGridSizer *item13 = new wxFlexGridSizer( 2, 0, 0 );
 
     wxStaticText *item14 = new wxStaticText( item2, -1, LabelWithColon( _("Change priority for new assigned files") ), wxDefaultPosition, wxDefaultSize, 0 );
