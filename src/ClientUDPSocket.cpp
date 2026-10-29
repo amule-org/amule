@@ -83,6 +83,44 @@
 // CClientUDPSocket -- Extended eMule UDP socket
 //
 
+#if defined(AMULE_UTP_TRANSPORT) || defined(AMULE_QUIC_TRANSPORT)
+namespace
+{
+//! Our user hash may only leave obfuscated, and only where the user allows the crypt layer.
+bool NatTObfuscationAvailable()
+{
+	return thePrefs::IsClientCryptLayerSupported() && theApp->GetPublicIP() != 0;
+}
+} // namespace
+
+bool CClientUDPSocket::SendNatKeyFrame(uint32_t ip, uint16_t port, const NatKeyFrame::Hash &key)
+{
+	CPacket *packet = new CPacket(
+		OP_NATT_FRAME_KEY, static_cast<uint32_t>(NatKeyFrame::kHashBytes), OP_UDPRESERVEDPROT2);
+	NatKeyFrame::Hash userHash{};
+	std::copy_n(thePrefs::GetUserHash().GetHash(), userHash.size(), userHash.begin());
+	const auto payload = NatKeyFrame::BuildPayload(userHash);
+	packet->CopyToDataBuffer(0, payload.data(), static_cast<unsigned int>(payload.size()));
+	return TrySendPacket(packet, ip, port, true, key.data(), false, 0);
+}
+
+void CClientUDPSocket::ExpectNatTPeer(
+	uint32_t ip, uint16_t udpPort, const std::array<uint8_t, 16> *vouchedHash)
+{
+	std::optional<NatKeyFrame::Hash> hash;
+	if (vouchedHash != nullptr) {
+		hash = *vouchedHash;
+	}
+	const std::uint64_t now = ::GetTickCount64();
+#ifdef AMULE_UTP_TRANSPORT
+	m_utpExpectedPeers.Expect(ip, udpPort, now, hash);
+#endif
+#ifdef AMULE_QUIC_TRANSPORT
+	m_keyFrames.ExpectPeer(ip, udpPort, now, hash);
+#endif
+}
+#endif
+
 #ifdef AMULE_QUIC_TRANSPORT
 namespace
 {
@@ -142,32 +180,13 @@ bool CClientUDPSocket::SendQuicFrame(const uint8_t *payload, size_t length, uint
 	return m_keyFrames.SendDatagram(payload, length, ip, port, ::GetTickCount64());
 }
 
-void CClientUDPSocket::ExpectNatTPeer(
-	uint32_t ip, uint16_t udpPort, const std::array<uint8_t, 16> *vouchedHash)
-{
-	std::optional<NatKeyFrame::Hash> hash;
-	if (vouchedHash != nullptr) {
-		hash = *vouchedHash;
-	}
-	m_keyFrames.ExpectPeer(ip, udpPort, ::GetTickCount64(), hash);
-}
-
 NatKeyFrame::Callbacks CClientUDPSocket::KeyFrameCallbacks()
 {
 	NatKeyFrame::Callbacks callbacks;
 	callbacks.enabled = [] { return QuicNatTEnabled(); };
-	callbacks.obfuscationOn = [] {
-		return thePrefs::IsClientCryptLayerSupported() && theApp->GetPublicIP() != 0;
-	};
+	callbacks.obfuscationOn = [] { return NatTObfuscationAvailable(); };
 	callbacks.sendKeyFrame = [this](uint32_t ip, uint16_t port, const NatKeyFrame::Hash &key) -> bool {
-		CPacket *packet = new CPacket(OP_NATT_FRAME_KEY,
-			static_cast<uint32_t>(NatKeyFrame::kHashBytes),
-			OP_UDPRESERVEDPROT2);
-		NatKeyFrame::Hash userHash{};
-		std::copy_n(thePrefs::GetUserHash().GetHash(), userHash.size(), userHash.begin());
-		const auto payload = NatKeyFrame::BuildPayload(userHash);
-		packet->CopyToDataBuffer(0, payload.data(), static_cast<unsigned int>(payload.size()));
-		return TrySendPacket(packet, ip, port, true, key.data(), false, 0);
+		return SendNatKeyFrame(ip, port, key);
 	};
 	callbacks.sendDatagram = [this](const uint8_t *payload,
 					 size_t length,
@@ -428,6 +447,54 @@ void CClientUDPSocket::SendUtpDatagram(const uint8_t *payload,
 	theStats::AddUpOverheadOther(overhead);
 	QueueUtpDatagram<CPacket>(*this, payload, length, ip, port, encrypt, userHash);
 }
+
+void CClientUDPSocket::SendUtpKeyFrame(uint32_t ip, uint16_t port, const uint8_t *peerHash)
+{
+	wxASSERT(wxIsMainThread());
+	const std::uint64_t now = ::GetTickCount64();
+	if (!NatTObfuscationAvailable() || !m_utpKeyFrameGate.TryAcquire(ip, port, now)) {
+		return;
+	}
+	NatKeyFrame::Hash key{};
+	std::copy_n(peerHash, key.size(), key.begin());
+	if (!SendNatKeyFrame(ip, port, key)) {
+		m_utpKeyFrameGate.Forget(ip, port);
+	}
+}
+
+void CClientUDPSocket::HandleUtpKeyFrame(const uint8_t *payload, size_t length, uint32_t ip, uint16_t port)
+{
+	const std::optional<NatKeyFrame::Hash> hash = NatKeyFrame::ParsePayload(payload, length);
+	const std::uint64_t now = ::GetTickCount64();
+	// A server-vouched identity for the endpoint is never overridden by an announcement.
+	if (!hash || m_utpExpectedPeers.HasVouchedHash(ip, port, now) ||
+		m_utpExpectedPeers.HasConflictingVoucher(ip, port, now)) {
+		return;
+	}
+	m_utpHeldKeys.Hold(ip, port, *hash, now);
+	if (NatTObfuscationAvailable() && m_utp.ApplyAnnouncedKey(ip, port, hash->data())) {
+		AddDebugLogLineN(logClientUDP,
+			CFormat("NAT-T key frame from %s:%u: obfuscating our uTP dial with its hash") %
+				Uint32toStringIP(ip) % port);
+	}
+}
+
+NatKeyFrame::UtpSynPlan CClientUDPSocket::PrepareUtpSynReply(uint32_t ip, uint16_t port, bool synObfuscated)
+{
+	const std::uint64_t now = ::GetTickCount64();
+	NatKeyFrame::UtpSynPlan plan = NatKeyFrame::PlanUtpSyn(m_utpExpectedPeers,
+		m_utpHeldKeys,
+		m_utpKeyFrameGate,
+		ip,
+		port,
+		synObfuscated,
+		NatTObfuscationAvailable(),
+		now);
+	if (plan.sendKeyFrame && !SendNatKeyFrame(ip, port, *plan.key)) {
+		m_utpKeyFrameGate.Forget(ip, port);
+	}
+	return plan;
+}
 #endif
 
 #ifdef AMULE_QUIC_TRANSPORT
@@ -686,7 +753,17 @@ void CClientUDPSocket::ProcessReservedProt2Frame(
 			kind == EUtpFrameKind::Existing && m_utp.HasExpectedPortRemapPeer(ip, port, nowMs);
 		if (kind != EUtpFrameKind::Malformed &&
 			(kind == EUtpFrameKind::Syn || fromKnownPeer || fromExpectedHandshakePeer)) {
-			if (ProcessUtpFrame(m_utp, classified, ip, port, nowMs, obfuscated)) {
+			NatKeyFrame::UtpSynPlan synReply;
+			if (kind == EUtpFrameKind::Syn) {
+				synReply = PrepareUtpSynReply(ip, port, obfuscated);
+			}
+			if (ProcessUtpFrame(m_utp,
+				    classified,
+				    ip,
+				    port,
+				    nowMs,
+				    obfuscated,
+				    synReply.key ? synReply.key->data() : nullptr)) {
 				return;
 			}
 		} else if (kind == EUtpFrameKind::Existing) {
@@ -825,8 +902,13 @@ void CClientUDPSocket::ProcessReservedProt2Frame(
 	break;
 
 	case OP_NATT_FRAME_KEY:
+#if defined(AMULE_UTP_TRANSPORT) || defined(AMULE_QUIC_TRANSPORT)
+#ifdef AMULE_UTP_TRANSPORT
+		HandleUtpKeyFrame(classified.payload, classified.payloadLength, ip, port);
+#endif
 #ifdef AMULE_QUIC_TRANSPORT
 		HandleNatKeyFrame(classified.payload, classified.payloadLength, ip, port);
+#endif
 #else
 		if (m_unservedFrameLog.ShouldLog(::GetTickCount64())) {
 			AddDebugLogLineN(logClientUDP,
@@ -1001,9 +1083,7 @@ bool CClientUDPSocket::DialLugdunumNatCallbackPeer(const LugdunumNatTraversal::F
 		!m_lugdunumCallbackActions.Admit(failureKey, ::GetTickCount64())) {
 		return false;
 	}
-#ifdef AMULE_QUIC_TRANSPORT
 	ExpectNatTPeer(target.ip, target.udpPort, callback.hasObfuscation ? &callback.userHash : nullptr);
-#endif
 
 	CUpDownClient *client = new CUpDownClient(
 		0, target.provisionalUserId, server->GetIP(), server->GetPort(), nullptr, true, false);

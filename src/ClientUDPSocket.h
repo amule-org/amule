@@ -43,6 +43,9 @@ class CUpDownClient;
 #include "UtpContext.h"
 #include "UtpStreamAcceptor.h"
 #endif
+#if defined(AMULE_UTP_TRANSPORT) || defined(AMULE_QUIC_TRANSPORT)
+#include "NatKeyFrame.h"
+#endif
 #ifdef AMULE_QUIC_TRANSPORT
 #include "QuicContext.h"
 #include "QuicNgtcp2Adapter.h"
@@ -50,7 +53,6 @@ class CUpDownClient;
 #include "QuicStreamAcceptor.h"
 #include "QuicCapsRequestLedger.h"
 #include "QuicCapabilityCache.h"
-#include "NatKeyFrame.h"
 #endif
 #if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT) && defined(AMULE_QUIC_TRANSPORT)
 #include "ClientRef.h" // Needed for a safe CAPS-holdoff owner reference
@@ -88,6 +90,13 @@ public:
 	void CompleteLugdunumCallbackRendezvous(const LugdunumNatTraversal::CallbackFailureKey &key);
 #endif
 #endif
+#if defined(AMULE_UTP_TRANSPORT) || defined(AMULE_QUIC_TRANSPORT)
+	//! A rendezvous says this peer is about to contact us from this UDP endpoint; only such an
+	//! endpoint may announce a QUIC key frame, or be answered with ours. When supplied, its
+	//! server-vouched hash is authoritative.
+	void ExpectNatTPeer(
+		uint32_t ip, uint16_t udpPort, const std::array<uint8_t, 16> *vouchedHash = nullptr);
+#endif
 #ifdef AMULE_QUIC_TRANSPORT
 	//! Services every live QUIC connection's RFC 9002 timers, independently of any inbound
 	//! datagram. Without this a connection that stops receiving ACKs would never retransmit
@@ -96,10 +105,6 @@ public:
 	//! Sends one QUIC datagram, obfuscated with the peer's hash when it is known. A long header
 	//! is preceded by our key frame, so the peer can obfuscate its replies the same way.
 	bool SendQuicFrame(const uint8_t *payload, size_t length, uint32_t ip, uint16_t port);
-	//! A rendezvous says this peer is about to contact us from this UDP endpoint; only such an
-	//! endpoint may announce a key frame. When supplied, its server-vouched hash is authoritative.
-	void ExpectNatTPeer(
-		uint32_t ip, uint16_t udpPort, const std::array<uint8_t, 16> *vouchedHash = nullptr);
 	bool SendQuicCapsRequest(const std::array<uint8_t, 16> &peer,
 		uint32_t ipv4,
 		uint16_t udpPort,
@@ -126,8 +131,15 @@ private:
 		uint16_t port,
 		bool encrypt,
 		const uint8_t *userHash) override;
+	void SendUtpKeyFrame(uint32_t ip, uint16_t port, const uint8_t *peerHash) override;
+	void HandleUtpKeyFrame(const uint8_t *payload, size_t length, uint32_t ip, uint16_t port);
+	//! How to key the reply to a uTP SYN, having sent our key frame first when the plan says so.
+	NatKeyFrame::UtpSynPlan PrepareUtpSynReply(uint32_t ip, uint16_t port, bool synObfuscated);
 	CUtpContext m_utp;
 	CUtpStreamAcceptor m_utpAcceptor;
+	NatKeyFrame::CExpectedPeers m_utpExpectedPeers{ 256, NatKeyFrame::kExpectedPeerTtlMs };
+	NatKeyFrame::CHeldKeys m_utpHeldKeys{ 256, NatKeyFrame::kHeldKeyTtlMs };
+	NatKeyFrame::CSendGate m_utpKeyFrameGate{ 256, NatKeyFrame::kKeyFrameIntervalMs };
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 	LugdunumNatTraversal::CallbackFailureMemory m_lugdunumCallbackFailures;
 	LugdunumNatTraversal::ForwardedCallbackActionGuard m_lugdunumCallbackActions;
@@ -153,6 +165,10 @@ private:
 	CQuicCapsHoldoffs<CClientRef> m_quicCapsHoldoffs;
 	CQuicCapsHoldoffs<CClientRef>::SCallbacks QuicCapsHoldoffCallbacks();
 #endif
+#endif
+#if defined(AMULE_UTP_TRANSPORT) || defined(AMULE_QUIC_TRANSPORT)
+	//! Our key frame, obfuscated with @a key; false when the packet was not queued.
+	bool SendNatKeyFrame(uint32_t ip, uint16_t port, const NatKeyFrame::Hash &key);
 #endif
 #ifdef AMULE_QUIC_TRANSPORT
 	NatKeyFrame::Callbacks KeyFrameCallbacks();
