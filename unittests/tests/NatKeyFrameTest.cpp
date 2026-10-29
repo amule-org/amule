@@ -268,6 +268,13 @@ TEST(NatKeyFrame, AnExpectationLapses)
 	ASSERT_FALSE(expected.IsExpected(1, 1, 1000));
 }
 
+TEST(NatKeyFrame, AZeroCapacityExpectationIsNoConflict)
+{
+	CExpectedPeers expected(0, 1000);
+	ASSERT_TRUE(expected.Expect(1, 1, 0, MakeHash(5)) == CExpectedPeers::Result::Accepted);
+	ASSERT_FALSE(expected.IsExpected(1, 1, 0));
+}
+
 TEST(NatKeyFrame, ExpectationsStayBounded)
 {
 	CExpectedPeers expected(3, 100000);

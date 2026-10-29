@@ -15,8 +15,7 @@ struct QuicCapsSendPlan
 	std::array<uint8_t, 16> targetHash{};
 };
 
-//! Shared observable plan for both production CAPS send paths. With no public IP or disabled
-//! obfuscation, the UDP sender transmits plaintext and the target hash is deliberately omitted.
+//! Plaintext, with no target hash, without a public IP or with obfuscation off.
 inline QuicCapsSendPlan MakeQuicCapsSendPlan(
 	bool clientCryptLayerSupported, uint32_t publicIP, const std::array<uint8_t, 16> &targetHash) noexcept
 {

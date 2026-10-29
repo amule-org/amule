@@ -257,10 +257,7 @@ bool CMuleUDPSocket::TrySendPacket(CPacket *packet,
 	bool bKad,
 	uint32 nReceiverVerifyKey)
 {
-	if (!packet) {
-		wxCHECK_MSG(packet, false, "Invalid packet.");
-		return false;
-	}
+	wxCHECK_MSG(packet, false, "Invalid packet.");
 	/*wxCHECK_RET(port, "Invalid port.");
 	wxCHECK_RET(IP, "Invalid IP.");
 	*/

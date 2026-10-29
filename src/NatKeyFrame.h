@@ -48,6 +48,8 @@ constexpr std::size_t kHashBytes = 16;
 constexpr std::uint64_t kPeerKeyIdleMs = 120000;
 //! Expected endpoints authorize unauthenticated key-frame announcements for 30 s.
 constexpr std::uint64_t kExpectedPeerTtlMs = 30000;
+//! At most one key frame per endpoint every 10 s.
+constexpr std::uint64_t kKeyFrameIntervalMs = 10000;
 using Hash = std::array<std::uint8_t, kHashBytes>;
 
 inline Hash BuildPayload(const Hash &userHash)
@@ -273,7 +275,7 @@ public:
 		std::optional<Hash> vouchedHash = std::nullopt)
 	{
 		if (m_capacity == 0) {
-			return Result::ConflictingVoucher;
+			return Result::Accepted;
 		}
 		const std::uint64_t key = Detail::EndpointKey(ip, port);
 		auto existing = m_entries.find(key);
@@ -487,7 +489,7 @@ public:
 private:
 	Callbacks m_callbacks;
 	CPeerKeyCache m_keys{ 256, kPeerKeyIdleMs };
-	CSendGate m_gate{ 256, 10000 };
+	CSendGate m_gate{ 256, kKeyFrameIntervalMs };
 	CExpectedPeers m_expected{ 256, kExpectedPeerTtlMs };
 };
 } // namespace NatKeyFrame
