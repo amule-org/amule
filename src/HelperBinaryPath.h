@@ -127,7 +127,7 @@ inline wxArrayString AmuleApiArguments(const wxString &path,
 	const wxString &ecIp,
 	unsigned ecPort)
 {
-	// No brace initialisation: wxArrayString only gets an initializer_list constructor in wx 3.3.
+	// No brace initialisation: wxArrayString has no initializer_list constructor before wx 3.2.4.
 	wxArrayString args;
 	args.Add(path);
 	args.Add("--config-dir=" + configDir);

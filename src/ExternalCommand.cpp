@@ -375,7 +375,7 @@ wxArrayString Build(const wxString &command,
 	return args;
 }
 
-// wxWidgets 3.2 has no wxArrayString(std::initializer_list) constructor (added in 3.3).
+// wxArrayString has no std::initializer_list constructor before wxWidgets 3.2.4.
 static wxArrayString SingleArgument(const wxString &arg)
 {
 	wxArrayString args;
