@@ -280,6 +280,7 @@ private:
 	// Recomputes the Download button from the visible list's selection; see
 	// the definition for why both callers go through it.
 	void UpdateDownloadButtonState();
+	void UpdateStartButtonState();
 	void OnListItemSelected(wxDataViewEvent &ev);
 	void OnBnClickedReset(wxCommandEvent &ev);
 	void OnBnClickedClear(wxCommandEvent &ev);

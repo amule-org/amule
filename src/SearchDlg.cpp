@@ -558,6 +558,8 @@ void CSearchDlg::OnSearchTypeChanged(wxCommandEvent &WXUNUSED(evt))
 			->SetToolTip(SearchModeHelp(static_cast<SearchType>(canonical)));
 		wxConfigBase::Get()->Write("/eMule/DefaultSearchType", (long)canonical);
 	}
+	// A different type is a new request, so the query need not change to search again.
+	UpdateStartButtonState();
 }
 
 void CSearchDlg::ResetResultViews()
@@ -1073,9 +1075,12 @@ void CSearchDlg::OnFieldChanged(wxEvent &WXUNUSED(evt))
 	// Enable the "Reset" button if any fields contain text
 	FindWindow(IDC_SEARCH_RESET)->Enable(enable);
 
-	// Enable the Server Search button if the Name field contains text
-	enable = !CastChild(IDC_SEARCHNAME, wxTextEntry)->GetValue().IsEmpty();
-	FindWindow(IDC_STARTS)->Enable(enable);
+	UpdateStartButtonState();
+}
+
+void CSearchDlg::UpdateStartButtonState()
+{
+	FindWindow(IDC_STARTS)->Enable(!CastChild(IDC_SEARCHNAME, wxTextEntry)->GetValue().IsEmpty());
 }
 
 void CSearchDlg::OnFilteringChange(wxCommandEvent &WXUNUSED(evt))
@@ -1353,7 +1358,7 @@ void CSearchDlg::ResetControls()
 	m_progressbar->SetValue(0);
 
 	FindWindow(IDC_CANCELS)->Disable();
-	FindWindow(IDC_STARTS)->Enable(!CastChild(IDC_SEARCHNAME, wxTextEntry)->GetValue().IsEmpty());
+	UpdateStartButtonState();
 }
 
 void CSearchDlg::LocalSearchEnd()
@@ -1380,6 +1385,9 @@ void CSearchDlg::KadSearchEnd(uint32 id)
 #endif
 			if (finished) {
 				page->SetSearchRunning(false);
+				// Only the ed2k path calls ResetControls. Kad, and every search on amuleGUI,
+				// ends here.
+				UpdateStartButtonState();
 			}
 			UpdateHitCount(page);
 		}
