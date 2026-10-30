@@ -83,8 +83,50 @@ env:
     -DENABLE_IP2COUNTRY=YES
 
 jobs:
+  # A master push analyzes only the languages whose files it changed: C/C++ takes
+  # about 80 minutes, so a workflow-only change runs just the actions analysis.
+  # Scheduled runs, a change to this workflow, and pushes whose changed files
+  # cannot be listed analyze all three.
+  languages:
+    name: Select languages
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    outputs:
+      matrix: ${{ steps.select.outputs.matrix }}
+    steps:
+      - name: Select languages
+        id: select
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          BEFORE: ${{ github.event.before }}
+          SHA: ${{ github.sha }}
+          REPO: ${{ github.repository }}
+        run: |
+          all=true
+          if [ "$EVENT" = push ] && [ -n "$BEFORE" ] && [ "$BEFORE" != 0000000000000000000000000000000000000000 ]; then
+            # The compare API lists at most 300 files; a longer list analyzes everything.
+            if files=$(gh api "repos/$REPO/compare/$BEFORE...$SHA" \
+                --jq 'if (.files | length) < 300 then .files[].filename else error("too many") end'); then
+              all=false
+            fi
+          fi
+          has() { [ "$all" = true ] || grep -q -E "$1" <<<"$files"; }
+          config='^\.github/workflows/codeql\.yml$'
+          entries=()
+          has '^\.github/' && entries+=('{"language":"actions","build-mode":"none"}')
+          has "^(src/|cmake/|CMakeLists\.txt\$|config\.h\.cm\$|unittests/|\.github/actions/apt-install/)|$config" &&
+            entries+=('{"language":"c-cpp","build-mode":"manual"}')
+          has "\.py\$|$config" && entries+=('{"language":"python","build-mode":"none"}')
+          matrix="{\"include\":[$(IFS=,; echo "${entries[*]}")]}"
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+          echo "Languages: $matrix"
+
   analyze:
     name: Analyze (${{ matrix.language }})
+    needs: languages
+    if: needs.languages.outputs.matrix != '{"include":[]}'
     # Runner size impacts CodeQL analysis time. To learn more, please see:
     #   - https://gh.io/recommended-hardware-resources-for-running-codeql
     #   - https://gh.io/supported-runners-and-hardware-resources
@@ -104,29 +146,10 @@ jobs:
 
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - language: actions
-            build-mode: none
-          - language: c-cpp
-            # build-mode: autobuild
-            build-mode: manual
-          # java-kotlin was dropped: the tree's last Java file, the generated
-          # ECCodes.java, went with the committed EC headers, so the analysis
-          # had nothing left to scan and failed on every run.
-          - language: python
-            build-mode: none
-          #- language: ruby
-          #  build-mode: none
-
-          # CodeQL supports the following values keywords for 'language': 'actions', 'c-cpp', 'csharp', 'go', 'java-kotlin', 'javascript-typescript', 'python', 'ruby', 'rust', 'swift'
-          # Use `c-cpp` to analyze code written in C, C++ or both
-          # Use 'java-kotlin' to analyze code written in Java, Kotlin or both
-          # Use 'javascript-typescript' to analyze code written in JavaScript, TypeScript or both
-          # To learn more about changing the languages that are analyzed or customizing the build mode for your analysis,
-          # see https://docs.github.com/en/code-security/code-scanning/creating-an-advanced-setup-for-code-scanning/customizing-your-advanced-setup-for-code-scanning.
-          # If you are analyzing a compiled language, you can modify the 'build-mode' for that language to customize how
-          # your codebase is analyzed, see https://docs.github.com/en/code-security/code-scanning/creating-an-advanced-setup-for-code-scanning/codeql-code-scanning-for-compiled-languages
+      # java-kotlin was dropped: the tree's last Java file, the generated
+      # ECCodes.java, went with the committed EC headers, so the analysis
+      # had nothing left to scan and failed on every run.
+      matrix: ${{ fromJSON(needs.languages.outputs.matrix) }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
