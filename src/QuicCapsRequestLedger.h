@@ -7,7 +7,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
-#include <vector>
+#include <deque>
 
 struct QuicCapsSendPlan
 {
@@ -60,7 +60,7 @@ public:
 		if (Find(peer, ipv4, udpPort) != m_records.end())
 			return false;
 		if (m_records.size() == m_maximum)
-			m_records.erase(m_records.begin());
+			m_records.pop_front();
 		m_records.push_back({ peer, ipv4, udpPort, fileHash, Expiration(nowMs) });
 		return true;
 	}
@@ -96,7 +96,7 @@ public:
 	}
 
 private:
-	using Iterator = std::vector<QuicCapsRequestRecord>::iterator;
+	using Iterator = std::deque<QuicCapsRequestRecord>::iterator;
 
 	Iterator Find(const std::array<uint8_t, 16> &peer, uint32_t ipv4, uint16_t udpPort)
 	{
@@ -112,7 +112,7 @@ private:
 	}
 
 	std::size_t m_maximum;
-	std::vector<QuicCapsRequestRecord> m_records;
+	std::deque<QuicCapsRequestRecord> m_records;
 };
 
 #endif
