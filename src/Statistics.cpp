@@ -1180,6 +1180,7 @@ void CStatistics::AddUploadToSoft(uint8 SoftType, uint32 bytes)
 	}
 }
 
+#ifdef AMULE_SESSION_TRAFFIC_STATS
 void CStatistics::AddSessionTrafficUpload(
 	[[maybe_unused]] bool lowIdToLowId, [[maybe_unused]] bool ipv6, [[maybe_unused]] uint32 bytes)
 {
@@ -1209,6 +1210,7 @@ void CStatistics::AddSessionTrafficDownload(
 	}
 #endif
 }
+#endif
 
 inline bool SupportsOSInfo(unsigned clientSoft)
 {

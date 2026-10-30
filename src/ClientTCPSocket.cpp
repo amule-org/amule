@@ -118,6 +118,7 @@ CClientTCPSocket::~CClientTCPSocket()
 	}
 }
 
+#ifdef AMULE_SESSION_TRAFFIC_STATS
 void CClientTCPSocket::NoteHelloForStatistics()
 {
 	if (m_client == nullptr) {
@@ -132,10 +133,16 @@ void CClientTCPSocket::NoteHelloForStatistics()
 	if (HasTransport() && theApp->clientudp != nullptr) {
 		std::array<std::uint8_t, 16> peerHash{};
 		std::copy_n(m_client->GetUserHash().GetHash(), peerHash.size(), peerHash.begin());
-		theApp->clientudp->NoteRendezvousHello(m_client->GetIP(), peerHash);
+		const bool completedRendezvous =
+			theApp->clientudp->NoteRendezvousHello(m_client->GetIP(), peerHash);
+		// The source we requested a Lugdunum callback for reached us; counted once per hello.
+		if (m_client->TakeLugdunumCallbackAnswered() && !completedRendezvous) {
+			theStats::AddLugdunumCallbackSuccess();
+		}
 	}
 #endif
 }
+#endif
 
 #ifdef AMULE_UTP_TRANSPORT
 void CClientTCPSocket::ApplyUtpCryptParameters()
@@ -439,7 +446,9 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 			}
 		}
 #endif
+#ifdef AMULE_SESSION_TRAFFIC_STATS
 		NoteHelloForStatistics();
+#endif
 #ifdef ENABLE_IPV6
 		m_client->MarkIPv6ChangeConnectionReady();
 #endif
@@ -553,7 +562,9 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 			theApp->clientlist->AddClient(m_client);
 			m_client->SetCommentDirty();
 		}
+#ifdef AMULE_SESSION_TRAFFIC_STATS
 		NoteHelloForStatistics();
+#endif
 #ifdef AMULE_UTP_TRANSPORT
 		// After the attach above, which may have replaced the client this keys
 		// on. Outbound streams also refresh their parameters on HELLOANSWER.

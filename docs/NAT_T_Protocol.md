@@ -386,7 +386,7 @@ observation confirms the relay delivery path; it does not validate the current u
 ## Statistics
 
 The statistics tree shows, per session, how often the server-coordinated paths start a
-LowID-to-LowID session and how much data such sessions carry (#1177). The nodes travel in the
+LowID-to-LowID session and how much data such sessions carry. The nodes travel in the
 tree like any other, so amulegui, amuleweb and amuleapi show them without new EC tags; each has a
 stable `key`.
 

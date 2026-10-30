@@ -29,9 +29,10 @@
 
 #include "kademlia/utils/ContactDistribution.h"
 #include "DisplayRateCounter.h"
-#include "Constants.h"    // Needed for StatsGraphType
-#include "StatTree.h"     // Needed for CStatTreeItem* classes
-#include "GetTickCount.h" // Needed for GetTickCount64 in CPreciseRateCounter ctor
+#include "Constants.h"           // Needed for StatsGraphType
+#include "StatTree.h"            // Needed for CStatTreeItem* classes
+#include "GetTickCount.h"        // Needed for GetTickCount64 in CPreciseRateCounter ctor
+#include "SessionTrafficStats.h" // Needed for AMULE_SESSION_TRAFFIC_STATS
 
 #include <atomic> // Needed for std::atomic (free-space figures)
 #include <deque>  // Needed for std::deque
@@ -388,8 +389,10 @@ public:
 	// Payload exchanged with a peer whose session is LowID to LowID (we and the peer both LowID,
 	// which only NAT traversal connects) or runs over IPv6. Each figure exists only in builds
 	// that can produce it.
+#ifdef AMULE_SESSION_TRAFFIC_STATS
 	static void AddSessionTrafficUpload(bool lowIdToLowId, bool ipv6, uint32 bytes);
 	static void AddSessionTrafficDownload(bool lowIdToLowId, bool ipv6, uint32 bytes);
+#endif
 #if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
 	// Server-coordinated rendezvous we acted on, and those that reached a verified hello.
 	static void AddServerHolePunchAttempt() { ++(*s_serverHolePunchAttempts); }

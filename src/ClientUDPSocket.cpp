@@ -1033,18 +1033,19 @@ void CClientUDPSocket::NoteRendezvousAttempt(
 	}
 }
 
-void CClientUDPSocket::NoteRendezvousHello(uint32 ip, const std::array<std::uint8_t, 16> &peerHash)
+bool CClientUDPSocket::NoteRendezvousHello(uint32 ip, const std::array<std::uint8_t, 16> &peerHash)
 {
 	const std::optional<NatServerHolePunch::RendezvousPath> path =
 		m_rendezvousOutcomes.TakeSuccess(ip, peerHash, ::GetTickCount64());
 	if (!path) {
-		return;
+		return false;
 	}
 	if (*path == NatServerHolePunch::RendezvousPath::ServerPunch) {
 		theStats::AddServerHolePunchSuccess();
 	} else {
 		theStats::AddLugdunumCallbackSuccess();
 	}
+	return true;
 }
 
 void CClientUDPSocket::SendLugdunumNatCallbackRequest(const LugdunumNatTraversal::CallbackFailureKey &key)

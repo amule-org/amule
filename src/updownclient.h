@@ -53,7 +53,9 @@
 #include "KadBuddyLiveness.h"
 #if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
 #include "LugdunumNatTraversal.h"
+#include "NatServerHolePunch.h" // Needed for PendingCallbackRequest
 #endif
+#include "SessionTrafficStats.h" // Needed for AMULE_SESSION_TRAFFIC_STATS
 
 #include <map>
 #include <wx/thread.h> // Needed for wxMutex
@@ -225,8 +227,9 @@ public:
 	void QuicDialFailed();
 	bool Connect();
 #ifdef ENABLE_NATT_SERVER_COORDINATION
-	//! Sends a reciprocal request for a callback-provided peer ID after its dial fails.
-	void TrySendLugdunumNatCallbackRequest(uint32 targetId) const;
+	//! Sends a reciprocal request for a callback-provided peer ID after its dial fails. Returns
+	//! whether the request went out.
+	bool TrySendLugdunumNatCallbackRequest(uint32 targetId) const;
 #endif
 #if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
 	//! Dials uTP for a temporary client at the server-announced endpoint. Do not mutate any
@@ -247,6 +250,7 @@ public:
 	CProtocolPeerIdentity GetProtocolPeerIdentity() const;
 	uint32 GetIP() const { return m_userAddress.ToIPv4NetworkOrderOrZero(); }
 	bool HasLowID() const { return IsLowID(m_nUserIDHybrid); }
+#ifdef AMULE_SESSION_TRAFFIC_STATS
 	//! Classifies this session's payload for the statistics tree. Set on the main thread when a
 	//! hello is processed; the upload disk I/O thread reads it.
 	void NoteSessionTraffic(bool lowIdToLowId, bool ipv6)
@@ -256,6 +260,7 @@ public:
 	}
 	bool IsLowIdToLowIdSession() const { return m_lowIdToLowIdSession; }
 	bool IsIPv6Session() const { return m_ipv6Session; }
+#endif
 	/**
 	 * The peer's address as text.
 	 *
@@ -358,7 +363,7 @@ private:
 	//! Sends OP_NAT_CALLBACKREQUEST for this LowID source when the Lugdunum preconditions hold.
 	//! Called from TryToContact's LowID->LowID decline, so at most once per source: a
 	//! DS_LOWTOLOWIP source is not asked again.
-	void TrySendLugdunumNatCallbackRequest() const;
+	void TrySendLugdunumNatCallbackRequest();
 	//! Sends OP_LOWID_HOLEPUNCH_REQUEST (ed2k-server) for this LowID source when its
 	//! preconditions hold. Mutually exclusive with the Lugdunum callback per server.
 	//! Called from TryToContact's LowID->LowID decline. Returns whether the request went out;
@@ -367,8 +372,15 @@ private:
 	bool m_lowIdHolePunchRequested = false;
 #endif
 #if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
+	// The source's own target dials us, so our request's success is that source's hello.
+	NatServerHolePunch::PendingCallbackRequest m_lugdunumCallbackRequest;
 
 public:
+	//! True once for a hello within the window of the last callback request for this source.
+	bool TakeLugdunumCallbackAnswered()
+	{
+		return m_lugdunumCallbackRequest.TakeAnswered(::GetTickCount64());
+	}
 	//! Asks again for a DS_LOWTOLOWIP source whose request was never sent because the server
 	//! slot was busy.
 	void RetryLowIdHolePunchRequest();
@@ -1037,8 +1049,10 @@ private:
 	// atomic: the disk I/O thread sets them, the main thread reads and resets them
 	std::atomic<bool> m_bDisableCompression{ false };
 	std::atomic<bool> m_bIOError{ false };
+#ifdef AMULE_SESSION_TRAFFIC_STATS
 	std::atomic<bool> m_lowIdToLowIdSession{ false };
 	std::atomic<bool> m_ipv6Session{ false };
+#endif
 
 	friend class CUploadDiskIOThread; // disk I/O thread needs direct access to block queues and session
 					  // counters

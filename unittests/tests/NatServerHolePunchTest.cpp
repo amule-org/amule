@@ -665,3 +665,34 @@ TEST(NatServerHolePunch, PendingRendezvousStayBounded)
 	ASSERT_TRUE(outcomes.Size() <= kMaxPendingRendezvous);
 	ASSERT_TRUE(outcomes.TakeSuccess(1000, FilledHash(1), 1) == RendezvousPath::ServerPunch);
 }
+
+TEST(NatServerHolePunch, TwoPeersBehindOneAddressAreTwoRendezvous)
+{
+	RendezvousOutcomes outcomes;
+	ASSERT_TRUE(outcomes.NoteAttempt(RendezvousPath::ServerPunch, 1, FilledHash(1), 0));
+	ASSERT_TRUE(outcomes.NoteAttempt(RendezvousPath::ServerPunch, 1, FilledHash(2), 0));
+	ASSERT_TRUE(outcomes.TakeSuccess(1, FilledHash(2), 10) == RendezvousPath::ServerPunch);
+	ASSERT_TRUE(outcomes.TakeSuccess(1, FilledHash(1), 10) == RendezvousPath::ServerPunch);
+	ASSERT_FALSE(outcomes.TakeSuccess(1, FilledHash(1), 10).has_value());
+}
+
+TEST(NatServerHolePunch, AHelloPrefersTheRendezvousThatNamedItsHash)
+{
+	RendezvousOutcomes outcomes;
+	outcomes.NoteAttempt(RendezvousPath::LugdunumCallback, 1, std::nullopt, 0);
+	outcomes.NoteAttempt(RendezvousPath::ServerPunch, 1, FilledHash(2), 0);
+	ASSERT_TRUE(outcomes.TakeSuccess(1, FilledHash(2), 10) == RendezvousPath::ServerPunch);
+	ASSERT_TRUE(outcomes.TakeSuccess(1, FilledHash(3), 10) == RendezvousPath::LugdunumCallback);
+}
+
+TEST(NatServerHolePunch, ACallbackRequestIsAnsweredOnceWithinItsWindow)
+{
+	PendingCallbackRequest request;
+	ASSERT_FALSE(request.TakeAnswered(0));
+	request.NoteSent(100);
+	ASSERT_TRUE(request.TakeAnswered(100 + kRendezvousOutcomeTtlMs - 1));
+	ASSERT_FALSE(request.TakeAnswered(100 + kRendezvousOutcomeTtlMs - 1));
+
+	request.NoteSent(1000);
+	ASSERT_FALSE(request.TakeAnswered(1000 + kRendezvousOutcomeTtlMs));
+}

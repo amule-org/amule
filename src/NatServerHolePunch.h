@@ -36,6 +36,7 @@
 #include <cstdint>
 #include <deque>
 #include <optional>
+#include <utility>
 #include <vector>
 
 namespace NatServerHolePunch
@@ -664,9 +665,10 @@ public:
 		RendezvousPath path, std::uint32_t ip, std::optional<Hash> peerHash, std::uint64_t now)
 	{
 		Evict(now);
-		const auto same = std::find_if(m_pending.begin(),
-			m_pending.end(),
-			[path, ip](const Entry &entry) { return entry.path == path && entry.ip == ip; });
+		// Peers behind one address are told apart by the hash the rendezvous named.
+		const auto same = std::find_if(m_pending.begin(), m_pending.end(), [&](const Entry &entry) {
+			return entry.path == path && entry.ip == ip && entry.peerHash == peerHash;
+		});
 		if (same != m_pending.end()) {
 			return false;
 		}
@@ -681,10 +683,15 @@ public:
 	std::optional<RendezvousPath> TakeSuccess(std::uint32_t ip, const Hash &peerHash, std::uint64_t now)
 	{
 		Evict(now);
-		const auto match =
+		auto match =
 			std::find_if(m_pending.begin(), m_pending.end(), [ip, &peerHash](const Entry &entry) {
-				return entry.ip == ip && (!entry.peerHash || *entry.peerHash == peerHash);
+				return entry.ip == ip && entry.peerHash == peerHash;
 			});
+		if (match == m_pending.end()) {
+			match = std::find_if(m_pending.begin(), m_pending.end(), [ip](const Entry &entry) {
+				return entry.ip == ip && !entry.peerHash;
+			});
+		}
 		if (match == m_pending.end()) {
 			return std::nullopt;
 		}
@@ -711,6 +718,22 @@ private:
 		m_pending.erase(firstLive, m_pending.end());
 	}
 	std::vector<Entry> m_pending;
+};
+// A Lugdunum callback we requested for one source: the target dials us, so the requester sees the
+// success only as that source's hello. Kept on the source, which the hello attaches to.
+class PendingCallbackRequest
+{
+public:
+	void NoteSent(std::uint64_t now) { m_sentAt = now; }
+	// True once for a hello within the window of the last request.
+	bool TakeAnswered(std::uint64_t now)
+	{
+		const std::optional<std::uint64_t> sentAt = std::exchange(m_sentAt, std::nullopt);
+		return sentAt && now >= *sentAt && now - *sentAt < kRendezvousOutcomeTtlMs;
+	}
+
+private:
+	std::optional<std::uint64_t> m_sentAt;
 };
 } // namespace NatServerHolePunch
 #endif // ENABLE_NATT_SERVER_COORDINATION

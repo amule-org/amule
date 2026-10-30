@@ -103,7 +103,8 @@ public:
 		uint32 ip,
 		const std::array<std::uint8_t, 16> *peerHash);
 	//! Statistics: a verified hello on a stream to or from a rendezvous peer, on either side.
-	void NoteRendezvousHello(uint32 ip, const std::array<std::uint8_t, 16> &peerHash);
+	//! Returns whether it completed a rendezvous, which was then counted.
+	bool NoteRendezvousHello(uint32 ip, const std::array<std::uint8_t, 16> &peerHash);
 #endif
 #endif
 #if defined(AMULE_UTP_TRANSPORT) || defined(AMULE_QUIC_TRANSPORT)

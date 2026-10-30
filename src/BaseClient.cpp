@@ -1824,25 +1824,32 @@ EContactResult CUpDownClient::CheckContactPreconditions()
 }
 
 #ifdef ENABLE_NATT_SERVER_COORDINATION
-void CUpDownClient::TrySendLugdunumNatCallbackRequest() const
+void CUpDownClient::TrySendLugdunumNatCallbackRequest()
 {
-	TrySendLugdunumNatCallbackRequest(GetUserIDHybrid());
+	if (!TrySendLugdunumNatCallbackRequest(GetUserIDHybrid())) {
+		return;
+	}
+#ifdef AMULE_UTP_TRANSPORT
+	// The source's target dials us: the attempt is the request, its success that source's hello.
+	theStats::AddLugdunumCallbackAttempt();
+	m_lugdunumCallbackRequest.NoteSent(::GetTickCount64());
+#endif
 }
 
-void CUpDownClient::TrySendLugdunumNatCallbackRequest(uint32 targetId) const
+bool CUpDownClient::TrySendLugdunumNatCallbackRequest(uint32 targetId) const
 {
 	if (theApp->serverconnect == nullptr || theApp->clientudp == nullptr) {
-		return;
+		return false;
 	}
 	CServer *server = theApp->serverconnect->GetCurrentServer();
 	if (server == nullptr) {
-		return;
+		return false;
 	}
 	// The server UDP fields are updated on the server-list entry, not on cur_server's snapshot.
 	CServer *serverListEntry =
 		theApp->serverlist->GetServerByAddress(server->GetAddress(), server->GetPort());
 	if (serverListEntry == nullptr) {
-		return;
+		return false;
 	}
 	const LugdunumNatTraversal::CallbackRequestFacts facts{ theApp->serverconnect->GetClientID(),
 		targetId,
@@ -1853,7 +1860,7 @@ void CUpDownClient::TrySendLugdunumNatCallbackRequest(uint32 targetId) const
 		serverListEntry->SupportsObfuscationUDP(),
 		thePrefs::IsLugdunumNatCallbackEnabled() };
 	if (!LugdunumNatTraversal::ShouldRequestLugdunumNatCallback(facts)) {
-		return;
+		return false;
 	}
 
 	const LugdunumNatTraversal::CallbackRequest request{ targetId, theApp->serverconnect->GetClientID() };
@@ -1868,6 +1875,7 @@ void CUpDownClient::TrySendLugdunumNatCallbackRequest(uint32 targetId) const
 		server->GetIP(),
 		serverListEntry->GetObfuscationPortUDP(),
 		serverListEntry->GetServerKeyUDP()));
+	return true;
 }
 
 namespace
