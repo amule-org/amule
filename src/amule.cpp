@@ -1556,7 +1556,8 @@ void CamuleApp::StartAmuleApi(bool startup)
 #endif
 		amuleapi_pid = 0;
 		try {
-			p = new CTerminationProcessAmuleApi(cmd, this);
+			p = new CTerminationProcessAmuleApi(
+				cmd, [this](int pid, int status) { OnAmuleApiTerminated(pid, status); });
 			m_amuleApiProcess = p;
 #ifdef __WINDOWS__
 			// wxWidgets' argv overload does not preserve trailing Windows backslashes.

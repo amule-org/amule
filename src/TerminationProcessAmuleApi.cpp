@@ -23,14 +23,15 @@
 //
 
 #include "TerminationProcessAmuleApi.h"
-#include "amule.h"
 
 #include <chrono>
+#include <utility>
 #include <wx/stream.h>
 
-CTerminationProcessAmuleApi::CTerminationProcessAmuleApi(const wxString &cmd, CamuleApp *app)
+CTerminationProcessAmuleApi::CTerminationProcessAmuleApi(
+	const wxString &cmd, std::function<void(int pid, int status)> onTerminated)
 : CTerminationProcess(cmd)
-, m_app(app)
+, m_onTerminated(std::move(onTerminated))
 {
 	// Don't open a command window on Windows
 	Redirect();
@@ -68,7 +69,7 @@ void CTerminationProcessAmuleApi::StartOutputDrain()
 void CTerminationProcessAmuleApi::ReleaseFromApp()
 {
 	StopOutputDrain();
-	m_app = nullptr;
+	m_onTerminated = nullptr;
 	// Keep the wxProcess observer alive until wx reports the child's exit,
 	// but close its pipes now. amuleapi ignores SIGPIPE and treats a closed
 	// console as best effort, so its logfile/teardown can still complete.
@@ -113,8 +114,8 @@ void CTerminationProcessAmuleApi::OnTerminate(int pid, int status)
 	StopOutputDrain();
 
 	// Tell the application that amuleapi is no longer running
-	if (m_app) {
-		m_app->OnAmuleApiTerminated(pid, status);
+	if (m_onTerminated) {
+		m_onTerminated(pid, status);
 	}
 
 	// Normal termination processing here

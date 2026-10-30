@@ -848,9 +848,12 @@ if (NEED_LIB_MULEAPPCOMMON)
 		generate_ECTagTypes.h
 	)
 
+	# AMULE_LIBRARY_UNIT: these libraries are built once and linked into binaries with
+	# different transport defines, so headers whose layout depends on them refuse it.
 	target_compile_definitions (muleappcommon
 		PRIVATE wxUSE_GUI=0
 		PRIVATE WXUSINGDLL
+		PRIVATE AMULE_LIBRARY_UNIT
 	)
 
 	target_include_directories (muleappcommon
@@ -932,7 +935,6 @@ if (NEED_LIB_MULEAPPCORE)
 		kademlia/utils/UInt128.cpp
 		AsyncDNS.cpp
 		HashListFile.cpp
-		DeadSourceList.cpp
 		FileArea.cpp
 		FileAutoClose.cpp
 		PlatformSpecific.cpp
@@ -949,6 +951,7 @@ if (NEED_LIB_MULEAPPCORE)
 	target_compile_definitions (muleappcore
 		PRIVATE wxUSE_GUI=0
 		PRIVATE WXUSINGDLL
+		PRIVATE AMULE_LIBRARY_UNIT
 	)
 
 	target_include_directories (muleappcore
@@ -1042,6 +1045,7 @@ if (NEED_LIB_MULEAPPGUI)
 
 	target_compile_definitions (muleappgui
 		PRIVATE WXUSINGDLL
+		PRIVATE AMULE_LIBRARY_UNIT
 	)
 
 	target_include_directories (muleappgui
@@ -1100,6 +1104,7 @@ IF (NEED_LIB_MULESOCKET)
 
 	target_compile_definitions (mulesocket
 		PRIVATE wxUSE_GUI=0
+		PRIVATE AMULE_LIBRARY_UNIT
 	)
 	
 	target_include_directories (mulesocket

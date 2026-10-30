@@ -28,6 +28,12 @@
 #ifndef CLIENTTCPSOCKET_H
 #define CLIENTTCPSOCKET_H
 
+// AMULE_UTP_TRANSPORT and AMULE_QUIC_TRANSPORT change this header and are defined only for
+// amule and amuled. A shared library unit would see another layout than the binary it links into.
+#ifdef AMULE_LIBRARY_UNIT
+#error "ClientTCPSocket.h depends on the amule/amuled transport defines; compile this unit in those targets"
+#endif
+
 #include "EMSocket.h" // Needed for CEMSocket
 #ifdef AMULE_UTP_TRANSPORT
 #include "UtpDialPolicy.h" // Needed for the incoming SYN winner token

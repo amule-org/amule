@@ -26,6 +26,12 @@
 #ifndef UPDOWNCLIENT_H
 #define UPDOWNCLIENT_H
 
+// AMULE_UTP_TRANSPORT and AMULE_QUIC_TRANSPORT change this header and are defined only for
+// amule and amuled. A shared library unit would see another layout than the binary it links into.
+#ifdef AMULE_LIBRARY_UNIT
+#error "updownclient.h depends on the amule/amuled transport defines; compile this unit in those targets"
+#endif
+
 #include <atomic>
 #include "DisplayRateCounter.h"
 

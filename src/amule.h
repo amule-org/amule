@@ -26,6 +26,12 @@
 #ifndef AMULE_H
 #define AMULE_H
 
+// AMULE_DAEMON and wxUSE_GUI give CamuleApp a different base class in each binary. A shared
+// library unit would see another layout than the binary it links into.
+#ifdef AMULE_LIBRARY_UNIT
+#error "amule.h depends on per-binary defines; compile this unit in the amule/amuled targets"
+#endif
+
 #include <wx/app.h>      // Needed for wxApp
 #include <wx/datetime.h> // Needed for wxDateTime (ED2K/Kad "Connected since")
 #include <wx/intl.h>     // Needed for wxLocale

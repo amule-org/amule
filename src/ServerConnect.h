@@ -28,6 +28,12 @@
 #ifndef SERVERCONNECT_H
 #define SERVERCONNECT_H
 
+// AMULE_UTP_TRANSPORT and AMULE_QUIC_TRANSPORT change this header and are defined only for
+// amule and amuled. A shared library unit would see another layout than the binary it links into.
+#ifdef AMULE_LIBRARY_UNIT
+#error "ServerConnect.h depends on the amule/amuled transport defines; compile this unit in those targets"
+#endif
+
 #include "amuleIPV4Address.h" // Needed for amuleIPV4Address
 #include "Timer.h"            // Needed for CTimer
 #ifdef ENABLE_NATT_SERVER_COORDINATION
