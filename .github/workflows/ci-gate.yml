@@ -1,0 +1,49 @@
+# One check for branch protection to require. The PR workflows have path
+# filters, and a required check from a workflow that never runs stays
+# "Expected" forever. This workflow always runs, waits for the PR's other
+# runs on the same head commit, and passes only if all of them passed.
+#
+# After re-running a failed workflow, re-run this one too.
+name: CI gate
+
+on:
+  pull_request:
+
+# A newer push makes the old head's verdict moot.
+concurrency:
+  group: ci-gate-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  actions: read
+
+jobs:
+  gate:
+    name: All checks passed
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Wait for the other PR workflows
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          # Latest run per workflow, so runs cancelled by a close and reopen
+          # don't count.
+          latest() {
+              gh api "repos/${REPO}/actions/runs?event=pull_request&head_sha=${SHA}&per_page=100" --jq '
+                  [.workflow_runs[] | select(.path != ".github/workflows/ci-gate.yml")]
+                  | group_by(.workflow_id) | map(max_by(.id))'
+          }
+          # The other runs start with this one; give them time to show up.
+          # Poll every two minutes to stay well inside the token's hourly API limit.
+          sleep 30
+          until runs=$(latest) && [ "$(jq '[.[] | select(.status != "completed")] | length' <<<"$runs")" = 0 ]; do
+              sleep 120
+          done
+          jq -r '.[] | "\(.conclusion)\t\(.name)"' <<<"$runs"
+          failed=$(jq '[.[] | select(.conclusion | IN("success", "skipped", "neutral") | not)] | length' <<<"$runs")
+          if [ "$failed" -gt 0 ]; then
+              echo "::error::${failed} PR workflow(s) did not pass"
+              exit 1
+          fi
