@@ -74,6 +74,11 @@ void HandleLowIdHolePunchInfo(
 		info.tcpPort == 0) {
 		return;
 	}
+	if (info.peerId.has_value()) {
+		// The 0x61 a wake was waiting for, even one the guards below keep us from acting on: the
+		// requester already has its 0x61, so the wake's Lugdunum fallback must not dial it.
+		serverconnect->HolePunchExtensionWakes().Resolve(*info.peerId);
+	}
 	const uint32 peerIP = PeekUInt32(info.peerIP.data());
 	if (!IsGoodIP(peerIP, thePrefs::FilterLanIPs()) || theApp->ipfilter->IsFiltered(peerIP) ||
 		theApp->clientlist->IsBannedClient(CNetworkAddress::FromIPv4NetworkOrderOrAbsent(peerIP))) {
@@ -89,10 +94,6 @@ void HandleLowIdHolePunchInfo(
 	// 25-byte one, leaves us the target, who punches and waits for the peer's stream.
 	const bool requester = info.peerId.has_value() &&
 			       serverconnect->LowIdHolePunchPendingRequests().Take(*info.peerId, now);
-	if (info.peerId.has_value()) {
-		// The 0x61 a wake was waiting for: the punch now goes as its role says.
-		serverconnect->HolePunchExtensionWakes().Resolve(*info.peerId);
-	}
 	const NatServerHolePunch::VouchedPeer peer{ info.userHash, info.peerCrypt };
 	serverconnect->LowIdHolePunchExpectedEndpoints().Register(info.peerIP, info.tcpPort, now, peer);
 	theApp->clientudp->ExpectNatTPeer(peerIP, info.udpPort, &info.userHash);

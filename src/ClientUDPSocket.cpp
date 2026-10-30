@@ -689,7 +689,9 @@ bool CClientUDPSocket::TryProcessServerWayNatCallback(uint32 ip, uint8_t *buffer
 			LugdunumNatTraversal::LogForwardedCallback(
 				logClientUDP, "OP_NAT_CALLBACKREQUESTED_UDP", forwarded);
 #ifdef AMULE_UTP_TRANSPORT
-			HandleForwardedCallback(forwarded);
+			// The extension wakes a target only with TCP 0x37: a 0xA7 is always Lugdunum's
+			// callback, answering our own 0xA6, so it is dialled at once.
+			DialLugdunumNatCallbackPeer(forwarded);
 #endif
 		});
 	return true;

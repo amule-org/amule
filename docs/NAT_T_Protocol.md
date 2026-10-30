@@ -237,9 +237,9 @@ none of `0xF9`, `0x9F` or `0x60` and cannot act on `0x61`:
   `CS_CONNECTED` (`CServerConnect::ConnectionEstablished()`), and then roughly every 60 s from
   `CamuleApp::OnCoreTimer`, no new thread. `CServerConnect::TrySendLowIdHolePunchKeepalive()`
   sends our 16-byte user hash from the client UDP socket (`theApp->clientudp`, not the server
-  link) to the server's IP at TCP port + 4, plain (obfuscated only on an extension server, see
-  below), only while we are
-  LowID and `thePrefs::GetEffectiveUDPPort()` is nonzero (`NatServerHolePunch::ShouldSendKeepalive()`)
+  link) to the server's IP at TCP port + 4, plain, or obfuscated to its obfuscation UDP port on an
+  extension server (see below), only while we are LowID and `thePrefs::GetEffectiveUDPPort()` is
+  nonzero (`NatServerHolePunch::ShouldSendKeepalive()`)
   -- ed2k-server refuses a HighID target (`FAIL_TARGET_IS_HIGHID`), and a disabled UDP port has
   no socket to send from;
 - sending `0x60`: where a LowID-to-LowID contact is declined in `TryToContact()`, next to
@@ -283,8 +283,8 @@ none of `0xF9`, `0x9F` or `0x60` and cannot act on `0x61`:
 
 ### Hole-punch extension (ed2k-server 0.9.85)
 
-The extension (andrey23127/ed2k-server#39) lets the server hand out fresh UDP ports without a
-standing keepalive. It applies only between two clients that announced it to a server that sets
+The extension (andrey23127/ed2k-server#39) lets the server hand out the UDP port from a fresh
+`0x9F` at punch time, not from the last standing keepalive. It applies only between two clients that announced it to a server that sets
 `0x100000` (`SRV_TCPFLG_HOLEPUNCH_EXTENSION`) in its `OP_IDCHANGE` TCP flags; every other pair
 gets the punch above unchanged.
 
@@ -299,12 +299,15 @@ gets the punch above unchanged.
   socket. The server ignores a session's plain `0x9F` after its first obfuscated one. Without the
   key it stays plain, and an older server always gets it plain
   (`NatServerHolePunch::ShouldObfuscateKeepalive()`). One `0x9F` goes with each `0x60`;
-- woken by `0x37` (or `0xA7`): send `0x9F` at 0, 0.5 and 1 s and `OP_HOLEPUNCH` to the
-  requester's endpoint, with no dial and no reverse callback. The `0x61` that follows (30 bytes,
-  with `peer_crypt`) decides who dials, as above. A `0x37` can also come from a Lugdunum `0xA6`,
-  which no `0x61` follows: if none names the requester within 5 s (the server waits 3 s, then
-  resends at +1.2 s and +3 s), aMule dials the Lugdunum way, as it would on any Lugdunum server.
-  At most 16 wakes wait at once (`NatServerHolePunch::PendingWakeSet`).
+- woken by `0x37`: send `0x9F` at 0, 0.5 and 1 s and `OP_HOLEPUNCH` to the requester's
+  endpoint, with no dial and no reverse callback. The `0x61` that follows (30 bytes, with
+  `peer_crypt`) decides who dials, as above. A `0x37` can also come from a Lugdunum `0xA6`, which
+  no `0x61` follows: if none names the requester within 5 s (the server waits 3 s, then resends at
+  +1.2 s and +3 s), aMule dials the Lugdunum way, as it would on any Lugdunum server. Any `0x61`
+  that names the requester answers the wake, even one the action limit or the duplicate window
+  keeps us from acting on. At most 16 wakes wait at once (`NatServerHolePunch::PendingWakeSet`).
+  The server wakes an extension target only with `0x37`, so a UDP `0xA7` is always Lugdunum's
+  callback, sent because we asked for one ourselves, and is dialled at once.
 
 The runtime setting remains off by default. Lugdunum's server-coordinated callback is still
 log-only and is a separate follow-up.
@@ -353,9 +356,10 @@ forwarded callback by dialing uTP additionally requires `ENABLE_UTP` (`AMULE_UTP
   LowID. As in NeoMule (`CanLow2Low()`), an opted-in server sends only LowID sources it can
   call back, and source records carry no NatT flag of their own
   (`LugdunumNatTraversal::ShouldKeepLowIdServerSource()`);
-- sending `OP_NAT_CALLBACKREQUEST` (`0xA6`): when we are LowID, the source we want is an odd LowID
-  on our current, callback-active server (both server families give callback-capable clients odd
-  LowIDs, so an even one cannot answer; the reverse callback follows the same rule), and the server-way UDP crypto preconditions hold
+- sending `OP_NAT_CALLBACKREQUEST` (`0xA6`): when we are LowID, the source we want is an odd
+  LowID on our current, callback-active server (both server families give callback-capable
+  clients odd LowIDs, so an even one cannot answer; the reverse callback follows the same rule),
+  and the server-way UDP crypto preconditions hold
   (`thePrefs::IsServerCryptLayerUDPEnabled() && GetServerKeyUDP() != 0 &&
   SupportsObfuscationUDP()`), `BaseClient.cpp` sends one request from the client UDP socket,
   encrypted "the server way" (`CEncryptedDatagramSocket::EncryptSendServer`), to the server's

@@ -84,7 +84,7 @@ public:
 	bool DialLowIdHolePunchPeer(
 		uint32 ip, uint16 tcpPort, uint16 udpPort, const NatServerHolePunch::VouchedPeer &peer);
 	bool DialLugdunumNatCallbackPeer(const LugdunumNatTraversal::ForwardedCallback &callback);
-	//! A 0x37/0xA7 forward: on a hole-punch extension server it is a wake that waits for the 0x61,
+	//! A TCP 0x37 forward: on a hole-punch extension server it is a wake that waits for the 0x61,
 	//! anywhere else Lugdunum's callback, dialled at once.
 	void HandleForwardedCallback(const LugdunumNatTraversal::ForwardedCallback &callback);
 	bool IsLugdunumNatCallbackCoolingDown(const LugdunumNatTraversal::CallbackFailureKey &key);

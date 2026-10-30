@@ -105,9 +105,8 @@
 #include "kademlia/routing/RoutingZone.h"
 #include "KadBuddyIdLayout.h" // Needed for ConvertBuddyIdLayout (#1835)
 #ifdef ENABLE_NATT_SERVER_COORDINATION
-#include "LugdunumNatTraversal.h"    // Needed for ShouldRequestLugdunumNatCallback
-#include "NatServerHolePunch.h"      // Needed for ShouldRequestLowIdHolePunch
-#include "EncryptedDatagramSocket.h" // Needed for CEncryptedDatagramSocket::EncryptSendServer
+#include "LugdunumNatTraversal.h" // Needed for ShouldRequestLugdunumNatCallback
+#include "NatServerHolePunch.h"   // Needed for ShouldRequestLowIdHolePunch
 #endif
 
 // #define __PACKET_DEBUG__
@@ -1862,32 +1861,13 @@ void CUpDownClient::TrySendLugdunumNatCallbackRequest(uint32 targetId) const
 	CMemFile data(payload.data(), payload.size());
 	CPacket *packet = new CPacket(data, OP_EDONKEYPROT, OP_NAT_CALLBACKREQUEST);
 
-	// Encrypted the server way, as CServerUDPSocket::SendPacket does, but sent from the client
-	// socket so the server sees the UDP port peers must punch.
-	uint16 uRawPacketSize = static_cast<uint16>(packet->GetPacketSize() + 2);
-	uint8_t *pRawPacket = new uint8_t[uRawPacketSize];
-	memcpy(pRawPacket, packet->GetUDPHeader(), 2);
-	memcpy(pRawPacket + 2, packet->GetDataBuffer(), packet->GetPacketSize());
-	delete packet;
-
-	uRawPacketSize = static_cast<uint16>(CEncryptedDatagramSocket::EncryptSendServer(
-		&pRawPacket, uRawPacketSize, serverListEntry->GetServerKeyUDP()));
-
-	CMemFile encryptedPacket(pRawPacket + 2, uRawPacketSize - 2);
-	CPacket *encrypted = new CPacket(encryptedPacket, pRawPacket[0], pRawPacket[1]);
-	delete[] pRawPacket;
-
 	AddDebugLogLineN(logClientUDP,
 		CFormat("Client UDP socket: OP_NAT_CALLBACKREQUEST for source %u to %s") % targetId %
 			Uint32_16toStringIP_Port(server->GetIP(), serverListEntry->GetObfuscationPortUDP()));
-	theStats::AddUpOverheadOther(encrypted->GetPacketSize());
-	theApp->clientudp->SendPacket(encrypted,
+	theStats::AddUpOverheadOther(theApp->clientudp->SendServerWayObfuscated(packet,
 		server->GetIP(),
 		serverListEntry->GetObfuscationPortUDP(),
-		false,
-		nullptr,
-		false,
-		0);
+		serverListEntry->GetServerKeyUDP()));
 }
 
 namespace

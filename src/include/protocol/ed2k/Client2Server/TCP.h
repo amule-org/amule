@@ -80,7 +80,7 @@ enum OP_ClientToServerTCP
 #define SRV_TCPFLG_IPV6_UPDATE 0x00008000
 // Server accepts OP_LOWID_HOLEPUNCH_REQUEST (ed2k-server 0.9.84+).
 #define SRV_TCPFLG_LOWID_HOLEPUNCH 0x00020000
-// Server runs the hole-punch extension (ed2k-server 0.9.85, andrey23127/ed2k-server#39).
+// Server runs the hole-punch extension (ed2k-server 0.9.85).
 #define SRV_TCPFLG_HOLEPUNCH_EXTENSION 0x00100000
 
 #endif // ED2KC2STCP_H
