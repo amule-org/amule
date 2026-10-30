@@ -22,7 +22,7 @@ for name, url, checksum in (('zenlib', *sys.argv[2:4]), ('mediainfo', *sys.argv[
 PYTHON
 for project in zenlib mediainfo; do
   cmake -S "$work/$project/Project/CMake" -B "$work/$project-build" \
-    -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=17 -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX="$prefix" \
+    -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=17 -DCMAKE_POLICY_VERSION_MINIMUM=3.10 -DCMAKE_INSTALL_PREFIX="$prefix" \
     -DCMAKE_PREFIX_PATH="$prefix" -DCMAKE_INSTALL_LIBDIR=lib -DBUILD_SHARED_LIBS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
     -DBUILD_ZENLIB=OFF -DBUILD_ZLIB=OFF -DCMAKE_DISABLE_FIND_PACKAGE_TinyXML=ON \
     -DCMAKE_DISABLE_FIND_PACKAGE_CURL=ON \

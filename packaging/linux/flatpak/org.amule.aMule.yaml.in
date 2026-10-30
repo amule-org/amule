@@ -358,7 +358,7 @@ modules:
   - name: media-zenlib
     buildsystem: cmake-ninja
     subdir: Project/CMake
-    config-opts: [-DCMAKE_CXX_STANDARD=17, -DBUILD_SHARED_LIBS=ON, -DCMAKE_INSTALL_LIBDIR=lib, -DCMAKE_POLICY_VERSION_MINIMUM=3.5]
+    config-opts: [-DCMAKE_CXX_STANDARD=17, -DBUILD_SHARED_LIBS=ON, -DCMAKE_INSTALL_LIBDIR=lib, -DCMAKE_POLICY_VERSION_MINIMUM=3.10]
     sources:
       - type: archive
         url: ${ZENLIB_TARBALL_URL}
