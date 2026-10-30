@@ -604,7 +604,7 @@ public:
 	{
 		Resolve(requesterId);
 		if (m_pending.size() >= kMaxPendingWakes) {
-			m_pending.erase(m_pending.begin());
+			m_pending.pop_front();
 		}
 		m_pending.push_back({ requesterId, std::move(wake), now });
 	}
@@ -640,7 +640,7 @@ private:
 		Wake wake;
 		std::uint64_t wokenAt;
 	};
-	std::vector<Entry> m_pending;
+	std::deque<Entry> m_pending;
 };
 } // namespace NatServerHolePunch
 #endif // ENABLE_NATT_SERVER_COORDINATION
