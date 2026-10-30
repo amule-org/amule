@@ -719,6 +719,58 @@ private:
 	}
 	std::vector<Entry> m_pending;
 };
+// Targets we sent a Lugdunum callback request for. A callback naming one as its requester is the
+// reverse of our own request, whose attempt is already counted.
+class RequestedCallbackTargets
+{
+public:
+	void Note(std::uint32_t targetId, std::uint64_t now)
+	{
+		Evict(now);
+		const auto same = Find(targetId);
+		if (same != m_entries.end()) {
+			same->notedAt = now;
+			return;
+		}
+		if (m_entries.size() >= kMaxPendingRendezvous) {
+			m_entries.erase(m_entries.begin());
+		}
+		m_entries.push_back({ targetId, now });
+	}
+	bool Take(std::uint32_t targetId, std::uint64_t now)
+	{
+		Evict(now);
+		const auto match = Find(targetId);
+		if (match == m_entries.end()) {
+			return false;
+		}
+		m_entries.erase(match);
+		return true;
+	}
+	std::size_t Size() const { return m_entries.size(); }
+
+private:
+	struct Entry
+	{
+		std::uint32_t targetId;
+		std::uint64_t notedAt;
+	};
+	std::vector<Entry>::iterator Find(std::uint32_t targetId)
+	{
+		return std::find_if(m_entries.begin(), m_entries.end(), [targetId](const Entry &entry) {
+			return entry.targetId == targetId;
+		});
+	}
+	void Evict(std::uint64_t now)
+	{
+		const auto firstLive =
+			std::remove_if(m_entries.begin(), m_entries.end(), [now](const Entry &entry) {
+				return now >= entry.notedAt && now - entry.notedAt >= kRendezvousOutcomeTtlMs;
+			});
+		m_entries.erase(firstLive, m_entries.end());
+	}
+	std::vector<Entry> m_entries;
+};
 // A Lugdunum callback we requested for one source: the target dials us, so the requester sees the
 // success only as that source's hello. Kept on the source, which the hello attaches to.
 class PendingCallbackRequest

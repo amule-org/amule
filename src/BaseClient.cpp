@@ -1833,6 +1833,7 @@ void CUpDownClient::TrySendLugdunumNatCallbackRequest()
 	// The source's target dials us: the attempt is the request, its success that source's hello.
 	theStats::AddLugdunumCallbackAttempt();
 	m_lugdunumCallbackRequest.NoteSent(::GetTickCount64());
+	theApp->clientudp->NoteLugdunumCallbackRequested(GetUserIDHybrid());
 #endif
 }
 

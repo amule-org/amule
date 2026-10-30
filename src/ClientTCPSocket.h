@@ -36,9 +36,9 @@
 
 #include "EMSocket.h" // Needed for CEMSocket
 #ifdef AMULE_UTP_TRANSPORT
-#include "UtpDialPolicy.h"       // Needed for the incoming SYN winner token
-#include "SessionTrafficStats.h" // Needed for AMULE_SESSION_TRAFFIC_STATS
+#include "UtpDialPolicy.h" // Needed for the incoming SYN winner token
 #endif
+#include "SessionTrafficStats.h" // Needed for AMULE_SESSION_TRAFFIC_STATS
 
 #include <atomic>
 

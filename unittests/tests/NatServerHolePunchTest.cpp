@@ -696,3 +696,30 @@ TEST(NatServerHolePunch, ACallbackRequestIsAnsweredOnceWithinItsWindow)
 	request.NoteSent(1000);
 	ASSERT_FALSE(request.TakeAnswered(1000 + kRendezvousOutcomeTtlMs));
 }
+
+TEST(NatServerHolePunch, ACallbackFromATargetWeAskedAboutIsTheReverseOfOurRequest)
+{
+	RequestedCallbackTargets targets;
+	targets.Note(7, 0);
+	ASSERT_FALSE(targets.Take(8, 10));
+	ASSERT_TRUE(targets.Take(7, 10));
+	// Taken once: a second callback from it is a new rendezvous.
+	ASSERT_FALSE(targets.Take(7, 20));
+}
+
+TEST(NatServerHolePunch, ARequestedTargetExpires)
+{
+	RequestedCallbackTargets targets;
+	targets.Note(7, 0);
+	ASSERT_FALSE(targets.Take(7, kRendezvousOutcomeTtlMs));
+}
+
+TEST(NatServerHolePunch, RequestedTargetsStayBounded)
+{
+	RequestedCallbackTargets targets;
+	for (std::uint32_t id = 1; id <= 1000; ++id) {
+		targets.Note(id, 0);
+	}
+	ASSERT_TRUE(targets.Size() <= kMaxPendingRendezvous);
+	ASSERT_TRUE(targets.Take(1000, 1));
+}
