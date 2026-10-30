@@ -49,7 +49,8 @@ private:
 	void StopOutputDrain();
 
 public:
-	CTerminationProcessAmuleApi(const wxString &cmd, std::function<void(int pid, int status)> onTerminated);
+	CTerminationProcessAmuleApi(
+		const wxString &cmd, std::function<void(int pid, int status)> onTerminated);
 	~CTerminationProcessAmuleApi() override;
 	void StartOutputDrain();
 	void ReleaseFromApp();
