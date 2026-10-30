@@ -51,6 +51,11 @@ OutFile "${OUTFILE}"
 InstallDir "$PROGRAMFILES64\aMule"
 InstallDirRegKey HKLM "Software\aMule" "InstallLocation"
 RequestExecutionLevel admin
+; Without this, Windows bitmap-stretches the whole installer on a scaled
+; display and its text comes out blurry (e.g. 4K at 225%). The pages are laid
+; out in dialog units, so they scale with the system font by themselves; the
+; exception, the Components page checkboxes, is ScaleComponentChecks below.
+ManifestDPIAware true
 ShowInstDetails show
 ShowUnInstDetails show
 SetCompressor /SOLID lzma
@@ -78,6 +83,7 @@ VIAddVersionKey  "ProductVersion"  "${VERSION}"
 ; License is the repo's GPL; copied into INSTROOT by build.sh so the
 ; script stays relocatable from the makensis invocation cwd.
 !insertmacro MUI_PAGE_LICENSE "${INSTROOT}\COPYING.txt"
+!define MUI_PAGE_CUSTOMFUNCTION_SHOW ScaleComponentChecks
 !insertmacro MUI_PAGE_COMPONENTS
 !insertmacro MUI_PAGE_DIRECTORY
 
@@ -96,6 +102,7 @@ Var PriorInstallDir
 !insertmacro MUI_PAGE_FINISH
 
 !insertmacro MUI_UNPAGE_CONFIRM
+!define MUI_PAGE_CUSTOMFUNCTION_SHOW un.ScaleComponentChecks
 !insertmacro MUI_UNPAGE_COMPONENTS
 !insertmacro MUI_UNPAGE_INSTFILES
 !insertmacro MUI_UNPAGE_FINISH
@@ -288,6 +295,92 @@ Function CheckPriorInstall
     RMDir  "$0"
   ${EndIf}
 FunctionEnd
+
+; NSIS builds the Components page checkboxes from a fixed 16x16 px image
+; list, which ManifestDPIAware leaves tiny on a scaled display: at 225% they
+; are less than half the height of their labels. On such a display, replace
+; it with the theme's checkboxes drawn at the small-icon size, the size a
+; tree view's own checkboxes use. At 100%, or with visual styles off, NSIS's
+; images are kept.
+Var ComponentChecks
+!macro ScaleComponentChecksFunc prefix
+Function ${prefix}ScaleComponentChecks
+  System::Call 'user32::GetSystemMetrics(i 49) i.r3' ; SM_CXSMICON
+  ${If} $3 <= 16
+    Return
+  ${EndIf}
+  FindWindow $0 "#32770" "" $HWNDPARENT
+  GetDlgItem $1 $0 1032 ; the components tree
+  System::Call 'uxtheme::OpenThemeData(p r1, w "BUTTON") p.r4'
+  ${If} $4 = 0
+    Return
+  ${EndIf}
+
+  ; A previous visit's list belongs to a tree that no longer exists.
+  ${If} $ComponentChecks != ""
+    System::Call 'comctl32::ImageList_Destroy(p $ComponentChecks)'
+  ${EndIf}
+  System::Call 'comctl32::ImageList_Create(i r3, i r3, i 0x18, i 6, i 0) p.r5' ; ILC_COLOR24
+  StrCpy $ComponentChecks $5
+
+  System::Call 'user32::GetDC(p r1) p.r6'
+  System::Call 'gdi32::CreateCompatibleDC(p r6) p.r7'
+  System::Call 'gdi32::CreateCompatibleBitmap(p r6, i r3, i r3) p.r8'
+  System::Call 'user32::ReleaseDC(p r1, p r6)'
+  System::Call '*(i 0, i 0, i r3, i r3) p.r9' ; the image's RECT
+
+  ; The box goes in the middle at the theme's own size: stretched to the
+  ; whole image, it would touch its label and the next row's box.
+  System::Call '*(i 0, i 0) p.r2' ; SIZE
+  System::Call 'uxtheme::GetThemePartSize(p r4, p r7, i 3, i 1, p 0, i 1, p r2)' ; BP_CHECKBOX, TS_TRUE
+  System::Call '*$2(i .R2, i .R3)'
+  System::Free $2
+  ${If} $R2 < 1
+  ${OrIf} $R2 > $3
+  ${OrIf} $R3 < 1
+  ${OrIf} $R3 > $3
+    StrCpy $R2 $3
+    StrCpy $R3 $3
+  ${EndIf}
+  IntOp $R4 $3 - $R2
+  IntOp $R4 $R4 / 2
+  IntOp $R5 $3 - $R3
+  IntOp $R5 $R5 / 2
+  IntOp $R2 $R2 + $R4
+  IntOp $R3 $R3 + $R5
+  System::Call '*(i R4, i R5, i R2, i R3) p.r2' ; the box's RECT
+
+  ; Opaque images on the tree's background, COLOR_WINDOW.
+  System::Call 'user32::GetSysColorBrush(i 5) p.r6'
+
+  ; The CBS_* theme state of each image NSIS uses, in order: unused,
+  ; unchecked, checked, partially checked, read-only unchecked, read-only
+  ; checked.
+  StrCpy $0 "115948"
+  ${For} $R0 0 5
+    StrCpy $R1 $0 1 $R0
+    System::Call 'gdi32::SelectObject(p r7, p r8) p.R6'
+    System::Call 'user32::FillRect(p r7, p r9, p r6)'
+    System::Call 'uxtheme::DrawThemeBackground(p r4, p r7, i 3, i R1, p r2, p 0)' ; BP_CHECKBOX
+    System::Call 'gdi32::SelectObject(p r7, p R6)'
+    System::Call 'comctl32::ImageList_Add(p r5, p r8, p 0)'
+  ${Next}
+  SendMessage $1 0x1109 2 $5 ; TVM_SETIMAGELIST, TVSIL_STATE
+  ; The rows are only as tall as the text, shorter than the images.
+  SendMessage $1 0x111C 0 0 $0 ; TVM_GETITEMHEIGHT
+  ${If} $0 < $3
+    SendMessage $1 0x111B $3 0 ; TVM_SETITEMHEIGHT
+  ${EndIf}
+
+  System::Free $2
+  System::Free $9
+  System::Call 'gdi32::DeleteObject(p r8)'
+  System::Call 'gdi32::DeleteDC(p r7)'
+  System::Call 'uxtheme::CloseThemeData(p r4)'
+FunctionEnd
+!macroend
+!insertmacro ScaleComponentChecksFunc ""
+!insertmacro ScaleComponentChecksFunc "un."
 
 ; .onInit / un.onInit are declared AFTER the Section block below
 ; because they need to expand ${SecCore} / ${un.SecUninstall} / ...
