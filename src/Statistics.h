@@ -385,6 +385,19 @@ public:
 	static void SetKadBannedAddresses(uint32 value) { s_kadBanned->SetValue(value); }
 #endif
 
+	// Payload exchanged with a peer whose session is LowID to LowID (we and the peer both LowID,
+	// which only NAT traversal connects) or runs over IPv6. Each figure exists only in builds
+	// that can produce it.
+	static void AddSessionTrafficUpload(bool lowIdToLowId, bool ipv6, uint32 bytes);
+	static void AddSessionTrafficDownload(bool lowIdToLowId, bool ipv6, uint32 bytes);
+#if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
+	// Server-coordinated rendezvous we acted on, and those that reached a verified hello.
+	static void AddServerHolePunchAttempt() { ++(*s_serverHolePunchAttempts); }
+	static void AddServerHolePunchSuccess() { ++(*s_serverHolePunchSuccesses); }
+	static void AddLugdunumCallbackAttempt() { ++(*s_lugdunumCallbackAttempts); }
+	static void AddLugdunumCallbackSuccess() { ++(*s_lugdunumCallbackSuccesses); }
+#endif
+
 	// Servers
 	static void AddServer() { ++(*s_totalServers); }
 	static void DeleteServer()
@@ -595,6 +608,20 @@ private:
 	static CStatTreeItemNativeCounter *s_banned;
 #ifdef ENABLE_KAD_NODE_PROTECTION
 	static CStatTreeItemNativeCounter *s_kadBanned;
+#endif
+
+	// NAT traversal and IPv6 traffic
+#if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
+	static CStatTreeItemCounter *s_lowIdToLowIdUpload;
+	static CStatTreeItemCounter *s_lowIdToLowIdDownload;
+	static CStatTreeItemNativeCounter *s_serverHolePunchAttempts;
+	static CStatTreeItemNativeCounter *s_serverHolePunchSuccesses;
+	static CStatTreeItemNativeCounter *s_lugdunumCallbackAttempts;
+	static CStatTreeItemNativeCounter *s_lugdunumCallbackSuccesses;
+#endif
+#ifdef ENABLE_IPV6
+	static CStatTreeItemCounter *s_ipv6Upload;
+	static CStatTreeItemCounter *s_ipv6Download;
 #endif
 
 	// Servers

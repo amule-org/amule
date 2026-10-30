@@ -206,6 +206,20 @@ CStatTreeItemNativeCounter *CStatistics::s_banned;
 CStatTreeItemNativeCounter *CStatistics::s_kadBanned;
 #endif
 
+// NAT traversal and IPv6 traffic
+#if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
+CStatTreeItemCounter *CStatistics::s_lowIdToLowIdUpload;
+CStatTreeItemCounter *CStatistics::s_lowIdToLowIdDownload;
+CStatTreeItemNativeCounter *CStatistics::s_serverHolePunchAttempts;
+CStatTreeItemNativeCounter *CStatistics::s_serverHolePunchSuccesses;
+CStatTreeItemNativeCounter *CStatistics::s_lugdunumCallbackAttempts;
+CStatTreeItemNativeCounter *CStatistics::s_lugdunumCallbackSuccesses;
+#endif
+#ifdef ENABLE_IPV6
+CStatTreeItemCounter *CStatistics::s_ipv6Upload;
+CStatTreeItemCounter *CStatistics::s_ipv6Download;
+#endif
+
 // Servers
 CStatTreeItemSimple *CStatistics::s_workingServers;
 CStatTreeItemSimple *CStatistics::s_failedServers;
@@ -830,6 +844,16 @@ void CStatistics::InitStatsTree()
 	s_cryptUpOverhead = static_cast<CStatTreeItemCounter *>(
 		tmpRoot2->AddChild(new CStatTreeItemCounter(wxTRANSLATE("Crypt overhead (UDP): %s"))));
 	s_cryptUpOverhead->SetDisplayMode(dmBytes);
+#if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
+	s_lowIdToLowIdUpload = static_cast<CStatTreeItemCounter *>(tmpRoot2->AddChild(
+		new CStatTreeItemCounter(wxTRANSLATE("LowID to LowID Data (Session): %s"))));
+	s_lowIdToLowIdUpload->SetDisplayMode(dmBytes);
+#endif
+#ifdef ENABLE_IPV6
+	s_ipv6Upload = static_cast<CStatTreeItemCounter *>(
+		tmpRoot2->AddChild(new CStatTreeItemCounter(wxTRANSLATE("IPv6 Data (Session): %s"))));
+	s_ipv6Upload->SetDisplayMode(dmBytes);
+#endif
 	s_activeUploads = static_cast<CStatTreeItemNativeCounter *>(
 		tmpRoot2->AddChild(new CStatTreeItemNativeCounter(wxTRANSLATE("Active Uploads: %s"))));
 	s_waitingUploads = static_cast<CStatTreeItemNativeCounter *>(
@@ -869,6 +893,16 @@ void CStatistics::InitStatsTree()
 	s_cryptDownOverhead = static_cast<CStatTreeItemCounter *>(
 		tmpRoot2->AddChild(new CStatTreeItemCounter(wxTRANSLATE("Crypt overhead (UDP): %s"))));
 	s_cryptDownOverhead->SetDisplayMode(dmBytes);
+#if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
+	s_lowIdToLowIdDownload = static_cast<CStatTreeItemCounter *>(tmpRoot2->AddChild(
+		new CStatTreeItemCounter(wxTRANSLATE("LowID to LowID Data (Session): %s"))));
+	s_lowIdToLowIdDownload->SetDisplayMode(dmBytes);
+#endif
+#ifdef ENABLE_IPV6
+	s_ipv6Download = static_cast<CStatTreeItemCounter *>(
+		tmpRoot2->AddChild(new CStatTreeItemCounter(wxTRANSLATE("IPv6 Data (Session): %s"))));
+	s_ipv6Download->SetDisplayMode(dmBytes);
+#endif
 	s_foundSources = static_cast<CStatTreeItemCounter *>(tmpRoot2->AddChild(
 		new CStatTreeItemCounter(wxTRANSLATE("Found Sources: %s"), stSortChildren | stSortByValue)));
 	s_activeDownloads = static_cast<CStatTreeItemNativeCounter *>(tmpRoot2->AddChild(
@@ -911,6 +945,18 @@ void CStatistics::InitStatsTree()
 	s_avgConnections->SetValue(0.0);
 	tmpRoot1->AddChild((new CStatTreeItemPeakConnections(wxTRANSLATE("Peak Connections (estimate): %i")))
 				   ->SetKey("peak_connections"));
+#if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
+	tmpRoot2 = tmpRoot1->AddChild(
+		(new CStatTreeItemBase(wxTRANSLATE("NAT Traversal (Session)")))->SetKey("nat_traversal"));
+	s_serverHolePunchAttempts = static_cast<CStatTreeItemNativeCounter *>(
+		tmpRoot2->AddChild(new CStatTreeItemNativeCounter(wxTRANSLATE("Server Hole Punches: %s"))));
+	s_serverHolePunchSuccesses = static_cast<CStatTreeItemNativeCounter *>(tmpRoot2->AddChild(
+		new CStatTreeItemNativeCounter(wxTRANSLATE("Successful Server Hole Punches: %s"))));
+	s_lugdunumCallbackAttempts = static_cast<CStatTreeItemNativeCounter *>(
+		tmpRoot2->AddChild(new CStatTreeItemNativeCounter(wxTRANSLATE("Lugdunum Callbacks: %s"))));
+	s_lugdunumCallbackSuccesses = static_cast<CStatTreeItemNativeCounter *>(tmpRoot2->AddChild(
+		new CStatTreeItemNativeCounter(wxTRANSLATE("Successful Lugdunum Callbacks: %s"))));
+#endif
 
 	s_clients = static_cast<CStatTreeItemHiddenCounter *>(s_statTree->AddChild(
 		new CStatTreeItemHiddenCounter(wxTRANSLATE("Clients"), stSortChildren | stSortByValue)));
@@ -1009,6 +1055,18 @@ void CStatistics::InitStatsTree()
 	s_banned->SetKey("clients_banned");
 #ifdef ENABLE_KAD_NODE_PROTECTION
 	s_kadBanned->SetKey("clients_kad_banned");
+#endif
+#if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
+	s_lowIdToLowIdUpload->SetKey("upload_lowid_to_lowid_data");
+	s_lowIdToLowIdDownload->SetKey("download_lowid_to_lowid_data");
+	s_serverHolePunchAttempts->SetKey("natt_server_punch_attempts");
+	s_serverHolePunchSuccesses->SetKey("natt_server_punch_successes");
+	s_lugdunumCallbackAttempts->SetKey("natt_lugdunum_callback_attempts");
+	s_lugdunumCallbackSuccesses->SetKey("natt_lugdunum_callback_successes");
+#endif
+#ifdef ENABLE_IPV6
+	s_ipv6Upload->SetKey("upload_ipv6_data");
+	s_ipv6Download->SetKey("download_ipv6_data");
 #endif
 	s_workingServers->SetKey("servers_working");
 	s_failedServers->SetKey("servers_failed");
@@ -1120,6 +1178,36 @@ void CStatistics::AddUploadToSoft(uint8 SoftType, uint32 bytes)
 		(*tmp) += bytes;
 		s_sessionUpload->AddChild(tmp, id);
 	}
+}
+
+void CStatistics::AddSessionTrafficUpload(
+	[[maybe_unused]] bool lowIdToLowId, [[maybe_unused]] bool ipv6, [[maybe_unused]] uint32 bytes)
+{
+#if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
+	if (lowIdToLowId) {
+		(*s_lowIdToLowIdUpload) += bytes;
+	}
+#endif
+#ifdef ENABLE_IPV6
+	if (ipv6) {
+		(*s_ipv6Upload) += bytes;
+	}
+#endif
+}
+
+void CStatistics::AddSessionTrafficDownload(
+	[[maybe_unused]] bool lowIdToLowId, [[maybe_unused]] bool ipv6, [[maybe_unused]] uint32 bytes)
+{
+#if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
+	if (lowIdToLowId) {
+		(*s_lowIdToLowIdDownload) += bytes;
+	}
+#endif
+#ifdef ENABLE_IPV6
+	if (ipv6) {
+		(*s_ipv6Download) += bytes;
+	}
+#endif
 }
 
 inline bool SupportsOSInfo(unsigned clientSoft)

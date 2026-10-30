@@ -382,3 +382,27 @@ NatT-capable LowID source is only handed to a NatT-capable LowID requester, matc
 The requester's `OP_NAT_CALLBACKREQUEST` then reached the sharer: the forwarded callback arrived
 as **`OP_NAT_CALLBACKREQUESTED` (`0x37`) over the TCP link**, not `0xA7` over UDP. This historical
 observation confirms the relay delivery path; it does not validate the current uTP implementation.
+
+## Statistics
+
+The statistics tree shows, per session, how often the server-coordinated paths start a
+LowID-to-LowID session and how much data such sessions carry (#1177). The nodes travel in the
+tree like any other, so amulegui, amuleweb and amuleapi show them without new EC tags; each has a
+stable `key`.
+
+- **NAT Traversal (Session)** (`nat_traversal`, under Connection), in builds with
+  `ENABLE_NATT_SERVER_COORDINATION` and uTP: attempts and successes for the ed2k-server punch
+  (`natt_server_punch_attempts`, `natt_server_punch_successes`) and Lugdunum's callback
+  (`natt_lugdunum_callback_attempts`, `natt_lugdunum_callback_successes`). An attempt is each
+  rendezvous we act on, counted once per peer: a `0x61` we punch for, or a Lugdunum callback we
+  dial. The extension counts under the ed2k-server punch, and its 5 s fallback dial under
+  Lugdunum. A success is a stream to or from that peer, on either side, whose hello is processed
+  within 60 s (`NatServerHolePunch::RendezvousOutcomes`, at most 64 pending).
+- **LowID to LowID Data (Session)** (`upload_lowid_to_lowid_data`,
+  `download_lowid_to_lowid_data`), in the same builds: payload exchanged with a LowID peer while
+  we are LowID on a server, which only NAT traversal connects.
+- **IPv6 Data (Session)** (`upload_ipv6_data`, `download_ipv6_data`), in `ENABLE_IPV6` builds:
+  payload exchanged with a peer connected over IPv6.
+
+A session is classified when its hello is processed, on the main thread; the upload disk I/O
+thread only reads the result.

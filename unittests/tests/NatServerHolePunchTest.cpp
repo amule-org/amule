@@ -598,3 +598,70 @@ TEST(NatServerHolePunch, PendingWakesStayBounded)
 	}
 	ASSERT_TRUE(wakes.TakeExpired(kWakeInfoTimeoutMs).size() <= kMaxPendingWakes);
 }
+
+namespace
+{
+Hash FilledHash(std::uint8_t value)
+{
+	Hash hash;
+	hash.fill(value);
+	return hash;
+}
+} // namespace
+
+TEST(NatServerHolePunch, EachRendezvousCountsOneAttemptPerPathAndPeer)
+{
+	RendezvousOutcomes outcomes;
+	ASSERT_TRUE(outcomes.NoteAttempt(RendezvousPath::ServerPunch, 1, FilledHash(1), 0));
+	// A resend or a second notice for the same peer is the same rendezvous.
+	ASSERT_FALSE(outcomes.NoteAttempt(RendezvousPath::ServerPunch, 1, FilledHash(1), 10));
+	ASSERT_TRUE(outcomes.NoteAttempt(RendezvousPath::ServerPunch, 2, FilledHash(2), 10));
+	ASSERT_TRUE(outcomes.NoteAttempt(RendezvousPath::LugdunumCallback, 1, std::nullopt, 10));
+}
+
+TEST(NatServerHolePunch, AHelloFromTheRendezvousPeerIsOneSuccessOnItsPath)
+{
+	RendezvousOutcomes outcomes;
+	outcomes.NoteAttempt(RendezvousPath::ServerPunch, 1, FilledHash(1), 0);
+	ASSERT_FALSE(outcomes.TakeSuccess(2, FilledHash(1), 10).has_value());
+	const std::optional<RendezvousPath> path = outcomes.TakeSuccess(1, FilledHash(1), 10);
+	ASSERT_TRUE(path == RendezvousPath::ServerPunch);
+	// A second stream to the same peer is not another success.
+	ASSERT_FALSE(outcomes.TakeSuccess(1, FilledHash(1), 20).has_value());
+	// And the next rendezvous with it counts again.
+	ASSERT_TRUE(outcomes.NoteAttempt(RendezvousPath::ServerPunch, 1, FilledHash(1), 30));
+}
+
+TEST(NatServerHolePunch, AHelloWithAnotherHashIsNotTheRendezvousPeer)
+{
+	RendezvousOutcomes outcomes;
+	outcomes.NoteAttempt(RendezvousPath::ServerPunch, 1, FilledHash(1), 0);
+	ASSERT_FALSE(outcomes.TakeSuccess(1, FilledHash(9), 10).has_value());
+	ASSERT_TRUE(outcomes.TakeSuccess(1, FilledHash(1), 10) == RendezvousPath::ServerPunch);
+}
+
+TEST(NatServerHolePunch, ARendezvousWithoutAHashMatchesByAddress)
+{
+	RendezvousOutcomes outcomes;
+	outcomes.NoteAttempt(RendezvousPath::LugdunumCallback, 1, std::nullopt, 0);
+	ASSERT_TRUE(outcomes.TakeSuccess(1, FilledHash(7), 10) == RendezvousPath::LugdunumCallback);
+}
+
+TEST(NatServerHolePunch, AnUnansweredRendezvousExpires)
+{
+	RendezvousOutcomes outcomes;
+	outcomes.NoteAttempt(RendezvousPath::ServerPunch, 1, FilledHash(1), 0);
+	ASSERT_FALSE(outcomes.TakeSuccess(1, FilledHash(1), kRendezvousOutcomeTtlMs).has_value());
+	ASSERT_TRUE(
+		outcomes.NoteAttempt(RendezvousPath::ServerPunch, 1, FilledHash(1), kRendezvousOutcomeTtlMs));
+}
+
+TEST(NatServerHolePunch, PendingRendezvousStayBounded)
+{
+	RendezvousOutcomes outcomes;
+	for (std::uint32_t ip = 1; ip <= 1000; ++ip) {
+		outcomes.NoteAttempt(RendezvousPath::ServerPunch, ip, std::nullopt, 0);
+	}
+	ASSERT_TRUE(outcomes.Size() <= kMaxPendingRendezvous);
+	ASSERT_TRUE(outcomes.TakeSuccess(1000, FilledHash(1), 1) == RendezvousPath::ServerPunch);
+}

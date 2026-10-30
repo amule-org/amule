@@ -917,6 +917,8 @@ void CUpDownClient::ProcessBlockPacket(const uint8_t *packet, uint32 size, bool 
 			throw wxString("Corrupted or invalid DataBlock received (ProcessBlockPacket)");
 		}
 		theStats::AddDownloadFromSoft(GetClientSoft(), size - header_size);
+		theStats::AddSessionTrafficDownload(
+			IsLowIdToLowIdSession(), IsIPv6Session(), size - header_size);
 		bytesReceivedCycle += size - header_size;
 		m_displayDownloadRate.Add(size - header_size, GetTickCount64());
 

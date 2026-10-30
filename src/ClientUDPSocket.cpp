@@ -1016,6 +1016,37 @@ void CClientUDPSocket::CompleteLugdunumCallbackRendezvous(const LugdunumNatTrave
 	m_lugdunumCallbackRendezvous.Complete(key);
 }
 
+void CClientUDPSocket::NoteRendezvousAttempt(
+	NatServerHolePunch::RendezvousPath path, uint32 ip, const std::array<std::uint8_t, 16> *peerHash)
+{
+	std::optional<NatServerHolePunch::Hash> hash;
+	if (peerHash != nullptr) {
+		hash = *peerHash;
+	}
+	if (!m_rendezvousOutcomes.NoteAttempt(path, ip, hash, ::GetTickCount64())) {
+		return;
+	}
+	if (path == NatServerHolePunch::RendezvousPath::ServerPunch) {
+		theStats::AddServerHolePunchAttempt();
+	} else {
+		theStats::AddLugdunumCallbackAttempt();
+	}
+}
+
+void CClientUDPSocket::NoteRendezvousHello(uint32 ip, const std::array<std::uint8_t, 16> &peerHash)
+{
+	const std::optional<NatServerHolePunch::RendezvousPath> path =
+		m_rendezvousOutcomes.TakeSuccess(ip, peerHash, ::GetTickCount64());
+	if (!path) {
+		return;
+	}
+	if (*path == NatServerHolePunch::RendezvousPath::ServerPunch) {
+		theStats::AddServerHolePunchSuccess();
+	} else {
+		theStats::AddLugdunumCallbackSuccess();
+	}
+}
+
 void CClientUDPSocket::SendLugdunumNatCallbackRequest(const LugdunumNatTraversal::CallbackFailureKey &key)
 {
 	if (theApp->serverconnect == nullptr || !Ok()) {
@@ -1154,6 +1185,9 @@ bool CClientUDPSocket::DialLugdunumNatCallbackPeer(const LugdunumNatTraversal::F
 	client->SetUDPPort(target.udpPort);
 	client->MarkLowIdHolePunchDial();
 	client->MarkLugdunumCallbackDial(failureKey);
+	NoteRendezvousAttempt(NatServerHolePunch::RendezvousPath::LugdunumCallback,
+		target.ip,
+		callback.hasObfuscation ? &callback.userHash : nullptr);
 	const bool started = LugdunumNatTraversal::RunCallbackDialApplication(
 		failureKey,
 		[client]() { return client->TryServerVouchedLowIdUtpDial(); },

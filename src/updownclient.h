@@ -247,6 +247,15 @@ public:
 	CProtocolPeerIdentity GetProtocolPeerIdentity() const;
 	uint32 GetIP() const { return m_userAddress.ToIPv4NetworkOrderOrZero(); }
 	bool HasLowID() const { return IsLowID(m_nUserIDHybrid); }
+	//! Classifies this session's payload for the statistics tree. Set on the main thread when a
+	//! hello is processed; the upload disk I/O thread reads it.
+	void NoteSessionTraffic(bool lowIdToLowId, bool ipv6)
+	{
+		m_lowIdToLowIdSession = lowIdToLowId;
+		m_ipv6Session = ipv6;
+	}
+	bool IsLowIdToLowIdSession() const { return m_lowIdToLowIdSession; }
+	bool IsIPv6Session() const { return m_ipv6Session; }
 	/**
 	 * The peer's address as text.
 	 *
@@ -1028,6 +1037,8 @@ private:
 	// atomic: the disk I/O thread sets them, the main thread reads and resets them
 	std::atomic<bool> m_bDisableCompression{ false };
 	std::atomic<bool> m_bIOError{ false };
+	std::atomic<bool> m_lowIdToLowIdSession{ false };
+	std::atomic<bool> m_ipv6Session{ false };
 
 	friend class CUploadDiskIOThread; // disk I/O thread needs direct access to block queues and session
 					  // counters

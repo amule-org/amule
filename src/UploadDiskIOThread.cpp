@@ -740,6 +740,10 @@ bool CUploadDiskIOThread::ReadCompletionRoutine(ReadRequest_Struct &req)
 					for (const auto &packet : packetList) {
 						theStats::AddUploadToSoft(
 							client->GetClientSoft(), packet.second);
+						theStats::AddSessionTrafficUpload(
+							client->IsLowIdToLowIdSession(),
+							client->IsIPv6Session(),
+							packet.second);
 						pSocket->SendPacket(packet.first, true, false, packet.second);
 					}
 					packetList.clear();

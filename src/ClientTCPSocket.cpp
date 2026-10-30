@@ -51,6 +51,7 @@
 #include "PeerAddressing.h"             // Needed for address admission policies
 #include "UploadQueue.h"                // Needed for CUploadQueue
 #include "ClientUDPSocket.h"            // Needed for CClientUDPSocket
+#include "ServerConnect.h"              // Needed for the LowID check in NoteHelloForStatistics
 #include "PartFile.h"                   // Needed for CPartFile
 #include "MemFile.h"                    // Needed for CMemFile
 #include "kademlia/kademlia/Kademlia.h" // Needed for CKademlia::Kademlia
@@ -115,6 +116,25 @@ CClientTCPSocket::~CClientTCPSocket()
 	if (theApp->listensocket && !theApp->listensocket->OnShutdown()) {
 		theApp->listensocket->RemoveSocket(this);
 	}
+}
+
+void CClientTCPSocket::NoteHelloForStatistics()
+{
+	if (m_client == nullptr) {
+		return;
+	}
+	// Two LowIDs can only meet over NAT traversal, so this is the NAT-T traffic figure.
+	const bool weAreLowId = theApp->serverconnect != nullptr && theApp->serverconnect->IsConnected() &&
+				theApp->serverconnect->IsLowID();
+	m_client->NoteSessionTraffic(weAreLowId && m_client->HasLowID(), GetRemoteAddress().IsIPv6());
+#if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
+	// A rendezvous ends on a uTP or QUIC stream, opened by either side.
+	if (HasTransport() && theApp->clientudp != nullptr) {
+		std::array<std::uint8_t, 16> peerHash{};
+		std::copy_n(m_client->GetUserHash().GetHash(), peerHash.size(), peerHash.begin());
+		theApp->clientudp->NoteRendezvousHello(m_client->GetIP(), peerHash);
+	}
+#endif
 }
 
 #ifdef AMULE_UTP_TRANSPORT
@@ -419,6 +439,7 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 			}
 		}
 #endif
+		NoteHelloForStatistics();
 #ifdef ENABLE_IPV6
 		m_client->MarkIPv6ChangeConnectionReady();
 #endif
@@ -532,6 +553,7 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 			theApp->clientlist->AddClient(m_client);
 			m_client->SetCommentDirty();
 		}
+		NoteHelloForStatistics();
 #ifdef AMULE_UTP_TRANSPORT
 		// After the attach above, which may have replaced the client this keys
 		// on. Outbound streams also refresh their parameters on HELLOANSWER.

@@ -121,6 +121,8 @@ protected:
 
 private:
 	CUpDownClient *m_client;
+	//! A hello was processed: classify the session's traffic and complete a rendezvous with it.
+	void NoteHelloForStatistics();
 #ifdef AMULE_UTP_TRANSPORT
 	bool TryUtpTcpFallback();
 	bool m_utpFallbackAttempted = false;

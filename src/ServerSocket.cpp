@@ -94,6 +94,8 @@ void HandleLowIdHolePunchInfo(
 	// 25-byte one, leaves us the target, who punches and waits for the peer's stream.
 	const bool requester = info.peerId.has_value() &&
 			       serverconnect->LowIdHolePunchPendingRequests().Take(*info.peerId, now);
+	theApp->clientudp->NoteRendezvousAttempt(
+		NatServerHolePunch::RendezvousPath::ServerPunch, peerIP, &info.userHash);
 	const NatServerHolePunch::VouchedPeer peer{ info.userHash, info.peerCrypt };
 	serverconnect->LowIdHolePunchExpectedEndpoints().Register(info.peerIP, info.tcpPort, now, peer);
 	theApp->clientudp->ExpectNatTPeer(peerIP, info.udpPort, &info.userHash);

@@ -642,6 +642,76 @@ private:
 	};
 	std::vector<Entry> m_pending;
 };
+// Statistics: which server-coordinated path a rendezvous took. The extension counts as the
+// ed2k-server punch, and its Lugdunum fallback dial as Lugdunum's callback.
+enum class RendezvousPath
+{
+	ServerPunch,
+	LugdunumCallback
+};
+
+// Covers the 30 s punch window, the 3 s dial back and the stream's handshake.
+constexpr std::uint64_t kRendezvousOutcomeTtlMs = 60'000;
+constexpr std::size_t kMaxPendingRendezvous = 64;
+
+// Rendezvous we acted on, each waiting for a verified hello from its peer, on either side: the
+// target of a punch usually waits for the requester's stream rather than dialling.
+class RendezvousOutcomes
+{
+public:
+	// True for a new rendezvous, the attempt to count; a resend or a second notice is the same one.
+	bool NoteAttempt(
+		RendezvousPath path, std::uint32_t ip, std::optional<Hash> peerHash, std::uint64_t now)
+	{
+		Evict(now);
+		const auto same = std::find_if(m_pending.begin(),
+			m_pending.end(),
+			[path, ip](const Entry &entry) { return entry.path == path && entry.ip == ip; });
+		if (same != m_pending.end()) {
+			return false;
+		}
+		if (m_pending.size() >= kMaxPendingRendezvous) {
+			m_pending.erase(m_pending.begin());
+		}
+		m_pending.push_back({ path, ip, peerHash, now });
+		return true;
+	}
+	// The path of the rendezvous a verified hello completes, taken once. A rendezvous that named the
+	// peer's hash matches only that hash; one that did not matches by address.
+	std::optional<RendezvousPath> TakeSuccess(std::uint32_t ip, const Hash &peerHash, std::uint64_t now)
+	{
+		Evict(now);
+		const auto match =
+			std::find_if(m_pending.begin(), m_pending.end(), [ip, &peerHash](const Entry &entry) {
+				return entry.ip == ip && (!entry.peerHash || *entry.peerHash == peerHash);
+			});
+		if (match == m_pending.end()) {
+			return std::nullopt;
+		}
+		const RendezvousPath path = match->path;
+		m_pending.erase(match);
+		return path;
+	}
+	std::size_t Size() const { return m_pending.size(); }
+
+private:
+	struct Entry
+	{
+		RendezvousPath path;
+		std::uint32_t ip;
+		std::optional<Hash> peerHash;
+		std::uint64_t notedAt;
+	};
+	void Evict(std::uint64_t now)
+	{
+		const auto firstLive =
+			std::remove_if(m_pending.begin(), m_pending.end(), [now](const Entry &entry) {
+				return now >= entry.notedAt && now - entry.notedAt >= kRendezvousOutcomeTtlMs;
+			});
+		m_pending.erase(firstLive, m_pending.end());
+	}
+	std::vector<Entry> m_pending;
+};
 } // namespace NatServerHolePunch
 #endif // ENABLE_NATT_SERVER_COORDINATION
 #endif // AMULE_NAT_SERVER_HOLE_PUNCH_H

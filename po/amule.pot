@@ -8353,6 +8353,16 @@ msgstr ""
 
 #: src/Statistics.cpp
 #, c-format
+msgid "LowID to LowID Data (Session): %s"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "IPv6 Data (Session): %s"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
 msgid "Active Uploads: %s"
 msgstr ""
 
@@ -8449,6 +8459,30 @@ msgstr ""
 #: src/Statistics.cpp
 #, c-format
 msgid "Peak Connections (estimate): %i"
+msgstr ""
+
+#: src/Statistics.cpp
+msgid "NAT Traversal (Session)"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Server Hole Punches: %s"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Successful Server Hole Punches: %s"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Lugdunum Callbacks: %s"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Successful Lugdunum Callbacks: %s"
 msgstr ""
 
 #: src/Statistics.cpp
