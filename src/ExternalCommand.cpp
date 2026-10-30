@@ -375,6 +375,14 @@ wxArrayString Build(const wxString &command,
 	return args;
 }
 
+// wxWidgets 3.2 has no wxArrayString(std::initializer_list) constructor (added in 3.3).
+static wxArrayString SingleArgument(const wxString &arg)
+{
+	wxArrayString args;
+	args.Add(arg);
+	return args;
+}
+
 // Windows CreateProcess accepts a string, and wxWidgets 3.2/3.3.1's argv overload
 // does not double backslashes before embedded quotes or the closing quote.
 // Quote each argument using the Windows C runtime rules instead.
@@ -426,14 +434,14 @@ wxString BuildWindowsCommandLine(const wxArrayString &args, const wxString *unch
 	}
 	wxString shell;
 	if (cmd) {
-		shell = QuoteCrtArguments(wxArrayString{ args[0] }) + " /d /s";
+		shell = QuoteCrtArguments(SingleArgument(args[0])) + " /d /s";
 		for (size_t i = 1; i < first; ++i) {
 			shell += " " + args[i];
 		}
 	} else {
 #ifdef __WINDOWS__
 		// Avoid implicit batch dispatch and PATH/COMSPEC lookup: select the OS shell.
-		shell = QuoteCrtArguments(wxArrayString{ wxGetOSDirectory() + "\\System32\\cmd.exe" });
+		shell = QuoteCrtArguments(SingleArgument(wxGetOSDirectory() + "\\System32\\cmd.exe"));
 #else
 		shell = "\"cmd.exe\""; // portable serializer regression coverage
 #endif
@@ -452,7 +460,7 @@ wxString BuildWindowsCommandLine(const wxArrayString &args, const wxString *unch
 			shell += args[i]; // fixed builtin token; cmd does not use CRT parsing
 		} else {
 			shell += rawQuotes ? "\"" + args[i] + "\""
-					   : QuoteCrtArguments(wxArrayString{ args[i] });
+					   : QuoteCrtArguments(SingleArgument(args[i]));
 		}
 	}
 	shell += '\"';

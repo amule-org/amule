@@ -402,6 +402,14 @@ struct LoadedSearch
 	bool hasParams = false;            // true when the trailing block records this search's form
 	CSearchList::CSearchParams params; // empty for a search the file records no form for
 	std::vector<std::unique_ptr<CSearchFile>> results;
+
+	// wxString's move constructor is not noexcept in wxWidgets 3.2, so std::vector::reserve()
+	// would fall back to copying this type and fail on the unique_ptr members. Make it move-only.
+	LoadedSearch() = default;
+	LoadedSearch(const LoadedSearch &) = delete;
+	LoadedSearch &operator=(const LoadedSearch &) = delete;
+	LoadedSearch(LoadedSearch &&) = default;
+	LoadedSearch &operator=(LoadedSearch &&) = default;
 };
 
 //! Reads the start-parameter block after its marker. A damaged block leaves every search

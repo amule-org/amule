@@ -127,10 +127,12 @@ inline wxArrayString AmuleApiArguments(const wxString &path,
 	const wxString &ecIp,
 	unsigned ecPort)
 {
-	wxArrayString args{ path,
-		"--config-dir=" + configDir,
-		"--bind=" + bind,
-		wxString::Format("--http-port=%u", httpPort) };
+	// No brace initialisation: wxArrayString only gets an initializer_list constructor in wx 3.3.
+	wxArrayString args;
+	args.Add(path);
+	args.Add("--config-dir=" + configDir);
+	args.Add("--bind=" + bind);
+	args.Add(wxString::Format("--http-port=%u", httpPort));
 	if (!ecIp.IsEmpty() && ecPort != 0) {
 		const wxString host = ecIp == "0.0.0.0" ? wxString("127.0.0.1") : ecIp;
 		args.Add("--host=" + host);
