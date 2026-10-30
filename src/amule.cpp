@@ -829,6 +829,12 @@ bool CamuleApp::OnInit()
 		if (!thePrefs::SetECPass(GetPassword(false).Encode()))
 			return false;
 		thePrefs::EnableExternalConnections(true);
+		// SetECPass() saves only the verifier.
+		wxConfigBase *cfg = wxConfigBase::Get();
+		if (!cfg->Write("/ExternalConnect/AcceptExternalConnections", true) || !cfg->Flush()) {
+			AddLogLineCS(_("Could not save AcceptExternalConnections to amule.conf."));
+			return false;
+		}
 		AddLogLineNS(_("Password set and external connections enabled."));
 	}
 

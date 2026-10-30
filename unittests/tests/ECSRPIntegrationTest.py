@@ -253,6 +253,34 @@ def password_edit_regressions(port, root, peer):
         editor.sock.close()
     print('PASS: malformed/empty password edits and failed port rebind preserve credentials and preferences')
 
+def ec_config_survives_restart(daemon, cmd):
+    with tempfile.TemporaryDirectory(prefix='amule-ec-config-') as scratch:
+        root = Path(scratch)
+        port, peer = free_ports(2)
+        # A fresh install: external connections off and no password.
+        write_amule_conf(root, port, Port=peer, UDPEnable=0,
+                         sections={'ExternalConnect': {'ECAddress': '127.0.0.1', 'ECPort': port}})
+        env = dict(os.environ, HOME=scratch, XDG_CONFIG_HOME=str(root / 'xdg'), LC_ALL='C.UTF-8')
+        base = [daemon, '-c', scratch] + ([] if os.name == 'nt' else ['--disable-fatal'])
+        for args in (['--ec-config'] + ([] if os.name == 'nt' else ['--enable-stdin']), []):
+            with (root / 'console').open('w') as log:
+                # Without a controlling terminal, getpass() reads stdin.
+                proc = subprocess.Popen(base + args, env=env, stdout=log, stderr=log,
+                                        stdin=subprocess.PIPE if args else subprocess.DEVNULL,
+                                        start_new_session=True)
+                try:
+                    if args:
+                        proc.stdin.write(b'regression\n')
+                        proc.stdin.close()
+                    connect_daemon(proc, port, root, peer).sock.close()
+                    out = subprocess.run([cmd, '-h', '127.0.0.1', '-p', str(port), '-P', 'regression',
+                                          '-c', 'status'],
+                                         env=env, capture_output=True, text=True, timeout=20)
+                    assert 'Succeeded!' in out.stdout + out.stderr, out
+                finally:
+                    stop_daemon(proc)
+    print('PASS: amuled --ec-config keeps external connections on after a restart')
+
 def main(daemon,cmd,async_probe):
     with tempfile.TemporaryDirectory(prefix='amule-srp-') as scratch:
         root=Path(scratch);port,peer=free_ports(2)
@@ -468,5 +496,6 @@ def main(daemon,cmd,async_probe):
         out=subprocess.run([cmd,'--disable-ec-encryption'],env=env,capture_output=True,text=True,timeout=5)
         assert 'Unknown' in out.stdout+out.stderr or 'unknown' in out.stdout+out.stderr,out
         print('PASS: old daemon and removed encryption switch fail clearly')
+    ec_config_survives_restart(daemon, cmd)
 
 if __name__=='__main__': main(*sys.argv[1:])
