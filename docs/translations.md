@@ -254,6 +254,9 @@ This regenerates `docs/man/po/manpages.pot` and merges the new strings
 into every `docs/man/po/manpages-*.po`. Commit the resulting changes.
 Requires `po4a` and `gettext` installed locally.
 
+To check that every translated manpage still renders, run
+`./scripts/check-manpages-render.sh`. CI runs it on every pull request.
+
 ### Adding a new language
 
 1. Add the language code to `[po4a_langs]` in `docs/man/po4a.config.in`.
