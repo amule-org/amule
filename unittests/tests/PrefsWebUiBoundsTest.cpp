@@ -21,7 +21,7 @@
 #include <muleunit/test.h>
 #include <webapi/PrefsSchema.h>
 
-#include <cstring>
+#include <cstdint>
 #include <fstream>
 #include <iterator>
 #include <map>
@@ -39,9 +39,9 @@ namespace
 struct JsBounds
 {
 	std::string where;
-	long min = -1;
-	long max = -1;
-	long step = -1;
+	int64_t min = -1;
+	int64_t max = -1;
+	int64_t step = -1;
 };
 
 // preferences.js cannot include the C++ limits, so read its numbers here: the fields of each
@@ -67,7 +67,7 @@ std::map<std::string, JsBounds> ReadWebUiBounds()
 		const std::string attrs = (*it)[2];
 		JsBounds b;
 		for (std::sregex_iterator n(attrs.begin(), attrs.end(), number); n != end; ++n) {
-			const long value = std::stol((*n)[2]);
+			const int64_t value = std::stoll((*n)[2]);
 			const std::string name = (*n)[1];
 			(name == "min" ? b.min : name == "max" ? b.max : b.step) = value;
 		}
@@ -116,14 +116,14 @@ TEST(PrefsWebUiBounds, WebUiBoundsMatchTheSchema)
 		ASSERT_TRUE_M(
 			row != nullptr, wxString("preferences.js bounds an unknown field: ") + js.where);
 		const wxString what = wxString(js.where) + ": preferences.js disagrees with PrefsSchema.cpp";
-		ASSERT_TRUE_M(js.min < 0 || js.min >= static_cast<long>(row->min), what);
-		ASSERT_TRUE_M(js.max <= static_cast<long>(row->max), what);
+		ASSERT_TRUE_M(js.min < 0 || js.min >= static_cast<int64_t>(row->min), what);
+		ASSERT_TRUE_M(js.max <= static_cast<int64_t>(row->max), what);
 		if (row->step) {
-			ASSERT_TRUE_M(js.step == static_cast<long>(row->step), what);
+			ASSERT_TRUE_M(js.step == static_cast<int64_t>(row->step), what);
 		}
 		if (row->min || row->step) {
-			ASSERT_TRUE_M(js.min == static_cast<long>(row->min), what);
-			ASSERT_TRUE_M(js.max == static_cast<long>(row->max), what);
+			ASSERT_TRUE_M(js.min == static_cast<int64_t>(row->min), what);
+			ASSERT_TRUE_M(js.max == static_cast<int64_t>(row->max), what);
 		}
 	}
 }
