@@ -18,6 +18,8 @@ on:
     # scripts and tests, and the workflows. Docs and translations skip it.
     paths:
       - 'src/**'
+      # Web UI translations; I18n CI checks them.
+      - '!src/webapi/static/i18n/**'
       - 'cmake/**'
       - 'CMakeLists.txt'
       - 'config.h.cm'
@@ -110,6 +112,7 @@ jobs:
             if files=$(gh api "repos/$REPO/compare/$BEFORE...$SHA" \
                 --jq 'if (.files | length) < 300 then .files[].filename else error("too many") end'); then
               all=false
+              files=$(grep -v '^src/webapi/static/i18n/' <<<"$files" || true)
             fi
           fi
           has() { [ "$all" = true ] || grep -q -E "$1" <<<"$files"; }

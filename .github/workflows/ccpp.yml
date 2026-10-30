@@ -5,6 +5,10 @@ on:
     branches: [ "**" ]
     paths:
       - 'src/**'
+      # Web UI translations; I18n CI checks them.
+      - '!src/webapi/static/i18n/**'
+      # Read by ClientSoftwareTest.mjs.
+      - 'src/webapi/static/i18n/en.json'
       - 'cmake/**'
       - 'CMakeLists.txt'
       - 'unittests/**'
@@ -18,6 +22,10 @@ on:
     branches: [ "**" ]
     paths:
       - 'src/**'
+      # Web UI translations; I18n CI checks them.
+      - '!src/webapi/static/i18n/**'
+      # Read by ClientSoftwareTest.mjs.
+      - 'src/webapi/static/i18n/en.json'
       - 'cmake/**'
       - 'CMakeLists.txt'
       - 'unittests/**'

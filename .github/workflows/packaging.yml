@@ -28,6 +28,8 @@ on:
       - '.github/workflows/packaging.yml'
       - '.github/workflows/flatpak-smoke.yml'
       - 'src/**'
+      # Web UI translations; I18n CI checks them.
+      - '!src/webapi/static/i18n/**'
       - 'CMakeLists.txt'
       - 'cmake/**'
   workflow_dispatch:
