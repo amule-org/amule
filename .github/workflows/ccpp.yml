@@ -213,7 +213,9 @@ jobs:
             ${{ env.cmake_ubuntu_config_flags }} \
             -DENABLE_BFD=${{ matrix.bfd }}
       - name: zero ccache stats
-        run: ccache --zero-stats
+        run: |
+          ccache --zero-stats
+          echo "BUILD_START_EPOCH=$(date +%s)" >> "$GITHUB_ENV"
       - name: make
         run: cmake --build build
       # Normal Ubuntu builds select libayatana and would miss Linux-only
@@ -221,6 +223,11 @@ jobs:
       - name: compile wxTaskBarIcon without libayatana
         if: matrix.build_type == 'Release'
         run: python3 scripts/check-tray-backend-build.py build --require-remote-gui
+      # Keep only what this build used: a hit or a new write updates an entry's
+      # timestamp, so anything older is left over from earlier commits.
+      - name: evict unused ccache entries
+        continue-on-error: true
+        run: ccache --evict-older-than "$(( $(date +%s) - BUILD_START_EPOCH ))s"
       - name: save ccache
         uses: ./.github/actions/cache-save-newest
         if: always() && github.event_name == 'push' && github.ref == 'refs/heads/master'
@@ -334,9 +341,14 @@ jobs:
             ${{ env.cmake_ubuntu_config_flags }} \
             -DENABLE_ALL_EXPERIMENTAL=YES
       - name: zero ccache stats
-        run: ccache --zero-stats
+        run: |
+          ccache --zero-stats
+          echo "BUILD_START_EPOCH=$(date +%s)" >> "$GITHUB_ENV"
       - name: make
         run: cmake --build build
+      - name: evict unused ccache entries
+        continue-on-error: true
+        run: ccache --evict-older-than "$(( $(date +%s) - BUILD_START_EPOCH ))s"
       - name: save ccache
         uses: ./.github/actions/cache-save-newest
         if: always() && github.event_name == 'push' && github.ref == 'refs/heads/master'
@@ -608,7 +620,9 @@ jobs:
             ${{ env.cmake_common_config_flags }} \
             ${{ env.cmake_macos_config_flags }}
       - name: zero ccache stats
-        run: ccache --zero-stats
+        run: |
+          ccache --zero-stats
+          echo "BUILD_START_EPOCH=$(date +%s)" >> "$GITHUB_ENV"
       # Exercise the native API and command-routing changes before spending
       # the rest of the job compiling unrelated application/test targets.
       - name: native tray and artwork regression tests
@@ -618,6 +632,9 @@ jobs:
             -R '^(NativeTrayIconMacTest|IconArtworkTest)$'
       - name: make
         run: cmake --build build
+      - name: evict unused ccache entries
+        continue-on-error: true
+        run: ccache --evict-older-than "$(( $(date +%s) - BUILD_START_EPOCH ))s"
       - name: save ccache
         uses: ./.github/actions/cache-save-newest
         if: always() && github.event_name == 'push' && github.ref == 'refs/heads/master'
@@ -719,9 +736,14 @@ jobs:
             ${{ env.cmake_mingw_w64_config_flags }} \
             ${{ matrix.extra_config_flags }}
       - name: zero ccache stats
-        run: ccache --zero-stats
+        run: |
+          ccache --zero-stats
+          echo "BUILD_START_EPOCH=$(date +%s)" >> "$GITHUB_ENV"
       - name: make
         run: cmake --build build
+      - name: evict unused ccache entries
+        continue-on-error: true
+        run: ccache --evict-older-than "$(( $(date +%s) - BUILD_START_EPOCH ))s"
       - name: save ccache
         uses: ./.github/actions/cache-save-newest
         if: always() && github.event_name == 'push' && github.ref == 'refs/heads/master'

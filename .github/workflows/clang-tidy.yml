@@ -126,6 +126,8 @@ jobs:
           path: ${{ env.CCACHE_DIR }}
           key: clang-tidy-ccache-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
           restore-keys: clang-tidy-ccache-
+      - name: note build start
+        run: echo "BUILD_START_EPOCH=$(date +%s)" >> "$GITHUB_ENV"
       # Roll the ctcache forward run-to-run: save under the run id, restore the
       # newest previous one via the shared prefix. Bump the version suffix when
       # LLVM_VERSION or CTCACHE_SHA changes so a stale cache can't mask a shift
@@ -166,6 +168,11 @@ jobs:
         run: cmake ${{ env.cmake_config_flags }}
       - name: build (generate headers + compile_commands.json)
         run: cmake --build build
+      # Keep only what this build used: a hit or a new write updates an entry's
+      # timestamp, so anything older is left over from earlier commits.
+      - name: evict unused ccache entries
+        continue-on-error: true
+        run: ccache --evict-older-than "$(( $(date +%s) - BUILD_START_EPOCH ))s"
       - name: save ccache
         uses: ./.github/actions/cache-save-newest
         if: always() && github.event_name == 'push' && github.ref == 'refs/heads/master'

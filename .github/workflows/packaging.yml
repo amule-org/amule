@@ -137,7 +137,9 @@ jobs:
           restore-keys: ${{ runner.os }}-appimage-${{ matrix.arch }}-ccache-
       - name: Zero ccache stats
         if: github.event_name != 'workflow_call'
-        run: ccache --zero-stats
+        run: |
+          ccache --zero-stats
+          echo "BUILD_START_EPOCH=$(date +%s)" >> "$GITHUB_ENV"
       # buildx + a gha layer cache for the image build, matching the static
       # track. wxWidgets is compiled inside the image, so ccache never sees
       # it; without this every run rebuilds it from scratch.
@@ -151,6 +153,13 @@ jobs:
         run: python3 packaging/media/test-runtime.py --appimage "$(ls dist/aMule-*-Linux-*.AppImage | head -1)"
       - name: Validate via cross-distro Docker matrix
         run: packaging/linux/build.sh validate
+      # Keep only what this build used: a hit or a new write updates an entry's
+      # timestamp, so anything older is left over from earlier commits.
+      # The build container writes the cache as root.
+      - name: Evict unused ccache entries
+        if: github.event_name != 'workflow_call'
+        continue-on-error: true
+        run: sudo env CCACHE_DIR="$CCACHE_DIR" ccache --evict-older-than "$(( $(date +%s) - BUILD_START_EPOCH ))s"
       - name: Save ccache
         if: always() && github.event_name == 'push' && github.ref == 'refs/heads/master'
         uses: ./.github/actions/cache-save-newest
@@ -276,11 +285,13 @@ jobs:
       # entry had grown to 4.4 GB of the repository's 10 GB budget -- evicting
       # the caches every other job depends on. max_size in the cache's own
       # config travels with it and is read wherever ccache runs. One build
-      # writes ~350 MB, so 1 GB keeps the current generation and two behind it.
+      # writes ~350 MB, which is all the eviction before the save keeps, so the
+      # cap is only a backstop.
       - name: Cap the flatpak-builder ccache
         run: |
           mkdir -p "$CCACHE_DIR"
           echo "max_size = 1.0G" > "$CCACHE_DIR/ccache.conf"
+          echo "BUILD_START_EPOCH=$(date +%s)" >> "$GITHUB_ENV"
       - name: Check Flatpak source provenance
         run: python3 -m unittest discover -s packaging/linux/tests -p test_flatpak_source.py -v
       - name: Build Flatpak
@@ -291,6 +302,15 @@ jobs:
           LOCATION=$(flatpak info --user --show-location org.amule.aMule)
           python3 packaging/media/test-runtime.py --flatpak org.amule.aMule \
             --licenses "$LOCATION/files/share/licenses/amule-media-probe"
+      # With the SDK's ccache, the one that wrote the cache.
+      - name: Evict unused ccache entries
+        if: github.event_name != 'workflow_call'
+        continue-on-error: true
+        run: |
+          set -a; . packaging/linux/versions.env; set +a
+          flatpak run --no-documents-portal --filesystem="$CCACHE_DIR" --env=CCACHE_DIR="$CCACHE_DIR" \
+              --command=ccache "org.gnome.Sdk//${GNOME_RUNTIME_VERSION}" \
+              --evict-older-than "$(( $(date +%s) - BUILD_START_EPOCH ))s"
       - name: Save flatpak-builder ccache
         if: always() && github.event_name == 'push' && github.ref == 'refs/heads/master'
         uses: ./.github/actions/cache-save-newest
@@ -602,7 +622,9 @@ jobs:
           restore-keys: ${{ runner.os }}-macos-${{ matrix.arch }}-ccache-
       - name: Zero ccache stats
         if: github.event_name != 'workflow_call'
-        run: ccache --zero-stats
+        run: |
+          ccache --zero-stats
+          echo "BUILD_START_EPOCH=$(date +%s)" >> "$GITHUB_ENV"
       # Homebrew's gd links libavif, which bundled aom, dav1d and libvmaf that
       # nothing in aMule uses. Only cas links libgd, and it needs PNG, JPEG and
       # FreeType. build.sh finds this one through LIBGD_PREFIX.
@@ -665,6 +687,10 @@ jobs:
               --bin-dir "${MNT}/aMule.app/Contents/MacOS" \
               --licenses "${MNT}/aMule.app/Contents/Resources/licenses/amule-media-probe"
           hdiutil detach "${MNT}"
+      - name: Evict unused ccache entries
+        if: github.event_name != 'workflow_call'
+        continue-on-error: true
+        run: ccache --evict-older-than "$(( $(date +%s) - BUILD_START_EPOCH ))s"
       - name: Save ccache
         if: always() && github.event_name == 'push' && github.ref == 'refs/heads/master'
         uses: ./.github/actions/cache-save-newest
@@ -885,7 +911,9 @@ jobs:
           restore-keys: ${{ runner.os }}-windows-${{ matrix.arch }}-ccache-
       - name: Zero ccache stats
         if: github.event_name != 'workflow_call'
-        run: ccache --zero-stats
+        run: |
+          ccache --zero-stats
+          echo "BUILD_START_EPOCH=$(date +%s)" >> "$GITHUB_ENV"
       - name: Configure git safe.directory for MSYS2 git
         # MSYS2 git (now installed above) uses a global config separate
         # from the Windows git at C:\Program Files\Git\bin\git.exe that
@@ -964,6 +992,10 @@ jobs:
           BUNDLE=$(find "$STAGE" -mindepth 1 -maxdepth 1 -type d | head -1)
           "$MINGW_PREFIX/bin/python.exe" packaging/media/test-runtime.py \
               --bin-dir "$BUNDLE/bin" --licenses "$BUNDLE/share/licenses/amule-media-probe"
+      - name: Evict unused ccache entries
+        if: github.event_name != 'workflow_call'
+        continue-on-error: true
+        run: ccache --evict-older-than "$(( $(date +%s) - BUILD_START_EPOCH ))s"
       - name: Save ccache
         if: always() && github.event_name == 'push' && github.ref == 'refs/heads/master'
         uses: ./.github/actions/cache-save-newest
