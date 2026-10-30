@@ -977,7 +977,8 @@ bool PrefsUnifiedDlg::TransferToWindow()
 		// Online-signature "Browse" is a local file picker; the directory field
 		// + update frequency beside it are EC-wired and stay visible.
 		IDC_SELOSDIR,
-		IDC_EXT_CONN_PARAMS_BOX,
+		// The EC listener settings. Their box stays shown: it holds the EC password, which
+		// the remote GUI can change.
 		IDC_EXT_CONN_ACCEPT,
 		IDC_EXT_CONN_IP,
 		IDC_EXT_CONN_IPTEXT,

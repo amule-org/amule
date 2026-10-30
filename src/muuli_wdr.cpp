@@ -2312,7 +2312,7 @@ wxSizer *PreferencesRemoteControlsTab( wxWindow *parent, bool call_fit, bool set
     wxStaticText *item5 = new wxStaticText( item2, IDC_EXT_CONN_IPTEXT, _("IP of the listening interface:"), wxDefaultPosition, wxDefaultSize, wxST_NO_AUTORESIZE );
     item4->Add( item5, wxSizerFlags().Expand().CenterVertical().Border(wxLEFT, 5) );
 #ifdef CLIENT_GUI
-    // Hidden in the remote GUI, as the whole EC-listener config group is, so a plain text field is
+    // Hidden in the remote GUI, like the other EC listener settings, so a plain text field is
     // enough -- no point offering a drop-down of the wrong host's addresses. See PrefsUnifiedDlg
     // amuledOnlyPrefs[].
     CMuleTextCtrl *item6 = new CMuleTextCtrl( parent, IDC_EXT_CONN_IP, "", wxDefaultPosition, wxDefaultSize, 0 );
@@ -2328,7 +2328,7 @@ wxSizer *PreferencesRemoteControlsTab( wxWindow *parent, bool call_fit, bool set
     wxStaticText *item6b = new wxStaticText( item2, IDC_EC_INTERFACETEXT, _("Bind to network interface (empty for any):"), wxDefaultPosition, wxDefaultSize, wxST_NO_AUTORESIZE );
     item4->Add( item6b, wxSizerFlags().Expand().CenterVertical().Border(wxLEFT, 5) );
 #ifdef CLIENT_GUI
-    // Hidden in the remote GUI, as the whole EC-listener config group is, so a plain text field is
+    // Hidden in the remote GUI, like the other EC listener settings, so a plain text field is
     // enough -- no point populating a drop-down of the wrong host's interfaces. See PrefsUnifiedDlg
     // amuledOnlyPrefs[].
     wxTextCtrl *item6c = new wxTextCtrl( parent, IDC_EC_INTERFACE, "", wxDefaultPosition, wxDefaultSize, 0 );
