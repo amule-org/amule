@@ -28,6 +28,7 @@
 #include <common/MD5Sum.h>
 #include <wx/init.h>
 #include <wx/app.h>
+#include <wx/sysopt.h>
 #include <chrono>
 #include <mutex>
 #include <thread>
@@ -70,6 +71,10 @@ int main(int argc, char **argv)
 	});
 	CRemoteConnect connection(&notifier);
 	connection.SetCapabilities(false, false, false);
+	// wx 3.3 caches this option on first lookup, without a lock. wxEntry() looks it up on the
+	// main thread before any thread starts; this probe has no wxEntry(), so the Asio threads
+	// below would race to do it.
+	wxSystemOptions::HasOption("catch-unhandled-exceptions");
 	CAsioService service;
 	if (!connection.ConnectToCore("127.0.0.1",
 		    std::stoi(argv[1]),
