@@ -14,6 +14,17 @@ name: "CodeQL Advanced"
 on:
   push:
     branches: [ "master" ]
+    # Everything the three analyses read: C/C++ sources and their build, Python
+    # scripts and tests, and the workflows. Docs and translations skip it.
+    paths:
+      - 'src/**'
+      - 'cmake/**'
+      - 'CMakeLists.txt'
+      - 'config.h.cm'
+      - 'unittests/**'
+      - 'scripts/**'
+      - 'packaging/**'
+      - '.github/**'
   # pull_request trigger intentionally omitted: a merged PR is just a push to
   # master, so the push trigger above already covers it.
   # Note: without a pull_request trigger, GitHub will not post a "Code scanning"
@@ -21,6 +32,13 @@ on:
   # re-add the pull_request trigger.
   schedule:
     - cron: "30 21 * * 4"
+
+# Each run analyzes the whole codebase, and code scanning keeps only the latest
+# master results, so a newer push makes the running analysis pointless. TRAP
+# caching is off, so a cancelled run loses no cache.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'push' }}
 
 env:
   # The minus sign removes the trailing new line in the last line
