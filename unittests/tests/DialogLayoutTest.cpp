@@ -68,7 +68,9 @@ void TestWrappingText(const wxString &message, bool scrolled, bool largerFont)
 	}
 	wxWindow *labelParent = scrolled ? new wxPanel(content) : content;
 	auto *label = new WrappingStaticText(labelParent, wxID_ANY, message);
-	auto *following = new wxTextCtrl(labelParent, wxID_ANY, "Keep this text");
+	// Read-only so keystrokes typed while a test dialog has focus cannot change it.
+	auto *following = new wxTextCtrl(
+		labelParent, wxID_ANY, "Keep this text", wxDefaultPosition, wxDefaultSize, wxTE_READONLY);
 	if (scrolled) {
 		// Preferences rows can keep the virtual page wider than the viewport.
 		following->SetMinSize(dialog.FromDIP(wxSize(560, -1)));
@@ -180,6 +182,9 @@ void TestWrappingText(const wxString &message, bool scrolled, bool largerFont)
 	Check(label->GetLabelText() == narrow && label->GetSize().y == narrowHeight,
 		"Repeated resizing accumulated line breaks or changed height");
 	Check(label->GetMinSize().x == label->FromDIP(20), "Translation enlarged minimum width");
+	if (following->GetValue() != "Keep this text") {
+		std::cerr << "Neighboring content: " << following->GetValue().ToUTF8().data() << '\n';
+	}
 	Check(following->GetValue() == "Keep this text", "Wrapping changed neighboring content");
 }
 
