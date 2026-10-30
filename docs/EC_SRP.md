@@ -80,6 +80,10 @@ M2 = HMAC-SHA256(K, ASCII("ec-srp-server") || C || M1)
 Proofs use constant-time comparison. The legacy salt tag, MD5 response and
 password-keyed AEAD confirmation tags are retired; their tag IDs are not reused.
 
+`unittests/tests/ECWire.py` implements both sides of this handshake in Python,
+independently of Crypto++, with the SRP math in `ECSRPVector.py` beside it. Use
+it as a reference peer.
+
 ## Migration and credential changes
 
 Legacy ECPassword values containing an empty-password digest, all zeros or invalid
