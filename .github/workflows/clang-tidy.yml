@@ -28,22 +28,16 @@ on:
       - '.github/apt-ci.conf'
       - '.github/actions/apt-install/**'
 
-# Supersede an older run only when a newer push makes it pointless, which means
-# within one branch or one PR. The default branch is the exception: every commit
-# on master is its own thing to gate, and merges land minutes apart while Tier-1
-# takes ten. A group shared by all of master therefore had each merge cancel the
-# run of the merge before it, so that commit was never gated and never wrote the
-# ccache/ctcache that only master runs save -- leaving the next run colder too.
+# A newer push makes the running analysis pointless, on master as on any branch:
+# Tier-1 checks the whole tree, so the newest master run covers every commit
+# before it, and each of those already passed both tiers on its pull request.
+# A cancelled run still saves its ccache and ctcache (both saves run on
+# always()), so the next run starts from everything the cancelled one built.
 #
-# Keying master runs on the commit gives each its own group, so nothing cancels
-# them and bursts of merges analyze in parallel. Turning cancellation off for
-# master instead would not do: GitHub keeps at most one pending run per group,
-# so a third merge would still discard the second.
-#
-# The two events do not share a group and never did: a PR branch push fires
-# `push` at refs/heads/<branch> and `pull_request` at refs/pull/<n>/merge.
+# The two events do not share a group: a PR branch push fires `push` at
+# refs/heads/<branch> and `pull_request` at refs/pull/<n>/merge.
 concurrency:
-  group: clang-tidy-${{ github.workflow }}-${{ github.ref }}-${{ github.ref == 'refs/heads/master' && github.sha || '' }}
+  group: clang-tidy-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -235,6 +229,9 @@ jobs:
   # must not fire on any line the change touches.
   clang-tidy-diff:
     name: clang-tidy (changed lines, Tier-2)
+    # On a master push the diff base is the commit itself, so there are no
+    # changed lines to check; the pull request already ran this tier.
+    if: github.event_name == 'pull_request' || github.ref != 'refs/heads/master'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
