@@ -134,6 +134,11 @@ wxString LabelWithColon(const wxString &label)
 	return CFormat(_("%s:")) % label;
 }
 
+wxString SharedFolderHint()
+{
+	return _("(All files in this folder are shared with other peers)");
+}
+
 wxString FormatLocalDateTime(const wxDateTime &when)
 {
 	// %x %X: both halves come from LC_TIME, so a locale that writes the day first, or separates

@@ -1908,7 +1908,7 @@ wxSizer *PreferencesDirectoriesTab( wxWindow *parent, bool call_fit, bool set_si
     item1->Add( item4, wxSizerFlags().Expand().CenterHorizontal() );
     item0->Add( item1, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 0) );
 
-    wxStaticText *item3_hint = new wxStaticText( parent, -1, _("(All files in this folder are shared with other peers)"), wxDefaultPosition, wxDefaultSize, wxALIGN_CENTRE );
+    wxStaticText *item3_hint = new wxStaticText( parent, -1, SharedFolderHint(), wxDefaultPosition, wxDefaultSize, wxALIGN_CENTRE );
     item0->Add( item3_hint, 0, wxALIGN_CENTER, 0 );
     wxStaticBox *item6 = new wxStaticBox( parent, -1, _("Folder for temporary download files") );
     wxStaticBoxSizer *item5 = new wxStaticBoxSizer( item6, wxHORIZONTAL );
@@ -2594,7 +2594,7 @@ wxSizer *CategoriesEditWindow( wxWindow *parent, bool call_fit, bool set_sizer )
     wxButton *item12 = new wxButton( item2, IDC_BROWSE, "...", wxDefaultPosition, wxDefaultSize, 0 );
     item9->Add( item12, wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 5) );
     item1->Add( item9, wxSizerFlags().Expand().CenterVertical().Border(wxBOTTOM, 5) );
-    wxStaticText *item9_hint = new wxStaticText( item2, -1, _("(All files in this folder are shared with other peers)"), wxDefaultPosition, wxDefaultSize, wxALIGN_CENTRE );
+    wxStaticText *item9_hint = new wxStaticText( item2, -1, SharedFolderHint(), wxDefaultPosition, wxDefaultSize, wxALIGN_CENTRE );
     item1->Add( item9_hint, wxSizerFlags().Expand().CenterHorizontal().Border(wxLEFT|wxRIGHT, 5) );
     wxFlexGridSizer *item13 = new wxFlexGridSizer( 2, 0, 0 );
 

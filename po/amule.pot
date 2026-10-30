@@ -3114,10 +3114,6 @@ msgid "Browse"
 msgstr ""
 
 #: src/FirstRunWizard.cpp src/muuli_wdr.cpp
-msgid "(All files in this folder are shared with other peers)"
-msgstr ""
-
-#: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Folder for temporary download files"
 msgstr ""
 
@@ -6291,6 +6287,10 @@ msgstr ""
 #: src/OtherFunctions.cpp
 #, c-format
 msgid "%s:"
+msgstr ""
+
+#: src/OtherFunctions.cpp
+msgid "(All files in this folder are shared with other peers)"
 msgstr ""
 
 #: src/OtherFunctions.cpp

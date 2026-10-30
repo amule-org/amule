@@ -43,6 +43,7 @@
 
 #include "amule.h"                  // Needed for theApp / glob_prefs
 #include "AutostartManager.h"       // Needed for Integrations page autostart toggle
+#include "OtherFunctions.h"         // Needed for SharedFolderHint
 #include "Preferences.h"            // Needed for thePrefs
 #include "ProtocolHandlerManager.h" // Needed for Integrations page URL-scheme toggles
 #include <common/Format.h>
@@ -536,13 +537,7 @@ wxWizardPageSimple *CFirstRunWizard::BuildFoldersPage()
 	incRow->Add(new wxButton(page, ID_FRW_BROWSE_INCOMING, _("Browse")), 0);
 	sizer->Add(incRow, 0, static_cast<int>(wxEXPAND) | wxBOTTOM, 4);
 
-	// Warn that everything dropped in the Incoming folder is shared, reusing
-	// the same hint shown on the Directories preferences panel.
-	sizer->Add(
-		new wxStaticText(page, wxID_ANY, _("(All files in this folder are shared with other peers)")),
-		0,
-		wxBOTTOM,
-		12);
+	sizer->Add(new wxStaticText(page, wxID_ANY, SharedFolderHint()), 0, wxBOTTOM, 12);
 
 	sizer->Add(
 		new wxStaticText(page, wxID_ANY, _("Folder for temporary download files")), 0, wxBOTTOM, 4);

@@ -182,6 +182,11 @@ wxString CastSecondsToHM(uint32 seconds, uint16 msecs = 0);
 wxString LabelWithColon(const wxString &label);
 
 /**
+ * The hint shown under every Incoming folder field: the folder's files are shared.
+ */
+wxString SharedFolderHint();
+
+/**
  * A timestamp written the way the user's locale writes one.
  *
  * "%x %X", so the day/month order, the separators and the 12- or 24-hour clock all come from
