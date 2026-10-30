@@ -24,6 +24,8 @@
 
 #include "PrefsSchema.h"
 
+#include "SourceSearchLimits.h"
+
 #include <cstring>
 #include <type_traits>
 
@@ -281,18 +283,15 @@ const PrefField kSchema[] = {
 	// s_iFileBufferSize is a uint8 holding val/15000, so the domain is 255 blocks of 15000 bytes
 	// and nothing between them.
 	PREF_U32_DOMAIN("advanced", "file_buffer_bytes", EC_TAG_CORETW_FILEBUFFER, 0u, 3825000u, 15000u, PrefAccess::ReadWrite, advanced.file_buffer_bytes),
-	// LoadAllItems() clamps this to 5..50 on the next start, so anything else
-	// was a value GET reported until the daemon was restarted.
-	PREF_U32_DOMAIN("advanced", "kad_max_concurrent_source_search_count", EC_TAG_CORETW_KAD_MAX_SEARCHES, 5u, 50u, 0u, PrefAccess::ReadWrite, advanced.kad_max_concurrent_source_search_count),
-	PREF_U32_SCALED_DOMAIN("advanced", "kad_source_reask_minutes", EC_TAG_CORETW_KAD_REASK_MS, 30u, 60u, PrefAccess::ReadWrite, advanced.kad_source_reask_minutes, 60000u),
+	// The core clamps these three, so a value outside the range would be changed, not stored.
+	PREF_U32_DOMAIN("advanced", "kad_max_concurrent_source_search_count", EC_TAG_CORETW_KAD_MAX_SEARCHES, KAD_MAX_SOURCE_SEARCHES.min, KAD_MAX_SOURCE_SEARCHES.max, 0u, PrefAccess::ReadWrite, advanced.kad_max_concurrent_source_search_count),
+	PREF_U32_SCALED_DOMAIN("advanced", "kad_source_reask_minutes", EC_TAG_CORETW_KAD_REASK_MS, KAD_SOURCE_REASK_MINUTES.min, KAD_SOURCE_REASK_MINUTES.max, PrefAccess::ReadWrite, advanced.kad_source_reask_minutes, 60000u),
 	// s_MaxConperFive is a uint16; 70000 wrapped to 4464.
 	PREF_U32_DOMAIN("advanced", "max_new_connections_per_5_seconds", EC_TAG_CORETW_MAX_CONN_PER_FIVE, 0u, 65535u, 0u, PrefAccess::ReadWrite, advanced.max_new_connections_per_5_seconds),
 	// s_iQueueSize is a uint8 holding val/100: 255 hundreds, nothing between.
 	PREF_U32_DOMAIN("advanced", "max_upload_queue_client_count", EC_TAG_CORETW_UL_QUEUE, 0u, 25500u, 100u, PrefAccess::ReadWrite, advanced.max_upload_queue_client_count),
 	PREF_U32_SCALED("advanced", "server_keepalive_timeout_minutes", EC_TAG_CORETW_SRV_KEEPALIVE_TIMEOUT, 71582u, PrefAccess::ReadWrite, advanced.server_keepalive_timeout_minutes, 60000u),
-	// The 15-minute floor is load-bearing: the UDP reask goes out at
-	// getter - 20s, and below ~10 min peers auto-ban for reask spam.
-	PREF_U32_SCALED_DOMAIN("advanced", "source_reask_minutes", EC_TAG_CORETW_SOURCE_REASK_MS, 15u, 60u, PrefAccess::ReadWrite, advanced.source_reask_minutes, 60000u),
+	PREF_U32_SCALED_DOMAIN("advanced", "source_reask_minutes", EC_TAG_CORETW_SOURCE_REASK_MS, SOURCE_REASK_MINUTES.min, SOURCE_REASK_MINUTES.max, PrefAccess::ReadWrite, advanced.source_reask_minutes, 60000u),
 	PREF_BOOL("advanced", "verbose_logging", EC_TAG_CORETW_VERBOSE, PrefEnc::Presence, false, PrefAccess::ReadWrite, advanced.verbose_logging),
 
 	// [kad] (EC group: KADEMLIA)

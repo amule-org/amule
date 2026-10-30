@@ -1196,7 +1196,7 @@ bool CEC_Prefs_Packet::Apply(wxArrayString *refusedDirs) const
 			thePrefs::SetServerKeepAliveTimeout(oneTag->GetInt());
 		}
 		if ((oneTag = thisTab->GetTagByName(EC_TAG_CORETW_KAD_MAX_SEARCHES)) != nullptr) {
-			thePrefs::SetKadMaxSourceSearches(static_cast<uint16>(oneTag->GetInt()));
+			thePrefs::SetKadMaxSourceSearches(oneTag->GetInt());
 		}
 		if ((oneTag = thisTab->GetTagByName(EC_TAG_CORETW_KAD_REASK_MS)) != nullptr) {
 			thePrefs::SetKadSourceReaskTime(oneTag->GetInt());

@@ -120,8 +120,8 @@ struct PrefField
 	//
 	// `max` alone is not a domain. A core member narrower than the declared ceiling wraps, and
 	// a setter that divides truncates, so a value inside [0, max] can still be rewritten on the
-	// way in -- and three of these fields are clamped by CPreferences::LoadAllItems() at the
-	// NEXT daemon start, which no read-back check after the PATCH can see.
+	// way in -- and three of these fields are clamped by their core setters, so a PATCH outside
+	// the range would report success and store a different value.
 	std::uint32_t min;
 	// Granularity the core can actually store, when its setter divides. A value that is not a
 	// multiple is a 400 naming the step, rather than a silent truncation: SetFileBufferSize()

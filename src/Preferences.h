@@ -35,6 +35,7 @@
 #include "Proxy.h"
 #include "ShareExclude.h"
 #include "OtherStructs.h"
+#include "SourceSearchLimits.h"
 
 #include <common/ClientVersion.h> // Needed for __GIT__
 
@@ -339,15 +340,24 @@ public:
 	// Concurrent files that may search Kad for sources at once (was the
 	// KADEMLIATOTALFILE constant). Compared against a uint8 source-count.
 	static uint16 GetKadMaxSourceSearches() { return s_kadMaxSourceSearches; }
-	static void SetKadMaxSourceSearches(uint16 val) { s_kadMaxSourceSearches = val; }
+	static void SetKadMaxSourceSearches(uint64 val)
+	{
+		s_kadMaxSourceSearches = static_cast<uint16>(KAD_MAX_SOURCE_SEARCHES.Clamp(val));
+	}
 	// Per-file Kad re-search interval (was KADEMLIAREASKTIME). Stored in
 	// minutes; returned/accepted in milliseconds to match the tick arithmetic.
 	static uint64 GetKadSourceReaskTime() { return s_kadSourceReaskMins * 60000; }
-	static void SetKadSourceReaskTime(uint64 val) { s_kadSourceReaskMins = val / 60000; }
+	static void SetKadSourceReaskTime(uint64 val)
+	{
+		s_kadSourceReaskMins = KAD_SOURCE_REASK_MINUTES.Clamp(val / 60000);
+	}
 	// Interval before re-asking a known source (was FILEREASKTIME). Same
 	// minutes-stored / milliseconds-exposed convention.
 	static uint64 GetSourceReaskTime() { return s_sourceReaskMins * 60000; }
-	static void SetSourceReaskTime(uint64 val) { s_sourceReaskMins = val / 60000; }
+	static void SetSourceReaskTime(uint64 val)
+	{
+		s_sourceReaskMins = SOURCE_REASK_MINUTES.Clamp(val / 60000);
+	}
 
 	static const wxString &GetLanguageID() { return s_languageID; }
 	static void SetLanguageID(const wxString &new_id) { s_languageID = new_id; }

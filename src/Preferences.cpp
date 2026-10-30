@@ -1160,10 +1160,14 @@ void CPreferences::BuildItemList(const wxString &appdir)
 	NewCfgItem(IDC_MAXCON,
 		(MkCfg_Int("/eMule/MaxConnections", s_maxconnections, GetRecommendedMaxConnections())));
 	NewCfgItem(IDC_MAXCON5SEC, (MkCfg_Int("/eMule/MaxConnectionsPerFiveSeconds", s_MaxConperFive, 50)));
-	NewCfgItem(
-		IDC_KADMAXSEARCHES, (MkCfg_Int("/eMule/KadMaxSourceSearches", s_kadMaxSourceSearches, 30)));
-	NewCfgItem(IDC_KADREASKTIME, (MkCfg_Int("/eMule/KadSourceReaskMinutes", s_kadSourceReaskMins, 30)));
-	NewCfgItem(IDC_SOURCEREASKTIME, (MkCfg_Int("/eMule/SourceReaskMinutes", s_sourceReaskMins, 15)));
+	NewCfgItem(IDC_KADMAXSEARCHES,
+		(MkCfg_Int(
+			"/eMule/KadMaxSourceSearches", s_kadMaxSourceSearches, KAD_MAX_SOURCE_SEARCHES.def)));
+	NewCfgItem(IDC_KADREASKTIME,
+		(MkCfg_Int(
+			"/eMule/KadSourceReaskMinutes", s_kadSourceReaskMins, KAD_SOURCE_REASK_MINUTES.def)));
+	NewCfgItem(IDC_SOURCEREASKTIME,
+		(MkCfg_Int("/eMule/SourceReaskMinutes", s_sourceReaskMins, SOURCE_REASK_MINUTES.def)));
 
 	/** Proxy */
 	NewCfgItem(ID_PROXY_ENABLE_PROXY,
@@ -1744,24 +1748,10 @@ void CPreferences::LoadAllItems(wxConfigBase *cfg)
 		cfg->Write("/eMule/MaxConPerFiveDefaultBumped", true);
 	}
 
-	// Keep the source-search knobs within their supported ranges even if amule.conf was
-	// hand-edited. SourceReaskMinutes must stay >= 15 so the UDP reask (issued at getter -
-	// 20s) never drops below the ~10 min floor that gets clients auto-banned for reask spam.
-	if (s_kadMaxSourceSearches < 5) {
-		s_kadMaxSourceSearches = 5;
-	} else if (s_kadMaxSourceSearches > 50) {
-		s_kadMaxSourceSearches = 50;
-	}
-	if (s_kadSourceReaskMins < 30) {
-		s_kadSourceReaskMins = 30;
-	} else if (s_kadSourceReaskMins > 60) {
-		s_kadSourceReaskMins = 60;
-	}
-	if (s_sourceReaskMins < 15) {
-		s_sourceReaskMins = 15;
-	} else if (s_sourceReaskMins > 60) {
-		s_sourceReaskMins = 60;
-	}
+	// amule.conf may have been edited by hand.
+	s_kadMaxSourceSearches = static_cast<uint16>(KAD_MAX_SOURCE_SEARCHES.Clamp(s_kadMaxSourceSearches));
+	s_kadSourceReaskMins = KAD_SOURCE_REASK_MINUTES.Clamp(s_kadSourceReaskMins);
+	s_sourceReaskMins = SOURCE_REASK_MINUTES.Clamp(s_sourceReaskMins);
 #endif
 
 	// Compile the shared-file exclusion filter from the values just loaded.

@@ -323,6 +323,12 @@ add_test (NAME KadPublishPolicyTest COMMAND KadPublishPolicyTest)
 target_include_directories (KadPublishPolicyTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries (KadPublishPolicyTest muleunit mulecommon)
 
+# EC writes reach these setters directly, so they must clamp to the shared limits.
+add_executable (SourceSearchLimitsTest SourceSearchLimitsTest.cpp)
+add_test (NAME SourceSearchLimitsTest COMMAND SourceSearchLimitsTest)
+target_include_directories (SourceSearchLimitsTest PRIVATE ${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include ${Boost_INCLUDE_DIR})
+target_link_libraries (SourceSearchLimitsTest muleunit mulecommon)
+
 add_executable (AdvertisedIPv6Test AdvertisedIPv6Test.cpp)
 add_test (NAME AdvertisedIPv6Test COMMAND AdvertisedIPv6Test)
 target_include_directories (AdvertisedIPv6Test PRIVATE ${CMAKE_SOURCE_DIR}/src)
@@ -2445,6 +2451,23 @@ target_link_libraries (RefresherTest
 	webcommon
 	wxWidgets::NET
 )
+
+# The WebUI hard-codes its preference ranges; keep them inside amuleapi's schema.
+add_executable (PrefsWebUiBoundsTest
+	PrefsWebUiBoundsTest.cpp
+	${CMAKE_SOURCE_DIR}/src/webapi/PrefsSchema.cpp
+)
+add_test (NAME PrefsWebUiBoundsTest COMMAND PrefsWebUiBoundsTest)
+target_compile_definitions (PrefsWebUiBoundsTest
+	PRIVATE "PREFERENCES_JS=\"${CMAKE_SOURCE_DIR}/src/webapi/static/js/views/preferences.js\""
+)
+target_include_directories (PrefsWebUiBoundsTest
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/webapi
+	PRIVATE ${CMAKE_SOURCE_DIR}/src
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
+	PRIVATE ${CMAKE_BINARY_DIR}
+)
+target_link_libraries (PrefsWebUiBoundsTest muleunit ec mulecommon)
 
 # CompleteSourcesNeedRecompute decides whether the complete-sources throttle
 # must be bypassed because the upload list went empty. #1052 added that bypass

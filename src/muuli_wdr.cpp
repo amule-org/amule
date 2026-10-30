@@ -44,6 +44,7 @@
 #include "DialogLayout.h" // Scrollable details dialogs
 #include "TextClearButton.h"
 #include "OtherFunctions.h" // Needed for LabelWithColon
+#include "SourceSearchLimits.h"
 
 #include <wx/artprov.h> // Needed for the "amule:" art ids (status bar + transfer window icons)
 #include <wx/intl.h>
@@ -2172,11 +2173,11 @@ wxSizer *PreferencesaMuleTweaksTab( wxWindow *parent, bool call_fit, bool set_si
     item6->Add( new wxStaticText( item5, -1, _("Max new connections / 5 secs"), wxDefaultPosition, wxDefaultSize, 0 ), wxSizerFlags().CenterVertical() );
     item6->Add( new wxSpinCtrl( item5, IDC_MAXCON5SEC, "50", wxDefaultPosition, wxDefaultSize, 0, 20, 500, 50 ), wxSizerFlags().CenterVertical() );
     item6->Add( new wxStaticText( item5, -1, _("Concurrent Kad source lookups"), wxDefaultPosition, wxDefaultSize, 0 ), wxSizerFlags().CenterVertical() );
-    item6->Add( new wxSpinCtrl( item5, IDC_KADMAXSEARCHES, "30", wxDefaultPosition, wxDefaultSize, 0, 5, 50, 30 ), wxSizerFlags().CenterVertical() );
+    item6->Add( new wxSpinCtrl( item5, IDC_KADMAXSEARCHES, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0, KAD_MAX_SOURCE_SEARCHES.min, KAD_MAX_SOURCE_SEARCHES.max, KAD_MAX_SOURCE_SEARCHES.def ), wxSizerFlags().CenterVertical() );
     item6->Add( new wxStaticText( item5, -1, _("Kad source re-search interval (minutes)"), wxDefaultPosition, wxDefaultSize, 0 ), wxSizerFlags().CenterVertical() );
-    item6->Add( new wxSpinCtrl( item5, IDC_KADREASKTIME, "30", wxDefaultPosition, wxDefaultSize, 0, 30, 60, 30 ), wxSizerFlags().CenterVertical() );
+    item6->Add( new wxSpinCtrl( item5, IDC_KADREASKTIME, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0, KAD_SOURCE_REASK_MINUTES.min, KAD_SOURCE_REASK_MINUTES.max, KAD_SOURCE_REASK_MINUTES.def ), wxSizerFlags().CenterVertical() );
     item6->Add( new wxStaticText( item5, -1, _("Source re-ask interval (minutes)"), wxDefaultPosition, wxDefaultSize, 0 ), wxSizerFlags().CenterVertical() );
-    item6->Add( new wxSpinCtrl( item5, IDC_SOURCEREASKTIME, "15", wxDefaultPosition, wxDefaultSize, 0, 15, 60, 15 ), wxSizerFlags().CenterVertical() );
+    item6->Add( new wxSpinCtrl( item5, IDC_SOURCEREASKTIME, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0, SOURCE_REASK_MINUTES.min, SOURCE_REASK_MINUTES.max, SOURCE_REASK_MINUTES.def ), wxSizerFlags().CenterVertical() );
     item4->Add( item6, wxSizerFlags().Border(wxTOP, 5) );
 
     wxStaticText *item8 = new wxStaticText( item5, IDC_FILEBUFFERSIZE_STATIC, _("File Buffer Size: 240000 bytes"), wxDefaultPosition, wxDefaultSize, 0 );
