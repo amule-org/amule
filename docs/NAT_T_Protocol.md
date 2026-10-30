@@ -284,9 +284,9 @@ none of `0xF9`, `0x9F` or `0x60` and cannot act on `0x61`:
 ### Hole-punch extension (ed2k-server 0.9.85)
 
 The extension (andrey23127/ed2k-server#39) lets the server hand out the UDP port from a fresh
-`0x9F` at punch time, not from the last standing keepalive. It applies only between two clients that announced it to a server that sets
-`0x100000` (`SRV_TCPFLG_HOLEPUNCH_EXTENSION`) in its `OP_IDCHANGE` TCP flags; every other pair
-gets the punch above unchanged.
+`0x9F` at punch time, not from the last standing keepalive. It applies only between two clients
+that announced it to a server that sets `0x100000` (`SRV_TCPFLG_HOLEPUNCH_EXTENSION`) in its
+`OP_IDCHANGE` TCP flags; every other pair gets the punch above unchanged.
 
 - announcing: `CT_SERVER_FLAGS` carries `0x100000` (`SRVCAP_HOLEPUNCH_EXTENSION`), always with
   Lugdunum's `0x1000`, only when both `LowIdHolePunch` and `LugdunumNatCallback` are on and uTP
