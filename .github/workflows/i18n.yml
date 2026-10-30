@@ -1,10 +1,26 @@
 name: I18n CI
 
+# Only what the four jobs read: source strings and Web UI dictionaries, the
+# catalogs, the manpage masters, and the scripts and installer tests.
 on:
   push:
     branches: [ "**" ]
+    paths:
+      - 'src/**'
+      - 'po/**'
+      - 'docs/man/**'
+      - 'scripts/**'
+      - 'packaging/**'
+      - '.github/workflows/i18n.yml'
   pull_request:
     branches: [ "**" ]
+    paths:
+      - 'src/**'
+      - 'po/**'
+      - 'docs/man/**'
+      - 'scripts/**'
+      - 'packaging/**'
+      - '.github/workflows/i18n.yml'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ github.ref == 'refs/heads/master' && github.sha || '' }}
