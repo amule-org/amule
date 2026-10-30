@@ -15,6 +15,9 @@
 # The cache-save-newest action now deletes a family's older generations as soon
 # as it saves the new one. This workflow is the backstop, for the caches that
 # action does not write (CodeQL) and for any prune it could not finish.
+#
+# It also deletes master runs that concurrency cancelled for a newer push.
+# GitHub counts a cancelled check as a failure, so each one marked its commit red.
 name: Cache retention
 
 on:
@@ -23,25 +26,17 @@ on:
   push:
     branches:
       - master
-  # As each cache-writing run ends, which a push alone does not cover: the
-  # heavy runs finish long after the push that started them, so the superseded
-  # generation would otherwise sit in the store until the next merge. That
-  # overlap is what holds the store over its 10 GB limit, and GitHub then
-  # evicts by least recent read -- which is how the macOS keg cache kept
-  # disappearing and costing the Intel leg a 2h40m rebuild.
+  # As each run that cancels superseded master runs ends, for drop-superseded.
+  # Prune skips these: cache-save-newest already pruned, and on a full runner
+  # queue the job started hours later and freed nothing.
   #
-  # `C/C++ CI` is deliberately absent. A name the trigger cannot resolve does
-  # not merely fail to match: it stops this workflow compiling for the event,
-  # and every completion then produces a startup_failure with no job and no
-  # log. Reproduced on a fork, where a probe listing a slash-named workflow
-  # broke completions that a sibling probe handled fine. Its caches are pruned
-  # by cache-save-newest as it saves them. Keep every entry here slash-free.
+  # A name the trigger cannot resolve, such as `C/C++ CI`, stops this workflow
+  # compiling for the event, and every completion then produces a
+  # startup_failure with no job and no log. Keep every entry here slash-free.
   workflow_run:
     workflows:
       - Packaging
       - clang-tidy
-      # Saves its ~1 GB TRAP cache itself, at the end of an hour-long run, after
-      # the rest of the push has triggered this: four merges in an hour left 3.8 GB.
       - CodeQL Advanced
     types:
       - completed
@@ -55,6 +50,7 @@ permissions:
 
 jobs:
   prune:
+    if: github.event_name != 'workflow_run'
     runs-on: ubuntu-24.04
     steps:
       - name: Keep only the newest cache per prefix
@@ -122,3 +118,29 @@ jobs:
           done
           echo "remaining: $(gh api "repos/${REPO}/actions/cache/usage" --jq '.active_caches_count') caches, \
           $(gh api "repos/${REPO}/actions/cache/usage" --jq '(.active_caches_size_in_bytes/1073741824*10|floor)/10') GB"
+
+  drop-superseded:
+    if: >-
+      github.event.workflow_run.conclusion == 'cancelled' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'master'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Delete the run if a newer push superseded it
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          WORKFLOW_ID: ${{ github.event.workflow_run.workflow_id }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          # A run cancelled by hand, or by a runner shortage, on the newest
+          # commit has no newer run, so it stays.
+          newer=$(gh api "repos/${REPO}/actions/workflows/${WORKFLOW_ID}/runs?branch=master&event=push&per_page=20" \
+              --jq "[.workflow_runs[] | select(.id > ${RUN_ID} and .head_sha != \"${SHA}\")] | length")
+          if [ "$newer" -gt 0 ]; then
+              gh api -X DELETE "repos/${REPO}/actions/runs/${RUN_ID}"
+              echo "deleted run ${RUN_ID} (${SHA})"
+          else
+              echo "no newer run, keeping ${RUN_ID}"
+          fi
