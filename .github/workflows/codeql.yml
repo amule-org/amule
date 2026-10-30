@@ -83,14 +83,17 @@ env:
     -DENABLE_IP2COUNTRY=YES
 
 jobs:
-  # A master push analyzes only the languages whose files it changed: C/C++ takes
-  # about 80 minutes, so a workflow-only change runs just the actions analysis.
+  # A master push analyzes only the languages whose files changed since the last
+  # successful run: C/C++ takes about 80 minutes, so a workflow-only change runs
+  # just the actions analysis. The previous push is the wrong base, because its
+  # run may have been cancelled before it analyzed its own changes.
   # Scheduled runs, a change to this workflow, and pushes whose changed files
   # cannot be listed analyze all three.
   languages:
     name: Select languages
     runs-on: ubuntu-24.04
     permissions:
+      actions: read
       contents: read
     outputs:
       matrix: ${{ steps.select.outputs.matrix }}
@@ -100,14 +103,17 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           EVENT: ${{ github.event_name }}
-          BEFORE: ${{ github.event.before }}
           SHA: ${{ github.sha }}
           REPO: ${{ github.repository }}
         run: |
           all=true
-          if [ "$EVENT" = push ] && [ -n "$BEFORE" ] && [ "$BEFORE" != 0000000000000000000000000000000000000000 ]; then
+          if [ "$EVENT" = push ]; then
+            base=$(gh api "repos/$REPO/actions/workflows/codeql.yml/runs?branch=master&status=success&per_page=20" \
+                --jq '[.workflow_runs[] | select(.event != "pull_request")][0].head_sha // empty') || base=
+          fi
+          if [ -n "${base:-}" ]; then
             # The compare API lists at most 300 files; a longer list analyzes everything.
-            if files=$(gh api "repos/$REPO/compare/$BEFORE...$SHA" \
+            if files=$(gh api "repos/$REPO/compare/$base...$SHA" \
                 --jq 'if (.files | length) < 300 then .files[].filename else error("too many") end'); then
               all=false
             fi
