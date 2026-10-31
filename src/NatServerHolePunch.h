@@ -905,6 +905,7 @@ public:
 
 	// True when the request may go out now; it is then pending for its answer.
 	bool TryStart(std::uint32_t serverIp,
+		std::uint32_t serverKeyUdp,
 		std::uint32_t targetId,
 		std::uint16_t sourceTcpPort,
 		std::optional<Hash> knownHash,
@@ -929,7 +930,7 @@ public:
 		if (!knownTarget) {
 			budget.targets.push_back({ targetId, now });
 		}
-		m_pending.push_back({ serverIp, targetId, sourceTcpPort, knownHash, now });
+		m_pending.push_back({ serverIp, serverKeyUdp, targetId, sourceTcpPort, knownHash, now });
 		return true;
 	}
 
@@ -948,18 +949,26 @@ public:
 		return taken;
 	}
 
-	bool HasPendingFrom(std::uint32_t serverIp, std::uint64_t now)
+	// The UDP keys our pending requests to that server IP were sent with, each once. Two listed
+	// servers can share an IP with different ports, and so different keys.
+	std::vector<std::uint32_t> PendingKeysFrom(std::uint32_t serverIp, std::uint64_t now)
 	{
 		Expire(now);
-		return std::any_of(m_pending.begin(), m_pending.end(), [serverIp](const PendingEntry &entry) {
-			return entry.serverIp == serverIp;
-		});
+		std::vector<std::uint32_t> keys;
+		for (const PendingEntry &entry : m_pending) {
+			if (entry.serverIp == serverIp &&
+				std::find(keys.begin(), keys.end(), entry.serverKeyUdp) == keys.end()) {
+				keys.push_back(entry.serverKeyUdp);
+			}
+		}
+		return keys;
 	}
 
 private:
 	struct PendingEntry
 	{
 		std::uint32_t serverIp;
+		std::uint32_t serverKeyUdp;
 		std::uint32_t targetId;
 		std::uint16_t sourceTcpPort;
 		std::optional<Hash> knownHash;

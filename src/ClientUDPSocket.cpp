@@ -1066,8 +1066,12 @@ bool CClientUDPSocket::SendForeignNatCallbackRequest(CServer *server,
 	const std::optional<NatServerHolePunch::Hash> &knownHash)
 {
 	if (server == nullptr || !Ok() ||
-		!m_foreignCallbacks.TryStart(
-			server->GetIP(), targetId, sourceTcpPort, knownHash, ::GetTickCount64())) {
+		!m_foreignCallbacks.TryStart(server->GetIP(),
+			server->GetServerKeyUDP(),
+			targetId,
+			sourceTcpPort,
+			knownHash,
+			::GetTickCount64())) {
 		return false;
 	}
 	const auto payload = NatServerHolePunch::BuildForeignCallbackRequest(targetId, ourCrypt);
@@ -1085,17 +1089,17 @@ bool CClientUDPSocket::SendForeignNatCallbackRequest(CServer *server,
 bool CClientUDPSocket::TryProcessForeignNatCallback(uint32 ip, uint8_t *buffer, size_t length)
 {
 	const std::uint64_t now = ::GetTickCount64();
-	if (!m_foreignCallbacks.HasPendingFrom(ip, now) || theApp->serverlist == nullptr) {
-		return false;
-	}
-	CServer *server = theApp->serverlist->GetServerByIP(ip);
-	if (server == nullptr || server->GetServerKeyUDP() == 0) {
-		return false;
-	}
+	// Decrypted with the key the request was sent with: a failed attempt leaves the buffer as it was.
 	uint8_t *decrypted = buffer;
-	const int decryptedLen = CEncryptedDatagramSocket::DecryptReceivedServer(
-		buffer, static_cast<int>(length), &decrypted, server->GetServerKeyUDP(), ip);
-	// Every non-decrypting path returns the input length unchanged; a decrypt strips the header.
+	int decryptedLen = static_cast<int>(length);
+	for (const std::uint32_t key : m_foreignCallbacks.PendingKeysFrom(ip, now)) {
+		decryptedLen = CEncryptedDatagramSocket::DecryptReceivedServer(
+			buffer, static_cast<int>(length), &decrypted, key, ip);
+		// Every non-decrypting path returns the input length unchanged; a decrypt strips the header.
+		if (decryptedLen < static_cast<int>(length)) {
+			break;
+		}
+	}
 	if (decryptedLen >= static_cast<int>(length) || decrypted == nullptr || decryptedLen < 2) {
 		return false;
 	}
