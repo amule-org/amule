@@ -93,7 +93,7 @@ jobs:
   # cannot be listed analyze all three.
   languages:
     name: Select languages
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
     permissions:
       actions: read
       contents: read

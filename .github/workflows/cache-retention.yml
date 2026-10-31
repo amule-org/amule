@@ -51,7 +51,7 @@ permissions:
 jobs:
   prune:
     if: github.event_name != 'workflow_run'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
     steps:
       - name: Keep only the newest cache per prefix
         env:
@@ -124,7 +124,7 @@ jobs:
       github.event.workflow_run.conclusion == 'cancelled' &&
       github.event.workflow_run.event == 'push' &&
       github.event.workflow_run.head_branch == 'master'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
     steps:
       - name: Delete the run if a newer push superseded it
         env:

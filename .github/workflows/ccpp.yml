@@ -162,7 +162,7 @@ jobs:
   # clash then crashes at runtime, and an EC one fails only Debug builds.
   unique_ids:
     name: Unique window IDs and EC codes
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
     steps:
       - uses: actions/checkout@v7
       - name: check
