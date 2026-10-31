@@ -170,6 +170,10 @@ bool CQuicContext::Dial(const CNetworkAddress &address,
 	if (port == 0 || m_factory == nullptr) {
 		return false;
 	}
+	EraseClosedConnections();
+	if (m_connections.size() >= kMaxConnections) {
+		return false;
+	}
 	std::unique_ptr<IQuicConnection> connection =
 		m_factory->CreateOutboundForClient(address, port, expectedPeerIdentity, nowMs, owner);
 	if (!connection || connection->IsClosed()) {
