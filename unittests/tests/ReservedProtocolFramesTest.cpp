@@ -102,6 +102,26 @@ TEST(ReservedProtocolFrames, EachKnownTypeIsRecognised)
 	}
 }
 
+TEST(ReservedProtocolFrames, OnlyABuiltTransportFrameIsLeftOutOfOverhead)
+{
+	const uint8_t utp[2] = { OP_NATT_FRAME_UTP, 0x41 };
+	const uint8_t quic[2] = { OP_NATT_FRAME_QUIC, 0xC0 };
+	const SReservedProt2Frame utpFrame = ClassifyReservedProt2Frame(utp, 2);
+	const SReservedProt2Frame quicFrame = ClassifyReservedProt2Frame(quic, 2);
+	ASSERT_TRUE(IsBuiltTransportFrame(utpFrame, true, false));
+	ASSERT_FALSE(IsBuiltTransportFrame(utpFrame, false, true));
+	ASSERT_TRUE(IsBuiltTransportFrame(quicFrame, false, true));
+	ASSERT_FALSE(IsBuiltTransportFrame(quicFrame, true, false));
+
+	const uint8_t others[3] = { OP_NATT_FRAME_CAPS, OP_NATT_FRAME_CAPS_ACK, OP_NATT_FRAME_KEY };
+	for (int i = 0; i < 3; ++i) {
+		ASSERT_FALSE(IsBuiltTransportFrame(ClassifyReservedProt2Frame(&others[i], 1), true, true));
+	}
+	ASSERT_FALSE(IsBuiltTransportFrame(ClassifyReservedProt2Frame(nullptr, 0), true, true));
+	const uint8_t unknown = 0x7F;
+	ASSERT_FALSE(IsBuiltTransportFrame(ClassifyReservedProt2Frame(&unknown, 1), true, true));
+}
+
 // Spec delta, "Frame type the client cannot handle": every type outside the registered five is
 // dropped. Sweeping the whole byte range keeps a later type addition from silently landing in the
 // wrong branch.

@@ -96,7 +96,7 @@ public:
 	std::vector<uint8_t> wire, peerHash, sentHash;
 	uint32_t ip = 0;
 	uint16_t port = 0;
-	bool encrypted = true, kad = true, hasHash = true, chargedToStream = true;
+	bool encrypted = true, kad = true, hasHash = true, chargedToStream = false;
 	uint32_t key = 1;
 	void SendUtpDatagram(const uint8_t *data,
 		size_t len,

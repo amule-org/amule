@@ -109,6 +109,19 @@ inline SReservedProt2Frame ClassifyReservedProt2Frame(const uint8_t *frame, size
 }
 
 /**
+ * True for a uTP or QUIC frame of a transport this build runs. The client socket counts that
+ * transport's stream bytes, as it counts TCP's, so the frame itself is not overhead.
+ */
+inline bool IsBuiltTransportFrame(const SReservedProt2Frame &frame, bool utpBuilt, bool quicBuilt)
+{
+	if (frame.disposition != RP2_KNOWN_TYPE) {
+		return false;
+	}
+	return (utpBuilt && frame.type == OP_NATT_FRAME_UTP) ||
+	       (quicBuilt && frame.type == OP_NATT_FRAME_QUIC);
+}
+
+/**
  * Keeps an unknown-frame flood from becoming a log flood.
  *
  * A peer speaking a frame type this build does not know sends one per connection attempt and

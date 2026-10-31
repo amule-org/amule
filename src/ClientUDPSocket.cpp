@@ -83,6 +83,20 @@
 // CClientUDPSocket -- Extended eMule UDP socket
 //
 
+namespace
+{
+#ifdef AMULE_UTP_TRANSPORT
+constexpr bool kUtpBuilt = true;
+#else
+constexpr bool kUtpBuilt = false;
+#endif
+#ifdef AMULE_QUIC_TRANSPORT
+constexpr bool kQuicBuilt = true;
+#else
+constexpr bool kQuicBuilt = false;
+#endif
+} // namespace
+
 #if defined(AMULE_UTP_TRANSPORT) || defined(AMULE_QUIC_TRANSPORT)
 namespace
 {
@@ -437,14 +451,7 @@ void CClientUDPSocket::SendUtpDatagram(const uint8_t *payload,
 	// to listen on a TCP port equal to the UDP port being dialled, keying the
 	// datagram on that client's hash so the real recipient could not decrypt.
 	//
-	// Counted here rather than inside QueueUtpDatagram(), which is deliberately
-	// free of the application's headers. The figure is the datagram that
-	// leaves: the payload, the two-byte 0xB2 envelope, and the crypt header
-	// when there is one. OnPacketReceived() counts the raw datagram before
-	// decryption, so without that last term aMule would under-report its own
-	// upload by eight bytes for every obfuscated datagram.
-	const std::uint64_t overhead = length + kUtpEnvelopeBytes + (encrypt ? kUtpCryptHeaderBytes : 0);
-	theStats::AddUpOverheadOther(overhead);
+	// Not counted as overhead: the client socket counts the stream bytes, as for TCP.
 	QueueUtpDatagram<CPacket>(*this, payload, length, ip, port, encrypt, userHash);
 }
 
@@ -610,13 +617,20 @@ void CClientUDPSocket::OnPacketReceived(
 				// Counted as overhead like every sibling branch: these bytes cross
 				// the wire whether or not we can serve the frame, and leaving them
 				// out makes aMule's own figures disagree with what the link shows.
+				// The exception is a frame of a transport this build runs: the
+				// client socket counts its stream bytes, as for TCP.
 				//
 				// This branch still reaches no *packet* accounting, which is what
 				// keeps a dropped frame from feeding a ban: CPacketTracking is only
 				// entered from the Kad listener, and an eMuleAI peer's NAT-T
 				// traffic would otherwise read as malformed. Statistics and bans are
 				// separate subsystems; only the second one must stay out of reach.
-				theStats::AddDownOverheadOther(length);
+				if (!IsBuiltTransportFrame(
+					    ClassifyReservedProt2Frame(decryptedBuffer + 1, packetLen - 1),
+					    kUtpBuilt,
+					    kQuicBuilt)) {
+					theStats::AddDownOverheadOther(length);
+				}
 				ProcessReservedProt2Frame(decryptedBuffer + 1,
 					packetLen - 1,
 					ip,
