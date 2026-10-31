@@ -59,5 +59,7 @@ enum OP_ClientToServerUDP
 #define SRV_UDPFLG_LARGEFILES 0x00000100
 #define SRV_UDPFLG_UDPOBFUSCATION 0x00000200
 #define SRV_UDPFLG_TCPOBFUSCATION 0x00000400
+// Takes a NAT callback request from a client logged in to another server (ed2k-server 0.9.86).
+#define SRV_UDPFLG_FOREIGN_NAT_CALLBACK 0x00100000
 
 #endif // ED2KC2SUDP_H

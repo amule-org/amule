@@ -370,10 +370,15 @@ private:
 	//! a busy server slot is not a send.
 	bool TrySendLowIdHolePunchRequest();
 	bool m_lowIdHolePunchRequested = false;
+	//! Sends the cross-server OP_NAT_CALLBACKREQUEST to this LowID source's own server when it is
+	//! not ours and takes one (ed2k-server 0.9.86). Returns whether the request went out; always
+	//! false without uTP, which the dial after the answer needs.
+	bool TrySendForeignNatCallbackRequest();
 #endif
 #if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
 	// The source's own target dials us, so our request's success is that source's hello.
 	NatServerHolePunch::PendingCallbackRequest m_lugdunumCallbackRequest;
+	uint64 m_nextForeignNatCallbackRetry = 0;
 
 public:
 	//! True once for a hello within the window of the last callback request for this source.
