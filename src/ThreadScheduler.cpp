@@ -162,14 +162,17 @@ static wxString GetErrMsg(wxThreadError err)
 
 void CThreadScheduler::CreateSchedulerThread()
 {
-	if ((m_thread && m_thread->IsAlive()) || m_tasks.empty()) {
+	// Not IsAlive(): a worker that found the queue empty stays alive for a moment after
+	// releasing s_lock, and a task added then would wait for the next AddTask.
+	if (m_threadRunning || m_tasks.empty()) {
 		return;
 	}
 
-	// A thread can only be run once, so the old one must be safely disposed of
+	// A thread can only be run once, so the old one must be safely disposed of. It has left
+	// its loop and no longer takes s_lock, so joining it here cannot deadlock.
 	if (m_thread) {
 		AddDebugLogLineN(logThreads, "CreateSchedulerThread: Disposing of old thread.");
-		m_thread->Stop();
+		m_thread->Wait(wxTHREAD_WAIT_BLOCK);
 		delete m_thread;
 	}
 
@@ -182,6 +185,7 @@ void CThreadScheduler::CreateSchedulerThread()
 
 		err = m_thread->Run();
 		if (err == wxTHREAD_NO_ERROR) {
+			m_threadRunning = true;
 			AddDebugLogLineN(logThreads, "Scheduler thread started");
 			return;
 		} else {
@@ -215,6 +219,7 @@ struct CTaskSorter
 CThreadScheduler::CThreadScheduler()
 : m_tasksDirty(false)
 , m_thread(NULL)
+, m_threadRunning(false)
 , m_currentTask(NULL)
 {
 }
@@ -332,6 +337,7 @@ void *CThreadScheduler::Entry()
 				m_tasksDirty = false;
 			} else if (m_tasks.empty()) {
 				AddDebugLogLineN(logThreads, "No more tasks, stopping");
+				m_threadRunning = false;
 				break;
 			}
 

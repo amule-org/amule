@@ -25,8 +25,9 @@
 #include <muleunit/test.h>
 
 #include "ThreadScheduler.h"
-#include <wx/thread.h>
+#include <chrono>
 #include <vector>
+#include <wx/thread.h>
 
 using namespace muleunit;
 
@@ -251,4 +252,23 @@ TEST(ThreadScheduler, QueueOwnershipAndTypeLimitsAcrossSchedulerLifecycle)
 	ASSERT_FALSE(CThreadScheduler::HasTaskOfType("Running"));
 	ASSERT_FALSE(CThreadScheduler::AddTaskIfNoneOfType(new CCountedTask()));
 	ASSERT_EQUALS(0, s_liveTasks);
+}
+
+// A task added while the idle worker is exiting must still run. Each round queues the next task
+// right after the previous one finishes, when the worker is about to find the queue empty.
+TEST(ThreadScheduler, TaskAddedWhileIdleWorkerExitsStillRuns)
+{
+	wxSemaphore done;
+	std::vector<int> order;
+	CThreadScheduler::Start();
+	for (int round = 0; round < 10000; ++round) {
+		ASSERT_TRUE(CThreadScheduler::AddTask(new COrderedTask(order, done, round, ETP_Normal)));
+		ASSERT_EQUALS(wxSEMA_NO_ERROR, done.WaitTimeout(5000));
+		// Sweep the gap so some rounds land after the worker has released the lock.
+		const auto until = std::chrono::steady_clock::now() + std::chrono::microseconds(round % 200);
+		while (std::chrono::steady_clock::now() < until) {
+		}
+	}
+	CThreadScheduler::Terminate();
+	ASSERT_EQUALS(static_cast<size_t>(10000), order.size());
 }

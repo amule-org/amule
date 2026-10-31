@@ -143,6 +143,8 @@ private:
 
 	//! The actual worker thread.
 	CMuleThread *m_thread;
+	//! True while the worker is in its loop and will pick up new tasks. Guarded by s_lock.
+	bool m_threadRunning;
 	//! The currently running task, if any.
 	CThreadTask *m_currentTask;
 
