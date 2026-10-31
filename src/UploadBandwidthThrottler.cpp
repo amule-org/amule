@@ -319,7 +319,6 @@ void *UploadBandwidthThrottler::Entry()
 		if (bytesToSpend >= 1) {
 			sint32 spentBytes = 0;
 			sint32 spentOverhead = 0;
-			bool servedControlQueue = false;
 
 			wxMutexLocker sendLock(m_sendLocker);
 
@@ -354,9 +353,6 @@ void *UploadBandwidthThrottler::Entry()
 				}
 
 				if (socket != NULL) {
-#if defined(AMULE_UTP_TRANSPORT) || defined(AMULE_QUIC_TRANSPORT)
-					servedControlQueue = true;
-#endif
 					SocketSentBytes socketSentBytes = socket->SendControlData(
 						bytesToSpend - spentBytes, minFragSize);
 					spentBytes += socketSentBytes.sentBytesControlPackets +
@@ -446,9 +442,7 @@ void *UploadBandwidthThrottler::Entry()
 			m_SentBytesSinceLastCall += spentBytes;
 			m_SentBytesSinceLastCallOverhead += spentOverhead;
 
-			// A uTP or QUIC datagram charges nothing, but its ACK clock still needs the short
-			// loop: a wake signalled while this thread runs is lost.
-			if (spentBytes == 0 && !servedControlQueue) { // spentBytes includes the overhead
+			if (spentBytes == 0) { // spentBytes includes the overhead
 				extraSleepTime = std::min<uint32>(extraSleepTime * 5, 1000); // 1s at most
 			} else {
 				extraSleepTime = TIME_BETWEEN_UPLOAD_LOOPS;
