@@ -1951,6 +1951,48 @@ bool CUpDownClient::TrySendLowIdHolePunchRequest()
 	return true;
 }
 
+bool CUpDownClient::TrySendForeignNatCallbackRequest()
+{
+#ifndef AMULE_UTP_TRANSPORT
+	return false;
+#else
+	CServerConnect *connect = theApp->serverconnect;
+	if (connect == nullptr || theApp->clientudp == nullptr || !connect->IsConnected()) {
+		return false;
+	}
+	CServer *server = connect->ForeignCallbackServer(GetServerIP(), GetServerPort());
+	NatServerHolePunch::ForeignRequestFacts facts;
+	facts.ourId = connect->GetClientID();
+	facts.sourceId = GetUserIDHybrid();
+	facts.sourceServerIsOurs = connect->IsLocalServer(GetServerIP(), GetServerPort());
+	facts.serverTakesForeignCallback = server != nullptr;
+	facts.extensionAnnounced = NatServerHolePunch::ShouldAnnounceHolePunchExtension(
+		thePrefs::IsLowIdHolePunchEnabled(), thePrefs::IsLugdunumNatCallbackEnabled(), true);
+	facts.ourUdpPort = thePrefs::GetEffectiveUDPPort();
+	if (!NatServerHolePunch::ShouldRequestForeignCallback(facts)) {
+		return false;
+	}
+	// Our CT_SERVER_FLAGS crypt bits, shifted down as the server encodes them.
+	const uint8_t ourCrypt = static_cast<uint8_t>((thePrefs::IsClientCryptLayerSupported() ? 0x01 : 0) |
+						      (thePrefs::IsClientCryptLayerRequested() ? 0x02 : 0) |
+						      (thePrefs::IsClientCryptLayerRequired() ? 0x04 : 0));
+	std::optional<NatServerHolePunch::Hash> knownHash;
+	if (HasValidHash()) {
+		NatServerHolePunch::Hash hash{};
+		std::copy_n(GetUserHash().GetHash(), hash.size(), hash.begin());
+		knownHash = hash;
+	}
+	if (!theApp->clientudp->SendForeignNatCallbackRequest(
+		    server, GetUserIDHybrid(), ourCrypt, GetUserPort(), knownHash)) {
+		return false;
+	}
+	// As a Lugdunum request: the attempt is the request, its success this source's hello.
+	theStats::AddLugdunumCallbackAttempt();
+	m_lugdunumCallbackRequest.NoteSent(::GetTickCount64());
+	return true;
+#endif
+}
+
 #ifdef AMULE_UTP_TRANSPORT
 void CUpDownClient::RetryLowIdHolePunchRequest()
 {
@@ -1999,8 +2041,10 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 			if (GetDownloadState() == DS_CONNECTING) {
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 				// Sent once per source: a DS_LOWTOLOWIP source is not asked again.
-				if (NatServerHolePunch::ShouldRequestLowIdHolePunch(
-					    BuildLowIdHolePunchRequestFacts(*this))) {
+				if (TrySendForeignNatCallbackRequest()) {
+					// The source is on another server, which wakes it for us.
+				} else if (NatServerHolePunch::ShouldRequestLowIdHolePunch(
+						   BuildLowIdHolePunchRequestFacts(*this))) {
 					TrySendLowIdHolePunchRequest();
 				} else {
 					TrySendLugdunumNatCallbackRequest();

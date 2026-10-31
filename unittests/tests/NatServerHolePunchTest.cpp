@@ -792,3 +792,162 @@ TEST(NatServerHolePunch, RequestedTargetsStayBounded)
 	ASSERT_TRUE(targets.Size() <= kMaxPendingRendezvous);
 	ASSERT_TRUE(targets.Take(1000, 1));
 }
+
+namespace
+{
+constexpr std::uint32_t kForeignServer = 0x0A000001;
+constexpr std::uint32_t kOtherServer = 0x0A000002;
+
+Hash ForeignHash(std::uint8_t value)
+{
+	Hash hash;
+	hash.fill(value);
+	return hash;
+}
+} // namespace
+
+TEST(NatServerHolePunch, BuildsTheCrossServerRequestWithRequesterIdZero)
+{
+	const auto bytes = BuildForeignCallbackRequest(0x01020305, 0x03);
+	ASSERT_EQUALS(9, static_cast<int>(bytes.size()));
+	ASSERT_EQUALS(0x05, static_cast<int>(bytes[0]));
+	ASSERT_EQUALS(0x01, static_cast<int>(bytes[3]));
+	for (int i = 4; i < 8; ++i) {
+		ASSERT_EQUALS(0, static_cast<int>(bytes[i]));
+	}
+	ASSERT_EQUALS(0x03, static_cast<int>(bytes[8]));
+}
+
+TEST(NatServerHolePunch, ParsesOnlyAnAnswerOfExactly27Bytes)
+{
+	std::array<std::uint8_t, 28> bytes{};
+	PokeUInt32(bytes.data(), 0x0B000001);
+	PokeUInt16(bytes.data() + 4, 4672);
+	PokeUInt32(bytes.data() + 6, 0x01020305);
+	bytes[10] = 0x81;
+	std::fill(bytes.begin() + 11, bytes.begin() + 27, 0x44);
+
+	const auto answer = ParseForeignCallbackAnswer(bytes.data(), 27);
+	ASSERT_TRUE(answer.has_value());
+	ASSERT_EQUALS((std::uint32_t)0x0B000001, answer->targetIp);
+	ASSERT_EQUALS((std::uint16_t)4672, answer->targetUdpPort);
+	ASSERT_EQUALS((std::uint32_t)0x01020305, answer->targetId);
+	ASSERT_EQUALS(0x81, static_cast<int>(answer->crypt));
+	ASSERT_TRUE(answer->targetHash == ForeignHash(0x44));
+
+	ASSERT_FALSE(ParseForeignCallbackAnswer(bytes.data(), 26).has_value());
+	ASSERT_FALSE(ParseForeignCallbackAnswer(bytes.data(), 28).has_value());
+	ASSERT_FALSE(ParseForeignCallbackAnswer(nullptr, 27).has_value());
+}
+
+TEST(NatServerHolePunch, RequestsACrossServerCallbackOnlyForAnOddLowIdOnAServerThatTakesIt)
+{
+	ForeignRequestFacts facts;
+	facts.ourId = 101;
+	facts.sourceId = 201;
+	facts.sourceServerIsOurs = false;
+	facts.serverTakesForeignCallback = true;
+	facts.extensionAnnounced = true;
+	facts.ourUdpPort = 4672;
+	ASSERT_TRUE(ShouldRequestForeignCallback(facts));
+
+	ForeignRequestFacts settingOff = facts;
+	settingOff.extensionAnnounced = false;
+	ASSERT_FALSE(ShouldRequestForeignCallback(settingOff));
+
+	ForeignRequestFacts sameServer = facts;
+	sameServer.sourceServerIsOurs = true;
+	ASSERT_FALSE(ShouldRequestForeignCallback(sameServer));
+
+	ForeignRequestFacts serverDoesNotTakeIt = facts;
+	serverDoesNotTakeIt.serverTakesForeignCallback = false;
+	ASSERT_FALSE(ShouldRequestForeignCallback(serverDoesNotTakeIt));
+
+	ForeignRequestFacts evenTarget = facts;
+	evenTarget.sourceId = 200;
+	ASSERT_FALSE(ShouldRequestForeignCallback(evenTarget));
+
+	ForeignRequestFacts weAreHighId = facts;
+	weAreHighId.ourId = 20000000;
+	ASSERT_FALSE(ShouldRequestForeignCallback(weAreHighId));
+
+	ForeignRequestFacts highIdSource = facts;
+	highIdSource.sourceId = 20000001;
+	ASSERT_FALSE(ShouldRequestForeignCallback(highIdSource));
+
+	ForeignRequestFacts noUdpPort = facts;
+	noUdpPort.ourUdpPort = 0;
+	ASSERT_FALSE(ShouldRequestForeignCallback(noUdpPort));
+}
+
+TEST(NatServerHolePunch, ACrossServerAnswerIsTakenOnceForItsPendingTarget)
+{
+	ForeignCallbackRequests requests;
+	ASSERT_TRUE(requests.TryStart(kForeignServer, 201, 4662, std::nullopt, 0));
+	// The same target is not asked twice while its answer is pending.
+	ASSERT_FALSE(requests.TryStart(kForeignServer, 201, 4662, std::nullopt, 10));
+
+	ASSERT_FALSE(requests.TakeAnswer(kOtherServer, 201, ForeignHash(1), 100).has_value());
+	ASSERT_FALSE(requests.TakeAnswer(kForeignServer, 203, ForeignHash(1), 100).has_value());
+	const auto taken = requests.TakeAnswer(kForeignServer, 201, ForeignHash(1), 100);
+	ASSERT_TRUE(taken.has_value());
+	ASSERT_EQUALS((std::uint16_t)4662, taken->sourceTcpPort);
+	// The server resends its answer; only the first copy is used.
+	ASSERT_FALSE(requests.TakeAnswer(kForeignServer, 201, ForeignHash(1), 1300).has_value());
+}
+
+TEST(NatServerHolePunch, ACrossServerAnswerMustCarryTheSourceHashWhenWeKnowIt)
+{
+	ForeignCallbackRequests requests;
+	ASSERT_TRUE(requests.TryStart(kForeignServer, 201, 4662, ForeignHash(7), 0));
+	ASSERT_FALSE(requests.TakeAnswer(kForeignServer, 201, ForeignHash(8), 100).has_value());
+	ASSERT_TRUE(requests.TakeAnswer(kForeignServer, 201, ForeignHash(7), 200).has_value());
+}
+
+TEST(NatServerHolePunch, AnUnansweredCrossServerTargetCoolsDown)
+{
+	ForeignCallbackRequests requests;
+	ASSERT_TRUE(requests.TryStart(kForeignServer, 201, 4662, std::nullopt, 0));
+	ASSERT_FALSE(requests.TakeAnswer(kForeignServer, 201, ForeignHash(1), kForeignRequestTimeoutMs)
+			     .has_value());
+	ASSERT_FALSE(
+		requests.TryStart(kForeignServer, 201, 4662, std::nullopt, kForeignRequestTimeoutMs + 1));
+	ASSERT_FALSE(requests.TryStart(kForeignServer,
+		201,
+		4662,
+		std::nullopt,
+		kForeignRequestTimeoutMs + kForeignTargetCooldownMs - 1));
+	ASSERT_TRUE(requests.TryStart(kForeignServer,
+		201,
+		4662,
+		std::nullopt,
+		kForeignRequestTimeoutMs + kForeignTargetCooldownMs));
+}
+
+TEST(NatServerHolePunch, CrossServerRequestsStayBelowTheServerRateLimit)
+{
+	ForeignCallbackRequests requests;
+	for (std::uint32_t target = 1; target <= kForeignRequestBurst; ++target) {
+		ASSERT_TRUE(requests.TryStart(kForeignServer, 2 * target + 1, 4662, std::nullopt, 0));
+	}
+	ASSERT_FALSE(requests.TryStart(kForeignServer, 1001, 4662, std::nullopt, 0));
+	// The limit is per server.
+	ASSERT_TRUE(requests.TryStart(kOtherServer, 1001, 4662, std::nullopt, 0));
+	ASSERT_FALSE(
+		requests.TryStart(kForeignServer, 1001, 4662, std::nullopt, kForeignRequestRefillMs - 1));
+	ASSERT_TRUE(requests.TryStart(kForeignServer, 1001, 4662, std::nullopt, kForeignRequestRefillMs));
+}
+
+TEST(NatServerHolePunch, CrossServerTargetsPerServerStayBelowTheServerWindow)
+{
+	ForeignCallbackRequests requests;
+	std::uint64_t now = 0;
+	for (std::uint32_t target = 0; target < kForeignTargetsPerWindow; ++target) {
+		ASSERT_TRUE(requests.TryStart(kForeignServer, 2 * target + 1, 4662, std::nullopt, now));
+		requests.TakeAnswer(kForeignServer, 2 * target + 1, ForeignHash(1), now);
+		now += kForeignRequestRefillMs;
+	}
+	ASSERT_FALSE(requests.TryStart(kForeignServer, 9001, 4662, std::nullopt, now));
+	ASSERT_TRUE(requests.TryStart(
+		kForeignServer, 9001, 4662, std::nullopt, kForeignTargetWindowMs + kForeignRequestRefillMs));
+}

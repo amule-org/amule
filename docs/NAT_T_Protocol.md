@@ -358,8 +358,43 @@ that announced it to a server that sets `0x100000` (`SRV_TCPFLG_HOLEPUNCH_EXTENS
   +1.2 s and +3 s), aMule dials the Lugdunum way, as it would on any Lugdunum server. Any `0x61`
   that names the requester answers the wake, even one the action limit or the duplicate window
   keeps us from acting on. At most 16 wakes wait at once (`NatServerHolePunch::PendingWakeSet`).
-  The server wakes an extension target only with `0x37`, so a UDP `0xA7` is always Lugdunum's
-  callback, sent because we asked for one ourselves, and is dialled at once.
+  The server wakes an extension target only with `0x37`, so a UDP `0xA7` from our own server is
+  always Lugdunum's callback, sent because we asked for one ourselves, and is dialled at once.
+
+### Cross-server NAT callback (ed2k-server 0.9.86)
+
+Two LowIDs on different servers meet through the target's own server, without a registry
+(andrey23127/ed2k-server#40). The source's server address and LowID come with the source, from
+source exchange or a server's source answer. Everything below needs the hole-punch extension's
+announce condition (`LowIdHolePunch` and `LugdunumNatCallback` on, uTP built); with it off, or
+without `ENABLE_NATT_SERVER_COORDINATION`, nothing changes.
+
+- which server: only one that is in our own server list, sets `0x100000`
+  (`SRV_UDPFLG_FOREIGN_NAT_CALLBACK`) in the UDP flags of its status reply and gave us its UDP key
+  for our address (`NatServerHolePunch::ServerTakesForeignCallback()`,
+  `CServerConnect::ForeignCallbackServer()`). A server address learnt from a peer is never asked;
+- keeping sources: while we are LowID, a LowID source of such a server survives
+  `CPartFile::CanAddSource()`, from source exchange or from another server's answer
+  (`NatServerHolePunch::ShouldKeepLowIdServerSource()`);
+- requester: where a LowID-to-LowID contact is declined in `TryToContact()`, an odd LowID source
+  on such a server gets `OP_NAT_CALLBACKREQUEST` (`0xA6`) `<target_id 4><0 4><crypt 1>`, server-key
+  obfuscated, from the client UDP socket to that server's obfuscation UDP port. Requester ID 0
+  marks it foreign; `crypt` is our `(CT_SERVER_FLAGS >> 9) & 7`. Per server we send a burst of 5,
+  then one every 2 s, and at most 30 different targets in 10 minutes, below the server's own
+  limits. A request waits 30 s for its answer; a target that never answers is not asked again for
+  10 minutes (`NatServerHolePunch::ForeignCallbackRequests`);
+- requester, answer: the server's `0xA7` is accepted only from that server's IP, decrypted with
+  its key, exactly 27 bytes (`<target_ip 4><target_udp_port 2><target_id 4><crypt 1><hash 16>`),
+  for a pending target, and with the hash source exchange gave us for the source when it did.
+  Only the first copy is used; the server resends it at +1.2 s and +3 s. The requester punches
+  and dials, as on the server punch: QUIC first, uTP as the fallback, keyed with the target's
+  hash and crypt options;
+- target: on a `0x100000` server, a `0x37` with requester ID 0 comes from a client logged in
+  elsewhere. No `0x61` follows it: the target punches the requester's endpoint, sends its `0x9F`
+  burst and waits to be dialled, with no fallback dial of its own.
+
+The upload-side callback this path also allows (`OP_HELLO` carries the peer's server address and
+ID) is not implemented.
 
 The runtime setting remains off by default.
 
@@ -447,7 +482,8 @@ stable `key`.
   (`natt_lugdunum_callback_attempts`, `natt_lugdunum_callback_successes`). An attempt is each
   rendezvous we act on, counted once per peer: a `0x61` we punch for, or a Lugdunum callback we
   dial. The extension counts under the ed2k-server punch, and its 5 s fallback dial under
-  Lugdunum. A success is a stream to or from that peer, on either side, whose hello is processed
+  Lugdunum, as does a cross-server request: on the requester the attempt is the request and the
+  success that source's hello, on the target the wake and the requester's hello. A success is a stream to or from that peer, on either side, whose hello is processed
   within 60 s (`NatServerHolePunch::RendezvousOutcomes`, at most 64 pending).
 - **LowID to LowID Data (Session)** (`upload_lowid_to_lowid_data`,
   `download_lowid_to_lowid_data`), in the same builds: payload exchanged with a LowID peer while
