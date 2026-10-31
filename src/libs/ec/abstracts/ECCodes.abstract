@@ -802,6 +802,8 @@ EC_TAG_SELECT_PREFS                       0x1000
 		EC_TAG_CORETW_KAD_MAX_SEARCHES            0x1D06
 		EC_TAG_CORETW_KAD_REASK_MS                0x1D07
 		EC_TAG_CORETW_SOURCE_REASK_MS             0x1D08
+## Download write budget in MiB, 1..1024 (default 128).
+		EC_TAG_CORETW_WRITE_BUFFER_LIMIT_MIB      0x1D09
 
 	EC_TAG_PREFS_KADEMLIA                     0x1E00
 		EC_TAG_KADEMLIA_UPDATE_URL                0x1E01

@@ -2417,6 +2417,7 @@ TEST(Refresher, PreferencesExtendedCategoriesDecode)
 
 	CECEmptyTag cw(EC_TAG_PREFS_CORETWEAKS);
 	cw.AddTag(CECTag(EC_TAG_CORETW_MAX_CONN_PER_FIVE, static_cast<std::uint32_t>(200)));
+	cw.AddTag(CECTag(EC_TAG_CORETW_WRITE_BUFFER_LIMIT_MIB, static_cast<std::uint32_t>(256)));
 	cw.AddTag(CECTag(EC_TAG_CORETW_KAD_REASK_MS, static_cast<std::uint32_t>(1800000)));
 	resp.AddTag(cw);
 
@@ -2474,6 +2475,7 @@ TEST(Refresher, PreferencesExtendedCategoriesDecode)
 	ASSERT_EQUALS(std::string("junk,scam"), p.message_filter.comment_keywords);
 
 	ASSERT_EQUALS(static_cast<std::uint32_t>(200), p.advanced.max_new_connections_per_5_seconds);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(256), p.advanced.write_buffer_limit_mib);
 	// EC carries milliseconds; the API speaks the minutes the core actually
 	// stores, so the decode divides by 60000 (#1159 section 5).
 	ASSERT_EQUALS(static_cast<std::uint32_t>(30), p.advanced.kad_source_reask_minutes);
@@ -2758,9 +2760,9 @@ TEST(Refresher, PrefsSchemaIsWellFormed)
 			++emitted;
 	}
 
-	// The documented payload is 137 fields. A row added or dropped without
+	// The documented payload is 139 fields. A row added or dropped without
 	// updating docs/api/REFERENCE.md should trip this.
-	ASSERT_EQUALS(static_cast<std::size_t>(137), emitted);
+	ASSERT_EQUALS(static_cast<std::size_t>(139), emitted);
 }
 
 // The schema's irregularities are enumerated rather than merely counted: each is deliberate and
@@ -4092,4 +4094,29 @@ TEST(Refresher, LegacyClientVersionStripsOnlyTheExactModSuffix)
 	ASSERT_EQUALS(
 		wxString("v0.70b - AI v1.6"), CEC_UpDownClient_Tag::StripModSuffix("v0.70b - AI v1.6", ""));
 	ASSERT_EQUALS(wxString("v0.70b"), CEC_UpDownClient_Tag::StripModSuffix("v0.70b", "AI v1.6"));
+}
+
+TEST(Refresher, WriteBufferCapabilityDoesNotSurviveAnOlderCore)
+{
+	CECPacket modern(EC_OP_SET_PREFERENCES);
+	CECEmptyTag advanced(EC_TAG_PREFS_CORETWEAKS);
+	advanced.AddTag(CECTag(EC_TAG_CORETW_WRITE_BUFFER_LIMIT_MIB, uint32_t{ 128 }));
+	modern.AddTag(advanced);
+	PreferencesSnapshot prefs;
+	std::vector<CategorySnapshot> cats;
+	ParsePreferencesFromPacket(&modern, prefs, cats);
+	ASSERT_TRUE(prefs.advanced.write_buffer_limit_supported);
+	ASSERT_EQUALS(uint32_t{ 128 }, prefs.advanced.write_buffer_limit_mib);
+
+	CECPacket legacy(EC_OP_SET_PREFERENCES);
+	legacy.AddTag(CECEmptyTag(EC_TAG_PREFS_CORETWEAKS));
+	ParsePreferencesFromPacket(&legacy, prefs, cats);
+	ASSERT_FALSE(prefs.advanced.write_buffer_limit_supported);
+	ASSERT_EQUALS(uint32_t{ 0 }, prefs.advanced.write_buffer_limit_mib);
+
+	ParsePreferencesFromPacket(&modern, prefs, cats);
+	CECPacket empty(EC_OP_SET_PREFERENCES);
+	ParsePreferencesFromPacket(&empty, prefs, cats);
+	ASSERT_FALSE(prefs.advanced.write_buffer_limit_supported);
+	ASSERT_EQUALS(uint32_t{ 0 }, prefs.advanced.write_buffer_limit_mib);
 }

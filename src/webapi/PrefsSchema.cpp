@@ -25,6 +25,7 @@
 #include "PrefsSchema.h"
 
 #include "SourceSearchLimits.h"
+#include "WriteBufferLimits.h"
 
 #include <cstring>
 #include <type_traits>
@@ -86,6 +87,10 @@ const char *const kIp2CountrySources[] = { "dbip", "maxmind", "custom", nullptr 
 #define PREF_U32_DOMAIN(cat, key, tag, minv, maxv, stepv, acc, memb) \
 	{cat, key, tag, PrefType::Uint32, PrefEnc::Value, false, acc, maxv, nullptr, nullptr, \
 		PREF_MEMBER(memb, std::uint32_t), 0, 0, minv, stepv}
+
+#define PREF_U32_DOMAIN_GATED(cat, key, tag, minv, maxv, acc, memb, gate) \
+	{cat, key, tag, PrefType::Uint32, PrefEnc::Value, false, acc, maxv, nullptr, gate, \
+		PREF_MEMBER(memb, std::uint32_t), 0, 0, minv, 0}
 
 #define PREF_U16_DOMAIN(cat, key, tag, minv, maxv, acc, memb) \
 	{cat, key, tag, PrefType::Uint16, PrefEnc::Value, false, acc, maxv, nullptr, nullptr, \
@@ -283,6 +288,8 @@ const PrefField kSchema[] = {
 	// s_iFileBufferSize is a uint8 holding val/15000, so the domain is 255 blocks of 15000 bytes
 	// and nothing between them.
 	PREF_U32_DOMAIN("advanced", "file_buffer_bytes", EC_TAG_CORETW_FILEBUFFER, 0u, 3825000u, 15000u, PrefAccess::ReadWrite, advanced.file_buffer_bytes),
+	PREF_BOOL("advanced", "write_buffer_limit_supported", EC_TAG_CORETW_WRITE_BUFFER_LIMIT_MIB, PrefEnc::Presence, false, PrefAccess::ReadOnly, advanced.write_buffer_limit_supported),
+	PREF_U32_DOMAIN_GATED("advanced", "write_buffer_limit_mib", EC_TAG_CORETW_WRITE_BUFFER_LIMIT_MIB, WriteBufferLimits::minMiB, WriteBufferLimits::maxMiB, PrefAccess::ReadWrite, advanced.write_buffer_limit_mib, "write_buffer_limit_supported"),
 	// The core clamps these three, so a value outside the range would be changed, not stored.
 	PREF_U32_DOMAIN("advanced", "kad_max_concurrent_source_search_count", EC_TAG_CORETW_KAD_MAX_SEARCHES, KAD_MAX_SOURCE_SEARCHES.min, KAD_MAX_SOURCE_SEARCHES.max, 0u, PrefAccess::ReadWrite, advanced.kad_max_concurrent_source_search_count),
 	PREF_U32_SCALED_DOMAIN("advanced", "kad_source_reask_minutes", EC_TAG_CORETW_KAD_REASK_MS, KAD_SOURCE_REASK_MINUTES.min, KAD_SOURCE_REASK_MINUTES.max, PrefAccess::ReadWrite, advanced.kad_source_reask_minutes, 60000u),

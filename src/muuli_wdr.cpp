@@ -45,6 +45,7 @@
 #include "TextClearButton.h"
 #include "OtherFunctions.h" // Needed for LabelWithColon
 #include "SourceSearchLimits.h"
+#include "WriteBufferLimits.h"
 
 #include <wx/artprov.h> // Needed for the "amule:" art ids (status bar + transfer window icons)
 #include <wx/intl.h>
@@ -2178,6 +2179,10 @@ wxSizer *PreferencesaMuleTweaksTab( wxWindow *parent, bool call_fit, bool set_si
     item6->Add( new wxSpinCtrl( item5, IDC_KADREASKTIME, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0, KAD_SOURCE_REASK_MINUTES.min, KAD_SOURCE_REASK_MINUTES.max, KAD_SOURCE_REASK_MINUTES.def ), wxSizerFlags().CenterVertical() );
     item6->Add( new wxStaticText( item5, -1, _("Source re-ask interval (minutes)"), wxDefaultPosition, wxDefaultSize, 0 ), wxSizerFlags().CenterVertical() );
     item6->Add( new wxSpinCtrl( item5, IDC_SOURCEREASKTIME, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0, SOURCE_REASK_MINUTES.min, SOURCE_REASK_MINUTES.max, SOURCE_REASK_MINUTES.def ), wxSizerFlags().CenterVertical() );
+    item6->Add( new wxStaticText( item5, -1, _("Download write buffer limit (MiB)"), wxDefaultPosition, wxDefaultSize, 0 ), wxSizerFlags().CenterVertical() );
+    auto *writeBudget = new wxSpinCtrl( item5, IDC_WRITEBUFFERLIMIT, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0, WriteBufferLimits::minMiB, WriteBufferLimits::maxMiB, WriteBufferLimits::defaultMiB );
+    writeBudget->SetToolTip( _("Total received download data waiting to be written. A larger limit can smooth short disk stalls at the cost of more memory. Already requested data can exceed this limit.") );
+    item6->Add( writeBudget, wxSizerFlags().CenterVertical() );
     item4->Add( item6, wxSizerFlags().Border(wxTOP, 5) );
 
     wxStaticText *item8 = new wxStaticText( item5, IDC_FILEBUFFERSIZE_STATIC, _("File Buffer Size: 240000 bytes"), wxDefaultPosition, wxDefaultSize, 0 );

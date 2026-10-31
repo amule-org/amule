@@ -1216,6 +1216,8 @@ struct PreferencesSnapshot
 		std::uint32_t max_new_connections_per_5_seconds = 0;
 		bool verbose_logging = false;
 		std::uint32_t file_buffer_bytes = 0;
+		std::uint32_t write_buffer_limit_mib = 0;
+		bool write_buffer_limit_supported = false;
 		std::uint32_t max_upload_queue_client_count = 0;
 		std::uint32_t server_keepalive_timeout_minutes = 0;
 		std::uint32_t kad_max_concurrent_source_search_count = 0;
