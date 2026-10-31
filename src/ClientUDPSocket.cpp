@@ -198,8 +198,8 @@ NatKeyFrame::Callbacks CClientUDPSocket::KeyFrameCallbacks()
 		if (length != 0) {
 			packet->CopyToDataBuffer(0, payload, static_cast<unsigned int>(length));
 		}
-		return TrySendPacket(
-			packet, ip, port, key != nullptr, key != nullptr ? key->data() : nullptr, false, 0);
+		return TrySendTransportPacket(
+			packet, ip, port, key != nullptr, key != nullptr ? key->data() : nullptr);
 	};
 	return callbacks;
 }

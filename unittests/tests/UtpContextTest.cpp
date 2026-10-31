@@ -96,7 +96,7 @@ public:
 	std::vector<uint8_t> wire, peerHash, sentHash;
 	uint32_t ip = 0;
 	uint16_t port = 0;
-	bool encrypted = true, kad = true, hasHash = true;
+	bool encrypted = true, kad = true, hasHash = true, chargedToStream = true;
 	uint32_t key = 1;
 	void SendUtpDatagram(const uint8_t *data,
 		size_t len,
@@ -134,6 +134,13 @@ public:
 			sentHash.assign(hash, hash + 16);
 		}
 		key = verifyKey;
+		chargedToStream = false;
+	}
+	void SendTransportPacket(
+		CPacket *raw, uint32_t address, uint16_t service, bool encrypt, const uint8_t *hash)
+	{
+		SendPacket(raw, address, service, encrypt, hash, false, 0);
+		chargedToStream = true;
 	}
 };
 } // namespace
@@ -192,6 +199,18 @@ TEST(UtpContext, LibrarySendIsPlaintextWhenNoPeerKnown)
 	ASSERT_FALSE(sink.kad);
 	ASSERT_FALSE(sink.hasHash);
 	ASSERT_EQUALS(0u, sink.key);
+}
+
+TEST(UtpContext, ADatagramGoesOutAsTransportTrafficTheStreamAlreadyPaidFor)
+{
+	State state;
+	Sink sink;
+	CUtpContext context(std::make_unique<FakeLibrary>(state), sink);
+	ASSERT_TRUE(context.Configure());
+	const uint8_t payload[] = { 0x41, 0x00, 0xFF, 0xB2 };
+	state.sink->SendUtpDatagram(payload, sizeof(payload), 0x04030201, 65535, false, nullptr);
+	ASSERT_EQUALS(6, (int)sink.wire.size());
+	ASSERT_TRUE(sink.chargedToStream);
 }
 
 TEST(UtpContext, LibrarySendIsEncryptedWithHashWhenPeerKnown)

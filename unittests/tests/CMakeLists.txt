@@ -455,6 +455,12 @@ target_compile_features (UdpObfuscationPolicyTest PRIVATE cxx_std_17)
 target_link_libraries (UdpObfuscationPolicyTest muleunit mulecommon)
 add_test (NAME UdpObfuscationPolicyTest COMMAND UdpObfuscationPolicyTest)
 
+add_executable (UdpThrottleChargeTest UdpThrottleChargeTest.cpp)
+target_include_directories (UdpThrottleChargeTest PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_BINARY_DIR})
+target_compile_features (UdpThrottleChargeTest PRIVATE cxx_std_17)
+target_link_libraries (UdpThrottleChargeTest muleunit mulecommon)
+add_test (NAME UdpThrottleChargeTest COMMAND UdpThrottleChargeTest)
+
 add_executable (EncryptionRequirementTest EncryptionRequirementTest.cpp)
 target_include_directories (EncryptionRequirementTest PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_BINARY_DIR})
 target_compile_features (EncryptionRequirementTest PRIVATE cxx_std_17)

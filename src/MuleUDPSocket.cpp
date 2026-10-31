@@ -42,6 +42,7 @@
 #include "ClientList.h"
 #include "Preferences.h"
 #include "UdpObfuscationPolicy.h"
+#include "UdpThrottleCharge.h"
 
 CMuleUDPSocket::CMuleUDPSocket(
 	const wxString &name, int id, const amuleIPV4Address &address, const CProxyData *ProxyData)
@@ -258,8 +259,15 @@ bool CMuleUDPSocket::TrySendPacket(CPacket *packet,
 	bool bKad,
 	uint32 nReceiverVerifyKey)
 {
-	return QueuePacket(
-		packet, IP, port, bEncrypt, pachTargetClientHashORKadID, bKad, nReceiverVerifyKey, false);
+	return QueuePacket(packet,
+		IP,
+		port,
+		bEncrypt,
+		pachTargetClientHashORKadID,
+		bKad,
+		nReceiverVerifyKey,
+		false,
+		false);
 }
 
 bool CMuleUDPSocket::TrySendObfuscatedPacket(
@@ -277,7 +285,13 @@ bool CMuleUDPSocket::TrySendObfuscatedPacket(
 		delete packet;
 		return false;
 	}
-	return QueuePacket(packet, IP, port, true, targetClientHash, false, 0, true);
+	return QueuePacket(packet, IP, port, true, targetClientHash, false, 0, true, false);
+}
+
+bool CMuleUDPSocket::TrySendTransportPacket(
+	CPacket *packet, uint32 IP, uint16 port, bool bEncrypt, const uint8 *targetClientHash)
+{
+	return QueuePacket(packet, IP, port, bEncrypt, targetClientHash, false, 0, false, true);
 }
 
 bool CMuleUDPSocket::QueuePacket(CPacket *packet,
@@ -287,7 +301,8 @@ bool CMuleUDPSocket::QueuePacket(CPacket *packet,
 	const uint8 *pachTargetClientHashORKadID,
 	bool bKad,
 	uint32 nReceiverVerifyKey,
-	bool bRequireEncrypt)
+	bool bRequireEncrypt,
+	bool bChargedToStream)
 {
 	wxCHECK_MSG(packet, false, "Invalid packet.");
 	/*wxCHECK_RET(port, "Invalid port.");
@@ -327,6 +342,7 @@ bool CMuleUDPSocket::QueuePacket(CPacket *packet,
 			      (pachTargetClientHashORKadID != NULL || (bKad && nReceiverVerifyKey != 0)) &&
 			      thePrefs::IsClientCryptLayerSupported();
 	newpending.bRequireEncrypt = bRequireEncrypt;
+	newpending.bChargedToStream = bChargedToStream;
 	newpending.bKad = bKad;
 	newpending.nReceiverVerifyKey = nReceiverVerifyKey;
 	if (newpending.bEncrypt && pachTargetClientHashORKadID != NULL) {
@@ -354,8 +370,8 @@ bool CMuleUDPSocket::Ok()
 SocketSentBytes CMuleUDPSocket::SendControlData(uint32 maxNumberOfBytesToSend, uint32 WXUNUSED(minFragSize))
 {
 	wxMutexLocker lock(m_mutex);
-	uint32 sentBytes = 0;
-	while (!m_queue.empty() && !m_busy && (sentBytes < maxNumberOfBytesToSend)) {
+	uint32 chargedBytes = 0;
+	while (!m_queue.empty() && !m_busy && (chargedBytes < maxNumberOfBytesToSend)) {
 		UDPPack item = m_queue.front();
 		CPacket *packet = item.packet;
 		const EUdpSendForm form = DecideUdpSendForm(
@@ -382,7 +398,7 @@ SocketSentBytes CMuleUDPSocket::SendControlData(uint32 maxNumberOfBytesToSend, u
 			}
 
 			if (SendTo(sendbuffer, len, item.IP, item.port)) {
-				sentBytes += len;
+				chargedBytes += ThrottledUdpBytes(item.bChargedToStream, len);
 				m_queue.pop_front();
 				delete packet;
 				delete[] sendbuffer;
@@ -399,7 +415,7 @@ SocketSentBytes CMuleUDPSocket::SendControlData(uint32 maxNumberOfBytesToSend, u
 	if (!m_busy && !m_queue.empty()) {
 		theApp->uploadBandwidthThrottler->QueueForSendingControlPacket(this);
 	}
-	SocketSentBytes returnVal = { true, 0, sentBytes };
+	SocketSentBytes returnVal = { true, 0, chargedBytes };
 
 	return returnVal;
 }

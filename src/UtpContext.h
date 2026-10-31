@@ -515,7 +515,7 @@ void QueueUtpDatagram(Socket &socket,
 	if (length != 0) {
 		packet->CopyToDataBuffer(0, payload, static_cast<unsigned int>(length));
 	}
-	socket.SendPacket(packet.release(), ip, port, encrypt, hash, false, 0);
+	socket.SendTransportPacket(packet.release(), ip, port, encrypt, hash);
 }
 
 #endif // UTP_CONTEXT_H

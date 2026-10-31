@@ -122,6 +122,17 @@ public:
 	 * it cannot be obfuscated now; dropped at send time if obfuscation lapses before then.
 	 */
 	bool TrySendObfuscatedPacket(CPacket *packet, uint32 IP, uint16 port, const uint8 *targetClientHash);
+	/**
+	 * Queues a uTP or QUIC datagram, taking ownership either way. Its stream bytes were charged to
+	 * the upload throttler when the client socket wrote them, so sending it charges nothing again.
+	 */
+	bool TrySendTransportPacket(
+		CPacket *packet, uint32 IP, uint16 port, bool bEncrypt, const uint8 *targetClientHash);
+	void SendTransportPacket(
+		CPacket *packet, uint32 IP, uint16 port, bool bEncrypt, const uint8 *targetClientHash)
+	{
+		(void)TrySendTransportPacket(packet, IP, port, bEncrypt, targetClientHash);
+	}
 
 	/**
 	 * True if the socket is Ok. @see wxSocketBase::Ok
@@ -176,7 +187,8 @@ private:
 		const uint8 *pachTargetClientHashORKadID,
 		bool bKad,
 		uint32 nReceiverVerifyKey,
-		bool bRequireEncrypt);
+		bool bRequireEncrypt,
+		bool bChargedToStream);
 
 	/**
 	 * Destroys the current socket, if any.
@@ -213,6 +225,8 @@ private:
 		bool bEncrypt;
 		//! Dropped rather than sent plain.
 		bool bRequireEncrypt;
+		//! A transport datagram whose stream bytes the throttler already charged.
+		bool bChargedToStream;
 		//! Is it a kad packet?
 		bool bKad;
 		// The verification key for RC4 encryption.
