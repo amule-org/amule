@@ -257,6 +257,8 @@ EC_TAG_CAN_SEARCH_LIST                    0x001A
 EC_TAG_CAN_KAD_LOOKUPS                    0x002A
 ## Server accepts EC_SEARCH_ALL; older servers silently treat unknown kinds as local.
 EC_TAG_CAN_SEARCH_ALL                     0x0029
+## Server accepts and validates all six media search filters.
+EC_TAG_CAN_SEARCH_METADATA                0x0035
 EC_TAG_CAN_AEAD                           0x001B
 EC_TAG_AEAD_CIPHER                        0x001C
 EC_TAG_AEAD_CLIENT_NONCE                  0x001D
@@ -533,6 +535,15 @@ EC_TAG_SEARCHFILE                         0x0700
 	EC_TAG_SEARCHFILE_KAD_SOURCES             0x0719
 ## Whether this search still owns the active eD2k slot, independent of Kad.
 	EC_TAG_SEARCH_ED2K_ACTIVE                 0x071A
+## Optional SEARCH_START filters, also reported by SEARCH_LIST for recorded parameters.
+## Integers: kbps (0..1000000) and seconds (0..86400); zero means no filter.
+## Strings: metadata terms; empty means no filter. Invalid types/ranges are rejected.
+	EC_TAG_SEARCH_MIN_BITRATE                 0x071B
+	EC_TAG_SEARCH_MIN_LENGTH                  0x071C
+	EC_TAG_SEARCH_CODEC                       0x071D
+	EC_TAG_SEARCH_TITLE                       0x071E
+	EC_TAG_SEARCH_ALBUM                       0x071F
+	EC_TAG_SEARCH_ARTIST                      0x0720
 
 EC_TAG_FRIEND                             0x0800
 	EC_TAG_FRIEND_NAME                        0x0801

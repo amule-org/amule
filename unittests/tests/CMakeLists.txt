@@ -2954,6 +2954,24 @@ target_link_libraries (ECClientCapabilitiesTest
 	mulecommon
 )
 
+# Media filter round trip through the real EC search-request constructor.
+add_executable (SearchMetadataTest
+	SearchMetadataTest.cpp
+	${CMAKE_SOURCE_DIR}/src/OtherFunctions.cpp
+	${CMAKE_SOURCE_DIR}/src/kademlia/utils/UInt128.cpp
+	${CMAKE_SOURCE_DIR}/src/LoggerConsole.cpp
+)
+add_test (NAME SearchMetadataTest COMMAND SearchMetadataTest)
+target_include_directories (SearchMetadataTest PRIVATE
+	${CMAKE_BINARY_DIR}
+	${CMAKE_SOURCE_DIR}/src
+	${CMAKE_SOURCE_DIR}/src/include
+	${CMAKE_SOURCE_DIR}/src/libs
+	${CMAKE_BINARY_DIR}/src/libs
+	${CMAKE_BINARY_DIR}/src/libs/ec/cpp
+)
+target_link_libraries (SearchMetadataTest muleunit ec mulecommon mulesocket)
+
 # Duplicate-search identity and lifecycle eligibility, without a GUI or network.
 add_executable (SearchRequestTest SearchRequestTest.cpp)
 add_test (NAME SearchRequestTest COMMAND SearchRequestTest)
@@ -3330,6 +3348,22 @@ endif ()
 # Exercise native scrolling/sizer behavior without starting the aMule application.
 # MuleUnit defines wxUSE_GUI=0, so this test owns a minimal wxApp instead.
 if (TARGET wxWidgets::CORE)
+	add_executable (SearchMetadataPanelTest
+		SearchMetadataPanelTest.cpp
+		${CMAKE_SOURCE_DIR}/src/SearchMetadataPanel.cpp
+	)
+	add_dependencies (SearchMetadataPanelTest generate_ECCodes.h generate_ECTagTypes.h)
+	if (WIN32)
+		target_sources (SearchMetadataPanelTest PRIVATE DialogLayoutTest.rc)
+	endif()
+	target_include_directories (SearchMetadataPanelTest PRIVATE
+		${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include
+		${CMAKE_SOURCE_DIR}/src/libs ${CMAKE_BINARY_DIR}/src/libs
+		${CMAKE_BINARY_DIR}/src/libs/ec/cpp)
+	target_link_libraries (SearchMetadataPanelTest PRIVATE wxWidgets::CORE mulecommon)
+	add_test (NAME SearchMetadataPanelTest COMMAND SearchMetadataPanelTest)
+	set_tests_properties (SearchMetadataPanelTest PROPERTIES SKIP_RETURN_CODE 77 LABELS "gui")
+
 	add_executable (DialogLayoutTest DialogLayoutTest.cpp)
 	if (WIN32)
 		target_sources (DialogLayoutTest PRIVATE DialogLayoutTest.rc)
