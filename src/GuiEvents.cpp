@@ -22,7 +22,7 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-#include "GuiEvents.h"
+#include "MuleGUIEvent.h"
 #include "amule.h"
 #ifndef CLIENT_GUI
 #include "ClientList.h"   // Needed for FindClientByECID (Browse_Started)
