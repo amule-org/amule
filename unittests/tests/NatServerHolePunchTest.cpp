@@ -560,6 +560,16 @@ TEST(NatServerHolePunch, KeepaliveBurstsStayBounded)
 	ASSERT_TRUE(burst.TakeDue(10000) <= kMaxPendingBurstKeepalives);
 }
 
+TEST(NatServerHolePunch, AForeignWakeWaitsToBeDialledAndIsNeverHandedBack)
+{
+	// Requester ID 0 on an extension server is a cross-server request: no 0x61 follows, and the
+	// target waits for the requester's dial instead of falling back to its own.
+	PendingWakeSet<int> wakes;
+	wakes.Add(0, 1, 0);
+	ASSERT_TRUE(wakes.TakeExpired(kWakeInfoTimeoutMs).empty());
+	ASSERT_FALSE(wakes.Resolve(0));
+}
+
 TEST(NatServerHolePunch, AWakeIsResolvedByTheInfoThatNamesItsRequester)
 {
 	PendingWakeSet<int> wakes;

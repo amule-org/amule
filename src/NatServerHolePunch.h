@@ -598,11 +598,15 @@ constexpr std::uint64_t kWakeInfoTimeoutMs = 5'000;
 constexpr std::size_t kMaxPendingWakes = 16;
 
 // Wakes waiting for the 0x61 that names their requester; an unanswered one is handed back.
+// Requester ID 0 is a cross-server request: no 0x61 follows, and the target waits to be dialled.
 template <typename Wake> class PendingWakeSet
 {
 public:
 	void Add(std::uint32_t requesterId, Wake wake, std::uint64_t now)
 	{
+		if (requesterId == 0) {
+			return;
+		}
 		Resolve(requesterId);
 		if (m_pending.size() >= kMaxPendingWakes) {
 			m_pending.pop_front();

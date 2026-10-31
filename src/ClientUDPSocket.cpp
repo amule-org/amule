@@ -1153,6 +1153,12 @@ bool CClientUDPSocket::AnswerHolePunchExtensionWake(const LugdunumNatTraversal::
 	// Punch now and refresh our port; the dial waits for the 0x61's role, as on any extension
 	// server, and no reverse callback is needed when the 0x61 gives both sides the endpoints.
 	connect->HolePunchExtensionWakes().Add(callback.requesterId, callback, now);
+	if (callback.requesterId == 0) {
+		// A cross-server requester dials us and no 0x61 follows: its hello is this rendezvous's
+		// success.
+		NoteRendezvousAttempt(
+			NatServerHolePunch::RendezvousPath::LugdunumCallback, target.ip, nullptr);
+	}
 	connect->StartHolePunchExtensionKeepalives();
 	CPacket *punch = new CPacket(OP_HOLEPUNCH, 0, OP_EMULEPROT);
 	theStats::AddUpOverheadOther(punch->GetPacketSize());
