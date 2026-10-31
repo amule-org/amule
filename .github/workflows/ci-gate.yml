@@ -1,49 +1,71 @@
-# One check for branch protection to require. The PR workflows have path
-# filters, and a required check from a workflow that never runs stays
-# "Expected" forever. This workflow always runs, waits for the PR's other
-# runs on the same head commit, and passes only if all of them passed.
+# Sets the "All checks passed" commit status that branch protection requires.
+# The PR workflows have path filters, and a required check from a workflow
+# that never runs stays "Expected" forever, so this one status stands in for
+# all of them.
 #
-# After re-running a failed workflow, re-run this one too.
+# No job waits for the builds. A PR push sets the status to pending, and each
+# PR workflow that finishes re-checks the head commit; the last one sets
+# success or failure. A re-run that passes flips it to success.
+#
+# pull_request_target and workflow_run, because a fork PR's pull_request token
+# cannot set statuses. Neither checks out the PR's code.
 name: CI gate
 
 on:
-  pull_request:
-
-# A newer push makes the old head's verdict moot.
-concurrency:
-  group: ci-gate-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+  # Keep every name slash-free: a name the trigger cannot resolve makes every
+  # completion a startup_failure.
+  workflow_run:
+    workflows:
+      - Build CI
+      - clang-format
+      - clang-tidy
+      - I18n CI
+      - Icons CI
+    types: [completed]
 
 permissions:
   actions: read
+  statuses: write
 
 jobs:
-  gate:
-    name: All checks passed
-    runs-on: ubuntu-24.04
+  status:
+    if: github.event_name == 'pull_request_target' || github.event.workflow_run.event == 'pull_request'
+    runs-on: ubuntu-slim
     steps:
-      - name: Wait for the other PR workflows
+      - name: Set the status from the PR's workflow runs
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
-          SHA: ${{ github.event.pull_request.head.sha }}
+          EVENT: ${{ github.event_name }}
+          SHA: ${{ github.event.pull_request.head.sha || github.event.workflow_run.head_sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          # Latest run per workflow, so runs cancelled by a close and reopen
-          # don't count.
-          latest() {
-              gh api "repos/${REPO}/actions/runs?event=pull_request&head_sha=${SHA}&per_page=100" --jq '
-                  [.workflow_runs[] | select(.path != ".github/workflows/ci-gate.yml")]
-                  | group_by(.workflow_id) | map(max_by(.id))'
-          }
-          # The other runs start with this one; give them time to show up.
-          # Poll every two minutes to stay well inside the token's hourly API limit.
-          sleep 30
-          until runs=$(latest) && [ "$(jq '[.[] | select(.status != "completed")] | length' <<<"$runs")" = 0 ]; do
-              sleep 120
-          done
-          jq -r '.[] | "\(.conclusion)\t\(.name)"' <<<"$runs"
-          failed=$(jq '[.[] | select(.conclusion | IN("success", "skipped", "neutral") | not)] | length' <<<"$runs")
-          if [ "$failed" -gt 0 ]; then
-              echo "::error::${failed} PR workflow(s) did not pass"
-              exit 1
+          # The PR's pull_request runs start with this event; give them time
+          # to show up.
+          if [ "$EVENT" = pull_request_target ]; then
+              sleep 30
           fi
+          # Latest run per workflow, so runs cancelled by a close and reopen
+          # don't count. This workflow's own pull_request runs are from the
+          # earlier gate, which waited for the builds.
+          runs=$(gh api "repos/${REPO}/actions/runs?event=pull_request&head_sha=${SHA}&per_page=100" --jq '
+              [.workflow_runs[] | select(.path != ".github/workflows/ci-gate.yml")]
+              | group_by(.workflow_id) | map(max_by(.id))')
+          jq -r '.[] | "\(.status)\t\(.conclusion)\t\(.name)"' <<<"$runs"
+          pending=$(jq '[.[] | select(.status != "completed")] | length' <<<"$runs")
+          failed=$(jq '[.[] | select(.status == "completed" and (.conclusion | IN("success", "skipped", "neutral") | not))] | length' <<<"$runs")
+          if [ "$pending" -gt 0 ]; then
+              # Only the PR push sets pending. A finished workflow leaves the
+              # status to whichever one finishes last.
+              [ "$EVENT" = pull_request_target ] || exit 0
+              state=pending desc="Waiting for ${pending} workflow(s)"
+          elif [ "$failed" -gt 0 ]; then
+              state=failure desc="${failed} workflow(s) did not pass"
+          else
+              state=success desc="All PR workflows passed or were skipped"
+          fi
+          gh api -X POST "repos/${REPO}/statuses/${SHA}" -f state="$state" \
+              -f context="All checks passed" -f description="$desc" -f target_url="$RUN_URL" >/dev/null
+          echo "${SHA}: ${state} (${desc})"

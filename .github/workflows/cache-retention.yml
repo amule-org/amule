@@ -30,8 +30,8 @@ on:
   # Prune skips these: cache-save-newest already pruned, and on a full runner
   # queue the job started hours later and freed nothing.
   #
-  # A name the trigger cannot resolve, such as `C/C++ CI`, stops this workflow
-  # compiling for the event, and every completion then produces a
+  # A name the trigger cannot resolve, such as one with a slash, stops this
+  # workflow compiling for the event, and every completion then produces a
   # startup_failure with no job and no log. Keep every entry here slash-free.
   workflow_run:
     workflows:
