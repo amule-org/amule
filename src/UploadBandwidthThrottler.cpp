@@ -44,7 +44,6 @@
  */
 UploadBandwidthThrottler::UploadBandwidthThrottler()
 : wxThread(wxTHREAD_JOINABLE)
-, m_newDataCondition(m_newDataMutex)
 {
 	m_SentBytesSinceLastCall = 0;
 	m_SentBytesSinceLastCallOverhead = 0;
@@ -68,8 +67,7 @@ UploadBandwidthThrottler::~UploadBandwidthThrottler()
  */
 void UploadBandwidthThrottler::NewUploadDataAvailable()
 {
-	wxMutexLocker lock(m_newDataMutex);
-	m_newDataCondition.Signal();
+	m_wake.Notify();
 }
 
 /**
@@ -179,8 +177,7 @@ void UploadBandwidthThrottler::QueueForSendingControlPacket(ThrottledControlSock
 	// coalesce into a single signal. The disk I/O thread already wakes the throttler the same
 	// way for file data.
 	if (wasEmpty) {
-		wxMutexLocker lock(m_newDataMutex);
-		m_newDataCondition.Signal();
+		m_wake.Notify();
 	}
 }
 
@@ -231,11 +228,8 @@ void UploadBandwidthThrottler::EndThread()
 			// signal the thread to stop looping and exit.
 			m_doRun = false;
 		}
-		// Cut its WaitTimeout short. Outside m_sendLocker, matching the lock order in Entry().
-		{
-			wxMutexLocker lock(m_newDataMutex);
-			m_newDataCondition.Signal();
-		}
+		// Cut its wait short. Outside m_sendLocker, matching the lock order in Entry().
+		m_wake.Notify();
 
 		Wait();
 	}
@@ -292,15 +286,9 @@ void *UploadBandwidthThrottler::Entry()
 			sleepTime = extraSleepTime;
 		}
 
-		if (timeSinceLastLoop < sleepTime) {
-			// wxCondition::WaitTimeout in place of eMule's WaitForSingleObject.
-			// Wakes early if the disk I/O thread signals NewUploadDataAvailable().
-			wxMutexLocker lock(m_newDataMutex);
-			// Checked under the lock, so a stop signal from EndThread() cannot be missed.
-			if (m_doRun) {
-				m_newDataCondition.WaitTimeout(sleepTime - timeSinceLastLoop);
-			}
-		}
+		// Wakes early on new control packets, new file data or EndThread(). Called even when
+		// there is no time left to sleep, to consume a wake that the drain below serves.
+		m_wake.Wait(timeSinceLastLoop < sleepTime ? sleepTime - timeSinceLastLoop : 0);
 
 		// Check after sleep in case the thread has been signaled to end
 		if (!m_doRun || TestDestroy()) {

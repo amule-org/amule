@@ -2153,6 +2153,12 @@ target_link_libraries (ChatSessionStoreTest
 	mulecommon
 )
 
+# A wake sent while the upload throttler is busy is kept for its next wait.
+add_executable (ThrottlerWakeTest ThrottlerWakeTest.cpp)
+add_test (NAME ThrottlerWakeTest COMMAND ThrottlerWakeTest)
+target_include_directories (ThrottlerWakeTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries (ThrottlerWakeTest muleunit mulecommon)
+
 # Queue bookkeeping and the one-per-type limit for queued and running tasks.
 add_executable (ThreadSchedulerTest
 	ThreadSchedulerTest.cpp

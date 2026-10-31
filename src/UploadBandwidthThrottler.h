@@ -31,6 +31,7 @@
 #include <atomic>
 #include <deque>
 
+#include "ThrottlerWake.h"
 #include "Types.h"
 
 class ThrottledControlSocket;
@@ -71,10 +72,8 @@ private:
 	wxMutex m_sendLocker;
 	wxMutex m_tempQueueLocker;
 
-	// Used by disk I/O thread to wake the throttler when new data is available.
-	// eMule ref: UploadBandwidthThrottler.cpp:795 (NewUploadDataAvailable)
-	wxMutex m_newDataMutex;
-	wxCondition m_newDataCondition; // replaces CEvent m_eventNewDataAvailable
+	// Replaces eMule's CEvent m_eventNewDataAvailable (UploadBandwidthThrottler.cpp:795).
+	CThrottlerWake m_wake;
 
 	typedef std::deque<ThrottledControlSocket *> SocketQueue;
 
