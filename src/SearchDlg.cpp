@@ -42,6 +42,8 @@
 #include "SearchDlg.h" // Interface declarations.
 #include "SearchModeIcons.h"
 #include "SearchTypeChoices.h"
+#include "SearchMetadataPanel.h"
+#include "SearchQueryDialog.h"
 #include "SearchHistory.h"  // Needed for ApplySearchHistoryEntry
 #include "SearchListCtrl.h" // Needed for CSearchListCtrl
 #include "muuli_wdr.h"      // Needed for IDC_STARTS
@@ -132,6 +134,21 @@ CSearchDlg::CSearchDlg(wxWindow *pParent)
 
 	m_notebook->SetCloseIconWidth(SearchModeCloseWidth(m_notebook));
 	m_notebook->AssignImageList(CreateSearchModeImages(m_notebook).release());
+
+	m_metadataFields = new CSearchMetadataPanel(FindWindow(IDC_EDITSEARCHEXTENSION)->GetParent());
+	s_extended_sizer->Add(m_metadataFields, wxSizerFlags().Expand().Border(wxALL, 5));
+	m_metadataFields->Bind(wxEVT_TEXT, [this](wxCommandEvent &event) {
+		OnFieldChanged(event);
+		event.Skip();
+	});
+	m_metadataFields->Bind(wxEVT_SPINCTRL, [this](wxSpinEvent &event) {
+		OnFieldChanged(event);
+		event.Skip();
+	});
+	m_metadataFields->Bind(wxEVT_TEXT_ENTER, &CSearchDlg::OnBnClickedStart, this);
+	m_translateQuery = new wxButton(m_metadataFields->GetParent(), wxID_ANY, _("Translate query..."));
+	s_extended_sizer->Add(m_translateQuery, wxSizerFlags().Border(wxALL, 5));
+	m_translateQuery->Bind(wxEVT_BUTTON, &CSearchDlg::OnTranslateQuery, this);
 
 	FixSearchTypes();
 
@@ -497,6 +514,21 @@ void CSearchDlg::OnSearchNameContextMenu(wxContextMenuEvent &WXUNUSED(evt))
 	PopupMenu(&menu);
 }
 
+void CSearchDlg::OnTranslateQuery(wxCommandEvent &WXUNUSED(event))
+{
+	CSearchQueryDialog dialog(this, CastChild(IDC_SEARCHNAME, wxTextEntry)->GetValue());
+	if (dialog.ShowModal() != wxID_OK)
+		return;
+	CSearchQueryPreview preview;
+	if (!dialog.ReadPreview(preview))
+		return;
+	m_metadataFields->Set(preview.metadata);
+	CastChild(IDC_SEARCHNAME, wxTextEntry)->SetValue(preview.keywords);
+	wxCommandEvent changed;
+	OnFieldChanged(changed);
+	// Applying the preview only edits controls. Search remains an explicit action.
+}
+
 void CSearchDlg::FixSearchTypes()
 {
 	wxBitmapComboBox *searchchoice = CastChild(ID_SEARCHTYPE, wxBitmapComboBox);
@@ -506,6 +538,9 @@ void CSearchDlg::FixSearchTypes()
 	bool supportsAll = true;
 #ifdef CLIENT_GUI
 	supportsAll = theApp->m_connect && theApp->m_connect->ServerSupportsSearchAll();
+	m_metadataFields->SetSupported(
+		theApp->m_connect && theApp->m_connect->ServerSupportsSearchMetadata());
+	m_translateQuery->Enable(theApp->m_connect && theApp->m_connect->ServerSupportsSearchMetadata());
 #endif
 	long savedType = 0;
 	wxConfigBase::Get()->Read("/eMule/DefaultSearchType", &savedType, 0);
@@ -1049,7 +1084,7 @@ void CSearchDlg::ClearSearchRequests()
 
 void CSearchDlg::OnFieldChanged(wxEvent &WXUNUSED(evt))
 {
-	bool enable = false;
+	bool enable = m_metadataFields->HasValues();
 
 	// These are the IDs of the search-fields
 	int textfields[] = { IDC_SEARCHNAME, IDC_EDITSEARCHEXTENSION };
@@ -1439,6 +1474,8 @@ CSearchList::CSearchParams CSearchDlg::ReadSearchParams(bool showWarning)
 	}
 
 	if (CastChild(IDC_EXTENDEDSEARCHCHECK, wxCheckBox)->GetValue()) {
+		m_metadataFields->Read(params);
+
 		params.extension = CastChild(IDC_EDITSEARCHEXTENSION, wxTextCtrl)->GetValue();
 
 		uint32 sizemin = GetTypeSize((uint8)CastChild(IDC_SEARCHMINSIZE, wxChoice)->GetSelection());
@@ -1630,6 +1667,7 @@ void CSearchDlg::OnBnClickedReset(wxCommandEvent &WXUNUSED(evt))
 	// #697 reported. SetValue() only touches the text.
 	CastChild(IDC_SEARCHNAME, wxTextEntry)->SetValue(wxEmptyString);
 	CastChild(IDC_EDITSEARCHEXTENSION, wxTextCtrl)->Clear();
+	m_metadataFields->Reset();
 	CastChild(IDC_SPINSEARCHMIN, wxSpinCtrl)->SetValue(0);
 	CastChild(IDC_SEARCHMINSIZE, wxChoice)->SetSelection(2);
 	CastChild(IDC_SPINSEARCHMAX, wxSpinCtrl)->SetValue(0);

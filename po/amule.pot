@@ -1345,6 +1345,10 @@ msgstr ""
 msgid "The connected daemon does not support All searches."
 msgstr ""
 
+#: src/amule-remote-gui.cpp
+msgid "The connected daemon does not support media search filters."
+msgstr ""
+
 #: src/BaseClient.cpp
 msgid "Searching buddy for lowid connection"
 msgstr ""
@@ -2165,7 +2169,8 @@ msgstr ""
 msgid "Extended Options"
 msgstr ""
 
-#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/SearchQueryDialog.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Preview"
 msgstr ""
 
@@ -2536,6 +2541,10 @@ msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "WebSearch from remote interface makes no sense."
+msgstr ""
+
+#: src/ExternalConn.cpp
+msgid "Invalid media search filter."
 msgstr ""
 
 #: src/ExternalConn.cpp
@@ -4711,19 +4720,23 @@ msgstr ""
 msgid "Bitrate"
 msgstr ""
 
-#: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/muuli_wdr.cpp src/SearchMetadataPanel.cpp src/SearchListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Codec"
 msgstr ""
 
-#: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/muuli_wdr.cpp src/SearchMetadataPanel.cpp src/SearchListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Artist"
 msgstr ""
 
-#: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/muuli_wdr.cpp src/SearchMetadataPanel.cpp src/SearchListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Album"
 msgstr ""
 
-#: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/muuli_wdr.cpp src/SearchMetadataPanel.cpp src/SearchListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Title"
 msgstr ""
 
@@ -7367,6 +7380,10 @@ msgid "Choose a folder remote clients may use"
 msgstr ""
 
 #: src/SearchDlg.cpp
+msgid "Translate query..."
+msgstr ""
+
+#: src/SearchDlg.cpp
 msgid "Clear Search History"
 msgstr ""
 
@@ -7405,6 +7422,96 @@ msgstr ""
 
 #: src/SearchDlg.cpp src/SearchListCtrl.cpp
 msgid "Main"
+msgstr ""
+
+#: src/SearchMetadataPanel.cpp
+msgid "Minimum duration (seconds)"
+msgstr ""
+
+#: src/SearchMetadataPanel.cpp
+msgid "Minimum bitrate (kbps)"
+msgstr ""
+
+#: src/SearchMetadataPanel.cpp
+msgid "Kad applies these filters; eD2k servers may ignore them"
+msgstr ""
+
+#: src/SearchMetadataPanel.cpp
+msgid "The connected daemon does not support media filters. Update the daemon to use these fields."
+msgstr ""
+
+#: src/SearchQueryTranslator.cpp
+msgid "Close the double quote before previewing the query."
+msgstr ""
+
+#: src/SearchQueryTranslator.cpp
+msgid "Media filters apply to the whole query. Put them outside parentheses and do not join them with AND, OR or NOT."
+msgstr ""
+
+#: src/SearchQueryTranslator.cpp
+msgid "Balance the parentheses before previewing the query."
+msgstr ""
+
+#: src/SearchQueryTranslator.cpp
+#, c-format
+msgid "Unknown filter '%s'. Quote the whole token to keep it as keywords."
+msgstr ""
+
+#: src/SearchQueryTranslator.cpp
+#, c-format
+msgid "Filter '%s' appears twice. Use one value per filter."
+msgstr ""
+
+#: src/SearchQueryTranslator.cpp
+#, c-format
+msgid "Filter '%s' needs a value. Use double quotes around values containing spaces."
+msgstr ""
+
+#: src/SearchQueryTranslator.cpp
+msgid "Duration must be seconds, h:mm:ss, or a whole number followed by s, m or h (up to 24 hours). Use >= or > for a minimum."
+msgstr ""
+
+#: src/SearchQueryTranslator.cpp
+msgid "Bitrate must be a whole number in kbps (up to 1000000). Use >= or > for a minimum."
+msgstr ""
+
+#: src/SearchQueryTranslator.cpp src/SearchQueryDialog.cpp
+msgid "Search input must not contain NUL characters."
+msgstr ""
+
+#: src/SearchQueryTranslator.cpp
+msgid "Enter keywords as well as filters; filters alone cannot start a search."
+msgstr ""
+
+#: src/SearchQueryDialog.cpp
+msgid "Translate search query"
+msgstr ""
+
+#: src/SearchQueryDialog.cpp
+msgid ""
+"Use artist:, album:, title:, codec:, duration: and bitrate:. Quote values containing spaces.\n"
+"Example: jazz artist:\"Miles Davis\" duration:>=5m bitrate:>=192\n"
+"Preview replaces the six media filters; other search options stay as they are."
+msgstr ""
+
+#: src/SearchQueryDialog.cpp
+msgid "Query to translate"
+msgstr ""
+
+#: src/SearchQueryDialog.cpp
+msgid "Keywords (editable preview)"
+msgstr ""
+
+#: src/SearchQueryDialog.cpp
+msgid "Preview keywords"
+msgstr ""
+
+#: src/SearchQueryDialog.cpp
+msgid "Use preview"
+msgstr ""
+
+#: src/SearchQueryDialog.cpp
+msgid "Enter keywords before using the preview."
 msgstr ""
 
 #: src/SearchList.cpp

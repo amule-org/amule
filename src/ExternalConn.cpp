@@ -1337,6 +1337,7 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 			response->AddTag(CECEmptyTag(EC_TAG_CAN_SEARCH_LIST));
 			response->AddTag(CECEmptyTag(EC_TAG_CAN_KAD_LOOKUPS));
 			response->AddTag(CECEmptyTag(EC_TAG_CAN_SEARCH_ALL));
+			response->AddTag(CECEmptyTag(EC_TAG_CAN_SEARCH_METADATA));
 		} else {
 			wxString err;
 			if (passwd) {
@@ -3064,6 +3065,21 @@ static CECPacket *Get_EC_Response_Search_List()
 			entry.AddTag(EC_TAG_SEARCH_MIN_SIZE, static_cast<uint64_t>(params->minSize));
 			entry.AddTag(EC_TAG_SEARCH_MAX_SIZE, static_cast<uint64_t>(params->maxSize));
 			entry.AddTag(EC_TAG_SEARCH_AVAILABILITY, static_cast<uint32_t>(params->availability));
+			entry.AddTag(
+				EC_TAG_SEARCH_MIN_BITRATE, static_cast<uint64_t>(params->minBitrateKbps));
+			entry.AddTag(EC_TAG_SEARCH_MIN_LENGTH, static_cast<uint64_t>(params->minLength));
+			if (!params->codec.empty()) {
+				entry.AddTag(EC_TAG_SEARCH_CODEC, params->codec);
+			}
+			if (!params->title.empty()) {
+				entry.AddTag(EC_TAG_SEARCH_TITLE, params->title);
+			}
+			if (!params->album.empty()) {
+				entry.AddTag(EC_TAG_SEARCH_ALBUM, params->album);
+			}
+			if (!params->artist.empty()) {
+				entry.AddTag(EC_TAG_SEARCH_ARTIST, params->artist);
+			}
 		}
 		// A browse also carries the peer it is listing: without it a remote GUI cannot
 		// build a browse tab at all, since a tab with no ecid is by definition not a
@@ -3337,6 +3353,12 @@ static CECPacket *Get_EC_Response_Search(const CECPacket *request, bool multiSea
 	params.minSize = search_request->MinSize();
 	params.maxSize = search_request->MaxSize();
 	params.availability = search_request->Avail();
+	params.minBitrateKbps = static_cast<uint32_t>(search_request->MinBitrate());
+	params.minLength = static_cast<uint32_t>(search_request->MinLength());
+	params.codec = search_request->Codec();
+	params.title = search_request->Title();
+	params.album = search_request->Album();
+	params.artist = search_request->Artist();
 
 	EC_SEARCH_TYPE search_type = search_request->SearchType();
 	uint32 op = EC_OP_FAILED;
@@ -3345,6 +3367,9 @@ static CECPacket *Get_EC_Response_Search(const CECPacket *request, bool multiSea
 
 	if (search_type == EC_SEARCH_WEB) {
 		response = wxTRANSLATE("WebSearch from remote interface makes no sense.");
+	} else if (search_request->MinBitrate() > SEARCH_MAX_MIN_BITRATE_KBPS ||
+		   search_request->MinLength() > SEARCH_MAX_MIN_DURATION_SECONDS) {
+		response = wxTRANSLATE("Invalid media search filter.");
 	} else if (search_type == EC_SEARCH_BROWSE) {
 		// Reported by the daemon, never accepted here: a browse is started by
 		// EC_OP_FRIEND, and the mapping below would otherwise fall through its final

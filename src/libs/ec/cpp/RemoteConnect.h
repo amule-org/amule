@@ -217,6 +217,7 @@ private:
 	bool m_serverSearchList;
 	bool m_serverKadLookups;
 	bool m_serverSearchAll;
+	bool m_serverSearchMetadata;
 
 	// Steady-clock stamp of the last packet received from the daemon. Steady, not
 	// wall-clock: a system clock step (NTP, sleep/wake) must not read as a stall.
@@ -311,6 +312,7 @@ public:
 	bool ServerSupportsKadLookups() const { return m_serverKadLookups; }
 	void ClearPeerNegotiatedFlags();
 	bool ServerSupportsSearchAll() const { return m_serverSearchAll; }
+	bool ServerSupportsSearchMetadata() const { return m_serverSearchMetadata; }
 
 	bool ServerSupportsSearchProgressUnion() const { return m_serverSearchProgressUnion; }
 

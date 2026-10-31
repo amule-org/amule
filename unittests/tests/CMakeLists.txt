@@ -2954,6 +2954,24 @@ target_link_libraries (ECClientCapabilitiesTest
 	mulecommon
 )
 
+# Media filter round trip through the real EC search-request constructor.
+add_executable (SearchMetadataTest
+	SearchMetadataTest.cpp
+	${CMAKE_SOURCE_DIR}/src/OtherFunctions.cpp
+	${CMAKE_SOURCE_DIR}/src/kademlia/utils/UInt128.cpp
+	${CMAKE_SOURCE_DIR}/src/LoggerConsole.cpp
+)
+add_test (NAME SearchMetadataTest COMMAND SearchMetadataTest)
+target_include_directories (SearchMetadataTest PRIVATE
+	${CMAKE_BINARY_DIR}
+	${CMAKE_SOURCE_DIR}/src
+	${CMAKE_SOURCE_DIR}/src/include
+	${CMAKE_SOURCE_DIR}/src/libs
+	${CMAKE_BINARY_DIR}/src/libs
+	${CMAKE_BINARY_DIR}/src/libs/ec/cpp
+)
+target_link_libraries (SearchMetadataTest muleunit ec mulecommon mulesocket)
+
 # Duplicate-search identity and lifecycle eligibility, without a GUI or network.
 add_executable (SearchRequestTest SearchRequestTest.cpp)
 add_test (NAME SearchRequestTest COMMAND SearchRequestTest)
@@ -3327,9 +3345,56 @@ if (BUILD_AMULECMD AND Python3_Interpreter_FOUND)
 	set_tests_properties (AmulecmdShutdownTest PROPERTIES LABELS "slow")
 endif ()
 
-# Exercise native scrolling/sizer behavior without starting the aMule application.
-# MuleUnit defines wxUSE_GUI=0, so this test owns a minimal wxApp instead.
+# The query parser runs offline with wxBase, including on headless builds.
+add_executable (SearchQueryTranslatorTest
+	SearchQueryTranslatorTest.cpp
+	${CMAKE_SOURCE_DIR}/src/SearchQueryTranslator.cpp
+)
+add_dependencies (SearchQueryTranslatorTest generate_ECCodes.h generate_ECTagTypes.h)
+target_include_directories (SearchQueryTranslatorTest PRIVATE
+	${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include
+	${CMAKE_SOURCE_DIR}/src/libs ${CMAKE_BINARY_DIR}/src/libs
+	${CMAKE_BINARY_DIR}/src/libs/ec/cpp)
+target_compile_definitions (SearchQueryTranslatorTest PRIVATE wxUSE_GUI=0)
+target_link_libraries (SearchQueryTranslatorTest PRIVATE wxWidgets::BASE)
+add_test (NAME SearchQueryTranslatorTest COMMAND SearchQueryTranslatorTest)
+
+# Native preview tests own a minimal wxApp without starting aMule or its network.
 if (TARGET wxWidgets::CORE)
+	add_executable (SearchQueryDialogTest
+		SearchQueryDialogTest.cpp
+		${CMAKE_SOURCE_DIR}/src/SearchQueryDialog.cpp
+		${CMAKE_SOURCE_DIR}/src/SearchQueryTranslator.cpp
+		${CMAKE_SOURCE_DIR}/src/SearchMetadataPanel.cpp
+	)
+	add_dependencies (SearchQueryDialogTest generate_ECCodes.h generate_ECTagTypes.h)
+	if (WIN32)
+		target_sources (SearchQueryDialogTest PRIVATE DialogLayoutTest.rc)
+	endif()
+	target_include_directories (SearchQueryDialogTest PRIVATE
+		${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include
+		${CMAKE_SOURCE_DIR}/src/libs ${CMAKE_BINARY_DIR}/src/libs
+		${CMAKE_BINARY_DIR}/src/libs/ec/cpp)
+	target_link_libraries (SearchQueryDialogTest PRIVATE wxWidgets::CORE mulecommon)
+	add_test (NAME SearchQueryDialogTest COMMAND SearchQueryDialogTest)
+	set_tests_properties (SearchQueryDialogTest PROPERTIES SKIP_RETURN_CODE 77 LABELS "gui")
+
+	add_executable (SearchMetadataPanelTest
+		SearchMetadataPanelTest.cpp
+		${CMAKE_SOURCE_DIR}/src/SearchMetadataPanel.cpp
+	)
+	add_dependencies (SearchMetadataPanelTest generate_ECCodes.h generate_ECTagTypes.h)
+	if (WIN32)
+		target_sources (SearchMetadataPanelTest PRIVATE DialogLayoutTest.rc)
+	endif()
+	target_include_directories (SearchMetadataPanelTest PRIVATE
+		${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include
+		${CMAKE_SOURCE_DIR}/src/libs ${CMAKE_BINARY_DIR}/src/libs
+		${CMAKE_BINARY_DIR}/src/libs/ec/cpp)
+	target_link_libraries (SearchMetadataPanelTest PRIVATE wxWidgets::CORE mulecommon)
+	add_test (NAME SearchMetadataPanelTest COMMAND SearchMetadataPanelTest)
+	set_tests_properties (SearchMetadataPanelTest PROPERTIES SKIP_RETURN_CODE 77 LABELS "gui")
+
 	add_executable (DialogLayoutTest DialogLayoutTest.cpp)
 	if (WIN32)
 		target_sources (DialogLayoutTest PRIVATE DialogLayoutTest.rc)

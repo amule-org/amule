@@ -174,6 +174,12 @@ const wxChar *const kSearchTagExtension = wxT("search.extension");
 const wxChar *const kSearchTagMinSize = wxT("search.min_size_bytes");
 const wxChar *const kSearchTagMaxSize = wxT("search.max_size_bytes");
 const wxChar *const kSearchTagMinSourceCount = wxT("search.min_source_count");
+const wxChar *const kSearchTagMinBitrate = wxT("search.min_bitrate_kbps");
+const wxChar *const kSearchTagMinLength = wxT("search.min_length");
+const wxChar *const kSearchTagCodec = wxT("search.codec");
+const wxChar *const kSearchTagTitle = wxT("search.title");
+const wxChar *const kSearchTagAlbum = wxT("search.album");
+const wxChar *const kSearchTagArtist = wxT("search.artist");
 
 //! Trailing-block marker, written once after the 0x01 records when any search has recorded
 //! parameters. Trailing data with any other value is a layout this build does not know; the
@@ -229,6 +235,12 @@ void WriteSearchParams(CFileDataIO &file, const CSearchList::CSearchParams &para
 	AddIntTag(tags, kSearchTagMinSize, params.minSize);
 	AddIntTag(tags, kSearchTagMaxSize, params.maxSize);
 	AddIntTag(tags, kSearchTagMinSourceCount, params.availability);
+	AddIntTag(tags, kSearchTagMinBitrate, params.minBitrateKbps);
+	AddIntTag(tags, kSearchTagMinLength, params.minLength);
+	AddStringTag(tags, kSearchTagCodec, params.codec);
+	AddStringTag(tags, kSearchTagTitle, params.title);
+	AddStringTag(tags, kSearchTagAlbum, params.album);
+	AddStringTag(tags, kSearchTagArtist, params.artist);
 
 	file.WriteTagPtrList(tags);
 	deleteTagPtrListEntries(&tags);
@@ -252,6 +264,18 @@ void ReadSearchParams(CFileDataIO &file, CSearchList::CSearchParams &params)
 			params.maxSize = ReadIntTag(*tag);
 		} else if (name == kSearchTagMinSourceCount) {
 			params.availability = ReadUInt32Tag(*tag);
+		} else if (name == kSearchTagMinBitrate) {
+			params.minBitrateKbps = ReadUInt32Tag(*tag);
+		} else if (name == kSearchTagMinLength) {
+			params.minLength = ReadUInt32Tag(*tag);
+		} else if (name == kSearchTagCodec) {
+			params.codec = ReadStringTag(*tag);
+		} else if (name == kSearchTagTitle) {
+			params.title = ReadStringTag(*tag);
+		} else if (name == kSearchTagAlbum) {
+			params.album = ReadStringTag(*tag);
+		} else if (name == kSearchTagArtist) {
+			params.artist = ReadStringTag(*tag);
 		} else {
 			// Unknown names are additive: a filter written by a newer build is simply not
 			// used by this one.

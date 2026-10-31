@@ -3222,6 +3222,13 @@ struct SearchListRow
 	std::uint64_t min_size = 0;
 	std::uint64_t max_size = 0;
 	std::uint32_t min_source_count = 0;
+	bool has_metadata = false;
+	std::uint64_t min_bitrate = 0;
+	std::uint64_t min_duration = 0;
+	std::string codec;
+	std::string title;
+	std::string album;
+	std::string artist;
 };
 
 void WriteSearchListRow(CJsonWriter &w, const SearchListRow &row)
@@ -3251,9 +3258,18 @@ void WriteSearchListRow(CJsonWriter &w, const SearchListRow &row)
 	// than a fabricated all-default form; "" and 0 mean the form had no such filter.
 	WriteStringOrNull(w, "file_type", row.has_form, row.file_type);
 	WriteStringOrNull(w, "extension", row.has_form, row.extension);
-	WriteIntOrNull(w, "min_size_bytes", row.has_form, static_cast<int64_t>(row.min_size));
-	WriteIntOrNull(w, "max_size_bytes", row.has_form, static_cast<int64_t>(row.max_size));
+	WriteUIntOrNull(w, "min_size_bytes", row.has_form, row.min_size);
+	WriteUIntOrNull(w, "max_size_bytes", row.has_form, row.max_size);
 	WriteIntOrNull(w, "min_source_count", row.has_form, static_cast<int64_t>(row.min_source_count));
+	WriteIntOrNull(w,
+		"min_bitrate_kilobits_per_second",
+		row.has_metadata,
+		static_cast<int64_t>(row.min_bitrate));
+	WriteIntOrNull(w, "min_duration_seconds", row.has_metadata, static_cast<int64_t>(row.min_duration));
+	WriteStringOrNull(w, "codec", row.has_metadata, row.codec);
+	WriteStringOrNull(w, "title", row.has_metadata, row.title);
+	WriteStringOrNull(w, "album", row.has_metadata, row.album);
+	WriteStringOrNull(w, "artist", row.has_metadata, row.artist);
 	w.EndObject();
 }
 
@@ -3888,6 +3904,51 @@ CHttpServer::Response UrlFetchOp(
 inline bool IsIntegralJsonNumber(double v)
 {
 	return std::isfinite(v) && v == std::floor(v);
+}
+
+// Extract an optional JSON integer before any narrowing or unit conversion.
+bool TakeBoundedInteger(const picojson::object &obj,
+	const char *key,
+	std::uint64_t minimum,
+	std::uint64_t maximum,
+	std::uint64_t &value,
+	std::string &error)
+{
+	const auto it = obj.find(key);
+	if (it == obj.end())
+		return true;
+	if (!it->second.is<double>() || !IsIntegralJsonNumber(it->second.get<double>())) {
+		error = std::string(key) + " must be a non-negative integer";
+		return false;
+	}
+	const double number = it->second.get<double>();
+	// UINT64_MAX rounds up to 2^64 as a double; reject that endpoint before casting.
+	if (number < static_cast<double>(minimum) || number > static_cast<double>(maximum) ||
+		number >= std::ldexp(1.0, 64)) {
+		error = std::string(key) + " out of range (" + std::to_string(minimum) + "-" +
+			std::to_string(maximum) + ")";
+		return false;
+	}
+	value = static_cast<std::uint64_t>(number);
+	return true;
+}
+
+bool TakeSearchString(const picojson::object &obj, const char *key, std::string &value, std::string &error)
+{
+	const auto it = obj.find(key);
+	if (it == obj.end())
+		return true;
+	if (!it->second.is<std::string>() || it->second.get<std::string>().find('\0') != std::string::npos) {
+		error = std::string(key) + " must be a string without NUL characters";
+		return false;
+	}
+	const std::string &text = it->second.get<std::string>();
+	if (!text.empty() && wxString::FromUTF8(text.c_str()).empty()) {
+		error = std::string(key) + " must contain valid UTF-8";
+		return false;
+	}
+	value = text;
+	return true;
 }
 
 // MD4 hex to CMD4Hash; false unless 32 hex chars. Either case is tolerated --
@@ -7930,6 +7991,26 @@ CHttpServer::Response CApiDispatcher::HandleSearchList(const CHttpServer::Reques
 		if (const CECTag *tag = entry.GetTagByName(EC_TAG_SEARCH_AVAILABILITY)) {
 			row.min_source_count = static_cast<std::uint32_t>(tag->GetInt());
 		}
+		if (const CECTag *tag = entry.GetTagByName(EC_TAG_SEARCH_MIN_BITRATE)) {
+			row.has_metadata = row.has_form;
+			row.min_bitrate = tag->GetInt();
+		}
+		if (const CECTag *tag = entry.GetTagByName(EC_TAG_SEARCH_MIN_LENGTH)) {
+			row.min_duration = tag->GetInt();
+		}
+		if (const CECTag *tag = entry.GetTagByName(EC_TAG_SEARCH_CODEC)) {
+			row.codec = std::string(tag->GetStringData().utf8_str());
+		}
+		if (const CECTag *tag = entry.GetTagByName(EC_TAG_SEARCH_TITLE)) {
+			row.title = std::string(tag->GetStringData().utf8_str());
+		}
+		if (const CECTag *tag = entry.GetTagByName(EC_TAG_SEARCH_ALBUM)) {
+			row.album = std::string(tag->GetStringData().utf8_str());
+		}
+		if (const CECTag *tag = entry.GetTagByName(EC_TAG_SEARCH_ARTIST)) {
+			row.artist = std::string(tag->GetStringData().utf8_str());
+		}
+
 		rows.push_back(std::move(row));
 	}
 	delete ec_resp;
@@ -8246,29 +8327,11 @@ bool PrefTakeUint(const picojson::object &o,
 	std::string &err,
 	std::uint32_t scale)
 {
-	const auto it = o.find(key);
-	if (it == o.end())
+	if (o.find(key) == o.end())
 		return true;
-	if (!it->second.is<double>()) {
-		err = std::string(key) + " must be a non-negative integer";
+	std::uint64_t v = 0;
+	if (!TakeBoundedInteger(o, key, min, max, v, err))
 		return false;
-	}
-	const double v = it->second.get<double>();
-	// Reject a fractional value rather than truncating it at the cast below. The step
-	// modulo further down is not a substitute: it runs on the already-truncated value,
-	// so it tests the floor's alignment and never integrality, and a field with no step
-	// skips it entirely.
-	if (!IsIntegralJsonNumber(v)) {
-		err = std::string(key) + " must be a non-negative integer";
-		return false;
-	}
-	if (v < 0 || v > static_cast<double>(max) || v < static_cast<double>(min)) {
-		// Name the bounds. These domains are narrower than the field's type for
-		// reasons a caller cannot infer, so "out of range" alone leaves them guessing.
-		err = std::string(key) + " out of range (" + std::to_string(min) + "-" + std::to_string(max) +
-		      ")";
-		return false;
-	}
 	// Quantised rows: the core's setter divides, so a value between two steps
 	// is truncated on the way in. Rejected rather than silently rounded.
 	if (step && (static_cast<std::uint64_t>(v) % step) != 0) {
@@ -10829,17 +10892,14 @@ CHttpServer::Response CApiDispatcher::HandleSearchStart(const CHttpServer::Reque
 	// "global"), "file_type": optional label, "extension": optional (e.g. "mkv"),
 	// "min_size_bytes"/"max_size_bytes": optional uint64 (0 = no cap),
 	// "min_source_count": optional uint32 }
+	std::string error;
 	std::string query;
-	{
-		const auto it = obj.find("query");
-		if (it == obj.end() || !it->second.is<std::string>()) {
-			return ErrorResponse(400, "bad_request", "required string field `query` is missing");
-		}
-		query = it->second.get<std::string>();
-		if (query.empty()) {
-			return ErrorResponse(400, "bad_request", "`query` must be non-empty");
-		}
-	}
+	if (obj.find("query") == obj.end())
+		return ErrorResponse(400, "bad_request", "required string field `query` is missing");
+	if (!TakeSearchString(obj, "query", query, error))
+		return ErrorResponse(400, "bad_request", error.c_str());
+	if (query.empty())
+		return ErrorResponse(400, "bad_request", "`query` must be non-empty");
 
 	std::uint8_t search_type = EC_SEARCH_GLOBAL;
 	std::string search_kind = "global"; // mirrors the input string for state.MarkSearchStarted
@@ -10885,74 +10945,58 @@ CHttpServer::Response CApiDispatcher::HandleSearchStart(const CHttpServer::Reque
 		}
 	}
 	std::string extension;
-	{
-		const auto it = obj.find("extension");
-		if (it != obj.end()) {
-			if (!it->second.is<std::string>()) {
-				return ErrorResponse(400, "bad_request", "`extension` must be a string");
-			}
-			extension = it->second.get<std::string>();
-		}
-	}
+	if (!TakeSearchString(obj, "extension", extension, error))
+		return ErrorResponse(400, "bad_request", error.c_str());
 	std::uint64_t min_size = 0;
 	std::uint64_t max_size = 0;
-	std::uint32_t min_avail = 0;
-	{
-		const auto it = obj.find("min_size_bytes");
-		if (it != obj.end()) {
-			if (!it->second.is<double>()) {
-				return ErrorResponse(400,
-					"bad_request",
-					"`min_size_bytes` must be a non-negative integer (bytes)");
-			}
-			const double v = it->second.get<double>();
-			if (!IsIntegralJsonNumber(v) || v < 0)
-				return ErrorResponse(400,
-					"bad_request",
-					"`min_size_bytes` must be a non-negative integer");
-			min_size = static_cast<std::uint64_t>(v);
-		}
-	}
-	{
-		const auto it = obj.find("max_size_bytes");
-		if (it != obj.end()) {
-			if (!it->second.is<double>()) {
-				return ErrorResponse(400,
-					"bad_request",
-					"`max_size_bytes` must be a non-negative integer (bytes; 0 = no "
-					"cap)");
-			}
-			const double v = it->second.get<double>();
-			if (!IsIntegralJsonNumber(v) || v < 0)
-				return ErrorResponse(400,
-					"bad_request",
-					"`max_size_bytes` must be a non-negative integer");
-			max_size = static_cast<std::uint64_t>(v);
-		}
-	}
-	{
-		const auto it = obj.find("min_source_count");
-		if (it != obj.end()) {
-			if (!it->second.is<double>()) {
-				return ErrorResponse(400,
-					"bad_request",
-					"`min_source_count` must be a non-negative integer");
-			}
-			const double v = it->second.get<double>();
-			if (!IsIntegralJsonNumber(v)) {
-				return ErrorResponse(400,
-					"bad_request",
-					"`min_source_count` must be a non-negative integer");
-			}
-			if (v < 0 || v > 4294967295.0) {
-				return ErrorResponse(400, "bad_request", "`min_source_count` out of range");
-			}
-			min_avail = static_cast<std::uint32_t>(v);
-		}
-	}
-
-	if (search_type == EC_SEARCH_ALL && !m_state.EcConnected()) {
+	std::uint64_t min_avail = 0;
+	CSearchMetadata metadata;
+	if (!TakeBoundedInteger(
+		    obj, "min_size_bytes", 0, std::numeric_limits<std::uint64_t>::max(), min_size, error))
+		return ErrorResponse(400, "bad_request", error.c_str());
+	if (!TakeBoundedInteger(
+		    obj, "max_size_bytes", 0, std::numeric_limits<std::uint64_t>::max(), max_size, error))
+		return ErrorResponse(400, "bad_request", error.c_str());
+	if (!TakeBoundedInteger(obj, "min_source_count", 0, 4294967295ULL, min_avail, error))
+		return ErrorResponse(400, "bad_request", error.c_str());
+	if (!TakeBoundedInteger(obj,
+		    "min_bitrate_kilobits_per_second",
+		    0,
+		    SEARCH_MAX_MIN_BITRATE_KBPS,
+		    metadata.minBitrateKbps,
+		    error))
+		return ErrorResponse(400, "bad_request", error.c_str());
+	if (!TakeBoundedInteger(obj,
+		    "min_duration_seconds",
+		    0,
+		    SEARCH_MAX_MIN_DURATION_SECONDS,
+		    metadata.minLength,
+		    error))
+		return ErrorResponse(400, "bad_request", error.c_str());
+	std::string codec;
+	if (!TakeSearchString(obj, "codec", codec, error))
+		return ErrorResponse(400, "bad_request", error.c_str());
+	metadata.codec = wxString::FromUTF8(codec.c_str());
+	std::string title;
+	if (!TakeSearchString(obj, "title", title, error))
+		return ErrorResponse(400, "bad_request", error.c_str());
+	metadata.title = wxString::FromUTF8(title.c_str());
+	std::string album;
+	if (!TakeSearchString(obj, "album", album, error))
+		return ErrorResponse(400, "bad_request", error.c_str());
+	metadata.album = wxString::FromUTF8(album.c_str());
+	std::string artist;
+	if (!TakeSearchString(obj, "artist", artist, error))
+		return ErrorResponse(400, "bad_request", error.c_str());
+	metadata.artist = wxString::FromUTF8(artist.c_str());
+	const bool has_media_filter = metadata.minBitrateKbps || metadata.minLength || !codec.empty() ||
+				      !title.empty() || !album.empty() || !artist.empty();
+	if ((search_type == EC_SEARCH_ALL || has_media_filter) && !m_state.EcConnected()) {
 		return ErrorResponse(503, "ec_unavailable", "the EC connection is unavailable");
+	}
+	if (has_media_filter && !m_app.IsServerSearchMetadataActive()) {
+		return ErrorResponse(
+			503, "ec_unsupported", "the connected amuled does not support media search filters");
 	}
 	if (search_type == EC_SEARCH_ALL && !m_app.IsServerSearchAllActive()) {
 		return ErrorResponse(
@@ -10964,9 +11008,10 @@ CHttpServer::Response CApiDispatcher::HandleSearchStart(const CHttpServer::Reque
 		static_cast<EC_SEARCH_TYPE>(search_type),
 		wxString::FromUTF8(file_type.c_str()),
 		wxString::FromUTF8(extension.c_str()),
-		min_avail,
+		static_cast<std::uint32_t>(min_avail),
 		min_size,
-		max_size));
+		max_size,
+		metadata));
 
 	const CECPacket *ec_resp = m_app.SendRecvSerialized(ec_req.get());
 	if (!ec_resp) {
@@ -11014,7 +11059,14 @@ CHttpServer::Response CApiDispatcher::HandleSearchStart(const CHttpServer::Reque
 	row.extension = extension;
 	row.min_size = min_size;
 	row.max_size = max_size;
-	row.min_source_count = min_avail;
+	row.min_source_count = static_cast<std::uint32_t>(min_avail);
+	row.has_metadata = m_app.IsServerSearchMetadataActive();
+	row.min_bitrate = metadata.minBitrateKbps;
+	row.min_duration = metadata.minLength;
+	row.codec = codec;
+	row.title = title;
+	row.album = album;
+	row.artist = artist;
 
 	CHttpServer::Response r;
 	r.status = 202;

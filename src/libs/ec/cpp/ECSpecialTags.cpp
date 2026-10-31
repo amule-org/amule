@@ -74,7 +74,8 @@ CEC_Search_Tag::CEC_Search_Tag(const wxString &name,
 	const wxString &extension,
 	uint32 avail,
 	uint64 min_size,
-	uint64 max_size)
+	uint64 max_size,
+	const CSearchMetadata &metadata)
 : CECTag(EC_TAG_SEARCH_TYPE, (uint32)search_type)
 {
 	AddTag(CECTag(EC_TAG_SEARCH_NAME, name));
@@ -90,6 +91,24 @@ CEC_Search_Tag::CEC_Search_Tag(const wxString &name,
 	}
 	if (max_size != 0) {
 		AddTag(CECTag(EC_TAG_SEARCH_MAX_SIZE, max_size));
+	}
+	if (metadata.minBitrateKbps) {
+		AddTag(CECTag(EC_TAG_SEARCH_MIN_BITRATE, metadata.minBitrateKbps));
+	}
+	if (metadata.minLength) {
+		AddTag(CECTag(EC_TAG_SEARCH_MIN_LENGTH, metadata.minLength));
+	}
+	if (!metadata.codec.empty()) {
+		AddTag(CECTag(EC_TAG_SEARCH_CODEC, metadata.codec));
+	}
+	if (!metadata.title.empty()) {
+		AddTag(CECTag(EC_TAG_SEARCH_TITLE, metadata.title));
+	}
+	if (!metadata.album.empty()) {
+		AddTag(CECTag(EC_TAG_SEARCH_ALBUM, metadata.album));
+	}
+	if (!metadata.artist.empty()) {
+		AddTag(CECTag(EC_TAG_SEARCH_ARTIST, metadata.artist));
 	}
 }
 
