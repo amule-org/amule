@@ -27,6 +27,7 @@
 #include "libs/ec/cpp/ECCrypt.h"
 
 #include "BrowseManager.h"
+#include "MuleGUIEvent.h" // Needed for CMuleGUIEvent
 
 #include <csignal>
 #include <cstring>

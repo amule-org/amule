@@ -61,8 +61,8 @@
 #include <common/Format.h>
 #include "InternalEvents.h" // Needed for wxEVT_*
 #include "ThreadTasks.h"
-#include "GuiEvents.h" // Needed for EVT_MULE_NOTIFY
-#include "Timer.h"     // Needed for EVT_MULE_TIMER
+#include "MuleGUIEvent.h" // Needed for EVT_MULE_NOTIFY
+#include "Timer.h"        // Needed for EVT_MULE_TIMER
 
 #include "ClientUDPSocket.h" // Do_not_auto_remove (forward declaration not enough)
 #include "ListenSocket.h"    // Do_not_auto_remove (forward declaration not enough)

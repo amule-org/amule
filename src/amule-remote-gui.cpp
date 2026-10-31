@@ -67,7 +67,7 @@
 #include "ECClientPassword.h"
 #include "Friend.h"
 #include "GetTickCount.h" // Needed for GetTickCount64
-#include "GuiEvents.h"
+#include "MuleGUIEvent.h"
 #include "UserEvents.h"
 #include "OtherFunctions.h" // Needed for IP_FROM_GUI_ID / PORT_FROM_GUI_ID
 #ifdef GEOIP_GUI

@@ -44,7 +44,7 @@
 #include <wx/apptrait.h>
 #include <wx/socket.h>
 
-#include <GuiEvents.h>
+#include <MuleGUIEvent.h>
 
 #ifdef ENABLE_NLS
 #include <libintl.h>

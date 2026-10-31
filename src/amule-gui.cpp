@@ -55,8 +55,8 @@
 #include "SearchDlg.h"  // Needed for CSearchDlg, CSearchListCtrl
 #include "SearchList.h" // Needed for CSearchList
 #include "ThreadTasks.h"
-#include "Logger.h"    // Needed for EVT_MULE_LOGGING
-#include "GuiEvents.h" // Needed for EVT_MULE_NOTIFY
+#include "Logger.h"       // Needed for EVT_MULE_LOGGING
+#include "MuleGUIEvent.h" // Needed for EVT_MULE_NOTIFY
 
 #ifdef __WXMAC__
 #include <CoreFoundation/CFBundle.h>                 // Do_not_auto_remove
