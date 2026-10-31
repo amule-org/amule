@@ -33,6 +33,7 @@
 #endif
 
 class CUpDownClient;
+class CServer;
 
 #include "MuleUDPSocket.h"
 #include "ReservedProtocolFrames.h" // Needed for CFrameLogThrottle
@@ -108,6 +109,13 @@ public:
 	//! Statistics: a verified hello on a stream to or from a rendezvous peer, on either side.
 	//! Returns whether it completed a rendezvous, which was then counted.
 	bool NoteRendezvousHello(uint32 ip, const std::array<std::uint8_t, 16> &peerHash);
+	//! Asks a LowID source's own server, not ours, to wake it (ed2k-server 0.9.86). False when our
+	//! per-server limit, a pending request or the target's cooldown holds it back.
+	bool SendForeignNatCallbackRequest(CServer *server,
+		uint32 targetId,
+		uint8_t ourCrypt,
+		uint16 sourceTcpPort,
+		const std::optional<NatServerHolePunch::Hash> &knownHash);
 #endif
 #endif
 #if defined(AMULE_UTP_TRANSPORT) || defined(AMULE_QUIC_TRANSPORT)
@@ -171,6 +179,7 @@ private:
 	LugdunumNatTraversal::CCallbackRendezvous m_lugdunumCallbackRendezvous;
 	NatServerHolePunch::RendezvousOutcomes m_rendezvousOutcomes;
 	NatServerHolePunch::RequestedCallbackTargets m_requestedCallbackTargets;
+	NatServerHolePunch::ForeignCallbackRequests m_foreignCallbacks;
 #endif
 #endif
 #ifdef AMULE_QUIC_TRANSPORT
@@ -211,6 +220,9 @@ private:
 	//! untouched for the normal client-way path below.
 	bool TryProcessServerWayNatCallback(uint32 ip, uint8_t *buffer, size_t length);
 #ifdef AMULE_UTP_TRANSPORT
+	//! A foreign server's 0xA7 answer to our cross-server request: true once it decrypted with that
+	//! server's key, whether or not it matched a pending request.
+	bool TryProcessForeignNatCallback(uint32 ip, uint8_t *buffer, size_t length);
 	void HandleLowIdHolePunch(uint32 host, uint16 port);
 	bool AnswerHolePunchExtensionWake(const LugdunumNatTraversal::ForwardedCallback &callback);
 	void SendLugdunumNatCallbackRequest(const LugdunumNatTraversal::CallbackFailureKey &key);

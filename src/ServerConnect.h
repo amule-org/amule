@@ -147,6 +147,9 @@ public:
 	//! Clears the pending requests, expected endpoints and waiting dial backs: called on a new
 	//! login, since a previous connection's target IDs mean nothing on a different server.
 	void ResetLowIdHolePunchState();
+	//! The listed server at that TCP address, when it is not ours and takes a cross-server NAT
+	//! callback request from us (NatServerHolePunch::ServerTakesForeignCallback()).
+	CServer *ForeignCallbackServer(uint32 serverIp, uint16 serverPort);
 	//! We announced the hole-punch extension at login and this server runs it, having also
 	//! answered our Lugdunum opt-in, whose 0x37 it wakes a target with.
 	bool IsHolePunchExtensionActive();
