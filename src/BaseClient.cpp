@@ -1969,6 +1969,8 @@ bool CUpDownClient::TrySendForeignNatCallbackRequest()
 	facts.extensionAnnounced = NatServerHolePunch::ShouldAnnounceHolePunchExtension(
 		thePrefs::IsLowIdHolePunchEnabled(), thePrefs::IsLugdunumNatCallbackEnabled(), true);
 	facts.ourUdpPort = thePrefs::GetEffectiveUDPPort();
+	facts.weRequireCryptLayer = thePrefs::IsClientCryptLayerRequired();
+	facts.sourceRequiresCryptLayer = RequiresCryptLayer();
 	if (!NatServerHolePunch::ShouldRequestForeignCallback(facts)) {
 		return false;
 	}
@@ -1996,7 +1998,19 @@ bool CUpDownClient::TrySendForeignNatCallbackRequest()
 #ifdef AMULE_UTP_TRANSPORT
 void CUpDownClient::RetryLowIdHolePunchRequest()
 {
-	if (!m_lowIdHolePunchRequested && GetDownloadState() == DS_LOWTOLOWIP) {
+	if (GetDownloadState() != DS_LOWTOLOWIP) {
+		return;
+	}
+	// A cross-server request the rate cap or a cooldown held back is asked again here, at most
+	// once per request timeout: each try looks the source's server up in the list.
+	const uint64 now = ::GetTickCount64();
+	if (now >= m_nextForeignNatCallbackRetry) {
+		m_nextForeignNatCallbackRetry = now + NatServerHolePunch::kForeignRequestTimeoutMs;
+		if (TrySendForeignNatCallbackRequest()) {
+			return;
+		}
+	}
+	if (!m_lowIdHolePunchRequested) {
 		TrySendLowIdHolePunchRequest();
 	}
 }

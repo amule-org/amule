@@ -3511,9 +3511,10 @@ void CPartFile::AddClientSources(CMemFile *sources,
 			    nPort,
 			    dwServerIP,
 			    nServerPort,
-			    NULL,
+			    nullptr,
 			    false,
-			    ShouldKeepNatTraversalSource(dwServerIP, nServerPort, SF_SOURCE_EXCHANGE))) {
+			    IsLowID(dwID) && ShouldKeepNatTraversalSource(
+						     dwServerIP, nServerPort, SF_SOURCE_EXCHANGE))) {
 			AddDebugLogLineN(logIPFilter,
 				CFormat("Ignored source (IP=%s) received via source exchange") %
 					Uint32toStringIP(dwIDED2K));

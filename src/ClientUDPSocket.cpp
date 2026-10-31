@@ -708,9 +708,15 @@ bool CClientUDPSocket::TryProcessServerWayNatCallback(uint32 ip, uint8_t *buffer
 			LugdunumNatTraversal::LogForwardedCallback(
 				logClientUDP, "OP_NAT_CALLBACKREQUESTED_UDP", forwarded);
 #ifdef AMULE_UTP_TRANSPORT
-			// The extension wakes a target only with TCP 0x37: a 0xA7 is always Lugdunum's
-			// callback, answering our own 0xA6, so it is dialled at once.
-			DialLugdunumNatCallbackPeer(forwarded);
+			// Requester ID 0 means a cross-server wake on an extension server, sent by UDP when
+			// we asked for a callback ourselves just before; anywhere else it is a reverse
+			// callback. Every other 0xA7 answers our own 0xA6 and is dialled at once.
+			if (forwarded.requesterId == 0 && theApp->serverconnect != nullptr &&
+				theApp->serverconnect->IsHolePunchExtensionActive()) {
+				AnswerHolePunchExtensionWake(forwarded);
+			} else {
+				DialLugdunumNatCallbackPeer(forwarded);
+			}
 #endif
 		});
 	return true;
@@ -1111,19 +1117,20 @@ bool CClientUDPSocket::TryProcessForeignNatCallback(uint32 ip, uint8_t *buffer, 
 	}
 	const std::optional<NatServerHolePunch::ForeignCallbackAnswer> answer =
 		NatServerHolePunch::ParseForeignCallbackAnswer(decrypted + 2, decryptedLen - 2);
-	const std::optional<NatServerHolePunch::ForeignCallbackRequests::Pending> pending =
-		answer ? m_foreignCallbacks.TakeAnswer(ip, answer->targetId, answer->targetHash, now)
-		       : std::nullopt;
-	if (!pending) {
+	if (!answer || !m_foreignCallbacks.AnswersPending(ip, answer->targetId, answer->targetHash, now)) {
 		AddDebugLogLineN(logClientUDP,
-			CFormat("Dropped a cross-server OP_NAT_CALLBACKREQUESTED_UDP from %s: not an answer "
-				"to a "
-				"pending request") %
+			CFormat("Dropped a cross-server 0xA7 from %s: no pending request") %
 				Uint32toStringIP(ip));
 		return true;
 	}
+	// Checked before the answer is taken: a refusal here leaves the request for the server's resend.
 	CServerConnect *connect = theApp->serverconnect;
 	if (connect == nullptr || !connect->LowIdHolePunchActionLimiter().Admit(now)) {
+		return true;
+	}
+	const std::optional<NatServerHolePunch::ForeignCallbackRequests::Pending> pending =
+		m_foreignCallbacks.TakeAnswer(ip, answer->targetId, answer->targetHash, now);
+	if (!pending) {
 		return true;
 	}
 	AddDebugLogLineN(logClientUDP,

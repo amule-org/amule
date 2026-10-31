@@ -820,6 +820,7 @@ public:
 private:
 	std::optional<std::uint64_t> m_sentAt;
 };
+
 // Cross-server NAT callback (ed2k-server 0.9.86): a LowID asks the server of a LowID source on
 // another server to wake that source, which then punches towards us and waits to be dialled.
 
@@ -868,15 +869,18 @@ struct ForeignRequestFacts
 	// We announce the hole-punch extension (ShouldAnnounceHolePunchExtension()).
 	bool extensionAnnounced = false;
 	std::uint16_t ourUdpPort = 0;
+	bool weRequireCryptLayer = false;
+	bool sourceRequiresCryptLayer = false;
 };
 
 // Both LowID on different servers, the source's server takes the request, and the source is odd: on
 // both server families only a client that set 0x1000, which a cross-server wake needs, is odd.
 inline bool ShouldRequestForeignCallback(const ForeignRequestFacts &facts)
 {
+	// The server answers nothing when one side requires the crypt layer (ed2k-server#40).
 	return facts.extensionAnnounced && !facts.sourceServerIsOurs && facts.serverTakesForeignCallback &&
-	       facts.ourUdpPort != 0 && IsLowID(facts.ourId) && IsLowID(facts.sourceId) &&
-	       (facts.sourceId & 1) != 0;
+	       facts.ourUdpPort != 0 && !facts.weRequireCryptLayer && !facts.sourceRequiresCryptLayer &&
+	       IsLowID(facts.ourId) && IsLowID(facts.sourceId) && (facts.sourceId & 1) != 0;
 }
 
 // Each server allows a burst of 10, then 1/s per source IP, and 60 targets per IP in 10 min; we stay
@@ -935,7 +939,8 @@ public:
 	}
 
 	// The pending request an answer completes, taken once: a resent copy finds nothing. An answer
-	// whose hash differs from the source's known one is dropped and the request stays pending.
+	// whose hash differs from the source's known one is dropped and the request stays pending. The
+	// target then cools down, so a dial that fails is not asked again on the next retry.
 	std::optional<Pending> TakeAnswer(
 		std::uint32_t serverIp, std::uint32_t targetId, const Hash &targetHash, std::uint64_t now)
 	{
@@ -945,8 +950,18 @@ public:
 			return std::nullopt;
 		}
 		const Pending taken{ match->sourceTcpPort };
+		AddCooldown(serverIp, targetId, now + kForeignTargetCooldownMs);
 		m_pending.erase(match);
 		return taken;
+	}
+
+	// Whether TakeAnswer() would take this answer, without taking it.
+	bool AnswersPending(
+		std::uint32_t serverIp, std::uint32_t targetId, const Hash &targetHash, std::uint64_t now)
+	{
+		Expire(now);
+		const auto match = FindPending(serverIp, targetId);
+		return match != m_pending.end() && (!match->knownHash || *match->knownHash == targetHash);
 	}
 
 	// The UDP keys our pending requests to that server IP were sent with, each once. Two listed
@@ -1018,17 +1033,22 @@ private:
 			m_cooldowns.end());
 		for (auto it = m_pending.begin(); it != m_pending.end();) {
 			if (now >= it->sentAt && now - it->sentAt >= kForeignRequestTimeoutMs) {
-				if (m_cooldowns.size() >= kMaxForeignCooldowns) {
-					m_cooldowns.pop_front();
-				}
-				m_cooldowns.push_back({ it->serverIp,
+				AddCooldown(it->serverIp,
 					it->targetId,
-					it->sentAt + kForeignRequestTimeoutMs + kForeignTargetCooldownMs });
+					it->sentAt + kForeignRequestTimeoutMs + kForeignTargetCooldownMs);
 				it = m_pending.erase(it);
 			} else {
 				++it;
 			}
 		}
+	}
+
+	void AddCooldown(std::uint32_t serverIp, std::uint32_t targetId, std::uint64_t until)
+	{
+		if (m_cooldowns.size() >= kMaxForeignCooldowns) {
+			m_cooldowns.pop_front();
+		}
+		m_cooldowns.push_back({ serverIp, targetId, until });
 	}
 
 	ServerBudget &BudgetFor(std::uint32_t serverIp, std::uint64_t now)

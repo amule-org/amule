@@ -909,7 +909,7 @@ TEST(NatServerHolePunch, AnUnansweredCrossServerTargetCoolsDown)
 	ForeignCallbackRequests requests;
 	ASSERT_TRUE(requests.TryStart(kForeignServer, 42, 201, 4662, std::nullopt, 0));
 	ASSERT_FALSE(requests.TakeAnswer(kForeignServer, 201, ForeignHash(1), kForeignRequestTimeoutMs)
-			     .has_value());
+			.has_value());
 	ASSERT_FALSE(
 		requests.TryStart(kForeignServer, 42, 201, 4662, std::nullopt, kForeignRequestTimeoutMs + 1));
 	ASSERT_FALSE(requests.TryStart(kForeignServer,
@@ -972,4 +972,50 @@ TEST(NatServerHolePunch, ACrossServerAnswerIsDecryptedWithTheKeyItsRequestWasSen
 
 	requests.TakeAnswer(kForeignServer, 201, ForeignHash(1), 20);
 	ASSERT_EQUALS(1, static_cast<int>(requests.PendingKeysFrom(kForeignServer, 20).size()));
+}
+
+TEST(NatServerHolePunch, NoCrossServerRequestWhenEitherSideRequiresTheCryptLayer)
+{
+	// The server sends nothing when one side requires it, so the request would only spend its budget.
+	ForeignRequestFacts facts;
+	facts.ourId = 101;
+	facts.sourceId = 201;
+	facts.serverTakesForeignCallback = true;
+	facts.extensionAnnounced = true;
+	facts.ourUdpPort = 4672;
+	ASSERT_TRUE(ShouldRequestForeignCallback(facts));
+
+	ForeignRequestFacts weRequire = facts;
+	weRequire.weRequireCryptLayer = true;
+	ASSERT_FALSE(ShouldRequestForeignCallback(weRequire));
+
+	ForeignRequestFacts sourceRequires = facts;
+	sourceRequires.sourceRequiresCryptLayer = true;
+	ASSERT_FALSE(ShouldRequestForeignCallback(sourceRequires));
+}
+
+TEST(NatServerHolePunch, AnAnsweredCrossServerTargetCoolsDownToo)
+{
+	// A dial that fails after the answer must not ask again on the next retry.
+	ForeignCallbackRequests requests;
+	ASSERT_TRUE(requests.TryStart(kForeignServer, 42, 201, 4662, std::nullopt, 0));
+	ASSERT_TRUE(requests.TakeAnswer(kForeignServer, 201, ForeignHash(1), 100).has_value());
+	ASSERT_FALSE(requests.TryStart(kForeignServer, 42, 201, 4662, std::nullopt, 101));
+	ASSERT_FALSE(requests.TryStart(
+		kForeignServer, 42, 201, 4662, std::nullopt, 100 + kForeignTargetCooldownMs - 1));
+	ASSERT_TRUE(requests.TryStart(
+		kForeignServer, 42, 201, 4662, std::nullopt, 100 + kForeignTargetCooldownMs));
+}
+
+TEST(NatServerHolePunch, ACrossServerAnswerCanBeCheckedWithoutTakingIt)
+{
+	// Checked before the action limit, so a refusal there leaves the request for the server's resend.
+	ForeignCallbackRequests requests;
+	ASSERT_TRUE(requests.TryStart(kForeignServer, 42, 201, 4662, ForeignHash(7), 0));
+	ASSERT_FALSE(requests.AnswersPending(kForeignServer, 201, ForeignHash(8), 10));
+	ASSERT_FALSE(requests.AnswersPending(kForeignServer, 203, ForeignHash(7), 10));
+	ASSERT_TRUE(requests.AnswersPending(kForeignServer, 201, ForeignHash(7), 10));
+	ASSERT_TRUE(requests.AnswersPending(kForeignServer, 201, ForeignHash(7), 20));
+	ASSERT_TRUE(requests.TakeAnswer(kForeignServer, 201, ForeignHash(7), 30).has_value());
+	ASSERT_FALSE(requests.AnswersPending(kForeignServer, 201, ForeignHash(7), 40));
 }

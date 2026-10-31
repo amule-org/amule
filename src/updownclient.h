@@ -378,6 +378,7 @@ private:
 #if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
 	// The source's own target dials us, so our request's success is that source's hello.
 	NatServerHolePunch::PendingCallbackRequest m_lugdunumCallbackRequest;
+	uint64 m_nextForeignNatCallbackRetry = 0;
 
 public:
 	//! True once for a hello within the window of the last callback request for this source.
