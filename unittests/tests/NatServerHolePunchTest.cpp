@@ -971,7 +971,25 @@ TEST(NatServerHolePunch, ACrossServerAnswerIsDecryptedWithTheKeyItsRequestWasSen
 	ASSERT_TRUE(requests.PendingKeysFrom(kOtherServer, 10).empty());
 
 	requests.TakeAnswer(kForeignServer, 201, ForeignHash(1), 20);
-	ASSERT_EQUALS(1, static_cast<int>(requests.PendingKeysFrom(kForeignServer, 20).size()));
+	ASSERT_EQUALS(2, static_cast<int>(requests.PendingKeysFrom(kForeignServer, 20).size()));
+	ASSERT_EQUALS(1,
+		static_cast<int>(
+			requests.PendingKeysFrom(kForeignServer, 20 + kForeignAnswerResendMs).size()));
+}
+
+TEST(NatServerHolePunch, AnAnsweredRequestKeepsItsKeyForTheServerResends)
+{
+	// The server resends its answer at +1.2 s and +3 s: the copies must still decrypt, then find
+	// nothing to take, rather than reach the client path as an unknown packet.
+	ForeignCallbackRequests requests;
+	ASSERT_TRUE(requests.TryStart(kForeignServer, 42, 201, 4662, std::nullopt, 0));
+	ASSERT_TRUE(requests.TakeAnswer(kForeignServer, 201, ForeignHash(1), 100).has_value());
+	const std::vector<std::uint32_t> keys = requests.PendingKeysFrom(kForeignServer, 3100);
+	ASSERT_EQUALS(1, static_cast<int>(keys.size()));
+	ASSERT_EQUALS(42u, keys.front());
+	ASSERT_FALSE(requests.AnswersPending(kForeignServer, 201, ForeignHash(1), 3100));
+	ASSERT_FALSE(requests.TakeAnswer(kForeignServer, 201, ForeignHash(1), 3100).has_value());
+	ASSERT_TRUE(requests.PendingKeysFrom(kForeignServer, 100 + kForeignAnswerResendMs).empty());
 }
 
 TEST(NatServerHolePunch, NoCrossServerRequestWhenEitherSideRequiresTheCryptLayer)

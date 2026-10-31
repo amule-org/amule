@@ -891,6 +891,8 @@ constexpr std::size_t kForeignTargetsPerWindow = 30;
 constexpr std::uint64_t kForeignTargetWindowMs = 600'000;
 // The server answers within 3 s and resends at +1.2 s and +3 s.
 constexpr std::uint64_t kForeignRequestTimeoutMs = 30'000;
+// An answered request's key outlives the +3 s resend, so the copies decrypt and are dropped here.
+constexpr std::uint64_t kForeignAnswerResendMs = 5'000;
 // A target that never answered (Lugdunum-only, gone) is not asked again for a while, so source
 // re-asks do not use up the server's per-IP target budget.
 constexpr std::uint64_t kForeignTargetCooldownMs = 600'000;
@@ -951,6 +953,10 @@ public:
 		}
 		const Pending taken{ match->sourceTcpPort };
 		AddCooldown(serverIp, targetId, now + kForeignTargetCooldownMs);
+		if (m_answeredKeys.size() >= kMaxForeignPending) {
+			m_answeredKeys.pop_front();
+		}
+		m_answeredKeys.push_back({ serverIp, match->serverKeyUdp, now + kForeignAnswerResendMs });
 		m_pending.erase(match);
 		return taken;
 	}
@@ -964,17 +970,22 @@ public:
 		return match != m_pending.end() && (!match->knownHash || *match->knownHash == targetHash);
 	}
 
-	// The UDP keys our pending requests to that server IP were sent with, each once. Two listed
-	// servers can share an IP with different ports, and so different keys.
+	// The UDP keys our pending or just-answered requests to that server IP were sent with, each
+	// once. Two listed servers can share an IP with different ports, and so different keys.
 	std::vector<std::uint32_t> PendingKeysFrom(std::uint32_t serverIp, std::uint64_t now)
 	{
 		Expire(now);
 		std::vector<std::uint32_t> keys;
-		for (const PendingEntry &entry : m_pending) {
-			if (entry.serverIp == serverIp &&
-				std::find(keys.begin(), keys.end(), entry.serverKeyUdp) == keys.end()) {
-				keys.push_back(entry.serverKeyUdp);
+		const auto add = [&keys, serverIp](std::uint32_t ip, std::uint32_t key) {
+			if (ip == serverIp && std::find(keys.begin(), keys.end(), key) == keys.end()) {
+				keys.push_back(key);
 			}
+		};
+		for (const PendingEntry &entry : m_pending) {
+			add(entry.serverIp, entry.serverKeyUdp);
+		}
+		for (const AnsweredKey &answered : m_answeredKeys) {
+			add(answered.serverIp, answered.serverKeyUdp);
 		}
 		return keys;
 	}
@@ -1007,6 +1018,12 @@ private:
 		std::uint32_t targetId;
 		std::uint64_t until;
 	};
+	struct AnsweredKey
+	{
+		std::uint32_t serverIp;
+		std::uint32_t serverKeyUdp;
+		std::uint64_t until;
+	};
 
 	std::vector<PendingEntry>::iterator FindPending(std::uint32_t serverIp, std::uint32_t targetId)
 	{
@@ -1031,6 +1048,9 @@ private:
 					  m_cooldowns.end(),
 					  [now](const Cooldown &cooldown) { return now >= cooldown.until; }),
 			m_cooldowns.end());
+		while (!m_answeredKeys.empty() && now >= m_answeredKeys.front().until) {
+			m_answeredKeys.pop_front();
+		}
 		for (auto it = m_pending.begin(); it != m_pending.end();) {
 			if (now >= it->sentAt && now - it->sentAt >= kForeignRequestTimeoutMs) {
 				AddCooldown(it->serverIp,
@@ -1091,6 +1111,7 @@ private:
 	std::vector<PendingEntry> m_pending;
 	std::deque<ServerBudget> m_budgets;
 	std::deque<Cooldown> m_cooldowns;
+	std::deque<AnsweredKey> m_answeredKeys;
 };
 } // namespace NatServerHolePunch
 #endif // ENABLE_NATT_SERVER_COORDINATION
