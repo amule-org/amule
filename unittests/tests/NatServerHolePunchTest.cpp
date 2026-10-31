@@ -908,8 +908,8 @@ TEST(NatServerHolePunch, AnUnansweredCrossServerTargetCoolsDown)
 {
 	ForeignCallbackRequests requests;
 	ASSERT_TRUE(requests.TryStart(kForeignServer, 42, 201, 4662, std::nullopt, 0));
-	ASSERT_FALSE(requests.TakeAnswer(kForeignServer, 201, ForeignHash(1), kForeignRequestTimeoutMs)
-			.has_value());
+	const std::uint64_t timedOut = kForeignRequestTimeoutMs;
+	ASSERT_FALSE(requests.TakeAnswer(kForeignServer, 201, ForeignHash(1), timedOut).has_value());
 	ASSERT_FALSE(
 		requests.TryStart(kForeignServer, 42, 201, 4662, std::nullopt, kForeignRequestTimeoutMs + 1));
 	ASSERT_FALSE(requests.TryStart(kForeignServer,
