@@ -393,7 +393,9 @@ int main(int argc, char *argv[])
 	string config_path;
 	string category = "";
 	for (int i = 1; i < argc; i++) {
-		string arg = strip(Unescape(string(argv[i])));
+		const string input = strip(string(argv[i]));
+		// Split magnet fields before decoding escaped delimiters.
+		string arg = CMagnetURI::IsMagnet(input) ? input : strip(Unescape(input));
 
 		if (CMagnetURI::IsMagnet(arg)) {
 			string ed2k = CMagnetED2KConverter(arg);

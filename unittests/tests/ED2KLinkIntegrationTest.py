@@ -44,6 +44,15 @@ def run(binary, root):
         log = (root / 'logfile').read_text(errors='replace')
         assert 'Downloading big.bin' in log, log[-2000:]
         assert 'GetCatPath' not in log, 'an out-of-range category reached GetCatPath'
+
+        magnet_hash = '89ABCDEF01234567' * 2
+        for bad in (f'magnet:?dn=bad|field&xt=urn:ed2k:{magnet_hash}&xl=42',):
+            assert add_link(ec, bad) == C['EC_OP_FAILED'], bad
+        magnet = (f'magnet:?dn=name%26xl%3D999%7Cfile.bin&xt=urn%3Aed2k%3A{magnet_hash}'
+                  '&xl=%34%32')
+        assert add_link(ec, magnet) == C['EC_OP_NOOP'], magnet
+        log = (root / 'logfile').read_text(errors='replace')
+        assert 'Downloading name&xl=999|file.bin' in log, log[-2000:]
         ec.sock.close()
     finally:
         stop_daemon(proc)
@@ -63,6 +72,22 @@ def check_helper(helper):
         plain = subprocess.run([helper, '-c', str(root), link], capture_output=True, timeout=30)
         assert plain.returncode == 0, plain
         assert links.read_text().splitlines() == [link], links.read_text()
+
+        # Magnets must reach the same validated converter without a whole-query
+        # decode making %26 a new magnet field or %7C a native eD2k separator.
+        name = 'name%26xl%3D999%7Cfile.bin'
+        magnet = (f'magnet:?dn={name}&xt=urn%3Aed2k%3A{"0123456789ABCDEF" * 2}'
+                  '&xl=%34%32')
+        converted = subprocess.run([helper, '-c', str(root), magnet],
+                                   capture_output=True, timeout=30)
+        assert converted.returncode == 0, converted
+        expected = f'ed2k://|file|{name}|42|{"0123456789ABCDEF" * 2}|/'
+        assert links.read_text().splitlines() == [link, expected], links.read_text()
+        for bad in (f'magnet:?dn=bad|field&xt=urn:ed2k:{"0123456789ABCDEF" * 2}&xl=42',):
+            rejected = subprocess.run([helper, '-c', str(root), bad],
+                                      capture_output=True, timeout=30)
+            assert rejected.returncode != 0, rejected
+            assert links.read_text().splitlines() == [link, expected], links.read_text()
 
 
 def main():

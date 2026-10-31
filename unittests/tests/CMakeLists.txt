@@ -1893,6 +1893,15 @@ target_link_libraries (MagnetURITest
 	muleunit
 )
 
+# Share one import contract across the GUI/daemon and standalone link handler.
+foreach (_magnet_mode IN ITEMS MagnetImportTest MagnetImportStdTest)
+	add_executable (${_magnet_mode} MagnetImportTest.cpp ${CMAKE_SOURCE_DIR}/src/MagnetURI.cpp)
+	target_include_directories (${_magnet_mode} PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include)
+	target_link_libraries (${_magnet_mode} muleunit mulecommon)
+	add_test (NAME ${_magnet_mode} COMMAND ${_magnet_mode})
+endforeach ()
+target_compile_definitions (MagnetImportStdTest PRIVATE USE_STD_STRING)
+
 add_executable (SearchHistoryTest
 	SearchHistoryTest.cpp
 	${CMAKE_SOURCE_DIR}/src/SearchHistory.cpp
