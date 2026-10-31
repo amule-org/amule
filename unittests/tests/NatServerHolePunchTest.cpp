@@ -492,6 +492,65 @@ TEST(NatServerHolePunch, KeepsLowIdServerSourcesOnlyFromOurOwnCapableServer)
 	ASSERT_FALSE(ShouldKeepLowIdServerSource(notCapable));
 }
 
+TEST(NatServerHolePunch, KeepsALowIdSourceOfAnotherServerThatTakesCrossServerRequests)
+{
+	LowIdServerSourceFacts facts;
+	facts.weAreLowId = true;
+	facts.extensionAnnounced = true;
+	facts.sourceServerTakesForeignCallback = true;
+	// From source exchange or another server's answer: neither origin nor server is ours.
+	ASSERT_TRUE(ShouldKeepLowIdServerSource(facts));
+
+	LowIdServerSourceFacts settingOff = facts;
+	settingOff.extensionAnnounced = false;
+	ASSERT_FALSE(ShouldKeepLowIdServerSource(settingOff));
+
+	LowIdServerSourceFacts serverDoesNotTakeThem = facts;
+	serverDoesNotTakeThem.sourceServerTakesForeignCallback = false;
+	ASSERT_FALSE(ShouldKeepLowIdServerSource(serverDoesNotTakeThem));
+
+	LowIdServerSourceFacts weAreHighId = facts;
+	weAreHighId.weAreLowId = false;
+	ASSERT_FALSE(ShouldKeepLowIdServerSource(weAreHighId));
+
+	// A source on our own server is the same-server rule's alone.
+	LowIdServerSourceFacts ourServer = facts;
+	ourServer.sourceServerIsOurCurrentServer = true;
+	ASSERT_FALSE(ShouldKeepLowIdServerSource(ourServer));
+}
+
+TEST(NatServerHolePunch, AServerTakesCrossServerRequestsOnlyWithItsFlagAndAKey)
+{
+	ForeignServerFacts facts;
+	facts.inServerList = true;
+	facts.udpFlags = 0x100000 | 0x200;
+	facts.serverKeyUdp = 42;
+	facts.supportsObfuscationUdp = true;
+	facts.cryptLayerUdpEnabled = true;
+	ASSERT_TRUE(ServerTakesForeignCallback(facts));
+
+	// A source's server address is learnt from a peer: only one we list ourselves is asked.
+	ForeignServerFacts notListed = facts;
+	notListed.inServerList = false;
+	ASSERT_FALSE(ServerTakesForeignCallback(notListed));
+
+	ForeignServerFacts noFlag = facts;
+	noFlag.udpFlags = 0x200;
+	ASSERT_FALSE(ServerTakesForeignCallback(noFlag));
+
+	ForeignServerFacts noKey = facts;
+	noKey.serverKeyUdp = 0;
+	ASSERT_FALSE(ServerTakesForeignCallback(noKey));
+
+	ForeignServerFacts noObfuscation = facts;
+	noObfuscation.supportsObfuscationUdp = false;
+	ASSERT_FALSE(ServerTakesForeignCallback(noObfuscation));
+
+	ForeignServerFacts cryptOff = facts;
+	cryptOff.cryptLayerUdpEnabled = false;
+	ASSERT_FALSE(ServerTakesForeignCallback(cryptOff));
+}
+
 TEST(NatServerHolePunch, OnlyAServerWithTheExtensionFlagOffersTheExtension)
 {
 	ASSERT_TRUE(ServerOffersHolePunchExtension(0x100000));

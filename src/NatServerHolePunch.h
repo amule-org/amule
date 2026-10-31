@@ -29,6 +29,7 @@
 #include "NetworkFunctions.h" // Needed for IsLowID
 #include "include/protocol/Protocols.h"
 #include "include/protocol/ed2k/Client2Server/TCP.h" // Needed for SRV_TCPFLG_LOWID_HOLEPUNCH
+#include "include/protocol/ed2k/Client2Server/UDP.h" // Needed for SRV_UDPFLG_FOREIGN_NAT_CALLBACK
 
 #include <algorithm>
 #include <array>
@@ -243,16 +244,44 @@ struct LowIdServerSourceFacts
 	bool weAreLowId = false;
 	bool serverAnnouncesHolePunch = false;
 	bool settingEnabled = false;
+	// We announce the hole-punch extension (ShouldAnnounceHolePunchExtension()).
+	bool extensionAnnounced = false;
+	// The source's server is not ours but takes a cross-server request (ServerTakesForeignCallback()).
+	bool sourceServerTakesForeignCallback = false;
 };
 
-// Whether a LowID server source survives CanAddSource's LowID-while-firewalled drop. ed2k-server
-// sends LowID sources to any LowID requester unconditionally (no opt-in flag needed, confirmed
-// against get_sources.rs), so this only has to confirm the source came from our own current,
-// hole-punch-capable server and that the runtime setting is on.
+// What we know of a source's server, to ask it for a cross-server NAT callback (ed2k-server 0.9.86).
+struct ForeignServerFacts
+{
+	bool inServerList = false;
+	std::uint32_t udpFlags = 0;
+	std::uint32_t serverKeyUdp = 0;
+	bool supportsObfuscationUdp = false;
+	bool cryptLayerUdpEnabled = false;
+};
+
+// A source's server address is learnt from a peer, so only a server in our own list is asked. The
+// request is server-key obfuscated, so it also needs that server's UDP key for our address.
+inline bool ServerTakesForeignCallback(const ForeignServerFacts &facts)
+{
+	return facts.inServerList && (facts.udpFlags & SRV_UDPFLG_FOREIGN_NAT_CALLBACK) != 0 &&
+	       facts.serverKeyUdp != 0 && facts.supportsObfuscationUdp && facts.cryptLayerUdpEnabled;
+}
+
+// Whether a LowID source survives CanAddSource's LowID-while-firewalled drop. Since ed2k-server
+// 0.9.86 (ed2k-server#49) a LowID requester with NAT traversal gets only LowID sources that have it
+// too, and aMule qualifies through the UDP port it sends at login while LowIdHolePunch is on. Kept
+// are sources from our own hole-punch-capable server, and sources of another server that takes a
+// cross-server request, which we can ask while we announce the extension.
 inline bool ShouldKeepLowIdServerSource(const LowIdServerSourceFacts &facts)
 {
-	return facts.settingEnabled && facts.originIsLocalServer && facts.sourceServerIsOurCurrentServer &&
-	       facts.weAreLowId && facts.serverAnnouncesHolePunch;
+	if (!facts.weAreLowId) {
+		return false;
+	}
+	if (facts.sourceServerIsOurCurrentServer) {
+		return facts.settingEnabled && facts.originIsLocalServer && facts.serverAnnouncesHolePunch;
+	}
+	return facts.extensionAnnounced && facts.sourceServerTakesForeignCallback;
 }
 
 // Server-coordinated punch state.

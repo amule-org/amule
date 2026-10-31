@@ -1996,6 +1996,59 @@ bool CPartFile::CanAddSource(uint32 userid,
 	return true;
 }
 
+namespace
+{
+// Whether a LowID source of that server survives CanAddSource's LowID-while-firewalled drop because
+// a server-coordinated NAT traversal can reach it. False in builds without one.
+bool ShouldKeepNatTraversalSource([[maybe_unused]] uint32 serverip,
+	[[maybe_unused]] uint16 serverport,
+	[[maybe_unused]] unsigned origin)
+{
+#ifdef ENABLE_NATT_SERVER_COORDINATION
+	if (theApp->serverconnect == nullptr || !theApp->serverconnect->IsConnected()) {
+		return false;
+	}
+	// A server is either Lugdunum or ed2k-server: each keeps a LowID source it would
+	// otherwise call back / hole-punch, so the two checks are independent and only one can apply
+	// to a given current server.
+	const CServer *current = theApp->serverconnect->GetCurrentServer();
+	const bool originIsLocalServer = origin == SF_LOCAL_SERVER;
+	const bool sourceServerIsOurCurrentServer =
+		current != nullptr && current->GetIP() == serverip && current->GetPort() == serverport;
+	const bool weAreLowId = theApp->serverconnect->IsLowID();
+
+	LugdunumNatTraversal::LowIdServerSourceFacts lugdunumFacts;
+	lugdunumFacts.originIsLocalServer = originIsLocalServer;
+	lugdunumFacts.sourceServerIsOurCurrentServer = sourceServerIsOurCurrentServer;
+	lugdunumFacts.weAreLowId = weAreLowId;
+	lugdunumFacts.serverCallbackCapable = current != nullptr && current->IsLugdunumNatCallbackActive();
+	lugdunumFacts.settingEnabled = thePrefs::IsLugdunumNatCallbackEnabled();
+
+#ifdef AMULE_UTP_TRANSPORT
+	const bool utpAvailable = true;
+#else
+	const bool utpAvailable = false;
+#endif
+	NatServerHolePunch::LowIdServerSourceFacts holePunchFacts;
+	holePunchFacts.originIsLocalServer = originIsLocalServer;
+	holePunchFacts.sourceServerIsOurCurrentServer = sourceServerIsOurCurrentServer;
+	holePunchFacts.weAreLowId = weAreLowId;
+	holePunchFacts.serverAnnouncesHolePunch = current != nullptr && current->SupportsLowIdHolePunch();
+	holePunchFacts.settingEnabled = thePrefs::IsLowIdHolePunchEnabled();
+	holePunchFacts.extensionAnnounced = NatServerHolePunch::ShouldAnnounceHolePunchExtension(
+		thePrefs::IsLowIdHolePunchEnabled(), thePrefs::IsLugdunumNatCallbackEnabled(), utpAvailable);
+	holePunchFacts.sourceServerTakesForeignCallback =
+		!sourceServerIsOurCurrentServer && holePunchFacts.extensionAnnounced && weAreLowId &&
+		theApp->serverconnect->ForeignCallbackServer(serverip, serverport) != nullptr;
+
+	return LugdunumNatTraversal::ShouldKeepLowIdServerSource(lugdunumFacts) ||
+	       NatServerHolePunch::ShouldKeepLowIdServerSource(holePunchFacts);
+#else
+	return false;
+#endif
+}
+} // namespace
+
 void CPartFile::AddSources(CMemFile &sources,
 	uint32 serverip,
 	uint16 serverport,
@@ -2007,39 +2060,7 @@ void CPartFile::AddSources(CMemFile &sources,
 	uint8 debug_lowiddropped = 0;
 	uint8 debug_possiblesources = 0;
 
-	bool keepLowIdSources = false;
-#ifdef ENABLE_NATT_SERVER_COORDINATION
-	// A server is either Lugdunum or ed2k-server: each keeps a LowID source it would
-	// otherwise call back / hole-punch, so the two checks are independent and only one can apply
-	// to a given current server.
-	if (theApp->serverconnect != nullptr && theApp->serverconnect->IsConnected()) {
-		const CServer *current = theApp->serverconnect->GetCurrentServer();
-		const bool originIsLocalServer = origin == SF_LOCAL_SERVER;
-		const bool sourceServerIsOurCurrentServer = current != nullptr &&
-							    current->GetIP() == serverip &&
-							    current->GetPort() == serverport;
-		const bool weAreLowId = theApp->serverconnect->IsLowID();
-
-		LugdunumNatTraversal::LowIdServerSourceFacts lugdunumFacts;
-		lugdunumFacts.originIsLocalServer = originIsLocalServer;
-		lugdunumFacts.sourceServerIsOurCurrentServer = sourceServerIsOurCurrentServer;
-		lugdunumFacts.weAreLowId = weAreLowId;
-		lugdunumFacts.serverCallbackCapable =
-			current != nullptr && current->IsLugdunumNatCallbackActive();
-		lugdunumFacts.settingEnabled = thePrefs::IsLugdunumNatCallbackEnabled();
-
-		NatServerHolePunch::LowIdServerSourceFacts holePunchFacts;
-		holePunchFacts.originIsLocalServer = originIsLocalServer;
-		holePunchFacts.sourceServerIsOurCurrentServer = sourceServerIsOurCurrentServer;
-		holePunchFacts.weAreLowId = weAreLowId;
-		holePunchFacts.serverAnnouncesHolePunch =
-			current != nullptr && current->SupportsLowIdHolePunch();
-		holePunchFacts.settingEnabled = thePrefs::IsLowIdHolePunchEnabled();
-
-		keepLowIdSources = LugdunumNatTraversal::ShouldKeepLowIdServerSource(lugdunumFacts) ||
-				   NatServerHolePunch::ShouldKeepLowIdServerSource(holePunchFacts);
-	}
-#endif
+	const bool keepLowIdSources = ShouldKeepNatTraversalSource(serverip, serverport, origin);
 
 	if (m_stopped) {
 		// since we may received multiple search source UDP results we have to "consume" all data of
@@ -3486,7 +3507,13 @@ void CPartFile::AddClientSources(CMemFile *sources,
 		}
 
 		// additionally check for LowID and own IP
-		if (!CanAddSource(dwID, nPort, dwServerIP, nServerPort, NULL, false)) {
+		if (!CanAddSource(dwID,
+			    nPort,
+			    dwServerIP,
+			    nServerPort,
+			    NULL,
+			    false,
+			    ShouldKeepNatTraversalSource(dwServerIP, nServerPort, SF_SOURCE_EXCHANGE))) {
 			AddDebugLogLineN(logIPFilter,
 				CFormat("Ignored source (IP=%s) received via source exchange") %
 					Uint32toStringIP(dwIDED2K));

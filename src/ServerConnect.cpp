@@ -843,6 +843,24 @@ void CServerConnect::ResetLowIdHolePunchState()
 	m_holePunchKeepaliveBurst = NatServerHolePunch::KeepaliveBurst();
 }
 
+CServer *CServerConnect::ForeignCallbackServer(uint32 serverIp, uint16 serverPort)
+{
+	if (IsLocalServer(serverIp, serverPort)) {
+		return nullptr;
+	}
+	CServer *server = theApp->serverlist->GetServerByIPTCP(serverIp, serverPort);
+	if (server == nullptr) {
+		return nullptr;
+	}
+	NatServerHolePunch::ForeignServerFacts facts;
+	facts.inServerList = true;
+	facts.udpFlags = server->GetUDPFlags();
+	facts.serverKeyUdp = server->GetServerKeyUDP();
+	facts.supportsObfuscationUdp = server->SupportsObfuscationUDP();
+	facts.cryptLayerUdpEnabled = thePrefs::IsServerCryptLayerUDPEnabled();
+	return NatServerHolePunch::ServerTakesForeignCallback(facts) ? server : nullptr;
+}
+
 bool CServerConnect::IsHolePunchExtensionActive()
 {
 	CServer *server = GetCurrentServer();
