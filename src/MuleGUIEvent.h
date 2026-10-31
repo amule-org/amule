@@ -52,6 +52,9 @@ public:
 		wxASSERT(m_functor);
 	}
 
+	CMuleGUIEvent(const CMuleGUIEvent &) = delete;
+	CMuleGUIEvent &operator=(const CMuleGUIEvent &) = delete;
+
 	/** Destructor, frees the functor object. */
 	virtual ~CMuleGUIEvent() { delete m_functor; }
 
@@ -71,11 +74,6 @@ public:
 	virtual wxEvent *Clone() const { return new CMuleGUIEvent(m_functor->Clone(), m_always); }
 
 private:
-	/** Not copyable. */
-	CMuleGUIEvent(const CMuleGUIEvent &);
-	/** Not assignable. */
-	CMuleGUIEvent &operator=(const CMuleGUIEvent &);
-
 	//! Whether this one runs regardless of the GUI's state; see IsAlways().
 	bool m_always;
 
