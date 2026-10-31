@@ -24,6 +24,8 @@ jobs:
     timeout-minutes: 15
     strategy:
       fail-fast: false
+      # One session at a time on master pushes, like the packaging matrices.
+      max-parallel: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && 1 || 10 }}
       matrix:
         session: [x11, gnome-wayland, kde-wayland]
     steps:

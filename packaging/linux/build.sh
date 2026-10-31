@@ -94,11 +94,9 @@ build_appimage() {
         fi
     fi
     # Optional buildx layer cache, mirroring the static track. CI sets
-    # APPIMAGE_CACHE_SCOPE for non-release runs so the wxWidgets, pupnp and
-    # appindicator layers persist across runs -- wx alone is minutes of
-    # compile that no ccache covers, because it happens inside the image
-    # build. Unset = plain build, so release (workflow_call) builds
-    # cold-compile, same rule as the static track.
+    # APPIMAGE_CACHE_SCOPE so the wxWidgets, pupnp and appindicator layers
+    # persist across runs -- wx alone is minutes of compile that no ccache
+    # covers, because it happens inside the image build. Unset = plain build.
     local -a cache_args=()
     if [[ -n "${APPIMAGE_CACHE_SCOPE:-}" ]]; then
         cache_args+=(--cache-from "type=gha,scope=${APPIMAGE_CACHE_SCOPE}")
@@ -290,9 +288,8 @@ build_static() {
     outdir="$(mktemp -d)"
 
     # Optional buildx layer cache — the ccache analogue for this track.
-    # CI sets STATIC_CACHE_SCOPE for non-release runs so the dep layers
-    # (Crypto++ / wxWidgets / pupnp / apk) persist via the gha backend;
-    # unset = plain build, so release (workflow_call) builds cold-compile.
+    # CI sets STATIC_CACHE_SCOPE so the dep layers (Crypto++ / wxWidgets /
+    # pupnp / apk) persist via the gha backend; unset = plain build.
     local -a cache_args=()
     if [[ -n "${STATIC_CACHE_SCOPE:-}" ]]; then
         cache_args+=(--cache-from "type=gha,scope=${STATIC_CACHE_SCOPE}")
