@@ -27,6 +27,7 @@
 #ifndef KADEMLIA_NET_PACKETTRACKING_H
 #define KADEMLIA_NET_PACKETTRACKING_H
 
+#include <cstddef>
 #include <map>
 #include <list>
 #include "../utils/UInt128.h"
@@ -56,6 +57,8 @@ struct TrackPacketsIn_Struct
 	struct TrackedRequestIn_Struct
 	{
 		uint32_t m_count;
+		uint32_t m_verifiedCount;
+		uint64_t m_verifiedFirstAdded;
 		uint64_t m_firstAdded;
 		uint8_t m_opcode;
 		bool m_dbgLogged;
@@ -76,13 +79,23 @@ struct TrackPacketsIn_Struct
 class CPacketTracking
 {
 public:
-	CPacketTracking() noexcept { lastTrackInCleanup = 0; }
+	enum class IncomingPacket
+	{
+		Allowed,
+		Drop,
+		MassiveFlood
+	};
+
+	CPacketTracking()
+	: lastTrackInCleanup(0)
+	{
+	}
 	virtual ~CPacketTracking();
 
 protected:
 	void AddTrackedOutPacket(uint32_t ip, uint8_t opcode);
 	bool IsOnOutTrackList(uint32_t ip, uint8_t opcode, bool dontRemove = false);
-	bool InTrackListIsAllowedPacket(uint32_t ip, uint8_t opcode, bool validReceiverkey);
+	IncomingPacket InTrackListIsAllowedPacket(uint32_t ip, uint8_t opcode, bool validReceiverKey);
 	void InTrackListCleanup();
 	void AddLegacyChallenge(
 		const CUInt128 &contactID, const CUInt128 &challengeID, uint32_t ip, uint8_t opcode);

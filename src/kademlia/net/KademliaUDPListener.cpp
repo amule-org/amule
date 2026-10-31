@@ -289,7 +289,17 @@ void CKademliaUDPListener::ProcessPacket(const uint8_t *data,
 	const uint8_t *packetData = data + 2;
 	uint32_t lenPacket = lenData - 2;
 
-	if (!InTrackListIsAllowedPacket(ip, opcode, validReceiverKey)) {
+	const IncomingPacket admission = InTrackListIsAllowedPacket(ip, opcode, validReceiverKey);
+	if (admission != IncomingPacket::Allowed) {
+		// A receiver key is evidence against off-path source spoofing, not proof of
+		// a Kad identity. Never let an unkeyed flood evict somebody else's contact.
+		if (admission == IncomingPacket::MassiveFlood && validReceiverKey) {
+			theApp->clientlist->AddBannedClient(wxUINT32_SWAP_ALWAYS(ip));
+			CContact *contact = CKademlia::GetRoutingZone()->GetContact(ip, port, false);
+			if (contact != nullptr) {
+				contact->Expire();
+			}
+		}
 		return;
 	}
 
