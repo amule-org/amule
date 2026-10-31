@@ -986,6 +986,14 @@ if (NEED_LIB_MULEAPPCORE)
 		PUBLIC webcommon
 	)
 
+	if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND GLIB_FOUND)
+		# PlatformSpecific.cpp lives in this library, not in the executable
+		# targets that already use GIO for the Flatpak Background portal.
+		target_compile_definitions (muleappcore PRIVATE HAVE_GIO)
+		target_include_directories (muleappcore PRIVATE ${GLIB_INCLUDE_DIRS})
+		target_link_libraries (muleappcore PRIVATE ${GLIB_LIBRARIES})
+	endif()
+
 	# The GeoIP resolver (IP2Country.cpp + geoip/MaxMindDBDatabase.cpp) now
 	# lives in the core library so the daemon can resolve country codes for
 	# the EC tag (#439 / #440), not just the GUI. It needs libmaxminddb.
