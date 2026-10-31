@@ -245,10 +245,6 @@ jobs:
           cat "$(command -v node)" > /dev/null
           xvfb-run -a ctest ${{ env.ctest_flags }} --timeout 10 -LE '^(slow|integration|reverify)$' &&
           xvfb-run -a ctest ${{ env.ctest_flags }} --timeout 60 -L '^slow$'
-      - name: run integration tests
-        run: ctest ${{ env.ctest_flags }} --timeout 300 --no-tests=error -L '^integration$'
-      - name: run shared-file reverify integration test
-        run: ctest ${{ env.ctest_flags }} --timeout 300 --no-tests=error -L '^reverify$'
       # amuleapi_curl_smoke drives these two against a live daemon rather than
       # compiling its own copy, with the media helper amuled finds beside itself.
       # Release only: the smoke times SSE windows, and a Debug daemon makes those flaky.
@@ -366,9 +362,13 @@ jobs:
           cat "$(command -v node)" > /dev/null
           xvfb-run -a ctest ${{ env.ctest_flags }} --timeout 10 -LE '^(slow|integration|reverify)$' &&
           xvfb-run -a ctest ${{ env.ctest_flags }} --timeout 60 -L '^slow$'
+      # The daemon tests behave the same on every Ubuntu build, so they run once:
+      # here, with asserts and every experimental feature compiled in.
       - name: run integration tests
+        if: matrix.build_type == 'Debug'
         run: ctest ${{ env.ctest_flags }} --timeout 300 --no-tests=error -L '^integration$'
       - name: run shared-file reverify integration test
+        if: matrix.build_type == 'Debug'
         run: ctest ${{ env.ctest_flags }} --timeout 300 --no-tests=error -L '^reverify$'
 
   # Configures with the oldest CMake that CMakeLists.txt declares, so the floor stays
