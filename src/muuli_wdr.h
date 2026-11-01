@@ -435,6 +435,7 @@ wxSizer *PreferencesStatisticsTab(wxWindow *parent, bool call_fit = TRUE, bool s
 #define IDC_KADSTRICTAICHPUBLISHERS 10435
 #define IDC_SOURCEREASKTIME 10432
 #define IDC_TWEAKS_RESET 10433
+#define IDC_WRITEBUFFERLIMIT 10540
 wxSizer *PreferencesaMuleTweaksTab(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 #define IDC_SKIN 10199

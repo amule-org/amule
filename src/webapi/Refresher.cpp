@@ -3010,6 +3010,10 @@ void ParsePreferencesFromPacket(
 	if (!resp)
 		return;
 
+	// A previous connection's value must not imply support on an older daemon.
+	out_prefs.advanced.write_buffer_limit_supported = false;
+	out_prefs.advanced.write_buffer_limit_mebibytes = 0;
+
 	// Each prefs sub-section is one top-level CECEmptyTag with named child
 	// fields; the table says which section every field lives in.
 	for (std::size_t i = 0; i < PrefSchemaSize(); ++i) {

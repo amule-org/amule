@@ -21,7 +21,6 @@ class WriteBufferBudget
 	};
 
 public:
-	static constexpr uint64_t kLimit = 16 * 1024 * 1024;
 	class Lease
 	{
 	public:
@@ -45,10 +44,6 @@ public:
 	};
 	using Credit = std::shared_ptr<Lease>;
 
-	explicit WriteBufferBudget(uint64_t limit = kLimit)
-	: m_limit(limit)
-	{
-	}
 	static WriteBufferBudget &Get()
 	{
 		static WriteBufferBudget budget;
@@ -68,25 +63,24 @@ public:
 		return m_state->used;
 	}
 	// Stop selection at the budget, and resume below half.
-	bool IsPressured() const
+	bool IsPressured(uint64_t limit) const
 	{
 		std::lock_guard<std::mutex> lock(m_state->mutex);
-		if (m_state->used >= m_limit) {
+		if (m_state->used >= limit) {
 			m_state->pressured = true;
-		} else if (m_state->used <= m_limit / 2) {
+		} else if (m_state->used <= limit / 2) {
 			m_state->pressured = false;
 		}
 		return m_state->pressured;
 	}
 	// Flush much earlier, to leave room for arrivals between main-thread ticks.
-	bool ShouldFlush() const
+	bool ShouldFlush(uint64_t limit) const
 	{
 		std::lock_guard<std::mutex> lock(m_state->mutex);
-		return m_state->used >= m_limit / 8;
+		return m_state->used >= limit / 8;
 	}
 
 private:
-	uint64_t m_limit;
 	std::shared_ptr<State> m_state = std::make_shared<State>();
 };
 #endif

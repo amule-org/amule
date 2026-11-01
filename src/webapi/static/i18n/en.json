@@ -1037,6 +1037,8 @@
   "prefs_field_advanced_kad_max_concurrent_source_search_count": "Concurrent Kad source lookups",
   "prefs_field_advanced_kad_source_reask_minutes": "Kad source re-search interval (minutes)",
   "prefs_field_advanced_source_reask_minutes": "Source re-ask interval (minutes)",
+  "prefs_field_advanced_write_buffer_limit_mebibytes_help": "A larger limit can smooth short disk stalls at the cost of more memory. Already requested data can exceed this limit.",
+  "prefs_field_advanced_write_buffer_limit_mebibytes": "Download write buffer limit (MiB)",
   "prefs_field_advanced_file_buffer_bytes": "File buffer size (bytes)",
   "prefs_field_advanced_max_upload_queue_client_count": "Upload queue size",
   "prefs_field_advanced_server_keepalive_timeout_minutes": "Server connection refresh interval (minutes, 0 = disable)",
