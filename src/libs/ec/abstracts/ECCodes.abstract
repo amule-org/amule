@@ -536,8 +536,8 @@ EC_TAG_SEARCHFILE                         0x0700
 ## Whether this search still owns the active eD2k slot, independent of Kad.
 	EC_TAG_SEARCH_ED2K_ACTIVE                 0x071A
 ## Optional SEARCH_START filters, also reported by SEARCH_LIST for recorded parameters.
-## Integers: kbps (0..1000000) and seconds (0..86400); zero means no filter.
-## Strings: metadata terms; empty means no filter. Invalid types/ranges are rejected.
+## Integers: kbps (0..1000000) and seconds (0..86400); zero means no filter. Out of range is rejected.
+## Strings: metadata terms; empty means no filter.
 	EC_TAG_SEARCH_MIN_BITRATE                 0x071B
 	EC_TAG_SEARCH_MIN_LENGTH                  0x071C
 	EC_TAG_SEARCH_CODEC                       0x071D

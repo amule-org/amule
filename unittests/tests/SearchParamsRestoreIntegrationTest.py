@@ -173,8 +173,7 @@ def round_trip(binary, root):
     try:
         assert ec.call(C['EC_OP_KAD_START'])[0] == C['EC_OP_NOOP']
         full = start_search(ec, **FULL)
-        # Out-of-range integers must fail before starting
-        # or replacing a search. Exercise the daemon, not just the decoder helper.
+        # Out-of-range integers must fail without starting or replacing a search.
         before = set(search_list(ec))
         bad_children = [uint64(C['EC_TAG_SEARCH_MIN_BITRATE'], 1 << 32),
                         uint64(C['EC_TAG_SEARCH_MIN_LENGTH'], 86401)]
