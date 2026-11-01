@@ -42,6 +42,8 @@ function (SetTranslationOption PoName DefaultMode)
 	cmake_dependent_option (TRANSLATION_${PoName} "Build ${LangName} translation" ${DefaultMode} ENABLE_NLS OFF)
 endfunction()
 
+# Start empty: the cached list from the previous configure would otherwise grow on every run.
+set (AMULE_TRANSLATIONS "")
 foreach (PO_FILE ${PO_FILES})
 	string (REGEX REPLACE ".po" "" PO_FILE ${PO_FILE})
 
@@ -77,6 +79,14 @@ foreach (PO_FILE ${PO_FILES})
 				DESTINATION ${CMAKE_INSTALL_BINDIR}/locale/${PO_FILE}/LC_MESSAGES/
 				RENAME amule.mo
 			)
+			if (COMMAND amule_wx_catalog)
+				amule_wx_catalog (${PO_FILE} _wx_mo)
+				if (_wx_mo)
+					install (FILES "${_wx_mo}"
+						DESTINATION ${CMAKE_INSTALL_BINDIR}/locale/${PO_FILE}/LC_MESSAGES/
+					)
+				endif()
+			endif()
 		else()
 			install (FILES ${CMAKE_CURRENT_BINARY_DIR}/${PO_FILE}.gmo
 				DESTINATION ${CMAKE_INSTALL_LOCALEDIR}/${PO_FILE}/LC_MESSAGES/

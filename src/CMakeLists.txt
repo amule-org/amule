@@ -238,9 +238,8 @@ if (APPLE)
 		"[{\"CFBundleTypeName\": \"eMule Collection\", \"CFBundleTypeRole\": \"Viewer\", \"LSHandlerRank\": \"Default\", \"CFBundleTypeExtensions\": [\"emulecollection\"], \"LSItemContentTypes\": [\"org.amule.emulecollection\"], \"CFBundleTypeIconFile\": \"amule.icns\"}]")
 
 	# Each bundle needs its own catalogs under Contents/Resources/locale, the lookup prefix
-	# InitLocale() adds on macOS: aMule's, and wxWidgets' own (wxstd) for the menu items and
-	# stock labels wx creates. wx's install prefix exists only on the build machine.
-	# CFBundleLocalizations makes AppKit localize the menus it supplies itself, such as the
+	# InitLocale() adds on macOS: aMule's, and wxWidgets' own for the menu items and stock
+	# labels wx creates. CFBundleLocalizations makes AppKit localize the menus it supplies itself, such as the
 	# text field context menu; it falls back to English for a bundle that declares none.
 	function (amule_bundle_translations target)
 		if (NOT (ENABLE_NLS AND AMULE_TRANSLATIONS))
@@ -248,10 +247,6 @@ if (APPLE)
 		endif()
 		add_dependencies (${target} pofiles)
 
-		execute_process (COMMAND ${wxWidgets_CONFIG_EXECUTABLE} --prefix
-			OUTPUT_VARIABLE _wx_prefix OUTPUT_STRIP_TRAILING_WHITESPACE)
-		set (_wx_locale "${_wx_prefix}/share/locale")
-		set (_wx_mo "wxstd-${wxWidgets_VERSION_MAJOR}.${wxWidgets_VERSION_MINOR}.mo")
 		set (_localizations "en")
 
 		foreach (_lang IN LISTS AMULE_TRANSLATIONS)
@@ -265,21 +260,13 @@ if (APPLE)
 				VERBATIM
 			)
 
-			# wx spells some languages differently: aMule's gl and pt_PT are its gl_ES and pt.
-			string (REGEX REPLACE "_.*" "" _base "${_lang}")
-			file (GLOB _wx_variants "${_wx_locale}/${_base}_*/LC_MESSAGES/${_wx_mo}")
-			foreach (_wx IN ITEMS
-					"${_wx_locale}/${_lang}/LC_MESSAGES/${_wx_mo}"
-					"${_wx_locale}/${_base}/LC_MESSAGES/${_wx_mo}"
-					${_wx_variants})
-				if (EXISTS "${_wx}")
-					add_custom_command (TARGET ${target} POST_BUILD
-						COMMAND ${CMAKE_COMMAND} -E copy_if_different "${_wx}" "${_mo_dir}/${_wx_mo}"
-						VERBATIM
-					)
-					break()
-				endif()
-			endforeach()
+			amule_wx_catalog (${_lang} _wx)
+			if (_wx)
+				add_custom_command (TARGET ${target} POST_BUILD
+					COMMAND ${CMAKE_COMMAND} -E copy_if_different "${_wx}" "${_mo_dir}/${AMULE_WX_CATALOG}"
+					VERBATIM
+				)
+			endif()
 
 			list (APPEND _localizations "${_lang}")
 		endforeach()
