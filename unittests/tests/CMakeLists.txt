@@ -2950,6 +2950,24 @@ target_link_libraries (ECClientCapabilitiesTest
 	mulecommon
 )
 
+# Media filter round trip through the real EC search-request constructor.
+add_executable (SearchMetadataTest
+	SearchMetadataTest.cpp
+	${CMAKE_SOURCE_DIR}/src/OtherFunctions.cpp
+	${CMAKE_SOURCE_DIR}/src/kademlia/utils/UInt128.cpp
+	${CMAKE_SOURCE_DIR}/src/LoggerConsole.cpp
+)
+add_test (NAME SearchMetadataTest COMMAND SearchMetadataTest)
+target_include_directories (SearchMetadataTest PRIVATE
+	${CMAKE_BINARY_DIR}
+	${CMAKE_SOURCE_DIR}/src
+	${CMAKE_SOURCE_DIR}/src/include
+	${CMAKE_SOURCE_DIR}/src/libs
+	${CMAKE_BINARY_DIR}/src/libs
+	${CMAKE_BINARY_DIR}/src/libs/ec/cpp
+)
+target_link_libraries (SearchMetadataTest muleunit ec mulecommon mulesocket)
+
 # Duplicate-search identity and lifecycle eligibility, without a GUI or network.
 add_executable (SearchRequestTest SearchRequestTest.cpp)
 add_test (NAME SearchRequestTest COMMAND SearchRequestTest)

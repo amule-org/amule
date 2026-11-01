@@ -1737,6 +1737,34 @@ for FT in Audio Iso iso image document unknown nonsuch; do
 	_assert_json_eq '.error.code' bad_request "POST /search (file_type=$FT) → bad_request"
 done
 
+# Media filter input validation belongs with the other POST /search rejections.
+for KEY in min_size_bytes max_size_bytes min_source_count min_bitrate_kilobits_per_second min_duration_seconds; do
+	case "$KEY" in
+		min_duration_seconds) LIMIT=86401 ;;
+		min_bitrate_kilobits_per_second) LIMIT=1000001 ;;
+		min_source_count) LIMIT=4294967296 ;;
+		*) LIMIT=18446744073709551616 ;;
+	esac
+	for VALUE in -1 0.5 "$LIMIT" 18446744073709551616 '"128"' true null; do
+		BODY=$(jq -nc --arg key "$KEY" --argjson value "$VALUE" '{query:"invalidmetadata",type:"kad",($key):$value}')
+		_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" -H 'Content-Type: application/json' -d "$BODY" "$API/search"
+		_assert_status 400 "POST /search ($KEY=$VALUE) → 400"
+		_assert_json_eq '.error.code' bad_request "POST /search ($KEY=$VALUE) → bad_request"
+	done
+done
+for KEY in query extension codec title album artist; do
+	for VALUE in 123 true null '"a\u0000b"'; do
+		BODY=$(jq -nc --arg key "$KEY" --argjson value "$VALUE" '{query:"invalidmetadata",type:"kad",($key):$value}')
+		_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" -H 'Content-Type: application/json' -d "$BODY" "$API/search"
+		_assert_status 400 "POST /search ($KEY=$VALUE) → 400"
+		_assert_json_eq '.error.code' bad_request "POST /search ($KEY=$VALUE) → bad_request"
+	done
+	BODY=$(printf '{"query":"invalidmetadata","type":"kad","%s":"\377"}' "$KEY")
+	_curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" -H 'Content-Type: application/json' -d "$BODY" "$API/search"
+	_assert_status 400 "POST /search ($KEY has invalid UTF-8) → 400"
+	_assert_json_eq '.error.code' bad_request "POST /search ($KEY has invalid UTF-8) → bad_request"
+done
+
 # --- Summary. -----------------------------------------------------
 echo
 SKIP_NOTE=""

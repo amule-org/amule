@@ -92,7 +92,7 @@ run_phase() {
 	echo "==================== $script ===================="
 	# All-search always owns an offline core/API pair on private ports.
 	# Endpoint checks use the shared daemon unless CI requests the fixture.
-	if [ "$script" = "45-all-search.sh" ] ||
+	if [ "$script" = "45-all-search.sh" ] || [ "$script" = "49-search-metadata.sh" ] ||
 		{ [ "$script" = "26-rfc-followup-endpoints.sh" ] && [ "${AMULEAPI_SMOKE_OFFLINE:-0}" = "1" ]; }; then
 		AMULEAPI_BIN="$BIN" bash "$SCRIPT_DIR/$script" --offline
 		return $?
@@ -296,6 +296,7 @@ PHASES=(
 	46-sse-session-end.sh
 	47-shared-delete.sh
 	48-cross-origin-writes.sh
+	49-search-metadata.sh
 	99-peer-fixture-teardown.sh
 )
 

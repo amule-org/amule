@@ -743,6 +743,20 @@ private:
 	CMD4Hash GetMD4Data(); // Block it, because it doesn't work anymore!
 };
 
+constexpr uint64 SEARCH_MAX_MIN_BITRATE_KBPS = 1000000;
+constexpr uint64 SEARCH_MAX_MIN_DURATION_SECONDS = 86400;
+
+// Optional media filters passed to the search-request constructor.
+struct CSearchMetadata
+{
+	uint64 minBitrateKbps = 0;
+	uint64 minLength = 0;
+	wxString codec;
+	wxString title;
+	wxString album;
+	wxString artist;
+};
+
 class CEC_Search_Tag : public CECTag
 {
 public:
@@ -753,12 +767,19 @@ public:
 		const wxString &extension,
 		uint32 avail,
 		uint64 min_size,
-		uint64 max_size);
+		uint64 max_size,
+		const CSearchMetadata &metadata = CSearchMetadata());
 
 	wxString SearchText() const { return GetTagByNameSafe(EC_TAG_SEARCH_NAME)->GetStringData(); }
 	EC_SEARCH_TYPE SearchType() const { return (EC_SEARCH_TYPE)GetInt(); }
 	uint64 MinSize() const { return GetTagByNameSafe(EC_TAG_SEARCH_MIN_SIZE)->GetInt(); }
 	uint64 MaxSize() const { return GetTagByNameSafe(EC_TAG_SEARCH_MAX_SIZE)->GetInt(); }
+	uint64 MinBitrate() const { return GetTagByNameSafe(EC_TAG_SEARCH_MIN_BITRATE)->GetInt(); }
+	uint64 MinLength() const { return GetTagByNameSafe(EC_TAG_SEARCH_MIN_LENGTH)->GetInt(); }
+	wxString Codec() const { return GetTagByNameSafe(EC_TAG_SEARCH_CODEC)->GetStringData(); }
+	wxString Title() const { return GetTagByNameSafe(EC_TAG_SEARCH_TITLE)->GetStringData(); }
+	wxString Album() const { return GetTagByNameSafe(EC_TAG_SEARCH_ALBUM)->GetStringData(); }
+	wxString Artist() const { return GetTagByNameSafe(EC_TAG_SEARCH_ARTIST)->GetStringData(); }
 	uint32 Avail() const { return GetTagByNameSafe(EC_TAG_SEARCH_AVAILABILITY)->GetInt(); }
 	wxString SearchExt() const { return GetTagByNameSafe(EC_TAG_SEARCH_EXTENSION)->GetStringData(); }
 	wxString SearchFileType() const { return GetTagByNameSafe(EC_TAG_SEARCH_FILE_TYPE)->GetStringData(); }

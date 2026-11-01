@@ -374,7 +374,7 @@ A key is **omitted** only where absence itself is the meaning: something the dae
 
 So: `null` means "no value", an absent key means "not reported", and neither is ever spelled `0` or `-1`.
 
-This rule covers the whole surface, not just the download and shared objects. These keys are `null` when their value is unknown: `name`, `ip`, `port`, `kad_port`, `country_code`, `software`, `software_version`, `source_origin`, `obfuscation_state`, `first_seen_at` and `session_count` on [`GET /known_clients`](#get-apiv1known_clients); `part_progress_percent` and `parts_offered_count` on the client rows and the `client_*` events; `client_ecid`, `file_type`, `extension`, `min_size_bytes`, `max_size_bytes` and `min_source_count` on [`GET /search`](#get-apiv1search), `client_ecid` on [`GET /friends`](#get-apiv1friends) and the `friend_*` events; `last_message` on [`GET /chats`](#get-apiv1chats); `token`, `label_value` and `extra` on the statistics tree; and `media` everywhere it appears. The address fields follow the same rule: `port` on [`GET /friends`](#get-apiv1friends) and the `friend_*` events; `ed2k.public_ip` and `ed2k.server_ip` on [`GET /status`](#get-apiv1status); `public_ip` on [`GET /kad`](#get-apiv1kad); `server_ip` / `server_port` on [`GET /clients/{ecid}`](#get-apiv1clientsecid); `ip` and `port` on [`GET /clients`](#get-apiv1clients) and the client detail row (also nulled by the `client_*` events); and `ed2k.server_port` on [`GET /status`](#get-apiv1status). The `status_changed` event nulls `ed2k.public_ip`, `ed2k.server_ip` and `ed2k.server_port` to match the REST row. Also `null` when unknown: `kad_port` on [`GET /api/v1/clients/{ecid}`](#get-apiv1clientsecid); `last_received_at` on [`GET /api/v1/downloads/{hash}`](#get-apiv1downloadshash); `node_id` on [`GET /api/v1/kad`](#get-apiv1kad); and `server_name` on [`GET /status`](#get-apiv1status) and [`GET /clients/{ecid}`](#get-apiv1clientsecid), which `status_changed` nulls too. The client objects follow suit: `name`, `software`, `software_version`, `reported_os`, `download_file_name`, `upload_file_name`, `upload_file_hash`, `download_file_hash`, `obfuscation_state`, `source_origin` and `client_mod_name` on [`GET /clients`](#get-apiv1clients), the client detail row and the `client_*` events. And the reachability field: `connected` on [`GET /friends`](#get-apiv1friends), [`GET /chats`](#get-apiv1chats), [`GET /known_clients`](#get-apiv1known_clients) and the client objects, is `null` on a daemon that does not report peer connectivity - unknown, rather than a guessed "offline". One quantity, one key on every resource that carries it (R6).
+This rule covers the whole surface, not just the download and shared objects. These keys are `null` when their value is unknown: `name`, `ip`, `port`, `kad_port`, `country_code`, `software`, `software_version`, `source_origin`, `obfuscation_state`, `first_seen_at` and `session_count` on [`GET /known_clients`](#get-apiv1known_clients); `part_progress_percent` and `parts_offered_count` on the client rows and the `client_*` events; `client_ecid`, `file_type`, `extension`, `min_size_bytes`, `max_size_bytes`, `min_source_count`, `min_bitrate_kilobits_per_second`, `min_duration_seconds`, `codec`, `title`, `album` and `artist` on [`GET /search`](#get-apiv1search), `client_ecid` on [`GET /friends`](#get-apiv1friends) and the `friend_*` events; `last_message` on [`GET /chats`](#get-apiv1chats); `token`, `label_value` and `extra` on the statistics tree; and `media` everywhere it appears. The address fields follow the same rule: `port` on [`GET /friends`](#get-apiv1friends) and the `friend_*` events; `ed2k.public_ip` and `ed2k.server_ip` on [`GET /status`](#get-apiv1status); `public_ip` on [`GET /kad`](#get-apiv1kad); `server_ip` / `server_port` on [`GET /clients/{ecid}`](#get-apiv1clientsecid); `ip` and `port` on [`GET /clients`](#get-apiv1clients) and the client detail row (also nulled by the `client_*` events); and `ed2k.server_port` on [`GET /status`](#get-apiv1status). The `status_changed` event nulls `ed2k.public_ip`, `ed2k.server_ip` and `ed2k.server_port` to match the REST row. Also `null` when unknown: `kad_port` on [`GET /api/v1/clients/{ecid}`](#get-apiv1clientsecid); `last_received_at` on [`GET /api/v1/downloads/{hash}`](#get-apiv1downloadshash); `node_id` on [`GET /api/v1/kad`](#get-apiv1kad); and `server_name` on [`GET /status`](#get-apiv1status) and [`GET /clients/{ecid}`](#get-apiv1clientsecid), which `status_changed` nulls too. The client objects follow suit: `name`, `software`, `software_version`, `reported_os`, `download_file_name`, `upload_file_name`, `upload_file_hash`, `download_file_hash`, `obfuscation_state`, `source_origin` and `client_mod_name` on [`GET /clients`](#get-apiv1clients), the client detail row and the `client_*` events. And the reachability field: `connected` on [`GET /friends`](#get-apiv1friends), [`GET /chats`](#get-apiv1chats), [`GET /known_clients`](#get-apiv1known_clients) and the client objects, is `null` on a daemon that does not report peer connectivity - unknown, rather than a guessed "offline". One quantity, one key on every resource that carries it (R6).
 
 `media` is the one place this reaches an **object** rather than a scalar, so a client tests `media === null` before reaching into it -- which it had to do regardless, since the object's own fields can be absent.
 
@@ -2988,11 +2988,14 @@ Lists every search amuled currently holds — including ones started by a **diff
 {
   "searches": [
     { "search_id": 42, "query": "ubuntu desktop iso", "type": "global", "state": "finished", "client_ecid": null, "started_at": 1751000000, "result_count": 182,
-      "file_type": "disc_image", "extension": "iso", "min_size_bytes": 1000000000, "max_size_bytes": 5000000000, "min_source_count": 5 },
+      "file_type": "disc_image", "extension": "iso", "min_size_bytes": 1000000000, "max_size_bytes": 5000000000, "min_source_count": 5,
+      "min_bitrate_kilobits_per_second": 0, "min_duration_seconds": 0, "codec": "", "title": "", "album": "", "artist": "" },
     { "search_id": 43, "query": "debian",             "type": "kad",    "state": "running",  "client_ecid": null, "started_at": 1751000042, "result_count": 57,
-      "file_type": null, "extension": null, "min_size_bytes": null, "max_size_bytes": null, "min_source_count": null },
+      "file_type": null, "extension": null, "min_size_bytes": null, "max_size_bytes": null, "min_source_count": null,
+      "min_bitrate_kilobits_per_second": null, "min_duration_seconds": null, "codec": null, "title": null, "album": null, "artist": null },
     { "search_id": 44, "query": "SomePeerNick",       "type": "browse", "state": "running",  "client_ecid": 621,  "result_count": 237,
-      "file_type": null, "extension": null, "min_size_bytes": null, "max_size_bytes": null, "min_source_count": null }
+      "file_type": null, "extension": null, "min_size_bytes": null, "max_size_bytes": null, "min_source_count": null,
+      "min_bitrate_kilobits_per_second": null, "min_duration_seconds": null, "codec": null, "title": null, "album": null, "artist": null }
   ],
   "total": 3,
   "offset": 0,
@@ -3018,9 +3021,9 @@ It is **omitted** for any search this `amuleapi` process did not start itself �
 
 It exists so a client that adopts the whole list and fetches each search's results lazily — on first activation of a tab, rather than all at once at load — has a number to label an unopened tab with. It is **omitted**, not zeroed, when the daemon does not report it: a daemon older than this field sends nothing, and "does not report counts" has to stay distinguishable from "this search found nothing". Same rule as `started_at` above.
 
-The start parameters a search was submitted with ride along on its row, in the same vocabulary [`POST /search`](#post-apiv1search) accepts, so a client can reload the form and re-run the search without translating anything: `file_type` (the token form — `"audio"`, `"video"`, `"picture"`, `"text"`, `"program"`, `"archive"`, `"disc_image"` — never the ed2k term the daemon stores), `extension`, `min_size_bytes`, `max_size_bytes`, and `min_source_count`, with `""` meaning "any" and `0` meaning "no cap" exactly as on the POST side.
+The start parameters a search was submitted with ride along on its row, in the same vocabulary [`POST /search`](#post-apiv1search) accepts, so a client can reload the form and re-run the search without translating anything: `file_type` (the token form — `"audio"`, `"video"`, `"picture"`, `"text"`, `"program"`, `"archive"`, `"disc_image"` — never the ed2k term the daemon stores), `extension`, `min_size_bytes`, `max_size_bytes`, `min_source_count`, `min_bitrate_kilobits_per_second`, `min_duration_seconds`, `codec`, `title`, `album` and `artist`, with `""` meaning "any" and `0` meaning "no cap" exactly as on the POST side.
 
-They describe the form the search was **actually started from**, as the daemon recorded it, so a search adopted from another client shows that client's filters, not this one's. Only a search the daemon started from a form carries them: a `"browse"` has none, and neither does one restored from search history an older version saved, or reported by an older daemon. For those, all five keys read `null`, which keeps "the form had no filter" (`""` or `0`) distinguishable from "there is no form" (`null`). The keys are always present, so a row's shape does not depend on which daemon produced it.
+They describe the form the search was **actually started from**, as the daemon recorded it, so a search adopted from another client shows that client's filters, not this one's. Only a search the daemon started from a form carries them: a `"browse"` has none, and neither does one restored from search history an older version saved, or reported by an older daemon. For those, all eleven keys read `null`, which keeps "the form had no filter" (`""` or `0`) distinguishable from "there is no form" (`null`). The keys are always present, so a row's shape does not depend on which daemon produced it. Media filter keys also read `null` when the daemon does not support them.
 
 amuled only tracks multiple concurrent searches for clients that advertise multi-search support; `amuleapi` does, so this always reflects the full live set. `searches` is an empty array when amuled holds no searches, never an error.
 
@@ -3048,6 +3051,29 @@ Kicks off a new search. amuleapi supports **several concurrent searches** — a 
 
 Only `query` is required. `type` defaults to `"global"`; valid values are `"local"`, `"global"`, `"kad"`, `"all"`. `"all"` searches eD2k and Kad together, falling back to the available network if the other cannot start. It requires the daemon to advertise `EC_TAG_CAN_SEARCH_ALL`; otherwise the API returns `503 ec_unsupported` before sending a search request. `GET /status` exposes this capability as `search_all_supported` (boolean), which the WebUI uses to offer All. This additive value keeps `/api/v1` compatible. `file_type` filters by category and takes the same tokens the result rows report: `"audio"`, `"video"`, `"picture"`, `"text"`, `"program"`, `"archive"`, `"disc_image"`. Omit it, or send `""`, for any type; anything else is `400 bad_request`, `"unknown"` included, since no ed2k category corresponds to it. `extension` filters by filename extension as the user typed it (e.g. `"iso"`); omit it, or send `""`, for any extension. `min_size_bytes`, `max_size_bytes` and `min_source_count` are integers: a fractional value is a `400` rather than being truncated, so a client that computed a size cannot half-apply a filter it thinks it set. A `"global"`/`"local"` (ed2k) search and a `"kad"` search run independently and can be in flight at the same time; starting one never disturbs the other.
 
+The following optional fields add media metadata filters:
+
+| Field | Input | Meaning |
+|---|---|---|
+| `min_bitrate_kilobits_per_second` | Integer, 0–1,000,000 | Inclusive minimum bitrate in kilobits per second. `0` disables it. |
+| `min_duration_seconds` | Integer, 0–86,400 | Inclusive minimum duration in seconds. `0` disables it. |
+| `codec` | String | Codec metadata term, for example `"FLAC"`. |
+| `title` | String | Media title metadata term. |
+| `album` | String | Album metadata term. |
+| `artist` | String | Artist metadata term. |
+
+Strings default to empty (no filter). Text terms are sent as metadata constraints, separately from the filename query. They do not use the filename query's Boolean expression syntax. Invalid types, fractions, negative or oversized values and strings containing NUL or invalid UTF-8 return `400 bad_request` before starting a search.
+
+For example:
+
+```json
+{"query":"concert","type":"kad","min_bitrate_kilobits_per_second":320,"min_duration_seconds":3723,"codec":"FLAC","artist":"Example Artist"}
+```
+
+A non-default media filter requires the connected daemon to advertise `EC_TAG_CAN_SEARCH_METADATA`. The API returns `503 ec_unsupported` if that capability is absent, or `503 ec_unavailable` if EC is disconnected. Recorded filters survive daemon restarts when search history is enabled.
+
+**Network limits:** Kad nodes apply the metadata terms. eD2k servers may ignore them. amuleapi does no local result filtering.
+
 **Response:** `202 Accepted`, with a `Location: /api/v1/search/{search_id}` header and the created search as the body -- the same row [`GET /search`](#get-apiv1search) lists, so it can go straight into a collection the client already keeps:
 
 ```json
@@ -3062,7 +3088,13 @@ Only `query` is required. `type` defaults to `"global"`; valid values are `"loca
   "extension":   "iso",
   "min_size_bytes":  1000000000,
   "max_size_bytes":  5000000000,
-  "min_source_count": 5
+  "min_source_count": 5,
+  "min_bitrate_kilobits_per_second": 0,
+  "min_duration_seconds": 0,
+  "codec": "",
+  "title": "",
+  "album": "",
+  "artist": ""
 }
 ```
 

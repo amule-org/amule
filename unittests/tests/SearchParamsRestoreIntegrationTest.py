@@ -23,7 +23,9 @@ from KnownHistoryIntegrationTest import start
 from ShareWatcherMoveIntegrationTest import tag_list
 
 FULL = {'query': 'comprehensive filters alpha', 'file_type': 'Audio', 'extension': '.mp3',
-        'avail': 7, 'min_size': 1 << 20, 'max_size': (1 << 33) + 5}
+        'avail': 7, 'min_size': 1 << 20, 'max_size': (1 << 33) + 5,
+        'min_bitrate': 320, 'min_length': 3723, 'codec': 'FLAC',
+        'title': '曲 AND OR NOT', 'album': 'Test Album', 'artist': 'Test Artist'}
 SPARSE = {'query': 'simple types beta', 'file_type': 'Video'}
 
 
@@ -32,7 +34,8 @@ def uint64(name, value):
 
 
 def search_request(query, kind=C['EC_SEARCH_KAD'], file_type='', extension='', avail=0,
-                   min_size=0, max_size=0):
+                   min_size=0, max_size=0, min_bitrate=0, min_length=0,
+                   codec="", title="", album="", artist=""):
     """The EC_OP_SEARCH_START compound tag, as CEC_Search_Tag builds it."""
     children = [string(C['EC_TAG_SEARCH_NAME'], query),
                 string(C['EC_TAG_SEARCH_FILE_TYPE'], file_type)]
@@ -44,6 +47,12 @@ def search_request(query, kind=C['EC_SEARCH_KAD'], file_type='', extension='', a
         children.append(uint64(C['EC_TAG_SEARCH_MIN_SIZE'], min_size))
     if max_size:
         children.append(uint64(C['EC_TAG_SEARCH_MAX_SIZE'], max_size))
+    for name, value in [('MIN_BITRATE', min_bitrate), ('MIN_LENGTH', min_length)]:
+        if value:
+            children.append(uint64(C['EC_TAG_SEARCH_' + name], value))
+    for name, value in [('CODEC', codec), ('TITLE', title), ('ALBUM', album), ('ARTIST', artist)]:
+        if value:
+            children.append(string(C['EC_TAG_SEARCH_' + name], value))
     return tag(C['EC_TAG_SEARCH_TYPE'], bytes([kind]), 2, children)
 
 
@@ -164,6 +173,19 @@ def round_trip(binary, root):
     try:
         assert ec.call(C['EC_OP_KAD_START'])[0] == C['EC_OP_NOOP']
         full = start_search(ec, **FULL)
+        # Out-of-range integers must fail without starting or replacing a search.
+        before = set(search_list(ec))
+        bad_children = [uint64(C['EC_TAG_SEARCH_MIN_BITRATE'], 1 << 32),
+                        uint64(C['EC_TAG_SEARCH_MIN_LENGTH'], 86401)]
+        for child in bad_children:
+            request = tag(C['EC_TAG_SEARCH_TYPE'], bytes([C['EC_SEARCH_KAD']]), 2,
+                          [string(C['EC_TAG_SEARCH_NAME'], 'invalidmetadata'),
+                           string(C['EC_TAG_SEARCH_FILE_TYPE'], ''), child])
+            op, reply = ec.call(C['EC_OP_SEARCH_START'],
+                                [request, tag(C['EC_TAG_SEARCH_REF'], struct.pack('!I', 4242), 4)])
+            assert op == C['EC_OP_FAILED']
+            assert reply[C['EC_TAG_SEARCH_REF']][0] == 4242
+            assert set(search_list(ec)) == before
         sparse = start_search(ec, **SPARSE)
     finally:
         ec.sock.close()
@@ -175,7 +197,10 @@ def round_trip(binary, root):
     assert by_id[full]['params'] == {'search.file_type': 'Audio', 'search.extension': '.mp3',
                                      'search.min_size_bytes': FULL['min_size'],
                                      'search.max_size_bytes': FULL['max_size'],
-                                     'search.min_source_count': FULL['avail']}
+                                     'search.min_source_count': FULL['avail'],
+                                     'search.min_bitrate_kbps': FULL['min_bitrate'],
+                                     'search.min_length': FULL['min_length'],
+                                     **{'search.' + k: FULL[k] for k in ('codec', 'title', 'album', 'artist')}}
     # Defaulted filters are omitted, not written as zeros.
     assert by_id[sparse]['params'] == {'search.file_type': 'Video'}, by_id[sparse]
 
@@ -189,6 +214,10 @@ def round_trip(binary, root):
         assert as_int(fields[C['EC_TAG_SEARCH_MIN_SIZE']]) == FULL['min_size']
         assert as_int(fields[C['EC_TAG_SEARCH_MAX_SIZE']]) == FULL['max_size']
         assert as_int(fields[C['EC_TAG_SEARCH_AVAILABILITY']]) == FULL['avail']
+        assert as_int(fields[C['EC_TAG_SEARCH_MIN_BITRATE']]) == FULL['min_bitrate']
+        assert as_int(fields[C['EC_TAG_SEARCH_MIN_LENGTH']]) == FULL['min_length']
+        for name in ('codec', 'title', 'album', 'artist'):
+            assert s(fields[C['EC_TAG_SEARCH_' + name.upper()]]) == FULL[name]
         fields = listing[sparse]
         assert s(fields[C['EC_TAG_SEARCH_FILE_TYPE']]) == 'Video'
         assert C['EC_TAG_SEARCH_EXTENSION'] not in fields
