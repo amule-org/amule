@@ -95,13 +95,16 @@ endforeach()
 unset (_amule_wx_components)
 unset (_amule_wx_targets)
 
-# wxWidgets' own catalogs (wxstd), which the macOS bundles and the Windows install ship beside
-# aMule's: a packaged build cannot reach the build machine's wx prefix. The prefix comes from
-# wx-config's location because MSYS2's wx-config is a shell script native CMake cannot run.
+# wxWidgets' own catalogs (wxstd), for BUNDLE_WX_CATALOGS: a packaged build cannot reach the
+# build machine's wx prefix. The prefix comes from wx-config's location because MSYS2's
+# wx-config is a shell script native CMake cannot run.
 get_filename_component (_amule_wx_bin "${wxWidgets_CONFIG_EXECUTABLE}" DIRECTORY)
 get_filename_component (AMULE_WX_LOCALE_DIR "${_amule_wx_bin}/../share/locale" ABSOLUTE)
 set (AMULE_WX_CATALOG "wxstd-${wxWidgets_VERSION_MAJOR}.${wxWidgets_VERSION_MINOR}.mo")
 unset (_amule_wx_bin)
+if (BUNDLE_WX_CATALOGS AND ENABLE_NLS AND NOT IS_DIRECTORY "${AMULE_WX_LOCALE_DIR}")
+	message (FATAL_ERROR "BUNDLE_WX_CATALOGS is ON, but wxWidgets has no catalogs in ${AMULE_WX_LOCALE_DIR}")
+endif()
 
 # Sets <out_var> to wx's catalog for aMule language <lang>, or to empty when wx has none.
 # wx spells some languages differently: aMule's gl and pt_PT are its gl_ES and pt.

@@ -74,24 +74,22 @@ foreach (PO_FILE ${PO_FILES})
 			# Bundling into the .app happens in src/CMakeLists.txt
 			# via a POST_BUILD on the amule target, since `po` is
 			# processed before `src` and the target doesn't exist yet.
-		elseif (WIN32)
+		else()
+			if (WIN32)
+				set (_mo_dest ${CMAKE_INSTALL_BINDIR}/locale/${PO_FILE}/LC_MESSAGES)
+			else()
+				set (_mo_dest ${CMAKE_INSTALL_LOCALEDIR}/${PO_FILE}/LC_MESSAGES)
+			endif()
 			install (FILES ${CMAKE_CURRENT_BINARY_DIR}/${PO_FILE}.gmo
-				DESTINATION ${CMAKE_INSTALL_BINDIR}/locale/${PO_FILE}/LC_MESSAGES/
+				DESTINATION ${_mo_dest}
 				RENAME amule.mo
 			)
-			if (COMMAND amule_wx_catalog)
+			if (BUNDLE_WX_CATALOGS)
 				amule_wx_catalog (${PO_FILE} _wx_mo)
 				if (_wx_mo)
-					install (FILES "${_wx_mo}"
-						DESTINATION ${CMAKE_INSTALL_BINDIR}/locale/${PO_FILE}/LC_MESSAGES/
-					)
+					install (FILES "${_wx_mo}" DESTINATION ${_mo_dest})
 				endif()
 			endif()
-		else()
-			install (FILES ${CMAKE_CURRENT_BINARY_DIR}/${PO_FILE}.gmo
-				DESTINATION ${CMAKE_INSTALL_LOCALEDIR}/${PO_FILE}/LC_MESSAGES/
-				RENAME amule.mo
-			)
 		endif()
 	endif()
 endforeach()

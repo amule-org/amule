@@ -260,12 +260,14 @@ if (APPLE)
 				VERBATIM
 			)
 
-			amule_wx_catalog (${_lang} _wx)
-			if (_wx)
-				add_custom_command (TARGET ${target} POST_BUILD
-					COMMAND ${CMAKE_COMMAND} -E copy_if_different "${_wx}" "${_mo_dir}/${AMULE_WX_CATALOG}"
-					VERBATIM
-				)
+			if (BUNDLE_WX_CATALOGS)
+				amule_wx_catalog (${_lang} _wx)
+				if (_wx)
+					add_custom_command (TARGET ${target} POST_BUILD
+						COMMAND ${CMAKE_COMMAND} -E copy_if_different "${_wx}" "${_mo_dir}/${AMULE_WX_CATALOG}"
+						VERBATIM
+					)
+				endif()
 			endif()
 
 			list (APPEND _localizations "${_lang}")
