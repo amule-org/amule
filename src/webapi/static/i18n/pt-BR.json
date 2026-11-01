@@ -1074,5 +1074,7 @@
   "stats_tree_natt_server_punch_attempts": "Hole punches via servidor: %s",
   "stats_tree_natt_server_punch_successes": "Hole punches via servidor bem-sucedidos: %s",
   "stats_tree_natt_lugdunum_callback_attempts": "Callbacks Lugdunum: %s",
-  "stats_tree_natt_lugdunum_callback_successes": "Callbacks Lugdunum bem-sucedidos: %s"
+  "stats_tree_natt_lugdunum_callback_successes": "Callbacks Lugdunum bem-sucedidos: %s",
+  "prefs_field_advanced_write_buffer_limit_mebibytes_help": "Um limite maior pode suavizar travamentos curtos do disco ao custo de mais memória. Dados já solicitados podem exceder este limite.",
+  "prefs_field_advanced_write_buffer_limit_mebibytes": "Limite do buffer de gravação de downloads (MiB)"
 }
