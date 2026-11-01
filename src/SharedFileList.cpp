@@ -1092,7 +1092,8 @@ void CSharedFileList::RemoveFile(CKnownFile *toremove)
 {
 	Notify_SharedFilesRemoveFile(toremove);
 	wxMutexLocker lock(list_mut);
-	if (m_Files_map.erase(toremove->GetFileHash()) > 0) {
+	const bool wasShared = m_Files_map.erase(toremove->GetFileHash()) > 0;
+	if (wasShared) {
 		m_listGeneration.fetch_add(1, std::memory_order_relaxed);
 		theStats::RemoveSharedFile(toremove->GetFileSize());
 	}
@@ -1110,8 +1111,9 @@ void CSharedFileList::RemoveFile(CKnownFile *toremove)
 	// `reloading` suppresses the check for the duration of a walk. The index is cleared at the
 	// start of one and refilled as the walk proceeds, so a removal that lands mid-walk --
 	// CUploadDiskIOThread calls RemoveFile from a worker thread -- legitimately finds nothing
-	// to erase, and the hardening would cry wolf on every such removal.
-	if (erasedFromIndex == 0 && !m_pathIndex.empty() && !reloading) {
+	// to erase, and the hardening would cry wolf on every such removal. A download with no
+	// verified part was never shared, so it has no entry either.
+	if (wasShared && erasedFromIndex == 0 && !m_pathIndex.empty() && !reloading) {
 		// Not fatal on its own -- the older-snapshot case above is legitimate -- but it is the
 		// signature of a desynchronised index, so say so rather than leaking an entry in
 		// silence.
@@ -2023,6 +2025,10 @@ bool CSharedFileList::RenameFile(CKnownFile *file, const CPath &newName)
 		if (file->GetStatus() != PS_COMPLETING) {
 			pfile->SetFileName(newName);
 			pfile->SavePartFile();
+			// Else deleting the download leaves its old key pointing at the freed file.
+			if (GetFileByID(file->GetFileHash()) == file) {
+				RefreshPathIndex(file);
+			}
 
 			Notify_SharedFilesUpdateItem(file);
 			Notify_DownloadCtrlUpdateItem(file);
