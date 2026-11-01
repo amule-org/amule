@@ -95,12 +95,23 @@ if (Python3_Interpreter_FOUND)
 	set_tests_properties (IntegrationFixtureUnitTest PROPERTIES LABELS "slow")
 endif ()
 
+set (_boost_test_toolchain_args)
+foreach (_variable CMAKE_CXX_COMPILER CMAKE_CXX_COMPILER_ARG1 CMAKE_TOOLCHAIN_FILE
+	CMAKE_GENERATOR CMAKE_GENERATOR_PLATFORM CMAKE_GENERATOR_TOOLSET CMAKE_MAKE_PROGRAM)
+	if (DEFINED ${_variable} AND NOT "${${_variable}}" STREQUAL "")
+		list (APPEND _boost_test_toolchain_args "-DTEST_${_variable}=${${_variable}}")
+	endif()
+endforeach()
 add_test (NAME BoostCMakeConfigTest
 	COMMAND ${CMAKE_COMMAND}
 		-DAMULE_SOURCE_DIR=${CMAKE_SOURCE_DIR}
 		-DTEST_BINARY_DIR=${CMAKE_BINARY_DIR}/boost-cmake-contract
+		${_boost_test_toolchain_args}
 		-P ${CMAKE_CURRENT_SOURCE_DIR}/BoostCMakeConfigTest.cmake
 )
+# This test configures and compiles several small projects, including on Windows.
+set_tests_properties (BoostCMakeConfigTest PROPERTIES LABELS "slow")
+unset (_boost_test_toolchain_args)
 
 add_test (NAME QuicCMakeConfigTest
 	COMMAND ${CMAKE_COMMAND}

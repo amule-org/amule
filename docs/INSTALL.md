@@ -17,6 +17,12 @@ The REST API server needs Boost 1.74 or newer for Asio's
 `thread_pool::attach()`. To select a separate Boost installation, pass
 `-DBoost_DIR=/path/to/boost/lib/cmake/Boost-<version>` when configuring.
 Its headers are automatically added as system includes to the build targets.
+The selector is case-sensitive: `Boost_DIR`, not `BOOST_DIR`. An environment
+variable named `Boost_DIR` also supplies a search location, but an existing
+cached selection takes precedence. Use a fresh build directory when switching
+installations to avoid stale Boost component paths. If the requested directory
+does not contain a compatible package, CMake may select another installation;
+check the Boost version in the configuration summary.
 
 The Crypto++ row accepts either the classic
 [weidai11/cryptopp](https://github.com/weidai11/cryptopp) library (minimum
