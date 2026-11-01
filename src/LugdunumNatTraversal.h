@@ -167,21 +167,25 @@ inline bool IsServerWayDatagramFromOurServer(const ServerWayDatagramFacts &facts
 	return facts.serverCallbackCapable && facts.sourceIp == facts.serverIp;
 }
 
-// A pending crypt-ping reply is the only packet authenticated by its challenge. A callback or
-// extension wake received during that 20-second window instead uses the established server key.
-// Try the challenge first, then the distinct established key, so a lost status ping cannot block
-// NAT-T until the next status refresh.
-inline std::vector<std::uint32_t> ServerWayKeys(
+struct ServerWayKeyCandidates
+{
+	std::array<std::uint32_t, 2> keys{};
+	std::size_t count = 0;
+};
+
+// The challenge authenticates only the status-ping reply. A callback or extension wake uses the
+// established server key, so try the challenge first and the distinct established key second.
+inline ServerWayKeyCandidates ServerWayKeys(
 	bool cryptPingReplyPending, std::uint32_t challenge, std::uint32_t serverKeyUdp)
 {
-	std::vector<std::uint32_t> keys;
+	ServerWayKeyCandidates candidates;
 	if (cryptPingReplyPending && challenge != 0) {
-		keys.push_back(challenge);
+		candidates.keys[candidates.count++] = challenge;
 	}
-	if (serverKeyUdp != 0 && (keys.empty() || keys.front() != serverKeyUdp)) {
-		keys.push_back(serverKeyUdp);
+	if (serverKeyUdp != 0 && (candidates.count == 0 || candidates.keys[0] != serverKeyUdp)) {
+		candidates.keys[candidates.count++] = serverKeyUdp;
 	}
-	return keys;
+	return candidates;
 }
 
 struct LowIdServerSourceFacts

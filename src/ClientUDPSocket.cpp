@@ -681,16 +681,17 @@ bool CClientUDPSocket::TryProcessServerWayNatCallback(uint32 ip, uint8_t *buffer
 		return false;
 	}
 
+	const LugdunumNatTraversal::ServerWayKeyCandidates keys =
+		LugdunumNatTraversal::ServerWayKeys(serverListEntry->GetCryptPingReplyPending(),
+			serverListEntry->GetChallenge(),
+			serverListEntry->GetServerKeyUDP());
 	uint8_t *decrypted = buffer;
 	int decryptedLen = static_cast<int>(length);
 	// A failed DecryptReceivedServer() leaves buffer unchanged, so the next candidate is safe.
-	for (const std::uint32_t key :
-		LugdunumNatTraversal::ServerWayKeys(serverListEntry->GetCryptPingReplyPending(),
-			serverListEntry->GetChallenge(),
-			serverListEntry->GetServerKeyUDP())) {
+	for (std::size_t index = 0; index != keys.count; ++index) {
 		decrypted = buffer;
 		decryptedLen = CEncryptedDatagramSocket::DecryptReceivedServer(
-			buffer, static_cast<int>(length), &decrypted, key, ip);
+			buffer, static_cast<int>(length), &decrypted, keys.keys[index], ip);
 		if (decryptedLen < static_cast<int>(length) && decrypted != nullptr && decryptedLen >= 2) {
 			break;
 		}
