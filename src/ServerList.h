@@ -79,6 +79,8 @@ public:
 	void FilterServers();
 
 	void CheckForExpiredUDPKeys();
+	// Brings forward the status ping of a server whose UDP key we need but do not have.
+	void RecoverServerKeyUDP(CServer *server);
 
 	/**
 	 * Marks the specified server as static or not.

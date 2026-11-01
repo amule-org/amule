@@ -148,8 +148,12 @@ public:
 	//! login, since a previous connection's target IDs mean nothing on a different server.
 	void ResetLowIdHolePunchState();
 	//! The listed server at that TCP address, when it is not ours and takes a cross-server NAT
-	//! callback request from us (NatServerHolePunch::ServerTakesForeignCallback()).
+	//! callback request from us (NatServerHolePunch::ServerTakesForeignCallback()). A server that
+	//! lacks only its UDP key is not returned, but its key is recovered for a later request.
 	CServer *ForeignCallbackServer(uint32 serverIp, uint16 serverPort);
+	//! Paces the Lugdunum requests that waited for the server's UDP key, which all become
+	//! sendable when it arrives.
+	bool TakeLugdunumCallbackRetrySlot(uint64 now) { return m_lugdunumCallbackRetryPacer.TryTake(now); }
 	//! We announced the hole-punch extension at login and this server runs it, having also
 	//! answered our Lugdunum opt-in, whose 0x37 it wakes a target with.
 	bool IsHolePunchExtensionActive();
@@ -233,6 +237,10 @@ private:
 	NatServerHolePunch::ExpectedEndpointRegistry m_lowIdHolePunchExpectedEndpoints;
 	NatServerHolePunch::PendingWakeSet<LugdunumNatTraversal::ForwardedCallback> m_holePunchExtensionWakes;
 	NatServerHolePunch::KeepaliveBurst m_holePunchKeepaliveBurst;
+	NatServerHolePunch::ServerRequestPacer m_lugdunumCallbackRetryPacer;
+	bool m_holePunchKeepaliveAwaitsServerKey = false;
+	//! Sends the keepalive again, obfuscated, once the server's missing UDP key arrives.
+	void RetryKeepaliveAwaitingServerKey();
 	// Fixed at login, so a setting changed mid-session cannot claim what the server was not told.
 	bool m_announcedHolePunchExtension = false;
 #endif

@@ -1842,9 +1842,48 @@ EContactResult CUpDownClient::CheckContactPreconditions()
 }
 
 #ifdef ENABLE_NATT_SERVER_COORDINATION
+namespace
+{
+struct LugdunumCallbackRoute
+{
+	CServer *server = nullptr;
+	// The server UDP fields are updated on the server-list entry, not on cur_server's snapshot.
+	CServer *serverListEntry = nullptr;
+	LugdunumNatTraversal::CallbackRequestFacts facts;
+};
+
+std::optional<LugdunumCallbackRoute> BuildLugdunumCallbackRoute(const CUpDownClient &client, uint32 targetId)
+{
+	if (theApp->serverconnect == nullptr || theApp->clientudp == nullptr) {
+		return std::nullopt;
+	}
+	LugdunumCallbackRoute route;
+	route.server = theApp->serverconnect->GetCurrentServer();
+	if (route.server == nullptr) {
+		return std::nullopt;
+	}
+	route.serverListEntry =
+		theApp->serverlist->GetServerByAddress(route.server->GetAddress(), route.server->GetPort());
+	if (route.serverListEntry == nullptr) {
+		return std::nullopt;
+	}
+	route.facts = { theApp->serverconnect->GetClientID(),
+		targetId,
+		theApp->serverconnect->IsLocalServer(client.GetServerIP(), client.GetServerPort()),
+		route.server->IsLugdunumNatCallbackActive(),
+		thePrefs::IsServerCryptLayerUDPEnabled(),
+		route.serverListEntry->GetServerKeyUDP(),
+		route.serverListEntry->SupportsObfuscationUDP(),
+		thePrefs::IsLugdunumNatCallbackEnabled() };
+	return route;
+}
+} // namespace
+
 void CUpDownClient::TrySendLugdunumNatCallbackRequest()
 {
+	m_lugdunumCallbackAwaitsServerKey = false;
 	if (!TrySendLugdunumNatCallbackRequest(GetUserIDHybrid())) {
+		m_lugdunumCallbackAwaitsServerKey = AwaitServerKeyForLugdunumCallback();
 		return;
 	}
 #ifdef AMULE_UTP_TRANSPORT
@@ -1855,32 +1894,25 @@ void CUpDownClient::TrySendLugdunumNatCallbackRequest()
 #endif
 }
 
+bool CUpDownClient::AwaitServerKeyForLugdunumCallback()
+{
+	const std::optional<LugdunumCallbackRoute> route =
+		BuildLugdunumCallbackRoute(*this, GetUserIDHybrid());
+	if (!route || !LugdunumNatTraversal::LugdunumNatCallbackAwaitsServerKey(route->facts)) {
+		return false;
+	}
+	theApp->serverlist->RecoverServerKeyUDP(route->serverListEntry);
+	return true;
+}
+
 bool CUpDownClient::TrySendLugdunumNatCallbackRequest(uint32 targetId) const
 {
-	if (theApp->serverconnect == nullptr || theApp->clientudp == nullptr) {
+	const std::optional<LugdunumCallbackRoute> route = BuildLugdunumCallbackRoute(*this, targetId);
+	if (!route || !LugdunumNatTraversal::ShouldRequestLugdunumNatCallback(route->facts)) {
 		return false;
 	}
-	CServer *server = theApp->serverconnect->GetCurrentServer();
-	if (server == nullptr) {
-		return false;
-	}
-	// The server UDP fields are updated on the server-list entry, not on cur_server's snapshot.
-	CServer *serverListEntry =
-		theApp->serverlist->GetServerByAddress(server->GetAddress(), server->GetPort());
-	if (serverListEntry == nullptr) {
-		return false;
-	}
-	const LugdunumNatTraversal::CallbackRequestFacts facts{ theApp->serverconnect->GetClientID(),
-		targetId,
-		theApp->serverconnect->IsLocalServer(GetServerIP(), GetServerPort()),
-		server->IsLugdunumNatCallbackActive(),
-		thePrefs::IsServerCryptLayerUDPEnabled(),
-		serverListEntry->GetServerKeyUDP(),
-		serverListEntry->SupportsObfuscationUDP(),
-		thePrefs::IsLugdunumNatCallbackEnabled() };
-	if (!LugdunumNatTraversal::ShouldRequestLugdunumNatCallback(facts)) {
-		return false;
-	}
+	CServer *server = route->server;
+	CServer *serverListEntry = route->serverListEntry;
 
 	const LugdunumNatTraversal::CallbackRequest request{ targetId, theApp->serverconnect->GetClientID() };
 	const std::array<std::uint8_t, 8> payload = LugdunumNatTraversal::BuildCallbackRequest(request);
@@ -2012,9 +2044,24 @@ void CUpDownClient::RetryLowIdHolePunchRequest()
 			return;
 		}
 	}
+	if (m_lugdunumCallbackAwaitsServerKey) {
+		RetryLugdunumCallbackAwaitingServerKey(now);
+	}
 	if (!m_lowIdHolePunchRequested) {
 		TrySendLowIdHolePunchRequest();
 	}
+}
+
+void CUpDownClient::RetryLugdunumCallbackAwaitingServerKey(uint64 now)
+{
+	if (AwaitServerKeyForLugdunumCallback()) {
+		return;
+	}
+	// Every waiting source can send once the key arrives, so they go out at the server's pace.
+	if (theApp->serverconnect != nullptr && !theApp->serverconnect->TakeLugdunumCallbackRetrySlot(now)) {
+		return;
+	}
+	TrySendLugdunumNatCallbackRequest();
 }
 #endif
 #endif

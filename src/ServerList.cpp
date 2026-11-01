@@ -29,6 +29,7 @@
 
 #include "ServerList.h" // Interface declarations.
 #include "ServerListSources.h"
+#include "ServerKeyRecovery.h"
 
 #include <protocol/Protocols.h>
 #include <protocol/ed2k/Constants.h>
@@ -976,6 +977,29 @@ void CServerList::FilterServers()
 				RemoveServer(server);
 			}
 		}
+	}
+}
+
+void CServerList::RecoverServerKeyUDP(CServer *server)
+{
+	if (server == nullptr) {
+		return;
+	}
+	ServerKeyRecovery::Facts facts;
+	facts.cryptLayerUdpEnabled = thePrefs::IsServerCryptLayerUDPEnabled();
+	facts.publicIpKnown = theApp->GetPublicIP() != 0;
+	facts.serverSupportsObfuscationUdp = server->SupportsObfuscationUDP();
+	facts.serverKeyUdp = server->GetServerKeyUDP();
+	facts.cryptPingReplyPending = server->GetCryptPingReplyPending();
+	facts.lastPingedTime = server->GetLastPingedTime();
+	facts.realLastPingedTime = server->GetRealLastPingedTime();
+	const time_t now = time(NULL);
+	if (const std::optional<time_t> lastPinged = ServerKeyRecovery::RecoveryLastPingedTime(facts, now)) {
+		AddDebugLogLineN(logServerUDP,
+			CFormat("Status ping of %s brought forward %us to recover its UDP key") %
+				server->GetListName() %
+				static_cast<unsigned>(*lastPinged + UDPSERVSTATREASKTIME - now));
+		server->SetLastPingedTime(*lastPinged);
 	}
 }
 

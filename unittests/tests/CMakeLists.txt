@@ -526,6 +526,13 @@ target_compile_definitions (LugdunumNatTraversalTest PRIVATE ENABLE_NATT_SERVER_
 target_link_libraries (LugdunumNatTraversalTest muleunit mulecommon)
 add_test (NAME LugdunumNatTraversalTest COMMAND LugdunumNatTraversalTest)
 
+# When a missing server UDP key brings that server's status ping forward.
+add_executable (ServerKeyRecoveryTest ServerKeyRecoveryTest.cpp)
+target_include_directories (ServerKeyRecoveryTest PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include ${CMAKE_BINARY_DIR})
+target_compile_features (ServerKeyRecoveryTest PRIVATE cxx_std_17)
+target_link_libraries (ServerKeyRecoveryTest muleunit mulecommon)
+add_test (NAME ServerKeyRecoveryTest COMMAND ServerKeyRecoveryTest)
+
 # The buffering between libutp and the eD2k stack: the would-block contract
 # CEMSocket depends on, and the close that must happen exactly once. Header-only
 # and free of libutp, so it is compiled and run in every build rather than only

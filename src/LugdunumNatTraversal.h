@@ -153,6 +153,15 @@ inline bool ShouldRequestLugdunumNatCallback(const CallbackRequestFacts &facts)
 	       facts.serverSupportsObfuscationUdp;
 }
 
+// The request was held back only because the server's UDP key is missing, so it is owed once the
+// key is recovered.
+inline bool LugdunumNatCallbackAwaitsServerKey(const CallbackRequestFacts &facts)
+{
+	CallbackRequestFacts keyed = facts;
+	keyed.serverKeyUdp = 1;
+	return facts.serverKeyUdp == 0 && ShouldRequestLugdunumNatCallback(keyed);
+}
+
 struct ServerWayDatagramFacts
 {
 	std::uint32_t sourceIp = 0;

@@ -274,6 +274,14 @@ inline bool ServerTakesForeignCallback(const ForeignServerFacts &facts)
 	       facts.serverKeyUdp != 0 && facts.supportsObfuscationUdp && facts.cryptLayerUdpEnabled;
 }
 
+// The server would take a cross-server request once its missing UDP key is recovered.
+inline bool ForeignCallbackServerAwaitsKey(const ForeignServerFacts &facts)
+{
+	ForeignServerFacts keyed = facts;
+	keyed.serverKeyUdp = 1;
+	return facts.serverKeyUdp == 0 && ServerTakesForeignCallback(keyed);
+}
+
 // Whether a LowID source survives CanAddSource's LowID-while-firewalled drop. Since ed2k-server
 // 0.9.86 (ed2k-server#49) a LowID requester with NAT traversal gets only LowID sources that have it
 // too, and aMule qualifies through the UDP port it sends at login while LowIdHolePunch is on. Kept
@@ -597,6 +605,14 @@ inline bool ShouldObfuscateKeepalive(const KeepaliveCryptFacts &facts)
 	       facts.serverSupportsObfuscationUdp;
 }
 
+// A keepalive that went plain only for want of the key is sent again, obfuscated, once it arrives.
+inline bool KeepaliveAwaitsServerKey(const KeepaliveCryptFacts &facts)
+{
+	KeepaliveCryptFacts keyed = facts;
+	keyed.serverKeyUdp = 1;
+	return facts.serverKeyUdp == 0 && ShouldObfuscateKeepalive(keyed);
+}
+
 // A woken target sends 0x9F at 0, 0.5 and 1 s: the server takes the first that arrives.
 constexpr std::array<std::uint64_t, 3> kWakeKeepaliveOffsetsMs{ 0, 500, 1'000 };
 constexpr std::size_t kMaxPendingBurstKeepalives = 3 * kWakeKeepaliveOffsetsMs.size();
@@ -897,6 +913,45 @@ inline bool ShouldRequestForeignCallback(const ForeignRequestFacts &facts)
 // below that on each server we ask.
 constexpr std::uint32_t kForeignRequestBurst = 5;
 constexpr std::uint64_t kForeignRequestRefillMs = 2'000;
+
+// Requests to one server: a burst of kForeignRequestBurst, then one per kForeignRequestRefillMs.
+class ServerRequestPacer
+{
+public:
+	bool TryTake(std::uint64_t now)
+	{
+		Refill(now);
+		if (m_tokens == 0) {
+			return false;
+		}
+		--m_tokens;
+		return true;
+	}
+
+private:
+	void Refill(std::uint64_t now)
+	{
+		if (!m_started) {
+			m_started = true;
+			m_refilledAt = now;
+			return;
+		}
+		if (now < m_refilledAt) {
+			return;
+		}
+		const std::uint64_t earned = (now - m_refilledAt) / kForeignRequestRefillMs;
+		if (earned == 0) {
+			return;
+		}
+		m_tokens = static_cast<std::uint32_t>(
+			std::min<std::uint64_t>(kForeignRequestBurst, m_tokens + earned));
+		m_refilledAt += earned * kForeignRequestRefillMs;
+	}
+
+	bool m_started = false;
+	std::uint32_t m_tokens = kForeignRequestBurst;
+	std::uint64_t m_refilledAt = 0;
+};
 constexpr std::size_t kForeignTargetsPerWindow = 30;
 constexpr std::uint64_t kForeignTargetWindowMs = 600'000;
 // The server answers within 3 s and resends at +1.2 s and +3 s.
@@ -933,16 +988,14 @@ public:
 			return false;
 		}
 		ServerBudget &budget = BudgetFor(serverIp, now);
-		Refill(budget, now);
 		PruneTargets(budget, now);
 		const bool knownTarget = std::any_of(budget.targets.begin(),
 			budget.targets.end(),
 			[targetId](const TargetSeen &seen) { return seen.targetId == targetId; });
-		if (budget.tokens == 0 ||
-			(!knownTarget && budget.targets.size() >= kForeignTargetsPerWindow)) {
+		if ((!knownTarget && budget.targets.size() >= kForeignTargetsPerWindow) ||
+			!budget.pacer.TryTake(now)) {
 			return false;
 		}
-		--budget.tokens;
 		if (!knownTarget) {
 			budget.targets.push_back({ targetId, now });
 		}
@@ -1018,8 +1071,7 @@ private:
 	struct ServerBudget
 	{
 		std::uint32_t serverIp;
-		std::uint32_t tokens;
-		std::uint64_t refilledAt;
+		ServerRequestPacer pacer;
 		std::deque<TargetSeen> targets;
 	};
 	struct Cooldown
@@ -1092,22 +1144,8 @@ private:
 		if (m_budgets.size() >= kMaxForeignServers) {
 			m_budgets.pop_front();
 		}
-		m_budgets.push_back({ serverIp, kForeignRequestBurst, now, {} });
+		m_budgets.push_back({ serverIp, {}, {} });
 		return m_budgets.back();
-	}
-
-	static void Refill(ServerBudget &budget, std::uint64_t now)
-	{
-		if (now < budget.refilledAt) {
-			return;
-		}
-		const std::uint64_t earned = (now - budget.refilledAt) / kForeignRequestRefillMs;
-		if (earned == 0) {
-			return;
-		}
-		budget.tokens = static_cast<std::uint32_t>(
-			std::min<std::uint64_t>(kForeignRequestBurst, budget.tokens + earned));
-		budget.refilledAt += earned * kForeignRequestRefillMs;
 	}
 
 	static void PruneTargets(ServerBudget &budget, std::uint64_t now)
