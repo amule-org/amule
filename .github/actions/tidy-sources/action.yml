@@ -1,0 +1,61 @@
+# Prepares a build tree for clang-tidy without compiling the project: configure
+# writes compile_commands.json and config.h, and only the sources the build
+# generates (EC headers, icon data) are built. clang-tidy reads sources and
+# headers, never objects, so a full build adds nothing to its input. Build CI
+# remains the compile gate.
+#
+# Needs Ninja on PATH and clang-tools-<llvm-version> installed (clang-scan-deps).
+name: Prepare clang-tidy sources
+description: Configure, build only the generated sources, and check every TU's includes resolve.
+
+inputs:
+  cmake-flags:
+    description: Flags for the configure step, including -B build.
+    required: true
+  llvm-version:
+    description: LLVM major version providing clang-scan-deps.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: create build system
+      shell: bash
+      run: cmake -G Ninja ${{ inputs.cmake-flags }}
+    # Each target's cmake_object_order_depends_target_* is what Ninja builds
+    # before compiling any of its objects: its generated sources and the
+    # targets named in add_dependencies(). Building all of them and no object
+    # gives every TU the inputs a full build would.
+    - name: build generated sources
+      shell: bash
+      run: |
+        set -euo pipefail
+        mapfile -t targets < <(ninja -C build -t targets all \
+          | grep -o '^cmake_object_order_depends_target_[^:]*')
+        echo "Building ${#targets[@]} order-only dependency targets"
+        ninja -C build "${targets[@]}"
+    # Fails if any TU in the compilation database includes a file that does
+    # not exist, so a generated header missing from the step above stops the
+    # job here instead of turning into a filtered clang-diagnostic-error.
+    #
+    # The database names the host compiler. clang-scan-deps derives its
+    # builtin headers from that path, so the copy it reads names clang instead.
+    - name: check every included file exists
+      shell: bash
+      env:
+        LLVM_VERSION: ${{ inputs.llvm-version }}
+      run: |
+        set -euo pipefail
+        mkdir -p build/scan-deps
+        jq --arg cc "clang-${LLVM_VERSION}" --arg cxx "clang++-${LLVM_VERSION}" '
+          map((if (.file | test("\\.c$")) then $cc else $cxx end) as $drv
+            | .command |= sub("^[^ ]+"; $drv))
+        ' build/compile_commands.json > build/scan-deps/compile_commands.json
+        if ! clang-scan-deps-${LLVM_VERSION} \
+             -compilation-database build/scan-deps/compile_commands.json \
+             -j "$(nproc)" -format make > build/scan-deps/deps.txt 2> build/scan-deps/errors.txt; then
+          echo "::error::clang-scan-deps could not resolve every include:"
+          grep -E 'error:' build/scan-deps/errors.txt | sort | uniq -c | sort -rn | head -50
+          exit 1
+        fi
+        echo "All $(jq length build/compile_commands.json) TUs resolve every include"
