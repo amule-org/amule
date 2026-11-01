@@ -2248,7 +2248,7 @@ msgstr "Opțiuni extinse"
 msgid "Preview"
 msgstr "Previzualizează"
 
-#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp src/TransferWnd.cpp
 msgid "Show in file manager"
 msgstr ""
 
@@ -2626,6 +2626,10 @@ msgstr ""
 #: src/ExternalConn.cpp
 msgid "WebSearch from remote interface makes no sense."
 msgstr "Nu are nici un sens căutarea web de pe interfața distantă."
+
+#: src/ExternalConn.cpp
+msgid "Invalid media search filter."
+msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "A browse is not a search that can be started."
@@ -3114,6 +3118,11 @@ msgid "ERROR: Failed to execute external media-player! Command: '%s'"
 msgstr "EROARE: A eșuat execuția playerului media extern! Comanda: '%s'"
 
 #: src/FileLaunch.cpp
+#, fuzzy, c-format
+msgid "ERROR: Failed to show '%s' in the file manager."
+msgstr "EROARE: A eșuat deschiderea fișierului parțial '%s'"
+
+#: src/FileLaunch.cpp
 #, c-format
 msgid "Cannot open '%s': the file is not present on this computer."
 msgstr ""
@@ -3126,11 +3135,6 @@ msgstr ""
 #, c-format
 msgid "ERROR: Failed to open '%s' with the default application."
 msgstr ""
-
-#: src/FileLaunch.cpp
-#, fuzzy, c-format
-msgid "ERROR: Failed to show '%s' in the file manager."
-msgstr "EROARE: A eșuat deschiderea fișierului parțial '%s'"
 
 #: src/FilterSelectionSummary.h
 msgid "The message filter is off; its selected rules are saved."

@@ -2235,7 +2235,7 @@ msgstr "Genişletilmiş Seçenekler"
 msgid "Preview"
 msgstr "Ön İzleme"
 
-#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp src/TransferWnd.cpp
 msgid "Show in file manager"
 msgstr "Dosya yöneticisinde göster"
 
@@ -2609,6 +2609,10 @@ msgstr "EC_TAG_FRIEND_SHARED, EC_TAG_FRIEND veya EC_TAG_CLIENT gerektirir."
 #: src/ExternalConn.cpp
 msgid "WebSearch from remote interface makes no sense."
 msgstr "Uzak arayüzden Web araması yapmak anlamsız."
+
+#: src/ExternalConn.cpp
+msgid "Invalid media search filter."
+msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "A browse is not a search that can be started."
@@ -3096,6 +3100,11 @@ msgstr "HATA: harici ortam oynatıcısını çalıştırma başarısız! Komut: 
 
 #: src/FileLaunch.cpp
 #, c-format
+msgid "ERROR: Failed to show '%s' in the file manager."
+msgstr "HATA: dosya yöneticisinde '%s' unsurunun gösterilmesi başarısız oldu."
+
+#: src/FileLaunch.cpp
+#, c-format
 msgid "Cannot open '%s': the file is not present on this computer."
 msgstr "'%s' açılamaz: dosya bu bilgisayarda mevcut değil."
 
@@ -3107,11 +3116,6 @@ msgstr "Tamamlanmamış bir indirmenin önizlenmesi bir video çalıcı gerektir
 #, c-format
 msgid "ERROR: Failed to open '%s' with the default application."
 msgstr "HATA: '%s' unsurunun varsayılan uygulama ile açılması başarısız oldu."
-
-#: src/FileLaunch.cpp
-#, c-format
-msgid "ERROR: Failed to show '%s' in the file manager."
-msgstr "HATA: dosya yöneticisinde '%s' unsurunun gösterilmesi başarısız oldu."
 
 #: src/FilterSelectionSummary.h
 msgid "The message filter is off; its selected rules are saved."

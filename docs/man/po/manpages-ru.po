@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: manpages-ru\n"
 "POT-Creation-Date: 2026-10-30 11:29+0000\n"
-"PO-Revision-Date: 2026-10-29 21:57+0000\n"
+"PO-Revision-Date: 2026-11-01 10:29+0000\n"
 "Last-Translator: Sebastiano Pistore <SebastianoPistore.info@protonmail.ch>\n"
 "Language-Team: Russian <LL@li.org>\n"
 "Language: ru\n"
@@ -840,7 +840,7 @@ msgstr "B<amulecmd> B<--create-config-from>=I</home/username/.aMule/amule.conf>"
 #. type: Plain text
 #: amulecmd.1.in amuleweb.1.in
 msgid "After daemon credential migration, supply the client password with B<-P> or enter it at the password prompt; the daemon verifier cannot supply it."
-msgstr ""
+msgstr "После миграции учётных данных демона укажите пароль клиента с помощью B<-P> или введите его в запросе пароля; верификатор демона не может его предоставить."
 
 #. type: Plain text
 #: amulecmd.1.in amuleweb.1.in

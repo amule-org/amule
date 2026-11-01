@@ -2235,7 +2235,7 @@ msgstr "Utökade inställningar"
 msgid "Preview"
 msgstr "Förhandsgranska"
 
-#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp src/TransferWnd.cpp
 msgid "Show in file manager"
 msgstr "Visa i filhanteraren"
 
@@ -2609,6 +2609,10 @@ msgstr "EC_TAG_FRIEND_SHARED kräver EC_TAG_FRIEND eller EC_TAG_CLIENT."
 #: src/ExternalConn.cpp
 msgid "WebSearch from remote interface makes no sense."
 msgstr "Websök från fjärrgränssnitt är meningslöst."
+
+#: src/ExternalConn.cpp
+msgid "Invalid media search filter."
+msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "A browse is not a search that can be started."
@@ -3096,6 +3100,11 @@ msgstr "FEL: Kunde inte starta den externa mediaspelaren! Kommando: '%s'"
 
 #: src/FileLaunch.cpp
 #, c-format
+msgid "ERROR: Failed to show '%s' in the file manager."
+msgstr "FEL: Kunde inte visa ”%s” i filhanteraren."
+
+#: src/FileLaunch.cpp
+#, c-format
 msgid "Cannot open '%s': the file is not present on this computer."
 msgstr "Kan inte öppna ”%s”: filen finns inte på den här datorn."
 
@@ -3107,11 +3116,6 @@ msgstr "Förhandsvisning av en ofullständig hämtning kräver en videospelare: 
 #, c-format
 msgid "ERROR: Failed to open '%s' with the default application."
 msgstr "FEL: Kunde inte öppna ”%s” med standardprogrammet."
-
-#: src/FileLaunch.cpp
-#, c-format
-msgid "ERROR: Failed to show '%s' in the file manager."
-msgstr "FEL: Kunde inte visa ”%s” i filhanteraren."
 
 #: src/FilterSelectionSummary.h
 msgid "The message filter is off; its selected rules are saved."

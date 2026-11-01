@@ -2264,7 +2264,7 @@ msgstr "Erweiterte Optionen"
 msgid "Preview"
 msgstr "Vorschau"
 
-#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp src/TransferWnd.cpp
 msgid "Show in file manager"
 msgstr ""
 
@@ -2640,6 +2640,10 @@ msgstr "EC_TAG_FRIEND_SHARED erfordert EC_TAG_FRIEND oder EC_TAG_CLIENT."
 #: src/ExternalConn.cpp
 msgid "WebSearch from remote interface makes no sense."
 msgstr "Websuche mit der Fernsteuerungsschnittstelle macht keinen Sinn."
+
+#: src/ExternalConn.cpp
+msgid "Invalid media search filter."
+msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "A browse is not a search that can be started."
@@ -3131,6 +3135,11 @@ msgid "ERROR: Failed to execute external media-player! Command: '%s'"
 msgstr "FEHLER: Konnte externen Mediaplayer nicht starten! Befehl: '%s'"
 
 #: src/FileLaunch.cpp
+#, fuzzy, c-format
+msgid "ERROR: Failed to show '%s' in the file manager."
+msgstr "FEHLER: Öffnen von Partfile '%s' fehlgeschlagen"
+
+#: src/FileLaunch.cpp
 #, c-format
 msgid "Cannot open '%s': the file is not present on this computer."
 msgstr "„%s“ kann nicht geöffnet werden: Die Datei ist auf diesem Computer nicht vorhanden."
@@ -3143,11 +3152,6 @@ msgstr "Um einen unvollständigen Download in der Vorschau anzusehen, ist ein Vi
 #, c-format
 msgid "ERROR: Failed to open '%s' with the default application."
 msgstr "FEHLER: '%s' konnte nicht mit der Standardanwendung geöffnet werden."
-
-#: src/FileLaunch.cpp
-#, fuzzy, c-format
-msgid "ERROR: Failed to show '%s' in the file manager."
-msgstr "FEHLER: Öffnen von Partfile '%s' fehlgeschlagen"
 
 #: src/FilterSelectionSummary.h
 msgid "The message filter is off; its selected rules are saved."

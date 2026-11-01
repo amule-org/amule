@@ -2218,7 +2218,7 @@ msgstr "বর্ধিত অপশন"
 msgid "Preview"
 msgstr "প্রিভিউ"
 
-#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp src/TransferWnd.cpp
 msgid "Show in file manager"
 msgstr ""
 
@@ -2592,6 +2592,10 @@ msgstr "EC_TAG_FRIEND_SHARED এর জন্য EC_TAG_FRIEND অথবা EC_T
 #: src/ExternalConn.cpp
 msgid "WebSearch from remote interface makes no sense."
 msgstr "রিমোট ইন্টারফেস থেকে WebSearch অর্থহীন।"
+
+#: src/ExternalConn.cpp
+msgid "Invalid media search filter."
+msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "A browse is not a search that can be started."
@@ -3079,6 +3083,11 @@ msgstr ""
 
 #: src/FileLaunch.cpp
 #, c-format
+msgid "ERROR: Failed to show '%s' in the file manager."
+msgstr ""
+
+#: src/FileLaunch.cpp
+#, c-format
 msgid "Cannot open '%s': the file is not present on this computer."
 msgstr ""
 
@@ -3089,11 +3098,6 @@ msgstr ""
 #: src/FileLaunch.cpp
 #, c-format
 msgid "ERROR: Failed to open '%s' with the default application."
-msgstr ""
-
-#: src/FileLaunch.cpp
-#, c-format
-msgid "ERROR: Failed to show '%s' in the file manager."
 msgstr ""
 
 #: src/FilterSelectionSummary.h

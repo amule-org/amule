@@ -2252,7 +2252,7 @@ msgstr "Opzioni avanzate"
 msgid "Preview"
 msgstr "Anteprima"
 
-#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp src/TransferWnd.cpp
 msgid "Show in file manager"
 msgstr "Mostra nel file manager"
 
@@ -2626,6 +2626,10 @@ msgstr "EC_TAG_FRIEND_SHARED richiede EC_TAG_FRIEND o EC_TAG_CLIENT."
 #: src/ExternalConn.cpp
 msgid "WebSearch from remote interface makes no sense."
 msgstr "Non ha senso usare la ricerca Web da interfaccia remota."
+
+#: src/ExternalConn.cpp
+msgid "Invalid media search filter."
+msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "A browse is not a search that can be started."
@@ -3112,6 +3116,11 @@ msgstr "ERRORE: Impossibile eseguire il lettore multimediale esterno! Comando: '
 
 #: src/FileLaunch.cpp
 #, c-format
+msgid "ERROR: Failed to show '%s' in the file manager."
+msgstr "ERRORE: impossibile visualizzare '%s' nel file manager."
+
+#: src/FileLaunch.cpp
+#, c-format
 msgid "Cannot open '%s': the file is not present on this computer."
 msgstr "Impossibile aprire '%s': il file non è presente su questo computer."
 
@@ -3123,11 +3132,6 @@ msgstr "Per visualizzare in anteprima un download non completato è necessario u
 #, c-format
 msgid "ERROR: Failed to open '%s' with the default application."
 msgstr "ERRORE: Impossibile aprire '%s' con l'applicazione predefinita."
-
-#: src/FileLaunch.cpp
-#, c-format
-msgid "ERROR: Failed to show '%s' in the file manager."
-msgstr "ERRORE: impossibile visualizzare '%s' nel file manager."
 
 #: src/FilterSelectionSummary.h
 msgid "The message filter is off; its selected rules are saved."
