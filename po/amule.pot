@@ -1430,7 +1430,8 @@ msgstr ""
 msgid "IO error while reading %s file: %s"
 msgstr ""
 
-#: src/HashListFile.cpp src/KnownFileList.cpp
+#: src/HashListFile.cpp src/kademlia/routing/RoutingZone.cpp
+#: src/KnownFileList.cpp
 #, c-format
 msgid "Error while saving %s file: %s"
 msgstr ""
@@ -2991,6 +2992,11 @@ msgstr ""
 #: src/FileLaunch.cpp
 #, c-format
 msgid "ERROR: Failed to execute external media-player! Command: '%s'"
+msgstr ""
+
+#: src/FileLaunch.cpp
+#, c-format
+msgid "ERROR: Failed to open folder '%s' in the file manager."
 msgstr ""
 
 #: src/FileLaunch.cpp
@@ -9378,6 +9384,10 @@ msgstr ""
 
 #: src/TransferWnd.cpp
 msgid "Select view filter"
+msgstr ""
+
+#: src/TransferWnd.cpp
+msgid "Open Folder"
 msgstr ""
 
 #: src/TransferWnd.cpp
