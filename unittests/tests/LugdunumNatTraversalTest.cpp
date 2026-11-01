@@ -421,17 +421,17 @@ TEST(LugdunumNatTraversal, RecognisesServerWayDatagramsOnlyFromACapableCurrentSe
 	ASSERT_FALSE(IsServerWayDatagramFromOurServer(notCapable));
 }
 
-TEST(LugdunumNatTraversal, SelectsChallengeOverServerKeyOnlyWhenAPingReplyIsPending)
+TEST(LugdunumNatTraversal, TriesTheServerKeyAfterAnUnansweredCryptPingChallenge)
 {
-	// Mirrors CServerUDPSocket::OnPacketReceived (ServerUDPSocket.cpp) and NeoMule's
-	// ClientUDPSocket.cpp: a pending crypt-ping reply's challenge wins.
-	ASSERT_EQUALS((std::uint32_t)777, SelectServerWayKey(true, 777, 42));
+	// A callback or extension wake uses the established server key, while the lost ping reply would
+	// have used its challenge. Both need trying, in that order, during the 20-second ping window.
+	ASSERT_TRUE((ServerWayKeys(true, 777, 42) == std::vector<std::uint32_t>{ 777, 42 }));
 
-	// No reply pending: the established server key is used regardless of a stale challenge.
-	ASSERT_EQUALS((std::uint32_t)42, SelectServerWayKey(false, 777, 42));
-
-	// Reply pending but no real challenge (0): falls back to the server key.
-	ASSERT_EQUALS((std::uint32_t)42, SelectServerWayKey(true, 0, 42));
+	// Without a pending ping, or without a usable challenge, there is exactly one established key.
+	ASSERT_TRUE((ServerWayKeys(false, 777, 42) == std::vector<std::uint32_t>{ 42 }));
+	ASSERT_TRUE((ServerWayKeys(true, 0, 42) == std::vector<std::uint32_t>{ 42 }));
+	ASSERT_TRUE((ServerWayKeys(true, 777, 0) == std::vector<std::uint32_t>{ 777 }));
+	ASSERT_TRUE(ServerWayKeys(true, 42, 42) == std::vector<std::uint32_t>{ 42 });
 }
 
 TEST(LugdunumNatTraversal, KeepsLowIdServerSourcesOnlyFromOurOwnCapableServer)

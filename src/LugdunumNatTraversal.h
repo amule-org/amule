@@ -167,18 +167,21 @@ inline bool IsServerWayDatagramFromOurServer(const ServerWayDatagramFacts &facts
 	return facts.serverCallbackCapable && facts.sourceIp == facts.serverIp;
 }
 
-// Picks the server-way UDP base key exactly as CServerUDPSocket::OnPacketReceived does
-// (ServerUDPSocket.cpp): a pending crypt-ping reply's challenge takes priority over the
-// established server key, because that specific exchange is what the challenge authenticates.
-// Confirmed against NeoMule's ClientUDPSocket.cpp, which makes the same choice on this same
-// opcode.
-inline std::uint32_t SelectServerWayKey(
+// A pending crypt-ping reply is the only packet authenticated by its challenge. A callback or
+// extension wake received during that 20-second window instead uses the established server key.
+// Try the challenge first, then the distinct established key, so a lost status ping cannot block
+// NAT-T until the next status refresh.
+inline std::vector<std::uint32_t> ServerWayKeys(
 	bool cryptPingReplyPending, std::uint32_t challenge, std::uint32_t serverKeyUdp)
 {
+	std::vector<std::uint32_t> keys;
 	if (cryptPingReplyPending && challenge != 0) {
-		return challenge;
+		keys.push_back(challenge);
 	}
-	return serverKeyUdp;
+	if (serverKeyUdp != 0 && (keys.empty() || keys.front() != serverKeyUdp)) {
+		keys.push_back(serverKeyUdp);
+	}
+	return keys;
 }
 
 struct LowIdServerSourceFacts

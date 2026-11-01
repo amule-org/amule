@@ -681,14 +681,20 @@ bool CClientUDPSocket::TryProcessServerWayNatCallback(uint32 ip, uint8_t *buffer
 		return false;
 	}
 
-	// A pending crypt-ping reply's challenge comes first, as in CServerUDPSocket::OnPacketReceived.
-	const std::uint32_t key =
-		LugdunumNatTraversal::SelectServerWayKey(serverListEntry->GetCryptPingReplyPending(),
-			serverListEntry->GetChallenge(),
-			serverListEntry->GetServerKeyUDP());
 	uint8_t *decrypted = buffer;
-	const int decryptedLen = CEncryptedDatagramSocket::DecryptReceivedServer(
-		buffer, static_cast<int>(length), &decrypted, key, ip);
+	int decryptedLen = static_cast<int>(length);
+	// A failed DecryptReceivedServer() leaves buffer unchanged, so the next candidate is safe.
+	for (const std::uint32_t key :
+		LugdunumNatTraversal::ServerWayKeys(serverListEntry->GetCryptPingReplyPending(),
+			serverListEntry->GetChallenge(),
+			serverListEntry->GetServerKeyUDP())) {
+		decrypted = buffer;
+		decryptedLen = CEncryptedDatagramSocket::DecryptReceivedServer(
+			buffer, static_cast<int>(length), &decrypted, key, ip);
+		if (decryptedLen < static_cast<int>(length) && decrypted != nullptr && decryptedLen >= 2) {
+			break;
+		}
+	}
 	// Every non-decrypting path returns the input length unchanged; a decrypt strips the header.
 	if (decryptedLen >= static_cast<int>(length) || decrypted == nullptr || decryptedLen < 2) {
 		return false;
