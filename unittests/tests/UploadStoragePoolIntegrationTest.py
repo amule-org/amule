@@ -21,7 +21,7 @@ import zlib
 
 from AllSearchIntegrationTest import connect_daemon, free_ports, retry_port_collisions, stop_daemon
 from CancelCompletedIntegrationTest import md4
-from DaemonConfig import write_amule_conf
+from DaemonConfig import daemon_env, write_amule_conf
 from ShareWatcherMoveIntegrationTest import shared
 from UploadStorageDelayIntegrationTest import BLOCK, Peer, wait_read
 from UploadRefillIntegrationTest import packet, send
@@ -87,11 +87,12 @@ def run(binary, fixture, stage):
         notify_r, notify_w = os.pipe()
         release_r, release_w = os.pipe()
         arm = root / 'armed'
-        env = dict(os.environ, HOME=str(root), XDG_CONFIG_HOME=str(root / 'xdg'), LC_ALL='C.UTF-8',
-                   LD_PRELOAD=os.pathsep.join(filter(None, (os.getenv('AMULE_TEST_PRELOAD_RUNTIME'), fixture))), AMULE_TEST_READ_PREFIX=str(root / 'Slow'),
-                   AMULE_TEST_READ_STAGE='open' if stage == 'open' else 'read', AMULE_TEST_MOUNTINFO=str(mounts),
-                   AMULE_TEST_READ_ARM=str(arm), AMULE_TEST_READ_NOTIFY_FD=str(notify_w),
-                   AMULE_TEST_READ_RELEASE_FD=str(release_r))
+        preload = os.pathsep.join(filter(None, (os.getenv('AMULE_TEST_PRELOAD_RUNTIME'), fixture)))
+        env = daemon_env(root, LD_PRELOAD=preload,
+                         AMULE_TEST_READ_PREFIX=root / 'Slow',
+                         AMULE_TEST_READ_STAGE='open' if stage == 'open' else 'read', AMULE_TEST_MOUNTINFO=mounts,
+                         AMULE_TEST_READ_ARM=arm, AMULE_TEST_READ_NOTIFY_FD=notify_w,
+                         AMULE_TEST_READ_RELEASE_FD=release_r)
         if stage == 'discovery':
             env['AMULE_TEST_READ_STAGE'] = 'discovery'
             env['AMULE_TEST_READ_PATH'] = '/proc/self/mountinfo'

@@ -7,16 +7,14 @@ A finished download stays in the download queue until it is cleared, so `amulecm
 and the remote GUI's category Cancel still send EC_OP_PARTFILE_DELETE for it. Its path then
 points into Incoming.
 """
-import os
 from pathlib import Path
 import struct
-import subprocess
 import sys
 import tempfile
 import time
 
-from AllSearchIntegrationTest import (C, connect_daemon, free_ports, log_snapshot,
-                                      retry_port_collisions, stop_daemon, tag, integer)
+from AllSearchIntegrationTest import (C, free_ports, retry_port_collisions, running_daemon,
+                                      tag, integer)
 from DaemonConfig import write_amule_conf
 
 DONE_NAME = 'done.bin'
@@ -91,13 +89,9 @@ def run(binary, root):
         for extension in MET_SIDECARS:
             (root / 'Temp' / f'{number}.part.met{extension}').write_bytes(b'stale metadata')
 
-    env = dict(os.environ, HOME=str(root), XDG_CONFIG_HOME=str(root / 'xdg'), LC_ALL='C.UTF-8')
-    env.pop('LD_PRELOAD', None)
-    snapshot = log_snapshot(root / 'logfile')
-    proc = subprocess.Popen([binary, '-c', str(root), '--disable-fatal'], env=env,
-                            stdout=(root / 'console.log').open('a'), stderr=subprocess.STDOUT)
-    try:
-        ec = connect_daemon(proc, ec_port, root, peer_port, udp_port, snapshot=snapshot)
+    # The clean stop checks the exit code: deleting a finished file left it freed in the
+    # known list, and the shutdown save then crashed.
+    with running_daemon(binary, root, ports) as (proc, ec):
         done = root / 'Incoming' / DONE_NAME
         wait_for(proc, 'the gapless part file to complete',
                  lambda: f'Finished downloading: {DONE_NAME}' in (root / 'logfile').read_text(errors='replace'))
@@ -160,12 +154,6 @@ def run(binary, root):
         assert command('EC_OP_PARTFILE_DELETE', replacement_id) == C['EC_OP_NOOP']
         _, remaining = ec.call(C['EC_OP_GET_DLOAD_QUEUE'])
         assert C['EC_TAG_PARTFILE'] not in remaining, remaining
-
-        ec.sock.close()
-    finally:
-        # Checks the exit code: deleting a finished file left it freed in the known list,
-        # and the shutdown save then crashed.
-        stop_daemon(proc)
     assert not list((root / 'Temp').glob('00[12].part*')), 'shutdown recreated removed metadata'
 
 

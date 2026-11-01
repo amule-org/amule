@@ -7,18 +7,16 @@ Each packet becomes one buffered write. Inserting it with a list scan, and flush
 on every packet, made each packet walk all pending writes: the download below took
 over a minute with the main thread at full CPU.
 """
-import os
 from pathlib import Path
 import select
 import socket
 import struct
-import subprocess
 import sys
 import tempfile
 import threading
 import time
 
-from AllSearchIntegrationTest import C, connect_daemon, free_ports, retry_port_collisions, stop_daemon
+from AllSearchIntegrationTest import C, free_ports, retry_port_collisions, start_daemon, stop_daemon
 from CancelCompletedIntegrationTest import md4
 from DaemonConfig import write_amule_conf
 from DownloadDisplayRatesIntegrationTest import hello, local_ipv4
@@ -85,14 +83,9 @@ def run(binary):
         ports = free_ports(2, peer_index=1)
         write_amule_conf(root, ports[0], Address=source.address, Port=ports[1], UDPEnable=0,
                          FilterLanIPs=0, MaxDownload=0, MaxUpload=0)
-        env = dict(os.environ, HOME=str(root), XDG_CONFIG_HOME=str(root / 'xdg'), LC_ALL='C.UTF-8')
-        env.pop('LD_PRELOAD', None)
         proc = ec = worker = None
         try:
-            with (root / 'console.log').open('w') as log:
-                proc = subprocess.Popen([binary, '-c', str(root), '--disable-fatal'], env=env,
-                                        stdout=log, stderr=log)
-            ec = connect_daemon(proc, ports[0], root, ports[1])
+            proc, ec = start_daemon(binary, root, ports)
             assert add_link(ec, source.link()) == C['EC_OP_NOOP']
             worker = threading.Thread(target=source.serve, args=(ports[1],), daemon=True)
             worker.start()

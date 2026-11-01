@@ -14,10 +14,8 @@ import sys
 import tempfile
 import time
 
-from AllSearchIntegrationTest import free_ports, retry_port_collisions
-from DaemonConfig import write_amule_conf, write_remote_conf
-from LogfilePathIntegrationTest import daemon_env
-from PathDefaultsIntegrationTest import daemon
+from AllSearchIntegrationTest import free_ports, retry_port_collisions, running_daemon
+from DaemonConfig import daemon_env, write_amule_conf, write_remote_conf
 
 # Version byte, then a user hash the core will not generate.
 LOCAL_PREFS = bytes([0x14]) + bytes(range(0x10, 0x20))
@@ -33,7 +31,7 @@ def run(gui, amuled, root):
     (local / 'preferences.dat').write_bytes(LOCAL_PREFS)
     write_remote_conf(local, ports[0])
 
-    with daemon(amuled, core, ports):
+    with running_daemon(amuled, core, ports):
         console_file = root / 'gui-console.log'
         with console_file.open('w') as console:
             gui_proc = subprocess.Popen([gui, '-c', str(local), '-s', '-o'], env=daemon_env(root),

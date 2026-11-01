@@ -2,7 +2,6 @@
 # Copyright (c) 2026 aMule Team
 # SPDX-License-Identifier: GPL-2.0-or-later
 """Keep the text client connected until a loopback SRP peer finishes shutdown."""
-import os
 from pathlib import Path
 import socketserver
 import struct
@@ -15,6 +14,7 @@ import zlib
 
 from ECWire import accept  # Preflight in the parent before starting fixtures.
 from AllSearchIntegrationTest import C, exact
+from DaemonConfig import daemon_env
 
 BINARY = str(Path(sys.argv.pop(1)).resolve())
 
@@ -55,11 +55,10 @@ class ShutdownTest(unittest.TestCase):
                 server.reply = reply
                 thread = threading.Thread(target=server.serve_forever, daemon=True)
                 thread.start()
-                env = dict(os.environ, HOME=directory, XDG_CONFIG_HOME=directory + '/xdg', LC_ALL='C.UTF-8')
                 process = subprocess.Popen([BINARY, '-h', '127.0.0.1',
                     '-p', str(server.server_address[1]), '-P', 'regression',
                     '-c', 'shutdown'],
-                    env=env, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    env=daemon_env(directory), stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 try:
                     if not server.received.wait(10):
                         if process.poll() is None:

@@ -3,11 +3,12 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 """Verify API and command-line guards against a loopback EC peer without All support."""
 import hashlib
-import json, os, socketserver, struct, subprocess, sys, tempfile, threading, time, urllib.request, zlib
+import json, socketserver, struct, subprocess, sys, tempfile, threading, time, urllib.request, zlib
 from pathlib import Path
 from ECWire import accept  # Preflight in the parent before starting fixtures.
-from AllSearchIntegrationTest import (C, PortCollision, exact, free_ports,
-                                      integer, retry_port_collisions, string, tag)
+from AllSearchIntegrationTest import (C, PortCollision, exact, free_ports, integer,
+                                      retry_port_collisions, stop_daemon, string, tag)
+from DaemonConfig import daemon_env
 requests = []
 class Handler(socketserver.BaseRequestHandler):
     def handle(self):
@@ -34,11 +35,13 @@ class Handler(socketserver.BaseRequestHandler):
 class Server(socketserver.ThreadingTCPServer):
     daemon_threads = True
 
+opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+
 def http(url, body=None, token=None):
     headers = {'Content-Type':'application/json'}
     if token: headers['Authorization'] = 'Bearer '+token
     request = urllib.request.Request(url, None if body is None else json.dumps(body).encode(), headers)
-    try: response = urllib.request.urlopen(request, timeout=3)
+    try: response = opener.open(request, timeout=3)
     except urllib.error.HTTPError as response: return response.code, json.load(response)
     with response: return response.status, json.load(response)
 
@@ -46,7 +49,7 @@ def http(url, body=None, token=None):
 def run(api, cmd):
     with tempfile.TemporaryDirectory(prefix='amule-missing-capability-') as tmp:
         cfg = Path(tmp)
-        env = dict(os.environ, HOME=tmp, XDG_CONFIG_HOME=tmp+'/xdg', LC_ALL='C.UTF-8')
+        env = daemon_env(tmp)
         subprocess.run([api, '--config-dir='+tmp, '--set-admin-pass=adminpass'], env=env, check=True, stdout=subprocess.DEVNULL)
         config=cfg/'amuleapi.conf'
         config.write_text(config.read_text().replace('PasswordMD5=', 'PasswordMD5=' + hashlib.md5(b'regression').hexdigest(), 1))
@@ -100,7 +103,7 @@ def run(api, cmd):
                 except BaseException:
                     log.flush();print((cfg/'api.log').read_text(),file=sys.stderr);raise
                 finally:
-                    proc.terminate();proc.wait(timeout=10);legacy.shutdown()
+                    stop_daemon(proc, check=sys.exc_info()[0] is None);legacy.shutdown()
 
 
 if __name__ == "__main__":

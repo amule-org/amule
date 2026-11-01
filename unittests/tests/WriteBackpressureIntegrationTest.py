@@ -8,15 +8,14 @@ from pathlib import Path
 import select
 import socket
 import struct
-import subprocess
 import sys
 import tempfile
 import threading
 import time
 import zlib
 
-from AllSearchIntegrationTest import C, connect_daemon, free_ports, retry_port_collisions, stop_daemon
-from DaemonConfig import write_amule_conf
+from AllSearchIntegrationTest import C, free_ports, retry_port_collisions, start_daemon, stop_daemon
+from DaemonConfig import daemon_env, write_amule_conf
 from CancelCompletedIntegrationTest import md4
 from DownloadDisplayRatesIntegrationTest import hello, local_ipv4
 from ED2KLinkIntegrationTest import add_link
@@ -158,14 +157,11 @@ def run(binary, shim, compressed, held_sources=False):
                          MaxConnections=1000, MaxConnectionsPerFiveSeconds=1000,
                          WriteBufferLimitMiB=LIMIT // (1024 * 1024))
         preload = ':'.join(filter(None, [os.environ.get('AMULE_TEST_PRELOAD_RUNTIME'), shim]))
-        env = dict(os.environ, HOME=str(root), XDG_CONFIG_HOME=str(root / 'xdg'), LC_ALL='C.UTF-8',
-                   LD_PRELOAD=preload, AMULE_TEST_WRITE_GATE=str(gate), AMULE_TEST_WRITE_ERROR=str(failure))
+        env = daemon_env(root, LD_PRELOAD=preload, AMULE_TEST_WRITE_GATE=gate,
+                         AMULE_TEST_WRITE_ERROR=failure)
         proc = ec = None
         try:
-            with (root / 'console.log').open('w') as log:
-                proc = subprocess.Popen([binary, '-c', str(root), '--disable-fatal'], env=env,
-                                        stdout=log, stderr=log)
-            ec = connect_daemon(proc, ports[0], root, ports[1])
+            proc, ec = start_daemon(binary, root, ports, env=env)
             def rss_bytes():
                 for line in Path(f'/proc/{proc.pid}/status').read_text().splitlines():
                     if line.startswith('VmRSS:'):

@@ -6,9 +6,14 @@ import configparser
 from pathlib import Path
 import errno
 import hashlib
+import os
+import signal
 import struct
+import subprocess
+import sys
 from itertools import cycle
 import tempfile
+import time
 import unittest
 from unittest.mock import patch
 
@@ -184,6 +189,43 @@ class IntegrationFixtureUnitTest(unittest.TestCase):
                                                expected=root / 'logfile')
 
 
+class StopDaemonUnitTest(unittest.TestCase):
+    def spawn(self, code):
+        return subprocess.Popen([sys.executable, '-c', code])
+
+    def test_unclean_exit_fails_check(self):
+        if os.name == 'nt':
+            self.skipTest('taskkill exit codes are not checked on Windows')
+        proc = self.spawn('import time; time.sleep(60)')
+        with patch.object(AllSearchIntegrationTest.subprocess.Popen, 'terminate',
+                          lambda p: p.send_signal(signal.SIGINT)):
+            with self.assertRaises(AssertionError):
+                AllSearchIntegrationTest.stop_daemon(proc)
+        self.assertIsNotNone(proc.poll())
+
+    def test_hung_process_is_killed(self):
+        if os.name == 'nt':
+            self.skipTest('POSIX signals only')
+        proc = self.spawn('import signal, time\n'
+                          'signal.signal(signal.SIGTERM, signal.SIG_IGN)\ntime.sleep(60)')
+        time.sleep(0.5)
+        with self.assertRaises(AssertionError):
+            AllSearchIntegrationTest.stop_daemon(proc, timeout=1)
+        self.assertIsNotNone(proc.poll())
+        proc = self.spawn('import signal, time\n'
+                          'signal.signal(signal.SIGTERM, signal.SIG_IGN)\ntime.sleep(60)')
+        time.sleep(0.5)
+        AllSearchIntegrationTest.stop_daemon(proc, timeout=1, check=False)
+        self.assertIsNotNone(proc.poll())
+
+    def test_exited_process_is_not_signalled(self):
+        proc = self.spawn('pass')
+        proc.wait()
+        with patch.object(AllSearchIntegrationTest.subprocess.Popen, 'terminate') as terminate:
+            AllSearchIntegrationTest.stop_daemon(proc)
+        terminate.assert_not_called()
+
+
 class OfferFilesLoginUnitTest(unittest.TestCase):
     def test_offerfiles_login_request_with_other_extensions(self):
         standard = (b'\x02\x01\x00\x01\x04\x00test'
@@ -238,6 +280,18 @@ class DaemonConfigUnitTest(unittest.TestCase):
         self.assertEqual(config['ExternalConnect']['ECPassword'],
                          hashlib.md5(DaemonConfig.EC_PASSWORD.encode()).hexdigest())
         self.assertEqual(config['WebServer']['Enabled'], '0')
+
+    def test_daemon_env_isolates_home_and_drops_preload(self):
+        with patch.dict(DaemonConfig.os.environ, {'LD_PRELOAD': 'x.so', 'DISPLAY': ':0'}):
+            env = DaemonConfig.daemon_env('/tmp/home', AMULE_TEST_X=1, DISPLAY=None)
+            preload = DaemonConfig.daemon_env('/tmp/home', LD_PRELOAD='y.so')
+        self.assertEqual(env['HOME'], '/tmp/home')
+        self.assertEqual(env['XDG_CONFIG_HOME'], str(Path('/tmp/home') / 'xdg'))
+        self.assertEqual(env['LC_ALL'], 'C.UTF-8')
+        self.assertEqual(env['AMULE_TEST_X'], '1')
+        self.assertNotIn('LD_PRELOAD', env)
+        self.assertNotIn('DISPLAY', env)
+        self.assertEqual(preload['LD_PRELOAD'], 'y.so')
 
     def test_none_leaves_a_key_out(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -11,13 +11,11 @@ import os
 from pathlib import Path
 import shutil
 import struct
-import subprocess
 import sys
 import tempfile
 import time
 
-from AllSearchIntegrationTest import (C, connect_daemon, exact, free_ports,
-                                      retry_port_collisions, stop_daemon)
+from AllSearchIntegrationTest import C, exact, free_ports, retry_port_collisions, running_daemon
 from DaemonConfig import write_amule_conf
 
 
@@ -78,53 +76,43 @@ def run(binary, root):
     port, peer_port = free_ports(2)
     write_amule_conf(root, port, Port=peer_port, UDPEnable=0, IncomingDir=incoming,
                      AutoRescanSharedDirs=1)
-    env = dict(os.environ, HOME=str(root), XDG_CONFIG_HOME=str(root / 'xdg'), LC_ALL='C.UTF-8')
-    env.pop('LD_PRELOAD', None)
-    with (root / 'console.log').open('w') as console:
-        proc = subprocess.Popen([binary, '-c', str(root), '--disable-fatal'], stdout=console, stderr=console, env=env)
-        ec = None
-        try:
-            ec = connect_daemon(proc, port, root, peer_port)
-            wait_for(proc, 'a.bin and c.bin shared', lambda: {'a.bin', 'c.bin'} <= shared(ec).keys())
-            original, c_hash = shared(ec)['a.bin'], shared(ec)['c.bin']
+    with running_daemon(binary, root, (port, peer_port)) as (proc, ec):
+        wait_for(proc, 'a.bin and c.bin shared', lambda: {'a.bin', 'c.bin'} <= shared(ec).keys())
+        original, c_hash = shared(ec)['a.bin'], shared(ec)['c.bin']
 
-            # The completion shape: a byte-identical file with the same mtime arrives over the
-            # shared path. b.bin moves in alongside it; once b.bin is being hashed, the watcher has
-            # handled both moves.
-            shutil.copy2(incoming / 'a.bin', outside / 'a.bin')
-            (outside / 'b.bin').write_bytes(os.urandom(200_000))
-            os.replace(outside / 'a.bin', incoming / 'a.bin')
-            os.replace(outside / 'b.bin', incoming / 'b.bin')
-            wait_for(proc, 'b.bin hashing', lambda: f'Hashing file: {incoming / "b.bin"}' in log(ec))
-            lines = [l for l in log(ec).splitlines() if 'a.bin' in l]
-            assert f'Stopped sharing removed file: {incoming / "a.bin"}' not in '\n'.join(lines), lines
-            assert shared(ec).get('a.bin') == original
-            wait_for(proc, 'b.bin shared', lambda: 'b.bin' in shared(ec))
+        # The completion shape: a byte-identical file with the same mtime arrives over the
+        # shared path. b.bin moves in alongside it; once b.bin is being hashed, the watcher has
+        # handled both moves.
+        shutil.copy2(incoming / 'a.bin', outside / 'a.bin')
+        (outside / 'b.bin').write_bytes(os.urandom(200_000))
+        os.replace(outside / 'a.bin', incoming / 'a.bin')
+        os.replace(outside / 'b.bin', incoming / 'b.bin')
+        wait_for(proc, 'b.bin hashing', lambda: f'Hashing file: {incoming / "b.bin"}' in log(ec))
+        lines = [l for l in log(ec).splitlines() if 'a.bin' in l]
+        assert f'Stopped sharing removed file: {incoming / "a.bin"}' not in '\n'.join(lines), lines
+        assert shared(ec).get('a.bin') == original
+        wait_for(proc, 'b.bin shared', lambda: 'b.bin' in shared(ec))
 
-            # Moved out of the watched set: no longer shared.
-            os.replace(incoming / 'b.bin', outside / 'b.bin')
-            wait_for(proc, 'b.bin unshared', lambda: 'b.bin' not in shared(ec))
-            assert f'Stopped sharing removed file: {incoming / "b.bin"}' in log(ec)
+        # Moved out of the watched set: no longer shared.
+        os.replace(incoming / 'b.bin', outside / 'b.bin')
+        wait_for(proc, 'b.bin unshared', lambda: 'b.bin' not in shared(ec))
+        assert f'Stopped sharing removed file: {incoming / "b.bin"}' in log(ec)
 
-            # Moved in over a shared file with different content: re-hashed.
-            (outside / 'a.bin').write_bytes(os.urandom(250_000))
-            os.replace(outside / 'a.bin', incoming / 'a.bin')
-            wait_for(proc, 'a.bin re-hashed', lambda: shared(ec).get('a.bin') not in (None, original))
+        # Moved in over a shared file with different content: re-hashed.
+        (outside / 'a.bin').write_bytes(os.urandom(250_000))
+        os.replace(outside / 'a.bin', incoming / 'a.bin')
+        wait_for(proc, 'a.bin re-hashed', lambda: shared(ec).get('a.bin') not in (None, original))
 
-            # Renamed over another shared file: that path now shares the renamed file's content.
-            os.replace(incoming / 'c.bin', incoming / 'a.bin')
-            wait_for(proc, 'c.bin content shared as a.bin',
-                     lambda: shared(ec).get('a.bin') == c_hash and 'c.bin' not in shared(ec))
+        # Renamed over another shared file: that path now shares the renamed file's content.
+        os.replace(incoming / 'c.bin', incoming / 'a.bin')
+        wait_for(proc, 'c.bin content shared as a.bin',
+                 lambda: shared(ec).get('a.bin') == c_hash and 'c.bin' not in shared(ec))
 
-            # Deleted and written again within one watcher window: shared with the new content.
-            os.remove(incoming / 'a.bin')
-            (incoming / 'a.bin').write_bytes(os.urandom(120_000))
-            wait_for(proc, 'a.bin re-hashed after delete and rewrite',
-                     lambda: shared(ec).get('a.bin') not in (None, c_hash))
-        finally:
-            if ec:
-                ec.sock.close()
-            stop_daemon(proc)
+        # Deleted and written again within one watcher window: shared with the new content.
+        os.remove(incoming / 'a.bin')
+        (incoming / 'a.bin').write_bytes(os.urandom(120_000))
+        wait_for(proc, 'a.bin re-hashed after delete and rewrite',
+                 lambda: shared(ec).get('a.bin') not in (None, c_hash))
 
 
 def main():

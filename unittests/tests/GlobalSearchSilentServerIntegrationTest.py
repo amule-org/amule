@@ -7,19 +7,17 @@ Lugdunum servers send no OP_SEARCHRESULT when they have no match. The fake conne
 holds its answer past the daemon's timeout, then sends it while the UDP sweep runs: the late
 answer must be filed without restarting the sweep, so each server is asked exactly once.
 """
-import os
 from pathlib import Path
 import select
 import socket
 import struct
-import subprocess
 import sys
 import tempfile
 import threading
 import time
 
-from AllSearchIntegrationTest import (C, connect_daemon, exact, free_ports, retry_port_collisions,
-                                      search_record, stop_daemon, string)
+from AllSearchIntegrationTest import (C, exact, free_ports, retry_port_collisions, running_daemon,
+                                      search_record, string)
 from DaemonConfig import write_amule_conf
 
 OP_SEARCHREQUEST = 0x16
@@ -80,11 +78,9 @@ def run(binary):
         workers = [threading.Thread(target=record, daemon=True), threading.Thread(target=serve, daemon=True)]
         for worker in workers:
             worker.start()
-        env = dict(os.environ, HOME=str(root), XDG_CONFIG_HOME=str(root / 'xdg'), LC_ALL='C.UTF-8')
-        with (root / 'stdout.log').open('w') as log:
-            proc = subprocess.Popen([binary, '-c', str(root)], stdout=log, stderr=log, env=env)
-            try:
-                ec = connect_daemon(proc, ec_port, root, peer_port, udp_port, server_udp=True)
+        try:
+            with running_daemon(binary, root, (ec_port, peer_port, udp_port), args=(),
+                                console='stdout.log', server_udp=True) as (_, ec):
 
                 def add(address):
                     return ec.call(C['EC_OP_SERVER_ADD'], [string(C['EC_TAG_SERVER_ADDRESS'], address)])[0]
@@ -111,18 +107,12 @@ def run(binary):
                 time.sleep(1.5)
                 assert all(count == 1 for count in asked.values()), f'each server must be asked once: {asked}'
                 assert state[C['EC_TAG_SEARCH_RESULT_COUNT']][0] == 1, state
-                ec.sock.close()
-            except BaseException:
-                logfile = root / 'logfile'
-                print(logfile.read_text(errors='replace')[-5000:] if logfile.exists() else 'no logfile')
-                raise
-            finally:
-                stop.set()
-                answer.set()
-                workers[0].join()
-                for sock in listeners + [login]:
-                    sock.close()
-                stop_daemon(proc)
+        finally:
+            stop.set()
+            answer.set()
+            workers[0].join()
+            for sock in listeners + [login]:
+                sock.close()
         print('the silent server timed out, every other server was asked once, the late answer was kept')
 
 

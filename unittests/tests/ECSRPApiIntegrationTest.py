@@ -11,8 +11,8 @@ import time
 import urllib.error
 import urllib.request
 
-from AllSearchIntegrationTest import connect_daemon, free_ports, retry_port_collisions, stop_daemon
-from DaemonConfig import write_amule_conf
+from AllSearchIntegrationTest import free_ports, retry_port_collisions, start_daemon, stop_daemon
+from DaemonConfig import daemon_env, write_amule_conf
 
 
 def run(daemon_binary, api_binary, token):
@@ -29,42 +29,38 @@ def run(daemon_binary, api_binary, token):
             '[EC]\nHost=127.0.0.1\nPort=' + str(port) + '\nPassword=' +
             ('wrong-password' if token else 'regression') + '\nEncryption=0\n')
         (root / 'amuleapi.conf').chmod(0o600)
-        env = dict(os.environ, HOME=str(root), XDG_CONFIG_HOME=str(root / 'xdg'),
-                   LC_ALL='C.UTF-8')
         processes = []
-        with (root / 'console').open('w') as log:
-            try:
-                daemon = subprocess.Popen([daemon_binary, '-c', str(root)] + ([] if os.name == 'nt' else ['--disable-fatal']),
-                                          env=env, stdout=log, stderr=log)
-                processes.append(daemon)
-                ec = connect_daemon(daemon, port, root, peer)
-                ec.sock.close()
-                if not token:
+        try:
+            daemon, ec = start_daemon(daemon_binary, root, (port, peer), console='console',
+                                      args=() if os.name == 'nt' else ('--disable-fatal',))
+            processes.append(daemon)
+            ec.sock.close()
+            if not token:
+                with (root / 'console').open('a') as log:
                     processes.append(subprocess.Popen(
                         [api_binary, '--config-dir=' + str(root)],
-                        env=env, stdout=log, stderr=log))
-                opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
-                deadline = time.monotonic() + 30
-                while True:
-                    assert all(p.poll() is None for p in processes), (root / 'console').read_text()
-                    try:
-                        with opener.open(f'http://127.0.0.1:{http}/api/v1/health', timeout=2) as response:
-                            assert response.status == 200
-                            json.load(response)
-                        break
-                    except urllib.error.URLError:
-                        assert time.monotonic() < deadline, (root / 'console').read_text()
-                        time.sleep(0.05)
-                api_log = (root / 'amuleapi.log').read_text()
-                assert 'Succeeded!' in api_log, api_log
-                assert ('using the ephemeral EC token' in api_log) == token, api_log
-                assert not (root / 'amuleapi-ec-token').exists(), 'token not consumed'
-                assert '\nECPassword=' not in (root / 'amule.conf').read_text()
-                print('PASS: production amuleapi SRP login:', 'spawned token' if token else 'password')
-            finally:
-                for process in reversed(processes):
-                    if process.poll() is None:
-                        stop_daemon(process)
+                        env=daemon_env(root), stdout=log, stderr=subprocess.STDOUT))
+            opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+            deadline = time.monotonic() + 30
+            while True:
+                assert all(p.poll() is None for p in processes), (root / 'console').read_text()
+                try:
+                    with opener.open(f'http://127.0.0.1:{http}/api/v1/health', timeout=2) as response:
+                        assert response.status == 200
+                        json.load(response)
+                    break
+                except urllib.error.URLError:
+                    assert time.monotonic() < deadline, (root / 'console').read_text()
+                    time.sleep(0.05)
+            api_log = (root / 'amuleapi.log').read_text()
+            assert 'Succeeded!' in api_log, api_log
+            assert ('using the ephemeral EC token' in api_log) == token, api_log
+            assert not (root / 'amuleapi-ec-token').exists(), 'token not consumed'
+            assert '\nECPassword=' not in (root / 'amule.conf').read_text()
+            print('PASS: production amuleapi SRP login:', 'spawned token' if token else 'password')
+        finally:
+            for process in reversed(processes):
+                stop_daemon(process, check=sys.exc_info()[0] is None)
 
 
 if __name__ == '__main__':

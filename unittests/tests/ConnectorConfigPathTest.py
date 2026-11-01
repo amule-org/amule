@@ -11,13 +11,14 @@ import subprocess
 import sys
 import tempfile
 
+from DaemonConfig import daemon_env
+
 
 PASSWORD = '0123456789abcdef0123456789abcdef'
 
 
 def run(binary, root, *args, expect_failure=False):
-    env = dict(os.environ, HOME=str(root), XDG_CONFIG_HOME=str(root / 'xdg'))
-    result = subprocess.run([binary, *args], cwd=root, env=env,
+    result = subprocess.run([binary, *args], cwd=root, env=daemon_env(root),
                             stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
                             stderr=subprocess.STDOUT, text=True, errors='replace', timeout=15)
     if expect_failure:
@@ -205,10 +206,9 @@ def main():
                                       f'ECPassword={PASSWORD}\n'
                                       f'[WebServer]\nTemplate={template}\n')
                     for argument in [source.as_posix(), './amule.conf']:
-                        env = dict(os.environ, HOME=str(root),
-                                   XDG_CONFIG_HOME=str(root / 'xdg'))
                         process = subprocess.Popen(
-                            [binary, f'--amule-config-file={argument}'], cwd=root, env=env,
+                            [binary, f'--amule-config-file={argument}'], cwd=root,
+                            env=daemon_env(root),
                             stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
                             stderr=subprocess.STDOUT, text=True, errors='replace')
                         try:

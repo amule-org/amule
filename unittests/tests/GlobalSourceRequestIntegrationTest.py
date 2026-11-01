@@ -11,13 +11,12 @@ from pathlib import Path
 import select
 import socket
 import struct
-import subprocess
 import sys
 import tempfile
 import threading
 import time
 
-from AllSearchIntegrationTest import C, connect_daemon, exact, free_ports, retry_port_collisions, stop_daemon, string
+from AllSearchIntegrationTest import C, exact, free_ports, retry_port_collisions, running_daemon, string
 from DaemonConfig import write_amule_conf
 
 OP_GLOBGETSOURCES = 0x9a
@@ -66,12 +65,9 @@ def run(binary):
         workers = [threading.Thread(target=record, daemon=True), threading.Thread(target=serve, daemon=True)]
         for worker in workers:
             worker.start()
-        env = dict(os.environ, HOME=str(root), XDG_CONFIG_HOME=str(root / 'xdg'), LC_ALL='C.UTF-8')
-        with (root / 'stdout.log').open('w') as log:
-            proc = subprocess.Popen([binary, '-c', str(root)], stdout=log, stderr=log, env=env)
-            try:
-                ec = connect_daemon(proc, ec_port, root, peer_port, udp_port, server_udp=True)
-
+        try:
+            with running_daemon(binary, root, (ec_port, peer_port, udp_port), args=(),
+                                console='stdout.log', server_udp=True) as (proc, ec):
                 def add(address):
                     return ec.call(C['EC_OP_SERVER_ADD'], [string(C['EC_TAG_SERVER_ADDRESS'], address)])[0]
 
@@ -90,17 +86,11 @@ def run(binary):
                     assert time.monotonic() < deadline, f'servers known by name were not asked: {asked}'
                     time.sleep(0.2)
                 assert not any(paused in hashes for hashes in asked.values()), 'a paused download was asked'
-                ec.sock.close()
-            except BaseException:
-                logfile = root / 'logfile'
-                print(logfile.read_text(errors='replace')[-5000:] if logfile.exists() else 'no logfile')
-                raise
-            finally:
-                stop.set()
-                workers[0].join()
-                for sock in listeners + [login]:
-                    sock.close()
-                stop_daemon(proc)
+        finally:
+            stop.set()
+            workers[0].join()
+            for sock in listeners + [login]:
+                sock.close()
         print('both servers known by name were asked about the new download, not the paused one')
 
 

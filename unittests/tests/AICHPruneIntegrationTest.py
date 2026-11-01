@@ -3,15 +3,13 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 """Exercise AICH prune commits and corruption recovery with an offline daemon."""
 import base64
-import os
 from pathlib import Path
 import struct
-import subprocess
 import sys
 import tempfile
 import time
 
-from AllSearchIntegrationTest import C, connect_daemon, free_ports, retry_port_collisions
+from AllSearchIntegrationTest import C, free_ports, retry_port_collisions, start_daemon, stop_daemon
 from DaemonConfig import write_amule_conf
 
 
@@ -42,48 +40,40 @@ def run(binary, corrupt=False):
             expected = b'\x02' + orphan_record
         else:
             aich.write_bytes(expected + orphan_record)
-        env = dict(os.environ, HOME=str(root), XDG_CONFIG_HOME=str(root / 'xdg'), LC_ALL='C.UTF-8')
-        with (root / 'stdout.log').open('w') as log:
-            proc = subprocess.Popen([binary, '-c', str(root)], env=env, stdout=log, stderr=log)
+        proc = ec = None
+        try:
+            proc, ec = start_daemon(binary, root, (ec_port, peer_port), args=(),
+                                    console='stdout.log')
+            # The source reader must be closed before committing the sibling .new.
+            # Otherwise Windows rejects the native replacement with a sharing error.
+            deadline = time.monotonic() + 30
+            while aich.read_bytes() != expected or (root / 'known2_64.met.new').exists():
+                if corrupt:
+                    assert aich.read_bytes() != b'\x02', 'partial prune replaced recovered source'
+                assert proc.poll() is None, 'daemon exited during AICH prune'
+                assert time.monotonic() < deadline, 'orphan AICH hashset was not pruned'
+                time.sleep(0.05)
+            assert not (root / 'known2_64.met.new').exists(), 'temporary rewrite remains after completion'
+            # Request normal shutdown through EC on every platform. terminate()
+            # forcibly kills a Windows process before it can save or close files.
+            ec.sock.sendall(struct.pack('!II', 0x20, 3) + bytes([C['EC_OP_SHUTDOWN'], 0, 0]))
+            assert proc.wait(timeout=30) == 0, 'daemon shutdown failed'
+            ec.sock.close()
             ec = None
-            try:
-                ec = connect_daemon(proc, ec_port, root, peer_port)
-                # The source reader must be closed before committing the sibling .new.
-                # Otherwise Windows rejects the native replacement with a sharing error.
-                deadline = time.monotonic() + 30
-                while aich.read_bytes() != expected or (root / 'known2_64.met.new').exists():
-                    if corrupt:
-                        assert aich.read_bytes() != b'\x02', 'partial prune replaced recovered source'
-                    assert proc.poll() is None, 'daemon exited during AICH prune'
-                    assert time.monotonic() < deadline, 'orphan AICH hashset was not pruned'
-                    time.sleep(0.05)
-                assert not (root / 'known2_64.met.new').exists(), 'temporary rewrite remains after completion'
-                # Request normal shutdown through EC on every platform. terminate()
-                # forcibly kills a Windows process before it can save or close files.
-                ec.sock.sendall(struct.pack('!II', 0x20, 3) + bytes([C['EC_OP_SHUTDOWN'], 0, 0]))
-                assert proc.wait(timeout=30) == 0, 'daemon shutdown failed'
+            assert aich.read_bytes() == expected, 'shutdown changed the retained hashset'
+            print('AICH corruption recovery discarded its partial rewrite' if corrupt else
+                  'AICH orphan prune preserved the live hashset and committed its replacement')
+        except BaseException:
+            for name in ('stdout.log', 'logfile'):
+                path = root / name
+                if path.exists():
+                    print(path.read_text(errors='replace')[-6000:], file=sys.stderr)
+            raise
+        finally:
+            if ec:
                 ec.sock.close()
-                ec = None
-                assert aich.read_bytes() == expected, 'shutdown changed the retained hashset'
-                print('AICH corruption recovery discarded its partial rewrite' if corrupt else
-                      'AICH orphan prune preserved the live hashset and committed its replacement')
-            except BaseException:
-                log.flush()
-                for name in ('stdout.log', 'logfile'):
-                    path = root / name
-                    if path.exists():
-                        print(path.read_text(errors='replace')[-6000:], file=sys.stderr)
-                raise
-            finally:
-                if ec:
-                    ec.sock.close()
-                if proc.poll() is None:
-                    proc.terminate()
-                    try:
-                        proc.wait(timeout=10)
-                    except subprocess.TimeoutExpired:
-                        proc.kill()
-                        proc.wait()
+            if proc:
+                stop_daemon(proc, check=False)
 
 
 if __name__ == '__main__':
