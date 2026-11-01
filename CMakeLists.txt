@@ -10,7 +10,7 @@ foreach (_part MJR MIN UPDATE)
 endforeach ()
 project (amule VERSION ${_amule_version_MJR}.${_amule_version_MIN}.${_amule_version_UPDATE})
 
-set (MIN_BOOST_VERSION 1.70)
+set (MIN_BOOST_VERSION 1.74) # Asio thread_pool::attach()
 set (MIN_CRYPTOPP_VERSION 8.1)
 set (MIN_GDLIB_VERSION 2.0.0)
 set (MIN_WX_VERSION 3.2.0)

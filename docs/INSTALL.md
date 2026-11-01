@@ -11,19 +11,11 @@ following packages:
 | zlib      | 1.2.3           |                                   |
 | wxWidgets | 3.2.0           | 3.2 branch or newer               |
 | Crypto++  | 8.1             | classic or cryptopp-modern        |
-| Boost     | 1.70            | headers only; 1.74 for `BUILD_AMULEAPI=ON` |
+| Boost     | 1.74            | headers only; only `asio` is used |
 
-The REST API server needs Boost 1.74 or newer for Asio's
-`thread_pool::attach()`. To select a separate Boost installation, pass
-`-DBoost_DIR=/path/to/boost/lib/cmake/Boost-<version>` when configuring.
-Its headers are automatically added as system includes to the build targets.
-The CMake variable is case-sensitive: use `-DBoost_DIR`, not `-DBOOST_DIR`.
-An environment variable named `Boost_DIR` also supplies a search location
-(environment names are case-insensitive on Windows), but an existing cached
-selection takes precedence. Use a fresh build directory when switching
-installations to avoid stale Boost component paths. If the requested directory
-does not contain a compatible package, CMake may select another installation;
-check the Boost version in the configuration summary.
+To use a separate Boost installation, pass
+`-DBoost_DIR=/path/to/boost/lib/cmake/Boost-<version>`. Use a fresh build
+directory when you switch installations.
 
 The Crypto++ row accepts either the classic
 [weidai11/cryptopp](https://github.com/weidai11/cryptopp) library (minimum

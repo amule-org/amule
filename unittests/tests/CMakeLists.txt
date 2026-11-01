@@ -109,7 +109,7 @@ add_test (NAME BoostCMakeConfigTest
 		${_boost_test_toolchain_args}
 		-P ${CMAKE_CURRENT_SOURCE_DIR}/BoostCMakeConfigTest.cmake
 )
-# This test configures and compiles several small projects, including on Windows.
+# Configures and builds a small project.
 set_tests_properties (BoostCMakeConfigTest PROPERTIES LABELS "slow")
 unset (_boost_test_toolchain_args)
 
