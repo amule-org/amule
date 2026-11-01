@@ -70,10 +70,9 @@
 set -u
 set -o pipefail
 
-HOST=${HOST:-localhost:4713}
-API="$HOST/api/v1"
-ADMIN_PASS=${ADMIN_PASS:-adminpass}
-GUEST_PASS=${GUEST_PASS:-guestpass}
+CURL_MAX_TIME=60
+. "$(dirname "${BASH_SOURCE[0]}")/lib/common.sh"
+
 AMULE_SHARED_DIR=${AMULE_SHARED_DIR:-}
 
 # 3 MiB: large enough that a suffix range, a 64 KiB streaming buffer and a
@@ -124,84 +123,12 @@ CAP_FIXTURE_SIZE=${CAP_FIXTURE_SIZE:-$(( $(_socket_buffer_budget) * 2 ))}
 [ "$CAP_FIXTURE_SIZE" -lt $((16 * 1024 * 1024)) ] && CAP_FIXTURE_SIZE=$((16 * 1024 * 1024))
 [ "$CAP_FIXTURE_SIZE" -gt $((128 * 1024 * 1024)) ] && CAP_FIXTURE_SIZE=$((128 * 1024 * 1024))
 
-FAIL_COUNT=0
-TEST_COUNT=0
-# Skips are counted apart from TEST_COUNT, never folded into it: a skipped
-# check is coverage that did not happen, and adding it to the passed tally
-# would report the absence of a check as a check that succeeded. Same form
-# as 40-http-conformance.
-SKIP_COUNT=0
-
-CURL_BODY_FILE=$(mktemp -t amuleapi_41_shared_content_body.XXXXXX)
-CURL_HEAD_FILE=$(mktemp -t amuleapi_41_shared_content_head.XXXXXX)
-trap 'rm -f "$CURL_BODY_FILE" "$CURL_HEAD_FILE"' EXIT
-
-_die()  { echo "FATAL: $*" >&2; exit 2; }
-_pass() { TEST_COUNT=$((TEST_COUNT+1)); echo "  PASS  $1"; }
-_fail() {
-	TEST_COUNT=$((TEST_COUNT+1)); FAIL_COUNT=$((FAIL_COUNT+1))
-	echo "  FAIL  $1"
-	shift
-	for arg in "$@"; do echo "        $arg"; done
-}
-_skip() { SKIP_COUNT=$((SKIP_COUNT+1)); echo "  SKIP  $1"; }
-
-_curl() {
-	local resp
-	# Truncate both dumps first. curl does not rewrite -o when the response
-	# carries no body, so a 304 would otherwise be asserted against the
-	# PREVIOUS response's bytes -- which is the one case this file most
-	# needs to get right.
-	: > "$CURL_BODY_FILE"
-	: > "$CURL_HEAD_FILE"
-	resp=$(curl -s --max-time 60 \
-		-D "$CURL_HEAD_FILE" \
-		-o "$CURL_BODY_FILE" -w '%{http_code}' "$@") \
-		|| _die "curl invocation failed for $*"
-	CURL_STATUS=$resp
-	# File bodies hold NUL bytes, which $(...) drops with a warning. Byte
-	# checks cmp the file; CURL_BODY is only read as JSON.
-	CURL_BODY=$(tr -d '\0' < "$CURL_BODY_FILE")
-	CURL_HEAD=$(cat "$CURL_HEAD_FILE")
-}
-
-_assert_status() {
-	local expected=$1 label=$2
-	if [ "$CURL_STATUS" = "$expected" ]; then
-		_pass "$label (HTTP $CURL_STATUS)"
-	else
-		_fail "$label" "expected HTTP $expected, got $CURL_STATUS" \
-			"body head: $(printf '%s' "$CURL_BODY" | head -c 200)"
-	fi
-}
-
-_assert_json_eq() {
-	local expr=$1 expected=$2 label=$3
-	local actual
-	actual=$(printf '%s' "$CURL_BODY" | jq -r "$expr" 2>/dev/null) \
-		|| _fail "$label" "body was not valid JSON" "body: $CURL_BODY"
-	if [ "$actual" = "$expected" ]; then
-		_pass "$label"
-	else
-		_fail "$label" "expected $expected, got $actual" "body: $CURL_BODY"
-	fi
-}
-
 _assert_body_empty() {
 	local label=$1
 	if [ ! -s "$CURL_BODY_FILE" ]; then
 		_pass "$label"
 	else
 		_fail "$label" "expected an empty body, got $(wc -c < "$CURL_BODY_FILE" | tr -d ' ') bytes"
-	fi
-}
-
-_assert_eq() {
-	local expected=$1 actual=$2 label=$3
-	if [ "$expected" = "$actual" ]; then
-		_pass "$label"
-	else
-		_fail "$label" "expected [$expected], got [$actual]"
 	fi
 }
 
@@ -223,10 +150,7 @@ _assert_hdr_eq() {
 }
 
 # --- Preconditions. -------------------------------------------------
-if ! command -v jq >/dev/null 2>&1; then _die "jq is required."; fi
-if ! curl -s -o /dev/null --max-time 2 "$API/health" 2>/dev/null; then
-	_die "amuleapi at $HOST is not reachable. Start amuleapi first."
-fi
+_preflight
 
 echo "amuleapi 41-shared-content smoke @ $HOST"
 
@@ -243,14 +167,12 @@ if [ ! -d "$AMULE_SHARED_DIR" ] || [ ! -w "$AMULE_SHARED_DIR" ]; then
 	exit 0
 fi
 
-ADMIN_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$ADMIN_PASS\"}" "$API/auth/login?include_token=true" | jq -r .token)
-[ -n "$ADMIN_TOKEN" ] && [ "$ADMIN_TOKEN" != "null" ] || _die "admin login failed"
+ADMIN_TOKEN=$(_login "$ADMIN_PASS")
+[ -n "$ADMIN_TOKEN" ] || _die "admin login failed"
 
-GUEST_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$GUEST_PASS\"}" "$API/auth/login?include_token=true" | jq -r .token)
+GUEST_TOKEN=$(_login "$GUEST_PASS")
 HAVE_GUEST=0
-[ -n "$GUEST_TOKEN" ] && [ "$GUEST_TOKEN" != "null" ] && HAVE_GUEST=1
+[ -n "$GUEST_TOKEN" ] && HAVE_GUEST=1
 
 AUTH=(-H "Authorization: Bearer $ADMIN_TOKEN")
 
@@ -864,12 +786,4 @@ else
 fi
 
 # --- Summary. -----------------------------------------------------
-echo
-SKIP_NOTE=""
-[ "$SKIP_COUNT" -gt 0 ] && SKIP_NOTE=" ($SKIP_COUNT check(s) skipped)"
-if [ "$FAIL_COUNT" -eq 0 ]; then
-	echo "OK: $TEST_COUNT/$TEST_COUNT passed$SKIP_NOTE"
-	exit 0
-fi
-echo "FAIL: $FAIL_COUNT/$TEST_COUNT failed"
-exit 1
+_summary

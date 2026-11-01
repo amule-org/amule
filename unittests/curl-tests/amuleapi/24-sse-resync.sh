@@ -26,9 +26,8 @@
 set -u
 set -o pipefail
 
-HOST=${HOST:-localhost:4713}
-API="$HOST/api/v1"
-ADMIN_PASS=${ADMIN_PASS:-adminpass}
+. "$(dirname "${BASH_SOURCE[0]}")/lib/common.sh"
+
 BIN=${AMULEAPI_BIN:?orchestrator must export AMULEAPI_BIN}
 CONFIG_DIR=${AMULEAPI_CONFIG_DIR:?orchestrator must export AMULEAPI_CONFIG_DIR}
 LOG=${AMULEAPI_LOG:-/tmp/amuleapi.log}
@@ -41,30 +40,10 @@ EC_PASSWORD=${EC_PASSWORD:-amule}
 # The HTTP port the rewritten config must bind is the one $HOST names.
 HTTP_PORT=${HOST##*:}
 
-FAIL_COUNT=0
-TEST_COUNT=0
-# Skips are counted apart from TEST_COUNT, never folded into it: a skipped
-# check is coverage that did not happen, and adding it to the passed tally
-# would report the absence of a check as a check that succeeded.
-SKIP_COUNT=0
-
 SSE=$(mktemp -t amuleapi_24-sse-resync.XXXXXX)
-trap 'rm -f "$SSE"' EXIT
+_on_exit 'rm -f "$SSE"'
 
-_die()  { echo "FATAL: $*" >&2; exit 2; }
-_pass() { TEST_COUNT=$((TEST_COUNT+1)); echo "  PASS  $1"; }
-_skip() { SKIP_COUNT=$((SKIP_COUNT+1)); echo "  SKIP  $1"; }
-_fail() {
-	TEST_COUNT=$((TEST_COUNT+1)); FAIL_COUNT=$((FAIL_COUNT+1))
-	echo "  FAIL  $1"
-	shift
-	for arg in "$@"; do echo "        $arg"; done
-}
-
-if ! command -v jq >/dev/null 2>&1; then _die "jq is required."; fi
-if ! curl -s -o /dev/null --max-time 2 "$API/health" 2>/dev/null; then
-	_die "amuleapi at $HOST is not reachable."
-fi
+_preflight
 
 echo "amuleapi 24-sse-resync smoke @ $HOST"
 
@@ -105,9 +84,8 @@ done
 # Re-login: the bus restart minted a new daemon process, so the
 # token from before the bounce is unrelated (its rate-limit bucket
 # is empty too).
-ADMIN_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$ADMIN_PASS\"}" "$API/auth/login?include_token=true" | jq -r .token)
-[ -n "$ADMIN_TOKEN" ] && [ "$ADMIN_TOKEN" != "null" ] || _die "admin login failed after bounce"
+ADMIN_TOKEN=$(_login "$ADMIN_PASS")
+[ -n "$ADMIN_TOKEN" ] || _die "admin login failed after bounce"
 
 # Deterministically rotate the ring past id 1 instead of hoping the
 # ambient refresher emits >capacity events in a fixed sleep (flaky on
@@ -122,8 +100,6 @@ ADMIN_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
 # ~17 s, so without one the ring would never rotate and the gap case below
 # would be unreachable -- Last-Event-ID: 1 would land above an empty bus's
 # newest and report `restart` instead.
-FILL_LINK="ed2k://|file|ubuntu-24.04.4-desktop-amd64.iso|6655619072|0031C9CBA65C50DD2015C184B2CA2C88|/"
-FILL_HASH="0031c9cba65c50dd2015c184b2ca2c88"
 FILL_SUB=$(mktemp -t amuleapi_24_fillsub.XXXXXX)
 (curl -s -m 30 -N -H "Authorization: Bearer $ADMIN_TOKEN" \
 	"$API/events" > "$FILL_SUB" 2>&1) &
@@ -132,10 +108,10 @@ sleep 1
 for _ in 1 2 3 4; do
 	curl -s -o /dev/null -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 		-H "Content-Type: application/json" \
-		-d "{\"links\":[\"$FILL_LINK\"]}" "$API/downloads"
+		-d "{\"links\":[\"$TEST_LINK\"]}" "$API/downloads"
 	sleep 2
 	curl -s -o /dev/null -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
-		"$API/downloads/$FILL_HASH"
+		"$API/downloads/$TEST_HASH"
 	sleep 2
 done
 # Final settle so the last download_removed is in the ring, then drop the
@@ -249,8 +225,6 @@ fi
 
 # First clear any prior in-queue test artifact so the POST
 # below actually does work (and potentially logs).
-TEST_HASH="0031c9cba65c50dd2015c184b2ca2c88"
-TEST_LINK="ed2k://|file|ubuntu-24.04.4-desktop-amd64.iso|6655619072|0031C9CBA65C50DD2015C184B2CA2C88|/"
 curl -s -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
 	"$API/downloads/$TEST_HASH" > /dev/null 2>&1 || true
 sleep 3
@@ -346,12 +320,4 @@ else
 fi
 
 # --- Summary. -----------------------------------------------------
-echo
-SKIP_NOTE=""
-[ "$SKIP_COUNT" -gt 0 ] && SKIP_NOTE=" ($SKIP_COUNT check(s) skipped)"
-if [ "$FAIL_COUNT" -eq 0 ]; then
-	echo "OK: $TEST_COUNT/$TEST_COUNT passed$SKIP_NOTE"
-	exit 0
-fi
-echo "FAIL: $FAIL_COUNT/$TEST_COUNT failed"
-exit 1
+_summary

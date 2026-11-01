@@ -35,10 +35,7 @@
 set -u
 set -o pipefail
 
-HOST=${HOST:-localhost:4713}
-API="$HOST/api/v1"
-ADMIN_PASS=${ADMIN_PASS:-adminpass}
-GUEST_PASS=${GUEST_PASS:-guestpass}
+. "$(dirname "${BASH_SOURCE[0]}")/lib/common.sh"
 
 # EC connection info for the second amuleapi instance spun up in section
 # 3.2 below — must point at the SAME amuled as the primary instance at
@@ -46,32 +43,6 @@ GUEST_PASS=${GUEST_PASS:-guestpass}
 EC_HOST=${EC_HOST:-127.0.0.1}
 EC_PORT=${EC_PORT:-4712}
 EC_PASSWORD=${EC_PASSWORD:-amule}
-# Locate the amuleapi binary the sub-instances need. Deliberately NOT falling
-# back to PATH: an installed package would silently be tested in place of the
-# working tree, which is worse than not finding anything. Set AMULEAPI_BIN to
-# point somewhere else on purpose.
-#
-# Any build*/ directory counts, not a fixed list of three: per-branch and
-# per-arch trees are normal, and a name this function has never heard of used
-# to mean a silent skip. Where several exist the NEWEST wins -- picking the
-# first match let a stale build/ supply the binary while the tree under test
-# was built somewhere else, which is the one failure mode that produces a
-# confident wrong answer rather than a missing one. Unmatched globs stay
-# literal and fail the -x test, so no nullglob is needed.
-_find_amuleapi_bin() {
-	local root=$1 c best=
-	for c in "$root"/src/webapi/amuleapi \
-		"$root"/build*/src/webapi/amuleapi \
-		"$root"/_build/src/webapi/amuleapi \
-		"$root"/cmake-build-*/src/webapi/amuleapi; do
-		[ -x "$c" ] || continue
-		if [ -z "$best" ] || [ "$c" -nt "$best" ]; then
-			best=$c
-		fi
-	done
-	[ -n "$best" ] || return 1
-	echo "$best"
-}
 
 AMULEAPI_BIN=${AMULEAPI_BIN:-$(_find_amuleapi_bin "$(cd "$(dirname "$0")/../../.." && pwd)")}
 # Three sections below drive a SECOND amuleapi against the same amuled. Without
@@ -81,98 +52,20 @@ if [ -x "${AMULEAPI_BIN:-/nonexistent}" ]; then
 else
 	HAVE_SECOND_INSTANCE=0
 fi
-# Counted so the summary cannot report a clean pass over a partial run:
-# every section below that skips increments this, and a non-zero count
-# is spelled out next to the OK line.
-SKIP_COUNT=0
-_skip() { SKIP_COUNT=$((SKIP_COUNT+1)); echo "  SKIP  $1"; }
-
 # A query likely to return results on any operator's daemon connected
 # to ed2k. "ubuntu" is a safe choice — well-seeded across the network.
 TEST_QUERY="ubuntu"
 
-FAIL_COUNT=0
-TEST_COUNT=0
-
-CURL_BODY_FILE=$(mktemp -t amuleapi_19_search_body.XXXXXX)
-CURL_HDR_FILE=$(mktemp -t amuleapi_19_search_hdr.XXXXXX)
-trap 'rm -f "$CURL_BODY_FILE" "$CURL_HDR_FILE"' EXIT
-
-_die()  { echo "FATAL: $*" >&2; exit 2; }
-_pass() { TEST_COUNT=$((TEST_COUNT+1)); echo "  PASS  $1"; }
-_fail() {
-	TEST_COUNT=$((TEST_COUNT+1)); FAIL_COUNT=$((FAIL_COUNT+1))
-	echo "  FAIL  $1"
-	shift
-	for arg in "$@"; do echo "        $arg"; done
-}
-
-_curl() {
-	local resp
-	resp=$(curl -s --max-time 10 -D "$CURL_HDR_FILE" \
-		-o "$CURL_BODY_FILE" -w '%{http_code}' "$@") \
-		|| _die "curl invocation failed for $*"
-	CURL_STATUS=$resp
-	CURL_BODY=$(cat "$CURL_BODY_FILE")
-	CURL_HDR=$(cat "$CURL_HDR_FILE")
-}
-
-_assert_status() {
-	local expected=$1 label=$2
-	if [ "$CURL_STATUS" = "$expected" ]; then
-		_pass "$label (HTTP $CURL_STATUS)"
-	else
-		_fail "$label" "expected HTTP $expected, got $CURL_STATUS" \
-			"body head: $(printf '%s' "$CURL_BODY" | head -c 200)"
-	fi
-}
-
-_assert_json_eq() {
-	local expr=$1 expected=$2 label=$3
-	local actual
-	actual=$(printf '%s' "$CURL_BODY" | jq -r "$expr" 2>/dev/null) \
-		|| _fail "$label" "body was not valid JSON" "body: $CURL_BODY"
-	if [ "$actual" = "$expected" ]; then
-		_pass "$label"
-	else
-		_fail "$label" "expected $expected, got $actual" "body: $CURL_BODY"
-	fi
-}
-
-_assert_header_contains() {
-	local needle=$1 label=$2
-	if printf '%s' "$CURL_HDR" | grep -qi -- "$needle"; then
-		_pass "$label"
-	else
-		_fail "$label" "needle '$needle' not in response headers" \
-			"headers: $(printf '%s' "$CURL_HDR" | head -c 400)"
-	fi
-}
-
-_assert_body_empty() {
-	local label=$1
-	if [ -z "$CURL_BODY" ]; then
-		_pass "$label"
-	else
-		_fail "$label" "expected an empty body, got: $(printf '%s' "$CURL_BODY" | head -c 200)"
-	fi
-}
-
-if ! command -v jq >/dev/null 2>&1; then _die "jq is required."; fi
-if ! curl -s -o /dev/null --max-time 2 "$API/health" 2>/dev/null; then
-	_die "amuleapi at $HOST is not reachable."
-fi
+_preflight
 
 echo "amuleapi 19-search smoke @ $HOST"
 
-ADMIN_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$ADMIN_PASS\"}" "$API/auth/login?include_token=true" | jq -r .token)
-[ -n "$ADMIN_TOKEN" ] && [ "$ADMIN_TOKEN" != "null" ] || _die "admin login failed"
+ADMIN_TOKEN=$(_login "$ADMIN_PASS")
+[ -n "$ADMIN_TOKEN" ] || _die "admin login failed"
 
-GUEST_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$GUEST_PASS\"}" "$API/auth/login?include_token=true" | jq -r .token)
+GUEST_TOKEN=$(_login "$GUEST_PASS")
 HAVE_GUEST=0
-[ -n "$GUEST_TOKEN" ] && [ "$GUEST_TOKEN" != "null" ] && HAVE_GUEST=1
+[ -n "$GUEST_TOKEN" ] && HAVE_GUEST=1
 
 sleep 4
 
@@ -388,11 +281,9 @@ for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
 done
 sleep 4
 
-SECOND_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$ADMIN_PASS\"}" "http://$SECOND_HOST/api/v1/auth/login?include_token=true" \
-	| jq -r .token)
+SECOND_TOKEN=$(_login "$ADMIN_PASS" "http://$SECOND_HOST/api/v1")
 
-if [ -n "$SECOND_TOKEN" ] && [ "$SECOND_TOKEN" != "null" ]; then
+if [ -n "$SECOND_TOKEN" ]; then
 	_curl -H "Authorization: Bearer $SECOND_TOKEN" "http://$SECOND_HOST/api/v1/search"
 	_assert_status 200 "second amuleapi instance: GET /search → 200"
 	_assert_json_eq "[.searches[] | select(.search_id == $FIRST_SID)] | length" 1 \
@@ -1134,10 +1025,8 @@ if [ -n "$SID_CLOSE" ] && [ "$SID_CLOSE" != "null" ]; then
 		sleep 0.5
 	done
 	sleep 2
-	SECOND2_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-		-d "{\"password\":\"$ADMIN_PASS\"}" \
-		"http://localhost:4715/api/v1/auth/login?include_token=true" | jq -r .token)
-	if [ -n "$SECOND2_TOKEN" ] && [ "$SECOND2_TOKEN" != "null" ]; then
+	SECOND2_TOKEN=$(_login "$ADMIN_PASS" "http://localhost:4715/api/v1")
+	if [ -n "$SECOND2_TOKEN" ]; then
 		_curl -H "Authorization: Bearer $SECOND2_TOKEN" "http://localhost:4715/api/v1/search"
 		_assert_json_eq "[.searches[] | select(.search_id == $SID_CLOSE)] | length" 0 \
 			'close: a second session also no longer sees the closed search'
@@ -1191,11 +1080,9 @@ for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
 	sleep 0.5
 done
 sleep 2
-FOREIGN_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$ADMIN_PASS\"}" \
-	"http://localhost:4716/api/v1/auth/login?include_token=true" | jq -r .token)
+FOREIGN_TOKEN=$(_login "$ADMIN_PASS" "http://localhost:4716/api/v1")
 
-if [ -n "$FOREIGN_TOKEN" ] && [ "$FOREIGN_TOKEN" != "null" ]; then
+if [ -n "$FOREIGN_TOKEN" ]; then
 	FOREIGN_RES=$(curl -s -X POST -H "Authorization: Bearer $FOREIGN_TOKEN" \
 		-H "Content-Type: application/json" \
 		-d "{\"query\":\"$TEST_QUERY\",\"type\":\"global\"}" \
@@ -1631,11 +1518,9 @@ if [ "$HAVE_SECOND_INSTANCE" -eq 1 ]; then
 	done
 	sleep 3
 
-	THIRD_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-		-d "{\"password\":\"$ADMIN_PASS\"}" "http://$THIRD_HOST/api/v1/auth/login?include_token=true" \
-		| jq -r .token)
+	THIRD_TOKEN=$(_login "$ADMIN_PASS" "http://$THIRD_HOST/api/v1")
 
-	if [ -n "$THIRD_TOKEN" ] && [ "$THIRD_TOKEN" != "null" ]; then
+	if [ -n "$THIRD_TOKEN" ]; then
 		# Give the third instance a slot of its own. From here its tick sends the
 		# union every second, which is the precondition for the bug.
 		OWN_SID=$(curl -s -X POST -H "Authorization: Bearer $THIRD_TOKEN" \
@@ -1766,12 +1651,4 @@ for KEY in query extension codec title album artist; do
 done
 
 # --- Summary. -----------------------------------------------------
-echo
-SKIP_NOTE=""
-[ "$SKIP_COUNT" -gt 0 ] && SKIP_NOTE=" ($SKIP_COUNT check(s) skipped -- see the SKIP lines above for why)"
-if [ "$FAIL_COUNT" -eq 0 ]; then
-	echo "OK: $TEST_COUNT/$TEST_COUNT passed$SKIP_NOTE"
-	exit 0
-fi
-echo "FAIL: $FAIL_COUNT/$TEST_COUNT failed"
-exit 1
+_summary

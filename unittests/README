@@ -154,6 +154,11 @@ How to use:
     .github/workflows/ccpp.yml shows how to start an isolated amuled,
     and which scripts it skips and why.
 
+    The scripts share one harness, curl-tests/amuleapi/lib/common.sh:
+    counters, _curl, the _assert_* helpers, _login and _summary. A new
+    script sources it, calls _preflight and ends with _summary. Keep
+    the lib/ directory next to a script that is copied elsewhere.
+
     curl-tests/amuleweb-smoke/phase0.sh checks the landing pages of a
     running amuleweb. See the header of the script for its settings.
 

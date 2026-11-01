@@ -26,19 +26,10 @@
 set -u
 set -o pipefail
 
-HOST=${HOST:-localhost:4713}
-API="$HOST/api/v1"
-ADMIN_PASS=${ADMIN_PASS:-adminpass}
-
-# Stable test artifact.
-TEST_LINK="ed2k://|file|ubuntu-24.04.4-desktop-amd64.iso|6655619072|0031C9CBA65C50DD2015C184B2CA2C88|/"
-TEST_HASH="0031c9cba65c50dd2015c184b2ca2c88"
-
-FAIL_COUNT=0
-TEST_COUNT=0
+. "$(dirname "${BASH_SOURCE[0]}")/lib/common.sh"
 
 SSE_OUT=$(mktemp -t amuleapi_22_sse_diff_emission_sse.XXXXXX)
-trap '
+_on_exit '
 	rm -f "$SSE_OUT"
 	# Best-effort partfile cleanup so the 6.6 GB Ubuntu ISO doesn'\''t
 	# survive a failed run and block the next one (Windows VM disk-
@@ -47,27 +38,14 @@ trap '
 		curl -s -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
 			"$API/downloads/$TEST_HASH" > /dev/null 2>&1 || true
 	fi
-' EXIT
+'
 
-_die()  { echo "FATAL: $*" >&2; exit 2; }
-_pass() { TEST_COUNT=$((TEST_COUNT+1)); echo "  PASS  $1"; }
-_fail() {
-	TEST_COUNT=$((TEST_COUNT+1)); FAIL_COUNT=$((FAIL_COUNT+1))
-	echo "  FAIL  $1"
-	shift
-	for arg in "$@"; do echo "        $arg"; done
-}
-
-if ! command -v jq >/dev/null 2>&1; then _die "jq is required."; fi
-if ! curl -s -o /dev/null --max-time 2 "$API/health" 2>/dev/null; then
-	_die "amuleapi at $HOST is not reachable."
-fi
+_preflight
 
 echo "amuleapi 22-sse-diff-emission smoke @ $HOST"
 
-ADMIN_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$ADMIN_PASS\"}" "$API/auth/login?include_token=true" | jq -r .token)
-[ -n "$ADMIN_TOKEN" ] && [ "$ADMIN_TOKEN" != "null" ] || _die "admin login failed"
+ADMIN_TOKEN=$(_login "$ADMIN_PASS")
+[ -n "$ADMIN_TOKEN" ] || _die "admin login failed"
 
 sleep 4
 
@@ -790,10 +768,4 @@ else
 fi
 
 # --- Summary. -----------------------------------------------------
-echo
-if [ "$FAIL_COUNT" -eq 0 ]; then
-	echo "OK: $TEST_COUNT/$TEST_COUNT passed"
-	exit 0
-fi
-echo "FAIL: $FAIL_COUNT/$TEST_COUNT failed"
-exit 1
+_summary
