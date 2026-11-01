@@ -214,10 +214,11 @@ bool CanOpenDirectory(const CPath &directory)
 
 void OpenDirectory(const CPath &directory)
 {
+	const CPath local = LocalDirectory(directory);
 	// Rechecked: the folder may have gone since the menu was built.
-	if (!CanOpenDirectory(directory) || !OpenWithDesktop(LocalDirectory(directory))) {
-		AddLogLineC(CFormat(_("ERROR: Failed to show '%s' in the file manager.")) %
-			    directory.GetPrintable());
+	if (!CanOpenDirectory(directory) || !OpenWithDesktop(local)) {
+		AddLogLineC(
+			CFormat(_("ERROR: Failed to show '%s' in the file manager.")) % local.GetPrintable());
 	}
 }
 

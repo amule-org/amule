@@ -1430,8 +1430,7 @@ msgstr ""
 msgid "IO error while reading %s file: %s"
 msgstr ""
 
-#: src/HashListFile.cpp src/kademlia/routing/RoutingZone.cpp
-#: src/KnownFileList.cpp
+#: src/HashListFile.cpp src/KnownFileList.cpp
 #, c-format
 msgid "Error while saving %s file: %s"
 msgstr ""
