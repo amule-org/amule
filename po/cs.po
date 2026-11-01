@@ -2247,7 +2247,7 @@ msgstr "Rozšířené možnosti"
 msgid "Preview"
 msgstr "Náhled"
 
-#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp src/TransferWnd.cpp
 msgid "Show in file manager"
 msgstr "Zobrazit ve správci souborů"
 
@@ -2621,6 +2621,10 @@ msgstr "EC_TAG_FRIEND_SHARED vyžaduje EC_TAG_FRIEND nebo EC_TAG_CLIENT."
 #: src/ExternalConn.cpp
 msgid "WebSearch from remote interface makes no sense."
 msgstr "Webové hledání ze vzdáleného rozhraní nedává smysl."
+
+#: src/ExternalConn.cpp
+msgid "Invalid media search filter."
+msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "A browse is not a search that can be started."
@@ -3104,6 +3108,11 @@ msgstr "CHYBA: Selhalo spuštění externího přehrávače médií! Příkaz: '
 
 #: src/FileLaunch.cpp
 #, c-format
+msgid "ERROR: Failed to show '%s' in the file manager."
+msgstr "CHYBA: Selhalo zobrazení '%s' ve správci souborů."
+
+#: src/FileLaunch.cpp
+#, c-format
 msgid "Cannot open '%s': the file is not present on this computer."
 msgstr "Nelze otevřít '%s': soubor není přítomen v tomto počítači."
 
@@ -3115,11 +3124,6 @@ msgstr "Náhled nedokončeného stahování potřebuje video přehrávač: čás
 #, c-format
 msgid "ERROR: Failed to open '%s' with the default application."
 msgstr "CHYBA: Selhalo otevření '%s' pomocí výchozí aplikace."
-
-#: src/FileLaunch.cpp
-#, c-format
-msgid "ERROR: Failed to show '%s' in the file manager."
-msgstr "CHYBA: Selhalo zobrazení '%s' ve správci souborů."
 
 #: src/FilterSelectionSummary.h
 msgid "The message filter is off; its selected rules are saved."

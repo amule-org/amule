@@ -2240,7 +2240,7 @@ msgstr "خيرات اضافية"
 msgid "Preview"
 msgstr "مشاهدة"
 
-#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp src/TransferWnd.cpp
 msgid "Show in file manager"
 msgstr "إظهار في مدير الملفات"
 
@@ -2614,6 +2614,10 @@ msgstr "يتطلب EC_TAG_FRIEND_SHARED وجود EC_TAG_FRIEND أو EC_TAG_CLIEN
 #: src/ExternalConn.cpp
 msgid "WebSearch from remote interface makes no sense."
 msgstr "البحث عبر الويب من الواجهة البعيدة غير منطقي."
+
+#: src/ExternalConn.cpp
+msgid "Invalid media search filter."
+msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "A browse is not a search that can be started."
@@ -3100,6 +3104,11 @@ msgstr "خطأ: فشل في تشغيل مشغل الوسائط الخارجي! �
 
 #: src/FileLaunch.cpp
 #, c-format
+msgid "ERROR: Failed to show '%s' in the file manager."
+msgstr "خطأ: فشل إظهار '%s' في مدير الملفات."
+
+#: src/FileLaunch.cpp
+#, c-format
 msgid "Cannot open '%s': the file is not present on this computer."
 msgstr "تعذر فتح '%s': الملف غير موجود على هذا الحاسوب."
 
@@ -3111,11 +3120,6 @@ msgstr "تتطلب معاينة التحميل غير المكتمل مشغل ف
 #, c-format
 msgid "ERROR: Failed to open '%s' with the default application."
 msgstr "خطأ: فشل فتح '%s' باستخدام التطبيق الافتراضي."
-
-#: src/FileLaunch.cpp
-#, c-format
-msgid "ERROR: Failed to show '%s' in the file manager."
-msgstr "خطأ: فشل إظهار '%s' في مدير الملفات."
 
 #: src/FilterSelectionSummary.h
 msgid "The message filter is off; its selected rules are saved."

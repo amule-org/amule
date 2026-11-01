@@ -1065,5 +1065,14 @@
   "prefs_field_servers_accelerated_publication_enabled_help": "Следовать темпу публикации, который объявляет сервер. Остальные серверы получают стандартный темп. Применяется со следующего подключения к серверу.",
   "prefs_field_servers_accelerated_publication_enabled": "Публиковать общие файлы быстрее на серверах, которые это позволяют",
   "shared_media_refresh_tip_disabled": "Извлечение метаданных медиафайлов отключено в настройках.",
-  "shared_media_refresh_tip_unavailable": "В этом aMule нет помощника для работы с медиа (amule-media-probe), поэтому он не может извлекать метаданные медиафайлов."
+  "shared_media_refresh_tip_unavailable": "В этом aMule нет помощника для работы с медиа (amule-media-probe), поэтому он не может извлекать метаданные медиафайлов.",
+  "stats_tree_upload_lowid_to_lowid_data": "Данные LowID–LowID, отдача (за сеанс): %s",
+  "stats_tree_upload_ipv6_data": "Данные IPv6, отдача (за сеанс): %s",
+  "stats_tree_download_lowid_to_lowid_data": "Данные LowID–LowID, загрузка (за сеанс): %s",
+  "stats_tree_download_ipv6_data": "Данные IPv6, загрузка (за сеанс): %s",
+  "stats_tree_nat_traversal": "Обход NAT (за сеанс)",
+  "stats_tree_natt_server_punch_attempts": "Проколы через сервер: %s",
+  "stats_tree_natt_server_punch_successes": "Успешные проколы через сервер: %s",
+  "stats_tree_natt_lugdunum_callback_attempts": "Обратные вызовы Lugdunum: %s",
+  "stats_tree_natt_lugdunum_callback_successes": "Успешные обратные вызовы Lugdunum: %s"
 }

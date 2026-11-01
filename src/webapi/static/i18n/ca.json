@@ -1065,5 +1065,14 @@
   "prefs_field_servers_accelerated_publication_enabled_help": "Segueix el ritme de publicació que anuncia el servidor. Als altres servidors s'aplica el ritme estàndard. S'aplica a partir de la propera connexió a un servidor.",
   "prefs_field_servers_accelerated_publication_enabled": "Publica els fitxers compartits més ràpidament als servidors que ho permeten",
   "shared_media_refresh_tip_unavailable": "Aquest aMule no té el programa auxiliar multimèdia (amule-media-probe), així que no pot extreure les metadades multimèdia.",
-  "shared_media_refresh_tip_disabled": "L'extracció de metadades multimèdia està desactivada a les Preferències."
+  "shared_media_refresh_tip_disabled": "L'extracció de metadades multimèdia està desactivada a les Preferències.",
+  "stats_tree_upload_lowid_to_lowid_data": "Dades d'ID Baixa a ID Baixa (Sessió): %s",
+  "stats_tree_upload_ipv6_data": "Dades IPv6 (Sessió): %s",
+  "stats_tree_download_lowid_to_lowid_data": "Dades d'ID Baixa a ID Baixa (Sessió): %s",
+  "stats_tree_download_ipv6_data": "Dades IPv6 (Sessió): %s",
+  "stats_tree_nat_traversal": "Travessia de NAT (Sessió)",
+  "stats_tree_natt_server_punch_attempts": "Perforacions de NAT amb servidor: %s",
+  "stats_tree_natt_server_punch_successes": "Perforacions de NAT amb servidor reeixides: %s",
+  "stats_tree_natt_lugdunum_callback_attempts": "Retrotrucades de Lugdunum: %s",
+  "stats_tree_natt_lugdunum_callback_successes": "Retrotrucades de Lugdunum reeixides: %s"
 }

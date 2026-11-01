@@ -2243,7 +2243,7 @@ msgstr "Utvida innstillingar"
 msgid "Preview"
 msgstr "Førehandssyning"
 
-#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp src/TransferWnd.cpp
 msgid "Show in file manager"
 msgstr ""
 
@@ -2618,6 +2618,10 @@ msgstr "EC_TAG_FRIEND_SHARED krev EC_TAG_FRIEND eller EC_TAG_CLIENT."
 #: src/ExternalConn.cpp
 msgid "WebSearch from remote interface makes no sense."
 msgstr "Nettsøk frå fjern adresse gir ikkje meining."
+
+#: src/ExternalConn.cpp
+msgid "Invalid media search filter."
+msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "A browse is not a search that can be started."
@@ -3109,6 +3113,11 @@ msgid "ERROR: Failed to execute external media-player! Command: '%s'"
 msgstr "FEIL: Greidde ikkje å starte ekstern mediespelar! Kommando: '%s'"
 
 #: src/FileLaunch.cpp
+#, fuzzy, c-format
+msgid "ERROR: Failed to show '%s' in the file manager."
+msgstr "Feil: Greidde ikkje opne delfila '%s'"
+
+#: src/FileLaunch.cpp
 #, c-format
 msgid "Cannot open '%s': the file is not present on this computer."
 msgstr ""
@@ -3121,11 +3130,6 @@ msgstr ""
 #, c-format
 msgid "ERROR: Failed to open '%s' with the default application."
 msgstr ""
-
-#: src/FileLaunch.cpp
-#, fuzzy, c-format
-msgid "ERROR: Failed to show '%s' in the file manager."
-msgstr "Feil: Greidde ikkje opne delfila '%s'"
 
 #: src/FilterSelectionSummary.h
 msgid "The message filter is off; its selected rules are saved."

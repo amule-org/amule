@@ -2239,7 +2239,7 @@ msgstr "擴充選項"
 msgid "Preview"
 msgstr "預覽"
 
-#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp src/TransferWnd.cpp
 msgid "Show in file manager"
 msgstr ""
 
@@ -2611,6 +2611,10 @@ msgstr "EC_TAG_FRIEND_SHARED 需要 EC_TAG_FRIEND 或 EC_TAG_CLIENT。"
 #: src/ExternalConn.cpp
 msgid "WebSearch from remote interface makes no sense."
 msgstr "從遠端界面使用網頁搜尋功能沒有意義。"
+
+#: src/ExternalConn.cpp
+msgid "Invalid media search filter."
+msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "A browse is not a search that can be started."
@@ -3102,6 +3106,11 @@ msgid "ERROR: Failed to execute external media-player! Command: '%s'"
 msgstr "錯誤：無法執行媒體播放器！指令：「 %s 」"
 
 #: src/FileLaunch.cpp
+#, fuzzy, c-format
+msgid "ERROR: Failed to show '%s' in the file manager."
+msgstr "錯誤：無法開啟暫存檔 %s"
+
+#: src/FileLaunch.cpp
 #, c-format
 msgid "Cannot open '%s': the file is not present on this computer."
 msgstr ""
@@ -3114,11 +3123,6 @@ msgstr ""
 #, c-format
 msgid "ERROR: Failed to open '%s' with the default application."
 msgstr ""
-
-#: src/FileLaunch.cpp
-#, fuzzy, c-format
-msgid "ERROR: Failed to show '%s' in the file manager."
-msgstr "錯誤：無法開啟暫存檔 %s"
 
 #: src/FilterSelectionSummary.h
 msgid "The message filter is off; its selected rules are saved."
