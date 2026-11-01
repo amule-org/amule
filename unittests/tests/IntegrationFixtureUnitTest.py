@@ -248,6 +248,19 @@ class DaemonConfigUnitTest(unittest.TestCase):
         self.assertNotIn('IncomingDir=', text)
         self.assertIn('GeoIPEnabled=0', text)
 
+    def test_remote_conf_targets_the_core_in_english(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            DaemonConfig.write_remote_conf(root, 4712)
+            config = configparser.ConfigParser()
+            config.optionxform = str
+            config.read(root / 'remote.conf', encoding='utf-8')
+        self.assertEqual(config['EC']['Host'], '127.0.0.1')
+        self.assertEqual(config['EC']['Port'], '4712')
+        self.assertEqual(config['EC']['Password'],
+                         hashlib.md5(DaemonConfig.EC_PASSWORD.encode()).hexdigest())
+        self.assertEqual(config['eMule']['Language'], DaemonConfig.OFFLINE['Language'])
+
     def test_no_test_writes_its_own_daemon_config(self):
         # A hand-written eMule section misses later offline defaults; use write_amule_conf.
         marker = '[' + 'eMule]'

@@ -7,7 +7,6 @@ amulegui shares its config dir with a local aMule. It used to write the remote c
 hash into that file, so the local aMule took the remote identity with its own key, and
 peers failed its secure identification.
 """
-import hashlib
 import os
 from pathlib import Path
 import subprocess
@@ -16,7 +15,7 @@ import tempfile
 import time
 
 from AllSearchIntegrationTest import free_ports, retry_port_collisions
-from DaemonConfig import EC_PASSWORD, OFFLINE, write_amule_conf
+from DaemonConfig import write_amule_conf, write_remote_conf
 from LogfilePathIntegrationTest import daemon_env
 from PathDefaultsIntegrationTest import daemon
 
@@ -32,14 +31,7 @@ def run(gui, amuled, root):
     ports = free_ports(2, peer_index=1)
     write_amule_conf(core, ports[0], Port=ports[1], UDPEnable=0)
     (local / 'preferences.dat').write_bytes(LOCAL_PREFS)
-    # The wait below matches an English log line.
-    (local / 'remote.conf').write_text(f'''[EC]
-Host=127.0.0.1
-Port={ports[0]}
-Password={hashlib.md5(EC_PASSWORD.encode()).hexdigest()}
-[eMule]
-Language={OFFLINE['Language']}
-''')
+    write_remote_conf(local, ports[0])
 
     with daemon(amuled, core, ports):
         console_file = root / 'gui-console.log'
