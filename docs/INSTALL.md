@@ -11,7 +11,12 @@ following packages:
 | zlib      | 1.2.3           |                                   |
 | wxWidgets | 3.2.0           | 3.2 branch or newer               |
 | Crypto++  | 8.1             | classic or cryptopp-modern        |
-| Boost     | 1.70            | headers only; only `asio` is used |
+| Boost     | 1.70            | headers only; 1.74 for `BUILD_AMULEAPI=ON` |
+
+The REST API server needs Boost 1.74 or newer for Asio's
+`thread_pool::attach()`. To select a separate Boost installation, pass
+`-DBoost_DIR=/path/to/boost/lib/cmake/Boost-<version>` when configuring.
+Its headers are automatically added as system includes to the build targets.
 
 The Crypto++ row accepts either the classic
 [weidai11/cryptopp](https://github.com/weidai11/cryptopp) library (minimum

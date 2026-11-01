@@ -1,4 +1,16 @@
-find_package(Boost ${MIN_BOOST_VERSION} CONFIG REQUIRED)
+# The REST server attaches its own threads to an Asio pool. attach() first
+# appeared in Boost 1.74; other executables can still use the older minimum.
+set (_boost_min_version ${MIN_BOOST_VERSION})
+if (BUILD_AMULEAPI AND _boost_min_version VERSION_LESS 1.74)
+	set (_boost_min_version 1.74)
+endif()
+find_package(Boost ${_boost_min_version} CONFIG REQUIRED)
+unset (_boost_min_version)
+
+# Keep every target (including tests and EC) on the installation selected by
+# find_package. Boost's config package exports the plural variable. Treat its
+# headers as external so our warning-as-error policy does not apply to Boost.
+include_directories (SYSTEM ${Boost_INCLUDE_DIRS})
 
 include (CheckIncludeFiles)
 

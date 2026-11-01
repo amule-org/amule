@@ -95,6 +95,13 @@ if (Python3_Interpreter_FOUND)
 	set_tests_properties (IntegrationFixtureUnitTest PROPERTIES LABELS "slow")
 endif ()
 
+add_test (NAME BoostCMakeConfigTest
+	COMMAND ${CMAKE_COMMAND}
+		-DAMULE_SOURCE_DIR=${CMAKE_SOURCE_DIR}
+		-DTEST_BINARY_DIR=${CMAKE_BINARY_DIR}/boost-cmake-contract
+		-P ${CMAKE_CURRENT_SOURCE_DIR}/BoostCMakeConfigTest.cmake
+)
+
 add_test (NAME QuicCMakeConfigTest
 	COMMAND ${CMAKE_COMMAND}
 		-DAMULE_SOURCE_DIR=${CMAKE_SOURCE_DIR}
