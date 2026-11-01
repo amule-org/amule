@@ -1,4 +1,6 @@
 find_package(Boost ${MIN_BOOST_VERSION} CONFIG REQUIRED)
+# SYSTEM keeps our warning flags off Boost's headers.
+include_directories (SYSTEM ${Boost_INCLUDE_DIRS})
 
 include (CheckIncludeFiles)
 

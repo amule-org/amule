@@ -11,7 +11,11 @@ following packages:
 | zlib      | 1.2.3           |                                   |
 | wxWidgets | 3.2.0           | 3.2 branch or newer               |
 | Crypto++  | 8.1             | classic or cryptopp-modern        |
-| Boost     | 1.70            | headers only; only `asio` is used |
+| Boost     | 1.74            | headers only; only `asio` is used |
+
+To use a separate Boost installation, pass
+`-DBoost_DIR=/path/to/boost/lib/cmake/Boost-<version>`. Use a fresh build
+directory when you switch installations.
 
 The Crypto++ row accepts either the classic
 [weidai11/cryptopp](https://github.com/weidai11/cryptopp) library (minimum

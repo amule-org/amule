@@ -61,7 +61,6 @@ target_include_directories (amuleapi
 	# the same to reach amule_find_icon() — same reason muleappgui puts
 	# src/icons on its include path.
 	PRIVATE ${SRC_DIR}/icons
-	PRIVATE ${Boost_INCLUDE_DIR}
 )
 
 # ${AMULE_ICON_DATA_C} is generated into the build tree when Python3 was
