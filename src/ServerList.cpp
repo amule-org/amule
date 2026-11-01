@@ -993,7 +993,7 @@ void CServerList::RecoverServerKeyUDP(CServer *server)
 	facts.cryptPingReplyPending = server->GetCryptPingReplyPending();
 	facts.lastPingedTime = server->GetLastPingedTime();
 	facts.realLastPingedTime = server->GetRealLastPingedTime();
-	const time_t now = time(NULL);
+	const time_t now = time(nullptr);
 	if (const std::optional<time_t> lastPinged = ServerKeyRecovery::RecoveryLastPingedTime(facts, now)) {
 		AddDebugLogLineN(logServerUDP,
 			CFormat("Status ping of %s brought forward %us to recover its UDP key") %
