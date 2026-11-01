@@ -1496,7 +1496,8 @@ msgstr "警告：%s可能已损坏（%i）"
 msgid "IO error while reading %s file: %s"
 msgstr "读取 %s 文件时发生 IO 错误：%s"
 
-#: src/HashListFile.cpp src/KnownFileList.cpp
+#: src/HashListFile.cpp src/kademlia/routing/RoutingZone.cpp
+#: src/KnownFileList.cpp
 #, c-format
 msgid "Error while saving %s file: %s"
 msgstr "保存 %s 文件时发生错误：%s"
@@ -5704,6 +5705,14 @@ msgstr "Kad 源重新搜索间隔（分钟）"
 #: src/muuli_wdr.cpp
 msgid "Source re-ask interval (minutes)"
 msgstr "源重新请求间隔（分钟）"
+
+#: src/muuli_wdr.cpp
+msgid "Download write buffer limit (MiB)"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Total received download data waiting to be written. A larger limit can smooth short disk stalls at the cost of more memory. Already requested data can exceed this limit."
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "File Buffer Size: 240000 bytes"

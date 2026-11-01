@@ -1505,7 +1505,8 @@ msgstr "AVISO: %s puede estar dañado (%i)"
 msgid "IO error while reading %s file: %s"
 msgstr "Error de E/S al leer el archivo %s: %s"
 
-#: src/HashListFile.cpp src/KnownFileList.cpp
+#: src/HashListFile.cpp src/kademlia/routing/RoutingZone.cpp
+#: src/KnownFileList.cpp
 #, c-format
 msgid "Error while saving %s file: %s"
 msgstr "Error guardando el archivo %s: %s"
@@ -5728,6 +5729,14 @@ msgstr "Intervalo de búsqueda de fuentes Kad (minutos)"
 #: src/muuli_wdr.cpp
 msgid "Source re-ask interval (minutes)"
 msgstr "Intervalo re‐solicitud de fuentes (minutos)"
+
+#: src/muuli_wdr.cpp
+msgid "Download write buffer limit (MiB)"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Total received download data waiting to be written. A larger limit can smooth short disk stalls at the cost of more memory. Already requested data can exceed this limit."
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "File Buffer Size: 240000 bytes"

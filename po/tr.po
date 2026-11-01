@@ -1492,7 +1492,8 @@ msgstr "UYARI: %s bozulmuş olabilir (%i)"
 msgid "IO error while reading %s file: %s"
 msgstr "%s dosyası okumada IO hatası: %s"
 
-#: src/HashListFile.cpp src/KnownFileList.cpp
+#: src/HashListFile.cpp src/kademlia/routing/RoutingZone.cpp
+#: src/KnownFileList.cpp
 #, c-format
 msgid "Error while saving %s file: %s"
 msgstr "%s dosyası kaydedilirken hata: %s"
@@ -5724,6 +5725,14 @@ msgstr "Kad kaynak tekrar arama zaman aralığı (dakika)"
 #: src/muuli_wdr.cpp
 msgid "Source re-ask interval (minutes)"
 msgstr "Kaynaklara tekrar sorma zaman aralığı (dakika)"
+
+#: src/muuli_wdr.cpp
+msgid "Download write buffer limit (MiB)"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Total received download data waiting to be written. A larger limit can smooth short disk stalls at the cost of more memory. Already requested data can exceed this limit."
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "File Buffer Size: 240000 bytes"

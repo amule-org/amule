@@ -1493,7 +1493,8 @@ msgstr "ЗАСТЕРЕЖЕННЯ: %s може бути зіпсований (%i)
 msgid "IO error while reading %s file: %s"
 msgstr "Помилка введення-виведення під час читання файлу %s: %s"
 
-#: src/HashListFile.cpp src/KnownFileList.cpp
+#: src/HashListFile.cpp src/kademlia/routing/RoutingZone.cpp
+#: src/KnownFileList.cpp
 #, c-format
 msgid "Error while saving %s file: %s"
 msgstr "Помилка під час збереження файлу %s: %s"
@@ -5772,6 +5773,14 @@ msgstr "Інтервал повторного пошуку джерел у Kad (
 #: src/muuli_wdr.cpp
 msgid "Source re-ask interval (minutes)"
 msgstr "Інтервал повторного запиту джерел (хвилини)"
+
+#: src/muuli_wdr.cpp
+msgid "Download write buffer limit (MiB)"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Total received download data waiting to be written. A larger limit can smooth short disk stalls at the cost of more memory. Already requested data can exceed this limit."
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "File Buffer Size: 240000 bytes"
