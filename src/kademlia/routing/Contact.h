@@ -92,6 +92,12 @@ public:
 
 	uint8_t GetType() const noexcept { return m_type; }
 
+	// Retain storage while searches hold references, but stop selecting this contact.
+	void Expire() noexcept
+	{
+		m_type = 4;
+		m_expires = 1;
+	}
 	void UpdateType() noexcept;
 	void CheckingType() noexcept;
 

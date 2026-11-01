@@ -289,7 +289,16 @@ void CKademliaUDPListener::ProcessPacket(const uint8_t *data,
 	const uint8_t *packetData = data + 2;
 	uint32_t lenPacket = lenData - 2;
 
-	if (!InTrackListIsAllowedPacket(ip, opcode, validReceiverKey)) {
+	const IncomingPacket admission = InTrackListIsAllowedPacket(ip, opcode, validReceiverKey);
+	if (admission != IncomingPacket::Allowed) {
+		// Only keyed packets reach MassiveFlood, so spoofing cannot get an honest peer banned.
+		if (admission == IncomingPacket::MassiveFlood) {
+			theApp->clientlist->AddBannedClient(wxUINT32_SWAP_ALWAYS(ip));
+			CContact *contact = CKademlia::GetRoutingZone()->GetContact(ip, port, false);
+			if (contact != nullptr) {
+				contact->Expire();
+			}
+		}
 		return;
 	}
 
