@@ -364,16 +364,16 @@ void CTransferWnd::OnCategoryChanged(wxNotebookEvent &evt)
 	downloadlistctrl->SortList();
 }
 
+// Category zero's stored path is set only at startup, and the Incoming preference may have changed.
+static const CPath &CategoryFolder(int category)
+{
+	return category == 0 ? thePrefs::GetIncomingDir()
+			     : theApp->glob_prefs->GetCatPath(static_cast<uint8>(category));
+}
+
 void CTransferWnd::OnOpenCategoryFolder(wxCommandEvent &WXUNUSED(event))
 {
-	const int category = m_dlTab->GetSelection();
-	if (category == wxNOT_FOUND || static_cast<uint32>(category) >= theApp->glob_prefs->GetCatCount()) {
-		return;
-	}
-	// Category zero's stored path is initialized only at startup. Preferences may have changed.
-	const CPath &directory =
-		category == 0 ? thePrefs::GetIncomingDir() : theApp->glob_prefs->GetCategory(category)->path;
-	FileLaunch::OpenDirectory(directory);
+	FileLaunch::OpenDirectory(CategoryFolder(m_dlTab->GetSelection()));
 }
 
 void CTransferWnd::OnNMRclickDLtab(wxMouseEvent &evt)
@@ -382,8 +382,7 @@ void CTransferWnd::OnNMRclickDLtab(wxMouseEvent &evt)
 	if (evt.GetEventObject() != (wxObject *)m_dlTab)
 		return;
 
-	const int category = m_dlTab->GetSelection();
-	if (category == wxNOT_FOUND || static_cast<uint32>(category) >= theApp->glob_prefs->GetCatCount()) {
+	if (m_dlTab->GetSelection() == -1) {
 		return;
 	}
 
@@ -420,10 +419,9 @@ void CTransferWnd::OnNMRclickDLtab(wxMouseEvent &evt)
 			m_menu->Append(0, _("Select view filter"), catmenu);
 		}
 
-		const CPath &directory = category == 0 ? thePrefs::GetIncomingDir()
-						       : theApp->glob_prefs->GetCategory(category)->path;
 		m_menu->Append(MP_CAT_OPEN_FOLDER, _("Open Folder"));
-		m_menu->Enable(MP_CAT_OPEN_FOLDER, FileLaunch::CanOpenDirectory(directory));
+		m_menu->Enable(MP_CAT_OPEN_FOLDER,
+			FileLaunch::CanOpenDirectory(CategoryFolder(m_dlTab->GetSelection())));
 		m_menu->AppendSeparator();
 
 		m_menu->Append(MP_CAT_ADD, _("Add category"));

@@ -2996,7 +2996,7 @@ msgstr ""
 
 #: src/FileLaunch.cpp
 #, c-format
-msgid "ERROR: Failed to open folder '%s' in the file manager."
+msgid "ERROR: Failed to show '%s' in the file manager."
 msgstr ""
 
 #: src/FileLaunch.cpp
@@ -3011,11 +3011,6 @@ msgstr ""
 #: src/FileLaunch.cpp
 #, c-format
 msgid "ERROR: Failed to open '%s' with the default application."
-msgstr ""
-
-#: src/FileLaunch.cpp
-#, c-format
-msgid "ERROR: Failed to show '%s' in the file manager."
 msgstr ""
 
 #: src/FilterSelectionSummary.h
