@@ -203,6 +203,19 @@ class StopDaemonUnitTest(unittest.TestCase):
                 AllSearchIntegrationTest.stop_daemon(proc)
         self.assertIsNotNone(proc.poll())
 
+    def test_codes_accepts_an_expected_exit(self):
+        if os.name == 'nt':
+            self.skipTest('POSIX signals only')
+        code = ('import signal, sys, time\n'
+                'signal.signal(signal.SIGTERM, lambda *_: sys.exit(1))\ntime.sleep(60)')
+        proc = self.spawn(code)
+        time.sleep(0.5)
+        AllSearchIntegrationTest.stop_daemon(proc, codes=(0, 1))
+        proc = self.spawn(code)
+        time.sleep(0.5)
+        with self.assertRaises(AssertionError):
+            AllSearchIntegrationTest.stop_daemon(proc)
+
     def test_hung_process_is_killed(self):
         if os.name == 'nt':
             self.skipTest('POSIX signals only')
