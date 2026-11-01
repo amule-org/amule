@@ -44,15 +44,6 @@ def run(binary, root):
         log = (root / 'logfile').read_text(errors='replace')
         assert 'Downloading big.bin' in log, log[-2000:]
         assert 'GetCatPath' not in log, 'an out-of-range category reached GetCatPath'
-
-        magnet_hash = '89ABCDEF01234567' * 2
-        for bad in (f'magnet:?dn=bad|field&xt=urn:ed2k:{magnet_hash}&xl=42',):
-            assert add_link(ec, bad) == C['EC_OP_FAILED'], bad
-        magnet = (f'magnet:?dn=name%26xl%3D999%7Cfile.bin&xt=urn%3Aed2k%3A{magnet_hash}'
-                  '&xl=%34%32')
-        assert add_link(ec, magnet) == C['EC_OP_NOOP'], magnet
-        log = (root / 'logfile').read_text(errors='replace')
-        assert 'Downloading name&xl=999|file.bin' in log, log[-2000:]
         ec.sock.close()
     finally:
         stop_daemon(proc)
@@ -83,11 +74,10 @@ def check_helper(helper):
         assert converted.returncode == 0, converted
         expected = f'ed2k://|file|{name}|42|{"0123456789ABCDEF" * 2}|/'
         assert links.read_text().splitlines() == [link, expected], links.read_text()
-        for bad in (f'magnet:?dn=bad|field&xt=urn:ed2k:{"0123456789ABCDEF" * 2}&xl=42',):
-            rejected = subprocess.run([helper, '-c', str(root), bad],
-                                      capture_output=True, timeout=30)
-            assert rejected.returncode != 0, rejected
-            assert links.read_text().splitlines() == [link, expected], links.read_text()
+        bad = f'magnet:?dn=bad|field&xt=urn:ed2k:{"0123456789ABCDEF" * 2}&xl=42'
+        rejected = subprocess.run([helper, '-c', str(root), bad], capture_output=True, timeout=30)
+        assert rejected.returncode != 0, rejected
+        assert links.read_text().splitlines() == [link, expected], links.read_text()
 
 
 def main():

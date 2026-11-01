@@ -171,8 +171,8 @@ bool CMagnetED2KConverter::CanConvertToED2K() const
 			continue;
 		}
 		if (it->first.compare(_T("xt")) == 0) {
-			if (StartsWithNoCase(DecodeAsciiEscapes(it->second), "urn:ed2k:") ||
-				StartsWithNoCase(DecodeAsciiEscapes(it->second), "urn:ed2khash:")) {
+			const STRING urn = DecodeAsciiEscapes(it->second);
+			if (StartsWithNoCase(urn, "urn:ed2k:") || StartsWithNoCase(urn, "urn:ed2khash:")) {
 				has_urn = true;
 				continue;
 			}
