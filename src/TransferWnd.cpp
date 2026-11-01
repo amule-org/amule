@@ -77,7 +77,7 @@ wxBEGIN_EVENT_TABLE(CTransferWnd, wxPanel)
 	EVT_MENU(MP_CAT_ADD, CTransferWnd::OnAddCategory)
 	EVT_MENU(MP_CAT_EDIT, CTransferWnd::OnEditCategory)
 	EVT_MENU(MP_CAT_REMOVE, CTransferWnd::OnDelCategory)
-	EVT_MENU(MP_CAT_OPEN_FOLDER, CTransferWnd::OnOpenCategoryFolder)
+	EVT_MENU(MP_SHOWINFOLDER, CTransferWnd::OnOpenCategoryFolder)
 	EVT_MENU(MP_PRIOLOW, CTransferWnd::OnSetCatPriority)
 	EVT_MENU(MP_PRIONORMAL, CTransferWnd::OnSetCatPriority)
 	EVT_MENU(MP_PRIOHIGH, CTransferWnd::OnSetCatPriority)
@@ -419,8 +419,8 @@ void CTransferWnd::OnNMRclickDLtab(wxMouseEvent &evt)
 			m_menu->Append(0, _("Select view filter"), catmenu);
 		}
 
-		m_menu->Append(MP_CAT_OPEN_FOLDER, _("Open Folder"));
-		m_menu->Enable(MP_CAT_OPEN_FOLDER,
+		AppendMenuIcon(m_menu, MP_SHOWINFOLDER, _("Show in file manager"), MenuIcon::Folder);
+		m_menu->Enable(MP_SHOWINFOLDER,
 			FileLaunch::CanOpenDirectory(CategoryFolder(m_dlTab->GetSelection())));
 		m_menu->AppendSeparator();
 

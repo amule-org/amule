@@ -2170,7 +2170,7 @@ msgstr ""
 msgid "Preview"
 msgstr ""
 
-#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp src/TransferWnd.cpp
 msgid "Show in file manager"
 msgstr ""
 
@@ -9379,10 +9379,6 @@ msgstr ""
 
 #: src/TransferWnd.cpp
 msgid "Select view filter"
-msgstr ""
-
-#: src/TransferWnd.cpp
-msgid "Open Folder"
 msgstr ""
 
 #: src/TransferWnd.cpp
