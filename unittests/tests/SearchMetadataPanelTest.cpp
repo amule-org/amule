@@ -27,8 +27,6 @@
 #include <wx/spinctrl.h>
 #include <wx/wx.h>
 #include <wx/evtloop.h>
-#include <wx/dcclient.h>
-#include <wx/dcmemory.h>
 #include <iostream>
 #include <stdexcept>
 
@@ -52,7 +50,7 @@ wxTextCtrl *Input(CSearchMetadataPanel &panel, const wxString &name)
 	Check(field != nullptr, "Missing accessible metadata input");
 	return field;
 }
-void TestFields(const wxString &WXUNUSED(screenshot))
+void TestFields()
 {
 	wxEventLoop loop;
 	wxEventLoopActivator active(&loop);
@@ -98,7 +96,6 @@ void TestFields(const wxString &WXUNUSED(screenshot))
 
 int main(int argc, char **argv)
 {
-	const wxString screenshot = argc > 1 ? wxString::FromUTF8(argv[1]) : wxString();
 	InstallGuiTestDiagnostics();
 	if (!wxEntryStart(argc, argv))
 		return 77;
@@ -108,9 +105,8 @@ int main(int argc, char **argv)
 		result = 1;
 	else {
 		try {
-			TestFields(screenshot);
-			std::cout << "PASS: metadata fields and reset "
-				     "and daemon capability\n";
+			TestFields();
+			std::cout << "PASS: metadata fields and reset\n";
 		} catch (const std::exception &error) {
 			std::cerr << error.what() << '\n';
 			result = 1;

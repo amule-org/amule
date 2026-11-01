@@ -1345,10 +1345,6 @@ msgstr ""
 msgid "The connected daemon does not support All searches."
 msgstr ""
 
-#: src/amule-remote-gui.cpp
-msgid "The connected daemon does not support media search filters."
-msgstr ""
-
 #: src/BaseClient.cpp
 msgid "Searching buddy for lowid connection"
 msgstr ""

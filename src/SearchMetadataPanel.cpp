@@ -102,6 +102,9 @@ void CSearchMetadataPanel::Reset()
 
 void CSearchMetadataPanel::SetSupported(bool supported)
 {
+	// A daemon without the capability ignores these filters and would run an unfiltered search.
+	if (!supported)
+		Reset();
 	for (wxTextCtrl *field : m_fields)
 		field->Enable(supported);
 	m_length->Enable(supported);

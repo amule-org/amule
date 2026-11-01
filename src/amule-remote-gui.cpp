@@ -4021,11 +4021,6 @@ wxString CSearchListRem::StartNewSearch(
 	metadata.title = params.title;
 	metadata.album = params.album;
 	metadata.artist = params.artist;
-	if ((metadata.minBitrateKbps || metadata.minLength || !metadata.codec.empty() ||
-		    !metadata.title.empty() || !metadata.album.empty() || !metadata.artist.empty()) &&
-		!m_conn->ServerSupportsSearchMetadata()) {
-		return _("The connected daemon does not support media search filters.");
-	}
 	CECPacket search_req(EC_OP_SEARCH_START);
 	EC_SEARCH_TYPE ec_search_type = EC_SEARCH_LOCAL;
 	switch (search_type) {
