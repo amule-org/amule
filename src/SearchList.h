@@ -495,8 +495,8 @@ private:
 	bool CanFileServerAnswer() const;
 
 	/**
-	 * How long an ed2k search waits for the connected server's OP_SEARCHRESULT before it is
-	 * given up on.
+	 * How long an ed2k search waits for the connected server's OP_SEARCHRESULT. A local search
+	 * then ends; a global one starts its sweep, since a server with no match stays silent.
 	 *
 	 * Both kinds need it, for the same reason. A local search has no other terminal path at
 	 * all: the single call to LocalSearchEnd is what ends it. A global search does have one
