@@ -32,9 +32,10 @@
 #include <wx/log.h>      // Needed for wxLogNull
 #include "config.h"      // Needed for a number of defines
 
-#include <wx/stdpaths.h> // Do_not_auto_remove
-#include <wx/regex.h>    // Needed for CompareLatestReleaseVersion tag parse
-#include <wx/tokenzr.h>  // Needed for CompareLatestReleaseVersion tokenizer
+#include <wx/stdpaths.h>    // Do_not_auto_remove
+#include <wx/regex.h>       // Needed for CompareLatestReleaseVersion tag parse
+#include <wx/tokenzr.h>     // Needed for CompareLatestReleaseVersion tokenizer
+#include <wx/translation.h> // Needed for wxTranslations
 #include <common/StringFunctions.h>
 #include <common/ClientVersion.h>
 #include <common/MediaCodecName.h> // Needed for MediaCodecLabel
@@ -1598,7 +1599,8 @@ void InitCustomLanguages()
 
 void InitLocale(wxLocale &locale, int language)
 {
-	locale.Init(language, wxLOCALE_LOAD_DEFAULT);
+	// The wx catalog loads below, once the bundled catalog directory is a lookup prefix.
+	locale.Init(language, wxLOCALE_DONT_LOAD_DEFAULT);
 
 #ifdef __WXMAC__
 	// Init() also sets LC_NUMERIC. Under a decimal-comma locale (LANG=it_IT.UTF-8 from a terminal)
@@ -1629,6 +1631,9 @@ void InitLocale(wxLocale &locale, int language)
 		JoinPaths(JoinPaths(wxStandardPaths::Get().GetInstallPrefix(), "share"), "locale"));
 #endif
 
+	if (wxTranslations *translations = wxTranslations::Get()) {
+		translations->AddStdCatalog();
+	}
 	locale.AddCatalog(PACKAGE);
 }
 
