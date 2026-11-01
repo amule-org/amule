@@ -26,22 +26,25 @@
 
 #include <AutostartManager.h>
 
+#include "TestScratchDir.h"
+
 #include <wx/file.h>
 #include <wx/filefn.h>
 #include <wx/filename.h>
 #include <wx/utils.h>
 
+#include <optional>
+
 using namespace muleunit;
 
 namespace
 {
+std::optional<TestScratchDir> g_scratch;
 wxString g_configHome;
 
 void UseScratchConfigHome()
 {
-	g_configHome = wxFileName::CreateTempFileName(wxT("amule-autostart"));
-	wxRemoveFile(g_configHome);
-	wxFileName::Mkdir(g_configHome, 0700, wxPATH_MKDIR_FULL);
+	g_configHome = g_scratch.emplace(wxT("amule-autostart")).WxPath();
 	wxSetEnv(wxT("XDG_CONFIG_HOME"), g_configHome);
 }
 
@@ -78,7 +81,7 @@ void Rewrite(const wxString &from, const wxString &to)
 DECLARE(AutostartManager)
 void tearDown()
 {
-	wxFileName::Rmdir(g_configHome, wxPATH_RMDIR_RECURSIVE);
+	g_scratch.reset();
 }
 END_DECLARE;
 

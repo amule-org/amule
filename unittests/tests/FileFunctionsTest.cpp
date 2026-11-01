@@ -27,6 +27,8 @@
 #include <common/FileFunctions.h>
 #include <common/Path.h>
 
+#include "TestScratchDir.h"
+
 #include <wx/file.h>
 #include <wx/filefn.h>
 #include <wx/filename.h>
@@ -74,12 +76,6 @@ wxString IteratedAsDirs(const CPath &dir)
 	}
 	return Joined(names);
 }
-
-struct CTempTree
-{
-	wxString root;
-	~CTempTree() { wxFileName::Rmdir(root, wxPATH_RMDIR_RECURSIVE); }
-};
 
 struct CTempFile
 {
@@ -132,11 +128,8 @@ DECLARE_SIMPLE(FileFunctions)
 
 TEST(FileFunctions, ListSubdirectoriesMatchesDirIterator)
 {
-	CTempTree tree;
-	tree.root = wxFileName::CreateTempFileName("amule-subdirs");
-	wxRemoveFile(tree.root);
-	ASSERT_TRUE(wxMkdir(tree.root));
-	const wxString in = tree.root + wxFileName::GetPathSeparator();
+	const TestScratchDir tree("amule-subdirs");
+	const wxString in = tree.WxPath() + wxFileName::GetPathSeparator();
 
 	ASSERT_TRUE(wxMkdir(in + "a"));
 	ASSERT_TRUE(wxMkdir(in + "b"));
@@ -153,7 +146,7 @@ TEST(FileFunctions, ListSubdirectoriesMatchesDirIterator)
 	expected.insert("link-to-dir");
 #endif
 
-	const CPath root(tree.root);
+	const CPath root(tree.WxPath());
 	ASSERT_EQUALS(Joined(expected), Listed(root));
 	ASSERT_EQUALS(IteratedAsDirs(root), Listed(root));
 }

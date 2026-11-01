@@ -25,6 +25,7 @@
 #include <muleunit/test.h>
 
 #include "PlayerExecutable.h"
+#include "TestScratchDir.h"
 
 #include <wx/ffile.h>
 #include <wx/filefn.h>
@@ -36,9 +37,8 @@ DECLARE_SIMPLE(AppBundle)
 
 TEST(AppBundle, OnlyAnExistingAppFolder)
 {
-	const wxString dir = wxFileName::CreateTempFileName("amule-bundle-");
-	wxRemoveFile(dir);
-	ASSERT_TRUE(wxMkdir(dir));
+	const TestScratchDir scratch("amule-bundle-");
+	const wxString dir = scratch.WxPath();
 	const wxString app = wxFileName(dir, "Player.APP").GetFullPath();
 	const wxString file = wxFileName(dir, "Fake.app").GetFullPath();
 	const wxString folder = wxFileName(dir, "Folder").GetFullPath();
@@ -52,10 +52,6 @@ TEST(AppBundle, OnlyAnExistingAppFolder)
 	const bool plainFolder = IsAppBundle(folder);
 	const bool missing = IsAppBundle(wxFileName(dir, "Missing.app").GetFullPath());
 
-	wxRmdir(app);
-	wxRmdir(folder);
-	wxRemoveFile(file);
-	wxRmdir(dir);
 	ASSERT_TRUE(bundle);
 	ASSERT_TRUE(trailingSlash);
 	ASSERT_FALSE(plainFile);

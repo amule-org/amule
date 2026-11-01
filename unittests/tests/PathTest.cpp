@@ -3,7 +3,8 @@
 #include <common/Path.h>
 #include <common/StringFunctions.h>
 
-#include <wx/filefn.h> // wxRemoveFile
+#include "TestScratchDir.h"
+
 #include <wx/filename.h>
 
 #ifndef __WXMSW__
@@ -521,9 +522,8 @@ TEST(CPath, IsContainedIn)
 	// Build a real directory tree in a unique temp workspace: the containment test resolves ".."
 	// and symlinks against the filesystem, so it needs actual directories.
 	const wxString sep = wxFileName::GetPathSeparator();
-	wxString ws = wxFileName::CreateTempFileName(wxT("amule-roots"));
-	wxRemoveFile(ws);
-	wxFileName::Mkdir(ws, 0700, wxPATH_MKDIR_FULL);
+	const TestScratchDir scratch(wxT("amule-roots"));
+	const wxString ws = scratch.WxPath();
 	const wxString data = ws + sep + wxT("data");
 	const wxString database = ws + sep + wxT("database");
 	const wxString outside = ws + sep + wxT("outside");
@@ -562,9 +562,6 @@ TEST(CPath, IsContainedIn)
 	ASSERT_TRUE(symlink((data + sep + wxT("sub2")).fn_str(), inlink.fn_str()) == 0);
 	ASSERT_TRUE(CPath(inlink).IsContainedIn(root));
 #endif
-
-	// Clean up the whole workspace.
-	wxFileName::Rmdir(ws, wxPATH_RMDIR_RECURSIVE);
 }
 
 TEST(CPath, CanonicalForContainmentStripsTrailingSeparator)
@@ -573,8 +570,8 @@ TEST(CPath, CanonicalForContainmentStripsTrailingSeparator)
 	// carries no trailing separator -- except a bare root, which is not a usable path without one.
 	const wxString sep = wxFileName::GetPathSeparator();
 	const wxString seps = wxFileName::GetPathSeparators();
-	wxString ws = wxFileName::CreateTempFileName(wxT("amule-canon"));
-	wxRemoveFile(ws);
+	const TestScratchDir scratch(wxT("amule-canon"));
+	const wxString ws = scratch.WxPath();
 	const wxString sub = ws + sep + wxT("x");
 	wxFileName::Mkdir(sub, 0700, wxPATH_MKDIR_FULL);
 
@@ -592,6 +589,4 @@ TEST(CPath, CanonicalForContainmentStripsTrailingSeparator)
 	// A bare root keeps its separator.
 	ASSERT_EQUALS(sep, CPath(sep).CanonicalForContainment().GetRaw());
 #endif
-
-	wxFileName::Rmdir(ws, wxPATH_RMDIR_RECURSIVE);
 }

@@ -25,6 +25,7 @@
 #include <muleunit/test.h>
 
 #include "Credentials.h"
+#include "TestScratchDir.h"
 
 #include <wx/filefn.h>
 #include <wx/filename.h>
@@ -44,27 +45,6 @@ namespace
 // produces before the value ever leaves the client.
 const char *const MD5_SECRET = "5ebe2294ecd0e0f08eab7690d2a6ee69";
 const char *const MD5_OTHER = "795f3202b17cb6bc3d4b771d8c6c9eaf";
-
-// Directory helpers go through wx rather than shelling out: this target is built on the mingw-w64
-// CI legs too, where `mkdir -p` / `rm -rf` are not available.
-std::string TempDir()
-{
-	// Unit tests run from the build tree; a per-process subdirectory keeps
-	// parallel ctest runs from colliding on the same file.
-	const wxString dir = wxString::Format(wxT("credtest-%ld"), static_cast<long>(wxGetProcessId()));
-	wxFileName::Mkdir(dir, 0700, wxPATH_MKDIR_FULL);
-	return std::string(dir.mb_str());
-}
-
-// Removes the one file the tests write plus the directory itself. A
-// general recursive delete is not needed and would be riskier.
-void RemoveTempDir(const std::string &dir)
-{
-	const wxString wxdir(dir.c_str(), wxConvUTF8);
-	wxRemoveFile(wxdir + wxT("/amuleapi-passwords"));
-	wxRemoveFile(wxdir + wxT("/amuleapi-ec-token"));
-	wxRmdir(wxdir);
-}
 } // namespace
 
 TEST(Credentials, HashIsSaltedAndVerifies)
@@ -159,7 +139,8 @@ TEST(Credentials, WeakerIterationCountVerifiesButWantsRehash)
 
 TEST(Credentials, FileRoundTrip)
 {
-	const std::string dir = TempDir();
+	const TestScratchDir scratch("credtest-");
+	const std::string dir = scratch.Path();
 	Credentials in;
 	in.admin = HashMd5Hex(MD5_SECRET);
 	in.guest = HashMd5Hex(MD5_OTHER);
@@ -173,15 +154,14 @@ TEST(Credentials, FileRoundTrip)
 	ASSERT_EQUALS(in.guest, out.guest);
 	ASSERT_TRUE(VerifyMd5Hex(MD5_SECRET, out.admin));
 	ASSERT_TRUE(VerifyMd5Hex(MD5_OTHER, out.guest));
-
-	RemoveTempDir(dir);
 }
 
 // Clearing the guest credential is how the guest role is disabled, so an
 // empty value has to survive a save/load round trip as empty.
 TEST(Credentials, EmptyGuestRoundTripsAsDisabled)
 {
-	const std::string dir = TempDir();
+	const TestScratchDir scratch("credtest-");
+	const std::string dir = scratch.Path();
 	Credentials in;
 	in.admin = HashMd5Hex(MD5_SECRET);
 	in.guest = "";
@@ -193,8 +173,6 @@ TEST(Credentials, EmptyGuestRoundTripsAsDisabled)
 	ASSERT_TRUE(LoadCredentialsFile(dir, out, err));
 	ASSERT_TRUE(out.guest.empty());
 	ASSERT_FALSE(VerifyMd5Hex(MD5_OTHER, out.guest));
-
-	RemoveTempDir(dir);
 }
 
 TEST(Credentials, MissingFileIsFirstRunNotAnError)
@@ -210,7 +188,8 @@ TEST(Credentials, MissingFileIsFirstRunNotAnError)
 TEST(Credentials, LegacyFileIsReadable)
 {
 	// A file written by a pre-KDF build: bare digests, no PHC prefix.
-	const std::string dir = TempDir();
+	const TestScratchDir scratch("credtest-");
+	const std::string dir = scratch.Path();
 	{
 		std::ofstream f((dir + "/amuleapi-passwords").c_str());
 		f << "admin=" << MD5_SECRET << "\n";
@@ -225,13 +204,12 @@ TEST(Credentials, LegacyFileIsReadable)
 	ASSERT_TRUE(VerifyMd5Hex(MD5_SECRET, out.admin, &needs_rehash));
 	ASSERT_TRUE(needs_rehash);
 	ASSERT_TRUE(VerifyMd5Hex(MD5_OTHER, out.guest));
-
-	RemoveTempDir(dir);
 }
 
 TEST(Credentials, CommentsAndBlankLinesIgnored)
 {
-	const std::string dir = TempDir();
+	const TestScratchDir scratch("credtest-");
+	const std::string dir = scratch.Path();
 	{
 		std::ofstream f((dir + "/amuleapi-passwords").c_str());
 		f << "# a comment\n\n";
@@ -244,8 +222,6 @@ TEST(Credentials, CommentsAndBlankLinesIgnored)
 	ASSERT_TRUE(LoadCredentialsFile(dir, out, err));
 	ASSERT_TRUE(VerifyMd5Hex(MD5_SECRET, out.admin));
 	ASSERT_TRUE(out.guest.empty());
-
-	RemoveTempDir(dir);
 }
 
 TEST(Credentials, FilePathJoinsWithAndWithoutSeparator)
@@ -259,7 +235,8 @@ TEST(Credentials, FilePathJoinsWithAndWithoutSeparator)
 // cannot disagree.
 TEST(Credentials, ChangeWithEmptyAdminLeavesAdminAlone)
 {
-	const std::string dir = TempDir();
+	const TestScratchDir scratch("credtest-");
+	const std::string dir = scratch.Path();
 	std::string err;
 
 	CredentialChange first;
@@ -278,13 +255,12 @@ TEST(Credentials, ChangeWithEmptyAdminLeavesAdminAlone)
 	ASSERT_TRUE(LoadCredentialsFile(dir, out, err));
 	ASSERT_TRUE(VerifyMd5Hex(MD5_SECRET, out.admin));
 	ASSERT_TRUE(VerifyMd5Hex(MD5_OTHER, out.guest));
-
-	RemoveTempDir(dir);
 }
 
 TEST(Credentials, ChangeWithGuestDisabledClearsGuest)
 {
-	const std::string dir = TempDir();
+	const TestScratchDir scratch("credtest-");
+	const std::string dir = scratch.Path();
 	std::string err;
 
 	CredentialChange on;
@@ -303,13 +279,12 @@ TEST(Credentials, ChangeWithGuestDisabledClearsGuest)
 	// Turning guest off must never take admin down with it, or the
 	// operator locks themselves out of a non-loopback deployment.
 	ASSERT_TRUE(VerifyMd5Hex(MD5_SECRET, out.admin));
-
-	RemoveTempDir(dir);
 }
 
 TEST(Credentials, ChangeWithGuestEnabledAndNoDigestKeepsGuestPassword)
 {
-	const std::string dir = TempDir();
+	const TestScratchDir scratch("credtest-");
+	const std::string dir = scratch.Path();
 	std::string err;
 
 	CredentialChange on;
@@ -325,13 +300,12 @@ TEST(Credentials, ChangeWithGuestEnabledAndNoDigestKeepsGuestPassword)
 	Credentials out;
 	ASSERT_TRUE(LoadCredentialsFile(dir, out, err));
 	ASSERT_TRUE(VerifyMd5Hex(MD5_OTHER, out.guest));
-
-	RemoveTempDir(dir);
 }
 
 TEST(Credentials, ChangeRejectsMalformedDigests)
 {
-	const std::string dir = TempDir();
+	const TestScratchDir scratch("credtest-");
+	const std::string dir = scratch.Path();
 	std::string err;
 
 	CredentialChange bad_admin;
@@ -348,8 +322,6 @@ TEST(Credentials, ChangeRejectsMalformedDigests)
 	ASSERT_TRUE(LoadCredentialsFile(dir, out, err));
 	ASSERT_TRUE(out.admin.empty());
 	ASSERT_TRUE(out.guest.empty());
-
-	RemoveTempDir(dir);
 }
 
 // Ephemeral EC token. The token is how amuled hands a spawned amuleapi a credential without either
@@ -387,7 +359,8 @@ TEST(Credentials, GeneratedTokenHasTheMd5HexShape)
 
 TEST(Credentials, ReadAndConsumeEcTokenReturnsItAndDeletesTheFile)
 {
-	const std::string dir = TempDir();
+	const TestScratchDir scratch("credtest-");
+	const std::string dir = scratch.Path();
 	const std::string path = EcTokenFilePath(dir);
 	const std::string token = GenerateEcToken();
 
@@ -403,13 +376,12 @@ TEST(Credentials, ReadAndConsumeEcTokenReturnsItAndDeletesTheFile)
 	// manually started amuleapi.
 	std::string again;
 	ASSERT_TRUE(!ReadAndConsumeEcToken(path, again));
-
-	RemoveTempDir(dir);
 }
 
 TEST(Credentials, ReadAndConsumeEcTokenRejectsMalformedButStillDeletes)
 {
-	const std::string dir = TempDir();
+	const TestScratchDir scratch("credtest-");
+	const std::string dir = scratch.Path();
 	const std::string path = EcTokenFilePath(dir);
 
 	// Truncated, non-hex and empty must all be refused rather than attempted as a credential;
@@ -425,13 +397,12 @@ TEST(Credentials, ReadAndConsumeEcTokenRejectsMalformedButStillDeletes)
 		ASSERT_EQUALS(std::string("untouched"), got);
 		ASSERT_TRUE(!wxFileExists(wxString(path.c_str(), wxConvUTF8)));
 	}
-
-	RemoveTempDir(dir);
 }
 
 TEST(Credentials, ReadAndConsumeEcTokenIgnoresSurroundingWhitespace)
 {
-	const std::string dir = TempDir();
+	const TestScratchDir scratch("credtest-");
+	const std::string dir = scratch.Path();
 	const std::string path = EcTokenFilePath(dir);
 	const std::string token = GenerateEcToken();
 
@@ -440,6 +411,4 @@ TEST(Credentials, ReadAndConsumeEcTokenIgnoresSurroundingWhitespace)
 	std::string got;
 	ASSERT_TRUE(ReadAndConsumeEcToken(path, got));
 	ASSERT_EQUALS(token, got);
-
-	RemoveTempDir(dir);
 }

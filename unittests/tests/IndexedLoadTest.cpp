@@ -1,5 +1,6 @@
 // Tests the production disk parser and main-thread adoption without a running app.
 #include <muleunit/test.h>
+#include "TestScratchDir.h"
 #include <kademlia/kademlia/Indexed.h>
 #include <kademlia/kademlia/Kademlia.h>
 #include <kademlia/net/KademliaUDPListener.h>
@@ -38,16 +39,10 @@ void CKademliaUDPListener::SendPacket(
 
 class TempIndex
 {
+	const TestScratchDir m_dir{ "amule-kad-index-" };
+
 public:
-	wxString path;
-	TempIndex()
-	{
-		path = wxFileName::CreateTempFileName("amule-kad-index-");
-		wxRemoveFile(path);
-		wxMkdir(path);
-		path += wxFileName::GetPathSeparator();
-	}
-	~TempIndex() { wxFileName::Rmdir(path, wxPATH_RMDIR_RECURSIVE); }
+	const wxString path = m_dir.WxPath() + wxFileName::GetPathSeparator();
 };
 static bool WaitForLoad(CIndexed &index)
 {
