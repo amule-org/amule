@@ -16,9 +16,10 @@ import time
 from urllib.error import URLError, HTTPError
 from urllib.request import ProxyHandler, Request, build_opener
 
-from AllSearchIntegrationTest import (C, exact, free_ports, integer, retry_port_collisions,
-                                      running_daemon, start_daemon, stop_daemon, string, tag)
-from DaemonConfig import EC_PASSWORD, daemon_env, write_amule_conf
+from AllSearchIntegrationTest import (C, configure_amuleapi, exact, free_ports, integer,
+                                      retry_port_collisions, running_daemon, start_daemon,
+                                      stop_daemon, string, tag)
+from DaemonConfig import daemon_env, write_amule_conf
 
 SERVER_MET = b'\xe0' + struct.pack('<I', 1) + bytes([203, 0, 113, 7]) + struct.pack('<HI', 4661, 0)
 EXISTING = SERVER_MET.replace(bytes([203, 0, 113, 7]), bytes([203, 0, 113, 9]))
@@ -55,12 +56,11 @@ def start_api(binary, root, ec_port):
     port = free_ports(1)[0]
     config = root / 'amuleapi.conf'
     config.write_text(f'[Server]\nBindAddress=127.0.0.1\nPort={port}\n'
-                      f'[EC]\nHost=127.0.0.1\nPort={ec_port}\nPassword={EC_PASSWORD}\n')
+                      f'[EC]\nHost=127.0.0.1\nPort={ec_port}\n')
     config.chmod(0o600)
     env = daemon_env(root, LANG='C.UTF-8')
     with (root / 'console.log').open('w') as output:
-        subprocess.run([binary, '--config-dir=' + str(root), '--set-admin-pass=fallback-test'],
-                       env=env, stdout=output, stderr=subprocess.STDOUT, timeout=15, check=True)
+        configure_amuleapi(binary, root, env, output, admin='fallback-test')
         proc = subprocess.Popen([binary, '--config-dir=' + str(root), '--foreground', '--no-log-file'],
                                 env=env, stdout=output, stderr=subprocess.STDOUT)
     endpoint = f'http://127.0.0.1:{port}/api/v1'

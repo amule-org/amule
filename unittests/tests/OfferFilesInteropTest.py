@@ -38,7 +38,7 @@ from pathlib import Path
 from DaemonConfig import daemon_env, write_amule_conf
 from ShareWatcherMoveIntegrationTest import shared
 
-from AllSearchIntegrationTest import C, EC, exact, free_ports, stop_daemon, string, tag
+from AllSearchIntegrationTest import C, DAEMON_ARGS, EC, exact, free_ports, stop_daemon, string, tag
 from OfferFilesInteropPeer import CompletionSource, SearchObserver, login_tags
 
 
@@ -216,7 +216,7 @@ def daemon(binary, root, count, seed, enabled, prepare=None, sections=None):
                      sections=config_sections)
     (root / 'nodes.dat').write_bytes(struct.pack('<III', 0, 1, 0))
     log = (root / 'stdout.log').open('w')
-    process = subprocess.Popen([binary, '-c', str(root)], env=daemon_env(root), stdout=log, stderr=log)
+    process = subprocess.Popen([binary, '-c', str(root), *DAEMON_ARGS], env=daemon_env(root), stdout=log, stderr=log)
     def connect():
         assert process.poll() is None, (root / 'stdout.log').read_text()[-4000:]
         try:

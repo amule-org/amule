@@ -64,7 +64,7 @@ def run(binary):
                 persisted.write(bytes(12) + struct.pack('<II', i, int(time.time()) + 3600))
         write_amule_conf(root, port, Port=peer_port, UDPPort=udp_port, ConnectToKad=1,
                          Autoconnect=0)
-        with running_daemon(binary, root, (port, peer_port, udp_port), args=(),
+        with running_daemon(binary, root, (port, peer_port, udp_port),
                             console='stdout.log') as (proc, ec):
             started = time.monotonic()
             assert ec.call(C['EC_OP_KAD_START'])[0] == C['EC_OP_NOOP']

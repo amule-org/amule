@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 """Offline metrics HTTP checks, including an EC fixture that stalls the refresher."""
 from contextlib import contextmanager
-import hashlib
 import json
 from pathlib import Path
 import re
@@ -19,8 +18,8 @@ import urllib.error
 import urllib.request
 import zlib
 
-from AllSearchIntegrationTest import (C, exact, free_ports, integer, running_daemon,
-                                      stop_daemon, tag)
+from AllSearchIntegrationTest import (C, configure_amuleapi, exact, free_ports, integer,
+                                      running_daemon, start_amuleapi, stop_daemon, tag)
 from DaemonConfig import daemon_env, write_amule_conf
 from ECWire import accept  # Preflight in the parent before starting fixtures.
 
@@ -59,8 +58,8 @@ def eventually(fn, seconds=30):
     raise AssertionError('timed out waiting for fixture')
 
 
-def stop(proc):
-    stop_daemon(proc, timeout=15, check=False)
+def stop(proc, check=False):
+    stop_daemon(proc, timeout=15, check=check)
 
 
 @contextmanager
@@ -68,15 +67,12 @@ def api_fixture(binary, root, ec_port, enabled=True, configured=True, token=TOKE
     root.mkdir()
     env = daemon_env(root)
     with (root / 'api.log').open('w') as log:
-        subprocess.run([binary, f'--config-dir={root}', '--set-admin-pass=adminpass'],
-                       env=env, stdout=log, stderr=log, check=True)
+        configure_amuleapi(binary, root, env, log)
         config = root / 'amuleapi.conf'
         static = root / 'static'
         static.mkdir()
         (static / 'index.html').write_text('fixture SPA')
-        digest = hashlib.md5(b'regression').hexdigest().upper()
         text = config.read_text().replace('FailureWindowSeconds=60\nFailureThreshold=30\nLockoutSeconds=300\n', '')
-        text = text.replace('PasswordMD5=', 'PasswordMD5=' + digest, 1)
         text = text.replace('StaticRoot=', f'StaticRoot={static}', 1)
         text = text.replace('BasePath=', 'BasePath=/amule', 1)
         # Explicit opt-in; omission must retain the default-off behavior.
@@ -87,10 +83,9 @@ def api_fixture(binary, root, ec_port, enabled=True, configured=True, token=TOKE
         config.write_text(text)
         port = free_ports(1)[0]
         base = f'http://127.0.0.1:{port}'
-        proc = subprocess.Popen([binary, f'--config-dir={root}', '--host=127.0.0.1',
-            f'--port={ec_port}', f'--http-port={port}'],
-            env=env, stdout=log, stderr=log)
+        proc = start_amuleapi(binary, root, ec_port, port, env, log)
         try:
+            # Not wait_amuleapi: the fake core may hold EC, so wait for HTTP only.
             def listening():
                 assert proc.poll() is None, (root / 'api.log').read_text()
                 return request(base, '/api/v1/health')[0] == 200
@@ -101,7 +96,7 @@ def api_fixture(binary, root, ec_port, enabled=True, configured=True, token=TOKE
             print((root / 'api.log').read_text(), file=sys.stderr)
             raise
         finally:
-            stop(proc)
+            stop(proc, check=sys.exc_info()[0] is None)
 
 
 class CoreHandler(socketserver.BaseRequestHandler):
@@ -300,7 +295,7 @@ def real_daemon_checks(daemon, binary, root):
     ec, peer, udp = free_ports(3, udp_indices=(2,), peer_index=1)
     write_amule_conf(core_dir, ec, Port=peer, UDPPort=udp, UDPEnable=0,
                      sections={'WebServer': {'Enabled': 0}})
-    with running_daemon(daemon, core_dir, (ec, peer), args=(), env=daemon_env(root),
+    with running_daemon(daemon, core_dir, (ec, peer), env=daemon_env(root),
                         console='core.log', stop_timeout=15) as (_, client):
         client.sock.close()
         with api_fixture(binary, root / 'real-api', ec) as (base, _):

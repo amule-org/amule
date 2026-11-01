@@ -66,7 +66,7 @@ def run(binary):
         for worker in workers:
             worker.start()
         try:
-            with running_daemon(binary, root, (ec_port, peer_port, udp_port), args=(),
+            with running_daemon(binary, root, (ec_port, peer_port, udp_port),
                                 console='stdout.log', server_udp=True) as (proc, ec):
                 def add(address):
                     return ec.call(C['EC_OP_SERVER_ADD'], [string(C['EC_TAG_SERVER_ADDRESS'], address)])[0]

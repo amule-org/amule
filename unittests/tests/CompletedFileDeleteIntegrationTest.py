@@ -7,20 +7,17 @@ No public networks: seed verified .part fixtures, let the normal completion path
 run, and exercise unlink failures by removing directory write permission.
 """
 import hashlib
-import json
 import os
 from pathlib import Path
 import socket
 import struct
-import subprocess
 import sys
 import tempfile
 import time
-import urllib.error
-import urllib.request
 
-from AllSearchIntegrationTest import (C, exact, free_ports, integer, retry_port_collisions,
-                                      start_daemon, stop_daemon, string, tag)
+from AllSearchIntegrationTest import (C, configure_amuleapi, exact, free_ports, http, integer,
+                                      retry_port_collisions, start_amuleapi, start_daemon,
+                                      stop_daemon, string, tag, wait_amuleapi)
 from DaemonConfig import daemon_env, write_amule_conf
 
 
@@ -105,24 +102,6 @@ def eventually(fn, timeout=30):
     raise AssertionError('timed out waiting for fixture state')
 
 
-opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
-
-
-def http(base, path, token=None, method='GET', body=None):
-    headers = {'Content-Type': 'application/json'}
-    if token:
-        headers['Authorization'] = 'Bearer ' + token
-    request = urllib.request.Request(base + path,
-        None if body is None else json.dumps(body).encode(), headers, method=method)
-    try:
-        response = opener.open(request, timeout=10)
-    except urllib.error.HTTPError as error:
-        response = error
-    with response:
-        data = response.read()
-        return response.status, json.loads(data) if data else None
-
-
 # Standard MD4 test vectors; files are < one eD2k chunk, so this is their file hash.
 FIXTURES = [
     (b'a', 'bde52cb31de33e46245e05fbdbd6fb24'),
@@ -174,7 +153,7 @@ def run(daemon, api):
         ec = None
         with (root / 'api.log').open('w') as api_log:
             try:
-                proc, ec = start_daemon(daemon, root, (ec_port, peer_port, udp_port), args=(), env=env,
+                proc, ec = start_daemon(daemon, root, (ec_port, peer_port, udp_port), env=env,
                                         console='daemon.log', ec_class=EC)
                 processes.append(proc)
                 eventually(lambda: len(rows := ec.files()) == len(FIXTURES) and
@@ -254,25 +233,12 @@ def run(daemon, api):
 
                 api_root = root / 'api'
                 api_root.mkdir()
-                for role in ('admin', 'guest'):
-                    subprocess.run([api, '--config-dir='+str(api_root), f'--set-{role}-pass={role}pass'],
-                                   env=env, check=True, stdout=api_log, stderr=api_log)
-                config = api_root / 'amuleapi.conf'
-                config.write_text(config.read_text().replace('PasswordMD5=', 'PasswordMD5=' + hashlib.md5(b'regression').hexdigest(), 1))
+                configure_amuleapi(api, api_root, env, api_log, guest='guestpass')
                 hp = free_ports(1)[0]
                 base = f'http://127.0.0.1:{hp}/api/v1'
-                api_proc = subprocess.Popen([api, '--config-dir='+str(api_root), '--host=127.0.0.1',
-                    '--port='+str(ec_port), '--http-port='+str(hp)],
-                    env=env, stdout=api_log, stderr=api_log)
+                api_proc = start_amuleapi(api, api_root, ec_port, hp, env, api_log)
                 processes.append(api_proc)
-                def healthy():
-                    assert api_proc.poll() is None, (root / 'api.log').read_text()
-                    try:
-                        return http(base, '/health')[1].get('ec_connected')
-                    except OSError:
-                        return False
-                eventually(healthy)
-                admin = http(base, '/auth/login?include_token=true', method='POST', body={'password':'adminpass'})[1]['token']
+                admin = wait_amuleapi(api_proc, base, api_log.name)
                 guest = http(base, '/auth/login?include_token=true', method='POST', body={'password':'guestpass'})[1]['token']
                 second, third, fourth = [h for _, h in FIXTURES[1:4]]
                 eventually(lambda: http(base, '/downloads/'+second, admin)[0] == 200)

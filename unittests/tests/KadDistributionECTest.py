@@ -47,7 +47,7 @@ def run(binary, populated=False):
         write_amule_conf(root, port, Port=peer_port, UDPPort=udp_port, ConnectToKad=1,
                          Autoconnect=0, FilterLanIPs=0)
         try:
-            with running_daemon(binary, root, (port, peer_port, udp_port), args=(),
+            with running_daemon(binary, root, (port, peer_port, udp_port),
                                 console='stdout.log') as (proc, ec):
                 assert C['EC_TAG_STATS_KAD_DISTRIBUTION'] not in ec.call(C['EC_OP_STAT_REQ'])[1]
 

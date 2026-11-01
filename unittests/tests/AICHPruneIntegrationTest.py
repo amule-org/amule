@@ -42,8 +42,7 @@ def run(binary, corrupt=False):
             aich.write_bytes(expected + orphan_record)
         proc = ec = None
         try:
-            proc, ec = start_daemon(binary, root, (ec_port, peer_port), args=(),
-                                    console='stdout.log')
+            proc, ec = start_daemon(binary, root, (ec_port, peer_port), console='stdout.log')
             # The source reader must be closed before committing the sibling .new.
             # Otherwise Windows rejects the native replacement with a sharing error.
             deadline = time.monotonic() + 30

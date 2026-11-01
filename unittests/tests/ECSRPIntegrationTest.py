@@ -13,13 +13,12 @@ import tempfile
 import threading
 import time
 
-from AllSearchIntegrationTest import (C, EC, tag, connect_daemon, free_ports, running_daemon,
+from AllSearchIntegrationTest import (C, DAEMON_ARGS, EC, tag, connect_daemon, free_ports, running_daemon,
                                       stop_daemon)
 from DaemonConfig import daemon_env, write_amule_conf
 from ConnectorConfigPathTest import read_config
 import ECWire as W
 
-DAEMON_ARGS = () if os.name == 'nt' else ('--disable-fatal',)
 
 def wire_tags(fields):
     names = {v:k for k,v in C.items() if k.startswith('EC_TAG_')}
@@ -128,7 +127,7 @@ def rate_limit_boundary(daemon, cmd, async_probe, root, env):
         config.write_text(config.read_text().replace(
             '[ExternalConnect]\n',
             f'[ExternalConnect]\nAuthFailureThreshold={threshold}\n'))
-        with running_daemon(daemon, directory, (port, peer), args=DAEMON_ARGS, env=env,
+        with running_daemon(daemon, directory, (port, peer), env=env,
                             console='console') as (_, ec):
             ec.sock.close()
 
@@ -288,7 +287,7 @@ def main(daemon,cmd,async_probe):
                 # Reproduce an unrelated settings save by a downgraded 3.1 core.
                 path=root/'amule.conf'
                 path.write_text(path.read_text().replace('[ExternalConnect]\n','[ExternalConnect]\nECPassword=\n'))
-            with running_daemon(daemon, root, (port, peer), args=DAEMON_ARGS,
+            with running_daemon(daemon, root, (port, peer),
                                 console='console') as (proc, ec):
                 ec.sock.close()
                 conf=(root/'amule.conf').read_text()

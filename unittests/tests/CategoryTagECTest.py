@@ -16,7 +16,7 @@ def run(binary):
         incoming = root / 'Incoming'
         write_amule_conf(root, port, Port=peer_port, UDPPort=udp_port, Autoconnect=0,
                          IncomingDir=incoming)
-        with running_daemon(binary, root, (port, peer_port, udp_port), args=(),
+        with running_daemon(binary, root, (port, peer_port, udp_port),
                             console='stdout.log') as (proc, ec):
             # Category 0 always exists, so the update reaches UpdateCategory.
             category = tag(C['EC_TAG_CATEGORY'], bytes([0]), 2)

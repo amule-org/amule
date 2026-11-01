@@ -189,6 +189,31 @@ class IntegrationFixtureUnitTest(unittest.TestCase):
                                                expected=root / 'logfile')
 
 
+class AmuleApiFixtureUnitTest(unittest.TestCase):
+    def exited(self, log_text):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        log = Path(directory.name) / 'api.log'
+        log.write_text(log_text)
+        proc = subprocess.Popen([sys.executable, '-c', 'raise SystemExit(1)'])
+        proc.wait()
+        return proc, log
+
+    def test_http_port_clash_is_retried(self):
+        proc, log = self.exited('HTTP server failed to start: address in use\n')
+        with self.assertRaises(AllSearchIntegrationTest.PortCollision):
+            AllSearchIntegrationTest.wait_amuleapi(proc, 'http://127.0.0.1:9/api/v1', log)
+
+    def test_other_exit_fails_with_the_log(self):
+        proc, log = self.exited('EC login refused\n')
+        with self.assertRaisesRegex(AssertionError, 'EC login refused'):
+            AllSearchIntegrationTest.wait_amuleapi(proc, 'http://127.0.0.1:9/api/v1', log)
+
+    def test_daemon_args_abort_on_assert_outside_windows(self):
+        expected = () if os.name == 'nt' else ('--disable-fatal',)
+        self.assertEqual(AllSearchIntegrationTest.DAEMON_ARGS, expected)
+
+
 class StopDaemonUnitTest(unittest.TestCase):
     def spawn(self, code):
         return subprocess.Popen([sys.executable, '-c', code])

@@ -47,7 +47,7 @@ def run(binary, populated=False):
         write_amule_conf(root, port, Port=ed2k_port, UDPPort=kad_port, ConnectToKad=1,
                          Autoconnect=0, FilterLanIPs=0)
         try:
-            with running_daemon(binary, root, (port, ed2k_port, kad_port), args=(),
+            with running_daemon(binary, root, (port, ed2k_port, kad_port),
                                 console='stdout.log') as (proc, ec):
                 op, tags = ec.call(C['EC_OP_GET_KAD_LOOKUPS'])
                 assert op == C['EC_OP_GET_KAD_LOOKUPS']

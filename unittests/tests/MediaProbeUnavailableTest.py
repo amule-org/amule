@@ -34,7 +34,7 @@ def run(daemon_binary, helper_binary, with_helper):
         write_amule_conf(core, ec_port, Port=peer_port, UDPPort=udp_port,
                          sections={'MediaMetadata': {'Enabled': 1}})
         snapshot = log_snapshot(core / 'logfile')
-        with running_daemon(daemon, core, (ec_port, peer_port, udp_port), args=(),
+        with running_daemon(daemon, core, (ec_port, peer_port, udp_port),
                             env=daemon_env(root)) as (proc, ec):
             startup = new_log_text(core / 'logfile', snapshot)
             assert (UNAVAILABLE_LOG in startup) is not with_helper, startup

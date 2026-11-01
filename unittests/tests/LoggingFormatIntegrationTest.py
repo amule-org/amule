@@ -8,7 +8,7 @@ import re
 import subprocess
 import tempfile
 
-from AllSearchIntegrationTest import (C, free_ports, retry_port_collisions, running_daemon,
+from AllSearchIntegrationTest import (C, DAEMON_ARGS, free_ports, retry_port_collisions, running_daemon,
                                       string, tag)
 from DaemonConfig import daemon_env, write_amule_conf
 
@@ -23,7 +23,7 @@ def run(binary, amulecmd=None):
         port, peer_port = free_ports(2)
         write_amule_conf(root, port, Port=peer_port, UDPEnable=0)
         env = daemon_env(root)
-        with running_daemon(binary, root, (port, peer_port), args=('--log-stdout', '--disable-fatal'),
+        with running_daemon(binary, root, (port, peer_port), args=(*DAEMON_ARGS, '--log-stdout'),
                             env=env, stop_timeout=15) as (_, ec):
             for status, message in [(False, 'logging-format-ordinary café'),
                                     (True, 'logging-format-status café'),
