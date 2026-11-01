@@ -107,12 +107,6 @@ struct KadHistogramTestAccess
 	}
 };
 
-static void Check(bool condition, const char *message)
-{
-	if (!condition) {
-		throw std::runtime_error(message);
-	}
-}
 static size_t Pixels(const wxImage &image, const wxColour &colour)
 {
 	size_t count = 0;
@@ -274,24 +268,8 @@ static void VerifyRendering()
 int main(int argc, char **argv)
 {
 	wxInitAllImageHandlers();
-	InstallGuiTestDiagnostics();
-	if (!wxEntryStart(argc, argv)) {
-		return 77;
-	}
-	RestoreGuiTestLog();
-	int result = 0;
-	if (!wxTheApp->CallOnInit()) {
-		result = 1;
-	} else {
-		try {
-			VerifyRendering();
-			std::cout << "Histogram render checks passed\n";
-		} catch (const std::exception &error) {
-			std::cerr << error.what() << '\n';
-			result = 1;
-		}
-		wxTheApp->OnExit();
-	}
-	wxEntryCleanup();
-	return result;
+	return RunGuiTest(argc, argv, nullptr, [] {
+		VerifyRendering();
+		std::cout << "Histogram render checks passed\n";
+	});
 }

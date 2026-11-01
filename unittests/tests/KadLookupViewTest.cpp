@@ -35,12 +35,6 @@ public:
 	bool OnInit() override { return true; }
 };
 wxIMPLEMENT_APP_NO_MAIN(LookupTestApp);
-static void Check(bool value, const char *message)
-{
-	if (!value) {
-		throw std::runtime_error(message);
-	}
-}
 static CKadLookupReply *StartReply(
 	CKadLookupView *view, const std::shared_ptr<CKadLookupRequestState> &request)
 {
@@ -128,24 +122,8 @@ static void VerifyClosedPendingView()
 
 int main(int argc, char **argv)
 {
-	InstallGuiTestDiagnostics();
-	if (!wxEntryStart(argc, argv)) {
-		return 77;
-	}
-	RestoreGuiTestLog();
-	int result = 0;
-	if (!wxTheApp->CallOnInit()) {
-		result = 1;
-	} else {
-		try {
-			VerifyLifecycle();
-			VerifyClosedPendingView();
-		} catch (const std::exception &e) {
-			std::cerr << e.what() << '\n';
-			result = 1;
-		}
-		wxTheApp->OnExit();
-	}
-	wxEntryCleanup();
-	return result;
+	return RunGuiTest(argc, argv, nullptr, [] {
+		VerifyLifecycle();
+		VerifyClosedPendingView();
+	});
 }

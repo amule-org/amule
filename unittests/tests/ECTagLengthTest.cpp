@@ -23,6 +23,9 @@
 //
 
 #include <muleunit/test.h>
+
+#include "ECReplaySocket.h"
+
 #include <ec/cpp/ECCodes.h>
 #include <ec/cpp/ECPacket.h>
 #include <ec/cpp/ECSocket.h>
@@ -37,40 +40,6 @@ using namespace muleunit;
 
 namespace
 {
-
-// Serves a recorded reply to SendRecvPacket and discards the request.
-class CReplaySocket : public CECSocket
-{
-public:
-	explicit CReplaySocket(std::vector<unsigned char> reply)
-	: CECSocket(false)
-	, m_reply(std::move(reply))
-	{
-	}
-
-private:
-	std::vector<unsigned char> m_reply;
-	size_t m_pos = 0;
-
-	void WriteDoneAndQueueEmpty() override {}
-	bool InternalConnect(uint32_t, uint16_t, bool) override { return true; }
-	bool InternalWaitOnConnect(long, long) override { return true; }
-	bool InternalWaitForWrite(long, long) override { return true; }
-	bool InternalWaitForRead(long, long) override { return true; }
-	int InternalGetLastError() override { return 0; }
-	void InternalClose() override {}
-	bool InternalError() override { return false; }
-	uint32 InternalRead(void *ptr, uint32 len) override
-	{
-		const uint32 n = std::min<size_t>(len, m_reply.size() - m_pos);
-		memcpy(ptr, m_reply.data() + m_pos, n);
-		m_pos += n;
-		return n;
-	}
-	uint32 InternalWrite(const void *, uint32 len) override { return len; }
-	bool InternalIsConnected() override { return true; }
-	void InternalDestroy() override {}
-};
 
 void Put16(std::vector<unsigned char> &v, uint32_t x)
 {

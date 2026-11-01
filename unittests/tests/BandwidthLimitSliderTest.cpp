@@ -42,13 +42,6 @@ wxIMPLEMENT_APP_NO_MAIN(BandwidthTestApp);
 
 namespace
 {
-void Check(bool condition, const char *message)
-{
-	if (!condition) {
-		throw std::runtime_error(message);
-	}
-}
-
 void TestLimitControl()
 {
 	wxDialog dialog(nullptr, wxID_ANY, "Bandwidth limit test");
@@ -247,25 +240,8 @@ void TestLimitControl()
 
 int main(int argc, char **argv)
 {
-	InstallGuiTestDiagnostics();
-	if (!wxEntryStart(argc, argv)) {
-		std::cerr << "No GUI display available; skipping bandwidth limit tests\n";
-		return 77;
-	}
-	RestoreGuiTestLog();
-	int result = 0;
-	if (!wxTheApp->CallOnInit()) {
-		result = 1;
-	} else {
-		try {
-			TestLimitControl();
-			std::cout << "Bandwidth limit tests passed\n";
-		} catch (const std::exception &error) {
-			std::cerr << error.what() << '\n';
-			result = 1;
-		}
-		wxTheApp->OnExit();
-	}
-	wxEntryCleanup();
-	return result;
+	return RunGuiTest(argc, argv, "No GUI display available; skipping bandwidth limit tests", [] {
+		TestLimitControl();
+		std::cout << "Bandwidth limit tests passed\n";
+	});
 }

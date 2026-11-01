@@ -11,6 +11,8 @@
 
 #include <muleunit/test.h>
 
+#include "TestScratchDir.h"
+
 #include "StaticFs.h"
 
 #include <cstdio>
@@ -34,74 +36,14 @@
 using namespace muleunit;
 using namespace webapi;
 
-namespace
-{
-
-// Per-test scratch dir. POSIX uses mkdtemp(); Windows builds a unique name under %TEMP%. Created
-// empty; callers populate it and must call RemoveAll() at the end of the test, muleunit's
-// DECLARE_SIMPLE having no TearDown hook.
-std::string MakeScratchRoot(const char *tag)
-{
-#ifdef _WIN32
-	char tmp[MAX_PATH];
-	DWORD n = GetTempPathA(MAX_PATH, tmp);
-	std::string base(tmp, n);
-	std::string dir = base + "amule-staticfs-" + tag + "-" + std::to_string(static_cast<long>(_getpid()));
-	_mkdir(dir.c_str());
-	return dir;
-#else
-	std::string tpl = "/tmp/amule-staticfs-";
-	tpl += tag;
-	tpl += "-XXXXXX";
-	std::vector<char> buf(tpl.begin(), tpl.end());
-	buf.push_back('\0');
-	if (!mkdtemp(buf.data()))
-		return std::string();
-	return std::string(buf.data());
-#endif
-}
-
-bool MkSubdir(const std::string &path)
-{
-#ifdef _WIN32
-	return _mkdir(path.c_str()) == 0;
-#else
-	return mkdir(path.c_str(), 0755) == 0;
-#endif
-}
-
-// Write a single-byte file. The content is not load-bearing for these tests -- they only verify the
-// resolver's accept/reject decision and the resolved path, not the file body.
-bool WriteFile(const std::string &path, const std::string &body)
-{
-	std::ofstream f(path.c_str(), std::ios::binary);
-	if (!f.is_open())
-		return false;
-	f << body;
-	return f.good();
-}
-
-void RemoveAll(const std::string &path)
-{
-	// Recursive rm via system(); test-scratch only, never on real
-	// data. Quote the path to survive spaces / odd chars in $TMPDIR.
-#ifdef _WIN32
-	std::string cmd = "rmdir /S /Q \"" + path + "\" >NUL 2>&1";
-#else
-	std::string cmd = "rm -rf \"" + path + "\" 2>/dev/null";
-#endif
-	(void)std::system(cmd.c_str());
-}
-
-} // namespace
-
 DECLARE_SIMPLE(StaticFs)
 
 // Plain accept paths -- file exists inside root.
 
 TEST(StaticFs, FileAtRootResolvesAndReturnsTrue)
 {
-	const std::string root = MakeScratchRoot("file-at-root");
+	const TestScratchDir scratch("amule-staticfs-file-at-root-");
+	const std::string root = scratch.Path();
 	ASSERT_TRUE(!root.empty());
 	const std::string asset = root + "/index.html";
 	ASSERT_TRUE(WriteFile(asset, "x"));
@@ -111,8 +53,6 @@ TEST(StaticFs, FileAtRootResolvesAndReturnsTrue)
 	// Trailing separator is stripped by the resolver -- strict equality
 	// against the file path is the cleanest check.
 	ASSERT_TRUE(out.size() >= asset.size() - 1);
-
-	RemoveAll(root);
 }
 
 TEST(StaticFs, RootWithTrailingSlashResolves)
@@ -121,27 +61,25 @@ TEST(StaticFs, RootWithTrailingSlashResolves)
 	// previously broke the prefix-comparison containment check. AMULEAPI_STATIC_DIR is baked
 	// with a trailing slash (cmake convention for dirs) so the bug shipped to every installed
 	// amuleapi binary until normalised here.
-	const std::string root = MakeScratchRoot("trailing-slash");
+	const TestScratchDir scratch("amule-staticfs-trailing-slash-");
+	const std::string root = scratch.Path();
 	ASSERT_TRUE(!root.empty());
 	ASSERT_TRUE(WriteFile(root + "/index.html", "x"));
 
 	std::string out;
 	ASSERT_TRUE(ResolveWithinRoot(root + "/", "index.html", out));
-
-	RemoveAll(root);
 }
 
 TEST(StaticFs, NestedFileResolvesAndReturnsTrue)
 {
-	const std::string root = MakeScratchRoot("nested");
+	const TestScratchDir scratch("amule-staticfs-nested-");
+	const std::string root = scratch.Path();
 	ASSERT_TRUE(!root.empty());
 	ASSERT_TRUE(MkSubdir(root + "/assets"));
 	ASSERT_TRUE(WriteFile(root + "/assets/app.js", "y"));
 
 	std::string out;
 	ASSERT_TRUE(ResolveWithinRoot(root, "assets/app.js", out));
-
-	RemoveAll(root);
 }
 
 // Reject paths -- an opaque false return for any failure mode, so the dispatcher can map every miss
@@ -149,13 +87,12 @@ TEST(StaticFs, NestedFileResolvesAndReturnsTrue)
 
 TEST(StaticFs, MissingFileReturnsFalse)
 {
-	const std::string root = MakeScratchRoot("missing");
+	const TestScratchDir scratch("amule-staticfs-missing-");
+	const std::string root = scratch.Path();
 	ASSERT_TRUE(!root.empty());
 
 	std::string out;
 	ASSERT_TRUE(!ResolveWithinRoot(root, "not-there.html", out));
-
-	RemoveAll(root);
 }
 
 TEST(StaticFs, MissingRootReturnsFalse)
@@ -170,7 +107,8 @@ TEST(StaticFs, ParentEscapeRejectedEvenIfTargetExists)
 	// `outside/secret.txt` existing. A request for `../outside/secret.txt` under `root` must be
 	// rejected even though the file is real and stat'able -- the canonical resolution would
 	// land outside root.
-	const std::string parent = MakeScratchRoot("parent-escape");
+	const TestScratchDir scratch("amule-staticfs-parent-escape-");
+	const std::string parent = scratch.Path();
 	ASSERT_TRUE(!parent.empty());
 	const std::string root = parent + "/root";
 	const std::string outside = parent + "/outside";
@@ -180,8 +118,6 @@ TEST(StaticFs, ParentEscapeRejectedEvenIfTargetExists)
 
 	std::string out;
 	ASSERT_TRUE(!ResolveWithinRoot(root, "../outside/secret.txt", out));
-
-	RemoveAll(parent);
 }
 
 // Symlink containment -- the security-critical case the resolver exists for. POSIX only: Windows
@@ -191,7 +127,8 @@ TEST(StaticFs, ParentEscapeRejectedEvenIfTargetExists)
 #ifndef _WIN32
 TEST(StaticFs, SymlinkEscapingRootIsRejected)
 {
-	const std::string parent = MakeScratchRoot("symlink-escape");
+	const TestScratchDir scratch("amule-staticfs-symlink-escape-");
+	const std::string parent = scratch.Path();
 	ASSERT_TRUE(!parent.empty());
 	const std::string root = parent + "/root";
 	const std::string outside = parent + "/outside";
@@ -204,15 +141,14 @@ TEST(StaticFs, SymlinkEscapingRootIsRejected)
 
 	std::string out;
 	ASSERT_TRUE(!ResolveWithinRoot(root, "leak.txt", out));
-
-	RemoveAll(parent);
 }
 
 TEST(StaticFs, SymlinkPointingInsideRootIsAccepted)
 {
 	// Sanity: not every symlink is an attack. A link from one file in
 	// root to another file in root resolves cleanly and must be served.
-	const std::string root = MakeScratchRoot("symlink-inside");
+	const TestScratchDir scratch("amule-staticfs-symlink-inside-");
+	const std::string root = scratch.Path();
 	ASSERT_TRUE(!root.empty());
 	ASSERT_TRUE(WriteFile(root + "/real.txt", "ok"));
 	const std::string link = root + "/alias.txt";
@@ -220,8 +156,6 @@ TEST(StaticFs, SymlinkPointingInsideRootIsAccepted)
 
 	std::string out;
 	ASSERT_TRUE(ResolveWithinRoot(root, "alias.txt", out));
-
-	RemoveAll(root);
 }
 #endif // !_WIN32
 
@@ -231,24 +165,22 @@ TEST(StaticFs, SymlinkPointingInsideRootIsAccepted)
 
 TEST(StaticFs, IsDirTrueForExistingDirectory)
 {
-	const std::string root = MakeScratchRoot("isdir-yes");
+	const TestScratchDir scratch("amule-staticfs-isdir-yes-");
+	const std::string root = scratch.Path();
 	ASSERT_TRUE(!root.empty());
 	ASSERT_TRUE(IsDir(root));
 	ASSERT_TRUE(IsDir(root + "/")); // trailing slash tolerated
-
-	RemoveAll(root);
 }
 
 TEST(StaticFs, IsDirFalseForFile)
 {
-	const std::string root = MakeScratchRoot("isdir-file");
+	const TestScratchDir scratch("amule-staticfs-isdir-file-");
+	const std::string root = scratch.Path();
 	ASSERT_TRUE(!root.empty());
 	const std::string file = root + "/just-a-file.txt";
 	ASSERT_TRUE(WriteFile(file, "x"));
 
 	ASSERT_TRUE(!IsDir(file));
-
-	RemoveAll(root);
 }
 
 TEST(StaticFs, IsDirFalseForMissingPath)
