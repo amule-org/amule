@@ -16,6 +16,7 @@ on:
       - '.github/workflows/clang-tidy.yml'
       - '.github/apt-ci.conf'
       - '.github/actions/apt-install/**'
+      - '.github/actions/tidy-sources/**'
   pull_request:
     branches: [ "**" ]
     paths:
@@ -31,12 +32,13 @@ on:
       - '.github/workflows/clang-tidy.yml'
       - '.github/apt-ci.conf'
       - '.github/actions/apt-install/**'
+      - '.github/actions/tidy-sources/**'
 
 # A newer push makes the running analysis pointless, on master as on any branch:
 # Tier-1 checks the whole tree, so the newest master run covers every commit
 # before it, and each of those already passed both tiers on its pull request.
-# A cancelled run still saves its ccache and ctcache (both saves run on
-# always()), so the next run starts from everything the cancelled one built.
+# A cancelled run still saves its ctcache (the save runs on always()), so the
+# next run starts from every TU the cancelled one analyzed.
 #
 # The two events do not share a group: a PR branch push fires `push` at
 # refs/heads/<branch> and `pull_request` at refs/pull/<n>/merge.
@@ -51,8 +53,6 @@ permissions:
   actions: write
 
 env:
-  CCACHE_DIR: ${{ github.workspace }}/.ccache
-  CCACHE_MAXSIZE: 500M
   LLVM_VERSION: '21'
 
   # clang-tidy result cache (ctcache). The whole-tree Tier-1 job runs the
@@ -120,14 +120,6 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
-      - name: restore ccache
-        uses: actions/cache/restore@v6
-        with:
-          path: ${{ env.CCACHE_DIR }}
-          key: clang-tidy-ccache-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
-          restore-keys: clang-tidy-ccache-
-      - name: note build start
-        run: echo "BUILD_START_EPOCH=$(date +%s)" >> "$GITHUB_ENV"
       # Roll the ctcache forward run-to-run: save under the run id, restore the
       # newest previous one via the shared prefix. Bump the version suffix when
       # LLVM_VERSION or CTCACHE_SHA changes so a stale cache can't mask a shift
@@ -141,13 +133,13 @@ jobs:
       - name: install deps
         uses: ./.github/actions/apt-install
         with:
-          packages: ${{ env.cmake_ubuntu_deps }} jq
+          packages: ${{ env.cmake_ubuntu_deps }} jq ninja-build
       # Not cached: apt.llvm.org stayed fast, and its large packages change
       # with every LLVM snapshot.
       - name: install clang-tidy
         run: |
           wget -qO- https://apt.llvm.org/llvm.sh | sudo bash -s -- ${LLVM_VERSION}
-          sudo apt-get install -y clang-tidy-${LLVM_VERSION}
+          sudo apt-get install -y clang-tidy-${LLVM_VERSION} clang-tools-${LLVM_VERSION}
       - uses: ./.github/actions/ngtcp2
       # Fetch the pinned ctcache wrapper. If the download fails, the next step
       # falls back to the bare analyzer binary, so ctcache availability never
@@ -164,21 +156,10 @@ jobs:
             echo "::warning::ctcache fetch failed; falling back to uncached clang-tidy-${LLVM_VERSION}"
             echo "CTCACHE_WRAPPER=clang-tidy-${LLVM_VERSION}" >> "$GITHUB_ENV"
           fi
-      - name: create build system
-        run: cmake ${{ env.cmake_config_flags }}
-      - name: build (generate headers + compile_commands.json)
-        run: cmake --build build
-      # Keep only what this build used: a hit or a new write updates an entry's
-      # timestamp, so anything older is left over from earlier commits.
-      - name: evict unused ccache entries
-        continue-on-error: true
-        run: ccache --evict-older-than "$(( $(date +%s) - BUILD_START_EPOCH ))s"
-      - name: save ccache
-        uses: ./.github/actions/cache-save-newest
-        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/master'
+      - uses: ./.github/actions/tidy-sources
         with:
-          path: ${{ env.CCACHE_DIR }}
-          key: clang-tidy-ccache-${{ github.run_id }}
+          cmake-flags: ${{ env.cmake_config_flags }}
+          llvm-version: ${{ env.LLVM_VERSION }}
       - name: clang-tidy Tier-1 over src/
         env:
           # The ctcache wrapper shells out to this real analyzer on a cache
@@ -213,9 +194,9 @@ jobs:
           # A header warning is reported once per including TU; keep project
           # locations only (drop system, wxWidgets and generated sources).
           # clang-diagnostic-* are compiler pass-throughs, not our configured
-          # checks -- the build step above is the real compile gate, and a file
-          # compiled into several targets can carry an incomplete -I set in one
-          # of them; drop those so they don't masquerade as lint findings.
+          # checks -- Build CI is the compile gate, and a file compiled into
+          # several targets can carry an incomplete -I set in one of them; drop
+          # those so they don't masquerade as lint findings.
           grep -E ': (warning|error):' tidy-full.log \
             | grep -E '/src/' \
             | grep -vE '/wx-[0-9]|/(Scanner|Parser|IPFilterScanner)\.cpp|clang-diagnostic-' \
@@ -228,7 +209,7 @@ jobs:
           echo "clang-tidy Tier-1: clean"
       # Persist AFTER the analysis so the newly-populated clean digests are
       # stored; if: always() so a Tier-1 failure still saves the hits computed
-      # this run. Unlike ccache (filled by the build), ctcache is filled here.
+      # this run.
       - name: save ctcache
         uses: ./.github/actions/cache-save-newest
         if: always() && github.event_name == 'push' && github.ref == 'refs/heads/master'
@@ -248,21 +229,14 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      # Read-only: Tier-1 saves this cache on master pushes, which skip this job.
-      - name: restore ccache
-        uses: actions/cache/restore@v6
-        with:
-          path: ${{ env.CCACHE_DIR }}
-          key: clang-tidy-ccache-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
-          restore-keys: clang-tidy-ccache-
       - name: install deps
         uses: ./.github/actions/apt-install
         with:
-          packages: ${{ env.cmake_ubuntu_deps }}
+          packages: ${{ env.cmake_ubuntu_deps }} jq ninja-build
       - name: install clang-tidy
         run: |
           wget -qO- https://apt.llvm.org/llvm.sh | sudo bash -s -- ${LLVM_VERSION}
-          sudo apt-get install -y clang-tidy-${LLVM_VERSION}
+          sudo apt-get install -y clang-tidy-${LLVM_VERSION} clang-tools-${LLVM_VERSION}
       - uses: ./.github/actions/ngtcp2
       - name: determine diff base
         id: base
@@ -282,10 +256,10 @@ jobs:
           fi
           echo "Using diff base: $base"
           echo "sha=$base" >> "$GITHUB_OUTPUT"
-      - name: create build system
-        run: cmake ${{ env.cmake_config_flags }}
-      - name: build (generate headers + compile_commands.json)
-        run: cmake --build build
+      - uses: ./.github/actions/tidy-sources
+        with:
+          cmake-flags: ${{ env.cmake_config_flags }}
+          llvm-version: ${{ env.LLVM_VERSION }}
       - name: clang-tidy Tier-2 on changed lines
         run: |
           # src/extern is vendored: src/extern/.clang-tidy exempts it with
@@ -304,7 +278,7 @@ jobs:
                 -p1 -path build -config-file .clang-tidy-new-code -quiet 2>&1 \
             | tee tidy-diff.log || true
           # See the Tier-1 job: clang-diagnostic-* are compiler pass-throughs
-          # (the build step is the compile gate), not our configured checks.
+          # (Build CI is the compile gate), not our configured checks.
           grep -E ': (warning|error):' tidy-diff.log \
             | grep -vE '/wx-[0-9]|clang-diagnostic-' \
             | sort -u > diff-hits.txt || true
