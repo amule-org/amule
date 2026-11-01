@@ -52,6 +52,13 @@ if [ -x "${AMULEAPI_BIN:-/nonexistent}" ]; then
 else
 	HAVE_SECOND_INSTANCE=0
 fi
+# amuleapi takes no --password, and its defaults amuleapi.conf carries only
+# PasswordMD5, so seed the EC credential the way run-all.sh does.
+_seed_extra_instance() {
+	"$AMULEAPI_BIN" --config-dir="$1" --set-admin-pass="$ADMIN_PASS" >/dev/null 2>&1
+	printf '%s\n' "$EC_PASSWORD" | "$AMULEAPI_BIN" --config-dir="$1" \
+		--set-ec-pass-stdin >/dev/null 2>&1
+}
 # A query likely to return results on any operator's daemon connected
 # to ed2k. "ubuntu" is a safe choice — well-seeded across the network.
 TEST_QUERY="ubuntu"
@@ -263,13 +270,7 @@ else
 SECOND_HOST="localhost:4714"
 SECOND_CONFIG_DIR=$(mktemp -d -t amuleapi_19_search_second.XXXXXX)
 SECOND_LOG=$(mktemp -t amuleapi_19_search_second_log.XXXXXX)
-"$AMULEAPI_BIN" --config-dir="$SECOND_CONFIG_DIR" \
-	--host="$EC_HOST" --port="$EC_PORT" \
-	--set-admin-pass="$ADMIN_PASS" >/dev/null 2>&1
-# amuleapi takes no --password; the call above also wrote a defaults
-# amuleapi.conf, so put the EC credential in there.
-sed -i'.bak' "s|^Password=.*|Password=$EC_PASSWORD|" "$SECOND_CONFIG_DIR/amuleapi.conf"
-rm -f "$SECOND_CONFIG_DIR/amuleapi.conf.bak"
+_seed_extra_instance "$SECOND_CONFIG_DIR"
 "$AMULEAPI_BIN" --config-dir="$SECOND_CONFIG_DIR" \
 	--host="$EC_HOST" --port="$EC_PORT" \
 	--http-port=4714 >"$SECOND_LOG" 2>&1 &
@@ -1010,12 +1011,7 @@ if [ -n "$SID_CLOSE" ] && [ "$SID_CLOSE" != "null" ]; then
 	else
 	SECOND2_CONFIG_DIR=$(mktemp -d -t amuleapi_19_close_second.XXXXXX)
 	SECOND2_LOG=$(mktemp -t amuleapi_19_close_second_log.XXXXXX)
-	"$AMULEAPI_BIN" --config-dir="$SECOND2_CONFIG_DIR" \
-		--host="$EC_HOST" --port="$EC_PORT" \
-		--set-admin-pass="$ADMIN_PASS" >/dev/null 2>&1
-		# Same reason as the first second-instance above.
-		sed -i'.bak' "s|^Password=.*|Password=$EC_PASSWORD|" "$SECOND2_CONFIG_DIR/amuleapi.conf"
-		rm -f "$SECOND2_CONFIG_DIR/amuleapi.conf.bak"
+	_seed_extra_instance "$SECOND2_CONFIG_DIR"
 	"$AMULEAPI_BIN" --config-dir="$SECOND2_CONFIG_DIR" \
 		--host="$EC_HOST" --port="$EC_PORT" \
 		--http-port=4715 >"$SECOND2_LOG" 2>&1 &
@@ -1064,13 +1060,7 @@ else
 # so the primary at $HOST has never seen the id in its own cache.
 FOREIGN_CONFIG_DIR=$(mktemp -d -t amuleapi_19_foreign.XXXXXX)
 FOREIGN_LOG=$(mktemp -t amuleapi_19_foreign_log.XXXXXX)
-"$AMULEAPI_BIN" --config-dir="$FOREIGN_CONFIG_DIR" \
-	--host="$EC_HOST" --port="$EC_PORT" \
-	--set-admin-pass="$ADMIN_PASS" >/dev/null 2>&1
-# Same reason as the other extra instances: no --password, so the EC
-# credential goes into the amuleapi.conf the call above just created.
-sed -i'.bak' "s|^Password=.*|Password=$EC_PASSWORD|" "$FOREIGN_CONFIG_DIR/amuleapi.conf"
-rm -f "$FOREIGN_CONFIG_DIR/amuleapi.conf.bak"
+_seed_extra_instance "$FOREIGN_CONFIG_DIR"
 "$AMULEAPI_BIN" --config-dir="$FOREIGN_CONFIG_DIR" \
 	--host="$EC_HOST" --port="$EC_PORT" \
 	--http-port=4716 >"$FOREIGN_LOG" 2>&1 &
@@ -1503,11 +1493,7 @@ if [ "$HAVE_SECOND_INSTANCE" -eq 1 ]; then
 	THIRD_HOST="localhost:4715"
 	THIRD_CONFIG_DIR=$(mktemp -d -t amuleapi_19_search_third.XXXXXX)
 	THIRD_LOG=$(mktemp -t amuleapi_19_search_third_log.XXXXXX)
-	"$AMULEAPI_BIN" --config-dir="$THIRD_CONFIG_DIR" \
-		--host="$EC_HOST" --port="$EC_PORT" \
-		--set-admin-pass="$ADMIN_PASS" >/dev/null 2>&1
-	sed -i'.bak' "s|^Password=.*|Password=$EC_PASSWORD|" "$THIRD_CONFIG_DIR/amuleapi.conf"
-	rm -f "$THIRD_CONFIG_DIR/amuleapi.conf.bak"
+	_seed_extra_instance "$THIRD_CONFIG_DIR"
 	"$AMULEAPI_BIN" --config-dir="$THIRD_CONFIG_DIR" \
 		--host="$EC_HOST" --port="$EC_PORT" \
 		--http-port=4715 >"$THIRD_LOG" 2>&1 &
