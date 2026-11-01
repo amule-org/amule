@@ -25,11 +25,16 @@
 #ifndef AMULE_GUI_TEST_DIAGNOSTICS_H
 #define AMULE_GUI_TEST_DIAGNOSTICS_H
 
+#include <wx/app.h>
 #include <wx/debug.h>
+#include <wx/evtloop.h>
+#include <wx/init.h>
 #include <wx/log.h>
 
 #include <cstdlib>
 #include <iostream>
+#include <stdexcept>
+#include <type_traits>
 
 namespace GuiTestDiagnostics
 {
@@ -91,6 +96,65 @@ inline void RestoreGuiTestLog()
 	if (GuiTestDiagnostics::StartupLogFailed()) {
 		std::exit(EXIT_FAILURE);
 	}
+}
+
+inline void Check(bool condition, const char *message)
+{
+	if (!condition) {
+		throw std::runtime_error(message);
+	}
+}
+
+enum class GuiTestEventLoop
+{
+	None,
+	Activate
+};
+
+// Runs body between CallOnInit and OnExit. Returns 77 (skip) when no display
+// is available, 1 when init fails or body throws, else body's result or 0.
+template <typename Body>
+int RunGuiTest(int argc,
+	char **argv,
+	const char *skipMessage,
+	Body body,
+	GuiTestEventLoop eventLoop = GuiTestEventLoop::None)
+{
+	InstallGuiTestDiagnostics();
+	if (!wxEntryStart(argc, argv)) {
+		if (skipMessage) {
+			std::cerr << skipMessage << '\n';
+		}
+		return 77;
+	}
+	RestoreGuiTestLog();
+	int result = 0;
+	if (!wxTheApp->CallOnInit()) {
+		result = 1;
+	} else {
+		auto run = [&] {
+			if constexpr (std::is_void_v<decltype(body())>) {
+				body();
+			} else {
+				result = body();
+			}
+		};
+		try {
+			if (eventLoop == GuiTestEventLoop::Activate) {
+				wxEventLoop loop;
+				wxEventLoopActivator active(&loop);
+				run();
+			} else {
+				run();
+			}
+		} catch (const std::exception &error) {
+			std::cerr << error.what() << '\n';
+			result = 1;
+		}
+		wxTheApp->OnExit();
+	}
+	wxEntryCleanup();
+	return result;
 }
 
 #endif // AMULE_GUI_TEST_DIAGNOSTICS_H

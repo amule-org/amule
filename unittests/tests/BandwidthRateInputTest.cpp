@@ -42,12 +42,6 @@ wxIMPLEMENT_APP_NO_MAIN(RateInputTestApp);
 
 namespace
 {
-void Check(bool condition, const char *message)
-{
-	if (!condition) {
-		throw std::runtime_error(message);
-	}
-}
 void TestInput()
 {
 	using namespace BandwidthRateConversion;
@@ -141,15 +135,7 @@ void TestInput()
 
 int main(int argc, char **argv)
 {
-	InstallGuiTestDiagnostics();
-	if (!wxEntryStart(argc, argv)) {
-		return 77;
-	}
-	RestoreGuiTestLog();
-	int result = 0;
-	if (!wxTheApp->CallOnInit()) {
-		result = 1;
-	} else {
+	return RunGuiTest(argc, argv, nullptr, [argc, argv] {
 		const int language =
 			argc > 1 && wxString(argv[1]) == "it" ? wxLANGUAGE_ITALIAN : wxLANGUAGE_ENGLISH_US;
 		wxLocale locale;
@@ -160,21 +146,13 @@ int main(int argc, char **argv)
 		}
 		if (!initialized) {
 			std::cerr << "Requested locale unavailable; skipping\n";
-			result = 77;
-		} else {
-			try {
-				Check(wxNumberFormatter::GetDecimalSeparator() ==
-						(language == wxLANGUAGE_ITALIAN ? ',' : '.'),
-					"Test must use the requested decimal separator");
-				TestInput();
-				std::cout << "Localized bandwidth input tests passed\n";
-			} catch (const std::exception &error) {
-				std::cerr << error.what() << '\n';
-				result = 1;
-			}
+			return 77;
 		}
-		wxTheApp->OnExit();
-	}
-	wxEntryCleanup();
-	return result;
+		Check(wxNumberFormatter::GetDecimalSeparator() ==
+				(language == wxLANGUAGE_ITALIAN ? ',' : '.'),
+			"Test must use the requested decimal separator");
+		TestInput();
+		std::cout << "Localized bandwidth input tests passed\n";
+		return 0;
+	});
 }
