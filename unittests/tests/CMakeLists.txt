@@ -195,7 +195,6 @@ target_include_directories (IPFilterIPv6Test PRIVATE
 	${CMAKE_BINARY_DIR}
 	${CMAKE_SOURCE_DIR}/src
 	${CMAKE_SOURCE_DIR}/src/include
-	${Boost_INCLUDE_DIR}
 )
 target_link_libraries (IPFilterIPv6Test muleunit mulecommon ${Boost_LIBRARIES})
 
@@ -362,7 +361,7 @@ add_test (NAME SourceRetryPolicyTest COMMAND SourceRetryPolicyTest)
 # EC writes reach these setters directly, so they must clamp to the shared limits.
 add_executable (SourceSearchLimitsTest SourceSearchLimitsTest.cpp)
 add_test (NAME SourceSearchLimitsTest COMMAND SourceSearchLimitsTest)
-target_include_directories (SourceSearchLimitsTest PRIVATE ${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include ${Boost_INCLUDE_DIR})
+target_include_directories (SourceSearchLimitsTest PRIVATE ${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include)
 target_link_libraries (SourceSearchLimitsTest muleunit mulecommon)
 
 add_executable (AdvertisedIPv6Test AdvertisedIPv6Test.cpp)
@@ -469,7 +468,6 @@ target_include_directories (NatRendezvousPolicyTest PRIVATE
 	${CMAKE_BINARY_DIR}
 	${CMAKE_SOURCE_DIR}/src
 	${CMAKE_SOURCE_DIR}/src/include
-	${Boost_INCLUDE_DIR}
 )
 target_link_libraries (NatRendezvousPolicyTest muleunit ${Boost_LIBRARIES})
 
@@ -517,7 +515,6 @@ target_include_directories (NatRendezvousProtocolTest PRIVATE
 	${CMAKE_BINARY_DIR}
 	${CMAKE_SOURCE_DIR}/src
 	${CMAKE_SOURCE_DIR}/src/include
-	${Boost_INCLUDE_DIR}
 )
 target_link_libraries (NatRendezvousProtocolTest muleunit ${Boost_LIBRARIES})
 
@@ -566,7 +563,6 @@ if (ENABLE_QUIC)
 		${CMAKE_BINARY_DIR}
 		${CMAKE_SOURCE_DIR}/src
 		${CMAKE_SOURCE_DIR}/src/include
-		${Boost_INCLUDE_DIR}
 	)
 	target_link_libraries (QuicContextTest muleunit ${Boost_LIBRARIES})
 
@@ -587,7 +583,6 @@ if (ENABLE_QUIC)
 		${CMAKE_BINARY_DIR}
 		${CMAKE_SOURCE_DIR}/src
 		${CMAKE_SOURCE_DIR}/src/include
-		${Boost_INCLUDE_DIR}
 	)
 	target_link_libraries (QuicNgtcp2AdapterTest muleunit Quic::Ngtcp2 ${Boost_LIBRARIES})
 
@@ -608,7 +603,6 @@ if (ENABLE_QUIC)
 		${CMAKE_BINARY_DIR}
 		${CMAKE_SOURCE_DIR}/src
 		${CMAKE_SOURCE_DIR}/src/include
-		${Boost_INCLUDE_DIR}
 	)
 	target_link_libraries (QuicNgtcp2HandshakeTest muleunit Quic::Ngtcp2 ${Boost_LIBRARIES})
 
@@ -653,7 +647,6 @@ target_include_directories (UtpSocketTransportTest
 	PRIVATE ${CMAKE_BINARY_DIR}
 	PRIVATE ${CMAKE_SOURCE_DIR}/src
 	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
-	PRIVATE ${Boost_INCLUDE_DIR}
 )
 
 target_link_libraries (UtpSocketTransportTest
@@ -682,7 +675,6 @@ target_include_directories (LibSocketTransportTest
 	PRIVATE ${CMAKE_BINARY_DIR}
 	PRIVATE ${CMAKE_SOURCE_DIR}/src
 	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
-	PRIVATE ${Boost_INCLUDE_DIR}
 )
 
 target_link_libraries (LibSocketTransportTest
@@ -764,7 +756,6 @@ if (ENABLE_UTP)
 		${CMAKE_BINARY_DIR}
 		${CMAKE_SOURCE_DIR}/src
 		${CMAKE_SOURCE_DIR}/src/include
-		${Boost_INCLUDE_DIR}
 	)
 	target_link_libraries (UtpLibraryAdapterTest muleunit Utp::Utp ${Boost_LIBRARIES})
 	add_test (NAME UtpLibraryAdapterTest COMMAND UtpLibraryAdapterTest)
@@ -1169,7 +1160,6 @@ target_include_directories (NetworkAddressTest
 	PRIVATE ${CMAKE_BINARY_DIR}
 	PRIVATE ${CMAKE_SOURCE_DIR}/src
 	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
-	PRIVATE ${Boost_INCLUDE_DIR}
 )
 
 target_link_libraries (NetworkAddressTest
@@ -1190,7 +1180,6 @@ target_include_directories (ProxyTest PRIVATE
 	${CMAKE_BINARY_DIR}
 	${CMAKE_SOURCE_DIR}/src
 	${CMAKE_SOURCE_DIR}/src/include
-	${Boost_INCLUDE_DIR}
 )
 target_link_libraries (ProxyTest muleunit ${Boost_LIBRARIES} wxWidgets::NET)
 
@@ -1219,7 +1208,6 @@ target_include_directories (PeerAddressingTest
 	PRIVATE ${CMAKE_BINARY_DIR}
 	PRIVATE ${CMAKE_SOURCE_DIR}/src
 	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
-	PRIVATE ${Boost_INCLUDE_DIR}
 )
 
 target_link_libraries (PeerAddressingTest
@@ -1243,7 +1231,6 @@ target_include_directories (ContactDialPolicyTest
 	PRIVATE ${CMAKE_BINARY_DIR}
 	PRIVATE ${CMAKE_SOURCE_DIR}/src
 	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
-	PRIVATE ${Boost_INCLUDE_DIR}
 )
 
 target_link_libraries (ContactDialPolicyTest
@@ -1267,7 +1254,6 @@ target_include_directories (KadSourceAddressPolicyTest
 	PRIVATE ${CMAKE_BINARY_DIR}
 	PRIVATE ${CMAKE_SOURCE_DIR}/src
 	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
-	PRIVATE ${Boost_INCLUDE_DIR}
 )
 
 target_link_libraries (KadSourceAddressPolicyTest
@@ -1309,7 +1295,6 @@ target_include_directories (ServerIPv6SourcePolicyTest
 	PRIVATE ${CMAKE_BINARY_DIR}
 	PRIVATE ${CMAKE_SOURCE_DIR}/src
 	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
-	PRIVATE ${Boost_INCLUDE_DIR}
 )
 
 target_link_libraries (ServerIPv6SourcePolicyTest
@@ -1343,7 +1328,6 @@ target_include_directories (UploadQueueAddressPolicyTest PRIVATE
 	${CMAKE_BINARY_DIR}
 	${CMAKE_SOURCE_DIR}/src
 	${CMAKE_SOURCE_DIR}/src/include
-	${Boost_INCLUDE_DIR}
 )
 target_link_libraries (UploadQueueAddressPolicyTest muleunit ${Boost_LIBRARIES})
 
@@ -1366,7 +1350,6 @@ target_include_directories (AddressFamilyPolicyTest
 	PRIVATE ${CMAKE_BINARY_DIR}
 	PRIVATE ${CMAKE_SOURCE_DIR}/src
 	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
-	PRIVATE ${Boost_INCLUDE_DIR}
 )
 
 target_link_libraries (AddressFamilyPolicyTest
@@ -1760,10 +1743,6 @@ target_compile_definitions (NetworkFunctionsTest
 target_include_directories (NetworkFunctionsTest
 	PRIVATE ${CMAKE_SOURCE_DIR}/src
 	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
-)
-
-target_include_directories (NetworkFunctionsTest
-	PRIVATE ${Boost_INCLUDE_DIR}
 )
 
 target_link_libraries (NetworkFunctionsTest
@@ -2765,7 +2744,6 @@ add_test (NAME RangeFileBodyTest
 
 target_include_directories (RangeFileBodyTest
 	PRIVATE ${CMAKE_SOURCE_DIR}/src/webapi
-	PRIVATE ${Boost_INCLUDE_DIR}
 )
 
 target_link_libraries (RangeFileBodyTest
@@ -3545,7 +3523,7 @@ add_executable (IndexedLoadTest
 	KadPrefsStub.cpp
 )
 add_test (NAME IndexedLoadTest COMMAND IndexedLoadTest)
-target_include_directories (IndexedLoadTest PRIVATE ${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include ${Boost_INCLUDE_DIR})
+target_include_directories (IndexedLoadTest PRIVATE ${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include)
 target_link_libraries (IndexedLoadTest muleunit muleappcommon mulecommon Threads::Threads)
 
 # A macOS .app player is a folder; the preview check must still accept it.

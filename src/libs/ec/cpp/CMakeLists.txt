@@ -29,10 +29,6 @@ target_include_directories (ec
 	PRIVATE ${LIBS_BINARY_INCLUDE_DIR}
 )
 
-target_include_directories (ec
-	PUBLIC ${Boost_INCLUDE_DIR}
-)
-
 target_link_libraries (ec
 	PRIVATE CRYPTOPP::CRYPTOPP
 	PRIVATE wxWidgets::BASE
