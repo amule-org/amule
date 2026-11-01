@@ -208,6 +208,15 @@ if (NEED_LIB_MULEAPPCOMMON)
 	# SIGSEGV/SIGBUS handler entirely (e.g. sanitizer builds).
 	option (ENABLE_MMAP "compile the mmap file-I/O path where supported" ON)
 	option (ENABLE_NLS "enable national language support" ON)
+	# wxWidgets' own catalogs ship beside aMule's where no system wx provides them: the macOS
+	# bundles, the Windows install and the AppImage. A distro's wx package owns them on Linux.
+	if (APPLE OR WIN32)
+		set (_amule_wx_catalogs_default ON)
+	else()
+		set (_amule_wx_catalogs_default OFF)
+	endif()
+	option (BUNDLE_WX_CATALOGS "ship wxWidgets' translations with aMule's" ${_amule_wx_catalogs_default})
+	unset (_amule_wx_catalogs_default)
 	# Backtrace symbol resolution: ON => use libbfd for in-process
 	# address→file:line resolution; OFF => fall back to
 	# backtrace_symbols() for function names + an external addr2line
@@ -221,6 +230,7 @@ else()
 	set (ENABLE_IP2COUNTRY FALSE)
 	set (ENABLE_MMAP FALSE)
 	set (ENABLE_NLS FALSE)
+	set (BUNDLE_WX_CATALOGS FALSE)
 	set (ENABLE_BFD FALSE)
 endif()
 

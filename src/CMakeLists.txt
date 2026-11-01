@@ -236,6 +236,51 @@ if (APPLE)
 		"[{\"UTTypeIdentifier\": \"org.amule.emulecollection\", \"UTTypeDescription\": \"eMule Collection\", \"UTTypeConformsTo\": [\"public.data\"], \"UTTypeTagSpecification\": {\"public.filename-extension\": [\"emulecollection\"], \"public.mime-type\": [\"application/x-emule-collection\"]}}]")
 	set (AMULE_PLIST_DOCUMENT_TYPES
 		"[{\"CFBundleTypeName\": \"eMule Collection\", \"CFBundleTypeRole\": \"Viewer\", \"LSHandlerRank\": \"Default\", \"CFBundleTypeExtensions\": [\"emulecollection\"], \"LSItemContentTypes\": [\"org.amule.emulecollection\"], \"CFBundleTypeIconFile\": \"amule.icns\"}]")
+
+	# Each bundle needs its own catalogs under Contents/Resources/locale, the lookup prefix
+	# InitLocale() adds on macOS: aMule's, and wxWidgets' own for the menu items and stock
+	# labels wx creates. CFBundleLocalizations makes AppKit localize the menus it supplies itself, such as the
+	# text field context menu; it falls back to English for a bundle that declares none.
+	function (amule_bundle_translations target)
+		if (NOT (ENABLE_NLS AND AMULE_TRANSLATIONS))
+			return ()
+		endif()
+		add_dependencies (${target} pofiles)
+
+		set (_localizations "en")
+
+		foreach (_lang IN LISTS AMULE_TRANSLATIONS)
+			set (_mo_dir "$<TARGET_BUNDLE_CONTENT_DIR:${target}>/Resources/locale/${_lang}/LC_MESSAGES")
+			add_custom_command (TARGET ${target} POST_BUILD
+				COMMAND ${CMAKE_COMMAND} -E make_directory "${_mo_dir}"
+				COMMAND ${CMAKE_COMMAND} -E copy_if_different
+					"${CMAKE_BINARY_DIR}/po/${_lang}.gmo"
+					"${_mo_dir}/amule.mo"
+				COMMENT "Bundling ${_lang} catalog into ${target}"
+				VERBATIM
+			)
+
+			if (BUNDLE_WX_CATALOGS)
+				amule_wx_catalog (${_lang} _wx)
+				if (_wx)
+					add_custom_command (TARGET ${target} POST_BUILD
+						COMMAND ${CMAKE_COMMAND} -E copy_if_different "${_wx}" "${_mo_dir}/${AMULE_WX_CATALOG}"
+						VERBATIM
+					)
+				endif()
+			endif()
+
+			list (APPEND _localizations "${_lang}")
+		endforeach()
+
+		list (JOIN _localizations "\", \"" _json)
+		add_custom_command (TARGET ${target} POST_BUILD
+			COMMAND /usr/bin/plutil -replace CFBundleLocalizations -json "[\"${_json}\"]"
+				"$<TARGET_BUNDLE_CONTENT_DIR:${target}>/Info.plist"
+			COMMENT "Declaring the localizations of ${target}"
+			VERBATIM
+		)
+	endfunction()
 endif()
 
 if (BUILD_DAEMON)
@@ -512,27 +557,7 @@ if (BUILD_MONOLITHIC)
 			VERBATIM
 		)
 
-		# Copy translation catalogs into the .app bundle so the in-tree
-		# build picks them up.  wxLocale's lookup prefix on macOS is
-		# wxStandardPaths::GetDataDir() + "/locale", which resolves to
-		# Contents/Resources/locale inside the bundle.  Done here (not
-		# in po/) because the `amule` target is defined in this file
-		# while `po` is added earlier in the top-level CMakeLists.
-		if (ENABLE_NLS AND AMULE_TRANSLATIONS)
-			add_dependencies (amule pofiles)
-			foreach (_lang IN LISTS AMULE_TRANSLATIONS)
-				set (_mo_dir
-					"$<TARGET_BUNDLE_CONTENT_DIR:amule>/Resources/locale/${_lang}/LC_MESSAGES")
-				add_custom_command (TARGET amule POST_BUILD
-					COMMAND ${CMAKE_COMMAND} -E make_directory "${_mo_dir}"
-					COMMAND ${CMAKE_COMMAND} -E copy_if_different
-						"${CMAKE_BINARY_DIR}/po/${_lang}.gmo"
-						"${_mo_dir}/amule.mo"
-					COMMENT "Bundling ${_lang} catalog into aMule.app"
-					VERBATIM
-				)
-			endforeach()
-		endif()
+		amule_bundle_translations (amule)
 
 		# Bundle the default webserver template into the .app at
 		# Contents/Resources/webserver/default/. amuleweb's macOS
@@ -765,27 +790,7 @@ if (BUILD_REMOTEGUI)
 			VERBATIM
 		)
 
-		# Same translation-catalog bundling as the monolithic amule.app
-		# — wxLocale's lookup prefix on macOS is GetDataDir() + "/locale"
-		# which resolves to Contents/Resources/locale inside whichever
-		# bundle is running, so each .app needs its own copy.  Without
-		# this aMuleGUI.app launches in English regardless of system
-		# locale (issue #541).
-		if (ENABLE_NLS AND AMULE_TRANSLATIONS)
-			add_dependencies (amulegui pofiles)
-			foreach (_lang IN LISTS AMULE_TRANSLATIONS)
-				set (_mo_dir
-					"$<TARGET_BUNDLE_CONTENT_DIR:amulegui>/Resources/locale/${_lang}/LC_MESSAGES")
-				add_custom_command (TARGET amulegui POST_BUILD
-					COMMAND ${CMAKE_COMMAND} -E make_directory "${_mo_dir}"
-					COMMAND ${CMAKE_COMMAND} -E copy_if_different
-						"${CMAKE_BINARY_DIR}/po/${_lang}.gmo"
-						"${_mo_dir}/amule.mo"
-					COMMENT "Bundling ${_lang} catalog into aMuleGUI.app"
-					VERBATIM
-				)
-			endforeach()
-		endif()
+		amule_bundle_translations (amulegui)
 	endif()
 
 	install (TARGETS amulegui

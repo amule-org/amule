@@ -95,6 +95,34 @@ endforeach()
 unset (_amule_wx_components)
 unset (_amule_wx_targets)
 
+# wxWidgets' own catalogs (wxstd), for BUNDLE_WX_CATALOGS: a packaged build cannot reach the
+# build machine's wx prefix. The prefix comes from wx-config's location because MSYS2's
+# wx-config is a shell script native CMake cannot run.
+get_filename_component (_amule_wx_bin "${wxWidgets_CONFIG_EXECUTABLE}" DIRECTORY)
+get_filename_component (AMULE_WX_LOCALE_DIR "${_amule_wx_bin}/../share/locale" ABSOLUTE)
+set (AMULE_WX_CATALOG "wxstd-${wxWidgets_VERSION_MAJOR}.${wxWidgets_VERSION_MINOR}.mo")
+unset (_amule_wx_bin)
+if (BUNDLE_WX_CATALOGS AND ENABLE_NLS AND NOT IS_DIRECTORY "${AMULE_WX_LOCALE_DIR}")
+	message (FATAL_ERROR "BUNDLE_WX_CATALOGS is ON, but wxWidgets has no catalogs in ${AMULE_WX_LOCALE_DIR}")
+endif()
+
+# Sets <out_var> to wx's catalog for aMule language <lang>, or to empty when wx has none.
+# wx spells some languages differently: aMule's gl and pt_PT are its gl_ES and pt.
+function (amule_wx_catalog lang out_var)
+	string (REGEX REPLACE "_.*" "" _base "${lang}")
+	file (GLOB _variants "${AMULE_WX_LOCALE_DIR}/${_base}_*/LC_MESSAGES/${AMULE_WX_CATALOG}")
+	foreach (_mo IN ITEMS
+			"${AMULE_WX_LOCALE_DIR}/${lang}/LC_MESSAGES/${AMULE_WX_CATALOG}"
+			"${AMULE_WX_LOCALE_DIR}/${_base}/LC_MESSAGES/${AMULE_WX_CATALOG}"
+			${_variants})
+		if (EXISTS "${_mo}")
+			set (${out_var} "${_mo}" PARENT_SCOPE)
+			return()
+		endif()
+	endforeach()
+	set (${out_var} "" PARENT_SCOPE)
+endfunction()
+
 
 # CHTTPDownloadThread (HTTPDownload.{h,cpp}) is built directly on top of
 # wxWebRequest / wxWebSession / wxWebRequestEvent.  Those classes are gated
