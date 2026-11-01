@@ -9,21 +9,21 @@
 # Ivan Nazimov <ivan@lonerx.net>, 2007.
 # Nick Shaforostoff <shaforostoff@kde.ru>, 2008.
 # Radist Morse <radist.morse@gmail.com>, 2008.
-#
+# Andrei Stepanov <adem@users.noreply.hosted.weblate.org>, 2026.
 msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-01 10:29+0000\n"
-"Last-Translator: Radist Morse <radist.morse@gmail.com>\n"
-"Language-Team: Russian <kde-russian@lists.kde.ru>\n"
+"PO-Revision-Date: 2026-11-01 21:47+0000\n"
+"Last-Translator: Andrei Stepanov <adem@users.noreply.hosted.weblate.org>\n"
+"Language-Team: Russian <https://hosted.weblate.org/projects/amule/amule-application/ru/>\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
-"X-Generator: Poedit 2.3\n"
+"X-Generator: Weblate 2026.11.dev0\n"
 "X-Poedit-SourceCharset: UTF-8\n"
 
 #: src/AboutDialog.cpp
@@ -2638,7 +2638,7 @@ msgstr "При удалённом использовании aMule веб-пои
 
 #: src/ExternalConn.cpp
 msgid "Invalid media search filter."
-msgstr ""
+msgstr "Неверный фильтр поиска по медиафайлам."
 
 #: src/ExternalConn.cpp
 msgid "A browse is not a search that can be started."
@@ -5754,11 +5754,11 @@ msgstr "Период повторного запроса источников (�
 
 #: src/muuli_wdr.cpp
 msgid "Download write buffer limit (MiB)"
-msgstr ""
+msgstr "Предел буфера записи загрузок (МиБ)"
 
 #: src/muuli_wdr.cpp
 msgid "Total received download data waiting to be written. A larger limit can smooth short disk stalls at the cost of more memory. Already requested data can exceed this limit."
-msgstr ""
+msgstr "Общий объём полученных данных загрузки, ожидающих записи. Больший предел может сгладить короткие задержки диска ценой большего потребления памяти. Уже запрошенные данные могут превысить этот предел."
 
 #: src/muuli_wdr.cpp
 msgid "File Buffer Size: 240000 bytes"
@@ -7678,20 +7678,19 @@ msgstr "Общая"
 
 #: src/SearchMetadataPanel.cpp
 msgid "Minimum duration (minutes)"
-msgstr ""
+msgstr "Минимальная длительность (минуты)"
 
 #: src/SearchMetadataPanel.cpp
 msgid "Minimum bitrate (kbps)"
-msgstr ""
+msgstr "Минимальный битрейт (кбит/с)"
 
 #: src/SearchMetadataPanel.cpp
 msgid "Kad applies these filters; eD2k servers may ignore them"
-msgstr ""
+msgstr "Kad применяет эти фильтры; серверы eD2k могут их игнорировать"
 
 #: src/SearchMetadataPanel.cpp
-#, fuzzy
 msgid "The connected daemon does not support media filters. Update the daemon to use these fields."
-msgstr "Подключённый демон не поддерживает поиск «Все»."
+msgstr "Подключённый демон не поддерживает фильтры медиафайлов. Обновите демон, чтобы использовать эти поля."
 
 #: src/SearchList.cpp
 #, c-format
