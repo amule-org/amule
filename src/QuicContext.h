@@ -155,6 +155,7 @@ private:
 		const CNetworkAddress &, uint16_t, const uint8_t *, size_t);
 	bool AdmitNewConnection(const CNetworkAddress &, uint64_t nowMs);
 	void EraseClosedConnections();
+	bool IsTableFull();
 
 	IQuicConnectionFactory *m_factory;
 	ConnectionMap m_connections;

@@ -143,10 +143,15 @@ void CQuicContext::EraseClosedConnections()
 	}
 }
 
-bool CQuicContext::AdmitNewConnection(const CNetworkAddress &address, uint64_t nowMs)
+bool CQuicContext::IsTableFull()
 {
 	EraseClosedConnections();
-	if (m_connections.size() >= kMaxConnections) {
+	return m_connections.size() >= kMaxConnections;
+}
+
+bool CQuicContext::AdmitNewConnection(const CNetworkAddress &address, uint64_t nowMs)
+{
+	if (IsTableFull()) {
 		return false;
 	}
 	const CNetworkAddress scope = PeerAddressing::RateLimitScope(address);
@@ -168,6 +173,9 @@ bool CQuicContext::Dial(const CNetworkAddress &address,
 	CUpDownClient *owner)
 {
 	if (port == 0 || m_factory == nullptr) {
+		return false;
+	}
+	if (IsTableFull()) {
 		return false;
 	}
 	std::unique_ptr<IQuicConnection> connection =

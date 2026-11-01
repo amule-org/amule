@@ -535,3 +535,19 @@ TEST(QuicContext, IssuedDcidFromAnotherEndpointIsNotRouted)
 	ASSERT_EQUALS(2u, factory.calls);
 	ASSERT_EQUALS(1u, factory.created[0]->calls);
 }
+
+TEST(QuicContext, FullTableRefusesOutboundBeforeCreatingHandshake)
+{
+	FakeFactory factory;
+	factory.alwaysCreate = true;
+	CQuicContext context(&factory);
+	auto payload = Initial(0x75);
+	for (unsigned i = 0; i < CQuicContext::kMaxConnections; ++i) {
+		ASSERT_TRUE(
+			context.ProcessDatagram(payload.data(), payload.size(), PeerNumber(i + 1), 4662, 0));
+	}
+	factory.next = std::make_unique<FakeConnection>();
+	ASSERT_TRUE(!context.Dial(PeerNumber(CQuicContext::kMaxConnections + 1), 4662, kPeerIdentity, 0));
+	ASSERT_EQUALS(0u, factory.outboundCalls);
+	ASSERT_EQUALS(CQuicContext::kMaxConnections, context.ConnectionCount());
+}
