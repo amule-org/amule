@@ -119,6 +119,9 @@ private:
 	 */
 	void OnEditCategory(wxCommandEvent &event);
 
+	/// Open the selected category's destination in the local file manager.
+	void OnOpenCategoryFolder(wxCommandEvent &event);
+
 	/**
 	 * Handler for manipulating the default category.
 	 */

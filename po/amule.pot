@@ -2169,7 +2169,7 @@ msgstr ""
 msgid "Preview"
 msgstr ""
 
-#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp src/TransferWnd.cpp
 msgid "Show in file manager"
 msgstr ""
 
@@ -2995,6 +2995,11 @@ msgstr ""
 
 #: src/FileLaunch.cpp
 #, c-format
+msgid "ERROR: Failed to show '%s' in the file manager."
+msgstr ""
+
+#: src/FileLaunch.cpp
+#, c-format
 msgid "Cannot open '%s': the file is not present on this computer."
 msgstr ""
 
@@ -3005,11 +3010,6 @@ msgstr ""
 #: src/FileLaunch.cpp
 #, c-format
 msgid "ERROR: Failed to open '%s' with the default application."
-msgstr ""
-
-#: src/FileLaunch.cpp
-#, c-format
-msgid "ERROR: Failed to show '%s' in the file manager."
 msgstr ""
 
 #: src/FilterSelectionSummary.h

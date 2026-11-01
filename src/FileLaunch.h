@@ -58,6 +58,12 @@ bool ResolvePath(const CKnownFile *file, CPath &out);
 /// True when the file can be handed to the desktop: its path resolves and exists.
 bool CanOpen(const CKnownFile *file);
 
+/// True when the directory exists locally, after amulegui path mapping.
+bool CanOpenDirectory(const CPath &directory);
+
+/// Open a directory in the default file manager, applying amulegui path mapping.
+void OpenDirectory(const CPath &directory);
+
 /**
  * Both menu answers from a single filesystem check.
  *

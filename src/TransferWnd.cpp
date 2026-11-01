@@ -26,6 +26,7 @@
 #include "TransferWnd.h" // Interface declarations
 
 #include "MenuIcons.h"
+#include "FileLaunch.h" // Needed for opening category folders
 
 #include <common/MenuIDs.h>
 
@@ -76,6 +77,7 @@ wxBEGIN_EVENT_TABLE(CTransferWnd, wxPanel)
 	EVT_MENU(MP_CAT_ADD, CTransferWnd::OnAddCategory)
 	EVT_MENU(MP_CAT_EDIT, CTransferWnd::OnEditCategory)
 	EVT_MENU(MP_CAT_REMOVE, CTransferWnd::OnDelCategory)
+	EVT_MENU(MP_SHOWINFOLDER, CTransferWnd::OnOpenCategoryFolder)
 	EVT_MENU(MP_PRIOLOW, CTransferWnd::OnSetCatPriority)
 	EVT_MENU(MP_PRIONORMAL, CTransferWnd::OnSetCatPriority)
 	EVT_MENU(MP_PRIOHIGH, CTransferWnd::OnSetCatPriority)
@@ -362,6 +364,18 @@ void CTransferWnd::OnCategoryChanged(wxNotebookEvent &evt)
 	downloadlistctrl->SortList();
 }
 
+// Category zero's stored path is set only at startup, and the Incoming preference may have changed.
+static const CPath &CategoryFolder(int category)
+{
+	return category == 0 ? thePrefs::GetIncomingDir()
+			     : theApp->glob_prefs->GetCatPath(static_cast<uint8>(category));
+}
+
+void CTransferWnd::OnOpenCategoryFolder(wxCommandEvent &WXUNUSED(event))
+{
+	FileLaunch::OpenDirectory(CategoryFolder(m_dlTab->GetSelection()));
+}
+
 void CTransferWnd::OnNMRclickDLtab(wxMouseEvent &evt)
 {
 	// Only handle events from the category-notebook
@@ -404,6 +418,11 @@ void CTransferWnd::OnNMRclickDLtab(wxMouseEvent &evt)
 
 			m_menu->Append(0, _("Select view filter"), catmenu);
 		}
+
+		AppendMenuIcon(m_menu, MP_SHOWINFOLDER, _("Show in file manager"), MenuIcon::Folder);
+		m_menu->Enable(MP_SHOWINFOLDER,
+			FileLaunch::CanOpenDirectory(CategoryFolder(m_dlTab->GetSelection())));
+		m_menu->AppendSeparator();
 
 		m_menu->Append(MP_CAT_ADD, _("Add category"));
 
