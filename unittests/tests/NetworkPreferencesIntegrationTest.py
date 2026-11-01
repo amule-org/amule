@@ -10,16 +10,14 @@ import json
 from pathlib import Path
 import struct
 import socket
-import subprocess
 import sys
 import tempfile
 import time
 import urllib.request
 
-from AllSearchIntegrationTest import (C, PortCollision, free_ports, integer,
-                                      retry_port_collisions, running_daemon, start_daemon,
-                                      stop_daemon, string, tag)
-from AmuleApiEcPasswordIntegrationTest import stop
+from AllSearchIntegrationTest import (C, configure_amuleapi, free_ports, integer,
+                                      retry_port_collisions, running_daemon, start_amuleapi,
+                                      start_daemon, stop_daemon, string, tag, wait_amuleapi)
 from DaemonConfig import daemon_env, write_amule_conf
 from KnownHistoryIntegrationTest import fake_server
 
@@ -66,14 +64,8 @@ def run(daemon_binary, api_binary):
             assert network_flags() == 0, 'fixture must start with both networks disabled'
             assert not ec.call(C['EC_OP_GET_SERVER_LIST'])[1], 'disabled ED2K loaded servers'
             with (root / 'api.log').open('w') as log:
-                command = [api_binary, '--config-dir=' + str(api)]
-                subprocess.run(command + ['--set-admin-pass-stdin'], input=b'regression\n',
-                               check=True, env=env, stdout=log, stderr=log, timeout=10)
-                (api / 'amuleapi.conf').write_text('[EC]\nPassword=regression\n')
-                (api / 'amuleapi.conf').chmod(0o600)
-                server = subprocess.Popen(command + ['--host=127.0.0.1', '--port=' + str(ec_port),
-                    '--http-port=' + str(http_port)],
-                    env=env, stdout=log, stderr=log)
+                configure_amuleapi(api_binary, api, env, log, admin='regression')
+                server = start_amuleapi(api_binary, api, ec_port, http_port, env, log)
                 opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
                 url = f'http://127.0.0.1:{http_port}/api/v1'
                 token = None
@@ -88,17 +80,7 @@ def run(daemon_binary, api_binary):
                     with opener.open(req, timeout=5) as response:
                         return json.load(response)
 
-                def ready():
-                    assert server.poll() is None, 'API exited'
-                    if 'HTTP server failed to start:' in (root / 'api.log').read_text():
-                        raise PortCollision('API port collision')
-                    try:
-                        return request('/health').get('ec_connected')
-                    except OSError:
-                        return False
-
-                wait_for(ready, 'API did not connect')
-                token = request('/auth/login?include_token=true', {'password': 'regression'})['token']
+                token = wait_amuleapi(server, url, log.name, password='regression')
                 result = request('/preferences', {'connection': {'ed2k_enabled': True}}, 'PATCH')
                 assert result['connection']['ed2k_enabled'] is True, result
                 assert network_flags() == 1, 'ED2K change missing from EC poll'
@@ -176,7 +158,7 @@ def run(daemon_binary, api_binary):
             raise
         finally:
             if server is not None:
-                stop(server)
+                stop_daemon(server, timeout=15, check=sys.exc_info()[0] is None)
             if ec is not None:
                 ec.sock.close()
             if daemon is not None:

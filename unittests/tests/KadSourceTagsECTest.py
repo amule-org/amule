@@ -122,7 +122,7 @@ def run(binary):
         port, udp_port, peer_port = free_ports(3, udp_indices=(1,), peer_index=2)
         write_amule_conf(root, port, Port=peer_port, UDPPort=udp_port, ConnectToKad=1,
                          Autoconnect=0)
-        with running_daemon(binary, root, (port, peer_port, udp_port), args=(),
+        with running_daemon(binary, root, (port, peer_port, udp_port),
                             console='stdout.log') as (proc, ec):
             # Stopping Kad saves the index, whose header names our Kad ID: a publish
             # aimed at it is within tolerance.

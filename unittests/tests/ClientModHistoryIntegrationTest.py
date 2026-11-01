@@ -7,15 +7,15 @@ import json
 from pathlib import Path
 import socket
 import struct
-import subprocess
 import sys
 import tempfile
 import time
 import urllib.error
 import urllib.request
 
-from AllSearchIntegrationTest import (C, EC, exact, free_ports, retry_port_collisions,
-                                      start_daemon, stop_daemon)
+from AllSearchIntegrationTest import (C, DAEMON_ARGS, EC, configure_amuleapi, exact, free_ports,
+                                      retry_port_collisions, start_amuleapi, start_daemon,
+                                      stop_daemon, wait_amuleapi)
 from DaemonConfig import daemon_env, write_amule_conf
 from DownloadDisplayRatesIntegrationTest import hello
 
@@ -47,10 +47,6 @@ def run(daemon, api, root):
     credit = peer_hash + struct.pack('<IIIIIHB', 1234, 5678, int(time.time()), 0, 0, 0, 0) + bytes(80)
     assert len(credit) == 119
     (daemon_dir / 'clients.met').write_bytes(b'\x12' + struct.pack('<I', 1) + credit)
-    config = api_dir / 'amuleapi.conf'
-    config.touch(mode=0o600)
-    config.write_text(f'[EC]\nHost=127.0.0.1\nPort={ec_port}\nPassword=regression\n'
-                      f'[Server]\nBindAddress=127.0.0.1\nPort={http_port}\n')
     env = daemon_env(root)
     token = ''
     processes = []
@@ -59,7 +55,7 @@ def run(daemon, api, root):
 
     def start_core():
         proc, ec = start_daemon(daemon, daemon_dir, (ec_port, tcp_port),
-                                args=('-o',), env=env, console='amuled.log')
+                                args=(*DAEMON_ARGS, '-o'), env=env, console='amuled.log')
         ec.sock.close()
         processes.append(proc)
         return proc
@@ -67,10 +63,10 @@ def run(daemon, api, root):
     def start_api():
         log = (root / 'amuleapi.log').open('a')
         logs.append(log)
-        proc = subprocess.Popen([str(api), '--config-dir', str(api_dir), '--foreground'],
-                                env=env, stdout=log, stderr=log)
+        proc = start_amuleapi(api, api_dir, ec_port, http_port, env, log)
         processes.append(proc)
-        return proc
+        return proc, wait_amuleapi(proc, f'http://127.0.0.1:{http_port}/api/v1', log.name,
+                                   password='mod-test')
 
     def stop(proc):
         processes.remove(proc)
@@ -109,11 +105,9 @@ def run(daemon, api, root):
 
     try:
         core = start_core()
-        subprocess.run([str(api), '--config-dir', str(api_dir), '--set-admin-pass', 'mod-test'],
-                       env=env, check=True, stdout=subprocess.DEVNULL, timeout=20)
-        web = start_api()
-        wait_for(lambda: request('/health'))
-        token = request('/auth/login?include_token=true', {'password': 'mod-test'})['token']
+        with (root / 'amuleapi.log').open('a') as log:
+            configure_amuleapi(api, api_dir, env, log, admin='mod-test')
+        web, token = start_api()
         # Load history before the hello to exercise reconciliation of a cached old record.
         request('/known_clients')
         cases = [
@@ -167,9 +161,7 @@ def run(daemon, api, root):
             assert saved[124:133] == b'AMULEMD1\x02'
             core = start_core()
             ec_history(mod, stored_version, software)
-            web = start_api()
-            wait_for(lambda: request('/health'))
-            token = request('/auth/login?include_token=true', {'password': 'mod-test'})['token']
+            web, token = start_api()
             row = wait_for(lambda: identity(request('/known_clients')['known_clients'], mod or None, stored_version))
             assert row['uploaded_bytes_total'] == 1234 and row['downloaded_bytes_total'] == 5678
         # A chat retains the known client across disconnect. Its next outbound hello

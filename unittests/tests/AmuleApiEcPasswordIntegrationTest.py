@@ -37,7 +37,7 @@ def run(daemon_binary, api_binary):
                 daemon = None
                 try:
                     daemon, ec = start_daemon(daemon_binary, core, (ec_port, peer_port, udp_port),
-                                              args=(), env=env, password=secret)
+                                              env=env, password=secret)
                     ec.sock.close()
                     command = [api_binary, '--config-dir=' + str(api)]
                     # Verify the input path stays compatible with the existing REST password derivation.

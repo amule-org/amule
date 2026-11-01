@@ -5,16 +5,14 @@
 from pathlib import Path
 import socketserver
 import struct
-import subprocess
 import sys
 import tempfile
 import threading
 import zlib
 
 from ECWire import accept
-from AllSearchIntegrationTest import C, exact, free_ports, integer, tag
-from AmuleApiEcPasswordIntegrationTest import stop
-from CompletedFileDeleteIntegrationTest import eventually, http
+from AllSearchIntegrationTest import (C, configure_amuleapi, exact, free_ports, http, integer,
+                                      start_amuleapi, stop_daemon, tag, wait_amuleapi)
 from DaemonConfig import daemon_env
 
 LIMIT_TAG = C['EC_TAG_CORETW_WRITE_BUFFER_LIMIT_MIB']
@@ -56,26 +54,12 @@ def run(api_binary, supported):
         with Core(('127.0.0.1', 0), CoreHandler) as core, (root / 'api.log').open('w') as log:
             core.supported, core.limit, core.connections, core.writes = supported, 128, 50, []
             threading.Thread(target=core.serve_forever, daemon=True).start()
-            command = [api_binary, '--config-dir=' + temporary]
-            subprocess.run(command + ['--set-admin-pass-stdin'], input=b'regression\n',
-                           env=env, check=True, stdout=log, stderr=log, timeout=10)
-            (root / 'amuleapi.conf').write_text('[EC]\nPassword=regression\n')
-            (root / 'amuleapi.conf').chmod(0o600)
+            configure_amuleapi(api_binary, root, env, log, admin='regression')
             port = free_ports(1)[0]
             base = f'http://127.0.0.1:{port}/api/v1'
-            proc = subprocess.Popen(command + ['--host=127.0.0.1',
-                '--port=' + str(core.server_address[1]), '--http-port=' + str(port)],
-                env=env, stdout=log, stderr=log)
+            proc = start_amuleapi(api_binary, root, core.server_address[1], port, env, log)
             try:
-                def ready():
-                    assert proc.poll() is None, (root / 'api.log').read_text()
-                    try:
-                        return http(base, '/health')[1].get('ec_connected')
-                    except OSError:
-                        return False
-                eventually(ready)
-                token = http(base, '/auth/login?include_token=true', method='POST',
-                             body={'password': 'regression'})[1]['token']
+                token = wait_amuleapi(proc, base, log.name, password='regression')
                 # A client must never report success for an ignored write, even if the
                 # caller tries to set the read-only capability flag itself.
                 status, result = http(base, '/preferences', token, 'PATCH', {'advanced': {
@@ -100,7 +84,7 @@ def run(api_binary, supported):
                 print((root / 'api.log').read_text(errors='replace'), file=sys.stderr)
                 raise
             finally:
-                stop(proc)
+                stop_daemon(proc, timeout=15, check=sys.exc_info()[0] is None)
                 core.shutdown()
 
 

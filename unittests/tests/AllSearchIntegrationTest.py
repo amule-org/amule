@@ -5,6 +5,7 @@
 from contextlib import ExitStack, contextmanager
 import errno
 import hashlib
+import json
 import os
 from pathlib import Path
 import queue
@@ -16,8 +17,10 @@ import sys
 import tempfile
 import threading
 import time
+import urllib.error
+import urllib.request
 
-from DaemonConfig import daemon_env, write_amule_conf
+from DaemonConfig import EC_PASSWORD, daemon_env, write_amule_conf
 
 
 # Resolve wire constants from the protocol source, so renumbering stays visible.
@@ -178,6 +181,11 @@ def check_daemon_ports(root, ec_port, peer_port, udp_port=None, server_udp=False
         raise PortCollision(f'Daemon did not bind fixture ports: {missing}\n{log[-4000:]}')
 
 
+# amuled aborts on a failed assertion instead of logging it and running on, so the test
+# fails. Windows has no such option.
+DAEMON_ARGS = () if os.name == 'nt' else ('--disable-fatal',)
+
+
 def wait_daemon_started(proc, port, root, peer_port=None, udp_port=None,
                         server_udp=False, snapshot=None):
     """Wait until amuled on root has started and bound the fixture ports, without EC."""
@@ -211,7 +219,7 @@ def connect_daemon(proc, port, root=None, peer_port=None, udp_port=None,
             return ec
 
 
-def start_daemon(binary, root, ports, *, args=('--disable-fatal',), env=None,
+def start_daemon(binary, root, ports, *, args=DAEMON_ARGS, env=None,
                  console='console.log', server_udp=False, **connect_kwargs):
     """Start amuled on root and return (proc, ec) once it serves EC on the fixture ports.
 
@@ -259,6 +267,81 @@ def running_daemon(binary, root, ports, *, stop_timeout=10, **start_kwargs):
             ec.sock.close()
         if proc is not None:
             stop_daemon(proc, timeout=stop_timeout, check=not failed)
+
+
+# Loopback calls must not go through a proxy set in the caller's environment.
+opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+
+
+def http(base, path, token=None, method='GET', body=None):
+    headers = {'Content-Type': 'application/json'}
+    if token:
+        headers['Authorization'] = 'Bearer ' + token
+    request = urllib.request.Request(base + path,
+        None if body is None else json.dumps(body).encode(), headers, method=method)
+    try:
+        response = opener.open(request, timeout=10)
+    except urllib.error.HTTPError as error:
+        response = error
+    with response:
+        data = response.read()
+        return response.status, json.loads(data) if data else None
+
+
+def configure_amuleapi(api, config_dir, env, log, *, admin='adminpass', guest=None):
+    """Set amuleapi's role passwords, and its EC password to the fixture core's."""
+    command = [str(api), f'--config-dir={config_dir}']
+    for role, password in (('admin', admin), ('guest', guest)):
+        if password is not None:
+            subprocess.run(command + [f'--set-{role}-pass={password}'], env=env, check=True,
+                           stdout=log, stderr=subprocess.STDOUT, timeout=20)
+    subprocess.run(command + ['--set-ec-pass-stdin'], input=(EC_PASSWORD + '\n').encode(),
+                   env=env, check=True, stdout=log, stderr=subprocess.STDOUT, timeout=20)
+
+
+def start_amuleapi(api, config_dir, ec_port, http_port, env, log):
+    return subprocess.Popen([str(api), f'--config-dir={config_dir}', '--host=127.0.0.1',
+                             f'--port={ec_port}', f'--http-port={http_port}'],
+                            env=env, stdout=log, stderr=subprocess.STDOUT)
+
+
+def wait_amuleapi(proc, base, log_path, *, password='adminpass', timeout=60):
+    """Wait until amuleapi reaches the core over EC, then log in; returns the token."""
+    # Only trust /health once this amuleapi says it owns the port, not whoever took it.
+    listening = 'listening on ' + base.rsplit('/api/', 1)[0] + '/'
+    deadline = time.monotonic() + timeout
+    while True:
+        text = Path(log_path).read_text(errors='replace')
+        if proc.poll() is not None:
+            if 'HTTP server failed to start:' in text:
+                raise PortCollision('amuleapi could not bind its HTTP port')
+            raise AssertionError(f'amuleapi exited with {proc.returncode}:\n{text[-4000:]}')
+        try:
+            if listening in text and http(base, '/health')[1].get('ec_connected'):
+                break
+        except OSError:
+            pass
+        assert time.monotonic() < deadline, f'amuleapi did not reach the core:\n{text[-4000:]}'
+        time.sleep(0.1)
+    if password is None:
+        return None
+    status, body = http(base, '/auth/login?include_token=true', method='POST',
+                        body={'password': password})
+    assert status == 200, (status, body)
+    return body['token']
+
+
+@contextmanager
+def running_amuleapi(api, config_dir, ec_port, http_port, env, log, **wait_kwargs):
+    """start_amuleapi and wait_amuleapi as a context that yields (proc, base, token)."""
+    base = f'http://127.0.0.1:{http_port}/api/v1'
+    proc = start_amuleapi(api, config_dir, ec_port, http_port, env, log)
+    failed = True
+    try:
+        yield proc, base, wait_amuleapi(proc, base, log.name, **wait_kwargs)
+        failed = False
+    finally:
+        stop_daemon(proc, timeout=15, check=not failed)
 
 
 def search_record(name, sources=10):
@@ -379,7 +462,7 @@ def run(binary):
         write_amule_conf(root, ec_port, Port=peer_port, UDPPort=udp_port, ConnectToKad=1,
                          ConnectToED2K=1, FilterLanIPs=0)
         (root / 'nodes.dat').write_bytes(struct.pack('<III', 0, 1, 0))
-        start = dict(args=(), console='stdout.log', server_udp=True)
+        start = dict(console='stdout.log', server_udp=True)
         proc = None
         try:
             proc, ec = start_daemon(binary, root, ports, **start)

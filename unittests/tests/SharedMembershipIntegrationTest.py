@@ -2,16 +2,15 @@
 # Copyright (c) 2026 aMule Team
 # SPDX-License-Identifier: GPL-2.0-or-later
 """Keep completed rows while their shared role changes on live EC/REST connections."""
-import hashlib
 import os
 from pathlib import Path
-import subprocess
 import sys
 import tempfile
 
-from AllSearchIntegrationTest import (C, connect_daemon, free_ports, integer,
-                                      retry_port_collisions, start_daemon, stop_daemon, string)
-from CompletedFileDeleteIntegrationTest import EC, FIXTURES, eventually, field, http, seed_part
+from AllSearchIntegrationTest import (C, configure_amuleapi, connect_daemon, free_ports, http,
+                                      integer, retry_port_collisions, start_amuleapi,
+                                      start_daemon, stop_daemon, string, wait_amuleapi)
+from CompletedFileDeleteIntegrationTest import EC, FIXTURES, eventually, field, seed_part
 from DaemonConfig import daemon_env, write_amule_conf
 
 
@@ -78,24 +77,10 @@ def run(daemon, api, root):
 
             api_dir = root / 'api'
             api_dir.mkdir()
-            subprocess.run([api, '--config-dir='+str(api_dir), '--set-admin-pass=adminpass'],
-                           env=env, check=True, stdout=log, stderr=log)
-            config = api_dir / 'amuleapi.conf'
-            config.write_text(config.read_text().replace('PasswordMD5=', 'PasswordMD5=' + hashlib.md5(b'regression').hexdigest(), 1))
-            server = subprocess.Popen([api, '--config-dir='+str(api_dir), '--host=127.0.0.1',
-                '--port='+str(ec_port), '--http-port='+str(http_port)],
-                env=env, stdout=log, stderr=log)
+            configure_amuleapi(api, api_dir, env, log)
+            server = start_amuleapi(api, api_dir, ec_port, http_port, env, log)
             base = f'http://127.0.0.1:{http_port}/api/v1'
-
-            def healthy():
-                assert server.poll() is None, 'API exited'
-                try:
-                    return http(base, '/health')[1].get('ec_connected')
-                except OSError:
-                    return False
-            eventually(healthy)
-            token = http(base, '/auth/login?include_token=true', method='POST',
-                         body={'password': 'adminpass'})[1]['token']
+            token = wait_amuleapi(server, base, log.name)
             eventually(lambda: http(base, '/shared/'+old_hash, token)[0] == 200)
             finished = incoming / 'completed-1.txt'
             original_stat = finished.stat()

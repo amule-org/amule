@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 """Guest URL privacy against disposable core/API processes and a loopback HTTP server."""
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-import hashlib
 import json
 import os
 import socket
@@ -16,7 +15,8 @@ import time
 import urllib.error
 import urllib.request
 
-from AllSearchIntegrationTest import free_ports, retry_port_collisions, start_daemon, stop_daemon
+from AllSearchIntegrationTest import (configure_amuleapi, free_ports, retry_port_collisions,
+                                      start_amuleapi, start_daemon, stop_daemon, wait_amuleapi)
 from DaemonConfig import daemon_env, write_amule_conf
 
 
@@ -79,18 +79,12 @@ def run(daemon_binary, api_binary):
                 (root / 'fixture.log').open('w') as log:
             threading.Thread(target=downloads.serve_forever, daemon=True).start()
             try:
-                daemon, ec = start_daemon(daemon_binary, core, (port, peer_port), args=(), env=env)
+                daemon, ec = start_daemon(daemon_binary, core, (port, peer_port), env=env)
                 processes.append(daemon)
                 ec.sock.close()
-                subprocess.run([api_binary, f'--config-dir={api}',
-                                '--set-admin-pass=adminpass'], check=True,
-                               env=env, stdout=log, stderr=log)
-                config = api / 'amuleapi.conf'
-                config.write_text(config.read_text().replace(
-                    'PasswordMD5=', 'PasswordMD5=' + hashlib.md5(b'regression').hexdigest(), 1))
-                processes.append(subprocess.Popen(
-                    [api_binary, f'--config-dir={api}', '--host=127.0.0.1',
-                     f'--port={port}', f'--http-port={http}'], env=env, stdout=log, stderr=log))
+                configure_amuleapi(api_binary, api, env, log)
+                server = start_amuleapi(api_binary, api, port, http, env, log)
+                processes.append(server)
                 url = f'http://127.0.0.1:{http}/api/v1'
                 opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
@@ -121,11 +115,7 @@ def run(daemon_binary, api_binary):
                         time.sleep(0.1)
                     raise AssertionError('fixture condition timed out')
 
-                until(lambda: request('GET', '/health')[0] == 200)
-                status, result = request('POST', '/auth/login?include_token=true',
-                                         {'password': 'adminpass'})
-                assert status == 200, (status, result)
-                admin = result['token']
+                admin = wait_amuleapi(server, url, log.name)
                 until(lambda: request('GET', '/preferences', token=admin)[0] == 200)
                 status, result = request('PATCH', '/auth/passwords?include_token=true', {
                     'current_password': 'adminpass', 'guest_access_enabled': True,
@@ -234,6 +224,7 @@ def run(daemon_binary, api_binary):
                         assert secret not in text, ('secret leaked', secret, text)
                 assert 'log_appended' in events_file.read_text()
                 print('PASS: failure status, success/failure logs and guest SSE contain no URL secrets')
+                stop_daemon(server, timeout=15)
             except BaseException:
                 log.flush()
                 print((root / 'fixture.log').read_text(), file=sys.stderr)

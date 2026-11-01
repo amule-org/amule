@@ -79,7 +79,7 @@ def run(binary):
         for worker in workers:
             worker.start()
         try:
-            with running_daemon(binary, root, (ec_port, peer_port, udp_port), args=(),
+            with running_daemon(binary, root, (ec_port, peer_port, udp_port),
                                 console='stdout.log', server_udp=True) as (_, ec):
 
                 def add(address):

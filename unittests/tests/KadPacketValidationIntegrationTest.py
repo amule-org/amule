@@ -26,7 +26,7 @@ def run(binary):
         ec_port, udp_port, peer_port = free_ports(3, udp_indices=(1,), peer_index=2)
         write_amule_conf(root, ec_port, Port=peer_port, UDPPort=udp_port, ConnectToKad=1,
                          Autoconnect=0)
-        with running_daemon(binary, root, (ec_port, peer_port, udp_port), args=(),
+        with running_daemon(binary, root, (ec_port, peer_port, udp_port),
                             console='stdout.log') as (proc, ec):
             assert ec.call(C['EC_OP_KAD_START'])[0] == C['EC_OP_NOOP']
             wait_ready(ec, proc)

@@ -2,7 +2,6 @@
 # Copyright (c) 2026 aMule Team. SPDX-License-Identifier: GPL-2.0-or-later
 """Real amuleapi password and spawned-token logins against an offline core."""
 import json
-import os
 from pathlib import Path
 import subprocess
 import sys
@@ -31,8 +30,7 @@ def run(daemon_binary, api_binary, token):
         (root / 'amuleapi.conf').chmod(0o600)
         processes = []
         try:
-            daemon, ec = start_daemon(daemon_binary, root, (port, peer), console='console',
-                                      args=() if os.name == 'nt' else ('--disable-fatal',))
+            daemon, ec = start_daemon(daemon_binary, root, (port, peer), console='console')
             processes.append(daemon)
             ec.sock.close()
             if not token:
