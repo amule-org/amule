@@ -322,8 +322,8 @@ def stored_search(results, kind=C['EC_SEARCH_ALL'], params=b''):
     return data
 
 
-def stop_daemon(proc, timeout=10, check=True):
-    """Stop proc and reap it. check asserts a clean exit; pass False on failure paths."""
+def stop_daemon(proc, timeout=10, check=True, codes=(0,)):
+    """Stop proc and reap it. check asserts an exit in codes; pass False on failure paths."""
     if proc.poll() is None:
         if os.name == 'nt':
             # TerminateProcess does not reap spawned helpers; their log handles
@@ -339,7 +339,7 @@ def stop_daemon(proc, timeout=10, check=True):
         proc.wait()
         assert not check, f'daemon did not exit within {timeout} s'
         return
-    assert not check or os.name == 'nt' or code == 0, f'daemon shutdown failed: {code}'
+    assert not check or os.name == 'nt' or code in codes, f'daemon shutdown failed: {code}'
 
 
 def free_ports(n, udp_indices=(), peer_index=None):

@@ -209,7 +209,9 @@ def run(binary, root, responses, sources, expected, *, url=None, startup=False,
     finally:
         release.set()
         if api_proc:
-            stop_daemon(api_proc, check=sys.exc_info()[0] is None)
+            # amuleapi exits 1 once it has seen its EC connection drop, which stopping the
+            # core above can cause.
+            stop_daemon(api_proc, check=sys.exc_info()[0] is None, codes=(0, 1))
         if ec:
             ec.sock.close()
         if proc and proc.poll() is None:
@@ -430,7 +432,9 @@ def editor_case(binary, api_binary, root):
         assert source_file.read_text() == ''
     finally:
         if api_proc:
-            stop_daemon(api_proc, check=sys.exc_info()[0] is None)
+            # amuleapi exits 1 once it has seen its EC connection drop, which stopping the
+            # core above can cause.
+            stop_daemon(api_proc, check=sys.exc_info()[0] is None, codes=(0, 1))
         if ec:
             ec.sock.close()
         if proc.poll() is None:
