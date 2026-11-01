@@ -30,32 +30,12 @@
 set -u
 set -o pipefail
 
-HOST=${HOST:-localhost:4713}
-API="$HOST/api/v1"
-ADMIN_PASS=${ADMIN_PASS:-adminpass}
+CURL_MAX_TIME=15
+. "$(dirname "${BASH_SOURCE[0]}")/lib/common.sh"
+
 STATE=${PEER_FIXTURE_STATE:-/tmp/amuleapi-peer-fixture}
 
-FAIL_COUNT=0
-
-CURL_BODY_FILE=$(mktemp -t amuleapi_99_peer_fixture_body.XXXXXX)
-trap 'rm -f "$CURL_BODY_FILE"' EXIT
-
-_die()  { echo "FATAL: $*" >&2; exit 2; }
 _ok()   { echo "  OK    $1"; }
-_fail() {
-	FAIL_COUNT=$((FAIL_COUNT+1))
-	echo "  FAIL  $1"
-	shift
-	for arg in "$@"; do echo "        $arg"; done
-}
-
-_curl() {
-	local resp
-	resp=$(curl -s --max-time 15 -o "$CURL_BODY_FILE" -w '%{http_code}' "$@") \
-		|| _die "curl invocation failed for $*"
-	CURL_STATUS=$resp
-	CURL_BODY=$(cat "$CURL_BODY_FILE")
-}
 
 echo "amuleapi 99-peer-fixture-teardown @ $HOST"
 
@@ -71,12 +51,8 @@ FIX_NAME=$(sed -n 's/^name=//p' "$STATE" | head -1)
 [ -n "$FIX_HASH" ] || _die "$STATE exists but carries no hash= line"
 echo "  fixture: $FIX_HASH ($FIX_NAME)"
 
-_curl -X POST -H 'Content-Type: application/json' \
-	-d "{\"username\":\"admin\",\"password\":\"$ADMIN_PASS\"}" \
-	"$API/auth/login?include_token=true"
-[ "$CURL_STATUS" = "200" ] || _die "admin login failed (HTTP $CURL_STATUS)"
-TOKEN=$(printf '%s' "$CURL_BODY" | jq -r '.token // empty')
-[ -n "$TOKEN" ] || _die "admin login returned no token"
+TOKEN=$(_login "$ADMIN_PASS")
+[ -n "$TOKEN" ] || _die "admin login failed"
 AUTH="Authorization: Bearer $TOKEN"
 
 # Resolved first so a preferences problem cannot look like a delete problem.

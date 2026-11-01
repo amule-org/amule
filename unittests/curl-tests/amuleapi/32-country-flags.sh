@@ -31,61 +31,13 @@
 set -u
 set -o pipefail
 
-HOST=${HOST:-localhost:4713}
-API="$HOST/api/v1"
+. "$(dirname "${BASH_SOURCE[0]}")/lib/common.sh"
 
-FAIL_COUNT=0
-TEST_COUNT=0
+# PNGs are binary: byte checks read $CURL_BODY_FILE. Body length is
+# curl's own %{size_download} ($CURL_SIZE), never the file size, because
+# `-I` writes the response headers into the file.
 
-CURL_BODY_FILE=$(mktemp -t amuleapi_32_country_flags_body.XXXXXX)
-CURL_HEAD_FILE=$(mktemp -t amuleapi_32_country_flags_head.XXXXXX)
-trap 'rm -f "$CURL_BODY_FILE" "$CURL_HEAD_FILE"' EXIT
-
-_die()  { echo "FATAL: $*" >&2; exit 2; }
-_pass() { TEST_COUNT=$((TEST_COUNT+1)); echo "  PASS  $1"; }
-_fail() {
-	TEST_COUNT=$((TEST_COUNT+1)); FAIL_COUNT=$((FAIL_COUNT+1))
-	echo "  FAIL  $1"
-	shift
-	for arg in "$@"; do echo "        $arg"; done
-}
-
-# Binary-safe: the body lands in a file and stays there. $CURL_BODY is
-# deliberately NOT populated (a PNG through a shell variable loses the
-# NUL bytes); assertions read $CURL_BODY_FILE instead.
-#
-# Body *length* comes from curl's own %{size_download}, never from the
-# file: curl leaves the previous response's file untouched when a reply
-# carries no body (304), and `-I` writes the response headers into it,
-# so file size answers a different question than "how many body bytes
-# came back". The file is truncated up front anyway so a signature
-# check can't read stale bytes.
-_curl() {
-	local resp
-	: > "$CURL_BODY_FILE"
-	resp=$(curl -s --max-time 10 \
-		-D "$CURL_HEAD_FILE" \
-		-o "$CURL_BODY_FILE" -w '%{http_code} %{size_download}' "$@") \
-		|| _die "curl invocation failed for $*"
-	CURL_STATUS=${resp%% *}
-	CURL_SIZE=${resp##* }
-	CURL_HEAD=$(cat "$CURL_HEAD_FILE")
-}
-
-_assert_status() {
-	local expected=$1 label=$2
-	if [ "$CURL_STATUS" = "$expected" ]; then
-		_pass "$label (HTTP $CURL_STATUS)"
-	else
-		_fail "$label" "expected HTTP $expected, got $CURL_STATUS"
-	fi
-}
-
-_header() { echo "$CURL_HEAD" | awk -F': ' -v k="$1" 'tolower($1) == k {gsub(/\r/,""); print $2}'; }
-
-if ! curl -s -o /dev/null --max-time 2 "$API/health" 2>/dev/null; then
-	_die "amuleapi at $HOST is not reachable. Start amuleapi first."
-fi
+_preflight
 
 echo "amuleapi 32-country-flags @ $HOST"
 
@@ -254,10 +206,4 @@ for target in us.svg us@1x.png us@4x.png us@2X.png us@2x@3x.png DE@2x.png zz@3x.
 done
 
 # --- Summary. -----------------------------------------------------
-echo
-if [ "$FAIL_COUNT" -eq 0 ]; then
-	echo "OK: $TEST_COUNT/$TEST_COUNT passed"
-	exit 0
-fi
-echo "FAIL: $FAIL_COUNT/$TEST_COUNT failed"
-exit 1
+_summary

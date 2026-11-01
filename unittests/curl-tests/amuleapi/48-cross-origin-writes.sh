@@ -13,43 +13,11 @@
 set -u
 set -o pipefail
 
-HOST=${HOST:-localhost:4713}
-API="$HOST/api/v1"
-ADMIN_PASS=${ADMIN_PASS:-adminpass}
+CURL_MAX_TIME=30
+. "$(dirname "${BASH_SOURCE[0]}")/lib/common.sh"
 
-FAIL_COUNT=0
-TEST_COUNT=0
-
-CURL_BODY_FILE=$(mktemp -t amuleapi_48_body.XXXXXX)
 COOKIE_JAR=$(mktemp -t amuleapi_48_cookies.XXXXXX)
-trap 'rm -f "$CURL_BODY_FILE" "$COOKIE_JAR"' EXIT
-
-_die()  { echo "FATAL: $*" >&2; exit 2; }
-_pass() { TEST_COUNT=$((TEST_COUNT+1)); echo "  PASS  $1"; }
-_fail() {
-	TEST_COUNT=$((TEST_COUNT+1)); FAIL_COUNT=$((FAIL_COUNT+1))
-	echo "  FAIL  $1"
-	shift
-	for arg in "$@"; do echo "        $arg"; done
-}
-
-_curl() {
-	local resp
-	resp=$(curl -s --max-time 30 -o "$CURL_BODY_FILE" -w '%{http_code}' "$@") \
-		|| _die "curl invocation failed for $*"
-	CURL_STATUS=$resp
-	CURL_BODY=$(cat "$CURL_BODY_FILE")
-}
-
-_assert_status() {
-	local expected=$1 label=$2
-	if [ "$CURL_STATUS" = "$expected" ]; then
-		_pass "$label (HTTP $CURL_STATUS)"
-	else
-		_fail "$label" "expected HTTP $expected, got $CURL_STATUS" \
-			"body head: $(printf '%s' "$CURL_BODY" | head -c 200)"
-	fi
-}
+_on_exit 'rm -f "$COOKIE_JAR"'
 
 _assert_error_code() {
 	local expected=$1 label=$2 actual
@@ -69,9 +37,8 @@ echo "== 48 cross-origin writes"
 _curl -c "$COOKIE_JAR" -X POST -H "Content-Type: application/json" \
 	-d "{\"password\":\"$ADMIN_PASS\"}" "$API/auth/login"
 [ "$CURL_STATUS" = "200" ] || _die "admin cookie login failed (HTTP $CURL_STATUS)"
-TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$ADMIN_PASS\"}" "$API/auth/login?include_token=true" | jq -r .token)
-[ -n "$TOKEN" ] && [ "$TOKEN" != "null" ] || _die "admin token login failed"
+TOKEN=$(_login "$ADMIN_PASS")
+[ -n "$TOKEN" ] || _die "admin token login failed"
 
 _curl -b "$COOKIE_JAR" -X POST "${OTHER_PORT[@]}" -H "Content-Type: text/plain" "$API/shared_reload"
 _assert_status 403 "cookie POST from another port of the same host is refused"
@@ -97,10 +64,4 @@ _assert_status 202 "bearer POST is accepted whatever the browser headers say"
 _curl -b "$COOKIE_JAR" "${OTHER_PORT[@]}" "$API/status"
 _assert_status 200 "cookie GET from another port is not affected"
 
-echo
-if [ "$FAIL_COUNT" -eq 0 ]; then
-	echo "OK: $TEST_COUNT/$TEST_COUNT passed"
-	exit 0
-fi
-echo "FAIL: $FAIL_COUNT/$TEST_COUNT failed"
-exit 1
+_summary

@@ -41,43 +41,11 @@
 set -u
 set -o pipefail
 
-HOST=${HOST:-localhost:4713}
-API="$HOST/api/v1"
-ADMIN_PASS=${ADMIN_PASS:-adminpass}
+# _curl sends "${AUTH[@]}"; empty until the login below.
+CURL_AUTO_AUTH=1
+. "$(dirname "${BASH_SOURCE[0]}")/lib/common.sh"
 
-FAIL_COUNT=0
-TEST_COUNT=0
-SKIP_COUNT=0
 AUTH=()
-
-_die()  { echo "FATAL: $*" >&2; exit 2; }
-_pass() { TEST_COUNT=$((TEST_COUNT+1)); echo "  PASS  $1"; }
-_skip() { SKIP_COUNT=$((SKIP_COUNT+1)); echo "  SKIP  $1"; }
-_fail() {
-	TEST_COUNT=$((TEST_COUNT+1)); FAIL_COUNT=$((FAIL_COUNT+1))
-	echo "  FAIL  $1"
-	shift
-	for arg in "$@"; do echo "        $arg"; done
-}
-
-_curl() {
-	local resp
-	resp=$(curl -s --max-time 10 -D /tmp/amuleapi_43_head -o /tmp/amuleapi_43_body \
-		-w '%{http_code}' "${AUTH[@]}" "$@") || _die "curl invocation failed for $*"
-	CURL_STATUS=$resp
-	CURL_BODY=$(cat /tmp/amuleapi_43_body)
-}
-
-_assert_status() {
-	local expected=$1 label=$2
-	if [ "$CURL_STATUS" = "$expected" ]; then
-		_pass "$label (HTTP $CURL_STATUS)"
-	else
-		_fail "$label" "expected HTTP $expected, got $CURL_STATUS"
-	fi
-}
-
-_jq() { echo "$CURL_BODY" | jq -r "$1" 2>/dev/null; }
 
 # The tokens the table in src/PeerCapabilities.h defines, in bit order. A row
 # added there without a matching entry here fails the membership check below,
@@ -116,21 +84,15 @@ _assert_word() {
 	fi
 }
 
-trap 'rm -f /tmp/amuleapi_43_head /tmp/amuleapi_43_body /tmp/amuleapi_43_sse' EXIT
+_on_exit 'rm -f /tmp/amuleapi_43_sse'
 
-command -v jq >/dev/null 2>&1 || _die "jq is required"
-
-if ! curl -s -o /dev/null --max-time 2 "$API/health" 2>/dev/null; then
-	_die "amuleapi at $HOST is not reachable. Start amuleapi first."
-fi
+_preflight
 
 echo "amuleapi 43-client-protocol-extensions @ $HOST"
 
 # --- 0. Log in. ----------------------------------------------------
-TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$ADMIN_PASS\"}" \
-	"$API/auth/login?include_token=true" | jq -r .token)
-[ -n "$TOKEN" ] && [ "$TOKEN" != "null" ] \
+TOKEN=$(_login "$ADMIN_PASS")
+[ -n "$TOKEN" ] \
 	|| _die "could not log in for protocol-extension tests"
 AUTH=(-H "Authorization: Bearer $TOKEN")
 
@@ -232,12 +194,4 @@ else
 	_skip "SSE payload word (no client event within the listen window)"
 fi
 
-echo
-SKIP_NOTE=""
-[ "$SKIP_COUNT" -gt 0 ] && SKIP_NOTE=" ($SKIP_COUNT check(s) skipped)"
-if [ "$FAIL_COUNT" -eq 0 ]; then
-	echo "43-client-protocol-extensions: all $TEST_COUNT assertions passed$SKIP_NOTE"
-	exit 0
-fi
-echo "43-client-protocol-extensions: $FAIL_COUNT of $TEST_COUNT assertions FAILED"
-exit 1
+_summary

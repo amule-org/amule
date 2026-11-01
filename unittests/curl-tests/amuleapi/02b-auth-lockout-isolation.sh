@@ -33,73 +33,14 @@
 set -u
 set -o pipefail
 
-HOST=${HOST:-localhost:4713}
-API="$HOST/api/v1"
-ADMIN_PASS=${ADMIN_PASS:-adminpass}
-GUEST_PASS=${GUEST_PASS:-guestpass}
+. "$(dirname "${BASH_SOURCE[0]}")/lib/common.sh"
 
-FAIL_COUNT=0
-TEST_COUNT=0
-SKIP_COUNT=0
-
-CURL_BODY_FILE=$(mktemp -t amuleapi_02b_body.XXXXXX)
-CURL_HDR_FILE=$(mktemp -t amuleapi_02b_hdr.XXXXXX)
-trap 'rm -f "$CURL_BODY_FILE" "$CURL_HDR_FILE"' EXIT
-
-_die()  { echo "FATAL: $*" >&2; exit 2; }
-_pass() { TEST_COUNT=$((TEST_COUNT+1)); echo "  PASS  $1"; }
-_skip() { SKIP_COUNT=$((SKIP_COUNT+1)); echo "  SKIP  $1"; }
-_fail() {
-	TEST_COUNT=$((TEST_COUNT+1)); FAIL_COUNT=$((FAIL_COUNT+1))
-	echo "  FAIL  $1"
-	shift
-	for arg in "$@"; do echo "        $arg"; done
-}
-
-_curl() {
-	local resp
-	resp=$(curl -s --max-time 10 \
-		-D "$CURL_HDR_FILE" \
-		-o "$CURL_BODY_FILE" -w '%{http_code}' "$@") \
-		|| _die "curl invocation failed for $*"
-	CURL_STATUS=$resp
-	CURL_BODY=$(cat "$CURL_BODY_FILE")
-	CURL_HDR=$(cat "$CURL_HDR_FILE")
-}
-
-_assert_status() {
-	local expected=$1 label=$2
-	if [ "$CURL_STATUS" = "$expected" ]; then
-		_pass "$label (HTTP $CURL_STATUS)"
-	else
-		_fail "$label" "expected HTTP $expected, got $CURL_STATUS" \
-			"body head: $(printf '%s' "$CURL_BODY" | head -c 200)"
-	fi
-}
-
-_assert_json_eq() {
-	local expr=$1 expected=$2 label=$3
-	local actual
-	actual=$(printf '%s' "$CURL_BODY" | jq -r "$expr" 2>/dev/null) \
-		|| _fail "$label" "body was not valid JSON" "body: $CURL_BODY"
-	if [ "$actual" = "$expected" ]; then
-		_pass "$label"
-	else
-		_fail "$label" "expected $expected, got $actual" "body: $CURL_BODY"
-	fi
-}
-
-_login() { # $1 = plaintext password
+_try_login() { # $1 = plaintext password
 	_curl -X POST -H "Content-Type: application/json" \
 		-d "{\"password\":\"$1\"}" "$API/auth/login"
 }
 
-if ! command -v jq >/dev/null 2>&1; then
-	_die "jq is required. brew install jq."
-fi
-if ! curl -s -o /dev/null --max-time 2 "$API/health" 2>/dev/null; then
-	_die "amuleapi at $HOST is not reachable. Start amuleapi first."
-fi
+_preflight
 
 echo "amuleapi 02b-auth-lockout-isolation smoke @ $HOST"
 
@@ -107,7 +48,7 @@ echo "amuleapi 02b-auth-lockout-isolation smoke @ $HOST"
 # The whole point is that a *guest* success cannot clear the bucket, so a
 # daemon without a usable guest password proves nothing. Skip rather than
 # fail: that is a bring-up shortfall, not a regression.
-_login "$GUEST_PASS"
+_try_login "$GUEST_PASS"
 if [ "$CURL_STATUS" != "200" ]; then
 	_skip "guest login unavailable (HTTP $CURL_STATUS) - cannot test cross-credential reset"
 	echo
@@ -119,38 +60,32 @@ _pass "precondition: guest can log in"
 # --- 1. Four failed admin guesses, one below the threshold. --------
 # Default limiter: 5 failures / 60 s → 300 s lockout.
 for i in 1 2 3 4; do
-	_login "wrong-admin-guess-$i"
+	_try_login "wrong-admin-guess-$i"
 	_assert_status 401 "failed admin guess $i/4 → 401"
 done
 
 # --- 2. A successful GUEST login must not clear the admin streak. --
-_login "$GUEST_PASS"
+_try_login "$GUEST_PASS"
 _assert_status 200 "guest login between the guesses → 200"
 
 # --- 3. The streak survived: the 5th failure arms the lockout. -----
 # Were the bucket cleared by step 2, this would be failure #1 of a fresh
 # window and step 4 would answer 401 instead of 429.
-_login "wrong-admin-guess-5"
+_try_login "wrong-admin-guess-5"
 _assert_status 401 "5th failed guess still returns 401 (arms the lockout)"
 
 # --- 4. The next attempt is locked out. ----------------------------
 # Asserted with the CORRECT admin password: a 429 here proves the lockout is
 # in force rather than the password being wrong, which is the whole control.
-_login "$ADMIN_PASS"
+_try_login "$ADMIN_PASS"
 _assert_status 429 "correct admin password is locked out → 429"
 _assert_json_eq '.error.code' rate_limited 'lockout carries error.code=rate_limited'
 
 # --- 5. Guest cannot unlock it either. -----------------------------
 # The bucket is per-IP, so a guest holder must not be able to log in and
 # clear the lockout out from under the admin.
-_login "$GUEST_PASS"
+_try_login "$GUEST_PASS"
 _assert_status 429 "guest is locked out by the same bucket → 429"
 
 # --- Summary. -----------------------------------------------------
-echo
-if [ "$FAIL_COUNT" -eq 0 ]; then
-	echo "OK: $TEST_COUNT/$TEST_COUNT passed${SKIP_COUNT:+ ($SKIP_COUNT skipped)}"
-	exit 0
-fi
-echo "FAIL: $FAIL_COUNT/$TEST_COUNT failed"
-exit 1
+_summary

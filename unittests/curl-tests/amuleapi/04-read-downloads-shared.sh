@@ -24,75 +24,15 @@
 set -u
 set -o pipefail
 
-HOST=${HOST:-localhost:4713}
-API="$HOST/api/v1"
-ADMIN_PASS=${ADMIN_PASS:-adminpass}
+. "$(dirname "${BASH_SOURCE[0]}")/lib/common.sh"
 
-FAIL_COUNT=0
-TEST_COUNT=0
-# Skips are counted apart from TEST_COUNT, never folded into it: a skipped
-# check is coverage that did not happen, and adding it to the passed tally
-# would report the absence of a check as a check that succeeded.
-SKIP_COUNT=0
-
-CURL_BODY_FILE=$(mktemp -t amuleapi_04_read_downloads_shared_body.XXXXXX)
-trap 'rm -f "$CURL_BODY_FILE"' EXIT
-
-_die()  { echo "FATAL: $*" >&2; exit 2; }
-_pass() { TEST_COUNT=$((TEST_COUNT+1)); echo "  PASS  $1"; }
-_skip() { SKIP_COUNT=$((SKIP_COUNT+1)); echo "  SKIP  $1"; }
-_fail() {
-	TEST_COUNT=$((TEST_COUNT+1)); FAIL_COUNT=$((FAIL_COUNT+1))
-	echo "  FAIL  $1"
-	shift
-	for arg in "$@"; do echo "        $arg"; done
-}
-
-_curl() {
-	local resp
-	resp=$(curl -s --max-time 10 \
-		-o "$CURL_BODY_FILE" -w '%{http_code}' "$@") \
-		|| _die "curl invocation failed for $*"
-	CURL_STATUS=$resp
-	CURL_BODY=$(cat "$CURL_BODY_FILE")
-}
-
-_assert_status() {
-	local expected=$1 label=$2
-	if [ "$CURL_STATUS" = "$expected" ]; then
-		_pass "$label (HTTP $CURL_STATUS)"
-	else
-		_fail "$label" "expected HTTP $expected, got $CURL_STATUS" \
-			"body head: $(printf '%s' "$CURL_BODY" | head -c 200)"
-	fi
-}
-
-_assert_json_eq() {
-	local expr=$1 expected=$2 label=$3
-	local actual
-	actual=$(printf '%s' "$CURL_BODY" | jq -r "$expr" 2>/dev/null) \
-		|| _fail "$label" "body was not valid JSON" "body: $CURL_BODY"
-	if [ "$actual" = "$expected" ]; then
-		_pass "$label"
-	else
-		_fail "$label" "expected $expected, got $actual" "body: $CURL_BODY"
-	fi
-}
-
-if ! command -v jq >/dev/null 2>&1; then
-	_die "jq is required. brew install jq."
-fi
-if ! curl -s -o /dev/null --max-time 2 "$API/health" 2>/dev/null; then
-	_die "amuleapi at $HOST is not reachable. Start amuleapi first."
-fi
+_preflight
 
 echo "amuleapi 04-read-downloads-shared smoke @ $HOST"
 
 # --- 0. Log in. ----------------------------------------------------
-TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$ADMIN_PASS\"}" \
-	"$API/auth/login?include_token=true" | jq -r .token)
-[ -n "$TOKEN" ] && [ "$TOKEN" != "null" ] \
+TOKEN=$(_login "$ADMIN_PASS")
+[ -n "$TOKEN" ] \
 	|| _die "could not log in"
 
 # Allow the first two refresher ticks to populate the cache (cold
@@ -766,12 +706,4 @@ else
 fi
 
 # --- Summary. -----------------------------------------------------
-echo
-SKIP_NOTE=""
-[ "$SKIP_COUNT" -gt 0 ] && SKIP_NOTE=" ($SKIP_COUNT check(s) skipped)"
-if [ "$FAIL_COUNT" -eq 0 ]; then
-	echo "OK: $TEST_COUNT/$TEST_COUNT passed$SKIP_NOTE"
-	exit 0
-fi
-echo "FAIL: $FAIL_COUNT/$TEST_COUNT failed"
-exit 1
+_summary

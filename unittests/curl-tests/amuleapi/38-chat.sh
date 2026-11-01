@@ -24,80 +24,19 @@
 set -u
 set -o pipefail
 
-HOST=${HOST:-localhost:4713}
-API="$HOST/api/v1"
-ADMIN_PASS=${ADMIN_PASS:-adminpass}
-GUEST_PASS=${GUEST_PASS:-guestpass}
+. "$(dirname "${BASH_SOURCE[0]}")/lib/common.sh"
 
 # TEST-NET-3 (RFC 5737). Never routable, never a real peer.
 PEER_IP=203.0.113.42
 PEER_PORT=4662
 PEER="$PEER_IP:$PEER_PORT"
 
-FAIL_COUNT=0
-TEST_COUNT=0
-
-CURL_BODY_FILE=$(mktemp -t amuleapi_38_chat_body.XXXXXX)
-trap 'rm -f "$CURL_BODY_FILE"' EXIT
-
-_die()  { echo "FATAL: $*" >&2; exit 2; }
-_pass() { TEST_COUNT=$((TEST_COUNT+1)); echo "  PASS  $1"; }
-_fail() {
-	TEST_COUNT=$((TEST_COUNT+1)); FAIL_COUNT=$((FAIL_COUNT+1))
-	echo "  FAIL  $1"
-	shift
-	for arg in "$@"; do echo "        $arg"; done
-}
-
-_curl() {
-	local resp
-	resp=$(curl -s --max-time 10 -o "$CURL_BODY_FILE" -w '%{http_code}' "$@") \
-		|| _die "curl invocation failed for $*"
-	CURL_STATUS=$resp
-	CURL_BODY=$(cat "$CURL_BODY_FILE")
-}
-
-_assert_status() {
-	local expected=$1 label=$2
-	if [ "$CURL_STATUS" = "$expected" ]; then
-		_pass "$label (HTTP $CURL_STATUS)"
-	else
-		_fail "$label" "expected HTTP $expected, got $CURL_STATUS" \
-			"body head: $(printf '%s' "$CURL_BODY" | head -c 200)"
-	fi
-}
-
-_assert_json_eq() {
-	local expr=$1 expected=$2 label=$3
-	local actual
-	actual=$(printf '%s' "$CURL_BODY" | jq -r "$expr" 2>/dev/null) \
-		|| _fail "$label" "body was not valid JSON" "body: $CURL_BODY"
-	if [ "$actual" = "$expected" ]; then
-		_pass "$label"
-	else
-		_fail "$label" "expected $expected, got $actual" "body: $CURL_BODY"
-	fi
-}
-
-_assert_body_empty() {
-	local label=$1
-	if [ -z "$CURL_BODY" ]; then
-		_pass "$label"
-	else
-		_fail "$label" "expected an empty body, got: $(printf '%s' "$CURL_BODY" | head -c 200)"
-	fi
-}
-
-command -v jq >/dev/null 2>&1 || _die "jq is required."
-curl -s -o /dev/null --max-time 2 "$API/health" 2>/dev/null \
-	|| _die "amuleapi at $HOST is not reachable."
+_preflight
 
 echo "amuleapi 38-chat smoke @ $HOST"
 
-TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$ADMIN_PASS\"}" \
-	"$API/auth/login?include_token=true" | jq -r .token)
-[ -n "$TOKEN" ] && [ "$TOKEN" != "null" ] || _die "login failed"
+TOKEN=$(_login "$ADMIN_PASS")
+[ -n "$TOKEN" ] || _die "login failed"
 
 # --- 1. Capability gate. ------------------------------------------
 #
@@ -279,10 +218,8 @@ _curl -X PATCH -H "Authorization: Bearer $TOKEN" "$API/chats/$PEER"
 _assert_status 405 "PATCH /chats/{address} → 405"
 
 # --- 8. Guests read but do not write. -----------------------------
-GUEST_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$GUEST_PASS\"}" \
-	"$API/auth/login?include_token=true" | jq -r .token)
-if [ -n "$GUEST_TOKEN" ] && [ "$GUEST_TOKEN" != "null" ]; then
+GUEST_TOKEN=$(_login "$GUEST_PASS")
+if [ -n "$GUEST_TOKEN" ]; then
 	_curl -H "Authorization: Bearer $GUEST_TOKEN" "$API/chats"
 	_assert_status 200 "GET /chats as guest → 200 (read-only data)"
 	_curl -X POST -H "Authorization: Bearer $GUEST_TOKEN" -H "Content-Type: application/json" \
@@ -321,10 +258,4 @@ _assert_status 204 "DELETE immediately after route POST → 204"
 # RefresherTest exercises the real session-value route + identity-child wire shape.
 
 # --- Summary. -----------------------------------------------------
-echo
-if [ "$FAIL_COUNT" -eq 0 ]; then
-	echo "OK: $TEST_COUNT/$TEST_COUNT passed"
-	exit 0
-fi
-echo "FAIL: $FAIL_COUNT/$TEST_COUNT failed"
-exit 1
+_summary

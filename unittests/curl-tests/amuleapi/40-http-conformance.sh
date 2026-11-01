@@ -29,40 +29,12 @@
 set -u
 set -o pipefail
 
-HOST=${HOST:-localhost:4713}
-API="$HOST/api/v1"
-ADMIN_PASS=${ADMIN_PASS:-adminpass}
-
-FAIL_COUNT=0
-TEST_COUNT=0
-# Skips are counted apart from TEST_COUNT, never folded into it: a skipped
-# check is coverage that did not happen, and adding it to the passed tally
-# would report the absence of a check as a check that succeeded.
-SKIP_COUNT=0
+. "$(dirname "${BASH_SOURCE[0]}")/lib/common.sh"
 
 BODY_FILE=$(mktemp -t amuleapi_40_body.XXXXXX)
 HDR_FILE=$(mktemp -t amuleapi_40_hdr.XXXXXX)
 BIG_FILE=$(mktemp -t amuleapi_40_big.XXXXXX)
-trap 'rm -f "$BODY_FILE" "$HDR_FILE" "$BIG_FILE"' EXIT
-
-_die()  { echo "FATAL: $*" >&2; exit 2; }
-_pass() { TEST_COUNT=$((TEST_COUNT+1)); echo "  PASS  $1"; }
-_skip() { SKIP_COUNT=$((SKIP_COUNT+1)); echo "  SKIP  $1"; }
-_fail() {
-	TEST_COUNT=$((TEST_COUNT+1)); FAIL_COUNT=$((FAIL_COUNT+1))
-	echo "  FAIL  $1"
-	shift
-	for arg in "$@"; do echo "        $arg"; done
-}
-
-_assert_eq() {
-	local expected=$1 actual=$2 label=$3
-	if [ "$expected" = "$actual" ]; then
-		_pass "$label"
-	else
-		_fail "$label" "expected [$expected], got [$actual]"
-	fi
-}
+_on_exit 'rm -f "$BODY_FILE" "$HDR_FILE" "$BIG_FILE"'
 
 # Header value by name, case-insensitively, from the last -D dump.
 _hdr() {
@@ -76,14 +48,10 @@ _has_hdr() {
 		'BEGIN{FS=":"} tolower($1)==want {found=1} END{exit !found}'
 }
 
-if ! command -v jq >/dev/null 2>&1; then _die "jq is required."; fi
-if ! curl -s -o /dev/null --max-time 2 "$API/health" 2>/dev/null; then
-	_die "amuleapi at $HOST is not reachable. Start it first."
-fi
+_preflight
 
-TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$ADMIN_PASS\"}" "$API/auth/login?include_token=true" | jq -r .token)
-[ -n "$TOKEN" ] && [ "$TOKEN" != "null" ] || _die "admin login failed"
+TOKEN=$(_login "$ADMIN_PASS")
+[ -n "$TOKEN" ] || _die "admin login failed"
 AUTH=(-H "Authorization: Bearer $TOKEN")
 
 echo "amuleapi 40-http-conformance smoke @ $HOST"
@@ -818,10 +786,8 @@ fi
 # and this route was not on it, an admin and a guest
 # hitting this inside one snapshot second got the SAME validator for two
 # different documents, and the second was answered 304 against the first's.
-GUEST_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"${GUEST_PASS:-guestpass}\"}" \
-	"$API/auth/login?include_token=true" 2>/dev/null | jq -r .token)
-if [ -z "$GUEST_TOKEN" ] || [ "$GUEST_TOKEN" = "null" ]; then
+GUEST_TOKEN=$(_login "$GUEST_PASS")
+if [ -z "$GUEST_TOKEN" ]; then
 	_skip "per-principal ETag check (no guest password configured)"
 else
 	curl -s -o "$BODY_FILE" -D "$HDR_FILE" --max-time 10 "${AUTH[@]}" \
@@ -1022,12 +988,4 @@ else
 fi
 
 # --- Summary. -------------------------------------------------------
-echo
-SKIP_NOTE=""
-[ "$SKIP_COUNT" -gt 0 ] && SKIP_NOTE=" ($SKIP_COUNT check(s) skipped)"
-if [ "$FAIL_COUNT" -eq 0 ]; then
-	echo "OK: $TEST_COUNT/$TEST_COUNT passed$SKIP_NOTE"
-	exit 0
-fi
-echo "FAIL: $FAIL_COUNT/$TEST_COUNT failed"
-exit 1
+_summary
